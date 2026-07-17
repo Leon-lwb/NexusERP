@@ -747,19 +747,14 @@
 
     // Tab 1 "任务办理": 任务表单初始化
     taskFormVisible.value = data.existTaskForm;
-    console.log('[Detail] taskFormVisible:', taskFormVisible.value, 'existTaskForm:', data.existTaskForm);
     if (taskFormVisible.value) {
       taskFormData.value = data.taskFormData;
-      console.log('[Detail] taskFormData:', JSON.stringify(taskFormData.value, null, 2));
-      console.log('[Detail] taskFormData.formValues?.routeName:', taskFormData.value?.formValues?.routeName);
 
       // 自定义业务表单：仍填充 model 供 complete 提交 variables，不在本 Tab 渲染「填写表单」卡片
       if (taskFormData.value?.formValues?.routeName) {
-        console.log('[Detail] 进入自定义业务表单分支');
         taskFormCustom.visible = true;
         taskFormCustom.disabled = true;
         taskFormCustom.formComponent = getFormComponent(taskFormData.value.formValues.routeName).component;
-        console.log('[Detail] taskFormCustom.formComponent:', taskFormCustom.formComponent);
         taskFormCustom.model = taskFormData.value.formValues.formData;
         taskFormCustom.customFormData = taskFormData.value.formValues.formData;
         if (data.startUserNode) {
@@ -1119,14 +1114,12 @@
   const handleJump = () => {
     taskFormRef.value.validate((valid: any)  => {
       if (valid) {
-          console.log("handleJump taskForm",taskForm);
           jumpOpen.value = true;
           jumpTitle.value = "跳转流程";
           jumpNodeLoading.value = true
           userTaskList({ taskId: taskForm.taskId }).then((res) => {
           jumpNodeLoading.value = false
           jumpNodeData.value = res.data
-          console.log("handleJump jumpNodeData.value",jumpNodeData.value)
          })
       }
     });
@@ -1146,7 +1139,6 @@
     jumpForm.targetActName = selectedJumpRows.value[0].name;
 
     jumpTask(jumpForm).then(res => {
-      console.log(" jumpTask",res);
       if (res.code == 200) {
         proxy?.$modal.msgSuccess('跳转成功')
         jumpOpen.value = false;
@@ -1180,11 +1172,8 @@
 
   const getFormContent = (item: any) => {
   const model = item?.formModel
-  console.log('[Detail][getFormContent] item=', item)
-  console.log('[Detail][getFormContent] formModel=', model)
   if (!model) return JSON.stringify({ formConfig: {}, formComponents: [] })
   const content = typeof model === 'string' ? model : JSON.stringify(model)
-  console.log('[Detail][getFormContent] content=', content)
   return content
 }
 
@@ -1267,12 +1256,9 @@ const getEditableFormContent = (item: any) => {
 // 只读展示用：禁用全部字段，并将子表数据嵌入 masterSubTableData
 const getReadonlyFormContent = (item: any) => {
   try {
-    console.log('[Detail][getReadonlyFormContent] item=', item)
     const rawModel = typeof item?.formModel === 'string' ? JSON.parse(item.formModel) : (item?.formModel || {})
-    console.log('[Detail][getReadonlyFormContent] rawModel=', rawModel)
     const cloned = JSON.parse(JSON.stringify(rawModel || {}))
     const comps = cloned.formComponents || cloned.widgetList || cloned.components || cloned.fields || []
-    console.log('[Detail][getReadonlyFormContent] comps length=', Array.isArray(comps) ? comps.length : 0)
 
     // 移除 formConfig 中的标签配置，让 FormRender 组件的 label-width 属性来控制
     if (cloned.formConfig) {
@@ -1309,12 +1295,10 @@ const getReadonlyFormContent = (item: any) => {
     if ((!Object.keys(masterSubTableData).length) && fd?.sub?.data && Array.isArray(fd.sub.data) && subFieldFromModel) {
       masterSubTableData[subFieldFromModel] = fd.sub.data
     }
-    console.log('[Detail][getReadonlyFormContent] masterSubTableData=', masterSubTableData)
     if (Object.keys(masterSubTableData).length > 0) {
       cloned.masterSubTableData = masterSubTableData
     }
     const result = JSON.stringify(cloned)
-    console.log('[Detail][getReadonlyFormContent] result=', result)
     return result
   } catch (e) {
     console.warn('getReadonlyFormContent 失败，回退为原模型:', e)
@@ -1327,7 +1311,6 @@ const getInitialMainData = (item: any) => {
   const data = item?.formData || {}
   // 兼容 main/sub 结构
   if (data && typeof data === 'object' && data.main) {
-    console.log('[Detail][getInitialMainData] use main from formData.main')
     return { ...data.main }
   }
   const main: Record<string, any> = {}
@@ -1335,7 +1318,6 @@ const getInitialMainData = (item: any) => {
     const v = (data as any)[k]
     if (!Array.isArray(v)) main[k] = v
   })
-  console.log('[Detail][getInitialMainData] flat main=', main)
   return main
 }
 

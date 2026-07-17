@@ -321,12 +321,10 @@ const handleDesignChange = (design: any) => {
 
 // 字段选择
 const handleFieldSelect = (field: any) => {
-  console.log('选中字段:', field)
 }
 
 // 表选择
 const handleTableSelect = (table: any) => {
-  console.log('选中表:', table)
 }
 
 // 设计选择（从打开面板）

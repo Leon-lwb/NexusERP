@@ -48,7 +48,6 @@ export default {
 
     // 处理 change 事件
     const commonmomponent = (nmInfo) => {
-      console.log("nmFile commonmomponent nmInfo=", nmInfo);
       localValue.value = nmInfo;
       emit('commonmomponent', { ...props.nm, commonDataInfo: localValue.value });
     };
@@ -65,10 +64,8 @@ export default {
   },
   methods: {
     handleRemove(file, fileList) {
-      console.log(file, fileList);
     },
     handlePreview(file) {
-      console.log(file);
     },
     handleExceed(files, fileList) {
       this.$message.warning(`当前限制选择 3 个文件，本次选择了 ${files.length} 个文件，共选择了 ${files.length + fileList.length} 个文件`);

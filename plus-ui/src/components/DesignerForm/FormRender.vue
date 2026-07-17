@@ -127,10 +127,6 @@
                         :multiple="getMultipleMode(column.props)"
                         :displayMode="getColumnDisplayMode(column) === 'sub' ? 'value' : getColumnDisplayMode(column)"
                         @common-component="data => {
-                          console.log('=== PopupTable 选择事件 ===')
-                          console.log('column.field:', column.field)
-                          console.log('row 当前值:', row)
-                          console.log('data:', data)
                           handleSubTablePopupSelect(data, column, row, item)
                         }"
                       />
@@ -438,28 +434,20 @@ const generateCode = (rule: string, params?: any) => {
 // 解析表单内容
 const parseFormContent = () => {
   try {
-    console.log('[FormRender] 开始解析表单内容')
-    console.log('[FormRender] formContent:', props.formContent)
     
     if (!props.formContent) {
-      console.log('[FormRender] formContent 为空，跳过解析')
       return
     }
     
     const parsed = JSON.parse(props.formContent)
-    console.log('[FormRender] 解析后的表单配置:', parsed)
     parsedContent.value = parsed
     
     formConfig.value = parsed.formConfig || {}
     formComponents.value = parsed.formComponents || []
     
-    console.log('[FormRender] 表单配置:', formConfig.value)
-    console.log('[FormRender] 表单组件:', formComponents.value)
     
     // 初始化表单/子表数据
     formComponents.value.forEach(component => {
-      console.log(`[FormRender] 处理组件: ${component.field}, type: ${component.type}`)
-      console.log(`[FormRender] component.props:`, component.props)
       
       if (component.type === 'subtable') {
         if (!subTableData.value[component.field]) {
@@ -483,8 +471,6 @@ const parseFormContent = () => {
       if (component.props?.onCodeGenerate) {
         const currentVal = formData.value[component.field]
         if (currentVal === undefined || currentVal === null || currentVal === '') {
-          console.log(`[FormRender] 处理编码生成: ${component.field}`)
-          console.log(`[FormRender] 编码规则:`, component.props.onCodeGenerate)
           
           const codeRule = component.props.onCodeGenerate
           // 如果 codeRule 是对象，尝试获取其中的规则字符串
@@ -503,7 +489,6 @@ const parseFormContent = () => {
           const generatedCode = generateCode(ruleString, component.props)
           formData.value[component.field] = generatedCode
           
-          console.log(`[FormRender] 生成的编码: ${generatedCode}`)
         }
         
         // 避免将 onCodeGenerate 作为事件传递给原生组件
@@ -515,7 +500,6 @@ const parseFormContent = () => {
 
     // 若父组件传入 initialData，这里再次合并，确保不被上面的默认值覆盖
     if (props.initialData && typeof props.initialData === 'object') {
-      console.log('[FormRender] 合并 initialData 到 formData')
       Object.assign(formData.value, props.initialData)
     }
     
@@ -541,7 +525,6 @@ const parseFormContent = () => {
 
     // 将 masterSubTableData 注入 subTableData（用于只读回显子表）
     if (parsed?.masterSubTableData && typeof parsed.masterSubTableData === 'object') {
-      console.log('[FormRender] 注入 masterSubTableData 到 subTableData:', parsed.masterSubTableData)
       Object.keys(parsed.masterSubTableData).forEach((key) => {
         const rows = parsed.masterSubTableData[key]
         if (Array.isArray(rows)) {
@@ -550,8 +533,6 @@ const parseFormContent = () => {
       })
     }
     
-    console.log('[FormRender] 解析完成，formData:', formData.value)
-    console.log('[FormRender] 解析完成，subTableData:', subTableData.value)
     
   } catch (error) {
     console.error('解析表单内容失败:', error)
@@ -669,7 +650,6 @@ const createNewRow = (subTableComponent: any) => {
 // 将选择的数据按 mapping 写入行（普通模式）
 const updateRowData = (row: any, column: any, data: any) => {
   const field = String(column.field)
-  console.log('[FormRender][updateRowData] start', { field, data, mapping: column?.props?.mapping })
   
   // 首先设置当前字段的值
   if (data && data.value !== undefined) {
@@ -684,7 +664,6 @@ const updateRowData = (row: any, column: any, data: any) => {
         ? JSON.parse(column.props.mapping) 
         : column.props.mapping
       
-      console.log('字段映射配置:', mapping)
       
       // 遍历映射配置，直接使用映射后的字段值
       Object.entries(mapping).forEach(([srcField, targetField]) => {
@@ -692,7 +671,6 @@ const updateRowData = (row: any, column: any, data: any) => {
           // 从映射后的数据中获取值
           const mappedValue = data[targetField]
           if (mappedValue !== undefined) {
-            console.log(`设置字段: ${targetField} = ${mappedValue}`)
             row[targetField] = mappedValue
           }
           
@@ -701,7 +679,6 @@ const updateRowData = (row: any, column: any, data: any) => {
           if (underscoreField !== targetField) {
             const underscoreValue = data[underscoreField]
             if (underscoreValue !== undefined) {
-              console.log(`设置下划线字段: ${underscoreField} = ${underscoreValue}`)
               row[underscoreField] = underscoreValue
             }
           }
@@ -712,59 +689,43 @@ const updateRowData = (row: any, column: any, data: any) => {
     }
   }
   
-  console.log('更新后的行数据:', row)
 }
 
 // 将选择的数据按 mapping 全量写入（sub 显示模式）
 const updateRowDataWithFullMapping = (row: any, column: any, data: any) => {
   try {
-    console.log('=== updateRowDataWithFullMapping 开始 ===')
-    console.log('传入的 row:', JSON.parse(JSON.stringify(row)))
-    console.log('传入的 column.field:', column.field)
-    console.log('传入的 data:', data)
     
     // 首先设置当前字段的值
     const field = String(column.field)
     if (data && data.value !== undefined) {
-      console.log(`设置当前字段 ${field} = ${data.value}`)
       row[field] = data.value
-      console.log(`设置后 row[${field}]:`, row[field])
     }
     
     const mapping = typeof column.props.mapping === 'string' ? JSON.parse(column.props.mapping) : column.props.mapping
     
-    console.log('mapping配置:', mapping)
     
     if (mapping && mapping.mapping) {
-      console.log('=== 开始处理映射 ===')
       Object.entries(mapping.mapping).forEach(([srcField, targetField]) => {
         if (typeof targetField === 'string') {
           let sourceValue = null
           if (data.originalData && data.originalData[srcField] !== undefined) {
             sourceValue = data.originalData[srcField]
-            console.log(`从 originalData[${srcField}] 获取值: ${sourceValue}`)
           } else if (data[srcField] !== undefined) {
             sourceValue = data[srcField]
-            console.log(`从 data[${srcField}] 获取值: ${sourceValue}`)
           }
           
           if (sourceValue !== null) {
-            console.log(`设置映射字段 ${targetField} = ${sourceValue}`)
             row[targetField] = sourceValue
             const underscoreField = targetField.replace(/([A-Z])/g, '_$1').toLowerCase()
             if (underscoreField !== targetField) {
               row[underscoreField] = sourceValue
-              console.log(`设置下划线字段 ${underscoreField} = ${sourceValue}`)
             }
           } else {
-            console.log(`未找到源字段值: ${srcField}`)
           }
         }
       })
     }
     
-    console.log('=== updateRowDataWithFullMapping 结束 ===')
-    console.log('最终 row:', JSON.parse(JSON.stringify(row)))
   } catch (error) {
     console.error('updateRowDataWithFullMapping 失败:', error)
   }
@@ -853,13 +814,6 @@ const handlePopupSelect = (data: any, component: FormComponent) => {
 // 子表弹窗选择处理（支持多选插入多行，以及 sub 显示模式）
 const handleSubTablePopupSelect = (data: any, column: any, row: any, subTableComponent: FormComponent) => {
   try {
-    console.log('=== handleSubTablePopupSelect 开始 ===')
-    console.log('data:', data)
-    console.log('column.field:', column?.field)
-    console.log('row 传入时:', row)
-    console.log('displayMode:', getColumnDisplayMode(column))
-    console.log('multiple:', getMultipleMode(column?.props || {}))
-    console.log('mappingProp:', column?.props?.mapping)
     
     const isMultiple = getMultipleMode(column?.props || {})
     const displayMode = getColumnDisplayMode(column)
@@ -867,56 +821,35 @@ const handleSubTablePopupSelect = (data: any, column: any, row: any, subTableCom
     // sub 显示模式且多选：每条数据生成一行（第一条填充当前行，其余 push 新行）
     if (displayMode === 'sub' && Array.isArray(data)) {
       const subTableField = (subTableComponent as any)?.field
-      console.log('=== sub 模式处理 ===')
-      console.log('subTableField:', subTableField)
-      console.log('data.length:', data.length)
       
       if (!subTableField) return
       
       data.forEach((item: any, index: number) => {
-        console.log(`=== 处理第 ${index + 1} 项数据 ===`)
-        console.log('item:', item)
-        console.log('index:', index)
         
         if (index === 0) {
-          console.log('=== 更新第一行 ===')
-          console.log('更新前 row:', JSON.parse(JSON.stringify(row)))
           updateRowDataWithFullMapping(row, column, item)
-          console.log('更新后 row:', JSON.parse(JSON.stringify(row)))
           
           // 强制触发第一行的响应式更新
           const rowIndex = subTableData.value[subTableField].indexOf(row)
-          console.log('rowIndex:', rowIndex)
           if (rowIndex !== -1) {
-            console.log('=== 强制更新第一行 ===')
-            console.log('更新前 subTableData:', JSON.parse(JSON.stringify(subTableData.value[subTableField])))
             subTableData.value[subTableField].splice(rowIndex, 1, { ...row })
-            console.log('更新后 subTableData:', JSON.parse(JSON.stringify(subTableData.value[subTableField])))
           }
         } else {
-          console.log('=== 创建新行 ===')
           const newRow = createNewRow(subTableComponent)
-          console.log('新行创建后:', newRow)
           updateRowDataWithFullMapping(newRow, column, item)
-          console.log('新行填充后:', newRow)
           if (!subTableData.value[subTableField]) subTableData.value[subTableField] = []
           subTableData.value[subTableField].push(newRow)
         }
       })
       
       // 触发响应式
-      console.log('=== 最终响应式更新 ===')
-      console.log('更新前完整 subTableData:', JSON.parse(JSON.stringify(subTableData.value)))
       subTableData.value[(subTableComponent as any).field] = [...subTableData.value[(subTableComponent as any).field]]
-      console.log('更新后完整 subTableData:', JSON.parse(JSON.stringify(subTableData.value)))
-      console.log('=== handleSubTablePopupSelect 结束 ===')
       return
     }
 
     // 非 sub 模式，如为多选也按多行插入
     if (isMultiple && Array.isArray(data)) {
       const subTableField = (subTableComponent as any)?.field
-      console.log('[FormRender][handleSubTablePopupSelect] normal multiple, subTableField=', subTableField)
       if (!subTableField) return
       data.forEach((item: any, index: number) => {
         if (index === 0) {
@@ -929,17 +862,14 @@ const handleSubTablePopupSelect = (data: any, column: any, row: any, subTableCom
         }
       })
       subTableData.value[(subTableComponent as any).field] = [...subTableData.value[(subTableComponent as any).field]]
-      console.log('[FormRender][handleSubTablePopupSelect] normal multiple end subTableData=', subTableData.value[(subTableComponent as any).field])
       return
     }
 
     // 单选：更新当前行
-    console.log('[FormRender][handleSubTablePopupSelect] single select')
     updateRowData(row, column, data)
     const fieldKey = (subTableComponent as any)?.field
     if (fieldKey && subTableData.value[fieldKey]) {
       subTableData.value[fieldKey] = [...subTableData.value[fieldKey]]
-      console.log('[FormRender][handleSubTablePopupSelect] single end row=', row)
     }
   } catch (error) {
     console.error('子表弹窗选择处理失败:', error)

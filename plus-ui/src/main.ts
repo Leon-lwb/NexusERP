@@ -42,18 +42,7 @@ VXETable.setConfig({
 import { ElDialog } from 'element-plus';
 ElDialog.props.closeOnClickModal.default = false;
 
-import { resetForm, parseTime, addDateRange, handleTree } from '@/utils/ruoyi';
-import { useDict } from '@/utils/dict';
-import { download } from '@/utils/request';
-
 const app = createApp(App);
-
-app.config.globalProperties.resetForm = resetForm;
-app.config.globalProperties.parseTime = parseTime;
-app.config.globalProperties.addDateRange = addDateRange;
-app.config.globalProperties.handleTree = handleTree;
-app.config.globalProperties.useDict = useDict;
-app.config.globalProperties.download = download;
 
 app.use(HighLight);
 app.use(ElementIcons);

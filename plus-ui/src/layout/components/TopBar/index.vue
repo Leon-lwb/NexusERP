@@ -14,16 +14,16 @@
 <script setup>
 import SidebarItem from '../Sidebar/SidebarItem'
 import {useAppStore} from '@/store/modules/app'
-import {useSettingsStore} from '@/store/modules/settings'
+import {useThemeStore} from '@/store/modules/theme'
 import {usePermissionStore} from '@/store/modules/permission'
 
 const route = useRoute()
 const appStore = useAppStore()
-const settingsStore = useSettingsStore()
+const themeStore = useThemeStore()
 const permissionStore = usePermissionStore()
 
 const sidebarRouters = computed(() => permissionStore.sidebarRouters)
-const theme = computed(() => settingsStore.theme)
+const theme = computed(() => themeStore.brandColor)
 const device = computed(() => appStore.device)
 const activeMenu = computed(() => {
   const { meta, path } = route

@@ -571,7 +571,6 @@ const getList = async () => {
       }
       return newItem;
     });
-    console.log("getList mainFields.value",mainFields.value)
     //处理是否显示名称
     subFields.value = safeSubColumns.map((item: any) => {
       const newItem = reactive({ ...item });
@@ -580,7 +579,6 @@ const getList = async () => {
       }
       return newItem;
     });
-    console.log("getList subFields.value",subFields.value)
     subTable.value = { ...res.map.sub, columnsVo: safeSubColumns }
     formData.main = safeRows[0]?.main || {}
     formData.sub = safeRows[0]?.[subTable.value.tableName] || []
@@ -664,7 +662,6 @@ const reset = () => {
 /** 搜索按钮操作 */
 const handleQuery = () => {
   queryParams.pageNum = 1;
-  console.log("handleQuery queryParams",queryParams)
   getList();
 }
 /** 重置按钮操作 */
@@ -684,9 +681,7 @@ const handleAdd = async () => {
   
   // 如果字段配置未加载，先获取字段配置
   if (!onlineField.value || onlineField.value.length === 0) {
-    console.log("handleAdd - 字段配置未加载，先获取字段配置")
     const formRes = await getOnlineForm(tableId.value)
-    console.log("handleAdd - getOnlineForm res", formRes)
     
     if (formRes.data && formRes.data.map) {
       const map = formRes.data.map
@@ -708,7 +703,6 @@ const handleAdd = async () => {
       // 查找主键字段
       const pkFieldFromConfig = onlineField.value.find((field: any) => field.pk)?.columnName
       pkName.value = pkFieldFromConfig || 'id'
-      console.log("handleAdd - 从配置中获取的主键字段:", pkName.value)
     }
   }
   
@@ -736,15 +730,11 @@ const shouldDisableField = (field: any) => {
 /**修改按钮操作 */
 const handleUpdate = async (row?: any) => {
   const pkField = pkName.value
-  console.log("handleUpdate row",row)
-  console.log("handleUpdate pkField",pkField)
   const onlineId = row ? row[pkField] : ids.value[0]
 
   // 如果字段配置未加载，先获取字段配置
   if (!onlineField.value || onlineField.value.length === 0) {
-    console.log("handleUpdate - 字段配置未加载，先获取字段配置")
     const formRes = await getOnlineForm(tableId.value)
-    console.log("handleUpdate - getOnlineForm res", formRes)
     
     if (formRes.data && formRes.data.map) {
       const map = formRes.data.map
@@ -766,13 +756,11 @@ const handleUpdate = async (row?: any) => {
       // 查找主键字段
       const pkFieldFromConfig = onlineField.value.find((field: any) => field.pk)?.columnName
       pkName.value = pkFieldFromConfig || 'id'
-      console.log("handleUpdate - 从配置中获取的主键字段:", pkName.value)
     }
   }
 
   const { data } = await getOnlineData(tableId.value, tableName.value, onlineId)
 
-  console.log("handleUpdate data",data)
   if (formType.value === 'single') {
     Object.assign(formData.single, data)
   }
@@ -798,28 +786,20 @@ const camelToSnake = (str: string): string => {
 // 修改子表处理逻辑
 const handleSubComponent = (data: any, index: number) => {
   try {
-    console.log("=== handleSubComponent 开始 ===")
-    console.log("完整接收数据:", data)
-    console.log("data.mappedData:", data.mappedData)
-    console.log("data.mapping:", data.mapping)
-    console.log("data.popupConfig:", data.popupConfig)
     
     // 检查是否为多选模式
     const isMultiple = data.popupConfig?.multiple === true || 
                       (data.mapping && safeParseJSON(data.mapping).popupConfig?.multiple === true)
     
-    console.log("是否为多选模式:", isMultiple)
     
     if (isMultiple && Array.isArray(data.mappedData) && data.mappedData.length > 1) {
       // 多选模式：为每个选中的数据创建新行
-      console.log(`多选模式 - 选中 ${data.mappedData.length} 条记录`)
       
       // 先删除当前行（因为会被第一条记录替换）
       formData.sub.splice(index, 1)
       
       // 为每条选中的记录创建对应的子表行
       data.mappedData.forEach((mappedItem: any, itemIndex: number) => {
-        console.log(`处理第 ${itemIndex + 1} 条记录:`, mappedItem)
         
         // 创建新行，初始化所有字段为 null
         const newRow = subFields.value.reduce((acc: any, cur) => {
@@ -827,12 +807,10 @@ const handleSubComponent = (data: any, index: number) => {
           return acc
         }, {})
         
-        console.log(`第 ${itemIndex + 1} 行初始化:`, newRow)
         
         // 使用映射数据填充新行
         updateRowWithMappedData(newRow, mappedItem, data.mapping)
         
-        console.log(`第 ${itemIndex + 1} 行填充后:`, newRow)
         
         // 将新行插入到子表中
         if (itemIndex === 0) {
@@ -844,8 +822,6 @@ const handleSubComponent = (data: any, index: number) => {
         }
       })
       
-      console.log(`多选模式 - 成功创建了 ${data.mappedData.length} 行记录`)
-      console.log("最终子表数据:", formData.sub)
       return
     }
     
@@ -856,7 +832,6 @@ const handleSubComponent = (data: any, index: number) => {
     if (data.popupConfig?.displayMode === 'sub' && data.mappedData) {
       // sub 模式：使用 mappedData 中的完整映射数据
       const mappedItem = Array.isArray(data.mappedData) ? data.mappedData[0] : data.mappedData
-      console.log("单选模式 - mappedItem:", mappedItem)
       updateRowWithMappedData(newRow, mappedItem, data.mapping)
     } else {
       // 原有逻辑：使用 dictFields 和 mapping
@@ -873,7 +848,6 @@ const handleSubComponent = (data: any, index: number) => {
 
     // 更新数组（触发响应式）
     formData.sub.splice(index, 1, newRow)
-    console.log("=== handleSubComponent 结束 ===")
   } catch (e) {
     console.error('子表处理异常:', e)
     proxy?.$modal.msgError(`字段映射失败: ${e.message}`)
@@ -882,10 +856,6 @@ const handleSubComponent = (data: any, index: number) => {
 
 // 更新行数据的辅助函数
 const updateRowWithMappedData = (row: any, mappedItem: any, mapping: any) => {
-  console.log('=== updateRowWithMappedData 开始 ===')
-  console.log('目标行:', row)
-  console.log('映射数据:', mappedItem)
-  console.log('字段映射配置:', mapping)
   
   // 解析 mapping 配置
   let mappingConfig = mapping
@@ -906,48 +876,36 @@ const updateRowWithMappedData = (row: any, mappedItem: any, mapping: any) => {
     mappingConfig = mappingConfig.mapping
   }
   
-  console.log('解析后的 mapping 配置:', mappingConfig)
-  console.log('解析后的 popup 配置:', popupConfig)
   
   // 根据 displayMode 处理数据
   const displayMode = popupConfig.displayMode || 'value'
-  console.log('显示模式:', displayMode)
   
   if (displayMode === 'sub') {
     // sub 模式：基于 mapping 构建完整映射数据
-    console.log('使用 sub 模式处理数据')
     
     Object.entries(mappingConfig).forEach(([sourceField, targetField]) => {
-      console.log(`映射字段: ${sourceField} -> ${targetField}`)
       
       // 检查 mappedItem 中是否有这个字段
       if (mappedItem.hasOwnProperty(sourceField)) {
         const value = mappedItem[sourceField]
-        console.log(`源字段 ${sourceField} 的值:`, value)
         
         // 只设置下划线格式字段（数据库表中的实际字段）
         const snakeField = targetField.replace(/([A-Z])/g, '_$1').toLowerCase()
         row[snakeField] = value
-        console.log(`设置下划线字段 ${snakeField} = ${value}`)
         
         // 不再设置驼峰格式字段，避免数据库字段错误
         // row[targetField] = value
       } else {
-        console.log(`源字段 ${sourceField} 不存在于 mappedItem 中，mappedItem 的字段:`, Object.keys(mappedItem))
       }
     })
   } else {
     // 其他模式：直接使用 mappedItem 中的数据
-    console.log('使用直接映射模式处理数据')
     
     Object.entries(mappedItem).forEach(([field, value]) => {
-      console.log(`直接设置字段: ${field} = ${value}`)
       row[field] = value
     })
   }
   
-  console.log('更新后的行数据:', row)
-  console.log('=== updateRowWithMappedData 结束 ===')
 }
 
 // 类型转换辅助方法
@@ -1048,7 +1006,6 @@ const handleDelete = async (row?: any) => {
     try {
       await proxy?.$modal.confirm('是否确认删除选中的数据？');
       // 调用删除API，传递表ID、表名和要删除的ID数组
-      console.log("handleDelete deleteIds",deleteIds)
       await delOnlineData(tableId.value, tableName.value, deleteIds);
       proxy?.$modal.msgSuccess('删除成功');
       await getList(); // 刷新列表

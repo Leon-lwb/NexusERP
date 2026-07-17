@@ -214,6 +214,7 @@ const resetSetting = () => {
   proxy?.$modal.loading('正在清除设置缓存并刷新，请稍候...');
   useStorage<any>('layout-setting', null).value = null;
   useStorage<any>('theme-config', null).value = null;
+  useStorage<any>('dynamic-title', null).value = null;
   setTimeout('window.location.reload()', 1000);
 };
 const openSetting = () => {

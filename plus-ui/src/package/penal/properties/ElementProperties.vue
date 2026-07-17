@@ -84,7 +84,6 @@
     })
   }
   const removeAttributes = (attr, index) => {
-    console.log(attr, 'attr')
     ElMessageBox.confirm('确认移除该属性吗？', '提示', {
       confirmButtonText: '确 认',
       cancelButtonText: '取 消'

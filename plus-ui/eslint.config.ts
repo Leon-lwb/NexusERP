@@ -36,6 +36,8 @@ export default defineConfigWithVueTs(
       'prefer-rest-params': 'off',
       // prettier
       'prettier/prettier': 'error',
+      // 禁止 console.log 残留(允许 warn/error),防止调试代码回潮
+      'no-console': ['warn', { allow: ['warn', 'error'] }],
       // 允许使用空Object类型 {}
       '@typescript-eslint/no-empty-object-type': 'off',
       '@typescript-eslint/no-unused-expressions': 'off'

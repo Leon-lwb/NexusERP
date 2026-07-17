@@ -9,7 +9,7 @@ import animate from '@/animate';
 import { download as dl } from '@/utils/request';
 import { useDict } from '@/utils/dict';
 import { getConfigKey, updateConfigByKey } from '@/api/system/config';
-import { parseTime, addDateRange, handleTree, selectDictLabel, selectDictLabels } from '@/utils/ruoyi';
+import { parseTime, addDateRange, handleTree, selectDictLabel, selectDictLabels, resetForm } from '@/utils/ruoyi';
 
 import { App } from 'vue';
 
@@ -30,6 +30,7 @@ export default function installPlugin(app: App) {
   app.config.globalProperties.$auth = auth;
 
   // 全局方法挂载
+  app.config.globalProperties.resetForm = resetForm;
   app.config.globalProperties.useDict = useDict;
   app.config.globalProperties.getConfigKey = getConfigKey;
   app.config.globalProperties.updateConfigByKey = updateConfigByKey;

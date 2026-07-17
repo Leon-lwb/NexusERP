@@ -49,7 +49,6 @@ export default {
 
     // 处理 change 事件
     const commonComponent = (event) => {
-      console.log("NmRadio localValue=", localValue.value);
       emit('commonComponent', { ...props.nm, commonDataInfo: localValue.value });
     };
 

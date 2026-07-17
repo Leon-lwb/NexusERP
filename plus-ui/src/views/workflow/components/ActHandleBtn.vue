@@ -113,12 +113,10 @@
       modalTaskVisible.value = true;
       returnList({dataId:props.dataId}).then(res => {
         returnTaskList.value = res.result||[];
-        // console.log(returnTaskList.value)
       })
   }
 
   const handelSubmit = () => {
-    console.log('提交');
     submitLoading.value = true;
     var formData = Object.assign({
       dataId:props.dataId,

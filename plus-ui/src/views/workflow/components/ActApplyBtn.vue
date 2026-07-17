@@ -110,7 +110,6 @@
     }, props.variables);
     startByDataId(props.dataId, selectFlowId.value, props.serviceName, params)
       .then(res => {
-        //console.log("startByDataId res",res);
         if (res.code == 200 ) {
           proxy?.$modal.msgSuccess(res.msg);
           emit('success');
@@ -144,7 +143,6 @@
       .finally(() => (submitLoading.value = false));
     }
     else {//继续原有流程流转，跳到流程处理界面上
-      //console.log("props.variables",props.variables);
       router.push({
         path: '/flowable/task/record/index',
         query: {
@@ -198,7 +196,6 @@
                 }, props.variables);
                 startByDataId(props.dataId, selectFlowId.value, props.serviceName, params)
                   .then(res => {
-                    console.log("startByDataId res",res);
                     if (res.code == 200 ) {
                       proxy?.$modal.msgSuccess(res.msg);
                       emit('success');

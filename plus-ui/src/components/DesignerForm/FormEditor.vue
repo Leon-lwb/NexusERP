@@ -274,7 +274,6 @@ const handleSubmit = () => {
   if (subTableField) {
     // 找到子表的配置
     const subTableComponent = formComponents.value.find(c => c.field === subTableField)
-    console.log("handleSubmit subTableComponent",subTableComponent)
     submitData.sub = {
       data: subTableData.value[subTableField],
       tableName: subTableComponent?.subTableName || ''

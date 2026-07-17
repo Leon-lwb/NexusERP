@@ -465,7 +465,6 @@ const tableSelection = ref<any[]>([]);
                     }
                 }
             } else {
-                console.log('没有找到表单数据或 formContent');
             }
             
             // 如果没有找到，回退到数据库表字段配置
@@ -646,10 +645,6 @@ const handleTableSelect = async (table: any) => {
         selectedTable.value = table;
         
         // 打印原始表数据
-        console.log('原始表数据:', table);
-        console.log('表类型:', table.tplCategory);
-        console.log('子表名:', table.subTableName);
-        console.log('子表外键:', table.subTableFkName);
         
         // 获取表字段数据
         const res = await getTableColumns(table.tableName);
@@ -670,7 +665,6 @@ const handleTableSelect = async (table: any) => {
             });
             
             if (table.tplCategory === 'main' && table.subTableName) {
-                console.log('处理主子表，子表名:', table.subTableName);
                 const subRes = await getTableColumns(table.subTableName);
                 if (subRes.data) {
                     const subColumnsData = Array.isArray(subRes.data) ? subRes.data : [];
@@ -678,13 +672,10 @@ const handleTableSelect = async (table: any) => {
                     table.subColumnsVo = subColumnsData
                         .filter(column => column.isPk !== '1')
                         .map(processColumn);
-                    console.log('子表字段处理完成:', table.subColumnsVo);
                 } else {
-                    console.log('获取子表字段失败');
                 }
             } else {
                 // 单表处理
-                console.log('处理单表');
                 table.tplCategory = 'single';
                 table.subTableName = '';
                 table.subTableFkName = '';
@@ -706,10 +697,6 @@ const handleTableSelect = async (table: any) => {
             stepDialog.activeStep = 1;
             
             // 打印调试信息
-            console.log('处理后的表数据:', table);
-            console.log('表类型:', table.tplCategory);
-            console.log('列列表数据:', columnList.value);
-            console.log('子表字段:', table.subColumnsVo);
         }
     } catch (error) {
         console.error('获取表字段信息失败:', error);
@@ -737,7 +724,6 @@ const getColumnType = (columnType: string): string => {
 
 /** 进入表单设计器 */
 const enterDesigner = () => {
-    console.log("enterDesigner selectedTable.value",selectedTable.value)
     if (!selectedTable.value) return;
     
     // 打印主子表信息
@@ -773,7 +759,6 @@ const enterDesigner = () => {
     
     // 如果有子表信息，添加到 tableInfo 中
     if (selectedTable.value.subTableName && selectedTable.value.subColumnsVo) {
-        console.log('添加子表信息到 tableInfo');
         tableInfo.subTable = {
             tableName: selectedTable.value.subTableName,
             tableComment: selectedTable.value.subTableComment || '',
@@ -791,7 +776,6 @@ const enterDesigner = () => {
             })) || []
         }
     } else {
-        console.log('没有子表信息，跳过添加子表到 tableInfo');
     }
     
     // 构建表单数据
@@ -981,9 +965,6 @@ const enterDesigner = () => {
         formType: 'PC'
     };
 
-    console.log('生成的表单配置:', formContent);
-    console.log('主子表数据:', formContent.masterSubTableData);
-    console.log('主子表数据是否为空:', Object.keys(formContent.masterSubTableData).length === 0);
     
     // 进入表单设计器
     designerVisible.value = true;
@@ -1024,8 +1005,6 @@ const nextStep = async () => {
             stepDialog.activeStep = 1;
             
             // 打印调试信息
-            console.log('下一步表类型:', selectedTable.value.tplCategory);
-            console.log('下一步列列表数据:', columnList.value);
         }
     } catch (error) {
         console.error('获取表字段失败:', error);
@@ -1073,7 +1052,6 @@ const cancelStep = () => {
     /** 处理表单设计器保存 */
     const handleDesignerSave = async (formData: any) => {
         try {
-        console.log('保存表单数据:', formData)
         // 确保表单数据包含必要的字段
         if (!formData.formName || !formData.formDesc) {
             throw new Error('表单名称和描述不能为空')
@@ -1081,9 +1059,7 @@ const cancelStep = () => {
         
             if (formData.formId) {
             // 编辑模式
-            console.log('更新表单:', formData)
             const res = await updateNform(formData)
-            console.log('更新表单响应:', res)
             if (res.code === 200) {
                 ElMessage.success('修改成功')
             } else {
@@ -1091,9 +1067,7 @@ const cancelStep = () => {
             }
         } else {
             // 新建模式
-            console.log('新增表单:', formData)
             const res = await addNform(formData)
-            console.log('新增表单响应:', res)
             if (res.code === 200) {
                 ElMessage.success('新增成功')
             } else {
@@ -1136,9 +1110,6 @@ const handleDetail = (row: NformVO) => {
 }
 
 const handleTest = (row: NformVO) => {
-    console.log('handleTest 方法被调用了！');
-    console.log('=== handleTest 开始 ===');
-    console.log('row:', row);
     
     // 跳转到同目录下的test.vue页面
                 router.push({
@@ -1149,13 +1120,11 @@ const handleTest = (row: NformVO) => {
             formContent: row.formContent
                     }
                 }).then(() => {
-        console.log('跳转到测试页面成功');
                 }).catch((error) => {
         console.error('跳转到测试页面失败:', error);
         ElMessage.error('跳转失败');
     });
     
-    console.log('=== handleTest 结束 ===');
 }
 
 // 生成序列号
@@ -1166,20 +1135,15 @@ const generateSequence = (field: string): string => {
 };
 
     onMounted(() => {
-        console.log('=== nform 组件 onMounted 开始 ===');
-        console.log('组件已挂载，开始初始化...');
         getColumns();
         getList();
-        console.log('=== nform 组件 onMounted 结束 ===');
     });
 
     // 监听路由变化，确保每次进入页面时都能正确初始化
     watch(
         () => route.path,
         (newPath, oldPath) => {
-            console.log('路由变化:', { oldPath, newPath });
             if (newPath === '/demo/nform') {
-                console.log('进入 nform 页面，重新初始化...');
                 // 延迟执行，确保组件完全挂载
                 nextTick(() => {
                     getColumns();
@@ -1271,7 +1235,6 @@ const generateSequence = (field: string): string => {
     /** 处理字段类型 */
     const processColumn = (column: any) => {
         // 打印原始字段数据
-        console.log('处理字段:', column);
         
         const processedColumn = {
             ...column,
@@ -1292,7 +1255,6 @@ const generateSequence = (field: string): string => {
         };
         
         // 打印处理后的字段数据
-        console.log('处理后的字段:', processedColumn);
         
         return processedColumn;
     }

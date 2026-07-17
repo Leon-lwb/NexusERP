@@ -92,19 +92,15 @@
 
   /** 查询表单列表 */
   const getFormList = () => {
-    console.log("getFormList appType",props.appType);
     const appType = toRaw(props.appType);
-    console.log("getFormList appType",appType);
     if(appType && appType[0].id === 'OA' ) {
       listNform().then(response => {
         formOptions.value = response.rows;
-        console.log("listNform formOptions=",formOptions);
       });
     }
     else if(appType && appType[0].id === 'ZDYYW') {
       listCustomForm().then(response => {
         formOptions.value = response.rows;
-        console.log("listCustomForm formOptions=",formOptions);
       });
     }
   }
@@ -281,7 +277,6 @@
 
   // 移除某个 字段的 配置项
   const removeFieldOptionItem = (option, index, type) => {
-    console.log(option, 'option')
     if (type === 'property') {
       fieldPropertiesList.value.splice(index, 1)
       return

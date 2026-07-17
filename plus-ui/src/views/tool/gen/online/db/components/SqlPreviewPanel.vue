@@ -299,14 +299,12 @@ const generateMockSql = (designData: any) => {
       const toField = getFieldById(toFieldId)
       
       if (!fromTable || !fromField || !toTable || !toField) {
-        console.log('外键关系中找不到对应的表或字段:', { fromTableId, fromFieldId, toTableId, toFieldId })
         return
       }
       
       const fromBase = normalizeType(fromField.type || 'varchar')
       const toBase = normalizeType(toField.type || 'varchar')
       if (fromBase !== toBase) {
-        console.log('外键字段类型不匹配:', fromBase, 'vs', toBase)
         return
       }
       

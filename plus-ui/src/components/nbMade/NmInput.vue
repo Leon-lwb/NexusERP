@@ -86,8 +86,6 @@ const commonComponent = () => {
 }
 
 onMounted(() => {
-  console.log("NmInput onMounted props.value=", props.value);
-  console.log("NmInput onMounted props.nm=", props.nm);
   localValue.value = props.value;
 });
 </script>

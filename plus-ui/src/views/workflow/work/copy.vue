@@ -109,10 +109,8 @@ const handleSelectionChange = (selection) => {
 }
 /** 流程详情 */
 const handleDetails = (row: ProcessVO) => {
-console.log(row);
   updateCcReaded({ id: row.copyId }).then(res => {
     if (res.success) {
-          console.log(res);
     }
   })
   router.push({

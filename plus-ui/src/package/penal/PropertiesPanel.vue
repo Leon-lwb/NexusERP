@@ -173,7 +173,6 @@
               type:  ${activatedElement.businessObject.$type}
               ----------
               `);
-    console.log("businessObject: ", activatedElement.businessObject);
     bpmnInstances().bpmnElement = activatedElement
     bpmnElement.value = activatedElement
     elementId.value = activatedElement.id

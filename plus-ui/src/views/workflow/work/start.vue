@@ -117,8 +117,6 @@
       }
       const subField = (parsed?.formComponents || []).find((c: any) => c.type === 'subtable')?.field || ''
 
-      console.log('[start][parseFormMeta] raw tableInfo =', tableInfo)
-      console.log('[start][parseFormMeta] resolved =', { mainTableName, mainTableId, subTableName, subField })
       return { mainTableName, mainTableId, subTableName, subField }
     } catch (e) {
       console.warn('[start] parseFormMeta failed:', e)
@@ -133,24 +131,16 @@
     try {
       // 获取流程表单数据
     const res = await getProcessForm({ definitionId: definitionId.value, deployId: deployId.value });
-      console.log("initData getProcessForm res=", res);
-      console.log("res.data 结构:", res.data);
-      console.log("res.data.formId:", res.data.formId);
-      console.log("res.data.formModel:", res.data.formModel);
       
       // 如果返回的是 nform 表单ID，则获取 nform 表单内容
       if (res.data.formId) {
         const nformRes = await getNform(res.data.formId);
-        console.log("initData nformRes=", nformRes);
         formContent.value = nformRes.data.formContent;
       } else if (res.data.formModel) {
         // 直接使用 formModel 作为 formContent
-        console.log("使用 formModel 作为 formContent");
-        console.log("formModel 结构:", res.data.formModel);
         formContent.value = JSON.stringify(res.data.formModel);
       }
       
-      console.log("最终的 formContent.value:", formContent.value);
       parseFormMeta()
 
       // 加载表单中需要的字典数据
@@ -173,7 +163,6 @@
       const mainData = dataObj?.main || {}
       const subDataObj = dataObj?.sub || {}
       const meta = parseFormMeta()
-      console.log('[start][submit] form data:', dataObj)
       // 组装提交数据（与 online/test/index.vue 类似）
       let submitData: any = mainData
       if (meta.subField && meta.subTableName) {
@@ -211,23 +200,18 @@
         return cleanObjectKeys(data)
       }
       const submitDataClean = cleanSubmitData(submitData)
-      console.log('[start][submit] submitData (cleaned):', submitDataClean)
 
       // 先保存业务数据到对应表
       try {
         if (meta.mainTableId && meta.mainTableName) {
-          console.log('[start][submit] save by id/name:', meta.mainTableId, meta.mainTableName)
           if (meta.subField && meta.subTableName && (!Array.isArray(subDataObj?.[meta.subField]) || subDataObj[meta.subField].length === 0)) {
             console.warn('[start][submit] 警告：检测到子表配置但当前无子表数据，subField=', meta.subField)
           }
           const saveRes: any = await addOrUpdateOnlineData(meta.mainTableId, meta.mainTableName, submitDataClean)
-          console.log('[start][submit] saveRes(id/name)=', saveRes)
         } else if (meta.mainTableName) {
           // 兼容：只有表名时，使用按表名保存
-          console.log('[start][submit] save by name only:', meta.mainTableName)
           const { addOrUpdateOnlineDataByName } = await import('@/api/online')
           const saveRes: any = await addOrUpdateOnlineDataByName(meta.mainTableName, submitDataClean)
-          console.log('[start][submit] saveRes(name-only)=', saveRes)
         } else {
           console.warn('[start][submit] 缺少表信息，跳过落库，仅发起流程')
         }
@@ -239,7 +223,6 @@
 
       // 再发起流程，携带业务变量（使用 submitData）
     if (definitionId.value) {
-        console.log('[start][submit] startProcess with variables=', submitData)
         const res = await startProcess(definitionId.value, JSON.stringify(submitData));
       proxy?.$modal.msgSuccess(res.msg);
       const obj = { path: "/work/own" };

@@ -285,7 +285,6 @@ const initBpmnModeler = () => {
     moddleExtensions: moddleExtensions.value,
     ...props.options
   })
-  console.log("initBpmnModeler bpmnModeler",bpmnModeler)
   emit('init-finished', bpmnModeler)
   initModelListeners()
 }

@@ -33,15 +33,6 @@ export const isExternal = (path: string) => {
 };
 
 /**
- * @param {string} str
- * @returns {Boolean}
- */
-export const validUsername = (str: string) => {
-  const valid_map = ['admin', 'editor'];
-  return valid_map.indexOf(str.trim()) >= 0;
-};
-
-/**
  * @param {string} url
  * @returns {Boolean}
  */

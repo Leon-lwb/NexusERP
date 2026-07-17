@@ -325,7 +325,6 @@ const generateCode = (rule: string, params?: any) => {
 const parseFormContent = async () => {
   try {
     const content = JSON.parse(props.formContent)
-    console.log("parseFormContent content", content)
     if (content.formConfig) {
       Object.assign(formConfig, content.formConfig)
     }
@@ -367,7 +366,6 @@ const parseFormContent = async () => {
       
       // 并行加载所有字典数据
       if (dictTypes.size > 0) {
-        console.log('需要加载的字典类型:', Array.from(dictTypes))
         await Promise.all(Array.from(dictTypes).map(dictType => loadDictData(dictType)))
       }
     }
@@ -459,7 +457,6 @@ const loadDictData = async (dictType: string) => {
         value: item.dictValue
       }))
       dictOptions.value[dictType] = options
-      console.log(`加载字典数据成功: ${dictType}`, options)
     }
   } catch (error) {
     console.error('获取字典数据失败:', error)
@@ -614,9 +611,6 @@ const updateRowDataWithFullMapping = (row: any, column: any, data: any) => {
   try {
     const mapping = typeof column.props.mapping === 'string' ? JSON.parse(column.props.mapping) : column.props.mapping
     
-    console.log('sub模式 - mapping配置:', mapping)
-    console.log('sub模式 - 源数据:', data)
-    console.log('sub模式 - 目标行:', row)
     
     if (mapping && mapping.mapping) {
       // 使用 mapping.mapping 中的所有字段映射
@@ -637,20 +631,13 @@ const updateRowDataWithFullMapping = (row: any, column: any, data: any) => {
             if (underscoreField !== targetField) {
               row[underscoreField] = sourceValue
             }
-            console.log(`sub模式映射: ${srcField} -> ${targetField} (${underscoreField}), 值: ${sourceValue}`)
           } else {
-            console.log(`sub模式 - 未找到源字段值: ${srcField}`)
           }
         }
       })
     } else {
-      console.log('sub模式 - 没有找到 mapping.mapping 配置')
-      console.log('sub模式 - 完整的 mapping 对象:', mapping)
-      console.log('sub模式 - mapping 的类型:', typeof mapping)
-      console.log('sub模式 - mapping 的键:', mapping ? Object.keys(mapping) : 'null')
     }
     
-    console.log('sub模式 - 更新后的行数据:', row)
   } catch (error) {
     console.error('sub模式更新行数据失败:', error)
   }
@@ -664,21 +651,15 @@ const handleSubTablePopupClick = (column: any, row: any) => {
 
 // 处理子表 popup 选择
 const handleSubTablePopupSelect = (data: any, column: any, row: any, subTableComponent?: any) => {
-  console.log('子表 popup 选择数据:', data)
-  console.log('子表列配置:', column)
-  console.log('当前行数据:', row)
-  console.log('子表组件:', subTableComponent)
   
   // 获取当前列的显示模式
   const currentDisplayMode = getColumnDisplayMode(column)
-  console.log('当前显示模式:', currentDisplayMode)
   
   // 检查是否为多选模式
   const isMultiple = getMultipleMode(column.props || {})
   
   // 只有明确配置了 sub 模式才使用新的逻辑
   if (currentDisplayMode === 'sub' && Array.isArray(data)) {
-    console.log('sub 模式 - 选中数据数量:', data.length)
     
     if (subTableComponent && subTableComponent.field) {
       const subTableField = subTableComponent.field
@@ -696,7 +677,6 @@ const handleSubTablePopupSelect = (data: any, column: any, row: any, subTableCom
         }
       })
       
-      console.log(`sub 模式 - 插入了 ${data.length} 条完整记录`)
       return
     }
   }
@@ -704,7 +684,6 @@ const handleSubTablePopupSelect = (data: any, column: any, row: any, subTableCom
   // 检查是否为多选模式（非 sub 模式的多选）
   if (isMultiple && Array.isArray(data) && data.length > 1) {
     // 多选模式：插入多条记录
-    console.log('多选模式 - 选中商品数量:', data.length)
     
     if (subTableComponent && subTableComponent.field) {
       const subTableField = subTableComponent.field
@@ -722,7 +701,6 @@ const handleSubTablePopupSelect = (data: any, column: any, row: any, subTableCom
         }
       })
       
-      console.log(`多选模式 - 插入了 ${data.length} 条记录`)
     }
   } else if (data && data.value !== undefined) {
     // 单选模式：更新当前行（保持原有逻辑）
@@ -746,7 +724,6 @@ const updateRowData = (row: any, column: any, data: any) => {
         ? JSON.parse(column.props.mapping) 
         : column.props.mapping
       
-      console.log('字段映射配置:', mapping)
       
       // 遍历映射配置，直接使用映射后的字段值
       Object.entries(mapping).forEach(([srcField, targetField]) => {
@@ -754,7 +731,6 @@ const updateRowData = (row: any, column: any, data: any) => {
           // 从映射后的数据中获取值
           const mappedValue = data[targetField]
           if (mappedValue !== undefined) {
-            console.log(`设置字段: ${targetField} = ${mappedValue}`)
             row[targetField] = mappedValue
           }
           
@@ -763,7 +739,6 @@ const updateRowData = (row: any, column: any, data: any) => {
           if (underscoreField !== targetField) {
             const underscoreValue = data[underscoreField]
             if (underscoreValue !== undefined) {
-              console.log(`设置下划线字段: ${underscoreField} = ${underscoreValue}`)
               row[underscoreField] = underscoreValue
             }
           }
@@ -795,7 +770,6 @@ const updateRowData = (row: any, column: any, data: any) => {
     }
   }
   
-  console.log('更新后的行数据:', row)
   
   // 详细检查每个字段的值
   if (column.props.mapping) {
@@ -804,15 +778,11 @@ const updateRowData = (row: any, column: any, data: any) => {
         ? JSON.parse(column.props.mapping) 
         : column.props.mapping
       
-      console.log('=== 字段值详细检查 ===')
       Object.entries(mapping).forEach(([srcField, targetField]) => {
         if (typeof targetField === 'string') {
           const underscoreField = targetField.replace(/([A-Z])/g, '_$1').toLowerCase()
-          console.log(`字段 ${targetField}: ${row[targetField]}`)
-          console.log(`字段 ${underscoreField}: ${row[underscoreField]}`)
         }
       })
-      console.log('=== 字段值详细检查结束 ===')
     } catch (error) {
       console.error('字段值检查失败:', error)
     }
@@ -864,7 +834,6 @@ const handleMainTableLinkage = (field: string, value: any) => {
               const targetField = column.props.linkage[field]
               const newValue = calculateLinkageValue(field, value, column.props.linkage)
               row[targetField] = newValue
-              console.log(`主表联动: ${field} -> ${targetField} = ${newValue}`)
             }
           })
         })
@@ -930,7 +899,6 @@ const handleSubTableLinkage = (field: string, value: any, rowIndex: number) => {
               const targetField = column.props.linkage[field]
               const newValue = calculateLinkageValue(field, value, column.props.linkage)
               row[targetField] = newValue
-              console.log(`子表联动: ${field} -> ${targetField} = ${newValue}`)
             }
           })
         }
@@ -963,7 +931,6 @@ const updateMainTableFromSubTable = (field: string, value: any) => {
           Object.entries(component.props.summary).forEach(([targetField, summaryRule]) => {
             const summaryValue = calculateSummary(summaryRule, currentSubTableData)
             formData.value[targetField] = summaryValue
-            console.log(`主表汇总: ${targetField} = ${summaryValue}`)
           })
         }
       }
@@ -1051,11 +1018,9 @@ const calculateFormula = (formula: string, rowData: any) => {
       }
     })
     
-    console.log('计算公式:', { original: formula, calculated: calculatedFormula, rowData })
     
     // 安全计算
     const result = eval(calculatedFormula)
-    console.log('计算结果:', result)
     return result
   } catch (error) {
     console.error('公式计算失败:', error, { formula, rowData })

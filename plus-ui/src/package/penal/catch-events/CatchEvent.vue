@@ -49,8 +49,6 @@
   const FormalExpression = ref('')
 
   const getElementLoop = (businessObject) => { //获取定时边界事件原有值
-    console.log("getElementLoop businessObject=",businessObject)
-    console.log("bpmnInstances().bpmnElement.businessObject=",bpmnInstances().bpmnElement.businessObject);
     if(businessObject.eventDefinitions && businessObject.eventDefinitions.length>0){
       if(businessObject.eventDefinitions[0].$type == 'bpmn:TimerEventDefinition') {
         if(businessObject.eventDefinitions[0].timeDuration) {
@@ -81,10 +79,7 @@
   //时间事件定义类型修改
   const updateTime = (type,value) => {
     //获取节点的子节点 timerEventDefinition
-    console.log("updatetime type=",type)
-    console.log("updatetime type.value=",type.value)
     let timerEventDef = bpmnInstances().bpmnElement.businessObject.eventDefinitions[0]
-    console.log("updatetime timerEventDef=",timerEventDef)
     const timeCycle = bpmnInstances().moddle.create("bpmn:FormalExpression", { body:value });
     const timeDate = bpmnInstances().moddle.create("bpmn:FormalExpression", { body:value });
     const timeDuration = bpmnInstances().moddle.create("bpmn:FormalExpression", { body:value });
@@ -94,7 +89,6 @@
       bpmnInstances().modeling.updateModdleProperties(toRaw(bpmnElement.value),timerEventDef,{timeCycle })
     }
     else if (type.value == 'timeDate') {
-      console.log("updatetime timeDate")
       bpmnInstances().modeling.updateModdleProperties(toRaw(bpmnElement.value),timerEventDef,{timeCycle:null})
       bpmnInstances().modeling.updateModdleProperties(toRaw(bpmnElement.value),timerEventDef,{timeDuration:null})
       bpmnInstances().modeling.updateModdleProperties(toRaw(bpmnElement.value),timerEventDef,{ timeDate })

@@ -61,14 +61,12 @@ export default {
 
     // 处理 change 事件
     const commonComponent = (nmInfo) => {
-      console.log("nmCatTree nmInfo=", nmInfo);
       localValue.value = nmInfo.toString();
       emit('commonComponent', { ...props.nm, commonDataInfo: localValue.value });
     };
 
     // 处理节点点击事件
     const handleClickNode = (data) => {
-      console.log("nmCatTree node clicked data=", data);
       localValue.value = data.id;
       props.nm.tableTypeDesc = data.label;
       // 选择器执行完成后，使其失去焦点隐藏下拉框的效果

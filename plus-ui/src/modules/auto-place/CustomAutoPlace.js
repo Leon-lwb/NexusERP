@@ -22,7 +22,6 @@ export default function CustomAutoPlace(eventBus, modeling) {
       shape: shape
     });
 
-    console.log('hints', hints, 'position', position);
 
     var newShape = modeling.appendShape(source, shape, position, source.parent, hints);
 

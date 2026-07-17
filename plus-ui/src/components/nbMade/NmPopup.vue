@@ -210,7 +210,6 @@ const handleConfirm = () => {
       return
     }
     
-    console.log('多选模式 - 选中行数:', selectedRows.value.length)
     
     // 处理多选数据 - 修复数据结构
     const mappedDataArray = selectedRows.value.map(row => {
@@ -228,7 +227,6 @@ const handleConfirm = () => {
       mappedData: mappedDataArray  // 这里直接是行数据数组
     }
     
-    console.log("多选模式 returnData", returnData)
     emit('update:value', returnData.id)
     emit('commonComponent', returnData)
     
@@ -240,7 +238,6 @@ const handleConfirm = () => {
     }
     
     const returnData = processRowData(tempSelectedRow.value)
-    console.log("单选模式 returnData", returnData)
     emit('update:value', selectedId.value)
     emit('commonComponent', returnData)
   }
@@ -287,7 +284,6 @@ const processRowData = (row: any) => {
         if (snakeField !== targetField) {
           mappedData[snakeField] = mappedData[targetField]
         }
-        console.log(`sub模式映射: ${sourceField} -> ${targetField} (${snakeField}), 值: ${mappedData[targetField]}`)
       }
     })
     

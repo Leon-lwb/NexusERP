@@ -151,7 +151,6 @@
   const detailProcesssByDataId = (dataId) => {
     const params = {dataId: dataId}
     detailProcessByDataId(params).then(res => {
-      console.log("detailProcessByDataId res=",res);
       if (res.code === 200 && res.data != null) {
         const data = res.data;
         xmlData.value = data.bpmnXml;
@@ -163,7 +162,6 @@
            customForm.value.formComponent = getFormComponent(processFormList.value[0].formValues.routeName).component;
            customForm.value.model = processFormList.value[0].formValues.formData;
            customForm.value.customFormData = processFormList.value[0].formValues.formData;
-           console.log("detailProcess customForm.value",customForm.value);
         }
         historyProcNodeList.value = data.historyProcNodeList;
         finishedInfo.value = data.flowViewer;
@@ -171,10 +169,8 @@
     })
   }
   const changeTab = (tab, event) => {
-    console.log("changeTab tab=",tab);
     const tabname = toRaw(tab);
     if(tabname.paneName.value === 'form') {
-      console.log("changeTab processFormList.value=",processFormList.value);
       if(customForm.value.formId === "") {
         // 回填数据,这里主要是处理文件列表显示,临时解决，以后应该在formdesigner里完成
         processFormList.value.forEach((item, i) => {
@@ -202,14 +198,11 @@
     }
   }
   const fillFormData = (list, formConf) => { // for formdesigner
-    console.log("fillFormData list=",list);
-    console.log("fillFormData formConf=",formConf);
     list.forEach((item, i) => {
       // 特殊处理el-upload，包括 回显图片
       if(formConf.formValues[item.id] != '') {
         const val = formConf.formValues[item.id];
         if (item.ele === 'el-upload') {
-          console.log('fillFormData val=',val)
           if(item['list-type'] != 'text') {//图片
             fileList.value = []    //隐藏加的el-upload文件列表
             //item['file-list'] = JSON.parse(val)
@@ -218,7 +211,6 @@
             }
           }
           else {  //列表
-            console.log("列表fillFormData val",val)
             fileList.value = JSON.parse(val)
             item['file-list'] = [] //隐藏加的表单设计器的文件列表
           }

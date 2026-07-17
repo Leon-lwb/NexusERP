@@ -236,7 +236,6 @@ const loadDeptOptions = async () => {
       pageSize: 1000
     }
     const response = await listDept(query)
-    console.log('部门数据:', response)
     if (response && response.rows) {
       const deptComponent = basicComponents.find(c => c.type === 'dept-select')
       if (deptComponent) {
@@ -259,7 +258,6 @@ const loadUserOptions = async () => {
       pageSize: 1000
     }
     const response = await listUser(query)
-    console.log('用户数据:', response)
     if (response && response.rows) {
       const userComponent = basicComponents.find(c => c.type === 'user-select')
       if (userComponent) {
@@ -276,7 +274,6 @@ const loadUserOptions = async () => {
 }
 
 onMounted(() => {
-  console.log('组件挂载，开始加载数据')
   loadDeptOptions()
   loadUserOptions()
 })

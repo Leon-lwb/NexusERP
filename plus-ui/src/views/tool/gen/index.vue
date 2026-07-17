@@ -420,7 +420,6 @@ const handlePreviewForm = async (row?: TableVO) => {
 
     // 获取表单结构
     const formRes = await getOnlineForm(row.tableId);
-    console.log('handlePreviewForm formRes=', formRes);
 
     // 检查返回数据结构
     if (!formRes.data) {
@@ -430,7 +429,6 @@ const handlePreviewForm = async (row?: TableVO) => {
 
     // 根据实际返回结构获取表单数据 (res.data.map 或 res.data)
     const formData = formRes.data.map || formRes.data;
-    console.log('handlePreviewForm formData=', formData);
 
     // 判断表单类型
     if (formData.type === 'main-sub') {

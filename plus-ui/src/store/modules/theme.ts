@@ -101,26 +101,6 @@ export const useThemeStore = defineStore('theme', () => {
       sidebarLogo: sidebarLogo.value,
       animationEnable: animationEnable.value
     };
-    syncToLegacyStorage();
-  };
-
-  const syncToLegacyStorage = () => {
-    try {
-      const raw = localStorage.getItem('layout-setting');
-      const legacy = raw ? JSON.parse(raw) : {};
-      legacy.theme = brandColor.value;
-      legacy.sideTheme = sideTheme.value;
-      legacy.navType = navType.value;
-      legacy.tagsView = isTabsEnabled.value;
-      legacy.tagsIcon = tabsIcon.value;
-      legacy.fixedHeader = fixedHeader.value;
-      legacy.sidebarLogo = sidebarLogo.value;
-      legacy.animationEnable = animationEnable.value;
-      legacy.dark = isDark.value;
-      localStorage.setItem('layout-setting', JSON.stringify(legacy));
-    } catch {
-      // ignore
-    }
   };
 
   watch(themeMode, (newMode) => {

@@ -12,7 +12,7 @@
 </template>
 
 <script setup name="AppMain" lang="ts">
-import { useSettingsStore } from '@/store/modules/settings';
+import { useThemeStore } from '@/store/modules/theme';
 import { useTagsViewStore } from '@/store/modules/tagsView';
 
 import IframeToggle from './IframeToggle/index.vue';
@@ -22,9 +22,9 @@ const tagsViewStore = useTagsViewStore();
 
 // 随机动画集合
 const animate = ref<string>('');
-const animationEnable = ref(useSettingsStore().animationEnable);
+const animationEnable = ref(useThemeStore().animationEnable);
 watch(
-  () => useSettingsStore().animationEnable,
+  () => useThemeStore().animationEnable,
   (val: boolean) => {
     animationEnable.value = val;
     if (val) {

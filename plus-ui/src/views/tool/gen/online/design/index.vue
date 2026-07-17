@@ -572,7 +572,6 @@ const handlePreview = async (row: TableVO) => {
 
     // 获取表单结构
     const formRes = await getOnlineForm(row.tableId)
-    console.log('handlePreview formRes=', formRes)
     const formData = formRes.data
 
     // 判断表单类型
@@ -595,9 +594,7 @@ const handlePreview = async (row: TableVO) => {
     } else if (formData.type === 'single') {
       // 单表处理
       previewData.type = 'single'
-      console.log('handlePreview formData=', formData)
       previewData.mainFields = formData.data.columnsVo || []
-      console.log('handlePreview previewData.mainFields=', previewData.mainFields)
 
       previewData.mainFields.forEach((f) => {
         if (f?.columnName) previewData.mainForm[f.columnName] = previewData.mainForm[f.columnName] ?? null
@@ -736,16 +733,13 @@ const handleTest = (row?: TableVO) => {
       proxy?.$modal.msgError('附子表不支持在线表单功能测试！');
       return;
     }
-    console.log('handleTest row=', row);
     const tableId = row?.tableId;
     const tableName = row?.tableName;
-    console.log('准备跳转 OnlineTest', { tableId, tableName });
     // 直接使用路径跳转，绕过命名路由匹配
     const pathTarget = {
       path: `/online/test/${String(tableId || '')}/${encodeURIComponent(String(tableName || ''))}`,
       query: { t: Date.now() }
     } as const;
-    console.log('使用 redirect 强制重载到 OnlineTest:', pathTarget);
     router.push({
       path: `/redirect${pathTarget.path}`,
       query: pathTarget.query

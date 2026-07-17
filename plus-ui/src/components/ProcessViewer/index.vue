@@ -137,13 +137,9 @@ export default {
       this.selectTaskId = element.id;
       this.dlgTitle = element.businessObject ? element.businessObject.name : undefined;
       // 计算当前悬浮任务审批记录，如果记录为空不显示弹窗
-      console.log("this.allCommentList",this.allCommentList)
       this.taskCommentList = (toRaw(this.allCommentList)).filter(item => {
-        console.log("item",item)
-        console.log("this.selectTaskId",this.selectTaskId)
         return item.activityId === this.selectTaskId;
       });
-      console.log("this.taskCommentList ",this.taskCommentList)
       this.dialogVisible = true;
     },
     // 显示流程图
@@ -189,8 +185,6 @@ export default {
       }
       const overlays = this.bpmnViewer.get("overlays");
       const commentAllList = toRaw(this.allCommentList)
-      console.log("commentAllList",commentAllList)
-      console.log("element",element)
       let { finishedTaskSet } = this.processNodeInfo;
       if (element.type !== "bpmn:Process" && finishedTaskSet?.indexOf(element.id) > -1) {
         let html = ``; // 默认值

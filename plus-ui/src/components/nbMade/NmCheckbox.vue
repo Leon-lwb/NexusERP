@@ -45,7 +45,6 @@ export default {
 
     // 处理 change 事件
     const commonmomponent = (event) => {
-      console.log("nmCheckbox localValue=", localValue.value);
       emit('commonmomponent', { ...props.nm, commonDataInfo: localValue.value });
     };
 

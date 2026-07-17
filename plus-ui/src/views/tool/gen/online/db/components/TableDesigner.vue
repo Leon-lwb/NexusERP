@@ -128,8 +128,6 @@ const handleAddTableFromCanvas = (table: Table) => {
 
 // 删除表
 const handleRemoveTable = (tableId: string) => {
-  console.log('删除表前的关系数量:', designData.relations.length)
-  console.log('删除表前的关系:', designData.relations)
   
   // 设置删除标志
   isDeleting.value = true
@@ -144,9 +142,6 @@ const handleRemoveTable = (tableId: string) => {
   const beforeRelations = designData.relations.length
   designData.relations = designData.relations.filter(r => r.fromTable !== tableId && r.toTable !== tableId)
   const afterRelations = designData.relations.length
-  console.log('删除关系数量:', beforeRelations - afterRelations)
-  console.log('删除表后的关系数量:', designData.relations.length)
-  console.log('删除表后的关系:', designData.relations)
   
   // 清理选择
   if (selectedTable.value?.id === tableId) selectedTable.value = null
@@ -156,7 +151,6 @@ const handleRemoveTable = (tableId: string) => {
   
   // 强制触发更新
   nextTick(() => {
-    console.log('触发design-change事件，关系数量:', designData.relations.length)
     emit('design-change', designData)
     
     // 延迟重置删除标志，确保父组件数据更新完成

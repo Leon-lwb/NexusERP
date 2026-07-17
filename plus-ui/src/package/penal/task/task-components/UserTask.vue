@@ -242,7 +242,6 @@
     for (let key in userTaskForm.value) {
         taskAttr[key] = userTaskForm.value[key] || null;
     }
-    console.log("updateElementTask taskAttr",taskAttr)
     bpmnInstances().modeling.updateProperties(toRaw(bpmnElement.value), taskAttr)
   }
   /**
@@ -270,7 +269,6 @@
       if (!deptTreeData.value || deptTreeData.value.length <= 0) {
         getDeptOptions().then(() => {
           deptTreeData.value = refactorTree(deptOptions.value);
-          console.log("getDeptTreeData deptTreeData.value",deptTreeData.value)
           resolve()
         }).catch(() => {
           reject()
@@ -375,7 +373,6 @@
 
   const nodeClick = (data, node, vm) => {
     const checkedIds = JSON.parse(JSON.stringify(node.checkedNodes))
-    console.log("nodeClick checkedIds",checkedIds)
     let groups = null;
     let text = null;
     deptIds.value = checkedIds;
@@ -398,7 +395,6 @@
     let text = null;
     const selectedIds = toRaw(checkedIds)
     deptIds.value = selectedIds;
-    console.log("checkedDeptChange selectedIds",selectedIds)
     if (selectedIds && selectedIds.length > 0) {
       userTaskForm.value.dataType = 'DEPTS';
       groups = selectedIds.join() || null;
@@ -438,8 +434,6 @@
     // 清空 userTaskForm 所有属性值
     Object.keys(userTaskForm.value).forEach(key => userTaskForm.value[key] = null);
     userTaskForm.value.dataType = val;
-    console.log("changeDataType selectedUser.value",selectedUser.value);
-    console.log("changeDataType val",val);
     if (val === 'USERS') {
       if (selectedUser.value && selectedUser.value.ids && selectedUser.value.ids.length > 0) {
         if (selectedUser.value.ids.length === 1) {
@@ -551,8 +545,6 @@
     // 根据名称筛选部门树
     () => deptName.value,
     (val) => {
-      console.log("watch deptName",deptName)
-      console.log("watch tree",tree)
       tree.value?.filter(val);
     }
   )

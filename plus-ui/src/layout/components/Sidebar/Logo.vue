@@ -23,7 +23,7 @@
 <script setup lang="ts">
 import variables from '@/assets/styles/variables.module.scss';
 import logo from '@/assets/logo/logo.png';
-import { useSettingsStore } from '@/store/modules/settings';
+import { useThemeStore } from '@/store/modules/theme';
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 import { NavTypeEnum } from '@/enums/NavTypeEnum';
 
@@ -35,15 +35,15 @@ defineProps({
 });
 
 const title = import.meta.env.VITE_APP_LOGO_TITLE;
-const settingsStore = useSettingsStore();
-const sideTheme = computed(() => settingsStore.sideTheme);
+const themeStore = useThemeStore();
+const sideTheme = computed(() => themeStore.sideTheme);
 
 // 获取Logo背景色
 const getLogoBackground = computed(() => {
-  if (settingsStore.isDark) {
+  if (themeStore.isDark) {
     return 'var(--sidebar-bg)'
   }
-  if (settingsStore.navType == NavTypeEnum.TOP) {
+  if (themeStore.navType == NavTypeEnum.TOP) {
     return variables.menuLightBackground
   }
   return sideTheme.value === 'theme-dark' ? variables.menuBg : variables.menuLightBackground
@@ -51,10 +51,10 @@ const getLogoBackground = computed(() => {
 
 // 获取Logo文字颜色
 const getLogoTextColor = computed(() => {
-  if (settingsStore.isDark) {
+  if (themeStore.isDark) {
     return 'var(--sidebar-text)'
   }
-  if (settingsStore.navType == NavTypeEnum.TOP) {
+  if (themeStore.navType == NavTypeEnum.TOP) {
     return variables.logoLightTitleColor
   }
   return sideTheme.value === 'theme-dark' ? variables.logoTitleColor : variables.logoLightTitleColor

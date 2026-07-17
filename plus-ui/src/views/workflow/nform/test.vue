@@ -379,7 +379,6 @@ const generateCode = (rule: string, params?: any) => {
 const parseFormContent = async () => {
   try {
     const content = JSON.parse(currentFormContent.value) as FormContent
-    console.log("parseFormContent content", content)
     
     if (content.formConfig) {
       Object.assign(formConfig, content.formConfig)
@@ -424,14 +423,12 @@ const parseFormContent = async () => {
       
       // 并行加载所有字典数据
       if (dictTypes.size > 0) {
-        console.log('需要加载的字典类型:', Array.from(dictTypes))
         await Promise.all(Array.from(dictTypes).map(dictType => loadDictData(dictType)))
       }
     }
     
     // 检查是否有主子表结构
     if (content.masterSubTableData) {
-      console.log('发现主子表结构:', content.masterSubTableData)
       
       // 分析masterSubTableData的结构
       if (typeof content.masterSubTableData === 'object' && content.masterSubTableData !== null) {
@@ -440,13 +437,11 @@ const parseFormContent = async () => {
         if (keys.length > 0) {
           // 第一个key通常是子表名
           const subTableName = keys[0]
-          console.log('从masterSubTableData中提取子表名:', subTableName)
           
           masterSubConfig.value = {
             subTableName: subTableName,
             subTableFkName: 'main_id' // 默认外键名，可以根据实际情况调整
           }
-          console.log('子表配置:', masterSubConfig.value)
         }
       } else if (content.masterSubTableData.subTableName) {
         // 如果masterSubTableData有标准的subTableName字段
@@ -454,26 +449,21 @@ const parseFormContent = async () => {
           subTableName: content.masterSubTableData.subTableName,
           subTableFkName: content.masterSubTableData.subTableFkName
         }
-        console.log('子表配置:', masterSubConfig.value)
       }
     } else {
-      console.log('没有发现masterSubTableData，尝试从formComponents中查找子表信息')
       // 尝试从formComponents中查找子表信息
       const subTableComponent = content.formComponents?.find(c => c.type === 'subtable')
       if (subTableComponent) {
-        console.log('从formComponents中找到子表组件:', subTableComponent)
         masterSubConfig.value = {
           subTableName: subTableComponent.subTableName || '',
           subTableFkName: subTableComponent.subTableFkName || ''
         }
-        console.log('从子表组件获取的配置:', masterSubConfig.value)
       }
     }
     
     // 初始化子表数据数组
     formComponents.value.forEach(component => {
       if (component.type === 'subtable') {
-        console.log('初始化子表组件:', component.field, component)
         // 初始化子表行容器为数组
         subTableData.value = []
         // 绑定子表表名
@@ -482,7 +472,6 @@ const parseFormContent = async () => {
         if (content.masterSubTableData?.subColumns) {
           component.subTableColumns = content.masterSubTableData.subColumns
         } else if (component.subTableColumns) {
-          console.log('使用组件自身的子表列信息')
         } else {
           // 尝试从masterSubTableData中获取列信息
           if (content.masterSubTableData && typeof content.masterSubTableData === 'object') {
@@ -505,7 +494,6 @@ const parseFormContent = async () => {
                   }
                 }).filter(col => col !== null)
                 component.subTableColumns = columns
-                console.log('从子表数据中提取列信息:', columns)
               }
             }
           }
@@ -514,7 +502,6 @@ const parseFormContent = async () => {
             console.warn('没有找到子表列信息')
           }
         }
-        console.log('子表组件配置后:', component)
       }
     })
   } catch (error) {
@@ -572,7 +559,6 @@ const getComponentByType = (type: string) => {
 
 // 添加子表行
 const handleAddSubTableRow = (component: FormComponent) => {
-  console.log('添加子表行:', component.field, component)
   
   const newRow: Record<string, any> = {}
   if (component.subTableColumns && Array.isArray(component.subTableColumns)) {
@@ -582,13 +568,11 @@ const handleAddSubTableRow = (component: FormComponent) => {
         newRow[column.field] = ''
       }
     })
-    console.log('创建新行:', newRow)
   } else {
     console.warn('子表列信息不存在:', component.subTableColumns)
   }
   
   subTableData.value.push(newRow)
-  console.log('子表数据更新:', subTableData.value)
 }
 
 // 删除子表行
@@ -607,7 +591,6 @@ const loadDictData = async (dictType: string) => {
         value: item.dictValue
       }))
       dictOptions.value[dictType] = options
-      console.log(`加载字典数据成功: ${dictType}`, options)
     }
   } catch (error) {
     console.error('获取字典数据失败:', error)
@@ -692,7 +675,6 @@ const handleSubmit = async () => {
 
     // 解析表单内容获取表名
     const formContent = JSON.parse(currentFormContent.value)
-    console.log('formContent', formContent)
     
     // 尝试从不同位置获取表名
     let tableName = ''
@@ -706,7 +688,6 @@ const handleSubmit = async () => {
       }
     }
     
-    console.log('tableName', tableName)
     
     if (!tableName) {
       ElMessage.error('无法获取表名信息')
@@ -756,12 +737,9 @@ const handleSubmit = async () => {
           data: cleanedSubTableData
         }
       }
-      console.log('构建主子表数据:', submitData)
-      console.log('清理后的子表数据:', cleanedSubTableData)
     } else {
       // 单表结构
       submitData = JSON.parse(JSON.stringify(formData.value))
-      console.log('构建单表数据:', submitData)
     }
     
     // 清理空字符串的日期字段，将其设置为 null
@@ -782,10 +760,6 @@ const handleSubmit = async () => {
       submitData = cleanEmptyDateFields(submitData)
     }
     
-    console.log('submitData', submitData)
-    console.log('tableName', tableName)
-    console.log('formComponents', formComponents.value)
-    console.log('subTableData', subTableData.value)
 
     const res = await addOrUpdateOnlineDataByName(tableName, submitData)
     if (res.code === 200) {
@@ -873,9 +847,6 @@ const updateRowDataWithFullMapping = (row: any, column: any, data: any) => {
   try {
     const mapping = typeof column.props.mapping === 'string' ? JSON.parse(column.props.mapping) : column.props.mapping
     
-    console.log('sub模式 - mapping配置:', mapping)
-    console.log('sub模式 - 源数据:', data)
-    console.log('sub模式 - 目标行:', row)
     
     if (mapping && mapping.mapping) {
       // 使用 mapping.mapping 中的所有字段映射
@@ -896,20 +867,13 @@ const updateRowDataWithFullMapping = (row: any, column: any, data: any) => {
             if (underscoreField !== targetField) {
               row[underscoreField] = sourceValue
             }
-            console.log(`sub模式映射: ${srcField} -> ${targetField} (${underscoreField}), 值: ${sourceValue}`)
           } else {
-            console.log(`sub模式 - 未找到源字段值: ${srcField}`)
           }
         }
       })
     } else {
-      console.log('sub模式 - 没有找到 mapping.mapping 配置')
-      console.log('sub模式 - 完整的 mapping 对象:', mapping)
-      console.log('sub模式 - mapping 的类型:', typeof mapping)
-      console.log('sub模式 - mapping 的键:', mapping ? Object.keys(mapping) : 'null')
     }
     
-    console.log('sub模式 - 更新后的行数据:', row)
   } catch (error) {
     console.error('sub模式更新行数据失败:', error)
   }
@@ -942,21 +906,15 @@ const handlePopupSelect = (data: any, item: FormComponent) => {
 
 // 处理子表popup选择
 const handleSubTablePopupSelect = (data: any, column: any, row: any, subTableComponent?: any) => {
-  console.log('子表 popup 选择数据:', data)
-  console.log('子表列配置:', column)
-  console.log('当前行数据:', row)
-  console.log('子表组件:', subTableComponent)
   
   // 获取当前列的显示模式
   const currentDisplayMode = getColumnDisplayMode(column)
-  console.log('当前显示模式:', currentDisplayMode)
   
   // 检查是否为多选模式
   const isMultiple = getMultipleMode(column.props || {})
   
   // 只有明确配置了 sub 模式才使用新的逻辑
   if (currentDisplayMode === 'sub' && Array.isArray(data)) {
-    console.log('sub 模式 - 选中数据数量:', data.length)
     
     if (subTableComponent && subTableComponent.field) {
       const subTableField = subTableComponent.field
@@ -974,8 +932,6 @@ const handleSubTablePopupSelect = (data: any, column: any, row: any, subTableCom
         }
       })
       
-      console.log(`sub 模式 - 插入了 ${data.length} 条完整记录`)
-      console.log('子表数据更新后:', subTableData.value)
       return
     }
   }
@@ -983,7 +939,6 @@ const handleSubTablePopupSelect = (data: any, column: any, row: any, subTableCom
   // 检查是否为多选模式（非 sub 模式的多选）
   if (isMultiple && Array.isArray(data) && data.length > 1) {
     // 多选模式：插入多条记录
-    console.log('多选模式 - 选中商品数量:', data.length)
     
     if (subTableComponent && subTableComponent.field) {
       const subTableField = subTableComponent.field
@@ -1001,14 +956,10 @@ const handleSubTablePopupSelect = (data: any, column: any, row: any, subTableCom
         }
       })
       
-      console.log(`多选模式 - 插入了 ${data.length} 条记录`)
-      console.log('子表数据更新后:', subTableData.value)
     }
   } else if (data && data.value !== undefined) {
     // 单选模式：更新当前行（保持原有逻辑）
     updateRowData(row, column, data)
-    console.log('单选模式 - 更新当前行后:', row)
-    console.log('子表数据更新后:', subTableData.value)
   }
 }
 
@@ -1025,7 +976,6 @@ const updateRowData = (row: any, column: any, data: any) => {
         ? JSON.parse(column.props.mapping) 
         : column.props.mapping
       
-      console.log('字段映射配置:', mapping)
       
       // 遍历映射配置，直接使用映射后的字段值
       Object.entries(mapping).forEach(([srcField, targetField]) => {
@@ -1033,7 +983,6 @@ const updateRowData = (row: any, column: any, data: any) => {
           // 从映射后的数据中获取值
           const mappedValue = data[targetField]
           if (mappedValue !== undefined) {
-            console.log(`设置字段: ${targetField} = ${mappedValue}`)
             row[targetField] = mappedValue
           }
           
@@ -1042,7 +991,6 @@ const updateRowData = (row: any, column: any, data: any) => {
           if (underscoreField !== targetField) {
             const underscoreValue = data[underscoreField]
             if (underscoreValue !== undefined) {
-              console.log(`设置下划线字段: ${underscoreField} = ${underscoreValue}`)
               row[underscoreField] = underscoreValue
             }
           }
@@ -1074,7 +1022,6 @@ const updateRowData = (row: any, column: any, data: any) => {
     }
   }
   
-  console.log('更新后的行数据:', row)
   
   // 详细检查每个字段的值
   if (column.props.mapping) {
@@ -1083,15 +1030,11 @@ const updateRowData = (row: any, column: any, data: any) => {
         ? JSON.parse(column.props.mapping) 
         : column.props.mapping
       
-      console.log('=== 字段值详细检查 ===')
       Object.entries(mapping).forEach(([srcField, targetField]) => {
         if (typeof targetField === 'string') {
           const underscoreField = targetField.replace(/([A-Z])/g, '_$1').toLowerCase()
-          console.log(`字段 ${targetField}: ${row[targetField]}`)
-          console.log(`字段 ${underscoreField}: ${row[underscoreField]}`)
         }
       })
-      console.log('=== 字段值详细检查结束 ===')
     } catch (error) {
       console.error('字段值检查失败:', error)
     }

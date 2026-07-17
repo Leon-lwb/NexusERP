@@ -178,14 +178,11 @@ const handleRowClick = (row: any) => {
 
 const handleConfirm = () => {
   if (selectedRows.value.length === 0) return
-  console.log("handleConfirm props.mapping",props.mapping)
   const mappedData = selectedRows.value.map(row => {
-    console.log("handleConfirm row",row)
     const result: any = {}
     Object.entries(props.mapping).forEach(([srcField, targetField]) => {
       result[targetField] = row[srcField]
     })
-    console.log("handleConfirm result",result)
     return result
   })
 

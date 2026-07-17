@@ -35,7 +35,6 @@ export default {
     value: {
       immediate: true,
       handler(newValue) {
-        console.log("NmEditor newValue=", newValue);
         this.nm.commonDataInfo = newValue || '';
       }
     }

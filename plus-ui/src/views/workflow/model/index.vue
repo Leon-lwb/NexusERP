@@ -348,7 +348,6 @@ const handleDeploy = (row?: ModelVO) => {
       });
     }
     catch(err){
-      console.log("handleDeploy err",err);
     }
     loading.value = false;
   });
@@ -416,7 +415,6 @@ const confirmSave = async (body: any, newVersion: boolean) => {
     designer.visible = false;
   }
   catch(err){
-    console.log("confirmSave err",err);
   }
   designerLoading.value = false;
 }

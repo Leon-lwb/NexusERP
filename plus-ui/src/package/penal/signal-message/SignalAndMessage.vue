@@ -59,7 +59,6 @@
   const bpmnInstances = () => (window as any)?.bpmnInstances
 
   const initDataList = () => {
-    console.log(window, 'window')
     rootElements.value = bpmnInstances().modeler.getDefinitions().rootElements
     messageIdMap.value = {}
     signalIdMap.value = {}

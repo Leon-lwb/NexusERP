@@ -107,23 +107,6 @@ export const selectDictLabels = (datas: any, value: any, separator: any) => {
   return actions.join('').substring(0, actions.join('').length - 1);
 };
 
-// 字符串格式化(%s )
-export function sprintf(str: string) {
-  if (arguments.length !== 0) {
-    let flag = true,
-      i = 1;
-    str = str.replace(/%s/g, function () {
-      const arg = arguments[i++];
-      if (typeof arg === 'undefined') {
-        flag = false;
-        return '';
-      }
-      return arg;
-    });
-    return flag ? str : '';
-  }
-}
-
 // 转换字符串，undefined,null等转化为""
 export const parseStrEmpty = (str: any) => {
   if (!str || str == 'undefined' || str == 'null') {

@@ -44,7 +44,6 @@ export default {
 
     // 处理 change 事件
     const commonComponent = (event) => {
-      console.log("NmLinkDown localValue=", localValue.value);
       if (localValue.value) {
         props.nm.commonDataInfo = localValue.value.id;
         props.nm.commonLinkDownCodeChild = localValue.value.children || [];

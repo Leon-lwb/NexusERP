@@ -473,7 +473,6 @@ async function loadSessions() {
   sessionLoading.value = true
   try {
     const res = await getChatSessions()
-    console.log('[AI] 会话列表响应:', res)
     // 兼容两种响应格式：R.ok 直接返回 data 字段，或 { rows: [...] }
     const list = res?.data ?? res?.rows ?? (Array.isArray(res) ? res : [])
     sessions.value = list
@@ -492,7 +491,6 @@ async function switchSession(sessionId: number | string) {
   loading.value = true
   try {
     const res = await getChatHistory(sessionId as any)
-    console.log('[AI] 聊天历史响应:', res)
     // 兼容多种响应格式：R.ok(data)、{ rows: [...] }、直接数组
     let history: AiMessageDto[] = []
     if (Array.isArray(res)) {
@@ -504,7 +502,6 @@ async function switchSession(sessionId: number | string) {
     } else if (res?.data?.rows && Array.isArray(res.data.rows)) {
       history = res.data.rows
     }
-    console.log('[AI] 解析到的历史消息条数:', history.length)
     messages.value = history.map(m => ({
       id: m.id,
       role: m.role === 'USER' ? 'user' as const : 'assistant' as const,
@@ -551,7 +548,6 @@ async function sendMessage() {
       enableWebSearch: enableWebSearch.value || undefined,
       enabledToolIds: selectedToolIds.value.length > 0 ? selectedToolIds.value : undefined
     })
-    console.log('[AI] 发送消息响应:', res)
     // 后端返回 sessionId（新会话时为新 ID）
     const sid = res?.data ?? res
     if (sid && (typeof sid === 'number' || typeof sid === 'string')) {

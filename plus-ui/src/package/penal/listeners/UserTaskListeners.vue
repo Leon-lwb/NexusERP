@@ -223,7 +223,6 @@
       bpmnElement.value.businessObject?.extensionElements?.values?.filter(
         (ex) => ex.$type === `${prefix}:TaskListener`
       ) ?? []
-    console.log("resetListenersList bpmnElementListeners.value",bpmnElementListeners.value)
     elementListenersList.value = bpmnElementListeners.value.map((listener) =>
       initListenerType(listener)
     )
@@ -254,7 +253,6 @@
   }
   // 移除监听器
   const removeListener = (listener, index?) => {
-    console.log(listener, 'listener')
     ElMessageBox.confirm('确认移除该监听器吗？', '提示', {
       confirmButtonText: '确 认',
       cancelButtonText: '取 消'
@@ -275,8 +273,6 @@
     if (!validateStatus) return // 验证不通过直接返回
     const listenerObject = createListenerObject(listenerForm.value, true, prefix)
     if (editingListenerIndex.value === -1) {
-      console.log("saveListenerConfig bpmnElementListeners.value",bpmnElementListeners.value)
-      console.log("saveListenerConfig listenerObject",listenerObject)
       bpmnElementListeners.value.push(listenerObject)
       elementListenersList.value.push(listenerForm.value)
     } else {
@@ -288,7 +284,6 @@
       bpmnElement.value.businessObject?.extensionElements?.values?.filter(
         (ex) => ex.$type !== `${prefix}:TaskListener`
       ) ?? []
-    console.log("saveListenerConfig otherExtensionList.value",otherExtensionList.value)
     updateElementExtensions(
       bpmnElement.value,
       otherExtensionList.value.concat(bpmnElementListeners.value)
@@ -325,7 +320,6 @@
   }
   // 移除监听器字段
   const removeListenerField = (field, index) => {
-    console.log(field, 'field')
     ElMessageBox.confirm('确认移除该字段吗？', '提示', {
       confirmButtonText: '确 认',
       cancelButtonText: '取 消'

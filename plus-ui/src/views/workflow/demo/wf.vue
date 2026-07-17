@@ -135,7 +135,6 @@
   onMounted(() => {
     //流程调用自定义表单的传入参数
     if(props.customFormData != null) {
-      console.log("props.customFormData=",props.customFormData);
       form.value = props.customFormData;
     }
   })

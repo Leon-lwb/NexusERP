@@ -1716,7 +1716,6 @@ const currentSubTableColumn = ref<SubTableColumn | null>(null)
 const listTableColumns = async (tableName: string) => {
   try {
     const res = await getTableColumns(tableName);
-    console.log("listTableColumns res",res)
     if (res) {
       currentTableColumns.value = res;
     } else {
@@ -1987,7 +1986,6 @@ const handleDatabaseConfig = () => {
 
 const handleDesignerSave = async (formData: any) => {
   try {
-    console.log('保存表单数据:', formData)
     // 确保表单数据包含必要的字段
     if (!formData.formName || !formData.formDesc) {
       throw new Error('表单名称和描述不能为空')
@@ -2000,9 +1998,7 @@ const handleDesignerSave = async (formData: any) => {
     
     if (formData.formId) {
       // 编辑模式
-      console.log('更新表单:', formData)
       const res = await updateNform(formData)
-      console.log('更新表单响应:', res)
       if (res.code === 200) {
         ElMessage.success('修改成功')
       } else {
@@ -2010,9 +2006,7 @@ const handleDesignerSave = async (formData: any) => {
       }
     } else {
       // 新建模式
-      console.log('新增表单:', formData)
       const res = await addNform(formData)
-      console.log('新增表单响应:', res)
       if (res.code === 200) {
         ElMessage.success('新增成功')
       } else {
@@ -2784,7 +2778,6 @@ const submitForm = async () => {
           const existingContent = JSON.parse(props.formData.formContent)
           if (existingContent.masterSubTableData) {
             masterSubTableData = existingContent.masterSubTableData
-            console.log('从现有数据中获取主子表数据:', masterSubTableData)
           }
         } catch (error) {
           console.error('解析现有表单内容失败:', error)
@@ -2819,9 +2812,6 @@ const submitForm = async () => {
       form.formId = props.formData.formId
     }
 
-    console.log('准备保存的表单数据:', form)
-    console.log('表信息:', tableInfo)
-    console.log('主子表数据:', masterSubTableData)
     // 触发保存事件
     emit('save', form)
     dialog.visible = false
@@ -2851,16 +2841,10 @@ const handleClose = () => {
 
 // 添加修改检测方法
 const hasChanges = () => {
-  console.log('检查是否有修改...')
-  console.log('originalFormData:', originalFormData.value)
-  console.log('当前 form.formName:', form.formName)
-  console.log('当前 form.formDesc:', form.formDesc)
-  console.log('当前 formComponents.length:', formComponents.value.length)
   
   if (!originalFormData.value) {
     // 新建表单，检查是否有内容
     const hasContent = form.formName || form.formDesc || formComponents.value.length > 0
-    console.log('新建表单，是否有内容:', hasContent)
     return hasContent
   }
   
@@ -2868,8 +2852,6 @@ const hasChanges = () => {
   const nameChanged = form.formName !== originalFormData.value.formName
   const descChanged = form.formDesc !== originalFormData.value.formDesc
   
-  console.log('名称是否改变:', nameChanged, form.formName, '!=', originalFormData.value.formName)
-  console.log('描述是否改变:', descChanged, form.formDesc, '!=', originalFormData.value.formDesc)
   
   // 比较表单组件是否改变 - 使用更简单的比较方式
   let componentsChanged = false
@@ -2877,14 +2859,12 @@ const hasChanges = () => {
     const originalContent = JSON.parse(originalFormData.value.formContent)
     const originalComponents = originalContent.formComponents || []
     componentsChanged = JSON.stringify(formComponents.value) !== JSON.stringify(originalComponents)
-    console.log('组件是否改变:', componentsChanged)
   } catch (error) {
     console.error('解析原始表单内容失败:', error)
     componentsChanged = true // 如果解析失败，认为有改变
   }
   
   const hasChanges = nameChanged || descChanged || componentsChanged
-  console.log('最终结果 - 是否有修改:', hasChanges)
   
   return hasChanges
 }
@@ -2935,7 +2915,6 @@ const handleLayoutDrop = (e: DragEvent, target: any) => {
 
 // 添加按钮点击处理方法
 const handleButtonClick = (field: string) => {
-  console.log('Button clicked:', field)
   // 这里可以添加按钮点击后的处理逻辑
 }
 
@@ -2985,13 +2964,11 @@ const loadUserOptions = async () => {
 
 // 部门选择变化处理
 const handleDeptChange = (value: any) => {
-  console.log('部门选择变化:', value)
   // 这里可以添加部门选择后的业务逻辑
 }
 
 // 用户选择变化处理
 const handleUserChange = (value: any) => {
-  console.log('用户选择变化:', value)
   // 这里可以添加用户选择后的业务逻辑
 }
 
@@ -3001,7 +2978,6 @@ const handlePreviewSubmit = () => {
   
   previewFormRef.value.validate((valid: boolean) => {
     if (valid) {
-      console.log('预览表单数据:', formData.value)
       ElMessage.success('提交成功')
       previewVisible.value = false
     } else {
@@ -3095,13 +3071,11 @@ const initPreviewFormData = () => {
 
 // 预览时的部门选择变化处理
 const handlePreviewDeptChange = (value: any, field: string) => {
-  console.log('预览部门选择变化:', value, field)
   formData.value[field] = value
 }
 
 // 预览时的用户选择变化处理
 const handlePreviewUserChange = (value: any, field: string) => {
-  console.log('预览用户选择变化:', value, field)
   formData.value[field] = value
 }
 
@@ -3186,7 +3160,6 @@ const loadDictTypeOptions = async () => {
     const res = await optionselect()
     if (res.code === 200) {
       dictTypeOptions.value = res.data
-      console.log('字典类型列表:', dictTypeOptions.value)
     } else {
       ElMessage.error(res.msg || '获取字典类型列表失败')
     }

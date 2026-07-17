@@ -23,7 +23,7 @@
 import { constantRoutes } from '@/router';
 import { isHttp } from '@/utils/validate';
 import { useAppStore } from '@/store/modules/app';
-import { useSettingsStore } from '@/store/modules/settings';
+import { useThemeStore } from '@/store/modules/theme';
 import { usePermissionStore } from '@/store/modules/permission';
 import { RouteRecordRaw } from 'vue-router';
 
@@ -35,13 +35,13 @@ const currentIndex = ref<string>();
 const hideList = ['/index', '/user/profile'];
 
 const appStore = useAppStore();
-const settingsStore = useSettingsStore();
+const themeStore = useThemeStore();
 const permissionStore = usePermissionStore();
 const route = useRoute();
 const router = useRouter();
 
 // 主题颜色
-const theme = computed(() => settingsStore.theme);
+const theme = computed(() => themeStore.brandColor);
 // 所有的路由信息
 const routers = computed(() => permissionStore.getTopbarRoutes());
 

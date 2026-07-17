@@ -46,7 +46,6 @@ export default {
 
     // 处理 change 事件
     const commonComponent = () => {
-      console.log("NmTime localValue=", localValue.value);
       emit('commonComponent', { ...props.nm, commonDataInfo: localValue.value });
     };
 

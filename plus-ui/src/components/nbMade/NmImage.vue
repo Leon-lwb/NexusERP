@@ -46,7 +46,6 @@ export default {
 
     // 处理 change 事件
     const commonmomponent = (nmInfo) => {
-      console.log("nmImage commonmomponent nmInfo=", nmInfo);
       localValue.value = nmInfo;
       emit('commonmomponent', { ...props.nm, commonDataInfo: localValue.value });
     };

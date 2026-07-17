@@ -39,7 +39,6 @@ Log.prototype.print = function(text, type = 'default', back = false) {
   }
   if (back) {
     // 如果是打印帶背景圖的
-    console.log(`%c ${text} `, `background:${this.typeColor(type)}; padding: 2px; border-radius: 4px; color: #fff;`);
   } else {
     console.log(
       `%c ${text} `,

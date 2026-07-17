@@ -223,7 +223,6 @@
   const { proxy } = getCurrentInstance() as ComponentInternalInstance;
   const { wf_app_type } = toRefs<any>(proxy?.useDict("wf_app_type"));
 
-  console.log("wf_app_type",wf_app_type)
 
   const customFormList = ref<WfCustomFormVO[]>([]);
   const buttonLoading = ref(false);

@@ -321,7 +321,6 @@ const handleLogin = () => {
         }
       }
     } else {
-      console.log('error submit!', fields);
     }
   });
 };
