@@ -29,6 +29,8 @@ import com.nexus.im.service.ISysUserNotificationService;
 import com.nexus.system.domain.vo.SysUserVo;
 import com.nexus.system.service.ISysUserService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -47,6 +49,7 @@ import java.util.Set;
  * @author nexus
  */
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class ImGroupChatService {
 
@@ -193,14 +196,18 @@ public class ImGroupChatService {
         g.setStatus("0");
         imGroupMapper.insert(g);
 
+        // P2-5: 批量插入群成员，替换原 for 循环逐条 insert
+        // group_id 为新生成的雪花 ID，(group_id, user_id) 不可能冲突，无需 catch DuplicateKeyException
         Date now = new Date();
+        List<ImGroupMember> members = new ArrayList<>(ids.size());
         for (Long uid : ids) {
             ImGroupMember m = new ImGroupMember();
             m.setGroupId(g.getGroupId());
             m.setUserId(uid);
             m.setJoinTime(now);
-            imGroupMemberMapper.insert(m);
+            members.add(m);
         }
+        imGroupMemberMapper.insertBatch(members);
         return R.ok(g.getGroupId());
     }
 
@@ -220,19 +227,29 @@ public class ImGroupChatService {
             return R.fail("请选择有效的新成员");
         }
         Date now = new Date();
+        int newCount = 0;
+        int existingCount = 0;
+        // P2-4: 移除 TOCTOU selectCount 检查，依赖 uk_group_user 唯一索引 + catch DuplicateKeyException
+        // 并发场景下两个请求同时通过 selectCount 检查 → 第二个 insert 触发唯一索引冲突 → 视为"已存在"跳过（幂等）
         for (Long uid : ids) {
             support.requireSameTenantUser(uid);
-            if (imGroupMemberMapper.selectCount(new LambdaQueryWrapper<ImGroupMember>()
-                .eq(ImGroupMember::getGroupId, groupId).eq(ImGroupMember::getUserId, uid)) > 0) {
-                continue;
-            }
             ImGroupMember m = new ImGroupMember();
             m.setGroupId(groupId);
             m.setUserId(uid);
             m.setJoinTime(now);
-            imGroupMemberMapper.insert(m);
+            try {
+                imGroupMemberMapper.insert(m);
+                newCount++;
+            } catch (DuplicateKeyException e) {
+                // (group_id, user_id) 唯一索引命中，视为"已存在"跳过
+                existingCount++;
+                log.debug("addGroupMembers 跳过已存在成员: groupId={}, userId={}", groupId, uid);
+            }
         }
-        return R.ok();
+        if (newCount == 0) {
+            return R.ok("所有成员均已在群中，新增 0 条，已存在 " + existingCount + " 条");
+        }
+        return R.ok("新增 " + newCount + " 条，已存在 " + existingCount + " 条");
     }
 
     public List<ImGroupMemberVo> listGroupMembers(Long groupId) {
