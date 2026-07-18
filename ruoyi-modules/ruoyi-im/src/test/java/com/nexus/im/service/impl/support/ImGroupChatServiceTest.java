@@ -1,10 +1,13 @@
 package com.nexus.im.service.impl.support;
 
+import com.baomidou.mybatisplus.core.MybatisConfiguration;
+import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.nexus.common.core.domain.R;
 import com.nexus.im.domain.ImGroup;
 import com.nexus.im.domain.ImGroupMember;
 import com.nexus.im.domain.bo.ImGroupCreateBo;
 import com.nexus.im.domain.bo.ImGroupMemberAddBo;
+import com.nexus.im.domain.vo.ImGroupMemberVo;
 import com.nexus.im.mapper.ImGroupMapper;
 import com.nexus.im.mapper.ImGroupMemberMapper;
 import com.nexus.im.mapper.ImMessageMapper;
@@ -15,6 +18,8 @@ import com.nexus.im.support.ImTestFixture;
 import com.nexus.im.support.ImUnitTestBase;
 import com.nexus.system.domain.vo.SysUserVo;
 import com.nexus.system.service.ISysUserService;
+import org.apache.ibatis.builder.MapperBuilderAssistant;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -22,12 +27,16 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.springframework.dao.DuplicateKeyException;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.LongStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.lenient;
@@ -39,26 +48,30 @@ import static org.mockito.Mockito.when;
 import org.mockito.ArgumentMatchers;
 
 /**
- * P3-4: P2-4 TOCTOU + P2-5 批量插入幂等回归测试。
+ * P3-4 + P3-6: P2-4 TOCTOU + P2-5 批量插入 + P2-6 listGroupMembers 批量化回归测试。
  * <p>
- * 守护 P2 阶段两项关键改造：
+ * 守护 P2 阶段三项关键改造：
  * <ul>
  *   <li>P2-4 {@code addGroupMembers} 移除 selectCount 预检查，依赖唯一索引 + catch {@link DuplicateKeyException} 实现幂等</li>
  *   <li>P2-5 {@code createGroup} 用 {@code insertBatch} 替代 for 循环逐条 insert</li>
+ *   <li>P2-6 {@code listGroupMembers} 批量加载用户与头像，消除 N+1（50 成员 SQL 数从 100+ 降到 4）</li>
  * </ul>
  * <p>
  * 任意重构若：
  * <ul>
- *   <li>在 {@code addGroupMembers} 前加回 selectCount 预检查 → 用例 3 立即失败</li>
- *   <li>把 {@code createGroup} 的 insertBatch 改回 for 循环逐条 insert → 用例 4/5 立即失败</li>
+ *   <li>在 {@code addGroupMembers} 前加回 selectCount 预检查 → P3-4 用例 3 立即失败</li>
+ *   <li>把 {@code createGroup} 的 insertBatch 改回 for 循环逐条 insert → P3-4 用例 4/5 立即失败</li>
+ *   <li>把 {@code listGroupMembers} 的 batchLoadUsers 改回循环 selectUserById → P3-6 用例立即失败</li>
  * </ul>
  * <p>
  * 设计说明：
  * <ul>
  *   <li>使用纯 Mockito 单元测试，直接 new ImGroupChatService 实例，避免启动 Spring 容器</li>
  *   <li>{@code support.normalizeUserIds}/{@code requireSameTenantUser}/{@code normalizeGroupName} 通过 lenient 桩透传，
- *       保持业务逻辑焦点在 TOCTOU 与批量插入上</li>
+ *       保持业务逻辑焦点在 TOCTOU / 批量插入 / 批量加载上</li>
  *   <li>{@code imGroupMapper.insert} 用 {@code doAnswer} 模拟 MyBatis-Plus 自动回填 groupId</li>
+ *   <li>{@code @BeforeAll} 预热 MyBatis-Plus Lambda 缓存，让 {@code listGroupMembers} 内部的
+ *       {@code LambdaQueryWrapper.eq(ImGroupMember::getGroupId, ...)} 能正常解析</li>
  * </ul>
  */
 class ImGroupChatServiceTest extends ImUnitTestBase {
@@ -79,6 +92,19 @@ class ImGroupChatServiceTest extends ImUnitTestBase {
     private static final Long MEMBER_101 = 101L;
     private static final Long MEMBER_102 = 102L;
     private static final Long MEMBER_103 = 103L;
+
+    /**
+     * 预热 MyBatis-Plus Lambda 缓存，让 {@code listGroupMembers} 内部
+     * 的 {@code LambdaQueryWrapper.eq(ImGroupMember::getGroupId, ...)} 能正常解析。
+     */
+    @BeforeAll
+    static void initLambdaCache() {
+        MybatisConfiguration configuration = new MybatisConfiguration();
+        MapperBuilderAssistant assistant = new MapperBuilderAssistant(configuration, "");
+        TableInfoHelper.initTableInfo(assistant, ImGroupMember.class);
+        TableInfoHelper.initTableInfo(assistant, ImGroup.class);
+        TableInfoHelper.initTableInfo(assistant, com.nexus.im.domain.ImMessage.class);
+    }
 
     @BeforeEach
     void setUpGroupChat() {
@@ -247,5 +273,104 @@ class ImGroupChatServiceTest extends ImUnitTestBase {
         ArgumentCaptor<List<ImGroupMember>> captor = ArgumentCaptor.forClass(List.class);
         verify(imGroupMemberMapper).insertBatch(captor.capture());
         assertThat(captor.getValue()).hasSize(11);
+    }
+
+    // ==================== P2-6 listGroupMembers 批量化 ====================
+
+    /**
+     * P2-6: 50 个群成员场景下，{@code support.batchLoadUsers} 仅调用 1 次（而非 N 次 selectUserById）。
+     * <p>核心守护：50 成员 SQL 数从 100+ 降到 4（selectById + selectList + batchLoadUsers + batchResolveAvatarUrls）。
+     * <p>任意重构若把 {@code batchLoadUsers} 改回 for 循环 {@code sysUserService.selectUserById}，
+     * 此用例立即失败。
+     */
+    @Test
+    void listGroupMembers_50members_callsBatchLoadUsersOnce() {
+        // 群存在，当前用户是群成员
+        lenient().when(support.isGroupMember(GROUP_ID, ME_USER_ID)).thenReturn(true);
+
+        // 50 个群成员（含群主 ME_USER_ID 和 49 个其他用户）
+        List<ImGroupMember> members = LongStream.rangeClosed(MEMBER_101, MEMBER_101 + 48)
+            .mapToObj(uid -> ImTestFixture.buildGroupMember(GROUP_ID, uid))
+            .collect(java.util.stream.Collectors.toList());
+        members.add(ImTestFixture.buildGroupMember(GROUP_ID, ME_USER_ID));
+        when(imGroupMemberMapper.selectList(any())).thenReturn(members);
+
+        // batchLoadUsers 返回空 Map（不引发后续 avatar 解析）
+        when(support.batchLoadUsers(anyCollection())).thenReturn(new LinkedHashMap<>());
+
+        List<ImGroupMemberVo> result = imGroupChatService.listGroupMembers(GROUP_ID);
+
+        assertThat(result).hasSize(50);
+        // 守护：batchLoadUsers 仅调用 1 次（替代 50 次 selectUserById）
+        verify(support, times(1)).batchLoadUsers(anyCollection());
+    }
+
+    /**
+     * P2-6: 群成员携带 avatar 时，{@code support.batchResolveAvatarUrls} 仅调用 1 次（而非 N 次 resolveAvatarUrl）。
+     */
+    @Test
+    void listGroupMembers_membersWithAvatar_callsBatchResolveAvatarUrlsOnce() {
+        lenient().when(support.isGroupMember(GROUP_ID, ME_USER_ID)).thenReturn(true);
+
+        // 3 个群成员（含群主）
+        List<ImGroupMember> members = List.of(
+            ImTestFixture.buildGroupMember(GROUP_ID, ME_USER_ID),
+            ImTestFixture.buildGroupMember(GROUP_ID, MEMBER_101),
+            ImTestFixture.buildGroupMember(GROUP_ID, MEMBER_102)
+        );
+        when(imGroupMemberMapper.selectList(any())).thenReturn(members);
+
+        // batchLoadUsers 返回 2 个带 avatar 的用户
+        Map<Long, SysUserVo> userMap = new LinkedHashMap<>();
+        SysUserVo u1 = new SysUserVo();
+        u1.setUserId(MEMBER_101);
+        u1.setUserName("m101");
+        u1.setAvatar(901L);
+        SysUserVo u2 = new SysUserVo();
+        u2.setUserId(MEMBER_102);
+        u2.setUserName("m102");
+        u2.setAvatar(902L);
+        userMap.put(MEMBER_101, u1);
+        userMap.put(MEMBER_102, u2);
+        // 群主 ME_USER_ID 不在 userMap 中（模拟用户查不到的情况，不引发 avatar 解析）
+        when(support.batchLoadUsers(anyCollection())).thenReturn(userMap);
+
+        // batchResolveAvatarUrls 返回 URL 映射
+        Map<Long, String> avatarUrlMap = new LinkedHashMap<>();
+        avatarUrlMap.put(901L, "https://oss.example.com/901.png");
+        avatarUrlMap.put(902L, "https://oss.example.com/902.png");
+        when(support.batchResolveAvatarUrls(anyCollection())).thenReturn(avatarUrlMap);
+
+        List<ImGroupMemberVo> result = imGroupChatService.listGroupMembers(GROUP_ID);
+
+        // 守护：batchResolveAvatarUrls 仅调用 1 次（替代 2 次 resolveAvatarUrl）
+        verify(support, times(1)).batchResolveAvatarUrls(anyCollection());
+        // 守护：成员 101 的 avatar 正确解析
+        ImGroupMemberVo vo101 = result.stream().filter(v -> MEMBER_101.equals(v.getUserId())).findFirst().orElseThrow();
+        assertThat(vo101.getAvatar()).isEqualTo("https://oss.example.com/901.png");
+    }
+
+    /**
+     * P2-6: 群主标记正确（owner=true 仅对群主，其他成员 false）。
+     */
+    @Test
+    void listGroupMembers_marksOwnerCorrectly() {
+        lenient().when(support.isGroupMember(GROUP_ID, ME_USER_ID)).thenReturn(true);
+
+        List<ImGroupMember> members = List.of(
+            ImTestFixture.buildGroupMember(GROUP_ID, ME_USER_ID),
+            ImTestFixture.buildGroupMember(GROUP_ID, MEMBER_101)
+        );
+        when(imGroupMemberMapper.selectList(any())).thenReturn(members);
+        when(support.batchLoadUsers(anyCollection())).thenReturn(new LinkedHashMap<>());
+
+        List<ImGroupMemberVo> result = imGroupChatService.listGroupMembers(GROUP_ID);
+
+        // 守护：群主 owner=true
+        ImGroupMemberVo ownerVo = result.stream().filter(v -> ME_USER_ID.equals(v.getUserId())).findFirst().orElseThrow();
+        assertThat(ownerVo.getOwner()).isTrue();
+        // 守护：非群主 owner=false
+        ImGroupMemberVo memberVo = result.stream().filter(v -> MEMBER_101.equals(v.getUserId())).findFirst().orElseThrow();
+        assertThat(memberVo.getOwner()).isFalse();
     }
 }
