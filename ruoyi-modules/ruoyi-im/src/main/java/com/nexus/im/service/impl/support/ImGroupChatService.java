@@ -40,7 +40,9 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * P1-7: 群聊子 Service
@@ -264,13 +266,32 @@ public class ImGroupChatService {
         List<ImGroupMember> members = imGroupMemberMapper.selectList(new LambdaQueryWrapper<ImGroupMember>()
             .eq(ImGroupMember::getGroupId, groupId)
             .orderByAsc(ImGroupMember::getJoinTime));
-        List<ImGroupMemberVo> list = new ArrayList<>();
+        if (members.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        // P2-6: 批量化加载用户与头像 URL（消除 N+1）
+        // 原: 循环 sysUserService.selectUserById + support.resolveAvatarUrl, 50 成员 = 100+ SQL
+        // 新: 1 次 batchLoadUsers + 1 次 batchResolveAvatarUrls = 2 SQL
+        Set<Long> userIds = members.stream()
+            .map(ImGroupMember::getUserId)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toCollection(LinkedHashSet::new));
+        Map<Long, SysUserVo> userMap = support.batchLoadUsers(userIds);
+        Set<Long> avatarIds = userMap.values().stream()
+            .map(SysUserVo::getAvatar)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toCollection(LinkedHashSet::new));
+        Map<Long, String> avatarUrlMap = support.batchResolveAvatarUrls(avatarIds);
+
+        List<ImGroupMemberVo> list = new ArrayList<>(members.size());
         for (ImGroupMember m : members) {
-            SysUserVo u = sysUserService.selectUserById(m.getUserId());
+            SysUserVo u = m.getUserId() == null ? null : userMap.get(m.getUserId());
             ImGroupMemberVo vo = new ImGroupMemberVo();
             vo.setUserId(m.getUserId());
             vo.setUserName(u != null ? StrUtil.blankToDefault(u.getNickName(), u.getUserName()) : String.valueOf(m.getUserId()));
-            vo.setAvatar(support.resolveAvatarUrl(u != null ? u.getAvatar() : null));
+            Long avatarId = u != null ? u.getAvatar() : null;
+            vo.setAvatar(avatarId == null ? "" : avatarUrlMap.getOrDefault(avatarId, ""));
             vo.setJoinTime(m.getJoinTime());
             vo.setOwner(group.getOwnerUserId() != null && group.getOwnerUserId().equals(m.getUserId()));
             list.add(vo);
