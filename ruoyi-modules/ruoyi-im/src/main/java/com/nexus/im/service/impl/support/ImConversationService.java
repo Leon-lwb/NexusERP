@@ -100,21 +100,37 @@ public class ImConversationService {
         }
         List<Long> validGroupIds = new ArrayList<>(groupMap.keySet());
 
-        // ── 第 3 步：批量查每群最后消息（1 SQL，利用雪花 ID 单调递增特性） ──
-        // messageId 为雪花 ID 单调递增，按 groupId 分组取 messageId 最大的即为最新消息
-        List<ImMessage> lastMsgs = imMessageMapper.selectList(new LambdaQueryWrapper<ImMessage>()
-            .select(ImMessage::getMessageId, ImMessage::getGroupId, ImMessage::getContent,
-                ImMessage::getCreateTime, ImMessage::getMsgType)
-            .in(ImMessage::getGroupId, validGroupIds)
-            .orderByDesc(ImMessage::getMessageId));
+        // ── 第 3 步：批量查每群最后消息（2 SQL，利用雪花 ID 单调递增特性） ──
+        // P2-1 修复: 原实现无 LIMIT 一次性加载所有群所有消息到内存（10群×10000消息=10万行）
+        // 改为先 selectMaps 取每群 MAX(message_id)（N 行），再用 IN 查完整数据（N 行）
+        // messageId 为雪花 ID 单调递增，MAX(message_id) 即为最新消息
+        List<Map<String, Object>> maxIdRows = imMessageMapper.selectMaps(new QueryWrapper<ImMessage>()
+            .select("MAX(message_id) as maxId")
+            .in("group_id", validGroupIds)
+            .groupBy("group_id"));
+        Set<Long> maxMessageIds = new LinkedHashSet<>();
+        for (Map<String, Object> row : maxIdRows) {
+            Object idObj = row.get("maxId");
+            if (idObj instanceof Number) {
+                maxMessageIds.add(((Number) idObj).longValue());
+            }
+        }
         Map<Long, ImMessage> lastMsgByGroup = new LinkedHashMap<>();
-        for (ImMessage m : lastMsgs) {
-            if (m.getGroupId() != null) {
-                lastMsgByGroup.putIfAbsent(m.getGroupId(), m);
+        if (!maxMessageIds.isEmpty()) {
+            List<ImMessage> lastMsgs = imMessageMapper.selectList(new LambdaQueryWrapper<ImMessage>()
+                .select(ImMessage::getMessageId, ImMessage::getGroupId, ImMessage::getContent,
+                    ImMessage::getCreateTime, ImMessage::getMsgType)
+                .in(ImMessage::getMessageId, maxMessageIds));
+            for (ImMessage m : lastMsgs) {
+                if (m.getGroupId() != null) {
+                    lastMsgByGroup.put(m.getGroupId(), m);
+                }
             }
         }
 
         // ── 第 4 步：批量聚合群未读数（1 SQL，GROUP BY group_id） ──
+        // P2-1 修复: mapUnderscoreToCamelCase=true 会将列名 "group_id" 转为 map key "groupId"
+        // 原 row.get("group_id") 返回 null 导致未读数始终为 0；改用驼峰 key
         List<Map<String, Object>> groupUnreadRows = imMessageMapper.selectMaps(new QueryWrapper<ImMessage>()
             .select("group_id", "count(*) as cnt")
             .in("group_id", validGroupIds)
@@ -123,7 +139,7 @@ public class ImConversationService {
             .groupBy("group_id"));
         Map<Long, Long> groupUnreadMap = new LinkedHashMap<>();
         for (Map<String, Object> row : groupUnreadRows) {
-            Object gidObj = row.get("group_id");
+            Object gidObj = row.get("groupId");
             Object cntObj = row.get("cnt");
             if (gidObj instanceof Number && cntObj instanceof Number) {
                 groupUnreadMap.put(((Number) gidObj).longValue(), ((Number) cntObj).longValue());
@@ -249,6 +265,8 @@ public class ImConversationService {
         Map<Long, String> avatarUrlMap = support.batchResolveAvatarUrls(avatarOssIds);
 
         // ── 第 3 步：批量聚合私聊未读数（1 SQL，GROUP BY from_user_id） ──
+        // P2-1 修复: mapUnderscoreToCamelCase=true 会将列名 "from_user_id" 转为 map key "fromUserId"
+        // 原 row.get("from_user_id") 返回 null 导致未读数始终为 0；改用驼峰 key
         List<Map<String, Object>> privateUnreadRows = imMessageMapper.selectMaps(new QueryWrapper<ImMessage>()
             .select("from_user_id", "count(*) as cnt")
             .eq("to_user_id", me)
@@ -258,7 +276,7 @@ public class ImConversationService {
             .groupBy("from_user_id"));
         Map<Long, Long> privateUnreadMap = new LinkedHashMap<>();
         for (Map<String, Object> row : privateUnreadRows) {
-            Object fromObj = row.get("from_user_id");
+            Object fromObj = row.get("fromUserId");
             Object cntObj = row.get("cnt");
             if (fromObj instanceof Number && cntObj instanceof Number) {
                 privateUnreadMap.put(((Number) fromObj).longValue(), ((Number) cntObj).longValue());
