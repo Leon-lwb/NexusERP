@@ -58,5 +58,38 @@
             <groupId>com.nexus</groupId>
             <artifactId>ruoyi-system</artifactId>
         </dependency>
+
+        <!-- P3-1: 测试依赖（test scope，不打入生产包） -->
+        <!-- spring-boot-starter-test 已包含 JUnit 5 + Mockito 5（内置 inline mock maker，支持 mockStatic） + AssertJ + Spring Test -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+            <exclusions>
+                <!-- 排除 JUnit Vintage，只用 JUnit 5 -->
+                <exclusion>
+                    <groupId>org.junit.vintage</groupId>
+                    <artifactId>junit-vintage-engine</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
     </dependencies>
+
+    <build>
+        <plugins>
+            <!-- P3-1: 覆盖根 pom 的 surefire 配置。
+                 根 pom 默认 <groups>${profiles.active}</groups> 限制只执行带 @Tag("dev"/"local"/"prod") 的测试，
+                 本模块的回归测试需要在所有 profile 下执行，故覆盖为空 groups（=全部执行），
+                 并将 @Tag("integration") 标记的集成测试排除在默认构建之外。 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <argLine>-Dfile.encoding=UTF-8</argLine>
+                    <groups combine.self="override"></groups>
+                    <excludedGroups combine.self="override">integration</excludedGroups>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 </project>

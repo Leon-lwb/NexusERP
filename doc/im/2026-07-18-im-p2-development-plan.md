@@ -410,3 +410,53 @@ perf(im): P2-X 简述
 - 每项任务独立提交，可单独 revert
 - P2-1 保留原 `listConversations` 方法作为 `listConversationsLegacy`，验证 1 周后删除
 - P2-3 保留原 `saveMessage` 全量序列化方法作为 `saveMessageLegacy`，配置开关切换
+
+---
+
+## 七、代码审查与修复记录
+
+### 审查时间
+2026-07-18，A/B/C 三档全部完成后统一审查。
+
+### 审查方式
+- 工具: TRAE-code-review skill
+- 范围: P2 阶段全部 commit (nexus-erp: `81885ad3`/`21ec3faf`/`30ef7ddb`；Nexus_App: `c5948f3`/`5a4482f`)
+- 交叉验证: 2 个 search 子代理独立验证所有问题，2/2 高置信度确认
+
+### 审查通过项
+- ✅ **P2-1 ImChatSupport.batchLoadUsers/batchResolveAvatarUrls**: 批量加载逻辑正确，注入 `SysUserMapper` 走 `selectVoByIds` 拿完整 VO（含 avatar），避开 `@DataPermission` 裁剪
+- ✅ **P2-2 buildSenderMessagePage**: 批量化正确，抽 `buildSenderMessageRowBase` 共用基础字段，保留单条版本兼容非批量路径
+- ✅ **P2-3 im-cache.js 防抖+增量 patch**: `dirtyTargets` Set + `flushTimer` 500ms 防抖 + `flushDirty` 仅序列化脏会话，`App.vue onHide` 触发 `flushOnExit`
+- ✅ **P2-4 addGroupMembers TOCTOU 修复**: 移除 `selectCount` 检查，catch `DuplicateKeyException` 幂等跳过，`R.ok(msg)` 携带"新增 N 条/已存在 M 条"
+- ✅ **P2-5 createGroup 批量插入**: `insertBatch` 一次插入所有成员，`group_id` 为新生成雪花 ID 无冲突风险
+- ✅ **P2-6 listGroupMembers 批量化**: 复用 `batchLoadUsers` + `batchResolveAvatarUrls`，50 成员 100+ SQL → 3 SQL
+- ✅ **P2-7 im-cache LRU 淘汰**: `evictIfNeeded` 按 `Map.keys().next()` 取首项淘汰，`touchCacheEntry` 用 `delete+set` 刷新顺序，单会话 200 条上限 `slice` 保留最新
+
+### 审查发现问题与修复
+
+#### 问题 1 (CRITICAL): listConversations 群消息查询无 LIMIT
+- **位置**: [ImConversationService.java#L105-L115](file:///d:/workspace/nexus-erp/ruoyi-modules/ruoyi-im/src/main/java/com/nexus/im/service/impl/support/ImConversationService.java#L105-L115)
+- **问题**: 第 3 步 `lastMsgs` 查询 `selectList(... in(groupId, validGroupIds) orderByDesc(messageId))` 无 LIMIT 子句。10 群 × 10000 消息 = 10 万行加载到内存，比原 N+1（10 行）更糟
+- **根因**: 文档方案描述"子查询取每群最大 messageId，再 JOIN 回主表"，但实现时直接全量加载 + 内存 `putIfAbsent` 取首条
+- **修复**: 改为先 `selectMaps` 取每群 `MAX(message_id)`（N 行），再 `in(messageId, maxIds)` 查完整数据（N 行）。2 SQL 但每条 bounded，内存 O(N) 而非 O(N×M)
+- **修复 commit**: `19b23fd1`
+
+#### 问题 2 (CRITICAL): selectMaps + row.get("group_id") 返回 null
+- **位置**: [ImConversationService.java#L118-L131](file:///d:/workspace/nexus-erp/ruoyi-modules/ruoyi-im/src/main/java/com/nexus/im/service/impl/support/ImConversationService.java#L118-L131)（群未读数）+ [L252-L266](file:///d:/workspace/nexus-erp/ruoyi-modules/ruoyi-im/src/main/java/com/nexus/im/service/impl/support/ImConversationService.java#L252-L266)（私聊未读数）
+- **问题**: 项目配置 `mapUnderscoreToCamelCase=true`（[common-mybatis.yml#L9](file:///d:/workspace/nexus-erp/ruoyi-common/ruoyi-common-mybatis/src/main/resources/common-mybatis.yml#L9)），`selectMaps` 返回的 map key 自动转为驼峰（"group_id"→"groupId"、"from_user_id"→"fromUserId"）。原代码 `row.get("group_id")` 返回 null → 未读数始终为 0（功能静默失败）
+- **根因**: 对 MyBatis `mapUnderscoreToCamelCase` 配置在 `selectMaps` 上的作用范围理解不足
+- **修复**: 群未读数改 `row.get("groupId")`；私聊未读数改 `row.get("fromUserId")`
+- **修复 commit**: `19b23fd1`
+
+### 审查结论
+P2 阶段 7 项任务中 5 项审查通过，2 项 CRITICAL 问题已修复并重新编译验证。修复后 P2 阶段代码可进入测试阶段。
+
+### P2 阶段最终提交清单
+| Commit | 仓库 | 内容 |
+|---|---|---|
+| `81885ad3` | nexus-erp | P2-1/P2-2 listConversations + buildSenderMessagePage 批量化 |
+| `c5948f3` | Nexus_App | P2-3 im-cache.js 增量更新 + App.vue onHide flush |
+| `21ec3faf` | nexus-erp | P2-4/P2-5 addGroupMembers TOCTOU + createGroup 批量插入 |
+| `30ef7ddb` | nexus-erp | P2-6 listGroupMembers 批量化 |
+| `5a4482f` | Nexus_App | P2-7 im-cache LRU 淘汰 + 单会话 200 条上限 |
+| `19b23fd1` | nexus-erp | P2-1 审查修复（lastMsgs LIMIT + selectMaps key 驼峰） |
