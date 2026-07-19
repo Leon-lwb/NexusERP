@@ -11,7 +11,7 @@
  Target Server Version : 50714 (5.7.14)
  File Encoding         : 65001
 
- Date: 17/07/2026 00:27:13
+ Date: 20/07/2026 05:34:02
 */
 
 SET NAMES utf8mb4;
@@ -4008,6 +4008,61 @@ CREATE TABLE `gen_table_design_history`  (
 -- ----------------------------
 
 -- ----------------------------
+-- Table structure for im_conversation_setting
+-- ----------------------------
+DROP TABLE IF EXISTS `im_conversation_setting`;
+CREATE TABLE `im_conversation_setting`  (
+  `id` bigint(20) NOT NULL COMMENT '主键',
+  `user_id` bigint(20) NOT NULL COMMENT '所属用户 ID',
+  `chat_type` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '会话类型: PRIVATE/GROUP',
+  `target_id` bigint(20) NOT NULL COMMENT '目标 ID（私聊=对方 userId，群聊=groupId）',
+  `is_pinned` tinyint(1) NOT NULL DEFAULT 0 COMMENT '是否置顶: 0=否 1=是',
+  `pinned_at` datetime(3) NULL DEFAULT NULL COMMENT '置顶时间（用于多会话置顶排序）',
+  `is_muted` tinyint(1) NOT NULL DEFAULT 0 COMMENT '是否免打扰: 0=否 1=是',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '000000' COMMENT '租户编号',
+  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '鍒涘缓閮ㄩ棬',
+  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime(3) NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime(3) NULL DEFAULT NULL COMMENT '更新时间',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_user_chat_target`(`user_id`, `chat_type`, `target_id`, `tenant_id`) USING BTREE,
+  INDEX `idx_user_pinned`(`user_id`, `is_pinned`, `pinned_at`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = 'IM 会话级配置（置顶/免打扰）' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of im_conversation_setting
+-- ----------------------------
+
+-- ----------------------------
+-- Table structure for im_favorite
+-- ----------------------------
+DROP TABLE IF EXISTS `im_favorite`;
+CREATE TABLE `im_favorite`  (
+  `id` bigint(20) NOT NULL COMMENT '主键',
+  `user_id` bigint(20) NOT NULL COMMENT '收藏者用户 ID',
+  `message_id` bigint(20) NOT NULL COMMENT '被收藏的消息 ID',
+  `chat_type` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '来源会话类型: PRIVATE/GROUP',
+  `target_id` bigint(20) NOT NULL COMMENT '来源会话目标 ID',
+  `from_user_id` bigint(20) NULL DEFAULT NULL COMMENT '消息原发送者（冗余便于列表展示）',
+  `msg_type` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '消息类型（冗余）',
+  `content_snippet` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '内容摘要（避免列表 JOIN im_message）',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '000000' COMMENT '租户编号',
+  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '鍒涘缓閮ㄩ棬',
+  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime(3) NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '鏇存柊鑰',
+  `update_time` datetime(3) NULL DEFAULT NULL COMMENT '鏇存柊鏃堕棿',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_user_message`(`user_id`, `message_id`, `tenant_id`) USING BTREE,
+  INDEX `idx_user_create`(`user_id`, `create_time`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = 'IM 用户收藏消息' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of im_favorite
+-- ----------------------------
+
+-- ----------------------------
 -- Table structure for im_friend
 -- ----------------------------
 DROP TABLE IF EXISTS `im_friend`;
@@ -4105,44 +4160,58 @@ CREATE TABLE `im_message`  (
   `is_read` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '私聊已读(0否1是)；群聊MVP不使用',
   `revoked` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '是否撤回（0否 1是）',
   `forward_from` bigint(20) NULL DEFAULT NULL COMMENT '杞?彂鏉ユ簮娑堟伅ID',
+  `client_msg_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '客户端消息ID（重发幂等）',
+  `mention_user_ids` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '被@的用户ID列表（JSON数组字符串）',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
   `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
   `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `reply_message_id` bigint(20) NULL DEFAULT NULL COMMENT '引用的消息 ID',
+  `reply_snippet` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '引用消息内容摘要',
   PRIMARY KEY (`message_id`) USING BTREE,
+  UNIQUE INDEX `uk_client_msg_id`(`tenant_id`, `client_msg_id`) USING BTREE,
   INDEX `idx_im_msg_private`(`tenant_id`, `from_user_id`, `to_user_id`, `create_time`) USING BTREE,
   INDEX `idx_im_msg_to`(`tenant_id`, `to_user_id`, `create_time`) USING BTREE,
-  INDEX `idx_im_msg_group`(`tenant_id`, `group_id`, `create_time`) USING BTREE
+  INDEX `idx_im_msg_group`(`tenant_id`, `group_id`, `create_time`) USING BTREE,
+  INDEX `idx_private_unread`(`tenant_id`, `to_user_id`, `is_read`, `from_user_id`, `create_time`) USING BTREE,
+  INDEX `idx_group_unread`(`tenant_id`, `group_id`, `is_read`) USING BTREE,
+  INDEX `idx_reply_msg`(`reply_message_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'IM消息' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of im_message
 -- ----------------------------
-INSERT INTO `im_message` VALUES (2052251495485603841, '000000', 1, 3, NULL, '1', 'text', '1', '0', NULL, 103, 1, '2026-05-07 12:57:40', 3, '2026-05-07 13:15:52');
-INSERT INTO `im_message` VALUES (2052254623102599170, '000000', 1, 3, NULL, '测试1', 'text', '1', '0', NULL, 103, 1, '2026-05-07 13:10:06', 3, '2026-05-07 13:15:52');
-INSERT INTO `im_message` VALUES (2052255965506371585, '000000', 3, 1, NULL, '收到', 'text', '1', '0', NULL, 108, 3, '2026-05-07 13:15:26', 1, '2026-05-07 13:15:41');
-INSERT INTO `im_message` VALUES (2052259606179016706, '000000', 1, 4, NULL, 'hello', 'text', '0', '0', NULL, 103, 1, '2026-05-07 13:29:54', 1, '2026-05-07 13:29:54');
-INSERT INTO `im_message` VALUES (2052265171731038209, '000000', 1, NULL, 2052257328328011777, 'hellow', 'text', '1', '0', NULL, 103, 1, '2026-05-07 13:52:01', 3, '2026-07-08 10:14:07');
-INSERT INTO `im_message` VALUES (2052656970919362561, '000000', 1, 4, NULL, '333', 'text', '0', '0', NULL, 103, 1, '2026-05-08 15:48:53', 1, '2026-05-08 15:48:53');
-INSERT INTO `im_message` VALUES (2052763151686107137, '000000', 1, 3, NULL, 'aaa', 'text', '1', '0', NULL, 103, 1, '2026-05-08 22:50:49', 3, '2026-05-08 23:12:30');
-INSERT INTO `im_message` VALUES (2052763178013753345, '000000', 1, 3, NULL, 'bb', 'text', '1', '0', NULL, 103, 1, '2026-05-08 22:50:55', 3, '2026-05-08 23:12:30');
-INSERT INTO `im_message` VALUES (2052765832613920770, '000000', 3, 1, NULL, 'haohao哈', 'text', '1', '0', NULL, 108, 3, '2026-05-08 23:01:28', 1, '2026-05-08 23:01:28');
-INSERT INTO `im_message` VALUES (2052765932568379394, '000000', 3, 1, NULL, 'aaa', 'text', '1', '0', NULL, 108, 3, '2026-05-08 23:01:52', 1, '2026-05-08 23:01:52');
-INSERT INTO `im_message` VALUES (2052768839447498754, '000000', 1, 3, NULL, '{\"fromUserInfo\":{\"nickName\":\"系统管理员\",\"userName\":\"admin\",\"avatar\":\"2052649712470769666\"},\"requestMessage\":\"请求添加您为好友\",\"status\":\"accepted\"}', 'friend_request', '1', '0', NULL, 103, 1, '2026-05-08 23:13:25', 3, '2026-05-08 23:13:40');
-INSERT INTO `im_message` VALUES (2052768902248812546, '000000', 3, 1, NULL, '{\"fromUserInfo\":{\"nickName\":\"本部门及以下 密码666666\",\"userName\":\"test\",\"avatar\":null},\"requestMessage\":\"本部门及以下 密码666666已同意了您的好友申请\",\"status\":\"accepted\"}', 'friend_request', '1', '0', NULL, 108, 3, '2026-05-08 23:13:40', 1, '2026-05-09 16:21:11');
-INSERT INTO `im_message` VALUES (2053024825151025153, '000000', 1, 3, NULL, 'cs', 'text', '1', '0', NULL, 103, 1, '2026-05-09 16:10:36', 3, '2026-06-13 02:44:15');
-INSERT INTO `im_message` VALUES (2053045848386785282, '000000', 1, 3, NULL, 'aaa', 'text', '1', '0', NULL, 103, 1, '2026-05-09 17:34:09', 3, '2026-06-13 02:44:15');
-INSERT INTO `im_message` VALUES (2053052819596857345, '000000', 1, 3, NULL, 'aaa', 'text', '1', '0', NULL, 103, 1, '2026-05-09 18:01:51', 3, '2026-06-13 02:44:15');
-INSERT INTO `im_message` VALUES (2053659806332264450, '000000', 1, 3, NULL, '😭', 'text', '1', '0', NULL, 103, 1, '2026-05-11 10:13:48', 3, '2026-06-13 02:44:15');
-INSERT INTO `im_message` VALUES (2053662246595108866, '000000', 1, 3, NULL, '🥹', 'text', '1', '0', NULL, 103, 1, '2026-05-11 10:23:29', 3, '2026-06-13 02:44:15');
-INSERT INTO `im_message` VALUES (2053700674065960962, '000000', 1, 3, NULL, '11', 'text', '1', '0', NULL, 103, 1, '2026-05-11 12:56:11', 3, '2026-06-13 02:44:15');
-INSERT INTO `im_message` VALUES (2064012918244130817, '000000', 1, 3, NULL, '要12点了', 'text', '1', '0', NULL, 103, 1, '2026-06-08 23:53:22', 3, '2026-06-13 02:44:15');
-INSERT INTO `im_message` VALUES (2065501890430619650, '000000', 1, 3, NULL, '❤️', 'text', '1', '0', NULL, 103, 1, '2026-06-13 02:30:01', 3, '2026-06-13 02:44:15');
-INSERT INTO `im_message` VALUES (2065502129174597634, '000000', 3, 1, NULL, '99', 'text', '1', '0', NULL, 108, 3, '2026-06-13 02:30:57', 1, '2026-07-08 10:11:47');
-INSERT INTO `im_message` VALUES (2065502354832347138, '000000', 3, 1, NULL, '233', 'text', '1', '0', NULL, 108, 3, '2026-06-13 02:31:51', 1, '2026-07-08 10:11:47');
-INSERT INTO `im_message` VALUES (2074677824579346433, '000000', 1, 3, NULL, 'http://159.75.14.226:9005/ruoyi/2026/07/08/32cd186b3ca1418e87f4f713f8fb8737.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20260708T021153Z&X-Amz-SignedHeaders=host&X-Amz-Credential=minio%2F20260708%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Expires=120&X-Amz-Signature=dead40c7ab778d359f512861294f681a6ed9638c0c38ecd0c70f1cf63fa2a0eb', 'image', '1', '0', NULL, 103, 1, '2026-07-08 10:11:54', 3, '2026-07-08 10:12:32');
-INSERT INTO `im_message` VALUES (2074678099922821121, '000000', 3, 1, NULL, 'http://159.75.14.226:9005/ruoyi/2026/07/08/32cd186b3ca1418e87f4f713f8fb8737.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20260708T021153Z&X-Amz-SignedHeaders=host&X-Amz-Credential=minio%2F20260708%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Expires=120&X-Amz-Signature=dead40c7ab778d359f512861294f681a6ed9638c0c38ecd0c70f1cf63fa2a0eb', 'image', '1', '1', 2074677824579346433, 108, 3, '2026-07-08 10:12:59', 3, '2026-07-08 10:14:38');
+INSERT INTO `im_message` VALUES (2052251495485603841, '000000', 1, 3, NULL, '1', 'text', '1', '0', NULL, NULL, NULL, 103, 1, '2026-05-07 12:57:40', 3, '2026-05-07 13:15:52', NULL, NULL);
+INSERT INTO `im_message` VALUES (2052254623102599170, '000000', 1, 3, NULL, '测试1', 'text', '1', '0', NULL, NULL, NULL, 103, 1, '2026-05-07 13:10:06', 3, '2026-05-07 13:15:52', NULL, NULL);
+INSERT INTO `im_message` VALUES (2052255965506371585, '000000', 3, 1, NULL, '收到', 'text', '1', '0', NULL, NULL, NULL, 108, 3, '2026-05-07 13:15:26', 1, '2026-05-07 13:15:41', NULL, NULL);
+INSERT INTO `im_message` VALUES (2052259606179016706, '000000', 1, 4, NULL, 'hello', 'text', '0', '0', NULL, NULL, NULL, 103, 1, '2026-05-07 13:29:54', 1, '2026-05-07 13:29:54', NULL, NULL);
+INSERT INTO `im_message` VALUES (2052265171731038209, '000000', 1, NULL, 2052257328328011777, 'hellow', 'text', '1', '0', NULL, NULL, NULL, 103, 1, '2026-05-07 13:52:01', 3, '2026-07-08 10:14:07', NULL, NULL);
+INSERT INTO `im_message` VALUES (2052656970919362561, '000000', 1, 4, NULL, '333', 'text', '0', '0', NULL, NULL, NULL, 103, 1, '2026-05-08 15:48:53', 1, '2026-05-08 15:48:53', NULL, NULL);
+INSERT INTO `im_message` VALUES (2052763151686107137, '000000', 1, 3, NULL, 'aaa', 'text', '1', '0', NULL, NULL, NULL, 103, 1, '2026-05-08 22:50:49', 3, '2026-05-08 23:12:30', NULL, NULL);
+INSERT INTO `im_message` VALUES (2052763178013753345, '000000', 1, 3, NULL, 'bb', 'text', '1', '0', NULL, NULL, NULL, 103, 1, '2026-05-08 22:50:55', 3, '2026-05-08 23:12:30', NULL, NULL);
+INSERT INTO `im_message` VALUES (2052765832613920770, '000000', 3, 1, NULL, 'haohao哈', 'text', '1', '0', NULL, NULL, NULL, 108, 3, '2026-05-08 23:01:28', 1, '2026-05-08 23:01:28', NULL, NULL);
+INSERT INTO `im_message` VALUES (2052765932568379394, '000000', 3, 1, NULL, 'aaa', 'text', '1', '0', NULL, NULL, NULL, 108, 3, '2026-05-08 23:01:52', 1, '2026-05-08 23:01:52', NULL, NULL);
+INSERT INTO `im_message` VALUES (2052768839447498754, '000000', 1, 3, NULL, '{\"fromUserInfo\":{\"nickName\":\"系统管理员\",\"userName\":\"admin\",\"avatar\":\"2052649712470769666\"},\"requestMessage\":\"请求添加您为好友\",\"status\":\"accepted\"}', 'friend_request', '1', '0', NULL, NULL, NULL, 103, 1, '2026-05-08 23:13:25', 3, '2026-05-08 23:13:40', NULL, NULL);
+INSERT INTO `im_message` VALUES (2052768902248812546, '000000', 3, 1, NULL, '{\"fromUserInfo\":{\"nickName\":\"本部门及以下 密码666666\",\"userName\":\"test\",\"avatar\":null},\"requestMessage\":\"本部门及以下 密码666666已同意了您的好友申请\",\"status\":\"accepted\"}', 'friend_request', '1', '0', NULL, NULL, NULL, 108, 3, '2026-05-08 23:13:40', 1, '2026-05-09 16:21:11', NULL, NULL);
+INSERT INTO `im_message` VALUES (2053024825151025153, '000000', 1, 3, NULL, 'cs', 'text', '1', '0', NULL, NULL, NULL, 103, 1, '2026-05-09 16:10:36', 3, '2026-06-13 02:44:15', NULL, NULL);
+INSERT INTO `im_message` VALUES (2053045848386785282, '000000', 1, 3, NULL, 'aaa', 'text', '1', '0', NULL, NULL, NULL, 103, 1, '2026-05-09 17:34:09', 3, '2026-06-13 02:44:15', NULL, NULL);
+INSERT INTO `im_message` VALUES (2053052819596857345, '000000', 1, 3, NULL, 'aaa', 'text', '1', '0', NULL, NULL, NULL, 103, 1, '2026-05-09 18:01:51', 3, '2026-06-13 02:44:15', NULL, NULL);
+INSERT INTO `im_message` VALUES (2053659806332264450, '000000', 1, 3, NULL, '😭', 'text', '1', '0', NULL, NULL, NULL, 103, 1, '2026-05-11 10:13:48', 3, '2026-06-13 02:44:15', NULL, NULL);
+INSERT INTO `im_message` VALUES (2053662246595108866, '000000', 1, 3, NULL, '🥹', 'text', '1', '0', NULL, NULL, NULL, 103, 1, '2026-05-11 10:23:29', 3, '2026-06-13 02:44:15', NULL, NULL);
+INSERT INTO `im_message` VALUES (2053700674065960962, '000000', 1, 3, NULL, '11', 'text', '1', '0', NULL, NULL, NULL, 103, 1, '2026-05-11 12:56:11', 3, '2026-06-13 02:44:15', NULL, NULL);
+INSERT INTO `im_message` VALUES (2064012918244130817, '000000', 1, 3, NULL, '要12点了', 'text', '1', '0', NULL, NULL, NULL, 103, 1, '2026-06-08 23:53:22', 3, '2026-06-13 02:44:15', NULL, NULL);
+INSERT INTO `im_message` VALUES (2065501890430619650, '000000', 1, 3, NULL, '❤️', 'text', '1', '0', NULL, NULL, NULL, 103, 1, '2026-06-13 02:30:01', 3, '2026-06-13 02:44:15', NULL, NULL);
+INSERT INTO `im_message` VALUES (2065502129174597634, '000000', 3, 1, NULL, '99', 'text', '1', '0', NULL, NULL, NULL, 108, 3, '2026-06-13 02:30:57', 1, '2026-07-08 10:11:47', NULL, NULL);
+INSERT INTO `im_message` VALUES (2065502354832347138, '000000', 3, 1, NULL, '233', 'text', '1', '0', NULL, NULL, NULL, 108, 3, '2026-06-13 02:31:51', 1, '2026-07-08 10:11:47', NULL, NULL);
+INSERT INTO `im_message` VALUES (2074677824579346433, '000000', 1, 3, NULL, 'http://159.75.14.226:9005/ruoyi/2026/07/08/32cd186b3ca1418e87f4f713f8fb8737.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20260708T021153Z&X-Amz-SignedHeaders=host&X-Amz-Credential=minio%2F20260708%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Expires=120&X-Amz-Signature=dead40c7ab778d359f512861294f681a6ed9638c0c38ecd0c70f1cf63fa2a0eb', 'image', '1', '0', NULL, NULL, NULL, 103, 1, '2026-07-08 10:11:54', 3, '2026-07-08 10:12:32', NULL, NULL);
+INSERT INTO `im_message` VALUES (2074678099922821121, '000000', 3, 1, NULL, 'http://159.75.14.226:9005/ruoyi/2026/07/08/32cd186b3ca1418e87f4f713f8fb8737.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20260708T021153Z&X-Amz-SignedHeaders=host&X-Amz-Credential=minio%2F20260708%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Expires=120&X-Amz-Signature=dead40c7ab778d359f512861294f681a6ed9638c0c38ecd0c70f1cf63fa2a0eb', 'image', '1', '1', 2074677824579346433, NULL, NULL, 108, 3, '2026-07-08 10:12:59', 3, '2026-07-08 10:14:38', NULL, NULL);
+INSERT INTO `im_message` VALUES (2078160256583737345, '000000', 1, 3, NULL, 'http://159.75.14.226:9005/ruoyi/2026/07/18/ebf07cbb2fd74b13865af6fa69f7a3f9.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20260717T164950Z&X-Amz-SignedHeaders=host&X-Amz-Credential=minio%2F20260717%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Expires=120&X-Amz-Signature=0612e4099d4501afe1f1dbbf81882fe78fd9492b9884963be1c1df06765e8088', 'image', '1', '0', NULL, NULL, NULL, 103, 1, '2026-07-18 00:49:50', 3, '2026-07-19 21:33:16', NULL, NULL);
+INSERT INTO `im_message` VALUES (2078349065682305026, '000000', 1, 3, NULL, '123', 'text', '1', '0', NULL, NULL, NULL, 103, 1, '2026-07-18 13:20:06', 3, '2026-07-19 21:33:16', NULL, NULL);
+INSERT INTO `im_message` VALUES (2078525394956468226, '000000', 1, 3, NULL, 'hh', 'text', '1', '0', NULL, NULL, NULL, 103, 1, '2026-07-19 01:00:46', 3, '2026-07-19 21:33:16', NULL, NULL);
+INSERT INTO `im_message` VALUES (2078833256412901377, '000000', 1, NULL, 2052257328328011777, '@本部门及以下 密码123456 我单独@你了', 'text', '1', '0', NULL, '1ca53d33-4fbd-4e16-a487-403b97549c5e', '[3]', 103, 1, '2026-07-19 21:24:06', 3, '2026-07-19 21:26:24', NULL, NULL);
+INSERT INTO `im_message` VALUES (2078834234637840385, '000000', 3, 1, NULL, '好好好', 'text', '1', '0', NULL, NULL, NULL, 108, 3, '2026-07-19 21:27:59', 1, '2026-07-19 21:27:59', NULL, NULL);
+INSERT INTO `im_message` VALUES (2078841596664762369, '000000', 3, NULL, 2052257328328011777, '@admin 收到', 'text', '1', '0', NULL, 'f1e1e4d0-a820-46fd-a279-c79e3202b03e', '[1]', 108, 3, '2026-07-19 21:57:14', 1, '2026-07-19 21:57:29', NULL, NULL);
 
 -- ----------------------------
 -- Table structure for jimu_dict
@@ -8783,17 +8852,17 @@ CREATE TABLE `sj_distributed_lock`  (
 -- ----------------------------
 -- Records of sj_distributed_lock
 -- ----------------------------
-INSERT INTO `sj_distributed_lock` VALUES ('clearLog', '2026-07-16 21:35:46.134', '2026-07-16 21:34:46.134', '2077748766877851648', '2026-07-16 16:38:32', '2026-07-16 21:34:46');
-INSERT INTO `sj_distributed_lock` VALUES ('clearOfflineNode', '2026-07-17 00:27:19.642', '2026-07-17 00:27:14.642', '2077748766877851648', '2026-07-16 16:38:31', '2026-07-17 00:27:15');
-INSERT INTO `sj_distributed_lock` VALUES ('jobClearLog', '2026-07-16 21:35:45.592', '2026-07-16 21:34:45.592', '2077748766877851648', '2026-07-16 16:38:31', '2026-07-16 21:34:46');
-INSERT INTO `sj_distributed_lock` VALUES ('jobLogMerge', '2026-07-17 00:26:45.608', '2026-07-17 00:25:45.608', '2077748766877851648', '2026-07-16 16:38:31', '2026-07-17 00:25:46');
-INSERT INTO `sj_distributed_lock` VALUES ('jobSummaryDashboard', '2026-07-17 00:27:05.600', '2026-07-17 00:26:45.600', '2077748766877851648', '2026-07-16 16:38:31', '2026-07-17 00:26:46');
-INSERT INTO `sj_distributed_lock` VALUES ('registerNode', '2026-07-17 00:27:16.136', '2026-07-17 00:27:11.136', '2077748766877851648', '2026-07-16 16:38:32', '2026-07-17 00:27:11');
-INSERT INTO `sj_distributed_lock` VALUES ('retryErrorMoreThreshold', '2026-07-17 00:25:46.380', '2026-07-17 00:24:46.380', '2077748766877851648', '2026-07-16 16:38:32', '2026-07-17 00:24:46');
-INSERT INTO `sj_distributed_lock` VALUES ('retryLogMerge', '2026-07-16 23:35:45.604', '2026-07-16 23:34:45.604', '2077748766877851648', '2026-07-16 16:38:32', '2026-07-16 23:34:46');
-INSERT INTO `sj_distributed_lock` VALUES ('retrySummaryDashboard', '2026-07-17 00:27:05.600', '2026-07-17 00:26:45.600', '2077748766877851648', '2026-07-16 16:38:32', '2026-07-17 00:26:46');
-INSERT INTO `sj_distributed_lock` VALUES ('retryTaskMoreThreshold', '2026-07-17 00:25:46.380', '2026-07-17 00:24:46.380', '2077748766877851648', '2026-07-16 16:38:32', '2026-07-17 00:24:46');
-INSERT INTO `sj_distributed_lock` VALUES ('workflowJobSummarySchedule', '2026-07-17 00:27:05.600', '2026-07-17 00:26:45.600', '2077748766877851648', '2026-07-16 16:38:32', '2026-07-17 00:26:46');
+INSERT INTO `sj_distributed_lock` VALUES ('clearLog', '2026-07-20 05:09:17.774', '2026-07-20 05:08:17.774', '2078829275464765440', '2026-07-19 21:08:19', '2026-07-20 05:08:18');
+INSERT INTO `sj_distributed_lock` VALUES ('clearOfflineNode', '2026-07-20 05:34:05.804', '2026-07-20 05:34:00.804', '2078829275464765440', '2026-07-19 21:08:19', '2026-07-20 05:34:01');
+INSERT INTO `sj_distributed_lock` VALUES ('jobClearLog', '2026-07-20 05:09:17.770', '2026-07-20 05:08:17.770', '2078829275464765440', '2026-07-19 21:08:19', '2026-07-20 05:08:18');
+INSERT INTO `sj_distributed_lock` VALUES ('jobLogMerge', '2026-07-20 05:34:17.765', '2026-07-20 05:33:17.765', '2078829275464765440', '2026-07-19 21:08:19', '2026-07-20 05:33:18');
+INSERT INTO `sj_distributed_lock` VALUES ('jobSummaryDashboard', '2026-07-20 05:33:37.765', '2026-07-20 05:33:17.765', '2078829275464765440', '2026-07-19 21:08:19', '2026-07-20 05:33:18');
+INSERT INTO `sj_distributed_lock` VALUES ('registerNode', '2026-07-20 05:34:08.733', '2026-07-20 05:34:03.733', '2078829275464765440', '2026-07-19 21:08:19', '2026-07-20 05:34:04');
+INSERT INTO `sj_distributed_lock` VALUES ('retryErrorMoreThreshold', '2026-07-20 05:29:18.706', '2026-07-20 05:28:18.706', '2078829275464765440', '2026-07-19 21:08:19', '2026-07-20 05:28:19');
+INSERT INTO `sj_distributed_lock` VALUES ('retryLogMerge', '2026-07-20 05:09:17.774', '2026-07-20 05:08:17.774', '2078829275464765440', '2026-07-19 21:08:19', '2026-07-20 05:08:18');
+INSERT INTO `sj_distributed_lock` VALUES ('retrySummaryDashboard', '2026-07-20 05:33:37.765', '2026-07-20 05:33:17.765', '2078829275464765440', '2026-07-19 21:08:19', '2026-07-20 05:33:18');
+INSERT INTO `sj_distributed_lock` VALUES ('retryTaskMoreThreshold', '2026-07-20 05:29:18.706', '2026-07-20 05:28:18.706', '2078829275464765440', '2026-07-19 21:08:19', '2026-07-20 05:28:19');
+INSERT INTO `sj_distributed_lock` VALUES ('workflowJobSummarySchedule', '2026-07-20 05:33:37.765', '2026-07-20 05:33:17.765', '2078829275464765440', '2026-07-19 21:08:19', '2026-07-20 05:33:18');
 
 -- ----------------------------
 -- Table structure for sj_group_config
@@ -9365,13 +9434,13 @@ CREATE TABLE `sj_server_node`  (
   UNIQUE INDEX `uk_host_id_host_ip`(`host_id`, `host_ip`) USING BTREE,
   INDEX `idx_namespace_id_group_name`(`namespace_id`, `group_name`) USING BTREE,
   INDEX `idx_expire_at_node_type`(`expire_at`, `node_type`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 225 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '服务器节点' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 241 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '服务器节点' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sj_server_node
 -- ----------------------------
-INSERT INTO `sj_server_node` VALUES (222, 'DEFAULT_SERVER_NAMESPACE_ID', 'DEFAULT_SERVER', '2077748766877851648', '192.168.1.105', 17888, '2026-07-17 00:27:36', 2, '{\"webPort\":8800,\"systemVersion\":\"1.9.0\"}', NULL, '2026-07-16 21:34:46', '2026-07-17 00:27:05');
-INSERT INTO `sj_server_node` VALUES (224, 'dev', 'ruoyi_group', '2077765093273358336', '192.168.1.105', 28080, '2026-07-17 00:27:41', 1, '{\"systemVersion\":\"1.9.0\",\"executorType\":\"1\"}', '{\"state\":\"up\"}', '2026-07-16 22:39:37', '2026-07-17 00:27:11');
+INSERT INTO `sj_server_node` VALUES (238, 'DEFAULT_SERVER_NAMESPACE_ID', 'DEFAULT_SERVER', '2078829275464765440', '192.168.1.105', 17888, '2026-07-20 05:34:28', 2, '{\"webPort\":8800,\"systemVersion\":\"1.9.0\"}', NULL, '2026-07-19 21:08:19', '2026-07-20 05:33:57');
+INSERT INTO `sj_server_node` VALUES (240, 'dev', 'ruoyi_group', '2078841294079283200', '192.168.1.105', 28080, '2026-07-20 05:34:34', 1, '{\"systemVersion\":\"1.9.0\",\"executorType\":\"1\"}', '{\"state\":\"up\"}', '2026-07-19 21:56:03', '2026-07-20 05:34:03');
 
 -- ----------------------------
 -- Table structure for sj_system_user
@@ -12652,6 +12721,29 @@ INSERT INTO `sys_logininfor` VALUES (2076906265879158785, '000000', 'admin', 'pc
 INSERT INTO `sys_logininfor` VALUES (2077674628275195905, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-07-16 16:40:07');
 INSERT INTO `sys_logininfor` VALUES (2077750468590858242, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-07-16 21:41:29');
 INSERT INTO `sys_logininfor` VALUES (2077765990531452929, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-07-16 22:43:10');
+INSERT INTO `sys_logininfor` VALUES (2078100043197566977, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-07-17 20:50:34');
+INSERT INTO `sys_logininfor` VALUES (2078113043145019393, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-07-17 21:42:14');
+INSERT INTO `sys_logininfor` VALUES (2078123633292857346, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-07-17 22:24:19');
+INSERT INTO `sys_logininfor` VALUES (2078132422448488450, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '退出成功', '2026-07-17 22:59:14');
+INSERT INTO `sys_logininfor` VALUES (2078139788573253633, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '1', '验证码已失效', '2026-07-17 23:28:30');
+INSERT INTO `sys_logininfor` VALUES (2078139802682892289, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-07-17 23:28:34');
+INSERT INTO `sys_logininfor` VALUES (2078139823696355329, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '退出成功', '2026-07-17 23:28:39');
+INSERT INTO `sys_logininfor` VALUES (2078160110143807489, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-07-18 00:49:15');
+INSERT INTO `sys_logininfor` VALUES (2078343187663151105, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-07-18 12:56:44');
+INSERT INTO `sys_logininfor` VALUES (2078343516374949890, '000000', 'admin', '', '', '0:0:0:0:0:0:0:1', '内网IP', 'Chrome', 'Android', '0', '登录成功', '2026-07-18 12:58:03');
+INSERT INTO `sys_logininfor` VALUES (2078357828891967489, '000000', 'admin', 'app', 'android', '0:0:0:0:0:0:0:1', '内网IP', 'Safari', 'iPhone', '0', '退出成功', '2026-07-18 13:54:55');
+INSERT INTO `sys_logininfor` VALUES (2078357875205472257, '000000', 'admin', '', '', '0:0:0:0:0:0:0:1', '内网IP', 'Safari', 'iPhone', '0', '登录成功', '2026-07-18 13:55:06');
+INSERT INTO `sys_logininfor` VALUES (2078520705812729857, '000000', 'admin', '', '', '0:0:0:0:0:0:0:1', '内网IP', 'Safari', 'iPhone', '0', '登录成功', '2026-07-19 00:42:08');
+INSERT INTO `sys_logininfor` VALUES (2078521930717224961, '000000', 'admin', 'app', 'android', '0:0:0:0:0:0:0:1', '内网IP', 'Safari', 'iPhone', '0', '退出成功', '2026-07-19 00:47:00');
+INSERT INTO `sys_logininfor` VALUES (2078521988875444225, '000000', 'admin', '', '', '0:0:0:0:0:0:0:1', '内网IP', 'Safari', 'iPhone', '0', '登录成功', '2026-07-19 00:47:14');
+INSERT INTO `sys_logininfor` VALUES (2078829578339643393, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-07-19 21:09:29');
+INSERT INTO `sys_logininfor` VALUES (2078833352160473089, '000000', 'test', '', '', '0:0:0:0:0:0:0:1', '内网IP', 'Chrome', 'Android', '0', '登录成功', '2026-07-19 21:24:29');
+INSERT INTO `sys_logininfor` VALUES (2078932301315723265, '000000', 'admin', '', '', '0:0:0:0:0:0:0:1', '内网IP', 'Chrome', 'Android', '1', '密码输入错误1次', '2026-07-20 03:57:40');
+INSERT INTO `sys_logininfor` VALUES (2078932341178388482, '000000', 'admin', '', '', '0:0:0:0:0:0:0:1', '内网IP', 'Chrome', 'Android', '0', '登录成功', '2026-07-20 03:57:49');
+INSERT INTO `sys_logininfor` VALUES (2078938534798053377, '000000', 'admin', '', '', '0:0:0:0:0:0:0:1', '内网IP', 'Chrome', 'Android', '0', '登录成功', '2026-07-20 04:22:26');
+INSERT INTO `sys_logininfor` VALUES (2078953951071457281, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '退出成功', '2026-07-20 05:23:42');
+INSERT INTO `sys_logininfor` VALUES (2078953966414221313, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-07-20 05:23:45');
+INSERT INTO `sys_logininfor` VALUES (2078954424197337089, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-07-20 05:25:34');
 
 -- ----------------------------
 -- Table structure for sys_menu
@@ -13176,15 +13268,15 @@ INSERT INTO `sys_menu` VALUES (2542, '合同新增', 2540, 2, '', '', '', 1, 0, 
 INSERT INTO `sys_menu` VALUES (2543, '合同修改', 2540, 3, '', '', '', 1, 0, 'F', '0', '0', 'pu:contract:edit', '#', 103, 1, '2026-06-27 00:22:07', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (2544, '合同删除', 2540, 4, '', '', '', 1, 0, 'F', '0', '0', 'pu:contract:remove', '#', 103, 1, '2026-06-27 00:22:07', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (2545, '合同审批', 2540, 5, '', '', '', 1, 0, 'F', '0', '0', 'pu:contract:submit', '#', 103, 1, '2026-06-27 00:22:07', NULL, NULL, '');
-INSERT INTO `sys_menu` VALUES (2550, '采购进项发票', 2500, 6, 'invoice', 'erp/pu/invoice/index', NULL, 1, 0, 'C', '0', '0', 'pu:invoice:list', 'documentation', 103, 1, '2026-07-17 00:00:06', NULL, NULL, '采购进项发票管理菜单');
-INSERT INTO `sys_menu` VALUES (2551, '发票查询', 2550, 1, '', '', '', 1, 0, 'F', '0', '0', 'pu:invoice:query', '#', 103, 1, '2026-07-17 00:00:06', NULL, NULL, '');
-INSERT INTO `sys_menu` VALUES (2552, '发票新增', 2550, 2, '', '', '', 1, 0, 'F', '0', '0', 'pu:invoice:add', '#', 103, 1, '2026-07-17 00:00:06', NULL, NULL, '');
-INSERT INTO `sys_menu` VALUES (2553, '发票修改', 2550, 3, '', '', '', 1, 0, 'F', '0', '0', 'pu:invoice:edit', '#', 103, 1, '2026-07-17 00:00:06', NULL, NULL, '含收票确认/作废');
-INSERT INTO `sys_menu` VALUES (2554, '发票删除', 2550, 4, '', '', '', 1, 0, 'F', '0', '0', 'pu:invoice:remove', '#', 103, 1, '2026-07-17 00:00:06', NULL, NULL, '');
-INSERT INTO `sys_menu` VALUES (2555, '发票导出', 2550, 5, '', '', '', 1, 0, 'F', '0', '0', 'pu:invoice:export', '#', 103, 1, '2026-07-17 00:00:06', NULL, NULL, '');
-INSERT INTO `sys_menu` VALUES (2556, '收票核销', 2550, 6, '', '', '', 1, 0, 'F', '0', '0', 'pu:invoice:verify', '#', 103, 1, '2026-07-17 00:00:06', NULL, NULL, '核销/红冲');
-INSERT INTO `sys_menu` VALUES (2557, '认证抵扣', 2550, 7, '', '', '', 1, 0, 'F', '0', '0', 'pu:invoice:certify', '#', 103, 1, '2026-07-17 00:00:06', NULL, NULL, '认证/抵扣/进项转出');
-INSERT INTO `sys_menu` VALUES (2558, '三单匹配', 2550, 8, '', '', '', 1, 0, 'F', '0', '0', 'pu:invoice:match', '#', 103, 1, '2026-07-17 00:00:06', NULL, NULL, 'PO+收货+发票校验');
+INSERT INTO `sys_menu` VALUES (2550, '采购进项发票', 2972, 3, 'invoice', 'erp/pu/invoice/index', NULL, 1, 0, 'C', '0', '0', 'pu:invoice:list', 'documentation', 103, 1, '2026-07-17 00:32:20', NULL, NULL, '采购进项发票管理菜单');
+INSERT INTO `sys_menu` VALUES (2551, '发票查询', 2550, 1, '', '', '', 1, 0, 'F', '0', '0', 'pu:invoice:query', '#', 103, 1, '2026-07-17 00:32:20', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (2552, '发票新增', 2550, 2, '', '', '', 1, 0, 'F', '0', '0', 'pu:invoice:add', '#', 103, 1, '2026-07-17 00:32:20', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (2553, '发票修改', 2550, 3, '', '', '', 1, 0, 'F', '0', '0', 'pu:invoice:edit', '#', 103, 1, '2026-07-17 00:32:20', NULL, NULL, '含收票确认/作废');
+INSERT INTO `sys_menu` VALUES (2554, '发票删除', 2550, 4, '', '', '', 1, 0, 'F', '0', '0', 'pu:invoice:remove', '#', 103, 1, '2026-07-17 00:32:20', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (2555, '发票导出', 2550, 5, '', '', '', 1, 0, 'F', '0', '0', 'pu:invoice:export', '#', 103, 1, '2026-07-17 00:32:20', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (2556, '收票核销', 2550, 6, '', '', '', 1, 0, 'F', '0', '0', 'pu:invoice:verify', '#', 103, 1, '2026-07-17 00:32:20', NULL, NULL, '核销/红冲');
+INSERT INTO `sys_menu` VALUES (2557, '认证抵扣', 2550, 7, '', '', '', 1, 0, 'F', '0', '0', 'pu:invoice:certify', '#', 103, 1, '2026-07-17 00:32:20', NULL, NULL, '认证/抵扣/进项转出');
+INSERT INTO `sys_menu` VALUES (2558, '三单匹配', 2550, 8, '', '', '', 1, 0, 'F', '0', '0', 'pu:invoice:match', '#', 103, 1, '2026-07-17 00:32:20', NULL, NULL, 'PO+收货+发票校验');
 INSERT INTO `sys_menu` VALUES (2600, '条码管理', 2000, 9, 'barcode', NULL, NULL, 1, 0, 'M', '0', '0', '', 'category', 103, 1, '2026-05-23 17:54:58', 1, '2026-06-03 11:08:41', '条码管理目录');
 INSERT INTO `sys_menu` VALUES (2601, '条码实例', 2600, 1, 'index', 'erp/wm/barcode/index', NULL, 1, 0, 'C', '0', '0', 'wm:barcode:list', 'ticket', 103, 1, '2026-05-23 17:54:58', NULL, NULL, '条码实例菜单');
 INSERT INTO `sys_menu` VALUES (2602, '条码实例查询', 2601, 1, '', NULL, NULL, 1, 0, 'F', '0', '0', 'wm:barcode:query', '#', 103, 1, '2026-05-23 17:54:58', NULL, NULL, '');
@@ -14936,6 +15028,7 @@ INSERT INTO `sys_oper_log` VALUES (2077779754572042243, '000000', '销售发票'
 INSERT INTO `sys_oper_log` VALUES (2077779777472942082, '000000', '销售发票', 2, 'com.nexus.erp.so.controller.SoInvoiceController.cancel()', 'PUT', 1, 'admin', '研发部门', '/erp/so/invoice/cancel/2077779678525116419', '127.0.0.1', '内网IP', '\"2077779678525116419\"', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2026-07-16 23:37:57', 18);
 INSERT INTO `sys_oper_log` VALUES (2077779820305174529, '000000', '销售发票', 2, 'com.nexus.erp.so.controller.SoInvoiceController.verify()', 'PUT', 1, 'admin', '研发部门', '/erp/so/invoice/verify/2077779754509127683', '127.0.0.1', '内网IP', '{\"verifyAmount\":\"1\"}', '{\"code\":200,\"msg\":\"操作成功\",\"data\":null}', 0, '', '2026-07-16 23:38:07', 9);
 INSERT INTO `sys_oper_log` VALUES (2077779838797860865, '000000', '销售发票', 1, 'com.nexus.erp.so.controller.SoInvoiceController.redFlush()', 'PUT', 1, 'admin', '研发部门', '/erp/so/invoice/redFlush/2077779754509127683', '127.0.0.1', '内网IP', '\"2077779754509127683\"', '', 1, '红字发票不允许再次红冲', '2026-07-16 23:38:12', 5);
+INSERT INTO `sys_oper_log` VALUES (2078160256457908226, '000000', 'OSS对象存储', 1, 'com.nexus.system.controller.system.SysOssController.upload()', 'POST', 1, 'admin', '研发部门', '/resource/oss/upload', '127.0.0.1', '内网IP', '', '{\"code\":200,\"msg\":\"操作成功\",\"data\":{\"url\":\"http://159.75.14.226:9005/ruoyi/2026/07/18/ebf07cbb2fd74b13865af6fa69f7a3f9.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20260717T164950Z&X-Amz-SignedHeaders=host&X-Amz-Credential=minio%2F20260717%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Expires=120&X-Amz-Signature=0612e4099d4501afe1f1dbbf81882fe78fd9492b9884963be1c1df06765e8088\",\"fileName\":\"20201208233524_40af5.jpg\",\"ossId\":\"2078160256323690497\"}}', 0, '', '2026-07-18 00:49:50', 572);
 
 -- ----------------------------
 -- Table structure for sys_oss
@@ -14969,6 +15062,7 @@ INSERT INTO `sys_oss` VALUES (2074677824197664770, '000000', '2026/07/08/32cd186
 INSERT INTO `sys_oss` VALUES (2074678251479801857, '000000', '2026/07/08/99cd5024de444eb2af8d279c8b31300a.png', '吴彦祖.png', '.png', 'http://159.75.14.226:9005/ruoyi/2026/07/08/99cd5024de444eb2af8d279c8b31300a.png', '{\"bizType\":null,\"fileSize\":101466,\"contentType\":\"image/png\",\"source\":null,\"uploadIp\":null,\"remark\":null,\"tags\":null,\"refId\":null,\"refType\":null,\"isTemp\":null,\"md5\":null}', 108, '2026-07-08 10:13:35', 3, '2026-07-08 10:13:35', 3, 'minio');
 INSERT INTO `sys_oss` VALUES (2076331577817944065, '000000', '2026/07/12/d43de8df510c468cb513fd0143385d33.jpg', '20201208233524_40af5.jpg', '.jpg', 'http://159.75.14.226:9005/ruoyi/2026/07/12/d43de8df510c468cb513fd0143385d33.jpg', '{\"bizType\":null,\"fileSize\":138634,\"contentType\":\"image/png\",\"source\":null,\"uploadIp\":null,\"remark\":null,\"tags\":null,\"refId\":null,\"refType\":null,\"isTemp\":null,\"md5\":null}', 103, '2026-07-12 23:43:19', 1, '2026-07-12 23:43:19', 1, 'minio');
 INSERT INTO `sys_oss` VALUES (2076335359372955650, '000000', '2026/07/12/4dc6d1b1bc5848f38b6e6860f85f2a35.jpg', '20201208233524_40af5.jpg', '.jpg', 'http://159.75.14.226:9005/ruoyi/2026/07/12/4dc6d1b1bc5848f38b6e6860f85f2a35.jpg', '{\"bizType\":null,\"fileSize\":138785,\"contentType\":\"image/png\",\"source\":null,\"uploadIp\":null,\"remark\":null,\"tags\":null,\"refId\":null,\"refType\":null,\"isTemp\":null,\"md5\":null}', 103, '2026-07-12 23:58:21', 1, '2026-07-12 23:58:21', 1, 'minio');
+INSERT INTO `sys_oss` VALUES (2078160256323690497, '000000', '2026/07/18/ebf07cbb2fd74b13865af6fa69f7a3f9.jpg', '20201208233524_40af5.jpg', '.jpg', 'http://159.75.14.226:9005/ruoyi/2026/07/18/ebf07cbb2fd74b13865af6fa69f7a3f9.jpg', '{\"bizType\":null,\"fileSize\":48574,\"contentType\":\"image/jpeg\",\"source\":null,\"uploadIp\":null,\"remark\":null,\"tags\":null,\"refId\":null,\"refType\":null,\"isTemp\":null,\"md5\":null}', 103, '2026-07-18 00:49:50', 1, '2026-07-18 00:49:50', 1, 'minio');
 
 -- ----------------------------
 -- Table structure for sys_oss_config
@@ -16863,8 +16957,8 @@ CREATE TABLE `sys_user`  (
 -- ----------------------------
 -- Records of sys_user
 -- ----------------------------
-INSERT INTO `sys_user` VALUES (1, '000000', 103, 'admin', '系统管理员', 'sys_user', 'NexusERP@163.com', '15888888888', '1', 2074342084062396417, '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', '2026-07-16 22:43:10', 103, 1, '2026-04-15 10:51:23', -1, '2026-07-16 22:43:10', '管理员');
-INSERT INTO `sys_user` VALUES (3, '000000', 108, 'test', '本部门及以下 密码123456', 'sys_user', 'test@169.com', '15388888888', '0', 2074678251479801857, '$2a$10$DwOcThSVZ7TYuS3ypbzD7OBUk1Yabj2wIT9ZwY/JXMXdWEDQTYxbu', '0', '0', '127.0.0.1', '2026-07-08 10:12:15', 103, 1, '2026-04-15 10:51:23', -1, '2026-07-08 10:12:15', NULL);
+INSERT INTO `sys_user` VALUES (1, '000000', 103, 'admin', '系统管理员', 'sys_user', 'NexusERP@163.com', '15888888888', '1', 2074342084062396417, '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', '2026-07-20 05:25:34', 103, 1, '2026-04-15 10:51:23', -1, '2026-07-20 05:25:34', '管理员');
+INSERT INTO `sys_user` VALUES (3, '000000', 108, 'test', '本部门及以下 密码123456', 'sys_user', 'test@169.com', '15388888888', '0', 2074678251479801857, '$2a$10$DwOcThSVZ7TYuS3ypbzD7OBUk1Yabj2wIT9ZwY/JXMXdWEDQTYxbu', '0', '0', '0:0:0:0:0:0:0:1', '2026-07-19 21:24:29', 103, 1, '2026-04-15 10:51:23', -1, '2026-07-19 21:24:29', NULL);
 INSERT INTO `sys_user` VALUES (4, '000000', 102, 'test1', '仅本人 密码666666', 'sys_user', '', '', '0', NULL, '$2a$10$b8yUzN0C71sbz.PhNOCgJe.Tu1yWC3RNrTyjSQ8p1W0.aaUXUJ.Ne', '0', '0', '127.0.0.1', '2026-04-15 10:51:23', 103, 1, '2026-04-15 10:51:23', 4, '2026-04-15 10:51:23', NULL);
 INSERT INTO `sys_user` VALUES (101, '000000', 115, '麦得朶', '麦得朶', 'sys_user', '', '1', '0', NULL, '$2a$10$ucYt.UqfSiVrXfpIyastPeSfEa8NH//2XUJmO/tillbQ3Aiyy9tg2', '0', '0', '127.0.0.1', '2026-07-10 09:30:13', NULL, 1, '2025-10-23 17:03:16', -1, '2026-07-10 09:30:13', '耳朵聋');
 INSERT INTO `sys_user` VALUES (102, '000000', 115, '麦得邵', '麦得邵', 'sys_user', '', '23', '0', NULL, '$2a$10$NDKFI8ezk4pCXp.TMTQWZu4thUF.035lFpWbDE.KdRTZTicynbdda', '0', '0', '127.0.0.1', '2025-10-23 18:54:16', NULL, 1, '2025-10-23 17:06:17', 1, '2025-12-17 15:41:21', '盐浸虾');
@@ -16916,34 +17010,9 @@ CREATE TABLE `sys_user_notification`  (
 -- ----------------------------
 INSERT INTO `sys_user_notification` VALUES (2052251495498186754, '000000', 3, 'im_private', 'im_message', '2052251495485603841', '私聊 · 疯狂的狮子Li', '1', '0', NULL, 103, 1, '2026-05-07 12:57:40', 1, '2026-05-07 12:57:40', NULL);
 INSERT INTO `sys_user_notification` VALUES (2052254623119376385, '000000', 3, 'im_private', 'im_message', '2052254623102599170', '私聊 · 疯狂的狮子Li', '测试1', '0', NULL, 103, 1, '2026-05-07 13:10:06', 1, '2026-05-07 13:10:06', NULL);
-INSERT INTO `sys_user_notification` VALUES (2052255965518954497, '000000', 1, 'im_private', 'im_message', '2052255965506371585', '私聊 · 本部门及以下 密码666666', '收到', '1', NULL, 108, 3, '2026-05-07 13:15:26', 1, '2026-06-27 01:15:20', NULL);
 INSERT INTO `sys_user_notification` VALUES (2052259606199988226, '000000', 4, 'im_private', 'im_message', '2052259606179016706', '私聊 · 疯狂的狮子Li', 'hello', '0', NULL, 103, 1, '2026-05-07 13:29:54', 1, '2026-05-07 13:29:54', NULL);
-INSERT INTO `sys_user_notification` VALUES (2052265171823312898, '000000', 3, 'im_group', 'im_message', '2052265171731038209', '群聊 · 222', '疯狂的狮子Li：hellow', '0', NULL, 103, 1, '2026-05-07 13:52:01', 1, '2026-05-07 13:52:01', NULL);
 INSERT INTO `sys_user_notification` VALUES (2052265171882033154, '000000', 4, 'im_group', 'im_message', '2052265171731038209', '群聊 · 222', '疯狂的狮子Li：hellow', '0', NULL, 103, 1, '2026-05-07 13:52:01', 1, '2026-05-07 13:52:01', NULL);
 INSERT INTO `sys_user_notification` VALUES (2052656970944528385, '000000', 4, 'im_private', 'im_message', '2052656970919362561', '私聊 · 系统管理员', '333', '0', NULL, 103, 1, '2026-05-08 15:48:53', 1, '2026-05-08 15:48:53', NULL);
-INSERT INTO `sys_user_notification` VALUES (2052763151686107138, '000000', 3, 'im_private', 'im_message', '2052763151686107137', '私聊 · 系统管理员', 'aaa', '0', NULL, 103, 1, '2026-05-08 22:50:49', 1, '2026-05-08 22:50:49', NULL);
-INSERT INTO `sys_user_notification` VALUES (2052763178080862210, '000000', 3, 'im_private', 'im_message', '2052763178013753345', '私聊 · 系统管理员', 'bb', '0', NULL, 103, 1, '2026-05-08 22:50:55', 1, '2026-05-08 22:50:55', NULL);
-INSERT INTO `sys_user_notification` VALUES (2052764346777534466, '000000', 3, 'im_friend_request', 'friend_request', '1', '系统管理员 请求添加您为好友', '请求添加您为好友', '0', '{\"status\":\"sent\",\"fromUserId\":1}', 103, 1, '2026-05-08 22:55:33', 1, '2026-05-08 22:55:33', NULL);
-INSERT INTO `sys_user_notification` VALUES (2052765832676835330, '000000', 1, 'im_private', 'im_message', '2052765832613920770', '私聊 · 本部门及以下 密码666666', 'haohao哈', '1', NULL, 108, 3, '2026-05-08 23:01:28', 1, '2026-06-27 01:15:20', NULL);
-INSERT INTO `sys_user_notification` VALUES (2052765932568379395, '000000', 1, 'im_private', 'im_message', '2052765932568379394', '私聊 · 本部门及以下 密码666666', 'aaa', '1', NULL, 108, 3, '2026-05-08 23:01:52', 1, '2026-06-27 01:15:20', NULL);
-INSERT INTO `sys_user_notification` VALUES (2052766019088482305, '000000', 3, 'im_friend_request', 'friend_request', '1', '系统管理员 请求添加您为好友', '请求添加您为好友', '0', '{\"status\":\"sent\",\"fromUserId\":1}', 103, 1, '2026-05-08 23:02:12', 1, '2026-05-08 23:02:12', NULL);
-INSERT INTO `sys_user_notification` VALUES (2052768564544471041, '000000', 3, 'im_friend_request', 'friend_request', '1', '系统管理员 请求添加您为好友', '请求添加您为好友', '0', '{\"status\":\"sent\",\"fromUserId\":1}', 103, 1, '2026-05-08 23:12:19', 1, '2026-05-08 23:12:19', NULL);
-INSERT INTO `sys_user_notification` VALUES (2052768839409750018, '000000', 3, 'im_friend_request', 'friend_request', '1', '系统管理员 请求添加您为好友', '请求添加您为好友', '0', '{\"status\":\"sent\",\"fromUserId\":1}', 103, 1, '2026-05-08 23:13:25', 1, '2026-05-08 23:13:25', NULL);
-INSERT INTO `sys_user_notification` VALUES (2053024825171996674, '000000', 3, 'im_private', 'im_message', '2053024825151025153', '私聊 · 系统管理员', 'cs', '0', NULL, 103, 1, '2026-05-09 16:10:36', 1, '2026-05-09 16:10:36', NULL);
-INSERT INTO `sys_user_notification` VALUES (2053045848424534017, '000000', 3, 'im_private', 'im_message', '2053045848386785282', '私聊 · 系统管理员', 'aaa', '0', NULL, 103, 1, '2026-05-09 17:34:09', 1, '2026-05-09 17:34:09', NULL);
-INSERT INTO `sys_user_notification` VALUES (2053052819609440258, '000000', 3, 'im_private', 'im_message', '2053052819596857345', '私聊 · 系统管理员', 'aaa', '0', NULL, 103, 1, '2026-05-09 18:01:51', 1, '2026-05-09 18:01:51', NULL);
-INSERT INTO `sys_user_notification` VALUES (2053659806349041665, '000000', 3, 'im_private', 'im_message', '2053659806332264450', '私聊 · 系统管理员', '😭', '0', NULL, 103, 1, '2026-05-11 10:13:48', 1, '2026-05-11 10:13:48', NULL);
-INSERT INTO `sys_user_notification` VALUES (2053662246603497474, '000000', 3, 'im_private', 'im_message', '2053662246595108866', '私聊 · 系统管理员', '🥹', '0', NULL, 103, 1, '2026-05-11 10:23:29', 1, '2026-05-11 10:23:29', NULL);
-INSERT INTO `sys_user_notification` VALUES (2053700674099515394, '000000', 3, 'im_private', 'im_message', '2053700674065960962', '私聊 · 系统管理员', '11', '0', NULL, 103, 1, '2026-05-11 12:56:11', 1, '2026-05-11 12:56:11', NULL);
-INSERT INTO `sys_user_notification` VALUES (2058451766588104706, '000000', 1, 'workflow_notice', 'workflow', NULL, '流程任务结束通知', '流程任务结束通知<a href=168e5d62-5743-11f1-8afc-00ff3b9d4ecf?taskId=1693dbbb-5743-11f1-8afc-00ff3b9d4ecf&processed=false>点击这个进行查看</a>', '1', NULL, 103, 1, '2026-05-24 15:35:20', 1, '2026-06-13 17:28:54', NULL);
-INSERT INTO `sys_user_notification` VALUES (2062092637135872002, '000000', 1, 'workflow_notice', 'workflow', NULL, '流程任务结束通知', '流程任务结束通知<a href=0dec816f-5f28-11f1-adca-00ff6700037c?taskId=0e0bf068-5f28-11f1-adca-00ff6700037c&processed=false>点击这个进行查看</a>', '1', NULL, 103, 1, '2026-06-03 16:42:51', 1, '2026-06-13 17:28:54', NULL);
-INSERT INTO `sys_user_notification` VALUES (2062108911094140929, '000000', 1, 'workflow_notice', 'workflow', NULL, '流程任务结束通知', '流程任务结束通知<a href=2f07753a-5f31-11f1-9ca8-00ff6700037c?taskId=2f227762-5f31-11f1-9ca8-00ff6700037c&processed=false>点击这个进行查看</a>', '1', NULL, 103, 1, '2026-06-03 17:47:31', 1, '2026-06-13 17:28:53', NULL);
-INSERT INTO `sys_user_notification` VALUES (2062395873554284546, '000000', 1, 'workflow_notice', 'workflow', NULL, '流程任务结束通知', '流程任务结束通知<a href=2f883d7f-5fd0-11f1-a630-00ff6700037c?taskId=2fab55f9-5fd0-11f1-a630-00ff6700037c&processed=false>点击这个进行查看</a>', '1', NULL, 103, 1, '2026-06-04 12:47:48', 1, '2026-06-13 17:28:43', NULL);
-INSERT INTO `sys_user_notification` VALUES (2062419874473238529, '000000', 1, 'workflow_notice', 'workflow', NULL, '流程任务结束通知', '流程任务结束通知<a href=561bcfbe-5fd2-11f1-a630-00ff6700037c?taskId=5622fbc8-5fd2-11f1-a630-00ff6700037c&processed=false>点击这个进行查看</a>', '1', NULL, 103, 1, '2026-06-04 14:23:11', 1, '2026-06-13 17:28:42', NULL);
-INSERT INTO `sys_user_notification` VALUES (2064012918244130818, '000000', 3, 'im_private', 'im_message', '2064012918244130817', '私聊 · 系统管理员', '要12点了', '0', NULL, 103, 1, '2026-06-08 23:53:22', 1, '2026-06-08 23:53:22', NULL);
-INSERT INTO `sys_user_notification` VALUES (2065501890430619651, '000000', 3, 'im_private', 'im_message', '2065501890430619650', '私聊 · 系统管理员', '❤️', '0', NULL, 103, 1, '2026-06-13 02:30:01', 1, '2026-06-13 02:30:01', NULL);
-INSERT INTO `sys_user_notification` VALUES (2065502129237512193, '000000', 1, 'im_private', 'im_message', '2065502129174597634', '私聊 · 本部门及以下 密码666666', '99', '1', NULL, 108, 3, '2026-06-13 02:30:57', 1, '2026-06-13 17:28:58', NULL);
-INSERT INTO `sys_user_notification` VALUES (2065502354832347139, '000000', 1, 'im_private', 'im_message', '2065502354832347138', '私聊 · 本部门及以下 密码666666', '233', '1', NULL, 108, 3, '2026-06-13 02:31:51', 1, '2026-06-13 17:28:56', NULL);
 INSERT INTO `sys_user_notification` VALUES (2068890023689781250, '000000', 101, 'workflow_todo', 'workflow', NULL, '流程待办通知', '流程待办通知<a href=8352dc6f-6de5-11f1-8004-00ff6700037c?taskId=835f1187-6de5-11f1-8004-00ff6700037c&businessKey=2068889177493143553&category=&processed=true>点击这个进行处理</a>', '0', NULL, 103, 1, '2026-06-22 10:53:14', 1, '2026-06-22 10:53:14', NULL);
 INSERT INTO `sys_user_notification` VALUES (2068896577264615425, '000000', 1, 'workflow_notice', 'workflow', NULL, '流程任务结束通知', '流程任务结束通知<a href=8352dc6f-6de5-11f1-8004-00ff6700037c?taskId=835f1187-6de5-11f1-8004-00ff6700037c&processed=false>点击这个进行查看</a>', '1', NULL, 115, 101, '2026-06-22 11:19:17', 1, '2026-06-27 01:15:20', NULL);
 INSERT INTO `sys_user_notification` VALUES (2068918656345104386, '000000', 101, 'workflow_todo', 'workflow', NULL, '流程待办通知', '流程待办通知<a href=6832550e-6df5-11f1-b34c-00ff6700037c?taskId=684fef46-6df5-11f1-b34c-00ff6700037c&businessKey=2068918578570125314&category=&processed=true>点击这个进行处理</a>', '0', NULL, 103, 1, '2026-06-22 12:47:01', 1, '2026-06-22 12:47:01', NULL);
@@ -16966,7 +17035,7 @@ INSERT INTO `sys_user_notification` VALUES (2074388889072484353, '000000', 1, 'w
 INSERT INTO `sys_user_notification` VALUES (2074392778932928514, '000000', 101, 'workflow_todo', 'workflow', NULL, '流程待办通知', '流程待办通知，请处理', '0', NULL, 103, 1, '2026-07-07 15:19:14', 1, '2026-07-07 15:19:14', NULL);
 INSERT INTO `sys_user_notification` VALUES (2074393069996654594, '000000', 1, 'workflow_notice', 'workflow', NULL, '流程任务结束通知', '流程任务结束通知，请点击查看', '0', NULL, 115, 101, '2026-07-07 15:20:23', 101, '2026-07-07 15:20:23', NULL);
 INSERT INTO `sys_user_notification` VALUES (2074394213913378818, '000000', 1, 'workflow_notice', 'workflow', NULL, '流程任务结束通知', '流程任务结束通知，请点击查看', '0', NULL, 103, 1, '2026-07-07 15:24:56', 1, '2026-07-07 15:24:56', NULL);
-INSERT INTO `sys_user_notification` VALUES (2074677824612900865, '000000', 3, 'im_private', 'im_message', '2074677824579346433', '私聊 · 系统管理员', 'http://159.75.14.226:9005/ruoyi/2026/07/08/32cd186b3ca1418e87f4f713f8fb8737.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20260708T021153Z&X-Amz-SignedHeaders=host&X-Amz-Credential=minio%2F20260708%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Expires=120&X-Amz-Signature=dead40c7ab778d359f512861294f681a6ed9638c0c38ecd0c70f1cf63fa2a0eb', '0', NULL, 103, 1, '2026-07-08 10:11:54', 1, '2026-07-08 10:11:54', NULL);
+INSERT INTO `sys_user_notification` VALUES (2074677824612900865, '000000', 3, 'im_private', 'im_message', '2074677824579346433', '私聊 · 系统管理员', 'http://159.75.14.226:9005/ruoyi/2026/07/08/32cd186b3ca1418e87f4f713f8fb8737.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20260708T021153Z&X-Amz-SignedHeaders=host&X-Amz-Credential=minio%2F20260708%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Expires=120&X-Amz-Signature=dead40c7ab778d359f512861294f681a6ed9638c0c38ecd0c70f1cf63fa2a0eb', '1', NULL, 103, 1, '2026-07-08 10:11:54', 3, '2026-07-19 22:14:50', NULL);
 INSERT INTO `sys_user_notification` VALUES (2074678099947986946, '000000', 1, 'im_private', 'im_message', '2074678099922821121', '私聊 · 本部门及以下 密码666666', 'http://159.75.14.226:9005/ruoyi/2026/07/08/32cd186b3ca1418e87f4f713f8fb8737.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20260708T021153Z&X-Amz-SignedHeaders=host&X-Amz-Credential=minio%2F20260708%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Expires=120&X-Amz-Signature=dead40c7ab778d359f512861294f681a6ed9638c0c38ecd0c70f1cf63fa2a0eb', '0', NULL, 108, 3, '2026-07-08 10:12:59', 3, '2026-07-08 10:12:59', NULL);
 INSERT INTO `sys_user_notification` VALUES (2074765446098096130, '000000', 101, 'workflow_todo', 'workflow', NULL, '流程待办通知', '流程待办通知，请处理', '0', NULL, 103, 1, '2026-07-08 16:00:04', 1, '2026-07-08 16:00:04', NULL);
 INSERT INTO `sys_user_notification` VALUES (2074765786889490433, '000000', 1, 'workflow_notice', 'workflow', NULL, '流程任务结束通知', '流程任务结束通知，请点击查看', '0', NULL, 115, 101, '2026-07-08 16:01:26', 101, '2026-07-08 16:01:26', NULL);
@@ -16978,6 +17047,14 @@ INSERT INTO `sys_user_notification` VALUES (2075391867623510018, '000000', 101, 
 INSERT INTO `sys_user_notification` VALUES (2075392175275708417, '000000', 1, 'workflow_notice', 'workflow', NULL, '流程任务结束通知', '流程任务结束通知，请点击查看', '0', NULL, 115, 101, '2026-07-10 09:30:28', 101, '2026-07-10 09:30:28', NULL);
 INSERT INTO `sys_user_notification` VALUES (2075397661404368898, '000000', 1, 'workflow_notice', 'workflow', NULL, '流程任务结束通知', '流程任务结束通知，请点击查看', '0', NULL, 103, 1, '2026-07-10 09:52:16', 1, '2026-07-10 09:52:16', NULL);
 INSERT INTO `sys_user_notification` VALUES (2077776433182396417, '000000', 1, 'workflow_notice', 'workflow', NULL, '流程任务结束通知', '流程任务结束通知，请点击查看', '0', NULL, 103, 1, '2026-07-16 23:24:40', 1, '2026-07-16 23:24:40', NULL);
+INSERT INTO `sys_user_notification` VALUES (2078160256583737346, '000000', 3, 'im_private', 'im_message', '2078160256583737345', '私聊 · 系统管理员', 'http://159.75.14.226:9005/ruoyi/2026/07/18/ebf07cbb2fd74b13865af6fa69f7a3f9.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20260717T164950Z&X-Amz-SignedHeaders=host&X-Amz-Credential=minio%2F20260717%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Expires=120&X-Amz-Signature=0612e4099d4501afe1f1dbbf81882fe78fd9492b9884963be1c1df06765e8088', '1', NULL, 103, 1, '2026-07-18 00:49:50', 3, '2026-07-19 22:14:37', NULL);
+INSERT INTO `sys_user_notification` VALUES (2078349065724248065, '000000', 3, 'im_private', 'im_message', '2078349065682305026', '私聊 · 系统管理员', '123', '1', NULL, 103, 1, '2026-07-18 13:20:06', 3, '2026-07-19 22:14:36', NULL);
+INSERT INTO `sys_user_notification` VALUES (2078525394956468227, '000000', 3, 'im_private', 'im_message', '2078525394956468226', '私聊 · 系统管理员', 'hh', '1', NULL, 103, 1, '2026-07-19 01:00:46', 3, '2026-07-19 22:14:32', NULL);
+INSERT INTO `sys_user_notification` VALUES (2078833256475815938, '000000', 3, 'im_group', 'im_message', '2078833256412901377', '[@你] 群聊 · 222', '系统管理员：@本部门及以下 密码123456 我单独@你了', '1', NULL, 103, 1, '2026-07-19 21:24:06', 3, '2026-07-19 22:14:29', NULL);
+INSERT INTO `sys_user_notification` VALUES (2078833256534536193, '000000', 4, 'im_group', 'im_message', '2078833256412901377', '群聊 · 222', '系统管理员：@本部门及以下 密码123456 我单独@你了', '0', NULL, 103, 1, '2026-07-19 21:24:06', 1, '2026-07-19 21:24:06', NULL);
+INSERT INTO `sys_user_notification` VALUES (2078834234637840386, '000000', 1, 'im_private', 'im_message', '2078834234637840385', '私聊 · 本部门及以下 密码123456', '好好好', '0', NULL, 108, 3, '2026-07-19 21:27:59', 3, '2026-07-19 21:27:59', NULL);
+INSERT INTO `sys_user_notification` VALUES (2078841596828340226, '000000', 1, 'im_group', 'im_message', '2078841596664762369', '[@你] 群聊 · 222', '本部门及以下 密码123456：@admin 收到', '0', NULL, 108, 3, '2026-07-19 21:57:14', 3, '2026-07-19 21:57:14', NULL);
+INSERT INTO `sys_user_notification` VALUES (2078841596828340227, '000000', 4, 'im_group', 'im_message', '2078841596664762369', '群聊 · 222', '本部门及以下 密码123456：@admin 收到', '0', NULL, 108, 3, '2026-07-19 21:57:14', 3, '2026-07-19 21:57:14', NULL);
 
 -- ----------------------------
 -- Table structure for sys_user_post
