@@ -22,4 +22,7 @@ public class ImPrivateSendBo {
      * <p>客户端生成 UUID，重发复用同一值；为空时不做幂等检查。
      */
     private String clientMsgId;
+
+    /** P6-B3: 引用的消息 ID（可选） */
+    private Long replyMessageId;
 }

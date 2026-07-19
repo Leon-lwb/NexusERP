@@ -46,4 +46,10 @@ public class ImMessage extends TenantEntity {
      * <p>仅群聊消息可能携带；私聊为 null。
      */
     private String mentionUserIds;
+
+    /** P6-B3: 引用的消息 ID（reply 类型消息使用） */
+    private Long replyMessageId;
+
+    /** P6-B3: 引用消息内容摘要（避免前端再次查询原消息） */
+    private String replySnippet;
 }

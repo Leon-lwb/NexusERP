@@ -516,6 +516,10 @@ public class AppImController extends BaseController {
         bo.setToUserId(Long.valueOf(body.get("toUserId")));
         bo.setContent(body.get("content"));
         bo.setMsgType(body.getOrDefault("messageType", "text"));
+        // P6-B3: 引用消息 ID（可选）
+        if (body.get("replyMessageId") != null) {
+            bo.setReplyMessageId(Long.valueOf(body.get("replyMessageId")));
+        }
         return imChatService.sendPrivate(bo);
     }
 
@@ -528,6 +532,10 @@ public class AppImController extends BaseController {
         bo.setGroupId(Long.valueOf(body.get("groupId")));
         bo.setContent(body.get("content"));
         bo.setMsgType(body.getOrDefault("messageType", "text"));
+        // P6-B3: 引用消息 ID（可选）
+        if (body.get("replyMessageId") != null) {
+            bo.setReplyMessageId(Long.valueOf(body.get("replyMessageId")));
+        }
         return imChatService.sendGroup(bo);
     }
 

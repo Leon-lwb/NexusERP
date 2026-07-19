@@ -74,6 +74,14 @@ public class ImPrivateChatService {
         msg.setRevoked("0");
         msg.setForwardFrom(bo.getForwardFrom());
         msg.setClientMsgId(StrUtil.trimToNull(bo.getClientMsgId()));
+        // P6-B3: 引用消息填充
+        if (bo.getReplyMessageId() != null) {
+            ImMessage origin = imMessageMapper.selectById(bo.getReplyMessageId());
+            if (origin != null && !"1".equals(origin.getRevoked())) {
+                msg.setReplyMessageId(bo.getReplyMessageId());
+                msg.setReplySnippet(truncate(origin.getContent(), 200));
+            }
+        }
         imMessageMapper.insert(msg);
 
         String title = "私聊 · " + (from != null ? StrUtil.blankToDefault(from.getNickName(), from.getUserName()) : "用户");
@@ -185,5 +193,13 @@ public class ImPrivateChatService {
         payload.put("readAt", System.currentTimeMillis());
         payload.put("readBy", readBy);
         imRealtimePush.publishToUserAfterCommit(peerUserId, ImEnvelopeHelper.imMessageRead(payload));
+    }
+
+    /**
+     * P6-B3: 字符串截断辅助
+     */
+    private String truncate(String s, int max) {
+        if (s == null) return null;
+        return s.length() <= max ? s : s.substring(0, max);
     }
 }

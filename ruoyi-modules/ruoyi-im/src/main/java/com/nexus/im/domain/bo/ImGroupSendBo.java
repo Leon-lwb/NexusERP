@@ -31,4 +31,7 @@ public class ImGroupSendBo {
      * <p>为空或 null 表示无 @。
      */
     private List<Long> mentionUserIds;
+
+    /** P6-B3: 引用的消息 ID（可选） */
+    private Long replyMessageId;
 }

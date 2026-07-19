@@ -102,6 +102,14 @@ public class ImGroupChatService {
         msg.setForwardFrom(bo.getForwardFrom());
         msg.setClientMsgId(StrUtil.trimToNull(bo.getClientMsgId()));
         msg.setMentionUserIds(mentionUserIdsJson);
+        // P6-B3: 引用消息填充
+        if (bo.getReplyMessageId() != null) {
+            ImMessage origin = imMessageMapper.selectById(bo.getReplyMessageId());
+            if (origin != null && !"1".equals(origin.getRevoked())) {
+                msg.setReplyMessageId(bo.getReplyMessageId());
+                msg.setReplySnippet(truncate(origin.getContent(), 200));
+            }
+        }
         imMessageMapper.insert(msg);
 
         SysUserVo from = sysUserService.selectUserById(fromId);
@@ -481,5 +489,13 @@ public class ImGroupChatService {
             payload.put("messageIds", Collections.singletonList(maxMessageId));
             imRealtimePush.publishToUserAfterCommit(fromUserId, ImEnvelopeHelper.imMessageRead(payload));
         }
+    }
+
+    /**
+     * P6-B3: 字符串截断辅助
+     */
+    private String truncate(String s, int max) {
+        if (s == null) return null;
+        return s.length() <= max ? s : s.substring(0, max);
     }
 }
