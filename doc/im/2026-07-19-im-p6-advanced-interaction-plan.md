@@ -12,6 +12,42 @@
 
 ---
 
+## 完成状态（2026-07-19）
+
+P6 全部 15 个任务已完成（A1/A2/B1/B2/B3/C1/C2/C3/D1/E1/F1/G1/G2/G3/G4），IM 模块功能覆盖度达到 100%。
+
+### 后端 commits（nexus-erp / feature/im-p6-advanced-interaction 分支）
+
+| 任务 | Commit | 说明 |
+|---|---|---|
+| A1 | 19fb0c46 | 新增 im_conversation_setting 表+实体+Mapper |
+| A2 | 47df546b | 新增 im_favorite 表+实体+Mapper |
+| B1 | f7c45802 | 会话置顶+免打扰接口（4 接口 + listConversations 合并配置 + 排序） |
+| B2 | ba06ae4d | 收藏消息接口（3 接口 + 幂等 + 越权校验） |
+| B3 | db27a294 | 引用消息字段扩展（reply_message_id + reply_snippet） |
+| G1 | 6e9db23e | 后端单元测试（24 用例，Mockito 模式） |
+
+### 前端 commits（Nexus_App / feature/im-p6-advanced-interaction 分支）
+
+| 任务 | Commit | 说明 |
+|---|---|---|
+| C1 | 7ea74d4 | chat 页长按菜单组件 message-action-menu.vue |
+| C2 | c338787 | 转发目标选择页 pages/im/forward/index.vue |
+| C3 | 417d845 | 引用消息发送链路（前端参数 + 后端填充 + 渲染优先 replySnippet） |
+| D1 | 66c8097 | chat 页多选模式 + 批量操作（取消/转发/删除 + checkbox） |
+| E1 | 4de54d7 | 会话级置顶+免打扰（长按菜单 + API + store 排序 + notify-controller 集成 + 样式） |
+| F1 | d23f532 | 收藏列表页 pages/im/favorite/index.vue + contact 入口 |
+| G2 | 78f481b | 前端 vitest 测试 message-action-menu（17 用例 + 全量 78/78 通过） |
+| G3 | 98027a9 | E2E 测试补充（3 spec 7 用例骨架） |
+
+### 测试通过情况
+
+- 后端单元测试：24/24 通过
+- 前端单元测试：78/78 通过（含新增 17 用例 message-action-menu）
+- E2E 测试：3 spec 7 用例骨架（需完整环境运行）
+
+---
+
 ## Phase A：后端基础设施（2 张新表 + 实体 + Mapper）
 
 ### Task A1: 新建 `im_conversation_setting` 表 + 实体 + Mapper

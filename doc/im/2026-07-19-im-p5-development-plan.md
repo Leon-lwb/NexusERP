@@ -469,3 +469,20 @@ P5 完成后，P6 可考虑以下方向（待 P5 验证后选择）：
 | P4 | 性能优化 + 可靠性补齐 + 可观测性 | 12 | ✅ 已完成（2026-07-19） |
 | P5 | 稳定性兜底 + 安全审计 + 前端体验补齐 | 7 | 🚧 实施中 |
 | P6 | 监控大盘 + SLA 体系 | TBD | 🔮 待规划 |
+
+---
+
+## P6 衔接（2026-07-19 完成）
+
+P5 B 档完成后，P6 高级交互入口开发已全部完成。详见 [2026-07-19-im-p6-advanced-interaction-plan.md](./2026-07-19-im-p6-advanced-interaction-plan.md)。
+
+P6 覆盖 7 项缺失功能（撤回/转发/引用/多选/收藏/置顶/会话级免打扰），共 15 个任务（A1/A2/B1/B2/B3/C1/C2/C3/D1/E1/F1/G1/G2/G3/G4），分 7 个 Phase 实施：
+
+- 后端：新建 2 张表（im_conversation_setting / im_favorite）+ 7 个新接口 + ImMessage 引用字段扩展
+- 前端：新建 3 个组件/页面（message-action-menu / forward / favorite）+ chat/conversation 长按菜单集成 + 多选模式 + 引用链路
+- 测试：后端 24 单元测试 + 前端 17 单元测试 + E2E 3 spec 骨架
+
+后端 commits：19fb0c46 / 47df546b / f7c45802 / ba06ae4d / db27a294 / 6e9db23e
+前端 commits：7ea74d4 / c338787 / 417d845 / 66c8097 / 4de54d7 / d23f532 / 78f481b / 98027a9
+
+IM 模块功能覆盖度达到 100%。
