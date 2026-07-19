@@ -61,6 +61,7 @@ class ImConversationServiceTest extends ImUnitTestBase {
     @Mock private ImGroupMapper imGroupMapper;
     @Mock private ImGroupMemberMapper imGroupMemberMapper;
     @Mock private ImChatSupport support;
+    @Mock private ImConversationCache conversationCache;
 
     @InjectMocks
     private ImConversationService imConversationService;
@@ -94,6 +95,8 @@ class ImConversationServiceTest extends ImUnitTestBase {
         lenient().when(support.batchLoadUsers(anyCollection())).thenReturn(new java.util.LinkedHashMap<>());
         // 公共桩：support.batchResolveAvatarUrls 返回空 Map
         lenient().when(support.batchResolveAvatarUrls(anyCollection())).thenReturn(new java.util.LinkedHashMap<>());
+        // P4-2: 公共桩 — 会话缓存未命中（返回 null 让测试走 DB 查询路径）
+        lenient().when(conversationCache.get()).thenReturn(null);
     }
 
     // ==================== 快速路径守护 ====================
@@ -104,13 +107,13 @@ class ImConversationServiceTest extends ImUnitTestBase {
     @Test
     void listConversations_noGroupsNoPrivate_returnsEmpty() {
         when(imGroupMemberMapper.selectList(any())).thenReturn(new ArrayList<>());
-        when(imMessageMapper.selectList(any())).thenReturn(new ArrayList<>());
+        // P4-10 B6: 私聊路径改用 selectLatestPrivatePerPeer（Mockito 默认返回空列表，无需显式 stub）
 
         List<ImConversationVo> result = imConversationService.listConversations();
 
         assertThat(result).isEmpty();
         // 守护：无群成员 → 不查 group 信息
-        verify(imGroupMapper, never()).selectVoByIds(any());
+        verify(imGroupMapper, never()).selectByIds(anyCollection());
         // 守护：无私聊消息 → 不查 user
         verify(support, never()).batchLoadUsers(anyCollection());
     }
@@ -121,23 +124,25 @@ class ImConversationServiceTest extends ImUnitTestBase {
     @Test
     void listConversations_noGroupsOnlyPrivate_skipsGroupPath() {
         when(imGroupMemberMapper.selectList(any())).thenReturn(new ArrayList<>());
-        // 私聊返回 1 条消息
+        // P4-10 B6: 私聊最近消息改用 selectLatestPrivatePerPeer（DB 侧去重后返回）
         ImMessage privateMsg = ImTestFixture.buildMessage(1L, PEER_301, ME_USER_ID, null, "hi");
-        when(imMessageMapper.selectList(any())).thenReturn(List.of(privateMsg));
+        when(imMessageMapper.selectLatestPrivatePerPeer(any())).thenReturn(List.of(privateMsg));
 
         List<ImConversationVo> result = imConversationService.listConversations();
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).getChatType()).isEqualTo("PRIVATE");
         // 守护：无群 → 不查群信息
-        verify(imGroupMapper, never()).selectVoByIds(any());
+        verify(imGroupMapper, never()).selectByIds(anyCollection());
     }
 
     // ==================== 群聊批量化守护 ====================
 
     /**
      * P2-1: 有群组时走完整 6 步批量化流程。
-     * <p>守护 selectVoByIds 用群 ID 集合一次性查询（而非 N 次 selectById）。
+     * <p>守护 selectByIds 用群 ID 集合一次性查询（而非 N 次 selectById）。
+     * <p>注：ImGroupMapper extends BaseMapperPlus<ImGroup, ImGroup>（实体类与 VO 同类型），
+     * 不能用 selectVoByIds（mapstruct-plus 找不到同类型转换器），改用 selectByIds 直接返回实体列表。
      */
     @Test
     void listConversations_withGroups_usesBatchSelectVoByIds() {
@@ -149,7 +154,7 @@ class ImConversationServiceTest extends ImUnitTestBase {
         // 群组信息批量查询
         ImGroup g1 = ImTestFixture.buildGroup(GROUP_1, "group-1", ME_USER_ID);
         ImGroup g2 = ImTestFixture.buildGroup(GROUP_2, "group-2", ME_USER_ID);
-        when(imGroupMapper.selectVoByIds(any())).thenReturn(List.of(g1, g2));
+        when(imGroupMapper.selectByIds(anyCollection())).thenReturn(List.of(g1, g2));
 
         // 群最后消息：selectMaps 返回 maxId
         Map<String, Object> maxRow1 = new HashMap<>();
@@ -163,8 +168,8 @@ class ImConversationServiceTest extends ImUnitTestBase {
 
         List<ImConversationVo> result = imConversationService.listConversations();
 
-        // 守护：selectVoByIds 调用 1 次（批量查群信息）
-        verify(imGroupMapper, times(1)).selectVoByIds(any());
+        // 守护：selectByIds 调用 1 次（批量查群信息）
+        verify(imGroupMapper, times(1)).selectByIds(anyCollection());
         // 守护：群成员列表查询只调 2 次（用户参与的群 + 群成员详情），不是 N×2 次
         verify(imGroupMemberMapper, times(2)).selectList(any());
     }
@@ -180,7 +185,7 @@ class ImConversationServiceTest extends ImUnitTestBase {
         ImGroupMember m1 = ImTestFixture.buildGroupMember(GROUP_1, ME_USER_ID);
         when(imGroupMemberMapper.selectList(any())).thenReturn(List.of(m1));
         ImGroup g1 = ImTestFixture.buildGroup(GROUP_1, "group-1", ME_USER_ID);
-        when(imGroupMapper.selectVoByIds(any())).thenReturn(List.of(g1));
+        when(imGroupMapper.selectByIds(anyCollection())).thenReturn(List.of(g1));
 
         // 第 1 次 selectMaps：返回 maxId（群最后消息查询）
         // 第 2 次 selectMaps：返回未读数（驼峰 key）
@@ -219,11 +224,9 @@ class ImConversationServiceTest extends ImUnitTestBase {
         // 无群组
         when(imGroupMemberMapper.selectList(any())).thenReturn(new ArrayList<>());
 
-        // 私聊消息：1 条来自 PEER_301
+        // P4-10 B6: 私聊最近消息改用 selectLatestPrivatePerPeer
         ImMessage privateMsg = ImTestFixture.buildMessage(1L, PEER_301, ME_USER_ID, null, "hi");
-        // 第 1 次 selectList：返回最近 200 条私聊
-        // 第 2 次 selectList：listGroupConversations 的群成员查询（此处空群走快速路径，不调用）
-        when(imMessageMapper.selectList(any())).thenReturn(List.of(privateMsg));
+        when(imMessageMapper.selectLatestPrivatePerPeer(any())).thenReturn(List.of(privateMsg));
 
         // selectMaps：返回私聊未读数（驼峰 key）
         Map<String, Object> unreadRow = new HashMap<>();
@@ -261,18 +264,16 @@ class ImConversationServiceTest extends ImUnitTestBase {
             .thenReturn(List.of(m1, m2));
 
         ImGroup g1 = ImTestFixture.buildGroup(GROUP_1, "group-1", ME_USER_ID);
-        when(imGroupMapper.selectVoByIds(any())).thenReturn(List.of(g1));
+        when(imGroupMapper.selectByIds(anyCollection())).thenReturn(List.of(g1));
 
         Map<String, Object> maxRow = new HashMap<>();
         maxRow.put("maxId", 1001L);
         when(imMessageMapper.selectMaps(any())).thenReturn(List.of(maxRow));
 
         ImMessage lastMsg = ImTestFixture.buildMessage(1001L, MEMBER_201, null, GROUP_1, "last");
-        // 群聊路径会调 selectList 取最后消息详情；私聊路径也调 selectList 取最近 200 条。
-        // 第 1 次（群最后消息）→ [lastMsg]；第 2 次（私聊最近 200 条）→ [] 让私聊路径快速返回
+        // 群聊路径调 selectList 取最后消息详情；私聊路径 B6 后改用 selectLatestPrivatePerPeer（默认返回空）
         when(imMessageMapper.selectList(any()))
-            .thenReturn(List.of(lastMsg))
-            .thenReturn(new ArrayList<>());
+            .thenReturn(List.of(lastMsg));
 
         imConversationService.listConversations();
 
@@ -292,8 +293,9 @@ class ImConversationServiceTest extends ImUnitTestBase {
         // 无群组
         when(imGroupMemberMapper.selectList(any())).thenReturn(new ArrayList<>());
 
+        // P4-10 B6: 私聊最近消息改用 selectLatestPrivatePerPeer
         ImMessage privateMsg = ImTestFixture.buildMessage(1L, PEER_301, ME_USER_ID, null, "hi");
-        when(imMessageMapper.selectList(any())).thenReturn(List.of(privateMsg));
+        when(imMessageMapper.selectLatestPrivatePerPeer(any())).thenReturn(List.of(privateMsg));
 
         // selectMaps 返回空（无私聊未读）
         when(imMessageMapper.selectMaps(any())).thenReturn(new ArrayList<>());
@@ -342,9 +344,8 @@ class ImConversationServiceTest extends ImUnitTestBase {
         ImMessage msgNew = ImTestFixture.buildMessage(2L, MEMBER_201, ME_USER_ID, null, "new");
         msgNew.setCreateTime(newer);
 
-        // selectList 返回顺序与时间倒序无关（业务代码再按 peer 去重保留首条 = 最新）
-        // 模拟 createTime 倒序排列（与生产 SQL 一致）
-        when(imMessageMapper.selectList(any())).thenReturn(List.of(msgNew, msgOld));
+        // P4-10 B6: 私聊最近消息改用 selectLatestPrivatePerPeer（DB 侧已按 create_time DESC 返回）
+        when(imMessageMapper.selectLatestPrivatePerPeer(any())).thenReturn(List.of(msgNew, msgOld));
         when(imMessageMapper.selectMaps(any())).thenReturn(new ArrayList<>());
 
         List<ImConversationVo> result = imConversationService.listConversations();

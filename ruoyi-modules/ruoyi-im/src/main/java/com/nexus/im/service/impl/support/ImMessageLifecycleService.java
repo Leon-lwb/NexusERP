@@ -16,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -70,27 +71,33 @@ public class ImMessageLifecycleService {
             // P0-2: 推送移到事务提交后，避免回滚时接收方收到撤回通知但实际未撤回
             imRealtimePush.publishToUserAfterCommit(msg.getToUserId(), ImEnvelopeHelper.imMessage(payload));
         } else {
+            // P4-1(B2): 群撤回事件单次批量推送
+            // 原实现 for 循环逐成员注册 N 个 afterCommit 钩子，1000 人群 = 1000 次注册。
+            // 改为：构造一次 envelope，调用 publishToUsersAfterCommit 单次批量推送所有成员。
             ImGroup group = imGroupMapper.selectById(msg.getGroupId());
             List<ImGroupMember> members = imGroupMemberMapper.selectList(new LambdaQueryWrapper<ImGroupMember>()
                 .eq(ImGroupMember::getGroupId, msg.getGroupId()));
             if (CollUtil.isEmpty(members)) {
                 return R.ok();
             }
+            List<Long> targetUserIds = new ArrayList<>(members.size());
             for (ImGroupMember m : members) {
-                if (m.getUserId().equals(me)) {
-                    continue;
+                if (!m.getUserId().equals(me)) {
+                    targetUserIds.add(m.getUserId());
                 }
+            }
+            if (!targetUserIds.isEmpty()) {
                 Map<String, Object> payload = new LinkedHashMap<>();
                 payload.put("chatType", "GROUP");
                 payload.put("messageId", messageId);
                 payload.put("groupId", msg.getGroupId());
                 payload.put("fromUserId", msg.getFromUserId());
+                payload.put("operatorId", me);
                 payload.put("action", "revoke");
                 if (group != null) {
                     payload.put("groupName", group.getGroupName());
                 }
-                // P0-2: 推送移到事务提交后，避免回滚时接收方收到撤回通知但实际未撤回
-                imRealtimePush.publishToUserAfterCommit(m.getUserId(), ImEnvelopeHelper.imMessage(payload));
+                imRealtimePush.publishToUsersAfterCommit(targetUserIds, ImEnvelopeHelper.imMessage(payload));
             }
         }
         return R.ok();

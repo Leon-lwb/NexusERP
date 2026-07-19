@@ -891,10 +891,47 @@ test(im): P3-X 简述
 
 ## 十、后续阶段预告（P4）
 
-P3 完成后，P4 可考虑以下方向（待 P3 验证后选择）：
+> **P4 完成状态**: 已于 2026-07-19 实施完成，详见 [2026-07-18-im-p4-development-plan.md](./2026-07-18-im-p4-development-plan.md)。
 
-1. **前端测试基础设施扩展**: uni-app 组件测试 + vuex store 测试 + E2E（H5 模式）
-2. **性能压测基线**: JMeter / wrk 压测高频接口，建立 P95/P99 延迟基线
-3. **可观测性增强**: 慢 SQL 监控 + 推送延迟监控 + 缓存命中率监控
-4. **安全审计深化**: 越权漏洞全量扫描 + SQL 注入检测 + XSS 防护
-5. **多租户隔离验证**: 跨租户数据泄露全量测试
+### 10.1 P4 已完成项
+
+| 任务 | 优化点 | 完成内容 |
+|---|---|---|
+| P4-1 | B1+B2 | 群消息扇出异步化 + 批量通知（saveBatch 替代循环 addAndPush） |
+| P4-2 | B4 | listConversations Redis 缓存（TTL 60s + 主动失效） |
+| P4-3 | B3 | markGroupRead 水位线模式（聚合 SQL 替代 messageId 列表） |
+| P4-4 | A2 | App syncToken 增量同步（替代全量拉 200 条） |
+| P4-5 | A3+A4+A5 | App 消息去重 O(1) Set 索引 + 新会话本地 push + 防抖重拉 |
+| P4-6 | W1+W2+W3 | Web IndexedDB 本地缓存 + WS 重连监听 + 30s 兜底轮询 + pageInfo LRU |
+| P4-7 | A1+A6+A8 | App pendingQueue 持久化 + 并行重发（按 targetId 分组）+ WS send 返回 boolean |
+| P4-8 | W7+W8+A11+A12 | 消息撤回双端 UI 提示 + 消息搜索（后端 LIKE + 7 天 + 分页） |
+| P4-9 | B5 | 后端可观测性 Micrometer 指标（im.push.success/failure/latency + im.message.send） |
+| P4-10 | B6+B7 | 私聊会话去重 SQL 改写（LEAST/GREATEST + MAX 子查询）+ 清理任务每小时分桶 |
+| P4-12 | — | ImMetricsTest + ImRealtimePushMetricsTest 单元测试补全 |
+
+### 10.2 P4 未完成项（留待 P5 评估）
+
+| 任务 | 优化点 | 原因 |
+|---|---|---|
+| P4-10 B8 | WS 推送背压（UserPushQueue） | 需改造共享基础设施 WebSocketUtils（不在 IM 模块），且现有 syncToken 机制已覆盖离线消息恢复；B8 应在 P5 与异步推送线程池统一设计 |
+| P4-11 | W4+W5+W6+A7+A9+A10 | 计划明确为"仅列出方向，需独立评估与设计"；前端虚拟滚动（vue-virtual-scroller / scroll-view 虚拟渲染）影响面广，需独立 PR 评估渲染性能与兼容性 |
+| P4-12 性能对比 | 1000 人群发送延迟 / listConversations 首屏 / App 重连拉取量 | 需独立压测环境与基线，留待 P5 性能压测专项 |
+
+### 10.3 P3 → P4 预告对照
+
+P3 阶段预告的 5 个方向，P4 实际落地情况：
+
+1. **前端测试基础设施扩展** → 仅补全后端单元测试（ImMetricsTest、ImRealtimePushMetricsTest）；前端组件测试与 E2E 留待 P5
+2. **性能压测基线** → 未建立（P4-12 性能对比延后）
+3. **可观测性增强** → 已完成 P4-9（Micrometer 指标）；慢 SQL / 缓存命中率监控留待 P5
+4. **安全审计深化** → 未涉及（P4 聚焦性能与可靠性）
+5. **多租户隔离验证** → 未涉及（P4 聚焦性能与可靠性）
+
+### 10.4 P5 候选方向
+
+- WS 推送背压 + 异步推送线程池统一设计（B8 升级版）
+- 前端虚拟滚动 + Emoji 分页 + 图片预加载（P4-11 全量落地）
+- 性能压测基线 + P95/P99 延迟监控告警
+- 慢 SQL 监控 + Redis 缓存命中率监控
+- 安全审计深化（越权 / SQL 注入 / XSS 全量扫描）
+- 多端状态同步协议重构（如需要）

@@ -40,10 +40,13 @@ public class ImConversationService {
     private final ImGroupMapper imGroupMapper;
     private final ImGroupMemberMapper imGroupMemberMapper;
     private final ImChatSupport support;
+    private final ImConversationCache conversationCache;
 
     /**
      * 列出当前用户的所有会话（群聊 + 私聊），按最后消息时间倒序。
      * <p>P2-1: 批量化改造，6 步聚合所有群聊会话 + 私聊会话。
+     * <p>P4-2: 新增 Redis 缓存层，TTL 60s。命中时直接返回，跳过 8 步 SQL 查询；
+     * 未命中时走 DB 查询后回填缓存。缓存失效由发送消息/标记已读/群组变更触发。
      * <ul>
      *   <li>第 1 步：用户参与的群组列表（1 SQL）</li>
      *   <li>第 2 步：批量查群组信息（1 SQL）</li>
@@ -55,6 +58,11 @@ public class ImConversationService {
      * </ul>
      */
     public List<ImConversationVo> listConversations() {
+        // P4-2: 先查 Redis 缓存，命中则直接返回（跳过所有 SQL）
+        List<ImConversationVo> cached = conversationCache.get();
+        if (cached != null) {
+            return cached;
+        }
         Long me = LoginHelper.getUserId();
         List<ImConversationVo> list = new ArrayList<>();
 
@@ -64,6 +72,8 @@ public class ImConversationService {
         list.addAll(privateVos);
 
         list.sort(Comparator.comparing(ImConversationVo::getLastTime, Comparator.nullsLast(Comparator.naturalOrder())).reversed());
+        // P4-2: 回填缓存
+        conversationCache.put(list);
         return list;
     }
 
@@ -87,7 +97,10 @@ public class ImConversationService {
         }
 
         // ── 第 2 步：批量查群组信息（1 SQL） ──
-        List<ImGroup> groups = imGroupMapper.selectVoByIds(groupIds);
+        // 注：ImGroupMapper extends BaseMapperPlus<ImGroup, ImGroup>（实体类与 VO 同类型），
+        // 不能用 selectVoByIds — MapstructUtils.convert 找不到 ImGroup→ImGroup 同类型转换器，
+        // 会抛 ConvertException。改用 selectByIds 直接返回实体列表，跳过 convert 步骤。
+        List<ImGroup> groups = imGroupMapper.selectByIds(groupIds);
         if (groups == null || groups.isEmpty()) {
             return new ArrayList<>();
         }
@@ -224,19 +237,18 @@ public class ImConversationService {
 
     /**
      * 私聊会话批量化加载。
+     * <p>P4-10 B6: 第 1 步 SQL 改写为 DB 侧去重（LEAST/GREATEST + MAX(message_id) 子查询），
+     * 替代原"取 200 条 + 内存 LinkedHashMap 去重"。返回行数 = peer 数（通常 ≤ 50），
+     * 避免高频对端挤占 200 条限额导致其他 peer 漏算。
      */
     private List<ImConversationVo> listPrivateConversations(Long me) {
-        // ── 第 1 步：取最近 200 条私聊消息，按对端用户去重保留最新（1 SQL） ──
-        List<ImMessage> recent = imMessageMapper.selectList(new LambdaQueryWrapper<ImMessage>()
-            .isNull(ImMessage::getGroupId)
-            .and(w -> w.eq(ImMessage::getFromUserId, me).or().eq(ImMessage::getToUserId, me))
-            .orderByDesc(ImMessage::getCreateTime)
-            .last("limit 200"));
+        // ── 第 1 步：DB 侧按对端 pair 去重，每 peer 返回最新一条消息（1 SQL） ──
+        List<ImMessage> recent = imMessageMapper.selectLatestPrivatePerPeer(me);
         if (recent.isEmpty()) {
             return new ArrayList<>();
         }
 
-        // 按 peer 去重，保留最新（createTime 已倒序，putIfAbsent 保留首条 = 最新）
+        // 按 peer 提取（DB 已按 create_time DESC 返回，putIfAbsent 保留首条 = 最新）
         Map<Long, ImMessage> latestByPeer = new LinkedHashMap<>();
         for (ImMessage m : recent) {
             Long peer;

@@ -13,9 +13,12 @@ import {
   privateHistoryWithSender,
   removeGroupMember as removeGroupMemberApi,
   revokeMessage as revokeMessageApi,
+  searchMessages as searchMessagesApi,
   sendGroupMessage,
   sendPrivateMessage
 } from '@/api/im/chat';
+import { imCache, flushOnExit } from '@/utils/im/im-cache';
+import { isWsConnected } from '@/utils/websocket';
 
 export type ChatType = 'PRIVATE' | 'GROUP';
 
@@ -71,6 +74,8 @@ interface ImPayload {
   mentioned?: boolean;
   /** P1-6: 已读回执专用字段 */
   messageIds?: (string | number)[];
+  /** P4-3: 群聊已读回执水位线（按发送者聚合，避免大数组传输） */
+  watermark?: { fromUserId: string | number; maxMessageId: string | number };
   readAt?: string | number;
   readBy?: string | number;
 }
@@ -125,6 +130,8 @@ export const useImStore = defineStore('im', () => {
   let newMsgCount = 0;
   let titleTimer: ReturnType<typeof setInterval> | null = null;
   let origTitle = '';
+  /** P4-6 W2: WS 不可达时的 30s 兜底轮询 timer */
+  let fallbackTimer: ReturnType<typeof setInterval> | null = null;
 
   const myUserId = computed(() => String(userStore.userId ?? ''));
   const myAvatar = computed(() => userStore.avatar);
@@ -137,7 +144,11 @@ export const useImStore = defineStore('im', () => {
   const draft = computed<string>({
     get: () => (activeKey.value ? (draftMap.value[activeKey.value] ?? '') : ''),
     set: (v) => {
-      if (activeKey.value) draftMap.value[activeKey.value] = v;
+      if (activeKey.value) {
+        draftMap.value[activeKey.value] = v;
+        // P4-6 W3: 草稿写入触发 LRU 记录
+        touchLru(activeKey.value);
+      }
     }
   });
 
@@ -150,10 +161,33 @@ export const useImStore = defineStore('im', () => {
     return String(m.fromUserId) === myUserId.value;
   }
 
+  /**
+   * P4-6 W3: 简易 LRU — 记录会话 key 访问顺序，超容量时淘汰最旧的 pageInfo/draft。
+   * <p>原 pageInfoMap/draftMap 不清理，长时间使用后会累积大量历史会话条目导致内存泄漏。
+   * <p>容量 20 足够覆盖典型使用场景（同时活跃的会话数远小于 20）。
+   */
+  const LRU_CAPACITY = 20;
+  const accessOrder: string[] = [];
+
+  function touchLru(key: string) {
+    const idx = accessOrder.indexOf(key);
+    if (idx !== -1) accessOrder.splice(idx, 1);
+    accessOrder.push(key);
+    while (accessOrder.length > LRU_CAPACITY) {
+      const oldest = accessOrder.shift();
+      if (oldest && oldest !== key) {
+        delete pageInfoMap.value[oldest];
+        delete draftMap.value[oldest];
+      }
+    }
+  }
+
   function ensurePageInfo(key: string): PageInfo {
     if (!pageInfoMap.value[key]) {
       pageInfoMap.value[key] = { pageNum: 1, hasMore: false, loading: false };
     }
+    // P4-6 W3: 记录访问顺序，超容量时淘汰最旧会话的 pageInfo/draft
+    touchLru(key);
     return pageInfoMap.value[key];
   }
 
@@ -182,10 +216,61 @@ export const useImStore = defineStore('im', () => {
   function init() {
     if (initialized.value) return;
     initialized.value = true;
+    // P4-6 W2: 1. 先从 IndexedDB 加载本地缓存（毫秒级，秒开体验）
+    void loadFromLocalCache();
+    // 2. 后台拉取服务器最新数据（不阻塞 UI）
     void loadConversations();
     window.addEventListener('im-realtime', handleRealtime as EventListener);
     window.addEventListener('focus', onWindowFocus);
     document.addEventListener('visibilitychange', onVisibilityChange);
+    // P4-6 W2: 3. 监听 WS 重连事件，触发离线消息同步
+    window.addEventListener('im-ws-connected', handleWsReconnect as EventListener);
+    // P4-6 W2: 4. WS 不可达时 30s 兜底轮询（避免推送丢失导致未读数长期不更新）
+    if (fallbackTimer == null) {
+      fallbackTimer = setInterval(() => {
+        if (!isWsConnected()) {
+          void loadConversations();
+        }
+      }, 30_000);
+    }
+    // P4-6 W2: 5. 页面隐藏时强制 flush 缓存（防止移动端/标签关闭丢失待写数据）
+    window.addEventListener('pagehide', onPageHide);
+  }
+
+  /**
+   * P4-6 W2: 从 IndexedDB 加载本地缓存的会话列表 + 各会话消息。
+   * <p>不阻塞 init 流程，加载完成后立即反映到 messagesMap，实现秒开。
+   */
+  async function loadFromLocalCache() {
+    try {
+      const cachedConv = await imCache.getConversations<Conversation[]>();
+      if (cachedConv && cachedConv.length > 0) {
+        conversations.value = cachedConv;
+      }
+      const chatIds = await imCache.listConversationIds();
+      for (const chatId of chatIds) {
+        const msgs = await imCache.getMessage<ChatMessage[]>(chatId);
+        if (msgs && msgs.length > 0) {
+          messagesMap.value[chatId] = msgs;
+        }
+      }
+    } catch {
+      /* IndexedDB 不可用时静默降级 */
+    }
+  }
+
+  /** P4-6 W2: WS 重连后同步离线期间的消息（重拉会话列表 + 活跃会话强制刷新） */
+  function handleWsReconnect() {
+    void loadConversations();
+    // 活跃会话强制刷新，拉取断线期间漏掉的消息
+    if (active.value) {
+      void loadMessages(true);
+    }
+  }
+
+  /** P4-6 W2: 页面隐藏时强制 flush 缓存到 IndexedDB */
+  function onPageHide() {
+    void flushOnExit();
   }
 
   async function loadConversations() {
@@ -201,6 +286,8 @@ export const useImStore = defineStore('im', () => {
         lastTime: c.lastTime,
         unreadCount: Number(c.unreadCount) || 0
       }));
+      // P4-6 W1: 持久化到 IndexedDB
+      void imCache.saveConversations(conversations.value);
     }
   }
 
@@ -223,6 +310,8 @@ export const useImStore = defineStore('im', () => {
         messagesMap.value[key] = rows.slice().reverse().map(normalizeRow);
         pi.pageNum = 1;
         pi.hasMore = rows.length >= PAGE_SIZE;
+        // P4-6 W1: 持久化到 IndexedDB
+        void imCache.saveMessage(key, messagesMap.value[key]);
       }
     } finally {
       pi.loading = false;
@@ -255,6 +344,8 @@ export const useImStore = defineStore('im', () => {
         if (older.length) {
           messagesMap.value[key] = [...older, ...(messagesMap.value[key] || [])];
           pi.pageNum = next;
+          // P4-6 W1: 持久化合并后的消息到 IndexedDB
+          void imCache.saveMessage(key, messagesMap.value[key]);
         }
         pi.hasMore = rows.length >= PAGE_SIZE;
       }
@@ -293,7 +384,12 @@ export const useImStore = defineStore('im', () => {
     const arr = messagesMap.value[key];
     if (!arr) return;
     const idx = arr.findIndex((m) => m.clientTempId === clientTempId);
-    if (idx >= 0) arr[idx] = { ...arr[idx], ...patch };
+    if (idx >= 0) {
+      arr[idx] = { ...arr[idx], ...patch };
+      // P4-6 W1: 状态变更（sending→sent/failed）同步到缓存，
+      // 避免刷新后已发送消息仍显示 sending 状态
+      void imCache.saveMessage(key, arr);
+    }
   }
 
   function updateConversationPreview(conv: ActiveConv, content: string) {
@@ -317,6 +413,8 @@ export const useImStore = defineStore('im', () => {
         ...conversations.value
       ];
     }
+    // P4-6 W1: 会话列表变更同步到缓存
+    void imCache.saveConversations(conversations.value);
   }
 
   async function sendCore(
@@ -386,6 +484,8 @@ export const useImStore = defineStore('im', () => {
         mentioned: isMentionedMe
       }
     ];
+    // P4-6 W1: 乐观插入后立即写入缓存（防抖），让刷新后仍可见
+    void imCache.saveMessage(key, messagesMap.value[key]);
     if (msgType === 'text') draftMap.value[key] = '';
     await sendCore(conv, key, content, msgType, clientTempId, forwardFrom, clientMsgId, mentionUserIds);
   }
@@ -408,7 +508,11 @@ export const useImStore = defineStore('im', () => {
     const arr = messagesMap.value[key];
     if (!arr) return;
     const idx = arr.findIndex((m) => m.messageId && m.messageId === messageId);
-    if (idx >= 0) arr[idx] = { ...arr[idx], revoked: true };
+    if (idx >= 0) {
+      arr[idx] = { ...arr[idx], revoked: true };
+      // P4-6 W1: 撤回状态同步到缓存，避免刷新后撤回提示丢失
+      void imCache.saveMessage(key, arr);
+    }
   }
 
   async function revoke(m: ChatMessage) {
@@ -499,6 +603,32 @@ export const useImStore = defineStore('im', () => {
     if (key) stopFlash();
   }
 
+  /**
+   * P4-8 W8: 消息搜索
+   * <p>调用后端 /messages/search 接口，LIKE 查询 7 天内消息。
+   * @param keyword 搜索关键词
+   * @param chatType 可选筛选 PRIVATE / GROUP
+   * @param targetId 可选筛选指定会话
+   */
+  async function searchMessages(keyword: string, chatType?: ChatType, targetId?: string) {
+    if (!keyword || !keyword.trim()) return [];
+    try {
+      const res: any = await searchMessagesApi({
+        keyword: keyword.trim(),
+        chatType,
+        targetId,
+        pageNum: 1,
+        pageSize: 20
+      });
+      if (res?.code === 200 && res.data?.messages) {
+        return res.data.messages;
+      }
+      return [];
+    } catch {
+      return [];
+    }
+  }
+
   function deriveKey(p: ImPayload): string | null {
     const me = myUserId.value;
     if (p.chatType === 'PRIVATE') {
@@ -523,6 +653,11 @@ export const useImStore = defineStore('im', () => {
     if (p.action === 'revoke') {
       const key = deriveKey(p);
       if (key && p.messageId != null) markRevoked(key, String(p.messageId));
+      // P4-8 W7: 撤回事件 UI 提示（非活跃会话时弹 toast）
+      if (focusedConvKey.value !== key) {
+        const who = p.senderName || '对方';
+        ElMessage.info(`${who} 撤回了一条消息`);
+      }
       return;
     }
 
@@ -548,6 +683,8 @@ export const useImStore = defineStore('im', () => {
       conv.lastTime = p.createTime;
       conversations.value = [conv, ...conversations.value.filter((c) => convKey(c) !== key)];
     }
+    // P4-6 W1: 会话列表变更同步到缓存（防抖合并，不影响性能）
+    void imCache.saveConversations(conversations.value);
 
     const isActive = activeKey.value === key;
     const msgId = p.messageId != null ? String(p.messageId) : undefined;
@@ -573,6 +710,8 @@ export const useImStore = defineStore('im', () => {
             mentioned: p.mentioned === true
           }
         ];
+        // P4-6 W1: 收到新消息后写入缓存
+        void imCache.saveMessage(key, messagesMap.value[key]);
       }
       if (chatType === 'PRIVATE') void markPrivateReadApi(targetId).catch(() => {});
     } else {
@@ -585,10 +724,12 @@ export const useImStore = defineStore('im', () => {
   /**
    * P1-6: 处理 IM_MESSAGE_READ 已读回执推送
    * <p>当接收方 markRead 后，原发送方会收到此推送，据此把对应消息标为已读。
-   * <p>payload: { chatType, peerUserId, groupId, messageIds, readAt, readBy }
+   * <p>P4-3: 群聊优先使用 watermark 字段（{fromUserId, maxMessageId}），一次性标记本地所有
+   * messageId ≤ maxMessageId 且 fromUserId 匹配的消息为已读，避免大数组传输。
+   * <p>payload: { chatType, peerUserId, groupId, messageIds, watermark, readAt, readBy }
    */
   function handleReadReceipt(p: ImPayload) {
-    if (!p || !Array.isArray(p.messageIds) || p.messageIds.length === 0) return;
+    if (!p) return;
 
     // 计算本地会话 key
     // 私聊：peerUserId = readBy（读取消息的人），对自己而言会话是 PRIVATE|readBy
@@ -607,15 +748,37 @@ export const useImStore = defineStore('im', () => {
     const arr = messagesMap.value[key];
     if (!arr || arr.length === 0) return;
 
-    const idSet = new Set(p.messageIds.map((id) => String(id)));
     let changed = false;
-    for (let i = 0; i < arr.length; i++) {
-      const m = arr[i];
-      if (m.messageId && idSet.has(m.messageId) && !m.isRead) {
-        arr[i] = { ...m, isRead: true };
-        changed = true;
+
+    // P4-3: 优先使用 watermark（群聊场景，按发送者水位线批量标记）
+    if (p.chatType === 'GROUP' && p.watermark) {
+      const wm = p.watermark;
+      const wmFromId = String(wm.fromUserId);
+      const wmMaxId = Number(wm.maxMessageId);
+      if (!Number.isNaN(wmMaxId)) {
+        for (let i = 0; i < arr.length; i++) {
+          const m = arr[i];
+          if (m.messageId
+              && String(m.fromUserId) === wmFromId
+              && Number(m.messageId) <= wmMaxId
+              && !m.isRead) {
+            arr[i] = { ...m, isRead: true };
+            changed = true;
+          }
+        }
+      }
+    } else if (Array.isArray(p.messageIds) && p.messageIds.length > 0) {
+      // 兼容旧协议：精确匹配 messageIds 数组（私聊仍用此方式）
+      const idSet = new Set(p.messageIds.map((id) => String(id)));
+      for (let i = 0; i < arr.length; i++) {
+        const m = arr[i];
+        if (m.messageId && idSet.has(m.messageId) && !m.isRead) {
+          arr[i] = { ...m, isRead: true };
+          changed = true;
+        }
       }
     }
+
     if (changed) {
       messagesMap.value[key] = [...arr];
     }
@@ -692,7 +855,8 @@ export const useImStore = defineStore('im', () => {
     loadGroupMembers,
     setFocus,
     isMine,
-    convKey
+    convKey,
+    searchMessages
   };
 });
 

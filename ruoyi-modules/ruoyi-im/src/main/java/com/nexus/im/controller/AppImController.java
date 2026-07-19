@@ -19,6 +19,8 @@ import com.nexus.im.domain.bo.ImGroupMemberAddBo;
 import com.nexus.im.domain.bo.ImGroupSendBo;
 import com.nexus.im.domain.bo.ImPrivateSendBo;
 import com.nexus.im.domain.vo.ImConversationVo;
+import com.nexus.im.domain.vo.ImSyncResultVo;
+import com.nexus.im.domain.vo.ImSearchResultVo;
 import com.nexus.im.mapper.*;
 import com.nexus.im.push.ImEnvelopeHelper;
 import com.nexus.im.push.ImRealtimePush;
@@ -31,6 +33,8 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -584,6 +588,152 @@ public class AppImController extends BaseController {
             .orderByDesc(ImMessage::getCreateTime);
         Page<ImMessage> page = messageMapper.selectPage(pageQuery.build(), w);
         return TableDataInfo.build(page);
+    }
+
+    /**
+     * P4-4: 增量同步消息（App syncToken 模式）。
+     * <p>
+     * App 端持久化 syncToken（上次同步的最后 messageId），重连时传入 sinceMessageId 参数，
+     * 后端返回该 ID 之后的所有新消息（私聊 + 群聊），最多 500 条。
+     * <p>
+     * 相比 {@link #unreadMessages} 的优势：
+     * <ul>
+     *   <li>支持群聊消息同步（unreadMessages 仅返回私聊未读）</li>
+     *   <li>增量拉取，避免每次重连全量扫描（syncUnreadMessages 原本固定拉 200 条）</li>
+     *   <li>未读超过 200 条不漏（hasMore=true 时客户端循环拉取）</li>
+     *   <li>已读消息也能同步（用于多端消息漫游，A 端发送 B 端拉取）</li>
+     * </ul>
+     * <p>
+     * 查询范围：当前用户作为发送者或接收者的私聊消息 + 当前用户所在群组的群聊消息。
+     * <p>
+     * 一致性：syncToken 仅前进不回退。无新消息时返回空列表 + 入参 sinceMessageId。
+     * 撤回事件不依赖此接口，由 WS 推送独立通道处理（P4-8）。
+     *
+     * @param sinceMessageId 上次同步的最后 messageId（null 或 0 表示首次同步，拉取最近 500 条）
+     */
+    @GetMapping("/messages/sync")
+    public R<ImSyncResultVo> syncMessages(@RequestParam(required = false) Long sinceMessageId) {
+        Long me = LoginHelper.getUserId();
+        long baseline = sinceMessageId == null ? 0L : sinceMessageId;
+
+        // 1. 查询当前用户参与的群组（1 SQL）
+        List<ImGroupMember> memberships = groupMemberMapper.selectList(new LambdaQueryWrapper<ImGroupMember>()
+            .eq(ImGroupMember::getUserId, me));
+        List<Long> groupIds = memberships.stream()
+            .map(ImGroupMember::getGroupId)
+            .filter(Objects::nonNull)
+            .distinct()
+            .toList();
+
+        // 2. 查询 sinceMessageId 之后的消息（私聊 + 群聊），按 messageId 升序，limit 500
+        //    私聊：from_user_id = me OR to_user_id = me
+        //    群聊：group_id IN (user's groups)
+        LambdaQueryWrapper<ImMessage> w = new LambdaQueryWrapper<ImMessage>()
+            .gt(ImMessage::getMessageId, baseline);
+        if (groupIds.isEmpty()) {
+            // 无群组：仅查私聊
+            w.and(p -> p.eq(ImMessage::getFromUserId, me).or().eq(ImMessage::getToUserId, me));
+        } else {
+            // 有群组：私聊 OR 群聊
+            w.and(p -> p
+                .and(q -> q.eq(ImMessage::getFromUserId, me).or().eq(ImMessage::getToUserId, me))
+                .or(q -> q.in(ImMessage::getGroupId, groupIds)));
+        }
+        w.orderByAsc(ImMessage::getMessageId).last("limit 500");
+        List<ImMessage> messages = messageMapper.selectList(w);
+
+        // 3. 计算 newSyncToken + hasMore
+        Long newSyncToken = messages.isEmpty() ? baseline : messages.get(messages.size() - 1).getMessageId();
+        boolean hasMore = messages.size() >= 500;
+
+        ImSyncResultVo vo = new ImSyncResultVo();
+        vo.setMessages(messages);
+        vo.setNewSyncToken(newSyncToken);
+        vo.setHasMore(hasMore);
+        return R.ok(vo);
+    }
+
+    /**
+     * P4-8: 消息搜索（LIKE 查询，限制 7 天内）。
+     * <p>搜索当前用户参与的私聊 + 群聊消息，按 createTime 降序分页返回。
+     * <p>性能：LIKE 全表扫描，限制 7 天 + 分页 20 条缓解；P5 评估引入 ES 索引。
+     *
+     * @param keyword   搜索关键词
+     * @param chatType  可选筛选：PRIVATE / GROUP（不传则搜索全部）
+     * @param targetId  可选筛选：指定私聊对方 userId 或群 groupId
+     * @param pageNum   页码（默认 1）
+     * @param pageSize  每页条数（默认 20）
+     */
+    @GetMapping("/messages/search")
+    public R<ImSearchResultVo> searchMessages(
+        @RequestParam String keyword,
+        @RequestParam(required = false) String chatType,
+        @RequestParam(required = false) Long targetId,
+        @RequestParam(defaultValue = "1") Integer pageNum,
+        @RequestParam(defaultValue = "20") Integer pageSize) {
+
+        if (StrUtil.isBlank(keyword)) {
+            return R.ok(new ImSearchResultVo(Collections.emptyList(), pageNum, pageSize));
+        }
+
+        Long me = LoginHelper.getUserId();
+        int offset = (pageNum - 1) * pageSize;
+        Date sevenDaysAgo = Date.from(Instant.now().minus(7, ChronoUnit.DAYS));
+
+        // 1. 查询当前用户参与的群组
+        List<ImGroupMember> memberships = groupMemberMapper.selectList(new LambdaQueryWrapper<ImGroupMember>()
+            .eq(ImGroupMember::getUserId, me));
+        List<Long> groupIds = memberships.stream()
+            .map(ImGroupMember::getGroupId)
+            .filter(Objects::nonNull)
+            .distinct()
+            .toList();
+
+        // 2. 构造查询条件：关键词 LIKE + 7 天内 + 当前用户可见的消息
+        LambdaQueryWrapper<ImMessage> w = new LambdaQueryWrapper<ImMessage>()
+            .like(ImMessage::getContent, keyword)
+            .ge(ImMessage::getCreateTime, sevenDaysAgo)
+            .eq(ImMessage::getRevoked, "0");
+
+        // 可见范围：私聊（from=me OR to=me）OR 群聊（group_id IN user's groups）
+        boolean filterPrivate = "PRIVATE".equalsIgnoreCase(chatType);
+        boolean filterGroup = "GROUP".equalsIgnoreCase(chatType);
+
+        if (filterPrivate) {
+            // 仅搜私聊
+            if (targetId != null) {
+                w.and(p -> p
+                    .and(q -> q.eq(ImMessage::getFromUserId, me).eq(ImMessage::getToUserId, targetId))
+                    .or(q -> q.eq(ImMessage::getFromUserId, targetId).eq(ImMessage::getToUserId, me)));
+            } else {
+                w.and(p -> p.eq(ImMessage::getFromUserId, me).or().eq(ImMessage::getToUserId, me));
+            }
+        } else if (filterGroup) {
+            // 仅搜群聊
+            if (targetId != null) {
+                w.eq(ImMessage::getGroupId, targetId);
+            } else if (!groupIds.isEmpty()) {
+                w.in(ImMessage::getGroupId, groupIds);
+            } else {
+                // 无群组，返回空
+                return R.ok(new ImSearchResultVo(Collections.emptyList(), pageNum, pageSize));
+            }
+        } else {
+            // 搜全部（私聊 + 群聊）
+            if (groupIds.isEmpty()) {
+                w.and(p -> p.eq(ImMessage::getFromUserId, me).or().eq(ImMessage::getToUserId, me));
+            } else {
+                w.and(p -> p
+                    .and(q -> q.eq(ImMessage::getFromUserId, me).or().eq(ImMessage::getToUserId, me))
+                    .or(q -> q.in(ImMessage::getGroupId, groupIds)));
+            }
+        }
+
+        w.orderByDesc(ImMessage::getCreateTime)
+            .last("limit " + offset + "," + pageSize);
+
+        List<ImMessage> messages = messageMapper.selectList(w);
+        return R.ok(new ImSearchResultVo(messages, pageNum, pageSize));
     }
 
     /**

@@ -2,7 +2,9 @@ package com.nexus.im.service.impl.support;
 
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexus.common.core.domain.R;
+import com.nexus.im.constants.ImPayloadConstants;
 import com.nexus.im.domain.ImGroup;
 import com.nexus.im.domain.ImGroupMember;
 import com.nexus.im.domain.bo.ImGroupCreateBo;
@@ -12,6 +14,7 @@ import com.nexus.im.mapper.ImGroupMapper;
 import com.nexus.im.mapper.ImGroupMemberMapper;
 import com.nexus.im.mapper.ImMessageMapper;
 import com.nexus.im.msgtype.ImMessageTypeRegistry;
+import com.nexus.im.push.ImEnvelopeHelper;
 import com.nexus.im.push.ImRealtimePush;
 import com.nexus.im.service.ISysUserNotificationService;
 import com.nexus.im.support.ImTestFixture;
@@ -19,12 +22,15 @@ import com.nexus.im.support.ImUnitTestBase;
 import com.nexus.system.domain.vo.SysUserVo;
 import com.nexus.system.service.ISysUserService;
 import org.apache.ibatis.builder.MapperBuilderAssistant;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.springframework.dao.DuplicateKeyException;
 
 import java.util.ArrayList;
@@ -39,6 +45,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -84,6 +91,7 @@ class ImGroupChatServiceTest extends ImUnitTestBase {
     @Mock private ImRealtimePush imRealtimePush;
     @Mock private ImMessageTypeRegistry messageTypeRegistry;
     @Mock private ImChatSupport support;
+    @Mock private ImConversationCache conversationCache;
 
     @InjectMocks
     private ImGroupChatService imGroupChatService;
@@ -92,6 +100,17 @@ class ImGroupChatServiceTest extends ImUnitTestBase {
     private static final Long MEMBER_101 = 101L;
     private static final Long MEMBER_102 = 102L;
     private static final Long MEMBER_103 = 103L;
+
+    /**
+     * P4-3: mockStatic ImEnvelopeHelper 让 markGroupRead 推送路径能在纯 Mockito 环境下工作。
+     * <p>JsonUtils.OBJECT_MAPPER 静态初始化依赖 Spring 容器（SpringUtils.getBean），
+     * 无容器环境下抛 ExceptionInInitializerError，且 mockStatic(JsonUtils.class) 无法
+     * instrument static final 字段初始化（类加载即失败）。
+     * <p>改用 mockStatic(ImEnvelopeHelper.class)：ImEnvelopeHelper 无静态字段，类加载安全；
+     * 用 thenAnswer 让 imMessageRead 用真实 ObjectMapper 序列化 payload，便于断言 JSON 内容。
+     */
+    private MockedStatic<ImEnvelopeHelper> envelopeHelperMock;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     /**
      * 预热 MyBatis-Plus Lambda 缓存，让 {@code listGroupMembers} 内部
@@ -136,6 +155,30 @@ class ImGroupChatServiceTest extends ImUnitTestBase {
 
         // 公共桩：normalizeGroupName 透传
         lenient().when(support.normalizeGroupName(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        // P4-3: mockStatic ImEnvelopeHelper — 用真实 ObjectMapper 序列化 payload，
+        // 避开 JsonUtils.OBJECT_MAPPER 静态初始化对 Spring 容器的依赖
+        envelopeHelperMock = Mockito.mockStatic(ImEnvelopeHelper.class);
+        envelopeHelperMock.when(() -> ImEnvelopeHelper.imMessageRead(any())).thenAnswer(inv -> {
+            Map<String, Object> payload = inv.getArgument(0);
+            Map<String, Object> root = new LinkedHashMap<>();
+            root.put("v", ImPayloadConstants.ENVELOPE_VERSION);
+            root.put("type", ImPayloadConstants.TYPE_IM_MESSAGE_READ);
+            root.put("ts", System.currentTimeMillis());
+            root.put("payload", payload);
+            try {
+                return objectMapper.writeValueAsString(root);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    @AfterEach
+    void tearDownGroupChat() {
+        if (envelopeHelperMock != null) {
+            envelopeHelperMock.close();
+        }
     }
 
     // ==================== P2-4 addGroupMembers TOCTOU 幂等 ====================
@@ -372,5 +415,96 @@ class ImGroupChatServiceTest extends ImUnitTestBase {
         // 守护：非群主 owner=false
         ImGroupMemberVo memberVo = result.stream().filter(v -> MEMBER_101.equals(v.getUserId())).findFirst().orElseThrow();
         assertThat(memberVo.getOwner()).isFalse();
+    }
+
+    // ==================== P4-3 markGroupRead 水位线模式 ====================
+
+    /**
+     * P4-3: markGroupRead 应使用聚合 SQL（selectMaps + GROUP BY from_user_id）取 watermarks，
+     * 而非 SELECT 全部未读 messageId。
+     * <p>
+     * 守护点：
+     * <ul>
+     *   <li>调用 selectMaps 一次（聚合查询，返回每发送者的 MAX(message_id)）</li>
+     *   <li>不调用 selectList（避免拉取全部未读 messageId 大数组）</li>
+     *   <li>每发送者推送一次 publishToUserAfterCommit，payload 含 watermark 字段</li>
+     *   <li>payload.messageIds 兼容字段仅含 maxMessageId 单元素（不再是 N 条 ID）</li>
+     * </ul>
+     * 若有人改回 SELECT 全部 messageId + 按 sender 分组推大数组，此用例立即失败。
+     */
+    @Test
+    void markGroupRead_usesWatermarkAggregation_notFullMessageIdList() {
+        // 模拟聚合 SQL 返回 3 个发送者的 watermarks（而非 1000 条 messageId）
+        // 注：mapUnderscoreToCamelCase=true 将列别名转为驼峰
+        List<Map<String, Object>> watermarkRows = new ArrayList<>();
+        watermarkRows.add(buildWatermarkRow(MEMBER_101, 1001L));
+        watermarkRows.add(buildWatermarkRow(MEMBER_102, 1005L));
+        watermarkRows.add(buildWatermarkRow(MEMBER_103, 1010L));
+        when(imMessageMapper.selectMaps(any())).thenReturn(watermarkRows);
+        when(imMessageMapper.update(any(), any())).thenReturn(15);
+
+        int updated = imGroupChatService.markGroupRead(GROUP_ID);
+
+        assertThat(updated).isEqualTo(15);
+        // 守护：调用 1 次 selectMaps（聚合查询），不调用 selectList
+        verify(imMessageMapper, times(1)).selectMaps(any());
+        verify(imMessageMapper, never()).selectList(any());
+        // 守护：每发送者推送 1 次（共 3 次），用 publishToUserAfterCommit
+        verify(imRealtimePush, times(3)).publishToUserAfterCommit(any(), any());
+    }
+
+    /**
+     * P4-3: 推送 payload 应包含 watermark 字段（{fromUserId, maxMessageId}），
+     * 且兼容字段 messageIds 仅含 maxMessageId 单元素（避免大数组）。
+     */
+    @Test
+    void markGroupRead_payloadContainsWatermarkField() {
+        List<Map<String, Object>> watermarkRows = new ArrayList<>();
+        watermarkRows.add(buildWatermarkRow(MEMBER_101, 1001L));
+        when(imMessageMapper.selectMaps(any())).thenReturn(watermarkRows);
+        when(imMessageMapper.update(any(), any())).thenReturn(5);
+
+        imGroupChatService.markGroupRead(GROUP_ID);
+
+        // 捕获推送 payload
+        ArgumentCaptor<String> jsonCaptor = ArgumentCaptor.forClass(String.class);
+        verify(imRealtimePush).publishToUserAfterCommit(eq(MEMBER_101), jsonCaptor.capture());
+        String json = jsonCaptor.getValue();
+        // 守护：payload 含 watermark 字段（新协议）
+        assertThat(json).contains("\"watermark\"");
+        assertThat(json).contains("\"fromUserId\":" + MEMBER_101);
+        assertThat(json).contains("\"maxMessageId\":1001");
+        // 守护：兼容字段 messageIds 仅含 maxMessageId 单元素（不是大数组）
+        assertThat(json).contains("\"messageIds\":[1001]");
+    }
+
+    /**
+     * P4-3: 1000 条未读消息（来自 3 个发送者），selectMaps 返回 3 条 watermark 记录，
+     * 推送次数 = 3（每发送者一次），而非 1000 次（每消息一次）。
+     * <p>核心收益：活跃群未读数从 N 条降到 ≤ 群成员数条。
+     */
+    @Test
+    void markGroupRead_1000unread_3senders_pushesOnly3Times() {
+        List<Map<String, Object>> watermarkRows = new ArrayList<>();
+        watermarkRows.add(buildWatermarkRow(MEMBER_101, 2000L));
+        watermarkRows.add(buildWatermarkRow(MEMBER_102, 2005L));
+        watermarkRows.add(buildWatermarkRow(MEMBER_103, 2010L));
+        when(imMessageMapper.selectMaps(any())).thenReturn(watermarkRows);
+        when(imMessageMapper.update(any(), any())).thenReturn(1000);
+
+        imGroupChatService.markGroupRead(GROUP_ID);
+
+        // 守护：1000 条未读仅推送 3 次（按发送者聚合），而非 1000 次
+        verify(imRealtimePush, times(3)).publishToUserAfterCommit(any(), any());
+    }
+
+    /**
+     * 构造 watermark 行（模拟 selectMaps 返回，key 为驼峰式）。
+     */
+    private Map<String, Object> buildWatermarkRow(Long fromUserId, Long maxMessageId) {
+        Map<String, Object> row = new LinkedHashMap<>();
+        row.put("fromUserId", fromUserId);
+        row.put("maxMessageId", maxMessageId);
+        return row;
     }
 }

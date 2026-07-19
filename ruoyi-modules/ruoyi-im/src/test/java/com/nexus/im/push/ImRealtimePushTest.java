@@ -1,6 +1,8 @@
 package com.nexus.im.push;
 
 import com.nexus.im.support.ImUnitTestBase;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
@@ -34,7 +36,16 @@ class ImRealtimePushTest extends ImUnitTestBase {
 
     private static final String JSON_MESSAGE = "{\"type\":\"IM_MESSAGE\",\"payload\":{\"messageId\":1}}";
 
-    private final ImRealtimePush imRealtimePush = new ImRealtimePush();
+    private SimpleMeterRegistry registry;
+    private ImRealtimePush imRealtimePush;
+
+    @BeforeEach
+    void setUpPush() {
+        // P4-9: ImRealtimePush 现依赖 ImMetrics；用 SimpleMeterRegistry 提供内存实现，
+        // 不依赖 Spring 容器即可完成事务同步行为验证。
+        registry = new SimpleMeterRegistry();
+        imRealtimePush = new ImRealtimePush(new ImMetrics(registry));
+    }
 
     /**
      * 事务内调用：应注册 1 个 TransactionSynchronization（afterCommit 回调），不立即推送。

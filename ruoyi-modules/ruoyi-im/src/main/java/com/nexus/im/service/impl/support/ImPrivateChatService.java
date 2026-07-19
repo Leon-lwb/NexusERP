@@ -15,6 +15,7 @@ import com.nexus.im.mapper.ImMessageMapper;
 import com.nexus.im.msgtype.ImMessageTypeHandler;
 import com.nexus.im.msgtype.ImMessageTypeRegistry;
 import com.nexus.im.push.ImEnvelopeHelper;
+import com.nexus.im.push.ImMetrics;
 import com.nexus.im.push.ImRealtimePush;
 import com.nexus.im.service.ISysUserNotificationService;
 import com.nexus.system.domain.vo.SysUserVo;
@@ -44,6 +45,8 @@ public class ImPrivateChatService {
     private final ImRealtimePush imRealtimePush;
     private final ImMessageTypeRegistry messageTypeRegistry;
     private final ImChatSupport support;
+    private final ImConversationCache conversationCache;
+    private final ImMetrics imMetrics;
 
     @Transactional(rollbackFor = Exception.class)
     public R<Long> sendPrivate(ImPrivateSendBo bo) {
@@ -85,7 +88,13 @@ public class ImPrivateChatService {
 
         String json = ImEnvelopeHelper.imMessage(buildPrivatePayload(msg, from));
         // P0-2: 推送移到事务提交后，避免回滚时接收方收到"幽灵消息"
-        imRealtimePush.publishToUserAfterCommit(bo.getToUserId(), json);
+        // P4-9: 传 chatType="private" 以便 push 指标按聊天类型分维度统计
+        imRealtimePush.publishToUserAfterCommit(bo.getToUserId(), json, "private");
+        // P4-2: 失效发送方与接收方的会话列表缓存（新消息进入会话）
+        conversationCache.evictUser(fromId);
+        conversationCache.evictUser(bo.getToUserId());
+        // P4-9: 消息发送计数（按聊天类型分维度）
+        imMetrics.recordMessageSend("private");
         return R.ok(msg.getMessageId());
     }
 
@@ -143,6 +152,8 @@ public class ImPrivateChatService {
             .isNull(ImMessage::getGroupId));
         // P1-6: 向原发送方推送已读回执（事务提交后）
         pushPrivateReadReceipt(peerUserId, me, messageIds);
+        // P4-2: 失效当前用户的会话列表缓存（未读数变化）
+        conversationCache.evict();
         return updated;
     }
 

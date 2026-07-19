@@ -17,7 +17,7 @@ import java.util.Date;
 /**
  * IM 消息清理任务
  * <p>
- * 借鉴 V-IM MessageClearTask，每天凌晨 4 点清理超过保留期的消息和通知，
+ * 借鉴 V-IM MessageClearTask，定期清理超过保留期的消息和通知，
  * 防止 im_message / sys_user_notification 无限增长拖慢历史查询。
  * <p>
  * 清理策略:
@@ -26,6 +26,10 @@ import java.util.Date;
  * <p>
  * 清理是物理删除，不可恢复；清理跨所有租户，通过 TenantHelper.ignore 绕过多租户拦截器。
  * 单批上限 BATCH_SIZE 避免长事务锁表。
+ * <p>
+ * P4-10 B7: 调度频率由"每天凌晨 4 点"改为"每小时整点"，将单次大事务拆为 N 次小事务，
+ * 降低锁持有时间，避免凌晨 4 点集中清理导致的 IO 峰值与从库延迟。
+ * 保留期不变（180/30/90 天），每小时仅清理"刚过期"的少量数据（稳态下约 1 小时增量）。
  *
  * @author nexus
  * @see com.nexus.im.mapper.ImMessageMapper
@@ -44,16 +48,20 @@ public class ImMessageClearTask {
     private static final int NOTIFICATION_UNREAD_RETENTION_DAYS = 90;
     /** 单批删除上限，避免长事务锁表 */
     private static final int BATCH_SIZE = 1000;
-    /** 单次任务最大循环次数，防止意外场景下无限循环 */
+    /**
+     * 单次任务最大循环次数，防止意外场景下无限循环。
+     * <p>P4-10 B7: 改为每小时执行后，稳态下每小时仅清理少量数据，循环次数远低于上限；
+     * 上限作为兜底，防止首次启用或积压场景下长时间占用调度线程。
+     */
     private static final int MAX_BATCH_LOOP = 1000;
 
     private final ImMessageMapper messageMapper;
     private final SysUserNotificationMapper notificationMapper;
 
     /**
-     * 每天凌晨 4 点执行清理
+     * P4-10 B7: 每小时整点执行清理（原每天凌晨 4 点）
      */
-    @Scheduled(cron = "0 0 4 * * ?")
+    @Scheduled(cron = "0 0 * * * ?")
     public void clearExpiredMessages() {
         Date messageThreshold = daysAgo(MESSAGE_RETENTION_DAYS);
         Date readThreshold = daysAgo(NOTIFICATION_READ_RETENTION_DAYS);

@@ -141,3 +141,23 @@ export function uploadOss(file: File): AxiosPromise<{ fileName: string; url: str
     data: formData
   });
 }
+
+/**
+ * P4-8: 消息搜索（LIKE 查询，限制 7 天内）
+ * @param keyword 搜索关键词
+ * @param chatType 可选筛选：PRIVATE / GROUP
+ * @param targetId 可选筛选：指定私聊对方 userId 或群 groupId
+ */
+export function searchMessages(params: {
+  keyword: string;
+  chatType?: string;
+  targetId?: number | string;
+  pageNum?: number;
+  pageSize?: number;
+}) {
+  return request({
+    url: '/im/app/messages/search',
+    method: 'get',
+    params
+  });
+}

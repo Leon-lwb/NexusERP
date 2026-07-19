@@ -1,5 +1,6 @@
 package com.nexus.im.service.impl;
 
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -16,6 +17,10 @@ import com.nexus.im.push.ImRealtimePush;
 import com.nexus.im.service.ISysUserNotificationService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * 用户通知Service业务层处理
@@ -47,6 +52,40 @@ public class SysUserNotificationServiceImpl implements ISysUserNotificationServi
         // P0-2: 推送移到事务提交后，避免回滚时接收方收到"幽灵通知"
         imRealtimePush.publishToUserAfterCommit(userId, json);
         return row.getNotificationId();
+    }
+
+    /**
+     * P4-1: 批量写入用户通知并推送。
+     * <p>一次 SQL 批量 INSERT（BaseMapperPlus.insertBatch，默认 1000 条/批），
+     * 替代原 N 次循环 insert；推送按 userId 逐条注册 afterCommit（每用户 envelope 因 notificationId 不同）。
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public List<Long> batchAddAndPush(List<SysUserNotification> rows) {
+        if (CollUtil.isEmpty(rows)) {
+            return Collections.emptyList();
+        }
+        // 规整字段：title 默认值、readFlag 默认 "0"
+        for (SysUserNotification row : rows) {
+            if (StrUtil.isBlank(row.getTitle())) {
+                row.setTitle("通知");
+            }
+            if (StrUtil.isBlank(row.getReadFlag())) {
+                row.setReadFlag("0");
+            }
+        }
+        // 一次 SQL 批量插入
+        notificationMapper.insertBatch(rows);
+        // 逐条注册 afterCommit 推送（每用户 envelope 含不同 notificationId，无法合并）
+        List<Long> ids = new ArrayList<>(rows.size());
+        for (SysUserNotification row : rows) {
+            String preview = StrUtil.maxLength(StrUtil.removeAll(row.getContent(), "<[^>]+>"), 200);
+            String json = ImEnvelopeHelper.userNotification(
+                row.getNotificationId(), row.getCategory(), row.getTitle(), preview, null);
+            imRealtimePush.publishToUserAfterCommit(row.getUserId(), json);
+            ids.add(row.getNotificationId());
+        }
+        return ids;
     }
 
     @Override
