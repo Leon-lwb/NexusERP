@@ -1,5 +1,7 @@
 package com.nexus.im.controller;
 
+import cn.dev33.satoken.annotation.SaCheckLogin;
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -30,6 +32,7 @@ import com.nexus.im.service.impl.support.ImConversationService;
 import com.nexus.system.domain.SysUser;
 import com.nexus.system.domain.vo.SysUserVo;
 import com.nexus.system.mapper.SysUserMapper;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -761,20 +764,15 @@ public class AppImController extends BaseController {
 
     /**
      * 撤回消息
+     * <p>P6 M1 修复：委托给 imChatService.revokeMessage，复用 Service 层 2 分钟窗口校验
+     * 与撤回事件推送（publishToUser(s)AfterCommit），与 PC 端 ImChatController 行为对齐。
      */
-    @PostMapping("/message/revoke/{messageId}")
-    public R<Void> revokeMessage(@PathVariable Long messageId) {
-        ImMessage msg = messageMapper.selectById(messageId);
-        if (msg == null) {
-            return R.fail("消息不存在");
-        }
-        if (!msg.getFromUserId().equals(LoginHelper.getUserId())) {
-            return R.fail("只能撤回自己发送的消息");
-        }
-        ImMessage update = new ImMessage();
-        update.setMessageId(messageId);
-        update.setRevoked("1");
-        messageMapper.updateById(update);
+    @SaCheckLogin
+    @SaCheckPermission("im:message:revoke")
+    @PostMapping("/message/revoke")
+    public R<Void> revokeMessage(@RequestBody Map<String, Object> body) {
+        Long messageId = Long.valueOf(body.get("messageId").toString());
+        imChatService.revokeMessage(messageId);
         return R.ok();
     }
 
@@ -1123,22 +1121,33 @@ public class AppImController extends BaseController {
 
     /**
      * P6-B1: 获取或创建会话配置记录（首次操作时 INSERT，后续 UPDATE）
+     * <p>P6 M2 修复：捕获 {@link DuplicateKeyException} 处理并发竞态。
+     * 表已有唯一索引 uk_user_chat_target(user_id, chat_type, target_id, tenant_id)，
+     * 并发场景下两个请求同时 selectOne 返回 null 后会先后 insert，第二个抛 DuplicateKeyException。
+     * 捕获后重新 selectOne 返回已存在记录，与 ImGroupChatService.addGroupMembers 同模式。
      */
     private ImConversationSetting getOrCreateSetting(Long userId, String chatType, Long targetId) {
-        ImConversationSetting existing = conversationSettingMapper.selectOne(
-            new LambdaQueryWrapper<ImConversationSetting>()
-                .eq(ImConversationSetting::getUserId, userId)
-                .eq(ImConversationSetting::getChatType, chatType)
-                .eq(ImConversationSetting::getTargetId, targetId));
-        if (existing != null) return existing;
+        LambdaQueryWrapper<ImConversationSetting> qw = new LambdaQueryWrapper<ImConversationSetting>()
+            .eq(ImConversationSetting::getUserId, userId)
+            .eq(ImConversationSetting::getChatType, chatType)
+            .eq(ImConversationSetting::getTargetId, targetId);
+        ImConversationSetting existing = conversationSettingMapper.selectOne(qw);
+        if (existing != null) {
+            return existing;
+        }
         ImConversationSetting s = new ImConversationSetting();
         s.setUserId(userId);
         s.setChatType(chatType);
         s.setTargetId(targetId);
         s.setIsPinned(0);
         s.setIsMuted(0);
-        conversationSettingMapper.insert(s);
-        return s;
+        try {
+            conversationSettingMapper.insert(s);
+            return s;
+        } catch (DuplicateKeyException e) {
+            // 并发场景：另一个请求已插入，重新查询返回
+            return conversationSettingMapper.selectOne(qw);
+        }
     }
 
     // =============== P6: 消息收藏 ===============
@@ -1147,6 +1156,13 @@ public class AppImController extends BaseController {
      * P6-B2: 收藏消息
      * <p>幂等：已收藏则直接返回成功。
      * <p>越权：非消息发送者/接收者/群成员不可收藏。
+     * <p>P6 M3 修复：
+     * <ul>
+     *   <li>NPE：原 {@code msg.getFromUserId().equals(me)} 反向调用，fromUserId 理论可为 null，
+     *       改为 {@code me.equals(msg.getFromUserId())} 防止 NPE。</li>
+     *   <li>并发竞态：selectCount 与 insert 之间存在 TOCTOU 窗口，并发重复收藏时
+     *       第二个 insert 抛 {@link DuplicateKeyException}，捕获后视为幂等成功。</li>
+     * </ul>
      */
     @PostMapping("/favorite/add")
     public R<Void> addFavorite(@RequestBody Map<String, Object> body) {
@@ -1170,12 +1186,17 @@ public class AppImController extends BaseController {
             fav.setTargetId(msg.getGroupId());
         } else {
             fav.setChatType("PRIVATE");
-            fav.setTargetId(msg.getFromUserId().equals(me) ? msg.getToUserId() : msg.getFromUserId());
+            // M3 修复 NPE：改为 me.equals(...) 防止 fromUserId 为 null 时抛 NPE
+            fav.setTargetId(me.equals(msg.getFromUserId()) ? msg.getToUserId() : msg.getFromUserId());
         }
         fav.setFromUserId(msg.getFromUserId());
         fav.setMsgType(msg.getMsgType());
         fav.setContentSnippet(truncate(msg.getContent(), 500));
-        favoriteMapper.insert(fav);
+        try {
+            favoriteMapper.insert(fav);
+        } catch (DuplicateKeyException e) {
+            // 并发场景：另一个请求已收藏，视为幂等成功
+        }
         return R.ok();
     }
 

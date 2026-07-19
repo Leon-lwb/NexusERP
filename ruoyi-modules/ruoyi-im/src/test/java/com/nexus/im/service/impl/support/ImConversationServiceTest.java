@@ -5,10 +5,12 @@ import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
+import com.nexus.im.domain.ImConversationSetting;
 import com.nexus.im.domain.ImGroup;
 import com.nexus.im.domain.ImGroupMember;
 import com.nexus.im.domain.ImMessage;
 import com.nexus.im.domain.vo.ImConversationVo;
+import com.nexus.im.mapper.ImConversationSettingMapper;
 import com.nexus.im.mapper.ImGroupMapper;
 import com.nexus.im.mapper.ImGroupMemberMapper;
 import com.nexus.im.mapper.ImMessageMapper;
@@ -62,6 +64,7 @@ class ImConversationServiceTest extends ImUnitTestBase {
     @Mock private ImGroupMemberMapper imGroupMemberMapper;
     @Mock private ImChatSupport support;
     @Mock private ImConversationCache conversationCache;
+    @Mock private ImConversationSettingMapper conversationSettingMapper;
 
     @InjectMocks
     private ImConversationService imConversationService;
@@ -87,6 +90,8 @@ class ImConversationServiceTest extends ImUnitTestBase {
         TableInfoHelper.initTableInfo(assistant, ImMessage.class);
         TableInfoHelper.initTableInfo(assistant, ImGroup.class);
         TableInfoHelper.initTableInfo(assistant, ImGroupMember.class);
+        // P6-B1: 预热 ImConversationSetting 表信息（applyConversationSettings 用 LambdaQueryWrapper）
+        TableInfoHelper.initTableInfo(assistant, ImConversationSetting.class);
     }
 
     @BeforeEach
@@ -97,6 +102,8 @@ class ImConversationServiceTest extends ImUnitTestBase {
         lenient().when(support.batchResolveAvatarUrls(anyCollection())).thenReturn(new java.util.LinkedHashMap<>());
         // P4-2: 公共桩 — 会话缓存未命中（返回 null 让测试走 DB 查询路径）
         lenient().when(conversationCache.get()).thenReturn(null);
+        // P6-B1: 公共桩 — 会话配置（置顶/免打扰）默认返回空列表，避免 applyConversationSettings NPE
+        lenient().when(conversationSettingMapper.selectList(any())).thenReturn(new ArrayList<>());
     }
 
     // ==================== 快速路径守护 ====================

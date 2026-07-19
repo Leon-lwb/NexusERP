@@ -107,7 +107,11 @@ public class ImGroupChatService {
             ImMessage origin = imMessageMapper.selectById(bo.getReplyMessageId());
             if (origin != null && !"1".equals(origin.getRevoked())) {
                 msg.setReplyMessageId(bo.getReplyMessageId());
-                msg.setReplySnippet(truncate(origin.getContent(), 200));
+                // P6 M4 修复：image/file 等非 text 消息的 content 是原样透传 JSON，可能含 <script> 等 HTML 标签，
+                // 统一调用 HtmlUtil.cleanHtmlTag 净化（与 TextMessageHandler.sanitize 路径一致），防止 XSS。
+                String snippet = truncate(origin.getContent(), 200);
+                snippet = cn.hutool.http.HtmlUtil.cleanHtmlTag(snippet);
+                msg.setReplySnippet(snippet);
             }
         }
         imMessageMapper.insert(msg);
