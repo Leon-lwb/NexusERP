@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS `im_conversation_setting` (
   `pinned_at`     DATETIME(3)   NULL                    COMMENT '置顶时间（用于多会话置顶排序）',
   `is_muted`      TINYINT(1)    NOT NULL DEFAULT 0      COMMENT '是否免打扰: 0=否 1=是',
   `tenant_id`     VARCHAR(20)   DEFAULT '000000'        COMMENT '租户编号',
+  `create_dept`   BIGINT(20)    DEFAULT NULL            COMMENT '创建部门',
   `create_by`     BIGINT(20)    DEFAULT NULL            COMMENT '创建者',
   `create_time`   DATETIME(3)   DEFAULT NULL            COMMENT '创建时间',
   `update_by`     BIGINT(20)    DEFAULT NULL            COMMENT '更新者',

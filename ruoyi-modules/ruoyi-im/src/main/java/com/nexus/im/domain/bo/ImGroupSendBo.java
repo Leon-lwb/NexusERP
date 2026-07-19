@@ -1,5 +1,6 @@
 package com.nexus.im.domain.bo;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
@@ -15,6 +16,12 @@ public class ImGroupSendBo {
     @NotBlank(message = "内容不能为空")
     private String content;
 
+    /**
+     * 消息类型：text / image / file / friend_request 等。
+     * <p>APP 端历史字段名为 messageType，PC 端为 msgType；用 @JsonAlias 兼容 APP 入参，
+     * 序列化输出仍为 msgType（不影响 PC）。
+     */
+    @JsonAlias("messageType")
     private String msgType = "text";
 
     private Long forwardFrom;

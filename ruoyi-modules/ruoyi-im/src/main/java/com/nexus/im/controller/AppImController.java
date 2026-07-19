@@ -512,33 +512,23 @@ public class AppImController extends BaseController {
 
     /**
      * 发送私聊消息
+     * <p>直接绑定 {@link ImPrivateSendBo}（与 PC 端 ImChatController 一致），避免手工
+     * Map 映射漏读 clientMsgId（重发幂等失效）等问题。APP 端 messageType 经 @JsonAlias 映射到 msgType。
      */
     @PostMapping("/message/send")
-    public R<Long> sendPrivate(@RequestBody Map<String, String> body) {
-        ImPrivateSendBo bo = new ImPrivateSendBo();
-        bo.setToUserId(Long.valueOf(body.get("toUserId")));
-        bo.setContent(body.get("content"));
-        bo.setMsgType(body.getOrDefault("messageType", "text"));
-        // P6-B3: 引用消息 ID（可选）
-        if (body.get("replyMessageId") != null) {
-            bo.setReplyMessageId(Long.valueOf(body.get("replyMessageId")));
-        }
+    public R<Long> sendPrivate(@Validated @RequestBody ImPrivateSendBo bo) {
         return imChatService.sendPrivate(bo);
     }
 
     /**
      * 发送群聊消息
+     * <p>直接绑定 {@link ImGroupSendBo}（与 PC 端 ImChatController 一致）。原先用
+     * {@code Map<String,String>} 手工映射有两个缺陷：mentionUserIds 是 JSON 数组无法
+     * 反序列化为 String（直接 400）；且 mentionUserIds / clientMsgId 未读取，@ 提醒与重发幂等静默失效。
+     * APP 端 messageType 经 @JsonAlias 映射到 msgType。
      */
     @PostMapping("/message/send-group")
-    public R<Long> sendGroup(@RequestBody Map<String, String> body) {
-        ImGroupSendBo bo = new ImGroupSendBo();
-        bo.setGroupId(Long.valueOf(body.get("groupId")));
-        bo.setContent(body.get("content"));
-        bo.setMsgType(body.getOrDefault("messageType", "text"));
-        // P6-B3: 引用消息 ID（可选）
-        if (body.get("replyMessageId") != null) {
-            bo.setReplyMessageId(Long.valueOf(body.get("replyMessageId")));
-        }
+    public R<Long> sendGroup(@Validated @RequestBody ImGroupSendBo bo) {
         return imChatService.sendGroup(bo);
     }
 
