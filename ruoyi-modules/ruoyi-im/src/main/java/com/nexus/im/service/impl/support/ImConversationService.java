@@ -4,10 +4,12 @@ import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.nexus.common.satoken.utils.LoginHelper;
+import com.nexus.im.domain.ImConversationSetting;
 import com.nexus.im.domain.ImGroup;
 import com.nexus.im.domain.ImGroupMember;
 import com.nexus.im.domain.ImMessage;
 import com.nexus.im.domain.vo.ImConversationVo;
+import com.nexus.im.mapper.ImConversationSettingMapper;
 import com.nexus.im.mapper.ImGroupMapper;
 import com.nexus.im.mapper.ImGroupMemberMapper;
 import com.nexus.im.mapper.ImMessageMapper;
@@ -41,6 +43,7 @@ public class ImConversationService {
     private final ImGroupMemberMapper imGroupMemberMapper;
     private final ImChatSupport support;
     private final ImConversationCache conversationCache;
+    private final ImConversationSettingMapper conversationSettingMapper;
 
     /**
      * 列出当前用户的所有会话（群聊 + 私聊），按最后消息时间倒序。
@@ -71,7 +74,22 @@ public class ImConversationService {
         list.addAll(groupVos);
         list.addAll(privateVos);
 
-        list.sort(Comparator.comparing(ImConversationVo::getLastTime, Comparator.nullsLast(Comparator.naturalOrder())).reversed());
+        // P6-B1: 合并当前用户的会话配置（置顶/免打扰）
+        applyConversationSettings(me, list);
+        // P6-B1: 排序：置顶在前（按 pinnedAt 倒序），非置顶按 lastTime 倒序
+        list.sort((a, b) -> {
+            int pa = a.getIsPinned() == null ? 0 : a.getIsPinned();
+            int pb = b.getIsPinned() == null ? 0 : b.getIsPinned();
+            if (pa != pb) return pb - pa;
+            if (pa == 1) {
+                java.util.Date da = a.getPinnedAt() == null ? new java.util.Date(0) : a.getPinnedAt();
+                java.util.Date db = b.getPinnedAt() == null ? new java.util.Date(0) : b.getPinnedAt();
+                return db.compareTo(da);
+            }
+            java.util.Date da = a.getLastTime() == null ? new java.util.Date(0) : a.getLastTime();
+            java.util.Date db = b.getLastTime() == null ? new java.util.Date(0) : b.getLastTime();
+            return db.compareTo(da);
+        });
         // P4-2: 回填缓存
         conversationCache.put(list);
         return list;
@@ -316,5 +334,36 @@ public class ImConversationService {
             privateVos.add(vo);
         }
         return privateVos;
+    }
+
+    /**
+     * P6-B1: 合并当前用户的会话配置（置顶/免打扰）到会话 VO 列表。
+     * <p>一次 SQL 查询当前用户所有会话配置，按 chatType:targetId 索引后填充到 VO。
+     */
+    private void applyConversationSettings(Long userId, List<ImConversationVo> list) {
+        if (list == null || list.isEmpty()) return;
+        List<ImConversationSetting> settings = conversationSettingMapper.selectList(
+            new LambdaQueryWrapper<ImConversationSetting>()
+                .eq(ImConversationSetting::getUserId, userId));
+        if (settings == null || settings.isEmpty()) return;
+        Map<String, ImConversationSetting> map = settings.stream().collect(
+            Collectors.toMap(s -> s.getChatType() + ":" + s.getTargetId(), s -> s, (a, b) -> a));
+        for (ImConversationVo vo : list) {
+            String key = vo.getChatType() + ":" + vo.getTargetId();
+            ImConversationSetting s = map.get(key);
+            if (s != null) {
+                vo.setIsPinned(s.getIsPinned() == null ? 0 : s.getIsPinned());
+                vo.setIsMuted(s.getIsMuted() == null ? 0 : s.getIsMuted());
+                vo.setPinnedAt(s.getPinnedAt());
+            }
+        }
+    }
+
+    /**
+     * P6-B1: 失效当前用户的会话列表缓存。
+     * <p>供 AppImController 在置顶/免打扰配置变更后调用，避免 60s TTL 内返回旧数据。
+     */
+    public void evictConversationCache() {
+        conversationCache.evict();
     }
 }

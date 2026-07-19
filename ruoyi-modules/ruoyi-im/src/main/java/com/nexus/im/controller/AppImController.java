@@ -26,6 +26,7 @@ import com.nexus.im.push.ImEnvelopeHelper;
 import com.nexus.im.push.ImRealtimePush;
 import com.nexus.im.service.IImChatService;
 import com.nexus.im.service.ISysUserNotificationService;
+import com.nexus.im.service.impl.support.ImConversationService;
 import com.nexus.system.domain.SysUser;
 import com.nexus.system.domain.vo.SysUserVo;
 import com.nexus.system.mapper.SysUserMapper;
@@ -65,6 +66,8 @@ public class AppImController extends BaseController {
     private final SysUserNotificationMapper notificationMapper;
     private final ImFriendMapper friendMapper;
     private final ImRealtimePush imRealtimePush;
+    private final ImConversationService conversationService;
+    private final ImConversationSettingMapper conversationSettingMapper;
 
     // ==================== Session ====================
 
@@ -1042,5 +1045,90 @@ public class AppImController extends BaseController {
             return isGroupMember(msg.getGroupId(), userId);
         }
         return userId.equals(msg.getFromUserId()) || userId.equals(msg.getToUserId());
+    }
+
+    // =============== P6: 会话配置（置顶/免打扰）===============
+
+    /**
+     * P6-B1: 查询当前用户所有会话配置
+     */
+    @GetMapping("/conversation/settings")
+    public R<List<ImConversationSetting>> conversationSettings() {
+        Long me = LoginHelper.getUserId();
+        return R.ok(conversationSettingMapper.selectList(
+            new LambdaQueryWrapper<ImConversationSetting>().eq(ImConversationSetting::getUserId, me)));
+    }
+
+    /**
+     * P6-B1: 设置置顶（isPinned=true 置顶 / isPinned=false 取消置顶）
+     */
+    @PostMapping("/conversation/pin")
+    public R<Void> pinConversation(@RequestBody Map<String, Object> body) {
+        Long me = LoginHelper.getUserId();
+        String chatType = (String) body.get("chatType");
+        Long targetId = Long.valueOf(body.get("targetId").toString());
+        boolean pinned = Boolean.TRUE.equals(body.get("isPinned"));
+
+        ImConversationSetting s = getOrCreateSetting(me, chatType, targetId);
+        ImConversationSetting update = new ImConversationSetting();
+        update.setId(s.getId());
+        update.setIsPinned(pinned ? 1 : 0);
+        update.setPinnedAt(pinned ? new java.util.Date() : null);
+        conversationSettingMapper.updateById(update);
+        conversationService.evictConversationCache();
+        return R.ok();
+    }
+
+    /**
+     * P6-B1: 设置免打扰（isMuted=true 免打扰 / isMuted=false 取消）
+     */
+    @PostMapping("/conversation/mute")
+    public R<Void> muteConversation(@RequestBody Map<String, Object> body) {
+        Long me = LoginHelper.getUserId();
+        String chatType = (String) body.get("chatType");
+        Long targetId = Long.valueOf(body.get("targetId").toString());
+        boolean muted = Boolean.TRUE.equals(body.get("isMuted"));
+
+        ImConversationSetting s = getOrCreateSetting(me, chatType, targetId);
+        ImConversationSetting update = new ImConversationSetting();
+        update.setId(s.getId());
+        update.setIsMuted(muted ? 1 : 0);
+        conversationSettingMapper.updateById(update);
+        conversationService.evictConversationCache();
+        return R.ok();
+    }
+
+    /**
+     * P6-B1: 取消会话所有配置（删除记录）
+     */
+    @DeleteMapping("/conversation/setting")
+    public R<Void> removeConversationSetting(@RequestParam String chatType, @RequestParam Long targetId) {
+        Long me = LoginHelper.getUserId();
+        conversationSettingMapper.delete(new LambdaQueryWrapper<ImConversationSetting>()
+            .eq(ImConversationSetting::getUserId, me)
+            .eq(ImConversationSetting::getChatType, chatType)
+            .eq(ImConversationSetting::getTargetId, targetId));
+        conversationService.evictConversationCache();
+        return R.ok();
+    }
+
+    /**
+     * P6-B1: 获取或创建会话配置记录（首次操作时 INSERT，后续 UPDATE）
+     */
+    private ImConversationSetting getOrCreateSetting(Long userId, String chatType, Long targetId) {
+        ImConversationSetting existing = conversationSettingMapper.selectOne(
+            new LambdaQueryWrapper<ImConversationSetting>()
+                .eq(ImConversationSetting::getUserId, userId)
+                .eq(ImConversationSetting::getChatType, chatType)
+                .eq(ImConversationSetting::getTargetId, targetId));
+        if (existing != null) return existing;
+        ImConversationSetting s = new ImConversationSetting();
+        s.setUserId(userId);
+        s.setChatType(chatType);
+        s.setTargetId(targetId);
+        s.setIsPinned(0);
+        s.setIsMuted(0);
+        conversationSettingMapper.insert(s);
+        return s;
     }
 }
