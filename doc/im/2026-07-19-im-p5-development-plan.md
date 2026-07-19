@@ -63,8 +63,8 @@ P5 共 **11 项任务**，按风险/价值分三档实施：
 | **A 高价值** | P5-3 性能压测基线 + P95/P99 延迟告警 | 低（独立环境） | P3+P4 第十章 | 后端+测试 | 待实施 |
 | **A 高价值** | P5-4 安全审计深化（越权/SQLi/XSS） | 中（可能发现 P0 漏洞） | P3 第十章 | 全端 | 待实施 |
 | **A 高价值** | P5-5 多租户隔离验证 | 低（测试为主） | P3 第十章 | 后端 | 待实施 |
-| **B 中价值** | P5-6 前端虚拟滚动 + Emoji 分页 + 图片预加载 | 高（影响渲染） | P4-11 延后 | 全端 | 待实施 |
-| **B 中价值** | P5-7 前端 E2E 测试（Playwright） | 低（独立测试） | P4 第十章 | Web | 待实施 |
+| **B 中价值** | P5-6 前端虚拟滚动 + Emoji 分页 + 图片预加载 | 高（影响渲染） | P4-11 延后 | 全端 | ✅ 已完成 (commit fd6fd6b) |
+| **B 中价值** | P5-7 前端 E2E 测试（Playwright） | 低（独立测试） | P4 第十章 | Web | ✅ 脚手架完成 (commit fd6fd6b，待运行环境就绪) |
 | **C 评估方向** | P5-8 MQ 死信队列方案评估 | — | P4-1 风险缓解 | 后端 | 待评估 |
 | **C 评估方向** | P5-9 ES 消息搜索方案评估 | — | P4-8 升级 | 后端 | 待评估 |
 | **C 评估方向** | P5-10 WebSocket 集群方案评估 | — | P4 第十章 | 后端+运维 | 待评估 |
@@ -378,62 +378,9 @@ public class SlowSqlInterceptor implements Interceptor {
 
 ---
 
-## 五、C 档评估方向（仅出方案，不实施）
+## 五、C 档评估方向（已取消）
 
-### P5-8 MQ 死信队列方案评估
-
-**问题**: P4-1 推送异步化后，JVM 崩溃可能丢失已提交事务的推送。
-
-**评估内容**:
-- 选型：RabbitMQ（已有 RuoYi 集成）/ RocketMQ / Kafka
-- 接入点：`ImRealtimePush.publishToUsersAfterCommit` 失败时入死信队列
-- 重试策略：指数退避，3 次重试后告警
-- 与 syncToken 机制的关系：死信队列是实时推送兜底，syncToken 是离线补偿，两者互补
-
-**产出**: `doc/im/2026-07-19-p5-mq-dead-letter-evaluation.md`
-
----
-
-### P5-9 ES 消息搜索方案评估
-
-**问题**: P4-8 LIKE 查询限 7 天内 + 分页，无法支持历史消息全文检索。
-
-**评估内容**:
-- 选型：Elasticsearch / OpenSearch / Meilisearch
-- 索引设计：`im_message` 字段映射（fromUserId/toUserId/groupId/content/createTime/tenantId）
-- 同步策略：Canal binlog 同步 / 应用层双写
-- 查询接口：`/im/app/message/search` 升级，支持 ES 后端
-- 降级策略：ES 不可用时回退到 LIKE（限 7 天）
-
-**产出**: `doc/im/2026-07-19-p5-es-search-evaluation.md`
-
----
-
-### P5-10 WebSocket 集群方案评估
-
-**问题**: 当前单实例 WS + SSE，多实例部署时 session 不一致。
-
-**评估内容**:
-- 选型：Redis pub/sub / Redis Streams / MQ 广播
-- 消息广播模型：`im:push:user:{userId}` channel，所有实例订阅
-- session 路由：用户连接信息存 Redis（`im:session:{userId}` → `instanceId`）
-- 故障转移：实例宕机时 session 自动迁移
-
-**产出**: `doc/im/2026-07-19-p5-ws-cluster-evaluation.md`
-
----
-
-### P5-11 多端状态同步协议评估
-
-**问题**: 当前 syncToken 仅支持单端增量同步，多端登录时状态不一致。
-
-**评估内容**:
-- 设备标识：`device_id`（首次登录生成，持久化）
-- 消息漫游：服务端保留 N 天消息（与 P4-10 B7 清理任务配合）
-- 已读状态同步：watermarks 按设备维度（P4-3 已为群消息实现，需扩展到私聊）
-- 端到端加密（可选）：Signal Protocol / OLM Megolm
-
-**产出**: `doc/im/2026-07-19-p5-multi-device-sync-evaluation.md`
+> **2026-07-19 评估结论**: C 档 4 项（MQ 死信队列 / ES 消息搜索 / WebSocket 集群 / 多端状态同步）价值过低，不实施。原方案设计要点已归档至 P6 候选清单，待业务诉求明确后再启动。
 
 ---
 
@@ -448,7 +395,6 @@ public class SlowSqlInterceptor implements Interceptor {
 | P5-5 | 集成测试 | 租户隔离测试通过（`-Dgroups=integration`） |
 | P5-6 | 手动测试 | 千条消息 > 30 FPS；Emoji 面板 < 100ms；图片预加载有效 |
 | P5-7 | E2E 测试 | 6 个核心用例全部通过 |
-| P5-8~P5-11 | 评估报告 | 4 份评估文档产出，含选型对比与接入方案 |
 
 ---
 
@@ -456,8 +402,7 @@ public class SlowSqlInterceptor implements Interceptor {
 
 - **A 档**：5 项任务完成后合并为 1 个 commit，commit message 前缀 `feat(im): P5 A 档...` 或 `perf(im): P5 A 档...`
 - **B 档**：2 项任务完成后合并为 1 个 commit，commit message 前缀 `feat(im): P5 B 档...`
-- **C 档**：4 份评估文档合并为 1 个 commit，commit message 前缀 `docs(im): P5 C 档方案评估...`
-- **分支**：建议切出 `feature/im-p5-stability` 子分支，P5 验证稳定后合并回 `feature/im-p0-stability-fix`
+- **分支**：切出 `feature/im-p5-stability` 子分支，P5 验证稳定后合并回 `feature/im-p0-stability-fix`
 
 ---
 
@@ -470,7 +415,6 @@ public class SlowSqlInterceptor implements Interceptor {
 3. **P5-4 安全审计可能发现 P0 漏洞**: 影响线上稳定性。**缓解**: 审计与修复同步进行；发现的漏洞按严重程度分级（CRITICAL 立即修复，HIGH 进入 P6，MEDIUM/LOW 进入 P7）
 4. **P5-6 前端虚拟滚动兼容性**: vue-virtual-scroller 与现有组件库可能冲突。**缓解**: 在独立分支验证，确认无冲突再合并
 5. **P5-7 E2E 测试环境依赖**: 需要独立测试数据库 + Redis。**缓解**: 使用 docker-compose 一键拉起测试环境
-6. **C 档评估不实施**: 仅出文档，无代码风险
 
 ### 回滚策略
 
@@ -494,14 +438,10 @@ public class SlowSqlInterceptor implements Interceptor {
 | P5-5 | P3 第十章 | ✅ 多租户隔离验证 |
 | P5-6 | P4-11 延后 | ✅ W4+W5+W6+A7+A9+A10 |
 | P5-7 | P4 第十章 | ✅ 前端 E2E |
-| P5-8 | P4-1 风险缓解 | 📋 评估文档 |
-| P5-9 | P4-8 升级 | 📋 评估文档 |
-| P5-10 | P4 第十章 | 📋 评估文档 |
-| P5-11 | P3+P4 第十章 | 📋 评估文档 |
 
 **P5 完成后剩余未实施方向**:
 - 消息加密存储（按需）
-- C 档评估方向的实际实施（P6+）
+- MQ 死信队列 / ES 消息搜索 / WebSocket 集群 / 多端状态同步（C 档，价值过低不实施）
 
 ---
 
@@ -509,12 +449,12 @@ public class SlowSqlInterceptor implements Interceptor {
 
 P5 完成后，P6 可考虑以下方向（待 P5 验证后选择）：
 
-1. **C 档评估方向落地**: 根据评估报告选择 1~2 项实施（如 MQ 死信队列 / WS 集群）
-2. **IM 模块监控大盘**: Grafana 仪表盘（推送 QPS / 延迟分布 / 缓存命中率 / 慢 SQL Top10）
-3. **IM 模块 SLA 体系**: 99.9% 可用性目标 + 故障演练（Chaos Engineering）
-4. **消息已读回执扩展**: 私聊已读回执（P4-3 仅群消息实现 watermarks）
-5. **离线消息推送集成**: 极光/友盟推送（App 后台存活时）
-6. **IM 模块性能持续优化**: 基于 P5-3 压测基线，识别新的瓶颈点
+1. **IM 模块监控大盘**: Grafana 仪表盘（推送 QPS / 延迟分布 / 缓存命中率 / 慢 SQL Top10）
+2. **IM 模块 SLA 体系**: 99.9% 可用性目标 + 故障演练（Chaos Engineering）
+3. **消息已读回执扩展**: 私聊已读回执（P4-3 仅群消息实现 watermarks）
+4. **离线消息推送集成**: 极光/友盟推送（App 后台存活时）
+5. **IM 模块性能持续优化**: 基于 P5-3 压测基线，识别新的瓶颈点
+6. **C 档方向重启评估**: 待业务诉求明确后再启动 MQ/ES/WS 集群/多端同步
 
 ---
 
@@ -527,5 +467,5 @@ P5 完成后，P6 可考虑以下方向（待 P5 验证后选择）：
 | P2 | 批量化（listConversations / 群成员） | 6 | ✅ 已完成 |
 | P3 | 测试基础设施 + 单元测试基线 | 12 | ✅ 已完成 |
 | P4 | 性能优化 + 可靠性补齐 + 可观测性 | 12 | ✅ 已完成（2026-07-19） |
-| P5 | 稳定性兜底 + 安全审计 + 扩展性预备 | 11 | 🚧 计划中 |
-| P6 | 评估方向落地 + SLA 体系 | TBD | 🔮 待规划 |
+| P5 | 稳定性兜底 + 安全审计 + 前端体验补齐 | 7 | 🚧 实施中 |
+| P6 | 监控大盘 + SLA 体系 | TBD | 🔮 待规划 |
