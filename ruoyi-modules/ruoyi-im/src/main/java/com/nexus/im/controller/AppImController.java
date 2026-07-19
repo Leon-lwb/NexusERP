@@ -68,6 +68,7 @@ public class AppImController extends BaseController {
     private final ImRealtimePush imRealtimePush;
     private final ImConversationService conversationService;
     private final ImConversationSettingMapper conversationSettingMapper;
+    private final ImFavoriteMapper favoriteMapper;
 
     // ==================== Session ====================
 
@@ -1130,5 +1131,76 @@ public class AppImController extends BaseController {
         s.setIsMuted(0);
         conversationSettingMapper.insert(s);
         return s;
+    }
+
+    // =============== P6: 消息收藏 ===============
+
+    /**
+     * P6-B2: 收藏消息
+     * <p>幂等：已收藏则直接返回成功。
+     * <p>越权：非消息发送者/接收者/群成员不可收藏。
+     */
+    @PostMapping("/favorite/add")
+    public R<Void> addFavorite(@RequestBody Map<String, Object> body) {
+        Long me = LoginHelper.getUserId();
+        Long messageId = Long.valueOf(body.get("messageId").toString());
+        ImMessage msg = messageMapper.selectById(messageId);
+        if (msg == null) return R.fail("消息不存在");
+        if (!canAccessMessage(msg, me)) return R.fail("无权收藏此消息");
+
+        // 幂等：已收藏则直接返回
+        long exists = favoriteMapper.selectCount(new LambdaQueryWrapper<ImFavorite>()
+            .eq(ImFavorite::getUserId, me).eq(ImFavorite::getMessageId, messageId));
+        if (exists > 0) return R.ok();
+
+        ImFavorite fav = new ImFavorite();
+        fav.setUserId(me);
+        fav.setMessageId(messageId);
+        // 群消息：chatType=GROUP，targetId=groupId；私聊消息：chatType=PRIVATE，targetId=对端
+        if (msg.getGroupId() != null) {
+            fav.setChatType("GROUP");
+            fav.setTargetId(msg.getGroupId());
+        } else {
+            fav.setChatType("PRIVATE");
+            fav.setTargetId(msg.getFromUserId().equals(me) ? msg.getToUserId() : msg.getFromUserId());
+        }
+        fav.setFromUserId(msg.getFromUserId());
+        fav.setMsgType(msg.getMsgType());
+        fav.setContentSnippet(truncate(msg.getContent(), 500));
+        favoriteMapper.insert(fav);
+        return R.ok();
+    }
+
+    /**
+     * P6-B2: 取消收藏
+     */
+    @DeleteMapping("/favorite/{favoriteId}")
+    public R<Void> removeFavorite(@PathVariable Long favoriteId) {
+        Long me = LoginHelper.getUserId();
+        ImFavorite fav = favoriteMapper.selectById(favoriteId);
+        if (fav == null || !me.equals(fav.getUserId())) return R.fail("收藏不存在或无权操作");
+        favoriteMapper.deleteById(favoriteId);
+        return R.ok();
+    }
+
+    /**
+     * P6-B2: 收藏列表（分页）
+     */
+    @GetMapping("/favorite/list")
+    public TableDataInfo<ImFavorite> favoriteList(PageQuery pageQuery) {
+        Long me = LoginHelper.getUserId();
+        Page<ImFavorite> page = favoriteMapper.selectPage(pageQuery.build(),
+            new LambdaQueryWrapper<ImFavorite>()
+                .eq(ImFavorite::getUserId, me)
+                .orderByDesc(ImFavorite::getCreateTime));
+        return TableDataInfo.build(page);
+    }
+
+    /**
+     * P6-B2: 字符串截断辅助方法
+     */
+    private String truncate(String s, int max) {
+        if (s == null) return null;
+        return s.length() <= max ? s : s.substring(0, max);
     }
 }
