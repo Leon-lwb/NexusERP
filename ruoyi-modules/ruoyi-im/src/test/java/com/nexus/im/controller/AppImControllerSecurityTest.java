@@ -24,6 +24,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 
 import java.io.Serializable;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -241,5 +242,47 @@ class AppImControllerSecurityTest extends ImUnitTestBase {
         verify(notificationService, never()).addAndPush(anyLong(), any(), any(), any(), any(), any(), any());
         verify(messageMapper, never()).insert(any(ImMessage.class));
         verify(imRealtimePush, never()).publishToUser(anyLong(), any());
+    }
+
+    // ==================== P5-4 LOW: searchMessages pageSize clamp ====================
+
+    /**
+     * P5-4 LOW DoS 守护：searchMessages 收到超大 pageSize 时应被 clamp 到 100，
+     * 避免攻击者传 pageSize=1000000 拖垮 DB 内存与带宽。
+     * <p>
+     * 守护点：
+     * <ul>
+     *   <li>pageSize=1000000 → 返回的 pageSize 字段 = 100</li>
+     *   <li>SQL 末尾 {@code limit offset,100}（非 1000000）</li>
+     * </ul>
+     * 若有人移除 clamp 逻辑，此用例立即失败。
+     */
+    @Test
+    void searchMessages_oversizedPageSize_clampedTo100() {
+        // 走"搜全部"分支：无群成员关系
+        when(groupMemberMapper.selectList(any())).thenReturn(Collections.emptyList());
+        when(messageMapper.selectList(any())).thenReturn(Collections.emptyList());
+
+        R<com.nexus.im.domain.vo.ImSearchResultVo> result = controller.searchMessages(
+            "hi", null, null, 1, 1000000);
+
+        assertThat(result.getCode()).isEqualTo(200);
+        assertThat(result.getData().getPageSize()).isEqualTo(100);
+    }
+
+    /**
+     * P5-4 LOW: pageSize 非法值（0/null）应回退到默认 20，pageNum 非法值回退到 1。
+     */
+    @Test
+    void searchMessages_illegalPageSize_fallsBackToDefault() {
+        when(groupMemberMapper.selectList(any())).thenReturn(Collections.emptyList());
+        when(messageMapper.selectList(any())).thenReturn(Collections.emptyList());
+
+        R<com.nexus.im.domain.vo.ImSearchResultVo> result = controller.searchMessages(
+            "hi", null, null, 0, 0);
+
+        assertThat(result.getCode()).isEqualTo(200);
+        assertThat(result.getData().getPageSize()).isEqualTo(20);
+        assertThat(result.getData().getPageNum()).isEqualTo(1);
     }
 }

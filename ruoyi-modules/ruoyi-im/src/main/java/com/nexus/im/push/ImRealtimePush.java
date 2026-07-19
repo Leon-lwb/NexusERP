@@ -2,16 +2,22 @@ package com.nexus.im.push;
 
 import cn.hutool.core.collection.CollUtil;
 import io.micrometer.core.instrument.Timer;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import com.nexus.common.sse.utils.SseMessageUtils;
 import com.nexus.common.websocket.dto.WebSocketMessageDto;
 import com.nexus.common.websocket.utils.WebSocketUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.List;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 
 /**
  * 统一 WebSocket + SSE 下行（载荷为 JSON 字符串）
@@ -23,6 +29,14 @@ import java.util.List;
  * P4-9: 新增带 {@code chatType} 参数的重载，在 {@code publishToUsers} 实际推送处
  * 集成 Micrometer 指标（success/failure 计数 + latency 分布）。
  * 原 2 参数重载保留并向后兼容（chatType 默认 "other"，用于撤回/已读回执等非消息发送场景）。
+ * <p>
+ * P5-1: 引入 {@code imPushExecutor} 异步推送线程池。
+ * <ul>
+ *   <li>{@code im.push.async.enabled=true}（默认）→ 推送动作封装为 Runnable 提交到 imPushExecutor</li>
+ *   <li>线程池满时由 {@code CallerRunsPolicy} 拒绝策略处理（调用线程同步执行，不丢消息）</li>
+ *   <li>通过 {@link ImMetrics#registerPushExecutor} 注册 executor.active / queue.size 等监控指标</li>
+ *   <li>关闭开关或单元测试场景 → 走同步路径（保持向后兼容）</li>
+ * </ul>
  */
 @Slf4j
 @Component
@@ -31,8 +45,33 @@ public class ImRealtimePush {
 
     private final ImMetrics imMetrics;
 
+    /** P5-1: 异步推送线程池（@Lazy 防止初始化时序问题；单元测试中为 null） */
+    @Autowired
+    @Qualifier("imPushExecutor")
+    @org.springframework.context.annotation.Lazy
+    private Executor imPushExecutor;
+
+    /** P5-1: 异步推送开关，默认 true；故障时关闭回退到同步推送 */
+    @Value("${im.push.async.enabled:true}")
+    private boolean asyncEnabled;
+
     /** 默认 chatType 标签（用于撤回事件/已读回执等非主消息发送场景） */
     private static final String CHAT_TYPE_OTHER = "other";
+
+    /**
+     * P5-1: 注册推送线程池监控指标（active / queue.size / completed / pool.size）。
+     * <p>仅在 imPushExecutor 为 ExecutorService 实例时注册（单元测试中为 null 或同步执行器，跳过）。
+     */
+    @PostConstruct
+    public void registerExecutorMetrics() {
+        if (imPushExecutor instanceof ExecutorService es) {
+            imMetrics.registerPushExecutor(es);
+            log.info("[IM] P5-1 推送线程池监控已注册, asyncEnabled={}", asyncEnabled);
+        } else if (imPushExecutor != null) {
+            log.info("[IM] P5-1 推送路径: asyncEnabled={}, executor={} (非 ExecutorService, 跳过监控注册)",
+                asyncEnabled, imPushExecutor.getClass().getSimpleName());
+        }
+    }
 
     public void publishToUsers(List<Long> userIds, String jsonMessage) {
         publishToUsers(userIds, jsonMessage, CHAT_TYPE_OTHER);
@@ -47,12 +86,35 @@ public class ImRealtimePush {
      *   <li>SSE 抛异常 → {@code im.push.failure(type=chatType, reason=sse)} +1（每异常一次记一次）</li>
      *   <li>整个调用耗时记入 {@code im.push.latency(type=chatType)}</li>
      * </ul>
+     * <p>P5-1: 若 {@code asyncEnabled=true} 且 {@code imPushExecutor != null}，
+     * 推送动作封装为 Runnable 提交到 imPushExecutor 异步执行（CallerRunsPolicy 兜底）。
      */
     public void publishToUsers(List<Long> userIds, String jsonMessage, String chatType) {
         if (CollUtil.isEmpty(userIds)) {
             return;
         }
         String type = chatType == null ? CHAT_TYPE_OTHER : chatType;
+
+        // P5-1: 异步路径
+        if (asyncEnabled && imPushExecutor != null) {
+            try {
+                imPushExecutor.execute(() -> doPublish(userIds, jsonMessage, type));
+                return;
+            } catch (Exception e) {
+                // CallerRunsPolicy 不应抛异常，但为防御性记录
+                log.warn("[IM] P5-1 异步提交失败, 降级同步推送: {}", e.getMessage());
+                imMetrics.recordPushExecutorRejected(type);
+            }
+        }
+        // 同步路径（异步关闭 / 异步提交失败 / 单元测试）
+        doPublish(userIds, jsonMessage, type);
+    }
+
+    /**
+     * 实际推送动作（WS + SSE）+ 指标埋点。
+     * <p>P5-1: 提取为独立方法，供同步/异步路径共用。
+     */
+    private void doPublish(List<Long> userIds, String jsonMessage, String type) {
         Timer.Sample sample = imMetrics.startPushTimer();
         boolean wsOk = false;
         boolean sseOk = true;

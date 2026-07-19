@@ -39,10 +39,26 @@ public interface ImMessageTypeHandler {
     }
 
     /**
-     * 通用文本内容规范化逻辑：trim + 空校验 + 长度校验
+     * P5-4 MEDIUM: 内容净化钩子，默认透传。
+     * <p>文本类消息（TextMessageHandler）可重写此方法执行 XSS 标签清理；
+     * JSON 类消息（image/file）默认不清理，避免破坏结构。
+     * <p>调用时机：在 trim 与空校验之后、长度校验之前，保证清理后的内容仍受长度限制。
+     */
+    default String sanitize(String value) {
+        return value;
+    }
+
+    /**
+     * 通用文本内容规范化逻辑：trim + 空校验 + sanitize + 长度校验
+     * <p>P5-4: 在 trim 后插入 sanitize 钩子，便于子类按需做 XSS 清理。
      */
     default String doNormalize(String content) {
         String value = StrUtil.trim(content);
+        if (StrUtil.isBlank(value)) {
+            throw new ServiceException("消息内容不能为空");
+        }
+        value = sanitize(value);
+        // P5-4: sanitize 后可能产生空字符串（如原内容全是 HTML 标签被清理）
         if (StrUtil.isBlank(value)) {
             throw new ServiceException("消息内容不能为空");
         }

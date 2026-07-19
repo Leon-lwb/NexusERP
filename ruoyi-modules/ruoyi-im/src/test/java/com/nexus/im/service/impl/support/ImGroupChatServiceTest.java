@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexus.common.core.domain.R;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.im.constants.ImPayloadConstants;
 import com.nexus.im.domain.ImGroup;
 import com.nexus.im.domain.ImGroupMember;
@@ -26,6 +27,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Assertions;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -434,6 +436,8 @@ class ImGroupChatServiceTest extends ImUnitTestBase {
      */
     @Test
     void markGroupRead_usesWatermarkAggregation_notFullMessageIdList() {
+        // P5-4: 当前用户是群成员，通过越权校验
+        lenient().when(support.isGroupMember(GROUP_ID, ME_USER_ID)).thenReturn(true);
         // 模拟聚合 SQL 返回 3 个发送者的 watermarks（而非 1000 条 messageId）
         // 注：mapUnderscoreToCamelCase=true 将列别名转为驼峰
         List<Map<String, Object>> watermarkRows = new ArrayList<>();
@@ -459,6 +463,8 @@ class ImGroupChatServiceTest extends ImUnitTestBase {
      */
     @Test
     void markGroupRead_payloadContainsWatermarkField() {
+        // P5-4: 当前用户是群成员，通过越权校验
+        lenient().when(support.isGroupMember(GROUP_ID, ME_USER_ID)).thenReturn(true);
         List<Map<String, Object>> watermarkRows = new ArrayList<>();
         watermarkRows.add(buildWatermarkRow(MEMBER_101, 1001L));
         when(imMessageMapper.selectMaps(any())).thenReturn(watermarkRows);
@@ -485,6 +491,8 @@ class ImGroupChatServiceTest extends ImUnitTestBase {
      */
     @Test
     void markGroupRead_1000unread_3senders_pushesOnly3Times() {
+        // P5-4: 当前用户是群成员，通过越权校验
+        lenient().when(support.isGroupMember(GROUP_ID, ME_USER_ID)).thenReturn(true);
         List<Map<String, Object>> watermarkRows = new ArrayList<>();
         watermarkRows.add(buildWatermarkRow(MEMBER_101, 2000L));
         watermarkRows.add(buildWatermarkRow(MEMBER_102, 2005L));
@@ -496,6 +504,34 @@ class ImGroupChatServiceTest extends ImUnitTestBase {
 
         // 守护：1000 条未读仅推送 3 次（按发送者聚合），而非 1000 次
         verify(imRealtimePush, times(3)).publishToUserAfterCommit(any(), any());
+    }
+
+    /**
+     * P5-4 HIGH 越权守护：非群成员调用 markGroupRead 应抛 ServiceException，且不触碰 DB 写操作。
+     * <p>
+     * 漏洞描述：原 markGroupRead 仅校验群组存在与状态，未校验调用者是否为群成员，
+     * 非成员可调用 PUT /im/chat/group/read?groupId=xxx 将他人未读数清零。
+     * <p>
+     * 守护点：
+     * <ul>
+     *   <li>非成员调用 → 抛 ServiceException("无权操作此群")</li>
+     *   <li>不执行 update（避免污染真实接收者的 is_read 状态）</li>
+     *   <li>不推送 watermark（避免误发已读回执）</li>
+     * </ul>
+     */
+    @Test
+    void markGroupRead_nonMember_throwsServiceException() {
+        // 当前用户不是群成员
+        when(support.isGroupMember(GROUP_ID, ME_USER_ID)).thenReturn(false);
+
+        ServiceException ex = Assertions.assertThrows(ServiceException.class,
+            () -> imGroupChatService.markGroupRead(GROUP_ID));
+        assertThat(ex.getMessage()).isEqualTo("无权操作此群");
+
+        // 守护：非成员场景下不得执行任何 DB 写或推送
+        verify(imMessageMapper, never()).update(any(), any());
+        verify(imMessageMapper, never()).selectMaps(any());
+        verify(imRealtimePush, never()).publishToUserAfterCommit(any(), any());
     }
 
     /**

@@ -676,6 +676,17 @@ public class AppImController extends BaseController {
             return R.ok(new ImSearchResultVo(Collections.emptyList(), pageNum, pageSize));
         }
 
+        // P5-4 LOW: pageSize clamp 防止 DoS——攻击者传 pageSize=1000000 会拖垮 DB 内存与带宽
+        // 上限 100 覆盖移动端合理翻页需求（默认 20），同时阻断异常大页
+        if (pageSize == null || pageSize < 1) {
+            pageSize = 20;
+        } else if (pageSize > 100) {
+            pageSize = 100;
+        }
+        if (pageNum == null || pageNum < 1) {
+            pageNum = 1;
+        }
+
         Long me = LoginHelper.getUserId();
         int offset = (pageNum - 1) * pageSize;
         Date sevenDaysAgo = Date.from(Instant.now().minus(7, ChronoUnit.DAYS));

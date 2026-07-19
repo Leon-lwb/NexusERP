@@ -3,11 +3,21 @@ package com.nexus.im.push;
 import com.nexus.im.support.ImUnitTestBase;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
+import java.lang.reflect.Field;
+import java.util.List;
+import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 /**
  * P3-3: P0-2 事务推送回归测试。
@@ -31,6 +41,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  * <p>
  * 任意重构若将 {@code publishToUserAfterCommit} 改回 {@code publishToUser}（事务内立即推送），
  * 用例 1 会立即失败（因为不会注册 TransactionSynchronization）。
+ * <p>
+ * P5-1: 新增异步推送路径测试（asyncEnabled + imPushExecutor 字段）。
  */
 class ImRealtimePushTest extends ImUnitTestBase {
 
@@ -45,6 +57,8 @@ class ImRealtimePushTest extends ImUnitTestBase {
         // 不依赖 Spring 容器即可完成事务同步行为验证。
         registry = new SimpleMeterRegistry();
         imRealtimePush = new ImRealtimePush(new ImMetrics(registry));
+        // P5-1: 默认 asyncEnabled=false（boolean 默认值）+ imPushExecutor=null → 走同步路径
+        // 与 P3-3 / P4-12 测试行为一致
     }
 
     /**
@@ -130,6 +144,103 @@ class ImRealtimePushTest extends ImUnitTestBase {
             assertThat(TransactionSynchronizationManager.getSynchronizations()).hasSize(3);
         } finally {
             TransactionSynchronizationManager.clearSynchronization();
+        }
+    }
+
+    // ==================== P5-1: 异步推送路径测试 ====================
+
+    /**
+     * P5-1: asyncEnabled=true + imPushExecutor 非 null → 提交到 executor，不立即同步执行。
+     * <p>守护：异步路径下，推送动作被封装为 Runnable 提交到 imPushExecutor，
+     * 调用线程不阻塞（不直接调用 WebSocketUtils 等静态方法）。
+     */
+    @Test
+    @DisplayName("P5-1: asyncEnabled=true 时推送动作提交到 imPushExecutor")
+    void publishToUsers_asyncEnabled_submitsToExecutor() throws Exception {
+        // 用计数 Executor 捕获提交的 Runnable，但不实际执行（避免触发 WebSocketUtils 静态初始化）
+        AtomicInteger submitted = new AtomicInteger();
+        Executor noopExecutor = r -> submitted.incrementAndGet();
+        setField(imRealtimePush, "imPushExecutor", noopExecutor);
+        setField(imRealtimePush, "asyncEnabled", true);
+
+        imRealtimePush.publishToUsers(List.of(PEER_USER_ID), JSON_MESSAGE, "private");
+
+        // 守护：提交了 1 个任务到 executor
+        assertThat(submitted.get()).isEqualTo(1);
+        // 守护：异步路径下不立即调用 WebSocketUtils（否则会抛 ExceptionInInitializerError）
+        // 若走了同步路径，本测试会因 WebSocketUtils 静态初始化失败而抛 Error
+    }
+
+    /**
+     * P5-1: asyncEnabled=false → 走同步路径（不提交到 executor）。
+     * <p>守护：异步开关关闭时，即使 imPushExecutor 非 null 也不提交，
+     * 直接走同步推送路径（与 P4-9 行为一致）。
+     */
+    @Test
+    @DisplayName("P5-1: asyncEnabled=false 时走同步路径（不提交 executor）")
+    void publishToUsers_asyncDisabled_executesSynchronously() throws Exception {
+        Executor mockExecutor = mock(Executor.class);
+        setField(imRealtimePush, "imPushExecutor", mockExecutor);
+        setField(imRealtimePush, "asyncEnabled", false);
+
+        try {
+            // 同步路径会触发 WebSocketUtils/SseMessageUtils 静态初始化失败，捕获即可
+            imRealtimePush.publishToUsers(List.of(PEER_USER_ID), JSON_MESSAGE, "private");
+        } catch (Throwable t) {
+            // 预期：WebSocketUtils 静态初始化失败
+        }
+
+        // 守护：未提交到 executor（asyncEnabled=false 走同步路径）
+        verify(mockExecutor, never()).execute(any(Runnable.class));
+    }
+
+    /**
+     * P5-1: imPushExecutor=null（单元测试默认场景）→ 走同步路径，不抛 NPE。
+     * <p>守护：单元测试无 Spring 容器，imPushExecutor 字段为 null 时不能抛 NPE，
+     * 必须降级为同步路径。
+     */
+    @Test
+    @DisplayName("P5-1: imPushExecutor=null 时降级同步路径（不抛 NPE）")
+    void publishToUsers_nullExecutor_fallsBackToSynchronous() {
+        // imPushExecutor 默认为 null（@BeforeEach 未设置）
+        // asyncEnabled 默认为 false（boolean 默认值）
+        try {
+            imRealtimePush.publishToUsers(List.of(PEER_USER_ID), JSON_MESSAGE, "private");
+        } catch (Throwable t) {
+            // 预期：WebSocketUtils 静态初始化失败（非 NPE）
+            // 守护点：不抛 NPE
+            assertThat(t).isNotInstanceOf(NullPointerException.class);
+        }
+    }
+
+    /**
+     * P5-1: ExecutorServiceMetrics 在 @PostConstruct 时注册（仅当 imPushExecutor 为 ExecutorService）。
+     * <p>守护：registerExecutorMetrics 仅对 ExecutorService 实例注册监控，
+     * 普通 Executor（如单元测试的 noop Executor）跳过注册，不抛异常。
+     */
+    @Test
+    @DisplayName("P5-1: registerExecutorMetrics 对非 ExecutorService 跳过注册")
+    void registerExecutorMetrics_nonExecutorService_skipsRegistration() throws Exception {
+        Executor noopExecutor = r -> {};
+        setField(imRealtimePush, "imPushExecutor", noopExecutor);
+
+        // 不应抛异常
+        imRealtimePush.registerExecutorMetrics();
+
+        // 守护：未注册 executor.* 指标（因为 noopExecutor 不是 ExecutorService）
+        assertThat(registry.find("executor.active").gauges()).isEmpty();
+    }
+
+    /**
+     * 反射设置 ImRealtimePush 私有字段（仅测试用）。
+     */
+    private static void setField(Object target, String fieldName, Object value) throws Exception {
+        Field field = target.getClass().getDeclaredField(fieldName);
+        field.setAccessible(true);
+        if (value instanceof Boolean) {
+            field.setBoolean(target, (Boolean) value);
+        } else {
+            field.set(target, value);
         }
     }
 }

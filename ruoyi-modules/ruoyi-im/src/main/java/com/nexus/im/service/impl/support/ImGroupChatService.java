@@ -220,6 +220,10 @@ public class ImGroupChatService {
         if (group == null || !"0".equals(group.getStatus())) {
             return 0;
         }
+        // P5-4 HIGH: 越权防护——非群成员不得标记该群消息已读，否则会污染真实接收者的未读数
+        if (!support.isGroupMember(groupId, me)) {
+            throw new ServiceException("无权操作此群");
+        }
         // P4-3: 聚合 SQL 取 watermarks（按 from_user_id 分组 MAX(message_id)）
         // 注：mapUnderscoreToCamelCase=true 会将列别名 "from_user_id" → "fromUserId"，"max_message_id" → "maxMessageId"
         List<Map<String, Object>> watermarkRows = imMessageMapper.selectMaps(new QueryWrapper<ImMessage>()

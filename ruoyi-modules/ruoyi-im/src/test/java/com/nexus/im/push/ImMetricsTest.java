@@ -93,4 +93,55 @@ class ImMetricsTest {
         // 不会有任何 timer 注册
         assertThat(registry.find("im.push.latency").timers()).isEmpty();
     }
+
+    // ==================== P5-2: 缓存命中率 + 慢 SQL 监控 ====================
+
+    @Test
+    @DisplayName("recordCacheHit: type tag 正确分离（conversation / group）")
+    void recordCacheHit_incrementsCounterWithTypeTag() {
+        imMetrics.recordCacheHit("conversation");
+        imMetrics.recordCacheHit("conversation");
+        imMetrics.recordCacheHit("group");
+
+        assertThat(registry.counter("im.cache.hit", "type", "conversation").count()).isEqualTo(2.0);
+        assertThat(registry.counter("im.cache.hit", "type", "group").count()).isEqualTo(1.0);
+    }
+
+    @Test
+    @DisplayName("recordCacheMiss: type tag 正确分离")
+    void recordCacheMiss_incrementsCounterWithTypeTag() {
+        imMetrics.recordCacheMiss("conversation");
+        imMetrics.recordCacheMiss("conversation");
+        imMetrics.recordCacheMiss("conversation");
+
+        assertThat(registry.counter("im.cache.miss", "type", "conversation").count()).isEqualTo(3.0);
+        assertThat(registry.counter("im.cache.miss", "type", "group").count()).isZero();
+    }
+
+    @Test
+    @DisplayName("recordSlowSql: sql id tag 正确分离，null → 'default'")
+    void recordSlowSql_incrementsCounterWithSqlTag() {
+        imMetrics.recordSlowSql("com.nexus.im.mapper.ImMessageMapper.selectLatestPrivatePerPeer");
+        imMetrics.recordSlowSql("com.nexus.im.mapper.ImMessageMapper.selectLatestPrivatePerPeer");
+        imMetrics.recordSlowSql(null);  // null → "default"
+        imMetrics.recordSlowSql("com.nexus.im.mapper.ImGroupMapper.selectByIds");
+
+        assertThat(registry.counter("im.db.slow",
+            "sql", "com.nexus.im.mapper.ImMessageMapper.selectLatestPrivatePerPeer").count()).isEqualTo(2.0);
+        assertThat(registry.counter("im.db.slow", "sql", "default").count()).isEqualTo(1.0);
+        assertThat(registry.counter("im.db.slow",
+            "sql", "com.nexus.im.mapper.ImGroupMapper.selectByIds").count()).isEqualTo(1.0);
+    }
+
+    @Test
+    @DisplayName("recordDbQueryLatency: 记录耗时分布到 timer")
+    void recordDbQueryLatency_recordsLatency() {
+        imMetrics.recordDbQueryLatency(50);
+        imMetrics.recordDbQueryLatency(150);
+        imMetrics.recordDbQueryLatency(300);
+
+        Timer timer = registry.timer("im.db.query.latency");
+        assertThat(timer.count()).isEqualTo(3L);
+        assertThat(timer.totalTime(TimeUnit.MILLISECONDS)).isEqualTo(500.0);
+    }
 }
