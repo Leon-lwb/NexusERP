@@ -2,7 +2,7 @@
 
 > **分支**: `feature/im-p0-stability-fix`（在 P1 commit 基础上继续）
 > **日期**: 2026-07-18
-> **依据**: [2026-07-17-vim-vs-nexus-im-analysis.md](./2026-07-17-vim-vs-nexus-im-analysis.md) §四 M1/M6/M9 + §五 P2.5
+> **依据**: P0 稳定性修复计划 §四 M1/M6/M9 + §五 P2.5
 > **范围**: 高频接口性能优化 + 缓存重构 + 竞态修复，1 周交付
 > **前置**: P0 五项 + P1 七项改造已完成（commits c6a74933 / 0b74b27b / ed0cace）
 

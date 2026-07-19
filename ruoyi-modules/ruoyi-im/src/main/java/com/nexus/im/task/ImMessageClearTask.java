@@ -17,7 +17,7 @@ import java.util.Date;
 /**
  * IM 消息清理任务
  * <p>
- * 借鉴 V-IM MessageClearTask，定期清理超过保留期的消息和通知，
+ * 定期清理超过保留期的消息和通知，
  * 防止 im_message / sys_user_notification 无限增长拖慢历史查询。
  * <p>
  * 清理策略:

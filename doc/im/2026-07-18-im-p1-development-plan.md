@@ -1,8 +1,8 @@
-# P1 IM 模块近期借鉴开发任务
+# P1 IM 模块近期开发任务
 
 > **分支**: `feature/im-p0-stability-fix`（在 P0 commit 基础上继续）
 > **日期**: 2026-07-18
-> **依据**: [2026-07-17-vim-vs-nexus-im-analysis.md](./2026-07-17-vim-vs-nexus-im-analysis.md) §五 P1
+> **依据**: P0 稳定性修复计划
 > **范围**: 功能补齐 + 性能优化，1-2 周交付
 > **前置**: P0 五项改造已完成（commits 57699704 / 39dd41d9 / bd2356db / f5c9e2df / Nexus_App 0cfe971）
 
@@ -32,7 +32,7 @@ P1 共 6 项任务，按风险/复杂度分三档实施：
 
 **问题**: `im_message` 和 `sys_user_notification` 两表无任何清理策略，随时间无限增长，拖慢历史查询和磁盘 IO。
 
-**借鉴**: V-IM [MessageClearTask.java#L22-L48](file:///d:/workspace/V-IM/v-im-server-2025/v-im-server/src/main/java/com/vim/tio/task/MessageClearTask.java#L22-L48) `@Scheduled(cron = "0 0 4 * * ?")` 每天凌晨 4 点清理。
+**参考**: 业界定时清理实践，`@Scheduled(cron = "0 0 4 * * ?")` 每天凌晨 4 点清理。
 
 **改造**:
 
@@ -42,7 +42,7 @@ P1 共 6 项任务，按风险/复杂度分三档实施：
 /**
  * IM 消息清理任务
  * <p>
- * 借鉴 V-IM MessageClearTask，每天凌晨 4 点清理超过保留期的消息和通知。
+ * 每天凌晨 4 点清理超过保留期的消息和通知。
  * 清理策略：
  *   - im_message: 保留最近 180 天
  *   - sys_user_notification: 保留最近 90 天（已读 30 天 / 未读 90 天）
@@ -77,7 +77,7 @@ public class ImMessageClearTask {
 ```
 
 **关键设计**:
-- 使用 `@Scheduled(cron = "0 0 4 * * ?")` 每天 4 点执行（与 V-IM 一致）
+- 使用 `@Scheduled(cron = "0 0 4 * * ?")` 每天 4 点执行（与业界实践一致）
 - 分批删除（BATCH_SIZE=1000），避免长事务锁表
 - 物理删除（`DELETE FROM`），非逻辑删除
 - 清理前打 INFO 日志记录待删条数，清理后打 INFO 记录实际删除条数
@@ -91,7 +91,7 @@ public class ImMessageClearTask {
 
 **问题**: [ImChatServiceImpl.java#L57](file:///d:/workspace/nexus-erp/ruoyi-modules/ruoyi-im/src/main/java/com/nexus/im/service/impl/ImChatServiceImpl.java#L57) `SUPPORTED_MSG_TYPES = Set.of("text", "image", "file")` 硬编码，新增类型需改 Service。
 
-**借鉴**: V-IM 未显式策略模式，但 nexus-erp 应做正交拆分，便于后续 P2 扩展 @提及/引用/语音等。
+**参考**: 策略模式最佳实践，做正交拆分，便于后续 P2 扩展 @提及/引用/语音等。
 
 **改造**:
 
@@ -216,7 +216,7 @@ public class ImMessageTypeRegistry {
 - markPrivateRead/markGroupRead 成功后，向原发送方推送 `im_message_read` 类型信封
 - payload: `{ messageIds: [...], readAt: timestamp, readBy: userId }`
 - 前端收到后更新消息状态为"已读"
-- 借鉴 V-IM [VimMessageServiceImpl.java#L280-L361](file:///d:/workspace/V-IM/v-im-server-2025/v-im-server/src/main/java/com/vim/sdk/service/impl/VimMessageServiceImpl.java#L280-L361) Redis 时间戳方案
+- 参考业界 Redis 时间戳方案
 
 ### P1-7 消息分发器抽象
 

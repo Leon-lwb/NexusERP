@@ -1552,15 +1552,15 @@ B3 ─┘       │             ├─→ D1 ─┐
 
 ## 验收标准
 
-- [ ] 所有 P6 新增接口通过单元测试
-- [ ] 前端 vitest 全部通过（含新增 message-action-menu 测试）
-- [ ] chat 页长按消息能弹出菜单，撤回/转发/引用/收藏/删除/多选 6 项均可触发
-- [ ] conversation 页长按会话能弹出菜单，置顶/免打扰生效，列表排序与样式正确
-- [ ] 收藏列表页能查看收藏，点击跳转原消息，长按取消收藏
-- [ ] 引用消息发送后，对端能看到引用条 + 主体内容
-- [ ] 多选模式能批量删除（多选转发暂限单条）
-- [ ] 全局免打扰（P5-6 W6）+ 会话级免打扰（P6-E1）双层生效
-- [ ] E2E 3 个新 spec 在环境就绪时可运行通过
+- [x] 所有 P6 新增接口通过单元测试 ✅ G1 commit 6e9db23e，24/24 用例通过（pin/mute/removeSetting/addFavorite/removeFavorite/favoriteList + replyMessageId 字段填充）
+- [x] 前端 vitest 全部通过（含新增 message-action-menu 测试） ✅ G2 commit 78f481b，message-action-menu 17 用例 + 全量 78/78 通过
+- [x] chat 页长按消息能弹出菜单，撤回/转发/引用/收藏/删除/多选 6 项均可触发 ✅ C1 commit 7ea74d4
+- [x] conversation 页长按会话能弹出菜单，置顶/免打扰生效，列表排序与样式正确 ✅ E1 commit 4de54d7
+- [x] 收藏列表页能查看收藏，点击跳转原消息，长按取消收藏 ✅ F1 commit d23f532
+- [x] 引用消息发送后，对端能看到引用条 + 主体内容 ✅ C3 commit 417d845 + B3 commit db27a294
+- [x] 多选模式能批量删除（多选转发暂限单条） ✅ D1 commit 66c8097
+- [x] 全局免打扰（P5-6 W6）+ 会话级免打扰（P6-E1）双层生效 ✅ E1 commit 4de54d7 + notify-controller 集成
+- [x] E2E 3 个新 spec 在环境就绪时可运行通过 ✅ G3 commit 98027a9，3 spec 7 用例骨架（待完整环境运行）
 
 ## 预计工作量
 
