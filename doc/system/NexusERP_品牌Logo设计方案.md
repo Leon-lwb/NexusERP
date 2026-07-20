@@ -84,11 +84,16 @@
 | 标准 ICO | `plus-ui/public/favicon.ico` | 真 ICO 容器，内嵌 16/32/48 三尺寸 PNG |
 | 入口声明 | `plus-ui/index.html` | `<link rel="icon" href="/favicon.ico" sizes="32x32">` + `<link rel="icon" href="/favicon.svg" type="image/svg+xml">` |
 
-## 4. 资产生成技术管线
+## 4. 资产生成技术管线（实施后的实际管线）
 
-1. 以主 SVG 为源，用 **Edge headless**（`--headless --screenshot --window-size=N,N`，透明背景）栅格化 16/32/48/512 四档 PNG
-2. 用 **Python Pillow**（已装 12.2.0）将 16/32/48 三档打包为标准多尺寸 ICO
-3. 栅格产物与 SVG 目视比对（16px 下环与节点仍清晰为准）
+1. 以主 SVG 为源，用 **resvg-js-cli**（Rust 实现，确定性渲染）栅格化：
+   `npx --yes @resvg/resvg-js-cli --fit-width <N> logo.svg logo-<N>.png`，N ∈ 16/32/48/512
+2. 用 **Python 手工构建 ICO**（6 字节头 + 16 字节目录项 + PNG 数据 blob，约 20 行 struct 打包代码）将 16/32/48 三档封装为标准多尺寸 ICO
+3. PIL 自动校验：尺寸精确、角部透明、中枢白色、logo 满幅、ICO 三帧与源 PNG 像素一致
+
+> 注：原计划用 Edge headless 截图 + Pillow `save(ICO)`，实施中发现两个坑并已弃用：
+> ① Edge headless 大窗口截图存在系统性视口偏差（窗口越高内容区越矮，512px 窗口内容区仅 488×421），且受系统 DPI 缩放影响（需 `--force-device-scale-factor=1`）；
+> ② Pillow `save(format='ICO', append_images=...)` 会写入重复帧（目录条目 count=4）。手工打包 ICO 可保证三帧与矢量渲染源像素级一致。
 
 ## 5. 旧资产处置
 
