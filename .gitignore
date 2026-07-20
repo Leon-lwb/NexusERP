@@ -74,3 +74,6 @@ replay_pid*
 
 application-prod.yml
 .agents/
+
+# 可视化头脑风暴会话文件
+.superpowers/
