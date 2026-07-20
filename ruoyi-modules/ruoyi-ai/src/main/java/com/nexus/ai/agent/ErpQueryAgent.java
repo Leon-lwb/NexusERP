@@ -8,7 +8,7 @@ import dev.langchain4j.service.V;
 /**
  * ERP 数据查询 Agent
  * <p>
- * 注解放在接口方法上（非类级别），与 ruoyi-ai 的 SqlAgent 一致。
+ * 注解放在接口方法上（非类级别）
  * 由 LangChain4j agentic 框架在运行时动态代理实现。
  * </p>
  *

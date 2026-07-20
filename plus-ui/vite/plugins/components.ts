@@ -5,8 +5,8 @@ import IconsResolver from 'unplugin-icons/resolver';
 export default (path: any) => {
   return Components({
     resolvers: [
-      // 自动导入 Element Plus 组件
-      ElementPlusResolver(),
+      // 自动导入 Element Plus 组件(样式已由 main.ts 全量引入,关闭按需样式注入,避免 dev 下触发 Vite 重新预构建导致整页 reload)
+      ElementPlusResolver({ importStyle: false }),
       // 自动注册图标组件
       IconsResolver({
         enabledCollections: ['ep']

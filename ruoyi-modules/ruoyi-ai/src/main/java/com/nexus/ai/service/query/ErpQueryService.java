@@ -16,9 +16,7 @@ import java.util.regex.Pattern;
 /**
  * ERP 数据源 SQL 执行服务
  * <p>
- * 关键：标注 @DS("erp") 切换到 ERP 数据源（ry-erp 库）。
- * ruoyi-ai 原版使用 SpringUtils.getBean(DataSource.class) 会拿到 master 数据源（ry-vue），
- * 查不到 ERP 业务表。此 Service 通过 @DS 注解正确切换到 ERP 数据源。
+ * 关键：标注 @DS("erp") 切换到 ERP 数据源（ry-erp 库）。@DS 注解正确切换到 ERP 数据源。
  * </p>
  *
  * @author NexusERP

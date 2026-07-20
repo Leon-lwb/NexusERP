@@ -11,8 +11,8 @@ export default (path: any) => {
       globalsPropValue: true
     },
     resolvers: [
-      // 自动导入 Element Plus 相关函数ElMessage, ElMessageBox... (带样式)
-      ElementPlusResolver()
+      // 自动导入 Element Plus 相关函数ElMessage, ElMessageBox...(样式已由 main.ts 全量引入,关闭按需样式注入)
+      ElementPlusResolver({ importStyle: false })
     ],
     vueTemplate: true, // 是否在 vue 模板中自动导入
     dts: path.resolve(path.resolve(__dirname, '../../src'), 'types', 'auto-imports.d.ts')
