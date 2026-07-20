@@ -16,20 +16,38 @@
         <div class="brand-logo">
           <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
             <defs>
-              <linearGradient id="nx-grad" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+              <linearGradient id="nx-logo-bg" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#1e2a52" />
+                <stop offset="1" stop-color="#0b0f24" />
+              </linearGradient>
+              <linearGradient id="nx-logo-ring" x1="13.8" y1="11" x2="50.2" y2="53" gradientUnits="userSpaceOnUse">
                 <stop stop-color="#409EFF" />
-                <stop offset="1" stop-color="#8b5cf6" />
+                <stop offset=".35" stop-color="#22d3ee" />
+                <stop offset=".7" stop-color="#8b5cf6" />
+                <stop offset="1" stop-color="#34d399" />
               </linearGradient>
             </defs>
-            <rect width="64" height="64" rx="16" fill="url(#nx-grad)" />
-            <g stroke="rgba(255,255,255,.55)" stroke-width="1.5" stroke-linecap="round">
-              <path d="M32 32L20 21M32 32L44 21M32 32L20 43M32 32L44 43" />
+            <rect width="64" height="64" rx="16" fill="url(#nx-logo-bg)" />
+            <path
+              d="M32 11L50.2 21.5V42.5L32 53L13.8 42.5V21.5Z"
+              fill="rgba(255,255,255,.04)"
+              stroke="url(#nx-logo-ring)"
+              stroke-width="4.4"
+              stroke-linejoin="round"
+            />
+            <g fill="none" stroke="rgba(255,255,255,.4)" stroke-width="2.2" stroke-linecap="round">
+              <path d="M32 32L50.2 21.5M32 32L50.2 42.5M32 32L13.8 42.5M32 32L13.8 21.5" />
             </g>
-            <circle cx="20" cy="21" r="3.2" fill="#fff" opacity=".95" />
-            <circle cx="44" cy="21" r="3.2" fill="#fff" opacity=".95" />
-            <circle cx="20" cy="43" r="3.2" fill="#fff" opacity=".95" />
-            <circle cx="44" cy="43" r="3.2" fill="#fff" opacity=".95" />
-            <circle cx="32" cy="32" r="5.5" fill="#fff" />
+            <circle cx="13.8" cy="21.5" r="7.2" fill="#409EFF" opacity=".25" />
+            <circle cx="50.2" cy="21.5" r="7.2" fill="#22d3ee" opacity=".25" />
+            <circle cx="50.2" cy="42.5" r="7.2" fill="#8b5cf6" opacity=".25" />
+            <circle cx="13.8" cy="42.5" r="7.2" fill="#34d399" opacity=".25" />
+            <circle cx="13.8" cy="21.5" r="4.6" fill="#409EFF" />
+            <circle cx="50.2" cy="21.5" r="4.6" fill="#22d3ee" />
+            <circle cx="50.2" cy="42.5" r="4.6" fill="#8b5cf6" />
+            <circle cx="13.8" cy="42.5" r="4.6" fill="#34d399" />
+            <circle cx="32" cy="32" r="9" fill="none" stroke="rgba(255,255,255,.3)" stroke-width="1.4" />
+            <circle cx="32" cy="32" r="6" fill="#fff" />
           </svg>
         </div>
         <h1 class="brand-name">{{ logoTitle }}</h1>
