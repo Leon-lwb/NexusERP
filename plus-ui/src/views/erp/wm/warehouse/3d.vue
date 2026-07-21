@@ -20,6 +20,7 @@
           <span class="wm3d-total">共 {{ viewData.totalLocations ?? 0 }} 个库位</span>
         </div>
         <div class="wm3d-toolbar-right">
+          <el-checkbox v-model="buildingVisible" title="仓库外壳显隐" style="margin-right: 12px" @change="onToggleBuilding">外壳</el-checkbox>
           <el-select v-model="colorMode" style="width: 120px" @change="recolorLocations" title="着色模式">
             <el-option label="按状态" value="status" />
             <el-option label="按库区" value="area" />
@@ -67,6 +68,7 @@ import { getWarehouse3d } from '@/api/erp/wm/warehouse';
 import type { Warehouse3dVO, WarehouseArea3dVO, WarehouseLocation3dVO } from '@/api/erp/wm/warehouse/types';
 import WmLocationStockDialog from '../components/WmLocationStockDialog.vue';
 import { autoLayoutRack } from '../components/rackLayout';
+import { buildWarehouseBuilding } from '../components/warehouseBuilding';
 
 const { proxy } = getCurrentInstance() as any;
 const route = useRoute();
@@ -93,6 +95,8 @@ const tooltip = reactive({
 // 着色模式：status 按状态 / area 按库区 / occupancy 按占用率
 const colorMode = ref<'status' | 'area' | 'occupancy'>('status');
 const maxStockQuantity = ref(0);
+// 仓库外壳（厂房）显隐
+const buildingVisible = ref(true);
 // 库位库存明细弹窗
 const stockDialog = reactive({
   visible: false,
@@ -113,6 +117,11 @@ let singleClickTimer: ReturnType<typeof setTimeout> | null = null;
 let pointerDownPos: { x: number; y: number } | null = null;
 let hoveredMesh: THREE.Mesh | null = null;
 const locationMeshes: THREE.Mesh[] = [];
+// 仓库厂房（建筑本体）资源
+let buildingGroup: THREE.Group | null = null;
+let roofMesh: THREE.Mesh | null = null;
+let buildingPickMeshes: THREE.Mesh[] = [];
+let roofHidden = false;
 // 缓存初始视角用于重置
 let initialTarget: THREE.Vector3 | null = null;
 let initialPosition: THREE.Vector3 | null = null;
@@ -201,6 +210,20 @@ const initScene = () => {
     for (const loc of locs) {
       addLocationMesh(loc, area, bounds);
     }
+  }
+
+  // 仓库厂房：由内容包围盒自动包络（写实风），其网格参与遮挡拾取但不响应业务交互
+  const building = buildWarehouseBuilding(bounds);
+  if (building) {
+    buildingGroup = building.group;
+    roofMesh = building.roof;
+    buildingPickMeshes = building.pickMeshes;
+    scene.add(buildingGroup);
+    // 取景包围盒扩展到整栋厂房（含地台外挑与屋顶起坡）
+    const e = building.envelope;
+    expandBounds(bounds, (e.minX + e.maxX) / 2, (e.minY + e.maxY) / 2, (e.minZ + e.maxZ) / 2, e.maxX - e.minX, e.maxY - e.minY, e.maxZ - e.minZ);
+    // 数据重载后按当前开关状态恢复显隐
+    buildingGroup.visible = buildingVisible.value;
   }
 
   // OrbitControls
@@ -361,21 +384,62 @@ const resetView = () => {
   controls.update();
 };
 
-/** 悬停检测 */
-const onPointerMove = (e: PointerEvent) => {
-  if (!renderer || !camera || !raycaster || !pointer) return;
+/** 有效可见性：沿父链任一祖先不可见即视为不可见（用于遮挡拾取与屋顶自动隐藏） */
+const isEffVisible = (o: THREE.Object3D | null): boolean => {
+  for (let p: THREE.Object3D | null = o; p; p = p.parent) {
+    if (!p.visible) return false;
+  }
+  return true;
+};
+
+/**
+ * 由指针事件拾取库位：raycast 目标含建筑网格，取"最近且有效可见"的命中。
+ * 命中库位返回其 mesh；命中建筑（被遮挡）或空白返回 null —— 看得到才点得到。
+ */
+const pickLocationMesh = (e: MouseEvent | PointerEvent): THREE.Mesh | null => {
+  if (!renderer || !camera || !raycaster || !pointer) return null;
   const rect = renderer.domElement.getBoundingClientRect();
   pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
   pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
   raycaster.setFromCamera(pointer, camera);
-  const hits = raycaster.intersectObjects(locationMeshes, false);
-  if (hits.length > 0) {
-    const mesh = hits[0].object as THREE.Mesh;
+  const targets = buildingPickMeshes.length > 0 ? [...buildingPickMeshes, ...locationMeshes] : locationMeshes;
+  const hits = raycaster.intersectObjects(targets, false);
+  const hit = hits.find((h) => isEffVisible(h.object));
+  return hit && hit.object.userData.type === 'location' ? (hit.object as THREE.Mesh) : null;
+};
+
+// 屋顶自动隐藏阈值（相机俯仰角）：俯视开顶见内部，低角度恢复外壳
+const ROOF_HIDE_ELEV = THREE.MathUtils.degToRad(42);
+const ROOF_SHOW_ELEV = THREE.MathUtils.degToRad(32);
+
+/** 按相机俯仰角自动显隐屋顶（42°/32° 双阈值迟滞，避免边界抖动） */
+const updateRoofVisibility = () => {
+  if (!roofMesh || !camera || !controls) return;
+  const dx = camera.position.x - controls.target.x;
+  const dy = camera.position.y - controls.target.y;
+  const dz = camera.position.z - controls.target.z;
+  const elev = Math.atan2(dy, Math.hypot(dx, dz));
+  if (!roofHidden && elev > ROOF_HIDE_ELEV) roofHidden = true;
+  else if (roofHidden && elev < ROOF_SHOW_ELEV) roofHidden = false;
+  roofMesh.visible = !roofHidden;
+};
+
+/** 外壳显隐开关：隐藏整栋厂房（墙+顶+地台），回到纯内部视图 */
+const onToggleBuilding = (val: boolean) => {
+  if (buildingGroup) buildingGroup.visible = val;
+};
+
+/** 悬停检测 */
+const onPointerMove = (e: PointerEvent) => {
+  if (!renderer || !camera || !raycaster || !pointer) return;
+  const mesh = pickLocationMesh(e);
+  if (mesh) {
     if (hoveredMesh !== mesh) {
       if (hoveredMesh) (hoveredMesh.material as THREE.MeshStandardMaterial).emissive.setHex(0x000000);
       hoveredMesh = mesh;
       (mesh.material as THREE.MeshStandardMaterial).emissive.setHex(0x333333);
     }
+    const rect = renderer.domElement.getBoundingClientRect();
     const ud = mesh.userData;
     const loc = ud.loc as WarehouseLocation3dVO;
     tooltip.title = loc.locationName || loc.locationCode;
@@ -490,13 +554,9 @@ const onPointerUp = (e: PointerEvent) => {
   const dy = e.clientY - pointerDownPos.y;
   pointerDownPos = null;
   if (Math.hypot(dx, dy) >= 5) return;
-  const rect = renderer.domElement.getBoundingClientRect();
-  pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-  pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
-  raycaster.setFromCamera(pointer, camera);
-  const hits = raycaster.intersectObjects(locationMeshes, false);
-  if (hits.length === 0) return;
-  const loc = hits[0].object.userData.loc as WarehouseLocation3dVO;
+  const mesh = pickLocationMesh(e);
+  if (!mesh) return;
+  const loc = mesh.userData.loc as WarehouseLocation3dVO;
   if (singleClickTimer) clearTimeout(singleClickTimer);
   singleClickTimer = setTimeout(() => {
     stockDialog.locationId = loc.locationId;
@@ -513,19 +573,16 @@ const onDblClick = (e: MouseEvent) => {
     singleClickTimer = null;
   }
   if (!renderer || !camera || !raycaster || !pointer) return;
-  const rect = renderer.domElement.getBoundingClientRect();
-  pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-  pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
-  raycaster.setFromCamera(pointer, camera);
-  const hits = raycaster.intersectObjects(locationMeshes, false);
-  if (hits.length === 0) return;
-  focusLocation(hits[0].object.userData.loc as WarehouseLocation3dVO);
+  const mesh = pickLocationMesh(e);
+  if (!mesh) return;
+  focusLocation(mesh.userData.loc as WarehouseLocation3dVO);
 };
 
 /** 渲染循环 */
 const animate = () => {
   rafId = requestAnimationFrame(animate);
   if (controls) controls.update();
+  updateRoofVisibility();
   if (renderer && scene && camera) renderer.render(scene, camera);
 };
 
@@ -562,6 +619,10 @@ const disposeScene = () => {
   }
   hoveredMesh = null;
   locationMeshes.length = 0;
+  buildingGroup = null;
+  roofMesh = null;
+  buildingPickMeshes = [];
+  roofHidden = false;
   if (scene) {
     scene.traverse((obj) => {
       if (obj instanceof THREE.Mesh) {
