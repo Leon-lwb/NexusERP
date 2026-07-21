@@ -1,7 +1,6 @@
 package com.nexus.erp.bd.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
-import cn.hutool.core.lang.tree.Tree;
 import cn.hutool.core.util.ObjectUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
@@ -11,7 +10,6 @@ import com.nexus.common.core.constant.CacheNames;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.MapstructUtils;
 import com.nexus.common.core.utils.StringUtils;
-import com.nexus.common.core.utils.TreeBuildUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.common.mybatis.helper.DataBaseHelper;
@@ -21,6 +19,7 @@ import com.nexus.erp.bd.domain.bo.BdMaterialCategoryBo;
 import com.nexus.erp.bd.domain.vo.BdMaterialCategoryVo;
 import com.nexus.erp.bd.mapper.BdMaterialCategoryMapper;
 import com.nexus.erp.bd.service.IBdMaterialCategoryService;
+import com.nexus.erp.bd.service.IBdMaterialService;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
@@ -30,6 +29,7 @@ import com.baomidou.dynamic.datasource.annotation.DS;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -43,6 +43,7 @@ import java.util.Objects;
 public class BdMaterialCategoryServiceImpl implements IBdMaterialCategoryService {
 
     private final BdMaterialCategoryMapper baseMapper;
+    private final IBdMaterialService bdMaterialService;
 
     @Override
     public TableDataInfo<BdMaterialCategoryVo> selectPageList(BdMaterialCategoryBo bo, PageQuery pageQuery) {
@@ -59,29 +60,6 @@ public class BdMaterialCategoryServiceImpl implements IBdMaterialCategoryService
         condition = "#bo.categoryCode == null and #bo.categoryName == null and #bo.status == null")
     public List<BdMaterialCategoryVo> selectList(BdMaterialCategoryBo bo) {
         return baseMapper.selectVoList(buildQueryWrapper(bo));
-    }
-
-    @Override
-    @Cacheable(cacheNames = CacheNames.BD_CATEGORY_TREE, key = "'treeselect'")
-    public List<Tree<Long>> selectCategoryTreeList() {
-        List<BdMaterialCategoryVo> list = baseMapper.selectVoList(buildQueryWrapper(new BdMaterialCategoryBo()));
-        return buildCategoryTreeSelect(list);
-    }
-
-    @Override
-    public List<Tree<Long>> buildCategoryTreeSelect(List<BdMaterialCategoryVo> categories) {
-        if (CollUtil.isEmpty(categories)) {
-            return CollUtil.newArrayList();
-        }
-        return TreeBuildUtils.buildMultiRoot(
-            categories,
-            BdMaterialCategoryVo::getCategoryId,
-            BdMaterialCategoryVo::getParentId,
-            (node, treeNode) -> treeNode
-                .setId(node.getCategoryId())
-                .setParentId(node.getParentId())
-                .setName(node.getCategoryName())
-                .setWeight(node.getSortOrder()));
     }
 
     @Override
@@ -175,6 +153,108 @@ public class BdMaterialCategoryServiceImpl implements IBdMaterialCategoryService
         }
         return baseMapper.exists(new LambdaQueryWrapper<BdMaterialCategory>()
             .in(BdMaterialCategory::getParentId, Arrays.asList(categoryIds)));
+    }
+
+    /**
+     * 实时填充直系物料数量。物料增删不触发分类缓存失效，故此处每次实时查询，
+     * 不进分类缓存，避免物料数陈旧。
+     */
+    @Override
+    public void fillMaterialCount(List<BdMaterialCategoryVo> list) {
+        if (CollUtil.isEmpty(list)) {
+            return;
+        }
+        Map<Long, Long> countMap = bdMaterialService.countMaterialByCategory();
+        for (BdMaterialCategoryVo vo : list) {
+            vo.setMaterialCount(countMap.getOrDefault(vo.getCategoryId(), 0L));
+        }
+    }
+
+    /**
+     * 轻量状态变更：仅更新 status，不触发 path 级联。
+     * <p>停用(1->0)时级联停用所有子孙；启用(0->1)仅自身（不级联启用祖先链，避免误启用）。
+     */
+    @Override
+    @CacheEvict(cacheNames = CacheNames.BD_CATEGORY_TREE, allEntries = true)
+    @Transactional(rollbackFor = Exception.class)
+    public int updateStatus(Long categoryId, Long status) {
+        if (baseMapper.selectById(categoryId) == null) {
+            throw new ServiceException("分类不存在");
+        }
+        BdMaterialCategory update = new BdMaterialCategory();
+        update.setCategoryId(categoryId);
+        update.setStatus(status);
+        int rows = baseMapper.updateById(update);
+        // 停用时级联停用所有子孙（path_ids 含自身，find_in_set 命中自身+子孙，排除自身）
+        if (Long.valueOf(0L).equals(status)) {
+            List<BdMaterialCategory> descendants = baseMapper.selectList(
+                new LambdaQueryWrapper<BdMaterialCategory>()
+                    .apply(DataBaseHelper.findInSet(categoryId, "path_ids"))
+                    .ne(BdMaterialCategory::getCategoryId, categoryId));
+            if (CollUtil.isNotEmpty(descendants)) {
+                List<Long> ids = new ArrayList<>();
+                for (BdMaterialCategory d : descendants) {
+                    ids.add(d.getCategoryId());
+                }
+                BdMaterialCategory cascade = new BdMaterialCategory();
+                cascade.setStatus(0L);
+                baseMapper.update(cascade, new LambdaQueryWrapper<BdMaterialCategory>()
+                    .in(BdMaterialCategory::getCategoryId, ids));
+            }
+        }
+        return rows;
+    }
+
+    /**
+     * 移动分类到新父级（拖拽改父级）。复用循环校验 + path 级联刷新，
+     * sortOrder 自动追加到新父级现有子级末尾。
+     */
+    @Override
+    @CacheEvict(cacheNames = CacheNames.BD_CATEGORY_TREE, allEntries = true)
+    @Transactional(rollbackFor = Exception.class)
+    public int moveCategory(Long categoryId, Long newParentId) {
+        BdMaterialCategory old = baseMapper.selectById(categoryId);
+        if (old == null) {
+            throw new ServiceException("分类不存在");
+        }
+        long parentId = (newParentId == null || newParentId <= 0L) ? 0L : newParentId;
+        BdMaterialCategory entity = new BdMaterialCategory();
+        entity.setCategoryId(categoryId);
+        entity.setParentId(parentId);
+        entity.setCategoryCode(old.getCategoryCode());
+        entity.setCategoryName(old.getCategoryName());
+        // sortOrder 追加到新父级现有子级末尾
+        entity.setSortOrder(maxSiblingSortOrder(parentId, categoryId) + 1);
+        // 循环引用 / 自身校验（编码不变，唯一性校验为冗余安全网）
+        BdMaterialCategoryBo bo = new BdMaterialCategoryBo();
+        bo.setCategoryId(categoryId);
+        bo.setCategoryCode(old.getCategoryCode());
+        bo.setParentId(parentId);
+        validateCategory(bo, entity);
+        fillPathAndLevel(entity);
+        int rows = baseMapper.updateById(entity);
+        if (!Objects.equals(old.getParentId(), entity.getParentId())) {
+            updateCategoryChildren(old, entity);
+        }
+        return rows;
+    }
+
+    /**
+     * 查询某父级下现有子级的最大 sortOrder（排除指定分类）。
+     */
+    private long maxSiblingSortOrder(long parentId, Long excludeId) {
+        List<BdMaterialCategory> siblings = baseMapper.selectList(
+            new LambdaQueryWrapper<BdMaterialCategory>()
+                .eq(BdMaterialCategory::getParentId, parentId)
+                .ne(BdMaterialCategory::getCategoryId, excludeId)
+                .select(BdMaterialCategory::getSortOrder));
+        long maxSort = 0L;
+        for (BdMaterialCategory s : siblings) {
+            if (s.getSortOrder() != null && s.getSortOrder() > maxSort) {
+                maxSort = s.getSortOrder();
+            }
+        }
+        return maxSort;
     }
 
     /**

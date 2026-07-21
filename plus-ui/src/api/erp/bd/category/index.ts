@@ -42,6 +42,24 @@ export const updateCategory = (data: CategoryForm) => {
   });
 };
 
+/** 修改分类状态（内联开关，轻量更新） */
+export const changeCategoryStatus = (categoryId: string | number, status: number) => {
+  return request({
+    url: '/erp/bd/category/' + categoryId + '/status',
+    method: 'put',
+    params: { status }
+  });
+};
+
+/** 移动分类到新父级（拖拽改父级，sortOrder 自动追加到新父级子级末尾） */
+export const moveCategory = (categoryId: string | number, parentId: string | number) => {
+  return request({
+    url: '/erp/bd/category/' + categoryId + '/move',
+    method: 'put',
+    params: { parentId }
+  });
+};
+
 export const delCategory = (categoryId: string | number | (string | number)[]) => {
   return request({
     url: '/erp/bd/category/' + categoryId,

@@ -7,6 +7,7 @@ import com.nexus.erp.bd.domain.vo.BdMaterialVo;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 物料产品主Service接口
@@ -79,4 +80,11 @@ public interface IBdMaterialService {
      * @return 结果 true 存在 false 不存在
      */
     boolean hasMaterialByCategoryIds(Collection<Long> categoryIds);
+
+    /**
+     * 统计各分类下的直系物料数量（按 category_id 分组，仅未删除物料）
+     *
+     * @return categoryId -> 直系物料数 映射（无物料的分类不在 map 中）
+     */
+    Map<Long, Long> countMaterialByCategory();
 }

@@ -430,6 +430,9 @@
             </el-table-column>
           </el-table>
         </el-tab-pane>
+        <el-tab-pane label="扩展属性" name="attr" v-if="form.materialId">
+          <MaterialAttrValueEditor :material-id="form.materialId" :category-id="form.categoryId" :readonly="isViewMode" />
+        </el-tab-pane>
       </el-tabs>
       <template #footer>
         <div class="dialog-footer">
@@ -448,6 +451,7 @@ import { listMeasureAll } from '@/api/erp/bd/measure';
 import { listMaterialVendor } from '@/api/erp/bd/material-vendor';
 import { previewCode } from '@/api/system/autocode/rule';
 import { useCategoryTree } from '@/composables/erp/useCategoryTree';
+import MaterialAttrValueEditor from './MaterialAttrValueEditor.vue';
 
 const { proxy } = getCurrentInstance();
 const { sys_true_or_false, prd_material_source_type, bd_material_type, bd_quality_status } = toRefs<any>(

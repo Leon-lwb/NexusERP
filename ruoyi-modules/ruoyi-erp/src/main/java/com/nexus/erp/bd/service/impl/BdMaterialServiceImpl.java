@@ -22,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.baomidou.dynamic.datasource.annotation.DS;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -154,6 +155,29 @@ public class BdMaterialServiceImpl implements IBdMaterialService {
         }
         return baseMapper.exists(new LambdaQueryWrapper<BdMaterial>()
             .in(BdMaterial::getCategoryId, categoryIds));
+    }
+
+    /**
+     * 统计各分类下的直系物料数量（按 category_id 分组）。
+     * <p>
+     * 仅 SELECT category_id 列（租户/逻辑删除条件由插件自动注入），Java 端分组，
+     * 避免自定义 SQL 的租户拦截不确定性。
+     */
+    @Override
+    public Map<Long, Long> countMaterialByCategory() {
+        List<BdMaterial> list = baseMapper.selectList(
+            Wrappers.lambdaQuery(BdMaterial.class).select(BdMaterial::getCategoryId)
+        );
+        Map<Long, Long> map = new HashMap<>();
+        if (CollUtil.isEmpty(list)) {
+            return map;
+        }
+        for (BdMaterial m : list) {
+            if (m.getCategoryId() != null) {
+                map.merge(m.getCategoryId(), 1L, Long::sum);
+            }
+        }
+        return map;
     }
 
     /**

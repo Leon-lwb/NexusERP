@@ -1,7 +1,6 @@
 package com.nexus.erp.bd.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
-import cn.hutool.core.lang.tree.Tree;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import com.nexus.common.core.domain.R;
@@ -46,7 +45,10 @@ public class BdMaterialCategoryController extends BaseController {
     @SaCheckPermission("bd:category:list")
     @GetMapping("/list")
     public R<List<BdMaterialCategoryVo>> list(BdMaterialCategoryBo bo) {
-        return R.ok(bdMaterialCategoryService.selectList(bo));
+        List<BdMaterialCategoryVo> list = bdMaterialCategoryService.selectList(bo);
+        // 物料数实时填充（不进分类缓存，避免物料增删后陈旧）
+        bdMaterialCategoryService.fillMaterialCount(list);
+        return R.ok(list);
     }
 
     /**
@@ -63,18 +65,6 @@ public class BdMaterialCategoryController extends BaseController {
     public void export(BdMaterialCategoryBo bo, HttpServletResponse response) {
         List<BdMaterialCategoryVo> list = bdMaterialCategoryService.selectList(bo);
         ExcelUtil.exportExcel(list, "物料产品分类数据", BdMaterialCategoryVo.class, response);
-    }
-
-    /**
-     * 获取分类下拉树结构
-     * <p>权限标识：{@code bd:category:query}</p>
-     *
-     * @return 分类下拉树结构列表
-     */
-    @SaCheckPermission("bd:category:query")
-    @GetMapping("/treeselect")
-    public R<List<Tree<Long>>> treeselect() {
-        return R.ok(bdMaterialCategoryService.selectCategoryTreeList());
     }
 
     /**
@@ -120,6 +110,39 @@ public class BdMaterialCategoryController extends BaseController {
     @PutMapping
     public R<Void> edit(@Validated @RequestBody BdMaterialCategoryBo bo) {
         return toAjax(bdMaterialCategoryService.updateByBo(bo));
+    }
+
+    /**
+     * 修改分类状态（内联开关，轻量更新，不走 path 级联）
+     * <p>权限标识：{@code bd:category:edit}</p>
+     * <p>日志记录：title="物料产品分类"，businessType=UPDATE</p>
+     *
+     * @param categoryId 分类 ID
+     * @param status     目标状态 0:停用 1:启用
+     * @return 操作结果
+     */
+    @SaCheckPermission("bd:category:edit")
+    @Log(title = "物料产品分类", businessType = BusinessType.UPDATE)
+    @PutMapping("/{categoryId}/status")
+    public R<Void> changeStatus(@PathVariable Long categoryId, @RequestParam Long status) {
+        return toAjax(bdMaterialCategoryService.updateStatus(categoryId, status));
+    }
+
+    /**
+     * 移动分类到新父级（拖拽改父级）
+     * <p>权限标识：{@code bd:category:edit}</p>
+     * <p>日志记录：title="物料产品分类"，businessType=UPDATE</p>
+     * <p>复用 path 级联刷新与循环引用校验；sortOrder 自动追加到新父级子级末尾。</p>
+     *
+     * @param categoryId 被移动分类 ID
+     * @param parentId   新父分类 ID（0=顶级）
+     * @return 操作结果
+     */
+    @SaCheckPermission("bd:category:edit")
+    @Log(title = "物料产品分类", businessType = BusinessType.UPDATE)
+    @PutMapping("/{categoryId}/move")
+    public R<Void> move(@PathVariable Long categoryId, @RequestParam Long parentId) {
+        return toAjax(bdMaterialCategoryService.moveCategory(categoryId, parentId));
     }
 
     /**

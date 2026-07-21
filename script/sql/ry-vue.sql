@@ -11837,6 +11837,22 @@ INSERT INTO `sys_dict_data` VALUES (157, '000000', 1, '原材料', '1', 'bd_mate
 INSERT INTO `sys_dict_data` VALUES (158, '000000', 2, '半成品', '2', 'bd_material_type', NULL, 'default', 'N', 103, 1, '2025-10-03 23:55:27', NULL, NULL, NULL);
 INSERT INTO `sys_dict_data` VALUES (159, '000000', 3, '成品', '3', 'bd_material_type', NULL, 'default', 'N', 103, 1, '2025-10-03 23:58:15', NULL, NULL, NULL);
 INSERT INTO `sys_dict_data` VALUES (160, '000000', 4, '辅料', '4', 'bd_material_type', NULL, 'default', 'N', 103, 1, '2025-10-03 23:58:25', NULL, NULL, NULL);
+SET @dd_id = (SELECT IFNULL(MAX(dict_code), 0) + 1 FROM `sys_dict_data`);
+INSERT INTO `sys_dict_data` (`dict_code`, `tenant_id`, `dict_sort`, `dict_label`, `dict_value`, `dict_type`, `css_class`, `list_class`, `is_default`, `create_dept`, `create_by`, `create_time`, `remark`)
+SELECT @dd_id + 0, '000000', 1, '字符串', 'STRING', 'bd_attr_data_type', NULL, 'default', 'N', 103, 1, NOW(), NULL
+WHERE NOT EXISTS (SELECT 1 FROM `sys_dict_data` WHERE `dict_type` = 'bd_attr_data_type' AND `dict_value` = 'STRING');
+INSERT INTO `sys_dict_data` (`dict_code`, `tenant_id`, `dict_sort`, `dict_label`, `dict_value`, `dict_type`, `css_class`, `list_class`, `is_default`, `create_dept`, `create_by`, `create_time`, `remark`)
+SELECT @dd_id + 1, '000000', 2, '数值', 'NUMBER', 'bd_attr_data_type', NULL, 'primary', 'N', 103, 1, NOW(), NULL
+WHERE NOT EXISTS (SELECT 1 FROM `sys_dict_data` WHERE `dict_type` = 'bd_attr_data_type' AND `dict_value` = 'NUMBER');
+INSERT INTO `sys_dict_data` (`dict_code`, `tenant_id`, `dict_sort`, `dict_label`, `dict_value`, `dict_type`, `css_class`, `list_class`, `is_default`, `create_dept`, `create_by`, `create_time`, `remark`)
+SELECT @dd_id + 2, '000000', 3, '枚举', 'ENUM', 'bd_attr_data_type', NULL, 'success', 'N', 103, 1, NOW(), NULL
+WHERE NOT EXISTS (SELECT 1 FROM `sys_dict_data` WHERE `dict_type` = 'bd_attr_data_type' AND `dict_value` = 'ENUM');
+INSERT INTO `sys_dict_data` (`dict_code`, `tenant_id`, `dict_sort`, `dict_label`, `dict_value`, `dict_type`, `css_class`, `list_class`, `is_default`, `create_dept`, `create_by`, `create_time`, `remark`)
+SELECT @dd_id + 3, '000000', 4, '日期', 'DATE', 'bd_attr_data_type', NULL, 'warning', 'N', 103, 1, NOW(), NULL
+WHERE NOT EXISTS (SELECT 1 FROM `sys_dict_data` WHERE `dict_type` = 'bd_attr_data_type' AND `dict_value` = 'DATE');
+INSERT INTO `sys_dict_data` (`dict_code`, `tenant_id`, `dict_sort`, `dict_label`, `dict_value`, `dict_type`, `css_class`, `list_class`, `is_default`, `create_dept`, `create_by`, `create_time`, `remark`)
+SELECT @dd_id + 4, '000000', 5, '布尔', 'BOOLEAN', 'bd_attr_data_type', NULL, 'info', 'N', 103, 1, NOW(), NULL
+WHERE NOT EXISTS (SELECT 1 FROM `sys_dict_data` WHERE `dict_type` = 'bd_attr_data_type' AND `dict_value` = 'BOOLEAN');
 INSERT INTO `sys_dict_data` VALUES (161, '000000', 1, '自制', '1', 'bd_source_type', NULL, 'default', 'N', 103, 1, '2025-10-04 00:00:24', NULL, NULL, NULL);
 INSERT INTO `sys_dict_data` VALUES (162, '000000', 2, '外购', '2', 'bd_source_type', NULL, 'default', 'N', 103, 1, '2025-10-04 00:00:36', NULL, NULL, NULL);
 INSERT INTO `sys_dict_data` VALUES (163, '000000', 3, '委外', '3', 'bd_source_type', NULL, 'default', 'N', 103, 1, '2025-10-04 00:00:47', NULL, NULL, NULL);
@@ -12363,6 +12379,10 @@ INSERT INTO `sys_dict_type` VALUES (111, '000000', '物料类型', 'bd_material_
 INSERT INTO `sys_dict_type` VALUES (112, '000000', '物料来源类型', 'bd_source_type', 103, 1, '2025-10-03 23:59:55', NULL, NULL, '已废弃，统一使用 prd_material_source_type');
 INSERT INTO `sys_dict_type` VALUES (113, '000000', '质量状态', 'bd_quality_status', 103, 1, '2025-10-04 00:05:08', NULL, '2025-10-04 00:05:15', '质量状态');
 INSERT INTO `sys_dict_type` VALUES (114, '000000', '币种', 'so_currency_type', 103, 1, '2025-10-21 15:08:10', NULL, NULL, '国际币种');
+SET @dt_id = (SELECT IFNULL(MAX(dict_id), 0) + 1 FROM `sys_dict_type`);
+INSERT INTO `sys_dict_type` (`dict_id`, `tenant_id`, `dict_name`, `dict_type`, `create_dept`, `create_by`, `create_time`, `remark`)
+SELECT @dt_id, '000000', '物料属性数据类型', 'bd_attr_data_type', 103, 1, NOW(), '分类属性值数据类型'
+WHERE NOT EXISTS (SELECT 1 FROM `sys_dict_type` WHERE `dict_type` = 'bd_attr_data_type');
 INSERT INTO `sys_dict_type` VALUES (115, '000000', '客户订单状态', 'so_customer_order_status', 103, 1, '2025-10-21 15:17:44', NULL, '2025-10-21 17:39:17', '客户订单状态');
 INSERT INTO `sys_dict_type` VALUES (116, '000000', '订单优先级', 'so_order_priority', 103, 1, '2025-10-21 15:20:04', NULL, NULL, '订单优先级');
 INSERT INTO `sys_dict_type` VALUES (117, '000000', '订单来源', 'so_source_channel', 103, 1, '2025-10-21 15:22:37', NULL, NULL, '订单来源');

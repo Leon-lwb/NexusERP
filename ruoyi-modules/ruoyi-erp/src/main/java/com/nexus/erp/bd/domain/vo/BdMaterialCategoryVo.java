@@ -88,6 +88,11 @@ public class BdMaterialCategoryVo implements Serializable {
     private Long status;
 
     /**
+     * 直系物料数量（前端据此累加含子孙的累计数）
+     */
+    private Long materialCount;
+
+    /**
      * 子分类列表
      */
     private List<BdMaterialCategoryVo> children;

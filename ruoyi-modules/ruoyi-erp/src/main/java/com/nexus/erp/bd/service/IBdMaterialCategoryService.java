@@ -1,6 +1,5 @@
 package com.nexus.erp.bd.service;
 
-import cn.hutool.core.lang.tree.Tree;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.erp.bd.domain.bo.BdMaterialCategoryBo;
@@ -31,21 +30,6 @@ public interface IBdMaterialCategoryService {
      * @return 物料产品分类列表
      */
     List<BdMaterialCategoryVo> selectList(BdMaterialCategoryBo bo);
-
-    /**
-     * 查询分类下拉树结构
-     *
-     * @return 分类树结构列表
-     */
-    List<Tree<Long>> selectCategoryTreeList();
-
-    /**
-     * 构建前端下拉树结构
-     *
-     * @param categories 分类列表
-     * @return 下拉树结构列表
-     */
-    List<Tree<Long>> buildCategoryTreeSelect(List<BdMaterialCategoryVo> categories);
 
     /**
      * 查询分类列表，排除指定分类及其所有子孙（用于父级下拉防循环）
@@ -110,4 +94,31 @@ public interface IBdMaterialCategoryService {
      * @return 结果 true 存在 false 不存在
      */
     boolean hasChildByCategoryIds(Long[] categoryIds);
+
+    /**
+     * 填充各分类的直系物料数量（实时查询，不进缓存）。
+     * <p>因物料增删不触发分类缓存失效，物料数须每次实时填充，避免缓存陈旧。
+     *
+     * @param list 分类VO列表（将被就地设置 materialCount）
+     */
+    void fillMaterialCount(List<BdMaterialCategoryVo> list);
+
+    /**
+     * 修改分类状态（轻量更新，不走 path 级联）
+     *
+     * @param categoryId 分类ID
+     * @param status     目标状态 0:停用 1:启用
+     * @return 影响行数
+     */
+    int updateStatus(Long categoryId, Long status);
+
+    /**
+     * 移动分类到新父级（拖拽改父级）。复用 path 级联刷新与循环引用校验，
+     * sortOrder 自动追加到新父级现有子级末尾。
+     *
+     * @param categoryId  被移动分类ID
+     * @param newParentId 新父分类ID（0=顶级）
+     * @return 影响行数
+     */
+    int moveCategory(Long categoryId, Long newParentId);
 }
