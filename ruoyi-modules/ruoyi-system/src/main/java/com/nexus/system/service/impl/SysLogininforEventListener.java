@@ -30,10 +30,16 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class SysLogininforEventListener {
 
+    /** ISysLogininforService 业务服务，提供 登录日志 相关能力。 */
     private final ISysLogininforService logininforService;
 
+    /** ISysClientService 业务服务，提供 客户端 相关能力。 */
     private final ISysClientService clientService;
 
+    /**
+     * 处理登录日志相关操作。
+     * @param logininforEvent 登录日志 参数
+     */
     @Async
     @EventListener
     public void recordLogininfor(LogininforEvent logininforEvent) {

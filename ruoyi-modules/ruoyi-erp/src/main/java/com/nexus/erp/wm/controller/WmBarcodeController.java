@@ -32,6 +32,7 @@ import java.util.List;
 @RequestMapping("/erp/wm/barcode")
 public class WmBarcodeController extends BaseController {
 
+    /** 条码业务服务，提供条码相关能力 */
     private final IWmBarcodeService wmBarcodeService;
 
     /**

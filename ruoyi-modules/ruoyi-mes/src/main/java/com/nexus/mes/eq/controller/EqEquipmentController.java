@@ -28,6 +28,8 @@ import java.util.stream.Collectors;
 /**
  * MES设备台账 Controller
  *
+ * <p>属于MES 设备管理模块，提供设备相关的 REST 接口。</p>
+ *
  * @author Nexus
  */
 @Validated
@@ -41,6 +43,10 @@ public class EqEquipmentController extends BaseController {
 
     /**
      * 分页查询设备台账列表
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @param pageQuery 分页参数（页码、每页大小、排序）
+     * @return 分页结果
      */
     @SaCheckPermission("mes:eq:equipment:list")
     @GetMapping("/list")
@@ -50,6 +56,9 @@ public class EqEquipmentController extends BaseController {
 
     /**
      * 根据ID获取设备详情
+     *
+     * @param equipmentId 设备ID
+     * @return 操作结果
      */
     @SaCheckPermission("mes:eq:equipment:query")
     @GetMapping("/{equipmentId}")
@@ -59,6 +68,9 @@ public class EqEquipmentController extends BaseController {
 
     /**
      * 新增设备
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @return 操作结果
      */
     @SaCheckPermission("mes:eq:equipment:add")
     @Log(title = "设备新增", businessType = BusinessType.INSERT)
@@ -69,6 +81,9 @@ public class EqEquipmentController extends BaseController {
 
     /**
      * 编辑设备
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @return 操作结果
      */
     @SaCheckPermission("mes:eq:equipment:edit")
     @Log(title = "设备编辑", businessType = BusinessType.UPDATE)
@@ -79,6 +94,9 @@ public class EqEquipmentController extends BaseController {
 
     /**
      * 批量删除设备
+     *
+     * @param ids ID数组
+     * @return 操作结果
      */
     @SaCheckPermission("mes:eq:equipment:remove")
     @Log(title = "设备删除", businessType = BusinessType.DELETE)
@@ -89,6 +107,9 @@ public class EqEquipmentController extends BaseController {
 
     /**
      * 查询设备关联的 IoT 在线状态
+     *
+     * @param equipmentId 设备ID
+     * @return 操作结果
      */
     @SaCheckPermission("mes:eq:equipment:query")
     @GetMapping("/{equipmentId}/iotStatus")
@@ -99,6 +120,9 @@ public class EqEquipmentController extends BaseController {
 
     /**
      * 查询设备关联的 IoT 最新数据
+     *
+     * @param equipmentId 设备ID
+     * @return 操作结果
      */
     @SaCheckPermission("mes:eq:equipment:query")
     @GetMapping("/{equipmentId}/iotLatest")
@@ -108,6 +132,9 @@ public class EqEquipmentController extends BaseController {
 
     /**
      * 查询设备当前关联的进行中工单(P1-6 设备-工单联动)
+     *
+     * @param equipmentId 设备ID
+     * @return 操作结果
      */
     @SaCheckPermission("mes:eq:equipment:query")
     @GetMapping("/{equipmentId}/currentWorkOrder")
@@ -117,6 +144,8 @@ public class EqEquipmentController extends BaseController {
 
     /**
      * 设备状态计数汇总(监控大屏用, 全量 COUNT 不受分页限制)
+     *
+     * @return 操作结果
      */
     @SaCheckPermission("mes:eq:equipment:list")
     @GetMapping("/summary")
@@ -148,6 +177,9 @@ public class EqEquipmentController extends BaseController {
 
     /**
      * 批量查询设备 IoT 在线状态(消除前端逐行 N+1 HTTP 请求)
+     *
+     * @param equipmentIds 设备ID列表（逗号分隔）
+     * @return 操作结果
      */
     @SaCheckPermission("mes:eq:equipment:query")
     @GetMapping("/batchIotStatus")
@@ -162,6 +194,9 @@ public class EqEquipmentController extends BaseController {
 
     /**
      * 查询 ERP 工作中心列表(供设备表单工作中心选择器使用)
+     *
+     * @param keyword 模糊匹配关键字（可空）
+     * @return 操作结果
      */
     @SaCheckPermission("mes:eq:equipment:query")
     @GetMapping("/workcenters")
@@ -171,6 +206,9 @@ public class EqEquipmentController extends BaseController {
 
     /**
      * 导出设备台账数据
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @param response HTTP 响应对象
      */
     @SaCheckPermission("mes:eq:equipment:export")
     @Log(title = "设备台账", businessType = BusinessType.EXPORT)
@@ -180,6 +218,9 @@ public class EqEquipmentController extends BaseController {
         ExcelUtil.exportExcel(list, "设备台账", EqEquipmentVo.class, response);
     }
 
+    /**
+     * 属于MES 设备管理模块，IoTLinkDto持久化实体。
+     */
     @Data
     public static class IotLinkDto {
         private Long iotDeviceId;

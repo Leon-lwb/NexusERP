@@ -12,6 +12,7 @@ import java.math.BigDecimal;
 
 /**
  * MES工单BOM快照明细视图对象
+ * <p>属于 MES 生产管理模块，作为 工单 的查询/导出返回结构。</p>
  */
 @Data
 @ExcelIgnoreUnannotated
@@ -23,9 +24,13 @@ public class ProWorkOrderBomLineVo implements Serializable {
     @ExcelProperty(value = "快照明细ID")
     private Long woBomLineId;
 
+    /** MES工单ID */
     private Long mesWoId;
+    /** BOMID */
     private Long bomId;
+    /** BOMDetailId */
     private Long bomDetailId;
+    /** MBOMLineId */
     private Long mbomLineId;
 
     @ExcelProperty(value = "子项物料ID")
@@ -70,5 +75,6 @@ public class ProWorkOrderBomLineVo implements Serializable {
     @ExcelProperty(value = "排序")
     private Integer sortOrder;
 
+    /** remark */
     private String remark;
 }

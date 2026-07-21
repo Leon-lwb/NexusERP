@@ -36,6 +36,7 @@ import com.nexus.workflow.service.IWfDemoService;
 
 /**
  * DEMO
+ * <p>流程表单 DEMO 数据的增删改查与导出 REST 接口，属于 Flowable 工作流模块。</p>
  *
  * @author wanghuan
  * @date 2023-10-12
@@ -47,15 +48,21 @@ import com.nexus.workflow.service.IWfDemoService;
 @RequestMapping("/workflow/demo")
 public class WfDemoController extends BaseController {
 
+    /** DEMO 业务服务，提供分页、导出、增删改等能力。 */
     private final IWfDemoService iWfDemoService;
 
     /**
-     * 查询DEMO列表
+     * 查询 DEMO 列表（分页）。
+     *
+     * @param vo         DEMO 查询条件
+     * @param pageQuery  分页参数（页码、每页大小、排序）
+     * @param req        请求对象，用于修正排序字段避免列歧义
+     * @return 分页结果，包含 DEMO 列表及分页元信息
      */
     @SaCheckPermission("workflow:demo:list")
     @GetMapping("/list")
     public TableDataInfo<WfDemoVo> list(WfDemoVo vo, PageQuery pageQuery, HttpServletRequest req) {
-    	//by wanghuan for java.sql.SQLSyntaxErrorException: ORA-00918: 未明确定义列
+   	//by wanghuan for java.sql.SQLSyntaxErrorException: ORA-00918: 未明确定义列
 		Map<String, String[]> ParameterMap = new HashMap<String, String[]>(req.getParameterMap());
 		String[] column = new String[]{""};
 		if(ParameterMap!=null&&  ParameterMap.containsKey("column")) {
@@ -74,7 +81,10 @@ public class WfDemoController extends BaseController {
     }
 
     /**
-     * 导出DEMO列表
+     * 导出 DEMO 列表。
+     *
+     * @param bo       DEMO 查询条件
+     * @param response HTTP 响应，用于写入导出的 Excel 流
      */
     @SaCheckPermission("workflow:demo:export")
     @Log(title = "DEMO", businessType = BusinessType.EXPORT)
@@ -85,9 +95,10 @@ public class WfDemoController extends BaseController {
     }
 
     /**
-     * 获取DEMO详细信息
+     * 获取 DEMO 详细信息。
      *
      * @param demoId 主键
+     * @return DEMO 详细信息
      */
     @SaCheckPermission("workflow:demo:query")
     @GetMapping("/{demoId}")
@@ -97,7 +108,10 @@ public class WfDemoController extends BaseController {
     }
 
     /**
-     * 新增DEMO
+     * 新增 DEMO。
+     *
+     * @param bo DEMO 新增数据
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckPermission("workflow:demo:add")
     @Log(title = "DEMO", businessType = BusinessType.INSERT)
@@ -108,7 +122,10 @@ public class WfDemoController extends BaseController {
     }
 
     /**
-     * 修改DEMO
+     * 修改 DEMO。
+     *
+     * @param bo DEMO 修改数据
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckPermission("workflow:demo:edit")
     @Log(title = "DEMO", businessType = BusinessType.UPDATE)
@@ -119,9 +136,10 @@ public class WfDemoController extends BaseController {
     }
 
     /**
-     * 删除DEMO
+     * 删除 DEMO。
      *
      * @param demoIds 主键串
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckPermission("workflow:demo:remove")
     @Log(title = "DEMO", businessType = BusinessType.DELETE)

@@ -17,6 +17,7 @@ import java.io.InputStream;
 @Service
 public class DocumentParserService {
 
+    /** Apache Tika 文档解析器，负责将二进制文档流解析为纯文本。 */
     private final Tika tika = new Tika();
 
     /**

@@ -59,15 +59,30 @@ import java.util.Map;
 @Service("wmArrivalNoticeService")
 public class WmArrivalNoticeServiceImpl extends ServiceImpl<WmArrivalNoticeMapper, WmArrivalNotice> implements IWmArrivalNoticeService {
 
+    /** 通知行数据访问映射器（Mapper） */
     private final WmArrivalNoticeLineMapper noticeLineMapper;
+    /** 到货通知数据访问映射器（Mapper） */
     private final PuPurchaseOrderMapper purchaseOrderMapper;
+    /** 到货通知业务服务，提供到货通知相关能力 */
     private final PuPurchaseReceivingService purchaseReceivingService;
+    /** 到货通知业务服务，提供到货通知相关能力 */
     private final IWfProcessService processService;
+    /** 到货通知业务服务，提供到货通知相关能力 */
     private final WfMyBusinessServiceImpl wfMyBusinessServiceImpl;
+    /** 到货通知业务服务，提供到货通知相关能力 */
     private final RuntimeService runtimeService;
+    /** 到货通知业务服务，提供到货通知相关能力 */
     private final HistoryService historyService;
+    /** 自动编码工具类 */
     private final AutoCodeUtil autoCodeUtil;
 
+    /**
+     * 分页查询到货通知列表
+     *
+     * @param bo 到货通知业务对象（BO）
+     * @param pageQuery 分页查询参数，包含页码、每页大小及排序条件
+     * @return 结果对象
+     */
     @Override
     public TableDataInfo<WmArrivalNoticeVo> selectPageList(WmArrivalNoticeBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<WmArrivalNotice> lqw = buildQueryWrapper(bo);
@@ -75,11 +90,23 @@ public class WmArrivalNoticeServiceImpl extends ServiceImpl<WmArrivalNoticeMappe
         return TableDataInfo.build(page);
     }
 
+    /**
+     * 查询到货通知列表
+     *
+     * @param bo 到货通知业务对象（BO）
+     * @return 结果对象
+     */
     @Override
     public List<WmArrivalNoticeVo> selectList(WmArrivalNoticeBo bo) {
         return baseMapper.selectVoList(buildQueryWrapper(bo));
     }
 
+    /**
+     * 查询到货通知
+     *
+     * @param id 主键 ID
+     * @return 结果
+     */
     @Override
     public WmArrivalNoticeVo selectById(Long id) {
         WmArrivalNoticeVo vo = baseMapper.selectVoById(id);
@@ -92,6 +119,12 @@ public class WmArrivalNoticeServiceImpl extends ServiceImpl<WmArrivalNoticeMappe
         return vo;
     }
 
+    /**
+     * 新增到货通知
+     *
+     * @param bo 到货通知业务对象（BO）
+     * @return 结果
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(WmArrivalNoticeBo bo) {
@@ -104,6 +137,12 @@ public class WmArrivalNoticeServiceImpl extends ServiceImpl<WmArrivalNoticeMappe
         return rows;
     }
 
+    /**
+     * 修改到货通知
+     *
+     * @param bo 到货通知业务对象（BO）
+     * @return 结果
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(WmArrivalNoticeBo bo) {
@@ -114,6 +153,12 @@ public class WmArrivalNoticeServiceImpl extends ServiceImpl<WmArrivalNoticeMappe
         return baseMapper.updateById(entity);
     }
 
+    /**
+     * 删除到货通知
+     *
+     * @param ids 主键 ID 数组（支持批量操作）
+     * @return 结果
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {
@@ -158,6 +203,12 @@ public class WmArrivalNoticeServiceImpl extends ServiceImpl<WmArrivalNoticeMappe
         throw new ServiceException(result.getMsg());
     }
 
+    /**
+     * 获取到货通知
+     *
+     * @param noticeIdStr 参数 noticeIdStr
+     * @return 结果
+     */
     @Override
     public String getProcInsId(String noticeIdStr) {
         try {
@@ -236,17 +287,37 @@ public class WmArrivalNoticeServiceImpl extends ServiceImpl<WmArrivalNoticeMappe
         purchaseOrderMapper.updateById(order);
     }
 
+    /**
+     * 获取到货通知详情
+     *
+     * @param dataId data ID
+     * @return 结果
+     */
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Object getBusinessDataById(String dataId) {
         return selectById(Long.parseLong(dataId));
     }
 
+    /**
+     * 到货通知处理（flowValuesOfTask）
+     *
+     * @param taskNameId taskName ID
+     * @param values 参数 values
+     * @return 结果对象
+     */
     @Override
     public Map<String, Object> flowValuesOfTask(String taskNameId, Map<String, Object> values) {
         return null;
     }
 
+    /**
+     * 到货通知处理（flowCandidateUsernamesOfTask）
+     *
+     * @param taskNameId taskName ID
+     * @param values 参数 values
+     * @return 结果对象
+     */
     @Override
     public List<String> flowCandidateUsernamesOfTask(String taskNameId, Map<String, Object> values) {
         return null;

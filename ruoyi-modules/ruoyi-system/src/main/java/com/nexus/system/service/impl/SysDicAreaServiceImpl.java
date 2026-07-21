@@ -13,17 +13,31 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * 行政区划 服务实现类，实现 {@link ISysDicAreaService} 接口。属于 System 系统管理模块。
+ */
 @RequiredArgsConstructor
 @Service
 public class SysDicAreaServiceImpl implements ISysDicAreaService {
 
+    /** SysDicAreaMapper 数据访问层组件，提供 行政区划 的持久化能力。 */
     private final SysDicAreaMapper baseMapper;
 
+    /**
+     * 根据条件查询行政区划列表。
+     * @param pkid 主键 ID
+     * @return 行政区划对象
+     */
     @Override
     public SysDicAreaVo selectSysDicAreaByPkid(Long pkid) {
         return baseMapper.selectVoById(pkid);
     }
 
+    /**
+     * 根据条件查询行政区划列表。
+     * @param sysDicArea 查询条件（行政区划）
+     * @return 匹配条件的行政区划列表
+     */
     @Override
     public List<SysDicAreaVo> selectSysDicAreaList(SysDicArea sysDicArea) {
         LambdaQueryWrapper<SysDicArea> wrapper = buildQueryWrapper(sysDicArea);
@@ -31,6 +45,11 @@ public class SysDicAreaServiceImpl implements ISysDicAreaService {
         return baseMapper.selectVoList(wrapper);
     }
 
+    /**
+     * 根据条件查询行政区划列表。
+     * @param sysDicArea 查询条件（行政区划）
+     * @return 匹配条件的行政区划列表
+     */
     @Override
     public List<SysDicAreaVo> selectSysDicAreaTreeList(SysDicArea sysDicArea) {
         List<SysDicAreaVo> areas = selectSysDicAreaList(sysDicArea);
@@ -40,39 +59,73 @@ public class SysDicAreaServiceImpl implements ISysDicAreaService {
         return buildTree(areas);
     }
 
+    /**
+     * 根据条件查询行政区划列表。
+     * @param sysDicArea 查询条件（行政区划）
+     * @return 匹配条件的行政区划列表
+     */
     @Override
     public List<SysDicAreaVo> selectChildrenTreeList(SysDicArea sysDicArea) {
         List<SysDicAreaVo> areas = selectSysDicAreaList(sysDicArea);
         return buildTree(areas);
     }
 
+    /**
+     * 根据条件查询行政区划列表。
+     * @return 匹配条件的行政区划列表
+     */
     @Override
     public List<SysDicAreaVo> selectProvinces() {
         List<SysDicArea> provinces = baseMapper.selectProvinces();
         return MapstructUtils.convert(provinces, SysDicAreaVo.class);
     }
 
+    /**
+     * 根据条件查询行政区划列表。
+     * @param parentAreaId 上级区域 ID
+     * @return 匹配条件的行政区划列表
+     */
     @Override
     public List<SysDicAreaVo> selectNextLevel(Long parentAreaId) {
         List<SysDicArea> nextLevel = baseMapper.selectNextLevel(parentAreaId);
         return MapstructUtils.convert(nextLevel, SysDicAreaVo.class);
     }
 
+    /**
+     * 新增行政区划。
+     * @param sysDicArea 待新增的行政区划
+     * @return 受影响行数
+     */
     @Override
     public int insertSysDicArea(SysDicArea sysDicArea) {
         return baseMapper.insert(sysDicArea);
     }
 
+    /**
+     * 更新行政区划。
+     * @param sysDicArea 待更新的行政区划
+     * @return 受影响行数
+     */
     @Override
     public int updateSysDicArea(SysDicArea sysDicArea) {
         return baseMapper.updateById(sysDicArea);
     }
 
+    /**
+     * 删除记录。
+     * @param pkid 待删除的 ID
+     * @return 受影响行数
+     */
     @Override
     public int deleteSysDicAreaByPkid(Long pkid) {
         return baseMapper.deleteById(pkid);
     }
 
+    /**
+     * 删除记录。
+     * @param pkids 待删除的 ID 数组
+     * @return 受影响行数
+     */
     @Override
     public int deleteSysDicAreaByPkids(Long[] pkids) {
         int count = 0;

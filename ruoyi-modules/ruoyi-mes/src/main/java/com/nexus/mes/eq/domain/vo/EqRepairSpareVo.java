@@ -13,6 +13,8 @@ import java.math.BigDecimal;
 /**
  * MES维修领用备件明细视图对象 eq_repair_spare
  *
+ * <p>属于MES 设备管理模块，维修备件视图对象（查询出参）。</p>
+ *
  * @author Nexus
  */
 @Data

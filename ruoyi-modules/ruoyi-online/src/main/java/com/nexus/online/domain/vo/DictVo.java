@@ -11,11 +11,11 @@ import lombok.Data;
 @Data
 public class DictVo {
 	/**
-     * id
+     * 字典项 ID（对应字典数据表中的 dict_value）。
      */
     private String id;
     /**
-     * 名称
+     * 字典项名称（对应字典数据表中的 dict_label）。
      */
     private String name;
 }

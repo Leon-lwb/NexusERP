@@ -35,14 +35,23 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 @Service
 public class CommonServiceImpl extends ServiceImpl<CommonMapper, Object> implements CommonService {
 
+    /** ISysUserService 业务服务，提供 用户 相关能力。 */
     private final ISysUserService userService;
+    /** ISysDeptService 业务服务，提供 部门 相关能力。 */
     private final ISysDeptService deptService;
+    /** SysUserMapper 数据访问层组件，提供 用户 的持久化能力。 */
     private final SysUserMapper userMapper;
+    /** eventPublisher 成员变量。 */
     private final ApplicationEventPublisher eventPublisher;
 
     @Value("${flowable.message-base-url:/workflow/process/detail/}")
+    /** messageBaseUrl 成员变量。 */
     private String messageBaseUrl;
 
+    /**
+     * 处理记录相关操作。
+     * @param message message 参数
+     */
     @Override
     public void sendSysNotice(String message) {
         LoginUser loginUser = LoginHelper.getLoginUser();
@@ -53,11 +62,28 @@ public class CommonServiceImpl extends ServiceImpl<CommonMapper, Object> impleme
         sendSysNotice("system", loginUser.getUsername(), message, message, Constants.MSG_CATEGORY_2, null);
     }
 
+    /**
+     * 处理记录相关操作。
+     * @param fromUser fromUser 参数
+     * @param toUser toUser 参数
+     * @param title title 参数
+     * @param msgContent msgContent 参数
+     * @param setMsgCategory setMsgCategory 参数
+     */
     @Override
     public void sendSysNotice(String fromUser, String toUser, String title, String msgContent, String setMsgCategory) {
         sendSysNotice(fromUser, toUser, title, msgContent, setMsgCategory, null);
     }
 
+    /**
+     * 处理记录相关操作。
+     * @param fromUser fromUser 参数
+     * @param toUser toUser 参数
+     * @param title title 参数
+     * @param msgContent msgContent 参数
+     * @param setMsgCategory setMsgCategory 参数
+     * @param contentUrl contentUrl 参数
+     */
     @Override
     public void sendSysNotice(String fromUser, String toUser, String title, String msgContent, String setMsgCategory, String contentUrl) {
         log.info("发送系统消息 fromUser: {}, toUser: {}, title: {}", fromUser, toUser, title);
@@ -87,16 +113,29 @@ public class CommonServiceImpl extends ServiceImpl<CommonMapper, Object> impleme
         eventPublisher.publishEvent(event);
     }
 
+    /**
+     * 根据条件查询单个记录。
+     * @return 结果字符串
+     */
     @Override
     public String getBaseUrl() {
         return messageBaseUrl;
     }
 
+    /**
+     * 根据条件查询单个用户。
+     * @return 用户对象
+     */
     @Override
     public LoginUser getLoginUser() {
         return LoginHelper.getLoginUser();
     }
 
+    /**
+     * 根据条件查询单个用户。
+     * @param roleId 角色 ID
+     * @return 匹配条件的用户列表
+     */
     @Override
     public List<SysUserVo> getUserListByRoleId(String roleId) {
         if (StringUtils.isBlank(roleId)) {
@@ -116,16 +155,31 @@ public class CommonServiceImpl extends ServiceImpl<CommonMapper, Object> impleme
         return userService.selectUserByIds(userIds, null);
     }
 
+    /**
+     * 根据条件查询单个用户。
+     * @param userId 用户 ID
+     * @return 用户对象
+     */
     @Override
     public SysUserVo getSysUserByUserId(Long userId) {
         return userService.selectUserById(userId);
     }
 
+    /**
+     * 根据条件查询单个用户。
+     * @param userName 用户名
+     * @return 用户对象
+     */
     @Override
     public SysUserVo getSysUserByUserName(String userName) {
         return userService.selectUserByUserName(userName);
     }
 
+    /**
+     * 根据条件查询单个记录。
+     * @param userName 用户名
+     * @return 结果字符串
+     */
     @Override
     public String getDepLeaderByUserName(String userName) {
         if (StringUtils.isBlank(userName)) {
@@ -143,12 +197,20 @@ public class CommonServiceImpl extends ServiceImpl<CommonMapper, Object> impleme
         return leader == null ? "" : leader.getUserName();
     }
 
+    /**
+     * 根据条件查询记录列表。
+     * @return 受影响行数
+     */
     @Override
     public Long selectMaxId() {
         Long maxId = baseMapper.selectMaxMenuId();
         return maxId == null ? 0L : maxId;
     }
 
+    /**
+     * 根据条件查询单个用户。
+     * @return 匹配条件的用户列表
+     */
     @Override
     public List<SysUserVo> getAllUser() {
         return userMapper.selectVoList();

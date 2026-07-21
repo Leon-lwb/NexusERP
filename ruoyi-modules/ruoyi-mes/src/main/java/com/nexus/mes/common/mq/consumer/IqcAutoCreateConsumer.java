@@ -82,6 +82,12 @@ public class IqcAutoCreateConsumer extends BaseMessageConsumer<ReceiveApprovedMe
     }
 
     @RabbitListener(queues = QueueConstants.MES_IQC_CREATE_QUEUE)
+    /**
+     * onMessage 操作
+     * @param message message
+     * @param channel channel
+     * @param amqpMessage amqpMessage
+     */
     public void onMessage(ReceiveApprovedMessage message, Channel channel, Message amqpMessage) throws Exception {
         processMessage(message, channel, amqpMessage);
     }

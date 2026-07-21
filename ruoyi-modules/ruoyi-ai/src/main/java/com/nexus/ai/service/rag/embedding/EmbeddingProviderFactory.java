@@ -23,6 +23,7 @@ import java.util.stream.Collectors;
 @Component
 public class EmbeddingProviderFactory {
 
+    /** 厂商类型 → 嵌入模型构建策略 注册表（构造时从 Spring 收集并注册）。 */
     private final Map<String, EmbeddingProvider> providers;
 
     public EmbeddingProviderFactory(List<EmbeddingProvider> providerList) {

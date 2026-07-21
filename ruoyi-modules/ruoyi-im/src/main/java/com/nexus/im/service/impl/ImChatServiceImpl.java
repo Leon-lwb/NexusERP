@@ -41,10 +41,15 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class ImChatServiceImpl implements IImChatService {
 
+    /** 私聊子服务：私聊消息发送/历史/已读。 */
     private final ImPrivateChatService privateChatService;
+    /** 群聊子服务：群消息发送/历史/已读/群组管理。 */
     private final ImGroupChatService groupChatService;
+    /** 会话列表聚合服务。 */
     private final ImConversationService conversationService;
+    /** 消息生命周期服务：撤回等。 */
     private final ImMessageLifecycleService messageLifecycleService;
+    /** 跨子服务共享辅助能力（头像解析等）。 */
     private final ImChatSupport support;
 
     @Override

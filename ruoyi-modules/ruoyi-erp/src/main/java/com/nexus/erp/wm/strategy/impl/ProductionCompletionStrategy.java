@@ -48,11 +48,17 @@ public class ProductionCompletionStrategy extends BaseStockOperationStrategy {
     /** 事务标志：入库（正数） */
     private static final int TX_FLAG_IN = 1;
 
+    /** 库存数据访问映射器（Mapper） */
     private final WmMaterialStockMapper stockMapper;
+    /** 生产完工数据访问映射器（Mapper） */
     private final BdMaterialMapper bdMaterialMapper;
+    /** 仓库数据访问映射器（Mapper） */
     private final WmWarehouseMapper wmWarehouseMapper;
+    /** 存储库位数据访问映射器（Mapper） */
     private final WmStorageLocationMapper wmStorageLocationMapper;
+    /** 存储区域数据访问映射器（Mapper） */
     private final WmStorageAreaMapper wmStorageAreaMapper;
+    /** 生产完工数据访问映射器（Mapper） */
     private final BdUnitOfMeasureMapper bdUnitOfMeasureMapper;
 
     /**

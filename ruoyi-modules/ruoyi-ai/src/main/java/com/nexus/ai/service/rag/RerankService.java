@@ -29,12 +29,16 @@ import java.util.concurrent.atomic.AtomicInteger;
 @RequiredArgsConstructor
 public class RerankService {
 
+    /** ChatModel 工厂，提供 LLM 兜底打分用的同步模型。 */
     private final ChatModelFactory chatModelFactory;
+    /** AI 模型业务服务，用于解析默认/指定 Rerank 模型。 */
     private final IAiModelService aiModelService;
 
+    /** AI 专用线程池，用于并行打分并控制超时。 */
     @Qualifier("aiExecutor")
     private final Executor aiExecutor;
 
+    /** Rerank 厂商策略工厂，按 providerType 获取专用重排实现。 */
     private final RerankProviderFactory rerankProviderFactory;
 
     /** 单个 chunk 打分超时时间（秒） */

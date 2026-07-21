@@ -12,6 +12,7 @@ import java.util.Date;
 
 /**
  * MES安灯呼叫视图对象 pro_andon
+ * <p>属于 MES 生产管理模块，作为 安灯告警 的查询/导出返回结构。</p>
  *
  * @author Nexus
  */

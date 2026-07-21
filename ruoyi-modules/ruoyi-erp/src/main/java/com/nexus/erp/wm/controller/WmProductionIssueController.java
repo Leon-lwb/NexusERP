@@ -35,6 +35,7 @@ import java.util.Map;
 @RequestMapping("/erp/wm/productionissue")
 public class WmProductionIssueController extends BaseController {
 
+    /** 生产发料业务服务，提供生产发料相关能力 */
     private final IWmProductionIssueService wmProductionIssueService;
 
     /**

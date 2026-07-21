@@ -48,6 +48,12 @@ public class ProDispatchServiceImpl implements IProDispatchService {
     private final IProFlowCardService proFlowCardService;
 
     @Override
+    /**
+     * 查询
+     * @param bo bo
+     * @param pageQuery pageQuery
+     * @return 分页结果
+     */
     public TableDataInfo<ProDispatchVo> selectPageList(ProDispatchBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<ProDispatch> lqw = buildQueryWrapper(bo);
         Page<ProDispatchVo> page = baseMapper.selectVoPage(pageQuery.build(), lqw);
@@ -55,11 +61,21 @@ public class ProDispatchServiceImpl implements IProDispatchService {
     }
 
     @Override
+    /**
+     * 查询
+     * @param dispatchId 派工ID
+     * @return 返回视图对象
+     */
     public ProDispatchVo selectById(Long dispatchId) {
         return baseMapper.selectVoById(dispatchId);
     }
 
     @Override
+    /**
+     * 查询
+     * @param stepRecordId 工序RecordId
+     * @return 结果列表
+     */
     public List<ProDispatchVo> selectByStepRecordId(Long stepRecordId) {
         LambdaQueryWrapper<ProDispatch> lqw = Wrappers.<ProDispatch>lambdaQuery()
             .eq(ProDispatch::getStepRecordId, stepRecordId)
@@ -68,6 +84,11 @@ public class ProDispatchServiceImpl implements IProDispatchService {
     }
 
     @Override
+    /**
+     * 查询
+     * @param operatorId ID
+     * @return 结果列表
+     */
     public List<ProDispatchVo> selectByOperatorId(Long operatorId) {
         LambdaQueryWrapper<ProDispatch> lqw = Wrappers.<ProDispatch>lambdaQuery()
             .eq(ProDispatch::getOperatorId, operatorId)

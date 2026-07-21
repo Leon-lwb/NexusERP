@@ -23,6 +23,8 @@ import java.util.List;
 /**
  * MES维修领用备件明细 Controller
  *
+ * <p>属于MES 设备管理模块，提供维修备件相关的 REST 接口。</p>
+ *
  * @author Nexus
  */
 @Validated
@@ -35,6 +37,9 @@ public class EqRepairSpareController extends BaseController {
 
     /**
      * 查询某维修单的备件领用明细
+     *
+     * @param repairId 维修记录ID
+     * @return 操作结果
      */
     @SaCheckPermission("mes:eq:repair:query")
     @GetMapping("/repair/{repairId}")
@@ -44,6 +49,9 @@ public class EqRepairSpareController extends BaseController {
 
     /**
      * 批量新增维修领用明细(扣减备件库存)
+     *
+     * @param bos 参数 bos
+     * @return 操作结果
      */
     @SaCheckPermission("mes:eq:repair:complete")
     @Log(title = "维修领用备件", businessType = BusinessType.INSERT)
@@ -54,6 +62,9 @@ public class EqRepairSpareController extends BaseController {
 
     /**
      * 删除维修领用明细
+     *
+     * @param ids ID数组
+     * @return 操作结果
      */
     @SaCheckPermission("mes:eq:repair:complete")
     @Log(title = "维修领用备件", businessType = BusinessType.DELETE)

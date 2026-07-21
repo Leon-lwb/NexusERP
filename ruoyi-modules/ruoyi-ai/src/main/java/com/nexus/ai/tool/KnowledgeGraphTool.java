@@ -35,7 +35,9 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class KnowledgeGraphTool {
 
+    /** 图谱存储策略，提供实体/关系查询与按知识库定位 */
     private final GraphStoreStrategy graphStoreStrategy;
+    /** 全局检索服务，基于社区摘要合成整体答案 */
     private final GlobalSearchService globalSearchService;
 
     /**

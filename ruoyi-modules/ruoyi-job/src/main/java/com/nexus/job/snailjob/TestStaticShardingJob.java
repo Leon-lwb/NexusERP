@@ -17,6 +17,13 @@ import org.springframework.stereotype.Component;
 @JobExecutor(name = "testStaticShardingJob")
 public class TestStaticShardingJob {
 
+    /**
+     * 静态分片任务：对指定 ID 范围模拟加密处理。
+     * <p>从任务参数解析起始与结束 ID，对区间内的数据模拟耗时加密操作。</p>
+     *
+     * @param jobArgs 任务参数，格式为「起始ID,结束ID」
+     * @return 执行结果，成功时返回完成提示，线程中断时返回失败
+     */
     public ExecuteResult jobExecute(JobArgs jobArgs) {
         String jobParams = Convert.toStr(jobArgs.getJobParams());
         SnailJobLog.LOCAL.info("开始执行分片任务,参数:{}", jobParams);

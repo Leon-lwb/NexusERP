@@ -31,9 +31,16 @@ import java.math.BigDecimal;
 @RequiredArgsConstructor
 public class AiChatModelListener implements ChatModelListener {
 
+    /** 聊天消息表 Mapper，用于更新消息的 Token 明细。 */
     private final AiMessageMapper aiMessageMapper;
+    /** Token 用量业务服务，用于计算成本与更新日统计。 */
     private final IAiTokenUsageService aiTokenUsageService;
 
+    /**
+     * LLM 请求回调：记录请求消息数量与模型提供者（debug 级别）。
+     *
+     * @param requestContext 请求上下文
+     */
     @Override
     public void onRequest(ChatModelRequestContext requestContext) {
         var chatRequest = requestContext.chatRequest();
@@ -101,6 +108,11 @@ public class AiChatModelListener implements ChatModelListener {
         }
     }
 
+    /**
+     * LLM 错误回调：记录调用异常信息与模型提供者。
+     *
+     * @param errorContext 错误上下文
+     */
     @Override
     public void onError(ChatModelErrorContext errorContext) {
         var error = errorContext.error();

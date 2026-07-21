@@ -22,6 +22,7 @@ import com.nexus.workflow.service.IWfTaskService;
 
 /**
  * 工作流任务管理
+ * <p>提供任务维度的审批、驳回、退回、加签、委派、转办、签收及流程图生成等 REST 接口，属于 Flowable 工作流模块。</p>
  *
  * @author wanghuan
  * @createTime 2022/3/10 00:12
@@ -32,10 +33,14 @@ import com.nexus.workflow.service.IWfTaskService;
 @RequestMapping("/workflow/task")
 public class WfTaskController {
 
+    /** 流程任务业务服务，提供审批、退回、加签、委派、流程图等任务操作能力。 */
     private final IWfTaskService flowTaskService;
 
     /**
-     * 取消申请
+     * 取消申请（终止流程）。
+     *
+     * @param bo 流程任务业务对象（含流程实例与取消意见）
+     * @return 操作结果，成功时返回成功状态
      */
     @PostMapping(value = "/stopProcess")
     @SaCheckPermission("workflow:process:cancel")
@@ -45,7 +50,10 @@ public class WfTaskController {
     }
 
     /**
-     * 收回流程
+     * 收回流程（在下一节点未处理前撤回）。
+     *
+     * @param bo 流程任务业务对象
+     * @return 操作结果，成功时返回成功状态
      */
     @PostMapping(value = "/recallProcess")
     @SaCheckPermission("workflow:process:recall")
@@ -54,7 +62,10 @@ public class WfTaskController {
     }
 
     /**
-     * 撤回流程
+     * 撤回流程。
+     *
+     * @param bo 流程任务业务对象
+     * @return 操作结果，成功时返回成功状态
      */
     @PostMapping(value = "/revokeProcess")
     @SaCheckPermission("workflow:process:revoke")
@@ -64,8 +75,10 @@ public class WfTaskController {
     }
 
     /**
-     * 获取流程变量
-     * @param taskId 流程任务Id
+     * 获取流程变量。
+     *
+     * @param taskId 流程任务 ID
+     * @return 流程变量集合
      */
     @GetMapping(value = "/processVariables/{taskId}")
     @SaCheckPermission("workflow:process:query")
@@ -74,7 +87,10 @@ public class WfTaskController {
     }
 
     /**
-     * 审批任务
+     * 审批通过任务。
+     *
+     * @param bo 流程任务业务对象（含任务 ID 与审批意见）
+     * @return 操作结果，成功时返回成功状态
      */
     @PostMapping(value = "/complete")
     @SaCheckPermission("workflow:process:approval")
@@ -84,7 +100,10 @@ public class WfTaskController {
     }
 
     /**
-     * 驳回任务
+     * 驳回任务（回到上一节点或发起人）。
+     *
+     * @param taskBo 流程任务业务对象
+     * @return 操作结果，成功时返回成功状态
      */
     @PostMapping(value = "/reject")
     @SaCheckPermission("workflow:process:approval")
@@ -94,7 +113,10 @@ public class WfTaskController {
     }
 
     /**
-     * 拒绝任务
+     * 拒绝任务（终止流程）。
+     *
+     * @param taskBo 流程任务业务对象
+     * @return 操作结果，成功时返回成功状态
      */
     @PostMapping(value = "/refuse")
     @SaCheckPermission("workflow:process:approval")
@@ -104,7 +126,10 @@ public class WfTaskController {
     }
 
     /**
-     * 退回任务
+     * 退回任务（回退到指定节点）。
+     *
+     * @param bo 流程任务业务对象
+     * @return 操作结果，成功时返回成功状态
      */
     @PostMapping(value = "/return")
     @SaCheckPermission("workflow:process:approval")
@@ -115,7 +140,10 @@ public class WfTaskController {
 
 
     /**
-     * 加签任务
+     * 加签任务（在当前节点增加处理人）。
+     *
+     * @param bo 流程任务业务对象
+     * @return 操作结果，成功时返回成功状态
      */
     @PostMapping(value = "/addSign")
     @SaCheckPermission("workflow:process:approval")
@@ -125,7 +153,10 @@ public class WfTaskController {
     }
 
     /**
-     * 多实例加签任务
+     * 多实例加签任务。
+     *
+     * @param bo 流程任务业务对象
+     * @return 操作结果，成功时返回成功状态
      */
     @PostMapping(value = "/multiInstanceAddSign")
     @SaCheckPermission("workflow:process:approval")
@@ -135,7 +166,10 @@ public class WfTaskController {
     }
 
     /**
-     * 任务跳转
+     * 任务跳转（跳转到指定节点）。
+     *
+     * @param bo 流程任务业务对象
+     * @return 操作结果，成功时返回成功状态
      */
     @PostMapping(value = "/jump")
     @SaCheckPermission("workflow:process:approval")
@@ -145,7 +179,10 @@ public class WfTaskController {
     }
 
     /**
-     * 获取用户任务节点,作为跳转任务使用
+     * 获取用户任务节点列表（用于任务跳转选择）。
+     *
+     * @param bo 流程任务业务对象
+     * @return 用户任务节点列表
      */
     @PostMapping(value = "/userTask")
     @SaCheckPermission("workflow:process:approval")
@@ -154,7 +191,10 @@ public class WfTaskController {
     }
 
     /**
-     * 获取所有可回退的节点
+     * 获取所有可回退的节点列表。
+     *
+     * @param bo 流程任务业务对象
+     * @return 可回退节点列表
      */
     @PostMapping(value = "/returnList")
     @SaCheckPermission("workflow:process:query")
@@ -163,7 +203,10 @@ public class WfTaskController {
     }
 
     /**
-     * 删除任务
+     * 删除任务。
+     *
+     * @param bo 流程任务业务对象
+     * @return 操作结果，成功时返回成功状态
      */
     @DeleteMapping(value = "/delete")
     @SaCheckPermission("workflow:process:approval")
@@ -173,7 +216,10 @@ public class WfTaskController {
     }
 
     /**
-     * 认领/签收任务
+     * 认领/签收任务。
+     *
+     * @param bo 流程任务业务对象
+     * @return 操作结果，成功时返回成功状态
      */
     @PostMapping(value = "/claim")
     @SaCheckPermission("workflow:process:claim")
@@ -183,7 +229,10 @@ public class WfTaskController {
     }
 
     /**
-     * 取消认领/签收任务
+     * 取消认领/签收任务。
+     *
+     * @param bo 流程任务业务对象
+     * @return 操作结果，成功时返回成功状态
      */
     @PostMapping(value = "/unClaim")
     @SaCheckPermission("workflow:process:claim")
@@ -193,7 +242,10 @@ public class WfTaskController {
     }
 
     /**
-     * 委派任务
+     * 委派任务（委托他人代为处理）。
+     *
+     * @param bo 流程任务业务对象（需包含任务 ID 与目标用户 ID）
+     * @return 操作结果，成功时返回成功状态
      */
     @PostMapping(value = "/delegate")
     @SaCheckPermission("workflow:process:approval")
@@ -206,7 +258,10 @@ public class WfTaskController {
     }
 
     /**
-     * 转办任务
+     * 转办任务（将任务转交给他人处理）。
+     *
+     * @param bo 流程任务业务对象（需包含任务 ID 与目标用户 ID）
+     * @return 操作结果，成功时返回成功状态
      */
     @PostMapping(value = "/transfer")
     @SaCheckPermission("workflow:process:approval")
@@ -219,10 +274,11 @@ public class WfTaskController {
     }
 
     /**
-     * 自定义业务使用
-     * 判断是否是第一个发起人节点，目前只针对退回，驳回情况进行处理
-     * @param dataId 流程业务数据id, variables 变量集合,json对象
-     * @return
+     * 判断是否为第一个发起人节点（用于退回/驳回场景）。
+     *
+     * @param dataId    流程业务数据 ID
+     * @param variables 变量集合（JSON 对象，含 actStatus、processInstanceId）
+     * @return 是否为首个发起人节点的布尔结果
      */
     @PostMapping(value = "/isFirstInitiator/{dataId}")
     public R isFirstInitiator(@PathVariable(value = "dataId") String dataId,
@@ -234,10 +290,11 @@ public class WfTaskController {
     }
 
     /**
-     * 自定义业务使用
-     *  删除自定义业务任务关联表与流程历史表，以便可以重新发起流程。
-     * @param dataId 流程业务数据id, variables 变量集合,json对象
-     * @return
+     * 删除自定义业务任务关联表与流程历史表（以便重新发起流程）。
+     *
+     * @param dataId    流程业务数据 ID
+     * @param variables 变量集合（JSON 对象，含 actStatus、processInstanceId）
+     * @return 删除结果
      */
     @PostMapping(value = "/deleteActivityAndJoin/{dataId}")
     public R del(@PathVariable(value = "dataId") String dataId,
@@ -248,9 +305,9 @@ public class WfTaskController {
     }
 
     /**
-     * 生成流程图
+     * 生成流程流程图（PNG）。
      *
-     * @param processId 任务ID
+     * @param processId 流程实例 ID
      */
     @RequestMapping("/diagram/{processId}")
     public void genProcessDiagram(HttpServletResponse response,

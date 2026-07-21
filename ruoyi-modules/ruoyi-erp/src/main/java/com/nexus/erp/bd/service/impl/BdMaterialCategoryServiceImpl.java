@@ -44,6 +44,13 @@ public class BdMaterialCategoryServiceImpl implements IBdMaterialCategoryService
 
     private final BdMaterialCategoryMapper baseMapper;
     private final IBdMaterialService bdMaterialService;
+    /**
+     * 分页查询物料类别列表
+     *
+     * @param bo 业务对象，包含筛选条件或待保存字段
+     * @param pageQuery 分页参数，包含页码、每页大小及排序信息
+     * @return 分页结果
+     */
 
     @Override
     public TableDataInfo<BdMaterialCategoryVo> selectPageList(BdMaterialCategoryBo bo, PageQuery pageQuery) {
@@ -58,9 +65,21 @@ public class BdMaterialCategoryServiceImpl implements IBdMaterialCategoryService
     @Override
     @Cacheable(cacheNames = CacheNames.BD_CATEGORY_TREE, key = "'list_all'",
         condition = "#bo.categoryCode == null and #bo.categoryName == null and #bo.status == null")
+    /**
+     * 查询物料类别列表
+     *
+     * @param bo 业务对象，包含筛选条件或待保存字段
+     * @return 结果列表
+     */
     public List<BdMaterialCategoryVo> selectList(BdMaterialCategoryBo bo) {
         return baseMapper.selectVoList(buildQueryWrapper(bo));
     }
+    /**
+     * 查询排除指定节点及其子节点后的物料类别列表
+     *
+     * @param excludeIds 需排除的类别ID数组
+     * @return 结果列表
+     */
 
     @Override
     public List<BdMaterialCategoryVo> selectListExcludeChild(Long[] excludeIds) {
@@ -73,11 +92,23 @@ public class BdMaterialCategoryServiceImpl implements IBdMaterialCategoryService
         }
         return baseMapper.selectVoList(lqw);
     }
+    /**
+     * 根据主键查询物料类别详情
+     *
+     * @param id 主键ID
+     * @return 结果
+     */
 
     @Override
     public BdMaterialCategoryVo selectById(Long id) {
         return baseMapper.selectVoById(id);
     }
+    /**
+     * 新增物料类别
+     *
+     * @param bo 业务对象，包含筛选条件或待保存字段
+     * @return 操作结果/影响行数
+     */
 
     @Override
     @CacheEvict(cacheNames = CacheNames.BD_CATEGORY_TREE, allEntries = true)
@@ -90,6 +121,12 @@ public class BdMaterialCategoryServiceImpl implements IBdMaterialCategoryService
         fillPathAndLevel(entity);
         return baseMapper.insert(entity);
     }
+    /**
+     * 修改物料类别
+     *
+     * @param bo 业务对象，包含筛选条件或待保存字段
+     * @return 操作结果/影响行数
+     */
 
     @Override
     @CacheEvict(cacheNames = CacheNames.BD_CATEGORY_TREE, allEntries = true)
@@ -110,6 +147,12 @@ public class BdMaterialCategoryServiceImpl implements IBdMaterialCategoryService
         }
         return rows;
     }
+    /**
+     * 批量删除物料类别
+     *
+     * @param ids 主键ID数组（支持批量）
+     * @return 操作结果/影响行数
+     */
 
     @Override
     @CacheEvict(cacheNames = CacheNames.BD_CATEGORY_TREE, allEntries = true)
@@ -117,6 +160,12 @@ public class BdMaterialCategoryServiceImpl implements IBdMaterialCategoryService
     public int deleteByIds(Long[] ids) {
         return baseMapper.deleteBatchIds(Arrays.asList(ids));
     }
+    /**
+     * 查询指定类别的所有子孙类别ID
+     *
+     * @param categoryIds 类别ID数组
+     * @return 结果列表
+     */
 
     @Override
     public List<BdMaterialCategoryVo> selectAllChildrenIds(Long[] categoryIds) {
@@ -137,6 +186,12 @@ public class BdMaterialCategoryServiceImpl implements IBdMaterialCategoryService
         });
         return baseMapper.selectVoList(lqw);
     }
+    /**
+     * 校验物料类别编码是否唯一
+     *
+     * @param bo 业务对象，包含筛选条件或待保存字段
+     * @return 操作结果/影响行数
+     */
 
     @Override
     public boolean checkCategoryCodeUnique(BdMaterialCategoryBo bo) {
@@ -145,6 +200,12 @@ public class BdMaterialCategoryServiceImpl implements IBdMaterialCategoryService
             .ne(ObjectUtil.isNotNull(bo.getCategoryId()), BdMaterialCategory::getCategoryId, bo.getCategoryId()));
         return !exist;
     }
+    /**
+     * 判断指定类别是否包含子节点
+     *
+     * @param categoryIds 类别ID数组
+     * @return 操作结果/影响行数
+     */
 
     @Override
     public boolean hasChildByCategoryIds(Long[] categoryIds) {

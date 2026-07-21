@@ -45,9 +45,13 @@ import java.util.Set;
 @Service
 public class SysMenuServiceImpl implements ISysMenuService {
 
+    /** SysMenuMapper 数据访问层组件，提供 菜单 的持久化能力。 */
     private final SysMenuMapper baseMapper;
+    /** SysRoleMapper 数据访问层组件，提供 角色 的持久化能力。 */
     private final SysRoleMapper roleMapper;
+    /** SysRoleMenuMapper 数据访问层组件，提供 菜单 的持久化能力。 */
     private final SysRoleMenuMapper roleMenuMapper;
+    /** SysTenantPackageMapper 数据访问层组件，提供 租户套餐 的持久化能力。 */
     private final SysTenantPackageMapper tenantPackageMapper;
 
     /**

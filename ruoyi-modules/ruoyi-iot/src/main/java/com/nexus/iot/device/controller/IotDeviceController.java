@@ -195,8 +195,12 @@ public class IotDeviceController extends BaseController {
         return toAjax(iotDeviceService.updateMesEquipmentLink(deviceId, dto.getMesEquipmentId()));
     }
 
+    /**
+     * 设备与 MES 设备关联请求体，携带待绑定的 MES 设备 ID。
+     */
     @Data
     public static class MesLinkDto {
+        /** 待关联的 MES 设备 ID */
         private Long mesEquipmentId;
     }
 }

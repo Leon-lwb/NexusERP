@@ -24,21 +24,34 @@ public interface IDcDataRecordService {
 
     /**
      * 分页查询采集数据记录列表
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @param pageQuery 分页参数（页码、每页大小、排序）
+     * @return 分页结果
      */
     TableDataInfo<DcDataRecordVo> selectPageList(DcDataRecordBo bo, PageQuery pageQuery);
 
     /**
      * 根据ID获取记录详情
+     *
+     * @param recordId 数据记录ID
+     * @return 返回结果
      */
     DcDataRecordVo selectById(Long recordId);
 
     /**
      * 手动录入采集数据(source=MANUAL, collectBy=当前用户)
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @return 返回结果
      */
     DcDataRecordVo insertByBo(DcDataRecordBo bo);
 
     /**
      * 按采集点查询全部记录(按collect_time升序, 供SPC analyze用)
+     *
+     * @param pointId 采集点ID
+     * @return 结果列表
      */
     List<DcDataRecordVo> listByPointId(Long pointId);
 }

@@ -34,26 +34,42 @@ public interface IDcCollectionPointService {
 
     /**
      * 分页查询采集点列表
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @param pageQuery 分页参数（页码、每页大小、排序）
+     * @return 分页结果
      */
     TableDataInfo<DcCollectionPointVo> selectPageList(DcCollectionPointBo bo, PageQuery pageQuery);
 
     /**
      * 根据ID获取采集点详情
+     *
+     * @param pointId 采集点ID
+     * @return 返回结果
      */
     DcCollectionPointVo selectById(Long pointId);
 
     /**
      * 新增采集点
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @return 返回结果
      */
     DcCollectionPointVo insertByBo(DcCollectionPointBo bo);
 
     /**
      * 编辑采集点
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @return 返回结果
      */
     DcCollectionPointVo updateByBo(DcCollectionPointBo bo);
 
     /**
      * 批量删除采集点
+     *
+     * @param ids ID数组
+     * @return 是否成功
      */
     Boolean deleteByIds(Long[] ids);
 }

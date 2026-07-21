@@ -21,8 +21,14 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class AiPromptTemplateInitializer implements ApplicationRunner {
 
+    /** Prompt 模板持久层 Mapper，用于判断模板是否已存在并执行插入。 */
     private final AiPromptTemplateMapper promptTemplateMapper;
 
+    /**
+     * 应用启动时执行，初始化 ErpQueryAgent、ErpReportAgent、Supervisor 三类默认 Prompt 模板。
+     *
+     * @param args Spring 应用启动参数（未使用）
+     */
     @Override
     public void run(ApplicationArguments args) {
         initDefaultTemplate("erp_query_agent", "ERP 数据查询助手上下文",

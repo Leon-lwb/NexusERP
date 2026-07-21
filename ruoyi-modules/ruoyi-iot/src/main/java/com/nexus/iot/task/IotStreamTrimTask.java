@@ -26,10 +26,18 @@ import org.springframework.stereotype.Component;
 @JobExecutor(name = "iotStreamTrimTask")
 public class IotStreamTrimTask {
 
+    /** 管道配置属性，提供 Stream Key。 */
     private final IotPipelineProperties properties;
 
+    /** Stream 最大保留长度，超过则近似修剪。 */
     private static final long MAX_LEN = 100000L;
 
+    /**
+     * 执行 Stream 修剪：{@code XTRIM MAXLEN ~MAX_LEN} 近似回收，控制内存。
+     *
+     * @param jobArgs SnailJob 任务参数（本任务未使用）
+     * @return 执行结果，含修剪条数
+     */
     public ExecuteResult jobExecute(JobArgs jobArgs) {
         SnailJobLog.REMOTE.info("开始执行IoT Redis Stream修剪任务，stream={}, MAXLEN={}", properties.getStreamKey(), MAX_LEN);
         try {

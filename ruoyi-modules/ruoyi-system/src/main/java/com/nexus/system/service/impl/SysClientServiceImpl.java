@@ -37,6 +37,7 @@ import java.util.List;
 @Service
 public class SysClientServiceImpl implements ISysClientService {
 
+    /** SysClientMapper 数据访问层组件，提供 客户端 的持久化能力。 */
     private final SysClientMapper baseMapper;
 
     /**

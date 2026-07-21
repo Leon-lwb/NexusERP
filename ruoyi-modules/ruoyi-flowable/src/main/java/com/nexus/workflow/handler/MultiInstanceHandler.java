@@ -26,6 +26,7 @@ import java.util.stream.Collectors;
 
 /**
  * 多实例处理类
+ * <p>解析多实例用户任务的候选处理人集合，支持按用户、角色、部门解析，属于 Flowable 工作流模块。</p>
  *
  * @author wanghuan
  */
@@ -33,6 +34,13 @@ import java.util.stream.Collectors;
 @Component("multiInstanceHandler")
 public class MultiInstanceHandler {
 
+    /**
+     * 解析当前用户任务的候选处理人名称集合。
+     * <p>根据任务设计中的数据类型（USERS/ROLES/DEPTS）分别解析候选用户、角色下用户或部门下用户。</p>
+     *
+     * @param execution 流程执行实例
+     * @return 候选处理人用户名集合（去重、有序）
+     */
     public Set<String> getUserNames(DelegateExecution execution) {
         Set<String> candidateUserNames = new LinkedHashSet<>();
         FlowElement flowElement = execution.getCurrentFlowElement();

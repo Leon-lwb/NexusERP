@@ -21,6 +21,7 @@ public interface IWmStockReservationService {
      * @return 预留成功数量 (不足时返回实际预留量)
      */
     BigDecimal reserve(Long materialId, Long warehouseId, BigDecimal reserveQty,
+                       /** 库存预留（库存预留相关字段） */
                        String sourceDocType, Long sourceDocId, Long sourceDocLineId);
 
     /**

@@ -32,20 +32,38 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class IotMqttInterceptHandler extends AbstractInterceptHandler {
 
+    /** 设备业务服务，用于按编码查询与更新连接状态。 */
     private final IIotDeviceService deviceService;
+    /** 设备在线状态 Redis 缓存，维护 iot:status / iot:will。 */
     private final IotDeviceStatusCache statusCache;
+    /** 消息管道服务，将属性上报写入 iot:data:stream。 */
     private final IotMessagePipelineService messagePipelineService;
 
+    /**
+     * 返回拦截器唯一标识。
+     *
+     * @return 拦截器 ID
+     */
     @Override
     public String getID() {
         return "iot-mqtt-intercept-handler";
     }
 
+    /**
+     * Broker 会话循环发生异常时的回调，记录错误日志。
+     *
+     * @param error 异常
+     */
     @Override
     public void onSessionLoopError(Throwable error) {
         log.error("MQTT Broker 会话循环异常", error);
     }
 
+    /**
+     * 设备连接成功：更新 ONLINE（DB + Redis），若声明遗嘱则缓存 will payload。
+     *
+     * @param msg 连接消息（含 ClientID 与遗嘱信息）
+     */
     @Override
     public void onConnect(InterceptConnectMessage msg) {
         String deviceCode = msg.getClientID();
@@ -60,6 +78,11 @@ public class IotMqttInterceptHandler extends AbstractInterceptHandler {
         }
     }
 
+    /**
+     * 设备正常断开：置 OFFLINE 并清空遗嘱缓存。
+     *
+     * @param msg 断开消息（含 ClientID）
+     */
     @Override
     public void onDisconnect(InterceptDisconnectMessage msg) {
         String deviceCode = msg.getClientID();
@@ -70,6 +93,11 @@ public class IotMqttInterceptHandler extends AbstractInterceptHandler {
         }
     }
 
+    /**
+     * 设备异常连接丢失（reason=CONNECTION_LOST）：置 OFFLINE 并清空遗嘱缓存。
+     *
+     * @param msg 连接丢失消息（含 ClientID）
+     */
     @Override
     public void onConnectionLost(InterceptConnectionLostMessage msg) {
         String deviceCode = msg.getClientID();
@@ -80,6 +108,11 @@ public class IotMqttInterceptHandler extends AbstractInterceptHandler {
         }
     }
 
+    /**
+     * 设备属性上报：解析消息体并交由管道服务写入 iot:data:stream；解析/写入异常由管道内部吞掉，不影响 Broker。
+     *
+     * @param msg 发布消息（含 ClientID、Topic 与 payload）
+     */
     @Override
     public void onPublish(InterceptPublishMessage msg) {
         // Week 34：解析消息并 XADD iot:data:stream；解析/写入异常由管道服务内部吞掉，不影响 Broker

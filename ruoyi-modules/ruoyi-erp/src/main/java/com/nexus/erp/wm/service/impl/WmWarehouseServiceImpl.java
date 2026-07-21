@@ -49,12 +49,24 @@ import java.util.stream.Collectors;
 @Service
 public class WmWarehouseServiceImpl implements IWmWarehouseService {
 
+    /** 基础数据访问映射器（Mapper） */
     private final WmWarehouseMapper baseMapper;
+    /** 存储区域数据访问映射器（Mapper） */
     private final WmStorageAreaMapper wmStorageAreaMapper;
+    /** 存储库位数据访问映射器（Mapper） */
     private final WmStorageLocationMapper wmStorageLocationMapper;
+    /** 物料库存数据访问映射器（Mapper） */
     private final WmMaterialStockMapper wmMaterialStockMapper;
+    /** 自动编码工具类 */
     private final AutoCodeUtil autoCodeUtil;
 
+    /**
+     * 分页查询仓库列表
+     *
+     * @param bo 仓库业务对象（BO）
+     * @param pageQuery 分页查询参数，包含页码、每页大小及排序条件
+     * @return 结果对象
+     */
     @Override
     public TableDataInfo<WmWarehouseVo> selectPageList(WmWarehouseBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<WmWarehouse> lqw = buildQueryWrapper(bo);
@@ -70,16 +82,34 @@ public class WmWarehouseServiceImpl implements IWmWarehouseService {
         return TableDataInfo.build(page);
     }
 
+    /**
+     * 查询仓库列表
+     *
+     * @param bo 仓库业务对象（BO）
+     * @return 结果对象
+     */
     @Override
     public List<WmWarehouseVo> selectList(WmWarehouseBo bo) {
         return baseMapper.selectVoList(buildQueryWrapper(bo));
     }
 
+    /**
+     * 查询仓库
+     *
+     * @param id 主键 ID
+     * @return 结果
+     */
     @Override
     public WmWarehouseVo selectById(Long id) {
         return baseMapper.selectVoById(id);
     }
 
+    /**
+     * 新增仓库
+     *
+     * @param bo 仓库业务对象（BO）
+     * @return 结果
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(WmWarehouseBo bo) {
@@ -93,6 +123,12 @@ public class WmWarehouseServiceImpl implements IWmWarehouseService {
         return baseMapper.insert(entity);
     }
 
+    /**
+     * 修改仓库
+     *
+     * @param bo 仓库业务对象（BO）
+     * @return 结果
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(WmWarehouseBo bo) {
@@ -112,6 +148,12 @@ public class WmWarehouseServiceImpl implements IWmWarehouseService {
         return baseMapper.updateById(entity);
     }
 
+    /**
+     * 删除仓库
+     *
+     * @param ids 主键 ID 数组（支持批量操作）
+     * @return 结果
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {

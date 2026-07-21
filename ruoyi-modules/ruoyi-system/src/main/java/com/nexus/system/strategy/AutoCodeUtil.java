@@ -22,22 +22,29 @@ import java.util.stream.Collectors;
 
 /**
  * 自动编码工具类
+ * <p>按编码规则（sys_auto_code_rule）及其组成（流水号、日期、固定字符、传入字符）生成业务单据编码，
+ * 支持落库生成与仅预览两种模式。属于系统管理（System）模块。</p>
  *
  * @author wanghuan
  */
 @Service
 public class AutoCodeUtil {
+    /** 编码生成期间标记是否需在 result 表落库（true 表示首次生成需新增记录）。 */
     public static ThreadLocal<Boolean> threadLocal = new ThreadLocal<>();
 
+    /** 编码规则业务服务，提供按规则编码查询规则定义的能力。 */
     @Autowired
     private ISysAutoCodeRuleService iAutoCodeRuleService;
 
+    /** 编码规则组成业务服务，提供查询规则下各组成片段的能力。 */
     @Autowired
     private ISysAutoCodePartService iAutoCodePartService;
 
+    /** 编码生成结果业务服务，提供结果记录的查询与保存/更新能力。 */
     @Autowired
     private ISysAutoCodeResultService iAutoCodeResultService;
 
+    /** 编码规则片段类型处理器，按组成类型路由到对应策略生成片段。 */
     @Autowired
     private PartTypeHandler partTypeHandler;
 
@@ -117,6 +124,15 @@ public class AutoCodeUtil {
         return new ComputeContext(rule, autoCode, serialNoHolder[0]);
     }
 
+    /**
+     * 生成编码并落库（消耗流水号）。
+     * <p>在独立事务中计算编码、持久化更新 sys_auto_code_result 表后返回完整编码。
+     * 由后端业务 Service 保存单据或前端提交表单前调用。</p>
+     *
+     * @param ruleCode       编码规则编码
+     * @param inputCharacter 传入字符（可选）
+     * @return 生成的完整编码字符串
+     */
     @DS("master")
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public synchronized String genSerialCode(String ruleCode, String inputCharacter) {

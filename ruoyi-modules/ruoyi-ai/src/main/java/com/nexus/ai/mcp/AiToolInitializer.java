@@ -23,8 +23,14 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class AiToolInitializer implements ApplicationRunner {
 
+    /** MCP 工具业务服务，负责将内置工具同步至数据库。 */
     private final McpToolServiceImpl mcpToolService;
 
+    /**
+     * 应用启动完成后执行，将内置工具同步至 ai_tool 表；失败仅记录日志，不影响启动。
+     *
+     * @param args Spring 应用启动参数（未使用）
+     */
     @Override
     public void run(ApplicationArguments args) {
         log.info("[MCP] 应用启动完成，开始同步内置工具到数据库...");

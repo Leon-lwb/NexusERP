@@ -21,6 +21,8 @@ import java.util.List;
 /**
  * MES设备保养执行记录 Controller
  *
+ * <p>属于MES 设备管理模块，提供保养记录相关的 REST 接口。</p>
+ *
  * @author Nexus
  */
 @Validated
@@ -33,6 +35,10 @@ public class EqMaintenanceRecordController extends BaseController {
 
     /**
      * 分页查询保养执行记录列表
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @param pageQuery 分页参数（页码、每页大小、排序）
+     * @return 分页结果
      */
     @SaCheckPermission("mes:eq:maintenance:record")
     @GetMapping("/list")
@@ -42,6 +48,9 @@ public class EqMaintenanceRecordController extends BaseController {
 
     /**
      * 根据ID获取保养执行记录详情
+     *
+     * @param recordId 数据记录ID
+     * @return 操作结果
      */
     @SaCheckPermission("mes:eq:maintenance:record:query")
     @GetMapping("/{recordId}")
@@ -51,6 +60,9 @@ public class EqMaintenanceRecordController extends BaseController {
 
     /**
      * 查询某设备的保养执行历史(设备详情页使用)
+     *
+     * @param equipmentId 设备ID
+     * @return 操作结果
      */
     @SaCheckPermission("mes:eq:maintenance:record:query")
     @GetMapping("/equipment/{equipmentId}")
@@ -60,6 +72,9 @@ public class EqMaintenanceRecordController extends BaseController {
 
     /**
      * 手动新增保养执行记录(无计划的手动保养)
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @return 操作结果
      */
     @SaCheckPermission("mes:eq:maintenance:complete")
     @Log(title = "手动保养记录", businessType = BusinessType.INSERT)
@@ -70,6 +85,9 @@ public class EqMaintenanceRecordController extends BaseController {
 
     /**
      * 导出保养执行记录列表
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @param response HTTP 响应对象
      */
     @SaCheckPermission("mes:eq:maintenance:record:export")
     @Log(title = "保养执行记录", businessType = BusinessType.EXPORT)
@@ -81,6 +99,9 @@ public class EqMaintenanceRecordController extends BaseController {
 
     /**
      * 批量删除保养执行记录
+     *
+     * @param ids ID数组
+     * @return 操作结果
      */
     @SaCheckPermission("mes:eq:maintenance:record:remove")
     @Log(title = "保养记录删除", businessType = BusinessType.DELETE)

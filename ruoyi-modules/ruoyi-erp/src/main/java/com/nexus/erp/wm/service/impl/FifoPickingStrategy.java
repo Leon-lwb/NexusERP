@@ -24,6 +24,7 @@ import java.util.List;
 @Service("fifoPickingStrategy")
 public class FifoPickingStrategy implements IPickingStrategyService {
 
+    /** 物料库存数据访问映射器（Mapper） */
     private final WmMaterialStockMapper materialStockMapper;
 
     /**

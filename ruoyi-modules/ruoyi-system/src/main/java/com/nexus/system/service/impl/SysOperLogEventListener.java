@@ -19,8 +19,13 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class SysOperLogEventListener {
 
+    /** ISysOperLogService 业务服务，提供 操作日志 相关能力。 */
     private final ISysOperLogService operLogService;
 
+    /**
+     * 处理操作日志相关操作。
+     * @param operLogEvent 操作日志 参数
+     */
     @Async
     @EventListener
     public void recordOper(OperLogEvent operLogEvent) {

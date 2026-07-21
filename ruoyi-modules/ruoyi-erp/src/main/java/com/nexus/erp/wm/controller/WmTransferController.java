@@ -31,6 +31,7 @@ import java.util.List;
 @RequestMapping("/erp/wm/transfer")
 public class WmTransferController extends BaseController {
 
+    /** 调拨业务服务，提供调拨相关能力 */
     private final IWmTransferService wmTransferService;
 
     /**

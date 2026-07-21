@@ -304,6 +304,9 @@ public class PrdWorkOrderServiceImpl implements IPrdWorkOrderService {
         final PrdWorkOrder msgEntity = wo;
         org.springframework.transaction.support.TransactionSynchronizationManager.registerSynchronization(
             new TransactionSynchronization() {
+                /**
+                 * 事务提交后回调：发送工单下达消息到 MES 队列
+                 */
                 @Override
                 public void afterCommit() {
                     sendWorkOrderReleaseMessage(msgEntity);
@@ -665,6 +668,12 @@ public boolean submit(String woIdStr, String selectFlowId) {
         return hist != null ? hist.getId() : null;
     }
 
+    /**
+     * 工作流审批结果回调
+     * <p>根据审批状态更新工单状态（审批中/已批准/已创建），审批通过后自动下达来源生产计划。</p>
+     *
+     * @param business Flowable 业务对象，含流程状态与关联工单 ID
+     */
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void afterFlowHandle(WfMyBusiness business) {
@@ -682,6 +691,9 @@ public boolean submit(String woIdStr, String selectFlowId) {
             final PrdWorkOrder msgEntity = entity;
             org.springframework.transaction.support.TransactionSynchronizationManager.registerSynchronization(
                 new TransactionSynchronization() {
+                    /**
+                     * 事务提交后回调：发送工单下达消息到 MES 队列
+                     */
                     @Override
                     public void afterCommit() {
                         sendWorkOrderReleaseMessage(msgEntity);
@@ -742,17 +754,37 @@ public boolean submit(String woIdStr, String selectFlowId) {
         }
     }
 
+    /**
+     * 获取工作流表单对应的业务数据
+     *
+     * @param dataId 业务数据 ID（工单 ID 字符串）
+     * @return 工单详情
+     */
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Object getBusinessDataById(String dataId) {
         return selectById(Long.parseLong(dataId));
     }
 
+    /**
+     * 获取任务节点的流程变量（当前未自定义变量，返回 {@code null}）
+     *
+     * @param taskNameId 任务节点标识
+     * @param values     流程变量
+     * @return 任务变量映射，未定义时返回 {@code null}
+     */
     @Override
     public Map<String, Object> flowValuesOfTask(String taskNameId, Map<String, Object> values) {
         return null;
     }
 
+    /**
+     * 获取任务节点的候选处理人（当前未配置，返回 {@code null}）
+     *
+     * @param taskNameId 任务节点标识
+     * @param values     流程变量
+     * @return 候选用户名列表，未配置时返回 {@code null}
+     */
     @Override
     public List<String> flowCandidateUsernamesOfTask(String taskNameId, Map<String, Object> values) {
         return null;

@@ -47,8 +47,11 @@ import java.util.*;
 @Service
 public class SysDeptServiceImpl implements ISysDeptService, DeptService {
 
+    /** SysDeptMapper 数据访问层组件，提供 部门 的持久化能力。 */
     private final SysDeptMapper baseMapper;
+    /** SysRoleMapper 数据访问层组件，提供 角色 的持久化能力。 */
     private final SysRoleMapper roleMapper;
+    /** SysUserMapper 数据访问层组件，提供 用户 的持久化能力。 */
     private final SysUserMapper userMapper;
 
     /**
@@ -169,6 +172,11 @@ public class SysDeptServiceImpl implements ISysDeptService, DeptService {
         return dept;
     }
 
+    /**
+     * 根据条件查询部门列表。
+     * @param deptIds ID 数组
+     * @return 匹配条件的部门列表
+     */
     @Override
     public List<SysDeptVo> selectDeptByIds(List<Long> deptIds) {
         return baseMapper.selectDeptList(new LambdaQueryWrapper<SysDept>()

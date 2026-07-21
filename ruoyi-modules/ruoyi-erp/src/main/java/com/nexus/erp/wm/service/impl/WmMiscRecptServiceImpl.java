@@ -23,6 +23,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Date;
 import java.util.List;
+/**
+ * 杂项收货服务实现
+ * <p>
+ * 实现杂项收货服务接口，处理杂项收货的增删改查、业务校验与库存联动。属于 ERP 仓储管理（wm）模块。
+ * </p>
+ */
 
 @Slf4j
 @RequiredArgsConstructor
@@ -30,11 +36,22 @@ import java.util.List;
 @Service
 public class WmMiscRecptServiceImpl implements IWmMiscRecptService {
 
+    /** 基础数据访问映射器（Mapper） */
     private final WmMiscRecptMapper baseMapper;
+    /** 行数据访问映射器（Mapper） */
     private final WmMiscRecptLineMapper lineMapper;
+    /** 库存操作业务服务，提供库存操作相关能力 */
     private final WmStockOperationServiceImpl stockOperationService;
+    /** 自动编码工具类 */
     private final AutoCodeUtil autoCodeUtil;
 
+    /**
+     * 分页查询杂项收货列表
+     *
+     * @param bo 杂项收货业务对象（BO）
+     * @param pageQuery 分页查询参数，包含页码、每页大小及排序条件
+     * @return 结果对象
+     */
     @Override
     public TableDataInfo<WmMiscRecptVo> selectPageList(WmMiscRecptBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<WmMiscRecpt> lqw = buildQueryWrapper(bo);
@@ -42,11 +59,23 @@ public class WmMiscRecptServiceImpl implements IWmMiscRecptService {
         return TableDataInfo.build(page);
     }
 
+    /**
+     * 查询杂项收货列表
+     *
+     * @param bo 杂项收货业务对象（BO）
+     * @return 结果对象
+     */
     @Override
     public List<WmMiscRecptVo> selectList(WmMiscRecptBo bo) {
         return baseMapper.selectVoList(buildQueryWrapper(bo));
     }
 
+    /**
+     * 查询杂项收货
+     *
+     * @param id 主键 ID
+     * @return 结果
+     */
     @Override
     public WmMiscRecptVo selectById(Long id) {
         WmMiscRecptVo vo = baseMapper.selectVoById(id);
@@ -58,6 +87,12 @@ public class WmMiscRecptServiceImpl implements IWmMiscRecptService {
         return vo;
     }
 
+    /**
+     * 新增杂项收货
+     *
+     * @param bo 杂项收货业务对象（BO）
+     * @return 结果
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(WmMiscRecptBo bo) {
@@ -70,6 +105,12 @@ public class WmMiscRecptServiceImpl implements IWmMiscRecptService {
         return rows;
     }
 
+    /**
+     * 修改杂项收货
+     *
+     * @param bo 杂项收货业务对象（BO）
+     * @return 结果
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(WmMiscRecptBo bo) {
@@ -79,6 +120,12 @@ public class WmMiscRecptServiceImpl implements IWmMiscRecptService {
         return baseMapper.updateById(entity);
     }
 
+    /**
+     * 删除杂项收货
+     *
+     * @param ids 主键 ID 数组（支持批量操作）
+     * @return 结果
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {
@@ -88,6 +135,12 @@ public class WmMiscRecptServiceImpl implements IWmMiscRecptService {
         return baseMapper.deleteBatchIds(List.of(ids));
     }
 
+    /**
+     * 执行杂项收货相关操作
+     *
+     * @param recptId 收货 ID
+     * @return 结果
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void execute(Long recptId) {

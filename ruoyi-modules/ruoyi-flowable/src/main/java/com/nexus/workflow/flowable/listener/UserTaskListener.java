@@ -6,6 +6,7 @@ import org.springframework.stereotype.Component;
 
 /**
  * 用户任务监听器
+ * <p>作为流程设计中用户任务的任务监听器示例，属于 Flowable 工作流模块。</p>
  *
  * @author wanghuan
  * @since 2023/5/13
@@ -14,10 +15,10 @@ import org.springframework.stereotype.Component;
 public class UserTaskListener implements TaskListener {
 
     /**
-     * 注入字段（名称与流程设计时字段名称一致）
+     * 任务创建/完成时触发，目前为示例实现。
+     *
+     * @param delegateTask 委托任务对象
      */
-    // private FixedValue field;
-
     @Override
     public void notify(DelegateTask delegateTask) {
         //TODO 实现你的任务监听器逻辑

@@ -25,26 +25,41 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.List;
 
 /**
- * 系统用户自定义导入
+ * 系统用户自定义导入监听器
+ * <p>监听 Excel 用户导入过程，逐行解析并新增或更新用户（依据是否支持覆盖），
+ * 汇总成功/失败信息，导入失败时抛出含错误明细的异常。属于系统管理（System）模块。</p>
  *
  * @author Lion Li
  */
 @Slf4j
 public class SysUserImportListener extends AnalysisEventListener<SysUserImportVo> implements ExcelListener<SysUserImportVo> {
 
+    /** 用户业务服务，提供按用户名查询与用户增改能力。 */
     private final ISysUserService userService;
 
+    /** 系统参数配置的初始密码（BCrypt 加密后），用于新增用户默认密码。 */
     private final String password;
 
+    /** 是否支持覆盖更新已存在用户。 */
     private final Boolean isUpdateSupport;
 
+    /** 当前操作人用户 ID，记录为创建/更新人。 */
     private final Long operUserId;
 
+    /** 导入成功条数。 */
     private int successNum = 0;
+    /** 导入失败条数。 */
     private int failureNum = 0;
+    /** 导入成功信息汇总。 */
     private final StringBuilder successMsg = new StringBuilder();
+    /** 导入失败信息汇总。 */
     private final StringBuilder failureMsg = new StringBuilder();
 
+    /**
+     * 构造导入监听器，从配置读取初始密码并解析当前操作人。
+     *
+     * @param isUpdateSupport 是否支持覆盖更新已存在用户
+     */
     public SysUserImportListener(Boolean isUpdateSupport) {
         String initPassword = SpringUtils.getBean(ISysConfigService.class).selectConfigByKey("sys.user.initPassword");
         this.userService = SpringUtils.getBean(ISysUserService.class);
@@ -53,6 +68,12 @@ public class SysUserImportListener extends AnalysisEventListener<SysUserImportVo
         this.operUserId = LoginHelper.getUserId();
     }
 
+    /**
+     * 解析并逐行处理导入的用户数据：不存在则新增，支持覆盖则更新，否则计入失败。
+     *
+     * @param userVo  当前行解析出的用户导入视图
+     * @param context Excel 解析上下文
+     */
     @Override
     public void invoke(SysUserImportVo userVo, AnalysisContext context) {
         SysUserVo sysUser = this.userService.selectUserByUserName(userVo.getUserName());
@@ -93,11 +114,21 @@ public class SysUserImportListener extends AnalysisEventListener<SysUserImportVo
         }
     }
 
+    /**
+     * 所有数据解析完成后的回调，本实现无需额外处理。
+     *
+     * @param context Excel 解析上下文
+     */
     @Override
     public void doAfterAllAnalysed(AnalysisContext context) {
 
     }
 
+    /**
+     * 返回导入结果：无失败时汇总成功信息，有失败时抛出含错误明细的异常。
+     *
+     * @return Excel 导入结果视图（含分析信息）
+     */
     @Override
     public ExcelResult<SysUserImportVo> getExcelResult() {
         return new ExcelResult<>() {

@@ -113,7 +113,9 @@ public class SysMenu extends BaseEntity {
     private List<SysMenu> children = new ArrayList<>();
 
     /**
-     * 获取路由名称
+     * 获取前端路由名称（首字母大写的路由地址，非外链一级目录为空串）。
+     *
+     * @return 路由名称
      */
     public String getRouteName() {
         String routerName = StringUtils.capitalize(path);
@@ -125,7 +127,9 @@ public class SysMenu extends BaseEntity {
     }
 
     /**
-     * 获取路由地址
+     * 获取前端路由地址，依据父子关系、外链与内链规则换算实际路径。
+     *
+     * @return 路由地址
      */
     public String getRouterPath() {
         String routerPath = this.path;
@@ -146,7 +150,9 @@ public class SysMenu extends BaseEntity {
     }
 
     /**
-     * 获取组件信息
+     * 获取前端组件信息，按菜单类型与内外链规则选择对应组件。
+     *
+     * @return 组件路径或布局组件标识
      */
     public String getComponentInfo() {
         String component = SystemConstants.LAYOUT;
@@ -161,28 +167,37 @@ public class SysMenu extends BaseEntity {
     }
 
     /**
-     * 是否为菜单内部跳转
+     * 判断是否为菜单框架（顶级菜单且为菜单类型、非外链）。
+     *
+     * @return 是菜单框架返回 true，否则返回 false
      */
     public boolean isMenuFrame() {
         return Constants.TOP_PARENT_ID.equals(getParentId()) && SystemConstants.TYPE_MENU.equals(menuType) && isFrame.equals(SystemConstants.NO_FRAME);
     }
 
     /**
-     * 是否为内链组件
+     * 判断是否为内链组件（非外链且路由地址为 http(s) 链接）。
+     *
+     * @return 是内链返回 true，否则返回 false
      */
     public boolean isInnerLink() {
         return isFrame.equals(SystemConstants.NO_FRAME) && StringUtils.ishttp(path);
     }
 
     /**
-     * 是否为parent_view组件
+     * 判断是否为父级视图组件（非顶级目录且为目录类型）。
+     *
+     * @return 是父级视图返回 true，否则返回 false
      */
     public boolean isParentView() {
         return !Constants.TOP_PARENT_ID.equals(getParentId()) && SystemConstants.TYPE_DIR.equals(menuType);
     }
 
     /**
-     * 内链域名特殊字符替换
+     * 对内链地址中的协议头与特殊字符进行替换，便于路由拼接。
+     *
+     * @param path 原始内链地址
+     * @return 替换后的地址
      */
     public static String innerLinkReplaceEach(String path) {
         return StringUtils.replaceEach(path, new String[]{Constants.HTTP, Constants.HTTPS, Constants.WWW, ".", ":"},

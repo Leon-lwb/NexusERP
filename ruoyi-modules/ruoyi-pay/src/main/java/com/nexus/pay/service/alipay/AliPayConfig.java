@@ -23,36 +23,47 @@ import java.nio.charset.StandardCharsets;
 @ConditionalOnProperty(prefix = "pay.alipay", name = "enabled", havingValue = "true")
 public class AliPayConfig {
 
+    /** 支付宝应用 ID。 */
     @Value("${pay.alipay.appId}")
     private String appId;
 
+    /** 支付宝异步回调地址。 */
     @Value("${pay.alipay.notifyUrl}")
     private String notifyUrl;
 
+    /** 应用私钥，支持 classpath: 前缀引用证书文件，缺省为空。 */
     @Value("${pay.alipay.appPrivateKey:}")
     private String appPrivateKey;
 
+    /** 支付宝公钥，支持 classpath: 前缀引用证书文件，缺省为空。 */
     @Value("${pay.alipay.alipayPublicKey:}")
     private String alipayPublicKey;
 
+    /** 签名类型，缺省 RSA2。 */
     @Value("${pay.alipay.signType:RSA2}")
     private String signType;
 
+    /** 商户证书路径，用于证书模式，缺省为空。 */
     @Value("${pay.alipay.merchantCertPath:}")
     private String merchantCertPath;
 
+    /** 支付宝证书路径，缺省为空。 */
     @Value("${pay.alipay.alipayCertPath:}")
     private String alipayCertPath;
 
+    /** 支付宝根证书路径，缺省为空。 */
     @Value("${pay.alipay.alipayRootCertPath:}")
     private String alipayRootCertPath;
 
+    /** 支付宝网关地址，缺省 openapi.alipay.com。 */
     @Value("${pay.alipay.gatewayHost:openapi.alipay.com}")
     private String gatewayHost;
 
+    /** 通信协议，缺省 https。 */
     @Value("${pay.alipay.protocol:https}")
     private String protocol;
 
+    /** Spring 应用上下文，用于读取 classpath 证书资源。 */
     @Autowired
     private ApplicationContext applicationContext;
 
@@ -76,6 +87,12 @@ public class AliPayConfig {
         return alipayPublicKey;
     }
 
+    /**
+     * 构建并注册支付宝 SDK 全局配置（Factory 单例），供各支付能力复用。
+     *
+     * @return 支付宝 SDK 配置对象
+     * @throws Exception 读取证书文件或初始化失败时抛出
+     */
     @Bean
     public Config alipayBaseConfig() throws Exception {
         Config config = new Config();

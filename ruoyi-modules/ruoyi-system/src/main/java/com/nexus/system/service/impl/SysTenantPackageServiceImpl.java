@@ -35,7 +35,9 @@ import java.util.List;
 @Service
 public class SysTenantPackageServiceImpl implements ISysTenantPackageService {
 
+    /** SysTenantPackageMapper 数据访问层组件，提供 租户套餐 的持久化能力。 */
     private final SysTenantPackageMapper baseMapper;
+    /** SysTenantMapper 数据访问层组件，提供 租户 的持久化能力。 */
     private final SysTenantMapper tenantMapper;
 
     /**
@@ -56,6 +58,10 @@ public class SysTenantPackageServiceImpl implements ISysTenantPackageService {
         return TableDataInfo.build(result);
     }
 
+    /**
+     * 根据条件查询租户套餐列表。
+     * @return 匹配条件的租户套餐列表
+     */
     @Override
     public List<SysTenantPackageVo> selectList() {
         return baseMapper.selectVoList(new LambdaQueryWrapper<SysTenantPackage>()

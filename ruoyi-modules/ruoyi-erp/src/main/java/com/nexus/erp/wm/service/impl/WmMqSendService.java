@@ -27,6 +27,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class WmMqSendService {
 
+    /** 消息提供器 */
     private final ReliableMessageProducer messageProducer;
 
     /**

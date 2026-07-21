@@ -19,6 +19,7 @@ import java.util.Map;
 
 /**
  * MES SN序列号 Controller
+ * <p>属于 MES 生产管理模块，提供 SN序列号追溯 相关 REST 接口（分页查询、增删改及业务动作）。</p>
  *
  * @author Nexus
  */

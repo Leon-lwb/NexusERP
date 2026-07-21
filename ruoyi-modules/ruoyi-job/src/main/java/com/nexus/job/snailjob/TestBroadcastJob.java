@@ -22,9 +22,16 @@ import org.springframework.stereotype.Component;
 @ConditionalOnProperty(prefix = "snail-job", name = "enabled", havingValue = "true")
 public class TestBroadcastJob {
 
+    /** 客户端监听端口，取自配置 {@code snail-job.port}，用于日志中标识执行节点。 */
     @Value("${snail-job.port}")
     private int clientPort;
 
+    /**
+     * 广播任务示例：生成随机数，小于 50 时随机失败以触发重试，否则执行成功。
+     *
+     * @param jobArgs 任务参数
+     * @return 执行结果，随机数小于 50 时失败，否则成功
+     */
     public ExecuteResult jobExecute(JobArgs jobArgs) {
         int randomInt = RandomUtil.randomInt(100);
         log.info("随机数: {}", randomInt);

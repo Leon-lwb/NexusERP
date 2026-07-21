@@ -22,8 +22,10 @@ import java.util.concurrent.ConcurrentHashMap;
 @Component
 public class ChatServiceProviderFactory implements ApplicationContextAware {
 
+    /** 未知厂商时的兜底策略编码（OpenAI 兼容接口）。 */
     private static final String FALLBACK_PROVIDER = "OPENAI";
 
+    /** 厂商编码 → 厂商策略 注册表（线程安全）。 */
     private final Map<String, ChatServiceProvider> providers = new ConcurrentHashMap<>();
 
     @Override

@@ -14,7 +14,9 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 /**
- * 社会化关系
+ * 社会化关系（第三方账号绑定）Controller
+ * <p>提供当前登录用户已绑定的第三方社会化账号（如微信、Github 等）列表查询接口。
+ * 属于系统管理（System）模块。</p>
  *
  * @author thiszhc
  * @date 2023-06-16
@@ -25,10 +27,13 @@ import java.util.List;
 @RequestMapping("/system/social")
 public class SysSocialController extends BaseController {
 
+    /** 社会化账号业务服务，提供按用户查询第三方绑定关系等能力。 */
     private final ISysSocialService socialUserService;
 
     /**
-     * 查询社会化关系列表
+     * 查询当前登录用户绑定的社会化账号列表。
+     *
+     * @return 当前用户的社会化账号列表
      */
     @GetMapping("/list")
     public R<List<SysSocialVo>> list() {

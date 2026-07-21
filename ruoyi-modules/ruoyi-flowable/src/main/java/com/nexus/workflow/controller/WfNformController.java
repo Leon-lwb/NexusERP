@@ -36,10 +36,15 @@ import com.nexus.common.mybatis.core.page.TableDataInfo;
 @RequestMapping("/workflow/nform")
 public class WfNformController extends BaseController {
 
+    /** 设计器单业务服务，提供分页、导出、增删改等能力。 */
     private final IWfNformService wfNformService;
 
     /**
-     * 查询设计器单列表
+     * 查询设计器单列表。
+     *
+     * @param bo        设计器单查询条件
+     * @param pageQuery 分页参数（页码、每页大小、排序）
+     * @return 分页结果，包含设计器单列表及分页元信息
      */
     @SaCheckPermission("workflow:nform:list")
     @GetMapping("/list")
@@ -48,7 +53,10 @@ public class WfNformController extends BaseController {
     }
 
     /**
-     * 导出设计器单列表
+     * 导出设计器单列表。
+     *
+     * @param bo        设计器单查询条件
+     * @param response  HTTP 响应，用于写入导出的 Excel 流
      */
     @SaCheckPermission("workflow:nform:export")
     @Log(title = "设计器单", businessType = BusinessType.EXPORT)
@@ -59,9 +67,10 @@ public class WfNformController extends BaseController {
     }
 
     /**
-     * 获取设计器单详细信息
+     * 获取设计器单详细信息。
      *
      * @param formId 主键
+     * @return 设计器单详细信息
      */
     @SaCheckPermission("workflow:nform:query")
     @GetMapping("/{formId}")
@@ -71,7 +80,10 @@ public class WfNformController extends BaseController {
     }
 
     /**
-     * 新增设计器单
+     * 新增设计器单。
+     *
+     * @param bo 设计器单新增数据
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckPermission("workflow:nform:add")
     @Log(title = "设计器单", businessType = BusinessType.INSERT)
@@ -82,7 +94,10 @@ public class WfNformController extends BaseController {
     }
 
     /**
-     * 修改设计器单
+     * 修改设计器单。
+     *
+     * @param bo 设计器单修改数据
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckPermission("workflow:nform:edit")
     @Log(title = "设计器单", businessType = BusinessType.UPDATE)
@@ -93,9 +108,10 @@ public class WfNformController extends BaseController {
     }
 
     /**
-     * 删除设计器单
+     * 删除设计器单。
      *
      * @param formIds 主键串
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckPermission("workflow:nform:remove")
     @Log(title = "设计器单", businessType = BusinessType.DELETE)

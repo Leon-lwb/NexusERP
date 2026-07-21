@@ -34,6 +34,7 @@ public class ImConversationCache {
     /** P5-2: 缓存类型 tag（区分会话缓存与其他可能的缓存） */
     private static final String CACHE_TYPE = "conversation";
 
+    /** 指标采集组件，用于缓存命中/未命中计数。 */
     private final ImMetrics imMetrics;
 
     /**

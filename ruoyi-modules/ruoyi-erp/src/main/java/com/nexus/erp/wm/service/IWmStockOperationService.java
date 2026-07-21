@@ -38,6 +38,7 @@ public interface IWmStockOperationService {
      * 盘点差异过账（盘盈/盘亏调整库存）
      */
     void postCountAdjust(WmStockTakingLine line, BigDecimal actualQuantity,
+                         /** 库存操作（库存操作相关字段） */
                          BigDecimal bookQuantity, BigDecimal diffQuantity, Date now);
 
     /**
@@ -84,6 +85,7 @@ public interface IWmStockOperationService {
      */
     void postProductionCompletion(Long woId, String woNo, Long materialId, String materialCode, String materialName,
                                   BigDecimal quantity, Long warehouseId, Long locationId,
+                                  /** 库存操作（库存操作相关字段） */
                                   Long batchId, String batchCode, Date now);
 
     /**

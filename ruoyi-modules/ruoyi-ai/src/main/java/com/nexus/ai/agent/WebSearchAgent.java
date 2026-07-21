@@ -16,6 +16,12 @@ import dev.langchain4j.service.V;
  */
 public interface WebSearchAgent {
 
+    /**
+     * 根据用户自然语言发起联网搜索，并返回带信息来源链接的中文回答。
+     *
+     * @param query 用户自然语言查询
+     * @return 检索与网页抓取结果整理后的回答，包含来源 URL
+     */
     @Agent("联网搜索助手")
     @SystemMessage("""
         你是一个联网搜索助手。当用户问题需要最新信息或你无法从 ERP 数据回答时，使用 web_search 搜索，

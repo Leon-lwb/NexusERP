@@ -55,7 +55,9 @@ public class ImMessageClearTask {
      */
     private static final int MAX_BATCH_LOOP = 1000;
 
+    /** 消息表 Mapper。 */
     private final ImMessageMapper messageMapper;
+    /** 用户通知表 Mapper。 */
     private final SysUserNotificationMapper notificationMapper;
 
     /**

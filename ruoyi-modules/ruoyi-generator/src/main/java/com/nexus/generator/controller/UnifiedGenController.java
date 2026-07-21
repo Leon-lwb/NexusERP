@@ -44,7 +44,11 @@ public class UnifiedGenController extends BaseController {
     // ==================== 代码生成相关（原有功能） ====================
 
     /**
-     * 查询代码生成列表
+     * 分页查询已导入的代码生成业务列表。
+     *
+     * @param genTable  查询条件（表名/表描述等）
+     * @param pageQuery 分页参数
+     * @return 业务表分页结果
      */
     @GetMapping("/list")
     public TableDataInfo<GenTable> genList(GenTable genTable, PageQuery pageQuery) {
@@ -52,7 +56,11 @@ public class UnifiedGenController extends BaseController {
     }
 
     /**
-     * 查询数据库列表
+     * 分页查询数据源中可导入的数据库表列表。
+     *
+     * @param genTable  查询条件（表名/表描述等）
+     * @param pageQuery 分页参数
+     * @return 数据库表分页结果
      */
     @GetMapping("/db/list")
     public TableDataInfo<GenTable> dataList(GenTable genTable, PageQuery pageQuery) {
@@ -60,7 +68,10 @@ public class UnifiedGenController extends BaseController {
     }
 
     /**
-     * 查询数据表字段列表
+     * 查询指定业务表的字段列表与表基本信息。
+     *
+     * @param tableId 业务表ID
+     * @return 包含字段列表（rows）与表信息（info）的映射
      */
     @GetMapping(value = "/column/{tableId}")
     public R<Map<String, Object>> columnList(@PathVariable("tableId") Long tableId) {
@@ -71,7 +82,11 @@ public class UnifiedGenController extends BaseController {
     }
 
     /**
-     * 导入表结构（保存）
+     * 根据表名从数据源导入表结构并保存为代码生成配置。
+     *
+     * @param tables   逗号分隔的表名
+     * @param dataName 数据源名称
+     * @return 操作结果
      */
     @Log(title = "代码生成", businessType = BusinessType.IMPORT)
     @PostMapping("/importTable")
@@ -86,7 +101,10 @@ public class UnifiedGenController extends BaseController {
     }
 
     /**
-     * 修改保存代码生成业务
+     * 校验并更新已导入的代码生成业务配置。
+     *
+     * @param genTable 代码生成业务对象
+     * @return 操作结果
      */
     @Log(title = "代码生成", businessType = BusinessType.UPDATE)
     @PutMapping
@@ -97,7 +115,10 @@ public class UnifiedGenController extends BaseController {
     }
 
     /**
-     * 删除代码生成
+     * 批量删除代码生成业务配置及其字段配置。
+     *
+     * @param tableIds 业务表ID数组
+     * @return 操作结果
      */
     @Log(title = "代码生成", businessType = BusinessType.DELETE)
     @DeleteMapping("/{tableIds}")
@@ -107,7 +128,10 @@ public class UnifiedGenController extends BaseController {
     }
 
     /**
-     * 预览代码
+     * 预览指定业务表将要生成的各文件代码。
+     *
+     * @param tableId 业务表ID
+     * @return 模板路径与生成内容映射
      */
     @GetMapping("/preview/{tableId}")
     public R<Map<String, String>> preview(@PathVariable("tableId") Long tableId) {
@@ -116,7 +140,11 @@ public class UnifiedGenController extends BaseController {
     }
 
     /**
-     * 生成代码（下载方式）
+     * 生成代码并以 zip 压缩包形式下载。
+     *
+     * @param response HTTP 响应
+     * @param tableId  业务表ID
+     * @throws IOException IO 异常
      */
     @Log(title = "代码生成", businessType = BusinessType.GENCODE)
     @GetMapping("/download/{tableId}")
@@ -126,7 +154,11 @@ public class UnifiedGenController extends BaseController {
     }
 
     /**
-     * 批量生成代码（下载方式）
+     * 批量生成多张表的代码并以 zip 压缩包形式下载。
+     *
+     * @param response HTTP 响应
+     * @param tables   逗号分隔的表ID串
+     * @throws IOException IO 异常
      */
     @Log(title = "代码生成", businessType = BusinessType.GENCODE)
     @GetMapping("/batchDownload")
@@ -141,7 +173,10 @@ public class UnifiedGenController extends BaseController {
     }
 
     /**
-     * 生成代码（自定义路径）
+     * 将代码生成到配置指定的自定义路径（不打包下载）。
+     *
+     * @param tableId 业务表ID
+     * @return 操作结果
      */
     @Log(title = "代码生成", businessType = BusinessType.GENCODE)
     @GetMapping("/genCode/{tableId}")
@@ -151,7 +186,10 @@ public class UnifiedGenController extends BaseController {
     }
 
     /**
-     * 同步数据库
+     * 将业务表同步到最新数据库表结构（新增/更新/删除字段）。
+     *
+     * @param tableId 业务表ID
+     * @return 操作结果
      */
     @Log(title = "代码生成", businessType = BusinessType.UPDATE)
     @GetMapping("/synchDb/{tableId}")
@@ -171,9 +209,11 @@ public class UnifiedGenController extends BaseController {
     }
 
     /**
-     * 批量生成代码
+     * 批量生成多张表的代码并以 zip 压缩包形式下载。
      *
-     * @param tableIdStr 表ID串
+     * @param response    HTTP 响应
+     * @param tableIdStr  逗号分隔的表ID串
+     * @throws IOException IO 异常
      */
     @Log(title = "代码生成", businessType = BusinessType.GENCODE)
     @GetMapping("/batchGenCode")
@@ -184,7 +224,9 @@ public class UnifiedGenController extends BaseController {
     }
 
     /**
-     * 查询数据源名称列表
+     * 查询当前系统可用的数据源名称列表。
+     *
+     * @return 数据源名称列表
      */
     @GetMapping(value = "/getDataNames")
     public R<Object> getCurrentDataSourceNameList() {
@@ -192,9 +234,10 @@ public class UnifiedGenController extends BaseController {
     }
 
     /**
-     * 根据表名查询数据表字段信息
+     * 根据表名查询对应的代码生成字段配置列表。
      *
      * @param tableName 表名
+     * @return 字段配置列表
      */
     @GetMapping(value = "/columns/{tableName}")
     public List<GenTableColumn> getTableColumns(@PathVariable("tableName") String tableName) {
@@ -202,9 +245,10 @@ public class UnifiedGenController extends BaseController {
     }
 
     /**
-     * 修改代码生成业务
+     * 获取指定业务表的详情（表信息、字段列表及全部表下拉）。
      *
-     * @param tableId 表ID
+     * @param tableId 业务表ID
+     * @return 包含 info/rows/tables 的映射
      */
     @RepeatSubmit()
     @GetMapping(value = "/{tableId}")
@@ -222,7 +266,10 @@ public class UnifiedGenController extends BaseController {
     // ==================== Online设计相关（新增功能） ====================
 
     /**
-     * 查询设计列表
+     * 按关键字查询 Online 表设计列表。
+     *
+     * @param keyword 关键字（匹配设计名/表名/表描述）
+     * @return 设计列表
      */
     @GetMapping("/design/list")
     public R<List<GenTableDesign>> listDesigns(@RequestParam(required = false) String keyword) {
@@ -231,7 +278,10 @@ public class UnifiedGenController extends BaseController {
     }
 
     /**
-     * 获取设计详情
+     * 获取指定 Online 表设计详情。
+     *
+     * @param designId 设计ID
+     * @return 设计详情
      */
     @GetMapping("/design/{designId}")
     public R<GenTableDesign> getDesign(@PathVariable Long designId) {
@@ -240,7 +290,10 @@ public class UnifiedGenController extends BaseController {
     }
 
     /**
-     * 保存设计
+     * 新增 Online 表设计。
+     *
+     * @param design 设计对象
+     * @return 新建的设计ID
      */
     @Log(title = "代码生成-设计", businessType = BusinessType.INSERT)
     @PostMapping("/design")
@@ -250,7 +303,10 @@ public class UnifiedGenController extends BaseController {
     }
 
     /**
-     * 更新设计
+     * 更新已有的 Online 表设计。
+     *
+     * @param design 设计对象（含 designId）
+     * @return 更新的设计ID
      */
     @Log(title = "代码生成-设计", businessType = BusinessType.UPDATE)
     @PutMapping("/design")
@@ -260,7 +316,10 @@ public class UnifiedGenController extends BaseController {
     }
 
     /**
-     * 删除设计
+     * 删除指定 Online 表设计。
+     *
+     * @param designId 设计ID
+     * @return 操作结果
      */
     @Log(title = "代码生成-设计", businessType = BusinessType.DELETE)
     @DeleteMapping("/design/{designId}")
@@ -270,7 +329,10 @@ public class UnifiedGenController extends BaseController {
     }
 
     /**
-     * 生成建表SQL
+     * 根据设计 JSON 生成建表及外键 SQL。
+     *
+     * @param params 包含 designJson 的请求参数
+     * @return 生成的建表 SQL
      */
     @PostMapping("/design/generateSql")
     public R<String> generateSql(@RequestBody Map<String, String> params) {
@@ -284,7 +346,10 @@ public class UnifiedGenController extends BaseController {
     }
 
     /**
-     * 执行建表SQL
+     * 在指定数据源执行建表 SQL（可选覆盖已存在表）。
+     *
+     * @param params 包含 sql 与 overwriteIfExists 的请求参数
+     * @return 操作结果
      */
     @Log(title = "代码生成-设计", businessType = BusinessType.INSERT)
     @PostMapping("/design/createTable")
@@ -299,7 +364,10 @@ public class UnifiedGenController extends BaseController {
     }
 
     /**
-     * 从设计导入到代码生成
+     * 将 Online 设计转换为代码生成配置并导入。
+     *
+     * @param params 包含 designId、dataName、overwriteIfExists 的请求参数
+     * @return 生成的代码生成表ID
      */
     @Log(title = "代码生成-设计", businessType = BusinessType.IMPORT)
     @PostMapping("/design/importToGen")
@@ -315,7 +383,10 @@ public class UnifiedGenController extends BaseController {
     // ==================== Online表单数据操作 ====================
 
     /**
-     * 获取Online表单配置
+     * 获取指定表对应的 Online 表单配置（含字段与布局）。
+     *
+     * @param tableId 业务表ID
+     * @return 表单配置映射
      */
     @GetMapping("/online/form/{tableId}")
     public R<Map<String, Object>> getOnlineForm(@PathVariable Long tableId) {
@@ -324,7 +395,11 @@ public class UnifiedGenController extends BaseController {
     }
 
     /**
-     * 分页查询Online表单数据
+     * 分页查询 Online 表单对应的业务表数据。
+     *
+     * @param tableId   业务表ID
+     * @param pageQuery 分页参数
+     * @return 业务数据分页结果（含表单配置 map）
      */
     @GetMapping("/online/data/{tableId}")
     public TableDataInfo<Map<String, Object>> listOnlineData(@PathVariable Long tableId, PageQuery pageQuery) {
@@ -332,7 +407,11 @@ public class UnifiedGenController extends BaseController {
     }
 
     /**
-     * 获取Online表单数据详情
+     * 根据主键查询 Online 表单单条业务数据。
+     *
+     * @param tableId 业务表ID
+     * @param dataId  数据ID
+     * @return 数据详情映射
      */
     @GetMapping("/online/data/{tableId}/{dataId}")
     public R<Map<String, Object>> getOnlineData(@PathVariable Long tableId, @PathVariable Long dataId) {
@@ -341,7 +420,11 @@ public class UnifiedGenController extends BaseController {
     }
 
     /**
-     * 新增或修改Online表单数据
+     * 新增或更新 Online 表单业务数据（按主键是否存在自动判断）。
+     *
+     * @param tableId 业务表ID
+     * @param data    业务数据
+     * @return 影响行数
      */
     @Log(title = "Online表单数据", businessType = BusinessType.INSERT)
     @PostMapping("/online/data/{tableId}")
@@ -351,7 +434,11 @@ public class UnifiedGenController extends BaseController {
     }
 
     /**
-     * 删除Online表单数据
+     * 批量删除 Online 表单业务数据。
+     *
+     * @param tableId 业务表ID
+     * @param ids     数据ID列表
+     * @return 操作结果
      */
     @Log(title = "Online表单数据", businessType = BusinessType.DELETE)
     @DeleteMapping("/online/data/{tableId}")
@@ -361,7 +448,11 @@ public class UnifiedGenController extends BaseController {
     }
 
     /**
-     * 通过表名新增或修改Online表单数据（供Flowable调用）
+     * 通过表名新增或更新 Online 表单数据，供 Flowable 流程调用。
+     *
+     * @param tableName 表名
+     * @param data      业务数据
+     * @return 影响行数
      */
     @Log(title = "Online表单数据", businessType = BusinessType.INSERT)
     @PostMapping("/online/dataByName/{tableName}")
@@ -371,7 +462,12 @@ public class UnifiedGenController extends BaseController {
     }
 
     /**
-     * 查询Popup数据列表（带权限校验）
+     * 分页查询 Popup 弹窗来源表数据（带表名授权校验）。
+     *
+     * @param tableId       业务表ID（用于权限上下文）
+     * @param dictTableName Popup 来源表名
+     * @param pageQuery     分页参数
+     * @return 来源表数据分页结果
      */
     @GetMapping("/online/popupData/{tableId}/{dictTableName}")
     public TableDataInfo<Map<String, Object>> listPopupTableData(
@@ -382,7 +478,12 @@ public class UnifiedGenController extends BaseController {
     }
 
     /**
-     * 查询Popup详情（带权限校验）
+     * 查询 Popup 弹窗来源表单条数据（带表名授权校验）。
+     *
+     * @param tableId       业务表ID（用于权限上下文）
+     * @param dictTableName Popup 来源表名
+     * @param id            数据ID
+     * @return 数据详情映射
      */
     @GetMapping("/online/popupDetail/{tableId}/{dictTableName}/{id}")
     public R<Map<String, Object>> getPopupDetail(
@@ -394,7 +495,11 @@ public class UnifiedGenController extends BaseController {
     }
 
     /**
-     * 查询动态表数据（通用）
+     * 通用动态表分页查询（按表名），用于未携带 tableId 的场景。
+     *
+     * @param tableName 表名
+     * @param pageQuery 分页参数
+     * @return 动态表数据分页结果
      */
     @GetMapping("/online/tableData/{tableName}")
     public TableDataInfo<Map<String, Object>> listTableData(

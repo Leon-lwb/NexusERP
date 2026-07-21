@@ -31,6 +31,7 @@ import java.util.List;
 @Service
 public class SysDictDataServiceImpl implements ISysDictDataService {
 
+    /** SysDictDataMapper 数据访问层组件，提供 字典数据 的持久化能力。 */
     private final SysDictDataMapper baseMapper;
 
     /**

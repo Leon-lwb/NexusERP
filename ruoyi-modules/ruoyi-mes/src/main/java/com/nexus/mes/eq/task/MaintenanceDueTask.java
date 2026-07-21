@@ -65,6 +65,12 @@ public class MaintenanceDueTask {
     private final IProAndonService andonService;
     private final MesSysTenantMapper mesSysTenantMapper;
 
+    /**
+     * 定时任务执行入口，由调度框架回调。
+     *
+     * @param jobArgs 任务执行参数
+     * @return 任务执行结果
+     */
     public ExecuteResult jobExecute(JobArgs jobArgs) {
         SnailJobLog.REMOTE.info("[保养到期任务] 开始执行");
         try {

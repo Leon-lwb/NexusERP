@@ -17,6 +17,12 @@ import org.springframework.stereotype.Component;
 @JobExecutor(name = "testJobExecutor")
 public class TestAnnoJobExecutor {
 
+    /**
+     * 正常任务示例执行器，打印任务参数并记录本地与远端日志。
+     *
+     * @param jobArgs 任务参数
+     * @return 执行结果，固定返回「测试成功」
+     */
     public ExecuteResult jobExecute(JobArgs jobArgs) {
         SnailJobLog.LOCAL.info("testJobExecutor. jobArgs:{}", JsonUtil.toJsonString(jobArgs));
         SnailJobLog.REMOTE.info("testJobExecutor. jobArgs:{}", JsonUtil.toJsonString(jobArgs));

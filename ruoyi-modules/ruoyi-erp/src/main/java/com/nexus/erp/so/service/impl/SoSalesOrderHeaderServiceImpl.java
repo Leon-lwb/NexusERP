@@ -653,6 +653,14 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
         }
     }
 
+    /**
+     * 为加工型物料的销售订单行自动创建生产计划。
+     * <p>根据物料查找当前有效BOM并关联，生成草稿状态的MPS计划，供后续生产排程使用。</p>
+     *
+     * @param line     销售订单行，提供行号与订购数量
+     * @param soNo     销售订单单号，作为计划来源与名称前缀
+     * @param material 物料信息，用于判断是否加工件及生成计划名称
+     */
     private void createProductionPlan(SoSalesOrderLine line, String soNo, BdMaterial material) {
         PrdProductionPlan plan = new PrdProductionPlan();
         plan.setPlanNo(autoCodeUtil.genSerialCode("PRD_PLAN_CODE", null));
@@ -685,6 +693,13 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
             soNo, material.getMaterialCode(), plan.getPlanNo());
     }
 
+    /**
+     * 根据查询条件对象构建销售订单主表的查询构造器。
+     * <p>仅对非空条件拼接等值或模糊匹配，便于分页与列表查询复用。</p>
+     *
+     * @param bo 销售订单查询条件，包含单号、客户、业务员、部门、状态等过滤项
+     * @return 已拼接条件的 {@link LambdaQueryWrapper} 查询构造器
+     */
     private LambdaQueryWrapper<SoSalesOrderHeader> buildQueryWrapper(SoSalesOrderHeaderBo bo) {
         LambdaQueryWrapper<SoSalesOrderHeader> lqw = Wrappers.<SoSalesOrderHeader>lambdaQuery()
             .eq(StringUtils.isNotBlank(bo.getSoNo()), SoSalesOrderHeader::getSoNo, bo.getSoNo())

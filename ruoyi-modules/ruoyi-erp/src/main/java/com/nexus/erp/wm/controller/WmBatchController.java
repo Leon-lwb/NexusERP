@@ -32,6 +32,7 @@ import java.util.List;
 @RequestMapping("/erp/wm/batch")
 public class WmBatchController extends BaseController {
 
+    /** 批次业务服务，提供批次相关能力 */
     private final IWmBatchService wmBatchService;
 
     /**

@@ -36,6 +36,7 @@ import java.util.stream.Collectors;
 
 /**
  * 工作流流程模型管理
+ * <p>提供流程模型的增删改查、历史版本、部署、配置、BPMN XML 读取及导出等 REST 接口，属于 Flowable 工作流模块。</p>
  *
  * @author wanghuan
  * @createTime 2022/6/21 9:09
@@ -46,14 +47,17 @@ import java.util.stream.Collectors;
 @RequestMapping("/workflow/model")
 public class WfModelController extends BaseController {
 
+    /** 流程模型业务服务，提供模型列表、详情、保存、部署、配置等能力。 */
     private final IWfModelService modelService;
+    /** 流程分类业务服务，用于导出时映射分类编码与名称。 */
     private final IWfCategoryService categoryService;
 
     /**
-     * 查询流程模型列表
+     * 查询流程模型列表。
      *
-     * @param modelBo 流程模型对象
-     * @param pageQuery 分页参数
+     * @param modelBo   流程模型查询条件
+     * @param pageQuery 分页参数（页码、每页大小、排序）
+     * @return 分页结果，包含流程模型列表及分页元信息
      */
     @SaCheckPermission("workflow:model:list")
     @GetMapping("/list")
@@ -62,10 +66,11 @@ public class WfModelController extends BaseController {
     }
 
     /**
-     * 查询流程模型列表
+     * 查询流程模型历史列表。
      *
-     * @param modelBo 流程模型对象
-     * @param pageQuery 分页参数
+     * @param modelBo   流程模型查询条件
+     * @param pageQuery 分页参数（页码、每页大小、排序）
+     * @return 分页结果，包含历史流程模型列表及分页元信息
      */
     @SaCheckPermission("workflow:model:list")
     @GetMapping("/historyList")
@@ -74,9 +79,10 @@ public class WfModelController extends BaseController {
     }
 
     /**
-     * 获取流程模型详细信息
+     * 获取流程模型详细信息。
      *
      * @param modelId 模型主键
+     * @return 流程模型详细信息
      */
     @SaCheckPermission("workflow:model:query")
     @GetMapping(value = "/{modelId}")
@@ -85,9 +91,10 @@ public class WfModelController extends BaseController {
     }
 
     /**
-     * 获取流程表单详细信息
+     * 获取流程模型 BPMN XML 内容。
      *
      * @param modelId 模型主键
+     * @return 流程模型 BPMN XML 字符串
      */
     @SaCheckPermission("workflow:model:query")
     @GetMapping(value = "/bpmnXml/{modelId}")
@@ -96,7 +103,10 @@ public class WfModelController extends BaseController {
     }
 
     /**
-     * 新增流程模型
+     * 新增流程模型。
+     *
+     * @param modelBo 流程模型新增数据
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckPermission("workflow:model:add")
     @Log(title = "流程模型", businessType = BusinessType.INSERT)
@@ -107,7 +117,10 @@ public class WfModelController extends BaseController {
     }
 
     /**
-     * 修改流程模型
+     * 修改流程模型。
+     *
+     * @param modelBo 流程模型修改数据
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckPermission("workflow:model:edit")
     @Log(title = "流程模型", businessType = BusinessType.UPDATE)
@@ -118,7 +131,10 @@ public class WfModelController extends BaseController {
     }
 
     /**
-     * 保存流程模型
+     * 保存流程模型（设计器保存模型内容与图形）。
+     *
+     * @param modelBo 流程模型数据
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckPermission("workflow:model:save")
     @Log(title = "保存流程模型", businessType = BusinessType.INSERT)
@@ -130,9 +146,10 @@ public class WfModelController extends BaseController {
     }
 
     /**
-     * 设为最新流程模型
-     * @param modelId
-     * @return
+     * 将指定流程模型设为最新版本。
+     *
+     * @param modelId 模型主键
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckPermission("workflow:model:save")
     @Log(title = "设为最新流程模型", businessType = BusinessType.INSERT)
@@ -144,9 +161,10 @@ public class WfModelController extends BaseController {
     }
 
     /**
-     * 删除流程模型
+     * 删除流程模型。
      *
      * @param modelIds 流程模型主键串
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckPermission("workflow:model:remove")
     @Log(title = "删除流程模型", businessType = BusinessType.DELETE)
@@ -157,9 +175,10 @@ public class WfModelController extends BaseController {
     }
 
     /**
-     * 部署流程模型
+     * 部署（发布）流程模型。
      *
      * @param modelId 流程模型主键
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckPermission("workflow:model:deploy")
     @Log(title = "部署流程模型", businessType = BusinessType.INSERT)
@@ -171,9 +190,11 @@ public class WfModelController extends BaseController {
     }
 
     /**
-     * 配置流程模型
+     * 配置流程模型（绑定应用类型）。
      *
      * @param modelId 流程模型主键
+     * @param appType 应用类型
+     * @return 操作结果，成功时返回配置结果
      */
     @SaCheckPermission("workflow:model:config")
     @Log(title = "配置流程模型", businessType = BusinessType.INSERT)
@@ -184,7 +205,10 @@ public class WfModelController extends BaseController {
     }
 
     /**
-     * 导出流程模型数据
+     * 导出流程模型数据。
+     *
+     * @param modelBo  流程模型查询条件
+     * @param response HTTP 响应，用于写入导出的 Excel 流
      */
     @Log(title = "导出流程模型数据", businessType = BusinessType.EXPORT)
     @SaCheckPermission("workflow:model:export")

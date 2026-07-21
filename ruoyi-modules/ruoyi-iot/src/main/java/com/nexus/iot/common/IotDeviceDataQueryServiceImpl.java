@@ -30,12 +30,23 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class IotDeviceDataQueryServiceImpl implements IotDeviceDataQueryService {
 
+    /** 设备最新属性值 Redis 缓存。 */
     private final IotDeviceLatestCache latestCache;
+    /** 设备在线状态 Redis 缓存。 */
     private final IotDeviceStatusCache statusCache;
+    /** 设备数据业务服务，提供历史查询。 */
     private final IIotDeviceDataService deviceDataService;
+    /** 设备 Mapper，用于缓存为空时回退查库。 */
     private final IotDeviceMapper deviceMapper;
+    /** 设备数据 Mapper，用于缓存为空时回退查库。 */
     private final IotDeviceDataMapper deviceDataMapper;
 
+    /**
+     * 获取设备最新属性值，优先读 Redis 缓存；缓存为空时回退查库避免误空。
+     *
+     * @param deviceId 设备 ID
+     * @return propertyCode → value 字符串映射
+     */
     @Override
     public Map<String, String> getLatestData(Long deviceId) {
         Map<String, String> map = latestCache.getAll(deviceId);
@@ -62,6 +73,12 @@ public class IotDeviceDataQueryServiceImpl implements IotDeviceDataQueryService 
         return map;
     }
 
+    /**
+     * 获取设备在线状态，优先读 Redis 缓存；缓存为 OFFLINE 时回退查库，避免 TTL 过期误报离线。
+     *
+     * @param deviceId 设备 ID
+     * @return ONLINE / OFFLINE
+     */
     @Override
     public String getOnlineStatus(Long deviceId) {
         String status = statusCache.get(deviceId);
@@ -81,6 +98,14 @@ public class IotDeviceDataQueryServiceImpl implements IotDeviceDataQueryService 
         return status;
     }
 
+    /**
+     * 查询设备历史数据（MySQL iot 数据源），转换为 Map 列表供 MES 读取。
+     *
+     * @param deviceId 设备 ID
+     * @param start    起始采集时间
+     * @param end      截止采集时间
+     * @return 历史数据 Map 列表
+     */
     @Override
     public List<Map<String, Object>> getHistoryData(Long deviceId, Date start, Date end) {
         List<IotDeviceData> list = deviceDataService.selectHistory(deviceId, start, end);

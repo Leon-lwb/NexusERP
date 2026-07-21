@@ -35,9 +35,13 @@ import java.util.Map;
 public class SysTaskAssigneeServiceImpl implements TaskAssigneeService {
 
     // 上级Service注入下级Service 其他Service永远不可能注入当前类 避免循环注入
+    /** ISysPostService 业务服务，提供 岗位 相关能力。 */
     private final ISysPostService postService;
+    /** ISysDeptService 业务服务，提供 部门 相关能力。 */
     private final ISysDeptService deptService;
+    /** ISysUserService 业务服务，提供 用户 相关能力。 */
     private final ISysUserService userService;
+    /** ISysRoleService 业务服务，提供 角色 相关能力。 */
     private final ISysRoleService roleService;
 
     /**

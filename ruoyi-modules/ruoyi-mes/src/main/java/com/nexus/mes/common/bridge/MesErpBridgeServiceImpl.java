@@ -40,6 +40,11 @@ public class MesErpBridgeServiceImpl implements IMesErpBridgeService {
     private final ErpUnitMapper erpUnitMapper;
 
     @Override
+    /**
+     * 获取
+     * @param materialId 物料ID
+     * @return 返回结果映射
+     */
     public Map<String, Object> getMaterial(Long materialId) {
         try {
             DynamicDataSourceContextHolder.push("erp");
@@ -50,6 +55,11 @@ public class MesErpBridgeServiceImpl implements IMesErpBridgeService {
     }
 
     @Override
+    /**
+     * 获取
+     * @param materialId 物料ID
+     * @return 返回结果映射
+     */
     public Map<String, Object> getMaterialFull(Long materialId) {
         try {
             DynamicDataSourceContextHolder.push("erp");
@@ -60,6 +70,11 @@ public class MesErpBridgeServiceImpl implements IMesErpBridgeService {
     }
 
     @Override
+    /**
+     * 获取
+     * @param bomId BOMID
+     * @return 结果列表
+     */
     public List<Map<String, Object>> getBomDetails(Long bomId) {
         try {
             DynamicDataSourceContextHolder.push("erp");
@@ -70,6 +85,11 @@ public class MesErpBridgeServiceImpl implements IMesErpBridgeService {
     }
 
     @Override
+    /**
+     * 获取
+     * @param bomId BOMID
+     * @return 返回结果映射
+     */
     public Map<String, Object> getBomHeader(Long bomId) {
         try {
             DynamicDataSourceContextHolder.push("erp");
@@ -80,6 +100,11 @@ public class MesErpBridgeServiceImpl implements IMesErpBridgeService {
     }
 
     @Override
+    /**
+     * 获取
+     * @param routingId 工艺路线ID
+     * @return 返回结果映射
+     */
     public Map<String, Object> getRoutingHeader(Long routingId) {
         try {
             DynamicDataSourceContextHolder.push("erp");
@@ -90,6 +115,11 @@ public class MesErpBridgeServiceImpl implements IMesErpBridgeService {
     }
 
     @Override
+    /**
+     * 获取
+     * @param workstationId 工单rkstationId
+     * @return 返回结果映射
+     */
     public Map<String, Object> getWorkstationFull(Long workstationId) {
         try {
             DynamicDataSourceContextHolder.push("erp");
@@ -100,6 +130,11 @@ public class MesErpBridgeServiceImpl implements IMesErpBridgeService {
     }
 
     @Override
+    /**
+     * 获取
+     * @param routingId 工艺路线ID
+     * @return 结果列表
+     */
     public List<Map<String, Object>> getRoutingSteps(Long routingId) {
         try {
             DynamicDataSourceContextHolder.push("erp");
@@ -110,6 +145,11 @@ public class MesErpBridgeServiceImpl implements IMesErpBridgeService {
     }
 
     @Override
+    /**
+     * 获取
+     * @param materialId 物料ID
+     * @return 受影响行数
+     */
     public Long getDefaultRoutingId(Long materialId) {
         try {
             DynamicDataSourceContextHolder.push("erp");
@@ -120,6 +160,11 @@ public class MesErpBridgeServiceImpl implements IMesErpBridgeService {
     }
 
     @Override
+    /**
+     * 获取
+     * @param workshopId 工单rkshopId
+     * @return 返回结果映射
+     */
     public Map<String, Object> getWorkshop(Long workshopId) {
         try {
             DynamicDataSourceContextHolder.push("erp");
@@ -130,6 +175,11 @@ public class MesErpBridgeServiceImpl implements IMesErpBridgeService {
     }
 
     @Override
+    /**
+     * 获取
+     * @param workstationId 工单rkstationId
+     * @return 返回结果映射
+     */
     public Map<String, Object> getWorkstation(Long workstationId) {
         try {
             DynamicDataSourceContextHolder.push("erp");
@@ -140,6 +190,11 @@ public class MesErpBridgeServiceImpl implements IMesErpBridgeService {
     }
 
     @Override
+    /**
+     * 获取
+     * @param unitId 单位ID
+     * @return 返回结果
+     */
     public String getUnitName(Long unitId) {
         try {
             DynamicDataSourceContextHolder.push("erp");
@@ -150,6 +205,11 @@ public class MesErpBridgeServiceImpl implements IMesErpBridgeService {
     }
 
     @Override
+    /**
+     * 分页查询列表
+     * @param keyword keyword
+     * @return 结果列表
+     */
     public List<Map<String, Object>> listWorkstations(String keyword) {
         try {
             DynamicDataSourceContextHolder.push("erp");

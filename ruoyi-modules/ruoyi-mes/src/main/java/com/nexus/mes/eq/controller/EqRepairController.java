@@ -26,6 +26,8 @@ import java.util.Map;
 /**
  * MES设备维修记录 Controller
  *
+ * <p>属于MES 设备管理模块，提供维修相关的 REST 接口。</p>
+ *
  * @author Nexus
  */
 @Validated
@@ -38,6 +40,10 @@ public class EqRepairController extends BaseController {
 
     /**
      * 分页查询维修记录列表
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @param pageQuery 分页参数（页码、每页大小、排序）
+     * @return 分页结果
      */
     @SaCheckPermission("mes:eq:repair:list")
     @GetMapping("/list")
@@ -47,6 +53,9 @@ public class EqRepairController extends BaseController {
 
     /**
      * 根据ID获取维修详情
+     *
+     * @param repairId 维修记录ID
+     * @return 操作结果
      */
     @SaCheckPermission("mes:eq:repair:query")
     @GetMapping("/{repairId}")
@@ -56,6 +65,9 @@ public class EqRepairController extends BaseController {
 
     /**
      * 报修(新增维修单), 联动置设备FAULT
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @return 操作结果
      */
     @SaCheckPermission("mes:eq:repair:add")
     @Log(title = "维修报修", businessType = BusinessType.INSERT)
@@ -66,6 +78,9 @@ public class EqRepairController extends BaseController {
 
     /**
      * 维修开工(REPORTED -> REPAIRING)
+     *
+     * @param repairId 维修记录ID
+     * @return 操作结果
      */
     @SaCheckPermission("mes:eq:repair:start")
     @Log(title = "维修开工", businessType = BusinessType.UPDATE)
@@ -77,6 +92,10 @@ public class EqRepairController extends BaseController {
 
     /**
      * 维修完成(REPAIRING -> COMPLETED), 联动恢复设备状态; 可携带更换备件明细(P1-2 R1)
+     *
+     * @param repairId 维修记录ID
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @return 操作结果
      */
     @SaCheckPermission("mes:eq:repair:complete")
     @Log(title = "维修完成", businessType = BusinessType.UPDATE)
@@ -88,6 +107,9 @@ public class EqRepairController extends BaseController {
 
     /**
      * 导出维修记录数据
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @param response HTTP 响应对象
      */
     @SaCheckPermission("mes:eq:repair:export")
     @Log(title = "维修记录", businessType = BusinessType.EXPORT)
@@ -110,6 +132,8 @@ public class EqRepairController extends BaseController {
 
     /**
      * 维修状态计数汇总(监控大屏用, 全量 COUNT 不受分页限制)
+     *
+     * @return 操作结果
      */
     @SaCheckPermission("mes:eq:repair:list")
     @GetMapping("/summary")

@@ -53,6 +53,12 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
     private final IProWorkOrderService proWorkOrderService;
 
     @Override
+    /**
+     * 查询
+     * @param bo bo
+     * @param pageQuery pageQuery
+     * @return 分页结果
+     */
     public TableDataInfo<ProFlowCardVo> selectPageList(ProFlowCardBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<ProFlowCard> lqw = buildQueryWrapper(bo);
         Page<ProFlowCardVo> page = baseMapper.selectVoPage(pageQuery.build(), lqw);
@@ -60,6 +66,11 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
     }
 
     @Override
+    /**
+     * 查询
+     * @param cardId 流转卡ID
+     * @return 返回视图对象
+     */
     public ProFlowCardVo selectById(Long cardId) {
         ProFlowCardVo vo = baseMapper.selectVoById(cardId);
         if (vo != null) {
@@ -69,6 +80,11 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
     }
 
     @Override
+    /**
+     * 查询
+     * @param mesWoId MES工单ID
+     * @return 结果列表
+     */
     public List<ProFlowCardVo> selectByWoId(Long mesWoId) {
         LambdaQueryWrapper<ProFlowCard> lqw = Wrappers.<ProFlowCard>lambdaQuery()
             .eq(ProFlowCard::getMesWoId, mesWoId)

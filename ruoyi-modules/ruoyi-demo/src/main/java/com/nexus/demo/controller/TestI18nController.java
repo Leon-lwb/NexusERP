@@ -61,9 +61,11 @@ public class TestI18nController {
     @Data
     public static class TestI18nBo {
 
+        /** 名称，用于演示 Bean 校验国际化 */
         @NotBlank(message = "{not.null}")
         private String name;
 
+        /** 年龄，范围 0-100，用于演示 Bean 校验国际化 */
         @NotNull(message = "{not.null}")
         @Range(min = 0, max = 100, message = "{length.not.valid}")
         private Integer age;

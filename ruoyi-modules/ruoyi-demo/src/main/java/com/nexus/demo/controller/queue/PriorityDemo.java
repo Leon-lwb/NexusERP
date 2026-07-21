@@ -14,7 +14,9 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 public class PriorityDemo implements Comparable<PriorityDemo> {
+    /** 元素名称 */
     private String name;
+    /** 排序号，数值越小优先级越高（由 compareTo 实现决定） */
     private Integer orderNum;
 
     @Override

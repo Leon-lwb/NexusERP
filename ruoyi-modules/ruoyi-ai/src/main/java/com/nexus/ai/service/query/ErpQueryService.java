@@ -27,6 +27,7 @@ import java.util.regex.Pattern;
 @RequiredArgsConstructor
 public class ErpQueryService {
 
+    /** ERP 数据源 JdbcTemplate，执行 SQL 查询 */
     private final JdbcTemplate jdbcTemplate;
 
     /** 表名合法字符正则（仅允许字母、数字、下划线） */

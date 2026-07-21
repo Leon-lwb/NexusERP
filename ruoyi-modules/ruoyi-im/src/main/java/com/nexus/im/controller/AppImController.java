@@ -55,22 +55,38 @@ import java.util.stream.Collectors;
 public class AppImController extends BaseController {
 
     // ============ 好友请求分类常量 ============
+    /** 好友请求通知分类标识，用于通知表 category 字段区分好友申请类消息。 */
     private static final String CATEGORY_FRIEND_REQUEST = "im_friend_request";
+    /** 好友请求状态：已发出，等待对方处理。 */
     private static final String FRIEND_REQUEST_SENT = "sent";
+    /** 好友请求状态：已被对方接受。 */
     private static final String FRIEND_REQUEST_ACCEPTED = "accepted";
+    /** 好友请求状态：已被对方拒绝。 */
     private static final String FRIEND_REQUEST_REJECTED = "rejected";
 
+    /** 聊天业务服务，提供私聊/群聊发送、历史、已读等能力。 */
     private final IImChatService imChatService;
+    /** 系统通知业务服务，用于创建并推送好友请求等通知。 */
     private final ISysUserNotificationService notificationService;
+    /** 系统用户 Mapper，用于查询用户昵称、头像等资料。 */
     private final SysUserMapper userMapper;
+    /** 消息 Mapper，直接操作用于好友请求消息、已读计数等。 */
     private final ImMessageMapper messageMapper;
+    /** 群组 Mapper。 */
     private final ImGroupMapper groupMapper;
+    /** 群成员 Mapper。 */
     private final ImGroupMemberMapper groupMemberMapper;
+    /** 系统通知 Mapper，用于好友请求通知的读写。 */
     private final SysUserNotificationMapper notificationMapper;
+    /** 好友关系 Mapper。 */
     private final ImFriendMapper friendMapper;
+    /** 实时推送组件，向指定用户推送消息信封。 */
     private final ImRealtimePush imRealtimePush;
+    /** 会话列表与缓存服务。 */
     private final ImConversationService conversationService;
+    /** 会话配置（置顶/免打扰）Mapper。 */
     private final ImConversationSettingMapper conversationSettingMapper;
+    /** 消息收藏 Mapper。 */
     private final ImFavoriteMapper favoriteMapper;
 
     // ==================== Session ====================

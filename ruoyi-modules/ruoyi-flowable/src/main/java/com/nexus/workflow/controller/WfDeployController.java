@@ -26,6 +26,7 @@ import java.util.Objects;
 
 /**
  * 流程部署
+ * <p>提供流程部署列表、版本列表、激活/挂起、BPMN XML 读取、删除及关联表单查询等 REST 接口，属于 Flowable 工作流模块。</p>
  *
  * @author wanghuan
  * @createTime 2022/3/24 20:57
@@ -36,11 +37,17 @@ import java.util.Objects;
 @RequestMapping("/workflow/deploy")
 public class WfDeployController extends BaseController {
 
+    /** 流程部署业务服务，提供部署分页、版本、状态变更及 BPMN XML 读取等能力。 */
     private final IWfDeployService deployService;
+    /** 部署表单关联服务，用于查询部署关联的业务表单。 */
     private final IWfDeployFormService deployFormService;
 
     /**
-     * 查询流程部署列表
+     * 查询流程部署列表。
+     *
+     * @param processQuery 流程查询条件
+     * @param pageQuery    分页参数（页码、每页大小、排序）
+     * @return 分页结果，包含流程部署列表及分页元信息
      */
     @SaCheckPermission("workflow:deploy:list")
     @GetMapping("/list")
@@ -49,7 +56,11 @@ public class WfDeployController extends BaseController {
     }
 
     /**
-     * 查询流程部署版本列表
+     * 查询流程部署版本列表。
+     *
+     * @param processKey 流程定义 KEY
+     * @param pageQuery  分页参数（页码、每页大小、排序）
+     * @return 分页结果，包含指定流程的版本部署列表及分页元信息
      */
     @SaCheckPermission("workflow:deploy:list")
     @GetMapping("/publishList")
@@ -58,10 +69,11 @@ public class WfDeployController extends BaseController {
     }
 
     /**
-     * 激活或挂起流程
+     * 激活或挂起流程。
      *
-     * @param state 状态（active:激活 suspended:挂起）
-     * @param definitionId 流程定义ID
+     * @param state       状态（active：激活，suspended：挂起）
+     * @param definitionId 流程定义 ID
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckPermission("workflow:deploy:state")
     @PutMapping(value = "/changeState")
@@ -71,9 +83,10 @@ public class WfDeployController extends BaseController {
     }
 
     /**
-     * 读取xml文件
-     * @param definitionId 流程定义ID
-     * @return
+     * 读取流程定义的 BPMN XML 内容。
+     *
+     * @param definitionId 流程定义 ID
+     * @return 流程 BPMN XML 字符串
      */
     @SaCheckPermission("workflow:deploy:query")
     @GetMapping("/bpmnXml/{definitionId}")
@@ -82,8 +95,10 @@ public class WfDeployController extends BaseController {
     }
 
     /**
-     * 删除流程模型
-     * @param deployIds 流程部署ids
+     * 删除流程部署。
+     *
+     * @param deployIds 流程部署 ID 串
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckPermission("workflow:deploy:remove")
     @Log(title = "删除流程部署", businessType = BusinessType.DELETE)
@@ -94,9 +109,10 @@ public class WfDeployController extends BaseController {
     }
 
     /**
-     * 查询流程部署关联表单信息
+     * 查询流程部署关联表单信息。
      *
-     * @param deployId 流程部署id
+     * @param deployId 流程部署 ID
+     * @return 部署关联的业务表单内容（JSON 对象）
      */
     @GetMapping("/form/{deployId}")
     public R<?> start(@PathVariable(value = "deployId") String deployId) {

@@ -190,26 +190,54 @@ public class GenTable extends BaseEntity {
     @TableField(exist = false)
     private String parentMenuName;
 
+    /**
+     * 判断当前表是否为树表（模板类型为 tree）。
+     */
     public boolean isTree() {
         return isTree(this.tplCategory);
     }
 
+    /**
+     * 判断模板类型是否为树表。
+     *
+     * @param tplCategory 模板类型
+     * @return 是树表返回 true
+     */
     public static boolean isTree(String tplCategory) {
         return tplCategory != null && StringUtils.equals(GenConstants.TPL_TREE, tplCategory);
     }
 
+    /**
+     * 判断当前表是否为单表（模板类型为 crud）。
+     */
     public boolean isCrud() {
         return isCrud(this.tplCategory);
     }
 
+    /**
+     * 判断模板类型是否为单表。
+     *
+     * @param tplCategory 模板类型
+     * @return 是单表返回 true
+     */
     public static boolean isCrud(String tplCategory) {
         return tplCategory != null && StringUtils.equals(GenConstants.TPL_CRUD, tplCategory);
     }
 
+    /**
+     * 判断指定字段是否为基类（BaseEntity/TreeEntity）字段。
+     */
     public boolean isSuperColumn(String javaField) {
         return isSuperColumn(this.tplCategory, javaField);
     }
 
+    /**
+     * 判断给定字段名是否属于基类字段，生成代码时应忽略。
+     *
+     * @param tplCategory 模板类型（预留参数，便于后续按模板差异化）
+     * @param javaField   字段名
+     * @return 属于基类字段返回 true
+     */
     public static boolean isSuperColumn(String tplCategory, String javaField) {
         return StringUtils.equalsAnyIgnoreCase(javaField, GenConstants.BASE_ENTITY);
     }

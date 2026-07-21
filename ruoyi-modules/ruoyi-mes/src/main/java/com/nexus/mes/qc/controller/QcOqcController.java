@@ -17,7 +17,9 @@ import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
 
 /**
- * MES出货检验 Controller
+ * MES 出货检验（OQC）Controller
+ * <p>提供出货检验单的分页查询、详情、新增与执行检验等 REST 接口，属于 MES 质量管理模块；
+ * 检验为 MES 内部流程，不回传 ERP。</p>
  *
  * @author Nexus
  */
@@ -30,7 +32,11 @@ public class QcOqcController extends BaseController {
     private final IQcOqcService qcOqcService;
 
     /**
-     * 分页查询OQC列表
+     * 分页查询 OQC 出货检验列表。
+     *
+     * @param bo        检验单查询条件
+     * @param pageQuery 分页参数（页码、每页大小、排序）
+     * @return 分页结果，包含 OQC 检验单视图列表及分页元信息
      */
     @SaCheckPermission("mes:qc:oqc:list")
     @GetMapping("/list")
@@ -39,7 +45,10 @@ public class QcOqcController extends BaseController {
     }
 
     /**
-     * 根据ID获取OQC详情
+     * 根据主键 ID 获取 OQC 出货检验单详情。
+     *
+     * @param oqcId OQC 检验单 ID
+     * @return OQC 检验单详情
      */
     @SaCheckPermission("mes:qc:oqc:query")
     @GetMapping("/{oqcId}")
@@ -48,7 +57,10 @@ public class QcOqcController extends BaseController {
     }
 
     /**
-     * 新增OQC检验单
+     * 新增 OQC 出货检验单。
+     *
+     * @param bo OQC 检验单业务对象
+     * @return 新增后的 OQC 检验单详情
      */
     @SaCheckPermission("mes:qc:oqc:add")
     @Log(title = "OQC新增", businessType = BusinessType.INSERT)
@@ -58,7 +70,13 @@ public class QcOqcController extends BaseController {
     }
 
     /**
-     * 执行OQC检验
+     * 执行 OQC 检验：将状态推进为 COMPLETED，记录检验员与检验时间。
+     *
+     * @param oqcId         OQC 检验单 ID
+     * @param inspectResult 检验结果 QUALIFIED（合格）/ UNQUALIFIED（不合格）
+     * @param defectInfo    不良品信息（JSON 字符串，可为空）
+     * @param sampleQty     抽样数量（可为空）
+     * @param remark        备注（可为空）
      */
     @SaCheckPermission("mes:qc:oqc:inspect")
     @Log(title = "OQC检验", businessType = BusinessType.UPDATE)

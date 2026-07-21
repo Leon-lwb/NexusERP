@@ -30,6 +30,7 @@ import java.util.Map;
 @Service
 public class SysLogininforServiceImpl implements ISysLogininforService {
 
+    /** SysLogininforMapper 数据访问层组件，提供 登录日志 的持久化能力。 */
     private final SysLogininforMapper baseMapper;
 
     /**

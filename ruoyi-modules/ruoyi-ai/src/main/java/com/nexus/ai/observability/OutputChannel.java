@@ -25,17 +25,23 @@ import java.util.function.Consumer;
  */
 public class OutputChannel {
 
+    /** 结束标记，写入队列表示事件流完成。 */
     private static final String DONE = "__DONE__";
     /** 最大 drain 时长：10 分钟，防止 Agent 挂起导致线程永久阻塞 */
     private static final long MAX_DRAIN_MS = 10 * 60 * 1000;
+    /** 全局 OutputChannel 注册表（requestId → channel）。 */
     private static final Map<String, OutputChannel> REGISTRY = new ConcurrentHashMap<>();
 
     /** 注册表条目最大存活时间：30 分钟，防止异常退出时泄漏 */
     private static final long MAX_ENTRY_AGE_MS = 30 * 60 * 1000;
 
+    /** 事件消息队列（容量 4096），满时丢弃而非阻塞。 */
     private final BlockingQueue<String> queue = new LinkedBlockingQueue<>(4096);
+    /** 执行异常引用，drain 时若非空则包装抛出。 */
     private final AtomicReference<Throwable> error = new AtomicReference<>();
+    /** 完成信号锁存器，标记事件流结束。 */
     private final CountDownLatch completed = new CountDownLatch(1);
+    /** 创建时间戳，用于过期与超时判定。 */
     private final long createTime = System.currentTimeMillis();
 
     /**

@@ -14,6 +14,7 @@ import java.util.Date;
 
 /**
  * MES工单业务对象 pro_work_order
+ * <p>属于 MES 生产管理模块，承载 MES 工单的增改入参，承接 ERP 工单并驱动工序、流转卡与报工。</p>
  *
  * @author Nexus
  */

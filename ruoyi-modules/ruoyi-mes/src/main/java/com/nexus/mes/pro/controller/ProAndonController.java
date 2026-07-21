@@ -18,6 +18,7 @@ import java.util.Map;
 
 /**
  * MES安灯 Controller
+ * <p>属于 MES 生产管理模块，提供 安灯告警 相关 REST 接口（分页查询、增删改及业务动作）。</p>
  *
  * @author Nexus
  */

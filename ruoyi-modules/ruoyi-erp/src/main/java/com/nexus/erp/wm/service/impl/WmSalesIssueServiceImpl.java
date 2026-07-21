@@ -56,17 +56,34 @@ import java.util.Map;
 @Service("wmSalesIssueService")
 public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
 
+    /** 基础数据访问映射器（Mapper） */
     private final WmSalesIssueMapper baseMapper;
+    /** 行数据访问映射器（Mapper） */
     private final WmSalesIssueLineMapper lineMapper;
+    /** 物料库存数据访问映射器（Mapper） */
     private final WmMaterialStockMapper wmMaterialStockMapper;
+    /** 库存流水数据访问映射器（Mapper） */
     private final WmMaterialStockTxMapper stockTxMapper;
+    /** 销售发料业务服务，提供销售发料相关能力 */
     private final IWfProcessService processService;
+    /** 销售发料业务服务，提供销售发料相关能力 */
     private final WfMyBusinessServiceImpl wfMyBusinessServiceImpl;
+    /** 销售发料业务服务，提供销售发料相关能力 */
     private final RuntimeService runtimeService;
+    /** 销售发料业务服务，提供销售发料相关能力 */
     private final HistoryService historyService;
+    /** 自动编码工具类 */
     private final AutoCodeUtil autoCodeUtil;
+    /** 销售发料业务服务，提供销售发料相关能力 */
     private final ISoFulfillmentWritebackService fulfillmentWritebackService;
 
+    /**
+     * 分页查询销售发料列表
+     *
+     * @param bo 销售发料业务对象（BO）
+     * @param pageQuery 分页查询参数，包含页码、每页大小及排序条件
+     * @return 结果对象
+     */
     @Override
     public TableDataInfo<WmSalesIssueVo> selectPageList(WmSalesIssueBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<WmSalesIssue> lqw = buildQueryWrapper(bo);
@@ -74,16 +91,34 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
         return TableDataInfo.build(page);
     }
 
+    /**
+     * 查询销售发料列表
+     *
+     * @param bo 销售发料业务对象（BO）
+     * @return 结果对象
+     */
     @Override
     public List<WmSalesIssueVo> selectList(WmSalesIssueBo bo) {
         return baseMapper.selectVoList(buildQueryWrapper(bo));
     }
 
+    /**
+     * 查询销售发料
+     *
+     * @param id 主键 ID
+     * @return 结果
+     */
     @Override
     public WmSalesIssueVo selectById(Long id) {
         return baseMapper.selectVoById(id);
     }
 
+    /**
+     * 新增销售发料
+     *
+     * @param bo 销售发料业务对象（BO）
+     * @return 结果
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(WmSalesIssueBo bo) {
@@ -96,6 +131,12 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
         return rows;
     }
 
+    /**
+     * 修改销售发料
+     *
+     * @param bo 销售发料业务对象（BO）
+     * @return 结果
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(WmSalesIssueBo bo) {
@@ -106,6 +147,12 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
         return baseMapper.updateById(entity);
     }
 
+    /**
+     * 删除销售发料
+     *
+     * @param ids 主键 ID 数组（支持批量操作）
+     * @return 结果
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {
@@ -114,6 +161,12 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
         return baseMapper.deleteBatchIds(List.of(ids));
     }
 
+    /**
+     * 销售发料处理（confirmSalesIssue）
+     *
+     * @param issueId 发料单 ID
+     * @return 结果
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int confirmSalesIssue(Long issueId) {
@@ -128,6 +181,12 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
         return baseMapper.updateById(salesIssue);
     }
 
+    /**
+     * 销售发料处理（completeSalesIssue）
+     *
+     * @param issueId 发料单 ID
+     * @return 结果
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int completeSalesIssue(Long issueId) {
@@ -254,6 +313,13 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
 
     // ==================== Flowable 工作流集成 ====================
 
+    /**
+     * 销售发料处理（submit）
+     *
+     * @param issueIdStr 参数 issueIdStr
+     * @param selectFlowId selectFlow ID
+     * @return 结果
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean submit(String issueIdStr, String selectFlowId) {
@@ -286,6 +352,12 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
         throw new RuntimeException(result.getMsg());
     }
 
+    /**
+     * 获取销售发料
+     *
+     * @param issueIdStr 参数 issueIdStr
+     * @return 结果
+     */
     @Override
     public String getProcInsId(String issueIdStr) {
         try {
@@ -305,6 +377,12 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
         return hist != null ? hist.getId() : null;
     }
 
+    /**
+     * 销售发料处理（afterFlowHandle）
+     *
+     * @param business 参数 business
+     * @return 结果
+     */
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void afterFlowHandle(WfMyBusiness business) {
@@ -324,17 +402,37 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
         baseMapper.updateById(entity);
     }
 
+    /**
+     * 获取销售发料详情
+     *
+     * @param dataId data ID
+     * @return 结果
+     */
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Object getBusinessDataById(String dataId) {
         return selectById(Long.parseLong(dataId));
     }
 
+    /**
+     * 销售发料处理（flowValuesOfTask）
+     *
+     * @param taskNameId taskName ID
+     * @param values 参数 values
+     * @return 结果对象
+     */
     @Override
     public Map<String, Object> flowValuesOfTask(String taskNameId, Map<String, Object> values) {
         return null;
     }
 
+    /**
+     * 销售发料处理（flowCandidateUsernamesOfTask）
+     *
+     * @param taskNameId taskName ID
+     * @param values 参数 values
+     * @return 结果对象
+     */
     @Override
     public List<String> flowCandidateUsernamesOfTask(String taskNameId, Map<String, Object> values) {
         return null;

@@ -22,6 +22,15 @@ public class SoLineProducedEvent extends ApplicationEvent {
     private final String materialCode;
     private final BigDecimal producedQty;
 
+    /**
+     * 构造销售订单行生产完成事件。
+     *
+     * @param source       事件源（发布者）
+     * @param soId         销售订单ID
+     * @param lineId       销售订单行ID
+     * @param materialCode 物料编码
+     * @param producedQty  已投产数量
+     */
     public SoLineProducedEvent(Object source, Long soId, Long lineId, String materialCode, BigDecimal producedQty) {
         super(source);
         this.soId = soId;

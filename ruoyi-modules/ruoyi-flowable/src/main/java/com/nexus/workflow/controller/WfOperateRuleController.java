@@ -37,10 +37,15 @@ import com.nexus.workflow.service.IWfOperateRuleService;
 @RequestMapping("/workflow/operateRule")
 public class WfOperateRuleController extends BaseController {
 
+    /** 流程操作规则业务服务，提供分页、导出、增删改等能力。 */
     private final IWfOperateRuleService iWfOperateRuleService;
 
     /**
-     * 查询流程操作规则列表
+     * 查询流程操作规则列表。
+     *
+     * @param bo        流程操作规则查询条件
+     * @param pageQuery 分页参数（页码、每页大小、排序）
+     * @return 分页结果，包含流程操作规则列表及分页元信息
      */
     @SaCheckPermission("workflow:operateRule:list")
     @GetMapping("/list")
@@ -49,7 +54,10 @@ public class WfOperateRuleController extends BaseController {
     }
 
     /**
-     * 导出流程操作规则列表
+     * 导出流程操作规则列表。
+     *
+     * @param bo        流程操作规则查询条件
+     * @param response  HTTP 响应，用于写入导出的 Excel 流
      */
     @SaCheckPermission("workflow:operateRule:export")
     @Log(title = "流程操作规则", businessType = BusinessType.EXPORT)
@@ -60,9 +68,10 @@ public class WfOperateRuleController extends BaseController {
     }
 
     /**
-     * 获取流程操作规则详细信息
+     * 获取流程操作规则详细信息。
      *
      * @param id 主键
+     * @return 流程操作规则详细信息
      */
     @SaCheckPermission("workflow:operateRule:query")
     @GetMapping("/{id}")
@@ -72,7 +81,10 @@ public class WfOperateRuleController extends BaseController {
     }
 
     /**
-     * 新增流程操作规则
+     * 新增流程操作规则。
+     *
+     * @param bo 流程操作规则新增数据
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckPermission("workflow:operateRule:add")
     @Log(title = "流程操作规则", businessType = BusinessType.INSERT)
@@ -83,7 +95,10 @@ public class WfOperateRuleController extends BaseController {
     }
 
     /**
-     * 修改流程操作规则
+     * 修改流程操作规则。
+     *
+     * @param bo 流程操作规则修改数据
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckPermission("workflow:operateRule:edit")
     @Log(title = "流程操作规则", businessType = BusinessType.UPDATE)
@@ -94,9 +109,10 @@ public class WfOperateRuleController extends BaseController {
     }
 
     /**
-     * 删除流程操作规则
+     * 删除流程操作规则。
      *
      * @param ids 主键串
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckPermission("workflow:operateRule:remove")
     @Log(title = "流程操作规则", businessType = BusinessType.DELETE)

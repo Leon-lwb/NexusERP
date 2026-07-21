@@ -24,16 +24,26 @@ public interface IEqMaintenanceRecordService {
 
     /**
      * 分页查询保养执行记录列表
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @param pageQuery 分页参数（页码、每页大小、排序）
+     * @return 分页结果
      */
     TableDataInfo<EqMaintenanceRecordVo> selectPageList(EqMaintenanceRecordBo bo, PageQuery pageQuery);
 
     /**
      * 查询保养执行记录列表(不分页, 用于导出)
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @return 结果列表
      */
     List<EqMaintenanceRecordVo> selectList(EqMaintenanceRecordBo bo);
 
     /**
      * 根据ID获取保养执行记录详情
+     *
+     * @param recordId 数据记录ID
+     * @return 返回结果
      */
     EqMaintenanceRecordVo selectById(Long recordId);
 
@@ -47,11 +57,17 @@ public interface IEqMaintenanceRecordService {
 
     /**
      * 手动新增保养执行记录(自动填充执行人为当前用户)
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @return 返回结果
      */
     EqMaintenanceRecordVo insertByBo(EqMaintenanceRecordBo bo);
 
     /**
      * 批量删除保养执行记录
+     *
+     * @param ids ID数组
+     * @return 是否成功
      */
     Boolean deleteByIds(Long[] ids);
 }

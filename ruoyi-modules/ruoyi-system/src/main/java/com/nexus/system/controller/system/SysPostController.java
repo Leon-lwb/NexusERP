@@ -27,7 +27,9 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * 岗位信息操作处理
+ * 岗位管理Controller
+ * <p>提供岗位的分页查询、Excel 导出、详情、增删改、岗位选择框及部门树查询等接口。
+ * 属于系统管理（System）模块。</p>
  *
  * @author Lion Li
  */
@@ -37,11 +39,17 @@ import java.util.List;
 @RequestMapping("/system/post")
 public class SysPostController extends BaseController {
 
+    /** 岗位业务服务，提供分页、唯一性校验、增删改等能力。 */
     private final ISysPostService postService;
+    /** 部门业务服务，用于查询岗位选择时所用的部门树。 */
     private final ISysDeptService deptService;
 
     /**
-     * 获取岗位列表
+     * 分页查询岗位列表。
+     *
+     * @param post      岗位查询条件（岗位名称、编码、状态等）
+     * @param pageQuery 分页查询参数，包含页码、每页大小及排序条件
+     * @return 岗位分页结果
      */
     @SaCheckPermission("system:post:list")
     @GetMapping("/list")
@@ -50,7 +58,10 @@ public class SysPostController extends BaseController {
     }
 
     /**
-     * 导出岗位列表
+     * 导出岗位列表为 Excel 文件。
+     *
+     * @param post     岗位查询条件
+     * @param response HTTP 响应，用于写入导出的 Excel 流
      */
     @Log(title = "岗位管理", businessType = BusinessType.EXPORT)
     @SaCheckPermission("system:post:export")
@@ -61,9 +72,10 @@ public class SysPostController extends BaseController {
     }
 
     /**
-     * 根据岗位编号获取详细信息
+     * 根据岗位编号查询岗位详细信息。
      *
-     * @param postId 岗位ID
+     * @param postId 岗位 ID
+     * @return 岗位详情
      */
     @SaCheckPermission("system:post:query")
     @GetMapping(value = "/{postId}")
@@ -72,7 +84,10 @@ public class SysPostController extends BaseController {
     }
 
     /**
-     * 新增岗位
+     * 新增岗位，校验岗位名称与编码唯一性。
+     *
+     * @param post 岗位新增参数
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckPermission("system:post:add")
     @Log(title = "岗位管理", businessType = BusinessType.INSERT)
@@ -88,7 +103,10 @@ public class SysPostController extends BaseController {
     }
 
     /**
-     * 修改岗位
+     * 修改岗位，校验名称、编码唯一性及停用约束。
+     *
+     * @param post 岗位修改参数
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckPermission("system:post:edit")
     @Log(title = "岗位管理", businessType = BusinessType.UPDATE)
@@ -107,9 +125,10 @@ public class SysPostController extends BaseController {
     }
 
     /**
-     * 删除岗位
+     * 批量删除岗位。
      *
-     * @param postIds 岗位ID串
+     * @param postIds 岗位 ID 数组
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckPermission("system:post:remove")
     @Log(title = "岗位管理", businessType = BusinessType.DELETE)
@@ -119,10 +138,11 @@ public class SysPostController extends BaseController {
     }
 
     /**
-     * 获取岗位选择框列表
+     * 获取岗位选择框列表，支持按部门或岗位 ID 串过滤。
      *
-     * @param postIds 岗位ID串
-     * @param deptId  部门id
+     * @param postIds 预选岗位 ID 数组（为空则按部门过滤）
+     * @param deptId  部门 ID（用于查询该部门下的岗位）
+     * @return 岗位列表
      */
     @SaCheckPermission("system:post:query")
     @GetMapping("/optionselect")
@@ -139,7 +159,10 @@ public class SysPostController extends BaseController {
     }
 
     /**
-     * 获取部门树列表
+     * 获取部门树列表（用于岗位选择所属部门）。
+     *
+     * @param dept 部门查询条件
+     * @return 部门树
      */
     @SaCheckPermission("system:post:list")
     @GetMapping("/deptTree")

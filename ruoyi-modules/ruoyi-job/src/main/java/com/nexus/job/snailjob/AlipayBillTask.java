@@ -22,6 +22,15 @@ import java.math.BigDecimal;
 @JobExecutor(name = "alipayBillTask")
 public class AlipayBillTask {
 
+    /**
+     * 生成支付宝模拟账单并写入 DAG 工作流上下文。
+     * <p>构造一笔固定的支付宝渠道账单（含清算日期与金额），写入工作流上下文，
+     * 供后续汇总任务读取。清算日期若为 {@code sysdate} 则取当前日期。</p>
+     *
+     * @param jobArgs 任务参数与 DAG 工作流上下文
+     * @return 执行结果，成功时携带账单数据
+     * @throws InterruptedException 线程中断时抛出
+     */
     public ExecuteResult jobExecute(JobArgs jobArgs) throws InterruptedException {
         BillDto billDto = new BillDto();
         billDto.setBillId(23456789L);

@@ -73,6 +73,13 @@ public class BdBomServiceImpl implements IBdBomService {
     /** 工单终态状态：处于这些状态的工单不再使用BOM，删除BOM时不阻断 */
     private static final List<String> WORK_ORDER_TERMINAL_STATUS =
         List.of("COMPLETED", "CLOSED", "CANCELLED");
+    /**
+     * 分页查询BOM列表
+     *
+     * @param bo 业务对象，包含筛选条件或待保存字段
+     * @param pageQuery 分页参数，包含页码、每页大小及排序信息
+     * @return 分页结果
+     */
 
     @Override
     public TableDataInfo<BdBomVo> selectPageList(BdBomBo bo, PageQuery pageQuery) {
@@ -81,6 +88,12 @@ public class BdBomServiceImpl implements IBdBomService {
         enrichBomVo(page.getRecords());
         return TableDataInfo.build(page);
     }
+    /**
+     * 查询BOM列表
+     *
+     * @param bo 业务对象，包含筛选条件或待保存字段
+     * @return 结果列表
+     */
 
     @Override
     public List<BdBomVo> selectList(BdBomBo bo) {
@@ -88,6 +101,12 @@ public class BdBomServiceImpl implements IBdBomService {
         enrichBomVo(list);
         return list;
     }
+    /**
+     * 根据主键查询BOM详情
+     *
+     * @param id 主键ID
+     * @return 结果
+     */
 
     @Override
     public BdBomVo selectById(Long id) {
@@ -252,6 +271,12 @@ public class BdBomServiceImpl implements IBdBomService {
         }
         return ctx;
     }
+    /**
+     * 新增BOM
+     *
+     * @param bo 业务对象，包含筛选条件或待保存字段
+     * @return 操作结果/影响行数
+     */
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -265,6 +290,12 @@ public class BdBomServiceImpl implements IBdBomService {
         BdBom entity = MapstructUtils.convert(bo, BdBom.class);
         return baseMapper.insert(entity);
     }
+    /**
+     * 修改BOM
+     *
+     * @param bo 业务对象，包含筛选条件或待保存字段
+     * @return 操作结果/影响行数
+     */
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -291,6 +322,12 @@ public class BdBomServiceImpl implements IBdBomService {
             .eq(BdBom::getParentMaterialId, parentMaterialId)
             .eq(BdBom::getIsCurrent, 1L));
     }
+    /**
+     * 批量删除BOM
+     *
+     * @param ids 主键ID数组（支持批量）
+     * @return 操作结果/影响行数
+     */
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -336,6 +373,11 @@ public class BdBomServiceImpl implements IBdBomService {
             throw new ServiceException("该父项物料下已存在版本号 " + bomVersion + " 的BOM，请使用其他版本号");
         }
     }
+    /**
+     * 激活BOM，将其设为当前生效版本
+     *
+     * @param bomId BOM ID
+     */
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -360,6 +402,12 @@ public class BdBomServiceImpl implements IBdBomService {
         bom.setStatus(1L);
         baseMapper.updateById(bom);
     }
+    /**
+     * 校验BOM完整性，返回校验结果描述（OK 表示通过）
+     *
+     * @param bomId BOM ID
+     * @return 结果
+     */
 
     @Override
     public String verifyBom(Long bomId) {
@@ -842,6 +890,12 @@ public class BdBomServiceImpl implements IBdBomService {
             }
         }
     }
+    /**
+     * 展开BOM并聚合叶子物料用量，返回扁平汇总列表
+     *
+     * @param bomId BOM ID
+     * @return 结果列表
+     */
 
     @Override
     public List<IndentedBomLineVo> explodeBom(Long bomId) {

@@ -30,8 +30,11 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class CommunityService {
 
+    /** 图谱存储策略，提供实体/关系/社区的读写与落库。 */
     private final GraphStoreStrategy graphStoreStrategy;
+    /** ChatModel 工厂，用于获取社区摘要用的同步模型。 */
     private final ChatModelFactory chatModelFactory;
+    /** AI 配置属性，提供社区数上限与标签传播迭代等参数。 */
     private final AiProperties aiProperties;
 
     /** 社区摘要 prompt 中列出的最大实体/关系数（控 token） */

@@ -35,8 +35,11 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class AiTokenUsageServiceImpl implements IAiTokenUsageService {
 
+    /** Token 用量日统计 Mapper */
     private final AiTokenUsageMapper aiTokenUsageMapper;
+    /** 模型 Mapper，用于读取模型单价计算成本 */
     private final AiModelMapper aiModelMapper;
+    /** 消息 Mapper，用于历史数据回填 */
     private final AiMessageMapper aiMessageMapper;
 
     /**

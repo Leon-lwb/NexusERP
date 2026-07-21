@@ -16,12 +16,18 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class StreamingToolExecutedListener implements ToolExecutedEventListener {
 
+    /** 当前请求的 OutputChannel，用于向前端推送工具执行事件。 */
     private final OutputChannel channel;
 
     public StreamingToolExecutedListener(OutputChannel channel) {
         this.channel = channel;
     }
 
+    /**
+     * 工具执行事件回调：推送工具完成事件到当前请求的 OutputChannel 并记录日志。
+     *
+     * @param event 工具执行事件
+     */
     @Override
     public void onEvent(ToolExecutedEvent event) {
         var request = event.request();

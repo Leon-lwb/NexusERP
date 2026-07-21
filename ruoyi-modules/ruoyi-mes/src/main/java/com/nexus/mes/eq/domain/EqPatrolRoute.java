@@ -10,6 +10,8 @@ import lombok.EqualsAndHashCode;
 /**
  * MES巡检路线对象 eq_patrol_route
  *
+ * <p>属于MES 设备管理模块，巡检路线持久化实体。</p>
+ *
  * @author Nexus
  */
 @Data

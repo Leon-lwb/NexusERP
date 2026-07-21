@@ -51,6 +51,12 @@ public class IotDataArchiveTask {
     private final DcDataRecordMapper dataRecordMapper;
     private final IotDeviceDataQueryService iotDeviceDataQueryService;
 
+    /**
+     * 定时任务执行入口，由调度框架回调。
+     *
+     * @param jobArgs 任务执行参数
+     * @return 任务执行结果
+     */
     public ExecuteResult jobExecute(JobArgs jobArgs) {
         SnailJobLog.REMOTE.info("[IoT归档任务] 开始执行");
         try {
@@ -65,6 +71,13 @@ public class IotDataArchiveTask {
         }
     }
 
+    /**
+     * 归档采集点
+     *
+     * @param startTime 开始时间
+     * @param endTime 结束时间
+     * @return 数量/结果
+     */
     @Transactional(rollbackFor = Exception.class)
     public int archiveAutoPoints(Date startTime, Date endTime) {
         LambdaQueryWrapper<DcCollectionPoint> wrapper = Wrappers.<DcCollectionPoint>lambdaQuery()

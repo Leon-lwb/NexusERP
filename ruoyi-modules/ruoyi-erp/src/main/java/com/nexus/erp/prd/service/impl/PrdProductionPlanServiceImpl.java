@@ -78,6 +78,13 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
     private static final Long VERSION_INIT = 1L;
     private static final Long VERSION_NOT_CURRENT = 0L;
 
+    /**
+     * 分页查询生产计划列表
+     *
+     * @param bo        查询参数，包含计划编号、名称、状态等筛选条件
+     * @param pageQuery 分页参数，包含页码、每页条数及排序信息
+     * @return 生产计划分页列表
+     */
     @Override
     public TableDataInfo<PrdProductionPlanVo> selectPageList(PrdProductionPlanBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<PrdProductionPlan> lqw = buildQueryWrapper(bo);
@@ -96,6 +103,12 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
         return baseMapper.selectVoList(buildQueryWrapper(bo));
     }
 
+    /**
+     * 根据 ID 查询生产计划详情
+     *
+     * @param id 生产计划 ID
+     * @return 生产计划详情
+     */
     @Override
     public PrdProductionPlanVo selectById(Long id) {
         return baseMapper.selectVoById(id);
@@ -124,6 +137,12 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
         return baseMapper.selectList(lqw);
     }
 
+    /**
+     * 新增生产计划
+     *
+     * @param prdProductionPlan 生产计划实体
+     * @return 影响的行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertPrdProductionPlan(PrdProductionPlan prdProductionPlan) {
@@ -175,6 +194,12 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
         return baseMapper.updateById(prdProductionPlan);
     }
 
+    /**
+     * 批量删除生产计划
+     *
+     * @param ids 要删除的生产计划 ID 数组
+     * @return 影响的行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {

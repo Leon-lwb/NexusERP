@@ -38,10 +38,15 @@ import com.nexus.workflow.service.IWfMyBusinessService;
 @RequestMapping("/workflow/myBusiness")
 public class WfMyBusinessController extends BaseController {
 
+    /** 流程业务扩展业务服务，提供分页、导出、增删改等能力。 */
     private final IWfMyBusinessService iWfMyBusinessService;
 
     /**
-     * 查询流程业务扩展列表
+     * 查询流程业务扩展列表。
+     *
+     * @param bo        流程业务扩展查询条件
+     * @param pageQuery 分页参数（页码、每页大小、排序）
+     * @return 分页结果，包含流程业务扩展列表及分页元信息
      */
     @SaCheckPermission("workflow:myBusiness:list")
     @GetMapping("/list")
@@ -50,7 +55,10 @@ public class WfMyBusinessController extends BaseController {
     }
 
     /**
-     * 导出流程业务扩展列表
+     * 导出流程业务扩展列表。
+     *
+     * @param bo        流程业务扩展查询条件
+     * @param response  HTTP 响应，用于写入导出的 Excel 流
      */
     @SaCheckPermission("workflow:myBusiness:export")
     @Log(title = "流程业务扩展", businessType = BusinessType.EXPORT)
@@ -61,9 +69,10 @@ public class WfMyBusinessController extends BaseController {
     }
 
     /**
-     * 获取流程业务扩展详细信息
+     * 获取流程业务扩展详细信息。
      *
      * @param id 主键
+     * @return 流程业务扩展详细信息
      */
     @SaCheckPermission("workflow:myBusiness:query")
     @GetMapping("/{id}")
@@ -73,7 +82,10 @@ public class WfMyBusinessController extends BaseController {
     }
 
     /**
-     * 新增流程业务扩展
+     * 新增流程业务扩展。
+     *
+     * @param bo 流程业务扩展新增数据
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckPermission("workflow:myBusiness:add")
     @Log(title = "流程业务扩展", businessType = BusinessType.INSERT)
@@ -84,7 +96,10 @@ public class WfMyBusinessController extends BaseController {
     }
 
     /**
-     * 修改流程业务扩展
+     * 修改流程业务扩展。
+     *
+     * @param bo 流程业务扩展修改数据
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckPermission("workflow:myBusiness:edit")
     @Log(title = "流程业务扩展", businessType = BusinessType.UPDATE)
@@ -95,9 +110,10 @@ public class WfMyBusinessController extends BaseController {
     }
 
     /**
-     * 删除流程业务扩展
+     * 删除流程业务扩展。
      *
      * @param ids 主键串
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckPermission("workflow:myBusiness:remove")
     @Log(title = "流程业务扩展", businessType = BusinessType.DELETE)

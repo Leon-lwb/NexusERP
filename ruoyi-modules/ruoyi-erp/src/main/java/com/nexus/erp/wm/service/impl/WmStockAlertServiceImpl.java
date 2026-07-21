@@ -56,9 +56,13 @@ public class WmStockAlertServiceImpl implements IWmStockAlertService {
     /** 预警级别：提示 */
     public static final String ALERT_LEVEL_INFO = "INFO";
 
+    /** 基础数据访问映射器（Mapper） */
     private final WmStockAlertMapper baseMapper;
+    /** 物料数据访问映射器（Mapper） */
     private final BdMaterialMapper materialMapper;
+    /** 库存预警数据访问映射器（Mapper） */
     private final BdUnitOfMeasureMapper uomMapper;
+    /** 库存数据访问映射器（Mapper） */
     private final WmMaterialStockMapper stockMapper;
 
     /**

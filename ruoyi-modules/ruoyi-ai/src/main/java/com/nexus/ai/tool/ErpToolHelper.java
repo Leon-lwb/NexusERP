@@ -25,6 +25,7 @@ import java.util.regex.Pattern;
 @RequiredArgsConstructor
 public abstract class ErpToolHelper {
 
+    /** ERP 查询服务（@DS("erp") 数据源） */
     protected final ErpQueryService erpQueryService;
 
     /** SQL 子句关键词正则（用于在正确位置插入 WHERE 条件） */

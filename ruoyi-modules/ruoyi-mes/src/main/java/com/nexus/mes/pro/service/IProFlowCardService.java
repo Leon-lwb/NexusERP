@@ -10,6 +10,7 @@ import java.util.List;
 
 /**
  * MES流转卡 Service 接口
+ * <p>属于 MES 生产管理模块，定义 流转卡 的业务服务契约，供 Controller 与 MQ 消费方调用。</p>
  *
  * @author Nexus
  */

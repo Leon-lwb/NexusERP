@@ -42,6 +42,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+/**
+ * 生产发料服务实现
+ * <p>
+ * 实现生产发料服务接口，处理生产发料的增删改查、业务校验与库存联动。属于 ERP 仓储管理（wm）模块。
+ * </p>
+ */
 
 @Slf4j
 @RequiredArgsConstructor
@@ -51,23 +57,42 @@ public class WmProductionIssueServiceImpl implements IWmProductionIssueService {
 
     /** 领料单/行状态常量 */
     private static final String STATUS_CREATED = "CREATED";
+    /** 常量：STATUSPARTIAL */
     private static final String STATUS_PARTIAL = "PARTIAL";
+    /** 常量：STATUSCOMPLETED */
     private static final String STATUS_COMPLETED = "COMPLETED";
     private static final String STATUS_EXECUTED = "EXECUTED";   // 历史值，等价于已完成
+    /** 常量：行PENDING */
     private static final String LINE_PENDING = "PENDING";
+    /** 常量：行PARTIAL */
     private static final String LINE_PARTIAL = "PARTIAL";
+    /** 常量：行ISSUED */
     private static final String LINE_ISSUED = "ISSUED";
 
+    /** 基础数据访问映射器（Mapper） */
     private final WmProductionIssueMapper baseMapper;
+    /** 行数据访问映射器（Mapper） */
     private final WmProductionIssueLineMapper lineMapper;
+    /** 库存数据访问映射器（Mapper） */
     private final WmMaterialStockMapper stockMapper;
     /** 解耦：注入库存操作接口而非实现 */
     private final IWmStockOperationService stockOperationService;
+    /** 自动编码工具类 */
     private final AutoCodeUtil autoCodeUtil;
+    /** 生产发料数据访问映射器（Mapper） */
     private final PrdWorkOrderMapper workOrderMapper;
+    /** 生产发料数据访问映射器（Mapper） */
     private final PrdMaterialRequirementMapper requirementMapper;
+    /** 明细数据访问映射器（Mapper） */
     private final PrdMaterialRequirementDetailMapper detailMapper;
 
+    /**
+     * 分页查询生产发料列表
+     *
+     * @param bo 生产发料业务对象（BO）
+     * @param pageQuery 分页查询参数，包含页码、每页大小及排序条件
+     * @return 结果对象
+     */
     @Override
     public TableDataInfo<WmProductionIssueVo> selectPageList(WmProductionIssueBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<WmProductionIssue> lqw = buildQueryWrapper(bo);
@@ -75,11 +100,23 @@ public class WmProductionIssueServiceImpl implements IWmProductionIssueService {
         return TableDataInfo.build(page);
     }
 
+    /**
+     * 查询生产发料列表
+     *
+     * @param bo 生产发料业务对象（BO）
+     * @return 结果对象
+     */
     @Override
     public List<WmProductionIssueVo> selectList(WmProductionIssueBo bo) {
         return baseMapper.selectVoList(buildQueryWrapper(bo));
     }
 
+    /**
+     * 查询生产发料
+     *
+     * @param id 主键 ID
+     * @return 结果
+     */
     @Override
     public WmProductionIssueVo selectById(Long id) {
         WmProductionIssueVo vo = baseMapper.selectVoById(id);
@@ -91,6 +128,12 @@ public class WmProductionIssueServiceImpl implements IWmProductionIssueService {
         return vo;
     }
 
+    /**
+     * 新增生产发料
+     *
+     * @param bo 生产发料业务对象（BO）
+     * @return 结果
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(WmProductionIssueBo bo) {
@@ -114,6 +157,12 @@ public class WmProductionIssueServiceImpl implements IWmProductionIssueService {
         return rows;
     }
 
+    /**
+     * 修改生产发料
+     *
+     * @param bo 生产发料业务对象（BO）
+     * @return 结果
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(WmProductionIssueBo bo) {
@@ -124,6 +173,12 @@ public class WmProductionIssueServiceImpl implements IWmProductionIssueService {
         return baseMapper.updateById(entity);
     }
 
+    /**
+     * 删除生产发料
+     *
+     * @param ids 主键 ID 数组（支持批量操作）
+     * @return 结果
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {
@@ -245,6 +300,13 @@ public class WmProductionIssueServiceImpl implements IWmProductionIssueService {
         log.info("生产领料单执行完成, issueId={}, status={}", issueId, issue.getStatus());
     }
 
+    /**
+     * 查询生产发料
+     *
+     * @param materialId 物料 ID
+     * @param warehouseId 仓库 ID
+     * @return 结果对象
+     */
     @Override
     public List<WmMaterialStockVo> selectAvailableStock(Long materialId, Long warehouseId) {
         LambdaQueryWrapper<WmMaterialStock> lqw = Wrappers.lambdaQuery();
@@ -278,6 +340,12 @@ public class WmProductionIssueServiceImpl implements IWmProductionIssueService {
         return result;
     }
 
+    /**
+     * 构建生产发料相关对象
+     *
+     * @param woId wo ID
+     * @return 结果对象
+     */
     @Override
     public List<WmProductionIssueLine> buildLinesFromWorkOrder(Long woId) {
         PrdWorkOrder wo = workOrderMapper.selectById(woId);

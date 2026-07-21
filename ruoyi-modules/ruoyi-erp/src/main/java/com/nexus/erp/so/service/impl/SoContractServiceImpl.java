@@ -149,6 +149,13 @@ public class SoContractServiceImpl implements ISoContractService {
 
     // ==================== Flowable 工作流集成 ====================
 
+    /**
+     * 发起审批流程（Flowable 工作流回调）：校验合同存在并启动对应审批流，注入流程变量。
+     *
+     * @param contractIdStr 合同ID（字符串）
+     * @param selectFlowId  流程定义ID
+     * @return 启动成功返回 true
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean submit(String contractIdStr, String selectFlowId) {
@@ -181,6 +188,12 @@ public class SoContractServiceImpl implements ISoContractService {
         throw new ServiceException(result.getMsg());
     }
 
+    /**
+     * 获取合同对应的流程实例ID（运行时优先，其次历史）。
+     *
+     * @param contractIdStr 合同ID（字符串）
+     * @return 流程实例ID，无则返回 null
+     */
     @Override
     public String getProcInsId(String contractIdStr) {
         try {
@@ -202,6 +215,11 @@ public class SoContractServiceImpl implements ISoContractService {
         return hist != null ? hist.getId() : null;
     }
 
+    /**
+     * 审批流节点处理完成后的回调：根据审批动作更新合同状态。
+     *
+     * @param business 工作流业务对象（含审批状态与数据ID）
+     */
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void afterFlowHandle(WfMyBusiness business) {
@@ -223,17 +241,37 @@ public class SoContractServiceImpl implements ISoContractService {
         baseMapper.updateById(contract);
     }
 
+    /**
+     * 根据数据ID返回合同详情（供审批详情展示）。
+     *
+     * @param dataId 业务数据ID
+     * @return 合同业务对象
+     */
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Object getBusinessDataById(String dataId) {
         return selectById(Long.parseLong(dataId));
     }
 
+    /**
+     * 获取审批任务所需的表单变量（当前实现无需额外变量，返回 null）。
+     *
+     * @param taskNameId 任务节点ID
+     * @param values     已有流程变量
+     * @return 任务表单变量，未实现返回 null
+     */
     @Override
     public Map<String, Object> flowValuesOfTask(String taskNameId, Map<String, Object> values) {
         return null;
     }
 
+    /**
+     * 获取审批任务的候选处理人（当前实现未指定，返回 null）。
+     *
+     * @param taskNameId 任务节点ID
+     * @param values     流程变量
+     * @return 候选用户名列表，未实现返回 null
+     */
     @Override
     public List<String> flowCandidateUsernamesOfTask(String taskNameId, Map<String, Object> values) {
         return null;

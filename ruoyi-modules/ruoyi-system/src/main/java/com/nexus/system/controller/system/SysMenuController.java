@@ -26,7 +26,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 菜单信息
+ * 菜单管理Controller
+ * <p>提供菜单路由构建、菜单树查询、角色/租户套餐菜单树加载、菜单增删改及级联删除等接口。
+ * 属于系统管理（System）模块，菜单管理限定超管与租户管理员角色。</p>
  *
  * @author Lion Li
  */
@@ -36,6 +38,7 @@ import java.util.List;
 @RequestMapping("/system/menu")
 public class SysMenuController extends BaseController {
 
+    /** 菜单业务服务，提供菜单树、路由构建、唯一性校验与增删改能力。 */
     private final ISysMenuService menuService;
 
     /**
@@ -50,7 +53,10 @@ public class SysMenuController extends BaseController {
     }
 
     /**
-     * 获取菜单列表
+     * 查询菜单列表（树形结构）。
+     *
+     * @param menu 菜单查询条件（菜单名称、状态等）
+     * @return 菜单列表
      */
     @SaCheckRole(value = {
         TenantConstants.SUPER_ADMIN_ROLE_KEY,
@@ -79,7 +85,10 @@ public class SysMenuController extends BaseController {
     }
 
     /**
-     * 获取菜单下拉树列表
+     * 获取菜单下拉树列表（用于新增/修改菜单时选择上级菜单）。
+     *
+     * @param menu 菜单查询条件
+     * @return 菜单下拉树
      */
     @SaCheckPermission("system:menu:query")
     @GetMapping("/treeselect")
@@ -125,7 +134,10 @@ public class SysMenuController extends BaseController {
     }
 
     /**
-     * 新增菜单
+     * 新增菜单，校验菜单名称、外链地址与路由配置唯一性。
+     *
+     * @param menu 菜单新增参数
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckRole(TenantConstants.SUPER_ADMIN_ROLE_KEY)
     @SaCheckPermission("system:menu:add")
@@ -144,7 +156,10 @@ public class SysMenuController extends BaseController {
     }
 
     /**
-     * 修改菜单
+     * 修改菜单，校验菜单名称、外链地址、上级菜单与路由配置唯一性。
+     *
+     * @param menu 菜单修改参数
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckRole(TenantConstants.SUPER_ADMIN_ROLE_KEY)
     @SaCheckPermission("system:menu:edit")

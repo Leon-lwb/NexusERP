@@ -27,7 +27,10 @@ import java.util.Map;
 @ConditionalOnProperty(prefix = "pay.alipay", name = "enabled", havingValue = "true")
 public class AliPayServiceImpl implements IAliPayService {
 
+    /** 订单业务服务，用于回调/查询时更新与查询订单。 */
     private final IPayOrderService payOrderService;
+
+    /** 支付宝 SDK 全局配置。 */
     private final Config config;
 
     public AliPayServiceImpl(IPayOrderService payOrderService, Config config) {
@@ -35,11 +38,22 @@ public class AliPayServiceImpl implements IAliPayService {
         this.config = config;
     }
 
+    /**
+     * 支付宝回调业务处理（预留扩展点，目前为空实现）。
+     *
+     * @param params 支付宝回调参数集合
+     */
     @Override
     public void callback(Map<String, String> params) {
         // 预留回调处理
     }
 
+    /**
+     * 生成支付宝支付链接：优先当面付预下单获取二维码链接，失败回退到 PC 网页支付表单。
+     *
+     * @param payOrder 支付订单（含订单内容、订单号、实际金额）
+     * @return 可用于扫码或跳转的支付链接/表单字符串
+     */
     @Override
     public String payUrl(PayOrder payOrder) {
         try {
@@ -75,6 +89,15 @@ public class AliPayServiceImpl implements IAliPayService {
         }
     }
 
+    /**
+     * 处理支付宝异步回调：验签通过后更新订单状态为「已支付」并写入第三方订单号。
+     *
+     * @param request HTTP 请求，承载回调参数
+     * @param response HTTP 响应
+     * @param payOrder 关联支付订单（可由订单号反查）
+     * @param type 通知类型
+     * @return 验签结果，"success" 表示处理成功，"fail" 表示失败
+     */
     @Override
     public String notify(HttpServletRequest request, HttpServletResponse response, PayOrder payOrder, String type) {
         Map<String, String[]> parameterMap = request.getParameterMap();
@@ -101,6 +124,12 @@ public class AliPayServiceImpl implements IAliPayService {
         return "fail";
     }
 
+    /**
+     * 查询支付宝订单状态并同步到本地订单（交易不存在时置「未支付」）。
+     *
+     * @param payOrder 待查询的支付订单
+     * @return 刷新状态后的支付订单
+     */
     @Override
     public PayOrder query(PayOrder payOrder) {
         try {
@@ -136,6 +165,12 @@ public class AliPayServiceImpl implements IAliPayService {
         }
     }
 
+    /**
+     * 发起支付宝退款，成功后更新订单状态为「已退款」。
+     *
+     * @param payOrder 待退款的支付订单
+     * @return 退款后的支付订单
+     */
     @Override
     public PayOrder refund(PayOrder payOrder) {
         try {

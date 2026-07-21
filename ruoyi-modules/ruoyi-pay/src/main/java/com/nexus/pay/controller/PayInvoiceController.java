@@ -40,8 +40,16 @@ import java.util.List;
 @Tag(name = "【发票】管理")
 public class PayInvoiceController extends BaseController {
 
+    /** 发票业务服务，提供发票分页、导出、增删改查等能力。 */
     private final IPayInvoiceService payInvoiceService;
 
+    /**
+     * 分页查询发票列表。
+     *
+     * @param bo 发票查询条件（订单号、发票类型）
+     * @param pageQuery 分页参数
+     * @return 分页后的发票视图列表
+     */
     @Operation(summary = "查询发票列表")
     @SaCheckPermission("pay:invoice:list")
     @GetMapping("/list")
@@ -49,6 +57,12 @@ public class PayInvoiceController extends BaseController {
         return payInvoiceService.selectPageList(bo, pageQuery);
     }
 
+    /**
+     * 导出符合条件的发票列表为 Excel。
+     *
+     * @param response HTTP 响应，用于写入 Excel 文件流
+     * @param bo 发票查询条件
+     */
     @Operation(summary = "导出发票列表")
     @SaCheckPermission("pay:invoice:export")
     @Log(title = "发票", businessType = BusinessType.EXPORT)
@@ -58,6 +72,12 @@ public class PayInvoiceController extends BaseController {
         ExcelUtil.exportExcel(list, "发票数据", PayInvoiceVo.class, response);
     }
 
+    /**
+     * 获取指定发票的详细信息。
+     *
+     * @param invoiceId 发票 ID
+     * @return 发票视图对象
+     */
     @Operation(summary = "获取发票详细信息")
     @SaCheckPermission("pay:invoice:query")
     @GetMapping(value = "/{invoiceId}")
@@ -65,6 +85,12 @@ public class PayInvoiceController extends BaseController {
         return R.ok(payInvoiceService.selectById(invoiceId));
     }
 
+    /**
+     * 新增发票记录。
+     *
+     * @param bo 发票业务对象，含订单号、发票类型、抬头、税号、收票人信息等
+     * @return 操作结果
+     */
     @Operation(summary = "新增发票")
     @SaCheckPermission("pay:invoice:add")
     @Log(title = "发票", businessType = BusinessType.INSERT)
@@ -81,6 +107,12 @@ public class PayInvoiceController extends BaseController {
         return toAjax(payInvoiceService.insertPayInvoice(entity));
     }
 
+    /**
+     * 修改发票记录。
+     *
+     * @param bo 发票业务对象，含待更新字段
+     * @return 操作结果
+     */
     @Operation(summary = "修改发票")
     @SaCheckPermission("pay:invoice:edit")
     @Log(title = "发票", businessType = BusinessType.UPDATE)
@@ -98,6 +130,12 @@ public class PayInvoiceController extends BaseController {
         return toAjax(payInvoiceService.updatePayInvoice(entity));
     }
 
+    /**
+     * 批量删除发票记录。
+     *
+     * @param invoiceIds 待删除的发票 ID 数组
+     * @return 操作结果
+     */
     @Operation(summary = "删除发票")
     @SaCheckPermission("pay:invoice:remove")
     @Log(title = "发票", businessType = BusinessType.DELETE)

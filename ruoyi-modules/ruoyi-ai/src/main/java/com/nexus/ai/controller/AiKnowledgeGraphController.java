@@ -49,12 +49,19 @@ import java.util.stream.Collectors;
 @RequestMapping("/ai/knowledge/graph")
 public class AiKnowledgeGraphController extends BaseController {
 
+    /** 知识图谱构建服务，负责图谱抽取、构建、重建与删除。 */
     private final KnowledgeGraphService knowledgeGraphService;
+    /** 图谱存储策略，提供实体/关系/邻居的底层读写。 */
     private final GraphStoreStrategy graphStoreStrategy;
+    /** 全局检索服务，基于社区摘要合成全局检索结果。 */
     private final GlobalSearchService globalSearchService;
+    /** 知识图谱实例业务服务，提供图谱元信息 CRUD。 */
     private final IAiKnowledgeGraphService aiKnowledgeGraphService;
+    /** 图谱实体业务服务，提供实体分页查询。 */
     private final IAiKgEntityService aiKgEntityService;
+    /** 图谱关系业务服务，提供关系分页查询。 */
     private final IAiKgRelationService aiKgRelationService;
+    /** 图谱社区业务服务，提供社区分页查询。 */
     private final IAiKgCommunityService aiKgCommunityService;
 
     /**

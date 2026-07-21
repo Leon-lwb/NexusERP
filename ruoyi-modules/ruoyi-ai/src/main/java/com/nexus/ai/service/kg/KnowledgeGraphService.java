@@ -41,20 +41,29 @@ import java.util.concurrent.Executor;
 @RequiredArgsConstructor
 public class KnowledgeGraphService {
 
+    /** 图谱存储策略，提供实体/关系/社区的底层读写。 */
     private final GraphStoreStrategy graphStoreStrategy;
+    /** 社区服务，负责社区检测与社区摘要生成。 */
     private final CommunityService communityService;
+    /** ChatModel 工厂，用于获取抽取/摘要用同步模型。 */
     private final ChatModelFactory chatModelFactory;
+    /** AI 模型业务服务，用于解析默认抽取模型与名称。 */
     private final IAiModelService aiModelService;
+    /** AI 配置属性，提供置信度阈值、数量上限等参数。 */
     private final AiProperties aiProperties;
+    /** 知识切片表 Mapper，负责切片抽取状态与计数读写。 */
     private final AiKnowledgeChunkMapper chunkMapper;
+    /** 知识图谱实例表 Mapper，负责图谱实例删除。 */
     private final AiKnowledgeGraphMapper graphMapper;
 
+    /** AI 专用线程池，用于异步提交图谱构建/重建任务。 */
     @Qualifier("aiExecutor")
     private final Executor aiExecutor;
 
     /** 默认实体类型（可被 config 覆盖） */
     private static final String DEFAULT_ENTITY_TYPES =
         "物料,客户,供应商,订单,采购订单,工单,BOM,车间,工序,设备,仓库,产品,其他";
+    /** 默认关系类型（可被 config 覆盖） */
     private static final String DEFAULT_RELATION_TYPES =
         "供应,采购,包含,生产于,存储于,隶属于,关联";
 

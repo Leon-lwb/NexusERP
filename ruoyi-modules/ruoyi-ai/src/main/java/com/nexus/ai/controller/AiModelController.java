@@ -29,6 +29,7 @@ import java.util.List;
 @RequestMapping("/ai/model")
 public class AiModelController extends BaseController {
 
+    /** AI 模型业务服务，提供模型分页、详情、CRUD、默认值设置等。 */
     private final IAiModelService aiModelService;
 
     /**

@@ -32,31 +32,50 @@ public interface IEqOeeService {
 
     /**
      * 看板概览 KPI: 平均稼动率、平均OEE、总停机时长、总故障次数、覆盖设备数
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @return 返回结果
      */
     EqOeeOverviewVo overview(EqOeeQueryBo bo);
 
     /**
      * 看板趋势: 按统计日期聚合的稼动率/OEE/停机时长折线
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @return 结果列表
      */
     List<EqOeeTrendVo> trend(EqOeeQueryBo bo);
 
     /**
      * 看板时长分布: 运行/停机/保养占比
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @return 返回结果
      */
     EqOeeDistributionVo distribution(EqOeeQueryBo bo);
 
     /**
      * 看板停机设备 TOP
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @return 结果列表
      */
     List<EqOeeTopVo> topDowntime(EqOeeQueryBo bo);
 
     /**
      * 分页查询 OEE 明细记录
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @param pageQuery 分页参数（页码、每页大小、排序）
+     * @return 分页结果
      */
     TableDataInfo<EqOeeRecordVo> selectPageList(EqOeeQueryBo bo, PageQuery pageQuery);
 
     /**
      * 查询 OEE 明细记录(不分页, 用于导出)
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @return 结果列表
      */
     List<EqOeeRecordVo> selectList(EqOeeQueryBo bo);
 

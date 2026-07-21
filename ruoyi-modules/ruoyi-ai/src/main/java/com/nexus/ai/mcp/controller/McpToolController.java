@@ -20,6 +20,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class McpToolController {
 
+    /** MCP 工具业务服务，负责工具 CRUD、启用停用、同步与测试。 */
     private final McpToolServiceImpl mcpToolService;
 
     /**

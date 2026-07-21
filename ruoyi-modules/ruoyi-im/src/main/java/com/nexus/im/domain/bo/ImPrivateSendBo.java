@@ -5,12 +5,19 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
+/**
+ * 发送私聊消息入参对象（BO）
+ * <p>用于接收私聊发送请求，包含接收方、内容、消息类型、引用与重发幂等标识等，
+ * 由 Controller 绑定后传入 Service。</p>
+ */
 @Data
 public class ImPrivateSendBo {
 
+    /** 接收方用户 ID，不能为空。 */
     @NotNull(message = "接收者不能为空")
     private Long toUserId;
 
+    /** 消息内容（文本/图片/文件等的承载 JSON 或纯文本），不能为空。 */
     @NotBlank(message = "内容不能为空")
     private String content;
 

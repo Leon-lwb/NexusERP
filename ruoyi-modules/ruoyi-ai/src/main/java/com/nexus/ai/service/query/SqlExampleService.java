@@ -24,6 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @RequiredArgsConstructor
 public class SqlExampleService {
 
+    /** SQL 示例持久化服务 */
     private final IAiSqlExampleService sqlExampleService;
 
     /** 示例缓存：key="all" 或 category */

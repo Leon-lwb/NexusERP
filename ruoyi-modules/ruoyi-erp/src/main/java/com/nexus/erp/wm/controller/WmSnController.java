@@ -30,6 +30,7 @@ import java.util.List;
 @RequestMapping("/erp/wm/sn")
 public class WmSnController extends BaseController {
 
+    /** 序列号业务服务，提供序列号相关能力 */
     private final IWmSnService wmSnService;
 
     /**

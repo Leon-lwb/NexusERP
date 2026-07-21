@@ -31,6 +31,13 @@ public class SalesOrderFulfilledEventListener {
 
     private final ISoInvoiceService soInvoiceService;
 
+    /**
+     * 监听销售订单履行完成事件，在事务提交后异步生成发票草稿。
+     * <p>通过 {@link TenantHelper#dynamic} 恢复租户上下文，避免异步线程 tenant_id 落 0；
+     * 异常被捕获并记录日志，不影响订单履约主流程。</p>
+     *
+     * @param event 销售订单履行完成事件
+     */
     @Async("financialExecutor")
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
     public void onFulfilled(SalesOrderFulfilledEvent event) {

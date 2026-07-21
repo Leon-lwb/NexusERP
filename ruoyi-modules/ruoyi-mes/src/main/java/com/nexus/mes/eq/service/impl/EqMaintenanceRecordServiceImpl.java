@@ -32,6 +32,8 @@ import java.util.stream.Collectors;
 /**
  * MES设备保养执行记录 Service 业务层实现
  *
+ * <p>属于MES 设备管理模块，保养记录业务层实现。</p>
+ *
  * @author Nexus
  */
 @Slf4j
@@ -43,6 +45,13 @@ public class EqMaintenanceRecordServiceImpl implements IEqMaintenanceRecordServi
     private final EqMaintenanceRecordMapper baseMapper;
     private final EqEquipmentMapper equipmentMapper;
 
+    /**
+     * 分页查询保养记录列表
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @param pageQuery 分页参数（页码、每页大小、排序）
+     * @return 分页结果
+     */
     @Override
     public TableDataInfo<EqMaintenanceRecordVo> selectPageList(EqMaintenanceRecordBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<EqMaintenanceRecord> lqw = buildQueryWrapper(bo);
@@ -51,6 +60,12 @@ public class EqMaintenanceRecordServiceImpl implements IEqMaintenanceRecordServi
         return TableDataInfo.build(page);
     }
 
+    /**
+     * 查询保养记录列表
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @return 结果列表
+     */
     @Override
     public List<EqMaintenanceRecordVo> selectList(EqMaintenanceRecordBo bo) {
         List<EqMaintenanceRecordVo> list = baseMapper.selectVoList(buildQueryWrapper(bo));
@@ -58,6 +73,12 @@ public class EqMaintenanceRecordServiceImpl implements IEqMaintenanceRecordServi
         return list;
     }
 
+    /**
+     * 获取保养记录详情
+     *
+     * @param recordId 数据记录ID
+     * @return 返回结果
+     */
     @Override
     public EqMaintenanceRecordVo selectById(Long recordId) {
         EqMaintenanceRecordVo vo = baseMapper.selectVoById(recordId);
@@ -67,6 +88,12 @@ public class EqMaintenanceRecordServiceImpl implements IEqMaintenanceRecordServi
         return vo;
     }
 
+    /**
+     * 按条件查询设备
+     *
+     * @param equipmentId 设备ID
+     * @return 结果列表
+     */
     @Override
     public List<EqMaintenanceRecordVo> selectByEquipment(Long equipmentId) {
         List<EqMaintenanceRecordVo> list = baseMapper.selectVoList(Wrappers.<EqMaintenanceRecord>lambdaQuery()
@@ -76,6 +103,12 @@ public class EqMaintenanceRecordServiceImpl implements IEqMaintenanceRecordServi
         return list;
     }
 
+    /**
+     * 新增保养记录
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @return 返回结果
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public EqMaintenanceRecordVo insertByBo(EqMaintenanceRecordBo bo) {
@@ -94,6 +127,12 @@ public class EqMaintenanceRecordServiceImpl implements IEqMaintenanceRecordServi
         return baseMapper.selectVoById(record.getRecordId());
     }
 
+    /**
+     * 获取保养记录详情
+     *
+     * @param ids ID数组
+     * @return 是否成功
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean deleteByIds(Long[] ids) {

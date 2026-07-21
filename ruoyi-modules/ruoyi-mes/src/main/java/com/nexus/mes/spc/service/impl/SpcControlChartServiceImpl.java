@@ -61,11 +61,22 @@ public class SpcControlChartServiceImpl implements ISpcControlChartService {
     /** X_BAR_S 系数 A3 (index 0 = n=2 .. index 8 = n=10) */
     private static final double[] A3 = {2.659, 1.954, 1.628, 1.427, 1.287, 1.182, 1.099, 1.032, 0.975};
 
+    /** 控制图数据访问 Mapper。 */
     private final SpcControlChartMapper baseMapper;
+    /** 数据点数据访问 Mapper。 */
     private final SpcDataPointMapper dataPointMapper;
+    /** 采集点数据记录服务，用于分析时拉取采集数据。 */
     private final IDcDataRecordService dcDataRecordService;
+    /** 安灯服务，用于 OOC 命中 RULE1 时联动告警。 */
     private final IProAndonService proAndonService;
 
+    /**
+     * 分页查询 SPC 控制图列表。
+     *
+     * @param bo        控制图查询条件（名称/类型/状态/采集点/物料）
+     * @param pageQuery 分页参数（页码、每页大小、排序）
+     * @return 分页结果，包含控制图视图列表及分页元信息
+     */
     @Override
     public TableDataInfo<SpcControlChartVo> selectPageList(SpcControlChartBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<SpcControlChart> lqw = buildQueryWrapper(bo);
@@ -73,11 +84,23 @@ public class SpcControlChartServiceImpl implements ISpcControlChartService {
         return TableDataInfo.build(page);
     }
 
+    /**
+     * 根据主键 ID 获取 SPC 控制图详情。
+     *
+     * @param chartId 控制图 ID
+     * @return 控制图视图对象
+     */
     @Override
     public SpcControlChartVo selectById(Long chartId) {
         return baseMapper.selectVoById(chartId);
     }
 
+    /**
+     * 新增 SPC 控制图，默认样本大小为 5、状态为启用（ACTIVE）。
+     *
+     * @param bo 控制图业务对象
+     * @return 新增后的控制图视图对象
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public SpcControlChartVo insertByBo(SpcControlChartBo bo) {
@@ -95,6 +118,12 @@ public class SpcControlChartServiceImpl implements ISpcControlChartService {
         return baseMapper.selectVoById(chart.getChartId());
     }
 
+    /**
+     * 编辑 SPC 控制图基础信息（控制限由 analyze 接口计算回写，不在此更新）。
+     *
+     * @param bo 控制图业务对象（需包含 chartId）
+     * @return 编辑后的控制图视图对象
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public SpcControlChartVo updateByBo(SpcControlChartBo bo) {
@@ -124,6 +153,12 @@ public class SpcControlChartServiceImpl implements ISpcControlChartService {
         return baseMapper.selectVoById(chart.getChartId());
     }
 
+    /**
+     * 批量删除 SPC 控制图，并级联删除其下数据点。
+     *
+     * @param ids 待删除的控制图 ID 数组
+     * @return 是否删除成功
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean deleteByIds(Long[] ids) {
@@ -138,7 +173,11 @@ public class SpcControlChartServiceImpl implements ISpcControlChartService {
     }
 
     /**
-     * 分析控制图(核心): 拉数据→分组→计算控制限→回写→重建数据点+OOC判定
+     * 分析 SPC 控制图（核心）：拉取采集点数据→按样本分组→按类型计算 UCL/CL/LCL 并回写→
+     * 重建数据点并执行 4 条 OOC 规则判定，命中 RULE1 时联动质量安灯。
+     *
+     * @param chartId 控制图 ID
+     * @return 分析结果，包含 chart / points / oocCount / ucl / cl / lcl
      */
     @Override
     @Transactional(rollbackFor = Exception.class)

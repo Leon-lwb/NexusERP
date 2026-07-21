@@ -65,6 +65,13 @@ public class PuContractServiceImpl implements IPuContractService {
     private final RuntimeService runtimeService;
     private final HistoryService historyService;
 
+    /**
+     * 分页查询采购合同列表。
+     *
+     * @param bo        查询参数
+     * @param pageQuery 分页参数
+     * @return 采购合同分页列表
+     */
     @Override
     public TableDataInfo<PuContractVo> selectPageList(PuContractBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<PuContract> lqw = buildQueryWrapper(bo);
@@ -72,11 +79,23 @@ public class PuContractServiceImpl implements IPuContractService {
         return TableDataInfo.build(page);
     }
 
+    /**
+     * 查询采购合同列表。
+     *
+     * @param bo 查询参数
+     * @return 采购合同列表
+     */
     @Override
     public List<PuContractVo> selectList(PuContractBo bo) {
         return baseMapper.selectVoList(buildQueryWrapper(bo));
     }
 
+    /**
+     * 根据ID查询采购合同详情（含明细行）。
+     *
+     * @param id 合同ID
+     * @return 采购合同详情
+     */
     @Override
     public PuContractVo selectById(Long id) {
         PuContractVo vo = baseMapper.selectVoById(id);
@@ -89,6 +108,12 @@ public class PuContractServiceImpl implements IPuContractService {
         return vo;
     }
 
+    /**
+     * 新增采购合同（默认草稿）并插入明细行。
+     *
+     * @param bo 采购合同业务对象
+     * @return 影响行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(PuContractBo bo) {
@@ -106,6 +131,12 @@ public class PuContractServiceImpl implements IPuContractService {
         return rows;
     }
 
+    /**
+     * 修改采购合同（仅草稿/驳回可改），差量更新明细行。
+     *
+     * @param bo 采购合同业务对象
+     * @return 影响行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(PuContractBo bo) {
@@ -126,6 +157,12 @@ public class PuContractServiceImpl implements IPuContractService {
         return rows;
     }
 
+    /**
+     * 批量删除采购合同（仅草稿可删，非草稿抛异常并清理明细行）。
+     *
+     * @param ids 合同ID数组
+     * @return 影响行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {
@@ -142,6 +179,13 @@ public class PuContractServiceImpl implements IPuContractService {
 
     // ==================== Flowable 工作流集成 ====================
 
+    /**
+     * 发起审批流程（Flowable 工作流回调）：校验合同存在并启动对应审批流，注入流程变量。
+     *
+     * @param contractIdStr 采购合同ID（字符串）
+     * @param selectFlowId  流程定义ID
+     * @return 启动成功返回 true
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean submit(String contractIdStr, String selectFlowId) {
@@ -172,6 +216,12 @@ public class PuContractServiceImpl implements IPuContractService {
         throw new ServiceException(result.getMsg());
     }
 
+    /**
+     * 获取采购合同对应的流程实例ID（运行时优先，其次历史）。
+     *
+     * @param contractIdStr 采购合同ID（字符串）
+     * @return 流程实例ID，无则返回 null
+     */
     @Override
     public String getProcInsId(String contractIdStr) {
         try {
@@ -191,6 +241,11 @@ public class PuContractServiceImpl implements IPuContractService {
         return hist != null ? hist.getId() : null;
     }
 
+    /**
+     * 审批流节点处理完成后的回调：根据审批动作更新合同状态（审批中/已批准/已驳回/草稿）。
+     *
+     * @param business 工作流业务对象（含审批状态与数据ID）
+     */
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void afterFlowHandle(WfMyBusiness business) {
@@ -212,22 +267,49 @@ public class PuContractServiceImpl implements IPuContractService {
         baseMapper.updateById(contract);
     }
 
+    /**
+     * 根据数据ID返回采购合同详情（供审批详情展示）。
+     *
+     * @param dataId 业务数据ID
+     * @return 采购合同业务对象
+     */
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Object getBusinessDataById(String dataId) {
         return selectById(Long.parseLong(dataId));
     }
 
+    /**
+     * 获取审批任务所需的表单变量（当前实现无需额外变量，返回 null）。
+     *
+     * @param taskNameId 任务节点ID
+     * @param values     已有流程变量
+     * @return 任务表单变量，未实现返回 null
+     */
     @Override
     public Map<String, Object> flowValuesOfTask(String taskNameId, Map<String, Object> values) {
         return null;
     }
 
+    /**
+     * 获取审批任务的候选处理人（当前实现未指定，返回 null）。
+     *
+     * @param taskNameId 任务节点ID
+     * @param values     流程变量
+     * @return 候选用户名列表，未实现返回 null
+     */
     @Override
     public List<String> flowCandidateUsernamesOfTask(String taskNameId, Map<String, Object> values) {
         return null;
     }
 
+    /**
+     * 根据采购合同生成采购订单：复制合同头与明细行为采购订单草稿，并把合同状态置为执行中。
+     * <p>仅 APPROVED/EXECUTING 状态的合同可生成。</p>
+     *
+     * @param contractId 采购合同ID
+     * @return 生成的采购订单ID
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Long createPurchaseOrderFromContract(Long contractId) {
@@ -293,6 +375,12 @@ public class PuContractServiceImpl implements IPuContractService {
         return order.getOrderId();
     }
 
+    /**
+     * 构建采购合同分页/列表查询条件（按合同号、名称、供应商、类型、状态动态拼接，按创建时间倒序）。
+     *
+     * @param bo 查询参数
+     * @return 查询条件构造器
+     */
     private LambdaQueryWrapper<PuContract> buildQueryWrapper(PuContractBo bo) {
         LambdaQueryWrapper<PuContract> lqw = Wrappers.lambdaQuery();
         lqw.like(StringUtils.isNotBlank(bo.getContractNo()), PuContract::getContractNo, bo.getContractNo());

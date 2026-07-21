@@ -29,8 +29,16 @@ import java.util.List;
 @Service("spcDataPointService")
 public class SpcDataPointServiceImpl implements ISpcDataPointService {
 
+    /** 数据点数据访问 Mapper。 */
     private final SpcDataPointMapper baseMapper;
 
+    /**
+     * 分页查询 SPC 数据点列表。
+     *
+     * @param bo        数据点查询条件（控制图/样本组/OOC 标志）
+     * @param pageQuery 分页参数（页码、每页大小、排序）
+     * @return 分页结果，包含数据点视图列表及分页元信息
+     */
     @Override
     public TableDataInfo<SpcDataPointVo> selectPageList(SpcDataPointBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<SpcDataPoint> lqw = buildQueryWrapper(bo);
@@ -38,11 +46,29 @@ public class SpcDataPointServiceImpl implements ISpcDataPointService {
         return TableDataInfo.build(page);
     }
 
+    /**
+     * 根据主键 ID 获取 SPC 数据点详情。
+     *
+     * @param dataId 数据点 ID
+     * @return 数据点视图对象
+     */
     @Override
     public SpcDataPointVo selectById(Long dataId) {
         return baseMapper.selectVoById(dataId);
     }
 
+    /**
+     * 按控制图查询其全部数据点（按样本组号升序），供前端绘制控制图。
+     *
+     * @param chartId 控制图 ID
+     * @return 该控制图下的数据点列表
+     */
+    /**
+     * 按控制图查询其全部数据点（按样本组号升序），供前端绘制控制图。
+     *
+     * @param chartId 控制图 ID
+     * @return 该控制图下的数据点列表
+     */
     @Override
     public List<SpcDataPointVo> listByChartId(Long chartId) {
         return baseMapper.selectVoList(Wrappers.<SpcDataPoint>lambdaQuery()
@@ -52,6 +78,18 @@ public class SpcDataPointServiceImpl implements ISpcDataPointService {
 
     // ==================== 私有辅助方法 ====================
 
+    /**
+     * 根据查询条件构建数据点的 LambdaQueryWrapper（控制图/样本组/OOC 标志精确匹配，按样本组号升序）。
+     *
+     * @param bo 数据点查询条件
+     * @return 数据点查询条件构造器
+     */
+    /**
+     * 根据查询条件构建数据点的 LambdaQueryWrapper（控制图/样本组/OOC 标志精确匹配，按样本组号升序）。
+     *
+     * @param bo 数据点查询条件
+     * @return 数据点查询条件构造器
+     */
     private LambdaQueryWrapper<SpcDataPoint> buildQueryWrapper(SpcDataPointBo bo) {
         return Wrappers.<SpcDataPoint>lambdaQuery()
             .eq(bo.getChartId() != null, SpcDataPoint::getChartId, bo.getChartId())

@@ -38,6 +38,13 @@ public class IotDeviceServiceImpl implements IIotDeviceService {
     private final IotDeviceMapper baseMapper;
     private final IotProductMapper productMapper;
 
+    /**
+     * 分页查询设备列表，按条件构建查询并转换为 VO 分页结果。
+     *
+     * @param bo        查询条件（编码/名称/产品/协议/状态等）
+     * @param pageQuery 分页参数
+     * @return 设备 VO 分页结果
+     */
     @Override
     public TableDataInfo<IotDeviceVo> selectPageList(IotDeviceBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<IotDevice> lqw = buildQueryWrapper(bo);
@@ -45,16 +52,35 @@ public class IotDeviceServiceImpl implements IIotDeviceService {
         return TableDataInfo.build(page);
     }
 
+    /**
+     * 查询设备列表（不分页），用于导出等场景。
+     *
+     * @param bo 查询条件
+     * @return 设备 VO 列表
+     */
     @Override
     public List<IotDeviceVo> selectList(IotDeviceBo bo) {
         return baseMapper.selectVoList(buildQueryWrapper(bo));
     }
 
+    /**
+     * 根据主键查询设备详情（VO）。
+     *
+     * @param id 设备 ID
+     * @return 设备 VO，不存在返回 null
+     */
     @Override
     public IotDeviceVo selectById(Long id) {
         return baseMapper.selectVoById(id);
     }
 
+    /**
+     * 新增设备，自动生成 device_secret，并在未指定协议/产品名时从所属产品回填。
+     * 新建设备默认连接状态为 OFFLINE。
+     *
+     * @param bo 设备业务对象
+     * @return 插入影响行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(IotDeviceBo bo) {
@@ -83,6 +109,12 @@ public class IotDeviceServiceImpl implements IIotDeviceService {
         return baseMapper.insert(entity);
     }
 
+    /**
+     * 修改设备，切换产品时回填产品名称与协议；密钥不在此更新以防前端覆盖。
+     *
+     * @param bo 设备业务对象
+     * @return 更新影响行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(IotDeviceBo bo) {
@@ -102,12 +134,24 @@ public class IotDeviceServiceImpl implements IIotDeviceService {
         return baseMapper.updateById(entity);
     }
 
+    /**
+     * 批量逻辑删除设备。
+     *
+     * @param ids 设备 ID 数组
+     * @return 删除影响行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {
         return baseMapper.deleteBatchIds(List.of(ids));
     }
 
+    /**
+     * 根据设备编码查询设备实体（含 device_secret），供 MQTT 认证使用。
+     *
+     * @param deviceCode 设备编码（即 MQTT ClientID）
+     * @return 设备实体，编码为空或查不到时返回 null
+     */
     @Override
     public IotDevice selectEntityByCode(String deviceCode) {
         if (StringUtils.isBlank(deviceCode)) {
@@ -118,6 +162,12 @@ public class IotDeviceServiceImpl implements IIotDeviceService {
         return baseMapper.selectOne(lqw);
     }
 
+    /**
+     * 更新设备连接状态，上线时同步刷新最后在线时间；由 MQTT Broker 连接/断开回调调用。
+     *
+     * @param deviceId 设备 ID
+     * @param online   true=ONLINE，false=OFFLINE
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void updateConnectionStatus(Long deviceId, boolean online) {
@@ -130,6 +180,12 @@ public class IotDeviceServiceImpl implements IIotDeviceService {
         baseMapper.updateById(update);
     }
 
+    /**
+     * 查询状态为 ONLINE 但最后在线时间早于 deadline 的设备，用于心跳任务识别异常掉线。
+     *
+     * @param deadline 截止时间
+     * @return 超时在线设备实体集合（deadline 为空时返回空）
+     */
     @Override
     public List<IotDevice> selectStaleOnlineDevices(Date deadline) {
         if (deadline == null) {
@@ -141,6 +197,13 @@ public class IotDeviceServiceImpl implements IIotDeviceService {
         return baseMapper.selectList(lqw);
     }
 
+    /**
+     * 仅更新设备关联的 MES 设备 ID（可置空解除关联），不影响其他字段。
+     *
+     * @param deviceId        IoT 设备 ID
+     * @param mesEquipmentId  MES 设备 ID（可空）
+     * @return 是否更新成功
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean updateMesEquipmentLink(Long deviceId, Long mesEquipmentId) {

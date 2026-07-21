@@ -33,6 +33,9 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
+/**
+ * 属于MES 设备管理模块，巡检业务层实现。
+ */
 @Slf4j
 @RequiredArgsConstructor
 @DS("mes")
@@ -46,6 +49,13 @@ public class EqPatrolServiceImpl implements IEqPatrolService {
 
     // ===== 路线 =====
 
+    /**
+     * 分页查询路线列表
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @param pageQuery 分页参数（页码、每页大小、排序）
+     * @return 分页结果
+     */
     @Override
     public TableDataInfo<EqPatrolRouteVo> selectRoutePage(EqPatrolRouteBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<EqPatrolRoute> lqw = Wrappers.<EqPatrolRoute>lambdaQuery()
@@ -56,11 +66,23 @@ public class EqPatrolServiceImpl implements IEqPatrolService {
         return TableDataInfo.build(page);
     }
 
+    /**
+     * 获取路线详情
+     *
+     * @param routeId 巡检路线ID
+     * @return 返回结果
+     */
     @Override
     public EqPatrolRouteVo selectRouteById(Long routeId) {
         return routeMapper.selectVoById(routeId);
     }
 
+    /**
+     * 查询路线列表
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @return 结果列表
+     */
     @Override
     public List<EqPatrolRouteVo> selectRouteList(EqPatrolRouteBo bo) {
         return routeMapper.selectVoList(Wrappers.<EqPatrolRoute>lambdaQuery()
@@ -68,6 +90,12 @@ public class EqPatrolServiceImpl implements IEqPatrolService {
             .orderByDesc(EqPatrolRoute::getRouteName));
     }
 
+    /**
+     * 新增路线
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @return 返回结果
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public EqPatrolRouteVo insertRouteByBo(EqPatrolRouteBo bo) {
@@ -83,6 +111,12 @@ public class EqPatrolServiceImpl implements IEqPatrolService {
         return routeMapper.selectVoById(route.getRouteId());
     }
 
+    /**
+     * 更新路线
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @return 是否成功
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean updateRouteByBo(EqPatrolRouteBo bo) {
@@ -98,6 +132,12 @@ public class EqPatrolServiceImpl implements IEqPatrolService {
         return routeMapper.updateById(route) > 0;
     }
 
+    /**
+     * 获取路线详情
+     *
+     * @param ids ID数组
+     * @return 是否成功
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean deleteRouteByIds(Long[] ids) {
@@ -114,6 +154,13 @@ public class EqPatrolServiceImpl implements IEqPatrolService {
 
     // ===== 任务 =====
 
+    /**
+     * 分页查询任务列表
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @param pageQuery 分页参数（页码、每页大小、排序）
+     * @return 分页结果
+     */
     @Override
     public TableDataInfo<EqPatrolTaskVo> selectTaskPage(EqPatrolTaskBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<EqPatrolTask> lqw = Wrappers.<EqPatrolTask>lambdaQuery()
@@ -124,11 +171,23 @@ public class EqPatrolServiceImpl implements IEqPatrolService {
         return TableDataInfo.build(page);
     }
 
+    /**
+     * 获取任务详情
+     *
+     * @param taskId 巡检任务ID
+     * @return 返回结果
+     */
     @Override
     public EqPatrolTaskVo selectTaskById(Long taskId) {
         return taskMapper.selectVoById(taskId);
     }
 
+    /**
+     * 新增任务
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @return 返回结果
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public EqPatrolTaskVo insertTaskByBo(EqPatrolTaskBo bo) {
@@ -146,6 +205,12 @@ public class EqPatrolServiceImpl implements IEqPatrolService {
         return taskMapper.selectVoById(task.getTaskId());
     }
 
+    /**
+     * 更新任务
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @return 是否成功
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean updateTaskByBo(EqPatrolTaskBo bo) {
@@ -160,6 +225,12 @@ public class EqPatrolServiceImpl implements IEqPatrolService {
         return taskMapper.updateById(task) > 0;
     }
 
+    /**
+     * 获取任务详情
+     *
+     * @param ids ID数组
+     * @return 是否成功
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean deleteTaskByIds(Long[] ids) {
@@ -174,6 +245,12 @@ public class EqPatrolServiceImpl implements IEqPatrolService {
         return taskMapper.deleteByIds(Arrays.asList(ids)) > 0;
     }
 
+    /**
+     * 完成任务
+     *
+     * @param taskId 巡检任务ID
+     * @return 是否成功
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean completeTask(Long taskId) {
@@ -188,6 +265,13 @@ public class EqPatrolServiceImpl implements IEqPatrolService {
 
     // ===== 记录 =====
 
+    /**
+     * 分页查询记录列表
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @param pageQuery 分页参数（页码、每页大小、排序）
+     * @return 分页结果
+     */
     @Override
     public TableDataInfo<EqPatrolRecordVo> selectRecordPage(EqPatrolRecordBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<EqPatrolRecord> lqw = Wrappers.<EqPatrolRecord>lambdaQuery()
@@ -199,11 +283,23 @@ public class EqPatrolServiceImpl implements IEqPatrolService {
         return TableDataInfo.build(page);
     }
 
+    /**
+     * 获取记录详情
+     *
+     * @param recordId 数据记录ID
+     * @return 返回结果
+     */
     @Override
     public EqPatrolRecordVo selectRecordById(Long recordId) {
         return recordMapper.selectVoById(recordId);
     }
 
+    /**
+     * 按任务查询记录
+     *
+     * @param taskId 巡检任务ID
+     * @return 结果列表
+     */
     @Override
     public List<EqPatrolRecordVo> selectRecordByTask(Long taskId) {
         return recordMapper.selectVoList(Wrappers.<EqPatrolRecord>lambdaQuery()
@@ -211,6 +307,12 @@ public class EqPatrolServiceImpl implements IEqPatrolService {
             .orderByAsc(EqPatrolRecord::getExecuteTime));
     }
 
+    /**
+     * 新增记录
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @return 返回结果
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public EqPatrolRecordVo insertRecordByBo(EqPatrolRecordBo bo) {
@@ -219,12 +321,24 @@ public class EqPatrolServiceImpl implements IEqPatrolService {
         return recordMapper.selectVoById(record.getRecordId());
     }
 
+    /**
+     * 获取记录详情
+     *
+     * @param ids ID数组
+     * @return 是否成功
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean deleteRecordByIds(Long[] ids) {
         return ids != null && ids.length > 0 && recordMapper.deleteByIds(Arrays.asList(ids)) > 0;
     }
 
+    /**
+     * 批量处理记录
+     *
+     * @param bos 参数 bos
+     * @return 结果列表
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public List<EqPatrolRecordVo> batchSubmitRecords(List<EqPatrolRecordBo> bos) {

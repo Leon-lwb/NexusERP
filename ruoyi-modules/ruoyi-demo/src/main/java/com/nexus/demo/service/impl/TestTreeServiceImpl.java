@@ -29,12 +29,24 @@ public class TestTreeServiceImpl implements ITestTreeService {
 
     private final TestTreeMapper baseMapper;
 
+    /**
+     * 根据主键查询测试树表详情
+     *
+     * @param id 测试树表主键
+     * @return 测试树表视图对象
+     */
     @Override
     public TestTreeVo queryById(Long id) {
         return baseMapper.selectVoById(id);
     }
 
     // @DS("slave") // 切换从库查询
+    /**
+     * 查询测试树表列表（不分页）
+     *
+     * @param bo 查询条件业务对象
+     * @return 测试树表视图对象列表
+     */
     @Override
     public List<TestTreeVo> queryList(TestTreeBo bo) {
         LambdaQueryWrapper<TestTree> lqw = buildQueryWrapper(bo);
@@ -53,6 +65,12 @@ public class TestTreeServiceImpl implements ITestTreeService {
         return lqw;
     }
 
+    /**
+     * 根据业务对象新增测试树表
+     *
+     * @param bo 新增业务对象
+     * @return 是否新增成功
+     */
     @Override
     public Boolean insertByBo(TestTreeBo bo) {
         TestTree add = MapstructUtils.convert(bo, TestTree.class);
@@ -64,6 +82,12 @@ public class TestTreeServiceImpl implements ITestTreeService {
         return flag;
     }
 
+    /**
+     * 根据业务对象修改测试树表
+     *
+     * @param bo 编辑业务对象
+     * @return 是否修改成功
+     */
     @Override
     public Boolean updateByBo(TestTreeBo bo) {
         TestTree update = MapstructUtils.convert(bo, TestTree.class);
@@ -80,6 +104,13 @@ public class TestTreeServiceImpl implements ITestTreeService {
         //TODO 做一些数据校验,如唯一约束
     }
 
+    /**
+     * 校验并批量删除测试树表
+     *
+     * @param ids     主键集合
+     * @param isValid 是否校验，true-删除前校验，false-不校验
+     * @return 是否删除成功
+     */
     @Override
     public Boolean deleteWithValidByIds(Collection<Long> ids, Boolean isValid) {
         if (isValid) {

@@ -35,9 +35,13 @@ import java.util.List;
 @Service
 public class PickingResolutionServiceImpl implements IPickingResolutionService {
 
+    /** 拣货规则数据访问映射器（Mapper） */
     private final WmPickingRuleMapper pickingRuleMapper;
+    /** 仓库数据访问映射器（Mapper） */
     private final WmWarehouseMapper wmWarehouseMapper;
+    /** 拣货解析数据访问映射器（Mapper） */
     private final BdMaterialMapper bdMaterialMapper;
+    /** 拣货策略工厂 */
     private final PickingStrategyFactory pickingStrategyFactory;
 
     /**

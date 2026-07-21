@@ -51,6 +51,13 @@ public class EqMaintenancePlanServiceImpl implements IEqMaintenancePlanService {
     private final EqMaintenanceRecordMapper maintenanceRecordMapper;
     private final IEqEquipmentService equipmentService;
 
+    /**
+     * 分页查询保养计划列表
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @param pageQuery 分页参数（页码、每页大小、排序）
+     * @return 分页结果
+     */
     @Override
     public TableDataInfo<EqMaintenancePlanVo> selectPageList(EqMaintenancePlanBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<EqMaintenancePlan> lqw = buildQueryWrapper(bo);
@@ -58,16 +65,34 @@ public class EqMaintenancePlanServiceImpl implements IEqMaintenancePlanService {
         return TableDataInfo.build(page);
     }
 
+    /**
+     * 获取保养计划详情
+     *
+     * @param planId 计划ID
+     * @return 返回结果
+     */
     @Override
     public EqMaintenancePlanVo selectById(Long planId) {
         return baseMapper.selectVoById(planId);
     }
 
+    /**
+     * 查询保养计划列表
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @return 结果列表
+     */
     @Override
     public List<EqMaintenancePlanVo> selectList(EqMaintenancePlanBo bo) {
         return baseMapper.selectVoList(buildQueryWrapper(bo));
     }
 
+    /**
+     * 新增保养计划
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @return 返回结果
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public EqMaintenancePlanVo insertByBo(EqMaintenancePlanBo bo) {
@@ -94,6 +119,12 @@ public class EqMaintenancePlanServiceImpl implements IEqMaintenancePlanService {
         return baseMapper.selectVoById(plan.getPlanId());
     }
 
+    /**
+     * 更新保养计划
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @return 返回结果
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public EqMaintenancePlanVo updateByBo(EqMaintenancePlanBo bo) {
@@ -130,6 +161,12 @@ public class EqMaintenancePlanServiceImpl implements IEqMaintenancePlanService {
         return baseMapper.selectVoById(plan.getPlanId());
     }
 
+    /**
+     * 获取保养计划详情
+     *
+     * @param ids ID数组
+     * @return 是否成功
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean deleteByIds(Long[] ids) {
@@ -139,6 +176,13 @@ public class EqMaintenancePlanServiceImpl implements IEqMaintenancePlanService {
         return baseMapper.deleteByIds(Arrays.asList(ids)) > 0;
     }
 
+    /**
+     * 完成计划
+     *
+     * @param planId 计划ID
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @return 返回结果
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public EqMaintenanceRecordVo completePlan(Long planId, EqMaintenanceRecordBo bo) {

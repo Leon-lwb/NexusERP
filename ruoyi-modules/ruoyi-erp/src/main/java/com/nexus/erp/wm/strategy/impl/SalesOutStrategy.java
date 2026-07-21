@@ -44,10 +44,15 @@ public class SalesOutStrategy extends BaseStockOperationStrategy {
     /** 事务标志：出库（负数） */
     private static final int TX_FLAG_OUT = -1;
 
+    /** 销售发料数据访问映射器（Mapper） */
     private final WmSalesIssueMapper salesIssueMapper;
+    /** 销售发料行数据访问映射器（Mapper） */
     private final WmSalesIssueLineMapper salesIssueLineMapper;
+    /** 库存数据访问映射器（Mapper） */
     private final WmMaterialStockMapper stockMapper;
+    /** 销售出库数据访问映射器（Mapper） */
     private final SoSalesOrderLineMapper salesOrderLineMapper;
+    /** 销售出库业务服务，提供销售出库相关能力 */
     private final ISoFulfillmentWritebackService fulfillmentWritebackService;
 
     /**

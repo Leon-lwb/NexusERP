@@ -16,12 +16,19 @@ import java.util.List;
  */
 public interface IWmSalesIssueService extends WfCallBackServiceI {
 
+    /** 常量：STATUSDRAFT */
     String STATUS_DRAFT = "DRAFT";
+    /** 常量：STATUSAPPROVING */
     String STATUS_APPROVING = "APPROVING";
+    /** 常量：STATUSAPPROVED */
     String STATUS_APPROVED = "APPROVED";
+    /** 常量：STATUSREJECTED */
     String STATUS_REJECTED = "REJECTED";
+    /** 常量：STATUSCONFIRMED */
     String STATUS_CONFIRMED = "CONFIRMED";
+    /** 常量：STATUSCOMPLETED */
     String STATUS_COMPLETED = "COMPLETED";
+    /** 常量：STATUSCANCELLED */
     String STATUS_CANCELLED = "CANCELLED";
 
     /**

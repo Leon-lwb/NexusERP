@@ -64,6 +64,11 @@ public class SysDictData extends TenantEntity {
      */
     private String remark;
 
+    /**
+     * 判断当前字典数据是否为默认选项。
+     *
+     * @return 为默认选项返回 true，否则返回 false
+     */
     public boolean getDefault() {
         return SystemConstants.YES.equals(this.isDefault);
     }

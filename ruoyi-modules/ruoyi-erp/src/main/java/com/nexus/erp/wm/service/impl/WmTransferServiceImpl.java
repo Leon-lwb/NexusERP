@@ -37,6 +37,12 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+/**
+ * 调拨服务实现
+ * <p>
+ * 实现调拨服务接口，处理调拨的增删改查、业务校验与库存联动。属于 ERP 仓储管理（wm）模块。
+ * </p>
+ */
 
 @Slf4j
 @RequiredArgsConstructor
@@ -44,15 +50,30 @@ import java.util.Map;
 @Service("wmTransferService")
 public class WmTransferServiceImpl implements IWmTransferService {
 
+    /** 基础数据访问映射器（Mapper） */
     private final WmTransferMapper baseMapper;
+    /** 行数据访问映射器（Mapper） */
     private final WmTransferLineMapper lineMapper;
+    /** 库存操作业务服务，提供库存操作相关能力 */
     private final WmStockOperationServiceImpl stockOperationService;
+    /** 自动编码工具类 */
     private final AutoCodeUtil autoCodeUtil;
+    /** 调拨业务服务，提供调拨相关能力 */
     private final IWfProcessService processService;
+    /** 调拨业务服务，提供调拨相关能力 */
     private final WfMyBusinessServiceImpl wfMyBusinessServiceImpl;
+    /** 调拨业务服务，提供调拨相关能力 */
     private final RuntimeService runtimeService;
+    /** 调拨业务服务，提供调拨相关能力 */
     private final HistoryService historyService;
 
+    /**
+     * 分页查询调拨列表
+     *
+     * @param bo 调拨业务对象（BO）
+     * @param pageQuery 分页查询参数，包含页码、每页大小及排序条件
+     * @return 结果对象
+     */
     @Override
     public TableDataInfo<WmTransferVo> selectPageList(WmTransferBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<WmTransfer> lqw = buildQueryWrapper(bo);
@@ -60,11 +81,23 @@ public class WmTransferServiceImpl implements IWmTransferService {
         return TableDataInfo.build(page);
     }
 
+    /**
+     * 查询调拨列表
+     *
+     * @param bo 调拨业务对象（BO）
+     * @return 结果对象
+     */
     @Override
     public List<WmTransferVo> selectList(WmTransferBo bo) {
         return baseMapper.selectVoList(buildQueryWrapper(bo));
     }
 
+    /**
+     * 查询调拨
+     *
+     * @param id 主键 ID
+     * @return 结果
+     */
     @Override
     public WmTransferVo selectById(Long id) {
         WmTransferVo vo = baseMapper.selectVoById(id);
@@ -76,6 +109,12 @@ public class WmTransferServiceImpl implements IWmTransferService {
         return vo;
     }
 
+    /**
+     * 新增调拨
+     *
+     * @param bo 调拨业务对象（BO）
+     * @return 结果
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(WmTransferBo bo) {
@@ -94,6 +133,12 @@ public class WmTransferServiceImpl implements IWmTransferService {
         return rows;
     }
 
+    /**
+     * 修改调拨
+     *
+     * @param bo 调拨业务对象（BO）
+     * @return 结果
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(WmTransferBo bo) {
@@ -108,6 +153,12 @@ public class WmTransferServiceImpl implements IWmTransferService {
         return baseMapper.updateById(entity);
     }
 
+    /**
+     * 删除调拨
+     *
+     * @param ids 主键 ID 数组（支持批量操作）
+     * @return 结果
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {
@@ -117,6 +168,12 @@ public class WmTransferServiceImpl implements IWmTransferService {
         return baseMapper.deleteBatchIds(List.of(ids));
     }
 
+    /**
+     * 执行调拨相关操作
+     *
+     * @param transferId 调拨单 ID
+     * @return 结果
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void execute(Long transferId) {
@@ -148,6 +205,13 @@ public class WmTransferServiceImpl implements IWmTransferService {
 
     // ==================== Flowable 工作流集成 ====================
 
+    /**
+     * 调拨处理（submit）
+     *
+     * @param transferIdStr 参数 transferIdStr
+     * @param selectFlowId selectFlow ID
+     * @return 结果
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean submit(String transferIdStr, String selectFlowId) {
@@ -179,6 +243,12 @@ public class WmTransferServiceImpl implements IWmTransferService {
         throw new RuntimeException(result.getMsg());
     }
 
+    /**
+     * 获取调拨
+     *
+     * @param transferIdStr 参数 transferIdStr
+     * @return 结果
+     */
     @Override
     public String getProcInsId(String transferIdStr) {
         try {
@@ -198,6 +268,12 @@ public class WmTransferServiceImpl implements IWmTransferService {
         return hist != null ? hist.getId() : null;
     }
 
+    /**
+     * 调拨处理（afterFlowHandle）
+     *
+     * @param business 参数 business
+     * @return 结果
+     */
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void afterFlowHandle(WfMyBusiness business) {
@@ -217,17 +293,37 @@ public class WmTransferServiceImpl implements IWmTransferService {
         baseMapper.updateById(entity);
     }
 
+    /**
+     * 获取调拨详情
+     *
+     * @param dataId data ID
+     * @return 结果
+     */
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Object getBusinessDataById(String dataId) {
         return selectById(Long.parseLong(dataId));
     }
 
+    /**
+     * 调拨处理（flowValuesOfTask）
+     *
+     * @param taskNameId taskName ID
+     * @param values 参数 values
+     * @return 结果对象
+     */
     @Override
     public Map<String, Object> flowValuesOfTask(String taskNameId, Map<String, Object> values) {
         return null;
     }
 
+    /**
+     * 调拨处理（flowCandidateUsernamesOfTask）
+     *
+     * @param taskNameId taskName ID
+     * @param values 参数 values
+     * @return 结果对象
+     */
     @Override
     public List<String> flowCandidateUsernamesOfTask(String taskNameId, Map<String, Object> values) {
         return null;

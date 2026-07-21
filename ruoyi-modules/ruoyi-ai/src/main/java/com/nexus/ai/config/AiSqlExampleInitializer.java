@@ -20,8 +20,14 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class AiSqlExampleInitializer implements ApplicationRunner {
 
+    /** SQL 示例持久层 Mapper，用于统计现有示例数量并执行插入。 */
     private final AiSqlExampleMapper sqlExampleMapper;
 
+    /**
+     * 应用启动时执行，当表为空时插入库存、销售、采购、生产、通用等默认 SQL 示例。
+     *
+     * @param args Spring 应用启动参数（未使用）
+     */
     @Override
     public void run(ApplicationArguments args) {
         initDefaultExamples();

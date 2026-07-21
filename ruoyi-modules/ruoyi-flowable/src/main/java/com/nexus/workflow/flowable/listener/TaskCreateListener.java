@@ -22,6 +22,7 @@ import com.nexus.system.service.CommonService;
 
 /**
  * 全局监听-工作流待办消息提醒
+ * <p>在任务分配时向任务接收人发送待办系统通知，属于 Flowable 工作流模块。</p>
  *
  * @author wanghuan
  */
@@ -30,12 +31,22 @@ import com.nexus.system.service.CommonService;
 @RequiredArgsConstructor
 public class TaskCreateListener implements FlowableEventListener {
 
+    /** 任务服务，用于查询任务变量。 */
     private final TaskService taskService;
+    /** 系统公共服务，用于查询登录用户与发送系统通知。 */
     private final CommonService commonService;
+    /** 仓储服务，用于查询流程部署信息。 */
     private final RepositoryService repositoryService;
+    /** 历史服务，用于查询流程历史实例。 */
     private final HistoryService historyService;
 
 
+    /**
+     * 监听任务分配事件，向任务接收人发送待办通知。
+     * <p>仅处理任务分配（TASK_ASSIGNED）事件，并向非发起人的接收人发送系统站内信。</p>
+     *
+     * @param flowableEvent 流程引擎事件
+     */
     @Override
     public void onEvent(FlowableEvent flowableEvent) {
         FlowableEventType type = flowableEvent.getType();
@@ -72,16 +83,31 @@ public class TaskCreateListener implements FlowableEventListener {
         }
     }
 
+    /**
+     * 监听器在事件处理抛出异常时是否继续。
+     *
+     * @return 始终返回 false，即异常时不中断流程
+     */
     @Override
     public boolean isFailOnException() {
         return false;
     }
 
+    /**
+     * 是否在事务生命周期事件中触发。
+     *
+     * @return 始终返回 false
+     */
     @Override
     public boolean isFireOnTransactionLifecycleEvent() {
         return false;
     }
 
+    /**
+     * 获取触发的事务阶段。
+     *
+     * @return 始终返回 null
+     */
     @Override
     public String getOnTransaction() {
         return null;

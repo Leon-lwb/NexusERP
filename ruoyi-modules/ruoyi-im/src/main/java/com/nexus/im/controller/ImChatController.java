@@ -31,7 +31,10 @@ import java.util.Map;
 
 
 /**
- * 聊天管理
+ * 聊天管理Controller（PC 端）
+ * <p>提供私聊/群聊消息发送、历史记录查询、会话列表、群组管理、已读标记、消息撤回等 REST 接口，
+ * 属于 IM（即时通讯）模块，所有接口均要求登录态（{@code @SaCheckLogin}）。</p>
+ *
  * @author wanghuan
  */
 @Validated
@@ -40,26 +43,53 @@ import java.util.Map;
 @RequestMapping("/im/chat")
 public class ImChatController extends BaseController {
 
+    /** 聊天业务服务，聚合私聊/群聊发送、历史、群组、已读等能力。 */
     private final IImChatService imChatService;
 
+    /**
+     * 发送私聊消息。
+     *
+     * @param bo 私聊发送参数（接收方、内容、消息类型、clientMsgId 等）
+     * @return 发送成功后的消息 ID
+     */
     @SaCheckLogin
     @PostMapping("/private/send")
     public R<Long> sendPrivate(@Validated @RequestBody ImPrivateSendBo bo) {
         return imChatService.sendPrivate(bo);
     }
 
+    /**
+     * 发送群聊消息。
+     *
+     * @param bo 群聊发送参数（群组、内容、消息类型、@ 提醒、clientMsgId 等）
+     * @return 发送成功后的消息 ID
+     */
     @SaCheckLogin
     @PostMapping("/group/send")
     public R<Long> sendGroup(@Validated @RequestBody ImGroupSendBo bo) {
         return imChatService.sendGroup(bo);
     }
 
+    /**
+     * 分页查询与指定用户的私聊历史消息。
+     *
+     * @param peerUserId 对端用户 ID
+     * @param pageQuery  分页查询参数
+     * @return 私聊消息分页结果
+     */
     @SaCheckLogin
     @GetMapping("/private/history")
     public TableDataInfo<ImMessage> privateHistory(@NotNull @RequestParam Long peerUserId, PageQuery pageQuery) {
         return imChatService.privateHistory(peerUserId, pageQuery);
     }
 
+    /**
+     * 分页查询指定群组的群聊历史消息。
+     *
+     * @param groupId  群组 ID
+     * @param pageQuery 分页查询参数
+     * @return 群聊消息分页结果
+     */
     @SaCheckLogin
     @GetMapping("/group/history")
     public TableDataInfo<ImMessage> groupHistory(@NotNull @RequestParam Long groupId, PageQuery pageQuery) {
@@ -84,24 +114,48 @@ public class ImChatController extends BaseController {
         return imChatService.groupHistoryWithSender(groupId, pageQuery);
     }
 
+    /**
+     * 查询当前登录用户的会话列表（按最近消息时间排序，含未读数）。
+     *
+     * @return 会话视图列表
+     */
     @SaCheckLogin
     @GetMapping("/conversations")
     public R<List<ImConversationVo>> conversations() {
         return R.ok(imChatService.listConversations());
     }
 
+    /**
+     * 创建群聊并把创建人设为群主，同时加入初始成员。
+     *
+     * @param bo 建群参数（群名、头像、初始成员）
+     * @return 新建群组 ID
+     */
     @SaCheckLogin
     @PostMapping("/group")
     public R<Long> createGroup(@Validated @RequestBody ImGroupCreateBo bo) {
         return imChatService.createGroup(bo);
     }
 
+    /**
+     * 向指定群组添加成员（群主操作）。
+     *
+     * @param groupId 群组 ID
+     * @param bo      待添加成员参数
+     * @return 操作结果
+     */
     @SaCheckLogin
     @PostMapping("/group/{groupId}/members")
     public R<Void> addMembers(@PathVariable Long groupId, @Validated @RequestBody ImGroupMemberAddBo bo) {
         return imChatService.addGroupMembers(groupId, bo);
     }
 
+    /**
+     * 标记与指定用户的私聊消息为已读（幂等）。
+     *
+     * @param peerUserId 对端用户 ID
+     * @return 操作结果
+     */
     @SaCheckLogin
     @PutMapping("/private/read")
     public R<Void> markPrivateRead(@NotNull @RequestParam Long peerUserId) {
@@ -110,6 +164,12 @@ public class ImChatController extends BaseController {
         return R.ok();
     }
 
+    /**
+     * 标记指定群组的群聊消息为已读（幂等）。
+     *
+     * @param groupId 群组 ID
+     * @return 操作结果
+     */
     @SaCheckLogin
     @PutMapping("/group/read")
     public R<Void> markGroupRead(@NotNull @RequestParam Long groupId) {
@@ -126,6 +186,13 @@ public class ImChatController extends BaseController {
         return R.ok(imChatService.listGroupMembers(groupId));
     }
 
+    /**
+     * 将成员移出群组（群主操作，群主自身不可被移除）。
+     *
+     * @param groupId 群组 ID
+     * @param userId  待移除成员用户 ID
+     * @return 操作结果
+     */
     @SaCheckLogin
     @DeleteMapping("/group/{groupId}/members/{userId}")
     public R<Void> removeMember(@PathVariable Long groupId, @PathVariable Long userId) {

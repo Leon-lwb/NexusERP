@@ -31,6 +31,11 @@ public class MatchResultVo implements Serializable {
     /** 匹配维度汇总(物料/数量/单价/税率/税额/价税合计) */
     private String summary;
 
+    /**
+     * 记录一条差异并标记结果为不通过。
+     *
+     * @param msg 差异描述（人读）
+     */
     public void addMismatch(String msg) {
         this.mismatches.add(msg);
         this.mismatchCount = this.mismatches.size();

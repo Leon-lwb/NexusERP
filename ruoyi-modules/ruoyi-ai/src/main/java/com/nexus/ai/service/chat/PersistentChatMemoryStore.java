@@ -27,6 +27,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class PersistentChatMemoryStore implements ChatMemoryStore {
 
+    /** 聊天消息表 Mapper，负责会话消息读写与去重。 */
     private final AiMessageMapper aiMessageMapper;
 
     /** 内存缓存：sessionId -> 最近一次保存的 ASSISTANT 消息内容，避免每次 updateMessages 都查库去重。

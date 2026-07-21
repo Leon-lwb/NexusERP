@@ -49,6 +49,12 @@ public class MesMbomServiceImpl implements IMesMbomService {
     private final IMesErpBridgeService bridge;
 
     @Override
+    /**
+     * 查询
+     * @param bo bo
+     * @param pageQuery pageQuery
+     * @return 分页结果
+     */
     public TableDataInfo<MesMbomVo> selectPageList(MesMbomBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<MesMbom> lqw = buildQueryWrapper(bo);
         Page<MesMbomVo> page = baseMapper.selectVoPage(pageQuery.build(), lqw);
@@ -57,6 +63,11 @@ public class MesMbomServiceImpl implements IMesMbomService {
     }
 
     @Override
+    /**
+     * 查询
+     * @param mbomId MBOMID
+     * @return 返回视图对象
+     */
     public MesMbomVo selectById(Long mbomId) {
         MesMbomVo vo = baseMapper.selectVoById(mbomId);
         if (vo != null) {
@@ -75,6 +86,11 @@ public class MesMbomServiceImpl implements IMesMbomService {
     }
 
     @Override
+    /**
+     * 查询
+     * @param bomId BOMID
+     * @return 返回视图对象
+     */
     public MesMbomVo selectByBomId(Long bomId) {
         if (bomId == null) {
             return null;
@@ -89,6 +105,11 @@ public class MesMbomServiceImpl implements IMesMbomService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    /**
+     * 新增
+     * @param bo bo
+     * @return 受影响行数
+     */
     public int insertByBo(MesMbomBo bo) {
         // 校验同一ERP BOM不能重复编制MBOM
         Long exist = baseMapper.selectCount(Wrappers.lambdaQuery(MesMbom.class)
@@ -107,6 +128,11 @@ public class MesMbomServiceImpl implements IMesMbomService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    /**
+     * 更新
+     * @param bo bo
+     * @return 受影响行数
+     */
     public int updateByBo(MesMbomBo bo) {
         // 校验bomId不与其他MBOM冲突(排除自身)
         if (bo.getBomId() != null && bo.getMbomId() != null) {
@@ -130,6 +156,11 @@ public class MesMbomServiceImpl implements IMesMbomService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    /**
+     * 删除
+     * @param ids 批量操作ID集合
+     * @return 受影响行数
+     */
     public int deleteByIds(Long[] ids) {
         List<Long> idList = List.of(ids);
         // 校验是否有在制工单快照引用这些MBOM的明细行
@@ -151,6 +182,10 @@ public class MesMbomServiceImpl implements IMesMbomService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    /**
+     * activate 操作
+     * @param mbomId MBOMID
+     */
     public void activate(Long mbomId) {
         MesMbom mbom = baseMapper.selectById(mbomId);
         if (mbom == null) {
@@ -161,6 +196,11 @@ public class MesMbomServiceImpl implements IMesMbomService {
     }
 
     @Override
+    /**
+     * verify 操作
+     * @param mbomId MBOMID
+     * @return 返回结果
+     */
     public String verify(Long mbomId) {
         MesMbom mbom = baseMapper.selectById(mbomId);
         if (mbom == null) {

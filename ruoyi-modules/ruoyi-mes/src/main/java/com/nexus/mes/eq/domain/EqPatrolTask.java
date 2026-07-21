@@ -12,6 +12,8 @@ import java.util.Date;
 /**
  * MES巡检任务对象 eq_patrol_task
  *
+ * <p>属于MES 设备管理模块，巡检定时任务。</p>
+ *
  * @author Nexus
  */
 @Data

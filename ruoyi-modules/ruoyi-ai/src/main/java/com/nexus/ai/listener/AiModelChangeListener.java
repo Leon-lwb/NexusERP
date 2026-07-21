@@ -19,6 +19,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class AiModelChangeListener {
 
+    /** ChatModel 工厂，用于清除变更模型对应的缓存实例。 */
     private final ChatModelFactory chatModelFactory;
 
     /**

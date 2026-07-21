@@ -32,11 +32,24 @@ public class TestDemoServiceImpl implements ITestDemoService {
 
     private final TestDemoMapper baseMapper;
 
+    /**
+     * 根据主键查询测试单表详情
+     *
+     * @param id 测试单表主键
+     * @return 测试单表视图对象
+     */
     @Override
     public TestDemoVo queryById(Long id) {
         return baseMapper.selectVoById(id);
     }
 
+    /**
+     * 分页查询测试单表列表
+     *
+     * @param bo        查询条件业务对象
+     * @param pageQuery 分页参数
+     * @return 分页结果
+     */
     @Override
     public TableDataInfo<TestDemoVo> queryPageList(TestDemoBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<TestDemo> lqw = buildQueryWrapper(bo);
@@ -54,6 +67,12 @@ public class TestDemoServiceImpl implements ITestDemoService {
         return TableDataInfo.build(result);
     }
 
+    /**
+     * 查询测试单表列表（不分页）
+     *
+     * @param bo 查询条件业务对象
+     * @return 测试单表视图对象列表
+     */
     @Override
     public List<TestDemoVo> queryList(TestDemoBo bo) {
         return baseMapper.selectVoList(buildQueryWrapper(bo));
@@ -72,6 +91,12 @@ public class TestDemoServiceImpl implements ITestDemoService {
         return lqw;
     }
 
+    /**
+     * 根据业务对象新增测试单表
+     *
+     * @param bo 新增业务对象
+     * @return 是否新增成功
+     */
     @Override
     public Boolean insertByBo(TestDemoBo bo) {
         TestDemo add = MapstructUtils.convert(bo, TestDemo.class);
@@ -83,6 +108,12 @@ public class TestDemoServiceImpl implements ITestDemoService {
         return flag;
     }
 
+    /**
+     * 根据业务对象修改测试单表
+     *
+     * @param bo 编辑业务对象
+     * @return 是否修改成功
+     */
     @Override
     public Boolean updateByBo(TestDemoBo bo) {
         TestDemo update = MapstructUtils.convert(bo, TestDemo.class);
@@ -99,6 +130,13 @@ public class TestDemoServiceImpl implements ITestDemoService {
         //TODO 做一些数据校验,如唯一约束
     }
 
+    /**
+     * 校验并批量删除测试单表
+     *
+     * @param ids     主键集合
+     * @param isValid 是否校验，true-删除前校验，false-不校验
+     * @return 是否删除成功
+     */
     @Override
     public Boolean deleteWithValidByIds(Collection<Long> ids, Boolean isValid) {
         if (isValid) {
@@ -111,6 +149,12 @@ public class TestDemoServiceImpl implements ITestDemoService {
         return baseMapper.deleteByIds(ids) > 0;
     }
 
+    /**
+     * 批量保存测试单表
+     *
+     * @param list 测试单表实体集合
+     * @return 是否保存成功
+     */
     @Override
     public Boolean saveBatch(List<TestDemo> list) {
         return baseMapper.insertBatch(list);

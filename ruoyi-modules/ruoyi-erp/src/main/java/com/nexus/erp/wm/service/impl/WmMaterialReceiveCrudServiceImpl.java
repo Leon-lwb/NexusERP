@@ -64,16 +64,27 @@ import java.util.Map;
 @Service("wmMaterialReceiveCrudService")
 public class WmMaterialReceiveCrudServiceImpl implements IWmMaterialReceiveCrudService {
 
+    /** 基础数据访问映射器（Mapper） */
     private final WmMaterialReceiveMapper baseMapper;
+    /** 领用行数据访问映射器（Mapper） */
     private final WmMaterialReceiveLineMapper receiveLineMapper;
+    /** 领用明细数据访问映射器（Mapper） */
     private final WmMaterialReceiveDetailMapper receiveDetailMapper;
+    /** 物料领用CRUD业务服务，提供物料领用CRUD相关能力 */
     private final IWfProcessService processService;
+    /** 物料领用CRUD业务服务，提供物料领用CRUD相关能力 */
     private final WfMyBusinessServiceImpl wfMyBusinessServiceImpl;
+    /** 物料领用CRUD业务服务，提供物料领用CRUD相关能力 */
     private final RuntimeService runtimeService;
+    /** 物料领用CRUD业务服务，提供物料领用CRUD相关能力 */
     private final HistoryService historyService;
+    /** 执行器业务服务，提供执行器相关能力 */
     private final IWmMaterialReceiveExecutorService executorService;
+    /** 消息提供器 */
     private final ReliableMessageProducer messageProducer;
+    /** 物料领用CRUD业务服务，提供物料领用CRUD相关能力 */
     private final ISysUserService sysUserService;
+    /** 自动编码工具类 */
     private final AutoCodeUtil autoCodeUtil;
 
     /**

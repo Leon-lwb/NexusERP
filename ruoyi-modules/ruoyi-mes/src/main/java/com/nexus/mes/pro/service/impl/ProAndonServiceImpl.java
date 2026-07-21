@@ -55,6 +55,12 @@ public class ProAndonServiceImpl implements IProAndonService {
     private final ProWorkOrderMapper workOrderMapper;
 
     @Override
+    /**
+     * 查询
+     * @param bo bo
+     * @param pageQuery pageQuery
+     * @return 分页结果
+     */
     public TableDataInfo<ProAndonVo> selectPageList(ProAndonBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<ProAndon> lqw = buildQueryWrapper(bo);
         Page<ProAndonVo> page = baseMapper.selectVoPage(pageQuery.build(), lqw);
@@ -62,11 +68,20 @@ public class ProAndonServiceImpl implements IProAndonService {
     }
 
     @Override
+    /**
+     * 查询
+     * @param andonId 安灯ID
+     * @return 返回视图对象
+     */
     public ProAndonVo selectById(Long andonId) {
         return baseMapper.selectVoById(andonId);
     }
 
     @Override
+    /**
+     * dashboardStats 操作
+     * @return 返回结果映射
+     */
     public Map<String, Object> dashboardStats() {
         Map<String, Object> stats = new HashMap<>();
         // 活跃呼叫数(CALLED + RESPONDED)

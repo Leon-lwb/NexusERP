@@ -43,15 +43,29 @@ import java.util.stream.Collectors;
 @Service
 public class StockReconciliationServiceImpl implements IStockReconciliationService {
 
+    /** 常量：STATUSMATCH */
     public static final String STATUS_MATCH = "MATCH";
+    /** 常量：STATUSDIFF */
     public static final String STATUS_DIFF = "DIFF";
 
+    /** 基础数据访问映射器（Mapper） */
     private final WmStockReconciliationMapper baseMapper;
+    /** 库存数据访问映射器（Mapper） */
     private final WmMaterialStockMapper stockMapper;
+    /** 库存流水数据访问映射器（Mapper） */
     private final WmMaterialStockTxMapper stockTxMapper;
+    /** 物料数据访问映射器（Mapper） */
     private final BdMaterialMapper materialMapper;
+    /** 库存对账数据访问映射器（Mapper） */
     private final BdUnitOfMeasureMapper uomMapper;
 
+    /**
+     * 分页查询库存对账列表
+     *
+     * @param bo 库存对账业务对象（BO）
+     * @param pageQuery 分页查询参数，包含页码、每页大小及排序条件
+     * @return 结果对象
+     */
     @Override
     public TableDataInfo<WmStockReconciliationVo> selectPageList(WmStockReconciliationBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<WmStockReconciliation> lqw = buildQueryWrapper(bo);
@@ -59,23 +73,45 @@ public class StockReconciliationServiceImpl implements IStockReconciliationServi
         return TableDataInfo.build(page);
     }
 
+    /**
+     * 查询库存对账列表
+     *
+     * @param bo 库存对账业务对象（BO）
+     * @return 结果对象
+     */
     @Override
     public List<WmStockReconciliationVo> selectList(WmStockReconciliationBo bo) {
         LambdaQueryWrapper<WmStockReconciliation> lqw = buildQueryWrapper(bo);
         return baseMapper.selectVoList(lqw);
     }
 
+    /**
+     * 查询库存对账
+     *
+     * @param id 主键 ID
+     * @return 结果
+     */
     @Override
     public WmStockReconciliationVo selectById(Long id) {
         return baseMapper.selectVoById(id);
     }
 
+    /**
+     * 删除库存对账
+     *
+     * @param ids 主键 ID 数组（支持批量操作）
+     * @return 结果
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {
         return baseMapper.deleteBatchIds(List.of(ids));
     }
 
+    /**
+     * 库存对账处理（reconcile）
+     * @return 结果
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void reconcile() {
@@ -156,6 +192,12 @@ public class StockReconciliationServiceImpl implements IStockReconciliationServi
         return new BigDecimal(value.toString());
     }
 
+    /**
+     * 库存对账处理（reconcileByMaterial）
+     *
+     * @param materialId 物料 ID
+     * @return 结果
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void reconcileByMaterial(Long materialId) {

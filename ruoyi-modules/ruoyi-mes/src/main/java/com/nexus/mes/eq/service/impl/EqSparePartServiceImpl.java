@@ -45,6 +45,13 @@ public class EqSparePartServiceImpl implements IEqSparePartService {
     private final EqSparePartMapper baseMapper;
     private final EqSpareStockLogMapper stockLogMapper;
 
+    /**
+     * 分页查询备件零件列表
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @param pageQuery 分页参数（页码、每页大小、排序）
+     * @return 分页结果
+     */
     @Override
     public TableDataInfo<EqSparePartVo> selectPageList(EqSparePartBo bo, PageQuery pageQuery) {
         Page<EqSparePartVo> page = baseMapper.selectVoPage(pageQuery.build(), buildQueryWrapper(bo));
@@ -52,6 +59,12 @@ public class EqSparePartServiceImpl implements IEqSparePartService {
         return TableDataInfo.build(page);
     }
 
+    /**
+     * 获取备件零件详情
+     *
+     * @param spareId 备件ID
+     * @return 返回结果
+     */
     @Override
     public EqSparePartVo selectById(Long spareId) {
         EqSparePartVo vo = baseMapper.selectVoById(spareId);
@@ -61,6 +74,12 @@ public class EqSparePartServiceImpl implements IEqSparePartService {
         return vo;
     }
 
+    /**
+     * 查询备件零件列表
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @return 结果列表
+     */
     @Override
     public List<EqSparePartVo> selectList(EqSparePartBo bo) {
         List<EqSparePartVo> list = baseMapper.selectVoList(buildQueryWrapper(bo));
@@ -68,6 +87,12 @@ public class EqSparePartServiceImpl implements IEqSparePartService {
         return list;
     }
 
+    /**
+     * 新增备件零件
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @return 返回结果
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public EqSparePartVo insertByBo(EqSparePartBo bo) {
@@ -92,6 +117,12 @@ public class EqSparePartServiceImpl implements IEqSparePartService {
         return baseMapper.selectVoById(spare.getSpareId());
     }
 
+    /**
+     * 更新备件零件
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @return 是否成功
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean updateByBo(EqSparePartBo bo) {
@@ -108,6 +139,12 @@ public class EqSparePartServiceImpl implements IEqSparePartService {
         return baseMapper.updateById(spare) > 0;
     }
 
+    /**
+     * 获取备件零件详情
+     *
+     * @param ids ID数组
+     * @return 是否成功
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean deleteByIds(Long[] ids) {
@@ -129,6 +166,9 @@ public class EqSparePartServiceImpl implements IEqSparePartService {
      * 出入库: 原子更新 current_stock + 写流水。
      * IN: current_stock = current_stock + qty
      * OUT/REPAIR_USE: current_stock = current_stock - qty (WHERE current_stock >= qty, 失败抛库存不足)
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @return 返回结果
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -181,17 +221,35 @@ public class EqSparePartServiceImpl implements IEqSparePartService {
         return after;
     }
 
+    /**
+     * 分页查询流水列表
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @param pageQuery 分页参数（页码、每页大小、排序）
+     * @return 分页结果
+     */
     @Override
     public TableDataInfo<EqSpareStockLogVo> selectStockLogPage(EqSpareStockBo bo, PageQuery pageQuery) {
         Page<EqSpareStockLogVo> page = stockLogMapper.selectVoPage(pageQuery.build(), buildStockLogQueryWrapper(bo));
         return TableDataInfo.build(page);
     }
 
+    /**
+     * 查询流水列表
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @return 结果列表
+     */
     @Override
     public List<EqSpareStockLogVo> selectStockLogList(EqSpareStockBo bo) {
         return stockLogMapper.selectVoList(buildStockLogQueryWrapper(bo));
     }
 
+    /**
+     * 查询低库存
+     *
+     * @return 结果列表
+     */
     @Override
     public List<EqSparePartVo> selectLowStock() {
         List<EqSparePartVo> list = baseMapper.selectVoList(Wrappers.<EqSparePart>lambdaQuery()

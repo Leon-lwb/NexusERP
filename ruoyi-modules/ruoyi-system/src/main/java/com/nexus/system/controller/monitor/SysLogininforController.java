@@ -23,7 +23,9 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 /**
- * 系统访问记录
+ * 系统访问记录（登录日志）Controller
+ * <p>提供登录日志的分页查询、Excel 导出、批量删除、清空及账户解锁等接口。
+ * 属于系统管理（System）模块的监控（monitor）分组。</p>
  *
  * @author Lion Li
  */
@@ -33,10 +35,15 @@ import java.util.List;
 @RequestMapping("/monitor/logininfor")
 public class SysLogininforController extends BaseController {
 
+    /** 系统访问记录（登录日志）业务服务，提供分页、导出、删除、清理与解锁等能力。 */
     private final ISysLogininforService logininforService;
 
     /**
-     * 获取系统访问记录列表
+     * 分页查询系统访问记录（登录日志）列表。
+     *
+     * @param logininfor 登录日志查询条件（IP、登录状态、时间范围等）
+     * @param pageQuery  分页查询参数，包含页码、每页大小及排序条件
+     * @return 分页结果，包含登录日志列表及分页元信息
      */
     @SaCheckPermission("monitor:logininfor:list")
     @GetMapping("/list")
@@ -45,7 +52,10 @@ public class SysLogininforController extends BaseController {
     }
 
     /**
-     * 导出系统访问记录列表
+     * 导出系统访问记录列表为 Excel 文件。
+     *
+     * @param logininfor 登录日志查询条件
+     * @param response   HTTP 响应，用于写入导出的 Excel 流
      */
     @Log(title = "登录日志", businessType = BusinessType.EXPORT)
     @SaCheckPermission("monitor:logininfor:export")
@@ -78,6 +88,12 @@ public class SysLogininforController extends BaseController {
         return R.ok();
     }
 
+    /**
+     * 解锁被登录失败次数限制锁定的账户，清除其密码错误计数缓存。
+     *
+     * @param userName 待解锁的用户名
+     * @return 操作结果，成功时返回成功状态
+     */
     @SaCheckPermission("monitor:logininfor:unlock")
     @Log(title = "账户解锁", businessType = BusinessType.OTHER)
     @RepeatSubmit()

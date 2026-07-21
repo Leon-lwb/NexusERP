@@ -73,6 +73,12 @@ public class ImRealtimePush {
         }
     }
 
+    /**
+     * 向多个用户推送消息（默认 chatType 为 other）。
+     *
+     * @param userIds     目标用户 ID 列表
+     * @param jsonMessage 推送载荷（信封 JSON 字符串）
+     */
     public void publishToUsers(List<Long> userIds, String jsonMessage) {
         publishToUsers(userIds, jsonMessage, CHAT_TYPE_OTHER);
     }
@@ -148,6 +154,12 @@ public class ImRealtimePush {
         }
     }
 
+    /**
+     * 向单个用户推送消息（默认 chatType 为 other）。
+     *
+     * @param userId      目标用户 ID
+     * @param jsonMessage 推送载荷（信封 JSON 字符串）
+     */
     public void publishToUser(Long userId, String jsonMessage) {
         publishToUsers(List.of(userId), jsonMessage, CHAT_TYPE_OTHER);
     }
@@ -183,6 +195,12 @@ public class ImRealtimePush {
         });
     }
 
+    /**
+     * 在事务提交后向单个用户推送消息（默认 chatType 为 other）；无活动事务则立即推送。
+     *
+     * @param userId      目标用户 ID
+     * @param jsonMessage 推送载荷（信封 JSON 字符串）
+     */
     public void publishToUserAfterCommit(Long userId, String jsonMessage) {
         publishToUsersAfterCommit(List.of(userId), jsonMessage, CHAT_TYPE_OTHER);
     }

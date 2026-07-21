@@ -27,7 +27,9 @@ import java.util.List;
 @RequestMapping("/ai/sql-example")
 public class AiSqlExampleController extends BaseController {
 
+    /** SQL 示例业务服务，提供示例 CRUD 与分页查询。 */
     private final IAiSqlExampleService sqlExampleService;
+    /** SQL 示例渲染服务，负责示例渲染缓存的清理。 */
     private final SqlExampleService sqlExampleRenderingService;
 
     /**

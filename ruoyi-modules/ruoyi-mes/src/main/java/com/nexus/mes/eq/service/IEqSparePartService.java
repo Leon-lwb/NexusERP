@@ -28,31 +28,50 @@ public interface IEqSparePartService {
 
     /**
      * 分页查询备件列表(填充 lowStock 标记)
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @param pageQuery 分页参数（页码、每页大小、排序）
+     * @return 分页结果
      */
     TableDataInfo<EqSparePartVo> selectPageList(EqSparePartBo bo, PageQuery pageQuery);
 
     /**
      * 根据ID获取备件详情
+     *
+     * @param spareId 备件ID
+     * @return 返回结果
      */
     EqSparePartVo selectById(Long spareId);
 
     /**
      * 查询备件列表(不分页, 用于导出/下拉)
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @return 结果列表
      */
     List<EqSparePartVo> selectList(EqSparePartBo bo);
 
     /**
      * 新增备件主数据
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @return 返回结果
      */
     EqSparePartVo insertByBo(EqSparePartBo bo);
 
     /**
      * 修改备件主数据
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @return 是否成功
      */
     Boolean updateByBo(EqSparePartBo bo);
 
     /**
      * 批量删除备件(校验库存为0或null)
+     *
+     * @param ids ID数组
+     * @return 是否成功
      */
     Boolean deleteByIds(Long[] ids);
 
@@ -68,16 +87,25 @@ public interface IEqSparePartService {
 
     /**
      * 分页查询库存流水
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @param pageQuery 分页参数（页码、每页大小、排序）
+     * @return 分页结果
      */
     TableDataInfo<EqSpareStockLogVo> selectStockLogPage(EqSpareStockBo bo, PageQuery pageQuery);
 
     /**
      * 查询库存流水列表(不分页, 用于导出)
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @return 结果列表
      */
     List<EqSpareStockLogVo> selectStockLogList(EqSpareStockBo bo);
 
     /**
      * 查询低于安全库存的备件(用于监控大屏/告警)
+     *
+     * @return 结果列表
      */
     List<EqSparePartVo> selectLowStock();
 }

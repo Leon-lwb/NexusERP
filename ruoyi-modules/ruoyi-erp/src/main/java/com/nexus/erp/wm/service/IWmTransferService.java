@@ -15,22 +15,64 @@ import java.util.List;
  */
 public interface IWmTransferService extends WfCallBackServiceI {
 
+    /** 常量：STATUSDRAFT */
     String STATUS_DRAFT = "DRAFT";
+    /** 常量：STATUSAPPROVING */
     String STATUS_APPROVING = "APPROVING";
+    /** 常量：STATUSAPPROVED */
     String STATUS_APPROVED = "APPROVED";
+    /** 常量：STATUSEXECUTED */
     String STATUS_EXECUTED = "EXECUTED";
+    /** 常量：STATUSCANCELLED */
     String STATUS_CANCELLED = "CANCELLED";
 
+    /**
+     * 分页查询调拨列表
+     *
+     * @param bo 调拨业务对象（BO）
+     * @param pageQuery 分页查询参数，包含页码、每页大小及排序条件
+     * @return 分页查询结果
+     */
     TableDataInfo<WmTransferVo> selectPageList(WmTransferBo bo, PageQuery pageQuery);
 
+    /**
+     * 查询调拨列表
+     *
+     * @param bo 调拨业务对象（BO）
+     * @return 结果列表
+     */
     List<WmTransferVo> selectList(WmTransferBo bo);
 
+    /**
+     * 查询调拨
+     *
+     * @param id 主键 ID
+     * @return 结果
+     */
     WmTransferVo selectById(Long id);
 
+    /**
+     * 新增调拨
+     *
+     * @param bo 调拨业务对象（BO）
+     * @return 影响行数
+     */
     int insertByBo(WmTransferBo bo);
 
+    /**
+     * 修改调拨
+     *
+     * @param bo 调拨业务对象（BO）
+     * @return 影响行数
+     */
     int updateByBo(WmTransferBo bo);
 
+    /**
+     * 删除调拨
+     *
+     * @param ids 主键 ID 数组（支持批量操作）
+     * @return 影响行数
+     */
     int deleteByIds(Long[] ids);
 
     /**

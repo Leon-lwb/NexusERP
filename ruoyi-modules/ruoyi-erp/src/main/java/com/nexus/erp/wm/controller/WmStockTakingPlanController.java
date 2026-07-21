@@ -31,6 +31,7 @@ import java.util.List;
 @RequestMapping("/erp/wm/stocktaking")
 public class WmStockTakingPlanController extends BaseController {
 
+    /** 库存盘点计划业务服务，提供库存盘点计划相关能力 */
     private final IWmStockTakingPlanService wmStockTakingPlanService;
 
     /**

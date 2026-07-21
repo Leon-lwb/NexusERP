@@ -31,7 +31,9 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.Arrays;
 
 /**
- * 个人信息 业务处理
+ * 个人信息管理Controller
+ * <p>提供当前登录用户的个人信息查看、资料修改、密码重置与头像上传等接口。
+ * 属于系统管理（System）模块。</p>
  *
  * @author Lion Li
  */
@@ -41,11 +43,15 @@ import java.util.Arrays;
 @RequestMapping("/system/user/profile")
 public class SysProfileController extends BaseController {
 
+    /** 用户业务服务，提供用户信息、角色/岗位组、资料与密码、头像更新等能力。 */
     private final ISysUserService userService;
+    /** OSS 对象存储业务服务，用于上传用户头像文件。 */
     private final ISysOssService ossService;
 
     /**
-     * 个人信息
+     * 获取当前登录用户的个人信息，包含用户资料、角色组与岗位组。
+     *
+     * @return 当前用户个人信息视图
      */
     @GetMapping
     public R<ProfileVo> profile() {
@@ -59,7 +65,10 @@ public class SysProfileController extends BaseController {
     }
 
     /**
-     * 修改用户信息
+     * 修改当前登录用户的个人资料（昵称、手机号、邮箱等），校验唯一性。
+     *
+     * @param profile 个人资料修改参数
+     * @return 操作结果，成功时返回成功状态
      */
     @RepeatSubmit
     @Log(title = "个人信息", businessType = BusinessType.UPDATE)
@@ -82,9 +91,10 @@ public class SysProfileController extends BaseController {
     }
 
     /**
-     * 重置密码
+     * 重置当前登录用户的登录密码，校验旧密码正确性及新旧密码不一致。
      *
-     * @param bo 新旧密码
+     * @param bo 含旧密码与新密码的参数（接口加密传输）
+     * @return 操作结果，成功时返回成功状态
      */
     @RepeatSubmit
     @ApiEncrypt
@@ -107,9 +117,10 @@ public class SysProfileController extends BaseController {
     }
 
     /**
-     * 头像上传
+     * 上传并更新当前登录用户的头像（仅支持图片格式）。
      *
-     * @param avatarfile 用户头像
+     * @param avatarfile 用户头像文件
+     * @return 上传成功时返回头像地址，失败则返回错误信息
      */
     @RepeatSubmit
     @Log(title = "用户头像", businessType = BusinessType.UPDATE)

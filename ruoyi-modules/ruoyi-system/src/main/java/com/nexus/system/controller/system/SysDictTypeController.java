@@ -22,7 +22,9 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * 数据字典信息
+ * 字典类型Controller
+ * <p>提供字典类型（字典分类）的分页查询、Excel 导出、详情、增删改、缓存刷新及选择框列表接口。
+ * 属于系统管理（System）模块。</p>
  *
  * @author Lion Li
  */
@@ -32,10 +34,15 @@ import java.util.List;
 @RequestMapping("/system/dict/type")
 public class SysDictTypeController extends BaseController {
 
+    /** 字典类型业务服务，提供分页、唯一性校验、增删改及缓存重置等能力。 */
     private final ISysDictTypeService dictTypeService;
 
     /**
-     * 查询字典类型列表
+     * 分页查询字典类型列表。
+     *
+     * @param dictType 字典类型查询条件（字典名称、字典类型等）
+     * @param pageQuery 分页查询参数，包含页码、每页大小及排序条件
+     * @return 字典类型分页结果
      */
     @SaCheckPermission("system:dict:list")
     @GetMapping("/list")
@@ -44,7 +51,10 @@ public class SysDictTypeController extends BaseController {
     }
 
     /**
-     * 导出字典类型列表
+     * 导出字典类型列表为 Excel 文件。
+     *
+     * @param dictType 字典类型查询条件
+     * @param response HTTP 响应，用于写入导出的 Excel 流
      */
     @Log(title = "字典类型", businessType = BusinessType.EXPORT)
     @SaCheckPermission("system:dict:export")
@@ -55,9 +65,10 @@ public class SysDictTypeController extends BaseController {
     }
 
     /**
-     * 查询字典类型详细
+     * 根据字典类型编号查询字典类型详细信息。
      *
-     * @param dictId 字典ID
+     * @param dictId 字典类型编号
+     * @return 字典类型详情
      */
     @SaCheckPermission("system:dict:query")
     @GetMapping(value = "/{dictId}")
@@ -66,7 +77,10 @@ public class SysDictTypeController extends BaseController {
     }
 
     /**
-     * 新增字典类型
+     * 新增字典类型，校验字典类型唯一性。
+     *
+     * @param dict 字典类型新增参数
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckPermission("system:dict:add")
     @Log(title = "字典类型", businessType = BusinessType.INSERT)
@@ -81,7 +95,10 @@ public class SysDictTypeController extends BaseController {
     }
 
     /**
-     * 修改字典类型
+     * 修改字典类型，校验字典类型唯一性。
+     *
+     * @param dict 字典类型修改参数
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckPermission("system:dict:edit")
     @Log(title = "字典类型", businessType = BusinessType.UPDATE)
@@ -96,9 +113,10 @@ public class SysDictTypeController extends BaseController {
     }
 
     /**
-     * 删除字典类型
+     * 批量删除字典类型。
      *
-     * @param dictIds 字典ID串
+     * @param dictIds 字典类型编号数组
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckPermission("system:dict:remove")
     @Log(title = "字典类型", businessType = BusinessType.DELETE)
@@ -109,7 +127,9 @@ public class SysDictTypeController extends BaseController {
     }
 
     /**
-     * 刷新字典缓存
+     * 刷新字典缓存，清除并重新加载全部字典数据。
+     *
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckPermission("system:dict:remove")
     @Log(title = "字典类型", businessType = BusinessType.CLEAN)
@@ -121,7 +141,9 @@ public class SysDictTypeController extends BaseController {
     }
 
     /**
-     * 获取字典选择框列表
+     * 获取全部字典类型下拉选择框列表。
+     *
+     * @return 全部字典类型列表
      */
     @GetMapping("/optionselect")
     public R<List<SysDictTypeVo>> optionselect() {

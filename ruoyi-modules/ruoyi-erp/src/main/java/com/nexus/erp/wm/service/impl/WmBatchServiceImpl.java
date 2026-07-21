@@ -37,6 +37,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Service
 public class WmBatchServiceImpl implements IWmBatchService {
 
+    /** 基础数据访问映射器（Mapper） */
     private final WmBatchMapper baseMapper;
 
     /** 当日序列号计数器 */
@@ -44,6 +45,13 @@ public class WmBatchServiceImpl implements IWmBatchService {
     /** 上次生成编码的日期 */
     private static volatile String lastDateStr = "";
 
+    /**
+     * 分页查询批次列表
+     *
+     * @param bo 批次业务对象（BO）
+     * @param pageQuery 分页查询参数，包含页码、每页大小及排序条件
+     * @return 结果对象
+     */
     @Override
     public TableDataInfo<WmBatchVo> selectPageList(WmBatchBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<WmBatch> lqw = buildQueryWrapper(bo);
@@ -51,16 +59,34 @@ public class WmBatchServiceImpl implements IWmBatchService {
         return TableDataInfo.build(page);
     }
 
+    /**
+     * 查询批次列表
+     *
+     * @param bo 批次业务对象（BO）
+     * @return 结果对象
+     */
     @Override
     public List<WmBatchVo> selectList(WmBatchBo bo) {
         return baseMapper.selectVoList(buildQueryWrapper(bo));
     }
 
+    /**
+     * 查询批次
+     *
+     * @param id 主键 ID
+     * @return 结果
+     */
     @Override
     public WmBatchVo selectById(Long id) {
         return baseMapper.selectVoById(id);
     }
 
+    /**
+     * 新增批次
+     *
+     * @param bo 批次业务对象（BO）
+     * @return 结果
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(WmBatchBo bo) {
@@ -68,6 +94,12 @@ public class WmBatchServiceImpl implements IWmBatchService {
         return baseMapper.insert(entity);
     }
 
+    /**
+     * 修改批次
+     *
+     * @param bo 批次业务对象（BO）
+     * @return 结果
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(WmBatchBo bo) {
@@ -75,12 +107,24 @@ public class WmBatchServiceImpl implements IWmBatchService {
         return baseMapper.updateById(entity);
     }
 
+    /**
+     * 删除批次
+     *
+     * @param ids 主键 ID 数组（支持批量操作）
+     * @return 结果
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {
         return baseMapper.deleteBatchIds(List.of(ids));
     }
 
+    /**
+     * 查询批次
+     *
+     * @param batchCode 批次 编码
+     * @return 结果
+     */
     @Override
     public WmBatchVo selectByCode(String batchCode) {
         LambdaQueryWrapper<WmBatch> lqw = Wrappers.lambdaQuery();
@@ -88,6 +132,12 @@ public class WmBatchServiceImpl implements IWmBatchService {
         return baseMapper.selectVoOne(lqw);
     }
 
+    /**
+     * 新增批次
+     *
+     * @param bo 批次业务对象（BO）
+     * @return 结果
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public WmBatchVo createBatch(WmBatchBo bo) {
@@ -111,6 +161,17 @@ public class WmBatchServiceImpl implements IWmBatchService {
         return baseMapper.selectVoById(entity.getBatchId());
     }
 
+    /**
+     * 新增批次
+     *
+     * @param materialId 物料 ID
+     * @param sourceDocType 参数 sourceDocType
+     * @param sourceDocId sourceDoc ID
+     * @param sourceDocNo 参数 sourceDocNo
+     * @param warehouseId 仓库 ID
+     * @param vendorBatchCode vendor批次 编码
+     * @return 结果
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public WmBatchVo createBatchByMaterial(Long materialId, String sourceDocType, Long sourceDocId, String sourceDocNo, Long warehouseId, String vendorBatchCode) {
@@ -126,6 +187,14 @@ public class WmBatchServiceImpl implements IWmBatchService {
         return createBatch(bo);
     }
 
+    /**
+     * 修改批次
+     *
+     * @param batchId 批次 ID
+     * @param deltaQty 参数 deltaQty
+     * @param isReceive 参数 isReceive
+     * @return 结果
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void updateQuantity(Long batchId, BigDecimal deltaQty, boolean isReceive) {
@@ -141,6 +210,13 @@ public class WmBatchServiceImpl implements IWmBatchService {
         baseMapper.updateById(batch);
     }
 
+    /**
+     * 批次处理（changeStatus）
+     *
+     * @param batchId 批次 ID
+     * @param status 状态
+     * @return 结果
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void changeStatus(Long batchId, String status) {
@@ -152,6 +228,10 @@ public class WmBatchServiceImpl implements IWmBatchService {
         baseMapper.updateById(batch);
     }
 
+    /**
+     * 校验批次
+     * @return 结果
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void checkExpiry() {

@@ -62,6 +62,13 @@ public class EqRepairServiceImpl implements IEqRepairService {
     private final IEqEquipmentService equipmentService;
     private final IEqRepairSpareService repairSpareService;
 
+    /**
+     * 分页查询维修列表
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @param pageQuery 分页参数（页码、每页大小、排序）
+     * @return 分页结果
+     */
     @Override
     public TableDataInfo<EqRepairVo> selectPageList(EqRepairBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<EqRepair> lqw = buildQueryWrapper(bo);
@@ -70,6 +77,12 @@ public class EqRepairServiceImpl implements IEqRepairService {
         return TableDataInfo.build(page);
     }
 
+    /**
+     * 获取维修详情
+     *
+     * @param repairId 维修记录ID
+     * @return 返回结果
+     */
     @Override
     public EqRepairVo selectById(Long repairId) {
         EqRepairVo vo = baseMapper.selectVoById(repairId);
@@ -79,6 +92,12 @@ public class EqRepairServiceImpl implements IEqRepairService {
         return vo;
     }
 
+    /**
+     * 查询维修列表
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @return 结果列表
+     */
     @Override
     public List<EqRepairVo> selectList(EqRepairBo bo) {
         List<EqRepairVo> list = baseMapper.selectVoList(buildQueryWrapper(bo));
@@ -88,6 +107,9 @@ public class EqRepairServiceImpl implements IEqRepairService {
 
     /**
      * 报修(新增维修单 REPORTED), 联动置设备 FAULT
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @return 返回结果
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -113,6 +135,8 @@ public class EqRepairServiceImpl implements IEqRepairService {
 
     /**
      * 开工(REPORTED -> REPAIRING), 置维修人/维修开始时间
+     *
+     * @param repairId 维修记录ID
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -133,6 +157,9 @@ public class EqRepairServiceImpl implements IEqRepairService {
     /**
      * 完成(REPAIRING -> COMPLETED), 联动: 该设备无其他活跃报修则恢复 NORMAL;
      * 若携带更换备件明细, 事务内写 eq_repair_spare + 扣减库存(P1-2 R1)
+     *
+     * @param repairId 维修记录ID
+     * @param bo 业务对象（含筛选条件/字段值）
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -234,6 +261,13 @@ public class EqRepairServiceImpl implements IEqRepairService {
 
     // ==================== 故障统计分析 ====================
 
+    /**
+     * 统计统计
+     *
+     * @param startDate 参数 startDate
+     * @param endDate 参数 endDate
+     * @return 返回结果
+     */
     @Override
     public EqRepairStatisticsVo statistics(Date startDate, Date endDate) {
         // 默认最近 30 天
@@ -331,6 +365,8 @@ public class EqRepairServiceImpl implements IEqRepairService {
 
     /**
      * 维修状态计数汇总(全量 COUNT, 不受分页限制, 供监控大屏)
+     *
+     * @return 结果映射
      */
     @Override
     public Map<String, Object> statusSummary() {

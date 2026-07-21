@@ -9,6 +9,8 @@ import java.math.BigDecimal;
 /**
  * OEE 停机设备 TOP 视图对象
  *
+ * <p>属于MES 设备管理模块，OEE排行视图对象（查询出参）。</p>
+ *
  * @author Nexus
  */
 @Data

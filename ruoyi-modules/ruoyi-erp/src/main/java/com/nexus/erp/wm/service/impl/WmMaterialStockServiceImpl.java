@@ -32,8 +32,15 @@ import java.util.List;
 @Service
 public class WmMaterialStockServiceImpl extends ServiceImpl<WmMaterialStockMapper, WmMaterialStock> implements IWmMaterialStockService {
 
+    /** 物料库存数据访问映射器（Mapper） */
     private final BdMaterialMapper bdMaterialMapper;
 
+    /**
+     * 物料库存处理（WmMaterialStockServiceImpl）
+     *
+     * @param bdMaterialMapper 参数 bdMaterialMapper
+     * @return 结果
+     */
     public WmMaterialStockServiceImpl(BdMaterialMapper bdMaterialMapper) {
         this.bdMaterialMapper = bdMaterialMapper;
     }

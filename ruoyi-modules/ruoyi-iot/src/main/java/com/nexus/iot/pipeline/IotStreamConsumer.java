@@ -72,6 +72,9 @@ public class IotStreamConsumer {
      */
     private final Map<StreamMessageId, Integer> retryCount = new ConcurrentHashMap<>();
 
+    /**
+     * 初始化：绑定的 Stream、幂等创建消费者组并启动单线程消费循环。
+     */
     @PostConstruct
     public void init() {
         stream = RedisUtils.getClient().getStream(properties.getStreamKey());
@@ -87,6 +90,9 @@ public class IotStreamConsumer {
             properties.getStreamKey(), properties.getConsumerGroup(), properties.getConsumerName());
     }
 
+    /**
+     * 销毁：停止消费循环并优雅关闭消费线程（最多等待 5 秒）。
+     */
     @PreDestroy
     public void destroy() {
         running = false;
@@ -259,6 +265,11 @@ public class IotStreamConsumer {
         }
     }
 
+    /**
+     * 确认（ACK）已处理完成的消息，异常仅记日志不阻断。
+     *
+     * @param id 待确认的 Stream 消息 ID
+     */
     private void ack(StreamMessageId id) {
         try {
             stream.ack(properties.getConsumerGroup(), id);

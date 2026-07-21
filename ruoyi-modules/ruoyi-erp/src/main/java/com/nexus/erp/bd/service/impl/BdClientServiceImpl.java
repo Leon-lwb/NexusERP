@@ -32,6 +32,13 @@ public class BdClientServiceImpl implements IBdClientService {
 
     private final BdClientMapper baseMapper;
     private final AutoCodeUtil autoCodeUtil;
+    /**
+     * 分页查询客户列表
+     *
+     * @param bo 业务对象，包含筛选条件或待保存字段
+     * @param pageQuery 分页参数，包含页码、每页大小及排序信息
+     * @return 分页结果
+     */
 
     @Override
     public TableDataInfo<BdClientVo> selectPageList(BdClientBo bo, PageQuery pageQuery) {
@@ -39,16 +46,34 @@ public class BdClientServiceImpl implements IBdClientService {
         Page<BdClientVo> page = baseMapper.selectVoPage(pageQuery.build(), lqw);
         return TableDataInfo.build(page);
     }
+    /**
+     * 查询客户列表
+     *
+     * @param bo 业务对象，包含筛选条件或待保存字段
+     * @return 结果列表
+     */
 
     @Override
     public List<BdClientVo> selectList(BdClientBo bo) {
         return baseMapper.selectVoList(buildQueryWrapper(bo));
     }
+    /**
+     * 根据主键查询客户详情
+     *
+     * @param id 主键ID
+     * @return 结果
+     */
 
     @Override
     public BdClientVo selectById(Long id) {
         return baseMapper.selectVoById(id);
     }
+    /**
+     * 新增客户
+     *
+     * @param bo 业务对象，包含筛选条件或待保存字段
+     * @return 操作结果/影响行数
+     */
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -59,6 +84,12 @@ public class BdClientServiceImpl implements IBdClientService {
         }
         return baseMapper.insert(entity);
     }
+    /**
+     * 修改客户
+     *
+     * @param bo 业务对象，包含筛选条件或待保存字段
+     * @return 操作结果/影响行数
+     */
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -66,6 +97,12 @@ public class BdClientServiceImpl implements IBdClientService {
         BdClient entity = MapstructUtils.convert(bo, BdClient.class);
         return baseMapper.updateById(entity);
     }
+    /**
+     * 批量删除客户
+     *
+     * @param ids 主键ID数组（支持批量）
+     * @return 操作结果/影响行数
+     */
 
     @Override
     @Transactional(rollbackFor = Exception.class)

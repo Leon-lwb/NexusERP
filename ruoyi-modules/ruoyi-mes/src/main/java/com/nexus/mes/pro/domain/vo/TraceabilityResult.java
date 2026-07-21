@@ -20,10 +20,15 @@ public class TraceabilityResult implements Serializable {
 
     // === 工单信息 ===
     private Long mesWoId;
+    /** 工单No */
     private String woNo;
+    /** 物料ID */
     private Long materialId;
+    /** 物料Code */
     private String materialCode;
+    /** 物料Name */
     private String materialName;
+    /** 工单Status */
     private String woStatus;
 
     // === 反向追溯: 成品 -> 组件 ===
@@ -42,15 +47,25 @@ public class TraceabilityResult implements Serializable {
     public static class SnInfo implements Serializable {
         @Serial
         private static final long serialVersionUID = 1L;
+        /** SNID */
         private Long snId;
+        /** SNCode */
         private String snCode;
+        /** MES工单ID */
         private Long mesWoId;
+        /** 工单No */
         private String woNo;
+        /** 物料ID */
         private Long materialId;
+        /** 物料Code */
         private String materialCode;
+        /** 物料Name */
         private String materialName;
+        /** SNStatus */
         private String snStatus;
+        /** 父级SnId */
         private Long parentSnId;
+        /** 父级SnCode */
         private String parentSnCode;
     }
 }

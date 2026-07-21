@@ -35,7 +35,9 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class KnowledgeImportService {
 
+    /** 知识文档处理服务，复用上传→解析→分段→向量化流程。 */
     private final KnowledgeProcessService knowledgeProcessService;
+    /** 文档解析服务，用于校验下载文件的格式是否支持。 */
     private final DocumentParserService documentParserService;
 
     /** HTTP 连接超时（秒） */

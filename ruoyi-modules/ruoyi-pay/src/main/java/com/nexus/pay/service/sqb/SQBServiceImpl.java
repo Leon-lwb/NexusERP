@@ -36,7 +36,10 @@ import java.util.Map;
 @ConditionalOnProperty(prefix = "pay.sqb", name = "enabled", havingValue = "true")
 public class SQBServiceImpl implements ISqbPayService {
 
+    /** 收钱吧配置，提供 API 域名、终端/服务商密钥及证书读取。 */
     private final SqbConfig sqbConfig;
+
+    /** 订单业务服务，用于回调/退款时更新订单状态。 */
     private final IPayOrderService payOrderService;
 
     public SQBServiceImpl(SqbConfig sqbConfig, IPayOrderService payOrderService) {
@@ -128,6 +131,12 @@ public class SQBServiceImpl implements ISqbPayService {
         }
     }
 
+    /**
+     * 发起收钱吧退款，退款状态为 REFUNDED 时更新订单为「已退款」。
+     *
+     * @param payOrder 待退款的支付订单
+     * @return 退款后的支付订单
+     */
     @Override
     public PayOrder refund(PayOrder payOrder) {
         String url = sqbConfig.getApiDomain() + "/upay/v2/refund";
@@ -154,6 +163,12 @@ public class SQBServiceImpl implements ISqbPayService {
         }
     }
 
+    /**
+     * 查询收钱吧订单支付状态（结果仅记录日志，不强制更新本地状态）。
+     *
+     * @param payOrder 待查询的支付订单
+     * @return 原支付订单对象
+     */
     @Override
     public PayOrder query(PayOrder payOrder) {
         String url = sqbConfig.getApiDomain() + "/upay/v2/query";
@@ -173,11 +188,24 @@ public class SQBServiceImpl implements ISqbPayService {
         return payOrder;
     }
 
+    /**
+     * 生成收钱吧支付链接（使用默认回调地址）。
+     *
+     * @param payOrder 支付订单（含订单号、金额、创建人、备注）
+     * @return 收钱吧网关支付链接
+     */
     @Override
     public String payUrl(PayOrder payOrder) {
         return payUrl(payOrder, null);
     }
 
+    /**
+     * 生成收钱吧支付链接：拼接订单参数并按终端密钥签名。
+     *
+     * @param payOrder 支付订单
+     * @param notifyBaseUrl 自定义回调基础地址（可空，使用配置中的回调地址）
+     * @return 收钱吧网关支付链接
+     */
     public String payUrl(PayOrder payOrder, String notifyBaseUrl) {
         if (payOrder.getRemark() == null) {
             payOrder.setRemark("支付");
@@ -247,6 +275,13 @@ public class SQBServiceImpl implements ISqbPayService {
         }
     }
 
+    /**
+     * 使用收钱吧平台 RSA 公钥验签回调数据。
+     *
+     * @param data 待验签的原始数据
+     * @param sign Base64 编码的签名值
+     * @return 验签通过返回 true，否则 false
+     */
     public boolean validateSign(String data, String sign) {
         try {
             Signature signature = Signature.getInstance("SHA256WithRSA");
@@ -262,6 +297,15 @@ public class SQBServiceImpl implements ISqbPayService {
         }
     }
 
+    /**
+     * 处理收钱吧异步回调：验签通过后返回 "success"，否则抛出验签失败异常。
+     *
+     * @param request HTTP 请求，承载回调报文与签名头
+     * @param response HTTP 响应
+     * @param payOrder 关联支付订单
+     * @param type 通知类型
+     * @return 处理结果，"success" 表示成功，"fail" 表示失败
+     */
     @Override
     public String notify(HttpServletRequest request, HttpServletResponse response, PayOrder payOrder, String type) {
         try {

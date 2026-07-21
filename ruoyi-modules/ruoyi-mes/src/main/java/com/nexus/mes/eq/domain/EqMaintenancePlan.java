@@ -12,6 +12,8 @@ import java.util.Date;
 /**
  * MES设备保养计划对象 eq_maintenance_plan
  *
+ * <p>属于MES 设备管理模块，保养计划持久化实体。</p>
+ *
  * @author Nexus
  */
 @Data

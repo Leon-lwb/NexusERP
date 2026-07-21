@@ -9,6 +9,9 @@ import com.nexus.mes.eq.domain.EqPatrolRoute;
 import java.io.Serial;
 import java.io.Serializable;
 
+/**
+ * 属于MES 设备管理模块，巡检路线视图对象（查询出参）。
+ */
 @Data
 @ExcelIgnoreUnannotated
 @AutoMapper(target = EqPatrolRoute.class)

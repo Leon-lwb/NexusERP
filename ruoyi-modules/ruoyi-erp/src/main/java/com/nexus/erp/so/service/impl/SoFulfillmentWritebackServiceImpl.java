@@ -48,6 +48,13 @@ public class SoFulfillmentWritebackServiceImpl implements ISoFulfillmentWritebac
     private final SoSalesOrderLineMapper soSalesOrderLineMapper;
     private final ApplicationEventPublisher applicationEventPublisher;
 
+    /**
+     * 回写销售出库的已发货数量（原子累加 delivered_qty 与 fulfilled_qty）。
+     * <p>soLineId 为空或 qty&lt;=0 时跳过；累加后按发货数量推进行状态。</p>
+     *
+     * @param soLineId 销售订单行ID
+     * @param qty      本次发货数量（正数）
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void addShippedQty(Long soLineId, BigDecimal qty) {
@@ -66,6 +73,13 @@ public class SoFulfillmentWritebackServiceImpl implements ISoFulfillmentWritebac
         promoteOnShipped(soLineId);
     }
 
+    /**
+     * 回写生产完工的已投产数量（原子累加 production_qty）。
+     * <p>soLineId 为空或 qty&lt;=0 时跳过；投产达量后推进行状态为 SCHEDULED 并发布生产完成事件。</p>
+     *
+     * @param soLineId 销售订单行ID
+     * @param qty      本次投产完工数量（正数）
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void addProducedQty(Long soLineId, BigDecimal qty) {

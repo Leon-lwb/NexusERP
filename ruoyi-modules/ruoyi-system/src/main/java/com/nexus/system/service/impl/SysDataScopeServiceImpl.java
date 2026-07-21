@@ -28,7 +28,9 @@ import java.util.List;
 @Service("sdss")
 public class SysDataScopeServiceImpl implements ISysDataScopeService {
 
+    /** SysRoleDeptMapper 数据访问层组件，提供 部门 的持久化能力。 */
     private final SysRoleDeptMapper roleDeptMapper;
+    /** SysDeptMapper 数据访问层组件，提供 部门 的持久化能力。 */
     private final SysDeptMapper deptMapper;
 
     /**

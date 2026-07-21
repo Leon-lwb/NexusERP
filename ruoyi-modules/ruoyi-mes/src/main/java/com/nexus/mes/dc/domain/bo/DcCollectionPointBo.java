@@ -11,6 +11,8 @@ import com.nexus.mes.dc.domain.DcCollectionPoint;
 /**
  * MES数据采集点业务对象 dc_collection_point
  *
+ * <p>属于MES 数据采集模块，采集点业务对象（新增/编辑入参）。</p>
+ *
  * @author Nexus
  */
 @Data

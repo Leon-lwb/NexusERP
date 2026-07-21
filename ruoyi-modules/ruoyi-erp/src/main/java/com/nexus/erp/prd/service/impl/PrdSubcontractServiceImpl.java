@@ -39,6 +39,13 @@ public class PrdSubcontractServiceImpl implements IPrdSubcontractService {
     private final PrdSubcontractMapper baseMapper;
     private final PrdWorkOrderMapper workOrderMapper;
 
+    /**
+     * 分页查询委外订单列表
+     *
+     * @param bo        查询参数
+     * @param pageQuery 分页参数
+     * @return 委外订单分页列表
+     */
     @Override
     public TableDataInfo<PrdSubcontractVo> selectPageList(PrdSubcontractBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<PrdSubcontract> lqw = buildQueryWrapper(bo);

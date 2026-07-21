@@ -31,6 +31,7 @@ import java.util.List;
 @RequestMapping("/erp/wm/miscissue")
 public class WmMiscIssueController extends BaseController {
 
+    /** 杂项发料业务服务，提供杂项发料相关能力 */
     private final IWmMiscIssueService wmMiscIssueService;
 
     /**

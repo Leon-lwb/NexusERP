@@ -39,8 +39,11 @@ import java.util.stream.Collectors;
 @Service
 public class PickingRuleServiceImpl implements IPickingRuleService {
 
+    /** 基础数据访问映射器（Mapper） */
     private final WmPickingRuleMapper baseMapper;
+    /** 仓库数据访问映射器（Mapper） */
     private final WmWarehouseMapper wmWarehouseMapper;
+    /** 拣货规则数据访问映射器（Mapper） */
     private final BdMaterialCategoryMapper bdMaterialCategoryMapper;
 
     /**

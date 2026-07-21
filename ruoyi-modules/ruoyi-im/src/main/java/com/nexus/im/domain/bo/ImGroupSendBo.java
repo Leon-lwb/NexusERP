@@ -7,12 +7,19 @@ import lombok.Data;
 
 import java.util.List;
 
+/**
+ * 发送群聊消息入参对象（BO）
+ * <p>用于接收群聊发送请求，包含目标群组、内容、消息类型、@ 提醒、引用与重发幂等标识等，
+ * 由 Controller 绑定后传入 Service。</p>
+ */
 @Data
 public class ImGroupSendBo {
 
+    /** 目标群组 ID，不能为空。 */
     @NotNull(message = "群ID不能为空")
     private Long groupId;
 
+    /** 消息内容（文本/图片/文件等的承载 JSON 或纯文本），不能为空。 */
     @NotBlank(message = "内容不能为空")
     private String content;
 

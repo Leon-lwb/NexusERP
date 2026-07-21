@@ -8,8 +8,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * 自动编码控制器
- * <p>提供编码生成（落库）和编码预览（不落库）两个接口。</p>
+ * 自动编码Controller
+ * <p>提供编码生成（落库）和编码预览（不落库）两个接口。属于系统管理（System）模块。</p>
  *
  * @author wanghuan
  */
@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/system/autocode")
 public class SysAutoCodeController {
 
+    /** 自动编码工具，负责按规则生成或预览业务单据编码。 */
     @Autowired
     private AutoCodeUtil autoCodeUtil;
 

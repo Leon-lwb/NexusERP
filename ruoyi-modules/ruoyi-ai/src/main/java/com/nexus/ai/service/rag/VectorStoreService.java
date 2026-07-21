@@ -39,9 +39,13 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 public class VectorStoreService {
 
+    /** 向量化服务，按模型名或默认构建并缓存 EmbeddingModel */
     private final EmbeddingService embeddingService;
+    /** 知识库片段 Mapper，用于回写片段的向量ID */
     private final AiKnowledgeChunkMapper chunkMapper;
+    /** 知识库 Mapper，用于读取知识库存储类型与配置 */
     private final AiKnowledgeMapper knowledgeMapper;
+    /** AI 配置属性，提供向量库类型、Milvus 连接与默认模型等配置 */
     private final AiProperties aiProperties;
 
     /**

@@ -40,10 +40,15 @@ import org.springframework.validation.annotation.Validated;
 @RequestMapping("/workflow/customRule")
 public class WfCustomRuleController extends BaseController {
 
+    /** 流程自定义业务规则业务服务，提供分页、导出、增删改等能力。 */
     private final IWfCustomRuleService iWfCustomRuleService;
 
     /**
-     * 查询流程自定义业务规则列表
+     * 查询流程自定义业务规则列表。
+     *
+     * @param bo        流程自定义业务规则查询条件
+     * @param pageQuery 分页参数（页码、每页大小、排序）
+     * @return 分页结果，包含规则列表及分页元信息
      */
     @SaCheckPermission("workflow:customRule:list")
     @GetMapping("/list")
@@ -52,7 +57,10 @@ public class WfCustomRuleController extends BaseController {
     }
 
     /**
-     * 导出流程自定义业务规则列表
+     * 导出流程自定义业务规则列表。
+     *
+     * @param bo        流程自定义业务规则查询条件
+     * @param response  HTTP 响应，用于写入导出的 Excel 流
      */
     @SaCheckPermission("workflow:customRule:export")
     @Log(title = "流程自定义业务规则", businessType = BusinessType.EXPORT)
@@ -63,9 +71,10 @@ public class WfCustomRuleController extends BaseController {
     }
 
     /**
-     * 获取流程自定义业务规则详细信息
+     * 获取流程自定义业务规则详细信息。
      *
      * @param id 主键
+     * @return 流程自定义业务规则详细信息
      */
     @SaCheckPermission("workflow:customRule:query")
     @GetMapping("/{id}")
@@ -75,7 +84,10 @@ public class WfCustomRuleController extends BaseController {
     }
 
     /**
-     * 新增流程自定义业务规则
+     * 新增流程自定义业务规则。
+     *
+     * @param bo 流程自定义业务规则新增数据
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckPermission("workflow:customRule:add")
     @Log(title = "流程自定义业务规则", businessType = BusinessType.INSERT)
@@ -86,7 +98,10 @@ public class WfCustomRuleController extends BaseController {
     }
 
     /**
-     * 修改流程自定义业务规则
+     * 修改流程自定义业务规则。
+     *
+     * @param bo 流程自定义业务规则修改数据
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckPermission("workflow:customRule:edit")
     @Log(title = "流程自定义业务规则", businessType = BusinessType.UPDATE)
@@ -97,9 +112,10 @@ public class WfCustomRuleController extends BaseController {
     }
 
     /**
-     * 删除流程自定义业务规则
+     * 删除流程自定义业务规则。
      *
      * @param ids 主键串
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckPermission("workflow:customRule:remove")
     @Log(title = "流程自定义业务规则", businessType = BusinessType.DELETE)

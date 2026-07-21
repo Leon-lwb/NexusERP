@@ -21,6 +21,14 @@ public class SalesOrderFulfilledEvent extends ApplicationEvent {
      */
     private final String tenantId;
 
+    /**
+     * 构造销售订单履行完成事件。
+     *
+     * @param source   事件源（发布者）
+     * @param soId     销售订单ID
+     * @param soNo     销售订单编号
+     * @param tenantId 租户ID（异步监听线程不传播 Sa-Token ThreadLocal，显式携带以恢复租户上下文）
+     */
     public SalesOrderFulfilledEvent(Object source, Long soId, String soNo, String tenantId) {
         super(source);
         this.soId = soId;

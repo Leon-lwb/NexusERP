@@ -59,13 +59,21 @@ public class WmMaterialReceiveExecutorServiceImpl implements IWmMaterialReceiveE
     /** 来源单据类型：物料入库单（用于防重校验） */
     private static final String SOURCE_DOC_TYPE_RECEIVE = "WM_MATERIAL_RECEIVE";
 
+    /** 基础数据访问映射器（Mapper） */
     private final WmMaterialReceiveMapper baseMapper;
+    /** 领用行数据访问映射器（Mapper） */
     private final WmMaterialReceiveLineMapper receiveLineMapper;
+    /** 领用明细数据访问映射器（Mapper） */
     private final WmMaterialReceiveDetailMapper receiveDetailMapper;
+    /** 物料库存数据访问映射器（Mapper） */
     private final WmMaterialStockMapper materialStockMapper;
+    /** 物料库存流水数据访问映射器（Mapper） */
     private final WmMaterialStockTxMapper materialStockTxMapper;
+    /** 到货通知数据访问映射器（Mapper） */
     private final WmArrivalNoticeMapper arrivalNoticeMapper;
+    /** 物料领用执行器业务服务，提供物料领用执行器相关能力 */
     private final IBdMaterialService bdMaterialService;
+    /** 条码业务服务，提供条码相关能力 */
     private final IWmBarcodeService wmBarcodeService;
     /** 仓储模块MQ消息发送服务，独立于@DS("erp")，确保消息记录写入ry-vue库 */
     private final WmMqSendService wmMqSendService;

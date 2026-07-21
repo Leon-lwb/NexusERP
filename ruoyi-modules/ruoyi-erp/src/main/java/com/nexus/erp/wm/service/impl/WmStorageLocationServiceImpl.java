@@ -46,12 +46,24 @@ import java.util.stream.Collectors;
 @Service
 public class WmStorageLocationServiceImpl implements IWmStorageLocationService {
 
+    /** 基础数据访问映射器（Mapper） */
     private final WmStorageLocationMapper baseMapper;
+    /** 存储区域数据访问映射器（Mapper） */
     private final WmStorageAreaMapper wmStorageAreaMapper;
+    /** 仓库数据访问映射器（Mapper） */
     private final WmWarehouseMapper wmWarehouseMapper;
+    /** 物料库存数据访问映射器（Mapper） */
     private final WmMaterialStockMapper wmMaterialStockMapper;
+    /** 自动编码工具类 */
     private final AutoCodeUtil autoCodeUtil;
 
+    /**
+     * 分页查询存储库位列表
+     *
+     * @param bo 存储库位业务对象（BO）
+     * @param pageQuery 分页查询参数，包含页码、每页大小及排序条件
+     * @return 结果对象
+     */
     @Override
     public TableDataInfo<WmStorageLocationVo> selectPageList(WmStorageLocationBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<WmStorageLocation> lqw = buildQueryWrapper(bo);
@@ -61,6 +73,12 @@ public class WmStorageLocationServiceImpl implements IWmStorageLocationService {
         return TableDataInfo.build(page);
     }
 
+    /**
+     * 查询存储库位列表
+     *
+     * @param bo 存储库位业务对象（BO）
+     * @return 结果对象
+     */
     @Override
     public List<WmStorageLocationVo> selectList(WmStorageLocationBo bo) {
         List<WmStorageLocationVo> list = baseMapper.selectVoList(buildQueryWrapper(bo));
@@ -69,11 +87,23 @@ public class WmStorageLocationServiceImpl implements IWmStorageLocationService {
         return list;
     }
 
+    /**
+     * 查询存储库位
+     *
+     * @param id 主键 ID
+     * @return 结果
+     */
     @Override
     public WmStorageLocationVo selectById(Long id) {
         return baseMapper.selectVoById(id);
     }
 
+    /**
+     * 新增存储库位
+     *
+     * @param bo 存储库位业务对象（BO）
+     * @return 结果
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(WmStorageLocationBo bo) {
@@ -95,6 +125,12 @@ public class WmStorageLocationServiceImpl implements IWmStorageLocationService {
         return baseMapper.insert(entity);
     }
 
+    /**
+     * 修改存储库位
+     *
+     * @param bo 存储库位业务对象（BO）
+     * @return 结果
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(WmStorageLocationBo bo) {
@@ -104,6 +140,12 @@ public class WmStorageLocationServiceImpl implements IWmStorageLocationService {
         return baseMapper.updateById(entity);
     }
 
+    /**
+     * 删除存储库位
+     *
+     * @param ids 主键 ID 数组（支持批量操作）
+     * @return 结果
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {

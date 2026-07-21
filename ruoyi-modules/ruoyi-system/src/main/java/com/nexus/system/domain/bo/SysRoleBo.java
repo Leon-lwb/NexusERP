@@ -83,10 +83,20 @@ public class SysRoleBo extends BaseEntity {
      */
     private Long[] deptIds;
 
+    /**
+     * 根据角色ID构造角色业务对象。
+     *
+     * @param roleId 角色ID
+     */
     public SysRoleBo(Long roleId) {
         this.roleId = roleId;
     }
 
+    /**
+     * 判断当前角色是否为超级管理员角色。
+     *
+     * @return 是超级管理员角色返回 true，否则返回 false
+     */
     public boolean isSuperAdmin() {
         return SystemConstants.SUPER_ADMIN_ID.equals(this.roleId);
     }

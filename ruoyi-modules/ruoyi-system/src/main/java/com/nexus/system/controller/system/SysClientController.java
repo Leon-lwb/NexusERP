@@ -24,7 +24,9 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 /**
- * 客户端管理
+ * 客户端管理Controller
+ * <p>提供系统客户端（OAuth2 客户端）的增删改查、状态变更与 Excel 导出接口。
+ * 属于系统管理（System）模块。</p>
  *
  * @author Michelle.Chung
  * @date 2023-06-18
@@ -35,10 +37,15 @@ import java.util.List;
 @RequestMapping("/system/client")
 public class SysClientController extends BaseController {
 
+    /** 客户端业务服务，提供分页查询、唯一性校验、增删改及状态变更等能力。 */
     private final ISysClientService sysClientService;
 
     /**
-     * 查询客户端管理列表
+     * 分页查询客户端列表。
+     *
+     * @param bo        客户端查询条件（客户端 key、名称等）
+     * @param pageQuery 分页查询参数，包含页码、每页大小及排序条件
+     * @return 客户端分页结果
      */
     @SaCheckPermission("system:client:list")
     @GetMapping("/list")
@@ -47,7 +54,10 @@ public class SysClientController extends BaseController {
     }
 
     /**
-     * 导出客户端管理列表
+     * 导出客户端列表为 Excel 文件。
+     *
+     * @param bo       客户端查询条件
+     * @param response HTTP 响应，用于写入导出的 Excel 流
      */
     @SaCheckPermission("system:client:export")
     @Log(title = "客户端管理", businessType = BusinessType.EXPORT)
@@ -58,9 +68,10 @@ public class SysClientController extends BaseController {
     }
 
     /**
-     * 获取客户端管理详细信息
+     * 获取指定客户端详细信息。
      *
-     * @param id 主键
+     * @param id 客户端主键
+     * @return 客户端详情
      */
     @SaCheckPermission("system:client:query")
     @GetMapping("/{id}")
@@ -70,7 +81,10 @@ public class SysClientController extends BaseController {
     }
 
     /**
-     * 新增客户端管理
+     * 新增客户端，校验客户端 key 唯一性。
+     *
+     * @param bo 客户端新增参数
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckPermission("system:client:add")
     @Log(title = "客户端管理", businessType = BusinessType.INSERT)
@@ -84,7 +98,10 @@ public class SysClientController extends BaseController {
     }
 
     /**
-     * 修改客户端管理
+     * 修改客户端，校验客户端 key 唯一性。
+     *
+     * @param bo 客户端修改参数
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckPermission("system:client:edit")
     @Log(title = "客户端管理", businessType = BusinessType.UPDATE)
@@ -98,7 +115,10 @@ public class SysClientController extends BaseController {
     }
 
     /**
-     * 状态修改
+     * 修改客户端状态（启用/停用）。
+     *
+     * @param bo 含客户端 ID 与状态值的参数
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckPermission("system:client:edit")
     @Log(title = "客户端管理", businessType = BusinessType.UPDATE)
@@ -108,9 +128,10 @@ public class SysClientController extends BaseController {
     }
 
     /**
-     * 删除客户端管理
+     * 批量删除客户端。
      *
-     * @param ids 主键串
+     * @param ids 客户端主键数组
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckPermission("system:client:remove")
     @Log(title = "客户端管理", businessType = BusinessType.DELETE)

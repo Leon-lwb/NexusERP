@@ -42,9 +42,18 @@ import java.util.Date;
 @Service("qcIqcService")
 public class QcIqcServiceImpl implements IQcIqcService {
 
+    /** IQC 来料检验单数据访问 Mapper。 */
     private final QcIqcMapper baseMapper;
+    /** MES MQ 发送服务，用于检验完成后异步回传 ERP。 */
     private final MesMqSendService mesMqSendService;
 
+    /**
+     * 分页查询 IQC 来料检验列表。
+     *
+     * @param bo        检验单查询条件（编号/状态/结果/收货单/物料/供应商）
+     * @param pageQuery 分页参数（页码、每页大小、排序）
+     * @return 分页结果，包含 IQC 检验单视图列表及分页元信息
+     */
     @Override
     public TableDataInfo<QcIqcVo> selectPageList(QcIqcBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<QcIqc> lqw = buildQueryWrapper(bo);
@@ -52,13 +61,22 @@ public class QcIqcServiceImpl implements IQcIqcService {
         return TableDataInfo.build(page);
     }
 
+    /**
+     * 根据主键 ID 获取 IQC 来料检验单详情。
+     *
+     * @param iqcId IQC 检验单 ID
+     * @return IQC 检验单视图对象
+     */
     @Override
     public QcIqcVo selectById(Long iqcId) {
         return baseMapper.selectVoById(iqcId);
     }
 
     /**
-     * 新增IQC检验单(生成编号)
+     * 新增 IQC 来料检验单，自动生成检验编号并初始化为待检验状态。
+     *
+     * @param bo IQC 检验单业务对象，包含物料、供应商、数量等信息
+     * @return 新增后的 IQC 检验单视图对象
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -82,7 +100,14 @@ public class QcIqcServiceImpl implements IQcIqcService {
     }
 
     /**
-     * 执行检验(PENDING/INSPECTING -> COMPLETED), 完成后MQ回传ERP
+     * 执行 IQC 检验：将状态由 PENDING/INSPECTING 推进为 COMPLETED，记录检验员与检验时间；
+     * 事务提交后通过 MQ 回传 ERP 更新收货单质检状态。
+     *
+     * @param iqcId         IQC 检验单 ID
+     * @param inspectResult 检验结果 QUALIFIED（合格）/ UNQUALIFIED（不合格）
+     * @param defectInfo    不良品信息（JSON 字符串，可为空）
+     * @param sampleQty     抽样数量（可为空，为空则不更新）
+     * @param remark        备注（可为空）
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -151,6 +176,12 @@ public class QcIqcServiceImpl implements IQcIqcService {
         return prefix + "-" + today + "-" + String.format("%03d", seq);
     }
 
+    /**
+     * 根据查询条件构建 IQC 检验单的 LambdaQueryWrapper（编号模糊匹配，状态/结果/收货单/物料/供应商精确匹配，按创建时间倒序）。
+     *
+     * @param bo 检验单查询条件
+     * @return IQC 查询条件构造器
+     */
     private LambdaQueryWrapper<QcIqc> buildQueryWrapper(QcIqcBo bo) {
         return Wrappers.<QcIqc>lambdaQuery()
             .like(StringUtils.isNotBlank(bo.getIqcNo()), QcIqc::getIqcNo, bo.getIqcNo())

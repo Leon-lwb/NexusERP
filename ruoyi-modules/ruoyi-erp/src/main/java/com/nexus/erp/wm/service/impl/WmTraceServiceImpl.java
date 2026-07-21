@@ -35,13 +35,24 @@ import java.util.Set;
 @Slf4j
 public class WmTraceServiceImpl implements IWmTraceService {
 
+    /** 物料库存流水数据访问映射器（Mapper） */
     private final WmMaterialStockTxMapper wmMaterialStockTxMapper;
+    /** 序列号数据访问映射器（Mapper） */
     private final WmSnMapper wmSnMapper;
+    /** 批次数据访问映射器（Mapper） */
     private final WmBatchMapper wmBatchMapper;
 
     /** 最大递归深度，防止无限循环 */
     private static final int MAX_DEPTH = 10;
 
+    /**
+     * 追溯处理（traceForward）
+     *
+     * @param materialId 物料 ID
+     * @param batchCode 批次 编码
+     * @param snCode 序列号 编码
+     * @return 结果
+     */
     @Override
     public WmTraceResultVo traceForward(Long materialId, String batchCode, String snCode) {
         WmTraceResultVo result = new WmTraceResultVo();
@@ -58,6 +69,14 @@ public class WmTraceServiceImpl implements IWmTraceService {
         return result;
     }
 
+    /**
+     * 追溯处理（traceBackward）
+     *
+     * @param materialId 物料 ID
+     * @param batchCode 批次 编码
+     * @param snCode 序列号 编码
+     * @return 结果
+     */
     @Override
     public WmTraceResultVo traceBackward(Long materialId, String batchCode, String snCode) {
         WmTraceResultVo result = new WmTraceResultVo();

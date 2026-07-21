@@ -34,13 +34,20 @@ import java.util.List;
 @RequiredArgsConstructor
 public class KnowledgeProcessService {
 
+    /** 文档解析服务，负责将上传文件解析为纯文本。 */
     private final DocumentParserService documentParserService;
+    /** 文本分段服务，负责按知识库配置切分片段。 */
     private final ChunkingService chunkingService;
+    /** 向量存储服务，负责片段向量化与入库。 */
     private final VectorStoreService vectorStoreService;
+    /** 知识文档表 Mapper，负责文档记录读写与状态更新。 */
     private final AiKnowledgeDocumentMapper documentMapper;
+    /** 知识片段表 Mapper，负责片段落库。 */
     private final AiKnowledgeChunkMapper chunkMapper;
+    /** 知识库业务服务，用于读取知识库分段/向量化配置。 */
     private final IAiKnowledgeService aiKnowledgeService;
 
+    /** AI 专用线程池，用于异步提交文档处理任务。 */
     @Qualifier("aiExecutor")
     private final java.util.concurrent.Executor aiExecutor;
 

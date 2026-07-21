@@ -22,6 +22,8 @@ import java.util.Arrays;
 /**
  * MES数据采集点 Service 业务层实现
  *
+ * <p>属于MES 数据采集模块，采集点业务层实现。</p>
+ *
  * @author Nexus
  */
 @Slf4j
@@ -32,6 +34,13 @@ public class DcCollectionPointServiceImpl implements IDcCollectionPointService {
 
     private final DcCollectionPointMapper baseMapper;
 
+    /**
+     * 分页查询采集点列表
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @param pageQuery 分页参数（页码、每页大小、排序）
+     * @return 分页结果
+     */
     @Override
     public TableDataInfo<DcCollectionPointVo> selectPageList(DcCollectionPointBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<DcCollectionPoint> lqw = buildQueryWrapper(bo);
@@ -39,11 +48,23 @@ public class DcCollectionPointServiceImpl implements IDcCollectionPointService {
         return TableDataInfo.build(page);
     }
 
+    /**
+     * 获取采集点详情
+     *
+     * @param pointId 采集点ID
+     * @return 返回结果
+     */
     @Override
     public DcCollectionPointVo selectById(Long pointId) {
         return baseMapper.selectVoById(pointId);
     }
 
+    /**
+     * 新增采集点
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @return 返回结果
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public DcCollectionPointVo insertByBo(DcCollectionPointBo bo) {
@@ -70,6 +91,12 @@ public class DcCollectionPointServiceImpl implements IDcCollectionPointService {
         return baseMapper.selectVoById(point.getPointId());
     }
 
+    /**
+     * 更新采集点
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @return 返回结果
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public DcCollectionPointVo updateByBo(DcCollectionPointBo bo) {
@@ -108,6 +135,12 @@ public class DcCollectionPointServiceImpl implements IDcCollectionPointService {
         return baseMapper.selectVoById(point.getPointId());
     }
 
+    /**
+     * 获取采集点详情
+     *
+     * @param ids ID数组
+     * @return 是否成功
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean deleteByIds(Long[] ids) {

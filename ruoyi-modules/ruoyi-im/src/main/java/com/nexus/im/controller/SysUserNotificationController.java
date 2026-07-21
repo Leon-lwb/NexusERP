@@ -17,6 +17,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * 用户通知Controller
+ * <p>提供当前登录用户的系统通知相关 REST 接口，包括通知分页查询、标记已读、未读数量统计。
+ * 属于 IM（即时通讯）模块，所有接口均要求登录态（{@code @SaCheckLogin}）。</p>
  *
  * @author wanghuan
  */
@@ -26,20 +28,38 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/im/notification")
 public class SysUserNotificationController extends BaseController {
 
+    /** 用户通知业务服务，提供通知分页、标记已读、未读计数等能力。 */
     private final ISysUserNotificationService sysUserNotificationService;
 
+    /**
+     * 分页查询当前登录用户的系统通知列表。
+     *
+     * @param pageQuery 分页查询参数，包含页码、每页大小及排序条件
+     * @return 分页结果，包含当前用户下的通知列表及分页元信息
+     */
     @SaCheckLogin
     @GetMapping("/page")
     public TableDataInfo<SysUserNotification> page(PageQuery pageQuery) {
         return sysUserNotificationService.pageMyNotifications(pageQuery);
     }
 
+    /**
+     * 将指定通知标记为已读。
+     *
+     * @param notificationId 待标记已读的通知 ID
+     * @return 操作结果，成功时返回成功状态
+     */
     @SaCheckLogin
     @PutMapping("/read/{notificationId}")
     public R<Void> markRead(@PathVariable Long notificationId) {
         return toAjax(sysUserNotificationService.markRead(notificationId));
     }
 
+    /**
+     * 统计当前登录用户的未读通知数量。
+     *
+     * @return 未读通知数量
+     */
     @SaCheckLogin
     @GetMapping("/unread/count")
     public R<Long> unreadCount() {

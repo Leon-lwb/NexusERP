@@ -23,7 +23,9 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class IotAlertChecker {
 
+    /** 管道配置属性，提供告警阈值映射。 */
     private final IotPipelineProperties properties;
+    /** 告警通知器，负责限频推送与 MES 安灯联动。 */
     private final IotAlertNotifier alertNotifier;
 
     /**
@@ -58,6 +60,12 @@ public class IotAlertChecker {
         }
     }
 
+    /**
+     * 按属性编码推断告警类型：含 temp→温度、vib→振动、press→压力，否则归为 OTHER。
+     *
+     * @param propertyCode 属性编码
+     * @return 告警类型枚举字符串
+     */
     private String resolveAlertType(String propertyCode) {
         String lower = propertyCode == null ? "" : propertyCode.toLowerCase();
         if (lower.contains("temp")) {

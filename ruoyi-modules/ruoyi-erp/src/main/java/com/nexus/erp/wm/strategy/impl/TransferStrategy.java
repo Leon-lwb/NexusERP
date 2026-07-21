@@ -41,6 +41,7 @@ public class TransferStrategy extends BaseStockOperationStrategy {
     /** 事务标志：入库（正数） */
     private static final int TX_FLAG_IN = 1;
 
+    /** 库存数据访问映射器（Mapper） */
     private final WmMaterialStockMapper stockMapper;
 
     /**

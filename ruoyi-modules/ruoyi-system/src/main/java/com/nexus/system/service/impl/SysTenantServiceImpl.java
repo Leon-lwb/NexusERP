@@ -46,16 +46,27 @@ import java.util.*;
 @Service
 public class SysTenantServiceImpl implements ISysTenantService {
 
+    /** SysTenantMapper 数据访问层组件，提供 租户 的持久化能力。 */
     private final SysTenantMapper baseMapper;
+    /** SysTenantPackageMapper 数据访问层组件，提供 租户套餐 的持久化能力。 */
     private final SysTenantPackageMapper tenantPackageMapper;
+    /** SysUserMapper 数据访问层组件，提供 用户 的持久化能力。 */
     private final SysUserMapper userMapper;
+    /** SysDeptMapper 数据访问层组件，提供 部门 的持久化能力。 */
     private final SysDeptMapper deptMapper;
+    /** SysRoleMapper 数据访问层组件，提供 角色 的持久化能力。 */
     private final SysRoleMapper roleMapper;
+    /** SysRoleMenuMapper 数据访问层组件，提供 菜单 的持久化能力。 */
     private final SysRoleMenuMapper roleMenuMapper;
+    /** SysRoleDeptMapper 数据访问层组件，提供 部门 的持久化能力。 */
     private final SysRoleDeptMapper roleDeptMapper;
+    /** SysUserRoleMapper 数据访问层组件，提供 角色 的持久化能力。 */
     private final SysUserRoleMapper userRoleMapper;
+    /** SysDictTypeMapper 数据访问层组件，提供 字典类型 的持久化能力。 */
     private final SysDictTypeMapper dictTypeMapper;
+    /** SysDictDataMapper 数据访问层组件，提供 字典数据 的持久化能力。 */
     private final SysDictDataMapper dictDataMapper;
+    /** SysConfigMapper 数据访问层组件，提供 参数配置 的持久化能力。 */
     private final SysConfigMapper configMapper;
 
     /**

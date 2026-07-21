@@ -35,11 +35,20 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class TableDesignServiceImpl implements ITableDesignService {
 
+    /** 表设计 Mapper，负责 gen_table_design 的持久化。 */
     private final GenTableDesignMapper designMapper;
+    /** JDBC 模板，用于执行动态生成的建表/删表 SQL。 */
     private final JdbcTemplate jdbcTemplate;
     @Resource
+    /** 代码生成表业务服务，用于导入表设计到代码生成器。 */
     private IGenTableService genTableService;
 
+    /**
+     * 保存或更新表设计（新增写创建时间，更新写更新时间）。
+     *
+     * @param design 表设计实体
+     * @return 保存后的设计 ID
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Long saveOrUpdate(GenTableDesign design) {
@@ -53,6 +62,12 @@ public class TableDesignServiceImpl implements ITableDesignService {
         return design.getDesignId();
     }
 
+    /**
+     * 按关键字查询表设计列表。
+     *
+     * @param keyword 可选查询关键字，匹配设计名、表名或表注释
+     * @return 表设计列表，按更新时间倒序
+     */
     @Override
     public List<GenTableDesign> list(String keyword) {
         LambdaQueryWrapper<GenTableDesign> qw = new LambdaQueryWrapper<>();
@@ -65,17 +80,34 @@ public class TableDesignServiceImpl implements ITableDesignService {
         return designMapper.selectList(qw);
     }
 
+    /**
+     * 查询指定表设计的详情。
+     *
+     * @param id 表设计 ID
+     * @return 表设计实体
+     */
     @Override
     public GenTableDesign getById(Long id) {
         return designMapper.selectById(id);
     }
 
+    /**
+     * 删除指定表设计。
+     *
+     * @param id 待删除的表设计 ID
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void removeById(Long id) {
         designMapper.deleteById(id);
     }
 
+    /**
+     * 根据设计 JSON 生成建表及外键 SQL（不执行）。
+     *
+     * @param designJson 表设计 JSON（含 tables 与 relations）
+     * @return 生成的完整 SQL 字符串
+     */
     @Override
     public String generateSql(String designJson) {
         JSONObject root = JSON.parseObject(designJson);
@@ -223,6 +255,12 @@ public class TableDesignServiceImpl implements ITableDesignService {
         return List.of("int", "integer", "bigint", "smallint", "tinyint", "float", "double", "decimal", "numeric").contains(type.toLowerCase());
     }
 
+    /**
+     * 执行建表 SQL，在数据库中创建物理表。
+     *
+     * @param sql 完整建表 SQL（可含多条语句）
+     * @param overwriteIfExists 表已存在时是否先删除后重建
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void createTables(String sql, boolean overwriteIfExists) {
@@ -332,6 +370,13 @@ public class TableDesignServiceImpl implements ITableDesignService {
         return null;
     }
 
+    /**
+     * 将表设计导入代码生成器（生成 GenTable / GenTableColumn 配置）。
+     *
+     * @param designJson 表设计 JSON
+     * @param dataName 目标数据源名称，默认 master
+     * @param overwriteIfExists 同名表已存在时是否覆盖导入
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void importToGen(String designJson, String dataName, boolean overwriteIfExists) {

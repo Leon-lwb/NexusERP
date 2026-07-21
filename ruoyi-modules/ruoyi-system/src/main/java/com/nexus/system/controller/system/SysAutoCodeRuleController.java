@@ -14,9 +14,9 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 /**
- * 编码规则控制器
+ * 编码规则Controller
  * <p>管理自动编码规则（sys_auto_code_rule）的增删改查，
- * 规则定义了编码的最大长度、补齐策略等元信息。</p>
+ * 规则定义了编码的最大长度、补齐策略等元信息。属于系统管理（System）模块。</p>
  *
  * @author wanghuan
  */
@@ -26,6 +26,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/system/autocode/rule")
 public class SysAutoCodeRuleController extends BaseController {
 
+    /** 编码规则业务服务，提供分页、详情、唯一性校验、增删改等能力。 */
     private final ISysAutoCodeRuleService ruleService;
 
     /**

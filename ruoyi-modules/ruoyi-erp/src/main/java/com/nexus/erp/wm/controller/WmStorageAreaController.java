@@ -31,6 +31,7 @@ import java.util.List;
 @RequestMapping("/erp/wm/storagearea")
 public class WmStorageAreaController extends BaseController {
 
+    /** 存储区域业务服务，提供存储区域相关能力 */
     private final IWmStorageAreaService wmStorageAreaService;
 
     /**

@@ -31,17 +31,27 @@ public interface IQcOqcService {
     String RESULT_UNQUALIFIED = "UNQUALIFIED";
 
     /**
-     * 分页查询OQC列表
+     * 分页查询 OQC 出货检验列表。
+     *
+     * @param bo        检验单查询条件（编号/状态/结果/销售订单/物料）
+     * @param pageQuery 分页参数（页码、每页大小、排序）
+     * @return 分页结果，包含 OQC 检验单视图列表及分页元信息
      */
     TableDataInfo<QcOqcVo> selectPageList(QcOqcBo bo, PageQuery pageQuery);
 
     /**
-     * 根据ID获取OQC详情
+     * 根据主键 ID 获取 OQC 出货检验单详情。
+     *
+     * @param oqcId OQC 检验单 ID
+     * @return OQC 检验单视图对象
      */
     QcOqcVo selectById(Long oqcId);
 
     /**
-     * 新增OQC检验单(生成编号)
+     * 新增 OQC 出货检验单，自动生成检验编号并初始化为待检验状态。
+     *
+     * @param bo OQC 检验单业务对象，包含销售订单、物料、数量等信息
+     * @return 新增后的 OQC 检验单视图对象
      */
     QcOqcVo insertByBo(QcOqcBo bo);
 

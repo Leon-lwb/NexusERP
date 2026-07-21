@@ -51,6 +51,12 @@ public class WorkOrderReleaseConsumer extends BaseMessageConsumer<WorkOrderRelea
     }
 
     @RabbitListener(queues = QueueConstants.MES_WORKORDER_QUEUE)
+    /**
+     * onMessage 操作
+     * @param message message
+     * @param channel channel
+     * @param amqpMessage amqpMessage
+     */
     public void onMessage(WorkOrderReleaseMessage message, Channel channel, Message amqpMessage) throws Exception {
         processMessage(message, channel, amqpMessage);
     }

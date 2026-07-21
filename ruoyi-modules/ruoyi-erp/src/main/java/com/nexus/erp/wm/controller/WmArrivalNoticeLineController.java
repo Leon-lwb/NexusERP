@@ -31,6 +31,7 @@ import java.util.List;
 @RequestMapping("/erp/wm/arrivalnoticeline")
 public class WmArrivalNoticeLineController extends BaseController {
 
+    /** 到货通知行业务服务，提供到货通知行相关能力 */
     private final IWmArrivalNoticeLineService wmArrivalNoticeLineService;
 
     /**

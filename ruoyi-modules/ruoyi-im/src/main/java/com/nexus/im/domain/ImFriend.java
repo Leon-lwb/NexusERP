@@ -25,7 +25,9 @@ public class ImFriend extends TenantEntity {
     @TableId(value = "id", type = IdType.ASSIGN_ID)
     private Long id;
 
+    /** 好友关系持有者（用户）ID。 */
     private Long userId;
 
+    /** 该用户的好友（对端）用户 ID。 */
     private Long friendUserId;
 }

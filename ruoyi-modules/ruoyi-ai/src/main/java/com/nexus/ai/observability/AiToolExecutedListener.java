@@ -34,6 +34,11 @@ public class AiToolExecutedListener implements ToolExecutedEventListener {
         CURRENT_CHANNEL.remove();
     }
 
+    /**
+     * 工具执行事件回调：记录调用信息，并在存在 OutputChannel 时推送工具调用事件到前端。
+     *
+     * @param event 工具执行事件
+     */
     @Override
     public void onEvent(ToolExecutedEvent event) {
         var invocationCtx = event.invocationContext();

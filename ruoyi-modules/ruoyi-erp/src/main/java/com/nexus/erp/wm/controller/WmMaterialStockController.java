@@ -35,7 +35,9 @@ import java.util.stream.Collectors;
 @RequestMapping("/erp/wm/stock")
 public class WmMaterialStockController extends BaseController {
 
+    /** 物料库存业务服务，提供物料库存相关能力 */
     private final IWmMaterialStockService wmMaterialStockService;
+    /** 物料库存业务服务，提供物料库存相关能力 */
     private final IBdMaterialCategoryService bdMaterialCategoryService;
 
     /**

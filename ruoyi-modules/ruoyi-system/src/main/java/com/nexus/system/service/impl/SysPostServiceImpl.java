@@ -37,8 +37,11 @@ import java.util.Map;
 @Service
 public class SysPostServiceImpl implements ISysPostService, PostService {
 
+    /** SysPostMapper 数据访问层组件，提供 岗位 的持久化能力。 */
     private final SysPostMapper baseMapper;
+    /** SysDeptMapper 数据访问层组件，提供 部门 的持久化能力。 */
     private final SysDeptMapper deptMapper;
+    /** SysUserPostMapper 数据访问层组件，提供 岗位 的持久化能力。 */
     private final SysUserPostMapper userPostMapper;
 
     /**

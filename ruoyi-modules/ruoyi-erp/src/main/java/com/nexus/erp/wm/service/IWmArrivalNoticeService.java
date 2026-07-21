@@ -24,16 +24,53 @@ public interface IWmArrivalNoticeService extends WfCallBackServiceI {
     /** 已驳回 */
     String STATUS_REJECTED = "REJECTED";
 
+    /**
+     * 分页查询到货通知列表
+     *
+     * @param bo 到货通知业务对象（BO）
+     * @param pageQuery 分页查询参数，包含页码、每页大小及排序条件
+     * @return 分页查询结果
+     */
     TableDataInfo<WmArrivalNoticeVo> selectPageList(WmArrivalNoticeBo bo, PageQuery pageQuery);
 
+    /**
+     * 查询到货通知列表
+     *
+     * @param bo 到货通知业务对象（BO）
+     * @return 结果列表
+     */
     List<WmArrivalNoticeVo> selectList(WmArrivalNoticeBo bo);
 
+    /**
+     * 查询到货通知
+     *
+     * @param id 主键 ID
+     * @return 结果
+     */
     WmArrivalNoticeVo selectById(Long id);
 
+    /**
+     * 新增到货通知
+     *
+     * @param bo 到货通知业务对象（BO）
+     * @return 影响行数
+     */
     int insertByBo(WmArrivalNoticeBo bo);
 
+    /**
+     * 修改到货通知
+     *
+     * @param bo 到货通知业务对象（BO）
+     * @return 影响行数
+     */
     int updateByBo(WmArrivalNoticeBo bo);
 
+    /**
+     * 删除到货通知
+     *
+     * @param ids 主键 ID 数组（支持批量操作）
+     * @return 影响行数
+     */
     int deleteByIds(Long[] ids);
 
     /**

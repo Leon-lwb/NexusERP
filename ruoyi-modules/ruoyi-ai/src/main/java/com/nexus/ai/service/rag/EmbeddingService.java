@@ -24,7 +24,9 @@ import java.util.concurrent.ConcurrentHashMap;
 @RequiredArgsConstructor
 public class EmbeddingService {
 
+    /** AI 模型业务服务，按 ID/名称加载 Embedding 模型配置。 */
     private final IAiModelService aiModelService;
+    /** Embedding 厂商策略工厂，按 providerType 构建 EmbeddingModel。 */
     private final EmbeddingProviderFactory embeddingProviderFactory;
 
     /** Embedding 模型缓存（key = modelId） */

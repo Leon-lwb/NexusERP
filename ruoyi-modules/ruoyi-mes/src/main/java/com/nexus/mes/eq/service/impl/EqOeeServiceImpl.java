@@ -69,6 +69,12 @@ public class EqOeeServiceImpl implements IEqOeeService {
 
     // ==================== 看板查询 ====================
 
+    /**
+     * 获取概览概览
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @return 返回结果
+     */
     @Override
     public EqOeeOverviewVo overview(EqOeeQueryBo bo) {
         List<EqOeeRecordVo> list = queryRecords(bo);
@@ -90,6 +96,12 @@ public class EqOeeServiceImpl implements IEqOeeService {
         return vo;
     }
 
+    /**
+     * 统计趋势趋势
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @return 结果列表
+     */
     @Override
     public List<EqOeeTrendVo> trend(EqOeeQueryBo bo) {
         List<EqOeeRecordVo> list = queryRecords(bo);
@@ -116,6 +128,12 @@ public class EqOeeServiceImpl implements IEqOeeService {
         return result;
     }
 
+    /**
+     * 统计分布分布
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @return 返回结果
+     */
     @Override
     public EqOeeDistributionVo distribution(EqOeeQueryBo bo) {
         List<EqOeeRecordVo> list = queryRecords(bo);
@@ -139,6 +157,12 @@ public class EqOeeServiceImpl implements IEqOeeService {
         return vo;
     }
 
+    /**
+     * 统计排行排行
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @return 结果列表
+     */
     @Override
     public List<EqOeeTopVo> topDowntime(EqOeeQueryBo bo) {
         List<EqOeeRecordVo> list = queryRecords(bo);
@@ -165,6 +189,13 @@ public class EqOeeServiceImpl implements IEqOeeService {
         return tops.stream().limit(10).collect(Collectors.toList());
     }
 
+    /**
+     * 分页查询OEE列表
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @param pageQuery 分页参数（页码、每页大小、排序）
+     * @return 分页结果
+     */
     @Override
     public TableDataInfo<EqOeeRecordVo> selectPageList(EqOeeQueryBo bo, PageQuery pageQuery) {
         Date[] range = resolveRange(bo);
@@ -172,6 +203,12 @@ public class EqOeeServiceImpl implements IEqOeeService {
         return TableDataInfo.build(page);
     }
 
+    /**
+     * 查询OEE列表
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @return 结果列表
+     */
     @Override
     public List<EqOeeRecordVo> selectList(EqOeeQueryBo bo) {
         Date[] range = resolveRange(bo);
@@ -180,6 +217,12 @@ public class EqOeeServiceImpl implements IEqOeeService {
 
     // ==================== 聚合任务 ====================
 
+    /**
+     * 聚合聚合
+     *
+     * @param date 统计日期（null 表示聚合昨天）
+     * @return 数量/结果
+     */
     @Override
     public int aggregate(Date date) {
         if (date == null) {

@@ -12,6 +12,7 @@ import java.util.Date;
 
 /**
  * MES工单工序步骤对象 pro_work_order_step
+ * <p>属于 MES 生产管理模块，表达 工单 的领域模型。</p>
  *
  * @author Nexus
  */

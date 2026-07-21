@@ -10,6 +10,8 @@ import lombok.EqualsAndHashCode;
 /**
  * MES数据采集点对象 dc_collection_point
  *
+ * <p>属于MES 数据采集模块，采集点持久化实体。</p>
+ *
  * @author Nexus
  */
 @Data

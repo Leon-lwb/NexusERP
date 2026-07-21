@@ -23,6 +23,8 @@ import java.util.List;
 /**
  * MES设备保养计划 Controller
  *
+ * <p>属于MES 设备管理模块，提供保养计划相关的 REST 接口。</p>
+ *
  * @author Nexus
  */
 @Validated
@@ -35,6 +37,10 @@ public class EqMaintenancePlanController extends BaseController {
 
     /**
      * 分页查询保养计划列表
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @param pageQuery 分页参数（页码、每页大小、排序）
+     * @return 分页结果
      */
     @SaCheckPermission("mes:eq:maintenance:list")
     @GetMapping("/list")
@@ -44,6 +50,9 @@ public class EqMaintenancePlanController extends BaseController {
 
     /**
      * 根据ID获取保养计划详情
+     *
+     * @param planId 计划ID
+     * @return 操作结果
      */
     @SaCheckPermission("mes:eq:maintenance:query")
     @GetMapping("/{planId}")
@@ -53,6 +62,9 @@ public class EqMaintenancePlanController extends BaseController {
 
     /**
      * 新增保养计划(自动计算下次保养日期)
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @return 操作结果
      */
     @SaCheckPermission("mes:eq:maintenance:add")
     @Log(title = "保养计划新增", businessType = BusinessType.INSERT)
@@ -63,6 +75,9 @@ public class EqMaintenancePlanController extends BaseController {
 
     /**
      * 编辑保养计划(自动计算下次保养日期)
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @return 操作结果
      */
     @SaCheckPermission("mes:eq:maintenance:edit")
     @Log(title = "保养计划编辑", businessType = BusinessType.UPDATE)
@@ -73,6 +88,9 @@ public class EqMaintenancePlanController extends BaseController {
 
     /**
      * 批量删除保养计划
+     *
+     * @param ids ID数组
+     * @return 操作结果
      */
     @SaCheckPermission("mes:eq:maintenance:remove")
     @Log(title = "保养计划删除", businessType = BusinessType.DELETE)
@@ -94,6 +112,9 @@ public class EqMaintenancePlanController extends BaseController {
 
     /**
      * 导出保养计划数据
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @param response HTTP 响应对象
      */
     @SaCheckPermission("mes:eq:maintenance:export")
     @Log(title = "保养计划", businessType = BusinessType.EXPORT)

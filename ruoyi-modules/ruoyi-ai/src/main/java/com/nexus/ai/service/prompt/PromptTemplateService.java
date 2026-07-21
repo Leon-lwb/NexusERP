@@ -34,9 +34,13 @@ import java.util.concurrent.ConcurrentHashMap;
 @RequiredArgsConstructor
 public class PromptTemplateService {
 
+    /** Prompt 模板持久化服务，按 templateKey 加载模板内容 */
     private final IAiPromptTemplateService promptTemplateService;
+    /** ERP 表结构缓存管理器，提供 Schema 摘要 */
     private final ErpTableSchemaManager schemaManager;
+    /** 内置工具注册表，提供可用工具描述 */
     private final BuiltinToolRegistry builtinToolRegistry;
+    /** SQL 示例匹配服务，提供 Few-Shot 示例 */
     private final SqlExampleService sqlExampleService;
 
     /** 模板内容缓存：templateKey -> content（变更时清除） */

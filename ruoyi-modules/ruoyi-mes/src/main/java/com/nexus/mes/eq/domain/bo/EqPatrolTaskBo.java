@@ -9,6 +9,9 @@ import com.nexus.mes.eq.domain.EqPatrolTask;
 
 import java.util.Date;
 
+/**
+ * 属于MES 设备管理模块，巡检任务业务对象（新增/编辑入参）。
+ */
 @Data
 @EqualsAndHashCode(callSuper = true)
 @AutoMapper(target = EqPatrolTask.class, reverseConvertGenerate = false)

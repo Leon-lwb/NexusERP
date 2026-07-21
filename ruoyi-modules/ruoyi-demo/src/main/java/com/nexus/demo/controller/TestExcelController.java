@@ -150,21 +150,31 @@ public class TestExcelController {
         return excelResult.getList();
     }
 
+    /** 单列表 Excel 模板的演示数据对象 */
     @Data
     @AllArgsConstructor
     static class TestObj1 {
+        /** 测试列1 */
         private String test1;
+        /** 测试列2 */
         private String test2;
+        /** 测试列3 */
         private String test3;
     }
 
+    /** 多列表 Excel 模板的演示数据对象 */
     @Data
     @AllArgsConstructor
     static class TestObj {
+        /** 名称 */
         private String name;
+        /** 列表数据1 */
         private String list1;
+        /** 列表数据2 */
         private String list2;
+        /** 列表数据3 */
         private String list3;
+        /** 列表数据4 */
         private String list4;
     }
 

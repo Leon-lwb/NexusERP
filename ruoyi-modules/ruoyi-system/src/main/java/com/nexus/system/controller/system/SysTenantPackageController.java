@@ -27,7 +27,9 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 /**
- * 租户套餐管理
+ * 租户套餐管理Controller
+ * <p>提供租户套餐（含菜单权限、功能权限集合）的分页查询、下拉列表、Excel 导出、详情、增删改与状态启停等接口。
+ * 仅限超管角色访问，且需在开启租户模式（tenant.enable=true）时生效。属于系统管理（System）模块。</p>
  *
  * @author Michelle.Chung
  */
@@ -38,10 +40,15 @@ import java.util.List;
 @ConditionalOnProperty(value = "tenant.enable", havingValue = "true")
 public class SysTenantPackageController extends BaseController {
 
+    /** 租户套餐业务服务，提供分页、唯一性校验、增删改与状态变更等能力。 */
     private final ISysTenantPackageService tenantPackageService;
 
     /**
-     * 查询租户套餐列表
+     * 分页查询租户套餐列表。
+     *
+     * @param bo        套餐查询条件（套餐名称、状态等）
+     * @param pageQuery 分页查询参数，包含页码、每页大小及排序条件
+     * @return 租户套餐分页结果
      */
     @SaCheckRole(TenantConstants.SUPER_ADMIN_ROLE_KEY)
     @SaCheckPermission("system:tenantPackage:list")
@@ -51,7 +58,9 @@ public class SysTenantPackageController extends BaseController {
     }
 
     /**
-     * 查询租户套餐下拉选列表
+     * 查询租户套餐下拉选择列表。
+     *
+     * @return 全部租户套餐列表
      */
     @SaCheckRole(TenantConstants.SUPER_ADMIN_ROLE_KEY)
     @SaCheckPermission("system:tenantPackage:list")
@@ -61,7 +70,10 @@ public class SysTenantPackageController extends BaseController {
     }
 
     /**
-     * 导出租户套餐列表
+     * 导出租户套餐列表为 Excel 文件。
+     *
+     * @param bo       套餐查询条件
+     * @param response HTTP 响应，用于写入导出的 Excel 流
      */
     @SaCheckRole(TenantConstants.SUPER_ADMIN_ROLE_KEY)
     @SaCheckPermission("system:tenantPackage:export")
@@ -73,9 +85,10 @@ public class SysTenantPackageController extends BaseController {
     }
 
     /**
-     * 获取租户套餐详细信息
+     * 根据套餐 ID 查询租户套餐详细信息。
      *
-     * @param packageId 主键
+     * @param packageId 套餐主键
+     * @return 租户套餐详情
      */
     @SaCheckRole(TenantConstants.SUPER_ADMIN_ROLE_KEY)
     @SaCheckPermission("system:tenantPackage:query")
@@ -86,7 +99,10 @@ public class SysTenantPackageController extends BaseController {
     }
 
     /**
-     * 新增租户套餐
+     * 新增租户套餐，校验套餐名称唯一性。
+     *
+     * @param bo 套餐新增参数
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckRole(TenantConstants.SUPER_ADMIN_ROLE_KEY)
     @SaCheckPermission("system:tenantPackage:add")
@@ -101,7 +117,10 @@ public class SysTenantPackageController extends BaseController {
     }
 
     /**
-     * 修改租户套餐
+     * 修改租户套餐，校验套餐名称唯一性。
+     *
+     * @param bo 套餐修改参数
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckRole(TenantConstants.SUPER_ADMIN_ROLE_KEY)
     @SaCheckPermission("system:tenantPackage:edit")
@@ -116,7 +135,10 @@ public class SysTenantPackageController extends BaseController {
     }
 
     /**
-     * 状态修改
+     * 启停租户套餐状态。
+     *
+     * @param bo 含套餐 ID 与状态值的参数
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckRole(TenantConstants.SUPER_ADMIN_ROLE_KEY)
     @SaCheckPermission("system:tenantPackage:edit")
@@ -128,9 +150,10 @@ public class SysTenantPackageController extends BaseController {
     }
 
     /**
-     * 删除租户套餐
+     * 批量删除租户套餐。
      *
-     * @param packageIds 主键串
+     * @param packageIds 套餐主键数组
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckRole(TenantConstants.SUPER_ADMIN_ROLE_KEY)
     @SaCheckPermission("system:tenantPackage:remove")

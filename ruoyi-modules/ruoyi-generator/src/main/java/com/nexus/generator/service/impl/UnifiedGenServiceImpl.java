@@ -45,11 +45,19 @@ public class UnifiedGenServiceImpl implements IUnifiedGenService {
     private final IGenTableService genTableService;
     private final JdbcTemplate jdbcTemplate;
 
+    /** 合法 SQL 标识符（表名/字段名）正则，用于校验防止 SQL 注入。 */
     private static final Pattern SAFE_IDENTIFIER = Pattern.compile("^[a-zA-Z_][a-zA-Z0-9_]*$");
+    /** 导入/查询数据库表时忽略的表前缀（系统表、流程表、生成器自身表）。 */
     private static final String[] TABLE_IGNORE = new String[]{"sj_", "flow_", "gen_"};
 
     // ==================== 设计管理 ====================
 
+    /**
+     * 新增或更新 Online 表设计，返回设计ID。
+     *
+     * @param design 设计对象（无 designId 则新增）
+     * @return 设计ID
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Long saveOrUpdateDesign(GenTableDesign design) {
@@ -61,17 +69,34 @@ public class UnifiedGenServiceImpl implements IUnifiedGenService {
         return design.getDesignId();
     }
 
+    /**
+     * 根据设计ID查询 Online 表设计详情。
+     *
+     * @param designId 设计ID
+     * @return 设计详情
+     */
     @Override
     public GenTableDesign getDesignById(Long designId) {
         return designMapper.selectById(designId);
     }
 
+    /**
+     * 删除指定 Online 表设计。
+     *
+     * @param designId 设计ID
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void removeDesignById(Long designId) {
         designMapper.deleteById(designId);
     }
 
+    /**
+     * 按关键字查询 Online 表设计列表（匹配设计名/表名/表描述）。
+     *
+     * @param keyword 关键字
+     * @return 设计列表
+     */
     @Override
     public List<GenTableDesign> listDesigns(String keyword) {
         LambdaQueryWrapper<GenTableDesign> qw = new LambdaQueryWrapper<>();
@@ -84,6 +109,12 @@ public class UnifiedGenServiceImpl implements IUnifiedGenService {
         return designMapper.selectList(qw);
     }
 
+    /**
+     * 根据设计 JSON 生成建表及外键 SQL（含字段定义与约束）。
+     *
+     * @param designJson 设计内容 JSON
+     * @return 生成的建表 SQL
+     */
     @Override
     public String generateCreateTableSql(String designJson) {
         JSONObject root = JSON.parseObject(designJson);
@@ -134,6 +165,12 @@ public class UnifiedGenServiceImpl implements IUnifiedGenService {
         return full.toString();
     }
 
+    /**
+     * 执行建表 SQL（按分号分句；overwriteIfExists 为真时先 DROP 已存在的表）。
+     *
+     * @param sql               建表 SQL（可含多条语句）
+     * @param overwriteIfExists 是否覆盖已存在的表
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void executeCreateTableSql(String sql, boolean overwriteIfExists) {
@@ -181,6 +218,14 @@ public class UnifiedGenServiceImpl implements IUnifiedGenService {
 
     // ==================== 设计导入代码生成 ====================
 
+    /**
+     * 将 Online 设计转换为代码生成配置并导入，返回生成的业务表ID。
+     *
+     * @param designId          设计ID
+     * @param dataName          数据源名称
+     * @param overwriteIfExists 是否覆盖已存在的配置
+     * @return 生成的代码生成表ID
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Long importFromDesign(Long designId, String dataName, boolean overwriteIfExists) {
@@ -279,6 +324,11 @@ public class UnifiedGenServiceImpl implements IUnifiedGenService {
         return null;
     }
 
+    /**
+     * 将关联的 Online 设计内容同步回代码生成表配置。
+     *
+     * @param tableId 代码生成表ID
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void syncDesignToGenTable(Long tableId) {
@@ -301,6 +351,12 @@ public class UnifiedGenServiceImpl implements IUnifiedGenService {
 
     // ==================== Online表单数据操作 ====================
 
+    /**
+     * 获取指定表的 Online 表单配置（含字段与布局，按模板返回单表/主子表/子表结构）。
+     *
+     * @param tableId 业务表ID
+     * @return 表单配置映射
+     */
     @Override
     public Map<String, Object> getOnlineForm(Long tableId) {
         GenTable table = genTableService.selectGenTableById(tableId);
@@ -413,6 +469,13 @@ public class UnifiedGenServiceImpl implements IUnifiedGenService {
         }
     }
 
+    /**
+     * 分页查询 Online 表单业务数据（含表单配置 map，并处理 BLOB 字段）。
+     *
+     * @param tableId   业务表ID
+     * @param pageQuery 分页参数
+     * @return 业务数据分页结果
+     */
     @Override
     public TableDataInfo<Map<String, Object>> listOnlineData(Long tableId, PageQuery pageQuery) {
         GenTable table = genTableService.selectGenTableById(tableId);
@@ -503,6 +566,13 @@ public class UnifiedGenServiceImpl implements IUnifiedGenService {
         return records;
     }
 
+    /**
+     * 根据主键查询 Online 表单单条业务数据（处理 BLOB 字段）。
+     *
+     * @param tableId 业务表ID
+     * @param dataId  数据ID
+     * @return 数据详情映射
+     */
     @Override
     public Map<String, Object> getOnlineDataById(Long tableId, Long dataId) {
         GenTable table = genTableService.selectGenTableById(tableId);
@@ -557,6 +627,13 @@ public class UnifiedGenServiceImpl implements IUnifiedGenService {
         }
     }
 
+    /**
+     * 新增或更新 Online 表单业务数据（按主键是否存在自动判断）。
+     *
+     * @param tableId 业务表ID
+     * @param data    业务数据
+     * @return 影响行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int addOrUpdateOnlineData(Long tableId, Map<String, Object> data) {
@@ -568,6 +645,13 @@ public class UnifiedGenServiceImpl implements IUnifiedGenService {
         return addOrUpdateOnlineDataInternal(table, data);
     }
 
+    /**
+     * 通过表名新增或更新 Online 表单数据，供 Flowable 流程调用。
+     *
+     * @param tableName 表名
+     * @param data      业务数据
+     * @return 影响行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int addOrUpdateOnlineDataByName(String tableName, Map<String, Object> data) {
@@ -639,6 +723,12 @@ public class UnifiedGenServiceImpl implements IUnifiedGenService {
         }
     }
 
+    /**
+     * 批量删除 Online 表单业务数据。
+     *
+     * @param tableId 业务表ID
+     * @param ids     数据ID列表
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void deleteOnlineData(Long tableId, List<Long> ids) {
@@ -659,6 +749,14 @@ public class UnifiedGenServiceImpl implements IUnifiedGenService {
 
     // ==================== 动态表查询 ====================
 
+    /**
+     * 动态表分页查询（按表名拼接 SQL 与自定义查询条件，带表名安全校验）。
+     *
+     * @param tableName 表名
+     * @param wrapper   查询条件封装
+     * @param page      分页对象
+     * @return 分页结果
+     */
     @Override
     public TableDataInfo<Map<String, Object>> selectDynamicTablePage(String tableName, QueryWrapper<?> wrapper, Page<?> page) {
         if (!isSafeIdentifier(tableName)) {
@@ -694,6 +792,13 @@ public class UnifiedGenServiceImpl implements IUnifiedGenService {
         return TableDataInfo.build(resultPage);
     }
 
+    /**
+     * 根据主键查询动态表单条数据（带表名安全校验）。
+     *
+     * @param tableName 表名
+     * @param id        数据ID
+     * @return 数据映射
+     */
     @Override
     public Map<String, Object> selectDynamicTableById(String tableName, String id) {
         if (!isSafeIdentifier(tableName)) {
@@ -705,6 +810,14 @@ public class UnifiedGenServiceImpl implements IUnifiedGenService {
         return list.isEmpty() ? null : list.get(0);
     }
 
+    /**
+     * 查询 Popup 弹窗来源表单条数据（先校验来源表授权，再按表名安全查询）。
+     *
+     * @param tableId       业务表ID（权限上下文）
+     * @param dictTableName Popup 来源表名
+     * @param id            数据ID
+     * @return 数据详情映射
+     */
     @Override
     public Map<String, Object> getPopupDetail(Long tableId, String dictTableName, String id) {
         // 验证表名权限
@@ -719,6 +832,14 @@ public class UnifiedGenServiceImpl implements IUnifiedGenService {
         return list.isEmpty() ? null : list.get(0);
     }
 
+    /**
+     * 分页查询 Popup 弹窗来源表数据（先校验来源表授权，再按表名安全查询）。
+     *
+     * @param tableId       业务表ID（权限上下文）
+     * @param dictTableName Popup 来源表名
+     * @param pageQuery     分页参数
+     * @return 来源表数据分页结果
+     */
     @Override
     public TableDataInfo<Map<String, Object>> listPopupTableData(Long tableId, String dictTableName, PageQuery pageQuery) {
         // 验证表名权限
@@ -741,27 +862,55 @@ public class UnifiedGenServiceImpl implements IUnifiedGenService {
 
     // ==================== 代码生成（委托给原有服务） ====================
 
+    /**
+     * 预览指定表的生成代码（委托原有代码生成服务）。
+     *
+     * @param tableId 业务表ID
+     * @return 模板路径与生成内容映射
+     */
     @Override
     public Map<String, String> previewCode(Long tableId) {
         return genTableService.previewCode(tableId);
     }
 
+    /**
+     * 生成指定表的代码并以 zip 字节数组返回（委托原有服务）。
+     *
+     * @param tableId 业务表ID
+     * @return 代码压缩包字节数组
+     */
     @Override
     public byte[] downloadCode(Long tableId) {
         return genTableService.downloadCode(tableId);
     }
 
+    /**
+     * 批量生成多张表的代码并以 zip 字节数组返回（委托原有服务）。
+     *
+     * @param tableIds 业务表ID数组
+     * @return 代码压缩包字节数组
+     */
     @Override
     public byte[] downloadCodeBatch(Long[] tableIds) {
         String[] ids = Arrays.stream(tableIds).map(String::valueOf).toArray(String[]::new);
         return genTableService.downloadCode(ids);
     }
 
+    /**
+     * 将指定表代码生成到自定义路径（委托原有服务）。
+     *
+     * @param tableId 业务表ID
+     */
     @Override
     public void generatorCode(Long tableId) {
         genTableService.generatorCode(tableId);
     }
 
+    /**
+     * 同步数据库表结构到代码生成配置（委托原有服务）。
+     *
+     * @param tableId 业务表ID
+     */
     @Override
     public void synchDb(Long tableId) {
         genTableService.synchDb(tableId);

@@ -13,10 +13,15 @@ import lombok.EqualsAndHashCode;
 public class MesMbom extends TenantEntity {
     @TableId(value = "mbom_id")
     private Long mbomId;
+    /** BOMID */
     private Long bomId;
+    /** 工艺路线ID */
     private Long routingId;
+    /** MBOMVersion */
     private String mbomVersion;
+    /** MBOMStatus */
     private String mbomStatus;  // DRAFT/ACTIVE/FROZEN
+    /** remark */
     private String remark;
     @TableLogic
     private String delFlag;

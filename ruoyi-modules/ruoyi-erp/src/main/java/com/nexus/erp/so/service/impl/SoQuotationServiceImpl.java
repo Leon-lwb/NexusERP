@@ -209,6 +209,12 @@ public class SoQuotationServiceImpl implements ISoQuotationService {
         return order.getSoId();
     }
 
+    /**
+     * 批量新增报价单明细行：清空行ID后按报价单ID归属并逐条插入。
+     *
+     * @param quotationId 报价单ID
+     * @param lineList    明细行列表
+     */
     private void insertOrUpdateLines(Long quotationId, List<SoQuotationLine> lineList) {
         if (lineList != null && !lineList.isEmpty()) {
             for (SoQuotationLine line : lineList) {
@@ -219,6 +225,11 @@ public class SoQuotationServiceImpl implements ISoQuotationService {
         }
     }
 
+    /**
+     * 按报价单ID删除其所有明细行。
+     *
+     * @param quotationId 报价单ID
+     */
     private void deleteLinesByQuotationId(Long quotationId) {
         if (quotationId != null) {
             LambdaQueryWrapper<SoQuotationLine> lqw = Wrappers.lambdaQuery();
@@ -227,6 +238,12 @@ public class SoQuotationServiceImpl implements ISoQuotationService {
         }
     }
 
+    /**
+     * 构建报价单分页/列表查询条件（按单号、客户、状态动态拼接，按创建时间倒序）。
+     *
+     * @param bo 查询参数
+     * @return 查询条件构造器
+     */
     private LambdaQueryWrapper<SoQuotation> buildQueryWrapper(SoQuotationBo bo) {
         LambdaQueryWrapper<SoQuotation> lqw = Wrappers.lambdaQuery();
         lqw.eq(StringUtils.isNotBlank(bo.getQuotationNo()), SoQuotation::getQuotationNo, bo.getQuotationNo());

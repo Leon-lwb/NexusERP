@@ -40,10 +40,15 @@ import org.springframework.validation.annotation.Validated;
 @RequestMapping("/workflow/customForm")
 public class WfCustomFormController extends BaseController {
 
+    /** 流程业务单业务服务，提供分页、导出、增删改及表单关联等能力。 */
     private final IWfCustomFormService iWfCustomFormService;
 
     /**
-     * 查询流程业务单列表
+     * 查询流程业务单列表。
+     *
+     * @param bo        流程业务单查询条件
+     * @param pageQuery 分页参数（页码、每页大小、排序）
+     * @return 分页结果，包含流程业务单列表及分页元信息
      */
     @SaCheckPermission("workflow:customForm:list")
     @GetMapping("/list")
@@ -52,7 +57,10 @@ public class WfCustomFormController extends BaseController {
     }
 
     /**
-     * 导出流程业务单列表
+     * 导出流程业务单列表。
+     *
+     * @param bo       流程业务单查询条件
+     * @param response HTTP 响应，用于写入导出的 Excel 流
      */
     @SaCheckPermission("workflow:customForm:export")
     @Log(title = "流程业务单", businessType = BusinessType.EXPORT)
@@ -63,9 +71,10 @@ public class WfCustomFormController extends BaseController {
     }
 
     /**
-     * 获取流程业务单详细信息
+     * 获取流程业务单详细信息。
      *
      * @param id 主键
+     * @return 流程业务单详细信息
      */
     @SaCheckPermission("workflow:customForm:query")
     @GetMapping("/{id}")
@@ -75,7 +84,10 @@ public class WfCustomFormController extends BaseController {
     }
 
     /**
-     * 新增流程业务单
+     * 新增流程业务单。
+     *
+     * @param bo 流程业务单新增数据
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckPermission("workflow:customForm:add")
     @Log(title = "流程业务单", businessType = BusinessType.INSERT)
@@ -86,7 +98,10 @@ public class WfCustomFormController extends BaseController {
     }
 
     /**
-     * 修改流程业务单
+     * 修改流程业务单。
+     *
+     * @param bo 流程业务单修改数据
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckPermission("workflow:customForm:edit")
     @Log(title = "流程业务单", businessType = BusinessType.UPDATE)
@@ -97,7 +112,10 @@ public class WfCustomFormController extends BaseController {
     }
 
     /**
-     * 关联流程业务单
+     * 关联流程业务单（将业务单与指定流程绑定）。
+     *
+     * @param customFormVo 业务单与流程关联信息
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckPermission("workflow:customForm:edit")
     @Log(title = "流程业务单", businessType = BusinessType.UPDATE)
@@ -109,9 +127,10 @@ public class WfCustomFormController extends BaseController {
     }
 
     /**
-     * 删除流程业务单
+     * 删除流程业务单。
      *
      * @param ids 主键串
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckPermission("workflow:customForm:remove")
     @Log(title = "流程业务单", businessType = BusinessType.DELETE)

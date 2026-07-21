@@ -32,8 +32,16 @@ import java.util.stream.Collectors;
 @Service
 public class WmBarcodeConfigServiceImpl implements IWmBarcodeConfigService {
 
+    /** 基础数据访问映射器（Mapper） */
     private final WmBarcodeConfigMapper baseMapper;
 
+    /**
+     * 分页查询条码配置列表
+     *
+     * @param bo 条码配置业务对象（BO）
+     * @param pageQuery 分页查询参数，包含页码、每页大小及排序条件
+     * @return 结果对象
+     */
     @Override
     public TableDataInfo<WmBarcodeConfigVo> selectPageList(WmBarcodeConfigBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<WmBarcodeConfig> lqw = buildQueryWrapper(bo);
@@ -46,17 +54,35 @@ public class WmBarcodeConfigServiceImpl implements IWmBarcodeConfigService {
         return TableDataInfo.build(voPage);
     }
 
+    /**
+     * 查询条码配置列表
+     *
+     * @param bo 条码配置业务对象（BO）
+     * @return 结果对象
+     */
     @Override
     public List<WmBarcodeConfigVo> selectList(WmBarcodeConfigBo bo) {
         return baseMapper.selectList(buildQueryWrapper(bo)).stream().map(this::toVo).collect(Collectors.toList());
     }
 
+    /**
+     * 查询条码配置
+     *
+     * @param id 主键 ID
+     * @return 结果
+     */
     @Override
     public WmBarcodeConfigVo selectById(Long id) {
         WmBarcodeConfig entity = baseMapper.selectById(id);
         return entity == null ? null : toVo(entity);
     }
 
+    /**
+     * 新增条码配置
+     *
+     * @param bo 条码配置业务对象（BO）
+     * @return 结果
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(WmBarcodeConfigBo bo) {
@@ -70,6 +96,12 @@ public class WmBarcodeConfigServiceImpl implements IWmBarcodeConfigService {
         return baseMapper.insert(entity);
     }
 
+    /**
+     * 修改条码配置
+     *
+     * @param bo 条码配置业务对象（BO）
+     * @return 结果
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(WmBarcodeConfigBo bo) {
@@ -77,6 +109,12 @@ public class WmBarcodeConfigServiceImpl implements IWmBarcodeConfigService {
         return baseMapper.updateById(entity);
     }
 
+    /**
+     * 删除条码配置
+     *
+     * @param ids 主键 ID 数组（支持批量操作）
+     * @return 结果
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {

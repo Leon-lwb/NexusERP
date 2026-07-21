@@ -32,6 +32,7 @@ import java.util.Map;
 @RequestMapping("/ai/token-usage")
 public class AiTokenUsageController {
 
+    /** Token 用量业务服务，提供用量查询、趋势、排行与回填。 */
     private final IAiTokenUsageService aiTokenUsageService;
 
     /**

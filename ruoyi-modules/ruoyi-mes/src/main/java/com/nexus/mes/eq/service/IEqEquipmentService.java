@@ -31,26 +31,42 @@ public interface IEqEquipmentService {
 
     /**
      * 分页查询设备台账列表
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @param pageQuery 分页参数（页码、每页大小、排序）
+     * @return 分页结果
      */
     TableDataInfo<EqEquipmentVo> selectPageList(EqEquipmentBo bo, PageQuery pageQuery);
 
     /**
      * 根据ID获取设备详情
+     *
+     * @param equipmentId 设备ID
+     * @return 返回结果
      */
     EqEquipmentVo selectById(Long equipmentId);
 
     /**
      * 新增设备(默认状态 NORMAL)
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @return 返回结果
      */
     EqEquipmentVo insertByBo(EqEquipmentBo bo);
 
     /**
      * 编辑设备
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @return 返回结果
      */
     EqEquipmentVo updateByBo(EqEquipmentBo bo);
 
     /**
      * 批量删除设备
+     *
+     * @param ids ID数组
+     * @return 是否成功
      */
     Boolean deleteByIds(Long[] ids);
 
@@ -83,6 +99,9 @@ public interface IEqEquipmentService {
 
     /**
      * 不分页查询设备列表(导出用)
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @return 结果列表
      */
     List<EqEquipmentVo> selectList(EqEquipmentBo bo);
 
@@ -123,6 +142,8 @@ public interface IEqEquipmentService {
      * 设备状态计数汇总(监控大屏用, 全量 COUNT 不受分页 pageSize 限制)
      *
      * @return {total, normal, maintenance, fault, scrapped}
+     *
+     * @return 结果映射
      */
     Map<String, Object> statusSummary();
 

@@ -24,6 +24,7 @@ import java.util.Map;
 @Slf4j
 public abstract class AbstractHttpRerankProvider implements RerankProvider {
 
+    /** 复用的 Jackson 对象映射器，用于构造与解析 HTTP 请求/响应。 */
     protected final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override

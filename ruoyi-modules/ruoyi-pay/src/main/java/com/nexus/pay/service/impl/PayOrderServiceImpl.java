@@ -27,8 +27,16 @@ import java.util.List;
 @Service
 public class PayOrderServiceImpl implements IPayOrderService {
 
+    /** 订单数据访问映射，封装订单表的增删改查。 */
     private final PayOrderMapper baseMapper;
 
+    /**
+     * 分页查询支付订单列表。
+     *
+     * @param bo 订单查询条件
+     * @param pageQuery 分页参数
+     * @return 分页后的订单视图列表
+     */
     @Override
     public TableDataInfo<PayOrderVo> selectPageList(PayOrderBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<PayOrder> lqw = buildQueryWrapper(bo);
@@ -36,17 +44,35 @@ public class PayOrderServiceImpl implements IPayOrderService {
         return TableDataInfo.build(page);
     }
 
+    /**
+     * 按条件查询全部支付订单列表（不分页）。
+     *
+     * @param bo 订单查询条件
+     * @return 订单视图列表
+     */
     @Override
     public List<PayOrderVo> selectList(PayOrderBo bo) {
         LambdaQueryWrapper<PayOrder> lqw = buildQueryWrapper(bo);
         return baseMapper.selectVoList(lqw);
     }
 
+    /**
+     * 根据订单 ID 查询订单详情。
+     *
+     * @param orderId 订单 ID
+     * @return 订单视图对象
+     */
     @Override
     public PayOrderVo selectById(Long orderId) {
         return baseMapper.selectVoById(orderId);
     }
 
+    /**
+     * 根据商户订单号查询支付订单；订单不存在时抛出业务异常。
+     *
+     * @param orderNumber 商户订单号
+     * @return 支付订单实体
+     */
     @Override
     public PayOrder selectPayOrderByOrderNumber(String orderNumber) {
         PayOrder payOrder = baseMapper.selectOne(
@@ -57,24 +83,48 @@ public class PayOrderServiceImpl implements IPayOrderService {
         return payOrder;
     }
 
+    /**
+     * 新增支付订单。
+     *
+     * @param payOrder 订单实体
+     * @return 受影响行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertPayOrder(PayOrder payOrder) {
         return baseMapper.insert(payOrder);
     }
 
+    /**
+     * 修改支付订单信息。
+     *
+     * @param payOrder 订单实体
+     * @return 受影响行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updatePayOrder(PayOrder payOrder) {
         return baseMapper.updateById(payOrder);
     }
 
+    /**
+     * 批量删除支付订单。
+     *
+     * @param orderIds 待删除的订单 ID 数组
+     * @return 受影响行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] orderIds) {
         return baseMapper.deleteBatchIds(List.of(orderIds));
     }
 
+    /**
+     * 根据商户订单号删除支付订单。
+     *
+     * @param orderNumber 商户订单号
+     * @return 受影响行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteByOrderNumber(String orderNumber) {
@@ -82,6 +132,13 @@ public class PayOrderServiceImpl implements IPayOrderService {
                 Wrappers.<PayOrder>lambdaQuery().eq(PayOrder::getOrderNumber, orderNumber));
     }
 
+    /**
+     * 根据商户订单号更新订单状态。
+     *
+     * @param orderNumber 商户订单号
+     * @param orderStatus 目标订单状态
+     * @return 受影响行数
+     */
     @Override
     public int updateStatus(String orderNumber, String orderStatus) {
         return baseMapper.update(null,

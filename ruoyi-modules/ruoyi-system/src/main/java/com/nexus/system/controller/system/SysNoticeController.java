@@ -18,7 +18,9 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 /**
- * 公告 信息操作处理
+ * 通知公告Controller
+ * <p>提供通知公告的分页查询、详情、增删改等接口；新增公告会通过 SSE 向在线用户推送提醒。
+ * 属于系统管理（System）模块。</p>
  *
  * @author Lion Li
  */
@@ -28,11 +30,17 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/system/notice")
 public class SysNoticeController extends BaseController {
 
+    /** 通知公告业务服务，提供分页、增删改等能力。 */
     private final ISysNoticeService noticeService;
+    /** 字典服务，用于解析公告类型的字典标签。 */
     private final DictService dictService;
 
     /**
-     * 获取通知公告列表
+     * 分页查询通知公告列表。
+     *
+     * @param notice   公告查询条件（标题、类型、状态等）
+     * @param pageQuery 分页查询参数，包含页码、每页大小及排序条件
+     * @return 通知公告分页结果
      */
     @SaCheckPermission("system:notice:list")
     @GetMapping("/list")
@@ -41,9 +49,10 @@ public class SysNoticeController extends BaseController {
     }
 
     /**
-     * 根据通知公告编号获取详细信息
+     * 根据通知公告编号查询详细信息。
      *
-     * @param noticeId 公告ID
+     * @param noticeId 公告 ID
+     * @return 通知公告详情
      */
     @SaCheckPermission("system:notice:query")
     @GetMapping(value = "/{noticeId}")
@@ -52,7 +61,10 @@ public class SysNoticeController extends BaseController {
     }
 
     /**
-     * 新增通知公告
+     * 新增通知公告，并通过 SSE 向全部在线用户推送公告提醒。
+     *
+     * @param notice 通知公告新增参数
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckPermission("system:notice:add")
     @Log(title = "通知公告", businessType = BusinessType.INSERT)
@@ -69,7 +81,10 @@ public class SysNoticeController extends BaseController {
     }
 
     /**
-     * 修改通知公告
+     * 修改通知公告。
+     *
+     * @param notice 通知公告修改参数
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckPermission("system:notice:edit")
     @Log(title = "通知公告", businessType = BusinessType.UPDATE)
@@ -80,9 +95,10 @@ public class SysNoticeController extends BaseController {
     }
 
     /**
-     * 删除通知公告
+     * 批量删除通知公告。
      *
-     * @param noticeIds 公告ID串
+     * @param noticeIds 公告 ID 数组
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckPermission("system:notice:remove")
     @Log(title = "通知公告", businessType = BusinessType.DELETE)

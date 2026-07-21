@@ -32,7 +32,9 @@ import java.util.List;
 @Service
 public class WmStockOperationServiceImpl implements IWmStockOperationService {
 
+    /** 策略工厂 */
     private final StockOperationStrategyFactory strategyFactory;
+    /** 生产发料策略（库存操作相关字段） */
     private final ProductionIssueStrategy productionIssueStrategy;
 
     /**

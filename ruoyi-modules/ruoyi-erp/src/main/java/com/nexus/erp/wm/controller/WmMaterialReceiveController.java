@@ -38,6 +38,7 @@ import java.util.List;
 @RequestMapping("/erp/wm/receive")
 public class WmMaterialReceiveController extends BaseController {
 
+    /** 物料领用业务服务，提供物料领用相关能力 */
     private final IWmMaterialReceiveService wmMaterialReceiveService;
 
     /**

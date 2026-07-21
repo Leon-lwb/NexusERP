@@ -29,14 +29,29 @@ import java.util.List;
 @RequestMapping("/erp/wm/stock-alert")
 public class WmStockAlertController extends BaseController {
 
+    /** 库存预警业务服务，提供库存预警相关能力 */
     private final IWmStockAlertService stockAlertService;
 
+    /**
+     * 分页查询库存预警列表
+     *
+     * @param bo 库存预警业务对象（BO）
+     * @param pageQuery 分页查询参数，包含页码、每页大小及排序条件
+     * @return 结果对象
+     */
     @SaCheckPermission("wm:stockAlert:list")
     @GetMapping("/list")
     public TableDataInfo<WmStockAlertVo> list(WmStockAlertBo bo, PageQuery pageQuery) {
         return stockAlertService.selectPageList(bo, pageQuery);
     }
 
+    /**
+     * 导出库存预警列表
+     *
+     * @param bo 库存预警业务对象（BO）
+     * @param response 参数 response
+     * @return 结果
+     */
     @SaCheckPermission("wm:stockAlert:export")
     @Log(title = "库存预警", businessType = BusinessType.EXPORT)
     @PostMapping("/export")
@@ -45,12 +60,24 @@ public class WmStockAlertController extends BaseController {
         ExcelUtil.exportExcel(list, "库存预警数据", WmStockAlertVo.class, response);
     }
 
+    /**
+     * 获取库存预警详情
+     *
+     * @param alertId 预警 ID
+     * @return 结果对象
+     */
     @SaCheckPermission("wm:stockAlert:query")
     @GetMapping("/{alertId}")
     public R<WmStockAlertVo> getInfo(@PathVariable Long alertId) {
         return R.ok(stockAlertService.selectById(alertId));
     }
 
+    /**
+     * 修改库存预警
+     *
+     * @param bo 库存预警业务对象（BO）
+     * @return 结果对象
+     */
     @SaCheckPermission("wm:stockAlert:edit")
     @Log(title = "库存预警", businessType = BusinessType.UPDATE)
     @PutMapping
@@ -58,6 +85,12 @@ public class WmStockAlertController extends BaseController {
         return toAjax(stockAlertService.updateByBo(bo));
     }
 
+    /**
+     * 删除库存预警
+     *
+     * @param alertIds 参数 alertIds
+     * @return 结果对象
+     */
     @SaCheckPermission("wm:stockAlert:remove")
     @Log(title = "库存预警", businessType = BusinessType.DELETE)
     @DeleteMapping("/{alertIds}")
@@ -65,6 +98,10 @@ public class WmStockAlertController extends BaseController {
         return toAjax(stockAlertService.deleteByIds(alertIds));
     }
 
+    /**
+     * 校验库存预警
+     * @return 结果对象
+     */
     @SaCheckPermission("wm:stockAlert:edit")
     @Log(title = "库存预警-执行检查", businessType = BusinessType.UPDATE)
     @PostMapping("/check")
@@ -73,6 +110,13 @@ public class WmStockAlertController extends BaseController {
         return R.ok();
     }
 
+    /**
+     * 执行库存预警相关操作
+     *
+     * @param alertId 预警 ID
+     * @param false 参数 false
+     * @return 结果对象
+     */
     @SaCheckPermission("wm:stockAlert:edit")
     @Log(title = "库存预警-处理", businessType = BusinessType.UPDATE)
     @PostMapping("/handle/{alertId}")

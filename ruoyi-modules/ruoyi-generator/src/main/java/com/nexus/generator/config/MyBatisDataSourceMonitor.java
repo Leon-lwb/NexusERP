@@ -32,6 +32,7 @@ public class MyBatisDataSourceMonitor implements DataSourceMonitor {
         ConfigTable.METADATA_CACHE_SCOPE = 0;
     }
 
+    /** 数据源名称与 adapter 特征值缓存，避免重复解析数据库元信息。 */
     private final Map<String, String> features = new HashMap<>();
 
     /**

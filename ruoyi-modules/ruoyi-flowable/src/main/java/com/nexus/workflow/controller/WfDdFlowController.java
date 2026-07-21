@@ -38,10 +38,15 @@ import com.nexus.workflow.service.IWfDdFlowService;
 @RequestMapping("/workflow/ddFlow")
 public class WfDdFlowController extends BaseController {
 
+    /** 钉钉流程业务服务，提供分页、导出、增删改等能力。 */
     private final IWfDdFlowService iWfDdFlowService;
 
     /**
-     * 查询钉钉流程列表
+     * 查询钉钉流程列表。
+     *
+     * @param bo        钉钉流程查询条件
+     * @param pageQuery 分页参数（页码、每页大小、排序）
+     * @return 分页结果，包含钉钉流程列表及分页元信息
      */
     @SaCheckPermission("workflow:ddFlow:list")
     @GetMapping("/list")
@@ -50,7 +55,10 @@ public class WfDdFlowController extends BaseController {
     }
 
     /**
-     * 导出钉钉流程列表
+     * 导出钉钉流程列表。
+     *
+     * @param bo        钉钉流程查询条件
+     * @param response  HTTP 响应，用于写入导出的 Excel 流
      */
     @SaCheckPermission("workflow:ddFlow:export")
     @Log(title = "钉钉流程", businessType = BusinessType.EXPORT)
@@ -61,9 +69,10 @@ public class WfDdFlowController extends BaseController {
     }
 
     /**
-     * 获取钉钉流程详细信息
+     * 获取钉钉流程详细信息。
      *
      * @param id 主键
+     * @return 钉钉流程详细信息
      */
     @SaCheckPermission("workflow:ddFlow:query")
     @GetMapping("/{id}")
@@ -73,7 +82,10 @@ public class WfDdFlowController extends BaseController {
     }
 
     /**
-     * 新增钉钉流程
+     * 新增钉钉流程。
+     *
+     * @param bo 钉钉流程新增数据
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckPermission("workflow:ddFlow:add")
     @Log(title = "钉钉流程", businessType = BusinessType.INSERT)
@@ -84,7 +96,10 @@ public class WfDdFlowController extends BaseController {
     }
 
     /**
-     * 修改钉钉流程
+     * 修改钉钉流程。
+     *
+     * @param bo 钉钉流程修改数据
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckPermission("workflow:ddFlow:edit")
     @Log(title = "钉钉流程", businessType = BusinessType.UPDATE)
@@ -95,9 +110,10 @@ public class WfDdFlowController extends BaseController {
     }
 
     /**
-     * 删除钉钉流程
+     * 删除钉钉流程。
      *
      * @param ids 主键串
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckPermission("workflow:ddFlow:remove")
     @Log(title = "钉钉流程", businessType = BusinessType.DELETE)

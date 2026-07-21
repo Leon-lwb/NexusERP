@@ -29,6 +29,7 @@ import com.nexus.workflow.service.IWfFlowConfigService;
 
 /**
  * 流程配置
+ * <p>提供流程配置主表及关联规则子表的增删改查、导出等 REST 接口，属于 Flowable 工作流模块。</p>
  *
  * @author wanghuan
  * @date 2023-11-19
@@ -39,10 +40,15 @@ import com.nexus.workflow.service.IWfFlowConfigService;
 @RequestMapping("/workflow/flowConfig")
 public class WfFlowConfigController extends BaseController {
 
+    /** 流程配置业务服务，提供配置查询、增删改及子表规则维护等能力。 */
     private final IWfFlowConfigService iWfFlowConfigService;
 
     /**
-     * 查询流程配置列表
+     * 查询流程配置列表。
+     *
+     * @param bo       流程配置查询条件
+     * @param pageQuery 分页参数（页码、每页大小、排序）
+     * @return 分页结果，包含流程配置列表及分页元信息
      */
     @SaCheckPermission("workflow:flowConfig:list")
     @GetMapping("/list")
@@ -51,7 +57,10 @@ public class WfFlowConfigController extends BaseController {
     }
 
     /**
-     * 导出流程配置列表
+     * 导出流程配置列表。
+     *
+     * @param bo       流程配置查询条件
+     * @param response HTTP 响应，用于写入导出的 Excel 流
      */
     @SaCheckPermission("workflow:flowConfig:export")
     @Log(title = "流程配置主", businessType = BusinessType.EXPORT)
@@ -62,9 +71,10 @@ public class WfFlowConfigController extends BaseController {
     }
 
     /**
-     * 获取流程配置详细信息
+     * 获取流程配置详细信息。
      *
      * @param id 主键
+     * @return 流程配置详细信息
      */
     @SaCheckPermission("workflow:flowConfig:query")
     @GetMapping("/{id}")
@@ -74,9 +84,10 @@ public class WfFlowConfigController extends BaseController {
     }
 
     /**
-     * 根据configId获取流程配置两个子表
+     * 根据 configId 获取流程配置的两个子表数据。
      *
-     * @param id 主键
+     * @param bo 流程配置查询条件（含 configId）
+     * @return 流程配置及关联规则子表数据
      */
     @SaCheckPermission("workflow:flowConfig:query")
     @GetMapping("/getConfigRule")
@@ -85,7 +96,10 @@ public class WfFlowConfigController extends BaseController {
     }
 
     /**
-     * 修改流程配置两个子表
+     * 修改流程配置的两个子表数据。
+     *
+     * @param vo 流程配置规则数据
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckPermission("workflow:flowConfig:edit")
     @Log(title = "更新流程配置两个子表", businessType = BusinessType.UPDATE)
@@ -96,7 +110,10 @@ public class WfFlowConfigController extends BaseController {
     }
 
     /**
-     * 新增流程配置
+     * 新增流程配置。
+     *
+     * @param bo 流程配置新增数据
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckPermission("workflow:flowConfig:add")
     @Log(title = "流程配置主", businessType = BusinessType.INSERT)
@@ -107,7 +124,10 @@ public class WfFlowConfigController extends BaseController {
     }
 
     /**
-     * 修改流程配置
+     * 修改流程配置。
+     *
+     * @param bo 流程配置修改数据
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckPermission("workflow:flowConfig:edit")
     @Log(title = "流程配置主", businessType = BusinessType.UPDATE)
@@ -118,9 +138,10 @@ public class WfFlowConfigController extends BaseController {
     }
 
     /**
-     * 删除流程配置
+     * 删除流程配置。
      *
      * @param ids 主键串
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckPermission("workflow:flowConfig:remove")
     @Log(title = "流程配置主", businessType = BusinessType.DELETE)

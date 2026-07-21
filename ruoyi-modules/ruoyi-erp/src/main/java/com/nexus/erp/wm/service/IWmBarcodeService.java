@@ -13,16 +13,53 @@ import java.util.List;
  */
 public interface IWmBarcodeService {
 
+    /**
+     * 分页查询条码列表
+     *
+     * @param bo 条码业务对象（BO）
+     * @param pageQuery 分页查询参数，包含页码、每页大小及排序条件
+     * @return 分页查询结果
+     */
     TableDataInfo<WmBarcodeVo> selectPageList(WmBarcodeBo bo, PageQuery pageQuery);
 
+    /**
+     * 查询条码列表
+     *
+     * @param bo 条码业务对象（BO）
+     * @return 结果列表
+     */
     List<WmBarcodeVo> selectList(WmBarcodeBo bo);
 
+    /**
+     * 查询条码
+     *
+     * @param id 主键 ID
+     * @return 结果
+     */
     WmBarcodeVo selectById(Long id);
 
+    /**
+     * 新增条码
+     *
+     * @param bo 条码业务对象（BO）
+     * @return 影响行数
+     */
     int insertByBo(WmBarcodeBo bo);
 
+    /**
+     * 修改条码
+     *
+     * @param bo 条码业务对象（BO）
+     * @return 影响行数
+     */
     int updateByBo(WmBarcodeBo bo);
 
+    /**
+     * 删除条码
+     *
+     * @param ids 主键 ID 数组（支持批量操作）
+     * @return 影响行数
+     */
     int deleteByIds(Long[] ids);
 
     /**

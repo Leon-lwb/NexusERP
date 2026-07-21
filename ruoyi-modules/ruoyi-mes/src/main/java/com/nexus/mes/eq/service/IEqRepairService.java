@@ -30,26 +30,41 @@ public interface IEqRepairService {
 
     /**
      * 分页查询维修记录列表
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @param pageQuery 分页参数（页码、每页大小、排序）
+     * @return 分页结果
      */
     TableDataInfo<EqRepairVo> selectPageList(EqRepairBo bo, PageQuery pageQuery);
 
     /**
      * 根据ID获取维修详情
+     *
+     * @param repairId 维修记录ID
+     * @return 返回结果
      */
     EqRepairVo selectById(Long repairId);
 
     /**
      * 不分页查询维修记录(导出用)
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @return 结果列表
      */
     List<EqRepairVo> selectList(EqRepairBo bo);
 
     /**
      * 报修(新增维修单 REPORTED), 联动置设备FAULT
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @return 返回结果
      */
     EqRepairVo insertByBo(EqRepairBo bo);
 
     /**
      * 开工(REPORTED -> REPAIRING), 置维修人/维修开始时间
+     *
+     * @param repairId 维修记录ID
      */
     void startRepair(Long repairId);
 
@@ -76,6 +91,8 @@ public interface IEqRepairService {
      * 维修状态计数汇总(监控大屏用, 全量 COUNT 不受分页 pageSize 限制)
      *
      * @return {reported, repairing, completed, active(=reported+repairing), total}
+     *
+     * @return 结果映射
      */
     Map<String, Object> statusSummary();
 }

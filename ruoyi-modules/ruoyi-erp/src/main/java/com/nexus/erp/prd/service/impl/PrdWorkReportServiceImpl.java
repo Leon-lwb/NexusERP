@@ -54,16 +54,34 @@ public class PrdWorkReportServiceImpl implements IPrdWorkReportService {
         return TableDataInfo.build(result);
     }
 
+    /**
+     * 查询生产报工列表（不分页）
+     *
+     * @param bo 查询参数
+     * @return 生产报工列表
+     */
     @Override
     public List<PrdWorkReportVo> selectList(PrdWorkReportBo bo) {
         return baseMapper.selectVoList(buildQueryWrapper(bo));
     }
 
+    /**
+     * 根据 ID 查询生产报工详情
+     *
+     * @param id 报工记录 ID
+     * @return 生产报工详情
+     */
     @Override
     public PrdWorkReportVo selectById(Long id) {
         return baseMapper.selectVoById(id);
     }
 
+    /**
+     * 根据报工 ID 查询生产报工实体
+     *
+     * @param reportId 报工记录 ID
+     * @return 生产报工实体
+     */
     @Override
     public PrdWorkReport selectPrdWorkReportByReportId(Long reportId) {
         return baseMapper.selectById(reportId);

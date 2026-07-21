@@ -26,7 +26,9 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * 在线用户监控
+ * 在线用户监控Controller
+ * <p>提供在线用户查询、强制踢下线及当前用户在线设备管理等接口。
+ * 属于系统管理（System）模块的监控（monitor）分组。</p>
  *
  * @author Lion Li
  */
@@ -36,10 +38,11 @@ import java.util.stream.Collectors;
 public class SysUserOnlineController extends BaseController {
 
     /**
-     * 获取在线用户监控列表
+     * 分页查询在线用户列表，支持按 IP 与用户名过滤。
      *
-     * @param ipaddr   IP地址
-     * @param userName 用户名
+     * @param ipaddr   IP 地址过滤条件（为空则不过滤）
+     * @param userName 用户名过滤条件（为空则不过滤）
+     * @return 在线用户分页结果
      */
     @SaCheckPermission("monitor:online:list")
     @GetMapping("/list")
@@ -76,9 +79,10 @@ public class SysUserOnlineController extends BaseController {
     }
 
     /**
-     * 强退用户
+     * 强制踢出指定 token 对应的在线用户。
      *
-     * @param tokenId token值
+     * @param tokenId 待强退用户的 token 值
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckPermission("monitor:online:forceLogout")
     @Log(title = "在线用户", businessType = BusinessType.FORCE)
@@ -93,7 +97,9 @@ public class SysUserOnlineController extends BaseController {
     }
 
     /**
-     * 获取当前用户登录在线设备
+     * 获取当前登录用户的所有在线设备（token）信息。
+     *
+     * @return 当前用户的在线设备分页结果
      */
     @GetMapping()
     public TableDataInfo<SysUserOnline> getInfo() {
@@ -111,9 +117,10 @@ public class SysUserOnlineController extends BaseController {
     }
 
     /**
-     * 强退当前在线设备
+     * 强退当前用户自身的指定在线设备。
      *
-     * @param tokenId token值
+     * @param tokenId 待强退的 token 值
+     * @return 操作结果，成功时返回成功状态
      */
     @Log(title = "在线设备", businessType = BusinessType.FORCE)
     @RepeatSubmit()

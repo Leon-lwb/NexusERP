@@ -77,11 +77,23 @@ public class PrdMaterialRequirementServiceImpl implements IPrdMaterialRequiremen
         return TableDataInfo.build(page);
     }
 
+    /**
+     * 查询物料需求清单列表（不分页）
+     *
+     * @param bo 查询参数
+     * @return 物料需求清单列表
+     */
     @Override
     public List<PrdMaterialRequirementVo> selectList(PrdMaterialRequirementBo bo) {
         return baseMapper.selectVoList(buildQueryWrapper(bo));
     }
 
+    /**
+     * 根据 ID 查询物料需求清单详情
+     *
+     * @param id 物料需求 ID
+     * @return 物料需求清单详情
+     */
     @Override
     public PrdMaterialRequirementVo selectById(Long id) {
         PrdMaterialRequirementVo vo = baseMapper.selectVoById(id);
@@ -94,11 +106,23 @@ public class PrdMaterialRequirementServiceImpl implements IPrdMaterialRequiremen
         return vo;
     }
 
+    /**
+     * 根据物料需求 ID 查询物料需求实体
+     *
+     * @param requirementId 物料需求 ID
+     * @return 物料需求实体
+     */
     @Override
     public PrdMaterialRequirement selectPrdMaterialRequirementByRequirementId(Long requirementId) {
         return baseMapper.selectById(requirementId);
     }
 
+    /**
+     * 查询物料需求清单列表（按实体条件）
+     *
+     * @param prdMaterialRequirement 物料需求查询实体
+     * @return 物料需求清单列表
+     */
     @Override
     public List<PrdMaterialRequirement> selectPrdMaterialRequirementList(PrdMaterialRequirement prdMaterialRequirement) {
         LambdaQueryWrapper<PrdMaterialRequirement> lqw = buildEntityQueryWrapper(prdMaterialRequirement);
@@ -398,6 +422,12 @@ public class PrdMaterialRequirementServiceImpl implements IPrdMaterialRequiremen
         return count;
     }
 
+    /**
+     * 计算物料需求明细的净需求
+     * <p>查询当前库存与安全库存，按「净需求 = 毛需求 - (现有库存 - 安全库存)」计算缺口（不小于 0）。</p>
+     *
+     * @param detail 物料需求明细，计算后回填库存量与短缺量
+     */
     @Override
     public void calculateNetRequirements(PrdMaterialRequirementDetail detail) {
         if (detail == null || detail.getMaterialId() == null) {

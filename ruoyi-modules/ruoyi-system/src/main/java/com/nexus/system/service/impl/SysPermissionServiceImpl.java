@@ -21,7 +21,9 @@ import java.util.Set;
 @Service
 public class SysPermissionServiceImpl implements ISysPermissionService, PermissionService {
 
+    /** ISysRoleService 业务服务，提供 角色 相关能力。 */
     private final ISysRoleService roleService;
+    /** ISysMenuService 业务服务，提供 菜单 相关能力。 */
     private final ISysMenuService menuService;
 
     /**

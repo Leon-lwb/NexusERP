@@ -14,6 +14,8 @@ import java.util.Date;
 /**
  * MES设备维修记录视图对象 eq_repair
  *
+ * <p>属于MES 设备管理模块，维修视图对象（查询出参）。</p>
+ *
  * @author Nexus
  */
 @Data

@@ -33,8 +33,11 @@ import java.util.Map;
 @RequestMapping("/ai/chat")
 public class AiChatController {
 
+    /** AI 对话门面，封装发送消息、流式回复与 SSE 推送的完整链路。 */
     private final AiServiceFacade aiServiceFacade;
+    /** 聊天消息表 Mapper，负责消息读写。 */
     private final AiMessageMapper aiMessageMapper;
+    /** 会话业务服务，负责会话查询、删除、重命名与归属校验。 */
     private final IAiSessionService aiSessionService;
 
     /**

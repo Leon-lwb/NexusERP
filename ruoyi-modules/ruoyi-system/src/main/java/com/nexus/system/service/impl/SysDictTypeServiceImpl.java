@@ -45,7 +45,9 @@ import java.util.stream.Collectors;
 @Service
 public class SysDictTypeServiceImpl implements ISysDictTypeService, DictService {
 
+    /** SysDictTypeMapper 数据访问层组件，提供 字典类型 的持久化能力。 */
     private final SysDictTypeMapper baseMapper;
+    /** SysDictDataMapper 数据访问层组件，提供 字典数据 的持久化能力。 */
     private final SysDictDataMapper dictDataMapper;
 
     /**

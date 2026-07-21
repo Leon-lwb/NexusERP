@@ -225,6 +225,13 @@ public class PuPurchaseOrderServiceImpl implements IPuPurchaseOrderService {
 
     // ==================== Flowable 工作流集成 ====================
 
+    /**
+     * 发起审批流程（Flowable 工作流回调）：校验订单存在并启动对应审批流，注入流程变量。
+     *
+     * @param orderIdStr   采购订单ID（字符串）
+     * @param selectFlowId 流程定义ID
+     * @return 启动成功返回 true
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean submit(String orderIdStr, String selectFlowId) {
@@ -256,6 +263,12 @@ public class PuPurchaseOrderServiceImpl implements IPuPurchaseOrderService {
         throw new ServiceException(result.getMsg());
     }
 
+    /**
+     * 获取采购订单对应的流程实例ID（运行时优先，其次历史）。
+     *
+     * @param orderIdStr 采购订单ID（字符串）
+     * @return 流程实例ID，无则返回 null
+     */
     @Override
     public String getProcInsId(String orderIdStr) {
         try {
@@ -277,6 +290,11 @@ public class PuPurchaseOrderServiceImpl implements IPuPurchaseOrderService {
         return hist != null ? hist.getId() : null;
     }
 
+    /**
+     * 审批流节点处理完成后的回调：根据审批动作更新采购订单状态。
+     *
+     * @param business 工作流业务对象（含审批状态与数据ID）
+     */
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void afterFlowHandle(WfMyBusiness business) {
@@ -298,17 +316,37 @@ public class PuPurchaseOrderServiceImpl implements IPuPurchaseOrderService {
         baseMapper.updateById(order);
     }
 
+    /**
+     * 根据数据ID返回采购订单详情（供审批详情展示）。
+     *
+     * @param dataId 业务数据ID
+     * @return 采购订单业务对象
+     */
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Object getBusinessDataById(String dataId) {
         return selectById(Long.parseLong(dataId));
     }
 
+    /**
+     * 获取审批任务所需的表单变量（当前实现无需额外变量，返回 null）。
+     *
+     * @param taskNameId 任务节点ID
+     * @param values     已有流程变量
+     * @return 任务表单变量，未实现返回 null
+     */
     @Override
     public Map<String, Object> flowValuesOfTask(String taskNameId, Map<String, Object> values) {
         return null;
     }
 
+    /**
+     * 获取审批任务的候选处理人（当前实现未指定，返回 null）。
+     *
+     * @param taskNameId 任务节点ID
+     * @param values     流程变量
+     * @return 候选用户名列表，未实现返回 null
+     */
     @Override
     public List<String> flowCandidateUsernamesOfTask(String taskNameId, Map<String, Object> values) {
         return null;
@@ -551,6 +589,12 @@ public class PuPurchaseOrderServiceImpl implements IPuPurchaseOrderService {
         return lineMapper.selectList(lqw);
     }
 
+    /**
+     * 构建采购订单分页/列表查询条件（按订单号、状态、供应商、部门、采购员动态拼接，按创建时间倒序）。
+     *
+     * @param bo 查询参数
+     * @return 查询条件构造器
+     */
     private LambdaQueryWrapper<PuPurchaseOrder> buildQueryWrapper(PuPurchaseOrderBo bo) {
         LambdaQueryWrapper<PuPurchaseOrder> lqw = Wrappers.<PuPurchaseOrder>lambdaQuery()
             .eq(StringUtils.isNotBlank(bo.getOrderNo()), PuPurchaseOrder::getOrderNo, bo.getOrderNo())

@@ -39,7 +39,9 @@ import java.util.Properties;
 })
 public class ImSlowSqlInterceptor implements Interceptor {
 
+    /** 指标采集组件，用于记录 SQL 延迟与慢 SQL 计数。 */
     private final ImMetrics imMetrics;
+    /** 慢 SQL 阈值（毫秒），超过该耗时的 SQL 记为慢查询并输出 WARN 日志。 */
     private final long thresholdMs;
 
     public ImSlowSqlInterceptor(ImMetrics imMetrics,

@@ -37,11 +37,22 @@ import java.util.List;
 @Service
 public class WmBarcodeServiceImpl implements IWmBarcodeService {
 
+    /** 基础数据访问映射器（Mapper） */
     private final WmBarcodeMapper baseMapper;
+    /** 条码配置数据访问映射器（Mapper） */
     private final WmBarcodeConfigMapper barcodeConfigMapper;
+    /** 条码生成器 */
     private final BarcodeGenerator barcodeGenerator;
+    /** 条码序列提供器 */
     private final BarcodeSequenceProvider barcodeSequenceProvider;
 
+    /**
+     * 分页查询条码列表
+     *
+     * @param bo 条码业务对象（BO）
+     * @param pageQuery 分页查询参数，包含页码、每页大小及排序条件
+     * @return 结果对象
+     */
     @Override
     public TableDataInfo<WmBarcodeVo> selectPageList(WmBarcodeBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<WmBarcode> lqw = buildQueryWrapper(bo);
@@ -49,16 +60,34 @@ public class WmBarcodeServiceImpl implements IWmBarcodeService {
         return TableDataInfo.build(page);
     }
 
+    /**
+     * 查询条码列表
+     *
+     * @param bo 条码业务对象（BO）
+     * @return 结果对象
+     */
     @Override
     public List<WmBarcodeVo> selectList(WmBarcodeBo bo) {
         return baseMapper.selectVoList(buildQueryWrapper(bo));
     }
 
+    /**
+     * 查询条码
+     *
+     * @param id 主键 ID
+     * @return 结果
+     */
     @Override
     public WmBarcodeVo selectById(Long id) {
         return baseMapper.selectVoById(id);
     }
 
+    /**
+     * 新增条码
+     *
+     * @param bo 条码业务对象（BO）
+     * @return 结果
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(WmBarcodeBo bo) {
@@ -66,6 +95,12 @@ public class WmBarcodeServiceImpl implements IWmBarcodeService {
         return baseMapper.insert(entity);
     }
 
+    /**
+     * 修改条码
+     *
+     * @param bo 条码业务对象（BO）
+     * @return 结果
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(WmBarcodeBo bo) {
@@ -73,12 +108,31 @@ public class WmBarcodeServiceImpl implements IWmBarcodeService {
         return baseMapper.updateById(entity);
     }
 
+    /**
+     * 删除条码
+     *
+     * @param ids 主键 ID 数组（支持批量操作）
+     * @return 结果
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {
         return baseMapper.deleteBatchIds(List.of(ids));
     }
 
+    /**
+     * 生成条码
+     *
+     * @param configId 配置 ID
+     * @param bizType 参数 bizType
+     * @param bizId biz ID
+     * @param bizLineId biz行 ID
+     * @param materialId 物料 ID
+     * @param batchId 批次 ID
+     * @param stockId 库存 ID
+     * @param bizDate 业务日期
+     * @return 结果
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public String generateAndSave(Long configId, String bizType, Long bizId, Long bizLineId, Long materialId, Long batchId, Long stockId, Date bizDate) {
@@ -86,6 +140,19 @@ public class WmBarcodeServiceImpl implements IWmBarcodeService {
         return generateAndSaveInternal(config, null, bizType, bizId, bizLineId, materialId, batchId, stockId, bizDate);
     }
 
+    /**
+     * 生成条码
+     *
+     * @param configCode 配置 编码
+     * @param bizType 参数 bizType
+     * @param bizId biz ID
+     * @param bizLineId biz行 ID
+     * @param materialId 物料 ID
+     * @param batchId 批次 ID
+     * @param stockId 库存 ID
+     * @param bizDate 业务日期
+     * @return 结果
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public String generateAndSaveByCode(String configCode, String bizType, Long bizId, Long bizLineId, Long materialId, Long batchId, Long stockId, Date bizDate) {

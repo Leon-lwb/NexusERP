@@ -11,14 +11,29 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+/**
+ * 移动平均计价服务实现
+ * <p>
+ * 实现移动平均计价服务接口，处理移动平均计价的增删改查、业务校验与库存联动。属于 ERP 仓储管理（wm）模块。
+ * </p>
+ */
 
 @RequiredArgsConstructor
 @DS("erp")
 @Service
 public class MovingAverageValuationServiceImpl implements IInventoryValuationService {
 
+    /** 基础数据访问映射器（Mapper） */
     private final WmMaterialStockMapper baseMapper;
 
+    /**
+     * 计算移动平均计价
+     *
+     * @param stockId 库存 ID
+     * @param inQty 入库数量
+     * @param inUnitCost 入库单位成本
+     * @return 结果
+     */
     @Override
     public BigDecimal calculateMovingAverage(Long stockId, BigDecimal inQty, BigDecimal inUnitCost) {
         if (stockId == null) {
@@ -45,6 +60,14 @@ public class MovingAverageValuationServiceImpl implements IInventoryValuationSer
         return newTotalAmount.divide(newTotalQty, 6, RoundingMode.HALF_UP);
     }
 
+    /**
+     * 修改移动平均计价
+     *
+     * @param stockId 库存 ID
+     * @param inQty 入库数量
+     * @param inUnitCost 入库单位成本
+     * @return 结果
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void updateStockCost(Long stockId, BigDecimal inQty, BigDecimal inUnitCost) {

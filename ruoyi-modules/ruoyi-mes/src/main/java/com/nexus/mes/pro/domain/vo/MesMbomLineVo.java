@@ -20,7 +20,9 @@ public class MesMbomLineVo implements Serializable {
     @ExcelProperty(value = "明细ID")
     private Long mbomLineId;
 
+    /** MBOMID */
     private Long mbomId;
+    /** BOMDetailId */
     private Long bomDetailId;
 
     @ExcelProperty(value = "子项物料ID")
@@ -75,5 +77,6 @@ public class MesMbomLineVo implements Serializable {
     @ExcelProperty(value = "排序")
     private Integer sortOrder;
 
+    /** remark */
     private String remark;
 }

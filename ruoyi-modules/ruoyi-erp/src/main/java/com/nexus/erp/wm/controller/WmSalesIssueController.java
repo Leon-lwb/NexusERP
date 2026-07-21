@@ -37,6 +37,7 @@ import java.util.List;
 @RequestMapping("/erp/wm/salesIssue")
 public class WmSalesIssueController extends BaseController {
 
+    /** 销售发料业务服务，提供销售发料相关能力 */
     private final IWmSalesIssueService wmSalesIssueService;
 
     /**

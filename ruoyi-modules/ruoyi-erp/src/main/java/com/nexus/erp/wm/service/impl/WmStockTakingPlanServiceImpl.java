@@ -39,6 +39,12 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+/**
+ * 库存盘点计划服务实现
+ * <p>
+ * 实现库存盘点计划服务接口，处理库存盘点计划的增删改查、业务校验与库存联动。属于 ERP 仓储管理（wm）模块。
+ * </p>
+ */
 
 @Slf4j
 @RequiredArgsConstructor
@@ -46,16 +52,32 @@ import java.util.Map;
 @Service("wmStockTakingPlanService")
 public class WmStockTakingPlanServiceImpl implements IWmStockTakingPlanService {
 
+    /** 基础数据访问映射器（Mapper） */
     private final WmStockTakingPlanMapper baseMapper;
+    /** 行数据访问映射器（Mapper） */
     private final WmStockTakingLineMapper lineMapper;
+    /** 库存数据访问映射器（Mapper） */
     private final WmMaterialStockMapper stockMapper;
+    /** 库存操作业务服务，提供库存操作相关能力 */
     private final IWmStockOperationService stockOperationService;
+    /** 自动编码工具类 */
     private final AutoCodeUtil autoCodeUtil;
+    /** 库存盘点计划业务服务，提供库存盘点计划相关能力 */
     private final IWfProcessService processService;
+    /** 库存盘点计划业务服务，提供库存盘点计划相关能力 */
     private final WfMyBusinessServiceImpl wfMyBusinessServiceImpl;
+    /** 库存盘点计划业务服务，提供库存盘点计划相关能力 */
     private final RuntimeService runtimeService;
+    /** 库存盘点计划业务服务，提供库存盘点计划相关能力 */
     private final HistoryService historyService;
 
+    /**
+     * 分页查询库存盘点计划列表
+     *
+     * @param bo 库存盘点计划业务对象（BO）
+     * @param pageQuery 分页查询参数，包含页码、每页大小及排序条件
+     * @return 结果对象
+     */
     @Override
     public TableDataInfo<WmStockTakingPlanVo> selectPageList(WmStockTakingPlanBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<WmStockTakingPlan> lqw = buildQueryWrapper(bo);
@@ -63,11 +85,23 @@ public class WmStockTakingPlanServiceImpl implements IWmStockTakingPlanService {
         return TableDataInfo.build(page);
     }
 
+    /**
+     * 查询库存盘点计划列表
+     *
+     * @param bo 库存盘点计划业务对象（BO）
+     * @return 结果对象
+     */
     @Override
     public List<WmStockTakingPlanVo> selectList(WmStockTakingPlanBo bo) {
         return baseMapper.selectVoList(buildQueryWrapper(bo));
     }
 
+    /**
+     * 查询库存盘点计划
+     *
+     * @param id 主键 ID
+     * @return 结果
+     */
     @Override
     public WmStockTakingPlanVo selectById(Long id) {
         WmStockTakingPlanVo vo = baseMapper.selectVoById(id);
@@ -79,6 +113,12 @@ public class WmStockTakingPlanServiceImpl implements IWmStockTakingPlanService {
         return vo;
     }
 
+    /**
+     * 新增库存盘点计划
+     *
+     * @param bo 库存盘点计划业务对象（BO）
+     * @return 结果
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(WmStockTakingPlanBo bo) {
@@ -97,6 +137,12 @@ public class WmStockTakingPlanServiceImpl implements IWmStockTakingPlanService {
         return rows;
     }
 
+    /**
+     * 修改库存盘点计划
+     *
+     * @param bo 库存盘点计划业务对象（BO）
+     * @return 结果
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(WmStockTakingPlanBo bo) {
@@ -112,6 +158,12 @@ public class WmStockTakingPlanServiceImpl implements IWmStockTakingPlanService {
         return baseMapper.updateById(entity);
     }
 
+    /**
+     * 删除库存盘点计划
+     *
+     * @param ids 主键 ID 数组（支持批量操作）
+     * @return 结果
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {
@@ -121,6 +173,12 @@ public class WmStockTakingPlanServiceImpl implements IWmStockTakingPlanService {
         return baseMapper.deleteBatchIds(List.of(ids));
     }
 
+    /**
+     * 生成库存盘点计划
+     *
+     * @param planId 计划 ID
+     * @return 结果
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void generateLines(Long planId) {
@@ -170,6 +228,12 @@ public class WmStockTakingPlanServiceImpl implements IWmStockTakingPlanService {
         log.info("盘点计划 {} 生成盘点行完成，共 {} 条", planId, stocks.size());
     }
 
+    /**
+     * 执行库存盘点计划相关操作
+     *
+     * @param planId 计划 ID
+     * @return 结果
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void postAdjustment(Long planId) {
@@ -209,6 +273,13 @@ public class WmStockTakingPlanServiceImpl implements IWmStockTakingPlanService {
 
     // ==================== Flowable 工作流集成 ====================
 
+    /**
+     * 库存盘点计划处理（submit）
+     *
+     * @param planIdStr 参数 planIdStr
+     * @param selectFlowId selectFlow ID
+     * @return 结果
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean submit(String planIdStr, String selectFlowId) {
@@ -239,6 +310,12 @@ public class WmStockTakingPlanServiceImpl implements IWmStockTakingPlanService {
         throw new RuntimeException(result.getMsg());
     }
 
+    /**
+     * 获取库存盘点计划
+     *
+     * @param planIdStr 参数 planIdStr
+     * @return 结果
+     */
     @Override
     public String getProcInsId(String planIdStr) {
         try {
@@ -258,6 +335,12 @@ public class WmStockTakingPlanServiceImpl implements IWmStockTakingPlanService {
         return hist != null ? hist.getId() : null;
     }
 
+    /**
+     * 库存盘点计划处理（afterFlowHandle）
+     *
+     * @param business 参数 business
+     * @return 结果
+     */
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void afterFlowHandle(WfMyBusiness business) {
@@ -279,17 +362,37 @@ public class WmStockTakingPlanServiceImpl implements IWmStockTakingPlanService {
         baseMapper.updateById(plan);
     }
 
+    /**
+     * 获取库存盘点计划详情
+     *
+     * @param dataId data ID
+     * @return 结果
+     */
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Object getBusinessDataById(String dataId) {
         return selectById(Long.parseLong(dataId));
     }
 
+    /**
+     * 库存盘点计划处理（flowValuesOfTask）
+     *
+     * @param taskNameId taskName ID
+     * @param values 参数 values
+     * @return 结果对象
+     */
     @Override
     public Map<String, Object> flowValuesOfTask(String taskNameId, Map<String, Object> values) {
         return null;
     }
 
+    /**
+     * 库存盘点计划处理（flowCandidateUsernamesOfTask）
+     *
+     * @param taskNameId taskName ID
+     * @param values 参数 values
+     * @return 结果对象
+     */
     @Override
     public List<String> flowCandidateUsernamesOfTask(String taskNameId, Map<String, Object> values) {
         return null;

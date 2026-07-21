@@ -21,6 +21,14 @@ import java.math.BigDecimal;
 @JobExecutor(name = "summaryBillTask")
 public class SummaryBillTask {
 
+    /**
+     * 汇总微信与支付宝两笔账单的总金额。
+     * <p>从 DAG 工作流上下文中读取微信与支付宝账单 JSON，解析后累加金额，
+     * 并将汇总结果写回上下文。</p>
+     *
+     * @param jobArgs 任务参数与 DAG 工作流上下文
+     * @return 执行结果，成功时携带汇总总金额
+     */
     public ExecuteResult jobExecute(JobArgs jobArgs) throws InterruptedException {
         // 获得微信账单
         BigDecimal wechatAmount = BigDecimal.valueOf(0);

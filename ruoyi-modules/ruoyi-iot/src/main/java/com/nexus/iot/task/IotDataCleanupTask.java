@@ -23,10 +23,18 @@ import java.util.Date;
 @JobExecutor(name = "iotDataCleanupTask")
 public class IotDataCleanupTask {
 
+    /** 设备数据业务服务，提供按时间删除能力。 */
     private final IIotDeviceDataService deviceDataService;
 
+    /** 数据保留天数，超过则清理。 */
     private static final int RETENTION_DAYS = 90;
 
+    /**
+     * 清理采集时间早于当前时间 {@code RETENTION_DAYS} 天的历史设备数据。
+     *
+     * @param jobArgs SnailJob 任务参数（本任务未使用）
+     * @return 执行结果，含删除条数
+     */
     public ExecuteResult jobExecute(JobArgs jobArgs) {
         SnailJobLog.REMOTE.info("开始执行IoT设备数据清理任务，保留天数={}", RETENTION_DAYS);
         try {

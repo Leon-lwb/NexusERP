@@ -24,8 +24,10 @@ import java.util.Map;
 @RequestMapping("/demo/encrypt")
 public class TestEncryptController {
 
+    /** 测试加解密表 Mapper，用于插入与查询加密后的数据 */
     @Autowired
     private TestDemoEncryptMapper mapper;
+    /** 是否开启数据库加解密（取自配置 mybatis-encryptor.enable） */
     @Value("${mybatis-encryptor.enable}")
     private Boolean encryptEnable;
 

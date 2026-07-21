@@ -32,8 +32,11 @@ import java.util.List;
 @RequestMapping("/ai/mcp/market")
 public class McpMarketController extends BaseController {
 
+    /** MCP 市场源表 Mapper，负责市场源 CRUD 与分页。 */
     private final AiMcpMarketMapper marketMapper;
+    /** MCP 市场工具表 Mapper，负责市场工具列表查询。 */
     private final AiMcpMarketToolMapper marketToolMapper;
+    /** MCP 市场业务服务，负责工具刷新与加载到本地。 */
     private final IMcpMarketService mcpMarketService;
 
     /**

@@ -11,6 +11,7 @@ import java.util.Date;
 
 /**
  * MES SN序列号追溯对象 pro_sn
+ * <p>属于 MES 生产管理模块，表达 SN序列号追溯 的领域模型。</p>
  *
  * @author Nexus
  */

@@ -34,9 +34,13 @@ import java.util.List;
 @Service
 public class PutawayStrategyServiceImpl implements IPutawayStrategyService {
 
+    /** 上架规则数据访问映射器（Mapper） */
     private final WmPutawayRuleMapper putawayRuleMapper;
+    /** 存储库位数据访问映射器（Mapper） */
     private final WmStorageLocationMapper storageLocationMapper;
+    /** 上架策略数据访问映射器（Mapper） */
     private final BdMaterialMapper bdMaterialMapper;
+    /** 仓库数据访问映射器（Mapper） */
     private final WmWarehouseMapper wmWarehouseMapper;
 
     /**

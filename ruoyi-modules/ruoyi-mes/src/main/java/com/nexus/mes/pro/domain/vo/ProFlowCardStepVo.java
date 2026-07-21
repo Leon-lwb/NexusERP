@@ -12,6 +12,7 @@ import java.util.Date;
 
 /**
  * MES流转卡工序记录视图对象 pro_flow_card_step
+ * <p>属于 MES 生产管理模块，作为 流转卡 的查询/导出返回结构。</p>
  *
  * @author Nexus
  */

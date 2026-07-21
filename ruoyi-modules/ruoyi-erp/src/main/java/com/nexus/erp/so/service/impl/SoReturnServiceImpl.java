@@ -286,6 +286,14 @@ public class SoReturnServiceImpl implements ISoReturnService {
         return null;
     }
 
+    /**
+     * 销售退货入库：将退货行数量加回库存（无库存则新建），并登记库存交易流水（RETURN_IN）。
+     * <p>退货数量必须 &gt;0，否则抛异常。</p>
+     *
+     * @param soReturn 销售退货单（提供仓库维度）
+     * @param line     退货明细行（提供物料与退货数量）
+     * @param now      操作时间
+     */
     private void postReturnStock(SoReturn soReturn, SoReturnLine line, Date now) {
         if (line.getReturnQuantity() == null || line.getReturnQuantity().compareTo(java.math.BigDecimal.ZERO) <= 0) {
             throw new RuntimeException("退货数量必须大于0");
@@ -351,6 +359,12 @@ public class SoReturnServiceImpl implements ISoReturnService {
         stockTxMapper.insert(tx);
     }
 
+    /**
+     * 批量新增退货单明细行：清空行ID后按退货单ID归属并逐条插入。
+     *
+     * @param returnId 退货单ID
+     * @param lineList 明细行列表
+     */
     private void insertOrUpdateLines(Long returnId, List<SoReturnLine> lineList) {
         if (lineList != null && !lineList.isEmpty()) {
             for (SoReturnLine line : lineList) {
@@ -361,6 +375,11 @@ public class SoReturnServiceImpl implements ISoReturnService {
         }
     }
 
+    /**
+     * 按退货单ID删除其所有明细行。
+     *
+     * @param returnId 退货单ID
+     */
     private void deleteLinesByReturnId(Long returnId) {
         if (returnId != null) {
             LambdaQueryWrapper<SoReturnLine> lqw = Wrappers.lambdaQuery();
@@ -369,6 +388,12 @@ public class SoReturnServiceImpl implements ISoReturnService {
         }
     }
 
+    /**
+     * 构建退货单分页/列表查询条件（按退货单号、销售订单号、客户、状态动态拼接，按创建时间倒序）。
+     *
+     * @param bo 查询参数
+     * @return 查询条件构造器
+     */
     private LambdaQueryWrapper<SoReturn> buildQueryWrapper(SoReturnBo bo) {
         LambdaQueryWrapper<SoReturn> lqw = Wrappers.lambdaQuery();
         lqw.eq(StringUtils.isNotBlank(bo.getReturnNo()), SoReturn::getReturnNo, bo.getReturnNo());

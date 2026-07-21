@@ -60,6 +60,13 @@ public class EqEquipmentServiceImpl implements IEqEquipmentService {
     private final MesMqSendService mesMqSendService;
     private final ProWorkOrderMapper proWorkOrderMapper;
 
+    /**
+     * 分页查询设备列表
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @param pageQuery 分页参数（页码、每页大小、排序）
+     * @return 分页结果
+     */
     @Override
     public TableDataInfo<EqEquipmentVo> selectPageList(EqEquipmentBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<EqEquipment> lqw = buildQueryWrapper(bo);
@@ -67,11 +74,23 @@ public class EqEquipmentServiceImpl implements IEqEquipmentService {
         return TableDataInfo.build(page);
     }
 
+    /**
+     * 获取设备详情
+     *
+     * @param equipmentId 设备ID
+     * @return 返回结果
+     */
     @Override
     public EqEquipmentVo selectById(Long equipmentId) {
         return baseMapper.selectVoById(equipmentId);
     }
 
+    /**
+     * 查询设备列表
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @return 结果列表
+     */
     @Override
     public List<EqEquipmentVo> selectList(EqEquipmentBo bo) {
         return baseMapper.selectVoList(buildQueryWrapper(bo));
@@ -82,6 +101,9 @@ public class EqEquipmentServiceImpl implements IEqEquipmentService {
      * <p>
      * 取 wo_status in (RELEASED, IN_PROGRESS) 的工单, 按创建时间倒序。
      * 与设备同库(ry-mes), TenantEntity 自动按租户隔离。
+     *
+     * @param equipmentId 设备ID
+     * @return 结果列表
      */
     @Override
     public List<ProWorkOrderVo> currentWorkOrders(Long equipmentId) {
@@ -93,6 +115,8 @@ public class EqEquipmentServiceImpl implements IEqEquipmentService {
 
     /**
      * 设备状态计数汇总(全量 COUNT, 不受分页限制, 供监控大屏)
+     *
+     * @return 结果映射
      */
     @Override
     public Map<String, Object> statusSummary() {
@@ -111,6 +135,12 @@ public class EqEquipmentServiceImpl implements IEqEquipmentService {
         return cnt == null ? 0L : cnt;
     }
 
+    /**
+     * 新增设备
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @return 返回结果
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public EqEquipmentVo insertByBo(EqEquipmentBo bo) {
@@ -142,6 +172,12 @@ public class EqEquipmentServiceImpl implements IEqEquipmentService {
         return baseMapper.selectVoById(equipment.getEquipmentId());
     }
 
+    /**
+     * 更新设备
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @return 返回结果
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public EqEquipmentVo updateByBo(EqEquipmentBo bo) {
@@ -185,6 +221,12 @@ public class EqEquipmentServiceImpl implements IEqEquipmentService {
         return baseMapper.selectVoById(equipment.getEquipmentId());
     }
 
+    /**
+     * 获取设备详情
+     *
+     * @param ids ID数组
+     * @return 是否成功
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean deleteByIds(Long[] ids) {
@@ -196,6 +238,10 @@ public class EqEquipmentServiceImpl implements IEqEquipmentService {
 
     /**
      * 更新设备状态(无原因), 委托带 reason 的重载方法
+     *
+     * @param equipmentId 设备ID
+     * @param status 目标状态
+     * @return 是否成功
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -206,6 +252,11 @@ public class EqEquipmentServiceImpl implements IEqEquipmentService {
     /**
      * 更新设备状态(供维修/点检/保养联动调用), 不改 SCRAPPED 终态;
      * 状态实际变更时发布 EquipmentStatusMessage MQ 事件。
+     *
+     * @param equipmentId 设备ID
+     * @param status 目标状态
+     * @param reason 变更原因（可空）
+     * @return 是否成功
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -246,6 +297,9 @@ public class EqEquipmentServiceImpl implements IEqEquipmentService {
      * 维修完成时联动恢复设备 NORMAL: 原子操作, 仅当该设备无其他活跃报修(REPORTED/REPAIRING)
      * 且非 SCRAPPED 终态时才置 NORMAL。以单条 UPDATE + NOT EXISTS 消除"查询活跃报修数 ->
      * 更新设备状态"两步之间的 TOCTOU(完成瞬间插入新报修导致误恢复, M3)。状态实际变更时发布 MQ 事件。
+     *
+     * @param equipmentId 设备ID
+     * @return 是否成功
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -298,6 +352,10 @@ public class EqEquipmentServiceImpl implements IEqEquipmentService {
         // 有事务上下文则延迟到提交后发送; 否则直接发送(回退, 兼容无事务调用)
         if (TransactionSynchronizationManager.isSynchronizationActive()) {
             TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                /**
+                 * 设备相关操作
+                 *
+                 */
                 @Override
                 public void afterCommit() {
                     send.run();
@@ -326,12 +384,24 @@ public class EqEquipmentServiceImpl implements IEqEquipmentService {
     private static final String IOT_STATUS_UNBOUND = "UNBOUND";
     private static final String IOT_STATUS_UNKNOWN = "UNKNOWN";
 
+    /**
+     * 获取设备详情
+     *
+     * @param equipmentId 设备ID
+     * @return 结果字符串
+     */
     @Override
     public String getIotStatus(Long equipmentId) {
         EqEquipment eq = baseMapper.selectById(equipmentId);
         return resolveIotStatus(eq);
     }
 
+    /**
+     * 批量处理设备
+     *
+     * @param equipmentIds 设备ID列表（逗号分隔）
+     * @return 结果映射
+     */
     @Override
     public Map<Long, String> batchIotStatus(List<Long> equipmentIds) {
         if (equipmentIds == null || equipmentIds.isEmpty()) {
@@ -361,6 +431,12 @@ public class EqEquipmentServiceImpl implements IEqEquipmentService {
         }
     }
 
+    /**
+     * 获取设备详情
+     *
+     * @param equipmentId 设备ID
+     * @return 结果映射
+     */
     @Override
     public Map<String, String> getIotLatest(Long equipmentId) {
         EqEquipment eq = baseMapper.selectById(equipmentId);
@@ -377,6 +453,13 @@ public class EqEquipmentServiceImpl implements IEqEquipmentService {
         }
     }
 
+    /**
+     * 更新设备
+     *
+     * @param equipmentId 设备ID
+     * @param iotDeviceId 关联的 IoT 设备ID
+     * @return 是否成功
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean updateIotDeviceLink(Long equipmentId, Long iotDeviceId) {
@@ -392,6 +475,13 @@ public class EqEquipmentServiceImpl implements IEqEquipmentService {
         return rows > 0;
     }
 
+    /**
+     * 提交点检
+     *
+     * @param equipmentId 设备ID
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @return 是否成功
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean submitInspection(Long equipmentId, InspectionResultBo bo) {

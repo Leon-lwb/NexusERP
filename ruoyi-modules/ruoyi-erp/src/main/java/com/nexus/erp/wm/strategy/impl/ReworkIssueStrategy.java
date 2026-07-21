@@ -39,7 +39,9 @@ public class ReworkIssueStrategy extends BaseStockOperationStrategy {
     /** 事务标志：出库（负数） */
     private static final int TX_FLAG_OUT = -1;
 
+    /** 库存数据访问映射器（Mapper） */
     private final WmMaterialStockMapper stockMapper;
+    /** 消息提供器 */
     private final ReliableMessageProducer messageProducer;
 
     /**

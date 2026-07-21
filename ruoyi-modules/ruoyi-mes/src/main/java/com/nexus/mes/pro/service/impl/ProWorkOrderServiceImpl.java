@@ -53,6 +53,7 @@ import java.util.Map;
 
 /**
  * MES工单 Service 业务层实现
+ * <p>属于 MES 生产管理模块，实现 工单 的业务逻辑，操作 MES 数据源并桥接 ERP 主数据。</p>
  *
  * @author Nexus
  */
@@ -75,6 +76,12 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
     private final EqEquipmentMapper equipmentMapper;
 
     @Override
+    /**
+     * 查询
+     * @param bo bo
+     * @param pageQuery pageQuery
+     * @return 分页结果
+     */
     public TableDataInfo<ProWorkOrderVo> selectPageList(ProWorkOrderBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<ProWorkOrder> lqw = buildQueryWrapper(bo);
         Page<ProWorkOrderVo> page = baseMapper.selectVoPage(pageQuery.build(), lqw);
@@ -82,11 +89,21 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
     }
 
     @Override
+    /**
+     * 查询
+     * @param bo bo
+     * @return 结果列表
+     */
     public List<ProWorkOrderVo> selectList(ProWorkOrderBo bo) {
         return baseMapper.selectVoList(buildQueryWrapper(bo));
     }
 
     @Override
+    /**
+     * 查询
+     * @param mesWoId MES工单ID
+     * @return 返回视图对象
+     */
     public ProWorkOrderVo selectById(Long mesWoId) {
         ProWorkOrderVo vo = baseMapper.selectVoById(mesWoId);
         if (vo != null) {
@@ -136,6 +153,11 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
     }
 
     @Override
+    /**
+     * 查询
+     * @param erpWoId ERP工单ID
+     * @return 返回视图对象
+     */
     public ProWorkOrderVo selectByErpWoId(Long erpWoId) {
         LambdaQueryWrapper<ProWorkOrder> lqw = Wrappers.<ProWorkOrder>lambdaQuery()
             .eq(ProWorkOrder::getErpWoId, erpWoId);
@@ -143,6 +165,11 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
     }
 
     @Override
+    /**
+     * 查询
+     * @param mesWoId MES工单ID
+     * @return 结果列表
+     */
     public List<ProWorkOrderStepVo> selectStepsByWoId(Long mesWoId) {
         LambdaQueryWrapper<ProWorkOrderStep> lqw = Wrappers.<ProWorkOrderStep>lambdaQuery()
             .eq(ProWorkOrderStep::getMesWoId, mesWoId)
@@ -152,6 +179,11 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    /**
+     * 新增
+     * @param bo bo
+     * @return 受影响行数
+     */
     public int insertByBo(ProWorkOrderBo bo) {
         ProWorkOrder entity = MapstructUtils.convert(bo, ProWorkOrder.class);
         if (StringUtils.isBlank(entity.getWoStatus())) {
@@ -165,6 +197,11 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    /**
+     * 更新
+     * @param bo bo
+     * @return 受影响行数
+     */
     public int updateByBo(ProWorkOrderBo bo) {
         ProWorkOrder entity = MapstructUtils.convert(bo, ProWorkOrder.class);
         return baseMapper.updateById(entity);
@@ -172,6 +209,11 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    /**
+     * 删除
+     * @param ids 批量操作ID集合
+     * @return 受影响行数
+     */
     public int deleteByIds(Long[] ids) {
         // 仅新建或已取消状态的工单可删除
         List<ProWorkOrder> orders = baseMapper.selectBatchIds(List.of(ids));
@@ -184,6 +226,10 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
     }
 
     @Override
+    /**
+     * 下达
+     * @param mesWoId MES工单ID
+     */
     public void release(Long mesWoId) {
         // 先读取工单信息(在事务外,通过桥接服务读取ERP数据)
         ProWorkOrder wo = baseMapper.selectById(mesWoId);
@@ -519,16 +565,35 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
     }
 
     @Override
+    /**
+     * 获取
+     * @param dataId ID
+     * @return 返回结果
+     */
     public Object getBusinessDataById(String dataId) {
         return selectById(Long.parseLong(dataId));
     }
 
     @Override
+    /**
+     * flowValuesOfTask 操作
+     * @param taskNameId ID
+     * @param Map<String Map<String
+     * @param values values
+     * @return 返回结果映射
+     */
     public Map<String, Object> flowValuesOfTask(String taskNameId, Map<String, Object> values) {
         return null;
     }
 
     @Override
+    /**
+     * flowCandidateUsernamesOfTask 操作
+     * @param taskNameId ID
+     * @param Map<String Map<String
+     * @param values values
+     * @return 结果列表
+     */
     public List<String> flowCandidateUsernamesOfTask(String taskNameId, Map<String, Object> values) {
         return null;
     }
@@ -576,6 +641,9 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
         TransactionSynchronizationManager.registerSynchronization(
             new TransactionSynchronization() {
                 @Override
+                /**
+                 * afterCommit 操作
+                 */
                 public void afterCommit() {
                     String tenantId = TenantHelper.getTenantId();
                     mesMqSendService.sendWorkOrderCompleted(

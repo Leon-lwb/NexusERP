@@ -39,8 +39,11 @@ import java.util.stream.Collectors;
 @Service
 public class PutawayRuleServiceImpl implements IPutawayRuleService {
 
+    /** 基础数据访问映射器（Mapper） */
     private final WmPutawayRuleMapper baseMapper;
+    /** 仓库数据访问映射器（Mapper） */
     private final WmWarehouseMapper wmWarehouseMapper;
+    /** 上架规则数据访问映射器（Mapper） */
     private final BdMaterialCategoryMapper bdMaterialCategoryMapper;
 
     /**

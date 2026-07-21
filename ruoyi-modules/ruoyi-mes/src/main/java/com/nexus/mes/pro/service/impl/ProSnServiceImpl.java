@@ -53,6 +53,12 @@ public class ProSnServiceImpl implements IProSnService {
     private final ProFlowCardStepMapper stepMapper;
 
     @Override
+    /**
+     * 查询
+     * @param bo bo
+     * @param pageQuery pageQuery
+     * @return 分页结果
+     */
     public TableDataInfo<ProSnVo> selectPageList(ProSnBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<ProSn> lqw = buildQueryWrapper(bo);
         Page<ProSnVo> page = baseMapper.selectVoPage(pageQuery.build(), lqw);
@@ -60,11 +66,21 @@ public class ProSnServiceImpl implements IProSnService {
     }
 
     @Override
+    /**
+     * 查询
+     * @param snId SNID
+     * @return 返回视图对象
+     */
     public ProSnVo selectById(Long snId) {
         return baseMapper.selectVoById(snId);
     }
 
     @Override
+    /**
+     * 查询
+     * @param snCode SNCode
+     * @return 返回视图对象
+     */
     public ProSnVo selectByCode(String snCode) {
         return baseMapper.selectVoOne(Wrappers.<ProSn>lambdaQuery()
             .eq(ProSn::getSnCode, snCode));

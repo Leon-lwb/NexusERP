@@ -31,6 +31,13 @@ public class IotProductServiceImpl implements IIotProductService {
 
     private final IotProductMapper baseMapper;
 
+    /**
+     * 分页查询产品列表，按条件构建查询并转换为 VO 分页结果。
+     *
+     * @param bo        查询条件（编码/名称/类型/协议/状态等）
+     * @param pageQuery 分页参数
+     * @return 产品 VO 分页结果
+     */
     @Override
     public TableDataInfo<IotProductVo> selectPageList(IotProductBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<IotProduct> lqw = buildQueryWrapper(bo);
@@ -38,16 +45,34 @@ public class IotProductServiceImpl implements IIotProductService {
         return TableDataInfo.build(page);
     }
 
+    /**
+     * 查询产品列表（不分页）。
+     *
+     * @param bo 查询条件
+     * @return 产品 VO 列表
+     */
     @Override
     public List<IotProductVo> selectList(IotProductBo bo) {
         return baseMapper.selectVoList(buildQueryWrapper(bo));
     }
 
+    /**
+     * 根据主键查询产品详情（VO）。
+     *
+     * @param id 产品 ID
+     * @return 产品 VO，不存在返回 null
+     */
     @Override
     public IotProductVo selectById(Long id) {
         return baseMapper.selectVoById(id);
     }
 
+    /**
+     * 新增产品。
+     *
+     * @param bo 产品业务对象
+     * @return 插入影响行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(IotProductBo bo) {
@@ -55,6 +80,12 @@ public class IotProductServiceImpl implements IIotProductService {
         return baseMapper.insert(entity);
     }
 
+    /**
+     * 修改产品。
+     *
+     * @param bo 产品业务对象
+     * @return 更新影响行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(IotProductBo bo) {
@@ -62,6 +93,12 @@ public class IotProductServiceImpl implements IIotProductService {
         return baseMapper.updateById(entity);
     }
 
+    /**
+     * 批量逻辑删除产品。
+     *
+     * @param ids 产品 ID 数组
+     * @return 删除影响行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {

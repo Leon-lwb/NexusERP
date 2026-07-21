@@ -20,6 +20,7 @@ import java.util.List;
 
 /**
  * MES工单 Controller
+ * <p>属于 MES 生产管理模块，提供 工单 相关 REST 接口（分页查询、增删改及业务动作）。</p>
  *
  * @author Nexus
  */

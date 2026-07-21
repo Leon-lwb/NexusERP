@@ -19,7 +19,9 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class QueryTableSchemaTool {
 
+    /** ERP 表结构缓存管理器，提供结构化表摘要 */
     private final ErpTableSchemaManager erpTableSchemaManager;
+    /** ERP 查询服务，验证表存在性与回退 DDL */
     private final ErpQueryService erpQueryService;
 
     /**

@@ -23,6 +23,13 @@ public class ExportDemoListener extends DefaultExcelListener<ExportDemoVo> {
         super(true);
     }
 
+    /**
+     * 逐行解析带下拉框的 Excel 数据
+     * <p>先按新增分组校验必填项，再解析省市县级联下拉选项并写入对应 ID，最后按编辑分组校验后收集到结果列表。</p>
+     *
+     * @param data    当前行解析出的 {@link ExportDemoVo} 数据
+     * @param context 解析上下文
+     */
     @Override
     public void invoke(ExportDemoVo data, AnalysisContext context) {
         // 先校验必填

@@ -36,6 +36,7 @@ import java.util.stream.Collectors;
 public class ErpTableSchemaManager {
 
     @Autowired
+    /** ERP 业务库数据源（由类级 @DS("erp") 指定） */
     private DataSource erpDataSource;
 
     /** 允许的表名前缀 */

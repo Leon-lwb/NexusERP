@@ -10,10 +10,8 @@ import java.io.Serializable;
 import java.util.Map;
 
 /**
- * @Description: 流程业务扩展表
- * @Author: wanghuan
- * @Date:   2021-11-25
- * @Version: V1.0
+ * 流程业务扩展数据传输对象
+ * <p>承载流程业务与 Flowable 流程实例的关联信息（定义、实例、任务、处理人等），属于 Flowable 工作流模块。</p>
  */
 @Data
 @Accessors(chain = true)

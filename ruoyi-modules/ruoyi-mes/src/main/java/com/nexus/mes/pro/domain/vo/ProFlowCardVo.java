@@ -13,6 +13,7 @@ import java.util.List;
 
 /**
  * MES流转卡视图对象 pro_flow_card
+ * <p>属于 MES 生产管理模块，作为 流转卡 的查询/导出返回结构。</p>
  *
  * @author Nexus
  */

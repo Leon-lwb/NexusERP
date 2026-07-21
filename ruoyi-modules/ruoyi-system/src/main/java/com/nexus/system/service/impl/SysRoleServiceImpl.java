@@ -49,9 +49,13 @@ import java.util.*;
 @Service
 public class SysRoleServiceImpl implements ISysRoleService, RoleService {
 
+    /** SysRoleMapper 数据访问层组件，提供 角色 的持久化能力。 */
     private final SysRoleMapper baseMapper;
+    /** SysRoleMenuMapper 数据访问层组件，提供 菜单 的持久化能力。 */
     private final SysRoleMenuMapper roleMenuMapper;
+    /** SysUserRoleMapper 数据访问层组件，提供 角色 的持久化能力。 */
     private final SysUserRoleMapper userRoleMapper;
+    /** SysRoleDeptMapper 数据访问层组件，提供 部门 的持久化能力。 */
     private final SysRoleDeptMapper roleDeptMapper;
 
     /**

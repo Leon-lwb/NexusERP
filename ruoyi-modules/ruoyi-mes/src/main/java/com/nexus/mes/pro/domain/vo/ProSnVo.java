@@ -14,6 +14,7 @@ import java.util.Map;
 
 /**
  * MES SN序列号视图对象 pro_sn
+ * <p>属于 MES 生产管理模块，作为 SN序列号追溯 的查询/导出返回结构。</p>
  *
  * @author Nexus
  */

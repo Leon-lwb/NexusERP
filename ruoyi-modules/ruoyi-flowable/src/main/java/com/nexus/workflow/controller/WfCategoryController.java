@@ -32,6 +32,7 @@ import java.util.List;
 
 /**
  * 流程分类Controller
+ * <p>提供流程分类的增删改查、导出及 APP 分类查询等 REST 接口，属于 Flowable 工作流模块。</p>
  *
  * @author wanghuan
  * @createTime 2022/3/10 00:12
@@ -42,10 +43,15 @@ import java.util.List;
 @RequestMapping("/workflow/category")
 public class WfCategoryController extends BaseController {
 
+    /** 流程分类业务服务，提供分类查询、新增、修改、删除及编码唯一性校验等能力。 */
     private final IWfCategoryService categoryService;
 
     /**
-     * 查询流程分类列表
+     * 分页查询流程分类列表。
+     *
+     * @param categoryBo 流程分类查询条件
+     * @param pageQuery 分页参数（页码、每页大小、排序）
+     * @return 分页结果，包含流程分类列表及分页元信息
      */
     @SaCheckPermission("workflow:category:list")
     @GetMapping("/list")
@@ -54,7 +60,10 @@ public class WfCategoryController extends BaseController {
     }
 
     /**
-     * 查询全部的流程分类列表
+     * 查询全部的流程分类列表。
+     *
+     * @param categoryBo 流程分类查询条件
+     * @return 全部流程分类列表
      */
     @SaCheckLogin
     @GetMapping("/listAll")
@@ -63,7 +72,10 @@ public class WfCategoryController extends BaseController {
     }
 
     /**
-     * 导出流程分类列表
+     * 导出流程分类列表。
+     *
+     * @param categoryBo 流程分类查询条件
+     * @param response   HTTP 响应，用于写入导出的 Excel 流
      */
     @SaCheckPermission("workflow:category:export")
     @Log(title = "流程分类", businessType = BusinessType.EXPORT)
@@ -75,8 +87,10 @@ public class WfCategoryController extends BaseController {
     }
 
     /**
-     * 获取流程分类详细信息
+     * 获取流程分类详细信息。
+     *
      * @param categoryId 分类主键
+     * @return 流程分类详细信息
      */
     @SaCheckPermission("workflow:category:query")
     @GetMapping("/{categoryId}")
@@ -85,8 +99,10 @@ public class WfCategoryController extends BaseController {
     }
 
     /**
-     * 获取流程APP分类详细信息
+     * 根据分类编码获取流程 APP 分类详细信息。
+     *
      * @param code 分类编码
+     * @return 流程 APP 分类列表
      */
     @GetMapping("/appType/{code}")
     public R<List<WfAppTypeVo>> getInfoByCode(@NotNull(message = "主键不能为空") @PathVariable("code") String code) {
@@ -94,7 +110,10 @@ public class WfCategoryController extends BaseController {
     }
 
     /**
-     * 新增流程分类
+     * 新增流程分类。
+     *
+     * @param categoryBo 流程分类新增数据
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckPermission("workflow:category:add")
     @Log(title = "流程分类", businessType = BusinessType.INSERT)
@@ -108,7 +127,10 @@ public class WfCategoryController extends BaseController {
     }
 
     /**
-     * 修改流程分类
+     * 修改流程分类。
+     *
+     * @param categoryBo 流程分类修改数据
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckPermission("workflow:category:edit")
     @Log(title = "流程分类", businessType = BusinessType.UPDATE)
@@ -122,8 +144,10 @@ public class WfCategoryController extends BaseController {
     }
 
     /**
-     * 删除流程分类
+     * 删除流程分类。
+     *
      * @param categoryIds 分类主键串
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckPermission("workflow:category:remove")
     @Log(title = "流程分类" , businessType = BusinessType.DELETE)

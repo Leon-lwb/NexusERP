@@ -38,10 +38,15 @@ import com.nexus.workflow.service.IWfDefaultOperateService;
 @RequestMapping("/workflow/defaultOperate")
 public class WfDefaultOperateController extends BaseController {
 
+    /** 流程默认操作业务服务，提供分页、导出、增删改等能力。 */
     private final IWfDefaultOperateService iWfDefaultOperateService;
 
     /**
-     * 查询流程默认操作列表
+     * 查询流程默认操作列表。
+     *
+     * @param bo        流程默认操作查询条件
+     * @param pageQuery 分页参数（页码、每页大小、排序）
+     * @return 分页结果，包含流程默认操作列表及分页元信息
      */
     @SaCheckPermission("workflow:defaultOperate:list")
     @GetMapping("/list")
@@ -50,7 +55,10 @@ public class WfDefaultOperateController extends BaseController {
     }
 
     /**
-     * 导出流程默认操作列表
+     * 导出流程默认操作列表。
+     *
+     * @param bo        流程默认操作查询条件
+     * @param response  HTTP 响应，用于写入导出的 Excel 流
      */
     @SaCheckPermission("workflow:defaultOperate:export")
     @Log(title = "流程默认操作", businessType = BusinessType.EXPORT)
@@ -61,9 +69,10 @@ public class WfDefaultOperateController extends BaseController {
     }
 
     /**
-     * 获取流程默认操作详细信息
+     * 获取流程默认操作详细信息。
      *
      * @param id 主键
+     * @return 流程默认操作详细信息
      */
     @SaCheckPermission("workflow:defaultOperate:query")
     @GetMapping("/{id}")
@@ -73,7 +82,10 @@ public class WfDefaultOperateController extends BaseController {
     }
 
     /**
-     * 新增流程默认操作
+     * 新增流程默认操作。
+     *
+     * @param bo 流程默认操作新增数据
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckPermission("workflow:defaultOperate:add")
     @Log(title = "流程默认操作", businessType = BusinessType.INSERT)
@@ -84,7 +96,10 @@ public class WfDefaultOperateController extends BaseController {
     }
 
     /**
-     * 修改流程默认操作
+     * 修改流程默认操作。
+     *
+     * @param bo 流程默认操作修改数据
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckPermission("workflow:defaultOperate:edit")
     @Log(title = "流程默认操作", businessType = BusinessType.UPDATE)
@@ -95,9 +110,10 @@ public class WfDefaultOperateController extends BaseController {
     }
 
     /**
-     * 删除流程默认操作
+     * 删除流程默认操作。
      *
      * @param ids 主键串
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckPermission("workflow:defaultOperate:remove")
     @Log(title = "流程默认操作", businessType = BusinessType.DELETE)

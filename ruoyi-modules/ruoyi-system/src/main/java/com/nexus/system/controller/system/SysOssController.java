@@ -26,7 +26,9 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * 文件上传 控制层
+ * OSS 对象存储（文件上传）Controller
+ * <p>提供 OSS 对象的分页查询、按 ID 批量查询、文件上传、下载及删除等接口。
+ * 属于系统管理（System）模块中的资源管理部分。</p>
  *
  * @author Lion Li
  */
@@ -36,10 +38,15 @@ import java.util.List;
 @RequestMapping("/resource/oss")
 public class SysOssController extends BaseController {
 
+    /** OSS 对象存储业务服务，提供分页、上传、下载与删除等能力。 */
     private final ISysOssService ossService;
 
     /**
-     * 查询OSS对象存储列表
+     * 分页查询 OSS 对象存储列表。
+     *
+     * @param bo        对象存储查询条件（文件名、分类等）
+     * @param pageQuery 分页查询参数，包含页码、每页大小及排序条件
+     * @return OSS 对象分页结果
      */
     @SaCheckPermission("system:oss:list")
     @GetMapping("/list")
@@ -48,9 +55,10 @@ public class SysOssController extends BaseController {
     }
 
     /**
-     * 查询OSS对象基于id串
+     * 根据 ID 串批量查询 OSS 对象。
      *
-     * @param ossIds OSS对象ID串
+     * @param ossIds OSS 对象 ID 数组
+     * @return OSS 对象列表
      */
     @SaCheckPermission("system:oss:query")
     @GetMapping("/listByIds/{ossIds}")
@@ -61,9 +69,10 @@ public class SysOssController extends BaseController {
     }
 
     /**
-     * 上传OSS对象存储
+     * 上传文件到 OSS 对象存储，返回可访问的文件地址。
      *
-     * @param file 文件
+     * @param file 待上传的文件
+     * @return 上传结果，含文件 URL、原始文件名与 OSS 对象 ID
      */
     @SaCheckPermission("system:oss:upload")
     @Log(title = "OSS对象存储", businessType = BusinessType.INSERT)
@@ -78,9 +87,11 @@ public class SysOssController extends BaseController {
     }
 
     /**
-     * 下载OSS对象
+     * 下载指定 OSS 对象到响应流。
      *
-     * @param ossId OSS对象ID
+     * @param ossId    OSS 对象 ID
+     * @param response HTTP 响应，用于写入文件流
+     * @throws IOException 写出响应流异常时抛出
      */
     @SaCheckPermission("system:oss:download")
     @GetMapping("/download/{ossId}")
@@ -89,9 +100,10 @@ public class SysOssController extends BaseController {
     }
 
     /**
-     * 删除OSS对象存储
+     * 批量删除 OSS 对象存储。
      *
-     * @param ossIds OSS对象ID串
+     * @param ossIds OSS 对象 ID 数组
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckPermission("system:oss:remove")
     @Log(title = "OSS对象存储", businessType = BusinessType.DELETE)

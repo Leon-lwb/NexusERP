@@ -31,17 +31,27 @@ public interface IQcIpqcService {
     String RESULT_UNQUALIFIED = "UNQUALIFIED";
 
     /**
-     * 分页查询IPQC列表
+     * 分页查询 IPQC 过程检验列表。
+     *
+     * @param bo        检验单查询条件（编号/状态/结果/工单/流转卡/物料）
+     * @param pageQuery 分页参数（页码、每页大小、排序）
+     * @return 分页结果，包含 IPQC 检验单视图列表及分页元信息
      */
     TableDataInfo<QcIpqcVo> selectPageList(QcIpqcBo bo, PageQuery pageQuery);
 
     /**
-     * 根据ID获取IPQC详情
+     * 根据主键 ID 获取 IPQC 过程检验单详情。
+     *
+     * @param ipqcId IPQC 检验单 ID
+     * @return IPQC 检验单视图对象
      */
     QcIpqcVo selectById(Long ipqcId);
 
     /**
-     * 新增IPQC检验单(生成编号)
+     * 新增 IPQC 过程检验单，自动生成检验编号并初始化为待检验状态。
+     *
+     * @param bo IPQC 检验单业务对象，包含工单、工序、物料、数量等信息
+     * @return 新增后的 IPQC 检验单视图对象
      */
     QcIpqcVo insertByBo(QcIpqcBo bo);
 

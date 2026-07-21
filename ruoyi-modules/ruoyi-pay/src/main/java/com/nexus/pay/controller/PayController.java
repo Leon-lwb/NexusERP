@@ -35,7 +35,10 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class PayController extends BaseController {
 
+    /** 订单业务服务，提供按订单号查询支付订单等能力。 */
     private final IPayOrderService payOrderService;
+
+    /** 支付通道服务映射，key 为 "pay:service:{channel}"，由 Spring 容器按 bean 名称装配。 */
     private final Map<String, PayService> payServiceMap;
 
     @PostConstruct
@@ -47,6 +50,14 @@ public class PayController extends BaseController {
         }
     }
 
+    /**
+     * 根据支付通道与订单号获取支付链接或表单。
+     *
+     * @param channel 支付方式（支付通道标识，如 alipay、wechat、sqb）
+     * @param orderNumber 商户订单号
+     * @return 支付链接或表单字符串（如支付宝当面付二维码链接或 PC 网页支付表单）
+     * @throws Exception 调用支付 SDK 异常时抛出
+     */
     @Operation(summary = "获取支付链接", description = "也不一定是链接，比如支付宝是一串表单代码")
     @Parameters({
             @Parameter(name = "channel", description = "支付方式", required = true),
@@ -60,6 +71,17 @@ public class PayController extends BaseController {
         return R.ok("操作成功", url);
     }
 
+    /**
+     * 接收支付通道的支付/退款回调通知并委托对应支付服务处理。
+     *
+     * @param channel 支付方式（支付通道标识）
+     * @param orderNumber 商户订单号（回调未携带时可空）
+     * @param type 通知类型，缺省按 "pay" 处理，可为 "refund"
+     * @param request HTTP 请求，承载通道回调参数
+     * @param response HTTP 响应
+     * @return 回调处理结果字符串（如 "success" / "fail"）
+     * @throws Exception 调用支付 SDK 异常时抛出
+     */
     @Operation(summary = "支付/退款回调")
     @Parameters({
             @Parameter(name = "channel", description = "支付方式", required = true),
@@ -89,6 +111,13 @@ public class PayController extends BaseController {
         return payService.notify(request, response, payOrder, type);
     }
 
+    /**
+     * 查询指定订单的支付状态（委托对应支付通道实时查询）。
+     *
+     * @param orderNumber 商户订单号
+     * @return 刷新支付状态后的订单对象
+     * @throws Exception 调用支付 SDK 异常时抛出
+     */
     @Operation(summary = "查询支付状态")
     @Parameters({
             @Parameter(name = "orderNumber", description = "订单号", required = true)
@@ -104,6 +133,12 @@ public class PayController extends BaseController {
         return R.ok(payService.query(payOrder));
     }
 
+    /**
+     * 对指定订单发起退款（委托对应支付通道处理）。
+     *
+     * @param orderNumber 商户订单号
+     * @return 退款后的订单对象；订单尚未支付时返回失败信息
+     */
     @Operation(summary = "退款")
     @Parameters({
             @Parameter(name = "orderNumber", description = "订单号", required = true)

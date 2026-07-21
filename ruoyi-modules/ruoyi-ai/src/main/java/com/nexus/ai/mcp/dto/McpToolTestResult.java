@@ -30,6 +30,7 @@ public class McpToolTestResult {
     /** 工具名称列表 */
     private List<String> tools;
 
+    /** 构建成功结果，携带发现的工具数量与名称列表。 */
     public static McpToolTestResult success(String message, int toolCount, List<String> tools) {
         return McpToolTestResult.builder()
             .success(true)
@@ -39,6 +40,7 @@ public class McpToolTestResult {
             .build();
     }
 
+    /** 构建失败结果，仅携带错误信息。 */
     public static McpToolTestResult fail(String message) {
         return McpToolTestResult.builder()
             .success(false)

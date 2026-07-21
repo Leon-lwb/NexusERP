@@ -21,7 +21,9 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * 参数配置 信息操作处理
+ * 参数配置（系统参数）Controller
+ * <p>提供系统参数的分页查询、Excel 导出、键值查询、增删改、按 key 更新及缓存刷新接口。
+ * 属于系统管理（System）模块。</p>
  *
  * @author Lion Li
  */
@@ -31,10 +33,15 @@ import java.util.List;
 @RequestMapping("/system/config")
 public class SysConfigController extends BaseController {
 
+    /** 参数配置业务服务，提供分页、唯一性校验、增删改及缓存重置等能力。 */
     private final ISysConfigService configService;
 
     /**
-     * 获取参数配置列表
+     * 分页查询参数配置列表。
+     *
+     * @param config    参数查询条件（参数名称、键名、类型等）
+     * @param pageQuery 分页查询参数，包含页码、每页大小及排序条件
+     * @return 参数配置分页结果
      */
     @SaCheckPermission("system:config:list")
     @GetMapping("/list")
@@ -43,7 +50,10 @@ public class SysConfigController extends BaseController {
     }
 
     /**
-     * 导出参数配置列表
+     * 导出参数配置列表为 Excel 文件。
+     *
+     * @param config   参数查询条件
+     * @param response HTTP 响应，用于写入导出的 Excel 流
      */
     @Log(title = "参数管理", businessType = BusinessType.EXPORT)
     @SaCheckPermission("system:config:export")
@@ -54,9 +64,10 @@ public class SysConfigController extends BaseController {
     }
 
     /**
-     * 根据参数编号获取详细信息
+     * 根据参数编号获取参数配置详细信息。
      *
-     * @param configId 参数ID
+     * @param configId 参数配置主键
+     * @return 参数配置详情
      */
     @SaCheckPermission("system:config:query")
     @GetMapping(value = "/{configId}")
@@ -65,9 +76,10 @@ public class SysConfigController extends BaseController {
     }
 
     /**
-     * 根据参数键名查询参数值
+     * 根据参数键名查询参数值。
      *
-     * @param configKey 参数Key
+     * @param configKey 参数键名
+     * @return 对应参数的值
      */
     @GetMapping(value = "/configKey/{configKey}")
     public R<String> getConfigKey(@PathVariable String configKey) {
@@ -75,7 +87,10 @@ public class SysConfigController extends BaseController {
     }
 
     /**
-     * 新增参数配置
+     * 新增参数配置，校验参数键名唯一性。
+     *
+     * @param config 参数配置新增参数
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckPermission("system:config:add")
     @Log(title = "参数管理", businessType = BusinessType.INSERT)
@@ -90,7 +105,10 @@ public class SysConfigController extends BaseController {
     }
 
     /**
-     * 修改参数配置
+     * 修改参数配置，校验参数键名唯一性。
+     *
+     * @param config 参数配置修改参数
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckPermission("system:config:edit")
     @Log(title = "参数管理", businessType = BusinessType.UPDATE)
@@ -105,7 +123,10 @@ public class SysConfigController extends BaseController {
     }
 
     /**
-     * 根据参数键名修改参数配置
+     * 根据参数键名修改参数配置（不校验键名唯一性）。
+     *
+     * @param config 含参数键名与值的修改参数
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckPermission("system:config:edit")
     @Log(title = "参数管理", businessType = BusinessType.UPDATE)
@@ -117,9 +138,10 @@ public class SysConfigController extends BaseController {
     }
 
     /**
-     * 删除参数配置
+     * 批量删除参数配置。
      *
-     * @param configIds 参数ID串
+     * @param configIds 参数配置主键数组
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckPermission("system:config:remove")
     @Log(title = "参数管理", businessType = BusinessType.DELETE)
@@ -130,7 +152,9 @@ public class SysConfigController extends BaseController {
     }
 
     /**
-     * 刷新参数缓存
+     * 刷新参数缓存，清除并重新加载全部系统参数。
+     *
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckPermission("system:config:remove")
     @Log(title = "参数管理", businessType = BusinessType.CLEAN)

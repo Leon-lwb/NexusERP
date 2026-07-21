@@ -20,7 +20,9 @@ import java.util.Arrays;
 public class GenUtils {
 
     /**
-     * 初始化表信息
+     * 初始化表信息（填充类名、包名、模块名、作者等默认生成属性）。
+     *
+     * @param genTable 待初始化的业务表对象
      */
     public static void initTable(GenTable genTable) {
         genTable.setClassName(convertClassName(genTable.getTableName()));
@@ -34,7 +36,10 @@ public class GenUtils {
     }
 
     /**
-     * 初始化列属性字段
+     * 初始化列属性字段（推导 Java 类型、HTML 控件、是否插入/编辑/列表/查询及字典等）。
+     *
+     * @param column 待初始化的列对象
+     * @param table  所属业务表（提供表ID等）
      */
     public static void initColumnField(GenTableColumn column, GenTable table) {
         String dataType = getDbType(column.getColumnType());

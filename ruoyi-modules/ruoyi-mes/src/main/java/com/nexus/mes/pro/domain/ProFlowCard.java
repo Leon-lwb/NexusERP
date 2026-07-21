@@ -11,6 +11,7 @@ import java.math.BigDecimal;
 
 /**
  * MES流转卡对象 pro_flow_card
+ * <p>属于 MES 生产管理模块，表达 流转卡 的领域模型。</p>
  *
  * @author Nexus
  */

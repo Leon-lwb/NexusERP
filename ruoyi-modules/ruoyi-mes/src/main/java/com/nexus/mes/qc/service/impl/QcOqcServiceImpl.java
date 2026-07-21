@@ -37,8 +37,16 @@ import java.util.Date;
 @Service("qcOqcService")
 public class QcOqcServiceImpl implements IQcOqcService {
 
+    /** OQC 出货检验单数据访问 Mapper。 */
     private final QcOqcMapper baseMapper;
 
+    /**
+     * 分页查询 OQC 出货检验列表。
+     *
+     * @param bo        检验单查询条件（编号/状态/结果/销售订单/物料）
+     * @param pageQuery 分页参数（页码、每页大小、排序）
+     * @return 分页结果，包含 OQC 检验单视图列表及分页元信息
+     */
     @Override
     public TableDataInfo<QcOqcVo> selectPageList(QcOqcBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<QcOqc> lqw = buildQueryWrapper(bo);
@@ -46,11 +54,23 @@ public class QcOqcServiceImpl implements IQcOqcService {
         return TableDataInfo.build(page);
     }
 
+    /**
+     * 根据主键 ID 获取 OQC 出货检验单详情。
+     *
+     * @param oqcId OQC 检验单 ID
+     * @return OQC 检验单视图对象
+     */
     @Override
     public QcOqcVo selectById(Long oqcId) {
         return baseMapper.selectVoById(oqcId);
     }
 
+    /**
+     * 新增 OQC 出货检验单，自动生成检验编号并初始化为待检验状态。
+     *
+     * @param bo OQC 检验单业务对象，包含销售订单、物料、数量等信息
+     * @return 新增后的 OQC 检验单视图对象
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public QcOqcVo insertByBo(QcOqcBo bo) {
@@ -70,6 +90,15 @@ public class QcOqcServiceImpl implements IQcOqcService {
         return baseMapper.selectVoById(oqc.getOqcId());
     }
 
+    /**
+     * 执行 OQC 检验：将状态推进为 COMPLETED，记录检验员与检验时间。
+     *
+     * @param oqcId         OQC 检验单 ID
+     * @param inspectResult 检验结果 QUALIFIED（合格）/ UNQUALIFIED（不合格）
+     * @param defectInfo    不良品信息（JSON 字符串，可为空）
+     * @param sampleQty     抽样数量（可为空，为空则不更新）
+     * @param remark        备注（可为空）
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void inspect(Long oqcId, String inspectResult, String defectInfo,
@@ -115,6 +144,12 @@ public class QcOqcServiceImpl implements IQcOqcService {
         return "OQC-" + today + "-" + String.format("%03d", seq);
     }
 
+    /**
+     * 根据查询条件构建 OQC 检验单的 LambdaQueryWrapper（编号模糊匹配，状态/结果/销售订单/物料精确匹配，按创建时间倒序）。
+     *
+     * @param bo 检验单查询条件
+     * @return OQC 查询条件构造器
+     */
     private LambdaQueryWrapper<QcOqc> buildQueryWrapper(QcOqcBo bo) {
         return Wrappers.<QcOqc>lambdaQuery()
             .like(StringUtils.isNotBlank(bo.getOqcNo()), QcOqc::getOqcNo, bo.getOqcNo())

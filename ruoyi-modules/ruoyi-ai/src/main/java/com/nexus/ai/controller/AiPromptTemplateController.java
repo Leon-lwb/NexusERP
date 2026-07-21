@@ -28,7 +28,9 @@ import java.util.List;
 @RequestMapping("/ai/prompt")
 public class AiPromptTemplateController extends BaseController {
 
+    /** Prompt 模板业务服务，提供模板 CRUD 与分页查询。 */
     private final IAiPromptTemplateService promptTemplateService;
+    /** Prompt 模板渲染服务，负责模板变量渲染与缓存清理。 */
     private final PromptTemplateService promptTemplateRenderingService;
 
     /**

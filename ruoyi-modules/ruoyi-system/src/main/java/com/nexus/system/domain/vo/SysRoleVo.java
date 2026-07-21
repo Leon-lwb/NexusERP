@@ -93,6 +93,11 @@ public class SysRoleVo implements Serializable {
      */
     private boolean flag = false;
 
+    /**
+     * 判断当前角色是否为超级管理员角色。
+     *
+     * @return 是超级管理员角色返回 true，否则返回 false
+     */
     public boolean isSuperAdmin() {
         return SystemConstants.SUPER_ADMIN_ID.equals(this.roleId);
     }

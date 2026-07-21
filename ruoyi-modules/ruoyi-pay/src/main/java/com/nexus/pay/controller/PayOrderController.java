@@ -40,8 +40,16 @@ import java.util.List;
 @Tag(name = "【订单】管理")
 public class PayOrderController extends BaseController {
 
+    /** 订单业务服务，提供订单分页、增删改查等能力。 */
     private final IPayOrderService payOrderService;
 
+    /**
+     * 分页查询支付订单列表。
+     *
+     * @param bo 订单查询条件（订单号、第三方订单号、状态、支付方式等）
+     * @param pageQuery 分页参数
+     * @return 分页后的订单视图列表
+     */
     @Operation(summary = "查询订单列表")
     @SaCheckPermission("pay:order:list")
     @GetMapping("/list")
@@ -49,6 +57,12 @@ public class PayOrderController extends BaseController {
         return payOrderService.selectPageList(bo, pageQuery);
     }
 
+    /**
+     * 导出符合条件的支付订单列表为 Excel。
+     *
+     * @param response HTTP 响应，用于写入 Excel 文件流
+     * @param bo 订单查询条件
+     */
     @Operation(summary = "导出订单列表")
     @SaCheckPermission("pay:order:export")
     @Log(title = "订单", businessType = BusinessType.EXPORT)
@@ -58,6 +72,12 @@ public class PayOrderController extends BaseController {
         ExcelUtil.exportExcel(list, "订单数据", PayOrderVo.class, response);
     }
 
+    /**
+     * 获取指定支付订单的详细信息。
+     *
+     * @param orderId 订单 ID
+     * @return 订单视图对象
+     */
     @Operation(summary = "获取订单详细信息")
     @SaCheckPermission("pay:order:query")
     @GetMapping(value = "/{orderId}")
@@ -65,6 +85,12 @@ public class PayOrderController extends BaseController {
         return R.ok(payOrderService.selectById(orderId));
     }
 
+    /**
+     * 新增支付订单，自动生成商户订单号并初始化为「待支付」状态。
+     *
+     * @param bo 订单业务对象，含订单内容、金额、支付方式等
+     * @return 创建成功的订单对象（含生成的订单号）
+     */
     @Operation(summary = "新增订单")
     @SaCheckPermission("pay:order:add")
     @Log(title = "订单", businessType = BusinessType.INSERT)
@@ -82,6 +108,12 @@ public class PayOrderController extends BaseController {
         return R.ok(payOrder);
     }
 
+    /**
+     * 修改支付订单信息。
+     *
+     * @param payOrder 待更新的订单实体
+     * @return 操作结果
+     */
     @Operation(summary = "修改订单")
     @SaCheckPermission("pay:order:edit")
     @Log(title = "订单", businessType = BusinessType.UPDATE)
@@ -90,6 +122,12 @@ public class PayOrderController extends BaseController {
         return toAjax(payOrderService.updatePayOrder(payOrder));
     }
 
+    /**
+     * 按商户订单号删除支付订单。
+     *
+     * @param orderNumber 商户订单号
+     * @return 操作结果
+     */
     @Operation(summary = "通过订单号删除订单")
     @SaCheckPermission("pay:order:remove")
     @Log(title = "订单", businessType = BusinessType.DELETE)
@@ -98,6 +136,12 @@ public class PayOrderController extends BaseController {
         return toAjax(payOrderService.deleteByOrderNumber(orderNumber));
     }
 
+    /**
+     * 批量删除支付订单。
+     *
+     * @param orderIds 待删除的订单 ID 数组
+     * @return 操作结果
+     */
     @Operation(summary = "批量删除订单")
     @SaCheckPermission("pay:order:remove")
     @Log(title = "订单", businessType = BusinessType.DELETE)

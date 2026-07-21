@@ -27,6 +27,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class WebSearchTool {
 
+    /** AI 配置属性，提供联网搜索厂商/Key/超时等配置 */
     private final AiProperties aiProperties;
 
     @Tool("联网搜索最新信息，返回相关网页摘要和链接")

@@ -30,9 +30,13 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class GlobalSearchService {
 
+    /** 图谱存储策略，提供图谱与社区摘要的读写。 */
     private final GraphStoreStrategy graphStoreStrategy;
+    /** ChatModel 工厂，用于获取全局检索用的同步模型。 */
     private final ChatModelFactory chatModelFactory;
+    /** AI 模型业务服务，用于解析默认摘要模型。 */
     private final IAiModelService aiModelService;
+    /** AI 配置属性，提供全局检索社区数上限等参数。 */
     private final AiProperties aiProperties;
 
     /** 单社区候选答案最大字符 */

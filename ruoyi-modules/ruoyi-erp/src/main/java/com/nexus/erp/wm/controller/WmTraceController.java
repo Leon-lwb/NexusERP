@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/erp/wm/trace")
 public class WmTraceController extends BaseController {
 
+    /** 追溯业务服务，提供追溯相关能力 */
     private final IWmTraceService wmTraceService;
 
     /**

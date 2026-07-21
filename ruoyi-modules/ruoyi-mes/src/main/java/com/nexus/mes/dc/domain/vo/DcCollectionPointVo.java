@@ -12,6 +12,8 @@ import java.io.Serializable;
 /**
  * MES数据采集点视图对象 dc_collection_point
  *
+ * <p>属于MES 数据采集模块，采集点视图对象（查询出参）。</p>
+ *
  * @author Nexus
  */
 @Data

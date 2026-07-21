@@ -12,6 +12,9 @@ import java.io.Serial;
 import java.io.Serializable;
 import java.util.Date;
 
+/**
+ * 属于MES 设备管理模块，巡检记录视图对象（查询出参）。
+ */
 @Data
 @ExcelIgnoreUnannotated
 @AutoMapper(target = EqPatrolRecord.class)

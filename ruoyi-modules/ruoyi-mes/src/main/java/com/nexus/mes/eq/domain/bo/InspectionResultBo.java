@@ -45,6 +45,8 @@ public class InspectionResultBo implements Serializable {
 
     /**
      * 单项点检结果
+     * <p>属于MES 设备管理模块，点检Item结果持久化实体。</p>
+     *
      */
     @Data
     public static class InspectionItemResult implements Serializable {

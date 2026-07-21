@@ -7,6 +7,9 @@ import lombok.EqualsAndHashCode;
 import com.nexus.common.mybatis.core.domain.BaseEntity;
 import com.nexus.mes.eq.domain.EqPatrolRecord;
 
+/**
+ * 属于MES 设备管理模块，巡检记录业务对象（新增/编辑入参）。
+ */
 @Data
 @EqualsAndHashCode(callSuper = true)
 @AutoMapper(target = EqPatrolRecord.class, reverseConvertGenerate = false)

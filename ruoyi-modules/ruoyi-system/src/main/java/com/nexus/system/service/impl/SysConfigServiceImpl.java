@@ -41,6 +41,7 @@ import java.util.Map;
 @Service
 public class SysConfigServiceImpl implements ISysConfigService, ConfigService {
 
+    /** SysConfigMapper 数据访问层组件，提供 参数配置 的持久化能力。 */
     private final SysConfigMapper baseMapper;
 
     /**

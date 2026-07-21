@@ -38,9 +38,13 @@ import java.util.Arrays;
 @RequestMapping("/ai/image")
 public class AiImageController extends BaseController {
 
+    /** 文生图厂商服务工厂，按厂商名获取具体实现（如通义万相）。 */
     private final ImageServiceFactory imageServiceFactory;
+    /** AI 模型业务服务，用于解析图像模型配置与默认模型。 */
     private final IAiModelService aiModelService;
+    /** AI 配置属性，提供默认文生图厂商等运行参数。 */
     private final AiProperties aiProperties;
+    /** 文生图历史记录表 Mapper，负责记录持久化与查询。 */
     private final AiImageRecordMapper imageRecordMapper;
 
     /**

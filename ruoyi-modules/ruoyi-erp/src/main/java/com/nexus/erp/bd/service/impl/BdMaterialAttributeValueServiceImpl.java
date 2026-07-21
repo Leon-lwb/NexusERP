@@ -37,6 +37,12 @@ public class BdMaterialAttributeValueServiceImpl implements IBdMaterialAttribute
     private final BdMaterialAttributeValueMapper baseMapper;
     private final IBdMaterialService bdMaterialService;
     private final IBdCategoryAttributeService bdCategoryAttributeService;
+    /**
+     * 查询物料的物料属性值列表
+     *
+     * @param materialId 物料ID
+     * @return 结果列表
+     */
 
     @Override
     public List<BdMaterialAttributeValueVo> listByMaterial(Long materialId) {
@@ -93,6 +99,12 @@ public class BdMaterialAttributeValueServiceImpl implements IBdMaterialAttribute
         }
         return rows;
     }
+    /**
+     * 删除物料的全部物料属性值
+     *
+     * @param materialId 物料ID
+     * @return 操作结果/影响行数
+     */
 
     @Override
     public int deleteByMaterial(Long materialId) {

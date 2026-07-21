@@ -24,8 +24,11 @@ import java.util.List;
 @RequiredArgsConstructor
 public class McpToolServiceImpl {
 
+    /** AI 工具表 Mapper，负责工具 CRUD 与查询。 */
     private final AiToolMapper aiToolMapper;
+    /** 内置工具注册中心，用于同步与测试内置工具。 */
     private final BuiltinToolRegistry builtinToolRegistry;
+    /** MCP 客户端管理器，负责外部工具连接刷新与健康检查。 */
     private final McpClientManager mcpClientManager;
 
     /**

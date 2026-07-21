@@ -12,6 +12,7 @@ import java.util.Date;
 
 /**
  * MES派工单对象 pro_dispatch
+ * <p>属于 MES 生产管理模块，表达 工序派工 的领域模型。</p>
  *
  * @author Nexus
  */

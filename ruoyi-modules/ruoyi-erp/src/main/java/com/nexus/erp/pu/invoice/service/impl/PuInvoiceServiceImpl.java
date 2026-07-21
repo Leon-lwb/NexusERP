@@ -62,6 +62,13 @@ public class PuInvoiceServiceImpl implements IPuInvoiceService {
     private final PuPurchaseOrderLineMapper puPurchaseOrderLineMapper;
     private final WmMaterialReceiveLineMapper wmMaterialReceiveLineMapper;
 
+    /**
+     * 分页查询进项发票列表。
+     *
+     * @param bo        查询参数
+     * @param pageQuery 分页参数
+     * @return 进项发票分页列表
+     */
     @Override
     public TableDataInfo<PuInvoiceVo> selectPageList(PuInvoiceBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<PuInvoice> lqw = buildQueryWrapper(bo);
@@ -69,11 +76,23 @@ public class PuInvoiceServiceImpl implements IPuInvoiceService {
         return TableDataInfo.build(page);
     }
 
+    /**
+     * 查询进项发票列表。
+     *
+     * @param bo 查询参数
+     * @return 进项发票列表
+     */
     @Override
     public List<PuInvoiceVo> selectList(PuInvoiceBo bo) {
         return baseMapper.selectVoList(buildQueryWrapper(bo));
     }
 
+    /**
+     * 根据ID查询进项发票详情（含明细行）。
+     *
+     * @param id 发票ID
+     * @return 进项发票详情
+     */
     @Override
     public PuInvoiceVo selectById(Long id) {
         PuInvoiceVo vo = baseMapper.selectVoById(id);
@@ -204,6 +223,12 @@ public class PuInvoiceServiceImpl implements IPuInvoiceService {
         }
     }
 
+    /**
+     * 批量删除进项发票（仅草稿可删，非草稿抛异常并回退已开票数量）。
+     *
+     * @param ids 发票ID数组
+     * @return 影响行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {

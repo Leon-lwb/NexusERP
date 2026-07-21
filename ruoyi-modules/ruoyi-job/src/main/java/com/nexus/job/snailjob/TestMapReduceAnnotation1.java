@@ -28,6 +28,14 @@ import java.util.stream.IntStream;
 @JobExecutor(name = "testMapReduceAnnotation1")
 public class TestMapReduceAnnotation1 {
 
+    /**
+     * MapReduce 任务入口：将 1~200 的整数按每片 50 个分片后派发。
+     * <p>生成 1~200 的数值并均分为多片，交由 {@code doCalc} 子任务并行计算。</p>
+     *
+     * @param mapArgs    Map 任务参数
+     * @param mapHandler 分片派发处理器
+     * @return 执行结果，派发完成后返回成功
+     */
     @MapExecutor
     public ExecuteResult rootMapExecute(MapArgs mapArgs, MapHandler mapHandler) {
         int partitionSize = 50;
@@ -41,6 +49,12 @@ public class TestMapReduceAnnotation1 {
         return mapHandler.doMap(partition, "doCalc");
     }
 
+    /**
+     * 子任务：对分片内的整数求和并上报结果。
+     *
+     * @param mapArgs 分片参数，含本片待计算的整数列表
+     * @return 执行结果，成功时携带本片累加值
+     */
     @MapExecutor(taskName = "doCalc")
     public ExecuteResult doCalc(MapArgs mapArgs) {
         List<Integer> sourceList = (List<Integer>) mapArgs.getMapResult();
@@ -52,6 +66,12 @@ public class TestMapReduceAnnotation1 {
         return ExecuteResult.success(partitionTotal);
     }
 
+    /**
+     * 归约任务：汇总各分片的计算结果，得到全量总和。
+     *
+     * @param reduceArgs 归约参数，含各分片结果集合
+     * @return 执行结果，成功时携带全局累加值
+     */
     @ReduceExecutor
     public ExecuteResult reduceExecute(ReduceArgs reduceArgs) {
         int reduceTotal = reduceArgs.getMapResult().stream().mapToInt(i -> Integer.parseInt((String) i)).sum();

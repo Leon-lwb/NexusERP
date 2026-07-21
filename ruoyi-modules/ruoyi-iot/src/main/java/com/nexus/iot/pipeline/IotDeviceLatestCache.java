@@ -17,6 +17,7 @@ import java.util.Map;
 @Component
 public class IotDeviceLatestCache {
 
+    /** 最新属性缓存 Key 前缀，完整 Key 为 iot:latest:{deviceId}。 */
     private static final String LATEST_KEY_PREFIX = "iot:latest:";
 
     /**

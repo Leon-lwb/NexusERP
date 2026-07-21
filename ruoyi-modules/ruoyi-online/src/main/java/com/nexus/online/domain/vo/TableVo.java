@@ -17,7 +17,7 @@ import lombok.Data;
 @Data
 public class TableVo extends GenTable {
 	/**
-     * 表列信息
+     * 在线表单字段视图列表（非数据库字段，承载表单列配置）。
      */
     @Valid
     @TableField(exist = false)

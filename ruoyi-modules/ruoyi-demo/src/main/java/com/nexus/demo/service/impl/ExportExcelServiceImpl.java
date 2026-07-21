@@ -31,6 +31,12 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ExportExcelServiceImpl implements IExportExcelService {
 
+    /**
+     * 导出带级联下拉框（省/市/县）的 Excel 示例
+     * <p>构造演示数据，通过 {@link DropDownOptions} 配置级联下拉选项，最终调用通用导出工具写出文件。</p>
+     *
+     * @param response HTTP 响应，用于写出 Excel 文件
+     */
     @Override
     public void exportWithOptions(HttpServletResponse response) {
         // 创建表格数据，业务中一般通过数据库查询
@@ -239,6 +245,13 @@ public class ExportExcelServiceImpl implements IExportExcelService {
     }
 
 
+    /**
+     * 自定义样式导出 Excel 示例
+     * <p>演示在同一个 Excel 中写入多个数据集合，并手动设置响应头与内容类型。</p>
+     *
+     * @param response HTTP 响应，用于写出 Excel 文件
+     * @throws IOException 写出流异常
+     */
     @Override
     public void customExport(HttpServletResponse response) throws IOException {
         String filename = ExcelUtil.encodingFilename("自定义导出");

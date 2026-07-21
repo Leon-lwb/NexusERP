@@ -17,15 +17,18 @@ public class ImGroupMemberVo implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
 
+    /** 群成员用户 ID。 */
     private Long userId;
 
+    /** 群成员用户名。 */
     private String userName;
 
-    /** 已解析的可访问头像 URL */
+    /** 已解析的可访问头像 URL。 */
     private String avatar;
 
+    /** 加入群组的时间。 */
     private Date joinTime;
 
-    /** 是否为群主 */
+    /** 是否为群主。 */
     private Boolean owner;
 }

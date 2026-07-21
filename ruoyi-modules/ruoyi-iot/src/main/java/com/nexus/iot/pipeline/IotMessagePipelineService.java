@@ -35,7 +35,9 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class IotMessagePipelineService {
 
+    /** MQTT Topic 解析器，提取租户/设备/业务类型/动作。 */
     private final IotMqttTopicParser topicParser;
+    /** 管道配置属性，提供 Stream Key。 */
     private final IotPipelineProperties properties;
 
     /**

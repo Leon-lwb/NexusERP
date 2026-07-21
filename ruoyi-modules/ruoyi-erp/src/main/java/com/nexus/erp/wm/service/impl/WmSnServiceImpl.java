@@ -37,6 +37,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Service
 public class WmSnServiceImpl implements IWmSnService {
 
+    /** 基础数据访问映射器（Mapper） */
     private final WmSnMapper baseMapper;
 
     /**

@@ -64,6 +64,8 @@ public class MesMbomVo implements Serializable {
     /** MBOM明细行 */
     private List<MesMbomLineVo> lines;
 
+    /** 时间 */
     private LocalDateTime createTime;
+    /** 时间 */
     private LocalDateTime updateTime;
 }

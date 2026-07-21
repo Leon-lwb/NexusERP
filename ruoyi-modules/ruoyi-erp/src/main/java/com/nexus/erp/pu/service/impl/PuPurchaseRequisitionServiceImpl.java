@@ -247,6 +247,12 @@ public class PuPurchaseRequisitionServiceImpl implements IPuPurchaseRequisitionS
         throw new ServiceException(result.getMsg());
     }
 
+    /**
+     * 获取采购申请对应的流程实例ID（运行时优先，其次历史）。
+     *
+     * @param requisitionIdStr 采购申请ID（字符串）
+     * @return 流程实例ID，无则返回 null
+     */
     @Override
     public String getProcInsId(String requisitionIdStr) {
         // 第一级：查 wf_my_business 表
@@ -271,6 +277,11 @@ public class PuPurchaseRequisitionServiceImpl implements IPuPurchaseRequisitionS
         return hist != null ? hist.getId() : null;
     }
 
+    /**
+     * 审批流节点处理完成后的回调：根据审批动作更新采购申请状态。
+     *
+     * @param business 工作流业务对象（含审批状态与数据ID）
+     */
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void afterFlowHandle(WfMyBusiness business) {
@@ -292,17 +303,37 @@ public class PuPurchaseRequisitionServiceImpl implements IPuPurchaseRequisitionS
         baseMapper.updateById(requisition);
     }
 
+    /**
+     * 根据数据ID返回采购申请详情（供审批详情展示）。
+     *
+     * @param dataId 业务数据ID
+     * @return 采购申请业务对象
+     */
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Object getBusinessDataById(String dataId) {
         return selectById(Long.parseLong(dataId));
     }
 
+    /**
+     * 获取审批任务所需的表单变量（当前实现无需额外变量，返回 null）。
+     *
+     * @param taskNameId 任务节点ID
+     * @param values     已有流程变量
+     * @return 任务表单变量，未实现返回 null
+     */
     @Override
     public Map<String, Object> flowValuesOfTask(String taskNameId, Map<String, Object> values) {
         return null;
     }
 
+    /**
+     * 获取审批任务的候选处理人（当前实现未指定，返回 null）。
+     *
+     * @param taskNameId 任务节点ID
+     * @param values     流程变量
+     * @return 候选用户名列表，未实现返回 null
+     */
     @Override
     public List<String> flowCandidateUsernamesOfTask(String taskNameId, Map<String, Object> values) {
         return null;
@@ -526,6 +557,12 @@ public class PuPurchaseRequisitionServiceImpl implements IPuPurchaseRequisitionS
         return generatedIds;
     }
 
+    /**
+     * 加载采购申请单，不存在则抛异常。
+     *
+     * @param requisitionId 采购申请单ID
+     * @return 采购申请单实体
+     */
     private PuPurchaseRequisition ensureRequisition(Long requisitionId) {
         PuPurchaseRequisition requisition = baseMapper.selectById(requisitionId);
         if (requisition == null) {

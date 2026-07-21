@@ -31,7 +31,9 @@ import java.util.List;
 @Service
 public class SysNoticeServiceImpl implements ISysNoticeService {
 
+    /** SysNoticeMapper 数据访问层组件，提供 通知公告 的持久化能力。 */
     private final SysNoticeMapper baseMapper;
+    /** SysUserMapper 数据访问层组件，提供 用户 的持久化能力。 */
     private final SysUserMapper userMapper;
 
     /**

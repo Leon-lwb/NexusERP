@@ -34,6 +34,11 @@ public class MesAndonServiceImpl implements IMesAndonService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    /**
+     * 创建
+     * @param alert alert
+     * @return 受影响行数
+     */
     public Long createAndonFromAlert(IotAlert alert) {
         // 设备告警 -> EQUIPMENT 类型安灯, 无工单/流转卡上下文
         String reason = String.format("IoT设备告警[%s]: %s (值=%s, 阈值=%s)",

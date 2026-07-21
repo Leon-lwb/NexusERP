@@ -34,9 +34,13 @@ public class ImMessageLifecycleService {
     /** 消息撤回时间窗（毫秒），超过则不允许撤回 */
     private static final long REVOKE_WINDOW_MS = 2 * 60 * 1000L;
 
+    /** 消息表 Mapper。 */
     private final ImMessageMapper imMessageMapper;
+    /** 群组表 Mapper。 */
     private final ImGroupMapper imGroupMapper;
+    /** 群成员表 Mapper。 */
     private final ImGroupMemberMapper imGroupMemberMapper;
+    /** 实时推送组件（撤回事件下发）。 */
     private final ImRealtimePush imRealtimePush;
 
     /**

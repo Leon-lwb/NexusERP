@@ -31,7 +31,9 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 /**
- * 租户管理
+ * 租户管理Controller
+ * <p>提供租户（多租户企业）的分页查询、Excel 导出、详情、增删改、状态启停、动态切换及数据同步等接口。
+ * 仅限超管角色访问，且需在开启租户模式（tenant.enable=true）时生效。属于系统管理（System）模块。</p>
  *
  * @author Michelle.Chung
  */
@@ -42,10 +44,15 @@ import java.util.List;
 @ConditionalOnProperty(value = "tenant.enable", havingValue = "true")
 public class SysTenantController extends BaseController {
 
+    /** 租户业务服务，提供分页、唯一性校验、增删改、状态变更与数据同步等能力。 */
     private final ISysTenantService tenantService;
 
     /**
-     * 查询租户列表
+     * 分页查询租户列表。
+     *
+     * @param bo        租户查询条件（企业名称、社会信用代码等）
+     * @param pageQuery 分页查询参数，包含页码、每页大小及排序条件
+     * @return 租户分页结果
      */
     @SaCheckRole(TenantConstants.SUPER_ADMIN_ROLE_KEY)
     @SaCheckPermission("system:tenant:list")
@@ -55,7 +62,10 @@ public class SysTenantController extends BaseController {
     }
 
     /**
-     * 导出租户列表
+     * 导出租户列表为 Excel 文件。
+     *
+     * @param bo       租户查询条件
+     * @param response HTTP 响应，用于写入导出的 Excel 流
      */
     @SaCheckRole(TenantConstants.SUPER_ADMIN_ROLE_KEY)
     @SaCheckPermission("system:tenant:export")
@@ -67,9 +77,10 @@ public class SysTenantController extends BaseController {
     }
 
     /**
-     * 获取租户详细信息
+     * 根据租户 ID 查询租户详细信息。
      *
-     * @param id 主键
+     * @param id 租户主键
+     * @return 租户详情
      */
     @SaCheckRole(TenantConstants.SUPER_ADMIN_ROLE_KEY)
     @SaCheckPermission("system:tenant:query")
@@ -80,7 +91,10 @@ public class SysTenantController extends BaseController {
     }
 
     /**
-     * 新增租户
+     * 新增租户，校验企业名称唯一性（新增参数加密传输）。
+     *
+     * @param bo 租户新增参数
+     * @return 操作结果，成功时返回成功状态
      */
     @ApiEncrypt
     @SaCheckRole(TenantConstants.SUPER_ADMIN_ROLE_KEY)
@@ -97,7 +111,10 @@ public class SysTenantController extends BaseController {
     }
 
     /**
-     * 修改租户
+     * 修改租户，校验租户可操作性与企业名称唯一性。
+     *
+     * @param bo 租户修改参数
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckRole(TenantConstants.SUPER_ADMIN_ROLE_KEY)
     @SaCheckPermission("system:tenant:edit")
@@ -113,7 +130,10 @@ public class SysTenantController extends BaseController {
     }
 
     /**
-     * 状态修改
+     * 启停租户状态。
+     *
+     * @param bo 含租户 ID 与状态值的参数
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckRole(TenantConstants.SUPER_ADMIN_ROLE_KEY)
     @SaCheckPermission("system:tenant:edit")
@@ -126,9 +146,10 @@ public class SysTenantController extends BaseController {
     }
 
     /**
-     * 删除租户
+     * 批量删除租户。
      *
-     * @param ids 主键串
+     * @param ids 租户主键数组
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckRole(TenantConstants.SUPER_ADMIN_ROLE_KEY)
     @SaCheckPermission("system:tenant:remove")
@@ -140,9 +161,10 @@ public class SysTenantController extends BaseController {
     }
 
     /**
-     * 动态切换租户
+     * 动态切换当前操作的租户上下文。
      *
-     * @param tenantId 租户ID
+     * @param tenantId 目标租户 ID
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckRole(TenantConstants.SUPER_ADMIN_ROLE_KEY)
     @GetMapping("/dynamic/{tenantId}")
@@ -152,7 +174,9 @@ public class SysTenantController extends BaseController {
     }
 
     /**
-     * 清除动态租户
+     * 清除当前动态租户上下文，恢复默认租户。
+     *
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckRole(TenantConstants.SUPER_ADMIN_ROLE_KEY)
     @GetMapping("/dynamic/clear")
@@ -163,10 +187,11 @@ public class SysTenantController extends BaseController {
 
 
     /**
-     * 同步租户套餐
+     * 同步指定租户的套餐菜单权限。
      *
-     * @param tenantId  租户id
-     * @param packageId 套餐id
+     * @param tenantId  目标租户 ID
+     * @param packageId 套餐 ID
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckRole(TenantConstants.SUPER_ADMIN_ROLE_KEY)
     @SaCheckPermission("system:tenant:edit")
@@ -179,7 +204,9 @@ public class SysTenantController extends BaseController {
     }
 
     /**
-     * 同步租户字典
+     * 同步租户字典数据（仅开启租户模式时可用）。
+     *
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckRole(TenantConstants.SUPER_ADMIN_ROLE_KEY)
     @Log(title = "租户管理", businessType = BusinessType.INSERT)
@@ -194,7 +221,9 @@ public class SysTenantController extends BaseController {
     }
 
     /**
-     * 同步租户参数配置
+     * 同步租户参数配置（仅开启租户模式时可用）。
+     *
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckRole(TenantConstants.SUPER_ADMIN_ROLE_KEY)
     @Log(title = "租户管理", businessType = BusinessType.INSERT)

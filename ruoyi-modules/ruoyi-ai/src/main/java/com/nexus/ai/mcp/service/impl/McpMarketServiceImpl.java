@@ -34,9 +34,13 @@ import java.util.List;
 @RequiredArgsConstructor
 public class McpMarketServiceImpl implements IMcpMarketService {
 
+    /** MCP 市场源表 Mapper，负责市场源读写。 */
     private final AiMcpMarketMapper marketMapper;
+    /** MCP 市场工具表 Mapper，负责市场工具 upsert 与状态更新。 */
     private final AiMcpMarketToolMapper marketToolMapper;
+    /** AI 工具表 Mapper，负责本地 ai_tool 记录写入。 */
     private final AiToolMapper toolMapper;
+    /** Jackson JSON 处理器，用于解析市场响应与构建工具配置。 */
     private final ObjectMapper objectMapper;
 
     @Override

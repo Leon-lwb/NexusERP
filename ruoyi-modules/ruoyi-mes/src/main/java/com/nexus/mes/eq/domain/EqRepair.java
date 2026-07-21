@@ -13,6 +13,8 @@ import java.util.Date;
 /**
  * MES设备维修记录对象 eq_repair
  *
+ * <p>属于MES 设备管理模块，维修持久化实体。</p>
+ *
  * @author Nexus
  */
 @Data

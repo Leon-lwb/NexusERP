@@ -12,6 +12,8 @@ import java.util.Date;
 /**
  * MES设备台账对象 eq_equipment
  *
+ * <p>属于MES 设备管理模块，设备持久化实体。</p>
+ *
  * @author Nexus
  */
 @Data

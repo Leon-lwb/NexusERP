@@ -133,6 +133,12 @@ public class SoPriceListServiceImpl implements ISoPriceListService {
         return baseMapper.deleteBatchIds(List.of(ids));
     }
 
+    /**
+     * 批量新增/更新价格表明细行：清空行ID后按价格表ID归属并批量插入。
+     *
+     * @param priceListId 价格表ID
+     * @param lineBoList  明细行业务对象列表
+     */
     private void insertOrUpdateLines(Long priceListId, List<SoPriceListLineBo> lineBoList) {
         if (lineBoList != null && !lineBoList.isEmpty()) {
             List<SoPriceListLine> lineList = MapstructUtils.convert(lineBoList, SoPriceListLine.class);
@@ -144,6 +150,12 @@ public class SoPriceListServiceImpl implements ISoPriceListService {
         }
     }
 
+    /**
+     * 构建价格表分页/列表查询条件（按编码、名称、类型、客户、币种、优先级、状态动态拼接）。
+     *
+     * @param bo 查询参数
+     * @return 查询条件构造器
+     */
     private LambdaQueryWrapper<SoPriceList> buildQueryWrapper(SoPriceListBo bo) {
         LambdaQueryWrapper<SoPriceList> lqw = Wrappers.<SoPriceList>lambdaQuery()
             .eq(StringUtils.isNotBlank(bo.getListCode()), SoPriceList::getListCode, bo.getListCode())

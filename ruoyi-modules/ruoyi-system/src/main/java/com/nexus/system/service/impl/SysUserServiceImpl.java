@@ -49,13 +49,25 @@ import java.util.*;
 @Service
 public class SysUserServiceImpl implements ISysUserService, UserService {
 
+    /** SysUserMapper 数据访问层组件，提供 用户 的持久化能力。 */
     private final SysUserMapper baseMapper;
+    /** SysDeptMapper 数据访问层组件，提供 部门 的持久化能力。 */
     private final SysDeptMapper deptMapper;
+    /** SysRoleMapper 数据访问层组件，提供 角色 的持久化能力。 */
     private final SysRoleMapper roleMapper;
+    /** SysPostMapper 数据访问层组件，提供 岗位 的持久化能力。 */
     private final SysPostMapper postMapper;
+    /** SysUserRoleMapper 数据访问层组件，提供 角色 的持久化能力。 */
     private final SysUserRoleMapper userRoleMapper;
+    /** SysUserPostMapper 数据访问层组件，提供 岗位 的持久化能力。 */
     private final SysUserPostMapper userPostMapper;
 
+    /**
+     * 根据条件查询用户列表。
+     * @param user 查询条件（用户）
+     * @param pageQuery pageQuery 参数
+     * @return 用户分页结果，含分页元信息
+     */
     @Override
     public TableDataInfo<SysUserVo> selectPageUserList(SysUserBo user, PageQuery pageQuery) {
         Page<SysUserVo> page = baseMapper.selectPageUserList(pageQuery.build(), this.buildQueryWrapper(user));

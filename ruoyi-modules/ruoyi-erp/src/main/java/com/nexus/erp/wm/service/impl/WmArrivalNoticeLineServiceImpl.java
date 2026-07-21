@@ -28,6 +28,13 @@ import java.util.List;
 @Service
 public class WmArrivalNoticeLineServiceImpl extends ServiceImpl<WmArrivalNoticeLineMapper, WmArrivalNoticeLine> implements IWmArrivalNoticeLineService {
 
+    /**
+     * 分页查询到货通知行列表
+     *
+     * @param bo 到货通知行业务对象（BO）
+     * @param pageQuery 分页查询参数，包含页码、每页大小及排序条件
+     * @return 结果对象
+     */
     @Override
     public TableDataInfo<WmArrivalNoticeLineVo> selectPageList(WmArrivalNoticeLineBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<WmArrivalNoticeLine> lqw = buildQueryWrapper(bo);
@@ -35,16 +42,34 @@ public class WmArrivalNoticeLineServiceImpl extends ServiceImpl<WmArrivalNoticeL
         return TableDataInfo.build(page);
     }
 
+    /**
+     * 查询到货通知行列表
+     *
+     * @param bo 到货通知行业务对象（BO）
+     * @return 结果对象
+     */
     @Override
     public List<WmArrivalNoticeLineVo> selectList(WmArrivalNoticeLineBo bo) {
         return baseMapper.selectVoList(buildQueryWrapper(bo));
     }
 
+    /**
+     * 查询到货通知行
+     *
+     * @param id 主键 ID
+     * @return 结果
+     */
     @Override
     public WmArrivalNoticeLineVo selectById(Long id) {
         return baseMapper.selectVoById(id);
     }
 
+    /**
+     * 新增到货通知行
+     *
+     * @param bo 到货通知行业务对象（BO）
+     * @return 结果
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(WmArrivalNoticeLineBo bo) {
@@ -52,6 +77,12 @@ public class WmArrivalNoticeLineServiceImpl extends ServiceImpl<WmArrivalNoticeL
         return baseMapper.insert(entity);
     }
 
+    /**
+     * 修改到货通知行
+     *
+     * @param bo 到货通知行业务对象（BO）
+     * @return 结果
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(WmArrivalNoticeLineBo bo) {
@@ -59,6 +90,12 @@ public class WmArrivalNoticeLineServiceImpl extends ServiceImpl<WmArrivalNoticeL
         return baseMapper.updateById(entity);
     }
 
+    /**
+     * 删除到货通知行
+     *
+     * @param ids 主键 ID 数组（支持批量操作）
+     * @return 结果
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {

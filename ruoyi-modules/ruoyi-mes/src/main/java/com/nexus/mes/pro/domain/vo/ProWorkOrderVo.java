@@ -14,6 +14,7 @@ import java.util.List;
 
 /**
  * MES工单视图对象 pro_work_order
+ * <p>属于 MES 生产管理模块，作为工单查询/导出的返回结构，详情含工序步骤与 MBOM 快照明细及 enriched 字段。</p>
  *
  * @author Nexus
  */

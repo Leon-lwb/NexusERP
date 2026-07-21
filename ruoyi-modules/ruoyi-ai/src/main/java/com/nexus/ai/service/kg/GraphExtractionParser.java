@@ -21,6 +21,7 @@ import java.util.regex.Pattern;
 @Slf4j
 public final class GraphExtractionParser {
 
+    /** 复用的 Jackson 对象映射器，忽略未知字段以容忍 LLM 多余字段。 */
     private static final ObjectMapper MAPPER = new ObjectMapper()
         .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 

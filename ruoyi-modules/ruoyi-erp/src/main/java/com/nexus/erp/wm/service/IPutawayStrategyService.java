@@ -4,9 +4,23 @@ import com.nexus.erp.wm.domain.WmStorageLocation;
 import com.nexus.erp.wm.domain.vo.PutawayLocation;
 
 import java.math.BigDecimal;
+/**
+ * 上架策略服务接口
+ * <p>
+ * 定义上架策略的业务契约，由对应的 ServiceImpl 实现。属于 ERP 仓储管理（wm）模块。
+ * </p>
+ */
 
 public interface IPutawayStrategyService {
 
+    /**
+     * 上架策略处理（recommendLocation）
+     *
+     * @param materialId 物料 ID
+     * @param warehouseId 仓库 ID
+     * @param quantity 数量
+     * @return 结果
+     */
     WmStorageLocation recommendLocation(Long materialId, Long warehouseId, BigDecimal quantity);
 
     /**

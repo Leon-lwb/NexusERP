@@ -25,10 +25,20 @@ public enum WoStatusEnum {
         this.label = label;
     }
 
+    /**
+     * 获取状态编码
+     *
+     * @return 状态编码（如 CREATED、RELEASED）
+     */
     public String getCode() {
         return code;
     }
 
+    /**
+     * 获取状态中文名称
+     *
+     * @return 状态中文标签（如 已创建、已下达）
+     */
     public String getLabel() {
         return label;
     }
@@ -57,6 +67,13 @@ public enum WoStatusEnum {
         return this == CLOSED;
     }
 
+    /**
+     * 根据状态编码解析对应的枚举值
+     *
+     * @param code 状态编码
+     * @return 对应的工单状态枚举，编码为空返回 {@code null}
+     * @throws IllegalArgumentException 当编码不匹配任何已知状态时抛出
+     */
     public static WoStatusEnum fromCode(String code) {
         if (code == null) {
             return null;

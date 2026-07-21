@@ -30,6 +30,7 @@ import java.util.List;
 
 /**
  * 流程表单Controller
+ * <p>提供流程表单的增删改查、导出及流程表单挂载等 REST 接口，属于 Flowable 工作流模块。</p>
  *
  * @author wanghuan
  * @createTime 2022/3/7 22:07
@@ -39,12 +40,18 @@ import java.util.List;
 @RequestMapping("/workflow/form")
 public class WfFormController extends BaseController {
 
+    /** 流程表单业务服务，提供表单分页、导出、增删改等能力。 */
     private final IWfFormService formService;
 
+    /** 部署表单关联服务，用于挂载流程与表单的关联关系。 */
     private final IWfDeployFormService deployFormService;
 
     /**
-     * 查询流程表单列表
+     * 查询流程表单列表。
+     *
+     * @param bo        流程表单查询条件
+     * @param pageQuery 分页参数（页码、每页大小、排序）
+     * @return 分页结果，包含流程表单列表及分页元信息
      */
     @SaCheckPermission("workflow:form:list")
     @GetMapping("/list")
@@ -53,7 +60,10 @@ public class WfFormController extends BaseController {
     }
 
     /**
-     * 导出流程表单列表
+     * 导出流程表单列表。
+     *
+     * @param bo       流程表单查询条件
+     * @param response HTTP 响应，用于写入导出的 Excel 流
      */
     @SaCheckPermission("workflow:form:export")
     @Log(title = "流程表单", businessType = BusinessType.EXPORT)
@@ -65,8 +75,10 @@ public class WfFormController extends BaseController {
     }
 
     /**
-     * 获取流程表单详细信息
+     * 获取流程表单详细信息。
+     *
      * @param formId 主键
+     * @return 流程表单详细信息
      */
     @SaCheckPermission("workflow:form:query")
     @GetMapping(value = "/{formId}")
@@ -75,7 +87,10 @@ public class WfFormController extends BaseController {
     }
 
     /**
-     * 新增流程表单
+     * 新增流程表单。
+     *
+     * @param bo 流程表单新增数据
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckPermission("workflow:form:add")
     @Log(title = "流程表单", businessType = BusinessType.INSERT)
@@ -85,7 +100,10 @@ public class WfFormController extends BaseController {
     }
 
     /**
-     * 修改流程表单
+     * 修改流程表单。
+     *
+     * @param bo 流程表单修改数据
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckPermission("workflow:form:edit")
     @Log(title = "流程表单", businessType = BusinessType.UPDATE)
@@ -95,8 +113,10 @@ public class WfFormController extends BaseController {
     }
 
     /**
-     * 删除流程表单
+     * 删除流程表单。
+     *
      * @param formIds 主键串
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckPermission("workflow:form:remove")
     @Log(title = "流程表单", businessType = BusinessType.DELETE)
@@ -107,7 +127,10 @@ public class WfFormController extends BaseController {
 
 
     /**
-     * 挂载流程表单
+     * 挂载流程表单（建立流程部署与表单的关联）。
+     *
+     * @param deployForm 部署表单关联对象
+     * @return 操作结果，成功时返回成功状态
      */
     @Log(title = "流程表单", businessType = BusinessType.INSERT)
     @PostMapping("/addDeployForm")

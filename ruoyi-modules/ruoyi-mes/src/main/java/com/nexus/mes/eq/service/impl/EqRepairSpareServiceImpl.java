@@ -40,6 +40,12 @@ public class EqRepairSpareServiceImpl implements IEqRepairSpareService {
     private final EqSparePartMapper sparePartMapper;
     private final IEqSparePartService sparePartService;
 
+    /**
+     * 按条件查询维修
+     *
+     * @param repairId 维修记录ID
+     * @return 结果列表
+     */
     @Override
     public List<EqRepairSpareVo> selectByRepair(Long repairId) {
         List<EqRepairSpareVo> list = baseMapper.selectVoList(Wrappers.<EqRepairSpare>lambdaQuery()
@@ -49,6 +55,12 @@ public class EqRepairSpareServiceImpl implements IEqRepairSpareService {
         return list;
     }
 
+    /**
+     * 新增维修备件
+     *
+     * @param bos 参数 bos
+     * @return 结果列表
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public List<EqRepairSpareVo> batchAdd(List<EqRepairSpareBo> bos) {
@@ -88,6 +100,12 @@ public class EqRepairSpareServiceImpl implements IEqRepairSpareService {
         return result;
     }
 
+    /**
+     * 获取维修备件详情
+     *
+     * @param ids ID数组
+     * @return 是否成功
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean deleteByIds(Long[] ids) {

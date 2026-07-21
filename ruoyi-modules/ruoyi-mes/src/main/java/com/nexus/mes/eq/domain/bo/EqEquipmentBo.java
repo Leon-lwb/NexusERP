@@ -13,6 +13,8 @@ import java.util.Date;
 /**
  * MES设备台账业务对象 eq_equipment
  *
+ * <p>属于MES 设备管理模块，设备业务对象（新增/编辑入参）。</p>
+ *
  * @author Nexus
  */
 @Data

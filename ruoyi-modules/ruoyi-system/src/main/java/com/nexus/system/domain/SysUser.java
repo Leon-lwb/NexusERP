@@ -104,10 +104,20 @@ public class SysUser extends TenantEntity {
     private String remark;
 
 
+    /**
+     * 根据用户ID构造用户对象。
+     *
+     * @param userId 用户ID
+     */
     public SysUser(Long userId) {
         this.userId = userId;
     }
 
+    /**
+     * 判断当前用户是否为超级管理员。
+     *
+     * @return 是超级管理员返回 true，否则返回 false
+     */
     public boolean isSuperAdmin() {
         return SystemConstants.SUPER_ADMIN_ID.equals(this.userId);
     }

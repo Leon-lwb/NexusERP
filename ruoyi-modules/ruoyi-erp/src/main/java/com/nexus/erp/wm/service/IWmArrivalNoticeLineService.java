@@ -14,15 +14,52 @@ import java.util.List;
  */
 public interface IWmArrivalNoticeLineService {
 
+    /**
+     * 分页查询到货通知行列表
+     *
+     * @param bo 到货通知行业务对象（BO）
+     * @param pageQuery 分页查询参数，包含页码、每页大小及排序条件
+     * @return 分页查询结果
+     */
     TableDataInfo<WmArrivalNoticeLineVo> selectPageList(WmArrivalNoticeLineBo bo, PageQuery pageQuery);
 
+    /**
+     * 查询到货通知行列表
+     *
+     * @param bo 到货通知行业务对象（BO）
+     * @return 结果列表
+     */
     List<WmArrivalNoticeLineVo> selectList(WmArrivalNoticeLineBo bo);
 
+    /**
+     * 查询到货通知行
+     *
+     * @param id 主键 ID
+     * @return 结果
+     */
     WmArrivalNoticeLineVo selectById(Long id);
 
+    /**
+     * 新增到货通知行
+     *
+     * @param bo 到货通知行业务对象（BO）
+     * @return 影响行数
+     */
     int insertByBo(WmArrivalNoticeLineBo bo);
 
+    /**
+     * 修改到货通知行
+     *
+     * @param bo 到货通知行业务对象（BO）
+     * @return 影响行数
+     */
     int updateByBo(WmArrivalNoticeLineBo bo);
 
+    /**
+     * 删除到货通知行
+     *
+     * @param ids 主键 ID 数组（支持批量操作）
+     * @return 影响行数
+     */
     int deleteByIds(Long[] ids);
 }

@@ -13,6 +13,7 @@ import java.util.Date;
  */
 public abstract class BaseStockOperationStrategy implements StockOperationStrategy {
 
+    /** 库存流水数据访问映射器（Mapper） */
     protected final WmMaterialStockTxMapper stockTxMapper;
 
     protected BaseStockOperationStrategy(WmMaterialStockTxMapper stockTxMapper) {

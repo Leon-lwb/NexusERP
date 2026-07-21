@@ -10,6 +10,7 @@ import com.nexus.mes.pro.domain.ProAndon;
 
 /**
  * MES安灯呼叫业务对象 pro_andon
+ * <p>属于 MES 生产管理模块，承载 安灯告警 的增改入参。</p>
  *
  * @author Nexus
  */

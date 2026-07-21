@@ -30,6 +30,12 @@ import java.util.List;
 public class BdCategoryAttributeServiceImpl implements IBdCategoryAttributeService {
 
     private final BdCategoryAttributeMapper baseMapper;
+    /**
+     * 查询指定类别下的类别属性列表
+     *
+     * @param categoryId 类别ID
+     * @return 结果列表
+     */
 
     @Override
     public List<BdCategoryAttributeVo> selectListByCategory(Long categoryId) {
@@ -38,11 +44,23 @@ public class BdCategoryAttributeServiceImpl implements IBdCategoryAttributeServi
         lqw.orderByAsc(BdCategoryAttribute::getSortOrder);
         return baseMapper.selectVoList(lqw);
     }
+    /**
+     * 根据主键查询类别属性详情
+     *
+     * @param attrId 参数 attrId
+     * @return 结果
+     */
 
     @Override
     public BdCategoryAttributeVo selectById(Long attrId) {
         return baseMapper.selectVoById(attrId);
     }
+    /**
+     * 新增类别属性
+     *
+     * @param bo 业务对象，包含筛选条件或待保存字段
+     * @return 操作结果/影响行数
+     */
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -51,6 +69,12 @@ public class BdCategoryAttributeServiceImpl implements IBdCategoryAttributeServi
         validate(bo);
         return baseMapper.insert(entity);
     }
+    /**
+     * 修改类别属性
+     *
+     * @param bo 业务对象，包含筛选条件或待保存字段
+     * @return 操作结果/影响行数
+     */
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -59,6 +83,12 @@ public class BdCategoryAttributeServiceImpl implements IBdCategoryAttributeServi
         validate(bo);
         return baseMapper.updateById(entity);
     }
+    /**
+     * 批量删除类别属性
+     *
+     * @param ids 主键ID数组（支持批量）
+     * @return 操作结果/影响行数
+     */
 
     @Override
     public int deleteByIds(Long[] ids) {

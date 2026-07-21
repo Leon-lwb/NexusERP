@@ -20,6 +20,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class ErpTableSchemaInitializer {
 
+    /** ERP 表结构缓存管理器，触发其缓存加载 */
     private final ErpTableSchemaManager erpTableSchemaManager;
 
     /**

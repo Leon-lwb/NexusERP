@@ -29,6 +29,7 @@ import java.util.Map;
 @Service
 public class SysOperLogServiceImpl implements ISysOperLogService {
 
+    /** SysOperLogMapper 数据访问层组件，提供 操作日志 的持久化能力。 */
     private final SysOperLogMapper baseMapper;
 
     /**

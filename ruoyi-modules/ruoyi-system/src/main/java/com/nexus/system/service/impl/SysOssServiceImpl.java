@@ -53,6 +53,7 @@ import java.util.Map;
 @Service
 public class SysOssServiceImpl implements ISysOssService, OssService {
 
+    /** SysOssMapper 数据访问层组件，提供 对象存储文件 的持久化能力。 */
     private final SysOssMapper baseMapper;
 
     /**
@@ -119,6 +120,11 @@ public class SysOssServiceImpl implements ISysOssService, OssService {
         return StringUtils.joinComma(list);
     }
 
+    /**
+     * 根据条件查询对象存储文件列表。
+     * @param ossIds ID 数组
+     * @return 匹配条件的对象存储文件列表
+     */
     @Override
     public List<OssDTO> selectByIds(String ossIds) {
         List<OssDTO> list = new ArrayList<>();

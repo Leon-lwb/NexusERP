@@ -24,6 +24,7 @@ import java.util.List;
 @Service
 public class SysSocialServiceImpl implements ISysSocialService {
 
+    /** SysSocialMapper 数据访问层组件，提供 社会化账户 的持久化能力。 */
     private final SysSocialMapper baseMapper;
 
 
@@ -47,6 +48,11 @@ public class SysSocialServiceImpl implements ISysSocialService {
         return baseMapper.selectVoList(lqw);
     }
 
+    /**
+     * 根据条件查询社会化账户列表。
+     * @param userId 用户 ID
+     * @return 匹配条件的社会化账户列表
+     */
     @Override
     public List<SysSocialVo> queryListByUserId(Long userId) {
         return baseMapper.selectVoList(new LambdaQueryWrapper<SysSocial>().eq(SysSocial::getUserId, userId));

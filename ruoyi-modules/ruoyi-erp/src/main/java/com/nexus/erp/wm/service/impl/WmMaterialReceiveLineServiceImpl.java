@@ -28,6 +28,13 @@ import java.util.List;
 @Service
 public class WmMaterialReceiveLineServiceImpl extends ServiceImpl<WmMaterialReceiveLineMapper, WmMaterialReceiveLine> implements IWmMaterialReceiveLineService {
 
+    /**
+     * 分页查询物料领用行列表
+     *
+     * @param bo 物料领用行业务对象（BO）
+     * @param pageQuery 分页查询参数，包含页码、每页大小及排序条件
+     * @return 结果对象
+     */
     @Override
     public TableDataInfo<WmMaterialReceiveLineVo> selectPageList(WmMaterialReceiveLineBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<WmMaterialReceiveLine> lqw = buildQueryWrapper(bo);
@@ -35,16 +42,34 @@ public class WmMaterialReceiveLineServiceImpl extends ServiceImpl<WmMaterialRece
         return TableDataInfo.build(page);
     }
 
+    /**
+     * 查询物料领用行列表
+     *
+     * @param bo 物料领用行业务对象（BO）
+     * @return 结果对象
+     */
     @Override
     public List<WmMaterialReceiveLineVo> selectList(WmMaterialReceiveLineBo bo) {
         return baseMapper.selectVoList(buildQueryWrapper(bo));
     }
 
+    /**
+     * 查询物料领用行
+     *
+     * @param id 主键 ID
+     * @return 结果
+     */
     @Override
     public WmMaterialReceiveLineVo selectById(Long id) {
         return baseMapper.selectVoById(id);
     }
 
+    /**
+     * 新增物料领用行
+     *
+     * @param bo 物料领用行业务对象（BO）
+     * @return 结果
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(WmMaterialReceiveLineBo bo) {
@@ -52,6 +77,12 @@ public class WmMaterialReceiveLineServiceImpl extends ServiceImpl<WmMaterialRece
         return baseMapper.insert(entity);
     }
 
+    /**
+     * 修改物料领用行
+     *
+     * @param bo 物料领用行业务对象（BO）
+     * @return 结果
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(WmMaterialReceiveLineBo bo) {
@@ -59,6 +90,12 @@ public class WmMaterialReceiveLineServiceImpl extends ServiceImpl<WmMaterialRece
         return baseMapper.updateById(entity);
     }
 
+    /**
+     * 删除物料领用行
+     *
+     * @param ids 主键 ID 数组（支持批量操作）
+     * @return 结果
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {

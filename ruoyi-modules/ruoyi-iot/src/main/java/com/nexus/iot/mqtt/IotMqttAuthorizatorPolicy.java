@@ -29,6 +29,14 @@ public class IotMqttAuthorizatorPolicy implements IAuthorizatorPolicy {
     private static final String TOPIC_PREFIX = "iot";
     private final IIotDeviceService deviceService;
 
+    /**
+     * 校验设备向指定 Topic 发布消息的权限：仅允许写入自身租户 Topic。
+     *
+     * @param topic 发布的目标 Topic
+     * @param user  用户名（兼容传入设备编码，可空）
+     * @param client 客户端标识（即 deviceCode）
+     * @return 允许发布返回 true，否则 false
+     */
     @Override
     public boolean canWrite(Topic topic, String user, String client) {
         String topicStr = topic.toString();
@@ -53,6 +61,14 @@ public class IotMqttAuthorizatorPolicy implements IAuthorizatorPolicy {
         return true;
     }
 
+    /**
+     * 校验设备订阅 Topic 的权限：仅允许订阅自身租户 Topic，且禁止通配符租户（+/#）。
+     *
+     * @param topic 订阅的 Topic
+     * @param user  用户名（兼容传入设备编码，可空）
+     * @param client 客户端标识（即 deviceCode）
+     * @return 允许订阅返回 true，否则 false
+     */
     @Override
     public boolean canRead(Topic topic, String user, String client) {
         String topicStr = topic.toString();

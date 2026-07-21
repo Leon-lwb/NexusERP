@@ -41,6 +41,13 @@ public class BdRoutingServiceImpl implements IBdRoutingService {
     private final BdRoutingMapper baseMapper;
     private final BdRoutingStepMapper stepMapper;
     private final BdBomMapper bomMapper;
+    /**
+     * 分页查询工艺路线列表
+     *
+     * @param bo 业务对象，包含筛选条件或待保存字段
+     * @param pageQuery 分页参数，包含页码、每页大小及排序信息
+     * @return 分页结果
+     */
 
     @Override
     public TableDataInfo<BdRoutingVo> selectPageList(BdRoutingBo bo, PageQuery pageQuery) {
@@ -48,16 +55,34 @@ public class BdRoutingServiceImpl implements IBdRoutingService {
         Page<BdRoutingVo> page = baseMapper.selectVoPage(pageQuery.build(), lqw);
         return TableDataInfo.build(page);
     }
+    /**
+     * 查询工艺路线列表
+     *
+     * @param bo 业务对象，包含筛选条件或待保存字段
+     * @return 结果列表
+     */
 
     @Override
     public List<BdRoutingVo> selectList(BdRoutingBo bo) {
         return baseMapper.selectVoList(buildQueryWrapper(bo));
     }
+    /**
+     * 根据主键查询工艺路线详情
+     *
+     * @param id 主键ID
+     * @return 结果
+     */
 
     @Override
     public BdRoutingVo selectById(Long id) {
         return baseMapper.selectVoById(id);
     }
+    /**
+     * 新增工艺路线
+     *
+     * @param bo 业务对象，包含筛选条件或待保存字段
+     * @return 操作结果/影响行数
+     */
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -68,6 +93,12 @@ public class BdRoutingServiceImpl implements IBdRoutingService {
         saveSteps(entity.getRoutingId(), bo.getSteps());
         return rows;
     }
+    /**
+     * 修改工艺路线
+     *
+     * @param bo 业务对象，包含筛选条件或待保存字段
+     * @return 操作结果/影响行数
+     */
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -120,6 +151,12 @@ public class BdRoutingServiceImpl implements IBdRoutingService {
         }
         entity.setTotalHours(totalHours);
     }
+    /**
+     * 批量删除工艺路线
+     *
+     * @param ids 主键ID数组（支持批量）
+     * @return 操作结果/影响行数
+     */
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -138,6 +175,11 @@ public class BdRoutingServiceImpl implements IBdRoutingService {
         }
         return baseMapper.deleteBatchIds(List.of(ids));
     }
+    /**
+     * 激活工艺路线，将其设为当前生效版本
+     *
+     * @param routingId 工艺路线ID
+     */
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -162,6 +204,12 @@ public class BdRoutingServiceImpl implements IBdRoutingService {
         routing.setStatus(1L);
         baseMapper.updateById(routing);
     }
+    /**
+     * 获取物料当前生效的工艺路线
+     *
+     * @param materialId 物料ID
+     * @return 结果
+     */
 
     @Override
     public BdRoutingVo getCurrentRouting(Long materialId) {
@@ -183,6 +231,12 @@ public class BdRoutingServiceImpl implements IBdRoutingService {
         }
         return routing != null ? MapstructUtils.convert(routing, BdRoutingVo.class) : null;
     }
+    /**
+     * 获取工艺路线的步骤列表
+     *
+     * @param routingId 工艺路线ID
+     * @return 结果列表
+     */
 
     @Override
     public List<BdRoutingStepVo> getRoutingSteps(Long routingId) {
@@ -191,6 +245,12 @@ public class BdRoutingServiceImpl implements IBdRoutingService {
                 .eq(BdRoutingStep::getRoutingId, routingId)
                 .orderByAsc(BdRoutingStep::getSequenceNum));
     }
+    /**
+     * 校验工艺路线完整性，返回校验结果描述（OK 表示通过）
+     *
+     * @param routingId 工艺路线ID
+     * @return 结果
+     */
 
     @Override
     public String verifyRouting(Long routingId) {

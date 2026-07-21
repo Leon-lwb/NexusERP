@@ -57,17 +57,36 @@ public class PrdReworkOrderServiceImpl implements IPrdReworkOrderService {
         return TableDataInfo.build(page);
     }
 
+    /**
+     * 查询返工订单列表（不分页）
+     *
+     * @param bo 查询参数
+     * @return 返工订单列表
+     */
     @Override
     public List<PrdReworkOrderVo> selectList(PrdReworkOrderBo bo) {
         LambdaQueryWrapper<PrdReworkOrder> lqw = buildQueryWrapper(bo);
         return baseMapper.selectVoList(lqw);
     }
 
+    /**
+     * 根据 ID 查询返工订单详情
+     *
+     * @param id 返工订单 ID
+     * @return 返工订单详细信息
+     */
     @Override
     public PrdReworkOrderVo selectById(Long id) {
         return baseMapper.selectVoById(id);
     }
 
+    /**
+     * 新增返工订单
+     * <p>若存在来源工单，自动带出来源工单的物料与编码信息。</p>
+     *
+     * @param bo 返工订单业务对象
+     * @return 影响的行数
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(PrdReworkOrderBo bo) {

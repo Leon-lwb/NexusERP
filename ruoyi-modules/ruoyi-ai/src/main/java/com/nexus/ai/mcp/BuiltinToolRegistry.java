@@ -32,12 +32,17 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class BuiltinToolRegistry {
 
+    /** 内置工具类型标识，用于 ai_tool 表 tool_type 字段过滤。 */
     public static final String TYPE_BUILTIN = "BUILTIN";
 
+    /** Spring 收集的全部内置工具提供者实例（由 @RequiredArgsConstructor 注入）。 */
     private final List<BuiltinToolProvider> toolProviders;
+    /** AI 工具表 Mapper，用于按状态查询已启用的工具。 */
     private final AiToolMapper aiToolMapper;
+    /** Spring 应用上下文，用于按 Class 获取工具 Bean 实例。 */
     private final ApplicationContext applicationContext;
 
+    /** 工具名称 → 提供者 的注册表（线程安全）。 */
     private final Map<String, BuiltinToolProvider> registeredProviders = new ConcurrentHashMap<>();
 
     @PostConstruct

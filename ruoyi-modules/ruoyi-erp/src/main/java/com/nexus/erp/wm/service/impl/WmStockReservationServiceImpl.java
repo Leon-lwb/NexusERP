@@ -29,7 +29,9 @@ import java.util.List;
 @RequiredArgsConstructor
 public class WmStockReservationServiceImpl implements IWmStockReservationService {
 
+    /** 库存数据访问映射器（Mapper） */
     private final WmMaterialStockMapper stockMapper;
+    /** 流水数据访问映射器（Mapper） */
     private final WmMaterialStockTxMapper txMapper;
 
     @Override
@@ -75,6 +77,14 @@ public class WmStockReservationServiceImpl implements IWmStockReservationService
         return reserved;
     }
 
+    /**
+     * 库存预留处理（unreserve）
+     *
+     * @param sourceDocType 参数 sourceDocType
+     * @param sourceDocId sourceDoc ID
+     * @param sourceDocLineId sourceDoc行 ID
+     * @return 结果
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public BigDecimal unreserve(String sourceDocType, Long sourceDocId, Long sourceDocLineId) {
@@ -101,6 +111,13 @@ public class WmStockReservationServiceImpl implements IWmStockReservationService
         return released;
     }
 
+    /**
+     * 校验库存预留
+     *
+     * @param materialId 物料 ID
+     * @param warehouseId 仓库 ID
+     * @return 结果
+     */
     @Override
     public BigDecimal checkAvailable(Long materialId, Long warehouseId) {
         LambdaQueryWrapper<WmMaterialStock> wrapper = Wrappers.<WmMaterialStock>lambdaQuery()

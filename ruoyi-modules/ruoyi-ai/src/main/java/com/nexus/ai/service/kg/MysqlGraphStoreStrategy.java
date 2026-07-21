@@ -36,10 +36,15 @@ import java.util.Set;
 @ConditionalOnProperty(prefix = "nexus.ai.knowledge-graph", name = "storage", havingValue = "mysql", matchIfMissing = true)
 public class MysqlGraphStoreStrategy implements GraphStoreStrategy {
 
+    /** 知识图谱实例表 Mapper。 */
     private final AiKnowledgeGraphMapper graphMapper;
+    /** 图谱实体表 Mapper。 */
     private final AiKgEntityMapper entityMapper;
+    /** 图谱关系表 Mapper。 */
     private final AiKgRelationMapper relationMapper;
+    /** 图谱社区表 Mapper。 */
     private final AiKgCommunityMapper communityMapper;
+    /** 知识切片表 Mapper（局部召回回溯来源切片用）。 */
     private final AiKnowledgeChunkMapper chunkMapper;
 
     /** 局部召回实体链接最大命中数 */

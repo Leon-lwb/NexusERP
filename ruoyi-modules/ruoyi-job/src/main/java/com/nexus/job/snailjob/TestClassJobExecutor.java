@@ -14,6 +14,12 @@ import org.springframework.stereotype.Component;
 @Component
 public class TestClassJobExecutor extends AbstractJobExecutor {
 
+    /**
+     * 类式任务执行器示例，直接返回测试成功结果。
+     *
+     * @param jobArgs 任务参数
+     * @return 执行结果，固定返回「TestJobExecutor测试成功」
+     */
     @Override
     protected ExecuteResult doJobExecute(JobArgs jobArgs) {
         return ExecuteResult.success("TestJobExecutor测试成功");

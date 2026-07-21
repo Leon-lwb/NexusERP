@@ -110,6 +110,12 @@ public class EquipmentStatusConsumer extends BaseMessageConsumer<EquipmentStatus
     }
 
     @RabbitListener(queues = QueueConstants.MES_EQUIPMENT_STATUS_QUEUE)
+    /**
+     * onMessage 操作
+     * @param message message
+     * @param channel channel
+     * @param amqpMessage amqpMessage
+     */
     public void onMessage(EquipmentStatusMessage message, Channel channel, Message amqpMessage) throws Exception {
         processMessage(message, channel, amqpMessage);
     }

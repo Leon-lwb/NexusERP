@@ -61,6 +61,7 @@ public class GenTableServiceImpl implements IGenTableService {
     private final GenTableMapper baseMapper;
     private final GenTableColumnMapper genTableColumnMapper;
 
+    /** 导入/查询数据库表时忽略的表前缀（系统表、流程表、生成器自身表）。 */
     private static final String[] TABLE_IGNORE = new String[]{"sj_", "flow_", "gen_"};
 
     /**
@@ -91,6 +92,13 @@ public class GenTableServiceImpl implements IGenTableService {
         return genTable;
     }
 
+    /**
+     * 分页查询已导入的代码生成业务列表。
+     *
+     * @param genTable  查询条件（表名/表描述/数据源等）
+     * @param pageQuery 分页参数
+     * @return 业务表分页结果
+     */
     @Override
     public TableDataInfo<GenTable> selectPageGenTableList(GenTable genTable, PageQuery pageQuery) {
         Page<GenTable> page = baseMapper.selectPage(pageQuery.build(), this.buildGenTableQueryWrapper(genTable));

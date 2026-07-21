@@ -13,6 +13,8 @@ import java.util.Date;
 /**
  * MES设备保养执行记录视图对象 eq_maintenance_record
  *
+ * <p>属于MES 设备管理模块，保养记录视图对象（查询出参）。</p>
+ *
  * @author Nexus
  */
 @Data

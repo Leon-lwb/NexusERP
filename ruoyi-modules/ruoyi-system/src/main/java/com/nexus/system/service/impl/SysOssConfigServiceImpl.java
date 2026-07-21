@@ -42,6 +42,7 @@ import java.util.List;
 @Service
 public class SysOssConfigServiceImpl implements ISysOssConfigService {
 
+    /** SysOssConfigMapper 数据访问层组件，提供 对象存储配置 的持久化能力。 */
     private final SysOssConfigMapper baseMapper;
 
     /**
@@ -60,11 +61,22 @@ public class SysOssConfigServiceImpl implements ISysOssConfigService {
         }
     }
 
+    /**
+     * 根据条件查询对象存储配置列表。
+     * @param ossConfigId ID
+     * @return 对象存储配置对象
+     */
     @Override
     public SysOssConfigVo queryById(Long ossConfigId) {
         return baseMapper.selectVoById(ossConfigId);
     }
 
+    /**
+     * 根据条件查询对象存储配置列表。
+     * @param bo 查询条件（对象存储配置）
+     * @param pageQuery pageQuery 参数
+     * @return 对象存储配置分页结果，含分页元信息
+     */
     @Override
     public TableDataInfo<SysOssConfigVo> queryPageList(SysOssConfigBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<SysOssConfig> lqw = buildQueryWrapper(bo);
@@ -82,6 +94,11 @@ public class SysOssConfigServiceImpl implements ISysOssConfigService {
         return lqw;
     }
 
+    /**
+     * 新增Boolean。
+     * @param bo 待新增的对象存储配置
+     * @return Boolean对象
+     */
     @Override
     public Boolean insertByBo(SysOssConfigBo bo) {
         SysOssConfig config = MapstructUtils.convert(bo, SysOssConfig.class);
@@ -95,6 +112,11 @@ public class SysOssConfigServiceImpl implements ISysOssConfigService {
         return flag;
     }
 
+    /**
+     * 更新Boolean。
+     * @param bo 待更新的对象存储配置
+     * @return Boolean对象
+     */
     @Override
     public Boolean updateByBo(SysOssConfigBo bo) {
         SysOssConfig config = MapstructUtils.convert(bo, SysOssConfig.class);
@@ -124,6 +146,12 @@ public class SysOssConfigServiceImpl implements ISysOssConfigService {
         }
     }
 
+    /**
+     * 删除Boolean。
+     * @param ids 待删除的 ID 数组
+     * @param isValid 待删除的 ID
+     * @return Boolean对象
+     */
     @Override
     public Boolean deleteWithValidByIds(Collection<Long> ids, Boolean isValid) {
         if (isValid) {

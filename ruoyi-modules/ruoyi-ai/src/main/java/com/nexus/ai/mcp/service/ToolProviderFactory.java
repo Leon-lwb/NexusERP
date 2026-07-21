@@ -26,7 +26,9 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ToolProviderFactory {
 
+    /** 内置工具注册中心，提供已启用内置工具对象。 */
     private final BuiltinToolRegistry builtinToolRegistry;
+    /** MCP 客户端管理器，提供外部工具 ToolProvider。 */
     private final McpClientManager mcpClientManager;
 
     /**

@@ -20,6 +20,11 @@ public class MesMbomLineServiceImpl implements IMesMbomLineService {
     private final MesMbomLineMapper baseMapper;
 
     @Override
+    /**
+     * 查询
+     * @param mbomId MBOMID
+     * @return 结果列表
+     */
     public List<MesMbomLineVo> selectByMbomId(Long mbomId) {
         if (mbomId == null) {
             return Collections.emptyList();

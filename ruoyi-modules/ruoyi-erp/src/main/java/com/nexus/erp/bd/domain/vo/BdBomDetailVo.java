@@ -11,6 +11,10 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+/**
+ * BOM明细视图对象（VO）
+ * <p>用于 BOM 子项物料行的查询展示与 Excel 导入导出，对应表 {@code bd_bom_detail}。字段中文名见各 {@code @ExcelProperty}。</p>
+ */
 @Data
 @ExcelIgnoreUnannotated
 @AutoMapper(target = BdBomDetail.class)

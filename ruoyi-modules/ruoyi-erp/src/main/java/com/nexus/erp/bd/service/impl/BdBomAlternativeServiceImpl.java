@@ -31,6 +31,12 @@ public class BdBomAlternativeServiceImpl implements IBdBomAlternativeService {
 
     private final BdBomAlternativeMapper baseMapper;
     private final BdMaterialMapper materialMapper;
+    /**
+     * 根据BOM明细ID查询BOM替代料列表
+     *
+     * @param detailId BOM明细ID
+     * @return 结果列表
+     */
 
     @Override
     public List<BdBomAlternativeVo> listByDetailId(Long detailId) {
@@ -39,6 +45,12 @@ public class BdBomAlternativeServiceImpl implements IBdBomAlternativeService {
                 .eq(BdBomAlternative::getDetailId, detailId)
                 .orderByAsc(BdBomAlternative::getPriority));
     }
+    /**
+     * 根据BOM ID查询BOM替代料列表
+     *
+     * @param bomId BOM ID
+     * @return 结果列表
+     */
 
     @Override
     public List<BdBomAlternativeVo> listByBomId(Long bomId) {
@@ -47,6 +59,14 @@ public class BdBomAlternativeServiceImpl implements IBdBomAlternativeService {
                 .eq(BdBomAlternative::getBomId, bomId)
                 .orderByAsc(BdBomAlternative::getPriority));
     }
+    /**
+     * 批量保存BOM替代料（用于子表明细的批量新增/更新）
+     *
+     * @param detailId BOM明细ID
+     * @param bomId BOM ID
+     * @param list 批量数据列表
+     * @return 操作结果/影响行数
+     */
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -68,12 +88,24 @@ public class BdBomAlternativeServiceImpl implements IBdBomAlternativeService {
         entities.forEach(baseMapper::insert);
         return entities.size();
     }
+    /**
+     * 批量删除BOM替代料
+     *
+     * @param ids 主键ID数组（支持批量）
+     * @return 操作结果/影响行数
+     */
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {
         return baseMapper.deleteBatchIds(List.of(ids));
     }
+    /**
+     * 查询指定明细可用的BOM替代料
+     *
+     * @param detailId BOM明细ID
+     * @return 结果列表
+     */
 
     @Override
     public List<BdBomAlternativeVo> getAvailableAlternatives(Long detailId) {

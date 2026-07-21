@@ -12,6 +12,8 @@ import java.util.Date;
 /**
  * MES巡检记录对象 eq_patrol_record
  *
+ * <p>属于MES 设备管理模块，巡检记录持久化实体。</p>
+ *
  * @author Nexus
  */
 @Data

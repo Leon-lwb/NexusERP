@@ -37,31 +37,50 @@ public interface IEqMaintenancePlanService {
 
     /**
      * 分页查询保养计划列表
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @param pageQuery 分页参数（页码、每页大小、排序）
+     * @return 分页结果
      */
     TableDataInfo<EqMaintenancePlanVo> selectPageList(EqMaintenancePlanBo bo, PageQuery pageQuery);
 
     /**
      * 根据ID获取保养计划详情
+     *
+     * @param planId 计划ID
+     * @return 返回结果
      */
     EqMaintenancePlanVo selectById(Long planId);
 
     /**
      * 不分页查询保养计划(导出用)
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @return 结果列表
      */
     List<EqMaintenancePlanVo> selectList(EqMaintenancePlanBo bo);
 
     /**
      * 新增保养计划(自动计算下次保养日期)
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @return 返回结果
      */
     EqMaintenancePlanVo insertByBo(EqMaintenancePlanBo bo);
 
     /**
      * 编辑保养计划(自动计算下次保养日期)
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @return 返回结果
      */
     EqMaintenancePlanVo updateByBo(EqMaintenancePlanBo bo);
 
     /**
      * 批量删除保养计划
+     *
+     * @param ids ID数组
+     * @return 是否成功
      */
     Boolean deleteByIds(Long[] ids);
 

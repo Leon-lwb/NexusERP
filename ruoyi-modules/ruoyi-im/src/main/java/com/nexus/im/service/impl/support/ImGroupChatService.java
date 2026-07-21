@@ -59,17 +59,33 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ImGroupChatService {
 
+    /** 消息表 Mapper。 */
     private final ImMessageMapper imMessageMapper;
+    /** 群组表 Mapper。 */
     private final ImGroupMapper imGroupMapper;
+    /** 群成员表 Mapper。 */
     private final ImGroupMemberMapper imGroupMemberMapper;
+    /** 系统用户服务。 */
     private final ISysUserService sysUserService;
+    /** 用户通知服务（群消息扇出通知）。 */
     private final ISysUserNotificationService sysUserNotificationService;
+    /** 实时推送组件。 */
     private final ImRealtimePush imRealtimePush;
+    /** 消息类型注册中心（按类型获取处理器）。 */
     private final ImMessageTypeRegistry messageTypeRegistry;
+    /** 共享辅助组件。 */
     private final ImChatSupport support;
+    /** 会话列表 Redis 缓存。 */
     private final ImConversationCache conversationCache;
+    /** 指标采集组件。 */
     private final ImMetrics imMetrics;
 
+    /**
+     * 发送群聊消息：校验群/成员、幂等、内容规范化、@ 校验，插入消息并按 @ 分组批量通知与推送。
+     *
+     * @param bo 群聊发送参数
+     * @return 发送成功后的消息 ID
+     */
     @Transactional(rollbackFor = Exception.class)
     public R<Long> sendGroup(ImGroupSendBo bo) {
         Long fromId = LoginHelper.getUserId();
@@ -191,6 +207,13 @@ public class ImGroupChatService {
         return n;
     }
 
+    /**
+     * 分页查询指定群组的群聊历史消息（校验群成员权限）。
+     *
+     * @param groupId   群组 ID
+     * @param pageQuery 分页查询参数
+     * @return 群聊消息分页结果
+     */
     public TableDataInfo<ImMessage> groupHistory(Long groupId, PageQuery pageQuery) {
         Long me = LoginHelper.getUserId();
         if (!support.isGroupMember(groupId, me)) {
@@ -203,6 +226,13 @@ public class ImGroupChatService {
         return TableDataInfo.build(page);
     }
 
+    /**
+     * 分页查询指定群组的群聊历史消息（每条附带发送者信息）。
+     *
+     * @param groupId   群组 ID
+     * @param pageQuery 分页查询参数
+     * @return 带发送者信息的群聊消息分页结果
+     */
     public TableDataInfo<Map<String, Object>> groupHistoryWithSender(Long groupId, PageQuery pageQuery) {
         Long me = LoginHelper.getUserId();
         if (!support.isGroupMember(groupId, me)) {
@@ -260,6 +290,12 @@ public class ImGroupChatService {
         return updated;
     }
 
+    /**
+     * 创建群聊：校验成员同租户、规整群名，写入群组并批量插入群成员。
+     *
+     * @param bo 建群参数
+     * @return 新建群组 ID
+     */
     @Transactional(rollbackFor = Exception.class)
     public R<Long> createGroup(ImGroupCreateBo bo) {
         Long ownerId = LoginHelper.getUserId();
@@ -295,6 +331,13 @@ public class ImGroupChatService {
         return R.ok(g.getGroupId());
     }
 
+    /**
+     * 向指定群组添加成员（仅群主，依赖唯一索引做并发幂等）。
+     *
+     * @param groupId 群组 ID
+     * @param bo      待添加成员参数
+     * @return 操作结果
+     */
     @Transactional(rollbackFor = Exception.class)
     public R<Void> addGroupMembers(Long groupId, ImGroupMemberAddBo bo) {
         Long operator = LoginHelper.getUserId();
@@ -339,6 +382,12 @@ public class ImGroupChatService {
         return R.ok("新增 " + newCount + " 条，已存在 " + existingCount + " 条");
     }
 
+    /**
+     * 查询群成员列表（含用户名称/头像/是否群主，批量加载避免 N+1）。
+     *
+     * @param groupId 群组 ID
+     * @return 群成员视图列表
+     */
     public List<ImGroupMemberVo> listGroupMembers(Long groupId) {
         Long me = LoginHelper.getUserId();
         ImGroup group = imGroupMapper.selectById(groupId);
@@ -384,6 +433,13 @@ public class ImGroupChatService {
         return list;
     }
 
+    /**
+     * 移除群成员（仅群主，且不可移除自身）。
+     *
+     * @param groupId 群组 ID
+     * @param userId  待移除成员用户 ID
+     * @return 操作结果
+     */
     @Transactional(rollbackFor = Exception.class)
     public R<Void> removeMember(Long groupId, Long userId) {
         Long operator = LoginHelper.getUserId();

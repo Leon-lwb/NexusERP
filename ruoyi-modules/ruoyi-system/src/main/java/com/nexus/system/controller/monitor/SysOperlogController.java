@@ -20,7 +20,9 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 /**
- * 操作日志记录
+ * 操作日志记录Controller
+ * <p>提供操作日志的分页查询、Excel 导出、批量删除与清空等接口。
+ * 属于系统管理（System）模块的监控（monitor）分组。</p>
  *
  * @author Lion Li
  */
@@ -30,10 +32,15 @@ import java.util.List;
 @RequestMapping("/monitor/operlog")
 public class SysOperlogController extends BaseController {
 
+    /** 操作日志业务服务，提供分页、导出、删除与清理等能力。 */
     private final ISysOperLogService operLogService;
 
     /**
-     * 获取操作日志记录列表
+     * 分页查询操作日志记录列表。
+     *
+     * @param operLog  操作日志查询条件（操作人、模块、状态、时间等）
+     * @param pageQuery 分页查询参数，包含页码、每页大小及排序条件
+     * @return 分页结果，包含操作日志列表及分页元信息
      */
     @SaCheckPermission("monitor:operlog:list")
     @GetMapping("/list")
@@ -42,7 +49,10 @@ public class SysOperlogController extends BaseController {
     }
 
     /**
-     * 导出操作日志记录列表
+     * 导出操作日志记录列表为 Excel 文件。
+     *
+     * @param operLog  操作日志查询条件
+     * @param response HTTP 响应，用于写入导出的 Excel 流
      */
     @Log(title = "操作日志", businessType = BusinessType.EXPORT)
     @SaCheckPermission("monitor:operlog:export")

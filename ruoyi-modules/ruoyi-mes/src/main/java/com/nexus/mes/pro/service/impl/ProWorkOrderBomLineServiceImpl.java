@@ -20,6 +20,11 @@ public class ProWorkOrderBomLineServiceImpl implements IProWorkOrderBomLineServi
     private final ProWorkOrderBomLineMapper baseMapper;
 
     @Override
+    /**
+     * 查询
+     * @param mesWoId MES工单ID
+     * @return 结果列表
+     */
     public List<ProWorkOrderBomLineVo> selectByWoId(Long mesWoId) {
         if (mesWoId == null) {
             return Collections.emptyList();

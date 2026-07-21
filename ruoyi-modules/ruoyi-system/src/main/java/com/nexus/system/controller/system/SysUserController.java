@@ -41,7 +41,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 用户信息
+ * 用户管理Controller
+ * <p>提供用户的增删改查、Excel 导入导出、个人信息获取、密码重置、状态启停、角色授权与部门树查询等接口。
+ * 属于系统管理（System）模块。</p>
  *
  * @author Lion Li
  */
@@ -51,14 +53,23 @@ import java.util.List;
 @RequestMapping("/system/user")
 public class SysUserController extends BaseController {
 
+    /** 用户业务服务，提供用户分页、唯一性校验、增删改与授权等能力。 */
     private final ISysUserService userService;
+    /** 角色业务服务，用于用户角色查询与授权。 */
     private final ISysRoleService roleService;
+    /** 岗位业务服务，用于查询用户所属岗位。 */
     private final ISysPostService postService;
+    /** 部门业务服务，用于校验部门数据权限与查询部门树。 */
     private final ISysDeptService deptService;
+    /** 租户业务服务，用于校验租户下用户名额。 */
     private final ISysTenantService tenantService;
 
     /**
-     * 获取用户列表
+     * 分页查询用户列表。
+     *
+     * @param user      用户查询条件（用户名、部门、状态等）
+     * @param pageQuery 分页查询参数，包含页码、每页大小及排序条件
+     * @return 用户分页结果
      */
     @SaCheckPermission("system:user:list")
     @GetMapping("/list")
@@ -67,7 +78,10 @@ public class SysUserController extends BaseController {
     }
 
     /**
-     * 导出用户列表
+     * 导出用户列表为 Excel 文件。
+     *
+     * @param user     用户查询条件
+     * @param response HTTP 响应，用于写入导出的 Excel 流
      */
     @Log(title = "用户管理", businessType = BusinessType.EXPORT)
     @SaCheckPermission("system:user:export")
@@ -78,10 +92,12 @@ public class SysUserController extends BaseController {
     }
 
     /**
-     * 导入数据
+     * 从 Excel 文件导入用户数据，支持更新已存在数据。
      *
-     * @param file          导入文件
-     * @param updateSupport 是否更新已存在数据
+     * @param file          导入的 Excel 文件
+     * @param updateSupport 是否更新已存在的用户数据
+     * @return 导入结果分析信息
+     * @throws Exception 解析 Excel 异常时抛出
      */
     @Log(title = "用户管理", businessType = BusinessType.IMPORT)
     @SaCheckPermission("system:user:import")
@@ -92,7 +108,9 @@ public class SysUserController extends BaseController {
     }
 
     /**
-     * 获取导入模板
+     * 下载用户导入模板（空 Excel）。
+     *
+     * @param response HTTP 响应，用于写入导出的 Excel 流
      */
     @PostMapping("/importTemplate")
     public void importTemplate(HttpServletResponse response) {
@@ -100,9 +118,9 @@ public class SysUserController extends BaseController {
     }
 
     /**
-     * 获取用户信息
+     * 获取当前登录用户的个人信息，包含用户资料、角色与菜单权限。
      *
-     * @return 用户信息
+     * @return 当前登录用户的信息视图
      */
     @GetMapping("/getInfo")
     public R<UserInfoVo> getInfo() {
@@ -124,9 +142,10 @@ public class SysUserController extends BaseController {
     }
 
     /**
-     * 根据用户编号获取详细信息
+     * 根据用户编号获取用户详细信息，含角色、岗位及可选的角色下拉列表。
      *
-     * @param userId 用户ID
+     * @param userId 用户 ID（为空时仅返回角色下拉列表）
+     * @return 用户详细信息视图
      */
     @SaCheckPermission("system:user:query")
     @GetMapping(value = {"/", "/{userId}"})
@@ -153,7 +172,10 @@ public class SysUserController extends BaseController {
     }
 
     /**
-     * 新增用户
+     * 新增用户，校验账号/手机号/邮箱唯一性、部门数据权限与租户名额。
+     *
+     * @param user 用户新增参数
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckPermission("system:user:add")
     @Log(title = "用户管理", businessType = BusinessType.INSERT)
@@ -178,7 +200,10 @@ public class SysUserController extends BaseController {
     }
 
     /**
-     * 修改用户
+     * 修改用户，校验可操作性、数据权限、唯一性及部门权限。
+     *
+     * @param user 用户修改参数
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckPermission("system:user:edit")
     @Log(title = "用户管理", businessType = BusinessType.UPDATE)
@@ -199,9 +224,10 @@ public class SysUserController extends BaseController {
     }
 
     /**
-     * 删除用户
+     * 批量删除用户（不允许删除当前登录用户）。
      *
-     * @param userIds 角色ID串
+     * @param userIds 用户 ID 数组
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckPermission("system:user:remove")
     @Log(title = "用户管理", businessType = BusinessType.DELETE)
@@ -214,10 +240,11 @@ public class SysUserController extends BaseController {
     }
 
     /**
-     * 根据用户ID串批量获取用户基础信息
+     * 根据用户 ID 串或部门 ID 批量获取用户基础信息（选择框用）。
      *
-     * @param userIds 用户ID串
-     * @param deptId  部门ID
+     * @param userIds 预选用户 ID 数组（为空则按部门过滤）
+     * @param deptId  部门 ID（用于查询该部门下的用户）
+     * @return 用户列表
      */
     @SaCheckPermission("system:user:query")
     @GetMapping("/optionselect")
@@ -227,7 +254,10 @@ public class SysUserController extends BaseController {
     }
 
     /**
-     * 重置密码
+     * 重置指定用户的登录密码（密码加密传输）。
+     *
+     * @param user 含用户 ID 与新密码的参数
+     * @return 操作结果，成功时返回成功状态
      */
     @ApiEncrypt
     @SaCheckPermission("system:user:resetPwd")
@@ -242,7 +272,10 @@ public class SysUserController extends BaseController {
     }
 
     /**
-     * 状态修改
+     * 启停用户状态。
+     *
+     * @param user 含用户 ID 与状态值的参数
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckPermission("system:user:edit")
     @Log(title = "用户管理", businessType = BusinessType.UPDATE)
@@ -255,9 +288,10 @@ public class SysUserController extends BaseController {
     }
 
     /**
-     * 根据用户编号获取授权角色
+     * 获取指定用户已授权的角色列表（用于角色授权页回显）。
      *
-     * @param userId 用户ID
+     * @param userId 用户 ID
+     * @return 含用户信息与可授权角色列表的视图
      */
     @SaCheckPermission("system:user:query")
     @GetMapping("/authRole/{userId}")
@@ -272,10 +306,11 @@ public class SysUserController extends BaseController {
     }
 
     /**
-     * 用户授权角色
+     * 将角色批量授权给指定用户。
      *
-     * @param userId  用户Id
-     * @param roleIds 角色ID串
+     * @param userId  用户 ID
+     * @param roleIds 角色 ID 数组
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckPermission("system:user:edit")
     @Log(title = "用户管理", businessType = BusinessType.GRANT)
@@ -288,7 +323,10 @@ public class SysUserController extends BaseController {
     }
 
     /**
-     * 获取部门树列表
+     * 获取部门树列表（用于用户选择所属部门）。
+     *
+     * @param dept 部门查询条件
+     * @return 部门树
      */
     @SaCheckPermission("system:user:list")
     @GetMapping("/deptTree")
@@ -297,7 +335,10 @@ public class SysUserController extends BaseController {
     }
 
     /**
-     * 获取部门下的所有用户信息
+     * 获取指定部门下的所有用户列表。
+     *
+     * @param deptId 部门 ID
+     * @return 该部门下的用户列表
      */
     @SaCheckPermission("system:user:list")
     @GetMapping("/list/dept/{deptId}")

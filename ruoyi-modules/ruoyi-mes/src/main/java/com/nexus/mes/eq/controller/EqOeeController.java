@@ -31,6 +31,8 @@ import java.util.List;
 /**
  * MES设备 OEE & 稼动率看板 Controller
  *
+ * <p>属于MES 设备管理模块，提供OEE相关的 REST 接口。</p>
+ *
  * @author Nexus
  */
 @Validated
@@ -43,6 +45,9 @@ public class EqOeeController extends BaseController {
 
     /**
      * 看板概览 KPI
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @return 操作结果
      */
     @SaCheckPermission("mes:eq:oee:query")
     @GetMapping("/overview")
@@ -52,6 +57,9 @@ public class EqOeeController extends BaseController {
 
     /**
      * 看板趋势(按日)
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @return 操作结果
      */
     @SaCheckPermission("mes:eq:oee:query")
     @GetMapping("/trend")
@@ -61,6 +69,9 @@ public class EqOeeController extends BaseController {
 
     /**
      * 看板时长分布(运行/停机/保养占比)
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @return 操作结果
      */
     @SaCheckPermission("mes:eq:oee:query")
     @GetMapping("/distribution")
@@ -70,6 +81,9 @@ public class EqOeeController extends BaseController {
 
     /**
      * 看板停机设备 TOP10
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @return 操作结果
      */
     @SaCheckPermission("mes:eq:oee:query")
     @GetMapping("/topDowntime")
@@ -79,6 +93,10 @@ public class EqOeeController extends BaseController {
 
     /**
      * 分页查询 OEE 明细记录
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @param pageQuery 分页参数（页码、每页大小、排序）
+     * @return 分页结果
      */
     @SaCheckPermission("mes:eq:oee:list")
     @GetMapping("/list")
@@ -88,6 +106,9 @@ public class EqOeeController extends BaseController {
 
     /**
      * 导出 OEE 明细数据
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @param response HTTP 响应对象
      */
     @SaCheckPermission("mes:eq:oee:export")
     @Log(title = "OEE看板", businessType = BusinessType.EXPORT)
@@ -99,6 +120,9 @@ public class EqOeeController extends BaseController {
 
     /**
      * 手动聚合指定日期的 OEE(date 为空则聚合昨天)
+     *
+     * @param date 统计日期（null 表示聚合昨天）
+     * @return 操作结果
      */
     @SaCheckPermission("mes:eq:oee:aggregate")
     @Log(title = "OEE手动聚合", businessType = BusinessType.OTHER)

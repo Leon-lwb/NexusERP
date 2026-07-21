@@ -29,6 +29,12 @@ public class EqOeeAggregateTask {
 
     private final IEqOeeService oeeService;
 
+    /**
+     * 定时任务执行入口，由调度框架回调。
+     *
+     * @param jobArgs 任务执行参数
+     * @return 任务执行结果
+     */
     public ExecuteResult jobExecute(JobArgs jobArgs) {
         SnailJobLog.REMOTE.info("[OEE聚合任务] 开始执行");
         try {

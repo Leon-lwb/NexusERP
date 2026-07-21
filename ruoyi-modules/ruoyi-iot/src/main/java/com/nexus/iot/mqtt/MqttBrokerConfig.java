@@ -31,11 +31,22 @@ import java.util.Properties;
 @ConditionalOnProperty(prefix = "nexus.iot.mqtt", name = "enabled", havingValue = "true", matchIfMissing = true)
 public class MqttBrokerConfig {
 
+    /** MQTT Broker 配置属性。 */
     private final IotMqttProperties properties;
+    /** 设备认证器，校验 ClientID/密码。 */
     private final IotMqttAuthenticator authenticator;
+    /** 消息拦截器，处理连接生命周期与属性上报。 */
     private final IotMqttInterceptHandler interceptHandler;
+    /** Topic 访问控制策略，实现租户隔离。 */
     private final IotMqttAuthorizatorPolicy authorizatorPolicy;
 
+    /**
+     * 构建并启动内嵌 Moquette Broker：按属性配置主机/端口/匿名开关/WebSocket，
+     * 注册拦截器、认证器与租户隔离授权策略；销毁时停止服务。
+     *
+     * @return 已启动的 Broker 服务实例
+     * @throws IOException 启动失败
+     */
     @Bean(destroyMethod = "stopServer")
     public Server mqttBrokerServer() throws IOException {
         IConfig config = new MemoryConfig(new Properties());

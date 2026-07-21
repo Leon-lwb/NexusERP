@@ -29,17 +29,27 @@ public interface IQcIqcService {
     String RESULT_UNQUALIFIED = "UNQUALIFIED";
 
     /**
-     * 分页查询IQC列表
+     * 分页查询 IQC 来料检验列表。
+     *
+     * @param bo        检验单查询条件（编号/状态/结果/收货单/物料/供应商）
+     * @param pageQuery 分页参数（页码、每页大小、排序）
+     * @return 分页结果，包含 IQC 检验单视图列表及分页元信息
      */
     TableDataInfo<QcIqcVo> selectPageList(QcIqcBo bo, PageQuery pageQuery);
 
     /**
-     * 根据ID获取IQC详情
+     * 根据主键 ID 获取 IQC 来料检验单详情。
+     *
+     * @param iqcId IQC 检验单 ID
+     * @return IQC 检验单视图对象
      */
     QcIqcVo selectById(Long iqcId);
 
     /**
-     * 新增IQC检验单(生成编号)
+     * 新增 IQC 来料检验单，自动生成检验编号并初始化为待检验状态。
+     *
+     * @param bo IQC 检验单业务对象，包含物料、供应商、数量等信息
+     * @return 新增后的 IQC 检验单视图对象
      */
     QcIqcVo insertByBo(QcIqcBo bo);
 

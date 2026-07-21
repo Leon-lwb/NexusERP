@@ -38,8 +38,16 @@ import java.util.Date;
 @Service("qcIpqcService")
 public class QcIpqcServiceImpl implements IQcIpqcService {
 
+    /** IPQC 过程检验单数据访问 Mapper。 */
     private final QcIpqcMapper baseMapper;
 
+    /**
+     * 分页查询 IPQC 过程检验列表。
+     *
+     * @param bo        检验单查询条件（编号/状态/结果/工单/流转卡/物料）
+     * @param pageQuery 分页参数（页码、每页大小、排序）
+     * @return 分页结果，包含 IPQC 检验单视图列表及分页元信息
+     */
     @Override
     public TableDataInfo<QcIpqcVo> selectPageList(QcIpqcBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<QcIpqc> lqw = buildQueryWrapper(bo);
@@ -47,11 +55,23 @@ public class QcIpqcServiceImpl implements IQcIpqcService {
         return TableDataInfo.build(page);
     }
 
+    /**
+     * 根据主键 ID 获取 IPQC 过程检验单详情。
+     *
+     * @param ipqcId IPQC 检验单 ID
+     * @return IPQC 检验单视图对象
+     */
     @Override
     public QcIpqcVo selectById(Long ipqcId) {
         return baseMapper.selectVoById(ipqcId);
     }
 
+    /**
+     * 新增 IPQC 过程检验单，自动生成检验编号并初始化为待检验状态。
+     *
+     * @param bo IPQC 检验单业务对象，包含工单、工序、物料、数量等信息
+     * @return 新增后的 IPQC 检验单视图对象
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public QcIpqcVo insertByBo(QcIpqcBo bo) {
@@ -77,6 +97,16 @@ public class QcIpqcServiceImpl implements IQcIpqcService {
         return baseMapper.selectVoById(ipqc.getIpqcId());
     }
 
+    /**
+     * 执行 IPQC 检验：将状态推进为 COMPLETED，自动计算不良率（不良数/抽样数乘100，两位小数）并记录检验员与时间。
+     *
+     * @param ipqcId        IPQC 检验单 ID
+     * @param inspectResult 检验结果 QUALIFIED（合格）/ UNQUALIFIED（不合格）
+     * @param defectInfo    不良品信息（JSON 字符串，可为空）
+     * @param sampleQty     抽样数量（可为空，为空则不更新）
+     * @param defectQty     不良数量（用于计算不良率，可为空）
+     * @param remark        备注（可为空）
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void inspect(Long ipqcId, String inspectResult, String defectInfo,
@@ -139,6 +169,12 @@ public class QcIpqcServiceImpl implements IQcIpqcService {
         return "IPQC-" + today + "-" + String.format("%03d", seq);
     }
 
+    /**
+     * 根据查询条件构建 IPQC 检验单的 LambdaQueryWrapper（编号模糊匹配，状态/结果/工单/流转卡/物料精确匹配，按创建时间倒序）。
+     *
+     * @param bo 检验单查询条件
+     * @return IPQC 查询条件构造器
+     */
     private LambdaQueryWrapper<QcIpqc> buildQueryWrapper(QcIpqcBo bo) {
         return Wrappers.<QcIpqc>lambdaQuery()
             .like(StringUtils.isNotBlank(bo.getIpqcNo()), QcIpqc::getIpqcNo, bo.getIpqcNo())

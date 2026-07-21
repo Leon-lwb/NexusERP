@@ -33,7 +33,9 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 public class ChatModelFactory {
 
+    /** AI 模型业务服务，按 ID/名称加载模型配置。 */
     private final IAiModelService aiModelService;
+    /** 厂商策略工厂，按 providerType 路由到对应构建实现。 */
     private final ChatServiceProviderFactory providerFactory;
 
     /** 同步模型缓存（key = modelId）。有界 + 1h 访问过期，防止模型实例（持 OkHttp 连接池/线程）无限堆积。 */

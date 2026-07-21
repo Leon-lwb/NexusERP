@@ -14,8 +14,9 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 /**
- * 编码规则组成控制器
- * <p>管理编码规则（sys_auto_code_rule）的各组成部分（流水号、日期、固定字符、传入字符）。</p>
+ * 编码规则组成Controller
+ * <p>管理编码规则（sys_auto_code_rule）的各组成部分（流水号、日期、固定字符、传入字符）。
+ * 属于系统管理（System）模块。</p>
  *
  * @author wanghuan
  */
@@ -25,6 +26,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/system/autocode/part")
 public class SysAutoCodePartController extends BaseController {
 
+    /** 编码规则组成业务服务，提供分页、详情、唯一性校验、增删改等能力。 */
     private final ISysAutoCodePartService partService;
 
     /**

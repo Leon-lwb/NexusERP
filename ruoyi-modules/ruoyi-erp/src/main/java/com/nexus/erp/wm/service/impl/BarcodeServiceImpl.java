@@ -20,7 +20,9 @@ import java.util.Date;
 @Service
 public class BarcodeServiceImpl implements IBarcodeService {
 
+    /** 条码生成器 */
     private final BarcodeGenerator barcodeGenerator;
+    /** 条码序列提供器 */
     private final BarcodeSequenceProvider barcodeSequenceProvider;
 
     /**

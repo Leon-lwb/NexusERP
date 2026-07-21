@@ -7,11 +7,26 @@ import com.nexus.im.constants.ImPayloadConstants;
 
 import java.util.Map;
 
+/**
+ * 推送信封构造助手
+ * <p>统一封装实时推送消息的 JSON 信封（含协议版本、类型、时间戳与业务 payload），
+ * 供 {@code ImRealtimePush} 与通知服务构造 WS/SSE 下行载荷。</p>
+ */
 public final class ImEnvelopeHelper {
 
     private ImEnvelopeHelper() {
     }
 
+    /**
+     * 构造系统用户通知信封。
+     *
+     * @param notificationId  通知 ID
+     * @param category        业务分类（如 im_friend_request / workflow_todo）
+     * @param title           通知标题
+     * @param contentPreview  内容预览摘要
+     * @param contentUrl      内容详情 URL（可为 null，不输出该字段）
+     * @return 信封 JSON 字符串
+     */
     public static String userNotification(long notificationId, String category, String title, String contentPreview, String contentUrl) {
         MapBuilder<String, Object> builder = MapUtil.<String, Object>builder()
             .put("notificationId", notificationId)
@@ -24,6 +39,12 @@ public final class ImEnvelopeHelper {
         return envelope(ImPayloadConstants.TYPE_USER_NOTIFICATION, builder.build());
     }
 
+    /**
+     * 构造 IM 聊天消息信封。
+     *
+     * @param payload 消息业务载荷（如 chatType、messageId、收发方、content 等）
+     * @return 信封 JSON 字符串
+     */
     public static String imMessage(Map<String, Object> payload) {
         return envelope(ImPayloadConstants.TYPE_IM_MESSAGE, payload);
     }

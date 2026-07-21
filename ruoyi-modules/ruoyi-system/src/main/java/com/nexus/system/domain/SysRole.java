@@ -72,6 +72,11 @@ public class SysRole extends TenantEntity {
      */
     private String remark;
 
+    /**
+     * 根据角色ID构造角色对象。
+     *
+     * @param roleId 角色ID
+     */
     public SysRole(Long roleId) {
         this.roleId = roleId;
     }

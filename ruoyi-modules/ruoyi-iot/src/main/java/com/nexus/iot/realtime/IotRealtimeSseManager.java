@@ -31,10 +31,12 @@ import java.util.concurrent.ConcurrentHashMap;
 @Component
 public class IotRealtimeSseManager {
 
-    /** 外键 deviceId → (会话键 → SseEmitter) */
+    /** deviceId → (会话键 → SseEmitter) 的实时连接集合。 */
     private final Map<Long, Map<String, SseEmitter>> deviceEmitters = new ConcurrentHashMap<>();
 
+    /** 设备最新属性值缓存，提供实时推送快照数据。 */
     private final IotDeviceLatestCache latestCache;
+    /** 设备在线状态缓存，提供实时推送连接状态。 */
     private final IotDeviceStatusCache statusCache;
 
     /**

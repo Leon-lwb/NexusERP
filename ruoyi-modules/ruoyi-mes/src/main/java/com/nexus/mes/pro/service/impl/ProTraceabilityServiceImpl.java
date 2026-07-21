@@ -35,6 +35,12 @@ public class ProTraceabilityServiceImpl implements IProTraceabilityService {
     private final ProSnMapper snMapper;
 
     @Override
+    /**
+     * backward 操作
+     * @param mesWoId MES工单ID
+     * @param snCode SNCode
+     * @return 返回结果
+     */
     public TraceabilityResult backward(Long mesWoId, String snCode) {
         // 读取工单
         ProWorkOrder wo = workOrderMapper.selectById(mesWoId);
@@ -83,6 +89,12 @@ public class ProTraceabilityServiceImpl implements IProTraceabilityService {
     }
 
     @Override
+    /**
+     * forward 操作
+     * @param componentMaterialId ID
+     * @param componentSnCode 编码
+     * @return 结果列表
+     */
     public List<TraceabilityResult> forward(Long componentMaterialId, String componentSnCode) {
         List<Long> woIds;
         if (componentSnCode != null) {

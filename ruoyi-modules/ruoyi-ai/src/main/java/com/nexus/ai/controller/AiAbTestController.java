@@ -40,10 +40,15 @@ import java.util.concurrent.Executor;
 @RequestMapping("/ai/ab-test")
 public class AiAbTestController {
 
+    /** A/B 测试主表 Mapper，负责测试配置读写。 */
     private final AiAbTestMapper abTestMapper;
+    /** A/B 测试结果表 Mapper，负责单次问答结果读写。 */
     private final AiAbTestResultMapper abTestResultMapper;
+    /** AI 模型业务服务，用于解析模型名称与配置。 */
     private final IAiModelService aiModelService;
+    /** ChatModel 工厂，按模型ID获取具体厂商的对话模型实例。 */
     private final ChatModelFactory chatModelFactory;
+    /** AI 专用线程池，用于异步执行 A/B 测试避免阻塞请求线程。 */
     private final Executor aiExecutor;
 
     /**

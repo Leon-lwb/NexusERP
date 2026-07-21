@@ -26,6 +26,15 @@ public class IotMqttAuthenticator implements IAuthenticator {
 
     private final IIotDeviceService deviceService;
 
+    /**
+     * 校验 MQTT 连接身份：ClientID/Username 作为 deviceCode，password 作为 deviceSecret。
+     * 校验设备存在、状态为 ACTIVE，且密钥以常量时间比较匹配。
+     *
+     * @param clientId MQTT ClientID（即设备编码）
+     * @param username 用户名（兼容传入设备编码，可空）
+     * @param password 连接密码（即 deviceSecret 原文）
+     * @return 校验通过返回 true，否则 false
+     */
     @Override
     public boolean checkValid(String clientId, String username, byte[] password) {
         // ClientID 即设备编码；username 兼容传入设备编码

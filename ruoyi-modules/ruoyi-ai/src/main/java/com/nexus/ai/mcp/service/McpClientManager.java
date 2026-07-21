@@ -37,10 +37,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 @RequiredArgsConstructor
 public class McpClientManager {
 
+    /** 连续失败达到该次数后触发熔断禁用。 */
     private static final int MAX_FAILURE_COUNT = 3;
+    /** 熔断禁用持续时间（毫秒），到期自动重新启用。 */
     private static final long DISABLE_DURATION_MS = 5 * 60 * 1000;
 
+    /** AI 工具表 Mapper，负责工具查询与状态校验。 */
     private final AiToolMapper aiToolMapper;
+    /** Jackson JSON 处理器，用于解析工具 configJson。 */
     private final ObjectMapper objectMapper;
 
     /** 客户端缓存：toolId -> McpClient */

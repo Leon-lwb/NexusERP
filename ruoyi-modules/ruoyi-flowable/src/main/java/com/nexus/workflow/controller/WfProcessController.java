@@ -30,6 +30,7 @@ import java.util.Map;
 
 /**
  * 工作流流程管理
+ * <p>提供流程定义/实例相关的各类列表查询、导出、启动、详情、流程图读取及钉钉转换等 REST 接口，属于 Flowable 工作流模块。</p>
  *
  * @author wanghuan
  * @createTime 2022/3/24 18:54
@@ -40,13 +41,17 @@ import java.util.Map;
 @RequestMapping("/workflow/process")
 public class WfProcessController extends BaseController {
 
+    /** 流程业务服务，提供流程列表、启动、详情、导出等能力。 */
     private final IWfProcessService processService;
+    /** 流程抄送业务服务，提供抄送列表查询与已读状态更新。 */
     private final IWfCopyService copyService;
 
     /**
-     * 查询可发起流程列表
+     * 查询可发起流程列表。
      *
-     * @param pageQuery 分页参数
+     * @param processQuery 流程查询条件
+     * @param pageQuery    分页参数（页码、每页大小、排序）
+     * @return 分页结果，包含可发起流程定义列表及分页元信息
      */
     @GetMapping(value = "/list")
     @SaCheckPermission("workflow:process:startList")
@@ -55,7 +60,11 @@ public class WfProcessController extends BaseController {
     }
 
     /**
-     * 我拥有的流程
+     * 查询我拥有的流程列表。
+     *
+     * @param processQuery 流程查询条件
+     * @param pageQuery    分页参数（页码、每页大小、排序）
+     * @return 分页结果，包含当前用户拥有的流程任务列表及分页元信息
      */
     @SaCheckPermission("workflow:process:ownList")
     @GetMapping(value = "/ownList")
@@ -64,7 +73,11 @@ public class WfProcessController extends BaseController {
     }
 
     /**
-     * 获取待办列表
+     * 获取待办列表。
+     *
+     * @param processQuery 流程查询条件
+     * @param pageQuery    分页参数（页码、每页大小、排序）
+     * @return 分页结果，包含当前用户待办任务列表及分页元信息
      */
     @SaCheckPermission("workflow:process:todoList")
     @GetMapping(value = "/todoList")
@@ -73,10 +86,11 @@ public class WfProcessController extends BaseController {
     }
 
     /**
-     * 获取待签列表
+     * 获取待签列表。
      *
      * @param processQuery 流程业务对象
-     * @param pageQuery 分页参数
+     * @param pageQuery    分页参数（页码、每页大小、排序）
+     * @return 分页结果，包含当前用户待签收任务列表及分页元信息
      */
     @SaCheckPermission("workflow:process:claimList")
     @GetMapping(value = "/claimList")
@@ -85,9 +99,11 @@ public class WfProcessController extends BaseController {
     }
 
     /**
-     * 获取已办列表
+     * 获取已办列表。
      *
-     * @param pageQuery 分页参数
+     * @param processQuery 流程查询条件
+     * @param pageQuery    分页参数（页码、每页大小、排序）
+     * @return 分页结果，包含当前用户已办任务列表及分页元信息
      */
     @SaCheckPermission("workflow:process:finishedList")
     @GetMapping(value = "/finishedList")
@@ -96,10 +112,11 @@ public class WfProcessController extends BaseController {
     }
 
     /**
-     * 获取抄送列表
+     * 获取抄送列表。
      *
-     * @param copyBo 流程抄送对象
-     * @param pageQuery 分页参数
+     * @param copyBo    流程抄送对象
+     * @param pageQuery 分页参数（页码、每页大小、排序）
+     * @return 分页结果，包含抄送任务列表及分页元信息
      */
     @SaCheckPermission("workflow:process:copyList")
     @GetMapping(value = "/copyList")
@@ -109,10 +126,11 @@ public class WfProcessController extends BaseController {
     }
 
     /**
-     * 获取我的抄送列表
+     * 获取我的抄送列表。
      *
-     * @param copyBo 流程抄送对象
-     * @param pageQuery 分页参数
+     * @param copyBo    流程抄送对象
+     * @param pageQuery 分页参数（页码、每页大小、排序）
+     * @return 分页结果，包含我的抄送任务列表及分页元信息
      */
     @SaCheckPermission("workflow:process:myCopyList")
     @GetMapping(value = "/myCopyList")
@@ -122,10 +140,10 @@ public class WfProcessController extends BaseController {
     }
 
     /**
-     *更新抄送状态为已读
+     * 更新抄送状态为已读。
      *
-     * @param id
-     *
+     * @param id 抄送记录 ID
+     * @return 操作结果，成功时返回成功状态
      */
     @GetMapping(value = "/updateViewStatust")
     public R<Object> updateViewStatus(@RequestParam(name = "id",required = false) String id) {
@@ -135,7 +153,10 @@ public class WfProcessController extends BaseController {
 
 
     /**
-     * 导出可发起流程列表
+     * 导出可发起流程列表。
+     *
+     * @param processQuery 流程查询条件
+     * @param response     HTTP 响应，用于写入导出的 Excel 流
      */
     @SaCheckPermission("workflow:process:startExport")
     @Log(title = "可发起流程", businessType = BusinessType.EXPORT)
@@ -147,7 +168,10 @@ public class WfProcessController extends BaseController {
     }
 
     /**
-     * 导出我拥有流程列表
+     * 导出我拥有流程列表。
+     *
+     * @param processQuery 流程查询条件
+     * @param response     HTTP 响应，用于写入导出的 Excel 流
      */
     @SaCheckPermission("workflow:process:ownExport")
     @Log(title = "我拥有流程", businessType = BusinessType.EXPORT)
@@ -162,7 +186,10 @@ public class WfProcessController extends BaseController {
     }
 
     /**
-     * 导出待办流程列表
+     * 导出待办流程列表。
+     *
+     * @param processQuery 流程查询条件
+     * @param response     HTTP 响应，用于写入导出的 Excel 流
      */
     @SaCheckPermission("workflow:process:todoExport")
     @Log(title = "待办流程", businessType = BusinessType.EXPORT)
@@ -174,7 +201,10 @@ public class WfProcessController extends BaseController {
     }
 
     /**
-     * 导出待签流程列表
+     * 导出待签流程列表。
+     *
+     * @param processQuery 流程查询条件
+     * @param response     HTTP 响应，用于写入导出的 Excel 流
      */
     @SaCheckPermission("workflow:process:claimExport")
     @Log(title = "待签流程", businessType = BusinessType.EXPORT)
@@ -186,7 +216,10 @@ public class WfProcessController extends BaseController {
     }
 
     /**
-     * 导出已办流程列表
+     * 导出已办流程列表。
+     *
+     * @param processQuery 流程查询条件
+     * @param response     HTTP 响应，用于写入导出的 Excel 流
      */
     @SaCheckPermission("workflow:process:finishedExport")
     @Log(title = "已办流程", businessType = BusinessType.EXPORT)
@@ -198,7 +231,10 @@ public class WfProcessController extends BaseController {
     }
 
     /**
-     * 导出抄送流程列表
+     * 导出抄送流程列表。
+     *
+     * @param copyBo   流程抄送对象
+     * @param response HTTP 响应，用于写入导出的 Excel 流
      */
     @SaCheckPermission("workflow:process:copyExport")
     @Log(title = "抄送流程", businessType = BusinessType.EXPORT)
@@ -211,10 +247,12 @@ public class WfProcessController extends BaseController {
     }
 
     /**
-     * 查询流程部署关联表单信息
+     * 查询流程部署关联表单信息。
      *
-     * @param definitionId 流程定义id
-     * @param deployId 流程部署id
+     * @param definitionId 流程定义 ID
+     * @param deployId     流程部署 ID
+     * @param procInsId    流程实例 ID（可选）
+     * @return 流程表单内容（JSON 对象）
      */
     @GetMapping("/getProcessForm")
     @SaCheckPermission("workflow:process:start")
@@ -225,10 +263,11 @@ public class WfProcessController extends BaseController {
     }
 
     /**
-     * 根据流程定义id启动流程实例
+     * 根据流程定义 ID 启动流程实例。
      *
-     * @param processDefId 流程定义id
-     * @param variables 变量集合,json对象
+     * @param processDefId 流程定义 ID
+     * @param variables    流程变量集合（JSON 对象）
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckPermission("workflow:process:start")
     @PostMapping("/start/{processDefId}")
@@ -238,10 +277,13 @@ public class WfProcessController extends BaseController {
     }
 
     /**
-     * 根据业务数据Id和服务名启动流程实例
+     * 根据业务数据 ID 与服务名启动流程实例。
      *
-     * @param dataId, serviceName
-     * @param variables 变量集合,json对象
+     * @param dataId      业务数据 ID
+     * @param selectFlowId 选择的流程 ID
+     * @param serviceName 业务服务名称
+     * @param variables   流程变量集合（JSON 对象）
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckPermission("workflow:process:start")
     @RepeatSubmit()
@@ -256,9 +298,10 @@ public class WfProcessController extends BaseController {
     }
 
     /**
-     * 删除流程实例
+     * 删除流程实例。
      *
-     * @param instanceIds 流程实例ID串
+     * @param instanceIds 流程实例 ID 串
+     * @return 操作结果，成功时返回成功状态
      */
     @DeleteMapping("/instance/{instanceIds}")
     public R<Void> delete(@PathVariable String[] instanceIds) {
@@ -267,8 +310,10 @@ public class WfProcessController extends BaseController {
     }
 
     /**
-     * 读取xml文件
-     * @param processDefId 流程定义ID
+     * 读取流程 BPMN XML 文件。
+     *
+     * @param processDefId 流程定义 ID
+     * @return 流程 BPMN XML 字符串
      */
     @GetMapping("/bpmnXml/{processDefId}")
     public R<String> getBpmnXml(@PathVariable(value = "processDefId") String processDefId) {
@@ -276,11 +321,12 @@ public class WfProcessController extends BaseController {
     }
 
     /**
-     * 查询流程详情信息
+     * 查询流程详情信息。
      *
-     * @param procInsId 流程实例ID
-     * @param taskId 任务ID
-     * @param dataId 业务数据ID
+     * @param procInsId 流程实例 ID
+     * @param taskId    任务 ID
+     * @param dataId    业务数据 ID
+     * @return 流程详情信息
      */
     @GetMapping("/detail")
     public R detail(String procInsId, String taskId, String dataId) {
@@ -288,9 +334,10 @@ public class WfProcessController extends BaseController {
     }
 
     /**
-     * 查询流程详情信息
+     * 根据业务数据 ID 查询流程详情信息。
      *
-     * @param dataId 任务ID
+     * @param dataId 业务数据 ID
+     * @return 流程详情信息
      */
     @GetMapping("/detailbydataid")
     public R detail(String dataId) {
@@ -298,10 +345,10 @@ public class WfProcessController extends BaseController {
     }
 
     /**
-     * 查询流程是否结束
+     * 查询流程是否已完成。
      *
-     * @param procInsId
-     * @param
+     * @param procInsId 流程实例 ID
+     * @return 是否已完成的布尔结果
      */
     @GetMapping("/iscompleted")
     public R processIscompleted(String procInsId) {
@@ -309,10 +356,10 @@ public class WfProcessController extends BaseController {
     }
 
     /**
-     * 根据钉钉流程json转flowable的bpmn的xml格式
+     * 将钉钉流程 JSON 转换为 Flowable 的 BPMN XML 格式。
      *
-     * @param ddjson json对象
-     *
+     * @param ddjson 钉钉流程 JSON 字符串
+     * @return 操作结果，成功时返回成功状态
      */
     @PostMapping("/ddtobpmn")
     public R<Void> ddToBpmn(@RequestBody String ddjson) {
@@ -321,10 +368,10 @@ public class WfProcessController extends BaseController {
     }
 
 	/**
-     * 根据当前服务名,组织与站点查询关联流程信息
+     * 根据当前服务名查询关联流程信息。
      *
-     * @param serviceName
-     * @param
+     * @param serviceName 业务服务名称
+     * @return 关联流程信息
      */
     @GetMapping("/getProcesss")
     public R getProcesss(String serviceName) {

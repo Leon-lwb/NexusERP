@@ -42,11 +42,17 @@ import java.util.Map;
 @RequestMapping("/ai/knowledge")
 public class AiKnowledgeController extends BaseController {
 
+    /** 知识库业务服务，提供知识库 CRUD 与分页查询。 */
     private final IAiKnowledgeService aiKnowledgeService;
+    /** 知识库文档业务服务，提供文档 CRUD 与按知识库查询。 */
     private final IAiKnowledgeDocumentService aiKnowledgeDocumentService;
+    /** 知识库片段业务服务，提供片段 CRUD 与按文档/知识库查询。 */
     private final IAiKnowledgeChunkService aiKnowledgeChunkService;
+    /** 知识文档处理服务，负责上传后解析、分段、向量化。 */
     private final KnowledgeProcessService knowledgeProcessService;
+    /** 知识批量导入服务，支持从 URL 列表批量导入文档。 */
     private final KnowledgeImportService knowledgeImportService;
+    /** 知识检索服务，提供向量/混合检索与重排能力。 */
     private final RetrieverService retrieverService;
 
     // ==================== 知识库管理 ====================

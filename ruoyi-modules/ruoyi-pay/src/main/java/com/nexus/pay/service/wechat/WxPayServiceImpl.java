@@ -35,10 +35,19 @@ import java.nio.charset.StandardCharsets;
 @ConditionalOnProperty(prefix = "pay.wechat", name = "enabled", havingValue = "true")
 public class WxPayServiceImpl implements IWxPayService {
 
+    /** 订单业务服务，用于回调/查询时更新订单状态。 */
     private final IPayOrderService payOrderService;
+
+    /** 微信 Native 支付服务，用于生成支付二维码。 */
     private final NativePayService nativePayService;
+
+    /** 微信支付配置，提供商户号、AppID、回调地址等。 */
     private final WxPayConfig wxPayAppConfig;
+
+    /** 微信回调通知解析器，用于验签与报文解析。 */
     private final NotificationParser notificationParser;
+
+    /** 微信退款服务。 */
     private final RefundService refundService;
 
     public WxPayServiceImpl(IPayOrderService payOrderService, NativePayService nativePayService,
@@ -51,6 +60,12 @@ public class WxPayServiceImpl implements IWxPayService {
         this.refundService = refundService;
     }
 
+    /**
+     * 生成微信 Native 支付二维码链接：下单后返回 code_url 供前端渲染二维码。
+     *
+     * @param payOrder 支付订单（含订单内容、订单号、金额）
+     * @return 微信支付二维码链接（code_url）
+     */
     @Override
     public String payUrl(PayOrder payOrder) {
         PrepayRequest request = new PrepayRequest();
@@ -82,6 +97,15 @@ public class WxPayServiceImpl implements IWxPayService {
         };
     }
 
+    /**
+     * 处理微信支付/退款异步回调：验签解析报文，更新订单状态/第三方单号/实际金额。
+     *
+     * @param request HTTP 请求，承载微信回调头与报文体
+     * @param response HTTP 响应
+     * @param payOrder 关联支付订单
+     * @param type 通知类型，pay 为支付、refund 为退款
+     * @return 处理结果，"success" 表示成功，"fail" 表示失败
+     */
     @Override
     public String notify(HttpServletRequest request, HttpServletResponse response, PayOrder payOrder, String type) {
         String timeStamp = request.getHeader("Wechatpay-Timestamp");
@@ -125,6 +149,12 @@ public class WxPayServiceImpl implements IWxPayService {
         }
     }
 
+    /**
+     * 查询微信订单状态并同步实际金额与状态到本地订单。
+     *
+     * @param payOrder 待查询的支付订单（需含第三方订单号）
+     * @return 刷新状态后的支付订单
+     */
     @Override
     public PayOrder query(PayOrder payOrder) {
         QueryOrderByIdRequest queryRequest = new QueryOrderByIdRequest();
@@ -142,6 +172,12 @@ public class WxPayServiceImpl implements IWxPayService {
         return payOrder;
     }
 
+    /**
+     * 发起微信退款，并按退款状态更新订单状态（已退款/处理中/异常等）。
+     *
+     * @param payOrder 待退款的支付订单
+     * @return 退款后的支付订单
+     */
     @Override
     public PayOrder refund(PayOrder payOrder) {
         CreateRequest request = new CreateRequest();

@@ -18,6 +18,7 @@ import java.util.Map;
 @Slf4j
 public class AgentStreamHelper {
 
+    /** 共享的 Jackson 对象映射器，用于事件对象序列化。 */
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     /**

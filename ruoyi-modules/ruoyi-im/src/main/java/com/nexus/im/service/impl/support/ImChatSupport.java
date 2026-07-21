@@ -52,11 +52,16 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ImChatSupport {
 
+    /** 群名称最大长度上限。 */
     private static final int MAX_GROUP_NAME_LENGTH = 50;
 
+    /** 消息表 Mapper。 */
     private final ImMessageMapper imMessageMapper;
+    /** 群成员表 Mapper。 */
     private final ImGroupMemberMapper imGroupMemberMapper;
+    /** 系统用户服务（按 ID 查用户）。 */
     private final ISysUserService sysUserService;
+    /** 系统 OSS 服务（按 ID 批量查文件 URL）。 */
     private final ISysOssService sysOssService;
     /**
      * P2-1/P2-2: 直接注入 SysUserMapper 用于批量查询用户 VO（含 avatar 字段）。

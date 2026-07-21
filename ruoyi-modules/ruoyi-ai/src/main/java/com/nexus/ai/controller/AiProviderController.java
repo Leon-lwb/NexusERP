@@ -29,6 +29,7 @@ import java.util.List;
 @RequestMapping("/ai/provider")
 public class AiProviderController extends BaseController {
 
+    /** AI 厂商配置业务服务，提供厂商分页、详情、CRUD 等。 */
     private final IAiProviderService aiProviderService;
 
     /**

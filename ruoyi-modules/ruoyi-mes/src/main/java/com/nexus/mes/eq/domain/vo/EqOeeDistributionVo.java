@@ -9,6 +9,8 @@ import java.math.BigDecimal;
 /**
  * OEE 时长分布视图对象(运行/停机/保养占比)
  *
+ * <p>属于MES 设备管理模块，OEE分布视图对象（查询出参）。</p>
+ *
  * @author Nexus
  */
 @Data

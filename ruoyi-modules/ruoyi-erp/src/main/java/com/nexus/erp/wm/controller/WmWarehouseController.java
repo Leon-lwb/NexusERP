@@ -33,6 +33,7 @@ import java.util.List;
 @RequestMapping("/erp/wm/warehouse")
 public class WmWarehouseController extends BaseController {
 
+    /** 仓库业务服务，提供仓库相关能力 */
     private final IWmWarehouseService wmWarehouseService;
 
     /**

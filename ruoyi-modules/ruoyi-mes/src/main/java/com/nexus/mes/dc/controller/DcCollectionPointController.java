@@ -17,6 +17,8 @@ import org.springframework.web.bind.annotation.*;
 /**
  * MES数据采集点 Controller
  *
+ * <p>属于MES 数据采集模块，提供采集点相关的 REST 接口。</p>
+ *
  * @author Nexus
  */
 @Validated
@@ -27,18 +29,37 @@ public class DcCollectionPointController extends BaseController {
 
     private final IDcCollectionPointService dcCollectionPointService;
 
+    /**
+     * 分页查询采集点列表
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @param pageQuery 分页参数（页码、每页大小、排序）
+     * @return 分页结果
+     */
     @SaCheckPermission("mes:dc:point:list")
     @GetMapping("/list")
     public TableDataInfo<DcCollectionPointVo> list(DcCollectionPointBo bo, PageQuery pageQuery) {
         return dcCollectionPointService.selectPageList(bo, pageQuery);
     }
 
+    /**
+     * 获取采集点详情
+     *
+     * @param pointId 采集点ID
+     * @return 操作结果
+     */
     @SaCheckPermission("mes:dc:point:query")
     @GetMapping("/{pointId}")
     public R<DcCollectionPointVo> getInfo(@PathVariable Long pointId) {
         return R.ok(dcCollectionPointService.selectById(pointId));
     }
 
+    /**
+     * 新增采集点
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @return 操作结果
+     */
     @SaCheckPermission("mes:dc:point:add")
     @Log(title = "采集点新增", businessType = BusinessType.INSERT)
     @PostMapping
@@ -46,6 +67,12 @@ public class DcCollectionPointController extends BaseController {
         return R.ok(dcCollectionPointService.insertByBo(bo));
     }
 
+    /**
+     * 更新采集点
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @return 操作结果
+     */
     @SaCheckPermission("mes:dc:point:edit")
     @Log(title = "采集点编辑", businessType = BusinessType.UPDATE)
     @PutMapping
@@ -53,6 +80,12 @@ public class DcCollectionPointController extends BaseController {
         return R.ok(dcCollectionPointService.updateByBo(bo));
     }
 
+    /**
+     * 删除采集点
+     *
+     * @param ids ID数组
+     * @return 操作结果
+     */
     @SaCheckPermission("mes:dc:point:remove")
     @Log(title = "采集点删除", businessType = BusinessType.DELETE)
     @DeleteMapping("/{ids}")

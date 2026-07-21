@@ -21,6 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @Component
 public class RerankProviderFactory implements ApplicationContextAware {
 
+    /** 厂商编码 → 重排策略 注册表（启动时自动发现并注册）。 */
     private final Map<String, RerankProvider> providers = new ConcurrentHashMap<>();
 
     @Override

@@ -13,6 +13,7 @@ import java.util.Date;
 
 /**
  * MES派工单视图对象 pro_dispatch
+ * <p>属于 MES 生产管理模块，作为 工序派工 的查询/导出返回结构。</p>
  *
  * @author Nexus
  */

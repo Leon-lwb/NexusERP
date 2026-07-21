@@ -45,6 +45,7 @@ public class IotAlertNotifier {
     private static final String RATE_LIMIT_PREFIX = "iot:alert:rl:";
     private static final Duration RATE_LIMIT_TTL = Duration.ofSeconds(60);
 
+    /** MES 安灯服务，告警触发设备安灯呼叫（未接入时由 Noop 兜底）。 */
     private final IMesAndonService mesAndonService;
 
     /**

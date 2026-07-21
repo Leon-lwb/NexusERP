@@ -35,7 +35,9 @@ import java.util.List;
 @RequestMapping("/erp/wm/storagelocation")
 public class WmStorageLocationController extends BaseController {
 
+    /** 存储库位业务服务，提供存储库位相关能力 */
     private final IWmStorageLocationService wmStorageLocationService;
+    /** 存储区域业务服务，提供存储区域相关能力 */
     private final IWmStorageAreaService wmStorageAreaService;
 
     /**

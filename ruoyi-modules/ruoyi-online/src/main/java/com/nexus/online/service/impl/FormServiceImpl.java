@@ -55,10 +55,14 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 public class FormServiceImpl implements IFormService {
 
+	/** 代码生成表基础 Mapper，用于查询表配置与分页。 */
 	private final GenTableMapper baseMapper;
+	/** 代码生成表业务服务，提供表与字段配置查询。 */
 	private final IGenTableService genTableService;
+	/** 在线动态表 Mapper，提供动态增删改查 SQL。 */
 	private final OnlineMapper onlineMapper;
 
+    /** 安全标识符正则：仅允许字母、数字与下划线，用于防 SQL 注入的表名/字段名校验。 */
     private static final Pattern SAFE_IDENTIFIER = Pattern.compile("^[a-zA-Z_][a-zA-Z0-9_]*$");
 
     private boolean isSafeIdentifier(String name) {
@@ -185,6 +189,12 @@ public class FormServiceImpl implements IFormService {
         data.keySet().removeIf(k -> !isSafeIdentifier(k) || !allowed.contains(k));
     }
 
+	/**
+	 * 获取指定在线表单的设计元数据（含字段与子表配置）。
+	 *
+	 * @param tableId 在线表单对应的表 ID
+	 * @return 表单设计结构，区分 single / main-sub / sub 三种类型
+	 */
 	@Override
 	public Map<String, Object> getOnlineForm(Long tableId) {
         GenTable table = genTableService.selectGenTableById(tableId);
@@ -247,6 +257,13 @@ public class FormServiceImpl implements IFormService {
     }
 
     // 修改保存方法
+    /**
+     * 保存主子表数据：先保存主表，再删除并重新写入关联子表数据。
+     *
+     * @param mainTableId 主表对应的 online 表 ID
+     * @param mainData 主表数据
+     * @param subDataList 子表数据集合
+     */
     @Transactional
     public void saveMainSubData(Long mainTableId, Map<String, Object> mainData, List<Map<String, Object>> subDataList) {
         // 保存主表
@@ -279,6 +296,13 @@ public class FormServiceImpl implements IFormService {
         );
     }
 
+	/**
+	 * 分页查询在线表单（代码生成表）列表。
+	 *
+	 * @param genTable 查询条件，可包含表名、表注释、数据源名及时间范围
+	 * @param pageQuery 分页参数
+	 * @return 分页结果，包含符合条件的在线表单表配置列表
+	 */
 	@Override
 	public TableDataInfo<GenTable> selectPageGenTableList(GenTable genTable, PageQuery pageQuery) {
 		Page<GenTable> page = baseMapper.selectPage(pageQuery.build(), this.buildGenTableQueryWrapper(genTable));
@@ -297,6 +321,12 @@ public class FormServiceImpl implements IFormService {
         return wrapper;
     }
 
+    /**
+     * 获取字段对应的字典数据列表（按 dictType 与租户查询）。
+     *
+     * @param onlColumn 在线表单字段配置
+     * @return 字典数据视图列表；无 dictType 时返回 null
+     */
     public  List<DictVo> getColumnDict(GenTableColumn onlColumn){
     	String dictType = onlColumn.getDictType();
     	if (StringUtils.isNotEmpty(dictType)) {
@@ -306,6 +336,14 @@ public class FormServiceImpl implements IFormService {
 		return null;
     }
 
+	/**
+	 * 分页查询在线表单表数据（基于 tableId 做授权与字段白名单校验）。
+	 *
+	 * @param tableId 在线表单对应的表 ID
+	 * @param tableName 实际数据表名
+	 * @param pageQuery 分页参数
+	 * @return 分页结果，含表数据与表单字段元信息
+	 */
 	@Override
 	public TableDataInfo<Map> listOnlineData(Long tableId, String tableName, PageQuery pageQuery) {
         // data table whitelist
@@ -360,6 +398,14 @@ public class FormServiceImpl implements IFormService {
 		return TableDataInfo.build(page,onlineField);
 	}
 
+    /**
+     * 新增或更新在线表单表数据（支持单表与主子表结构，含字段白名单与租户隔离）。
+     *
+     * @param tableId 在线表单对应的表 ID
+     * @param tableName 实际数据表名
+     * @param map 数据内容；主子表结构时含 main / sub 两部分
+     * @return 受影响记录数
+     */
     @Override
     @Transactional
     public int addOrUpdateOnlineData(Long tableId, String tableName, Map<String, Object> map) {
@@ -528,6 +574,13 @@ public class FormServiceImpl implements IFormService {
         data.entrySet().removeIf(entry -> entry.getValue() == null);
     }
 
+    /**
+     * 批量删除在线表单表数据（含关联子表数据）。
+     *
+     * @param tableId 在线表单对应的表 ID
+     * @param tableName 实际数据表名
+     * @param ids 待删除记录的主键 ID 列表
+     */
     @Override
     @Transactional
     public void deleteOnlineData(Long tableId, String tableName, List<Long> ids) {
@@ -562,6 +615,14 @@ public class FormServiceImpl implements IFormService {
             && StringUtils.isNotBlank(getSubTableFk(table));
     }
 
+	/**
+	 * 查询在线表单指定记录的详细数据。
+	 *
+	 * @param tableId 在线表单对应的表 ID
+	 * @param tableName 实际数据表名
+	 * @param id 待查询记录的主键 ID
+	 * @return 记录详情，主子表结构时含主表与子表数据
+	 */
 	@Override
 	public Map<String, Object> getOnlineData(Long tableId, String tableName, Long id) {
         // 参数校验
@@ -684,6 +745,14 @@ public class FormServiceImpl implements IFormService {
     }
 
     // 动态表分页查询
+    /**
+     * 动态表分页查询（按表名，无 tableId 上下文，需表名合法且已纳入白名单）。
+     *
+     * @param tableName 数据表名
+     * @param wrapper 动态查询条件
+     * @param page 分页对象
+     * @return 分页结果
+     */
     @Override
     public TableDataInfo selectDynamicTablePage(String tableName, QueryWrapper<?> wrapper, Page<?> page) {
         // 校验表名合法性（防止SQL注入）
@@ -704,6 +773,13 @@ public class FormServiceImpl implements IFormService {
     }
 
     // 动态表单条查询
+    /**
+     * 动态表单单条查询（按表名与 ID，需表名合法且已纳入白名单）。
+     *
+     * @param tableName 数据表名
+     * @param id 记录 ID
+     * @return 记录数据映射
+     */
     @Override
     public Map<String, Object> selectDynamicTableById(String tableName, String id) {
         if (!isValidTableName(tableName)) {
@@ -723,6 +799,13 @@ public class FormServiceImpl implements IFormService {
         return tableName.matches("^[a-zA-Z0-9_]+$");
     }
 
+	/**
+	 * 按表名分页查询字典/关联表数据（需已纳入 online 配置白名单）。
+	 *
+	 * @param tableName 目标字典或关联表名
+	 * @param pageQuery 分页参数
+	 * @return 分页结果
+	 */
 	@Override
 	public TableDataInfo<Map> listTableData(String tableName, PageQuery pageQuery) {
         // table whitelist
@@ -746,12 +829,28 @@ public class FormServiceImpl implements IFormService {
 		return TableDataInfo.build(page);
 	}
 
+    /**
+     * 查询弹窗来源表指定记录的详情数据（带 tableId 上下文做来源表授权校验）。
+     *
+     * @param tableId 当前 online 表的 ID
+     * @param tableName 弹窗来源表名
+     * @param id 待查询记录的主键 ID
+     * @return 弹窗来源表的记录详情
+     */
     @Override
     public Map<String, Object> getPopupDetail(Long tableId, String tableName, String id) {
         assertAllowedPopupDictTableByContext(tableId, tableName);
         return selectDynamicTableById(tableName, id);
     }
 
+    /**
+     * 查询弹窗来源表列表数据（带 tableId 上下文做来源表授权校验）。
+     *
+     * @param tableId 当前 online 表的 ID
+     * @param dictTableName 弹窗来源表名
+     * @param pageQuery 分页参数
+     * @return 分页结果
+     */
     @Override
     public TableDataInfo<Map> listPopupTableData(Long tableId, String dictTableName, PageQuery pageQuery) {
         assertAllowedPopupDictTableByContext(tableId, dictTableName);

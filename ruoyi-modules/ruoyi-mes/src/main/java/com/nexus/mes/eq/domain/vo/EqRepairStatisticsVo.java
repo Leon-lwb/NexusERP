@@ -52,7 +52,14 @@ public class EqRepairStatisticsVo implements Serializable {
     /** 设备故障 TOP10 */
     private List<TopItem> topEquipment;
 
-    /** 趋势项 */
+    /**
+     * 趋势项
+     *
+     * <p>属于MES 设备管理模块，趋势Item持久化实体。</p>
+
+     * 
+
+     */
     @Data
     public static class TrendItem implements Serializable {
         @Serial
@@ -62,7 +69,14 @@ public class EqRepairStatisticsVo implements Serializable {
         private BigDecimal downtimeHours;
     }
 
-    /** Pareto 项 */
+    /**
+     * Pareto 项
+     *
+     * <p>属于MES 设备管理模块，ParetoItem持久化实体。</p>
+
+     * 
+
+     */
     @Data
     public static class ParetoItem implements Serializable {
         @Serial
@@ -72,7 +86,14 @@ public class EqRepairStatisticsVo implements Serializable {
         private BigDecimal ratio;
     }
 
-    /** 设备 TOP 项 */
+    /**
+     * 设备 TOP 项
+     *
+     * <p>属于MES 设备管理模块，排行Item持久化实体。</p>
+
+     * 
+
+     */
     @Data
     public static class TopItem implements Serializable {
         @Serial

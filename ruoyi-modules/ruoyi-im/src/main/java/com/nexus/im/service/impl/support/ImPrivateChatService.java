@@ -39,15 +39,29 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class ImPrivateChatService {
 
+    /** 消息表 Mapper。 */
     private final ImMessageMapper imMessageMapper;
+    /** 系统用户服务。 */
     private final ISysUserService sysUserService;
+    /** 用户通知服务（私聊消息提醒通知）。 */
     private final ISysUserNotificationService sysUserNotificationService;
+    /** 实时推送组件。 */
     private final ImRealtimePush imRealtimePush;
+    /** 消息类型注册中心（按类型获取处理器）。 */
     private final ImMessageTypeRegistry messageTypeRegistry;
+    /** 共享辅助组件。 */
     private final ImChatSupport support;
+    /** 会话列表 Redis 缓存。 */
     private final ImConversationCache conversationCache;
+    /** 指标采集组件。 */
     private final ImMetrics imMetrics;
 
+    /**
+     * 发送私聊消息：校验接收方、幂等、内容规范化，插入消息后写通知并推送（提交后）。
+     *
+     * @param bo 私聊发送参数
+     * @return 发送成功后的消息 ID
+     */
     @Transactional(rollbackFor = Exception.class)
     public R<Long> sendPrivate(ImPrivateSendBo bo) {
         Long fromId = LoginHelper.getUserId();
@@ -110,6 +124,13 @@ public class ImPrivateChatService {
         return R.ok(msg.getMessageId());
     }
 
+    /**
+     * 分页查询与指定用户的私聊历史消息（校验同租户权限）。
+     *
+     * @param peerUserId 对端用户 ID
+     * @param pageQuery  分页查询参数
+     * @return 私聊消息分页结果
+     */
     public TableDataInfo<ImMessage> privateHistory(Long peerUserId, PageQuery pageQuery) {
         Long me = LoginHelper.getUserId();
         support.requireSameTenantUser(peerUserId);
@@ -122,6 +143,13 @@ public class ImPrivateChatService {
         return TableDataInfo.build(page);
     }
 
+    /**
+     * 分页查询与指定用户的私聊历史消息（每条附带发送者信息）。
+     *
+     * @param peerUserId 对端用户 ID
+     * @param pageQuery  分页查询参数
+     * @return 带发送者信息的私聊消息分页结果
+     */
     public TableDataInfo<Map<String, Object>> privateHistoryWithSender(Long peerUserId, PageQuery pageQuery) {
         Long me = LoginHelper.getUserId();
         support.requireSameTenantUser(peerUserId);
@@ -169,6 +197,13 @@ public class ImPrivateChatService {
         return updated;
     }
 
+    /**
+     * 构建私聊消息推送 payload（含收发方、内容、发送者名称/头像）。
+     *
+     * @param msg  消息实体
+     * @param from 发送者用户视图
+     * @return 私聊消息信封 payload
+     */
     private Map<String, Object> buildPrivatePayload(ImMessage msg, SysUserVo from) {
         Map<String, Object> p = new LinkedHashMap<>();
         p.put("chatType", "PRIVATE");

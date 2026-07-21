@@ -78,6 +78,12 @@ public class VelocityUtils {
         return velocityContext;
     }
 
+    /**
+     * 向模板上下文写入上级菜单ID（从 options 解析，缺省取默认菜单）。
+     *
+     * @param context  模板上下文
+     * @param genTable 业务表对象
+     */
     public static void setMenuVelocityContext(VelocityContext context, GenTable genTable) {
         String options = genTable.getOptions();
         Dict paramsObj = JsonUtils.parseMap(options);
@@ -85,6 +91,12 @@ public class VelocityUtils {
         context.put("parentMenuId", parentMenuId);
     }
 
+    /**
+     * 向模板上下文写入树表相关变量（树编码、父编码、名称及展开列）。
+     *
+     * @param context  模板上下文
+     * @param genTable 业务表对象
+     */
     public static void setTreeVelocityContext(VelocityContext context, GenTable genTable) {
         String options = genTable.getOptions();
         Dict paramsObj = JsonUtils.parseMap(options);
@@ -140,7 +152,11 @@ public class VelocityUtils {
     }
 
     /**
-     * 获取文件名
+     * 根据模板路径与业务表信息计算生成的文件名（含包路径/前端路径）。
+     *
+     * @param template 模板文件路径（vm 文件）
+     * @param genTable 业务表对象
+     * @return 目标文件名
      */
     public static String getFileName(String template, GenTable genTable) {
         // 文件名称

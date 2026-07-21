@@ -38,11 +38,17 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ImConversationService {
 
+    /** 消息表 Mapper。 */
     private final ImMessageMapper imMessageMapper;
+    /** 群组表 Mapper。 */
     private final ImGroupMapper imGroupMapper;
+    /** 群成员表 Mapper。 */
     private final ImGroupMemberMapper imGroupMemberMapper;
+    /** 共享辅助组件（批量加载用户/头像、未读数等）。 */
     private final ImChatSupport support;
+    /** 会话列表 Redis 缓存。 */
     private final ImConversationCache conversationCache;
+    /** 会话配置（置顶/免打扰）Mapper。 */
     private final ImConversationSettingMapper conversationSettingMapper;
 
     /**

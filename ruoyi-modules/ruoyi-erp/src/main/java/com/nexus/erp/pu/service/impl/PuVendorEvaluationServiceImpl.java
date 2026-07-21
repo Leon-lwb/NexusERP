@@ -320,6 +320,12 @@ public class PuVendorEvaluationServiceImpl implements IPuVendorEvaluationService
         }
     }
 
+    /**
+     * 判断采购订单是否准时交货（已收货且完成时间不晚于预计到货日期）。
+     *
+     * @param order 采购订单
+     * @return 准时返回 true
+     */
     private boolean isOnTime(PuPurchaseOrder order) {
         if (!"RECEIVED".equals(order.getStatus())) {
             return false;
@@ -331,6 +337,12 @@ public class PuVendorEvaluationServiceImpl implements IPuVendorEvaluationService
         return completionTime != null && !completionTime.after(order.getExpectedArrivalDate());
     }
 
+    /**
+     * 根据综合得分计算供应商等级（A≥90，B≥80，C≥60，其余 D）。
+     *
+     * @param totalScore 综合得分
+     * @return 等级代码（A/B/C/D）
+     */
     private String calcLevel(BigDecimal totalScore) {
         if (totalScore.compareTo(new BigDecimal("90")) >= 0) {
             return "A";
@@ -345,6 +357,12 @@ public class PuVendorEvaluationServiceImpl implements IPuVendorEvaluationService
 
     private static final DateTimeFormatter PERIOD_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM");
 
+    /**
+     * 解析评估周期（yyyy-MM）为起止日期数组 [起始日, 结束日]。
+     *
+     * @param evalPeriod 评估周期，格式 yyyy-MM
+     * @return 长度为 2 的日期数组，[0] 为当月首日，[1] 为当月末日
+     */
     private Date[] parsePeriod(String evalPeriod) {
         YearMonth ym = YearMonth.parse(evalPeriod, PERIOD_FORMATTER);
         java.sql.Date startDate = java.sql.Date.valueOf(ym.atDay(1));
@@ -352,6 +370,12 @@ public class PuVendorEvaluationServiceImpl implements IPuVendorEvaluationService
         return new Date[]{startDate, endDate};
     }
 
+    /**
+     * 计算价格竞争力得分：以供应商订单均价与市场同物料均价之比衡量（0~100，无数据取默认分）。
+     *
+     * @param orderIds 供应商当期采购订单ID列表
+     * @return 价格竞争力得分
+     */
     private BigDecimal calculatePriceScore(List<Long> orderIds) {
         if (orderIds == null || orderIds.isEmpty()) {
             return DEFAULT_PRICE_SCORE;
@@ -441,6 +465,12 @@ public class PuVendorEvaluationServiceImpl implements IPuVendorEvaluationService
         return distribution;
     }
 
+    /**
+     * 构建供应商评估分页/列表查询条件（按供应商、评估周期、等级动态拼接，按创建时间倒序）。
+     *
+     * @param bo 查询参数
+     * @return 查询条件构造器
+     */
     private LambdaQueryWrapper<PuVendorEvaluation> buildQueryWrapper(PuVendorEvaluationBo bo) {
         LambdaQueryWrapper<PuVendorEvaluation> lqw = Wrappers.<PuVendorEvaluation>lambdaQuery()
             .eq(bo.getVendorId() != null, PuVendorEvaluation::getVendorId, bo.getVendorId())

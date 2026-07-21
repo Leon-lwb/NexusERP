@@ -28,7 +28,9 @@ import java.util.regex.Pattern;
 @RequiredArgsConstructor
 public class ExecuteSqlQueryTool {
 
+    /** ERP 查询服务（执行只读 SQL，@DS("erp") 数据源） */
     private final ErpQueryService erpQueryService;
+    /** AI 配置属性，提供 SQL 行数/超时限制与表前缀白名单 */
     private final AiProperties aiProperties;
 
     /** 禁止出现的 SQL 关键词正则（使用单词边界避免子串误匹配，如 UPDATE_TIME 不会命中 UPDATE） */
@@ -186,6 +188,10 @@ public class ExecuteSqlQueryTool {
         }
     }
 
+    /** SQL 子句关键词正则（用于在正确位置插入 WHERE 条件） */
+    private static final Pattern CLAUSE_PATTERN = Pattern.compile(
+        "\\s+(ORDER\\s+BY|GROUP\\s+BY|HAVING|LIMIT)\\s+", Pattern.CASE_INSENSITIVE);
+
     /**
      * 注入租户隔离条件
      * <p>
@@ -198,10 +204,6 @@ public class ExecuteSqlQueryTool {
      * @param tenantId 租户ID
      * @return 注入租户条件后的 SQL
      */
-    /** SQL 子句关键词正则（用于在正确位置插入 WHERE 条件） */
-    private static final Pattern CLAUSE_PATTERN = Pattern.compile(
-        "\\s+(ORDER\\s+BY|GROUP\\s+BY|HAVING|LIMIT)\\s+", Pattern.CASE_INSENSITIVE);
-
     private String injectTenantCondition(String sql, Long tenantId) {
         if (sql.toUpperCase().contains("TENANT_ID")) {
             return sql;

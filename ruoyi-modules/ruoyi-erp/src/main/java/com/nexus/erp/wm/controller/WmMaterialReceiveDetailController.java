@@ -31,6 +31,7 @@ import java.util.List;
 @RequestMapping("/erp/wm/detail")
 public class WmMaterialReceiveDetailController extends BaseController {
 
+    /** 物料领用明细业务服务，提供物料领用明细相关能力 */
     private final IWmMaterialReceiveDetailService wmMaterialReceiveDetailService;
 
     /**

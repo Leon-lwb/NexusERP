@@ -10,6 +10,7 @@ import com.nexus.mes.pro.domain.ProSn;
 
 /**
  * MES SN序列号业务对象 pro_sn
+ * <p>属于 MES 生产管理模块，承载 SN序列号追溯 的增改入参。</p>
  *
  * @author Nexus
  */

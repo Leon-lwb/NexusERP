@@ -65,21 +65,34 @@ import java.util.concurrent.Executor;
 @RequiredArgsConstructor
 public class AiServiceFacade {
 
+    /** ChatModel 工厂，构建并缓存流式与 Agent 用 ChatModel */
     private final ChatModelFactory chatModelFactory;
+    /** 模型配置服务，解析用户指定或默认模型 */
     private final IAiModelService aiModelService;
+    /** 会话 Mapper，创建/读取会话及工具配置 */
     private final AiSessionMapper aiSessionMapper;
+    /** 消息 Mapper，持久化用户与 AI 消息 */
     private final AiMessageMapper aiMessageMapper;
+    /** 持久化对话记忆存储，加载历史消息 */
     private final PersistentChatMemoryStore persistentChatMemoryStore;
+    /** 工具提供者工厂，按分类/ID 加载内置与 MCP 工具 */
     private final ToolProviderFactory toolProviderFactory;
+    /** RAG 检索服务，增强提示词 */
     private final RetrieverService retrieverService;
+    /** Agent 监听器，记录 Agent 生命周期事件 */
     private final AiAgentListener aiAgentListener;
+    /** Prompt 模板渲染服务，注入动态上下文 */
     private final PromptTemplateService promptTemplateService;
+    /** Token 用量服务，计算成本与日统计 */
     private final IAiTokenUsageService aiTokenUsageService;
 
     @Qualifier("aiExecutor")
+    /** AI 异步执行线程池（限流保护大模型并发调用） */
     private final Executor aiExecutor;
 
+    /** 联网搜索工具，供 WebSearchAgent 调用 */
     private final WebSearchTool webSearchTool;
+    /** AI 配置属性 */
     private final AiProperties aiProperties;
 
     /** OutputChannel 事件 JSON 解析复用单例（ObjectMapper 线程安全，避免每请求 new 产生 GC 压力） */

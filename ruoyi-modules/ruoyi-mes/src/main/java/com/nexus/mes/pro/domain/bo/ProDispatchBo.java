@@ -12,6 +12,7 @@ import java.math.BigDecimal;
 
 /**
  * MES派工单业务对象 pro_dispatch
+ * <p>属于 MES 生产管理模块，承载 工序派工 的增改入参。</p>
  *
  * @author Nexus
  */

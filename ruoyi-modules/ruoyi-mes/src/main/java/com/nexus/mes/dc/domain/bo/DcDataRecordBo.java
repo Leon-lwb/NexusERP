@@ -14,6 +14,8 @@ import java.util.Date;
 /**
  * MES采集数据记录业务对象 dc_data_record
  *
+ * <p>属于MES 数据采集模块，数据记录业务对象（新增/编辑入参）。</p>
+ *
  * @author Nexus
  */
 @Data

@@ -14,6 +14,8 @@ import java.util.Date;
 /**
  * MES设备 OEE 聚合记录视图对象 eq_oee_record
  *
+ * <p>属于MES 设备管理模块，OEE记录视图对象（查询出参）。</p>
+ *
  * @author Nexus
  */
 @Data

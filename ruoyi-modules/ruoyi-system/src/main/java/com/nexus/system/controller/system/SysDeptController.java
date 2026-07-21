@@ -20,7 +20,9 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 /**
- * 部门信息
+ * 部门管理Controller
+ * <p>提供部门（组织机构）的树形列表查询、详情、新增、修改、删除及部门选择框等接口，
+ * 同时校验数据权限与层级约束。属于系统管理（System）模块。</p>
  *
  * @author Lion Li
  */
@@ -30,11 +32,16 @@ import java.util.List;
 @RequestMapping("/system/dept")
 public class SysDeptController extends BaseController {
 
+    /** 部门业务服务，提供部门树查询、唯一性校验、数据权限与增删改能力。 */
     private final ISysDeptService deptService;
+    /** 岗位业务服务，用于删除部门前校验部门下是否存在关联岗位。 */
     private final ISysPostService postService;
 
     /**
-     * 获取部门列表
+     * 查询部门列表（树形结构）。
+     *
+     * @param dept 部门查询条件（部门名称、状态等）
+     * @return 部门列表
      */
     @SaCheckPermission("system:dept:list")
     @GetMapping("/list")
@@ -44,9 +51,10 @@ public class SysDeptController extends BaseController {
     }
 
     /**
-     * 查询部门列表（排除节点）
+     * 查询部门列表并排除指定节点及其所有子节点（用于部门选择上级时回显）。
      *
-     * @param deptId 部门ID
+     * @param deptId 待排除的部门 ID（为空则不排除）
+     * @return 排除后的部门列表
      */
     @SaCheckPermission("system:dept:list")
     @GetMapping("/list/exclude/{deptId}")
@@ -58,9 +66,10 @@ public class SysDeptController extends BaseController {
     }
 
     /**
-     * 根据部门编号获取详细信息
+     * 根据部门编号获取部门详细信息（先校验数据权限）。
      *
-     * @param deptId 部门ID
+     * @param deptId 部门 ID
+     * @return 部门详情
      */
     @SaCheckPermission("system:dept:query")
     @GetMapping(value = "/{deptId}")
@@ -70,7 +79,10 @@ public class SysDeptController extends BaseController {
     }
 
     /**
-     * 新增部门
+     * 新增部门，校验部门名称唯一性。
+     *
+     * @param dept 部门新增参数
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckPermission("system:dept:add")
     @Log(title = "部门管理", businessType = BusinessType.INSERT)
@@ -84,7 +96,10 @@ public class SysDeptController extends BaseController {
     }
 
     /**
-     * 修改部门
+     * 修改部门，校验数据权限、名称唯一性、层级与停用约束。
+     *
+     * @param dept 部门修改参数
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckPermission("system:dept:edit")
     @Log(title = "部门管理", businessType = BusinessType.UPDATE)
@@ -108,9 +123,10 @@ public class SysDeptController extends BaseController {
     }
 
     /**
-     * 删除部门
+     * 删除部门，前置校验默认部门、下级部门、部门用户与部门岗位约束。
      *
-     * @param deptId 部门ID
+     * @param deptId 部门 ID
+     * @return 操作结果，成功时返回成功状态
      */
     @SaCheckPermission("system:dept:remove")
     @Log(title = "部门管理", businessType = BusinessType.DELETE)
@@ -133,9 +149,10 @@ public class SysDeptController extends BaseController {
     }
 
     /**
-     * 获取部门选择框列表
+     * 获取部门选择框列表（支持按部门 ID 串预选）。
      *
-     * @param deptIds 部门ID串
+     * @param deptIds 预选部门 ID 数组（为空则查全部）
+     * @return 部门列表
      */
     @SaCheckPermission("system:dept:query")
     @GetMapping("/optionselect")

@@ -17,7 +17,9 @@ import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
 
 /**
- * MES过程检验 Controller
+ * MES 过程检验（IPQC）Controller
+ * <p>提供过程检验单的分页查询、详情、新增与执行检验等 REST 接口，属于 MES 质量管理模块；
+ * 检验为 MES 内部流程、不回传 ERP，执行检验时自动计算不良率。</p>
  *
  * @author Nexus
  */
@@ -30,7 +32,11 @@ public class QcIpqcController extends BaseController {
     private final IQcIpqcService qcIpqcService;
 
     /**
-     * 分页查询IPQC列表
+     * 分页查询 IPQC 过程检验列表。
+     *
+     * @param bo        检验单查询条件
+     * @param pageQuery 分页参数（页码、每页大小、排序）
+     * @return 分页结果，包含 IPQC 检验单视图列表及分页元信息
      */
     @SaCheckPermission("mes:qc:ipqc:list")
     @GetMapping("/list")
@@ -39,7 +45,10 @@ public class QcIpqcController extends BaseController {
     }
 
     /**
-     * 根据ID获取IPQC详情
+     * 根据主键 ID 获取 IPQC 过程检验单详情。
+     *
+     * @param ipqcId IPQC 检验单 ID
+     * @return IPQC 检验单详情
      */
     @SaCheckPermission("mes:qc:ipqc:query")
     @GetMapping("/{ipqcId}")
@@ -48,7 +57,10 @@ public class QcIpqcController extends BaseController {
     }
 
     /**
-     * 新增IPQC检验单
+     * 新增 IPQC 过程检验单。
+     *
+     * @param bo IPQC 检验单业务对象
+     * @return 新增后的 IPQC 检验单详情
      */
     @SaCheckPermission("mes:qc:ipqc:add")
     @Log(title = "IPQC新增", businessType = BusinessType.INSERT)
@@ -58,7 +70,14 @@ public class QcIpqcController extends BaseController {
     }
 
     /**
-     * 执行IPQC检验(自动计算不良率)
+     * 执行 IPQC 检验：将状态推进为 COMPLETED，并自动计算不良率（不良数/抽样数乘100）。
+     *
+     * @param ipqcId        IPQC 检验单 ID
+     * @param inspectResult 检验结果 QUALIFIED（合格）/ UNQUALIFIED（不合格）
+     * @param defectInfo    不良品信息（JSON 字符串，可为空）
+     * @param sampleQty     抽样数量（可为空）
+     * @param defectQty     不良数量（可为空）
+     * @param remark        备注（可为空）
      */
     @SaCheckPermission("mes:qc:ipqc:inspect")
     @Log(title = "IPQC检验", businessType = BusinessType.UPDATE)
