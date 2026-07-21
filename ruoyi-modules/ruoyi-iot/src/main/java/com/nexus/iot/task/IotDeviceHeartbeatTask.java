@@ -17,7 +17,7 @@ import java.util.List;
 /**
  * IoT 设备心跳检测任务：扫描最后在线时间早于 15 分钟仍标记 ONLINE 的设备，置为 OFFLINE。
  * <p>
- * SnailJob：executor=iotDeviceHeartbeatTask，建议 cron=0 */5 * * * ?（每 5 分钟）。
+ * SnailJob：executor=iotDeviceHeartbeatTask，建议 cron=0 * /5 * * * ?（每 5 分钟）。
  *
  * @author nexus
  */
