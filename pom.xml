@@ -55,8 +55,8 @@
         <flowable.version>7.0.0</flowable.version>
 
         <!-- AI 相关版本 -->
-        <langchain4j.version>1.13.0</langchain4j.version>
-        <langchain4j.community.version>1.13.0-beta23</langchain4j.community.version>
+        <langchain4j.version>1.18.0</langchain4j.version>
+        <langchain4j.community.version>1.18.0-beta28</langchain4j.community.version>
         <langgraph4j.version>1.5.3</langgraph4j.version>
 
         <!-- 插件版本 -->
