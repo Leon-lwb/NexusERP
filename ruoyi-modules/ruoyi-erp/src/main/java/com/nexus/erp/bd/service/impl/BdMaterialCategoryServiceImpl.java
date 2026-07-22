@@ -393,7 +393,10 @@ public class BdMaterialCategoryServiceImpl implements IBdMaterialCategoryService
         lqw.eq(StringUtils.isNotBlank(bo.getCategoryCode()), BdMaterialCategory::getCategoryCode, bo.getCategoryCode());
         lqw.like(StringUtils.isNotBlank(bo.getCategoryName()), BdMaterialCategory::getCategoryName, bo.getCategoryName());
         lqw.eq(bo.getStatus() != null, BdMaterialCategory::getStatus, bo.getStatus());
-        lqw.orderByAsc(BdMaterialCategory::getPathIds);
+        // 先按 level_num 再按 sort_order：path_ids 为逗号串，字符串排序会使 "1,10" 排在 "1,5" 之前，
+        // 导致子分类乱序且 sort_order 永不生效。前端 handleTree 按数组顺序构建子节点，
+        // 同 level 内按 sort_order 排序即可保证各父级下子节点顺序正确。
+        lqw.orderByAsc(BdMaterialCategory::getLevelNum);
         lqw.orderByAsc(BdMaterialCategory::getSortOrder);
         return lqw;
     }
