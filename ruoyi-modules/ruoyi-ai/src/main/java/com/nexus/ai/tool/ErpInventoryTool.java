@@ -59,7 +59,7 @@ public class ErpInventoryTool extends ErpToolHelper {
     @Tool("根据物料编码查询最近N个月的出库趋势")
     public String queryMaterialOutboundTrend(
         @P("物料编码") String materialCode,
-        @P("查询月数") int months) {
+        @P(value = "查询月数", defaultValue = "6") int months) {
         log.info("[AI-Inventory] 查询物料出库趋势: materialCode={}, months={}", materialCode, months);
         if (materialCode == null || materialCode.trim().isEmpty()) {
             return "参数错误：物料编码不能为空";
@@ -151,7 +151,7 @@ public class ErpInventoryTool extends ErpToolHelper {
      * @return 呆滞物料列表
      */
     @Tool("查询库龄分析，识别呆滞物料（入库超过指定天数的库存）")
-    public String queryInventoryAging(@P("库龄天数阈值") int agingDays) {
+    public String queryInventoryAging(@P(value = "库龄天数阈值", defaultValue = "90") int agingDays) {
         log.info("[AI-Inventory] 查询库龄分析: agingDays={}", agingDays);
         if (agingDays <= 0) {
             return "参数错误：库龄天数阈值必须大于0";
@@ -191,7 +191,7 @@ public class ErpInventoryTool extends ErpToolHelper {
      * @return 各仓库库存周转率
      */
     @Tool("查询各仓库的库存周转率分析")
-    public String queryInventoryTurnover(@P("统计月数") int months) {
+    public String queryInventoryTurnover(@P(value = "统计月数", defaultValue = "6") int months) {
         log.info("[AI-Inventory] 查询库存周转率: months={}", months);
         if (months <= 0) {
             return "参数错误：统计月数必须大于0";

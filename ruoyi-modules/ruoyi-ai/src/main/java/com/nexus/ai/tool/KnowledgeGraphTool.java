@@ -48,7 +48,7 @@ public class KnowledgeGraphTool {
      * @return Markdown 关系表或提示信息
      */
     @Tool("根据实体名称查询当前知识库知识图谱中该实体的关系（1跳或2跳邻居），返回 Markdown 关系表")
-    public String queryGraphRelation(@P("实体名称") String entityName, @P("跳数，1 或 2，默认 1") Integer hops) {
+    public String queryGraphRelation(@P("实体名称") String entityName, @P(value = "跳数，1 或 2，默认 1", defaultValue = "1") Integer hops) {
         Long knowledgeId = AiRequestContext.getKnowledgeId();
         if (knowledgeId == null) {
             return "未选择知识库，无法查询图谱";

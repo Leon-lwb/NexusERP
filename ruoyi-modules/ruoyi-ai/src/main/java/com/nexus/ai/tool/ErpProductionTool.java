@@ -157,7 +157,7 @@ public class ErpProductionTool extends ErpToolHelper {
      */
     @Tool("查询最近N天的生产完成率")
     public String queryProductionCompletionRate(
-        @P("查询天数") int days) {
+        @P(value = "查询天数", defaultValue = "30") int days) {
         log.info("[AI-Production] 查询生产完成率: days={}", days);
         if (days <= 0) {
             return "参数错误：查询天数必须大于0";
@@ -196,7 +196,7 @@ public class ErpProductionTool extends ErpToolHelper {
      * @return 延期工单列表
      */
     @Tool("查询生产延期分析（计划结束日期已过但未完成的工单）")
-    public String queryProductionDelayAnalysis(@P("查询天数") int days) {
+    public String queryProductionDelayAnalysis(@P(value = "查询天数", defaultValue = "30") int days) {
         log.info("[AI-Production] 查询生产延期分析: days={}", days);
         if (days <= 0) {
             return "参数错误：查询天数必须大于0";
@@ -238,7 +238,7 @@ public class ErpProductionTool extends ErpToolHelper {
      * @return 车间产量统计
      */
     @Tool("查询各车间的产量统计")
-    public String queryWorkshopOutput(@P("统计天数") int days) {
+    public String queryWorkshopOutput(@P(value = "统计天数", defaultValue = "30") int days) {
         log.info("[AI-Production] 查询车间产量统计: days={}", days);
         if (days <= 0) {
             return "参数错误：统计天数必须大于0";

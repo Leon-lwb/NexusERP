@@ -32,7 +32,7 @@ public class ErpSalesTool extends ErpToolHelper {
     @Tool("查询指定物料近N个月的月度销售数据，用于趋势分析")
     public String queryMonthlySalesTrend(
         @P("物料编码") String materialCode,
-        @P("查询月数") int months) {
+        @P(value = "查询月数", defaultValue = "6") int months) {
         log.info("[AI-Sales] 查询月度销售趋势: materialCode={}, months={}", materialCode, months);
         if (materialCode == null || materialCode.trim().isEmpty()) {
             return "参数错误：物料编码不能为空";
@@ -70,8 +70,8 @@ public class ErpSalesTool extends ErpToolHelper {
      */
     @Tool("查询按客户维度的销售金额排行（Top N）")
     public String queryTopClientsBySales(
-        @P("时间范围（天数）") int days,
-        @P("Top N") int topN) {
+        @P(value = "时间范围（天数）", defaultValue = "30") int days,
+        @P(value = "Top N", defaultValue = "10") int topN) {
         log.info("[AI-Sales] 查询客户销售排行: days={}, topN={}", days, topN);
         if (days <= 0) {
             return "参数错误：时间范围天数必须大于0";
@@ -109,7 +109,7 @@ public class ErpSalesTool extends ErpToolHelper {
      */
     @Tool("查询最近N天的退货统计")
     public String queryRecentReturns(
-        @P("查询天数") int days) {
+        @P(value = "查询天数", defaultValue = "30") int days) {
         log.info("[AI-Sales] 查询退货统计: days={}", days);
         if (days <= 0) {
             return "参数错误：查询天数必须大于0";
@@ -174,7 +174,7 @@ public class ErpSalesTool extends ErpToolHelper {
      * @return 各品类销售额分布
      */
     @Tool("查询各物料分类的销售额分布")
-    public String querySalesByCategory(@P("统计天数") int days) {
+    public String querySalesByCategory(@P(value = "统计天数", defaultValue = "30") int days) {
         log.info("[AI-Sales] 查询品类销售分布: days={}", days);
         if (days <= 0) {
             return "参数错误：统计天数必须大于0";
@@ -215,8 +215,8 @@ public class ErpSalesTool extends ErpToolHelper {
      */
     @Tool("查询物料销售金额排行TOP N")
     public String queryTopMaterialsBySales(
-        @P("统计天数") int days,
-        @P("Top N") int topN) {
+        @P(value = "统计天数", defaultValue = "30") int days,
+        @P(value = "Top N", defaultValue = "10") int topN) {
         log.info("[AI-Sales] 查询物料销售排行: days={}, topN={}", days, topN);
         if (days <= 0) {
             return "参数错误：统计天数必须大于0";

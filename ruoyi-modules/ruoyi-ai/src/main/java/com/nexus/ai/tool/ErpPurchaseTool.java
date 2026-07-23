@@ -104,7 +104,7 @@ public class ErpPurchaseTool extends ErpToolHelper {
      */
     @Tool("查询最近N天未到货的在途采购订单")
     public String queryPendingPurchaseOrders(
-        @P("查询天数") int days) {
+        @P(value = "查询天数", defaultValue = "30") int days) {
         log.info("[AI-Purchase] 查询在途采购订单: days={}", days);
         if (days <= 0) {
             return "参数错误：查询天数必须大于0";
@@ -142,7 +142,7 @@ public class ErpPurchaseTool extends ErpToolHelper {
     @Tool("查询指定物料近N个月的采购价格历史趋势")
     public String queryPurchasePriceHistory(
         @P("物料编码") String materialCode,
-        @P("查询月数") int months) {
+        @P(value = "查询月数", defaultValue = "6") int months) {
         log.info("[AI-Purchase] 查询采购价格历史: materialCode={}, months={}", materialCode, months);
         if (materialCode == null || materialCode.trim().isEmpty()) {
             return "参数错误：物料编码不能为空";
@@ -215,7 +215,7 @@ public class ErpPurchaseTool extends ErpToolHelper {
      * @return 月度采购趋势
      */
     @Tool("查询最近N个月的采购趋势（按月聚合）")
-    public String queryPurchaseTrend(@P("统计月数") int months) {
+    public String queryPurchaseTrend(@P(value = "统计月数", defaultValue = "6") int months) {
         log.info("[AI-Purchase] 查询采购趋势: months={}", months);
         if (months <= 0) {
             return "参数错误：统计月数必须大于0";

@@ -2,8 +2,11 @@ package com.nexus.ai.service.rag.embedding;
 
 import com.nexus.common.ai.domain.entity.AiModel;
 import dev.langchain4j.model.embedding.EmbeddingModel;
+import dev.langchain4j.model.embedding.listener.EmbeddingModelListener;
 import dev.langchain4j.model.openai.OpenAiEmbeddingModel;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
 
 /**
  * OpenAI 兼容接口 Embedding 构建
@@ -26,6 +29,16 @@ public class OpenAiEmbeddingProvider implements EmbeddingProvider {
             .baseUrl(config.getApiHost())
             .apiKey(config.getApiKey())
             .modelName(config.getModelName())
+            .build();
+    }
+
+    @Override
+    public EmbeddingModel build(AiModel config, List<EmbeddingModelListener> listeners) {
+        return OpenAiEmbeddingModel.builder()
+            .baseUrl(config.getApiHost())
+            .apiKey(config.getApiKey())
+            .modelName(config.getModelName())
+            .listeners(listeners)
             .build();
     }
 }

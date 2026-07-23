@@ -3,6 +3,7 @@ package com.nexus.ai.observability;
 import com.nexus.common.ai.mapper.AiMessageMapper;
 import com.nexus.common.ai.service.IAiTokenUsageService;
 import dev.langchain4j.model.chat.listener.ChatModelListener;
+import dev.langchain4j.model.embedding.listener.EmbeddingModelListener;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
@@ -12,11 +13,12 @@ import java.util.List;
 
 /**
  * LangChain4j 可观测性配置
- * <p>注册 ChatModel/ToolExecuted 监听器到 LangChain4j 框架</p>
+ * <p>注册 ChatModel/ToolExecuted/EmbeddingModel 监听器到 LangChain4j 框架</p>
  * <p>{@link ChatModelListener} 通过 Spring Bean 注入到 {@code ChatModelFactory}，再传入 OpenAI 模型构建器</p>
  * <p>{@link AiToolExecutedListener} 通过 {@code AiServiceListenerRegistrar} 全局注册</p>
- * <p>注意：OpenAiEmbeddingModel 在 langchain4j 1.13.0 中不支持 {@code listeners()} 注入，
- * {@link AiEmbeddingModelListener} 暂未注册，待后续版本支持后启用</p>
+ * <p>{@link AiEmbeddingModelListener} 通过 Spring Bean 注入到 {@code EmbeddingProviderFactory}，
+ * 再传入 {@code OpenAiEmbeddingModel.builder().listeners()} / {@code OllamaEmbeddingModel.builder().listeners()}
+ * （langchain4j 1.18.0 起支持）</p>
  *
  * @author NexusERP
  * @since 1.0.0
@@ -66,5 +68,18 @@ public class LangChain4jObservabilityConfig {
     @Bean
     public List<ChatModelListener> chatModelListeners(ChatModelListener chatModelListener) {
         return List.of(chatModelListener);
+    }
+
+    /**
+     * EmbeddingModel 监听器 Bean
+     * <p>注入到 {@code EmbeddingProviderFactory}，在构建 Embedding 模型时传入 {@code .listeners()}</p>
+     * <p>langchain4j 1.18.0 起 {@code OpenAiEmbeddingModel.builder().listeners()} 和
+     * {@code OllamaEmbeddingModel.builder().listeners()} 均已可用</p>
+     *
+     * @return {@link AiEmbeddingModelListener} 实例
+     */
+    @Bean
+    public EmbeddingModelListener embeddingModelListener() {
+        return new AiEmbeddingModelListener();
     }
 }

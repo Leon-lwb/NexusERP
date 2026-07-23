@@ -2,9 +2,11 @@ package com.nexus.ai.service.rag.embedding;
 
 import com.nexus.common.ai.domain.entity.AiModel;
 import dev.langchain4j.model.embedding.EmbeddingModel;
+import dev.langchain4j.model.embedding.listener.EmbeddingModelListener;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -25,14 +27,19 @@ public class EmbeddingProviderFactory {
 
     /** 厂商类型 → 嵌入模型构建策略 注册表（构造时从 Spring 收集并注册）。 */
     private final Map<String, EmbeddingProvider> providers;
+    /** Embedding 监听器列表（来自 Spring 容器，可能为空）。 */
+    private final List<EmbeddingModelListener> listeners;
 
-    public EmbeddingProviderFactory(List<EmbeddingProvider> providerList) {
+    public EmbeddingProviderFactory(List<EmbeddingProvider> providerList,
+                                    List<EmbeddingModelListener> listeners) {
         this.providers = providerList.stream()
             .collect(Collectors.toMap(
                 p -> p.getProviderType().toUpperCase(),
                 Function.identity()
             ));
-        log.info("[EmbeddingProviderFactory] 已注册 Embedding Provider: {}", providers.keySet());
+        this.listeners = listeners != null ? listeners : Collections.emptyList();
+        log.info("[EmbeddingProviderFactory] 已注册 Embedding Provider: {}, listeners={}",
+            providers.keySet(), this.listeners.size());
     }
 
     /**
@@ -49,14 +56,14 @@ public class EmbeddingProviderFactory {
 
         EmbeddingProvider provider = providers.get(type);
         if (provider != null) {
-            return provider.build(config);
+            return provider.build(config, listeners);
         }
 
         // 回退到 OpenAI 兼容接口
         log.warn("[EmbeddingProviderFactory] 未找到 Provider: {}，回退到 OPENAI 兼容接口", type);
         EmbeddingProvider fallback = providers.get("OPENAI");
         if (fallback != null) {
-            return fallback.build(config);
+            return fallback.build(config, listeners);
         }
 
         throw new IllegalArgumentException("未找到可用的 Embedding Provider: " + type);
