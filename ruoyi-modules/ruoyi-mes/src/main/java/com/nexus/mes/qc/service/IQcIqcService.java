@@ -54,6 +54,19 @@ public interface IQcIqcService {
     QcIqcVo insertByBo(QcIqcBo bo);
 
     /**
+     * 幂等查询：指定收货单 + 物料是否已存在 IQC 检验单。
+     * <p>
+     * 供 MQ 消费者（IqcAutoCreateConsumer）调用——消费者线程无 {@code @DS} 上下文，
+     * 直接调 Mapper 会落到默认 master 库（ry-vue）报 "Table 'ry-vue.qc_iqc' doesn't exist"，
+     * 故必须经此 Service 方法走类级 {@code @DS("mes")} 切换到 ry-mes 库。
+     *
+     * @param receiveId  ERP 收货单 ID
+     * @param materialId 物料 ID
+     * @return 已存在返回 true
+     */
+    boolean existsByReceiveAndMaterial(Long receiveId, Long materialId);
+
+    /**
      * 执行检验(PENDING/INSPECTING -> COMPLETED), 完成后MQ回传ERP
      *
      * @param iqcId        IQC ID

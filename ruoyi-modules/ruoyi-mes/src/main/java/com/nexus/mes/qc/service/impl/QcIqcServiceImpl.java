@@ -100,6 +100,23 @@ public class QcIqcServiceImpl implements IQcIqcService {
     }
 
     /**
+     * 幂等查询：指定收货单 + 物料是否已存在 IQC 检验单。
+     * <p>
+     * 类级 {@code @DS("mes")} 保证查询落到 ry-mes 库（qc_iqc 表所在库）。
+     *
+     * @param receiveId  ERP 收货单 ID
+     * @param materialId 物料 ID
+     * @return 已存在返回 true
+     */
+    @Override
+    public boolean existsByReceiveAndMaterial(Long receiveId, Long materialId) {
+        Long count = baseMapper.selectCount(Wrappers.<QcIqc>lambdaQuery()
+            .eq(QcIqc::getReceiveId, receiveId)
+            .eq(QcIqc::getMaterialId, materialId));
+        return count != null && count > 0;
+    }
+
+    /**
      * 执行 IQC 检验：将状态由 PENDING/INSPECTING 推进为 COMPLETED，记录检验员与检验时间；
      * 事务提交后通过 MQ 回传 ERP 更新收货单质检状态。
      *
@@ -157,7 +174,8 @@ public class QcIqcServiceImpl implements IQcIqcService {
                         return;
                     }
                     String tenantId = TenantHelper.getTenantId();
-                    mesMqSendService.sendIqcCompleted(iqcId, iqcCode, receiveId, result, quantity, tenantId);
+                    mesMqSendService.sendIqcCompleted(iqcId, iqcCode, receiveId, updated.getMaterialId(),
+                        result, quantity, tenantId);
                 }
             });
     }

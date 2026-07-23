@@ -28,7 +28,7 @@ public class ReceiveApprovedMessage extends BaseMessage {
     /** 收货单号 */
     private String receiveCode;
 
-    /** 物料 ID（取自收货明细首条，明细表 wm_material_receive_detail） */
+    /** 物料 ID（取自收货行 wm_material_receive_line，按到货通知行 iqc_check=1 逐需检物料投递） */
     private Long materialId;
 
     /** 物料编码 */
@@ -43,9 +43,9 @@ public class ReceiveApprovedMessage extends BaseMessage {
     /** 供应商名称 */
     private String vendorName;
 
-    /** 收货数量（取自收货明细首条 quantity 字段） */
+    /** 收货数量（取自收货行 quantity_received，同一物料多行求和） */
     private BigDecimal quantity;
 
-    /** 收货明细 ID（用于 IQC 关联，可空） */
+    /** 收货明细 ID（已废弃：原取自上架明细 wm_material_receive_detail，现按收货行投递，此字段留空） */
     private Long receiveDetailId;
 }

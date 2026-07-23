@@ -80,19 +80,21 @@ public class MesMqSendService {
      * @param iqcId         IQC检验ID
      * @param iqcCode       IQC检验编号
      * @param receiveId     ERP收货单ID
+     * @param materialId    物料ID(ERP 据此按行回写 wm_arrival_notice_line)
      * @param inspectResult 检验结果(QUALIFIED/UNQUALIFIED)
      * @param quantity      检验数量
      * @param tenantId      租户ID
      */
     @Async
-    public void sendIqcCompleted(Long iqcId, String iqcCode, Long receiveId,
+    public void sendIqcCompleted(Long iqcId, String iqcCode, Long receiveId, Long materialId,
                                  String inspectResult, BigDecimal quantity, String tenantId) {
-        log.info("异步发送IQC检验完成消息: iqcId={}, iqcCode={}, receiveId={}, result={}",
-            iqcId, iqcCode, receiveId, inspectResult);
+        log.info("异步发送IQC检验完成消息: iqcId={}, iqcCode={}, receiveId={}, materialId={}, result={}",
+            iqcId, iqcCode, receiveId, materialId, inspectResult);
         IqcCompletedMessage msg = new IqcCompletedMessage();
         msg.setIqcId(iqcId);
         msg.setIqcCode(iqcCode);
         msg.setReceiveId(receiveId);
+        msg.setMaterialId(materialId);
         msg.setInspectResult(inspectResult);
         msg.setQuantity(quantity);
         if (tenantId != null) {

@@ -1,11 +1,14 @@
 package com.nexus.erp.mq.consumer;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.nexus.common.mq.constant.QueueConstants;
 import com.nexus.common.mq.consumer.BaseMessageConsumer;
 import com.nexus.common.mq.message.IqcCompletedMessage;
 import com.nexus.common.tenant.helper.TenantHelper;
+import com.nexus.erp.wm.domain.WmArrivalNoticeLine;
 import com.nexus.erp.wm.domain.WmMaterialReceive;
+import com.nexus.erp.wm.mapper.WmArrivalNoticeLineMapper;
 import com.nexus.erp.wm.mapper.WmMaterialReceiveMapper;
 import com.rabbitmq.client.Channel;
 import lombok.RequiredArgsConstructor;
@@ -17,10 +20,14 @@ import org.springframework.stereotype.Component;
 /**
  * IQC检验完成消费者（ERP侧）
  * <p>
- * 消费MES发出的IQC检验完成消息，回写ERP收货单(WmMaterialReceive)质检状态：
- * QUALIFIED -> APPROVED(允许上架入库); UNQUALIFIED -> REJECTED(标记不合格)。
+ * 消费MES发出的IQC检验完成消息，按物料行回写ERP到货通知行(wm_arrival_notice_line)的质检结果：
+ * iqc_id / iqc_code / iqc_status(QUALIFIED|UNQUALIFIED)。
  * <p>
- * 边界: 仅标记收货单状态 + 回写 iqcId/iqcCode，不实现不良品入库/退货流程。
+ * 收货单头仅回写 iqc_id/iqc_code(展示用)，不再强改收货单状态——上架门禁由
+ * {@code WmMaterialReceiveCrudServiceImpl.confirmShelf} 按 iqc_status 校验，
+ * 避免多需检料时单头状态在 QUALIFIED/REJECTED 间反复跳变。
+ * <p>
+ * 边界: 仅回写质检结果，不实现不良品入库/退货流程。
  *
  * @author Nexus
  */
@@ -30,16 +37,8 @@ import org.springframework.stereotype.Component;
 @DS("erp")
 public class ErpIqcCompletedConsumer extends BaseMessageConsumer<IqcCompletedMessage> {
 
-    /** ERP收货单状态: 审批通过(待上架) */
-    private static final String RECEIVE_STATUS_APPROVED = "APPROVED";
-    /** ERP收货单状态: 已上架(待入库) */
-    private static final String RECEIVE_STATUS_SHELVED = "SHELVED";
-    /** ERP收货单状态: 已完成 */
-    private static final String RECEIVE_STATUS_FINISHED = "FINISHED";
-    /** ERP收货单状态: 已拒绝(不合格) */
-    private static final String RECEIVE_STATUS_REJECTED = "REJECTED";
-
     private final WmMaterialReceiveMapper materialReceiveMapper;
+    private final WmArrivalNoticeLineMapper arrivalNoticeLineMapper;
 
     /**
      * 获取消息类型
@@ -52,7 +51,7 @@ public class ErpIqcCompletedConsumer extends BaseMessageConsumer<IqcCompletedMes
     }
 
     /**
-     * 处理IQC检验完成消息，更新ERP收货单质检状态
+     * 处理IQC检验完成消息，按物料行回写ERP质检结果
      *
      * @param message IQC检验完成消息
      */
@@ -68,7 +67,11 @@ public class ErpIqcCompletedConsumer extends BaseMessageConsumer<IqcCompletedMes
     }
 
     /**
-     * 执行收货单质检状态回写
+     * 按物料行回写IQC结果：
+     * <ol>
+     *   <li>收货单头 iqc_id/iqc_code（展示用）</li>
+     *   <li>到货通知行 iqc_id/iqc_code/iqc_status（confirmShelf 门禁依据）</li>
+     * </ol>
      *
      * @param message IQC检验完成消息
      */
@@ -79,26 +82,28 @@ public class ErpIqcCompletedConsumer extends BaseMessageConsumer<IqcCompletedMes
             return;
         }
 
-        // 回写IQC关联
+        // 1. 收货单头回写 iqc_id/iqc_code（展示用）
         receive.setIqcId(message.getIqcId());
         receive.setIqcCode(message.getIqcCode());
-
-        // 仅标记状态: QUALIFIED -> APPROVED(允许上架); UNQUALIFIED -> REJECTED
-        // 已 APPROVED/SHELVED/FINISHED 的单据不回退(避免影响已上架/已入库流程)
-        String status = receive.getStatus();
-        if ("QUALIFIED".equals(message.getInspectResult())) {
-            if (!RECEIVE_STATUS_APPROVED.equals(status)
-                && !RECEIVE_STATUS_SHELVED.equals(status)
-                && !RECEIVE_STATUS_FINISHED.equals(status)) {
-                receive.setStatus(RECEIVE_STATUS_APPROVED);
-            }
-        } else if ("UNQUALIFIED".equals(message.getInspectResult())) {
-            receive.setStatus(RECEIVE_STATUS_REJECTED);
-            receive.setRemark("IQC检验不合格: " + message.getIqcCode());
-        }
         materialReceiveMapper.updateById(receive);
-        log.info("IQC回写收货单完成: receiveId={}, iqcCode={}, result={}, newStatus={}",
-            message.getReceiveId(), message.getIqcCode(), message.getInspectResult(), receive.getStatus());
+
+        // 2. 按物料行回写 wm_arrival_notice_line: iqc_id/iqc_code/iqc_status（门禁依据）
+        if (receive.getNoticeId() != null && message.getMaterialId() != null) {
+            WmArrivalNoticeLine lineUpdate = new WmArrivalNoticeLine();
+            lineUpdate.setIqcId(message.getIqcId());
+            lineUpdate.setIqcCode(message.getIqcCode());
+            lineUpdate.setIqcStatus(message.getInspectResult());
+            int rows = arrivalNoticeLineMapper.update(lineUpdate, new LambdaQueryWrapper<WmArrivalNoticeLine>()
+                .eq(WmArrivalNoticeLine::getNoticeId, receive.getNoticeId())
+                .eq(WmArrivalNoticeLine::getMaterialId, message.getMaterialId()));
+            log.info("IQC按行回写: receiveId={}, materialId={}, result={}, 影响行数={}",
+                message.getReceiveId(), message.getMaterialId(), message.getInspectResult(), rows);
+        } else {
+            log.warn("IQC回写缺少 noticeId/materialId，跳过按行回写: receiveId={}, materialId={}",
+                message.getReceiveId(), message.getMaterialId());
+        }
+        log.info("IQC回写收货单完成: receiveId={}, iqcCode={}, result={}",
+            message.getReceiveId(), message.getIqcCode(), message.getInspectResult());
     }
 
     /**

@@ -27,6 +27,8 @@ public class IqcCompletedMessage extends BaseMessage {
     private String iqcCode;
     /** ERP收货单ID */
     private Long receiveId;
+    /** 物料ID(ERP 据此按行回写 wm_arrival_notice_line) */
+    private Long materialId;
     /** 检验结果: QUALIFIED/UNQUALIFIED */
     private String inspectResult;
     /** 检验数量 */

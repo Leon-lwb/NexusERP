@@ -49,6 +49,8 @@ public class WmArrivalNoticeLine extends TenantEntity {
     private Long iqcId;
     /** 质检单编号 */
     private String iqcCode;
+    /** IQC检验结果(QUALIFIED/UNQUALIFIED, NULL=未完成)——confirmShelf 门禁依据 */
+    private String iqcStatus;
     /** 备注 */
     private String remark;
     /** 预留字段1 */

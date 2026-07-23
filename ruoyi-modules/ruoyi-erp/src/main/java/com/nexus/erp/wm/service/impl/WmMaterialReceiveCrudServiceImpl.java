@@ -12,9 +12,11 @@ import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.flowable.core.domain.ActStatus;
 import com.nexus.common.mq.constant.ExchangeConstants;
 import com.nexus.common.mq.constant.RoutingKeyConstants;
+import com.nexus.common.mq.message.ReceiveApprovedMessage;
 import com.nexus.common.mq.producer.ReliableMessageProducer;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
+import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.system.strategy.AutoCodeUtil;
 import com.nexus.erp.mq.message.StockInMessage;
 import com.nexus.erp.wm.domain.WmArrivalNoticeLine;
@@ -47,13 +49,20 @@ import org.flowable.engine.runtime.ProcessInstance;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
 
+import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * 物料入库单CRUD Service实现类，负责基础CRUD、校验和工作流回调
@@ -365,6 +374,39 @@ public class WmMaterialReceiveCrudServiceImpl implements IWmMaterialReceiveCrudS
             throw new ServiceException("请先添加上架明细并分配库位");
         }
 
+        // IQC 门禁：需检物料(iqc_check=1)必须IQC合格才允许上架(待上架->待入库)
+        // 按到货通知行校验 iqc_status；无到货通知或无需检料则跳过(无到货通知的收货单由 MES 端手动建 IQC)
+        if (receive.getNoticeId() != null) {
+            List<WmArrivalNoticeLine> noticeLines = arrivalNoticeLineMapper.selectList(
+                new LambdaQueryWrapper<WmArrivalNoticeLine>()
+                    .eq(WmArrivalNoticeLine::getNoticeId, receive.getNoticeId())
+                    .eq(WmArrivalNoticeLine::getIqcCheck, "1"));
+            if (noticeLines != null && !noticeLines.isEmpty()) {
+                StringBuilder pending = new StringBuilder();
+                StringBuilder unqualified = new StringBuilder();
+                for (WmArrivalNoticeLine nl : noticeLines) {
+                    if ("UNQUALIFIED".equals(nl.getIqcStatus())) {
+                        if (unqualified.length() > 0) {
+                            unqualified.append("、");
+                        }
+                        unqualified.append(nl.getMaterialCode());
+                    } else if (!"QUALIFIED".equals(nl.getIqcStatus())) {
+                        // null 或其他值 -> 尚未完成检验
+                        if (pending.length() > 0) {
+                            pending.append("、");
+                        }
+                        pending.append(nl.getMaterialCode());
+                    }
+                }
+                if (pending.length() > 0) {
+                    throw new ServiceException("以下需检物料尚未完成来料检验(IQC)，禁止上架确认：" + pending);
+                }
+                if (unqualified.length() > 0) {
+                    throw new ServiceException("以下物料来料检验(IQC)不合格，禁止上架确认：" + unqualified);
+                }
+            }
+        }
+
         receive.setStatus(STATUS_SHELVED);
         receive.setShelfBy(LoginHelper.getUserId());
         receive.setShelfTime(new Date());
@@ -580,80 +622,116 @@ public class WmMaterialReceiveCrudServiceImpl implements IWmMaterialReceiveCrudS
     }
 
     /**
-     * 注册 afterCommit 回调，事务提交后发 ReceiveApprovedMessage 给 MES 自动创建 IQC。
+     * 注册 afterCommit 回调，事务提交后按"需检物料"逐条发 ReceiveApprovedMessage 给 MES 自动创建 IQC。
      * <p>
-     * 参考模式：PrdWorkOrderServiceImpl.afterFlowHandle 第 508-514 行。
+     * 触发点：收货单工作流审批通过（afterFlowHandle 的 ActStatus.pass）。
      * <p>
-     * 字段填充：receiveId/receiveCode/vendorId/vendorName 取自收货单主表；
-     * materialId/materialCode/materialName/quantity 取自收货明细表（wm_material_receive_detail）首条。
-     * 若明细为空则跳过 MQ 投递（避免 IQC 创建因 materialId NotNull 校验失败）。
-     * 显式设置 tenantId 修复 sendWorkOrderReleaseMessage 同类缺陷（消费端退化为 000000）。
+     * 物料/数量来源：wm_material_receive_line（收货行，收货单创建时即有），
+     * 不再依赖 wm_material_receive_detail（上架明细，审批后才补），避免"审批时明细为空 -> MQ 被跳过"的时序耦合。
+     * <p>
+     * 门控：到货通知行 iqc_check="1" 的物料才发；同一收货单同一物料聚合并去重（仅发一条）。
+     * 无到货通知关联的收货单跳过（由 MES 端手动建 IQC）。
+     * 显式设置 tenantId 避免消费端退化为 000000（参考 sendWorkOrderReleaseMessage 同类缺陷）。
      */
     private void registerReceiveApprovedMessage(WmMaterialReceive receive) {
         try {
-            // iqcCheck 门控：查到货通知行，任一行 iqcCheck="1" 才触发 IQC 自动创建
-            // noticeId 为空或所有行均免检则跳过（无到货通知的收货单由 MES 端手动建 IQC）
+            // 无到货通知关联：跳过（无到货通知的收货单由 MES 端手动建 IQC）
             if (receive.getNoticeId() == null) {
                 log.warn("收货单 {} 无到货通知关联，跳过 IQC 自动创建 MQ 投递", receive.getReceiveId());
                 return;
             }
+
+            // 收集到货通知行中需检（iqcCheck="1"）的物料ID
             List<WmArrivalNoticeLine> noticeLines = arrivalNoticeLineMapper.selectList(
                 new LambdaQueryWrapper<WmArrivalNoticeLine>()
                     .eq(WmArrivalNoticeLine::getNoticeId, receive.getNoticeId()));
-            boolean needIqc = noticeLines != null && noticeLines.stream()
-                .anyMatch(l -> "1".equals(l.getIqcCheck()));
-            if (!needIqc) {
+            if (noticeLines == null || noticeLines.isEmpty()) {
+                log.warn("收货单 {} 关联到货通知无明细行，跳过 IQC 自动创建 MQ 投递", receive.getReceiveId());
+                return;
+            }
+            Set<Long> needIqcMaterialIds = new HashSet<>();
+            for (WmArrivalNoticeLine l : noticeLines) {
+                if ("1".equals(l.getIqcCheck()) && l.getMaterialId() != null) {
+                    needIqcMaterialIds.add(l.getMaterialId());
+                }
+            }
+            if (needIqcMaterialIds.isEmpty()) {
                 log.info("收货单 {} 所有关联到货通知行均免检，跳过 IQC 自动创建 MQ 投递", receive.getReceiveId());
                 return;
             }
 
-            // 收货明细表查询首条（按 detail_id 升序）填充物料/数量信息
-            WmMaterialReceiveDetail firstDetail = receiveDetailMapper.selectOne(
-                new LambdaQueryWrapper<WmMaterialReceiveDetail>()
-                    .eq(WmMaterialReceiveDetail::getReceiveId, receive.getReceiveId())
-                    .orderByAsc(WmMaterialReceiveDetail::getDetailId)
-                    .last("LIMIT 1"));
-            if (firstDetail == null) {
-                log.warn("收货单 {} 无明细记录，跳过 IQC 自动创建 MQ 投递", receive.getReceiveId());
+            // 收货行：按需检物料聚合数量（同物料多行求和），首行用于取物料编码/名称
+            List<WmMaterialReceiveLine> receiveLines = receiveLineMapper.selectList(
+                new LambdaQueryWrapper<WmMaterialReceiveLine>()
+                    .eq(WmMaterialReceiveLine::getReceiveId, receive.getReceiveId()));
+            if (receiveLines == null || receiveLines.isEmpty()) {
+                log.warn("收货单 {} 无收货行，跳过 IQC 自动创建 MQ 投递", receive.getReceiveId());
+                return;
+            }
+            Map<Long, BigDecimal> qtyByMaterial = new LinkedHashMap<>();
+            Map<Long, WmMaterialReceiveLine> firstLineByMaterial = new LinkedHashMap<>();
+            for (WmMaterialReceiveLine line : receiveLines) {
+                if (line.getMaterialId() == null || !needIqcMaterialIds.contains(line.getMaterialId())) {
+                    continue;
+                }
+                BigDecimal qty = line.getQuantityReceived() != null ? line.getQuantityReceived() : BigDecimal.ZERO;
+                qtyByMaterial.merge(line.getMaterialId(), qty, BigDecimal::add);
+                firstLineByMaterial.putIfAbsent(line.getMaterialId(), line);
+            }
+            if (firstLineByMaterial.isEmpty()) {
+                log.warn("收货单 {} 需检物料无对应收货行，跳过 IQC 自动创建 MQ 投递", receive.getReceiveId());
                 return;
             }
 
-            com.nexus.common.mq.message.ReceiveApprovedMessage message = new com.nexus.common.mq.message.ReceiveApprovedMessage();
-            message.setReceiveId(receive.getReceiveId());
-            message.setReceiveCode(receive.getReceiveCode());
-            message.setReceiveDetailId(firstDetail.getDetailId());
-            message.setMaterialId(firstDetail.getMaterialId());
-            message.setMaterialCode(firstDetail.getMaterialCode());
-            message.setMaterialName(firstDetail.getMaterialName());
-            message.setVendorId(receive.getVendorId());
-            message.setVendorName(receive.getVendorName());
-            message.setQuantity(firstDetail.getQuantity());
-            message.setSourceModule("ERP");
             // 显式设置 tenantId，避免消费端退化为 000000
-            String tenantId = com.nexus.common.tenant.helper.TenantHelper.getTenantId();
-            if (tenantId != null) {
+            long tenantIdVal = 0L;
+            String tenantIdStr = TenantHelper.getTenantId();
+            if (tenantIdStr != null) {
                 try {
-                    message.setTenantId(Long.parseLong(tenantId));
+                    tenantIdVal = Long.parseLong(tenantIdStr);
                 } catch (NumberFormatException ignore) {
-                    message.setTenantId(0L);
+                    tenantIdVal = 0L;
                 }
-            } else {
-                message.setTenantId(0L);
+            }
+            final Long tenantId = tenantIdVal;
+
+            // 逐个需检物料构建消息（一物料一条 -> MES 建一条 IQC）
+            List<ReceiveApprovedMessage> messages = new ArrayList<>();
+            for (Map.Entry<Long, WmMaterialReceiveLine> entry : firstLineByMaterial.entrySet()) {
+                Long materialId = entry.getKey();
+                WmMaterialReceiveLine line = entry.getValue();
+                ReceiveApprovedMessage message = new ReceiveApprovedMessage();
+                message.setReceiveId(receive.getReceiveId());
+                message.setReceiveCode(receive.getReceiveCode());
+                message.setMaterialId(materialId);
+                message.setMaterialCode(line.getMaterialCode());
+                message.setMaterialName(line.getMaterialName());
+                message.setVendorId(receive.getVendorId());
+                message.setVendorName(receive.getVendorName());
+                message.setQuantity(qtyByMaterial.get(materialId));
+                message.setSourceModule("ERP");
+                message.setTenantId(tenantId);
+                messages.add(message);
             }
 
-            org.springframework.transaction.support.TransactionSynchronizationManager.registerSynchronization(
-                new org.springframework.transaction.support.TransactionSynchronization() {
+            final List<ReceiveApprovedMessage> toSend = messages;
+            TransactionSynchronizationManager.registerSynchronization(
+                new TransactionSynchronization() {
                     @Override
                     public void afterCommit() {
-                        try {
-                            messageProducer.send(
-                                ExchangeConstants.TOPIC_EXCHANGE,
-                                com.nexus.common.mq.constant.RoutingKeyConstants.MES_IQC_CREATE,
-                                message);
-                            log.info("收货单审批通过 MQ 已发送: receiveId={}", receive.getReceiveId());
-                        } catch (Exception e) {
-                            log.error("收货单审批通过 MQ 发送失败: receiveId={}", receive.getReceiveId(), e);
-                            // 失败由 MQ 补偿任务兜底
+                        for (ReceiveApprovedMessage message : toSend) {
+                            try {
+                                messageProducer.send(
+                                    ExchangeConstants.TOPIC_EXCHANGE,
+                                    RoutingKeyConstants.MES_IQC_CREATE,
+                                    message);
+                                log.info("收货单审批通过 MQ 已发送: receiveId={}, materialId={}",
+                                    receive.getReceiveId(), message.getMaterialId());
+                            } catch (Exception e) {
+                                log.error("收货单审批通过 MQ 发送失败: receiveId={}, materialId={}",
+                                    receive.getReceiveId(), message.getMaterialId(), e);
+                                // 单条失败由 MQ 补偿任务兜底，不影响其他物料
+                            }
                         }
                     }
                 });
