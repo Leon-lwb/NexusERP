@@ -19,7 +19,7 @@ import java.math.BigDecimal;
 /**
  * MES 出货检验（OQC）Controller
  * <p>提供出货检验单的分页查询、详情、新增与执行检验等 REST 接口，属于 MES 质量管理模块；
- * 检验为 MES 内部流程，不回传 ERP。</p>
+ * 执行检验完成（COMPLETED）后若关联销售订单，则通过 MQ 回传 ERP 更新销售订单行 OQC 状态。</p>
  *
  * @author Nexus
  */

@@ -371,6 +371,19 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
                 + "\n如需强制履行，请确认后重试。");
         }
 
+        // ①' OQC硬门禁：任一行 OQC 不合格则禁止履行(质量门禁，force 不可绕过)
+        List<String> oqcFailedLines = new ArrayList<>();
+        for (SoSalesOrderLine line : lines) {
+            if ("UNQUALIFIED".equals(line.getOqcStatus())) {
+                oqcFailedLines.add("行" + line.getLineNo() + "(" + line.getMaterialName() + "):"
+                    + line.getOqcCode());
+            }
+        }
+        if (!oqcFailedLines.isEmpty()) {
+            throw new RuntimeException("存在OQC检验不合格的销售订单行，禁止履行：\n"
+                + String.join("\n", oqcFailedLines) + "\n请先处理不合格品后再履行。");
+        }
+
         // ② 残余预留清理（兜底：正常出库已把 reserved_qty 消耗至 0）
         stockReservationService.unreserve("SALES_ORDER", soId, null);
 

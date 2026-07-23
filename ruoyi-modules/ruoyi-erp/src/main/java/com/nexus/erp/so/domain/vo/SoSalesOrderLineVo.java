@@ -156,4 +156,15 @@ public class SoSalesOrderLineVo implements Serializable {
 
     /** 关联生产计划ID */
     private Long linkedPlanId;
+
+    /** OQC检验状态(PENDING/QUALIFIED/UNQUALIFIED) */
+    @ExcelProperty(value = "OQC检验状态")
+    private String oqcStatus;
+    /** OQC检验单ID */
+    private Long oqcId;
+    /** OQC检验单编号 */
+    @ExcelProperty(value = "OQC检验单编号")
+    private String oqcCode;
+    /** OQC检验时间 */
+    private Date oqcTime;
 }

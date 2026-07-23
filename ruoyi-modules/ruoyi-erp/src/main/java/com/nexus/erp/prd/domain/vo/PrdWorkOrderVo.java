@@ -253,4 +253,33 @@ public class PrdWorkOrderVo implements Serializable {
      * 生产部门名称（非持久化，同上）
      */
     private String deptName;
+
+    /**
+     * 质检状态(PENDING/QUALIFIED/UNQUALIFIED/PARTIAL) - IPQC聚合
+     */
+    @ExcelProperty("质检状态")
+    private String qualityStatus;
+    /**
+     * 质检记录ID(IPQC)
+     */
+    private Long qualityCheckId;
+    /**
+     * 质检单号(IPQC)
+     */
+    @ExcelProperty("质检单号")
+    private String qualityCheckNo;
+    /**
+     * 检验员ID
+     */
+    private Long inspectorId;
+    /**
+     * 检验员姓名
+     */
+    @ExcelProperty("检验员")
+    private String inspectorName;
+    /**
+     * 检验时间
+     */
+    @ExcelProperty("检验时间")
+    private Date inspectTime;
 }

@@ -12,7 +12,7 @@ import java.math.BigDecimal;
  * <p>
  * 状态机: PENDING -> INSPECTING -> COMPLETED
  * 检验结果: PENDING -> QUALIFIED / UNQUALIFIED
- * IPQC纯MES内部检验, 不发MQ回传ERP
+ * IPQC检验完成(COMPLETED)后若关联ERP工单(经 mesWoId -> ProWorkOrder.erpWoId)则通过MQ回传ERP, 更新工单聚合质检状态。
  *
  * @author Nexus
  */

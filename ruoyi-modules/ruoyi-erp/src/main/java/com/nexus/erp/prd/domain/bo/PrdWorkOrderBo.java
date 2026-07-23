@@ -225,6 +225,31 @@ public class PrdWorkOrderBo extends BaseEntity {
     private Long selectFlowId;
 
     /**
+     * 质检状态(PENDING/QUALIFIED/UNQUALIFIED/PARTIAL) - IPQC聚合
+     */
+    private String qualityStatus;
+    /**
+     * 质检记录ID(IPQC)
+     */
+    private Long qualityCheckId;
+    /**
+     * 质检单号(IPQC)
+     */
+    private String qualityCheckNo;
+    /**
+     * 检验员ID
+     */
+    private Long inspectorId;
+    /**
+     * 检验员姓名
+     */
+    private String inspectorName;
+    /**
+     * 检验时间
+     */
+    private Date inspectTime;
+
+    /**
      * 批量删除ID集合
      */
     private Long[] ids;

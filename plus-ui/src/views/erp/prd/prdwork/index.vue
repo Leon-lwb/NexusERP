@@ -107,6 +107,11 @@
           <dict-tag :options="prd_wo_status" :value="scope.row.woStatus" />
         </template>
       </el-table-column>
+      <el-table-column label="质检状态" align="center" prop="qualityStatus">
+        <template #default="scope">
+          <dict-tag :options="bd_quality_status" :value="scope.row.qualityStatus" />
+        </template>
+      </el-table-column>
       <el-table-column label="是否倒冲" align="center" prop="backflushFlag">
         <template #default="scope">
           <dict-tag :options="prd_backflush_flag" :value="scope.row.backflushFlag" />
@@ -193,8 +198,8 @@ import { useRouter } from 'vue-router';
 
 const router = useRouter();
 const { proxy } = getCurrentInstance();
-const { prd_source_type, so_order_priority, prd_wo_status, prd_backflush_flag } = toRefs<any>(
-  proxy.useDict('prd_source_type', 'so_order_priority', 'prd_wo_status', 'prd_backflush_flag')
+const { prd_source_type, so_order_priority, prd_wo_status, prd_backflush_flag, bd_quality_status } = toRefs<any>(
+  proxy.useDict('prd_source_type', 'so_order_priority', 'prd_wo_status', 'prd_backflush_flag', 'bd_quality_status')
 );
 
 const workList = ref([]);

@@ -4,8 +4,10 @@ import com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder;
 import com.nexus.common.mq.constant.ExchangeConstants;
 import com.nexus.common.mq.constant.RoutingKeyConstants;
 import com.nexus.common.mq.message.EquipmentStatusMessage;
+import com.nexus.common.mq.message.IpqcCompletedMessage;
 import com.nexus.common.mq.message.IqcCompletedMessage;
 import com.nexus.common.mq.message.MesWorkOrderCompletedMessage;
+import com.nexus.common.mq.message.OqcCompletedMessage;
 import com.nexus.common.mq.producer.ReliableMessageProducer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -104,6 +106,96 @@ public class MesMqSendService {
         try {
             messageProducer.send(ExchangeConstants.TOPIC_EXCHANGE,
                 RoutingKeyConstants.ERP_IQC_COMPLETED, msg);
+        } finally {
+            DynamicDataSourceContextHolder.poll();
+        }
+    }
+
+    /**
+     * 异步发送OQC检验完成消息到ERP，触发ERP销售订单行OQC状态回写
+     *
+     * @param oqcId         OQC检验ID
+     * @param oqcCode       OQC检验编号
+     * @param soId          ERP销售订单头ID
+     * @param materialId    物料ID(用于定位销售订单行)
+     * @param materialCode  物料编码
+     * @param inspectResult 检验结果(QUALIFIED/UNQUALIFIED)
+     * @param quantity      检验数量
+     * @param tenantId      租户ID
+     */
+    @Async
+    public void sendOqcCompleted(Long oqcId, String oqcCode, Long soId, Long materialId,
+                                 String materialCode, String inspectResult,
+                                 BigDecimal quantity, String tenantId) {
+        log.info("异步发送OQC检验完成消息: oqcId={}, oqcCode={}, soId={}, result={}",
+            oqcId, oqcCode, soId, inspectResult);
+        OqcCompletedMessage msg = new OqcCompletedMessage();
+        msg.setOqcId(oqcId);
+        msg.setOqcCode(oqcCode);
+        msg.setSoId(soId);
+        msg.setMaterialId(materialId);
+        msg.setMaterialCode(materialCode);
+        msg.setInspectResult(inspectResult);
+        msg.setQuantity(quantity);
+        if (tenantId != null) {
+            try {
+                msg.setTenantId(Long.parseLong(tenantId));
+            } catch (NumberFormatException e) {
+                log.warn("无效的tenantId: {}", tenantId);
+            }
+        }
+        DynamicDataSourceContextHolder.push("master");
+        try {
+            messageProducer.send(ExchangeConstants.TOPIC_EXCHANGE,
+                RoutingKeyConstants.ERP_OQC_COMPLETED, msg);
+        } finally {
+            DynamicDataSourceContextHolder.poll();
+        }
+    }
+
+    /**
+     * 异步发送IPQC检验完成消息到ERP，触发ERP工单聚合质检状态回写
+     *
+     * @param ipqcId        IPQC检验ID
+     * @param ipqcNo        IPQC检验编号
+     * @param mesWoId       MES工单ID
+     * @param erpWoId       ERP工单ID(消费端定位 PrdWorkOrder 的关键)
+     * @param woNo          工单编号
+     * @param inspectResult 检验结果(QUALIFIED/UNQUALIFIED)
+     * @param defectQty     不良数量
+     * @param defectRate    不良率(%)
+     * @param inspectorId   检验员ID
+     * @param inspectorName 检验员姓名
+     * @param tenantId      租户ID
+     */
+    @Async
+    public void sendIpqcCompleted(Long ipqcId, String ipqcNo, Long mesWoId, Long erpWoId, String woNo,
+                                  String inspectResult, BigDecimal defectQty, BigDecimal defectRate,
+                                  Long inspectorId, String inspectorName, String tenantId) {
+        log.info("异步发送IPQC检验完成消息: ipqcId={}, ipqcNo={}, mesWoId={}, erpWoId={}, result={}",
+            ipqcId, ipqcNo, mesWoId, erpWoId, inspectResult);
+        IpqcCompletedMessage msg = new IpqcCompletedMessage();
+        msg.setIpqcId(ipqcId);
+        msg.setIpqcNo(ipqcNo);
+        msg.setMesWoId(mesWoId);
+        msg.setErpWoId(erpWoId);
+        msg.setWoNo(woNo);
+        msg.setInspectResult(inspectResult);
+        msg.setDefectQty(defectQty);
+        msg.setDefectRate(defectRate);
+        msg.setInspectorId(inspectorId);
+        msg.setInspectorName(inspectorName);
+        if (tenantId != null) {
+            try {
+                msg.setTenantId(Long.parseLong(tenantId));
+            } catch (NumberFormatException e) {
+                log.warn("无效的tenantId: {}", tenantId);
+            }
+        }
+        DynamicDataSourceContextHolder.push("master");
+        try {
+            messageProducer.send(ExchangeConstants.TOPIC_EXCHANGE,
+                RoutingKeyConstants.ERP_IPQC_COMPLETED, msg);
         } finally {
             DynamicDataSourceContextHolder.poll();
         }

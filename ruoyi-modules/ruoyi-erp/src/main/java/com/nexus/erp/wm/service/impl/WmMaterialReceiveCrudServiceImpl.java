@@ -17,6 +17,7 @@ import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.system.strategy.AutoCodeUtil;
 import com.nexus.erp.mq.message.StockInMessage;
+import com.nexus.erp.wm.domain.WmArrivalNoticeLine;
 import com.nexus.erp.wm.domain.WmMaterialReceive;
 import com.nexus.erp.wm.domain.WmMaterialReceiveDetail;
 import com.nexus.erp.wm.domain.WmMaterialReceiveLine;
@@ -26,6 +27,7 @@ import com.nexus.erp.wm.domain.bo.WmMaterialReceiveLineBo;
 import com.nexus.erp.wm.domain.vo.WmMaterialReceiveDetailVo;
 import com.nexus.erp.wm.domain.vo.WmMaterialReceiveLineVo;
 import com.nexus.erp.wm.domain.vo.WmMaterialReceiveVo;
+import com.nexus.erp.wm.mapper.WmArrivalNoticeLineMapper;
 import com.nexus.erp.wm.mapper.WmMaterialReceiveDetailMapper;
 import com.nexus.erp.wm.mapper.WmMaterialReceiveLineMapper;
 import com.nexus.erp.wm.mapper.WmMaterialReceiveMapper;
@@ -70,6 +72,8 @@ public class WmMaterialReceiveCrudServiceImpl implements IWmMaterialReceiveCrudS
     private final WmMaterialReceiveLineMapper receiveLineMapper;
     /** 领用明细数据访问映射器（Mapper） */
     private final WmMaterialReceiveDetailMapper receiveDetailMapper;
+    /** 到货通知行数据访问映射器（用于查询 iqcCheck 门控 IQC 自动创建） */
+    private final WmArrivalNoticeLineMapper arrivalNoticeLineMapper;
     /** 物料领用CRUD业务服务，提供物料领用CRUD相关能力 */
     private final IWfProcessService processService;
     /** 物料领用CRUD业务服务，提供物料领用CRUD相关能力 */
@@ -587,6 +591,22 @@ public class WmMaterialReceiveCrudServiceImpl implements IWmMaterialReceiveCrudS
      */
     private void registerReceiveApprovedMessage(WmMaterialReceive receive) {
         try {
+            // iqcCheck 门控：查到货通知行，任一行 iqcCheck="1" 才触发 IQC 自动创建
+            // noticeId 为空或所有行均免检则跳过（无到货通知的收货单由 MES 端手动建 IQC）
+            if (receive.getNoticeId() == null) {
+                log.warn("收货单 {} 无到货通知关联，跳过 IQC 自动创建 MQ 投递", receive.getReceiveId());
+                return;
+            }
+            List<WmArrivalNoticeLine> noticeLines = arrivalNoticeLineMapper.selectList(
+                new LambdaQueryWrapper<WmArrivalNoticeLine>()
+                    .eq(WmArrivalNoticeLine::getNoticeId, receive.getNoticeId()));
+            boolean needIqc = noticeLines != null && noticeLines.stream()
+                .anyMatch(l -> "1".equals(l.getIqcCheck()));
+            if (!needIqc) {
+                log.info("收货单 {} 所有关联到货通知行均免检，跳过 IQC 自动创建 MQ 投递", receive.getReceiveId());
+                return;
+            }
+
             // 收货明细表查询首条（按 detail_id 升序）填充物料/数量信息
             WmMaterialReceiveDetail firstDetail = receiveDetailMapper.selectOne(
                 new LambdaQueryWrapper<WmMaterialReceiveDetail>()

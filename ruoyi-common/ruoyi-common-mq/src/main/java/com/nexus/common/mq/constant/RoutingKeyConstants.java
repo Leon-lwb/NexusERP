@@ -22,6 +22,10 @@ public interface RoutingKeyConstants {
     String ERP_WORKORDER_COMPLETED = "erp.workorder.completed";
     /** MES IQC检验完成路由键 (MES->ERP) */
     String ERP_IQC_COMPLETED = "erp.iqc.completed";
+    /** MES OQC检验完成路由键 (MES->ERP, 回写销售订单行OQC状态) */
+    String ERP_OQC_COMPLETED = "erp.oqc.completed";
+    /** MES IPQC检验完成路由键 (MES->ERP, 回写工单聚合质检状态) */
+    String ERP_IPQC_COMPLETED = "erp.ipqc.completed";
     /** ERP 收货审批通过 -> MES 自动创建 IQC */
     String MES_IQC_CREATE = "mes.iqc.create";
     String DELAY_ORDER_TIMEOUT = "delay.order.timeout";

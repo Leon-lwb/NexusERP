@@ -127,7 +127,8 @@ public class PuPurchaseReceivingServiceImpl implements PuPurchaseReceivingServic
             noticeLine.setBaseUomName(orderLine.getUnit());
             noticeLine.setQuantityArrival(orderLine.getOrderQuantity());
             noticeLine.setQuantityQuanlified(orderLine.getOrderQuantity());
-            noticeLine.setIqcCheck("0");
+            // 按物料档案 inspectionRequired 派生 iqcCheck(1=需要来料检验,0=免检)
+            noticeLine.setIqcCheck(material != null && Integer.valueOf(1).equals(material.getInspectionRequired()) ? "1" : "0");
             noticeLine.setRemark(orderLine.getRemark());
             arrivalNoticeLineMapper.insert(noticeLine);
         }

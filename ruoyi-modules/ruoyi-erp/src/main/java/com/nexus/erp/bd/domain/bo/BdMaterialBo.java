@@ -136,6 +136,11 @@ public class BdMaterialBo extends BaseEntity {
     private String qualityStatus;
 
     /**
+     * 是否需要来料检验(0否/1是)
+     */
+    private Integer inspectionRequired;
+
+    /**
      * 仓库ID（仅用于查询过滤：仅返回在该仓库存在库存记录的物料）
      */
     private Long warehouseId;

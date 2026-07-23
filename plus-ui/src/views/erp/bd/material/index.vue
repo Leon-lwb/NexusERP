@@ -362,6 +362,13 @@
                   </el-select>
                 </el-form-item>
               </el-col>
+              <el-col :span="12">
+                <el-form-item label="是否需要来料检验" prop="inspectionRequired">
+                  <el-radio-group v-model="form.inspectionRequired">
+                    <el-radio v-for="dict in bd_inspection_required" :key="dict.value" :label="parseInt(dict.value)">{{ dict.label }}</el-radio>
+                  </el-radio-group>
+                </el-form-item>
+              </el-col>
             </el-row>
 
             <el-row :gutter="20">
@@ -454,8 +461,8 @@ import { useCategoryTree } from '@/composables/erp/useCategoryTree';
 import MaterialAttrValueEditor from './MaterialAttrValueEditor.vue';
 
 const { proxy } = getCurrentInstance();
-const { sys_true_or_false, prd_material_source_type, bd_material_type, bd_quality_status } = toRefs<any>(
-  proxy.useDict('sys_true_or_false', 'prd_material_source_type', 'bd_material_type', 'bd_quality_status')
+const { sys_true_or_false, prd_material_source_type, bd_material_type, bd_quality_status, bd_inspection_required } = toRefs<any>(
+  proxy.useDict('sys_true_or_false', 'prd_material_source_type', 'bd_material_type', 'bd_quality_status', 'bd_inspection_required')
 );
 
 const materialList = ref([]);
@@ -562,6 +569,7 @@ function reset() {
     referencePrice: 0,
     status: 1,
     qualityStatus: 'PENDING',
+    inspectionRequired: 0,
     shelfLife: 0,
     weight: 0,
     volume: 0,

@@ -19,7 +19,7 @@ import java.math.BigDecimal;
 /**
  * MES 过程检验（IPQC）Controller
  * <p>提供过程检验单的分页查询、详情、新增与执行检验等 REST 接口，属于 MES 质量管理模块；
- * 检验为 MES 内部流程、不回传 ERP，执行检验时自动计算不良率。</p>
+ * 执行检验完成（COMPLETED）后若关联 ERP 工单，则通过 MQ 回传 ERP 更新工单聚合质检状态，检验时自动计算不良率。</p>
  *
  * @author Nexus
  */

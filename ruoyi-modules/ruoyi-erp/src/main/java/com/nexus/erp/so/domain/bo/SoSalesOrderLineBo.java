@@ -97,6 +97,15 @@ public class SoSalesOrderLineBo extends BaseEntity {
     /** 备注 */
     private String remark;
 
+    /** OQC检验状态(PENDING/QUALIFIED/UNQUALIFIED) */
+    private String oqcStatus;
+    /** OQC检验单ID */
+    private Long oqcId;
+    /** OQC检验单编号 */
+    private String oqcCode;
+    /** OQC检验时间 */
+    private Date oqcTime;
+
     /** ID数组（用于批量操作） */
     private Long[] ids;
 }

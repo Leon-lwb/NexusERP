@@ -540,6 +540,11 @@
                     <span>{{ getDictLabel(so_order_line_status, scope.row.lineStatus) }}</span>
                   </template>
                 </el-table-column>
+                <el-table-column label="OQC检验状态" prop="oqcStatus" width="120" v-if="isViewMode">
+                  <template #default="scope">
+                    <span>{{ getDictLabel(bd_quality_status, scope.row.oqcStatus) }}</span>
+                  </template>
+                </el-table-column>
                 <el-table-column label="关联生产工单" prop="linkedWoNo" width="160" v-if="isViewMode">
                   <template #default="scope">
                     <el-link v-if="scope.row.linkedWoId" type="primary" @click="viewWorkOrder(scope.row)">{{ scope.row.linkedWoNo || '-' }}</el-link>
@@ -612,7 +617,7 @@ import type { CustomerOrderVO } from '@/api/erp/so/customer-order/types';
 import type { OrderheaderForm } from '@/api/erp/so/orderheader/types';
 
 const { proxy } = getCurrentInstance() as any;
-const { so_credit_status, so_order_status, sys_true_or_false, so_currency_type, so_order_line_status, so_order_priority, bd_material_type } =
+const { so_credit_status, so_order_status, sys_true_or_false, so_currency_type, so_order_line_status, so_order_priority, bd_material_type, bd_quality_status } =
   toRefs<any>(
     proxy.useDict(
       'so_credit_status',
@@ -621,7 +626,8 @@ const { so_credit_status, so_order_status, sys_true_or_false, so_currency_type, 
       'so_currency_type',
       'so_order_line_status',
       'so_order_priority',
-      'bd_material_type'
+      'bd_material_type',
+      'bd_quality_status'
     )
   );
 

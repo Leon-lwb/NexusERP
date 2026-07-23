@@ -147,6 +147,12 @@ public class BdMaterial extends TenantEntity {
     private String qualityStatus;
 
     /**
+     * 是否需要来料检验(0否/1是)
+     */
+    @ExcelProperty("是否需要来料检验")
+    private Integer inspectionRequired;
+
+    /**
      * 保质期(天)
      */
     private Long shelfLife;

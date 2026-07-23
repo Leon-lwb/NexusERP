@@ -8,6 +8,10 @@ import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.common.satoken.utils.LoginHelper;
+import com.nexus.common.tenant.helper.TenantHelper;
+import com.nexus.mes.common.mq.MesMqSendService;
+import com.nexus.mes.pro.domain.vo.ProWorkOrderVo;
+import com.nexus.mes.pro.service.IProWorkOrderService;
 import com.nexus.mes.qc.domain.QcIpqc;
 import com.nexus.mes.qc.domain.bo.QcIpqcBo;
 import com.nexus.mes.qc.domain.vo.QcIpqcVo;
@@ -17,6 +21,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -29,6 +35,7 @@ import java.util.Date;
  * <p>
  * 状态机: PENDING -> INSPECTING -> COMPLETED
  * 检验时自动计算不良率 = defectQty / sampleQty * 100
+ * IPQC检验完成(COMPLETED)后若关联ERP工单(经 mesWoId -> ProWorkOrder.erpWoId)则通过MQ回传ERP, 更新工单聚合质检状态。
  *
  * @author Nexus
  */
@@ -40,6 +47,10 @@ public class QcIpqcServiceImpl implements IQcIpqcService {
 
     /** IPQC 过程检验单数据访问 Mapper。 */
     private final QcIpqcMapper baseMapper;
+    /** MES MQ 发送服务，用于检验完成后异步回传 ERP。 */
+    private final MesMqSendService mesMqSendService;
+    /** MES 工单服务，用于经 mesWoId 查询 erpWoId 定位 ERP 工单。 */
+    private final IProWorkOrderService proWorkOrderService;
 
     /**
      * 分页查询 IPQC 过程检验列表。
@@ -125,6 +136,10 @@ public class QcIpqcServiceImpl implements IQcIpqcService {
         // 计算不良率 = defectQty / sampleQty * 100 (两位小数)
         BigDecimal defectRate = calcDefectRate(sampleQty, defectQty);
 
+        // 捕获检验员信息(供 MQ 回传, LoginHelper 在 afterCommit 异步线程不可用)
+        final Long inspectorId = LoginHelper.getUserId();
+        final String inspectorName = LoginHelper.getUsername();
+
         int rows = baseMapper.update(null, Wrappers.<QcIpqc>lambdaUpdate()
             .set(QcIpqc::getInspectResult, inspectResult)
             .set(QcIpqc::getDefectInfo, defectInfo)
@@ -132,8 +147,8 @@ public class QcIpqcServiceImpl implements IQcIpqcService {
             .set(defectQty != null, QcIpqc::getDefectQty, defectQty)
             .set(defectRate != null, QcIpqc::getDefectRate, defectRate)
             .set(StringUtils.isNotBlank(remark), QcIpqc::getRemark, remark)
-            .set(QcIpqc::getInspectorId, LoginHelper.getUserId())
-            .set(QcIpqc::getInspectorName, LoginHelper.getUsername())
+            .set(QcIpqc::getInspectorId, inspectorId)
+            .set(QcIpqc::getInspectorName, inspectorName)
             .set(QcIpqc::getInspectTime, new Date())
             .set(QcIpqc::getStatus, STATUS_COMPLETED)
             .eq(QcIpqc::getIpqcId, ipqcId)
@@ -142,6 +157,32 @@ public class QcIpqcServiceImpl implements IQcIpqcService {
             throw new RuntimeException("IPQC状态已变更, 检验失败");
         }
         log.info("IPQC检验完成: ipqcId={}, result={}, defectRate={}", ipqcId, inspectResult, defectRate);
+
+        // 事务提交后异步MQ回传ERP(更新工单聚合质检状态)
+        // 经 mesWoId -> ProWorkOrder.erpWoId 定位 ERP 工单; 无 erpWoId 则为纯 MES 工单, 跳过
+        final Long mesWoId = ipqc.getMesWoId();
+        final String ipqcNo = ipqc.getIpqcNo();
+        final BigDecimal msgDefectQty = defectQty;
+        final BigDecimal msgDefectRate = defectRate;
+        final String result = inspectResult;
+        TransactionSynchronizationManager.registerSynchronization(
+            new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    if (mesWoId == null) {
+                        log.info("IPQC未关联MES工单, 跳过MQ回传: ipqcNo={}", ipqcNo);
+                        return;
+                    }
+                    ProWorkOrderVo wo = proWorkOrderService.selectById(mesWoId);
+                    if (wo == null || wo.getErpWoId() == null) {
+                        log.info("IPQC关联工单无ERP对应, 跳过MQ回传: ipqcNo={}, mesWoId={}", ipqcNo, mesWoId);
+                        return;
+                    }
+                    String tenantId = TenantHelper.getTenantId();
+                    mesMqSendService.sendIpqcCompleted(ipqcId, ipqcNo, mesWoId, wo.getErpWoId(),
+                        wo.getWoNo(), result, msgDefectQty, msgDefectRate, inspectorId, inspectorName, tenantId);
+                }
+            });
     }
 
     // ==================== 私有辅助方法 ====================

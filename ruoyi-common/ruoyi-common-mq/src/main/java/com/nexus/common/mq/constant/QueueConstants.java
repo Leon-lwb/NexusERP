@@ -19,6 +19,10 @@ public interface QueueConstants {
     String ERP_WORKORDER_COMPLETED_QUEUE = "erp.workorder.completed.queue";
     /** MES IQC检验完成队列 (MES->ERP) */
     String ERP_IQC_COMPLETED_QUEUE = "erp.iqc.completed.queue";
+    /** MES OQC检验完成队列 (MES->ERP, 回写销售订单行OQC状态) */
+    String ERP_OQC_COMPLETED_QUEUE = "erp.oqc.completed.queue";
+    /** MES IPQC检验完成队列 (MES->ERP, 回写工单聚合质检状态) */
+    String ERP_IPQC_COMPLETED_QUEUE = "erp.ipqc.completed.queue";
     /** MES IQC 自动创建队列 (ERP 收货审批通过 -> MES 自动创建 IQC) */
     String MES_IQC_CREATE_QUEUE = "erp.mes.iqc.create.queue";
     String DELAY_QUEUE = "erp.delay.queue";

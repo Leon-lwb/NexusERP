@@ -12,7 +12,7 @@ import java.math.BigDecimal;
  * <p>
  * 状态机: PENDING -> INSPECTING -> COMPLETED
  * 检验结果: PENDING -> QUALIFIED / UNQUALIFIED
- * OQC纯MES内部检验, 不发MQ回传ERP
+ * OQC检验完成(COMPLETED)后若关联销售订单(soId)则通过MQ回传ERP, 更新销售订单行OQC状态。
  *
  * @author Nexus
  */

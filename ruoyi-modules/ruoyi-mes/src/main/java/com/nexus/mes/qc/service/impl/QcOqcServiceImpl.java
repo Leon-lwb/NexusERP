@@ -8,6 +8,8 @@ import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.common.satoken.utils.LoginHelper;
+import com.nexus.common.tenant.helper.TenantHelper;
+import com.nexus.mes.common.mq.MesMqSendService;
 import com.nexus.mes.qc.domain.QcOqc;
 import com.nexus.mes.qc.domain.bo.QcOqcBo;
 import com.nexus.mes.qc.domain.vo.QcOqcVo;
@@ -17,6 +19,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -28,6 +32,7 @@ import java.util.Date;
  * <p>
  * 状态机: PENDING -> INSPECTING -> COMPLETED
  * 检验结果: PENDING -> QUALIFIED / UNQUALIFIED
+ * OQC检验完成后(COMPLETED)若关联销售订单(soId)则通过MQ回传ERP, 更新销售订单行OQC状态。
  *
  * @author Nexus
  */
@@ -39,6 +44,8 @@ public class QcOqcServiceImpl implements IQcOqcService {
 
     /** OQC 出货检验单数据访问 Mapper。 */
     private final QcOqcMapper baseMapper;
+    /** MES MQ 发送服务，用于检验完成后异步回传 ERP。 */
+    private final MesMqSendService mesMqSendService;
 
     /**
      * 分页查询 OQC 出货检验列表。
@@ -129,6 +136,28 @@ public class QcOqcServiceImpl implements IQcOqcService {
             throw new RuntimeException("OQC状态已变更, 检验失败");
         }
         log.info("OQC检验完成: oqcId={}, result={}", oqcId, inspectResult);
+
+        // 事务提交后异步MQ回传ERP(更新销售订单行OQC状态)
+        QcOqc updated = baseMapper.selectById(oqcId);
+        final Long soId = updated.getSoId();
+        final Long materialId = updated.getMaterialId();
+        final String materialCode = updated.getMaterialCode();
+        final String oqcCode = updated.getOqcNo();
+        final BigDecimal quantity = updated.getQuantity() != null ? updated.getQuantity() : BigDecimal.ZERO;
+        final String result = inspectResult;
+        TransactionSynchronizationManager.registerSynchronization(
+            new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    if (soId == null) {
+                        log.info("OQC未关联ERP销售订单, 跳过MQ回传: oqcNo={}", oqcCode);
+                        return;
+                    }
+                    String tenantId = TenantHelper.getTenantId();
+                    mesMqSendService.sendOqcCompleted(oqcId, oqcCode, soId, materialId,
+                        materialCode, result, quantity, tenantId);
+                }
+            });
     }
 
     // ==================== 私有辅助方法 ====================

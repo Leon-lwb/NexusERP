@@ -226,7 +226,10 @@ export const useImStore = defineStore('im', () => {
     // P4-6 W2: 3. 监听 WS 重连事件，触发离线消息同步
     window.addEventListener('im-ws-connected', handleWsReconnect as EventListener);
     // P4-6 W2: 4. WS 不可达时 30s 兜底轮询（避免推送丢失导致未读数长期不更新）
-    if (fallbackTimer == null) {
+    // 仅在 WebSocket 实际启用时才启动兜底轮询；项目默认走 SSE 推送（VITE_APP_WEBSOCKET=false），
+    // 此时 IM 消息由 SSE 实时下发，无需轮询，避免每 30s 空打会话列表接口。
+    const wsEnabled = import.meta.env.VITE_APP_WEBSOCKET !== 'false';
+    if (wsEnabled && fallbackTimer == null) {
       fallbackTimer = setInterval(() => {
         if (!isWsConnected()) {
           void loadConversations();
