@@ -10,8 +10,15 @@ import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.MapstructUtils;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.flowable.core.domain.ActStatus;
+import com.nexus.common.mq.constant.ExchangeConstants;
+import com.nexus.common.mq.constant.RoutingKeyConstants;
+import com.nexus.common.mq.message.OqcAutoCreateMessage;
+import com.nexus.common.mq.producer.ReliableMessageProducer;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
+import com.nexus.common.tenant.helper.TenantHelper;
+import com.nexus.erp.bd.domain.BdMaterial;
+import com.nexus.erp.bd.mapper.BdMaterialMapper;
 import com.nexus.erp.wm.domain.WmMaterialStock;
 import com.nexus.erp.wm.domain.WmMaterialStockTx;
 import com.nexus.erp.wm.domain.WmSalesIssue;
@@ -19,6 +26,7 @@ import com.nexus.erp.wm.domain.WmSalesIssueLine;
 import com.nexus.erp.wm.domain.bo.WmSalesIssueBo;
 import com.nexus.erp.wm.domain.bo.WmSalesIssueLineBo;
 import com.nexus.erp.wm.domain.vo.WmSalesIssueVo;
+import com.nexus.erp.wm.domain.vo.WmSalesIssueLineVo;
 import com.nexus.erp.wm.mapper.WmMaterialStockMapper;
 import com.nexus.erp.wm.mapper.WmMaterialStockTxMapper;
 import com.nexus.erp.wm.mapper.WmSalesIssueLineMapper;
@@ -36,13 +44,18 @@ import org.flowable.engine.runtime.ProcessInstance;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * 销售出库Service业务层处理
@@ -76,6 +89,10 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
     private final AutoCodeUtil autoCodeUtil;
     /** 销售发料业务服务，提供销售发料相关能力 */
     private final ISoFulfillmentWritebackService fulfillmentWritebackService;
+    /** 可靠消息生产者：销售出库审批通过后发 OQC 自动创建消息 */
+    private final ReliableMessageProducer messageProducer;
+    /** 物料主数据 Mapper：查 inspection_required 门控 OQC 自动创建 */
+    private final BdMaterialMapper bdMaterialMapper;
 
     /**
      * 分页查询销售发料列表
@@ -110,7 +127,14 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
      */
     @Override
     public WmSalesIssueVo selectById(Long id) {
-        return baseMapper.selectVoById(id);
+        WmSalesIssueVo vo = baseMapper.selectVoById(id);
+        if (vo != null) {
+            List<WmSalesIssueLine> lineList = lineMapper.selectList(
+                new LambdaQueryWrapper<WmSalesIssueLine>()
+                    .eq(WmSalesIssueLine::getIssueId, id));
+            vo.setWmSalesIssueLineList(MapstructUtils.convert(lineList, WmSalesIssueLineVo.class));
+        }
+        return vo;
     }
 
     /**
@@ -394,12 +418,113 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
             entity.setStatus(STATUS_APPROVING);
         } else if (ActStatus.pass.equals(actStatus)) {
             entity.setStatus(STATUS_APPROVED);
+            // 审批通过后，事务提交后按需检物料发 OqcAutoCreateMessage 给 MES 自动创建 OQC
+            registerOqcCreateMessages(entity);
         } else if (ActStatus.reject.equals(actStatus) || ActStatus.retrun.equals(actStatus)) {
             entity.setStatus(STATUS_REJECTED);
         } else if (ActStatus.revoke.equals(actStatus) || ActStatus.stop.equals(actStatus) || ActStatus.recall.equals(actStatus)) {
             entity.setStatus(STATUS_DRAFT);
         }
         baseMapper.updateById(entity);
+    }
+
+    /**
+     * 注册 afterCommit 回调，事务提交后按"需检物料"逐条发 OqcAutoCreateMessage 给 MES 自动创建 OQC。
+     * <p>
+     * 触发点：销售出库审批通过(afterFlowHandle pass)。
+     * 门控：出库行物料 inspection_required=1 才发；同 soId+materialId 去重(消费端亦幂等)。
+     * soId 取自销售出库主表；物料/数量取自 wm_sales_issue_line。显式传 tenantId 避免消费端退化。
+     *
+     * @param entity 销售出库单
+     */
+    private void registerOqcCreateMessages(WmSalesIssue entity) {
+        try {
+            if (entity.getSoId() == null) {
+                log.warn("销售出库 {} 无关联销售订单，跳过 OQC 自动创建", entity.getIssueId());
+                return;
+            }
+            List<WmSalesIssueLine> lines = lineMapper.selectList(
+                new LambdaQueryWrapper<WmSalesIssueLine>()
+                    .eq(WmSalesIssueLine::getIssueId, entity.getIssueId()));
+            if (lines == null || lines.isEmpty()) {
+                log.warn("销售出库 {} 无明细行，跳过 OQC 自动创建", entity.getIssueId());
+                return;
+            }
+            // 批量查物料 inspection_required 门控
+            Set<Long> materialIds = new HashSet<>();
+            for (WmSalesIssueLine l : lines) {
+                if (l.getMaterialId() != null) {
+                    materialIds.add(l.getMaterialId());
+                }
+            }
+            if (materialIds.isEmpty()) {
+                return;
+            }
+            List<BdMaterial> materials = bdMaterialMapper.selectList(
+                new LambdaQueryWrapper<BdMaterial>().in(BdMaterial::getMaterialId, materialIds));
+            Set<Long> needOqcMaterialIds = new HashSet<>();
+            for (BdMaterial m : materials) {
+                if (Integer.valueOf(1).equals(m.getInspectionRequired())) {
+                    needOqcMaterialIds.add(m.getMaterialId());
+                }
+            }
+            if (needOqcMaterialIds.isEmpty()) {
+                log.info("销售出库 {} 所有出库物料均免检，跳过 OQC 自动创建", entity.getIssueId());
+                return;
+            }
+
+            // 显式设置 tenantId，避免消费端退化为 000000
+            long tenantIdVal = 0L;
+            String tenantIdStr = TenantHelper.getTenantId();
+            if (tenantIdStr != null) {
+                try {
+                    tenantIdVal = Long.parseLong(tenantIdStr);
+                } catch (NumberFormatException ignore) {
+                    tenantIdVal = 0L;
+                }
+            }
+            final long tenantId = tenantIdVal;
+
+            // 逐个需检物料构建消息（同物料去重，一物料一条 -> MES 建一条 OQC）
+            List<OqcAutoCreateMessage> messages = new ArrayList<>();
+            Set<Long> dispatched = new HashSet<>();
+            for (WmSalesIssueLine l : lines) {
+                if (l.getMaterialId() == null || !needOqcMaterialIds.contains(l.getMaterialId())) {
+                    continue;
+                }
+                if (!dispatched.add(l.getMaterialId())) {
+                    continue;
+                }
+                OqcAutoCreateMessage msg = new OqcAutoCreateMessage();
+                msg.setSoId(entity.getSoId());
+                msg.setMaterialId(l.getMaterialId());
+                msg.setMaterialCode(l.getMaterialCode());
+                msg.setMaterialName(l.getMaterialName());
+                msg.setQuantity(l.getQuantityIssue());
+                msg.setSourceModule("ERP");
+                msg.setTenantId(tenantId);
+                messages.add(msg);
+            }
+            if (messages.isEmpty()) {
+                return;
+            }
+            final List<OqcAutoCreateMessage> toSend = messages;
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    for (OqcAutoCreateMessage msg : toSend) {
+                        try {
+                            messageProducer.send(ExchangeConstants.TOPIC_EXCHANGE, RoutingKeyConstants.MES_OQC_CREATE, msg);
+                            log.info("销售出库审批通过 OQC MQ 已发送: soId={}, materialId={}", entity.getSoId(), msg.getMaterialId());
+                        } catch (Exception e) {
+                            log.error("销售出库审批通过 OQC MQ 发送失败: soId={}, materialId={}", entity.getSoId(), msg.getMaterialId(), e);
+                        }
+                    }
+                }
+            });
+        } catch (Exception e) {
+            log.error("注册销售出库 OQC MQ 失败: issueId={}", entity.getIssueId(), e);
+        }
     }
 
     /**

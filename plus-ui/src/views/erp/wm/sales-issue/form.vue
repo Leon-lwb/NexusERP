@@ -6,7 +6,7 @@
           <span>{{ title }}</span>
           <div>
             <el-button type="primary" @click="submitForm" v-if="!isViewMode && form.status === 'DRAFT'">保存</el-button>
-            <el-button type="success" @click="handleConfirm" v-if="!isViewMode && (form.status === 'DRAFT' || form.status === 'APPROVED') && form.issueId">确认</el-button>
+            <el-button type="success" @click="handleConfirm" v-if="!isViewMode && form.status === 'APPROVED' && form.issueId">确认</el-button>
             <el-button type="warning" @click="handleComplete" v-if="!isViewMode && form.status === 'CONFIRMED'">完成出库</el-button>
             <el-button type="primary" @click="handleSubmitFlow" v-if="!isViewMode && form.status === 'DRAFT' && form.issueId">提交审批</el-button>
             <el-button type="info" @click="onViewFlow" v-if="form.status === 'APPROVING' || form.status === 'APPROVED'">查看流程</el-button>

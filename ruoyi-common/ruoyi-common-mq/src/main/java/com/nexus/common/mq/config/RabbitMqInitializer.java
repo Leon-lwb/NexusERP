@@ -61,6 +61,8 @@ public class RabbitMqInitializer {
 
         // ERP -> MES 队列：ERP 收货审批通过触发 MES 自动创建 IQC
         declareQueueWithDLX(QueueConstants.MES_IQC_CREATE_QUEUE, ExchangeConstants.TOPIC_EXCHANGE, "mes.iqc.#");
+        // ERP -> MES 队列：ERP 销售出库审批通过触发 MES 自动创建 OQC
+        declareQueueWithDLX(QueueConstants.MES_OQC_CREATE_QUEUE, ExchangeConstants.TOPIC_EXCHANGE, "mes.oqc.#");
 
         declareQueueWithDLX(QueueConstants.STOCK_ALERT_QUEUE, ExchangeConstants.TOPIC_EXCHANGE, "stock.alert.#");
 

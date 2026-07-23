@@ -56,6 +56,15 @@ public interface IQcOqcService {
     QcOqcVo insertByBo(QcOqcBo bo);
 
     /**
+     * 幂等查询：指定销售订单 + 物料是否已存在 OQC（销售出库审批自动建单去重）。
+     *
+     * @param soId       ERP 销售订单头 ID
+     * @param materialId 物料 ID
+     * @return 已存在返回 true
+     */
+    boolean existsBySoAndMaterial(Long soId, Long materialId);
+
+    /**
      * 执行检验(PENDING/INSPECTING -> COMPLETED)
      *
      * @param oqcId         OQC ID

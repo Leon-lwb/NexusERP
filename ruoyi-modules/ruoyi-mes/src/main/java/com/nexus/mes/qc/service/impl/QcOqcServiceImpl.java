@@ -98,6 +98,17 @@ public class QcOqcServiceImpl implements IQcOqcService {
     }
 
     /**
+     * 幂等查询：指定销售订单 + 物料是否已存在 OQC（销售出库审批自动建单去重）。
+     */
+    @Override
+    public boolean existsBySoAndMaterial(Long soId, Long materialId) {
+        Long count = baseMapper.selectCount(Wrappers.<QcOqc>lambdaQuery()
+            .eq(QcOqc::getSoId, soId)
+            .eq(QcOqc::getMaterialId, materialId));
+        return count != null && count > 0;
+    }
+
+    /**
      * 执行 OQC 检验：将状态推进为 COMPLETED，记录检验员与检验时间。
      *
      * @param oqcId         OQC 检验单 ID

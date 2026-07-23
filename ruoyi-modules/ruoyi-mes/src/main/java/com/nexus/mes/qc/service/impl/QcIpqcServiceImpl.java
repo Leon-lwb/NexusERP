@@ -20,6 +20,7 @@ import com.nexus.mes.qc.service.IQcIpqcService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
@@ -29,6 +30,7 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Date;
+import java.util.List;
 
 /**
  * MES过程检验 Service 业务层实现
@@ -106,6 +108,42 @@ public class QcIpqcServiceImpl implements IQcIpqcService {
         baseMapper.insert(ipqc);
         log.info("新增IPQC检验单: ipqcId={}, ipqcNo={}", ipqc.getIpqcId(), ipqc.getIpqcNo());
         return baseMapper.selectVoById(ipqc.getIpqcId());
+    }
+
+    /**
+     * 幂等查询：指定工单 + 工序是否已存在 IPQC（关键工序报工自动建单去重）。
+     */
+    @Override
+    public boolean existsByWoAndProcess(Long mesWoId, Long processId) {
+        Long count = baseMapper.selectCount(Wrappers.<QcIpqc>lambdaQuery()
+            .eq(QcIpqc::getMesWoId, mesWoId)
+            .eq(QcIpqc::getProcessId, processId));
+        return count != null && count > 0;
+    }
+
+    /**
+     * 查询工单下全部 IPQC（供 completeWo 门禁按关键工序校验）。
+     */
+    @Override
+    public List<QcIpqc> selectByMesWoId(Long mesWoId) {
+        return baseMapper.selectList(Wrappers.<QcIpqc>lambdaQuery()
+            .eq(QcIpqc::getMesWoId, mesWoId));
+    }
+
+    /**
+     * 关键工序报工时自动建 IPQC（幂等：同工单同工序已存在则跳过）。
+     * <p>
+     * 独立事务(REQUIRES_NEW)：IPQC 创建失败不回滚工序报工事务，由 completeWo 门禁兜底。
+     */
+    @Override
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void autoCreateForKeyProcess(QcIpqcBo bo) {
+        if (existsByWoAndProcess(bo.getMesWoId(), bo.getProcessId())) {
+            log.info("[IPQC自动建单] 工单 {} 工序 {} 已存在 IPQC，跳过", bo.getMesWoId(), bo.getProcessId());
+            return;
+        }
+        insertByBo(bo);
+        log.info("[IPQC自动建单] 工单 {} 工序 {} 已自动创建 IPQC", bo.getMesWoId(), bo.getProcessId());
     }
 
     /**

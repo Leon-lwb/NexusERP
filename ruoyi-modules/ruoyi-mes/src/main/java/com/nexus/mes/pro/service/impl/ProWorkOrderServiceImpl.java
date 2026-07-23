@@ -30,6 +30,8 @@ import com.nexus.mes.pro.service.IMesMbomService;
 import com.nexus.mes.pro.domain.vo.MesMbomVo;
 import com.nexus.mes.pro.domain.vo.MesMbomLineVo;
 import com.nexus.mes.pro.service.IProWorkOrderService;
+import com.nexus.mes.qc.domain.QcIpqc;
+import com.nexus.mes.qc.mapper.QcIpqcMapper;
 import com.nexus.workflow.domain.WfMyBusiness;
 import com.nexus.workflow.service.IWfProcessService;
 import com.nexus.workflow.service.impl.WfMyBusinessServiceImpl;
@@ -74,6 +76,12 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
     private final HistoryService historyService;
     private final MesMqSendService mesMqSendService;
     private final EqEquipmentMapper equipmentMapper;
+    /**
+     * IPQC Mapper：completeWo 门禁查关键工序检验结果。
+     * 直调 Mapper 而非 IQcIpqcService，避免与 QcIpqcServiceImpl(依赖 IProWorkOrderService) 形成循环依赖；
+     * 本类 @DS("mes")，completeWo 经代理走 mes 上下文，直调 mes 库 Mapper 安全。
+     */
+    private final QcIpqcMapper qcIpqcMapper;
 
     @Override
     /**
@@ -617,6 +625,47 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
             log.warn("工单状态不满足完工条件，跳过: mesWoId={}, woStatus={}", mesWoId, wo.getWoStatus());
             return;
         }
+
+        // IPQC 门禁：关键工序(isKeyProcess=1)必须有 QUALIFIED 的 IPQC 才允许工单完工
+        List<ProWorkOrderStep> keySteps = stepMapper.selectList(Wrappers.<ProWorkOrderStep>lambdaQuery()
+            .eq(ProWorkOrderStep::getMesWoId, mesWoId)
+            .eq(ProWorkOrderStep::getIsKeyProcess, 1));
+        if (keySteps != null && !keySteps.isEmpty()) {
+            List<QcIpqc> ipqcList = qcIpqcMapper.selectList(Wrappers.<QcIpqc>lambdaQuery()
+                .eq(QcIpqc::getMesWoId, mesWoId));
+            Map<Long, String> resultByProcess = new HashMap<>();
+            if (ipqcList != null) {
+                for (QcIpqc ipqc : ipqcList) {
+                    resultByProcess.putIfAbsent(ipqc.getProcessId(), ipqc.getInspectResult());
+                }
+            }
+            StringBuilder pending = new StringBuilder();
+            StringBuilder unqualified = new StringBuilder();
+            for (ProWorkOrderStep ks : keySteps) {
+                String result = resultByProcess.get(ks.getProcessId());
+                if ("QUALIFIED".equals(result)) {
+                    continue;
+                }
+                if ("UNQUALIFIED".equals(result)) {
+                    if (unqualified.length() > 0) {
+                        unqualified.append("、");
+                    }
+                    unqualified.append(ks.getProcessName());
+                } else {
+                    if (pending.length() > 0) {
+                        pending.append("、");
+                    }
+                    pending.append(ks.getProcessName());
+                }
+            }
+            if (pending.length() > 0) {
+                throw new RuntimeException("以下关键工序尚未完成IPQC过程检验，禁止工单完工：" + pending);
+            }
+            if (unqualified.length() > 0) {
+                throw new RuntimeException("以下关键工序IPQC检验不合格，禁止工单完工：" + unqualified);
+            }
+        }
+
         // CAS更新 RELEASED/IN_PROGRESS -> COMPLETED; 若工单从未开工(actualStartDate为空)则补写开工时间
         Date now = new Date();
         int rows = baseMapper.update(null, Wrappers.<ProWorkOrder>lambdaUpdate()

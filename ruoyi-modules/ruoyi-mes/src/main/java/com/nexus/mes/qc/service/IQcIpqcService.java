@@ -2,10 +2,12 @@ package com.nexus.mes.qc.service;
 
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
+import com.nexus.mes.qc.domain.QcIpqc;
 import com.nexus.mes.qc.domain.bo.QcIpqcBo;
 import com.nexus.mes.qc.domain.vo.QcIpqcVo;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 /**
  * MES过程检验 Service 业务层接口
@@ -54,6 +56,34 @@ public interface IQcIpqcService {
      * @return 新增后的 IPQC 检验单视图对象
      */
     QcIpqcVo insertByBo(QcIpqcBo bo);
+
+    /**
+     * 幂等查询：指定工单 + 工序是否已存在 IPQC。
+     * <p>
+     * 供关键工序报工自动建单去重（同一工单同一关键工序仅建一条 IPQC）。
+     *
+     * @param mesWoId   MES 工单 ID
+     * @param processId 工序 ID
+     * @return 已存在返回 true
+     */
+    boolean existsByWoAndProcess(Long mesWoId, Long processId);
+
+    /**
+     * 查询工单下全部 IPQC（供 completeWo 门禁按关键工序校验检验结果）。
+     *
+     * @param mesWoId MES 工单 ID
+     * @return IPQC 列表
+     */
+    List<QcIpqc> selectByMesWoId(Long mesWoId);
+
+    /**
+     * 关键工序报工时自动建 IPQC（幂等：同工单同工序已存在则跳过）。
+     * <p>
+     * 独立事务(REQUIRES_NEW)：IPQC 创建失败不回滚工序报工事务，由 completeWo 门禁兜底。
+     *
+     * @param bo IPQC 业务对象（至少含 mesWoId/processId/processCode/processName/materialId 等）
+     */
+    void autoCreateForKeyProcess(QcIpqcBo bo);
 
     /**
      * 执行检验(PENDING/INSPECTING -> COMPLETED), 自动计算不良率

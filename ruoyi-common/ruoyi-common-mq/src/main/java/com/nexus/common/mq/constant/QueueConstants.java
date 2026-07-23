@@ -25,6 +25,8 @@ public interface QueueConstants {
     String ERP_IPQC_COMPLETED_QUEUE = "erp.ipqc.completed.queue";
     /** MES IQC 自动创建队列 (ERP 收货审批通过 -> MES 自动创建 IQC) */
     String MES_IQC_CREATE_QUEUE = "erp.mes.iqc.create.queue";
+    /** MES OQC 自动创建队列 (ERP 销售出库审批通过 -> MES 自动创建 OQC) */
+    String MES_OQC_CREATE_QUEUE = "erp.mes.oqc.create.queue";
     String DELAY_QUEUE = "erp.delay.queue";
     String DLX_QUEUE = "erp.dlx.queue";
     /** MES 设备状态变更队列(设备状态变更广播, 供排产/工单模块感知) */

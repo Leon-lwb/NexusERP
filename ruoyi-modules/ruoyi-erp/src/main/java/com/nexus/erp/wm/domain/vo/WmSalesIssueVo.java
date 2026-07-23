@@ -10,6 +10,7 @@ import java.io.Serial;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.Date;
+import java.util.List;
 
 /**
  * 销售出库视图对象 wm_sales_issue
@@ -140,4 +141,9 @@ public class WmSalesIssueVo implements Serializable {
      */
     @ExcelProperty(value = "预留字段4")
     private Long attr4;
+
+    /**
+     * 销售出库明细列表
+     */
+    private List<WmSalesIssueLineVo> wmSalesIssueLineList;
 }

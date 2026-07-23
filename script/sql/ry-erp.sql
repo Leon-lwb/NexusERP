@@ -1,17 +1,17 @@
 /*
  Navicat Premium Data Transfer
 
- Source Server         : whbuild
+ Source Server         : 本地5.7
  Source Server Type    : MySQL
- Source Server Version : 50720
+ Source Server Version : 50714 (5.7.14)
  Source Host           : localhost:3306
  Source Schema         : ry-erp
 
  Target Server Type    : MySQL
- Target Server Version : 50720
+ Target Server Version : 50714 (5.7.14)
  File Encoding         : 65001
 
- Date: 23/07/2026 17:59:52
+ Date: 24/07/2026 00:01:08
 */
 
 SET NAMES utf8mb4;
@@ -41,16 +41,16 @@ CREATE TABLE `bd_bom`  (
   `attr4` int(11) NULL DEFAULT NULL COMMENT '预留字段4',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`bom_id`) USING BTREE,
   UNIQUE INDEX `uk_parent_version`(`parent_material_id`, `bom_version`) USING BTREE,
   INDEX `idx_parent_material`(`parent_material_id`) USING BTREE,
   INDEX `idx_current`(`is_current`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'BOM主表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'BOM主表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of bd_bom
@@ -89,16 +89,20 @@ CREATE TABLE `bd_bom_alternative`  (
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`alternative_id`) USING BTREE,
   INDEX `idx_detail_id`(`detail_id`) USING BTREE,
   INDEX `idx_bom_id`(`bom_id`) USING BTREE,
   INDEX `idx_alt_material`(`alt_material_id`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'BOM替代料表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'BOM替代料表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of bd_bom_alternative
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for bd_bom_detail
@@ -125,16 +129,16 @@ CREATE TABLE `bd_bom_detail`  (
   `attr4` int(11) NULL DEFAULT NULL COMMENT '预留字段4',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`detail_id`) USING BTREE,
   INDEX `idx_bom_id`(`bom_id`) USING BTREE,
   INDEX `idx_child_material`(`child_material_id`) USING BTREE,
   INDEX `idx_operation_step`(`operation_step`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'BOM明细表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'BOM明细表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of bd_bom_detail
@@ -216,14 +220,18 @@ CREATE TABLE `bd_category_attribute`  (
   `attr4` int(11) NULL DEFAULT NULL COMMENT '预留字段4',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`attr_id`) USING BTREE,
   UNIQUE INDEX `uk_category_attr_code`(`attr_code`, `category_id`, `tenant_id`) USING BTREE,
   INDEX `idx_category_id`(`category_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料分类属性模板' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料分类属性模板' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of bd_category_attribute
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for bd_client
@@ -269,9 +277,9 @@ CREATE TABLE `bd_client`  (
   `address_lng` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '地址经度',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   `sales_rep_id` bigint(20) NULL DEFAULT NULL COMMENT '业务员ID（关联sys_user）',
   `sales_rep_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '业务员名称',
@@ -282,7 +290,7 @@ CREATE TABLE `bd_client`  (
   INDEX `idx_city_area`(`city_area_id`) USING BTREE,
   INDEX `idx_district_area`(`district_area_id`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '客户表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '客户表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of bd_client
@@ -321,15 +329,15 @@ CREATE TABLE `bd_client_credit`  (
   `attr4` int(11) NULL DEFAULT NULL COMMENT '预留字段4',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`credit_id`) USING BTREE,
   INDEX `idx_client_id`(`client_id`) USING BTREE,
   INDEX `idx_client_code`(`client_code`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '客户信用表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '客户信用表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of bd_client_credit
@@ -378,9 +386,9 @@ CREATE TABLE `bd_material`  (
   `attr4` int(11) NULL DEFAULT NULL COMMENT '预留字段4',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   `is_phantom` tinyint(1) NULL DEFAULT 0 COMMENT '是否虚拟件: 0-否 1-是（虚拟件展开时跳层，不入库不生成工单）',
   `inspection_required` int(1) NULL DEFAULT 0 COMMENT '是否需要来料检验(0否/1是)',
@@ -392,7 +400,7 @@ CREATE TABLE `bd_material`  (
   INDEX `idx_create_time`(`create_time`) USING BTREE,
   INDEX `idx_base_uom`(`base_uom_id`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料产品主表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料产品主表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of bd_material
@@ -444,19 +452,23 @@ CREATE TABLE `bd_material_attribute_value`  (
   `numeric_value` decimal(14, 4) NULL DEFAULT NULL COMMENT '数值型值',
   `text_value` varchar(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '字符串/枚举值',
   `bool_value` tinyint(1) NULL DEFAULT NULL COMMENT '布尔值',
-  `date_value` datetime(0) NULL DEFAULT NULL COMMENT '日期值',
+  `date_value` datetime NULL DEFAULT NULL COMMENT '日期值',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`value_id`) USING BTREE,
   UNIQUE INDEX `uk_material_attr`(`material_id`, `attr_id`, `tenant_id`) USING BTREE,
   INDEX `idx_material_id`(`material_id`) USING BTREE,
   INDEX `idx_attr_id`(`attr_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料扩展属性值' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料扩展属性值' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of bd_material_attribute_value
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for bd_material_category
@@ -481,9 +493,9 @@ CREATE TABLE `bd_material_category`  (
   `attr4` int(11) NULL DEFAULT NULL COMMENT '预留字段4',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`category_id`) USING BTREE,
   UNIQUE INDEX `uk_category_code`(`category_code`, `tenant_id`) USING BTREE,
@@ -491,7 +503,7 @@ CREATE TABLE `bd_material_category`  (
   INDEX `idx_status`(`status`) USING BTREE,
   INDEX `idx_level_sort`(`level_num`, `sort_order`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料产品分类表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料产品分类表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of bd_material_category
@@ -571,9 +583,9 @@ CREATE TABLE `bd_material_vendor`  (
   `attr4` int(11) NULL DEFAULT NULL COMMENT '预留字段4',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`relation_id`) USING BTREE,
   UNIQUE INDEX `uk_material_supplier`(`material_id`, `vendor_id`) USING BTREE,
@@ -581,7 +593,7 @@ CREATE TABLE `bd_material_vendor`  (
   INDEX `idx_supplier_id`(`vendor_id`) USING BTREE,
   INDEX `idx_default`(`is_default`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料供应商关系表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料供应商关系表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of bd_material_vendor
@@ -623,15 +635,15 @@ CREATE TABLE `bd_process`  (
   `attr4` bigint(20) NULL DEFAULT NULL COMMENT '预留字段4',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`process_id`) USING BTREE,
   UNIQUE INDEX `uk_process_code`(`process_code`, `tenant_id`) USING BTREE,
   INDEX `idx_workstation`(`workstation_id`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '工序定义表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '工序定义表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of bd_process
@@ -674,16 +686,16 @@ CREATE TABLE `bd_routing`  (
   `attr4` bigint(20) NULL DEFAULT NULL COMMENT '预留字段4',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`routing_id`) USING BTREE,
   UNIQUE INDEX `uk_routing_code_version`(`routing_code`, `routing_version`, `tenant_id`) USING BTREE,
   INDEX `idx_material`(`material_id`) USING BTREE,
   INDEX `idx_current`(`is_current`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '工艺路线主表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '工艺路线主表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of bd_routing
@@ -724,14 +736,14 @@ CREATE TABLE `bd_routing_step`  (
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`step_id`) USING BTREE,
   INDEX `idx_routing`(`routing_id`) USING BTREE,
   INDEX `idx_process`(`process_id`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '工艺路线步骤表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '工艺路线步骤表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of bd_routing_step
@@ -776,15 +788,15 @@ CREATE TABLE `bd_serial_number_rule`  (
   `attr4` int(11) NULL DEFAULT 0 COMMENT '预留字段4',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`rule_id`) USING BTREE,
   UNIQUE INDEX `uk_rule_code`(`rule_code`) USING BTREE,
   INDEX `idx_status`(`status`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '产品序列号/条码规则表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '产品序列号/条码规则表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of bd_serial_number_rule
@@ -813,9 +825,9 @@ CREATE TABLE `bd_unit_of_measure`  (
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`uom_id`) USING BTREE,
   UNIQUE INDEX `uk_uom_code`(`uom_code`) USING BTREE,
@@ -823,7 +835,7 @@ CREATE TABLE `bd_unit_of_measure`  (
   INDEX `idx_status`(`status`) USING BTREE,
   INDEX `idx_primary_id`(`primary_id`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '计量单位表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '计量单位表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of bd_unit_of_measure
@@ -918,9 +930,9 @@ CREATE TABLE `bd_vendor`  (
   `address_lng` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '地址经度',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   `buyer_id` bigint(20) NULL DEFAULT NULL COMMENT '采购员ID（关联sys_user）',
   `buyer_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '采购员名称',
@@ -929,7 +941,7 @@ CREATE TABLE `bd_vendor`  (
   PRIMARY KEY (`vendor_id`) USING BTREE,
   UNIQUE INDEX `uk_vendor_code`(`vendor_code`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '供应商表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '供应商表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of bd_vendor
@@ -965,16 +977,16 @@ CREATE TABLE `bd_workshop`  (
   `attr4` int(11) NULL DEFAULT 0 COMMENT '预留字段4',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`workshop_id`) USING BTREE,
   UNIQUE INDEX `uk_workshop_code`(`workshop_code`) USING BTREE,
   INDEX `idx_status`(`status`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE,
   INDEX `idx_dept_id`(`dept_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '车间表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '车间表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of bd_workshop
@@ -1010,16 +1022,16 @@ CREATE TABLE `bd_workstation`  (
   `attr4` int(11) NULL DEFAULT 0 COMMENT '预留字段4',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`workstation_id`) USING BTREE,
   UNIQUE INDEX `uk_workstation_code`(`workstation_code`) USING BTREE,
   INDEX `idx_workshop_id`(`workshop_id`) USING BTREE,
   INDEX `idx_status`(`status`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '工作站表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '工作站表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of bd_workstation
@@ -1052,14 +1064,14 @@ CREATE TABLE `po_requisition`  (
   `dept_id` bigint(20) NULL DEFAULT NULL COMMENT '部门ID（关联sys_dept）',
   `dept_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '部门名称',
   `applicant_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '申请人',
-  `required_date` datetime(0) NULL DEFAULT NULL COMMENT '需求日期',
+  `required_date` datetime NULL DEFAULT NULL COMMENT '需求日期',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000' COMMENT '租户ID',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '0' COMMENT '删除标志',
   `applicant_id` bigint(20) NULL DEFAULT NULL COMMENT '申请人ID（关联sys_user）',
   PRIMARY KEY (`requisition_id`) USING BTREE,
@@ -1068,7 +1080,11 @@ CREATE TABLE `po_requisition`  (
   INDEX `idx_po_requisition_applicant`(`applicant_name`) USING BTREE,
   INDEX `idx_po_requisition_dept`(`dept_id`) USING BTREE,
   INDEX `idx_po_requisition_applicant_id`(`applicant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '请购单主表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '请购单主表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of po_requisition
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for po_requisition_detail
@@ -1086,21 +1102,25 @@ CREATE TABLE `po_requisition_detail`  (
   `issued_quantity` decimal(18, 4) NULL DEFAULT 0.0000 COMMENT '已发料数量',
   `stock_quantity` decimal(18, 4) NULL DEFAULT 0.0000 COMMENT '库存数量',
   `shortage_quantity` decimal(18, 4) NULL DEFAULT 0.0000 COMMENT '缺料数量',
-  `required_date` datetime(0) NULL DEFAULT NULL COMMENT '需求日期',
+  `required_date` datetime NULL DEFAULT NULL COMMENT '需求日期',
   `status` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'draft' COMMENT '状态',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   `source_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '来源类型',
   `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000' COMMENT '租户ID',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`detail_id`) USING BTREE,
   INDEX `idx_po_requisition_detail_req`(`requisition_id`) USING BTREE,
   INDEX `idx_po_requisition_detail_material`(`material_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '请购单明细表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '请购单明细表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of po_requisition_detail
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for prd_capacity_calendar
@@ -1127,15 +1147,19 @@ CREATE TABLE `prd_capacity_calendar`  (
   `remark` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `del_flag` varchar(2) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`calendar_id`) USING BTREE,
   UNIQUE INDEX `uk_date_object_shift`(`calendar_date`, `object_type`, `object_id`, `shift_id`, `tenant_id`) USING BTREE,
   INDEX `idx_date`(`calendar_date`) USING BTREE,
   INDEX `idx_object`(`object_type`, `object_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '产能日历表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '产能日历表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of prd_capacity_calendar
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for prd_material_requirement
@@ -1148,7 +1172,7 @@ CREATE TABLE `prd_material_requirement`  (
   `plan_id` bigint(20) NULL DEFAULT NULL COMMENT '生产计划ID',
   `plan_no` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '生产计划编号',
   `bom_id` bigint(20) NULL DEFAULT NULL COMMENT 'BOM ID',
-  `requirement_date` datetime(0) NULL DEFAULT NULL COMMENT '需求日期',
+  `requirement_date` datetime NULL DEFAULT NULL COMMENT '需求日期',
   `total_material_types` bigint(20) NULL DEFAULT 0 COMMENT '物料种类总数',
   `total_required_quantity` decimal(18, 4) NULL DEFAULT 0.0000 COMMENT '需求总量',
   `source_type` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '来源类型',
@@ -1157,9 +1181,9 @@ CREATE TABLE `prd_material_requirement`  (
   `planner_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '计划员',
   `dept_id` bigint(20) NULL DEFAULT NULL COMMENT '部门ID',
   `dept_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '部门',
-  `confirmed_time` datetime(0) NULL DEFAULT NULL COMMENT '确认时间',
-  `issued_time` datetime(0) NULL DEFAULT NULL COMMENT '发料时间',
-  `closed_time` datetime(0) NULL DEFAULT NULL COMMENT '关闭时间',
+  `confirmed_time` datetime NULL DEFAULT NULL COMMENT '确认时间',
+  `issued_time` datetime NULL DEFAULT NULL COMMENT '发料时间',
+  `closed_time` datetime NULL DEFAULT NULL COMMENT '关闭时间',
   `material_id` bigint(20) NULL DEFAULT NULL COMMENT '物料ID',
   `material_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '物料编码',
   `material_name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '物料名称',
@@ -1167,9 +1191,9 @@ CREATE TABLE `prd_material_requirement`  (
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   `parent_requirement_id` bigint(20) NULL DEFAULT NULL COMMENT '父级物料需求单ID',
   PRIMARY KEY (`requirement_id`) USING BTREE,
@@ -1177,7 +1201,7 @@ CREATE TABLE `prd_material_requirement`  (
   INDEX `idx_plan_id`(`plan_id`) USING BTREE,
   INDEX `idx_status`(`status`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料需求单表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料需求单表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of prd_material_requirement
@@ -1206,7 +1230,7 @@ INSERT INTO `prd_material_requirement` VALUES (2074785455767719938, '000000', 'M
 INSERT INTO `prd_material_requirement` VALUES (2074785456010989570, '000000', 'MBOM260708004', 2074785290231123970, 'SCJH20260014', 21, '2026-07-08 17:19:35', 1, 4.0000, 'PROCESS', 'DRAFT', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 8001, 'RACK-SIDE', '侧板组件', '300mm*200mm*2mm', NULL, 103, 1, '2026-07-08 17:19:35', 1, '2026-07-08 17:19:35', '0', 2074785455767719938);
 INSERT INTO `prd_material_requirement` VALUES (2075392539102220290, '000000', 'MBOM260710001', 2075392307220123649, 'SCJH20260015', 20, '2026-07-10 09:31:55', 1, 1.0000, 'PROCESS', 'COMPLETED', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 8003, 'RACK-001', '简易金属工具架', '600mm*300mm*800mm', NULL, 103, 1, '2026-07-10 09:31:55', 1, '2026-07-10 10:11:41', '0', NULL);
 INSERT INTO `prd_material_requirement` VALUES (2075392539404210178, '000000', 'MBOM260710002', 2075392307220123649, 'SCJH20260015', 21, '2026-07-10 09:31:55', 1, 4.0000, 'PROCESS', 'COMPLETED', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 8001, 'RACK-SIDE', '侧板组件', '300mm*200mm*2mm', NULL, 103, 1, '2026-07-10 09:31:55', 1, '2026-07-10 10:11:41', '0', 2075392539102220290);
-INSERT INTO `prd_material_requirement` VALUES (2080230508787073026, '000000', 'MBOM260723001', 2080230131631063041, 'SCJH20260016', 99001, '2026-07-23 17:56:17', 2, 60.0000, 'PROCESS', 'DRAFT', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 99001, 'QC-FP-001', '质检联动测试成品', '100×50×30mm', NULL, 103, 1, '2026-07-23 17:56:17', 1, '2026-07-23 17:56:17', '0', NULL);
+INSERT INTO `prd_material_requirement` VALUES (2080230508787073026, '000000', 'MBOM260723001', 2080230131631063041, 'SCJH20260016', 99001, '2026-07-23 17:56:17', 2, 60.0000, 'PROCESS', 'COMPLETED', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 99001, 'QC-FP-001', '质检联动测试成品', '100×50×30mm', NULL, 103, 1, '2026-07-23 17:56:17', 1, '2026-07-23 22:33:00', '0', NULL);
 
 -- ----------------------------
 -- Table structure for prd_material_requirement_detail
@@ -1232,14 +1256,14 @@ CREATE TABLE `prd_material_requirement_detail`  (
   `workstation_id` bigint(20) NULL DEFAULT NULL COMMENT '工作中心ID',
   `workstation_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '工作中心名称',
   `lead_time` bigint(20) NULL DEFAULT NULL COMMENT '提前期(小时)',
-  `required_date` datetime(0) NULL DEFAULT NULL COMMENT '需求日期',
+  `required_date` datetime NULL DEFAULT NULL COMMENT '需求日期',
   `status` bigint(20) NULL DEFAULT NULL COMMENT '状态',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   `backflush_flag` tinyint(4) NULL DEFAULT 0 COMMENT '是否倒冲物料: 0-否, 1-是',
   `actual_consumed_qty` decimal(14, 4) NULL DEFAULT 0.0000 COMMENT '实际消耗数量',
@@ -1247,7 +1271,7 @@ CREATE TABLE `prd_material_requirement_detail`  (
   INDEX `idx_requirement_id`(`requirement_id`) USING BTREE,
   INDEX `idx_material_id`(`material_id`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料需求单明细表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料需求单明细表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of prd_material_requirement_detail
@@ -1276,8 +1300,8 @@ INSERT INTO `prd_material_requirement_detail` VALUES (2074785455843217410, '0000
 INSERT INTO `prd_material_requirement_detail` VALUES (2074785456061321218, '000000', 2074785456010989570, 1, 'IF20251016004', '钢板', '1m*0.5m*2cm,100kg', '2', 'PROCUREMENT', 1.5000, 2.000000, 4.0000, 0.0000, 1295.2100, 0.0000, 10, NULL, NULL, 2, '2026-07-08 19:19:35', 1, NULL, 103, 1, '2026-07-08 17:19:35', -1, '2026-07-08 17:35:14', '0', 0, 1.5300);
 INSERT INTO `prd_material_requirement_detail` VALUES (2075392539211272193, '000000', 2075392539102220290, 8002, 'RACK-FIT', '连接件包', 'M6螺丝*8+挂钩*4+膨胀管*4', '28', 'PROCUREMENT', 1.0000, 0.000000, 1.0000, 1.0000, 2.0000, 1.0000, 30, NULL, NULL, 1, '2026-07-10 10:31:55', 1, NULL, 103, 1, '2026-07-10 09:31:55', 1, '2026-07-10 10:11:41', '0', 0, 1.0000);
 INSERT INTO `prd_material_requirement_detail` VALUES (2075392539454541826, '000000', 2075392539404210178, 1, 'IF20251016004', '钢板', '1m*0.5m*2cm,100kg', '2', 'PROCUREMENT', 1.5000, 2.000000, 4.0000, 1.5300, 1293.6800, 0.0000, 10, NULL, NULL, 2, '2026-07-10 11:31:55', 1, NULL, 103, 1, '2026-07-10 09:31:55', 1, '2026-07-10 10:11:41', '0', 0, 1.5300);
-INSERT INTO `prd_material_requirement_detail` VALUES (2080230508904513537, '000000', 2080230508787073026, 99003, 'QC-RM-B', '质检测试原料B', '20×20mm', '26', 'PROCUREMENT', 1.0000, 0.000000, 20.0000, 0.0000, 1000.0000, 0.0000, 20, NULL, NULL, 0, '2026-07-23 17:56:17', 1, NULL, 103, 1, '2026-07-23 17:56:17', 1, '2026-07-23 17:56:17', '0', 0, 0.0000);
-INSERT INTO `prd_material_requirement_detail` VALUES (2080230508959039489, '000000', 2080230508787073026, 99002, 'QC-RM-A', '质检测试原料A', '10×10mm', '26', 'PROCUREMENT', 2.0000, 0.000000, 40.0000, 0.0000, 1000.0000, 0.0000, 10, NULL, NULL, 0, '2026-07-23 17:56:17', 1, NULL, 103, 1, '2026-07-23 17:56:17', 1, '2026-07-23 17:56:17', '0', 0, 0.0000);
+INSERT INTO `prd_material_requirement_detail` VALUES (2080230508904513537, '000000', 2080230508787073026, 99003, 'QC-RM-B', '质检测试原料B', '20×20mm', '26', 'PROCUREMENT', 1.0000, 0.000000, 20.0000, 60.0000, 1000.0000, 0.0000, 20, NULL, NULL, 0, '2026-07-23 17:56:17', 1, NULL, 103, 1, '2026-07-23 17:56:17', 1, '2026-07-23 22:33:00', '0', 0, 60.0000);
+INSERT INTO `prd_material_requirement_detail` VALUES (2080230508959039489, '000000', 2080230508787073026, 99002, 'QC-RM-A', '质检测试原料A', '10×10mm', '26', 'PROCUREMENT', 2.0000, 0.000000, 40.0000, 120.0000, 1000.0000, 0.0000, 10, NULL, NULL, 0, '2026-07-23 17:56:17', 1, NULL, 103, 1, '2026-07-23 17:56:17', 1, '2026-07-23 22:33:00', '0', 0, 120.0000);
 
 -- ----------------------------
 -- Table structure for prd_production_plan
@@ -1292,9 +1316,9 @@ CREATE TABLE `prd_production_plan`  (
   `original_plan_id` bigint(20) NULL DEFAULT NULL COMMENT '原始计划ID',
   `reference_no` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '参考单据号',
   `plan_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '计划类型',
-  `plan_date` datetime(0) NULL DEFAULT NULL COMMENT '计划日期',
-  `start_date` datetime(0) NULL DEFAULT NULL COMMENT '计划开始日期',
-  `end_date` datetime(0) NULL DEFAULT NULL COMMENT '计划结束日期',
+  `plan_date` datetime NULL DEFAULT NULL COMMENT '计划日期',
+  `start_date` datetime NULL DEFAULT NULL COMMENT '计划开始日期',
+  `end_date` datetime NULL DEFAULT NULL COMMENT '计划结束日期',
   `status` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '状态',
   `priority` bigint(20) NULL DEFAULT NULL COMMENT '优先级',
   `planner_id` bigint(20) NULL DEFAULT NULL COMMENT '计划员ID',
@@ -1302,9 +1326,9 @@ CREATE TABLE `prd_production_plan`  (
   `dept_id` bigint(20) NULL DEFAULT NULL COMMENT '生产部门ID',
   `dept_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '生产部门',
   `total_quantity` decimal(18, 4) NULL DEFAULT 0.0000 COMMENT '计划总数量',
-  `confirmed_time` datetime(0) NULL DEFAULT NULL COMMENT '确认时间',
-  `released_time` datetime(0) NULL DEFAULT NULL COMMENT '下达时间',
-  `closed_time` datetime(0) NULL DEFAULT NULL COMMENT '关闭时间',
+  `confirmed_time` datetime NULL DEFAULT NULL COMMENT '确认时间',
+  `released_time` datetime NULL DEFAULT NULL COMMENT '下达时间',
+  `closed_time` datetime NULL DEFAULT NULL COMMENT '关闭时间',
   `bom_name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT 'bom名称',
   `bom_version` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT 'bom版本',
   `is_current` bigint(20) NULL DEFAULT 0 COMMENT '是否当前版本',
@@ -1317,16 +1341,16 @@ CREATE TABLE `prd_production_plan`  (
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`plan_id`) USING BTREE,
   UNIQUE INDEX `uk_plan_no`(`plan_no`) USING BTREE,
   INDEX `idx_status`(`status`) USING BTREE,
   INDEX `idx_plan_date`(`plan_date`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '生产计划表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '生产计划表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of prd_production_plan
@@ -1344,7 +1368,7 @@ INSERT INTO `prd_production_plan` VALUES (2074393201098014721, '000000', 'SCJH20
 INSERT INTO `prd_production_plan` VALUES (2074765944117170177, '000000', 'SCJH20260013', '销售订单-XSDD20260708001-简易金属工具架', 2, NULL, 'XSDD20260708001', 'MPS', '2026-07-08 16:02:03', '2026-07-08 00:00:00', '2026-07-09 00:00:00', 'RELEASED', 0, 101, '麦得朶', 111, '生产中心', 1.0000, '2026-07-08 16:03:15', '2026-07-08 16:05:17', NULL, '简易金属工具架标准版BOM', '1.0', 1, 20, NULL, NULL, NULL, 2074765442386137089, '101', NULL, 103, 1, '2026-07-08 16:02:03', 1, '2026-07-08 16:05:17', '0');
 INSERT INTO `prd_production_plan` VALUES (2074785290231123970, '000000', 'SCJH20260014', '销售订单-XSDD20260708002-简易金属工具架', 2, NULL, 'XSDD20260708002', 'MPS', '2026-07-08 17:18:55', '2026-07-08 00:00:00', NULL, 'RELEASED', 0, 101, '麦得朶', 111, '生产中心', 1.0000, '2026-07-08 17:21:45', '2026-07-08 17:26:16', NULL, '简易金属工具架标准版BOM', '1.0', 1, 20, NULL, NULL, NULL, 2074785090586447873, '101', NULL, 103, 1, '2026-07-08 17:18:55', 1, '2026-07-08 17:26:15', '0');
 INSERT INTO `prd_production_plan` VALUES (2075392307220123649, '000000', 'SCJH20260015', '销售订单-XSDD20260710001-简易金属工具架', 2, NULL, 'XSDD20260710001', 'MPS', '2026-07-10 09:31:00', '2026-07-10 00:00:00', '2026-07-11 00:00:00', 'COMPLETED', 0, 101, '麦得朶', 111, '生产中心', 1.0000, '2026-07-10 09:45:40', '2026-07-10 09:52:16', NULL, '简易金属工具架标准版BOM', '1.0', 1, 20, NULL, NULL, NULL, 2075391864192569346, '101', NULL, 103, 1, '2026-07-10 09:31:00', 1, '2026-07-10 10:11:41', '0');
-INSERT INTO `prd_production_plan` VALUES (2080230131631063041, '000000', 'SCJH20260016', '销售订单-XSDD20260723001-质检联动测试成品', 2, NULL, 'XSDD20260723001', 'MPS', '2026-07-23 17:54:47', '2026-07-23 00:00:00', '2026-07-24 00:00:00', 'CONFIRMED', 0, 101, '麦得朶', 111, '生产中心', 20.0000, '2026-07-23 17:56:43', NULL, NULL, '质检联动测试成品BOM', '1.0', 1, 99001, NULL, NULL, NULL, 2080229429462630402, '101', NULL, 103, 1, '2026-07-23 17:54:47', 1, '2026-07-23 17:56:43', '0');
+INSERT INTO `prd_production_plan` VALUES (2080230131631063041, '000000', 'SCJH20260016', '销售订单-XSDD20260723001-质检联动测试成品', 2, NULL, 'XSDD20260723001', 'MPS', '2026-07-23 17:54:47', '2026-07-23 00:00:00', '2026-07-24 00:00:00', 'CLOSED', 0, 101, '麦得朶', 111, '生产中心', 20.0000, '2026-07-23 17:56:43', '2026-07-23 20:35:18', NULL, '质检联动测试成品BOM', '1.0', 1, 99001, NULL, NULL, NULL, 2080229429462630402, '101', NULL, 103, 1, '2026-07-23 17:54:47', 1, '2026-07-23 23:55:39', '0');
 
 -- ----------------------------
 -- Table structure for prd_rework_order
@@ -1369,9 +1393,9 @@ CREATE TABLE `prd_rework_order`  (
   `del_flag` varchar(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`rework_id`) USING BTREE,
   UNIQUE INDEX `uk_rework_no`(`rework_no`, `tenant_id`) USING BTREE,
@@ -1379,7 +1403,11 @@ CREATE TABLE `prd_rework_order`  (
   INDEX `idx_rework_material`(`material_id`) USING BTREE,
   INDEX `idx_rework_status`(`status`) USING BTREE,
   INDEX `idx_rework_tenant`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '返工订单表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '返工订单表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of prd_rework_order
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for prd_subcontract
@@ -1411,9 +1439,9 @@ CREATE TABLE `prd_subcontract`  (
   `del_flag` varchar(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`subcontract_id`) USING BTREE,
   UNIQUE INDEX `uk_subcontract_no`(`subcontract_no`, `tenant_id`) USING BTREE,
@@ -1421,7 +1449,11 @@ CREATE TABLE `prd_subcontract`  (
   INDEX `idx_subcontract_material`(`material_id`) USING BTREE,
   INDEX `idx_subcontract_status`(`status`) USING BTREE,
   INDEX `idx_subcontract_tenant`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '委外订单表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '委外订单表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of prd_subcontract
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for prd_work_order
@@ -1446,10 +1478,10 @@ CREATE TABLE `prd_work_order`  (
   `scrap_qty` decimal(18, 4) NULL DEFAULT 0.0000 COMMENT '报废数量',
   `unit_id` bigint(20) NULL DEFAULT NULL COMMENT '单位id',
   `unit_name` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '单位名称',
-  `plan_start_date` datetime(0) NULL DEFAULT NULL COMMENT '计划开始日期',
-  `plan_end_date` datetime(0) NULL DEFAULT NULL COMMENT '计划结束日期',
-  `actual_start_date` datetime(0) NULL DEFAULT NULL COMMENT '实际开始时间',
-  `actual_end_date` datetime(0) NULL DEFAULT NULL COMMENT '实际结束时间',
+  `plan_start_date` datetime NULL DEFAULT NULL COMMENT '计划开始日期',
+  `plan_end_date` datetime NULL DEFAULT NULL COMMENT '计划结束日期',
+  `actual_start_date` datetime NULL DEFAULT NULL COMMENT '实际开始时间',
+  `actual_end_date` datetime NULL DEFAULT NULL COMMENT '实际结束时间',
   `wo_status` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '工单状态',
   `workshop_id` bigint(20) NULL DEFAULT NULL COMMENT '车间ID',
   `workshop_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '车间名称',
@@ -1471,9 +1503,9 @@ CREATE TABLE `prd_work_order`  (
   `select_flow_id` bigint(20) NULL DEFAULT NULL COMMENT '已选审批流程模板ID',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   `wo_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'NORMAL' COMMENT '工单类型:NORMAL-正常,SUBCONTRACT-委外,REWORK-返工',
   `backflush_flag` tinyint(4) NULL DEFAULT 0 COMMENT '是否倒冲工单: 0-否, 1-是',
@@ -1483,14 +1515,14 @@ CREATE TABLE `prd_work_order`  (
   `quality_check_no` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '质检单号(IPQC)',
   `inspector_id` bigint(20) NULL DEFAULT NULL COMMENT '检验员ID',
   `inspector_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '检验员姓名',
-  `inspect_time` datetime(0) NULL DEFAULT NULL COMMENT '检验时间',
+  `inspect_time` datetime NULL DEFAULT NULL COMMENT '检验时间',
   PRIMARY KEY (`wo_id`) USING BTREE,
   UNIQUE INDEX `uk_wo_no`(`wo_no`) USING BTREE,
   INDEX `idx_plan_id`(`plan_id`) USING BTREE,
   INDEX `idx_material_id`(`material_id`) USING BTREE,
   INDEX `idx_wo_status`(`wo_status`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '生产工单表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '生产工单表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of prd_work_order
@@ -1503,7 +1535,7 @@ INSERT INTO `prd_work_order` VALUES (2074393703705657346, '000000', 'SCGD2026070
 INSERT INTO `prd_work_order` VALUES (2074766662588862465, '000000', 'SCGD202607080001', 2074765944117170177, '销售订单-XSDD20260708001-简易金属工具架', 'PLAN', 2074765944117170177, 'XSDD20260708001', NULL, 8003, 'RACK-001', '简易金属工具架', '600mm*300mm*800mm', 1.0000, 1.0000, 0.0000, 27, '套', '2026-07-08 00:00:00', '2026-07-09 00:00:00', '2026-07-08 16:08:52', '2026-07-08 16:08:52', 'COMPLETED', 2, '冲压车间#1', NULL, NULL, NULL, 117, '车间主任', NULL, NULL, 0, 20, '1.0', '简易金属工具架标准版BOM', NULL, NULL, NULL, NULL, 2058473835820376066, 103, 1, '2026-07-08 16:04:54', 1, '2026-07-08 16:33:52', '0', 'NORMAL', 0, 0.0000, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO `prd_work_order` VALUES (2074786959987740674, '000000', 'SCGD202607080002', 2074785290231123970, '销售订单-XSDD20260708002-简易金属工具架', 'PLAN', 2074785290231123970, 'XSDD20260708002', NULL, 8003, 'RACK-001', '简易金属工具架', '600mm*300mm*800mm', 1.0000, 1.0000, 0.0000, 27, '套', '2026-07-08 00:00:00', '2026-07-09 00:00:00', '2026-07-08 17:35:13', '2026-07-08 17:35:13', 'COMPLETED', 2, '冲压车间#1', NULL, NULL, NULL, 101, '麦得朶', NULL, NULL, 0, 20, '1.0', '简易金属工具架标准版BOM', NULL, NULL, NULL, NULL, 2058473835820376066, 103, 1, '2026-07-08 17:25:34', -1, '2026-07-08 17:35:13', '0', 'NORMAL', 1, 0.0000, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO `prd_work_order` VALUES (2075397566059450369, '000000', 'SCGD202607100001', 2075392307220123649, '销售订单-XSDD20260710001-简易金属工具架', 'PLAN', 2075392307220123649, 'XSDD20260710001', NULL, 8003, 'RACK-001', '简易金属工具架', '600mm*300mm*800mm', 1.0000, 1.0000, 0.0000, 27, '套', '2026-07-10 00:00:00', '2026-07-11 00:00:00', '2026-07-10 10:11:41', '2026-07-10 10:11:41', 'COMPLETED', 2, '冲压车间#1', NULL, NULL, NULL, 117, '车间主任', NULL, NULL, 0, 20, '1.0', '简易金属工具架标准版BOM', NULL, NULL, NULL, NULL, 2058473835820376066, 103, 1, '2026-07-10 09:51:53', -1, '2026-07-10 10:11:41', '0', 'NORMAL', 1, 0.0000, NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO `prd_work_order` VALUES (2080231171726180353, '000000', 'SCGD202607230001', 2080230131631063041, '销售订单-XSDD20260723001-质检联动测试成品', 'PLAN', 2080230131631063041, 'XSDD20260723001', NULL, 99001, 'QC-FP-001', '质检联动测试成品', '100×50×30mm', 20.0000, 0.0000, 0.0000, 26, '件', '2026-07-23 00:00:00', '2026-07-24 00:00:00', '2026-07-23 00:00:00', NULL, 'CREATED', 4, '包装车间#1', NULL, NULL, NULL, 117, '车间主任', NULL, NULL, 0, 99001, '1.0', '质检联动测试成品BOM', NULL, NULL, NULL, NULL, 2058473835820376066, 103, 1, '2026-07-23 17:58:55', 1, '2026-07-23 17:58:55', '0', 'NORMAL', 1, 0.0000, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO `prd_work_order` VALUES (2080231171726180353, '000000', 'SCGD202607230001', 2080230131631063041, '销售订单-XSDD20260723001-质检联动测试成品', 'PLAN', 2080230131631063041, 'XSDD20260723001', NULL, 99001, 'QC-FP-001', '质检联动测试成品', '100×50×30mm', 20.0000, 20.0000, 0.0000, 26, '件', '2026-07-23 00:00:00', '2026-07-24 00:00:00', '2026-07-23 22:33:00', '2026-07-23 22:33:00', 'COMPLETED', 4, '包装车间#1', NULL, NULL, NULL, 117, '车间主任', NULL, NULL, 0, 99001, '1.0', '质检联动测试成品BOM', NULL, NULL, NULL, NULL, 2058473835820376066, 103, 1, '2026-07-23 17:58:55', -1, '2026-07-23 22:33:00', '0', 'NORMAL', 1, 0.0000, NULL, NULL, NULL, NULL, NULL, NULL);
 
 -- ----------------------------
 -- Table structure for prd_work_order_resource
@@ -1520,17 +1552,17 @@ CREATE TABLE `prd_work_order_resource`  (
   `seq` int(11) NULL DEFAULT 0 COMMENT '资源顺序/工序顺序',
   `parent_id` bigint(20) NULL DEFAULT NULL COMMENT '父资源ID（如工作站所属车间ID）',
   `parent_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '父资源类型',
-  `plan_start_time` datetime(0) NULL DEFAULT NULL COMMENT '计划开始时间',
-  `plan_end_time` datetime(0) NULL DEFAULT NULL COMMENT '计划结束时间',
-  `actual_start_time` datetime(0) NULL DEFAULT NULL COMMENT '实际开始时间',
-  `actual_end_time` datetime(0) NULL DEFAULT NULL COMMENT '实际结束时间',
+  `plan_start_time` datetime NULL DEFAULT NULL COMMENT '计划开始时间',
+  `plan_end_time` datetime NULL DEFAULT NULL COMMENT '计划结束时间',
+  `actual_start_time` datetime NULL DEFAULT NULL COMMENT '实际开始时间',
+  `actual_end_time` datetime NULL DEFAULT NULL COMMENT '实际结束时间',
   `status` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'PENDING' COMMENT '状态：PENDING-待执行, PROCESSING-执行中, COMPLETED-已完成',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_wo_id`(`wo_id`) USING BTREE,
@@ -1538,7 +1570,7 @@ CREATE TABLE `prd_work_order_resource`  (
   INDEX `idx_resource_id`(`resource_id`) USING BTREE,
   INDEX `idx_status`(`status`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '生产工单资源分配表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '生产工单资源分配表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of prd_work_order_resource
@@ -1647,7 +1679,7 @@ CREATE TABLE `prd_work_report`  (
   `equipment_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '设备名称',
   `lot_number` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '生产批号/批次号',
   `batch_no` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '批次编号',
-  `expire_date` datetime(0) NULL DEFAULT NULL COMMENT '过期日期/有效期至',
+  `expire_date` datetime NULL DEFAULT NULL COMMENT '过期日期/有效期至',
   `shift_id` bigint(20) NULL DEFAULT NULL COMMENT '班次ID',
   `shift_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '班次名称',
   `planned_qty` decimal(18, 4) NULL DEFAULT 0.0000 COMMENT '计划数量（工序计划数量）',
@@ -1661,9 +1693,9 @@ CREATE TABLE `prd_work_report`  (
   `uncheck_qty` decimal(18, 4) NULL DEFAULT 0.0000 COMMENT '待检测数量',
   `cumulative_qty` decimal(18, 4) NULL DEFAULT 0.0000 COMMENT '累计报工数量（到本次为止）',
   `remaining_qty` decimal(18, 4) NULL DEFAULT 0.0000 COMMENT '剩余数量',
-  `report_date` datetime(0) NULL DEFAULT NULL COMMENT '报工日期',
-  `start_time` datetime(0) NULL DEFAULT NULL COMMENT '开始时间',
-  `end_time` datetime(0) NULL DEFAULT NULL COMMENT '结束时间',
+  `report_date` datetime NULL DEFAULT NULL COMMENT '报工日期',
+  `start_time` datetime NULL DEFAULT NULL COMMENT '开始时间',
+  `end_time` datetime NULL DEFAULT NULL COMMENT '结束时间',
   `labor_hours` decimal(18, 2) NULL DEFAULT 0.00 COMMENT '人工工时（小时）',
   `machine_hours` decimal(18, 2) NULL DEFAULT 0.00 COMMENT '机器工时（小时）',
   `setup_hours` decimal(18, 2) NULL DEFAULT 0.00 COMMENT '准备工时（小时）',
@@ -1682,16 +1714,16 @@ CREATE TABLE `prd_work_report`  (
   `quality_check_no` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '质检单号',
   `inspector_id` bigint(20) NULL DEFAULT NULL COMMENT '检验员ID',
   `inspector_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '检验员姓名',
-  `inspect_time` datetime(0) NULL DEFAULT NULL COMMENT '检验时间',
+  `inspect_time` datetime NULL DEFAULT NULL COMMENT '检验时间',
   `report_channel` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '报工途径：PC-电脑端，APP-移动端，PDA-手持设备，AUTO-自动采集',
   `source_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '来源类型：MANUAL-手工录入，SCAN-扫码，IMPORT-导入，INTERFACE-接口同步',
   `source_id` bigint(20) NULL DEFAULT NULL COMMENT '来源单据ID',
   `source_no` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '来源单据编号',
   `barcode` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '条码信息',
   `submit_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '提交人',
-  `submit_time` datetime(0) NULL DEFAULT NULL COMMENT '提交时间',
+  `submit_time` datetime NULL DEFAULT NULL COMMENT '提交时间',
   `audit_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '审核人',
-  `audit_time` datetime(0) NULL DEFAULT NULL COMMENT '审核时间',
+  `audit_time` datetime NULL DEFAULT NULL COMMENT '审核时间',
   `audit_remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '审核意见',
   `attr1` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段1',
   `attr2` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段2',
@@ -1701,9 +1733,9 @@ CREATE TABLE `prd_work_report`  (
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   `batch_id` bigint(20) NULL DEFAULT NULL COMMENT '批次ID（关联 wm_batch，统一批次管理）',
   `batch_code` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '批次号（关联 wm_batch.batch_code，统一批次管理）',
@@ -1716,7 +1748,7 @@ CREATE TABLE `prd_work_report`  (
   INDEX `idx_report_date`(`report_date`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE,
   INDEX `idx_prd_work_report_batch_id`(`batch_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '生产报工表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '生产报工表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of prd_work_report
@@ -1735,9 +1767,9 @@ CREATE TABLE `pu_contract`  (
   `vendor_code` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '供应商编码',
   `vendor_name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '供应商名称',
   `contract_type` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '合同类型 FRAMEWORK-框架合同 SPOT-现货合同 SERVICE-服务合同',
-  `sign_date` datetime(0) NULL DEFAULT NULL COMMENT '签订日期',
-  `effective_date` datetime(0) NULL DEFAULT NULL COMMENT '生效日期',
-  `expiry_date` datetime(0) NULL DEFAULT NULL COMMENT '失效日期',
+  `sign_date` datetime NULL DEFAULT NULL COMMENT '签订日期',
+  `effective_date` datetime NULL DEFAULT NULL COMMENT '生效日期',
+  `expiry_date` datetime NULL DEFAULT NULL COMMENT '失效日期',
   `total_amount` decimal(18, 4) NULL DEFAULT NULL COMMENT '合同总金额',
   `tax_amount` decimal(18, 2) NULL DEFAULT 0.00 COMMENT '税额',
   `amount_excluding_tax` decimal(18, 2) NULL DEFAULT 0.00 COMMENT '不含税总金额',
@@ -1753,12 +1785,16 @@ CREATE TABLE `pu_contract`  (
   `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000' COMMENT '租户编号',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志(0代表存在 2代表删除)',
   PRIMARY KEY (`contract_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '采购合同头表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '采购合同头表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of pu_contract
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for pu_contract_line
@@ -1778,7 +1814,7 @@ CREATE TABLE `pu_contract_line`  (
   `line_amount` decimal(18, 4) NULL DEFAULT NULL COMMENT '行金额',
   `tax_amount` decimal(18, 2) NULL DEFAULT 0.00 COMMENT '行税额',
   `line_amount_excluding_tax` decimal(18, 2) NULL DEFAULT 0.00 COMMENT '不含税行金额',
-  `delivery_date` datetime(0) NULL DEFAULT NULL COMMENT '交货日期',
+  `delivery_date` datetime NULL DEFAULT NULL COMMENT '交货日期',
   `sort_order` int(11) NULL DEFAULT 0 COMMENT '排序号',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   `attr1` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '扩展字段1',
@@ -1788,13 +1824,17 @@ CREATE TABLE `pu_contract_line`  (
   `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000' COMMENT '租户编号',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志(0代表存在 2代表删除)',
   PRIMARY KEY (`line_id`) USING BTREE,
   INDEX `idx_contract_id`(`contract_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '采购合同行表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '采购合同行表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of pu_contract_line
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for pu_invoice
@@ -1840,9 +1880,9 @@ CREATE TABLE `pu_invoice`  (
   `attr4` bigint(20) NULL DEFAULT NULL,
   `create_dept` bigint(20) NULL DEFAULT NULL,
   `create_by` bigint(20) NULL DEFAULT NULL,
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP,
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP,
   `update_by` bigint(20) NULL DEFAULT NULL,
-  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0),
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`invoice_id`) USING BTREE,
   UNIQUE INDEX `uk_invoice_no`(`invoice_no`, `tenant_id`) USING BTREE,
@@ -1851,7 +1891,11 @@ CREATE TABLE `pu_invoice`  (
   INDEX `idx_original_invoice_id`(`original_invoice_id`) USING BTREE,
   INDEX `idx_status`(`status`) USING BTREE,
   INDEX `idx_cert_status`(`cert_status`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '采购进项发票表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '采购进项发票表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of pu_invoice
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for pu_invoice_line
@@ -1884,15 +1928,19 @@ CREATE TABLE `pu_invoice_line`  (
   `attr4` bigint(20) NULL DEFAULT NULL,
   `create_dept` bigint(20) NULL DEFAULT NULL,
   `create_by` bigint(20) NULL DEFAULT NULL,
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP,
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP,
   `update_by` bigint(20) NULL DEFAULT NULL,
-  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0),
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0',
   PRIMARY KEY (`line_id`) USING BTREE,
   INDEX `idx_invoice_id`(`invoice_id`) USING BTREE,
   INDEX `idx_material_id`(`material_id`) USING BTREE,
   INDEX `idx_po_line_id`(`po_line_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '采购进项发票明细行表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '采购进项发票明细行表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of pu_invoice_line
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for pu_purchase_order
@@ -1906,8 +1954,8 @@ CREATE TABLE `pu_purchase_order`  (
   `vendor_id` bigint(20) NULL DEFAULT NULL COMMENT '供应商ID',
   `vendor_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '供应商编码',
   `vendor_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '供应商名称',
-  `order_date` datetime(0) NULL DEFAULT NULL COMMENT '订单日期',
-  `expected_arrival_date` datetime(0) NULL DEFAULT NULL COMMENT '预计到货日期',
+  `order_date` datetime NULL DEFAULT NULL COMMENT '订单日期',
+  `expected_arrival_date` datetime NULL DEFAULT NULL COMMENT '预计到货日期',
   `currency` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'CNY' COMMENT '币别',
   `exchange_rate` decimal(18, 6) NULL DEFAULT 1.000000 COMMENT '汇率',
   `total_amount` decimal(18, 2) NULL DEFAULT NULL COMMENT '含税总金额',
@@ -1927,9 +1975,9 @@ CREATE TABLE `pu_purchase_order`  (
   `tenant_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000',
   `create_dept` bigint(20) NULL DEFAULT NULL,
   `create_by` bigint(20) NULL DEFAULT NULL,
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP,
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP,
   `update_by` bigint(20) NULL DEFAULT NULL,
-  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0),
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0',
   `select_flow_id` bigint(20) NULL DEFAULT NULL COMMENT '审批流程ID',
   `contract_id` bigint(20) NULL DEFAULT NULL COMMENT '合同ID，关联pu_contract表（预留字段）',
@@ -1940,7 +1988,7 @@ CREATE TABLE `pu_purchase_order`  (
   `buyer_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '采购员名称',
   PRIMARY KEY (`order_id`) USING BTREE,
   UNIQUE INDEX `uk_order_no`(`order_no`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2074342752626065411 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '采购订单表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 2080272156951982084 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '采购订单表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of pu_purchase_order
@@ -1951,6 +1999,7 @@ INSERT INTO `pu_purchase_order` VALUES (8800200, 'PO-FP-TEST-002', NULL, NULL, 8
 INSERT INTO `pu_purchase_order` VALUES (2062092892921307138, 'CGDD202606030001', 2062086009753870338, 'CGSQ202606030002', 2062098763051089921, 'V00001', '钢板产出商', '2026-06-03 16:43:52', '2026-06-05 00:00:00', 'CNY', 1.000000, NULL, 0.00, NULL, NULL, NULL, NULL, NULL, NULL, 'RECEIVED', '由采购申请【CGSQ202606030002】转单生成', NULL, NULL, NULL, NULL, '000000', 103, 1, '2026-06-03 16:43:52', -1, '2026-06-07 22:13:52', '0', NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO `pu_purchase_order` VALUES (2074143658025840642, 'CGDD202607060001', 2074142238945996802, 'CGSQ202607060001', 2062098763051089925, 'V00005', '宏达五金有限公司', '2026-07-06 22:49:18', '2026-07-07 00:00:00', 'CNY', 1.000000, NULL, 0.00, NULL, NULL, NULL, NULL, NULL, NULL, 'RECEIVED', '由采购申请【CGSQ202607060001】转单生成', NULL, NULL, NULL, NULL, '000000', 103, 1, '2026-07-06 22:49:18', -1, '2026-07-06 23:22:42', '0', NULL, NULL, NULL, 114, '采购部门', 104, '蔡埋朶');
 INSERT INTO `pu_purchase_order` VALUES (2074342752626065410, 'CGDD202607070001', 2074340986022969346, 'CGSQ202607070001', 2062098763051089925, 'V00005', '宏达五金有限公司', '2026-07-07 12:00:26', '2026-07-08 00:00:00', 'CNY', 1.000000, NULL, 0.00, NULL, NULL, NULL, NULL, NULL, NULL, 'RECEIVED', '由采购申请【CGSQ202607070001】转单生成', NULL, NULL, NULL, NULL, '000000', 103, 1, '2026-07-07 12:00:26', -1, '2026-07-07 15:05:06', '0', NULL, NULL, NULL, 114, '采购部门', 104, '蔡埋朶');
+INSERT INTO `pu_purchase_order` VALUES (2080272156951982083, 'CGDD202607230001', 2080271642264743937, 'CGSQ202607230001', 2062098763051089923, 'V00003', '深圳精密电机制造厂', '2026-07-23 20:41:46', '2026-07-24 00:00:00', 'CNY', 1.000000, NULL, 0.00, NULL, NULL, NULL, NULL, NULL, NULL, 'RECEIVED', '由采购申请【CGSQ202607230001】转单生成', NULL, NULL, NULL, NULL, '000000', 103, 1, '2026-07-23 20:41:46', -1, '2026-07-23 22:30:26', '0', NULL, NULL, NULL, 114, '采购部门', 104, '蔡埋朶');
 
 -- ----------------------------
 -- Table structure for pu_purchase_order_line
@@ -1980,15 +2029,15 @@ CREATE TABLE `pu_purchase_order_line`  (
   `tenant_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000' COMMENT '租户ID',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`line_id`) USING BTREE,
   INDEX `idx_order_id`(`order_id`) USING BTREE,
   INDEX `idx_material_id`(`material_id`) USING BTREE,
   INDEX `idx_pu_order_line_material`(`order_id`, `material_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2074343106725986306 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '采购订单明细表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 2080272463601741827 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '采购订单明细表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of pu_purchase_order_line
@@ -2000,6 +2049,8 @@ INSERT INTO `pu_purchase_order_line` VALUES (8800302, 8800200, NULL, 8803002, 'P
 INSERT INTO `pu_purchase_order_line` VALUES (2062184390943023106, 2062092892921307138, 2062092362954219521, 1, 'IF20251016004', '钢板', '1m*0.5m*2cm,100kg', '千克', 1000.0000, 1000.0000, 0.0000, 'FULL_RECEIVED', 300.0000, 0.0000, NULL, 300000.00, 0.00, 0.00, NULL, '测试', '000000', 103, 1, '2026-06-03 16:43:52', -1, '2026-06-07 22:13:52', '0');
 INSERT INTO `pu_purchase_order_line` VALUES (2074143983021486082, 2074143658025840642, 2074142305039839233, 8002, 'RACK-FIT', '连接件包', 'M6螺丝*8+挂钩*4+膨胀管*4', '双', 10.0000, 10.0000, 0.0000, 'FULL_RECEIVED', 25.0000, 0.0000, NULL, 250.00, 0.00, 0.00, NULL, NULL, '000000', 103, 1, '2026-07-06 22:49:18', 1, '2026-07-06 23:22:42', '0');
 INSERT INTO `pu_purchase_order_line` VALUES (2074343106725986305, 2074342752626065410, 2074342573579616258, 8002, 'RACK-FIT', '连接件包', 'M6螺丝*8+挂钩*4+膨胀管*4', '双', 1.0000, 1.0000, 0.0000, 'FULL_RECEIVED', 25.0000, 0.0000, NULL, 25.00, 0.00, 0.00, NULL, NULL, '000000', 103, 1, '2026-07-07 12:00:26', 1, '2026-07-07 15:05:05', '0');
+INSERT INTO `pu_purchase_order_line` VALUES (2080272463601741825, 2080272156951982083, 2080272041260494850, 99003, 'QC-RM-B', '质检测试原料B', '20×20mm', '件', 100.0000, 100.0000, 0.0000, 'FULL_RECEIVED', 100.0000, 0.0000, NULL, 10000.00, 0.00, 0.00, NULL, NULL, '000000', 103, 1, '2026-07-23 20:41:46', 1, '2026-07-23 22:30:25', '0');
+INSERT INTO `pu_purchase_order_line` VALUES (2080272463601741826, 2080272156951982083, 2080272041260494849, 99002, 'QC-RM-A', '质检测试原料A', '10×10mm', '件', 200.0000, 200.0000, 0.0000, 'FULL_RECEIVED', 50.0000, 0.0000, NULL, 10000.00, 0.00, 0.00, NULL, NULL, '000000', 103, 1, '2026-07-23 20:41:46', 1, '2026-07-23 22:30:25', '0');
 
 -- ----------------------------
 -- Table structure for pu_purchase_requisition
@@ -2011,8 +2062,8 @@ CREATE TABLE `pu_purchase_requisition`  (
   `requisition_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '采购申请名称',
   `applicant_id` bigint(20) NULL DEFAULT NULL COMMENT '申请人ID',
   `applicant_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '申请人名称',
-  `requisition_date` datetime(0) NULL DEFAULT NULL COMMENT '申请日期',
-  `required_date` datetime(0) NULL DEFAULT NULL COMMENT '需求日期',
+  `requisition_date` datetime NULL DEFAULT NULL COMMENT '申请日期',
+  `required_date` datetime NULL DEFAULT NULL COMMENT '需求日期',
   `source_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '来源类型',
   `status` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'DRAFT' COMMENT '状态',
   `select_flow_id` bigint(20) NULL DEFAULT NULL COMMENT '流程ID',
@@ -2024,15 +2075,15 @@ CREATE TABLE `pu_purchase_requisition`  (
   `tenant_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000' COMMENT '租户ID',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   `dept_id` bigint(20) NULL DEFAULT NULL COMMENT '采购部门ID（关联sys_dept）',
   `dept_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '采购部门名称',
   PRIMARY KEY (`requisition_id`) USING BTREE,
   UNIQUE INDEX `uk_requisition_no`(`requisition_no`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2074340986022969347 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '采购申请表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 2080271642264743938 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '采购申请表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of pu_purchase_requisition
@@ -2048,6 +2099,7 @@ INSERT INTO `pu_purchase_requisition` VALUES (2062086009753870338, 'CGSQ20260603
 INSERT INTO `pu_purchase_requisition` VALUES (2071442348321062913, 'CGSQ202606290001', '测试', NULL, NULL, '2026-06-29 00:00:00', '2026-06-30 00:00:00', 'MANUAL', 'APPROVED', 2058435612079448066, NULL, NULL, NULL, NULL, NULL, '000000', 103, 1, '2026-06-29 11:55:16', 1, '2026-06-29 11:57:37', '0', NULL, NULL);
 INSERT INTO `pu_purchase_requisition` VALUES (2074142238945996802, 'CGSQ202607060001', '简易金属工具架连接件包', NULL, NULL, '2026-07-06 00:00:00', '2026-07-06 00:00:00', 'MANUAL', 'ORDERED', 2058435612079448066, NULL, NULL, NULL, NULL, NULL, '000000', 103, 1, '2026-07-06 22:43:40', 1, '2026-07-06 22:49:18', '0', 114, '采购部门');
 INSERT INTO `pu_purchase_requisition` VALUES (2074340986022969346, 'CGSQ202607070001', '连接件包2', NULL, NULL, '2026-07-07 00:00:00', '2026-07-07 00:00:00', 'MANUAL', 'ORDERED', 2058435612079448066, NULL, NULL, NULL, NULL, NULL, '000000', 103, 1, '2026-07-07 11:53:25', 1, '2026-07-07 12:00:26', '0', 114, '采购部门');
+INSERT INTO `pu_purchase_requisition` VALUES (2080271642264743937, 'CGSQ202607230001', '采购测试检测', NULL, NULL, '2026-07-23 00:00:00', '2026-07-23 00:00:00', 'MANUAL', 'ORDERED', 2058435612079448066, NULL, NULL, NULL, NULL, NULL, '000000', 103, 1, '2026-07-23 20:39:44', 1, '2026-07-23 20:41:46', '0', 114, '采购部门');
 
 -- ----------------------------
 -- Table structure for pu_purchase_requisition_line
@@ -2064,7 +2116,7 @@ CREATE TABLE `pu_purchase_requisition_line`  (
   `apply_quantity` decimal(18, 4) NULL DEFAULT NULL COMMENT '申请数量',
   `approved_quantity` decimal(18, 4) NULL DEFAULT NULL COMMENT '已批准数量',
   `shortage_quantity` decimal(18, 4) NULL DEFAULT NULL COMMENT '短缺数量',
-  `required_date` datetime(0) NULL DEFAULT NULL COMMENT '需求日期',
+  `required_date` datetime NULL DEFAULT NULL COMMENT '需求日期',
   `source_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '来源类型',
   `source_id` bigint(20) NULL DEFAULT NULL COMMENT '来源单据ID',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
@@ -2075,14 +2127,14 @@ CREATE TABLE `pu_purchase_requisition_line`  (
   `tenant_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000' COMMENT '租户ID',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`line_id`) USING BTREE,
   INDEX `idx_requisition_id`(`requisition_id`) USING BTREE,
   INDEX `idx_material_id`(`material_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2074342573579616259 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '采购申请明细表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 2080272041260494851 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '采购申请明细表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of pu_purchase_requisition_line
@@ -2108,6 +2160,10 @@ INSERT INTO `pu_purchase_requisition_line` VALUES (2074142238945996803, 20741422
 INSERT INTO `pu_purchase_requisition_line` VALUES (2074142305039839233, 2074142238945996802, 8002, 'RACK-FIT', '连接件包', 'M6螺丝*8+挂钩*4+膨胀管*4', '双', 10.0000, NULL, NULL, '2026-07-06 00:00:00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, '000000', 103, 1, '2026-07-06 22:43:40', 1, '2026-07-06 22:43:40', '0');
 INSERT INTO `pu_purchase_requisition_line` VALUES (2074340986043940866, 2074340986022969346, 8002, 'RACK-FIT', '连接件包', 'M6螺丝*8+挂钩*4+膨胀管*4', '双', 1.0000, NULL, NULL, '2026-07-07 00:00:00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, '000000', 103, 1, '2026-07-07 11:53:25', 1, '2026-07-07 11:59:43', '1');
 INSERT INTO `pu_purchase_requisition_line` VALUES (2074342573579616258, 2074340986022969346, 8002, 'RACK-FIT', '连接件包', 'M6螺丝*8+挂钩*4+膨胀管*4', '双', 1.0000, NULL, NULL, '2026-07-07 00:00:00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, '000000', 103, 1, '2026-07-07 11:53:25', 1, '2026-07-07 11:53:25', '0');
+INSERT INTO `pu_purchase_requisition_line` VALUES (2080271642264743938, 2080271642264743937, 99002, 'QC-RM-A', '质检测试原料A', '10×10mm', '件', 200.0000, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '000000', 103, 1, '2026-07-23 20:39:44', 1, '2026-07-23 20:41:18', '1');
+INSERT INTO `pu_purchase_requisition_line` VALUES (2080271642264743939, 2080271642264743937, 99003, 'QC-RM-B', '质检测试原料B', '20×20mm', '件', 100.0000, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '000000', 103, 1, '2026-07-23 20:39:44', 1, '2026-07-23 20:41:18', '1');
+INSERT INTO `pu_purchase_requisition_line` VALUES (2080272041260494849, 2080271642264743937, 99002, 'QC-RM-A', '质检测试原料A', '10×10mm', '件', 200.0000, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '000000', 103, 1, '2026-07-23 20:39:44', 1, '2026-07-23 20:39:44', '0');
+INSERT INTO `pu_purchase_requisition_line` VALUES (2080272041260494850, 2080271642264743937, 99003, 'QC-RM-B', '质检测试原料B', '20×20mm', '件', 100.0000, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '000000', 103, 1, '2026-07-23 20:39:44', 1, '2026-07-23 20:39:44', '0');
 
 -- ----------------------------
 -- Table structure for pu_purchase_return
@@ -2121,7 +2177,7 @@ CREATE TABLE `pu_purchase_return`  (
   `vendor_id` bigint(20) NULL DEFAULT NULL COMMENT '供应商ID',
   `vendor_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '供应商编码',
   `vendor_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '供应商名称',
-  `return_date` datetime(0) NULL DEFAULT NULL COMMENT '退货日期',
+  `return_date` datetime NULL DEFAULT NULL COMMENT '退货日期',
   `return_reason` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '退货原因',
   `total_amount` decimal(18, 2) NULL DEFAULT NULL COMMENT '金额',
   `tax_amount` decimal(18, 2) NULL DEFAULT 0.00 COMMENT '税额',
@@ -2136,13 +2192,13 @@ CREATE TABLE `pu_purchase_return`  (
   `tenant_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000',
   `create_dept` bigint(20) NULL DEFAULT NULL,
   `create_by` bigint(20) NULL DEFAULT NULL,
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP,
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP,
   `update_by` bigint(20) NULL DEFAULT NULL,
-  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0),
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0',
   PRIMARY KEY (`return_id`) USING BTREE,
   UNIQUE INDEX `uk_return_no`(`return_no`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 8800401 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '采购退货表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 8800401 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '采购退货表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of pu_purchase_return
@@ -2178,13 +2234,13 @@ CREATE TABLE `pu_purchase_return_line`  (
   `tenant_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000',
   `create_dept` bigint(20) NULL DEFAULT NULL,
   `create_by` bigint(20) NULL DEFAULT NULL,
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP,
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP,
   `update_by` bigint(20) NULL DEFAULT NULL,
-  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0),
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0',
   PRIMARY KEY (`line_id`) USING BTREE,
   INDEX `idx_return_id`(`return_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 8800502 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '采购退货行表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 8800502 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '采购退货行表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of pu_purchase_return_line
@@ -2219,15 +2275,19 @@ CREATE TABLE `pu_vendor_evaluation`  (
   `attr4` bigint(20) NULL DEFAULT NULL COMMENT '预留字段4',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志(0存在 2删除)',
   PRIMARY KEY (`evaluation_id`) USING BTREE,
   UNIQUE INDEX `uk_vendor_period`(`vendor_id`, `eval_period`, `tenant_id`) USING BTREE,
   INDEX `idx_vendor`(`vendor_id`) USING BTREE,
   INDEX `idx_period`(`eval_period`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '供应商评估记录表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '供应商评估记录表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of pu_vendor_evaluation
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for sch_attendance
@@ -2238,10 +2298,10 @@ CREATE TABLE `sch_attendance`  (
   `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000' COMMENT '租户ID',
   `worker_id` bigint(20) NULL DEFAULT NULL COMMENT '人员ID',
   `worker_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '人员姓名',
-  `record_date` datetime(0) NULL DEFAULT NULL COMMENT '考勤日期',
+  `record_date` datetime NULL DEFAULT NULL COMMENT '考勤日期',
   `schedule_id` bigint(20) NULL DEFAULT NULL COMMENT '关联排班ID',
-  `clock_in_time` datetime(0) NULL DEFAULT NULL COMMENT '上班打卡时间',
-  `clock_out_time` datetime(0) NULL DEFAULT NULL COMMENT '下班打卡时间',
+  `clock_in_time` datetime NULL DEFAULT NULL COMMENT '上班打卡时间',
+  `clock_out_time` datetime NULL DEFAULT NULL COMMENT '下班打卡时间',
   `late_minutes` bigint(20) NULL DEFAULT 0 COMMENT '迟到分钟数',
   `leave_early_minutes` bigint(20) NULL DEFAULT 0 COMMENT '早退分钟数',
   `overtime_hours` decimal(18, 2) NULL DEFAULT 0.00 COMMENT '加班时长',
@@ -2252,16 +2312,16 @@ CREATE TABLE `sch_attendance`  (
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`attendance_id`) USING BTREE,
   INDEX `idx_worker_id`(`worker_id`) USING BTREE,
   INDEX `idx_record_date`(`record_date`) USING BTREE,
   INDEX `idx_attendance_status`(`attendance_status`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '考勤记录表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '考勤记录表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sch_attendance
@@ -2292,18 +2352,18 @@ CREATE TABLE `sch_employee_schedule`  (
   `team_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '班组名称',
   `shift_id` bigint(20) NULL DEFAULT NULL COMMENT '班次ID',
   `shift_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '班次名称',
-  `scheduled_date` datetime(0) NULL DEFAULT NULL COMMENT '排班日期',
-  `start_time` datetime(0) NULL DEFAULT NULL COMMENT '排班开始时间',
-  `end_time` datetime(0) NULL DEFAULT NULL COMMENT '排班结束时间',
+  `scheduled_date` datetime NULL DEFAULT NULL COMMENT '排班日期',
+  `start_time` datetime NULL DEFAULT NULL COMMENT '排班开始时间',
+  `end_time` datetime NULL DEFAULT NULL COMMENT '排班结束时间',
   `actual_shift_id` bigint(20) NULL DEFAULT NULL COMMENT '实际班次ID（用于调班覆盖）',
   `schedule_status` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '排班状态',
   `is_working_day` tinyint(4) NULL DEFAULT 1 COMMENT '是否工作日 0:否 1:是',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`schedule_id`) USING BTREE,
   INDEX `idx_plan_id`(`plan_id`) USING BTREE,
@@ -2312,7 +2372,7 @@ CREATE TABLE `sch_employee_schedule`  (
   INDEX `idx_shift_id`(`shift_id`) USING BTREE,
   INDEX `idx_scheduled_date`(`scheduled_date`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '员工排班明细表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '员工排班明细表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sch_employee_schedule
@@ -2721,7 +2781,7 @@ DROP TABLE IF EXISTS `sch_holiday`;
 CREATE TABLE `sch_holiday`  (
   `holiday_id` bigint(20) NOT NULL COMMENT '节假日ID',
   `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000' COMMENT '租户ID',
-  `holiday_date` datetime(0) NOT NULL COMMENT '日期',
+  `holiday_date` datetime NOT NULL COMMENT '日期',
   `holiday_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '节假日名称',
   `holiday_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '类型',
   `year` bigint(20) NULL DEFAULT NULL COMMENT '年份',
@@ -2729,15 +2789,15 @@ CREATE TABLE `sch_holiday`  (
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`holiday_id`) USING BTREE,
   UNIQUE INDEX `uk_holiday_date`(`holiday_date`) USING BTREE,
   INDEX `idx_year`(`year`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '节假日设置表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '节假日设置表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sch_holiday
@@ -2755,25 +2815,25 @@ CREATE TABLE `sch_plan`  (
   `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000' COMMENT '租户ID',
   `plan_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '计划编码',
   `plan_name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '计划名称',
-  `start_date` datetime(0) NULL DEFAULT NULL COMMENT '开始日期',
-  `end_date` datetime(0) NULL DEFAULT NULL COMMENT '结束日期',
+  `start_date` datetime NULL DEFAULT NULL COMMENT '开始日期',
+  `end_date` datetime NULL DEFAULT NULL COMMENT '结束日期',
   `period_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '周期类型',
   `rotation_type` int(11) NULL DEFAULT NULL COMMENT '轮班方式',
   `status` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '状态',
   `published_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '发布人',
-  `published_time` datetime(0) NULL DEFAULT NULL COMMENT '发布时间',
+  `published_time` datetime NULL DEFAULT NULL COMMENT '发布时间',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`plan_id`) USING BTREE,
   UNIQUE INDEX `uk_plan_code`(`plan_code`) USING BTREE,
   INDEX `idx_status`(`status`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '排班计划表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '排班计划表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sch_plan
@@ -2795,15 +2855,15 @@ CREATE TABLE `sch_plan_team`  (
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`record_id`) USING BTREE,
   INDEX `idx_plan_id`(`plan_id`) USING BTREE,
   INDEX `idx_team_id`(`team_id`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '计划班组关联表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '计划班组关联表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sch_plan_team
@@ -2825,12 +2885,12 @@ CREATE TABLE `sch_punch_rule`  (
   `rule_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '规则名称',
   `shift_id` bigint(20) NULL DEFAULT NULL COMMENT '适用班次ID（NULL表示所有班次）',
   `shift_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '班次名称',
-  `work_start_time` time(0) NULL DEFAULT NULL COMMENT '上班时间',
-  `work_end_time` time(0) NULL DEFAULT NULL COMMENT '下班时间',
-  `allow_clock_in_start` time(0) NULL DEFAULT NULL COMMENT '允许上班打卡开始时间',
-  `allow_clock_in_end` time(0) NULL DEFAULT NULL COMMENT '允许上班打卡结束时间',
-  `allow_clock_out_start` time(0) NULL DEFAULT NULL COMMENT '允许下班打卡开始时间',
-  `allow_clock_out_end` time(0) NULL DEFAULT NULL COMMENT '允许下班打卡结束时间',
+  `work_start_time` time NULL DEFAULT NULL COMMENT '上班时间',
+  `work_end_time` time NULL DEFAULT NULL COMMENT '下班时间',
+  `allow_clock_in_start` time NULL DEFAULT NULL COMMENT '允许上班打卡开始时间',
+  `allow_clock_in_end` time NULL DEFAULT NULL COMMENT '允许上班打卡结束时间',
+  `allow_clock_out_start` time NULL DEFAULT NULL COMMENT '允许下班打卡开始时间',
+  `allow_clock_out_end` time NULL DEFAULT NULL COMMENT '允许下班打卡结束时间',
   `location_lat` decimal(18, 8) NULL DEFAULT NULL COMMENT '打卡中心点纬度',
   `location_lng` decimal(18, 8) NULL DEFAULT NULL COMMENT '打卡中心点经度',
   `location_radius` bigint(20) NULL DEFAULT NULL COMMENT '打卡半径（米）',
@@ -2848,15 +2908,15 @@ CREATE TABLE `sch_punch_rule`  (
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`rule_id`) USING BTREE,
   INDEX `idx_shift_id`(`shift_id`) USING BTREE,
   INDEX `idx_is_enabled`(`is_enabled`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '打卡规则表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '打卡规则表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sch_punch_rule
@@ -2878,12 +2938,12 @@ CREATE TABLE `sch_shift`  (
   `shift_code` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '班次编码',
   `shift_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '班次名称',
   `plan_id` bigint(20) NULL DEFAULT NULL COMMENT '排班计划ID',
-  `start_time` time(0) NULL DEFAULT NULL COMMENT '开始时间',
-  `end_time` time(0) NULL DEFAULT NULL COMMENT '结束时间',
+  `start_time` time NULL DEFAULT NULL COMMENT '开始时间',
+  `end_time` time NULL DEFAULT NULL COMMENT '结束时间',
   `work_hours` decimal(18, 2) NULL DEFAULT 0.00 COMMENT '工时(小时)',
   `is_cross_day` tinyint(4) NULL DEFAULT 0 COMMENT '是否跨天 0:否 1:是',
-  `rest_start_time` time(0) NULL DEFAULT NULL COMMENT '休息开始时间',
-  `rest_end_time` time(0) NULL DEFAULT NULL COMMENT '休息结束时间',
+  `rest_start_time` time NULL DEFAULT NULL COMMENT '休息开始时间',
+  `rest_end_time` time NULL DEFAULT NULL COMMENT '休息结束时间',
   `late_threshold` bigint(20) NULL DEFAULT NULL COMMENT '迟到阈值(分钟)',
   `early_leave_threshold` bigint(20) NULL DEFAULT NULL COMMENT '早退阈值(分钟)',
   `shift_category` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '班次类别',
@@ -2892,15 +2952,15 @@ CREATE TABLE `sch_shift`  (
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`shift_id`) USING BTREE,
   UNIQUE INDEX `uk_shift_code`(`shift_code`) USING BTREE,
   INDEX `idx_plan_id`(`plan_id`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '班次定义表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '班次定义表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sch_shift
@@ -2932,16 +2992,16 @@ CREATE TABLE `sch_team`  (
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`team_id`) USING BTREE,
   UNIQUE INDEX `uk_team_code`(`team_code`) USING BTREE,
   INDEX `idx_workshop_id`(`workshop_id`) USING BTREE,
   INDEX `idx_status`(`status`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '班组设置表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '班组设置表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sch_team
@@ -2971,21 +3031,21 @@ CREATE TABLE `sch_team_member`  (
   `worker_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '人员姓名',
   `worker_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '工号',
   `role` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '角色',
-  `effective_date` datetime(0) NULL DEFAULT NULL COMMENT '生效日期',
-  `expire_date` datetime(0) NULL DEFAULT NULL COMMENT '失效日期',
+  `effective_date` datetime NULL DEFAULT NULL COMMENT '生效日期',
+  `expire_date` datetime NULL DEFAULT NULL COMMENT '失效日期',
   `status` bigint(20) NULL DEFAULT 1 COMMENT '状态',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`member_id`) USING BTREE,
   INDEX `idx_team_id`(`team_id`) USING BTREE,
   INDEX `idx_worker_id`(`worker_id`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '班组成员表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '班组成员表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sch_team_member
@@ -3029,15 +3089,15 @@ CREATE TABLE `sch_team_schedule`  (
   `plan_id` bigint(20) NOT NULL COMMENT '排班计划ID',
   `team_id` bigint(20) NOT NULL COMMENT '班组ID',
   `shift_id` bigint(20) NULL DEFAULT NULL COMMENT '班次ID',
-  `scheduled_date` datetime(0) NULL DEFAULT NULL COMMENT '排班日期',
+  `scheduled_date` datetime NULL DEFAULT NULL COMMENT '排班日期',
   `week_day` bigint(20) NULL DEFAULT NULL COMMENT '星期几(1-7)',
   `is_holiday` tinyint(4) NULL DEFAULT 0 COMMENT '是否节假日 0:否 1:是',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`team_schedule_id`) USING BTREE,
   INDEX `idx_plan_id`(`plan_id`) USING BTREE,
@@ -3045,7 +3105,7 @@ CREATE TABLE `sch_team_schedule`  (
   INDEX `idx_shift_id`(`shift_id`) USING BTREE,
   INDEX `idx_scheduled_date`(`scheduled_date`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '班组排班（模板）表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '班组排班（模板）表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sch_team_schedule
@@ -3082,14 +3142,14 @@ CREATE TABLE `sch_worker`  (
   `work_category` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '工种',
   `skill_level` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '技能等级',
   `work_status` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '在岗状态',
-  `entry_date` datetime(0) NULL DEFAULT NULL COMMENT '入职日期',
-  `regularization_date` datetime(0) NULL DEFAULT NULL COMMENT '转正日期',
+  `entry_date` datetime NULL DEFAULT NULL COMMENT '入职日期',
+  `regularization_date` datetime NULL DEFAULT NULL COMMENT '转正日期',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`worker_id`) USING BTREE,
   UNIQUE INDEX `uk_employee_id`(`employee_id`) USING BTREE,
@@ -3097,7 +3157,7 @@ CREATE TABLE `sch_worker`  (
   INDEX `idx_work_status`(`work_status`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE,
   INDEX `idx_workshop_id`(`workshop_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '生产工人档案表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '生产工人档案表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sch_worker
@@ -3163,15 +3223,19 @@ CREATE TABLE `so_contract`  (
   `attr4` int(11) NULL DEFAULT NULL COMMENT '预留字段4',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`contract_id`) USING BTREE,
   UNIQUE INDEX `uk_contract_no`(`contract_no`, `tenant_id`) USING BTREE,
   INDEX `idx_client_id`(`client_id`) USING BTREE,
   INDEX `idx_status`(`status`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售合同表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售合同表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of so_contract
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for so_contract_line
@@ -3204,14 +3268,18 @@ CREATE TABLE `so_contract_line`  (
   `attr4` int(11) NULL DEFAULT NULL COMMENT '预留字段4',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`line_id`) USING BTREE,
   INDEX `idx_contract_id`(`contract_id`) USING BTREE,
   INDEX `idx_material_id`(`material_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售合同明细行表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售合同明细行表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of so_contract_line
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for so_credit_usage
@@ -3224,18 +3292,18 @@ CREATE TABLE `so_credit_usage`  (
   `so_id` bigint(20) NOT NULL,
   `amount` decimal(14, 2) NOT NULL,
   `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'FROZEN',
-  `freeze_time` datetime(0) NULL DEFAULT NULL,
-  `used_time` datetime(0) NULL DEFAULT NULL COMMENT '转为已用(已交付)时间',
-  `release_time` datetime(0) NULL DEFAULT NULL,
+  `freeze_time` datetime NULL DEFAULT NULL,
+  `used_time` datetime NULL DEFAULT NULL COMMENT '转为已用(已交付)时间',
+  `release_time` datetime NULL DEFAULT NULL,
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`usage_id`) USING BTREE,
   INDEX `idx_client`(`client_id`) USING BTREE,
   INDEX `idx_so`(`so_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '信用占用记录' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '信用占用记录' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of so_credit_usage
@@ -3260,8 +3328,8 @@ CREATE TABLE `so_customer_order`  (
   `client_name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '客户名称',
   `contact_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '联系人',
   `contact_phone` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '联系人电话',
-  `order_date` datetime(0) NULL DEFAULT NULL COMMENT '客户下单日期',
-  `requested_date` datetime(0) NULL DEFAULT NULL COMMENT '客户要求交货日',
+  `order_date` datetime NULL DEFAULT NULL COMMENT '客户下单日期',
+  `requested_date` datetime NULL DEFAULT NULL COMMENT '客户要求交货日',
   `currency` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '货币',
   `total_amount` decimal(18, 2) NULL DEFAULT NULL COMMENT '订单总金额（未税）',
   `status` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '订单状态',
@@ -3275,9 +3343,9 @@ CREATE TABLE `so_customer_order`  (
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`co_id`) USING BTREE,
   UNIQUE INDEX `uk_co_no`(`co_no`) USING BTREE,
@@ -3285,7 +3353,7 @@ CREATE TABLE `so_customer_order`  (
   INDEX `idx_status`(`status`) USING BTREE,
   INDEX `idx_order_date`(`order_date`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '客户订单表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '客户订单表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of so_customer_order
@@ -3351,9 +3419,9 @@ CREATE TABLE `so_invoice`  (
   `attr4` int(11) NULL DEFAULT NULL COMMENT '预留字段4',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`invoice_id`) USING BTREE,
   UNIQUE INDEX `uk_invoice_no`(`invoice_no`, `tenant_id`) USING BTREE,
@@ -3363,7 +3431,7 @@ CREATE TABLE `so_invoice`  (
   INDEX `idx_status`(`status`) USING BTREE,
   INDEX `idx_original_invoice_id`(`original_invoice_id`) USING BTREE,
   INDEX `idx_issue_channel`(`issue_channel`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售发票表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售发票表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of so_invoice
@@ -3371,6 +3439,7 @@ CREATE TABLE `so_invoice`  (
 INSERT INTO `so_invoice` VALUES (2077778385148563458, '000000', 'FP2077778385148563457', NULL, 'VAT_NORMAL', 11, '测试五金贸易公司', NULL, '测试五金贸易公司', NULL, NULL, NULL, 2075391810035716098, NULL, NULL, '0', '2026-07-16', 'CNY', 1.0000, 200.00, 6.00, 206.00, 0.00, 'ISSUED', NULL, 'MANUAL', NULL, NULL, NULL, 4, NULL, NULL, NULL, NULL, NULL, -1, -1, '2026-07-16 23:32:25', 1, '2026-07-16 23:37:51', '0');
 INSERT INTO `so_invoice` VALUES (2077779678525116419, '000000', 'FP2077779678525116418', NULL, 'VAT_NORMAL', 11, '测试五金贸易公司', NULL, '测试五金贸易公司', NULL, NULL, NULL, 2075391810035716098, NULL, 2077778385148563458, '1', '2026-07-16', 'CNY', 1.0000, -200.00, -6.00, -206.00, 0.00, 'CANCELLED', NULL, 'MANUAL', NULL, NULL, NULL, 1, '红冲', NULL, NULL, NULL, NULL, 103, 1, '2026-07-16 23:37:33', 1, '2026-07-16 23:37:56', '0');
 INSERT INTO `so_invoice` VALUES (2077779754509127683, '000000', 'FP2077779754509127682', NULL, 'VAT_NORMAL', 11, '测试五金贸易公司', NULL, '测试五金贸易公司', NULL, NULL, NULL, 2075391810035716098, NULL, 2077778385148563458, '1', '2026-07-16', 'CNY', 1.0000, -200.00, -6.00, -206.00, 1.00, 'VERIFIED', NULL, 'MANUAL', NULL, NULL, NULL, 1, '红冲', NULL, NULL, NULL, NULL, 103, 1, '2026-07-16 23:37:51', 1, '2026-07-16 23:38:07', '0');
+INSERT INTO `so_invoice` VALUES (2080320947449126914, '000000', 'FP2080320947449126913', NULL, 'VAT_NORMAL', 7, '赵氏工程公司', NULL, '赵氏工程公司', NULL, NULL, NULL, 2080229404229697537, NULL, NULL, '0', '2026-07-23', 'CNY', 1.0000, 2400.00, 72.00, 2472.00, 0.00, 'DRAFT', NULL, 'MANUAL', NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, -1, -1, '2026-07-23 23:55:39', -1, '2026-07-23 23:55:39', '0');
 
 -- ----------------------------
 -- Table structure for so_invoice_line
@@ -3402,14 +3471,14 @@ CREATE TABLE `so_invoice_line`  (
   `attr4` int(11) NULL DEFAULT NULL COMMENT '预留字段4',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`line_id`) USING BTREE,
   INDEX `idx_invoice_id`(`invoice_id`) USING BTREE,
   INDEX `idx_material_id`(`material_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售发票明细行表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售发票明细行表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of so_invoice_line
@@ -3417,6 +3486,7 @@ CREATE TABLE `so_invoice_line`  (
 INSERT INTO `so_invoice_line` VALUES (2077778385148563459, '000000', 2077778385148563458, '101', 8003, 'RACK-001', '简易金属工具架', '600mm*300mm*800mm', 1.0000, '套', 200.0000, 200.00, 3.00, 6.00, 206.00, 2077776617266204673, NULL, 0, NULL, NULL, NULL, NULL, NULL, -1, -1, '2026-07-16 23:32:25', 1, '2026-07-16 23:34:57', '0');
 INSERT INTO `so_invoice_line` VALUES (2077779678525116420, '000000', 2077779678525116419, '101', 8003, 'RACK-001', '简易金属工具架', '600mm*300mm*800mm', -1.0000, '套', 200.0000, -200.00, 3.00, -6.00, -206.00, 2077776617266204673, NULL, 0, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-07-16 23:37:33', 1, '2026-07-16 23:37:33', '0');
 INSERT INTO `so_invoice_line` VALUES (2077779754572042242, '000000', 2077779754509127683, '101', 8003, 'RACK-001', '简易金属工具架', '600mm*300mm*800mm', -1.0000, '套', 200.0000, -200.00, 3.00, -6.00, -206.00, 2077776617266204673, NULL, 0, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-07-16 23:37:51', 1, '2026-07-16 23:37:51', '0');
+INSERT INTO `so_invoice_line` VALUES (2080320947449126915, '000000', 2080320947449126914, '101', 99001, 'QC-FP-001', '质检联动测试成品', '100×50×30mm', 20.0000, '件', 120.0000, 2400.00, 3.00, 72.00, 2472.00, 2080229429462630402, NULL, 0, NULL, NULL, NULL, NULL, NULL, -1, -1, '2026-07-23 23:55:39', -1, '2026-07-23 23:55:39', '0');
 
 -- ----------------------------
 -- Table structure for so_price_list
@@ -3436,12 +3506,16 @@ CREATE TABLE `so_price_list`  (
   `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'ACTIVE',
   `create_by` bigint(20) NULL DEFAULT NULL,
   `create_dept` bigint(20) NULL DEFAULT NULL,
-  `create_time` datetime(0) NULL DEFAULT NULL,
+  `create_time` datetime NULL DEFAULT NULL,
   `update_by` bigint(20) NULL DEFAULT NULL,
-  `update_time` datetime(0) NULL DEFAULT NULL,
+  `update_time` datetime NULL DEFAULT NULL,
   PRIMARY KEY (`price_list_id`) USING BTREE,
   UNIQUE INDEX `uk_code_tenant`(`list_code`, `tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售价格表头' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售价格表头' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of so_price_list
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for so_price_list_line
@@ -3458,13 +3532,17 @@ CREATE TABLE `so_price_list_line`  (
   `discount_rate` decimal(5, 2) NULL DEFAULT 100.00,
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`line_id`) USING BTREE,
   INDEX `idx_list_material`(`price_list_id`, `material_id`) USING BTREE,
   INDEX `idx_material`(`material_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售价格表行' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售价格表行' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of so_price_list_line
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for so_quotation
@@ -3477,8 +3555,8 @@ CREATE TABLE `so_quotation`  (
   `client_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '客户名称',
   `sales_rep_id` bigint(20) NULL DEFAULT NULL COMMENT '销售代表ID',
   `sales_rep_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '销售代表',
-  `quotation_date` datetime(0) NULL DEFAULT NULL COMMENT '报价日期',
-  `valid_until` datetime(0) NULL DEFAULT NULL COMMENT '有效期至',
+  `quotation_date` datetime NULL DEFAULT NULL COMMENT '报价日期',
+  `valid_until` datetime NULL DEFAULT NULL COMMENT '有效期至',
   `currency` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '币种',
   `exchange_rate` decimal(18, 6) NULL DEFAULT NULL COMMENT '汇率',
   `total_amount` decimal(18, 4) NULL DEFAULT NULL COMMENT '总金额',
@@ -3498,14 +3576,14 @@ CREATE TABLE `so_quotation`  (
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`quotation_id`) USING BTREE,
   INDEX `idx_quotation_status`(`status`) USING BTREE,
   INDEX `idx_quotation_client`(`client_id`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售报价单表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售报价单表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of so_quotation
@@ -3530,7 +3608,7 @@ CREATE TABLE `so_quotation_line`  (
   `amount` decimal(18, 4) NULL DEFAULT NULL COMMENT '金额',
   `tax_rate` decimal(10, 4) NULL DEFAULT NULL COMMENT '税率',
   `tax_amount` decimal(18, 4) NULL DEFAULT NULL COMMENT '税额',
-  `delivery_date` datetime(0) NULL DEFAULT NULL COMMENT '交货日期',
+  `delivery_date` datetime NULL DEFAULT NULL COMMENT '交货日期',
   `sort_order` int(11) NULL DEFAULT 0 COMMENT '排序',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '' COMMENT '备注',
   `attr1` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留1',
@@ -3541,13 +3619,13 @@ CREATE TABLE `so_quotation_line`  (
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`line_id`) USING BTREE,
   INDEX `idx_quotation_line_mid`(`quotation_id`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售报价行表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售报价行表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of so_quotation_line
@@ -3567,7 +3645,7 @@ CREATE TABLE `so_return`  (
   `client_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '客户名称',
   `sales_rep_id` bigint(20) NULL DEFAULT NULL COMMENT '销售代表ID',
   `sales_rep_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '销售代表',
-  `return_date` datetime(0) NULL DEFAULT NULL COMMENT '退货日期',
+  `return_date` datetime NULL DEFAULT NULL COMMENT '退货日期',
   `return_reason` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '退货原因',
   `return_type` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '退货类型',
   `total_amount` decimal(18, 4) NULL DEFAULT NULL COMMENT '总金额',
@@ -3587,14 +3665,18 @@ CREATE TABLE `so_return`  (
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`return_id`) USING BTREE,
   INDEX `idx_return_so`(`so_id`) USING BTREE,
   INDEX `idx_return_status`(`status`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售退货单表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售退货单表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of so_return
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for so_return_line
@@ -3626,13 +3708,17 @@ CREATE TABLE `so_return_line`  (
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`line_id`) USING BTREE,
   INDEX `idx_return_line_mid`(`return_id`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售退货行表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售退货行表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of so_return_line
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for so_sales_order_header
@@ -3647,9 +3733,9 @@ CREATE TABLE `so_sales_order_header`  (
   `client_name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '客户名称',
   `sales_rep_id` bigint(20) NULL DEFAULT NULL COMMENT '销售代表',
   `sales_rep_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '销售代表名称',
-  `order_date` datetime(0) NULL DEFAULT NULL COMMENT '订单生成日期',
-  `promise_date` datetime(0) NULL DEFAULT NULL COMMENT '承诺交货日',
-  `requested_date` datetime(0) NULL DEFAULT NULL COMMENT '客户要求交货日',
+  `order_date` datetime NULL DEFAULT NULL COMMENT '订单生成日期',
+  `promise_date` datetime NULL DEFAULT NULL COMMENT '承诺交货日',
+  `requested_date` datetime NULL DEFAULT NULL COMMENT '客户要求交货日',
   `delivery_address_id` bigint(20) NULL DEFAULT NULL COMMENT '发货地址',
   `invoice_address_id` bigint(20) NULL DEFAULT NULL COMMENT '开票地址ID',
   `delivery_address` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '发货地址详情',
@@ -3662,15 +3748,15 @@ CREATE TABLE `so_sales_order_header`  (
   `discount_amount` decimal(18, 2) NULL DEFAULT NULL COMMENT '整单折扣',
   `discount_rate` decimal(18, 6) NULL DEFAULT NULL COMMENT '整单折扣率',
   `credit_status` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '信用状态',
-  `credit_check_time` datetime(0) NULL DEFAULT NULL COMMENT '信用检查时间',
+  `credit_check_time` datetime NULL DEFAULT NULL COMMENT '信用检查时间',
   `credit_blocked_by` bigint(20) NULL DEFAULT NULL COMMENT '信用拦截人',
   `order_status` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '订单状态',
   `project_id` bigint(20) NULL DEFAULT NULL COMMENT '项目ID',
   `is_pa_enabled` tinyint(4) NULL DEFAULT 0 COMMENT '是否启用项目配套发料 0:否 1:是',
-  `confirmed_time` datetime(0) NULL DEFAULT NULL COMMENT '确认时间',
-  `fulfilled_time` datetime(0) NULL DEFAULT NULL COMMENT '完全履行时间',
-  `closed_time` datetime(0) NULL DEFAULT NULL COMMENT '结束时间',
-  `cancelled_time` datetime(0) NULL DEFAULT NULL COMMENT '取消时间',
+  `confirmed_time` datetime NULL DEFAULT NULL COMMENT '确认时间',
+  `fulfilled_time` datetime NULL DEFAULT NULL COMMENT '完全履行时间',
+  `closed_time` datetime NULL DEFAULT NULL COMMENT '结束时间',
+  `cancelled_time` datetime NULL DEFAULT NULL COMMENT '取消时间',
   `cancelled_reason` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '取消原因',
   `dept_id` bigint(20) NULL DEFAULT NULL COMMENT '销售部门ID（关联sys_dept）',
   `distribution_channel` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '分销渠道',
@@ -3682,9 +3768,9 @@ CREATE TABLE `so_sales_order_header`  (
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   `select_flow_id` bigint(20) NULL DEFAULT NULL COMMENT '审批流程ID',
   `dept_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '销售部门名称',
@@ -3695,7 +3781,7 @@ CREATE TABLE `so_sales_order_header`  (
   INDEX `idx_order_status`(`order_status`) USING BTREE,
   INDEX `idx_order_date`(`order_date`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售订单主表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售订单主表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of so_sales_order_header
@@ -3714,7 +3800,7 @@ INSERT INTO `so_sales_order_header` VALUES (2074392682392633345, '000000', 'XSDD
 INSERT INTO `so_sales_order_header` VALUES (2074765296298528769, '000000', 'XSDD20260708001', 2074391908581294081, 11, '测试五金贸易公司', 101, '麦得朶', '2026-07-07 00:00:00', '2026-07-08 00:00:00', '2026-07-08 00:00:00', NULL, NULL, NULL, NULL, NULL, 'CNY', 1.000000, 193.83, 5.82, 5.99, 3.000000, 'PASSED', '2026-07-08 16:02:03', NULL, 'CONFIRMED', NULL, 0, '2026-07-08 16:02:03', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-07-08 15:59:29', 1, '2026-07-08 16:02:03', '0', 2058473342767357953, NULL);
 INSERT INTO `so_sales_order_header` VALUES (2074784622795722753, '000000', 'XSDD20260708002', 2074391908581294081, 11, '测试五金贸易公司', 101, '麦得朶', '2026-07-07 00:00:00', NULL, '2026-07-08 00:00:00', NULL, NULL, NULL, NULL, NULL, 'CNY', 1.000000, 197.84, 5.88, 4.04, 2.000000, 'PASSED', '2026-07-08 17:18:55', NULL, 'CONFIRMED', NULL, 0, '2026-07-08 17:18:55', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-07-08 17:16:16', 1, '2026-07-08 17:18:55', '0', 2058473342767357953, NULL);
 INSERT INTO `so_sales_order_header` VALUES (2075391810035716098, '000000', 'XSDD20260710001', 2074391908581294081, 11, '测试五金贸易公司', 101, '麦得朶', '2026-07-07 00:00:00', '2026-07-10 00:00:00', '2026-07-08 00:00:00', NULL, NULL, NULL, NULL, NULL, 'CNY', 1.000000, 185.91, 5.70, 9.79, 5.000000, 'PASSED', '2026-07-10 09:31:00', NULL, 'FULFILLED', NULL, 0, '2026-07-10 09:31:00', '2026-07-16 23:32:25', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-07-10 09:29:01', 1, '2026-07-16 23:32:25', '0', 2058473342767357953, NULL);
-INSERT INTO `so_sales_order_header` VALUES (2080229404229697537, '000000', 'XSDD20260723001', 2080228834202812417, 7, '赵氏工程公司', 101, '麦得朶', '2026-07-23 00:00:00', '2026-07-24 00:00:00', '2026-07-24 00:00:00', NULL, NULL, NULL, NULL, NULL, 'CNY', 1.000000, 2277.95, 68.40, 70.45, 3.000000, 'PASSED', '2026-07-23 17:54:47', NULL, 'CONFIRMED', NULL, 0, '2026-07-23 17:54:47', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-07-23 17:51:53', 1, '2026-07-23 17:54:47', '0', 2058473342767357953, NULL);
+INSERT INTO `so_sales_order_header` VALUES (2080229404229697537, '000000', 'XSDD20260723001', 2080228834202812417, 7, '赵氏工程公司', 101, '麦得朶', '2026-07-23 00:00:00', '2026-07-24 00:00:00', '2026-07-24 00:00:00', NULL, NULL, NULL, NULL, NULL, 'CNY', 1.000000, 2277.95, 68.40, 70.45, 3.000000, 'PASSED', '2026-07-23 17:54:47', NULL, 'FULFILLED', NULL, 0, '2026-07-23 17:54:47', '2026-07-23 23:55:39', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-07-23 17:51:53', 1, '2026-07-23 23:55:39', '0', 2058473342767357953, NULL);
 
 -- ----------------------------
 -- Table structure for so_sales_order_line
@@ -3739,8 +3825,8 @@ CREATE TABLE `so_sales_order_line`  (
   `tax_amount` decimal(18, 2) NULL DEFAULT NULL COMMENT '行税额',
   `discount_percent` decimal(18, 6) NULL DEFAULT NULL COMMENT '行折扣率',
   `discount_amount` decimal(18, 2) NULL DEFAULT NULL COMMENT '行折扣额',
-  `requested_date` datetime(0) NULL DEFAULT NULL COMMENT '行要求交期',
-  `promise_date` datetime(0) NULL DEFAULT NULL COMMENT '行承诺交期',
+  `requested_date` datetime NULL DEFAULT NULL COMMENT '行要求交期',
+  `promise_date` datetime NULL DEFAULT NULL COMMENT '行承诺交期',
   `fulfilled_qty` decimal(18, 4) NULL DEFAULT 0.0000 COMMENT '已履行数量（已发货）',
   `production_qty` decimal(18, 4) NULL DEFAULT 0.0000 COMMENT '已投产数量',
   `purchase_qty` decimal(18, 4) NULL DEFAULT 0.0000 COMMENT '已采购数量',
@@ -3762,20 +3848,20 @@ CREATE TABLE `so_sales_order_line`  (
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   `oqc_status` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'PENDING' COMMENT 'OQC检验状态(PENDING/QUALIFIED/UNQUALIFIED)',
   `oqc_id` bigint(20) NULL DEFAULT NULL COMMENT 'OQC检验单ID',
   `oqc_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT 'OQC检验单编号',
-  `oqc_time` datetime(0) NULL DEFAULT NULL COMMENT 'OQC检验时间',
+  `oqc_time` datetime NULL DEFAULT NULL COMMENT 'OQC检验时间',
   PRIMARY KEY (`line_id`) USING BTREE,
   INDEX `idx_so_id`(`so_id`) USING BTREE,
   INDEX `idx_material_id`(`material_id`) USING BTREE,
   INDEX `idx_line_status`(`line_status`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售订单行表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售订单行表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of so_sales_order_line
@@ -3803,8 +3889,7 @@ INSERT INTO `so_sales_order_line` VALUES (2075391810132185089, '000000', 2075391
 INSERT INTO `so_sales_order_line` VALUES (2075391864192569346, '000000', 2075391810035716098, '101', 8003, 'RACK-001', '简易金属工具架', '600mm*300mm*800mm', 1.0000, 0.0000, 0.0000, '套', 200.000000, 200.00, 3.000000, 5.70, 5.000000, 10.00, '2026-07-08 00:00:00', '2026-07-10 00:00:00', 0.0000, 1.0000, 0.0000, 0.0000, 'SCHEDULED', NULL, NULL, '', '', NULL, NULL, NULL, '', 1, NULL, NULL, NULL, NULL, '', 103, 1, '2026-07-10 09:29:14', 1, '2026-07-17 22:40:40', '1', 'PENDING', NULL, NULL, NULL);
 INSERT INTO `so_sales_order_line` VALUES (2077775426692042753, '000000', 2075391810035716098, '101', 8003, 'RACK-001', '简易金属工具架', '600mm*300mm*800mm', 1.0000, 0.0000, 0.0000, '套', 200.000000, 200.00, 3.000000, 5.70, 5.000000, 10.00, '2026-07-08 00:00:00', '2026-07-10 00:00:00', 0.0000, 1.0000, 0.0000, 0.0000, 'SCHEDULED', NULL, NULL, '', '', NULL, NULL, NULL, '', 1, NULL, NULL, NULL, NULL, '', 103, 1, '2026-07-16 23:20:40', 1, '2026-07-16 23:25:23', '1', 'PENDING', NULL, NULL, NULL);
 INSERT INTO `so_sales_order_line` VALUES (2077776617266204673, '000000', 2075391810035716098, '101', 8003, 'RACK-001', '简易金属工具架', '600mm*300mm*800mm', 1.0000, 1.0000, 0.0000, '套', 200.000000, 200.00, 3.000000, 5.70, 5.000000, 10.00, '2026-07-08 00:00:00', '2026-07-10 00:00:00', 1.0000, 1.0000, 0.0000, 0.0000, 'FULFILLED', NULL, NULL, '', '', NULL, NULL, NULL, '', 1, NULL, NULL, NULL, NULL, '', 103, 1, '2026-07-16 23:25:23', 1, '2026-07-16 23:37:56', '0', 'PENDING', NULL, NULL, NULL);
-INSERT INTO `so_sales_order_line` VALUES (2080229404384886785, '000000', 2080229404229697537, '101', 99001, 'QC-FP-001', '质检联动测试成品', '100×50×30mm', 20.0000, 0.0000, 0.0000, '件', 120.000000, 2400.00, 3.000000, 68.40, 5.000000, 120.00, '2026-07-24 00:00:00', '2026-07-24 00:00:00', 0.0000, 0.0000, 0.0000, 0.0000, 'PENDING', NULL, NULL, '', '', NULL, 1, 0, '', 1, NULL, NULL, NULL, NULL, '', 103, 1, '2026-07-23 17:51:53', 1, '2026-07-23 17:51:59', '1', 'PENDING', NULL, NULL, NULL);
-INSERT INTO `so_sales_order_line` VALUES (2080229429462630402, '000000', 2080229404229697537, '101', 99001, 'QC-FP-001', '质检联动测试成品', '100×50×30mm', 20.0000, 0.0000, 0.0000, '件', 120.000000, 2400.00, 3.000000, 68.40, 5.000000, 120.00, '2026-07-24 00:00:00', '2026-07-24 00:00:00', 0.0000, 0.0000, 0.0000, 0.0000, 'PENDING', NULL, NULL, '', '', NULL, 1, 0, '', 1, NULL, NULL, NULL, NULL, '', 103, 1, '2026-07-23 17:51:59', 1, '2026-07-23 17:51:59', '0', 'PENDING', NULL, NULL, NULL);
+INSERT INTO `so_sales_order_line` VALUES (2080229429462630402, '000000', 2080229404229697537, '101', 99001, 'QC-FP-001', '质检联动测试成品', '100×50×30mm', 20.0000, 20.0000, 20.0000, '件', 120.000000, 2400.00, 3.000000, 68.40, 5.000000, 120.00, '2026-07-24 00:00:00', '2026-07-24 00:00:00', 20.0000, 20.0000, 0.0000, 0.0000, 'FULFILLED', NULL, NULL, '', '', NULL, 1, 0, '', 1, NULL, NULL, NULL, NULL, '', 103, 1, '2026-07-23 17:51:59', 1, '2026-07-23 23:55:39', '0', 'QUALIFIED', 2080312885934026753, 'OQC-20260723-001', '2026-07-23 23:24:21');
 
 -- ----------------------------
 -- Table structure for wm_arrival_notice
@@ -3819,7 +3904,7 @@ CREATE TABLE `wm_arrival_notice`  (
   `vendor_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '供应商编码',
   `vendor_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '供应商名称',
   `vendor_nick` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '供应商简称',
-  `arrival_date` datetime(0) NULL DEFAULT NULL COMMENT '到货日期',
+  `arrival_date` datetime NULL DEFAULT NULL COMMENT '到货日期',
   `contact` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '联系人',
   `phone` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '联系方式',
   `status` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'DRAFT' COMMENT '单据状态',
@@ -3833,12 +3918,12 @@ CREATE TABLE `wm_arrival_notice`  (
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`notice_id`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '到货通知单表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '到货通知单表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of wm_arrival_notice
@@ -3850,6 +3935,7 @@ INSERT INTO `wm_arrival_notice` VALUES (2062198287922073602, 'AN20260603005', '�
 INSERT INTO `wm_arrival_notice` VALUES (2062208168804696066, 'AN20260604001', '采购订单到货通知', 'CGDD202606030001', 2062098763051089921, 'V00001', '钢板产出商', NULL, '2026-06-04 00:21:56', '买的多', '15xxxx', 'FINISHED', 2062368011052814337, '由采购订单自动生成', NULL, NULL, 0, 0, '000000', 103, '0', 1, '2026-06-04 00:21:56', 1, '2026-06-07 22:13:52');
 INSERT INTO `wm_arrival_notice` VALUES (2074145040774623233, 'AN20260706001', '连接件包', 'CGDD202607060001', 2062098763051089925, 'V00005', '宏达五金有限公司', NULL, '2026-07-06 00:00:00', '李四', '13800138002', 'FINISHED', 2062368011052814337, '', NULL, NULL, 0, 0, '000000', 103, '0', 1, '2026-07-06 22:54:48', 1, '2026-07-06 23:22:42');
 INSERT INTO `wm_arrival_notice` VALUES (2074343301031313410, 'AN20260707001', '采购订单到货通知', 'CGDD202607070001', 2062098763051089925, 'V00005', '宏达五金有限公司', NULL, '2026-07-07 12:02:37', 'xxx', '123456', 'FINISHED', 2062368011052814337, '由采购订单自动生成', NULL, NULL, 0, 0, '000000', 103, '0', 1, '2026-07-07 12:02:37', 1, '2026-07-07 15:05:05');
+INSERT INTO `wm_arrival_notice` VALUES (2080272658611712003, 'AN20260723001', '采购订单到货通知', 'CGDD202607230001', 2062098763051089923, 'V00003', '深圳精密电机制造厂', NULL, '2026-07-23 20:43:46', NULL, NULL, 'FINISHED', NULL, '由采购订单自动生成', NULL, NULL, 0, 0, '000000', 103, '0', 1, '2026-07-23 20:43:46', 1, '2026-07-23 22:30:26');
 
 -- ----------------------------
 -- Table structure for wm_arrival_notice_line
@@ -3869,7 +3955,7 @@ CREATE TABLE `wm_arrival_notice_line`  (
   `iqc_check` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '是否来料检验',
   `iqc_id` bigint(20) NULL DEFAULT NULL COMMENT '来料检验单ID',
   `iqc_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '来料检验单编号',
-  `iqc_status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT 'IQC检验结果(QUALIFIED/UNQUALIFIED,NULL=未完成)',
+  `iqc_status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT 'IQC检验结果(QUALIFIED/UNQUALIFIED, NULL=未完成)',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '' COMMENT '备注',
   `attr1` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段1',
   `attr2` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段2',
@@ -3879,33 +3965,35 @@ CREATE TABLE `wm_arrival_notice_line`  (
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`line_id`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '到货通知单行表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '到货通知单行表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of wm_arrival_notice_line
 -- ----------------------------
-INSERT INTO `wm_arrival_notice_line` VALUES (10, 1, 1, 'IF20251016004', '钢板', '1m*0.5m*2cm,100kg', '2', '千克', 100.00, NULL, '1', NULL, '', '', NULL, NULL, NULL, NULL, '000000', 103, '0', 1, NULL, 1, NULL);
-INSERT INTO `wm_arrival_notice_line` VALUES (11, 2, 10, 'LUBRICANT', '润滑油', 'ISO VG46', '29', '打', 110.00, NULL, '0', NULL, '', '', NULL, NULL, NULL, NULL, '000000', 103, '0', 1, NULL, 1, NULL);
-INSERT INTO `wm_arrival_notice_line` VALUES (12, 2, 3001, 'IF20251203004', '轮圈', NULL, '1', '克', 250.00, NULL, '0', NULL, '', '', NULL, NULL, NULL, NULL, '000000', 103, '0', 1, NULL, 1, NULL);
-INSERT INTO `wm_arrival_notice_line` VALUES (13, 2, 3002, 'IF20251203005', '轮胎', NULL, '1', '克', 250.00, NULL, '0', NULL, '', '', NULL, NULL, NULL, NULL, '000000', 103, '0', 1, NULL, 1, NULL);
-INSERT INTO `wm_arrival_notice_line` VALUES (14, 2, 3003, 'IF20251203006', '辐条', NULL, '1', '克', 10000.00, NULL, '0', NULL, '', '', NULL, NULL, NULL, NULL, '000000', 103, '0', 1, NULL, 1, NULL);
-INSERT INTO `wm_arrival_notice_line` VALUES (15, 2, 3004, 'IF20251203007', '把管', NULL, '1', '克', 120.00, NULL, '0', NULL, '', '', NULL, NULL, NULL, NULL, '000000', 103, '0', 1, NULL, 1, NULL);
-INSERT INTO `wm_arrival_notice_line` VALUES (16, 2, 3005, 'IF20251203008', '把套', NULL, '1', '克', 250.00, NULL, '0', NULL, '', '', NULL, NULL, NULL, NULL, '000000', 103, '0', 1, NULL, 1, NULL);
-INSERT INTO `wm_arrival_notice_line` VALUES (10001, 10001, 1, 'IF20251016004', '钢板', NULL, '3', '吨', 500.00, 0.00, '1', NULL, NULL, '钢板到货需IQC检验', NULL, NULL, 0, 0, '000000', 100, '0', 1, '2026-06-21 20:59:14', 1, '2026-06-21 20:59:14');
-INSERT INTO `wm_arrival_notice_line` VALUES (2062198287964016641, 2062198287922073602, 1, 'IF20251016004', '钢板', '1m*0.5m*2cm,100kg', NULL, '千克', 1000.00, 1000.00, 'N', NULL, NULL, '测试', NULL, NULL, 0, 0, '000000', 103, '1', 1, '2026-06-03 23:42:40', 1, '2026-06-03 23:42:40');
-INSERT INTO `wm_arrival_notice_line` VALUES (2062208168871804929, 2062208168804696066, 1, 'IF20251016004', '钢板', '1m*0.5m*2cm,100kg', '2', '千克', 1000.00, 1000.00, '0', NULL, NULL, '测试', NULL, NULL, 0, 0, '000000', 103, '1', 1, '2026-06-04 00:21:56', 1, '2026-06-04 00:21:56');
-INSERT INTO `wm_arrival_notice_line` VALUES (2062211711074779138, 2062208168804696066, 1, 'IF20251016004', '钢板', '1m*0.5m*2cm,100kg', '2', '千克', 1000.00, 1000.00, '0', NULL, NULL, '测试', NULL, NULL, 0, 0, '000000', 103, '1', 1, '2026-06-04 00:36:01', 1, '2026-06-04 00:36:01');
-INSERT INTO `wm_arrival_notice_line` VALUES (2062211768180228097, 2062208168804696066, 1, 'IF20251016004', '钢板', '1m*0.5m*2cm,100kg', '2', '千克', 1000.00, 1000.00, '0', NULL, NULL, '测试', NULL, NULL, 0, 0, '000000', 103, '1', 1, '2026-06-04 00:36:14', 1, '2026-06-04 00:36:14');
-INSERT INTO `wm_arrival_notice_line` VALUES (2062375843877859329, 2062208168804696066, 1, 'IF20251016004', '钢板', '1m*0.5m*2cm,100kg', '2', '千克', 1000.00, 1000.00, '0', NULL, NULL, '测试', NULL, NULL, 0, 0, '000000', 103, '1', 1, '2026-06-04 11:28:13', 1, '2026-06-04 11:28:13');
-INSERT INTO `wm_arrival_notice_line` VALUES (2062395104738361346, 2062208168804696066, 1, 'IF20251016004', '钢板', '1m*0.5m*2cm,100kg', '2', '千克', 1000.00, 1000.00, '0', NULL, NULL, '测试', NULL, NULL, 0, 0, '000000', 103, '0', 1, '2026-06-04 12:44:45', 1, '2026-06-04 12:44:45');
-INSERT INTO `wm_arrival_notice_line` VALUES (2074145236485042177, 2074145040774623233, 8002, 'RACK-FIT', '连接件包', 'M6螺丝*8+挂钩*4+膨胀管*4', '27', '套', 10.00, 10.00, '0', NULL, '', '', NULL, NULL, 0, 0, '000000', 103, '0', 1, '2026-07-06 22:55:35', 1, '2026-07-06 22:55:35');
-INSERT INTO `wm_arrival_notice_line` VALUES (2074343301060673538, 2074343301031313410, 8002, 'RACK-FIT', '连接件包', 'M6螺丝*8+挂钩*4+膨胀管*4', '28', '双', 1.00, 1.00, '0', NULL, NULL, '', NULL, NULL, 0, 0, '000000', 103, '1', 1, '2026-07-07 12:02:37', 1, '2026-07-07 12:02:37');
-INSERT INTO `wm_arrival_notice_line` VALUES (2074381941170159617, 2074343301031313410, 8002, 'RACK-FIT', '连接件包', 'M6螺丝*8+挂钩*4+膨胀管*4', '28', '双', 1.00, 1.00, '0', NULL, NULL, '', NULL, NULL, 0, 0, '000000', 103, '0', 1, '2026-07-07 14:36:10', 1, '2026-07-07 14:36:10');
+INSERT INTO `wm_arrival_notice_line` VALUES (10, 1, 1, 'IF20251016004', '钢板', '1m*0.5m*2cm,100kg', '2', '千克', 100.00, NULL, '1', NULL, '', NULL, '', NULL, NULL, NULL, NULL, '000000', 103, '0', 1, NULL, 1, NULL);
+INSERT INTO `wm_arrival_notice_line` VALUES (11, 2, 10, 'LUBRICANT', '润滑油', 'ISO VG46', '29', '打', 110.00, NULL, '0', NULL, '', NULL, '', NULL, NULL, NULL, NULL, '000000', 103, '0', 1, NULL, 1, NULL);
+INSERT INTO `wm_arrival_notice_line` VALUES (12, 2, 3001, 'IF20251203004', '轮圈', NULL, '1', '克', 250.00, NULL, '0', NULL, '', NULL, '', NULL, NULL, NULL, NULL, '000000', 103, '0', 1, NULL, 1, NULL);
+INSERT INTO `wm_arrival_notice_line` VALUES (13, 2, 3002, 'IF20251203005', '轮胎', NULL, '1', '克', 250.00, NULL, '0', NULL, '', NULL, '', NULL, NULL, NULL, NULL, '000000', 103, '0', 1, NULL, 1, NULL);
+INSERT INTO `wm_arrival_notice_line` VALUES (14, 2, 3003, 'IF20251203006', '辐条', NULL, '1', '克', 10000.00, NULL, '0', NULL, '', NULL, '', NULL, NULL, NULL, NULL, '000000', 103, '0', 1, NULL, 1, NULL);
+INSERT INTO `wm_arrival_notice_line` VALUES (15, 2, 3004, 'IF20251203007', '把管', NULL, '1', '克', 120.00, NULL, '0', NULL, '', NULL, '', NULL, NULL, NULL, NULL, '000000', 103, '0', 1, NULL, 1, NULL);
+INSERT INTO `wm_arrival_notice_line` VALUES (16, 2, 3005, 'IF20251203008', '把套', NULL, '1', '克', 250.00, NULL, '0', NULL, '', NULL, '', NULL, NULL, NULL, NULL, '000000', 103, '0', 1, NULL, 1, NULL);
+INSERT INTO `wm_arrival_notice_line` VALUES (10001, 10001, 1, 'IF20251016004', '钢板', NULL, '3', '吨', 500.00, 0.00, '1', NULL, NULL, NULL, '钢板到货需IQC检验', NULL, NULL, 0, 0, '000000', 100, '0', 1, '2026-06-21 20:59:14', 1, '2026-06-21 20:59:14');
+INSERT INTO `wm_arrival_notice_line` VALUES (2062198287964016641, 2062198287922073602, 1, 'IF20251016004', '钢板', '1m*0.5m*2cm,100kg', NULL, '千克', 1000.00, 1000.00, 'N', NULL, NULL, NULL, '测试', NULL, NULL, 0, 0, '000000', 103, '1', 1, '2026-06-03 23:42:40', 1, '2026-06-03 23:42:40');
+INSERT INTO `wm_arrival_notice_line` VALUES (2062208168871804929, 2062208168804696066, 1, 'IF20251016004', '钢板', '1m*0.5m*2cm,100kg', '2', '千克', 1000.00, 1000.00, '0', NULL, NULL, NULL, '测试', NULL, NULL, 0, 0, '000000', 103, '1', 1, '2026-06-04 00:21:56', 1, '2026-06-04 00:21:56');
+INSERT INTO `wm_arrival_notice_line` VALUES (2062211711074779138, 2062208168804696066, 1, 'IF20251016004', '钢板', '1m*0.5m*2cm,100kg', '2', '千克', 1000.00, 1000.00, '0', NULL, NULL, NULL, '测试', NULL, NULL, 0, 0, '000000', 103, '1', 1, '2026-06-04 00:36:01', 1, '2026-06-04 00:36:01');
+INSERT INTO `wm_arrival_notice_line` VALUES (2062211768180228097, 2062208168804696066, 1, 'IF20251016004', '钢板', '1m*0.5m*2cm,100kg', '2', '千克', 1000.00, 1000.00, '0', NULL, NULL, NULL, '测试', NULL, NULL, 0, 0, '000000', 103, '1', 1, '2026-06-04 00:36:14', 1, '2026-06-04 00:36:14');
+INSERT INTO `wm_arrival_notice_line` VALUES (2062375843877859329, 2062208168804696066, 1, 'IF20251016004', '钢板', '1m*0.5m*2cm,100kg', '2', '千克', 1000.00, 1000.00, '0', NULL, NULL, NULL, '测试', NULL, NULL, 0, 0, '000000', 103, '1', 1, '2026-06-04 11:28:13', 1, '2026-06-04 11:28:13');
+INSERT INTO `wm_arrival_notice_line` VALUES (2062395104738361346, 2062208168804696066, 1, 'IF20251016004', '钢板', '1m*0.5m*2cm,100kg', '2', '千克', 1000.00, 1000.00, '0', NULL, NULL, NULL, '测试', NULL, NULL, 0, 0, '000000', 103, '0', 1, '2026-06-04 12:44:45', 1, '2026-06-04 12:44:45');
+INSERT INTO `wm_arrival_notice_line` VALUES (2074145236485042177, 2074145040774623233, 8002, 'RACK-FIT', '连接件包', 'M6螺丝*8+挂钩*4+膨胀管*4', '27', '套', 10.00, 10.00, '0', NULL, '', NULL, '', NULL, NULL, 0, 0, '000000', 103, '0', 1, '2026-07-06 22:55:35', 1, '2026-07-06 22:55:35');
+INSERT INTO `wm_arrival_notice_line` VALUES (2074343301060673538, 2074343301031313410, 8002, 'RACK-FIT', '连接件包', 'M6螺丝*8+挂钩*4+膨胀管*4', '28', '双', 1.00, 1.00, '0', NULL, NULL, NULL, '', NULL, NULL, 0, 0, '000000', 103, '1', 1, '2026-07-07 12:02:37', 1, '2026-07-07 12:02:37');
+INSERT INTO `wm_arrival_notice_line` VALUES (2074381941170159617, 2074343301031313410, 8002, 'RACK-FIT', '连接件包', 'M6螺丝*8+挂钩*4+膨胀管*4', '28', '双', 1.00, 1.00, '0', NULL, NULL, NULL, '', NULL, NULL, 0, 0, '000000', 103, '0', 1, '2026-07-07 14:36:10', 1, '2026-07-07 14:36:10');
+INSERT INTO `wm_arrival_notice_line` VALUES (2080272658611712004, 2080272658611712003, 99003, 'QC-RM-B', '质检测试原料B', '20×20mm', '26', '件', 100.00, 100.00, '0', NULL, NULL, NULL, '', NULL, NULL, 0, 0, '000000', 103, '0', 1, '2026-07-23 20:43:46', 1, '2026-07-23 20:43:46');
+INSERT INTO `wm_arrival_notice_line` VALUES (2080272658674626561, 2080272658611712003, 99002, 'QC-RM-A', '质检测试原料A', '10×10mm', '26', '件', 200.00, 200.00, '1', 2080291255916593154, 'IQC-20260723-001', 'QUALIFIED', '', NULL, NULL, 0, 0, '000000', 103, '0', 1, '2026-07-23 20:43:46', -1, '2026-07-23 22:26:06');
 
 -- ----------------------------
 -- Table structure for wm_barcode
@@ -3923,9 +4011,9 @@ CREATE TABLE `wm_barcode`  (
   `batch_id` bigint(20) NULL DEFAULT NULL COMMENT '批次ID',
   `stock_id` bigint(20) NULL DEFAULT NULL COMMENT '库存ID',
   `status` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'ACTIVE' COMMENT '状态',
-  `generate_time` datetime(0) NULL DEFAULT NULL COMMENT '生成时间',
-  `bind_time` datetime(0) NULL DEFAULT NULL COMMENT '绑定时间',
-  `expire_time` datetime(0) NULL DEFAULT NULL COMMENT '失效时间',
+  `generate_time` datetime NULL DEFAULT NULL COMMENT '生成时间',
+  `bind_time` datetime NULL DEFAULT NULL COMMENT '绑定时间',
+  `expire_time` datetime NULL DEFAULT NULL COMMENT '失效时间',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   `attr1` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
   `attr2` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
@@ -3934,9 +4022,9 @@ CREATE TABLE `wm_barcode`  (
   `tenant_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000',
   `create_dept` bigint(20) NULL DEFAULT NULL,
   `create_by` bigint(20) NULL DEFAULT NULL,
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP,
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP,
   `update_by` bigint(20) NULL DEFAULT NULL,
-  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0),
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0',
   `batch_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '批次编码',
   `sn_id` bigint(20) NULL DEFAULT NULL COMMENT '序列号ID',
@@ -3948,7 +4036,7 @@ CREATE TABLE `wm_barcode`  (
   INDEX `idx_barcode_material_id`(`material_id`) USING BTREE,
   INDEX `idx_barcode_stock_id`(`stock_id`) USING BTREE,
   INDEX `idx_barcode_status`(`status`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2074389221408161795 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '条码实例表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 2080299501423308803 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '条码实例表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of wm_barcode
@@ -3967,6 +4055,8 @@ INSERT INTO `wm_barcode` VALUES (2063623345664036865, 'RC20260607000011', 900001
 INSERT INTO `wm_barcode` VALUES (2063625490874368001, 'RC20260607000012', 900001, 'WM_RECEIVE_DEFAULT', 'RECEIVE_IN', 2062395873109688322, NULL, 1, 2062717540369408001, 2063625490677235714, 'ACTIVE', '2026-06-07 22:13:52', NULL, NULL, '系统生成条码', NULL, NULL, NULL, NULL, '000000', 103, 1, '2026-06-07 22:13:52', 1, '2026-06-07 22:13:52', '0', NULL, NULL);
 INSERT INTO `wm_barcode` VALUES (2074152062840729601, 'RC20260706000013', 900001, 'WM_RECEIVE_DEFAULT', 'RECEIVE_IN', 2074145387983302657, NULL, 8002, 2074149637295607809, 2074152062656180226, 'ACTIVE', '2026-07-06 23:22:42', NULL, NULL, '系统生成条码', NULL, NULL, NULL, NULL, '000000', 103, 1, '2026-07-06 23:22:42', 1, '2026-07-06 23:22:42', '0', NULL, NULL);
 INSERT INTO `wm_barcode` VALUES (2074389221408161794, 'RC20260707000014', 900001, 'WM_RECEIVE_DEFAULT', 'RECEIVE_IN', 2074382055599161345, NULL, 8002, 2074389151019352066, 2074389221097783297, 'ACTIVE', '2026-07-07 15:05:05', NULL, NULL, '系统生成条码', NULL, NULL, NULL, NULL, '000000', 103, 1, '2026-07-07 15:05:05', 1, '2026-07-07 15:05:05', '0', NULL, NULL);
+INSERT INTO `wm_barcode` VALUES (2080299501423308801, 'RC20260723000015', 900001, 'WM_RECEIVE_DEFAULT', 'RECEIVE_IN', 2080273188016762882, NULL, 99003, 2080282149310832642, 2080299501108736002, 'ACTIVE', '2026-07-23 22:30:26', NULL, NULL, '系统生成条码', NULL, NULL, NULL, NULL, '000000', 103, 1, '2026-07-23 22:30:26', 1, '2026-07-23 22:30:26', '0', NULL, NULL);
+INSERT INTO `wm_barcode` VALUES (2080299501423308802, 'RC20260723000016', 900001, 'WM_RECEIVE_DEFAULT', 'RECEIVE_IN', 2080273188016762882, NULL, 99002, 2080282262099861505, 2080299501238759427, 'ACTIVE', '2026-07-23 22:30:26', NULL, NULL, '系统生成条码', NULL, NULL, NULL, NULL, '000000', 103, 1, '2026-07-23 22:30:26', 1, '2026-07-23 22:30:26', '0', NULL, NULL);
 
 -- ----------------------------
 -- Table structure for wm_barcode_config
@@ -3991,9 +4081,9 @@ CREATE TABLE `wm_barcode_config`  (
   `tenant_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000',
   `create_dept` bigint(20) NULL DEFAULT NULL,
   `create_by` bigint(20) NULL DEFAULT NULL,
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP,
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP,
   `update_by` bigint(20) NULL DEFAULT NULL,
-  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0),
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0',
   `current_sequence` bigint(20) NULL DEFAULT 0 COMMENT '当前序列号',
   PRIMARY KEY (`config_id`) USING BTREE,
@@ -4001,12 +4091,12 @@ CREATE TABLE `wm_barcode_config`  (
   INDEX `idx_barcode_config_biz_type`(`biz_type`) USING BTREE,
   INDEX `idx_barcode_config_category_id`(`category_id`) USING BTREE,
   INDEX `idx_barcode_config_enable_flag`(`enable_flag`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2062021060516102147 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '条码配置表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 2062021060516102147 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '条码配置表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of wm_barcode_config
 -- ----------------------------
-INSERT INTO `wm_barcode_config` VALUES (900001, 'WM_RECEIVE_DEFAULT', '收货入库默认条码规则', 'RC', 'yyyyMMdd', 6, 0, 'RECEIVE_IN', NULL, 1, '默认收货入库条码配置，入库后自动生成条码实例.', NULL, NULL, NULL, NULL, '000000', NULL, NULL, '2026-05-23 17:46:58', 1, '2026-07-07 15:05:05', '0', 14);
+INSERT INTO `wm_barcode_config` VALUES (900001, 'WM_RECEIVE_DEFAULT', '收货入库默认条码规则', 'RC', 'yyyyMMdd', 6, 0, 'RECEIVE_IN', NULL, 1, '默认收货入库条码配置，入库后自动生成条码实例.', NULL, NULL, NULL, NULL, '000000', NULL, NULL, '2026-05-23 17:46:58', 1, '2026-07-23 22:30:26', '0', 16);
 INSERT INTO `wm_barcode_config` VALUES (2062021060516102146, 'SO_SALESOUT_DEFAULT', '销售订单出库配置', 'SO', 'yyyyMMdd', 6, 0, 'SALES_OUT', NULL, 1, '', NULL, NULL, NULL, NULL, '000000', 103, 1, '2026-06-03 11:58:26', 1, '2026-06-03 11:59:25', '0', 0);
 
 -- ----------------------------
@@ -4044,9 +4134,9 @@ CREATE TABLE `wm_batch`  (
   `attr4` int(11) NULL DEFAULT NULL COMMENT '预留字段4',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   `vendor_batch_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '供应商原始批次号',
   PRIMARY KEY (`batch_id`) USING BTREE,
@@ -4059,7 +4149,7 @@ CREATE TABLE `wm_batch`  (
   INDEX `idx_batch_source`(`source_doc_type`, `source_doc_id`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE,
   INDEX `idx_wm_batch_vendor_batch_code`(`vendor_batch_code`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '批次管理表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '批次管理表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of wm_batch
@@ -4074,6 +4164,9 @@ INSERT INTO `wm_batch` VALUES (2074145859616010242, '000000', 'B202607060001', 8
 INSERT INTO `wm_batch` VALUES (2074149637295607809, '000000', 'B202607060002', 8002, 'RACK-FIT', '连接件包', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 10.0000, 0.0000, 0.0000, 'ACTIVE', 'PURCHASE_RECEIVE', 2074145387983302657, 'CGRK20260706001', NULL, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-07-06 23:13:04', 1, '2026-07-06 23:13:04', '0', NULL);
 INSERT INTO `wm_batch` VALUES (2074388930944221186, '000000', 'B202607070001', 8002, 'RACK-FIT', '连接件包', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1.0000, 0.0000, 0.0000, 'ACTIVE', 'PURCHASE_RECEIVE', 2074382055599161345, 'CGRK20260707001', NULL, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-07-07 15:03:56', 1, '2026-07-07 15:03:56', '0', NULL);
 INSERT INTO `wm_batch` VALUES (2074389151019352066, '000000', 'B202607070002', 8002, 'RACK-FIT', '连接件包', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1.0000, 0.0000, 0.0000, 'ACTIVE', 'PURCHASE_RECEIVE', 2074382055599161345, 'CGRK20260707001', NULL, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-07-07 15:04:49', 1, '2026-07-07 15:04:49', '0', NULL);
+INSERT INTO `wm_batch` VALUES (2080282149310832642, '000000', 'B202607230001', 99003, 'QC-RM-B', '质检测试原料B', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 100.0000, 0.0000, 0.0000, 'ACTIVE', 'PURCHASE_RECEIVE', 2080273188016762882, 'CGRK20260723001', NULL, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-07-23 21:21:29', 1, '2026-07-23 21:21:29', '0', NULL);
+INSERT INTO `wm_batch` VALUES (2080282262099861505, '000000', 'B202607230002', 99002, 'QC-RM-A', '质检测试原料A', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 200.0000, 0.0000, 0.0000, 'ACTIVE', 'PURCHASE_RECEIVE', 2080273188016762882, 'CGRK20260723001', NULL, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-07-23 21:21:56', 1, '2026-07-23 21:21:56', '0', NULL);
+INSERT INTO `wm_batch` VALUES (2080300149917233154, '000000', 'B202607230003', 99001, NULL, NULL, NULL, NULL, NULL, NULL, 1, NULL, NULL, NULL, NULL, 0.0000, 0.0000, 0.0000, 'ACTIVE', 'PRD_WORK_ORDER', 2080231171726180353, 'SCGD202607230001', NULL, NULL, NULL, NULL, NULL, NULL, -1, -1, '2026-07-23 22:33:01', -1, '2026-07-23 22:33:01', '0', NULL);
 
 -- ----------------------------
 -- Table structure for wm_material_receive
@@ -4102,7 +4195,7 @@ CREATE TABLE `wm_material_receive`  (
   `location_id` bigint(20) NULL DEFAULT NULL COMMENT '库位ID',
   `location_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '库位编码',
   `location_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '库位名称',
-  `receive_date` datetime(0) NULL DEFAULT NULL COMMENT '入库日期',
+  `receive_date` datetime NULL DEFAULT NULL COMMENT '入库日期',
   `status` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'DRAFT' COMMENT '单据状态',
   `select_flow_id` bigint(20) NULL DEFAULT NULL COMMENT '已选审批流程模板（wf_custom_form.id）',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '' COMMENT '备注',
@@ -4114,16 +4207,16 @@ CREATE TABLE `wm_material_receive`  (
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `shelf_by` bigint(20) NULL DEFAULT NULL COMMENT '上架人ID',
-  `shelf_time` datetime(0) NULL DEFAULT NULL COMMENT '上架时间',
+  `shelf_time` datetime NULL DEFAULT NULL COMMENT '上架时间',
   PRIMARY KEY (`receive_id`) USING BTREE,
   INDEX `idx_receive_status`(`status`) USING BTREE,
   INDEX `idx_receive_vendor`(`vendor_id`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料入库单表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料入库单表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of wm_material_receive
@@ -4151,6 +4244,7 @@ INSERT INTO `wm_material_receive` VALUES (2062208168934719491, 'CGRK20260604001'
 INSERT INTO `wm_material_receive` VALUES (2062395873109688322, 'CGRK20260604002', '采购到货收货单', NULL, NULL, 2062208168804696066, 'AN20260604001', 2062092892921307138, 'CGDD202606030001', 2062098763051089921, 'V00001', '钢板产出商', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-06-04 12:47:48', 'FINISHED', 2015458019458437122, '到货通知审批通过后自动生成', NULL, NULL, 0, 0, '000000', 103, '0', 1, '2026-06-04 12:47:48', 1, '2026-06-07 22:13:52', 1, '2026-06-07 15:11:04');
 INSERT INTO `wm_material_receive` VALUES (2074145387983302657, 'CGRK20260706001', '采购到货收货单', NULL, NULL, 2074145040774623233, 'AN20260706001', 2074143658025840642, 'CGDD202607060001', 2062098763051089925, 'V00005', '宏达五金有限公司', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-07-06 22:56:11', 'FINISHED', 2015458019458437122, '到货通知审批通过后自动生成', NULL, NULL, 0, 0, '000000', 103, '0', 1, '2026-07-06 22:56:11', 1, '2026-07-06 23:22:42', 1, '2026-07-06 23:14:12');
 INSERT INTO `wm_material_receive` VALUES (2074382055599161345, 'CGRK20260707001', '采购到货收货单', NULL, NULL, 2074343301031313410, 'AN20260707001', 2074342752626065410, 'CGDD202607070001', 2062098763051089925, 'V00005', '宏达五金有限公司', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-07-07 14:36:37', 'FINISHED', 2015458019458437122, '到货通知审批通过后自动生成', NULL, NULL, 0, 0, '000000', 103, '0', 1, '2026-07-07 14:36:37', 1, '2026-07-07 15:05:05', 1, '2026-07-07 15:05:03');
+INSERT INTO `wm_material_receive` VALUES (2080273188016762882, 'CGRK20260723001', '采购到货收货单', 2080291255916593154, 'IQC-20260723-001', 2080272658611712003, 'AN20260723001', 2080272156951982083, 'CGDD202607230001', 2062098763051089923, 'V00003', '深圳精密电机制造厂', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-07-23 20:45:52', 'FINISHED', 2015458019458437122, '到货通知审批通过后自动生成', NULL, NULL, 0, 0, '000000', 103, '0', 1, '2026-07-23 20:45:52', 1, '2026-07-23 22:30:26', 1, '2026-07-23 22:26:18');
 
 -- ----------------------------
 -- Table structure for wm_material_receive_detail
@@ -4187,15 +4281,15 @@ CREATE TABLE `wm_material_receive_detail`  (
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `sn_id` bigint(20) NULL DEFAULT NULL COMMENT '序列号ID（序列号管理物料上架时关联）',
   `sn_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '序列号编码（序列号管理物料上架时关联）',
   PRIMARY KEY (`detail_id`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE,
   INDEX `idx_wm_receive_detail_sn_id`(`sn_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料入库单明细表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料入库单明细表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of wm_material_receive_detail
@@ -4219,6 +4313,10 @@ INSERT INTO `wm_material_receive_detail` VALUES (2062479162872872962, 2062469049
 INSERT INTO `wm_material_receive_detail` VALUES (2062717661832257537, 2062717661786120194, 2062395873109688322, 1, 'IF20251016004', '钢板', NULL, NULL, '千克', 1000.00, 2062717540369408001, 'B202606050002', 2, 'WH004', '原料仓库', 4, 'A0005', '金属库区', 6, 'L010', '钢板库位', '最新的一吨钢板', NULL, NULL, 0, 0, '000000', 103, '0', 1, '2026-06-05 10:06:29', 1, '2026-06-07 22:13:52', NULL, NULL);
 INSERT INTO `wm_material_receive_detail` VALUES (2074149902488866818, 2074149902430146561, 2074145387983302657, 8002, 'RACK-FIT', '连接件包', 'M6螺丝*8+挂钩*4+膨胀管*4', NULL, '套', 10.00, 2074149637295607809, 'B202607060002', 3, 'WH005', '半成品仓库', 6, 'A0007', '加工区', 2074149487256965121, 'L002', '连接件包', '', NULL, NULL, 0, 0, '000000', 103, '0', 1, '2026-07-06 23:14:07', 1, '2026-07-06 23:22:42', NULL, NULL);
 INSERT INTO `wm_material_receive_detail` VALUES (2074389195965513730, 2074389195877433346, 2074382055599161345, 8002, 'RACK-FIT', '连接件包', NULL, NULL, '双', 1.00, 2074389151019352066, 'B202607070002', 3, 'WH005', '半成品仓库', 6, 'A0007', '加工区', 2074149487256965121, 'L002', '连接件包', '', NULL, NULL, 0, 0, '000000', 103, '0', 1, '2026-07-07 15:04:59', 1, '2026-07-07 15:05:05', NULL, NULL);
+INSERT INTO `wm_material_receive_detail` VALUES (2080282355888693249, 2080282355829972994, 2080273188016762882, 99003, 'QC-RM-B', '质检测试原料B', NULL, NULL, '件', 100.00, 2080282149310832642, 'B202607230001', 2, 'WH004', '原料仓库', 4, 'A0005', '金属库区', 6, 'L010', '钢板库位', '', NULL, NULL, 0, 0, '000000', 103, '1', 1, '2026-07-23 21:22:18', 1, '2026-07-23 21:22:18', NULL, NULL);
+INSERT INTO `wm_material_receive_detail` VALUES (2080282355888693250, 2080282355829972995, 2080273188016762882, 99002, 'QC-RM-A', '质检测试原料A', NULL, NULL, '件', 200.00, 2080282262099861505, 'B202607230002', 2, 'WH004', '原料仓库', 4, 'A0005', '金属库区', 6, 'L010', '钢板库位', '', NULL, NULL, 0, 0, '000000', 103, '1', 1, '2026-07-23 21:22:18', 1, '2026-07-23 21:22:18', NULL, NULL);
+INSERT INTO `wm_material_receive_detail` VALUES (2080292674417623041, 2080292674354708481, 2080273188016762882, 99003, 'QC-RM-B', '质检测试原料B', NULL, NULL, '件', 100.00, 2080282149310832642, 'B202607230001', 2, 'WH004', '原料仓库', 4, 'A0005', '金属库区', 6, 'L010', '钢板库位', '', NULL, NULL, 0, 0, '000000', 103, '0', 1, '2026-07-23 22:03:18', 1, '2026-07-23 22:30:26', NULL, NULL);
+INSERT INTO `wm_material_receive_detail` VALUES (2080292674417623042, 2080292674354708482, 2080273188016762882, 99002, 'QC-RM-A', '质检测试原料A', NULL, NULL, '件', 200.00, 2080282262099861505, 'B202607230002', 2, 'WH004', '原料仓库', 4, 'A0005', '金属库区', 6, 'L010', '钢板库位', '', NULL, NULL, 0, 0, '000000', 103, '0', 1, '2026-07-23 22:03:18', 1, '2026-07-23 22:30:26', NULL, NULL);
 
 -- ----------------------------
 -- Table structure for wm_material_receive_line
@@ -4256,13 +4354,13 @@ CREATE TABLE `wm_material_receive_line`  (
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`line_id`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE,
   INDEX `idx_wm_receive_line_po_line`(`purchase_line_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料入库单行表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料入库单行表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of wm_material_receive_line
@@ -4334,6 +4432,14 @@ INSERT INTO `wm_material_receive_line` VALUES (2074149902430146561, 207414538798
 INSERT INTO `wm_material_receive_line` VALUES (2074382055678853122, 2074382055599161345, NULL, NULL, 8002, 'RACK-FIT', '连接件包', 'M6螺丝*8+挂钩*4+膨胀管*4', NULL, '双', 1.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '', NULL, NULL, 0, 0, '000000', 103, '1', 1, '2026-07-07 14:36:37', 1, '2026-07-07 14:36:37');
 INSERT INTO `wm_material_receive_line` VALUES (2074388838837305346, 2074382055599161345, NULL, NULL, 8002, 'RACK-FIT', '连接件包', 'M6螺丝*8+挂钩*4+膨胀管*4', NULL, '双', 1.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '', NULL, NULL, 0, 0, '000000', 103, '1', 1, '2026-07-07 15:03:34', 1, '2026-07-07 15:03:34');
 INSERT INTO `wm_material_receive_line` VALUES (2074389195877433346, 2074382055599161345, NULL, NULL, 8002, 'RACK-FIT', '连接件包', 'M6螺丝*8+挂钩*4+膨胀管*4', NULL, '双', 1.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '', NULL, NULL, 0, 0, '000000', 103, '0', 1, '2026-07-07 15:04:59', 1, '2026-07-07 15:05:05');
+INSERT INTO `wm_material_receive_line` VALUES (2080273188016762883, 2080273188016762882, NULL, NULL, 99003, 'QC-RM-B', '质检测试原料B', '20×20mm', NULL, '件', 100.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '', NULL, NULL, 0, 0, '000000', 103, '1', 1, '2026-07-23 20:45:52', 1, '2026-07-23 20:45:52');
+INSERT INTO `wm_material_receive_line` VALUES (2080273188079677441, 2080273188016762882, NULL, NULL, 99002, 'QC-RM-A', '质检测试原料A', '10×10mm', NULL, '件', 200.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '', NULL, NULL, 0, 0, '000000', 103, '1', 1, '2026-07-23 20:45:52', 1, '2026-07-23 20:45:52');
+INSERT INTO `wm_material_receive_line` VALUES (2080281762306596865, 2080273188016762882, NULL, NULL, 99003, 'QC-RM-B', '质检测试原料B', '20×20mm', NULL, '件', 100.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '', NULL, NULL, 0, 0, '000000', 103, '1', 1, '2026-07-23 21:19:57', 1, '2026-07-23 21:19:57');
+INSERT INTO `wm_material_receive_line` VALUES (2080281762306596866, 2080273188016762882, NULL, NULL, 99002, 'QC-RM-A', '质检测试原料A', '10×10mm', NULL, '件', 200.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '', NULL, NULL, 0, 0, '000000', 103, '1', 1, '2026-07-23 21:19:57', 1, '2026-07-23 21:19:57');
+INSERT INTO `wm_material_receive_line` VALUES (2080282355829972994, 2080273188016762882, NULL, NULL, 99003, 'QC-RM-B', '质检测试原料B', '20×20mm', NULL, '件', 100.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '', NULL, NULL, 0, 0, '000000', 103, '1', 1, '2026-07-23 21:22:18', 1, '2026-07-23 21:22:18');
+INSERT INTO `wm_material_receive_line` VALUES (2080282355829972995, 2080273188016762882, NULL, NULL, 99002, 'QC-RM-A', '质检测试原料A', '10×10mm', NULL, '件', 200.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '', NULL, NULL, 0, 0, '000000', 103, '1', 1, '2026-07-23 21:22:18', 1, '2026-07-23 21:22:18');
+INSERT INTO `wm_material_receive_line` VALUES (2080292674354708481, 2080273188016762882, NULL, NULL, 99003, 'QC-RM-B', '质检测试原料B', '20×20mm', NULL, '件', 100.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '', NULL, NULL, 0, 0, '000000', 103, '0', 1, '2026-07-23 22:03:18', 1, '2026-07-23 22:30:26');
+INSERT INTO `wm_material_receive_line` VALUES (2080292674354708482, 2080273188016762882, NULL, NULL, 99002, 'QC-RM-A', '质检测试原料A', '10×10mm', NULL, '件', 200.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '', NULL, NULL, 0, 0, '000000', 103, '0', 1, '2026-07-23 22:03:18', 1, '2026-07-23 22:30:26');
 
 -- ----------------------------
 -- Table structure for wm_material_stock
@@ -4367,9 +4473,9 @@ CREATE TABLE `wm_material_stock`  (
   `reserved_quantity` double(12, 2) NOT NULL DEFAULT 0.00 COMMENT '已预留数量(销售订单/工单锁定)',
   `wo_id` bigint(20) NULL DEFAULT NULL COMMENT '生产工单ID',
   `wo_no` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '生产工单编号',
-  `production_date` datetime(0) NULL DEFAULT NULL COMMENT '生产日期',
-  `recpt_date` datetime(0) NULL DEFAULT NULL COMMENT '入库时间',
-  `expire_date` datetime(0) NULL DEFAULT NULL COMMENT '库存有效期',
+  `production_date` datetime NULL DEFAULT NULL COMMENT '生产日期',
+  `recpt_date` datetime NULL DEFAULT NULL COMMENT '入库时间',
+  `expire_date` datetime NULL DEFAULT NULL COMMENT '库存有效期',
   `frozen_flag` tinyint(4) NOT NULL DEFAULT 1 COMMENT '冻结标志',
   `attr1` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段1',
   `attr2` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段2',
@@ -4381,9 +4487,9 @@ CREATE TABLE `wm_material_stock`  (
   `remark` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   `version` int(11) NOT NULL DEFAULT 1 COMMENT '乐观锁版本号',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `unit_cost` decimal(14, 6) NULL DEFAULT 0.000000 COMMENT '单位成本(移动加权平均)',
   `total_cost` decimal(14, 4) NULL DEFAULT 0.0000 COMMENT '库存总金额',
   `sn_id` bigint(20) NULL DEFAULT NULL COMMENT '序列号ID（序列号管理物料的唯一标识）',
@@ -4395,7 +4501,7 @@ CREATE TABLE `wm_material_stock`  (
   INDEX `idx_wm_material_stock_sn_id`(`sn_id`) USING BTREE,
   INDEX `idx_wm_material_stock_sn_code`(`sn_code`) USING BTREE,
   INDEX `idx_wm_material_stock_location`(`location_id`, `del_flag`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '库存物料记录表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '库存物料记录表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of wm_material_stock
@@ -4417,8 +4523,8 @@ INSERT INTO `wm_material_stock` VALUES (1006, 3, 1001, 'IF20251110001', '自行�
 INSERT INTO `wm_material_stock` VALUES (1007, 10, 7, 'BOLT_M12', '螺栓M12', NULL, '26', '件', NULL, NULL, 3, 'WH005', '半成品仓库', 6, 'A0007', '加工区', 13, 'L017', '电机库位', NULL, NULL, NULL, NULL, 5000.00, 0.00, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, 0, '000000', 100, '0', '螺栓初始库存(存放于半成品仓库空闲库位)', 1, 1, '2026-06-21 20:52:46', 1, '2026-06-21 20:52:46', 1.500000, 7500.0000, NULL, NULL);
 INSERT INTO `wm_material_stock` VALUES (1008, 1, 3004, 'IF20251203007', '把管', NULL, '26', '件', NULL, NULL, 2, 'WH004', '原料仓库', 4, 'A0005', '金属库区', 10, 'L014', '把管库位', NULL, NULL, NULL, NULL, 98.50, 0.00, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, 0, '000000', 100, '0', '把管初始库存', 2, 1, '2026-06-21 20:52:46', 1, '2026-06-24 11:30:44', 20.000000, 4000.0000, NULL, NULL);
 INSERT INTO `wm_material_stock` VALUES (1009, 1, 3005, 'IF20251203008', '把套', NULL, '26', '件', NULL, NULL, 2, 'WH004', '原料仓库', 5, 'A0006', '辅料库区', 11, 'L015', '把套库位', NULL, NULL, NULL, NULL, 298.00, 0.00, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, 0, '000000', 100, '0', '把套初始库存', 2, 1, '2026-06-21 20:52:46', 1, '2026-06-24 11:30:44', 8.000000, 4000.0000, NULL, NULL);
-INSERT INTO `wm_material_stock` VALUES (99001, 1, 99002, 'QC-RM-A', '质检测试原料A', NULL, '26', '件', NULL, NULL, 2, 'WH004', '原料仓库', 4, 'A0005', '金属库区', 6, 'L010', '钢板库位', NULL, NULL, NULL, NULL, 1000.00, 0.00, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, 0, '000000', NULL, '0', '【质检联动测试】初始库存', 1, 1, '2026-07-23 15:33:25', NULL, NULL, 10.000000, 10000.0000, NULL, NULL);
-INSERT INTO `wm_material_stock` VALUES (99002, 1, 99003, 'QC-RM-B', '质检测试原料B', NULL, '26', '件', NULL, NULL, 2, 'WH004', '原料仓库', 5, 'A0006', '辅料库区', 10, 'L014', '把管库位', NULL, NULL, NULL, NULL, 1000.00, 0.00, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, 0, '000000', NULL, '0', '【质检联动测试】初始库存', 1, 1, '2026-07-23 15:33:25', NULL, NULL, 8.000000, 8000.0000, NULL, NULL);
+INSERT INTO `wm_material_stock` VALUES (99001, 1, 99002, 'QC-RM-A', '质检测试原料A', NULL, '26', '件', NULL, NULL, 2, 'WH004', '原料仓库', 4, 'A0005', '金属库区', 6, 'L010', '钢板库位', NULL, NULL, NULL, NULL, 880.00, 0.00, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, 0, '000000', NULL, '0', '【质检联动测试】初始库存', 4, 1, '2026-07-23 15:33:25', NULL, '2026-07-23 22:33:00', 10.000000, 10000.0000, NULL, NULL);
+INSERT INTO `wm_material_stock` VALUES (99002, 1, 99003, 'QC-RM-B', '质检测试原料B', NULL, '26', '件', NULL, NULL, 2, 'WH004', '原料仓库', 5, 'A0006', '辅料库区', 10, 'L014', '把管库位', NULL, NULL, NULL, NULL, 940.00, 0.00, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, 0, '000000', NULL, '0', '【质检联动测试】初始库存', 4, 1, '2026-07-23 15:33:25', NULL, '2026-07-23 22:33:00', 8.000000, 8000.0000, NULL, NULL);
 INSERT INTO `wm_material_stock` VALUES (8809001, NULL, 8803001, 'P2-MAT-001', 'P2测试物料A', NULL, NULL, NULL, NULL, NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 100.00, 0.00, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, 0, '000000', 103, '0', NULL, 0, 1, NULL, NULL, NULL, 0.000000, 0.0000, NULL, NULL);
 INSERT INTO `wm_material_stock` VALUES (9900003001, NULL, 9900000001, 'DEMO-M001', '演示物料A', NULL, NULL, '件', NULL, NULL, 9900000001, 'WH-3D-DEMO', '3D演示仓库', 9900000011, 'A3D01', '原料货架区', 9900000101, 'A-L1C1', 'A区1层1列', NULL, NULL, NULL, NULL, 100.00, 0.00, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, 0, '000000', NULL, '0', NULL, 1, 1, '2026-06-30 17:06:21', 1, '2026-06-30 17:06:21', 10.000000, 1000.0000, NULL, NULL);
 INSERT INTO `wm_material_stock` VALUES (9900003002, NULL, 9900000001, 'DEMO-M001', '演示物料A', NULL, NULL, '件', NULL, NULL, 9900000001, 'WH-3D-DEMO', '3D演示仓库', 9900000011, 'A3D01', '原料货架区', 9900000102, 'A-L1C2', 'A区1层2列', NULL, NULL, NULL, NULL, 100.00, 85.00, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, 0, '000000', NULL, '0', NULL, 1, 1, '2026-06-30 17:06:21', 1, '2026-06-30 17:06:21', 10.000000, 1000.0000, NULL, NULL);
@@ -4441,6 +4547,11 @@ INSERT INTO `wm_material_stock` VALUES (2074389220997120001, 10, 8002, 'RACK-FIT
 INSERT INTO `wm_material_stock` VALUES (2074389221097783297, 10, 8002, 'RACK-FIT', '连接件包', NULL, NULL, '双', 2074389151019352066, 'B202607070002', 3, 'WH005', '半成品仓库', 6, 'A0007', '加工区', 2074149487256965121, 'L002', '连接件包', 2062098763051089925, 'V00005', '宏达五金有限公司', NULL, 1.00, 0.00, NULL, NULL, NULL, '2026-07-07 15:05:05', NULL, 0, NULL, NULL, 0, 0, '000000', 103, '0', '', 4, 1, '2026-07-07 15:05:05', 1, '2026-07-10 10:11:41', 0.000000, 0.0000, NULL, NULL);
 INSERT INTO `wm_material_stock` VALUES (2074406916719603714, NULL, 8003, 'RACK-001', '简易金属工具架', NULL, NULL, NULL, NULL, NULL, 2, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 2.00, 0.00, NULL, NULL, NULL, NULL, NULL, 1, NULL, NULL, 0, 0, '000000', -1, '0', NULL, 1, -1, '2026-07-07 16:15:24', -1, '2026-07-07 16:15:24', 0.000000, 0.0000, NULL, NULL);
 INSERT INTO `wm_material_stock` VALUES (2074767659994353665, NULL, 8003, 'RACK-001', '简易金属工具架', NULL, NULL, NULL, NULL, NULL, 1, NULL, NULL, NULL, NULL, NULL, 200001, NULL, NULL, NULL, NULL, NULL, NULL, 3.00, 0.00, NULL, NULL, NULL, NULL, NULL, 1, NULL, NULL, 0, 0, '000000', -1, '0', NULL, 3, -1, '2026-07-08 16:08:52', -1, '2026-07-10 10:11:41', 0.000000, 0.0000, NULL, NULL);
+INSERT INTO `wm_material_stock` VALUES (2080299501041627138, 1, 99003, 'QC-RM-B', '质检测试原料B', NULL, NULL, '件', 2080282149310832642, 'B202607230001', 2, 'WH004', '原料仓库', 0, 'A0005', '金属库区', 0, 'VIRTUAL', '虚拟库位', 2062098763051089923, 'V00003', '深圳精密电机制造厂', NULL, 0.00, 0.00, NULL, NULL, NULL, '2026-07-23 22:30:26', NULL, 1, NULL, NULL, 0, 0, '000000', 103, '0', '', 1, 1, '2026-07-23 22:30:26', 1, '2026-07-23 22:30:26', 0.000000, 0.0000, NULL, NULL);
+INSERT INTO `wm_material_stock` VALUES (2080299501108736002, 1, 99003, 'QC-RM-B', '质检测试原料B', NULL, NULL, '件', 2080282149310832642, 'B202607230001', 2, 'WH004', '原料仓库', 4, 'A0005', '金属库区', 6, 'L010', '钢板库位', 2062098763051089923, 'V00003', '深圳精密电机制造厂', NULL, 100.00, 0.00, NULL, NULL, NULL, '2026-07-23 22:30:26', NULL, 0, NULL, NULL, 0, 0, '000000', 103, '0', '', 1, 1, '2026-07-23 22:30:26', 1, '2026-07-23 22:30:26', 0.000000, 0.0000, NULL, NULL);
+INSERT INTO `wm_material_stock` VALUES (2080299501171650562, 1, 99002, 'QC-RM-A', '质检测试原料A', NULL, NULL, '件', 2080282262099861505, 'B202607230002', 2, 'WH004', '原料仓库', 0, 'A0005', '金属库区', 0, 'VIRTUAL', '虚拟库位', 2062098763051089923, 'V00003', '深圳精密电机制造厂', NULL, 0.00, 0.00, NULL, NULL, NULL, '2026-07-23 22:30:26', NULL, 1, NULL, NULL, 0, 0, '000000', 103, '0', '', 1, 1, '2026-07-23 22:30:26', 1, '2026-07-23 22:30:26', 0.000000, 0.0000, NULL, NULL);
+INSERT INTO `wm_material_stock` VALUES (2080299501238759427, 1, 99002, 'QC-RM-A', '质检测试原料A', NULL, NULL, '件', 2080282262099861505, 'B202607230002', 2, 'WH004', '原料仓库', 4, 'A0005', '金属库区', 6, 'L010', '钢板库位', 2062098763051089923, 'V00003', '深圳精密电机制造厂', NULL, 200.00, 0.00, NULL, NULL, NULL, '2026-07-23 22:30:26', NULL, 0, NULL, NULL, 0, 0, '000000', 103, '0', '', 1, 1, '2026-07-23 22:30:26', 1, '2026-07-23 22:30:26', 0.000000, 0.0000, NULL, NULL);
+INSERT INTO `wm_material_stock` VALUES (2080300150043062274, 3, 99001, 'QC-FP-001', '质检联动测试成品', '100×50×30mm', '26', '件', 2080300149917233154, 'B202607230003', 1, 'WH003', '成品仓库', 1, 'A0002', '成品区', 200001, 'FIN-L01', '成品库位1', NULL, NULL, NULL, NULL, 0.00, 0.00, 2080231171726180353, 'SCGD202607230001', '2026-07-23 22:33:01', '2026-07-23 22:33:01', NULL, 0, NULL, NULL, 0, 0, '000000', -1, '0', NULL, 2, -1, '2026-07-23 22:33:01', -1, '2026-07-23 23:55:33', 100.000000, 2000.0000, NULL, NULL);
 
 -- ----------------------------
 -- Table structure for wm_material_stock_tx
@@ -4477,10 +4588,10 @@ CREATE TABLE `wm_material_stock_tx`  (
   `tx_quantity` decimal(12, 2) NULL DEFAULT NULL COMMENT '事务数量',
   `before_quantity` decimal(12, 2) NULL DEFAULT NULL COMMENT '变动前数量',
   `after_quantity` decimal(12, 2) NULL DEFAULT NULL COMMENT '变动后数量',
-  `tx_date` datetime(0) NULL DEFAULT NULL COMMENT '事务日期',
+  `tx_date` datetime NULL DEFAULT NULL COMMENT '事务日期',
   `related_tx_id` bigint(20) NULL DEFAULT NULL COMMENT '关联的事务ID',
-  `erp_date` datetime(0) NULL DEFAULT NULL COMMENT 'ERP账期',
-  `recpt_date` datetime(0) NULL DEFAULT NULL COMMENT '接收日期',
+  `erp_date` datetime NULL DEFAULT NULL COMMENT 'ERP账期',
+  `recpt_date` datetime NULL DEFAULT NULL COMMENT '接收日期',
   `attr1` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段1',
   `attr2` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段2',
   `attr3` bigint(20) NULL DEFAULT 0 COMMENT '预留字段3',
@@ -4490,15 +4601,15 @@ CREATE TABLE `wm_material_stock_tx`  (
   `remark` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `unit_cost` decimal(14, 6) NULL DEFAULT 0.000000 COMMENT '单位成本',
   `tx_amount` decimal(14, 4) NULL DEFAULT 0.0000 COMMENT '事务金额',
   PRIMARY KEY (`tx_id`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE,
   INDEX `idx_wm_stock_tx_source`(`source_doc_type`, `source_doc_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '库存事务表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '库存事务表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of wm_material_stock_tx
@@ -4541,6 +4652,18 @@ INSERT INTO `wm_material_stock_tx` VALUES (2074789392843444225, 'PRODUCTION_IN',
 INSERT INTO `wm_material_stock_tx` VALUES (2075402548108267521, 'PRODUCTION_ISSUE', 8002, 'RACK-FIT', '连接件包', NULL, NULL, '双', 2074389151019352066, 'B202607070002', 3, 'WH005', '半成品仓库', 6, 'A0007', '加工区', 2074149487256965121, 'L002', '连接件包', NULL, NULL, 'WM_PRODUCTION_ISSUE', 2075402547844026369, NULL, 2075402548011798529, 2074389221097783297, -1, 1.00, 2.00, 1.00, '2026-07-10 10:11:41', NULL, NULL, NULL, NULL, NULL, 0, 0, '000000', -1, '生产领料', '0', -1, '2026-07-10 10:11:41', -1, '2026-07-10 10:11:41', 0.000000, 0.0000);
 INSERT INTO `wm_material_stock_tx` VALUES (2075402548334759937, 'PRODUCTION_ISSUE', 1, 'IF20251016004', '钢板', NULL, '3', '吨', NULL, NULL, 2, 'WH004', '原料仓库', 4, 'A0005', '金属库区', 6, 'L010', '钢板库位', NULL, NULL, 'WM_PRODUCTION_ISSUE', 2075402547844026369, NULL, 2075402548234096641, 1001, -1, 1.53, 498.47, 496.94, '2026-07-10 10:11:41', NULL, NULL, NULL, NULL, NULL, 0, 0, '000000', -1, '生产领料', '0', -1, '2026-07-10 10:11:41', -1, '2026-07-10 10:11:41', 0.000000, 0.0000);
 INSERT INTO `wm_material_stock_tx` VALUES (2075402548900990977, 'PRODUCTION_IN', 8003, 'RACK-001', '简易金属工具架', NULL, NULL, NULL, NULL, NULL, 1, NULL, NULL, NULL, NULL, NULL, 200001, NULL, NULL, NULL, NULL, 'PRD_WORK_ORDER', 2075397566059450369, NULL, NULL, 2074767659994353665, 1, 1.00, 2.00, 3.00, '2026-07-10 10:11:41', NULL, NULL, NULL, NULL, NULL, 0, 0, '000000', -1, '工单完工入库', '0', -1, '2026-07-10 10:11:41', -1, '2026-07-10 10:11:41', 0.000000, 0.0000);
+INSERT INTO `wm_material_stock_tx` VALUES (2080299501108736001, 'VIRTUAL_OUT', 99003, 'QC-RM-B', '质检测试原料B', NULL, NULL, '件', 2080282149310832642, 'B202607230001', 2, 'WH004', '原料仓库', 4, 'A0005', '金属库区', 6, 'L010', '钢板库位', NULL, NULL, 'WM_MATERIAL_RECEIVE', 2080273188016762882, 'CGRK20260723001', NULL, 2080299501041627138, -1, 100.00, 100.00, 0.00, '2026-07-23 22:30:26', NULL, '2026-07-23 22:30:26', '2026-07-23 22:30:26', NULL, NULL, 0, 0, '000000', 103, '', '0', 1, '2026-07-23 22:30:26', 1, '2026-07-23 22:30:26', 0.000000, 0.0000);
+INSERT INTO `wm_material_stock_tx` VALUES (2080299501108736003, 'TARGET_IN', 99003, 'QC-RM-B', '质检测试原料B', NULL, NULL, '件', 2080282149310832642, 'B202607230001', 2, 'WH004', '原料仓库', 4, 'A0005', '金属库区', 6, 'L010', '钢板库位', NULL, NULL, 'WM_MATERIAL_RECEIVE', 2080273188016762882, 'CGRK20260723001', NULL, 2080299501108736002, 1, 100.00, 0.00, 100.00, '2026-07-23 22:30:26', NULL, '2026-07-23 22:30:26', '2026-07-23 22:30:26', NULL, NULL, 0, 0, '000000', 103, '', '0', 1, '2026-07-23 22:30:26', 1, '2026-07-23 22:30:26', 0.000000, 0.0000);
+INSERT INTO `wm_material_stock_tx` VALUES (2080299501238759426, 'VIRTUAL_OUT', 99002, 'QC-RM-A', '质检测试原料A', NULL, NULL, '件', 2080282262099861505, 'B202607230002', 2, 'WH004', '原料仓库', 4, 'A0005', '金属库区', 6, 'L010', '钢板库位', NULL, NULL, 'WM_MATERIAL_RECEIVE', 2080273188016762882, 'CGRK20260723001', NULL, 2080299501171650562, -1, 200.00, 200.00, 0.00, '2026-07-23 22:30:26', NULL, '2026-07-23 22:30:26', '2026-07-23 22:30:26', NULL, NULL, 0, 0, '000000', 103, '', '0', 1, '2026-07-23 22:30:26', 1, '2026-07-23 22:30:26', 0.000000, 0.0000);
+INSERT INTO `wm_material_stock_tx` VALUES (2080299501238759428, 'TARGET_IN', 99002, 'QC-RM-A', '质检测试原料A', NULL, NULL, '件', 2080282262099861505, 'B202607230002', 2, 'WH004', '原料仓库', 4, 'A0005', '金属库区', 6, 'L010', '钢板库位', NULL, NULL, 'WM_MATERIAL_RECEIVE', 2080273188016762882, 'CGRK20260723001', NULL, 2080299501238759427, 1, 200.00, 0.00, 200.00, '2026-07-23 22:30:26', NULL, '2026-07-23 22:30:26', '2026-07-23 22:30:26', NULL, NULL, 0, 0, '000000', 103, '', '0', 1, '2026-07-23 22:30:26', 1, '2026-07-23 22:30:26', 0.000000, 0.0000);
+INSERT INTO `wm_material_stock_tx` VALUES (2080300148923183105, 'PRODUCTION_ISSUE', 99003, 'QC-RM-B', '质检测试原料B', NULL, '26', '件', NULL, NULL, 2, 'WH004', '原料仓库', 5, 'A0006', '辅料库区', 10, 'L014', '把管库位', NULL, NULL, 'WM_PRODUCTION_ISSUE', 2080300148864462849, NULL, 2080300148864462850, 99002, -1, 20.00, 1000.00, 980.00, '2026-07-23 22:33:00', NULL, NULL, NULL, NULL, NULL, 0, 0, '000000', -1, '生产领料', '0', -1, '2026-07-23 22:33:00', -1, '2026-07-23 22:33:00', 0.000000, 0.0000);
+INSERT INTO `wm_material_stock_tx` VALUES (2080300148986097666, 'PRODUCTION_ISSUE', 99002, 'QC-RM-A', '质检测试原料A', NULL, '26', '件', NULL, NULL, 2, 'WH004', '原料仓库', 4, 'A0005', '金属库区', 6, 'L010', '钢板库位', NULL, NULL, 'WM_PRODUCTION_ISSUE', 2080300148864462849, NULL, 2080300148986097665, 99001, -1, 40.00, 1000.00, 960.00, '2026-07-23 22:33:00', NULL, NULL, NULL, NULL, NULL, 0, 0, '000000', -1, '生产领料', '0', -1, '2026-07-23 22:33:00', -1, '2026-07-23 22:33:00', 0.000000, 0.0000);
+INSERT INTO `wm_material_stock_tx` VALUES (2080300149304864771, 'PRODUCTION_ISSUE', 99003, 'QC-RM-B', '质检测试原料B', NULL, '26', '件', NULL, NULL, 2, 'WH004', '原料仓库', 5, 'A0006', '辅料库区', 10, 'L014', '把管库位', NULL, NULL, 'WM_PRODUCTION_ISSUE', 2080300149241950209, NULL, 2080300149304864770, 99002, -1, 20.00, 980.00, 960.00, '2026-07-23 22:33:00', NULL, NULL, NULL, NULL, NULL, 0, 0, '000000', -1, '生产领料', '0', -1, '2026-07-23 22:33:00', -1, '2026-07-23 22:33:00', 0.000000, 0.0000);
+INSERT INTO `wm_material_stock_tx` VALUES (2080300149367779330, 'PRODUCTION_ISSUE', 99002, 'QC-RM-A', '质检测试原料A', NULL, '26', '件', NULL, NULL, 2, 'WH004', '原料仓库', 4, 'A0005', '金属库区', 6, 'L010', '钢板库位', NULL, NULL, 'WM_PRODUCTION_ISSUE', 2080300149241950209, NULL, 2080300149367779329, 99001, -1, 40.00, 960.00, 920.00, '2026-07-23 22:33:00', NULL, NULL, NULL, NULL, NULL, 0, 0, '000000', -1, '生产领料', '0', -1, '2026-07-23 22:33:00', -1, '2026-07-23 22:33:00', 0.000000, 0.0000);
+INSERT INTO `wm_material_stock_tx` VALUES (2080300149736878081, 'PRODUCTION_ISSUE', 99003, 'QC-RM-B', '质检测试原料B', NULL, '26', '件', NULL, NULL, 2, 'WH004', '原料仓库', 5, 'A0006', '辅料库区', 10, 'L014', '把管库位', NULL, NULL, 'WM_PRODUCTION_ISSUE', 2080300149611048961, NULL, 2080300149678157825, 99002, -1, 20.00, 960.00, 940.00, '2026-07-23 22:33:00', NULL, NULL, NULL, NULL, NULL, 0, 0, '000000', -1, '生产领料', '0', -1, '2026-07-23 22:33:00', -1, '2026-07-23 22:33:00', 0.000000, 0.0000);
+INSERT INTO `wm_material_stock_tx` VALUES (2080300149799792643, 'PRODUCTION_ISSUE', 99002, 'QC-RM-A', '质检测试原料A', NULL, '26', '件', NULL, NULL, 2, 'WH004', '原料仓库', 4, 'A0005', '金属库区', 6, 'L010', '钢板库位', NULL, NULL, 'WM_PRODUCTION_ISSUE', 2080300149611048961, NULL, 2080300149799792642, 99001, -1, 40.00, 920.00, 880.00, '2026-07-23 22:33:00', NULL, NULL, NULL, NULL, NULL, 0, 0, '000000', -1, '生产领料', '0', -1, '2026-07-23 22:33:00', -1, '2026-07-23 22:33:00', 0.000000, 0.0000);
+INSERT INTO `wm_material_stock_tx` VALUES (2080300150043062275, 'PRODUCTION_IN', 99001, 'QC-FP-001', '质检联动测试成品', '100×50×30mm', '26', '件', 2080300149917233154, 'B202607230003', 1, 'WH003', '成品仓库', 1, 'A0002', '成品区', 200001, 'FIN-L01', '成品库位1', NULL, NULL, 'PRD_WORK_ORDER', 2080231171726180353, NULL, NULL, 2080300150043062274, 1, 20.00, 0.00, 20.00, '2026-07-23 22:33:01', NULL, NULL, NULL, NULL, NULL, 0, 0, '000000', -1, '工单完工入库', '0', -1, '2026-07-23 22:33:01', -1, '2026-07-23 22:33:01', 0.000000, 0.0000);
+INSERT INTO `wm_material_stock_tx` VALUES (2080320923122163714, 'SALES_OUT', 99001, 'QC-FP-001', '质检联动测试成品', '100×50×30mm', '26', '件', 2080300149917233154, 'B202607230003', 1, 'WH003', '成品仓库', 1, 'A0002', '成品区', 200001, 'FIN-L01', '成品库位1', NULL, NULL, 'WM_SALES_ISSUE', 2080312773019168770, 'XSCK202607230001', 2080312773144997889, 2080300150043062274, -1, 20.00, 20.00, 0.00, '2026-07-23 23:55:33', NULL, NULL, NULL, NULL, NULL, 0, 0, '000000', 103, '销售出库扣减库存，单号：XSCK202607230001', '0', 1, '2026-07-23 23:55:33', 1, '2026-07-23 23:55:33', 0.000000, 0.0000);
 
 -- ----------------------------
 -- Table structure for wm_misc_issue
@@ -4553,7 +4676,7 @@ CREATE TABLE `wm_misc_issue`  (
   `warehouse_id` bigint(20) NULL DEFAULT NULL COMMENT '仓库ID',
   `warehouse_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '仓库编码',
   `warehouse_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '仓库名称',
-  `issue_date` datetime(0) NULL DEFAULT NULL COMMENT '出库日期',
+  `issue_date` datetime NULL DEFAULT NULL COMMENT '出库日期',
   `status` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'DRAFT' COMMENT '状态',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '' COMMENT '备注',
   `attr1` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留1',
@@ -4564,13 +4687,17 @@ CREATE TABLE `wm_misc_issue`  (
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`issue_id`) USING BTREE,
   INDEX `idx_misc_issue_status`(`status`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '杂项出库单表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '杂项出库单表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of wm_misc_issue
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for wm_misc_issue_line
@@ -4602,13 +4729,17 @@ CREATE TABLE `wm_misc_issue_line`  (
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`line_id`) USING BTREE,
   INDEX `idx_misc_issue_line_mid`(`issue_id`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '杂项出库行表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '杂项出库行表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of wm_misc_issue_line
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for wm_misc_recpt
@@ -4624,7 +4755,7 @@ CREATE TABLE `wm_misc_recpt`  (
   `area_id` bigint(20) NULL DEFAULT NULL COMMENT '库区ID',
   `area_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '库区编码',
   `area_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '库区名称',
-  `recpt_date` datetime(0) NULL DEFAULT NULL COMMENT '入库日期',
+  `recpt_date` datetime NULL DEFAULT NULL COMMENT '入库日期',
   `status` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'DRAFT' COMMENT '状态',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '' COMMENT '备注',
   `attr1` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留1',
@@ -4635,13 +4766,17 @@ CREATE TABLE `wm_misc_recpt`  (
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`recpt_id`) USING BTREE,
   INDEX `idx_misc_recpt_status`(`status`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '杂项入库单表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '杂项入库单表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of wm_misc_recpt
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for wm_misc_recpt_line
@@ -4673,13 +4808,17 @@ CREATE TABLE `wm_misc_recpt_line`  (
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`line_id`) USING BTREE,
   INDEX `idx_misc_recpt_line_mid`(`recpt_id`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '杂项入库行表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '杂项入库行表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of wm_misc_recpt_line
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for wm_picking_rule
@@ -4698,14 +4837,14 @@ CREATE TABLE `wm_picking_rule`  (
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`rule_id`) USING BTREE,
   UNIQUE INDEX `uk_rule_code`(`rule_code`, `tenant_id`) USING BTREE,
   INDEX `idx_warehouse`(`warehouse_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '拣货规则配置表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '拣货规则配置表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of wm_picking_rule
@@ -4726,7 +4865,7 @@ CREATE TABLE `wm_production_issue`  (
   `warehouse_id` bigint(20) NULL DEFAULT NULL COMMENT '仓库ID',
   `warehouse_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '仓库编码',
   `warehouse_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '仓库名称',
-  `issue_date` datetime(0) NULL DEFAULT NULL COMMENT '领料日期',
+  `issue_date` datetime NULL DEFAULT NULL COMMENT '领料日期',
   `status` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'DRAFT' COMMENT '状态',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '' COMMENT '备注',
   `attr1` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留1',
@@ -4737,9 +4876,9 @@ CREATE TABLE `wm_production_issue`  (
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `issue_type` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'NORMAL' COMMENT '领料类型(NORMAL普通/BACKFLUSH倒冲)',
   `issuer_id` bigint(20) NULL DEFAULT NULL COMMENT '领料人ID',
   `issuer_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '领料人名称',
@@ -4749,7 +4888,7 @@ CREATE TABLE `wm_production_issue`  (
   INDEX `idx_prod_issue_status`(`status`) USING BTREE,
   INDEX `idx_prod_issue_wo`(`wo_id`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '生产领料单表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '生产领料单表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of wm_production_issue
@@ -4763,6 +4902,9 @@ INSERT INTO `wm_production_issue` VALUES (2074394242308816898, 'SCLL202607070001
 INSERT INTO `wm_production_issue` VALUES (2074766846383263746, 'SCLL202607080001', 2074766662588862465, 'SCGD202607080001', 2, NULL, NULL, '2026-07-08 16:05:38', 'CREATED', '工单下达自动生成', NULL, NULL, 0, 0, '000000', 103, '0', 1, '2026-07-08 16:05:38', 1, '2026-07-08 16:05:38', 'NORMAL', NULL, NULL, NULL, NULL);
 INSERT INTO `wm_production_issue` VALUES (2074789392361099265, 'SCLL202607080002', 2074786959987740674, 'SCGD202607080002', NULL, NULL, NULL, '2026-07-08 17:35:14', 'COMPLETED', '完工倒冲领料，完工数量:1', NULL, NULL, 0, 0, '000000', -1, '0', -1, '2026-07-08 17:35:14', -1, '2026-07-08 17:35:14', 'NORMAL', NULL, NULL, NULL, NULL);
 INSERT INTO `wm_production_issue` VALUES (2075402547844026369, 'SCLL202607100001', 2075397566059450369, 'SCGD202607100001', NULL, NULL, NULL, '2026-07-10 10:11:41', 'COMPLETED', '完工倒冲领料，完工数量:1', NULL, NULL, 0, 0, '000000', -1, '0', -1, '2026-07-10 10:11:41', -1, '2026-07-10 10:11:41', 'NORMAL', NULL, NULL, NULL, NULL);
+INSERT INTO `wm_production_issue` VALUES (2080300148864462849, 'SCLL202607230001', 2080231171726180353, 'SCGD202607230001', NULL, NULL, NULL, '2026-07-23 22:33:00', 'COMPLETED', '完工倒冲领料，完工数量:20', NULL, NULL, 0, 0, '000000', -1, '0', -1, '2026-07-23 22:33:00', -1, '2026-07-23 22:33:00', 'NORMAL', NULL, NULL, NULL, NULL);
+INSERT INTO `wm_production_issue` VALUES (2080300149241950209, 'SCLL202607230002', 2080231171726180353, 'SCGD202607230001', NULL, NULL, NULL, '2026-07-23 22:33:00', 'COMPLETED', '完工倒冲领料，完工数量:20', NULL, NULL, 0, 0, '000000', -1, '0', -1, '2026-07-23 22:33:00', -1, '2026-07-23 22:33:00', 'NORMAL', NULL, NULL, NULL, NULL);
+INSERT INTO `wm_production_issue` VALUES (2080300149611048961, 'SCLL202607230003', 2080231171726180353, 'SCGD202607230001', NULL, NULL, NULL, '2026-07-23 22:33:00', 'COMPLETED', '完工倒冲领料，完工数量:20', NULL, NULL, 0, 0, '000000', -1, '0', -1, '2026-07-23 22:33:00', -1, '2026-07-23 22:33:00', 'NORMAL', NULL, NULL, NULL, NULL);
 
 -- ----------------------------
 -- Table structure for wm_production_issue_line
@@ -4797,9 +4939,9 @@ CREATE TABLE `wm_production_issue_line`  (
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `bom_qty` decimal(18, 4) NULL DEFAULT NULL COMMENT 'BOM标准用量（单位产品用量）',
   `loss_rate` decimal(8, 4) NULL DEFAULT 0.0000 COMMENT '损耗率(%)',
   `required_qty` decimal(18, 4) NULL DEFAULT NULL COMMENT '应领数量（BOM定额×工单数量）',
@@ -4811,7 +4953,7 @@ CREATE TABLE `wm_production_issue_line`  (
   PRIMARY KEY (`line_id`) USING BTREE,
   INDEX `idx_prod_issue_line_mid`(`issue_id`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '生产领料行表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '生产领料行表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of wm_production_issue_line
@@ -4848,6 +4990,12 @@ INSERT INTO `wm_production_issue_line` VALUES (2074789392457568257, 207478939236
 INSERT INTO `wm_production_issue_line` VALUES (2074789392621146114, 2074789392361099265, 2, 'WH004', '原料仓库', 1, 'IF20251016004', '钢板', '1m*0.5m*2cm,100kg', '2', NULL, NULL, NULL, NULL, NULL, NULL, 1.5300, NULL, NULL, '', NULL, NULL, 0, 0, '000000', -1, '0', -1, '2026-07-08 17:35:14', -1, '2026-07-08 17:35:14', NULL, 0.0000, NULL, 0.0000, NULL, NULL, NULL, 'PENDING');
 INSERT INTO `wm_production_issue_line` VALUES (2075402548011798529, 2075402547844026369, 3, 'WH005', '半成品仓库', 8002, 'RACK-FIT', '连接件包', 'M6螺丝*8+挂钩*4+膨胀管*4', '28', NULL, NULL, NULL, NULL, NULL, NULL, 1.0000, NULL, NULL, '', NULL, NULL, 0, 0, '000000', -1, '0', -1, '2026-07-10 10:11:41', -1, '2026-07-10 10:11:41', NULL, 0.0000, NULL, 0.0000, NULL, NULL, NULL, 'PENDING');
 INSERT INTO `wm_production_issue_line` VALUES (2075402548234096641, 2075402547844026369, 2, 'WH004', '原料仓库', 1, 'IF20251016004', '钢板', '1m*0.5m*2cm,100kg', '2', NULL, NULL, NULL, NULL, NULL, NULL, 1.5300, NULL, NULL, '', NULL, NULL, 0, 0, '000000', -1, '0', -1, '2026-07-10 10:11:41', -1, '2026-07-10 10:11:41', NULL, 0.0000, NULL, 0.0000, NULL, NULL, NULL, 'PENDING');
+INSERT INTO `wm_production_issue_line` VALUES (2080300148864462850, 2080300148864462849, 2, 'WH004', '原料仓库', 99003, 'QC-RM-B', '质检测试原料B', '20×20mm', '26', NULL, NULL, NULL, NULL, NULL, NULL, 20.0000, NULL, NULL, '', NULL, NULL, 0, 0, '000000', -1, '0', -1, '2026-07-23 22:33:00', -1, '2026-07-23 22:33:00', NULL, 0.0000, NULL, 0.0000, NULL, NULL, NULL, 'PENDING');
+INSERT INTO `wm_production_issue_line` VALUES (2080300148986097665, 2080300148864462849, 2, 'WH004', '原料仓库', 99002, 'QC-RM-A', '质检测试原料A', '10×10mm', '26', NULL, NULL, NULL, NULL, NULL, NULL, 40.0000, NULL, NULL, '', NULL, NULL, 0, 0, '000000', -1, '0', -1, '2026-07-23 22:33:00', -1, '2026-07-23 22:33:00', NULL, 0.0000, NULL, 0.0000, NULL, NULL, NULL, 'PENDING');
+INSERT INTO `wm_production_issue_line` VALUES (2080300149304864770, 2080300149241950209, 2, 'WH004', '原料仓库', 99003, 'QC-RM-B', '质检测试原料B', '20×20mm', '26', NULL, NULL, NULL, NULL, NULL, NULL, 20.0000, NULL, NULL, '', NULL, NULL, 0, 0, '000000', -1, '0', -1, '2026-07-23 22:33:00', -1, '2026-07-23 22:33:00', NULL, 0.0000, NULL, 0.0000, NULL, NULL, NULL, 'PENDING');
+INSERT INTO `wm_production_issue_line` VALUES (2080300149367779329, 2080300149241950209, 2, 'WH004', '原料仓库', 99002, 'QC-RM-A', '质检测试原料A', '10×10mm', '26', NULL, NULL, NULL, NULL, NULL, NULL, 40.0000, NULL, NULL, '', NULL, NULL, 0, 0, '000000', -1, '0', -1, '2026-07-23 22:33:00', -1, '2026-07-23 22:33:00', NULL, 0.0000, NULL, 0.0000, NULL, NULL, NULL, 'PENDING');
+INSERT INTO `wm_production_issue_line` VALUES (2080300149678157825, 2080300149611048961, 2, 'WH004', '原料仓库', 99003, 'QC-RM-B', '质检测试原料B', '20×20mm', '26', NULL, NULL, NULL, NULL, NULL, NULL, 20.0000, NULL, NULL, '', NULL, NULL, 0, 0, '000000', -1, '0', -1, '2026-07-23 22:33:00', -1, '2026-07-23 22:33:00', NULL, 0.0000, NULL, 0.0000, NULL, NULL, NULL, 'PENDING');
+INSERT INTO `wm_production_issue_line` VALUES (2080300149799792642, 2080300149611048961, 2, 'WH004', '原料仓库', 99002, 'QC-RM-A', '质检测试原料A', '10×10mm', '26', NULL, NULL, NULL, NULL, NULL, NULL, 40.0000, NULL, NULL, '', NULL, NULL, 0, 0, '000000', -1, '0', -1, '2026-07-23 22:33:00', -1, '2026-07-23 22:33:00', NULL, 0.0000, NULL, 0.0000, NULL, NULL, NULL, 'PENDING');
 
 -- ----------------------------
 -- Table structure for wm_production_recpt
@@ -4875,9 +5023,9 @@ CREATE TABLE `wm_production_recpt`  (
   `remark` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `del_flag` varchar(2) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   `batch_id` bigint(20) NULL DEFAULT NULL COMMENT '批次ID（生产入库时自动生成或引用）',
   `batch_code` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '批次号（生产入库时自动生成或引用）',
@@ -4887,7 +5035,7 @@ CREATE TABLE `wm_production_recpt`  (
   INDEX `idx_material`(`material_id`) USING BTREE,
   INDEX `idx_warehouse`(`warehouse_id`) USING BTREE,
   INDEX `idx_wm_production_recpt_batch_id`(`batch_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2075402548787744771 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '生产完工入库表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 2080300149975953411 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '生产完工入库表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of wm_production_recpt
@@ -4896,6 +5044,7 @@ INSERT INTO `wm_production_recpt` VALUES (10001, '000000', 'PR-TEST-001', 10001,
 INSERT INTO `wm_production_recpt` VALUES (2069684019362971650, '000000', 'SCRK20260624', 2068920326621814786, 'SCGD202606220001', 1001, 'IF20251110001', '自行车', '1.5m长0.5m高', 50.0000, 1, NULL, NULL, 1, NULL, NULL, NULL, 'EXECUTED', NULL, 103, 1, '2026-06-24 15:28:18', 1, '2026-07-10 12:58:22', '0', NULL, NULL);
 INSERT INTO `wm_production_recpt` VALUES (2074153963774799873, '000000', 'SCRK20260706001', 2073979191344271361, 'SCGD202607060001', 8003, 'RACK-001', '简易金属工具架', '600mm*300mm*800mm', 10.0000, 1, NULL, NULL, 1, NULL, NULL, NULL, 'EXECUTED', NULL, 103, 1, '2026-07-06 23:30:16', 1, '2026-07-10 12:58:22', '0', NULL, NULL);
 INSERT INTO `wm_production_recpt` VALUES (2075402548787744770, '000000', 'SCRK202607100001', 2075397566059450369, NULL, 8003, 'RACK-001', '简易金属工具架', NULL, 1.0000, 1, 'WH003', '成品仓库', 200001, 'FIN-L01', '成品库位1', '2026-07-10', 'EXECUTED', '工单完工自动入库', -1, -1, '2026-07-10 10:11:41', -1, '2026-07-10 12:58:22', '0', NULL, NULL);
+INSERT INTO `wm_production_recpt` VALUES (2080300149975953410, '000000', 'SCRK202607230001', 2080231171726180353, 'SCGD202607230001', 99001, 'QC-FP-001', '质检联动测试成品', NULL, 20.0000, 1, 'WH003', '成品仓库', 200001, 'FIN-L01', '成品库位1', '2026-07-23', 'EXECUTED', '工单完工自动入库', -1, -1, '2026-07-23 22:33:01', -1, '2026-07-23 22:33:01', '0', 2080300149917233154, 'B202607230003');
 
 -- ----------------------------
 -- Table structure for wm_putaway_rule
@@ -4914,15 +5063,15 @@ CREATE TABLE `wm_putaway_rule`  (
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`rule_id`) USING BTREE,
   UNIQUE INDEX `uk_rule_code`(`rule_code`, `tenant_id`) USING BTREE,
   INDEX `idx_warehouse`(`warehouse_id`) USING BTREE,
   INDEX `idx_category`(`material_category_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '上架规则配置表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '上架规则配置表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of wm_putaway_rule
@@ -4957,9 +5106,9 @@ CREATE TABLE `wm_sales_issue`  (
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `attr1` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段1',
   `attr2` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段2',
   `attr3` bigint(20) NULL DEFAULT NULL COMMENT '预留字段3',
@@ -4971,13 +5120,14 @@ CREATE TABLE `wm_sales_issue`  (
   INDEX `idx_status`(`status`) USING BTREE,
   INDEX `idx_issue_date`(`issue_date`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售出库主表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售出库主表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of wm_sales_issue
 -- ----------------------------
 INSERT INTO `wm_sales_issue` VALUES (10001, 'SI-TEST-001', '小明科技出货单', 10001, 'SO-TEST-001', 2, 'C00003', '小明科技有限公司', 1, 'WH003', '成品仓库', '2026-06-26', 30.000000, 45000.0000, 'DRAFT', '小明科技第一批出货30辆', NULL, '000000', 100, '0', 1, '2026-06-21 20:59:14', 1, '2026-06-21 20:59:14', NULL, NULL, NULL, NULL);
 INSERT INTO `wm_sales_issue` VALUES (2077775843664580609, 'XSCK202607160001', NULL, 2075391810035716098, 'XSDD20260710001', 11, NULL, '测试五金贸易公司', 1, NULL, '成品仓库', '2026-07-16', 1.000000, 200.0000, 'APPROVED', NULL, 2058471493289009153, '000000', 103, '0', 1, '2026-07-16 23:22:19', 1, '2026-07-16 23:24:40', NULL, NULL, NULL, NULL);
+INSERT INTO `wm_sales_issue` VALUES (2080312773019168770, 'XSCK202607230001', '测试OQC', 2080229404229697537, 'XSDD20260723001', 7, NULL, '赵氏工程公司', 1, NULL, '成品仓库', '2026-07-23', 20.000000, 2400.0000, 'COMPLETED', NULL, 2058471493289009153, '000000', 103, '0', 1, '2026-07-23 23:23:10', 1, '2026-07-23 23:55:33', NULL, NULL, NULL, NULL);
 
 -- ----------------------------
 -- Table structure for wm_sales_issue_line
@@ -5009,22 +5159,23 @@ CREATE TABLE `wm_sales_issue_line`  (
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`line_id`) USING BTREE,
   INDEX `idx_issue_id`(`issue_id`) USING BTREE,
   INDEX `idx_material_id`(`material_id`) USING BTREE,
   INDEX `idx_batch_id`(`batch_id`) USING BTREE,
   INDEX `idx_location_id`(`location_id`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售出库明细表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售出库明细表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of wm_sales_issue_line
 -- ----------------------------
 INSERT INTO `wm_sales_issue_line` VALUES (10001, 10001, 10001, '1', 1001, 'IF20251110001', '自行车', NULL, '26', '件', NULL, NULL, 1, 'L001', '自行车库位', 30.000000, 100.000000, 0.000000, 1500.0000, 45000.0000, '出货30辆自行车', '000000', 100, '0', 1, '2026-06-21 20:59:14', 1, '2026-06-21 20:59:14');
 INSERT INTO `wm_sales_issue_line` VALUES (2077775843664580610, 2077775843664580609, 2077775426692042753, '0010', 8003, 'RACK-001', '简易金属工具架', '600mm*300mm*800mm', NULL, '套', NULL, NULL, 200001, 'FIN-L01', '成品库位1', 1.000000, 1.000000, 0.000000, 200.0000, 200.0000, NULL, '000000', 103, '0', 1, '2026-07-16 23:22:19', 1, '2026-07-16 23:22:19');
+INSERT INTO `wm_sales_issue_line` VALUES (2080312773144997889, 2080312773019168770, 2080229429462630402, '0010', 99001, 'QC-FP-001', '质检联动测试成品', '100×50×30mm', NULL, '件', 2080300149917233154, 'B202607230003', 200001, NULL, '成品库位1', 20.000000, 20.000000, 0.000000, 120.0000, 2400.0000, NULL, '000000', 103, '0', 1, '2026-07-23 23:23:10', 1, '2026-07-23 23:23:10');
 
 -- ----------------------------
 -- Table structure for wm_sn
@@ -5060,9 +5211,9 @@ CREATE TABLE `wm_sn`  (
   `attr4` int(11) NULL DEFAULT NULL COMMENT '预留字段4',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`sn_id`) USING BTREE,
   UNIQUE INDEX `uk_sn_code`(`sn_code`) USING BTREE,
@@ -5073,7 +5224,11 @@ CREATE TABLE `wm_sn`  (
   INDEX `idx_stock_id`(`stock_id`) USING BTREE,
   INDEX `idx_source_doc`(`source_doc_type`, `source_doc_id`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '序列号管理表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '序列号管理表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of wm_sn
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for wm_stock_alert
@@ -5097,20 +5252,20 @@ CREATE TABLE `wm_stock_alert`  (
   `alert_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预警类型',
   `alert_level` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'WARNING' COMMENT '预警级别',
   `handled_flag` tinyint(4) NULL DEFAULT 0 COMMENT '处理状态(0未处理1已处理)',
-  `handled_time` datetime(0) NULL DEFAULT NULL COMMENT '处理时间',
+  `handled_time` datetime NULL DEFAULT NULL COMMENT '处理时间',
   `handled_by` bigint(20) NULL DEFAULT NULL COMMENT '处理人ID',
   `handled_remark` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '处理说明',
   `del_flag` varchar(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`alert_id`) USING BTREE,
   INDEX `idx_alert_material`(`material_id`, `alert_type`, `handled_flag`) USING BTREE,
   INDEX `idx_alert_tenant`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '安全库存预警表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '安全库存预警表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of wm_stock_alert
@@ -5140,18 +5295,18 @@ CREATE TABLE `wm_stock_reconciliation`  (
   `tx_balance` decimal(18, 4) NULL DEFAULT 0.0000 COMMENT '事务汇总',
   `diff_qty` decimal(18, 4) NULL DEFAULT 0.0000 COMMENT '差异数量',
   `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'DIFF' COMMENT '校验状态(MATCH-一致,DIFF-有差异)',
-  `recon_time` datetime(0) NULL DEFAULT NULL COMMENT '校验时间',
+  `recon_time` datetime NULL DEFAULT NULL COMMENT '校验时间',
   `del_flag` varchar(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`recon_id`) USING BTREE,
   INDEX `idx_recon_material`(`material_id`, `status`) USING BTREE,
   INDEX `idx_recon_tenant`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '库存台账校验表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '库存台账校验表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of wm_stock_reconciliation
@@ -5229,13 +5384,13 @@ CREATE TABLE `wm_stock_taking_line`  (
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`line_id`) USING BTREE,
   INDEX `idx_taking_line_pid`(`plan_id`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '盘点行表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '盘点行表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of wm_stock_taking_line
@@ -5257,22 +5412,22 @@ CREATE TABLE `wm_stock_taking_plan`  (
   `area_id` bigint(20) NULL DEFAULT NULL COMMENT '库区ID',
   `area_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '库区编码',
   `area_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '库区名称',
-  `planned_date` datetime(0) NULL DEFAULT NULL COMMENT '计划盘点日期',
+  `planned_date` datetime NULL DEFAULT NULL COMMENT '计划盘点日期',
   `status` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'DRAFT' COMMENT '状态',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '' COMMENT '备注',
   `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000' COMMENT '租户ID',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `act_process_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '流程实例ID',
   `select_flow_id` bigint(20) NULL DEFAULT NULL COMMENT '审批流程ID',
   PRIMARY KEY (`plan_id`) USING BTREE,
   INDEX `idx_taking_plan_status`(`status`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '盘点计划表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '盘点计划表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of wm_stock_taking_plan
@@ -5302,9 +5457,9 @@ CREATE TABLE `wm_storage_area`  (
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `layout_type` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'GRID' COMMENT '布局类型: GRID-网格, RACK-货架, FLUID-流体, BULK-散货',
   `pos_x` decimal(10, 2) NULL DEFAULT 0.00 COMMENT '3D坐标X(米)',
   `pos_y` decimal(10, 2) NULL DEFAULT 0.00 COMMENT '3D坐标Y(米)',
@@ -5325,7 +5480,7 @@ CREATE TABLE `wm_storage_area`  (
   `config_json` json NULL COMMENT '3D配置JSON',
   PRIMARY KEY (`area_id`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '库区表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '库区表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of wm_storage_area
@@ -5368,9 +5523,9 @@ CREATE TABLE `wm_storage_location`  (
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `location_type` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'STORAGE' COMMENT '库位类型: STORAGE-存储, PICKING-拣货, TRANSIT-中转',
   `rack_id` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '所属货架ID',
   `layer` int(11) NULL DEFAULT 1 COMMENT '层数(从下往上)',
@@ -5398,12 +5553,12 @@ CREATE TABLE `wm_storage_location`  (
   `label_size` decimal(3, 2) NULL DEFAULT 0.30 COMMENT '标签大小',
   `status` int(11) NULL DEFAULT 0 COMMENT '库位状态: 0-空置, 1-占用, 2-锁定, 3-预警',
   `occupancy_rate` decimal(5, 2) NULL DEFAULT 0.00 COMMENT '占用率(0-100)',
-  `last_inbound_time` datetime(0) NULL DEFAULT NULL COMMENT '最后入库时间',
-  `last_outbound_time` datetime(0) NULL DEFAULT NULL COMMENT '最后出库时间',
+  `last_inbound_time` datetime NULL DEFAULT NULL COMMENT '最后入库时间',
+  `last_outbound_time` datetime NULL DEFAULT NULL COMMENT '最后出库时间',
   `config_json` json NULL COMMENT '3D配置JSON数据',
   PRIMARY KEY (`location_id`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '库位表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '库位表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of wm_storage_location
@@ -5469,21 +5624,21 @@ CREATE TABLE `wm_transfer`  (
   `status` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'DRAFT' COMMENT '状态',
   `operator_id` bigint(20) NULL DEFAULT NULL COMMENT '操作人ID',
   `operator_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '操作人',
-  `transfer_date` datetime(0) NULL DEFAULT NULL COMMENT '调拨日期',
-  `execute_date` datetime(0) NULL DEFAULT NULL COMMENT '执行日期',
+  `transfer_date` datetime NULL DEFAULT NULL COMMENT '调拨日期',
+  `execute_date` datetime NULL DEFAULT NULL COMMENT '执行日期',
   `select_flow_id` bigint(20) NULL DEFAULT NULL COMMENT '已选审批流ID(wf_custom_form.id)',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '' COMMENT '备注',
   `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000' COMMENT '租户ID',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`transfer_id`) USING BTREE,
   INDEX `idx_transfer_status`(`status`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '库存调拨单表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '库存调拨单表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of wm_transfer
@@ -5517,13 +5672,13 @@ CREATE TABLE `wm_transfer_line`  (
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`line_id`) USING BTREE,
   INDEX `idx_transfer_line_mid`(`transfer_id`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '库存调拨行表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '库存调拨行表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of wm_transfer_line
@@ -5552,9 +5707,9 @@ CREATE TABLE `wm_warehouse`  (
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `province_area_id` bigint(20) NULL DEFAULT NULL COMMENT '省份行政区划ID',
   `city_area_id` bigint(20) NULL DEFAULT NULL COMMENT '城市行政区划ID',
   `district_area_id` bigint(20) NULL DEFAULT NULL COMMENT '区县行政区划ID',
@@ -5566,7 +5721,7 @@ CREATE TABLE `wm_warehouse`  (
   PRIMARY KEY (`warehouse_id`) USING BTREE,
   UNIQUE INDEX `uk_warehouse_code`(`warehouse_code`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '仓库表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '仓库表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of wm_warehouse

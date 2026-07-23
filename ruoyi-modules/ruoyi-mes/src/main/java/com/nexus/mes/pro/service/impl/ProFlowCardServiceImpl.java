@@ -22,6 +22,8 @@ import com.nexus.mes.pro.mapper.ProWorkOrderMapper;
 import com.nexus.mes.pro.mapper.ProWorkOrderStepMapper;
 import com.nexus.mes.pro.service.IProFlowCardService;
 import com.nexus.mes.pro.service.IProWorkOrderService;
+import com.nexus.mes.qc.domain.bo.QcIpqcBo;
+import com.nexus.mes.qc.service.IQcIpqcService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -51,6 +53,8 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
     private final ProWorkOrderMapper workOrderMapper;
     private final ProWorkOrderStepMapper workOrderStepMapper;
     private final IProWorkOrderService proWorkOrderService;
+    /** IPQC 服务：关键工序报工时自动建过程检验单 */
+    private final IQcIpqcService iqcIpqcService;
 
     @Override
     /**
@@ -251,6 +255,9 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
             throw new RuntimeException("工序状态已变更或不存在，仅进行中状态可完工");
         }
 
+        // 关键工序报工完成 -> 自动建 IPQC(幂等，失败不阻断报工，由 completeWo 门禁兜底)
+        triggerIpqcIfKeyProcess(stepRecordId);
+
         // 2. 更新流转卡数量: completed_qty 用当前工序goodQty覆写（串行流程，每道工序处理同一批工件）
         //    scrap_qty 累加（各工序独立报废，需累计）
         baseMapper.update(null, Wrappers.<ProFlowCard>lambdaUpdate()
@@ -380,6 +387,8 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
         if (rows == 0) {
             return;
         }
+        // 关键工序报工完成 -> 自动建 IPQC(幂等，失败不阻断报工，由 completeWo 门禁兜底)
+        triggerIpqcIfKeyProcess(stepRecordId);
         // 检查所有工序完成 -> completeCard
         Long pendingCount = stepMapper.selectCount(Wrappers.<ProFlowCardStep>lambdaQuery()
             .eq(ProFlowCardStep::getCardId, cardId)
@@ -391,6 +400,42 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
     }
 
     // ==================== 私有辅助方法 ====================
+
+    /**
+     * 关键工序报工完成时自动建 IPQC。
+     * <p>
+     * 仅 isKeyProcess=1 的工序触发；按 (mesWoId, processId) 幂等（同工单同工序仅一条 IPQC）。
+     * IPQC 创建走独立事务(REQUIRES_NEW)，失败仅告警不阻断报工，由 completeWo 门禁兜底。
+     *
+     * @param stepRecordId 流转卡工序记录 ID
+     */
+    private void triggerIpqcIfKeyProcess(Long stepRecordId) {
+        try {
+            ProFlowCardStep step = stepMapper.selectById(stepRecordId);
+            if (step == null || !Integer.valueOf(1).equals(step.getIsKeyProcess())) {
+                return;
+            }
+            ProWorkOrder wo = workOrderMapper.selectById(step.getMesWoId());
+            if (wo == null) {
+                log.warn("[IPQC自动建单] 工单不存在，跳过: mesWoId={}", step.getMesWoId());
+                return;
+            }
+            QcIpqcBo bo = new QcIpqcBo();
+            bo.setMesWoId(step.getMesWoId());
+            bo.setWoNo(wo.getWoNo());
+            bo.setCardId(step.getCardId());
+            bo.setStepRecordId(step.getStepRecordId());
+            bo.setProcessId(step.getProcessId());
+            bo.setProcessCode(step.getProcessCode());
+            bo.setProcessName(step.getProcessName());
+            bo.setMaterialId(wo.getMaterialId());
+            bo.setMaterialCode(wo.getMaterialCode());
+            bo.setMaterialName(wo.getMaterialName());
+            iqcIpqcService.autoCreateForKeyProcess(bo);
+        } catch (Exception e) {
+            log.error("[IPQC自动建单] 关键工序报工自动建 IPQC 失败(不影响报工，由 completeWo 门禁兜底): stepRecordId={}", stepRecordId, e);
+        }
+    }
 
     /**
      * 根据工单工序步骤生成流转卡工序记录

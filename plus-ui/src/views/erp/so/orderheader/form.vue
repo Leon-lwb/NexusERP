@@ -577,7 +577,7 @@
                 <el-table-column label="交付优先级" prop="deliveryPriority" width="150">
                   <template #default="scope">
                     <el-select v-model="scope.row.deliveryPriority" placeholder="请选择交付优先级" v-if="!isViewMode">
-                      <el-option v-for="dict in so_order_priority" :key="dict.value" :label="dict.label" :value="dict.value"></el-option>
+                      <el-option v-for="dict in so_order_priority" :key="dict.value" :label="dict.label" :value="Number(dict.value)"></el-option>
                     </el-select>
                     <span v-else>{{ getDictLabel(so_order_priority, scope.row.deliveryPriority) }}</span>
                   </template>
@@ -1043,7 +1043,7 @@ function viewWorkOrder(row) {
 }
 
 function getDictLabel(dictOptions, value) {
-  const dict = dictOptions.find((item) => item.value === value);
+  const dict = dictOptions.find((item) => String(item.value) === String(value));
   return dict ? dict.label : value;
 }
 

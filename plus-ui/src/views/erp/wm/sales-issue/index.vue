@@ -111,7 +111,7 @@
             修改
           </el-button>
           <el-button
-            v-if="scope.row.status === 'DRAFT'"
+            v-if="scope.row.status === 'APPROVED'"
             link
             type="success"
             icon="Check"
