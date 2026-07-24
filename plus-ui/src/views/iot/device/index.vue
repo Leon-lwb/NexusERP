@@ -374,7 +374,7 @@ function handleExport() {
 
 /** 跳转到 MES 设备台账（带 equipmentId 查询参数） */
 function goToMesEquipment(mesEquipmentId: number) {
-  router.push({ path: '/mes/eq/equipment', query: { equipmentId: String(mesEquipmentId) } });
+  router.push({ path: '/mes/eq-maintain/equipment', query: { equipmentId: String(mesEquipmentId) } });
 }
 
 /** 关联 MES 设备对话框 */

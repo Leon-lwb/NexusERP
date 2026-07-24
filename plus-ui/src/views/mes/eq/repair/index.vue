@@ -185,7 +185,7 @@ const { mes_repair_status, mes_fault_type } = toRefs<any>(proxy?.useDict('mes_re
 const router = useRouter();
 
 const goStatistics = () => {
-  router.push('/mes/eq/statistics');
+  router.push('/mes/eq-maintain/statistics');
 };
 
 const dataList = ref<EqRepairVO[]>([]);

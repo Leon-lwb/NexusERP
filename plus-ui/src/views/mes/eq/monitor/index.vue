@@ -81,7 +81,7 @@
           <template #header>
             <div class="card-header">
               <span>活跃维修单</span>
-              <el-button link type="warning" icon="WarnTriangleFilled" @click="router.push('/mes/eq/repair')" v-hasPermi="['mes:eq:repair:list']"
+              <el-button link type="warning" icon="WarnTriangleFilled" @click="router.push('/mes/eq-maintain/repair')" v-hasPermi="['mes:eq:repair:list']"
                 >查看全部</el-button
               >
             </div>
@@ -107,7 +107,7 @@
           <template #header>
             <div class="card-header">
               <span>低库存告警</span>
-              <el-button link type="warning" icon="Box" @click="router.push('/mes/eq/spare-part')" v-hasPermi="['mes:eq:spare:list']"
+              <el-button link type="warning" icon="Box" @click="router.push('/mes/eq-spare/spare-part')" v-hasPermi="['mes:eq:spare:list']"
                 >备件管理</el-button
               >
             </div>
