@@ -13,12 +13,14 @@ import com.nexus.mes.pro.domain.ProSn;
 import com.nexus.mes.pro.domain.bo.ProSnBo;
 import com.nexus.mes.pro.domain.vo.ProFlowCardStepVo;
 import com.nexus.mes.pro.domain.vo.ProSnVo;
+import com.nexus.mes.pro.event.SnCreatedEvent;
 import com.nexus.mes.pro.mapper.ProFlowCardMapper;
 import com.nexus.mes.pro.mapper.ProFlowCardStepMapper;
 import com.nexus.mes.pro.mapper.ProSnMapper;
 import com.nexus.mes.pro.service.IProSnService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -51,6 +53,8 @@ public class ProSnServiceImpl implements IProSnService {
     private final ProSnMapper baseMapper;
     private final ProFlowCardMapper flowCardMapper;
     private final ProFlowCardStepMapper stepMapper;
+    /** 事件发布器: SN 创建并指定批次时发布 SnCreatedEvent -> lt 模块写 SN↔批次绑定 */
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     @Override
     /**
@@ -92,7 +96,7 @@ public class ProSnServiceImpl implements IProSnService {
     @Lock4j(keys = {"#cardId"})
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public List<ProSnVo> generateSnForCard(Long cardId, Integer quantity, String initialStatus) {
+    public List<ProSnVo> generateSnForCard(Long cardId, Integer quantity, String initialStatus, Long lotId) {
         if (quantity == null || quantity <= 0) {
             throw new RuntimeException("生成数量必须大于0");
         }
@@ -133,6 +137,14 @@ public class ProSnServiceImpl implements IProSnService {
         }
         log.info("批量生成SN成功: cardId={}, quantity={}, startSeq={}", cardId, quantity, startSeq);
 
+        // 若指定批次, 发布 SnCreatedEvent -> lt 模块写 lt_sn_binding(SN↔批次绑定)
+        if (lotId != null) {
+            for (ProSn sn : snList) {
+                applicationEventPublisher.publishEvent(
+                    new SnCreatedEvent(sn.getSnId(), sn.getSnCode(), lotId, sn.getMaterialId()));
+            }
+        }
+
         // 4. 返回VO列表
         List<Long> ids = snList.stream().map(ProSn::getSnId).toList();
         return baseMapper.selectVoList(Wrappers.<ProSn>lambdaQuery()
@@ -146,7 +158,7 @@ public class ProSnServiceImpl implements IProSnService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public ProSnVo createSn(Long mesWoId, Long cardId, Long materialId,
-                            String snCode, Long parentSnId, String remark) {
+                            String snCode, Long parentSnId, String remark, Long lotId) {
         if (StringUtils.isBlank(snCode)) {
             throw new RuntimeException("SN编码不能为空");
         }
@@ -188,7 +200,13 @@ public class ProSnServiceImpl implements IProSnService {
         sn.setRemark(remark);
         baseMapper.insert(sn);
 
-        log.info("手动创建SN成功: snCode={}, parentSnId={}", snCode, parentSnId);
+        // 若指定批次, 发布 SnCreatedEvent -> lt 模块写 lt_sn_binding(SN↔批次绑定)
+        if (lotId != null) {
+            applicationEventPublisher.publishEvent(
+                new SnCreatedEvent(sn.getSnId(), snCode, lotId, materialId));
+        }
+
+        log.info("手动创建SN成功: snCode={}, parentSnId={}, lotId={}", snCode, parentSnId, lotId);
         return baseMapper.selectVoById(sn.getSnId());
     }
 

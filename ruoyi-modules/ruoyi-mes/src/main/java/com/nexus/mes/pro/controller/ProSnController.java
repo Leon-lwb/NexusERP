@@ -75,8 +75,9 @@ public class ProSnController extends BaseController {
     @PostMapping("/generate")
     public R<List<ProSnVo>> generate(@RequestParam Long cardId,
                                      @RequestParam Integer quantity,
-                                     @RequestParam(required = false) String initialStatus) {
-        return R.ok(proSnService.generateSnForCard(cardId, quantity, initialStatus));
+                                     @RequestParam(required = false) String initialStatus,
+                                     @RequestParam(required = false) Long lotId) {
+        return R.ok(proSnService.generateSnForCard(cardId, quantity, initialStatus, lotId));
     }
 
     /**
@@ -90,8 +91,9 @@ public class ProSnController extends BaseController {
                           @RequestParam Long materialId,
                           @RequestParam String snCode,
                           @RequestParam(required = false) Long parentSnId,
-                          @RequestParam(required = false) String remark) {
-        return R.ok(proSnService.createSn(mesWoId, cardId, materialId, snCode, parentSnId, remark));
+                          @RequestParam(required = false) String remark,
+                          @RequestParam(required = false) Long lotId) {
+        return R.ok(proSnService.createSn(mesWoId, cardId, materialId, snCode, parentSnId, remark, lotId));
     }
 
     /**

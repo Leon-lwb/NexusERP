@@ -10,6 +10,7 @@ import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.common.satoken.utils.LoginHelper;
 import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.mes.common.mq.MesMqSendService;
+import com.nexus.mes.lt.service.ILtLotService;
 import com.nexus.mes.qc.domain.QcIqc;
 import com.nexus.mes.qc.domain.bo.QcIqcBo;
 import com.nexus.mes.qc.domain.vo.QcIqcVo;
@@ -46,6 +47,8 @@ public class QcIqcServiceImpl implements IQcIqcService {
     private final QcIqcMapper baseMapper;
     /** MES MQ 发送服务，用于检验完成后异步回传 ERP。 */
     private final MesMqSendService mesMqSendService;
+    /** MES 批次服务，用于检验完成后回写关联批次 qc_status（lot.iqc_id 已关联时生效）。 */
+    private final ILtLotService ltLotService;
 
     /**
      * 分页查询 IQC 来料检验列表。
@@ -169,6 +172,13 @@ public class QcIqcServiceImpl implements IQcIqcService {
             new TransactionSynchronization() {
                 @Override
                 public void afterCommit() {
+                    // 1. 回写关联批次 qc_status (best-effort: lot.iqc_id 已关联才生效; 失败不影响IQC结果与MQ回传)
+                    try {
+                        ltLotService.applyIqcResult(iqcId, result);
+                    } catch (Exception e) {
+                        log.warn("IQC回写批次QC状态失败(不影响IQC结果): iqcNo={}", iqcCode, e);
+                    }
+                    // 2. MQ回传ERP(更新收货单质检状态)
                     if (receiveId == null) {
                         log.info("IQC未关联ERP收货单, 跳过MQ回传: iqcNo={}", iqcCode);
                         return;

@@ -54,15 +54,18 @@ public interface IProSnService {
      * @param cardId        流转卡ID
      * @param quantity      生成数量
      * @param initialStatus 初始状态(默认 IN_PRODUCTION)
+     * @param lotId         批次ID(可空; 非空时发布 SnCreatedEvent, 由 lt 模块写 SN↔批次绑定)
      * @return 生成的SN列表
      */
-    List<ProSnVo> generateSnForCard(Long cardId, Integer quantity, String initialStatus);
+    List<ProSnVo> generateSnForCard(Long cardId, Integer quantity, String initialStatus, Long lotId);
 
     /**
      * 手动创建单个SN(可指定parentSnId用于组装追溯)
+     *
+     * @param lotId 批次ID(可空; 非空时发布 SnCreatedEvent, 由 lt 模块写 SN↔批次绑定)
      */
     ProSnVo createSn(Long mesWoId, Long cardId, Long materialId,
-                     String snCode, Long parentSnId, String remark);
+                     String snCode, Long parentSnId, String remark, Long lotId);
 
     /**
      * 完工(IN_PRODUCTION -> COMPLETED)
