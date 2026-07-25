@@ -38,7 +38,7 @@
         <el-descriptions-item label="完成数量">{{ flowCard.completedQty }}</el-descriptions-item>
         <el-descriptions-item label="报废数量">{{ flowCard.scrapQty }}</el-descriptions-item>
         <el-descriptions-item label="状态">
-          <el-tag :type="statusTagType(flowCard.cardStatus)">{{ statusLabel(flowCard.cardStatus) }}</el-tag>
+          <dict-tag :options="mes_flow_card_status" :value="flowCard.cardStatus" />
         </el-descriptions-item>
       </el-descriptions>
     </el-card>
@@ -62,7 +62,7 @@
         <el-table-column label="报废" prop="scrapQty" width="80" align="right" />
         <el-table-column label="状态" prop="stepStatus" width="100" align="center">
           <template #default="scope">
-            <el-tag :type="stepStatusTagType(scope.row.stepStatus)">{{ stepStatusLabel(scope.row.stepStatus) }}</el-tag>
+            <dict-tag :options="mes_step_status" :value="scope.row.stepStatus" />
           </template>
         </el-table-column>
         <el-table-column label="已派工" width="120" align="center">
@@ -124,12 +124,7 @@
           </el-select>
         </el-form-item>
         <el-form-item label="派工数量" prop="quantity">
-          <el-input-number
-            v-model="dispatchForm.quantity"
-            :min="1"
-            :max="maxDispatchQty"
-            style="width: 100%"
-          />
+          <el-input-number v-model="dispatchForm.quantity" :min="1" :max="maxDispatchQty" style="width: 100%" />
           <div class="text-gray-400 text-xs mt-1">工序计划数量: {{ currentStep?.plannedQty }}，剩余可派: {{ maxDispatchQty }}</div>
         </el-form-item>
       </el-form>
@@ -151,6 +146,7 @@ import type { WorkerVO } from '@/api/erp/sch/worker/types';
 import type { FormInstance, FormRules } from 'element-plus';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
+const { mes_flow_card_status, mes_step_status } = toRefs<any>(proxy?.useDict('mes_flow_card_status', 'mes_step_status'));
 const route = useRoute();
 const router = useRouter();
 
@@ -285,45 +281,6 @@ const handleSubmitDispatch = async () => {
   } finally {
     dispatchSubmitting.value = false;
   }
-};
-
-const statusLabel = (status: string) => {
-  const map: Record<string, string> = {
-    CREATED: '新建',
-    RELEASED: '已下达',
-    IN_PROGRESS: '生产中',
-    COMPLETED: '已完工',
-    CLOSED: '已关闭'
-  };
-  return map[status] || status;
-};
-const statusTagType = (status: string) => {
-  const map: Record<string, string> = {
-    CREATED: 'info',
-    RELEASED: 'success',
-    IN_PROGRESS: 'warning',
-    COMPLETED: 'primary',
-    CLOSED: 'info'
-  };
-  return map[status] || 'info';
-};
-const stepStatusLabel = (status: string) => {
-  const map: Record<string, string> = {
-    PENDING: '待开始',
-    IN_PROGRESS: '进行中',
-    COMPLETED: '已完成',
-    SKIPPED: '已跳过'
-  };
-  return map[status] || status;
-};
-const stepStatusTagType = (status: string) => {
-  const map: Record<string, string> = {
-    PENDING: 'info',
-    IN_PROGRESS: 'warning',
-    COMPLETED: 'success',
-    SKIPPED: 'info'
-  };
-  return map[status] || 'info';
 };
 
 onMounted(async () => {

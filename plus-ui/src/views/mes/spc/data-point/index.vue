@@ -6,8 +6,7 @@
           <el-col :span="6">
             <el-form-item label="是否OOC" prop="isOoc">
               <el-select v-model="queryParams.isOoc" placeholder="请选择" clearable style="width: 100%">
-                <el-option label="是" value="1" />
-                <el-option label="否" value="0" />
+                <el-option v-for="dict in mes_yes_no" :key="dict.value" :label="dict.label" :value="dict.value" />
               </el-select>
             </el-form-item>
           </el-col>
@@ -23,10 +22,9 @@
       <el-table v-loading="loading" :data="dataList" show-overflow-tooltip>
         <el-table-column label="样本组号" prop="sampleGroup" align="right" />
         <el-table-column label="值" prop="value" align="right" />
-        <!-- 技术债:是否OOC暂无对应字典,使用硬编码 el-tag,待补字典后改 dict-tag -->
         <el-table-column label="是否OOC" prop="isOoc" align="center">
           <template #default="scope">
-            <el-tag :type="scope.row.isOoc === '1' ? 'danger' : 'success'">{{ scope.row.isOoc === '1' ? '是' : '否' }}</el-tag>
+            <dict-tag :options="mes_yes_no" :value="scope.row.isOoc" />
           </template>
         </el-table-column>
         <el-table-column label="违规规则" prop="oocRule" min-width="120" show-overflow-tooltip>
@@ -47,6 +45,7 @@ import { listDataPoint } from '@/api/mes/spc/data-point';
 import type { SpcDataPointVO } from '@/api/mes/spc/control-chart';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
+const { mes_yes_no } = toRefs<any>(proxy?.useDict('mes_yes_no'));
 
 const dataList = ref<SpcDataPointVO[]>([]);
 const loading = ref(true);
@@ -84,4 +83,3 @@ onMounted(() => {
   getList();
 });
 </script>
-

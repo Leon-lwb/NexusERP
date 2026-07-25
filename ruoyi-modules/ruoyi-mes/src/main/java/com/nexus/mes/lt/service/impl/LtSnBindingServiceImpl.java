@@ -23,6 +23,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * MES SN批次绑定 Service 业务层实现
@@ -44,6 +47,8 @@ public class LtSnBindingServiceImpl implements ILtSnBindingService {
     public TableDataInfo<LtSnBindingVo> selectPageList(LtSnBindingBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<LtSnBinding> lqw = buildQueryWrapper(bo);
         Page<LtSnBindingVo> page = baseMapper.selectVoPage(pageQuery.build(), lqw);
+        // 富集物料编码/名称(从同库 lt_lot 冗余字段); boundByName 由 VO @Translation 自动翻译
+        enrichMaterial(page.getRecords());
         return TableDataInfo.build(page);
     }
 
@@ -115,6 +120,35 @@ public class LtSnBindingServiceImpl implements ILtSnBindingService {
     }
 
     // ==================== 私有辅助方法 ====================
+
+    /**
+     * 富集物料编码/名称: 批量查 lt_lot(同库冗余字段 materialCode/materialName), 避免跨库调 ERP。
+     * boundByName 由 VO 上的 @Translation(USER_ID_TO_NAME) 自动翻译, 无需此处处理。
+     */
+    private void enrichMaterial(List<LtSnBindingVo> records) {
+        if (records == null || records.isEmpty()) {
+            return;
+        }
+        List<Long> lotIds = records.stream()
+            .map(LtSnBindingVo::getLotId)
+            .filter(Objects::nonNull)
+            .distinct()
+            .toList();
+        if (lotIds.isEmpty()) {
+            return;
+        }
+        Map<Long, LtLot> lotMap = lotMapper.selectList(
+            Wrappers.<LtLot>lambdaQuery().in(LtLot::getLotId, lotIds))
+            .stream()
+            .collect(Collectors.toMap(LtLot::getLotId, l -> l, (a, b) -> a));
+        for (LtSnBindingVo vo : records) {
+            LtLot lot = lotMap.get(vo.getLotId());
+            if (lot != null) {
+                vo.setMaterialCode(lot.getMaterialCode());
+                vo.setMaterialName(lot.getMaterialName());
+            }
+        }
+    }
 
     private LambdaQueryWrapper<LtSnBinding> buildQueryWrapper(LtSnBindingBo bo) {
         return Wrappers.<LtSnBinding>lambdaQuery()

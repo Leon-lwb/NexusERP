@@ -9,8 +9,11 @@ export interface LtSnBindingVO {
   lotId: number;
   lotCode?: string;
   materialId: number;
+  materialCode?: string;
+  materialName?: string;
   boundTime: string;
   boundBy?: number;
+  boundByName?: string;
 }
 
 /** SN批次绑定查询条件 */
@@ -24,8 +27,12 @@ export interface LtSnBindingQuery extends PageQuery {
 export interface LtSnBindingForm {
   bindingId?: number;
   snId: number;
+  snCode?: string;
   lotId: number;
+  lotCode?: string;
   materialId: number;
+  materialCode?: string;
+  materialName?: string;
 }
 
 /** 分页查询SN批次绑定列表 */
@@ -37,12 +44,10 @@ export const getBinding = (bindingId: number | string): AxiosPromise<LtSnBinding
   request({ url: `/mes/lt/binding/${bindingId}`, method: 'get' });
 
 /** 新增SN-批次绑定 */
-export const addBinding = (data: LtSnBindingForm) =>
-  request({ url: '/mes/lt/binding', method: 'post', data });
+export const addBinding = (data: LtSnBindingForm) => request({ url: '/mes/lt/binding', method: 'post', data });
 
 /** 批量删除绑定 */
-export const delBinding = (bindingIds: number | number[]) =>
-  request({ url: `/mes/lt/binding/${bindingIds}`, method: 'delete' });
+export const delBinding = (bindingIds: number | number[]) => request({ url: `/mes/lt/binding/${bindingIds}`, method: 'delete' });
 
 /** 按SN ID查询其批次绑定 */
 export const listBindingBySn = (snId: number | string): AxiosPromise<LtSnBindingVO[]> =>

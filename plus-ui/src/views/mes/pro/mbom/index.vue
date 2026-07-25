@@ -6,9 +6,7 @@
           <el-col :span="6">
             <el-form-item label="状态" prop="mbomStatus">
               <el-select v-model="queryParams.mbomStatus" placeholder="全部状态" clearable style="width: 100%">
-                <el-option label="草稿" value="DRAFT" />
-                <el-option label="已激活" value="ACTIVE" />
-                <el-option label="冻结" value="FROZEN" />
+                <el-option v-for="dict in mes_mbom_status" :key="dict.value" :label="dict.label" :value="dict.value" />
               </el-select>
             </el-form-item>
           </el-col>
@@ -42,9 +40,7 @@
         <el-table-column label="MBOM版本" prop="mbomVersion" align="center" />
         <el-table-column label="状态" prop="mbomStatus" align="center">
           <template #default="scope">
-            <el-tag :type="scope.row.mbomStatus === 'ACTIVE' ? 'success' : scope.row.mbomStatus === 'FROZEN' ? 'danger' : 'info'">
-              {{ { DRAFT: '草稿', ACTIVE: '已激活', FROZEN: '冻结' }[scope.row.mbomStatus] || scope.row.mbomStatus }}
-            </el-tag>
+            <dict-tag :options="mes_mbom_status" :value="scope.row.mbomStatus" />
           </template>
         </el-table-column>
         <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
@@ -111,7 +107,7 @@
           </el-col>
           <el-col :span="8">
             <el-form-item label="状态" prop="mbomStatus">
-              <el-tag>{{ form.mbomStatus || 'DRAFT' }}</el-tag>
+              <dict-tag :options="mes_mbom_status" :value="form.mbomStatus || 'DRAFT'" />
             </el-form-item>
           </el-col>
           <el-col :span="8">
@@ -122,7 +118,7 @@
         </el-row>
 
         <el-divider content-position="left">MBOM明细行</el-divider>
-        <el-button type="primary" icon="Plus" size="small" @click="addLine" style="margin-bottom: 8px;">添加行</el-button>
+        <el-button type="primary" icon="Plus" size="small" @click="addLine" style="margin-bottom: 8px">添加行</el-button>
         <el-table :data="form.lines || []" border size="small" show-overflow-tooltip>
           <el-table-column label="物料" width="250">
             <template #default="scope">
@@ -193,7 +189,6 @@
 </template>
 
 <script setup lang="ts" name="MesMbomIndex">
-// 技术债: 缺 mes_mbom_status 字典, MBOM 状态暂用硬编码 el-tag, 待补字典后改 dict-tag
 import { listMbom, getMbom, addMbom, updateMbom, delMbom, activateMbom } from '@/api/mes/pro/mbom';
 import { listBom } from '@/api/erp/bd/bom/index';
 import { listRouting, getRoutingSteps } from '@/api/erp/bd/routing/index';
@@ -202,6 +197,7 @@ import { listWorkstation } from '@/api/erp/bd/workstation/index';
 import type { MesMbomForm, MesMbomLineForm, MesMbomVO } from '@/api/mes/pro/types';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
+const { mes_mbom_status } = toRefs<any>(proxy?.useDict('mes_mbom_status'));
 
 const dataList = ref<MesMbomVO[]>([]);
 const loading = ref(true);
@@ -379,4 +375,3 @@ onMounted(() => {
   getList();
 });
 </script>
-

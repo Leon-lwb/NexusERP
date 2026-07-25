@@ -11,19 +11,14 @@
           <el-col :span="6">
             <el-form-item label="类型" prop="chartType">
               <el-select v-model="queryParams.chartType" placeholder="请选择类型" clearable style="width: 100%">
-                <el-option label="均值-极差(X̄-R)" value="X_BAR_R" />
-                <el-option label="均值-标准差(X̄-S)" value="X_BAR_S" />
-                <el-option label="不良率(P)" value="P" />
-                <el-option label="缺陷数(C)" value="C" />
-                <el-option label="单位缺陷数(U)" value="U" />
+                <el-option v-for="dict in spc_chart_type" :key="dict.value" :label="dict.label" :value="dict.value" />
               </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="6">
             <el-form-item label="状态" prop="status">
               <el-select v-model="queryParams.status" placeholder="请选择状态" clearable style="width: 100%">
-                <el-option label="启用" value="ACTIVE" />
-                <el-option label="停用" value="INACTIVE" />
+                <el-option v-for="dict in mes_enable_status" :key="dict.value" :label="dict.label" :value="dict.value" />
               </el-select>
             </el-form-item>
           </el-col>
@@ -45,10 +40,9 @@
 
       <el-table v-loading="loading" :data="dataList" show-overflow-tooltip>
         <el-table-column label="控制图名称" prop="chartName" min-width="120" show-overflow-tooltip />
-        <!-- 技术债:类型暂无对应字典,使用硬编码 el-tag,待补字典后改 dict-tag -->
         <el-table-column label="类型" prop="chartType" align="center">
           <template #default="scope">
-            <el-tag type="primary">{{ typeLabel(scope.row.chartType) }}</el-tag>
+            <dict-tag :options="spc_chart_type" :value="scope.row.chartType" />
           </template>
         </el-table-column>
         <el-table-column label="样本大小" prop="sampleSize" align="right" />
@@ -61,10 +55,9 @@
         <el-table-column label="LCL" prop="lcl" align="right">
           <template #default="scope">{{ scope.row.lcl ?? '-' }}</template>
         </el-table-column>
-        <!-- 技术债:状态暂无对应字典,使用硬编码 el-tag,待补字典后改 dict-tag -->
         <el-table-column label="状态" prop="status" align="center">
           <template #default="scope">
-            <el-tag :type="scope.row.status === 'ACTIVE' ? 'success' : 'info'">{{ scope.row.status === 'ACTIVE' ? '启用' : '停用' }}</el-tag>
+            <dict-tag :options="mes_enable_status" :value="scope.row.status" />
           </template>
         </el-table-column>
         <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
@@ -89,15 +82,15 @@
         </el-form-item>
         <el-form-item label="图表类型" required>
           <el-select v-model="form.chartType" placeholder="请选择类型" style="width: 100%">
-            <el-option label="均值-极差(X̄-R)" value="X_BAR_R" />
-            <el-option label="均值-标准差(X̄-S)" value="X_BAR_S" />
-            <el-option label="不良率(P)" value="P" />
-            <el-option label="缺陷数(C)" value="C" />
-            <el-option label="单位缺陷数(U)" value="U" />
+            <el-option v-for="dict in spc_chart_type" :key="dict.value" :label="dict.label" :value="dict.value" />
           </el-select>
         </el-form-item>
-        <el-form-item label="关联采集点ID" required>
-          <el-input v-model.number="form.pointId" placeholder="采集点ID(SPC数据来源)" clearable />
+        <el-form-item label="关联采集点" required>
+          <el-input v-model="pointCodeDisplay" placeholder="请选择采集点(SPC数据来源)" readonly>
+            <template #append>
+              <el-button icon="Search" @click="openPointSelect" />
+            </template>
+          </el-input>
         </el-form-item>
         <el-form-item label="样本大小">
           <el-input-number
@@ -110,16 +103,23 @@
             placeholder="X̄-R/S每组样本数(2~10), 计数型为检验数/单位数"
           />
         </el-form-item>
-        <el-form-item label="关联物料ID">
-          <el-input v-model.number="form.materialId" placeholder="可选" clearable />
+        <el-form-item label="关联物料">
+          <el-input v-model="materialCodeDisplay" placeholder="可选, 选择物料" readonly clearable @clear="form.materialId = undefined">
+            <template #append>
+              <el-button icon="Search" @click="openMaterialSelect" />
+            </template>
+          </el-input>
         </el-form-item>
-        <el-form-item label="关联工序ID">
-          <el-input v-model.number="form.processId" placeholder="可选" clearable />
+        <el-form-item label="关联工序">
+          <el-input v-model="processCodeDisplay" placeholder="可选, 选择工序" readonly clearable @clear="form.processId = undefined">
+            <template #append>
+              <el-button icon="Search" @click="openProcessSelect" />
+            </template>
+          </el-input>
         </el-form-item>
         <el-form-item label="状态">
           <el-select v-model="form.status" placeholder="状态" style="width: 100%">
-            <el-option label="启用" value="ACTIVE" />
-            <el-option label="停用" value="INACTIVE" />
+            <el-option v-for="dict in mes_enable_status" :key="dict.value" :label="dict.label" :value="dict.value" />
           </el-select>
         </el-form-item>
         <el-form-item label="备注">
@@ -142,7 +142,9 @@
     >
       <div v-loading="analyzeLoading">
         <el-descriptions :column="4" border size="small" class="mb-2">
-          <el-descriptions-item label="类型">{{ typeLabel(analyzeResult.chart?.chartType) }}</el-descriptions-item>
+          <el-descriptions-item label="类型">
+            <dict-tag :options="spc_chart_type" :value="analyzeResult.chart?.chartType" />
+          </el-descriptions-item>
           <el-descriptions-item label="样本大小">{{ analyzeResult.chart?.sampleSize }}</el-descriptions-item>
           <el-descriptions-item label="数据点数">{{ analyzeResult.points?.length ?? 0 }}</el-descriptions-item>
           <el-descriptions-item label="OOC点数">
@@ -151,11 +153,82 @@
           <el-descriptions-item label="UCL(上控制限)">{{ analyzeResult.ucl }}</el-descriptions-item>
           <el-descriptions-item label="CL(中心线)">{{ analyzeResult.cl }}</el-descriptions-item>
           <el-descriptions-item label="LCL(下控制限)">{{ analyzeResult.lcl }}</el-descriptions-item>
-          <el-descriptions-item label="状态">{{ analyzeResult.chart?.status === 'ACTIVE' ? '启用' : '停用' }}</el-descriptions-item>
+          <el-descriptions-item label="状态">
+            <dict-tag :options="mes_enable_status" :value="analyzeResult.chart?.status" />
+          </el-descriptions-item>
         </el-descriptions>
         <div ref="chartRef" style="height: 380px" />
       </div>
     </el-dialog>
+
+    <!-- 采集点选择对话框 -->
+    <el-dialog v-model="pointDialog.visible" title="选择采集点" width="820px" append-to-body>
+      <el-form :model="pointDialog.query" :inline="true">
+        <el-form-item label="采集点编码">
+          <el-input v-model="pointDialog.query.pointCode" clearable @keyup.enter="queryPoints" />
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" icon="Search" @click="queryPoints">搜索</el-button>
+          <el-button icon="Refresh" @click="resetPointQuery">重置</el-button>
+        </el-form-item>
+      </el-form>
+      <el-table :data="pointDialog.list" height="400" @row-dblclick="selectPoint">
+        <el-table-column label="采集点编码" prop="pointCode" min-width="140" />
+        <el-table-column label="采集点名称" prop="pointName" min-width="140" />
+        <el-table-column label="类型" prop="pointType" width="100" align="center">
+          <template #default="scope">
+            <dict-tag :options="dc_collection_point_type" :value="scope.row.pointType" size="small" />
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="100" align="center">
+          <template #default="scope">
+            <el-button link type="primary" @click="selectPoint(scope.row)">选择</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+      <pagination
+        v-show="pointDialog.total > 0"
+        :total="pointDialog.total"
+        v-model:page="pointDialog.query.pageNum"
+        v-model:limit="pointDialog.query.pageSize"
+        @pagination="queryPoints"
+      />
+    </el-dialog>
+
+    <!-- 工序选择对话框 -->
+    <el-dialog v-model="processDialog.visible" title="选择工序" width="820px" append-to-body>
+      <el-form :model="processDialog.query" :inline="true">
+        <el-form-item label="工序编码">
+          <el-input v-model="processDialog.query.processCode" clearable @keyup.enter="queryProcesses" />
+        </el-form-item>
+        <el-form-item label="工序名称">
+          <el-input v-model="processDialog.query.processName" clearable @keyup.enter="queryProcesses" />
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" icon="Search" @click="queryProcesses">搜索</el-button>
+          <el-button icon="Refresh" @click="resetProcessQuery">重置</el-button>
+        </el-form-item>
+      </el-form>
+      <el-table :data="processDialog.list" height="400" @row-dblclick="selectProcess">
+        <el-table-column label="工序编码" prop="processCode" min-width="140" />
+        <el-table-column label="工序名称" prop="processName" min-width="160" />
+        <el-table-column label="操作" width="100" align="center">
+          <template #default="scope">
+            <el-button link type="primary" @click="selectProcess(scope.row)">选择</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+      <pagination
+        v-show="processDialog.total > 0"
+        :total="processDialog.total"
+        v-model:page="processDialog.query.pageNum"
+        v-model:limit="processDialog.query.pageSize"
+        @pagination="queryProcesses"
+      />
+    </el-dialog>
+
+    <!-- 物料选择对话框 -->
+    <MaterialSelectDialog ref="materialSelectRef" title="选择物料" @select="handleMaterialSelect" />
   </div>
 </template>
 
@@ -170,8 +243,15 @@ import {
   analyzeControlChart
 } from '@/api/mes/spc/control-chart';
 import type { SpcControlChartVO, SpcControlChartQuery, SpcControlChartForm, SpcAnalyzeResult, SpcDataPointVO } from '@/api/mes/spc/control-chart';
+import { listCollectionPoint, getCollectionPoint } from '@/api/mes/dc/collection-point';
+import { listProcess, getProcess } from '@/api/erp/bd/process';
+import { getMaterial } from '@/api/erp/bd/material';
+import MaterialSelectDialog from '@/components/MaterialSelectDialog';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
+const { spc_chart_type, mes_enable_status, dc_collection_point_type } = toRefs<any>(
+  proxy?.useDict('spc_chart_type', 'mes_enable_status', 'dc_collection_point_type')
+);
 
 const dataList = ref<SpcControlChartVO[]>([]);
 const loading = ref(true);
@@ -188,6 +268,24 @@ const queryParams = ref<SpcControlChartQuery>({
 
 const dialog = reactive({ visible: false });
 const form = ref<SpcControlChartForm>({} as SpcControlChartForm);
+// 选择器展示字段(后端 BO 忽略)
+const pointCodeDisplay = ref('');
+const materialCodeDisplay = ref('');
+const processCodeDisplay = ref('');
+const materialSelectRef = ref<InstanceType<typeof MaterialSelectDialog>>();
+
+const pointDialog = reactive({
+  visible: false,
+  list: [] as any[],
+  total: 0,
+  query: { pageNum: 1, pageSize: 10, pointCode: '' as string }
+});
+const processDialog = reactive({
+  visible: false,
+  list: [] as any[],
+  total: 0,
+  query: { pageNum: 1, pageSize: 10, processCode: '' as string, processName: '' as string }
+});
 
 const analyzeDialog = reactive({ visible: false });
 const analyzeLoading = ref(false);
@@ -228,6 +326,9 @@ const resetForm = () => {
     status: 'ACTIVE',
     remark: ''
   };
+  pointCodeDisplay.value = '';
+  materialCodeDisplay.value = '';
+  processCodeDisplay.value = '';
 };
 
 const handleOpenAdd = () => {
@@ -238,6 +339,15 @@ const handleOpenAdd = () => {
 const handleOpenEdit = async (row: SpcControlChartVO) => {
   const res = await getControlChart(row.chartId);
   form.value = { ...res.data };
+  // 回填展示字段(VO 不带 pointCode/materialCode/processCode, 按 ID 反查)
+  const [pointRes, materialRes, processRes] = await Promise.all([
+    form.value.pointId ? getCollectionPoint(form.value.pointId).catch(() => null) : Promise.resolve(null),
+    form.value.materialId ? getMaterial(form.value.materialId).catch(() => null) : Promise.resolve(null),
+    form.value.processId ? getProcess(form.value.processId).catch(() => null) : Promise.resolve(null)
+  ]);
+  pointCodeDisplay.value = (pointRes as any)?.data?.pointCode || '';
+  materialCodeDisplay.value = (materialRes as any)?.data?.materialCode || '';
+  processCodeDisplay.value = (processRes as any)?.data?.processCode || '';
   dialog.visible = true;
 };
 
@@ -348,8 +458,56 @@ const renderChart = () => {
 
 const handleResize = () => chartInstance?.resize();
 
-const typeLabel = (t?: string) =>
-  ({ X_BAR_R: '均值-极差(X̄-R)', X_BAR_S: '均值-标准差(X̄-S)', P: '不良率(P)', C: '缺陷数(C)', U: '单位缺陷数(U)' })[t || ''] || t || '-';
+// ============ 采集点选择 ============
+const openPointSelect = () => {
+  pointDialog.visible = true;
+  queryPoints();
+};
+const queryPoints = () => {
+  listCollectionPoint(pointDialog.query as any).then((res: any) => {
+    pointDialog.list = res.rows || [];
+    pointDialog.total = res.total || 0;
+  });
+};
+const resetPointQuery = () => {
+  pointDialog.query = { pageNum: 1, pageSize: 10, pointCode: '' };
+  queryPoints();
+};
+const selectPoint = (row: any) => {
+  form.value.pointId = row.pointId;
+  pointCodeDisplay.value = row.pointCode;
+  pointDialog.visible = false;
+};
+
+// ============ 工序选择 ============
+const openProcessSelect = () => {
+  processDialog.visible = true;
+  queryProcesses();
+};
+const queryProcesses = () => {
+  listProcess(processDialog.query as any).then((res: any) => {
+    processDialog.list = res.rows || [];
+    processDialog.total = res.total || 0;
+  });
+};
+const resetProcessQuery = () => {
+  processDialog.query = { pageNum: 1, pageSize: 10, processCode: '', processName: '' };
+  queryProcesses();
+};
+const selectProcess = (row: any) => {
+  form.value.processId = row.processId;
+  processCodeDisplay.value = row.processCode;
+  processDialog.visible = false;
+};
+
+// ============ 物料选择 ============
+const openMaterialSelect = () => {
+  materialSelectRef.value?.open();
+};
+const handleMaterialSelect = (row: any) => {
+  form.value.materialId = row.materialId;
+  materialCodeDisplay.value = row.materialCode;
+};
 
 onMounted(() => {
   getList();
@@ -361,4 +519,3 @@ onUnmounted(() => {
   chartInstance?.dispose();
 });
 </script>
-

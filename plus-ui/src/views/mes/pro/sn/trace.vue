@@ -14,7 +14,7 @@
         <el-descriptions-item label="SN编码">{{ sn.snCode }}</el-descriptions-item>
         <el-descriptions-item label="物料">{{ sn.materialCode }} {{ sn.materialName }}</el-descriptions-item>
         <el-descriptions-item label="状态">
-          <el-tag :type="statusTagType(sn.snStatus)">{{ statusLabel(sn.snStatus) }}</el-tag>
+          <dict-tag :options="mes_sn_status" :value="sn.snStatus" />
         </el-descriptions-item>
         <el-descriptions-item label="工单编号">{{ sn.woNo || '-' }}</el-descriptions-item>
         <el-descriptions-item label="流转卡编号">{{ sn.cardNo || '-' }}</el-descriptions-item>
@@ -35,7 +35,7 @@
           <el-tree :data="forwardTree" :props="treeProps" default-expand-all :expand-on-click-node="true">
             <template #default="{ node, data }">
               <span>
-                <el-tag v-if="data.nodeType === 'sn'" :type="statusTagType(data.snStatus)" size="small">{{ node.label }}</el-tag>
+                <span v-if="data.nodeType === 'sn'">{{ node.label }} <dict-tag :options="mes_sn_status" :value="data.snStatus" size="small" /></span>
                 <el-tag v-else-if="data.nodeType === 'step'" type="primary" size="small">{{ node.label }}</el-tag>
                 <el-tag v-else-if="data.nodeType === 'childGroup'" type="warning" size="small">{{ node.label }}</el-tag>
                 <span v-else>{{ node.label }}</span>
@@ -55,7 +55,7 @@
           <el-tree v-else :data="backwardTree" :props="treeProps" default-expand-all>
             <template #default="{ node, data }">
               <span>
-                <el-tag :type="statusTagType(data.snStatus)" size="small">{{ node.label }}</el-tag>
+                <span>{{ node.label }} <dict-tag :options="mes_sn_status" :value="data.snStatus" size="small" /></span>
               </span>
             </template>
           </el-tree>
@@ -71,6 +71,8 @@ import type { ProSnVO, SnTraceResult, SnTraceStep } from '@/api/mes/pro/sn';
 
 const route = useRoute();
 const router = useRouter();
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
+const { mes_sn_status } = toRefs<any>(proxy?.useDict('mes_sn_status'));
 
 const loading = ref(true);
 const sn = ref<ProSnVO>({} as ProSnVO);
@@ -79,9 +81,6 @@ const children = ref<ProSnVO[]>([]);
 const parentChain = ref<ProSnVO[]>([]);
 
 const treeProps = { children: 'children', label: 'label' };
-
-const statusLabel = (s: string) => ({ IN_PRODUCTION: '生产中', COMPLETED: '已完成', SCRAPPED: '已报废', SHIPPED: '已发货' })[s] || s;
-const statusTagType = (s: string) => ({ IN_PRODUCTION: 'warning', COMPLETED: 'success', SCRAPPED: 'danger', SHIPPED: 'info' })[s] || 'info';
 
 const loadTrace = async () => {
   loading.value = true;

@@ -2,6 +2,8 @@ package com.nexus.mes.lt.domain.vo;
 
 import cn.idev.excel.annotation.ExcelIgnoreUnannotated;
 import cn.idev.excel.annotation.ExcelProperty;
+import com.nexus.common.translation.annotation.Translation;
+import com.nexus.common.translation.constant.TransConstant;
 import io.github.linpeilie.annotations.AutoMapper;
 import lombok.Data;
 import com.nexus.mes.lt.domain.LtSnBinding;
@@ -50,4 +52,14 @@ public class LtSnBindingVo implements Serializable {
 
     /** 绑定人ID */
     private Long boundBy;
+
+    /** 物料编码(富集自批次冗余字段, 非库列) */
+    private String materialCode;
+
+    /** 物料名称(富集自批次冗余字段, 非库列) */
+    private String materialName;
+
+    /** 绑定人账号(由 @Translation 按 boundBy 自动翻译, 非库列) */
+    @Translation(type = TransConstant.USER_ID_TO_NAME, mapper = "boundBy")
+    private String boundByName;
 }

@@ -28,12 +28,10 @@
         <el-table-column label="规格型号" prop="materialSpec" min-width="120" show-overflow-tooltip />
         <el-table-column label="物料类型" prop="materialType" />
         <el-table-column label="计量单位" prop="unitName" />
-        <!-- 技术债: 缺独立物料状态字典, 且本只读镜像 status 极性(0=正常)与 ERP 源页 sys_true_or_false(1=是=启用)相反, 暂保留硬编码 el-tag -->
+        <!-- 只读镜像 ERP 物料, status 0=正常/1=停用, 复用 RuoYi 内置 sys_normal_disable -->
         <el-table-column label="状态" prop="status" align="center">
           <template #default="scope">
-            <el-tag :type="scope.row.status === '0' ? 'success' : 'danger'">
-              {{ scope.row.status === '0' ? '正常' : '停用' }}
-            </el-tag>
+            <dict-tag :options="sys_normal_disable" :value="scope.row.status" />
           </template>
         </el-table-column>
       </el-table>
@@ -47,6 +45,7 @@
 import { listMaterial } from '@/api/erp/bd/material/index';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
+const { sys_normal_disable } = toRefs<any>(proxy?.useDict('sys_normal_disable'));
 
 const dataList = ref<any[]>([]);
 const loading = ref(true);
@@ -85,4 +84,3 @@ onMounted(() => {
   getList();
 });
 </script>
-

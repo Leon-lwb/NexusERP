@@ -17,12 +17,7 @@
           <el-col :span="6">
             <el-form-item label="状态" prop="woStatus">
               <el-select v-model="queryParams.woStatus" placeholder="请选择状态" clearable style="width: 100%">
-                <el-option label="新建" value="CREATED" />
-                <el-option label="审批中" value="APPROVING" />
-                <el-option label="已下达" value="RELEASED" />
-                <el-option label="生产中" value="IN_PROGRESS" />
-                <el-option label="已完工" value="COMPLETED" />
-                <el-option label="已取消" value="CANCELLED" />
+                <el-option v-for="dict in prd_wo_status" :key="dict.value" :label="dict.label" :value="dict.value" />
               </el-select>
             </el-form-item>
           </el-col>
@@ -59,7 +54,7 @@
         <el-table-column label="计划开工" prop="planStartDate" />
         <el-table-column label="状态" prop="woStatus" align="center">
           <template #default="scope">
-            <el-tag :type="statusTagType(scope.row.woStatus)">{{ statusLabel(scope.row.woStatus) }}</el-tag>
+            <dict-tag :options="prd_wo_status" :value="scope.row.woStatus" />
           </template>
         </el-table-column>
         <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
@@ -94,11 +89,11 @@
 </template>
 
 <script setup lang="ts" name="MesWorkOrder">
-// 技术债: 缺 mes_work_order_status 字典, 工单状态暂用硬编码 el-tag + 本地 map(statusLabel/statusTagType), 待补字典后改 dict-tag
 import { listWorkOrder, delWorkOrder, releaseWorkOrder } from '@/api/mes/pro/workorder';
 import type { ProWorkOrderVO, ProWorkOrderQuery } from '@/api/mes/pro/types';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
+const { prd_wo_status } = toRefs<any>(proxy?.useDict('prd_wo_status'));
 const router = useRouter();
 
 const workOrderList = ref<ProWorkOrderVO[]>([]);
@@ -168,32 +163,7 @@ const handleDelete = async () => {
   getList();
 };
 
-const statusLabel = (status: string) => {
-  const map: Record<string, string> = {
-    CREATED: '新建',
-    APPROVING: '审批中',
-    RELEASED: '已下达',
-    IN_PROGRESS: '生产中',
-    COMPLETED: '已完工',
-    CANCELLED: '已取消'
-  };
-  return map[status] || status;
-};
-
-const statusTagType = (status: string) => {
-  const map: Record<string, string> = {
-    CREATED: 'info',
-    APPROVING: 'warning',
-    RELEASED: 'success',
-    IN_PROGRESS: 'warning',
-    COMPLETED: 'primary',
-    CANCELLED: 'danger'
-  };
-  return map[status] || 'info';
-};
-
 onActivated(() => {
   getList();
 });
 </script>
-

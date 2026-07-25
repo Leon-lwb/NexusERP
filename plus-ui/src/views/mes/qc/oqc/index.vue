@@ -11,9 +11,7 @@
           <el-col :span="6">
             <el-form-item label="状态" prop="status">
               <el-select v-model="queryParams.status" placeholder="请选择状态" clearable style="width: 100%">
-                <el-option label="待检验" value="PENDING" />
-                <el-option label="检验中" value="INSPECTING" />
-                <el-option label="已完成" value="COMPLETED" />
+                <el-option v-for="dict in mes_qc_status" :key="dict.value" :label="dict.label" :value="dict.value" />
               </el-select>
             </el-form-item>
           </el-col>
@@ -42,16 +40,14 @@
           <template #default="scope">{{ scope.row.materialName || '-' }}</template>
         </el-table-column>
         <el-table-column label="检验数量" prop="quantity" align="right" />
-        <!-- 技术债:状态暂无对应字典,使用硬编码 el-tag,待补字典后改 dict-tag -->
         <el-table-column label="状态" prop="status" align="center">
           <template #default="scope">
-            <el-tag :type="statusTagType(scope.row.status)">{{ statusLabel(scope.row.status) }}</el-tag>
+            <dict-tag :options="mes_qc_status" :value="scope.row.status" />
           </template>
         </el-table-column>
-        <!-- 技术债:检验结果暂无对应字典,使用硬编码 el-tag,待补字典后改 dict-tag -->
         <el-table-column label="检验结果" prop="inspectResult" align="center">
           <template #default="scope">
-            <el-tag :type="resultTagType(scope.row.inspectResult)">{{ resultLabel(scope.row.inspectResult) }}</el-tag>
+            <dict-tag :options="mes_qc_result" :value="scope.row.inspectResult" />
           </template>
         </el-table-column>
         <el-table-column label="检验员" prop="inspectorName">
@@ -81,17 +77,19 @@
     <!-- 新增OQC对话框 -->
     <el-dialog v-model="addDialog.visible" title="新增OQC检验单" width="560px" append-to-body>
       <el-form :model="addForm" label-width="100px">
-        <el-form-item label="销售订单ID">
-          <el-input v-model.number="addForm.soId" placeholder="可选, ERP销售订单ID" clearable />
+        <el-form-item label="销售订单">
+          <el-input v-model="addSoNo" placeholder="可选, 选择ERP销售订单" readonly clearable @clear="addForm.soId = undefined">
+            <template #append>
+              <el-button icon="Search" @click="openSoSelect" />
+            </template>
+          </el-input>
         </el-form-item>
-        <el-form-item label="物料ID" required>
-          <el-input v-model.number="addForm.materialId" placeholder="物料ID" clearable />
-        </el-form-item>
-        <el-form-item label="物料编码">
-          <el-input v-model="addForm.materialCode" placeholder="物料编码(冗余)" clearable />
-        </el-form-item>
-        <el-form-item label="物料名称">
-          <el-input v-model="addForm.materialName" placeholder="物料名称(冗余)" clearable />
+        <el-form-item label="物料" required>
+          <el-input v-model="addForm.materialCode" placeholder="请选择物料" readonly>
+            <template #append>
+              <el-button icon="Search" @click="openMaterialSelect" />
+            </template>
+          </el-input>
         </el-form-item>
         <el-form-item label="检验数量">
           <el-input-number v-model="addForm.quantity" :min="0" :precision="4" controls-position="right" style="width: 100%" />
@@ -114,8 +112,7 @@
       <el-form :model="inspectForm" label-width="100px">
         <el-form-item label="检验结果" required>
           <el-radio-group v-model="inspectForm.inspectResult">
-            <el-radio value="QUALIFIED">合格</el-radio>
-            <el-radio value="UNQUALIFIED">不合格</el-radio>
+            <el-radio v-for="dict in inspectResultOptions" :key="dict.value" :value="dict.value">{{ dict.label }}</el-radio>
           </el-radio-group>
         </el-form-item>
         <el-form-item label="抽样数量">
@@ -133,14 +130,53 @@
         <el-button type="primary" @click="submitInspect">确认检验</el-button>
       </template>
     </el-dialog>
+
+    <!-- 销售订单选择对话框 -->
+    <el-dialog v-model="soDialog.visible" title="选择销售订单" width="900px" append-to-body>
+      <el-form :model="soDialog.query" :inline="true">
+        <el-form-item label="订单编号">
+          <el-input v-model="soDialog.query.soNo" clearable @keyup.enter="queryOrders" />
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" icon="Search" @click="queryOrders">搜索</el-button>
+          <el-button icon="Refresh" @click="resetSoQuery">重置</el-button>
+        </el-form-item>
+      </el-form>
+      <el-table :data="soDialog.list" height="400" @row-dblclick="selectOrder">
+        <el-table-column label="订单编号" prop="soNo" min-width="160" />
+        <el-table-column label="客户参考号" prop="customerRefNo" min-width="140" show-overflow-tooltip>
+          <template #default="scope">{{ scope.row.customerRefNo || '-' }}</template>
+        </el-table-column>
+        <el-table-column label="操作" width="100" align="center">
+          <template #default="scope">
+            <el-button link type="primary" @click="selectOrder(scope.row)">选择</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+      <pagination
+        v-show="soDialog.total > 0"
+        :total="soDialog.total"
+        v-model:page="soDialog.query.pageNum"
+        v-model:limit="soDialog.query.pageSize"
+        @pagination="queryOrders"
+      />
+    </el-dialog>
+
+    <!-- 物料选择对话框 -->
+    <MaterialSelectDialog ref="materialSelectRef" title="选择物料" @select="handleMaterialSelect" />
   </div>
 </template>
 
 <script setup lang="ts" name="MesQcOqc">
 import { listOqc, addOqc, inspectOqc } from '@/api/mes/qc/oqc';
 import type { QcOqcVO, QcOqcQuery, QcOqcForm } from '@/api/mes/qc/oqc';
+import { listOrderheader } from '@/api/erp/so/orderheader';
+import MaterialSelectDialog from '@/components/MaterialSelectDialog';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
+const { mes_qc_status, mes_qc_result } = toRefs<any>(proxy?.useDict('mes_qc_status', 'mes_qc_result'));
+// 检验结果可选项(排除 PENDING, 检验动作只能判合格/不合格)
+const inspectResultOptions = computed(() => (mes_qc_result.value as any[]).filter((d) => d.value !== 'PENDING'));
 
 const dataList = ref<QcOqcVO[]>([]);
 const loading = ref(true);
@@ -163,6 +199,15 @@ const addForm = reactive<QcOqcForm>({
   quantity: undefined,
   sampleQty: undefined,
   remark: ''
+});
+// 选择器展示字段
+const addSoNo = ref('');
+const materialSelectRef = ref<InstanceType<typeof MaterialSelectDialog>>();
+const soDialog = reactive({
+  visible: false,
+  list: [] as any[],
+  total: 0,
+  query: { pageNum: 1, pageSize: 10, soNo: '' as string }
 });
 
 const inspectDialog = reactive({ visible: false });
@@ -206,12 +251,13 @@ const handleOpenAdd = () => {
     sampleQty: undefined,
     remark: ''
   });
+  addSoNo.value = '';
   addDialog.visible = true;
 };
 
 const submitAdd = async () => {
   if (!addForm.materialId) {
-    proxy?.$modal.msgWarning('请输入物料ID');
+    proxy?.$modal.msgWarning('请选择物料');
     return;
   }
   await addOqc(addForm);
@@ -237,13 +283,38 @@ const submitInspect = async () => {
   getList();
 };
 
-const statusLabel = (s: string) => ({ PENDING: '待检验', INSPECTING: '检验中', COMPLETED: '已完成' })[s] || s;
-const statusTagType = (s: string) => ({ PENDING: 'info', INSPECTING: 'warning', COMPLETED: 'success' })[s] || 'info';
-const resultLabel = (r: string) => ({ QUALIFIED: '合格', UNQUALIFIED: '不合格', PENDING: '待定' })[r] || r;
-const resultTagType = (r: string) => ({ QUALIFIED: 'success', UNQUALIFIED: 'danger', PENDING: 'info' })[r] || 'info';
+// ============ 销售订单选择 ============
+const openSoSelect = () => {
+  soDialog.visible = true;
+  queryOrders();
+};
+const queryOrders = () => {
+  listOrderheader(soDialog.query as any).then((res: any) => {
+    soDialog.list = res.rows || [];
+    soDialog.total = res.total || 0;
+  });
+};
+const resetSoQuery = () => {
+  soDialog.query = { pageNum: 1, pageSize: 10, soNo: '' };
+  queryOrders();
+};
+const selectOrder = (row: any) => {
+  addForm.soId = row.soId;
+  addSoNo.value = row.soNo;
+  soDialog.visible = false;
+};
+
+// ============ 物料选择 ============
+const openMaterialSelect = () => {
+  materialSelectRef.value?.open();
+};
+const handleMaterialSelect = (row: any) => {
+  addForm.materialId = row.materialId;
+  addForm.materialCode = row.materialCode;
+  addForm.materialName = row.materialName;
+};
 
 onMounted(() => {
   getList();
 });
 </script>
-

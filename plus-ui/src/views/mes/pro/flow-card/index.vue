@@ -11,11 +11,7 @@
           <el-col :span="6">
             <el-form-item label="状态" prop="cardStatus">
               <el-select v-model="queryParams.cardStatus" placeholder="请选择状态" clearable style="width: 100%">
-                <el-option label="新建" value="CREATED" />
-                <el-option label="已下达" value="RELEASED" />
-                <el-option label="生产中" value="IN_PROGRESS" />
-                <el-option label="已完工" value="COMPLETED" />
-                <el-option label="已关闭" value="CLOSED" />
+                <el-option v-for="dict in mes_flow_card_status" :key="dict.value" :label="dict.label" :value="dict.value" />
               </el-select>
             </el-form-item>
           </el-col>
@@ -30,8 +26,9 @@
 
       <el-alert v-if="woSummary" :closable="false" show-icon type="info" class="mb-2">
         <template #title>
-          工单 <b>{{ woSummary.woNo }}</b> 计划数量 <b>{{ woSummary.plannedQty }}</b>，已建流转卡计划数量
-          <b>{{ woSummary.usedQty }}</b>，剩余可建
+          工单 <b>{{ woSummary.woNo }}</b> 计划数量 <b>{{ woSummary.plannedQty }}</b
+          >，已建流转卡计划数量 <b>{{ woSummary.usedQty }}</b
+          >，剩余可建
           <b :style="{ color: woSummary.remainingQty <= 0 ? '#f56c6c' : '#67c23a' }">{{ woSummary.remainingQty }}</b>
         </template>
       </el-alert>
@@ -44,7 +41,7 @@
         <el-table-column label="完成数量" prop="completedQty" align="right" />
         <el-table-column label="状态" prop="cardStatus" align="center">
           <template #default="scope">
-            <el-tag :type="statusTagType(scope.row.cardStatus)">{{ statusLabel(scope.row.cardStatus) }}</el-tag>
+            <dict-tag :options="mes_flow_card_status" :value="scope.row.cardStatus" />
           </template>
         </el-table-column>
         <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
@@ -69,7 +66,6 @@
 </template>
 
 <script setup lang="ts" name="MesFlowCard">
-// 技术债: 缺 mes_flow_card_status 字典, 流转卡状态暂用硬编码 el-tag + 本地 map, 待补字典后改 dict-tag
 // 注: mesWoId 保留在 queryParams(供路由 query 预过滤), 但不暴露为搜索项(内部 ID)
 import { listFlowCard, listFlowCardByWoId, releaseFlowCard } from '@/api/mes/pro/flowcardApi';
 import type { ProFlowCardVO, ProFlowCardQuery } from '@/api/mes/pro/flowcard';
@@ -77,6 +73,7 @@ import { getWorkOrder } from '@/api/mes/pro/workorder';
 import { checkPermi } from '@/utils/permission';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
+const { mes_flow_card_status } = toRefs<any>(proxy?.useDict('mes_flow_card_status'));
 const router = useRouter();
 const route = useRoute();
 
@@ -163,27 +160,6 @@ const handleRelease = async (row: ProFlowCardVO) => {
   getList();
 };
 
-const statusLabel = (status: string) => {
-  const map: Record<string, string> = {
-    CREATED: '新建',
-    RELEASED: '已下达',
-    IN_PROGRESS: '生产中',
-    COMPLETED: '已完工',
-    CLOSED: '已关闭'
-  };
-  return map[status] || status;
-};
-const statusTagType = (status: string) => {
-  const map: Record<string, string> = {
-    CREATED: 'info',
-    RELEASED: 'success',
-    IN_PROGRESS: 'warning',
-    COMPLETED: 'primary',
-    CLOSED: 'info'
-  };
-  return map[status] || 'info';
-};
-
 onMounted(() => {
   if (route.query.mesWoId) {
     queryParams.value.mesWoId = route.query.mesWoId as any;
@@ -191,4 +167,3 @@ onMounted(() => {
   getList();
 });
 </script>
-

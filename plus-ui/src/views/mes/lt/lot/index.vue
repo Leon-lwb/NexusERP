@@ -11,20 +11,14 @@
           <el-col :span="6">
             <el-form-item label="状态" prop="status">
               <el-select v-model="queryParams.status" placeholder="请选择状态" clearable style="width: 100%">
-                <el-option label="在库" value="IN_STOCK" />
-                <el-option label="使用中" value="IN_USE" />
-                <el-option label="已消耗" value="CONSUMED" />
-                <el-option label="已隔离" value="QUARANTINED" />
-                <el-option label="已报废" value="SCRAPPED" />
+                <el-option v-for="dict in mes_lot_status" :key="dict.value" :label="dict.label" :value="dict.value" />
               </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="6">
             <el-form-item label="QC状态" prop="qcStatus">
               <el-select v-model="queryParams.qcStatus" placeholder="请选择QC状态" clearable style="width: 100%">
-                <el-option label="待检" value="PENDING" />
-                <el-option label="合格" value="PASS" />
-                <el-option label="不合格" value="FAIL" />
+                <el-option v-for="dict in mes_lot_qc_status" :key="dict.value" :label="dict.label" :value="dict.value" />
               </el-select>
             </el-form-item>
           </el-col>
@@ -74,12 +68,12 @@
         </el-table-column>
         <el-table-column label="状态" prop="status" align="center" width="90">
           <template #default="scope">
-            <el-tag :type="statusTagType(scope.row.status)">{{ statusLabel(scope.row.status) }}</el-tag>
+            <dict-tag :options="mes_lot_status" :value="scope.row.status" />
           </template>
         </el-table-column>
         <el-table-column label="QC" prop="qcStatus" align="center" width="80">
           <template #default="scope">
-            <el-tag :type="qcTagType(scope.row.qcStatus)" size="small">{{ qcLabel(scope.row.qcStatus) }}</el-tag>
+            <dict-tag :options="mes_lot_qc_status" :value="scope.row.qcStatus" size="small" />
           </template>
         </el-table-column>
         <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="280" :show-overflow-tooltip="false">
@@ -143,50 +137,59 @@
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="批次编码" prop="lotCode">
-              <el-input v-model="form.lotCode" placeholder="留空自动生成" />
+              <div style="display: flex; align-items: center; gap: 10px; width: 100%">
+                <el-input v-model="form.lotCode" :disabled="autoGenFlag" placeholder="留空自动生成" style="flex: 1" />
+                <el-switch v-model="autoGenFlag" active-text="生成" @change="handleAutoGenChange" />
+              </div>
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="物料ID" prop="materialId">
-              <el-input-number v-model="form.materialId" :min="1" controls-position="right" style="width: 100%" />
+            <el-form-item label="物料" prop="materialId">
+              <el-input v-model="form.materialCode" placeholder="请选择物料" readonly>
+                <template #append>
+                  <el-button icon="Search" @click="openMaterialSelect('form')" />
+                </template>
+              </el-input>
             </el-form-item>
           </el-col>
         </el-row>
         <el-row :gutter="20">
-          <el-col :span="12"
-            ><el-form-item label="物料编码"><el-input v-model="form.materialCode" placeholder="冗余字段" /></el-form-item
-          ></el-col>
-          <el-col :span="12"
-            ><el-form-item label="物料名称"><el-input v-model="form.materialName" placeholder="冗余字段" /></el-form-item
-          ></el-col>
+          <el-col :span="12">
+            <el-form-item label="物料名称">
+              <el-input v-model="form.materialName" placeholder="选择物料后自动带出" readonly />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="供应商">
+              <el-input v-model="form.supplierName" placeholder="请选择供应商" readonly>
+                <template #append>
+                  <el-button icon="Search" @click="openVendorDialog" />
+                </template>
+              </el-input>
+            </el-form-item>
+          </el-col>
         </el-row>
         <el-row :gutter="20">
-          <el-col :span="12"
-            ><el-form-item label="供应商ID"
-              ><el-input-number v-model="form.supplierId" :min="1" controls-position="right" style="width: 100%" /></el-form-item
-          ></el-col>
-          <el-col :span="12"
-            ><el-form-item label="供应商名称"><el-input v-model="form.supplierName" /></el-form-item
-          ></el-col>
+          <el-col :span="12">
+            <el-form-item label="供应商批次"><el-input v-model="form.supplierLot" /></el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="批次数量" prop="quantity">
+              <el-input-number v-model="form.quantity" :min="0" :precision="4" controls-position="right" style="width: 100%" />
+            </el-form-item>
+          </el-col>
         </el-row>
         <el-row :gutter="20">
-          <el-col :span="12"
-            ><el-form-item label="供应商批次"><el-input v-model="form.supplierLot" /></el-form-item
-          ></el-col>
-          <el-col :span="12"
-            ><el-form-item label="批次数量" prop="quantity"
-              ><el-input-number v-model="form.quantity" :min="0" :precision="4" controls-position="right" style="width: 100%" /></el-form-item
-          ></el-col>
-        </el-row>
-        <el-row :gutter="20">
-          <el-col :span="12"
-            ><el-form-item label="生产日期"
-              ><el-date-picker v-model="form.producedDate" type="date" value-format="YYYY-MM-DD" style="width: 100%" /></el-form-item
-          ></el-col>
-          <el-col :span="12"
-            ><el-form-item label="有效期"
-              ><el-date-picker v-model="form.expiryDate" type="date" value-format="YYYY-MM-DD" style="width: 100%" /></el-form-item
-          ></el-col>
+          <el-col :span="12">
+            <el-form-item label="生产日期">
+              <el-date-picker v-model="form.producedDate" type="date" value-format="YYYY-MM-DD" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="有效期">
+              <el-date-picker v-model="form.expiryDate" type="date" value-format="YYYY-MM-DD" style="width: 100%" />
+            </el-form-item>
+          </el-col>
         </el-row>
         <el-form-item label="备注"><el-input v-model="form.remark" type="textarea" :rows="2" /></el-form-item>
       </el-form>
@@ -199,8 +202,12 @@
     <!-- FEFO 推荐对话框 -->
     <el-dialog title="FEFO 批次推荐" v-model="fefoDialog.visible" width="720px" append-to-body>
       <el-form :inline="true" label-width="100px">
-        <el-form-item label="物料ID">
-          <el-input-number v-model="fefoDialog.materialId" :min="1" controls-position="right" />
+        <el-form-item label="物料">
+          <el-input v-model="fefoDialog.materialCode" placeholder="请选择物料" readonly style="width: 200px">
+            <template #append>
+              <el-button icon="Search" @click="openMaterialSelect('fefo')" />
+            </template>
+          </el-input>
         </el-form-item>
         <el-form-item label="需求数量">
           <el-input-number v-model="fefoDialog.requiredQty" :min="0" :precision="4" controls-position="right" />
@@ -231,13 +238,15 @@
         <el-descriptions :column="3" border title="批次信息">
           <el-descriptions-item label="批次编码">{{ traceDialog.data.lot?.lotCode }}</el-descriptions-item>
           <el-descriptions-item label="物料">{{ traceDialog.data.lot?.materialCode }} {{ traceDialog.data.lot?.materialName }}</el-descriptions-item>
-          <el-descriptions-item label="状态">{{ statusLabel(traceDialog.data.lot?.status) }}</el-descriptions-item>
+          <el-descriptions-item label="状态"><dict-tag :options="mes_lot_status" :value="traceDialog.data.lot?.status" /></el-descriptions-item>
           <el-descriptions-item label="批次数量">{{ traceDialog.data.lot?.quantity }}</el-descriptions-item>
           <el-descriptions-item label="已消耗">{{ traceDialog.data.lot?.consumedQty }}</el-descriptions-item>
           <el-descriptions-item label="剩余">{{ traceDialog.data.lot?.remainingQty }}</el-descriptions-item>
           <el-descriptions-item label="生产日期">{{ traceDialog.data.lot?.producedDate }}</el-descriptions-item>
           <el-descriptions-item label="有效期">{{ traceDialog.data.lot?.expiryDate }}</el-descriptions-item>
-          <el-descriptions-item label="QC状态">{{ qcLabel(traceDialog.data.lot?.qcStatus) }}</el-descriptions-item>
+          <el-descriptions-item label="QC状态"
+            ><dict-tag :options="mes_lot_qc_status" :value="traceDialog.data.lot?.qcStatus"
+          /></el-descriptions-item>
         </el-descriptions>
 
         <el-tabs v-model="traceDialog.activeTab" class="mt8">
@@ -260,6 +269,43 @@
         </el-tabs>
       </div>
     </el-dialog>
+
+    <!-- 物料选择对话框 -->
+    <MaterialSelectDialog ref="materialSelectRef" title="选择物料" @select="handleMaterialSelect" />
+
+    <!-- 供应商选择对话框 -->
+    <el-dialog v-model="vendorDialog.visible" title="选择供应商" width="900px" append-to-body>
+      <el-form :model="vendorDialog.query" :inline="true">
+        <el-form-item label="供应商编码">
+          <el-input v-model="vendorDialog.query.vendorCode" clearable @keyup.enter="queryVendors" />
+        </el-form-item>
+        <el-form-item label="供应商名称">
+          <el-input v-model="vendorDialog.query.vendorName" clearable @keyup.enter="queryVendors" />
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" icon="Search" @click="queryVendors">搜索</el-button>
+          <el-button icon="Refresh" @click="resetVendorQuery">重置</el-button>
+        </el-form-item>
+      </el-form>
+      <el-table :data="vendorDialog.list" height="400" @row-dblclick="selectVendor">
+        <el-table-column label="供应商编码" prop="vendorCode" width="160" />
+        <el-table-column label="供应商名称" prop="vendorName" min-width="180" show-overflow-tooltip />
+        <el-table-column label="联系人" prop="contactPerson" width="120" />
+        <el-table-column label="电话" prop="phone" width="140" />
+        <el-table-column label="操作" width="100" align="center">
+          <template #default="scope">
+            <el-button link type="primary" @click="selectVendor(scope.row)">选择</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+      <pagination
+        v-show="vendorDialog.total > 0"
+        :total="vendorDialog.total"
+        v-model:page="vendorDialog.query.pageNum"
+        v-model:limit="vendorDialog.query.pageSize"
+        @pagination="queryVendors"
+      />
+    </el-dialog>
   </div>
 </template>
 
@@ -278,8 +324,12 @@ import {
   traceLot
 } from '@/api/mes/lt/lot';
 import type { LtLotVO, LtLotForm, LtLotQuery, LtLotTraceResult } from '@/api/mes/lt/lot';
+import { previewCode } from '@/api/system/autocode/rule';
+import { listVendor } from '@/api/erp/bd/vendor';
+import MaterialSelectDialog from '@/components/MaterialSelectDialog';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
+const { mes_lot_status, mes_lot_qc_status } = toRefs<any>(proxy?.useDict('mes_lot_status', 'mes_lot_qc_status'));
 const dataList = ref<LtLotVO[]>([]);
 const total = ref(0);
 const loading = ref(true);
@@ -292,12 +342,27 @@ const dialog = reactive({ visible: false, title: '' });
 const fefoDialog = reactive({
   visible: false,
   materialId: undefined as number | undefined,
+  materialCode: '' as string,
   requiredQty: undefined as number | undefined,
   list: [] as LtLotVO[],
   loading: false
 });
 const traceDialog = reactive({ visible: false, data: null as LtLotTraceResult | null, activeTab: 'consumptions' });
 const form = reactive<LtLotForm>({ materialId: 0, quantity: 0 } as LtLotForm);
+const autoGenFlag = ref(false);
+const materialSelectRef = ref<InstanceType<typeof MaterialSelectDialog>>();
+const materialSelectTarget = ref<'form' | 'fefo'>('form');
+const vendorDialog = reactive({
+  visible: false,
+  list: [] as any[],
+  total: 0,
+  query: {
+    pageNum: 1,
+    pageSize: 10,
+    vendorCode: '' as string,
+    vendorName: '' as string
+  }
+});
 
 const rules: ElFormRules = {
   materialId: [{ required: true, message: '物料ID不能为空', trigger: 'blur' }],
@@ -328,6 +393,7 @@ const handleSelectionChange = (selection: LtLotVO[]) => {
 };
 
 const resetForm = () => {
+  autoGenFlag.value = false;
   Object.assign(form, {
     lotId: undefined,
     lotCode: '',
@@ -361,6 +427,10 @@ const handleEdit = async (row: LtLotVO) => {
 const submitForm = () => {
   lotFormRef.value?.validate(async (valid) => {
     if (!valid) return;
+    // 自动生成开关打开时清空编码，由后端 genSerialCode 落库生成(避免预览占号)
+    if (!form.lotId && autoGenFlag.value) {
+      form.lotCode = undefined;
+    }
     if (form.lotId) {
       await updateLot(form);
       proxy!.$modal.msgSuccess('修改成功');
@@ -407,10 +477,13 @@ const handleCommand = async (cmd: string, row: LtLotVO) => {
 const handleFefo = () => {
   fefoDialog.visible = true;
   fefoDialog.list = [];
+  fefoDialog.materialId = undefined;
+  fefoDialog.materialCode = '';
+  fefoDialog.requiredQty = undefined;
 };
 const loadFefo = async () => {
   if (!fefoDialog.materialId) {
-    proxy!.$modal.msgWarning('请输入物料ID');
+    proxy!.$modal.msgWarning('请选择物料');
     return;
   }
   fefoDialog.loading = true;
@@ -430,18 +503,63 @@ const handleTrace = async (row: LtLotVO) => {
   traceDialog.visible = true;
 };
 
-const statusLabel = (s?: string) =>
-  ({ IN_STOCK: '在库', IN_USE: '使用中', CONSUMED: '已消耗', QUARANTINED: '已隔离', SCRAPPED: '已报废' })[s || ''] || s;
-const statusTagType = (s?: string): any =>
-  ({ IN_STOCK: 'success', IN_USE: 'primary', CONSUMED: 'info', QUARANTINED: 'warning', SCRAPPED: 'danger' })[s || ''] || 'info';
-const qcLabel = (s?: string) => ({ PENDING: '待检', PASS: '合格', FAIL: '不合格' })[s || ''] || s;
-const qcTagType = (s?: string): any => ({ PENDING: 'info', PASS: 'success', FAIL: 'danger' })[s || ''] || 'info';
 const canEdit = (s: string) => ['IN_STOCK', 'IN_USE'].includes(s);
 const canQuarantine = (s: string) => ['IN_STOCK', 'IN_USE'].includes(s);
 const isExpiringSoon = (expiryDate?: string) => {
   if (!expiryDate) return false;
   const days = (new Date(expiryDate).getTime() - Date.now()) / 86400000;
   return days <= 30 && days >= 0;
+};
+
+// 编码自动生成开关: ON 走 preview 预览(不消耗流水号), 提交时清空由后端 genSerialCode 落库
+const handleAutoGenChange = (val: boolean) => {
+  if (val) {
+    previewCode('MES_LOT_CODE').then((response) => {
+      form.lotCode = response as unknown as string;
+    });
+  } else {
+    form.lotCode = '';
+  }
+};
+
+const openMaterialSelect = (target: 'form' | 'fefo') => {
+  materialSelectTarget.value = target;
+  materialSelectRef.value?.open();
+};
+
+const handleMaterialSelect = (row: any) => {
+  if (materialSelectTarget.value === 'fefo') {
+    fefoDialog.materialId = row.materialId;
+    fefoDialog.materialCode = row.materialCode;
+  } else {
+    form.materialId = row.materialId;
+    form.materialCode = row.materialCode;
+    form.materialName = row.materialName;
+    lotFormRef.value?.validateField('materialId');
+  }
+};
+
+const openVendorDialog = () => {
+  vendorDialog.visible = true;
+  queryVendors();
+};
+
+const queryVendors = () => {
+  listVendor(vendorDialog.query as any).then((res: any) => {
+    vendorDialog.list = res.rows || [];
+    vendorDialog.total = res.total || 0;
+  });
+};
+
+const resetVendorQuery = () => {
+  vendorDialog.query = { pageNum: 1, pageSize: 10, vendorCode: '', vendorName: '' };
+  queryVendors();
+};
+
+const selectVendor = (row: any) => {
+  form.supplierId = row.vendorId;
+  form.supplierName = row.vendorName;
+  vendorDialog.visible = false;
 };
 
 onMounted(() => getList());

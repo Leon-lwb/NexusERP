@@ -30,10 +30,15 @@ export interface LtWoConsumptionQuery extends PageQuery {
 export interface LtWoConsumptionForm {
   consumptionId?: number;
   woId: number;
+  woNo?: string;
   lotId: number;
+  lotCode?: string;
   materialId: number;
+  materialCode?: string;
+  materialName?: string;
   consumedQty: number;
   operatorId?: number;
+  operatorName?: string;
   remark?: string;
 }
 

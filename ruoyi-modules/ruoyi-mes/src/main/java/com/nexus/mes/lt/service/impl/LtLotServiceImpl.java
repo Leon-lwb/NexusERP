@@ -17,14 +17,13 @@ import com.nexus.mes.lt.mapper.LtLotMapper;
 import com.nexus.mes.lt.mapper.LtSnBindingMapper;
 import com.nexus.mes.lt.mapper.LtWoConsumptionMapper;
 import com.nexus.mes.lt.service.ILtLotService;
+import com.nexus.system.strategy.AutoCodeUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -49,6 +48,7 @@ public class LtLotServiceImpl implements ILtLotService {
     private final LtLotMapper baseMapper;
     private final LtWoConsumptionMapper consumptionMapper;
     private final LtSnBindingMapper bindingMapper;
+    private final AutoCodeUtil autoCodeUtil;
 
     @Override
     public TableDataInfo<LtLotVo> selectPageList(LtLotBo bo, PageQuery pageQuery) {
@@ -78,7 +78,6 @@ public class LtLotServiceImpl implements ILtLotService {
         return vo;
     }
 
-    @Lock4j(keys = {"'lot:create'"})
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean insertByBo(LtLotBo bo) {
@@ -498,17 +497,13 @@ public class LtLotServiceImpl implements ILtLotService {
     // ==================== 私有辅助方法 ====================
 
     /**
-     * 生成批次编码: LOT-yyyyMMdd-NNN(顺序序号, 当日已存在数+1)
-     * <p>并发安全: insertByBo 上的 @Lock4j('lot:create') 串行化创建, uk_lot_code 兜底。
-     * 对齐 MES 兄弟模块 QcIqc.generateNo 的顺序模式(非随机,避免碰撞重试)。</p>
+     * 生成批次编码: 走系统自动编码规则 MES_LOT_CODE (LOT + yyyyMMdd + 3位日循环流水号)
+     * <p>对齐 ERP 全模块 (BdMaterial/PrdWorkOrder 等) 的 autoCodeUtil.genSerialCode 模式:
+     * synchronized + REQUIRES_NEW 落 sys_auto_code_result, 流水号日循环归零, uk_lot_code 兜底。
+     * 旧实现为本地 count(likeRight)+1, 无流水号持久化、与项目标准不一致, 已废弃。</p>
      */
     private String generateLotCode() {
-        String datePart = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
-        String prefix = "LOT-" + datePart + "-";
-        Long count = baseMapper.selectCount(Wrappers.<LtLot>lambdaQuery()
-            .likeRight(LtLot::getLotCode, prefix));
-        int seq = (count == null ? 0 : count.intValue()) + 1;
-        return prefix + String.format("%03d", seq);
+        return autoCodeUtil.genSerialCode("MES_LOT_CODE", null);
     }
 
     /**

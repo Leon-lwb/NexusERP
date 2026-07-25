@@ -23,10 +23,7 @@
           <el-col :span="6">
             <el-form-item label="状态" prop="dispatchStatus">
               <el-select v-model="queryParams.dispatchStatus" placeholder="请选择状态" clearable style="width: 100%">
-                <el-option label="待开工" value="PENDING" />
-                <el-option label="进行中" value="IN_PROGRESS" />
-                <el-option label="已完工" value="COMPLETED" />
-                <el-option label="已取消" value="CANCELLED" />
+                <el-option v-for="dict in mes_dispatch_status" :key="dict.value" :label="dict.label" :value="dict.value" />
               </el-select>
             </el-form-item>
           </el-col>
@@ -57,7 +54,7 @@
         <el-table-column label="已完成" prop="completedQty" align="right" />
         <el-table-column label="状态" prop="dispatchStatus" align="center">
           <template #default="scope">
-            <el-tag :type="statusTagType(scope.row.dispatchStatus)">{{ statusLabel(scope.row.dispatchStatus) }}</el-tag>
+            <dict-tag :options="mes_dispatch_status" :value="scope.row.dispatchStatus" />
           </template>
         </el-table-column>
         <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
@@ -102,7 +99,6 @@
 </template>
 
 <script setup lang="ts" name="MesDispatch">
-// 技术债: 缺 mes_dispatch_status 字典, 派工状态暂用硬编码 el-tag + 本地 map, 待补字典后改 dict-tag
 import { listDispatch, startDispatch, completeDispatch, cancelDispatch } from '@/api/mes/pro/dispatch';
 import type { ProDispatchVO, ProDispatchQuery } from '@/api/mes/pro/dispatch';
 import { listWorker } from '@/api/erp/sch/worker/index';
@@ -110,6 +106,7 @@ import type { WorkerVO } from '@/api/erp/sch/worker/types';
 import ScanExecute from './components/ScanExecute.vue';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
+const { mes_dispatch_status } = toRefs<any>(proxy?.useDict('mes_dispatch_status'));
 const router = useRouter();
 
 const dataList = ref<ProDispatchVO[]>([]);
@@ -183,25 +180,6 @@ const handleCancel = async (row: ProDispatchVO) => {
   getList();
 };
 
-const statusLabel = (status: string) => {
-  const map: Record<string, string> = {
-    PENDING: '待开工',
-    IN_PROGRESS: '进行中',
-    COMPLETED: '已完工',
-    CANCELLED: '已取消'
-  };
-  return map[status] || status;
-};
-const statusTagType = (status: string) => {
-  const map: Record<string, string> = {
-    PENDING: 'info',
-    IN_PROGRESS: 'warning',
-    COMPLETED: 'success',
-    CANCELLED: 'danger'
-  };
-  return map[status] || 'info';
-};
-
 onMounted(async () => {
   try {
     const res = await listWorker({ pageNum: 1, pageSize: 1000 });
@@ -212,4 +190,3 @@ onMounted(async () => {
   getList();
 });
 </script>
-

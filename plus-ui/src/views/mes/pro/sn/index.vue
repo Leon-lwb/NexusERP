@@ -11,10 +11,7 @@
           <el-col :span="6">
             <el-form-item label="状态" prop="snStatus">
               <el-select v-model="queryParams.snStatus" placeholder="请选择状态" clearable style="width: 100%">
-                <el-option label="生产中" value="IN_PRODUCTION" />
-                <el-option label="已完成" value="COMPLETED" />
-                <el-option label="已报废" value="SCRAPPED" />
-                <el-option label="已发货" value="SHIPPED" />
+                <el-option v-for="dict in mes_sn_status" :key="dict.value" :label="dict.label" :value="dict.value" />
               </el-select>
             </el-form-item>
           </el-col>
@@ -54,7 +51,7 @@
         <el-table-column label="生产日期" prop="productionDate" />
         <el-table-column label="状态" prop="snStatus" align="center">
           <template #default="scope">
-            <el-tag :type="statusTagType(scope.row.snStatus)">{{ statusLabel(scope.row.snStatus) }}</el-tag>
+            <dict-tag :options="mes_sn_status" :value="scope.row.snStatus" />
           </template>
         </el-table-column>
         <el-table-column label="来源" prop="source" align="center">
@@ -102,18 +99,21 @@
     </el-card>
 
     <!-- 批量生成对话框 -->
-    <el-dialog v-model="generateDialog.visible" title="批量生成SN" width="480px" append-to-body>
+    <el-dialog v-model="generateDialog.visible" title="批量生成SN" width="520px" append-to-body>
       <el-form :model="generateForm" label-width="100px">
-        <el-form-item label="流转卡ID" required>
-          <el-input v-model.number="generateForm.cardId" placeholder="请输入流转卡ID" clearable />
+        <el-form-item label="流转卡" required>
+          <el-input v-model="generateForm.cardNo" placeholder="请选择流转卡" readonly>
+            <template #append>
+              <el-button icon="Search" @click="openFlowCardSelect('generate')" />
+            </template>
+          </el-input>
         </el-form-item>
         <el-form-item label="生成数量" required>
           <el-input-number v-model="generateForm.quantity" :min="1" :max="9999" />
         </el-form-item>
         <el-form-item label="初始状态">
           <el-select v-model="generateForm.initialStatus" style="width: 100%">
-            <el-option label="生产中" value="IN_PRODUCTION" />
-            <el-option label="已完成" value="COMPLETED" />
+            <el-option v-for="dict in mes_sn_status" :key="dict.value" :label="dict.label" :value="dict.value" />
           </el-select>
         </el-form-item>
       </el-form>
@@ -124,22 +124,38 @@
     </el-dialog>
 
     <!-- 手动建SN对话框 -->
-    <el-dialog v-model="createDialog.visible" title="手动建SN" width="520px" append-to-body>
+    <el-dialog v-model="createDialog.visible" title="手动建SN" width="600px" append-to-body>
       <el-form :model="createForm" label-width="90px">
         <el-form-item label="SN编码" required>
           <el-input v-model="createForm.snCode" placeholder="请输入SN编码" clearable />
         </el-form-item>
-        <el-form-item label="物料ID" required>
-          <el-input v-model.number="createForm.materialId" placeholder="请输入物料ID" clearable />
+        <el-form-item label="物料" required>
+          <el-input v-model="createForm.materialCode" placeholder="请选择物料" readonly>
+            <template #append>
+              <el-button icon="Search" @click="openMaterialSelect" />
+            </template>
+          </el-input>
         </el-form-item>
-        <el-form-item label="工单ID">
-          <el-input v-model.number="createForm.mesWoId" placeholder="可选, 关联MES工单ID" clearable />
+        <el-form-item label="工单">
+          <el-input v-model="createForm.woNo" placeholder="可选,选择工单" readonly>
+            <template #append>
+              <el-button icon="Search" @click="openWoSelect" />
+            </template>
+          </el-input>
         </el-form-item>
-        <el-form-item label="流转卡ID">
-          <el-input v-model.number="createForm.cardId" placeholder="可选, 关联流转卡ID" clearable />
+        <el-form-item label="流转卡">
+          <el-input v-model="createForm.cardNo" placeholder="可选,选择流转卡" readonly>
+            <template #append>
+              <el-button icon="Search" @click="openFlowCardSelect('create')" />
+            </template>
+          </el-input>
         </el-form-item>
-        <el-form-item label="父SN ID">
-          <el-input v-model.number="createForm.parentSnId" placeholder="可选, 组装追溯父SN ID" clearable />
+        <el-form-item label="父SN">
+          <el-input v-model="createForm.parentSnCode" placeholder="可选,选择父SN" readonly>
+            <template #append>
+              <el-button icon="Search" @click="openSnSelect" />
+            </template>
+          </el-input>
         </el-form-item>
         <el-form-item label="备注">
           <el-input v-model="createForm.remark" type="textarea" :rows="2" placeholder="请输入备注" />
@@ -150,15 +166,126 @@
         <el-button type="primary" @click="submitCreate">确认创建</el-button>
       </template>
     </el-dialog>
+
+    <!-- 流转卡选择对话框 -->
+    <el-dialog v-model="flowCardDialog.visible" title="选择流转卡" width="950px" append-to-body>
+      <el-form :model="flowCardDialog.query" :inline="true">
+        <el-form-item label="流转卡号">
+          <el-input v-model="flowCardDialog.query.cardNo" clearable @keyup.enter="queryFlowCards" />
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" icon="Search" @click="queryFlowCards">搜索</el-button>
+          <el-button icon="Refresh" @click="resetFlowCardQuery">重置</el-button>
+        </el-form-item>
+      </el-form>
+      <el-table :data="flowCardDialog.list" height="400" @row-dblclick="selectFlowCard">
+        <el-table-column label="流转卡号" prop="cardNo" min-width="140" />
+        <el-table-column label="工单编号" prop="woNo" min-width="140" />
+        <el-table-column label="物料" min-width="160" show-overflow-tooltip>
+          <template #default="scope">{{ scope.row.materialCode }} {{ scope.row.materialName }}</template>
+        </el-table-column>
+        <el-table-column label="状态" prop="cardStatus" width="100" align="center" />
+        <el-table-column label="操作" width="100" align="center">
+          <template #default="scope">
+            <el-button link type="primary" @click="selectFlowCard(scope.row)">选择</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+      <pagination
+        v-show="flowCardDialog.total > 0"
+        :total="flowCardDialog.total"
+        v-model:page="flowCardDialog.query.pageNum"
+        v-model:limit="flowCardDialog.query.pageSize"
+        @pagination="queryFlowCards"
+      />
+    </el-dialog>
+
+    <!-- 工单选择对话框 -->
+    <el-dialog v-model="woDialog.visible" title="选择工单" width="950px" append-to-body>
+      <el-form :model="woDialog.query" :inline="true">
+        <el-form-item label="工单编号">
+          <el-input v-model="woDialog.query.woNo" clearable @keyup.enter="queryWorkOrders" />
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" icon="Search" @click="queryWorkOrders">搜索</el-button>
+          <el-button icon="Refresh" @click="resetWoQuery">重置</el-button>
+        </el-form-item>
+      </el-form>
+      <el-table :data="woDialog.list" height="400" @row-dblclick="selectWorkOrder">
+        <el-table-column label="工单编号" prop="woNo" min-width="160" />
+        <el-table-column label="物料" min-width="160" show-overflow-tooltip>
+          <template #default="scope">{{ scope.row.materialCode }} {{ scope.row.materialName }}</template>
+        </el-table-column>
+        <el-table-column label="状态" prop="woStatus" width="100" align="center">
+          <template #default="scope">
+            <dict-tag :options="prd_wo_status" :value="scope.row.woStatus" size="small" />
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="100" align="center">
+          <template #default="scope">
+            <el-button link type="primary" @click="selectWorkOrder(scope.row)">选择</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+      <pagination
+        v-show="woDialog.total > 0"
+        :total="woDialog.total"
+        v-model:page="woDialog.query.pageNum"
+        v-model:limit="woDialog.query.pageSize"
+        @pagination="queryWorkOrders"
+      />
+    </el-dialog>
+
+    <!-- 父SN选择对话框 -->
+    <el-dialog v-model="snDialog.visible" title="选择父SN" width="900px" append-to-body>
+      <el-form :model="snDialog.query" :inline="true">
+        <el-form-item label="SN编码">
+          <el-input v-model="snDialog.query.snCode" clearable @keyup.enter="querySns" />
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" icon="Search" @click="querySns">搜索</el-button>
+          <el-button icon="Refresh" @click="resetSnQuery">重置</el-button>
+        </el-form-item>
+      </el-form>
+      <el-table :data="snDialog.list" height="400" @row-dblclick="selectSn">
+        <el-table-column label="SN编码" prop="snCode" min-width="160" />
+        <el-table-column label="物料" min-width="160" show-overflow-tooltip>
+          <template #default="scope">{{ scope.row.materialCode }} {{ scope.row.materialName }}</template>
+        </el-table-column>
+        <el-table-column label="状态" prop="snStatus" width="100" align="center">
+          <template #default="scope">
+            <dict-tag :options="mes_sn_status" :value="scope.row.snStatus" size="small" />
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="100" align="center">
+          <template #default="scope">
+            <el-button link type="primary" @click="selectSn(scope.row)">选择</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+      <pagination
+        v-show="snDialog.total > 0"
+        :total="snDialog.total"
+        v-model:page="snDialog.query.pageNum"
+        v-model:limit="snDialog.query.pageSize"
+        @pagination="querySns"
+      />
+    </el-dialog>
+
+    <!-- 物料选择对话框 -->
+    <MaterialSelectDialog ref="materialSelectRef" title="选择物料" @select="handleMaterialSelect" />
   </div>
 </template>
 
 <script setup lang="ts" name="MesSn">
-// 技术债: 缺 mes_sn_status 字典, SN 状态暂用硬编码 el-tag + 本地 map, 待补字典后改 dict-tag
 import { listSn, generateSnForCard, createSn, completeSn, scrapSn, shipSn } from '@/api/mes/pro/sn';
 import type { ProSnVO, ProSnQuery } from '@/api/mes/pro/sn';
+import { listFlowCard } from '@/api/mes/pro/flowcardApi';
+import { listWorkOrder } from '@/api/mes/pro/workorder';
+import MaterialSelectDialog from '@/components/MaterialSelectDialog';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
+const { mes_sn_status, prd_wo_status } = toRefs<any>(proxy?.useDict('mes_sn_status', 'prd_wo_status'));
 const router = useRouter();
 
 const dataList = ref<ProSnVO[]>([]);
@@ -174,8 +301,9 @@ const queryParams = ref<ProSnQuery>({
 });
 
 const generateDialog = reactive({ visible: false });
-const generateForm = reactive<{ cardId?: number; quantity: number; initialStatus: string }>({
+const generateForm = reactive<{ cardId?: number; cardNo: string; quantity: number; initialStatus: string }>({
   cardId: undefined,
+  cardNo: '',
   quantity: 1,
   initialStatus: 'IN_PRODUCTION'
 });
@@ -184,17 +312,48 @@ const createDialog = reactive({ visible: false });
 const createForm = reactive<{
   snCode: string;
   materialId?: number;
+  materialCode: string;
+  materialName: string;
   mesWoId?: number;
+  woNo: string;
   cardId?: number;
+  cardNo: string;
   parentSnId?: number;
+  parentSnCode: string;
   remark?: string;
 }>({
   snCode: '',
   materialId: undefined,
+  materialCode: '',
+  materialName: '',
   mesWoId: undefined,
+  woNo: '',
   cardId: undefined,
+  cardNo: '',
   parentSnId: undefined,
+  parentSnCode: '',
   remark: ''
+});
+
+const materialSelectRef = ref<InstanceType<typeof MaterialSelectDialog>>();
+const flowCardSelectTarget = ref<'generate' | 'create'>('create');
+const flowCardDialog = reactive({
+  visible: false,
+  list: [] as any[],
+  total: 0,
+  query: { pageNum: 1, pageSize: 10, cardNo: '' as string }
+});
+const woDialog = reactive({
+  visible: false,
+  list: [] as any[],
+  total: 0,
+  query: { pageNum: 1, pageSize: 10, woNo: '' as string }
+});
+const snDialog = reactive({
+  visible: false,
+  list: [] as any[],
+  total: 0,
+  query: { pageNum: 1, pageSize: 10, snCode: '' as string }
 });
 
 const getList = async () => {
@@ -220,6 +379,7 @@ const resetQuery = () => {
 
 const handleOpenGenerate = () => {
   generateForm.cardId = undefined;
+  generateForm.cardNo = '';
   generateForm.quantity = 1;
   generateForm.initialStatus = 'IN_PRODUCTION';
   generateDialog.visible = true;
@@ -227,7 +387,7 @@ const handleOpenGenerate = () => {
 
 const submitGenerate = async () => {
   if (!generateForm.cardId) {
-    proxy?.$modal.msgWarning('请输入流转卡ID');
+    proxy?.$modal.msgWarning('请选择流转卡');
     return;
   }
   await generateSnForCard(generateForm.cardId, generateForm.quantity, generateForm.initialStatus);
@@ -237,12 +397,19 @@ const submitGenerate = async () => {
 };
 
 const handleOpenCreate = () => {
-  createForm.snCode = '';
-  createForm.materialId = undefined;
-  createForm.mesWoId = undefined;
-  createForm.cardId = undefined;
-  createForm.parentSnId = undefined;
-  createForm.remark = '';
+  Object.assign(createForm, {
+    snCode: '',
+    materialId: undefined,
+    materialCode: '',
+    materialName: '',
+    mesWoId: undefined,
+    woNo: '',
+    cardId: undefined,
+    cardNo: '',
+    parentSnId: undefined,
+    parentSnCode: '',
+    remark: ''
+  });
   createDialog.visible = true;
 };
 
@@ -252,7 +419,7 @@ const submitCreate = async () => {
     return;
   }
   if (!createForm.materialId) {
-    proxy?.$modal.msgWarning('请输入物料ID');
+    proxy?.$modal.msgWarning('请选择物料');
     return;
   }
   await createSn(createForm.mesWoId, createForm.cardId, createForm.materialId, createForm.snCode, createForm.parentSnId, createForm.remark);
@@ -286,11 +453,102 @@ const handleShip = async (row: ProSnVO) => {
   getList();
 };
 
-const statusLabel = (s: string) => ({ IN_PRODUCTION: '生产中', COMPLETED: '已完成', SCRAPPED: '已报废', SHIPPED: '已发货' })[s] || s;
-const statusTagType = (s: string) => ({ IN_PRODUCTION: 'warning', COMPLETED: 'success', SCRAPPED: 'danger', SHIPPED: 'info' })[s] || 'info';
+// ============ 流转卡选择 ============
+const openFlowCardSelect = (target: 'generate' | 'create') => {
+  flowCardSelectTarget.value = target;
+  flowCardDialog.visible = true;
+  queryFlowCards();
+};
+const queryFlowCards = () => {
+  listFlowCard(flowCardDialog.query as any).then((res: any) => {
+    flowCardDialog.list = res.rows || [];
+    flowCardDialog.total = res.total || 0;
+  });
+};
+const resetFlowCardQuery = () => {
+  flowCardDialog.query = { pageNum: 1, pageSize: 10, cardNo: '' };
+  queryFlowCards();
+};
+const selectFlowCard = (row: any) => {
+  if (flowCardSelectTarget.value === 'generate') {
+    generateForm.cardId = row.cardId;
+    generateForm.cardNo = row.cardNo;
+  } else {
+    createForm.cardId = row.cardId;
+    createForm.cardNo = row.cardNo;
+    // 顺带带出物料/工单(若空)
+    if (!createForm.materialId && row.materialId) {
+      createForm.materialId = row.materialId;
+      createForm.materialCode = row.materialCode;
+      createForm.materialName = row.materialName;
+    }
+    if (!createForm.mesWoId && row.mesWoId) {
+      createForm.mesWoId = row.mesWoId;
+      createForm.woNo = row.woNo;
+    }
+  }
+  flowCardDialog.visible = false;
+};
+
+// ============ 工单选择 ============
+const openWoSelect = () => {
+  woDialog.visible = true;
+  queryWorkOrders();
+};
+const queryWorkOrders = () => {
+  listWorkOrder(woDialog.query as any).then((res: any) => {
+    woDialog.list = res.rows || [];
+    woDialog.total = res.total || 0;
+  });
+};
+const resetWoQuery = () => {
+  woDialog.query = { pageNum: 1, pageSize: 10, woNo: '' };
+  queryWorkOrders();
+};
+const selectWorkOrder = (row: any) => {
+  createForm.mesWoId = row.mesWoId;
+  createForm.woNo = row.woNo;
+  // 顺带带出物料(若空)
+  if (!createForm.materialId && row.materialId) {
+    createForm.materialId = row.materialId;
+    createForm.materialCode = row.materialCode;
+    createForm.materialName = row.materialName;
+  }
+  woDialog.visible = false;
+};
+
+// ============ 父SN选择 ============
+const openSnSelect = () => {
+  snDialog.visible = true;
+  querySns();
+};
+const querySns = () => {
+  listSn(snDialog.query as any).then((res: any) => {
+    snDialog.list = res.rows || [];
+    snDialog.total = res.total || 0;
+  });
+};
+const resetSnQuery = () => {
+  snDialog.query = { pageNum: 1, pageSize: 10, snCode: '' };
+  querySns();
+};
+const selectSn = (row: any) => {
+  createForm.parentSnId = row.snId;
+  createForm.parentSnCode = row.snCode;
+  snDialog.visible = false;
+};
+
+// ============ 物料选择 ============
+const openMaterialSelect = () => {
+  materialSelectRef.value?.open();
+};
+const handleMaterialSelect = (row: any) => {
+  createForm.materialId = row.materialId;
+  createForm.materialCode = row.materialCode;
+  createForm.materialName = row.materialName;
+};
 
 onMounted(() => {
   getList();
 });
 </script>
-

@@ -16,16 +16,14 @@
           <el-col :span="6">
             <el-form-item label="类型" prop="pointType">
               <el-select v-model="queryParams.pointType" placeholder="请选择类型" clearable style="width: 100%">
-                <el-option label="手动" value="MANUAL" />
-                <el-option label="自动" value="AUTO" />
+                <el-option v-for="dict in dc_collection_point_type" :key="dict.value" :label="dict.label" :value="dict.value" />
               </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="6">
             <el-form-item label="状态" prop="status">
               <el-select v-model="queryParams.status" placeholder="请选择状态" clearable style="width: 100%">
-                <el-option label="启用" value="ACTIVE" />
-                <el-option label="停用" value="INACTIVE" />
+                <el-option v-for="dict in mes_enable_status" :key="dict.value" :label="dict.label" :value="dict.value" />
               </el-select>
             </el-form-item>
           </el-col>
@@ -48,14 +46,15 @@
       <el-table v-loading="loading" :data="dataList" show-overflow-tooltip>
         <el-table-column label="采集点编码" prop="pointCode" />
         <el-table-column label="采集点名称" prop="pointName" min-width="120" show-overflow-tooltip />
-        <!-- 技术债:类型暂无对应字典,使用硬编码 el-tag,待补字典后改 dict-tag -->
         <el-table-column label="类型" prop="pointType" align="center">
           <template #default="scope">
-            <el-tag :type="scope.row.pointType === 'AUTO' ? 'primary' : 'info'">{{ scope.row.pointType === 'AUTO' ? '自动' : '手动' }}</el-tag>
+            <dict-tag :options="dc_collection_point_type" :value="scope.row.pointType" />
           </template>
         </el-table-column>
-        <el-table-column label="数据类型" prop="dataType">
-          <template #default="scope">{{ scope.row.dataType || '-' }}</template>
+        <el-table-column label="数据类型" prop="dataType" align="center">
+          <template #default="scope">
+            <dict-tag :options="dc_data_type" :value="scope.row.dataType" />
+          </template>
         </el-table-column>
         <el-table-column label="单位" prop="unit">
           <template #default="scope">{{ scope.row.unit || '-' }}</template>
@@ -63,10 +62,9 @@
         <el-table-column label="频率(秒)" prop="frequency" align="right">
           <template #default="scope">{{ scope.row.frequency ?? '-' }}</template>
         </el-table-column>
-        <!-- 技术债:状态暂无对应字典,使用硬编码 el-tag,待补字典后改 dict-tag -->
         <el-table-column label="状态" prop="status" align="center">
           <template #default="scope">
-            <el-tag :type="scope.row.status === 'ACTIVE' ? 'success' : 'info'">{{ scope.row.status === 'ACTIVE' ? '启用' : '停用' }}</el-tag>
+            <dict-tag :options="mes_enable_status" :value="scope.row.status" />
           </template>
         </el-table-column>
         <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
@@ -91,15 +89,12 @@
         </el-form-item>
         <el-form-item label="采集点类型" required>
           <el-select v-model="form.pointType" placeholder="请选择类型" style="width: 100%">
-            <el-option label="手动" value="MANUAL" />
-            <el-option label="自动(预留)" value="AUTO" />
+            <el-option v-for="dict in dc_collection_point_type" :key="dict.value" :label="dict.label" :value="dict.value" />
           </el-select>
         </el-form-item>
         <el-form-item label="数据类型">
           <el-select v-model="form.dataType" placeholder="请选择数据类型" clearable style="width: 100%">
-            <el-option label="数值" value="NUMERIC" />
-            <el-option label="文本" value="TEXT" />
-            <el-option label="枚举" value="ENUM" />
+            <el-option v-for="dict in dc_data_type" :key="dict.value" :label="dict.label" :value="dict.value" />
           </el-select>
         </el-form-item>
         <el-form-item label="单位">
@@ -118,13 +113,16 @@
         <el-form-item label="关联设备">
           <equipment-select v-model="form.equipmentId" />
         </el-form-item>
-        <el-form-item label="关联工序ID">
-          <el-input v-model.number="form.processId" placeholder="可选, 工序ID" clearable />
+        <el-form-item label="关联工序">
+          <el-input v-model="processCodeDisplay" placeholder="可选, 选择工序" readonly clearable @clear="form.processId = undefined">
+            <template #append>
+              <el-button icon="Search" @click="openProcessSelect" />
+            </template>
+          </el-input>
         </el-form-item>
         <el-form-item label="状态">
           <el-select v-model="form.status" placeholder="状态" style="width: 100%">
-            <el-option label="启用" value="ACTIVE" />
-            <el-option label="停用" value="INACTIVE" />
+            <el-option v-for="dict in mes_enable_status" :key="dict.value" :label="dict.label" :value="dict.value" />
           </el-select>
         </el-form-item>
         <el-form-item label="备注">
@@ -135,6 +133,38 @@
         <el-button @click="dialog.visible = false">取消</el-button>
         <el-button type="primary" @click="submitForm">确认</el-button>
       </template>
+    </el-dialog>
+
+    <!-- 工序选择对话框 -->
+    <el-dialog v-model="processDialog.visible" title="选择工序" width="820px" append-to-body>
+      <el-form :model="processDialog.query" :inline="true">
+        <el-form-item label="工序编码">
+          <el-input v-model="processDialog.query.processCode" clearable @keyup.enter="queryProcesses" />
+        </el-form-item>
+        <el-form-item label="工序名称">
+          <el-input v-model="processDialog.query.processName" clearable @keyup.enter="queryProcesses" />
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" icon="Search" @click="queryProcesses">搜索</el-button>
+          <el-button icon="Refresh" @click="resetProcessQuery">重置</el-button>
+        </el-form-item>
+      </el-form>
+      <el-table :data="processDialog.list" height="400" @row-dblclick="selectProcess">
+        <el-table-column label="工序编码" prop="processCode" min-width="140" />
+        <el-table-column label="工序名称" prop="processName" min-width="160" />
+        <el-table-column label="操作" width="100" align="center">
+          <template #default="scope">
+            <el-button link type="primary" @click="selectProcess(scope.row)">选择</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+      <pagination
+        v-show="processDialog.total > 0"
+        :total="processDialog.total"
+        v-model:page="processDialog.query.pageNum"
+        v-model:limit="processDialog.query.pageSize"
+        @pagination="queryProcesses"
+      />
     </el-dialog>
   </div>
 </template>
@@ -148,9 +178,13 @@ import {
   delCollectionPoint
 } from '@/api/mes/dc/collection-point';
 import type { DcCollectionPointVO, DcCollectionPointQuery, DcCollectionPointForm } from '@/api/mes/dc/collection-point';
+import { listProcess, getProcess } from '@/api/erp/bd/process';
 import EquipmentSelect from '@/components/EquipmentSelect/index.vue';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
+const { dc_collection_point_type, dc_data_type, mes_enable_status } = toRefs<any>(
+  proxy?.useDict('dc_collection_point_type', 'dc_data_type', 'mes_enable_status')
+);
 
 const dataList = ref<DcCollectionPointVO[]>([]);
 const loading = ref(true);
@@ -168,6 +202,15 @@ const queryParams = ref<DcCollectionPointQuery>({
 
 const dialog = reactive({ visible: false });
 const form = ref<DcCollectionPointForm>({} as DcCollectionPointForm);
+// 工序展示字段(后端 BO 忽略)
+const processCodeDisplay = ref('');
+
+const processDialog = reactive({
+  visible: false,
+  list: [] as any[],
+  total: 0,
+  query: { pageNum: 1, pageSize: 10, processCode: '' as string, processName: '' as string }
+});
 
 const getList = async () => {
   loading.value = true;
@@ -204,6 +247,7 @@ const resetForm = () => {
     status: 'ACTIVE',
     remark: ''
   };
+  processCodeDisplay.value = '';
 };
 
 const handleOpenAdd = () => {
@@ -214,6 +258,17 @@ const handleOpenAdd = () => {
 const handleOpenEdit = async (row: DcCollectionPointVO) => {
   const res = await getCollectionPoint(row.pointId);
   form.value = { ...res.data };
+  // 回填工序编码(VO 不带 processCode, 按 processId 反查)
+  if (form.value.processId) {
+    try {
+      const pres = await getProcess(form.value.processId);
+      processCodeDisplay.value = pres.data?.processCode || '';
+    } catch {
+      processCodeDisplay.value = '';
+    }
+  } else {
+    processCodeDisplay.value = '';
+  }
   dialog.visible = true;
 };
 
@@ -240,8 +295,28 @@ const handleDelete = async (row: DcCollectionPointVO) => {
   getList();
 };
 
+// ============ 工序选择 ============
+const openProcessSelect = () => {
+  processDialog.visible = true;
+  queryProcesses();
+};
+const queryProcesses = () => {
+  listProcess(processDialog.query as any).then((res: any) => {
+    processDialog.list = res.rows || [];
+    processDialog.total = res.total || 0;
+  });
+};
+const resetProcessQuery = () => {
+  processDialog.query = { pageNum: 1, pageSize: 10, processCode: '', processName: '' };
+  queryProcesses();
+};
+const selectProcess = (row: any) => {
+  form.value.processId = row.processId;
+  processCodeDisplay.value = row.processCode;
+  processDialog.visible = false;
+};
+
 onMounted(() => {
   getList();
 });
 </script>
-

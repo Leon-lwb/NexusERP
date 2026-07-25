@@ -10,7 +10,7 @@
       <el-descriptions-item label="流转卡编号">{{ flowCard.cardNo }}</el-descriptions-item>
       <el-descriptions-item label="产品">{{ flowCard.materialName }}</el-descriptions-item>
       <el-descriptions-item label="状态">
-        <el-tag :type="statusTagType(flowCard.cardStatus)">{{ statusLabel(flowCard.cardStatus) }}</el-tag>
+        <dict-tag :options="mes_flow_card_status" :value="flowCard.cardStatus" />
       </el-descriptions-item>
       <el-descriptions-item label="当前工序">{{ currentStep?.processName }}</el-descriptions-item>
     </el-descriptions>
@@ -42,6 +42,7 @@ import { startStep, completeStep } from '@/api/mes/pro/flowcardApi';
 import type { ProFlowCardVO, ProFlowCardStepVO } from '@/api/mes/pro/flowcard';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
+const { mes_flow_card_status } = toRefs<any>(proxy?.useDict('mes_flow_card_status'));
 
 const visible = ref(false);
 const barcode = ref('');
@@ -93,27 +94,6 @@ const handleCompleteStep = async () => {
   await completeStep(flowCard.value.cardId, currentStep.value.stepRecordId, Number(goodQty), Number(defectQty || 0), Number(scrapQty || 0));
   proxy?.$modal.msgSuccess('完工成功');
   handleScan();
-};
-
-const statusLabel = (status: string) => {
-  const map: Record<string, string> = {
-    CREATED: '新建',
-    RELEASED: '已下达',
-    IN_PROGRESS: '生产中',
-    COMPLETED: '已完工',
-    CLOSED: '已关闭'
-  };
-  return map[status] || status;
-};
-const statusTagType = (status: string) => {
-  const map: Record<string, string> = {
-    CREATED: 'info',
-    RELEASED: 'success',
-    IN_PROGRESS: 'warning',
-    COMPLETED: 'primary',
-    CLOSED: 'info'
-  };
-  return map[status] || 'info';
 };
 
 defineExpose({

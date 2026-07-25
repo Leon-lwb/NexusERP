@@ -54,7 +54,7 @@
         <el-descriptions-item label="不良">{{ dispatch.defectQty }}</el-descriptions-item>
         <el-descriptions-item label="报废">{{ dispatch.scrapQty }}</el-descriptions-item>
         <el-descriptions-item label="状态">
-          <el-tag :type="statusTagType(dispatch.dispatchStatus)">{{ statusLabel(dispatch.dispatchStatus) }}</el-tag>
+          <dict-tag :options="mes_dispatch_status" :value="dispatch.dispatchStatus" />
         </el-descriptions-item>
         <el-descriptions-item label="计划开始">{{ dispatch.planStartTime }}</el-descriptions-item>
         <el-descriptions-item label="计划结束">{{ dispatch.planEndTime }}</el-descriptions-item>
@@ -71,6 +71,7 @@ import { getDispatch, startDispatch, completeDispatch, cancelDispatch } from '@/
 import type { ProDispatchVO } from '@/api/mes/pro/dispatch';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
+const { mes_dispatch_status } = toRefs<any>(proxy?.useDict('mes_dispatch_status'));
 const route = useRoute();
 const router = useRouter();
 
@@ -111,25 +112,6 @@ const handleCancel = async () => {
 
 const goBack = () => {
   router.push('/mes/pro/dispatch');
-};
-
-const statusLabel = (status: string) => {
-  const map: Record<string, string> = {
-    PENDING: '待开工',
-    IN_PROGRESS: '进行中',
-    COMPLETED: '已完工',
-    CANCELLED: '已取消'
-  };
-  return map[status] || status;
-};
-const statusTagType = (status: string) => {
-  const map: Record<string, string> = {
-    PENDING: 'info',
-    IN_PROGRESS: 'warning',
-    COMPLETED: 'success',
-    CANCELLED: 'danger'
-  };
-  return map[status] || 'info';
 };
 
 onMounted(() => {

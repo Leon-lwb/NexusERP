@@ -44,7 +44,7 @@
                   : '-'
             }}</el-descriptions-item>
             <el-descriptions-item label="状态">
-              <el-tag :type="statusTagType(workOrder.woStatus)">{{ statusLabel(workOrder.woStatus) }}</el-tag>
+              <dict-tag :options="prd_wo_status" :value="workOrder.woStatus" />
             </el-descriptions-item>
             <el-descriptions-item label="计划开工">{{ workOrder.planStartDate }}</el-descriptions-item>
             <el-descriptions-item label="计划完工">{{ workOrder.planEndDate }}</el-descriptions-item>
@@ -67,7 +67,7 @@
             <el-table-column label="计划数量" prop="plannedQty" width="100" align="right" />
             <el-table-column label="状态" prop="stepStatus" width="100" align="center">
               <template #default="scope">
-                <el-tag :type="stepStatusTagType(scope.row.stepStatus)">{{ stepStatusLabel(scope.row.stepStatus) }}</el-tag>
+                <dict-tag :options="mes_step_status" :value="scope.row.stepStatus" />
               </template>
             </el-table-column>
           </el-table>
@@ -127,6 +127,7 @@ import type { ProWorkOrderVO } from '@/api/mes/pro/types';
 import { checkPermi } from '@/utils/permission';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
+const { prd_wo_status, mes_step_status } = toRefs<any>(proxy?.useDict('prd_wo_status', 'mes_step_status'));
 const route = useRoute();
 const router = useRouter();
 
@@ -251,49 +252,6 @@ const handleCreateFlowCard = async () => {
 
 const goBack = () => {
   router.push('/mes/wo/workorder');
-};
-
-const statusLabel = (status: string) => {
-  const map: Record<string, string> = {
-    CREATED: '新建',
-    APPROVING: '审批中',
-    RELEASED: '已下达',
-    IN_PROGRESS: '生产中',
-    COMPLETED: '已完工',
-    CANCELLED: '已取消'
-  };
-  return map[status] || status;
-};
-const statusTagType = (status: string) => {
-  const map: Record<string, string> = {
-    CREATED: 'info',
-    APPROVING: 'warning',
-    RELEASED: 'success',
-    IN_PROGRESS: 'warning',
-    COMPLETED: 'primary',
-    CANCELLED: 'danger'
-  };
-  return map[status] || 'info';
-};
-const stepStatusLabel = (status: string) => {
-  const map: Record<string, string> = {
-    PENDING: '待开始',
-    READY: '就绪',
-    IN_PROGRESS: '进行中',
-    COMPLETED: '已完成',
-    SKIPPED: '已跳过'
-  };
-  return map[status] || status;
-};
-const stepStatusTagType = (status: string) => {
-  const map: Record<string, string> = {
-    PENDING: 'info',
-    READY: 'warning',
-    IN_PROGRESS: 'warning',
-    COMPLETED: 'success',
-    SKIPPED: 'info'
-  };
-  return map[status] || 'info';
 };
 
 /**
