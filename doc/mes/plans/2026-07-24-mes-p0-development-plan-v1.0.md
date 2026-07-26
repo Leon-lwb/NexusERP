@@ -102,7 +102,7 @@
 | P0-6 | 电子签名 + DHR 批记录 | `common` 扩展（合规基础设施） | 7.5 | 高 | MESA-4 文档控制（合规） |
 | P0-7 | 核心模块单元测试补齐 | `pro/qc/spc` 测试包 | 7.5 | 高 | 工程质量底线 |
 | P0-8 | IoT 自动采集打通 | `dc` 扩展 + `common` 桥接 | 7.5 | 高 | MESA-5 数据采集 |
-| P0-9 | 批次（Lot）管理 | `md` 扩展 + `pro` 扩展 | 5 | 高 | MESA-10 追溯与谱系 | ✅ 编码完成 |
+| P0-9 | 批次（Lot）管理 | `md` 扩展 + `pro` 扩展 | 5 | 高 | MESA-10 追溯与谱系 | ✅ 编码+整改+前端打磨完成（运行时待验证） |
 | **合计** | | | **60 人天** | | |
 
 ### 2.2 优先级矩阵
@@ -265,7 +265,7 @@ CREATE TABLE wm_line_side_stock (
 
 #### 3.2.3 数据库设计
 
-新增 5 张表（前缀 `tg_`）：
+新增 4 张表（前缀 `tg_`，原 `tg_checkout_record` 已并入 `tg_usage_record`——领用-归还即一次使用会话，字段重叠。详见 [P0-2 实施方案](./2026-07-26-mes-p0-2-tooling-management-implementation-plan.md) §1.3）：
 
 ```sql
 -- 工装台账
@@ -319,34 +319,26 @@ CREATE TABLE tg_maintenance_record (
     PRIMARY KEY (record_id), INDEX idx_tooling_id (tooling_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='工装保养记录';
 
--- 工装使用记录
+-- 工装使用/领用记录（合并原 tg_checkout_record：领用-归还即一次使用会话）
 CREATE TABLE tg_usage_record (
     usage_id         BIGINT NOT NULL,
     tenant_id        VARCHAR(20) NOT NULL DEFAULT '000000',
     tooling_id       BIGINT NOT NULL,
     wo_id            BIGINT,
+    wo_no            VARCHAR(64) COMMENT '工单编号(冗余)',
     workstation_id   BIGINT,
+    workstation_name VARCHAR(128) COMMENT '工位名称(冗余)',
     operator_id      BIGINT,
-    checkout_time    DATETIME NOT NULL,
-    return_time      DATETIME,
+    operator_name    VARCHAR(64) COMMENT '操作员姓名(冗余)',
+    checkout_time    DATETIME NOT NULL COMMENT '领用时间',
+    return_time      DATETIME COMMENT '归还时间',
     usage_count      INT DEFAULT 1,
     usage_hours      DECIMAL(14,2),
-    create_dept BIGINT, create_by BIGINT, create_time DATETIME, update_by BIGINT, update_time DATETIME, del_flag CHAR(1) DEFAULT '0',
-    PRIMARY KEY (usage_id), INDEX idx_tooling_id (tooling_id), INDEX idx_wo_id (wo_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='工装使用记录';
-
--- 工装领用归还
-CREATE TABLE tg_checkout_record (
-    checkout_id      BIGINT NOT NULL,
-    tenant_id        VARCHAR(20) NOT NULL DEFAULT '000000',
-    tooling_id       BIGINT NOT NULL,
-    operator_id      BIGINT NOT NULL,
-    checkout_time    DATETIME NOT NULL,
-    return_time      DATETIME,
     status           VARCHAR(16) DEFAULT 'OUT' COMMENT 'OUT/RETURNED',
     remark           VARCHAR(500),
-    PRIMARY KEY (checkout_id), INDEX idx_tooling_id (tooling_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='工装领用归还记录';
+    create_dept BIGINT, create_by BIGINT, create_time DATETIME, update_by BIGINT, update_time DATETIME, del_flag CHAR(1) DEFAULT '0',
+    PRIMARY KEY (usage_id), INDEX idx_tooling_id (tooling_id), INDEX idx_wo_id (wo_id), INDEX idx_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='工装使用领用记录';
 ```
 
 ### 3.3 P0-3 任务进站/出站 + 流程指引
@@ -708,7 +700,8 @@ CREATE TABLE dhr_record_entry (
 | spc/ | 0 | 2 | 80%（算法核心） | ≥12 |
 | eq/ | 3 | 5 | 60% | +6 |
 | common/ | 0 | 2 | 60% | ≥6 |
-| **合计** | 3 | 20 | **60%+** | **≥79** |
+| lt/ | 0 | 2 | 65% | ≥8 |
+| **合计** | 3 | 22 | **60%+** | **≥87** |
 
 #### 3.7.3 测试用例清单（核心）
 
@@ -728,6 +721,10 @@ CREATE TABLE dhr_record_entry (
 
 **qc 模块**：
 - `QcIqcServiceImplTest`、`QcIpqcServiceImplTest`、`QcOqcServiceImplTest`：CRUD + ERP MQ 回调
+
+**lt 模块（P0-9 新增，状态机+FEFO+事件）**：
+- `LtLotServiceImplTest`：状态机 5 态流转、FEFO 排序、consume 并发与超卖、applyIqcResult 钩子、checkLotUsable 契约
+- `LtWoConsumptionServiceImplTest`：confirmPick 多批次部分消耗、事务回滚
 
 #### 3.7.4 测试规范
 
@@ -794,8 +791,11 @@ ALTER TABLE eq_equipment
 
 ### 3.9 P0-9 批次（Lot）管理
 
-> **实施状态**: ✅ 编码完成（2026-07-24）。详见 [P0-9 实施方案](./2026-08-03-mes-p0-9-lot-management-implementation-plan.md)。
-> 后端 `mvn compile` 通过（39 class），3 表 DDL + 21 Java + 3 API + 3 页面 + 菜单 SQL 均已交付。待运行时验证（DDL 执行 + 菜单注入 + 端到端联调）。
+> **实施状态**: ✅ 编码 + 整改 + 前端打磨完成（2026-07-24 ~ 07-26），**运行时验证待闭合**。详见 [P0-9 实施方案](./2026-08-03-mes-p0-9-lot-management-implementation-plan.md) + [批次整改计划](./2026-07-25-mes-lot-remediation-plan.md)。
+> - 编码：3 表 DDL + 21 Java + 3 API + 3 页面 + 菜单 SQL，`mvn compile` 通过（39 class）
+> - 整改（07-25）：A1-A6 代码修复（编码顺序化+@Lock4j、数量/删除/放行守卫、SQL 4->2 整合）+ B1-B5 五链路（SN↔批次事件、工单 FEFO 领料、IQC->qc_status 钩子、NCR/进站契约）
+> - 前端打磨（07-25~07-26，9 批）：`plus-ui/src/views/mes` 全 38 页选择器化（无裸 ID 输入）+ dict-tag（无硬编码状态 map）+ 17 字典种子 + 批次编码 autoCode 规则
+> - **待办**：DDL 执行（ry-mes）+ 字典/菜单/autocode SQL 执行（ry-vue）+ 端到端联调 + 并入 `script/sql/ry-mes.sql` 规范库
 
 #### 3.9.1 需求描述
 
@@ -976,7 +976,9 @@ P0-6 电子签名 ─── 最后,被所有模块依赖
 
 #### Phase 4-A：基础设施 + 主数据类（Week 28-30，3.5 周）
 
-- **Week 28**（2026-08-03 ~ 08-09）：P0-7 单元测试补齐 + P0-9 批次管理（并行）
+> **进度注（2026-07-26）**：P0-9 已于 2026-07-24 ~ 07-26 提前完工（编码+整改+前端打磨），早于计划 08-03。运行时验证待闭合。Phase 4-A 实际已启动，P0-2 计划已就绪（[实施方案](./2026-07-26-mes-p0-2-tooling-management-implementation-plan.md)）。
+
+- **Week 28**（2026-08-03 ~ 08-09）：P0-7 单元测试补齐 + P0-9 批次管理（并行）- P0-9 ✅ 已完成，P0-7 待启动
 - **Week 29**（2026-08-10 ~ 08-16）：P0-2 工装/模治具管理
 - **Week 30 上半周**（2026-08-17 ~ 08-19）：P0-7 收尾 + 集成测试
 
@@ -1074,18 +1076,20 @@ P0-6 电子签名                                ███ ███
 
 ### 7.3 菜单 ID 段分配
 
-沿用既有约定（Week 17-29 已用至 4145+），新增分配：
+沿用既有约定（Week 17-29 + P0-9 已用至 4171），新增分配（2026-07-26 校正后）：
 
-| Phase | 模块 | 菜单 ID 段 | 父菜单 |
-|-------|------|----------|--------|
-| 4-A | P0-2 工装 | 4150-4165 | 4003 设备管理 |
-| 4-A | P0-9 批次 | 4166-4175 | 4006 主数据（新建） |
-| 4-B | P0-3 进站出站 | 4176-4180 | 4001 生产执行 |
-| 4-B | P0-1 物料拉动 | 4181-4195 | 4006 物料管理（新建） |
-| 4-B | P0-8 IoT 打通 | - | 扩展现有 4004 数据采集 |
-| 4-C | P0-4 NCR | 4196-4210 | 4002 质量管理 |
-| 4-C | P0-5 E-SOP | 4211-4220 | 4004 数据采集（或新建"文档管理"） |
-| 4-C | P0-6 电子签名 | 4221-4230 | 系统管理下 |
+| Phase | 模块 | 菜单 ID 段 | 父菜单 | 备注 |
+|-------|------|----------|--------|------|
+| 4-A | P0-9 批次 | 4006 + 4152-4171 | 4006 主数据（新建） | ✅ 已落地（原分配 4166-4175，实际偏移） |
+| 4-A | P0-2 工装 | 4205 + 4172-4195 | 4205 工装管理（新建 M 目录） | 原分配 4150-4165 被 P0-9 占用；4003 不存在，新建 4205 M 目录作父菜单 |
+| 4-B | P0-3 进站出站 | 4200-4215 | 4001 生产执行 | 原分配 4176-4180，后移 |
+| 4-B | P0-1 物料拉动 | 4216-4240 | 4006 物料管理（新建） | 原分配 4181-4195，后移 |
+| 4-B | P0-8 IoT 打通 | - | 扩展现有 4004 数据采集 | 不新增菜单 |
+| 4-C | P0-4 NCR | 4241-4260 | 4002 质量管理 | 原分配 4196-4210，后移 |
+| 4-C | P0-5 E-SOP | 4261-4280 | 文档管理（新建） | 原分配 4211-4220，后移 |
+| 4-C | P0-6 电子签名 | 4281-4300 | 系统管理下 | 原分配 4221-4230，后移 |
+
+> ⚠️ **校正说明（2026-07-26）**：P0-9 实际占用 `4006 + 4152-4171`，原 §7.3 的 P0-2 段 `4150-4165` 冲突。全 MES 菜单 max 已用 = 4171。本表为校正后映射，每模块预留 20-25 ID 余量避免再溢出。详见 [P0-2 实施方案 §七](./2026-07-26-mes-p0-2-tooling-management-implementation-plan.md)。
 
 ---
 
@@ -1335,6 +1339,7 @@ P0-6 电子签名                                ███ ███
 | 版本 | 日期 | 修订人 | 修订内容 |
 |------|------|--------|---------|
 | v1.0 | 2026-07-24 | AI Agent | 初始版本,基于 P0 对标分析创建 |
+| v1.1 | 2026-07-26 | AI Agent | 同步:P0-9 完工状态、P0-2 DDL 5->4 表合并、菜单 ID 段校正(4172+)、P0-7 范围补 lt、时间线 P0-9 提前 |
 
 ### 13.4 待评审开放问题
 
