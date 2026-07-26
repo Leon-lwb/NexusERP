@@ -8,7 +8,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite serve --mode development",
-    "build:prod": "vite build --mode production",
+    "build:prod": "node --max-old-space-size=8192 ./node_modules/vite/bin/vite.js build --mode production",
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
     "lint:eslint": "eslint",

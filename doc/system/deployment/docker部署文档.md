@@ -1,9 +1,9 @@
 # NexusERP Docker 双机部署方案
 
 > **服务器信息**
-> - 主服务器：`81.68.78.136`（2核2G）—— 部署 MySQL、Redis、RabbitMQ、MinIO、Nginx+前端、NexusServer
+> - 主服务器：`159.75.14.226`（4核4G）—— 部署 MySQL 5.7、Redis、RabbitMQ、MinIO、Nginx+前端、NexusServer
 > - 辅助服务器：`117.72.190.225`（2核2G）—— 部署 MonitorAdmin、SnailJobServer
-> - 域名：`nexuserp.website`
+> - 域名：`nexuserp.website`（已解析到 159.75.14.226）
 
 ---
 
@@ -32,12 +32,12 @@
 ```
 +---------------------------------------------------+
 |  用户浏览器                                        |
-|  域名: nexuserp.website / IP: 81.68.78.136        |
+|  域名: nexuserp.website / IP: 159.75.14.226        |
 +---------------------------------------------------+
                       |
                       v
 +---------------------------------------------------+
-|  主服务器  81.68.78.136 (2C2G)                     |
+|  主服务器  159.75.14.226 (4C4G)                     |
 |  +---------------------------------------------+  |
 |  | Nginx:80 (前端 + 反向代理)                   |  |
 |  |   /prod-api/   -> NexusServer:8080          |  |
@@ -45,23 +45,25 @@
 |  |   /snail-job/  -> SnailJob:8800 (代理)       |  |
 |  +---------------------------------------------+  |
 |  +----------------+  +-------------------------+  |
-|  | NexusServer    |  | MySQL:3306              |  |
+|  | NexusServer    |  | MySQL 5.7:3306          |  |
 |  |   port: 8080   |  |   系统库: ry-vue        |  |
-|  |   JVM: 384M    |  |   业务库: ry-erp        |  |
+|  |   JVM: 512M    |  |   业务库: ry-erp        |  |
+|  | (snail-job:off)|  |                         |  |
 |  +----------------+  +-------------------------+  |
 |  +----------------+  +-------------------------+  |
 |  | Redis:6379     |  | RabbitMQ:5672/15672     |  |
 |  |   password     |  |   user/pass: nexus      |  |
+|  |                |  |           / ******      |  |
 |  +----------------+  +-------------------------+  |
 |  +----------------+  +-------------------------+  |
-|  | MinIO:9000/9001|  |                           |  |
+|  | MinIO:9005/9001|  |                           |  |
 |  |   user/pass    |  |                           |  |
-|  |   nexus/       |  |                           |  |
-|  |   nexus123456  |  |                           |  |
+|  |   minio/       |  |                           |  |
+|  |   ******       |  |                           |  |
 |  +----------------+  +-------------------------+  |
 +---------------------------------------------------+
                       |
-      MySQL JDBC      |   SnailJob Client
+      MySQL JDBC      |   (SnailJob 调度中心在辅助服务器)
       +---------------+---------------+
       |                               |
       v                               v
@@ -221,28 +223,28 @@ npm run build:prod
 cd ..
 ```
 
-### 5.2 上传到主服务器 (81.68.78.136)
+### 5.2 上传到主服务器 (159.75.14.226)
 
 ```powershell
 # 上传后端配置文件
-scp docker-compose-main.yml root@81.68.78.136:/nexus/nexus-erp/
-scp docker-compose-assist.yml root@81.68.78.136:/nexus/nexus-erp/
-scp -r script/ root@81.68.78.136:/nexus/nexus-erp/script/
-scp ruoyi-admin/src/main/resources/application-prod.yml root@81.68.78.136:/nexus/nexus-erp/ruoyi-admin/src/main/resources/
+scp docker-compose-main.yml root@159.75.14.226:/nexus/nexus-erp/
+scp docker-compose-assist.yml root@159.75.14.226:/nexus/nexus-erp/
+scp -r script/ root@159.75.14.226:/nexus/nexus-erp/script/
+scp ruoyi-admin/src/main/resources/application-prod.yml root@159.75.14.226:/nexus/nexus-erp/ruoyi-admin/src/main/resources/
 
 # 上传 Dockerfile
-scp ruoyi-admin/Dockerfile root@81.68.78.136:/nexus/nexus-erp/ruoyi-admin/
-scp ruoyi-extend/ruoyi-monitor-admin/Dockerfile root@81.68.78.136:/nexus/nexus-erp/ruoyi-extend/ruoyi-monitor-admin/
-scp ruoyi-extend/ruoyi-snailjob-server/Dockerfile root@81.68.78.136:/nexus/nexus-erp/ruoyi-extend/ruoyi-snailjob-server/
+scp ruoyi-admin/Dockerfile root@159.75.14.226:/nexus/nexus-erp/ruoyi-admin/
+scp ruoyi-extend/ruoyi-monitor-admin/Dockerfile root@159.75.14.226:/nexus/nexus-erp/ruoyi-extend/ruoyi-monitor-admin/
+scp ruoyi-extend/ruoyi-snailjob-server/Dockerfile root@159.75.14.226:/nexus/nexus-erp/ruoyi-extend/ruoyi-snailjob-server/
 
 # 上传 jar 文件
-scp ruoyi-admin/target/ruoyi-admin.jar root@81.68.78.136:/nexus/nexus-erp/ruoyi-admin/target/
-scp ruoyi-extend/ruoyi-monitor-admin/target/ruoyi-monitor-admin.jar root@81.68.78.136:/nexus/nexus-erp/ruoyi-extend/ruoyi-monitor-admin/target/
-scp ruoyi-extend/ruoyi-snailjob-server/target/ruoyi-snailjob-server.jar root@81.68.78.136:/nexus/nexus-erp/ruoyi-extend/ruoyi-snailjob-server/target/
+scp ruoyi-admin/target/ruoyi-admin.jar root@159.75.14.226:/nexus/nexus-erp/ruoyi-admin/target/
+scp ruoyi-extend/ruoyi-monitor-admin/target/ruoyi-monitor-admin.jar root@159.75.14.226:/nexus/nexus-erp/ruoyi-extend/ruoyi-monitor-admin/target/
+scp ruoyi-extend/ruoyi-snailjob-server/target/ruoyi-snailjob-server.jar root@159.75.14.226:/nexus/nexus-erp/ruoyi-extend/ruoyi-snailjob-server/target/
 
 # 上传前端文件
-scp plus-ui/Dockerfile plus-ui/nginx.conf plus-ui/.dockerignore root@81.68.78.136:/nexus/nexus-ui/
-scp -r plus-ui/dist root@81.68.78.136:/nexus/nexus-ui/
+scp plus-ui/Dockerfile plus-ui/nginx.conf plus-ui/.dockerignore root@159.75.14.226:/nexus/nexus-ui/
+scp -r plus-ui/dist root@159.75.14.226:/nexus/nexus-ui/
 ```
 
 ### 5.3 上传到辅助服务器 (117.72.190.225)
@@ -384,7 +386,7 @@ docker ps
 curl http://localhost:8080/system/user/getInfo
 
 # 访问前端
-http://81.68.78.136
+http://159.75.14.226
 ```
 
 ---
@@ -439,7 +441,7 @@ sudo ufw allow 80       # Nginx HTTP
 sudo ufw allow 8080     # NexusServer API
 sudo ufw allow 5672     # RabbitMQ AMQP
 sudo ufw allow 15672    # RabbitMQ 管理后台
-sudo ufw allow 9000     # MinIO API
+sudo ufw allow 9005     # MinIO API
 sudo ufw allow 9001     # MinIO 控制台
 ```
 
@@ -462,8 +464,8 @@ sudo ufw allow 17888    # SnailJob Server RPC
 主服务器 MySQL 启动后，执行以下命令允许辅助服务器连接：
 
 ```bash
-docker exec -it nexus-mysql mysql -uroot -pMIS@5mis@5 -e "
-  CREATE USER IF NOT EXISTS 'root'@'%' IDENTIFIED WITH mysql_native_password BY 'MIS@5mis@5';
+docker exec -it nexus-mysql mysql -uroot -p<your-mysql-password> -e "
+  CREATE USER IF NOT EXISTS 'root'@'%' IDENTIFIED WITH mysql_native_password BY '<your-mysql-password>';
   GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' WITH GRANT OPTION;
   FLUSH PRIVILEGES;
 "
@@ -476,12 +478,12 @@ docker exec -it nexus-mysql mysql -uroot -pMIS@5mis@5 -e "
 | 服务 | 访问地址 | 说明 |
 |------|---------|------|
 | 前端页面 | `http://nexuserp.website` | 通过 Nginx 80 端口 |
-| 后端 API | `http://81.68.78.136:8080` | Swagger 接口文档 |
+| 后端 API | `http://159.75.14.226:8080` | Swagger 接口文档 |
 | 监控中心 | `http://nexuserp.website/admin/` | Nginx 代理到辅助服务器 |
 | SnailJob 控制台 | `http://nexuserp.website/snail-job/` | Nginx 代理到辅助服务器 |
-| RabbitMQ 管理 | `http://81.68.78.136:15672` | 默认账号 `nexus` / `nexus` |
-| MinIO 控制台 | `http://81.68.78.136:9001` | 账号 `nexus` / `nexus123456` |
-| MinIO API | `http://81.68.78.136:9000` | S3 兼容 API |
+| RabbitMQ 管理 | `http://159.75.14.226:15672` | 默认账号 `nexus` / `<见 .env>` |
+| MinIO 控制台 | `http://159.75.14.226:9001` | 账号 `minio` / `<见 .env>` |
+| MinIO API | `http://159.75.14.226:9005` | S3 兼容 API |
 
 ---
 
@@ -499,10 +501,10 @@ cd E:\Nexus\nexus-erp
 mvn clean package -DskipTests -Pprod
 
 # 上传 jar 文件
-scp ruoyi-admin/target/ruoyi-admin.jar root@81.68.78.136:/nexus/nexus-erp/ruoyi-admin/target/
+scp ruoyi-admin/target/ruoyi-admin.jar root@159.75.14.226:/nexus/nexus-erp/ruoyi-admin/target/
 
 # 如果修改了配置文件，也需要上传
-scp ruoyi-admin/src/main/resources/application-prod.yml root@81.68.78.136:/nexus/nexus-erp/ruoyi-admin/src/main/resources/
+scp ruoyi-admin/src/main/resources/application-prod.yml root@159.75.14.226:/nexus/nexus-erp/ruoyi-admin/src/main/resources/
 ```
 
 **主服务器执行：**
@@ -511,10 +513,10 @@ scp ruoyi-admin/src/main/resources/application-prod.yml root@81.68.78.136:/nexus
 cd /nexus/nexus-erp
 
 # 重新构建镜像
-docker build -t nexus/nexus-server:5.6.0 ./ruoyi-admin
+docker build -t nexus-erp:fix-headless ./ruoyi-admin
 
-# 重启服务
-docker restart nexus-server
+# 重建容器（docker restart 不会使用新镜像，必须 --force-recreate）
+docker compose -f docker-compose-main.yml up -d --force-recreate nexus-server
 
 # 查看日志
 docker logs -f nexus-server
@@ -531,16 +533,22 @@ cd E:\Nexus\nexus-erp\plus-ui
 # 打包前端
 npm run build:prod
 
-# 上传 dist 目录
-scp -r dist root@81.68.78.136:/nexus/nexus-ui/
+# 打包 dist 目录（保留 dist/ 层级，与服务器 nginx root=/usr/share/nginx/html/dist 对齐）
+tar -czf dist.tar.gz dist
+scp dist.tar.gz root@159.75.14.226:/tmp/
 
-# 如果修改了 nginx.conf，也需要上传
-scp nginx.conf root@81.68.78.136:/nexus/nexus-ui/
+# 如果修改了 nginx.conf，上传到 nginx 配置目录（volume 挂载）
+scp nginx.conf root@159.75.14.226:/docker/nginx/conf/nginx.conf
 ```
 
 **主服务器执行：**
 
 ```bash
+# 前端静态文件通过 volume 挂载，nginx root 指向 /usr/share/nginx/html/dist
+rm -rf /docker/nginx/html/dist
+tar -xzf /tmp/dist.tar.gz -C /docker/nginx/html/
+rm -f /tmp/dist.tar.gz
+
 # 重新加载 nginx 配置
 docker exec nexus-nginx nginx -s reload
 ```
@@ -570,9 +578,8 @@ cd /nexus/nexus-erp
 docker build -t nexus/nexus-monitor:5.6.0 ./ruoyi-extend/ruoyi-monitor-admin
 docker build -t nexus/nexus-snailjob:5.6.0 ./ruoyi-extend/ruoyi-snailjob-server
 
-# 重启服务
-docker restart nexus-monitor
-docker restart nexus-snailjob
+# 重建容器（docker restart 不会使用新镜像，必须 --force-recreate）
+docker compose -f docker-compose-assist.yml up -d --force-recreate nexus-monitor nexus-snailjob
 ```
 
 ### 12.4 一键更新脚本
@@ -595,14 +602,18 @@ FRONTEND_ROOT="/nexus/nexus-ui"
 
 echo "=== 更新后端服务 ==="
 docker build -t nexus/nexus-server:${VERSION} ${PROJECT_ROOT}/ruoyi-admin
-docker restart nexus-server
+docker compose -f ${PROJECT_ROOT}/docker-compose-main.yml up -d --force-recreate nexus-server
 echo "✓ 后端服务已更新"
 
 if [ "$1" = "all" ]; then
     echo ""
     echo "=== 更新前端服务 ==="
-    docker build -t nexus/nexus-ui:${VERSION} ${FRONTEND_ROOT}
-    docker restart nexus-nginx
+    # 前端静态文件通过 volume 挂载，nginx root 指向 /usr/share/nginx/html/dist
+    # 前置：在 plus-ui 目录 `tar -czf dist.tar.gz dist` 并 scp 到 /tmp/dist.tar.gz
+    rm -rf /docker/nginx/html/dist
+    tar -xzf /tmp/dist.tar.gz -C /docker/nginx/html/
+    rm -f /tmp/dist.tar.gz
+    docker exec nexus-nginx nginx -s reload
     echo "✓ 前端服务已更新"
 fi
 
@@ -767,12 +778,16 @@ JAVA_OPTS: "-Xms256m -Xmx384m -XX:MaxMetaspaceSize=256m -XX:+UseZGC"
 
 **现象**：前端页面能访问，但 API 请求返回 404。
 
-**原因**：Nginx 配置没有生效（nginx.conf 打包在镜像中）。
+**原因**：Nginx 配置没有生效。新方案 nginx.conf 与 html 均通过 volume 挂载（非打包进镜像），常见于 `/docker/nginx/conf/nginx.conf` 未正确挂载或配置有语法错误。
 
-**解决方案**：重新构建前端镜像：
+**解决方案**：校验并重载配置（无需构建镜像）：
 ```bash
-docker build -t nexus/nexus-ui:5.6.0 /nexus/nexus-ui/
-docker restart nexus-nginx
+# 检查配置语法
+docker exec nexus-nginx nginx -t
+# 重新加载
+docker exec nexus-nginx nginx -s reload
+# 若 nginx.conf 改动未生效，确认 volume 挂载后强制重建容器
+docker compose -f /nexus/nexus-erp/docker-compose-main.yml up -d --force-recreate nexus-nginx
 ```
 
 ---
@@ -800,6 +815,6 @@ docker restart nexus-nginx
 
 ---
 
-*文档版本：v2.0*
-*更新日期：2026-06-12*
-*更新内容：添加服务更新指南、添加部署实战问题汇总、完善部署步骤*
+*文档版本：v2.1*
+*更新日期：2026-07-26*
+*更新内容：主服务器迁移至 159.75.14.226（4C4G / MySQL 5.7 / MinIO 9005-minio / RabbitMQ / JVM 512M）；修正 `docker restart` 不换镜像（改用 `--force-recreate`）与前端 volume 挂载两个部署坑；新增 optimized.yml 说明*

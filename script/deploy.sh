@@ -1,7 +1,7 @@
 #!/bin/bash
 # ==========================================
 # NexusERP Docker 双机部署脚本（Linux）
-# 主服务器 (81.68.78.136): MySQL, Redis, RabbitMQ, MinIO, Nginx+前端, NexusServer
+# 主服务器 (159.75.14.226): MySQL, Redis, RabbitMQ, MinIO, Nginx+前端, NexusServer
 # 辅助服务器 (117.72.190.225): MonitorAdmin, SnailJobServer
 #
 # 用法:
@@ -154,8 +154,8 @@ function build_images() {
     cd "${PROJECT_ROOT}"
 
     # 1. 主后端服务
-    echo -e "${YELLOW}→ 构建 nexus/nexus-server:${VERSION}${NC}"
-    docker build -t nexus/nexus-server:${VERSION} ./ruoyi-admin
+    echo -e "${YELLOW}→ 构建 nexus-erp:fix-headless${NC}"
+    docker build -t nexus-erp:fix-headless ./ruoyi-admin
 
     # 2. 监控中心
     echo -e "${YELLOW}→ 构建 nexus/nexus-monitor:${VERSION}${NC}"
@@ -167,7 +167,7 @@ function build_images() {
 
     # 4. 前端
     echo -e "${YELLOW}→ 构建 nexus/nexus-ui:${VERSION}${NC}"
-    docker build -t nexus/nexus-ui:${VERSION} "${FRONTEND_ROOT}"
+    # docker build -t nexus/nexus-ui:${VERSION} "${FRONTEND_ROOT}"  # 前端实际用官方 nginx + volume 挂载 /docker/nginx/html/dist，无需 build
 
     echo -e "${GREEN}所有镜像构建完成${NC}"
 }
@@ -204,15 +204,15 @@ function start_main() {
 
     echo ""
     echo -e "${GREEN}============================================${NC}"
-    echo -e "${GREEN}  主服务器 (81.68.78.136) 启动完成${NC}"
+    echo -e "${GREEN}  主服务器 (159.75.14.226) 启动完成${NC}"
     echo -e "${GREEN}============================================${NC}"
     echo ""
     echo -e "${YELLOW}访问地址：${NC}"
-    echo -e "  前端页面:       http://nexuserp.website 或 http://81.68.78.136"
-    echo -e "  后端API:        http://81.68.78.136:8080"
-    echo -e "  RabbitMQ管理:   http://81.68.78.136:15672  (账号: nexus / nexus)"
-    echo -e "  MinIO控制台:    http://81.68.78.136:9001  (账号: nexus / nexus123456)"
-    echo -e "  MinIO API:      http://81.68.78.136:9000"
+    echo -e "  前端页面:       http://nexuserp.website 或 http://159.75.14.226"
+    echo -e "  后端API:        http://159.75.14.226:8080"
+    echo -e "  RabbitMQ管理:   http://159.75.14.226:15672  (账号: nexus / <RABBITMQ_PASSWORD>)"
+    echo -e "  MinIO控制台:    http://159.75.14.226:9001  (账号: minio / <MINIO_PASSWORD>)"
+    echo -e "  MinIO API:      http://159.75.14.226:9005"
     echo ""
     echo -e "${YELLOW}辅助服务器 (117.72.190.225) 需单独部署：${NC}"
     echo -e "  监控中心:       http://117.72.190.225:9090/admin"
@@ -336,7 +336,7 @@ case "${COMMAND}" in
         echo ""
         echo "  build       - Maven 打包 + 构建镜像（需要源代码和 Maven 环境）"
         echo "  images      - 仅构建 Docker 镜像（使用已上传的 jar/dist 文件）"
-        echo "  up          - 启动主服务器服务（81.68.78.136）"
+        echo "  up          - 启动主服务器服务（159.75.14.226）"
         echo "  up-assist   - 启动辅助服务器服务（117.72.190.225）"
         echo "  down        - 停止主服务器服务"
         echo "  down-assist - 停止辅助服务器服务"

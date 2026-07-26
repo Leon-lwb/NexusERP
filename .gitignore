@@ -73,6 +73,7 @@ replay_pid*
 .flattened-pom.xml
 
 application-prod.yml
+.env
 .agents/
 
 # 可视化头脑风暴会话文件
