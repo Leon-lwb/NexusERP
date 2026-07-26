@@ -98,7 +98,7 @@
 | P0-2 | 工装/模治具管理 | `eq` 扩展 + `tg`（新增子模块） | 5 | 高 | MESA-2 资源分配 |
 | P0-3 | 任务进站/出站 + 流程指引 | `pro` 扩展 | 5 | 高 | MESA-3 派工 + MESA-8 过程管理 |
 | P0-4 | NCR 不合格品 + 返工流程 | `qc` 扩展 + `nr`（新增子模块） | 7.5 | 高 | MESA-7 质量管理 |
-| P0-5 | E-SOP 电子作业指导书 | `dc` 扩展 + `sop`（新增子模块） | 7.5 | 高 | MESA-4 文档控制 |
+| P0-5 | E-SOP 电子作业指导书 | `sop`（新增子模块） | 7.5 | 高 | MESA-4 文档控制 | 📝 实施方案已就绪（[P0-5 计划](./2026-07-26-mes-p0-5-esop-implementation-plan.md)） |
 | P0-6 | 电子签名 + DHR 批记录 | `common` 扩展（合规基础设施） | 7.5 | 高 | MESA-4 文档控制（合规） |
 | P0-7 | 核心模块单元测试补齐 | `pro/qc/spc` 测试包 | 7.5 | 高 | 工程质量底线 |
 | P0-8 | IoT 自动采集打通 | `dc` 扩展 + `common` 桥接 | 7.5 | 高 | MESA-5 数据采集 |
@@ -343,6 +343,9 @@ CREATE TABLE tg_usage_record (
 
 ### 3.3 P0-3 任务进站/出站 + 流程指引
 
+> **评审标注（2026-07-26，与 P0-5 联合评审）**：`pro_step_guide.guide_type` 原计划含 IMAGE/VIDEO + `media_url`，与 P0-5 `sop_document` 富媒体能力高重叠（影子 SOP 风险）。**建议收敛**：guide_type 限 **TEXT + SOP_LINK**（去掉 IMAGE/VIDEO），删除 `media_url` 字段（TEXT 用 guide_content，SOP_LINK 用 sop_id）。富媒体作业指导统一走 P0-5 `sop_document`（版本+审批+审计），pro_step_guide 用 SOP_LINK 引用。详见 [P0-5 实施方案 §1.6](./2026-07-26-mes-p0-5-esop-implementation-plan.md)。SOP_LINK 类型时 `sop_id` 须校验该 SOP 在 `sop_process_binding` 已绑定到同 process_id。
+> **进站插入点**：`ProFlowCardServiceImpl.startStep()` 是 SOP 推送的天然触发点（F3-1 进站校验门禁），P0-5 `pushSopToWorkstation(stepRecordId)` 由此处调用。
+
 #### 3.3.1 需求描述
 
 扩展 [ProFlowCardServiceImpl](file:///d:/workspace/nexus-erp/ruoyi-modules/ruoyi-mes/src/main/java/com/nexus/mes/pro/service/impl/ProFlowCardServiceImpl.java)，实现工序进站前置校验、出站放行规则、流程跳站防错，对标鼎捷"任务进站管理+任务出站管理+流程指引管理"。
@@ -517,6 +520,14 @@ CREATE TABLE nr_8d_report (
 ```
 
 ### 3.5 P0-5 E-SOP 电子作业指导书
+
+> **实施状态**: 📝 实施方案已就绪（2026-07-26），待执行（Phase 4-C Week 34）。详见 [P0-5 实施方案](./2026-07-26-mes-p0-5-esop-implementation-plan.md)。
+> - 独立 `sop` 子包（非 dc 扩展），4 张 `sop_` 表
+> - ⚠️ DDL 修正：`file_url VARCHAR(500)` -> `file_oss_id BIGINT`（OSS 私有桶存 ID，VO 用 `@Translation(OSS_ID_TO_URL)` 解析签名 URL，依据 memory `oss-private-bucket-store-ossid`）
+> - 审批流：Flowable（`WfCallBackServiceI`，ruoyi-mes 已依赖 ruoyi-flowable）+ 管理员兜底 approve/reject（R11）
+> - F5-5 电子签名：`sop_view_log.signature_id` 预留，强制校验待 P0-6 接入
+> - F5-4 工位推送：查询 API + 查看器页 + SSE 契约（`SseMessageUtils`），触发时机由 P0-3 接入
+> - F5-3 工序绑定：绑到 ERP `bd_process.process_id`（工序主数据，非 routing_step），冗余 `process_category`，复用 ERP `/erp/bd/process/list` 选择器；与 `bd_routing_step.description`（文本作业指导）并存
 
 #### 3.5.1 需求描述
 
@@ -1086,7 +1097,7 @@ P0-6 电子签名                                ███ ███
 | 4-B | P0-1 物料拉动 | 4216-4240 | 4006 物料管理（新建） | 原分配 4181-4195，后移 |
 | 4-B | P0-8 IoT 打通 | - | 扩展现有 4004 数据采集 | 不新增菜单 |
 | 4-C | P0-4 NCR | 4241-4260 | 4002 质量管理 | 原分配 4196-4210，后移 |
-| 4-C | P0-5 E-SOP | 4261-4280 | 文档管理（新建） | 原分配 4211-4220，后移 |
+| 4-C | P0-5 E-SOP | 4206(M) + 4261-4275(C/F) | 4206 文档管理（新建 M 目录） | 原分配 4211-4220 后移至 4261-4280；M-dir 4206 接续 4205（工装）；file_url 改 file_oss_id（OSS 私有桶） |
 | 4-C | P0-6 电子签名 | 4281-4300 | 系统管理下 | 原分配 4221-4230，后移 |
 
 > ⚠️ **校正说明（2026-07-26）**：P0-9 实际占用 `4006 + 4152-4171`，原 §7.3 的 P0-2 段 `4150-4165` 冲突。全 MES 菜单 max 已用 = 4171。本表为校正后映射，每模块预留 20-25 ID 余量避免再溢出。详见 [P0-2 实施方案 §七](./2026-07-26-mes-p0-2-tooling-management-implementation-plan.md)。
