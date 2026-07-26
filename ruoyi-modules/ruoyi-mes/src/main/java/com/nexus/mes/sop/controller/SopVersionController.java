@@ -32,6 +32,10 @@ public class SopVersionController extends BaseController {
 
     /**
      * 分页查询版本列表
+     *
+     * @param bo        查询参数
+     * @param pageQuery 分页参数
+     * @return 分页结果
      */
     @SaCheckPermission("mes:sop:document:list")
     @GetMapping("/list")
@@ -41,6 +45,9 @@ public class SopVersionController extends BaseController {
 
     /**
      * 查询SOP的版本列表(版本历史, 按 published_time desc)
+     *
+     * @param sopId SOP文档ID
+     * @return 版本列表
      */
     @SaCheckPermission("mes:sop:document:list")
     @GetMapping("/by-sop/{sopId}")
@@ -50,6 +57,9 @@ public class SopVersionController extends BaseController {
 
     /**
      * 根据ID获取版本详情
+     *
+     * @param versionId 版本ID
+     * @return 版本详情
      */
     @SaCheckPermission("mes:sop:document:list")
     @GetMapping("/{versionId}")
@@ -59,6 +69,9 @@ public class SopVersionController extends BaseController {
 
     /**
      * 批量删除版本(守卫:CURRENT 版本不可删)
+     *
+     * @param ids 版本ID数组
+     * @return 操作结果
      */
     @SaCheckPermission("mes:sop:document:remove")
     @Log(title = "SOP版本删除", businessType = BusinessType.DELETE)

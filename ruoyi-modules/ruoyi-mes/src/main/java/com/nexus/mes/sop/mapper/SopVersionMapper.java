@@ -5,7 +5,7 @@ import com.nexus.mes.sop.domain.SopVersion;
 import com.nexus.mes.sop.domain.vo.SopVersionVo;
 
 /**
- * SOP版本 Mapper接口
+ * SOP版本 Mapper接口, 实体 SopVersion, VO SopVersionVo
  *
  * @author Nexus
  */

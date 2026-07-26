@@ -50,6 +50,14 @@ public class LtLotServiceImpl implements ILtLotService {
     private final LtSnBindingMapper bindingMapper;
     private final AutoCodeUtil autoCodeUtil;
 
+    /**
+     * 分页查询批次列表
+     * <p>结果中填充 remainingQty 计算字段。</p>
+     *
+     * @param bo        查询条件
+     * @param pageQuery 分页参数
+     * @return 批次分页列表
+     */
     @Override
     public TableDataInfo<LtLotVo> selectPageList(LtLotBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<LtLot> lqw = buildQueryWrapper(bo);
@@ -59,6 +67,13 @@ public class LtLotServiceImpl implements ILtLotService {
         return TableDataInfo.build(page);
     }
 
+    /**
+     * 根据ID获取批次详情
+     * <p>返回时填充 remainingQty 计算字段。</p>
+     *
+     * @param lotId 批次ID
+     * @return 批次详情(含剩余数量)
+     */
     @Override
     public LtLotVo selectById(Long lotId) {
         LtLotVo vo = baseMapper.selectVoById(lotId);
@@ -68,6 +83,13 @@ public class LtLotServiceImpl implements ILtLotService {
         return vo;
     }
 
+    /**
+     * 根据批次编码查询
+     * <p>返回时填充 remainingQty 计算字段。</p>
+     *
+     * @param lotCode 批次编码
+     * @return 批次详情(含剩余数量)
+     */
     @Override
     public LtLotVo selectByCode(String lotCode) {
         LtLotVo vo = baseMapper.selectVoOne(Wrappers.<LtLot>lambdaQuery()
@@ -78,6 +100,13 @@ public class LtLotServiceImpl implements ILtLotService {
         return vo;
     }
 
+    /**
+     * 新增批次(自动生成编码,初始状态 IN_STOCK, QC PENDING)。
+     * <p>编码为空时自动走 MES_LOT_CODE 规则生成; 编码唯一性校验(uk_lot_code 兜底)。</p>
+     *
+     * @param bo 批次业务对象
+     * @return 新增成功返回 true
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean insertByBo(LtLotBo bo) {
@@ -110,6 +139,14 @@ public class LtLotServiceImpl implements ILtLotService {
         return rows > 0;
     }
 
+    /**
+     * 修改批次(仅 IN_STOCK/IN_USE 状态可编辑)。
+     * <p>数量守卫: 不可小于已消耗数量(否则剩余为负,破坏 consume 不变量)。
+     * 不允许通过编辑修改 status/consumedQty/qcStatus(走专用接口)。</p>
+     *
+     * @param bo 批次业务对象
+     * @return 修改成功返回 true
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean updateByBo(LtLotBo bo) {
@@ -139,6 +176,13 @@ public class LtLotServiceImpl implements ILtLotService {
         return rows > 0;
     }
 
+    /**
+     * 批量删除批次(仅 IN_STOCK/SCRAPPED 状态可删)。
+     * <p>孤儿守卫: 存在消耗/绑定记录则禁止删除,防止追溯链断裂。</p>
+     *
+     * @param ids 批次ID数组
+     * @return 删除成功返回 true
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean deleteByIds(Long[] ids) {
@@ -174,6 +218,14 @@ public class LtLotServiceImpl implements ILtLotService {
         return rows > 0;
     }
 
+    /**
+     * 批次隔离(IN_STOCK/IN_USE -> QUARANTINED)。
+     * <p>CAS: .in(status, IN_STOCK, IN_USE) + rows==0 抛"状态已变更"。</p>
+     *
+     * @param lotId  批次ID
+     * @param remark 隔离原因(可空)
+     * @return 隔离成功返回 true
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean quarantine(Long lotId, String remark) {
@@ -196,6 +248,14 @@ public class LtLotServiceImpl implements ILtLotService {
         return true;
     }
 
+    /**
+     * 批次报废(QUARANTINED -> SCRAPPED)。
+     * <p>CAS: .eq(status, QUARANTINED) + rows==0 抛"状态已变更"。</p>
+     *
+     * @param lotId  批次ID
+     * @param remark 报废原因(可空)
+     * @return 报废成功返回 true
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean scrap(Long lotId, String remark) {
@@ -218,6 +278,14 @@ public class LtLotServiceImpl implements ILtLotService {
         return true;
     }
 
+    /**
+     * 批次放行(QUARANTINED -> 恢复状态,隔离解除)。
+     * <p>按剩余/已消耗恢复: 数量归零->CONSUMED, 部分消耗->IN_USE, 全剩余->IN_STOCK。
+     * CAS: .eq(status, QUARANTINED) + rows==0 抛"状态已变更"。</p>
+     *
+     * @param lotId 批次ID
+     * @return 放行成功返回 true
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean release(Long lotId) {
@@ -249,6 +317,15 @@ public class LtLotServiceImpl implements ILtLotService {
         return true;
     }
 
+    /**
+     * 更新批次QC状态(PENDING -> PASS/FAIL)。
+     * <p>CAS: .eq(qcStatus, PENDING) + rows==0 抛"状态已变更"。
+     * FAIL 自动调用 quarantine 隔离。</p>
+     *
+     * @param lotId    批次ID
+     * @param qcStatus 目标QC状态(PASS/FAIL)
+     * @return 更新成功返回 true
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean updateQcStatus(Long lotId, String qcStatus) {
@@ -517,6 +594,9 @@ public class LtLotServiceImpl implements ILtLotService {
         vo.setRemainingQty(vo.getQuantity().subtract(consumed));
     }
 
+    /**
+     * 构建批次查询条件包装器(按 lotCode/status/qcStatus/iqcId/materialId/supplierId/supplierLot 筛选)。
+     */
     private LambdaQueryWrapper<LtLot> buildQueryWrapper(LtLotBo bo) {
         return Wrappers.<LtLot>lambdaQuery()
             .eq(StringUtils.isNotBlank(bo.getLotCode()), LtLot::getLotCode, bo.getLotCode())

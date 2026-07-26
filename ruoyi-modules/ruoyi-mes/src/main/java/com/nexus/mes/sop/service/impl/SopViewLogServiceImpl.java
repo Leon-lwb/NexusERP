@@ -38,6 +38,13 @@ public class SopViewLogServiceImpl implements ISopViewLogService {
 
     private final SopViewLogMapper baseMapper;
 
+    /**
+     * 分页查询查阅记录列表
+     *
+     * @param bo        查询参数
+     * @param pageQuery 分页参数
+     * @return 分页结果
+     */
     @Override
     public TableDataInfo<SopViewLogVo> selectPageList(SopViewLogBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<SopViewLog> lqw = buildQueryWrapper(bo);
@@ -45,6 +52,19 @@ public class SopViewLogServiceImpl implements ISopViewLogService {
         return TableDataInfo.build(page);
     }
 
+    /**
+     * 登记查阅(查看器打开时调): viewer/time/wo/process/IP/UA, signature_id=null(预留P0-6)
+     * <p>IP/UA 从请求上下文获取; 非请求上下文(如 MQ/定时任务)时留空。</p>
+     *
+     * @param sopId         SOP ID
+     * @param versionNo     查阅的版本号
+     * @param woId          关联工单ID(可选)
+     * @param woNo          工单编号(冗余,可选)
+     * @param processId     关联工序ID(可选)
+     * @param processName   工序名称(冗余,可选)
+     * @param workstationId 工位ID(可选)
+     * @return 登记成功返回 true
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean recordView(Long sopId, String versionNo, Long woId, String woNo,
@@ -79,6 +99,12 @@ public class SopViewLogServiceImpl implements ISopViewLogService {
         return rows > 0;
     }
 
+    /**
+     * 批量删除查阅记录
+     *
+     * @param ids 查阅记录ID数组
+     * @return 删除成功返回 true
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean deleteByIds(Long[] ids) {
@@ -91,6 +117,9 @@ public class SopViewLogServiceImpl implements ISopViewLogService {
         return rows > 0;
     }
 
+    /**
+     * 构建查询条件: sopId/viewerId/woId/processId/versionNo 精确匹配, 按查阅时间倒序
+     */
     private LambdaQueryWrapper<SopViewLog> buildQueryWrapper(SopViewLogBo bo) {
         return Wrappers.<SopViewLog>lambdaQuery()
             .eq(bo.getSopId() != null, SopViewLog::getSopId, bo.getSopId())

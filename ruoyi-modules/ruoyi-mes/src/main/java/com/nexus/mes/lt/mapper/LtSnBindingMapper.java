@@ -6,6 +6,7 @@ import com.nexus.mes.lt.domain.vo.LtSnBindingVo;
 
 /**
  * MES SN批次绑定 Mapper接口
+ * <p>实体: {@link LtSnBinding} / VO: {@link LtSnBindingVo}</p>
  *
  * @author Nexus
  */

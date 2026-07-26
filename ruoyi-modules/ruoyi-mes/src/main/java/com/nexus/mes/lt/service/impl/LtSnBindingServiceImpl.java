@@ -43,6 +43,14 @@ public class LtSnBindingServiceImpl implements ILtSnBindingService {
     private final LtLotMapper lotMapper;
     private final ProSnMapper snMapper;
 
+    /**
+     * 分页查询SN批次绑定列表
+     * <p>结果中富集物料编码/名称(从 lt_lot 冗余字段), boundByName 由 @Translation 自动翻译。</p>
+     *
+     * @param bo        查询条件
+     * @param pageQuery 分页参数
+     * @return SN批次绑定分页列表
+     */
     @Override
     public TableDataInfo<LtSnBindingVo> selectPageList(LtSnBindingBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<LtSnBinding> lqw = buildQueryWrapper(bo);
@@ -52,6 +60,12 @@ public class LtSnBindingServiceImpl implements ILtSnBindingService {
         return TableDataInfo.build(page);
     }
 
+    /**
+     * 根据ID获取绑定详情
+     *
+     * @param bindingId 绑定ID
+     * @return 绑定详情
+     */
     @Override
     public LtSnBindingVo selectById(Long bindingId) {
         return baseMapper.selectVoById(bindingId);
@@ -94,6 +108,12 @@ public class LtSnBindingServiceImpl implements ILtSnBindingService {
         return rows > 0;
     }
 
+    /**
+     * 批量删除绑定
+     *
+     * @param ids 绑定ID数组
+     * @return 删除成功返回 true
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean deleteByIds(Long[] ids) {
@@ -105,6 +125,12 @@ public class LtSnBindingServiceImpl implements ILtSnBindingService {
         return rows > 0;
     }
 
+    /**
+     * 按SN ID查询其批次绑定(追溯用)
+     *
+     * @param snId SN ID
+     * @return 绑定列表(按绑定时间降序)
+     */
     @Override
     public List<LtSnBindingVo> selectBySnId(Long snId) {
         return baseMapper.selectVoList(Wrappers.<LtSnBinding>lambdaQuery()
@@ -112,6 +138,12 @@ public class LtSnBindingServiceImpl implements ILtSnBindingService {
             .orderByDesc(LtSnBinding::getBoundTime));
     }
 
+    /**
+     * 按批次ID查询所有SN绑定(追溯用)
+     *
+     * @param lotId 批次ID
+     * @return 绑定列表(按绑定时间降序)
+     */
     @Override
     public List<LtSnBindingVo> selectByLotId(Long lotId) {
         return baseMapper.selectVoList(Wrappers.<LtSnBinding>lambdaQuery()
@@ -150,6 +182,9 @@ public class LtSnBindingServiceImpl implements ILtSnBindingService {
         }
     }
 
+    /**
+     * 构建SN批次绑定查询条件包装器(按 snId/lotId/materialId 筛选)。
+     */
     private LambdaQueryWrapper<LtSnBinding> buildQueryWrapper(LtSnBindingBo bo) {
         return Wrappers.<LtSnBinding>lambdaQuery()
             .eq(bo.getSnId() != null, LtSnBinding::getSnId, bo.getSnId())

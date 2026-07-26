@@ -5,7 +5,7 @@ import com.nexus.mes.sop.domain.SopDocument;
 import com.nexus.mes.sop.domain.vo.SopDocumentVo;
 
 /**
- * MES SOP文档 Mapper接口
+ * MES SOP文档 Mapper接口, 实体 SopDocument, VO SopDocumentVo
  *
  * @author Nexus
  */

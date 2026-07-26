@@ -49,6 +49,13 @@ public class LtWoConsumptionServiceImpl implements ILtWoConsumptionService {
     private final LtSnBindingMapper snBindingMapper;
     private final ILtSnBindingService snBindingService;
 
+    /**
+     * 分页查询工单批次消耗列表
+     *
+     * @param bo        查询条件
+     * @param pageQuery 分页参数
+     * @return 工单批次消耗分页列表
+     */
     @Override
     public TableDataInfo<LtWoConsumptionVo> selectPageList(LtWoConsumptionBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<LtWoConsumption> lqw = buildQueryWrapper(bo);
@@ -56,6 +63,12 @@ public class LtWoConsumptionServiceImpl implements ILtWoConsumptionService {
         return TableDataInfo.build(page);
     }
 
+    /**
+     * 根据ID获取消耗记录详情
+     *
+     * @param consumptionId 消耗记录ID
+     * @return 消耗记录详情
+     */
     @Override
     public LtWoConsumptionVo selectById(Long consumptionId) {
         return baseMapper.selectVoById(consumptionId);
@@ -92,6 +105,12 @@ public class LtWoConsumptionServiceImpl implements ILtWoConsumptionService {
         return rows > 0;
     }
 
+    /**
+     * 批量删除消耗记录(不回滚已扣减数量,仅删记录)
+     *
+     * @param ids 消耗记录ID数组
+     * @return 删除成功返回 true
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean deleteByIds(Long[] ids) {
@@ -104,6 +123,12 @@ public class LtWoConsumptionServiceImpl implements ILtWoConsumptionService {
         return rows > 0;
     }
 
+    /**
+     * 按工单ID查询所有批次消耗
+     *
+     * @param woId 工单ID
+     * @return 消耗记录列表(按消耗时间降序)
+     */
     @Override
     public List<LtWoConsumptionVo> selectByWoId(Long woId) {
         return baseMapper.selectVoList(Wrappers.<LtWoConsumption>lambdaQuery()
@@ -111,6 +136,12 @@ public class LtWoConsumptionServiceImpl implements ILtWoConsumptionService {
             .orderByDesc(LtWoConsumption::getConsumedTime));
     }
 
+    /**
+     * 按批次ID查询所有消耗记录(追溯用)
+     *
+     * @param lotId 批次ID
+     * @return 消耗记录列表(按消耗时间降序)
+     */
     @Override
     public List<LtWoConsumptionVo> selectByLotId(Long lotId) {
         return baseMapper.selectVoList(Wrappers.<LtWoConsumption>lambdaQuery()
@@ -166,6 +197,9 @@ public class LtWoConsumptionServiceImpl implements ILtWoConsumptionService {
 
     // ==================== 私有辅助方法 ====================
 
+    /**
+     * 构建工单批次消耗查询条件包装器(按 woId/lotId/materialId/operatorId 筛选)。
+     */
     private LambdaQueryWrapper<LtWoConsumption> buildQueryWrapper(LtWoConsumptionBo bo) {
         return Wrappers.<LtWoConsumption>lambdaQuery()
             .eq(bo.getWoId() != null, LtWoConsumption::getWoId, bo.getWoId())

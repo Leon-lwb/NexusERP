@@ -25,6 +25,8 @@ public class LtSnBindingEventListener {
 
     /**
      * SN 创建联动写 SN↔批次绑定
+     *
+     * @param event SN创建事件
      */
     @EventListener
     public void onSnCreated(SnCreatedEvent event) {

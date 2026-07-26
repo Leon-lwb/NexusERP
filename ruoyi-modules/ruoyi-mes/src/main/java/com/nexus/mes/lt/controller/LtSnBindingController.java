@@ -31,6 +31,10 @@ public class LtSnBindingController extends BaseController {
 
     /**
      * 分页查询SN批次绑定列表
+     *
+     * @param bo        查询条件
+     * @param pageQuery 分页参数
+     * @return SN批次绑定分页数据
      */
     @SaCheckPermission("mes:lt:binding:list")
     @GetMapping("/list")
@@ -40,6 +44,9 @@ public class LtSnBindingController extends BaseController {
 
     /**
      * 根据ID获取绑定详情
+     *
+     * @param bindingId 绑定ID
+     * @return 绑定详情
      */
     @SaCheckPermission("mes:lt:binding:query")
     @GetMapping("/{bindingId}")
@@ -49,6 +56,9 @@ public class LtSnBindingController extends BaseController {
 
     /**
      * 新增SN-批次绑定
+     *
+     * @param bo SN批次绑定业务对象
+     * @return 操作结果
      */
     @SaCheckPermission("mes:lt:binding:add")
     @Log(title = "SN批次绑定", businessType = BusinessType.INSERT)
@@ -59,6 +69,9 @@ public class LtSnBindingController extends BaseController {
 
     /**
      * 批量删除绑定
+     *
+     * @param ids 绑定ID数组
+     * @return 操作结果
      */
     @SaCheckPermission("mes:lt:binding:remove")
     @Log(title = "SN批次绑定删除", businessType = BusinessType.DELETE)
@@ -69,6 +82,9 @@ public class LtSnBindingController extends BaseController {
 
     /**
      * 按SN ID查询其批次绑定(追溯用)
+     *
+     * @param snId SN ID
+     * @return 绑定列表
      */
     @SaCheckPermission("mes:lt:binding:list")
     @GetMapping("/by-sn/{snId}")
@@ -78,6 +94,9 @@ public class LtSnBindingController extends BaseController {
 
     /**
      * 按批次ID查询所有SN绑定(追溯用)
+     *
+     * @param lotId 批次ID
+     * @return 绑定列表
      */
     @SaCheckPermission("mes:lt:binding:list")
     @GetMapping("/by-lot/{lotId}")

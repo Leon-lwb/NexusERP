@@ -43,6 +43,10 @@ public class SopDocumentController extends BaseController {
 
     /**
      * 分页查询SOP文档列表
+     *
+     * @param bo        查询参数
+     * @param pageQuery 分页参数
+     * @return 分页结果
      */
     @SaCheckPermission("mes:sop:document:list")
     @GetMapping("/list")
@@ -52,6 +56,9 @@ public class SopDocumentController extends BaseController {
 
     /**
      * 根据ID获取SOP详情
+     *
+     * @param sopId SOP文档ID
+     * @return SOP详情
      */
     @SaCheckPermission("mes:sop:document:query")
     @GetMapping("/{sopId}")
@@ -61,6 +68,9 @@ public class SopDocumentController extends BaseController {
 
     /**
      * 新增SOP(编码自动生成 + 首版本 PENDING)
+     *
+     * @param bo SOP业务对象
+     * @return 操作结果
      */
     @SaCheckPermission("mes:sop:document:add")
     @Log(title = "SOP新增", businessType = BusinessType.INSERT)
@@ -71,6 +81,9 @@ public class SopDocumentController extends BaseController {
 
     /**
      * 修改SOP(仅 DRAFT/ARCHIVED 可编辑)
+     *
+     * @param bo SOP业务对象
+     * @return 操作结果
      */
     @SaCheckPermission("mes:sop:document:edit")
     @Log(title = "SOP修改", businessType = BusinessType.UPDATE)
@@ -81,6 +94,9 @@ public class SopDocumentController extends BaseController {
 
     /**
      * 批量删除SOP(孤儿守卫:PUBLISHED 不可删;存在绑定/查阅记录不可删)
+     *
+     * @param ids SOP文档ID数组
+     * @return 操作结果
      */
     @SaCheckPermission("mes:sop:document:remove")
     @Log(title = "SOP删除", businessType = BusinessType.DELETE)
@@ -91,6 +107,9 @@ public class SopDocumentController extends BaseController {
 
     /**
      * 新增版本(DRAFT 或 PUBLISHED 上修订) -> PENDING, sop_document.status DRAFT
+     *
+     * @param bo 版本业务对象
+     * @return 操作结果
      */
     @SaCheckPermission("mes:sop:document:add")
     @Log(title = "SOP新增版本", businessType = BusinessType.INSERT)
@@ -101,6 +120,10 @@ public class SopDocumentController extends BaseController {
 
     /**
      * 提交审批: DRAFT -> IN_REVIEW (selectFlowId 非空走 Flowable, 否则直接 IN_REVIEW)
+     *
+     * @param sopId        SOP文档ID
+     * @param selectFlowId 流程定义ID(可空)
+     * @return 操作结果
      */
     @SaCheckPermission("mes:sop:document:submit")
     @Log(title = "SOP提交审批", businessType = BusinessType.UPDATE)
@@ -112,6 +135,10 @@ public class SopDocumentController extends BaseController {
 
     /**
      * 兜底审批通过(管理员强制, R11): IN_REVIEW -> PUBLISHED
+     *
+     * @param sopId  SOP文档ID
+     * @param remark 审批备注(可空)
+     * @return 操作结果
      */
     @SaCheckPermission("mes:sop:document:approve")
     @Log(title = "SOP审批通过", businessType = BusinessType.UPDATE)
@@ -123,6 +150,10 @@ public class SopDocumentController extends BaseController {
 
     /**
      * 兜底驳回: IN_REVIEW -> DRAFT
+     *
+     * @param sopId  SOP文档ID
+     * @param reason 驳回原因(可空)
+     * @return 操作结果
      */
     @SaCheckPermission("mes:sop:document:reject")
     @Log(title = "SOP审批驳回", businessType = BusinessType.UPDATE)
@@ -134,6 +165,10 @@ public class SopDocumentController extends BaseController {
 
     /**
      * 归档(废止): PUBLISHED -> ARCHIVED
+     *
+     * @param sopId  SOP文档ID
+     * @param reason 归档原因(可空)
+     * @return 操作结果
      */
     @SaCheckPermission("mes:sop:document:edit")
     @Log(title = "SOP归档", businessType = BusinessType.UPDATE)
@@ -145,6 +180,9 @@ public class SopDocumentController extends BaseController {
 
     /**
      * 契约: 按工序查SOP(工位推送用) -> 返回默认SOP(含文件签名URL)
+     *
+     * @param processId 工序ID
+     * @return 默认SOP信息
      */
     @SaCheckPermission("mes:sop:document:list")
     @GetMapping("/by-process/{processId}")
@@ -154,6 +192,9 @@ public class SopDocumentController extends BaseController {
 
     /**
      * 契约: 按流转卡工序记录查SOP(经 ProFlowCardStep.processId)
+     *
+     * @param stepRecordId 流转卡工序记录ID
+     * @return SOP信息
      */
     @SaCheckPermission("mes:sop:document:list")
     @GetMapping("/by-step/{stepRecordId}")
@@ -163,6 +204,9 @@ public class SopDocumentController extends BaseController {
 
     /**
      * 契约: 按物料查全部工序SOP(工单开工预加载) -> Map<processId, SopDocumentVo>
+     *
+     * @param materialId 物料ID
+     * @return 工序SOP映射表
      */
     @SaCheckPermission("mes:sop:document:list")
     @GetMapping("/by-material/{materialId}")
@@ -173,6 +217,9 @@ public class SopDocumentController extends BaseController {
     /**
      * 契约: 触发SSE推送当前工序SOP到工位(P0-3 startStep 调用)
      * <p>推送当前登录用户(工位操作员);无在线用户时仅返回SOP供主动拉取。</p>
+     *
+     * @param stepRecordId 流转卡工序记录ID
+     * @return SOP信息(推送失败不阻断, 可主动拉取)
      */
     @SaCheckPermission("mes:sop:document:list")
     @PostMapping("/push/{stepRecordId}")

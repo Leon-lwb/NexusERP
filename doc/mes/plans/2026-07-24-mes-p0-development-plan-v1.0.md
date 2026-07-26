@@ -98,11 +98,11 @@
 | P0-2 | 工装/模治具管理 | `eq` 扩展 + `tg`（新增子模块） | 5 | 高 | MESA-2 资源分配 |
 | P0-3 | 任务进站/出站 + 流程指引 | `pro` 扩展 | 5 | 高 | MESA-3 派工 + MESA-8 过程管理 |
 | P0-4 | NCR 不合格品 + 返工流程 | `qc` 扩展 + `nr`（新增子模块） | 7.5 | 高 | MESA-7 质量管理 |
-| P0-5 | E-SOP 电子作业指导书 | `sop`（新增子模块） | 7.5 | 高 | MESA-4 文档控制 | 📝 实施方案已就绪（[P0-5 计划](./2026-07-26-mes-p0-5-esop-implementation-plan.md)） |
+| P0-5 | E-SOP 电子作业指导书 | `sop`（新增子模块） | 7.5 | 高 | MESA-4 文档控制 | ✅ 完整交付（E2E 28/28，Flowable+OSS ossId+契约+Javadoc） |
 | P0-6 | 电子签名 + DHR 批记录 | `common` 扩展（合规基础设施） | 7.5 | 高 | MESA-4 文档控制（合规） |
 | P0-7 | 核心模块单元测试补齐 | `pro/qc/spc` 测试包 | 7.5 | 高 | 工程质量底线 |
 | P0-8 | IoT 自动采集打通 | `dc` 扩展 + `common` 桥接 | 7.5 | 高 | MESA-5 数据采集 |
-| P0-9 | 批次（Lot）管理 | `md` 扩展 + `pro` 扩展 | 5 | 高 | MESA-10 追溯与谱系 | ✅ 编码+整改+前端打磨完成（运行时待验证） |
+| P0-9 | 批次（Lot）管理 | `md` 扩展 + `pro` 扩展 | 5 | 高 | MESA-10 追溯与谱系 | ✅ 完整交付（编码+整改+DDL落库+并入ry-mes.sql+Javadoc） |
 | **合计** | | | **60 人天** | | |
 
 ### 2.2 优先级矩阵
@@ -521,7 +521,7 @@ CREATE TABLE nr_8d_report (
 
 ### 3.5 P0-5 E-SOP 电子作业指导书
 
-> **实施状态**: 📝 实施方案已就绪（2026-07-26），待执行（Phase 4-C Week 34）。详见 [P0-5 实施方案](./2026-07-26-mes-p0-5-esop-implementation-plan.md)。
+> **实施状态**: ✅ 完整交付（2026-07-26）：编码 + SQL 落库 + 端到端联调 28/28 断言通过 + Javadoc 完善。详见 [P0-5 实施方案](./2026-07-26-mes-p0-5-esop-implementation-plan.md)。
 > - 独立 `sop` 子包（非 dc 扩展），4 张 `sop_` 表
 > - ⚠️ DDL 修正：`file_url VARCHAR(500)` -> `file_oss_id BIGINT`（OSS 私有桶存 ID，VO 用 `@Translation(OSS_ID_TO_URL)` 解析签名 URL，依据 memory `oss-private-bucket-store-ossid`）
 > - 审批流：Flowable（`WfCallBackServiceI`，ruoyi-mes 已依赖 ruoyi-flowable）+ 管理员兜底 approve/reject（R11）
@@ -802,11 +802,13 @@ ALTER TABLE eq_equipment
 
 ### 3.9 P0-9 批次（Lot）管理
 
-> **实施状态**: ✅ 编码 + 整改 + 前端打磨完成（2026-07-24 ~ 07-26），**运行时验证待闭合**。详见 [P0-9 实施方案](./2026-08-03-mes-p0-9-lot-management-implementation-plan.md) + [批次整改计划](./2026-07-25-mes-lot-remediation-plan.md)。
+> **实施状态**: ✅ 完整交付（2026-07-24 ~ 07-26）：编码 + 整改 + 前端打磨 + DDL/字典/菜单/autocode 落库 + 并入 `script/sql/ry-mes.sql` + Javadoc 完善。详见 [P0-9 实施方案](./2026-08-03-mes-p0-9-lot-management-implementation-plan.md) + [批次整改计划](./2026-07-25-mes-lot-remediation-plan.md)。
 > - 编码：3 表 DDL + 21 Java + 3 API + 3 页面 + 菜单 SQL，`mvn compile` 通过（39 class）
 > - 整改（07-25）：A1-A6 代码修复（编码顺序化+@Lock4j、数量/删除/放行守卫、SQL 4->2 整合）+ B1-B5 五链路（SN↔批次事件、工单 FEFO 领料、IQC->qc_status 钩子、NCR/进站契约）
 > - 前端打磨（07-25~07-26，9 批）：`plus-ui/src/views/mes` 全 38 页选择器化（无裸 ID 输入）+ dict-tag（无硬编码状态 map）+ 17 字典种子 + 批次编码 autoCode 规则
-> - **待办**：DDL 执行（ry-mes）+ 字典/菜单/autocode SQL 执行（ry-vue）+ 端到端联调 + 并入 `script/sql/ry-mes.sql` 规范库
+> - DDL/字典/菜单/autocode 已落本地库（各库总库已备份）；3 表 DDL 已并入 `script/sql/ry-mes.sql` 规范库
+> - Javadoc 完善（2026-07-26）：lt+sop 两包 51 文件方法级 Javadoc 补全（impl 镜像接口契约 + CAS/守卫/事务注记，controller @param/@return）
+> - 运行时 E2E：lt 契约方法（checkLotUsable/quarantineByNcr）待 P0-3 进站校验联调时一并验证
 
 #### 3.9.1 需求描述
 
@@ -1351,6 +1353,7 @@ P0-6 电子签名                                ███ ███
 |------|------|--------|---------|
 | v1.0 | 2026-07-24 | AI Agent | 初始版本,基于 P0 对标分析创建 |
 | v1.1 | 2026-07-26 | AI Agent | 同步:P0-9 完工状态、P0-2 DDL 5->4 表合并、菜单 ID 段校正(4172+)、P0-7 范围补 lt、时间线 P0-9 提前 |
+| v1.2 | 2026-07-26 | AI Agent | P0-5 E-SOP ✅ 完整交付(E2E 28/28)；P0-9 批次 ✅ 完整交付(DDL落库+并入ry-mes.sql+Javadoc)；lt/sop 两包 Javadoc 完善；doc/mes/sql 增量 SQL 清理(schema 已并入 ry-mes.sql + 总库备份) |
 
 ### 13.4 待评审开放问题
 

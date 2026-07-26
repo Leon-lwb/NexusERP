@@ -15,6 +15,10 @@ public interface ISopViewLogService {
 
     /**
      * 分页查询查阅记录列表
+     *
+     * @param bo         查阅记录查询条件
+     * @param pageQuery  分页参数
+     * @return 分页列表
      */
     TableDataInfo<SopViewLogVo> selectPageList(SopViewLogBo bo, PageQuery pageQuery);
 
@@ -28,12 +32,16 @@ public interface ISopViewLogService {
      * @param processId     关联工序ID(可选)
      * @param processName   工序名称(冗余,可选)
      * @param workstationId 工位ID(可选)
+     * @return 登记成功返回 true
      */
     Boolean recordView(Long sopId, String versionNo, Long woId, String woNo,
                        Long processId, String processName, Long workstationId);
 
     /**
      * 批量删除查阅记录
+     *
+     * @param ids 查阅记录ID集合
+     * @return 删除成功返回 true
      */
     Boolean deleteByIds(Long[] ids);
 }

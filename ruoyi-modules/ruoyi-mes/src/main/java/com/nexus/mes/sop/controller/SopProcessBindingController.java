@@ -32,6 +32,10 @@ public class SopProcessBindingController extends BaseController {
 
     /**
      * 分页查询绑定列表
+     *
+     * @param bo        查询参数
+     * @param pageQuery 分页参数
+     * @return 分页结果
      */
     @SaCheckPermission("mes:sop:binding:list")
     @GetMapping("/list")
@@ -41,6 +45,9 @@ public class SopProcessBindingController extends BaseController {
 
     /**
      * 根据ID获取绑定详情
+     *
+     * @param bindingId 绑定ID
+     * @return 绑定详情
      */
     @SaCheckPermission("mes:sop:binding:query")
     @GetMapping("/{bindingId}")
@@ -50,6 +57,9 @@ public class SopProcessBindingController extends BaseController {
 
     /**
      * 新增绑定(is_default=1 时同工序排他置0)
+     *
+     * @param bo 绑定业务对象
+     * @return 操作结果
      */
     @SaCheckPermission("mes:sop:binding:add")
     @Log(title = "工序SOP绑定新增", businessType = BusinessType.INSERT)
@@ -60,6 +70,9 @@ public class SopProcessBindingController extends BaseController {
 
     /**
      * 批量删除绑定
+     *
+     * @param ids 绑定ID数组
+     * @return 操作结果
      */
     @SaCheckPermission("mes:sop:binding:remove")
     @Log(title = "工序SOP绑定删除", businessType = BusinessType.DELETE)
@@ -70,6 +83,9 @@ public class SopProcessBindingController extends BaseController {
 
     /**
      * 查询工序绑定的SOP列表(is_default 优先 + sort_order)
+     *
+     * @param processId 工序ID
+     * @return 绑定列表
      */
     @SaCheckPermission("mes:sop:binding:list")
     @GetMapping("/by-process/{processId}")

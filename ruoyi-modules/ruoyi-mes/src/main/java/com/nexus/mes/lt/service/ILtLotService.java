@@ -40,31 +40,50 @@ public interface ILtLotService {
 
     /**
      * 分页查询批次列表
+     *
+     * @param bo         查询条件
+     * @param pageQuery  分页参数
+     * @return 分页结果
      */
     TableDataInfo<LtLotVo> selectPageList(LtLotBo bo, PageQuery pageQuery);
 
     /**
      * 根据ID获取批次详情
+     *
+     * @param lotId 批次ID
+     * @return 批次视图对象
      */
     LtLotVo selectById(Long lotId);
 
     /**
      * 根据批次编码查询
+     *
+     * @param lotCode 批次编码
+     * @return 批次视图对象
      */
     LtLotVo selectByCode(String lotCode);
 
     /**
      * 新增批次(自动生成编码,初始状态 IN_STOCK, QC PENDING)
+     *
+     * @param bo 批次业务对象
+     * @return 新增成功返回 true
      */
     Boolean insertByBo(LtLotBo bo);
 
     /**
      * 修改批次(仅 IN_STOCK/IN_USE 状态可编辑)
+     *
+     * @param bo 批次业务对象
+     * @return 修改成功返回 true
      */
     Boolean updateByBo(LtLotBo bo);
 
     /**
      * 批量删除批次(仅 IN_STOCK/SCRAPPED 状态可删)
+     *
+     * @param ids 批次ID数组
+     * @return 删除成功返回 true
      */
     Boolean deleteByIds(Long[] ids);
 
@@ -80,11 +99,18 @@ public interface ILtLotService {
 
     /**
      * 批次放行(QUARANTINED -> IN_STOCK,隔离解除)
+     *
+     * @param lotId 批次ID
+     * @return 放行成功返回 true
      */
     Boolean release(Long lotId);
 
     /**
      * 更新批次QC状态(PENDING -> PASS/FAIL)
+     *
+     * @param lotId    批次ID
+     * @param qcStatus 目标QC状态(PASS/FAIL)
+     * @return 更新成功返回 true
      */
     Boolean updateQcStatus(Long lotId, String qcStatus);
 
@@ -142,6 +168,7 @@ public interface ILtLotService {
     /**
      * 批次追溯链(批次 -> 工单消耗 -> SN 绑定)
      *
+     * @param lotId 批次ID
      * @return { lot, consumptions, bindings }
      */
     Map<String, Object> trace(Long lotId);

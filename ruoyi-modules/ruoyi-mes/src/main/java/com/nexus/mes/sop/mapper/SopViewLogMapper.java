@@ -5,7 +5,7 @@ import com.nexus.mes.sop.domain.SopViewLog;
 import com.nexus.mes.sop.domain.vo.SopViewLogVo;
 
 /**
- * SOP查阅记录 Mapper接口
+ * SOP查阅记录 Mapper接口, 实体 SopViewLog, VO SopViewLogVo
  *
  * @author Nexus
  */

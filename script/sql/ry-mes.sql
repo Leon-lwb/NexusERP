@@ -11,7 +11,7 @@
  Target Server Version : 50714 (5.7.14)
  File Encoding         : 65001
 
- Date: 24/07/2026 00:01:17
+ Date: 26/07/2026 20:35:11
 */
 
 SET NAMES utf8mb4;
@@ -487,6 +487,116 @@ CREATE TABLE `eq_spare_stock_log`  (
 -- ----------------------------
 -- Records of eq_spare_stock_log
 -- ----------------------------
+
+-- ----------------------------
+-- Table structure for lt_lot
+-- ----------------------------
+DROP TABLE IF EXISTS `lt_lot`;
+CREATE TABLE `lt_lot`  (
+  `lot_id` bigint(20) NOT NULL COMMENT '批次ID(主键)',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '000000',
+  `lot_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '批次编码',
+  `material_id` bigint(20) NOT NULL COMMENT '物料ID',
+  `material_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '物料编码(冗余)',
+  `material_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '物料名称(冗余)',
+  `supplier_id` bigint(20) NULL DEFAULT NULL COMMENT '供应商ID',
+  `supplier_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '供应商名称(冗余)',
+  `supplier_lot` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '供应商批次号',
+  `quantity` decimal(14, 4) NOT NULL COMMENT '批次数量',
+  `consumed_qty` decimal(14, 4) NULL DEFAULT 0.0000 COMMENT '已消耗数量',
+  `produced_date` date NULL DEFAULT NULL COMMENT '生产日期',
+  `expiry_date` date NULL DEFAULT NULL COMMENT '有效期',
+  `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'IN_STOCK' COMMENT '状态: IN_STOCK/IN_USE/CONSUMED/QUARANTINED/SCRAPPED',
+  `qc_status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'PENDING' COMMENT 'QC状态: PENDING/PASS/FAIL',
+  `iqc_id` bigint(20) NULL DEFAULT NULL COMMENT 'IQC检验单ID(关联qc_iqc.iqc_id,可空;关联后IQC完成自动回写qc_status)',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
+  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
+  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志',
+  PRIMARY KEY (`lot_id`) USING BTREE,
+  UNIQUE INDEX `uk_lot_code`(`lot_code`) USING BTREE,
+  INDEX `idx_material`(`material_id`) USING BTREE,
+  INDEX `idx_status`(`status`) USING BTREE,
+  INDEX `idx_qc_status`(`qc_status`) USING BTREE,
+  INDEX `idx_expiry`(`expiry_date`) USING BTREE,
+  INDEX `idx_iqc_id`(`iqc_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = 'MES批次主档' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of lt_lot
+-- ----------------------------
+INSERT INTO `lt_lot` VALUES (2081043029287907330, '000000', 'LOT-20260725-001', 1, '', '', 1, '', '', 0.0000, 0.0000, NULL, NULL, 'IN_STOCK', 'PENDING', NULL, '', 103, 1, '2026-07-25 23:44:57', 1, '2026-07-25 23:44:57', '0');
+INSERT INTO `lt_lot` VALUES (2081053196305989635, '000000', 'LOT20260726001', 99002, 'QC-RM-A', '质检测试原料A', 2062098763051089924, '天津化工材料有限公司', '', 2.0000, 2.0000, '2026-07-26', '2027-07-25', 'CONSUMED', 'PASS', NULL, '', 103, 1, '2026-07-26 00:25:21', 1, '2026-07-26 00:25:21', '0');
+
+-- ----------------------------
+-- Table structure for lt_sn_binding
+-- ----------------------------
+DROP TABLE IF EXISTS `lt_sn_binding`;
+CREATE TABLE `lt_sn_binding`  (
+  `binding_id` bigint(20) NOT NULL COMMENT '绑定ID(主键)',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '000000',
+  `sn_id` bigint(20) NOT NULL COMMENT 'SN ID',
+  `sn_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT 'SN编码(冗余)',
+  `lot_id` bigint(20) NOT NULL COMMENT '批次ID',
+  `lot_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '批次编码(冗余)',
+  `material_id` bigint(20) NOT NULL COMMENT '物料ID',
+  `bound_time` datetime NOT NULL COMMENT '绑定时间',
+  `bound_by` bigint(20) NULL DEFAULT NULL COMMENT '绑定人ID',
+  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
+  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志',
+  PRIMARY KEY (`binding_id`) USING BTREE,
+  UNIQUE INDEX `uk_sn_material`(`sn_id`, `material_id`) USING BTREE,
+  INDEX `idx_sn_id`(`sn_id`) USING BTREE,
+  INDEX `idx_lot_id`(`lot_id`) USING BTREE,
+  INDEX `idx_material_id`(`material_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = 'MES SN批次绑定关系' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of lt_sn_binding
+-- ----------------------------
+
+-- ----------------------------
+-- Table structure for lt_wo_consumption
+-- ----------------------------
+DROP TABLE IF EXISTS `lt_wo_consumption`;
+CREATE TABLE `lt_wo_consumption`  (
+  `consumption_id` bigint(20) NOT NULL COMMENT '消耗记录ID(主键)',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '000000',
+  `wo_id` bigint(20) NOT NULL COMMENT '工单ID',
+  `wo_no` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '工单编号(冗余)',
+  `lot_id` bigint(20) NOT NULL COMMENT '批次ID',
+  `lot_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '批次编码(冗余)',
+  `material_id` bigint(20) NOT NULL COMMENT '物料ID',
+  `material_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '物料编码(冗余)',
+  `consumed_qty` decimal(14, 4) NOT NULL COMMENT '消耗数量',
+  `consumed_time` datetime NOT NULL COMMENT '消耗时间',
+  `operator_id` bigint(20) NULL DEFAULT NULL COMMENT '操作员ID',
+  `operator_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '操作员姓名(冗余)',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
+  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
+  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志',
+  PRIMARY KEY (`consumption_id`) USING BTREE,
+  INDEX `idx_wo_id`(`wo_id`) USING BTREE,
+  INDEX `idx_lot_id`(`lot_id`) USING BTREE,
+  INDEX `idx_material_id`(`material_id`) USING BTREE,
+  INDEX `idx_consumed_time`(`consumed_time`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = 'MES工单批次消耗记录' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of lt_wo_consumption
+-- ----------------------------
+INSERT INTO `lt_wo_consumption` VALUES (2081053452590546946, '000000', 2080270525816516609, NULL, 2081053196305989635, 'LOT20260726001', 99002, 'QC-RM-A', 2.0000, '2026-07-26 00:26:22', 1, NULL, NULL, 103, 1, '2026-07-26 00:26:22', 1, '2026-07-26 00:26:22', '0');
 
 -- ----------------------------
 -- Table structure for mes_mbom
@@ -1191,6 +1301,147 @@ INSERT INTO `qc_oqc` VALUES (1, '000000', 'OQC-001', 10001, 1001, 'IF20251110001
 INSERT INTO `qc_oqc` VALUES (2080312885934026753, '000000', 'OQC-20260723-001', 2080229404229697537, 99001, 'QC-FP-001', '质检联动测试成品', 20.0000, 1.0000, 'QUALIFIED', '{}', 1, 'admin', '2026-07-23 23:24:21', 'COMPLETED', NULL, -1, -1, '2026-07-23 23:23:37', -1, '2026-07-23 23:23:37', '0');
 
 -- ----------------------------
+-- Table structure for sop_document
+-- ----------------------------
+DROP TABLE IF EXISTS `sop_document`;
+CREATE TABLE `sop_document`  (
+  `sop_id` bigint(20) NOT NULL COMMENT 'SOP ID(主键)',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '000000',
+  `sop_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT 'SOP编码',
+  `sop_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT 'SOP名称',
+  `sop_type` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '类型: PRODUCTION/INSPECTION/SAFETY/SETUP/CLEAN',
+  `current_version` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '当前发布版本号',
+  `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'DRAFT' COMMENT '状态: DRAFT/IN_REVIEW/PUBLISHED/ARCHIVED',
+  `file_oss_id` bigint(20) NULL DEFAULT NULL COMMENT '当前发布文件OSS ID(私有桶存ID)',
+  `file_type` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '文件类型: PDF/IMAGE/VIDEO/WORD',
+  `description` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '说明',
+  `approval_by` bigint(20) NULL DEFAULT NULL COMMENT '审批人ID',
+  `approval_time` datetime NULL DEFAULT NULL COMMENT '审批时间',
+  `approval_remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '审批意见',
+  `archive_reason` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '归档原因',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
+  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
+  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志',
+  PRIMARY KEY (`sop_id`) USING BTREE,
+  UNIQUE INDEX `uk_sop_code`(`sop_code`) USING BTREE,
+  INDEX `idx_status`(`status`) USING BTREE,
+  INDEX `idx_type`(`sop_type`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = 'MES SOP文档主档' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of sop_document
+-- ----------------------------
+INSERT INTO `sop_document` VALUES (2081355255391621121, '000000', 'SOP-E2E-A', 'E2E Test SOP A', 'PRODUCTION', '1.1', 'ARCHIVED', 2081355254821195778, 'PDF', 'E2E test', 1, '2026-07-26 20:25:39', 'v1.1-approve', 'E2E-archive', NULL, 103, 1, '2026-07-26 20:25:37', 1, '2026-07-26 20:25:41', '1');
+INSERT INTO `sop_document` VALUES (2081357146414551042, '000000', 'SOP20260726001', '测试sop', 'PRODUCTION', '1.0', 'ARCHIVED', 2081357120791547906, 'WORD', 'cs', 1, '2026-07-26 20:33:57', NULL, NULL, '', 103, 1, '2026-07-26 20:33:08', 1, '2026-07-26 20:33:08', '0');
+
+-- ----------------------------
+-- Table structure for sop_process_binding
+-- ----------------------------
+DROP TABLE IF EXISTS `sop_process_binding`;
+CREATE TABLE `sop_process_binding`  (
+  `binding_id` bigint(20) NOT NULL COMMENT '绑定ID(主键)',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '000000',
+  `process_id` bigint(20) NOT NULL COMMENT '工序ID(ERP bd_process.process_id, 工序主数据PK)',
+  `process_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '工序编码(冗余)',
+  `process_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '工序名称(冗余)',
+  `process_category` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '工序类别(冗余, PROCESSING/ASSEMBLY/INSPECTION/PACKAGING)',
+  `sop_id` bigint(20) NOT NULL COMMENT 'SOP ID',
+  `version_no` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '指定版本号(空=当前发布版)',
+  `is_default` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '是否该工序默认SOP(1/0)',
+  `sort_order` int(11) NULL DEFAULT 0 COMMENT '排序',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
+  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
+  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志',
+  PRIMARY KEY (`binding_id`) USING BTREE,
+  INDEX `idx_process`(`process_id`) USING BTREE,
+  INDEX `idx_sop_id`(`sop_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '工序SOP绑定' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of sop_process_binding
+-- ----------------------------
+INSERT INTO `sop_process_binding` VALUES (2081355265004965890, '000000', 1, 'E2E-PROC', 'E2E Process', 'PROCESSING', 2081355255391621121, NULL, '0', 1, NULL, 103, 1, '2026-07-26 20:25:40', 1, '2026-07-26 20:25:41', '1');
+INSERT INTO `sop_process_binding` VALUES (2081355265898352642, '000000', 1, 'E2E-PROC', 'E2E Process', 'PROCESSING', 2081355255391621121, NULL, '1', 2, NULL, 103, 1, '2026-07-26 20:25:40', 1, '2026-07-26 20:25:41', '1');
+
+-- ----------------------------
+-- Table structure for sop_version
+-- ----------------------------
+DROP TABLE IF EXISTS `sop_version`;
+CREATE TABLE `sop_version`  (
+  `version_id` bigint(20) NOT NULL COMMENT '版本ID(主键)',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '000000',
+  `sop_id` bigint(20) NOT NULL COMMENT 'SOP ID',
+  `version_no` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '版本号(如1.0/1.1)',
+  `file_oss_id` bigint(20) NOT NULL COMMENT '该版本文件OSS ID',
+  `file_type` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '文件类型: PDF/IMAGE/VIDEO/WORD',
+  `change_log` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '变更说明',
+  `published_time` datetime NULL DEFAULT NULL COMMENT '发布时间',
+  `published_by` bigint(20) NULL DEFAULT NULL COMMENT '发布人ID',
+  `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'PENDING' COMMENT '状态: PENDING/CURRENT/HISTORICAL',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
+  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
+  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志',
+  PRIMARY KEY (`version_id`) USING BTREE,
+  INDEX `idx_sop_id`(`sop_id`) USING BTREE,
+  INDEX `idx_status`(`status`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = 'SOP版本历史' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of sop_version
+-- ----------------------------
+INSERT INTO `sop_version` VALUES (2081355255400009730, '000000', 2081355255391621121, '1.0', 2081355254821195778, 'PDF', 'E2E test', '2026-07-26 20:25:38', 1, 'HISTORICAL', NULL, 103, 1, '2026-07-26 20:25:37', 1, '2026-07-26 20:25:37', '1');
+INSERT INTO `sop_version` VALUES (2081355261779546113, '000000', 2081355255391621121, '1.1', 2081355254821195778, 'PDF', 'v1.1 revision', '2026-07-26 20:25:39', 1, 'CURRENT', NULL, 103, 1, '2026-07-26 20:25:39', 1, '2026-07-26 20:25:39', '1');
+INSERT INTO `sop_version` VALUES (2081357146414551043, '000000', 2081357146414551042, '1.0', 2081357120791547906, 'WORD', 'cs', '2026-07-26 20:33:57', 1, 'CURRENT', NULL, 103, 1, '2026-07-26 20:33:08', 1, '2026-07-26 20:33:08', '0');
+
+-- ----------------------------
+-- Table structure for sop_view_log
+-- ----------------------------
+DROP TABLE IF EXISTS `sop_view_log`;
+CREATE TABLE `sop_view_log`  (
+  `log_id` bigint(20) NOT NULL COMMENT '查阅记录ID(主键)',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '000000',
+  `sop_id` bigint(20) NOT NULL COMMENT 'SOP ID',
+  `version_no` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '查阅的版本号',
+  `viewer_id` bigint(20) NOT NULL COMMENT '查阅人ID',
+  `viewer_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '查阅人姓名(冗余)',
+  `view_time` datetime NOT NULL COMMENT '查阅时间',
+  `wo_id` bigint(20) NULL DEFAULT NULL COMMENT '关联工单ID',
+  `wo_no` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '工单编号(冗余)',
+  `process_id` bigint(20) NULL DEFAULT NULL COMMENT '关联工序ID',
+  `process_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '工序名称(冗余)',
+  `workstation_id` bigint(20) NULL DEFAULT NULL COMMENT '工位ID',
+  `signature_id` bigint(20) NULL DEFAULT NULL COMMENT '电子签名记录ID(预留,P0-6接入)',
+  `ip_address` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT 'IP地址',
+  `user_agent` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT 'User-Agent',
+  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
+  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志',
+  PRIMARY KEY (`log_id`) USING BTREE,
+  INDEX `idx_sop_id`(`sop_id`) USING BTREE,
+  INDEX `idx_viewer`(`viewer_id`) USING BTREE,
+  INDEX `idx_wo_id`(`wo_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = 'SOP查阅记录' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of sop_view_log
+-- ----------------------------
+
+-- ----------------------------
 -- Table structure for spc_control_chart
 -- ----------------------------
 DROP TABLE IF EXISTS `spc_control_chart`;
@@ -1222,7 +1473,7 @@ CREATE TABLE `spc_control_chart`  (
 -- ----------------------------
 -- Records of spc_control_chart
 -- ----------------------------
-INSERT INTO `spc_control_chart` VALUES (1, '000000', 'CNC主轴温度控制图', 'X_BAR_R', 1, 1, 1, 85.0000, 75.0000, 65.0000, 5, 'ACTIVE', '数控车床主轴温度SPC监控', 100, 1, NULL, NULL, NULL, '0');
+INSERT INTO `spc_control_chart` VALUES (1, '000000', 'CNC主轴温度控制图', 'X_BAR_R', 1, 1, 1, 85.2750, 76.6200, 67.9650, 5, 'ACTIVE', '数控车床主轴温度SPC监控', 100, 1, NULL, 1, '2026-07-26 02:00:03', '0');
 INSERT INTO `spc_control_chart` VALUES (2, '000000', '装配关键尺寸控制图', 'X_BAR_R', 3, 1001, 3, 10.0500, 10.0000, 9.9500, 5, 'ACTIVE', '装配工序关键尺寸SPC监控(目标10mm)', 100, 1, NULL, NULL, NULL, '0');
 INSERT INTO `spc_control_chart` VALUES (3, '000000', '焊接温度控制图', 'X_BAR_R', 4, 1, 2, 280.0000, 250.0000, 220.0000, 5, 'ACTIVE', '焊接温度SPC监控', 100, 1, NULL, NULL, NULL, '0');
 
@@ -1254,5 +1505,154 @@ CREATE TABLE `spc_data_point`  (
 -- ----------------------------
 -- Records of spc_data_point
 -- ----------------------------
+INSERT INTO `spc_data_point` VALUES (2081077029524107266, '000000', 1, 1, NULL, 76.6200, '0', NULL, '2026-06-10 08:10:00', 103, 1, '2026-07-26 02:00:03', 1, '2026-07-26 02:00:03', '0');
+
+-- ----------------------------
+-- Table structure for tg_maintenance_plan
+-- ----------------------------
+DROP TABLE IF EXISTS `tg_maintenance_plan`;
+CREATE TABLE `tg_maintenance_plan`  (
+  `plan_id` bigint(20) NOT NULL COMMENT '计划ID(主键)',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '000000',
+  `tooling_id` bigint(20) NOT NULL COMMENT '工装ID',
+  `plan_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '计划名称',
+  `trigger_type` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '触发类型: BY_COUNT/BY_HOURS/PERIODIC',
+  `trigger_value` int(11) NULL DEFAULT NULL COMMENT '触发阈值(次数/小时/天数)',
+  `last_maintain_time` datetime NULL DEFAULT NULL COMMENT '上次保养时间',
+  `next_maintain_time` datetime NULL DEFAULT NULL COMMENT '下次保养时间(PERIODIC)',
+  `next_maintain_count` int(11) NULL DEFAULT NULL COMMENT '下次保养次数阈值(BY_COUNT)',
+  `next_maintain_hours` decimal(14, 2) NULL DEFAULT NULL COMMENT '下次保养时长阈值(BY_HOURS)',
+  `enabled` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '1' COMMENT '是否启用(1/0)',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
+  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
+  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志',
+  PRIMARY KEY (`plan_id`) USING BTREE,
+  INDEX `idx_tooling_id`(`tooling_id`) USING BTREE,
+  INDEX `idx_enabled`(`enabled`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = 'MES工装保养计划' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of tg_maintenance_plan
+-- ----------------------------
+INSERT INTO `tg_maintenance_plan` VALUES (2081272381422350338, '000000', 2081272377081245697, 'A-Plan-ByCount', 'BY_COUNT', 1000, NULL, NULL, 1000, NULL, '1', NULL, 103, 1, '2026-07-26 14:56:19', 1, '2026-07-26 14:56:19', '0');
+
+-- ----------------------------
+-- Table structure for tg_maintenance_record
+-- ----------------------------
+DROP TABLE IF EXISTS `tg_maintenance_record`;
+CREATE TABLE `tg_maintenance_record`  (
+  `record_id` bigint(20) NOT NULL COMMENT '记录ID(主键)',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '000000',
+  `tooling_id` bigint(20) NOT NULL COMMENT '工装ID',
+  `plan_id` bigint(20) NULL DEFAULT NULL COMMENT '关联计划ID',
+  `maintain_type` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '保养类型: PLANNED/REPAIR',
+  `maintain_time` datetime NOT NULL COMMENT '保养时间',
+  `maintainer_id` bigint(20) NULL DEFAULT NULL COMMENT '保养人ID',
+  `maintainer_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '保养人姓名(冗余)',
+  `used_count_before` int(11) NULL DEFAULT NULL COMMENT '保养前次数',
+  `used_count_after` int(11) NULL DEFAULT NULL COMMENT '保养后次数(归零=0)',
+  `used_hours_before` decimal(14, 2) NULL DEFAULT NULL COMMENT '保养前时长',
+  `used_hours_after` decimal(14, 2) NULL DEFAULT NULL COMMENT '保养后时长(归零=0)',
+  `description` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '保养内容',
+  `cost` decimal(14, 2) NULL DEFAULT NULL COMMENT '保养成本',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
+  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
+  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志',
+  PRIMARY KEY (`record_id`) USING BTREE,
+  INDEX `idx_tooling_id`(`tooling_id`) USING BTREE,
+  INDEX `idx_plan_id`(`plan_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = 'MES工装保养记录' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of tg_maintenance_record
+-- ----------------------------
+INSERT INTO `tg_maintenance_record` VALUES (2081272385134309378, '000000', 2081272377081245697, NULL, 'PLANNED', '2026-07-26 14:56:19', 1, 'admin', 1100, 0, 2.50, 0.00, 'E2E routine maintain', 200.00, NULL, 103, 1, '2026-07-26 14:56:19', 1, '2026-07-26 14:56:19', '0');
+
+-- ----------------------------
+-- Table structure for tg_tooling
+-- ----------------------------
+DROP TABLE IF EXISTS `tg_tooling`;
+CREATE TABLE `tg_tooling`  (
+  `tooling_id` bigint(20) NOT NULL COMMENT '工装ID(主键)',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '000000',
+  `tooling_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '工装编码',
+  `tooling_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '工装名称',
+  `tooling_type` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '类型: MOLD/FIXTURE/CUTTER/GAUGE/OTHER',
+  `spec` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '规格',
+  `workshop_id` bigint(20) NULL DEFAULT NULL COMMENT '所属车间ID',
+  `workshop_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '车间名称(冗余)',
+  `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'IDLE' COMMENT '状态: IDLE/IN_USE/MAINTENANCE/SCRAPPED',
+  `total_life_count` int(11) NULL DEFAULT NULL COMMENT '总寿命(次数)',
+  `total_life_hours` decimal(14, 2) NULL DEFAULT NULL COMMENT '总寿命(小时)',
+  `used_count` int(11) NULL DEFAULT 0 COMMENT '已使用次数',
+  `used_hours` decimal(14, 2) NULL DEFAULT 0.00 COMMENT '已使用时长',
+  `last_maintain_time` datetime NULL DEFAULT NULL COMMENT '上次保养时间',
+  `purchase_date` date NULL DEFAULT NULL COMMENT '采购日期',
+  `purchase_cost` decimal(14, 2) NULL DEFAULT NULL COMMENT '采购成本',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
+  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
+  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志',
+  PRIMARY KEY (`tooling_id`) USING BTREE,
+  UNIQUE INDEX `uk_tooling_code`(`tooling_code`) USING BTREE,
+  INDEX `idx_status`(`status`) USING BTREE,
+  INDEX `idx_type`(`tooling_type`) USING BTREE,
+  INDEX `idx_workshop`(`workshop_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = 'MES工装台账' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of tg_tooling
+-- ----------------------------
+INSERT INTO `tg_tooling` VALUES (2081272377081245697, '000000', 'TG-E2E-A', 'E2E Test Mold A', 'MOLD', NULL, 1, 'Test WS', 'SCRAPPED', 1000, 100.00, 0, 0.00, '2026-07-26 14:56:19', NULL, NULL, 'E2E-Test-Scrap', 103, 1, '2026-07-26 14:56:18', 1, '2026-07-26 14:56:18', '0');
+INSERT INTO `tg_tooling` VALUES (2081272388263260162, '000000', 'TG-E2E-B', 'E2E Test Gauge B', 'GAUGE', NULL, NULL, NULL, 'IDLE', 5000, NULL, 0, 0.00, NULL, NULL, NULL, NULL, 103, 1, '2026-07-26 14:56:20', 1, '2026-07-26 14:56:21', '1');
+
+-- ----------------------------
+-- Table structure for tg_usage_record
+-- ----------------------------
+DROP TABLE IF EXISTS `tg_usage_record`;
+CREATE TABLE `tg_usage_record`  (
+  `usage_id` bigint(20) NOT NULL COMMENT '使用记录ID(主键)',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '000000',
+  `tooling_id` bigint(20) NOT NULL COMMENT '工装ID',
+  `wo_id` bigint(20) NULL DEFAULT NULL COMMENT '工单ID',
+  `wo_no` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '工单编号(冗余)',
+  `workstation_id` bigint(20) NULL DEFAULT NULL COMMENT '工位ID',
+  `workstation_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '工位名称(冗余)',
+  `operator_id` bigint(20) NULL DEFAULT NULL COMMENT '操作员ID',
+  `operator_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '操作员姓名(冗余)',
+  `checkout_time` datetime NOT NULL COMMENT '领用时间',
+  `return_time` datetime NULL DEFAULT NULL COMMENT '归还时间',
+  `usage_count` int(11) NULL DEFAULT 1 COMMENT '使用次数',
+  `usage_hours` decimal(14, 2) NULL DEFAULT NULL COMMENT '使用时长',
+  `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'OUT' COMMENT '状态: OUT/RETURNED',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
+  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
+  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志',
+  PRIMARY KEY (`usage_id`) USING BTREE,
+  INDEX `idx_tooling_id`(`tooling_id`) USING BTREE,
+  INDEX `idx_wo_id`(`wo_id`) USING BTREE,
+  INDEX `idx_status`(`status`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = 'MES工装使用领用记录' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of tg_usage_record
+-- ----------------------------
+INSERT INTO `tg_usage_record` VALUES (2081272379664936961, '000000', 2081272377081245697, 100, 'WO-E2E-001', 1, 'WS1', 1, 'admin', '2026-07-26 14:56:18', '2026-07-26 14:56:18', 500, 2.50, 'RETURNED', NULL, 103, 1, '2026-07-26 14:56:18', 1, '2026-07-26 14:56:18', '0');
+INSERT INTO `tg_usage_record` VALUES (2081272382944882689, '000000', 2081272377081245697, NULL, NULL, NULL, NULL, 1, 'admin', '2026-07-26 14:56:19', '2026-07-26 14:56:19', 600, NULL, 'RETURNED', NULL, 103, 1, '2026-07-26 14:56:19', 1, '2026-07-26 14:56:19', '0');
 
 SET FOREIGN_KEY_CHECKS = 1;

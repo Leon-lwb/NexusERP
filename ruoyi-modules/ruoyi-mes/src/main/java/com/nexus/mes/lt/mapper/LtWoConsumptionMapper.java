@@ -6,6 +6,7 @@ import com.nexus.mes.lt.domain.vo.LtWoConsumptionVo;
 
 /**
  * MES工单批次消耗 Mapper接口
+ * <p>实体: {@link LtWoConsumption} / VO: {@link LtWoConsumptionVo}</p>
  *
  * @author Nexus
  */

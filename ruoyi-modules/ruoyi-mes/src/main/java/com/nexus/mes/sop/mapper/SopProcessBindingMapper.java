@@ -5,7 +5,7 @@ import com.nexus.mes.sop.domain.SopProcessBinding;
 import com.nexus.mes.sop.domain.vo.SopProcessBindingVo;
 
 /**
- * 工序SOP绑定 Mapper接口
+ * 工序SOP绑定 Mapper接口, 实体 SopProcessBinding, VO SopProcessBindingVo
  *
  * @author Nexus
  */

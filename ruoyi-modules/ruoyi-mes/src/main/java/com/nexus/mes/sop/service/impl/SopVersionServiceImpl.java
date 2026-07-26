@@ -35,6 +35,13 @@ public class SopVersionServiceImpl implements ISopVersionService {
 
     private final SopVersionMapper baseMapper;
 
+    /**
+     * 分页查询版本列表
+     *
+     * @param bo        查询参数
+     * @param pageQuery 分页参数
+     * @return 分页结果
+     */
     @Override
     public TableDataInfo<SopVersionVo> selectPageList(SopVersionBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<SopVersion> lqw = buildQueryWrapper(bo);
@@ -42,6 +49,12 @@ public class SopVersionServiceImpl implements ISopVersionService {
         return TableDataInfo.build(page);
     }
 
+    /**
+     * 查询SOP的版本列表(按 published_time desc, 未发布的按 create_time desc)
+     *
+     * @param sopId SOP文档ID
+     * @return 版本列表
+     */
     @Override
     public List<SopVersionVo> selectBySop(Long sopId) {
         return baseMapper.selectVoList(Wrappers.<SopVersion>lambdaQuery()
@@ -50,11 +63,23 @@ public class SopVersionServiceImpl implements ISopVersionService {
             .orderByDesc(SopVersion::getCreateTime));
     }
 
+    /**
+     * 根据ID获取版本详情
+     *
+     * @param versionId 版本ID
+     * @return 版本详情
+     */
     @Override
     public SopVersionVo selectById(Long versionId) {
         return baseMapper.selectVoById(versionId);
     }
 
+    /**
+     * 批量删除版本(守卫: CURRENT 版本不可删, 先发布新版本或归档SOP)
+     *
+     * @param ids 版本ID数组
+     * @return 删除成功返回 true
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean deleteByIds(Long[] ids) {
@@ -74,6 +99,9 @@ public class SopVersionServiceImpl implements ISopVersionService {
         return rows > 0;
     }
 
+    /**
+     * 构建查询条件: sopId/versionNo/status 精确匹配, 按创建时间倒序
+     */
     private LambdaQueryWrapper<SopVersion> buildQueryWrapper(SopVersionBo bo) {
         return Wrappers.<SopVersion>lambdaQuery()
             .eq(bo.getSopId() != null, SopVersion::getSopId, bo.getSopId())

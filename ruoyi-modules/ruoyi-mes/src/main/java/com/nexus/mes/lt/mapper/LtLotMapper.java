@@ -6,6 +6,7 @@ import com.nexus.mes.lt.domain.vo.LtLotVo;
 
 /**
  * MES批次 Mapper接口
+ * <p>实体: {@link LtLot} / VO: {@link LtLotVo}</p>
  *
  * @author Nexus
  */

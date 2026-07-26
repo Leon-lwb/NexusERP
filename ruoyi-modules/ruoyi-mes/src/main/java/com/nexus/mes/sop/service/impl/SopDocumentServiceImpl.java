@@ -63,6 +63,13 @@ public class SopDocumentServiceImpl implements ISopDocumentService, WfCallBackSe
     private final AutoCodeUtil autoCodeUtil;
     private final IWfProcessService processService;
 
+    /**
+     * 分页查询SOP文档列表
+     *
+     * @param bo        查询参数
+     * @param pageQuery 分页参数
+     * @return 分页结果
+     */
     @Override
     public TableDataInfo<SopDocumentVo> selectPageList(SopDocumentBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<SopDocument> lqw = buildQueryWrapper(bo);
@@ -70,12 +77,26 @@ public class SopDocumentServiceImpl implements ISopDocumentService, WfCallBackSe
         return TableDataInfo.build(page);
     }
 
+    /**
+     * 根据ID获取SOP详情
+     *
+     * @param sopId SOP文档ID
+     * @return SOP详情
+     */
     @Override
     public SopDocumentVo selectById(Long sopId) {
         SopDocumentVo vo = baseMapper.selectVoById(sopId);
         return vo;
     }
 
+    /**
+     * 新增SOP(自动生成编码 + 建首版本 PENDING)
+     * <p>编码为空时自动生成 MES_SOP_CODE; 首版本 v1.0 PENDING 态。
+     * 编码唯一性校验, 首版本文件不得为空。</p>
+     *
+     * @param bo SOP业务对象(含文件OssId)
+     * @return 新增成功返回 true
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean insertByBo(SopDocumentBo bo) {
@@ -113,6 +134,13 @@ public class SopDocumentServiceImpl implements ISopDocumentService, WfCallBackSe
         return true;
     }
 
+    /**
+     * 修改SOP(仅 DRAFT/ARCHIVED 可编辑; PUBLISHED 需先新增版本修订)
+     * <p>状态守卫: 非 DRAFT/ARCHIVED 时抛异常。</p>
+     *
+     * @param bo SOP业务对象
+     * @return 修改成功返回 true
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean updateByBo(SopDocumentBo bo) {
@@ -133,6 +161,13 @@ public class SopDocumentServiceImpl implements ISopDocumentService, WfCallBackSe
         return true;
     }
 
+    /**
+     * 批量删除SOP(孤儿守卫: PUBLISHED 不可删; 存在绑定/查阅记录不可删)
+     * <p>级联删除版本。发布状态、工序绑定、查阅记录均阻止删除以保障追溯完整性。</p>
+     *
+     * @param ids SOP文档ID数组
+     * @return 删除成功返回 true
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean deleteByIds(Long[] ids) {
@@ -166,6 +201,14 @@ public class SopDocumentServiceImpl implements ISopDocumentService, WfCallBackSe
         return rows > 0;
     }
 
+    /**
+     * 新增版本(DRAFT 或 PUBLISHED 上修订) -> PENDING, sop_document.status DRAFT
+     * <p>PUBLISHED/IN_REVIEW 下修订时主档回退 DRAFT; ARCHIVED 不可修订。
+     * 版本号留空则自动递增 (1.0 -> 1.1 -> 1.2)。</p>
+     *
+     * @param bo 版本业务对象(含文件OssId)
+     * @return 新增成功返回 true
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean addVersion(SopVersionBo bo) {
@@ -201,6 +244,15 @@ public class SopDocumentServiceImpl implements ISopDocumentService, WfCallBackSe
         return true;
     }
 
+    /**
+     * 提交审批: DRAFT -> IN_REVIEW (CAS 状态守卫)
+     * <p>selectFlowId 非空则走 Flowable 启动流程; 异常时降级为仅改状态(管理员兜底)。
+     * CAS 更新(sopId + DRAFT) 确保并发安全。</p>
+     *
+     * @param sopId        SOP文档ID
+     * @param selectFlowId 流程定义ID(可空, 空则仅改状态)
+     * @return 提交成功返回 true
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean submitForApproval(Long sopId, String selectFlowId) {
@@ -266,6 +318,12 @@ public class SopDocumentServiceImpl implements ISopDocumentService, WfCallBackSe
         }
     }
 
+    /**
+     * Flowable 回调钩子: 根据业务数据ID获取业务表单数据
+     *
+     * @param dataId 业务数据ID(sopId 字符串)
+     * @return SopDocumentVo 或 null(解析失败时)
+     */
     @Override
     public Object getBusinessDataById(String dataId) {
         try {
@@ -275,11 +333,27 @@ public class SopDocumentServiceImpl implements ISopDocumentService, WfCallBackSe
         }
     }
 
+    /**
+     * Flowable 回调钩子: 返回当前节点的流程变量
+     * <p>SOP 审批无需额外变量, 返回 null。</p>
+     *
+     * @param taskNameId 节点定义ID
+     * @param values     前端传入的变量(含dataId)
+     * @return 始终返回 null
+     */
     @Override
     public Map<String, Object> flowValuesOfTask(String taskNameId, Map<String, Object> values) {
         return null;
     }
 
+    /**
+     * Flowable 回调钩子: 返回当前节点的候选人用户名
+     * <p>SOP 审批无特殊候选人逻辑, 返回 null。</p>
+     *
+     * @param taskNameId 节点定义ID
+     * @param values     前端传入的变量(含dataId)
+     * @return 始终返回 null
+     */
     @Override
     public List<String> flowCandidateUsernamesOfTask(String taskNameId, Map<String, Object> values) {
         return null;
@@ -336,6 +410,14 @@ public class SopDocumentServiceImpl implements ISopDocumentService, WfCallBackSe
         return true;
     }
 
+    /**
+     * 归档(废止): PUBLISHED -> ARCHIVED (CAS 状态守卫)
+     * <p>仅已发布状态可归档, CAS 更新(sopId + PUBLISHED) 确保并发安全。</p>
+     *
+     * @param sopId  SOP文档ID
+     * @param reason 归档原因(可空)
+     * @return 归档成功返回 true
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean archive(Long sopId, String reason) {
@@ -400,6 +482,9 @@ public class SopDocumentServiceImpl implements ISopDocumentService, WfCallBackSe
         log.info("SOP发布成功: sopId={}, version={}", sopId, pending.getVersionNo());
     }
 
+    /**
+     * 直接更新 SOP 状态(无 CAS 守卫, 供 Flowable 回调使用)
+     */
     private void updateStatus(Long sopId, String status) {
         baseMapper.update(null, Wrappers.<SopDocument>lambdaUpdate()
             .set(SopDocument::getStatus, status)
@@ -413,6 +498,9 @@ public class SopDocumentServiceImpl implements ISopDocumentService, WfCallBackSe
         return autoCodeUtil.genSerialCode("MES_SOP_CODE", null);
     }
 
+    /**
+     * 构建查询条件: sopCode精确/sopName模糊/sopType精确/status精确, 按创建时间倒序
+     */
     private LambdaQueryWrapper<SopDocument> buildQueryWrapper(SopDocumentBo bo) {
         return Wrappers.<SopDocument>lambdaQuery()
             .eq(StringUtils.isNotBlank(bo.getSopCode()), SopDocument::getSopCode, bo.getSopCode())

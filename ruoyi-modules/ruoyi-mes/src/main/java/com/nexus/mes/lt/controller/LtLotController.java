@@ -34,6 +34,10 @@ public class LtLotController extends BaseController {
 
     /**
      * 分页查询批次列表
+     *
+     * @param bo        查询条件
+     * @param pageQuery 分页参数
+     * @return 批次分页数据
      */
     @SaCheckPermission("mes:lt:lot:list")
     @GetMapping("/list")
@@ -43,6 +47,9 @@ public class LtLotController extends BaseController {
 
     /**
      * 根据ID获取批次详情
+     *
+     * @param lotId 批次ID
+     * @return 批次详情
      */
     @SaCheckPermission("mes:lt:lot:query")
     @GetMapping("/{lotId}")
@@ -52,6 +59,9 @@ public class LtLotController extends BaseController {
 
     /**
      * 根据批次编码查询
+     *
+     * @param lotCode 批次编码
+     * @return 批次详情
      */
     @SaCheckPermission("mes:lt:lot:query")
     @GetMapping("/by-code/{lotCode}")
@@ -61,6 +71,9 @@ public class LtLotController extends BaseController {
 
     /**
      * 新增批次
+     *
+     * @param bo 批次业务对象
+     * @return 操作结果
      */
     @SaCheckPermission("mes:lt:lot:add")
     @Log(title = "批次新增", businessType = BusinessType.INSERT)
@@ -71,6 +84,9 @@ public class LtLotController extends BaseController {
 
     /**
      * 修改批次
+     *
+     * @param bo 批次业务对象
+     * @return 操作结果
      */
     @SaCheckPermission("mes:lt:lot:edit")
     @Log(title = "批次修改", businessType = BusinessType.UPDATE)
@@ -81,6 +97,9 @@ public class LtLotController extends BaseController {
 
     /**
      * 批量删除批次
+     *
+     * @param ids 批次ID数组
+     * @return 操作结果
      */
     @SaCheckPermission("mes:lt:lot:remove")
     @Log(title = "批次删除", businessType = BusinessType.DELETE)
@@ -91,6 +110,10 @@ public class LtLotController extends BaseController {
 
     /**
      * 批次隔离(IN_STOCK/IN_USE -> QUARANTINED)
+     *
+     * @param lotId  批次ID
+     * @param remark 隔离原因(可空)
+     * @return 操作结果
      */
     @SaCheckPermission("mes:lt:lot:quarantine")
     @Log(title = "批次隔离", businessType = BusinessType.UPDATE)
@@ -102,6 +125,10 @@ public class LtLotController extends BaseController {
 
     /**
      * 批次报废(QUARANTINED -> SCRAPPED)
+     *
+     * @param lotId  批次ID
+     * @param remark 报废原因(可空)
+     * @return 操作结果
      */
     @SaCheckPermission("mes:lt:lot:scrap")
     @Log(title = "批次报废", businessType = BusinessType.UPDATE)
@@ -113,6 +140,9 @@ public class LtLotController extends BaseController {
 
     /**
      * 批次放行(QUARANTINED -> IN_STOCK,隔离解除)
+     *
+     * @param lotId 批次ID
+     * @return 操作结果
      */
     @SaCheckPermission("mes:lt:lot:release")
     @Log(title = "批次放行", businessType = BusinessType.UPDATE)
@@ -123,6 +153,10 @@ public class LtLotController extends BaseController {
 
     /**
      * 更新批次QC状态(PENDING -> PASS/FAIL)
+     *
+     * @param lotId    批次ID
+     * @param qcStatus 目标QC状态(PASS/FAIL)
+     * @return 操作结果
      */
     @SaCheckPermission("mes:lt:lot:qc")
     @Log(title = "批次QC状态更新", businessType = BusinessType.UPDATE)
@@ -134,6 +168,10 @@ public class LtLotController extends BaseController {
 
     /**
      * FEFO 推荐: 按到期升序返回可用批次
+     *
+     * @param materialId  物料ID
+     * @param requiredQty 需求数量(可空,传值则累加直到满足)
+     * @return 推荐批次列表
      */
     @SaCheckPermission("mes:lt:lot:fefo")
     @GetMapping("/fefo/{materialId}")
@@ -144,6 +182,9 @@ public class LtLotController extends BaseController {
 
     /**
      * 批次追溯链(批次 -> 工单消耗 -> SN 绑定)
+     *
+     * @param lotId 批次ID
+     * @return 追溯数据(lot/consumptions/bindings/woIds/snIds)
      */
     @SaCheckPermission("mes:lt:lot:trace")
     @GetMapping("/trace/{lotId}")

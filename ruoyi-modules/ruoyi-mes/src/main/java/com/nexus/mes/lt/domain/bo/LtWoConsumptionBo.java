@@ -11,6 +11,7 @@ import java.math.BigDecimal;
 
 /**
  * MES工单批次消耗业务对象 lt_wo_consumption
+ * <p>属于 MES 批次管理模块，承载 工单批次消耗记录 的增删入参。</p>
  *
  * @author Nexus
  */

@@ -9,6 +9,7 @@ import com.nexus.mes.lt.domain.LtSnBinding;
 
 /**
  * MES SN批次绑定业务对象 lt_sn_binding
+ * <p>属于 MES 批次管理模块，承载 SN-批次绑定关系的增删入参。</p>
  *
  * @author Nexus
  */

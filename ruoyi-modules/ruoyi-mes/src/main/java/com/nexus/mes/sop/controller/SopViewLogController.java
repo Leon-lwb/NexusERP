@@ -30,6 +30,10 @@ public class SopViewLogController extends BaseController {
 
     /**
      * 分页查询查阅记录列表
+     *
+     * @param bo        查询参数
+     * @param pageQuery 分页参数
+     * @return 分页结果
      */
     @SaCheckPermission("mes:sop:viewlog:list")
     @GetMapping("/list")
@@ -39,6 +43,15 @@ public class SopViewLogController extends BaseController {
 
     /**
      * 登记查阅(查看器打开时调): viewer/time/wo/process/IP/UA, signature_id=null(预留P0-6)
+     *
+     * @param sopId         SOP ID
+     * @param versionNo     查阅的版本号(可空)
+     * @param woId          关联工单ID(可空)
+     * @param woNo          工单编号(可空)
+     * @param processId     关联工序ID(可空)
+     * @param processName   工序名称(可空)
+     * @param workstationId 工位ID(可空)
+     * @return 操作结果
      */
     @SaCheckPermission("mes:sop:viewlog:list")
     @Log(title = "SOP查阅登记", businessType = BusinessType.INSERT)
@@ -55,6 +68,9 @@ public class SopViewLogController extends BaseController {
 
     /**
      * 批量删除查阅记录
+     *
+     * @param ids 查阅记录ID数组
+     * @return 操作结果
      */
     @SaCheckPermission("mes:sop:viewlog:list")
     @Log(title = "SOP查阅记录删除", businessType = BusinessType.DELETE)
