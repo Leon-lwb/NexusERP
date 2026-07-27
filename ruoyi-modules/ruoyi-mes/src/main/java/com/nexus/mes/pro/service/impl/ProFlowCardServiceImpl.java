@@ -13,17 +13,23 @@ import com.nexus.mes.pro.domain.ProFlowCard;
 import com.nexus.mes.pro.domain.ProFlowCardStep;
 import com.nexus.mes.pro.domain.ProWorkOrder;
 import com.nexus.mes.pro.domain.ProWorkOrderStep;
+import com.nexus.mes.pro.domain.bo.ProEntryBo;
+import com.nexus.mes.pro.domain.bo.ProExitBo;
 import com.nexus.mes.pro.domain.bo.ProFlowCardBo;
+import com.nexus.mes.pro.domain.bo.ProSkipBo;
+import com.nexus.mes.pro.domain.vo.ProCheckResultVo;
 import com.nexus.mes.pro.domain.vo.ProFlowCardStepVo;
 import com.nexus.mes.pro.domain.vo.ProFlowCardVo;
 import com.nexus.mes.pro.mapper.ProFlowCardMapper;
 import com.nexus.mes.pro.mapper.ProFlowCardStepMapper;
 import com.nexus.mes.pro.mapper.ProWorkOrderMapper;
 import com.nexus.mes.pro.mapper.ProWorkOrderStepMapper;
+import com.nexus.mes.pro.service.IProEntryCheckService;
 import com.nexus.mes.pro.service.IProFlowCardService;
 import com.nexus.mes.pro.service.IProWorkOrderService;
 import com.nexus.mes.qc.domain.bo.QcIpqcBo;
 import com.nexus.mes.qc.service.IQcIpqcService;
+import com.nexus.mes.sop.service.ISopProcessBindingService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -55,6 +61,10 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
     private final IProWorkOrderService proWorkOrderService;
     /** IPQC 服务：关键工序报工时自动建过程检验单 */
     private final IQcIpqcService iqcIpqcService;
+    /** 进站/出站校验规则引擎(P0-3) */
+    private final IProEntryCheckService proEntryCheckService;
+    /** SOP 工序绑定服务(P0-3 进站推送 SOP) */
+    private final ISopProcessBindingService sopBindingService;
 
     @Override
     /**
@@ -397,6 +407,149 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
         if (pendingCount == 0) {
             completeCard(cardId);
         }
+    }
+
+    // ==================== P0-3 进站/出站/跳站 ====================
+
+    /**
+     * 进站(P0-3): ENTRY 校验 -> 通过则 startStep + 推送SOP + 记录进站校验结果
+     */
+    @Lock4j(keys = {"#bo.cardId"})
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public ProCheckResultVo entry(ProEntryBo bo) {
+        log.info("工序进站: cardId={}, stepRecordId={}, operatorId={}", bo.getCardId(), bo.getStepRecordId(), bo.getOperatorId());
+
+        // 1. 执行进站校验(含内置 SERIAL_GATE)
+        ProCheckResultVo result = proEntryCheckService.runEntryChecks(bo.getStepRecordId(), bo);
+        if (Boolean.FALSE.equals(result.getPassed())) {
+            // 校验失败: 记录 entry_check_result=FAIL,不流转状态(操作员可整改后重试)
+            stepMapper.update(null, Wrappers.<ProFlowCardStep>lambdaUpdate()
+                .set(ProFlowCardStep::getEntryCheckResult, "FAIL")
+                .set(ProFlowCardStep::getEntryCheckRemark, buildCheckRemark(result))
+                .eq(ProFlowCardStep::getStepRecordId, bo.getStepRecordId()));
+            return result;
+        }
+
+        // 2. 校验通过: 开工(复用既有 startStep 状态机)
+        startStep(bo.getCardId(), bo.getStepRecordId(), bo.getOperatorId());
+
+        // 3. 推送 SOP 到工位(失败不阻断)
+        try {
+            sopBindingService.pushSopToWorkstation(bo.getStepRecordId(), bo.getOperatorId());
+            result.setSopPushed(true);
+        } catch (Exception e) {
+            log.warn("进站推送SOP失败(不阻断): stepRecordId={}", bo.getStepRecordId(), e);
+            result.setSopPushed(false);
+        }
+
+        // 4. 记录 entry_check_result=PASS
+        stepMapper.update(null, Wrappers.<ProFlowCardStep>lambdaUpdate()
+            .set(ProFlowCardStep::getEntryCheckResult, "PASS")
+            .eq(ProFlowCardStep::getStepRecordId, bo.getStepRecordId()));
+        return result;
+    }
+
+    /**
+     * 出站(P0-3): EXIT 校验 -> 通过则 completeStep + 记录出站校验结果
+     */
+    @Lock4j(keys = {"#bo.cardId"})
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public ProCheckResultVo exit(ProExitBo bo) {
+        log.info("工序出站: cardId={}, stepRecordId={}, good={}, defect={}, scrap={}",
+            bo.getCardId(), bo.getStepRecordId(), bo.getGoodQty(), bo.getDefectQty(), bo.getScrapQty());
+
+        // 1. 执行出站校验
+        ProCheckResultVo result = proEntryCheckService.runExitChecks(bo.getStepRecordId(), bo);
+        if (Boolean.FALSE.equals(result.getPassed())) {
+            stepMapper.update(null, Wrappers.<ProFlowCardStep>lambdaUpdate()
+                .set(ProFlowCardStep::getExitCheckResult, "FAIL")
+                .set(ProFlowCardStep::getExitCheckRemark, buildCheckRemark(result))
+                .eq(ProFlowCardStep::getStepRecordId, bo.getStepRecordId()));
+            return result;
+        }
+
+        // 2. 校验通过: 完工(复用既有 completeStep 状态机)
+        completeStep(bo.getCardId(), bo.getStepRecordId(), bo.getGoodQty(), bo.getDefectQty(), bo.getScrapQty());
+
+        // 3. 记录 exit_check_result=PASS
+        stepMapper.update(null, Wrappers.<ProFlowCardStep>lambdaUpdate()
+            .set(ProFlowCardStep::getExitCheckResult, "PASS")
+            .eq(ProFlowCardStep::getStepRecordId, bo.getStepRecordId()));
+        return result;
+    }
+
+    /**
+     * 跳站(P0-3): 防错校验 -> 置 SKIPPED + 记录原因 + 推进下一工序
+     */
+    @Lock4j(keys = {"#bo.cardId"})
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public void skip(ProSkipBo bo) {
+        log.info("工序跳站: cardId={}, stepRecordId={}", bo.getCardId(), bo.getStepRecordId());
+
+        ProFlowCardStep step = stepMapper.selectById(bo.getStepRecordId());
+        if (step == null) {
+            throw new RuntimeException("工序记录不存在: " + bo.getStepRecordId());
+        }
+        // 首道工序不允许跳过(防跳过 mandatory 工序)
+        if (step.getSequenceNum() == null || step.getSequenceNum() <= 1) {
+            throw new RuntimeException("首道工序不允许跳过");
+        }
+        // CAS 置 SKIPPED(仅 PENDING 可跳过)
+        int rows = stepMapper.update(null, Wrappers.<ProFlowCardStep>lambdaUpdate()
+            .set(ProFlowCardStep::getStepStatus, STEP_SKIPPED)
+            .set(ProFlowCardStep::getSkipReason, bo.getReason())
+            .eq(ProFlowCardStep::getStepRecordId, bo.getStepRecordId())
+            .eq(ProFlowCardStep::getCardId, bo.getCardId())
+            .eq(ProFlowCardStep::getStepStatus, STEP_PENDING));
+        if (rows == 0) {
+            throw new RuntimeException("工序状态已变更或不存在，仅待开始状态可跳过");
+        }
+
+        // 推进流转卡 current_step_id 到下一未完成工序
+        ProFlowCardStep next = stepMapper.selectOne(Wrappers.<ProFlowCardStep>lambdaQuery()
+            .eq(ProFlowCardStep::getCardId, bo.getCardId())
+            .gt(ProFlowCardStep::getSequenceNum, step.getSequenceNum())
+            .orderByAsc(ProFlowCardStep::getSequenceNum)
+            .last("LIMIT 1"));
+        if (next != null) {
+            baseMapper.update(null, Wrappers.<ProFlowCard>lambdaUpdate()
+                .set(ProFlowCard::getCurrentStepId, next.getStepRecordId())
+                .eq(ProFlowCard::getCardId, bo.getCardId()));
+        }
+
+        // 检查是否所有工序完成/跳过 -> completeCard
+        Long pendingCount = stepMapper.selectCount(Wrappers.<ProFlowCardStep>lambdaQuery()
+            .eq(ProFlowCardStep::getCardId, bo.getCardId())
+            .ne(ProFlowCardStep::getStepStatus, STEP_COMPLETED)
+            .ne(ProFlowCardStep::getStepStatus, STEP_SKIPPED));
+        if (pendingCount == 0) {
+            log.info("跳站后流转卡所有工序完成/跳过，触发completeCard: cardId={}", bo.getCardId());
+            completeCard(bo.getCardId());
+        }
+    }
+
+    /**
+     * 拼装校验未通过备注(failures 拼接,超 500 字符截断)
+     */
+    private String buildCheckRemark(ProCheckResultVo result) {
+        if (result.getFailures() == null || result.getFailures().isEmpty()) {
+            return null;
+        }
+        StringBuilder sb = new StringBuilder();
+        for (ProCheckResultVo.CheckFailure f : result.getFailures()) {
+            if (sb.length() > 0) {
+                sb.append("; ");
+            }
+            sb.append(f.getCheckType()).append(": ").append(f.getErrorMsg());
+            if (sb.length() > 480) {
+                break;
+            }
+        }
+        String remark = sb.toString();
+        return remark.length() > 500 ? remark.substring(0, 500) : remark;
     }
 
     // ==================== 私有辅助方法 ====================

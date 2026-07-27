@@ -178,6 +178,33 @@ public class SopProcessBindingServiceImpl implements ISopProcessBindingService {
     }
 
     /**
+     * 契约: 推送当前工序SOP到工位终端(P0-3 进站通过后调用)
+     * <p>SSE 推送 SOP 到指定用户;推送失败不抛异常,无绑定SOP返回 null。</p>
+     */
+    @Override
+    public SopDocumentVo pushSopToWorkstation(Long stepRecordId, Long userId) {
+        SopDocumentVo sop = getSopForStep(stepRecordId);
+        if (sop == null) {
+            return null;
+        }
+        if (com.nexus.common.sse.utils.SseMessageUtils.isEnable()) {
+            try {
+                java.util.Map<String, Object> payload = new java.util.HashMap<>();
+                payload.put("type", "SOP");
+                payload.put("action", "PUSH");
+                payload.put("data", sop);
+                com.nexus.common.sse.dto.SseMessageDto dto = new com.nexus.common.sse.dto.SseMessageDto();
+                dto.setUserIds(java.util.Collections.singletonList(userId));
+                dto.setMessage(com.nexus.common.json.utils.JsonUtils.toJsonString(payload));
+                com.nexus.common.sse.utils.SseMessageUtils.publishMessage(dto);
+            } catch (Exception e) {
+                log.warn("SOP SSE推送失败(不阻断,可主动拉取): stepRecordId={}, userId={}", stepRecordId, userId, e);
+            }
+        }
+        return sop;
+    }
+
+    /**
      * 契约: 按物料查全部工序SOP(工单开工预加载)
      * <p>物料 -> ERP 当前工艺路线 -> 路线步骤 -> 各 processId -> 绑定SOP。
      * 仅含已绑定SOP的工序。防御: ERP 查询异常时返回空 Map, 不阻断主流程。</p>

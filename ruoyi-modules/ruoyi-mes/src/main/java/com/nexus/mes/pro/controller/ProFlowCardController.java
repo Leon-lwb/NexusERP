@@ -10,7 +10,11 @@ import com.nexus.common.log.enums.BusinessType;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.common.web.core.BaseController;
+import com.nexus.mes.pro.domain.bo.ProEntryBo;
+import com.nexus.mes.pro.domain.bo.ProExitBo;
 import com.nexus.mes.pro.domain.bo.ProFlowCardBo;
+import com.nexus.mes.pro.domain.bo.ProSkipBo;
+import com.nexus.mes.pro.domain.vo.ProCheckResultVo;
 import com.nexus.mes.pro.domain.vo.ProFlowCardVo;
 import com.nexus.mes.pro.service.IProFlowCardService;
 import org.springframework.validation.annotation.Validated;
@@ -154,6 +158,38 @@ public class ProFlowCardController extends BaseController {
     @PutMapping("/close/{cardId}")
     public R<Void> close(@PathVariable Long cardId) {
         proFlowCardService.closeCard(cardId);
+        return R.ok();
+    }
+
+    /**
+     * 工序进站(P0-3): 执行进站校验,通过则开工并推送SOP
+     * <p>校验不通过时返回 failures 明细(不流转状态),前端可展示阻断原因。</p>
+     */
+    @SaCheckPermission("mes:pro:flowcard:start")
+    @Log(title = "工序进站", businessType = BusinessType.UPDATE)
+    @PostMapping("/entry")
+    public R<ProCheckResultVo> entry(@RequestBody ProEntryBo bo) {
+        return R.ok(proFlowCardService.entry(bo));
+    }
+
+    /**
+     * 工序出站(P0-3): 执行出站校验,通过则完工
+     */
+    @SaCheckPermission("mes:pro:flowcard:complete")
+    @Log(title = "工序出站", businessType = BusinessType.UPDATE)
+    @PostMapping("/exit")
+    public R<ProCheckResultVo> exit(@RequestBody ProExitBo bo) {
+        return R.ok(proFlowCardService.exit(bo));
+    }
+
+    /**
+     * 工序跳站(P0-3): 跳站防错,须填写原因,首道工序不可跳
+     */
+    @SaCheckPermission("mes:pro:flowcard:skip")
+    @Log(title = "工序跳站", businessType = BusinessType.UPDATE)
+    @PostMapping("/skip")
+    public R<Void> skip(@RequestBody ProSkipBo bo) {
+        proFlowCardService.skip(bo);
         return R.ok();
     }
 }

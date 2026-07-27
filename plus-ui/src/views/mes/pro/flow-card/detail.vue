@@ -73,7 +73,7 @@
             <span v-else class="text-gray-400">-</span>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="220" align="center">
+        <el-table-column label="操作" width="300" align="center">
           <template #default="scope">
             <el-button
               link
@@ -88,19 +88,28 @@
               link
               type="primary"
               icon="VideoPlay"
-              @click="handleStartStep(scope.row)"
+              @click="handleEntry(scope.row)"
               v-if="scope.row.stepStatus === 'PENDING' && flowCard.cardStatus === 'RELEASED'"
               v-hasPermi="['mes:pro:flowcard:start']"
-              >开工</el-button
+              >进站开工</el-button
             >
             <el-button
               link
               type="success"
               icon="CircleCheck"
-              @click="handleCompleteStep(scope.row)"
+              @click="handleExit(scope.row)"
               v-if="scope.row.stepStatus === 'IN_PROGRESS'"
               v-hasPermi="['mes:pro:flowcard:complete']"
-              >完工</el-button
+              >出站完工</el-button
+            >
+            <el-button
+              link
+              type="info"
+              icon="Sort"
+              @click="handleSkip(scope.row)"
+              v-if="scope.row.stepStatus === 'PENDING' && flowCard.cardStatus === 'RELEASED'"
+              v-hasPermi="['mes:pro:flowcard:skip']"
+              >跳站</el-button
             >
           </template>
         </el-table-column>
@@ -133,12 +142,118 @@
         <el-button type="primary" :loading="dispatchSubmitting" @click="handleSubmitDispatch">确定</el-button>
       </template>
     </el-dialog>
+
+    <!-- 进站操作员选择对话框 -->
+    <el-dialog v-model="entryDialogVisible" title="工序进站" width="480px" destroy-on-close>
+      <el-form ref="entryFormRef" :model="entryForm" :rules="entryRules" label-width="90px">
+        <el-form-item label="工序">
+          <el-input :model-value="currentStep?.processName" disabled />
+        </el-form-item>
+        <el-form-item label="操作员" prop="operatorId">
+          <el-select v-model="entryForm.operatorId" placeholder="请选择操作员" filterable style="width: 100%">
+            <el-option
+              v-for="w in workerOptions"
+              :key="w.workerId"
+              :label="w.userName + (w.employeeId ? ' / ' + w.employeeId : '')"
+              :value="w.workerId"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="工装">
+          <el-input v-model="entryForm.toolingCode" placeholder="可选,扫码或输入工装编码" />
+        </el-form-item>
+        <el-form-item label="批次">
+          <el-input v-model="entryForm.lotNo" placeholder="可选,扫码或输入批次号" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="entryDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="entrySubmitting" @click="handleSubmitEntry">确认进站</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 出站完工对话框 -->
+    <el-dialog v-model="exitDialogVisible" title="工序出站完工" width="480px" destroy-on-close>
+      <el-form ref="exitFormRef" :model="exitForm" :rules="exitRules" label-width="90px">
+        <el-form-item label="工序">
+          <el-input :model-value="currentStep?.processName" disabled />
+        </el-form-item>
+        <el-form-item label="良品数量" prop="goodQty">
+          <el-input-number v-model="exitForm.goodQty" :min="0" :precision="0" style="width: 100%" />
+        </el-form-item>
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <el-form-item label="不良数量">
+              <el-input-number v-model="exitForm.defectQty" :min="0" :precision="0" controls-position="right" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="报废数量">
+              <el-input-number v-model="exitForm.scrapQty" :min="0" :precision="0" controls-position="right" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+      </el-form>
+      <template #footer>
+        <el-button @click="exitDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="exitSubmitting" @click="handleSubmitExit">确认完工</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 跳站对话框 -->
+    <el-dialog v-model="skipDialogVisible" title="工序跳站" width="480px" destroy-on-close>
+      <el-form ref="skipFormRef" :model="skipForm" :rules="skipRules" label-width="90px">
+        <el-form-item label="工序">
+          <el-input :model-value="currentStep?.processName" disabled />
+        </el-form-item>
+        <el-form-item label="跳站原因" prop="reason">
+          <el-input v-model="skipForm.reason" type="textarea" :rows="3" placeholder="请填写跳站原因（必填）" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="skipDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="skipSubmitting" @click="handleSubmitSkip">确认跳站</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 校验失败明细对话框 -->
+    <el-dialog v-model="failureDialogVisible" title="校验未通过" width="600px" append-to-body>
+      <el-alert title="工序校验未通过，请处理以下问题：" type="error" :closable="false" show-icon class="mb-2" />
+      <el-table :data="failureList" border>
+        <el-table-column label="校验类型" prop="checkType" width="180">
+          <template #default="scope">
+            <dict-tag :options="mes_check_type" :value="scope.row.checkType" />
+          </template>
+        </el-table-column>
+        <el-table-column label="错误信息" prop="errorMsg" min-width="200" />
+      </el-table>
+      <template #footer>
+        <el-button type="primary" @click="failureDialogVisible = false">知道了</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts" name="MesFlowCardDetail">
-import { getFlowCard, startStep, completeStep, completeFlowCard, closeFlowCard } from '@/api/mes/pro/flowcardApi';
-import type { ProFlowCardVO, ProFlowCardStepVO } from '@/api/mes/pro/flowcard';
+import {
+  getFlowCard,
+  startStep,
+  completeStep,
+  completeFlowCard,
+  closeFlowCard,
+  entryFlowCard,
+  exitFlowCard,
+  skipFlowCard
+} from '@/api/mes/pro/flowcardApi';
+import type {
+  ProFlowCardVO,
+  ProFlowCardStepVO,
+  ProEntryBo,
+  ProExitBo,
+  ProSkipBo,
+  ProCheckResultVo,
+  ProCheckFailure
+} from '@/api/mes/pro/flowcardApi';
 import { addDispatch, listDispatchByStep } from '@/api/mes/pro/dispatch';
 import type { ProDispatchVO } from '@/api/mes/pro/dispatch';
 import { listWorker } from '@/api/erp/sch/worker/index';
@@ -146,7 +261,9 @@ import type { WorkerVO } from '@/api/erp/sch/worker/types';
 import type { FormInstance, FormRules } from 'element-plus';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
-const { mes_flow_card_status, mes_step_status } = toRefs<any>(proxy?.useDict('mes_flow_card_status', 'mes_step_status'));
+const { mes_flow_card_status, mes_step_status, mes_check_type } = toRefs<any>(
+  proxy?.useDict('mes_flow_card_status', 'mes_step_status', 'mes_check_type')
+);
 const route = useRoute();
 const router = useRouter();
 
@@ -179,6 +296,47 @@ const maxDispatchQty = computed(() => {
   return Math.max(0, Number(currentStep.value.plannedQty) - dispatched);
 });
 
+// 进站相关
+const entryDialogVisible = ref(false);
+const entrySubmitting = ref(false);
+const entryFormRef = ref<FormInstance>();
+const entryForm = ref({
+  operatorId: undefined as number | undefined,
+  toolingCode: '',
+  lotNo: ''
+});
+const entryRules: FormRules = {
+  operatorId: [{ required: true, message: '请选择操作员', trigger: 'change' }]
+};
+
+// 出站相关
+const exitDialogVisible = ref(false);
+const exitSubmitting = ref(false);
+const exitFormRef = ref<FormInstance>();
+const exitForm = ref({
+  goodQty: 0,
+  defectQty: 0,
+  scrapQty: 0
+});
+const exitRules: FormRules = {
+  goodQty: [{ required: true, message: '请输入良品数量', trigger: 'blur' }]
+};
+
+// 跳站相关
+const skipDialogVisible = ref(false);
+const skipSubmitting = ref(false);
+const skipFormRef = ref<FormInstance>();
+const skipForm = ref({
+  reason: ''
+});
+const skipRules: FormRules = {
+  reason: [{ required: true, message: '请填写跳站原因', trigger: 'blur' }]
+};
+
+// 校验失败明细
+const failureDialogVisible = ref(false);
+const failureList = ref<ProCheckFailure[]>([]);
+
 const loadDetail = async () => {
   const cardId = route.params.cardId as string;
   const res = await getFlowCard(cardId);
@@ -187,6 +345,113 @@ const loadDetail = async () => {
   await loadStepDispatches();
 };
 
+// ===== 进站(P0-3) =====
+const handleEntry = (row: ProFlowCardStepVO) => {
+  currentStep.value = row;
+  entryForm.value = {
+    operatorId: undefined,
+    toolingCode: '',
+    lotNo: ''
+  };
+  entryDialogVisible.value = true;
+};
+
+const handleSubmitEntry = async () => {
+  if (!entryFormRef.value) return;
+  if (!currentStep.value) return;
+
+  await entryFormRef.value.validate();
+  entrySubmitting.value = true;
+  try {
+    const bo: ProEntryBo = {
+      cardId: currentStep.value.cardId,
+      stepRecordId: currentStep.value.stepRecordId,
+      operatorId: entryForm.value.operatorId!
+    };
+    const res = await entryFlowCard(bo);
+    const result: ProCheckResultVo = res.data;
+    if (result.passed) {
+      proxy?.$modal.msgSuccess('进站成功，已开工');
+      entryDialogVisible.value = false;
+      loadDetail();
+    } else {
+      failureList.value = result.failures || [];
+      failureDialogVisible.value = true;
+    }
+  } finally {
+    entrySubmitting.value = false;
+  }
+};
+
+// ===== 出站(P0-3) =====
+const handleExit = (row: ProFlowCardStepVO) => {
+  currentStep.value = row;
+  exitForm.value = {
+    goodQty: Number(row.plannedQty) || 0,
+    defectQty: 0,
+    scrapQty: 0
+  };
+  exitDialogVisible.value = true;
+};
+
+const handleSubmitExit = async () => {
+  if (!exitFormRef.value) return;
+  if (!currentStep.value) return;
+
+  await exitFormRef.value.validate();
+  exitSubmitting.value = true;
+  try {
+    const bo: ProExitBo = {
+      cardId: currentStep.value.cardId,
+      stepRecordId: currentStep.value.stepRecordId,
+      goodQty: exitForm.value.goodQty,
+      defectQty: exitForm.value.defectQty,
+      scrapQty: exitForm.value.scrapQty
+    };
+    const res = await exitFlowCard(bo);
+    const result: ProCheckResultVo = res.data;
+    if (result.passed) {
+      proxy?.$modal.msgSuccess('出站成功，已完工');
+      exitDialogVisible.value = false;
+      loadDetail();
+    } else {
+      failureList.value = result.failures || [];
+      failureDialogVisible.value = true;
+    }
+  } finally {
+    exitSubmitting.value = false;
+  }
+};
+
+// ===== 跳站(P0-3) =====
+const handleSkip = (row: ProFlowCardStepVO) => {
+  currentStep.value = row;
+  skipForm.value = { reason: '' };
+  skipDialogVisible.value = true;
+};
+
+const handleSubmitSkip = async () => {
+  if (!skipFormRef.value) return;
+  if (!currentStep.value) return;
+
+  await skipFormRef.value.validate();
+  skipSubmitting.value = true;
+  try {
+    const bo: ProSkipBo = {
+      cardId: currentStep.value.cardId,
+      stepRecordId: currentStep.value.stepRecordId,
+      reason: skipForm.value.reason
+    };
+    await skipFlowCard(bo);
+    proxy?.$modal.msgSuccess('跳站成功');
+    skipDialogVisible.value = false;
+    loadDetail();
+  } finally {
+    skipSubmitting.value = false;
+  }
+};
+
+// ===== 原有开工/完工(保留作为旧版后备) =====
 const handleStartStep = async (row: ProFlowCardStepVO) => {
   await proxy?.$modal.confirm('确认开始工序"' + row.processName + '"？');
   await startStep(row.cardId, row.stepRecordId);

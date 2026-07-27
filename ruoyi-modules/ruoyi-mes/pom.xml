@@ -113,13 +113,81 @@
             <artifactId>ruoyi-system</artifactId>
         </dependency>
 
-        <!-- 单元测试 -->
+        <!-- 单元测试（test scope，不打入生产包） -->
+        <!-- spring-boot-starter-test 已包含 JUnit 5 + Mockito 5（内置 inline mock maker，支持 mockStatic） + AssertJ + Spring Test -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
+            <exclusions>
+                <!-- 排除 JUnit Vintage，只用 JUnit 5 -->
+                <exclusion>
+                    <groupId>org.junit.vintage</groupId>
+                    <artifactId>junit-vintage-engine</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
     </dependencies>
+
+    <properties>
+        <!-- P0-7: 默认排除 @Tag("integration") 标记的集成测试 -->
+        <mes.excludedGroups>integration</mes.excludedGroups>
+        <!-- P0-7: 覆盖根 pom 的 groups 过滤(根 pom 用 profiles.active 限制只执行带 @Tag 的测试，导致无 @Tag 测试不执行)，覆盖为空=全部执行 -->
+        <mes.groups></mes.groups>
+        <argLine>-Dfile.encoding=UTF-8</argLine>
+        <mes.jacoco.haltOnFailure>false</mes.jacoco.haltOnFailure>
+        <mes.jacoco.lineRatio>0.50</mes.jacoco.lineRatio>
+        <jacoco.version>0.8.12</jacoco.version>
+    </properties>
+
+    <build>
+        <plugins>
+            <!-- P0-7: 覆盖根 pom surefire 配置，使无 @Tag 测试在所有 profile 下执行 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <argLine>@{argLine} -Dfile.encoding=UTF-8 -Djdk.net.URLClassPath.disableClassPathURLCheck=true</argLine>
+                    <groups combine.self="override">${mes.groups}</groups>
+                    <excludedGroups combine.self="override">${mes.excludedGroups}</excludedGroups>
+                </configuration>
+            </plugin>
+            <!-- P0-7: JaCoCo 覆盖率插件 -->
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>${jacoco.version}</version>
+                <executions>
+                    <execution>
+                        <id>prepare-agent</id>
+                        <goals><goal>prepare-agent</goal></goals>
+                    </execution>
+                    <execution>
+                        <id>report</id>
+                        <phase>test</phase>
+                        <goals><goal>report</goal></goals>
+                    </execution>
+                    <execution>
+                        <id>check</id>
+                        <phase>test</phase>
+                        <goals><goal>check</goal></goals>
+                        <configuration>
+                            <haltOnFailure>${mes.jacoco.haltOnFailure}</haltOnFailure>
+                            <rules><rule>
+                                <element>BUNDLE</element>
+                                <includes><include>com.nexus.mes.*</include></includes>
+                                <limits><limit>
+                                    <counter>LINE</counter>
+                                    <value>COVEREDRATIO</value>
+                                    <minimum>${mes.jacoco.lineRatio}</minimum>
+                                </limit></limits>
+                            </rule></rules>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 
 </project>

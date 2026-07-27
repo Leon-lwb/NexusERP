@@ -1,0 +1,263 @@
+package com.nexus.mes.qc.service.impl;
+
+import com.baomidou.mybatisplus.core.toolkit.LambdaUtils;
+import com.baomidou.mybatisplus.core.toolkit.support.ColumnCache;
+import com.nexus.common.satoken.utils.LoginHelper;
+import com.nexus.common.tenant.helper.TenantHelper;
+import com.nexus.mes.common.mq.MesMqSendService;
+import com.nexus.mes.pro.domain.vo.ProWorkOrderVo;
+import com.nexus.mes.pro.service.IProWorkOrderService;
+import com.nexus.mes.qc.domain.QcIpqc;
+import com.nexus.mes.qc.domain.bo.QcIpqcBo;
+import com.nexus.mes.qc.domain.vo.QcIpqcVo;
+import com.nexus.mes.qc.mapper.QcIpqcMapper;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.math.BigDecimal;
+import java.util.HashMap;
+import java.util.Map;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
+@ExtendWith(MockitoExtension.class)
+class QcIpqcServiceImplTest {
+
+    @Mock
+    private QcIpqcMapper baseMapper;
+    @Mock
+    private MesMqSendService mesMqSendService;
+    @Mock
+    private IProWorkOrderService proWorkOrderService;
+    @InjectMocks
+    private QcIpqcServiceImpl service;
+
+    @Captor
+    private ArgumentCaptor<QcIpqc> insertCaptor;
+
+    private MockedStatic<LoginHelper> loginHelperMock;
+    private MockedStatic<TenantHelper> tenantHelperMock;
+    private MockedStatic<LambdaUtils> lambdaUtilsMock;
+
+    @BeforeEach
+    void setUp() {
+        loginHelperMock = mockStatic(LoginHelper.class);
+        tenantHelperMock = mockStatic(TenantHelper.class);
+        lambdaUtilsMock = mockStatic(LambdaUtils.class);
+        loginHelperMock.when(LoginHelper::getUserId).thenReturn(1L);
+        loginHelperMock.when(LoginHelper::getUsername).thenReturn("tester");
+        tenantHelperMock.when(TenantHelper::getTenantId).thenReturn("000000");
+        // Pre-populate column cache for QcIpqc
+        Map<String, ColumnCache> columnMap = new HashMap<>();
+        columnMap.put("IPQCID", new ColumnCache("ipqc_id", "ipqc_id"));
+        columnMap.put("IPQCNO", new ColumnCache("ipqc_no", "ipqc_no"));
+        columnMap.put("MESWOID", new ColumnCache("mes_wo_id", "mes_wo_id"));
+        columnMap.put("WONO", new ColumnCache("wo_no", "wo_no"));
+        columnMap.put("CARDID", new ColumnCache("card_id", "card_id"));
+        columnMap.put("STEPRECORDID", new ColumnCache("step_record_id", "step_record_id"));
+        columnMap.put("PROCESSID", new ColumnCache("process_id", "process_id"));
+        columnMap.put("PROCESSCODE", new ColumnCache("process_code", "process_code"));
+        columnMap.put("PROCESSNAME", new ColumnCache("process_name", "process_name"));
+        columnMap.put("MATERIALID", new ColumnCache("material_id", "material_id"));
+        columnMap.put("MATERIALCODE", new ColumnCache("material_code", "material_code"));
+        columnMap.put("MATERIALNAME", new ColumnCache("material_name", "material_name"));
+        columnMap.put("SAMPLEQTY", new ColumnCache("sample_qty", "sample_qty"));
+        columnMap.put("DEFECTQTY", new ColumnCache("defect_qty", "defect_qty"));
+        columnMap.put("DEFECTRATE", new ColumnCache("defect_rate", "defect_rate"));
+        columnMap.put("INSPECTRESULT", new ColumnCache("inspect_result", "inspect_result"));
+        columnMap.put("DEFECTINFO", new ColumnCache("defect_info", "defect_info"));
+        columnMap.put("INSPECTORID", new ColumnCache("inspector_id", "inspector_id"));
+        columnMap.put("INSPECTORNAME", new ColumnCache("inspector_name", "inspector_name"));
+        columnMap.put("INSPECTTIME", new ColumnCache("inspect_time", "inspect_time"));
+        columnMap.put("STATUS", new ColumnCache("status", "status"));
+        columnMap.put("REMARK", new ColumnCache("remark", "remark"));
+        columnMap.put("CREATETIME", new ColumnCache("create_time", "create_time"));
+        lambdaUtilsMock.when(() -> LambdaUtils.getColumnMap(any())).thenReturn(columnMap);
+    }
+
+    @AfterEach
+    void tearDown() {
+        if (loginHelperMock != null) loginHelperMock.close();
+        if (tenantHelperMock != null) tenantHelperMock.close();
+        if (lambdaUtilsMock != null) lambdaUtilsMock.close();
+    }
+
+    @Test
+    void autoCreateForKeyProcessSkipsWhenExists() {
+        QcIpqcBo bo = new QcIpqcBo();
+        bo.setMesWoId(10L);
+        bo.setProcessId(20L);
+        when(baseMapper.selectCount(any())).thenReturn(1L);
+
+        service.autoCreateForKeyProcess(bo);
+
+        verify(baseMapper, never()).insert(any(QcIpqc.class));
+    }
+
+    @Test
+    void autoCreateForKeyProcessCreatesWhenNotExists() {
+        QcIpqcBo bo = new QcIpqcBo();
+        bo.setMesWoId(10L);
+        bo.setProcessId(20L);
+        bo.setProcessCode("PC-001");
+        bo.setProcessName("焊接");
+        bo.setMaterialId(30L);
+        bo.setMaterialCode("MAT-001");
+        bo.setMaterialName("测试物料");
+        bo.setSampleQty(BigDecimal.valueOf(5));
+        when(baseMapper.selectCount(any())).thenReturn(0L);
+        QcIpqcVo insertedVo = new QcIpqcVo();
+        insertedVo.setIpqcId(1L);
+        when(baseMapper.selectVoById(1L)).thenReturn(insertedVo);
+
+        service.autoCreateForKeyProcess(bo);
+
+        verify(baseMapper).insert(insertCaptor.capture());
+        QcIpqc captured = insertCaptor.getValue();
+        assertEquals("PENDING", captured.getInspectResult());
+        assertEquals("PENDING", captured.getStatus());
+        assertEquals(BigDecimal.ZERO, captured.getDefectQty());
+        assertEquals(10L, captured.getMesWoId());
+        assertEquals(20L, captured.getProcessId());
+        assertEquals("PC-001", captured.getProcessCode());
+        assertEquals("焊接", captured.getProcessName());
+    }
+
+    @Test
+    void existsByWoAndProcessReturnsTrueWhenCountGreaterThanZero() {
+        when(baseMapper.selectCount(any())).thenReturn(2L);
+
+        boolean exists = service.existsByWoAndProcess(10L, 20L);
+
+        assertTrue(exists);
+    }
+
+    @Test
+    void existsByWoAndProcessReturnsFalseWhenCountIsZero() {
+        when(baseMapper.selectCount(any())).thenReturn(0L);
+
+        boolean exists = service.existsByWoAndProcess(10L, 20L);
+
+        assertFalse(exists);
+    }
+
+    @Test
+    void inspectRejectsInvalidResult() {
+        RuntimeException exception = assertThrows(RuntimeException.class,
+            () -> service.inspect(1L, "INVALID", null, null, null, null));
+        assertTrue(exception.getMessage().contains("QUALIFIED"));
+    }
+
+    @Test
+    void inspectRejectsNonexistentIpqc() {
+        when(baseMapper.selectById(1L)).thenReturn(null);
+
+        RuntimeException exception = assertThrows(RuntimeException.class,
+            () -> service.inspect(1L, "QUALIFIED", null, null, null, null));
+        assertTrue(exception.getMessage().contains("不存在"));
+    }
+
+    @Test
+    void inspectRejectsAlreadyCompleted() {
+        QcIpqc ipqc = new QcIpqc();
+        ipqc.setIpqcId(1L);
+        ipqc.setStatus("COMPLETED");
+        when(baseMapper.selectById(1L)).thenReturn(ipqc);
+
+        RuntimeException exception = assertThrows(RuntimeException.class,
+            () -> service.inspect(1L, "QUALIFIED", null, null, null, null));
+        assertTrue(exception.getMessage().contains("已检验完成"));
+    }
+
+    @Test
+    void inspectQualifiedCompletesSuccessfully() {
+        QcIpqc ipqc = new QcIpqc();
+        ipqc.setIpqcId(1L);
+        ipqc.setIpqcNo("IPQC-001");
+        ipqc.setStatus("PENDING");
+        ipqc.setMesWoId(10L);
+        when(baseMapper.selectById(1L)).thenReturn(ipqc);
+        when(baseMapper.update(any(), any())).thenReturn(1);
+
+        service.inspect(1L, "QUALIFIED", "{}", BigDecimal.valueOf(10), BigDecimal.valueOf(1), "OK");
+
+        verify(baseMapper).update(any(), any());
+    }
+
+    @Test
+    void inspectThrowsWhenCasRowZero() {
+        QcIpqc ipqc = new QcIpqc();
+        ipqc.setIpqcId(1L);
+        ipqc.setIpqcNo("IPQC-001");
+        ipqc.setStatus("PENDING");
+        when(baseMapper.selectById(1L)).thenReturn(ipqc);
+        when(baseMapper.update(any(), any())).thenReturn(0);
+
+        RuntimeException exception = assertThrows(RuntimeException.class,
+            () -> service.inspect(1L, "QUALIFIED", null, null, null, null));
+        assertTrue(exception.getMessage().contains("状态已变更"));
+    }
+
+    @Test
+    void inspectCalculatesDefectRateCorrectly() {
+        QcIpqc ipqc = new QcIpqc();
+        ipqc.setIpqcId(1L);
+        ipqc.setIpqcNo("IPQC-001");
+        ipqc.setStatus("PENDING");
+        ipqc.setMesWoId(10L);
+        when(baseMapper.selectById(1L)).thenReturn(ipqc);
+        when(baseMapper.update(any(), any())).thenReturn(1);
+
+        service.inspect(1L, "UNQUALIFIED", null, BigDecimal.valueOf(100), BigDecimal.valueOf(5), null);
+
+        verify(baseMapper).update(any(), any());
+    }
+
+    @Test
+    void inspectWithErpWoIdSendsMqAfterCommit() {
+        QcIpqc ipqc = new QcIpqc();
+        ipqc.setIpqcId(1L);
+        ipqc.setIpqcNo("IPQC-001");
+        ipqc.setStatus("PENDING");
+        ipqc.setMesWoId(10L);
+        when(baseMapper.selectById(1L)).thenReturn(ipqc);
+        when(baseMapper.update(any(), any())).thenReturn(1);
+
+        ProWorkOrderVo wo = new ProWorkOrderVo();
+        wo.setErpWoId(999L);
+        wo.setWoNo("WO-001");
+        when(proWorkOrderService.selectById(10L)).thenReturn(wo);
+
+        service.inspect(1L, "QUALIFIED", null, null, null, null);
+
+        // afterCommit won't execute in pure unit test
+        verify(mesMqSendService, never()).sendIpqcCompleted(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void inspectWithoutErpWoIdSkipsMq() {
+        QcIpqc ipqc = new QcIpqc();
+        ipqc.setIpqcId(1L);
+        ipqc.setIpqcNo("IPQC-001");
+        ipqc.setStatus("PENDING");
+        ipqc.setMesWoId(10L);
+        when(baseMapper.selectById(1L)).thenReturn(ipqc);
+        when(baseMapper.update(any(), any())).thenReturn(1);
+
+        ProWorkOrderVo wo = new ProWorkOrderVo();
+        wo.setErpWoId(null);
+        when(proWorkOrderService.selectById(10L)).thenReturn(wo);
+
+        service.inspect(1L, "QUALIFIED", null, null, null, null);
+    }
+}

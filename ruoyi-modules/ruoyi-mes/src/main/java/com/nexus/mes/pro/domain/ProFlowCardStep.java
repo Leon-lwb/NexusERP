@@ -88,6 +88,21 @@ public class ProFlowCardStep extends TenantEntity {
     /** 备注 */
     private String remark;
 
+    /** 进站校验结果(PASS/FAIL) */
+    private String entryCheckResult;
+
+    /** 进站校验备注(失败原因) */
+    private String entryCheckRemark;
+
+    /** 出站校验结果(PASS/FAIL) */
+    private String exitCheckResult;
+
+    /** 出站校验备注(失败原因) */
+    private String exitCheckRemark;
+
+    /** 跳站原因 */
+    private String skipReason;
+
     /** 删除标志 */
     @TableLogic
     private String delFlag;

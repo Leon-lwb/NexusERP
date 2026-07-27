@@ -2,7 +2,11 @@ package com.nexus.mes.pro.service;
 
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
+import com.nexus.mes.pro.domain.bo.ProEntryBo;
+import com.nexus.mes.pro.domain.bo.ProExitBo;
 import com.nexus.mes.pro.domain.bo.ProFlowCardBo;
+import com.nexus.mes.pro.domain.bo.ProSkipBo;
+import com.nexus.mes.pro.domain.vo.ProCheckResultVo;
 import com.nexus.mes.pro.domain.vo.ProFlowCardVo;
 
 import java.math.BigDecimal;
@@ -117,4 +121,29 @@ public interface IProFlowCardService {
 
     /** 检查并完成工序(派工完工聚合后调用) — CAS工序→COMPLETED + 检查所有工序完成→completeCard */
     void checkAndCompleteStep(Long cardId, Long stepRecordId);
+
+    /**
+     * 进站(P0-3): 执行 ENTRY 校验 -> 通过则 startStep + 推送SOP + 记录进站校验结果
+     * <p>校验不通过时不流转状态,返回 failures 明细供前端展示。</p>
+     *
+     * @param bo 进站上下文(含 cardId/stepRecordId/operatorId/可选 toolingId/lotId)
+     * @return 校验结果(passed=true 时已完成开工)
+     */
+    ProCheckResultVo entry(ProEntryBo bo);
+
+    /**
+     * 出站(P0-3): 执行 EXIT 校验 -> 通过则 completeStep + 记录出站校验结果
+     *
+     * @param bo 出站上下文(含 cardId/stepRecordId/goodQty/defectQty/scrapQty)
+     * @return 校验结果(passed=true 时已完成完工)
+     */
+    ProCheckResultVo exit(ProExitBo bo);
+
+    /**
+     * 跳站(P0-3): 跳站防错校验 -> 置工序 SKIPPED + 记录跳站原因 + 推进下一工序
+     * <p>首道工序不允许跳过;须有 mes:pro:flowcard:skip 权限(Controller 层校验)。</p>
+     *
+     * @param bo 跳站申请(含 cardId/stepRecordId/reason)
+     */
+    void skip(ProSkipBo bo);
 }

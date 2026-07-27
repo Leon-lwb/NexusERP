@@ -1,0 +1,695 @@
+package com.nexus.mes.lt.service.impl;
+
+import com.baomidou.mybatisplus.core.toolkit.LambdaUtils;
+import com.baomidou.mybatisplus.core.toolkit.support.ColumnCache;
+import com.nexus.mes.lt.domain.LtLot;
+import com.nexus.mes.lt.domain.bo.LtLotBo;
+import com.nexus.mes.lt.domain.vo.LtLotVo;
+import com.nexus.mes.lt.mapper.LtLotMapper;
+import com.nexus.mes.lt.mapper.LtSnBindingMapper;
+import com.nexus.mes.lt.mapper.LtWoConsumptionMapper;
+import com.nexus.system.strategy.AutoCodeUtil;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.math.BigDecimal;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
+@ExtendWith(MockitoExtension.class)
+class LtLotServiceImplTest {
+
+    @Mock
+    private LtLotMapper baseMapper;
+    @Mock
+    private LtWoConsumptionMapper consumptionMapper;
+    @Mock
+    private LtSnBindingMapper bindingMapper;
+    @Mock
+    private AutoCodeUtil autoCodeUtil;
+    @InjectMocks
+    private LtLotServiceImpl service;
+
+    @Captor
+    private ArgumentCaptor<LtLot> insertCaptor;
+
+    private MockedStatic<LambdaUtils> lambdaUtilsMock;
+
+    @BeforeEach
+    void setUp() {
+        lambdaUtilsMock = mockStatic(LambdaUtils.class);
+        Map<String, ColumnCache> columnMap = new HashMap<>();
+        columnMap.put("LOTID", new ColumnCache("lot_id", "lot_id"));
+        columnMap.put("LOTCODE", new ColumnCache("lot_code", "lot_code"));
+        columnMap.put("MATERIALID", new ColumnCache("material_id", "material_id"));
+        columnMap.put("MATERIALCODE", new ColumnCache("material_code", "material_code"));
+        columnMap.put("MATERIALNAME", new ColumnCache("material_name", "material_name"));
+        columnMap.put("SUPPLIERID", new ColumnCache("supplier_id", "supplier_id"));
+        columnMap.put("SUPPLIERNAME", new ColumnCache("supplier_name", "supplier_name"));
+        columnMap.put("SUPPLIERLOT", new ColumnCache("supplier_lot", "supplier_lot"));
+        columnMap.put("QUANTITY", new ColumnCache("quantity", "quantity"));
+        columnMap.put("CONSUMEDQTY", new ColumnCache("consumed_qty", "consumed_qty"));
+        columnMap.put("PRODUCEDDATE", new ColumnCache("produced_date", "produced_date"));
+        columnMap.put("EXPIRYDATE", new ColumnCache("expiry_date", "expiry_date"));
+        columnMap.put("STATUS", new ColumnCache("status", "status"));
+        columnMap.put("QCSTATUS", new ColumnCache("qc_status", "qc_status"));
+        columnMap.put("IQCID", new ColumnCache("iqc_id", "iqc_id"));
+        columnMap.put("REMARK", new ColumnCache("remark", "remark"));
+        columnMap.put("CREATETIME", new ColumnCache("create_time", "create_time"));
+        lambdaUtilsMock.when(() -> LambdaUtils.getColumnMap(any())).thenReturn(columnMap);
+    }
+
+    @AfterEach
+    void tearDown() {
+        if (lambdaUtilsMock != null) lambdaUtilsMock.close();
+    }
+
+    // ==================== 状态机 5 态流转 ====================
+
+    @Test
+    void insertByBoSetsInitialInStockAndQcPending() {
+        when(autoCodeUtil.genSerialCode("MES_LOT_CODE", null)).thenReturn("LOT-20250727-001");
+        when(baseMapper.selectCount(any())).thenReturn(0L);
+
+        LtLotBo bo = new LtLotBo();
+        bo.setMaterialId(1L);
+        bo.setMaterialCode("MAT-001");
+        bo.setMaterialName("测试物料");
+        bo.setQuantity(BigDecimal.valueOf(100));
+        bo.setSupplierId(10L);
+        bo.setSupplierName("测试供应商");
+        bo.setProducedDate(new Date());
+        bo.setExpiryDate(new Date());
+
+        service.insertByBo(bo);
+
+        verify(baseMapper).insert(insertCaptor.capture());
+        LtLot captured = insertCaptor.getValue();
+        assertEquals("IN_STOCK", captured.getStatus());
+        assertEquals("PENDING", captured.getQcStatus());
+        assertEquals(BigDecimal.ZERO, captured.getConsumedQty());
+        assertEquals("LOT-20250727-001", captured.getLotCode());
+        assertEquals(1L, captured.getMaterialId());
+        assertEquals(BigDecimal.valueOf(100), captured.getQuantity());
+    }
+
+    @Test
+    void insertByBoRejectsDuplicateLotCode() {
+        when(baseMapper.selectCount(any())).thenReturn(1L);
+
+        LtLotBo bo = new LtLotBo();
+        bo.setLotCode("LOT-001");
+        bo.setMaterialId(1L);
+        bo.setQuantity(BigDecimal.TEN);
+
+        RuntimeException exception = assertThrows(RuntimeException.class,
+            () -> service.insertByBo(bo));
+        assertTrue(exception.getMessage().contains("批次编码已存在"));
+    }
+
+    @Test
+    void quarantineMovesInStockToQuarantined() {
+        LtLot lot = new LtLot();
+        lot.setLotId(1L);
+        lot.setStatus("IN_STOCK");
+        when(baseMapper.selectById(1L)).thenReturn(lot);
+        when(baseMapper.update(any(), any())).thenReturn(1);
+
+        Boolean result = service.quarantine(1L, "质检隔离");
+
+        assertTrue(result);
+        verify(baseMapper).update(any(), any());
+    }
+
+    @Test
+    void quarantineRejectsNonInStockInUse() {
+        LtLot lot = new LtLot();
+        lot.setLotId(1L);
+        lot.setStatus("CONSUMED");
+        when(baseMapper.selectById(1L)).thenReturn(lot);
+
+        RuntimeException exception = assertThrows(RuntimeException.class,
+            () -> service.quarantine(1L, "隔离"));
+        assertTrue(exception.getMessage().contains("仅 IN_STOCK/IN_USE"));
+    }
+
+    @Test
+    void quarantineThrowsWhenCasRowZero() {
+        LtLot lot = new LtLot();
+        lot.setLotId(1L);
+        lot.setStatus("IN_STOCK");
+        when(baseMapper.selectById(1L)).thenReturn(lot);
+        when(baseMapper.update(any(), any())).thenReturn(0);
+
+        RuntimeException exception = assertThrows(RuntimeException.class,
+            () -> service.quarantine(1L, "隔离"));
+        assertTrue(exception.getMessage().contains("状态已变更"));
+    }
+
+    @Test
+    void scrapMovesQuarantinedToScrapped() {
+        LtLot lot = new LtLot();
+        lot.setLotId(1L);
+        lot.setStatus("QUARANTINED");
+        when(baseMapper.selectById(1L)).thenReturn(lot);
+        when(baseMapper.update(any(), any())).thenReturn(1);
+
+        Boolean result = service.scrap(1L, "报废");
+
+        assertTrue(result);
+    }
+
+    @Test
+    void scrapRejectsNonQuarantined() {
+        LtLot lot = new LtLot();
+        lot.setLotId(1L);
+        lot.setStatus("IN_STOCK");
+        when(baseMapper.selectById(1L)).thenReturn(lot);
+
+        RuntimeException exception = assertThrows(RuntimeException.class,
+            () -> service.scrap(1L, "报废"));
+        assertTrue(exception.getMessage().contains("仅 QUARANTINED"));
+    }
+
+    @Test
+    void scrapThrowsWhenCasRowZero() {
+        LtLot lot = new LtLot();
+        lot.setLotId(1L);
+        lot.setStatus("QUARANTINED");
+        when(baseMapper.selectById(1L)).thenReturn(lot);
+        when(baseMapper.update(any(), any())).thenReturn(0);
+
+        RuntimeException exception = assertThrows(RuntimeException.class,
+            () -> service.scrap(1L, "报废"));
+        assertTrue(exception.getMessage().contains("状态已变更"));
+    }
+
+    @Test
+    void releaseFromQuarantinedToInStockWhenFullRemaining() {
+        LtLot lot = new LtLot();
+        lot.setLotId(1L);
+        lot.setStatus("QUARANTINED");
+        lot.setQuantity(BigDecimal.valueOf(100));
+        lot.setConsumedQty(BigDecimal.ZERO);
+        when(baseMapper.selectById(1L)).thenReturn(lot);
+        when(baseMapper.update(any(), any())).thenReturn(1);
+
+        Boolean result = service.release(1L);
+
+        assertTrue(result);
+    }
+
+    @Test
+    void releaseFromQuarantinedToConsumedWhenZeroRemaining() {
+        LtLot lot = new LtLot();
+        lot.setLotId(1L);
+        lot.setStatus("QUARANTINED");
+        lot.setQuantity(BigDecimal.valueOf(100));
+        lot.setConsumedQty(BigDecimal.valueOf(100));
+        when(baseMapper.selectById(1L)).thenReturn(lot);
+        when(baseMapper.update(any(), any())).thenReturn(1);
+
+        Boolean result = service.release(1L);
+
+        assertTrue(result);
+    }
+
+    @Test
+    void releaseFromQuarantinedToInUseWhenPartiallyConsumed() {
+        LtLot lot = new LtLot();
+        lot.setLotId(1L);
+        lot.setStatus("QUARANTINED");
+        lot.setQuantity(BigDecimal.valueOf(100));
+        lot.setConsumedQty(BigDecimal.valueOf(30));
+        when(baseMapper.selectById(1L)).thenReturn(lot);
+        when(baseMapper.update(any(), any())).thenReturn(1);
+
+        Boolean result = service.release(1L);
+
+        assertTrue(result);
+    }
+
+    @Test
+    void releaseRejectsNonQuarantined() {
+        LtLot lot = new LtLot();
+        lot.setLotId(1L);
+        lot.setStatus("IN_STOCK");
+        when(baseMapper.selectById(1L)).thenReturn(lot);
+
+        RuntimeException exception = assertThrows(RuntimeException.class,
+            () -> service.release(1L));
+        assertTrue(exception.getMessage().contains("仅 QUARANTINED"));
+    }
+
+    // ==================== FEFO 排序 ====================
+
+    @Test
+    void recommendFefoOrdersByExpiryDateAsc() {
+        LtLotVo early = new LtLotVo();
+        early.setLotId(1L);
+        early.setQuantity(BigDecimal.TEN);
+        early.setConsumedQty(BigDecimal.ZERO);
+
+        LtLotVo late = new LtLotVo();
+        late.setLotId(2L);
+        late.setQuantity(BigDecimal.TEN);
+        late.setConsumedQty(BigDecimal.ZERO);
+
+        when(baseMapper.selectVoList(any())).thenReturn(List.of(early, late));
+
+        List<LtLotVo> result = service.recommendFefo(1L, null);
+
+        assertEquals(2, result.size());
+    }
+
+    @Test
+    void recommendFefoFiltersZeroRemaining() {
+        LtLotVo empty = new LtLotVo();
+        empty.setLotId(1L);
+        empty.setQuantity(BigDecimal.TEN);
+        empty.setConsumedQty(BigDecimal.TEN);
+
+        LtLotVo available = new LtLotVo();
+        available.setLotId(2L);
+        available.setQuantity(BigDecimal.TEN);
+        available.setConsumedQty(BigDecimal.ZERO);
+
+        when(baseMapper.selectVoList(any())).thenReturn(List.of(empty, available));
+
+        List<LtLotVo> result = service.recommendFefo(1L, null);
+
+        assertEquals(1, result.size());
+        assertEquals(2L, result.get(0).getLotId());
+    }
+
+    @Test
+    void recommendFefoAccumulatesUntilRequiredQtyMet() {
+        LtLotVo lot1 = new LtLotVo();
+        lot1.setLotId(1L);
+        lot1.setQuantity(BigDecimal.valueOf(5));
+        lot1.setConsumedQty(BigDecimal.ZERO);
+
+        LtLotVo lot2 = new LtLotVo();
+        lot2.setLotId(2L);
+        lot2.setQuantity(BigDecimal.valueOf(5));
+        lot2.setConsumedQty(BigDecimal.ZERO);
+
+        LtLotVo lot3 = new LtLotVo();
+        lot3.setLotId(3L);
+        lot3.setQuantity(BigDecimal.valueOf(5));
+        lot3.setConsumedQty(BigDecimal.ZERO);
+
+        when(baseMapper.selectVoList(any())).thenReturn(List.of(lot1, lot2, lot3));
+
+        List<LtLotVo> result = service.recommendFefo(1L, BigDecimal.valueOf(8));
+
+        assertEquals(2, result.size());
+    }
+
+    @Test
+    void recommendFefoRejectsNullMaterialId() {
+        RuntimeException exception = assertThrows(RuntimeException.class,
+            () -> service.recommendFefo(null, BigDecimal.TEN));
+        assertTrue(exception.getMessage().contains("物料ID不能为空"));
+    }
+
+    // ==================== consume 并发超卖守卫 ====================
+
+    @Test
+    void consumeRejectsNonPositiveQuantity() {
+        RuntimeException exception = assertThrows(RuntimeException.class,
+            () -> service.consume(1L, BigDecimal.valueOf(-1)));
+        assertTrue(exception.getMessage().contains("消耗数量必须大于0"));
+    }
+
+    @Test
+    void consumeRejectsNonInStockInUseStatus() {
+        LtLot lot = new LtLot();
+        lot.setLotId(1L);
+        lot.setStatus("CONSUMED");
+        when(baseMapper.selectById(1L)).thenReturn(lot);
+
+        RuntimeException exception = assertThrows(RuntimeException.class,
+            () -> service.consume(1L, BigDecimal.valueOf(5)));
+        assertTrue(exception.getMessage().contains("状态不可消耗"));
+    }
+
+    @Test
+    void consumeRejectsExceedingRemaining() {
+        LtLot lot = new LtLot();
+        lot.setLotId(1L);
+        lot.setStatus("IN_STOCK");
+        lot.setQuantity(BigDecimal.valueOf(10));
+        lot.setConsumedQty(BigDecimal.ZERO);
+        when(baseMapper.selectById(1L)).thenReturn(lot);
+
+        RuntimeException exception = assertThrows(RuntimeException.class,
+            () -> service.consume(1L, BigDecimal.valueOf(20)));
+        assertTrue(exception.getMessage().contains("超过剩余数量"));
+    }
+
+    @Test
+    void consumeTransitionsToInUseWhenPartiallyConsumed() {
+        LtLot lot = new LtLot();
+        lot.setLotId(1L);
+        lot.setStatus("IN_STOCK");
+        lot.setQuantity(BigDecimal.valueOf(100));
+        lot.setConsumedQty(BigDecimal.ZERO);
+        when(baseMapper.selectById(1L)).thenReturn(lot);
+        when(baseMapper.update(any(), any())).thenReturn(1);
+
+        Boolean result = service.consume(1L, BigDecimal.valueOf(30));
+
+        assertTrue(result);
+    }
+
+    @Test
+    void consumeTransitionsToConsumedWhenQuantityReachesZero() {
+        LtLot lot = new LtLot();
+        lot.setLotId(1L);
+        lot.setStatus("IN_STOCK");
+        lot.setQuantity(BigDecimal.valueOf(10));
+        lot.setConsumedQty(BigDecimal.ZERO);
+        when(baseMapper.selectById(1L)).thenReturn(lot);
+        when(baseMapper.update(any(), any())).thenReturn(1);
+
+        Boolean result = service.consume(1L, BigDecimal.valueOf(10));
+
+        assertTrue(result);
+    }
+
+    @Test
+    void consumeThrowsWhenCasRowZero() {
+        LtLot lot = new LtLot();
+        lot.setLotId(1L);
+        lot.setStatus("IN_STOCK");
+        lot.setQuantity(BigDecimal.valueOf(100));
+        lot.setConsumedQty(BigDecimal.ZERO);
+        when(baseMapper.selectById(1L)).thenReturn(lot);
+        when(baseMapper.update(any(), any())).thenReturn(0);
+
+        RuntimeException exception = assertThrows(RuntimeException.class,
+            () -> service.consume(1L, BigDecimal.valueOf(30)));
+        assertTrue(exception.getMessage().contains("状态已变更"));
+    }
+
+    // ==================== checkLotUsable 契约 ====================
+
+    @Test
+    void checkLotUsableReturnsNotUsableWhenLotNotFound() {
+        when(baseMapper.selectById(1L)).thenReturn(null);
+
+        Map<String, Object> result = service.checkLotUsable(1L, 1L);
+
+        assertFalse((Boolean) result.get("usable"));
+        assertTrue(((String) result.get("reason")).contains("不存在"));
+    }
+
+    @Test
+    void checkLotUsableRejectsWrongMaterial() {
+        LtLot lot = new LtLot();
+        lot.setLotId(1L);
+        lot.setMaterialId(999L);
+        lot.setStatus("IN_STOCK");
+        lot.setQcStatus("PASS");
+        lot.setQuantity(BigDecimal.TEN);
+        lot.setConsumedQty(BigDecimal.ZERO);
+        when(baseMapper.selectById(1L)).thenReturn(lot);
+
+        Map<String, Object> result = service.checkLotUsable(1L, 1L);
+
+        assertFalse((Boolean) result.get("usable"));
+        assertTrue(((String) result.get("reason")).contains("物料不符"));
+    }
+
+    @Test
+    void checkLotUsableRejectsNonInStockStatus() {
+        LtLot lot = new LtLot();
+        lot.setLotId(1L);
+        lot.setMaterialId(1L);
+        lot.setStatus("IN_USE");
+        lot.setQcStatus("PASS");
+        when(baseMapper.selectById(1L)).thenReturn(lot);
+
+        Map<String, Object> result = service.checkLotUsable(1L, 1L);
+
+        assertFalse((Boolean) result.get("usable"));
+        assertTrue(((String) result.get("reason")).contains("非在库"));
+    }
+
+    @Test
+    void checkLotUsableRejectsNonPassQcStatus() {
+        LtLot lot = new LtLot();
+        lot.setLotId(1L);
+        lot.setMaterialId(1L);
+        lot.setStatus("IN_STOCK");
+        lot.setQcStatus("PENDING");
+        when(baseMapper.selectById(1L)).thenReturn(lot);
+
+        Map<String, Object> result = service.checkLotUsable(1L, 1L);
+
+        assertFalse((Boolean) result.get("usable"));
+        assertTrue(((String) result.get("reason")).contains("QC未通过"));
+    }
+
+    @Test
+    void checkLotUsableRejectsZeroRemaining() {
+        LtLot lot = new LtLot();
+        lot.setLotId(1L);
+        lot.setMaterialId(1L);
+        lot.setStatus("IN_STOCK");
+        lot.setQcStatus("PASS");
+        lot.setQuantity(BigDecimal.TEN);
+        lot.setConsumedQty(BigDecimal.TEN);
+        when(baseMapper.selectById(1L)).thenReturn(lot);
+
+        Map<String, Object> result = service.checkLotUsable(1L, 1L);
+
+        assertFalse((Boolean) result.get("usable"));
+        assertTrue(((String) result.get("reason")).contains("剩余数量为0"));
+    }
+
+    @Test
+    void checkLotUsableReturnsUsableWhenAllConditionsMet() {
+        LtLot lot = new LtLot();
+        lot.setLotId(1L);
+        lot.setLotCode("LOT-001");
+        lot.setMaterialId(1L);
+        lot.setStatus("IN_STOCK");
+        lot.setQcStatus("PASS");
+        lot.setQuantity(BigDecimal.TEN);
+        lot.setConsumedQty(BigDecimal.ZERO);
+        when(baseMapper.selectById(1L)).thenReturn(lot);
+
+        Map<String, Object> result = service.checkLotUsable(1L, 1L);
+
+        assertTrue((Boolean) result.get("usable"));
+        assertEquals("可用", result.get("reason"));
+        assertEquals(BigDecimal.TEN, result.get("remainingQty"));
+        assertEquals("LOT-001", result.get("lotCode"));
+    }
+
+    // ==================== applyIqcResult 钩子 ====================
+
+    @Test
+    void applyIqcResultReturnsFalseWhenIqcIdIsNull() {
+        Boolean result = service.applyIqcResult(null, "QUALIFIED");
+        assertFalse(result);
+    }
+
+    @Test
+    void applyIqcResultReturnsFalseWhenNoLotLinked() {
+        when(baseMapper.selectOne(any())).thenReturn(null);
+
+        Boolean result = service.applyIqcResult(1L, "QUALIFIED");
+
+        assertFalse(result);
+    }
+
+    @Test
+    void applyIqcResultPassUpdatesQcStatus() {
+        LtLot lot = new LtLot();
+        lot.setLotId(1L);
+        lot.setStatus("IN_STOCK");
+        when(baseMapper.selectOne(any())).thenReturn(lot);
+
+        Boolean result = service.applyIqcResult(1L, "QUALIFIED");
+
+        assertTrue(result);
+        verify(baseMapper).update(any(), any());
+    }
+
+    @Test
+    void applyIqcResultFailQuarantinesLot() {
+        LtLot lot = new LtLot();
+        lot.setLotId(1L);
+        lot.setStatus("IN_STOCK");
+        lot.setQuantity(BigDecimal.TEN);
+        lot.setConsumedQty(BigDecimal.ZERO);
+        when(baseMapper.selectOne(any())).thenReturn(lot);
+        when(baseMapper.update(any(), any())).thenReturn(1);
+
+        Boolean result = service.applyIqcResult(1L, "UNQUALIFIED");
+
+        assertTrue(result);
+        // quarantine should have been called (2nd update)
+        verify(baseMapper, times(2)).update(any(), any());
+    }
+
+    @Test
+    void applyIqcResultThrowsOnInvalidResult() {
+        RuntimeException exception = assertThrows(RuntimeException.class,
+            () -> service.applyIqcResult(1L, "INVALID"));
+        assertTrue(exception.getMessage().contains("QUALIFIED"));
+    }
+
+    // ==================== updateByBo 守卫 ====================
+
+    @Test
+    void updateByBoRejectsNonInStockInUseStatus() {
+        LtLot lot = new LtLot();
+        lot.setLotId(1L);
+        lot.setStatus("CONSUMED");
+        when(baseMapper.selectById(1L)).thenReturn(lot);
+
+        LtLotBo bo = new LtLotBo();
+        bo.setLotId(1L);
+
+        RuntimeException exception = assertThrows(RuntimeException.class,
+            () -> service.updateByBo(bo));
+        assertTrue(exception.getMessage().contains("不可编辑"));
+    }
+
+    @Test
+    void updateByBoRejectsQuantityBelowConsumed() {
+        LtLot lot = new LtLot();
+        lot.setLotId(1L);
+        lot.setStatus("IN_STOCK");
+        lot.setQuantity(BigDecimal.valueOf(100));
+        lot.setConsumedQty(BigDecimal.valueOf(50));
+        when(baseMapper.selectById(1L)).thenReturn(lot);
+
+        LtLotBo bo = new LtLotBo();
+        bo.setLotId(1L);
+        bo.setQuantity(BigDecimal.valueOf(30));
+
+        RuntimeException exception = assertThrows(RuntimeException.class,
+            () -> service.updateByBo(bo));
+        assertTrue(exception.getMessage().contains("不可小于已消耗数量"));
+    }
+
+    // ==================== deleteByIds 守卫 ====================
+
+    @Test
+    void deleteByIdsRejectsNonInStockScrappedStatus() {
+        LtLot lot = new LtLot();
+        lot.setLotId(1L);
+        lot.setLotCode("LOT-001");
+        lot.setStatus("IN_USE");
+        when(baseMapper.selectById(1L)).thenReturn(lot);
+
+        RuntimeException exception = assertThrows(RuntimeException.class,
+            () -> service.deleteByIds(new Long[]{1L}));
+        assertTrue(exception.getMessage().contains("状态非在库/报废"));
+    }
+
+    @Test
+    void deleteByIdsRejectsWhenConsumptionExists() {
+        LtLot lot = new LtLot();
+        lot.setLotId(1L);
+        lot.setLotCode("LOT-001");
+        lot.setStatus("IN_STOCK");
+        when(baseMapper.selectById(1L)).thenReturn(lot);
+        when(consumptionMapper.selectCount(any())).thenReturn(1L);
+
+        RuntimeException exception = assertThrows(RuntimeException.class,
+            () -> service.deleteByIds(new Long[]{1L}));
+        assertTrue(exception.getMessage().contains("工单批次消耗记录"));
+    }
+
+    @Test
+    void deleteByIdsRejectsWhenBindingExists() {
+        LtLot lot = new LtLot();
+        lot.setLotId(1L);
+        lot.setLotCode("LOT-001");
+        lot.setStatus("IN_STOCK");
+        when(baseMapper.selectById(1L)).thenReturn(lot);
+        when(consumptionMapper.selectCount(any())).thenReturn(0L);
+        when(bindingMapper.selectCount(any())).thenReturn(1L);
+
+        RuntimeException exception = assertThrows(RuntimeException.class,
+            () -> service.deleteByIds(new Long[]{1L}));
+        assertTrue(exception.getMessage().contains("SN批次绑定记录"));
+    }
+
+    // ==================== updateQcStatus ====================
+
+    @Test
+    void updateQcStatusRejectsInvalidStatus() {
+        RuntimeException exception = assertThrows(RuntimeException.class,
+            () -> service.updateQcStatus(1L, "INVALID"));
+        assertTrue(exception.getMessage().contains("PASS/FAIL"));
+    }
+
+    @Test
+    void updateQcStatusFailAutoQuarantines() {
+        LtLot lot = new LtLot();
+        lot.setLotId(1L);
+        lot.setStatus("IN_STOCK");
+        lot.setQcStatus("PENDING");
+        lot.setQuantity(BigDecimal.TEN);
+        lot.setConsumedQty(BigDecimal.ZERO);
+        when(baseMapper.selectById(1L)).thenReturn(lot);
+        when(baseMapper.update(any(), any())).thenReturn(1);
+
+        Boolean result = service.updateQcStatus(1L, "FAIL");
+
+        assertTrue(result);
+        // quarantine should have been called (2nd update)
+        verify(baseMapper, times(2)).update(any(), any());
+    }
+
+    @Test
+    void updateQcStatusPassDoesNotQuarantine() {
+        LtLot lot = new LtLot();
+        lot.setLotId(1L);
+        lot.setStatus("IN_STOCK");
+        lot.setQcStatus("PENDING");
+        when(baseMapper.selectById(1L)).thenReturn(lot);
+        when(baseMapper.update(any(), any())).thenReturn(1);
+
+        Boolean result = service.updateQcStatus(1L, "PASS");
+
+        assertTrue(result);
+        verify(baseMapper, times(1)).update(any(), any());
+    }
+
+    // ==================== quarantineByNcr ====================
+
+    @Test
+    void quarantineByNcrDelegatesToQuarantineWithNcrRemark() {
+        LtLot lot = new LtLot();
+        lot.setLotId(1L);
+        lot.setStatus("IN_STOCK");
+        when(baseMapper.selectById(1L)).thenReturn(lot);
+        when(baseMapper.update(any(), any())).thenReturn(1);
+
+        Boolean result = service.quarantineByNcr(1L, 100L, "质量问题");
+
+        assertTrue(result);
+    }
+}

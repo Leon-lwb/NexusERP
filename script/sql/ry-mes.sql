@@ -939,6 +939,17 @@ INSERT INTO `pro_flow_card_step` VALUES (2080299927703007233, '000000', 20802999
 INSERT INTO `pro_flow_card_step` VALUES (2080299927703007234, '000000', 2080299927648481282, 'FC-SCGD202607230001-7515', 2080270525816516609, 2080270525816516613, 30, 5, 'PKG', '包装', 9, 'GZZ0010', 0, 'COMPLETED', 14, '王思远', 20.0000, 20.0000, 0.0000, 0.0000, '2026-07-23 22:32:42', '2026-07-23 22:32:53', NULL, 103, 1, '2026-07-23 22:32:08', 1, '2026-07-23 22:32:53', '0');
 
 -- ----------------------------
+-- P0-3 扩展 pro_flow_card_step：进站/出站校验结果 + 跳站原因
+-- 复用既有 actual_start_time(进站时间)/actual_end_time(出站时间)/step_status(含SKIPPED)，仅新增 5 字段
+-- ----------------------------
+ALTER TABLE `pro_flow_card_step`
+    ADD COLUMN `entry_check_result` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '进站校验结果(PASS/FAIL)' AFTER `remark`,
+    ADD COLUMN `entry_check_remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '进站校验备注(失败原因)' AFTER `entry_check_result`,
+    ADD COLUMN `exit_check_result` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '出站校验结果(PASS/FAIL)' AFTER `entry_check_remark`,
+    ADD COLUMN `exit_check_remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '出站校验备注(失败原因)' AFTER `exit_check_result`,
+    ADD COLUMN `skip_reason` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '跳站原因' AFTER `exit_check_remark`;
+
+-- ----------------------------
 -- Table structure for pro_sn
 -- ----------------------------
 DROP TABLE IF EXISTS `pro_sn`;
@@ -1654,5 +1665,54 @@ CREATE TABLE `tg_usage_record`  (
 -- ----------------------------
 INSERT INTO `tg_usage_record` VALUES (2081272379664936961, '000000', 2081272377081245697, 100, 'WO-E2E-001', 1, 'WS1', 1, 'admin', '2026-07-26 14:56:18', '2026-07-26 14:56:18', 500, 2.50, 'RETURNED', NULL, 103, 1, '2026-07-26 14:56:18', 1, '2026-07-26 14:56:18', '0');
 INSERT INTO `tg_usage_record` VALUES (2081272382944882689, '000000', 2081272377081245697, NULL, NULL, NULL, NULL, 1, 'admin', '2026-07-26 14:56:19', '2026-07-26 14:56:19', 600, NULL, 'RETURNED', NULL, 103, 1, '2026-07-26 14:56:19', 1, '2026-07-26 14:56:19', '0');
+
+-- ----------------------------
+-- Table structure for pro_step_guide (P0-3 工序流程指引配置)
+-- 收敛为 TEXT + SOP_LINK 两类(无 IMAGE/VIDEO/media_url，富媒体统一走 sop_document)
+-- ----------------------------
+DROP TABLE IF EXISTS `pro_step_guide`;
+CREATE TABLE `pro_step_guide`  (
+  `guide_id` bigint(20) NOT NULL COMMENT '指引ID(主键)',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '000000' COMMENT '租户ID',
+  `process_id` bigint(20) NOT NULL COMMENT '工序ID(ERP bd_process.process_id)',
+  `guide_type` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '指引类型: TEXT/SOP_LINK',
+  `guide_title` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '指引标题',
+  `guide_content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '文本内容(TEXT类型用)',
+  `sop_id` bigint(20) NULL DEFAULT NULL COMMENT '关联SOP文档(SOP_LINK类型用,须在sop_process_binding已绑定同process_id)',
+  `sort_order` int(4) NULL DEFAULT 0 COMMENT '排序',
+  `enabled` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '1' COMMENT '是否启用(0停用 1启用)',
+  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
+  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志(0正常 1删除)',
+  PRIMARY KEY (`guide_id`) USING BTREE,
+  INDEX `idx_process_id`(`process_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'MES工序流程指引配置' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Table structure for pro_step_check_rule (P0-3 工序校验规则配置)
+-- ----------------------------
+DROP TABLE IF EXISTS `pro_step_check_rule`;
+CREATE TABLE `pro_step_check_rule`  (
+  `rule_id` bigint(20) NOT NULL COMMENT '规则ID(主键)',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '000000' COMMENT '租户ID',
+  `process_id` bigint(20) NOT NULL COMMENT '工序ID',
+  `check_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '校验类型: MATERIAL_KITTING/OPERATOR_SKILL/EQUIPMENT_STATUS/SOP_VERSION/TOOLING_AVAILABLE/LOT_AVAILABLE/INSPECTION_REQUIRED/QUANTITY_REACHED/PARAMETER_OK/EXCEPTION_CLOSED',
+  `check_stage` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '校验阶段: ENTRY/EXIT',
+  `enabled` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '1' COMMENT '是否启用(0停用 1启用)',
+  `error_msg` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '校验失败提示',
+  `sort_order` int(4) NULL DEFAULT 0 COMMENT '排序',
+  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
+  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志(0正常 1删除)',
+  PRIMARY KEY (`rule_id`) USING BTREE,
+  INDEX `idx_process_id`(`process_id`) USING BTREE,
+  INDEX `idx_check_stage`(`check_stage`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'MES工序校验规则配置' ROW_FORMAT = DYNAMIC;
 
 SET FOREIGN_KEY_CHECKS = 1;

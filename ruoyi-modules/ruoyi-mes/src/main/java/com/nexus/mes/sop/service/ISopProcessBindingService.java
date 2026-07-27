@@ -80,6 +80,17 @@ public interface ISopProcessBindingService {
     SopDocumentVo getSopForStep(Long stepRecordId);
 
     /**
+     * 契约: 推送当前工序SOP到工位终端(P0-3 进站通过后调用)
+     * <p>获取工序绑定SOP并通过 SSE 推送给指定用户(工位操作员)。
+     * 推送失败不抛异常(仅告警),调用方可主动拉取。无绑定SOP时返回 null。</p>
+     *
+     * @param stepRecordId 流转卡工序记录ID
+     * @param userId       目标用户ID(工位操作员)
+     * @return 推送的SOP文档, 无绑定返回 null
+     */
+    SopDocumentVo pushSopToWorkstation(Long stepRecordId, Long userId);
+
+    /**
      * 契约: 按物料查全部工序SOP(工单开工预加载)
      * <p>物料 -> ERP 当前工艺路线 -> 路线步骤 -> 各 processId -> 绑定SOP。
      * 返回 Map<processId, SopDocumentVo>(仅含已绑定SOP的工序)</p>
