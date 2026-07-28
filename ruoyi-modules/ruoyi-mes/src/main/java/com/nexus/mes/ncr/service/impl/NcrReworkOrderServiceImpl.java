@@ -1,0 +1,169 @@
+package com.nexus.mes.ncr.service.impl;
+
+import com.baomidou.dynamic.datasource.annotation.DS;
+import com.baomidou.lock.annotation.Lock4j;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.nexus.common.core.utils.StringUtils;
+import com.nexus.common.mybatis.core.page.PageQuery;
+import com.nexus.common.mybatis.core.page.TableDataInfo;
+import com.nexus.mes.ncr.domain.NcrReworkOrder;
+import com.nexus.mes.ncr.domain.bo.NcrReworkOrderBo;
+import com.nexus.mes.ncr.domain.vo.NcrReworkOrderVo;
+import com.nexus.mes.ncr.mapper.NcrReworkOrderMapper;
+import com.nexus.mes.ncr.service.INcrReworkOrderService;
+import com.nexus.mes.pro.domain.ProWorkOrder;
+import com.nexus.mes.pro.domain.bo.ProWorkOrderBo;
+import com.nexus.mes.pro.domain.vo.ProWorkOrderVo;
+import com.nexus.mes.pro.mapper.ProWorkOrderMapper;
+import com.nexus.mes.pro.service.IProWorkOrderService;
+import com.nexus.system.strategy.AutoCodeUtil;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.util.List;
+
+/**
+ * MES NCR返工单 Service 业务层实现
+ * <p>
+ * 返工单由 NCR 处置(REWORK)自动派生,通过 {@link IProWorkOrderService} 创建返工工单。
+ * 注意: 为避免循环依赖,本实现不注入 INcrOrderService。
+ * NCR 状态流转由 NcrOrderServiceImpl 在其 dispose 方法中通过 NcrOrderMapper 直调完成。
+ * </p>
+ *
+ * @author Nexus
+ */
+@Slf4j
+@RequiredArgsConstructor
+@DS("mes")
+@Service("ncrReworkOrderService")
+public class NcrReworkOrderServiceImpl implements INcrReworkOrderService {
+
+    private final NcrReworkOrderMapper baseMapper;
+    private final IProWorkOrderService proWorkOrderService;
+    private final ProWorkOrderMapper proWorkOrderMapper;
+    private final AutoCodeUtil autoCodeUtil;
+
+    /**
+     * 分页查询返工单列表
+     *
+     * @param bo        查询条件
+     * @param pageQuery 分页参数
+     * @return 返工单分页数据
+     */
+    @Override
+    public TableDataInfo<NcrReworkOrderVo> selectPageList(NcrReworkOrderBo bo, PageQuery pageQuery) {
+        LambdaQueryWrapper<NcrReworkOrder> lqw = buildQueryWrapper(bo);
+        Page<NcrReworkOrderVo> page = baseMapper.selectVoPage(pageQuery.build(), lqw);
+        return TableDataInfo.build(page);
+    }
+
+    /**
+     * 根据ID获取返工单详情
+     *
+     * @param reworkId 返工记录ID
+     * @return 返工单详情
+     */
+    @Override
+    public NcrReworkOrderVo selectById(Long reworkId) {
+        return baseMapper.selectVoById(reworkId);
+    }
+
+    /**
+     * 批量删除返工单
+     *
+     * @param ids 返工记录ID数组
+     * @return 删除成功返回 true
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Boolean deleteByIds(Long[] ids) {
+        if (ids == null || ids.length == 0) {
+            return false;
+        }
+        List<Long> idList = java.util.Arrays.asList(ids);
+        int rows = baseMapper.deleteByIds(idList);
+        log.info("批量删除返工单: count={}", ids.length);
+        return rows > 0;
+    }
+
+    /**
+     * 派生返工工单
+     * <p>
+     * 1. 查询原工单信息(materialId/routingId/workshopId/bomId/unitId/materialCode/materialName);
+     * 2. 构造 ProWorkOrderBo 创建返工工单(复制物料/工艺/车间,plannedQty=reworkQty);
+     * 3. 按 woNo 查回返工工单ID,记录返工关联(ncr_rework_order)。
+     * 注意: 本方法不修改 NcrOrder 状态,由调用方 NcrOrderServiceImpl 负责 CAS 流转。
+     * </p>
+     */
+    @Lock4j(keys = {"#ncrId"})
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public NcrReworkOrderVo deriveReworkOrder(Long ncrId, Long originalWoId, BigDecimal reworkQty, String reason) {
+        // 1. 查询原工单(直调 Mapper 取原始实体, 避免 selectById 的 VO 富集触发 bridge 跨库查 bd_routing 在 @Transactional mes 内失效)
+        ProWorkOrder originalWo = proWorkOrderMapper.selectById(originalWoId);
+        if (originalWo == null) {
+            throw new RuntimeException("原工单不存在: " + originalWoId);
+        }
+
+        // 2. 构造返工工单BO
+        String reworkWoNo = autoCodeUtil.genSerialCode("MES_REWORK_CODE", null);
+        ProWorkOrderBo reworkBo = new ProWorkOrderBo();
+        reworkBo.setWoNo(reworkWoNo);
+        reworkBo.setSourceType("REWORK");
+        reworkBo.setMaterialId(originalWo.getMaterialId());
+        reworkBo.setMaterialCode(originalWo.getMaterialCode());
+        reworkBo.setMaterialName(originalWo.getMaterialName());
+        reworkBo.setPlannedQty(reworkQty);
+        reworkBo.setUnitId(originalWo.getUnitId());
+        reworkBo.setUnitName(originalWo.getUnitName());
+        reworkBo.setWorkshopId(originalWo.getWorkshopId());
+        reworkBo.setWorkshopName(originalWo.getWorkshopName());
+        reworkBo.setBomId(originalWo.getBomId());
+        reworkBo.setRoutingId(originalWo.getRoutingId());
+        reworkBo.setRemark("NCR返工: " + (reason != null ? reason : ""));
+        int rows = proWorkOrderService.insertByBo(reworkBo);
+        if (rows <= 0) {
+            throw new RuntimeException("返工工单创建失败");
+        }
+
+        // 3. insertByBo 已回写雪花ID到BO,直接取用(避免 selectList 触发 VO 富集查 bd_ 跨库)
+        Long reworkWoId = reworkBo.getMesWoId();
+        if (reworkWoId == null) {
+            throw new RuntimeException("返工工单创建后未获取到ID, woNo=" + reworkWoNo);
+        }
+
+        // 4. 构建返工关联记录
+        NcrReworkOrder reworkOrder = new NcrReworkOrder();
+        reworkOrder.setReworkCode(autoCodeUtil.genSerialCode("MES_REWORK_CODE", null));
+        reworkOrder.setNcrId(ncrId);
+        reworkOrder.setOriginalWoId(originalWoId);
+        reworkOrder.setOriginalWoNo(originalWo.getWoNo());
+        reworkOrder.setReworkWoId(reworkWoId);
+        reworkOrder.setReworkWoNo(reworkWoNo);
+        reworkOrder.setReworkQty(reworkQty);
+        reworkOrder.setReworkReason(reason);
+        reworkOrder.setStatus(STATUS_OPEN);
+        baseMapper.insert(reworkOrder);
+
+        log.info("派生返工单: ncrId={}, originalWoId={}, reworkWoId={}, reworkWoNo={}",
+            ncrId, originalWoId, reworkWoId, reworkWoNo);
+        return baseMapper.selectVoById(reworkOrder.getReworkId());
+    }
+
+    /**
+     * 构建返工单查询条件包装器
+     */
+    private LambdaQueryWrapper<NcrReworkOrder> buildQueryWrapper(NcrReworkOrderBo bo) {
+        return Wrappers.<NcrReworkOrder>lambdaQuery()
+            .eq(bo.getNcrId() != null, NcrReworkOrder::getNcrId, bo.getNcrId())
+            .eq(bo.getOriginalWoId() != null, NcrReworkOrder::getOriginalWoId, bo.getOriginalWoId())
+            .eq(bo.getReworkWoId() != null, NcrReworkOrder::getReworkWoId, bo.getReworkWoId())
+            .eq(StringUtils.isNotBlank(bo.getStatus()), NcrReworkOrder::getStatus, bo.getStatus())
+            .orderByDesc(NcrReworkOrder::getCreateTime);
+    }
+}

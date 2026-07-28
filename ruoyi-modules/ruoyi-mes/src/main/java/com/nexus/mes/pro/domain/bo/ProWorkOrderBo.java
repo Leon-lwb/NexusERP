@@ -87,6 +87,9 @@ public class ProWorkOrderBo extends BaseEntity {
     /** 已选审批流程模板ID */
     private Long selectFlowId;
 
+    /** 工单来源(ERP/REWORK/MANUAL) */
+    private String sourceType;
+
     /** 批量删除ID集合 */
     private Long[] ids;
 }

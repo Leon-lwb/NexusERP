@@ -10,6 +10,7 @@ import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.common.satoken.utils.LoginHelper;
 import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.mes.common.mq.MesMqSendService;
+import com.nexus.mes.ncr.service.INcrOrderService;
 import com.nexus.mes.qc.domain.QcOqc;
 import com.nexus.mes.qc.domain.bo.QcOqcBo;
 import com.nexus.mes.qc.domain.vo.QcOqcVo;
@@ -46,6 +47,8 @@ public class QcOqcServiceImpl implements IQcOqcService {
     private final QcOqcMapper baseMapper;
     /** MES MQ 发送服务，用于检验完成后异步回传 ERP。 */
     private final MesMqSendService mesMqSendService;
+    /** NCR 不合格品服务(P0-4)：检验判定不合格时自动创建 NCR 单。 */
+    private final INcrOrderService ncrOrderService;
 
     /**
      * 分页查询 OQC 出货检验列表。
@@ -147,6 +150,11 @@ public class QcOqcServiceImpl implements IQcOqcService {
             throw new RuntimeException("OQC状态已变更, 检验失败");
         }
         log.info("OQC检验完成: oqcId={}, result={}", oqcId, inspectResult);
+
+        // P0-4: 判定不合格则自动创建NCR单(同事务,幂等)
+        if (RESULT_UNQUALIFIED.equals(inspectResult)) {
+            ncrOrderService.autoCreateFromOqc(oqcId, oqc.getSoId(), oqc.getMaterialId(), defectInfo);
+        }
 
         // 事务提交后异步MQ回传ERP(更新销售订单行OQC状态)
         QcOqc updated = baseMapper.selectById(oqcId);

@@ -94,6 +94,9 @@ public class ProWorkOrder extends TenantEntity {
     /** 已选审批流程模板ID */
     private Long selectFlowId;
 
+    /** 工单来源(ERP/REWORK/MANUAL) */
+    private String sourceType;
+
     /** 删除标志 */
     @TableLogic
     private String delFlag;

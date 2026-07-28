@@ -10,6 +10,7 @@ import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.common.satoken.utils.LoginHelper;
 import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.mes.common.mq.MesMqSendService;
+import com.nexus.mes.ncr.service.INcrOrderService;
 import com.nexus.mes.pro.domain.vo.ProWorkOrderVo;
 import com.nexus.mes.pro.service.IProWorkOrderService;
 import com.nexus.mes.qc.domain.QcIpqc;
@@ -53,6 +54,8 @@ public class QcIpqcServiceImpl implements IQcIpqcService {
     private final MesMqSendService mesMqSendService;
     /** MES 工单服务，用于经 mesWoId 查询 erpWoId 定位 ERP 工单。 */
     private final IProWorkOrderService proWorkOrderService;
+    /** NCR 不合格品服务(P0-4)：检验判定不合格时自动创建 NCR 单。 */
+    private final INcrOrderService ncrOrderService;
 
     /**
      * 分页查询 IPQC 过程检验列表。
@@ -195,6 +198,12 @@ public class QcIpqcServiceImpl implements IQcIpqcService {
             throw new RuntimeException("IPQC状态已变更, 检验失败");
         }
         log.info("IPQC检验完成: ipqcId={}, result={}, defectRate={}", ipqcId, inspectResult, defectRate);
+
+        // P0-4: 判定不合格则自动创建NCR单(同事务,幂等;关联工单/流转卡/工序/不良数)
+        if (RESULT_UNQUALIFIED.equals(inspectResult)) {
+            ncrOrderService.autoCreateFromIpqc(ipqcId, ipqc.getMesWoId(), ipqc.getCardId(),
+                ipqc.getStepRecordId(), ipqc.getProcessId(), defectQty, defectInfo);
+        }
 
         // 事务提交后异步MQ回传ERP(更新工单聚合质检状态)
         // 经 mesWoId -> ProWorkOrder.erpWoId 定位 ERP 工单; 无 erpWoId 则为纯 MES 工单, 跳过

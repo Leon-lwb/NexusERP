@@ -118,6 +118,10 @@ public class ProWorkOrderVo implements Serializable {
     /** 已选审批流程模板ID */
     private Long selectFlowId;
 
+    /** 工单来源(ERP/REWORK/MANUAL) */
+    @ExcelProperty("工单来源")
+    private String sourceType;
+
     /** 工序步骤列表(详情查询时填充) */
     private List<ProWorkOrderStepVo> steps;
 

@@ -9,6 +9,7 @@ import com.nexus.common.core.utils.MapstructUtils;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
+import com.nexus.mes.ncr.service.INcrOrderService;
 import com.nexus.mes.pro.domain.ProFlowCard;
 import com.nexus.mes.pro.domain.ProFlowCardStep;
 import com.nexus.mes.pro.domain.ProWorkOrder;
@@ -65,6 +66,8 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
     private final IProEntryCheckService proEntryCheckService;
     /** SOP 工序绑定服务(P0-3 进站推送 SOP) */
     private final ISopProcessBindingService sopBindingService;
+    /** NCR 不合格品服务(P0-4)：出站报工不良(defectQty>0)时自动创建 NCR 单。 */
+    private final INcrOrderService ncrOrderService;
 
     @Override
     /**
@@ -472,6 +475,13 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
 
         // 2. 校验通过: 完工(复用既有 completeStep 状态机)
         completeStep(bo.getCardId(), bo.getStepRecordId(), bo.getGoodQty(), bo.getDefectQty(), bo.getScrapQty());
+
+        // P0-4: 出站报工不良(defectQty>0)自动创建NCR单(幂等;关联流转卡/工单)
+        if (bo.getDefectQty() != null && bo.getDefectQty().compareTo(BigDecimal.ZERO) > 0) {
+            ProFlowCard card = baseMapper.selectById(bo.getCardId());
+            Long ncrMesWoId = card != null ? card.getMesWoId() : null;
+            ncrOrderService.autoCreateFromExit(bo.getCardId(), bo.getStepRecordId(), ncrMesWoId, bo.getDefectQty(), null);
+        }
 
         // 3. 记录 exit_check_result=PASS
         stepMapper.update(null, Wrappers.<ProFlowCardStep>lambdaUpdate()

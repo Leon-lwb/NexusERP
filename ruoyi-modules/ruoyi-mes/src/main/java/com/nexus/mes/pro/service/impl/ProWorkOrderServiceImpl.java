@@ -16,6 +16,10 @@ import com.nexus.mes.common.bridge.IMesErpBridgeService;
 import com.nexus.mes.eq.domain.EqEquipment;
 import com.nexus.mes.eq.mapper.EqEquipmentMapper;
 import com.nexus.mes.common.mq.MesMqSendService;
+import com.nexus.mes.ncr.domain.NcrOrder;
+import com.nexus.mes.ncr.domain.NcrReworkOrder;
+import com.nexus.mes.ncr.mapper.NcrOrderMapper;
+import com.nexus.mes.ncr.mapper.NcrReworkOrderMapper;
 import com.nexus.mes.pro.domain.ProWorkOrder;
 import com.nexus.mes.pro.domain.ProWorkOrderBomLine;
 import com.nexus.mes.pro.domain.ProWorkOrderStep;
@@ -82,6 +86,12 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
      * 本类 @DS("mes")，completeWo 经代理走 mes 上下文，直调 mes 库 Mapper 安全。
      */
     private final QcIpqcMapper qcIpqcMapper;
+    /**
+     * NCR 返工工单/不合格单 Mapper(P0-4)：返工工单完工时直调 Mapper 回写 NCR 状态。
+     * 直调 Mapper 而非 INcrReworkOrderService，避免与 NcrReworkOrderServiceImpl(依赖 IProWorkOrderService) 形成循环依赖，同 QcIpqcMapper 模式。
+     */
+    private final NcrReworkOrderMapper ncrReworkOrderMapper;
+    private final NcrOrderMapper ncrOrderMapper;
 
     @Override
     /**
@@ -687,6 +697,28 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
         final BigDecimal scrappedQty = wo.getScrapQty() != null ? wo.getScrapQty() : BigDecimal.ZERO;
         final String woNo = wo.getWoNo();
         final Long erpWoId = wo.getErpWoId();
+
+        // P0-4: 返工工单(source_type=REWORK)完工 -> 直调 Mapper 回写 NCR 状态(同事务原子; 直调 Mapper 避免 Service 循环依赖, 同 QcIpqcMapper 模式)
+        if ("REWORK".equals(wo.getSourceType())) {
+            NcrReworkOrder ro = ncrReworkOrderMapper.selectOne(
+                Wrappers.<NcrReworkOrder>lambdaQuery().eq(NcrReworkOrder::getReworkWoId, mesWoId));
+            if (ro != null) {
+                ncrReworkOrderMapper.update(null,
+                    Wrappers.<NcrReworkOrder>lambdaUpdate()
+                        .set(NcrReworkOrder::getStatus, "COMPLETED")
+                        .eq(NcrReworkOrder::getReworkId, ro.getReworkId())
+                        .ne(NcrReworkOrder::getStatus, "COMPLETED"));
+                ncrOrderMapper.update(null,
+                    Wrappers.<NcrOrder>lambdaUpdate()
+                        .set(NcrOrder::getStatus, "CLOSED")
+                        .set(NcrOrder::getClosedTime, new Date())
+                        .eq(NcrOrder::getNcrId, ro.getNcrId())
+                        .eq(NcrOrder::getStatus, "IN_REWORK"));
+                log.info("返工工单完工回写NCR: mesWoId={}, ncrId={}", mesWoId, ro.getNcrId());
+            }
+            return;  // 返工工单是 MES 内部事务, 不通知 ERP, 不注册 MQ afterCommit
+        }
+
         TransactionSynchronizationManager.registerSynchronization(
             new TransactionSynchronization() {
                 @Override

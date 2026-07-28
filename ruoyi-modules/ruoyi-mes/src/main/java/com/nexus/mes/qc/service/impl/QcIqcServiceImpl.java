@@ -11,6 +11,7 @@ import com.nexus.common.satoken.utils.LoginHelper;
 import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.mes.common.mq.MesMqSendService;
 import com.nexus.mes.lt.service.ILtLotService;
+import com.nexus.mes.ncr.service.INcrOrderService;
 import com.nexus.mes.qc.domain.QcIqc;
 import com.nexus.mes.qc.domain.bo.QcIqcBo;
 import com.nexus.mes.qc.domain.vo.QcIqcVo;
@@ -49,6 +50,8 @@ public class QcIqcServiceImpl implements IQcIqcService {
     private final MesMqSendService mesMqSendService;
     /** MES 批次服务，用于检验完成后回写关联批次 qc_status（lot.iqc_id 已关联时生效）。 */
     private final ILtLotService ltLotService;
+    /** NCR 不合格品服务(P0-4)：检验判定不合格时自动创建 NCR 单。 */
+    private final INcrOrderService ncrOrderService;
 
     /**
      * 分页查询 IQC 来料检验列表。
@@ -162,6 +165,11 @@ public class QcIqcServiceImpl implements IQcIqcService {
 
         QcIqc updated = baseMapper.selectById(iqcId);
         log.info("IQC检验完成: iqcId={}, iqcNo={}, result={}", iqcId, updated.getIqcNo(), inspectResult);
+
+        // P0-4: 判定不合格则自动创建NCR单(同事务,幂等;建单失败回滚检验--质量闭环不容许NCR丢失)
+        if (RESULT_UNQUALIFIED.equals(inspectResult)) {
+            ncrOrderService.autoCreateFromIqc(iqcId, updated.getReceiveId(), updated.getMaterialId(), defectInfo);
+        }
 
         // 事务提交后异步MQ回传ERP(更新收货单质检状态)
         final Long receiveId = updated.getReceiveId();
