@@ -36,6 +36,7 @@ CREATE TABLE `dc_collection_point`  (
   `frequency` int(11) NULL DEFAULT NULL COMMENT '采集频率(秒)',
   `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'ACTIVE' COMMENT 'ACTIVE/INACTIVE',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
+  `last_archive_time` datetime NULL DEFAULT NULL COMMENT '最后成功归档时间（数据补偿游标）',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
   `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',

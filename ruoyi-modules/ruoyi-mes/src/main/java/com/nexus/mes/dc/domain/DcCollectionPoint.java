@@ -59,6 +59,9 @@ public class DcCollectionPoint extends TenantEntity {
     /** 备注 */
     private String remark;
 
+    /** 最后成功归档时间（数据补偿游标，IotDataArchiveTask 维护，不对前端暴露） */
+    private java.util.Date lastArchiveTime;
+
     /** 删除标志 */
     @TableLogic
     private String delFlag;

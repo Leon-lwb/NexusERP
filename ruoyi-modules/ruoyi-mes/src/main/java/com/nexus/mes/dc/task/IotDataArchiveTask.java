@@ -46,6 +46,10 @@ public class IotDataArchiveTask {
     private static final String STATUS_ACTIVE = "ACTIVE";
     /** 每次拉取时间窗口（分钟）：略大于任务周期以避免漏拉 */
     private static final long PULL_WINDOW_MINUTES = 6L;
+    /** 单次拉取上限（分钟）：超过则分块拉取，避免单次拉取过载 */
+    private static final long MAX_CHUNK_MINUTES = 120L;
+    /** 绝对截断上限（分钟）：超过则截断并告警（避免拉数天数据） */
+    private static final long MAX_GAP_MINUTES = 1440L;
 
     private final DcCollectionPointMapper collectionPointMapper;
     private final DcDataRecordMapper dataRecordMapper;
@@ -97,9 +101,58 @@ public class IotDataArchiveTask {
         return inserted;
     }
 
-    private int archiveOne(DcCollectionPoint point, Date startTime, Date endTime) {
+    /**
+     * 归档单个采集点：游标优先 + 分块拉取 + 推进游标（F8-6 数据补偿核心）。
+     * <p>
+     * effectiveStart = lastArchiveTime ?: windowStart（首次运行退回滑窗，行为与改造前一致）；
+     * gap &gt; {@value #MAX_CHUNK_MINUTES} 分钟分块拉取避免单次过载；
+     * gap &gt; {@value #MAX_GAP_MINUTES} 分钟截断并告警（避免拉数天数据）；
+     * 归档后推进 lastArchiveTime 到 endTime（空结果也推进：已扫描无数据 ≠ 应重扫）。
+     * <p>
+     * 游标推进置于末尾：任一分块异常则不推进，下轮从原游标重拉，由 uk_point_collect_time 去重，保证不丢数据。
+     *
+     * @param point      采集点
+     * @param windowStart 滑窗起始（lastArchiveTime 为空时退回）
+     * @param endTime    归档截止时间
+     * @return 本次归档条数
+     */
+    int archiveOne(DcCollectionPoint point, Date windowStart, Date endTime) {
+        Date cursor = point.getLastArchiveTime() != null ? point.getLastArchiveTime() : windowStart;
+        long gapMin = (endTime.getTime() - cursor.getTime()) / 60000L;
+        if (gapMin <= 0) {
+            return 0;
+        }
+        if (gapMin > MAX_GAP_MINUTES) {
+            log.warn("[IoT归档任务] 采集点 {} 断线 {} 分钟超 {} 分钟上限，截断回补",
+                point.getPointId(), gapMin, MAX_GAP_MINUTES);
+            cursor = new Date(endTime.getTime() - MAX_GAP_MINUTES * 60000L);
+        }
+        int total = 0;
+        Date segStart = cursor;
+        while (segStart.before(endTime)) {
+            Date segEnd = new Date(Math.min(segStart.getTime() + MAX_CHUNK_MINUTES * 60000L, endTime.getTime()));
+            total += archiveSegment(point, segStart, segEnd);
+            segStart = segEnd;
+        }
+        // 推进游标（空结果也推进：已扫描无数据 ≠ 应重扫）。任一分块异常时不会执行到此处。
+        collectionPointMapper.updateLastArchiveTime(point.getPointId(), endTime);
+        return total;
+    }
+
+    /**
+     * 归档单个时间段的 IoT 历史数据到 dc_data_record（source=IoT）。
+     * <p>
+     * 按 iotPropertyCode 过滤属性，按 dataType 区分 numericValue/textValue，
+     * 唯一索引 uk_point_collect_time 兜底去重。
+     *
+     * @param point    采集点
+     * @param segStart 段起始时间
+     * @param segEnd   段截止时间
+     * @return 本段归档条数
+     */
+    private int archiveSegment(DcCollectionPoint point, Date segStart, Date segEnd) {
         List<Map<String, Object>> history = iotDeviceDataQueryService.getHistoryData(
-            point.getIotDeviceId(), startTime, endTime);
+            point.getIotDeviceId(), segStart, segEnd);
         if (history == null || history.isEmpty()) {
             return 0;
         }

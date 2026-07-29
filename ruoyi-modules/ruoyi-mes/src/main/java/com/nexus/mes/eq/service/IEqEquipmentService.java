@@ -28,6 +28,8 @@ public interface IEqEquipmentService {
     String STATUS_FAULT = "FAULT";
     /** 状态: 已报废 */
     String STATUS_SCRAPPED = "SCRAPPED";
+    /** 状态: IoT 离线（仅 EquipmentStatusSyncTask 在 NORMAL<->OFFLINE 间联动，不覆盖 FAULT/MAINTENANCE/SCRAPPED） */
+    String STATUS_OFFLINE = "OFFLINE";
 
     /**
      * 分页查询设备台账列表

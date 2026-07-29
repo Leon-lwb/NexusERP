@@ -51,6 +51,9 @@
             <dict-tag :options="dc_collection_point_type" :value="scope.row.pointType" />
           </template>
         </el-table-column>
+        <el-table-column label="IoT设备" align="center" width="90">
+          <template #default="scope">{{ scope.row.iotDeviceId ? '已绑定' : '-' }}</template>
+        </el-table-column>
         <el-table-column label="数据类型" prop="dataType" align="center">
           <template #default="scope">
             <dict-tag :options="dc_data_type" :value="scope.row.dataType" />
@@ -88,10 +91,20 @@
           <el-input v-model="form.pointName" placeholder="采集点名称" clearable />
         </el-form-item>
         <el-form-item label="采集点类型" required>
-          <el-select v-model="form.pointType" placeholder="请选择类型" style="width: 100%">
+          <el-select v-model="form.pointType" placeholder="请选择类型" style="width: 100%" @change="onPointTypeChange">
             <el-option v-for="dict in dc_collection_point_type" :key="dict.value" :label="dict.label" :value="dict.value" />
           </el-select>
         </el-form-item>
+        <template v-if="form.pointType === 'AUTO'">
+          <el-form-item label="关联IoT设备" required>
+            <el-select v-model="form.iotDeviceId" placeholder="请选择 IoT 设备" clearable filterable style="width: 100%">
+              <el-option v-for="d in iotDeviceList" :key="d.deviceId" :label="d.deviceCode + ' - ' + d.deviceName" :value="d.deviceId" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="IoT属性编码">
+            <el-input v-model="form.iotPropertyCode" placeholder="对应 IoT 属性编码, 如 temperature; 留空归档全部属性" clearable />
+          </el-form-item>
+        </template>
         <el-form-item label="数据类型">
           <el-select v-model="form.dataType" placeholder="请选择数据类型" clearable style="width: 100%">
             <el-option v-for="dict in dc_data_type" :key="dict.value" :label="dict.label" :value="dict.value" />
@@ -180,6 +193,7 @@ import {
 import type { DcCollectionPointVO, DcCollectionPointQuery, DcCollectionPointForm } from '@/api/mes/dc/collection-point';
 import { listProcess, getProcess } from '@/api/erp/bd/process';
 import EquipmentSelect from '@/components/EquipmentSelect/index.vue';
+import { listIotDeviceForBind } from '@/api/iot/device';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { dc_collection_point_type, dc_data_type, mes_enable_status } = toRefs<any>(
@@ -204,6 +218,22 @@ const dialog = reactive({ visible: false });
 const form = ref<DcCollectionPointForm>({} as DcCollectionPointForm);
 // 工序展示字段(后端 BO 忽略)
 const processCodeDisplay = ref('');
+
+const iotDeviceList = ref<any[]>([]);
+const loadIotDevices = async () => {
+  try {
+    const res = await listIotDeviceForBind({ pageNum: 1, pageSize: 1000 });
+    iotDeviceList.value = res.rows || [];
+  } catch {
+    iotDeviceList.value = [];
+  }
+};
+const onPointTypeChange = (val: string) => {
+  if (val !== 'AUTO') {
+    form.value.iotDeviceId = undefined;
+    form.value.iotPropertyCode = undefined;
+  }
+};
 
 const processDialog = reactive({
   visible: false,
@@ -240,6 +270,8 @@ const resetForm = () => {
     pointName: '',
     pointType: 'MANUAL',
     equipmentId: undefined,
+    iotDeviceId: undefined,
+    iotPropertyCode: undefined,
     processId: undefined,
     dataType: 'NUMERIC',
     unit: '',
@@ -252,12 +284,14 @@ const resetForm = () => {
 
 const handleOpenAdd = () => {
   resetForm();
+  loadIotDevices();
   dialog.visible = true;
 };
 
 const handleOpenEdit = async (row: DcCollectionPointVO) => {
   const res = await getCollectionPoint(row.pointId);
   form.value = { ...res.data };
+  loadIotDevices();
   // 回填工序编码(VO 不带 processCode, 按 processId 反查)
   if (form.value.processId) {
     try {
@@ -275,6 +309,10 @@ const handleOpenEdit = async (row: DcCollectionPointVO) => {
 const submitForm = async () => {
   if (!form.value.pointCode || !form.value.pointName || !form.value.pointType) {
     proxy?.$modal.msgWarning('采集点编码/名称/类型不能为空');
+    return;
+  }
+  if (form.value.pointType === 'AUTO' && !form.value.iotDeviceId) {
+    proxy?.$modal.msgWarning('AUTO 类型采集点必须关联 IoT 设备');
     return;
   }
   if (form.value.pointId) {

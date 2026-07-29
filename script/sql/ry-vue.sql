@@ -12482,6 +12482,7 @@ INSERT INTO `sys_dict_data` VALUES (2068956987053350922, '000000', 1, '正常', 
 INSERT INTO `sys_dict_data` VALUES (2068956987053350923, '000000', 2, '保养中', 'MAINTENANCE', 'mes_equipment_status', NULL, 'warning', 'N', 103, 1, '2026-07-13 17:36:54', NULL, NULL, NULL);
 INSERT INTO `sys_dict_data` VALUES (2068956987053350924, '000000', 3, '故障', 'FAULT', 'mes_equipment_status', NULL, 'danger', 'N', 103, 1, '2026-07-13 17:36:54', NULL, NULL, NULL);
 INSERT INTO `sys_dict_data` VALUES (2068956987053350925, '000000', 4, '已报废', 'SCRAPPED', 'mes_equipment_status', NULL, 'info', 'N', 103, 1, '2026-07-13 17:36:54', NULL, NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (2068956987053356081, '000000', 5, 'IoT离线', 'OFFLINE', 'mes_equipment_status', NULL, 'primary', 'N', 103, 1, '2026-07-29 10:00:00', NULL, NULL, 'IoT设备离线(状态联动任务置,P0-8)');
 INSERT INTO `sys_dict_data` VALUES (2068956987053350926, '000000', 1, '数控机床', 'CNC', 'mes_equipment_type', NULL, 'primary', 'N', 103, 1, '2026-07-13 17:36:54', NULL, NULL, NULL);
 INSERT INTO `sys_dict_data` VALUES (2068956987053350927, '000000', 2, '焊接设备', 'WELDING', 'mes_equipment_type', NULL, 'success', 'N', 103, 1, '2026-07-13 17:36:54', NULL, NULL, NULL);
 INSERT INTO `sys_dict_data` VALUES (2068956987053350928, '000000', 3, '装配设备', 'ASSEMBLY', 'mes_equipment_type', NULL, 'info', 'N', 103, 1, '2026-07-13 17:36:54', NULL, NULL, NULL);

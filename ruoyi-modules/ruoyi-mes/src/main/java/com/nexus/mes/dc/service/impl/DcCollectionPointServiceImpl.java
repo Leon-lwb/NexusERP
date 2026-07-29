@@ -73,6 +73,7 @@ public class DcCollectionPointServiceImpl implements IDcCollectionPointService {
         if (existCount != null && existCount > 0) {
             throw new RuntimeException("采集点编码已存在: " + bo.getPointCode());
         }
+        validateAndNormalizeIotFields(bo);
         DcCollectionPoint point = new DcCollectionPoint();
         point.setPointCode(bo.getPointCode());
         point.setPointName(bo.getPointName());
@@ -107,6 +108,7 @@ public class DcCollectionPointServiceImpl implements IDcCollectionPointService {
         if (point == null) {
             throw new RuntimeException("采集点不存在: " + bo.getPointId());
         }
+        validateAndNormalizeIotFields(bo);
         if (StringUtils.isNotBlank(bo.getPointCode())
             && !bo.getPointCode().equals(point.getPointCode())) {
             Long existCount = baseMapper.selectCount(Wrappers.<DcCollectionPoint>lambdaQuery()
@@ -151,6 +153,26 @@ public class DcCollectionPointServiceImpl implements IDcCollectionPointService {
     }
 
     // ==================== 私有辅助方法 ====================
+
+    /**
+     * 校验并规整 IoT 绑定字段：AUTO 类型必须关联 IoT 设备；非 AUTO 清空 IoT 字段避免脏数据。
+     * <p>
+     * 对齐 autocode-form-pattern：前端清空 + BO 去 @NotBlank + Service 兜底校验。
+     * 未传 pointType（部分字段更新场景）则不校验不动。
+     */
+    private void validateAndNormalizeIotFields(DcCollectionPointBo bo) {
+        if (StringUtils.isBlank(bo.getPointType())) {
+            return;
+        }
+        if ("AUTO".equals(bo.getPointType())) {
+            if (bo.getIotDeviceId() == null) {
+                throw new RuntimeException("AUTO 类型采集点必须关联 IoT 设备");
+            }
+        } else {
+            bo.setIotDeviceId(null);
+            bo.setIotPropertyCode(null);
+        }
+    }
 
     private LambdaQueryWrapper<DcCollectionPoint> buildQueryWrapper(DcCollectionPointBo bo) {
         return Wrappers.<DcCollectionPoint>lambdaQuery()

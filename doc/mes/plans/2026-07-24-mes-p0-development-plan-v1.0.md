@@ -94,16 +94,21 @@
 
 | 编号 | 功能名称 | 模块归属 | 估算人天 | 优先级 | 关联主线 | 状态 |
 |------|---------|---------|---------|--------|---------|------|
-| P0-1 | 物料拉动配送 + 齐套管理 | `wm`（新增子模块） | 7.5 | 高 | MESA-5 物料管理 | |
-| P0-2 | 工装/模治具管理 | `eq` 扩展 + `tg`（新增子模块） | 5 | 高 | MESA-2 资源分配 |
-| P0-3 | 任务进站/出站 + 流程指引 | `pro` 扩展 | 5 | 高 | MESA-3 派工 + MESA-8 过程管理 |
-| P0-4 | NCR 不合格品 + 返工流程 | `qc` 扩展 + `nr`（新增子模块） | 7.5 | 高 | MESA-7 质量管理 |
+| P0-1 | 物料拉动配送 + 齐套管理 | `wm`（新增子模块） | 7.5 | 高 | MESA-5 物料管理 | ❌ 不做（与 ERP wm/prd 重叠，见 §2.3） |
+| P0-2 | 工装/模治具管理 | `eq` 扩展 + `tg`（新增子模块） | 5 | 高 | MESA-2 资源分配 | ✅ 完整交付（E2E 20/20） |
+| P0-3 | 任务进站/出站 + 流程指引 | `pro` 扩展 | 5 | 高 | MESA-3 派工 + MESA-8 过程管理 | ✅ 完整交付（commit 03f0098a，进站出站跳站+规则引擎+SOP推送） |
+| P0-4 | NCR 不合格品 + 返工流程 | `qc` 扩展 + `nr`（新增子模块） | 7.5 | 高 | MESA-7 质量管理 | ✅ 完整交付（E2E 41/41 + 单测 16/16） |
 | P0-5 | E-SOP 电子作业指导书 | `sop`（新增子模块） | 7.5 | 高 | MESA-4 文档控制 | ✅ 完整交付（E2E 28/28，Flowable+OSS ossId+契约+Javadoc） |
-| P0-6 | 电子签名 + DHR 批记录 | `common` 扩展（合规基础设施） | 7.5 | 高 | MESA-4 文档控制（合规） |
-| P0-7 | 核心模块单元测试补齐 | `pro/qc/spc` 测试包 | 7.5 | 高 | 工程质量底线 |
-| P0-8 | IoT 自动采集打通 | `dc` 扩展 + `common` 桥接 | 7.5 | 高 | MESA-5 数据采集 |
+| P0-6 | 电子签名 + DHR 批记录 | `common` 扩展（合规基础设施） | 7.5 | 高 | MESA-4 文档控制（合规） | ⏭️ 延后（电子签名后期抽 common 组件，业务自行调用） |
+| P0-7 | 核心模块单元测试补齐 | `pro/qc/spc` 测试包 | 7.5 | 高 | 工程质量底线 | ⏭️ 不做（pro 模块测试缺口暂不补） |
+| P0-8 | IoT 自动采集打通 | `dc` 扩展 + `common` 桥接 | 7.5 | 高 | MESA-5 数据采集 | ✅ 完整交付（E2E 10/10 + 单测 11/11） |
 | P0-9 | 批次（Lot）管理 | `md` 扩展 + `pro` 扩展 | 5 | 高 | MESA-10 追溯与谱系 | ✅ 完整交付（编码+整改+DDL落库+并入ry-mes.sql+Javadoc） |
 | **合计** | | | **60 人天** | | |
+
+> **2026-07-29 P0 收尾决议**（6 完成 / 3 不做，P0 阶段闭合）：
+> - **P0-1 物料拉动+齐套** ❌ 不做 — 与 ERP `wm`/`prd` 重叠：ERP 已有 `WmProductionIssue.buildLinesFromWorkOrder`（工单 BOM 带领料行）+ `selectAvailableStock`（ATP 可用库存=齐套校验）+ `PrdMaterialRequirement.calculateNetRequirements`（毛需求-库存-安全库存=短缺=缺料计算）+ `WmStockAlert.checkStockAlerts`（库存预警）+ `WmTransfer`/`PickingResolutionService`（调拨/拣货=配送）。F1-2~F1-6 均被覆盖，仅 F1-7 AGV 接口为新。按"不与 ERP 重复"约束不做。
+> - **P0-7 pro 模块单测缺口** ⏭️ 不做 — ProWorkOrder/ProFlowCard/ProDispatch/ProSn/MesMbom/ProAndon/ProTraceability 暂不补。
+> - **P0-6 电子签名+DHR** ⏭️ 延后 — 电子签名后期单独抽为 common 组件（`ruoyi-common` 下），业务模块自行调用；SOP `signature_id`、NCR `disposition_signature_id` 预留点待落地后回填。
 
 ### 2.2 优先级矩阵
 

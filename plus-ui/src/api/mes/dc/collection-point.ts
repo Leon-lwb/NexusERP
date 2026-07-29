@@ -8,6 +8,8 @@ export interface DcCollectionPointVO {
   pointName: string;
   pointType: string;
   equipmentId?: number;
+  iotDeviceId?: number | string;
+  iotPropertyCode?: string;
   processId?: number;
   dataType?: string;
   unit?: string;
@@ -23,6 +25,7 @@ export interface DcCollectionPointQuery extends PageQuery {
   pointType?: string;
   dataType?: string;
   status?: string;
+  iotDeviceId?: number | string;
 }
 
 /** 采集点表单 */
@@ -32,6 +35,8 @@ export interface DcCollectionPointForm {
   pointName: string;
   pointType: string;
   equipmentId?: number;
+  iotDeviceId?: number | string;
+  iotPropertyCode?: string;
   processId?: number;
   dataType?: string;
   unit?: string;
