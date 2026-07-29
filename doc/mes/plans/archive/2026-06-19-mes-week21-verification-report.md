@@ -30,7 +30,7 @@
 | `plus-ui/src/views/mes/pro/workorder/form.vue` | Vue(新建) | ✅ 新增/编辑弹窗 |
 | `plus-ui/src/views/mes/pro/workorder/index.vue` | Vue(修改) | ✅ 新增/修改按钮 |
 | `plus-ui/src/api/mes/pro/types.ts` | TS(修改) | ✅ ProWorkOrderForm 补充 planStartDate/planEndDate 可选字段 |
-| `doc/mes/sql/mes-week21-15-menu.sql` | SQL(新建) | ✅ 菜单权限清理 |
+| `doc/mes/sql/archive/mes-week21-15-menu.sql` | SQL(新建) | ✅ 菜单权限清理 |
 
 ### 1.3 过程中发现的预存 Bug（已修复）
 
@@ -63,7 +63,7 @@
 
 **操作步骤**:
 1. 启动系统（`ry-vue`/`ry-erp`/`ry-mes`/`ry-iot` 四库 + RabbitMQ 就绪）
-2. 执行 `doc/mes/sql/mes-week21-15-menu.sql`（菜单权限清理）
+2. 执行 `doc/mes/sql/archive/mes-week21-15-menu.sql`（菜单权限清理）
 3. 为相关角色重新勾选 MES 工单按钮权限（4018-4024）
 4. 访问 `/workflow/model` 新建流程模型
 5. 流程 key: `mesWorkOrderApproval`，分类: 自定义业务（ZDYYW）

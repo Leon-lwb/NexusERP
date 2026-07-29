@@ -185,7 +185,7 @@
 - **R1**（已解决）：`IMesAndonService` / `IotAlert` 抽到新建的 `ruoyi-common-iot` 公共契约模块，`ruoyi-iot` + 未来 `ruoyi-mes` 均依赖它、互不依赖。no-op 默认实现留 `ruoyi-iot`，MES 提供 `@Primary` 真实实现时让位。
 - **R2**：告警推送目标用户（决策 D）默认「租户在线用户」。若你希望第一版直接推全量或推特定角色（如设备管理员），请指定。
 - **R3**：`iot_device_data` 是否需要补 `idx_tenant_time` 索引——取决于 Week 36 清理任务与 MES 历史查询的访问模式。本周默认不补（Week 33 已有 `idx_device_time`/`idx_property`），如你认为租户维度查询高频可现在加。
-- **R4**：ry-iot 库与 Week 33 DDL **是否已在你本地执行**？本周 T3 联调强依赖 `iot_device_data` 表存在。若未执行，请先执行 `doc/iot/sql/iot-week33-01-init.sql`，否则本周自测无法进行。
+- **R4**：ry-iot 库与 Week 33 DDL **是否已在你本地执行**？本周 T3 联调强依赖 `iot_device_data` 表存在。若未执行，请先执行 `doc/iot/sql/archive/iot-week33-01-init.sql`，否则本周自测无法进行。
 
 ---
 

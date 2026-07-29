@@ -4,7 +4,7 @@
 >
 > **编制日期**: 2026-07-26
 > **计划周期**: Week 29（2026-08-10 ~ 08-16）；P0-9 提前完工，可提前启动
-> **所属计划**: [2026-07-24-mes-p0-development-plan-v1.0.md](./2026-07-24-mes-p0-development-plan-v1.0.md) §3.2
+> **所属计划**: [2026-07-24-mes-p0-development-plan-v1.0.md](../2026-07-24-mes-p0-development-plan-v1.0.md) §3.2
 > **状态**: ✅ 编码完成 + SQL 落库 + 端到端联调通过（20/20 断言），后端 BUILD SUCCESS + 前端 eslint 0 错误
 
 ---
@@ -13,14 +13,14 @@
 
 | 任务 | 状态 | 交付物 |
 |------|------|--------|
-| 1. DDL（4 表） | ✅ | [mes-p0-02-01-tooling.sql](../sql/mes-p0-02-01-tooling.sql) - 四表对齐既定约定，CREATE TABLE IF NOT EXISTS 幂等 |
+| 1. DDL（4 表） | ✅ | [mes-p0-02-01-tooling.sql](../../sql/archive/mes-p0-02-01-tooling.sql) - 四表对齐既定约定，CREATE TABLE IF NOT EXISTS 幂等 |
 | 2. Entity/BO/VO/Mapper | ✅ | 17 个 Java 文件（含 TgCheckoutBo 动作 BO），字段对齐 DDL，VO 含 remainingCount/Hours |
 | 3. Service + 实现 | ✅ | 4 接口 + 4 实现，含状态机(CAS)/寿命累加/保养归零/checkToolingAvailable 契约/孤儿守卫 |
 | 4. Controller | ✅ | 4 REST 控制器，端点对齐 §四 |
 | 5. 前端 API + 页面 | ✅ | 4 API + 4 页面，全选择器化(车间/工位/工单/操作员/工装) + dict-tag + autocode 预览 |
-| 6. 菜单权限 SQL | ✅ | [mes-p0-02-02-menu.sql](../sql/mes-p0-02-02-menu.sql) - ID 段 4172-4195（24 条），父菜单 4003 |
-| 7. 自动编码规则 | ✅ | [mes-p0-02-03-autocode-tooling.sql](../sql/mes-p0-02-03-autocode-tooling.sql) - MES_TOOLING_CODE（TG+日期+3位日循环） |
-| 8. 字典种子 | ✅ | [mes-p0-02-04-tooling-dicts.sql](../sql/mes-p0-02-04-tooling-dicts.sql) - 5 字典（status/type/trigger/maintain_type/usage_status） |
+| 6. 菜单权限 SQL | ✅ | [mes-p0-02-02-menu.sql](../../sql/archive/mes-p0-02-02-menu.sql) - ID 段 4172-4195（24 条），父菜单 4003 |
+| 7. 自动编码规则 | ✅ | [mes-p0-02-03-autocode-tooling.sql](../../sql/archive/mes-p0-02-03-autocode-tooling.sql) - MES_TOOLING_CODE（TG+日期+3位日循环） |
+| 8. 字典种子 | ✅ | [mes-p0-02-04-tooling-dicts.sql](../../sql/archive/mes-p0-02-04-tooling-dicts.sql) - 5 字典（status/type/trigger/maintain_type/usage_status） |
 | 9. 编译 + lint 验证 | ✅ | `mvn -pl ruoyi-modules/ruoyi-mes -am compile` BUILD SUCCESS；eslint 0 错误；vue-tsc 仅 2 处 `$modal.prompt` 3 参基线噪声（同 lot 页） |
 
 ---
@@ -68,16 +68,16 @@
 
 | 事实 | 依据 |
 |------|------|
-| 既定约定：tenant_id VARCHAR(20) DEFAULT '000000'、del_flag CHAR(1)、状态列 VARCHAR(16)、数量/时长 DECIMAL(14,4)/DECIMAL(14,2)、备注 VARCHAR(500)、日期 DATE/DATETIME | [mes-week26-07-equipment.sql](../sql/mes-week26-07-equipment.sql) + [mes-p0-09-01-lot.sql](../sql/mes-p0-09-01-lot.sql) |
+| 既定约定：tenant_id VARCHAR(20) DEFAULT '000000'、del_flag CHAR(1)、状态列 VARCHAR(16)、数量/时长 DECIMAL(14,4)/DECIMAL(14,2)、备注 VARCHAR(500)、日期 DATE/DATETIME | [mes-week26-07-equipment.sql](../../sql/archive/mes-week26-07-equipment.sql) + [mes-p0-09-01-lot.sql](../../sql/archive/mes-p0-09-01-lot.sql) |
 | Entity 模式：`@Data @EqualsAndHashCode(callSuper=true) @TableName` extends `TenantEntity` + `@TableId` + `@TableLogic delFlag` | [EqEquipment.java](../../ruoyi-modules/ruoyi-mes/src/main/java/com/nexus/mes/eq/domain/EqEquipment.java) + [LtLot.java](../../ruoyi-modules/ruoyi-mes/src/main/java/com/nexus/mes/lt/domain/LtLot.java) |
 | BO 模式：`@AutoMapper(target=..., reverseConvertGenerate=false)` extends `BaseEntity` + `@NotBlank/@NotNull` + `Long[] ids` | [LtLotBo.java](../../ruoyi-modules/ruoyi-mes/src/main/java/com/nexus/mes/lt/domain/bo/LtLotBo.java) |
 | VO 模式：`@ExcelIgnoreUnannotated @AutoMapper(target=...)` implements Serializable + `@ExcelProperty` + `@Translation` 翻译用户名 | [LtSnBindingVo.java](../../ruoyi-modules/ruoyi-mes/src/main/java/com/nexus/mes/lt/domain/vo/LtSnBindingVo.java)（`@Translation(USER_ID_TO_NAME, mapper="boundBy")`） |
 | Mapper 模式：`extends BaseMapperPlus<X, XVo>` | [LtLotMapper.java](../../ruoyi-modules/ruoyi-mes/src/main/java/com/nexus/mes/lt/mapper/LtLotMapper.java) |
 | ServiceImpl 模式：`@Slf4j @RequiredArgsConstructor @DS("mes") @Service("xxxService")` + `@Lock4j` + `@Transactional` + `Wrappers.lambdaQuery` + 私有 `buildQueryWrapper` + CAS 状态机（`.eq(status, currentStatus)` + rows==0 抛异常） | [LtLotServiceImpl.java](../../ruoyi-modules/ruoyi-mes/src/main/java/com/nexus/mes/lt/service/impl/LtLotServiceImpl.java) |
-| 自动编码：`autoCodeUtil.genSerialCode("RULE_CODE", null)`（注入 `com.nexus.system.strategy.AutoCodeUtil`），规则存 `sys_auto_code_rule`/`sys_auto_code_part`（ry-vue 库） | [LtLotServiceImpl.java:505-507](../../ruoyi-modules/ruoyi-mes/src/main/java/com/nexus/mes/lt/service/impl/LtLotServiceImpl.java) + [mes-p0-09-05-autocode-lot.sql](../sql/mes-p0-09-05-autocode-lot.sql) |
+| 自动编码：`autoCodeUtil.genSerialCode("RULE_CODE", null)`（注入 `com.nexus.system.strategy.AutoCodeUtil`），规则存 `sys_auto_code_rule`/`sys_auto_code_part`（ry-vue 库） | [LtLotServiceImpl.java:505-507](../../ruoyi-modules/ruoyi-mes/src/main/java/com/nexus/mes/lt/service/impl/LtLotServiceImpl.java) + [mes-p0-09-05-autocode-lot.sql](../../sql/archive/mes-p0-09-05-autocode-lot.sql) |
 | Controller 模式：`@Validated @RequiredArgsConstructor @RestController @RequestMapping("/mes/xxx/yyy")` extends `BaseController` + `@SaCheckPermission` + `@Log` + `R<T>` + `TableDataInfo<T>` | [LtLotController.java](../../ruoyi-modules/ruoyi-mes/src/main/java/com/nexus/mes/lt/controller/LtLotController.java) |
-| 菜单 SQL 模式：`INSERT INTO sys_menu VALUES (id, name, parent_id, sort, path, component, ...)` 父菜单 4xxx，子菜单 ID 接续 | [mes-week26-20-menu.sql](../sql/mes-week26-20-menu.sql) |
-| 字典 SQL 模式：`sys_dict_type`/`sys_dict_data` 动态 MAX+1 主键 + `WHERE NOT EXISTS` 守护（两表主键均雪花，不得硬编码小 ID） | [mes-p0-09-06-lot-dict.sql](../sql/mes-p0-09-06-lot-dict.sql) |
+| 菜单 SQL 模式：`INSERT INTO sys_menu VALUES (id, name, parent_id, sort, path, component, ...)` 父菜单 4xxx，子菜单 ID 接续 | [mes-week26-20-menu.sql](../../sql/archive/mes-week26-20-menu.sql) |
+| 字典 SQL 模式：`sys_dict_type`/`sys_dict_data` 动态 MAX+1 主键 + `WHERE NOT EXISTS` 守护（两表主键均雪花，不得硬编码小 ID） | [mes-p0-09-06-lot-dict.sql](../../sql/archive/mes-p0-09-06-lot-dict.sql) |
 | 前端选择器组件已存在：`WorkcenterSelect`、`MaterialSelectDialog`、`EquipmentSelect`、`UserSelect` | `plus-ui/src/components/` |
 | 前端 list API：`listWorkOrder`(mes/pro/workorder)、ERP `bd/workshop`、`bd/workstation`、`bd/process` 均存在 | `plus-ui/src/api/mes/pro/workorder.ts` + `plus-ui/src/api/erp/bd/` |
 | MES 前端约定：全选择器化（无裸 ID 输入）+ dict-tag（无硬编码状态 map），P0-9 第九批已全目录收尾 | memory `mes-lot-remediation-and-erp-batch-conflict` 第八/九批 |
@@ -104,7 +104,7 @@
 
 ### 任务 1：DDL（4 表）
 
-**File:** Create `doc/mes/sql/mes-p0-02-01-tooling.sql`
+**File:** Create `doc/mes/sql/archive/mes-p0-02-01-tooling.sql`
 
 四表设计（见 §六 DDL 详情）：
 - `tg_tooling`：工装台账（类型/规格/状态/寿命双轨/采购）
@@ -272,7 +272,7 @@ public List<TgToolingVo> listMaintenanceDue();
 
 ### 任务 6：菜单 SQL
 
-**File:** `doc/mes/sql/mes-p0-02-02-menu.sql`
+**File:** `doc/mes/sql/archive/mes-p0-02-02-menu.sql`
 
 父菜单 **新建 4205 工装管理 M 目录**（parent=4000 MES系统）。原计划误用 4003，本地 DB 核实 4003 不存在，设备实际挂在 4201/4202 下，故新建独立 M 目录对齐 equipment 模式。菜单 ID 段 **4205 + 4172-4195**（1 M + 4 C + 20 F = 25 条）。
 
@@ -280,7 +280,7 @@ public List<TgToolingVo> listMaintenanceDue();
 
 ### 任务 7：自动编码规则
 
-**File:** `doc/mes/sql/mes-p0-02-03-autocode-tooling.sql`
+**File:** `doc/mes/sql/archive/mes-p0-02-03-autocode-tooling.sql`
 
 镜像 `mes-p0-09-05-autocode-lot.sql` 结构：
 - 规则 `MES_TOOLING_CODE`：`TG` + `yyyyMMdd` + 3位日循环流水号 → `TG20260810001`
@@ -290,7 +290,7 @@ public List<TgToolingVo> listMaintenanceDue();
 
 ### 任务 8：字典种子
 
-**File:** `doc/mes/sql/mes-p0-02-04-tooling-dicts.sql`
+**File:** `doc/mes/sql/archive/mes-p0-02-04-tooling-dicts.sql`
 
 镜像 `mes-p0-09-06-lot-dict.sql` 结构，5 个字典：
 
@@ -514,10 +514,10 @@ P0-9 实际占用 `4006`(主数据目录) + `4152-4171`，原 §7.3 的 P0-2 段
 
 | 交付物 | 类型 | 路径 |
 |--------|------|------|
-| `mes-p0-02-01-tooling.sql` | SQL | `doc/mes/sql/mes-p0-02-01-tooling.sql` |
-| `mes-p0-02-02-menu.sql` | SQL | `doc/mes/sql/mes-p0-02-02-menu.sql` |
-| `mes-p0-02-03-autocode-tooling.sql` | SQL | `doc/mes/sql/mes-p0-02-03-autocode-tooling.sql` |
-| `mes-p0-02-04-tooling-dicts.sql` | SQL | `doc/mes/sql/mes-p0-02-04-tooling-dicts.sql` |
+| `mes-p0-02-01-tooling.sql` | SQL | `doc/mes/sql/archive/mes-p0-02-01-tooling.sql` |
+| `mes-p0-02-02-menu.sql` | SQL | `doc/mes/sql/archive/mes-p0-02-02-menu.sql` |
+| `mes-p0-02-03-autocode-tooling.sql` | SQL | `doc/mes/sql/archive/mes-p0-02-03-autocode-tooling.sql` |
+| `mes-p0-02-04-tooling-dicts.sql` | SQL | `doc/mes/sql/archive/mes-p0-02-04-tooling-dicts.sql` |
 | TgTooling/TgMaintenancePlan/TgMaintenanceRecord/TgUsageRecord Entity/BO/VO/Mapper | Java×16 | `ruoyi-mes/.../tg/{domain,domain/bo,domain/vo,mapper}/` |
 | 4 Service + 4 实现 | Java×8 | `ruoyi-mes/.../tg/{service,service/impl}/` |
 | 4 Controller | Java×4 | `ruoyi-mes/.../tg/controller/` |
@@ -545,7 +545,7 @@ P0-9 实际占用 `4006`(主数据目录) + `4152-4171`，原 §7.3 的 P0-2 段
 
 ## 十二、与主计划的对齐项（建议同步更新）
 
-执行本方案时，建议同步修订 [主计划 v1.0](./2026-07-24-mes-p0-development-plan-v1.0.md)：
+执行本方案时，建议同步修订 [主计划 v1.0](../2026-07-24-mes-p0-development-plan-v1.0.md)：
 
 1. **§3.2.3 DDL**：5 表 → 4 表（`tg_checkout_record` 并入 `tg_usage_record`），更新字段清单
 2. **§7.3 菜单 ID 段**：按 §七 校正映射整体后移

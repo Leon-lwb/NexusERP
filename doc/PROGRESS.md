@@ -1,6 +1,6 @@
 # NexusERP 功能开发进度
 
-> 更新日期: 2026-07-10
+> 更新日期: 2026-07-29
 > 状态图例: ✅ 已完成 | 🚧 进行中 | ⬜ 未开发 | 🗑️ 暂时搁置
 
 ---
@@ -16,14 +16,14 @@
 | **ERP 排产调度 (sch)** | 15 | 13 | 0 | 2 | 0 |
 | **ERP 仓储管理 (wm)** | 39 | 36 | 2 | 1 | 0 |
 | **ERP 跨模块 (MQ/枚举)** | 14 | 13 | 0 | 1 | 0 |
-| **MES 制造执行** | 36 | 30 | 1 | 5 | 0 |
+| **MES 制造执行** | 36 | 36 | 0 | 0 | 0 |
 | **IoT 物联网** | 18 | 16 | 0 | 2 | 0 |
 | **AI 智能助手** | 25 | 21 | 2 | 2 | 0 |
 | **IM 即时通讯** | 9 | 8 | 1 | 0 | 0 |
 | **Pay 支付** | 5 | 4 | 0 | 1 | 0 |
 | **Workflow 工作流** | 27 | 25 | 0 | 2 | 0 |
 | **Report 报表** | 3 | 2 | 0 | 1 | 0 |
-| **合计** | **258** | **232** | **8** | **18** | **0** |
+| **合计** | **258** | **238** | **7** | **13** | **0** |
 
 ---
 
@@ -610,8 +610,8 @@ flowchart LR
 | 设备点检执行 + 异常联动安灯 | EqEquipmentController.inspection | eq/inspection/ | ✅ |
 | 保养到期 SnailJob + SSE + 安灯 | MaintenanceDueTask | — | ✅ |
 | 设备点检前端页面 + API | — | eq/inspection/ | ✅ |
-| 设备 OEE 综合效率分析 | — | — | ⬜ |
-| 设备备件管理 | — | — | ⬜ |
+| 设备 OEE 综合效率分析 | — | — | ✅ |
+| 设备备件管理 | — | — | ✅ |
 
 ---
 
@@ -623,8 +623,8 @@ flowchart LR
 | IQC 自动创建 (ERP 收货审批触发) | IqcAutoCreateConsumer | — | ✅ |
 | IPQC 过程检验 CRUD | QcIpqcController | qc/ipqc/ | ✅ |
 | OQC 出货检验 CRUD | QcOqcController | qc/oqc/ | ✅ |
-| 不合格品处理流程 (MRB) | — | — | ⬜ |
-| 质量追溯 (批次→检验记录) | — | — | ⬜ |
+| 不合格品处理流程 (MRB/NCR) | — | — | ✅ |
+| 质量追溯 (批次→检验记录) | — | — | ✅ |
 
 ---
 
@@ -635,8 +635,8 @@ flowchart LR
 | 控制图定义 (X-bar/R 等, UCL/LCL/CL) | SpcControlChartController | spc/control-chart/ | ✅ |
 | 数据点管理 | SpcDataPointController | spc/data-point/ | ✅ |
 | SPC OOC 超限自动触发安灯 | SnailJob + Andon | — | ✅ |
-| 过程能力分析 (Cp/Cpk) | — | — | ⬜ |
-| 控制图趋势分析前端可视化 | — | — | 🚧 |
+| 过程能力分析 (Cp/Cpk) | — | — | ✅ |
+| 控制图趋势分析前端可视化 | — | — | ✅ |
 
 ---
 
@@ -828,10 +828,6 @@ flowchart LR
 | 优先级 | 模块 | 功能 | 预估工时 |
 |--------|------|------|----------|
 | P1 | ERP | 库存预留前端页面 | 1d |
-| P1 | MES | 不合格品处理流程 (MRB) | 2d |
-| P1 | MES | 质量追溯 (批次→检验记录) | 1d |
-| P2 | MES | 设备 OEE 综合效率分析 | 2d |
-| P2 | MES | 过程能力分析 (Cp/Cpk) | 1d |
 | P2 | IoT | 设备 OTA 固件升级 | 3d |
 | P2 | IoT | 设备分组/标签管理 | 1d |
 | P2 | AI | RAG + 知识图谱混合检索优化 | 2d |
@@ -846,8 +842,6 @@ flowchart LR
 | P3 | Workflow | 自定义审批规则引擎 | 3d |
 | P3 | Workflow | 催办/加签/转办 | 2d |
 | P3 | MQ | 消息死信队列处理 | 1d |
-| P3 | MES | 设备备件管理 | 2d |
-| P3 | MES | 控制图趋势分析前端可视化 | 1d |
 
 ---
 
@@ -863,5 +857,4 @@ flowchart LR
 | AI 开发计划 | [ai/plans/NexusERP_AI开发计划.md](./ai/plans/NexusERP_AI开发计划.md) |
 | 三模块升级方案 | [system/NexusERP_三模块共同升级方案.md](./system/NexusERP_三模块共同升级方案.md) |
 | 代码审计报告 | [system/NexusERP_代码审计报告与修复进度.md](./system/NexusERP_代码审计报告与修复进度.md) |
-| BOM 增强变更文档 | [erp/BOM管理增强-需求变更文档.md](./erp/BOM管理增强-需求变更文档.md) |
-| 开发日志 (按模块) | [devlog/README.md](./devlog/README.md) |
+| BOM 增强变更文档 | [erp/archive/2026-06-26-erp-bom-enhancement-requirement-change.md](./erp/archive/2026-06-26-erp-bom-enhancement-requirement-change.md) |

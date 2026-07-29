@@ -4,7 +4,7 @@
 >
 > **文档版本**: v1.0
 > **编制日期**: 2026-07-24
-> **编制依据**: [NexusERP_MES文档.md](file:///d:/workspace/nexus-erp/doc/mes/Nesu… 以下简称"主文档") + [mes-completion-linkage-analysis.md](file:///d:/workspace/nexus-erp/doc/system/mes-completion-linkage-analysis.md) + 主流 MES 对标报告（MESA-11、Siemens Opcenter 2604、鼎捷数智、用友 YonBIP）
+> **编制依据**: [NexusERP_MES文档.md](file:///d:/workspace/nexus-erp/doc/mes/Nesu… 以下简称"主文档") + [mes-completion-linkage-analysis.md](file:///d:/workspace/nexus-erp/doc/system/plans/archive/2026-07-08-system-mes-completion-linkage-analysis.md) + 主流 MES 对标报告（MESA-11、Siemens Opcenter 2604、鼎捷数智、用友 YonBIP）
 > **状态**: 待评审 → 待用户批准 → 进入执行
 
 ---
@@ -270,7 +270,7 @@ CREATE TABLE wm_line_side_stock (
 
 #### 3.2.3 数据库设计
 
-新增 4 张表（前缀 `tg_`，原 `tg_checkout_record` 已并入 `tg_usage_record`——领用-归还即一次使用会话，字段重叠。详见 [P0-2 实施方案](./2026-07-26-mes-p0-2-tooling-management-implementation-plan.md) §1.3）：
+新增 4 张表（前缀 `tg_`，原 `tg_checkout_record` 已并入 `tg_usage_record`——领用-归还即一次使用会话，字段重叠。详见 [P0-2 实施方案](./archive/2026-07-26-mes-p0-2-tooling-management-implementation-plan.md) §1.3）：
 
 ```sql
 -- 工装台账
@@ -348,7 +348,7 @@ CREATE TABLE tg_usage_record (
 
 ### 3.3 P0-3 任务进站/出站 + 流程指引
 
-> **评审标注（2026-07-26，与 P0-5 联合评审）**：`pro_step_guide.guide_type` 原计划含 IMAGE/VIDEO + `media_url`，与 P0-5 `sop_document` 富媒体能力高重叠（影子 SOP 风险）。**建议收敛**：guide_type 限 **TEXT + SOP_LINK**（去掉 IMAGE/VIDEO），删除 `media_url` 字段（TEXT 用 guide_content，SOP_LINK 用 sop_id）。富媒体作业指导统一走 P0-5 `sop_document`（版本+审批+审计），pro_step_guide 用 SOP_LINK 引用。详见 [P0-5 实施方案 §1.6](./2026-07-26-mes-p0-5-esop-implementation-plan.md)。SOP_LINK 类型时 `sop_id` 须校验该 SOP 在 `sop_process_binding` 已绑定到同 process_id。
+> **评审标注（2026-07-26，与 P0-5 联合评审）**：`pro_step_guide.guide_type` 原计划含 IMAGE/VIDEO + `media_url`，与 P0-5 `sop_document` 富媒体能力高重叠（影子 SOP 风险）。**建议收敛**：guide_type 限 **TEXT + SOP_LINK**（去掉 IMAGE/VIDEO），删除 `media_url` 字段（TEXT 用 guide_content，SOP_LINK 用 sop_id）。富媒体作业指导统一走 P0-5 `sop_document`（版本+审批+审计），pro_step_guide 用 SOP_LINK 引用。详见 [P0-5 实施方案 §1.6](./archive/2026-07-26-mes-p0-5-esop-implementation-plan.md)。SOP_LINK 类型时 `sop_id` 须校验该 SOP 在 `sop_process_binding` 已绑定到同 process_id。
 > **进站插入点**：`ProFlowCardServiceImpl.startStep()` 是 SOP 推送的天然触发点（F3-1 进站校验门禁），P0-5 `pushSopToWorkstation(stepRecordId)` 由此处调用。
 
 #### 3.3.1 需求描述
@@ -526,7 +526,7 @@ CREATE TABLE nr_8d_report (
 
 ### 3.5 P0-5 E-SOP 电子作业指导书
 
-> **实施状态**: ✅ 完整交付（2026-07-26）：编码 + SQL 落库 + 端到端联调 28/28 断言通过 + Javadoc 完善。详见 [P0-5 实施方案](./2026-07-26-mes-p0-5-esop-implementation-plan.md)。
+> **实施状态**: ✅ 完整交付（2026-07-26）：编码 + SQL 落库 + 端到端联调 28/28 断言通过 + Javadoc 完善。详见 [P0-5 实施方案](./archive/2026-07-26-mes-p0-5-esop-implementation-plan.md)。
 > - 独立 `sop` 子包（非 dc 扩展），4 张 `sop_` 表
 > - ⚠️ DDL 修正：`file_url VARCHAR(500)` -> `file_oss_id BIGINT`（OSS 私有桶存 ID，VO 用 `@Translation(OSS_ID_TO_URL)` 解析签名 URL，依据 memory `oss-private-bucket-store-ossid`）
 > - 审批流：Flowable（`WfCallBackServiceI`，ruoyi-mes 已依赖 ruoyi-flowable）+ 管理员兜底 approve/reject（R11）
@@ -807,7 +807,7 @@ ALTER TABLE eq_equipment
 
 ### 3.9 P0-9 批次（Lot）管理
 
-> **实施状态**: ✅ 完整交付（2026-07-24 ~ 07-26）：编码 + 整改 + 前端打磨 + DDL/字典/菜单/autocode 落库 + 并入 `script/sql/ry-mes.sql` + Javadoc 完善。详见 [P0-9 实施方案](./2026-08-03-mes-p0-9-lot-management-implementation-plan.md) + [批次整改计划](./2026-07-25-mes-lot-remediation-plan.md)。
+> **实施状态**: ✅ 完整交付（2026-07-24 ~ 07-26）：编码 + 整改 + 前端打磨 + DDL/字典/菜单/autocode 落库 + 并入 `script/sql/ry-mes.sql` + Javadoc 完善。详见 [P0-9 实施方案](./archive/2026-08-03-mes-p0-9-lot-management-implementation-plan.md) + [批次整改计划](./archive/2026-07-25-mes-lot-remediation-plan.md)。
 > - 编码：3 表 DDL + 21 Java + 3 API + 3 页面 + 菜单 SQL，`mvn compile` 通过（39 class）
 > - 整改（07-25）：A1-A6 代码修复（编码顺序化+@Lock4j、数量/删除/放行守卫、SQL 4->2 整合）+ B1-B5 五链路（SN↔批次事件、工单 FEFO 领料、IQC->qc_status 钩子、NCR/进站契约）
 > - 前端打磨（07-25~07-26，9 批）：`plus-ui/src/views/mes` 全 38 页选择器化（无裸 ID 输入）+ dict-tag（无硬编码状态 map）+ 17 字典种子 + 批次编码 autoCode 规则
@@ -994,7 +994,7 @@ P0-6 电子签名 ─── 最后,被所有模块依赖
 
 #### Phase 4-A：基础设施 + 主数据类（Week 28-30，3.5 周）
 
-> **进度注（2026-07-26）**：P0-9 已于 2026-07-24 ~ 07-26 提前完工（编码+整改+前端打磨），早于计划 08-03。运行时验证待闭合。Phase 4-A 实际已启动，P0-2 计划已就绪（[实施方案](./2026-07-26-mes-p0-2-tooling-management-implementation-plan.md)）。
+> **进度注（2026-07-26）**：P0-9 已于 2026-07-24 ~ 07-26 提前完工（编码+整改+前端打磨），早于计划 08-03。运行时验证待闭合。Phase 4-A 实际已启动，P0-2 计划已就绪（[实施方案](./archive/2026-07-26-mes-p0-2-tooling-management-implementation-plan.md)）。
 
 - **Week 28**（2026-08-03 ~ 08-09）：P0-7 单元测试补齐 + P0-9 批次管理（并行）- P0-9 ✅ 已完成，P0-7 待启动
 - **Week 29**（2026-08-10 ~ 08-16）：P0-2 工装/模治具管理
@@ -1107,7 +1107,7 @@ P0-6 电子签名                                ███ ███
 | 4-C | P0-5 E-SOP | 4206(M) + 4261-4275(C/F) | 4206 文档管理（新建 M 目录） | 原分配 4211-4220 后移至 4261-4280；M-dir 4206 接续 4205（工装）；file_url 改 file_oss_id（OSS 私有桶） |
 | 4-C | P0-6 电子签名 | 4281-4300 | 系统管理下 | 原分配 4221-4230，后移 |
 
-> ⚠️ **校正说明（2026-07-26）**：P0-9 实际占用 `4006 + 4152-4171`，原 §7.3 的 P0-2 段 `4150-4165` 冲突。全 MES 菜单 max 已用 = 4171。本表为校正后映射，每模块预留 20-25 ID 余量避免再溢出。详见 [P0-2 实施方案 §七](./2026-07-26-mes-p0-2-tooling-management-implementation-plan.md)。
+> ⚠️ **校正说明（2026-07-26）**：P0-9 实际占用 `4006 + 4152-4171`，原 §7.3 的 P0-2 段 `4150-4165` 冲突。全 MES 菜单 max 已用 = 4171。本表为校正后映射，每模块预留 20-25 ID 余量避免再溢出。详见 [P0-2 实施方案 §七](./archive/2026-07-26-mes-p0-2-tooling-management-implementation-plan.md)。
 
 ---
 
@@ -1345,7 +1345,7 @@ P0-6 电子签名                                ███ ███
 ### 13.2 参考文档
 
 - [NexusERP_MES文档.md](file:///d:/workspace/nexus-erp/doc/mes/NexusERP_MES文档.md) — 主设计文档
-- [mes-completion-linkage-analysis.md](file:///d:/workspace/nexus-erp/doc/system/mes-completion-linkage-analysis.md) — 完成度与联动分析
+- [mes-completion-linkage-analysis.md](file:///d:/workspace/nexus-erp/doc/system/plans/archive/2026-07-08-system-mes-completion-linkage-analysis.md) — 完成度与联动分析
 - [2026-07-19-im-p5-development-plan.md](file:///d:/workspace/nexus-erp/doc/mes/plans/2026-07-19-im-p5-development-plan.md) — P5 风格参考
 - [mes-week27-implementation-plan.md](file:///d:/workspace/nexus-erp/doc/mes/plans/archive/2026-06-25-mes-week27-implementation-plan.md) — 周度计划模板
 - [MESA 11 Functions](https://www.symestic.com/en-us/what-is/mesa-11)

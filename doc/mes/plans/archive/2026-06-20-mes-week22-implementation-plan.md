@@ -45,7 +45,7 @@
 ### 任务 1：pro_dispatch DDL + barcode 增强
 
 **Files:**
-- Create: `doc/mes/sql/mes-week22-03-dispatch.sql`
+- Create: `doc/mes/sql/archive/mes-week22-03-dispatch.sql`
 
 **DDL 对齐项（同 Week 20）：**
 
@@ -538,7 +538,7 @@ export const getFlowCardByBarcode = (barcode: string): AxiosPromise<any> =>
 ### 任务 10：菜单权限 SQL
 
 **Files:**
-- Create: `doc/mes/sql/mes-week22-16-menu.sql`
+- Create: `doc/mes/sql/archive/mes-week22-16-menu.sql`
 
 **菜单 ID 段：4060~4070（对齐 Week 20 的 4040 段）**
 

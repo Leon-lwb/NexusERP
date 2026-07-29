@@ -10,8 +10,8 @@
 | [NexusERP_ERP文档.md](./NexusERP_ERP文档.md) | — | ERP 综合文档（架构/完成度/业务流程/MQ/Week1-16 记录） | 持续更新 |
 | [NexusERP_业务流转分析.md](./NexusERP_业务流转分析.md) | — | 全业务流转分析（5 大流程图 + 跨模块总图） | 2026-06-03 |
 | [NexusERP_编码生成规则设计方案.md](./NexusERP_编码生成规则设计方案.md) | v1.1 | 序列号/批次号/条码编码规则 | 2026-06-04 |
-| [BOM管理增强-需求变更文档.md](./BOM管理增强-需求变更文档.md) | NexusERP-CHG-2026-001 | BOM 增强 Phase 1-5 | 2026-06-17 |
-| [BOM优化-ERP成本融合MES制造BOM-变更说明文档.md](./BOM优化-ERP成本融合MES制造BOM-变更说明文档.md) | NexusERP-CHG-2026-002 | ERP 成本 BOM 与 MES 制造 BOM 融合 | 2026-06-25 |
+| [BOM管理增强-需求变更文档.md](./archive/2026-06-26-erp-bom-enhancement-requirement-change.md) | NexusERP-CHG-2026-001 | BOM 增强 Phase 1-5 | 2026-06-17 |
+| [BOM优化-ERP成本融合MES制造BOM-变更说明文档.md](./archive/2026-06-26-erp-bom-cost-fusion-mes-mbom-change.md) | NexusERP-CHG-2026-002 | ERP 成本 BOM 与 MES 制造 BOM 融合 | 2026-06-25 |
 
 ### 实施计划（plans/）
 | 文档 | 编号 | 主题 | 日期 |
@@ -19,18 +19,17 @@
 | [2026-06-30-erp-wm-3d-warehouse-plan.md](./plans/archive/2026-06-30-erp-wm-3d-warehouse-plan.md) | NexusERP-PLAN-2026-003 | 仓储管理（wm）3D 可视化仓库实施计划 | 2026-06-30 |
 
 ### SQL 脚本（sql/）
-| 脚本 | 用途 | 幂等 | 执行顺序 |
-|------|------|------|----------|
-| [erp-bom-routing-enhancement.sql](./sql/erp-bom-routing-enhancement.sql) | 建 4 表 + BOM 加字段 | ❌ | 1（先执行） |
-| [erp-bom-cleanup.sql](./sql/erp-bom-cleanup.sql) | 删除 BOM 制造字段 | ❌ | 2（必须在 enhancement 之后） |
-| [dict-bom-routing-process.sql](./sql/dict-bom-routing-process.sql) | BOM/工艺路线字典 | ❌ | 3 |
-| [erp-process-routing-menu.sql](./sql/erp-process-routing-menu.sql) | 工序/工艺路线菜单 | ❌ | 4 |
-| [erp-production-issue.sql](./sql/erp-production-issue.sql) | 生产领料单加字段 | ✅ | — |
-| [erp-production-issue-dict.sql](./sql/erp-production-issue-dict.sql) | 生产领料单状态字典 | ✅ | — |
-| [erp-purchase-order-contract.sql](./sql/erp-purchase-order-contract.sql) | 采购订单合同字段 | ✅ | — |
-| [erp-wm-3d-demo-seed.sql](./sql/erp-wm-3d-demo-seed.sql) | 3D仓库可视化演示数据（仓库/库区/库位/库存） | ✅ | — |
+全部开发期 SQL 已执行到本地库并并入权威 schema：业务表 DDL 并入 `script/sql/ry-erp.sql`，菜单/字典并入 `script/sql/ry-vue.sql`。原始脚本归档于 [sql/archive/](./sql/archive/)（18 个），演示/测试数据在 [sql/test-data/](./sql/test-data/)（3 个）。
 
-⚠️ **关键执行顺序**：`erp-bom-routing-enhancement.sql` 会给 `bd_bom_detail` 增加 `process_id`/`routing_step_id`，而 `erp-bom-cleanup.sql` 会删除这两个字段。必须按 enhancement → cleanup 顺序执行，否则会失败。
+主要归档脚本：
+| 脚本 | 用途 |
+|------|------|
+| [erp-bom-routing-enhancement.sql](./sql/archive/erp-bom-routing-enhancement.sql) | 工序/工艺路线 4 表 + BOM 加字段 |
+| [erp-bom-cleanup.sql](./sql/archive/erp-bom-cleanup.sql) | 删除 BOM 制造字段（须在 enhancement 之后） |
+| [erp-invoicing-p0-data-model.sql](./sql/archive/erp-invoicing-p0-data-model.sql) | 开票数据模型（开票四要素 + invoiced_qty + 价税分离） |
+| [p1-so-invoice-enhance.sql](./sql/archive/p1-so-invoice-enhance.sql) | 销售发票增强（14 列） |
+| [p2-pu-invoice-create.sql](./sql/archive/p2-pu-invoice-create.sql) | 采购进项发票表 |
+| [erp-wm-3d-demo-seed.sql](./sql/test-data/erp-wm-3d-demo-seed.sql) | 3D 仓库可视化演示数据 |
 
 ## 阅读顺序
 

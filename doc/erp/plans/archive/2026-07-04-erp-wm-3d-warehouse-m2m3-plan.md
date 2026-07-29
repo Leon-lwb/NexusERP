@@ -21,7 +21,7 @@
 - 状态判定 LOCKED>WARNING>OCCUPIED>EMPTY（WARNING=预留占比≥80%）
 - 前端 `warehouse/3d.vue`：Three.js 场景/灯光/地面/库区库位 mesh/OrbitControls/hover 浮窗/资源释放
 - 路由 `/erp/wm/warehouse/3d/:warehouseId` + 仓库列表"3D预览"按钮，复用 `wm:warehouse:query`
-- 演示种子 `doc/erp/sql/erp-wm-3d-demo-seed.sql`（1 仓库+2 库区+18 库位+10 库存）
+- 演示种子 `doc/erp/sql/test-data/erp-wm-3d-demo-seed.sql`（1 仓库+2 库区+18 库位+10 库存）
 
 **本计划范围：**
 - **Phase 0**：MVP 端到端验证（M1 遗留 `⬜ 端到端联调待本地验证`，先于 M2 闭合）
@@ -63,7 +63,7 @@
 
 **步骤：**
 
-- [ ] 本地执行 `doc/erp/sql/erp-wm-3d-demo-seed.sql`（幂等，落到 ry-erp 库）
+- [ ] 本地执行 `doc/erp/sql/test-data/erp-wm-3d-demo-seed.sql`（幂等，落到 ry-erp 库）
 - [ ] 启动后端：`mvn spring-boot:run -P local`（或 IDE 运行 `DromaraApplication`）
 - [ ] 启动前端：`npm run dev`，登录后进入 仓库管理 → 仓库列表 → 点"3D预览"
 - [ ] 验证点：

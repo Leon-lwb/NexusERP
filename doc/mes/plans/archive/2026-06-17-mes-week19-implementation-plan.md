@@ -174,7 +174,7 @@ export const getWorkOrderProcId = (mesWoId: string | number) =>
 ### 任务 7：菜单权限补充 SQL
 
 **Files:**
-- Create: `doc/mes/sql/mes-week19-12-menu.sql`
+- Create: `doc/mes/sql/archive/mes-week19-12-menu.sql`
 
 **内容：**
 - 补充主数据只读菜单（物料/BOM/工艺路线）

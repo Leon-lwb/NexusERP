@@ -75,7 +75,7 @@ Phase 3 质量管理（Week 25）已完成。按主计划《NexusERP_MES文档.m
 
 ### 任务 1：eq DDL
 
-**File:** Create `doc/mes/sql/mes-week26-07-equipment.sql`
+**File:** Create `doc/mes/sql/archive/mes-week26-07-equipment.sql`
 
 对齐主文档 §2.3 字段，按 Week22/25 约定调整（`tenant_id` BIGINT→VARCHAR(20)、加 `del_flag`、JSON 字段、状态列 VARCHAR）。三表：
 
@@ -221,7 +221,7 @@ CREATE TABLE eq_repair (
 
 ### 任务 6：菜单权限 SQL
 
-**File:** Create `doc/mes/sql/mes-week26-20-menu.sql`
+**File:** Create `doc/mes/sql/archive/mes-week26-20-menu.sql`
 
 父菜单 **4003（设备管理，Week17 已建，零子菜单）**。菜单 ID 段 **4110-4121**（Week25 用到 4101，留 4102-4109 空隙取整段接续）。
 
@@ -309,13 +309,13 @@ INSERT INTO sys_menu VALUES
 
 | 交付物 | 类型 | 路径 |
 |--------|------|------|
-| `mes-week26-07-equipment.sql` | SQL | `doc/mes/sql/mes-week26-07-equipment.sql` |
+| `mes-week26-07-equipment.sql` | SQL | `doc/mes/sql/archive/mes-week26-07-equipment.sql` |
 | EqEquipment/EqMaintenancePlan/EqRepair Entity/BO/VO/Mapper | Java×12 | `ruoyi-mes/.../eq/{domain,domain/bo,domain/vo,mapper}/` |
 | IEqXxxService + 实现 | Java×6 | `ruoyi-mes/.../eq/{service,service/impl}/` |
 | EqEquipmentController/EqMaintenancePlanController/EqRepairController | Java×3 | `ruoyi-mes/.../eq/controller/` |
 | `equipment.ts`/`maintenance.ts`/`repair.ts` | TS×3 | `plus-ui/src/api/mes/eq/` |
 | `equipment/index.vue`/`maintenance/index.vue`/`repair/index.vue` | Vue×3 | `plus-ui/src/views/mes/eq/` |
-| `mes-week26-20-menu.sql` | SQL | `doc/mes/sql/mes-week26-20-menu.sql` |
+| `mes-week26-20-menu.sql` | SQL | `doc/mes/sql/archive/mes-week26-20-menu.sql` |
 
 ---
 

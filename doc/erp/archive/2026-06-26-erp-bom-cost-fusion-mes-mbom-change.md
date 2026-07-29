@@ -132,7 +132,7 @@ BOM 管理增强需求变更文档（Phase 1-5）的功能已实现并编译通�
 
 #### 4.2.1 数据库新增
 
-**脚本**：`doc/mes/sql/mes-week28-09-mbom.sql`（`USE ry-mes`）
+**脚本**：`doc/mes/sql/archive/mes-week28-09-mbom.sql`（`USE ry-mes`）
 
 | 表名 | 用途 | 关键字段 |
 |------|------|----------|
@@ -209,7 +209,7 @@ BOM 管理增强需求变更文档（Phase 1-5）的功能已实现并编译通�
 
 ### 4.4 菜单权限
 
-**脚本**：`doc/mes/sql/mes-week28-22-menu.sql`
+**脚本**：`doc/mes/sql/archive/mes-week28-22-menu.sql`
 
 | 菜单 ID | 名称 | 父菜单 | 权限 |
 |---------|------|--------|------|
@@ -248,9 +248,9 @@ BOM 管理增强需求变更文档（Phase 1-5）的功能已实现并编译通�
 
 | 脚本 | 库 | 说明 |
 |------|----|------|
-| `doc/erp/sql/erp-bom-cleanup.sql` | ry-erp | DROP `bd_bom_detail.workstation_id`/`process_id`/`routing_step_id`；`bd_bom.is_current` 默认值改 0；`bd_routing_step` 加 `labor_rate`/`machine_rate` |
-| `doc/mes/sql/mes-week28-09-mbom.sql` | ry-mes | `mes_mbom`/`mes_mbom_line`/`pro_work_order_bom_line` 三表（幂等：`DROP TABLE IF EXISTS`） |
-| `doc/mes/sql/mes-week28-22-menu.sql` | ry-vue | MBOM 菜单（2950–2954，parent 4001）（幂等：`INSERT IGNORE`）；组件追溯菜单已移除（现有 SN 追溯菜单 4080 已覆盖入口） |
+| `doc/erp/sql/archive/erp-bom-cleanup.sql` | ry-erp | DROP `bd_bom_detail.workstation_id`/`process_id`/`routing_step_id`；`bd_bom.is_current` 默认值改 0；`bd_routing_step` 加 `labor_rate`/`machine_rate` |
+| `doc/mes/sql/archive/mes-week28-09-mbom.sql` | ry-mes | `mes_mbom`/`mes_mbom_line`/`pro_work_order_bom_line` 三表（幂等：`DROP TABLE IF EXISTS`） |
+| `doc/mes/sql/archive/mes-week28-22-menu.sql` | ry-vue | MBOM 菜单（2950–2954，parent 4001）（幂等：`INSERT IGNORE`）；组件追溯菜单已移除（现有 SN 追溯菜单 4080 已覆盖入口） |
 
 ---
 

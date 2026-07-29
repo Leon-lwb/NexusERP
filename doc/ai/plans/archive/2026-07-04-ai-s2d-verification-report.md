@@ -136,10 +136,10 @@ S2-A-7（regexFallback 字段顺序）、S2-A-8（assignCommunityIds N+1）、S2
 ### 4.1 Task 1：落库 + 启动
 
 1. 按顺序执行 4 份 SQL（注意 ALTER 非幂等，执行前查 `information_schema`，详见 `Week12_Plan_S2D.md` 2.1）：
-   - `doc/ai/sql/ai-stage2-a.sql`（4 表 + chunk ALTER 5 列 + 图谱菜单）
-   - `doc/ai/sql/ai-stage2-b.sql`（ai_message.thinking_content ALTER）
-   - `doc/ai/sql/ai-stage2-c.sql`（2 表 + MCP 市场菜单）
-   - `doc/ai/sql/ai-stage2-image.sql`（1 表 + 文生图菜单）
+   - `doc/ai/sql/archive/ai-stage2-a.sql`（4 表 + chunk ALTER 5 列 + 图谱菜单）
+   - `doc/ai/sql/archive/ai-stage2-b.sql`（ai_message.thinking_content ALTER）
+   - `doc/ai/sql/archive/ai-stage2-c.sql`（2 表 + MCP 市场菜单）
+   - `doc/ai/sql/archive/ai-stage2-image.sql`（1 表 + 文生图菜单）
 2. 落库后 `SHOW TABLES LIKE` / `DESC` 校验 8 张新表 + 2 处 ALTER 就位。
 3. `mvn spring-boot:run -P local` 启动，确认无 Bean 装配异常、`Neo4jGraphStoreStrategy` 桩不被加载、前端 AI 菜单可见。
 

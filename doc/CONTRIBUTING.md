@@ -4,20 +4,18 @@
 
 ## 1. 文档命名规范
 
-统一格式：`NexusERP_<模块>_<类型>_<标识>.md`
+按文档性质分两类命名：
 
-| 字段 | 取值 | 示例 |
+| 类别 | 格式 | 示例 |
 |------|------|------|
-| 模块 | ai / erp / iot / mes / system | mes |
-| 类型 | Plan / Report / Design / Change / Deploy / Guide / Review | Plan |
-| 标识 | WeekNN / 2026-NNN / PhaseN | Week28 |
+| 时间相关（计划/方案/分析/报告/变更/变更日志） | `YYYY-MM-DD-<模块>-<描述>.md` | `2026-07-28-mes-p0-4-ncr-rework-implementation-plan.md` |
+| 常青参考（模块总文档/设计规范/指南/手册） | `NexusERP_<描述>.md` | `NexusERP_MES文档.md`、`NexusERP_IoT学习指南.md` |
 
-示例：
-- `NexusERP_MES_Plan_Week28.md`
-- `NexusERP_ERP_Change_2026-002.md`
-- `NexusERP_AI_QuickStart_Phase0.md`（历史命名保留）
-
-周计划文件放在各模块 `plans/` 子目录，命名沿用 `YYYY-MM-DD-<模块>-weekNN-plan.md`（mes/iot 现有规范）。`report`/`verification-report` 后缀用于区分事后报告。
+- `<模块>` 取值：ai / erp / iot / mes / im / system
+- 日期前缀用文档首次提交日期（`git log --diff-filter=A --date=short -- <file>`）
+- 计划/报告类放各模块 `plans/`，设计规范放 `specs/`，指南放 `guides/`
+- 已完成或废弃的文档移入对应 `plans/archive/` 或 `specs/archive/`，文件名保留
+- `report`/`verification-report` 后缀用于区分事后报告
 
 ## 2. 文档元信息模板
 
@@ -58,34 +56,41 @@
 
 ## 5. SQL 脚本规范
 
-### 5.1 命名
-`<模块>-weekNN-<序号>-<名称>.sql`，如 `mes-week28-09-mbom.sql`、`iot-week33-01-init.sql`。
-- 序号 01-09：业务表 DDL
-- 序号 10+：菜单/字典/流程配置
+> **重要变更（2026-07-29）**：开发期增量 SQL 不再以独立文件维护。DDL/菜单/字典直接合并进权威 schema 文件；发布后的增量迁移走 `script/sql/update/`。历史开发期脚本已归档至 `doc/<模块>/sql/archive/`，仅供追溯，不再执行。
+
+### 5.1 权威 schema 位置
+| 文件 | 内容 |
+|------|------|
+| `script/sql/ry-vue.sql` | 系统库（ai_*、im_*、sys_menu、sys_dict_*、sj_job 等） |
+| `script/sql/ry-erp.sql` | ERP 业务表（bd_/so_/pu_/prd_/wm_/sch_） |
+| `script/sql/ry-mes.sql` | MES 业务表（pro_/dc_/eq_/qc_/spc_/lt_/mes_） |
+| `script/sql/ry-iot.sql` | IoT 业务表（iot_*） |
+| `script/sql/app.sql` | 移动端 App 表 |
+| `script/sql/update/` | 发布后增量迁移：`YYYY-MM-DD-<模块>-<描述>.sql` |
+
+新增表/列/菜单/字典时，直接编辑对应 `ry-*.sql`；如属发布后修复或增强，另加 `script/sql/update/YYYY-MM-DD-<模块>-<描述>.sql`。
 
 ### 5.2 幂等性
-所有脚本必须支持重复执行不报错，推荐：
+`update/` 下脚本必须支持重复执行不报错，推荐：
 - 建表用 `CREATE TABLE IF NOT EXISTS`
-- 加列用存储过程 + `information_schema` 检查（见 [erp-production-issue.sql](./erp/sql/erp-production-issue.sql) 范本）
+- 加列用存储过程 + `information_schema` 检查（见 [erp-production-issue.sql](./erp/sql/archive/erp-production-issue.sql) 范本）
 - 插入字典用 `INSERT ... WHERE NOT EXISTS`
 
 ### 5.3 文件头注释
-必须包含：
+`update/` 脚本必须包含：
 ```sql
 -- =====================================================
--- 脚本名称: mes-week28-09-mbom.sql
--- 用途: MBOM 子系统建表
--- 对应文档: NexusERP-CHG-2026-002（BOM优化-ERP成本融合MES制造BOM）
+-- 脚本名称: 2026-07-23-iqc-shelf-gate-schema.sql
+-- 用途: IQC 货架期门禁字段
 -- 适用数据库: ry-erp
--- 执行顺序: 依赖 mes-week17-01-init.sql，先于 mes-week28-22-menu.sql
 -- 特性: 幂等可重复执行
--- 创建日期: 2026-06-25
+-- 创建日期: 2026-07-23
 -- 作者: <name>
 -- =====================================================
 ```
 
-### 5.4 执行顺序
-有依赖的脚本必须在头注释"执行顺序"字段说明。复杂依赖建议在 `sql/README.md` 中绘制执行顺序图。
+### 5.4 历史脚本
+`doc/<模块>/sql/archive/` 下的开发期脚本（如 `mes-week28-09-mbom.sql`）已全部执行并并入上述权威文件，仅作历史追溯，不要再次执行。演示/测试数据脚本在 `doc/erp/sql/test-data/`。
 
 ## 6. 内容维护原则
 
@@ -105,34 +110,38 @@
 
 ## 7. 目录结构约定
 
-```
-doc/
+doc/
 ├── README.md              # 本顶层索引
 ├── CONTRIBUTING.md        # 本规范
 ├── ai/
-│   ├── README.md
-│   ├── *.md               # AI 开发计划、周计划、QuickStart
-│   ├── plans/             # 周计划（如有）
-│   └── sql/               # SQL 脚本（如有）
+│   ├── plans/             # 活跃计划（主计划、二阶段计划）
+│   │   └── archive/       # 已归档周计划 / QuickStart / S2A-D
+│   ├── knowledge-base/    # RAG 知识源（11 主题，.txt + .annotated.txt）
+│   └── sql/archive/       # 历史增量 SQL（已并入 ry-vue.sql）
 ├── erp/
-│   ├── README.md
-│   ├── *.md               # ERP 设计、变更说明、业务流转
+│   ├── *.md               # ERP 综合文档、业务流转分析、编码规则
+│   ├── plans/             # 实施计划
+│   │   └── archive/
+│   ├── specs/             # 设计规范
+│   │   └── archive/
+│   ├── archive/           # 已归档变更说明
 │   └── sql/
+│       ├── archive/       # 历史增量 SQL（18 个，已并入 ry-erp/ry-vue.sql）
+│       └── test-data/     # 演示/测试数据 SQL（3 个）
 ├── iot/
-│   ├── README.md
-│   ├── *.md               # IoT 设计、验收报告、学习指南
-│   ├── plans/
-│   └── sql/
+│   ├── *.md               # IoT 文档、学习指南、验收报告
+│   ├── plans/archive/
+│   └── sql/archive/       # 历史增量 SQL（已并入 ry-iot/ry-vue.sql）
 ├── mes/
-│   ├── README.md
-│   ├── *.md               # MES 主文档
-│   ├── plans/             # Week 17-28 实施计划
-│   └── sql/
+│   ├── *.md               # MES 主文档、设备管理方案
+│   ├── plans/             # 总规划、P0 开发计划 v1.0、P0-9 计划
+│   │   └── archive/       # Week17-28 报告 + P0-2/4/5/7/8/9 实施计划
+│   └── sql/archive/       # 历史增量 SQL（33 个，已并入 ry-mes/ry-vue.sql）
 └── system/
-    ├── README.md
-    ├── deployment/
-    │   └── docker/        # 部署文档与配置
+    ├── deployment/        # 部署文档与 docker 配置
     ├── marketing/         # 公众号文章
-    ├── screenshots/       # 系统截图
-    └── user-manual/      # 用户操作手册
+    ├── plans/archive/     # 已归档计划与分析报告
+    ├── screenshots/       # 系统截图（36 张）
+    ├── specs/             # 编码规范
+    └── user-manual/       # 用户操作手册
 ```

@@ -26,7 +26,7 @@
 | C | `iot_device_data` 仅有 `create_time` | `BaseEntity` 自动填充 `create_dept/create_by/create_time/update_by/update_time` | `iot_device_data` 实体 **不继承** `BaseEntity`/`TenantEntity`，独立声明 `tenantId`+`createTime` 字段，避免 INSERT 填充不存在的列 |
 | D | `iot_product`/`iot_device` 有 `create_dept` 但无 `del_flag`、无 `update_by` 等 | `TenantEntity→BaseEntity` 需 `create_dept/create_by/create_time/update_by/update_time` 全套 | DDL **补齐全套审计列 + del_flag**，实体继承 `TenantEntity` |
 
-> 结论：本周会产出一份**修正版 DDL 脚本** `doc/iot/sql/iot-week33-01-init.sql`，与文档 DDL 有上述差异，并在脚本头注释中标注“对齐项目规范”。文档原文不改（留作设计意图记录），以脚本为准。
+> 结论：本周会产出一份**修正版 DDL 脚本** `doc/iot/sql/archive/iot-week33-01-init.sql`，与文档 DDL 有上述差异，并在脚本头注释中标注“对齐项目规范”。文档原文不改（留作设计意图记录），以脚本为准。
 
 ---
 
@@ -56,11 +56,11 @@
 ### T3 · 配置 iot 数据源 + 建库脚本（0.4d）
 - `ruoyi-admin/src/main/resources/application-dev.yml`：在 `spring.datasource.dynamic.datasource` 下增加 `iot` 数据源，url=`jdbc:mysql://localhost:3306/ry-iot?...`（参数照 mes 段复制），账号密码同 master（dev 环境复用 root）。
 - 同步在 `application-prod.yml` 增加 iot 段（占位，凭证留 TODO）。
-- 产出建库脚本 `doc/iot/sql/iot-week33-01-init.sql` 头部：`CREATE DATABASE IF NOT EXISTS \`ry-iot\` ...` + `USE \`ry-iot\`;`。
+- 产出建库脚本 `doc/iot/sql/archive/iot-week33-01-init.sql` 头部：`CREATE DATABASE IF NOT EXISTS \`ry-iot\` ...` + `USE \`ry-iot\`;`。
 - **验收**：应用启动无数据源报错；`strict: true` 模式下 `@DS("iot")` 可解析（T10 联调验证）。
 
 ### T4 · 修正版 3 张核心表 DDL（0.4d）
-写入 `doc/iot/sql/iot-week33-01-init.sql`（脚本头注释说明与文档 DDL 的差异及原因）：
+写入 `doc/iot/sql/archive/iot-week33-01-init.sql`（脚本头注释说明与文档 DDL 的差异及原因）：
 - `iot_product`：`tenant_id VARCHAR(20) DEFAULT '000000'`；补 `del_flag CHAR(1) DEFAULT '0'`；保留 `create_dept/create_by/create_time/update_by/update_time`；`uk_code(product_code, tenant_id)`。
 - `iot_device`：同上规范；`mes_equipment_id BIGINT NULL`（无外键，仅字段）；`uk_code(device_code, tenant_id)`；`idx_product`、`idx_status`。
 - `iot_device_data`：`tenant_id VARCHAR(20) DEFAULT '000000'`；**不补** del_flag/审计列（仅 `create_time`）；`idx_device_time`、`idx_property`。
@@ -103,7 +103,7 @@
 - **验收**：Swagger/Postman 走通产品、设备的增删改查；`@DS("iot")` 切库正确（数据落在 ry-iot）。
 
 ### T10 · 菜单权限 SQL（0.2d）
-- 产出 `doc/iot/sql/iot-week33-02-menu.sql`（目标库 `ry-vue`，写 `sys_menu`）。
+- 产出 `doc/iot/sql/archive/iot-week33-02-menu.sql`（目标库 `ry-vue`，写 `sys_menu`）。
 - ID 段：**6000~6999**（MES 占用 4000 段，ERP 占 2000 段，实际执行改为 6000 段空闲）。
 - 一级目录 `IoT平台`(6000) → 二级 `设备管理`(6001) → 菜单 `产品管理`(6010, `iot/product/index`)、`设备管理`(6020, `iot/device/index`)，及对应按钮权限 `iot:product:list/add/edit/remove/export`、`iot:device:*`。
 - 前端路由/页面本周不做，仅埋菜单，供 Week 35 前端对接。
@@ -112,7 +112,7 @@
 ### T11 · 集成自测与文档收尾（0.3d）
 - 联调顺序：建库→建表→启动应用（无 ERROR）→ Moquette 监听 1883 → mosquitto 连接鉴权 → 产品/设备 CRUD（数据落 ry-iot）→ 关闭 enabled 验证可降级启动。
 - 更新 `NexusERP_IoT文档.md` 第十四节检查清单状态（`ruoyi-iot 模块`/`iot 数据源`/`@DS`/`ry-iot 库`/`3 张 DDL`/`Moquette 依赖` → ✅；Redis Streams 消费者组保持 ❌，属 Week 34）。
-- 在 `doc/iot/sql/iot-week33-01-init.sql` 头部记录“本周已完成项 / 待 Week 34 项”。
+- 在 `doc/iot/sql/archive/iot-week33-01-init.sql` 头部记录“本周已完成项 / 待 Week 34 项”。
 - **验收**：对照文档第十九节 19.1 中本周可验收的项（模块启动、数据源切换、Broker、设备认证）全部通过。
 
 ---
@@ -125,8 +125,8 @@
 | 聚合 pom | `ruoyi-modules/pom.xml`（加 module） |
 | 数据源配置 | `application-dev.yml`、`application-prod.yml`（iot 段） |
 | MQTT 配置 | `application.yml`（`nexus.iot.mqtt` 段） |
-| 建库+建表脚本 | `doc/iot/sql/iot-week33-01-init.sql` |
-| 菜单脚本 | `doc/iot/sql/iot-week33-02-menu.sql` |
+| 建库+建表脚本 | `doc/iot/sql/archive/iot-week33-01-init.sql` |
+| 菜单脚本 | `doc/iot/sql/archive/iot-week33-02-menu.sql` |
 | 后端代码 | `ruoyi-modules/ruoyi-iot/src/main/java/com/nexus/iot/{device,mqtt,...}` |
 | 文档更新 | `doc/iot/NexusERP_IoT文档.md`（检查清单状态） |
 

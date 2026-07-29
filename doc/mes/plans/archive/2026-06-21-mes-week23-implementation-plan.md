@@ -58,7 +58,7 @@
 
 | 交付物 | 类型 | 文件路径 |
 |--------|------|----------|
-| `mes-week23-04-andon.sql` | SQL | `doc/mes/sql/mes-week23-04-andon.sql` |
+| `mes-week23-04-andon.sql` | SQL | `doc/mes/sql/archive/mes-week23-04-andon.sql` |
 | `ProAndon.java` | Java | `ruoyi-modules/ruoyi-mes/.../pro/domain/ProAndon.java` |
 | `ProAndonBo.java` | Java | `ruoyi-modules/ruoyi-mes/.../pro/domain/bo/ProAndonBo.java` |
 | `ProAndonVo.java` | Java | `ruoyi-modules/ruoyi-mes/.../pro/domain/vo/ProAndonVo.java` |
@@ -72,7 +72,7 @@
 | `andon.ts` | TS | `plus-ui/src/api/mes/pro/andon.ts` |
 | `andon/index.vue` | Vue | `plus-ui/src/views/mes/pro/andon/index.vue` |
 | `utils/sse.ts`（+ANDON 分支） | 改 | `plus-ui/src/utils/sse.ts` |
-| `mes-week23-17-menu.sql` | SQL | `doc/mes/sql/mes-week23-17-menu.sql` |
+| `mes-week23-17-menu.sql` | SQL | `doc/mes/sql/archive/mes-week23-17-menu.sql` |
 
 ---
 

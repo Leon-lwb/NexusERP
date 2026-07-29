@@ -42,7 +42,7 @@ MES `pro_sn` 是**生产追溯**序列号表（status=IN_PRODUCTION/COMPLETED/SC
 | 事实 | 依据 |
 |------|------|
 | MES Entity/BO/VO/Mapper/Service/Controller 模式（TenantEntity、@DS("mes")、@Lock4j+CAS、@SaCheckPermission、BaseMapperPlus） | Week22 `ProDispatch` 一族 + Week23 `ProAndon` 一族（已实现） |
-| DDL 约定：`tenant_id VARCHAR(20) DEFAULT '000000'`、`del_flag CHAR(1)`、状态列 `VARCHAR(32)`、`mes_wo_id` 命名 | `doc/mes/sql/mes-week22-03-dispatch.sql` / `mes-week23-04-andon.sql` |
+| DDL 约定：`tenant_id VARCHAR(20) DEFAULT '000000'`、`del_flag CHAR(1)`、状态列 `VARCHAR(32)`、`mes_wo_id` 命名 | `doc/mes/sql/archive/mes-week22-03-dispatch.sql` / `mes-week23-04-andon.sql` |
 | 流转卡完工聚合链路 completeStep→completeCard→completeWo（SN 生成挂载点的上下文） | `ProFlowCardServiceImpl.completeCard()` |
 | 主文档 `pro_sn` DDL 字段：sn_id/sn_code/wo_id/card_id/material_id/material_code/material_name/current_step_seq/status/parent_sn_id | 主文档 §2.1 |
 | SN 状态：IN_PRODUCTION/COMPLETED/SCRAPPED/SHIPPED | 主文档 §7.2 |
@@ -75,7 +75,7 @@ MES `pro_sn` 是**生产追溯**序列号表（status=IN_PRODUCTION/COMPLETED/SC
 
 ### 任务 1：pro_sn DDL
 
-**File:** Create `doc/mes/sql/mes-week24-05-sntrace.sql`
+**File:** Create `doc/mes/sql/archive/mes-week24-05-sntrace.sql`
 
 对齐主文档 §2.1 字段，按 Week22/23 约定调整命名与精度：
 
@@ -289,7 +289,7 @@ completeSn(snId) / scrapSn(snId, remark) / shipSn(snId)
 
 ### 任务 8：菜单权限 SQL
 
-**File:** Create `doc/mes/sql/mes-week24-18-menu.sql`
+**File:** Create `doc/mes/sql/archive/mes-week24-18-menu.sql`
 
 菜单 ID 段 **4080-4087**（Week23 用到 4075，接续）。父菜单 4001（生产执行）。
 

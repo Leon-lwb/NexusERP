@@ -320,7 +320,7 @@ ALTER TABLE `pu_purchase_order_line`
 微信回调写回 `actualAmount`(`WxPayServiceImpl:102,132`)返回分,需 `/100` 转元再存。**单位换算错一处即真金白银 bug。**
 
 **改动清单**:
-- DDL:`ALTER pay_order MODIFY total_amount/actual_amount decimal(18,2)`(ry-vue 库,文件 `doc/erp/sql/erp-invoicing-p0-pay-order-decimal.sql`)
+- DDL:`ALTER pay_order MODIFY total_amount/actual_amount decimal(18,2)`(ry-vue 库,文件 `doc/erp/sql/archive/erp-invoicing-p0-pay-order-decimal.sql`)
 - 数据迁移:存量 27 条测试数据 `分/100 -> 元`(`UPDATE pay_order SET total_amount=ROUND(total_amount/100,2), actual_amount=ROUND(actual_amount/100,2)`);无生产数据可直接重建
 - Java:`PayOrder`/`PayOrderVo`/`PayOrderBo` 三处 `String -> BigDecimal`;`PayOrderController:76-77`;三个 SDK Impl 单位换算(上表);微信回调写回处
 - 前端:`views/pay/paytest/index.vue`(下单输入)、`views/pay/order/index.vue`、`api/pay/order/types.ts` 三文件(展示/输入从分串改元)
@@ -334,7 +334,7 @@ ALTER TABLE `pu_purchase_order_line`
 
 | 项 | 原方案 | 实际 |
 |----|--------|------|
-| SQL 文件 | `doc/erp/sql/erp-invoicing-p0-pay-order-decimal.sql` | ✅ 同名,本地 ry-vue 执行成功 |
+| SQL 文件 | `doc/erp/sql/archive/erp-invoicing-p0-pay-order-decimal.sql` | ✅ 同名,本地 ry-vue 执行成功 |
 | 存量数据 | 27 条 | 实际 **22 条**(部分已删),全为数字分值,MODIFY 安全;迁移后校验:1分→0.01元、1100分→11.00元、500000000分→5000000.00元、123213分→1232.13元 ✓ |
 | 列定义 | `decimal(18,2)` | `decimal(18,2) NULL DEFAULT 0.00`(与 so_invoice 金额列约定一致,P3 SUM 友好) |
 | Java 实体 | PayOrder/Vo/Bo String→BigDecimal | ✅ 三处已改,字段注释 分→元 |
@@ -352,7 +352,7 @@ ALTER TABLE `pu_purchase_order_line`
 
 `views/erp/so/invoice/index.vue:17/27/68` 硬编码 `el-option` 改为 `useDict` + `dict-tag`(代码自注"技术债")。新增字典:`so_invoice_type`、`so_invoice_status`、`pu_invoice_type`、`pu_invoice_status`、`pu_invoice_cert_status`、`fin_receipt_type` 等。
 
-> **字典 ID 约定**(2026-07-15 审查更正):实际项目约定为**段位硬编码小 ID + INSERT IGNORE + 冲突避让注释**(见 `doc/erp/sql/dict-pu-contract.sql` 6003xx、`erp-pu-contract-menu.sql` 25xx),非 `@var:=@var+1`。本轮发票/收付款字典用 6004xx 段,先 grep 避让既有 6001xx/6002xx/6003xx。
+> **字典 ID 约定**(2026-07-15 审查更正):实际项目约定为**段位硬编码小 ID + INSERT IGNORE + 冲突避让注释**(见 `doc/erp/sql/archive/dict-pu-contract.sql` 6003xx、`erp-pu-contract-menu.sql` 25xx),非 `@var:=@var+1`。本轮发票/收付款字典用 6004xx 段,先 grep 避让既有 6001xx/6002xx/6003xx。
 
 ---
 
@@ -751,8 +751,8 @@ P4 先建 `EInvoiceGateway` SPI 抽象 + `ManualEInvoiceGateway`(默认实现,�
 
 | 阶段 | 类型 | 文件 |
 |------|------|------|
-| P0 | SQL | `doc/erp/sql/erp-invoicing-p0-data-model.sql`(bd_client/bd_vendor 开票四要素 + so/pu invoiced_qty + pu 价税分离) |
-| P0 | SQL | `doc/erp/sql/dict-invoicing.sql`(发票/收付款字典 6004xx 段) |
+| P0 | SQL | `doc/erp/sql/archive/erp-invoicing-p0-data-model.sql`(bd_client/bd_vendor 开票四要素 + so/pu invoiced_qty + pu 价税分离) |
+| P0 | SQL | `doc/erp/sql/archive/dict-invoicing.sql`(发票/收付款字典 6004xx 段) |
 | P0 | 改 | `BdClient.java`/`BdVendor.java`/`SoSalesOrderLine.java`/`PuPurchaseOrder.java`/`PuPurchaseOrderLine.java`/`PuPurchaseReturn.java`/`PuPurchaseReturnLine.java`/`PuContract.java`/`PuContractLine.java` + 对应 VO/BO/前端 |
 | P0 | 字典 | `so_invoice_type`/`so_invoice_status`/`pu_invoice_*`/`fin_receipt_type` 等(雪花 ID 动态分配) |
 | P1 | SQL | `script/sql/update/2026-07-15-so-invoice-enhance.sql` |
@@ -800,13 +800,13 @@ P0(基础数据模型修补)ERP 侧已落地并验证。pay_order decimal 迁移
 
 | 项 | 交付 | 验证 |
 |----|------|------|
-| 增量 SQL | `doc/erp/sql/erp-invoicing-p0-data-model.sql`(10 段 ALTER:bd_client/bd_vendor 开票四要素 + so/pu invoiced_qty + pu 价税分离) | 本地 ry-erp 执行成功,26 个新列验证存在 |
-| 字典 SQL | `doc/erp/sql/dict-invoicing.sql`(8 字典 6004xx 段,29 条数据) | 本地 ry-vue 执行成功,8 类型 + 29 数据验证存在 |
+| 增量 SQL | `doc/erp/sql/archive/erp-invoicing-p0-data-model.sql`(10 段 ALTER:bd_client/bd_vendor 开票四要素 + so/pu invoiced_qty + pu 价税分离) | 本地 ry-erp 执行成功,26 个新列验证存在 |
+| 字典 SQL | `doc/erp/sql/archive/dict-invoicing.sql`(8 字典 6004xx 段,29 条数据) | 本地 ry-vue 执行成功,8 类型 + 29 数据验证存在 |
 | 实体 | 9 实体补字段:BdClient/BdVendor/SoSalesOrderLine/PuPurchaseOrder(Line)/PuPurchaseReturn(Line)/PuContract(Line) | `mvn -pl ruoyi-erp -am compile` 通过,13 个 .class 生成 |
 | VO/BO | BdClientVo/Bo、BdVendorVo/Bo 补开票字段 | 同上(MapStruct @AutoMapper 自动映射新字段) |
 | 前端 | BdClient/BdVendor 表单"开票信息"页签;so_invoice/index.vue 硬编码改 useDict+dict-tag,删 3 个冗余 map 函数 | `npx eslint` 3 文件通过 |
 | 文档/记忆 | Section 4 修正块、4.2/4.6 更正、第十三节文件名对齐;更正 ruoyi-snowflake-dict-menu-id 记忆 | - |
-| pay_order decimal 迁移 | `doc/erp/sql/erp-invoicing-p0-pay-order-decimal.sql`(varchar 分 -> decimal 元);PayOrder/Vo/Bo String->BigDecimal;新增 `MoneyUtil`;AliPay/Wx/SQB 三 SDK 单位换算;前端 2 文件标签(详见 4.5.1) | 本地 ry-vue 迁移成功 22 条校验通过;`mvn -pl ruoyi-pay -am compile -o` EXIT 0;eslint 零新增(运行时端到端验证待办) |
+| pay_order decimal 迁移 | `doc/erp/sql/archive/erp-invoicing-p0-pay-order-decimal.sql`(varchar 分 -> decimal 元);PayOrder/Vo/Bo String->BigDecimal;新增 `MoneyUtil`;AliPay/Wx/SQB 三 SDK 单位换算;前端 2 文件标签(详见 4.5.1) | 本地 ry-vue 迁移成功 22 条校验通过;`mvn -pl ruoyi-pay -am compile -o` EXIT 0;eslint 零新增(运行时端到端验证待办) |
 
 ### 15.2 待办(不阻塞 P1)
 
@@ -823,7 +823,7 @@ P1 全部落地并编译/eslint 通过。运行时端到端验证为待办(同 p
 
 | 子任务 | 交付 | 验证 |
 |--------|------|------|
-| P1-0 so_invoice 增强 | `doc/erp/sql/p1-so-invoice-enhance.sql`(14 列:invoice_code/buyer_四要素/original_invoice_id/red_flag/select_flow_id/issue_channel/e_invoice_no/pdf_oss_id/ofd_oss_id/version+2 索引);SoInvoice/Vo/Bo 补字段(@Version、pdf/ofd 用 @Translation(OSS_ID_TO_URL) 解析 URL);SoSalesOrderLineVo 补 invoicedQty | 本地 ry-erp 执行成功,14 列验证存在(version 默认 0、issue_channel 默认 MANUAL、select_flow_id 终于可持久化) |
+| P1-0 so_invoice 增强 | `doc/erp/sql/archive/p1-so-invoice-enhance.sql`(14 列:invoice_code/buyer_四要素/original_invoice_id/red_flag/select_flow_id/issue_channel/e_invoice_no/pdf_oss_id/ofd_oss_id/version+2 索引);SoInvoice/Vo/Bo 补字段(@Version、pdf/ofd 用 @Translation(OSS_ID_TO_URL) 解析 URL);SoSalesOrderLineVo 补 invoicedQty | 本地 ry-erp 执行成功,14 列验证存在(version 默认 0、issue_channel 默认 MANUAL、select_flow_id 终于可持久化) |
 | P1-1 financialExecutor | `com.nexus.erp.config.FinancialThreadPoolConfig`(镜像 AiThreadPoolConfig,core4/max16/queue200/CallerRunsPolicy) | - |
 | P1-2 Event 补 tenantId | `SalesOrderFulfilledEvent` 加 tenantId;`SoSalesOrderHeaderServiceImpl:300` 传 `TenantHelper.getTenantId()` | - |
 | P1-3 generateDraftFromOrder | `ISoInvoiceService`/Impl 新增;按 `delivered_qty - invoiced_qty >0` 生成 DRAFT,原子累加 invoiced_qty(setSql),buyer_* 从 BdClient 取,invoiceNo=`FP`+`IdWorker.getId()` | - |
@@ -858,12 +858,12 @@ P2 全部落地并编译/eslint/造数通过。镜像 so 销售开票,新增进�
 
 | 子任务 | 交付 | 验证 |
 |--------|------|------|
-| P2-0 SQL 建表+菜单 | `doc/erp/sql/p2-pu-invoice-create.sql`(pu_invoice 43 列:镜像 so + 销售方四要素 seller_* + cert_status/cert_date/deductible_tax_amount + version;pu_invoice_line 30 列:po_line_id/gr_line_id/contract_line_id);`doc/erp/sql/erp-pu-invoice-menu.sql`(2550-2558,9 权限,verify/certify/match 一开始即拆分) | ry-erp 建表成功(头 43/行 30 列);ry-vue 9 菜单落库;字典复用 dict-invoicing.sql(pu_invoice_type/status/cert_status 已在 P0 落库) |
+| P2-0 SQL 建表+菜单 | `doc/erp/sql/archive/p2-pu-invoice-create.sql`(pu_invoice 43 列:镜像 so + 销售方四要素 seller_* + cert_status/cert_date/deductible_tax_amount + version;pu_invoice_line 30 列:po_line_id/gr_line_id/contract_line_id);`doc/erp/sql/archive/erp-pu-invoice-menu.sql`(2550-2558,9 权限,verify/certify/match 一开始即拆分) | ry-erp 建表成功(头 43/行 30 列);ry-vue 9 菜单落库;字典复用 dict-invoicing.sql(pu_invoice_type/status/cert_status 已在 P0 落库) |
 | P2-1 实体/VO/BO/Mapper | `com.nexus.erp.pu.invoice`:PuInvoice(@Version + cert + seller 四要素 + vendorId/poId)、PuInvoiceLine(poLineId/grLineId)、PuInvoiceVo(@Translation pdf/ofd + cert + seller)、PuInvoiceBo(不暴露 cert/verified/version)、PuInvoiceMapper、PuInvoiceLineMapper、MatchResultVo | - |
 | P2-2 Service/Controller | IPuInvoiceService(状态机 + cert 状态机常量)+ PuInvoiceServiceImpl(@DS("erp")):CRUD(差量更新+乐观锁)、generateDraftFromPo(按 received-invoiced,seller_* 从 BdVendor,原子累加 po invoiced_qty)、receiveInvoice(DRAFT->ISSUED)、matchThreeWay(PO+GR+Invoice)、verifyInvoice(前置三单匹配+原子累加)、certifyInvoice/deductInvoice、cancelInvoice、redFlush(全量)、redFlushForReturn(部分)+redFlushForReturnByPoLines;PuInvoiceController(`/erp/pu/invoice`)13 端点 | `mvn -pl ruoyi-modules/ruoyi-erp -am compile -o` EXIT 0;pu.invoice 包 15 个 .class 生成 |
 | P2-3 退货进项转出 | `PuPurchaseReturnServiceImpl.execute()` 增强:扣库存后按退货 PO 行调 `redFlushForReturnByPoLines`,仅 DEDUCTED 触发部分红冲 + 原 cert->TRANSFERRED + 冲减 verified/invoiced_qty | 同上编译 |
 | P2-4 前端 | `api/erp/pu/invoice/{types,index}.ts` + `views/erp/pu/invoice/index.vue`(认证状态列 + 收票/匹配/认证/抵扣/核销/红冲/作废/从订单生成按钮 + 销售方四要素表单 + 供应商内联选择对话框) | `npx eslint --fix` EXIT 0 |
-| P2-5 E2E 造数 | `doc/erp/sql/p2-e2e-test-data.sql`(供应商 8800002 + PO 8800200 + 2 行全额收货未开票 + 库存 8803001 + 退货 8800400) | 本地 ry-erp 执行成功,5 项校验通过(PO 1695/1500/195、2 行 received=ordered/invoiced=0、vendor 四要素、退货 CONFIRMED、库存 frozen=0) |
+| P2-5 E2E 造数 | `doc/erp/sql/test-data/p2-e2e-test-data.sql`(供应商 8800002 + PO 8800200 + 2 行全额收货未开票 + 库存 8803001 + 退货 8800400) | 本地 ry-erp 执行成功,5 项校验通过(PO 1695/1500/195、2 行 received=ordered/invoiced=0、vendor 四要素、退货 CONFIRMED、库存 frozen=0) |
 
 ### 17.2 关键决策与坑
 

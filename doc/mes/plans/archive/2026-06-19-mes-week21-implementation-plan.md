@@ -232,7 +232,7 @@ const handleUpdate = (row: ProWorkOrderVO) => formRef.value?.open(row);
 ### 任务 4：菜单权限清理 SQL
 
 **Files:**
-- Create: `doc/mes/sql/mes-week21-15-menu.sql`
+- Create: `doc/mes/sql/archive/mes-week21-15-menu.sql`
 
 **问题背景：** Week 17 创建的 4010（MES工单页面）权限字符串为 `mes:workorder:list`，但 `ProWorkOrderController` 实际使用 `mes:pro:work:list`（@SaCheckPermission）。若角色仅有 4010 的旧权限，菜单可见但列表 API 返回 403。Week 18 已补充 4018-4024（`mes:pro:work:*`）但未删除 4011-4017（`mes:workorder:*` 冗余按钮），两套并存。
 

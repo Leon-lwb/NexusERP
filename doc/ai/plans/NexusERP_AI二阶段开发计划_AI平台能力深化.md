@@ -786,7 +786,7 @@ public class TongYiWanxImageService implements IImageGenerationService {
 | 1 | `WebSearchTool`（Tavily/Bing Java 实现）+ `crawlWebpage` | ✅ 含 Jsoup 超时防护 |
 | 2 | `WebSearchAgent` + 联网路由（独立 invokeWithWebSearch） | ✅ auto 模式路由 |
 | 3 | 前端联网开关 + 来源链接卡片 | ✅ `WebSearchToggle.vue` + `AI_WEB_SEARCH` 来源卡 |
-| 4 | `ai_mcp_market` + `ai_mcp_market_tool` 表 | ✅ `doc/ai/sql/ai-stage2-c.sql` |
+| 4 | `ai_mcp_market` + `ai_mcp_market_tool` 表 | ✅ `doc/ai/sql/archive/ai-stage2-c.sql` |
 | 5 | `McpMarketService` + `McpMarketController`（移植参照，改写 ai_tool，默认 DISABLED） | ✅ |
 | 6 | 前端 MCP 市场页 | ✅ `api/ai/market.ts` + `views/ai/mcp/market.vue` + 菜单 |
 | 7 | `IImageGenerationService` + 通义万相实现（含 OSS 持久化） | ✅ `TongYiWanxImageService` |
@@ -800,16 +800,16 @@ public class TongYiWanxImageService implements IImageGenerationService {
 
 | 表名 | 用途 | 子阶段 | 状态 |
 |------|------|--------|------|
-| `ai_knowledge_graph` | 知识图谱实例 | S2-A | ✅ `doc/ai/sql/ai-stage2-a.sql` |
-| `ai_kg_entity` | 图谱实体（含 community_id） | S2-A | ✅ `doc/ai/sql/ai-stage2-a.sql` |
-| `ai_kg_relation` | 图谱关系 | S2-A | ✅ `doc/ai/sql/ai-stage2-a.sql` |
-| `ai_kg_community` | 图谱社区（GraphRAG 社区检测+摘要） | S2-A | ✅ `doc/ai/sql/ai-stage2-a.sql` |
-| `ai_knowledge_chunk`（ALTER） | 增抽取跟踪列 | S2-A | ✅ `doc/ai/sql/ai-stage2-a.sql` |
-| `ai_mcp_market` | MCP 市场源 | S2-C | ✅ `doc/ai/sql/ai-stage2-c.sql` |
-| `ai_mcp_market_tool` | 市场工具 | S2-C | ✅ `doc/ai/sql/ai-stage2-c.sql` |
-| `ai_message`（ALTER） | 增 `thinking_content` 列（存思考过程） | S2-B | ✅ `doc/ai/sql/ai-stage2-b.sql` |
+| `ai_knowledge_graph` | 知识图谱实例 | S2-A | ✅ `doc/ai/sql/archive/ai-stage2-a.sql` |
+| `ai_kg_entity` | 图谱实体（含 community_id） | S2-A | ✅ `doc/ai/sql/archive/ai-stage2-a.sql` |
+| `ai_kg_relation` | 图谱关系 | S2-A | ✅ `doc/ai/sql/archive/ai-stage2-a.sql` |
+| `ai_kg_community` | 图谱社区（GraphRAG 社区检测+摘要） | S2-A | ✅ `doc/ai/sql/archive/ai-stage2-a.sql` |
+| `ai_knowledge_chunk`（ALTER） | 增抽取跟踪列 | S2-A | ✅ `doc/ai/sql/archive/ai-stage2-a.sql` |
+| `ai_mcp_market` | MCP 市场源 | S2-C | ✅ `doc/ai/sql/archive/ai-stage2-c.sql` |
+| `ai_mcp_market_tool` | 市场工具 | S2-C | ✅ `doc/ai/sql/archive/ai-stage2-c.sql` |
+| `ai_message`（ALTER） | 增 `thinking_content` 列（存思考过程） | S2-B | ✅ `doc/ai/sql/archive/ai-stage2-b.sql` |
 
-> 脚本位置：`doc/ai/sql/ai-stage2-a.sql`（S2-A）、`doc/ai/sql/ai-stage2-b.sql`（S2-B）、`doc/ai/sql/ai-stage2-c.sql`（S2-C）。
+> 脚本位置：`doc/ai/sql/archive/ai-stage2-a.sql`（S2-A）、`doc/ai/sql/archive/ai-stage2-b.sql`（S2-B）、`doc/ai/sql/archive/ai-stage2-c.sql`（S2-C）。
 
 ---
 

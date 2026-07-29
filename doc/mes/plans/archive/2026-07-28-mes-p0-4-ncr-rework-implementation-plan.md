@@ -4,7 +4,7 @@
 >
 > **编制日期**: 2026-07-28
 > **计划周期**: Week 30-32（2026-08-17 ~ 09-06，P0-3/P0-5 提前完工可提前启动）
-> **所属计划**: [2026-07-24-mes-p0-development-plan-v1.0.md](./2026-07-24-mes-p0-development-plan-v1.0.md) §3.4
+> **所属计划**: [2026-07-24-mes-p0-development-plan-v1.0.md](../2026-07-24-mes-p0-development-plan-v1.0.md) §3.4
 > **状态**: ✅ 编码完成 + SQL 落库 + 编译/lint 通过（2026-07-28；运行时 E2E 待验证）
 
 ---
@@ -663,10 +663,10 @@ CREATE TABLE IF NOT EXISTS ncr_8d_report (
 
 | 交付物 | 类型 | 路径 |
 |--------|------|------|
-| `mes-p0-04-01-ncr.sql` | SQL(ry-mes) | `doc/mes/sql/mes-p0-04-01-ncr.sql`（+并入 ry-mes.sql） |
-| `mes-p0-04-02-menu.sql` | SQL(ry-vue) | `doc/mes/sql/mes-p0-04-02-menu.sql` |
-| `mes-p0-04-03-autocode-ncr.sql` | SQL(ry-vue) | `doc/mes/sql/mes-p0-04-03-autocode-ncr.sql` |
-| `mes-p0-04-04-ncr-dicts.sql` | SQL(ry-vue) | `doc/mes/sql/mes-p0-04-04-ncr-dicts.sql` |
+| `mes-p0-04-01-ncr.sql` | SQL(ry-mes) | `doc/mes/sql/archive/mes-p0-04-01-ncr.sql`（+并入 ry-mes.sql） |
+| `mes-p0-04-02-menu.sql` | SQL(ry-vue) | `doc/mes/sql/archive/mes-p0-04-02-menu.sql` |
+| `mes-p0-04-03-autocode-ncr.sql` | SQL(ry-vue) | `doc/mes/sql/archive/mes-p0-04-03-autocode-ncr.sql` |
+| `mes-p0-04-04-ncr-dicts.sql` | SQL(ry-vue) | `doc/mes/sql/archive/mes-p0-04-04-ncr-dicts.sql` |
 | NcrOrder/NcrDefect/NcrDefectCode/NcrReworkOrder/Ncr8dReport 各 Entity/BO/VO/Mapper | Java×20 | `ruoyi-mes/.../ncr/{domain,domain/bo,domain/vo,mapper}/` |
 | 5 Service + 5 实现 | Java×10 | `ruoyi-mes/.../ncr/{service,service/impl}/` |
 | 5 Controller | Java×5 | `ruoyi-mes/.../ncr/controller/` |
@@ -698,7 +698,7 @@ CREATE TABLE IF NOT EXISTS ncr_8d_report (
 
 ## 十二、与主计划的对齐项（建议同步更新）
 
-执行本方案时，建议同步修订 [主计划 v1.0](./2026-07-24-mes-p0-development-plan-v1.0.md)：
+执行本方案时，建议同步修订 [主计划 v1.0](../2026-07-24-mes-p0-development-plan-v1.0.md)：
 
 1. **§3.4.3 DDL**：表前缀 `nr_` -> `ncr_`（用户指令，NCR 是缩写不双写），表名 `nr_ncr_order` -> `ncr_order` 等；`nr_rework_order` 不再"扩展 pro_work_order"而是独立表 + pro_work_order 加 source_type
 2. **§3.4 隔离**：明确不回写 ERP frozenFlag（MES 批次层隔离）

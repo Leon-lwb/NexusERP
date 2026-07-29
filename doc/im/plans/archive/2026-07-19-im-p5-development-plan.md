@@ -427,7 +427,7 @@ public class SlowSqlInterceptor implements Interceptor {
 
 ## 九、与优化点记录文档的对应关系
 
-> **注**: [optimization-backlog](./2026-07-18-im-optimization-backlog.md) 在 P4 计划中引用但实际未创建。P5 阶段需补建该文档，汇总 P0~P5 所有优化点的状态。
+> **注**: [optimization-backlog](../../2026-07-18-im-optimization-backlog.md) 在 P4 计划中引用但实际未创建。P5 阶段需补建该文档，汇总 P0~P5 所有优化点的状态。
 
 | P5 任务 | 来源 | 完成后状态 |
 |---|---|---|

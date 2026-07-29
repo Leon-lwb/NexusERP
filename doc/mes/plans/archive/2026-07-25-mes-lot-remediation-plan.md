@@ -53,12 +53,12 @@
 ### A5 DDL 整合（消除事后改名）
 - **现状**：4 个 SQL 是事后补救——`mes-p0-09-01-lot.sql` 建了错名 `lt_sn_lot_binding`/`lt_wo_lot_consumption`，`mes-p0-09-04-rename-tables.sql` 再改名；先跑 01+02 的环境会建出错表名。
 - **修复**：重写 `mes-p0-09-01-lot.sql`，三表直接用最终名 `lt_lot`/`lt_sn_binding`/`lt_wo_consumption`（`CREATE TABLE IF NOT EXISTS` 保持幂等）；`lt_lot` 加 `iqc_id` 列（见 B3）；删除 `mes-p0-09-04-rename-tables.sql`（逻辑并入 01）。已部署环境附"已改名则跳过"说明。
-- **文件**：`doc/mes/sql/mes-p0-09-01-lot.sql`（重写）、删除 `mes-p0-09-04-rename-tables.sql`
+- **文件**：`doc/mes/sql/archive/mes-p0-09-01-lot.sql`（重写）、删除 `mes-p0-09-04-rename-tables.sql`
 
 ### A6 菜单整合（消除 ID 冲突补救）
 - **现状**：`mes-p0-09-02-menu.sql` 用了被占用的 4150/4151（`INSERT IGNORE` 静默跳过致路由缺失），`mes-p0-09-03-menu-fix.sql` 改用 4170/4171 + 重挂按钮 + 授权 role_id=3。
 - **修复**：重写 `mes-p0-09-02-menu.sql` 为单一干净版——父目录 4006、批次主档 C 页 4170、查询/按钮 F 用 4171+/4152~4168、`sys_role_menu` 授权；删除 `mes-p0-09-03-menu-fix.sql`（逻辑并入 02）。执行前校验 SQL 保留。
-- **文件**：`doc/mes/sql/mes-p0-09-02-menu.sql`（重写）、删除 `mes-p0-09-03-menu-fix.sql`
+- **文件**：`doc/mes/sql/archive/mes-p0-09-02-menu.sql`（重写）、删除 `mes-p0-09-03-menu-fix.sql`
 
 ---
 

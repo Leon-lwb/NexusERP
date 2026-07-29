@@ -79,7 +79,7 @@ Phase 3 质量管理（Week 25）与设备管理（Week 26）已完成。按主�
 
 ### 任务 1：dc/spc DDL
 
-**File:** Create `doc/mes/sql/mes-week27-08-collection-spc.sql`
+**File:** Create `doc/mes/sql/archive/mes-week27-08-collection-spc.sql`
 
 对齐主文档 §2.4 字段，按 Week25/26 约定调整（`tenant_id` BIGINT→VARCHAR(20)、加 `del_flag`、状态列 VARCHAR、is_ooc 用 BIT/CHAR）。四表：
 
@@ -269,7 +269,7 @@ CREATE TABLE spc_data_point (
 
 ### 任务 7：菜单权限 SQL
 
-**File:** Create `doc/mes/sql/mes-week27-21-menu.sql`
+**File:** Create `doc/mes/sql/archive/mes-week27-21-menu.sql`
 
 父菜单 **4004（数据采集，零子菜单）** + **4005（SPC分析，零子菜单）**。菜单 ID 段 **4130-4145**（Week26 用到 4124，留 4125-4129 空隙）。
 
@@ -369,14 +369,14 @@ SPC 分析:
 
 | 交付物 | 类型 | 路径 |
 |--------|------|------|
-| `mes-week27-08-collection-spc.sql` | SQL | `doc/mes/sql/mes-week27-08-collection-spc.sql` |
+| `mes-week27-08-collection-spc.sql` | SQL | `doc/mes/sql/archive/mes-week27-08-collection-spc.sql` |
 | Dc/Spc Entity/BO/VO/Mapper | Java×16 | `ruoyi-mes/.../{dc,spc}/{domain,domain/bo,domain/vo,mapper}/` |
 | IDcCollectionPointService + IDcDataRecordService + 实现 | Java×4 | `ruoyi-mes/.../dc/{service,service/impl}/` |
 | ISpcControlChartService + ISpcDataPointService + 实现 | Java×4 | `ruoyi-mes/.../spc/{service,service/impl}/` |
 | 4 Controller | Java×4 | `ruoyi-mes/.../{dc,spc}/controller/` |
 | `collection-point.ts`/`data-record.ts`/`control-chart.ts`/`data-point.ts` | TS×4 | `plus-ui/src/api/mes/{dc,spc}/` |
 | `collection-point/index.vue`/`data-record/index.vue`/`control-chart/index.vue`/`data-point/index.vue` | Vue×4 | `plus-ui/src/views/mes/{dc,spc}/` |
-| `mes-week27-21-menu.sql` | SQL | `doc/mes/sql/mes-week27-21-menu.sql` |
+| `mes-week27-21-menu.sql` | SQL | `doc/mes/sql/archive/mes-week27-21-menu.sql` |
 
 > 注：前端 4 API + 4 页面（含 SPC 数据点列表页），共 8 前端文件。
 

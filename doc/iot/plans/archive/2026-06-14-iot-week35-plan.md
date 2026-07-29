@@ -76,7 +76,7 @@ Week 35 目标：**让产品/设备管理在浏览器可用 + 后端实时数据
 - **验收**：`curl -N -H "Authorization: Bearer <token>" "http://localhost:8080/iot/device/{id}/realtime"` 每 3s 收到 `event:realtime` 数据帧；`mosquitto_pub` 发新值后下一帧 properties 变化。
 
 ### T3 · 字典 SQL（0.2d）
-**新建** `doc/iot/sql/iot-week35-03-dict.sql`（目标库 `ry-vue`，`INSERT IGNORE` 幂等）：
+**新建** `doc/iot/sql/archive/iot-week35-03-dict.sql`（目标库 `ry-vue`，`INSERT IGNORE` 幂等）：
 - `sys_dict_type` 4 条：`product_type`(6030)、`iot_protocol_type`(6031)、`iot_connection_status`(6032)、`iot_device_status`(6033)。
 - `sys_dict_data`：`product_type`→DEVICE/GATEWAY；`iot_protocol_type`→MQTT/OPC_UA/MODBUS/HTTP；`iot_connection_status`→ONLINE(success)/OFFLINE(info)；`iot_device_status`→ACTIVE(primary)/INACTIVE(danger)。
 - 不写菜单（Week 33 已建）。参照既有 `sys_dict_*` 插入列序。
@@ -121,7 +121,7 @@ Week 35 目标：**让产品/设备管理在浏览器可用 + 后端实时数据
 |---|---|
 | 后端数据端点 | `IotDeviceController.java`（+3 端点：latest/status/data） |
 | SSE 实时 | `realtime/IotRealtimeSseManager.java`（新建）、`IotDeviceController.java`（+realtime 端点）、`config/IotConfiguration.java`（+`@EnableScheduling`+TaskScheduler Bean） |
-| 字典 | `doc/iot/sql/iot-week35-03-dict.sql`（新建，4 字典类型 + 字典数据） |
+| 字典 | `doc/iot/sql/archive/iot-week35-03-dict.sql`（新建，4 字典类型 + 字典数据） |
 | 前端产品页 | `plus-ui/src/api/iot/product/{index.ts,types.ts}`、`plus-ui/src/views/iot/product/index.vue` |
 | 前端设备页 | `plus-ui/src/api/iot/device/{index.ts,types.ts}`、`plus-ui/src/views/iot/device/index.vue` |
 | 路由 | `plus-ui/src/router/index.ts`（+2 dynamicRoutes） |

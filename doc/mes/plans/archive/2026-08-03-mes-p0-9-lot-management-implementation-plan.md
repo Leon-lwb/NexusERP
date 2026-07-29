@@ -3,19 +3,19 @@
 > **For agentic workers:** REQUIRED SUB-SKILL: superpowers:executing-plans（任务级 checkbox 跟踪）。Steps 用 `- [ ]` 标记。
 >
 > **实施日期**: 2026-08-03（Phase 4-A Week 28）
-> **所属计划**: [2026-07-24-mes-p0-development-plan-v1.0.md](./2026-07-24-mes-p0-development-plan-v1.0.md) §3.9
+> **所属计划**: [2026-07-24-mes-p0-development-plan-v1.0.md](../2026-07-24-mes-p0-development-plan-v1.0.md) §3.9
 > **状态**: ✅ 编码完成，`mvn compile` 通过（39 个 class），待运行时验证
 
 ## 实施结果摘要
 
 | 任务 | 状态 | 交付物 |
 |------|------|--------|
-| 1. DDL | ✅ | [mes-p0-09-01-lot.sql](../sql/mes-p0-09-01-lot.sql) — 三表对齐既定约定 |
+| 1. DDL | ✅ | [mes-p0-09-01-lot.sql](../../sql/archive/mes-p0-09-01-lot.sql) — 三表对齐既定约定 |
 | 2. Entity/BO/VO/Mapper | ✅ | 12 个 Java 文件，字段对齐 DDL |
 | 3. Service + 实现 | ✅ | 3 接口 + 3 实现，含状态机/FEFO/隔离/追溯/Lock4j |
 | 4. Controller | ✅ | 3 REST 控制器，端点对齐 §四 |
 | 5. 前端 API + 页面 | ✅ | 3 API + 3 页面，含 FEFO 推荐 UI |
-| 6. 菜单权限 SQL | ✅ | [mes-p0-09-02-menu.sql](../sql/mes-p0-09-02-menu.sql) — 实际 ID 段 4006+4150~4168 |
+| 6. 菜单权限 SQL | ✅ | [mes-p0-09-02-menu.sql](../../sql/archive/mes-p0-09-02-menu.sql) — 实际 ID 段 4006+4150~4168 |
 | 7. 编译验证 | ✅ | `mvn compile` 通过，39 个 class 生成 |
 
 > 注：菜单 ID 段实际分配为 4006(M目录) + 4150~4168(3 C页面 + 15 F按钮)，原计划估算 4166-4175 因 Week29(4125/4126) 占用后接续调整。
@@ -62,14 +62,14 @@
 
 | 事实 | 依据 |
 |------|------|
-| 既定约定：tenant_id VARCHAR(20) DEFAULT '000000'、del_flag CHAR(1)、状态列 VARCHAR(16)、数量 DECIMAL(14,4)、备注 VARCHAR(500)、日期 DATE | [mes-week25-06-quality.sql](file:///d:/workspace/nexus-erp/doc/mes/sql/mes-week25-06-quality.sql) + [mes-week26-07-equipment.sql](file:///d:/workspace/nexus-erp/doc/mes/sql/mes-week26-07-equipment.sql) |
+| 既定约定：tenant_id VARCHAR(20) DEFAULT '000000'、del_flag CHAR(1)、状态列 VARCHAR(16)、数量 DECIMAL(14,4)、备注 VARCHAR(500)、日期 DATE | [mes-week25-06-quality.sql](file:///d:/workspace/nexus-erp/doc/mes/sql/archive/mes-week25-06-quality.sql) + [mes-week26-07-equipment.sql](file:///d:/workspace/nexus-erp/doc/mes/sql/archive/mes-week26-07-equipment.sql) |
 | Entity 模式：`@Data @EqualsAndHashCode(callSuper=true) @TableName` extends `TenantEntity` + `@TableId` + `@TableLogic delFlag` | [ProSn.java](file:///d:/workspace/nexus-erp/ruoyi-modules/ruoyi-mes/src/main/java/com/nexus/mes/pro/domain/ProSn.java) |
 | BO 模式：`@AutoMapper(target=..., reverseConvertGenerate=false)` extends `BaseEntity` + `@NotBlank/@NotNull` + `Long[] ids` | [ProSnBo.java](file:///d:/workspace/nexus-erp/ruoyi-modules/ruoyi-mes/src/main/java/com/nexus/mes/pro/domain/bo/ProSnBo.java) |
 | VO 模式：`@ExcelIgnoreUnannotated @AutoMapper(target=...)` implements Serializable + `@ExcelProperty` | [ProSnVo.java](file:///d:/workspace/nexus-erp/ruoyi-modules/ruoyi-mes/src/main/java/com/nexus/mes/pro/domain/vo/ProSnVo.java) |
 | Mapper 模式：`extends BaseMapperPlus<X, XVo>` | [ProSnMapper.java](file:///d:/workspace/nexus-erp/ruoyi-modules/ruoyi-mes/src/main/java/com/nexus/mes/pro/mapper/ProSnMapper.java) |
 | ServiceImpl 模式：`@Slf4j @RequiredArgsConstructor @DS("mes") @Service("xxxService")` + `@Lock4j` + `@Transactional` + `Wrappers.lambdaQuery` + 私有 `buildQueryWrapper` | [ProSnServiceImpl.java](file:///d:/workspace/nexus-erp/ruoyi-modules/ruoyi-mes/src/main/java/com/nexus/mes/pro/service/impl/ProSnServiceImpl.java) |
 | Controller 模式：`@Validated @RequiredArgsConstructor @RestController @RequestMapping("/mes/xxx/yyy")` extends `BaseController` + `@SaCheckPermission` + `@Log` + `R<T>` + `TableDataInfo<T>` | [ProSnController.java](file:///d:/workspace/nexus-erp/ruoyi-modules/ruoyi-mes/src/main/java/com/nexus/mes/pro/controller/ProSnController.java) |
-| 菜单 SQL 模式：`INSERT INTO sys_menu VALUES (id, name, parent_id, sort, path, component, ...)` 父菜单 4xxx，子菜单 ID 接续 | [mes-week25-19-menu.sql](file:///d:/workspace/nexus-erp/doc/mes/sql/mes-week25-19-menu.sql) |
+| 菜单 SQL 模式：`INSERT INTO sys_menu VALUES (id, name, parent_id, sort, path, component, ...)` 父菜单 4xxx，子菜单 ID 接续 | [mes-week25-19-menu.sql](file:///d:/workspace/nexus-erp/doc/mes/sql/archive/mes-week25-19-menu.sql) |
 | 前端 API 模式：`request({ url, method, params/data })` + TS 接口定义 | [sn.ts](file:///d:/workspace/nexus-erp/plus-ui/src/api/mes/pro/sn.ts) |
 | 前端页面模式：el-card + el-form 查询 + el-table 列表 + el-dialog 弹窗 + el-tag 状态 + `v-hasPermi` | [sn/index.vue](file:///d:/workspace/nexus-erp/plus-ui/src/views/mes/pro/sn/index.vue) |
 | SQL 命名：`mes-weekXX-YY-xxx.sql` + 菜单 `mes-weekXX-ZZ-menu.sql` | [doc/mes/sql](file:///d:/workspace/nexus-erp/doc/mes/sql) 既有约定 |
@@ -95,7 +95,7 @@
 
 ### 任务 1：DDL
 
-**File:** Create `doc/mes/sql/mes-p0-09-01-lot.sql`
+**File:** Create `doc/mes/sql/archive/mes-p0-09-01-lot.sql`
 
 三表设计（见 §六 DDL 详情）：
 - `lt_lot`：批次主档（11 业务字段 + 7 审计字段）
@@ -328,13 +328,13 @@ CREATE TABLE lt_sn_binding (
 
 | 交付物 | 类型 | 路径 |
 |--------|------|------|
-| `mes-p0-09-01-lot.sql` | SQL | `doc/mes/sql/mes-p0-09-01-lot.sql` |
+| `mes-p0-09-01-lot.sql` | SQL | `doc/mes/sql/archive/mes-p0-09-01-lot.sql` |
 | LtLot/LtWoConsumption/LtSnBinding Entity/BO/VO/Mapper | Java×12 | `ruoyi-mes/.../lt/{domain,domain/bo,domain/vo,mapper}/` |
 | 3 Service + 3 实现 | Java×6 | `ruoyi-mes/.../lt/{service,service/impl}/` |
 | 3 Controller | Java×3 | `ruoyi-mes/.../lt/controller/` |
 | `lot.ts`/`consumption.ts`/`binding.ts` | TS×3 | `plus-ui/src/api/mes/lt/` |
 | `lot/index.vue`/`consumption/index.vue`/`binding/index.vue` | Vue×3 | `plus-ui/src/views/mes/lt/` |
-| `mes-p0-09-02-menu.sql` | SQL | `doc/mes/sql/mes-p0-09-02-menu.sql` |
+| `mes-p0-09-02-menu.sql` | SQL | `doc/mes/sql/archive/mes-p0-09-02-menu.sql` |
 
 ---
 

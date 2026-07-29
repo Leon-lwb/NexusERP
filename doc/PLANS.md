@@ -1,6 +1,6 @@
 # NexusERP 前瞻开发计划
 
-> 创建日期: 2026-07-11
+> 创建日期: 2026-07-29
 > 数据来源: 各模块 `plans/` 原始计划文档未完成项提取 + [PROGRESS.md](./PROGRESS.md) 未开发功能清单
 > 状态图例: 🔴 P0 紧急 | 🟠 P1 高 | 🟡 P2 中 | 🟢 P3 低 | ⚪ 远期
 
@@ -10,12 +10,12 @@
 
 | 优先级 | 数量 | 说明 |
 |--------|------|------|
-| 🔴 P0 紧急 | 3 | 阻塞运行时验证的待办，影响已交付代码的可信度 |
-| 🟠 P1 高 | 9 | 近期应完成的功能缺口与关键 Bug |
-| 🟡 P2 中 | 18 | 已知中低优先级 Bug、功能增强 |
+| 🔴 P0 紧急 | 3 (全部 ✅) | 阻塞运行时验证的待办 — 已完成 |
+| 🟠 P1 高 | 9 (5 ✅ 4 待办) | 近期应完成的功能缺口与关键 Bug |
+| 🟡 P2 中 | 18 (4 ✅ 14 待办) | 已知中低优先级 Bug、功能增强 |
 | 🟢 P3 低 | 10 | 延后项、可选重构、范围排除项 |
 | ⚪ 远期 | 4 | AI Phase 3-6，依赖 MES/IoT 成熟 |
-| **合计** | **44** | |
+| **合计** | **44** | **12 ✅ + 32 待办** |
 
 ---
 
@@ -23,35 +23,35 @@
 
 > 已交付代码缺少运行时验证，需在真实环境中执行确认。
 
-### P0-1 AI 模块 SQL 落库与端到端验证
-- **来源**: [ai/plans/NexusERP_AI_Week12_Plan_S2D.md](./ai/plans/NexusERP_AI_Week12_Plan_S2D.md)、[ai/plans/NexusERP_AI_S2D_验证报告.md](./ai/plans/NexusERP_AI_S2D_验证报告.md)
+### P0-1 AI 模块 SQL 落库与端到端验证 ✅
+- **来源**: [ai/plans/archive/2026-07-04-ai-week12-plan-s2d.md](./ai/plans/archive/2026-07-04-ai-week12-plan-s2d.md)、[ai/plans/archive/2026-07-04-ai-s2d-verification-report.md](./ai/plans/archive/2026-07-04-ai-s2d-verification-report.md)
 - **待办**:
-  - [ ] 执行 4 个 SQL 脚本: `ai-stage2-a.sql`、`ai-stage2-b.sql`、`ai-stage2-c.sql`、`ai-stage2-image.sql`
-  - [ ] S2-A 端到端验证: 上传文档 → 构建图谱 → 验证实体/关系/社区数据 → 检索增强 → KnowledgeGraphTool
-  - [ ] S2-B 回归: 8 厂商切换、thinking token 流、缓存键隔离、专用 Rerank vs LLM-as-judge
-  - [ ] S2-C 回归: 联网搜索(Tavily/Bing)、MCP 市场刷新+加载、文生图(OSS)
-  - [ ] 异步租户上下文运行时验证(3 文件 5 处修复后 SQL 验证 tenant_id)
-  - [ ] 成本/性能基线采集(9 项指标)
+  - [x] 执行 4 个 SQL 脚本: `ai-stage2-a.sql`、`ai-stage2-b.sql`、`ai-stage2-c.sql`、`ai-stage2-image.sql`
+  - [x] S2-A 端到端验证: 上传文档 → 构建图谱 → 验证实体/关系/社区数据 → 检索增强 → KnowledgeGraphTool
+  - [x] S2-B 回归: 8 厂商切换、thinking token 流、缓存键隔离、专用 Rerank vs LLM-as-judge
+  - [x] S2-C 回归: 联网搜索(Tavily/Bing)、MCP 市场刷新+加载、文生图(OSS)
+  - [x] 异步租户上下文运行时验证(3 文件 5 处修复后 SQL 验证 tenant_id)
+  - [x] 成本/性能基线采集(9 项指标)
 - **阻塞原因**: 需真实环境 + LLM API Keys + OSS 配置
 - **预估**: 2d
 
-### P0-2 MES Phase 1 端到端运行时验证
-- **来源**: [mes/plans/2026-06-19-mes-week21-verification-report.md](./mes/plans/2026-06-19-mes-week21-verification-report.md)
+### P0-2 MES Phase 1 端到端运行时验证 ✅
+- **来源**: [mes/plans/2026-06-19-mes-week21-verification-report.md](./mes/plans/archive/2026-06-19-mes-week21-verification-report.md)
 - **待办**:
-  - [ ] Flowable BPMN 流程部署(MES 工单审批流，运行时 UI 操作)
-  - [ ] MES 模块启动验证
-  - [ ] 9 项端到端检查点: 菜单权限、MQ 联动、流转卡执行、工单完工聚合、MQ 回写 ERP
-  - [ ] Phase 1 退出标准"演示通过"确认
+  - [x] Flowable BPMN 流程部署(MES 工单审批流，运行时 UI 操作)
+  - [x] MES 模块启动验证
+  - [x] 9 项端到端检查点: 菜单权限、MQ 联动、流转卡执行、工单完工聚合、MQ 回写 ERP
+  - [x] Phase 1 退出标准"演示通过"确认
 - **预估**: 1d
 
-### P0-3 MES-IoT-ERP 跨模块联动运行时验证
+### P0-3 MES-IoT-ERP 跨模块联动运行时验证 ✅
 - **来源**: [system/plans/archive/2026-06-26-upgrade-wave1-plan.md](./system/plans/archive/2026-06-26-upgrade-wave1-plan.md)、Wave2
 - **待办**:
-  - [ ] MES-IoT 设备软链接运行时确认
-  - [ ] IoT 自动归档 dc_data_record 端到端
-  - [ ] SPC OOC → 安灯触发链路
-  - [ ] ERP 收货审批 → MES IQC 自动创建(幂等)
-  - [ ] 保养到期 SnailJob + SSE + 安灯(24h 限频)
+  - [x] MES-IoT 设备软链接运行时确认
+  - [x] IoT 自动归档 dc_data_record 端到端
+  - [x] SPC OOC → 安灯触发链路
+  - [x] ERP 收货审批 → MES IQC 自动创建(幂等)
+  - [x] 保养到期 SnailJob + SSE + 安灯(24h 限频)
 - **预估**: 1d
 
 ---
@@ -63,14 +63,14 @@
 - **待办**: [ ] 库存预留前端管理页面(后端 Service/事务类型已就绪)
 - **预估**: 1d
 
-### P1-2 MES 不合格品处理流程 (MRB)
-- **来源**: PROGRESS.md 未开发项
-- **待办**: [ ] IQC/IPQC/OQC 不合格 → MRB 评审 → 返工/退货/报废处置流程
+### P1-2 MES 不合格品处理流程 (MRB/NCR) ✅
+- **来源**: PROGRESS.md 未开发项(已在 P0-4 NCR 中实现)
+- **待办**: [x] IQC/IPQC/OQC 不合格 → NCR 评审 → 返工/退货/报废处置流程
 - **预估**: 2d
 
-### P1-3 MES 质量追溯(批次→检验记录)
-- **来源**: PROGRESS.md 未开发项
-- **待办**: [ ] 批次/序列号 → 关联检验记录的正反向追溯
+### P1-3 MES 质量追溯(批次→检验记录) ✅
+- **来源**: PROGRESS.md 未开发项(已在 P0-4 NCR 中实现)
+- **待办**: [x] 批次/序列号 → 关联检验记录的正反向追溯
 - **预估**: 1d
 
 ### P1-4 ERP SO 履行链路收尾
@@ -78,12 +78,12 @@
 - **待办**: [ ] 销售订单行 → 生产完工 → 入库联动运行时验证(后端已重构)
 - **预估**: 1d
 
-### P1-5 AI S2-D 文档闭环
-- **来源**: [ai/plans/NexusERP_AI_Week12_Plan_S2D.md](./ai/plans/NexusERP_AI_Week12_Plan_S2D.md) Task 7
+### P1-5 AI S2-D 文档闭环 ✅
+- **来源**: [ai/plans/archive/2026-07-04-ai-week12-plan-s2d.md](./ai/plans/archive/2026-07-04-ai-week12-plan-s2d.md) Task 7
 - **待办**:
-  - [ ] AI README 已知问题 6 项更新
-  - [ ] S2-D 验证报告补全运行时结果
-  - [ ] 主计划 v6.1 中 S2-A 状态从"待运行时验证"更新为"已验证"(验证后)
+  - [x] AI README 已知问题 6 项更新
+  - [x] S2-D 验证报告补全运行时结果
+  - [x] 主计划 v6.1 中 S2-A 状态从"待运行时验证"更新为"已验证"(验证后)
 - **预估**: 0.5d
 
 ### P1-6 AI 知识图谱已知限制处理
@@ -96,7 +96,7 @@
 - **预估**: 2d
 
 ### P1-7 AI 中优先级 Bug 修复(11 项)
-- **来源**: [ai/plans/NexusERP_AI_S2D_验证报告.md](./ai/plans/NexusERP_AI_S2D_验证报告.md)
+- **来源**: [ai/plans/archive/2026-07-04-ai-s2d-verification-report.md](./ai/plans/archive/2026-07-04-ai-s2d-verification-report.md)
 - **待办**:
   - [ ] S2-A-4: KnowledgeGraphService 缺 @Transactional
   - [ ] S2-A-5: 关系消歧义
@@ -111,26 +111,26 @@
   - [ ] S2-C-9: 缺权限校验
 - **预估**: 3d
 
-### P1-8 MES 控制图趋势分析前端可视化
+### P1-8 MES 控制图趋势分析前端可视化 ✅
 - **来源**: PROGRESS.md 进行中项
-- **待办**: [ ] SPC 控制图前端趋势分析完善(后端数据点已就绪)
+- **待办**: [x] SPC 控制图前端趋势分析完善(后端数据点已就绪)
 - **预估**: 1d
 
-### P1-9 ERP 完工入库与计划状态流转运行时验证
+### P1-9 ERP 完工入库与计划状态流转运行时验证 ✅
 - **来源**: [erp/plans/archive/2026-07-10-mes-completion-linkage-fix.md](./erp/plans/archive/2026-07-10-mes-completion-linkage-fix.md)
-- **待办**: [ ] 工单完工 → 倒冲 + 入库 + 计划状态流转全链路运行时验证
+- **待办**: [x] 工单完工 → 倒冲 + 入库 + 计划状态流转全链路运行时验证
 - **预估**: 1d
 
 ---
 
 ## 四、🟡 P2 中 - 功能增强与低优先级 Bug
 
-### P2-1 MES 设备 OEE 综合效率分析
-- **待办**: [ ] 设备可用率 × 性能率 × 质量率 综合分析
+### P2-1 MES 设备 OEE 综合效率分析 ✅
+- **待办**: [x] 设备可用率 × 性能率 × 质量率 综合分析
 - **预估**: 2d
 
-### P2-2 MES 过程能力分析 (Cp/Cpk)
-- **待办**: [ ] 基于 SPC 数据点计算 Cp/Cpk 并展示
+### P2-2 MES 过程能力分析 (Cp/Cpk) ✅
+- **待办**: [x] 基于 SPC 数据点计算 Cp/Cpk 并展示
 - **预估**: 1d
 
 ### P2-3 IoT 设备 OTA 固件升级
@@ -150,7 +150,7 @@
 - **预估**: 3d
 
 ### P2-7 AI 低优先级 Bug 修复(12 项)
-- **来源**: [ai/plans/NexusERP_AI_S2D_验证报告.md](./ai/plans/NexusERP_AI_S2D_验证报告.md)
+- **来源**: [ai/plans/archive/2026-07-04-ai-s2d-verification-report.md](./ai/plans/archive/2026-07-04-ai-s2d-verification-report.md)
 - **待办**:
   - [ ] S2-A-7: regexFallback 字段顺序
   - [ ] S2-A-8: N+1 查询
@@ -191,8 +191,8 @@
 | P2-13 | AI Agent 模式支持 thinking token 流 | 1d |
 | P2-14 | MES el-table → vxe-table 迁移 ⚠️ 与 [system/NexusERP_plus-ui前端优化方案.md](./system/NexusERP_plus-ui前端优化方案.md) 批次 4「移除 vxe-table」方向相反，推广前需对齐 | 2d |
 | P2-15 | MES pro_sn → wm_sn 同步 | 1d |
-| P2-16 | MES IoT 自动采集归档增强 | 1d |
-| P2-17 | MES SPC 告警/安灯联动 | 1d |
+| P2-16 | MES IoT 自动采集归档增强 ✅ | 1d |
+| P2-17 | MES SPC 告警/安灯联动 ✅ | 1d |
 | P2-18 | MQ 死信队列处理 | 1d |
 
 ---
@@ -253,7 +253,7 @@
   - [ ] ERP SN 规则引擎复用
   - [ ] TDengine 时序库迁移
   - [ ] 工序派工调度优化
-  - [ ] 设备备件管理
+  - [x] 设备备件管理(已完成)
 - **预估**: 按需
 
 ---
@@ -270,7 +270,7 @@
 | Phase 6 | Week 45+ | AI 工作流演进 | LangGraph4j 工作流引擎、自动补货、质量异常处理、设备故障响应、月度经营分析 |
 
 **前置条件**:
-- [ ] P0-1 ~ P0-3 运行时验证完成
+- [x] P0-1 ~ P0-3 运行时验证完成
 - [ ] MES/IoT 端到端稳定运行
 - [ ] ai_token_usage、ai_workflow 表落库
 
@@ -278,18 +278,25 @@
 
 ## 七、执行建议
 
+### 已完成里程碑
+1. **P0-1 ~ P0-3** 运行时验证已完成 — S2-D 落库验证、MES 全阶段验证、跨模块联动验证均通过
+2. **P1-2/P1-3** MES 质量闭环(MRB/NCR + 追溯)已在 P0-4 中实现
+3. **P1-5** AI S2-D 文档闭环完成
+4. **P1-8/P1-9** MES 控制图可视化 + ERP 完工入库全链路验证完成
+5. **P2-1/P2-2** MES 设备 OEE + Cp/Cpk 分析完成
+6. **P2-16/P2-17** MES IoT 自动采集归档 + SPC 安灯联动完成
+
 ### 近期(本周)
-1. 优先完成 **P0-1 ~ P0-3** 运行时验证 - 这是已交付代码可信度的基础
-2. 同步推进 **P1-1** 库存预留前端(后端已就绪，投入小收益快)
+1. 推进 **P1-1** 库存预留前端(后端已就绪，投入小收益快)
+2. 继续清理 **P1-7** AI 中优先级 Bug(11 项)
 
 ### 中期(2-3 周)
-3. 集中清理 **P1-7** AI 中优先级 Bug(11 项)
-4. 完成 **P1-2、P1-3** MES 质量闭环(MRB + 追溯)
-5. 推进 **P2-5、P2-6** AI 检索与 Agent 增强
+3. 推进 **P2-5、P2-6** AI 检索与 Agent 增强
+4. 按需处理 P1-4 SO 履行链路验证、P1-6 知识图谱限制
 
 ### 远期(1 月+)
-6. 视 MES/IoT 运行时稳定性，启动 **AI Phase 3**
-7. 按需推进 P3 延后项
+5. 视 MES/IoT 运行时稳定性，启动 **AI Phase 3**
+6. 按需推进 P3 延后项
 
 ---
 

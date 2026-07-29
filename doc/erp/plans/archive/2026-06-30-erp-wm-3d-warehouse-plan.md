@@ -341,7 +341,7 @@ const instanced = new THREE.InstancedMesh(geo, mat, locations.length);
 **Files:**
 - Modify: `plus-ui/src/router/index.ts`（dynamicRoutes 增 3D 预览路由）
 - Modify: `plus-ui/src/views/erp/wm/warehouse/index.vue`（操作列增"3D预览"按钮）
-- Create: `doc/erp/sql/erp-wm-3d-menu.sql`（菜单/权限，幂等）
+- Create: `doc/erp/sql/archive/erp-wm-3d-menu.sql`（菜单/权限，幂等）
 
 **路由（参照现有 `/erp/wm/storagearea` 模式）：**
 
@@ -377,7 +377,7 @@ const handleView3d = (warehouseId: number | string) => {
 };
 ```
 
-**菜单 SQL（草案，执行阶段落地为 `doc/erp/sql/erp-wm-3d-menu.sql`，遵循 CONTRIBUTING §5 幂等规范）：**
+**菜单 SQL（草案，执行阶段落地为 `doc/erp/sql/archive/erp-wm-3d-menu.sql`，遵循 CONTRIBUTING §5 幂等规范）：**
 
 ```sql
 -- =====================================================
@@ -516,7 +516,7 @@ WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE perms = 'wm:warehouse:3d');
 - ✅ 后端 `mvn compile -pl ruoyi-modules/ruoyi-erp -am` BUILD SUCCESS
 - ✅ 前端 `npm run build:prod` ✓ built，3D 页懒加载 chunk `3d-*.js`（含 three，532K），不影响首屏
 - ✅ 新增/修改文件 lint 无 error（`warehouse/index.vue` 的 178 个 prettier 错误为预存状态，非本次引入，未越权重排）
-- ✅ 演示种子 SQL：`doc/erp/sql/erp-wm-3d-demo-seed.sql`（幂等，1 仓库 + 2 库区 + 18 库位 + 10 库存，覆盖四态）
+- ✅ 演示种子 SQL：`doc/erp/sql/test-data/erp-wm-3d-demo-seed.sql`（幂等，1 仓库 + 2 库区 + 18 库位 + 10 库存，覆盖四态）
 - ⬜ 端到端联调：需运行环境（后端启动 + 执行种子 SQL + 前端访问 3D 预览页），待用户在本地验证
 
 ### MVP 交付物
@@ -533,7 +533,7 @@ WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE perms = 'wm:warehouse:3d');
 | `plus-ui/src/router/index.ts` | 修改 +3d 路由 |
 | `plus-ui/src/views/erp/wm/warehouse/index.vue` | 修改 +3D预览按钮 |
 | `plus-ui/src/views/erp/wm/warehouse/3d.vue` | 新建 3D 渲染页 |
-| `doc/erp/sql/erp-wm-3d-demo-seed.sql` | 新建演示种子 |
+| `doc/erp/sql/test-data/erp-wm-3d-demo-seed.sql` | 新建演示种子 |
 
 ---
 

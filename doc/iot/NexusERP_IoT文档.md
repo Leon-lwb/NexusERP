@@ -5,7 +5,7 @@
 > **Week 34 额外**: MQTT 租户访问控制策略已实现（`git cc3781a`），设备认证含多租户隔离。
 > **MES 联动实际进度**: IMesAndonService 安灯联动✅（MES Week 23），设备台账✅（MES Week 26），数据采集点✅（MES Week 27）。
 > **MES↔IoT 未打通**: IoT→MES REST 查询（契约就绪，MES 侧未调用）、设备双向软关联查询、IoT 自动采集归档到 dc_data_record。详见 §二十一。
-> 后续升级方案：[NexusERP 三模块共同升级方案](NexusERP_三模块共同升级方案.md)
+> 后续升级方案：[NexusERP 三模块共同升级方案](../system/NexusERP_三模块共同升级方案.md)
 >
 > 参考实施计划：[IoT 阶段一 Week 33 开发计划](./plans/archive/2026-06-12-iot-week33-plan.md)、[IoT 阶段一 Week 34 开发计划](./plans/archive/2026-06-13-iot-week34-plan.md)、[IoT 阶段一 Week 35 开发计划](./plans/archive/2026-06-14-iot-week35-plan.md)、[IoT 阶段一 Week 36 开发计划](./plans/archive/2026-06-15-iot-week36-plan.md)
 >
@@ -78,7 +78,7 @@ ruoyi-iot/
 
 ### 2.1 产品与设备
 
-> ⚠️ 本节 DDL 已与 `sql/iot-week33-01-init.sql` 对齐，后续变更以 SQL 脚本为准。
+> ⚠️ 本节 DDL 已与 `sql/archive/iot-week33-01-init.sql` 对齐，后续变更以 SQL 脚本为准。
 
 ```sql
 -- IoT产品(设备模板)
@@ -586,7 +586,7 @@ IoT设备数据 → Redis缓存 → MES数据采集模块(mes_dc)
 | 根 `pom.xml` 注册 iot 模块 | ✅ 已完成 | dependencyManagement 注册 `ruoyi-iot`，`ruoyi-admin` 引入 |
 | `application-dev.yml` 配置 iot 数据源 | ✅ 已完成 | `spring.datasource.dynamic.datasource.iot`（prod 同步占位） |
 | `@DS("iot")` 注解可用 | ✅ 已完成 | `IotProductServiceImpl`/`IotDeviceServiceImpl` 标注 `@DS("iot")`，编译通过 |
-| `ry-iot` 数据库已创建 | ⏳ 待执行 | DDL 脚本已产出 `doc/iot/sql/iot-week33-01-init.sql`，由开发者本地执行 |
+| `ry-iot` 数据库已创建 | ⏳ 待执行 | DDL 脚本已产出 `doc/iot/sql/archive/iot-week33-01-init.sql`，由开发者本地执行 |
 | 3张核心DDL已执行 | ⏳ 待执行 | iot_product + iot_device + iot_device_data，脚本内含修正版 DDL（见脚本头注释） |
 | Moquette依赖已引入 | ✅ 已完成 | `io.moquette:moquette-broker:0.17`（注：0.17 groupId 为 `io.moquette`，非 `io.github.moquette`），T6 已排查 Netty 收敛无冲突 |
 | Redis Streams消费者组已创建 | ✅ 已完成 | Week 34 `IotStreamConsumer` 启动时幂等创建 `iot-consumers` 组（`StreamCreateGroupArgs.name(...).id(NEWEST).makeStream()`），BUSYGROUP 幂等忽略 |
@@ -597,12 +597,12 @@ IoT设备数据 → Redis缓存 → MES数据采集模块(mes_dc)
 | SSE 实时数据端点 | ✅ 已完成 | Week 35 `IotRealtimeSseManager`(per-device SseEmitter + `@Scheduled` 3s 轮询 `iot:latest`+`iot:status`) + `GET /iot/device/{id}/realtime`(`@SaIgnore`+手动鉴权，token 走 query) |
 | 设备数据 REST 端点(latest/status/data) | ✅ 已完成 | Week 35 `IotDeviceController` 加 3 端点，包装 Week 34 缓存/历史查询，`selectById` 校验设备归属 |
 | 前端产品/设备管理页 | ✅ 已完成 | Week 35 `plus-ui/src/views/iot/{product,device}` + `api/iot/*`，对接 Week 33 菜单(6000-6025)，在线状态指示灯 |
-| IoT 字典 | ✅ 已完成 | Week 35 `doc/iot/sql/iot-week35-03-dict.sql`：`product_type`/`iot_protocol_type`/`iot_connection_status`/`iot_device_status` |
+| IoT 字典 | ✅ 已完成 | Week 35 `doc/iot/sql/archive/iot-week35-03-dict.sql`：`product_type`/`iot_protocol_type`/`iot_connection_status`/`iot_device_status` |
 | 实时仪表盘(ECharts+SSE) | ✅ 已完成 | Week 36 `views/iot/device/realtime.vue`: 专用 EventSource 订阅 `/realtime` + 数值卡片 + 实时折线图(60点滚动窗口) + 历史趋势图(近1h `/data`) + 设备信息卡(在线状态指示灯) |
 | SnailJob 定时任务(清理/心跳/Stream修剪) | ✅ 已完成 | Week 36 `com.nexus.iot.task`: `IotDataCleanupTask`(90天, cron 0 0 2 * * ?), `IotDeviceHeartbeatTask`(15min, cron 0 */5 * * * ?), `IotStreamTrimTask`(MAXLEN 100000, cron 0 0 * * * ?); SnailJob 后台 ruoyi_group 配置 |
 | 真实设备联调 | ✅ 已完成 | Week 36 端到端: MQTT 设备上报 -> Stream -> MySQL+缓存 -> SSE `/realtime` -> 仪表盘实时可见; 心跳任务兜底异常掉线; 清理/修剪任务运维 |
 
-> **Week 33 DDL 修正说明**：与本文档第二节 DDL 的差异已记录在 `doc/iot/sql/iot-week33-01-init.sql` 头注释——`tenant_id` 改 `VARCHAR(20) DEFAULT '000000'` 对齐项目规范；业务表补 `del_flag` + 审计列；`iot_device_data` 不补审计列（实体独立）。以脚本为准。
+> **Week 33 DDL 修正说明**：与本文档第二节 DDL 的差异已记录在 `doc/iot/sql/archive/iot-week33-01-init.sql` 头注释——`tenant_id` 改 `VARCHAR(20) DEFAULT '000000'` 对齐项目规范；业务表补 `del_flag` + 审计列；`iot_device_data` 不补审计列（实体独立）。以脚本为准。
 
 ### 14.2 已有基础设施确认
 
@@ -968,7 +968,7 @@ mosquitto_pub -h localhost -p 1883 \
 | 时序数据库迁移（TDengine） | 未启动 | iot_device_data > 1000 万行时 |
 | 边缘网关 | 未启动 | 设备超 100 台或需协议转换时 |
 
-> 以上均保持触发条件驱动。详见 [三模块共同升级方案](NexusERP_三模块共同升级方案.md) 第二波次。
+> 以上均保持触发条件驱动。详见 [三模块共同升级方案](../system/NexusERP_三模块共同升级方案.md) 第二波次。
 
 ### 21.4 验收报告
 

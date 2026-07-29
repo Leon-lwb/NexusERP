@@ -14,7 +14,7 @@
 
 二阶段（S2-A/B/C）共 66 人天、加上一阶段累计约 204 人天的代码，截至本周**几乎全部只过了"编译关"，未过"运行关"**：
 
-- S2-A 知识图谱：README 与二阶段计划均自标"⬜ 待运行时验证"，`doc/ai/sql/ai-stage2-a.sql` 至今未落库跑通。
+- S2-A 知识图谱：README 与二阶段计划均自标"⬜ 待运行时验证"，`doc/ai/sql/archive/ai-stage2-a.sql` 至今未落库跑通。
 - S2-B 推理 + 厂商 + Rerank：仅在 Chat/RAG 模式做过推理 token 流验证，Agent 模式明确不支持 thinking 流（设计限制），8 厂商切换与缓存 key 维度无回归记录。
 - S2-C 联网 + 市场 + 文生图：代码审查修过 2 个 Bug（MCP 加载状态值、crawlWebpage 超时），无端到端回归记录。
 
@@ -51,10 +51,10 @@
 
 | 顺序 | 脚本 | 内容 | 幂等性 |
 |------|------|------|--------|
-| 1 | `doc/ai/sql/ai-stage2-a.sql` | 4 张表（`ai_knowledge_graph`/`ai_kg_entity`/`ai_kg_relation`/`ai_kg_community`）+ `ai_knowledge_chunk` ALTER 5 列 + 图谱菜单 4 条 | ✅ 表 `IF NOT EXISTS`；⚠️ **ALTER 非幂等**；菜单 `DELETE+INSERT` 幂等 |
-| 2 | `doc/ai/sql/ai-stage2-b.sql` | `ai_message` ALTER `thinking_content` 1 列 | ⚠️ **ALTER 非幂等** |
-| 3 | `doc/ai/sql/ai-stage2-c.sql` | 2 张表（`ai_mcp_market`/`ai_mcp_market_tool`）+ MCP 市场菜单 5 条 | ✅ 表 `IF NOT EXISTS`；⚠️ 菜单 INSERT **非幂等**（无 DELETE 前置） |
-| 4 | `doc/ai/sql/ai-stage2-image.sql` | 1 张表（`ai_image_record`）+ 文生图菜单 4 条 | ✅ 表 `IF NOT EXISTS`；⚠️ 菜单 INSERT **非幂等** |
+| 1 | `doc/ai/sql/archive/ai-stage2-a.sql` | 4 张表（`ai_knowledge_graph`/`ai_kg_entity`/`ai_kg_relation`/`ai_kg_community`）+ `ai_knowledge_chunk` ALTER 5 列 + 图谱菜单 4 条 | ✅ 表 `IF NOT EXISTS`；⚠️ **ALTER 非幂等**；菜单 `DELETE+INSERT` 幂等 |
+| 2 | `doc/ai/sql/archive/ai-stage2-b.sql` | `ai_message` ALTER `thinking_content` 1 列 | ⚠️ **ALTER 非幂等** |
+| 3 | `doc/ai/sql/archive/ai-stage2-c.sql` | 2 张表（`ai_mcp_market`/`ai_mcp_market_tool`）+ MCP 市场菜单 5 条 | ✅ 表 `IF NOT EXISTS`；⚠️ 菜单 INSERT **非幂等**（无 DELETE 前置） |
+| 4 | `doc/ai/sql/archive/ai-stage2-image.sql` | 1 张表（`ai_image_record`）+ 文生图菜单 4 条 | ✅ 表 `IF NOT EXISTS`；⚠️ 菜单 INSERT **非幂等** |
 
 **执行前必查**（避免重复执行报错）：
 

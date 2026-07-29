@@ -96,8 +96,8 @@
 
 | 文件 | 用途 |
 |------|------|
-| `doc/ai/sql/ai-stage2-b.sql` | ai_message ALTER thinking_content |
-| `doc/ai/sql/ai-stage2-c.sql` | ai_mcp_market + ai_mcp_market_tool 建表 |
+| `doc/ai/sql/archive/ai-stage2-b.sql` | ai_message ALTER thinking_content |
+| `doc/ai/sql/archive/ai-stage2-c.sql` | ai_mcp_market + ai_mcp_market_tool 建表 |
 
 ---
 
@@ -130,7 +130,7 @@
 |------|------|
 | `plus-ui/src/api/ai/market.ts` | API 封装：list/get/add/edit/del + listTools/refresh/load/batchLoad |
 | `plus-ui/src/views/ai/mcp/market.vue` | 市场源 CRUD 表 + 每市场工具抽屉（刷新/工具列表/单条加载/批量加载），仿 `mcp/index.vue` |
-| `doc/ai/sql/ai-stage2-c.sql` | 菜单 INSERT（menu_id 1800-1804，parent=1700，权限 `ai:mcp:market:*`） |
+| `doc/ai/sql/archive/ai-stage2-c.sql` | 菜单 INSERT（menu_id 1800-1804，parent=1700，权限 `ai:mcp:market:*`） |
 
 ### 4.2 联网搜索前端接线 ✅
 

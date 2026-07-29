@@ -1,6 +1,6 @@
 # NexusERP 文档中心
 
-本目录是 NexusERP 项目的文档总入口，按业务模块组织。截至 2026-07-10，文档覆盖 AI、ERP、IoT、MES 四大业务模块及系统级（部署/审计/营销）文档。
+本目录是 NexusERP 项目的文档总入口，按业务模块组织。截至 2026-07-29，文档覆盖 AI、ERP、IoT、MES 四大业务模块及系统级（部署/审计/营销）文档。
 
 ## 快速入口
 
@@ -8,7 +8,6 @@
 |------|------|
 | **[PROGRESS.md](./PROGRESS.md)** | **📊 功能开发进度总览** — 258 个功能点状态、跨模块业务流程图、未开发/搁置功能清单 |
 | [PLANS.md](./PLANS.md) | **📅 前瞻开发计划** - 44 项待办按 P0~P3 优先级排列，含预估工时与执行建议 |
-| [devlog/](./devlog/) | 按模块分卷开发日志（含前期概要 + 正式开发期详情链接） |
 
 ## 目录结构
 
@@ -16,7 +15,6 @@
 |------|------|------|
 | [PROGRESS.md](./PROGRESS.md) | 功能开发进度总览（258功能点 + 流程图） | 直接查看 |
 | [PLANS.md](./PLANS.md) | 前瞻开发计划（44 项待办，P0~P3 优先级） | 直接查看 |
-| [devlog/](./devlog/) | 按模块分卷开发日志 | [devlog/README.md](./devlog/README.md) |
 | [ai/](./ai/) | AI 模块（LangChain4j + 知识图谱 + MCP）设计与开发计划 | [ai/README.md](./ai/README.md) |
 | [erp/](./erp/) | ERP 模块业务设计、变更说明、业务流转分析 | [erp/README.md](./erp/README.md) |
 | [iot/](./iot/) | IoT 物联网平台设计与阶段一实施 | [iot/README.md](./iot/README.md) |

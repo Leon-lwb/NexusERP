@@ -69,7 +69,7 @@ plus-ui（前端）
 ├─ api/ai/knowledgeGraph.ts
 └─ views/ai/knowledge/graph.vue（+ index.vue 改 el-tabs 加 Tab）
 
-doc/ai/sql/ai-stage2-a.sql（4 表 + 2 ALTER + sys_menu 1820-1823）
+doc/ai/sql/archive/ai-stage2-a.sql（4 表 + 2 ALTER + sys_menu 1820-1823）
 ```
 
 ### 2.2 构建数据流（两阶段，异步）
@@ -177,7 +177,7 @@ performGraphRecall(knowledgeId, query):
 
 | 文件 | 用途 |
 |------|------|
-| `doc/ai/sql/ai-stage2-a.sql` | 4 表 CREATE + `ai_knowledge_chunk` ALTER（5 列）+ `ai_kg_entity` ALTER（community_id）+ sys_menu 1820-1823（幂等 DELETE+INSERT） |
+| `doc/ai/sql/archive/ai-stage2-a.sql` | 4 表 CREATE + `ai_knowledge_chunk` ALTER（5 列）+ `ai_kg_entity` ALTER（community_id）+ sys_menu 1820-1823（幂等 DELETE+INSERT） |
 
 ---
 
@@ -199,7 +199,7 @@ performGraphRecall(knowledgeId, query):
 
 ## 五、数据库变更
 
-详见 `doc/ai/sql/ai-stage2-a.sql`。要点：
+详见 `doc/ai/sql/archive/ai-stage2-a.sql`。要点：
 
 - **4 张新表**（均含 BaseEntity 审计列 + tenant_id + del_flag + attr1-4，utf8mb4_unicode_ci，ROW_FORMAT=DYNAMIC）：
   - `ai_knowledge_graph`：图谱实例。idx(knowledge_id)。
@@ -485,5 +485,5 @@ if (graphCfg.isEnabled()) {
 - 配置：`.../config/AiProperties.java`（`KnowledgeGraphConfig`）+ `ruoyi-admin/.../application.yml`
 - 上下文：`.../context/AiRequestContext.java`（`knowledgeId`）+ `.../service/facade/AiServiceFacade.java`
 - 前端：`plus-ui/src/views/ai/knowledge/graph.vue` + `api/ai/knowledgeGraph.ts` + `views/ai/knowledge/index.vue`
-- SQL：`doc/ai/sql/ai-stage2-a.sql`
+- SQL：`doc/ai/sql/archive/ai-stage2-a.sql`
 - 实施计划：`C:\Users\admin\.claude\plans\doc-ai-s2-a-d-ruoyi-ai-snazzy-riddle.md`

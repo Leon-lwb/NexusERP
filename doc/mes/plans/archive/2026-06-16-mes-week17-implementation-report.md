@@ -21,8 +21,8 @@
 | 注册 MES 队列绑定 | ✅ | [RabbitMqInitializer](../../../ruoyi-common/ruoyi-common-mq/src/main/java/com/nexus/common/mq/config/RabbitMqInitializer.java) |
 | 修正 MQ 消息发送时序 | ✅ | [PrdWorkOrderServiceImpl](../../../ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/prd/service/impl/PrdWorkOrderServiceImpl.java) |
 | 禁用 ERP 占位消费者 | ✅ | [WorkOrderReleaseConsumer](../../../ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/mq/consumer/WorkOrderReleaseConsumer.java) |
-| 生成 DDL SQL | ✅ | [mes-week17-01-init.sql](../sql/mes-week17-01-init.sql) |
-| 生成菜单权限 SQL | ✅ | [mes-week17-10-menu.sql](../sql/mes-week17-10-menu.sql) |
+| 生成 DDL SQL | ✅ | [mes-week17-01-init.sql](../../sql/archive/mes-week17-01-init.sql) |
+| 生成菜单权限 SQL | ✅ | [mes-week17-10-menu.sql](../../sql/archive/mes-week17-10-menu.sql) |
 | 编译验证 | ✅ | `mvn compile -pl ruoyi-modules/ruoyi-mes -am` 通过 |
 
 ---
@@ -102,7 +102,7 @@ spring.datasource.dynamic.datasource:
 
 ### 3.1 DDL SQL
 
-**文件**: [mes-week17-01-init.sql](../sql/mes-week17-01-init.sql)
+**文件**: [mes-week17-01-init.sql](../../sql/archive/mes-week17-01-init.sql)
 
 **内容**:
 - 创建 `ry-mes` 数据库
@@ -115,7 +115,7 @@ spring.datasource.dynamic.datasource:
 
 ### 3.2 菜单权限 SQL
 
-**文件**: [mes-week17-10-menu.sql](../sql/mes-week17-10-menu.sql)
+**文件**: [mes-week17-10-menu.sql](../../sql/archive/mes-week17-10-menu.sql)
 
 **菜单 ID 分配**:
 | ID | 名称 | 类型 | 父级 |
@@ -146,10 +146,10 @@ mvn compile -pl ruoyi-modules/ruoyi-mes -am
 
 ```bash
 # 1. 创建数据库
-mysql -u root -p < doc/mes/sql/mes-week17-01-init.sql
+mysql -u root -p < doc/mes/sql/archive/mes-week17-01-init.sql
 
 # 2. 创建菜单
-mysql -u root -p ry-vue < doc/mes/sql/mes-week17-10-menu.sql
+mysql -u root -p ry-vue < doc/mes/sql/archive/mes-week17-10-menu.sql
 
 # 3. 启动应用
 mvn spring-boot:run -pl ruoyi-admin

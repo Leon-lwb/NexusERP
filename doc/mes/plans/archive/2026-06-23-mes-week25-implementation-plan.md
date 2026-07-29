@@ -90,7 +90,7 @@ Phase 2（流转卡+派工+安灯+SN）已于 Week 24 全部闭合（见 `memory
 
 ### 任务 2：qc DDL
 
-**File:** Create `doc/mes/sql/mes-week25-06-quality.sql`
+**File:** Create `doc/mes/sql/archive/mes-week25-06-quality.sql`
 
 对齐主文档 §2.2 字段，按 Week22/23 约定调整（`tenant_id` BIGINT→VARCHAR(20)、加 `del_flag`、`mes_wo_id` 命名、`status VARCHAR(16)`）。三表结构：
 
@@ -355,7 +355,7 @@ import：`com.nexus.common.mq.message.MesWorkOrderCompletedMessage` + `com.nexus
 
 ### 任务 10：菜单权限 SQL
 
-**File:** Create `doc/mes/sql/mes-week25-19-menu.sql`
+**File:** Create `doc/mes/sql/archive/mes-week25-19-menu.sql`
 
 父菜单 **4002（质量管理，Week17 已建）**。菜单 ID 段 **4090-4101**（Week24 用到 4086，接续）。
 
@@ -442,7 +442,7 @@ IPQC/OQC: 纯 MES 内检验, 不发 MQ, 状态机 PENDING→INSPECTING→COMPLET
 | 交付物 | 类型 | 路径 |
 |--------|------|------|
 | `IqcCompletedMessage`/`MesWorkOrderCompletedMessage` 迁移 | 改 | `ruoyi-common-mq/.../message/` |
-| `mes-week25-06-quality.sql` | SQL | `doc/mes/sql/mes-week25-06-quality.sql` |
+| `mes-week25-06-quality.sql` | SQL | `doc/mes/sql/archive/mes-week25-06-quality.sql` |
 | QcIqc/QcIpqc/QcOqc Entity/BO/VO/Mapper | Java×12 | `ruoyi-mes/.../qc/{domain,domain/bo,domain/vo,mapper}/` |
 | IQcXxxService + 实现 | Java×6 | `ruoyi-mes/.../qc/{service,service/impl}/` |
 | `MesMqSendService.java`（+sendIqcCompleted, 修 exchange） | 改 | `ruoyi-mes/.../common/mq/MesMqSendService.java` |
@@ -451,7 +451,7 @@ IPQC/OQC: 纯 MES 内检验, 不发 MQ, 状态机 PENDING→INSPECTING→COMPLET
 | `ErpWorkOrderCompletedConsumer.java` | Java | `ruoyi-erp/.../mq/consumer/` |
 | `iqc.ts`/`ipqc.ts`/`oqc.ts` | TS×3 | `plus-ui/src/api/mes/qc/` |
 | `iqc/index.vue`/`ipqc/index.vue`/`oqc/index.vue` | Vue×3 | `plus-ui/src/views/mes/qc/` |
-| `mes-week25-19-menu.sql` | SQL | `doc/mes/sql/mes-week25-19-menu.sql` |
+| `mes-week25-19-menu.sql` | SQL | `doc/mes/sql/archive/mes-week25-19-menu.sql` |
 
 ---
 

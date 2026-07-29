@@ -42,14 +42,14 @@
 | 修改 | `ruoyi-modules/ruoyi-erp/.../pu/service/impl/PuPurchaseOrderServiceImpl.java` | cancel/close 校验补全 |
 | 修改 | `ruoyi-modules/ruoyi-erp/.../wm/domain/WmMaterialReceiveLine.java` | 新增 purchaseLineId 外键字段 |
 | 修改 | `ruoyi-modules/ruoyi-erp/.../pu/service/impl/PuPurchaseReceiveWritebackServiceImpl.java` | 按 lineId 直接匹配 |
-| 新建 | `doc/erp/sql/erp-phaseb-po-receive-line.sql` | DDL: wm_material_receive_line 加 purchase_line_id 列 |
+| 新建 | `doc/erp/sql/archive/erp-phaseb-po-receive-line.sql` | DDL: wm_material_receive_line 加 purchase_line_id 列 |
 | 新建 | `ruoyi-modules/ruoyi-erp/.../pu/controller/PuPurchaseOrderLineController.java` | 收货差异处理端点 |
 
 ### 子项3：库存预留机制（Task 5-7）
 
 | 操作 | 文件路径 | 责任 |
 |---|---|---|
-| 新建 | `doc/erp/sql/erp-phaseb-stock-reservation.sql` | DDL: wm_material_stock 加 reserved_quantity 列 |
+| 新建 | `doc/erp/sql/archive/erp-phaseb-stock-reservation.sql` | DDL: wm_material_stock 加 reserved_quantity 列 |
 | 修改 | `ruoyi-modules/ruoyi-erp/.../wm/domain/WmMaterialStock.java` | 新增 reservedQuantity 字段 |
 | 修改 | `ruoyi-modules/ruoyi-erp/.../wm/mapper/WmMaterialStockMapper.java` | reserveStock/releaseReserved 原子方法 |
 | 新建 | `ruoyi-modules/ruoyi-erp/.../wm/service/IWmStockReservationService.java` | 预留服务接口 |
@@ -480,7 +480,7 @@ git commit -m "feat(pu): 采购订单状态枚举+cancel/close校验补全 (Phas
 ## Task 4: 收货行外键 + 收货差异处理端点
 
 **Files:**
-- Create: `doc/erp/sql/erp-phaseb-po-receive-line.sql`
+- Create: `doc/erp/sql/archive/erp-phaseb-po-receive-line.sql`
 - Modify: `ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/wm/domain/WmMaterialReceiveLine.java`
 - Modify: `ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/pu/service/impl/PuPurchaseReceiveWritebackServiceImpl.java`
 - Create: `ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/pu/controller/PuPurchaseOrderLineController.java`
@@ -489,7 +489,7 @@ git commit -m "feat(pu): 采购订单状态枚举+cancel/close校验补全 (Phas
 
 - [ ] **Step 1: DDL 新增 purchase_line_id 列**
 
-文件 `doc/erp/sql/erp-phaseb-po-receive-line.sql`：
+文件 `doc/erp/sql/archive/erp-phaseb-po-receive-line.sql`：
 
 ```sql
 -- =============================================
@@ -626,7 +626,7 @@ Run: `mvn -pl ruoyi-modules/ruoyi-erp -am compile -DskipTests -T 1C`
 Expected: BUILD SUCCESS
 
 ```bash
-git add doc/erp/sql/erp-phaseb-po-receive-line.sql \
+git add doc/erp/sql/archive/erp-phaseb-po-receive-line.sql \
        ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/wm/domain/WmMaterialReceiveLine.java \
        ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/pu/service/impl/PuPurchaseReceiveWritebackServiceImpl.java \
        ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/pu/controller/PuPurchaseOrderLineController.java
@@ -638,7 +638,7 @@ git commit -m "feat(pu): 收货行外键+差异处理端点 (PhaseB-子项2)"
 ## Task 5: 库存预留 DDL + Entity + Mapper
 
 **Files:**
-- Create: `doc/erp/sql/erp-phaseb-stock-reservation.sql`
+- Create: `doc/erp/sql/archive/erp-phaseb-stock-reservation.sql`
 - Modify: `ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/wm/domain/WmMaterialStock.java`
 - Modify: `ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/wm/mapper/WmMaterialStockMapper.java`
 
@@ -646,7 +646,7 @@ git commit -m "feat(pu): 收货行外键+差异处理端点 (PhaseB-子项2)"
 
 - [ ] **Step 1: DDL 新增 reserved_quantity 列**
 
-文件 `doc/erp/sql/erp-phaseb-stock-reservation.sql`：
+文件 `doc/erp/sql/archive/erp-phaseb-stock-reservation.sql`：
 
 ```sql
 -- =============================================
@@ -732,7 +732,7 @@ Run: `mvn -pl ruoyi-modules/ruoyi-erp -am compile -DskipTests -T 1C`
 Expected: BUILD SUCCESS
 
 ```bash
-git add doc/erp/sql/erp-phaseb-stock-reservation.sql \
+git add doc/erp/sql/archive/erp-phaseb-stock-reservation.sql \
        ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/wm/domain/WmMaterialStock.java \
        ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/wm/mapper/WmMaterialStockMapper.java
 git commit -m "feat(wm): 库存预留DDL+Entity+Mapper原子方法 (PhaseB-子项3)"
@@ -1459,8 +1459,8 @@ git commit -m "perf(bd): BOM展开N+1消除-批量预加载重构4处递归方�
 ### 部署后手动操作项
 
 1. **执行 DDL**（`ry-erp` 库）：
-   - `doc/erp/sql/erp-phaseb-po-receive-line.sql`（wm_material_receive_line 加 purchase_line_id）
-   - `doc/erp/sql/erp-phaseb-stock-reservation.sql`（wm_material_stock 加 reserved_quantity）
+   - `doc/erp/sql/archive/erp-phaseb-po-receive-line.sql`（wm_material_receive_line 加 purchase_line_id）
+   - `doc/erp/sql/archive/erp-phaseb-stock-reservation.sql`（wm_material_stock 加 reserved_quantity）
 2. **验证库存预留初始化**：`SELECT COUNT(*) FROM wm_material_stock WHERE reserved_quantity > 0` 应为 0
 3. **验证 BOM 展开性能**：对一个 5 级 BOM 调用 `getBomTree`，观察 SQL 日志确认无 N+1
 

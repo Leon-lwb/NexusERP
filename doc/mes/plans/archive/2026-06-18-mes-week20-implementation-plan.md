@@ -32,7 +32,7 @@
 ### 任务 1：流转卡 DDL（对齐 Week 17 schema 约定）
 
 **Files:**
-- Create: `doc/mes/sql/mes-week20-02-flowcard.sql`
+- Create: `doc/mes/sql/archive/mes-week20-02-flowcard.sql`
 
 **关键对齐项（文档 DDL → 实际约定）：**
 
@@ -263,7 +263,7 @@ void completeWo(Long mesWoId) {
 ### 任务 8：Flowable 审批流配置 SQL
 
 **Files:**
-- Create: `doc/mes/sql/mes-week20-13-flow-deploy.sql`
+- Create: `doc/mes/sql/archive/mes-week20-13-flow-deploy.sql`
 
 **内容：**
 ```sql
@@ -296,7 +296,7 @@ VALUES (
 ### 任务 9：菜单权限补充 SQL
 
 **Files:**
-- Create: `doc/mes/sql/mes-week20-14-menu.sql`
+- Create: `doc/mes/sql/archive/mes-week20-14-menu.sql`
 
 **菜单 ID 段：4040~4050（对齐 Week 17 的 4000 段）**
 

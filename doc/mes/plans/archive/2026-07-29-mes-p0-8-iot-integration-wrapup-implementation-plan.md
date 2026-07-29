@@ -3,7 +3,7 @@
 > **For agentic workers:** REQUIRED SUB-SKILL: superpowers:executing-plans（任务级 checkbox 跟踪）。Steps 用 `- [ ]` 标记。
 >
 > **编制日期**: 2026-07-29
-> **所属计划**: [2026-07-24-mes-p0-development-plan-v1.0.md](./2026-07-24-mes-p0-development-plan-v1.0.md) §3.8
+> **所属计划**: [2026-07-24-mes-p0-development-plan-v1.0.md](../2026-07-24-mes-p0-development-plan-v1.0.md) §3.8
 > **状态**: ✅ 完整交付（编码 + SQL 落库 + 单测 11/11 + 编译/eslint + E2E 10/10）
 
 ---
@@ -244,7 +244,7 @@ private int archiveOne(DcCollectionPoint point, Date windowStart, Date endTime) 
 
 ### 5.1 增量脚本
 
-`doc/mes/sql/mes-p0-08-01-iot-wrapup.sql`（幂等）：
+`doc/mes/sql/archive/mes-p0-08-01-iot-wrapup.sql`（幂等）：
 
 ```sql
 -- F8-6: dc_collection_point 加数据补偿游标列
@@ -331,7 +331,7 @@ WHERE NOT EXISTS (SELECT 1 FROM sys_dict_data WHERE dict_type='mes_equipment_sta
 - [ ] F8-2: `collection-point/index.vue` 表单加 IoT 设备选择器 + 属性编码输入（AUTO 时 v-if）+ 类型切换清空 + 列表列
 
 ### SQL
-- [ ] `doc/mes/sql/mes-p0-08-01-iot-wrapup.sql`（ALTER + dict OFFLINE，幂等）
+- [ ] `doc/mes/sql/archive/mes-p0-08-01-iot-wrapup.sql`（ALTER + dict OFFLINE，幂等）
 - [ ] `script/sql/ry-mes.sql` 同步（dc_collection_point 列 + 字典种子）
 - [ ] 本地 MySQL(root/root,3306) 执行增量脚本
 

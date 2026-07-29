@@ -80,7 +80,7 @@ plus-ui/src/
 ### SQL 脚本
 
 ```
-doc/mes/sql/mes-week28-23-iot-bridge.sql   (新建)
+doc/mes/sql/archive/mes-week28-23-iot-bridge.sql   (新建)
 doc/system/plans/2026-06-26-upgrade-wave1-plan.md  (本计划)
 ```
 
@@ -795,7 +795,7 @@ Expected: 无报错，4 个 PREPARE 语句均执行成功。
 
 ```bash
 cd d:\workspace\nexus-erp
-git add doc/mes/sql/mes-week28-23-iot-bridge.sql
+git add doc/mes/sql/archive/mes-week28-23-iot-bridge.sql
 git commit -m "feat(mes-dc-sql): dc_collection_point/dc_data_record 新增 IoT 桥接字段 (Wave1-3.2)"
 ```
 

@@ -237,7 +237,7 @@ Element Plus 已移除全量 `index.css`，改为按需 CSS。**编程式组件*
   - `assets/styles/variables.module.scss`（12 处）、`main.ts`（5 处：`VXETable` import / `setConfig` / `app.use` / css）。
   - 改造完成后 `main.ts` 删 VXETable 注册与 css，`npm uninstall vxe-table`（省 500KB+ vendor）。
 
-  > ⚠️ **方向冲突提示**：[../../PLANS.md](../../PLANS.md) 的 P2-14 曾计划"MES el-table -> vxe-table 迁移"，与本方案"移除 vxe-table"方向相反。本方案以**移除 vxe-table** 为准（统一技术栈为 el-table + vxe-table 仅省 500KB+ vendor、且全局仅 5 文件残留），推广前需与 MES 团队对齐、废止 P2-14。
+  > ⚠️ **方向冲突提示**：[../PLANS.md](../PLANS.md) 的 P2-14 曾计划"MES el-table -> vxe-table 迁移"，与本方案"移除 vxe-table"方向相反。本方案以**移除 vxe-table** 为准（统一技术栈为 el-table + vxe-table 仅省 500KB+ vendor、且全局仅 5 文件残留），推广前需与 MES 团队对齐、废止 P2-14。
 - `autoGenFlag` 剩余内联页面全量替换为 `AutoGenCodeField`。
 - eslint 规则固化（`no-console` 等防回潮规则入配置）。
 

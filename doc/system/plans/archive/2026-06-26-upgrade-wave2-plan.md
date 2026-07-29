@@ -25,8 +25,8 @@
 
 | 操作 | 文件路径 | 责任 |
 |---|---|---|
-| 新建 | `doc/erp/sql/erp-pu-contract-menu.sql` | 采购合同菜单注册（ID 2530-2540） |
-| 新建 | `doc/erp/sql/dict-pu-contract.sql` | 采购合同字典（contract_type / pu_contract_status） |
+| 新建 | `doc/erp/sql/archive/erp-pu-contract-menu.sql` | 采购合同菜单注册（ID 2530-2540） |
+| 新建 | `doc/erp/sql/archive/dict-pu-contract.sql` | 采购合同字典（contract_type / pu_contract_status） |
 | 修改 | `ruoyi-modules/ruoyi-erp/.../pu/domain/bo/PuContractBo.java` | 补 @AutoMapper + attr1-4 字段 |
 | 修改 | `ruoyi-modules/ruoyi-erp/.../pu/domain/vo/PuContractVo.java` | 补 attr1-4 + updateTime 字段 |
 | 修改 | `ruoyi-modules/ruoyi-erp/.../pu/controller/PuContractController.java` | 移除类级 @DS + 新增 createOrder 端点 |
@@ -41,28 +41,28 @@
 | 新建 | `ruoyi-modules/ruoyi-mes/.../eq/task/MaintenanceDueTask.java` | SnailJob 保养到期扫描任务 |
 | 修改 | `ruoyi-modules/ruoyi-mes/.../eq/service/IEqMaintenancePlanService.java` | 新增 completePlan 方法签名 |
 | 修改 | `ruoyi-modules/ruoyi-mes/.../eq/service/impl/EqMaintenancePlanServiceImpl.java` | 实现 completePlan（推进 nextDate） |
-| 新建 | `doc/mes/sql/mes-week29-25-snailjob-maintenance-due.sql` | SnailJob 任务注册（ry-vue 库） |
+| 新建 | `doc/mes/sql/archive/mes-week29-25-snailjob-maintenance-due.sql` | SnailJob 任务注册（ry-vue 库） |
 | 新建 | `ruoyi-modules/ruoyi-mes/.../eq/domain/bo/InspectionResultBo.java` | 点检结果 BO（含 results 数组） |
 | 修改 | `ruoyi-modules/ruoyi-mes/.../eq/service/IEqEquipmentService.java` | 新增 submitInspection 方法签名 |
 | 修改 | `ruoyi-modules/ruoyi-mes/.../eq/service/impl/EqEquipmentServiceImpl.java` | 实现点检提交 + 异常联动 |
 | 修改 | `ruoyi-modules/ruoyi-mes/.../eq/controller/EqEquipmentController.java` | 新增 POST /{equipmentId}/inspect 端点 |
 | 新建 | `plus-ui/src/api/mes/eq/inspection.ts` | 点检 API |
 | 新建 | `plus-ui/src/views/mes/eq/inspection/index.vue` | 点检执行页面 |
-| 新建 | `doc/mes/sql/mes-week29-26-inspection-menu.sql` | 点检菜单注册（ID 4125-4129） |
+| 新建 | `doc/mes/sql/archive/mes-week29-26-inspection-menu.sql` | 点检菜单注册（ID 4125-4129） |
 
 ---
 
 ## Task 1: 采购合同菜单 + 字典 SQL
 
 **Files:**
-- Create: `doc/erp/sql/erp-pu-contract-menu.sql`
-- Create: `doc/erp/sql/dict-pu-contract.sql`
+- Create: `doc/erp/sql/archive/erp-pu-contract-menu.sql`
+- Create: `doc/erp/sql/archive/dict-pu-contract.sql`
 
 **背景**：采购合同 `pu_contract` 表与 Service/Controller 已完整，但菜单 SQL 未注册（`pu:contract:*` 权限不存在），合同类型/状态字典未注册。父菜单 2500 = 采购管理，已用 ID 段 2501-2518。
 
 - [ ] **Step 1: 新建采购合同菜单 SQL**
 
-文件 `doc/erp/sql/erp-pu-contract-menu.sql`：
+文件 `doc/erp/sql/archive/erp-pu-contract-menu.sql`：
 
 ```sql
 -- =============================================
@@ -91,7 +91,7 @@ INSERT IGNORE INTO `sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`,
 
 - [ ] **Step 2: 新建采购合同字典 SQL**
 
-文件 `doc/erp/sql/dict-pu-contract.sql`：
+文件 `doc/erp/sql/archive/dict-pu-contract.sql`：
 
 ```sql
 -- =============================================
@@ -136,7 +136,7 @@ INSERT IGNORE INTO `sys_dict_data` (`dict_code`, `tenant_id`, `dict_sort`, `dict
 - [ ] **Step 3: Commit**
 
 ```bash
-git add doc/erp/sql/erp-pu-contract-menu.sql doc/erp/sql/dict-pu-contract.sql
+git add doc/erp/sql/archive/erp-pu-contract-menu.sql doc/erp/sql/archive/dict-pu-contract.sql
 git commit -m "feat(erp-pu): Task1 采购合同菜单+字典SQL注册 (Wave2-P1)"
 ```
 
@@ -450,7 +450,7 @@ git commit -m "feat(erp-bd): Task4 物料-供应商 isDefault唯一性+防重复
 - Create: `ruoyi-modules/ruoyi-mes/src/main/java/com/nexus/mes/eq/task/MaintenanceDueTask.java`
 - Modify: `ruoyi-modules/ruoyi-mes/src/main/java/com/nexus/mes/eq/service/IEqMaintenancePlanService.java`
 - Modify: `ruoyi-modules/ruoyi-mes/src/main/java/com/nexus/mes/eq/service/impl/EqMaintenancePlanServiceImpl.java`
-- Create: `doc/mes/sql/mes-week29-25-snailjob-maintenance-due.sql`
+- Create: `doc/mes/sql/archive/mes-week29-25-snailjob-maintenance-due.sql`
 
 **背景**：`eq_maintenance_plan.next_date` + `cycle_days` 字段已存在且有索引，但无到期扫描任务。沿用 `IotDataArchiveTask` 的 `@JobExecutor` 模式 + `IotAlertNotifier` 的 Redis 限频模式 + `ProAndonServiceImpl.publishAndonSse` 的 SSE 推送模式 + `IProAndonService.callAndon(TYPE_EQUIPMENT)` 安灯触发。
 
@@ -680,7 +680,7 @@ public class MaintenanceDueTask {
 
 - [ ] **Step 4: 新建 SnailJob 注册 SQL**
 
-文件 `doc/mes/sql/mes-week29-25-snailjob-maintenance-due.sql`：
+文件 `doc/mes/sql/archive/mes-week29-25-snailjob-maintenance-due.sql`：
 
 ```sql
 -- =============================================
@@ -732,7 +732,7 @@ WHERE NOT EXISTS (
 ```bash
 cd d:\workspace\nexus-erp
 mvn -pl ruoyi-modules/ruoyi-mes -am compile -DskipTests -T 1C
-git add ruoyi-modules/ruoyi-mes/src/main/java/com/nexus/mes/eq/task/MaintenanceDueTask.java ruoyi-modules/ruoyi-mes/src/main/java/com/nexus/mes/eq/service/IEqMaintenancePlanService.java ruoyi-modules/ruoyi-mes/src/main/java/com/nexus/mes/eq/service/impl/EqMaintenancePlanServiceImpl.java doc/mes/sql/mes-week29-25-snailjob-maintenance-due.sql
+git add ruoyi-modules/ruoyi-mes/src/main/java/com/nexus/mes/eq/task/MaintenanceDueTask.java ruoyi-modules/ruoyi-mes/src/main/java/com/nexus/mes/eq/service/IEqMaintenancePlanService.java ruoyi-modules/ruoyi-mes/src/main/java/com/nexus/mes/eq/service/impl/EqMaintenancePlanServiceImpl.java doc/mes/sql/archive/mes-week29-25-snailjob-maintenance-due.sql
 git commit -m "feat(mes-eq): Task5 保养到期SnailJob任务+SSE推送+安灯触发(24h限频) (Wave2-MES运行时)"
 ```
 
@@ -935,7 +935,7 @@ git commit -m "feat(mes-eq): Task6 设备点检执行Service+Controller+异常�
 **Files:**
 - Create: `plus-ui/src/api/mes/eq/inspection.ts`
 - Create: `plus-ui/src/views/mes/eq/inspection/index.vue`
-- Create: `doc/mes/sql/mes-week29-26-inspection-menu.sql`
+- Create: `doc/mes/sql/archive/mes-week29-26-inspection-menu.sql`
 
 **背景**：后端 API 已就位（Task 6），需新建前端点检执行页面。沿用 `repair/index.vue` 的状态推进页面模式：列表展示设备 + "点检"按钮打开对话框 + 结构化表单（v-for 渲染 inspection_items 每项 + actual 输入框 + pass 判断）。菜单 ID 4125+（父菜单 4003 设备管理，现有 4110-4124 已用）。
 
@@ -1156,7 +1156,7 @@ getList();
 
 - [ ] **Step 3: 新建点检菜单 SQL**
 
-文件 `doc/mes/sql/mes-week29-26-inspection-menu.sql`：
+文件 `doc/mes/sql/archive/mes-week29-26-inspection-menu.sql`：
 
 ```sql
 -- =============================================
@@ -1181,7 +1181,7 @@ INSERT IGNORE INTO `sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`,
 - [ ] **Step 4: Commit**
 
 ```bash
-git add plus-ui/src/api/mes/eq/inspection.ts plus-ui/src/views/mes/eq/inspection/index.vue doc/mes/sql/mes-week29-26-inspection-menu.sql
+git add plus-ui/src/api/mes/eq/inspection.ts plus-ui/src/views/mes/eq/inspection/index.vue doc/mes/sql/archive/mes-week29-26-inspection-menu.sql
 git commit -m "feat(mes-eq-ui): Task7 设备点检前端页面+API+菜单SQL (Wave2-MES运行时)"
 ```
 
@@ -1216,11 +1216,11 @@ git commit -m "feat(mes-eq-ui): Task7 设备点检前端页面+API+菜单SQL (Wa
 ### 部署后手动操作项
 
 1. **执行 ERP SQL**（`ry-vue` 库）：
-   - `doc/erp/sql/erp-pu-contract-menu.sql`
-   - `doc/erp/sql/dict-pu-contract.sql`
+   - `doc/erp/sql/archive/erp-pu-contract-menu.sql`
+   - `doc/erp/sql/archive/dict-pu-contract.sql`
 2. **执行 MES SQL**（`ry-vue` 库）：
-   - `doc/mes/sql/mes-week29-25-snailjob-maintenance-due.sql`
-   - `doc/mes/sql/mes-week29-26-inspection-menu.sql`
+   - `doc/mes/sql/archive/mes-week29-25-snailjob-maintenance-due.sql`
+   - `doc/mes/sql/archive/mes-week29-26-inspection-menu.sql`
 3. **SnailJob 控制台确认**：`maintenanceDueTask` 任务已注册且 `job_status=1`
 
 ---

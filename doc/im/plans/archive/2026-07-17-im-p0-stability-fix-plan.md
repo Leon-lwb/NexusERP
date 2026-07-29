@@ -15,7 +15,7 @@
 | P0-1 | 修复 3 处越权 + 跨租户好友申请 | AppImController.java | 低 | ⏳ |
 | P0-2 | 推送移到事务提交后（消除幽灵消息） | ImRealtimePush.java、ImChatServiceImpl.java、SysUserNotificationServiceImpl.java | 中 | ⏳ |
 | P0-3 | 修复雪花 ID 推送精度丢失 | ImEnvelopeHelper.java、AppImController.java | 低 | ⏳ |
-| P0-4 | 补 im_message is_read 复合索引 | doc/im/sql/2026-07-17-im-p0-read-index.sql | 极低 | ⏳ |
+| P0-4 | 补 im_message is_read 复合索引 | doc/im/sql/archive/2026-07-17-im-p0-read-index.sql | 极低 | ⏳ |
 | P0-5 | 移动端响应式 + 群聊去重 + 重连退避 | Nexus_App: chat/index.vue、im.js、websocket.js | 低 | ⏳ |
 
 状态图例: ⏳ 待办 / 🚧 进行中 / ✅ 完成 / ❌ 阻塞
@@ -160,7 +160,7 @@ public class ImEnvelopeHelper {
 
 ### 改造方案
 
-新增 `doc/im/sql/2026-07-17-im-p0-read-index.sql`:
+新增 `doc/im/sql/archive/2026-07-17-im-p0-read-index.sql`:
 
 ```sql
 -- P0-4: IM 消息已读/未读查询性能优化

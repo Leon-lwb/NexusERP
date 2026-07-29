@@ -2,7 +2,7 @@
 
 > **分支**: `feature/im-p0-stability-fix`（在 P3 commit `12b0a996` 基础上继续）
 > **日期**: 2026-07-18
-> **依据**: [2026-07-18-im-optimization-backlog.md](./2026-07-18-im-optimization-backlog.md) + [2026-07-18-im-p3-development-plan.md](./2026-07-18-im-p3-development-plan.md) 第十章 P4 预告
+> **依据**: [2026-07-18-im-optimization-backlog.md](../../2026-07-18-im-optimization-backlog.md) + [2026-07-18-im-p3-development-plan.md](./2026-07-18-im-p3-development-plan.md) 第十章 P4 预告
 > **范围**: 性能优化（群消息扇出/会话缓存/已读回执）+ 可靠性补齐（增量同步/队列持久化/断线 fallback）+ UX 补全（撤回提示/消息搜索）+ 可观测性增强
 > **前置**: P0/P1/P2/P3 共 29 项改造已完成（nexus-erp: `12b0a996` / Nexus_App: `5c2d058`），单元测试覆盖率基线已建立
 
@@ -19,7 +19,7 @@
 | 可观测性 | 仅 log.warn，无 metrics | 无性能采集 | 无性能采集 |
 | 功能 | 撤回事件按成员循环推送 | 无消息搜索，撤回无 UI 提示 | 无消息搜索，撤回未处理 |
 
-P3 已为 19 项关键改造建立了测试基线，但代码审查发现 28 项性能/可靠性/UX 优化点（详见 [optimization-backlog](./2026-07-18-im-optimization-backlog.md)）。P4 聚焦其中**高价值与中价值共 20 项**，分三档实施。
+P3 已为 19 项关键改造建立了测试基线，但代码审查发现 28 项性能/可靠性/UX 优化点（详见 [optimization-backlog](../../2026-07-18-im-optimization-backlog.md)）。P4 聚焦其中**高价值与中价值共 20 项**，分三档实施。
 
 ### 1.2 目标
 
@@ -839,7 +839,7 @@ public class UserPushQueue {
 
 **任务**:
 - 为 P4-1 ~ P4-9 新增单元测试（延续 P3 测试规范）
-- 更新 [optimization-backlog](./2026-07-18-im-optimization-backlog.md) 中已完成项的状态与 commit hash
+- 更新 [optimization-backlog](../../2026-07-18-im-optimization-backlog.md) 中已完成项的状态与 commit hash
 - 更新 [P0 稳定性分析](./2026-07-17-im-p0-stability-fix-plan.md) 中的"后续阶段"章节，标记 P4 已完成项
 - 性能对比：P4 前后 1000 人群发送延迟、listConversations 首屏延迟、App 重连拉取量三项指标
 

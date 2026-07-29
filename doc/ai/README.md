@@ -7,32 +7,13 @@
 ```
 /doc/ai/
 ├── README.md
-├── plans/                          # 开发计划与阶段文档
-│   ├── NexusERP_AI开发计划.md
-│   ├── NexusERP_AI_QuickStart_Phase0.md
-│   ├── NexusERP_AI_Week*_Plan.md   # 各周计划
-│   ├── NexusERP_AI_S2D_验证报告.md
-│   ├── NexusERP_AI二阶段实施计划_S2A.md
-│   ├── NexusERP_AI二阶段实施计划_S2B_S2C.md
-│   └── NexusERP_AI二阶段开发计划_AI平台能力深化.md
-├── knowledge-base/                 # RAG 知识源文档
-│   ├── knowledge-base-01-erp-master-data/
-│   ├── knowledge-base-02-erp-supplier/
-│   ├── knowledge-base-03-erp-procurement/
-│   ├── knowledge-base-04-erp-sales/
-│   ├── knowledge-base-05-erp-inventory/
-│   ├── knowledge-base-06-erp-production/
-│   ├── knowledge-base-07-mes-workshop/
-│   ├── knowledge-base-08-mes-quality/
-│   ├── knowledge-base-09-system-deploy/
-│   ├── knowledge-base-10-system-troubleshoot/
-│   └── knowledge-base-11-system-integration/
-└── sql/                            # 数据库脚本
-    ├── ai-providers-models.sql
-    ├── ai-stage2-a.sql
-    ├── ai-stage2-b.sql
-    ├── ai-stage2-c.sql
-    └── ai-stage2-image.sql
+├── plans/                          # 活跃开发计划
+│   ├── NexusERP_AI开发计划.md                       # 主计划（Phase 0-2 完成确认 + 后续排期）
+│   └── NexusERP_AI二阶段开发计划_AI平台能力深化.md   # 二阶段 S2-A/B/C/D
+├── plans/archive/                  # 已归档历史计划（QuickStart_Phase0、Week2-11 周计划、S2A/S2B_S2C 实施计划、S2-D 验证报告与 Week12 计划）
+├── knowledge-base/                 # RAG 知识源文档（11 主题：01-erp-master-data ~ 11-system-integration，每主题 .txt 原始版 + .annotated.txt 标注版）
+└── sql/                            # 已清空：开发期 SQL 全部已并入 script/sql/ry-vue.sql
+    └── archive/                    # 历史增量 SQL：ai-providers-models / ai-stage2-a / ai-stage2-b / ai-stage2-c / ai-stage2-image
 ```
 
 ## 知识源文档使用方式

@@ -23,17 +23,19 @@
 ### 营销（marketing/）
 | 文档 | 主题 |
 |------|------|
-| [NexusERP1.0上线公众号文章.md](./marketing/NexusERP1.0上线公众号文章.md) | 1.0 上线宣传（六大核心模块） |
-| [NexusERP1.1上线公众号文章.md](./marketing/NexusERP1.1上线公众号文章.md) | 1.1 上线宣传（MES + IoT 双引擎） |
+| [NexusERP_1.0上线公众号文章.md](./marketing/NexusERP_1.0上线公众号文章.md) | 1.0 上线宣传（六大核心模块） |
+| [NexusERP_1.1上线公众号文章.md](./marketing/NexusERP_1.1上线公众号文章.md) | 1.1 上线宣传（MES + IoT 双引擎） |
 
 ### 资源
-- [screenshots/](./screenshots/) - 18 张系统截图（登录页、各业务模块界面）
+- [screenshots/](./screenshots/) - 36 张系统截图（34 PNG + 2 GIF，登录页与各业务模块界面）
 - [user-manual/](./user-manual/) - 用户操作手册（docx）
 
 ### 待开发计划（plans/）
 | 文档 | 主题 | 状态 |
 |------|------|------|
-| [2026-07-17-so-purchase-linkage-plan.md](./plans/2026-07-17-so-purchase-linkage-plan.md) | SO 销售订单->采购联动（补全 so_sales_order_line.purchase_qty / linked_po_id，建销售->采购业务链路） | 📋 待开发 |
+| [2026-07-17-system-so-purchase-linkage-plan.md](./plans/archive/2026-07-17-system-so-purchase-linkage-plan.md) | SO 销售订单->采购联动（补全 so_sales_order_line.purchase_qty / linked_po_id，建销售->采购业务链路） | 📋 待开发 |
+
+已完成的计划与临时分析报告（品牌 Logo、SO 行状态联动、MES 完工联动、代码审查等）归档于 [plans/archive/](./plans/archive/)。
 
 ## 阅读顺序
 

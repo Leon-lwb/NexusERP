@@ -4,7 +4,7 @@
 >
 > **编制日期**: 2026-07-26
 > **计划周期**: Week 34（2026-09-14 ~ 09-20）；属 Phase 4-C 质量与合规类
-> **所属计划**: [2026-07-24-mes-p0-development-plan-v1.0.md](./2026-07-24-mes-p0-development-plan-v1.0.md) §3.5
+> **所属计划**: [2026-07-24-mes-p0-development-plan-v1.0.md](../2026-07-24-mes-p0-development-plan-v1.0.md) §3.5
 > **状态**: ✅ 编码完成 + SQL 落库 + 端到端联调通过（28/28 断言），后端 BUILD SUCCESS + 前端 eslint 0 错误
 
 ---
@@ -207,7 +207,7 @@ MES (WorkOrderReleaseConsumer -> ProWorkOrderServiceImpl.createFromErpMessage):
 
 ### 任务 1：DDL（4 表）
 
-**File:** Create `doc/mes/sql/mes-p0-05-01-sop.sql`
+**File:** Create `doc/mes/sql/archive/mes-p0-05-01-sop.sql`
 
 四表设计（见 §六 DDL 详情）：
 - `sop_document`：SOP 主档（编码/名称/类型/当前版本/状态/当前文件 ossId/审批字段）
@@ -385,7 +385,7 @@ public Boolean deleteByIds(Long[] ids);
 
 ### 任务 6：菜单 SQL
 
-**File:** `doc/mes/sql/mes-p0-05-02-menu.sql`
+**File:** `doc/mes/sql/archive/mes-p0-05-02-menu.sql`
 
 父菜单 **新建 4206 文档管理 M 目录**（parent=4000 MES系统，order_num=12，path=sop）。沿用 P0-2 "M-dir 取整百数 + C/F 用计划段" 模式（4205 工装管理 → 4206 文档管理）。C/F 用主计划 §7.3 分配的 **4261-4280** 段。
 
@@ -406,7 +406,7 @@ public Boolean deleteByIds(Long[] ids);
 
 ### 任务 7：自动编码规则
 
-**File:** `doc/mes/sql/mes-p0-05-03-autocode-sop.sql`
+**File:** `doc/mes/sql/archive/mes-p0-05-03-autocode-sop.sql`
 
 镜像 `mes-p0-02-03-autocode-tooling.sql` 结构：
 - 规则 `MES_SOP_CODE`：`SOP` + `yyyyMMdd` + 3位日循环流水号 → `SOP20260914001`
@@ -416,7 +416,7 @@ public Boolean deleteByIds(Long[] ids);
 
 ### 任务 8：字典种子
 
-**File:** `doc/mes/sql/mes-p0-05-04-sop-dicts.sql`
+**File:** `doc/mes/sql/archive/mes-p0-05-04-sop-dicts.sql`
 
 镜像 `mes-p0-02-04-tooling-dicts.sql` 结构，4 个字典：
 
@@ -638,10 +638,10 @@ CREATE TABLE IF NOT EXISTS sop_view_log (
 
 | 交付物 | 类型 | 路径 |
 |--------|------|------|
-| `mes-p0-05-01-sop.sql` | SQL | `doc/mes/sql/mes-p0-05-01-sop.sql` |
-| `mes-p0-05-02-menu.sql` | SQL | `doc/mes/sql/mes-p0-05-02-menu.sql` |
-| `mes-p0-05-03-autocode-sop.sql` | SQL | `doc/mes/sql/mes-p0-05-03-autocode-sop.sql` |
-| `mes-p0-05-04-sop-dicts.sql` | SQL | `doc/mes/sql/mes-p0-05-04-sop-dicts.sql` |
+| `mes-p0-05-01-sop.sql` | SQL | `doc/mes/sql/archive/mes-p0-05-01-sop.sql` |
+| `mes-p0-05-02-menu.sql` | SQL | `doc/mes/sql/archive/mes-p0-05-02-menu.sql` |
+| `mes-p0-05-03-autocode-sop.sql` | SQL | `doc/mes/sql/archive/mes-p0-05-03-autocode-sop.sql` |
+| `mes-p0-05-04-sop-dicts.sql` | SQL | `doc/mes/sql/archive/mes-p0-05-04-sop-dicts.sql` |
 | SopDocument/SopVersion/SopProcessBinding/SopViewLog Entity/BO/VO/Mapper | Java×16 | `ruoyi-mes/.../sop/{domain,domain/bo,domain/vo,mapper}/` |
 | 4 Service + 4 实现（SopDocumentServiceImpl 实现 WfCallBackServiceI） | Java×8 | `ruoyi-mes/.../sop/{service,service/impl}/` |
 | 4 Controller | Java×4 | `ruoyi-mes/.../sop/controller/` |
@@ -673,7 +673,7 @@ CREATE TABLE IF NOT EXISTS sop_view_log (
 
 ## 十二、与主计划的对齐项（建议同步更新）
 
-执行本方案时，建议同步修订 [主计划 v1.0](./2026-07-24-mes-p0-development-plan-v1.0.md)：
+执行本方案时，建议同步修订 [主计划 v1.0](../2026-07-24-mes-p0-development-plan-v1.0.md)：
 
 1. **§3.5.3 DDL**：`file_url VARCHAR(500)` → `file_oss_id BIGINT`（OSS 私有桶存 ID）；`sop_version.status` 增加 PENDING 态；补 `approval_by/time/remark`/`archive_reason` 字段
 2. **§3.5.2 F5-5**：注明电子签名本周仅预留 `signature_id`，强制校验待 P0-6

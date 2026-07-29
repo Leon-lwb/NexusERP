@@ -5,7 +5,7 @@
 > ERP侧集成准备状态：主数据API已就绪✅，MQ消息发送+队列常量已完成✅，MES→ERP MQ双向贯通✅（Week 25 ErpIqcCompletedConsumer + ErpWorkOrderCompletedConsumer）。
 > MES↔IoT集成状态：IMesAndonService 安灯联动✅（Week 23），设备关联字段已建✅，IoT自动采集归档⏳待打通。
 > 参考实施计划：[MES Phase 1~3 + IoT 阶段一实施计划](./plans/2026-06-16-mes-iot-phase-plan.md)
-> 后续升级方案：[NexusERP 三模块共同升级方案](NexusERP_三模块共同升级方案.md)
+> 后续升级方案：[NexusERP 三模块共同升级方案](../system/NexusERP_三模块共同升级方案.md)
 >
 > **命名规范**: MES表命名与ERP保持一致，采用一级前缀 `{模块缩写}_{业务实体名}`（如 `pro_work_order`、`qc_iqc`），
 > 不使用 `mes_` 二级前缀，因为MES在独立库 `ry-mes` 中，库名已标识来源。
@@ -1301,7 +1301,7 @@ public class IqcCompletedMessage implements Serializable {
 | 实现MES→ERP完工MQ回传 | `WorkOrderCompletedMessage` 生产者 | ✅ 已在Phase2 ProWorkOrderServiceImpl.completeWo afterCommit触发 |
 | ERP侧实现完工消费端 | `ErpWorkOrderCompletedConsumer` | ✅ `com.nexus.erp.mq.consumer.ErpWorkOrderCompletedConsumer` + 修复exchange bug(DIRECT→TOPIC) |
 | 前端：IQC/IPQC/OQC页面 | 3个列表+检验弹窗 | ✅ `plus-ui/src/views/mes/qc/{iqc,ipqc,oqc}/index.vue` |
-| 执行 Phase 3 DDL | qc_iqc + qc_ipqc + qc_oqc | ✅ `doc/mes/sql/mes-week25-06-quality.sql` |
+| 执行 Phase 3 DDL | qc_iqc + qc_ipqc + qc_oqc | ✅ `doc/mes/sql/archive/mes-week25-06-quality.sql` |
 
 #### Week 30：设备管理 → 实际 Week 26 ✅（3人天）
 
@@ -1313,7 +1313,7 @@ public class IqcCompletedMessage implements Serializable {
 | 前端：设备台账页 | `mes/eq/equipment/index.vue` | ✅ |
 | 前端：保养计划页 | `mes/eq/maintenance/index.vue` | ✅ 过期标红 |
 | 前端：维修记录页 | `mes/eq/repair/index.vue` | ✅ 开工/完成操作按钮 |
-| 执行 Phase 3 DDL | eq_equipment + eq_maintenance_plan + eq_repair | ✅ `doc/mes/sql/mes-week26-07-equipment.sql` |
+| 执行 Phase 3 DDL | eq_equipment + eq_maintenance_plan + eq_repair | ✅ `doc/mes/sql/archive/mes-week26-07-equipment.sql` |
 
 #### Week 31-32：数据采集 + SPC + 集成测试 → 实际 Week 27 ✅（4人天）
 
@@ -1326,7 +1326,7 @@ public class IqcCompletedMessage implements Serializable {
 | 前端：采集点页面 | `mes/dc/collection-point/index.vue` | ✅ |
 | 前端：采集记录页面 | `mes/dc/data-record/index.vue` | ✅ |
 | 前端：SPC控制图 | `mes/spc/control-chart/index.vue` | ✅ ECharts UCL/CL/LCL参考线+OOC红点 |
-| 执行 Phase 3 DDL | dc/spc 四表 | ✅ `doc/mes/sql/mes-week27-08-collection-spc.sql` |
+| 执行 Phase 3 DDL | dc/spc 四表 | ✅ `doc/mes/sql/archive/mes-week27-08-collection-spc.sql` |
 | Phase 3 集成测试 | 测试报告 | ⏳ 待人工运行时验证 |
 | MES全链路集成测试 | 测试报告 | ⏳ 待人工运行时验证 |
 
@@ -1544,7 +1544,7 @@ TransactionSynchronizationManager.registerSynchronization(new TransactionSynchro
 
 ## 二十、Week 28 MBOM 子系统扩展
 
-> **定位**: Phase 1-3 全部交付（Week 17-27）后的后续扩展。引入 MBOM（制造 BOM）子系统，目的是修复 BOM 管理增强审查中发现的核心问题——MES 完全未消费 BOM、职责错位、ERP 数据正确性隐患。详见变更说明文档 `NexusERP-CHG-2026-002`（`doc/erp/BOM优化-ERP成本融合MES制造BOM-变更说明文档.md`）。
+> **定位**: Phase 1-3 全部交付（Week 17-27）后的后续扩展。引入 MBOM（制造 BOM）子系统，目的是修复 BOM 管理增强审查中发现的核心问题——MES 完全未消费 BOM、职责错位、ERP 数据正确性隐患。详见变更说明文档 `NexusERP-CHG-2026-002`（`doc/erp/archive/2026-06-26-erp-bom-cost-fusion-mes-mbom-change.md`）。
 >
 > **交付状态**: SQL 已就绪（`mes-week28-09-mbom.sql` + `mes-week28-22-menu.sql`），后端/前端代码交付以变更说明文档为准。
 
@@ -1574,7 +1574,7 @@ Week 28 MBOM 子系统即针对上述问题 1、2 落地 MES 侧改造，与 ERP
 
 新增 3 张表，目标库 `ry-mes`。约定对齐：`tenant_id VARCHAR(20) DEFAULT '000000'`、`del_flag CHAR(1)`、状态列 VARCHAR、BIGINT 主键。脚本幂等（`DROP TABLE IF EXISTS`）。
 
-**脚本**: `doc/mes/sql/mes-week28-09-mbom.sql`
+**脚本**: `doc/mes/sql/archive/mes-week28-09-mbom.sql`
 
 | 表名 | 用途 | 关键字段 |
 |------|------|----------|
@@ -1691,7 +1691,7 @@ CREATE TABLE `pro_work_order_bom_line` (
 
 ### 20.4 菜单权限
 
-**脚本**: `doc/mes/sql/mes-week28-22-menu.sql`（目标库 `ry-vue`，幂等：先 `DELETE` 旧错误记录再 `INSERT IGNORE`）
+**脚本**: `doc/mes/sql/archive/mes-week28-22-menu.sql`（目标库 `ry-vue`，幂等：先 `DELETE` 旧错误记录再 `INSERT IGNORE`）
 
 父菜单：`4001`（生产执行），菜单 ID 段 2950。
 
@@ -1711,7 +1711,7 @@ CREATE TABLE `pro_work_order_bom_line` (
 |--------|------|------|
 | DDL 脚本 `mes-week28-09-mbom.sql` | ✅ 已就绪 | 三表（`mes_mbom`/`mes_mbom_line`/`pro_work_order_bom_line`），幂等 |
 | 菜单脚本 `mes-week28-22-menu.sql` | ✅ 已就绪 | 2950-2954，父菜单 4001，幂等 |
-| 后端代码（MBOM CRUD + 工单快照 + 追溯） | 见变更说明文档 | 详见 `doc/erp/BOM优化-ERP成本融合MES制造BOM-变更说明文档.md` §4.2-§4.3 |
+| 后端代码（MBOM CRUD + 工单快照 + 追溯） | 见变更说明文档 | 详见 `doc/erp/archive/2026-06-26-erp-bom-cost-fusion-mes-mbom-change.md` §4.2-§4.3 |
 | 前端代码（MBOM 编制页 + 工单 BOM Tab） | 见变更说明文档 | 详见同上 §5.2 |
 
 > **与主文档其他章节关系**: 本节为 Phase 1-3 之外的独立扩展，不在 §10「MES 实施计划」原计划周次内。`mes_mbom`/`mes_mbom_line`/`pro_work_order_bom_line` 三表未计入 §2「~17 张表」统计，单独列出。

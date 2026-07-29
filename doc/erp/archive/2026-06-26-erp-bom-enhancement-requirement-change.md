@@ -5,7 +5,7 @@
 > **变更日期**: 2026-06-17
 > **影响模块**: ruoyi-erp (bd 包)、plus-ui (erp/bd)、sys_menu / sys_dict
 > **变更负责人**: 王欢
-> **关联文档**: `./sql/erp-bom-routing-enhancement.sql`（BOM 增强建表脚本）
+> **关联文档**: `../sql/archive/erp-bom-routing-enhancement.sql`（BOM 增强建表脚本）
 
 ---
 
@@ -50,7 +50,7 @@
 ## 三、数据库变更
 
 ### 3.1 新增表（4 张）
-脚本：`doc/erp/sql/erp-bom-routing-enhancement.sql`
+脚本：`doc/erp/sql/archive/erp-bom-routing-enhancement.sql`
 
 | 表名 | 用途 | 关键字段 |
 |------|------|----------|
@@ -71,7 +71,7 @@
 | `bd_bom_detail` | `routing_step_id` BIGINT | 子项对应工艺步骤 |
 
 ### 3.3 字典变更
-脚本：`doc/erp/sql/dict-bom-routing-process.sql`（3 个字典类型）
+脚本：`doc/erp/sql/archive/dict-bom-routing-process.sql`（3 个字典类型）
 
 | 字典类型 | 字典编码 | 字典值 |
 |----------|----------|--------|
@@ -82,7 +82,7 @@
 > ⚠️ **主键冲突注意**：若 `ry-vue.sql` 已执行（其中已包含上述字典数据），**不要再执行** `dict-bom-routing-process.sql`，否则会因 dict_data 主键冲突报错。两者二选一。
 
 ### 3.4 菜单权限变更
-脚本：`doc/erp/sql/erp-process-routing-menu.sql`（ID 段 2900–2999）
+脚本：`doc/erp/sql/archive/erp-process-routing-menu.sql`（ID 段 2900–2999）
 
 | 菜单 ID | 菜单名 | 父菜单 | 权限标识 |
 |---------|--------|--------|----------|
@@ -237,9 +237,9 @@
 ## 八、上线步骤（执行顺序）
 
 1. **执行数据库脚本**（按顺序）：
-   - `doc/erp/sql/erp-bom-routing-enhancement.sql`（建表 + 加字段）
+   - `doc/erp/sql/archive/erp-bom-routing-enhancement.sql`（建表 + 加字段）
    - 字典脚本二选一：若库未执行过 `ry-vue.sql` 的新字典则执行 `dict-bom-routing-process.sql`；**否则跳过**
-   - `doc/erp/sql/erp-process-routing-menu.sql`（菜单权限）
+   - `doc/erp/sql/archive/erp-process-routing-menu.sql`（菜单权限）
 2. **角色授权**：到「系统管理 → 角色管理」分配 `bd:process:*`、`bd:routing:*` 权限
 3. **后端部署**：`mvn clean package` 后重启服务
 4. **前端部署**：`npm run build:prod` 后发布

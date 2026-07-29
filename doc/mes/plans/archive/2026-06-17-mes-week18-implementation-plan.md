@@ -1757,7 +1757,7 @@ onMounted(() => {
 ### 任务 9：菜单权限补充 SQL
 
 **Files:**
-- Create: `doc/mes/sql/mes-week18-11-menu.sql`
+- Create: `doc/mes/sql/archive/mes-week18-11-menu.sql`
 
 - [ ] **Step 1: 生成菜单权限补充 SQL**
 
@@ -1804,7 +1804,7 @@ Expected: BUILD SUCCESS
 
 ```bash
 # 1. 执行菜单权限补充SQL
-mysql -u root -p ry-vue < doc/mes/sql/mes-week18-11-menu.sql
+mysql -u root -p ry-vue < doc/mes/sql/archive/mes-week18-11-menu.sql
 
 # 2. 启动应用
 mvn spring-boot:run -pl ruoyi-admin

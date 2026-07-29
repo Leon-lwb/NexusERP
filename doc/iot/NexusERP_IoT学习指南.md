@@ -1088,8 +1088,8 @@ mosquitto_pub -h localhost -p 1883 \
 |------|------|
 | `application.yml` (nexus.iot 段) | MQTT Broker + 管道配置 |
 | `application-dev.yml` (datasource.iot) | IoT 数据库连接配置 |
-| `doc/iot/sql/iot-week33-01-init.sql` | 3 张核心表 DDL |
-| `doc/iot/sql/iot-week35-03-dict.sql` | 4 个 IoT 字典初始化 |
+| `doc/iot/sql/archive/iot-week33-01-init.sql` | 3 张核心表 DDL |
+| `doc/iot/sql/archive/iot-week35-03-dict.sql` | 4 个 IoT 字典初始化 |
 
 ### 公共契约模块
 
