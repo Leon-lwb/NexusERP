@@ -46,16 +46,19 @@ public class GlAccountServiceImpl implements IGlAccountService {
     private final GlVoucherLineMapper voucherLineMapper;
     private final GlAccountBalanceMapper balanceMapper;
 
+    /** 按查询条件构建 Wrapper 查询列表 */
     @Override
     public List<GlAccountVo> queryList(GlAccountBo bo) {
         return baseMapper.selectVoList(buildQueryWrapper(bo));
     }
 
+    /** 根据主键查询科目VO */
     @Override
     public GlAccountVo queryById(Long accountId) {
         return baseMapper.selectVoById(accountId);
     }
 
+    /** 新增科目:计算物化路径;父科目自动标记为非末级 */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean insertByBo(GlAccountBo bo) {
@@ -79,6 +82,7 @@ public class GlAccountServiceImpl implements IGlAccountService {
         return rows > 0;
     }
 
+    /** 修改科目:父级或名称变更时级联刷新子孙物化路径 */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean updateByBo(GlAccountBo bo) {
@@ -101,6 +105,7 @@ public class GlAccountServiceImpl implements IGlAccountService {
         return true;
     }
 
+    /** 删除科目:校验末级/无子科目/无凭证引用/无余额记录 */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean deleteByIds(Long[] accountIds) {
@@ -131,6 +136,7 @@ public class GlAccountServiceImpl implements IGlAccountService {
         return baseMapper.deleteBatchIds(Arrays.asList(accountIds)) > 0;
     }
 
+    /** 查询末级科目(启用、可选按类型过滤),按科目编码排序,供凭证录入下拉 */
     @Override
     public List<GlAccountVo> selectLeafAccounts(String accountType) {
         LambdaQueryWrapper<GlAccount> lqw = Wrappers.lambdaQuery();
@@ -141,6 +147,7 @@ public class GlAccountServiceImpl implements IGlAccountService {
         return baseMapper.selectVoList(lqw);
     }
 
+    /** 校验编码唯一:修改时排除自身 */
     @Override
     public Boolean checkAccountCodeUnique(GlAccountBo bo) {
         boolean exist = baseMapper.exists(new LambdaQueryWrapper<GlAccount>()
@@ -209,6 +216,7 @@ public class GlAccountServiceImpl implements IGlAccountService {
         }
     }
 
+    /** 构建查询 Wrapper:按科目编码/名称/类型/状态过滤,按层级+排序号正序 */
     private LambdaQueryWrapper<GlAccount> buildQueryWrapper(GlAccountBo bo) {
         LambdaQueryWrapper<GlAccount> lqw = Wrappers.lambdaQuery();
         if (bo != null) {

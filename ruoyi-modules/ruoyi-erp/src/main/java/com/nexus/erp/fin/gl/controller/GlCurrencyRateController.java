@@ -26,30 +26,35 @@ public class GlCurrencyRateController extends BaseController {
 
     private final IGlCurrencyRateService glCurrencyRateService;
 
+    /** 分页查询币种汇率 */
     @SaCheckPermission("fin:gl:currency:list")
     @GetMapping("/list")
     public TableDataInfo<GlCurrencyRateVo> list(GlCurrencyRateBo bo, PageQuery pageQuery) {
         return glCurrencyRateService.queryPageList(bo, pageQuery);
     }
 
+    /** 查询币种汇率详情 */
     @SaCheckPermission("fin:gl:currency:list")
     @GetMapping("/{rateId}")
     public R<GlCurrencyRateVo> getInfo(@PathVariable Long rateId) {
         return R.ok(glCurrencyRateService.queryById(rateId));
     }
 
+    /** 新增币种汇率 */
     @SaCheckPermission("fin:gl:currency:add")
     @PostMapping
     public R<Void> add(@Validated @RequestBody GlCurrencyRateBo bo) {
         return toAjax(glCurrencyRateService.insertByBo(bo));
     }
 
+    /** 修改币种汇率 */
     @SaCheckPermission("fin:gl:currency:edit")
     @PutMapping
     public R<Void> edit(@Validated @RequestBody GlCurrencyRateBo bo) {
         return toAjax(glCurrencyRateService.updateByBo(bo));
     }
 
+    /** 删除币种汇率 */
     @SaCheckPermission("fin:gl:currency:remove")
     @DeleteMapping("/{rateIds}")
     public R<Void> remove(@PathVariable Long[] rateIds) {

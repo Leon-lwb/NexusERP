@@ -23,6 +23,7 @@ import java.util.Date;
 @TableName("gl_period")
 public class GlPeriod extends TenantEntity {
 
+    /** 期间ID */
     @TableId(value = "period_id")
     private Long periodId;
 
@@ -50,9 +51,11 @@ public class GlPeriod extends TenantEntity {
     /** 关账时间 */
     private Date closedTime;
 
+    /** 乐观锁版本号 */
     @Version
     private Integer version;
 
+    /** 逻辑删除标志 */
     @TableLogic
     private String delFlag;
 }

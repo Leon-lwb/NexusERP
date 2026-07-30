@@ -37,6 +37,15 @@ public class PayOrder extends TenantEntity {
     @ExcelProperty("订单状态")
     private String orderStatus;
 
+    /** 业务类型 SO_ORDER/AR_RECEIPT(跨库关联业务单据,F1 AR/AP 用) */
+    private String bizType;
+
+    /** 业务单据ID(销售订单ID等) */
+    private Long bizId;
+
+    /** 客户ID(AR 收款核销用) */
+    private Long clientId;
+
     /** 订单总金额（单位：元） */
     @ExcelProperty("订单总金额")
     private BigDecimal totalAmount;

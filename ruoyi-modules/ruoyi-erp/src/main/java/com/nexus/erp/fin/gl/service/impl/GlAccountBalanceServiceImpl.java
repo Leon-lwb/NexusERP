@@ -43,18 +43,21 @@ public class GlAccountBalanceServiceImpl implements IGlAccountBalanceService {
     private final GlAccountBalanceMapper baseMapper;
     private final GlAccountMapper accountMapper;
 
+    /** 过账:按 accountId 聚合借贷金额,setSql 原子累加 period_debit/period_credit */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void applyPosting(Long periodId, List<GlVoucherLine> lines) {
         apply(periodId, lines, true);
     }
 
+    /** 反过账:按 accountId 聚合借贷金额,setSql 原子扣减 period_debit/period_credit */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void reversePosting(Long periodId, List<GlVoucherLine> lines) {
         apply(periodId, lines, false);
     }
 
+    /** 原子累加/扣减科目余额:按 accountId 聚合借贷金额,setSql 原地更新;余额记录不存在时自动创建(唯一索引防并发插入) */
     private void apply(Long periodId, List<GlVoucherLine> lines, boolean add) {
         if (CollUtil.isEmpty(lines)) {
             return;
@@ -102,6 +105,7 @@ public class GlAccountBalanceServiceImpl implements IGlAccountBalanceService {
         }
     }
 
+    /** 试算平衡表:Java 层聚合,期初+/-本期发生=期末;按科目编码排序 */
     @Override
     public List<TrialBalanceVo> trialBalance(Long periodId, String accountType) {
         List<GlAccountBalance> balances = baseMapper.selectList(new LambdaQueryWrapper<GlAccountBalance>()
@@ -149,6 +153,7 @@ public class GlAccountBalanceServiceImpl implements IGlAccountBalanceService {
         return result;
     }
 
+    /** null-safe BigDecimal 取零值 */
     private BigDecimal nz(BigDecimal v) {
         return v == null ? BigDecimal.ZERO : v;
     }

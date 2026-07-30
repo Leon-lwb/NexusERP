@@ -24,6 +24,7 @@ import java.util.Date;
 @TableName("gl_currency_rate")
 public class GlCurrencyRate extends TenantEntity {
 
+    /** 汇率ID */
     @TableId(value = "rate_id")
     private Long rateId;
 
@@ -42,9 +43,11 @@ public class GlCurrencyRate extends TenantEntity {
     /** 类型 MIDDLE/BID/ASK */
     private String rateType;
 
+    /** 乐观锁版本号 */
     @Version
     private Integer version;
 
+    /** 逻辑删除标志 */
     @TableLogic
     private String delFlag;
 }

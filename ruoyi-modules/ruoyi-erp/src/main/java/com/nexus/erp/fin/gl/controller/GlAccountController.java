@@ -33,24 +33,28 @@ public class GlAccountController extends BaseController {
         return R.ok(glAccountService.queryList(bo));
     }
 
+    /** 查询会计科目详情 */
     @SaCheckPermission("fin:gl:account:query")
     @GetMapping("/{accountId}")
     public R<GlAccountVo> getInfo(@PathVariable Long accountId) {
         return R.ok(glAccountService.queryById(accountId));
     }
 
+    /** 新增会计科目 */
     @SaCheckPermission("fin:gl:account:add")
     @PostMapping
     public R<Void> add(@Validated @RequestBody GlAccountBo bo) {
         return toAjax(glAccountService.insertByBo(bo));
     }
 
+    /** 修改会计科目 */
     @SaCheckPermission("fin:gl:account:edit")
     @PutMapping
     public R<Void> edit(@Validated @RequestBody GlAccountBo bo) {
         return toAjax(glAccountService.updateByBo(bo));
     }
 
+    /** 删除会计科目 */
     @SaCheckPermission("fin:gl:account:remove")
     @DeleteMapping("/{accountIds}")
     public R<Void> remove(@PathVariable Long[] accountIds) {

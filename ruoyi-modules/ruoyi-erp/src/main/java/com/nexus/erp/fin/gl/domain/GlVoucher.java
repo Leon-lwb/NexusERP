@@ -71,11 +71,14 @@ public class GlVoucher extends TenantEntity {
     /** 过账时间 */
     private Date postedTime;
 
+    /** 乐观锁版本号 */
     @Version
     private Integer version;
 
+    /** 备注 */
     private String remark;
 
+    /** 逻辑删除标志 */
     @TableLogic
     private String delFlag;
 

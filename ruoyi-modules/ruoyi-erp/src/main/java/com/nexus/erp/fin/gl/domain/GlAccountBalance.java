@@ -23,6 +23,7 @@ import java.math.BigDecimal;
 @TableName("gl_account_balance")
 public class GlAccountBalance extends TenantEntity {
 
+    /** 余额ID */
     @TableId(value = "balance_id")
     private Long balanceId;
 
@@ -56,9 +57,11 @@ public class GlAccountBalance extends TenantEntity {
     /** 年初贷方 */
     private BigDecimal yearOpeningCredit;
 
+    /** 乐观锁版本号 */
     @Version
     private Integer version;
 
+    /** 逻辑删除标志 */
     @TableLogic
     private String delFlag;
 }

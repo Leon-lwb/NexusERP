@@ -33,4 +33,12 @@ public interface RoutingKeyConstants {
     String DELAY_ORDER_TIMEOUT = "delay.order.timeout";
     /** MES 设备状态变更路由键 */
     String MES_EQUIPMENT_STATUS = "mes.equipment.status";
+    /** GL 过账路由键 - 销售发票 (fin -> GL, 匹配 gl.posting.#) */
+    String GL_POSTING_SO_INVOICE = "gl.posting.so.invoice";
+    /** GL 过账路由键 - 采购发票 (fin -> GL) */
+    String GL_POSTING_PU_INVOICE = "gl.posting.pu.invoice";
+    /** GL 过账路由键 - 收付款 (fin -> GL) */
+    String GL_POSTING_RECEIPT = "gl.posting.receipt";
+    /** 支付收款通知路由键 (pay -> ERP, 匹配 pay.received.#) */
+    String PAY_RECEIVED_CALLBACK = "pay.received.callback";
 }

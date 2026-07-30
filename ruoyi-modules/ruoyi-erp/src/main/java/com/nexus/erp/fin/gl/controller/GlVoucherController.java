@@ -32,12 +32,14 @@ public class GlVoucherController extends BaseController {
 
     private final IGlVoucherService glVoucherService;
 
+    /** 分页查询记账凭证 */
     @SaCheckPermission("fin:gl:voucher:list")
     @GetMapping("/list")
     public TableDataInfo<GlVoucherVo> list(GlVoucherBo bo, PageQuery pageQuery) {
         return glVoucherService.queryPageList(bo, pageQuery);
     }
 
+    /** 导出记账凭证 */
     @SaCheckPermission("fin:gl:voucher:export")
     @Log(title = "记账凭证", businessType = BusinessType.EXPORT)
     @PostMapping("/export")
@@ -46,30 +48,35 @@ public class GlVoucherController extends BaseController {
         ExcelUtil.exportExcel(list, "记账凭证数据", GlVoucherVo.class, response);
     }
 
+    /** 查询记账凭证详情 */
     @SaCheckPermission("fin:gl:voucher:query")
     @GetMapping("/{voucherId}")
     public R<GlVoucherVo> getInfo(@PathVariable Long voucherId) {
         return R.ok(glVoucherService.queryById(voucherId));
     }
 
+    /** 新增记账凭证(草稿) */
     @SaCheckPermission("fin:gl:voucher:add")
     @PostMapping
     public R<Void> add(@Validated @RequestBody GlVoucherBo bo) {
         return toAjax(glVoucherService.insertByBo(bo));
     }
 
+    /** 修改记账凭证(草稿) */
     @SaCheckPermission("fin:gl:voucher:edit")
     @PutMapping
     public R<Void> edit(@Validated @RequestBody GlVoucherBo bo) {
         return toAjax(glVoucherService.updateByBo(bo));
     }
 
+    /** 删除记账凭证 */
     @SaCheckPermission("fin:gl:voucher:remove")
     @DeleteMapping("/{voucherIds}")
     public R<Void> remove(@PathVariable Long[] voucherIds) {
         return toAjax(glVoucherService.deleteByIds(voucherIds));
     }
 
+    /** 过账 */
     @SaCheckPermission("fin:gl:voucher:post")
     @PutMapping("/post/{voucherId}")
     public R<Void> post(@PathVariable Long voucherId) {
@@ -77,6 +84,7 @@ public class GlVoucherController extends BaseController {
         return toAjax(1);
     }
 
+    /** 反过账 */
     @SaCheckPermission("fin:gl:voucher:unpost")
     @PutMapping("/unpost/{voucherId}")
     public R<Void> unpost(@PathVariable Long voucherId) {
@@ -84,6 +92,7 @@ public class GlVoucherController extends BaseController {
         return toAjax(1);
     }
 
+    /** 作废记账凭证 */
     @SaCheckPermission("fin:gl:voucher:edit")
     @PutMapping("/cancel/{voucherId}")
     public R<Void> cancel(@PathVariable Long voucherId) {

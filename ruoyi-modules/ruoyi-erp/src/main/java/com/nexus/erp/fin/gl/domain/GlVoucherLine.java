@@ -22,6 +22,7 @@ import java.math.BigDecimal;
 @TableName("gl_voucher_line")
 public class GlVoucherLine extends TenantEntity {
 
+    /** 明细行ID */
     @TableId(value = "line_id")
     private Long lineId;
 
@@ -76,8 +77,10 @@ public class GlVoucherLine extends TenantEntity {
     /** 排序 */
     private Integer sortOrder;
 
+    /** 备注 */
     private String remark;
 
+    /** 逻辑删除标志 */
     @TableLogic
     private String delFlag;
 }

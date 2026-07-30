@@ -38,6 +38,10 @@ import org.flowable.engine.runtime.ProcessInstance;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.context.ApplicationEventPublisher;
+
+import com.nexus.common.tenant.helper.TenantHelper;
+import com.nexus.erp.so.event.SoInvoiceIssuedEvent;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -70,6 +74,7 @@ public class SoInvoiceServiceImpl implements ISoInvoiceService {
     private final ISoSalesOrderHeaderService soSalesOrderHeaderService;
     private final IBdClientService bdClientService;
     private final SoSalesOrderLineMapper soSalesOrderLineMapper;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     /**
      * 分页查询销售发票列表
@@ -514,6 +519,8 @@ public class SoInvoiceServiceImpl implements ISoInvoiceService {
             throw new ServiceException("原发票数据已变更,红冲失败,请重试");
         }
         log.info("发票红冲, originalInvoiceId={}, redInvoiceId={}, redTotal={}", originalInvoiceId, red.getInvoiceId(), redTotal);
+        applicationEventPublisher.publishEvent(
+            new SoInvoiceIssuedEvent(this, red.getInvoiceId(), TenantHelper.getTenantId()));
         return red.getInvoiceId();
     }
 
@@ -625,6 +632,10 @@ public class SoInvoiceServiceImpl implements ISoInvoiceService {
             invoice.setStatus(STATUS_DRAFT);
         }
         baseMapper.updateById(invoice);
+        if (ActStatus.pass.equals(actStatus)) {
+            applicationEventPublisher.publishEvent(
+                new SoInvoiceIssuedEvent(this, invoiceId, TenantHelper.getTenantId()));
+        }
     }
 
     /**

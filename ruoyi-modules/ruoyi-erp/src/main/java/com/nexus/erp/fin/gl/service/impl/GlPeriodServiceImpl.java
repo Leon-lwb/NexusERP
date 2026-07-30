@@ -43,6 +43,7 @@ public class GlPeriodServiceImpl implements IGlPeriodService {
     private final GlPeriodMapper baseMapper;
     private final GlVoucherMapper voucherMapper;
 
+    /** 分页查询会计期间 */
     @Override
     public TableDataInfo<GlPeriodVo> queryPageList(GlPeriodBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<GlPeriod> lqw = buildQueryWrapper(bo);
@@ -50,11 +51,13 @@ public class GlPeriodServiceImpl implements IGlPeriodService {
         return TableDataInfo.build(page);
     }
 
+    /** 根据主键查询期间VO */
     @Override
     public GlPeriodVo queryById(Long periodId) {
         return baseMapper.selectVoById(periodId);
     }
 
+    /** 按日期推导期间:取 fiscalYear+periodNo,不存在则自动创建 OPEN 期间(含起止日期) */
     @Override
     public GlPeriod getOrDerivePeriod(Date voucherDate) {
         Calendar cal = Calendar.getInstance();
@@ -83,6 +86,7 @@ public class GlPeriodServiceImpl implements IGlPeriodService {
         return period;
     }
 
+    /** 关账:仅 OPEN 可关,校验无草稿凭证,乐观锁防并发 */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean closePeriod(Long periodId) {
@@ -109,6 +113,7 @@ public class GlPeriodServiceImpl implements IGlPeriodService {
         return true;
     }
 
+    /** 锁定:仅 CLOSED 可锁定,不可逆,乐观锁防并发 */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean lockPeriod(Long periodId) {
@@ -127,6 +132,7 @@ public class GlPeriodServiceImpl implements IGlPeriodService {
         return true;
     }
 
+    /** 反结账:仅 CLOSED 可反结账为 OPEN,清空关账人/时间,乐观锁防并发 */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean reopenPeriod(Long periodId) {
@@ -147,6 +153,7 @@ public class GlPeriodServiceImpl implements IGlPeriodService {
         return true;
     }
 
+    /** 批量生成 12 个 OPEN 期间:逐月检查,已存在跳过 */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean generateYearPeriods(Integer fiscalYear) {
@@ -173,6 +180,7 @@ public class GlPeriodServiceImpl implements IGlPeriodService {
         return true;
     }
 
+    /** 构建查询 Wrapper:按会计年度/期间号/状态过滤,按年度倒序+期间号正序 */
     private LambdaQueryWrapper<GlPeriod> buildQueryWrapper(GlPeriodBo bo) {
         LambdaQueryWrapper<GlPeriod> lqw = Wrappers.lambdaQuery();
         if (bo != null) {
@@ -185,6 +193,7 @@ public class GlPeriodServiceImpl implements IGlPeriodService {
         return lqw;
     }
 
+    /** LocalDate -> java.util.Date(系统时区 00:00) */
     private Date toDate(LocalDate ld) {
         return Date.from(ld.atStartOfDay(ZoneId.systemDefault()).toInstant());
     }

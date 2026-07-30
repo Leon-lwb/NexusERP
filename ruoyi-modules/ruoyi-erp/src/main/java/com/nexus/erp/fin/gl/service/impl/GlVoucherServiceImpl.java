@@ -61,6 +61,7 @@ public class GlVoucherServiceImpl implements IGlVoucherService {
     private final IGlPeriodService periodService;
     private final IGlAccountBalanceService balanceService;
 
+    /** 分页查询凭证 */
     @Override
     public TableDataInfo<GlVoucherVo> queryPageList(GlVoucherBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<GlVoucher> lqw = buildQueryWrapper(bo);
@@ -68,11 +69,13 @@ public class GlVoucherServiceImpl implements IGlVoucherService {
         return TableDataInfo.build(page);
     }
 
+    /** 查询凭证列表 */
     @Override
     public List<GlVoucherVo> queryList(GlVoucherBo bo) {
         return baseMapper.selectVoList(buildQueryWrapper(bo));
     }
 
+    /** 查询凭证(含明细行,按 lineNo 排序) */
     @Override
     public GlVoucherVo queryById(Long voucherId) {
         GlVoucherVo vo = baseMapper.selectVoById(voucherId);
@@ -85,6 +88,7 @@ public class GlVoucherServiceImpl implements IGlVoucherService {
         return vo;
     }
 
+    /** 新增草稿凭证:校验借贷平衡+末级科目,自动生成凭证号,默认 DRAFT 状态 */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean insertByBo(GlVoucherBo bo) {
@@ -109,6 +113,7 @@ public class GlVoucherServiceImpl implements IGlVoucherService {
         return true;
     }
 
+    /** 更新草稿凭证:差量更新明细行,乐观锁防并发,仅 DRAFT 可修改 */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean updateByBo(GlVoucherBo bo) {
@@ -137,6 +142,7 @@ public class GlVoucherServiceImpl implements IGlVoucherService {
         return true;
     }
 
+    /** 删除凭证:仅 DRAFT 可删除,级联删除明细行 */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean deleteByIds(Long[] voucherIds) {
@@ -151,6 +157,7 @@ public class GlVoucherServiceImpl implements IGlVoucherService {
         return baseMapper.deleteBatchIds(Arrays.asList(voucherIds)) > 0;
     }
 
+    /** 过账:DRAFT->POSTED;校验借贷平衡+末级科目+期间开放;乐观锁改状态+version;写科目余额 */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void post(Long voucherId) {
@@ -185,6 +192,7 @@ public class GlVoucherServiceImpl implements IGlVoucherService {
         balanceService.applyPosting(period.getPeriodId(), lines);
     }
 
+    /** 反过账:POSTED->DRAFT;LOCKED 期间不可操作;回滚科目余额;乐观锁防并发 */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void unpost(Long voucherId) {
@@ -214,6 +222,7 @@ public class GlVoucherServiceImpl implements IGlVoucherService {
         }
     }
 
+    /** 作废:DRAFT/POSTED->CANCELLED;POSTED 时先回滚余额+LOCKED 期间不可操作;乐观锁防并发 */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void cancel(Long voucherId) {
@@ -244,6 +253,7 @@ public class GlVoucherServiceImpl implements IGlVoucherService {
         }
     }
 
+    /** 业务自动制单+直过账:幂等(同 source+sourceId 已制单返回既有);校验借贷平衡+末级科目+期间开放;写科目余额 */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public GlVoucherVo createAndPost(VoucherBuildRequest req) {
@@ -328,6 +338,7 @@ public class GlVoucherServiceImpl implements IGlVoucherService {
         return new BigDecimal[]{dr, cr};
     }
 
+    /** 批量插入明细行,从 1 开始分配 lineNo */
     private void insertLines(Long voucherId, List<GlVoucherLine> lines) {
         if (CollUtil.isEmpty(lines)) {
             return;
@@ -371,15 +382,18 @@ public class GlVoucherServiceImpl implements IGlVoucherService {
         }
     }
 
+    /** 生成凭证号:凭证字 + MyBatis-Plus IdWorker */
     private String genVoucherNo(String voucherWord) {
         String word = StringUtils.isBlank(voucherWord) ? "PZ" : voucherWord;
         return word + IdWorker.getId();
     }
 
+    /** null-safe BigDecimal 取零值 */
     private BigDecimal nz(BigDecimal v) {
         return v == null ? BigDecimal.ZERO : v;
     }
 
+    /** 构建查询 Wrapper:按凭证号/状态/来源/期间/日期范围过滤,按日期+凭证号倒序 */
     private LambdaQueryWrapper<GlVoucher> buildQueryWrapper(GlVoucherBo bo) {
         LambdaQueryWrapper<GlVoucher> lqw = Wrappers.lambdaQuery();
         if (bo != null) {

@@ -58,6 +58,7 @@ public class GlVoucherBo extends BaseEntity {
     /** 期间ID(查询用) */
     private Long periodId;
 
+    /** 备注 */
     private String remark;
 
     /** 明细行 */

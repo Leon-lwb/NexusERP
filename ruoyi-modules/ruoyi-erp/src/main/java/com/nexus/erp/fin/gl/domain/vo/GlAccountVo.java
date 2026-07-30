@@ -38,27 +38,39 @@ public class GlAccountVo implements Serializable {
     @ExcelProperty(value = "余额方向")
     private String balanceDir;
 
+    /** 父科目ID(0=顶级) */
     private Long parentId;
 
+    /** 层级(1=一级) */
     private Integer levelNum;
 
+    /** 路径ID串 */
     private String pathIds;
 
+    /** 路径名称串 */
     private String pathNames;
 
+    /** 是否末级 */
     private String isLeaf;
 
+    /** 是否统驭科目 */
     private String isRecon;
 
+    /** 统驭类型 */
     private String reconType;
 
+    /** 是否未清项管理 */
     private String isOpenItem;
 
+    /** 币种 */
     private String currency;
 
+    /** 状态 */
     private String status;
 
+    /** 排序 */
     private Integer sortOrder;
 
+    /** 乐观锁版本号 */
     private Integer version;
 }

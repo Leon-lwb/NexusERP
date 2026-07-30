@@ -35,6 +35,13 @@ public class AccountingPosterRegistry {
         log.info("AccountingPoster 注册 {} 个: {}", map.size(), map.keySet());
     }
 
+    /**
+     * 按来源类型获取 Poster。
+     *
+     * @param sourceType 来源类型(对应 GlConstants.SOURCE_*)
+     * @return AccountingPoster 实现
+     * @throws ServiceException 若未找到对应类型的 Poster
+     */
     public AccountingPoster get(String sourceType) {
         AccountingPoster poster = map.get(sourceType);
         if (poster == null) {

@@ -45,9 +45,12 @@ public class GlPeriodVo implements Serializable {
     @ExcelProperty(value = "状态")
     private String status;
 
+    /** 关账人 */
     private Long closedBy;
 
+    /** 关账时间 */
     private Date closedTime;
 
+    /** 乐观锁版本号 */
     private Integer version;
 }

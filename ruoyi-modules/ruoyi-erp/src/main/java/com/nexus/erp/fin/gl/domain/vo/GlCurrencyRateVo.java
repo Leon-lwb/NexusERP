@@ -31,6 +31,7 @@ public class GlCurrencyRateVo implements Serializable {
     @ExcelProperty(value = "币种")
     private String currency;
 
+    /** 本位币 */
     private String baseCurrency;
 
     @ExcelProperty(value = "汇率日期")
@@ -39,7 +40,9 @@ public class GlCurrencyRateVo implements Serializable {
     @ExcelProperty(value = "汇率")
     private BigDecimal rate;
 
+    /** 汇率类型 */
     private String rateType;
 
+    /** 乐观锁版本号 */
     private Integer version;
 }

@@ -21,17 +21,24 @@ import java.util.Date;
 @AutoMapper(target = GlPeriod.class, reverseConvertGenerate = false)
 public class GlPeriodBo extends BaseEntity {
 
+    /** 期间ID */
     private Long periodId;
 
+    /** 会计年度 */
     private Integer fiscalYear;
 
+    /** 期间号 */
     private Integer periodNo;
 
+    /** 期间名称 */
     private String periodName;
 
+    /** 开始日期 */
     private Date startDate;
 
+    /** 结束日期 */
     private Date endDate;
 
+    /** 状态 */
     private String status;
 }

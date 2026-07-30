@@ -19,14 +19,19 @@ public class TrialBalanceVo implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
 
+    /** 科目ID */
     private Long accountId;
 
+    /** 科目编码 */
     private String accountCode;
 
+    /** 科目名称 */
     private String accountName;
 
+    /** 科目类型 */
     private String accountType;
 
+    /** 余额方向 */
     private String balanceDir;
 
     /** 期初借方 */

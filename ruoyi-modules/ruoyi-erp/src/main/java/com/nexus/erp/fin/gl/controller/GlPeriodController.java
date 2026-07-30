@@ -26,36 +26,42 @@ public class GlPeriodController extends BaseController {
 
     private final IGlPeriodService glPeriodService;
 
+    /** 分页查询会计期间 */
     @SaCheckPermission("fin:gl:period:list")
     @GetMapping("/list")
     public TableDataInfo<GlPeriodVo> list(GlPeriodBo bo, PageQuery pageQuery) {
         return glPeriodService.queryPageList(bo, pageQuery);
     }
 
+    /** 查询会计期间详情 */
     @SaCheckPermission("fin:gl:period:list")
     @GetMapping("/{periodId}")
     public R<GlPeriodVo> getInfo(@PathVariable Long periodId) {
         return R.ok(glPeriodService.queryById(periodId));
     }
 
+    /** 关闭会计期间 */
     @SaCheckPermission("fin:gl:period:edit")
     @PutMapping("/close/{periodId}")
     public R<Void> close(@PathVariable Long periodId) {
         return toAjax(glPeriodService.closePeriod(periodId));
     }
 
+    /** 锁定会计期间 */
     @SaCheckPermission("fin:gl:period:edit")
     @PutMapping("/lock/{periodId}")
     public R<Void> lock(@PathVariable Long periodId) {
         return toAjax(glPeriodService.lockPeriod(periodId));
     }
 
+    /** 重新开启会计期间 */
     @SaCheckPermission("fin:gl:period:edit")
     @PutMapping("/reopen/{periodId}")
     public R<Void> reopen(@PathVariable Long periodId) {
         return toAjax(glPeriodService.reopenPeriod(periodId));
     }
 
+    /** 生成年度会计期间 */
     @SaCheckPermission("fin:gl:period:edit")
     @PostMapping("/generateYear/{fiscalYear}")
     public R<Void> generateYear(@PathVariable Integer fiscalYear) {

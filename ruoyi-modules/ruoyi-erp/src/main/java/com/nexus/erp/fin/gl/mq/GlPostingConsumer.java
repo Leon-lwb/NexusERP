@@ -28,11 +28,13 @@ public class GlPostingConsumer extends BaseMessageConsumer<GlPostingMessage> {
 
     private final AccountingPosterRegistry registry;
 
+    /** 返回消息类型(GlPostingMessage) */
     @Override
     protected Class<GlPostingMessage> getMessageClass() {
         return GlPostingMessage.class;
     }
 
+    /** 消费 GL 过账消息:按 sourceType 从 Registry 取 Poster 调用 post();继承 BaseMessageConsumer 的幂等/重试机制 */
     @Override
     protected void doProcess(GlPostingMessage message) {
         log.info("处理 GL 过账消息: source={}, sourceId={}", message.getSourceType(), message.getSourceId());
@@ -46,6 +48,7 @@ public class GlPostingConsumer extends BaseMessageConsumer<GlPostingMessage> {
         }
     }
 
+    /** 执行过账:从 Registry 获取对应 AccountingPoster 并构建 PostingContext 调用 post() */
     private void doPost(GlPostingMessage message) {
         AccountingPoster poster = registry.get(message.getSourceType());
         PostingContext ctx = PostingContext.builder()

@@ -30,6 +30,10 @@ import com.nexus.erp.wm.domain.WmMaterialReceiveLine;
 import com.nexus.erp.wm.mapper.WmMaterialReceiveLineMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.context.ApplicationEventPublisher;
+
+import com.nexus.common.tenant.helper.TenantHelper;
+import com.nexus.erp.pu.invoice.event.PuInvoiceIssuedEvent;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -61,6 +65,7 @@ public class PuInvoiceServiceImpl implements IPuInvoiceService {
     private final IBdVendorService bdVendorService;
     private final PuPurchaseOrderLineMapper puPurchaseOrderLineMapper;
     private final WmMaterialReceiveLineMapper wmMaterialReceiveLineMapper;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     /**
      * 分页查询进项发票列表。
@@ -374,6 +379,8 @@ public class PuInvoiceServiceImpl implements IPuInvoiceService {
         if (rows == 0) {
             throw new ServiceException("发票数据已变更,收票确认失败,请重试");
         }
+        applicationEventPublisher.publishEvent(
+            new PuInvoiceIssuedEvent(this, invoiceId, TenantHelper.getTenantId()));
     }
 
     /**
@@ -632,6 +639,8 @@ public class PuInvoiceServiceImpl implements IPuInvoiceService {
         // 冲减原发票已核销金额;若已抵扣则进项转出
         offsetOriginal(original, redTotal.abs());
         log.info("进项发票红冲(全量), originalInvoiceId={}, redInvoiceId={}, redTotal={}", originalInvoiceId, redId, redTotal);
+        applicationEventPublisher.publishEvent(
+            new PuInvoiceIssuedEvent(this, redId, TenantHelper.getTenantId()));
         return redId;
     }
 
@@ -686,6 +695,8 @@ public class PuInvoiceServiceImpl implements IPuInvoiceService {
         offsetOriginal(original, redTotal.abs());
         log.info("退货进项转出(部分红冲), originalInvoiceId={}, redInvoiceId={}, redTotal={}",
             originalInvoiceId, redId, redTotal);
+        applicationEventPublisher.publishEvent(
+            new PuInvoiceIssuedEvent(this, redId, TenantHelper.getTenantId()));
         return redId;
     }
 

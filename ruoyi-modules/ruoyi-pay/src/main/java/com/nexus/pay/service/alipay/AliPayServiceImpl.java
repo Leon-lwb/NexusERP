@@ -11,6 +11,10 @@ import com.nexus.pay.domain.PayOrder;
 import com.nexus.pay.service.IPayOrderService;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
+import com.nexus.common.mq.constant.ExchangeConstants;
+import com.nexus.common.mq.constant.RoutingKeyConstants;
+import com.nexus.common.mq.domain.PayReceivedMessage;
+import com.nexus.common.mq.producer.ReliableMessageProducer;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -33,9 +37,13 @@ public class AliPayServiceImpl implements IAliPayService {
     /** 支付宝 SDK 全局配置。 */
     private final Config config;
 
-    public AliPayServiceImpl(IPayOrderService payOrderService, Config config) {
+    /** MQ 生产者，支付成功后通知 ERP 建收款单+核销(F1 AR/AP)。 */
+    private final ReliableMessageProducer messageProducer;
+
+    public AliPayServiceImpl(IPayOrderService payOrderService, Config config, ReliableMessageProducer messageProducer) {
         this.payOrderService = payOrderService;
         this.config = config;
+        this.messageProducer = messageProducer;
     }
 
     /**
@@ -115,6 +123,7 @@ public class AliPayServiceImpl implements IAliPayService {
                 if (Factory.Payment.Common().verifyNotify(params)) {
                     payOrder.setOrderStatus("已支付");
                     payOrderService.updatePayOrder(payOrder);
+                    sendPayReceived(payOrder);
                 }
                 return "success";
             } catch (Exception e) {
@@ -122,6 +131,28 @@ public class AliPayServiceImpl implements IAliPayService {
             }
         }
         return "fail";
+    }
+
+    /**
+     * 发送支付收款通知 MQ(ERP 侧 PayReceivedConsumer 建收款单 + FIFO 自动核销)。
+     */
+    private void sendPayReceived(PayOrder payOrder) {
+        try {
+            PayReceivedMessage msg = new PayReceivedMessage();
+            msg.setPayOrderNumber(payOrder.getOrderNumber());
+            msg.setAmount(payOrder.getActualAmount());
+            msg.setThirdPartyNo(payOrder.getThirdNumber());
+            msg.setBizType(payOrder.getBizType());
+            msg.setBizId(payOrder.getBizId());
+            msg.setClientId(payOrder.getClientId());
+            msg.setPayType("alipay");
+            msg.setTenantIdStr(payOrder.getTenantId());
+            msg.setSourceModule("pay");
+            messageProducer.send(ExchangeConstants.TOPIC_EXCHANGE, RoutingKeyConstants.PAY_RECEIVED_CALLBACK, msg);
+            log.info("发送支付收款通知: orderNumber={}, amount={}", payOrder.getOrderNumber(), payOrder.getActualAmount());
+        } catch (Exception e) {
+            log.error("发送支付收款通知失败: orderNumber={}", payOrder.getOrderNumber(), e);
+        }
     }
 
     /**

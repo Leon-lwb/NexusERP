@@ -71,9 +71,11 @@ public class GlAccount extends TenantEntity {
     /** 排序 */
     private Integer sortOrder;
 
+    /** 乐观锁版本号 */
     @Version
     private Integer version;
 
+    /** 逻辑删除标志 */
     @TableLogic
     private String delFlag;
 }

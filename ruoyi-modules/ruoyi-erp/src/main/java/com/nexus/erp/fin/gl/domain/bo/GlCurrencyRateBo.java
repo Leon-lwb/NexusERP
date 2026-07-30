@@ -24,18 +24,24 @@ import java.util.Date;
 @AutoMapper(target = GlCurrencyRate.class, reverseConvertGenerate = false)
 public class GlCurrencyRateBo extends BaseEntity {
 
+    /** 汇率ID */
     private Long rateId;
 
+    /** 币种 */
     @NotBlank(message = "币种不能为空")
     private String currency;
 
+    /** 本位币 */
     private String baseCurrency;
 
+    /** 汇率日期 */
     @NotNull(message = "汇率日期不能为空")
     private Date rateDate;
 
+    /** 汇率 */
     @NotNull(message = "汇率不能为空")
     private BigDecimal rate;
 
+    /** 汇率类型 */
     private String rateType;
 }

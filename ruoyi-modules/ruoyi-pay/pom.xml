@@ -62,6 +62,12 @@
             <artifactId>ruoyi-common-idempotent</artifactId>
         </dependency>
 
+        <!-- MQ:支付回调通知 ERP 建收款单+核销(F1 AR/AP) -->
+        <dependency>
+            <groupId>com.nexus</groupId>
+            <artifactId>ruoyi-common-mq</artifactId>
+        </dependency>
+
         <!-- 支付宝支付SDK -->
         <dependency>
             <groupId>com.alipay.sdk</groupId>
