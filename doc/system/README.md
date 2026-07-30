@@ -10,6 +10,8 @@
 | [NexusERP_三模块共同升级方案.md](./NexusERP_三模块共同升级方案.md) | ERP/MES/IoT 协同升级路线图（三波次，约 13 周） | 待审核 |
 | [NexusERP_代码审计报告与修复进度.md](./NexusERP_代码审计报告与修复进度.md) | 全模块代码审计（42 问题） | 🚧 CRITICAL 已修复，37 个待修复 |
 | [NexusERP_plus-ui前端优化方案.md](./NexusERP_plus-ui前端优化方案.md) | plus-ui 前端优化（5 阶段已完成 + 推广批次待开始） | ✅ 阶段 0-4 已完成，⬜ 批次 1-4 待推广 |
+| [2026-07-29-system-gap-analysis-vs-mainstream.md](./2026-07-29-system-gap-analysis-vs-mainstream.md) | 与主流 MES/ERP/IoT/AI 功能差距分析（对标 SAP/西门子/AWS/Dify 等） | ✅ 已发布 |
+| [2026-07-29-erp-financial-core-dev-plan.md](../erp/plans/2026-07-29-erp-financial-core-dev-plan.md) | ERP 财务核心模块开发计划（GL/AR-AP/FA/CO/预算，差距分析的财务补齐路线，F0-F7 约 20-25 人周） | 📋 规划待评审 |
 
 ### 部署（deployment/）
 | 文档/配置 | 路径 | 说明 |

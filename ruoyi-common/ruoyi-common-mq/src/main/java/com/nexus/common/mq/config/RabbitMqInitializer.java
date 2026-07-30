@@ -69,6 +69,13 @@ public class RabbitMqInitializer {
         // MES 设备状态变更队列(设备状态变更广播, 供排产/工单模块异步感知)
         declareQueueWithDLX(QueueConstants.MES_EQUIPMENT_STATUS_QUEUE, ExchangeConstants.TOPIC_EXCHANGE, "mes.equipment.#");
 
+        // GL 财务过账队列(业务单据事件 -> AccountingPoster 异步制单, fin.gl)
+        declareQueueWithDLX(QueueConstants.GL_POSTING_QUEUE, ExchangeConstants.TOPIC_EXCHANGE, "gl.posting.#");
+        // 支付收款通知队列(pay -> ERP, 跨库, F1 AR/AP 用)
+        declareQueueWithDLX(QueueConstants.PAY_RECEIVED_QUEUE, ExchangeConstants.TOPIC_EXCHANGE, "pay.received.#");
+        // 电票开具结果队列(电子发票平台回调, F7 用)
+        declareQueueWithDLX(QueueConstants.EINVOICE_ISSUE_RESULT_QUEUE, ExchangeConstants.TOPIC_EXCHANGE, "einvoice.issue.result.#");
+
         declareDelayQueue();
         declareDlxQueue();
     }

@@ -17,6 +17,13 @@
 | 文档 | 编号 | 主题 | 日期 |
 |------|------|------|------|
 | [2026-06-30-erp-wm-3d-warehouse-plan.md](./plans/archive/2026-06-30-erp-wm-3d-warehouse-plan.md) | NexusERP-PLAN-2026-003 | 仓储管理（wm）3D 可视化仓库实施计划 | 2026-06-30 |
+| [2026-07-29-erp-financial-core-dev-plan.md](./plans/2026-07-29-erp-financial-core-dev-plan.md) | NexusERP-PLAN-2026-005 | 财务核心模块开发计划（GL/AR-AP/FA/CO/预算，对标主流 ERP，承接发票域 spec P3-P5） | 2026-07-29 |
+
+### 设计规格（specs/）
+| 文档 | 编号 | 主题 | 日期 |
+|------|------|------|------|
+| [2026-07-15-invoicing-ar-ap-redesign.md](./specs/2026-07-15-invoicing-ar-ap-redesign.md) | - | 开票与应收应付优化设计（发票域 P0-P5，P0-P2 已落地，P3-P5 已设计） | 2026-07-15 |
+| [2026-07-29-f0-gl-ledger-impl-spec.md](./specs/2026-07-29-f0-gl-ledger-impl-spec.md) | NexusERP-SPEC-2026-005-F0 | F0 GL 总账详细实施（6 表 DDL/科目 seed/凭证引擎/期间/余额/AccountingPoster SPI/试算平衡） | 2026-07-29 |
 
 ### SQL 脚本（sql/）
 全部开发期 SQL 已执行到本地库并并入权威 schema：业务表 DDL 并入 `script/sql/ry-erp.sql`，菜单/字典并入 `script/sql/ry-vue.sql`。原始脚本归档于 [sql/archive/](./sql/archive/)（18 个），演示/测试数据在 [sql/test-data/](./sql/test-data/)（3 个）。

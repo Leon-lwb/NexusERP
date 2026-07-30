@@ -1,0 +1,14 @@
+package com.nexus.erp.fin.gl.mapper;
+
+import com.nexus.common.mybatis.core.mapper.BaseMapperPlus;
+import com.nexus.erp.fin.gl.domain.GlVoucher;
+import com.nexus.erp.fin.gl.domain.vo.GlVoucherVo;
+
+/**
+ * 记账凭证 Mapper
+ *
+ * @author nexus
+ * @date 2026-07-29
+ */
+public interface GlVoucherMapper extends BaseMapperPlus<GlVoucher, GlVoucherVo> {
+}

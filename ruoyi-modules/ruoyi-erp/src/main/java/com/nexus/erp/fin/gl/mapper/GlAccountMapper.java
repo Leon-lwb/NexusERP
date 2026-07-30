@@ -1,0 +1,14 @@
+package com.nexus.erp.fin.gl.mapper;
+
+import com.nexus.common.mybatis.core.mapper.BaseMapperPlus;
+import com.nexus.erp.fin.gl.domain.GlAccount;
+import com.nexus.erp.fin.gl.domain.vo.GlAccountVo;
+
+/**
+ * 会计科目 Mapper
+ *
+ * @author nexus
+ * @date 2026-07-29
+ */
+public interface GlAccountMapper extends BaseMapperPlus<GlAccount, GlAccountVo> {
+}
