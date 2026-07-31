@@ -232,16 +232,18 @@ public class ReportDataServiceImpl implements IReportDataService {
             .in(GlAccountBalance::getPeriodId, periodIds));
     }
 
-    /** 按匹配规则取期末净额(资产负债表):净额=期初+本期发生(Java 聚合,closing 列未落库),贷方科目取反,乘 sign */
+    /** 按匹配规则取期末净额(资产负债表):净额=期初+本期发生(Java 聚合,closing 列未落库),贷方科目取反,乘 sign 与科目方向因子 */
     private BigDecimal matchClosingAmount(ReportItem item, Map<Long, GlAccountBalance> balanceMap) {
-        List<Long> ids = matchAccountIds(item, balanceMap.keySet());
-        if (CollUtil.isEmpty(ids)) {
+        Map<Long, Integer> matched = matchAccountIds(item, balanceMap.keySet());
+        if (CollUtil.isEmpty(matched)) {
             return BigDecimal.ZERO;
         }
-        Map<Long, GlAccount> accountMap = loadAccountMap(ids);
+        Map<Long, GlAccount> accountMap = loadAccountMap(new ArrayList<>(matched.keySet()));
         BigDecimal total = BigDecimal.ZERO;
         int sign = parseSign(item.getSign());
-        for (Long id : ids) {
+        for (Map.Entry<Long, Integer> entry : matched.entrySet()) {
+            Long id = entry.getKey();
+            int factor = entry.getValue();
             GlAccountBalance b = balanceMap.get(id);
             GlAccount a = accountMap.get(id);
             if (b == null || a == null) {
@@ -253,21 +255,23 @@ public class ReportDataServiceImpl implements IReportDataService {
             if ("CREDIT".equals(a.getBalanceDir())) {
                 net = net.negate();
             }
-            total = total.add(net.multiply(BigDecimal.valueOf(sign)));
+            total = total.add(net.multiply(BigDecimal.valueOf(sign * factor)));
         }
         return total;
     }
 
-    /** 本期发生净额(利润表本期):period_debit/period_credit 净额,贷方科目取反,乘 sign */
+    /** 本期发生净额(利润表本期):period_debit/period_credit 净额,贷方科目取反,乘 sign 与科目方向因子 */
     private BigDecimal matchPeriodAmount(ReportItem item, Map<Long, GlAccountBalance> balanceMap) {
-        List<Long> ids = matchAccountIds(item, balanceMap.keySet());
-        if (CollUtil.isEmpty(ids)) {
+        Map<Long, Integer> matched = matchAccountIds(item, balanceMap.keySet());
+        if (CollUtil.isEmpty(matched)) {
             return BigDecimal.ZERO;
         }
-        Map<Long, GlAccount> accountMap = loadAccountMap(ids);
+        Map<Long, GlAccount> accountMap = loadAccountMap(new ArrayList<>(matched.keySet()));
         BigDecimal total = BigDecimal.ZERO;
         int sign = parseSign(item.getSign());
-        for (Long id : ids) {
+        for (Map.Entry<Long, Integer> entry : matched.entrySet()) {
+            Long id = entry.getKey();
+            int factor = entry.getValue();
             GlAccountBalance b = balanceMap.get(id);
             GlAccount a = accountMap.get(id);
             if (b == null || a == null) {
@@ -277,7 +281,7 @@ public class ReportDataServiceImpl implements IReportDataService {
             if ("CREDIT".equals(a.getBalanceDir())) {
                 net = net.negate();
             }
-            total = total.add(net.multiply(BigDecimal.valueOf(sign)));
+            total = total.add(net.multiply(BigDecimal.valueOf(sign * factor)));
         }
         return total;
     }
@@ -302,10 +306,12 @@ public class ReportDataServiceImpl implements IReportDataService {
         Map<Long, GlAccount> accountMap = loadAccountMap(new ArrayList<>(agg.keySet()));
         Map<String, BigDecimal> result = new HashMap<>();
         for (ReportItem item : items) {
-            List<Long> ids = matchAccountIds(item, agg.keySet());
+            Map<Long, Integer> matched = matchAccountIds(item, agg.keySet());
             BigDecimal total = BigDecimal.ZERO;
             int sign = parseSign(item.getSign());
-            for (Long id : ids) {
+            for (Map.Entry<Long, Integer> entry : matched.entrySet()) {
+                Long id = entry.getKey();
+                int factor = entry.getValue();
                 GlAccountBalance b = agg.get(id);
                 GlAccount a = accountMap.get(id);
                 if (b == null || a == null) {
@@ -315,64 +321,72 @@ public class ReportDataServiceImpl implements IReportDataService {
                 if ("CREDIT".equals(a.getBalanceDir())) {
                     net = net.negate();
                 }
-                total = total.add(net.multiply(BigDecimal.valueOf(sign)));
+                total = total.add(net.multiply(BigDecimal.valueOf(sign * factor)));
             }
             result.put(item.getItemCode(), total);
         }
         return result;
     }
 
-    /** 现金流量表本期:sign=1 取贷方发生(收现),sign=-1 取借方发生(付现) */
+    /** 现金流量表本期:sign=1 取贷方发生(收现),sign=-1 取借方发生(付现);"-" 前缀科目反向 */
     private BigDecimal matchCashAmount(ReportItem item, Map<Long, GlAccountBalance> balanceMap) {
-        List<Long> ids = matchAccountIds(item, balanceMap.keySet());
-        if (CollUtil.isEmpty(ids)) {
+        Map<Long, Integer> matched = matchAccountIds(item, balanceMap.keySet());
+        if (CollUtil.isEmpty(matched)) {
             return BigDecimal.ZERO;
         }
         BigDecimal total = BigDecimal.ZERO;
         int sign = parseSign(item.getSign());
-        for (Long id : ids) {
-            GlAccountBalance b = balanceMap.get(id);
+        for (Map.Entry<Long, Integer> entry : matched.entrySet()) {
+            GlAccountBalance b = balanceMap.get(entry.getKey());
             if (b == null) {
                 continue;
             }
+            int factor = entry.getValue();
             if (sign > 0) {
-                total = total.add(nz(b.getPeriodCredit()));
+                total = total.add(nz(b.getPeriodCredit()).multiply(BigDecimal.valueOf(factor)));
             } else {
-                total = total.add(nz(b.getPeriodDebit()));
+                total = total.add(nz(b.getPeriodDebit()).multiply(BigDecimal.valueOf(factor)));
             }
         }
         return total;
     }
 
-    /** 匹配科目ID:精确编码或前缀通配(如 2221% 匹配 2221/2221.01/2221.02) */
-    private List<Long> matchAccountIds(ReportItem item, Set<Long> balanceIds) {
+    /** 匹配科目ID及方向:精确编码或前缀通配(如 2221% 匹配 2221/2221.01/2221.02);
+     *  支持 "-" 前缀表抵减科目(contra,贡献取反),如 "1601,-1602" 固定资产净值=原值-累计折旧。
+     *  返回 Map<accountId, factor(1|-1)>。 */
+    private Map<Long, Integer> matchAccountIds(ReportItem item, Set<Long> balanceIds) {
         if (StringUtils.isBlank(item.getAccountCodeMatch()) || CollUtil.isEmpty(balanceIds)) {
-            return new ArrayList<>();
+            return new HashMap<>();
         }
         List<GlAccount> accounts = accountMapper.selectList(new LambdaQueryWrapper<GlAccount>()
             .in(GlAccount::getAccountId, balanceIds));
-        List<Long> matched = new ArrayList<>();
+        Map<Long, Integer> matched = new HashMap<>();
         for (String pattern : item.getAccountCodeMatch().split(",")) {
             String p = pattern.trim();
             if (p.isEmpty()) {
                 continue;
             }
+            boolean contra = p.startsWith("-");
+            if (contra) {
+                p = p.substring(1);
+            }
+            int factor = contra ? -1 : 1;
             if (p.endsWith("%")) {
                 String prefix = p.substring(0, p.length() - 1);
                 for (GlAccount a : accounts) {
                     if (a.getAccountCode().startsWith(prefix)) {
-                        matched.add(a.getAccountId());
+                        matched.put(a.getAccountId(), factor);
                     }
                 }
             } else {
                 for (GlAccount a : accounts) {
                     if (p.equals(a.getAccountCode())) {
-                        matched.add(a.getAccountId());
+                        matched.put(a.getAccountId(), factor);
                     }
                 }
             }
         }
-        return matched.stream().distinct().collect(Collectors.toList());
+        return matched;
     }
 
     /** 科目表 Map(accountId -> account) */
