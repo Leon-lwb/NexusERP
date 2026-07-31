@@ -453,38 +453,42 @@ String GL_POSTING_QUEUE = "erp.gl.posting.queue";            // 业务单据过�
 | P0 基础修补(开票四要素/invoicedQty/价税分离/pay decimal/字典) | ✅ 已落地 | F1 复用 |
 | P1 销售开票闭环 | ✅ 已落地(E2E 基本通过) | F1 发票过账源头 |
 | P2 采购进项发票 | ✅ 已落地(编译/造数通过,运行时待跑) | F1 发票过账源头 |
-| **P3 AR/AP + 核销** | 📐 已设计未实现 | **F1 承接**(fin_receipt/fin_settlement/settle 复用 spec 设计 + 补 GL 过账) |
-| **P4 电子发票网关** | 📐 已设计未实现 | **F7 承接**(EInvoiceGateway SPI + 数电票) |
-| **P5 财务对账** | 📐 已设计未实现 | **F6 承接**(fin_reconciliation + 银行勾对) |
+| **P3 AR/AP + 核销** | ✅ **F1 已落地**(fin_receipt/fin_settlement/settle + GL 过账 + 账龄) | F1 |
+| **P4 电子发票网关** | 📐 已设计未实现 | **F7 承接**(EInvoiceGateway SPI + 数电票),暂缓(无平台凭证) |
+| **P5 财务对账** | 📐 已设计未实现 | **F6 承接**(fin_reconciliation + 银行勾对),暂缓(无银行流水数据源) |
 | —(spec 未覆盖) | ❌ | **F0 GL / F2 FA / F3 CO / F4 预算 / F5 报表关账**(本计划新增) |
 
 > 本计划不替代发票域 spec,而是**在其之上补齐会计核心**。spec 的 P3/P4/P5 设计(表结构、MQ、决议)直接复用,F1/F6/F7 在其基础上增加 GL 过账维度。
 
 ---
 
-## 十二、文件清单与工作量预估
+## 十二、文件清单与工作量预估(实施状态)
 
-| 阶段 | 工作量 | 主要新增 |
-|---|---|---|
-| F0 GL 总账 | 2-3 周 | `fin.gl` 整包(5 实体)+ 科目初始化 SQL + 试算报表 |
-| F1 AR/AP 核销 | 3-4 周 | `fin.arap` 整包 + AccountingPoster(发票/收付款)+ `PayReceivedConsumer` + 账龄报表 + 权限拆分 |
-| F2 固定资产 | 2-3 周 | `fin.fa` 整包(4 实体)+ 折旧引擎 + 处置 |
-| F3 成本核算 | 4-5 周 | `fin.co` 整包 + BOM 卷积 + 存货计价 + 差异(F3-a 先行) |
-| F4 预算 | 2 周 | `fin.budget` 整包 + 预算检查拦截 |
-| F5 报表与关账 | 3 周 | `fin.report` + 三大报表取数 + 损益结转 + 月结年结向导 |
-| F6 财务对账 | 2 周 | `fin.reconciliation` 整包 + 银行流水导入/勾对 |
-| F7 电票网关 | 2-3 周 | `fin.einvoice` SPI + Manual 实现 + 平台占位 |
-| **合计** | **~20-25 人周** | 分阶段交付,F0+F1 为最高优先级(MVP P0) |
+> 截至 2026-08-01:**F0 / F1 / F5 / F2 / F3-a 全部落地并 E2E 验证**;F4 / F6 / F7 经代码现状审查后**决定暂不实施**(无需求/无数据源);另补最小 pay 收款入口解决自动收款断链。审查报告见会话记录,阶段详情见各 impl spec。
 
-> 建议实施顺序:F0 → F1 → F5(试算+基础报表,验证 GL 闭环)→ F2 → F3-a → F6 → F4 → F3-b → F7。F7 可与任意阶段并行(Mock 不阻塞)。
+| 阶段 | 工作量 | 主要新增 | 状态 |
+|---|---|---|---|
+| F0 GL 总账 | 2-3 周 | `fin.gl` 整包(5 实体)+ 科目初始化 SQL + 试算报表 | ✅ 已落地(`2026-07-29-f0-gl-ledger-impl-spec.md`) |
+| F1 AR/AP 核销 | 3-4 周 | `fin.arap` 整包 + AccountingPoster(发票/收付款)+ `PayReceivedConsumer` + 账龄报表 + 权限拆分 | ✅ 已落地(`2026-07-30-f1-ar-ap-reconciliation-impl-spec.md`;pay 模块 `ruoyi-modules/ruoyi-pay` 真实存在,支付宝/微信回调已发 PAY_RECEIVED_CALLBACK) |
+| F2 固定资产 | 2-3 周 | `fin.fa` 整包(4 实体)+ 折旧引擎 + 处置 | ✅ 已落地(`2026-08-01-f2-fixed-assets-impl-spec.md`) |
+| F3 成本核算 | 4-5 周 | `fin.co` 整包 + BOM 卷积 + 存货计价 + 差异 | **F3-a 存货成本 ✅ 已落地**(`2026-08-01-f3a-inventory-cost-impl-spec.md`);F3-b 暂缓(依赖 MES 报工数据成熟) |
+| F4 预算 | 2 周 | `fin.budget` 整包 + 预算检查拦截 | ⏸️ 暂不实施(无预算控制需求信号,GL 无预算钩子) |
+| F5 报表与关账 | 3 周 | `fin.report` + 三大报表取数 + 损益结转 + 月结年结向导 | ✅ 已落地(`2026-07-31-f5-financial-reports-closing-impl-spec.md`) |
+| F6 财务对账 | 2 周 | `fin.reconciliation` 整包 + 银行流水导入/勾对 | ⏸️ 暂不实施(无银行流水数据源;wm 已有库存盘点对账) |
+| F7 电票网关 | 2-3 周 | `fin.einvoice` SPI + Manual 实现 + 平台占位 | ⏸️ 暂不实施(无数电票平台凭证,Mock 无实际价值) |
+| 附加 | 0.5 天 | 最小 pay 收款入口(`PayMockController` 模拟渠道回调,复用 `PayReceivedConsumer` 全链路) | ✅ 已落地(`2026-08-01` 提交 96848f93) |
+| **合计** | **~20-25 人周** | 已实施 ~13 人周核心(F0/F1/F5/F2/F3-a + 附加) | |
+
+> 实施顺序:F0 → F1 → F5(试算+基础报表,验证 GL 闭环)→ F2 → F3-a 已按建议顺序完成;F6/F4/F3-b/F7 经现状审查暂缓(见下表)。F7 可与任意阶段并行(Mock 不阻塞)。
+
+> **审查结论(2026-08-01)**:财务模块功能无重复、有真实业务价值(发票/收付/存货已自动驱动凭证);非孤岛(事件解耦设计正确);遗留 2 个依赖:pay 自动收款断链(已用 PayMockController 解决)、固定资产/成本等待真实业务数据自然启用。剩余阶段 F4/F6/F7 均为"无需求/无数据源"暂缓。
 
 ---
 
-## 十三、下一步
+## 十三、下一步(更新)
 
-1. **评审本计划**,确认阶段范围、统驭科目架构、AccountingPoster SPI 设计
-2. **F0 GL 总账**先行,产出详细 impl spec(科目表 DDL + 凭证引擎 + 期间状态机),落 `doc/erp/specs/`
-3. F0 落地后启动 **F1 AR/AP 核销**,承接发票域 spec P3 设计并补 GL 过账
-4. 同步更新 `doc/PROGRESS.md`/`doc/PLANS.md` 财务核心条目与 [[invoicing-ar-ap-redesign]] 记忆
-
-> 本计划为战略级开发规划,各阶段实施前产出详细 impl spec(含完整 DDL/接口签名/调用序列),参考发票域 spec 的 P1/P2 实施记录模式。
+1. ~~评审本计划~~ ✅ 已完成;F0/F1/F5/F2/F3-a 已按序实施并 E2E 验证
+2. ~~F0 GL 总账先行~~ ✅ 已落地;后续各阶段 impl spec 已产出(F0/F1/F5/F2/F3-a)
+3. **财务模块整体收尾**:已补最小 pay 收款入口(`PayMockController`)解决自动收款断链;F2 固定资产/F3-a 成本等待真实业务数据自然启用(代码已就绪)
+4. **暂缓项**:F4 预算 / F6 银行对账 / F7 电票 / F3-b 产品成本 —— 条件未满足(无预算需求、无银行流水数据源、无数电票平台凭证、MES 报工数据未成熟),待对应业务需求出现再启动
+5. 已更新 `doc/PROGRESS.md`/`doc/PLANS.md` 财务核心条目与 [[invoicing-ar-ap-redesign]] 记忆

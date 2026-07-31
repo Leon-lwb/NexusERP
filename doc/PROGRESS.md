@@ -1,6 +1,6 @@
 # NexusERP 功能开发进度
 
-> 更新日期: 2026-07-29
+> 更新日期: 2026-08-01
 > 状态图例: ✅ 已完成 | 🚧 进行中 | ⬜ 未开发 | 🗑️ 暂时搁置
 
 ---
@@ -754,8 +754,24 @@ flowchart LR
 | 统一支付入口 (支付宝/微信) | PayController | paytest/ | ✅ |
 | 支付订单管理 CRUD | PayOrderController | order/ | ✅ |
 | 发票管理 CRUD | PayInvoiceController | invoice/ | ✅ |
-| 支付回调处理 | PayController | — | ✅ |
-| 对账功能 | — | — | ⬜ |
+| 支付回调处理 | PayController | — | ✅ (回调发 PAY_RECEIVED_CALLBACK → ERP 自动收款/核销) |
+| 对账功能 | — | — | ⬜ (F6 暂缓,无银行流水数据源) |
+
+---
+
+## 八·一、财务核心模块进度 (fin)
+
+> 实施记录: [2026-07-29-erp-financial-core-dev-plan.md](./erp/plans/2026-07-29-erp-financial-core-dev-plan.md);各阶段 impl spec 见 `doc/erp/specs/`。
+
+| 阶段 | 后端 | 前端 | 状态 |
+|------|------|------|------|
+| F0 GL 总账 (科目/凭证/期间/试算) | fin.gl | gl/ (account/voucher/period/report) | ✅ E2E 通过 |
+| F1 AR/AP 核销 (发票过账/收付款/账龄) | fin.arap + 3 Poster | fin/arap/ (receipt/settlement) | ✅ E2E 通过 |
+| F5 报表与期末关账 (三大报表/月结/年结) | fin.report | fin/report/ + fin/closing/ | ✅ E2E 通过 |
+| F2 固定资产 (卡片/折旧/处置) | fin.fa | fin/fa/ (asset/category/depreciation/disposal) | ✅ E2E 通过 |
+| F3-a 存货成本 (计价接线/成本过账/暂估) | fin.cost + wm 计价接线 | fin/cost/ | ✅ E2E 通过 |
+| 最小 pay 收款入口 (模拟渠道回调) | fin.pay PayMockController | fin/pay/mock | ✅ E2E 通过 |
+| F4 预算 / F6 银行对账 / F7 电票 / F3-b 产品成本 | — | — | 🗑️ 暂缓 (无需求/无数据源/MES 未成熟) |
 
 ---
 
