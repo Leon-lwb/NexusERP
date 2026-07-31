@@ -77,6 +77,8 @@ public class WmMaterialReceiveExecutorServiceImpl implements IWmMaterialReceiveE
     private final IWmBarcodeService wmBarcodeService;
     /** 仓储模块MQ消息发送服务，独立于@DS("erp")，确保消息记录写入ry-vue库 */
     private final WmMqSendService wmMqSendService;
+    /** 库存计价服务(F3-a:采购入库按参考价/标准成本计价) */
+    private final com.nexus.erp.wm.service.IInventoryValuationService valuationService;
 
     /**
      * 执行物料入库
@@ -401,7 +403,29 @@ public class WmMaterialReceiveExecutorServiceImpl implements IWmMaterialReceiveE
         WmMaterialStock targetStock = selectOneStock(targetCondition);
 
         Long actualStockId = processStockTransfer(receive, stock, virtualStock, targetStock, transactionQuantity);
+        // F3-a:采购入库按参考价/标准成本计价并回写成本
+        BigDecimal inUnitCost = resolveReceiveUnitCost(stock.getMaterialId());
+        valuationService.updateStockCost(actualStockId, transactionQuantity, inUnitCost);
+        WmMaterialStock actualStock = materialStockMapper.selectById(actualStockId);
+        // 回填 TARGET_IN 流水成本(按实际库存成本)
+        materialStockTxMapper.update(null, Wrappers.<WmMaterialStockTx>lambdaUpdate()
+            .set(WmMaterialStockTx::getUnitCost, actualStock != null ? actualStock.getUnitCost() : inUnitCost)
+            .set(WmMaterialStockTx::getTxAmount, actualStock != null ? actualStock.getUnitCost().multiply(transactionQuantity) : inUnitCost.multiply(transactionQuantity))
+            .eq(WmMaterialStockTx::getSourceDocId, receive.getReceiveId())
+            .eq(WmMaterialStockTx::getTxType, "TARGET_IN"));
         stock.setStockId(actualStockId); // 回写实际的库存ID
+    }
+
+    /** 入库计价:物料参考价,其次标准成本,无价格按 0 */
+    private BigDecimal resolveReceiveUnitCost(Long materialId) {
+        BdMaterialVo material = materialId != null ? bdMaterialService.selectById(materialId) : null;
+        if (material == null) {
+            return BigDecimal.ZERO;
+        }
+        if (material.getReferencePrice() != null) {
+            return material.getReferencePrice();
+        }
+        return material.getStandardCost() != null ? material.getStandardCost() : BigDecimal.ZERO;
     }
 
     /**
@@ -615,7 +639,8 @@ public class WmMaterialReceiveExecutorServiceImpl implements IWmMaterialReceiveE
         stockTx.setAfterQuantity(afterQuantity);
         Date now = new Date();
         stockTx.setTxDate(now);
-        stockTx.setErpDate(now);
+        // F3-a:业务日期取收货单日期(过账落正确期间),空则当前时间
+        stockTx.setErpDate(receive.getReceiveDate() != null ? receive.getReceiveDate() : now);
         stockTx.setRecptDate(stock.getRecptDate());
         stockTx.setRemark(stock.getRemark());
         stockTx.setCreateTime(now);

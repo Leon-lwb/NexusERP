@@ -11,6 +11,7 @@ import com.nexus.erp.wm.enums.StockOperationTypeEnum;
 import com.nexus.erp.wm.mapper.WmMaterialStockMapper;
 import com.nexus.erp.wm.mapper.WmMaterialStockTxMapper;
 import com.nexus.common.core.exception.ServiceException;
+import com.nexus.erp.wm.service.IInventoryValuationService;
 import com.nexus.erp.wm.strategy.BaseStockOperationStrategy;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,17 +41,22 @@ public class ProductionIssueStrategy extends BaseStockOperationStrategy {
 
     /** 库存数据访问映射器（Mapper） */
     private final WmMaterialStockMapper stockMapper;
+    /** 库存计价服务(F3-a:出库按移动平均结转成本) */
+    private final IInventoryValuationService valuationService;
 
     /**
      * 构造生产领料策略实例
      *
      * @param stockTxMapper 库存事务Mapper
      * @param stockMapper   库存Mapper
+     * @param valuationService 库存计价服务
      */
     public ProductionIssueStrategy(WmMaterialStockTxMapper stockTxMapper,
-                                   WmMaterialStockMapper stockMapper) {
+                                   WmMaterialStockMapper stockMapper,
+                                   IInventoryValuationService valuationService) {
         super(stockTxMapper);
         this.stockMapper = stockMapper;
+        this.valuationService = valuationService;
     }
 
     /**
@@ -151,8 +157,11 @@ public class ProductionIssueStrategy extends BaseStockOperationStrategy {
         if (affected == 0) {
             throw new ServiceException("库存并发冲突，请重试: 物料【" + stock.getMaterialName() + "】");
         }
+        // F3-a:出库按移动平均成本结转(扣减 totalCost,返回单位成本)
+        BigDecimal outUnitCost = valuationService.issueStockCost(stock.getStockId(), deductQty);
         WmMaterialStockTx tx = buildBaseTxFromStock(stock, TX_TYPE_PRODUCTION_ISSUE, TX_FLAG_OUT, deductQty,
             beforeQuantity, afterQuantity, now);
+        tx.setUnitCost(outUnitCost);
         tx.setSourceDocType(SOURCE_DOC_TYPE_PRODUCTION_ISSUE);
         tx.setSourceDocId(issueId);
         tx.setSourceDocLineId(lineId);

@@ -198,6 +198,16 @@ public class WmMaterialStockTx extends TenantEntity {
     private BigDecimal txAmount;
 
     /**
+     * 成本过账标记 0-未过账 1-已过账(F3-a)
+     */
+    private Integer posted;
+
+    /**
+     * 成本过账凭证号(F3-a)
+     */
+    private String postedVoucherNo;
+
+    /**
      * 变动前数量
      */
     @ExcelProperty("变动前数量")

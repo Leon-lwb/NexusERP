@@ -46,6 +46,11 @@ public class WmMaterialStock extends TenantEntity {
     private Long materialId;
 
     /**
+     * 物料类型(冗余,成本科目映射)1-原材料 2-半成品 3-成品 4-辅料(F3-a)
+     */
+    private Long materialType;
+
+    /**
      * 产品物料编码
      */
     @ExcelProperty("产品物料编码")

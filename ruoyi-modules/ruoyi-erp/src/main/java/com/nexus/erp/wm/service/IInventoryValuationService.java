@@ -28,4 +28,13 @@ public interface IInventoryValuationService {
      * @param inUnitCost 入库单位成本
      */
     void updateStockCost(Long stockId, BigDecimal inQty, BigDecimal inUnitCost);
+
+    /**
+     * 出库成本结转:按当前移动平均单位成本扣减 totalCost,返回出库单位成本
+     *
+     * @param stockId 库存 ID
+     * @param outQty  出库数量
+     * @return 出库单位成本(移动平均成本,出库不改变单位成本)
+     */
+    BigDecimal issueStockCost(Long stockId, BigDecimal outQty);
 }

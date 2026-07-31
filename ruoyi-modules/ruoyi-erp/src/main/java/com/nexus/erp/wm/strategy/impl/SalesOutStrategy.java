@@ -54,6 +54,8 @@ public class SalesOutStrategy extends BaseStockOperationStrategy {
     private final SoSalesOrderLineMapper salesOrderLineMapper;
     /** 销售出库业务服务，提供销售出库相关能力 */
     private final ISoFulfillmentWritebackService fulfillmentWritebackService;
+    /** 库存计价服务(F3-a:出库按移动平均结转成本) */
+    private final com.nexus.erp.wm.service.IInventoryValuationService valuationService;
 
     /**
      * 构造销售出库策略实例
@@ -64,19 +66,22 @@ public class SalesOutStrategy extends BaseStockOperationStrategy {
      * @param stockMapper                库存Mapper
      * @param salesOrderLineMapper       销售订单行Mapper
      * @param fulfillmentWritebackService 销售订单履行回写Service
+     * @param valuationService           库存计价服务
      */
     public SalesOutStrategy(WmMaterialStockTxMapper stockTxMapper,
                             WmSalesIssueMapper salesIssueMapper,
                             WmSalesIssueLineMapper salesIssueLineMapper,
                             WmMaterialStockMapper stockMapper,
                             SoSalesOrderLineMapper salesOrderLineMapper,
-                            ISoFulfillmentWritebackService fulfillmentWritebackService) {
+                            ISoFulfillmentWritebackService fulfillmentWritebackService,
+                            com.nexus.erp.wm.service.IInventoryValuationService valuationService) {
         super(stockTxMapper);
         this.salesIssueMapper = salesIssueMapper;
         this.salesIssueLineMapper = salesIssueLineMapper;
         this.stockMapper = stockMapper;
         this.salesOrderLineMapper = salesOrderLineMapper;
         this.fulfillmentWritebackService = fulfillmentWritebackService;
+        this.valuationService = valuationService;
     }
 
     /**
@@ -156,7 +161,9 @@ public class SalesOutStrategy extends BaseStockOperationStrategy {
                     throw new ServiceException("库存并发冲突，请重试: 物料【" + line.getMaterialName() + "】");
                 }
                 remainingConsumeReserved = remainingConsumeReserved.subtract(batchConsumeReserved);
-                stockTxMapper.insert(buildSalesOutStockTx(salesIssue, line, stock, beforeQuantity, afterQuantity, now));
+                // F3-a:出库按移动平均成本结转(扣减 totalCost,返回单位成本)
+                BigDecimal outUnitCost = valuationService.issueStockCost(stock.getStockId(), deductQty);
+                stockTxMapper.insert(buildSalesOutStockTx(salesIssue, line, stock, beforeQuantity, afterQuantity, now, outUnitCost));
                 remaining = remaining.subtract(deductQty);
             }
             if (remaining.compareTo(BigDecimal.ZERO) > 0) {
@@ -200,9 +207,10 @@ public class SalesOutStrategy extends BaseStockOperationStrategy {
 
     private WmMaterialStockTx buildSalesOutStockTx(WmSalesIssue salesIssue, WmSalesIssueLine line,
                                                    WmMaterialStock stock, BigDecimal beforeQuantity,
-                                                   BigDecimal afterQuantity, Date now) {
+                                                   BigDecimal afterQuantity, Date now, BigDecimal outUnitCost) {
         WmMaterialStockTx tx = buildBaseTxFromStock(stock, TX_TYPE_SALES_OUT, TX_FLAG_OUT, line.getQuantityIssue(),
             beforeQuantity, afterQuantity, now);
+        tx.setUnitCost(outUnitCost);
         tx.setSourceDocType(SOURCE_DOC_TYPE_SALES_ISSUE);
         tx.setSourceDocId(salesIssue.getIssueId());
         tx.setSourceDocCode(salesIssue.getIssueCode());

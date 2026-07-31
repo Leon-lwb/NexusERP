@@ -39,6 +39,8 @@ public class MiscIssueStrategy extends BaseStockOperationStrategy {
 
     /** 库存数据访问映射器（Mapper） */
     private final WmMaterialStockMapper stockMapper;
+    /** 库存计价服务(F3-a:出库按移动平均结转成本) */
+    private final com.nexus.erp.wm.service.IInventoryValuationService valuationService;
 
     /**
      * 构造杂项出库策略实例
@@ -47,9 +49,11 @@ public class MiscIssueStrategy extends BaseStockOperationStrategy {
      * @param stockMapper   库存Mapper
      */
     public MiscIssueStrategy(WmMaterialStockTxMapper stockTxMapper,
-                             WmMaterialStockMapper stockMapper) {
+                             WmMaterialStockMapper stockMapper,
+                             com.nexus.erp.wm.service.IInventoryValuationService valuationService) {
         super(stockTxMapper);
         this.stockMapper = stockMapper;
+        this.valuationService = valuationService;
     }
 
     /**
@@ -93,8 +97,11 @@ public class MiscIssueStrategy extends BaseStockOperationStrategy {
                 throw new ServiceException("库存并发冲突，请重试: 物料【" + line.getMaterialName() + "】");
             }
 
+            // F3-a:出库按移动平均成本结转(扣减 totalCost,返回单位成本)
+            BigDecimal outUnitCost = valuationService.issueStockCost(stock.getStockId(), deductQty);
             WmMaterialStockTx tx = buildBaseTxFromStock(stock, TX_TYPE_MISC_OUT, TX_FLAG_OUT, deductQty,
                 beforeQuantity, afterQuantity, now);
+            tx.setUnitCost(outUnitCost);
             tx.setSourceDocType(SOURCE_DOC_TYPE_MISC_ISSUE);
             tx.setSourceDocId(line.getIssueId());
             tx.setSourceDocLineId(line.getLineId());

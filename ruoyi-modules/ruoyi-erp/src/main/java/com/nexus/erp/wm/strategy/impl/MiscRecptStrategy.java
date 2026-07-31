@@ -39,17 +39,27 @@ public class MiscRecptStrategy extends BaseStockOperationStrategy {
 
     /** 库存数据访问映射器（Mapper） */
     private final WmMaterialStockMapper stockMapper;
+    /** 库存计价服务(F3-a:入库按标准成本计价) */
+    private final com.nexus.erp.wm.service.IInventoryValuationService valuationService;
+    /** 物料基础数据 Mapper(取标准成本) */
+    private final com.nexus.erp.bd.mapper.BdMaterialMapper materialMapper;
 
     /**
      * 构造杂项入库策略实例
      *
      * @param stockTxMapper 库存事务Mapper
      * @param stockMapper   库存Mapper
+     * @param valuationService 库存计价服务
+     * @param materialMapper 物料Mapper
      */
     public MiscRecptStrategy(WmMaterialStockTxMapper stockTxMapper,
-                             WmMaterialStockMapper stockMapper) {
+                             WmMaterialStockMapper stockMapper,
+                             com.nexus.erp.wm.service.IInventoryValuationService valuationService,
+                             com.nexus.erp.bd.mapper.BdMaterialMapper materialMapper) {
         super(stockTxMapper);
         this.stockMapper = stockMapper;
+        this.valuationService = valuationService;
+        this.materialMapper = materialMapper;
     }
 
     /**
@@ -122,12 +132,30 @@ public class MiscRecptStrategy extends BaseStockOperationStrategy {
             }
         }
 
+        // F3-a:杂项入库按物料标准成本计价(无标准成本按0)
+        BigDecimal inUnitCost = resolveMiscUnitCost(line.getMaterialId());
+        valuationService.updateStockCost(stock.getStockId(), line.getQuantity(), inUnitCost);
+        stock = stockMapper.selectById(stock.getStockId());
+
         WmMaterialStockTx tx = buildBaseTxFromStock(stock, TX_TYPE_MISC_IN, TX_FLAG_IN, line.getQuantity(),
             beforeQuantity, afterQuantity, now);
+        tx.setUnitCost(stock.getUnitCost());
         tx.setSourceDocType(SOURCE_DOC_TYPE_MISC_RECPT);
         tx.setSourceDocId(line.getRecptId());
         tx.setSourceDocLineId(line.getLineId());
         tx.setRemark("杂项入库");
         stockTxMapper.insert(tx);
+    }
+
+    /** 杂项入库计价:优先标准成本,其次参考价,无价格按 0 */
+    private BigDecimal resolveMiscUnitCost(Long materialId) {
+        com.nexus.erp.bd.domain.BdMaterial material = materialMapper.selectById(materialId);
+        if (material == null) {
+            return BigDecimal.ZERO;
+        }
+        if (material.getStandardCost() != null) {
+            return material.getStandardCost();
+        }
+        return material.getReferencePrice() != null ? material.getReferencePrice() : BigDecimal.ZERO;
     }
 }

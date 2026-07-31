@@ -11,6 +11,7 @@ import com.nexus.erp.wm.mapper.WmMaterialReceiveDetailMapper;
 import com.nexus.erp.wm.mapper.WmMaterialReceiveMapper;
 import com.nexus.erp.wm.mapper.WmMaterialStockMapper;
 import com.nexus.erp.wm.mapper.WmMaterialStockTxMapper;
+import com.nexus.erp.wm.service.IInventoryValuationService;
 import com.nexus.erp.wm.strategy.BaseStockOperationStrategy;
 import org.springframework.stereotype.Component;
 
@@ -43,6 +44,10 @@ public class ReceiveInStrategy extends BaseStockOperationStrategy {
     private final WmMaterialReceiveDetailMapper receiveDetailMapper;
     /** 库存数据访问映射器（Mapper） */
     private final WmMaterialStockMapper stockMapper;
+    /** 库存计价服务(F3-a:入库按采购参考价/标准成本计价) */
+    private final IInventoryValuationService valuationService;
+    /** 物料基础数据 Mapper(取参考价/标准成本) */
+    private final com.nexus.erp.bd.mapper.BdMaterialMapper materialMapper;
 
     /**
      * 构造采购入库策略实例
@@ -51,15 +56,33 @@ public class ReceiveInStrategy extends BaseStockOperationStrategy {
      * @param receiveMapper        物料入库单Mapper
      * @param receiveDetailMapper  入库单明细Mapper
      * @param stockMapper          库存Mapper
+     * @param valuationService     库存计价服务
+     * @param materialMapper       物料Mapper
      */
     public ReceiveInStrategy(WmMaterialStockTxMapper stockTxMapper,
                              WmMaterialReceiveMapper receiveMapper,
                              WmMaterialReceiveDetailMapper receiveDetailMapper,
-                             WmMaterialStockMapper stockMapper) {
+                             WmMaterialStockMapper stockMapper,
+                             IInventoryValuationService valuationService,
+                             com.nexus.erp.bd.mapper.BdMaterialMapper materialMapper) {
         super(stockTxMapper);
         this.receiveMapper = receiveMapper;
         this.receiveDetailMapper = receiveDetailMapper;
         this.stockMapper = stockMapper;
+        this.valuationService = valuationService;
+        this.materialMapper = materialMapper;
+    }
+
+    /** 入库计价:优先参考价,其次标准成本,无价格按 0 */
+    private BigDecimal resolveReceiveUnitCost(WmMaterialReceiveDetail detail) {
+        com.nexus.erp.bd.domain.BdMaterial material = materialMapper.selectById(detail.getMaterialId());
+        if (material == null) {
+            return BigDecimal.ZERO;
+        }
+        if (material.getReferencePrice() != null) {
+            return material.getReferencePrice();
+        }
+        return material.getStandardCost() != null ? material.getStandardCost() : BigDecimal.ZERO;
     }
 
     /**
@@ -118,6 +141,11 @@ public class ReceiveInStrategy extends BaseStockOperationStrategy {
                     .eq(WmMaterialStock::getStockId, stock.getStockId()));
                 stock = stockMapper.selectById(stock.getStockId());
             }
+
+            // F3-a:采购入库按参考价/标准成本计价(明细无单价,取物料价格;无价格按0)
+            BigDecimal inUnitCost = resolveReceiveUnitCost(detail);
+            valuationService.updateStockCost(stock.getStockId(), detail.getQuantity(), inUnitCost);
+            stock = stockMapper.selectById(stock.getStockId());
 
             stockTxMapper.insert(buildReceiveStockTx(receive, detail, stock, beforeQuantity, afterQuantity, now));
         }
@@ -179,6 +207,7 @@ public class ReceiveInStrategy extends BaseStockOperationStrategy {
                                                   BigDecimal afterQuantity, Date now) {
         WmMaterialStockTx tx = buildBaseTxFromStock(stock, TX_TYPE_RECEIVE_IN, TX_FLAG_IN, detail.getQuantity(),
             beforeQuantity, afterQuantity, now);
+        tx.setUnitCost(stock.getUnitCost());
         tx.setSourceDocType(SOURCE_DOC_TYPE_RECEIVE);
         tx.setSourceDocId(receive.getReceiveId());
         tx.setSourceDocCode(receive.getReceiveCode());
