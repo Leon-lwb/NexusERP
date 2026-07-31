@@ -45,6 +45,18 @@ public class GlPeriod extends TenantEntity {
     /** 状态 OPEN/CLOSED/LOCKED */
     private String status;
 
+    /** 月结进度(CLOSING_TRIAL/CLOSING_CARRY/CLOSING_REVAL/CLOSING_DONE,CLOSED 时冗余) */
+    private String closingStep;
+
+    /** 本期凭证数(结账时快照) */
+    private Integer closedVoucherCount;
+
+    /** 损益结转凭证ID(幂等回溯) */
+    private Long closingVoucherId;
+
+    /** 重估凭证ID(幂等回溯) */
+    private Long revaluationVoucherId;
+
     /** 关账人 */
     private Long closedBy;
 
