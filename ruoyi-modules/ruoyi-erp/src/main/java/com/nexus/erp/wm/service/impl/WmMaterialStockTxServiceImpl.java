@@ -105,7 +105,11 @@ public class WmMaterialStockTxServiceImpl extends ServiceImpl<WmMaterialStockTxM
 
     private LambdaQueryWrapper<WmMaterialStockTx> buildQueryWrapper(WmMaterialStockTxBo bo) {
         LambdaQueryWrapper<WmMaterialStockTx> lqw = Wrappers.lambdaQuery();
-        lqw.eq(StringUtils.isNotBlank(bo.getTxType()), WmMaterialStockTx::getTxType, bo.getTxType());
+        // 事务类型支持逗号分隔多值（如 "RESERVE,UNRESERVE"），单值时退化为 eq
+        if (StringUtils.isNotBlank(bo.getTxType())) {
+            String[] types = bo.getTxType().split(",");
+            lqw.in(WmMaterialStockTx::getTxType, (Object[]) types);
+        }
         lqw.eq(bo.getMaterialId() != null, WmMaterialStockTx::getMaterialId, bo.getMaterialId());
         lqw.eq(StringUtils.isNotBlank(bo.getMaterialCode()), WmMaterialStockTx::getMaterialCode, bo.getMaterialCode());
         lqw.like(StringUtils.isNotBlank(bo.getMaterialName()), WmMaterialStockTx::getMaterialName, bo.getMaterialName());

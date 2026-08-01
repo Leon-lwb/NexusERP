@@ -162,6 +162,18 @@ public class WmMaterialStockVo implements Serializable {
     private BigDecimal stockQuantity;
 
     /**
+     * 已预留数量（销售订单/工单锁定）
+     */
+    @ExcelProperty(value = "已预留数量")
+    private BigDecimal reservedQuantity;
+
+    /**
+     * 可用数量 = 在库数量 - 已预留数量（计算属性，非数据库列）
+     */
+    @ExcelProperty(value = "可用数量")
+    private BigDecimal availableQuantity;
+
+    /**
      * 生产工单ID
      */
     private Long woId;

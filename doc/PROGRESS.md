@@ -2,6 +2,7 @@
 
 > 更新日期: 2026-08-01
 > 状态图例: ✅ 已完成 | 🚧 进行中 | ⬜ 未开发 | 🗑️ 暂时搁置
+> 最近修订: 2026-08-01 增补 MES P0 新模块(lt/tg/sop/ncr + 进站出站)与财务核心(fin)进度
 
 ---
 
@@ -16,14 +17,15 @@
 | **ERP 排产调度 (sch)** | 15 | 13 | 0 | 2 | 0 |
 | **ERP 仓储管理 (wm)** | 39 | 36 | 2 | 1 | 0 |
 | **ERP 跨模块 (MQ/枚举)** | 14 | 13 | 0 | 1 | 0 |
-| **MES 制造执行** | 36 | 36 | 0 | 0 | 0 |
+| **ERP 财务核心 (fin)** | 12 | 8 | 0 | 0 | 4 |
+| **MES 制造执行** | 51 | 51 | 0 | 0 | 0 |
 | **IoT 物联网** | 18 | 16 | 0 | 2 | 0 |
 | **AI 智能助手** | 25 | 21 | 2 | 2 | 0 |
 | **IM 即时通讯** | 9 | 8 | 1 | 0 | 0 |
 | **Pay 支付** | 5 | 4 | 0 | 1 | 0 |
 | **Workflow 工作流** | 27 | 25 | 0 | 2 | 0 |
 | **Report 报表** | 3 | 2 | 0 | 1 | 0 |
-| **合计** | **258** | **238** | **7** | **13** | **0** |
+| **合计** | **285** | **261** | **7** | **13** | **4** |
 
 ---
 
@@ -578,7 +580,15 @@ flowchart LR
 | 安灯告警 CRUD + SSE 推送 | ProAndonController | pro/andon/ | ✅ |
 | MBOM (制造 BOM) 管理 | MesMbomController | pro/mbom/ | ✅ |
 
-#### 第三层：主数据桥接
+#### 第三层：进站/出站校验 (P0-3)
+
+| 功能 | 后端 | 前端 | 状态 |
+|------|------|------|------|
+| 任务进站/出站/跳站 (5 类规则) | ProFlowCardServiceImpl.entry/exit/skip | — | ✅ (commit 03f0098a) |
+| 工序流程指引配置 | ProStepGuideController | pro/step-guide/ | ✅ |
+| 工序校验规则配置 | ProStepCheckRuleController | pro/step-check-rule/ | ✅ |
+
+#### 第四层：主数据桥接
 
 | 功能 | 说明 | 状态 |
 |------|------|------|
@@ -637,6 +647,49 @@ flowchart LR
 | SPC OOC 超限自动触发安灯 | SnailJob + Andon | — | ✅ |
 | 过程能力分析 (Cp/Cpk) | — | — | ✅ |
 | 控制图趋势分析前端可视化 | — | — | ✅ |
+
+---
+
+### 4.6 批次管理 (lt) — P0-9 ✅
+
+> 实施: 2026-07-24~07-26, 编码+整改+前端打磨+DDL 落库(并入 `script/sql/ry-mes.sql`)。
+
+| 功能 | 后端 | 前端 | 状态 |
+|------|------|------|------|
+| 批次主档 + 状态机 (IN_STOCK/IN_USE/CONSUMED/QUARANTINED/SCRAPPED) | LtLotController | lt/lot/ | ✅ |
+| 工单-批次消耗 (FEFO 推荐) | LtWoConsumptionController | lt/consumption/ | ✅ |
+| SN-批次绑定 + 追溯链 | LtSnBindingController | lt/binding/ | ✅ |
+| 批次隔离/放行/守卫 + IQC 结果钩子 | LtLotServiceImpl | — | ✅ |
+
+### 4.7 工装/模治具管理 (tg) — P0-2 ✅
+
+| 功能 | 后端 | 前端 | 状态 |
+|------|------|------|------|
+| 工装台账 + 寿命计数 | TgToolingController | tg/tooling/ | ✅ |
+| 保养计划/记录 (计数归零) | TgMaintenancePlan/RecordController | tg/maintenance-plan/ tg/maintenance-record/ | ✅ |
+| 使用/领用归还记录 | TgUsageRecordController | tg/usage-record/ | ✅ |
+
+### 4.8 E-SOP 电子作业指导书 (sop) — P0-5 ✅
+
+> 实施: 2026-07-26, 独立 `sop` 子包, 4 张 `sop_` 表, Flowable 审批 + 管理员兜底。
+
+| 功能 | 后端 | 前端 | 状态 |
+|------|------|------|------|
+| SOP 文档库 + 版本管理 | SopDocumentController / SopVersionController | sop/document/ | ✅ |
+| 工序-SOP 绑定 (多对多, 版本指定) | SopProcessBindingController | sop/binding/ | ✅ |
+| 查阅记录 (含电子签名预留) | SopViewLogController | sop/view-log/ + sop/viewer/ | ✅ |
+| 工位推送 (进站触发, SSE 契约) | ProFlowCardServiceImpl → pushSopToWorkstation | — | ✅ |
+
+### 4.9 NCR 不合格品 + 返工 (ncr) — P0-4 ✅
+
+> 实施: 2026-07-28, 独立 `ncr` 子包 (5 张 `nr_` 表), 与既有 `qc.defectInfo` 并存, 4 触发点 (IQC/IPQC/OQC/过程), 隔离不回写 ERP。
+
+| 功能 | 后端 | 前端 | 状态 |
+|------|------|------|------|
+| NCR 单据 + 生命周期 (OPEN→REVIEW→DISPOSITION→IN_REWORK→CLOSED) | NcrOrderController | ncr/order/ | ✅ |
+| 缺陷明细 + 缺陷代码库 (分层) | NcrDefectController / NcrDefectCodeController | ncr/defect/ ncr/defect-code/ | ✅ |
+| 返工工单派生 (关联原工单) | NcrReworkOrderController | ncr/rework/ | ✅ |
+| 8D 报告 (D1-D8) | Ncr8dReportController | ncr/8d-report/ | ✅ |
 
 ---
 
@@ -754,24 +807,29 @@ flowchart LR
 | 统一支付入口 (支付宝/微信) | PayController | paytest/ | ✅ |
 | 支付订单管理 CRUD | PayOrderController | order/ | ✅ |
 | 发票管理 CRUD | PayInvoiceController | invoice/ | ✅ |
-| 支付回调处理 | PayController | — | ✅ (回调发 PAY_RECEIVED_CALLBACK → ERP 自动收款/核销) |
-| 对账功能 | — | — | ⬜ (F6 暂缓,无银行流水数据源) |
+| 支付回调处理 → ERP 自动收款/核销 | PayController + PayReceivedConsumer | — | ✅ (回调发 PAY_RECEIVED_CALLBACK → F1 自动收款/核销) |
+| 最小 pay 收款入口 (模拟渠道回调) | fin.pay PayMockController | erp/fin/pay/mock.vue | ✅ (F1 补充, 解决自动收款断链) |
+| 对账功能 | — | — | ⬜ (F6 暂缓, 无银行流水数据源) |
 
 ---
 
 ## 八·一、财务核心模块进度 (fin)
 
 > 实施记录: [2026-07-29-erp-financial-core-dev-plan.md](./erp/plans/2026-07-29-erp-financial-core-dev-plan.md);各阶段 impl spec 见 `doc/erp/specs/`。
+> 后端: `ruoyi-erp/.../com/nexus/erp/fin/{gl,arap,cost,fa,pay,report}`;前端: `plus-ui/src/views/erp/fin/`。
 
 | 阶段 | 后端 | 前端 | 状态 |
 |------|------|------|------|
-| F0 GL 总账 (科目/凭证/期间/试算) | fin.gl | gl/ (account/voucher/period/report) | ✅ E2E 通过 |
-| F1 AR/AP 核销 (发票过账/收付款/账龄) | fin.arap + 3 Poster | fin/arap/ (receipt/settlement) | ✅ E2E 通过 |
-| F5 报表与期末关账 (三大报表/月结/年结) | fin.report | fin/report/ + fin/closing/ | ✅ E2E 通过 |
-| F2 固定资产 (卡片/折旧/处置) | fin.fa | fin/fa/ (asset/category/depreciation/disposal) | ✅ E2E 通过 |
-| F3-a 存货成本 (计价接线/成本过账/暂估) | fin.cost + wm 计价接线 | fin/cost/ | ✅ E2E 通过 |
-| 最小 pay 收款入口 (模拟渠道回调) | fin.pay PayMockController | fin/pay/mock | ✅ E2E 通过 |
-| F4 预算 / F6 银行对账 / F7 电票 / F3-b 产品成本 | — | — | 🗑️ 暂缓 (无需求/无数据源/MES 未成熟) |
+| F0 GL 总账 (科目/凭证/期间/汇率/试算) | fin.gl (gl_account/gl_voucher/gl_period/gl_currency_rate) | erp/fin/gl/ (account/voucher/period/currencyRate/report) | ✅ E2E 通过 |
+| F1 AR/AP 核销 (发票过账/收付款/核销/账龄) | fin.arap (FinArApReceipt/FinArApPayment/FinArApSettlement) + 3 Poster (AR/AP/存货) | erp/fin/receipt/ + erp/fin/settlement/ + erp/fin/arap/report | ✅ E2E 通过 |
+| F2 固定资产 (卡片/折旧/处置) | fin.fa | erp/fin/fa/ (asset/category/depreciation/disposal) | ✅ E2E 通过 |
+| F3-a 存货成本 (计价接线/成本过账/暂估) | fin.cost + wm 计价接线 | erp/fin/cost/ | ✅ E2E 通过 |
+| F5 报表与期末关账 (三大报表/月结/年结) | fin.report | erp/fin/report/ (balance/income/cashFlow/itemConfig) + erp/fin/closing/ (monthly/yearly) | ✅ E2E 通过 |
+| 最小 pay 收款入口 (模拟渠道回调) | fin.pay PayMockController | erp/fin/pay/mock.vue | ✅ E2E 通过 |
+| F4 预算 | — | — | 🗑️ 暂缓 (无需求) |
+| F6 银行对账 | — | — | 🗑️ 暂缓 (无银行流水数据源) |
+| F7 电票 | — | — | 🗑️ 暂缓 (无需求) |
+| F3-b 产品成本 (标准/实际成本/差异) | — | — | 🗑️ 暂缓 (MES 未成熟) |
 
 ---
 
@@ -843,11 +901,18 @@ flowchart LR
 
 | 优先级 | 模块 | 功能 | 预估工时 |
 |--------|------|------|----------|
-| P1 | ERP | 库存预留前端页面 | 1d |
+| P1 | ERP | 库存预留前端页面 (后端已完成) | 1d |
+| P1 | AI | 知识图谱限制修复 (JSON 解析/实体合并/大图性能/并发竞态) | 2d |
+| P1 | AI | 中优先级 Bug 11 项 (缺 @Transactional/Rerank fallback/InputStream 泄漏/权限校验等) | 3d |
 | P2 | IoT | 设备 OTA 固件升级 | 3d |
 | P2 | IoT | 设备分组/标签管理 | 1d |
 | P2 | AI | RAG + 知识图谱混合检索优化 | 2d |
 | P2 | AI | Agent 多轮自主工具调用 | 3d |
+| P2 | AI | 低优先级 Bug 12 项 | 2d |
+| P2 | AI | 知识图谱 v1.5 升级 (gleaning/embedding 匹配/Neo4j/Leiden) | 5d |
+| P2 | MQ | 消息死信队列处理 | 1d |
+| P3 | MES | 电子签名 + DHR 批记录 (P0-6 延后, 预留点: sop_view_log.signature_id / ncr.disposition_signature_id) | 7.5d |
+| P3 | MES | pro 模块单元测试补齐 (P0-7 不做, 测试缺口留待后续) | 7.5d |
 | P3 | ERP | 部门请购→采购申请联动 | 1d |
 | P3 | ERP | 多仓库间自动调拨建议 | 2d |
 | P3 | ERP | WiFi/蓝牙位置验证打卡 | 2d |
@@ -857,7 +922,6 @@ flowchart LR
 | P3 | Report | 自定义数据源报表 | 1d |
 | P3 | Workflow | 自定义审批规则引擎 | 3d |
 | P3 | Workflow | 催办/加签/转办 | 2d |
-| P3 | MQ | 消息死信队列处理 | 1d |
 
 ---
 
@@ -869,6 +933,9 @@ flowchart LR
 | ERP 编码生成规则 | [erp/NexusERP_编码生成规则设计方案.md](./erp/NexusERP_编码生成规则设计方案.md) |
 | ERP 主文档 | [erp/NexusERP_ERP文档.md](./erp/NexusERP_ERP文档.md) |
 | MES 主文档 | [mes/NexusERP_MES文档.md](./mes/NexusERP_MES文档.md) |
+| MES P0 开发计划 | [mes/plans/2026-07-24-mes-p0-development-plan-v1.0.md](./mes/plans/2026-07-24-mes-p0-development-plan-v1.0.md) |
+| 财务核心开发计划 | [erp/plans/2026-07-29-erp-financial-core-dev-plan.md](./erp/plans/2026-07-29-erp-financial-core-dev-plan.md) |
+| 前瞻开发计划 (PLANS.md) | [PLANS.md](./PLANS.md) |
 | IoT 主文档 | [iot/NexusERP_IoT文档.md](./iot/NexusERP_IoT文档.md) |
 | AI 开发计划 | [ai/plans/NexusERP_AI开发计划.md](./ai/plans/NexusERP_AI开发计划.md) |
 | 三模块升级方案 | [system/NexusERP_三模块共同升级方案.md](./system/NexusERP_三模块共同升级方案.md) |
