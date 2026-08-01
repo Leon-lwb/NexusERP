@@ -209,14 +209,20 @@ function handleView(row?: any) {
 }
 
 function handleDelete(row?: any) {
-  const _ids = row ? row.returnId : ids.value;
+  // 工具栏点击时传入 MouseEvent，取选中行 ID；单行操作传入行对象
+  const _ids = row && !(row instanceof Event) ? row.returnId : ids.value;
+  if (!_ids || (Array.isArray(_ids) && _ids.length === 0)) {
+    proxy.$modal.msgWarning('请先选择要删除的退货单');
+    return;
+  }
   proxy.$modal
     .confirm('是否确认删除采购退货单?')
     .then(() => delPurchaseReturn(_ids))
     .then(() => {
       getList();
       proxy.$modal.msgSuccess('删除成功');
-    });
+    })
+    .catch(() => {});
 }
 
 function handleExport() {
@@ -264,4 +270,3 @@ onActivated(() => {
   getList();
 });
 </script>
-

@@ -42,7 +42,12 @@
         <el-table-column type="selection" width="55" align="center" />
         <el-table-column label="厂商名称" align="center" prop="name" :show-overflow-tooltip="true" />
         <el-table-column label="API 地址" align="center" prop="apiHost" :show-overflow-tooltip="true" />
-        <el-table-column label="API Key" align="center" prop="apiKey" :show-overflow-tooltip="true" />
+        <el-table-column label="API Key" align="center" prop="apiKey" :show-overflow-tooltip="true">
+          <template #default="scope">
+            <!-- 列表脱敏，完整 Key 仅在编辑弹窗可见 -->
+            <span>{{ scope.row.apiKey ? 'sk-***' + String(scope.row.apiKey).slice(-4) : '' }}</span>
+          </template>
+        </el-table-column>
         <el-table-column label="厂商类型" align="center" prop="providerType">
           <template #default="scope">
             <el-tag>{{ scope.row.providerType }}</el-tag>

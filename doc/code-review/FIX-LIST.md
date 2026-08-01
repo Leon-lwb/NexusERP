@@ -103,3 +103,22 @@
 | H3-12 | 序列号并发+周期重置失效（BdSerialNumberRuleServiceImpl:140-197） | ✅ DB 条件更新原子递增；周期重置用 attr1 存周期段 CASE WHEN 判定 |
 
 编译验证: erp 通过
+
+## H4 批（前端，2026-08-01，全部完成）
+
+| # | 问题 | 状态 |
+|---|------|------|
+| H4-1 | 雪花 ID Number() 截断 14 处（sop/viewer、routing、requirement、storagelocation×5、WmLocationStockDialog、barcode×8、sn×3、pu/invoice×3、barcode/config、8d-report、ncr/rework、ScanExecute、capacity-calendar×4、ai/abTest×2） | ✅ 全部改字符串透传 / el-input |
+| H4-2 | trace 追溯把物料编码当 materialId | ✅ 先按编码查物料再追溯 |
+| H4-3 | wm/receive 工具栏删除传 Event 恒失败 | ✅ Event 兜底 + 批量空选提示 |
+| H4-4 | pu/return 删除传 undefined | ✅ Event 判断 + ids 兜底 + catch |
+| H4-5 | sales-issue 删除明细全删（index 未赋值） | ✅ rowLineIndex 写入 row.index |
+| H4-6 | so/invoice + so/contract 物料对话框缺失 | ✅ 接入共享 MaterialSelectDialog |
+| H4-7 | 委外 issue/receive/submit/logs 端点不存在 | ✅ 后端补齐 4 端点（issue→start、receive→complete、submit、logs 状态时间线） |
+| H4-8 | AI API Key 明文展示 | ✅ 列表脱敏 sk-*** 尾4位 |
+| H4-9 | 客户端秘钥明文展示 | ✅ 列表脱敏 + 编辑 show-password |
+
+保留项（技术约束）:
+- 报表 iframe / IoT SSE 的 token 走 URL query 是积木报表协议与 EventSource 无法设 header 的技术约束，后端已用 @SaIgnore + StpUtil 手动校验，日志侧需反代过滤
+
+验证: eslint 全部通过；erp 编译通过

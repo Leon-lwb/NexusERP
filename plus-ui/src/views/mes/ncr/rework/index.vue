@@ -10,7 +10,7 @@
           </el-col>
           <el-col :span="6">
             <el-form-item label="NCR编号" prop="ncrId">
-              <el-input-number v-model="queryParams.ncrId" :min="0" controls-position="right" placeholder="NCR ID" style="width: 100%" />
+              <el-input v-model="queryParams.ncrId" placeholder="NCR ID" style="width: 100%" />
             </el-form-item>
           </el-col>
           <el-col :span="6">

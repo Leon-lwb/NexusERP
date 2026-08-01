@@ -109,7 +109,7 @@
             <div class="calendar-cell">
               <div class="calendar-day">{{ data.day.split('-')[2] }}</div>
               <div v-for="item in getCalendarItems(data.day)" :key="item.calendarId" class="calendar-item">
-                <el-tag :type="getCapacityTagType(item)" size="small" style="width: 100%; margin: 1px 0;">
+                <el-tag :type="getCapacityTagType(item)" size="small" style="width: 100%; margin: 1px 0">
                   {{ item.shiftName || '' }}: {{ item.remainingHours || 0 }}h/{{ item.availableHours || 0 }}h
                 </el-tag>
               </div>
@@ -140,7 +140,7 @@
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="对象ID" prop="objectId">
-              <el-input-number v-model="form.objectId" placeholder="请输入对象ID" style="width: 100%" />
+              <el-input v-model="form.objectId" placeholder="请输入对象ID" style="width: 100%" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -157,7 +157,7 @@
           </el-col>
           <el-col :span="12">
             <el-form-item label="班次ID" prop="shiftId">
-              <el-input-number v-model="form.shiftId" placeholder="请输入班次ID" style="width: 100%" />
+              <el-input v-model="form.shiftId" placeholder="请输入班次ID" style="width: 100%" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -197,7 +197,7 @@
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="排班计划ID" prop="planId">
-              <el-input-number v-model="generateForm.planId" placeholder="请输入排班计划ID" style="width: 100%" />
+              <el-input v-model="generateForm.planId" placeholder="请输入排班计划ID" style="width: 100%" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -228,7 +228,7 @@
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="对象ID" prop="objectId">
-              <el-input-number v-model="generateForm.objectId" placeholder="请输入对象ID" style="width: 100%" />
+              <el-input v-model="generateForm.objectId" placeholder="请输入对象ID" style="width: 100%" />
             </el-form-item>
           </el-col>
           <el-col :span="12">

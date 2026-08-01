@@ -224,8 +224,8 @@
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="入库单编号" prop="receiveCode">
-              <div style="display: flex; align-items: center; gap: 10px;">
-                <el-input v-model="form.receiveCode" placeholder="请输入入库单编号" :disabled="autoGenFlag || isViewMode" style="flex: 1;" />
+              <div style="display: flex; align-items: center; gap: 10px">
+                <el-input v-model="form.receiveCode" placeholder="请输入入库单编号" :disabled="autoGenFlag || isViewMode" style="flex: 1" />
                 <el-switch
                   v-model="autoGenFlag"
                   inline-prompt
@@ -573,12 +573,23 @@ function submitForm() {
 
 /** 删除按钮操作 */
 function handleDelete(row: any) {
+  // 工具栏点击时传入的是 MouseEvent，需兜底取选中行 ID
+  if (row instanceof Event) {
+    row = undefined;
+  }
   // 校验状态：只有草稿状态才能删除
-  if (row.status !== 'DRAFT') {
+  if (row && row.status !== 'DRAFT') {
     proxy.$modal.msgWarning('当前状态不允许删除，只有草稿状态才能删除！');
     return;
   }
-  const _receiveIds = row.receiveId || ids.value;
+  if (!row) {
+    // 批量删除仅允许草稿状态
+    if (!ids.value || ids.value.length === 0) {
+      proxy.$modal.msgWarning('请先选择要删除的入库单');
+      return;
+    }
+  }
+  const _receiveIds = row?.receiveId || ids.value;
   proxy.$modal
     .confirm('是否确认删除物料入库单编号为"' + _receiveIds + '"的数据项？')
     .then(function () {
@@ -807,4 +818,3 @@ onActivated(() => {
   getList();
 });
 </script>
-

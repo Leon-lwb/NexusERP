@@ -6,6 +6,7 @@ import com.nexus.erp.prd.domain.bo.PrdSubcontractBo;
 import com.nexus.erp.prd.domain.vo.PrdSubcontractVo;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 委外订单 Service 接口
@@ -115,4 +116,21 @@ public interface IPrdSubcontractService {
      * @param subcontractId 委外订单 ID
      */
     void close(Long subcontractId);
+
+    /**
+     * 提交审批委外订单
+     * <p>
+     * 将草稿状态更新为已提交。
+     *
+     * @param subcontractId 委外订单 ID
+     */
+    void submit(Long subcontractId);
+
+    /**
+     * 查询委外订单操作日志（状态时间线）
+     *
+     * @param subcontractId 委外订单 ID
+     * @return 操作日志列表
+     */
+    List<Map<String, Object>> getOperationLogs(Long subcontractId);
 }

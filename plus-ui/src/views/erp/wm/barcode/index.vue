@@ -138,25 +138,25 @@
           </el-select>
         </el-form-item>
         <el-form-item label="配置ID" prop="configId">
-          <el-input-number v-model="form.configId" :min="0" disabled style="width: 100%" />
+          <el-input v-model="form.configId" disabled style="width: 100%" />
         </el-form-item>
         <el-form-item label="业务类型" prop="bizType">
           <el-input v-model="form.bizType" placeholder="请输入业务类型" />
         </el-form-item>
         <el-form-item label="业务ID" prop="bizId">
-          <el-input-number v-model="form.bizId" :min="0" style="width: 100%" />
+          <el-input v-model="form.bizId" style="width: 100%" />
         </el-form-item>
         <el-form-item label="业务行ID" prop="bizLineId">
-          <el-input-number v-model="form.bizLineId" :min="0" style="width: 100%" />
+          <el-input v-model="form.bizLineId" style="width: 100%" />
         </el-form-item>
         <el-form-item label="物料ID" prop="materialId">
-          <el-input-number v-model="form.materialId" :min="0" style="width: 100%" />
+          <el-input v-model="form.materialId" style="width: 100%" />
         </el-form-item>
         <el-form-item label="批次ID" prop="batchId">
-          <el-input-number v-model="form.batchId" :min="0" style="width: 100%" />
+          <el-input v-model="form.batchId" style="width: 100%" />
         </el-form-item>
         <el-form-item label="库存ID" prop="stockId">
-          <el-input-number v-model="form.stockId" :min="0" style="width: 100%" />
+          <el-input v-model="form.stockId" style="width: 100%" />
         </el-form-item>
         <el-form-item label="状态" prop="status">
           <el-select v-model="form.status" placeholder="请选择状态" style="width: 100%">
@@ -187,10 +187,10 @@
           <el-input v-model="generateForm.bizType" placeholder="请输入业务类型" />
         </el-form-item>
         <el-form-item label="业务ID" prop="bizId">
-          <el-input-number v-model="generateForm.bizId" :min="0" style="width: 100%" />
+          <el-input v-model="generateForm.bizId" style="width: 100%" />
         </el-form-item>
         <el-form-item label="物料ID" prop="materialId">
-          <el-input-number v-model="generateForm.materialId" :min="0" style="width: 100%" />
+          <el-input v-model="generateForm.materialId" style="width: 100%" />
         </el-form-item>
       </el-form>
       <template #footer>

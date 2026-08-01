@@ -208,7 +208,7 @@
               </el-col>
               <el-col :span="8">
                 <el-form-item label="采购订单ID" prop="poId">
-                  <el-input-number v-model="form.poId" :min="0" controls-position="right" style="width: 100%" placeholder="关联采购订单" />
+                  <el-input v-model="form.poId" style="width: 100%" placeholder="关联采购订单" />
                 </el-form-item>
               </el-col>
               <el-col :span="8">
@@ -383,7 +383,7 @@
               </el-table-column>
               <el-table-column label="采购订单行ID" width="140">
                 <template #default="scope">
-                  <el-input-number v-model="scope.row.poLineId" size="small" controls-position="right" :min="0" style="width: 100%" />
+                  <el-input v-model="scope.row.poLineId" size="small" style="width: 100%" />
                 </template>
               </el-table-column>
               <el-table-column label="备注" min-width="120">
@@ -438,7 +438,7 @@
     <el-dialog title="从采购订单生成发票草稿" v-model="genFromPoOpen" width="420px" append-to-body>
       <el-form label-width="100px">
         <el-form-item label="采购订单ID">
-          <el-input-number v-model="genFromPoPoId" :min="0" controls-position="right" style="width: 100%" placeholder="请输入采购订单ID" />
+          <el-input v-model="genFromPoPoId" style="width: 100%" placeholder="请输入采购订单ID" />
         </el-form-item>
         <div style="color: #909399; font-size: 12px">按"已收货未开票"自动生成草稿,销售方四要素从供应商档案带入。</div>
       </el-form>
@@ -972,4 +972,3 @@ function submitGenFromPo() {
 
 getList();
 </script>
-

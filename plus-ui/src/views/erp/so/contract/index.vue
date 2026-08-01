@@ -281,14 +281,15 @@
 
     <!-- 客户选择弹窗 -->
     <ClientSelectDialog ref="clientSelectDialogRef" @confirm="handleClientConfirm" />
+    <MaterialSelectDialog ref="materialSelectDialogRef" title="选择物料" @select="handleMaterialSelected" />
   </div>
 </template>
 
 <script setup lang="ts" name="SoContract">
 import { listContract, getContract, delContract, addContract, updateContract } from '@/api/erp/so/contract';
-import { listMaterial } from '@/api/erp/bd/material';
 import { ContractVO, ContractForm, ContractLineForm } from '@/api/erp/so/contract/types';
 import ClientSelectDialog from '@/views/erp/so/components/ClientSelectDialog.vue';
+import MaterialSelectDialog from '@/components/MaterialSelectDialog';
 
 const { proxy } = getCurrentInstance();
 
@@ -312,11 +313,7 @@ const activeTab = ref('basic');
 const lineList = ref<ContractLineForm[]>([]);
 const checkedLines = ref<number[]>([]);
 const currentLineIndex = ref(-1);
-
-// 物料选择对话框
-const materialDialogVisible = ref(false);
-const materialList = ref<any[]>([]);
-const materialQuery = ref({ materialCode: '', materialName: '', pageNum: 1, pageSize: 20 });
+const materialSelectDialogRef = ref();
 
 const data = reactive({
   form: {} as ContractForm,
@@ -532,19 +529,11 @@ function calcLineAmount(row: ContractLineForm) {
 /** 打开物料选择对话框 */
 function openMaterialDialog(index: number) {
   currentLineIndex.value = index;
-  materialDialogVisible.value = true;
-  queryMaterials();
+  materialSelectDialogRef.value?.open();
 }
 
-/** 查询物料 */
-function queryMaterials() {
-  listMaterial(materialQuery.value as any).then((res: any) => {
-    materialList.value = res.rows || res.data || [];
-  });
-}
-
-/** 选择物料 */
-function selectMaterial(row: any) {
+/** 物料选择回调 */
+function handleMaterialSelected(row: any) {
   if (currentLineIndex.value >= 0) {
     const target = lineList.value[currentLineIndex.value];
     target.materialId = row.materialId;
@@ -553,7 +542,6 @@ function selectMaterial(row: any) {
     target.materialSpec = row.materialSpec;
     target.unit = row.baseUomName || '';
   }
-  materialDialogVisible.value = false;
 }
 
 /** 打开客户选择对话框 */
@@ -569,4 +557,3 @@ function handleClientConfirm(client: any) {
 
 getList();
 </script>
-

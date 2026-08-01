@@ -2,7 +2,7 @@
   <div class="app-container">
     <!-- 面包屑上下文 -->
     <el-card v-if="currentArea" class="mb8" shadow="never">
-      <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="display: flex; align-items: center; gap: 12px">
         <el-button link icon="ArrowLeft" @click="goBackToArea">返回库区列表</el-button>
         <el-divider direction="vertical" />
         <span
@@ -141,8 +141,8 @@
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="库位编码" prop="locationCode">
-              <div style="display: flex; align-items: center; gap: 10px;">
-                <el-input v-model="form.locationCode" placeholder="请输入库位编码" :disabled="autoGenFlag || isViewMode" style="flex: 1;" />
+              <div style="display: flex; align-items: center; gap: 10px">
+                <el-input v-model="form.locationCode" placeholder="请输入库位编码" :disabled="autoGenFlag || isViewMode" style="flex: 1" />
                 <el-switch
                   v-model="autoGenFlag"
                   inline-prompt
@@ -502,7 +502,8 @@ function handleAdd() {
   reset();
   isViewMode.value = false;
   if (route.query.areaId) {
-    form.value.areaId = Number(route.query.areaId);
+    // 雪花ID字符串透传，Number() 会截断
+    form.value.areaId = String(route.query.areaId);
     selectedAreaPath.value = `a_${route.query.areaId}`;
   } else {
     selectedAreaPath.value = '';
@@ -658,10 +659,10 @@ function handleAreaCascaderChange(value: any) {
     form.value.warehouseId = null;
     return;
   }
-  // 从 key 中解析 areaId
+  // 从 key 中解析 areaId（雪花ID字符串透传）
   const keyStr = String(value);
   if (keyStr.startsWith('a_')) {
-    form.value.areaId = Number(keyStr.replace('a_', ''));
+    form.value.areaId = keyStr.replace('a_', '');
   }
   // 从树中找到对应仓库ID
   for (const w of warehouseTreeOptions.value) {
@@ -683,10 +684,11 @@ function handleQueryAreaChange(value: any) {
   }
   const keyStr = String(value);
   if (keyStr.startsWith('a_')) {
-    queryParams.value.areaId = Number(keyStr.replace('a_', ''));
+    // 雪花ID字符串透传
+    queryParams.value.areaId = keyStr.replace('a_', '');
     queryParams.value.warehouseId = null;
   } else if (keyStr.startsWith('w_')) {
-    queryParams.value.warehouseId = Number(keyStr.replace('w_', ''));
+    queryParams.value.warehouseId = keyStr.replace('w_', '');
     queryParams.value.areaId = null;
   }
 }
@@ -721,7 +723,8 @@ const batchGenEstimate = computed(() => {
 /** 打开批量生成对话框 */
 function handleBatchGenerate() {
   batchGenForm.value = {
-    areaId: route.query.areaId ? Number(route.query.areaId) : null,
+    // 雪花ID字符串透传
+    areaId: route.query.areaId ? String(route.query.areaId) : null,
     areaPath: route.query.areaId ? `a_${route.query.areaId}` : '',
     rowStart: 1,
     rowEnd: 1,
@@ -742,7 +745,8 @@ function handleBatchAreaChange(value: any) {
   }
   const keyStr = String(value);
   if (keyStr.startsWith('a_')) {
-    batchGenForm.value.areaId = Number(keyStr.replace('a_', ''));
+    // 雪花ID字符串透传
+    batchGenForm.value.areaId = keyStr.replace('a_', '');
   }
 }
 
@@ -776,4 +780,3 @@ function doBatchGenerate() {
 loadWarehouseTree();
 getList();
 </script>
-

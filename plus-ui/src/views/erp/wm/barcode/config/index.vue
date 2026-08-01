@@ -109,7 +109,7 @@
           <el-input v-model="form.bizType" />
         </el-form-item>
         <el-form-item label="物料类别ID" prop="categoryId">
-          <el-input-number v-model="form.categoryId" :min="0" />
+          <el-input v-model="form.categoryId" />
         </el-form-item>
         <el-form-item label="启用状态" prop="enableFlag">
           <el-radio-group v-model="form.enableFlag">
@@ -301,4 +301,3 @@ function submitForm() {
 // 页面加载时获取数据
 getList();
 </script>
-

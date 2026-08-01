@@ -16,8 +16,8 @@
         <el-row :gutter="20">
           <el-col :span="8">
             <el-form-item label="物料需求单编号" prop="requirementNo">
-              <div style="display: flex; align-items: center; gap: 10px;">
-                <el-input v-model="form.requirementNo" placeholder="请输入物料需求单编号" :disabled="autoGenFlag || isViewMode" style="flex: 1;" />
+              <div style="display: flex; align-items: center; gap: 10px">
+                <el-input v-model="form.requirementNo" placeholder="请输入物料需求单编号" :disabled="autoGenFlag || isViewMode" style="flex: 1" />
                 <el-switch v-model="autoGenFlag" active-color="#13ce66" active-text="自动生成" @change="handleAutoGenChange" :disabled="isViewMode">
                 </el-switch>
               </div>
@@ -64,8 +64,7 @@
           </el-col>
           <el-col :span="8">
             <el-form-item label="需求日期" prop="requirementDate">
-              <el-date-picker clearable v-model="form.requirementDate" type="date" value-format="YYYY-MM-DD"
-                placeholder="请选择需求日期">
+              <el-date-picker clearable v-model="form.requirementDate" type="date" value-format="YYYY-MM-DD" placeholder="请选择需求日期">
               </el-date-picker>
             </el-form-item>
           </el-col>
@@ -113,15 +112,13 @@
           <el-col :span="8">
             <el-form-item label="状态" prop="status">
               <el-select v-model="form.status" placeholder="请选择状态">
-                <el-option v-for="dict in prd_requirement_status" :key="dict.value" :label="dict.label"
-                  :value="dict.value"></el-option>
+                <el-option v-for="dict in prd_requirement_status" :key="dict.value" :label="dict.label" :value="dict.value"></el-option>
               </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="8">
             <el-form-item label="确认时间" prop="confirmedTime">
-              <el-date-picker clearable v-model="form.confirmedTime" type="date" value-format="YYYY-MM-DD"
-                placeholder="请选择确认时间">
+              <el-date-picker clearable v-model="form.confirmedTime" type="date" value-format="YYYY-MM-DD" placeholder="请选择确认时间">
               </el-date-picker>
             </el-form-item>
           </el-col>
@@ -139,8 +136,7 @@
             <el-button type="success" icon="Upload" @click="handleImportBom" v-if="!isViewMode">导入BOM</el-button>
           </el-col>
         </el-row>
-        <el-table :data="detailList" :row-class-name="rowDetailIndex"
-          @selection-change="handleDetailSelectionChange" ref="detailTable">
+        <el-table :data="detailList" :row-class-name="rowDetailIndex" @selection-change="handleDetailSelectionChange" ref="detailTable">
           <el-table-column type="selection" width="50" align="center" v-if="!isViewMode" />
           <el-table-column label="序号" align="center" prop="index" width="50" />
           <el-table-column label="物料ID" prop="materialId" width="150">
@@ -193,8 +189,14 @@
           </el-table-column>
           <el-table-column label="需求日期" prop="requiredDate" width="240">
             <template #default="scope">
-              <el-date-picker clearable v-model="scope.row.requiredDate" type="date" value-format="YYYY-MM-DD"
-                placeholder="请选择需求日期" v-if="!isViewMode">
+              <el-date-picker
+                clearable
+                v-model="scope.row.requiredDate"
+                type="date"
+                value-format="YYYY-MM-DD"
+                placeholder="请选择需求日期"
+                v-if="!isViewMode"
+              >
               </el-date-picker>
               <span v-else>{{ scope.row.requiredDate }}</span>
             </template>
@@ -202,8 +204,7 @@
           <el-table-column label="状态" prop="status" width="150">
             <template #default="scope">
               <el-select v-model="scope.row.status" placeholder="请选择状态" v-if="!isViewMode">
-                <el-option v-for="dict in sys_core_status" :key="dict.value" :label="dict.label"
-                  :value="dict.value"></el-option>
+                <el-option v-for="dict in sys_core_status" :key="dict.value" :label="dict.label" :value="dict.value"></el-option>
               </el-select>
               <span v-else>{{ getDictLabel(sys_core_status, scope.row.status) }}</span>
             </template>
@@ -215,63 +216,65 @@
 </template>
 
 <script setup lang="ts" name="PrdRequirementForm">
-import { getRequirement, addRequirement, updateRequirement, importBomDetails } from "@/api/erp/prd/requirement"
-import { previewCode } from "@/api/system/autocode/rule"
-import type { RequirementForm } from "@/api/erp/prd/requirement/types"
+import { getRequirement, addRequirement, updateRequirement, importBomDetails } from '@/api/erp/prd/requirement';
+import { previewCode } from '@/api/system/autocode/rule';
+import type { RequirementForm } from '@/api/erp/prd/requirement/types';
 
-const { proxy } = getCurrentInstance() as any
-const { sys_core_status, prd_requirement_status, prd_material_source_type } = toRefs<any>(proxy.useDict('sys_core_status', 'prd_requirement_status', 'prd_material_source_type'))
-const route = useRoute()
-const router = useRouter()
-const autoGenFlag = ref(false)
+const { proxy } = getCurrentInstance() as any;
+const { sys_core_status, prd_requirement_status, prd_material_source_type } = toRefs<any>(
+  proxy.useDict('sys_core_status', 'prd_requirement_status', 'prd_material_source_type')
+);
+const route = useRoute();
+const router = useRouter();
+const autoGenFlag = ref(false);
 
-const form = ref<RequirementForm>({})
-const isViewMode = ref(false)
-const title = ref("")
-const detailList = ref([])
-const checkedDetail = ref([])
+const form = ref<RequirementForm>({});
+const isViewMode = ref(false);
+const title = ref('');
+const detailList = ref([]);
+const checkedDetail = ref([]);
 
 onMounted(() => {
-  const id = route.query.id
-  const action = route.query.action
-  isViewMode.value = action === 'view'
+  const id = route.query.id;
+  const action = route.query.action;
+  isViewMode.value = action === 'view';
 
   if (id) {
-    initPage(id)
+    initPage(id);
   }
-})
+});
 
 function initPage(id) {
-  const action = route.query.action
+  const action = route.query.action;
 
   if (action === 'view') {
-    isViewMode.value = true
-    title.value = "查看物料清单"
+    isViewMode.value = true;
+    title.value = '查看物料清单';
     if (id) {
-      getInfo(id)
+      getInfo(id);
     }
   } else if (action === 'edit') {
-    isViewMode.value = false
-    title.value = "修改物料清单"
+    isViewMode.value = false;
+    title.value = '修改物料清单';
     if (id) {
-      getInfo(id)
+      getInfo(id);
     }
   } else if (action === 'add') {
-    isViewMode.value = false
-    title.value = "新增物料清单"
-    reset()
+    isViewMode.value = false;
+    title.value = '新增物料清单';
+    reset();
   }
 }
 
 function getInfo(id) {
-  getRequirement(id).then(response => {
-    form.value = response.data
-    detailList.value = response.data.prdMaterialRequirementDetailList || []
-  })
+  getRequirement(id).then((response) => {
+    form.value = response.data;
+    detailList.value = response.data.prdMaterialRequirementDetailList || [];
+  });
 }
 
 function reset() {
-  autoGenFlag.value = false
+  autoGenFlag.value = false;
   form.value = {
     requirementId: null,
     requirementNo: null,
@@ -295,32 +298,32 @@ function reset() {
     materialName: null,
     materialSpec: null,
     sourceType: null
-  }
-  detailList.value = []
-  proxy.resetForm("requirementRef")
+  };
+  detailList.value = [];
+  proxy.resetForm('requirementRef');
 }
 
 function submitForm() {
-  proxy.$refs["requirementRef"].validate(valid => {
+  proxy.$refs['requirementRef'].validate((valid) => {
     if (valid) {
-        // 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号
-        if (autoGenFlag.value) {
-          form.value.requirementNo = undefined;
-        }
-      form.value.prdMaterialRequirementDetailList = detailList.value
+      // 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号
+      if (autoGenFlag.value) {
+        form.value.requirementNo = undefined;
+      }
+      form.value.prdMaterialRequirementDetailList = detailList.value;
       if (form.value.requirementId != null) {
-        updateRequirement(form.value).then(response => {
-          proxy.$modal.msgSuccess("修改成功")
-          router.push('/erp/prd/requirement')
-        })
+        updateRequirement(form.value).then((response) => {
+          proxy.$modal.msgSuccess('修改成功');
+          router.push('/erp/prd/requirement');
+        });
       } else {
-        addRequirement(form.value).then(response => {
-          proxy.$modal.msgSuccess("新增成功")
-          router.push('/erp/prd/requirement')
-        })
+        addRequirement(form.value).then((response) => {
+          proxy.$modal.msgSuccess('新增成功');
+          router.push('/erp/prd/requirement');
+        });
       }
     }
-  })
+  });
 }
 
 /** 部门变更：回填部门名称 */
@@ -329,111 +332,116 @@ function handleDeptChange(dept) {
 }
 
 function cancel() {
-  const obj = { path: '/erp/prd/requirement' }
-  proxy.$tab.closeOpenPage(obj)
+  const obj = { path: '/erp/prd/requirement' };
+  proxy.$tab.closeOpenPage(obj);
 }
 
 function rowDetailIndex({ row, rowIndex }) {
-  row.index = rowIndex + 1
+  row.index = rowIndex + 1;
 }
 
 function handleAddDetail() {
-  let obj = {
-    materialId: "",
-    materialCode: "",
-    materialName: "",
-    materialSpec: "",
-    unit: "",
-    bomQuantity: "",
-    lossRate: "",
-    requiredQuantity: "",
-    issuedQuantity: "",
-    stockQuantity: "",
-    shortageQuantity: "",
-    operationStep: "",
-    workstationId: "",
-    workstationName: "",
-    leadTime: "",
-    requiredDate: "",
-    status: "",
-    remark: "",
-    sourceType: ""
-  }
-  detailList.value.push(obj)
+  const obj = {
+    materialId: '',
+    materialCode: '',
+    materialName: '',
+    materialSpec: '',
+    unit: '',
+    bomQuantity: '',
+    lossRate: '',
+    requiredQuantity: '',
+    issuedQuantity: '',
+    stockQuantity: '',
+    shortageQuantity: '',
+    operationStep: '',
+    workstationId: '',
+    workstationName: '',
+    leadTime: '',
+    requiredDate: '',
+    status: '',
+    remark: '',
+    sourceType: ''
+  };
+  detailList.value.push(obj);
 }
 
 function handleDeleteDetail() {
   if (checkedDetail.value.length == 0) {
-    proxy.$modal.msgError("请先选择要删除的数据")
+    proxy.$modal.msgError('请先选择要删除的数据');
   } else {
-    const items = detailList.value
-    const checkedItems = checkedDetail.value
+    const items = detailList.value;
+    const checkedItems = checkedDetail.value;
     detailList.value = items.filter(function (item) {
-      return checkedItems.indexOf(item.index) == -1
-    })
+      return checkedItems.indexOf(item.index) == -1;
+    });
   }
 }
 
 function handleImportBom() {
-  const bomId = form.value.bomId
-  const totalRequiredQuantity = form.value.totalRequiredQuantity
+  const bomId = form.value.bomId;
+  const totalRequiredQuantity = form.value.totalRequiredQuantity;
 
   if (!bomId) {
-    proxy.$modal.msgError("请先填写BOM ID")
-    return
+    proxy.$modal.msgError('请先填写BOM ID');
+    return;
   }
   if (!totalRequiredQuantity || Number(totalRequiredQuantity) <= 0) {
-    proxy.$modal.msgError("请先填写有效的需求总量")
-    return
+    proxy.$modal.msgError('请先填写有效的需求总量');
+    return;
   }
 
-  proxy.$modal.confirm('确认从BOM导入物料明细吗？这将覆盖当前明细列表。').then(() => {
-    return importBomDetails(Number(bomId), Number(totalRequiredQuantity))
-  }).then(response => {
-    const data = response.data || []
-    if (data.length === 0) {
-      proxy.$modal.msgWarning("该BOM没有明细数据")
-      return
-    }
-    detailList.value = data.map(item => ({
-      materialId: item.materialId || "",
-      materialCode: item.materialCode || "",
-      materialName: item.materialName || "",
-      materialSpec: item.materialSpec || "",
-      unit: item.unit || "",
-      bomQuantity: item.bomQuantity || "",
-      lossRate: item.lossRate || "",
-      requiredQuantity: item.requiredQuantity || "",
-      issuedQuantity: item.issuedQuantity || "",
-      stockQuantity: item.stockQuantity || "",
-      shortageQuantity: item.shortageQuantity || "",
-      operationStep: item.operationStep || "",
-      workstationId: item.workstationId || "",
-      workstationName: item.workstationName || "",
-      leadTime: item.leadTime || "",
-      requiredDate: item.requiredDate || "",
-      status: item.status || "",
-      remark: item.remark || "",
-      sourceType: item.sourceType || ""
-    }))
-    proxy.$modal.msgSuccess(`成功导入 ${detailList.value.length} 条物料明细`)
-  }).catch(() => {
-    // cancelled or error
-  })
+  proxy.$modal
+    .confirm('确认从BOM导入物料明细吗？这将覆盖当前明细列表。')
+    .then(() => {
+      // bomId 是雪花ID不能 Number() 截断，字符串透传；数量可转数值
+      return importBomDetails(String(bomId), Number(totalRequiredQuantity));
+    })
+    .then((response) => {
+      const data = response.data || [];
+      if (data.length === 0) {
+        proxy.$modal.msgWarning('该BOM没有明细数据');
+        return;
+      }
+      detailList.value = data.map((item) => ({
+        materialId: item.materialId || '',
+        materialCode: item.materialCode || '',
+        materialName: item.materialName || '',
+        materialSpec: item.materialSpec || '',
+        unit: item.unit || '',
+        bomQuantity: item.bomQuantity || '',
+        lossRate: item.lossRate || '',
+        requiredQuantity: item.requiredQuantity || '',
+        issuedQuantity: item.issuedQuantity || '',
+        stockQuantity: item.stockQuantity || '',
+        shortageQuantity: item.shortageQuantity || '',
+        operationStep: item.operationStep || '',
+        workstationId: item.workstationId || '',
+        workstationName: item.workstationName || '',
+        leadTime: item.leadTime || '',
+        requiredDate: item.requiredDate || '',
+        status: item.status || '',
+        remark: item.remark || '',
+        sourceType: item.sourceType || ''
+      }));
+      proxy.$modal.msgSuccess(`成功导入 ${detailList.value.length} 条物料明细`);
+    })
+    .catch(() => {
+      // cancelled or error
+    });
 }
 
 function handleDetailSelectionChange(selection) {
-  checkedDetail.value = selection.map(item => item.index)
+  checkedDetail.value = selection.map((item) => item.index);
 }
 
 function getDictLabel(dictOptions, value) {
-  const dict = dictOptions.find(item => item.value === value)
-  return dict ? dict.label : value
+  const dict = dictOptions.find((item) => item.value === value);
+  return dict ? dict.label : value;
 }
 
 function handleAutoGenChange(autoGenFlag) {
   if (autoGenFlag) {
-    previewCode('PRD_MATERIAL_MBOM').then(response => {
+    previewCode('PRD_MATERIAL_MBOM').then((response) => {
       form.value.requirementNo = response;
     });
   } else {

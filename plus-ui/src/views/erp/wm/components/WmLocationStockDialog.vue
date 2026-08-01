@@ -69,7 +69,8 @@ const load = () => {
     return;
   }
   loading.value = true;
-  listStock({ locationId: Number(props.locationId), pageNum: pageNum.value, pageSize: pageSize.value })
+  // locationId 雪花ID字符串透传，Number() 会截断
+  listStock({ locationId: String(props.locationId), pageNum: pageNum.value, pageSize: pageSize.value })
     .then((response: any) => {
       rows.value = response.rows || [];
       total.value = response.total || 0;

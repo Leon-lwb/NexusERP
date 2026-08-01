@@ -226,8 +226,8 @@ onMounted(() => {
 function loadRoutingDetail(id: string) {
   getRouting(id).then((response: any) => {
     form.value = response.data;
-    // 加载步骤
-    getRoutingSteps(Number(id)).then((stepResponse: any) => {
+    // 加载步骤（雪花ID不能 Number() 截断，字符串透传）
+    getRoutingSteps(id).then((stepResponse: any) => {
       stepItems.value = stepResponse.data || stepResponse.rows || [];
     });
   });

@@ -21,8 +21,8 @@
         <el-row :gutter="20">
           <el-col :span="8">
             <el-form-item label="出库单编号" prop="issueCode">
-              <div style="display: flex; align-items: center; gap: 10px;">
-                <el-input v-model="form.issueCode" placeholder="请输入出库单编号" :disabled="autoGenFlag || isViewMode" style="flex: 1;" />
+              <div style="display: flex; align-items: center; gap: 10px">
+                <el-input v-model="form.issueCode" placeholder="请输入出库单编号" :disabled="autoGenFlag || isViewMode" style="flex: 1" />
                 <el-switch v-model="autoGenFlag" active-color="#13ce66" active-text="生成" @change="handleAutoGenChange" :disabled="isViewMode">
                 </el-switch>
               </div>
@@ -35,13 +35,7 @@
           </el-col>
           <el-col :span="8">
             <el-form-item label="出库日期" prop="issueDate">
-              <el-date-picker
-                v-model="form.issueDate"
-                type="date"
-                value-format="YYYY-MM-DD"
-                placeholder="请选择出库日期"
-                style="width: 100%"
-              />
+              <el-date-picker v-model="form.issueDate" type="date" value-format="YYYY-MM-DD" placeholder="请选择出库日期" style="width: 100%" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -84,9 +78,16 @@
           </el-col>
           <el-col :span="8">
             <el-form-item label="审批流程" prop="selectFlowId">
-              <el-select v-model="form.selectFlowId" clearable filterable :loading="loadingFlow"
-                :disabled="isViewMode || form.status !== 'DRAFT'" placeholder="请选择审批流程" style="width: 100%">
-                <el-option v-for="f in flowOptions" :key="f.id" :label="f.flowName || f.businessName || ('流程#' + f.id)" :value="f.id" />
+              <el-select
+                v-model="form.selectFlowId"
+                clearable
+                filterable
+                :loading="loadingFlow"
+                :disabled="isViewMode || form.status !== 'DRAFT'"
+                placeholder="请选择审批流程"
+                style="width: 100%"
+              >
+                <el-option v-for="f in flowOptions" :key="f.id" :label="f.flowName || f.businessName || '流程#' + f.id" :value="f.id" />
               </el-select>
             </el-form-item>
           </el-col>
@@ -99,7 +100,12 @@
         <!-- 审批流程提示 -->
         <el-row :gutter="20" v-if="form.status === 'DRAFT' && flowOptions.length === 0 && (!form.selectFlowId || form.selectFlowId === '')">
           <el-col :span="24">
-            <el-alert type="warning" show-icon :closable="false" title="未配置可用审批流程，请先在 workflow 模块配置流程模板并绑定到 wmSalesIssueService。" />
+            <el-alert
+              type="warning"
+              show-icon
+              :closable="false"
+              title="未配置可用审批流程，请先在 workflow 模块配置流程模板并绑定到 wmSalesIssueService。"
+            />
           </el-col>
         </el-row>
 
@@ -126,14 +132,10 @@
         <el-divider content-position="center">出库明细</el-divider>
         <el-row :gutter="10" class="mb8">
           <el-col :span="1.5">
-            <el-button type="primary" icon="Plus" @click="handleAddLine" v-if="!isViewMode && form.status === 'DRAFT'">
-              添加物料
-            </el-button>
+            <el-button type="primary" icon="Plus" @click="handleAddLine" v-if="!isViewMode && form.status === 'DRAFT'"> 添加物料 </el-button>
           </el-col>
           <el-col :span="1.5">
-            <el-button type="danger" icon="Delete" @click="handleDeleteLine" v-if="!isViewMode && form.status === 'DRAFT'">
-              删除
-            </el-button>
+            <el-button type="danger" icon="Delete" @click="handleDeleteLine" v-if="!isViewMode && form.status === 'DRAFT'"> 删除 </el-button>
           </el-col>
           <el-col :span="1.5">
             <el-button type="info" icon="Download" @click="handleImportFromOrder" v-if="!isViewMode && form.status === 'DRAFT' && form.soId">
@@ -142,13 +144,7 @@
           </el-col>
         </el-row>
 
-        <el-table
-          :data="wmSalesIssueLineList"
-          :row-class-name="rowLineIndex"
-          @selection-change="handleLineSelectionChange"
-          ref="lineTable"
-          border
-        >
+        <el-table :data="wmSalesIssueLineList" :row-class-name="rowLineIndex" @selection-change="handleLineSelectionChange" ref="lineTable" border>
           <el-table-column type="selection" width="50" align="center" v-if="!isViewMode && form.status === 'DRAFT'" />
           <el-table-column label="序号" align="center" prop="index" width="60" />
           <el-table-column label="物料编码" prop="materialCode" width="140">
@@ -345,21 +341,21 @@ import {
   completeSalesIssue,
   submitSalesIssueFlow,
   getSalesIssueProcId
-} from "@/api/erp/wm/sales-issue"
-import { listOrderheader, getOrderLine } from "@/api/erp/so/orderheader"
-import { listWarehouse } from "@/api/erp/wm/warehouse"
-import { listMaterial } from "@/api/erp/bd/material"
-import { listStock } from "@/api/erp/wm/stock"
-import { listStoragelocation } from "@/api/erp/wm/storagelocation"
-import { getProcesss } from '@/api/workflow/process'
-import { useRoute, useRouter } from 'vue-router'
-import { previewCode } from "@/api/system/autocode/rule"
-import type { SalesIssueForm } from "@/api/erp/wm/sales-issue/types"
+} from '@/api/erp/wm/sales-issue';
+import { listOrderheader, getOrderLine } from '@/api/erp/so/orderheader';
+import { listWarehouse } from '@/api/erp/wm/warehouse';
+import { listMaterial } from '@/api/erp/bd/material';
+import { listStock } from '@/api/erp/wm/stock';
+import { listStoragelocation } from '@/api/erp/wm/storagelocation';
+import { getProcesss } from '@/api/workflow/process';
+import { useRoute, useRouter } from 'vue-router';
+import { previewCode } from '@/api/system/autocode/rule';
+import type { SalesIssueForm } from '@/api/erp/wm/sales-issue/types';
 
-const { proxy } = getCurrentInstance() as any
-const { wm_sales_status, so_order_status } = toRefs<any>(proxy.useDict('wm_sales_status', 'so_order_status'))
-const route = useRoute()
-const router = useRouter()
+const { proxy } = getCurrentInstance() as any;
+const { wm_sales_status, so_order_status } = toRefs<any>(proxy.useDict('wm_sales_status', 'so_order_status'));
+const route = useRoute();
+const router = useRouter();
 
 /** 流程详情 / HistoricDetail 嵌入时传入 */
 const props = defineProps({
@@ -367,7 +363,7 @@ const props = defineProps({
   model: { type: Object, default: () => ({}) },
   customFormData: { type: Object, default: () => ({}) },
   isNew: { type: Boolean, default: false }
-})
+});
 
 // 表单数据
 const form = ref<SalesIssueForm>({
@@ -385,41 +381,41 @@ const form = ref<SalesIssueForm>({
   totalAmount: 0,
   status: 'DRAFT',
   remark: null
-})
+});
 
-const wmSalesIssueLineList = ref([])
-const checkedLines = ref([])
-const autoGenFlag = ref(false)
-const isViewMode = ref(false)
-const title = ref("")
-const loadingFlow = ref(false)
-const flowOptions = ref([])
+const wmSalesIssueLineList = ref([]);
+const checkedLines = ref([]);
+const autoGenFlag = ref(false);
+const isViewMode = ref(false);
+const title = ref('');
+const loadingFlow = ref(false);
+const flowOptions = ref([]);
 
 // 表单禁用状态（考虑 workflow 嵌入和查看模式）
-const formDisabled = computed(() => isViewMode.value || props.disabled)
-const currentLineIndex = ref(-1)
+const formDisabled = computed(() => isViewMode.value || props.disabled);
+const currentLineIndex = ref(-1);
 
 // 对话框显示状态
-const salesOrderDialogOpen = ref(false)
-const warehouseDialogOpen = ref(false)
-const materialDialogOpen = ref(false)
-const batchDialogOpen = ref(false)
-const locationDialogOpen = ref(false)
+const salesOrderDialogOpen = ref(false);
+const warehouseDialogOpen = ref(false);
+const materialDialogOpen = ref(false);
+const batchDialogOpen = ref(false);
+const locationDialogOpen = ref(false);
 
 // 选中数据
-const selectedSalesOrder = ref(null)
-const selectedWarehouse = ref(null)
-const selectedMaterial = ref(null)
-const selectedBatch = ref(null)
-const selectedLocation = ref(null)
-const importOrderLoading = ref(false)
+const selectedSalesOrder = ref(null);
+const selectedWarehouse = ref(null);
+const selectedMaterial = ref(null);
+const selectedBatch = ref(null);
+const selectedLocation = ref(null);
+const importOrderLoading = ref(false);
 
 // 列表数据
-const salesOrderList = ref([])
-const warehouseList = ref([])
-const materialList = ref([])
-const batchList = ref([])
-const locationList = ref([])
+const salesOrderList = ref([]);
+const warehouseList = ref([]);
+const materialList = ref([]);
+const batchList = ref([]);
+const locationList = ref([]);
 
 // 查询参数
 const salesOrderQuery = reactive({
@@ -428,44 +424,46 @@ const salesOrderQuery = reactive({
   soNo: null,
   clientName: null,
   orderStatus: 'CONFIRMED'
-})
+});
 
 const materialQuery = reactive({
   pageNum: 1,
   pageSize: 10,
   materialCode: null,
   materialName: null
-})
+});
 
 // 表单校验规则
 const rules = {
-  issueCode: [{ required: true, message: "出库单编号不能为空", trigger: "blur" }],
-  issueDate: [{ required: true, message: "出库日期不能为空", trigger: "change" }],
-  warehouseName: [{ required: true, message: "仓库不能为空", trigger: "change" }]
-}
+  issueCode: [{ required: true, message: '出库单编号不能为空', trigger: 'blur' }],
+  issueDate: [{ required: true, message: '出库日期不能为空', trigger: 'change' }],
+  warehouseName: [{ required: true, message: '仓库不能为空', trigger: 'change' }]
+};
 
 /**
  * 将流程下发的业务数据写入本地状态
  */
 function applyWorkflowFormPayload(payload: Record<string, any>) {
-  if (!payload || typeof payload !== 'object') return
-  const merged = JSON.parse(JSON.stringify(payload)) as Record<string, any>
-  form.value = merged
-  wmSalesIssueLineList.value = Array.isArray(merged.wmSalesIssueLineList) ? merged.wmSalesIssueLineList : []
+  if (!payload || typeof payload !== 'object') return;
+  const merged = JSON.parse(JSON.stringify(payload)) as Record<string, any>;
+  form.value = merged;
+  wmSalesIssueLineList.value = Array.isArray(merged.wmSalesIssueLineList) ? merged.wmSalesIssueLineList : [];
 }
 
 /**
  * 加载审批流列表
  */
 function loadFlows() {
-  loadingFlow.value = true
-  getProcesss({ serviceName: 'wmSalesIssueService' }).then((response: any) => {
-    flowOptions.value = response?.data || []
-    tryAutoSelect()
-    loadingFlow.value = false
-  }).catch(() => {
-    loadingFlow.value = false
-  })
+  loadingFlow.value = true;
+  getProcesss({ serviceName: 'wmSalesIssueService' })
+    .then((response: any) => {
+      flowOptions.value = response?.data || [];
+      tryAutoSelect();
+      loadingFlow.value = false;
+    })
+    .catch(() => {
+      loadingFlow.value = false;
+    });
 }
 
 /**
@@ -473,7 +471,7 @@ function loadFlows() {
  */
 function tryAutoSelect() {
   if (!form.value.selectFlowId && flowOptions.value.length === 1) {
-    form.value.selectFlowId = flowOptions.value[0].id
+    form.value.selectFlowId = flowOptions.value[0].id;
   }
 }
 
@@ -481,50 +479,50 @@ watch(
   () => props.customFormData,
   (val) => {
     if (val && typeof val === 'object' && (val as any).issueId != null) {
-      applyWorkflowFormPayload(val as Record<string, any>)
-      isViewMode.value = props.disabled
-      title.value = props.disabled ? '销售出库（流程）' : '销售出库'
-      loadFlows()
+      applyWorkflowFormPayload(val as Record<string, any>);
+      isViewMode.value = props.disabled;
+      title.value = props.disabled ? '销售出库（流程）' : '销售出库';
+      loadFlows();
     }
   },
   { deep: true, immediate: true }
-)
+);
 
 onMounted(() => {
-  const id = route.query.id
-  const action = route.query.action
-  isViewMode.value = action === 'view'
+  const id = route.query.id;
+  const action = route.query.action;
+  isViewMode.value = action === 'view';
 
   if (id) {
-    initPage(id, action)
+    initPage(id, action);
   } else if (action === 'add') {
-    title.value = "新增销售出库"
-    reset()
-    loadFlows()
+    title.value = '新增销售出库';
+    reset();
+    loadFlows();
   }
-})
+});
 
 function initPage(id: any, action: any) {
   if (action === 'view') {
-    title.value = "查看销售出库"
+    title.value = '查看销售出库';
   } else if (action === 'edit') {
-    title.value = "修改销售出库"
+    title.value = '修改销售出库';
   }
-  getInfo(id)
-  loadFlows()
+  getInfo(id);
+  loadFlows();
 }
 
 function getInfo(id: any) {
   getSalesIssue(id).then((response: any) => {
-    form.value = response.data
-    wmSalesIssueLineList.value = response.data.wmSalesIssueLineList || []
-    calculateTotal()
-    tryAutoSelect()
-  })
+    form.value = response.data;
+    wmSalesIssueLineList.value = response.data.wmSalesIssueLineList || [];
+    calculateTotal();
+    tryAutoSelect();
+  });
 }
 
 function reset() {
-  autoGenFlag.value = false
+  autoGenFlag.value = false;
   form.value = {
     issueId: null,
     issueCode: null,
@@ -541,72 +539,78 @@ function reset() {
     status: 'DRAFT',
     remark: null,
     selectFlowId: null
-  }
-  wmSalesIssueLineList.value = []
-  calculateTotal()
-  proxy.resetForm("salesIssueRef")
+  };
+  wmSalesIssueLineList.value = [];
+  calculateTotal();
+  proxy.resetForm('salesIssueRef');
 }
 
 /** 提交按钮 */
 function submitForm() {
-  proxy.$refs["salesIssueRef"].validate((valid: boolean) => {
+  proxy.$refs['salesIssueRef'].validate((valid: boolean) => {
     if (valid) {
-        // 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号
-        if (autoGenFlag.value) {
-          form.value.issueCode = undefined;
-        }
+      // 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号
+      if (autoGenFlag.value) {
+        form.value.issueCode = undefined;
+      }
       if (wmSalesIssueLineList.value.length === 0) {
-        proxy.$modal.msgError("请至少添加一条出库明细")
-        return
+        proxy.$modal.msgError('请至少添加一条出库明细');
+        return;
       }
 
       // 校验库存
-      for (let line of wmSalesIssueLineList.value) {
+      for (const line of wmSalesIssueLineList.value) {
         if (!line.quantityIssue || line.quantityIssue <= 0) {
-          proxy.$modal.msgError("出库数量必须大于0")
-          return
+          proxy.$modal.msgError('出库数量必须大于0');
+          return;
         }
         if (line.stockQuantity && line.quantityIssue > line.stockQuantity) {
-          proxy.$modal.msgError(`物料【${line.materialName}】出库数量不能大于库存数量`)
-          return
+          proxy.$modal.msgError(`物料【${line.materialName}】出库数量不能大于库存数量`);
+          return;
         }
       }
 
-      form.value.wmSalesIssueLineList = wmSalesIssueLineList.value
+      form.value.wmSalesIssueLineList = wmSalesIssueLineList.value;
 
       if (form.value.issueId != null) {
         updateSalesIssue(form.value).then(() => {
-          proxy.$modal.msgSuccess("修改成功")
-          router.push('/erp/outbound/salesIssue')
-        })
+          proxy.$modal.msgSuccess('修改成功');
+          router.push('/erp/outbound/salesIssue');
+        });
       } else {
         addSalesIssue(form.value).then(() => {
-          proxy.$modal.msgSuccess("新增成功")
-          router.push('/erp/outbound/salesIssue')
-        })
+          proxy.$modal.msgSuccess('新增成功');
+          router.push('/erp/outbound/salesIssue');
+        });
       }
     }
-  })
+  });
 }
 
 /** 确认按钮 */
 function handleConfirm() {
-  proxy.$modal.confirm('确认后单据将进入已确认状态，是否继续？').then(() => {
-    return confirmSalesIssue(form.value.issueId)
-  }).then(() => {
-    proxy.$modal.msgSuccess("确认成功")
-    getInfo(form.value.issueId)
-  })
+  proxy.$modal
+    .confirm('确认后单据将进入已确认状态，是否继续？')
+    .then(() => {
+      return confirmSalesIssue(form.value.issueId);
+    })
+    .then(() => {
+      proxy.$modal.msgSuccess('确认成功');
+      getInfo(form.value.issueId);
+    });
 }
 
 /** 完成出库按钮 */
 function handleComplete() {
-  proxy.$modal.confirm('完成后将扣减库存，是否继续？').then(() => {
-    return completeSalesIssue(form.value.issueId)
-  }).then(() => {
-    proxy.$modal.msgSuccess("出库完成")
-    getInfo(form.value.issueId)
-  })
+  proxy.$modal
+    .confirm('完成后将扣减库存，是否继续？')
+    .then(() => {
+      return completeSalesIssue(form.value.issueId);
+    })
+    .then(() => {
+      proxy.$modal.msgSuccess('出库完成');
+      getInfo(form.value.issueId);
+    });
 }
 
 /**
@@ -614,25 +618,27 @@ function handleComplete() {
  */
 function handleSubmitFlow() {
   if (!form.value.selectFlowId) {
-    proxy.$modal.msgWarning("请先选择审批流程")
-    return
+    proxy.$modal.msgWarning('请先选择审批流程');
+    return;
   }
-  form.value.wmSalesIssueLineList = wmSalesIssueLineList.value
+  form.value.wmSalesIssueLineList = wmSalesIssueLineList.value;
   if (form.value.issueId != null) {
     updateSalesIssue(form.value).then(() => {
-      submitSalesIssueFlow(String(form.value.issueId), String(form.value.selectFlowId)).then((res: any) => {
-        if (res.code === 200) {
-          proxy.$modal.msgSuccess("提交审批成功")
-          router.push('/erp/outbound/salesIssue')
-        } else {
-          proxy.$modal.msgError(res.msg || '提交审批失败')
-        }
-      }).catch((error: any) => {
-        proxy.$modal.msgError('提交审批失败：' + error)
-      })
-    })
+      submitSalesIssueFlow(String(form.value.issueId), String(form.value.selectFlowId))
+        .then((res: any) => {
+          if (res.code === 200) {
+            proxy.$modal.msgSuccess('提交审批成功');
+            router.push('/erp/outbound/salesIssue');
+          } else {
+            proxy.$modal.msgError(res.msg || '提交审批失败');
+          }
+        })
+        .catch((error: any) => {
+          proxy.$modal.msgError('提交审批失败：' + error);
+        });
+    });
   } else {
-    proxy.$modal.msgWarning("请先保存单据后再提交审批")
+    proxy.$modal.msgWarning('请先保存单据后再提交审批');
   }
 }
 
@@ -640,15 +646,17 @@ function handleSubmitFlow() {
  * 查看流程
  */
 function onViewFlow() {
-  getSalesIssueProcId(String(form.value.issueId)).then((res: any) => {
-    if (res.code === 200 && res.data) {
-      router.push('/workflow/process/detail/' + res.data)
-    } else {
-      proxy.$modal.msgWarning('暂无流程信息')
-    }
-  }).catch(() => {
-    proxy.$modal.msgWarning('获取流程信息失败')
-  })
+  getSalesIssueProcId(String(form.value.issueId))
+    .then((res: any) => {
+      if (res.code === 200 && res.data) {
+        router.push('/workflow/process/detail/' + res.data);
+      } else {
+        proxy.$modal.msgWarning('暂无流程信息');
+      }
+    })
+    .catch(() => {
+      proxy.$modal.msgWarning('获取流程信息失败');
+    });
 }
 
 //自动生成编号
@@ -663,22 +671,24 @@ function handleAutoGenChange(autoGenFlag: boolean) {
 }
 
 function cancel() {
-  proxy.$tab.closeOpenPage({ path: '/erp/outbound/salesIssue' })
+  proxy.$tab.closeOpenPage({ path: '/erp/outbound/salesIssue' });
 }
 
 /** 明细行相关方法 */
-function rowLineIndex({ rowIndex }: any) {
-  return { rowIndex: rowIndex + 1 }
+function rowLineIndex({ row, rowIndex }: any) {
+  // 给行对象写入自增 index，供删除过滤使用（否则 item.index 恒 undefined，includes 恒 true 误删全部）
+  row.index = rowIndex + 1;
+  return { rowIndex: rowIndex + 1 };
 }
 
 function handleLineSelectionChange(selection: any[]) {
-  checkedLines.value = selection.map((item: any) => item.index)
+  checkedLines.value = selection.map((item: any) => item.index);
 }
 
 function handleAddLine() {
   if (!form.value.warehouseId) {
-    proxy.$modal.msgError("请先选择仓库")
-    return
+    proxy.$modal.msgError('请先选择仓库');
+    return;
   }
 
   const obj: any = {
@@ -702,45 +712,45 @@ function handleAddLine() {
     unitPrice: 0,
     lineAmount: 0,
     remark: null
-  }
-  wmSalesIssueLineList.value.push(obj)
+  };
+  wmSalesIssueLineList.value.push(obj);
 }
 
 function handleDeleteLine() {
   if (checkedLines.value.length === 0) {
-    proxy.$modal.msgError("请先选择要删除的数据")
-    return
+    proxy.$modal.msgError('请先选择要删除的数据');
+    return;
   }
-  wmSalesIssueLineList.value = wmSalesIssueLineList.value.filter((item: any) => !checkedLines.value.includes(item.index))
+  wmSalesIssueLineList.value = wmSalesIssueLineList.value.filter((item: any) => !checkedLines.value.includes(item.index));
   // 重新计算序号
   wmSalesIssueLineList.value.forEach((item: any, index: number) => {
-    item.index = index + 1
-    item.lineNo = String((index + 1) * 10).padStart(4, '0')
-  })
-  calculateTotal()
+    item.index = index + 1;
+    item.lineNo = String((index + 1) * 10).padStart(4, '0');
+  });
+  calculateTotal();
 }
 
 function calculateLineAmount(row: any) {
-  const qty = parseFloat(row.quantityIssue) || 0
-  const price = parseFloat(row.unitPrice) || 0
-  row.lineAmount = (qty * price).toFixed(4)
-  calculateTotal()
+  const qty = parseFloat(row.quantityIssue) || 0;
+  const price = parseFloat(row.unitPrice) || 0;
+  row.lineAmount = (qty * price).toFixed(4);
+  calculateTotal();
 }
 
 function calculateTotal() {
-  let totalQty = 0
-  let totalAmt = 0
+  let totalQty = 0;
+  let totalAmt = 0;
   wmSalesIssueLineList.value.forEach((item: any) => {
-    totalQty += parseFloat(item.quantityIssue) || 0
-    totalAmt += parseFloat(item.lineAmount) || 0
-  })
-  form.value.totalQuantity = totalQty.toFixed(2)
-  form.value.totalAmount = totalAmt.toFixed(4)
+    totalQty += parseFloat(item.quantityIssue) || 0;
+    totalAmt += parseFloat(item.lineAmount) || 0;
+  });
+  form.value.totalQuantity = totalQty.toFixed(2);
+  form.value.totalAmount = totalAmt.toFixed(4);
 }
 
 function formatAmount(amount: any) {
-  if (!amount) return '0.00'
-  return parseFloat(amount).toFixed(2)
+  if (!amount) return '0.00';
+  return parseFloat(amount).toFixed(2);
 }
 
 function getStatusType(status: string) {
@@ -752,8 +762,8 @@ function getStatusType(status: string) {
     'CONFIRMED': 'warning',
     'COMPLETED': 'success',
     'CANCELLED': 'danger'
-  }
-  return typeMap[status] || 'info'
+  };
+  return typeMap[status] || 'info';
 }
 
 function getStatusLabel(status: string) {
@@ -765,64 +775,64 @@ function getStatusLabel(status: string) {
     'CONFIRMED': '已确认',
     'COMPLETED': '已完成',
     'CANCELLED': '已取消'
-  }
-  return labelMap[status] || status
+  };
+  return labelMap[status] || status;
 }
 
 /** 销售订单选择 */
 function openSalesOrderSelect() {
-  salesOrderDialogOpen.value = true
-  selectedSalesOrder.value = null
-  getSalesOrderList()
+  salesOrderDialogOpen.value = true;
+  selectedSalesOrder.value = null;
+  getSalesOrderList();
 }
 
 function getSalesOrderList() {
   listOrderheader(salesOrderQuery).then((response: any) => {
-    salesOrderList.value = response.rows
-  })
+    salesOrderList.value = response.rows;
+  });
 }
 
 function handleSalesOrderSelect(val: any) {
-  selectedSalesOrder.value = val
+  selectedSalesOrder.value = val;
 }
 
 function confirmSalesOrderSelect() {
   if (selectedSalesOrder.value) {
-    form.value.soId = selectedSalesOrder.value.soId
-    form.value.soNo = selectedSalesOrder.value.soNo
-    form.value.clientId = selectedSalesOrder.value.clientId
-    form.value.clientName = selectedSalesOrder.value.clientName
-    salesOrderDialogOpen.value = false
+    form.value.soId = selectedSalesOrder.value.soId;
+    form.value.soNo = selectedSalesOrder.value.soNo;
+    form.value.clientId = selectedSalesOrder.value.clientId;
+    form.value.clientName = selectedSalesOrder.value.clientName;
+    salesOrderDialogOpen.value = false;
   }
 }
 
 /** 仓库选择 */
 function openWarehouseSelect() {
-  warehouseDialogOpen.value = true
-  selectedWarehouse.value = null
+  warehouseDialogOpen.value = true;
+  selectedWarehouse.value = null;
   listWarehouse({ pageNum: 1, pageSize: 100 }).then((response: any) => {
-    warehouseList.value = response.rows
-  })
+    warehouseList.value = response.rows;
+  });
 }
 
 function handleWarehouseSelect(val: any) {
-  selectedWarehouse.value = val
+  selectedWarehouse.value = val;
 }
 
 function confirmWarehouseSelect() {
   if (selectedWarehouse.value) {
-    form.value.warehouseId = selectedWarehouse.value.warehouseId
-    form.value.warehouseName = selectedWarehouse.value.warehouseName
-    warehouseDialogOpen.value = false
+    form.value.warehouseId = selectedWarehouse.value.warehouseId;
+    form.value.warehouseName = selectedWarehouse.value.warehouseName;
+    warehouseDialogOpen.value = false;
   }
 }
 
 /** 物料选择 */
 function openMaterialSelect(index: number) {
-  currentLineIndex.value = index
-  materialDialogOpen.value = true
-  selectedMaterial.value = null
-  getMaterialList()
+  currentLineIndex.value = index;
+  materialDialogOpen.value = true;
+  selectedMaterial.value = null;
+  getMaterialList();
 }
 
 function getMaterialList() {
@@ -830,45 +840,45 @@ function getMaterialList() {
   const params = {
     ...materialQuery,
     warehouseId: form.value.warehouseId ?? null
-  }
+  };
   listMaterial(params).then((response: any) => {
-    materialList.value = response.rows
-  })
+    materialList.value = response.rows;
+  });
 }
 
 function handleMaterialSelect(val: any) {
-  selectedMaterial.value = val
+  selectedMaterial.value = val;
 }
 
 function confirmMaterialSelect() {
   if (selectedMaterial.value && currentLineIndex.value >= 0) {
-    const row = wmSalesIssueLineList.value[currentLineIndex.value]
-    row.materialId = selectedMaterial.value.materialId
-    row.materialCode = selectedMaterial.value.materialCode
-    row.materialName = selectedMaterial.value.materialName
-    row.materialSpec = selectedMaterial.value.materialSpec
-    row.baseUomId = selectedMaterial.value.baseUomId
-    row.baseUomName = selectedMaterial.value.baseUomName
-    row.unitPrice = selectedMaterial.value.standardPrice || 0
-    materialDialogOpen.value = false
+    const row = wmSalesIssueLineList.value[currentLineIndex.value];
+    row.materialId = selectedMaterial.value.materialId;
+    row.materialCode = selectedMaterial.value.materialCode;
+    row.materialName = selectedMaterial.value.materialName;
+    row.materialSpec = selectedMaterial.value.materialSpec;
+    row.baseUomId = selectedMaterial.value.baseUomId;
+    row.baseUomName = selectedMaterial.value.baseUomName;
+    row.unitPrice = selectedMaterial.value.standardPrice || 0;
+    materialDialogOpen.value = false;
 
     // 加载该物料的库存信息
-    loadStockInfo(row)
+    loadStockInfo(row);
   }
 }
 
 /** 批次选择 */
 function openBatchSelect(index: number) {
-  currentLineIndex.value = index
-  const row = wmSalesIssueLineList.value[index]
+  currentLineIndex.value = index;
+  const row = wmSalesIssueLineList.value[index];
 
   if (!row.materialId) {
-    proxy.$modal.msgError("请先选择物料")
-    return
+    proxy.$modal.msgError('请先选择物料');
+    return;
   }
 
-  batchDialogOpen.value = true
-  selectedBatch.value = null
+  batchDialogOpen.value = true;
+  selectedBatch.value = null;
 
   // 查询该物料在选中仓库的库存批次
   listStock({
@@ -877,58 +887,58 @@ function openBatchSelect(index: number) {
     pageNum: 1,
     pageSize: 100
   }).then((response: any) => {
-    batchList.value = response.rows.filter((item: any) => item.stockQuantity > 0)
-  })
+    batchList.value = response.rows.filter((item: any) => item.stockQuantity > 0);
+  });
 }
 
 function handleBatchSelect(val: any) {
-  selectedBatch.value = val
+  selectedBatch.value = val;
 }
 
 function confirmBatchSelect() {
   if (selectedBatch.value && currentLineIndex.value >= 0) {
-    const row = wmSalesIssueLineList.value[currentLineIndex.value]
-    row.batchId = selectedBatch.value.batchId
-    row.batchCode = selectedBatch.value.batchCode
-    row.locationId = selectedBatch.value.locationId
-    row.locationName = selectedBatch.value.locationName
-    row.stockQuantity = selectedBatch.value.stockQuantity
-    batchDialogOpen.value = false
+    const row = wmSalesIssueLineList.value[currentLineIndex.value];
+    row.batchId = selectedBatch.value.batchId;
+    row.batchCode = selectedBatch.value.batchCode;
+    row.locationId = selectedBatch.value.locationId;
+    row.locationName = selectedBatch.value.locationName;
+    row.stockQuantity = selectedBatch.value.stockQuantity;
+    batchDialogOpen.value = false;
   }
 }
 
 /** 库位选择 */
 function openLocationSelect(index: number) {
-  currentLineIndex.value = index
-  locationDialogOpen.value = true
-  selectedLocation.value = null
+  currentLineIndex.value = index;
+  locationDialogOpen.value = true;
+  selectedLocation.value = null;
 
   listStoragelocation({
     warehouseId: form.value.warehouseId,
     pageNum: 1,
     pageSize: 100
   }).then((response: any) => {
-    locationList.value = response.rows
-  })
+    locationList.value = response.rows;
+  });
 }
 
 function handleLocationSelect(val: any) {
-  selectedLocation.value = val
+  selectedLocation.value = val;
 }
 
 function confirmLocationSelect() {
   if (selectedLocation.value && currentLineIndex.value >= 0) {
-    const row = wmSalesIssueLineList.value[currentLineIndex.value]
-    row.locationId = selectedLocation.value.locationId
-    row.locationCode = selectedLocation.value.locationCode
-    row.locationName = selectedLocation.value.locationName
-    locationDialogOpen.value = false
+    const row = wmSalesIssueLineList.value[currentLineIndex.value];
+    row.locationId = selectedLocation.value.locationId;
+    row.locationCode = selectedLocation.value.locationCode;
+    row.locationName = selectedLocation.value.locationName;
+    locationDialogOpen.value = false;
   }
 }
 
 /** 加载库存信息 */
 function loadStockInfo(row: any) {
-  if (!form.value.warehouseId || !row.materialId) return
+  if (!form.value.warehouseId || !row.materialId) return;
 
   listStock({
     materialId: row.materialId,
@@ -937,71 +947,73 @@ function loadStockInfo(row: any) {
     pageSize: 1
   }).then((response: any) => {
     if (response.rows && response.rows.length > 0) {
-      const stock = response.rows[0]
-      row.stockQuantity = stock.stockQuantity
-      row.batchId = stock.batchId
-      row.batchCode = stock.batchCode
-      row.locationId = stock.locationId
-      row.locationName = stock.locationName
+      const stock = response.rows[0];
+      row.stockQuantity = stock.stockQuantity;
+      row.batchId = stock.batchId;
+      row.batchCode = stock.batchCode;
+      row.locationId = stock.locationId;
+      row.locationName = stock.locationName;
     }
-  })
+  });
 }
 
 /** 从订单导入明细 */
 function handleImportFromOrder() {
   if (!form.value.soId) {
-    proxy.$modal.msgError("请先选择销售订单")
-    return
+    proxy.$modal.msgError('请先选择销售订单');
+    return;
   }
 
   if (wmSalesIssueLineList.value.length > 0) {
     proxy.$modal.confirm('导入订单明细会覆盖当前已有的出库明细，是否继续？').then(() => {
-      return loadOrderLinesIntoIssue()
-    })
-    return
+      return loadOrderLinesIntoIssue();
+    });
+    return;
   }
 
-  loadOrderLinesIntoIssue()
+  loadOrderLinesIntoIssue();
 }
 
 function loadOrderLinesIntoIssue() {
-  importOrderLoading.value = true
-  return getOrderLine(form.value.soNo).then((response: any) => {
-    const orderLines = response.data || []
+  importOrderLoading.value = true;
+  return getOrderLine(form.value.soNo)
+    .then((response: any) => {
+      const orderLines = response.data || [];
 
-    if (orderLines.length === 0) {
-      proxy.$modal.msgWarning("该销售订单暂无明细")
-      return
-    }
+      if (orderLines.length === 0) {
+        proxy.$modal.msgWarning('该销售订单暂无明细');
+        return;
+      }
 
-    wmSalesIssueLineList.value = orderLines.map((item: any, index: number) => ({
-      sourceDocLineId: item.lineId,
-      lineNo: String((index + 1) * 10).padStart(4, '0'),
-      materialId: item.materialId,
-      materialCode: item.materialCode,
-      materialName: item.materialName,
-      materialSpec: item.materialSpec,
-      baseUomId: null,
-      baseUomName: item.unit,
-      batchId: null,
-      batchCode: null,
-      locationId: null,
-      locationCode: null,
-      locationName: null,
-      stockQuantity: item.orderedQty || 0,
-      quantityIssue: Math.max((item.orderedQty || 0) - (item.deliveredQty || 0), 0),
-      quantityOrdered: item.orderedQty || 0,
-      quantityDelivered: item.deliveredQty || 0,
-      unitPrice: item.unitPrice || 0,
-      lineAmount: ((Math.max((item.orderedQty || 0) - (item.deliveredQty || 0), 0)) * (item.unitPrice || 0)).toFixed(4),
-      remark: item.attr1 || null
-    }))
+      wmSalesIssueLineList.value = orderLines.map((item: any, index: number) => ({
+        sourceDocLineId: item.lineId,
+        lineNo: String((index + 1) * 10).padStart(4, '0'),
+        materialId: item.materialId,
+        materialCode: item.materialCode,
+        materialName: item.materialName,
+        materialSpec: item.materialSpec,
+        baseUomId: null,
+        baseUomName: item.unit,
+        batchId: null,
+        batchCode: null,
+        locationId: null,
+        locationCode: null,
+        locationName: null,
+        stockQuantity: item.orderedQty || 0,
+        quantityIssue: Math.max((item.orderedQty || 0) - (item.deliveredQty || 0), 0),
+        quantityOrdered: item.orderedQty || 0,
+        quantityDelivered: item.deliveredQty || 0,
+        unitPrice: item.unitPrice || 0,
+        lineAmount: (Math.max((item.orderedQty || 0) - (item.deliveredQty || 0), 0) * (item.unitPrice || 0)).toFixed(4),
+        remark: item.attr1 || null
+      }));
 
-    calculateTotal()
-    proxy.$modal.msgSuccess(`已导入 ${orderLines.length} 条销售订单明细`)
-  }).finally(() => {
-    importOrderLoading.value = false
-  })
+      calculateTotal();
+      proxy.$modal.msgSuccess(`已导入 ${orderLines.length} 条销售订单明细`);
+    })
+    .finally(() => {
+      importOrderLoading.value = false;
+    });
 }
 </script>
 

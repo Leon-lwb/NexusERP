@@ -17,6 +17,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 委外订单 Controller
@@ -202,5 +203,74 @@ public class PrdSubcontractController extends BaseController {
     public R<Void> close(@PathVariable Long subcontractId) {
         subcontractService.close(subcontractId);
         return R.ok();
+    }
+
+    /**
+     * 委外发料
+     * <p>
+     * 发料视为委外开始（进入进行中状态），业务上由仓库领料流程记录实际扣料。
+     * 权限标识：{@code prd:subcontract:edit}</p>
+     * <p>日志记录：title="委外订单-发料"，businessType=UPDATE</p>
+     *
+     * @param subcontractId 委外订单 ID
+     * @return 操作结果
+     */
+    @SaCheckPermission("prd:subcontract:edit")
+    @Log(title = "委外订单-发料", businessType = BusinessType.UPDATE)
+    @PutMapping("/issue/{subcontractId}")
+    public R<Void> issue(@PathVariable Long subcontractId) {
+        subcontractService.start(subcontractId);
+        return R.ok();
+    }
+
+    /**
+     * 委外收货
+     * <p>
+     * 收货视为委外完工（进入已完成状态）。
+     * 权限标识：{@code prd:subcontract:edit}</p>
+     * <p>日志记录：title="委外订单-收货"，businessType=UPDATE</p>
+     *
+     * @param subcontractId 委外订单 ID
+     * @return 操作结果
+     */
+    @SaCheckPermission("prd:subcontract:edit")
+    @Log(title = "委外订单-收货", businessType = BusinessType.UPDATE)
+    @PutMapping("/receive/{subcontractId}")
+    public R<Void> receive(@PathVariable Long subcontractId) {
+        subcontractService.complete(subcontractId);
+        return R.ok();
+    }
+
+    /**
+     * 提交审批委外订单
+     * <p>
+     * 将草稿状态更新为已提交，等待审批。
+     * 权限标识：{@code prd:subcontract:edit}</p>
+     * <p>日志记录：title="委外订单-提交审批"，businessType=UPDATE</p>
+     *
+     * @param subcontractId 委外订单 ID
+     * @return 操作结果
+     */
+    @SaCheckPermission("prd:subcontract:edit")
+    @Log(title = "委外订单-提交审批", businessType = BusinessType.UPDATE)
+    @PostMapping("/submit/{subcontractId}")
+    public R<Void> submit(@PathVariable Long subcontractId) {
+        subcontractService.submit(subcontractId);
+        return R.ok();
+    }
+
+    /**
+     * 查询委外订单操作日志（状态时间线）
+     * <p>
+     * 基于订单的状态字段与关键时间字段生成操作时间线。
+     * 权限标识：{@code prd:subcontract:query}</p>
+     *
+     * @param subcontractId 委外订单 ID
+     * @return 操作日志列表（[{operation, operator, time}]）
+     */
+    @SaCheckPermission("prd:subcontract:query")
+    @GetMapping("/logs/{subcontractId}")
+    public R<List<Map<String, Object>>> operationLogs(@PathVariable Long subcontractId) {
+        return R.ok(subcontractService.getOperationLogs(subcontractId));
     }
 }

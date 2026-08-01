@@ -77,7 +77,8 @@ const handleStartStep = async () => {
     proxy?.$modal.msgWarning('请输入有效操作员ID');
     return;
   }
-  await startStep(flowCard.value.cardId, currentStep.value.stepRecordId, Number(operatorId));
+  // 操作员ID为雪花ID，校验通过后字符串透传，Number() 会截断
+  await startStep(flowCard.value.cardId, currentStep.value.stepRecordId, String(operatorId));
   proxy?.$modal.msgSuccess('开工成功');
   handleScan();
 };

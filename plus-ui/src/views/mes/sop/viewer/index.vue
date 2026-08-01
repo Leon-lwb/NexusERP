@@ -74,11 +74,12 @@ const { mes_sop_type } = toRefs<any>(proxy?.useDict('mes_sop_type'));
 const sop = ref<SopDocumentVO | null>(null);
 const loading = ref(true);
 
-const processId = computed(() => (route.query.processId ? Number(route.query.processId) : 0));
-const stepRecordId = computed(() => (route.query.stepRecordId ? Number(route.query.stepRecordId) : 0));
-const woId = computed(() => (route.query.woId ? Number(route.query.woId) : undefined));
+// 雪花ID为19位长整型，route.query 传字符串，不能 Number() 截断，保持字符串透传
+const processId = computed(() => (route.query.processId ? String(route.query.processId) : ''));
+const stepRecordId = computed(() => (route.query.stepRecordId ? String(route.query.stepRecordId) : ''));
+const woId = computed(() => (route.query.woId ? String(route.query.woId) : undefined));
 const woNo = computed(() => (route.query.woNo as string) || '');
-const workstationId = computed(() => (route.query.workstationId ? Number(route.query.workstationId) : undefined));
+const workstationId = computed(() => (route.query.workstationId ? String(route.query.workstationId) : undefined));
 
 const typeLabel = (v: string) => {
   const dict = mes_sop_type.value?.find((d: any) => d.value === v);

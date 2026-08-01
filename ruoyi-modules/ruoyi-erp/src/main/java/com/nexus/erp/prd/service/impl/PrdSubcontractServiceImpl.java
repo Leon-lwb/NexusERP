@@ -22,8 +22,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 委外订单Service业务层处理 * 状态流转：DRAFT -> SUBMITTED -> APPROVED -> IN_PROGRESS -> COMPLETED -> CLOSED
@@ -229,6 +232,65 @@ public class PrdSubcontractServiceImpl implements IPrdSubcontractService {
         }
         subcontract.setStatus(STATUS_CLOSED);
         baseMapper.updateById(subcontract);
+    }
+
+    /**
+     * 提交审批委外订单（草稿 → 已提交）
+     *
+     * @param subcontractId 委外订单 ID
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void submit(Long subcontractId) {
+        PrdSubcontract subcontract = baseMapper.selectById(subcontractId);
+        if (subcontract == null) {
+            throw new ServiceException("委外订单不存在");
+        }
+        if (!STATUS_DRAFT.equals(subcontract.getStatus())) {
+            throw new ServiceException("仅草稿状态可提交审批，当前状态：" + subcontract.getStatus());
+        }
+        subcontract.setStatus(STATUS_SUBMITTED);
+        baseMapper.updateById(subcontract);
+    }
+
+    /**
+     * 查询委外订单操作日志（基于状态与时间字段生成状态时间线）
+     *
+     * @param subcontractId 委外订单 ID
+     * @return 操作日志列表（[{operation, time}]）
+     */
+    @Override
+    public List<Map<String, Object>> getOperationLogs(Long subcontractId) {
+        PrdSubcontract subcontract = baseMapper.selectById(subcontractId);
+        if (subcontract == null) {
+            throw new ServiceException("委外订单不存在");
+        }
+        List<Map<String, Object>> logs = new ArrayList<>();
+        addLog(logs, "创建委外订单", subcontract.getCreateTime());
+        if (subcontract.getPlanStartDate() != null) {
+            addLog(logs, "计划开始", subcontract.getPlanStartDate());
+        }
+        if (subcontract.getPlanEndDate() != null) {
+            addLog(logs, "计划结束", subcontract.getPlanEndDate());
+        }
+        if (subcontract.getActualStartDate() != null) {
+            addLog(logs, "实际开始（发料）", subcontract.getActualStartDate());
+        }
+        if (subcontract.getActualEndDate() != null) {
+            addLog(logs, "实际完工（收货）", subcontract.getActualEndDate());
+        }
+        addLog(logs, "当前状态：" + subcontract.getStatus(), subcontract.getUpdateTime());
+        return logs;
+    }
+
+    private void addLog(List<Map<String, Object>> logs, String operation, java.util.Date time) {
+        if (time == null) {
+            return;
+        }
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("operation", operation);
+        m.put("time", time);
+        logs.add(m);
     }
 
     private LambdaQueryWrapper<PrdSubcontract> buildQueryWrapper(PrdSubcontractBo bo) {

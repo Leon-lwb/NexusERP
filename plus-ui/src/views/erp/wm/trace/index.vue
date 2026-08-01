@@ -112,6 +112,7 @@
 
 <script setup name="WmTrace" lang="ts">
 import { traceForward, traceBackward } from '@/api/erp/wm/trace';
+import { listMaterial } from '@/api/erp/bd/material';
 import { WmTraceResultVO, WmTraceNodeVO } from '@/api/erp/wm/trace/types';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
@@ -175,11 +176,16 @@ const handleQuery = async () => {
   }
   loading.value = true;
   try {
-    // 先根据物料编码查找物料ID（此处简化处理，直接用编码作为参数传给后端）
-    // 后端接口需要 materialId，前端输入 materialCode，需要先查询物料
-    // 为简化，此处将 materialCode 作为 materialId 传入（实际项目中应先调用物料查询接口获取ID）
+    // 后端追溯接口需要 materialId（Long），先按物料编码查询物料再追溯，不能把编码当 ID 传
+    const materialRes: any = await listMaterial({ materialCode: queryParams.value.materialCode, pageNum: 1, pageSize: 1 } as any);
+    const materialRow = materialRes?.rows?.[0] || materialRes?.data?.[0];
+    if (!materialRow?.materialId) {
+      proxy?.$modal.msgWarning('未找到该物料编码对应的物料');
+      loading.value = false;
+      return;
+    }
     const params: any = {
-      materialId: queryParams.value.materialCode
+      materialId: materialRow.materialId
     };
     if (queryParams.value.batchCode) {
       params.batchCode = queryParams.value.batchCode;

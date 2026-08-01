@@ -50,7 +50,12 @@
         <el-table-column v-if="true" label="id" align="center" prop="id" />
         <el-table-column label="客户端id" align="center" prop="clientId" />
         <el-table-column label="客户端key" align="center" prop="clientKey" />
-        <el-table-column label="客户端秘钥" align="center" prop="clientSecret" />
+        <el-table-column label="客户端秘钥" align="center" prop="clientSecret" :show-overflow-tooltip="true">
+          <template #default="scope">
+            <!-- 列表脱敏，完整秘钥仅在编辑弹窗可见 -->
+            <span>{{ scope.row.clientSecret ? '****' + String(scope.row.clientSecret).slice(-4) : '' }}</span>
+          </template>
+        </el-table-column>
         <el-table-column label="授权类型" align="center">
           <template #default="scope">
             <dict-tag :options="sys_grant_type" :value="scope.row.grantTypeList" />
@@ -89,7 +94,7 @@
           <el-input v-model="form.clientKey" :disabled="form.id != null" placeholder="请输入客户端key" />
         </el-form-item>
         <el-form-item label="客户端秘钥" prop="clientSecret">
-          <el-input v-model="form.clientSecret" :disabled="form.id != null" placeholder="请输入客户端秘钥" />
+          <el-input v-model="form.clientSecret" :disabled="form.id != null" placeholder="请输入客户端秘钥" show-password />
         </el-form-item>
         <el-form-item label="授权类型" prop="grantTypeList">
           <el-select v-model="form.grantTypeList" multiple placeholder="请输入授权类型">

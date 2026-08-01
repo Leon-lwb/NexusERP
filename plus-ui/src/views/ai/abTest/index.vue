@@ -47,10 +47,10 @@
           <el-input v-model="form.description" type="textarea" :rows="2" placeholder="可选" />
         </el-form-item>
         <el-form-item label="模型A" prop="modelAId">
-          <el-input-number v-model="form.modelAId" :controls="false" placeholder="模型ID" style="width: 100%" />
+          <el-input v-model="form.modelAId" placeholder="模型ID" style="width: 100%" />
         </el-form-item>
         <el-form-item label="模型B" prop="modelBId">
-          <el-input-number v-model="form.modelBId" :controls="false" placeholder="模型ID" style="width: 100%" />
+          <el-input v-model="form.modelBId" placeholder="模型ID" style="width: 100%" />
         </el-form-item>
         <el-form-item label="测试问题" prop="testQuestions">
           <el-input v-model="form.testQuestions" type="textarea" :rows="6" placeholder='JSON数组，如：["查询库存","销售趋势"]' />
@@ -90,23 +90,23 @@
 </template>
 
 <script setup lang="ts" name="AiAbTest">
-import { ref, reactive, computed } from 'vue'
-import { Plus, Edit, Delete } from '@element-plus/icons-vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { listAbTest, getAbTest, addAbTest, updateAbTest, delAbTest, executeAbTest, getAbTestResults, scoreAbTestResult } from '@/api/ai/abTest'
+import { ref, reactive, computed } from 'vue';
+import { Plus, Edit, Delete } from '@element-plus/icons-vue';
+import { ElMessage, ElMessageBox } from 'element-plus';
+import { listAbTest, getAbTest, addAbTest, updateAbTest, delAbTest, executeAbTest, getAbTestResults, scoreAbTestResult } from '@/api/ai/abTest';
 
-defineOptions({ name: 'AiAbTest' })
+defineOptions({ name: 'AiAbTest' });
 
-const loading = ref(false)
-const showSearch = ref(true)
-const dataList = ref<any[]>([])
-const total = ref(0)
-const dialogVisible = ref(false)
-const dialogTitle = ref('')
-const resultDialogVisible = ref(false)
-const resultList = ref<any[]>([])
+const loading = ref(false);
+const showSearch = ref(true);
+const dataList = ref<any[]>([]);
+const total = ref(0);
+const dialogVisible = ref(false);
+const dialogTitle = ref('');
+const resultDialogVisible = ref(false);
+const resultList = ref<any[]>([]);
 
-const queryParams = reactive({ pageNum: 1, pageSize: 10 })
+const queryParams = reactive({ pageNum: 1, pageSize: 10 });
 
 const form = reactive({
   id: undefined as number | undefined,
@@ -115,111 +115,154 @@ const form = reactive({
   modelAId: undefined as number | undefined,
   modelBId: undefined as number | undefined,
   testQuestions: ''
-})
+});
 
 const rules = {
   testName: [{ required: true, message: '测试名称不能为空', trigger: 'blur' }],
   modelAId: [{ required: true, message: '请输入模型A的ID', trigger: 'blur' }],
   modelBId: [{ required: true, message: '请输入模型B的ID', trigger: 'blur' }],
   testQuestions: [{ required: true, message: '测试问题不能为空', trigger: 'blur' }]
-}
+};
 
-const formRef = ref()
+const formRef = ref();
 
 function statusTagType(status: string) {
-  return { PENDING: 'info', RUNNING: 'warning', COMPLETED: 'success' }[status] || 'info'
+  return { PENDING: 'info', RUNNING: 'warning', COMPLETED: 'success' }[status] || 'info';
 }
 function statusLabel(status: string) {
-  return { PENDING: '待执行', RUNNING: '执行中', COMPLETED: '已完成' }[status] || status
+  return { PENDING: '待执行', RUNNING: '执行中', COMPLETED: '已完成' }[status] || status;
 }
 function parseQuestions(json: string) {
-  try { return JSON.parse(json || '[]') } catch { return [] }
+  try {
+    return JSON.parse(json || '[]');
+  } catch {
+    return [];
+  }
 }
 
 const resultGroups = computed(() => {
-  const map = new Map<string, any[]>()
+  const map = new Map<string, any[]>();
   for (const r of resultList.value) {
-    if (!map.has(r.question)) map.set(r.question, [])
-    map.get(r.question)!.push(r)
+    if (!map.has(r.question)) map.set(r.question, []);
+    map.get(r.question)!.push(r);
   }
-  return Array.from(map.entries()).map(([question, results]) => ({ question, results }))
-})
+  return Array.from(map.entries()).map(([question, results]) => ({ question, results }));
+});
 
 function getList() {
-  loading.value = true
+  loading.value = true;
   listAbTest(queryParams).then((res: any) => {
-    dataList.value = res.rows
-    total.value = res.total
-    loading.value = false
-  })
+    dataList.value = res.rows;
+    total.value = res.total;
+    loading.value = false;
+  });
 }
 
 function resetForm() {
-  form.id = undefined
-  form.testName = ''
-  form.description = ''
-  form.modelAId = undefined
-  form.modelBId = undefined
-  form.testQuestions = ''
+  form.id = undefined;
+  form.testName = '';
+  form.description = '';
+  form.modelAId = undefined;
+  form.modelBId = undefined;
+  form.testQuestions = '';
 }
 
 function handleAdd() {
-  resetForm()
-  dialogTitle.value = '新增 A/B 测试'
-  dialogVisible.value = true
+  resetForm();
+  dialogTitle.value = '新增 A/B 测试';
+  dialogVisible.value = true;
 }
 
 function handleUpdate(row: any) {
-  resetForm()
+  resetForm();
   getAbTest(row.id).then((res: any) => {
-    Object.assign(form, res.data)
-    dialogTitle.value = '修改 A/B 测试'
-    dialogVisible.value = true
-  })
+    Object.assign(form, res.data);
+    dialogTitle.value = '修改 A/B 测试';
+    dialogVisible.value = true;
+  });
 }
 
 function submitForm() {
   formRef.value?.validate((valid: boolean) => {
-    if (!valid) return
+    if (!valid) return;
     if (form.id) {
-      updateAbTest(form).then(() => { ElMessage.success('修改成功'); dialogVisible.value = false; getList() })
+      updateAbTest(form).then(() => {
+        ElMessage.success('修改成功');
+        dialogVisible.value = false;
+        getList();
+      });
     } else {
-      addAbTest(form).then(() => { ElMessage.success('新增成功'); dialogVisible.value = false; getList() })
+      addAbTest(form).then(() => {
+        ElMessage.success('新增成功');
+        dialogVisible.value = false;
+        getList();
+      });
     }
-  })
+  });
 }
 
 function handleExecute(row: any) {
-  ElMessageBox.confirm('确认执行该 A/B 测试？执行过程可能需要几分钟。', '提示', { type: 'warning' }).then(() => {
-    executeAbTest(row.id).then(() => { ElMessage.success('测试已开始执行'); getList() })
-  }).catch(() => {})
+  ElMessageBox.confirm('确认执行该 A/B 测试？执行过程可能需要几分钟。', '提示', { type: 'warning' })
+    .then(() => {
+      executeAbTest(row.id).then(() => {
+        ElMessage.success('测试已开始执行');
+        getList();
+      });
+    })
+    .catch(() => {});
 }
 
 function handleViewResults(row: any) {
   getAbTestResults(row.id).then((res: any) => {
-    resultList.value = res.data || []
-    resultDialogVisible.value = true
-  })
+    resultList.value = res.data || [];
+    resultDialogVisible.value = true;
+  });
 }
 
 function handleScore(resultId: number, score: number) {
-  scoreAbTestResult(resultId, score).then(() => { ElMessage.success('评分已保存') })
+  scoreAbTestResult(resultId, score).then(() => {
+    ElMessage.success('评分已保存');
+  });
 }
 
 function handleDelete(row: any) {
-  ElMessageBox.confirm('确认删除该测试？', '提示', { type: 'warning' }).then(() => {
-    delAbTest(row.id).then(() => { ElMessage.success('删除成功'); getList() })
-  }).catch(() => {})
+  ElMessageBox.confirm('确认删除该测试？', '提示', { type: 'warning' })
+    .then(() => {
+      delAbTest(row.id).then(() => {
+        ElMessage.success('删除成功');
+        getList();
+      });
+    })
+    .catch(() => {});
 }
 
-getList()
+getList();
 </script>
 
 <style scoped>
-.result-group { margin-bottom: 20px; }
-.result-group h4 { margin-bottom: 10px; color: #303133; }
-.result-card { margin-bottom: 10px; }
-.card-header { display: flex; justify-content: space-between; align-items: center; }
-.response-text { max-height: 200px; overflow-y: auto; white-space: pre-wrap; font-size: 13px; line-height: 1.6; }
-.ml5 { margin-left: 5px; }
+.result-group {
+  margin-bottom: 20px;
+}
+.result-group h4 {
+  margin-bottom: 10px;
+  color: #303133;
+}
+.result-card {
+  margin-bottom: 10px;
+}
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.response-text {
+  max-height: 200px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.ml5 {
+  margin-left: 5px;
+}
 </style>

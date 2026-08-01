@@ -76,11 +76,51 @@
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="300" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
-          <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-if="scope.row.status === 'DRAFT' || scope.row.status === 'REJECTED'" v-hasPermi="['so:invoice:edit']">修改</el-button>
-          <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-if="scope.row.status === 'DRAFT'" v-hasPermi="['so:invoice:remove']">删除</el-button>
-          <el-button link type="success" icon="Check" @click="handleVerify(scope.row)" v-if="scope.row.status === 'ISSUED'" v-hasPermi="['so:invoice:edit']">核销</el-button>
-          <el-button link type="warning" icon="RefreshLeft" @click="handleRedFlush(scope.row)" v-if="scope.row.status === 'ISSUED' || scope.row.status === 'VERIFIED'" v-hasPermi="['so:invoice:edit']">红冲</el-button>
-          <el-button link type="danger" icon="CircleClose" @click="handleCancel(scope.row)" v-if="scope.row.status === 'ISSUED' || scope.row.status === 'DRAFT'" v-hasPermi="['so:invoice:edit']">作废</el-button>
+          <el-button
+            link
+            type="primary"
+            icon="Edit"
+            @click="handleUpdate(scope.row)"
+            v-if="scope.row.status === 'DRAFT' || scope.row.status === 'REJECTED'"
+            v-hasPermi="['so:invoice:edit']"
+            >修改</el-button
+          >
+          <el-button
+            link
+            type="primary"
+            icon="Delete"
+            @click="handleDelete(scope.row)"
+            v-if="scope.row.status === 'DRAFT'"
+            v-hasPermi="['so:invoice:remove']"
+            >删除</el-button
+          >
+          <el-button
+            link
+            type="success"
+            icon="Check"
+            @click="handleVerify(scope.row)"
+            v-if="scope.row.status === 'ISSUED'"
+            v-hasPermi="['so:invoice:edit']"
+            >核销</el-button
+          >
+          <el-button
+            link
+            type="warning"
+            icon="RefreshLeft"
+            @click="handleRedFlush(scope.row)"
+            v-if="scope.row.status === 'ISSUED' || scope.row.status === 'VERIFIED'"
+            v-hasPermi="['so:invoice:edit']"
+            >红冲</el-button
+          >
+          <el-button
+            link
+            type="danger"
+            icon="CircleClose"
+            @click="handleCancel(scope.row)"
+            v-if="scope.row.status === 'ISSUED' || scope.row.status === 'DRAFT'"
+            v-hasPermi="['so:invoice:edit']"
+            >作废</el-button
+          >
         </template>
       </el-table-column>
     </el-table>
@@ -327,17 +367,22 @@
 
     <!-- 客户选择弹窗 -->
     <ClientSelectDialog ref="clientSelectDialogRef" @confirm="handleClientConfirm" />
+
+    <!-- 物料选择弹窗（明细行选择物料） -->
+    <MaterialSelectDialog ref="materialSelectDialogRef" title="选择物料" @select="handleMaterialSelected" />
   </div>
 </template>
 
 <script setup lang="ts" name="SoInvoice">
 import { listInvoice, getInvoice, delInvoice, addInvoice, updateInvoice, verifyInvoice, cancelInvoice, redFlushInvoice } from '@/api/erp/so/invoice';
-import { listMaterial } from '@/api/erp/bd/material';
 import { InvoiceVO, InvoiceForm, InvoiceLineForm } from '@/api/erp/so/invoice/types';
 import ClientSelectDialog from '@/views/erp/so/components/ClientSelectDialog.vue';
+import MaterialSelectDialog from '@/components/MaterialSelectDialog';
 
 const { proxy } = getCurrentInstance();
-const { so_invoice_type, so_invoice_status, invoice_issue_channel } = toRefs<any>(proxy.useDict('so_invoice_type', 'so_invoice_status', 'invoice_issue_channel'));
+const { so_invoice_type, so_invoice_status, invoice_issue_channel } = toRefs<any>(
+  proxy.useDict('so_invoice_type', 'so_invoice_status', 'invoice_issue_channel')
+);
 
 // 客户选择弹窗引用
 const clientSelectDialogRef = ref();
@@ -359,11 +404,7 @@ const activeTab = ref('basic');
 const lineList = ref<InvoiceLineForm[]>([]);
 const checkedLines = ref<number[]>([]);
 const currentLineIndex = ref(-1);
-
-// 物料选择对话框
-const materialDialogVisible = ref(false);
-const materialList = ref<any[]>([]);
-const materialQuery = ref({ materialCode: '', materialName: '', pageNum: 1, pageSize: 20 });
+const materialSelectDialogRef = ref();
 
 const data = reactive({
   form: {} as InvoiceForm,
@@ -577,19 +618,11 @@ function calcTotalAmount() {
 /** 打开物料选择对话框 */
 function openMaterialDialog(index: number) {
   currentLineIndex.value = index;
-  materialDialogVisible.value = true;
-  queryMaterials();
+  materialSelectDialogRef.value?.open();
 }
 
-/** 查询物料 */
-function queryMaterials() {
-  listMaterial(materialQuery.value as any).then((res: any) => {
-    materialList.value = res.rows || res.data || [];
-  });
-}
-
-/** 选择物料 */
-function selectMaterial(row: any) {
+/** 物料选择回调 */
+function handleMaterialSelected(row: any) {
   if (currentLineIndex.value >= 0) {
     const target = lineList.value[currentLineIndex.value];
     target.materialId = row.materialId;
@@ -598,7 +631,6 @@ function selectMaterial(row: any) {
     target.materialSpec = row.materialSpec;
     target.unit = row.baseUomName || '';
   }
-  materialDialogVisible.value = false;
 }
 
 /** 打开客户选择对话框 */
@@ -665,4 +697,3 @@ function handleRedFlush(row: InvoiceVO) {
 
 getList();
 </script>
-
