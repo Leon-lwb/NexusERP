@@ -69,8 +69,10 @@
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button type="primary" @click="submitSettle">确认核销</el-button>
-        <el-button @click="open = false">取 消</el-button>
+        <div class="dialog-footer">
+          <el-button type="primary" @click="submitSettle">确认核销</el-button>
+          <el-button @click="open = false">取 消</el-button>
+        </div>
       </template>
     </el-dialog>
   </div>

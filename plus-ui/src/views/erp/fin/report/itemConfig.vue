@@ -1,20 +1,36 @@
 <template>
   <div class="app-container">
-    <el-form :inline="true" label-width="90px" class="list-search">
-      <el-form-item label="报表类型">
-        <el-select v-model="reportType" style="width: 180px" @change="getList">
-          <el-option v-for="dict in fin_report_type" :key="dict.value" :label="dict.label" :value="dict.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item>
-        <el-button type="primary" icon="Plus" @click="handleAdd">新增</el-button>
-      </el-form-item>
+    <!-- 搜索区域 -->
+    <el-form :model="queryParams" ref="queryRef" v-show="showSearch" label-width="100px" class="list-search">
+      <el-row :gutter="16">
+        <el-col :span="6">
+          <el-form-item label="报表类型" prop="reportType">
+            <el-select v-model="queryParams.reportType" placeholder="请选择报表类型" clearable style="width: 100%" @change="handleQuery">
+              <el-option v-for="dict in fin_report_type" :key="dict.value" :label="dict.label" :value="dict.value" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :span="6" class="search-actions">
+          <el-form-item>
+            <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+          </el-form-item>
+        </el-col>
+      </el-row>
     </el-form>
 
-    <el-table v-loading="loading" :data="dataList" border>
+    <!-- 操作按钮区域 -->
+    <el-row :gutter="10" class="mb8">
+      <el-col :span="1.5">
+        <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['fin:report:item:add']">新增</el-button>
+      </el-col>
+      <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
+    </el-row>
+
+    <el-table v-loading="loading" :data="dataList" show-overflow-tooltip>
       <el-table-column label="项目编码" align="center" prop="itemCode" width="160" />
-      <el-table-column label="项目名称" align="left" prop="itemName" min-width="180" />
-      <el-table-column label="科目匹配" align="left" prop="accountCodeMatch" min-width="200" />
+      <el-table-column label="项目名称" align="left" prop="itemName" min-width="180" show-overflow-tooltip />
+      <el-table-column label="科目匹配" align="left" prop="accountCodeMatch" min-width="200" show-overflow-tooltip />
       <el-table-column label="取值符号" align="center" width="90">
         <template #default="scope">
           <el-tag :type="scope.row.sign === '-1' ? 'warning' : 'success'" size="small">{{ scope.row.sign === '-1' ? '负(-)' : '正(+1)' }}</el-tag>
@@ -26,15 +42,15 @@
         </template>
       </el-table-column>
       <el-table-column label="排序" align="center" prop="sortOrder" width="70" />
-      <el-table-column label="操作" align="center" width="140" fixed="right">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="140" :show-overflow-tooltip="false">
         <template #default="scope">
-          <el-button link type="primary" icon="Edit" @click="handleEdit(scope.row)">修改</el-button>
-          <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)">删除</el-button>
+          <el-button link type="primary" icon="Edit" @click="handleEdit(scope.row)" v-hasPermi="['fin:report:item:edit']">修改</el-button>
+          <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['fin:report:item:remove']">删除</el-button>
         </template>
       </el-table-column>
     </el-table>
 
-    <el-dialog v-model="open" :title="form.itemId ? '修改报表项目' : '新增报表项目'" width="560px" append-to-body>
+    <el-dialog v-model="open" :title="title" width="560px" append-to-body>
       <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
         <el-form-item label="报表类型" prop="reportType">
           <el-select v-model="form.reportType" style="width: 100%">
@@ -64,8 +80,10 @@
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button type="primary" @click="submitForm">确 定</el-button>
-        <el-button @click="open = false">取 消</el-button>
+        <div class="dialog-footer">
+          <el-button type="primary" @click="submitForm">确 定</el-button>
+          <el-button @click="cancel">取 消</el-button>
+        </div>
       </template>
     </el-dialog>
   </div>
@@ -78,11 +96,17 @@ const { proxy } = getCurrentInstance() as any;
 const { fin_report_type } = toRefs<any>(proxy.useDict('fin_report_type'));
 
 const dataList = ref<ReportItemVO[]>([]);
-const loading = ref(false);
-const reportType = ref('BALANCE');
+const loading = ref(true);
+const showSearch = ref(true);
 const open = ref(false);
+const title = ref('');
 const formRef = ref();
 const summaryFlag = ref('0');
+
+const data = reactive({
+  queryParams: { reportType: 'BALANCE' }
+});
+const { queryParams } = toRefs(data);
 
 const form = ref<Partial<ReportItemVO>>({});
 const rules = {
@@ -93,7 +117,7 @@ const rules = {
 
 function getList() {
   loading.value = true;
-  listItemConfig(reportType.value)
+  listItemConfig(queryParams.value.reportType)
     .then((response) => {
       dataList.value = response.data;
     })
@@ -102,9 +126,17 @@ function getList() {
     });
 }
 
+function handleQuery() {
+  getList();
+}
+
+function resetQuery() {
+  queryParams.value.reportType = 'BALANCE';
+  getList();
+}
 function reset() {
   form.value = {
-    reportType: reportType.value,
+    reportType: queryParams.value.reportType,
     sign: '1',
     sortOrder: 0,
     status: '0',
@@ -116,12 +148,14 @@ function reset() {
 function handleAdd() {
   reset();
   open.value = true;
+  title.value = '新增报表项目';
 }
 
 function handleEdit(row: ReportItemVO) {
   form.value = { ...row };
   summaryFlag.value = row.isSummary || '0';
   open.value = true;
+  title.value = '修改报表项目';
 }
 
 function submitForm() {
@@ -129,12 +163,17 @@ function submitForm() {
     if (!valid) return;
     saveItemConfig({ ...form.value, isSummary: summaryFlag.value } as any)
       .then(() => {
-        proxy.$modal.msgSuccess('保存成功');
+        proxy.$modal.msgSuccess(form.value.itemId ? '修改成功' : '新增成功');
         open.value = false;
         getList();
       })
       .catch(() => {});
   });
+}
+
+function cancel() {
+  open.value = false;
+  reset();
 }
 
 function handleDelete(row: ReportItemVO) {

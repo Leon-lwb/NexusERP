@@ -27,7 +27,7 @@
       style="margin-bottom: 12px"
     />
 
-    <el-table v-loading="loading" :data="dataList" border size="small">
+    <el-table v-loading="loading" :data="dataList" show-overflow-tooltip>
       <el-table-column label="流水ID" align="center" prop="txId" width="180" />
       <el-table-column label="事务类型" align="center" prop="txType" width="120" />
       <el-table-column label="物料" align="left" min-width="150">
@@ -47,7 +47,7 @@
         </template>
       </el-table-column>
       <el-table-column label="凭证号" align="center" prop="postedVoucherNo" min-width="170" />
-      <el-table-column label="操作" align="center" width="110" fixed="right">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="110" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button
             v-if="scope.row.posted !== 1 && Number(scope.row.txAmount || 0) !== 0"

@@ -16,7 +16,6 @@
       type="warning"
       :closable="false"
       show-icon
-      style="margin-bottom: 16px"
     />
   </div>
 </template>

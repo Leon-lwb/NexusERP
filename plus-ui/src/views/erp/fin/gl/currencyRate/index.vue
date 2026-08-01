@@ -35,8 +35,12 @@
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="币种" align="center" prop="currency" width="100" />
       <el-table-column label="本位币" align="center" prop="baseCurrency" width="100" />
-      <el-table-column label="汇率日期" align="center" prop="rateDate" width="120" />
-      <el-table-column label="汇率" align="center" prop="rate" />
+      <el-table-column label="汇率日期" align="center" prop="rateDate" width="120">
+        <template #default="scope">
+          <span>{{ parseTime(scope.row.rateDate, '{y}-{m}-{d}') }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="汇率" align="right" prop="rate" />
       <el-table-column label="类型" align="center" prop="rateType" width="100" />
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="180" :show-overflow-tooltip="false">
         <template #default="scope">
@@ -71,8 +75,10 @@
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button type="primary" @click="submitForm">确 定</el-button>
-        <el-button @click="cancel">取 消</el-button>
+        <div class="dialog-footer">
+          <el-button type="primary" @click="submitForm">确 定</el-button>
+          <el-button @click="cancel">取 消</el-button>
+        </div>
       </template>
     </el-dialog>
   </div>

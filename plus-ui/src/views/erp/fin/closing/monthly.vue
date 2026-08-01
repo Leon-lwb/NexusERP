@@ -41,7 +41,7 @@
       <el-button type="warning" :loading="loading" @click="doClose">④ 关账</el-button>
     </el-space>
 
-    <el-table v-loading="loading" :data="steps.logs || []" border size="small">
+    <el-table v-loading="loading" :data="steps.logs || []" show-overflow-tooltip>
       <el-table-column label="步骤" align="center" prop="step" width="140" />
       <el-table-column label="状态" align="center" width="90">
         <template #default="scope">

@@ -2,7 +2,7 @@
   <div class="app-container">
     <el-form :inline="true" label-width="90px" class="list-search">
       <el-form-item label="会计期间">
-        <el-select v-model="periodId" placeholder="请选择期间" filterable style="width: 200px">
+        <el-select v-model="periodId" placeholder="请选择期间" filterable style="width: 200px" @change="onPeriodChange">
           <el-option v-for="p in periodList" :key="p.periodId" :label="p.periodName" :value="p.periodId" />
         </el-select>
       </el-form-item>
@@ -20,7 +20,7 @@
       style="margin-bottom: 12px"
     />
 
-    <el-tabs v-model="activeTab">
+    <el-tabs v-model="activeTab" @tab-change="onTabChange">
       <el-tab-pane label="计提计划" name="plan">
         <el-table v-loading="loading" :data="planList" border size="small">
           <el-table-column label="资产编号" align="center" prop="assetNo" width="130" />
@@ -93,6 +93,19 @@ function loadPeriods() {
       loadPlan();
     }
   });
+}
+
+function onPeriodChange() {
+  loadPlan();
+  if (activeTab.value === 'history') {
+    getList();
+  }
+}
+
+function onTabChange() {
+  if (activeTab.value === 'history') {
+    getList();
+  }
 }
 
 function loadPlan() {

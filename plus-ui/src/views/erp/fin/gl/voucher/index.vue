@@ -214,8 +214,10 @@
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button type="primary" @click="submitForm" v-if="!isViewMode">确 定</el-button>
-        <el-button @click="cancel">{{ isViewMode ? '关 闭' : '取 消' }}</el-button>
+        <div class="dialog-footer">
+          <el-button type="primary" @click="submitForm" v-if="!isViewMode">确 定</el-button>
+          <el-button @click="cancel">{{ isViewMode ? '关 闭' : '取 消' }}</el-button>
+        </div>
       </template>
     </el-dialog>
   </div>

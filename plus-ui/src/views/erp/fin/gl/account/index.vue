@@ -48,7 +48,7 @@
       show-overflow-tooltip
     >
       <el-table-column label="科目编码" align="left" prop="accountCode" width="140" />
-      <el-table-column label="科目名称" align="left" prop="accountName" min-width="160" />
+      <el-table-column label="科目名称" align="left" prop="accountName" min-width="160" show-overflow-tooltip />
       <el-table-column label="科目类型" align="center" prop="accountType">
         <template #default="scope">
           <dict-tag :options="gl_account_type" :value="scope.row.accountType" />
@@ -155,8 +155,10 @@
         </el-row>
       </el-form>
       <template #footer>
-        <el-button type="primary" @click="submitForm">确 定</el-button>
-        <el-button @click="cancel">取 消</el-button>
+        <div class="dialog-footer">
+          <el-button type="primary" @click="submitForm">确 定</el-button>
+          <el-button @click="cancel">取 消</el-button>
+        </div>
       </template>
     </el-dialog>
   </div>

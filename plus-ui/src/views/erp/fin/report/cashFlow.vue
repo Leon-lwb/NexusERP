@@ -14,6 +14,7 @@
       </el-form-item>
       <el-form-item>
         <el-button type="primary" icon="Search" @click="getList">查询</el-button>
+        <el-button icon="Refresh" @click="resetQuery">重置</el-button>
       </el-form-item>
     </el-form>
 
@@ -25,7 +26,7 @@
       style="margin-bottom: 12px"
     />
 
-    <el-table v-loading="loading" :data="dataList" border show-overflow-tooltip>
+    <el-table v-loading="loading" :data="dataList" show-overflow-tooltip>
       <el-table-column label="项目" align="left" prop="itemName" min-width="240" />
       <el-table-column label="金额" align="right" min-width="140">
         <template #default="scope">{{ fmt(scope.row.amount) }}</template>
@@ -68,6 +69,11 @@ function getList() {
     .finally(() => {
       loading.value = false;
     });
+}
+
+function resetQuery() {
+  yearToDate.value = false;
+  getList();
 }
 
 onMounted(() => {

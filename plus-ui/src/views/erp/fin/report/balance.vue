@@ -11,10 +11,11 @@
       </el-form-item>
       <el-form-item>
         <el-button type="primary" icon="Search" @click="getList">查询</el-button>
+        <el-button icon="Refresh" @click="resetQuery">重置</el-button>
       </el-form-item>
     </el-form>
 
-    <el-table v-loading="loading" :data="dataList" border show-overflow-tooltip>
+    <el-table v-loading="loading" :data="dataList" show-overflow-tooltip>
       <el-table-column label="项目" align="left" prop="itemName" min-width="200">
         <template #default="scope">
           <span :style="{ fontWeight: scope.row.isSummary ? 700 : 400 }">{{ scope.row.itemName }}</span>
@@ -90,6 +91,11 @@ function getList() {
     .finally(() => {
       loading.value = false;
     });
+}
+
+function resetQuery() {
+  includeZero.value = false;
+  getList();
 }
 
 onMounted(() => {

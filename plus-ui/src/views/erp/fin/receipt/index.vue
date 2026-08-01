@@ -51,16 +51,20 @@
       <el-table-column label="类型" align="center" prop="receiptType" width="90">
         <template #default="scope"><dict-tag :options="fin_receipt_type" :value="scope.row.receiptType" /></template>
       </el-table-column>
-      <el-table-column label="客户/供应商" align="center" prop="payerName" width="160" />
-      <el-table-column label="金额" align="center" prop="amount" width="120" />
-      <el-table-column label="已核销" align="center" prop="settledAmount" width="120" />
+      <el-table-column label="客户/供应商" align="center" prop="payerName" width="160" show-overflow-tooltip />
+      <el-table-column label="金额" align="right" prop="amount" width="120" />
+      <el-table-column label="已核销" align="right" prop="settledAmount" width="120" />
       <el-table-column label="来源" align="center" prop="source" width="100">
         <template #default="scope"><dict-tag :options="fin_receipt_source" :value="scope.row.source" /></template>
       </el-table-column>
       <el-table-column label="状态" align="center" prop="status" width="90">
         <template #default="scope"><dict-tag :options="fin_receipt_status" :value="scope.row.status" /></template>
       </el-table-column>
-      <el-table-column label="日期" align="center" prop="receiptDate" width="120" />
+      <el-table-column label="日期" align="center" prop="receiptDate" width="120">
+        <template #default="scope">
+          <span>{{ parseTime(scope.row.receiptDate, '{y}-{m}-{d}') }}</span>
+        </template>
+      </el-table-column>
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="180" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button
@@ -112,8 +116,10 @@
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button type="primary" @click="submitForm">确 定</el-button>
-        <el-button @click="cancel">取 消</el-button>
+        <div class="dialog-footer">
+          <el-button type="primary" @click="submitForm">确 定</el-button>
+          <el-button @click="cancel">取 消</el-button>
+        </div>
       </template>
     </el-dialog>
   </div>

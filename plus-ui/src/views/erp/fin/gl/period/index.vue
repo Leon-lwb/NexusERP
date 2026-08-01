@@ -84,8 +84,10 @@
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button type="primary" @click="submitGenerate">确 定</el-button>
-        <el-button @click="genOpen = false">取 消</el-button>
+        <div class="dialog-footer">
+          <el-button type="primary" @click="submitGenerate">确 定</el-button>
+          <el-button @click="genOpen = false">取 消</el-button>
+        </div>
       </template>
     </el-dialog>
   </div>

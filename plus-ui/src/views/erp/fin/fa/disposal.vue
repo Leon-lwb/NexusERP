@@ -1,21 +1,33 @@
 <template>
   <div class="app-container">
-    <el-form :inline="true" label-width="90px" class="list-search">
-      <el-form-item label="资产名称">
-        <el-input v-model="queryParams.keyword" placeholder="请输入资产名称" clearable style="width: 180px" @keyup.enter="getList" />
-      </el-form-item>
-      <el-form-item>
-        <el-button type="primary" icon="Search" @click="getList">查询</el-button>
-        <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-      </el-form-item>
-      <el-form-item style="float: right">
-        <el-button type="primary" icon="Plus" @click="handleAdd">处置资产</el-button>
-      </el-form-item>
+    <!-- 搜索区域 -->
+    <el-form :model="queryParams" ref="queryRef" v-show="showSearch" label-width="100px" class="list-search">
+      <el-row :gutter="16">
+        <el-col :span="6">
+          <el-form-item label="资产名称" prop="keyword">
+            <el-input v-model="queryParams.keyword" placeholder="请输入资产名称" clearable @keyup.enter="handleQuery" />
+          </el-form-item>
+        </el-col>
+        <el-col :span="6" class="search-actions">
+          <el-form-item>
+            <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+          </el-form-item>
+        </el-col>
+      </el-row>
     </el-form>
 
-    <el-table v-loading="loading" :data="dataList" border>
+    <!-- 操作按钮区域 -->
+    <el-row :gutter="10" class="mb8">
+      <el-col :span="1.5">
+        <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['fa:disposal:add']">处置资产</el-button>
+      </el-col>
+      <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
+    </el-row>
+
+    <el-table v-loading="loading" :data="dataList" show-overflow-tooltip>
       <el-table-column label="资产编号" align="center" prop="assetNo" width="130" />
-      <el-table-column label="资产名称" align="left" prop="assetName" min-width="160" />
+      <el-table-column label="资产名称" align="left" prop="assetName" min-width="160" show-overflow-tooltip />
       <el-table-column label="处置类型" align="center" width="90">
         <template #default="scope">
           <el-tag :type="scope.row.disposalType === 'SALE' ? 'primary' : 'danger'" size="small">{{
@@ -66,8 +78,10 @@
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button type="primary" @click="submitForm">确 定</el-button>
-        <el-button @click="open = false">取 消</el-button>
+        <div class="dialog-footer">
+          <el-button type="primary" @click="submitForm">确 定</el-button>
+          <el-button @click="cancel">取 消</el-button>
+        </div>
       </template>
     </el-dialog>
   </div>
@@ -80,7 +94,8 @@ const { proxy } = getCurrentInstance() as any;
 
 const dataList = ref<FaDisposalVO[]>([]);
 const assetOptions = ref<any[]>([]);
-const loading = ref(false);
+const loading = ref(true);
+const showSearch = ref(true);
 const total = ref(0);
 const open = ref(false);
 const formRef = ref();
@@ -110,9 +125,14 @@ function getList() {
     });
 }
 
-function resetQuery() {
-  queryParams.value = { pageNum: 1, pageSize: 10, keyword: '' };
+function handleQuery() {
+  queryParams.value.pageNum = 1;
   getList();
+}
+
+function resetQuery() {
+  proxy.resetForm('queryRef');
+  handleQuery();
 }
 
 function loadAssets() {
@@ -141,6 +161,11 @@ function submitForm() {
       })
       .catch(() => {});
   });
+}
+
+function cancel() {
+  open.value = false;
+  reset();
 }
 
 onMounted(() => {
