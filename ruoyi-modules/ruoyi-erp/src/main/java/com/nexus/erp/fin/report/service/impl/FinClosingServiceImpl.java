@@ -390,17 +390,18 @@ public class FinClosingServiceImpl implements IFinClosingService {
             // 结转净额=(期初借方-期初贷方)+(本期借方-本期贷方),与试算平衡表同构
             BigDecimal net = nz(b.getOpeningDebit()).subtract(nz(b.getOpeningCredit()))
                 .add(nz(b.getPeriodDebit())).subtract(nz(b.getPeriodCredit()));
-            BigDecimal dr = net.signum() >= 0 ? net : BigDecimal.ZERO;
-            BigDecimal cr = net.signum() < 0 ? net.negate() : BigDecimal.ZERO;
+            // 增量结转：扣除上次已结转净额（closing 字段记录），
+            // 支持"重开期间→补录凭证→再关账"场景——否则目标期初非零即跳过，补录发生额永不结转
+            BigDecimal alreadyCarried = nz(b.getClosingDebit()).subtract(nz(b.getClosingCredit()));
+            BigDecimal deltaNet = net.subtract(alreadyCarried);
+            BigDecimal dr = deltaNet.signum() >= 0 ? deltaNet : BigDecimal.ZERO;
+            BigDecimal cr = deltaNet.signum() < 0 ? deltaNet.negate() : BigDecimal.ZERO;
             if (dr.signum() == 0 && cr.signum() == 0) {
                 continue;
             }
             GlAccountBalance target = balanceMapper.selectOne(new LambdaQueryWrapper<GlAccountBalance>()
                 .eq(GlAccountBalance::getPeriodId, toPeriodId)
                 .eq(GlAccountBalance::getAccountId, b.getAccountId()));
-            if (target != null && (nz(target.getOpeningDebit()).signum() != 0 || nz(target.getOpeningCredit()).signum() != 0)) {
-                continue; // 已结转
-            }
             if (target == null) {
                 target = new GlAccountBalance();
                 target.setBalanceId(IdGeneratorUtil.nextLongId());
@@ -415,6 +416,11 @@ public class FinClosingServiceImpl implements IFinClosingService {
                 .setSql("opening_credit = opening_credit + " + cr.toPlainString())
                 .setSql("year_opening_debit = year_opening_debit + " + dr.toPlainString())
                 .setSql("year_opening_credit = year_opening_credit + " + cr.toPlainString()));
+            // 记录本次已结转净额（幂等依据）
+            balanceMapper.update(null, Wrappers.<GlAccountBalance>lambdaUpdate()
+                .eq(GlAccountBalance::getBalanceId, b.getBalanceId())
+                .setSql("closing_debit = closing_debit + " + dr.toPlainString())
+                .setSql("closing_credit = closing_credit + " + cr.toPlainString()));
         }
     }
 

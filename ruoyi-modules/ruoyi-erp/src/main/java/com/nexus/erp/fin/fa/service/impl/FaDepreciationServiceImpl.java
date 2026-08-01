@@ -146,6 +146,9 @@ public class FaDepreciationServiceImpl implements IFaDepreciationService {
         // 回填折旧记录并累加资产累计折旧
         for (FaDepreciation plan : plans) {
             FaAsset asset = assetMapper.selectById(plan.getAssetId());
+            if (asset == null) {
+                continue;
+            }
             BigDecimal cumulative = nz(asset.getCumulativeDepreciation()).add(nz(plan.getDepreciationAmount()));
             plan.setDepreciationId(IdGeneratorUtil.nextLongId());
             plan.setStatus(FaConstants.DEP_STATUS_DONE);
@@ -154,9 +157,16 @@ public class FaDepreciationServiceImpl implements IFaDepreciationService {
             plan.setCumulativeDepreciation(cumulative);
             plan.setVersion(0);
             baseMapper.insert(plan);
-            asset.setCumulativeDepreciation(cumulative);
-            asset.setNetBookValue(nz(asset.getOriginalValue()).subtract(cumulative));
-            assetMapper.updateById(asset);
+            // 资产累计折旧用原子累加并校验乐观锁，避免并发（原值调整/转固）下丢失更新但凭证已落库
+            int assetRows = assetMapper.update(null, Wrappers.<FaAsset>lambdaUpdate()
+                .eq(FaAsset::getAssetId, asset.getAssetId())
+                .eq(FaAsset::getVersion, asset.getVersion())
+                .setSql("cumulative_depreciation = cumulative_depreciation + " + nz(plan.getDepreciationAmount()).toPlainString())
+                .setSql("net_book_value = original_value - cumulative_depreciation - " + nz(plan.getDepreciationAmount()).toPlainString())
+                .set(FaAsset::getVersion, asset.getVersion() + 1));
+            if (assetRows == 0) {
+                throw new ServiceException("资产[" + asset.getAssetNo() + "]数据已变更,折旧计提失败,请重试");
+            }
         }
         log.info("期间 {} 折旧计提完成: {} 项, 凭证 {}", period.getPeriodName(), plans.size(), voucher.getVoucherNo());
         return plans.size();

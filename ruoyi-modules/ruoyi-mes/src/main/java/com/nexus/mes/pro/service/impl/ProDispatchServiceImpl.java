@@ -224,6 +224,8 @@ public class ProDispatchServiceImpl implements IProDispatchService {
         if (dispatch == null) {
             throw new RuntimeException("派工单不存在: " + dispatchId);
         }
+        // 数量校验：非负且合计不超过派工计划数量，防止负数/超量污染工序与工单完工数量
+        validateReportQuantities(goodQty, defectQty, scrapQty, dispatch.getPlannedQty());
 
         // 1. CAS派工 IN_PROGRESS -> COMPLETED
         int rows = baseMapper.update(null, Wrappers.<ProDispatch>lambdaUpdate()
@@ -292,6 +294,27 @@ public class ProDispatchServiceImpl implements IProDispatchService {
     private String generateDispatchNo(String cardNo) {
         long suffix = System.currentTimeMillis() % 10000L;
         return "DIS-" + cardNo + "-" + String.format("%04d", suffix);
+    }
+
+    /**
+     * 校验报工数量：非负且三者合计不超过派工计划数量
+     */
+    private void validateReportQuantities(BigDecimal goodQty, BigDecimal defectQty, BigDecimal scrapQty, BigDecimal plannedQty) {
+        if (goodQty == null || defectQty == null || scrapQty == null) {
+            throw new RuntimeException("报工数量不能为空");
+        }
+        if (goodQty.compareTo(BigDecimal.ZERO) < 0
+            || defectQty.compareTo(BigDecimal.ZERO) < 0
+            || scrapQty.compareTo(BigDecimal.ZERO) < 0) {
+            throw new RuntimeException("报工数量不能为负数");
+        }
+        BigDecimal total = goodQty.add(defectQty).add(scrapQty);
+        if (total.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new RuntimeException("报工数量合计必须大于0");
+        }
+        if (plannedQty != null && total.compareTo(plannedQty) > 0) {
+            throw new RuntimeException("报工数量合计不能超过派工计划数量 " + plannedQty);
+        }
     }
 
     private LambdaQueryWrapper<ProDispatch> buildQueryWrapper(ProDispatchBo bo) {

@@ -122,3 +122,29 @@
 - 报表 iframe / IoT SSE 的 token 走 URL query 是积木报表协议与 EventSource 无法设 header 的技术约束，后端已用 @SaIgnore + StpUtil 手动校验，日志侧需反代过滤
 
 验证: eslint 全部通过；erp 编译通过
+
+## M1 批（MEDIUM 后端数据一致性，2026-08-02，全部完成）
+
+| # | 问题 | 状态 |
+|---|------|------|
+| M1-1 | SPC judgeOoc 重复值定位错位（SpcControlChartServiceImpl:435） | ✅ 改遍历下标传入 |
+| M1-2 | MES 报工数量无校验（ProFlowCard/ProDispatch） | ✅ 非负 + 合计 ≤ 计划量 |
+| M1-3 | 备件出入库 quantity 未校验（EqSparePartServiceImpl:175） | ✅ 非空且 >0 |
+| M1-4 | 批次创建 quantity 未校验（LtLotServiceImpl:112） | ✅ 非空且 >0 |
+| M1-5 | 拣货/上架规则兜底选错类别（PickingResolution/PutawayStrategy） | ✅ 兜底仅通用规则，无匹配返回 null |
+| M1-6 | SalesOutStrategy 流水 txQuantity 误用整行数量 | ✅ 传实际扣减 deductQty |
+| M1-7 | CountAdjustStrategy afterQty 快照推算 | ✅ 原子更新后重读实际库存 |
+| M1-8 | 完工入库增量完工数量丢失（WmProductionRecptServiceImpl:211） | ✅ 补差额入库 + 单据数量更新为累计 |
+| M1-9 | 凭证负数借贷校验缺失（GlVoucherServiceImpl:317） | ✅ 拒绝负数分录 |
+| M1-10 | 核销金额精度错配（FinSettlementServiceImpl） | ✅ settleAmount 统一 setScale(2) |
+| M1-11 | 重开期间结转跳过（FinClosingServiceImpl:383） | ✅ 增量结转（closing 记录已结转净额） |
+| M1-12 | 清账静默跳过（FinSettlementServiceImpl:261） | ✅ 凭证未生成抛异常回滚核销 |
+| M1-13 | 折旧并发丢失更新（FaDepreciationServiceImpl:147） | ✅ 原子累加 + 乐观锁校验 |
+| M1-14 | FaAsset queryById NPE | ✅ null 直接返回 |
+| M1-15 | 工单双完工（PrdWorkOrderServiceImpl:502） | ✅ WHERE 带状态条件 |
+| M1-16 | 发票草稿重复生成（So/Pu Invoice） | ✅ invoiced_qty + ? ≤ delivered/received 条件门禁 |
+| M1-17 | 信用冻结双占（CreditCheckServiceImpl:66） | ✅ 已有 FROZEN 跳过 |
+| M1-18 | 合同重复生成采购订单（PuContractServiceImpl:315） | ✅ 仅 APPROVED 可生成 + CAS 状态更新 |
+| M1-19 | 多发票退货进项转出超冲（PuInvoiceServiceImpl:709） | ✅ 按发票行先消先冲逐张分配 |
+
+编译验证: mes/erp 通过

@@ -516,6 +516,7 @@ public class PrdWorkOrderServiceImpl implements IPrdWorkOrderService {
         }
         // 原子更新: 状态 + 累加完工数量 + 累加报废数量 + 完工时间
         // 使用 toPlainString() 避免 BigDecimal 科学计数法导致 SQL 语法错误
+        // 并发防重: WHERE 带状态条件(仅非 COMPLETED/CLOSED 可更新), 与预读校验配合杜绝 MQ 重投+手动完工的双完工
         String completeSetSql = completeQty != null && completeQty.compareTo(BigDecimal.ZERO) != 0
             ? "completed_qty = completed_qty + " + completeQty.toPlainString() : null;
         String scrapSetSql = scrapQty != null && scrapQty.compareTo(BigDecimal.ZERO) != 0
@@ -525,10 +526,11 @@ public class PrdWorkOrderServiceImpl implements IPrdWorkOrderService {
             .set(PrdWorkOrder::getWoStatus, WoStatusEnum.COMPLETED.getCode())
             .set(PrdWorkOrder::getActualEndDate, new Date())
             .setSql(completeSetSql != null, completeSetSql)
-            .setSql(scrapSetSql != null, scrapSetSql);
+            .setSql(scrapSetSql != null, scrapSetSql)
+            .notIn(PrdWorkOrder::getWoStatus, WoStatusEnum.COMPLETED.getCode(), STATUS_CLOSED);
         int rows = baseMapper.update(null, wrapper);
         if (rows == 0) {
-            throw new RuntimeException("工单完工更新失败, 可能已被其他操作修改");
+            throw new RuntimeException("工单已完工或已关闭, 不可重复完工");
         }
 
         // 回写销售订单行已投产数量：wo.planId → plan.orderLineId → SO 行

@@ -67,6 +67,15 @@ public class CreditCheckServiceImpl implements ICreditCheckService {
                 clientId, creditLimit, usedAmount, orderAmount);
         }
 
+        // 幂等防重：该订单已有 FROZEN 记录则跳过（防止订单重复确认/并发双击导致额度双占）
+        Long frozenCount = creditUsageMapper.selectCount(Wrappers.<SoCreditUsage>lambdaQuery()
+            .eq(SoCreditUsage::getSoId, soId)
+            .eq(SoCreditUsage::getStatus, "FROZEN"));
+        if (frozenCount != null && frozenCount > 0) {
+            log.info("订单[{}]信用额度已冻结,跳过重复冻结", soId);
+            return;
+        }
+
         SoCreditUsage usage = new SoCreditUsage();
         usage.setClientId(clientId);
         usage.setSoId(soId);

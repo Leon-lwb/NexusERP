@@ -110,6 +110,10 @@ public class LtLotServiceImpl implements ILtLotService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean insertByBo(LtLotBo bo) {
+        // 数量校验：必须非空且大于 0，防止下游 consume/release 解引用 NPE 或产生负剩余批次
+        if (bo.getQuantity() == null || bo.getQuantity().signum() <= 0) {
+            throw new RuntimeException("批次数量必须大于0");
+        }
         if (StringUtils.isBlank(bo.getLotCode())) {
             bo.setLotCode(generateLotCode());
         }

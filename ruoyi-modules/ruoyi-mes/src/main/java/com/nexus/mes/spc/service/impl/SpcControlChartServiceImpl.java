@@ -229,8 +229,9 @@ public class SpcControlChartServiceImpl implements ISpcControlChartService {
         }
         // OOC判定需在所有点生成后基于完整序列
         List<SpcDataPointVo> allPoints = listPointsForOoc(dataPointMapper, chartId);
-        for (SpcDataPointVo pv : allPoints) {
-            String rules = judgeOoc(pv.getValue(), limit, allPoints);
+        for (int i = 0; i < allPoints.size(); i++) {
+            SpcDataPointVo pv = allPoints.get(i);
+            String rules = judgeOoc(pv.getValue(), limit, allPoints, i);
             if (StringUtils.isNotBlank(rules)) {
                 dataPointMapper.update(null, Wrappers.<SpcDataPoint>lambdaUpdate()
                     .set(SpcDataPoint::getIsOoc, "1")
@@ -426,20 +427,15 @@ public class SpcControlChartServiceImpl implements ISpcControlChartService {
      * RULE3: 连续6点严格递增或递减
      * RULE4: 连续14点交替上下(zig-zag)
      */
-    private String judgeOoc(BigDecimal value, ControlLimit limit, List<SpcDataPointVo> allPoints) {
+    private String judgeOoc(BigDecimal value, ControlLimit limit, List<SpcDataPointVo> allPoints, int currentIndex) {
         List<String> rules = new ArrayList<>();
         // RULE1: 超限
         if (value.compareTo(limit.ucl) > 0 || value.compareTo(limit.lcl) < 0) {
             rules.add(OOC_RULE_1);
         }
-        // 找当前点在序列中的索引
-        int idx = -1;
-        for (int i = 0; i < allPoints.size(); i++) {
-            if (allPoints.get(i).getValue().compareTo(value) == 0) {
-                idx = i;
-                break;
-            }
-        }
+        // RULE2/3/4 基于当前点在序列中的真实下标（由调用方遍历传入），
+        // 不能用值相等匹配定位——重复测量值时 getValue() 会命中首个同值点导致规则窗口错位
+        int idx = currentIndex;
         if (idx >= 0) {
             // RULE2: 连续9点(含当前)在CL同侧
             if (idx >= 8 && checkSameSide(allPoints, idx, 9, limit.cl)) {

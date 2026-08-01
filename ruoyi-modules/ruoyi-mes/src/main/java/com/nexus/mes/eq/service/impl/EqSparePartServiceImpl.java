@@ -183,6 +183,10 @@ public class EqSparePartServiceImpl implements IEqSparePartService {
         }
         BigDecimal before = spare.getCurrentStock() == null ? BigDecimal.ZERO : spare.getCurrentStock();
         BigDecimal qty = bo.getQuantity();
+        // 数量校验：必须非空且大于 0，防止 null 触发 NPE、负值绕过防超卖/反向加库存
+        if (qty == null || qty.signum() <= 0) {
+            throw new ServiceException("备件出入库数量必须大于0");
+        }
         BigDecimal after;
         int rows;
         if (TXN_IN.equals(type)) {

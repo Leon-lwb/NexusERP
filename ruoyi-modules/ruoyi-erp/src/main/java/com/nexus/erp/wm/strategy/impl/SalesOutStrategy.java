@@ -163,7 +163,8 @@ public class SalesOutStrategy extends BaseStockOperationStrategy {
                 remainingConsumeReserved = remainingConsumeReserved.subtract(batchConsumeReserved);
                 // F3-a:出库按移动平均成本结转(扣减 totalCost,返回单位成本)
                 BigDecimal outUnitCost = valuationService.issueStockCost(stock.getStockId(), deductQty);
-                stockTxMapper.insert(buildSalesOutStockTx(salesIssue, line, stock, beforeQuantity, afterQuantity, now, outUnitCost));
+                // 流水数量用本次实际扣减量（一行跨多批次拆分时各批次 deductQty 不同，不能用整行数量）
+                stockTxMapper.insert(buildSalesOutStockTx(salesIssue, line, stock, beforeQuantity, afterQuantity, now, outUnitCost, deductQty));
                 remaining = remaining.subtract(deductQty);
             }
             if (remaining.compareTo(BigDecimal.ZERO) > 0) {
@@ -207,8 +208,9 @@ public class SalesOutStrategy extends BaseStockOperationStrategy {
 
     private WmMaterialStockTx buildSalesOutStockTx(WmSalesIssue salesIssue, WmSalesIssueLine line,
                                                    WmMaterialStock stock, BigDecimal beforeQuantity,
-                                                   BigDecimal afterQuantity, Date now, BigDecimal outUnitCost) {
-        WmMaterialStockTx tx = buildBaseTxFromStock(stock, TX_TYPE_SALES_OUT, TX_FLAG_OUT, line.getQuantityIssue(),
+                                                   BigDecimal afterQuantity, Date now, BigDecimal outUnitCost,
+                                                   BigDecimal txQuantity) {
+        WmMaterialStockTx tx = buildBaseTxFromStock(stock, TX_TYPE_SALES_OUT, TX_FLAG_OUT, txQuantity,
             beforeQuantity, afterQuantity, now);
         tx.setUnitCost(outUnitCost);
         tx.setSourceDocType(SOURCE_DOC_TYPE_SALES_ISSUE);

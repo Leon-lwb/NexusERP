@@ -314,6 +314,10 @@ public class GlVoucherServiceImpl implements IGlVoucherService {
         for (GlVoucherLine l : lines) {
             BigDecimal d = nz(l.getDebit());
             BigDecimal c = nz(l.getCredit());
+            // 负数金额拒绝（红字仅允许业务 poster 生成，手工凭证不允许负数分录）
+            if (d.signum() < 0 || c.signum() < 0) {
+                throw new ServiceException("分录行金额不能为负数，红字业务请通过业务过账生成");
+            }
             if (d.signum() > 0 && c.signum() > 0) {
                 throw new ServiceException("分录行借贷不可同时有值");
             }

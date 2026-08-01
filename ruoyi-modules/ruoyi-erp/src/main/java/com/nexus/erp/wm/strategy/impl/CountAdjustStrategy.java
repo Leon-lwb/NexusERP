@@ -97,7 +97,6 @@ public class CountAdjustStrategy extends BaseStockOperationStrategy {
         }
 
         BigDecimal beforeQty = stock.getStockQuantity() == null ? BigDecimal.ZERO : stock.getStockQuantity();
-        BigDecimal afterQty = bookQuantity.add(diffQuantity);
 
         int affected;
         if (diffQuantity.compareTo(BigDecimal.ZERO) > 0) {
@@ -108,6 +107,12 @@ public class CountAdjustStrategy extends BaseStockOperationStrategy {
         if (affected == 0) {
             throw new ServiceException("库存并发冲突，请重试: 物料【" + line.getMaterialName() + "】");
         }
+
+        // afterQty 用原子更新后的实际库存（重读），不能用快照推算——
+        // 盘点行生成后、过账前若发生出入库，bookQuantity+diff 与真实库存对不上，流水前后断裂
+        WmMaterialStock afterStock = stockMapper.selectById(stock.getStockId());
+        BigDecimal afterQty = afterStock != null && afterStock.getStockQuantity() != null
+            ? afterStock.getStockQuantity() : beforeQty.add(diffQuantity);
 
         WmMaterialStockTx tx = buildBaseTxFromStock(stock, TX_TYPE_COUNT_ADJUST, txFlag, absDiff,
             beforeQty, afterQty, now);

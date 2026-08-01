@@ -313,14 +313,13 @@ public class PuContractServiceImpl implements IPuContractService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Long createPurchaseOrderFromContract(Long contractId) {
-        // 1. 校验合同存在且状态为 APPROVED 或 EXECUTING
+        // 1. 校验合同存在且状态为 APPROVED（EXECUTING 表示已生成过采购订单，禁止重复生成）
         PuContract contract = baseMapper.selectById(contractId);
         if (contract == null) {
             throw new ServiceException("合同不存在: " + contractId);
         }
-        if (!STATUS_APPROVED.equals(contract.getStatus())
-            && !STATUS_EXECUTING.equals(contract.getStatus())) {
-            throw new ServiceException("合同状态不允许生成采购订单, 仅 APPROVED/EXECUTING 可生成");
+        if (!STATUS_APPROVED.equals(contract.getStatus())) {
+            throw new ServiceException("合同状态不允许生成采购订单, 仅 APPROVED 可生成(当前:" + contract.getStatus() + ")");
         }
 
         // 2. 查合同明细
@@ -365,11 +364,16 @@ public class PuContractServiceImpl implements IPuContractService {
         order.setTotalAmount(totalAmount);
         purchaseOrderMapper.updateById(order);
 
-        // 5. 更新合同状态为 EXECUTING (LambdaUpdateWrapper 单列更新)
+        // 5. 更新合同状态为 EXECUTING——CAS 条件更新（仅 APPROVED 可转为 EXECUTING），
+        //    并发重复生成时第二个事务影响行数为 0 直接失败，杜绝同一合同生成多张采购订单
         LambdaUpdateWrapper<PuContract> wrapper = Wrappers.<PuContract>lambdaUpdate()
             .set(PuContract::getStatus, STATUS_EXECUTING)
-            .eq(PuContract::getContractId, contractId);
-        baseMapper.update(null, wrapper);
+            .eq(PuContract::getContractId, contractId)
+            .eq(PuContract::getStatus, STATUS_APPROVED);
+        int contractRows = baseMapper.update(null, wrapper);
+        if (contractRows == 0) {
+            throw new ServiceException("合同状态已变更(可能已生成采购订单), 请勿重复操作");
+        }
 
         log.info("合同 {} 生成采购订单 {}: 金额 {}", contractId, order.getOrderNo(), totalAmount);
         return order.getOrderId();

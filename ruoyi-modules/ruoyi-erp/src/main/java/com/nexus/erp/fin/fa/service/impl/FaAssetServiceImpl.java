@@ -61,6 +61,9 @@ public class FaAssetServiceImpl implements IFaAssetService {
     @Override
     public FaAssetVo queryById(Long assetId) {
         FaAssetVo vo = baseMapper.selectVoById(assetId);
+        if (vo == null) {
+            return null; // 不存在返回 null 而非 NPE
+        }
         fillExtra(List.of(vo));
         return vo;
     }

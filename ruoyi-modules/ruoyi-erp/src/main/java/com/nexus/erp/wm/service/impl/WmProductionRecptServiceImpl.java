@@ -216,16 +216,35 @@ public class WmProductionRecptServiceImpl implements IWmProductionRecptService {
                                   Long warehouseId, String warehouseCode, String warehouseName,
                                   Long locationId, String locationCode, String locationName,
                                   Date recptDate) {
-        // 单据级幂等：同工单已存在已执行入库单则直接返回（防 MQ 重投产生重复单据）
+        // 单据级幂等：同工单已存在已执行入库单则补差额入库（支持分次完工/增量完工），
+        // 避免"一工单一入库"假设下第二次完工消息被整体跳过导致成品入库量短缺
         List<WmProductionRecpt> existing = baseMapper.selectList(
             Wrappers.<WmProductionRecpt>lambdaQuery()
                 .eq(WmProductionRecpt::getWoId, woId)
                 .eq(WmProductionRecpt::getStatus, "EXECUTED")
+                .orderByDesc(WmProductionRecpt::getCreateTime)
                 .last("LIMIT 1"));
         if (!existing.isEmpty()) {
-            log.info("工单[{}]已存在已执行的生产入库单, 跳过重复创建: recptId={}",
-                woId, existing.get(0).getRecptId());
-            return existing.get(0).getRecptId();
+            WmProductionRecpt last = existing.get(0);
+            BigDecimal alreadyIn = last.getQuantity() == null ? BigDecimal.ZERO : last.getQuantity();
+            if (quantity.compareTo(alreadyIn) <= 0) {
+                log.info("工单[{}]已入库数量 {} 不小于本次 {}，跳过: recptId={}", woId, alreadyIn, quantity, last.getRecptId());
+                return last.getRecptId();
+            }
+            // 本次消息数量大于已入库数量：补差额（增量完工场景）
+            BigDecimal delta = quantity.subtract(alreadyIn);
+            log.info("工单[{}]增量完工补入库: 已入库={}, 本次累计={}, 补差额={}", woId, alreadyIn, quantity, delta);
+            WmBatchVo batch = batchService.createBatchByMaterial(materialId,
+                BATCH_SOURCE_DOC_TYPE, woId, woNo, warehouseId, null);
+            stockOperationService.postProductionCompletion(
+                woId, woNo, materialId, materialCode, materialName,
+                delta, warehouseId, locationId,
+                batch.getBatchId(), batch.getBatchCode(), recptDate != null ? recptDate : new Date());
+            // 更新单据数量为累计值
+            baseMapper.update(null, Wrappers.<WmProductionRecpt>lambdaUpdate()
+                .set(WmProductionRecpt::getQuantity, quantity)
+                .eq(WmProductionRecpt::getRecptId, last.getRecptId()));
+            return last.getRecptId();
         }
 
         // 为成品自动生成批次（生产入库单据留痕 + 库存记录共用同一批次）

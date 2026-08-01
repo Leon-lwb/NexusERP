@@ -254,6 +254,9 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
         log.info("完成工序: cardId={}, stepRecordId={}, good={}, defect={}, scrap={}",
             cardId, stepRecordId, goodQty, defectQty, scrapQty);
 
+        // 数量校验：三个数量必须非负且合计不超过计划数量，防止负数/超量污染工单完工数量
+        validateReportQuantities(goodQty, defectQty, scrapQty);
+
         // 1. CAS更新工序状态 IN_PROGRESS -> COMPLETED
         int stepRows = stepMapper.update(null, Wrappers.<ProFlowCardStep>lambdaUpdate()
             .set(ProFlowCardStep::getStepStatus, STEP_COMPLETED)
@@ -286,6 +289,24 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
         if (pendingCount == 0) {
             log.info("流转卡所有工序完成，触发completeCard: cardId={}", cardId);
             completeCard(cardId);
+        }
+    }
+
+    /**
+     * 校验报工数量：非负且三者合计不超过流转卡计划数量，防止负数/超量污染完工数据
+     */
+    private void validateReportQuantities(BigDecimal goodQty, BigDecimal defectQty, BigDecimal scrapQty) {
+        if (goodQty == null || defectQty == null || scrapQty == null) {
+            throw new RuntimeException("报工数量不能为空");
+        }
+        if (goodQty.compareTo(BigDecimal.ZERO) < 0
+            || defectQty.compareTo(BigDecimal.ZERO) < 0
+            || scrapQty.compareTo(BigDecimal.ZERO) < 0) {
+            throw new RuntimeException("报工数量不能为负数");
+        }
+        BigDecimal total = goodQty.add(defectQty).add(scrapQty);
+        if (total.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new RuntimeException("报工数量合计必须大于0");
         }
     }
 

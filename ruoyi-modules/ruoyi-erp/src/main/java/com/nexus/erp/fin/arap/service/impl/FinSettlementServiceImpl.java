@@ -75,6 +75,9 @@ public class FinSettlementServiceImpl implements IFinSettlementService {
         if (settleAmount == null || settleAmount.signum() <= 0) {
             throw new ServiceException("核销金额必须大于0");
         }
+        // 精度对齐：收付款单/核销金额为 decimal(18,4)，凭证与余额表为 decimal(18,2)，
+        // 统一按 2 位小数入账，防止明细与余额表对不平（如 10.125 → 凭证 10.13）
+        settleAmount = settleAmount.setScale(2, java.math.RoundingMode.HALF_UP);
         if (invoiceId == null || receiptId == null || StringUtils.isBlank(direction)) {
             throw new ServiceException("发票/收付款单/方向不能为空");
         }
@@ -259,9 +262,9 @@ public class FinSettlementServiceImpl implements IFinSettlementService {
             .eq(GlVoucher::getSourceId, sourceId)
             .last("limit 1"));
         if (voucher == null) {
-            // 凭证异步未生成,本次跳过清账(F1 简化:不阻断核销;后续可补清账任务)
-            log.warn("清账跳过(凭证未生成): source={}, sourceId={}", voucherSource, sourceId);
-            return;
+            // 凭证未生成：当前过账链路为同步制单，正常不会走到这里；
+            // 若走到说明制单失败，抛异常回滚核销，避免"已核销但未清项永久残留"的账实不符
+            throw new ServiceException("清账失败:凭证未生成(source={}, sourceId={})，核销已回滚", voucherSource, sourceId);
         }
         int n = voucherLineMapper.update(null, Wrappers.<GlVoucherLine>lambdaUpdate()
             .eq(GlVoucherLine::getVoucherId, voucher.getVoucherId())

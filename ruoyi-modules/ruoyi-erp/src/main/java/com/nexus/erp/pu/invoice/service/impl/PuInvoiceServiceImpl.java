@@ -347,10 +347,15 @@ public class PuInvoiceServiceImpl implements IPuInvoiceService {
             line.setInvoiceId(invoice.getInvoiceId());
             lineMapper.insert(line);
             // 原子累加已开票数量(防重复开票);数量内部计算,无注入风险
-            puPurchaseOrderLineMapper.update(null,
+            // 条件更新门禁: invoiced_qty + ? <= received_quantity, 影响行数为 0 说明并发已开票,回滚本次草稿
+            int affected = puPurchaseOrderLineMapper.update(null,
                 Wrappers.<PuPurchaseOrderLine>lambdaUpdate()
                     .eq(PuPurchaseOrderLine::getLineId, line.getPoLineId())
+                    .apply("invoiced_qty + {0} <= received_quantity", line.getQuantity())
                     .setSql("invoiced_qty = invoiced_qty + " + line.getQuantity().toPlainString()));
+            if (affected == 0) {
+                throw new ServiceException("采购订单行已开票数量变化,请刷新后重试: lineId=" + line.getPoLineId());
+            }
         }
         log.info("采购订单自动生成进项发票草稿, poId={}, invoiceId={}, invoiceNo={}, lineCount={}",
             poId, invoice.getInvoiceId(), invoice.getInvoiceNo(), invoiceLines.size());
@@ -716,6 +721,16 @@ public class PuInvoiceServiceImpl implements IPuInvoiceService {
         if (coverLines.isEmpty()) {
             return 0;
         }
+        // 按 PO 行汇总各蓝字发票行已开票数量，用于把退货数量按"先消先冲"逐发票分配，
+        // 防止多发票覆盖同一 PO 行时每张都按全额退货红冲导致进项转出超冲（invoiced_qty 冲成负数）
+        Map<Long, Map<Long, BigDecimal>> invoiceLineQtyByPoLine = new HashMap<>();
+        for (PuInvoiceLine l : coverLines) {
+            invoiceLineQtyByPoLine
+                .computeIfAbsent(l.getPoLineId(), k -> new HashMap<>())
+                .put(l.getInvoiceId(), l.getQuantity() != null ? l.getQuantity() : BigDecimal.ZERO);
+        }
+        // 剩余可冲退货量（初始为退货总量，逐发票扣减）
+        Map<Long, BigDecimal> remainingReturnQty = new HashMap<>(poLineReturnQty);
         Set<Long> invoiceIds = new HashSet<>();
         for (PuInvoiceLine l : coverLines) {
             invoiceIds.add(l.getInvoiceId());
@@ -729,9 +744,31 @@ public class PuInvoiceServiceImpl implements IPuInvoiceService {
                 .in(PuInvoice::getStatus, List.of(STATUS_ISSUED, STATUS_VERIFIED)));
         int count = 0;
         for (PuInvoice inv : covering) {
-            Long redId = redFlushForReturn(inv.getInvoiceId(), poLineReturnQty);
+            // 构建"仅本发票可红冲量"的退货映射：每个 PO 行取 min(退货剩余, 本发票行已开票量)
+            Map<Long, BigDecimal> perInvoiceReturnQty = new HashMap<>();
+            for (Map.Entry<Long, BigDecimal> e : remainingReturnQty.entrySet()) {
+                Long poLineId = e.getKey();
+                BigDecimal remaining = e.getValue();
+                if (remaining == null || remaining.signum() <= 0) {
+                    continue;
+                }
+                BigDecimal invoiceQty = invoiceLineQtyByPoLine.getOrDefault(poLineId, Map.of())
+                    .getOrDefault(inv.getInvoiceId(), BigDecimal.ZERO);
+                BigDecimal canFlush = remaining.min(invoiceQty);
+                if (canFlush.signum() > 0) {
+                    perInvoiceReturnQty.put(poLineId, canFlush);
+                }
+            }
+            if (perInvoiceReturnQty.isEmpty()) {
+                continue;
+            }
+            Long redId = redFlushForReturn(inv.getInvoiceId(), perInvoiceReturnQty);
             if (redId != null) {
                 count++;
+                // 扣减剩余退货量
+                for (Map.Entry<Long, BigDecimal> e : perInvoiceReturnQty.entrySet()) {
+                    remainingReturnQty.merge(e.getKey(), e.getValue(), (a, b) -> a.subtract(b));
+                }
             }
         }
         return count;

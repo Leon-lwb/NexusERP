@@ -235,10 +235,15 @@ public class SoInvoiceServiceImpl implements ISoInvoiceService {
             line.setInvoiceId(invoice.getInvoiceId());
             lineMapper.insert(line);
             // 原子累加已开票数量(防重复开票);数量内部计算,非用户输入,无注入风险
-            soSalesOrderLineMapper.update(null,
+            // 条件更新门禁: invoiced_qty + ? <= delivered_qty, 影响行数为 0 说明并发已开票,回滚本次草稿
+            int affected = soSalesOrderLineMapper.update(null,
                 Wrappers.<SoSalesOrderLine>lambdaUpdate()
                     .eq(SoSalesOrderLine::getLineId, line.getSoLineId())
+                    .apply("invoiced_qty + {0} <= delivered_qty", line.getQuantity())
                     .setSql("invoiced_qty = invoiced_qty + " + line.getQuantity().toPlainString()));
+            if (affected == 0) {
+                throw new ServiceException("销售订单行已开票数量变化,请刷新后重试: lineId=" + line.getSoLineId());
+            }
         }
         log.info("销售订单自动生成发票草稿, soId={}, invoiceId={}, invoiceNo={}, lineCount={}",
             soId, invoice.getInvoiceId(), invoice.getInvoiceNo(), invoiceLines.size());

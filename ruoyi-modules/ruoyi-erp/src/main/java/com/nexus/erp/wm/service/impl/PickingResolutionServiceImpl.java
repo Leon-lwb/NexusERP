@@ -128,9 +128,11 @@ public class PickingResolutionServiceImpl implements IPickingResolutionService {
         if (rules.isEmpty()) {
             return null;
         }
+        // 优先匹配物料类别专属规则，其次通用规则（materialCategoryId 为空）；
+        // 兜底只允许取通用规则，不能回退到其他类别的专用规则（会把物料导向错误仓库）
         return rules.stream()
             .filter(r -> r.getMaterialCategoryId() == null || r.getMaterialCategoryId().equals(categoryId))
             .findFirst()
-            .orElse(rules.get(0));
+            .orElse(null);
     }
 }
