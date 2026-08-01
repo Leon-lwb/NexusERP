@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="drawio" version="31.1.5">
+  <diagram name="Page-1">
+    <mxGraphModel>
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="st1" value="① 请求入口" style="swimlane;startSize=34;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#d6b656;fontColor=#7a5c00;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="140" y="40" width="960" height="400" as="geometry" />
+        </mxCell>
+        <mxCell id="a1" value="前端 AI 聊天抽屉&#xa;AiChatDrawer.vue（Markdown 渲染）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="st1">
+          <mxGeometry x="160" y="50" width="340" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="a2" value="POST /ai/chat/send&#xa;AiChatRequest（会话 + 消息）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="st1">
+          <mxGeometry x="160" y="160" width="340" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="a3" value="AiServiceFacade.chat()&#xa;路由对话 → 创建会话 → 构建 Agent" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="st1">
+          <mxGeometry x="160" y="270" width="340" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="st2" value="② Agent 编排（Supervisor 模式）" style="swimlane;startSize=34;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#d6b656;fontColor=#7a5c00;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="140" y="480" width="960" height="520" as="geometry" />
+        </mxCell>
+        <mxCell id="b1" value="ChatModelFactory 构建模型&#xa;（按数据库配置 + 缓存）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="st2">
+          <mxGeometry x="160" y="50" width="340" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="b2" value="SupervisorAgent 编排&#xa;（responseStrategy=LAST）" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="st2">
+          <mxGeometry x="160" y="160" width="340" height="72" as="geometry" />
+        </mxCell>
+        <mxCell id="b3" value="ErpQueryAgent&#xa;（SQL 查询）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="st2">
+          <mxGeometry x="20" y="280" width="220" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="b4" value="ErpReportAgent&#xa;（报表图表）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="st2">
+          <mxGeometry x="420" y="280" width="220" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="b5" value="Tools 动态加载&#xa;QueryAllTables / QueryTableSchema&#xa;ExecuteSqlQuery + 业务 Tool" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="st2">
+          <mxGeometry x="160" y="400" width="340" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="st3" value="③ 异步执行与 SSE 推送" style="swimlane;startSize=34;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#d6b656;fontColor=#7a5c00;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="140" y="1040" width="960" height="440" as="geometry" />
+        </mxCell>
+        <mxCell id="c1" value="CompletableFuture.runAsync&#xa;→ aiExecutor 专用线程池&#xa;AiRequestContext 手动传播租户上下文" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="st3">
+          <mxGeometry x="160" y="50" width="340" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="c2" value="AiSseMessageHelper 编码&#xa;THINKING / TOOL_START / TOOL_END&#xa;CONTENT / DONE / ERROR" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="st3">
+          <mxGeometry x="160" y="180" width="340" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="c3" value="Redis Pub/Sub 广播 → SSE&#xa;前端实时接收（工具卡片 + 思考过程）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="st3">
+          <mxGeometry x="160" y="300" width="340" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="lg" value="图例" style="swimlane;startSize=34;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#999999;fontColor=#333333;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="140" y="1520" width="560" height="174" as="geometry" />
+        </mxCell>
+        <mxCell id="lg0" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="lg">
+          <mxGeometry x="20" y="50" width="30" height="16" as="geometry" />
+        </mxCell>
+        <mxCell id="lg0t" value="单据 / 操作" style="text;html=1;align=left;verticalAlign=middle;" vertex="1" parent="lg">
+          <mxGeometry x="60" y="47" width="200" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="lg1" value="" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="lg">
+          <mxGeometry x="20" y="88" width="30" height="16" as="geometry" />
+        </mxCell>
+        <mxCell id="lg1t" value="Agent 编排" style="text;html=1;align=left;verticalAlign=middle;" vertex="1" parent="lg">
+          <mxGeometry x="60" y="85" width="200" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="lg2" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="lg">
+          <mxGeometry x="20" y="126" width="30" height="16" as="geometry" />
+        </mxCell>
+        <mxCell id="lg2t" value="系统自动" style="text;html=1;align=left;verticalAlign=middle;" vertex="1" parent="lg">
+          <mxGeometry x="60" y="123" width="200" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1.0;entryX=0.5;entryY=0.0;exitDx=0;exitDy=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="a1" target="a2">
+          <mxGeometry relative="1" as="geometry">          </mxGeometry>
+        </mxCell>
+        <mxCell id="e2" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1.0;entryX=0.5;entryY=0.0;exitDx=0;exitDy=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="a2" target="a3">
+          <mxGeometry relative="1" as="geometry">          </mxGeometry>
+        </mxCell>
+        <mxCell id="e3" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1.0;entryX=0.5;entryY=0.0;exitDx=0;exitDy=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="a3" target="b1">
+          <mxGeometry relative="1" as="geometry">          </mxGeometry>
+        </mxCell>
+        <mxCell id="e4" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1.0;entryX=0.5;entryY=0.0;exitDx=0;exitDy=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="b1" target="b2">
+          <mxGeometry relative="1" as="geometry">          </mxGeometry>
+        </mxCell>
+        <mxCell id="e5" value="查询" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.0;exitY=0.5;entryX=0.5;entryY=0.0;exitDx=0;exitDy=0;entryDx=0;entryDy=0;fontSize=11;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="b2" target="b3">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="290" y="676" />
+              <mxPoint x="270" y="676" />
+              <mxPoint x="270" y="790" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e6" value="报表" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1.0;exitY=0.5;entryX=0.5;entryY=0.0;exitDx=0;exitDy=0;entryDx=0;entryDy=0;fontSize=11;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="b2" target="b4">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="650" y="676" />
+              <mxPoint x="670" y="676" />
+              <mxPoint x="670" y="790" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e7" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1.0;entryX=0.0;entryY=0.5;exitDx=0;exitDy=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="b3" target="b5">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="270" y="820" />
+              <mxPoint x="270" y="850" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e8" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1.0;entryX=1.0;entryY=0.5;exitDx=0;exitDy=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="b4" target="b5">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="670" y="820" />
+              <mxPoint x="670" y="850" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e9" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1.0;entryX=0.5;entryY=0.0;exitDx=0;exitDy=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="b5" target="c1">
+          <mxGeometry relative="1" as="geometry">          </mxGeometry>
+        </mxCell>
+        <mxCell id="e10" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1.0;entryX=0.5;entryY=0.0;exitDx=0;exitDy=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="c1" target="c2">
+          <mxGeometry relative="1" as="geometry">          </mxGeometry>
+        </mxCell>
+        <mxCell id="e11" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1.0;entryX=0.5;entryY=0.0;exitDx=0;exitDy=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="c2" target="c3">
+          <mxGeometry relative="1" as="geometry">          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
