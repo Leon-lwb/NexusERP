@@ -11,6 +11,7 @@ import com.nexus.common.core.utils.MapstructUtils;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
+import com.nexus.common.redis.utils.RedisUtils;
 import com.nexus.erp.wm.domain.WmSn;
 import com.nexus.erp.wm.domain.bo.WmSnBo;
 import com.nexus.erp.wm.domain.vo.WmSnVo;
@@ -20,10 +21,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.text.SimpleDateFormat;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * 序列号管理Service业务层处理
@@ -199,30 +200,33 @@ public class WmSnServiceImpl implements IWmSnService {
         String prefix = "SN";
         String dateStr = new SimpleDateFormat("yyyyMMdd").format(new Date());
 
-        // 查询当天已有最大序号
-        String likePattern = prefix + dateStr + "%";
-        LambdaQueryWrapper<WmSn> lqw = Wrappers.lambdaQuery();
-        lqw.likeRight(WmSn::getSnCode, prefix + dateStr);
-        lqw.orderByDesc(WmSn::getSnCode);
-        lqw.last("LIMIT 1");
-        List<WmSn> existingList = baseMapper.selectList(lqw);
-
-        int startSeq = 1;
-        if (existingList != null && !existingList.isEmpty()) {
-            String lastCode = existingList.get(0).getSnCode();
-            String seqPart = lastCode.substring((prefix + dateStr).length());
-            try {
-                startSeq = Integer.parseInt(seqPart) + 1;
-            } catch (NumberFormatException e) {
-                startSeq = 1;
+        // 序号使用 Redis 原子自增（跨实例唯一、重启不重置），首次访问当天键时按当日最大已有序号初始化
+        String seqKey = "erp:sn:seq:" + dateStr;
+        long startSeq;
+        if (RedisUtils.setObjectIfAbsent(seqKey, 0L, Duration.ofHours(48))) {
+            LambdaQueryWrapper<WmSn> lqw = Wrappers.lambdaQuery();
+            lqw.likeRight(WmSn::getSnCode, prefix + dateStr);
+            lqw.orderByDesc(WmSn::getSnCode);
+            lqw.last("LIMIT 1");
+            List<WmSn> existingList = baseMapper.selectList(lqw);
+            long lastSeq = 0;
+            if (existingList != null && !existingList.isEmpty()) {
+                String lastCode = existingList.get(0).getSnCode();
+                try {
+                    lastSeq = Long.parseLong(lastCode.substring((prefix + dateStr).length()));
+                } catch (NumberFormatException e) {
+                    lastSeq = 0;
+                }
             }
+            RedisUtils.setCacheObject(seqKey, lastSeq, Duration.ofHours(48));
         }
+        startSeq = RedisUtils.incrAtomicValue(seqKey);
 
-        AtomicInteger seq = new AtomicInteger(startSeq);
+        long seq = startSeq;
         List<WmSn> batchList = new ArrayList<>();
         for (int i = 0; i < quantity; i++) {
             WmSn sn = new WmSn();
-            sn.setSnCode(prefix + dateStr + String.format("%04d", seq.getAndIncrement()));
+            sn.setSnCode(prefix + dateStr + String.format("%04d", seq + i));
             sn.setMaterialId(materialId);
             sn.setRuleId(ruleId);
             sn.setSourceDocId(sourceDocId);

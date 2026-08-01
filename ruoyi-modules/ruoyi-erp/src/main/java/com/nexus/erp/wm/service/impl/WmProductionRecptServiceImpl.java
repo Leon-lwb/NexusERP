@@ -150,6 +150,14 @@ public class WmProductionRecptServiceImpl implements IWmProductionRecptService {
         if ("EXECUTED".equals(recpt.getStatus())) {
             throw new ServiceException("生产入库单已执行");
         }
+        // 并发防重：条件更新抢占（非 EXECUTED → EXECUTING），影响行数为 0 说明已被并发执行
+        int claimed = baseMapper.update(null, Wrappers.<WmProductionRecpt>lambdaUpdate()
+            .set(WmProductionRecpt::getStatus, "EXECUTING")
+            .eq(WmProductionRecpt::getRecptId, recptId)
+            .ne(WmProductionRecpt::getStatus, "EXECUTED"));
+        if (claimed == 0) {
+            throw new ServiceException("生产入库单已执行");
+        }
         if (recpt.getQuantity() == null || recpt.getQuantity().signum() <= 0) {
             throw new ServiceException("入库数量必须大于0");
         }

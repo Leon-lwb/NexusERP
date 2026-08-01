@@ -221,6 +221,15 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
         if (!STATUS_CONFIRMED.equals(salesIssue.getStatus())) {
             throw new ServiceException("只有已确认的出库单才能完成");
         }
+        // 并发防重：条件更新抢占（CONFIRMED → EXECUTING），影响行数为 0 说明已被并发执行/已过期
+        int claimed = baseMapper.update(null, Wrappers.<WmSalesIssue>lambdaUpdate()
+            .set(WmSalesIssue::getStatus, "EXECUTING")
+            .eq(WmSalesIssue::getIssueId, issueId)
+            .eq(WmSalesIssue::getStatus, STATUS_CONFIRMED));
+        if (claimed == 0) {
+            log.warn("销售出库单[{}]状态已变更，跳过重复处理", issueId);
+            return 1;
+        }
 
         // 幂等检查：已生成过出库事务记录则跳过
         Long txCount = stockTxMapper.selectCount(Wrappers.<WmMaterialStockTx>lambdaQuery()

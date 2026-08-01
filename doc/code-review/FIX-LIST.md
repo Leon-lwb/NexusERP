@@ -84,3 +84,22 @@
 | H2-8 | 补货申请去重失效（PuPurchaseRequisitionServiceImpl:502-556） | ✅ 按已有未完结申请行 materialId 集合跳过 |
 
 编译验证: erp 通过
+
+## H3 批（并发/幂等，2026-08-01，全部完成）
+
+| # | 问题 | 状态 |
+|---|------|------|
+| H3-1 | wm 入库执行并发重复过账（WmMaterialReceiveExecutorServiceImpl:94） | ✅ SHELVED→EXECUTING 条件更新抢占 |
+| H3-2 | 调拨执行并发（WmTransferServiceImpl:184） | ✅ 非 EXECUTED→EXECUTING 抢占 |
+| H3-3 | 杂项出库/入库并发（WmMiscIssue/Recpt:146/148） | ✅ 同上 |
+| H3-4 | 销售出库并发（WmSalesIssueServiceImpl:216） | ✅ CONFIRMED→EXECUTING 抢占 |
+| H3-5 | 生产入库并发（WmProductionRecptServiceImpl:144） | ✅ 同上 |
+| H3-6 | 预留释放版本冲突静默跳过（WmStockReservationServiceImpl:99） | ✅ 重读重试3次+失败抛异常回滚 |
+| H3-7 | 预留不足静默部分预留 | ✅ 不足抛异常（禁止部分预留） |
+| H3-8 | 生产领料绕穿预留（ProductionIssueStrategy:87） | ✅ 查询排除已预留量 |
+| H3-9 | 杂项出库绕穿预留（MiscIssueStrategy:117） | ✅ 同上 |
+| H3-10 | 调拨跨仓维度错乱（TransferStrategy:85） | ✅ 源/目标按仓库过滤 + 行补非表仓库字段从单头填充 + 目标库存用目标仓库维度 |
+| H3-11 | SN 批量生成并发重复（WmSnServiceImpl:202） | ✅ Redis 原子自增 `erp:sn:seq:{yyyyMMdd}` |
+| H3-12 | 序列号并发+周期重置失效（BdSerialNumberRuleServiceImpl:140-197） | ✅ DB 条件更新原子递增；周期重置用 attr1 存周期段 CASE WHEN 判定 |
+
+编译验证: erp 通过

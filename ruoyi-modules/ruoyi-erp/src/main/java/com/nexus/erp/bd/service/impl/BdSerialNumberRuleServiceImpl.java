@@ -137,7 +137,7 @@ public class BdSerialNumberRuleServiceImpl implements IBdSerialNumberRuleService
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public synchronized String generateSerialNumber(String ruleCode) {
+    public String generateSerialNumber(String ruleCode) {
         LambdaQueryWrapper<BdSerialNumberRule> lqw = Wrappers.lambdaQuery();
         lqw.eq(BdSerialNumberRule::getRuleCode, ruleCode);
         BdSerialNumberRule rule = baseMapper.selectOne(lqw);
@@ -154,12 +154,34 @@ public class BdSerialNumberRuleServiceImpl implements IBdSerialNumberRuleService
             dateSegment = LocalDate.now().format(DateTimeFormatter.ofPattern(rule.getDateFormat()));
         }
 
-        // 处理流水号重置周期
-        int currentSeq = resetSeqIfNeeded(rule, dateSegment);
+        // 处理流水号重置周期：用 DB 条件更新原子递增（current_seq = current_seq + 1 WHERE 周期段未变，
+        // 周期段变化时重置为 1），替代 synchronized + 读改写（跨实例失效且事务提交前锁已释放）
+        int currentSeq;
+        String cycle = rule.getSeqCycle();
+        if (StringUtils.isBlank(cycle) || "NONE".equals(cycle)) {
+            LambdaUpdateWrapper<BdSerialNumberRule> uw = Wrappers.lambdaUpdate();
+            uw.eq(BdSerialNumberRule::getRuleCode, ruleCode);
+            uw.setSql("current_seq = COALESCE(current_seq, 0) + 1");
+            baseMapper.update(uw);
+            BdSerialNumberRule updated = baseMapper.selectOne(
+                Wrappers.<BdSerialNumberRule>lambdaQuery().eq(BdSerialNumberRule::getRuleCode, ruleCode));
+            currentSeq = updated.getCurrentSeq() != null ? updated.getCurrentSeq() : 1;
+        } else {
+            // 周期段（DAY/MONTH/YEAR）变化时重置：条件更新只在周期段匹配时递增，否则置 1
+            String cycleSegment = buildCycleDatePart(cycle);
+            LambdaUpdateWrapper<BdSerialNumberRule> uw = Wrappers.lambdaUpdate();
+            uw.eq(BdSerialNumberRule::getRuleCode, ruleCode);
+            uw.setSql("current_seq = CASE WHEN attr1 = '" + cycleSegment + "' THEN COALESCE(current_seq, 0) + 1 ELSE 1 END");
+            uw.set(BdSerialNumberRule::getAttr1, cycleSegment);
+            baseMapper.update(uw);
+            BdSerialNumberRule updated = baseMapper.selectOne(
+                Wrappers.<BdSerialNumberRule>lambdaQuery().eq(BdSerialNumberRule::getRuleCode, ruleCode));
+            currentSeq = updated.getCurrentSeq() != null ? updated.getCurrentSeq() : 1;
+        }
 
         // 获取流水号长度(默认4位)
         int seqLen = rule.getSeqLength() != null ? rule.getSeqLength() : 4;
-        String seqPart = String.format("%0" + seqLen + "d", currentSeq + 1);
+        String seqPart = String.format("%0" + seqLen + "d", currentSeq);
 
         // 构建前缀
         String prefix = StringUtils.isNotBlank(rule.getPrefix()) ? rule.getPrefix() : "";
@@ -168,32 +190,7 @@ public class BdSerialNumberRuleServiceImpl implements IBdSerialNumberRuleService
         String baseCode = prefix + dateSegment + seqPart;
         String checkDigit = computeCheckDigit(baseCode, rule.getCheckDigitRule());
 
-        // 原子递增数据库中的currentSeq
-        LambdaUpdateWrapper<BdSerialNumberRule> uw = Wrappers.lambdaUpdate();
-        uw.eq(BdSerialNumberRule::getRuleCode, ruleCode);
-        uw.set(BdSerialNumberRule::getCurrentSeq, currentSeq + 1);
-        baseMapper.update(uw);
-
         return baseCode + checkDigit;
-    }
-
-    private int resetSeqIfNeeded(BdSerialNumberRule rule, String currentDateSegment) {
-        String cycle = rule.getSeqCycle();
-        if (StringUtils.isBlank(cycle) || "NONE".equals(cycle)) {
-            return rule.getCurrentSeq() != null ? rule.getCurrentSeq() : 0;
-        }
-
-        int currentSeq = rule.getCurrentSeq() != null ? rule.getCurrentSeq() : 0;
-        if (currentSeq == 0) {
-            return 0;
-        }
-
-        // 根据周期类型构建当前日期段，与之前生成的日期比较
-        String prevDatePart = buildCycleDatePart(cycle);
-        if (!currentDateSegment.equals(prevDatePart)) {
-            return 0;
-        }
-        return currentSeq;
     }
 
     private String buildCycleDatePart(String cycle) {

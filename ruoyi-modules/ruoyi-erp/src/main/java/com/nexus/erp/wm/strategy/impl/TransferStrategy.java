@@ -81,12 +81,14 @@ public class TransferStrategy extends BaseStockOperationStrategy {
 
         Date now = new Date();
 
-        // 1. 来源库存扣减
+        // 1. 来源库存扣减（按来源仓库过滤，防止跨仓调拨从错误仓库扣减；排除已预留量）
         LambdaQueryWrapper<WmMaterialStock> fromLqw = Wrappers.lambdaQuery();
         fromLqw.eq(WmMaterialStock::getMaterialId, line.getMaterialId());
+        fromLqw.eq(line.getFromWarehouseId() != null, WmMaterialStock::getWarehouseId, line.getFromWarehouseId());
         fromLqw.eq(line.getBatchId() != null, WmMaterialStock::getBatchId, line.getBatchId());
         fromLqw.eq(line.getFromLocationId() != null, WmMaterialStock::getLocationId, line.getFromLocationId());
         fromLqw.eq(WmMaterialStock::getFrozenFlag, 0L);
+        fromLqw.apply("(stock_quantity - reserved_quantity) > 0");
         fromLqw.orderByAsc(WmMaterialStock::getExpireDate, WmMaterialStock::getRecptDate, WmMaterialStock::getStockId);
 
         List<WmMaterialStock> fromStocks = stockMapper.selectList(fromLqw);
@@ -114,9 +116,10 @@ public class TransferStrategy extends BaseStockOperationStrategy {
             throw new RuntimeException("物料【" + line.getMaterialName() + "】来源库存不足");
         }
 
-        // 2. 目标库存增加
+        // 2. 目标库存增加（按目标仓库过滤）
         LambdaQueryWrapper<WmMaterialStock> toLqw = Wrappers.lambdaQuery();
         toLqw.eq(WmMaterialStock::getMaterialId, line.getMaterialId());
+        toLqw.eq(line.getToWarehouseId() != null, WmMaterialStock::getWarehouseId, line.getToWarehouseId());
         toLqw.eq(line.getBatchId() != null, WmMaterialStock::getBatchId, line.getBatchId());
         toLqw.eq(line.getToLocationId() != null, WmMaterialStock::getLocationId, line.getToLocationId());
         toLqw.eq(WmMaterialStock::getFrozenFlag, 0L);
@@ -134,12 +137,13 @@ public class TransferStrategy extends BaseStockOperationStrategy {
             toStock.setBaseUomName(fromRef.getBaseUomName());
             toStock.setBatchId(line.getBatchId());
             toStock.setBatchCode(line.getBatchCode());
-            toStock.setWarehouseId(fromRef.getWarehouseId());
-            toStock.setWarehouseCode(fromRef.getWarehouseCode());
-            toStock.setWarehouseName(fromRef.getWarehouseName());
-            toStock.setAreaId(fromRef.getAreaId());
-            toStock.setAreaCode(fromRef.getAreaCode());
-            toStock.setAreaName(fromRef.getAreaName());
+            // 目标库存维度取自目标仓库/调拨单头，而非复制来源行维度（跨仓调拨时来源仓库与目标库位矛盾）
+            toStock.setWarehouseId(line.getToWarehouseId());
+            toStock.setWarehouseCode(line.getToWarehouseCode());
+            toStock.setWarehouseName(line.getToWarehouseName());
+            toStock.setAreaId(line.getToAreaId());
+            toStock.setAreaCode(line.getToAreaCode());
+            toStock.setAreaName(line.getToAreaName());
             toStock.setLocationId(line.getToLocationId());
             toStock.setLocationCode(line.getToLocationCode());
             toStock.setLocationName(line.getToLocationName());

@@ -1,5 +1,6 @@
 package com.nexus.erp.wm.domain;
 
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
@@ -110,4 +111,32 @@ public class WmTransferLine extends TenantEntity {
      * 备注
      */
     private String remark;
+
+    /** 来源仓库（非表字段，执行时从调拨单头填充，用于跨仓调拨正确扣减） */
+    @TableField(exist = false)
+    private Long fromWarehouseId;
+    /** 来源仓库编码（非表字段） */
+    @TableField(exist = false)
+    private String fromWarehouseCode;
+    /** 来源仓库名称（非表字段） */
+    @TableField(exist = false)
+    private String fromWarehouseName;
+    /** 目标仓库（非表字段，执行时从调拨单头填充，目标库存维度取目标仓库） */
+    @TableField(exist = false)
+    private Long toWarehouseId;
+    /** 目标仓库编码（非表字段） */
+    @TableField(exist = false)
+    private String toWarehouseCode;
+    /** 目标仓库名称（非表字段） */
+    @TableField(exist = false)
+    private String toWarehouseName;
+    /** 目标库区ID（非表字段） */
+    @TableField(exist = false)
+    private Long toAreaId;
+    /** 目标库区编码（非表字段） */
+    @TableField(exist = false)
+    private String toAreaCode;
+    /** 目标库区名称（非表字段） */
+    @TableField(exist = false)
+    private String toAreaName;
 }

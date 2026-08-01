@@ -151,6 +151,14 @@ public class WmMiscRecptServiceImpl implements IWmMiscRecptService {
         if ("EXECUTED".equals(recpt.getStatus())) {
             throw new RuntimeException("杂项入库单已执行");
         }
+        // 并发防重：条件更新抢占（非 EXECUTED → EXECUTING），影响行数为 0 说明已被并发执行
+        int claimed = baseMapper.update(null, Wrappers.<WmMiscRecpt>lambdaUpdate()
+            .set(WmMiscRecpt::getStatus, "EXECUTING")
+            .eq(WmMiscRecpt::getRecptId, recptId)
+            .ne(WmMiscRecpt::getStatus, "EXECUTED"));
+        if (claimed == 0) {
+            throw new RuntimeException("杂项入库单已执行");
+        }
 
         List<WmMiscRecptLine> lines = lineMapper.selectList(
             Wrappers.lambdaQuery(WmMiscRecptLine.class)

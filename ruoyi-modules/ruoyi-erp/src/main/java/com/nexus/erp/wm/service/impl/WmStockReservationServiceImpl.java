@@ -72,7 +72,9 @@ public class WmStockReservationServiceImpl implements IWmStockReservationService
             }
         }
         if (reserved.compareTo(reserveQty) < 0) {
-            log.warn("库存预留不足: 需求={}, 实际预留={}, 物料={}", reserveQty, reserved, materialId);
+            // 预留不足显式抛异常，禁止静默部分预留（调用方无法感知会导致销售承诺落空）
+            throw new com.nexus.common.core.exception.ServiceException(
+                "库存预留不足: 需求=" + reserveQty + ", 实际可预留=" + reserved + ", 物料ID=" + materialId);
         }
         return reserved;
     }
@@ -101,11 +103,24 @@ public class WmStockReservationServiceImpl implements IWmStockReservationService
             if (stock == null) {
                 continue;
             }
-            int rows = stockMapper.releaseReserved(stock.getStockId(), tx.getTxQuantity(), stock.getVersion());
-            if (rows > 0) {
-                released = released.add(tx.getTxQuantity());
-                recordStockTx(stock, tx.getTxQuantity(), "UNRESERVE", sourceDocType, sourceDocId, sourceDocLineId);
+            // 版本冲突/预留不足时重读最新版本重试（最多3次），避免并发下释放被静默跳过导致预留永久卡死
+            int rows = 0;
+            for (int attempt = 0; attempt < 3 && rows == 0; attempt++) {
+                if (attempt > 0) {
+                    stock = stockMapper.selectById(tx.getMaterialStockId());
+                    if (stock == null) {
+                        break;
+                    }
+                }
+                rows = stockMapper.releaseReserved(stock.getStockId(), tx.getTxQuantity(), stock.getVersion());
             }
+            if (rows == 0) {
+                // 重试仍失败：库存行被并发操作修改或预留不足，抛异常回滚，禁止静默跳过
+                throw new com.nexus.common.core.exception.ServiceException(
+                    "释放预留失败(并发冲突或预留不足): stockId=" + tx.getMaterialStockId() + ", qty=" + tx.getTxQuantity());
+            }
+            released = released.add(tx.getTxQuantity());
+            recordStockTx(stock, tx.getTxQuantity(), "UNRESERVE", sourceDocType, sourceDocId, sourceDocLineId);
         }
         log.info("释放预留: source={}/{}, 释放量={}", sourceDocType, sourceDocId, released);
         return released;

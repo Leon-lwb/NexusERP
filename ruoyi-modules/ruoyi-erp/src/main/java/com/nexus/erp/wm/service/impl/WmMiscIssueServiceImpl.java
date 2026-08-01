@@ -151,6 +151,14 @@ public class WmMiscIssueServiceImpl implements IWmMiscIssueService {
         if ("EXECUTED".equals(issue.getStatus())) {
             throw new RuntimeException("杂项出库单已执行");
         }
+        // 并发防重：条件更新抢占（非 EXECUTED → EXECUTING），影响行数为 0 说明已被并发执行
+        int claimed = baseMapper.update(null, Wrappers.<WmMiscIssue>lambdaUpdate()
+            .set(WmMiscIssue::getStatus, "EXECUTING")
+            .eq(WmMiscIssue::getIssueId, issueId)
+            .ne(WmMiscIssue::getStatus, "EXECUTED"));
+        if (claimed == 0) {
+            throw new RuntimeException("杂项出库单已执行");
+        }
 
         List<WmMiscIssueLine> lines = lineMapper.selectList(
             Wrappers.lambdaQuery(WmMiscIssueLine.class)

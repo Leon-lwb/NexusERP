@@ -100,6 +100,15 @@ public class WmMaterialReceiveExecutorServiceImpl implements IWmMaterialReceiveE
             throw new ServiceException("只有待入库状态的入库单才能执行入库操作");
         }
 
+        // 并发防重：条件更新抢占（SHELVED → EXECUTING），影响行数为 0 说明已被并发执行，杜绝双击/MQ 同时到达的重复过账
+        int claimed = baseMapper.update(null, Wrappers.<WmMaterialReceive>lambdaUpdate()
+            .set(WmMaterialReceive::getStatus, "EXECUTING")
+            .eq(WmMaterialReceive::getReceiveId, receiveId)
+            .eq(WmMaterialReceive::getStatus, ORDER_STATUS_SHELVED));
+        if (claimed == 0) {
+            throw new ServiceException("入库单已执行过入库过账，请勿重复操作");
+        }
+
         // 防重校验：检查是否已存在该入库单的库存事务记录，避免重复入库
         if (hasPosted(receiveId)) {
             throw new ServiceException("入库单已执行过入库过账，请勿重复操作");

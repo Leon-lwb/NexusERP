@@ -184,6 +184,14 @@ public class WmTransferServiceImpl implements IWmTransferService {
         if (STATUS_EXECUTED.equals(transfer.getStatus())) {
             throw new RuntimeException("调拨单已执行");
         }
+        // 并发防重：条件更新抢占（非 EXECUTED → EXECUTING），影响行数为 0 说明已被并发执行
+        int claimed = baseMapper.update(null, Wrappers.<WmTransfer>lambdaUpdate()
+            .set(WmTransfer::getStatus, "EXECUTING")
+            .eq(WmTransfer::getTransferId, transferId)
+            .ne(WmTransfer::getStatus, STATUS_EXECUTED));
+        if (claimed == 0) {
+            throw new RuntimeException("调拨单已执行");
+        }
 
         LambdaQueryWrapper<WmTransferLine> lineLqw = Wrappers.lambdaQuery();
         lineLqw.eq(WmTransferLine::getTransferId, transferId);
@@ -194,6 +202,16 @@ public class WmTransferServiceImpl implements IWmTransferService {
         }
 
         for (WmTransferLine line : lines) {
+            // 从调拨单头填充仓库维度（行表无仓库字段，跨仓调拨时用于正确扣减/建立目标库存维度）
+            line.setFromWarehouseId(transfer.getFromWarehouseId());
+            line.setFromWarehouseCode(transfer.getFromWarehouseCode());
+            line.setFromWarehouseName(transfer.getFromWarehouseName());
+            line.setToWarehouseId(transfer.getToWarehouseId());
+            line.setToWarehouseCode(transfer.getToWarehouseCode());
+            line.setToWarehouseName(transfer.getToWarehouseName());
+            line.setToAreaId(transfer.getToAreaId());
+            line.setToAreaCode(transfer.getToAreaCode());
+            line.setToAreaName(transfer.getToAreaName());
             stockOperationService.postTransfer(line);
         }
 

@@ -120,6 +120,8 @@ public class MiscIssueStrategy extends BaseStockOperationStrategy {
         lqw.eq(line.getBatchId() != null, WmMaterialStock::getBatchId, line.getBatchId());
         lqw.eq(line.getLocationId() != null, WmMaterialStock::getLocationId, line.getLocationId());
         lqw.eq(WmMaterialStock::getFrozenFlag, 0L);
+        // 排除已预留量，防止杂项出库扣走销售预留库存
+        lqw.apply("(stock_quantity - reserved_quantity) > 0");
         lqw.orderByAsc(WmMaterialStock::getExpireDate, WmMaterialStock::getRecptDate, WmMaterialStock::getStockId);
 
         List<WmMaterialStock> stockList = stockMapper.selectList(lqw);
