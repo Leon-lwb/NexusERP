@@ -8,7 +8,10 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.InetAddress;
 import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.UnknownHostException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -77,14 +80,22 @@ public class KnowledgeImportService {
 
         HttpClient httpClient = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(CONNECT_TIMEOUT_SECONDS))
-            .followRedirects(HttpClient.Redirect.NORMAL)
+            // SSRF 防护：禁用自动重定向，每个跳转后的 URL 都需重新过 sanitizeUrl 校验
+            .followRedirects(HttpClient.Redirect.NEVER)
             .build();
 
         for (String url : urls) {
             try {
-                importSingleUrl(httpClient, knowledgeId, url.trim());
+                // SSRF 防护：仅允许 http/https 且目标非内网/环回/链路本地地址
+                String safeUrl = sanitizeUrl(url.trim());
+                if (safeUrl == null) {
+                    failed++;
+                    errors.add(url + ": URL 不合法或指向禁止访问的地址（仅允许 http/https，禁止内网/环回/链路本地地址）");
+                    continue;
+                }
+                importSingleUrl(httpClient, knowledgeId, safeUrl);
                 success++;
-                log.info("[KnowledgeImport] URL 导入成功: {}", url);
+                log.info("[KnowledgeImport] URL 导入成功: {}", safeUrl);
             } catch (Exception e) {
                 failed++;
                 String errorMsg = url + ": " + e.getMessage();
@@ -94,6 +105,47 @@ public class KnowledgeImportService {
         }
 
         return buildResult(success, failed, errors, null);
+    }
+
+    /**
+     * 校验并净化 URL，防止 SSRF
+     * <p>仅允许 http/https 协议；解析主机地址后拒绝内网/环回/链路本地/任意本地/组播地址。
+     * 与 WebSearchTool.sanitizeUrl 保持一致。存在 DNS rebinding 残余风险（基础防护覆盖主要场景）。</p>
+     *
+     * @param url 原始 URL
+     * @return 净化后的 URL；不合法或指向禁止地址返回 null
+     */
+    private String sanitizeUrl(String url) {
+        if (url == null || url.isBlank()) {
+            return null;
+        }
+        try {
+            URI uri = new URI(url);
+            String scheme = uri.getScheme();
+            if (!"http".equalsIgnoreCase(scheme) && !"https".equalsIgnoreCase(scheme)) {
+                log.warn("[SSRF] 拒绝非 http/https 协议: {}", url);
+                return null;
+            }
+            String host = uri.getHost();
+            if (host == null || host.isBlank()) {
+                log.warn("[SSRF] URL 缺少 host: {}", url);
+                return null;
+            }
+            // 解析主机 IP，任一地址命中内网/保留段即拒绝
+            InetAddress[] addrs = InetAddress.getAllByName(host);
+            for (InetAddress addr : addrs) {
+                if (addr.isLoopbackAddress() || addr.isSiteLocalAddress()
+                    || addr.isLinkLocalAddress() || addr.isAnyLocalAddress()
+                    || addr.isMulticastAddress()) {
+                    log.warn("[SSRF] 拒绝访问内网/保留地址: host={}, addr={}", host, addr.getHostAddress());
+                    return null;
+                }
+            }
+            return uri.toString();
+        } catch (URISyntaxException | UnknownHostException e) {
+            log.warn("[SSRF] URL 解析失败: {}", url, e);
+            return null;
+        }
     }
 
     /**

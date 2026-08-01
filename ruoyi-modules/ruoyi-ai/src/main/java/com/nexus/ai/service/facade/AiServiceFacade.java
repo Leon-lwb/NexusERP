@@ -156,6 +156,13 @@ public class AiServiceFacade {
             session.setModelName(modelConfig.getModelName());
             aiSessionMapper.insert(session);
             sessionId = session.getId();
+        } else {
+            // 越权防护：复用会话时必须校验会话归属当前用户，防止向他人会话注入消息并窃取历史上下文
+            AiSession existing = aiSessionMapper.selectById(sessionId);
+            if (existing == null || !userId.equals(existing.getUserId())) {
+                AiSseMessageHelper.sendError(userId, "会话不存在或无权访问该会话");
+                return null;
+            }
         }
 
         // 3. 保存用户消息

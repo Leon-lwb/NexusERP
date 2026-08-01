@@ -23,6 +23,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * AI 文生图 Controller
@@ -106,6 +107,16 @@ public class AiImageController extends BaseController {
     @SaCheckPermission("ai:image:remove")
     @DeleteMapping("/{ids}")
     public R<Void> remove(@PathVariable Long[] ids) {
+        // 越权防护：仅可删除属于自己的历史记录
+        Long userId = LoginHelper.getUserId();
+        List<AiImageRecord> records = imageRecordMapper.selectList(
+            new LambdaQueryWrapper<AiImageRecord>()
+                .in(AiImageRecord::getId, Arrays.asList(ids)));
+        for (AiImageRecord record : records) {
+            if (record == null || !userId.equals(record.getUserId())) {
+                return R.fail("无权删除他人记录");
+            }
+        }
         imageRecordMapper.deleteByIds(Arrays.asList(ids));
         return R.ok();
     }

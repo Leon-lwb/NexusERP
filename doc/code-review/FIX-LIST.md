@@ -53,3 +53,19 @@
 ### ✅ C14 已完成（2026-08-01）
 - **C14 AI SQL 租户注入绕过**: ExecuteSqlQueryTool 第 4-7 步（租户注入、LIMIT、EXPLAIN 校验、执行）统一改用**清洗注释后的 SQL**；`/* tenant_id */`、`-- WHERE` 注释绕过全部失效（判断与执行同一份干净文本）
 - 编译验证: ai 通过
+
+## H1 安全批（2026-08-01，全部完成）
+
+| # | 问题 | 状态 |
+|---|------|------|
+| H1-1 | 角色授权接口可给任意用户授超管角色（SysRoleServiceImpl insertAuthUsers/deleteAuthUsers/deleteAuthUser） | ✅ 三方法加 `LoginHelper.isSuperAdmin(roleId)` 拦截 |
+| H1-2 | 员工排班接口路径大小写不匹配（前端 employee-schedule vs 后端 employeeSchedule） | ✅ 前端 5 个接口统一为后端 camelCase 路径 |
+| H1-3 | IM App 好友请求 IDOR（AppImController:314-418） | ✅ 处理前校验当前用户 == 接收方 |
+| H1-4 | IM App 群消息搜索越权（AppImController:743-751） | ✅ GROUP 分支校验 targetId ∈ 我的群组 |
+| H1-5 | IM App groupInfo/groupMembers 越权（AppImController:887-922） | ✅ 复用 isGroupMember 校验 |
+| H1-6 | AI 会话归属未校验（AiServiceFacade:150-166） | ✅ 复用会话时校验 session.userId == 当前用户 |
+| H1-7 | AI 文生图删除越权（AiImageController:106-111） | ✅ 删除前逐条校验记录归属 |
+| H1-8 | 知识库 URL 导入无 SSRF 防护（KnowledgeImportService:65-144） | ✅ sanitizeUrl（协议白名单+拒绝内网/环回/链路本地）+ 禁用自动重定向 |
+| H1-9 | 自动编码接口无权限注解（SysAutoCodeController） | ✅ get/preview 加 @SaCheckPermission |
+
+编译验证: system/im/ai 均通过

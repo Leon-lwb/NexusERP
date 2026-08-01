@@ -1,5 +1,6 @@
 package com.nexus.system.controller.system;
 
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.nexus.system.strategy.AutoCodeUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -32,6 +33,7 @@ public class SysAutoCodeController {
      * @param inputCharacter 传入字符（可选）
      * @return 生成的完整编码字符串
      */
+    @SaCheckPermission("system:autocode:get")
     @GetMapping(value = {"/get/{ruleCode}/{inputCharacter}", "/get/{ruleCode}"})
     public String getAutoCode(@PathVariable String ruleCode, @PathVariable(required = false) String inputCharacter) {
         return autoCodeUtil.genSerialCode(ruleCode, inputCharacter);
@@ -49,6 +51,7 @@ public class SysAutoCodeController {
      * @param inputCharacter 传入字符（可选）
      * @return 预览的编码字符串
      */
+    @SaCheckPermission("system:autocode:preview")
     @GetMapping(value = {"/preview/{ruleCode}/{inputCharacter}", "/preview/{ruleCode}"})
     public String previewAutoCode(@PathVariable String ruleCode, @PathVariable(required = false) String inputCharacter) {
         return autoCodeUtil.previewSerialCode(ruleCode, inputCharacter);

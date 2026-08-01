@@ -372,6 +372,12 @@ public class AppImController extends BaseController {
             return R.fail("请求不存在");
         }
 
+        // 越权防护：仅请求接收方可处理该好友请求，防止代他人接受/拒绝
+        Long currentUserId = LoginHelper.getUserId();
+        if (currentUserId == null || !currentUserId.equals(toUserId)) {
+            return R.fail("无权处理该好友请求");
+        }
+
         // 接受时写入双向好友关系
         if (accept) {
             addFriendRelation(fromUserId, toUserId);
@@ -743,6 +749,10 @@ public class AppImController extends BaseController {
         } else if (filterGroup) {
             // 仅搜群聊
             if (targetId != null) {
+                // 越权防护：仅群成员可搜索该群消息
+                if (!groupIds.contains(targetId)) {
+                    return R.ok(new ImSearchResultVo(Collections.emptyList(), pageNum, pageSize));
+                }
                 w.eq(ImMessage::getGroupId, targetId);
             } else if (!groupIds.isEmpty()) {
                 w.in(ImMessage::getGroupId, groupIds);
@@ -886,6 +896,10 @@ public class AppImController extends BaseController {
      */
     @GetMapping("/group/info")
     public R<Map<String, Object>> groupInfo(@RequestParam Long groupId) {
+        // 越权防护：仅群成员可查看群详情（与 PC 端 listGroupMembers 行为对齐）
+        if (!isGroupMember(groupId, LoginHelper.getUserId())) {
+            return R.fail("无权查看该群组");
+        }
         ImGroup g = groupMapper.selectById(groupId);
         if (g == null) {
             return R.fail("群组不存在");
@@ -904,6 +918,10 @@ public class AppImController extends BaseController {
      */
     @GetMapping("/group/members")
     public R<List<Map<String, Object>>> groupMembers(@RequestParam Long groupId) {
+        // 越权防护：仅群成员可查看成员名单（与 PC 端 listGroupMembers 行为对齐）
+        if (!isGroupMember(groupId, LoginHelper.getUserId())) {
+            return R.fail("无权查看该群组成员");
+        }
         List<ImGroupMember> members = groupMemberMapper.selectList(new LambdaQueryWrapper<ImGroupMember>()
             .eq(ImGroupMember::getGroupId, groupId));
 
