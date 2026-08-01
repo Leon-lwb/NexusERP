@@ -242,6 +242,16 @@ public class WmStockTakingPlanServiceImpl implements IWmStockTakingPlanService {
             throw new RuntimeException("盘点计划不存在");
         }
 
+        // 幂等/并发防护：仅未过账（GENERATED/APPROVING）的计划允许过账，条件更新抢占，防止双通道重复过账
+        int claimed = baseMapper.update(null,
+            Wrappers.<WmStockTakingPlan>lambdaUpdate()
+                .set(WmStockTakingPlan::getStatus, "POSTING")
+                .eq(WmStockTakingPlan::getPlanId, planId)
+                .in(WmStockTakingPlan::getStatus, "GENERATED", STATUS_APPROVING));
+        if (claimed == 0) {
+            throw new RuntimeException("盘点计划已过账或状态不允许过账");
+        }
+
         List<WmStockTakingLine> lines = lineMapper.selectList(
             Wrappers.lambdaQuery(WmStockTakingLine.class)
                 .eq(WmStockTakingLine::getPlanId, planId));
@@ -251,6 +261,10 @@ public class WmStockTakingPlanServiceImpl implements IWmStockTakingPlanService {
         }
 
         for (WmStockTakingLine line : lines) {
+            // 已过账/已平衡的行跳过，避免重复调整
+            if ("POSTED".equals(line.getStatus()) || "BALANCED".equals(line.getStatus())) {
+                continue;
+            }
             BigDecimal actual = line.getActualQuantity() == null ? BigDecimal.ZERO : line.getActualQuantity();
             BigDecimal book = line.getBookQuantity() == null ? BigDecimal.ZERO : line.getBookQuantity();
             BigDecimal diff = actual.subtract(book);
@@ -404,6 +418,17 @@ public class WmStockTakingPlanServiceImpl implements IWmStockTakingPlanService {
      * 执行盘点差异调整（审批通过后调用）
      */
     private void executeCountAdjust(Long planId) {
+        // 幂等/并发防护：仅未过账（GENERATED/APPROVING）的计划允许调整，防止与 postAdjustment 双通道重复过账
+        int claimed = baseMapper.update(null,
+            Wrappers.<WmStockTakingPlan>lambdaUpdate()
+                .set(WmStockTakingPlan::getStatus, "POSTING")
+                .eq(WmStockTakingPlan::getPlanId, planId)
+                .in(WmStockTakingPlan::getStatus, "GENERATED", STATUS_APPROVING));
+        if (claimed == 0) {
+            log.info("盘点计划 {} 已过账或状态不允许调整，跳过", planId);
+            return;
+        }
+
         List<WmStockTakingLine> lines = lineMapper.selectList(
             Wrappers.lambdaQuery(WmStockTakingLine.class)
                 .eq(WmStockTakingLine::getPlanId, planId));
@@ -413,6 +438,10 @@ public class WmStockTakingPlanServiceImpl implements IWmStockTakingPlanService {
         }
 
         for (WmStockTakingLine line : lines) {
+            // 已过账/已平衡的行跳过，避免重复调整
+            if ("POSTED".equals(line.getStatus()) || "BALANCED".equals(line.getStatus())) {
+                continue;
+            }
             BigDecimal actual = line.getActualQuantity() == null ? BigDecimal.ZERO : line.getActualQuantity();
             BigDecimal book = line.getBookQuantity() == null ? BigDecimal.ZERO : line.getBookQuantity();
             BigDecimal diff = actual.subtract(book);

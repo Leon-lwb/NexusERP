@@ -276,6 +276,11 @@ public class TableDesignServiceImpl implements ITableDesignService {
             // 去除开头的单行与块注释再判断是否为 CREATE TABLE
             String sNoComments = removeLeadingComments(s);
 
+            // 安全白名单：仅允许 CREATE TABLE 语句，拒绝其他任意 SQL（DROP/ALTER/UPDATE/DELETE 等）
+            if (!isCreateTableStatement(sNoComments)) {
+                throw new ServiceException("仅允许执行 CREATE TABLE 建表语句");
+            }
+
             if (overwriteIfExists && isCreateTableStatement(sNoComments)) {
                 String tableName = extractCreateTableName(sNoComments);
                 if (StringUtils.isNotBlank(tableName)) {

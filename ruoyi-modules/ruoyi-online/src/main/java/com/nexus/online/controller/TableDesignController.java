@@ -1,9 +1,11 @@
 package com.nexus.online.controller;
 
 import com.nexus.common.core.domain.R;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.generator.domain.GenTableDesign;
 import com.nexus.online.domain.dto.TableDesignSaveDTO;
 import com.nexus.online.service.ITableDesignService;
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import jakarta.annotation.Resource;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.web.bind.annotation.*;
@@ -101,6 +103,7 @@ public class TableDesignController {
      * @param body 请求体，含 sql 与可选的 overwriteIfExists（存在时是否覆盖）
      * @return 操作结果，成功时返回成功状态
      */
+    @SaCheckPermission("online:design:create")
     @PostMapping("/create-table")
     public R<Void> createTable(@RequestBody Map<String, Object> body) {
         String sql = (String) body.get("sql");
@@ -115,6 +118,7 @@ public class TableDesignController {
      * @param body 请求体，含 content、dataName（数据源名，默认 master）与 overwriteIfExists
      * @return 操作结果，成功时返回成功状态
      */
+    @SaCheckPermission("online:design:create")
     @PostMapping("/import-to-gen")
     public R<Void> importToGen(@RequestBody Map<String, Object> body) {
         String content = (String) body.get("content");

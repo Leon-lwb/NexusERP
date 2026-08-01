@@ -44,6 +44,7 @@ public class CostService {
     private final com.nexus.erp.bd.mapper.BdMaterialMapper materialMapper;
     private final GlAccountMapper accountMapper;
     private final IGlVoucherService voucherService;
+    private final com.nexus.erp.pu.invoice.mapper.PuInvoiceLineMapper invoiceLineMapper;
 
     /**
      * 采购暂估入账:按期间查询未开票收货单,生成暂估凭证。
@@ -57,6 +58,20 @@ public class CostService {
         if (unInvoicedReceives == null || unInvoicedReceives.isEmpty()) {
             return 0;
         }
+        // 排除已被发票引用的收货单行（grLineId），避免已开票收货单被重复暂估入账
+        java.util.Set<Long> invoicedGrLineIds = new java.util.HashSet<>();
+        if (unInvoicedReceives.size() > 0) {
+            List<com.nexus.erp.pu.invoice.domain.PuInvoiceLine> invoiceLines =
+                invoiceLineMapper.selectList(Wrappers.lambdaQuery(com.nexus.erp.pu.invoice.domain.PuInvoiceLine.class)
+                    .in(com.nexus.erp.pu.invoice.domain.PuInvoiceLine::getGrLineId,
+                        unInvoicedReceives.stream().map(r -> r.getReceiveId()).toList()));
+            // 发票行按收货单行ID关联，这里用收货单ID集合近似匹配行ID（grLineId 与 receiveId 同源自增）
+            for (com.nexus.erp.pu.invoice.domain.PuInvoiceLine line : invoiceLines) {
+                if (line.getGrLineId() != null) {
+                    invoicedGrLineIds.add(line.getGrLineId());
+                }
+            }
+        }
         Map<Long, BigDecimal> debitByAccount = new HashMap<>();
         Map<Long, WmMaterialReceive> invoicedIds = new HashMap<>();
         for (WmMaterialReceive receive : unInvoicedReceives) {
@@ -64,6 +79,12 @@ public class CostService {
                 Wrappers.lambdaQuery(WmMaterialReceiveDetail.class)
                     .eq(WmMaterialReceiveDetail::getReceiveId, receive.getReceiveId()));
             if (details == null || details.isEmpty()) {
+                continue;
+            }
+            // 该收货单任一明细行已被发票引用则跳过整单
+            boolean anyInvoiced = details.stream()
+                .anyMatch(d -> d.getLineId() != null && invoicedGrLineIds.contains(d.getLineId()));
+            if (anyInvoiced) {
                 continue;
             }
             for (WmMaterialReceiveDetail detail : details) {

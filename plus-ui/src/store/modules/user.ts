@@ -1,6 +1,7 @@
 import { to } from 'await-to-js';
 import { getToken, removeToken, setToken } from '@/utils/auth';
 import { login as loginApi, logout as logoutApi, getInfo as getUserInfo } from '@/api/login';
+import { imCache } from '@/utils/im/im-cache';
 import { LoginData } from '@/api/types';
 import defAva from '@/assets/images/profile.jpg';
 import { defineStore } from 'pinia';
@@ -59,8 +60,24 @@ export const useUserStore = defineStore('user', () => {
 
   // 注销
   const logout = async (): Promise<void> => {
-    await logoutApi();
+    try {
+      await logoutApi();
+    } catch (e) {
+      // 会话过期时 logout 接口本身也会 401，先本地清理再忽略接口失败，避免重新登录死循环
+      console.error('logout api failed', e);
+    }
+    // 清空 IM 聊天缓存（IndexedDB + 内存），防止换用户后泄露上一用户私聊记录
+    try {
+      await imCache.clearAllCache();
+    } catch (e) {
+      console.error('clear im cache failed', e);
+    }
     token.value = '';
+    name.value = '';
+    nickname.value = '';
+    avatar.value = '';
+    userId.value = '';
+    tenantId.value = '';
     roles.value = [];
     permissions.value = [];
     removeToken();

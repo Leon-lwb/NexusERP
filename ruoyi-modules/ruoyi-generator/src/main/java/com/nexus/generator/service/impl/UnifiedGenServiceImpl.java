@@ -12,6 +12,7 @@ import org.apache.commons.lang3.StringUtils;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
+import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.generator.domain.GenTable;
 import com.nexus.generator.domain.GenTableColumn;
 import com.nexus.generator.domain.GenTableDesign;
@@ -185,6 +186,11 @@ public class UnifiedGenServiceImpl implements IUnifiedGenService {
 
             // 去除开头的单行与块注释再判断是否为 CREATE TABLE
             String sNoComments = removeLeadingComments(s);
+
+            // 安全白名单：仅允许 CREATE TABLE 语句，拒绝其他任意 SQL（DROP/ALTER/UPDATE/DELETE 等）
+            if (!isCreateTableStatement(sNoComments)) {
+                throw new ServiceException("仅允许执行 CREATE TABLE 建表语句");
+            }
 
             if (overwriteIfExists && isCreateTableStatement(sNoComments)) {
                 String tableName = extractCreateTableName(sNoComments);
@@ -805,8 +811,8 @@ public class UnifiedGenServiceImpl implements IUnifiedGenService {
             throw new ServiceException("非法表名");
         }
 
-        String sql = "SELECT * FROM " + tableName + " WHERE id = ?";
-        List<Map<String, Object>> list = jdbcTemplate.queryForList(sql, id);
+        String sql = "SELECT * FROM " + tableName + " WHERE id = ? AND tenant_id = ?";
+        List<Map<String, Object>> list = jdbcTemplate.queryForList(sql, id, TenantHelper.getTenantId());
         return list.isEmpty() ? null : list.get(0);
     }
 
@@ -827,8 +833,8 @@ public class UnifiedGenServiceImpl implements IUnifiedGenService {
             throw new ServiceException("非法表名");
         }
 
-        String sql = "SELECT * FROM " + dictTableName + " WHERE id = ?";
-        List<Map<String, Object>> list = jdbcTemplate.queryForList(sql, id);
+        String sql = "SELECT * FROM " + dictTableName + " WHERE id = ? AND tenant_id = ?";
+        List<Map<String, Object>> list = jdbcTemplate.queryForList(sql, id, TenantHelper.getTenantId());
         return list.isEmpty() ? null : list.get(0);
     }
 

@@ -40,6 +40,8 @@ export interface RoutingForm {
   expiryDate?: string;
   status?: number;
   remark?: string;
+  /** 工序步骤列表（随主表一并保存） */
+  steps?: RoutingStepForm[];
 }
 
 export interface RoutingStepVO {

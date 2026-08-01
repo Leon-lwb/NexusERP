@@ -116,18 +116,51 @@ public class AliPayServiceImpl implements IAliPayService {
             }
             String orderNumber = params.get("out_trade_no");
             String theTradeNo = params.get("trade_no");
-            payOrder = payOrderService.selectPayOrderByOrderNumber(orderNumber);
-            payOrder.setPayType("alipay");
-            payOrder.setThirdNumber(theTradeNo);
+            String tradeStatus = params.get("trade_status");
+            String totalAmount = params.get("total_amount");
+            // 订单号缺失或订单不存在：拒绝，让渠道重试
+            if (orderNumber == null) {
+                log.error("支付宝回调缺少 out_trade_no");
+                return "fail";
+            }
             try {
-                if (Factory.Payment.Common().verifyNotify(params)) {
-                    payOrder.setOrderStatus("已支付");
-                    payOrderService.updatePayOrder(payOrder);
-                    sendPayReceived(payOrder);
+                payOrder = payOrderService.selectPayOrderByOrderNumber(orderNumber);
+                if (payOrder == null) {
+                    log.error("支付宝回调订单不存在: orderNumber={}", orderNumber);
+                    return "fail";
                 }
+                // 验签失败必须返回 "fail" 让支付宝重试，不能静默吞掉
+                if (!Factory.Payment.Common().verifyNotify(params)) {
+                    log.error("支付宝回调验签失败: orderNumber={}", orderNumber);
+                    return "fail";
+                }
+                // 幂等：已支付/已退款/已关闭等终态订单的重复回调直接忽略
+                String cur = payOrder.getOrderStatus();
+                if ("已支付".equals(cur) || "已退款".equals(cur) || "已关闭".equals(cur)) {
+                    log.info("支付宝重复回调，忽略: orderNumber={}, 状态={}", orderNumber, cur);
+                    return "success";
+                }
+                // 仅接受支付成功终态，WAIT_BUYER_PAY 等非终态不更新
+                if (!"TRADE_SUCCESS".equals(tradeStatus) && !"TRADE_FINISHED".equals(tradeStatus)) {
+                    log.warn("支付宝回调非成功状态: orderNumber={}, tradeStatus={}", orderNumber, tradeStatus);
+                    return "success";
+                }
+                // 金额校验：回调金额必须与本地订单金额一致，防止金额篡改
+                if (totalAmount != null && payOrder.getActualAmount() != null
+                        && new java.math.BigDecimal(totalAmount).compareTo(payOrder.getActualAmount()) != 0) {
+                    log.error("支付宝回调金额不一致: 回调={}, 订单={}, orderNumber={}",
+                            totalAmount, payOrder.getActualAmount(), orderNumber);
+                    return "fail";
+                }
+                payOrder.setPayType("alipay");
+                payOrder.setThirdNumber(theTradeNo);
+                payOrder.setOrderStatus("已支付");
+                payOrderService.updatePayOrder(payOrder);
+                sendPayReceived(payOrder);
                 return "success";
             } catch (Exception e) {
                 log.error("支付宝回调处理失败", e);
+                return "fail";
             }
         }
         return "fail";

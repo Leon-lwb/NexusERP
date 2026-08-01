@@ -312,13 +312,15 @@ function handleSave() {
         return sum + (item.standardHours || 0) + (item.setupHours || 0);
       }, 0);
 
+      // 工序步骤随主表一并提交（后端 insert/update 落库 steps）
+      const submitData = { ...form.value, steps: stepItems.value };
       if (form.value.routingId) {
-        updateRouting(form.value).then(() => {
+        updateRouting(submitData).then(() => {
           proxy.$modal.msgSuccess('修改成功');
           handleClose();
         });
       } else {
-        addRouting(form.value).then((response: any) => {
+        addRouting(submitData).then((response: any) => {
           proxy.$modal.msgSuccess('新增成功');
           handleClose();
         });

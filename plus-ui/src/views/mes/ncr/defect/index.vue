@@ -48,7 +48,8 @@
     <el-dialog title="补录缺陷" v-model="dialog.visible" width="560px" append-to-body>
       <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
         <el-form-item label="NCR编号" prop="ncrId" required>
-          <el-input v-model.number="form.ncrId" placeholder="请输入NCR编号" />
+          <!-- 雪花ID为19位长整型，不能 v-model.number 截断，保持字符串透传 -->
+          <el-input v-model="form.ncrId" placeholder="请输入NCR编号" />
         </el-form-item>
         <el-form-item label="缺陷代码" prop="defectCodeId" required>
           <el-select v-model="form.defectCodeId" placeholder="请选择缺陷代码" style="width: 100%" filterable>
@@ -92,12 +93,12 @@ const { mes_defect_cause } = toRefs<any>(proxy?.useDict('mes_defect_cause'));
 const dataList = ref<NcrDefectVO[]>([]);
 const total = ref(0);
 const loading = ref(false);
-const queryParams = reactive({ pageNum: 1, pageSize: 10, ncrId: undefined as number | undefined } as any);
+const queryParams = reactive({ pageNum: 1, pageSize: 10, ncrId: undefined as string | undefined } as any);
 const showSearch = ref(true);
 const queryFormRef = ref<ElFormInstance>();
 const formRef = ref<ElFormInstance>();
 const dialog = reactive({ visible: false, title: '' });
-const form = reactive<NcrDefectForm>({ ncrId: 0, defectQty: 1 } as NcrDefectForm);
+const form = reactive<NcrDefectForm>({ ncrId: '', defectQty: 1 } as NcrDefectForm);
 const defectCodeList = ref<any[]>([]);
 
 const rules = {
@@ -127,7 +128,7 @@ const resetQuery = () => {
 };
 
 const handleAdd = async () => {
-  form.ncrId = 0;
+  form.ncrId = '';
   form.defectCodeId = undefined;
   form.defectQty = 1;
   form.defectCause = '';

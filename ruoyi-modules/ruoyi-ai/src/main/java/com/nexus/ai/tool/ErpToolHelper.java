@@ -52,7 +52,6 @@ public abstract class ErpToolHelper {
         if (tenantId == null || sql.toUpperCase().contains("TENANT_ID")) {
             return sql;
         }
-
         // 跳过 CTE 定义部分，定位主查询的 FROM
         // CTE 格式：WITH name AS (...), name2 AS (...) SELECT ...
         // 主查询的 FROM 在最后一个 CTE 定义之后

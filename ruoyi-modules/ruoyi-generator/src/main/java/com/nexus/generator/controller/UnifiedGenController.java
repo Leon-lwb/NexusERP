@@ -2,6 +2,7 @@ package com.nexus.generator.controller;
 
 import cn.hutool.core.convert.Convert;
 import cn.hutool.core.io.IoUtil;
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import com.nexus.common.core.domain.R;
@@ -352,6 +353,7 @@ public class UnifiedGenController extends BaseController {
      * @return 操作结果
      */
     @Log(title = "代码生成-设计", businessType = BusinessType.INSERT)
+    @SaCheckPermission("tool:gen:design")
     @PostMapping("/design/createTable")
     public R<Void> createTable(@RequestBody Map<String, Object> params) {
         String sql = (String) params.get("sql");
@@ -370,6 +372,7 @@ public class UnifiedGenController extends BaseController {
      * @return 生成的代码生成表ID
      */
     @Log(title = "代码生成-设计", businessType = BusinessType.IMPORT)
+    @SaCheckPermission("tool:gen:design")
     @PostMapping("/design/importToGen")
     public R<Long> importFromDesign(@RequestBody Map<String, Object> params) {
         Long designId = Long.valueOf(params.get("designId").toString());

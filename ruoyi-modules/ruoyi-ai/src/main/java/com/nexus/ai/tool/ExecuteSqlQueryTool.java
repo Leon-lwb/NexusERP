@@ -107,9 +107,10 @@ public class ExecuteSqlQueryTool {
         }
 
         // 4. 注入租户隔离条件（从 AiRequestContext 获取，兼容异步线程）
+        //    注意：注入与后续执行均基于清洗注释后的 SQL，防止 /* tenant_id */ 或 -- WHERE 注释绕过
         Long tenantId = AiRequestContext.getTenantId();
         if (tenantId != null) {
-            sql = injectTenantCondition(sql, tenantId);
+            cleanedSql = injectTenantCondition(cleanedSql, tenantId);
             log.debug("[AI-SQL] 已注入租户条件 tenant_id={}", tenantId);
         } else {
             log.warn("[AI-SQL] 无法获取租户ID，跳过租户隔离");
@@ -117,21 +118,21 @@ public class ExecuteSqlQueryTool {
 
         // 5. 追加行数限制（移除已有的 LIMIT，强制使用安全限制）
         // 移除用户指定的 LIMIT（防止绕过行数限制），兼容末尾有分号的情况
-        sql = sql.replaceAll("(?i)\\s+LIMIT\\s+\\d+(?:\\s*,\\s*\\d+)?\\s*;?\\s*$", "");
-        sql = sql + " LIMIT " + aiProperties.getSqlMaxRows();
+        cleanedSql = cleanedSql.replaceAll("(?i)\\s+LIMIT\\s+\\d+(?:\\s*,\\s*\\d+)?\\s*;?\\s*$", "");
+        cleanedSql = cleanedSql + " LIMIT " + aiProperties.getSqlMaxRows();
 
         // 6. SQL 语法预校验（通过 EXPLAIN 验证，避免执行语法错误的 SQL）
-        String explainError = validateSqlSyntax(sql);
+        String explainError = validateSqlSyntax(cleanedSql);
         if (explainError != null) {
             log.warn("[AI-SQL] SQL 语法校验失败: {}", explainError);
-            return "SQL 语法错误：" + explainError + "。请修正 SQL 后重试。原始 SQL：" + sql;
+            return "SQL 语法错误：" + explainError + "。请修正 SQL 后重试。原始 SQL：" + cleanedSql;
         }
 
         // 7. 通过 ErpQueryService 执行（走 @DS("erp") 数据源）
         try {
-            log.info("[AI-SQL] 执行最终SQL: {}", sql);
+            log.info("[AI-SQL] 执行最终SQL: {}", cleanedSql);
             List<Map<String, Object>> results = erpQueryService.executeQuery(
-                sql, aiProperties.getSqlMaxRows(), aiProperties.getSqlTimeout() / 1000);
+                cleanedSql, aiProperties.getSqlMaxRows(), aiProperties.getSqlTimeout() / 1000);
             log.info("[AI-SQL] 查询成功，返回 {} 行", results.size());
             return formatResults(results);
         } catch (Exception e) {
@@ -215,7 +216,7 @@ public class ExecuteSqlQueryTool {
         String upperSql = sql.toUpperCase();
 
         if (upperSql.contains("WHERE")) {
-            // 已有 WHERE，在其后追加 AND 条件
+            // 已有 WHERE，在其后追加 AND 条件（在清洗后的 SQL 上定位，注释无法干扰）
             int whereIndex = upperSql.indexOf("WHERE");
             sql = sql.substring(0, whereIndex + 5) +
                   " " + tenantCondition + " AND" +

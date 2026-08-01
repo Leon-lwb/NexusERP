@@ -55,9 +55,7 @@
         <div class="input-actions">
           <DeepThinking v-model="enableThinking" />
           <WebSearchToggle v-model="enableWebSearch" />
-          <el-button type="primary" :icon="Promotion" @click="sendMessage" :loading="loading" style="flex: 1">
-            发送
-          </el-button>
+          <el-button type="primary" :icon="Promotion" @click="sendMessage" :loading="loading" style="flex: 1"> 发送 </el-button>
           <el-button @click="newChat" :icon="RefreshRight" />
         </div>
       </div>
@@ -66,177 +64,190 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
-import { Promotion, Loading, ChatDotRound, RefreshRight } from '@element-plus/icons-vue'
-import { sendAiMessage } from '@/api/ai/chat'
-import { marked } from 'marked'
-import { createAiRenderer } from '@/utils/aiRenderers'
-import DeepThinking from '@/components/ai/DeepThinking.vue'
-import WebSearchToggle from '@/components/ai/WebSearchToggle.vue'
-import ModelSelect from '@/components/ai/ModelSelect.vue'
-import * as echarts from 'echarts'
-import 'github-markdown-css'
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
+import { Promotion, Loading, ChatDotRound, RefreshRight } from '@element-plus/icons-vue';
+import { sendAiMessage } from '@/api/ai/chat';
+import { marked } from 'marked';
+import { createAiRenderer, sanitizeHtml } from '@/utils/aiRenderers';
+import DeepThinking from '@/components/ai/DeepThinking.vue';
+import WebSearchToggle from '@/components/ai/WebSearchToggle.vue';
+import ModelSelect from '@/components/ai/ModelSelect.vue';
+import * as echarts from 'echarts';
+import 'github-markdown-css';
 
 interface ChatMessage {
-  role: 'user' | 'assistant'
-  content: string
+  role: 'user' | 'assistant';
+  content: string;
   /** 推理过程内容（DeepSeek-R1 等推理模型的思考链） */
-  reasoning?: string
+  reasoning?: string;
   /** 联网搜索来源卡片 */
-  webSources?: Array<{ title: string; url: string }>
+  webSources?: Array<{ title: string; url: string }>;
 }
 
-const visible = ref(false)
-const inputText = ref('')
-const messages = ref<ChatMessage[]>([])
-const thinking = ref(false)
-const loading = ref(false)
-const messageListRef = ref<HTMLElement>()
-const sessionId = ref<number | null>(null)
-const chatMode = ref('auto')
-const enableThinking = ref(false)
-const enableWebSearch = ref(false)
+const visible = ref(false);
+const inputText = ref('');
+const messages = ref<ChatMessage[]>([]);
+const thinking = ref(false);
+const loading = ref(false);
+const messageListRef = ref<HTMLElement>();
+const sessionId = ref<number | null>(null);
+const chatMode = ref('auto');
+const enableThinking = ref(false);
+const enableWebSearch = ref(false);
 /** 选中模型名称（为空使用默认模型），ModelSelect 组件会预选默认模型 */
-const selectedModel = ref('')
+const selectedModel = ref('');
 
 /** 根据当前模式显示不同的输入提示 */
 const modePlaceholder = computed(() => {
   switch (chatMode.value) {
-    case 'agent': return '输入数据查询需求，如：查询本月采购订单总金额'
-    case 'rag': return '输入知识检索问题，如：如何创建采购订单'
-    case 'chat': return '输入任意问题，与 AI 自由对话'
-    default: return '输入问题，AI 将自动选择最佳模式'
+    case 'agent':
+      return '输入数据查询需求，如：查询本月采购订单总金额';
+    case 'rag':
+      return '输入知识检索问题，如：如何创建采购订单';
+    case 'chat':
+      return '输入任意问题，与 AI 自由对话';
+    default:
+      return '输入问题，AI 将自动选择最佳模式';
   }
-})
+});
 
 function onAiSseMessage(event: Event) {
-  const detail = (event as CustomEvent).detail
-  if (!detail) return
+  const detail = (event as CustomEvent).detail;
+  if (!detail) return;
 
   switch (detail.type) {
     case 'AI_THINKING':
-      thinking.value = true
-      break
+      thinking.value = true;
+      break;
     case 'AI_CONTENT_INCREMENT':
       // 流式 Token 追加模式
-      thinking.value = false
-      const incMsg = messages.value[messages.value.length - 1]
+      thinking.value = false;
+      const incMsg = messages.value[messages.value.length - 1];
       if (incMsg && incMsg.role === 'assistant') {
-        incMsg.content += detail.content
+        incMsg.content += detail.content;
       } else {
-        messages.value.push({ role: 'assistant', content: detail.content })
+        messages.value.push({ role: 'assistant', content: detail.content });
       }
-      nextTick(() => scrollToBottom())
-      break
+      nextTick(() => scrollToBottom());
+      break;
     case 'AI_CONTENT':
-      thinking.value = false
-      loading.value = false
-      const lastMsg = messages.value[messages.value.length - 1]
+      thinking.value = false;
+      loading.value = false;
+      const lastMsg = messages.value[messages.value.length - 1];
       if (lastMsg && lastMsg.role === 'assistant') {
-        lastMsg.content = detail.content
+        lastMsg.content = detail.content;
       } else {
-        messages.value.push({ role: 'assistant', content: detail.content })
+        messages.value.push({ role: 'assistant', content: detail.content });
       }
-      nextTick(() => scrollToBottom())
-      break
+      nextTick(() => scrollToBottom());
+      break;
     case 'AI_DONE':
-      thinking.value = false
-      loading.value = false
+      thinking.value = false;
+      loading.value = false;
       // 扫描并挂载 ECharts 容器
-      nextTick(() => mountEchartsContainers())
-      break
+      nextTick(() => mountEchartsContainers());
+      break;
     case 'AI_ERROR':
-      thinking.value = false
-      loading.value = false
-      messages.value.push({ role: 'assistant', content: `[错误] ${detail.content}` })
-      break
+      thinking.value = false;
+      loading.value = false;
+      messages.value.push({ role: 'assistant', content: `[错误] ${detail.content}` });
+      break;
     case 'AI_CHART':
-      break
+      break;
     case 'AI_IMAGE': {
       // 文生图结果：解析 {url, prompt}，追加 markdown 图片到当前 assistant 消息
-      thinking.value = false
-      let imgInfo: { url?: string; prompt?: string } = {}
-      try { imgInfo = JSON.parse(detail.content || '{}') } catch { /* ignore */ }
-      const imgMd = `\n\n![${imgInfo.prompt || 'image'}](${imgInfo.url})\n`
-      const imgMsg = messages.value[messages.value.length - 1]
-      if (imgMsg && imgMsg.role === 'assistant') {
-        imgMsg.content += imgMd
-      } else {
-        messages.value.push({ role: 'assistant', content: imgMd.trim() })
+      thinking.value = false;
+      let imgInfo: { url?: string; prompt?: string } = {};
+      try {
+        imgInfo = JSON.parse(detail.content || '{}');
+      } catch {
+        /* ignore */
       }
-      loading.value = false
-      nextTick(() => scrollToBottom())
-      break
+      const imgMd = `\n\n![${imgInfo.prompt || 'image'}](${imgInfo.url})\n`;
+      const imgMsg = messages.value[messages.value.length - 1];
+      if (imgMsg && imgMsg.role === 'assistant') {
+        imgMsg.content += imgMd;
+      } else {
+        messages.value.push({ role: 'assistant', content: imgMd.trim() });
+      }
+      loading.value = false;
+      nextTick(() => scrollToBottom());
+      break;
     }
     case 'AI_WEB_SEARCH': {
       // 联网搜索来源卡片
-      let srcInfo: { sources?: Array<{ title?: string; url?: string }> } = {}
-      try { srcInfo = JSON.parse(detail.content || '{}') } catch { /* ignore */ }
-      const sources = (srcInfo.sources || []).map(s => ({ title: s.title || s.url || '', url: s.url || '' }))
-      const srcMsg = messages.value[messages.value.length - 1]
-      if (srcMsg && srcMsg.role === 'assistant') {
-        srcMsg.webSources = sources
-      } else {
-        messages.value.push({ role: 'assistant', content: '', webSources: sources })
+      let srcInfo: { sources?: Array<{ title?: string; url?: string }> } = {};
+      try {
+        srcInfo = JSON.parse(detail.content || '{}');
+      } catch {
+        /* ignore */
       }
-      nextTick(() => scrollToBottom())
-      break
+      const sources = (srcInfo.sources || []).map((s) => ({ title: s.title || s.url || '', url: s.url || '' }));
+      const srcMsg = messages.value[messages.value.length - 1];
+      if (srcMsg && srcMsg.role === 'assistant') {
+        srcMsg.webSources = sources;
+      } else {
+        messages.value.push({ role: 'assistant', content: '', webSources: sources });
+      }
+      nextTick(() => scrollToBottom());
+      break;
     }
     case 'AI_THINKING_TOKEN': {
       // 推理 token 流（DeepSeek-R1 等），追加到当前 assistant 消息的 reasoning 字段
-      const reasonMsg = messages.value[messages.value.length - 1]
+      const reasonMsg = messages.value[messages.value.length - 1];
       if (reasonMsg && reasonMsg.role === 'assistant') {
-        reasonMsg.reasoning = (reasonMsg.reasoning || '') + detail.content
+        reasonMsg.reasoning = (reasonMsg.reasoning || '') + detail.content;
       } else {
-        messages.value.push({ role: 'assistant', content: '', reasoning: detail.content })
+        messages.value.push({ role: 'assistant', content: '', reasoning: detail.content });
       }
-      nextTick(() => scrollToBottom())
-      break
+      nextTick(() => scrollToBottom());
+      break;
     }
   }
 }
 
 function renderMarkdown(content: string) {
-  const renderer = createAiRenderer()
-  return marked.parse(content || '', { renderer })
+  const renderer = createAiRenderer();
+  // 净化 LLM 输出的 HTML，防止存储型 XSS（库内数据经 AI 查询回显可含恶意标签）
+  return sanitizeHtml(marked.parse(content || '', { renderer }));
 }
 
 /** 扫描 DOM 中的 echarts-container 并挂载 ECharts 实例 */
 function mountEchartsContainers() {
-  if (!messageListRef.value) return
-  const containers = messageListRef.value.querySelectorAll('.echarts-container:not([data-mounted])')
+  if (!messageListRef.value) return;
+  const containers = messageListRef.value.querySelectorAll('.echarts-container:not([data-mounted])');
   containers.forEach((el) => {
-    const optionStr = (el as HTMLElement).dataset.option
-    if (!optionStr) return
+    const optionStr = (el as HTMLElement).dataset.option;
+    if (!optionStr) return;
     try {
-      const option = JSON.parse(decodeURIComponent(optionStr))
-      el.setAttribute('data-mounted', 'true')
-      const chart = echarts.init(el as HTMLElement)
-      chart.setOption(option, true)
-      const ro = new ResizeObserver(() => chart.resize())
-      ro.observe(el as HTMLElement)
+      const option = JSON.parse(decodeURIComponent(optionStr));
+      el.setAttribute('data-mounted', 'true');
+      const chart = echarts.init(el as HTMLElement);
+      chart.setOption(option, true);
+      const ro = new ResizeObserver(() => chart.resize());
+      ro.observe(el as HTMLElement);
     } catch (e) {
-      console.error('ECharts 容器挂载失败:', e)
+      console.error('ECharts 容器挂载失败:', e);
     }
-  })
+  });
 }
 
 function scrollToBottom() {
   if (messageListRef.value) {
-    messageListRef.value.scrollTop = messageListRef.value.scrollHeight
+    messageListRef.value.scrollTop = messageListRef.value.scrollHeight;
   }
 }
 
 async function sendMessage() {
-  const text = inputText.value.trim()
-  if (!text || loading.value) return
+  const text = inputText.value.trim();
+  if (!text || loading.value) return;
 
-  messages.value.push({ role: 'user', content: text })
-  inputText.value = ''
-  loading.value = true
+  messages.value.push({ role: 'user', content: text });
+  inputText.value = '';
+  loading.value = true;
 
-  await nextTick()
-  scrollToBottom()
+  await nextTick();
+  scrollToBottom();
 
   try {
     const res = await sendAiMessage({
@@ -246,42 +257,42 @@ async function sendMessage() {
       model: selectedModel.value || undefined,
       enableThinking: enableThinking.value || undefined,
       enableWebSearch: enableWebSearch.value || undefined
-    })
-    const sid = res?.data ?? res
+    });
+    const sid = res?.data ?? res;
     if (sid && typeof sid === 'number') {
-      sessionId.value = sid
+      sessionId.value = sid;
     }
   } catch (e: any) {
-    loading.value = false
-    thinking.value = false
-    messages.value.push({ role: 'assistant', content: `[请求失败] ${e.message}` })
+    loading.value = false;
+    thinking.value = false;
+    messages.value.push({ role: 'assistant', content: `[请求失败] ${e.message}` });
   }
 }
 
 function newChat() {
-  sessionId.value = null
-  messages.value = []
-  thinking.value = false
-  loading.value = false
+  sessionId.value = null;
+  messages.value = [];
+  thinking.value = false;
+  loading.value = false;
 }
 
 function handleClose() {
-  visible.value = false
+  visible.value = false;
 }
 
 function open() {
-  visible.value = true
+  visible.value = true;
 }
 
-defineExpose({ open })
+defineExpose({ open });
 
 onMounted(() => {
-  window.addEventListener('ai-sse-message', onAiSseMessage)
-})
+  window.addEventListener('ai-sse-message', onAiSseMessage);
+});
 
 onUnmounted(() => {
-  window.removeEventListener('ai-sse-message', onAiSseMessage)
-})
+  window.removeEventListener('ai-sse-message', onAiSseMessage);
+});
 </script>
 
 <style scoped lang="scss">
@@ -360,7 +371,8 @@ onUnmounted(() => {
       border-collapse: collapse;
       width: 100%;
 
-      th, td {
+      th,
+      td {
         border: 1px solid #dcdfe6;
         padding: 6px 10px;
         text-align: left;

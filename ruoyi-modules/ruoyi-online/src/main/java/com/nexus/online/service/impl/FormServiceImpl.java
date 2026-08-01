@@ -292,7 +292,8 @@ public class FormServiceImpl implements IFormService {
         onlineMapper.deleteSubByForeignKey(
             mainTable.getSubTableName(),
             mainTable.getSubTableFkName(),
-            mainId
+            mainId,
+            TenantHelper.getTenantId()
         );
     }
 
@@ -497,7 +498,7 @@ public class FormServiceImpl implements IFormService {
             Map<String, Object> where = new HashMap<>();
             where.put(pkName, data.get(pkName));
             data.remove(pkName);
-            onlineMapper.dynamicUpdate(tableName, data, where);
+            onlineMapper.dynamicUpdate(tableName, data, where, TenantHelper.getTenantId());
             mainId = where.get(pkName);
         } else {
             // 新增主表 - 移除主键字段，让数据库自增
@@ -519,7 +520,7 @@ public class FormServiceImpl implements IFormService {
         if (mainId != null) {
             Map<String, Object> deleteWhere = new HashMap<>();
             deleteWhere.put(fkName, mainId);
-            onlineMapper.dynamicDelete(subTableName, deleteWhere);
+            onlineMapper.dynamicDelete(subTableName, deleteWhere, TenantHelper.getTenantId());
         }
 
         // 插入新子表数据
@@ -542,7 +543,7 @@ public class FormServiceImpl implements IFormService {
             Map<String, Object> where = new HashMap<>();
             where.put(pkName, data.get(pkName));
             data.remove(pkName);
-            return onlineMapper.dynamicUpdate(tableName, data, where);
+            return onlineMapper.dynamicUpdate(tableName, data, where, TenantHelper.getTenantId());
         } else {
             // 新增操作 - 移除主键字段，让数据库自增
             // 强制移除主键字段，确保数据库能自动生成自增ID
@@ -601,11 +602,11 @@ public class FormServiceImpl implements IFormService {
 
             Map<String, Object> deleteWhere = new HashMap<>();
             deleteWhere.put(fkName, ids);
-            onlineMapper.dynamicDelete(subName, deleteWhere);
+            onlineMapper.dynamicDelete(subName, deleteWhere, TenantHelper.getTenantId());
         }
 
         // 删除主表数据
-        onlineMapper.deleteDynamicTable(tableName, pkName, ids);
+        onlineMapper.deleteDynamicTable(tableName, pkName, ids, TenantHelper.getTenantId());
     }
 
     // 判断是否存在子表
@@ -653,7 +654,7 @@ public class FormServiceImpl implements IFormService {
         // 处理单表模式
         if ("single".equals(formType)) {
             TableVo tableVo = (TableVo) onlineField.get("data");
-            Map<String, Object> data = onlineMapper.selectDynamicTableById(tableName, pkName, id);
+            Map<String, Object> data = onlineMapper.selectDynamicTableById(tableName, pkName, id, TenantHelper.getTenantId());
             processBlobFields(tableVo.getColumnsVo(), data);
             result.putAll(data);
         }
@@ -665,7 +666,7 @@ public class FormServiceImpl implements IFormService {
             TableVo subTable = (TableVo) onlineField.get("sub");
 
             // 查询主表数据
-            Map<String, Object> mainData = onlineMapper.selectDynamicTableById(tableName, pkName, id);
+            Map<String, Object> mainData = onlineMapper.selectDynamicTableById(tableName, pkName, id, TenantHelper.getTenantId());
             processBlobFields(mainTable.getColumnsVo(), mainData);
             removeSystemFields(mainData);  // 新增过滤逻辑
             result.put("main", mainData);
@@ -678,7 +679,8 @@ public class FormServiceImpl implements IFormService {
             List<Map<String, Object>> subData = onlineMapper.selectSubTableByFk(
                 subTableName,
                 fkName,
-                (Long) mainData.get(pkName)
+                (Long) mainData.get(pkName),
+                TenantHelper.getTenantId()
             );
             processBlobFields(subTable.getColumnsVo(), subData);
             subData.forEach(this::removeSystemFields);  // 新增过滤逻辑

@@ -48,8 +48,9 @@ public class CostController extends BaseController {
     @Log(title = "采购暂估入账", businessType = BusinessType.UPDATE)
     @PostMapping("/provision/{periodName}")
     public R<Void> provision(@PathVariable String periodName) {
-        // 简化:全部未开票收货单暂估(发票联动后置)
-        List<WmMaterialReceive> receives = receiveMapper.selectList(Wrappers.lambdaQuery(WmMaterialReceive.class));
+        // 仅取"已收货完成(SHELVED/FINISHED)且未开票"的收货单，避免草稿/审批中单据被重复暂估、已开票单据再次入账
+        List<WmMaterialReceive> receives = receiveMapper.selectList(Wrappers.lambdaQuery(WmMaterialReceive.class)
+            .in(WmMaterialReceive::getStatus, "SHELVED", "FINISHED"));
         costService.provision(receives, periodName);
         return R.ok();
     }

@@ -11,6 +11,7 @@ import com.nexus.common.core.utils.MapstructUtils;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
+import com.nexus.common.redis.utils.RedisUtils;
 import com.nexus.erp.wm.domain.WmBatch;
 import com.nexus.erp.wm.domain.bo.WmBatchBo;
 import com.nexus.erp.wm.domain.vo.WmBatchVo;
@@ -21,9 +22,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
+import java.time.Duration;
 import java.util.Date;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * 批次管理Service业务层处理
@@ -39,11 +40,6 @@ public class WmBatchServiceImpl implements IWmBatchService {
 
     /** 基础数据访问映射器（Mapper） */
     private final WmBatchMapper baseMapper;
-
-    /** 当日序列号计数器 */
-    private static final AtomicInteger dailySequence = new AtomicInteger(0);
-    /** 上次生成编码的日期 */
-    private static volatile String lastDateStr = "";
 
     /**
      * 分页查询批次列表
@@ -255,21 +251,37 @@ public class WmBatchServiceImpl implements IWmBatchService {
 
     /**
      * 生成批次编码，格式：B{yyyyMMdd}{4位序号}
+     * <p>序号使用 Redis 原子自增（RAtomicLong），保证双机集群/多实例部署下跨实例唯一、重启不重置；
+     * 每天首次调用时初始化当日期序号（以当日最大已有批次号兜底，避免与历史数据冲突）。</p>
      *
      * @return 批次编码
      */
     private String generateBatchCode() {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
         String currentDateStr = sdf.format(new Date());
+        String key = "erp:batch:seq:" + currentDateStr;
 
-        synchronized (WmBatchServiceImpl.class) {
-            if (!currentDateStr.equals(lastDateStr)) {
-                lastDateStr = currentDateStr;
-                dailySequence.set(0);
+        long seq;
+        // 首次访问当天键：基于当日已有最大批次号初始化，防止重启后序号回退与历史批次冲突
+        if (RedisUtils.setObjectIfAbsent(key, 0L, Duration.ofHours(48))) {
+            // 取当日最后一条批次号的后缀序号作为起点（若无历史批次则从 0 开始）
+            WmBatch last = baseMapper.selectOne(
+                    Wrappers.<WmBatch>lambdaQuery()
+                            .likeRight(WmBatch::getBatchCode, "B" + currentDateStr)
+                            .orderByDesc(WmBatch::getBatchCode)
+                            .last("LIMIT 1"));
+            long base = 0;
+            if (last != null && last.getBatchCode() != null && last.getBatchCode().length() > 9) {
+                try {
+                    base = Long.parseLong(last.getBatchCode().substring(9));
+                } catch (NumberFormatException ignored) {
+                    base = 0;
+                }
             }
-            int seq = dailySequence.incrementAndGet();
-            return "B" + currentDateStr + String.format("%04d", seq);
+            RedisUtils.setCacheObject(key, base, Duration.ofHours(48));
         }
+        seq = RedisUtils.incrAtomicValue(key);
+        return "B" + currentDateStr + String.format("%04d", seq);
     }
 
     private LambdaQueryWrapper<WmBatch> buildQueryWrapper(WmBatchBo bo) {

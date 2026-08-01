@@ -15,6 +15,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <foreach collection="condition" item="item" index="key" open="" separator=" AND " close="">
                 ${key} = #{item}
             </foreach>
+            AND tenant_id = #{tenantId}
         </where>
     </update>
 
@@ -38,6 +39,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <foreach collection="ids" item="id" open="(" separator="," close=")">
             #{id}
         </foreach>
+        AND tenant_id = #{tenantId}
     </delete>
 
     <delete id="dynamicDelete">
@@ -56,24 +58,25 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                     </otherwise>
                 </choose>
             </foreach>
+            AND tenant_id = #{tenantId}
         </where>
     </delete>
 
     <select id="selectDynamicTableById" resultType="map">
 	    SELECT * FROM ${tableName}
-	    WHERE ${pkName} = #{id}
+	    WHERE ${pkName} = #{id} AND tenant_id = #{tenantId}
 	</select>
 
     <!-- 根据外键删除子表数据 -->
     <delete id="deleteSubByForeignKey">
         DELETE FROM ${subTableName}
-        WHERE ${fkName} = #{mainId}
+        WHERE ${fkName} = #{mainId} AND tenant_id = #{tenantId}
     </delete>
 
     <!-- 查询子表数据 -->
     <select id="selectSubTableByFk" resultType="map">
         SELECT * FROM ${subTableName}
-        WHERE ${fkName} = #{mainId}
+        WHERE ${fkName} = #{mainId} AND tenant_id = #{tenantId}
     </select>
 
 </mapper>

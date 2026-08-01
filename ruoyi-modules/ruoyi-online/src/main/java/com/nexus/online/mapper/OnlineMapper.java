@@ -40,7 +40,8 @@ public interface OnlineMapper extends BaseMapperPlus<GenTableColumn, OnlFieldVo>
      */
     int dynamicUpdate(@Param("tableName") String tableName,
                       @Param("data") Map<String, Object> data,
-                      @Param("condition") Map<String, Object> condition);
+                      @Param("condition") Map<String, Object> condition,
+                      @Param("tenantId") String tenantId);
     /**
      * 动态插入表数据
      * @param tableName 表名
@@ -59,7 +60,8 @@ public interface OnlineMapper extends BaseMapperPlus<GenTableColumn, OnlFieldVo>
     void deleteDynamicTable(
             @Param("tableName") String tableName,
             @Param("pkColumn") String pkColumn,
-            @Param("ids") List<Long> ids);
+            @Param("ids") List<Long> ids,
+            @Param("tenantId") String tenantId);
     /**
      * 查询online表的id详细数据
      * @param tableName 表名
@@ -70,7 +72,8 @@ public interface OnlineMapper extends BaseMapperPlus<GenTableColumn, OnlFieldVo>
     Map<String, Object> selectDynamicTableById(
     	    @Param("tableName") String tableName,
     	    @Param("pkName") String pkName,
-    	    @Param("id") Long id
+    	    @Param("id") Long id,
+    	    @Param("tenantId") String tenantId
     	);
 
     /**
@@ -82,7 +85,8 @@ public interface OnlineMapper extends BaseMapperPlus<GenTableColumn, OnlFieldVo>
     void deleteSubByForeignKey(
         @Param("subTableName") String subTableName,
         @Param("fkName") String fkName,
-        @Param("mainId") Object mainId
+        @Param("mainId") Object mainId,
+        @Param("tenantId") String tenantId
     );
 
     /**
@@ -93,9 +97,10 @@ public interface OnlineMapper extends BaseMapperPlus<GenTableColumn, OnlFieldVo>
      */
     @DeleteProvider(type = DynamicSqlProvider.class, method = "buildDeleteSql")
     int dynamicDelete(@Param("tableName") String tableName,
-                      @Param("where") Map<String, Object> whereMap);
+                      @Param("where") Map<String, Object> whereMap,
+                      @Param("tenantId") String tenantId);
 
-    List<Map<String, Object>> selectSubTableByFk(String subTableName, String fkName, Long mainId);
+    List<Map<String, Object>> selectSubTableByFk(String subTableName, String fkName, Long mainId, String tenantId);
 
     /**
      * 动态SQL构造器
@@ -106,16 +111,13 @@ public interface OnlineMapper extends BaseMapperPlus<GenTableColumn, OnlFieldVo>
             Map<String, Object> where = (Map<String, Object>) params.get("where");
 
             StringBuilder sql = new StringBuilder("DELETE FROM ")
-                .append(tableName);
+                .append(tableName)
+                .append(" WHERE tenant_id = #{tenantId}");
 
             if (where != null && !where.isEmpty()) {
-                sql.append(" WHERE ");
-                int index = 0;
                 for (Map.Entry<String, Object> entry : where.entrySet()) {
-                    if (index++ > 0) {
-                        sql.append(" AND ");
-                    }
-                    sql.append(entry.getKey())
+                    sql.append(" AND ")
+                        .append(entry.getKey())
                         .append(" = #{where.")
                         .append(entry.getKey())
                         .append("}");
@@ -126,14 +128,15 @@ public interface OnlineMapper extends BaseMapperPlus<GenTableColumn, OnlFieldVo>
     }
 
     @Delete("<script>" +
-        "DELETE FROM ${tableName} WHERE " +
+        "DELETE FROM ${tableName} WHERE tenant_id = #{tenantId} AND " +
         "<foreach item='item' index='index' collection='whereKeys' open='(' separator=' OR ' close=')'>" +
         "  ${item} = #{where[item]}" +
         "</foreach>" +
         "</script>")
     int batchDelete(@Param("tableName") String tableName,
                     @Param("where") Map<String, Object> conditions,
-                    @Param("whereKeys") List<String> whereKeys);
+                    @Param("whereKeys") List<String> whereKeys,
+                    @Param("tenantId") String tenantId);
 
     @Select("<script>" +
         "SELECT * FROM ${tableName} " +

@@ -123,10 +123,30 @@ public class WxPayServiceImpl implements IWxPayService {
                     .build();
             if ("pay".equals(type)) {
                 Transaction transaction = notificationParser.parse(requestParam, Transaction.class);
+                // 安全校验：回调订单号必须与路径订单号一致，防止重放他单回调
+                String outTradeNo = transaction.getOutTradeNo();
+                if (outTradeNo == null || !outTradeNo.equals(payOrder.getOrderNumber())) {
+                    log.error("微信支付回调订单号不匹配: 回调={}, 订单={}", outTradeNo, payOrder.getOrderNumber());
+                    return "fail";
+                }
+                // 安全校验：回调金额必须与本地订单金额一致（分→元比对），防止金额篡改
+                long cbFen = transaction.getAmount() != null ? transaction.getAmount().getTotal() : -1L;
+                long localFen = MoneyUtil.yuanToFen(payOrder.getTotalAmount());
+                if (cbFen != localFen) {
+                    log.error("微信支付回调金额不一致: 回调={}分, 订单={}分, 订单号={}", cbFen, localFen, payOrder.getOrderNumber());
+                    return "fail";
+                }
+                // 幂等：仅待支付/支付中订单可更新为已支付；已支付/已退款等终态重复回调直接忽略
+                if (!"已支付".equals(payOrder.getOrderStatus())
+                        && !"未支付".equals(payOrder.getOrderStatus())
+                        && !"用户支付中".equals(payOrder.getOrderStatus())) {
+                    log.info("微信支付回调重复或终态订单 {}，忽略: 当前状态={}", payOrder.getOrderNumber(), payOrder.getOrderStatus());
+                    return "success";
+                }
                 payOrder.setOrderStatus(getTradeState(transaction.getTradeState()));
                 payOrder.setThirdNumber(transaction.getTransactionId());
                 // 微信回调金额单位为"分",pay_order 存元,需分->元
-                payOrder.setActualAmount(MoneyUtil.fenToYuan(transaction.getAmount().getTotal()));
+                payOrder.setActualAmount(MoneyUtil.fenToYuan(cbFen));
                 payOrderService.updatePayOrder(payOrder);
                 return "success";
             } else if ("refund".equals(type)) {

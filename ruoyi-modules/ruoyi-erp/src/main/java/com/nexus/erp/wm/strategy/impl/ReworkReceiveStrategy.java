@@ -35,8 +35,8 @@ public class ReworkReceiveStrategy extends BaseStockOperationStrategy {
 
     /** 事务类型：返工入库 */
     private static final String TX_TYPE_REWORK_RECEIVE = "REWORK_RECEIVE";
-    /** 来源单据类型：返工订单 */
-    private static final String SOURCE_DOC_TYPE_REWORK = "PRD_REWORK_ORDER";
+    /** 来源单据类型：返工入库（与返工出库 PRD_REWORK_ORDER 区分，保证幂等键互不干扰） */
+    private static final String SOURCE_DOC_TYPE_REWORK_RECEIVE = "PRD_REWORK_ORDER_RECEIVE";
     /** 事务标志：入库（正数） */
     private static final int TX_FLAG_IN = 1;
 
@@ -90,7 +90,7 @@ public class ReworkReceiveStrategy extends BaseStockOperationStrategy {
         String materialSpec = (String) args[6];
         String baseUomName = (String) args[7];
 
-        if (hasPosted(SOURCE_DOC_TYPE_REWORK + "_RECEIVE", reworkId)) {
+        if (hasPosted(SOURCE_DOC_TYPE_REWORK_RECEIVE, reworkId)) {
             return;
         }
 
@@ -138,7 +138,7 @@ public class ReworkReceiveStrategy extends BaseStockOperationStrategy {
 
         WmMaterialStockTx tx = buildBaseTxFromStock(stock, TX_TYPE_REWORK_RECEIVE, TX_FLAG_IN,
             quantity, beforeQty, beforeQty.add(quantity), now);
-        tx.setSourceDocType(SOURCE_DOC_TYPE_REWORK);
+        tx.setSourceDocType(SOURCE_DOC_TYPE_REWORK_RECEIVE);
         tx.setSourceDocId(reworkId);
         tx.setSourceDocCode(reworkNo);
         tx.setRemark("返工入库");
