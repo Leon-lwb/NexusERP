@@ -4,6 +4,7 @@ import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.nexus.common.redis.utils.RedisUtils;
 import com.nexus.erp.pu.domain.PuPurchaseOrder;
 import com.nexus.erp.pu.domain.PuPurchaseOrderLine;
 import com.nexus.erp.pu.domain.enums.PurchaseOrderLineReceiveStatus;
@@ -18,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.util.List;
 
 /**
@@ -48,6 +50,12 @@ public class PuPurchaseReceiveWritebackServiceImpl implements IPuPurchaseReceive
     @Transactional(rollbackFor = Exception.class)
     public void writeBackReceivedQty(Long receiveId, Long purId) {
         log.info("开始回写采购订单已收货数量: receiveId={}, purId={}", receiveId, purId);
+        // 幂等防重：同一收货单只回写一次，防止 MQ 重投/重复发送导致已收数量重复累加
+        String idempotentKey = "erp:writeback:receive:" + receiveId;
+        if (!RedisUtils.setObjectIfAbsent(idempotentKey, "1", Duration.ofHours(24))) {
+            log.info("收货单已回写过，跳过: receiveId={}", receiveId);
+            return;
+        }
         if (purId == null) {
             log.warn("采购订单ID为空，跳过回写: receiveId={}", receiveId);
             return;

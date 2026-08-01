@@ -69,3 +69,18 @@
 | H1-9 | 自动编码接口无权限注解（SysAutoCodeController） | ✅ get/preview 加 @SaCheckPermission |
 
 编译验证: system/im/ai 均通过
+
+## H2 批（MQ/租户上下文，2026-08-01，全部完成）
+
+| # | 问题 | 状态 |
+|---|------|------|
+| H2-1 | ReworkStockConsumer 缺 TenantHelper.dynamic | ✅ doProcess 内 TenantHelper.dynamic 包裹 |
+| H2-2 | SubcontractStockConsumer 缺 TenantHelper.dynamic | ✅ 同上 |
+| H2-3 | StockInConsumer writeback 消息未传 tenantIdStr | ✅ 同步设置 6 位零填充 tenantIdStr |
+| H2-4 | 收货回写不幂等（PuPurchaseReceiveWritebackServiceImpl:71-105） | ✅ Redis 幂等键 `erp:writeback:receive:{receiveId}` 24h |
+| H2-5 | 倒冲双事务重试双倒冲（ProductionBackflushConsumer:536-548） | ✅ Redis 幂等键 `erp:backflush:wo:{woId}:{qty}` 24h |
+| H2-6 | VendorEvaluationTask 无租户上下文 | ✅ 遍历 sys_tenant + TenantHelper.dynamic |
+| H2-7 | StockAlertTask 无租户上下文 | ✅ 遍历 sys_tenant + TenantHelper.dynamic |
+| H2-8 | 补货申请去重失效（PuPurchaseRequisitionServiceImpl:502-556） | ✅ 按已有未完结申请行 materialId 集合跳过 |
+
+编译验证: erp 通过

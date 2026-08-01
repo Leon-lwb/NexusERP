@@ -509,11 +509,29 @@ public class PuPurchaseRequisitionServiceImpl implements IPuPurchaseRequisitionS
                 existingRequisitionMap.put(req.getRequisitionNo(), req.getRequisitionId());
             }
         }
+        // 已有未完结低库存申请单的物料集合（用于去重：同一物料已生成申请则不再重复生成）
+        java.util.Set<Long> alreadyRequestedMaterialIds = new java.util.HashSet<>();
+        if (!existingRequisitionMap.isEmpty()) {
+            List<PuPurchaseRequisitionLine> existingLines = lineMapper.selectList(
+                new LambdaQueryWrapper<PuPurchaseRequisitionLine>()
+                    .in(PuPurchaseRequisitionLine::getRequisitionId, existingRequisitionMap.values()));
+            if (existingLines != null) {
+                for (PuPurchaseRequisitionLine line : existingLines) {
+                    if (line.getMaterialId() != null) {
+                        alreadyRequestedMaterialIds.add(line.getMaterialId());
+                    }
+                }
+            }
+        }
 
         List<Long> generatedIds = new ArrayList<>();
         List<PuPurchaseRequisitionLine> lowStockLines = new ArrayList<>();
 
         for (BdMaterial material : materials) {
+            // 去重：该物料已有未完结的低库存申请单则跳过
+            if (alreadyRequestedMaterialIds.contains(material.getMaterialId())) {
+                continue;
+            }
             BigDecimal currentStock = stockMap.getOrDefault(material.getMaterialId(), BigDecimal.ZERO);
             BigDecimal safetyStock = material.getSafetyStock();
 

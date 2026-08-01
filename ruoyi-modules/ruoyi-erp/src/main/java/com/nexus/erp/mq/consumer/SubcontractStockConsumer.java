@@ -3,6 +3,7 @@ package com.nexus.erp.mq.consumer;
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.nexus.common.mq.constant.QueueConstants;
 import com.nexus.common.mq.consumer.BaseMessageConsumer;
+import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.erp.mq.message.SubcontractStockMessage;
 import com.nexus.erp.prd.domain.PrdSubcontract;
 import com.nexus.erp.prd.mapper.PrdSubcontractMapper;
@@ -44,26 +45,33 @@ public class SubcontractStockConsumer extends BaseMessageConsumer<SubcontractSto
     @Override
     protected void doProcess(SubcontractStockMessage message) {
         log.info("处理委外库存消息: subcontractId={}, operationType={}", message.getSubcontractId(), message.getOperationType());
-        PrdSubcontract subcontract = subcontractMapper.selectById(message.getSubcontractId());
-        if (subcontract == null) {
-            log.warn("委外订单不存在: subcontractId={}", message.getSubcontractId());
-            return;
+        // MQ消费者线程无登录态，需从消息恢复租户上下文，否则多租户拦截器跳过租户过滤导致跨租户读写
+        String tenantId = "000000";
+        if (message.getTenantId() != null && !Long.valueOf(0L).equals(message.getTenantId())) {
+            tenantId = String.format("%06d", message.getTenantId());
         }
-        String currentStatus = subcontract.getStatus();
-        if ("ISSUE".equals(message.getOperationType())) {
-            if (!"RELEASED".equals(currentStatus) && !"PENDING".equals(currentStatus)) {
-                log.warn("委外订单[{}]当前状态[{}]不允许发料", subcontract.getSubcontractNo(), currentStatus);
+        TenantHelper.dynamic(tenantId, () -> {
+            PrdSubcontract subcontract = subcontractMapper.selectById(message.getSubcontractId());
+            if (subcontract == null) {
+                log.warn("委外订单不存在: subcontractId={}", message.getSubcontractId());
                 return;
             }
-            subcontract.setStatus("IN_PROGRESS");
-        } else if ("RECEIVE".equals(message.getOperationType())) {
-            if (!"IN_PROGRESS".equals(currentStatus)) {
-                log.warn("委外订单[{}]当前状态[{}]不允许收货", subcontract.getSubcontractNo(), currentStatus);
-                return;
+            String currentStatus = subcontract.getStatus();
+            if ("ISSUE".equals(message.getOperationType())) {
+                if (!"RELEASED".equals(currentStatus) && !"PENDING".equals(currentStatus)) {
+                    log.warn("委外订单[{}]当前状态[{}]不允许发料", subcontract.getSubcontractNo(), currentStatus);
+                    return;
+                }
+                subcontract.setStatus("IN_PROGRESS");
+            } else if ("RECEIVE".equals(message.getOperationType())) {
+                if (!"IN_PROGRESS".equals(currentStatus)) {
+                    log.warn("委外订单[{}]当前状态[{}]不允许收货", subcontract.getSubcontractNo(), currentStatus);
+                    return;
+                }
+                subcontract.setStatus("COMPLETED");
             }
-            subcontract.setStatus("COMPLETED");
-        }
-        subcontractMapper.updateById(subcontract);
+            subcontractMapper.updateById(subcontract);
+        });
     }
 
     /**

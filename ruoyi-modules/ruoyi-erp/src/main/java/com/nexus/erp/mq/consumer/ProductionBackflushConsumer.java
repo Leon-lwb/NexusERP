@@ -6,6 +6,7 @@ import com.nexus.common.mq.constant.QueueConstants;
 import com.nexus.common.mq.constant.RoutingKeyConstants;
 import com.nexus.common.mq.consumer.BaseMessageConsumer;
 import com.nexus.common.mq.producer.ReliableMessageProducer;
+import com.nexus.common.redis.utils.RedisUtils;
 import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.erp.mq.message.ProductionCompleteMessage;
 import com.nexus.erp.prd.service.impl.PrdBackflushServiceImpl;
@@ -19,6 +20,7 @@ import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 
+import java.time.Duration;
 import java.util.Date;
 
 /**
@@ -55,6 +57,13 @@ public class ProductionBackflushConsumer extends BaseMessageConsumer<ProductionC
     @Override
     protected void doProcess(ProductionCompleteMessage message) {
         log.info("处理完工倒冲消息: woId={}, completionQty={}", message.getWoId(), message.getCompletionQty());
+        // 幂等防重：倒冲与成品入库分属两个事务，成品入库失败 NACK 重试时若倒冲已提交会二次扣料。
+        // 以 (woId, completionQty) 为键，仅首次执行倒冲+入库全链路。
+        String idempotentKey = "erp:backflush:wo:" + message.getWoId() + ":" + message.getCompletionQty();
+        if (!RedisUtils.setObjectIfAbsent(idempotentKey, "1", Duration.ofHours(24))) {
+            log.info("该完工消息已处理过，跳过: woId={}, completionQty={}", message.getWoId(), message.getCompletionQty());
+            return;
+        }
         backflushService.backflushOnCompletion(message.getWoId(), message.getCompletionQty());
         // 规则驱动解析成品入库仓库与库位（替换原车间ID当仓库的写法）
         PutawayLocation putaway = putawayStrategyService.resolvePutaway(message.getMaterialId(), message.getCompletionQty());

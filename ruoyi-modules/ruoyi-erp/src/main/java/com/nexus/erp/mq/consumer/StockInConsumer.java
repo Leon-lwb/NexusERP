@@ -56,6 +56,12 @@ public class StockInConsumer extends BaseMessageConsumer<StockInMessage> {
             writebackMsg.setReceiveId(message.getReceiveId());
             writebackMsg.setSourceModule("wm");
             writebackMsg.setTenantId(message.getTenantId());
+            // 同步设置 tenantIdStr（String），否则消费端取不到租户降级为无租户上下文执行，回写脱离租户隔离
+            if (message.getTenantId() != null && !Long.valueOf(0L).equals(message.getTenantId())) {
+                writebackMsg.setTenantIdStr(String.format("%06d", message.getTenantId()));
+            } else {
+                writebackMsg.setTenantIdStr("000000");
+            }
             messageProducer.send(ExchangeConstants.TOPIC_EXCHANGE,
                 RoutingKeyConstants.PURCHASE_RECEIVE_WRITEBACK, writebackMsg);
         } else {
