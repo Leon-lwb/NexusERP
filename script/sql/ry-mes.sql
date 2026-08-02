@@ -11,7 +11,7 @@
  Target Server Version : 50714 (5.7.14)
  File Encoding         : 65001
 
- Date: 28/07/2026 23:57:40
+ Date: 03/08/2026 00:04:55
 */
 
 SET NAMES utf8mb4;
@@ -51,11 +51,15 @@ CREATE TABLE `dc_collection_point`  (
 -- ----------------------------
 -- Records of dc_collection_point
 -- ----------------------------
-INSERT INTO `dc_collection_point` VALUES (1, '000000', 'CP-TEMP-001', 'CNC001主轴温度', 'AUTO', 1, NULL, NULL, 1, 'NUMERIC', '℃', 60, 'ACTIVE', '数控车床#1主轴温度自动采集，每60秒', 100, 1, NULL, NULL, NULL, '0');
-INSERT INTO `dc_collection_point` VALUES (2, '000000', 'CP-VIB-001', 'CNC001振动', 'AUTO', 1, NULL, NULL, 1, 'NUMERIC', 'mm/s', 30, 'ACTIVE', '数控车床#1振动值自动采集，每30秒', 100, 1, NULL, NULL, NULL, '0');
-INSERT INTO `dc_collection_point` VALUES (3, '000000', 'CP-DIM-001', '装配尺寸检验', 'MANUAL', 4, NULL, NULL, 3, 'NUMERIC', 'mm', NULL, 'ACTIVE', '装配工序关键尺寸人工采集', 100, 1, NULL, NULL, NULL, '0');
-INSERT INTO `dc_collection_point` VALUES (4, '000000', 'CP-WELD-TEMP', '焊接温度监控', 'AUTO', 3, NULL, NULL, 2, 'NUMERIC', '℃', 10, 'ACTIVE', '焊接温度自动采集，每10秒', 100, 1, NULL, NULL, NULL, '0');
-INSERT INTO `dc_collection_point` VALUES (5, '000000', 'CP-PKG-CNT', '包装计数', 'AUTO', 5, NULL, NULL, 5, 'NUMERIC', '件', 60, 'ACTIVE', '包装机产出计数，每60秒', 100, 1, NULL, NULL, NULL, '0');
+INSERT INTO `dc_collection_point` VALUES (1, '000000', 'CP-TEMP-001', 'CNC001主轴温度', 'AUTO', 1, NULL, NULL, 1, 'NUMERIC', '℃', 60, 'ACTIVE', '数控车床#1主轴温度自动采集，每60秒', NULL, 100, 1, NULL, NULL, NULL, '0');
+INSERT INTO `dc_collection_point` VALUES (2, '000000', 'CP-VIB-001', 'CNC001振动', 'AUTO', 1, NULL, NULL, 1, 'NUMERIC', 'mm/s', 30, 'ACTIVE', '数控车床#1振动值自动采集，每30秒', NULL, 100, 1, NULL, NULL, NULL, '0');
+INSERT INTO `dc_collection_point` VALUES (3, '000000', 'CP-DIM-001', '装配尺寸检验', 'MANUAL', 4, NULL, NULL, 3, 'NUMERIC', 'mm', NULL, 'ACTIVE', '装配工序关键尺寸人工采集', NULL, 100, 1, NULL, NULL, NULL, '0');
+INSERT INTO `dc_collection_point` VALUES (4, '000000', 'CP-WELD-TEMP', '焊接温度监控', 'AUTO', 3, NULL, NULL, 2, 'NUMERIC', '℃', 10, 'ACTIVE', '焊接温度自动采集，每10秒', NULL, 100, 1, NULL, NULL, NULL, '0');
+INSERT INTO `dc_collection_point` VALUES (5, '000000', 'CP-PKG-CNT', '包装计数', 'AUTO', 5, NULL, NULL, 5, 'NUMERIC', '件', 60, 'ACTIVE', '包装机产出计数，每60秒', NULL, 100, 1, NULL, NULL, NULL, '0');
+INSERT INTO `dc_collection_point` VALUES (2082453690429710337, '000000', 'E2E-AUTO-IOT', 'E2E自动采集点', 'AUTO', NULL, 1, 'temperature', NULL, 'NUMERIC', '℃', 10, 'ACTIVE', 'p0-8 e2e', NULL, 103, 1, '2026-07-29 21:10:25', 1, '2026-07-29 21:10:25', '1');
+INSERT INTO `dc_collection_point` VALUES (2082453690815586305, '000000', 'E2E-MANUAL', 'E2E手动采集点', 'MANUAL', NULL, NULL, NULL, NULL, 'TEXT', NULL, NULL, 'ACTIVE', 'p0-8 e2e', NULL, 103, 1, '2026-07-29 21:10:25', 1, '2026-07-29 21:10:25', '1');
+INSERT INTO `dc_collection_point` VALUES (2082454791119937537, '000000', 'E2E-AUTO-IOT-330886', 'E2E自动采集点', 'AUTO', NULL, 1, 'temperature', NULL, 'NUMERIC', '℃', 10, 'ACTIVE', 'p0-8 e2e', NULL, 103, 1, '2026-07-29 21:14:47', 1, '2026-07-29 21:14:47', '1');
+INSERT INTO `dc_collection_point` VALUES (2082454791241572353, '000000', 'E2E-MANUAL-330886', 'E2E手动采集点', 'MANUAL', NULL, NULL, NULL, NULL, 'TEXT', NULL, NULL, 'ACTIVE', 'p0-8 e2e', NULL, 103, 1, '2026-07-29 21:14:47', 1, '2026-07-29 21:14:47', '1');
 
 -- ----------------------------
 -- Table structure for dc_data_record
