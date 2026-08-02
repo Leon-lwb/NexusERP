@@ -134,10 +134,11 @@ public class VisionClientImpl implements VisionClient {
     @Override
     public boolean deleteFace(String subject) {
         String url = url("/api/v1/faces/" + encodePath(subject));
-        try (HttpResponse response = HttpRequest.delete(url)
+        HttpRequest request = HttpRequest.delete(url)
             .header("x-api-key", apiKey())
-            .timeout(properties.getTimeoutMs())
-            .execute()) {
+            .timeout(properties.getTimeoutMs());
+        noProxy(request);
+        try (HttpResponse response = request.execute()) {
             if (response.getStatus() != 200) {
                 throw new VisionException("删除底库失败 HTTP " + response.getStatus(), response.getStatus(), "DELETE_FAILED");
             }
@@ -283,6 +284,7 @@ public class VisionClientImpl implements VisionClient {
         HttpRequest request = HttpRequest.post(url)
             .header("x-api-key", apiKey())
             .timeout(properties.getTimeoutMs());
+        noProxy(request);
         for (Part part : formParts) {
             request.form(part.name(), part.value());
         }
@@ -300,6 +302,7 @@ public class VisionClientImpl implements VisionClient {
         HttpRequest request = HttpRequest.get(url)
             .header("x-api-key", apiKey())
             .timeout(properties.getTimeoutMs());
+        noProxy(request);
         return execute(request);
     }
 
@@ -351,6 +354,15 @@ public class VisionClientImpl implements VisionClient {
 
     private String apiKey() {
         return properties.getApiKey();
+    }
+
+    /**
+     * 禁用系统代理
+     * <p>Hutool 默认走 JVM 系统代理设置,部分环境(如公司代理)下访问内网 vision 服务
+     * 会报 "Failed to select a proxy" —— 内网直连必须绕过代理。</p>
+     */
+    private void noProxy(HttpRequest request) {
+        request.setProxy(null);
     }
 
     /**

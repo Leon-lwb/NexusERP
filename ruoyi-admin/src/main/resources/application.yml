@@ -390,3 +390,12 @@ nexus:
       max-communities: 50
       max-communities-for-global: 50
       gleaning-enabled: false
+
+  # 视觉识别服务 (nexus-vision-service)
+  vision:
+    base-url: http://localhost:5001
+    api-key: ${VISION_API_KEY:dev-key-nexus-erp}
+    timeout-ms: 5000
+    max-image-dim: 4096
+    enabled: true
+    health-fail-threshold: 3
