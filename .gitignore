@@ -78,3 +78,4 @@ application-prod.yml
 
 # 可视化头脑风暴会话文件
 .superpowers/
+doc/erp/scripts/__pycache__/
