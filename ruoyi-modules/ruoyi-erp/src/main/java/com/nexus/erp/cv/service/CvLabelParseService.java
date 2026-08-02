@@ -55,10 +55,11 @@ public class CvLabelParseService {
             Pattern.compile("(?:料号|物料编码|物料号|PN|Material)\\s*[：:]?\\s*([A-Za-z0-9][A-Za-z0-9\\-]{2,29})"),
             Pattern.compile("(?:^|\\s)([A-Z]{1,6}[0-9]{3,10}[A-Z0-9\\-]{0,12})(?=\\s|$)")
         ));
-        // 批次: 以 B/P 开头 + 8 位日期 + 流水(符合 BATCH_PURCHASE/BATCH_PRODUCTION 规则);同时兼容纯数字批次(如 20260715001)
+        // 批次: 以 B/P 开头 + 8 位日期 + 可选流水(符合 BATCH_PURCHASE/BATCH_PRODUCTION 规则,
+        // 兼容无流水标签如 B20260715);同时兼容纯数字批次(如 20260715001)
         map.put("batchCode", List.of(
-            Pattern.compile("(?:批次|批号|Lot)\\s*[：:]?\\s*([A-Za-z]?\\d{8}\\d{1,6})"),
-            Pattern.compile("(?:^|\\s)([BP]\\d{8}\\d{1,6})(?=\\s|$)"),
+            Pattern.compile("(?:批次|批号|Lot)\\s*[：:]?\\s*([A-Za-z]?\\d{8}(?:\\d{1,6})?)"),
+            Pattern.compile("(?:^|\\s)([BP]\\d{8}(?:\\d{1,6})?)(?=\\s|$)"),
             Pattern.compile("(?:批次|批号)\\s*[：:]?\\s*(\\d{6,})")
         ));
         // 序列号: SN 前缀(SN_PURCHASE 规则)或 物料尾号+年月+流水
