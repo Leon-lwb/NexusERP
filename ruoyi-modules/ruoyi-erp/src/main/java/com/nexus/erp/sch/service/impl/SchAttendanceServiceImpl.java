@@ -25,6 +25,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
+import com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder;
 import com.nexus.common.cv.client.VisionClient;
 import com.nexus.common.cv.config.CvProperties;
 import com.nexus.common.cv.domain.FaceDtos.VerifyResult;
@@ -598,6 +599,9 @@ public class SchAttendanceServiceImpl implements ISchAttendanceService {
      * 异步调 vision 1:1 校验,结果回写 sch_attendance.face_verify_*。</p>
      * <p><b>异步租户上下文</b>:{@code cvExecutor} 线程不传播 Sa-Token ThreadLocal,
      * 必须 {@link TenantHelper#dynamic} 恢复租户,否则 tenant_id 落 0、查不到考勤记录。
+     * <b>异步数据源</b>:类级 {@code @DS("erp")} 不作用于异步线程,但 sys_oss 表在 master 库
+     * (ry-vue),上传存证前必须 {@link DynamicDataSourceContextHolder#push}("master"),
+     * 否则误落 erp 数据源报 "Table 'ry-erp.sys_oss' doesn't exist"。
      * 视觉服务不可用时不抛异常,置 NONE 由降级补跑任务兜底(见 FaceVerifyBackfillTask)。</p>
      *
      * @param attendanceId 考勤记录ID
@@ -613,6 +617,8 @@ public class SchAttendanceServiceImpl implements ISchAttendanceService {
                 Long ossId = null;
                 if (storeImage && imageBytes != null && imageBytes.length > 0) {
                     // 1. 照片存 MinIO 存证(仅打卡时;补跑复用已有 ossId,避免重复存证)
+                    //    sys_oss 表在 master 库(ry-vue),异步线程无 @DS 上下文,显式切主数据源
+                    DynamicDataSourceContextHolder.push("master");
                     try {
                         java.io.File temp = java.io.File.createTempFile("face-", ".jpg");
                         try {
@@ -624,9 +630,17 @@ public class SchAttendanceServiceImpl implements ISchAttendanceService {
                         }
                     } catch (Exception e) {
                         log.error("[cv] 打卡人脸照片存 MinIO 失败, attendanceId={}, 跳过存证继续校验", attendanceId, e);
+                    } finally {
+                        DynamicDataSourceContextHolder.poll();
                     }
                 }
-                verifyAndWriteBack(attendanceId, workerId, imageBytes, ossId);
+                // 2. 校验 + 回写 sch_attendance(erp 库),异步线程需显式切回 erp 数据源
+                DynamicDataSourceContextHolder.push("erp");
+                try {
+                    verifyAndWriteBack(attendanceId, workerId, imageBytes, ossId);
+                } finally {
+                    DynamicDataSourceContextHolder.poll();
+                }
             });
         } catch (Exception e) {
             // 异步校验失败不影响打卡主流程,告警即可

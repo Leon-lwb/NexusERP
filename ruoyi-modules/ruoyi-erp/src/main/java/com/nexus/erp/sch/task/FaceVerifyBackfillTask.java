@@ -4,6 +4,7 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.io.IoUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder;
 import com.nexus.common.cv.client.VisionClient;
 import com.nexus.common.cv.config.CvProperties;
 import com.nexus.common.oss.factory.OssFactory;
@@ -67,20 +68,26 @@ public class FaceVerifyBackfillTask {
 
     /**
      * 扫描 24h 内 NONE 记录逐条补跑
+     * <p>sch_attendance 在 erp 库,调度线程无 @DS 上下文,显式切 erp 数据源。</p>
      */
     private void backfillNoneRecords() {
-        Date since = new Date(System.currentTimeMillis() - BACKFILL_WINDOW_MS);
-        LambdaQueryWrapper<SchAttendance> wrapper = Wrappers.lambdaQuery();
-        wrapper.eq(SchAttendance::getFaceVerifyStatus, "NONE");
-        wrapper.ge(SchAttendance::getFaceVerifyTime, since);
-        wrapper.last("LIMIT " + MAX_BATCH);
-        List<SchAttendance> list = attendanceMapper.selectList(wrapper);
-        if (CollUtil.isEmpty(list)) {
-            return;
-        }
-        log.info("[cv] 降级补跑:发现 {} 条 NONE 记录待补跑", list.size());
-        for (SchAttendance attendance : list) {
-            retryVerify(attendance);
+        DynamicDataSourceContextHolder.push("erp");
+        try {
+            Date since = new Date(System.currentTimeMillis() - BACKFILL_WINDOW_MS);
+            LambdaQueryWrapper<SchAttendance> wrapper = Wrappers.lambdaQuery();
+            wrapper.eq(SchAttendance::getFaceVerifyStatus, "NONE");
+            wrapper.ge(SchAttendance::getFaceVerifyTime, since);
+            wrapper.last("LIMIT " + MAX_BATCH);
+            List<SchAttendance> list = attendanceMapper.selectList(wrapper);
+            if (CollUtil.isEmpty(list)) {
+                return;
+            }
+            log.info("[cv] 降级补跑:发现 {} 条 NONE 记录待补跑", list.size());
+            for (SchAttendance attendance : list) {
+                retryVerify(attendance);
+            }
+        } finally {
+            DynamicDataSourceContextHolder.poll();
         }
     }
 
@@ -107,21 +114,27 @@ public class FaceVerifyBackfillTask {
 
     /**
      * 从 MinIO 取回存证照片字节
+     * <p>sys_oss 表在 master 库(ry-vue),补跑调度线程无 @DS 上下文,显式切主数据源。</p>
      */
     private byte[] loadFaceImage(SchAttendance attendance) {
         if (attendance.getFaceImageOssId() == null) {
             return null;
         }
         try {
-            SysOssVo ossVo = sysOssService.getById(attendance.getFaceImageOssId());
-            if (ossVo == null || ossVo.getFileName() == null) {
-                log.warn("[cv] 补跑:ossId={} 无文件记录, attendanceId={}",
-                    attendance.getFaceImageOssId(), attendance.getAttendanceId());
-                return null;
-            }
-            try (InputStream in = OssFactory.instance(ossVo.getService())
-                .getObjectContent(ossVo.getFileName())) {
-                return IoUtil.readBytes(in);
+            DynamicDataSourceContextHolder.push("master");
+            try {
+                SysOssVo ossVo = sysOssService.getById(attendance.getFaceImageOssId());
+                if (ossVo == null || ossVo.getFileName() == null) {
+                    log.warn("[cv] 补跑:ossId={} 无文件记录, attendanceId={}",
+                        attendance.getFaceImageOssId(), attendance.getAttendanceId());
+                    return null;
+                }
+                try (InputStream in = OssFactory.instance(ossVo.getService())
+                    .getObjectContent(ossVo.getFileName())) {
+                    return IoUtil.readBytes(in);
+                }
+            } finally {
+                DynamicDataSourceContextHolder.poll();
             }
         } catch (Exception e) {
             log.warn("[cv] 补跑取回照片失败, attendanceId={}, ossId={}: {}",
