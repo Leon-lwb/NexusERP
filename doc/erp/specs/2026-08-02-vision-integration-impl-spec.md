@@ -1,6 +1,6 @@
 # Nexus-ERP 视觉识别整体接入方案（人脸 + 物料识别）
 
-> 状态：**Phase 1a+1b 已完成并端到端验证通过**（2026-08-02）；**Phase 2 已完成并验证通过**（2026-08-02，9.4.6）；Phase 3 待启动
+> 状态：**全部完成** —— Phase 1a+1b（打卡人脸+管理端）与 Phase 2（物料 OCR+操作台+标签识别组件）均已完成并端到端验证通过（2026-08-02）；Phase 3（自定义 YOLO / App/PAD 落地）待立项需求
 > 日期：2026-08-02
 > 关联服务：[nexus-vision-service](D:\workspace\nexus-vision-service)（已实现 V0–V4）
 > 本文档规划 V5 阶段：`ruoyi-common-cv` Java 客户端 + ERP/Web/App 三端接入落地路径
@@ -218,25 +218,27 @@ nexus:
 - **subject 映射**：`EMP-<SchWorker.employeeNo>`；`SysUser.avatar`（ossId）→ 下载后 `registerFace`。
 - **底库与 avatar 解耦（决策）**：底库一经注册**不自动跟随 `SysUser.avatar` 变化**（自动同步会把 HR 展示头像/生活照灌进底库，拉低识别精度）。HR 更换员工头像后，需管理端**手动触发"重新注册"**；该操作写入运维 SOP。管理端注册页提供"按员工重新注册"入口。
 
-### 3.3 ERP 对外接口清单
+### 3.3 ERP 对外接口清单（✅ 已全部实现）
 
-> 三端统一经 ERP 后端代理，不直连 vision。以下为 ERP 暴露的视觉相关端点。
+> 三端统一经 ERP 后端代理，不直连 vision。以下为 ERP 暴露的视觉相关端点（均已实现并验证）。
 
-| 端点 | 方法 | 鉴权 | 说明 |
-|------|------|------|------|
-| `/cv/face/register` | POST | 管理端角色 | 上传照片 + subject 注册底库（管理端用） |
-| `/cv/face/verify` | POST | 登录态 | 1:1 验证（操作台/打卡校验内部调用） |
-| `/cv/face/recognize` | POST | 登录态 | 1:N 识别返回 top-N（操作台忘记工号场景，N=3） |
-| `/cv/face/list` | GET | 管理端角色 | 底库分页列表 |
-| `/cv/face/{subject}` | GET / DELETE | 管理端角色 | 底库详情/删除 |
-| `/cv/face/re-register` | POST | 管理端角色 | 按员工重新注册（avatar 变更后手动触发） |
-| `/cv/detect/product` | POST | 登录态 | 物料 OCR（YOLO+OCR） |
-| `/cv/detect/material` | POST | 登录态 | YOLO 通用检测（兜底） |
-| `/app/mes/face/verify` | POST | 登录态 | MES 操作台人脸登录/验证（返回工单上下文） |
-| `/cv/health` | GET | 登录态 | 探活（管理端状态展示） |
+| 端点 | 方法 | 鉴权 | 说明 | 状态 |
+|------|------|------|------|------|
+| `/cv/face/register` | POST | 管理端角色 | 上传照片 + subject 注册底库（管理端用） | ✅ |
+| `/cv/face/batch-register` | POST | 管理端角色 | 批量注册（测试期：遍历 SysUser.avatar 按 EMP-工号注册） | ✅ |
+| `/cv/face/re-register` | POST | 管理端角色 | 按员工重新注册（avatar 变更后手动触发，先删旧再注册） | ✅ |
+| `/cv/face/verify` | POST | 登录态 | 1:1 验证（操作台/打卡校验内部调用） | ✅ |
+| `/cv/face/recognize` | POST | 登录态 | 1:N 识别返回 top-N（操作台忘记工号场景，N=3） | ✅ |
+| `/cv/face/list` | GET | 管理端角色 | 底库分页列表 | ✅ |
+| `/cv/face/{subject}` | GET / DELETE | 管理端角色 | 底库详情/删除 | ✅ |
+| `/cv/face/health` | GET | 登录态 | 探活（管理端状态展示；方案初稿写 `/cv/health`，实现统一挂 face 下） | ✅ |
+| `/cv/detect/product` | POST | 登录态 | 物料 OCR（YOLO+OCR；`enableOcr`/`enableLabelParse` 开关，label 含料号/批次/SN + 主数据校验） | ✅ |
+| `/cv/detect/material` | POST | 登录态 | YOLO 通用检测（兜底） | ✅ |
+| `/cv/ops/identify` | POST | 登录态 | 操作台 1:N 识别（top-3 候选 + worker 映射，不签发身份；方案初稿的 `/app/mes/face/verify` 以本端点 + `/cv/face/verify` 1:1 确认闭环实现） | ✅ |
 
 - 请求/响应 schema 详见 `ruoyi-common-cv` 的 DTO（`FaceVerifyResult` 等），前端按 `src/api/cv/*.ts` 对接
 - 打卡校验**不暴露独立端点**，复用 `POST /app/sch/attendance/clock-in`（照片作为 multipart 字段），由后端内部触发 `cvExecutor`
+- 操作台安全闭环：`/cv/ops/identify`（1:N）→ 前端手选候选 → `/cv/face/verify`（1:1）→ 通过才签发操作上下文；**不单凭 1:N 签发身份**（防照片/双胞胎攻击，见 3.2.2）
 
 ### 3.4 可观测性
 
@@ -267,8 +269,9 @@ plus-ui/src/api/cv/
 |------|------|------|
 | 底库管理 | `src/views/cv/face/` | 列表（subject/姓名/照片/样本数）、注册（上传照片）、删除 |
 | 操作台人脸登录 | MES 工单相关页面 | 刷脸抽屉（调相机 → 上传 → verify/recognize → 进入） |
-| 检测调试 | `src/views/cv/detect/` | 上传图片 → 展示 YOLO 框 + OCR 文本（对接管理/验收用） |
-| 物料识别（预留） | 业务页按需 | 收货/发料等页面接入拍照识别 |
+| 检测调试 | `src/views/cv/detect/` | 上传图片 → 展示 YOLO 框 + OCR 文本（对接管理/验收用） | ✅ |
+| 物料识别（标签） | `src/components/cv/LabelCapture.vue` | 拍照/上传标签 → OCR 解析料号/批次/SN → 回填表单（Web 仅测试用，最终落地 App/PAD）；已示范接入收货上架弹窗（`receive/form.vue`「扫标签」按钮） | ✅ |
+| 操作台刷脸 | `src/views/mes/pro/dispatch/components/FaceLoginDrawer.vue` | 派工页「刷脸登录」抽屉：拍照 → 1:N top-3 候选 → 手选 → 1:1 确认 | ✅ |
 
 **相机能力**：Web 端拍照用 `<input type="file" accept="image/*" capture>` 或 getUserMedia（HTTPS 必需）；识别调试页建议直接上传文件，避免浏览器兼容性负担。
 
@@ -281,18 +284,19 @@ plus-ui/src/api/cv/
 
 ## 五、Nexus_App 设计
 
-### 5.1 打卡人脸
+### 5.1 打卡人脸 ✅ 已实现（2026-08-02，Nexus_App）
 
 - `pages/sch/attendance/punch-card.vue`：打卡时新增"人脸拍照"步骤（`uni.chooseImage` + `sourceType: ['camera']`），拍照后随 `clock-in` 上传
 - 上传通道：复用现有 `utils/request.js` → ERP `/app/sch/attendance/clock-in`（photo 字段）→ ERP 存 MinIO（ossId 存证）+ `cvExecutor` 异步校验（已定，不暴露独立校验端点，见 3.3）
+- 首次打卡弹"人脸采集告知与同意"弹窗（同意态存 storage，未同意不采集）；拍照组件 `components/cv/camera-capture.vue`（chooseImage/压缩/base64）
 - 若拍照失败/视觉服务不可用：**打卡不阻断**（后端降级策略，返回 face_verify_status=NONE 提示）
 
 ### 5.2 通用视觉组件（预留 PAD 复用）
 
 ```
 components/cv/
-├── camera-capture.vue    # 相机拍照组件（封装 chooseImage/权限/预览）
-└── face-verify.vue       # 人脸验证组件（拍照→上传→结果回调）
+├── camera-capture.vue    # ✅ 相机拍照组件（封装 chooseImage/权限/预览）——已实现
+└── face-verify.vue       # 人脸验证组件（拍照→上传→结果回调）——待接入（后端 1:1 端点已就绪）
 ```
 
 > 设计为跨端复用组件，未来 PAD（uni-app 同栈）可直接复用，避免重复开发。若 PAD 立项为其他栈，仅需替换拍照/上传壳，识别协议不变。
@@ -459,11 +463,12 @@ components/cv/
 - 打卡复用当天同 worker 记录（`performClockIn` 既有 update 逻辑），非本方案引入
 - 测试底库 `EMP-20002`（吴彦祖头像）可留作演示或删除
 
-#### 9.4.5 待补验证项（Phase 2 前）
+#### 9.4.5 遗留验证项状态（2026-08-02）
 
-- Web 端菜单可见性：视觉识别(6182) → 人脸底库/FAIL 复查页操作（需清 Redis 菜单缓存）
-- App 端真机打卡拍照 → 上传（HBuilderX 验证）
-- 降级补跑任务：vision 停机 → 打卡 NONE → 恢复后 24h 内补跑（`FaceVerifyBackfillTask` cron 每小时）
+- ✅ **Web 端页面验证已通过**（2026-08-02，浏览器实测）：人脸底库/FAIL 复查页、派工页刷脸登录抽屉（拍照→候选→1:1 确认）、收货上架弹窗「扫标签」识别回填（`ocr_cn.jpg` → 料号/批次回填成功）
+- ⏸ App 端真机打卡拍照 → 上传（HBuilderX 验证，待真机）
+- ⏸ 降级补跑任务实测：vision 停机 → 打卡 NONE → 恢复后 24h 内补跑（`FaceVerifyBackfillTask` cron 每小时，逻辑已实现，未做停机实测）
+- ⏸ M2 识别率 ≥80%：需 ≥50 张真实标签样本（样例未提供，规则可配 `PATTERNS`）
 
 #### 9.4.6 Phase 2 运行时验证 ✅（2026-08-02 实测通过）
 
@@ -523,6 +528,6 @@ components/cv/
 1. ~~打卡人脸校验模式~~ → **已定：A 异步校验**（见 3.2.1）
 2. ~~打卡照片存储~~ → **已定：存 MinIO（ossId 存证）**，`face_image_oss_id` 启用（见 3.2.1 / 5.1）
 3. ~~操作台挂点~~ → **已定：工单页内抽屉**（见 3.2.2）
-4. **物料 OCR 标签格式**：需确认标签上的料号/批次/SN 的版式与编码规则 —— Phase 2.2 启动前必须提供 ≥50 张样例标签照片（M2 验收依赖）
+4. ~~物料 OCR 标签格式~~ → **已实现可配置规则**：`CvLabelParseService.PATTERNS` 提取 料号/批次/SN（键值对优先 + 编码兜底，兼容 B/P 前缀批次、SN 前缀序列号）。**样例标签照片（≥50 张）仍待提供** —— 到位后只需调 `PATTERNS` 并回归 M2 识别率，业务链路无需改动（见 2.2）
 5. ~~Phase 1 范围~~ → **已定：拆 1a/1b**（见第七章）
-6. **Phase 0 owner**：vision 维护者 + 运维须在 Phase 1 启动前 1 周完成生产部署，评审指派
+6. **Phase 0 owner**：vision 维护者 + 运维须在生产部署前 1 周完成，评审指派

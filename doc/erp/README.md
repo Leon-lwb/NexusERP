@@ -24,6 +24,7 @@
 |------|------|------|------|
 | [2026-07-15-invoicing-ar-ap-redesign.md](./specs/2026-07-15-invoicing-ar-ap-redesign.md) | - | 开票与应收应付优化设计（发票域 P0-P5，P0-P2 已落地，P3-P5 已设计） | 2026-07-15 |
 | [2026-07-29-f0-gl-ledger-impl-spec.md](./specs/2026-07-29-f0-gl-ledger-impl-spec.md) | NexusERP-SPEC-2026-005-F0 | F0 GL 总账详细实施（6 表 DDL/科目 seed/凭证引擎/期间/余额/AccountingPoster SPI/试算平衡） | 2026-07-29 |
+| [2026-08-02-vision-integration-impl-spec.md](./specs/2026-08-02-vision-integration-impl-spec.md) | NexusERP-SPEC-2026-006-CV | 视觉识别整体接入（人脸考勤/操作台刷脸 + 物料 OCR；`ruoyi-common-cv` + ERP/Web/App 三端；Phase 1a/1b/2 已完成并验证） | 2026-08-02 |
 
 ### SQL 脚本（sql/）
 全部开发期 SQL 已执行到本地库并并入权威 schema：业务表 DDL 并入 `script/sql/ry-erp.sql`，菜单/字典并入 `script/sql/ry-vue.sql`。原始脚本归档于 [sql/archive/](./sql/archive/)（18 个），演示/测试数据在 [sql/test-data/](./sql/test-data/)（3 个）。

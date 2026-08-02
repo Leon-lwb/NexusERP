@@ -1323,3 +1323,34 @@ Week 37+    ░░░░░░░░ IoT 阶段二 (按需, 触发条件未满�
 1. **集成联动深化**（~12人天）：设备软关联、IoT自动采集归档、SPC OOC→安灯、ERP收货单驱动IQC
 2. **各模块功能补齐**（~30人天）：ERP Phase B/C/D、IoT阶段二按需、MES不良品入库/保养提醒
 3. **可观测性与运维**（~8人天）：统一traceId、健康检查聚合、数据归档、租户隔离巡检
+
+---
+
+## 十五、视觉识别接入（CV，2026-08-02）
+
+> 详见 [specs/2026-08-02-vision-integration-impl-spec.md](./specs/2026-08-02-vision-integration-impl-spec.md)（NexusERP-SPEC-2026-006-CV）。
+> 关联服务：[nexus-vision-service](D:\workspace\nexus-vision-service)（SCRFD+ArcFace 人脸 / YOLO / RapidOCR，:5001）。
+
+### 15.1 交付总览（Phase 1a+1b + Phase 2 全部完成并验证）
+
+| 能力 | 落点 | 状态 |
+|------|------|------|
+| 考勤打卡人脸验证（App） | `sch_attendance` +4 列、`cvExecutor` 异步校验、降级补跑、FAIL 复查 | ✅ E2E 通过 |
+| 人脸底库管理（Web） | `views/cv/face`（注册/列表/删除/批量/按员工重新注册） | ✅ 页面验证通过 |
+| 物料 OCR 检测调试（Web） | `views/cv/detect`（YOLO 框 + OCR 文本 + 标签解析） | ✅ 页面验证通过 |
+| 物料标签 OCR 规则解析 | `CvLabelParseService`（料号/批次/SN + 主数据校验，规则可配） | ✅ E2E 通过 |
+| 操作台刷脸登录（Web） | 派工页抽屉（1:N top-3 → 手选 → 1:1 确认） | ✅ 页面验证通过 |
+| 标签拍照识别组件 | `components/cv/LabelCapture.vue` + 收货上架弹窗示范接入 | ✅ 页面验证通过 |
+
+### 15.2 技术要点
+
+- `ruoyi-common-cv` 公共模块：VisionClient（Hutool HTTP + `x-api-key` + `Proxy.NO_PROXY`）+ 自动配置（`nexus.vision.*`）
+- 三端统一经 ERP 代理，不直连 vision（key 不落前端；小程序域名白名单）
+- 安全闭环：操作台 1:N 仅候选，1:1 确认才签发身份；打卡异步校验不阻断；降级 NONE + 24h 补跑
+- 关键坑（已修复）：异步线程 `@DS` 丢失（push master/erp）、系统代理劫持（NO_PROXY）、vision multipart 字段名（`file`）
+
+### 15.3 遗留（后续需求）
+
+- App 真机打卡拍照验证（HBuilderX）；降级停机实测
+- M2 识别率 ≥80% 回归（需 ≥50 张真实标签样本）
+- Phase 3：自定义 YOLO 物料模型、OCR+YOLO 融合、PAD 立项后落地
