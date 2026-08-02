@@ -51,7 +51,7 @@ public class VisionClientImpl implements VisionClient {
     @Override
     public VerifyResult verifyFace(byte[] image, String subject) {
         JsonNode json = multipart("/api/v1/faces/verify",
-            List.of(new Part("subject", subject)), image, "image");
+            List.of(new Part("subject", subject)), image, "file");
         VerifyResult result = new VerifyResult();
         result.setSuccess(json.path("success").asBoolean(false));
         result.setSubject(subject);
@@ -66,7 +66,7 @@ public class VisionClientImpl implements VisionClient {
     public RecognizeResult recognizeFace(byte[] image, int limit) {
         JsonNode json = multipart("/api/v1/faces/recognize",
             List.of(new Part("limit", String.valueOf(Math.max(1, Math.min(limit, 10))))),
-            image, "image");
+            image, "file");
         RecognizeResult result = new RecognizeResult();
         result.setSuccess(json.path("success").asBoolean(false));
         result.setFaceCount(json.path("face_count").asInt(0));
@@ -102,7 +102,7 @@ public class VisionClientImpl implements VisionClient {
         if (StrUtil.isNotBlank(remark)) {
             parts.add(new Part("remark", remark));
         }
-        JsonNode json = multipart("/api/v1/faces", parts, image, "image");
+        JsonNode json = multipart("/api/v1/faces", parts, image, "file");
         RegisterResult result = new RegisterResult();
         result.setSuccess(json.path("success").asBoolean(false));
         result.setSubject(subject);
