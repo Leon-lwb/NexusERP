@@ -221,7 +221,7 @@ public class VisionClientImpl implements VisionClient {
      * @param path 探针路径(/health 或 /health/ready)
      */
     private HealthResult getHealth(String path) {
-        JsonNode json = getJson(path);
+        JsonNode json = getJson(url(path));
         HealthResult result = new HealthResult();
         result.setStatus(json.path("status").asText());
         result.setService(json.path("service").asText());
