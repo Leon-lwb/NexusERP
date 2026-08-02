@@ -40,6 +40,9 @@
         <el-col :span="1.5">
           <el-button type="success" plain icon="Aim" @click="handleOpenScan" v-hasPermi="['mes:pro:dispatch:scan']">扫码执行</el-button>
         </el-col>
+        <el-col :span="1.5">
+          <el-button type="primary" plain icon="User" @click="handleOpenFaceLogin">刷脸登录</el-button>
+        </el-col>
         <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
       </el-row>
 
@@ -95,6 +98,7 @@
     </el-card>
 
     <ScanExecute ref="scanRef" />
+    <FaceLoginDrawer ref="faceLoginRef" @verified="onFaceVerified" />
   </div>
 </template>
 
@@ -104,6 +108,7 @@ import type { ProDispatchVO, ProDispatchQuery } from '@/api/mes/pro/dispatch';
 import { listWorker } from '@/api/erp/sch/worker/index';
 import type { WorkerVO } from '@/api/erp/sch/worker/types';
 import ScanExecute from './components/ScanExecute.vue';
+import FaceLoginDrawer from './components/FaceLoginDrawer.vue';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { mes_dispatch_status } = toRefs<any>(proxy?.useDict('mes_dispatch_status'));
@@ -115,6 +120,7 @@ const showSearch = ref(true);
 const total = ref(0);
 const workerOptions = ref<WorkerVO[]>([]);
 const scanRef = ref<InstanceType<typeof ScanExecute> | null>(null);
+const faceLoginRef = ref<InstanceType<typeof FaceLoginDrawer> | null>(null);
 
 const queryParams = ref<ProDispatchQuery>({
   pageNum: 1,
@@ -151,6 +157,16 @@ const handleDetail = (row: ProDispatchVO) => {
 
 const handleOpenScan = () => {
   scanRef.value?.open();
+};
+
+/** 操作台刷脸登录抽屉(1:N top-3 候选 + 1:1 确认,见方案 3.2.2) */
+const handleOpenFaceLogin = () => {
+  faceLoginRef.value?.open();
+};
+
+/** 人脸验证通过回调:记录当前操作员上下文(派工查询过滤等后续接入) */
+const onFaceVerified = (payload: { subject: string; workerId?: string | null; userName?: string; similarity: number }) => {
+  proxy?.$modal.msgSuccess(`已验证 ${payload.userName || payload.subject},开始操作`);
 };
 
 const handleStart = async (row: ProDispatchVO) => {
