@@ -131,4 +131,16 @@ public interface ISchAttendanceService {
      * @param storeImage   是否存 MinIO 存证(打卡传 true;降级补跑传 false 复用已有 ossId,避免重复存证)
      */
     void asyncFaceVerify(Long attendanceId, Long workerId, String tenantId, byte[] imageBytes, boolean storeImage);
+
+    /**
+     * FAIL 复查人工标记(改 PASS 或确认 FAIL)
+     * <p>考勤管理员复查 FAIL 记录:误判→PASS;确认代打卡→保持 FAIL(审计备注记录)。
+     * 操作在 remark 追加 {@code [FACE-REVIEW:status] 备注} 前缀供审计。</p>
+     *
+     * @param attendanceId 考勤记录ID
+     * @param status       目标状态(PASS=误判 / FAIL=确认代打卡)
+     * @param remark       复查备注(可选)
+     * @return 影响行数
+     */
+    int markFaceVerified(Long attendanceId, String status, String remark);
 }

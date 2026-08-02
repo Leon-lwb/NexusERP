@@ -541,6 +541,8 @@ public class SchAttendanceServiceImpl implements ISchAttendanceService {
             lqw.eq(bo.getWorkerId() != null, SchAttendance::getWorkerId, bo.getWorkerId());
             lqw.eq(bo.getRecordDate() != null, SchAttendance::getRecordDate, bo.getRecordDate());
             lqw.eq(StringUtils.isNotBlank(bo.getAttendanceStatus()), SchAttendance::getAttendanceStatus, bo.getAttendanceStatus());
+            // 人脸验证状态过滤(FAIL 复查页用)
+            lqw.eq(StringUtils.isNotBlank(bo.getFaceVerifyStatus()), SchAttendance::getFaceVerifyStatus, bo.getFaceVerifyStatus());
         }
         return lqw;
     }
@@ -560,6 +562,34 @@ public class SchAttendanceServiceImpl implements ISchAttendanceService {
         double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
         return EARTH_RADIUS * c;
+    }
+
+    /**
+     * FAIL 复查人工标记(改 PASS 或确认 FAIL)
+     * <p>考勤管理员复查 FAIL 记录:误判→PASS;确认代打卡→保持 FAIL。
+     * 操作在 remark 追加 {@code [FACE-REVIEW:status] 备注} 前缀供审计。</p>
+     *
+     * @param attendanceId 考勤记录ID
+     * @param status       目标状态(PASS=误判 / FAIL=确认代打卡)
+     * @param remark       复查备注(可选)
+     * @return 影响行数
+     */
+    @Override
+    public int markFaceVerified(Long attendanceId, String status, String remark) {
+        SchAttendance attendance = baseMapper.selectById(attendanceId);
+        if (attendance == null) {
+            return 0;
+        }
+        if (!"PASS".equals(status) && !"FAIL".equals(status)) {
+            throw new ServiceException("复查状态仅支持 PASS(误判) 或 FAIL(代打卡)");
+        }
+        attendance.setFaceVerifyStatus(status);
+        attendance.setFaceVerifyTime(new Date());
+        // 审计备注:追加复查记录,不覆盖原有备注
+        String audit = "[FACE-REVIEW:" + status + "] " + (remark != null ? remark : "人工复查");
+        attendance.setRemark(attendance.getRemark() != null
+            ? attendance.getRemark() + " " + audit : audit);
+        return baseMapper.updateById(attendance);
     }
 
     /**

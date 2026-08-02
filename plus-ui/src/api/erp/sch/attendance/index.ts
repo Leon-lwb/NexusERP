@@ -39,3 +39,23 @@ export const delAttendance = (attendanceId: string | number | (string | number)[
     method: 'delete'
   });
 };
+
+// ===== 人脸验证 FAIL 复查 =====
+
+/** 标记误判(人工改 PASS) */
+export const markFacePass = (attendanceId: string | number, remark?: string): AxiosPromise<void> => {
+  return request({
+    url: `/erp/sch/attendance/${attendanceId}/face/mark-pass`,
+    method: 'put',
+    params: remark ? { remark } : {}
+  });
+};
+
+/** 标记代打卡(确认 FAIL) */
+export const markFaceProxy = (attendanceId: string | number, remark?: string): AxiosPromise<void> => {
+  return request({
+    url: `/erp/sch/attendance/${attendanceId}/face/mark-proxy`,
+    method: 'put',
+    params: remark ? { remark } : {}
+  });
+};

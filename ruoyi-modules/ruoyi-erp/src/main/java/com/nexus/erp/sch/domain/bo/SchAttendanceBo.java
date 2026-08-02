@@ -93,6 +93,11 @@ public class SchAttendanceBo extends BaseEntity {
     private String deviceName;
 
     /**
+     * 人脸验证状态: NONE未验证, PASS通过, FAIL失败(复查筛选用)
+     */
+    private String faceVerifyStatus;
+
+    /**
      * 批量删除ID集合
      */
     private Long[] ids;

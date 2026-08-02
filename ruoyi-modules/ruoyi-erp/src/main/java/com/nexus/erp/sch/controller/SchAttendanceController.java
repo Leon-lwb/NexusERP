@@ -1,6 +1,8 @@
 package com.nexus.erp.sch.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
+import com.nexus.common.core.exception.ServiceException;
+import com.nexus.system.service.ISysOssService;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import com.nexus.common.core.domain.R;
@@ -31,6 +33,7 @@ import java.util.List;
 public class SchAttendanceController extends BaseController {
 
     private final ISchAttendanceService schAttendanceService;
+    private final ISysOssService sysOssService;
 
     /**
      * 分页查询考勤记录列表
@@ -117,5 +120,53 @@ public class SchAttendanceController extends BaseController {
     @DeleteMapping("/{attendanceIds}")
     public R<Void> remove(@PathVariable Long[] attendanceIds) {
         return toAjax(schAttendanceService.deleteByIds(attendanceIds));
+    }
+
+    /**
+     * FAIL 复查:标记误判(人工改 PASS)
+     * <p>考勤管理员复查 FAIL 记录,确认是误判(照片相似但阈值误判)时改 PASS。
+     * 操作写入 remark 前缀 {@code [FACE-REVIEW]} 供审计。</p>
+     *
+     * @param attendanceId 考勤记录ID
+     * @param remark       复查备注(可选)
+     * @return 操作结果
+     */
+    @SaCheckPermission("sch:attendance:review")
+    @Log(title = "考勤复查", businessType = BusinessType.UPDATE)
+    @PutMapping("/{attendanceId}/face/mark-pass")
+    public R<Void> markFacePass(@PathVariable Long attendanceId, @RequestParam(required = false) String remark) {
+        return toAjax(schAttendanceService.markFaceVerified(attendanceId, "PASS", remark));
+    }
+
+    /**
+     * FAIL 复查:标记代打卡(违规,状态置 FAIL 且不再自动补跑)
+     * <p>考勤管理员确认是代打卡/照片冒用时调用,记录审计备注。</p>
+     *
+     * @param attendanceId 考勤记录ID
+     * @param remark       复查备注(可选)
+     * @return 操作结果
+     */
+    @SaCheckPermission("sch:attendance:review")
+    @Log(title = "考勤复查", businessType = BusinessType.UPDATE)
+    @PutMapping("/{attendanceId}/face/mark-proxy")
+    public R<Void> markFaceProxy(@PathVariable Long attendanceId, @RequestParam(required = false) String remark) {
+        return toAjax(schAttendanceService.markFaceVerified(attendanceId, "FAIL", remark));
+    }
+
+    /**
+     * 打卡人脸照片查看(私有桶 MinIO,经后端代理流式下载)
+     * <p>私有桶 presigned URL 短时效且含敏感信息,复查页统一经本端点代理浏览。</p>
+     *
+     * @param ossId 存证照片 ossId
+     * @param response HTTP 响应
+     */
+    @SaCheckPermission("sch:attendance:review")
+    @GetMapping("/face-photo/{ossId}")
+    public void facePhoto(@PathVariable Long ossId, HttpServletResponse response) {
+        try {
+            sysOssService.download(ossId, response);
+        } catch (Exception e) {
+            throw new ServiceException("照片读取失败: " + e.getMessage());
+        }
     }
 }

@@ -108,4 +108,27 @@ public class SchAttendanceVo implements Serializable {
      */
     @ExcelProperty(value = "设备名称")
     private String deviceName;
+
+    /**
+     * 人脸验证状态: NONE未验证, PASS通过, FAIL失败
+     */
+    @ExcelProperty(value = "人脸验证状态")
+    private String faceVerifyStatus;
+
+    /**
+     * 人脸验证时间
+     */
+    @ExcelProperty(value = "人脸验证时间")
+    private Date faceVerifyTime;
+
+    /**
+     * 人脸相似度
+     */
+    @ExcelProperty(value = "人脸相似度")
+    private BigDecimal faceSimilarity;
+
+    /**
+     * 打卡人脸照片ossId(MinIO存证)
+     */
+    private Long faceImageOssId;
 }
