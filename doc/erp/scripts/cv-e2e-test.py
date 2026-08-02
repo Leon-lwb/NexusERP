@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """视觉识别 CV 端到端测试: 登录(RSA+AES+redis验证码) -> cv 底库/健康/打卡链路/FAIL 复查"""
-import json, os, subprocess, urllib.request, urllib.error, base64
+import json, os, subprocess, urllib.request, urllib.error, urllib.parse, base64
 from Crypto.Cipher import AES, PKCS1_v1_5
 from Crypto.PublicKey import RSA
 from Crypto.Util.Padding import pad
@@ -165,7 +165,8 @@ def main():
     # 用第 4 步的考勤记录做复查
     if "att_id" in dir():
         st, resp = http(
-            "PUT", f"/erp/sch/attendance/{att_id}/face/mark-pass?remark=E2E误判验证",
+            "PUT",
+            f"/erp/sch/attendance/{att_id}/face/mark-pass?remark=" + urllib.parse.quote("E2E误判验证"),
             headers=auth(token), body={},
         )
         log("标记误判", st == 200, f"st={st} {resp[:150]}")

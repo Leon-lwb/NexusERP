@@ -23,6 +23,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 
+import java.net.Proxy;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -358,11 +359,12 @@ public class VisionClientImpl implements VisionClient {
 
     /**
      * 禁用系统代理
-     * <p>Hutool 默认走 JVM 系统代理设置,部分环境(如公司代理)下访问内网 vision 服务
-     * 会报 "Failed to select a proxy" —— 内网直连必须绕过代理。</p>
+     * <p>Hutool {@code setProxy(null)} 会 fallback 到 GlobalProxy/ProxySelector.getDefault(),
+     * 被系统代理软件劫持时报 "Failed to select a proxy"(内网 vision 直连必须绕过)。
+     * 显式传入 {@link Proxy#NO_PROXY}(DIRECT 实例)跳过代理选择。</p>
      */
     private void noProxy(HttpRequest request) {
-        request.setProxy(null);
+        request.setProxy(Proxy.NO_PROXY);
     }
 
     /**
