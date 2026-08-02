@@ -1,6 +1,6 @@
 # Nexus-ERP 视觉识别整体接入方案（人脸 + 物料识别）
 
-> 状态：**设计阶段**（决策已定稿，待评审确认）
+> 状态：**Phase 1a+1b 已完成并端到端验证通过**（2026-08-02），Phase 2 待启动
 > 日期：2026-08-02
 > 关联服务：[nexus-vision-service](D:\workspace\nexus-vision-service)（已实现 V0–V4）
 > 本文档规划 V5 阶段：`ruoyi-common-cv` Java 客户端 + ERP/Web/App 三端接入落地路径
@@ -325,21 +325,21 @@ components/cv/
 
 ### Phase 1（基础设施 + 打卡人脸，本期重点 —— 拆 1a/1b 双里程碑）
 
-**Phase 1a（M1a：打卡链路核心）**
+**Phase 1a（M1a：打卡链路核心）✅ 已完成并验证（2026-08-02）**
 
 | 项 | 内容 | 依赖 |
 |----|------|------|
-| 1.1 | 新建 `ruoyi-common-cv` 模块（CvProperties + VisionClient + DTO + 自动配置） | Phase 0 |
-| 1.2 | 场景集成：打卡人脸验证（`sch_attendance` 增量 SQL 扩展 + `cvExecutor` 异步校验 + 降级安全闭环 + FAIL 复查定时任务） | 1.1 |
-| 1.3 | 底库：测试期下载头像批量注册脚本/接口（绑定测试账号） | 1.1 |
-| 1.4 | App 打卡人脸（`punch-card.vue` 拍照 + 上传 + 首次告知同意弹窗） | 1.2 |
+| 1.1 | ✅ 新建 `ruoyi-common-cv` 模块（CvProperties + VisionClient + DTO + 自动配置） | Phase 0 |
+| 1.2 | ✅ 场景集成：打卡人脸验证（`sch_attendance` 增量 SQL 扩展 + `cvExecutor` 异步校验 + 降级安全闭环 + FAIL 复查定时任务） | 1.1 |
+| 1.3 | ✅ 底库：测试期下载头像批量注册脚本/接口（绑定测试账号） | 1.1 |
+| 1.4 | ✅ App 打卡人脸（`punch-card.vue` 拍照 + 上传 + 首次告知同意弹窗） | 1.2 |
 
-**Phase 1b（M1b：管理端）**
+**Phase 1b（M1b：管理端）✅ 已完成并验证（2026-08-02）**
 
 | 项 | 内容 | 依赖 |
 |----|------|------|
-| 1.5 | Web 底库管理页（`views/cv/face/`：列表/注册/删除/按员工重新注册） | 1.1 + 1.3 |
-| 1.6 | Web FAIL 复查页（昨日 `FAIL` 记录列表 + 标记误判/代打卡） | 1.2 |
+| 1.5 | ✅ Web 底库管理页（`views/cv/face/`：列表/注册/删除/按员工重新注册） | 1.1 + 1.3 |
+| 1.6 | ✅ Web FAIL 复查页（昨日 `FAIL` 记录列表 + 标记误判/代打卡） | 1.2 |
 
 ### Phase 2（物料 OCR + 操作台）
 
@@ -407,6 +407,56 @@ components/cv/
 - Web：底库管理注册（上传照片）→ 列表/删除；检测调试页上传料件标签 → OCR 文本展示
 - 失败路径：照片模糊/无人脸 → 校验 FAIL 但不阻断打卡；vision 停机 → 打卡 NONE + 日志告警
 
+### 9.4 Phase 1a+1b 运行时端到端验证（2026-08-02 实测通过）
+
+> 脚本：`doc/erp/scripts/cv-e2e-test.py`（复用 P0-4 登录加密复刻模式：RSA+AES+Redis 验证码，
+> 可复跑，含全链路断言）。测试照片：vision 底库 `EMP-20002` 注册照片（吴彦祖头像，测试用）。
+
+#### 9.4.1 vision 服务直连验证 ✅
+
+| 项 | 结果 |
+|----|------|
+| API key 鉴权 | 对 key→200 / 错 key→401 / 无 key→401 |
+| 1:1 verify 本人 | sim=1.0, matched=true（~184ms） |
+| 1:1 verify 不存在 subject | sim=0.0, matched=false, reason=subject_not_found |
+| 1:N recognize | 正确返回 EMP-20002 + 人脸框（~138ms） |
+| YOLO 通用检测 | person 0.957（~102ms） |
+| OCR 中文标签 | `料号：MC-301A-03` 0.995、`批次 B20260715` 0.998（Phase 2 基础可行） |
+
+#### 9.4.2 ERP 集成链路验证 ✅（8/8 项）
+
+| # | 验证项 | 结果 |
+|---|--------|------|
+| 1 | 加密登录（RSA+AES+Redis 验证码） | PASS |
+| 2 | `/cv/face/list` 底库列表（经 ERP 代理） | PASS total=1 |
+| 3 | `/cv/face/health` 健康探活 | PASS status=ready, 三模型 true |
+| 4 | 打卡（`clock-in` 带照片 base64，异步不阻断） | PASS attendanceId 正常 |
+| 5 | 异步人脸验证回写 | PASS **FAIL sim=0.0**（底库无此工号→正确拒绝）→ 注册匹配工号后 **PASS sim=1.0** |
+| 6 | MinIO 存证 | PASS `face_image_oss_id` 写入 |
+| 7 | FAIL 复查列表（`faceVerifyStatus=FAIL` 过滤） | PASS total=1 |
+| 8 | 标记误判 FAIL→PASS（审计备注 `[FACE-REVIEW:PASS]`） | PASS st=200 |
+
+#### 9.4.3 验证中发现并修复的缺陷（6 个，均已提交）
+
+| 提交 | 缺陷 | 根因与修复 |
+|------|------|-----------|
+| `ad51037a` | 异步存证报 `Table 'ry-erp.sys_oss' doesn't exist` | cvExecutor 线程无 @DS 上下文,sys_oss 在 master 库(ry-vue);`DynamicDataSourceContextHolder.push("master"/"erp")` 显式切换(同 WmMqSendService 既有模式) |
+| `3d292693` | vision 调用报 `Failed to select a proxy` | 系统代理软件劫持 ProxySelector;`request.setProxy(Proxy.NO_PROXY)` 显式直连 |
+| `68dd8abb` | 健康探活 `StringIndexOutOfBoundsException` | `getHealth` 误把相对路径传 `getJson`;改用 `url(path)` 拼接 base-url |
+| `2cc9616f` | 打卡人脸验证全部落 NONE（HTTP 422） | **根因**：vision 全部端点文件字段名为 `file`,`VisionClientImpl` 人脸方法误传 `image` 字段名导致 `file Field required`;改为 `"file"` |
+
+#### 9.4.4 遗留小问题（非阻塞）
+
+- FAIL（subject_not_found）时 `face_similarity` 写 0.0000 —— 语义可接受（未匹配=0），如需区分可改空
+- 打卡复用当天同 worker 记录（`performClockIn` 既有 update 逻辑），非本方案引入
+- 测试底库 `EMP-20002`（吴彦祖头像）可留作演示或删除
+
+#### 9.4.5 待补验证项（Phase 2 前）
+
+- Web 端菜单可见性：视觉识别(6182) → 人脸底库/FAIL 复查页操作（需清 Redis 菜单缓存）
+- App 端真机打卡拍照 → 上传（HBuilderX 验证）
+- 降级补跑任务：vision 停机 → 打卡 NONE → 恢复后 24h 内补跑（`FaceVerifyBackfillTask` cron 每小时）
+
 ---
 
 ## 十、风险与决策记录
@@ -420,7 +470,9 @@ components/cv/
 | 底库与 avatar 漂移 | HR 换头像后底库不同步 | 不自动同步，管理端手动重新注册，写入 SOP（见 3.2.4） |
 | 1:N 登录冒用 | 双胞胎/照片攻击 | 1:N 仅返回 top-3 候选，转 1:1 确认才签发 token（见 3.2.2） |
 | 小程序域名 | 直连 vision 不可行 | 统一走后端代理（架构已固化） |
-| 阈值误判 | 0.5 阈值未用真实数据校准 | Phase 1 集成测试阶段用测试人员照片回归 |
+| 阈值误判 | 0.5 阈值未用真实数据校准 | Phase 1 集成测试阶段用测试人员照片回归（当前用头像照片验证 sim=1.0/0.0 两端正确） |
+| 代理劫持 | 内网 vision 被系统代理软件拦截 | `Proxy.NO_PROXY` 显式直连（已修复并验证，见 9.4.3） |
+| 异步数据源错乱 | 异步线程 sys_oss 误落 erp 库 | `DynamicDataSourceContextHolder` 显式 push master/erp（已修复并验证，见 9.4.3） |
 | PAD 技术栈 | 未立项 | 预留接口抽象 + `components/cv` 复用空间，立项再定 |
 
 ---
