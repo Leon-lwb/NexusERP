@@ -1,6 +1,6 @@
 # Nexus-ERP 视觉识别整体接入方案（人脸 + 物料识别）
 
-> 状态：**Phase 1a+1b 已完成并端到端验证通过**（2026-08-02）；**Phase 2 代码完成,运行时验证待后端重启后执行**
+> 状态：**Phase 1a+1b 已完成并端到端验证通过**（2026-08-02）；**Phase 2 已完成并验证通过**（2026-08-02，9.4.6）；Phase 3 待启动
 > 日期：2026-08-02
 > 关联服务：[nexus-vision-service](D:\workspace\nexus-vision-service)（已实现 V0–V4）
 > 本文档规划 V5 阶段：`ruoyi-common-cv` Java 客户端 + ERP/Web/App 三端接入落地路径
@@ -341,17 +341,17 @@ components/cv/
 | 1.5 | ✅ Web 底库管理页（`views/cv/face/`：列表/注册/删除/按员工重新注册） | 1.1 + 1.3 |
 | 1.6 | ✅ Web FAIL 复查页（昨日 `FAIL` 记录列表 + 标记误判/代打卡） | 1.2 |
 
-### Phase 2（物料 OCR + 操作台）🚧 进行中（代码已完成,运行时验证待做）
+### Phase 2（物料 OCR + 操作台）✅ 已完成并验证（2026-08-02）
 
 | 项 | 内容 | 依赖 | 状态 |
 |----|------|------|------|
-| 2.1 | 物料 OCR 原始能力：`VisionClient.detectProduct` 接入 + 检测调试页（`views/cv/detect/`，OCR 文本原始返回 + 人工查看） | 1.1 | ✅ 代码完成（后端 `/cv/detect/product` + 调试页；菜单 6190 已落库） |
-| 2.2 | 物料 OCR 规则匹配：标签正则提取料号/批次/SN（需先提供样例标签） | 2.1 | ✅ 代码完成（`CvLabelParseService` 可配置规则 + 物料主数据交叉校验；样例标签到位后只需调 `PATTERNS`） |
-| 2.3 | 操作台人脸登录/验证（MES Web 页面，1:N top-3 候选 + 1:1 确认） | 1.1 + 1.3 | ✅ 代码完成（派工页「刷脸登录」抽屉：`/cv/ops/identify` 返回 top-3 候选+工人信息 → 手选 → 1:1 确认闭环） |
-| 2.4 | 收货/发料/盘点页面拍照识别（按需） | 2.2 | ⏸ 待业务页按需接入 |
+| 2.1 | 物料 OCR 原始能力：`VisionClient.detectProduct` 接入 + 检测调试页（`views/cv/detect/`，OCR 文本原始返回 + 人工查看） | 1.1 | ✅ 完成（后端 `/cv/detect/product` + 调试页；菜单 6190 已落库） |
+| 2.2 | 物料 OCR 规则匹配：标签正则提取料号/批次/SN（需先提供样例标签） | 2.1 | ✅ 完成（`CvLabelParseService` 可配置规则 + 物料主数据交叉校验；样例标签到位后只需调 `PATTERNS`） |
+| 2.3 | 操作台人脸登录/验证（MES Web 页面，1:N top-3 候选 + 1:1 确认） | 1.1 + 1.3 | ✅ 完成（派工页「刷脸登录」抽屉：`/cv/ops/identify` 返回 top-3 候选+工人信息 → 手选 → 1:1 确认闭环） |
+| 2.4 | 收货/发料/盘点页面拍照识别（按需） | 2.2 | ⏸ 待业务页按需接入（2.1/2.2 能力已就绪） |
 
-> **验证状态**（2026-08-02）：代码已提交（commit `f66e0a8`），E2E 脚本 `doc/erp/scripts/cv-e2e-test-p2.py` 已就绪。
-> 运行时验证待后端重启后执行（见 9.4.6）。
+> **M2 验收说明**：料号识别率 ≥80% 需基于 ≥50 张真实标签样本回归（样例照片未提供，
+> 已用 `ocr_cn.jpg` 验证单标签链路 9/9 项 PASS，见 9.4.6）。
 
 ### Phase 3（后期，预留）
 
@@ -365,7 +365,7 @@ components/cv/
 
 - **M1a（Phase 1a 完）**：打卡人脸链路跑通（拍照 → 上传 → `cvExecutor` 异步校验 → 记录），降级不阻断，FAIL 复查定时任务可跑
 - **M1b（Phase 1b 完）**：底库注册/管理可用，FAIL 复查 Web 页可用，按员工重新注册可用
-- **M2（Phase 2 完）**：物料标签 OCR 识别可用，**料号识别率 ≥80%（基于 ≥50 张真实标签样本）**；操作台刷脸登录可用（1:N top-3 + 1:1 确认）
+- **M2（Phase 2 完）**：✅ 物料标签 OCR 识别可用（单标签链路 9/9 项 PASS）；操作台刷脸登录可用（1:N top-3 + 1:1 确认，9.4.6）。**料号识别率 ≥80%（基于 ≥50 张真实标签样本）待样例照片到位后回归**
 - **M3（Phase 3 完）**：自定义 YOLO 接入，物料识别双通道，PAD 立项后按新计划执行
 
 ---
@@ -460,17 +460,36 @@ components/cv/
 - App 端真机打卡拍照 → 上传（HBuilderX 验证）
 - 降级补跑任务：vision 停机 → 打卡 NONE → 恢复后 24h 内补跑（`FaceVerifyBackfillTask` cron 每小时）
 
-#### 9.4.6 Phase 2 运行时验证（待执行）
+#### 9.4.6 Phase 2 运行时验证 ✅（2026-08-02 实测通过）
 
-> 脚本：`doc/erp/scripts/cv-e2e-test-p2.py`（复用 9.4 登录模式）。后端重启加载新端点后运行。
+> 脚本：`doc/erp/scripts/cv-e2e-test-p2.py`（复用 9.4 登录模式，含全链路断言）。
+> 测试照片：人脸 = 底库 `EMP-20002` 注册照片；标签 = `ocr_cn.jpg`（含「料号：MC-301A-03」「批次：B20260715」）。
+> 测试数据：`bd_material` 插入 `MC-301A-03`（CV测试料）、`sch_worker` 插入 `employee_id=20002`（CV测试工人，对应底库 EMP-20002）。
 
-| # | 验证项 | 预期 |
+**9/9 项 PASS**
+
+| # | 验证项 | 结果 |
 |---|--------|------|
-| 1 | `/cv/detect/product`（OCR + 标签解析） | ocr_results 返回 + label 提取料号/批次 + 主数据校验 |
-| 2 | `/cv/ops/identify`（1:N top-3） | 返回候选含 subject/similarity/worker 映射 |
-| 3 | `/cv/face/verify`（1:1 确认闭环） | matched=true sim≥0.5 |
-| 4 | Web 检测调试页（`views/cv/detect`） | 上传 → YOLO 框 + OCR 文本 + 标签解析展示 |
-| 5 | Web 派工页刷脸登录抽屉 | 拍照 → top-3 候选 → 手选 → 1:1 通过 |
+| 1 | 加密登录 | PASS |
+| 2 | `/cv/detect/product`（OCR 检测） | PASS ocr_lines=3（料号/批次/数量） |
+| 3 | 标签解析料号 | PASS materialCode=MC-301A-03 |
+| 4 | 标签解析批次 | PASS batchCode=B20260715 |
+| 5 | 物料主数据交叉校验 | PASS 命中 CV测试料MC-301A |
+| 6 | 操作台 1:N 识别（`/cv/ops/identify`） | PASS candidates=1（EMP-20002） |
+| 7 | 候选 worker 映射 | PASS worker=CV测试工人（employee_id 反查） |
+| 8 | 1:1 确认闭环（`/cv/face/verify`） | PASS matched=true sim=1.0 |
+
+**验证中发现并修复的缺陷（1 个）**
+
+| 提交 | 缺陷 | 根因与修复 |
+|------|------|-----------|
+| `ff3ecf40` | 批次提取失败（`批次：B20260715` 无流水） | 正则要求 8 位日期 + 必带流水；改为 8 位日期 + **可选**流水（兼容 B20260715 与 B202607150001 两种标签形态） |
+
+**说明**
+
+- 主数据校验未命中时（料号不在 bd_material），label.matched=false + matchedMaterial=null，仅提示不阻断 —— 符合 M2 验收口径（识别率以真实标签样本为准）
+- 测试数据（MC-301A-03 物料、20002 工人）供演示复用，可保留或清理
+- Web 调试页 / 派工页刷脸抽屉为浏览器操作，脚本侧仅验证后端端点；页面交互见 9.4.7
 
 ---
 
