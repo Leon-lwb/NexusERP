@@ -92,6 +92,11 @@
 
         <dependency>
             <groupId>com.nexus</groupId>
+            <artifactId>ruoyi-common-cv</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.nexus</groupId>
             <artifactId>ruoyi-system</artifactId>
         </dependency>
 

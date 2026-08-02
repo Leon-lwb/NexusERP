@@ -118,4 +118,17 @@ public interface ISchAttendanceService {
      * @return 考勤状态（normal正常, late迟到, early_leave早退等）
      */
     String determineAttendanceStatus(Date clockTime, Long workerId, Date recordDate, boolean isClockIn);
+
+    /**
+     * 异步触发打卡人脸验证
+     * <p>打卡成功后调用(不阻断打卡):照片先存 MinIO 存证,再提交 cvExecutor 异步调 vision 1:1 校验,
+     * 结果回写 sch_attendance.face_verify_*;vision 不可用时置 NONE,由降级补跑任务兜底。</p>
+     *
+     * @param attendanceId 考勤记录ID
+     * @param workerId     工人ID
+     * @param tenantId     租户ID(异步线程需手动恢复)
+     * @param imageBytes   打卡人脸照片(可能为 null,照片缺失则不校验置 NONE)
+     * @param storeImage   是否存 MinIO 存证(打卡传 true;降级补跑传 false 复用已有 ossId,避免重复存证)
+     */
+    void asyncFaceVerify(Long attendanceId, Long workerId, String tenantId, byte[] imageBytes, boolean storeImage);
 }

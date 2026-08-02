@@ -207,6 +207,13 @@
                 <version>${revision}</version>
             </dependency>
 
+            <!-- 视觉识别公共模块 -->
+            <dependency>
+                <groupId>com.nexus</groupId>
+                <artifactId>ruoyi-common-cv</artifactId>
+                <version>${revision}</version>
+            </dependency>
+
         </dependencies>
     </dependencyManagement>
 

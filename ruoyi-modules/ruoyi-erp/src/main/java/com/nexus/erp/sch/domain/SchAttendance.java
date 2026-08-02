@@ -96,6 +96,29 @@ public class SchAttendance extends TenantEntity {
     private String deviceName;
 
     /**
+     * 人脸验证状态: NONE未验证, PASS通过, FAIL失败
+     */
+    @ExcelProperty("人脸验证状态")
+    private String faceVerifyStatus;
+
+    /**
+     * 人脸验证时间
+     */
+    @ExcelProperty("人脸验证时间")
+    private Date faceVerifyTime;
+
+    /**
+     * 人脸相似度
+     */
+    @ExcelProperty("人脸相似度")
+    private BigDecimal faceSimilarity;
+
+    /**
+     * 打卡人脸照片ossId(MinIO存证)
+     */
+    private Long faceImageOssId;
+
+    /**
      * 删除标志
      */
     @TableLogic

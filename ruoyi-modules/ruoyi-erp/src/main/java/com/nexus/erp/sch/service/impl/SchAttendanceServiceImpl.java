@@ -25,6 +25,17 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
+import com.nexus.common.cv.client.VisionClient;
+import com.nexus.common.cv.config.CvProperties;
+import com.nexus.common.cv.domain.FaceDtos.VerifyResult;
+import com.nexus.common.cv.exception.VisionException;
+import com.nexus.common.tenant.helper.TenantHelper;
+import com.nexus.erp.sch.mapper.SchWorkerMapper;
+import com.nexus.erp.sch.domain.SchWorker;
+import com.nexus.system.service.ISysOssService;
+import com.nexus.system.domain.vo.SysOssVo;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Async;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -38,6 +49,7 @@ import java.util.*;
  * @date 2026-01-06
  */
 @RequiredArgsConstructor
+@Slf4j
 @DS("erp")
 @Service
 public class SchAttendanceServiceImpl implements ISchAttendanceService {
@@ -46,6 +58,10 @@ public class SchAttendanceServiceImpl implements ISchAttendanceService {
     private final SchEmployeeScheduleMapper employeeScheduleMapper;
     private final SchShiftMapper shiftMapper;
     private final ISchPunchRuleService schPunchRuleService;
+    private final VisionClient visionClient;
+    private final CvProperties cvProperties;
+    private final SchWorkerMapper workerMapper;
+    private final ISysOssService sysOssService;
 
     /**
      * 分页查询考勤记录列表
@@ -544,5 +560,91 @@ public class SchAttendanceServiceImpl implements ISchAttendanceService {
         double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
         return EARTH_RADIUS * c;
+    }
+
+    /**
+     * 异步触发打卡人脸验证
+     * <p>打卡成功后由调用方触发(不阻断打卡)。照片先存 MinIO 存证(ossId),再提交 {@code cvExecutor}
+     * 异步调 vision 1:1 校验,结果回写 sch_attendance.face_verify_*。</p>
+     * <p><b>异步租户上下文</b>:{@code cvExecutor} 线程不传播 Sa-Token ThreadLocal,
+     * 必须 {@link TenantHelper#dynamic} 恢复租户,否则 tenant_id 落 0、查不到考勤记录。
+     * 视觉服务不可用时不抛异常,置 NONE 由降级补跑任务兜底(见 FaceVerifyBackfillTask)。</p>
+     *
+     * @param attendanceId 考勤记录ID
+     * @param workerId     工人ID
+     * @param tenantId     租户ID(异步线程需手动恢复)
+     * @param imageBytes   打卡人脸照片(可能为 null,照片缺失则不校验置 NONE)
+     */
+    @Async("cvExecutor")
+    @Override
+    public void asyncFaceVerify(Long attendanceId, Long workerId, String tenantId, byte[] imageBytes, boolean storeImage) {
+        try {
+            TenantHelper.dynamic(tenantId, () -> {
+                Long ossId = null;
+                if (storeImage && imageBytes != null && imageBytes.length > 0) {
+                    // 1. 照片存 MinIO 存证(仅打卡时;补跑复用已有 ossId,避免重复存证)
+                    try {
+                        java.io.File temp = java.io.File.createTempFile("face-", ".jpg");
+                        try {
+                            java.nio.file.Files.write(temp.toPath(), imageBytes);
+                            SysOssVo ossVo = sysOssService.upload(temp);
+                            ossId = ossVo.getOssId();
+                        } finally {
+                            temp.delete();
+                        }
+                    } catch (Exception e) {
+                        log.error("[cv] 打卡人脸照片存 MinIO 失败, attendanceId={}, 跳过存证继续校验", attendanceId, e);
+                    }
+                }
+                verifyAndWriteBack(attendanceId, workerId, imageBytes, ossId);
+            });
+        } catch (Exception e) {
+            // 异步校验失败不影响打卡主流程,告警即可
+            log.error("[cv] 打卡人脸验证异常, attendanceId={}, workerId={}", attendanceId, workerId, e);
+        }
+    }
+
+    /**
+     * 执行人脸验证并回写考勤记录
+     * <p>vision 可用 → PASS/FAIL + similarity;vision 不可用/无照片 → NONE(等待降级补跑)</p>
+     */
+    private void verifyAndWriteBack(Long attendanceId, Long workerId, byte[] imageBytes, Long ossId) {
+        String status = "NONE";
+        BigDecimal similarity = null;
+        Date verifyTime = new Date();
+        try {
+            if (imageBytes == null || imageBytes.length == 0) {
+                log.warn("[cv] 打卡未上传人脸照片, attendanceId={}, 置 NONE", attendanceId);
+            } else if (!cvProperties.isEnabled() || !visionClient.isAvailable()) {
+                log.warn("[cv] 视觉服务不可用, attendanceId={}, 置 NONE 待补跑", attendanceId);
+            } else {
+                SchWorker worker = workerMapper.selectById(workerId);
+                String subject = worker != null ? "EMP-" + worker.getEmployeeId() : "EMP-" + workerId;
+                VerifyResult result = visionClient.verifyFace(imageBytes, subject);
+                similarity = BigDecimal.valueOf(result.getSimilarity());
+                status = result.isMatched() ? "PASS" : "FAIL";
+                log.info("[cv] 打卡人脸验证完成, attendanceId={}, subject={}, status={}, similarity={}",
+                    attendanceId, subject, status, similarity);
+            }
+        } catch (VisionException e) {
+            log.warn("[cv] 打卡人脸验证调用失败, attendanceId={}, 置 NONE 待补跑: {}", attendanceId, e.getMessage());
+        } catch (Exception e) {
+            log.error("[cv] 打卡人脸验证异常, attendanceId={}, 置 NONE 待补跑", attendanceId, e);
+        } finally {
+            try {
+                SchAttendance attendance = baseMapper.selectById(attendanceId);
+                if (attendance != null) {
+                    attendance.setFaceVerifyStatus(status);
+                    attendance.setFaceVerifyTime(verifyTime);
+                    attendance.setFaceSimilarity(similarity);
+                    if (ossId != null) {
+                        attendance.setFaceImageOssId(ossId);
+                    }
+                    baseMapper.updateById(attendance);
+                }
+            } catch (Exception e) {
+                log.error("[cv] 回写考勤人脸验证状态失败, attendanceId={}", attendanceId, e);
+            }
+        }
     }
 }
