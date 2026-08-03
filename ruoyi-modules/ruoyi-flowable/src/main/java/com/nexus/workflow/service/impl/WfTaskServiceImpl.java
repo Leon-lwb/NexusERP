@@ -48,7 +48,6 @@ import com.nexus.common.core.constant.Constants;
 import com.nexus.common.core.domain.R;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.service.UserService;
-import com.nexus.common.core.utils.DateUtils;
 import com.nexus.common.core.utils.SpringContextHolder;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.flowable.common.constant.ProcessConstants;
@@ -82,14 +81,11 @@ import com.nexus.workflow.service.IWfTaskService;
 import com.nexus.workflow.util.flowExp;
 
 import com.nexus.workflow.service.WfCallBackServiceI;
-import com.nexus.common.core.domain.model.LoginUser;
 
 import java.io.InputStream;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import com.nexus.workflow.domain.WfDeployForm;
@@ -193,25 +189,29 @@ public class WfTaskServiceImpl extends FlowServiceFactory implements IWfTaskServ
                 //能够处理下个节点的候选人
                 List<SysUserVo> nextFlowNodeUserList = flowNextDto.getUserList();
                 List<String> newusername = new ArrayList<String>();
-                if(nextFlowNodeUserList != null &&  nextFlowNodeUserList.get(0) != null ) {
+                if(CollUtil.isNotEmpty(nextFlowNodeUserList)) {
     	            List<String> collect_username = nextFlowNodeUserList.stream().filter(Objects::nonNull).filter(item->item.getUserName()!=null).map(SysUserVo::getUserName).collect(Collectors.toList());
     	            //collect_username转换成realname
     	            // 流程发起人
     	            ProcessInstance processInstance = runtimeService.createProcessInstanceQuery().processInstanceId(taskBo.getProcInsId()).singleResult();
-    	            String startUserId = processInstance.getStartUserId();
+    	            String startUserId = processInstance != null ? processInstance.getStartUserId() : null;
     	            if(taskBo.getVariables() !=null && taskBo.getVariables().containsKey("approval")) {//前端传回的变量值
     	            	SysUserVo sysUser = commonService.getSysUserByUserName(taskBo.getVariables().get("approval").toString());
-    	            	newusername.add(sysUser.getNickName());
+    	            	if (sysUser != null) {
+    	            		newusername.add(sysUser.getNickName());
+    	            	}
     	            }
     	            else {
     	            	for (String oldUser : collect_username) {
     	                  if(StrUtil.equalsAnyIgnoreCase(oldUser,"${INITIATOR}")) {
-    	                	  SysUserVo sysUser = commonService.getSysUserByUserName(startUserId);
-    	                      newusername.add(sysUser.getNickName());
+    	                	  if (StringUtils.isNotBlank(startUserId)) {
+    	                		  SysUserVo sysUser = commonService.getSysUserByUserName(startUserId);
+    	                		  newusername.add(sysUser != null ? sysUser.getNickName() : startUserId);
+    	                	  }
     	                  }
     	                  else {
     	                	 SysUserVo sysUser = commonService.getSysUserByUserName(oldUser);
-    	                     newusername.add(sysUser.getNickName());
+    	                	 newusername.add(sysUser != null ? sysUser.getNickName() : oldUser);
     	                  }
     	                }
     	            }
@@ -223,11 +223,11 @@ public class WfTaskServiceImpl extends FlowServiceFactory implements IWfTaskServ
                 if(listtask.size()==1) {
                 	nexttask = taskService.createTaskQuery().processInstanceId(business.getProcessInstanceId()).active().singleResult();
                 }
-                else {
-                	nexttask = taskService.createTaskQuery().processInstanceId(business.getProcessInstanceId()).active().list().get(0);
+                else if(listtask.size()>1) {
+                	nexttask = listtask.get(0);
                 }
 
-                if(nextFlowNodeUserList !=null) {
+                if(CollUtil.isNotEmpty(nextFlowNodeUserList) && nexttask != null && nextUserTask != null) {
                 	business.setActStatus(ActStatus.doing);
                 	business.setTaskId(nexttask.getId());
                 	business.setTaskNameId(nextUserTask.getId());
@@ -237,7 +237,7 @@ public class WfTaskServiceImpl extends FlowServiceFactory implements IWfTaskServ
                 }
                 else {
                 	business.setActStatus(ActStatus.doing);
-                	business.setTaskId(nexttask.getId());
+                	business.setTaskId(nexttask != null ? nexttask.getId() : "");
                 	business.setTaskNameId("");
                 	business.setTaskName("");
                 	business.setPriority("");
@@ -306,101 +306,27 @@ public class WfTaskServiceImpl extends FlowServiceFactory implements IWfTaskServ
      * @return 部署表单信息
      */
     private WfDeployForm getDeployForm(String processDefinitionId, String nodeKey) {
+        // wf_deploy_form.deploy_id 字段实存「部署ID」，而非流程定义ID，必须解析出部署ID后查询
         try {
-            log.info("🔍 [DEBUG] getDeployForm - 查询参数: processDefinitionId={}, nodeKey={}", processDefinitionId, nodeKey);
-
-            // 根据流程定义ID和节点Key查询表单配置
+            ProcessDefinition processDefinition = repositoryService.createProcessDefinitionQuery()
+                .processDefinitionId(processDefinitionId)
+                .singleResult();
+            if (ObjectUtil.isNull(processDefinition)) {
+                log.warn("getDeployForm - 流程定义不存在，processDefinitionId={}", processDefinitionId);
+                return null;
+            }
             LambdaQueryWrapper<WfDeployForm> queryWrapper = new LambdaQueryWrapper<>();
-            queryWrapper.eq(WfDeployForm::getDeployId, processDefinitionId)
+            queryWrapper.eq(WfDeployForm::getDeployId, processDefinition.getDeploymentId())
                        .eq(WfDeployForm::getNodeKey, nodeKey);
 
             WfDeployForm result = wfDeployFormMapper.selectOne(queryWrapper);
-            log.info(" [DEBUG] getDeployForm - 查询结果: {}", result);
-
+            if (result == null) {
+                log.warn("getDeployForm - 未找到节点表单配置，deployId={}, nodeKey={}", processDefinition.getDeploymentId(), nodeKey);
+            }
             return result;
         } catch (Exception e) {
-            log.error("🔍 [ERROR] getDeployForm - 获取部署表单信息失败", e);
+            log.error("getDeployForm - 获取部署表单信息失败，processDefinitionId={}, nodeKey={}", processDefinitionId, nodeKey, e);
             return null;
-        }
-    }
-
-    /**
-     * 保存节点表单数据到业务表
-     * 直接调用现有的 FormService 方法，复用发起任务时的保存逻辑
-     *
-     * @param tableName 表名
-     * @param variables 表单数据
-     */
-    private void saveNodeFormDataToTable(String tableName, Map<String, Object> variables) {
-        try {
-            // 直接调用现有的 FormService 方法
-            IFormService formService = SpringContextHolder.getBean(IFormService.class);
-            int result = formService.addOrUpdateOnlineDataByName(tableName, variables);
-
-            log.info("节点表单数据保存成功，表名：{}，影响行数：{}", tableName, result);
-
-        } catch (Exception e) {
-            log.error("保存节点表单数据失败，表名：{}，错误：{}", tableName, e.getMessage(), e);
-            throw new RuntimeException("保存节点表单数据失败：" + e.getMessage());
-        }
-    }
-
-    /**
-     * 处理公共字段
-     */
-    private void handleCommonFields(Map<String, Object> data, boolean isInsert) {
-        String currentUser = TaskUtils.getUserName();
-        String currentTime = DateUtils.getTime();
-
-        if (isInsert) {
-            data.put("create_by", currentUser);
-            data.put("create_time", currentTime);
-            data.put("create_dept", getCurrentDeptId());
-        }
-
-        data.put("update_by", currentUser);
-        data.put("update_time", currentTime);
-        data.put("tenant_id", TenantHelper.getTenantId());
-    }
-
-    /**
-     * 设置SQL参数
-     */
-    private void setParameter(PreparedStatement preparedStatement, int index, Object value) throws SQLException {
-        if (value instanceof String) {
-            preparedStatement.setString(index, (String) value);
-        } else if (value instanceof Integer) {
-            preparedStatement.setInt(index, (Integer) value);
-        } else if (value instanceof Boolean) {
-            preparedStatement.setInt(index, (Boolean) value ? 1 : 0);
-        } else if (value instanceof Double) {
-            preparedStatement.setDouble(index, (Double) value);
-        } else if (value instanceof Float) {
-            preparedStatement.setFloat(index, (Float) value);
-        } else if (value instanceof Long) {
-            preparedStatement.setLong(index, (Long) value);
-        } else if (value instanceof java.sql.Date) {
-            preparedStatement.setDate(index, (java.sql.Date) value);
-        } else if (value instanceof java.sql.Timestamp) {
-            preparedStatement.setTimestamp(index, (java.sql.Timestamp) value);
-        } else if (value instanceof ArrayList) {
-            ArrayList<String> list = (ArrayList) value;
-            String stringValue = list.toString().replaceAll("\\[|\\]", "");
-            preparedStatement.setString(index, stringValue);
-        } else {
-            preparedStatement.setString(index, value != null ? value.toString() : null);
-        }
-    }
-
-    /**
-     * 获取当前部门ID
-     */
-    private String getCurrentDeptId() {
-        try {
-            LoginUser loginUser = commonService.getLoginUser();
-            return loginUser.getDeptId() != null ? loginUser.getDeptId().toString() : "1";
-        } catch (Exception e) {
-            return "1";
         }
     }
 
@@ -823,10 +749,17 @@ public class WfTaskServiceImpl extends FlowServiceFactory implements IWfTaskServ
     public List<UserTask> findReturnTaskList(WfTaskBo bo) {
     	// 当前任务 task
         Task task = taskService.createTaskQuery().taskId(bo.getTaskId()).singleResult();
+        if (ObjectUtil.isNull(task)) {
+            throw new RuntimeException("获取任务信息异常！");
+        }
         // 获取流程定义信息
         ProcessDefinition processDefinition = repositoryService.createProcessDefinitionQuery().processDefinitionId(task.getProcessDefinitionId()).singleResult();
         // 获取所有节点信息，暂不考虑子流程情况
-        Process process = repositoryService.getBpmnModel(processDefinition.getId()).getProcesses().get(0);
+        BpmnModel bpmnModel = repositoryService.getBpmnModel(processDefinition.getId());
+        if (ObjectUtil.isNull(bpmnModel) || CollUtil.isEmpty(bpmnModel.getProcesses())) {
+            throw new RuntimeException("获取流程定义信息异常！");
+        }
+        Process process = bpmnModel.getProcesses().get(0);
         Collection<FlowElement> flowElements = process.getFlowElements();
         // 获取当前任务节点元素
         UserTask source = null;
@@ -1607,56 +1540,22 @@ public class WfTaskServiceImpl extends FlowServiceFactory implements IWfTaskServ
  	    	   StringUtils.equalsAnyIgnoreCase(actStatusType, ActStatus.recall) ||
  	    	   StringUtils.equalsAnyIgnoreCase(actStatusType, ActStatus.retrun) ||
  	    	   StringUtils.equalsAnyIgnoreCase(actStatusType, ActStatus.revoke) ) {
-            //  重新查询当前任务
-            Task currentTask = taskService.createTaskQuery().processInstanceId(processInstanceId).singleResult();
             //删除自定义业务任务关联表与流程历史表，以便可以重新发起流程。
             if (business != null) {
             	wfMyBusinessService.removeById(business);
-            	// 对自定义业务，删除运行和历史的节点信息
-                this.deleteActivity(currentTask.getTaskDefinitionKey(), currentTask.getProcessInstanceId(), dataId);
+            	// 对自定义业务，通过引擎 API 删除运行与历史流程数据（勿直连 ACT_RU_*/ACT_HI_* 表，会绕过引擎缓存导致运行库与缓存不一致）
+                ProcessInstance processInstance = runtimeService.createProcessInstanceQuery()
+            		.processInstanceTenantId(TenantHelper.getTenantId())
+            		.processInstanceId(processInstanceId).singleResult();
+                if (null != processInstance) {
+                    runtimeService.deleteProcessInstance(processInstanceId, "流程实例删除");
+                    historyService.deleteHistoricProcessInstance(processInstanceId);
+                }
                 return true;
             }
         }
 		return false;
 	}
-
-	/**
-     * 删除跳转的历史节点信息
-     *
-     * @param disActivityId     跳转的节点id
-     * @param processInstanceId 流程实例id
-     * @param dataId   自定义业务id
-     */
-    protected void deleteActivity(String disActivityId, String processInstanceId, String dataId) {
-        List<ActivityInstance> disActivities = flowTaskMapper
-                .queryActivityInstance(disActivityId, processInstanceId, null);
-
-        //删除运行时和历史节点信息
-        if (CollectionUtils.isNotEmpty(disActivities)) {
-            ActivityInstance activityInstance = disActivities.get(0);
-            List<ActivityInstance> datas = flowTaskMapper
-                    .queryActivityInstance(disActivityId, processInstanceId, activityInstance.getEndTime());
-
-            //datas.remove(0); //保留流程发起节点信息
-            List<String> runActivityIds = new ArrayList<>();
-            if (CollectionUtils.isNotEmpty(datas)) {
-                datas.forEach(ai -> runActivityIds.add(ai.getId()));
-                flowTaskMapper.deleteRunActinstsByIds(runActivityIds);
-                flowTaskMapper.deleteHisActinstsByIds(runActivityIds);
-            }
-            if(dataId != null) {//对于自定义业务, 删除所有相关流程信息
-            	//flowTaskMapper.deleteAllHisAndRun(processInstanceId);
-                //根据流程实例id 删除去ACT_RU_*与ACT_HI_*流程实例数据
-                ProcessInstance processInstance = runtimeService.createProcessInstanceQuery()
-                		.processInstanceTenantId(TenantHelper.getTenantId())
-                		.processInstanceId(processInstanceId).singleResult();
-                if (null != processInstance) {
-                    runtimeService.deleteProcessInstance(processInstanceId, "流程实例删除");
-                    historyService.deleteHistoricProcessInstance(processInstanceId);
-                }
-            }
-        }
-    }
 
     @Override
 	public Map<String, List<ExtensionElement>> getSequenceFlowExtensionElement(String taskId) {
@@ -1859,7 +1758,8 @@ public class WfTaskServiceImpl extends FlowServiceFactory implements IWfTaskServ
         //遍历要加签的人
         assigneeList.forEach(assignee -> {
             //获取加签人名称
-            String assigneeName = commonService.getSysUserByUserName(assignee).getNickName();
+            SysUserVo assigneeUser = commonService.getSysUserByUserName(assignee);
+            String assigneeName = assigneeUser != null ? assigneeUser.getNickName() : assignee;
             assigneeNameList.add(assigneeName);
             //定义参数
             Map<String, Object> assigneeVariables = new HashMap<String, Object>();
@@ -2046,8 +1946,6 @@ public class WfTaskServiceImpl extends FlowServiceFactory implements IWfTaskServ
             throw new FlowableException("任务处于挂起状态");
         }
 
-    	List<Task> procInsId = taskService.createNativeTaskQuery().sql("select * from ACT_HI_TASKINST where PROC_INST_ID_ = #{procInsId} ORDER BY START_TIME_ desc").parameter("procInsId", bo.getProcInsId()).list();
-
         String processInstanceId = listtask.get(0).getProcessInstanceId();
 
         //  获取所有历史任务（按创建时间升序）
@@ -2122,8 +2020,6 @@ public class WfTaskServiceImpl extends FlowServiceFactory implements IWfTaskServ
             }
         }
 
-        // 删除运行和历史的节点信息
-        this.deleteActivity(procInsId.get(1).getTaskDefinitionKey(), bo.getProcInsId(), dataId);
         //  恢复原始方向
         currentFlowNode.setOutgoingFlows(originalSequenceFlowList);
 

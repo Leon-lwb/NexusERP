@@ -97,13 +97,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
 import java.util.*;
 import java.util.stream.Collectors;
-
-import javax.sql.DataSource;
 
 /**
  * @author wanghuan
@@ -976,15 +971,6 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
             }
         }
 
-        // remove by wanghuan
-        /*System.out.print("流程描述="+procDef.getDescription());
-        String definitionld = procDef.getId();
-        BpmnModel bpmnModel = repositoryService.getBpmnModel(definitionld);//获取bpm（模型）对象
-        // 获取开始节点
-        StartEvent startEvent = FlowableUtils.getStartEvent(bpmnModel);
-        System.out.print("开始节点描述="+startEvent.getDocumentation());*/
-        // remove by wanghuan
-
         //获取下个节点信息
         getNextFlowInfo(procDef, variablesnew, usermap, variables, userlist);
 
@@ -1005,21 +991,7 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
             // 必须按「流程定义ID」启动：避免同 key 多版本时启动到 latestVersion，导致“选了流程A却跑到流程B/节点不一致/秒通过”等问题
             processInstance = runtimeService.startProcessInstanceById(procDef.getId(), dataId, variables);
 
-        /*if (StringUtils.isEmpty(dataId)) {
-        	WfDeployForm deployForm = getDeployForm(procDef.getId(),processInstance.getDeploymentId());
-	        String tableName = deployForm.getTableName();
-	        if(StringUtils.isNotEmpty(tableName)) {//VForm3表单同时也保存到数据库里
-	        	try {
-					insertVForm3Db(tableName,variables);
-				} catch (SQLException e) {
-					throw new RuntimeException(e.getMessage());
-				}
-	        }
-        }*/
-
-
         // 第一个用户任务为发起人，则自动完成任务
-        //wfTaskService.startFirstTask(processInstance, variables);
         R<Void> result = setNextAssignee(processInstance, usermap, userlist, sysUsr, variables, bparallelGateway, bapprovedEG);
         // setNextAssignee 返回失败时，必须抛异常触发补偿清理（否则会出现“业务回滚但流程遗留待办/重复待办”）
         if (!R.isSuccess(result)) {
@@ -1121,97 +1093,6 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
                 identityService.setAuthenticatedUserId(null);
             } catch (Exception ignore) {
             }
-        }
-    }
-
-    /**
-	 * 保存VForm3数据到数据库里
-	 *  add by wanghuan
-	 *
-	 * @param tableName
-	 *
-	 * @return
-	 */
-    private void insertVForm3Db(String tableName, Map<String, Object> variables) throws SQLException {
-    	//考虑到减掉2个与增加一个
-    	String[] columns = new String[variables.size()-1];
-    	Object[] values = new Object[variables.size()-1];
-    	// 使用EntrySet对variables进行遍历
-        int n = 0;
-        columns[n] = "id";
-        long timestamp = System.currentTimeMillis();
-        values[n] = timestamp;
-        n++;
-        for (Map.Entry<String, Object> entry : variables.entrySet()) {
-            String key = entry.getKey();
-            //下面两种数据不是表单数据，忽略掉
-            if (StringUtils.equalsIgnoreCase(key, "initiator") || StringUtils.equalsIgnoreCase(key, "processStatus")) {
-            	break;
-            }
-            Object value = entry.getValue();
-            columns[n] = key;
-            values[n] = value;
-            n++;
-        }
-        DataSource dataSource = SpringContextHolder.getApplicationContext().getBean(DataSource.class);
-		Connection connection = dataSource.getConnection();
-        try {
-            // 构建SQL语句，使用参数占位符（?）
-            StringBuilder sqlBuilder = new StringBuilder("INSERT INTO " + tableName +" (");
-            for (int i = 0; i < columns.length; i++) {
-                sqlBuilder.append(columns[i]);
-                if (i < columns.length - 1) {
-                    sqlBuilder.append(", ");
-                }
-            }
-            sqlBuilder.append(") VALUES (");
-            for (int i = 0; i < columns.length; i++) {
-                sqlBuilder.append("?");
-                if (i < columns.length - 1) {
-                    sqlBuilder.append(", ");
-                }
-            }
-            sqlBuilder.append(")");
-            String sql = sqlBuilder.toString();
-
-            PreparedStatement preparedStatement = connection.prepareStatement(sql);
-
-            for (int i = 0; i < values.length; i++) {
-                Object value = values[i];
-                if (value instanceof String) {
-                    preparedStatement.setString(i + 1, (String) value);
-                } else if (value instanceof Integer) {
-                    preparedStatement.setInt(i + 1, (Integer) value);
-                } else if (value instanceof Boolean) {
-                    preparedStatement.setInt(i + 1, (Boolean) value? 1:0);
-                } else if (value instanceof Double) {
-                    preparedStatement.setDouble(i + 1, (Double) value);
-                } else if (value instanceof Float) {
-                    preparedStatement.setFloat(i + 1, (Float) value);
-                } else if (value instanceof Long) {
-                    preparedStatement.setLong(i + 1, (Long) value);
-                } else if (value instanceof java.sql.Date) {
-                    preparedStatement.setDate(i + 1, (java.sql.Date) value);
-                } else if (value instanceof ArrayList) {
-                	ArrayList<String> list = (ArrayList) value;
-                	//去掉[]
-                	String stringValue = (list.toString()).replaceAll("\\[|\\]", "");
-                    preparedStatement.setString(i + 1, stringValue);
-                } else {
-                    // 如果遇到其他不支持的类型，可以根据需要进行扩展或者抛出异常提示
-                    throw new IllegalArgumentException("不支持的数据类型: " + value.getClass().getName());
-                }
-            }
-
-            int rowsInserted = preparedStatement.executeUpdate();
-            if (rowsInserted > 0) {
-                System.out.println("数据插入成功");
-            }
-
-        } catch (Exception e) {
-			throw new RuntimeException(e.getMessage());
-		} finally {
-            connection.close();
         }
     }
 
@@ -1339,7 +1220,6 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
 					if( nextFlowNode.getUserList().size() == 1 ) {
 						if (nextFlowNode.getUserList().get(0) != null) {
 							if(StringUtils.equalsAnyIgnoreCase(nextFlowNode.getUserList().get(0).getUserName(), "${initiator}")) {//对发起人做特殊处理
-								//System.out.print("任务描述="+task.getDescription()); //remove by wanghuan
 								taskService.complete(task.getId(), variables);
 								return R.ok("流程启动成功给发起人.");
 							}
