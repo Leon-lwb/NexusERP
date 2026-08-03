@@ -57,6 +57,7 @@ ruoyi-common/             — 共享库 (27 个子模块)。每个均为可自�
   ruoyi-common-tenant/    —    多租户插件
   ruoyi-common-sse/       —    用于推送通知的服务器发送事件 (Server-Sent Events)
   ruoyi-common-ai/        —    AI 公共层: 实体类 (AiProvider/AiModel/AiSession/AiMessage)、Mapper、DTO、Service 接口
+  ruoyi-common-cv/        —    视觉识别客户端 (VisionClient — 封装 Vision 服务: 人脸注册/1:1验证/1:N识别、物料OCR、探活)
   ruoyi-common-oss/       —    对象存储 (Minio / S3 协议)
   ruoyi-common-flowable/  —    Flowable 工作流引擎集成
   ... 以及更多 (任务、日志、短信、邮件、社交、Excel、加密等)
@@ -107,6 +108,7 @@ ERP 模块 (`ruoyi-erp`) 按业务领域组织:
 | `prd` | 生产计划 | 生产计划、工单、报工、物料需求 |
 | `sch` | 排产调度 | 班次、班组、工人、考勤、假期、生产调度 |
 | `wm` | 仓储管理 | 仓库、库区/储位、库存、收货、发货、到货通知 |
+| `cv` | 视觉识别 | 人脸底库管理/1:1验证/1:N识别(CvFaceController)、物料OCR(CvDetectController)、标签拍照解析(CvLabelParseService)、批量注册(CvFaceBatchRegisterService) |
 
 ### MES 模块子包
 
@@ -177,13 +179,15 @@ AI 公共模块 (`ruoyi-common-ai`) 存放跨模块共享的实体和接口:
 ### 前端结构 (plus-ui)
 
 ```
-src/api/                  — API 层 (对应后端模块: system, erp/{bd,so,pu,prd,sch,wm}, mes/{pro,dc,eq,qc,spc}, iot/{device,product,realtime}, im/chat, ai/chat, workflow)
+src/api/                  — API 层 (对应后端模块: system, cv, erp/{bd,so,pu,prd,sch,wm}, mes/{pro,dc,eq,qc,spc}, iot/{device,product,realtime}, im/chat, ai/chat, workflow)
 src/views/                — 页面组件 (结构对应)
 src/views/ai/             —   AI 页面: model/ (厂商/模型配置)、knowledge/ (知识库)、assistant/ (助手)
+src/views/cv/             —   CV 页面: detect/ (物料OCR)、face/ (人脸底库)、face-review/ (FAIL 复查)
 src/views/mes/            —   MES 页面: pro/ (工单)、dc/ (数据采集)、eq/ (设备)、qc/ (质量)、spc/ (SPC)、md/ (MBOM)
 src/views/iot/            —   IoT 页面: device/ (设备管理)、product/ (产品管理)
 src/views/im/             —   IM 页面: chat/ (即时通讯)
 src/components/ai/        —   AI 组件: AiChatDrawer.vue (全局对话抽屉，Markdown 渲染，SSE 消息接收)
+src/components/cv/        —   CV 组件: LabelCapture.vue (标签拍照识别组件)
 src/router/               — Vue Router 配置 (index.ts)
 src/store/modules/        — Pinia 状态库 (app, user, permission, dict, tagsView, settings, notice)
 src/components/           — 共享组件
@@ -217,6 +221,7 @@ src/package/              — BPMN 流程设计器 (Flowable 集成)
 | XSS 防护 | 自定义过滤器 (可配置排除 URL) |
 | AI 框架 | LangChain4j 1.18.0 + LangChain4j Agentic 1.18.0-beta28 (Supervisor Agent 编排) |
 | AI 模型接入 | OpenAI 兼容接口 (DeepSeek/通义千问/智谱/Ollama)，ChatModelFactory 动态构建+缓存 |
+| 视觉识别 | 独立 Vision 服务 (HTTP，`nexus.vision` 配置)，VisionClient 封装人脸/OCR/探活 |
 | SSE 推送 | Redis Pub/Sub + Server-Sent Events (AI 回复、IoT 实时数据) |
 | 前端技术栈 | Vue 3.5 + Vite 7 + TypeScript + Pinia + Element Plus + UnoCSS |
 
@@ -251,6 +256,15 @@ src/package/              — BPMN 流程设计器 (Flowable 集成)
 - 实时推送: `IotRealtimeSseManager` 通过 SSE 推送设备最新数据到前端，基于 `IotDeviceLatestCache` 缓存
 - 定时任务: 设备心跳检测(`IotDeviceHeartbeatTask`)、历史数据清理(`IotDataCleanupTask`)、数据流裁剪(`IotStreamTrimTask`)
 
+### CV 视觉识别模块配置与约束
+
+- 视觉识别为独立 Vision 服务 (HTTP)，客户端统一走 `ruoyi-common-cv` 的 `VisionClient`（`VisionClientImpl` 用 Hutool Http 调用，需直连内网时用 `Proxy.NO_PROXY` 而非 null）
+- 配置前缀 `nexus.vision` (`CvProperties`)：`baseUrl`(默认 `http://localhost:5001`)、`enabled`；客户端通过 `CvAutoConfiguration` 自动装配
+- 调用点: 人脸注册/1:1验证/1:N识别(`CvFaceController` `/cv/face`)、物料OCR(`CvDetectController` `/cv`)、标签拍照解析(`CvLabelParseService`)、批次注册(`CvFaceBatchRegisterService`)、考勤人脸打卡验证(`SchAttendanceServiceImpl.asyncFaceVerify`，异步+降级补跑任务 `FaceVerifyBackfillTask`)
+- multipart 上传字段名为 `file`，切勿改名为 image 等，否则 HTTP 422
+- 视觉服务不可用时调用方需降级（如考勤置 NONE 由补跑任务兜底），不应抛异常阻断主流程
+- 前端: `src/views/cv/`(detect/face/face-review)、`src/components/cv/LabelCapture.vue`(标签拍照识别组件，示范接入见 `erp/wm/receive/form.vue`)
+
 ### MES 模块配置与约束
 
 - MES 通过 `MesErpBridgeService` 与 `ruoyi-erp` 模块交互，获取 BOM、工艺路线(Routing)、物料、车间、工位等基础数据
@@ -272,3 +286,4 @@ src/package/              — BPMN 流程设计器 (Flowable 集成)
 - **AI 异步线程的租户上下文丢失**: Sa-Token 的 ThreadLocal 不会传播到 `aiExecutor` 异步线程，导致异步写库时 `tenant_id` 落 0。任何 AI 异步写库都必须通过 `AiRequestContext.set(tenantId, userId)` 手动传播，并在 `TenantHelper.dynamic` 中执行写库，任务结束时调用 `AiRequestContext.clear()`。其他自定义异步线程(如 `@Async`、MQ 消费者)写多租户表时同理。
 - **多数据源切换**: AI 数据查询走 `@DS("erp")` (ry-erp 库)，系统配置走默认 master (ry-vue 库)；跨库调用注意 `@DS` 注解必须放在被实际调用的 Service 方法上，同类内部方法调用不会触发 AOP 切换。
 - **API 加密默认开启**: 前后端必须同时启用或同时禁用，否则请求无法解密。本地调试若遇到 400/解密失败，先确认两端 `api-decrypt` 配置一致。
+- **Sa-Token 认证异常被通用处理器抢先捕获**: `NotLoginException`/`NotPermissionException`/`NotRoleException` 均继承自 `RuntimeException`。全局有多个 `@RestControllerAdvice`，其中 `GlobalExceptionHandler` 标了 `@Order(1)` 且含 `@ExceptionHandler(RuntimeException.class)`，若不提升 `SaTokenExceptionHandler` 优先级，认证异常会被它抢先捕获，执行 `R.fail(e.getMessage())` 返回 500 且把 "token 已被冻结：eyJ…" 等 JWT 明文暴露给前端。`SaTokenExceptionHandler` 已加 `@Order(Ordered.HIGHEST_PRECEDENCE)` 确保认证/鉴权异常优先返回 401/403。新增其它 `@RestControllerAdvice` 时，若其处理 `RuntimeException` 子类，务必用 `@Order` 控制优先级，否则同样会被 `GlobalExceptionHandler` 抢先。
