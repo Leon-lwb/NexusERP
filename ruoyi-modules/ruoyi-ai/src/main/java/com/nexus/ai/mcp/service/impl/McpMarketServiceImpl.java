@@ -60,19 +60,29 @@ public class McpMarketServiceImpl implements IMcpMarketService {
 
         try {
             JsonNode root = objectMapper.readTree(resp.body());
-            // 兼容 {data:[...]} 或 [...]
+            // 兼容 {data:[...]}、{tools:[...]}、{servers:[...]} 或裸数组
             JsonNode tools = root.isArray() ? root : root.path("data");
             if (!tools.isArray()) {
                 tools = root.path("tools");
             }
             if (!tools.isArray()) {
-                log.warn("[MCP市场] 响应格式异常，无 data 或 tools 数组: {}", market.getUrl());
+                tools = root.path("servers");
+            }
+            if (!tools.isArray()) {
+                log.warn("[MCP市场] 响应格式异常，无 data/tools/servers 数组: {}", market.getUrl());
                 return new McpMarketRefreshResult(0, 0);
             }
 
             int added = 0, updated = 0;
             for (JsonNode item : tools) {
+                // 工具名兼容多种市场格式：name（标准）→ qualifiedName（Smithery）→ displayName
                 String toolName = item.path("name").asText(null);
+                if (toolName == null) {
+                    toolName = item.path("qualifiedName").asText(null);
+                }
+                if (toolName == null) {
+                    toolName = item.path("displayName").asText(null);
+                }
                 if (toolName == null) continue;
 
                 // 按 marketId + tool_name 查找已有记录

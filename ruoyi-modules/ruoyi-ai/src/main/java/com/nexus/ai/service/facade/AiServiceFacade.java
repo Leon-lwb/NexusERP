@@ -5,6 +5,7 @@ import com.nexus.ai.agent.ErpReportAgent;
 import com.nexus.ai.agent.WebSearchAgent;
 import com.nexus.ai.config.AiProperties;
 import com.nexus.ai.context.AiRequestContext;
+import com.nexus.ai.context.SearchSourceHolder;
 import com.nexus.ai.mcp.service.ToolProviderFactory;
 import com.nexus.ai.observability.AiAgentListener;
 import com.nexus.ai.observability.AiToolExecutedListener;
@@ -901,6 +902,9 @@ public class AiServiceFacade {
 
                 String result = agent.search(request.getContent());
 
+                // 推送搜索来源卡片（从 SearchSourceHolder 取出本次搜索的来源）
+                pushWebSearchSources(userId);
+
                 saveAiMessageFromContext(sessionId, result, tenantId, userId, userName, modelConfig.getModelName(), tenantIdStr);
                 AiSseMessageHelper.sendContent(userId, result);
                 AiSseMessageHelper.sendDone(userId);
@@ -908,8 +912,27 @@ public class AiServiceFacade {
                 log.error("AI 联网搜索失败", e);
                 AiSseMessageHelper.sendError(userId, "联网搜索失败: " + e.getMessage());
             } finally {
+                SearchSourceHolder.clear();
                 AiRequestContext.clear();
             }
         }, aiExecutor);
+    }
+
+    /**
+     * 推送联网搜索来源卡片（AI_WEB_SEARCH 事件）
+     * <p>从 {@link SearchSourceHolder} 取出本次请求收集的来源（按 url 去重），
+     * 非空时通过 SSE 推送到前端渲染来源卡片。</p>
+     *
+     * @param userId 目标用户ID
+     */
+    private void pushWebSearchSources(Long userId) {
+        try {
+            var sources = SearchSourceHolder.drain();
+            if (!sources.isEmpty()) {
+                AiSseMessageHelper.sendWebSearchSources(userId, sources);
+            }
+        } catch (Exception e) {
+            log.error("推送联网搜索来源卡片失败, userId={}", userId, e);
+        }
     }
 }

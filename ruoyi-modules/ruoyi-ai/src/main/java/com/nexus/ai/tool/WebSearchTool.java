@@ -1,6 +1,7 @@
 package com.nexus.ai.tool;
 
 import com.nexus.ai.config.AiProperties;
+import com.nexus.ai.context.SearchSourceHolder;
 import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
 import lombok.RequiredArgsConstructor;
@@ -139,14 +140,17 @@ public class WebSearchTool {
             throw new IllegalArgumentException("Tavily API 调用失败: HTTP " + resp.getStatus());
         }
 
-        // 解析 results[].title/url/content
+        // 解析 results[].title/url/content，并同步收集来源卡片（供 SSE AI_WEB_SEARCH 推送）
         var root = new com.fasterxml.jackson.databind.ObjectMapper().readTree(resp.body());
         var results = root.path("results");
         StringBuilder sb = new StringBuilder();
         if (results.isArray()) {
             for (var item : results) {
-                sb.append("- ").append(item.path("title").asText("")).append("\n")
-                  .append("  ").append(item.path("url").asText("")).append("\n")
+                String title = item.path("title").asText("");
+                String url = item.path("url").asText("");
+                SearchSourceHolder.add(title, url);
+                sb.append("- ").append(title).append("\n")
+                  .append("  ").append(url).append("\n")
                   .append("  ").append(item.path("content").asText("").substring(0,
                       Math.min(item.path("content").asText("").length(), 200))).append("\n\n");
             }
@@ -174,8 +178,11 @@ public class WebSearchTool {
         StringBuilder sb = new StringBuilder();
         if (webPages.isArray()) {
             for (var item : webPages) {
-                sb.append("- ").append(item.path("name").asText("")).append("\n")
-                  .append("  ").append(item.path("url").asText("")).append("\n")
+                String title = item.path("name").asText("");
+                String url = item.path("url").asText("");
+                SearchSourceHolder.add(title, url);
+                sb.append("- ").append(title).append("\n")
+                  .append("  ").append(url).append("\n")
                   .append("  ").append(item.path("snippet").asText("")).append("\n\n");
             }
         }
