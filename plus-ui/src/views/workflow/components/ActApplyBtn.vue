@@ -53,7 +53,7 @@
     isFirstInitiator,
     deleteActivityAndJoin,
     getProcesss
-  } from "@/api/workflow/process";
+  } from '@/api/workflow/process/index';
 
   defineOptions({ name: 'ActApplyBtn' })
   const props = defineProps({

@@ -16,7 +16,7 @@
 </template>
 
 <script setup lang="ts">
-  //import {deleteByDataId} from "@/api/workflow/process";
+  //import {deleteByDataId} from '@/api/workflow/process/index';
 
   defineOptions({ name: 'ActCancelBtn' })
   const props = defineProps({

@@ -74,7 +74,7 @@
 
 <script setup name="WorkProcess" lang="ts">
 import { listProcess, getBpmnXml } from "@/api/workflow/work/process";
-import { listAllCategory } from "@/api/workflow/category";
+import { listAllCategory } from '@/api/workflow/category/index';
 import { ProcessQuery, ProcessVO } from "@/api/workflow/work/types";
 import { CategoryVO } from "@/api/workflow/category/types";
 import { ComponentInternalInstance } from "vue";

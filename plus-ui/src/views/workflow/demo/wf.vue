@@ -26,7 +26,7 @@
 </template>
 
 <script setup name="wfDemo" lang="ts">
-  import {getDemo, delDemo, addDemo, updateDemo } from "@/api/workflow/demo";
+  import {getDemo, delDemo, addDemo, updateDemo } from '@/api/workflow/demo/index';
 
   const props = defineProps({
     //表单禁用

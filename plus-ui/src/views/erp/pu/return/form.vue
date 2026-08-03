@@ -140,7 +140,7 @@
 <script setup lang="ts" name="PurchaseReturnForm">
 import { addPurchaseReturn, getPurchaseReturn, updatePurchaseReturn, submitPurchaseReturnFlow, getPurchaseReturnProcId } from '@/api/erp/pu/return'
 import { getPurchaseOrder } from '@/api/erp/pu/order'
-import { getProcesss } from '@/api/workflow/process'
+import { getProcesss } from '@/api/workflow/process/index'
 import { useRoute, useRouter } from 'vue-router'
 import { previewCode } from "@/api/system/autocode/rule"
 

@@ -64,7 +64,7 @@
 </template>
 
 <script setup lang="ts">
-  import {detailProcessByDataId} from "@/api/workflow/process";
+  import {detailProcessByDataId} from '@/api/workflow/process/index';
   import ProcessViewer from '@/components/ProcessViewer'
   import {
       useFlowable

@@ -198,7 +198,7 @@ import {
 // 导入物料管理API
 import MaterialSelectDialog from '@/components/MaterialSelectDialog';
 // 导入审批流API
-import { getProcesss } from '@/api/workflow/process';
+import { getProcesss } from '@/api/workflow/process/index';
 // 导入路由相关功能
 import { useRoute, useRouter } from 'vue-router';
 import { previewCode } from '@/api/system/autocode/rule';

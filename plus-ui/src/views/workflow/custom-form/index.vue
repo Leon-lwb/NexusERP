@@ -215,8 +215,8 @@
 <script setup name="CustomForm" lang="ts">
   import { listCustomForm, getCustomForm, delCustomForm, addCustomForm, updateCustomForm, updateCustom } from '@/api/workflow/custom-form';
   import { WfCustomFormVO, WfCustomFormQuery, WfCustomForm, CustomFormVO } from '@/api/workflow/custom-form/types';
-  import { listAllCategory } from '@/api/workflow/category'
-  import { listDeploy, getBpmnXml } from '@/api/workflow/deploy'
+  import { listAllCategory } from '@/api/workflow/category/index'
+  import { listDeploy, getBpmnXml } from '@/api/workflow/deploy/index'
   import { DeployVO } from "@/api/workflow/deploy/types";
   import { listTable, getGenTable } from '@/api/tool/gen'
 

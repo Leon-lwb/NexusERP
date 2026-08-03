@@ -23,7 +23,9 @@
             <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['workflow:model:add']">新增</el-button>
           </el-col>
           <el-col :span="1.5">
-            <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['workflow:model:remove']">删除</el-button>
+            <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['workflow:model:remove']"
+              >删除</el-button
+            >
           </el-col>
           <el-col :span="1.5">
             <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['workflow:model:export']">导出</el-button>
@@ -85,7 +87,7 @@
           <el-input v-model="form.modelName" clearable :disabled="form.modelId !== undefined" placeholder="请输入模型名称" />
         </el-form-item>
         <el-form-item label="流程分类" prop="category">
-          <el-select v-model="form.category" placeholder="请选择" clearable style="width:100%">
+          <el-select v-model="form.category" placeholder="请选择" clearable style="width: 100%">
             <el-option v-for="item in categoryOptions" :key="item.categoryId" :label="item.categoryName" :value="item.code" />
           </el-select>
         </el-form-item>
@@ -142,19 +144,30 @@
 
     <!-- 流程图 -->
     <el-dialog :title="processDialog.title" v-model="processDialog.visible" width="70%">
-      <process-viewer :key="`designer-${reloadIndex}`" :xml="processXml" :style="{height: '650px'}" />
+      <process-viewer :key="`designer-${reloadIndex}`" :xml="processXml" :style="{ height: '650px' }" />
     </el-dialog>
   </div>
 </template>
 
 <script setup name="Model" lang="ts">
-import { getBpmnXml, listModel, historyModel, latestModel, addModel, updateModel, saveModel, delModel, deployModel, getModel } from "@/api/workflow/model";
-import { listAllCategory, getAppType } from "@/api/workflow/category";
-import { ModelForm, ModelQuery, ModelVO, DesignerForm } from "@/api/workflow/model/types";
-import { CategoryVO, AppTypeVo } from "@/api/workflow/category/types";
-import ProcessDesigner from "@/components/ProcessDesigner";
-import ProcessViewer from '@/components/ProcessViewer'
-import { ComponentInternalInstance } from "vue";
+import {
+  getBpmnXml,
+  listModel,
+  historyModel,
+  latestModel,
+  addModel,
+  updateModel,
+  saveModel,
+  delModel,
+  deployModel,
+  getModel
+} from '@/api/workflow/model/index';
+import { listAllCategory, getAppType } from '@/api/workflow/category/index';
+import { ModelForm, ModelQuery, ModelVO, DesignerForm } from '@/api/workflow/model/types';
+import { CategoryVO, AppTypeVo } from '@/api/workflow/category/types';
+import ProcessDesigner from '@/components/ProcessDesigner';
+import ProcessViewer from '@/components/ProcessViewer';
+import { ComponentInternalInstance } from 'vue';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 
@@ -169,7 +182,7 @@ const categoryOptions = ref<CategoryVO[]>([]);
 const designerLoading = ref(true);
 const bpmnXml = ref<string>('');
 const reloadIndex = ref(undefined);
-const processXml = ref<any>("");
+const processXml = ref<any>('');
 
 const historyList = ref<ModelVO[]>([]);
 const historyLoading = ref(true);
@@ -177,7 +190,7 @@ const historyTotal = ref(0);
 
 const modelFormRef = ref(ElForm);
 const queryFormRef = ref(ElForm);
-const modelDesignerRef = ref(null)
+const modelDesignerRef = ref(null);
 
 const dialog = reactive<DialogOption>({
   visible: false,
@@ -209,26 +222,26 @@ const initFormData: ModelForm = {
   formId: undefined,
   bpmnXml: '',
   newVersion: false
-}
+};
 
 const data = reactive<PageData<ModelForm, ModelQuery>>({
-  form: {...initFormData},
+  form: { ...initFormData },
   queryParams: {
     pageNum: 1,
     pageSize: 10,
     modelKey: '',
-    modelName: '',
+    modelName: ''
   },
   rules: {
-    modelKey: [{ required: true, message: "岗位名称不能为空", trigger: "blur" }],
-    modelName: [{ required: true, message: "岗位编码不能为空", trigger: "blur" }],
+    modelKey: [{ required: true, message: '岗位名称不能为空', trigger: 'blur' }],
+    modelName: [{ required: true, message: '岗位编码不能为空', trigger: 'blur' }]
   }
 });
 
 const designerForm = reactive<DesignerForm>({
   modelId: '',
   form: {
-    appType: {id: '', name: ''},
+    appType: { id: '', name: '' },
     processName: '',
     processKey: ''
   }
@@ -245,48 +258,48 @@ const getList = async () => {
   modelList.value = res.rows;
   total.value = res.total;
   loading.value = false;
-}
+};
 /** 取消按钮 */
 const cancel = () => {
   reset();
   dialog.visible = false;
-}
+};
 /** 表单重置 */
 const reset = () => {
-  form.value = {...initFormData};
+  form.value = { ...initFormData };
   modelFormRef.value.resetFields();
-}
+};
 /** 搜索按钮操作 */
 const handleQuery = () => {
   queryParams.value.pageNum = 1;
   getList();
-}
+};
 /** 重置按钮操作 */
 const resetQuery = () => {
   queryFormRef.value.resetFields();
   handleQuery();
-}
+};
 /** 多选框选中数据 */
 const handleSelectionChange = (selection: ModelVO[]) => {
-  ids.value = selection.map(item => item.modelId);
+  ids.value = selection.map((item) => item.modelId);
   single.value = selection.length != 1;
   multiple.value = !selection.length;
-}
+};
 /** 新增按钮操作 */
 const handleAdd = () => {
   dialog.visible = true;
-  dialog.title = "添加模型";
+  dialog.title = '添加模型';
   nextTick(() => {
     reset();
     const dateTime = new Date().getTime();
     form.value.modelKey = `Process_${dateTime}`;
     form.value.modelName = `业务流程_${dateTime}`;
-  })
-}
+  });
+};
 /** 修改按钮操作 */
 const handleUpdate = (row?: ModelVO) => {
   dialog.visible = true;
-  dialog.title = "修改模型";
+  dialog.title = '修改模型';
   nextTick(async () => {
     reset();
     const modelId = row?.modelId || ids.value[0];
@@ -300,13 +313,17 @@ const handleDelete = async (row?: ModelVO) => {
   await proxy?.$modal.confirm('是否确认删除参数编号为"' + modelIds + '"的数据项？');
   await delModel(modelIds);
   getList();
-  proxy?.$modal.msgSuccess("删除成功");
-}
+  proxy?.$modal.msgSuccess('删除成功');
+};
 /** 导出按钮操作 */
 const handleExport = () => {
-  proxy?.download("workflow/model/export", {
-    ...queryParams.value
-  }, `model_${new Date().getTime()}.xlsx`);
+  proxy?.download(
+    'workflow/model/export',
+    {
+      ...queryParams.value
+    },
+    `model_${new Date().getTime()}.xlsx`
+  );
 };
 /** 查看流程图 */
 const handleProcessView = async (row: ModelVO) => {
@@ -314,53 +331,51 @@ const handleProcessView = async (row: ModelVO) => {
   // 发送请求，获取xml
   const res = await getBpmnXml(row.modelId);
   // 发送请求，获取xml
-  getBpmnXml(row.modelId).then(res => {
+  getBpmnXml(row.modelId).then((res) => {
     processXml.value = res.data;
-  })
+  });
   processDialog.visible = true;
-}
+};
 /** 设计按钮操作 */
 const handleDesigner = async (row: ModelVO) => {
   // 发送请求，获取流程App类型
   const resApp = await getAppType(row.category);
   designerForm.form = {
-    appType: resApp.data || [],
+    appType: resApp.data,
     processName: row.modelName,
     processKey: row.modelKey
-  }
+  };
   reloadIndex.value = row.modelId;
   designerForm.modelId = row.modelId;
   const res = await getBpmnXml(row.modelId);
   bpmnXml.value = res.data || '';
   designerLoading.value = false;
-  designer.title = "流程设计 - " + row.modelName;
+  designer.title = '流程设计 - ' + row.modelName;
   designer.visible = true;
-}
+};
 const handleDeploy = (row?: ModelVO) => {
   loading.value = true;
   nextTick(async () => {
     try {
       const res = await deployModel({ modelId: row?.modelId });
-      proxy?.$modal.msgSuccess("操作成功");
+      proxy?.$modal.msgSuccess('操作成功');
       router.push({
         name: 'Deploy',
         path: '/workflow/deploy'
       });
-    }
-    catch(err){
-    }
+    } catch (err) {}
     loading.value = false;
   });
-}
+};
 const handleLatest = async (row: ModelVO) => {
   await proxy?.$modal.confirm('是否将此模型保存为新版本?');
   historyLoading.value = true;
-  await latestModel({modelId: row.modelId});
+  await latestModel({ modelId: row.modelId });
   history.visible = false;
   getList();
-  proxy?.$modal.msgSuccess("操作成功");
+  proxy?.$modal.msgSuccess('操作成功');
   historyLoading.value = false;
-}
+};
 /** 查询历史列表 */
 const getHistoryList = async () => {
   historyLoading.value = true;
@@ -368,63 +383,64 @@ const getHistoryList = async () => {
   historyList.value = res.rows;
   historyTotal.value = res.total;
   historyLoading.value = false;
-}
+};
 const handleHistory = (row?: ModelVO) => {
   history.visible = true;
-  history.title = "模型历史";
+  history.title = '模型历史';
   queryParams.value.modelKey = row?.modelKey;
   getHistoryList();
-}
+};
 /** 提交表单操作 */
 const submitForm = () => {
   modelFormRef.value.validate(async (valid: boolean) => {
     if (valid) {
       form.value.modelId ? await updateModel(form.value) : await addModel(form.value);
-      proxy?.$modal.msgSuccess("操作成功");
+      proxy?.$modal.msgSuccess('操作成功');
       dialog.visible = false;
       getList();
     }
-  })
-}
+  });
+};
 /** 查询流程分类列表 */
 const getCategoryList = async () => {
   const res = await listAllCategory();
   categoryOptions.value = res.data;
-}
+};
 
 const onSaveDesigner = async (str: string) => {
   bpmnXml.value = str;
   let dataBody = {
     modelId: designerForm.modelId,
     bpmnXml: str
-  }
-  proxy?.$modal.confirm('是否将此模型保存为新版本?').then(() => {
-    confirmSave(dataBody, true)
-  }).catch(action => {
-    if (action === 'cancel') {
-      confirmSave(dataBody, false)
-    }
-  })
-}
+  };
+  proxy?.$modal
+    .confirm('是否将此模型保存为新版本?')
+    .then(() => {
+      confirmSave(dataBody, true);
+    })
+    .catch((action) => {
+      if (action === 'cancel') {
+        confirmSave(dataBody, false);
+      }
+    });
+};
 const confirmSave = async (body: any, newVersion: boolean) => {
   designerLoading.value = true;
   try {
     await saveModel(Object.assign(body, { newVersion: newVersion }));
     getList();
-    proxy?.$modal.msgSuccess("保存成功");
+    proxy?.$modal.msgSuccess('保存成功');
     designer.visible = false;
-  }
-  catch(err){
-  }
+  } catch (err) {}
   designerLoading.value = false;
-}
+};
 
 const categoryFormat = (row: ModelVO) => {
-  return categoryOptions.value.find(k => k.code === row.category)?.categoryName ?? '';
-}
+  return categoryOptions.value.find((k) => k.code === row.category)?.categoryName ?? '';
+};
 
 onMounted(() => {
-  getCategoryList()
+  getCategoryList();
   getList();
 });
 </script>

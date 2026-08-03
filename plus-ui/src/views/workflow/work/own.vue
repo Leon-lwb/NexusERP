@@ -89,7 +89,7 @@
 
 <script setup name="Own" lang="ts">
 import { listOwnProcess, stopProcess, delProcess } from "@/api/workflow/work/process";
-import { listAllCategory } from "@/api/workflow/category";
+import { listAllCategory } from '@/api/workflow/category/index';
 import { ProcessQuery, ProcessVO } from "@/api/workflow/work/types";
 import { CategoryVO } from "@/api/workflow/category/types";
 import { DateModelType } from "element-plus";

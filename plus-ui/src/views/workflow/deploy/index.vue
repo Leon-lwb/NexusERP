@@ -117,8 +117,8 @@
 </template>
 
 <script setup name="Deploy" lang="ts">
-import { listAllCategory } from '@/api/workflow/category'
-import { listDeploy, listPublish, getBpmnXml, changeState, delDeploy } from '@/api/workflow/deploy'
+import { listAllCategory } from '@/api/workflow/category/index'
+import { listDeploy, listPublish, getBpmnXml, changeState, delDeploy } from '@/api/workflow/deploy/index'
 import { ComponentInternalInstance } from "vue";
 import { CategoryVO } from "@/api/workflow/category/types";
 import {DeployVO, ProcessQuery} from "@/api/workflow/deploy/types";

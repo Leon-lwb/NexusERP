@@ -155,7 +155,7 @@
 
 <script setup lang="ts" name="StockTakingForm">
 import { getStockTakingPlan, addStockTakingPlan, updateStockTakingPlan, generateLines, postAdjustment, submitStockTakingFlow, getStockTakingProcId } from "@/api/erp/wm/stocktaking"
-import { getProcesss } from "@/api/workflow/process"
+import { getProcesss } from '@/api/workflow/process/index'
 import { listWarehouse } from "@/api/erp/wm/warehouse"
 import { listStoragearea } from "@/api/erp/wm/storagearea"
 import { previewCode } from "@/api/system/autocode/rule"

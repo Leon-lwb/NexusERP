@@ -98,8 +98,8 @@
 </template>
 
 <script setup name="WorkProcess" lang="ts">
-import { listProcess, getBpmnXml } from "@/api/workflow/process";
-import { listAllCategory } from '@/api/workflow/category'
+import { listProcess, getBpmnXml } from '@/api/workflow/process/index';
+import { listAllCategory } from '@/api/workflow/category/index'
 import ProcessViewer from '@/components/ProcessViewer'
 
 const router = useRouter()

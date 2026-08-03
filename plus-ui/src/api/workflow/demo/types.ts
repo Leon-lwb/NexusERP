@@ -1,109 +1,112 @@
-export interface WfDemoVO extends WfMyBusiness{
+export interface WfDemoVO {
   /**
    * DEMO-ID
    */
-  demoId: string |number;
-
+  demoId?: string | number;
   /**
    * 用户账号
    */
-  userName: string;
+  userName?: string;
 
   /**
    * 用户昵称
    */
-  nickName: string;
+  nickName?: string;
 
   /**
    * 用户邮箱
    */
-  email: string;
+  email?: string;
 
   /**
    * 头像地址
    */
-  avatar: string;
+  avatar?: string;
 
   /**
    * 帐号状态（0正常 1停用）
    */
-  status: string;
+  status?: string;
 
   /**
    * 备注
    */
-  remark: string;
+  remark?: string;
 }
 
 export interface WfDemo extends BaseEntity {
   /**
    * DEMO-ID
    */
-  demoId: string |number;
+  demoId?: string | number;
+  /**
+   * 删除标志
+   */
+  delFlag?: string;
 
   /**
    * 用户账号
    */
-  userName: string;
+  userName?: string;
 
   /**
    * 用户昵称
    */
-  nickName: string;
+  nickName?: string;
 
   /**
    * 用户邮箱
    */
-  email: string;
+  email?: string;
 
   /**
    * 头像地址
    */
-  avatar: string;
+  avatar?: string;
 
   /**
    * 帐号状态（0正常 1停用）
    */
-  status: string;
+  status?: string;
 
   /**
    * 备注
    */
-  remark: string;
+  remark?: string;
 }
 export interface WfDemoQuery extends PageQuery {
   /**
    * DEMO-ID
    */
-  demoId: string |number;
+  demoId?: string | number;
 
   /**
    * 用户账号
    */
-  userName: string;
+  userName?: string;
 
   /**
    * 用户昵称
    */
-  nickName: string;
+  nickName?: string;
 
   /**
    * 用户邮箱
    */
-  email: string;
+  email?: string;
 
   /**
    * 头像地址
    */
-  avatar: string;
+  avatar?: string;
 
   /**
    * 帐号状态（0正常 1停用）
    */
-  status: string;
+  status?: string;
 
   /**
    * 备注
    */
-  remark: string;
+  remark?: string;
 }

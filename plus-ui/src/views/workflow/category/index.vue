@@ -98,7 +98,7 @@
 </template>
 
 <script setup name="Category" lang="ts">
-import { listCategory, getCategory, delCategory, addCategory, updateCategory } from "@/api/workflow/category";
+import { listCategory, getCategory, delCategory, addCategory, updateCategory } from '@/api/workflow/category/index';
 import { CategoryForm, CategoryQuery, CategoryVO } from "@/api/workflow/category/types";
 import { ComponentInternalInstance } from "vue";
 

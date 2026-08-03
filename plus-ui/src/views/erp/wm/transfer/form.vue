@@ -213,7 +213,7 @@ import { getTransfer, addTransfer, updateTransfer, submitTransferFlow, getTransf
 import { listWarehouse } from '@/api/erp/wm/warehouse';
 import { getMeasure } from '@/api/erp/bd/measure';
 import { previewCode } from '@/api/system/autocode/rule';
-import { getProcesss } from '@/api/workflow/process';
+import { getProcesss } from '@/api/workflow/process/index';
 import { useRoute, useRouter } from 'vue-router';
 import MaterialSelectDialog from '@/components/MaterialSelectDialog';
 

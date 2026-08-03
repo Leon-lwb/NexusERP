@@ -409,7 +409,7 @@ import { getArrivalnotice } from '@/api/erp/wm/arrivalnotice';
 import { listDetail } from '@/api/erp/wm/detail';
 import { createBatch } from '@/api/erp/wm/batch';
 import { getWareHouseTree } from '@/api/erp/wm/warehouse';
-import { getProcesss } from '@/api/workflow/process';
+import { getProcesss } from '@/api/workflow/process/index';
 import { useRoute, useRouter } from 'vue-router';
 import { previewCode } from '@/api/system/autocode/rule';
 import { listMaterial } from '@/api/erp/bd/material';

@@ -608,7 +608,7 @@ import { getMaterial } from '@/api/erp/bd/material';
 import { listMeasureAll } from '@/api/erp/bd/measure';
 import { listWarehouse } from '@/api/erp/wm/warehouse';
 import MaterialSelectDialog from '@/components/MaterialSelectDialog';
-import { getProcesss } from '@/api/workflow/process';
+import { getProcesss } from '@/api/workflow/process/index';
 
 import { previewCode } from '@/api/system/autocode/rule';
 import { useRouter, useRoute } from 'vue-router';

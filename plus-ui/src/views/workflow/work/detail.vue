@@ -296,8 +296,8 @@
 </template>
 
 <script setup name="Detail" lang="ts">
-  import { detailProcess, processIscompleted } from "@/api/workflow/process";
-  import { getProcessVariables } from '@/api/workflow/task';
+  import { detailProcess, processIscompleted } from '@/api/workflow/process/index';
+  import { getProcessVariables } from '@/api/workflow/work/task';
   import { complete, delegate, transfer, rejectTask, returnList, refuseTask, userTaskList, multiInstanceAddSignTask,
          addSignTask, returnTask, jumpTask } from "@/api/workflow/work/task";
   import { deptTreeSelect } from "@/api/workflow/identity";

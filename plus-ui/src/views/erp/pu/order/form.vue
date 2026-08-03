@@ -355,7 +355,7 @@ import { listUser } from '@/api/system/user';
 // 导入物料-供应商关系API
 import { listMaterialVendor } from '@/api/erp/bd/material-vendor';
 // 导入审批流API
-import { getProcesss } from '@/api/workflow/process';
+import { getProcesss } from '@/api/workflow/process/index';
 // 导入采购合同API
 import { listApprovedContract } from '@/api/erp/pu/contract';
 // 导入路由相关功能

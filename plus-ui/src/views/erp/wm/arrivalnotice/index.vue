@@ -274,7 +274,7 @@ import {
   submitArrivalnotice,
   getArrivalnoticeProcId
 } from '@/api/erp/wm/arrivalnotice';
-import { getProcesss } from '@/api/workflow/process';
+import { getProcesss } from '@/api/workflow/process/index';
 import { previewCode } from '@/api/system/autocode/rule';
 import { listVendor } from '@/api/erp/bd/vendor';
 import { useRouter } from 'vue-router';

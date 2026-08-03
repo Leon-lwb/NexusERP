@@ -1,5 +1,13 @@
 import request from '@/utils/request';
 
+// 获取流程变量
+export function getProcessVariables(taskId?: any) {
+  return request({
+    url: '/workflow/task/processVariables/' + taskId,
+    method: 'get'
+  });
+}
+
 // 完成任务
 export function complete(data?: any) {
   return request({
@@ -78,7 +86,7 @@ export function refuseTask(data?: any) {
     url: '/workflow/task/refuse',
     method: 'post',
     data: data
-  })
+  });
 }
 
 // 加签任务
@@ -87,7 +95,7 @@ export function addSignTask(data?: any) {
     url: '/workflow/task/addSign',
     method: 'post',
     data: data
-  })
+  });
 }
 
 // 多实例加签任务
@@ -96,7 +104,7 @@ export function multiInstanceAddSignTask(data?: any) {
     url: '/workflow/task/multiInstanceAddSign',
     method: 'post',
     data: data
-  })
+  });
 }
 
 // 跳转任务
@@ -105,7 +113,7 @@ export function jumpTask(data?: any) {
     url: '/workflow/task/jump',
     method: 'post',
     data: data
-  })
+  });
 }
 
 // 跳转任务节点列表
@@ -114,7 +122,7 @@ export function userTaskList(data?: any) {
     url: '/workflow/task/userTask',
     method: 'post',
     data: data
-  })
+  });
 }
 
 // 收回任务
@@ -123,5 +131,5 @@ export function recallProcess(data?: any) {
     url: '/workflow/task/recallProcess',
     method: 'post',
     data: data
-  })
+  });
 }

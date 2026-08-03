@@ -347,7 +347,7 @@ import { listWarehouse } from '@/api/erp/wm/warehouse';
 import { listMaterial } from '@/api/erp/bd/material';
 import { listStock } from '@/api/erp/wm/stock';
 import { listStoragelocation } from '@/api/erp/wm/storagelocation';
-import { getProcesss } from '@/api/workflow/process';
+import { getProcesss } from '@/api/workflow/process/index';
 import { useRoute, useRouter } from 'vue-router';
 import { previewCode } from '@/api/system/autocode/rule';
 import type { SalesIssueForm } from '@/api/erp/wm/sales-issue/types';
