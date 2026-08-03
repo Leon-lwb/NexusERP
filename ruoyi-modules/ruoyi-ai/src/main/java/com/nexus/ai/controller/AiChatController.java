@@ -162,6 +162,28 @@ public class AiChatController {
     }
 
     /**
+     * 删除消息
+     *
+     * @param messageId 消息ID
+     * @return 操作结果
+     */
+    @DeleteMapping("/message/{messageId}")
+    public R<Void> deleteMessage(@PathVariable Long messageId) {
+        // 校验消息归属：只能删除自己会话中的消息
+        Long userId = LoginHelper.getUserId();
+        AiMessage message = aiMessageMapper.selectById(messageId);
+        if (message == null) {
+            return R.fail("消息不存在");
+        }
+        AiSession session = aiSessionService.selectById(message.getSessionId());
+        if (session == null || !session.getUserId().equals(userId)) {
+            return R.fail("无权操作该消息");
+        }
+        aiMessageMapper.deleteById(messageId);
+        return R.ok();
+    }
+
+    /**
      * 查询当前会话的 Token 用量
      * <p>返回会话中所有消息的 Token 用量总和，供前端显示进度条</p>
      *

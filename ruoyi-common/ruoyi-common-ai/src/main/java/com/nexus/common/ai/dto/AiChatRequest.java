@@ -61,4 +61,12 @@ public class AiChatRequest implements Serializable {
      * <p>开启后路由到 WebSearchAgent，回答需标注信息来源链接</p>
      */
     private Boolean enableWebSearch = false;
+
+    /**
+     * 业务上下文（可选）
+     * <p>移动端从业务详情页（工单/采购订单/收货单等）带入的当前业务对象摘要，
+     * 注入到生成 prompt 中使 AI 知晓上下文（如"当前在查看采购订单 PO-2026-0001"）。
+     * 仅参与 prompt 拼接，不参与关键词路由判断、不落库。</p>
+     */
+    private String context;
 }

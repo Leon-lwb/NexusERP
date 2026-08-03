@@ -251,6 +251,9 @@ public class AiServiceFacade {
             .build();
         List<ChatMessage> allMessages = new ArrayList<>(memory.messages());
 
+        // 业务上下文注入（移动端从详情页带入，如"当前在查看采购订单 PO-xxx"）
+        injectContextIntoLastUserMessage(request, allMessages);
+
         AiSseMessageHelper.sendThinking(userId);
 
         // 用于拼接完整 AI 回复（StringBuffer 线程安全，流式回调可能由不同线程执行）
@@ -334,15 +337,16 @@ public class AiServiceFacade {
         // 从后往前查找最后一条 UserMessage 并替换为增强后的提示词
         // （避免当末尾是 AiMessage 时误删，或连续多条 UserMessage 时删错）
         boolean replaced = false;
+        String injectedQuery = buildInjectedPrompt(request, augmentedQuery);
         for (int i = allMessages.size() - 1; i >= 0; i--) {
             if (allMessages.get(i) instanceof dev.langchain4j.data.message.UserMessage) {
-                allMessages.set(i, dev.langchain4j.data.message.UserMessage.from(augmentedQuery));
+                allMessages.set(i, dev.langchain4j.data.message.UserMessage.from(injectedQuery));
                 replaced = true;
                 break;
             }
         }
         if (!replaced) {
-            allMessages.add(dev.langchain4j.data.message.UserMessage.from(augmentedQuery));
+            allMessages.add(dev.langchain4j.data.message.UserMessage.from(injectedQuery));
         }
 
         AiSseMessageHelper.sendThinking(userId);
@@ -428,12 +432,20 @@ public class AiServiceFacade {
         String reportAgentContext = promptTemplateService.renderReportAgentContext();
         String supervisorContext = promptTemplateService.renderSupervisorContext();
 
-        // 构建增强查询：将 Supervisor 上下文 + SubAgent 上下文 + 原始查询合并
+        // 构建增强查询：将 Supervisor 上下文 + SubAgent 上下文 + 业务上下文 + 原始查询合并
         // Supervisor 会将完整上下文连同用户问题一起分发给对应的 SubAgent
-        String enhancedQuery = supervisorContext + "\n\n"
-            + "【数据查询助手上下文】\n" + queryAgentContext + "\n\n"
-            + "【报表生成助手上下文】\n" + reportAgentContext + "\n\n"
-            + "【用户问题】\n" + contextualQuery;
+        StringBuilder enhancedSb = new StringBuilder();
+        enhancedSb.append(supervisorContext).append("\n\n")
+            .append("【数据查询助手上下文】\n").append(queryAgentContext).append("\n\n")
+            .append("【报表生成助手上下文】\n").append(reportAgentContext).append("\n\n");
+        // 业务上下文（移动端从详情页带入）作为独立段注入，Supervisor 会将其分发给 SubAgent，
+        // 使 Agent 可直接引用单据号/状态调用 ERP 工具
+        String bizCtx = request.getContext();
+        if (bizCtx != null && !bizCtx.isBlank()) {
+            enhancedSb.append("【业务上下文】\n").append(truncateContext(bizCtx)).append("\n\n");
+        }
+        enhancedSb.append("【用户问题】\n").append(contextualQuery);
+        String enhancedQuery = enhancedSb.toString();
 
         // SubAgent 不使用持久化记忆，避免工具调用中间结果膨胀上下文
         var queryAgentBuilder = AgenticServices.agentBuilder(ErpQueryAgent.class)
@@ -900,7 +912,7 @@ public class AiServiceFacade {
                     .tools(webSearchTool)
                     .build();
 
-                String result = agent.search(request.getContent());
+                String result = agent.search(buildInjectedPrompt(request, request.getContent()));
 
                 // 推送搜索来源卡片（从 SearchSourceHolder 取出本次搜索的来源）
                 pushWebSearchSources(userId);
@@ -933,6 +945,70 @@ public class AiServiceFacade {
             }
         } catch (Exception e) {
             log.error("推送联网搜索来源卡片失败, userId={}", userId, e);
+        }
+    }
+
+    /**
+     * 业务上下文最大长度（字符）。防恶意大包与超长摘要，超长前缀截断保留尾部摘要语义。
+     */
+    private static final int CONTEXT_MAX_LEN = 2000;
+
+    /**
+     * 截断业务上下文至 {@link #CONTEXT_MAX_LEN} 字符
+     *
+     * @param ctx 原始业务上下文
+     * @return 截断后的上下文
+     */
+    private String truncateContext(String ctx) {
+        if (ctx.length() <= CONTEXT_MAX_LEN) {
+            return ctx;
+        }
+        return ctx.substring(0, CONTEXT_MAX_LEN) + "…";
+    }
+
+    /**
+     * 构建注入业务上下文的用户问题
+     * <p>context 非空时拼为「【业务上下文】…【用户问题】…」结构注入 prompt；
+     * 为空时原样返回 query。context 仅参与 prompt 拼接，不参与关键词路由判断。</p>
+     *
+     * @param request 聊天请求（含 context）
+     * @param query   原始/增强后的用户问题
+     * @return 注入后的 prompt
+     */
+    private String buildInjectedPrompt(AiChatRequest request, String query) {
+        String ctx = request.getContext();
+        if (ctx == null || ctx.isBlank()) {
+            return query;
+        }
+        return "【业务上下文】\n" + truncateContext(ctx) + "\n\n【用户问题】\n" + query;
+    }
+
+    /**
+     * 将业务上下文注入消息列表中最后一条 UserMessage
+     * <p>从后往前查找（避免末尾是 AiMessage 时误删，或连续多条 UserMessage 时删错），
+     * 未找到则追加一条。用于 streaming/RAG 模式。</p>
+     *
+     * @param request     聊天请求（含 context）
+     * @param allMessages 消息列表（原地修改）
+     */
+    private void injectContextIntoLastUserMessage(AiChatRequest request, List<ChatMessage> allMessages) {
+        String ctx = request.getContext();
+        if (ctx == null || ctx.isBlank()) {
+            return;
+        }
+        boolean replaced = false;
+        for (int i = allMessages.size() - 1; i >= 0; i--) {
+            if (allMessages.get(i) instanceof dev.langchain4j.data.message.UserMessage userMsg) {
+                String injected = "【业务上下文】\n" + truncateContext(ctx)
+                    + "\n\n【用户问题】\n" + userMsg.singleText();
+                allMessages.set(i, dev.langchain4j.data.message.UserMessage.from(injected));
+                replaced = true;
+                break;
+            }
+        }
+        if (!replaced) {
+            allMessages.add(dev.langchain4j.data.message.UserMessage.from(
+                "【业务上下文】\n" + truncateContext(ctx) + "\n\n【用户问题】\n" + request.getContent()));
         }
     }
 }
