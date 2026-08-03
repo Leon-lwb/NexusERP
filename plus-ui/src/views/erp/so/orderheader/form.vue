@@ -5,8 +5,8 @@
         <div class="card-header">
           <span class="card-title">{{ title }}</span>
           <div class="card-actions">
-            <el-button type="primary" @click="submitForm" v-if="!isViewMode">保存</el-button>
-            <el-button type="success" @click="handleSubmitFlow" v-if="!isViewMode && form.orderStatus === 'DRAFT'">提交审批</el-button>
+            <el-button type="primary" @click="submitForm" v-if="!isViewMode && !props.disabled">保存</el-button>
+            <el-button type="success" @click="handleSubmitFlow" v-if="!isViewMode && !props.disabled && form.orderStatus === 'DRAFT'">提交审批</el-button>
             <el-button type="info" @click="onViewFlow" v-if="form.orderStatus === 'APPROVING' || form.orderStatus === 'APPROVED'">查看流程</el-button>
             <el-button @click="cancel" v-if="!props.disabled">取消</el-button>
           </div>
@@ -22,7 +22,7 @@
                   <el-form-item label="销售订单编号" prop="soNo">
                     <div style="display: flex; align-items: center; gap: 10px">
                       <el-input v-model="form.soNo" placeholder="请输入销售订单编号" :disabled="autoGenFlag || isViewMode" style="flex: 1" />
-                      <el-switch v-model="autoGenFlag" active-color="#13ce66" active-text="生成" @change="handleAutoGenChange" :disabled="isViewMode">
+                      <el-switch v-model="autoGenFlag" active-color="#13ce66" active-text="生成" @change="handleAutoGenChange" :disabled="isViewMode || props.disabled">
                       </el-switch>
                     </div>
                   </el-form-item>
@@ -31,9 +31,9 @@
                   <el-form-item label="客户订单" prop="coId">
                     <el-row :gutter="10">
                       <el-col :span="18">
-                        <el-input v-model="customerOrderDisplay" placeholder="请选择客户订单" readonly :disabled="isViewMode">
+                        <el-input v-model="customerOrderDisplay" placeholder="请选择客户订单" readonly :disabled="isViewMode || props.disabled">
                           <template #append>
-                            <el-button icon="Search" @click.stop="openCustomerOrderSelect" :disabled="isViewMode" />
+                            <el-button icon="Search" @click.stop="openCustomerOrderSelect" :disabled="isViewMode || props.disabled" />
                           </template>
                         </el-input>
                       </el-col>
@@ -106,7 +106,7 @@
                       clearable
                       filterable
                       :loading="loadingFlow"
-                      :disabled="isViewMode || form.orderStatus !== 'DRAFT'"
+                      :disabled="isViewMode || props.disabled || form.orderStatus !== 'DRAFT'"
                       placeholder="请选择审批流程"
                       style="width: 100%"
                     >
@@ -117,7 +117,7 @@
                 <el-col :xs="24" :sm="12" :md="8" :lg="6">
                   <el-form-item
                     label="审批流程提示"
-                    v-if="!isViewMode && !loadingFlow && flowOptions.length === 0 && (!form.selectFlowId || form.selectFlowId === '')"
+                    v-if="!isViewMode && !props.disabled && !loadingFlow && flowOptions.length === 0 && (!form.selectFlowId || form.selectFlowId === '')"
                   >
                     <el-alert
                       type="warning"
@@ -331,10 +331,10 @@
             <el-collapse-item title="销售订单行信息" name="lines">
               <el-row :gutter="10" class="mb8">
                 <el-col :span="1.5">
-                  <el-button type="primary" icon="Plus" @click="handleAddSoSalesOrderLine" v-if="!isViewMode">添加</el-button>
+                  <el-button type="primary" icon="Plus" @click="handleAddSoSalesOrderLine" v-if="!isViewMode && !props.disabled">添加</el-button>
                 </el-col>
                 <el-col :span="1.5">
-                  <el-button type="danger" icon="Delete" @click="handleDeleteSoSalesOrderLine" v-if="!isViewMode">删除</el-button>
+                  <el-button type="danger" icon="Delete" @click="handleDeleteSoSalesOrderLine" v-if="!isViewMode && !props.disabled">删除</el-button>
                 </el-col>
               </el-row>
               <el-table
@@ -343,16 +343,16 @@
                 @selection-change="handleSoSalesOrderLineSelectionChange"
                 ref="soSalesOrderLine"
               >
-                <el-table-column type="selection" width="50" align="center" v-if="!isViewMode" />
+                <el-table-column type="selection" width="50" align="center" v-if="!isViewMode && !props.disabled" />
                 <el-table-column label="序号" prop="sortOrder" width="60">
                   <template #default="scope">
-                    <el-input v-model="scope.row.sortOrder" placeholder="请输入" v-if="!isViewMode" />
+                    <el-input v-model="scope.row.sortOrder" placeholder="请输入" v-if="!isViewMode && !props.disabled" />
                     <span v-else>{{ scope.row.sortOrder }}</span>
                   </template>
                 </el-table-column>
                 <el-table-column label="行号" prop="lineNo" width="150">
                   <template #default="scope">
-                    <el-input v-model="scope.row.lineNo" placeholder="请输入行号" v-if="!isViewMode" />
+                    <el-input v-model="scope.row.lineNo" placeholder="请输入行号" v-if="!isViewMode && !props.disabled" />
                     <span v-else>{{ scope.row.lineNo }}</span>
                   </template>
                 </el-table-column>
@@ -383,7 +383,7 @@
                       :precision="4"
                       @change="calcLine(scope.row)"
                       style="width: 100%"
-                      v-if="!isViewMode"
+                      v-if="!isViewMode && !props.disabled"
                     />
                     <span v-else>{{ scope.row.orderedQty }}</span>
                   </template>
@@ -395,7 +395,7 @@
                 </el-table-column>
                 <el-table-column label="单位" prop="unit" width="150">
                   <template #default="scope">
-                    <el-select v-model="scope.row.unit" placeholder="请选择单位" v-if="!isViewMode" filterable clearable style="width: 100%">
+                    <el-select v-model="scope.row.unit" placeholder="请选择单位" v-if="!isViewMode && !props.disabled" filterable clearable style="width: 100%">
                       <el-option v-for="u in uomOptions" :key="u.uomId" :label="u.uomName" :value="u.uomName" />
                     </el-select>
                     <span v-else>{{ scope.row.unit }}</span>
@@ -410,7 +410,7 @@
                       :precision="4"
                       @change="calcLine(scope.row)"
                       style="width: 100%"
-                      v-if="!isViewMode"
+                      v-if="!isViewMode && !props.disabled"
                     />
                     <span v-else>{{ scope.row.unitPrice }}</span>
                   </template>
@@ -423,7 +423,7 @@
                       :precision="2"
                       readonly
                       style="width: 100%"
-                      v-if="!isViewMode"
+                      v-if="!isViewMode && !props.disabled"
                     />
                     <span v-else>{{ scope.row.lineAmount }}</span>
                   </template>
@@ -438,7 +438,7 @@
                       :precision="2"
                       @change="calcLine(scope.row)"
                       style="width: 100%"
-                      v-if="!isViewMode"
+                      v-if="!isViewMode && !props.disabled"
                     />
                     <span v-else>{{ scope.row.discountPercent }}</span>
                   </template>
@@ -451,7 +451,7 @@
                       :precision="2"
                       readonly
                       style="width: 100%"
-                      v-if="!isViewMode"
+                      v-if="!isViewMode && !props.disabled"
                     />
                     <span v-else>{{ scope.row.discountAmount }}</span>
                   </template>
@@ -466,7 +466,7 @@
                       :precision="2"
                       @change="calcLine(scope.row)"
                       style="width: 100%"
-                      v-if="!isViewMode"
+                      v-if="!isViewMode && !props.disabled"
                     />
                     <span v-else>{{ scope.row.taxRate }}</span>
                   </template>
@@ -479,7 +479,7 @@
                       :precision="2"
                       readonly
                       style="width: 100%"
-                      v-if="!isViewMode"
+                      v-if="!isViewMode && !props.disabled"
                     />
                     <span v-else>{{ scope.row.taxAmount }}</span>
                   </template>
@@ -492,7 +492,7 @@
                       type="date"
                       value-format="YYYY-MM-DD"
                       placeholder="请选择行要求交期"
-                      v-if="!isViewMode"
+                      v-if="!isViewMode && !props.disabled"
                     >
                     </el-date-picker>
                     <span v-else>{{ scope.row.requestedDate }}</span>
@@ -506,7 +506,7 @@
                       type="date"
                       value-format="YYYY-MM-DD"
                       placeholder="请选择行承诺交期"
-                      v-if="!isViewMode"
+                      v-if="!isViewMode && !props.disabled"
                     >
                     </el-date-picker>
                     <span v-else>{{ scope.row.promiseDate }}</span>
@@ -568,7 +568,7 @@
                 </el-table-column>
                 <el-table-column label="默认仓库" prop="warehouseId" width="160">
                   <template #default="scope">
-                    <el-select v-model="scope.row.warehouseId" placeholder="请选择仓库" filterable clearable style="width: 100%" v-if="!isViewMode">
+                    <el-select v-model="scope.row.warehouseId" placeholder="请选择仓库" filterable clearable style="width: 100%" v-if="!isViewMode && !props.disabled">
                       <el-option v-for="w in warehouseOptions" :key="w.warehouseId" :label="w.warehouseName" :value="w.warehouseId" />
                     </el-select>
                     <span v-else>{{ scope.row.warehouseName || '-' }}</span>
@@ -576,7 +576,7 @@
                 </el-table-column>
                 <el-table-column label="交付优先级" prop="deliveryPriority" width="150">
                   <template #default="scope">
-                    <el-select v-model="scope.row.deliveryPriority" placeholder="请选择交付优先级" v-if="!isViewMode">
+                    <el-select v-model="scope.row.deliveryPriority" placeholder="请选择交付优先级" v-if="!isViewMode && !props.disabled">
                       <el-option v-for="dict in so_order_priority" :key="dict.value" :label="dict.label" :value="Number(dict.value)"></el-option>
                     </el-select>
                     <span v-else>{{ getDictLabel(so_order_priority, scope.row.deliveryPriority) }}</span>
@@ -584,7 +584,7 @@
                 </el-table-column>
                 <el-table-column label="客户行参考号" prop="customerLineRef" width="150">
                   <template #default="scope">
-                    <el-input v-model="scope.row.customerLineRef" placeholder="请输入客户行参考号" v-if="!isViewMode" />
+                    <el-input v-model="scope.row.customerLineRef" placeholder="请输入客户行参考号" v-if="!isViewMode && !props.disabled" />
                     <span v-else>{{ scope.row.customerLineRef }}</span>
                   </template>
                 </el-table-column>

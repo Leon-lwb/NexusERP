@@ -5,8 +5,8 @@
         <div class="card-header">
           <span>{{ title }}</span>
           <div>
-            <el-button type="primary" @click="submitForm" v-if="!isViewMode">保存</el-button>
-            <el-button type="success" @click="handleSubmitFlow" v-if="!isViewMode && form.status === 'DRAFT' && form.returnId">提交审批</el-button>
+            <el-button type="primary" @click="submitForm" v-if="!isViewMode && !props.disabled">保存</el-button>
+            <el-button type="success" @click="handleSubmitFlow" v-if="!isViewMode && !props.disabled && form.status === 'DRAFT' && form.returnId">提交审批</el-button>
             <el-button type="info" @click="onViewFlow" v-if="form.status === 'APPROVING' || form.status === 'CONFIRMED'">查看流程</el-button>
             <el-button @click="cancel" v-if="!props.disabled">取消</el-button>
           </div>
@@ -21,7 +21,7 @@
             <el-form-item label="退货单号" prop="returnNo">
               <div style="display: flex; align-items: center; gap: 10px;">
                 <el-input v-model="form.returnNo" :disabled="autoGenFlag || isViewMode" style="flex: 1;" />
-                <el-switch v-model="autoGenFlag" active-color="#13ce66" active-text="生成" @change="handleAutoGenChange" :disabled="isViewMode">
+                <el-switch v-model="autoGenFlag" active-color="#13ce66" active-text="生成" @change="handleAutoGenChange" :disabled="isViewMode || props.disabled">
                 </el-switch>
               </div>
             </el-form-item>
@@ -69,7 +69,7 @@
           <el-col :span="8">
             <el-form-item label="审批流程" prop="selectFlowId">
               <el-select v-model="form.selectFlowId" clearable filterable :loading="loadingFlow"
-                :disabled="isViewMode || form.status !== 'DRAFT'" placeholder="请选择审批流程" style="width: 100%">
+                :disabled="isViewMode || props.disabled || form.status !== 'DRAFT'" placeholder="请选择审批流程" style="width: 100%">
                 <el-option v-for="f in flowOptions" :key="f.id" :label="f.flowName || f.businessName || ('流程#' + f.id)" :value="f.id" />
               </el-select>
             </el-form-item>
@@ -91,15 +91,15 @@
 
         <el-row :gutter="10" class="mb8">
           <el-col :span="1.5">
-            <el-button type="primary" icon="Plus" @click="handleAddLine" v-if="!isViewMode">添加</el-button>
+            <el-button type="primary" icon="Plus" @click="handleAddLine" v-if="!isViewMode && !props.disabled">添加</el-button>
           </el-col>
           <el-col :span="1.5">
-            <el-button type="danger" icon="Delete" @click="handleDeleteLine" v-if="!isViewMode">删除</el-button>
+            <el-button type="danger" icon="Delete" @click="handleDeleteLine" v-if="!isViewMode && !props.disabled">删除</el-button>
           </el-col>
         </el-row>
 
         <el-table :data="lineList" @selection-change="handleLineSelectionChange" border>
-          <el-table-column type="selection" width="50" v-if="!isViewMode" />
+          <el-table-column type="selection" width="50" v-if="!isViewMode && !props.disabled" />
           <el-table-column label="序号" type="index" width="60" />
           <el-table-column label="物料编码">
             <template #default="scope">

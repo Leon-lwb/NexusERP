@@ -7,9 +7,9 @@
           <span class="card-title">{{ title }}</span>
           <div class="card-actions">
             <!-- 保存按钮，仅在非查看模式下显示 -->
-            <el-button type="primary" @click="submitForm" v-if="!isViewMode">保存</el-button>
+            <el-button type="primary" @click="submitForm" v-if="!isViewMode && !props.disabled">保存</el-button>
             <!-- 提交审批按钮 -->
-            <el-button type="success" @click="handleSubmitFlow" v-if="!isViewMode && form.status === 'DRAFT'">提交审批</el-button>
+            <el-button type="success" @click="handleSubmitFlow" v-if="!isViewMode && !props.disabled && form.status === 'DRAFT'">提交审批</el-button>
             <!-- 查看流程按钮 -->
             <el-button type="info" @click="onViewFlow" v-if="form.status === 'APPROVING' || form.status === 'APPROVED'">查看流程</el-button>
             <!-- 取消按钮 -->
@@ -28,7 +28,7 @@
             <el-form-item label="订单号" prop="orderNo">
               <div style="display: flex; align-items: center; gap: 10px">
                 <el-input v-model="form.orderNo" :disabled="autoGenFlag || isViewMode" style="flex: 1" />
-                <el-switch v-model="autoGenFlag" active-color="#13ce66" active-text="生成" @change="handleAutoGenChange" :disabled="isViewMode">
+                <el-switch v-model="autoGenFlag" active-color="#13ce66" active-text="生成" @change="handleAutoGenChange" :disabled="isViewMode || props.disabled">
                 </el-switch>
               </div>
             </el-form-item>
@@ -132,7 +132,7 @@
                 clearable
                 filterable
                 :loading="loadingFlow"
-                :disabled="isViewMode || form.status !== 'DRAFT'"
+                :disabled="isViewMode || props.disabled || form.status !== 'DRAFT'"
                 placeholder="请选择审批流程"
                 style="width: 100%"
               >
@@ -162,7 +162,7 @@
 
         <!-- 流程选择警告 -->
         <el-alert
-          v-if="!isViewMode && !loadingFlow && flowOptions.length === 0 && (!form.selectFlowId || form.selectFlowId === '')"
+          v-if="!isViewMode && !props.disabled && !loadingFlow && flowOptions.length === 0 && (!form.selectFlowId || form.selectFlowId === '')"
           type="warning"
           show-icon
           :closable="false"
@@ -176,16 +176,16 @@
         <!-- 明细操作按钮 -->
         <el-row :gutter="10" class="mb8">
           <el-col :span="1.5">
-            <el-button type="primary" icon="Plus" @click="handleAddLine" v-if="!isViewMode">添加</el-button>
+            <el-button type="primary" icon="Plus" @click="handleAddLine" v-if="!isViewMode && !props.disabled">添加</el-button>
           </el-col>
           <el-col :span="1.5">
-            <el-button type="danger" icon="Delete" @click="handleDeleteLine" v-if="!isViewMode">删除</el-button>
+            <el-button type="danger" icon="Delete" @click="handleDeleteLine" v-if="!isViewMode && !props.disabled">删除</el-button>
           </el-col>
         </el-row>
 
         <!-- 订单明细表格 -->
         <el-table :data="lineList" @selection-change="handleLineSelectionChange" border>
-          <el-table-column type="selection" width="50" v-if="!isViewMode" />
+          <el-table-column type="selection" width="50" v-if="!isViewMode && !props.disabled" />
           <el-table-column label="序号" type="index" width="60" />
           <el-table-column label="物料编码">
             <template #default="scope">

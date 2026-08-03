@@ -5,10 +5,10 @@
         <div class="card-header">
           <span>{{ title }}</span>
           <div>
-            <el-button type="primary" @click="submitForm" v-if="!isViewMode">保存</el-button>
-            <el-button type="success" @click="handleSubmitFlow" v-if="!isViewMode && form.status === 'DRAFT' && form.transferId">提交审批</el-button>
+            <el-button type="primary" @click="submitForm" v-if="!isViewMode && !props.disabled">保存</el-button>
+            <el-button type="success" @click="handleSubmitFlow" v-if="!isViewMode && !props.disabled && form.status === 'DRAFT' && form.transferId">提交审批</el-button>
             <el-button type="info" @click="onViewFlow" v-if="form.status === 'APPROVING' || form.status === 'APPROVED'">查看流程</el-button>
-            <el-button type="warning" @click="handleExecute" v-if="!isViewMode && form.status === 'APPROVED'">执行调拨</el-button>
+            <el-button type="warning" @click="handleExecute" v-if="!isViewMode && !props.disabled && form.status === 'APPROVED'">执行调拨</el-button>
             <el-button @click="cancel" v-if="!props.disabled">取消</el-button>
           </div>
         </div>
@@ -21,7 +21,7 @@
             <el-form-item label="调拨单编号" prop="transferNo">
               <div style="display: flex; align-items: center; gap: 10px">
                 <el-input v-model="form.transferNo" placeholder="请输入调拨单编号" :disabled="autoGenFlag || isViewMode" style="flex: 1" />
-                <el-switch v-model="autoGenFlag" active-color="#13ce66" active-text="生成" @change="handleAutoGenChange" :disabled="isViewMode">
+                <el-switch v-model="autoGenFlag" active-color="#13ce66" active-text="生成" @change="handleAutoGenChange" :disabled="isViewMode || props.disabled">
                 </el-switch>
               </div>
             </el-form-item>
@@ -52,7 +52,7 @@
             <el-form-item label="调出仓库" prop="fromWarehouseName">
               <el-input v-model="form.fromWarehouseName" placeholder="请选择调出仓库" readonly>
                 <template #append>
-                  <el-button v-if="!isViewMode" icon="Search" @click="openWarehouseSelect('from')" />
+                  <el-button v-if="!isViewMode && !props.disabled" icon="Search" @click="openWarehouseSelect('from')" />
                 </template>
               </el-input>
             </el-form-item>
@@ -61,7 +61,7 @@
             <el-form-item label="调拨入库" prop="toWarehouseName">
               <el-input v-model="form.toWarehouseName" placeholder="请选择调拨入库" readonly>
                 <template #append>
-                  <el-button v-if="!isViewMode" icon="Search" @click="openWarehouseSelect('to')" />
+                  <el-button v-if="!isViewMode && !props.disabled" icon="Search" @click="openWarehouseSelect('to')" />
                 </template>
               </el-input>
             </el-form-item>
@@ -81,7 +81,7 @@
                 clearable
                 filterable
                 :loading="loadingFlow"
-                :disabled="isViewMode || form.status !== 'DRAFT'"
+                :disabled="isViewMode || props.disabled || form.status !== 'DRAFT'"
                 placeholder="请选择审批流程"
                 style="width: 100%"
               >
@@ -110,18 +110,18 @@
         <el-divider content-position="center">调拨行信息</el-divider>
         <el-row :gutter="10" class="mb8">
           <el-col :span="1.5">
-            <el-button type="primary" icon="Plus" @click="handleAddLine" v-if="!isViewMode">添加</el-button>
+            <el-button type="primary" icon="Plus" @click="handleAddLine" v-if="!isViewMode && !props.disabled">添加</el-button>
           </el-col>
           <el-col :span="1.5">
-            <el-button type="danger" icon="Delete" @click="handleDeleteLine" v-if="!isViewMode">删除</el-button>
+            <el-button type="danger" icon="Delete" @click="handleDeleteLine" v-if="!isViewMode && !props.disabled">删除</el-button>
           </el-col>
         </el-row>
         <el-table :data="lineList" :row-class-name="rowLineIndex" @selection-change="handleLineSelectionChange" ref="lineTable">
-          <el-table-column type="selection" width="50" align="center" v-if="!isViewMode" />
+          <el-table-column type="selection" width="50" align="center" v-if="!isViewMode && !props.disabled" />
           <el-table-column label="序号" align="center" prop="index" width="50" />
           <el-table-column label="物料编码" prop="materialCode" width="150">
             <template #default="scope">
-              <el-input v-model="scope.row.materialCode" placeholder="请选择物料" v-if="!isViewMode" readonly>
+              <el-input v-model="scope.row.materialCode" placeholder="请选择物料" v-if="!isViewMode && !props.disabled" readonly>
                 <template #append>
                   <el-button icon="Search" @click="openMaterialSelect(scope.$index)" />
                 </template>
@@ -131,7 +131,7 @@
           </el-table-column>
           <el-table-column label="物料名称" prop="materialName" width="150">
             <template #default="scope">
-              <el-input v-model="scope.row.materialName" placeholder="物料名称" v-if="!isViewMode" readonly />
+              <el-input v-model="scope.row.materialName" placeholder="物料名称" v-if="!isViewMode && !props.disabled" readonly />
               <span v-else>{{ scope.row.materialName }}</span>
             </template>
           </el-table-column>
@@ -142,25 +142,25 @@
           </el-table-column>
           <el-table-column label="数量" prop="quantity" width="100">
             <template #default="scope">
-              <el-input v-model="scope.row.quantity" placeholder="数量" v-if="!isViewMode" />
+              <el-input v-model="scope.row.quantity" placeholder="数量" v-if="!isViewMode && !props.disabled" />
               <span v-else>{{ scope.row.quantity }}</span>
             </template>
           </el-table-column>
           <el-table-column label="源库位" prop="fromLocationCode" width="120">
             <template #default="scope">
-              <el-input v-model="scope.row.fromLocationCode" placeholder="源库位" v-if="!isViewMode" />
+              <el-input v-model="scope.row.fromLocationCode" placeholder="源库位" v-if="!isViewMode && !props.disabled" />
               <span v-else>{{ scope.row.fromLocationCode }}</span>
             </template>
           </el-table-column>
           <el-table-column label="目标库位" prop="toLocationCode" width="120">
             <template #default="scope">
-              <el-input v-model="scope.row.toLocationCode" placeholder="目标库位" v-if="!isViewMode" />
+              <el-input v-model="scope.row.toLocationCode" placeholder="目标库位" v-if="!isViewMode && !props.disabled" />
               <span v-else>{{ scope.row.toLocationCode }}</span>
             </template>
           </el-table-column>
           <el-table-column label="备注" prop="remark" width="120">
             <template #default="scope">
-              <el-input v-model="scope.row.remark" placeholder="备注" v-if="!isViewMode" />
+              <el-input v-model="scope.row.remark" placeholder="备注" v-if="!isViewMode && !props.disabled" />
               <span v-else>{{ scope.row.remark }}</span>
             </template>
           </el-table-column>

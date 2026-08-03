@@ -5,11 +5,11 @@
         <div class="card-header">
           <span class="card-title">{{ title }}</span>
           <div class="card-actions">
-            <el-button type="primary" @click="submitForm" v-if="!isViewMode">保存</el-button>
-            <el-button type="success" @click="handleSubmitFlow" v-if="!isViewMode && form.status === 'DRAFT'">提交审批</el-button>
+            <el-button type="primary" @click="submitForm" v-if="!isViewMode && !props.disabled">保存</el-button>
+            <el-button type="success" @click="handleSubmitFlow" v-if="!isViewMode && !props.disabled && form.status === 'DRAFT'">提交审批</el-button>
             <el-button type="info" @click="onViewFlow" v-if="form.status === 'APPROVING' || form.status === 'APPROVED'">查看流程</el-button>
-            <el-button type="success" @click="handleGenerateLines" v-if="!isViewMode && form.planId">生成盘点行</el-button>
-            <el-button type="warning" @click="handlePostAdjustment" v-if="!isViewMode && form.planId">过账调整</el-button>
+            <el-button type="success" @click="handleGenerateLines" v-if="!isViewMode && !props.disabled && form.planId">生成盘点行</el-button>
+            <el-button type="warning" @click="handlePostAdjustment" v-if="!isViewMode && !props.disabled && form.planId">过账调整</el-button>
             <el-button @click="cancel" v-if="!props.disabled">取消</el-button>
           </div>
         </div>
@@ -22,7 +22,7 @@
             <el-form-item label="盘点编号" prop="planCode">
               <div style="display: flex; align-items: center; gap: 10px;">
                 <el-input v-model="form.planCode" placeholder="请输入盘点编号" :disabled="autoGenFlag || isViewMode" style="flex: 1;" />
-                <el-switch v-model="autoGenFlag" active-color="#13ce66" active-text="生成" @change="handleAutoGenChange" :disabled="isViewMode">
+                <el-switch v-model="autoGenFlag" active-color="#13ce66" active-text="生成" @change="handleAutoGenChange" :disabled="isViewMode || props.disabled">
                 </el-switch>
               </div>
             </el-form-item>
@@ -43,7 +43,7 @@
             <el-form-item label="仓库" prop="warehouseName">
               <el-input v-model="form.warehouseName" placeholder="请选择仓库" readonly>
                 <template #append>
-                  <el-button v-if="!isViewMode" icon="Search" @click="warehouseSelectOpen = true" />
+                  <el-button v-if="!isViewMode && !props.disabled" icon="Search" @click="warehouseSelectOpen = true" />
                 </template>
               </el-input>
             </el-form-item>
@@ -52,7 +52,7 @@
             <el-form-item label="库区" prop="areaName">
               <el-input v-model="form.areaName" placeholder="请选择库区" readonly>
                 <template #append>
-                  <el-button v-if="!isViewMode" icon="Search" @click="areaSelectOpen = true" />
+                  <el-button v-if="!isViewMode && !props.disabled" icon="Search" @click="areaSelectOpen = true" />
                 </template>
               </el-input>
             </el-form-item>
@@ -67,7 +67,7 @@
           <el-col :span="8">
             <el-form-item label="审批流程" prop="selectFlowId">
               <el-select v-model="form.selectFlowId" clearable filterable :loading="loadingFlow"
-                :disabled="isViewMode || form.status !== 'DRAFT'" placeholder="请选择审批流程">
+                :disabled="isViewMode || props.disabled || form.status !== 'DRAFT'" placeholder="请选择审批流程">
                 <el-option v-for="f in flowOptions" :key="f.id"
                   :label="f.flowName || f.businessName || ('流程#' + f.id)" :value="f.id" />
               </el-select>
@@ -80,11 +80,11 @@
         <el-divider content-position="center">盘点行信息</el-divider>
         <el-row :gutter="10" class="mb8">
           <el-col :span="1.5">
-            <el-button type="primary" plain icon="Plus" @click="handleGenerateLines" v-if="!isViewMode && form.planId">生成盘点行</el-button>
+            <el-button type="primary" plain icon="Plus" @click="handleGenerateLines" v-if="!isViewMode && !props.disabled && form.planId">生成盘点行</el-button>
           </el-col>
         </el-row>
         <el-table :data="lineList" :row-class-name="rowLineIndex" @selection-change="handleLineSelectionChange">
-          <el-table-column type="selection" width="50" align="center" v-if="!isViewMode" />
+          <el-table-column type="selection" width="50" align="center" v-if="!isViewMode && !props.disabled" />
           <el-table-column label="序号" align="center" prop="index" width="50" />
           <el-table-column label="物料编码" prop="materialCode" width="120">
             <template #default="scope"><span>{{ scope.row.materialCode }}</span></template>
@@ -106,7 +106,7 @@
           </el-table-column>
           <el-table-column label="实盘数量" prop="actualQuantity" width="120">
             <template #default="scope">
-              <el-input v-model="scope.row.actualQuantity" placeholder="实盘数量" v-if="!isViewMode" />
+              <el-input v-model="scope.row.actualQuantity" placeholder="实盘数量" v-if="!isViewMode && !props.disabled" />
               <span v-else>{{ scope.row.actualQuantity }}</span>
             </template>
           </el-table-column>
@@ -115,7 +115,7 @@
           </el-table-column>
           <el-table-column label="备注" prop="remark" width="120">
             <template #default="scope">
-              <el-input v-model="scope.row.remark" placeholder="备注" v-if="!isViewMode" />
+              <el-input v-model="scope.row.remark" placeholder="备注" v-if="!isViewMode && !props.disabled" />
               <span v-else>{{ scope.row.remark }}</span>
             </template>
           </el-table-column>

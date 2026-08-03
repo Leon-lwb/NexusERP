@@ -12,7 +12,7 @@
               placement="top"
             >
               <span style="margin-right: 8px; display: inline-block">
-                <el-button type="success" icon="Stamp" @click="handleCreateFlowCard" :disabled="remainingQty !== undefined && remainingQty <= 0"
+                <el-button v-if="!props.disabled" type="success" icon="Stamp" @click="handleCreateFlowCard" :disabled="remainingQty !== undefined && remainingQty <= 0"
                   >创建流转卡</el-button
                 >
               </span>
@@ -101,13 +101,13 @@
 
         <el-tab-pane label="审批流程" name="approval">
           <el-form :inline="true">
-            <el-form-item label="审批流程" v-if="workOrder.woStatus === 'CREATED'">
+            <el-form-item label="审批流程" v-if="workOrder.woStatus === 'CREATED' && !props.disabled">
               <el-select v-model="selectFlowId" clearable filterable placeholder="请选择审批流程" style="width: 300px">
                 <el-option v-for="f in flowOptions" :key="f.id" :label="f.flowName || f.businessName || '流程#' + f.id" :value="f.id" />
               </el-select>
             </el-form-item>
             <el-form-item>
-              <el-button type="primary" icon="Promotion" @click="handleSubmitFlow" v-if="workOrder.woStatus === 'CREATED'" :disabled="!selectFlowId">
+              <el-button type="primary" icon="Promotion" @click="handleSubmitFlow" v-if="workOrder.woStatus === 'CREATED' && !props.disabled" :disabled="!selectFlowId">
                 提交审批
               </el-button>
               <el-button type="info" icon="View" @click="handleViewFlow" v-if="procInsId"> 查看流程 </el-button>

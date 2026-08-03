@@ -5,8 +5,8 @@
         <div class="card-header">
           <span>{{ title }}</span>
           <div>
-            <el-button type="primary" @click="submitForm" v-if="!isViewMode">保存</el-button>
-            <el-button type="success" @click="handleSubmitFlow" v-if="!isViewMode && form.woStatus === 'CREATED' && form.woId">提交审批</el-button>
+            <el-button type="primary" @click="submitForm" v-if="!isViewMode && !props.disabled">保存</el-button>
+            <el-button type="success" @click="handleSubmitFlow" v-if="!isViewMode && !props.disabled && form.woStatus === 'CREATED' && form.woId">提交审批</el-button>
             <el-button type="info" @click="onViewFlow" v-if="form.woStatus === 'APPROVING' || form.woStatus === 'APPROVED'">查看流程</el-button>
             <el-button @click="cancel" v-if="!props.disabled">取消</el-button>
           </div>
@@ -20,7 +20,7 @@
             <el-form-item label="工单编号" prop="woNo">
               <div style="display: flex; align-items: center; gap: 10px;">
                 <el-input v-model="form.woNo" placeholder="请输入工单编号" :disabled="autoGenFlag || isViewMode" style="flex: 1;" />
-                <el-switch v-model="autoGenFlag" active-color="#13ce66" active-text="生成" @change="handleAutoGenChange" :disabled="isViewMode">
+                <el-switch v-model="autoGenFlag" active-color="#13ce66" active-text="生成" @change="handleAutoGenChange" :disabled="isViewMode || props.disabled">
                 </el-switch>
               </div>
             </el-form-item>
@@ -29,7 +29,7 @@
             <el-form-item label="来源计划" prop="planName">
               <el-input v-model="form.planName" placeholder="请选择来源计划" readonly>
                 <template #append>
-                  <el-button icon="Search" @click="openPlanSelect" :disabled="isViewMode" />
+                  <el-button icon="Search" @click="openPlanSelect" :disabled="isViewMode || props.disabled" />
                 </template>
               </el-input>
             </el-form-item>
@@ -53,7 +53,7 @@
             <el-form-item label="产品编码" prop="materialCode">
               <el-input v-model="form.materialCode" placeholder="请选择产品物料" readonly>
                 <template #append>
-                  <el-button icon="Search" @click="openMaterialSelect" :disabled="isViewMode" />
+                  <el-button icon="Search" @click="openMaterialSelect" :disabled="isViewMode || props.disabled" />
                 </template>
               </el-input>
             </el-form-item>
@@ -102,7 +102,7 @@
             <el-form-item label="BOM名称" prop="bomName">
               <el-input v-model="form.bomName" placeholder="请选择BOM" readonly>
                 <template #append>
-                  <el-button icon="Search" @click="openBomSelect" :disabled="isViewMode" />
+                  <el-button icon="Search" @click="openBomSelect" :disabled="isViewMode || props.disabled" />
                 </template>
               </el-input>
             </el-form-item>
@@ -119,7 +119,7 @@
             <el-form-item label="主车间" prop="workshopName">
               <el-input v-model="form.workshopName" placeholder="请选择主车间" readonly>
                 <template #append>
-                  <el-button icon="Search" @click="openMainWorkshopSelect" :disabled="isViewMode" />
+                  <el-button icon="Search" @click="openMainWorkshopSelect" :disabled="isViewMode || props.disabled" />
                 </template>
               </el-input>
             </el-form-item>
@@ -139,12 +139,12 @@
                   :max-collapse-tags="3"
                   placeholder="请选择车间"
                   style="flex: 1; min-width: 300px;"
-                  :disabled="isViewMode"
+                  :disabled="isViewMode || props.disabled"
                   @remove-tag="handleWorkshopRemove"
                 >
                   <el-option v-for="item in workshopOptions" :key="item.workshopId" :label="item.workshopName" :value="item.workshopId" />
                 </el-select>
-                <el-button type="primary" icon="Search" @click="openWorkshopSelect" :disabled="isViewMode">选择</el-button>
+                <el-button type="primary" icon="Search" @click="openWorkshopSelect" :disabled="isViewMode || props.disabled">选择</el-button>
               </div>
             </el-form-item>
           </el-col>
@@ -158,12 +158,12 @@
               icon="Plus"
               @click="openWorkstationSelect"
               :disabled="isViewMode || !form.workshopList || form.workshopList.length === 0"
-              v-if="!isViewMode"
+              v-if="!isViewMode && !props.disabled"
               >添加工作站</el-button
             >
           </el-col>
           <el-col :span="1.5">
-            <span v-if="!isViewMode && (!form.workshopList || form.workshopList.length === 0)" style="color: #909399;">请先选择车间</span>
+            <span v-if="!isViewMode && !props.disabled && (!form.workshopList || form.workshopList.length === 0)" style="color: #909399;">请先选择车间</span>
           </el-col>
         </el-row>
         <el-row :gutter="20">
@@ -174,7 +174,7 @@
                 <el-table-column label="工作站编码" prop="resourceCode" width="120" />
                 <el-table-column label="工作站名称" prop="resourceName" />
                 <el-table-column label="所属车间" prop="parentName" width="150" />
-                <el-table-column label="操作" width="100" align="center" v-if="!isViewMode">
+                <el-table-column label="操作" width="100" align="center" v-if="!isViewMode && !props.disabled">
                   <template #default="scope">
                     <el-button type="danger" link icon="Delete" @click="removeWorkstation(scope.$index)">删除</el-button>
                   </template>
@@ -192,12 +192,12 @@
               icon="Plus"
               @click="openTeamSelect"
               :disabled="isViewMode || !form.workshopList || form.workshopList.length === 0"
-              v-if="!isViewMode"
+              v-if="!isViewMode && !props.disabled"
               >添加班组</el-button
             >
           </el-col>
           <el-col :span="1.5">
-            <span v-if="!isViewMode && (!form.workshopList || form.workshopList.length === 0)" style="color: #909399;">请先选择车间</span>
+            <span v-if="!isViewMode && !props.disabled && (!form.workshopList || form.workshopList.length === 0)" style="color: #909399;">请先选择车间</span>
           </el-col>
         </el-row>
         <el-row :gutter="20">
@@ -208,7 +208,7 @@
                 <el-table-column label="班组编码" prop="resourceCode" width="120" />
                 <el-table-column label="班组名称" prop="resourceName" />
                 <el-table-column label="所属车间" prop="parentName" width="150" />
-                <el-table-column label="操作" width="100" align="center" v-if="!isViewMode">
+                <el-table-column label="操作" width="100" align="center" v-if="!isViewMode && !props.disabled">
                   <template #default="scope">
                     <el-button type="danger" link icon="Delete" @click="removeTeam(scope.$index)">删除</el-button>
                   </template>
@@ -224,7 +224,7 @@
             <el-form-item label="负责人" prop="responsibleName">
               <el-input v-model="form.responsibleName" placeholder="请选择负责人" readonly>
                 <template #append>
-                  <el-button icon="Search" @click="openUserSelect" :disabled="isViewMode" />
+                  <el-button icon="Search" @click="openUserSelect" :disabled="isViewMode || props.disabled" />
                 </template>
               </el-input>
             </el-form-item>
@@ -284,7 +284,7 @@
                 clearable
                 filterable
                 :loading="loadingFlow"
-                :disabled="isViewMode || form.woStatus !== 'CREATED'"
+                :disabled="isViewMode || props.disabled || form.woStatus !== 'CREATED'"
                 placeholder="请选择审批流程"
                 style="width: 100%"
               >
