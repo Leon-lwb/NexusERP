@@ -6,6 +6,7 @@ import com.nexus.system.domain.bo.SysUserBo;
 import com.nexus.system.domain.vo.SysUserExportVo;
 import com.nexus.system.domain.vo.SysUserVo;
 
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -58,6 +59,14 @@ public interface ISysUserService {
      * @return 用户对象信息
      */
     SysUserVo selectUserByUserName(String userName);
+
+    /**
+     * 通过用户名集合批量查询用户（用于列表页批量回填昵称，避免 N+1 查询）
+     *
+     * @param userNames 用户名集合
+     * @return 用户列表信息（按用户名过滤，仅返回存在的用户）
+     */
+    List<SysUserVo> selectUserByUserNames(Collection<String> userNames);
 
     /**
      * 通过手机号查询用户

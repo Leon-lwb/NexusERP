@@ -565,11 +565,11 @@ public class WfTaskServiceImpl extends FlowServiceFactory implements IWfTaskServ
                    	if (Objects.nonNull(multiInstance) && !multiInstance.isSequential()) {//当前节点是会签而且是并发的话
                    		List<SysUserVo> sysUserFromTask = getSysUserFromTask(userTask,startUserId);
                    		List<String> userlist = sysUserFromTask.stream().filter(Objects::nonNull).filter(item->item.getUserName()!=null).map(SysUserVo::getUserName).collect(Collectors.toList());
-                   		int i=0;
-         				    for (Task nexttask : listTask) {
+                   		// 会签人数与待办任务数可能不一致（候选人解析失败/用户已删除），按较小值循环，避免越界
+                   		int size = Math.min(listTask.size(), userlist.size());
+                   		for (int i = 0; i < size; i++) {
          					   String assignee = userlist.get(i).toString();
-             			       taskService.setAssignee(nexttask.getId(), assignee);
-             			       i++;
+             			       taskService.setAssignee(listTask.get(i).getId(), assignee);
          				    }
 
                    	}
@@ -596,6 +596,10 @@ public class WfTaskServiceImpl extends FlowServiceFactory implements IWfTaskServ
         	}
         	else {
               SysUserVo userByUsername = commonService.getSysUserByUserName(assignee);
+              if (userByUsername == null) {
+                  log.warn("getSysUserFromTask - 未找到用户，assignee={}", assignee);
+                  return Lists.newArrayList();
+              }
               return Lists.newArrayList(userByUsername);
         	}
 

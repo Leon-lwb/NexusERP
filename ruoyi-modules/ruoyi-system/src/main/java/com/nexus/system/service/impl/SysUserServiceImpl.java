@@ -171,6 +171,22 @@ public class SysUserServiceImpl implements ISysUserService, UserService {
     }
 
     /**
+     * 通过用户名集合批量查询用户（用于列表页批量回填昵称，避免 N+1 查询）
+     *
+     * @param userNames 用户名集合
+     * @return 用户列表信息（按用户名过滤，仅返回存在的用户）
+     */
+    @Override
+    public List<SysUserVo> selectUserByUserNames(Collection<String> userNames) {
+        if (CollUtil.isEmpty(userNames)) {
+            return List.of();
+        }
+        return baseMapper.selectVoList(new LambdaQueryWrapper<SysUser>()
+            .select(SysUser::getUserName, SysUser::getNickName)
+            .in(SysUser::getUserName, userNames));
+    }
+
+    /**
      * 通过手机号查询用户
      *
      * @param phonenumber 手机号

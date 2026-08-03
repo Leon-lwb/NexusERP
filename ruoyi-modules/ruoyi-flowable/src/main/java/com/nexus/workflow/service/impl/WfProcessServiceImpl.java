@@ -129,11 +129,6 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
     private final WfCategoryMapper categoryMapper;
     private final WfMyBusinessServiceImpl wfMyBusinessServiceImpl;
 
-    //仿钉钉流程转bpmn用
-    private BpmnModel ddBpmnModel;
-    private Process ddProcess;
-    private List<SequenceFlow> ddSequenceFlows;
-
     /**
      * 流程定义列表
      *
@@ -358,30 +353,13 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
             flowTask.setCreateTime(task.getCreateTime());
             flowTask.setProcDefId(task.getProcessDefinitionId());
             flowTask.setTaskName(task.getName());
-            // 流程定义信息
-            ProcessDefinition pd = repositoryService.createProcessDefinitionQuery()
-                .processDefinitionId(task.getProcessDefinitionId())
-                .singleResult();
-            flowTask.setDeployId(pd.getDeploymentId());
-            flowTask.setProcDefName(pd.getName());
-            flowTask.setProcDefVersion(pd.getVersion());
             flowTask.setProcInsId(task.getProcessInstanceId());
-
-            // 流程发起人信息
-            HistoricProcessInstance historicProcessInstance = historyService.createHistoricProcessInstanceQuery()
-                .processInstanceId(task.getProcessInstanceId())
-                .singleResult();
-            String userId = historicProcessInstance.getStartUserId();
-            String nickName = sysUserService.selectUserByUserName(userId).getNickName();
-            flowTask.setStartUserId(userId);
-            flowTask.setStartUserName(nickName);
-            flowTask.setDataId(historicProcessInstance.getBusinessKey());
-
             // 流程变量
             flowTask.setProcVars(task.getProcessVariables());
-
             flowList.add(flowTask);
         }
+        // 批量回填流程定义与发起人信息，避免逐条 N+1 查询
+        fillTaskListExtraInfo(flowList);
         page.setRecords(flowList);
         return TableDataInfo.build(page);
     }
@@ -407,26 +385,11 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
             taskVo.setCreateTime(task.getCreateTime());
             taskVo.setProcDefId(task.getProcessDefinitionId());
             taskVo.setTaskName(task.getName());
-            // 流程定义信息
-            ProcessDefinition pd = repositoryService.createProcessDefinitionQuery()
-                    .processDefinitionId(task.getProcessDefinitionId())
-                    .singleResult();
-            taskVo.setDeployId(pd.getDeploymentId());
-            taskVo.setProcDefName(pd.getName());
-            taskVo.setProcDefVersion(pd.getVersion());
             taskVo.setProcInsId(task.getProcessInstanceId());
-
-            // 流程发起人信息
-            HistoricProcessInstance historicProcessInstance = historyService.createHistoricProcessInstanceQuery()
-                    .processInstanceId(task.getProcessInstanceId())
-                    .singleResult();
-            String userId = historicProcessInstance.getStartUserId();
-            String nickName = sysUserService.selectUserByUserName(userId).getNickName();
-            taskVo.setStartUserId(userId);
-            taskVo.setStartUserName(nickName);
-
             taskVoList.add(taskVo);
         }
+        // 批量回填流程定义与发起人信息，避免逐条 N+1 查询
+        fillTaskListExtraInfo(taskVoList);
         return taskVoList;
     }
 
@@ -454,26 +417,11 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
             flowTask.setCreateTime(task.getCreateTime());
             flowTask.setProcDefId(task.getProcessDefinitionId());
             flowTask.setTaskName(task.getName());
-            // 流程定义信息
-            ProcessDefinition pd = repositoryService.createProcessDefinitionQuery()
-                .processDefinitionId(task.getProcessDefinitionId())
-                .singleResult();
-            flowTask.setDeployId(pd.getDeploymentId());
-            flowTask.setProcDefName(pd.getName());
-            flowTask.setProcDefVersion(pd.getVersion());
             flowTask.setProcInsId(task.getProcessInstanceId());
-
-            // 流程发起人信息
-            HistoricProcessInstance historicProcessInstance = historyService.createHistoricProcessInstanceQuery()
-                .processInstanceId(task.getProcessInstanceId())
-                .singleResult();
-            String userId = historicProcessInstance.getStartUserId();
-            String nickName = sysUserService.selectUserByUserName(userId).getNickName();
-            flowTask.setStartUserId(userId);
-            flowTask.setStartUserName(nickName);
-
             flowList.add(flowTask);
         }
+        // 批量回填流程定义与发起人信息，避免逐条 N+1 查询
+        fillTaskListExtraInfo(flowList);
         page.setRecords(flowList);
         return TableDataInfo.build(page);
     }
@@ -499,26 +447,11 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
             flowTask.setCreateTime(task.getCreateTime());
             flowTask.setProcDefId(task.getProcessDefinitionId());
             flowTask.setTaskName(task.getName());
-            // 流程定义信息
-            ProcessDefinition pd = repositoryService.createProcessDefinitionQuery()
-                    .processDefinitionId(task.getProcessDefinitionId())
-                    .singleResult();
-            flowTask.setDeployId(pd.getDeploymentId());
-            flowTask.setProcDefName(pd.getName());
-            flowTask.setProcDefVersion(pd.getVersion());
             flowTask.setProcInsId(task.getProcessInstanceId());
-
-            // 流程发起人信息
-            HistoricProcessInstance historicProcessInstance = historyService.createHistoricProcessInstanceQuery()
-                    .processInstanceId(task.getProcessInstanceId())
-                    .singleResult();
-            String userId = historicProcessInstance.getStartUserId();
-            String nickName = sysUserService.selectUserByUserName(userId).getNickName();
-            flowTask.setStartUserId(userId);
-            flowTask.setStartUserName(nickName);
-
             flowList.add(flowTask);
         }
+        // 批量回填流程定义与发起人信息，避免逐条 N+1 查询
+        fillTaskListExtraInfo(flowList);
         return flowList;
     }
 
@@ -548,26 +481,8 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
             flowTask.setProcDefId(histTask.getProcessDefinitionId());
             flowTask.setTaskDefKey(histTask.getTaskDefinitionKey());
             flowTask.setTaskName(histTask.getName());
-
-            // 流程定义信息
-            ProcessDefinition pd = repositoryService.createProcessDefinitionQuery()
-                .processDefinitionId(histTask.getProcessDefinitionId())
-                .singleResult();
-            flowTask.setDeployId(pd.getDeploymentId());
-            flowTask.setProcDefName(pd.getName());
-            flowTask.setProcDefVersion(pd.getVersion());
             flowTask.setProcInsId(histTask.getProcessInstanceId());
             flowTask.setHisProcInsId(histTask.getProcessInstanceId());
-
-            // 流程发起人信息
-            HistoricProcessInstance historicProcessInstance = historyService.createHistoricProcessInstanceQuery()
-                .processInstanceId(histTask.getProcessInstanceId())
-                .singleResult();
-            String userId = historicProcessInstance.getStartUserId();
-            String nickName = sysUserService.selectUserByUserName(userId).getNickName();
-            flowTask.setStartUserId(userId);
-            flowTask.setStartUserName(nickName);
-
             // 流程变量
             flowTask.setProcVars(histTask.getProcessVariables());
             //自定义业务
@@ -578,6 +493,8 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
 
             hisTaskList.add(flowTask);
         }
+        // 批量回填流程定义与发起人信息，避免逐条 N+1 查询
+        fillTaskListExtraInfo(hisTaskList);
         page.setTotal(taskInstanceQuery.count());
         page.setRecords(hisTaskList);
 //        Map<String, Object> result = new HashMap<>();
@@ -610,31 +527,15 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
             flowTask.setProcDefId(histTask.getProcessDefinitionId());
             flowTask.setTaskDefKey(histTask.getTaskDefinitionKey());
             flowTask.setTaskName(histTask.getName());
-
-            // 流程定义信息
-            ProcessDefinition pd = repositoryService.createProcessDefinitionQuery()
-                    .processDefinitionId(histTask.getProcessDefinitionId())
-                    .singleResult();
-            flowTask.setDeployId(pd.getDeploymentId());
-            flowTask.setProcDefName(pd.getName());
-            flowTask.setProcDefVersion(pd.getVersion());
             flowTask.setProcInsId(histTask.getProcessInstanceId());
             flowTask.setHisProcInsId(histTask.getProcessInstanceId());
-
-            // 流程发起人信息
-            HistoricProcessInstance historicProcessInstance = historyService.createHistoricProcessInstanceQuery()
-                    .processInstanceId(histTask.getProcessInstanceId())
-                    .singleResult();
-            String userId = historicProcessInstance.getStartUserId();
-            String nickName = sysUserService.selectUserByUserName(userId).getNickName();
-            flowTask.setStartUserId(userId);
-            flowTask.setStartUserName(nickName);
-
             // 流程变量
             flowTask.setProcVars(histTask.getProcessVariables());
 
             hisTaskList.add(flowTask);
         }
+        // 批量回填流程定义与发起人信息，避免逐条 N+1 查询
+        fillTaskListExtraInfo(hisTaskList);
         return hisTaskList;
     }
 
@@ -1848,6 +1749,108 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
     }
 
     /**
+     * 批量查询流程定义信息（避免列表方法内 N+1 查询）
+     *
+     * @param processDefinitionIds 流程定义ID集合
+     * @return 流程定义ID -> 流程定义
+     */
+    private Map<String, ProcessDefinition> batchQueryProcessDefinitions(Collection<String> processDefinitionIds) {
+        if (CollUtil.isEmpty(processDefinitionIds)) {
+            return Collections.emptyMap();
+        }
+        List<ProcessDefinition> pdList = repositoryService.createProcessDefinitionQuery()
+            .processDefinitionIds(new HashSet<>(processDefinitionIds))
+            .list();
+        Map<String, ProcessDefinition> pdMap = new HashMap<>();
+        if (CollUtil.isNotEmpty(pdList)) {
+            pdList.forEach(pd -> pdMap.put(pd.getId(), pd));
+        }
+        return pdMap;
+    }
+
+    /**
+     * 批量查询历史流程实例（发起人/业务Key），避免列表方法内 N+1 查询
+     *
+     * @param processInstanceIds 流程实例ID集合
+     * @return 流程实例ID -> 历史流程实例
+     */
+    private Map<String, HistoricProcessInstance> batchQueryHistoricProcessInstances(Collection<String> processInstanceIds) {
+        if (CollUtil.isEmpty(processInstanceIds)) {
+            return Collections.emptyMap();
+        }
+        List<HistoricProcessInstance> hisList = historyService.createHistoricProcessInstanceQuery()
+            .processInstanceIds(new HashSet<>(processInstanceIds))
+            .list();
+        Map<String, HistoricProcessInstance> hisMap = new HashMap<>();
+        if (CollUtil.isNotEmpty(hisList)) {
+            hisList.forEach(his -> hisMap.put(his.getId(), his));
+        }
+        return hisMap;
+    }
+
+    /**
+     * 批量查询用户名->昵称映射（避免列表方法内按用户逐条查询）
+     *
+     * @param userNames 用户名集合
+     * @return 用户名 -> 昵称（用户不存在时回退显示用户名）
+     */
+    private Map<String, String> batchQueryUserNickNames(Collection<String> userNames) {
+        if (CollUtil.isEmpty(userNames)) {
+            return Collections.emptyMap();
+        }
+        Map<String, String> nickNameMap = new HashMap<>();
+        sysUserService.selectUserByUserNames(userNames)
+            .forEach(user -> nickNameMap.put(user.getUserName(), user.getNickName()));
+        return nickNameMap;
+    }
+
+    /**
+     * 批量回填任务列表的流程定义与发起人信息（todo/claim/finished 列表共用）
+     *
+     * @param flowList 待回填的任务VO列表
+     */
+    private void fillTaskListExtraInfo(List<WfTaskVo> flowList) {
+        if (CollUtil.isEmpty(flowList)) {
+            return;
+        }
+        Set<String> procDefIds = new HashSet<>();
+        Set<String> procInsIds = new HashSet<>();
+        Set<String> userNames = new HashSet<>();
+        for (WfTaskVo flowTask : flowList) {
+            if (StringUtils.isNotBlank(flowTask.getProcDefId())) {
+                procDefIds.add(flowTask.getProcDefId());
+            }
+            if (StringUtils.isNotBlank(flowTask.getProcInsId())) {
+                procInsIds.add(flowTask.getProcInsId());
+            }
+            if (StringUtils.isNotBlank(flowTask.getStartUserId())) {
+                userNames.add(flowTask.getStartUserId());
+            }
+        }
+        Map<String, ProcessDefinition> pdMap = batchQueryProcessDefinitions(procDefIds);
+        Map<String, HistoricProcessInstance> hisMap = batchQueryHistoricProcessInstances(procInsIds);
+        Map<String, String> nickNameMap = batchQueryUserNickNames(userNames);
+        for (WfTaskVo flowTask : flowList) {
+            // 流程定义信息
+            ProcessDefinition pd = pdMap.get(flowTask.getProcDefId());
+            if (pd != null) {
+                flowTask.setDeployId(pd.getDeploymentId());
+                flowTask.setProcDefName(pd.getName());
+                flowTask.setProcDefVersion(pd.getVersion());
+            }
+            // 流程发起人信息
+            HistoricProcessInstance his = hisMap.get(flowTask.getProcInsId());
+            if (his != null) {
+                flowTask.setStartUserId(his.getStartUserId());
+                flowTask.setStartUserName(nickNameMap.getOrDefault(his.getStartUserId(), his.getStartUserId()));
+                if (StringUtils.isBlank(flowTask.getDataId())) {
+                    flowTask.setDataId(his.getBusinessKey());
+                }
+            }
+        }
+    }
+
+    /**
 	 * 获取流程是否结束
 	 *  add by wanghuan
 	 * @param String procInsId
@@ -1971,23 +1974,20 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
 		try {
 
             JSONObject object = JSON.parseObject(ddjson, JSONObject.class);
-            //JSONObject workflow = object.getJSONObject("process");
-            //ddBpmnModel.addProcess(ddProcess);
-            //ddProcess.setName (workflow.getString("name"));
-            //ddProcess.setId(workflow.getString("processId"));
-            ddProcess = new Process();
-            ddBpmnModel = new BpmnModel();
-            ddSequenceFlows = Lists.newArrayList();
+            // 以下对象均为本次转换的局部变量，禁止提升为实例字段（多线程/多租户并发调用会互相污染）
+            Process ddProcess = new Process();
+            BpmnModel ddBpmnModel = new BpmnModel();
+            List<SequenceFlow> ddSequenceFlows = Lists.newArrayList();
             ddBpmnModel.addProcess(ddProcess);
             ddProcess.setId("Process_"+UUID.randomUUID());
             ddProcess.setName ("dingding演示流程");
             JSONObject flowNode = object.getJSONObject("processData");
             StartEvent startEvent = createStartEvent(flowNode);
             ddProcess.addFlowElement(startEvent);
-            String lastNode = create(startEvent.getId(), flowNode);
+            String lastNode = create(startEvent.getId(), flowNode, ddProcess, ddBpmnModel, ddSequenceFlows);
             EndEvent endEvent = createEndEvent();
             ddProcess.addFlowElement(endEvent);
-            ddProcess.addFlowElement(connect(lastNode, endEvent.getId()));
+            ddProcess.addFlowElement(connect(lastNode, endEvent.getId(), ddSequenceFlows));
 
             new BpmnAutoLayout(ddBpmnModel).execute();
             return R.ok(new String(new BpmnXMLConverter().convertToXML(ddBpmnModel)));
@@ -2007,7 +2007,7 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
         return serviceTask;
     }
 
-    SequenceFlow connect(String from, String to) {
+    SequenceFlow connect(String from, String to, List<SequenceFlow> ddSequenceFlows) {
         SequenceFlow flow = new SequenceFlow();
         flow.setId(id("sequenceFlow"));
         flow.setSourceRef(from);
@@ -2036,65 +2036,62 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
     }
 
 
-    String create(String fromId, JSONObject flowNode) throws InvocationTargetException, IllegalAccessException {
+    String create(String fromId, JSONObject flowNode, Process ddProcess, BpmnModel ddBpmnModel, List<SequenceFlow> ddSequenceFlows) throws InvocationTargetException, IllegalAccessException {
         String nodeType = flowNode.getString("type");
 
         if (Type.INITIATOR_TASK.isEqual(nodeType)) {
             flowNode.put("incoming", Collections.singletonList(fromId));
-            String id = createUserTask(flowNode,nodeType);
+            String id = createUserTask(flowNode,nodeType, ddProcess, ddSequenceFlows);
 
             if(flowNode.containsKey("concurrentNodes")) { //并行网关
-                return createConcurrentGatewayBuilder(id, flowNode);
+                return createConcurrentGatewayBuilder(id, flowNode, ddProcess, ddBpmnModel, ddSequenceFlows);
             }
 
             if(flowNode.containsKey("conditionNodes")) { //排它网关或叫条件网关
-                return createExclusiveGatewayBuilder(id, flowNode);
+                return createExclusiveGatewayBuilder(id, flowNode, ddProcess, ddBpmnModel, ddSequenceFlows);
             }
 
             // 如果当前任务还有后续任务，则遍历创建后续任务
             JSONObject nextNode = flowNode.getJSONObject("childNode");
             if (Objects.nonNull(nextNode)) {
-                FlowElement flowElement = ddBpmnModel.getFlowElement(id);
-                return create(id, nextNode);
+                return create(id, nextNode, ddProcess, ddBpmnModel, ddSequenceFlows);
             } else {
                 return id;
             }
         } else if (Type.USER_TASK.isEqual(nodeType) || Type.APPROVER_TASK.isEqual(nodeType)) {
         	flowNode.put("incoming", Collections.singletonList(fromId));
-            String id = createUserTask(flowNode,nodeType);
+            String id = createUserTask(flowNode,nodeType, ddProcess, ddSequenceFlows);
             if(flowNode.containsKey("concurrentNodes")) { //并行网关
-                return createConcurrentGatewayBuilder(id, flowNode);
+                return createConcurrentGatewayBuilder(id, flowNode, ddProcess, ddBpmnModel, ddSequenceFlows);
             }
 
             if(flowNode.containsKey("conditionNodes")) { //排它网关或叫条件网关
-                return createExclusiveGatewayBuilder(id, flowNode);
+                return createExclusiveGatewayBuilder(id, flowNode, ddProcess, ddBpmnModel, ddSequenceFlows);
             }
 
             // 如果当前任务还有后续任务，则遍历创建后续任务
             JSONObject nextNode = flowNode.getJSONObject("childNode");
             if (Objects.nonNull(nextNode)) {
-                FlowElement flowElement = ddBpmnModel.getFlowElement(id);
-                return create(id, nextNode);
+                return create(id, nextNode, ddProcess, ddBpmnModel, ddSequenceFlows);
             } else {
             	return id;
             }
         } else if (Type.SERVICE_TASK.isEqual(nodeType)) {
             flowNode.put("incoming", Collections.singletonList(fromId));
-            String id = createServiceTask(flowNode);
+            String id = createServiceTask(flowNode, ddProcess, ddSequenceFlows);
 
             if(flowNode.containsKey("concurrentNodes")) { //并行网关
-                return createConcurrentGatewayBuilder(id, flowNode);
+                return createConcurrentGatewayBuilder(id, flowNode, ddProcess, ddBpmnModel, ddSequenceFlows);
             }
 
             if(flowNode.containsKey("conditionNodes")) { //排它网关或叫条件网关
-                return createExclusiveGatewayBuilder(id, flowNode);
+                return createExclusiveGatewayBuilder(id, flowNode, ddProcess, ddBpmnModel, ddSequenceFlows);
             }
 
             // 如果当前任务还有后续任务，则遍历创建后续任务
             JSONObject nextNode = flowNode.getJSONObject("childNode");
             if (Objects.nonNull(nextNode)) {
-                FlowElement flowElement = ddBpmnModel.getFlowElement(id);
-                return create(id, nextNode);
+                return create(id, nextNode, ddProcess, ddBpmnModel, ddSequenceFlows);
             } else {
                 return id;
             }
@@ -2104,14 +2101,14 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
         }
     }
 
-    String createExclusiveGatewayBuilder(String formId, JSONObject flowNode) throws InvocationTargetException, IllegalAccessException {
+    String createExclusiveGatewayBuilder(String formId, JSONObject flowNode, Process ddProcess, BpmnModel ddBpmnModel, List<SequenceFlow> ddSequenceFlows) throws InvocationTargetException, IllegalAccessException {
         //String name = flowNode.getString("nodeName");
         String exclusiveGatewayId = id("exclusiveGateway");
         ExclusiveGateway exclusiveGateway = new ExclusiveGateway();
         exclusiveGateway.setId(exclusiveGatewayId);
         exclusiveGateway.setName("排它条件网关");
         ddProcess.addFlowElement(exclusiveGateway);
-        ddProcess.addFlowElement(connect(formId, exclusiveGatewayId));
+        ddProcess.addFlowElement(connect(formId, exclusiveGatewayId, ddSequenceFlows));
 
         if (Objects.isNull(flowNode.getJSONArray("conditionNodes")) && Objects.isNull(flowNode.getJSONObject("childNode"))) {
             return exclusiveGatewayId;
@@ -2136,7 +2133,7 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
             }
             // 只生成一个任务，同时设置当前任务的条件
             childNode.put("incoming", Collections.singletonList(exclusiveGatewayId));
-            String identifier = create(exclusiveGatewayId, childNode);
+            String identifier = create(exclusiveGatewayId, childNode, ddProcess, ddBpmnModel, ddSequenceFlows);
             List<SequenceFlow> flows = ddSequenceFlows.stream().filter(flow -> StringUtils.equals(exclusiveGatewayId, flow.getSourceRef()))
                     .collect(Collectors.toList());
 
@@ -2160,7 +2157,7 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
         JSONObject childNode = flowNode.getJSONObject("childNode");
         if (Objects.nonNull(childNode)) {
             if (incoming == null || incoming.isEmpty()) {
-                return create(exclusiveGatewayId, childNode);
+                return create(exclusiveGatewayId, childNode, ddProcess, ddBpmnModel, ddSequenceFlows);
             } else {
                 // 所有 service task 连接 end exclusive gateway
                 childNode.put("incoming", incoming);
@@ -2168,9 +2165,9 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
                 // 1.0 先进行边连接, 暂存 nextNode
                 JSONObject nextNode = childNode.getJSONObject("childNode");
                 childNode.put("childNode", null);
-                String identifier = create(flowElement.getId(), childNode);
+                String identifier = create(flowElement.getId(), childNode, ddProcess, ddBpmnModel, ddSequenceFlows);
                 for (int i = 1; i < incoming.size(); i++) {
-                	ddProcess.addFlowElement(connect(incoming.get(i), identifier));
+                	ddProcess.addFlowElement(connect(incoming.get(i), identifier, ddSequenceFlows));
                 }
 
                 //  针对 gateway 空任务分支 添加条件表达式
@@ -2202,7 +2199,7 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
 
                 // 1.1 边连接完成后，在进行 nextNode 创建
                 if (Objects.nonNull(nextNode)) {
-                    return create(identifier, nextNode);
+                    return create(identifier, nextNode, ddProcess, ddBpmnModel, ddSequenceFlows);
                 } else {
                     return identifier;
                 }
@@ -2211,7 +2208,7 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
         return exclusiveGatewayId;
     }
 
-    String createConcurrentGatewayBuilder(String fromId, JSONObject flowNode) throws InvocationTargetException, IllegalAccessException {
+    String createConcurrentGatewayBuilder(String fromId, JSONObject flowNode, Process ddProcess, BpmnModel ddBpmnModel, List<SequenceFlow> ddSequenceFlows) throws InvocationTargetException, IllegalAccessException {
         //String name = flowNode.getString("nodeName");
         //下面创建并行网关并进行连线
     	ParallelGateway parallelGateway = new ParallelGateway();
@@ -2219,7 +2216,7 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
         parallelGateway.setId(parallelGatewayId);
         parallelGateway.setName("并行网关");
         ddProcess.addFlowElement(parallelGateway);
-        ddProcess.addFlowElement(connect(fromId, parallelGatewayId));
+        ddProcess.addFlowElement(connect(fromId, parallelGatewayId, ddSequenceFlows));
 
         if (Objects.isNull(flowNode.getJSONArray("concurrentNodes"))
                 && Objects.isNull(flowNode.getJSONObject("childNode"))) {
@@ -2235,7 +2232,7 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
                 incoming.add(parallelGatewayId);
                 continue;
             }
-            String identifier = create(parallelGatewayId, childNode);
+            String identifier = create(parallelGatewayId, childNode, ddProcess, ddBpmnModel, ddSequenceFlows);
             if (Objects.nonNull(identifier)) {//否则加入有子节点的用户id
                 incoming.add(identifier);
             }
@@ -2246,7 +2243,7 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
         if (Objects.nonNull(childNode)) {
             // 普通结束网关
             if (CollectionUtils.isEmpty(incoming)) {
-                return create(parallelGatewayId, childNode);
+                return create(parallelGatewayId, childNode, ddProcess, ddBpmnModel, ddSequenceFlows);
             } else {
                 // 所有 user task 连接 end parallel gateway
                 childNode.put("incoming", incoming);
@@ -2254,14 +2251,14 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
                 // 1.0 先进行边连接, 暂存 nextNode
                 JSONObject nextNode = childNode.getJSONObject("childNode");
                 childNode.put("childNode", null); //不加这个,下面创建子节点会进入递归了
-                String identifier = create(incoming.get(0), childNode);
+                String identifier = create(incoming.get(0), childNode, ddProcess, ddBpmnModel, ddSequenceFlows);
                 for (int i = 1; i < incoming.size(); i++) {//其中0之前创建的时候已经连接过了，所以从1开始补另外一条
                     FlowElement flowElementIncoming = ddBpmnModel.getFlowElement(incoming.get(i));
-                    ddProcess.addFlowElement(connect(flowElementIncoming.getId(), identifier));
+                    ddProcess.addFlowElement(connect(flowElementIncoming.getId(), identifier, ddSequenceFlows));
                 }
                 // 1.1 边连接完成后，在进行 nextNode 创建
                 if (Objects.nonNull(nextNode)) {
-                    return create(identifier, nextNode);
+                    return create(identifier, nextNode, ddProcess, ddBpmnModel, ddSequenceFlows);
                 } else {
                     return identifier;
                 }
@@ -2276,7 +2273,7 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
 
     }
 
-    String createUserTask(JSONObject flowNode, String nodeType) {
+    String createUserTask(JSONObject flowNode, String nodeType, Process ddProcess, List<SequenceFlow> ddSequenceFlows) {
         List<String> incoming = flowNode.getJSONArray("incoming").toJavaList(String.class);
         // 自动生成id
         String id = id("userTask");
@@ -2362,12 +2359,12 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
         	}
 
             ddProcess.addFlowElement(userTask);
-            ddProcess.addFlowElement(connect(incoming.get(0), id));
+            ddProcess.addFlowElement(connect(incoming.get(0), id, ddSequenceFlows));
         }
         return id;
     }
 
-    String createServiceTask(JSONObject flowNode) {
+    String createServiceTask(JSONObject flowNode, Process ddProcess, List<SequenceFlow> ddSequenceFlows) {
         List<String> incoming = flowNode.getJSONArray("incoming").toJavaList(String.class);
         // 自动生成id
         String id = id("serviceTask");
@@ -2376,7 +2373,7 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
             serviceTask.setName(flowNode.getString("nodeName"));
             serviceTask.setId(id);
             ddProcess.addFlowElement(serviceTask);
-            ddProcess.addFlowElement(connect(incoming.get(0), id));
+            ddProcess.addFlowElement(connect(incoming.get(0), id, ddSequenceFlows));
         }
         return id;
     }

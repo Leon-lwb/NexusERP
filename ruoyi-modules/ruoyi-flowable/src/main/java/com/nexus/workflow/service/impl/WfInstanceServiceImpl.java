@@ -16,9 +16,13 @@ import com.nexus.common.core.service.UserService;
 import com.nexus.common.json.utils.JsonUtils;
 import com.nexus.common.core.utils.SpringContextHolder;
 import com.nexus.common.core.utils.StringUtils;
+import com.nexus.common.flowable.common.constant.ProcessConstants;
 import com.nexus.common.flowable.common.constant.TaskConstants;
+import com.nexus.common.flowable.common.enums.FlowComment;
+import com.nexus.common.flowable.common.enums.ProcessStatus;
 import com.nexus.common.flowable.core.domain.ActStatus;
 import com.nexus.common.flowable.factory.FlowServiceFactory;
+import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.workflow.service.WfCallBackServiceI;
 import com.nexus.system.domain.vo.SysDeptVo;
 import com.nexus.system.domain.vo.SysRoleVo;
@@ -37,8 +41,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import org.apache.commons.collections4.CollectionUtils;
+import org.flowable.bpmn.model.BpmnModel;
+import org.flowable.bpmn.model.EndEvent;
 import org.flowable.common.engine.api.FlowableObjectNotFoundException;
 import org.flowable.engine.history.HistoricProcessInstance;
+import org.flowable.engine.runtime.Execution;
+import org.flowable.engine.runtime.ProcessInstance;
 import org.flowable.engine.task.Comment;
 import org.flowable.identitylink.api.history.HistoricIdentityLink;
 import org.flowable.task.api.Task;
@@ -47,6 +55,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 
 /**
@@ -70,14 +79,58 @@ public class WfInstanceServiceImpl extends FlowServiceFactory implements IWfInst
     private CommonService commonService;
 
     /**
-     * 结束流程实例
+     * 结束流程实例（终止整个流程，走引擎 API 将活动迁移到结束节点，并回写业务状态）
      *
-     * @param vo
+     * @param vo 包含流程实例ID与终止原因
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void stopProcessInstance(WfTaskBo vo) {
-        String taskId = vo.getTaskId();
-
+        String procInsId = vo.getProcInsId();
+        if (StringUtils.isBlank(procInsId)) {
+            throw new ServiceException("流程实例ID不能为空");
+        }
+        ProcessInstance processInstance = runtimeService.createProcessInstanceQuery()
+            .processInstanceTenantId(TenantHelper.getTenantId())
+            .processInstanceId(procInsId)
+            .singleResult();
+        if (processInstance == null) {
+            throw new ServiceException("流程实例不存在或已结束");
+        }
+        BpmnModel bpmnModel = repositoryService.getBpmnModel(processInstance.getProcessDefinitionId());
+        if (ObjectUtil.isNull(bpmnModel)) {
+            throw new ServiceException("获取流程定义信息失败");
+        }
+        List<EndEvent> endNodes = bpmnModel.getMainProcess().findFlowElementsOfType(EndEvent.class, false);
+        if (CollUtil.isEmpty(endNodes)) {
+            throw new ServiceException("流程定义中不存在结束节点");
+        }
+        // 当前活动任务加终止意见
+        List<Task> activeTasks = taskService.createTaskQuery().processInstanceId(procInsId).active().list();
+        if (CollUtil.isNotEmpty(activeTasks)) {
+            for (Task activeTask : activeTasks) {
+                taskService.addComment(activeTask.getId(), procInsId, FlowComment.STOP.getType(),
+                    StringUtils.isBlank(vo.getComment()) ? "取消申请" : vo.getComment());
+            }
+        }
+        // 流程状态置为已取消，并将所有活动迁移到结束节点
+        runtimeService.setVariable(procInsId, ProcessConstants.PROCESS_STATUS_KEY, ProcessStatus.CANCELED.getStatus());
+        List<Execution> executions = runtimeService.createExecutionQuery().parentId(procInsId).list();
+        List<String> executionIds = executions.stream().map(Execution::getId).collect(Collectors.toList());
+        runtimeService.createChangeActivityStateBuilder()
+            .moveExecutionsToSingleActivityId(executionIds, endNodes.get(0).getId())
+            .changeState();
+        // 回写自定义业务状态为已终止
+        if (StringUtils.isNotBlank(vo.getDataId())) {
+            WfMyBusiness business = wfMyBusinessService.getByDataId(vo.getDataId());
+            if (business != null) {
+                business.setActStatus(ActStatus.stop);
+                business.setTaskId("");
+                business.setTaskName("已终止");
+                business.setTodoUsers("");
+                wfMyBusinessService.updateById(business);
+            }
+        }
     }
 
     /**

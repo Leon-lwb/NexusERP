@@ -4,7 +4,6 @@ import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.nexus.workflow.service.impl.WfInstanceServiceImpl;
 import com.nexus.workflow.service.impl.WfMyBusinessServiceImpl;
-import com.nexus.common.core.domain.R;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.workflow.domain.WfMyBusiness;
 
@@ -48,10 +47,8 @@ public class WfCommonService {
         	wfMyBusiness = business;
         }
         if (processDefinitionId==null){
-            // 以便更新流程
-            processDefinitionId = "";
-            R.fail("自定义表单也没关联流程定义表或流程定义里关联自定义表单");
-            return false;
+            // 流程定义ID为空则初始化失败（原实现调用 R.fail(...) 无返回值，既不返回也不抛异常，属逻辑漏洞）
+            throw new ServiceException("自定义表单未关联流程定义表或流程定义未关联自定义表单");
         }
         wfMyBusiness.setTitle(title);
         wfMyBusiness.setDataId(dataId);
