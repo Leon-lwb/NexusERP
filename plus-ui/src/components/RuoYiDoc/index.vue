@@ -5,7 +5,7 @@
 </template>
 
 <script setup lang="ts">
-const url = ref('http://nexuserp.website/index');
+const url = ref('/manual/index.html');
 
 const click = () => {
   window.open(url.value, '_blank');
