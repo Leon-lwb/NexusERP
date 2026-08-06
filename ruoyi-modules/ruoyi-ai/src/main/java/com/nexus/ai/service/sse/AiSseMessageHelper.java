@@ -48,6 +48,12 @@ public class AiSseMessageHelper {
     public static final String TYPE_IMAGE = "AI_IMAGE";
     /** 联网搜索来源卡片 */
     public static final String TYPE_WEB_SEARCH = "AI_WEB_SEARCH";
+    /** 流程执行状态（instance 级） */
+    public static final String TYPE_FLOW_STATUS = "AI_FLOW_STATUS";
+    /** 流程节点开始执行 */
+    public static final String TYPE_FLOW_NODE_START = "AI_FLOW_NODE_START";
+    /** 流程节点执行完成 */
+    public static final String TYPE_FLOW_NODE_END = "AI_FLOW_NODE_END";
 
     /**
      * 发送 AI 回复内容（完整替换模式，用于 Agent 一次性结果）
@@ -214,6 +220,54 @@ public class AiSseMessageHelper {
      * @param url   链接
      */
     public record SourceCard(String title, String url) {
+    }
+
+    /**
+     * 发送流程执行状态事件
+     * <p>payload: {instanceId, flowId, status, seq, errorMsg?, durationMs?}</p>
+     *
+     * @param userId 目标用户ID
+     * @param payload 事件数据
+     */
+    public static void sendFlowStatus(Long userId, Map<String, Object> payload) {
+        try {
+            payload.put("type", TYPE_FLOW_STATUS);
+            send(userId, TYPE_FLOW_STATUS, MAPPER.writeValueAsString(payload));
+        } catch (Exception e) {
+            log.error("发送流程状态事件失败", e);
+        }
+    }
+
+    /**
+     * 发送流程节点开始执行事件
+     * <p>payload: {instanceId, nodeId, nodeType, nodeName, retryCount, seq}</p>
+     *
+     * @param userId 目标用户ID
+     * @param payload 事件数据
+     */
+    public static void sendFlowNodeStart(Long userId, Map<String, Object> payload) {
+        try {
+            payload.put("type", TYPE_FLOW_NODE_START);
+            send(userId, TYPE_FLOW_NODE_START, MAPPER.writeValueAsString(payload));
+        } catch (Exception e) {
+            log.error("发送流程节点开始事件失败", e);
+        }
+    }
+
+    /**
+     * 发送流程节点执行完成事件
+     * <p>payload: {instanceId, nodeId, status, durationMs, outputSummary?, errorMsg?, seq}</p>
+     *
+     * @param userId 目标用户ID
+     * @param payload 事件数据
+     */
+    public static void sendFlowNodeEnd(Long userId, Map<String, Object> payload) {
+        try {
+            payload.put("type", TYPE_FLOW_NODE_END);
+            send(userId, TYPE_FLOW_NODE_END, MAPPER.writeValueAsString(payload));
+        } catch (Exception e) {
+            log.error("发送流程节点完成事件失败", e);
+        }
     }
 
     /**
