@@ -19,6 +19,7 @@ import org.redisson.codec.TypedJsonJacksonCodec;
 import org.redisson.spring.starter.RedissonAutoConfigurationCustomizer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.data.redis.RedisProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.task.VirtualThreadTaskExecutor;
@@ -39,6 +40,10 @@ public class RedisConfig {
 
     @Autowired
     private RedissonProperties redissonProperties;
+
+    /** Spring Redis 配置（address/password 等基础连接参数） */
+    @Autowired
+    private RedisProperties redisProperties;
 
     @Bean
     public RedissonAutoConfigurationCustomizer redissonCustomizer() {
@@ -70,10 +75,14 @@ public class RedisConfig {
             }
             RedissonProperties.SingleServerConfig singleServerConfig = redissonProperties.getSingleServerConfig();
             if (ObjectUtil.isNotNull(singleServerConfig)) {
-                // 使用单机模式
+                // 使用单机模式（注意：useSingleServer() 会重置官方自动配置设置的 address/password，
+                // 必须从 spring.data.redis 补回，否则本地 Redis 带密码时 NOAUTH 连接失败）
                 config.useSingleServer()
                     //设置redis key前缀
                     .setNameMapper(new KeyPrefixHandler(redissonProperties.getKeyPrefix()))
+                    .setAddress("redis://" + redisProperties.getHost() + ":" + redisProperties.getPort())
+                    .setDatabase(redisProperties.getDatabase())
+                    .setPassword(redisProperties.getPassword())
                     .setTimeout(singleServerConfig.getTimeout())
                     .setClientName(singleServerConfig.getClientName())
                     .setIdleConnectionTimeout(singleServerConfig.getIdleConnectionTimeout())

@@ -4,8 +4,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.nexus.ai.flow.state.FlowState;
+import org.springframework.context.expression.MapAccessor;
 import org.springframework.expression.EvaluationContext;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
+import org.springframework.expression.spel.support.DataBindingPropertyAccessor;
 import org.springframework.expression.spel.support.SimpleEvaluationContext;
 
 import java.util.HashMap;
@@ -90,9 +92,18 @@ public class SpelFlowExpressionEvaluator {
     private Object evaluateOne(String expression, Map<String, Object> root) {
         Future<Object> future = executor.submit(() -> {
             try {
-                EvaluationContext ctx = SimpleEvaluationContext
-                    .forReadOnlyDataBinding()
-                    .build();
+                // 只读安全模式：仅注册 DataBinding(JavaBean 属性) + MapAccessor(Map 键访问)，
+                // 不注册 MethodResolver/TypeLocator —— 不能调方法、不能 new/静态引用（MVP 安全决策）
+                org.springframework.expression.spel.support.StandardEvaluationContext ctx =
+                    new org.springframework.expression.spel.support.StandardEvaluationContext();
+                ctx.setPropertyAccessors(java.util.List.of(
+                    DataBindingPropertyAccessor.forReadOnlyAccess(),
+                    new MapAccessor()));
+                ctx.setMethodResolvers(java.util.List.of());
+                ctx.setTypeLocator(typeName -> {
+                    throw new org.springframework.expression.spel.SpelEvaluationException(
+                        org.springframework.expression.spel.SpelMessage.TYPE_NOT_FOUND, typeName);
+                });
                 return PARSER.parseExpression(expression).getValue(ctx, root);
             } catch (Exception e) {
                 throw new SpelEvaluationRuntimeException(expression, e);

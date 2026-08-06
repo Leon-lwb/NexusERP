@@ -3,6 +3,7 @@ package com.nexus.ai.flow.node;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.nexus.ai.flow.expr.SpelFlowExpressionEvaluator;
+import org.springframework.stereotype.Component;
 
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -15,6 +16,7 @@ import java.util.Map;
  *
  * @author NexusERP
  */
+@Component
 public class CodeNodeProvider implements FlowNodeProvider {
 
     private final SpelFlowExpressionEvaluator evaluator = new SpelFlowExpressionEvaluator();
