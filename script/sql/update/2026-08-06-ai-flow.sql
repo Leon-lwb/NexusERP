@@ -117,8 +117,9 @@ INSERT IGNORE INTO `sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`,
 -- 页面
 (1831, '流程列表', 1830, 1, 'index', 'ai/flow/index', NULL, 1, 0, 'C', '0', '0', 'ai:flow:list', 'list', 103, 1, NOW(), NULL, NULL, '流程列表/新建/编辑/发布/下线/删除/运行'),
 (1832, '流程设计', 1830, 2, 'designer', 'ai/flow/designer/index', NULL, 1, 0, 'C', '1', '0', 'ai:flow:edit', 'edit', 103, 1, NOW(), NULL, NULL, '流程设计器(侧边栏隐藏, 路由可达)'),
-(1833, '运行历史', 1830, 3, 'monitor', 'ai/flow/monitor/index', NULL, 1, 0, 'C', '0', '0', 'ai:flow:list', 'monitor', 103, 1, NOW(), NULL, NULL, '流程运行历史/实例详情'),
-(1839, '实例详情', 1833, 1, 'detail', 'ai/flow/monitor/InstanceDetail', NULL, 1, 0, 'C', '1', '0', 'ai:flow:list', 'detail', 103, 1, NOW(), NULL, NULL, '实例详情(侧边栏隐藏, 路由可达)'),
+(1833, '运行历史', 1830, 3, 'monitor', NULL, NULL, 1, 0, 'M', '0', '0', 'ai:flow:list', 'monitor', 103, 1, NOW(), NULL, NULL, '运行历史目录(M, 下挂 index/detail 子页面)'),
+(1840, '运行历史列表', 1833, 1, 'index', 'ai/flow/monitor/index', NULL, 1, 0, 'C', '0', '0', 'ai:flow:list', 'monitor', 103, 1, NOW(), NULL, NULL, '流程运行历史/实例详情'),
+(1839, '实例详情', 1833, 2, 'detail', 'ai/flow/monitor/InstanceDetail', NULL, 1, 0, 'C', '1', '0', 'ai:flow:list', 'detail', 103, 1, NOW(), NULL, NULL, '实例详情(侧边栏隐藏, 路由可达)'),
 -- 按钮
 (1834, '流程新增', 1831, 1, '', '', '', 1, 0, 'F', '0', '0', 'ai:flow:add', '#', 103, 1, NOW(), NULL, NULL, '新建/存草稿'),
 (1835, '流程修改', 1831, 2, '', '', '', 1, 0, 'F', '0', '0', 'ai:flow:edit', '#', 103, 1, NOW(), NULL, NULL, '编辑/发布校验/下线'),
