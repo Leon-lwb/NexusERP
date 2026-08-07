@@ -353,11 +353,11 @@ function goBack() {
       </div>
     </div>
 
-    <!-- 底部：运行面板 -->
-    <div v-if="running || runOutput || runError" class="flow-designer__run-panel">
+    <!-- 底部：运行面板（常驻，运行前可输入入参） -->
+    <div class="flow-designer__run-panel">
       <div class="flow-designer__run-input">
         <span class="flow-designer__run-label">运行入参 (JSON)</span>
-        <el-input v-model="runInput" type="textarea" :rows="2" placeholder='{"question":"xxx"}' />
+        <el-input v-model="runInput" type="textarea" :rows="2" placeholder='{"name":"张三","amount":500}' />
       </div>
       <div v-if="runOutput" class="flow-designer__run-result">✅ {{ runOutput }}</div>
       <div v-if="runError" class="flow-designer__run-error">❌ {{ runError }}</div>

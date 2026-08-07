@@ -92,13 +92,14 @@ public class SpelFlowExpressionEvaluator {
     private Object evaluateOne(String expression, Map<String, Object> root) {
         Future<Object> future = executor.submit(() -> {
             try {
-                // 只读安全模式：仅注册 DataBinding(JavaBean 属性) + MapAccessor(Map 键访问)，
+                // 只读安全模式：仅注册 DataBinding(JavaBean 属性) + 宽松 MapAccessor(Map 键访问)，
                 // 不注册 MethodResolver/TypeLocator —— 不能调方法、不能 new/静态引用（MVP 安全决策）
+                // 宽松 MapAccessor: 缺失键返回 null 而非抛 EL1008E（对齐 n8n 属性缺失→空串语义）
                 org.springframework.expression.spel.support.StandardEvaluationContext ctx =
                     new org.springframework.expression.spel.support.StandardEvaluationContext();
                 ctx.setPropertyAccessors(java.util.List.of(
                     DataBindingPropertyAccessor.forReadOnlyAccess(),
-                    new MapAccessor()));
+                    new LenientMapAccessor()));
                 ctx.setMethodResolvers(java.util.List.of());
                 ctx.setTypeLocator(typeName -> {
                     throw new org.springframework.expression.spel.SpelEvaluationException(
@@ -182,6 +183,33 @@ public class SpelFlowExpressionEvaluator {
     private static class SpelEvaluationRuntimeException extends RuntimeException {
         public SpelEvaluationRuntimeException(String expression, Throwable cause) {
             super(expression + "（" + cause.getMessage() + "）", cause);
+        }
+    }
+
+    /**
+     * 宽松 MapAccessor：缺失键返回 null（而非抛 EL1008E），对齐 n8n 属性缺失→空串语义
+     * <p>继承 {@link MapAccessor} 仅覆盖 read：键不存在时返回 {@code null}，
+     * 使 SpEL 把缺失属性视为空值（表达式渲染为 ""），流程可继续而非节点失败</p>
+     */
+    private static class LenientMapAccessor extends MapAccessor {
+
+        @Override
+        @SuppressWarnings("rawtypes")
+        public boolean canRead(org.springframework.expression.EvaluationContext context,
+                               Object target, String name) throws org.springframework.expression.AccessException {
+            return target instanceof Map;
+        }
+
+        @Override
+        @SuppressWarnings("rawtypes")
+        public org.springframework.expression.TypedValue read(org.springframework.expression.EvaluationContext context,
+                                                              Object target, String name) throws org.springframework.expression.AccessException {
+            Map map = (Map) target;
+            if (!map.containsKey(name)) {
+                // 缺失键 → null（SpEL 视为空值）
+                return org.springframework.expression.TypedValue.NULL;
+            }
+            return new org.springframework.expression.TypedValue(map.get(name));
         }
     }
 }
