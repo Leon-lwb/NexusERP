@@ -165,6 +165,18 @@
             <artifactId>ruoyi-common-job</artifactId>
         </dependency>
 
+        <!-- 邮件发送（mail 节点） -->
+        <dependency>
+            <groupId>com.nexus</groupId>
+            <artifactId>ruoyi-common-mail</artifactId>
+        </dependency>
+
+        <!-- 短信发送（sms 节点） -->
+        <dependency>
+            <groupId>com.nexus</groupId>
+            <artifactId>ruoyi-common-sms</artifactId>
+        </dependency>
+
     </dependencies>
 
     <properties>

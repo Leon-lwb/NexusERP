@@ -1,5 +1,5 @@
 import type { Component } from 'vue';
-import { Bell, ChatDotRound, Connection, Cpu, MagicStick, SetUp } from '@element-plus/icons-vue';
+import { Bell, ChatDotRound, Connection, Cpu, DataLine, MagicStick, Message, Odometer, Promotion, SetUp } from '@element-plus/icons-vue';
 
 /**
  * 流程节点类型注册表
@@ -94,6 +94,62 @@ export const NODE_TYPE_CONFIGS: FlowNodeTypeConfig[] = [
       title: '',
       content: '',
       category: 'system'
+    }
+  },
+  {
+    type: 'sql',
+    label: '数据库查询',
+    icon: DataLine,
+    color: '#1677ff',
+    defaultConfig: {
+      sqlTemplate: '',
+      maxRows: 50
+    }
+  },
+  {
+    type: 'erp_tool',
+    label: 'ERP 业务工具',
+    icon: Odometer,
+    color: '#722ed1',
+    defaultConfig: {
+      toolName: '',
+      args: {}
+    }
+  },
+  {
+    type: 'mail',
+    label: '邮件发送',
+    icon: Message,
+    color: '#13c2c2',
+    defaultConfig: {
+      to: '',
+      subject: '',
+      content: '',
+      isHtml: false
+    }
+  },
+  {
+    type: 'sms',
+    label: '短信发送',
+    icon: Promotion,
+    color: '#eb2f96',
+    defaultConfig: {
+      phones: '',
+      templateId: '',
+      params: {},
+      configId: 'config1'
+    }
+  },
+  {
+    type: 'im_webhook',
+    label: 'IM 群机器人',
+    icon: Connection,
+    color: '#2f54eb',
+    defaultConfig: {
+      channel: 'wecom',
+      webhookUrl: '',
+      content: '',
+      timeoutSeconds: 10
     }
   }
 ];
