@@ -254,7 +254,11 @@ public class FlowEngineImpl implements FlowEngine {
             } catch (java.util.concurrent.TimeoutException e) {
                 lastError = new IllegalStateException("节点 " + nodeName + " 执行超时（" + timeoutSeconds + "s）");
             } catch (java.util.concurrent.ExecutionException e) {
+                // 解包 CompletableFuture 的 CompletionException 嵌套，取底层 cause（否则 message 为 null 导致错误信息丢失）
                 Throwable cause = e.getCause();
+                while (cause instanceof java.util.concurrent.CompletionException ce && ce.getCause() != null) {
+                    cause = ce.getCause();
+                }
                 lastError = cause instanceof Exception ex ? ex : new Exception(cause);
             } catch (Exception e) {
                 lastError = e;
@@ -357,7 +361,7 @@ public class FlowEngineImpl implements FlowEngine {
     private Throwable handleNodeFailure(AiFlowNodeRun nodeRun, FlowNodeDef nodeDef,
                                         Exception e, String tenantIdStr) {
         nodeRun.setStatus("FAILED");
-        nodeRun.setErrorMsg(truncate(e.getMessage(), 2000));
+        nodeRun.setErrorMsg(truncate(safeMessage(e), 2000));
         nodeRun.setEndTime(new Date());
         if (nodeRun.getStartTime() != null) {
             nodeRun.setDurationMs(System.currentTimeMillis() - nodeRun.getStartTime().getTime());
@@ -366,7 +370,7 @@ public class FlowEngineImpl implements FlowEngine {
             nodeRunMapper.updateById(nodeRun);
             return null;
         });
-        log.warn("[Flow] 节点 {} ({}) 执行失败: {}", nodeDef.getId(), nodeDef.getName(), e.getMessage());
+        log.warn("[Flow] 节点 {} ({}) 执行失败: {}", nodeDef.getId(), nodeDef.getName(), e.getMessage(), e);
         return e;
     }
 
@@ -437,7 +441,7 @@ public class FlowEngineImpl implements FlowEngine {
             instance.setErrorMsg("用户请求停止");
         } else if (flowError != null) {
             instance.setStatus("FAILED");
-            instance.setErrorMsg(truncate(flowError.getMessage(), 2000));
+            instance.setErrorMsg(truncate(safeMessage(flowError), 2000));
         } else {
             instance.setStatus("SUCCEEDED");
             instance.setOutputJson(state.getFinalOutput().toString());
@@ -466,7 +470,7 @@ public class FlowEngineImpl implements FlowEngine {
         AiFlowInstance instance = new AiFlowInstance();
         instance.setId(instanceId);
         instance.setStatus("FAILED");
-        instance.setErrorMsg(truncate(e.getMessage(), 2000));
+        instance.setErrorMsg(truncate(safeMessage(e), 2000));
         instance.setEndTime(new Date());
         TenantHelper.dynamic(tenantIdStr, () -> {
             instanceMapper.updateById(instance);
@@ -476,7 +480,7 @@ public class FlowEngineImpl implements FlowEngine {
         payload.put("instanceId", instanceId);
         payload.put("flowId", flowId);
         payload.put("status", "FAILED");
-        payload.put("errorMsg", truncate(e.getMessage(), 2000));
+        payload.put("errorMsg", truncate(safeMessage(e), 2000));
         payload.put("seq", nextSeq(instanceId));
         AiSseMessageHelper.sendFlowStatus(userId, payload);
     }
@@ -508,7 +512,6 @@ public class FlowEngineImpl implements FlowEngine {
         payload.put("seq", nextSeq(instanceId));
         AiSseMessageHelper.sendFlowNodeEnd(userId, payload);
     }
-
     private long nextSeq(Long instanceId) {
         AtomicLong seq = seqMap.get(instanceId);
         return seq == null ? 0 : seq.incrementAndGet();
@@ -519,5 +522,24 @@ public class FlowEngineImpl implements FlowEngine {
             return null;
         }
         return text.length() <= maxLen ? text : text.substring(0, maxLen);
+    }
+
+    /**
+     * 提取异常可读信息（message 为 null 时降级为类名，保证节点错误原因不丢失）
+     */
+    private String safeMessage(Throwable e) {
+        if (e == null) {
+            return "未知错误";
+        }
+        String msg = e.getMessage();
+        if (msg == null || msg.isBlank()) {
+            // CompletionException/部分包装异常的 message 为 null，展开 cause 链找首个非空信息
+            Throwable cause = e.getCause();
+            if (cause != null && cause != e) {
+                return safeMessage(cause);
+            }
+            return e.getClass().getSimpleName();
+        }
+        return msg;
     }
 }

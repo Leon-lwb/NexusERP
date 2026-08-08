@@ -1,5 +1,5 @@
 import type { Component } from 'vue';
-import { ChatDotRound, Cpu, Connection, MagicStick, SetUp } from '@element-plus/icons-vue';
+import { Bell, ChatDotRound, Connection, Cpu, MagicStick, SetUp } from '@element-plus/icons-vue';
 
 /**
  * 流程节点类型注册表
@@ -69,6 +69,31 @@ export const NODE_TYPE_CONFIGS: FlowNodeTypeConfig[] = [
     color: '#52c41a',
     defaultConfig: {
       expressions: {}
+    }
+  },
+  {
+    type: 'http',
+    label: 'HTTP 请求',
+    icon: Connection,
+    color: '#13c2c2',
+    defaultConfig: {
+      method: 'GET',
+      url: '',
+      headers: {},
+      body: '',
+      timeoutSeconds: 15
+    }
+  },
+  {
+    type: 'notify',
+    label: '站内通知',
+    icon: Bell,
+    color: '#fa8c16',
+    defaultConfig: {
+      userId: '',
+      title: '',
+      content: '',
+      category: 'system'
     }
   }
 ];
