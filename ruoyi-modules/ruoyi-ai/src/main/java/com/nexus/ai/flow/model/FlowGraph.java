@@ -34,6 +34,9 @@ public class FlowGraph {
     /** 出边索引: nodeId -> 出边列表（保持顺序） */
     private final Map<String, List<FlowEdgeDef>> outEdges;
 
+    /** 入边索引: nodeId -> 入边列表（merge 节点收集上游输出用） */
+    private final Map<String, List<FlowEdgeDef>> inEdges;
+
     /** 静态入度: nodeId -> 入度 */
     private final Map<String, Integer> inDegree;
 
@@ -47,6 +50,7 @@ public class FlowGraph {
         this.nodes = nodes;
         this.edges = edges;
         this.outEdges = buildOutEdges();
+        this.inEdges = buildInEdges();
         this.inDegree = buildInDegree();
         this.startNodeIds = buildStartNodes();
         this.topologicalOrder = topologicalSort();
@@ -182,6 +186,17 @@ public class FlowGraph {
     }
 
     /**
+     * 构建入边索引
+     */
+    private Map<String, List<FlowEdgeDef>> buildInEdges() {
+        Map<String, List<FlowEdgeDef>> map = new HashMap<>();
+        for (FlowEdgeDef edge : edges.values()) {
+            map.computeIfAbsent(edge.getTarget(), k -> new ArrayList<>()).add(edge);
+        }
+        return map;
+    }
+
+    /**
      * 构建静态入度
      */
     private Map<String, Integer> buildInDegree() {
@@ -220,6 +235,16 @@ public class FlowGraph {
 
     public List<FlowEdgeDef> getOutEdges(String nodeId) {
         return outEdges.getOrDefault(nodeId, List.of());
+    }
+
+    /**
+     * 获取节点的入边列表
+     *
+     * @param nodeId 节点ID
+     * @return 入边列表
+     */
+    public List<FlowEdgeDef> getInEdges(String nodeId) {
+        return inEdges.getOrDefault(nodeId, List.of());
     }
 
     public int getInDegree(String nodeId) {

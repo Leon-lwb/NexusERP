@@ -240,6 +240,7 @@ public class FlowEngineImpl implements FlowEngine {
                 ctx.setInstanceId(instanceId);
                 ctx.setFlowId(flow.getId());
                 ctx.setUserId(userId);
+                ctx.setGraph(graph);
 
                 // 带超时执行（Future.get）
                 java.util.concurrent.Future<JsonNode> future = java.util.concurrent.CompletableFuture
@@ -291,8 +292,8 @@ public class FlowEngineImpl implements FlowEngine {
                 pass = !ifResult;
             }
             if (!pass) {
-                // 未选中分支的下游节点标记 SKIPPED
-                markBranchSkipped(edge.getTarget(), graph, nodeRuns, instanceId, flowId, tenantIdStr);
+                // 未选中分支的下游节点：SKIPPED 传播（走入度簿记，merge 节点豁免——收集已到达输入后真执行）
+                markBranchSkipped(edge.getTarget(), graph, enqueued, queue, nodeRuns, instanceId, flowId, tenantIdStr);
                 continue;
             }
             String target = edge.getTarget();
@@ -304,9 +305,13 @@ public class FlowEngineImpl implements FlowEngine {
     }
 
     /**
-     * 标记分支未命中的下游节点为 SKIPPED（递归，只标记未执行且未入队的）
+     * 标记分支未命中的下游节点为 SKIPPED（传入度簿记传播）
+     * <p>语义：SKIPPED 节点视为"已结束无输出"——递减下游入度；归零时：
+     * 下游为 merge → 入队真执行（只收集已到达的输入，对齐 n8n 空分支合并）；
+     * 下游非 merge → 递归 SKIPPED（跳过链整段灰化）</p>
      */
     private void markBranchSkipped(String nodeId, FlowGraph graph,
+                                   Map<String, Integer> enqueued, Deque<String> queue,
                                    Map<String, AiFlowNodeRun> nodeRuns, Long instanceId, Long flowId, String tenantIdStr) {
         if (nodeRuns.containsKey(nodeId)) {
             return;
@@ -323,9 +328,20 @@ public class FlowEngineImpl implements FlowEngine {
             return null;
         });
         nodeRuns.put(nodeId, nodeRun);
-        // 递归标记下游（该节点的所有出边）
+        // 递减下游入度（SKIPPED 参与簿记，保证 merge 等汇聚节点能归零入队）
         for (FlowEdgeDef edge : graph.getOutEdges(nodeId)) {
-            markBranchSkipped(edge.getTarget(), graph, nodeRuns, instanceId, flowId, tenantIdStr);
+            String target = edge.getTarget();
+            int remain = enqueued.merge(target, -1, Integer::sum);
+            if (remain == 0) {
+                FlowNodeDef targetDef = graph.getNode(target);
+                if (targetDef != null && "merge".equals(targetDef.getType())) {
+                    // merge：入队真执行（收集已到达输入）
+                    queue.add(target);
+                } else {
+                    // 非 merge：跳过链递归传播
+                    markBranchSkipped(target, graph, enqueued, queue, nodeRuns, instanceId, flowId, tenantIdStr);
+                }
+            }
         }
     }
 

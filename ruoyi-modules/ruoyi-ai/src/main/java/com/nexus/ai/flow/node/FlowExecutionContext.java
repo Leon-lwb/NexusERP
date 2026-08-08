@@ -36,4 +36,7 @@ public class FlowExecutionContext {
 
     /** 目标用户ID（SSE 通知用，定时任务为流程创建人） */
     private Long userId;
+
+    /** 流程图模型（merge 节点收集上游输出用） */
+    private com.nexus.ai.flow.model.FlowGraph graph;
 }

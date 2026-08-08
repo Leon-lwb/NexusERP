@@ -37,8 +37,20 @@ const statusClass = computed(() => {
 
 <template>
   <div class="flow-node" :class="[statusClass, { 'is-selected': props.selected }]">
-    <!-- 输入端口（目标） -->
-    <Handle id="inputs/main/0" type="target" :position="Position.Left" class="flow-node__handle" />
+    <!-- 合并节点：多输入端口（inputs/main/0, /1... 按入边数） -->
+    <template v-if="props.data.type === 'merge'">
+      <Handle
+        v-for="i in 3"
+        :key="'in' + i"
+        :id="'inputs/main/' + (i - 1)"
+        type="target"
+        :position="Position.Left"
+        class="flow-node__handle"
+        :style="{ top: 20 + i * 20 + '%' }"
+      />
+    </template>
+    <!-- 普通节点：单输入端口 -->
+    <Handle v-else id="inputs/main/0" type="target" :position="Position.Left" class="flow-node__handle" />
     <!-- 条件节点：双输出端口 true/false -->
     <template v-if="props.data.type === 'if'">
       <Handle

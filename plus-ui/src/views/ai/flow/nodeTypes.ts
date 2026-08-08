@@ -1,5 +1,18 @@
 import type { Component } from 'vue';
-import { Bell, ChatDotRound, Connection, Cpu, DataLine, MagicStick, Message, Odometer, Promotion, SetUp } from '@element-plus/icons-vue';
+import {
+  Bell,
+  ChatDotRound,
+  Connection,
+  Cpu,
+  DataLine,
+  EditPen,
+  MagicStick,
+  Message,
+  Odometer,
+  Promotion,
+  SetUp,
+  Timer
+} from '@element-plus/icons-vue';
 
 /**
  * 流程节点类型注册表
@@ -151,6 +164,31 @@ export const NODE_TYPE_CONFIGS: FlowNodeTypeConfig[] = [
       content: '',
       timeoutSeconds: 10
     }
+  },
+  {
+    type: 'set',
+    label: '变量设置',
+    icon: EditPen,
+    color: '#52c41a',
+    defaultConfig: {
+      variables: {}
+    }
+  },
+  {
+    type: 'wait',
+    label: '延迟等待',
+    icon: Timer,
+    color: '#faad14',
+    defaultConfig: {
+      waitSeconds: 5
+    }
+  },
+  {
+    type: 'merge',
+    label: '合并汇总',
+    icon: Connection,
+    color: '#13c2c2',
+    defaultConfig: {}
   }
 ];
 
