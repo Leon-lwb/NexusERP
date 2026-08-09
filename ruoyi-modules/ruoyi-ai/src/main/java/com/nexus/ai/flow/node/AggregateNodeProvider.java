@@ -53,14 +53,14 @@ public class AggregateNodeProvider implements FlowNodeProvider {
         ObjectNode sources = MAPPER.createObjectNode();
         // 遍历直接上游，收集其批次历史输出（无历史 → 空数组）
         for (com.nexus.ai.flow.model.FlowEdgeDef edge : ctx.getGraph().getInEdges(ctx.getNodeId())) {
-            // 上游是 split 循环节点时：收集其循环体尾节点的输出（loop 返回边 source）——
+            // 上游是 split 循环节点时：收集其循环体尾节点的输出（loop 返回边 source，在 split 的入边中）——
             // 语义对齐 n8n：聚合的是"每轮循环处理结果"，split 自身的 done 空批输出不进入
             String collectFrom = edge.getSource();
             var sourceNode = ctx.getGraph().getNode(edge.getSource());
             if (sourceNode != null && "split".equals(sourceNode.getType())) {
-                for (var out : ctx.getGraph().getOutEdges(edge.getSource())) {
-                    if (out.isLoopEdge()) {
-                        collectFrom = out.getSource();
+                for (var in : ctx.getGraph().getInEdges(edge.getSource())) {
+                    if (in.isLoopEdge()) {
+                        collectFrom = in.getSource();
                         break;
                     }
                 }
