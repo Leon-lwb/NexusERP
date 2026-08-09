@@ -845,9 +845,9 @@ n8n 本体执行内严格串行（§3.1 已代码级确认），所以**自研�
 | 阶段 | 内容 | 预估 | 状态 |
 |---|---|---|---|
 | **P10-A 设计器运行测试闭环** | `POST /ai/flow/run-test`（画布当前配置直接执行，豁免 PUBLISHED，triggerType=TEST 可过滤）+ 引擎写 node_run.inputJson（NDV 输入视图）+ 运行面板重构（状态标签/耗时/节点统计/最终输出/查看详情）+ SSE 看门狗 15s 后轮询兜底 + 节点输出摘要徽标 | 2-3 人天 | ✅ 已完成（2026-08-09） |
-| **P10-B 结构化参数表单** | KeyValueEditor 键值对行编辑（set/code/http.headers/sms.params/运行入参）+ IF conditions 行编辑器（修复发布阻断）+ erp_tool 参数表单化（反射 @P schema）+ modelId/knowledgeId 下拉（optionsSource）+ 变量选择器增强（运行时数据优先/扩展 json 字段/弹层视口翻转） | 3-4 人天 | 待实施 |
-| **P10-C 数据查看/历史** | AiFlowNodeRunVo 补 batchIndex + NDV 修复（循环轮次/上次实例回退）+ 端口文字标签 + monitor 流程下拉筛选/RUNNING 自动刷新/详情续跑/快照重放 | 1.5-2 人天 | 待实施 |
-| **P10-D 画布交互** | 复制粘贴（含边）/撤销重做（快照栈）/框选批量/自动布局（自研 BFS 分层）/快捷键 | 2-3 人天 | 待实施 |
+| **P10-B 结构化参数表单** | KeyValueEditor 键值对行编辑（set/code/http.headers/sms.params）+ IF conditions 行编辑器（修复发布阻断）+ erp_tool 参数表单化（反射 @P schema）+ modelId/knowledgeId 下拉（optionsSource）+ 变量选择器增强（运行时数据优先/扩展 json 字段/弹层视口翻转） | 3-4 人天 | ✅ 已完成（2026-08-09，E2E 19 项 PASS） |
+| **P10-C 数据查看/历史** | AiFlowNodeRunVo 补 batchIndex + NDV 修复（循环轮次/上次实例回退）+ 端口文字标签 + monitor 流程下拉筛选/RUNNING 自动刷新/详情续跑/快照重放 | 1.5-2 人天 | ✅ 已完成（2026-08-09） |
+| **P10-D 画布交互** | 复制粘贴（含边）/撤销重做（快照栈）/框选批量/自动布局（自研 BFS 分层）/快捷键 | 2-3 人天 | ✅ 已完成（2026-08-09） |
 
 **表达式编辑决策**（2026-08-09 用户确认）：轻量自研增强（textarea + {{ 高亮 overlay + 变量候选树），不引入 CodeMirror 依赖。
 
