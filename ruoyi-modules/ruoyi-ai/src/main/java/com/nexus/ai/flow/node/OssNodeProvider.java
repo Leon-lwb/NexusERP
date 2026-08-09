@@ -73,7 +73,7 @@ public class OssNodeProvider implements FlowNodeProvider {
 
         ObjectNode output = MAPPER.createObjectNode();
         if ("UPLOAD_TEXT".equals(action)) {
-            // 渲染文件名与内容（支持 {{}} 变量引用）
+            // 渲染文件名与内容（支持 {{}} 变量引用）；key 用 fileName 保证读回一致（uploadSuffix 会生成随机 key）
             String fileName = config.has("fileName") && !config.get("fileName").asText().isBlank()
                 ? FlowTemplateRenderer.render(config.get("fileName").asText(), ctx.getState(), label + " 的 fileName")
                 : "flow-" + UUID.randomUUID().toString().substring(0, 8) + ".txt";
@@ -81,7 +81,7 @@ public class OssNodeProvider implements FlowNodeProvider {
                 ? FlowTemplateRenderer.render(config.get("content").asText(), ctx.getState(), label + " 的 content")
                 : "";
             byte[] data = content.getBytes(StandardCharsets.UTF_8);
-            var result = client.uploadSuffix(data, fileName.contains(".") ? fileName.substring(fileName.lastIndexOf('.')) : ".txt", "text/plain");
+            var result = client.upload(new java.io.ByteArrayInputStream(data), fileName, (long) data.length, "text/plain");
             output.put("success", true);
             output.put("fileName", fileName);
             if (result != null && result.getUrl() != null) {
