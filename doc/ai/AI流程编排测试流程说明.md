@@ -80,3 +80,20 @@ curl -X POST http://192.168.1.101:8080/ai/flow/webhook/test_webhook_reply \
 3. **调试**：选中节点 → 「测试此节点」→ 填 mock 状态单独执行
 4. **看数据**：运行后双击节点 → 查看该节点 input/output 快照（NDV）
 5. **历史**：流程列表 → 「历史」→ 实例列表 → 「详情」只读重放 / 「续跑」从失败节点重跑
+
+---
+
+## 节点生态扩展验证（2026-08-09）
+
+**19 类节点**（新增 mq_send / aggregate / oss）。E2E 验证结果：
+
+| 能力 | 验证 | 结果 |
+|---|---|---|
+| mq_send 节点 | 流程实测发送 `stock.alert.low` 路由（RabbitMQ 可靠投递，返回 messageId） | ✅ |
+| aggregate 节点 | split(5订单/批2)→code→aggregate：收集**循环体 3 轮输出**（done 空批不混入），`items` 数=3 | ✅ |
+| webhook x-wait | `POST /ai/flow/webhook/{flowKey}` + 头 `x-wait: true` → 同步返回 `{status, outputJson, errorMsg}`（60s 超时兜底） | ✅ |
+| oss 节点 | UPLOAD_TEXT（key=fileName 保证读回一致）→ GET_CONTENT 读回内容一致（MinIO 实测 URL） | ✅ |
+
+**mq_send 路由键**：下拉反射 `RoutingKeyConstants` 24 个常量（stock.alert.low 等），payload 支持 `{{}}` 模板，消息体为 `FlowMqMessage`（含 flowInstanceId/flowNodeId 溯源）。
+
+**aggregate 语义**：接在 split 的 done 分支后，经 loop 返回边溯源到循环体尾节点，收集其每轮输出为 `{items, sources, count}`。
