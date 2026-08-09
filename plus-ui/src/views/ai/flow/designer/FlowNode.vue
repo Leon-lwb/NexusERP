@@ -3,10 +3,12 @@ import { computed } from 'vue';
 import { Handle, Position } from '@vue-flow/core';
 import type { NodeProps } from '@vue-flow/core';
 import { getNodeTypeConfig } from '../nodeTypes';
+import { useFlowStore } from './useFlowStore';
 
 /**
  * 流程画布节点组件（slot 注册，非 nodeTypes 对象）
- * <p>运行态高亮：RUNNING 旋转渐变边框 / SUCCEEDED 绿框 / FAILED 红框 / SKIPPED 灰化</p>
+ * <p>运行态高亮：RUNNING 旋转渐变边框 / SUCCEEDED 绿框 / FAILED 红框 / SKIPPED 灰化
+ * 底部展示运行输出摘要（SSE outputSummary，失败时显示错误）</p>
  */
 interface FlowNodeData {
   label: string;
@@ -16,9 +18,13 @@ interface FlowNodeData {
 }
 
 const props = defineProps<NodeProps<FlowNodeData>>();
+const store = useFlowStore();
 
 const typeConfig = computed(() => getNodeTypeConfig(props.data.type));
 const nodeColor = computed(() => typeConfig.value?.color ?? '#909399');
+
+/** 节点运行摘要（输出/错误文本） */
+const summary = computed(() => store.nodeSummaryMap[props.id] ?? '');
 
 const statusClass = computed(() => {
   switch (props.data.status) {
@@ -108,6 +114,9 @@ const statusClass = computed(() => {
         <div class="flow-node__label">{{ props.data.label || typeConfig?.label || props.id }}</div>
         <div class="flow-node__type">{{ typeConfig?.label ?? props.data.type }}</div>
       </div>
+    </div>
+    <div v-if="summary" class="flow-node__summary" :class="{ 'is-error': props.data.status === 'FAILED' }" :title="summary">
+      {{ summary }}
     </div>
   </div>
 </template>
@@ -216,5 +225,22 @@ const statusClass = computed(() => {
 .flow-node--skipped {
   opacity: 0.5;
   filter: grayscale(1);
+}
+
+/* 运行摘要（底部小字） */
+.flow-node__summary {
+  font-size: 10px;
+  color: #909399;
+  padding: 2px 10px 6px;
+  max-width: 156px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.4;
+}
+
+.flow-node__summary.is-error {
+  color: #fa541c;
+  font-weight: 500;
 }
 </style>

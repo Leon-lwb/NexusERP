@@ -43,6 +43,8 @@ export const useFlowStore = defineStore('aiFlow', () => {
   const currentInstanceId = ref<string | null>(null);
   /** 节点运行快照缓存（NDV 双击查看：nodeId → 最近一次运行记录） */
   const nodeRunCache = ref<Record<string, unknown>>({});
+  /** 节点运行摘要（SSE AI_FLOW_NODE_END.outputSummary：nodeId → 摘要/错误文本） */
+  const nodeSummaryMap = ref<Record<string, string>>({});
   /** 流程名称 */
   const flowName = ref('');
   /** 流程 ID（null=新建） */
@@ -158,10 +160,17 @@ export const useFlowStore = defineStore('aiFlow', () => {
   /** 清空运行态 */
   function clearNodeStatus() {
     nodeStatusMap.value = {};
+    nodeSummaryMap.value = {};
     nodes.value = nodes.value.map((n) => ({
       ...n,
       data: { ...n.data, status: undefined }
     }));
+  }
+
+  /** 设置节点运行摘要（输出/错误，显示在节点卡片底部） */
+  function setNodeSummary(nodeId: string, summary: string) {
+    if (!summary) return;
+    nodeSummaryMap.value = { ...nodeSummaryMap.value, [nodeId]: summary };
   }
 
   return {
@@ -171,6 +180,7 @@ export const useFlowStore = defineStore('aiFlow', () => {
     nodeStatusMap,
     currentInstanceId,
     nodeRunCache,
+    nodeSummaryMap,
     flowName,
     flowId,
     selectedNode,
@@ -179,6 +189,7 @@ export const useFlowStore = defineStore('aiFlow', () => {
     fromConfigJson,
     setNodeStatus,
     setNodeRun,
+    setNodeSummary,
     clearNodeStatus
   };
 });

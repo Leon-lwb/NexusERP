@@ -811,7 +811,49 @@ n8n 本体执行内严格串行（§3.1 已代码级确认），所以**自研�
 
 ---
 
-## 十四、审批清单
+## 十四、前端差距审查与优化计划（P10 系列，2026-08-09）
+
+> 背景：P6-P9 完成后对照 n8n 前端做全量审查（Explore 两路全量梳理）。用户反馈两大痛点：
+> **① 设计器内不能运行测试整个流程（DRAFT 阻断 + 运行结果展示极弱）② 数据输入依赖裸 JSON 不友好（7 处）**。
+
+### 14.1 差距矩阵
+
+| 能力维度 | n8n | 当前系统（审查时） | 差距 |
+|---|---|---|---|
+| 设计器内运行测试 | Execute Workflow 直接跑（无需发布/保存） | 仅 PUBLISHED 可跑，DRAFT 阻断 | 🔴 严重 |
+| 运行结果展示 | 节点上输出摘要徽标 + 执行统计面板 | 两行文本，SSE outputSummary 被丢弃 | 🔴 严重 |
+| 运行可靠性 | 执行事件流 + 重连 | SSE 断开即卡死，无轮询兜底 | 🟠 中 |
+| 参数输入形式 | 字段级表单 + 键值对列表 | 7 处裸 JSON textarea | 🔴 严重 |
+| 条件分支编辑 | 结构化条件编辑器 | IF conditions 无 UI（发布必败） | 🔴 严重 |
+| 实体选择 | 下拉选择器 | modelId/knowledgeId 裸数字输入 | 🟠 中 |
+| 表达式/变量引用 | CodeMirror 高亮 + 数据树浏览 | {{ 弹出硬编码候选 | 🟠 中 |
+| 节点数据查看 | NDV：INPUT/PARAMETERS/OUTPUT | NDV 有，但 batchIndex/inputJson 契约错位 | 🟠 中 |
+| 历史详情 | 快照重放 + 时间线 + 续跑 | 用当前配置重放失真、详情无续跑 | 🟠 中 |
+| 画布编辑 | 复制/撤销/框选/自动布局/快捷键 | 仅 Delete 键 | 🟡 低-中 |
+
+**根因定位**（代码级）：
+- `AiFlowController.run` 强制 PUBLISHED（AiFlowController.java:210）——DRAFT 流程设计器点运行直接失败
+- `designer/index.vue` 运行面板仅两行文本；`AI_FLOW_NODE_END.outputSummary`（后端已推送 500 字符截断）被前端丢弃
+- 纯 SSE 无轮询兜底（`VITE_APP_SSE==='false'` 时 running 永久卡 true）
+- 7 处裸 JSON：运行入参 / set.variables / code.expressions / erp_tool.args / http.headers / sms.params / node-test mockState
+- `IfNodeProvider.getParamSchemas` 只声明 logic 不声明 conditions，`validateConfig` 却强制非空——**IF 条件在 UI 无法编辑，发布必失败**
+- `AiFlowNodeRunVo` 缺 batchIndex（实体有）、node_run.inputJson 引擎从不写（恒 null）
+- monitor 详情重放用当前配置而非实例 `configSnapshot`，改版后重放旧实例错位
+
+### 14.2 优化计划（P10 系列，每阶段独立合并）
+
+| 阶段 | 内容 | 预估 | 状态 |
+|---|---|---|---|
+| **P10-A 设计器运行测试闭环** | `POST /ai/flow/run-test`（画布当前配置直接执行，豁免 PUBLISHED，triggerType=TEST 可过滤）+ 引擎写 node_run.inputJson（NDV 输入视图）+ 运行面板重构（状态标签/耗时/节点统计/最终输出/查看详情）+ SSE 看门狗 15s 后轮询兜底 + 节点输出摘要徽标 | 2-3 人天 | ✅ 已完成（2026-08-09） |
+| **P10-B 结构化参数表单** | KeyValueEditor 键值对行编辑（set/code/http.headers/sms.params/运行入参）+ IF conditions 行编辑器（修复发布阻断）+ erp_tool 参数表单化（反射 @P schema）+ modelId/knowledgeId 下拉（optionsSource）+ 变量选择器增强（运行时数据优先/扩展 json 字段/弹层视口翻转） | 3-4 人天 | 待实施 |
+| **P10-C 数据查看/历史** | AiFlowNodeRunVo 补 batchIndex + NDV 修复（循环轮次/上次实例回退）+ 端口文字标签 + monitor 流程下拉筛选/RUNNING 自动刷新/详情续跑/快照重放 | 1.5-2 人天 | 待实施 |
+| **P10-D 画布交互** | 复制粘贴（含边）/撤销重做（快照栈）/框选批量/自动布局（自研 BFS 分层）/快捷键 | 2-3 人天 | 待实施 |
+
+**表达式编辑决策**（2026-08-09 用户确认）：轻量自研增强（textarea + {{ 高亮 overlay + 变量候选树），不引入 CodeMirror 依赖。
+
+---
+
+## 十五、审批清单
 
 - [ ] 总体路线（直接自研 MVP，不部署 n8n）
 - [ ] 引入 @vue-flow/core 画布依赖

@@ -232,6 +232,68 @@ public class AiFlowController extends BaseController {
     }
 
     /**
+     * 设计器测试运行（对齐 n8n Execute Workflow）
+     * <p>与正式 run 的区别：不要求 PUBLISHED（DRAFT 即可），且接受画布当前配置
+     * configJson 直接执行（未保存也能测）；仍做图校验 + 逐节点 config 校验。
+     * 实例 triggerType=TEST，历史页可过滤。权限标识：{@code ai:flow:run}</p>
+     *
+     * @param request 测试请求（flowId + configJson + input）
+     * @return 实例ID
+     */
+    @SaCheckPermission("ai:flow:run")
+    @PostMapping("/run-test")
+    public R<Long> runTest(@RequestBody FlowRunTestRequest request) {
+        if (request.getFlowId() == null) {
+            return R.fail("flowId 不能为空");
+        }
+        AiFlow flow = aiFlowService.selectById(request.getFlowId());
+        if (flow == null) {
+            return R.fail("流程不存在");
+        }
+        // 用画布当前配置覆盖（未保存也能测）；null 时回退 DB 配置
+        if (request.getConfigJson() != null && !request.getConfigJson().isBlank()) {
+            try {
+                MAPPER.readTree(request.getConfigJson());
+                flow.setConfigJson(request.getConfigJson());
+            } catch (Exception e) {
+                return R.fail("configJson 不是合法的 JSON: " + e.getMessage());
+            }
+        }
+        // 解析输入 JSON
+        JsonNode input = null;
+        if (request.getInput() != null && !request.getInput().isBlank()) {
+            try {
+                input = MAPPER.readTree(request.getInput());
+            } catch (Exception e) {
+                return R.fail("input 不是合法的 JSON: " + e.getMessage());
+            }
+        }
+        // 测试运行同样做图 + 节点配置校验（仅豁免 PUBLISHED 要求）
+        try {
+            FlowGraph graph = FlowGraph.parse(flow.getConfigJson());
+            graph.validate(flowNodeRegistry::contains);
+            for (var entry : graph.getNodes().entrySet()) {
+                FlowNodeProvider provider = flowNodeRegistry.getProvider(entry.getValue().getType());
+                if (provider != null) {
+                    provider.validateConfig(entry.getValue().getConfig());
+                }
+            }
+        } catch (IllegalArgumentException e) {
+            return R.fail("测试校验失败: " + e.getMessage());
+        }
+        // 捕获登录上下文（异步线程用）
+        String tenantIdStr = LoginHelper.getTenantId();
+        Long userId = LoginHelper.getUserId();
+        String userName = LoginHelper.getUsername();
+        try {
+            Long instanceId = flowEngine.start(flow, input, "TEST", tenantIdStr, userId, userName);
+            return R.ok(instanceId);
+        } catch (IllegalArgumentException e) {
+            return R.fail("启动失败: " + e.getMessage());
+        }
+    }
+
+    /**
      * 停止运行中的实例（协作式，节点边界生效）
      * <p>权限标识：{@code ai:flow:run}</p>
      *
@@ -424,6 +486,43 @@ public class AiFlowController extends BaseController {
 
         public void setFlowId(Long flowId) {
             this.flowId = flowId;
+        }
+
+        public String getInput() {
+            return input;
+        }
+
+        public void setInput(String input) {
+            this.input = input;
+        }
+    }
+
+    /**
+     * 测试运行请求（设计器 Execute Workflow）
+     *
+     * @param flowId     流程ID
+     * @param configJson 画布当前配置（可选；null 时用 DB 配置）
+     * @param input      运行入参（JSON 字符串）
+     */
+    public static class FlowRunTestRequest {
+        private Long flowId;
+        private String configJson;
+        private String input;
+
+        public Long getFlowId() {
+            return flowId;
+        }
+
+        public void setFlowId(Long flowId) {
+            this.flowId = flowId;
+        }
+
+        public String getConfigJson() {
+            return configJson;
+        }
+
+        public void setConfigJson(String configJson) {
+            this.configJson = configJson;
         }
 
         public String getInput() {

@@ -169,6 +169,20 @@ export function runFlow(flowId: number | string, input?: string) {
 }
 
 /**
+ * 设计器测试运行（对齐 n8n Execute Workflow：无需发布，用画布当前配置）
+ * @param flowId 流程ID
+ * @param configJson 画布当前配置（可选，null 时回退 DB 配置）
+ * @param input 运行入参 JSON 字符串
+ */
+export function runFlowTest(flowId: number | string, configJson?: string, input?: string) {
+  return request({
+    url: '/ai/flow/run-test',
+    method: 'post',
+    data: { flowId, configJson, input }
+  });
+}
+
+/**
  * 停止运行中的实例
  * @param instanceId 实例ID
  */

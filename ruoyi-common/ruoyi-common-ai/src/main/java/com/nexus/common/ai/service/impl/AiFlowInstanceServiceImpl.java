@@ -46,6 +46,8 @@ public class AiFlowInstanceServiceImpl implements IAiFlowInstanceService {
     public TableDataInfo<AiFlowInstanceVo> selectPageList(AiFlowInstanceBo bo, PageQuery pageQuery) {
         Page<AiFlowInstanceVo> page = baseMapper.selectVoPage(pageQuery.build(), buildQueryWrapper(bo));
         fillFlowName(page.getRecords());
+        // 列表不返回配置快照（体积大，仅详情接口用）
+        page.getRecords().forEach(vo -> vo.setConfigSnapshot(null));
         return TableDataInfo.build(page);
     }
 

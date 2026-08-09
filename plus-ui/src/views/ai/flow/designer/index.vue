@@ -10,7 +10,18 @@ import VueJsonPretty from 'vue-json-pretty';
 import 'vue-json-pretty/lib/styles.css';
 import { getNodeTypeConfig } from '../nodeTypes';
 import type { NodeParamSchema, NodeTypeMeta } from '@/api/ai/flow';
-import { addFlow, getFlow, listNodeRuns, listNodeTypes, nodeTest, publishFlow, runFlow, stopFlowRun, updateFlow } from '@/api/ai/flow';
+import {
+  addFlow,
+  getFlow,
+  getInstance,
+  listNodeRuns,
+  listNodeTypes,
+  nodeTest,
+  publishFlow,
+  runFlowTest,
+  stopFlowRun,
+  updateFlow
+} from '@/api/ai/flow';
 
 /**
  * 流程设计器页面
@@ -28,6 +39,38 @@ const running = ref(false);
 const runInput = ref('{}');
 const runOutput = ref('');
 const runError = ref('');
+/** 运行状态（面板展示：标签/耗时/节点统计/最终输出） */
+const runStatus = ref<'RUNNING' | 'SUCCEEDED' | 'FAILED' | 'STOPPED' | null>(null);
+const runDuration = ref<number | null>(null);
+const runStats = ref<{ success: number; total: number } | null>(null);
+const runFinalOutput = ref<string>('');
+/** SSE 看门狗：距上次事件超过 15s 切轮询兜底 */
+let watchdogTimer: number | null = null;
+let pollTimer: number | null = null;
+let lastSseTime = 0;
+
+/** 运行状态标签 */
+const runStatusLabel = computed(() => {
+  const m: Record<string, string> = { RUNNING: '运行中', SUCCEEDED: '成功', FAILED: '失败', STOPPED: '已停止' };
+  return runStatus.value ? (m[runStatus.value] ?? runStatus.value) : '';
+});
+
+/** 运行状态标签颜色 */
+const runTagType = computed<'info' | 'success' | 'danger' | 'warning'>(() => {
+  const m: Record<string, 'info' | 'success' | 'danger' | 'warning'> = {
+    RUNNING: 'info',
+    SUCCEEDED: 'success',
+    FAILED: 'danger',
+    STOPPED: 'warning'
+  };
+  return runStatus.value ? (m[runStatus.value] ?? 'info') : 'info';
+});
+
+/** 耗时格式化 */
+function fmtDuration(ms: number | null | undefined): string {
+  if (ms == null) return '';
+  return ms < 1000 ? ms + 'ms' : (ms / 1000).toFixed(1) + 's';
+}
 /** 节点类型元数据（schema 驱动表单） */
 const nodeTypes = ref<NodeTypeMeta[]>([]);
 /** 画布实例引用（删除节点） */
@@ -215,7 +258,7 @@ async function publish() {
   }
 }
 
-/** 运行流程 */
+/** 测试运行流程（对齐 n8n Execute Workflow：无需发布，用画布当前配置） */
 async function run() {
   if (!store.flowId) {
     ElMessage.warning('请先保存流程');
@@ -223,15 +266,23 @@ async function run() {
   }
   if (!(await saveFlow(false))) return;
   running.value = true;
+  runStatus.value = 'RUNNING';
   runOutput.value = '';
   runError.value = '';
+  runDuration.value = null;
+  runStats.value = null;
+  runFinalOutput.value = '';
   store.clearNodeStatus();
   try {
-    const res = await runFlow(store.flowId, runInput.value.trim() || undefined);
+    // 传画布当前配置（即使保存失败/未保存也能测；后端做图 + 节点校验）
+    const res = await runFlowTest(store.flowId, store.toConfigJson(), runInput.value.trim() || undefined);
     store.currentInstanceId = res.data;
-    ElMessage.success('流程已启动，实例ID: ' + res.data);
+    // SSE 看门狗：无事件超时后切轮询兜底（终态为准，SSE 仅加速）
+    armWatchdog();
+    ElMessage.success('测试运行已启动，实例ID: ' + res.data);
   } catch (e: any) {
     running.value = false;
+    runStatus.value = null;
     ElMessage.error('运行失败: ' + (e?.message ?? e));
   }
 }
@@ -247,7 +298,90 @@ async function stop() {
   }
 }
 
-/** SSE 事件消费（流程运行态高亮） */
+/** 清理运行定时器 */
+function clearTimers() {
+  if (watchdogTimer !== null) {
+    window.clearInterval(watchdogTimer);
+    watchdogTimer = null;
+  }
+  if (pollTimer !== null) {
+    window.clearInterval(pollTimer);
+    pollTimer = null;
+  }
+}
+
+/** SSE 看门狗：每 5s 检查，距上次事件 >15s 或 SSE 关闭时启动轮询 */
+function armWatchdog() {
+  clearTimers();
+  lastSseTime = Date.now();
+  const sseOff = import.meta.env.VITE_APP_SSE === 'false';
+  if (sseOff) {
+    startPolling();
+    return;
+  }
+  watchdogTimer = window.setInterval(() => {
+    if (!running.value) {
+      clearTimers();
+      return;
+    }
+    if (Date.now() - lastSseTime > 15000) {
+      startPolling();
+    }
+  }, 5000);
+}
+
+/** 轮询兜底：每 2s 查实例详情直到终态 */
+function startPolling() {
+  if (pollTimer !== null) return;
+  pollTimer = window.setInterval(async () => {
+    if (!running.value || !store.currentInstanceId) {
+      clearTimers();
+      return;
+    }
+    try {
+      const res = await getInstance(store.currentInstanceId);
+      const inst = res.data;
+      if (inst && inst.status !== 'RUNNING') {
+        applyInstanceResult(inst);
+      }
+    } catch {
+      // 轮询异常忽略（SSE 正常时轮询仅兜底）
+    }
+  }, 2000);
+}
+
+/** 应用实例终态结果（SSE AI_FLOW_STATUS 与轮询共用；终态为准） */
+function applyInstanceResult(inst: any) {
+  clearTimers();
+  running.value = false;
+  runStatus.value = inst.status;
+  runDuration.value = inst.durationMs ?? null;
+  runStats.value = inst.nodeTotal ? { success: inst.nodeSuccess ?? 0, total: inst.nodeTotal } : null;
+  if (inst.outputJson) {
+    runFinalOutput.value = inst.outputJson;
+  }
+  if (inst.status === 'SUCCEEDED') {
+    runOutput.value = '流程执行成功';
+    ElMessage.success('流程执行成功');
+  } else if (inst.status === 'FAILED') {
+    runError.value = inst.errorMsg ?? '流程执行失败';
+    ElMessage.error('流程执行失败: ' + (inst.errorMsg ?? ''));
+  } else if (inst.status === 'STOPPED') {
+    runOutput.value = '流程已停止';
+    ElMessage.info('流程已停止');
+  }
+}
+
+/** 查看实例详情（跳转历史详情页） */
+function viewDetail() {
+  if (!store.currentInstanceId) return;
+  router.push({
+    path: '/ai/flow/monitor/detail',
+    query: { instanceId: String(store.currentInstanceId), flowId: String(store.flowId ?? '') }
+  });
+}
+
+/** SSE 事件消费（流程运行态高亮 + 节点输出摘要） */
 function onSseMessage(e: Event) {
   const detail = (e as CustomEvent).detail;
   if (!detail || !detail.type) return;
@@ -261,24 +395,22 @@ function onSseMessage(e: Event) {
     }
     if (payload.instanceId !== store.currentInstanceId) return;
 
+    // 任意事件刷新看门狗
+    lastSseTime = Date.now();
+
     if (detail.type === 'AI_FLOW_NODE_START') {
       store.setNodeStatus(payload.nodeId, 'RUNNING');
     } else if (detail.type === 'AI_FLOW_NODE_END') {
       store.setNodeStatus(payload.nodeId, payload.status === 'SUCCEEDED' ? 'SUCCEEDED' : 'FAILED');
-      if (payload.errorMsg) {
-        ElMessage.warning(`节点 ${payload.nodeName ?? payload.nodeId} 失败: ${payload.errorMsg}`);
+      // 节点输出摘要（后端 500 字符截断），显示在节点卡片底部
+      if (payload.status === 'SUCCEEDED' && payload.outputSummary) {
+        store.setNodeSummary(payload.nodeId, String(payload.outputSummary));
+      } else if (payload.errorMsg) {
+        store.setNodeSummary(payload.nodeId, '失败: ' + payload.errorMsg);
       }
     } else if (detail.type === 'AI_FLOW_STATUS') {
-      if (payload.status === 'SUCCEEDED') {
-        runOutput.value = '流程执行成功';
-        ElMessage.success('流程执行成功');
-      } else if (payload.status === 'FAILED') {
-        runError.value = payload.errorMsg ?? '流程执行失败';
-        ElMessage.error('流程执行失败: ' + (payload.errorMsg ?? ''));
-      } else if (payload.status === 'STOPPED') {
-        ElMessage.info('流程已停止');
-      }
-      running.value = false;
+      // 终态：SSE 与轮询共用同一终态处理（终态为准）
+      applyInstanceResult(payload);
     }
   }
 }
@@ -316,6 +448,7 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   window.removeEventListener('ai-sse-message', onSseMessage);
+  clearTimers();
 });
 
 function goBack() {
@@ -332,7 +465,7 @@ function goBack() {
       <div class="flow-designer__spacer" />
       <el-button :loading="saving" @click="saveFlow()">保存</el-button>
       <el-button type="primary" @click="publish">发布</el-button>
-      <el-button type="success" :disabled="running" @click="run">运行</el-button>
+      <el-button type="success" :disabled="running" @click="run">测试运行</el-button>
       <el-button type="danger" :disabled="!running || !store.currentInstanceId" @click="stop"> 停止 </el-button>
     </div>
 
@@ -454,14 +587,25 @@ function goBack() {
       </div>
     </div>
 
-    <!-- 底部：运行面板（常驻，运行前可输入入参） -->
+    <!-- 底部：运行面板（常驻，运行前可输入入参，运行中/后展示状态与结果） -->
     <div class="flow-designer__run-panel">
       <div class="flow-designer__run-input">
         <span class="flow-designer__run-label">运行入参 (JSON)</span>
         <el-input v-model="runInput" type="textarea" :rows="2" placeholder='{"name":"张三","amount":500}' />
       </div>
+      <div v-if="runStatus" class="flow-designer__run-info">
+        <el-tag size="small" :type="runTagType">{{ runStatusLabel }}</el-tag>
+        <span v-if="runDuration !== null" class="flow-designer__run-sub">耗时 {{ fmtDuration(runDuration) }}</span>
+        <span v-if="runStats" class="flow-designer__run-sub">节点 {{ runStats.success }}/{{ runStats.total }} 成功</span>
+        <el-button v-if="runStatus !== 'RUNNING'" link type="primary" size="small" @click="viewDetail"> 查看详情 </el-button>
+      </div>
       <div v-if="runOutput" class="flow-designer__run-result">✅ {{ runOutput }}</div>
       <div v-if="runError" class="flow-designer__run-error">❌ {{ runError }}</div>
+      <el-collapse v-if="runFinalOutput && runStatus === 'SUCCEEDED'" class="flow-designer__run-final">
+        <el-collapse-item title="最终输出 (outputJson)" name="final">
+          <pre class="flow-designer__run-final-pre">{{ runFinalOutput }}</pre>
+        </el-collapse-item>
+      </el-collapse>
     </div>
 
     <!-- NDV：节点运行数据抽屉（双击节点） -->
@@ -604,6 +748,42 @@ function goBack() {
   padding-top: 4px;
   white-space: pre-wrap;
   max-width: 400px;
+}
+
+.flow-designer__run-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-top: 2px;
+  white-space: nowrap;
+}
+
+.flow-designer__run-sub {
+  font-size: 12px;
+  color: #909399;
+}
+
+.flow-designer__run-final {
+  width: 300px;
+  border: 1px solid #e4e7ed;
+  border-radius: 6px;
+  background: #fafafa;
+}
+
+.flow-designer__run-final :deep(.el-collapse-item__header) {
+  font-size: 12px;
+  padding-left: 8px;
+  background: #fafafa;
+}
+
+.flow-designer__run-final-pre {
+  font-size: 11px;
+  margin: 0;
+  padding: 0 8px 8px;
+  max-height: 160px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
 }
 
 .flow-designer__actions {

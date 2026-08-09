@@ -41,6 +41,9 @@ public class AiFlowInstanceVo implements Serializable {
     /** 运行时的流程版本 */
     private Integer flowVersion;
 
+    /** 启动时配置快照（JSON，供历史重放；列表接口不返回，仅详情） */
+    private String configSnapshot;
+
     /** 触发方式: MANUAL/SCHEDULE */
     @ExcelProperty(value = "触发方式")
     private String triggerType;

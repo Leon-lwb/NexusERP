@@ -2,6 +2,8 @@ package com.nexus.ai.flow.engine;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.nexus.ai.context.AiRequestContext;
 import com.nexus.ai.flow.model.FlowEdgeDef;
 import com.nexus.ai.flow.model.FlowGraph;
@@ -562,6 +564,8 @@ public class FlowEngineImpl implements FlowEngine {
         AiFlowNodeRun nodeRun = createNodeRun(instanceId, flow.getId(), nodeDef, batchIndex, tenantIdStr);
         nodeRuns.put(nodeId, nodeRun);
         sendNodeStart(instanceId, nodeDef, nodeRun, userId);
+        // 输入快照（渲染后入参：流程入参 + 直接上游输出），供 NDV 输入视图
+        nodeRun.setInputJson(buildInputSnapshot(graph, state, nodeId));
 
         try {
             // 执行节点（带超时 + 重试）
@@ -881,6 +885,30 @@ public class FlowEngineImpl implements FlowEngine {
         });
         log.warn("[Flow] 节点 {} ({}) 执行失败: {}", nodeDef.getId(), nodeDef.getName(), e.getMessage(), e);
         return e;
+    }
+
+    /**
+     * 构建节点输入快照（NDV 输入视图用）：流程入参 + 直接上游节点输出
+     */
+    private String buildInputSnapshot(FlowGraph graph, FlowState state, String nodeId) {
+        ObjectNode snapshot = MAPPER.createObjectNode();
+        JsonNode flowInput;
+        try {
+            flowInput = state.get("input");
+        } catch (IllegalArgumentException ignore) {
+            flowInput = null;
+        }
+        snapshot.set("input", flowInput == null ? MAPPER.createObjectNode() : flowInput);
+        ObjectNode upstream = MAPPER.createObjectNode();
+        for (FlowEdgeDef edge : graph.getInEdges(nodeId)) {
+            try {
+                upstream.set(edge.getSource(), state.get("nodes." + edge.getSource() + ".output"));
+            } catch (IllegalArgumentException ignore) {
+                // 上游尚未输出（不应发生），忽略
+            }
+        }
+        snapshot.set("upstream", upstream);
+        return snapshot.toString();
     }
 
     /**
