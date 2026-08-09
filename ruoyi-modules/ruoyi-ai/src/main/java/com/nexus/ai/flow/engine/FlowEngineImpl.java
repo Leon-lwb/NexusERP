@@ -2,6 +2,7 @@ package com.nexus.ai.flow.engine;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.nexus.ai.context.AiRequestContext;
@@ -577,6 +578,8 @@ public class FlowEngineImpl implements FlowEngine {
             updateNodeRun(nodeRun, tenantIdStr);
             succeededNodes.add(nodeId);
             state.putNodeOutput(nodeId, output);
+            // 追加批次历史输出（aggregate 节点收集每轮输出用）
+            appendBatchOutput(state, nodeId, output);
             sendNodeEnd(instanceId, nodeDef, nodeRun, output, userId);
 
             // 扇出下游：按 IF 结果选边，选中边下游入度-1，为 0 入队
@@ -885,6 +888,18 @@ public class FlowEngineImpl implements FlowEngine {
         });
         log.warn("[Flow] 节点 {} ({}) 执行失败: {}", nodeDef.getId(), nodeDef.getName(), e.getMessage(), e);
         return e;
+    }
+
+    /**
+     * 追加节点批次历史输出（aggregate 节点收集用）
+     * <p>root.batchOutputs.&lt;nodeId&gt; = [第1轮输出, 第2轮输出, ...]；非循环节点仅 1 条</p>
+     */
+    private void appendBatchOutput(FlowState state, String nodeId, JsonNode output) {
+        if (output == null || state.getRoot() == null) {
+            return;
+        }
+        ArrayNode list = state.getRoot().withArray("/batchOutputs/" + nodeId);
+        list.add(output);
     }
 
     /**

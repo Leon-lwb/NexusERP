@@ -15,7 +15,9 @@ import com.nexus.ai.flow.node.NodeParamSchema;
 import com.nexus.ai.flow.state.FlowState;
 import com.nexus.common.ai.domain.bo.AiFlowBo;
 import com.nexus.common.ai.domain.entity.AiFlow;
+import com.nexus.common.ai.domain.entity.AiFlowInstance;
 import com.nexus.common.ai.domain.vo.AiFlowVo;
+import com.nexus.common.ai.service.IAiFlowInstanceService;
 import com.nexus.common.ai.service.IAiFlowService;
 import com.nexus.common.core.domain.R;
 import com.nexus.common.mybatis.core.page.PageQuery;
@@ -46,6 +48,8 @@ public class AiFlowController extends BaseController {
 
     /** AI 流程业务服务 */
     private final IAiFlowService aiFlowService;
+    /** 流程运行实例服务（webhook x-wait 同步等待用） */
+    private final IAiFlowInstanceService instanceService;
     /** 流程执行引擎 */
     private final FlowEngine flowEngine;
     /** 流程节点注册中心（node-types 元数据） */
@@ -428,16 +432,18 @@ public class AiFlowController extends BaseController {
     /**
      * Webhook 入站触发（无需登录，flowKey 路由 + 可选 token 校验）
      * <p>POST /ai/flow/webhook/{flowKey}，body 为运行入参 JSON。
-     * 流程配置了 webhookToken 时需带请求头 x-flow-token 匹配；未配置则 flowKey 本身即令牌。</p>
+     * 流程配置了 webhookToken 时需带请求头 x-flow-token 匹配；未配置则 flowKey 本身即令牌。
+     * 请求头 x-wait: true 时同步等待实例终态（最多 60s）并返回完整结果（外部系统一次调用拿结果）。</p>
      *
      * @param flowKey 流程标识（唯一）
      * @param body    运行入参 JSON
-     * @return 实例ID
+     * @return 实例ID（x-wait 时含 status/outputJson/errorMsg）
      */
     @PostMapping("/webhook/{flowKey}")
-    public R<Long> webhook(@PathVariable String flowKey,
-                           @RequestBody(required = false) String body,
-                           @RequestHeader(value = "x-flow-token", required = false) String token) {
+    public R<Map<String, Object>> webhook(@PathVariable String flowKey,
+                                          @RequestBody(required = false) String body,
+                                          @RequestHeader(value = "x-flow-token", required = false) String token,
+                                          @RequestHeader(value = "x-wait", required = false) String waitHeader) {
         AiFlow flow = aiFlowService.selectByFlowKey(flowKey);
         if (flow == null) {
             return R.fail("流程不存在: " + flowKey);
@@ -464,7 +470,41 @@ public class AiFlowController extends BaseController {
         Long userId = flow.getCreateBy() == null ? 1L : flow.getCreateBy();
         try {
             Long instanceId = flowEngine.start(flow, input, "WEBHOOK", tenantIdStr, userId, null);
-            return R.ok(instanceId);
+            // x-wait: true → 同步等待终态（最多 60s）并返回完整结果
+            if ("true".equalsIgnoreCase(waitHeader) || "1".equals(waitHeader)) {
+                Map<String, Object> result = new java.util.HashMap<>();
+                result.put("instanceId", instanceId);
+                long deadline = System.currentTimeMillis() + 60000;
+                AiFlowInstance inst = null;
+                while (System.currentTimeMillis() < deadline) {
+                    try {
+                        inst = com.nexus.common.tenant.helper.TenantHelper.dynamic(tenantIdStr,
+                            () -> instanceService.selectById(instanceId));
+                    } catch (Exception ignore) {
+                        // 忽略瞬时查询异常
+                    }
+                    if (inst != null && !"RUNNING".equals(inst.getStatus())) {
+                        break;
+                    }
+                    try {
+                        Thread.sleep(500);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        break;
+                    }
+                }
+                if (inst == null || "RUNNING".equals(inst.getStatus())) {
+                    result.put("status", "TIMEOUT");
+                    result.put("message", "60s 内未完成，请用 instanceId 查询或轮询");
+                } else {
+                    result.put("status", inst.getStatus());
+                    result.put("outputJson", inst.getOutputJson());
+                    result.put("errorMsg", inst.getErrorMsg());
+                    result.put("durationMs", inst.getDurationMs());
+                }
+                return R.ok(result);
+            }
+            return R.ok(Map.of("instanceId", instanceId));
         } catch (IllegalArgumentException e) {
             return R.fail("启动失败: " + e.getMessage());
         }

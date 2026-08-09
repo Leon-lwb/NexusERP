@@ -6,6 +6,7 @@ import {
   Cpu,
   DataLine,
   EditPen,
+  FolderOpened,
   MagicStick,
   Message,
   Odometer,
@@ -199,6 +200,38 @@ export const NODE_TYPE_CONFIGS: FlowNodeTypeConfig[] = [
     defaultConfig: {
       arrayPath: 'input.items',
       batchSize: 1
+    }
+  },
+  {
+    type: 'mq_send',
+    label: 'MQ 消息发送',
+    icon: Promotion,
+    color: '#722ed1',
+    defaultConfig: {
+      routingKey: '',
+      payload: '{}',
+      exchange: 'erp.topic.exchange'
+    }
+  },
+  {
+    type: 'aggregate',
+    label: '聚合汇总',
+    icon: DataLine,
+    color: '#13c2c2',
+    defaultConfig: {
+      mode: 'ALL_UPSTREAM'
+    }
+  },
+  {
+    type: 'oss',
+    label: 'OSS 文件',
+    icon: FolderOpened,
+    color: '#fa8c16',
+    defaultConfig: {
+      action: 'UPLOAD_TEXT',
+      fileName: '',
+      content: '',
+      filePath: ''
     }
   }
 ];

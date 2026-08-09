@@ -132,10 +132,16 @@
             <version>1.18.3</version>
         </dependency>
 
-        <!-- OSS 文件存储（知识库文档上传） -->
+        <!-- OSS 文件存储（知识库文档上传 / 流程 OSS 节点） -->
         <dependency>
             <groupId>com.nexus</groupId>
             <artifactId>ruoyi-common-oss</artifactId>
+        </dependency>
+
+        <!-- RabbitMQ 可靠消息（流程 mq_send 节点） -->
+        <dependency>
+            <groupId>com.nexus</groupId>
+            <artifactId>ruoyi-common-mq</artifactId>
         </dependency>
 
         <!-- 本地缓存（模型实例、会话记忆、向量存储等有界缓存） -->
