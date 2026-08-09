@@ -36,11 +36,12 @@ public class FlowState {
      *   <li>已存在节点的属性缺失 → 返回 {@link com.fasterxml.jackson.databind.node.MissingNode}</li>
      * </ul>
      * </p>
+     * <p>并行安全：读操作与写入并发，synchronized 保证结构一致性</p>
      *
      * @param path 路径（如 input.warehouse、nodes.node_llm_1.output.content、chunks[0]）
      * @return 值节点；属性缺失返回 MissingNode（调用方渲染为空串）
      */
-    public JsonNode get(String path) {
+    public synchronized JsonNode get(String path) {
         if (path == null || path.isBlank()) {
             return MAPPER.missingNode();
         }
@@ -108,12 +109,12 @@ public class FlowState {
     }
 
     /**
-     * 写入节点输出
+     * 写入节点输出（并行安全：synchronized）
      *
      * @param nodeId 节点ID
      * @param output 输出 JSON
      */
-    public void putNodeOutput(String nodeId, JsonNode output) {
+    public synchronized void putNodeOutput(String nodeId, JsonNode output) {
         ObjectNode nodes = (ObjectNode) root.get("nodes");
         ObjectNode nodeEntry = MAPPER.createObjectNode();
         nodeEntry.set("output", output == null ? MAPPER.createObjectNode() : output);
@@ -121,20 +122,20 @@ public class FlowState {
     }
 
     /**
-     * 获取运行入参
+     * 获取运行入参（并行安全：synchronized）
      *
      * @return 入参 JSON
      */
-    public JsonNode getInput() {
+    public synchronized JsonNode getInput() {
         return root.get("input");
     }
 
     /**
-     * 获取末节点输出（引擎在流程结束时调用）
+     * 获取末节点输出（引擎在流程结束时调用；并行安全：synchronized）
      *
      * @return 输出 JSON，无输出返回空对象
      */
-    public JsonNode getFinalOutput() {
+    public synchronized JsonNode getFinalOutput() {
         JsonNode nodes = root.get("nodes");
         if (nodes == null || !nodes.isObject() || nodes.isEmpty()) {
             return MAPPER.createObjectNode();
@@ -151,11 +152,11 @@ public class FlowState {
     }
 
     /**
-     * 获取底层根节点
+     * 获取底层根节点（并行安全：synchronized；调用方仅在读快照时使用）
      *
      * @return 根节点
      */
-    public ObjectNode getRoot() {
+    public synchronized ObjectNode getRoot() {
         return root;
     }
 }

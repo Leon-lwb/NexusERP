@@ -193,7 +193,11 @@ class FlowEngineSchedulingTest {
         when(registry.contains(anyString())).thenReturn(true);
 
         FlowStopRegistry stopRegistry = new FlowStopRegistry();
-        return new FlowEngineImpl(registry, stopRegistry, instanceMapper, nodeRunMapper, syncExecutor());
+        com.nexus.common.ai.mapper.AiFlowMapper flowMapper = mock(com.nexus.common.ai.mapper.AiFlowMapper.class);
+        com.nexus.ai.config.AiProperties aiProperties = new com.nexus.ai.config.AiProperties();
+        java.util.concurrent.ExecutorService flowExecutor = java.util.concurrent.Executors.newSingleThreadExecutor();
+        return new FlowEngineImpl(registry, stopRegistry, instanceMapper, nodeRunMapper, flowMapper, aiProperties,
+            syncExecutor(), flowExecutor);
     }
 
     @Test

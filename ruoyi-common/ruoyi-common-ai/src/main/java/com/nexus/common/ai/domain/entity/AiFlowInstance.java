@@ -40,6 +40,9 @@ public class AiFlowInstance extends TenantEntity {
     /** 输出(JSON, 末节点输出) */
     private String outputJson;
 
+    /** 启动时画布配置快照（续跑 retry 用——config 变更后重跑语义不漂移） */
+    private String configSnapshot;
+
     /** 状态: RUNNING/SUCCEEDED/FAILED/STOPPED */
     private String status;
 

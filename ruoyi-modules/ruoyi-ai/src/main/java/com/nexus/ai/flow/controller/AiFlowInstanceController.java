@@ -1,6 +1,7 @@
 package com.nexus.ai.flow.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
+import com.nexus.ai.flow.engine.FlowEngine;
 import com.nexus.common.ai.domain.bo.AiFlowInstanceBo;
 import com.nexus.common.ai.domain.vo.AiFlowInstanceVo;
 import com.nexus.common.ai.domain.vo.AiFlowNodeRunVo;
@@ -8,11 +9,13 @@ import com.nexus.common.ai.service.IAiFlowInstanceService;
 import com.nexus.common.core.domain.R;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
+import com.nexus.common.satoken.utils.LoginHelper;
 import com.nexus.common.web.core.BaseController;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -31,6 +34,8 @@ public class AiFlowInstanceController extends BaseController {
 
     /** AI 流程运行实例业务服务 */
     private final IAiFlowInstanceService aiFlowInstanceService;
+    /** 流程执行引擎（续跑） */
+    private final FlowEngine flowEngine;
 
     /**
      * 分页查询运行实例列表
@@ -70,5 +75,25 @@ public class AiFlowInstanceController extends BaseController {
     @GetMapping("/{instanceId}/nodes")
     public R<List<AiFlowNodeRunVo>> nodeRuns(@PathVariable Long instanceId) {
         return R.ok(aiFlowInstanceService.selectNodeRuns(instanceId));
+    }
+
+    /**
+     * 执行级续跑（从失败节点重跑，对齐 n8n retry）
+     * <p>权限标识：{@code ai:flow:run}</p>
+     *
+     * @param instanceId 实例ID
+     * @return 续跑后的实例ID
+     */
+    @SaCheckPermission("ai:flow:run")
+    @PostMapping("/{instanceId}/retry")
+    public R<Long> retry(@PathVariable Long instanceId) {
+        try {
+            String tenantIdStr = LoginHelper.getTenantId();
+            Long userId = LoginHelper.getUserId();
+            Long retried = flowEngine.retry(instanceId, tenantIdStr, userId);
+            return R.ok(retried);
+        } catch (IllegalArgumentException e) {
+            return R.fail("续跑失败: " + e.getMessage());
+        }
     }
 }

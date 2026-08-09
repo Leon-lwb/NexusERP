@@ -4,6 +4,7 @@ import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexus.ai.flow.engine.FlowEngine;
+import com.nexus.ai.flow.model.FlowEdgeDef;
 import com.nexus.ai.flow.model.FlowGraph;
 import com.nexus.ai.flow.node.FlowNodeProvider;
 import com.nexus.ai.flow.node.FlowNodeRegistry;
@@ -141,11 +142,16 @@ public class AiFlowController extends BaseController {
         try {
             FlowGraph graph = FlowGraph.parse(flow.getConfigJson());
             graph.validate(flowNodeRegistry::contains);
-            // 各节点 config 校验
+            // 各节点 config 校验 + ERROR_PORT 必须有 error 出边
             for (var entry : graph.getNodes().entrySet()) {
                 FlowNodeProvider provider = flowNodeRegistry.getProvider(entry.getValue().getType());
                 if (provider != null) {
                     provider.validateConfig(entry.getValue().getConfig());
+                }
+                if ("ERROR_PORT".equals(entry.getValue().getOnError())
+                    && graph.getOutEdges(entry.getValue().getId()).stream().noneMatch(FlowEdgeDef::isErrorBranch)) {
+                    return R.fail("发布校验失败: 节点 " + entry.getValue().getName()
+                        + " 配置了 ERROR_PORT 但缺少错误输出边（outputs/error/0）");
                 }
             }
         } catch (IllegalArgumentException e) {

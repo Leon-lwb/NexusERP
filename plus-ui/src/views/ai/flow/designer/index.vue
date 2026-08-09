@@ -295,6 +295,7 @@ function goBack() {
                   >
                     <el-option label="STOP（停止流程）" value="STOP" />
                     <el-option label="CONTINUE（透传继续）" value="CONTINUE" />
+                    <el-option label="ERROR_PORT（错误分支）" value="ERROR_PORT" />
                   </el-select>
                 </el-form-item>
                 <el-form-item label="失败重试">

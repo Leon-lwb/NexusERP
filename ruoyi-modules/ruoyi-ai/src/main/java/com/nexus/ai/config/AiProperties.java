@@ -46,6 +46,9 @@ public class AiProperties {
     /** 文生图配置 */
     private ImageConfig image = new ImageConfig();
 
+    /** 流程编排配置 */
+    private FlowConfig flow = new FlowConfig();
+
     /** 知识图谱配置 */
     private KnowledgeGraphConfig knowledgeGraph = new KnowledgeGraphConfig();
 
@@ -107,6 +110,17 @@ public class AiProperties {
         private boolean enabled = true;
         /** 默认厂商（对应 IImageGenerationService.getProviderName()） */
         private String defaultProvider = "Tongyiwanx";
+    }
+
+    /**
+     * 流程编排配置（前缀 nexus.ai.flow）
+     */
+    @Data
+    public static class FlowConfig {
+        /** 是否启用并行分支执行（默认 false 串行；含循环的图强制串行） */
+        private boolean parallel = false;
+        /** 并行 worker 数（默认 4） */
+        private int parallelWorkers = 4;
     }
 
     /**

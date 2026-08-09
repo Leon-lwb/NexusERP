@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { ElMessage } from 'element-plus';
 import type { AiFlowInstance } from '@/api/ai/flow';
-import { listInstance } from '@/api/ai/flow';
+import { listInstance, retryInstance } from '@/api/ai/flow';
 
 /**
  * 流程运行历史列表页
@@ -44,6 +45,17 @@ async function loadList() {
 /** 进入详情（只读画布重放） */
 function detail(row: AiFlowInstance) {
   router.push({ path: '/ai/flow/monitor/detail', query: { instanceId: row.id, flowId: row.flowId } });
+}
+
+/** 执行级续跑（从失败节点重跑） */
+async function retry(row: AiFlowInstance) {
+  try {
+    await retryInstance(row.id);
+    ElMessage.success('已从失败节点续跑');
+    loadList();
+  } catch (e: any) {
+    ElMessage.error('续跑失败: ' + (e?.message ?? e));
+  }
 }
 
 /** 格式化耗时 */
@@ -105,9 +117,10 @@ onMounted(loadList);
         <template #default="{ row }">{{ formatDuration(row.durationMs) }}</template>
       </el-table-column>
       <el-table-column label="开始时间" prop="startTime" width="170" />
-      <el-table-column label="操作" width="120" fixed="right">
+      <el-table-column label="操作" width="160" fixed="right">
         <template #default="{ row }">
           <el-button link type="primary" @click="detail(row)">详情</el-button>
+          <el-button v-if="row.status === 'FAILED' || row.status === 'STOPPED'" link type="warning" @click="retry(row)"> 续跑 </el-button>
         </template>
       </el-table-column>
     </el-table>

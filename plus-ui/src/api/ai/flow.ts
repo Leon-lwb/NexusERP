@@ -222,3 +222,14 @@ export function listNodeRuns(instanceId: number | string) {
     method: 'get'
   });
 }
+
+/**
+ * 执行级续跑（从失败节点重跑）
+ * @param instanceId 实例ID
+ */
+export function retryInstance(instanceId: number | string) {
+  return request({
+    url: `/ai/flow/instance/${instanceId}/retry`,
+    method: 'post'
+  });
+}

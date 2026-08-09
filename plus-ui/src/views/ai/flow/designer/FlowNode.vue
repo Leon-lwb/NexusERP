@@ -12,6 +12,7 @@ interface FlowNodeData {
   label: string;
   type: string;
   status?: 'RUNNING' | 'SUCCEEDED' | 'FAILED' | 'SKIPPED';
+  onError?: 'STOP' | 'CONTINUE' | 'ERROR_PORT';
 }
 
 const props = defineProps<NodeProps<FlowNodeData>>();
@@ -65,6 +66,34 @@ const statusClass = computed(() => {
         type="source"
         :position="Position.Right"
         class="flow-node__handle flow-node__handle--false"
+        :style="{ top: '65%' }"
+      />
+    </template>
+    <!-- ERROR_PORT 节点：main + error 双输出端口 -->
+    <template v-else-if="props.data.onError === 'ERROR_PORT'">
+      <Handle id="outputs/main/0" type="source" :position="Position.Right" class="flow-node__handle" :style="{ top: '35%' }" />
+      <Handle
+        id="outputs/error/0"
+        type="source"
+        :position="Position.Right"
+        class="flow-node__handle flow-node__handle--error"
+        :style="{ top: '65%' }"
+      />
+    </template>
+    <!-- 循环节点：loop/main + loop/done 双输出端口 -->
+    <template v-else-if="props.data.type === 'split'">
+      <Handle
+        id="outputs/loop/main"
+        type="source"
+        :position="Position.Right"
+        class="flow-node__handle flow-node__handle--loop"
+        :style="{ top: '35%' }"
+      />
+      <Handle
+        id="outputs/loop/done"
+        type="source"
+        :position="Position.Right"
+        class="flow-node__handle flow-node__handle--done"
         :style="{ top: '65%' }"
       />
     </template>
@@ -144,6 +173,18 @@ const statusClass = computed(() => {
 
 .flow-node__handle--false {
   border-color: #fa541c !important;
+}
+
+.flow-node__handle--error {
+  border-color: #fa541c !important;
+}
+
+.flow-node__handle--loop {
+  border-color: #2f54eb !important;
+}
+
+.flow-node__handle--done {
+  border-color: #52c41a !important;
 }
 
 /* 运行中：旋转渐变边框（对齐 n8n CanvasNodeDefault） */

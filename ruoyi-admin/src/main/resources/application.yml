@@ -351,6 +351,10 @@ nexus:
     allowed-table-prefixes: bd_,so_,pu_,prd_,wm_,sch_
     sql-timeout: 5000
     sql-max-rows: 1000
+    flow:
+      # 并行分支执行（默认关；含循环的图强制串行）
+      parallel: false
+      parallel-workers: 4
     vector-store:
       # 向量存储类型：milvus（持久化，重启不丢）/ inmemory（仅内存，重启清空，仅用于无 Milvus 环境的演示）
       # ⚠️ inmemory 模式下重启服务后向量全部丢失，RAG 检索返回空；生产必须用 milvus

@@ -52,6 +52,9 @@ public class AiFlowNodeRun extends TenantEntity {
     /** 已重试次数 */
     private Integer retryCount;
 
+    /** 循环批次索引（split 循环场景同一节点多次执行的轮次，非循环=0） */
+    private Integer batchIndex;
+
     /** 耗时(毫秒) */
     private Long durationMs;
 

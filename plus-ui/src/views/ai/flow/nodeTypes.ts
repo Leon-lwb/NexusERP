@@ -10,6 +10,7 @@ import {
   Message,
   Odometer,
   Promotion,
+  Refresh,
   SetUp,
   Timer
 } from '@element-plus/icons-vue';
@@ -189,6 +190,16 @@ export const NODE_TYPE_CONFIGS: FlowNodeTypeConfig[] = [
     icon: Connection,
     color: '#13c2c2',
     defaultConfig: {}
+  },
+  {
+    type: 'split',
+    label: '循环分批',
+    icon: Refresh,
+    color: '#2f54eb',
+    defaultConfig: {
+      arrayPath: 'input.items',
+      batchSize: 1
+    }
   }
 ];
 

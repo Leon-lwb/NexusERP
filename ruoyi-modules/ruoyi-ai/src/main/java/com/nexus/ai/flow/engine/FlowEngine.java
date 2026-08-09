@@ -31,4 +31,17 @@ public interface FlowEngine {
      * @return 是否首次请求成功
      */
     boolean stop(Long instanceId);
+
+    /**
+     * 执行级续跑（从失败节点重跑，对齐 n8n execution.service.ts retry()）
+     * <p>从 ai_flow_node_run 快照重建状态：已 SUCCEEDED 节点保留原输出，从最早 FAILED 节点继续。
+     * 实例状态须为 FAILED/STOPPED；循环场景从失败批次继续。</p>
+     *
+     * @param instanceId   实例ID
+     * @param tenantIdStr  租户ID
+     * @param userId       触发人ID（SSE 通知目标）
+     * @return 续跑后的实例ID
+     * @throws IllegalArgumentException 状态不允许续跑/无可续跑点
+     */
+    Long retry(Long instanceId, String tenantIdStr, Long userId);
 }
