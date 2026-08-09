@@ -64,7 +64,8 @@ public class SysUserNotificationServiceImpl implements ISysUserNotificationServi
         row.setExtJson(extJson);
         notificationMapper.insert(row);
         String preview = StrUtil.maxLength(StrUtil.removeAll(content, "<[^>]+>"), 200);
-        String json = ImEnvelopeHelper.userNotification(row.getNotificationId(), category, row.getTitle(), preview, null);
+        String json = ImEnvelopeHelper.userNotification(row.getNotificationId(), category, row.getTitle(), preview, null,
+            row.getRefType(), row.getRefId());
         // P0-2: 推送移到事务提交后，避免回滚时接收方收到"幽灵通知"
         imRealtimePush.publishToUserAfterCommit(userId, json);
         return row.getNotificationId();
@@ -97,7 +98,8 @@ public class SysUserNotificationServiceImpl implements ISysUserNotificationServi
         for (SysUserNotification row : rows) {
             String preview = StrUtil.maxLength(StrUtil.removeAll(row.getContent(), "<[^>]+>"), 200);
             String json = ImEnvelopeHelper.userNotification(
-                row.getNotificationId(), row.getCategory(), row.getTitle(), preview, null);
+                row.getNotificationId(), row.getCategory(), row.getTitle(), preview, null,
+                row.getRefType(), row.getRefId());
             imRealtimePush.publishToUserAfterCommit(row.getUserId(), json);
             ids.add(row.getNotificationId());
         }
@@ -129,7 +131,8 @@ public class SysUserNotificationServiceImpl implements ISysUserNotificationServi
         }
         notificationMapper.insert(row);
         String preview = StrUtil.maxLength(StrUtil.removeAll(event.getContent(), "<[^>]+>"), 200);
-        String json = ImEnvelopeHelper.userNotification(row.getNotificationId(), row.getCategory(), row.getTitle(), preview, event.getContentUrl());
+        String json = ImEnvelopeHelper.userNotification(row.getNotificationId(), row.getCategory(), row.getTitle(), preview,
+            event.getContentUrl(), row.getRefType(), row.getRefId());
         // P0-2: 推送移到事务提交后，避免回滚时接收方收到"幽灵通知"
         imRealtimePush.publishToUserAfterCommit(event.getTargetUserId(), json);
     }
@@ -145,6 +148,8 @@ public class SysUserNotificationServiceImpl implements ISysUserNotificationServi
         Long userId = LoginHelper.getUserId();
         LambdaQueryWrapper<SysUserNotification> w = new LambdaQueryWrapper<SysUserNotification>()
             .eq(SysUserNotification::getUserId, userId)
+            // 未读在前（readFlag: 0未读 < 1已读）+ 时间倒序（对齐主流消息中心）
+            .orderByAsc(SysUserNotification::getReadFlag)
             .orderByDesc(SysUserNotification::getCreateTime);
         Page<SysUserNotification> page = notificationMapper.selectPage(pageQuery.build(), w);
         return TableDataInfo.build(page);
@@ -177,6 +182,22 @@ public class SysUserNotificationServiceImpl implements ISysUserNotificationServi
     public Long countUnread() {
         Long userId = LoginHelper.getUserId();
         return notificationMapper.selectCount(new LambdaQueryWrapper<SysUserNotification>()
+            .eq(SysUserNotification::getUserId, userId)
+            .eq(SysUserNotification::getReadFlag, "0"));
+    }
+
+    /**
+     * 将当前登录用户的全部未读通知标记为已读。
+     *
+     * @return 受影响行数
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int markAllRead() {
+        Long userId = LoginHelper.getUserId();
+        SysUserNotification update = new SysUserNotification();
+        update.setReadFlag("1");
+        return notificationMapper.update(update, new LambdaQueryWrapper<SysUserNotification>()
             .eq(SysUserNotification::getUserId, userId)
             .eq(SysUserNotification::getReadFlag, "0"));
     }

@@ -64,6 +64,13 @@ public interface ISysUserNotificationService {
     int markRead(Long notificationId);
 
     /**
+     * 将当前登录用户的全部未读通知标记为已读。
+     *
+     * @return 受影响行数
+     */
+    int markAllRead();
+
+    /**
      * 统计当前登录用户的未读通知数量。
      *
      * @return 未读通知数量

@@ -112,15 +112,17 @@ import { useThemeStore } from '@/store/modules/theme';
 import { useNoticeStore } from '@/store/modules/notice';
 import { getTenantList } from '@/api/login';
 import { dynamicClear, dynamicTenant } from '@/api/system/tenant';
+import { unreadNotificationCount } from '@/api/im/notification';
 import { TenantVO } from '@/api/types';
 import notice from './notice/index.vue';
 import router from '@/router';
 import { ElMessageBoxOptions } from 'element-plus/es/components/message-box/src/message-box.type';
 import { NavTypeEnum } from '@/enums/NavTypeEnum';
-import Logo from "@/layout/components/Sidebar/Logo.vue";
-import TopBar from './TopBar'
-import { Brush, ChatDotRound } from '@element-plus/icons-vue'
-import AiChatDrawer from '@/components/ai/AiChatDrawer.vue'
+import Logo from '@/layout/components/Sidebar/Logo.vue';
+import TopBar from './TopBar';
+import { Brush, ChatDotRound } from '@element-plus/icons-vue';
+import AiChatDrawer from '@/components/ai/AiChatDrawer.vue';
+import { onMounted } from 'vue';
 
 const appStore = useAppStore();
 const userStore = useUserStore();
@@ -224,14 +226,24 @@ const handleCommand = (command: string) => {
     commandMap[command]();
   }
 };
-//用深度监听 消息
+//未读角标：以后端 unread/count 为基数，实时推送 +1、已读 -1（store 内维护）
 watch(
-  () => noticeStore.state.value.notices,
-  (newVal) => {
-    newNotice.value = newVal.filter((item: any) => !item.read).length;
-  },
-  { deep: true }
+  () => noticeStore.state.value.unreadCount,
+  (n) => {
+    newNotice.value = n;
+  }
 );
+
+// 登录/刷新后初始化未读计数（持久化）
+onMounted(() => {
+  unreadNotificationCount()
+    .then((res: any) => {
+      useNoticeStore().setUnreadCount(Number(res.data ?? 0));
+    })
+    .catch(() => {
+      /* 接口失败不阻塞 */
+    });
+});
 </script>
 
 <style lang="scss" scoped>
@@ -304,7 +316,6 @@ watch(
     overflow: hidden;
     margin-left: 8px;
   }
-
 
   .errLog-container {
     display: inline-block;

@@ -25,9 +25,12 @@ public final class ImEnvelopeHelper {
      * @param title           通知标题
      * @param contentPreview  内容预览摘要
      * @param contentUrl      内容详情 URL（可为 null，不输出该字段）
+     * @param refType         关联业务类型（可为 null，前端据此拼跳转；不输出该字段）
+     * @param refId           关联业务 ID（可为 null）
      * @return 信封 JSON 字符串
      */
-    public static String userNotification(long notificationId, String category, String title, String contentPreview, String contentUrl) {
+    public static String userNotification(long notificationId, String category, String title, String contentPreview, String contentUrl,
+                                          String refType, String refId) {
         MapBuilder<String, Object> builder = MapUtil.<String, Object>builder()
             .put("notificationId", notificationId)
             .put("category", category)
@@ -35,6 +38,10 @@ public final class ImEnvelopeHelper {
             .put("contentPreview", contentPreview);
         if (contentUrl != null) {
             builder.put("contentUrl", contentUrl);
+        }
+        if (refType != null) {
+            builder.put("refType", refType);
+            builder.put("refId", refId);
         }
         return envelope(ImPayloadConstants.TYPE_USER_NOTIFICATION, builder.build());
     }

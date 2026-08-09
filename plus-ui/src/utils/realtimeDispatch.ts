@@ -23,12 +23,21 @@ export const dispatchRealtimeMessage = (raw: string) => {
     if (obj && obj.v === 1 && obj.type && obj.payload) {
       if (obj.type === 'USER_NOTIFICATION') {
         const p = obj.payload;
-        useNoticeStore().addNotice({
+        const noticeStore = useNoticeStore();
+        noticeStore.addNotice({
+          id: p.notificationId,
           message: p.title || '通知',
+          title: p.title || '通知',
           read: false,
           time: new Date().toLocaleString(),
-          contentUrl: p.contentUrl || undefined
+          contentPreview: p.contentPreview || undefined,
+          contentUrl: p.contentUrl || undefined,
+          category: p.category,
+          refType: p.refType,
+          refId: p.refId
         });
+        // 未读计数 +1（铃铛角标）
+        noticeStore.incrUnread();
         ElNotification({
           title: p.title || '站内通知',
           message: stripHtml(p.contentPreview || ''),

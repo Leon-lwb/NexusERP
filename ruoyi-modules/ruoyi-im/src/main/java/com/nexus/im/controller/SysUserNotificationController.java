@@ -56,6 +56,17 @@ public class SysUserNotificationController extends BaseController {
     }
 
     /**
+     * 将当前登录用户的全部未读通知标记为已读（通知中心"全部已读"）。
+     *
+     * @return 操作结果
+     */
+    @SaCheckLogin
+    @PutMapping("/read/all")
+    public R<Void> markAllRead() {
+        return toAjax(sysUserNotificationService.markAllRead());
+    }
+
+    /**
      * 统计当前登录用户的未读通知数量。
      *
      * @return 未读通知数量
