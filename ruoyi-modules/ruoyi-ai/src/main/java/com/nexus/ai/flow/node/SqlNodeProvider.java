@@ -68,9 +68,11 @@ public class SqlNodeProvider implements FlowNodeProvider {
         String rawSql = FlowTemplateRenderer.render(sqlTemplate, ctx.getState(), label + " 的 sqlTemplate");
 
         // 安全校验 + 净化（SELECT 白名单/关键词黑名单/表名白名单/租户注入/LIMIT/EXPLAIN）
+        // 显式传租户：节点在 ForkJoinPool 线程执行，AiRequestContext ThreadLocal 不可达
         int maxRows = config.has("maxRows") && config.get("maxRows").canConvertToInt()
             ? config.get("maxRows").asInt() : 50;
-        String safeSql = sqlSafetyValidator.validateAndSanitize(rawSql, maxRows);
+        Long tenantId = ctx.getTenantId() == null ? null : Long.valueOf(ctx.getTenantId());
+        String safeSql = sqlSafetyValidator.validateAndSanitize(rawSql, maxRows, tenantId);
 
         // 执行（@DS("erp") 数据源）
         List<Map<String, Object>> rows = erpQueryService.executeQuery(

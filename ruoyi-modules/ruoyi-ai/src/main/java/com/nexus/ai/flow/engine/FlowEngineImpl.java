@@ -570,7 +570,7 @@ public class FlowEngineImpl implements FlowEngine {
 
         try {
             // 执行节点（带超时 + 重试）
-            JsonNode output = runNodeWithRetry(nodeDef, provider, state, instanceId, userId, flow, graph, executedCount);
+            JsonNode output = runNodeWithRetry(nodeDef, provider, state, instanceId, userId, flow, graph, executedCount, tenantIdStr);
             // 成功
             nodeRun.setStatus("SUCCEEDED");
             nodeRun.setOutputJson(output == null ? "{}" : output.toString());
@@ -637,7 +637,7 @@ public class FlowEngineImpl implements FlowEngine {
      */
     private JsonNode runNodeWithRetry(FlowNodeDef nodeDef, FlowNodeProvider provider, FlowState state,
                                       Long instanceId, Long userId, AiFlow flow, FlowGraph graph,
-                                      AtomicInteger executedCount) throws Exception {
+                                      AtomicInteger executedCount, String tenantIdStr) throws Exception {
         int maxTries = nodeDef.isRetryOnFail() ? nodeDef.getRetryMaxTries() : 1;
         long waitBetweenTries = nodeDef.getWaitBetweenTries();
         long timeoutSeconds = nodeDef.getTimeoutSeconds();
@@ -657,6 +657,8 @@ public class FlowEngineImpl implements FlowEngine {
                 ctx.setInstanceId(instanceId);
                 ctx.setFlowId(flow.getId());
                 ctx.setUserId(userId);
+                // 租户经 ctx 传递（节点在 ForkJoinPool 线程执行，AiRequestContext ThreadLocal 不可达）
+                ctx.setTenantId(tenantIdStr);
                 ctx.setGraph(graph);
 
                 // 带超时执行（Future.get）

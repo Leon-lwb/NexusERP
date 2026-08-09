@@ -56,6 +56,21 @@ public class SqlSafetyValidator {
      * @return 可安全执行的 SQL
      */
     public String validateAndSanitize(String sql, Integer maxRows) {
+        // 无显式租户（AI 对话链路）：从 AiRequestContext 获取（对话线程 ThreadLocal 可达）
+        return validateAndSanitize(sql, maxRows, AiRequestContext.getTenantId());
+    }
+
+    /**
+     * SQL 安全校验（带显式租户）
+     * <p>流程 sql 节点在 ForkJoinPool 线程执行（AiRequestContext ThreadLocal 不可达），
+     * 必须由调用方经执行上下文传入租户，否则租户隔离注入失效（跨租户数据泄露风险）</p>
+     *
+     * @param sql     原始 SQL
+     * @param maxRows 行数上限（null 时取配置 nexus.ai.sql-max-rows）
+     * @param tenantId 显式租户（null 时回退 AiRequestContext）
+     * @return 可安全执行的 SQL
+     */
+    public String validateAndSanitize(String sql, Integer maxRows, Long tenantId) {
         if (sql == null || sql.trim().isEmpty()) {
             throw new IllegalArgumentException("SQL 不能为空");
         }
@@ -96,10 +111,10 @@ public class SqlSafetyValidator {
             }
         }
 
-        // 4. 注入租户隔离条件（从 AiRequestContext 获取，兼容异步线程）
-        Long tenantId = AiRequestContext.getTenantId();
-        if (tenantId != null) {
-            cleanedSql = injectTenantCondition(cleanedSql, tenantId);
+        // 4. 注入租户隔离条件（显式租户优先，回退 AiRequestContext）
+        Long effectiveTenantId = tenantId != null ? tenantId : AiRequestContext.getTenantId();
+        if (effectiveTenantId != null) {
+            cleanedSql = injectTenantCondition(cleanedSql, effectiveTenantId);
         } else {
             log.warn("[AI-SQL] 无法获取租户ID，跳过租户隔离");
         }

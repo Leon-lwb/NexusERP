@@ -37,6 +37,9 @@ public class FlowExecutionContext {
     /** 目标用户ID（SSE 通知用，定时任务为流程创建人） */
     private Long userId;
 
+    /** 租户ID（引擎注入；节点在 ForkJoinPool 线程执行，AiRequestContext ThreadLocal 不可达，必须经 ctx 传递） */
+    private String tenantId;
+
     /** 流程图模型（merge 节点收集上游输出用） */
     private com.nexus.ai.flow.model.FlowGraph graph;
 }

@@ -91,9 +91,20 @@ public class NotifyNodeProvider implements FlowNodeProvider {
             throw new IllegalArgumentException("通知节点 userId 不是合法数字: " + userIdStr);
         }
 
-        // 发布事件（im 模块监听落库并推送）；租户取流程级 AiRequestContext
+        // 发布事件（im 模块监听落库并推送）
+        // 租户经 ctx 传递（节点在 ForkJoinPool 线程执行，AiRequestContext ThreadLocal 不可达；
+        // node-test 单节点测试无 ctx 租户时兜底 AiRequestContext）。null 不 set —— 监听器跳过租户切换
         UserNotificationEvent event = new UserNotificationEvent();
-        event.setTenantId(String.valueOf(AiRequestContext.getTenantId()));
+        String tenantId = ctx.getTenantId();
+        if (tenantId == null) {
+            Long ctxTenant = AiRequestContext.getTenantId();
+            if (ctxTenant != null) {
+                tenantId = String.valueOf(ctxTenant);
+            }
+        }
+        if (tenantId != null) {
+            event.setTenantId(tenantId);
+        }
         event.setTargetUserId(targetUserId);
         event.setCategory(category);
         event.setRefType("ai_flow");

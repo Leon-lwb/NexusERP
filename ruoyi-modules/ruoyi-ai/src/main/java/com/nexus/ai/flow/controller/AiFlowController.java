@@ -383,6 +383,8 @@ public class AiFlowController extends BaseController {
             ctx.setConfig(nodeDef.getConfig());
             ctx.setState(state);
             ctx.setGraph(graph);
+            // 租户经 ctx 传递（节点内不依赖 AiRequestContext ThreadLocal）
+            ctx.setTenantId(LoginHelper.getTenantId());
             JsonNode output = provider.execute(ctx);
             return R.ok(output);
         } catch (IllegalArgumentException e) {
