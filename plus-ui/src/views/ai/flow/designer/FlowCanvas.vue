@@ -9,16 +9,18 @@ import '@vue-flow/core/dist/theme-default.css';
 import '@vue-flow/controls/dist/style.css';
 import '@vue-flow/minimap/dist/style.css';
 import type { Connection, Edge, Node, NodeMouseEvent } from '@vue-flow/core';
-import { computed, watch } from 'vue';
+import { onBeforeUnmount, onMounted } from 'vue';
 import FlowNode from './FlowNode.vue';
 import { getNodeTypeConfig } from '../nodeTypes';
-import type { FlowCanvasNode } from './useFlowStore';
+import { useFlowStore, type FlowCanvasNode } from './useFlowStore';
 
 /**
  * 流程画布（@vue-flow 封装）
  * <p>受控模式（apply-changes=false）：store 单向下发 nodes/edges。
  * 连线约束：只允许 outputs/* → inputs/*（同 type 反 mode）。
- * 节点拖入：接收 NodePalette 的 HTML5 draggable 数据。</p>
+ * 节点拖入：接收 NodePalette 的 HTML5 draggable 数据。
+ * 编辑能力：框选（selection-on-drag）+ 快捷键（Ctrl+C/V/D 复制粘贴、Ctrl+A 全选、
+ * Ctrl+Z/Ctrl+Shift+Z 撤销重做）+ 结构性变更入撤销栈。</p>
  */
 
 const props = defineProps<{
@@ -37,7 +39,8 @@ const emit = defineEmits<{
   (e: 'node-dblclick', node: FlowCanvasNode): void;
 }>();
 
-const { screenToFlowCoordinate, addEdges, addNodes, removeNodes, project } = useVueFlow();
+const store = useFlowStore();
+const { screenToFlowCoordinate, getSelectedNodes, addSelectedNodes } = useVueFlow();
 
 /** slot 注册自定义节点（n8n 同款方式，非 nodeTypes 对象） */
 const nodeTypes = { 'flow-node': FlowNode };
@@ -49,7 +52,7 @@ function isValidConnection(connection: Connection): boolean {
   return source.startsWith('outputs/') && target.startsWith('inputs/');
 }
 
-/** 连接创建：写入 store */
+/** 连接创建：入撤销栈 + 写入 store */
 function onConnect(connection: Connection) {
   const edge: Edge = {
     id: `edge_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
@@ -60,6 +63,7 @@ function onConnect(connection: Connection) {
     markerEnd: MarkerType.ArrowClosed,
     type: 'default'
   };
+  store.snapshot();
   emit('update:edges', [...props.edges, edge]);
 }
 
@@ -96,6 +100,7 @@ function onDrop(event: DragEvent) {
       config: JSON.parse(JSON.stringify(config.defaultConfig))
     }
   };
+  store.snapshot();
   emit('update:nodes', [...props.nodes, node]);
 }
 
@@ -106,19 +111,21 @@ function onDragOver(event: DragEvent) {
   }
 }
 
-/** 节点拖拽结束：同步 position 到 store */
+/** 节点拖拽结束：入撤销栈 + 同步 position 到 store */
 function onNodeDragStop(event: { node: FlowCanvasNode }) {
   const node = event.node;
   const index = props.nodes.findIndex((n) => n.id === node.id);
   if (index >= 0) {
+    store.snapshot();
     const updated = [...props.nodes];
     updated[index] = { ...updated[index], position: { ...node.position } };
     emit('update:nodes', updated);
   }
 }
 
-/** 删除节点：级联删除关联边 */
+/** 删除节点：级联删除关联边（入撤销栈） */
 function onRemoveNode(nodeId: string) {
+  store.snapshot();
   const remainingEdges = props.edges.filter((e) => e.source !== nodeId && e.target !== nodeId);
   emit('update:edges', remainingEdges);
   emit(
@@ -126,6 +133,69 @@ function onRemoveNode(nodeId: string) {
     props.nodes.filter((n) => n.id !== nodeId)
   );
 }
+
+/* ==================== 快捷键（Ctrl+C/V/D/A + 撤销重做） ==================== */
+
+/** 当前选中的节点列表（vue-flow 内部选中状态） */
+function getSelectedNodeList(): FlowCanvasNode[] {
+  return (getSelectedNodes.value ?? []) as unknown as FlowCanvasNode[];
+}
+
+/** Ctrl+C 复制选中 */
+function copy() {
+  store.copySelection(getSelectedNodeList());
+}
+
+/** Ctrl+V 粘贴（含连边，偏移 40px） */
+function paste() {
+  const result = store.pasteClipboard();
+  if (!result) return;
+  store.snapshot();
+  emit('update:nodes', [...props.nodes, ...result.nodes]);
+  emit('update:edges', [...props.edges, ...result.edges]);
+}
+
+/** Ctrl+A 全选 */
+function selectAll() {
+  addSelectedNodes(props.nodes as unknown as never[]);
+}
+
+function onKeyDown(e: KeyboardEvent) {
+  if (props.readonly) return;
+  // 输入框/文本域聚焦时不拦截（保留编辑行为）
+  const target = e.target as HTMLElement | null;
+  if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return;
+  const mod = e.ctrlKey || e.metaKey;
+  if (!mod) return;
+  const key = e.key.toLowerCase();
+  if (key === 'c') {
+    copy();
+    e.preventDefault();
+  } else if (key === 'v') {
+    paste();
+    e.preventDefault();
+  } else if (key === 'd') {
+    copy();
+    paste();
+    e.preventDefault();
+  } else if (key === 'z') {
+    if (e.shiftKey) {
+      store.redo();
+    } else {
+      store.undo();
+    }
+    e.preventDefault();
+  } else if (key === 'y') {
+    store.redo();
+    e.preventDefault();
+  } else if (key === 'a') {
+    selectAll();
+    e.preventDefault();
+  }
+}
+
+onMounted(() => window.addEventListener('keydown', onKeyDown));
+onBeforeUnmount(() => window.removeEventListener('keydown', onKeyDown));
 
 defineExpose({ onRemoveNode });
 </script>
@@ -144,6 +214,8 @@ defineExpose({ onRemoveNode });
       :nodes-draggable="!props.readonly"
       :nodes-connectable="!props.readonly"
       :elements-selectable="!props.readonly"
+      :selection-on-drag="!props.readonly"
+      :selection-mode="'partial'"
       @connect="onConnect"
       @pane-click="onPaneClick"
       @node-click="onNodeClick"

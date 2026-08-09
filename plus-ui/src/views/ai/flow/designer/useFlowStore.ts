@@ -47,6 +47,12 @@ export const useFlowStore = defineStore('aiFlow', () => {
   const nodeSummaryMap = ref<Record<string, string>>({});
   /** 节点运行时输出缓存（运行结束后从 node_run 拉取：nodeId → outputJson 对象，变量选择器真实数据用） */
   const nodeOutputs = ref<Record<string, unknown> | null>(null);
+  /** 撤销栈（节点+边快照，上限 50） */
+  const historyStack = ref<string[]>([]);
+  /** 重做栈 */
+  const futureStack = ref<string[]>([]);
+  /** 剪贴板（复制节点+连边） */
+  const clipboard = ref<{ nodes: string; edges: string } | null>(null);
   /** 流程名称 */
   const flowName = ref('');
   /** 流程 ID（null=新建） */
@@ -99,7 +105,8 @@ export const useFlowStore = defineStore('aiFlow', () => {
           source: e.source,
           target: e.target,
           sourceHandle: e.sourceHandle ?? 'outputs/main/0',
-          targetHandle: e.targetHandle ?? 'inputs/main/0'
+          targetHandle: e.targetHandle ?? 'inputs/main/0',
+          ...(e.loop ? { loop: true } : {})
         })
       )
     };
@@ -138,7 +145,8 @@ export const useFlowStore = defineStore('aiFlow', () => {
         target: e.target,
         sourceHandle: e.sourceHandle,
         targetHandle: e.targetHandle,
-        markerEnd: 'arrowclosed'
+        markerEnd: 'arrowclosed',
+        ...(e.loop ? { loop: true } : {})
       }));
     } catch (e) {
       console.error('[Flow] config_json 解析失败:', e);
@@ -180,6 +188,104 @@ export const useFlowStore = defineStore('aiFlow', () => {
     nodeOutputs.value = map;
   }
 
+  /** 快照当前画布（结构性变更前调用，如连线/删除/拖入/粘贴/布局） */
+  function snapshot() {
+    historyStack.value.push(JSON.stringify({ nodes: nodes.value, edges: edges.value }));
+    if (historyStack.value.length > 50) historyStack.value.shift();
+    futureStack.value = [];
+  }
+
+  /** 撤销 */
+  function undo() {
+    const prev = historyStack.value.pop();
+    if (!prev) return false;
+    futureStack.value.push(JSON.stringify({ nodes: nodes.value, edges: edges.value }));
+    const data = JSON.parse(prev);
+    nodes.value = data.nodes;
+    edges.value = data.edges;
+    return true;
+  }
+
+  /** 重做 */
+  function redo() {
+    const next = futureStack.value.pop();
+    if (!next) return false;
+    historyStack.value.push(JSON.stringify({ nodes: nodes.value, edges: edges.value }));
+    const data = JSON.parse(next);
+    nodes.value = data.nodes;
+    edges.value = data.edges;
+    return true;
+  }
+
+  /** 清空历史（加载流程时） */
+  function clearHistory() {
+    historyStack.value = [];
+    futureStack.value = [];
+  }
+
+  /** 复制选中节点（含节点间连边）到剪贴板 */
+  function copySelection(selectedNodes: FlowCanvasNode[]) {
+    if (!selectedNodes.length) return false;
+    const ids = new Set(selectedNodes.map((n) => n.id));
+    const selEdges = edges.value.filter((e) => ids.has(e.source) && ids.has(e.target));
+    clipboard.value = {
+      nodes: JSON.stringify(selectedNodes.map((n) => ({ ...n, selected: undefined }))),
+      edges: JSON.stringify(selEdges)
+    };
+    return true;
+  }
+
+  /** 粘贴剪贴板（新 ID + 偏移 40px，含连边重映射） */
+  function pasteClipboard(): { nodes: FlowCanvasNode[]; edges: Edge[] } | null {
+    if (!clipboard.value) return null;
+    const srcNodes = JSON.parse(clipboard.value.nodes) as FlowCanvasNode[];
+    const srcEdges = JSON.parse(clipboard.value.edges) as Edge[];
+    const idMap: Record<string, string> = {};
+    const stamp = Date.now();
+    const newNodes = srcNodes.map((n, i) => {
+      const newId = `${n.id}_copy${stamp}_${i}`;
+      idMap[n.id] = newId;
+      return { ...n, id: newId, position: { x: n.position.x + 40, y: n.position.y + 40 } };
+    });
+    const newEdges = srcEdges.map((e, i) => ({
+      ...e,
+      id: `edge_${stamp}_${i}`,
+      source: idMap[e.source] ?? e.source,
+      target: idMap[e.target] ?? e.target
+    }));
+    return { nodes: newNodes, edges: newEdges };
+  }
+
+  /** 自动布局：BFS 分层（跳过 loop 返回边防发散），同层垂直排布 */
+  function autoLayout() {
+    if (!nodes.value.length) return;
+    // 分层：重复扫描边直到稳定（跳过 loop 返回边）
+    const layer: Record<string, number> = {};
+    nodes.value.forEach((n) => (layer[n.id] = 0));
+    let changed = true;
+    while (changed) {
+      changed = false;
+      for (const e of edges.value) {
+        if ((e as any).loop) continue;
+        if ((layer[e.target] ?? 0) <= (layer[e.source] ?? 0)) {
+          layer[e.target] = (layer[e.source] ?? 0) + 1;
+          changed = true;
+        }
+      }
+    }
+    // 同层垂直排布
+    const byLayer: Record<number, string[]> = {};
+    nodes.value.forEach((n) => {
+      const l = layer[n.id] ?? 0;
+      (byLayer[l] ??= []).push(n.id);
+    });
+    nodes.value = nodes.value.map((n) => {
+      const l = layer[n.id] ?? 0;
+      const idx = byLayer[l].indexOf(n.id);
+      return { ...n, position: { x: 40 + l * 260, y: 40 + idx * 150 } };
+    });
+  }
+
   return {
     nodes,
     edges,
@@ -199,6 +305,13 @@ export const useFlowStore = defineStore('aiFlow', () => {
     setNodeRun,
     setNodeSummary,
     setNodeOutputs,
-    clearNodeStatus
+    clearNodeStatus,
+    snapshot,
+    undo,
+    redo,
+    clearHistory,
+    copySelection,
+    pasteClipboard,
+    autoLayout
   };
 });

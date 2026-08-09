@@ -207,6 +207,7 @@ async function loadFlow(flowId: string | number) {
     store.flowName = flow.flowName;
     store.flowId = flow.id;
     if (flow.configJson) {
+      store.clearHistory();
       store.fromConfigJson(flow.configJson);
     }
   } finally {
@@ -406,6 +407,14 @@ function viewDetail() {
   });
 }
 
+/** 自动布局（BFS 分层） */
+function autoLayout() {
+  if (!store.nodes.length) return;
+  store.snapshot();
+  store.autoLayout();
+  ElMessage.success('已自动布局');
+}
+
 /** SSE 事件消费（流程运行态高亮 + 节点输出摘要） */
 function onSseMessage(e: Event) {
   const detail = (e as CustomEvent).detail;
@@ -490,6 +499,7 @@ function goBack() {
       <div class="flow-designer__spacer" />
       <el-button :loading="saving" @click="saveFlow()">保存</el-button>
       <el-button type="primary" @click="publish">发布</el-button>
+      <el-button @click="autoLayout">自动布局</el-button>
       <el-button type="success" :disabled="running" @click="run">测试运行</el-button>
       <el-button type="danger" :disabled="!running || !store.currentInstanceId" @click="stop"> 停止 </el-button>
     </div>
