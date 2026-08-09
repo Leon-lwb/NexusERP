@@ -6,8 +6,7 @@ import { useFlowStore } from './useFlowStore';
 import NodePalette from './NodePalette.vue';
 import FlowCanvas from './FlowCanvas.vue';
 import NodeParameterForm from './NodeParameterForm.vue';
-import VueJsonPretty from 'vue-json-pretty';
-import 'vue-json-pretty/lib/styles.css';
+import JsonViewer from '../components/JsonViewer.vue';
 import { getNodeTypeConfig } from '../nodeTypes';
 import type { NodeParamSchema, NodeTypeMeta } from '@/api/ai/flow';
 import {
@@ -658,10 +657,10 @@ function goBack() {
         </div>
         <el-tabs>
           <el-tab-pane label="输出">
-            <VueJsonPretty :data="parseNdvJson(ndvNode.run.outputJson) as any" :show-line="false" :deep="4" />
+            <JsonViewer :data="parseNdvJson(ndvNode.run.outputJson)" />
           </el-tab-pane>
           <el-tab-pane label="输入">
-            <VueJsonPretty :data="parseNdvJson(ndvNode.run.inputJson) as any" :show-line="false" :deep="4" />
+            <JsonViewer :data="parseNdvJson(ndvNode.run.inputJson)" />
           </el-tab-pane>
           <el-tab-pane v-if="ndvNode.run.errorMsg" label="错误">
             <el-alert :title="ndvNode.run.errorMsg" type="error" :closable="false" />
@@ -689,7 +688,7 @@ function goBack() {
       </el-form>
       <div v-if="nodeTestResult" class="flow-designer__test-result">
         <div class="flow-designer__test-label">输出:</div>
-        <VueJsonPretty :data="parseNdvJson(nodeTestResult) as any" :show-line="false" :deep="4" />
+        <JsonViewer :data="parseNdvJson(nodeTestResult)" />
       </div>
       <el-alert v-if="nodeTestError" :title="nodeTestError" type="error" :closable="false" />
     </el-drawer>

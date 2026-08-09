@@ -1,18 +1,17 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
-import VueJsonPretty from 'vue-json-pretty';
-import 'vue-json-pretty/lib/styles.css';
 import { useFlowStore } from '../designer/useFlowStore';
 import FlowCanvas from '../designer/FlowCanvas.vue';
+import JsonViewer from '../components/JsonViewer.vue';
 import type { AiFlowInstance, AiFlowNodeRun } from '@/api/ai/flow';
 import { getFlow, getInstance, listNodeRuns, retryInstance } from '@/api/ai/flow';
 
 /**
  * 流程实例详情页（只读画布重放）
  * <p>用实例 configSnapshot（启动时配置）加载画布 → 按 node_run 状态着色 →
- * 节点运行记录表 + input/output JSON 快照 + 失败续跑</p>
+ * 时间线动画重放（按执行顺序逐步高亮）→ 节点运行记录表 + JSON/表格双视图 + 失败续跑</p>
  */
 
 const route = useRoute();
@@ -47,6 +46,43 @@ const canRetry = computed(() => {
   const s = instance.value?.status;
   return s === 'FAILED' || s === 'STOPPED';
 });
+
+/* ==================== 时间线动画重放 ==================== */
+
+const playing = ref(false);
+let playTimer: number | null = null;
+let playIndex = 0;
+
+/** 播放/停止：按 node_run 执行顺序逐步高亮（500ms/步） */
+function toggleReplay() {
+  if (playing.value) {
+    stopReplay();
+    return;
+  }
+  if (!nodeRuns.value.length) return;
+  // 清空着色后按时间顺序逐步播放
+  store.clearNodeStatus();
+  playing.value = true;
+  playIndex = 0;
+  playTimer = window.setInterval(() => {
+    if (playIndex >= nodeRuns.value.length) {
+      stopReplay();
+      return;
+    }
+    const run = nodeRuns.value[playIndex++];
+    store.setNodeStatus(run.nodeId, run.status);
+  }, 500);
+}
+
+function stopReplay() {
+  playing.value = false;
+  if (playTimer !== null) {
+    window.clearInterval(playTimer);
+    playTimer = null;
+  }
+}
+
+onBeforeUnmount(stopReplay);
 
 /** 解析 JSON 字符串（宽松） */
 function parseJson(text?: string): unknown {
@@ -139,6 +175,9 @@ onMounted(async () => {
             {{ formatDuration(instance.durationMs) }} · 节点 {{ instance.nodeSuccess ?? 0 }}/{{ instance.nodeTotal ?? 0 }}
           </span>
         </div>
+        <el-button v-if="nodeRuns.length && instance.status !== 'RUNNING'" type="primary" plain size="small" @click="toggleReplay">
+          {{ playing ? '⏸ 停止重放' : '▶ 时间线重放' }}
+        </el-button>
         <el-button v-if="canRetry" type="warning" plain size="small" :loading="retrying" @click="retry">续跑（从失败节点重跑）</el-button>
         <el-alert
           v-if="instance.status === 'FAILED' && instance.errorMsg"
@@ -176,14 +215,14 @@ onMounted(async () => {
           <el-table-column label="错误信息" prop="errorMsg" min-width="160" show-overflow-tooltip />
         </el-table>
 
-        <!-- 选中节点：JSON 快照 -->
+        <!-- 选中节点：JSON/表格双视图快照 -->
         <div v-if="selectedRun" class="instance-detail__snapshot">
           <el-tabs>
             <el-tab-pane label="输出">
-              <VueJsonPretty :data="parseJson(selectedRun.outputJson) as any" :show-line="false" :deep="3" />
+              <JsonViewer :data="parseJson(selectedRun.outputJson)" />
             </el-tab-pane>
             <el-tab-pane label="输入">
-              <VueJsonPretty :data="parseJson(selectedRun.inputJson) as any" :show-line="false" :deep="3" />
+              <JsonViewer :data="parseJson(selectedRun.inputJson)" />
             </el-tab-pane>
           </el-tabs>
         </div>
