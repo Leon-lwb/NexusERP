@@ -1082,11 +1082,12 @@ public class FlowEngineImpl implements FlowEngine {
                 }
             }
         }
-        // 节点自身是 split 时：本轮 index 已在执行前写入 loops（index 表示"已取到第几批"）
+        // 节点自身是 split 时：createNodeRun 在 execute 之前调用，此时 loops.index 为
+        // 上一轮执行写回的 nextIndex（即本轮 index，split 每次执行后 +1；done 轮不 +1）
         JsonNode self = loops.get(nodeId);
         if (self != null && self.has("index")) {
             int selfIdx = self.get("index").asInt();
-            return Math.max(0, selfIdx - 1); // split 执行时 index 已 +1，运行记录用本轮（-1）
+            return Math.max(0, selfIdx); // 上一轮写回的 nextIndex 即本轮 index（勿再 -1）
         }
         return Math.max(0, maxIndex - 1);
     }
