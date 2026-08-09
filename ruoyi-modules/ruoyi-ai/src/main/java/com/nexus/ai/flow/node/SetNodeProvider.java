@@ -35,9 +35,9 @@ public class SetNodeProvider implements FlowNodeProvider {
 
     @Override
     public List<NodeParamSchema> getParamSchemas() {
-        return List.of(
-            new NodeParamSchema("variables", "变量映射 (JSON)", "json", "{}", true)
-        );
+        NodeParamSchema variables = new NodeParamSchema("variables", "变量映射", "json", "{}", true);
+        variables.setEditor("keyvalue");
+        return List.of(variables);
     }
 
     @Override

@@ -38,10 +38,12 @@ public class SmsNodeProvider implements FlowNodeProvider {
 
     @Override
     public List<NodeParamSchema> getParamSchemas() {
+        NodeParamSchema params = new NodeParamSchema("params", "模板参数", "json", "{}", false);
+        params.setEditor("keyvalue");
         return List.of(
             new NodeParamSchema("phones", "手机号 (逗号分隔)", "string", "", true),
             new NodeParamSchema("templateId", "模板ID", "string", "", true),
-            new NodeParamSchema("params", "模板参数 (JSON)", "json", "{}", false),
+            params,
             new NodeParamSchema("configId", "短信配置", "string", "config1", false)
         );
     }

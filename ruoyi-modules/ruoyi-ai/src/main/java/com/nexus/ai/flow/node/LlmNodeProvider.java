@@ -44,8 +44,10 @@ public class LlmNodeProvider implements FlowNodeProvider {
 
     @Override
     public List<NodeParamSchema> getParamSchemas() {
+        NodeParamSchema modelId = new NodeParamSchema("modelId", "模型", "number", "0", true);
+        modelId.setOptionsSource("aiModel");
         return List.of(
-            new NodeParamSchema("modelId", "模型", "number", "0", true),
+            modelId,
             new NodeParamSchema("promptTemplate", "提示词模板", "textarea", "", true),
             new NodeParamSchema("systemPrompt", "系统提示词", "textarea", "", false),
             new NodeParamSchema("temperature", "温度", "number", "0.7", false),

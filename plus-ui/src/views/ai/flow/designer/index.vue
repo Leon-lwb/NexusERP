@@ -351,7 +351,7 @@ function startPolling() {
 }
 
 /** 应用实例终态结果（SSE AI_FLOW_STATUS 与轮询共用；终态为准） */
-function applyInstanceResult(inst: any) {
+async function applyInstanceResult(inst: any) {
   clearTimers();
   running.value = false;
   runStatus.value = inst.status;
@@ -369,6 +369,23 @@ function applyInstanceResult(inst: any) {
   } else if (inst.status === 'STOPPED') {
     runOutput.value = '流程已停止';
     ElMessage.info('流程已停止');
+  }
+  // 缓存节点真实输出（变量选择器运行时数据优先）
+  try {
+    const runsRes = await listNodeRuns(store.currentInstanceId);
+    const outputs: Record<string, unknown> = {};
+    for (const r of runsRes.data ?? []) {
+      if (r.outputJson) {
+        try {
+          outputs[r.nodeId] = JSON.parse(r.outputJson);
+        } catch {
+          /* 忽略非法 JSON */
+        }
+      }
+    }
+    store.setNodeOutputs(Object.keys(outputs).length ? outputs : null);
+  } catch {
+    // 缓存失败不影响主流程
   }
 }
 
@@ -498,6 +515,8 @@ function goBack() {
                   :model-value="store.selectedNode.data.config?.[schema.name] ?? schema.defaultValue"
                   :node-type="store.selectedNode.data.type"
                   :upstream-nodes="upstreamNodes"
+                  :node-outputs="store.nodeOutputs"
+                  :config="store.selectedNode.data.config"
                   @update:model-value="
                     (v) => {
                       const config = { ...(store.selectedNode.data.config ?? {}) };

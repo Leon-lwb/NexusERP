@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * IF 条件分支节点执行器
@@ -43,7 +44,11 @@ public class IfNodeProvider implements FlowNodeProvider {
             java.util.Map.of("name", "AND（全部满足）", "value", "AND"),
             java.util.Map.of("name", "OR（任一满足）", "value", "OR")
         ));
-        return List.of(logic);
+        // conditions 条件列表：前端按 conditionList 渲染行编辑（变量 + 运算符 + 值）
+        NodeParamSchema conditions = new NodeParamSchema("conditions", "条件列表", "conditionList", true);
+        conditions.setDefaultValue("[{\"variable\":\"\",\"operator\":\"EQ\",\"value\":\"\"}]");
+        conditions.setAttrs(Map.of("operators", OPERATORS));
+        return List.of(logic, conditions);
     }
 
     @Override

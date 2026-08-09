@@ -33,8 +33,10 @@ public class CodeNodeProvider implements FlowNodeProvider {
 
     @Override
     public List<NodeParamSchema> getParamSchemas() {
+        NodeParamSchema expressions = new NodeParamSchema("expressions", "表达式映射", "json", "", true);
+        expressions.setEditor("keyvalue");
         return List.of(
-            new NodeParamSchema("expressions", "表达式映射", "json", "", true),
+            expressions,
             new NodeParamSchema("expressionLimit", "表达式长度上限", "number", "2000", false)
         );
     }

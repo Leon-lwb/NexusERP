@@ -20,7 +20,7 @@ public class NodeParamSchema {
     /** 显示名 */
     private String label;
 
-    /** 类型: string/number/boolean/options/textarea/json */
+    /** 类型: string/number/boolean/options/textarea/json/conditionList */
     private String type;
 
     /** 默认值 */
@@ -34,6 +34,15 @@ public class NodeParamSchema {
 
     /** 占位符 */
     private String placeholder;
+
+    /** 编辑器增强标记: keyvalue（键值对行编辑，替代裸 JSON textarea） */
+    private String editor;
+
+    /** 候选来源: aiModel（AI 模型下拉）/ aiKnowledge（知识库下拉） */
+    private String optionsSource;
+
+    /** 扩展属性（节点类型自定义元数据，如 erp_tool 的工具参数定义 toolArgs） */
+    private Map<String, Object> attrs;
 
     public NodeParamSchema() {
     }

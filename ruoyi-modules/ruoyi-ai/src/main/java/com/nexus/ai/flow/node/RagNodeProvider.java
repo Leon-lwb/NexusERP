@@ -37,8 +37,10 @@ public class RagNodeProvider implements FlowNodeProvider {
 
     @Override
     public List<NodeParamSchema> getParamSchemas() {
+        NodeParamSchema knowledgeId = new NodeParamSchema("knowledgeId", "知识库", "number", "0", true);
+        knowledgeId.setOptionsSource("aiKnowledge");
         return List.of(
-            new NodeParamSchema("knowledgeId", "知识库ID", "number", "0", true),
+            knowledgeId,
             new NodeParamSchema("queryTemplate", "查询模板", "textarea", "", true),
             new NodeParamSchema("topK", "返回条数", "number", "5", false),
             new NodeParamSchema("minScore", "相似度阈值", "number", "0.5", false)

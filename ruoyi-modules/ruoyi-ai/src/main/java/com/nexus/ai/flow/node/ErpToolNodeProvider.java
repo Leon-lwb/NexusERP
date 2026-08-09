@@ -55,10 +55,50 @@ public class ErpToolNodeProvider implements FlowNodeProvider {
         }
         NodeParamSchema toolName = new NodeParamSchema("toolName", "工具", "options", "", true);
         toolName.setOptions(options);
+        // args：携带全量工具参数定义（toolArgs: toolName → [{name,type}]），前端选中工具后渲染参数字段表单
+        NodeParamSchema args = new NodeParamSchema("args", "参数", "json", "{}", false);
+        args.setEditor("toolArgs");
+        args.setAttrs(Map.of("toolArgs", collectToolArgs()));
         return List.of(
             toolName,
-            new NodeParamSchema("args", "参数 (JSON)", "json", "{}", false)
+            args
         );
+    }
+
+    /**
+     * 收集所有工具的参数定义（反射 @Tool 方法的 @P 注解）
+     * <p>参数名用 @P.value()（中文描述；编译后 p.getName() 为 arg0，不可用作键）。
+     * 类型映射：String→string、int/long→number、boolean→boolean</p>
+     */
+    private Map<String, Object> collectToolArgs() {
+        Map<String, Object> toolArgs = new java.util.LinkedHashMap<>();
+        for (BuiltinToolProvider provider : builtinToolRegistry.getAllProviders()) {
+            List<Map<String, Object>> argList = new ArrayList<>();
+            Class<?> toolClass = provider.getToolClass();
+            // 取第一个 @Tool 方法（与 execute 的 fallback 逻辑一致）
+            for (Method m : toolClass.getDeclaredMethods()) {
+                if (!m.isAnnotationPresent(Tool.class)) {
+                    continue;
+                }
+                for (Parameter p : m.getParameters()) {
+                    Map<String, Object> arg = new java.util.LinkedHashMap<>();
+                    String paramName = p.getName();
+                    if (p.isAnnotationPresent(P.class)) {
+                        paramName = p.getAnnotation(P.class).value();
+                    }
+                    arg.put("name", paramName);
+                    Class<?> type = p.getType();
+                    String typeName = type == String.class ? "string"
+                        : (type == int.class || type == Integer.class || type == long.class || type == Long.class) ? "number"
+                        : (type == boolean.class || type == Boolean.class) ? "boolean" : "string";
+                    arg.put("type", typeName);
+                    argList.add(arg);
+                }
+                break;
+            }
+            toolArgs.put(provider.getToolName(), argList);
+        }
+        return toolArgs;
     }
 
     @Override

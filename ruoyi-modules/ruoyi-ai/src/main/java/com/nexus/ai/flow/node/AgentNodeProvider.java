@@ -43,8 +43,10 @@ public class AgentNodeProvider implements FlowNodeProvider {
 
     @Override
     public List<NodeParamSchema> getParamSchemas() {
+        NodeParamSchema modelId = new NodeParamSchema("modelId", "模型", "number", "0", true);
+        modelId.setOptionsSource("aiModel");
         return List.of(
-            new NodeParamSchema("modelId", "模型", "number", "0", true),
+            modelId,
             new NodeParamSchema("queryTemplate", "问题模板", "textarea", "", true),
             new NodeParamSchema("toolCategories", "工具类别", "options", "QUERY,ALL", false),
             new NodeParamSchema("mcpToolIds", "MCP 工具ID(逗号分隔)", "string", "", false),

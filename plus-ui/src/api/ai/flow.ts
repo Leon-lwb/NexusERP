@@ -59,11 +59,17 @@ export interface AiFlowNodeRun {
 export interface NodeParamSchema {
   name: string;
   label: string;
-  type: 'string' | 'number' | 'boolean' | 'options' | 'textarea' | 'json';
+  type: 'string' | 'number' | 'boolean' | 'options' | 'textarea' | 'json' | 'conditionList';
   defaultValue?: string;
   options?: Array<{ name: string; value: string }>;
   required?: boolean;
   placeholder?: string;
+  /** 编辑器增强标记：keyvalue（键值对行编辑）/ toolArgs（工具参数表单） */
+  editor?: string;
+  /** 候选来源：aiModel（AI 模型下拉）/ aiKnowledge（知识库下拉） */
+  optionsSource?: string;
+  /** 扩展属性（如 conditionList 的 operators、erp_tool 的 toolArgs） */
+  attrs?: Record<string, unknown>;
 }
 
 /** 节点类型元数据（/ai/flow/node-types 返回） */

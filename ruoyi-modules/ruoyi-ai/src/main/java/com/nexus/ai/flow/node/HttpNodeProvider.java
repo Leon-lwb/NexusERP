@@ -50,10 +50,12 @@ public class HttpNodeProvider implements FlowNodeProvider {
             Map.of("name", "DELETE", "value", "DELETE"),
             Map.of("name", "PATCH", "value", "PATCH")
         ));
+        NodeParamSchema headers = new NodeParamSchema("headers", "请求头", "json", "", false);
+        headers.setEditor("keyvalue");
         return List.of(
             method,
             new NodeParamSchema("url", "请求 URL", "string", "", true),
-            new NodeParamSchema("headers", "请求头 (JSON)", "json", "", false),
+            headers,
             new NodeParamSchema("body", "请求体", "textarea", "", false),
             new NodeParamSchema("timeoutSeconds", "超时(秒)", "number", "15", false)
         );
