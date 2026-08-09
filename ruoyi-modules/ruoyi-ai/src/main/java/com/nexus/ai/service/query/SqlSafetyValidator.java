@@ -46,6 +46,10 @@ public class SqlSafetyValidator {
     private static final Pattern CLAUSE_PATTERN = Pattern.compile(
         "\\s+(ORDER\\s+BY|GROUP\\s+BY|HAVING|LIMIT)\\s+", Pattern.CASE_INSENSITIVE);
 
+    /** 子句关键字（FROM 别名提取时排除，防止无别名表把 WHERE 当别名吞掉） */
+    private static final java.util.Set<String> CLAUSE_KEYWORDS = java.util.Set.of(
+        "WHERE", "GROUP", "ORDER", "LIMIT", "HAVING", "JOIN", "UNION", "ON", "AND", "OR", "SET", "VALUES");
+
     /**
      * 校验并净化 SQL（只读 SELECT）
      * <p>通过则返回清洗注释 + 注入租户条件 + 追加行数上限后的可执行 SQL；
@@ -184,7 +188,10 @@ public class SqlSafetyValidator {
             return sql;
         }
         String tenantCol = extractOuterTenantColumn(sql);
-        String tenantCondition = tenantCol + " = " + tenantId;
+        // 租户值按 RuoYi 6 位字符串格式注入（Long.valueOf("000000")=0 会丢失前导零，
+        // 且数字字面量依赖 MySQL 隐式转换才能匹配 varchar 列——统一字符串+引号）
+        String tenantValue = String.format("%06d", tenantId);
+        String tenantCondition = tenantCol + " = '" + tenantValue + "'";
         String upperSql = sql.toUpperCase();
 
         if (upperSql.contains("WHERE")) {
@@ -208,6 +215,7 @@ public class SqlSafetyValidator {
 
     /**
      * 提取最外层 FROM 子句的表名/别名（跳过括号内子查询/CTE）
+     * <p>别名组排除子句关键字（无别名表 + WHERE 时，原正则把 WHERE 当别名吞掉 → WHERE.tenant_id）</p>
      *
      * @param sql SQL
      * @return 租户列名（如 s.tenant_id）
@@ -219,8 +227,13 @@ public class SqlSafetyValidator {
         Matcher matcher = fromPattern.matcher(sql);
         while (matcher.find()) {
             if (!isInsideParentheses(sql, matcher.start())) {
-                if (matcher.group(2) != null) {
-                    return matcher.group(2) + ".tenant_id";
+                String alias = matcher.group(2);
+                // 别名不得是 SQL 子句关键字（无别名表时 group(2) 会吞掉 WHERE/GROUP/ORDER 等）
+                if (alias != null && CLAUSE_KEYWORDS.contains(alias.toUpperCase())) {
+                    alias = null;
+                }
+                if (alias != null) {
+                    return alias + ".tenant_id";
                 }
                 return matcher.group(1) + ".tenant_id";
             }
