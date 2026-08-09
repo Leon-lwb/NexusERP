@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import type { AiFlow } from '@/api/ai/flow';
@@ -7,7 +7,7 @@ import { deleteFlow, listFlow, offlineFlow, publishFlow, runFlow } from '@/api/a
 
 /**
  * AI 流程列表页
- * <p>流程 CRUD + 发布/下线 + 运行 + 进入设计器/历史</p>
+ * <p>流程 CRUD + 发布/下线 + 运行 + 进入设计器/历史 + Webhook 信息</p>
  */
 
 const router = useRouter();
@@ -20,6 +20,30 @@ const query = reactive({
   flowName: '',
   status: ''
 });
+
+/** Webhook 信息对话框 */
+const webhookVisible = ref(false);
+const webhookRow = ref<AiFlow | null>(null);
+const webhookUrl = computed(() => {
+  if (!webhookRow.value) return '';
+  return `${location.origin}/ai/flow/webhook/${webhookRow.value.flowKey}`;
+});
+
+/** 显示 Webhook 信息 */
+function showWebhook(row: AiFlow) {
+  webhookRow.value = row;
+  webhookVisible.value = true;
+}
+
+/** 复制到剪贴板 */
+async function copyText(text: string) {
+  try {
+    await navigator.clipboard.writeText(text);
+    ElMessage.success('已复制');
+  } catch {
+    ElMessage.warning('复制失败，请手动选择复制');
+  }
+}
 
 /** 状态标签映射 */
 const statusMap: Record<string, { label: string; type: string }> = {
@@ -140,18 +164,78 @@ onMounted(loadList);
         </template>
       </el-table-column>
       <el-table-column label="更新时间" prop="updateTime" width="170" />
-      <el-table-column label="操作" width="300" fixed="right">
+      <el-table-column label="操作" width="360" fixed="right">
         <template #default="{ row }">
           <el-button link type="primary" @click="editFlow(row)">设计</el-button>
           <el-button v-if="row.status === 'DRAFT'" link type="success" @click="publish(row)"> 发布 </el-button>
           <el-button v-if="row.status === 'PUBLISHED'" link type="warning" @click="offline(row)"> 下线 </el-button>
           <el-button link type="success" @click="run(row)">运行</el-button>
           <el-button link type="primary" @click="history(row)">历史</el-button>
+          <el-button v-if="row.status === 'PUBLISHED'" link type="info" @click="showWebhook(row)">Webhook</el-button>
           <el-button link type="danger" @click="remove(row)">删除</el-button>
         </template>
       </el-table-column>
     </el-table>
 
+    <!-- Webhook 信息对话框 -->
+    <el-dialog v-model="webhookVisible" title="Webhook 触发" width="520px">
+      <template v-if="webhookRow">
+        <el-alert
+          title="外部系统可通过 POST 此 URL 触发流程（无需登录）。流程配置了 token 时需带 x-flow-token 请求头。"
+          type="info"
+          :closable="false"
+          style="margin-bottom: 12px"
+        />
+        <el-form label-width="80px">
+          <el-form-item label="Webhook URL">
+            <div class="webhook-url">
+              <code>{{ webhookUrl }}</code>
+              <el-button link type="primary" @click="copyText(webhookUrl)">复制</el-button>
+            </div>
+          </el-form-item>
+          <el-form-item label="Token 校验">
+            <span v-if="webhookRow.webhookToken">已配置（请求头 x-flow-token: {{ webhookRow.webhookToken }}）</span>
+            <span v-else>未配置（flowKey 本身即令牌）</span>
+          </el-form-item>
+          <el-form-item label="调用示例">
+            <pre class="webhook-example">
+curl -X POST {{ webhookUrl }} \
+  -H "Content-Type: application/json"{{ webhookRow.webhookToken ? '\n  -H "x-flow-token: ' + webhookRow.webhookToken + '"' : '' }} \
+  -d '{"name":"张三","amount":500}'</pre
+            >
+          </el-form-item>
+        </el-form>
+      </template>
+    </el-dialog>
+
     <pagination v-show="total > 0" v-model:page="query.pageNum" v-model:limit="query.pageSize" :total="total" @pagination="loadList" />
   </div>
 </template>
+
+<style scoped>
+.webhook-url {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.webhook-url code {
+  flex: 1;
+  font-size: 12px;
+  word-break: break-all;
+  background: #f5f7fa;
+  padding: 6px 8px;
+  border-radius: 4px;
+}
+
+.webhook-example {
+  font-size: 11px;
+  background: #f5f7fa;
+  padding: 8px;
+  border-radius: 4px;
+  width: 100%;
+  overflow-x: auto;
+  white-space: pre-wrap;
+}
+</style>

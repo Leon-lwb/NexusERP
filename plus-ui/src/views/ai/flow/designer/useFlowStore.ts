@@ -41,6 +41,8 @@ export const useFlowStore = defineStore('aiFlow', () => {
   const nodeStatusMap = ref<Record<string, string>>({});
   /** 当前运行实例 ID */
   const currentInstanceId = ref<string | null>(null);
+  /** 节点运行快照缓存（NDV 双击查看：nodeId → 最近一次运行记录） */
+  const nodeRunCache = ref<Record<string, unknown>>({});
   /** 流程名称 */
   const flowName = ref('');
   /** 流程 ID（null=新建） */
@@ -59,6 +61,12 @@ export const useFlowStore = defineStore('aiFlow', () => {
     selectedNodeId.value = null;
     nodeStatusMap.value = {};
     currentInstanceId.value = null;
+    nodeRunCache.value = {};
+  }
+
+  /** 设置节点运行快照（NDV 查看用，按 nodeId 覆盖为最新轮） */
+  function setNodeRun(nodeId: string, run: unknown) {
+    nodeRunCache.value = { ...nodeRunCache.value, [nodeId]: run };
   }
 
   /**
@@ -162,6 +170,7 @@ export const useFlowStore = defineStore('aiFlow', () => {
     selectedNodeId,
     nodeStatusMap,
     currentInstanceId,
+    nodeRunCache,
     flowName,
     flowId,
     selectedNode,
@@ -169,6 +178,7 @@ export const useFlowStore = defineStore('aiFlow', () => {
     toConfigJson,
     fromConfigJson,
     setNodeStatus,
+    setNodeRun,
     clearNodeStatus
   };
 });

@@ -28,6 +28,16 @@ PREPARE stmt FROM @sql;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 
+-- ai_flow: Webhook 访问令牌（P9 入站触发）
+SET @exist := (SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = 'ry-vue' AND TABLE_NAME = 'ai_flow' AND COLUMN_NAME = 'webhook_token');
+SET @sql := IF(@exist = 0,
+  'ALTER TABLE `ai_flow` ADD COLUMN `webhook_token` varchar(64) NULL COMMENT ''Webhook访问令牌(空=不校验, flowKey本身即令牌)''',
+  'SELECT 1');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
 -- 验证
 -- SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='ry-vue' AND TABLE_NAME='ai_flow_node_run' AND COLUMN_NAME='batch_index';
 -- SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='ry-vue' AND TABLE_NAME='ai_flow_instance' AND COLUMN_NAME='config_snapshot';

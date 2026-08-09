@@ -44,6 +44,9 @@ public class AiFlow extends TenantEntity {
     /** 定时 Cron 表达式 */
     private String cronExpr;
 
+    /** Webhook 访问令牌（空 = 不校验，flowKey 本身即令牌） */
+    private String webhookToken;
+
     /** 节点失败最大重试次数 */
     private Integer maxRetry;
 }

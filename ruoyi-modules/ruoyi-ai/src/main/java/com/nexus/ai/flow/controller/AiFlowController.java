@@ -3,12 +3,16 @@ package com.nexus.ai.flow.controller;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.nexus.ai.flow.engine.FlowEngine;
 import com.nexus.ai.flow.model.FlowEdgeDef;
 import com.nexus.ai.flow.model.FlowGraph;
+import com.nexus.ai.flow.model.FlowNodeDef;
+import com.nexus.ai.flow.node.FlowExecutionContext;
 import com.nexus.ai.flow.node.FlowNodeProvider;
 import com.nexus.ai.flow.node.FlowNodeRegistry;
 import com.nexus.ai.flow.node.NodeParamSchema;
+import com.nexus.ai.flow.state.FlowState;
 import com.nexus.common.ai.domain.bo.AiFlowBo;
 import com.nexus.common.ai.domain.entity.AiFlow;
 import com.nexus.common.ai.domain.vo.AiFlowVo;
@@ -242,6 +246,166 @@ public class AiFlowController extends BaseController {
         }
         boolean first = flowEngine.stop(request.getInstanceId());
         return first ? R.ok() : R.fail("实例不存在或已停止");
+    }
+
+    /**
+     * 单节点测试（设计器调试用）
+     * <p>用 mockState 构建流程状态，单独执行指定节点 Provider 并返回输出。
+     * 权限标识：{@code ai:flow:run}</p>
+     *
+     * @param request 测试请求（flowId + nodeId + mockState）
+     * @return 节点输出 JSON
+     */
+    @SaCheckPermission("ai:flow:run")
+    @PostMapping("/node-test")
+    public R<JsonNode> nodeTest(@RequestBody FlowNodeTestRequest request) {
+        if (request.getFlowId() == null || request.getNodeId() == null) {
+            return R.fail("flowId 和 nodeId 不能为空");
+        }
+        AiFlow flow = aiFlowService.selectById(request.getFlowId());
+        if (flow == null) {
+            return R.fail("流程不存在");
+        }
+        try {
+            // 解析图 + 校验
+            FlowGraph graph = FlowGraph.parse(flow.getConfigJson());
+            graph.validate(flowNodeRegistry::contains);
+            FlowNodeDef nodeDef = graph.getNode(request.getNodeId());
+            if (nodeDef == null) {
+                return R.fail("节点不存在: " + request.getNodeId());
+            }
+            FlowNodeProvider provider = flowNodeRegistry.getProvider(nodeDef.getType());
+            if (provider == null) {
+                return R.fail("未注册的节点类型: " + nodeDef.getType());
+            }
+            provider.validateConfig(nodeDef.getConfig());
+
+            // 构建 mock 状态（mockState 为 {input: {...}, nodes: {...}}，缺失部分自动补全）
+            ObjectNode mockRoot = MAPPER.createObjectNode();
+            if (request.getMockState() != null && !request.getMockState().isBlank()) {
+                JsonNode parsed = MAPPER.readTree(request.getMockState());
+                if (parsed.isObject()) {
+                    mockRoot = (ObjectNode) parsed;
+                }
+            }
+            if (mockRoot.get("input") == null) {
+                mockRoot.set("input", MAPPER.createObjectNode());
+            }
+            if (mockRoot.get("nodes") == null) {
+                mockRoot.set("nodes", MAPPER.createObjectNode());
+            }
+            FlowState state = new FlowState(mockRoot.get("input"));
+            // 把 mock 的 nodes 输出写入状态
+            JsonNode mockNodes = mockRoot.get("nodes");
+            if (mockNodes != null && mockNodes.isObject()) {
+                var it = mockNodes.fields();
+                while (it.hasNext()) {
+                    var entry = it.next();
+                    JsonNode output = entry.getValue() != null && entry.getValue().isObject()
+                        ? entry.getValue().get("output") : entry.getValue();
+                    if (output != null && !output.isMissingNode()) {
+                        state.putNodeOutput(entry.getKey(), output);
+                    }
+                }
+            }
+
+            // 执行节点
+            FlowExecutionContext ctx = new FlowExecutionContext();
+            ctx.setNodeId(nodeDef.getId());
+            ctx.setNodeName(nodeDef.getName());
+            ctx.setNodeType(nodeDef.getType());
+            ctx.setConfig(nodeDef.getConfig());
+            ctx.setState(state);
+            ctx.setGraph(graph);
+            JsonNode output = provider.execute(ctx);
+            return R.ok(output);
+        } catch (IllegalArgumentException e) {
+            return R.fail("测试失败: " + e.getMessage());
+        } catch (Exception e) {
+            return R.fail("测试失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 单节点测试请求
+     *
+     * @param flowId    流程ID
+     * @param nodeId    节点ID
+     * @param mockState mock 状态 JSON（{input: {...}, nodes: {nodeId: {output: {...}}}}）
+     */
+    public static class FlowNodeTestRequest {
+        private Long flowId;
+        private String nodeId;
+        private String mockState;
+
+        public Long getFlowId() {
+            return flowId;
+        }
+
+        public void setFlowId(Long flowId) {
+            this.flowId = flowId;
+        }
+
+        public String getNodeId() {
+            return nodeId;
+        }
+
+        public void setNodeId(String nodeId) {
+            this.nodeId = nodeId;
+        }
+
+        public String getMockState() {
+            return mockState;
+        }
+
+        public void setMockState(String mockState) {
+            this.mockState = mockState;
+        }
+    }
+
+    /**
+     * Webhook 入站触发（无需登录，flowKey 路由 + 可选 token 校验）
+     * <p>POST /ai/flow/webhook/{flowKey}，body 为运行入参 JSON。
+     * 流程配置了 webhookToken 时需带请求头 x-flow-token 匹配；未配置则 flowKey 本身即令牌。</p>
+     *
+     * @param flowKey 流程标识（唯一）
+     * @param body    运行入参 JSON
+     * @return 实例ID
+     */
+    @PostMapping("/webhook/{flowKey}")
+    public R<Long> webhook(@PathVariable String flowKey,
+                           @RequestBody(required = false) String body,
+                           @RequestHeader(value = "x-flow-token", required = false) String token) {
+        AiFlow flow = aiFlowService.selectByFlowKey(flowKey);
+        if (flow == null) {
+            return R.fail("流程不存在: " + flowKey);
+        }
+        if (!"PUBLISHED".equals(flow.getStatus())) {
+            return R.fail("流程未发布，无法 Webhook 触发");
+        }
+        // token 校验（配置了 webhookToken 时必须匹配；未配置则放行——flowKey 本身即令牌）
+        if (flow.getWebhookToken() != null && !flow.getWebhookToken().isBlank()
+            && !flow.getWebhookToken().equals(token)) {
+            return R.fail("Webhook token 校验失败");
+        }
+        // 解析入参 JSON
+        JsonNode input = null;
+        if (body != null && !body.isBlank()) {
+            try {
+                input = MAPPER.readTree(body);
+            } catch (Exception e) {
+                return R.fail("入参不是合法的 JSON: " + e.getMessage());
+            }
+        }
+        // 无登录态：用流程创建人租户/用户（对齐 AiFlowScheduleJob）
+        String tenantIdStr = flow.getTenantId() == null ? "000000" : flow.getTenantId();
+        Long userId = flow.getCreateBy() == null ? 1L : flow.getCreateBy();
+        try {
+            Long instanceId = flowEngine.start(flow, input, "WEBHOOK", tenantIdStr, userId, null);
+            return R.ok(instanceId);
+        } catch (IllegalArgumentException e) {
+            return R.fail("启动失败: " + e.getMessage());
+        }
     }
 
     /**

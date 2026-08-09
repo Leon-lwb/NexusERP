@@ -6,9 +6,11 @@ import { useFlowStore } from './useFlowStore';
 import NodePalette from './NodePalette.vue';
 import FlowCanvas from './FlowCanvas.vue';
 import NodeParameterForm from './NodeParameterForm.vue';
+import VueJsonPretty from 'vue-json-pretty';
+import 'vue-json-pretty/lib/styles.css';
 import { getNodeTypeConfig } from '../nodeTypes';
 import type { NodeParamSchema, NodeTypeMeta } from '@/api/ai/flow';
-import { addFlow, getFlow, listNodeTypes, publishFlow, runFlow, stopFlowRun, updateFlow } from '@/api/ai/flow';
+import { addFlow, getFlow, listNodeRuns, listNodeTypes, nodeTest, publishFlow, runFlow, stopFlowRun, updateFlow } from '@/api/ai/flow';
 
 /**
  * 流程设计器页面
@@ -39,8 +41,103 @@ const currentNodeSchemas = computed<NodeParamSchema[]>(() => {
   return meta?.params ?? [];
 });
 
+/** 上游节点列表（变量选择器候选：可直接引用其输出） */
+const upstreamNodes = computed(() => {
+  const node = store.selectedNode;
+  if (!node) return [];
+  // 通过入边找直接上游（递归一层：上游的上游也可引用，但 MVP 只列直接上游 + input）
+  const sourceIds = new Set<string>();
+  store.edges.forEach((e: any) => {
+    if (e.target === node.id) sourceIds.add(e.source);
+  });
+  // 上游的上游（链式引用）
+  let changed = true;
+  while (changed) {
+    changed = false;
+    store.edges.forEach((e: any) => {
+      if (sourceIds.has(e.target) && !sourceIds.has(e.source) && e.source !== node.id) {
+        sourceIds.add(e.source);
+        changed = true;
+      }
+    });
+  }
+  return store.nodes.filter((n) => sourceIds.has(n.id));
+});
+
 /** 节点高级设置是否展开 */
 const advancedExpanded = ref<string[]>([]);
+
+/** NDV：节点运行数据查看抽屉 */
+const ndvVisible = ref(false);
+const ndvNode = ref<{ id: string; label: string; run: any } | null>(null);
+
+/** 双击节点：拉取该节点最近一次运行快照 */
+async function onNodeDoubleClick(node: any) {
+  if (!store.currentInstanceId) {
+    ElMessage.info('请先运行流程后再双击查看节点数据');
+    return;
+  }
+  try {
+    const res = await listNodeRuns(store.currentInstanceId);
+    const runs = res.data ?? [];
+    // 取该节点最新一条运行记录（按 startTime 排序，取最后一条）
+    const nodeRuns = runs.filter((r: any) => r.nodeId === node.id);
+    const latest = nodeRuns.length ? nodeRuns[nodeRuns.length - 1] : null;
+    ndvNode.value = { id: node.id, label: node.data.label || node.id, run: latest };
+    ndvVisible.value = true;
+  } catch (e: any) {
+    ElMessage.error('获取节点数据失败: ' + (e?.message ?? e));
+  }
+}
+
+/** NDV 快照解析 */
+function parseNdvJson(text?: string): unknown {
+  if (!text) return null;
+  try {
+    return JSON.parse(text);
+  } catch {
+    return text;
+  }
+}
+
+/** 单节点测试状态 */
+const nodeTestVisible = ref(false);
+const nodeTestMock = ref('{}');
+const nodeTestResult = ref<string>('');
+const nodeTestError = ref<string>('');
+const nodeTestLoading = ref(false);
+
+/** 打开单节点测试 */
+function openNodeTest() {
+  const node = store.selectedNode;
+  if (!node) return;
+  // 预填 mock：当前节点 config 里已引用的 input 变量
+  nodeTestMock.value = '{}';
+  nodeTestResult.value = '';
+  nodeTestError.value = '';
+  nodeTestVisible.value = true;
+}
+
+/** 执行单节点测试 */
+async function runNodeTest() {
+  const node = store.selectedNode;
+  if (!node) return;
+  if (!store.flowId) {
+    ElMessage.warning('请先保存流程');
+    return;
+  }
+  nodeTestLoading.value = true;
+  nodeTestResult.value = '';
+  nodeTestError.value = '';
+  try {
+    const res = await nodeTest(store.flowId, node.id, nodeTestMock.value.trim() || undefined);
+    nodeTestResult.value = JSON.stringify(res.data ?? res, null, 2);
+  } catch (e: any) {
+    nodeTestError.value = e?.message ?? String(e);
+  } finally {
+    nodeTestLoading.value = false;
+  }
+}
 
 /** 加载节点类型元数据 */
 async function loadNodeTypes() {
@@ -250,6 +347,7 @@ function goBack() {
         @update:nodes="(n) => (store.nodes = n)"
         @update:edges="(e) => (store.edges = e)"
         @node-click="(n) => (store.selectedNodeId = n ? n.id : null)"
+        @node-dblclick="onNodeDoubleClick"
       />
       <!-- 右：属性面板 -->
       <div class="flow-designer__property">
@@ -266,6 +364,7 @@ function goBack() {
                   :schema="schema"
                   :model-value="store.selectedNode.data.config?.[schema.name] ?? schema.defaultValue"
                   :node-type="store.selectedNode.data.type"
+                  :upstream-nodes="upstreamNodes"
                   @update:model-value="
                     (v) => {
                       const config = { ...(store.selectedNode.data.config ?? {}) };
@@ -346,9 +445,10 @@ function goBack() {
               </el-form>
             </el-collapse-item>
           </el-collapse>
-          <el-button type="danger" plain size="small" class="flow-designer__delete" @click="canvasRef?.onRemoveNode(store.selectedNode.id)">
-            删除节点
-          </el-button>
+          <div class="flow-designer__actions">
+            <el-button type="primary" plain size="small" @click="openNodeTest">测试此节点</el-button>
+            <el-button type="danger" plain size="small" @click="canvasRef?.onRemoveNode(store.selectedNode.id)"> 删除节点 </el-button>
+          </div>
         </template>
         <el-empty v-else description="选择节点查看配置" :image-size="60" />
       </div>
@@ -363,6 +463,55 @@ function goBack() {
       <div v-if="runOutput" class="flow-designer__run-result">✅ {{ runOutput }}</div>
       <div v-if="runError" class="flow-designer__run-error">❌ {{ runError }}</div>
     </div>
+
+    <!-- NDV：节点运行数据抽屉（双击节点） -->
+    <el-drawer v-model="ndvVisible" :title="'节点数据: ' + (ndvNode?.label ?? '')" size="420px">
+      <template v-if="ndvNode?.run">
+        <div class="flow-designer__ndv-meta">
+          <el-tag size="small" :type="ndvNode.run.status === 'SUCCEEDED' ? 'success' : ndvNode.run.status === 'FAILED' ? 'danger' : 'info'">
+            {{ ndvNode.run.status }}
+          </el-tag>
+          <span class="flow-designer__ndv-sub">
+            批次 {{ ndvNode.run.batchIndex ?? 0 }} · 耗时 {{ ndvNode.run.durationMs ?? 0 }}ms · 重试 {{ ndvNode.run.retryCount ?? 0 }}
+          </span>
+        </div>
+        <el-tabs>
+          <el-tab-pane label="输出">
+            <VueJsonPretty :data="parseNdvJson(ndvNode.run.outputJson) as any" :show-line="false" :deep="4" />
+          </el-tab-pane>
+          <el-tab-pane label="输入">
+            <VueJsonPretty :data="parseNdvJson(ndvNode.run.inputJson) as any" :show-line="false" :deep="4" />
+          </el-tab-pane>
+          <el-tab-pane v-if="ndvNode.run.errorMsg" label="错误">
+            <el-alert :title="ndvNode.run.errorMsg" type="error" :closable="false" />
+          </el-tab-pane>
+        </el-tabs>
+      </template>
+      <el-empty v-else description="该节点没有运行数据（可能被跳过或未执行）" :image-size="60" />
+    </el-drawer>
+
+    <!-- 单节点测试抽屉 -->
+    <el-drawer v-model="nodeTestVisible" :title="'测试节点: ' + (store.selectedNode?.data.label ?? '')" size="460px">
+      <el-form label-width="80px">
+        <el-form-item label="Mock 状态">
+          <el-input
+            v-model="nodeTestMock"
+            type="textarea"
+            :rows="6"
+            placeholder='{"input":{"name":"张三","amount":500},"nodes":{"node_llm_1":{"output":{"content":"..."}}}}'
+          />
+          <div class="flow-designer__mock-tip">可 mock 运行入参 input 与上游节点输出 nodes.&lt;节点ID&gt;.output，供本节点 {{}} 变量引用</div>
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" :loading="nodeTestLoading" @click="runNodeTest">运行测试</el-button>
+        </el-form-item>
+      </el-form>
+      <div v-if="nodeTestResult" class="flow-designer__test-result">
+        <div class="flow-designer__test-label">输出:</div>
+        <VueJsonPretty :data="parseNdvJson(nodeTestResult) as any" :show-line="false" :deep="4" />
+      </div>
+      <el-alert v-if="nodeTestError" :title="nodeTestError" type="error" :closable="false" />
+    </el-drawer>
   </div>
 </template>
 
@@ -412,8 +561,9 @@ function goBack() {
   padding: 4px 0;
 }
 
-.flow-designer__delete {
-  width: 100%;
+.flow-designer__actions {
+  display: flex;
+  gap: 8px;
   margin-top: 12px;
 }
 
@@ -454,5 +604,47 @@ function goBack() {
   padding-top: 4px;
   white-space: pre-wrap;
   max-width: 400px;
+}
+
+.flow-designer__actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.flow-designer__mock-tip {
+  font-size: 11px;
+  color: #909399;
+  line-height: 1.5;
+  margin-top: 4px;
+}
+
+.flow-designer__test-result {
+  margin-top: 8px;
+  border: 1px solid #e4e7ed;
+  border-radius: 6px;
+  padding: 8px;
+  background: #fafafa;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.flow-designer__test-label {
+  font-size: 12px;
+  color: #303133;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.flow-designer__ndv-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.flow-designer__ndv-sub {
+  font-size: 12px;
+  color: #909399;
 }
 </style>

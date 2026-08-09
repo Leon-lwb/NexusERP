@@ -11,6 +11,7 @@ export interface AiFlow {
   configJson?: string;
   triggerType?: string;
   cronExpr?: string;
+  webhookToken?: string;
   maxRetry?: number;
   createTime?: string;
   createBy?: number;
@@ -231,5 +232,19 @@ export function retryInstance(instanceId: number | string) {
   return request({
     url: `/ai/flow/instance/${instanceId}/retry`,
     method: 'post'
+  });
+}
+
+/**
+ * 单节点测试（设计器调试）
+ * @param flowId 流程ID
+ * @param nodeId 节点ID
+ * @param mockState mock 状态 JSON 字符串
+ */
+export function nodeTest(flowId: number | string, nodeId: string, mockState?: string) {
+  return request({
+    url: '/ai/flow/node-test',
+    method: 'post',
+    data: { flowId, nodeId, mockState }
   });
 }

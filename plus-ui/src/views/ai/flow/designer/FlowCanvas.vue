@@ -34,6 +34,7 @@ const emit = defineEmits<{
   (e: 'update:nodes', nodes: FlowCanvasNode[]): void;
   (e: 'update:edges', edges: Edge[]): void;
   (e: 'node-click', node: FlowCanvasNode): void;
+  (e: 'node-dblclick', node: FlowCanvasNode): void;
 }>();
 
 const { screenToFlowCoordinate, addEdges, addNodes, removeNodes, project } = useVueFlow();
@@ -70,6 +71,11 @@ function onPaneClick() {
 /** 节点点击：通知父组件（选中） */
 function onNodeClick(event: NodeMouseEvent) {
   emit('node-click', event.node);
+}
+
+/** 节点双击：通知父组件（查看运行数据 NDV） */
+function onNodeDoubleClick(event: NodeMouseEvent) {
+  emit('node-dblclick', event.node);
 }
 
 /** 节点拖入（NodePalette HTML5 draggable） */
@@ -141,6 +147,7 @@ defineExpose({ onRemoveNode });
       @connect="onConnect"
       @pane-click="onPaneClick"
       @node-click="onNodeClick"
+      @node-double-click="onNodeDoubleClick"
       @node-drag-stop="onNodeDragStop"
       @node-key-delete="(e) => onRemoveNode(e.node.id)"
     >
