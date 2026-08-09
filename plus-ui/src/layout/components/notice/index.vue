@@ -143,21 +143,19 @@ const loadHistory = async () => {
 const detailVisible = ref(false);
 const currentDetail = ref<NewsRow | null>(null);
 
-/** 点击行：展示正文详情 + 标记已读（后端持久） */
+/** 点击行：展示正文详情 + 标记已读（后端成功后才更新角标） */
 const openDetail = (item: NewsRow) => {
   currentDetail.value = item;
   detailVisible.value = true;
-  if (!item.read) {
-    item.read = true;
-    if (item.id !== undefined && item.id !== null) {
-      noticeStore.markRead(item.id);
-      markNotificationRead(item.id).catch(() => {
-        item.read = false;
+  if (!item.read && item.id !== undefined && item.id !== null) {
+    markNotificationRead(item.id)
+      .then(() => {
+        item.read = true;
+        noticeStore.markRead(item.id as number | string);
+      })
+      .catch(() => {
         ElMessage.warning('标记已读失败');
       });
-    } else {
-      noticeStore.markRead(item.id as any);
-    }
   }
 };
 

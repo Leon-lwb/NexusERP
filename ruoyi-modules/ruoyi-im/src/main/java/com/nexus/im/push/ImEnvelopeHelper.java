@@ -32,7 +32,8 @@ public final class ImEnvelopeHelper {
     public static String userNotification(long notificationId, String category, String title, String contentPreview, String contentUrl,
                                           String refType, String refId) {
         MapBuilder<String, Object> builder = MapUtil.<String, Object>builder()
-            .put("notificationId", notificationId)
+            // 雪花 ID 转字符串（JS 精度丢失坑：信封不走全局 BigNumberSerializer，long 直出会被截断）
+            .put("notificationId", String.valueOf(notificationId))
             .put("category", category)
             .put("title", title)
             .put("contentPreview", contentPreview);
