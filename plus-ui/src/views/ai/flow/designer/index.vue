@@ -114,14 +114,20 @@ const advancedExpanded = ref<string[]>([]);
 const ndvVisible = ref(false);
 const ndvNode = ref<{ id: string; label: string; run: any } | null>(null);
 
-/** 双击节点：拉取该节点最近一次运行快照 */
+/** 双击节点：拉取该节点最近一次运行快照（当前实例优先，无则回退上次运行实例） */
 async function onNodeDoubleClick(node: any) {
-  if (!store.currentInstanceId) {
-    ElMessage.info('请先运行流程后再双击查看节点数据');
-    return;
+  let instanceId = store.currentInstanceId;
+  if (!instanceId) {
+    instanceId = localStorage.getItem('aiFlowLastInstanceId');
+    if (instanceId) {
+      ElMessage.info('展示上次运行的数据（未运行过本次变更）');
+    } else {
+      ElMessage.info('请先运行流程后再双击查看节点数据');
+      return;
+    }
   }
   try {
-    const res = await listNodeRuns(store.currentInstanceId);
+    const res = await listNodeRuns(instanceId);
     const runs = res.data ?? [];
     // 取该节点最新一条运行记录（按 startTime 排序，取最后一条）
     const nodeRuns = runs.filter((r: any) => r.nodeId === node.id);
@@ -384,6 +390,8 @@ async function applyInstanceResult(inst: any) {
       }
     }
     store.setNodeOutputs(Object.keys(outputs).length ? outputs : null);
+    // 记忆上次运行实例（NDV 回退查看用）
+    localStorage.setItem('aiFlowLastInstanceId', String(store.currentInstanceId));
   } catch {
     // 缓存失败不影响主流程
   }

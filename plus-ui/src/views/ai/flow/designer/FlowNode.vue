@@ -26,6 +26,12 @@ const nodeColor = computed(() => typeConfig.value?.color ?? '#909399');
 /** 节点运行摘要（输出/错误文本） */
 const summary = computed(() => store.nodeSummaryMap[props.id] ?? '');
 
+/** merge 节点输入端口数（按实际入边数，至少 1） */
+const mergeInputCount = computed(() => {
+  const count = store.edges.filter((e) => e.target === props.id).length;
+  return Math.max(1, count);
+});
+
 const statusClass = computed(() => {
   switch (props.data.status) {
     case 'RUNNING':
@@ -44,21 +50,22 @@ const statusClass = computed(() => {
 
 <template>
   <div class="flow-node" :class="[statusClass, { 'is-selected': props.selected }]">
-    <!-- 合并节点：多输入端口（inputs/main/0, /1... 按入边数） -->
+    <!-- 合并节点：多输入端口（按实际入边数动态渲染，带序号标签） -->
     <template v-if="props.data.type === 'merge'">
-      <Handle
-        v-for="i in 3"
-        :key="'in' + i"
-        :id="'inputs/main/' + (i - 1)"
-        type="target"
-        :position="Position.Left"
-        class="flow-node__handle"
-        :style="{ top: 20 + i * 20 + '%' }"
-      />
+      <template v-for="i in mergeInputCount" :key="'in' + i">
+        <Handle
+          :id="'inputs/main/' + (i - 1)"
+          type="target"
+          :position="Position.Left"
+          class="flow-node__handle"
+          :style="{ top: 20 + i * 20 + '%' }"
+        />
+        <span class="flow-node__port-label flow-node__port-label--left" :style="{ top: 20 + i * 20 + '%' }">{{ i }}</span>
+      </template>
     </template>
     <!-- 普通节点：单输入端口 -->
     <Handle v-else id="inputs/main/0" type="target" :position="Position.Left" class="flow-node__handle" />
-    <!-- 条件节点：双输出端口 true/false -->
+    <!-- 条件节点：双输出端口 true/false（带文字标签） -->
     <template v-if="props.data.type === 'if'">
       <Handle
         id="outputs/if/true"
@@ -67,6 +74,7 @@ const statusClass = computed(() => {
         class="flow-node__handle flow-node__handle--true"
         :style="{ top: '35%' }"
       />
+      <span class="flow-node__port-label flow-node__port-label--right flow-node__port-label--true" :style="{ top: '35%' }">true</span>
       <Handle
         id="outputs/if/false"
         type="source"
@@ -74,6 +82,7 @@ const statusClass = computed(() => {
         class="flow-node__handle flow-node__handle--false"
         :style="{ top: '65%' }"
       />
+      <span class="flow-node__port-label flow-node__port-label--right flow-node__port-label--false" :style="{ top: '65%' }">false</span>
     </template>
     <!-- ERROR_PORT 节点：main + error 双输出端口 -->
     <template v-else-if="props.data.onError === 'ERROR_PORT'">
@@ -85,6 +94,7 @@ const statusClass = computed(() => {
         class="flow-node__handle flow-node__handle--error"
         :style="{ top: '65%' }"
       />
+      <span class="flow-node__port-label flow-node__port-label--right flow-node__port-label--false" :style="{ top: '65%' }">错误</span>
     </template>
     <!-- 循环节点：loop/main + loop/done 双输出端口 -->
     <template v-else-if="props.data.type === 'split'">
@@ -95,6 +105,7 @@ const statusClass = computed(() => {
         class="flow-node__handle flow-node__handle--loop"
         :style="{ top: '35%' }"
       />
+      <span class="flow-node__port-label flow-node__port-label--right flow-node__port-label--loop" :style="{ top: '35%' }">loop</span>
       <Handle
         id="outputs/loop/done"
         type="source"
@@ -102,6 +113,7 @@ const statusClass = computed(() => {
         class="flow-node__handle flow-node__handle--done"
         :style="{ top: '65%' }"
       />
+      <span class="flow-node__port-label flow-node__port-label--right flow-node__port-label--done" :style="{ top: '65%' }">done</span>
     </template>
     <!-- 普通节点：单输出端口 -->
     <Handle v-else id="outputs/main/0" type="source" :position="Position.Right" class="flow-node__handle" />
@@ -194,6 +206,43 @@ const statusClass = computed(() => {
 
 .flow-node__handle--done {
   border-color: #52c41a !important;
+}
+
+/* 端口文字标签（对齐 n8n 端口命名） */
+.flow-node__port-label {
+  position: absolute;
+  font-size: 10px;
+  line-height: 12px;
+  transform: translateY(-50%);
+  pointer-events: none;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.flow-node__port-label--left {
+  left: -34px;
+  color: #909399;
+}
+
+.flow-node__port-label--right {
+  right: -40px;
+  font-weight: 600;
+}
+
+.flow-node__port-label--true {
+  color: #52c41a;
+}
+
+.flow-node__port-label--false {
+  color: #fa541c;
+}
+
+.flow-node__port-label--loop {
+  color: #2f54eb;
+}
+
+.flow-node__port-label--done {
+  color: #52c41a;
 }
 
 /* 运行中：旋转渐变边框（对齐 n8n CanvasNodeDefault） */

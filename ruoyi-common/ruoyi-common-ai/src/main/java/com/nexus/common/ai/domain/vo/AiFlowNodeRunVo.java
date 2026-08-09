@@ -64,6 +64,9 @@ public class AiFlowNodeRunVo implements Serializable {
     /** 已重试次数 */
     private Integer retryCount;
 
+    /** 循环批次索引（split 循环轮次，非循环=0） */
+    private Integer batchIndex;
+
     /** 耗时(毫秒) */
     @ExcelProperty(value = "耗时(ms)")
     private Long durationMs;

@@ -1,16 +1,18 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { ElMessage } from 'element-plus';
 import VueJsonPretty from 'vue-json-pretty';
 import 'vue-json-pretty/lib/styles.css';
 import { useFlowStore } from '../designer/useFlowStore';
 import FlowCanvas from '../designer/FlowCanvas.vue';
 import type { AiFlowInstance, AiFlowNodeRun } from '@/api/ai/flow';
-import { getFlow, getInstance, listNodeRuns } from '@/api/ai/flow';
+import { getFlow, getInstance, listNodeRuns, retryInstance } from '@/api/ai/flow';
 
 /**
  * 流程实例详情页（只读画布重放）
- * <p>从流程 configJson 加载画布 → 按 node_run 状态着色 → 节点运行记录表 + input/output JSON 快照</p>
+ * <p>用实例 configSnapshot（启动时配置）加载画布 → 按 node_run 状态着色 →
+ * 节点运行记录表 + input/output JSON 快照 + 失败续跑</p>
  */
 
 const route = useRoute();
@@ -21,6 +23,7 @@ const loading = ref(false);
 const instance = ref<AiFlowInstance | null>(null);
 const nodeRuns = ref<AiFlowNodeRun[]>([]);
 const selectedRun = ref<AiFlowNodeRun | null>(null);
+const retrying = ref(false);
 
 /** 实例状态映射 */
 const statusMap: Record<string, { label: string; type: string }> = {
@@ -39,6 +42,12 @@ const nodeStatusMap: Record<string, { label: string; type: string }> = {
   PENDING: { label: '等待', type: 'info' }
 };
 
+/** 是否可续跑 */
+const canRetry = computed(() => {
+  const s = instance.value?.status;
+  return s === 'FAILED' || s === 'STOPPED';
+});
+
 /** 解析 JSON 字符串（宽松） */
 function parseJson(text?: string): unknown {
   if (!text) return null;
@@ -56,20 +65,45 @@ function formatDuration(ms?: number) {
   return (ms / 1000).toFixed(2) + 's';
 }
 
-onMounted(async () => {
+/** 续跑（从失败节点重跑，返回新实例 → 刷新详情） */
+async function retry() {
+  if (!instance.value || retrying.value) return;
+  retrying.value = true;
+  try {
+    const res = await retryInstance(instance.value.id);
+    const newId = res.data ?? instance.value.id;
+    ElMessage.success('已从失败节点续跑');
+    if (String(newId) !== String(instance.value.id)) {
+      router.replace({
+        path: '/ai/flow/monitor/detail',
+        query: { instanceId: String(newId), flowId: String(instance.value.flowId) }
+      });
+      await loadDetail(String(newId));
+    } else {
+      await loadDetail(String(instance.value.id));
+    }
+  } catch (e: any) {
+    ElMessage.error('续跑失败: ' + (e?.message ?? e));
+  } finally {
+    retrying.value = false;
+  }
+}
+
+async function loadDetail(instanceId: string) {
   loading.value = true;
   try {
-    const instanceId = route.query.instanceId as string;
-    const flowId = route.query.flowId as string;
-
-    // 1. 加载实例
+    // 1. 加载实例（详情接口返回 configSnapshot）
     const instRes = await getInstance(instanceId);
     instance.value = instRes.data;
 
-    // 2. 加载流程配置（画布重放）
-    const flowRes = await getFlow(flowId);
-    if (flowRes.data?.configJson) {
-      store.fromConfigJson(flowRes.data.configJson);
+    // 2. 加载画布配置：实例快照优先（改版后重放旧实例不错位），无快照回退当前流程配置
+    if (instance.value?.configSnapshot) {
+      store.fromConfigJson(instance.value.configSnapshot);
+    } else {
+      const flowRes = await getFlow(String(instance.value?.flowId ?? route.query.flowId));
+      if (flowRes.data?.configJson) {
+        store.fromConfigJson(flowRes.data.configJson);
+      }
     }
 
     // 3. 加载节点运行记录并着色
@@ -81,6 +115,10 @@ onMounted(async () => {
   } finally {
     loading.value = false;
   }
+}
+
+onMounted(async () => {
+  await loadDetail(route.query.instanceId as string);
 });
 </script>
 
@@ -96,10 +134,12 @@ onMounted(async () => {
             {{ statusMap[instance.status]?.label ?? instance.status }}
           </el-tag>
           <span class="instance-detail__sub">
-            实例 {{ instance.id }} · 版本 v{{ instance.flowVersion }} · {{ instance.triggerType === 'SCHEDULE' ? '定时触发' : '手动触发' }} ·
+            实例 {{ instance.id }} · 版本 v{{ instance.flowVersion }} ·
+            {{ instance.triggerType === 'SCHEDULE' ? '定时触发' : instance.triggerType === 'TEST' ? '测试运行' : '手动触发' }} ·
             {{ formatDuration(instance.durationMs) }} · 节点 {{ instance.nodeSuccess ?? 0 }}/{{ instance.nodeTotal ?? 0 }}
           </span>
         </div>
+        <el-button v-if="canRetry" type="warning" plain size="small" :loading="retrying" @click="retry">续跑（从失败节点重跑）</el-button>
         <el-alert
           v-if="instance.status === 'FAILED' && instance.errorMsg"
           :title="'执行失败: ' + instance.errorMsg"
@@ -125,6 +165,9 @@ onMounted(async () => {
                 {{ nodeStatusMap[row.status]?.label ?? row.status }}
               </el-tag>
             </template>
+          </el-table-column>
+          <el-table-column label="批次" width="60" align="center">
+            <template #default="{ row }">{{ row.batchIndex ?? 0 }}</template>
           </el-table-column>
           <el-table-column label="耗时" width="90" align="center">
             <template #default="{ row }">{{ formatDuration(row.durationMs) }}</template>

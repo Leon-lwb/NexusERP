@@ -24,9 +24,11 @@ export interface AiFlowInstance {
   flowId: number | string;
   flowName?: string;
   flowVersion: number;
-  triggerType: 'MANUAL' | 'SCHEDULE';
+  triggerType: 'MANUAL' | 'SCHEDULE' | 'TEST' | 'WEBHOOK';
   inputJson?: string;
   outputJson?: string;
+  /** 启动时配置快照（仅详情接口返回，列表不返回；历史重放用） */
+  configSnapshot?: string;
   status: 'RUNNING' | 'SUCCEEDED' | 'FAILED' | 'STOPPED';
   errorMsg?: string;
   durationMs?: number;
