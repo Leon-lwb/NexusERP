@@ -4,7 +4,7 @@ import { Delete, Plus } from '@element-plus/icons-vue';
 import type { NodeParamSchema } from '@/api/ai/flow';
 import { listKnowledge } from '@/api/ai/knowledge';
 import { listModelOptions } from '@/api/ai/model';
-import { useVariablePicker, buildVariableCandidates, type VariableCandidate } from './useVariablePicker';
+import { useVariablePicker, buildVariableCandidates, evaluateExpression, parseExpressionSegments, type VariableCandidate } from './useVariablePicker';
 import type { FlowCanvasNode } from './useFlowStore';
 import KeyValueEditor from './KeyValueEditor.vue';
 
@@ -44,6 +44,29 @@ const picker = useVariablePicker();
 
 /** 变量候选（运行时真实输出优先） */
 const variableCandidates = computed(() => buildVariableCandidates(props.upstreamNodes ?? [], props.nodeOutputs ?? null));
+
+/** 表达式求值数据集（运行入参 + 上游节点输出，供 hover 实时求值预览） */
+const evalData = computed<Record<string, unknown>>(() => {
+  const data: Record<string, unknown> = {};
+  const input = props.config?.input ?? props.modelValue;
+  // 运行入参 input（从上游 nodeOutputs 或 config 取）
+  const outputs = props.nodeOutputs ?? {};
+  for (const [k, v] of Object.entries(outputs)) data[`nodes.${k}.output`] = v;
+  // 展开 input 顶层字段（供 input.xxx 引用）
+  if (props.nodeOutputs && typeof props.nodeOutputs === 'object') {
+    // nodeOutputs 顶层是 nodeId→output，input 无法直接取；保留空占位
+  }
+  return data;
+});
+
+/** 表达式分段（textarea/string 高亮用） */
+const exprSegments = computed(() => parseExpressionSegments(String(value.value ?? '')));
+
+/** 表达式 hover 求值预览 */
+const exprPreview = computed(() => (exprSegments.value.some((s) => s.isExpr) ? evaluateExpression(String(value.value ?? ''), evalData.value) : ''));
+
+/** 是否表达式模式（含 {{ }}） */
+const isExpression = computed(() => String(value.value ?? '').includes('{{'));
 
 /** number 类型的输入处理 */
 function onNumberInput(e: Event) {
@@ -340,8 +363,13 @@ onMounted(loadEntityOptions);
         <div class="node-param-form__conds-tip">条件使用 {{ schema.attrs?.logicHint ?? '节点输出字段' }} 判断，true 走绿色分支、false 走红色分支</div>
       </div>
 
-      <!-- textarea：多行文本（支持 {{ 变量选择器 }}） -->
+      <!-- textarea：多行文本（支持 {{ 变量选择器 }} + 表达式高亮 + hover 求值预览） -->
       <div v-else-if="schema.type === 'textarea'" class="node-param-form__textarea-wrap">
+        <div class="node-param-form__expr-overlay" v-if="isExpression">
+          <template v-for="(seg, i) in exprSegments" :key="i">
+            <span :class="seg.isExpr ? 'node-param-form__expr-seg' : ''">{{ seg.text }}</span>
+          </template>
+        </div>
         <el-input
           :model-value="String(value ?? '')"
           @update:model-value="(v) => (value = v)"
@@ -350,8 +378,11 @@ onMounted(loadEntityOptions);
           :rows="5"
           :placeholder="schema.placeholder || '支持 {{input.xxx}} 变量引用，输入 {{ 弹出选择器'"
         />
-        <div v-if="value && String(value).includes('{{')" class="node-param-form__var-tip">
+        <div v-if="isExpression" class="node-param-form__var-tip">
           检测到变量引用，支持：&#123;&#123;input.xxx&#125;&#125;（运行入参）、&#123;&#123;nodes.节点ID.output.xxx&#125;&#125;（前序输出）
+          <el-tooltip :content="exprPreview || '（运行时填充）'" placement="right" :show-after="300">
+            <span class="node-param-form__preview-btn">预览求值</span>
+          </el-tooltip>
         </div>
       </div>
 
@@ -365,9 +396,25 @@ onMounted(loadEntityOptions);
         @update:model-value="onJsonInput"
       />
 
-      <!-- string：单行输入 -->
-      <el-input v-else :model-value="String(value ?? '')" @update:model-value="(v) => (value = v)" :placeholder="schema.placeholder" clearable />
+      <!-- string：单行输入（含表达式高亮 + hover 求值预览） -->
+      <div v-else class="node-param-form__string-wrap">
+        <el-input
+          :model-value="String(value ?? '')"
+          @update:model-value="(v) => (value = v)"
+          @input="onTextInput"
+          :placeholder="schema.placeholder"
+          clearable
+        />
+        <span v-if="isExpression" class="node-param-form__string-expr">
+          <el-tooltip :content="exprPreview || '（运行时填充）'" placement="right" :show-after="300">
+            <span class="node-param-form__preview-btn">fx</span>
+          </el-tooltip>
+        </span>
+      </div>
     </el-form-item>
+
+    <!-- 参数 hint（节点类型说明，schema.description） -->
+    <div v-if="schema.description" class="node-param-form__hint">{{ schema.description }}</div>
 
     <!-- 变量选择器弹层（fixed，视口翻转） -->
     <div
@@ -517,5 +564,66 @@ onMounted(loadEntityOptions);
   color: #909399;
   line-height: 1.5;
   margin-top: 4px;
+}
+
+/* 表达式高亮 overlay（覆盖整个 textarea，白底遮住下方真实文本 → 只显示着色层，杜绝重影）
+   缩放/分段与 .el-textarea__inner 完全一致：border 1px + padding 5px 11px */
+.node-param-form__expr-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background: #fff;
+  border: 1px solid transparent;
+  box-sizing: border-box;
+  padding: 5px 11px;
+  font-size: 14px;
+  line-height: 1.5;
+  font-family: var(--el-font-family);
+  color: transparent;
+  white-space: pre-wrap;
+  word-break: break-all;
+  overflow-wrap: break-word;
+  z-index: 1;
+}
+
+.node-param-form__expr-seg {
+  color: #409eff;
+  font-weight: 600;
+}
+
+/* 表达式预览按钮（fx 图标 / 预览求值文字） */
+.node-param-form__preview-btn {
+  font-size: 11px;
+  color: #409eff;
+  background: #f0f7ff;
+  border: 1px solid #d6e4ff;
+  border-radius: 4px;
+  padding: 1px 6px;
+  margin-left: 6px;
+  cursor: help;
+}
+
+.node-param-form__string-wrap {
+  position: relative;
+  width: 100%;
+}
+
+.node-param-form__string-expr {
+  position: absolute;
+  right: 28px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+/* 参数 hint（节点类型说明） */
+.node-param-form__hint {
+  font-size: 11px;
+  color: #909399;
+  line-height: 1.5;
+  margin: 2px 0 8px 110px;
 }
 </style>

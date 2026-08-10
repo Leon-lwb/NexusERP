@@ -12,6 +12,72 @@ export interface VariableCandidate {
   insert: string;
 }
 
+/** 多分段表达式（如 "前缀 {{path}} 后缀"，供高亮/求值预览用） */
+export interface ExpressionSegment {
+  text: string;
+  isExpr: boolean;
+  path: string;
+}
+
+const EXPR_REGEX = /\{\{([^{}]+)\}\}/g;
+
+/**
+ * 把字符串拆成多分段（固定文本 + {{path}} 表达式）
+ * <p>NodeParameterForm 的表达式高亮 / hover 实时求值预览共用</p>
+ */
+export function parseExpressionSegments(text: string): ExpressionSegment[] {
+  if (!text || !text.includes('{{')) return [{ text, isExpr: false, path: '' }];
+  const segments: ExpressionSegment[] = [];
+  let last = 0;
+  let m: RegExpExecArray | null;
+  EXPR_REGEX.lastIndex = 0;
+  while ((m = EXPR_REGEX.exec(text)) !== null) {
+    if (m.index > last) segments.push({ text: text.slice(last, m.index), isExpr: false, path: '' });
+    segments.push({ text: `{{${m[1]}}}`, isExpr: true, path: m[1].trim() });
+    last = m.index + m[0].length;
+  }
+  if (last < text.length) segments.push({ text: text.slice(last), isExpr: false, path: '' });
+  return segments;
+}
+
+/**
+ * 轻量实时求值：从候选数据集解析 {{path}} 的值（对齐后端 FlowTemplateRenderer 缺失语义）
+ * <p>path 形如 input.xxx / nodes.&lt;nodeId&gt;.output.xxx；找不到返回 <span>未找到</span>，
+ * 对象/数组返回 JSON。用于 hover 预览——渲染结果与后端一致，帮助用户确认引用是否正确。</p>
+ */
+export function evaluateExpression(text: string, data: Record<string, unknown>): string {
+  if (!text || !text.includes('{{')) return text;
+  return text.replace(/{{([^{}]+)}}/g, (_, p) => {
+    const path = String(p).trim();
+    const value = resolvePath(data, path);
+    if (value === undefined) return '‹未找到›';
+    if (value === null) return 'null';
+    if (typeof value === 'object') {
+      try {
+        return JSON.stringify(value);
+      } catch {
+        return String(value);
+      }
+    }
+    return String(value);
+  });
+}
+
+/** 按点路径从对象取值（支持 input.xxx、nodes.nodeId.output.xxx、数组索引） */
+function resolvePath(data: Record<string, unknown>, path: string): unknown {
+  const parts = path
+    .replace(/\[(\d+)\]/g, '.$1')
+    .split('.')
+    .filter(Boolean);
+  let cur: unknown = data;
+  for (const p of parts) {
+    if (cur === null || cur === undefined) return undefined;
+    if (typeof cur !== 'object') return undefined;
+    cur = (cur as Record<string, unknown>)[p];
+  }
+  return cur;
+}
+
 export function useVariablePicker() {
   const visible = ref(false);
   const position = ref({ top: 0, left: 0 });

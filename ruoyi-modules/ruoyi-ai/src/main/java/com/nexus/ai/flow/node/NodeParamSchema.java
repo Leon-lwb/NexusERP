@@ -44,6 +44,9 @@ public class NodeParamSchema {
     /** 扩展属性（节点类型自定义元数据，如 erp_tool 的工具参数定义 toolArgs） */
     private Map<String, Object> attrs;
 
+    /** 参数说明（表单 hint，对齐 n8n ParameterInputHint；前端 NodeParameterForm 展示） */
+    private String description;
+
     public NodeParamSchema() {
     }
 

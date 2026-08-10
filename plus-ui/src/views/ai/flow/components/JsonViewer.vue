@@ -22,8 +22,72 @@ const props = withDefaults(
   { maxCols: 8, cellMax: 60 }
 );
 
-const viewMode = ref<'json' | 'table'>('json');
+const viewMode = ref<'json' | 'table' | 'schema'>('json');
 const filterText = ref('');
+
+/** Schema 视图：递归字段树（字段名 + 类型 + 示例值） */
+interface SchemaNode {
+  path: string;
+  name: string;
+  type: string;
+  example: string;
+  depth: number;
+}
+
+function typeOf(v: unknown): string {
+  if (v === null) return 'null';
+  if (Array.isArray(v)) return 'array';
+  if (typeof v === 'object') return 'object';
+  return typeof v;
+}
+
+function collectSchema(obj: unknown, path: string, depth: number, out: SchemaNode[]) {
+  if (depth > 6) return;
+  if (obj !== null && typeof obj === 'object') {
+    if (Array.isArray(obj)) {
+      out.push({ path, name: path.split('.').pop() ?? '', type: `array[${obj.length}]`, example: '', depth });
+      if (obj.length && depth < 6) collectSchema(obj[0], `${path}[0]`, depth + 1, out);
+      return;
+    }
+    for (const [k, v] of Object.entries(obj as Record<string, unknown>)) {
+      const childPath = path ? `${path}.${k}` : k;
+      out.push({
+        path: childPath,
+        name: k,
+        type: typeOf(v),
+        example: v !== null && typeof v === 'object' ? '' : String(v),
+        depth
+      });
+      if (typeof v === 'object' && v !== null) collectSchema(v, childPath, depth + 1, out);
+    }
+  } else {
+    out.push({ path, name: path.split('.').pop() ?? '', type: typeOf(obj), example: String(obj ?? ''), depth });
+  }
+}
+
+const schemaNodes = computed<SchemaNode[]>(() => {
+  if (props.data === null || props.data === undefined) return [];
+  const out: SchemaNode[] = [];
+  collectSchema(props.data, '', 0, out);
+  return out;
+});
+
+/** Schema 过滤（字段名/路径/类型匹配） */
+const filteredSchema = computed(() => {
+  const f = filterText.value.trim().toLowerCase();
+  if (!f) return schemaNodes.value;
+  return schemaNodes.value.filter((n) => n.name.toLowerCase().includes(f) || n.path.toLowerCase().includes(f) || n.type.toLowerCase().includes(f));
+});
+
+/** 类型徽标颜色 */
+function typeColor(t: string): string {
+  if (t === 'string') return '#409eff';
+  if (t === 'number') return '#52c41a';
+  if (t === 'boolean') return '#faad14';
+  if (t.startsWith('array')) return '#722ed1';
+  if (t === 'object') return '#13c2c2';
+  return '#909399';
+}
 
 const isArray = computed(() => Array.isArray(props.data));
 const isObject = computed(() => props.data !== null && typeof props.data === 'object' && !Array.isArray(props.data));
@@ -102,10 +166,21 @@ onBeforeUnmount(() => {
   <div class="json-viewer">
     <div class="json-viewer__toolbar">
       <el-radio-group v-model="viewMode" size="small">
+        <el-radio-button value="schema">Schema</el-radio-button>
         <el-radio-button value="json">JSON</el-radio-button>
         <el-radio-button value="table">表格</el-radio-button>
       </el-radio-group>
-      <el-input v-if="viewMode === 'table'" v-model="filterText" size="small" placeholder="过滤字段/值..." clearable class="json-viewer__filter" />
+      <el-input v-if="viewMode !== 'json'" v-model="filterText" size="small" placeholder="过滤字段/值..." clearable class="json-viewer__filter" />
+    </div>
+
+    <!-- Schema 模式：递归字段树 -->
+    <div v-if="viewMode === 'schema'" class="json-viewer__schema">
+      <div v-for="n in filteredSchema" :key="n.path" class="json-viewer__schema-row" :style="{ paddingLeft: 10 + n.depth * 16 + 'px' }">
+        <span class="json-viewer__schema-name">{{ n.name }}</span>
+        <span class="json-viewer__schema-type" :style="{ color: typeColor(n.type) }">{{ n.type }}</span>
+        <span v-if="n.example" class="json-viewer__schema-example">{{ n.example }}</span>
+      </div>
+      <div v-if="!filteredSchema.length" class="json-viewer__schema-empty">无字段</div>
     </div>
 
     <!-- JSON 模式：树状 -->
@@ -172,5 +247,47 @@ onBeforeUnmount(() => {
   font-size: 12px;
   color: #303133;
   word-break: break-all;
+}
+
+/* Schema 视图 */
+.json-viewer__schema {
+  max-height: 320px;
+  overflow-y: auto;
+  font-size: 12px;
+}
+
+.json-viewer__schema-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 3px 4px;
+  border-bottom: 1px solid #f0f2f5;
+}
+
+.json-viewer__schema-name {
+  color: #303133;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.json-viewer__schema-type {
+  font-size: 11px;
+  flex-shrink: 0;
+}
+
+.json-viewer__schema-example {
+  color: #909399;
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 40%;
+}
+
+.json-viewer__schema-empty {
+  padding: 16px 0;
+  text-align: center;
+  color: #c0c4cc;
+  font-size: 12px;
 }
 </style>

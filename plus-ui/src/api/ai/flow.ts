@@ -72,6 +72,8 @@ export interface NodeParamSchema {
   optionsSource?: string;
   /** 扩展属性（如 conditionList 的 operators、erp_tool 的 toolArgs） */
   attrs?: Record<string, unknown>;
+  /** 参数说明（表单 hint，对齐 n8n ParameterInputHint） */
+  description?: string;
 }
 
 /** 节点类型元数据（/ai/flow/node-types 返回） */
