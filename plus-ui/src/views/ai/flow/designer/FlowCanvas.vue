@@ -9,7 +9,7 @@ import '@vue-flow/core/dist/theme-default.css';
 import '@vue-flow/controls/dist/style.css';
 import '@vue-flow/minimap/dist/style.css';
 import type { Connection, Edge, Node, NodeMouseEvent } from '@vue-flow/core';
-import { onBeforeUnmount, onMounted } from 'vue';
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import FlowNode from './FlowNode.vue';
 import { getNodeTypeConfig } from '../nodeTypes';
 import { useFlowStore, type FlowCanvasNode } from './useFlowStore';
@@ -30,6 +30,8 @@ const props = defineProps<{
   edges: Edge[];
   /** 是否只读（运行监控重放用） */
   readonly?: boolean;
+  /** 时间线重放当前播放节点 ID（画布上显示移动小球指示执行位置） */
+  playingNodeId?: string | null;
 }>();
 
 const emit = defineEmits<{
@@ -40,7 +42,34 @@ const emit = defineEmits<{
 }>();
 
 const store = useFlowStore();
-const { screenToFlowCoordinate, getSelectedNodes, addSelectedNodes } = useVueFlow();
+const { screenToFlowCoordinate, viewport, getSelectedNodes, addSelectedNodes } = useVueFlow();
+
+/* ==================== 时间线播放小球（跟随当前播放节点移动） ==================== */
+
+/** 节点渲染宽度（与 FlowNode .flow-node 一致，居中偏移需乘 zoom） */
+const NODE_WIDTH = 160;
+
+const ballPos = ref({ x: -100, y: -100 });
+
+/**
+ * 播放小球屏幕坐标（flow 坐标 → 屏幕坐标）
+ * <p>注意不能用 useVueFlow 的 project()：它是反向投影（屏幕→flow，(x-tx)/zoom）。
+ * 正确公式 x*zoom+translate；居中偏移 80px 也需乘 zoom（fitView 后 zoom≠1）。</p>
+ */
+watch(
+  [() => props.playingNodeId, () => props.nodes, viewport],
+  () => {
+    if (!props.playingNodeId) return;
+    const node = props.nodes.find((n) => n.id === props.playingNodeId);
+    if (!node) return;
+    const vp = viewport.value;
+    ballPos.value = {
+      x: node.position.x * vp.zoom + vp.x + (NODE_WIDTH * vp.zoom) / 2,
+      y: node.position.y * vp.zoom + vp.y
+    };
+  },
+  { deep: true }
+);
 
 /** slot 注册自定义节点（n8n 同款方式，非 nodeTypes 对象） */
 const nodeTypes = { 'flow-node': FlowNode };
@@ -230,13 +259,78 @@ defineExpose({ onRemoveNode });
       <Controls v-if="!props.readonly" />
       <MiniMap pannable zoomable />
     </VueFlow>
+    <!-- 时间线播放小球（绝对定位于画布容器，跟随当前播放节点移动） -->
+    <div v-if="props.playingNodeId" class="flow-canvas__ball" :style="{ transform: `translate(${ballPos.x}px, ${ballPos.y}px)` }">
+      <span class="flow-canvas__ball-dot"></span>
+      <span class="flow-canvas__ball-ring"></span>
+    </div>
   </div>
 </template>
 
 <style scoped>
 .flow-canvas {
+  position: relative;
   flex: 1;
   height: 100%;
   background: #f5f7fa;
+}
+
+/* 时间线播放小球（容器即圆心锚点，内联 style 控制 translate 位置；子元素相对 -7px 居中） */
+.flow-canvas__ball {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 20;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  transition: transform 0.45s cubic-bezier(0.25, 0.9, 0.4, 1.2);
+}
+
+/* 小球本体：红色实心圆点 + 白色描边 */
+.flow-canvas__ball-dot {
+  position: absolute;
+  top: -7px;
+  left: -7px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #f56c6c;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 6px rgba(245, 108, 108, 0.5);
+  animation: flow-ball-bounce 0.6s ease-in-out infinite alternate;
+}
+
+/* 脉冲光环 */
+.flow-canvas__ball-ring {
+  position: absolute;
+  top: -7px;
+  left: -7px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid rgba(245, 108, 108, 0.55);
+  animation: flow-ball-ping 1.2s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+@keyframes flow-ball-bounce {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes flow-ball-ping {
+  0% {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+  75%,
+  100% {
+    transform: scale(2.6);
+    opacity: 0;
+  }
 }
 </style>

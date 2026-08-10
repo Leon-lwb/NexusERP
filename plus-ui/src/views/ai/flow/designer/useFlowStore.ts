@@ -47,6 +47,8 @@ export const useFlowStore = defineStore('aiFlow', () => {
   const nodeSummaryMap = ref<Record<string, string>>({});
   /** 节点运行时输出缓存（运行结束后从 node_run 拉取：nodeId → outputJson 对象，变量选择器真实数据用） */
   const nodeOutputs = ref<Record<string, unknown> | null>(null);
+  /** 时间线重放当前播放节点（画布移动小球 + 节点播放徽标用，null=未播放） */
+  const playingNodeId = ref<string | null>(null);
   /** 撤销栈（节点+边快照，上限 50） */
   const historyStack = ref<string[]>([]);
   /** 重做栈 */
@@ -57,6 +59,8 @@ export const useFlowStore = defineStore('aiFlow', () => {
   const flowName = ref('');
   /** 流程 ID（null=新建） */
   const flowId = ref<string | number | null>(null);
+  /** 是否未保存变更（返回/离开时确认；保存成功或加载流程后清除） */
+  const dirty = ref(false);
 
   /** 选中节点 */
   const selectedNode = computed(() => {
@@ -155,26 +159,78 @@ export const useFlowStore = defineStore('aiFlow', () => {
     }
   }
 
-  /** 设置节点运行态 */
+  /**
+   * 设置节点运行态
+   * <p>必须【就地修改 data 属性】而非替换节点对象：VueFlow 受控模式下内部节点图与
+   * 数组元素共享 data 对象引用（parseNode 浅拷贝），且其外部 nodes 同步是浅引用监听
+   * （数组元素替换不触发、length 不变不触发）——替换对象会导致内部图持有旧 data，
+   * FlowNode 的 props.data.status 永远不更新（时间线重放/运行时高亮失效）。</p>
+   */
   function setNodeStatus(nodeId: string, status: string) {
     nodeStatusMap.value[nodeId] = status;
-    const index = nodes.value.findIndex((n) => n.id === nodeId);
-    if (index >= 0) {
-      nodes.value[index] = {
-        ...nodes.value[index],
-        data: { ...nodes.value[index].data, status: status as FlowNodeData['status'] }
-      };
+    const node = nodes.value.find((n) => n.id === nodeId);
+    if (node) {
+      node.data.status = status as FlowNodeData['status'];
     }
   }
 
-  /** 清空运行态 */
+  /** 清空运行态（同样就地修改，保持 data 对象身份稳定） */
   function clearNodeStatus() {
     nodeStatusMap.value = {};
     nodeSummaryMap.value = {};
-    nodes.value = nodes.value.map((n) => ({
-      ...n,
-      data: { ...n.data, status: undefined }
-    }));
+    nodes.value.forEach((n) => {
+      n.data.status = undefined;
+    });
+  }
+
+  /**
+   * 更新节点 data 元字段（label/config/onError/retry 等）
+   * <p>与 setNodeStatus 同理：必须就地修改共享 data 对象属性（VueFlow 受控模式下
+   * 内部节点图与数组元素共享 data 引用，整体替换元素不会被其浅监听感知）</p>
+   */
+  function setNodeMeta(nodeId: string | null | undefined, key: keyof FlowNodeData, value: unknown) {
+    if (!nodeId) return;
+    const node = nodes.value.find((n) => n.id === nodeId);
+    if (node) {
+      (node.data as Record<string, unknown>)[key] = value;
+      dirty.value = true;
+    }
+  }
+
+  /** 设置时间线重放当前播放节点（null=停止播放，隐藏小球） */
+  function setPlayingNode(nodeId: string | null) {
+    playingNodeId.value = nodeId;
+  }
+
+  /** 标记未保存变更（结构变更/参数修改后调用） */
+  function markDirty() {
+    dirty.value = true;
+  }
+
+  /** 清除未保存标记（加载流程/保存成功后调用） */
+  function clearDirty() {
+    dirty.value = false;
+  }
+
+  /** 添加节点到画布（空画布引导/快速添加用；自动递增偏移避免重叠） */
+  function addNode(type: string, config: Record<string, unknown>, label: string) {
+    const count = nodes.value.length;
+    // 新节点放起始位置，已有节点依次下移 150px（与 autoLayout 同距）
+    const position = { x: 120, y: 80 + count * 30 };
+    const node: FlowCanvasNode = {
+      id: `node_${type}_${Date.now()}_${count}`,
+      type: 'flow-node',
+      position,
+      data: {
+        label,
+        type,
+        config: JSON.parse(JSON.stringify(config))
+      }
+    };
+    nodes.value = [...nodes.value, node];
+    selectedNodeId.value = node.id;
+    dirty.value = true;
+    return node;
   }
 
   /** 设置节点运行摘要（输出/错误，显示在节点卡片底部） */
@@ -295,8 +351,10 @@ export const useFlowStore = defineStore('aiFlow', () => {
     nodeRunCache,
     nodeSummaryMap,
     nodeOutputs,
+    playingNodeId,
     flowName,
     flowId,
+    dirty,
     selectedNode,
     reset,
     toConfigJson,
@@ -306,6 +364,11 @@ export const useFlowStore = defineStore('aiFlow', () => {
     setNodeSummary,
     setNodeOutputs,
     clearNodeStatus,
+    setNodeMeta,
+    setPlayingNode,
+    markDirty,
+    clearDirty,
+    addNode,
     snapshot,
     undo,
     redo,

@@ -49,37 +49,109 @@ const canRetry = computed(() => {
 
 /* ==================== 时间线动画重放 ==================== */
 
+/**
+ * 节点运行记录（按拓扑序重排，含 SKIPPED，表格/动画共用）
+ * <p>node_run 的 start_time 是秒级精度，同秒执行时 ORDER BY 失效（物理序≠执行序，
+ * 且 SKIPPED 记录在分支判断时即时插入、id 可能早于后续节点）。
+ * 拓扑序（BFS 分层，loop 返回边跳过）是唯一稳定且语义正确的执行顺序。</p>
+ */
+const orderedRuns = computed(() => {
+  // 1. 构图（跳过 loop 返回边：循环体依赖主体而非反向）
+  const adj: Record<string, string[]> = {};
+  const inDeg: Record<string, number> = {};
+  for (const n of store.nodes) {
+    adj[n.id] = [];
+    inDeg[n.id] = 0;
+  }
+  for (const e of store.edges) {
+    if ((e as any).loop) continue;
+    (adj[e.source] ??= []).push(e.target);
+    inDeg[e.target] = (inDeg[e.target] ?? 0) + 1;
+  }
+  // 2. Kahn BFS 分层
+  const layer: Record<string, number> = {};
+  const queue = store.nodes.filter((n) => (inDeg[n.id] ?? 0) === 0).map((n) => n.id);
+  queue.forEach((id) => (layer[id] = 0));
+  let qi = 0;
+  while (qi < queue.length) {
+    const id = queue[qi++];
+    for (const t of adj[id] ?? []) {
+      if ((inDeg[t] ?? 0) > 0) {
+        inDeg[t]--;
+        if (inDeg[t] === 0) {
+          layer[t] = (layer[id] ?? 0) + 1;
+          queue.push(t);
+        }
+      }
+    }
+  }
+  // 3. 按 (拓扑层, batchIndex, 原顺序) 排序
+  return nodeRuns.value
+    .map((r, idx) => ({ r, idx }))
+    .sort((a, b) => {
+      const la = layer[a.r.nodeId] ?? 0;
+      const lb = layer[b.r.nodeId] ?? 0;
+      if (la !== lb) return la - lb;
+      const ba = a.r.batchIndex ?? 0;
+      const bb = b.r.batchIndex ?? 0;
+      if (ba !== bb) return ba - bb;
+      return a.idx - b.idx;
+    })
+    .map(({ r }) => r);
+});
+
+/** 播放序列（拓扑序 - SKIPPED：跳过的节点不进入动画） */
+const playSequence = computed(() => orderedRuns.value.filter((r) => r.status !== 'SKIPPED'));
+
 const playing = ref(false);
+const playProgress = ref(0);
 let playTimer: number | null = null;
 let playIndex = 0;
 
-/** 播放/停止：按 node_run 执行顺序逐步高亮（500ms/步） */
+/** 播放/停止：按播放序列逐步高亮（500ms/步），播放小球跟随当前节点 */
 function toggleReplay() {
   if (playing.value) {
     stopReplay();
     return;
   }
-  if (!nodeRuns.value.length) return;
-  // 清空着色后按时间顺序逐步播放
+  if (!playSequence.value.length) return;
+  // 清空着色后按拓扑顺序逐步播放（SKIPPED 不进入序列，动画结束后补色）
   store.clearNodeStatus();
   playing.value = true;
   playIndex = 0;
+  playProgress.value = 0;
   playTimer = window.setInterval(() => {
-    if (playIndex >= nodeRuns.value.length) {
+    if (playIndex >= playSequence.value.length) {
       stopReplay();
       return;
     }
-    const run = nodeRuns.value[playIndex++];
+    const run = playSequence.value[playIndex++];
     store.setNodeStatus(run.nodeId, run.status);
+    store.setPlayingNode(run.nodeId);
+    playProgress.value = playIndex;
   }, 500);
 }
 
 function stopReplay() {
   playing.value = false;
+  store.setPlayingNode(null);
+  // 补色 SKIPPED 节点（播放序列已过滤，动画结束后恢复灰色着色）
+  for (const run of nodeRuns.value) {
+    if (run.status === 'SKIPPED') {
+      store.setNodeStatus(run.nodeId, run.status);
+    }
+  }
   if (playTimer !== null) {
     window.clearInterval(playTimer);
     playTimer = null;
   }
+}
+
+/** 表格行点击：右侧抽屉查看输入/输出快照（数据再多也不遮挡表格/画布） */
+const snapshotVisible = ref(false);
+function onRowClick(row: AiFlowNodeRun) {
+  selectedRun.value = row;
+  snapshotVisible.value = true;
 }
 
 onBeforeUnmount(stopReplay);
@@ -175,8 +247,8 @@ onMounted(async () => {
             {{ formatDuration(instance.durationMs) }} · 节点 {{ instance.nodeSuccess ?? 0 }}/{{ instance.nodeTotal ?? 0 }}
           </span>
         </div>
-        <el-button v-if="nodeRuns.length && instance.status !== 'RUNNING'" type="primary" plain size="small" @click="toggleReplay">
-          {{ playing ? '⏸ 停止重放' : '▶ 时间线重放' }}
+        <el-button v-if="playSequence.length && instance.status !== 'RUNNING'" type="primary" plain size="small" @click="toggleReplay">
+          {{ playing ? `⏸ 停止重放 (${playProgress}/${playSequence.length})` : '▶ 时间线重放' }}
         </el-button>
         <el-button v-if="canRetry" type="warning" plain size="small" :loading="retrying" @click="retry">续跑（从失败节点重跑）</el-button>
         <el-alert
@@ -188,14 +260,14 @@ onMounted(async () => {
         />
       </div>
 
-      <!-- 中部：只读画布（重放） -->
+      <!-- 中部：只读画布（重放 + 播放小球） -->
       <div class="instance-detail__canvas">
-        <FlowCanvas :nodes="store.nodes" :edges="store.edges" readonly />
+        <FlowCanvas :nodes="store.nodes" :edges="store.edges" readonly :playing-node-id="store.playingNodeId" />
       </div>
 
-      <!-- 底部：节点运行记录 -->
+      <!-- 底部：节点运行记录（拓扑序） -->
       <div class="instance-detail__runs">
-        <el-table :data="nodeRuns" border stripe size="small" @row-click="(row: any) => (selectedRun = row)">
+        <el-table :data="orderedRuns" border stripe size="small" @row-click="onRowClick">
           <el-table-column label="节点" prop="nodeName" min-width="120" show-overflow-tooltip />
           <el-table-column label="类型" prop="nodeType" width="90" align="center" />
           <el-table-column label="状态" width="90" align="center">
@@ -214,9 +286,21 @@ onMounted(async () => {
           <el-table-column label="重试" prop="retryCount" width="70" align="center" />
           <el-table-column label="错误信息" prop="errorMsg" min-width="160" show-overflow-tooltip />
         </el-table>
+      </div>
 
-        <!-- 选中节点：JSON/表格双视图快照 -->
-        <div v-if="selectedRun" class="instance-detail__snapshot">
+      <!-- 节点运行快照：右侧抽屉（JSON/表格双视图，对齐 n8n NDV） -->
+      <el-drawer v-model="snapshotVisible" :title="'节点数据: ' + (selectedRun?.nodeName ?? '')" size="480px">
+        <template v-if="selectedRun">
+          <div class="snapshot-drawer__meta">
+            <el-tag :type="(nodeStatusMap[selectedRun.status]?.type as any) ?? 'info'" size="small">
+              {{ nodeStatusMap[selectedRun.status]?.label ?? selectedRun.status }}
+            </el-tag>
+            <span>批次 {{ selectedRun.batchIndex ?? 0 }}</span>
+            <span>耗时 {{ formatDuration(selectedRun.durationMs) }}</span>
+            <span v-if="selectedRun.retryCount">重试 {{ selectedRun.retryCount }}</span>
+            <span class="snapshot-drawer__id">{{ selectedRun.nodeId }}</span>
+          </div>
+          <el-alert v-if="selectedRun.errorMsg" :title="selectedRun.errorMsg" type="error" :closable="false" class="snapshot-drawer__error" />
           <el-tabs>
             <el-tab-pane label="输出">
               <JsonViewer :data="parseJson(selectedRun.outputJson)" />
@@ -225,8 +309,8 @@ onMounted(async () => {
               <JsonViewer :data="parseJson(selectedRun.inputJson)" />
             </el-tab-pane>
           </el-tabs>
-        </div>
-      </div>
+        </template>
+      </el-drawer>
     </div>
   </div>
 </template>
@@ -288,13 +372,23 @@ onMounted(async () => {
   border-radius: 6px;
   padding: 8px;
   overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
 }
 
-.instance-detail__snapshot {
-  border-top: 1px solid #e4e7ed;
-  padding-top: 8px;
+.snapshot-drawer__meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  color: #909399;
+  margin-bottom: 10px;
+}
+
+.snapshot-drawer__id {
+  margin-left: auto;
+  font-family: monospace;
+}
+
+.snapshot-drawer__error {
+  margin-bottom: 10px;
 }
 </style>

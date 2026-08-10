@@ -46,6 +46,9 @@ const statusClass = computed(() => {
       return '';
   }
 });
+
+/** 时间线重放：是否当前播放节点（显示播放徽标） */
+const isPlaying = computed(() => store.playingNodeId === props.id);
 </script>
 
 <template>
@@ -130,11 +133,17 @@ const statusClass = computed(() => {
     <div v-if="summary" class="flow-node__summary" :class="{ 'is-error': props.data.status === 'FAILED' }" :title="summary">
       {{ summary }}
     </div>
+    <!-- 时间线重放：当前播放节点徽标（脉冲圆点 + 播放中） -->
+    <div v-if="isPlaying" class="flow-node__playing">
+      <span class="flow-node__playing-dot"></span>
+      <span class="flow-node__playing-text">播放中</span>
+    </div>
   </div>
 </template>
 
 <style scoped>
 .flow-node {
+  position: relative;
   width: 160px;
   border-radius: 8px;
   background: #fff;
@@ -291,5 +300,56 @@ const statusClass = computed(() => {
 .flow-node__summary.is-error {
   color: #fa541c;
   font-weight: 500;
+}
+
+/* 时间线重放：当前播放节点徽标（右上角，脉冲圆点 + 文字） */
+.flow-node__playing {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px 2px 6px;
+  border-radius: 10px;
+  background: #f56c6c;
+  color: #fff;
+  font-size: 10px;
+  line-height: 14px;
+  box-shadow: 0 2px 8px rgba(245, 108, 108, 0.45);
+  z-index: 5;
+  animation: flow-playing-glow 0.8s ease-in-out infinite alternate;
+}
+
+.flow-node__playing-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #fff;
+  animation: flow-playing-blink 0.8s ease-in-out infinite;
+}
+
+.flow-node__playing-text {
+  white-space: nowrap;
+  user-select: none;
+}
+
+@keyframes flow-playing-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+
+@keyframes flow-playing-glow {
+  from {
+    box-shadow: 0 2px 8px rgba(245, 108, 108, 0.45);
+  }
+  to {
+    box-shadow: 0 2px 14px rgba(245, 108, 108, 0.85);
+  }
 }
 </style>

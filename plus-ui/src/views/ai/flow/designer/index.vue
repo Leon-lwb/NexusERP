@@ -1,13 +1,14 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
+import { Search } from '@element-plus/icons-vue';
 import { useFlowStore } from './useFlowStore';
 import NodePalette from './NodePalette.vue';
 import FlowCanvas from './FlowCanvas.vue';
 import NodeParameterForm from './NodeParameterForm.vue';
 import JsonViewer from '../components/JsonViewer.vue';
-import { getNodeTypeConfig } from '../nodeTypes';
+import { getNodeTypeConfig, NODE_CATEGORIES, NODE_TYPE_CONFIGS } from '../nodeTypes';
 import type { NodeParamSchema, NodeTypeMeta } from '@/api/ai/flow';
 import {
   addFlow,
@@ -75,6 +76,52 @@ const nodeTypes = ref<NodeTypeMeta[]>([]);
 /** 画布实例引用（删除节点） */
 const canvasRef = ref();
 
+/** 空画布引导：快速添加节点弹窗 */
+const quickAddVisible = ref(false);
+const quickAddKeyword = ref('');
+
+/** 按分类分组的可添加节点（快速添加弹窗 + 空画布引导） */
+const quickAddGroups = computed(() => {
+  const kw = quickAddKeyword.value.trim().toLowerCase();
+  const list = NODE_TYPE_CONFIGS.filter((c) => !kw || c.label.toLowerCase().includes(kw) || c.type.toLowerCase().includes(kw));
+  return NODE_CATEGORIES.map((cat) => ({
+    cat,
+    items: list.filter((c) => c.category === cat.key)
+  })).filter((g) => g.items.length);
+});
+
+/** 快速添加节点：加进画布并选中 */
+function quickAdd(type: string) {
+  const cfg = getNodeTypeConfig(type);
+  if (!cfg) return;
+  store.addNode(cfg.type, cfg.defaultConfig, cfg.label);
+  quickAddVisible.value = false;
+  quickAddKeyword.value = '';
+}
+
+/** 返回确认（未保存变更提示） */
+async function goBack() {
+  if (store.dirty) {
+    try {
+      await ElMessageBox.confirm('画布有未保存的修改，确定返回吗？', '未保存修改', {
+        type: 'warning',
+        confirmButtonText: '放弃修改',
+        cancelButtonText: '留在页面'
+      });
+    } catch {
+      return; // 取消返回
+    }
+  }
+  router.push('/ai/flow/index');
+}
+
+/** 当前选中节点的类型配置（类型标签 + 说明） */
+const nodeTypeConfig = computed(() => {
+  const node = store.selectedNode;
+  if (!node) return undefined;
+  return getNodeTypeConfig(node.data.type);
+});
+
 /** 当前节点 schema（选中节点的类型参数定义） */
 const currentNodeSchemas = computed<NodeParamSchema[]>(() => {
   const node = store.selectedNode;
@@ -106,8 +153,8 @@ const upstreamNodes = computed(() => {
   return store.nodes.filter((n) => sourceIds.has(n.id));
 });
 
-/** 节点高级设置是否展开 */
-const advancedExpanded = ref<string[]>([]);
+/** 节点高级设置是否展开（默认展开"节点配置"） */
+const advancedExpanded = ref<string[]>(['config']);
 
 /** NDV：节点运行数据查看抽屉 */
 const ndvVisible = ref(false);
@@ -209,15 +256,40 @@ async function loadFlow(flowId: string | number) {
       store.clearHistory();
       store.fromConfigJson(flow.configJson);
     }
+    store.clearDirty();
   } finally {
     loading.value = false;
   }
+}
+
+/** 必填参数校验：返回第一个缺失项（null=全部通过） */
+function validateRequired(): { nodeId: string; nodeLabel: string; paramLabel: string } | null {
+  for (const n of store.nodes) {
+    const meta = nodeTypes.value.find((t) => t.type === n.data.type);
+    if (!meta) continue;
+    for (const p of meta.params ?? []) {
+      if (!p.required) continue;
+      const v = (n.data.config ?? {})[p.name];
+      if (v === undefined || v === null || v === '' || (typeof v === 'object' && !Object.keys(v as object).length)) {
+        return { nodeId: n.id, nodeLabel: n.data.label || n.id, paramLabel: p.label ?? p.name };
+      }
+    }
+  }
+  return null;
 }
 
 /** 保存流程 */
 async function saveFlow(showTip = true) {
   if (!store.flowName.trim()) {
     ElMessage.warning('请输入流程名称');
+    return false;
+  }
+  // 必填参数校验：缺失时定位节点并展开配置面板
+  const missing = validateRequired();
+  if (missing) {
+    store.selectedNodeId = missing.nodeId;
+    advancedExpanded.value = ['config'];
+    ElMessage.warning(`节点「${missing.nodeLabel}」缺少必填参数「${missing.paramLabel}」`);
     return false;
   }
   saving.value = true;
@@ -237,6 +309,7 @@ async function saveFlow(showTip = true) {
       res = await addFlow(data);
       store.flowId = res.data;
     }
+    store.clearDirty();
     if (showTip) {
       ElMessage.success('保存成功');
     }
@@ -411,6 +484,7 @@ function autoLayout() {
   if (!store.nodes.length) return;
   store.snapshot();
   store.autoLayout();
+  store.markDirty();
   ElMessage.success('已自动布局');
 }
 
@@ -448,26 +522,45 @@ function onSseMessage(e: Event) {
   }
 }
 
-/** 节点参数值更新（写回 store 的 config） */
+/** 节点参数值更新（写回 store 的 config）——就地修改共享 data（VueFlow 受控同步依赖共享引用） */
 function onConfigUpdate(value: unknown) {
   const node = store.selectedNode;
   if (!node) return;
-  const index = store.nodes.findIndex((n) => n.id === node.id);
-  if (index >= 0) {
-    const updated = { ...store.nodes[index] };
-    updated.data = { ...updated.data, config: value as Record<string, unknown> };
-    store.nodes[index] = updated;
-  }
+  node.data.config = value as Record<string, unknown>;
+  store.markDirty();
 }
 
 /** 更新节点名称 */
 function onLabelUpdate(label: string) {
   const node = store.selectedNode;
   if (!node) return;
-  const index = store.nodes.findIndex((n) => n.id === node.id);
-  if (index >= 0) {
-    store.nodes[index] = { ...store.nodes[index], data: { ...store.nodes[index].data, label } };
-  }
+  node.data.label = label;
+  store.markDirty();
+}
+
+/** 画布节点/边变更（连线/拖入/拖拽/删除/粘贴/撤销等）→ 标记未保存 */
+function onNodesChange(nodes: any) {
+  store.nodes = nodes;
+  store.markDirty();
+}
+function onEdgesChange(edges: any) {
+  store.edges = edges;
+  store.markDirty();
+}
+
+/** 复制当前选中节点（含关联边） */
+function duplicateNode() {
+  const node = store.selectedNode;
+  if (!node) return;
+  store.copySelection([node]);
+  const result = store.pasteClipboard();
+  if (!result) return;
+  store.snapshot();
+  store.nodes = [...store.nodes, ...result.nodes];
+  store.edges = [...store.edges, ...result.edges];
+  store.selectedNodeId = result.nodes[0]?.id ?? null;
+  store.markDirty();
+  ElMessage.success('已复制节点');
 }
 
 onMounted(async () => {
@@ -483,10 +576,6 @@ onBeforeUnmount(() => {
   window.removeEventListener('ai-sse-message', onSseMessage);
   clearTimers();
 });
-
-function goBack() {
-  router.push('/ai/flow/index');
-}
 </script>
 
 <template>
@@ -494,8 +583,15 @@ function goBack() {
     <!-- 顶栏 -->
     <div class="flow-designer__toolbar">
       <el-button @click="goBack">返回</el-button>
-      <el-input v-model="store.flowName" placeholder="流程名称" class="flow-designer__name" maxlength="50" />
+      <el-input v-model="store.flowName" placeholder="流程名称" class="flow-designer__name" maxlength="50">
+        <template #suffix>
+          <el-tooltip v-if="store.dirty" content="有未保存的修改" placement="bottom">
+            <span class="flow-designer__dirty-dot" />
+          </el-tooltip>
+        </template>
+      </el-input>
       <div class="flow-designer__spacer" />
+      <el-button @click="quickAddVisible = true">+ 添加节点</el-button>
       <el-button :loading="saving" @click="saveFlow()">保存</el-button>
       <el-button type="primary" @click="publish">发布</el-button>
       <el-button @click="autoLayout">自动布局</el-button>
@@ -507,20 +603,37 @@ function goBack() {
       <!-- 左：节点面板 -->
       <NodePalette />
       <!-- 中：画布 -->
-      <FlowCanvas
-        ref="canvasRef"
-        :nodes="store.nodes"
-        :edges="store.edges"
-        @update:nodes="(n) => (store.nodes = n)"
-        @update:edges="(e) => (store.edges = e)"
-        @node-click="(n) => (store.selectedNodeId = n ? n.id : null)"
-        @node-dblclick="onNodeDoubleClick"
-      />
+      <div class="flow-designer__canvas-wrap">
+        <FlowCanvas
+          ref="canvasRef"
+          :nodes="store.nodes"
+          :edges="store.edges"
+          @update:nodes="onNodesChange"
+          @update:edges="onEdgesChange"
+          @node-click="(n) => (store.selectedNodeId = n ? n.id : null)"
+          @node-dblclick="onNodeDoubleClick"
+        />
+        <!-- 空画布引导（对齐 n8n 空白画布） -->
+        <div v-if="!store.nodes.length && !loading" class="flow-designer__canvas-empty">
+          <div class="flow-designer__canvas-empty-box">
+            <div class="flow-designer__canvas-empty-title">开始构建你的流程</div>
+            <div class="flow-designer__canvas-empty-desc">添加第一个节点，或用示例流程快速开始</div>
+            <el-button type="primary" size="large" @click="quickAddVisible = true">＋ 添加第一个节点</el-button>
+            <div class="flow-designer__canvas-empty-hint">也可以从左侧节点面板拖拽节点到画布 · 快捷键 Ctrl+Z 撤销 / Ctrl+C+V 复制粘贴</div>
+          </div>
+        </div>
+      </div>
       <!-- 右：属性面板 -->
       <div class="flow-designer__property">
         <template v-if="store.selectedNode">
           <div class="flow-designer__property-header">
             <el-input :model-value="store.selectedNode.data.label" placeholder="节点名称" @input="onLabelUpdate" />
+          </div>
+          <div class="flow-designer__property-desc">
+            <el-tag size="small" :color="nodeTypeConfig?.color" effect="dark" class="flow-designer__property-tag">{{
+              nodeTypeConfig?.label ?? store.selectedNode.data.type
+            }}</el-tag>
+            <span class="flow-designer__property-desc-text">{{ nodeTypeConfig?.description ?? '自定义节点' }}</span>
           </div>
           <el-collapse v-model="advancedExpanded">
             <el-collapse-item title="节点配置" name="config">
@@ -550,15 +663,7 @@ function goBack() {
                 <el-form-item label="失败策略">
                   <el-select
                     :model-value="store.selectedNode.data.onError ?? 'STOP'"
-                    @update:model-value="
-                      (v) => {
-                        const node = store.selectedNode;
-                        const idx = store.nodes.findIndex((n) => n.id === node?.id);
-                        if (idx >= 0) {
-                          store.nodes[idx] = { ...store.nodes[idx], data: { ...store.nodes[idx].data, onError: v } };
-                        }
-                      }
-                    "
+                    @update:model-value="(v) => store.setNodeMeta(store.selectedNode?.id, 'onError', v)"
                     style="width: 100%"
                   >
                     <el-option label="STOP（停止流程）" value="STOP" />
@@ -569,15 +674,7 @@ function goBack() {
                 <el-form-item label="失败重试">
                   <el-switch
                     :model-value="store.selectedNode.data.retryOnFail ?? false"
-                    @update:model-value="
-                      (v: boolean | string | number) => {
-                        const node = store.selectedNode;
-                        const idx = store.nodes.findIndex((n) => n.id === node?.id);
-                        if (idx >= 0) {
-                          store.nodes[idx] = { ...store.nodes[idx], data: { ...store.nodes[idx].data, retryOnFail: Boolean(v) } };
-                        }
-                      }
-                    "
+                    @update:model-value="(v) => store.setNodeMeta(store.selectedNode?.id, 'retryOnFail', Boolean(v))"
                   />
                 </el-form-item>
                 <el-form-item label="重试次数">
@@ -585,30 +682,14 @@ function goBack() {
                     :model-value="store.selectedNode.data.retryMaxTries ?? 3"
                     :min="2"
                     :max="5"
-                    @update:model-value="
-                      (v) => {
-                        const node = store.selectedNode;
-                        const idx = store.nodes.findIndex((n) => n.id === node?.id);
-                        if (idx >= 0) {
-                          store.nodes[idx] = { ...store.nodes[idx], data: { ...store.nodes[idx].data, retryMaxTries: v } };
-                        }
-                      }
-                    "
+                    @update:model-value="(v) => store.setNodeMeta(store.selectedNode?.id, 'retryMaxTries', v)"
                   />
                 </el-form-item>
                 <el-form-item label="超时(秒)">
                   <el-input-number
                     :model-value="store.selectedNode.data.timeoutSeconds ?? 600"
                     :min="1"
-                    @update:model-value="
-                      (v) => {
-                        const node = store.selectedNode;
-                        const idx = store.nodes.findIndex((n) => n.id === node?.id);
-                        if (idx >= 0) {
-                          store.nodes[idx] = { ...store.nodes[idx], data: { ...store.nodes[idx].data, timeoutSeconds: v } };
-                        }
-                      }
-                    "
+                    @update:model-value="(v) => store.setNodeMeta(store.selectedNode?.id, 'timeoutSeconds', v)"
                   />
                 </el-form-item>
               </el-form>
@@ -616,6 +697,7 @@ function goBack() {
           </el-collapse>
           <div class="flow-designer__actions">
             <el-button type="primary" plain size="small" @click="openNodeTest">测试此节点</el-button>
+            <el-button plain size="small" @click="duplicateNode">复制</el-button>
             <el-button type="danger" plain size="small" @click="canvasRef?.onRemoveNode(store.selectedNode.id)"> 删除节点 </el-button>
           </div>
         </template>
@@ -692,6 +774,26 @@ function goBack() {
       </div>
       <el-alert v-if="nodeTestError" :title="nodeTestError" type="error" :closable="false" />
     </el-drawer>
+
+    <!-- 快速添加节点弹窗（空画布引导 / 顶栏按钮） -->
+    <el-dialog v-model="quickAddVisible" title="添加节点" width="520px" @closed="quickAddKeyword = ''">
+      <el-input v-model="quickAddKeyword" placeholder="搜索节点类型或名称..." clearable :prefix-icon="Search" class="flow-designer__quick-search" />
+      <div class="flow-designer__quick-list">
+        <template v-for="g in quickAddGroups" :key="g.cat.key">
+          <div class="flow-designer__quick-group">{{ g.cat.label }}</div>
+          <div v-for="cfg in g.items" :key="cfg.type" class="flow-designer__quick-item" @click="quickAdd(cfg.type)">
+            <el-icon :style="{ color: cfg.color }" class="flow-designer__quick-icon">
+              <component :is="cfg.icon" />
+            </el-icon>
+            <div class="flow-designer__quick-text">
+              <div class="flow-designer__quick-label">{{ cfg.label }}</div>
+              <div class="flow-designer__quick-desc">{{ cfg.description }}</div>
+            </div>
+          </div>
+        </template>
+        <div v-if="!quickAddGroups.length" class="flow-designer__quick-empty">无匹配节点</div>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
@@ -715,8 +817,157 @@ function goBack() {
   width: 220px;
 }
 
+/* 未保存标记（输入框尾部小圆点） */
+.flow-designer__dirty-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #f56c6c;
+  animation: flow-dirty-blink 1.2s ease-in-out infinite;
+}
+
+@keyframes flow-dirty-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
 .flow-designer__spacer {
   flex: 1;
+}
+
+/* 画布容器（空画布引导层定位基准） */
+.flow-designer__canvas-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+/* 空画布引导（对齐 n8n 空白画布） */
+.flow-designer__canvas-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.flow-designer__canvas-empty-box {
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 40px 56px;
+  border: 2px dashed #c0c4cc;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.75);
+}
+
+.flow-designer__canvas-empty-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.flow-designer__canvas-empty-desc {
+  font-size: 13px;
+  color: #909399;
+}
+
+.flow-designer__canvas-empty-hint {
+  font-size: 12px;
+  color: #c0c4cc;
+}
+
+/* 属性面板：节点类型说明 */
+.flow-designer__property-desc {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 0 12px 10px;
+  border-bottom: 1px solid #e4e7ed;
+}
+
+/* 节点类型标签：深色底 + 白色文字（原 plain 浅底蓝字与绿底对比不佳） */
+.flow-designer__property-tag {
+  color: #fff !important;
+  border-color: transparent !important;
+}
+
+.flow-designer__property-desc-text {
+  font-size: 12px;
+  color: #909399;
+  line-height: 1.6;
+  flex: 1;
+}
+
+/* 快速添加节点弹窗 */
+.flow-designer__quick-search {
+  margin-bottom: 10px;
+}
+
+.flow-designer__quick-list {
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+.flow-designer__quick-group {
+  font-size: 12px;
+  color: #909399;
+  font-weight: 600;
+  padding: 8px 4px 4px;
+}
+
+.flow-designer__quick-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.flow-designer__quick-item:hover {
+  background: #f0f7ff;
+}
+
+.flow-designer__quick-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.flow-designer__quick-text {
+  min-width: 0;
+}
+
+.flow-designer__quick-label {
+  font-size: 13px;
+  color: #303133;
+  font-weight: 500;
+}
+
+.flow-designer__quick-desc {
+  font-size: 11px;
+  color: #909399;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.flow-designer__quick-empty {
+  padding: 24px 0;
+  text-align: center;
+  color: #c0c4cc;
+  font-size: 12px;
 }
 
 .flow-designer__body {
