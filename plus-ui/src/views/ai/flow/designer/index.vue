@@ -156,6 +156,73 @@ const upstreamNodes = computed(() => {
 /** 节点高级设置是否展开（默认展开"节点配置"） */
 const advancedExpanded = ref<string[]>(['config']);
 
+/* ==================== 框选工具栏（多选后浮出：分组/删除） ==================== */
+
+/** 当前框选节点（FlowCanvas selection-change） */
+const selectedNodes = ref<Array<{ id: string; data: { label?: string } }>>([]);
+
+function onSelectionChange(nodes: any[]) {
+  selectedNodes.value = nodes ?? [];
+}
+
+/** 框选分组（Ctrl+G 同逻辑） */
+function groupSelected() {
+  if (selectedNodes.value.length < 2) {
+    ElMessage.info('请至少框选 2 个节点');
+    return;
+  }
+  store.createGroup(selectedNodes.value.map((n) => n.id));
+  selectedNodes.value = [];
+}
+
+/** 框选删除（画布已删，仅清状态） */
+function removeSelected() {
+  selectedNodes.value = [];
+}
+
+/* ==================== 快捷键帮助弹窗（? 键 / 顶栏按钮） ==================== */
+
+const shortcutHelpVisible = ref(false);
+
+/** 快捷键清单（与 FlowCanvas onKeyDown 实现一致） */
+const SHORTCUTS: Array<{ keys: string; desc: string }> = [
+  { keys: 'Ctrl+S', desc: '保存流程' },
+  { keys: 'Ctrl+Enter', desc: '测试运行流程' },
+  { keys: 'Ctrl+C / Ctrl+V', desc: '复制 / 粘贴节点（含连边）' },
+  { keys: 'Ctrl+D', desc: '复制选中节点' },
+  { keys: 'Ctrl+A', desc: '全选节点' },
+  { keys: 'Ctrl+G', desc: '框选节点分组' },
+  { keys: 'Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y', desc: '撤销 / 重做' },
+  { keys: 'Delete', desc: '删除选中节点（或解除选中分组）' },
+  { keys: '↑ ↓ ← →', desc: '方向键在兄弟/上下游节点间导航' },
+  { keys: 'Shift+← / Shift+→', desc: '批量选中全部上游 / 下游节点' },
+  { keys: 'Shift+S', desc: '新建便利贴' },
+  { keys: '?', desc: '打开快捷键帮助' }
+];
+
+/** 画布节点点击（单击选中；点击空白清空选中 + 框选工具栏 + 分组选中） */
+function onCanvasNodeClick(n: any) {
+  store.selectedNodeId = n ? n.id : null;
+  if (!n) {
+    store.selectedGroupId = null;
+    selectedNodes.value = [];
+  }
+}
+
+/** 节点 hover 工具栏动作（test/duplicate/delete；focus 已在 FlowCanvas 就地处理） */
+function onNodeAction(payload: { nodeId: string; action: string }) {
+  const node = store.nodes.find((n) => n.id === payload.nodeId);
+  if (!node) return;
+  store.selectedNodeId = payload.nodeId;
+  if (payload.action === 'test') {
+    openNodeTest();
+  } else if (payload.action === 'duplicate') {
+    duplicateNode();
+  } else if (payload.action === 'delete') {
+    canvasRef.value?.onRemoveNode(payload.nodeId);
+  }
+}
+
 /** NDV：节点运行数据查看抽屉 */
 const ndvVisible = ref(false);
 const ndvNode = ref<{ id: string; label: string; run: any } | null>(null);
@@ -592,11 +659,15 @@ onBeforeUnmount(() => {
       </el-input>
       <div class="flow-designer__spacer" />
       <el-button @click="quickAddVisible = true">+ 添加节点</el-button>
+      <el-button @click="store.addNote()">便利贴</el-button>
       <el-button :loading="saving" @click="saveFlow()">保存</el-button>
       <el-button type="primary" @click="publish">发布</el-button>
       <el-button @click="autoLayout">自动布局</el-button>
       <el-button type="success" :disabled="running" @click="run">测试运行</el-button>
       <el-button type="danger" :disabled="!running || !store.currentInstanceId" @click="stop"> 停止 </el-button>
+      <el-tooltip content="快捷键帮助 (?)" placement="bottom">
+        <el-button circle @click="shortcutHelpVisible = true">?</el-button>
+      </el-tooltip>
     </div>
 
     <div class="flow-designer__body">
@@ -610,9 +681,18 @@ onBeforeUnmount(() => {
           :edges="store.edges"
           @update:nodes="onNodesChange"
           @update:edges="onEdgesChange"
-          @node-click="(n) => (store.selectedNodeId = n ? n.id : null)"
+          @node-click="onCanvasNodeClick"
           @node-dblclick="onNodeDoubleClick"
+          @selection-change="onSelectionChange"
+          @node-action="onNodeAction"
+          @shortcut-help="shortcutHelpVisible = true"
         />
+        <!-- 框选工具栏（≥2 节点时浮出：分组/删除） -->
+        <div v-if="selectedNodes.length >= 2" class="flow-designer__selection-toolbar">
+          <span class="flow-designer__selection-count">{{ selectedNodes.length }} 个节点已选</span>
+          <el-button type="primary" plain size="small" @click="groupSelected">分组 (Ctrl+G)</el-button>
+          <el-button type="danger" plain size="small" @click="removeSelected">删除</el-button>
+        </div>
         <!-- 空画布引导（对齐 n8n 空白画布） -->
         <div v-if="!store.nodes.length && !loading" class="flow-designer__canvas-empty">
           <div class="flow-designer__canvas-empty-box">
@@ -794,6 +874,18 @@ onBeforeUnmount(() => {
         <div v-if="!quickAddGroups.length" class="flow-designer__quick-empty">无匹配节点</div>
       </div>
     </el-dialog>
+
+    <!-- 快捷键帮助弹窗 -->
+    <el-dialog v-model="shortcutHelpVisible" title="快捷键" width="520px">
+      <el-table :data="SHORTCUTS" border size="small">
+        <el-table-column label="快捷键" prop="keys" width="200">
+          <template #default="{ row }">
+            <code class="flow-designer__shortcut-keys">{{ row.keys }}</code>
+          </template>
+        </el-table-column>
+        <el-table-column label="功能" prop="desc" />
+      </el-table>
+    </el-dialog>
   </div>
 </template>
 
@@ -839,6 +931,28 @@ onBeforeUnmount(() => {
 
 .flow-designer__spacer {
   flex: 1;
+}
+
+/* 框选工具栏（画布顶部浮出） */
+.flow-designer__selection-toolbar {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: #fff;
+  border: 1px solid #e4e7ed;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+.flow-designer__selection-count {
+  font-size: 12px;
+  color: #606266;
 }
 
 /* 画布容器（空画布引导层定位基准） */
@@ -968,6 +1082,15 @@ onBeforeUnmount(() => {
   text-align: center;
   color: #c0c4cc;
   font-size: 12px;
+}
+
+.flow-designer__shortcut-keys {
+  font-size: 12px;
+  color: #409eff;
+  background: #f0f7ff;
+  padding: 2px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
 }
 
 .flow-designer__body {

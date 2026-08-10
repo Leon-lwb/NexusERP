@@ -11,6 +11,8 @@ import '@vue-flow/minimap/dist/style.css';
 import type { Connection, Edge, Node, NodeMouseEvent } from '@vue-flow/core';
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import FlowNode from './FlowNode.vue';
+import FlowNodeGroup from './FlowNodeGroup.vue';
+import FlowNote from './FlowNote.vue';
 import { getNodeTypeConfig } from '../nodeTypes';
 import { useFlowStore, type FlowCanvasNode } from './useFlowStore';
 
@@ -39,10 +41,47 @@ const emit = defineEmits<{
   (e: 'update:edges', edges: Edge[]): void;
   (e: 'node-click', node: FlowCanvasNode): void;
   (e: 'node-dblclick', node: FlowCanvasNode): void;
+  /** 框选变化（多选状态暴露给父组件：选择工具栏/分组） */
+  (e: 'selection-change', nodes: FlowCanvasNode[]): void;
+  /** 节点 hover 工具栏动作（test/duplicate/delete 由父组件处理） */
+  (e: 'node-action', payload: { nodeId: string; action: string }): void;
+  /** 快捷键帮助请求（? 键） */
+  (e: 'shortcut-help'): void;
 }>();
 
 const store = useFlowStore();
-const { screenToFlowCoordinate, viewport, getSelectedNodes, addSelectedNodes } = useVueFlow();
+const { screenToFlowCoordinate, viewport, fitBounds, getSelectedNodes, addSelectedNodes, removeSelectedNodes } = useVueFlow();
+
+/* ==================== 节点 hover 工具栏动作（事件总线） ==================== */
+
+/** 接收 FlowNode 浮动工具栏动作：focus 就地 fitBounds，其余转发父组件 */
+function onNodeActionEvent(e: Event) {
+  const detail = (e as CustomEvent).detail;
+  if (!detail?.nodeId) return;
+  if (detail.action === 'focus') {
+    const node = props.nodes.find((n) => n.id === detail.nodeId);
+    if (node) {
+      const bounds = {
+        x: node.position.x,
+        y: node.position.y,
+        width: 160,
+        height: 80
+      };
+      fitBounds(bounds, { padding: 0.4 });
+    }
+    return;
+  }
+  emit('node-action', { nodeId: detail.nodeId, action: detail.action });
+}
+
+onMounted(() => {
+  window.addEventListener('keydown', onKeyDown);
+  window.addEventListener('flow-node-action', onNodeActionEvent);
+});
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', onKeyDown);
+  window.removeEventListener('flow-node-action', onNodeActionEvent);
+});
 
 /* ==================== 时间线播放小球（跟随当前播放节点移动） ==================== */
 
@@ -72,7 +111,7 @@ watch(
 );
 
 /** slot 注册自定义节点（n8n 同款方式，非 nodeTypes 对象） */
-const nodeTypes = { 'flow-node': FlowNode };
+const nodeTypes = { 'flow-node': FlowNode, 'flow-note': FlowNote };
 
 /** 连线校验：source 与 target 的 handle type 必须相反（outputs→inputs） */
 function isValidConnection(connection: Connection): boolean {
@@ -101,14 +140,47 @@ function onPaneClick() {
   emit('node-click', null as unknown as FlowCanvasNode);
 }
 
-/** 节点点击：通知父组件（选中） */
+/** 节点点击：通知父组件（选中）+ 同步内部选中（单击=单选清工具栏；Ctrl+点击追加走内部状态） */
 function onNodeClick(event: NodeMouseEvent) {
   emit('node-click', event.node);
+  emit('selection-change', getSelectedNodeList());
 }
 
 /** 节点双击：通知父组件（查看运行数据 NDV） */
 function onNodeDoubleClick(event: NodeMouseEvent) {
   emit('node-dblclick', event.node);
+}
+
+/* ==================== 多选/框选（选择工具栏 + 分组） ==================== */
+
+/** 框选结束（@vue-flow 事件名是 selection-end，SelectionChange 参数含 nodes/edges） */
+function onSelectionEnd(e: { nodes: FlowCanvasNode[] }) {
+  emit('selection-change', e.nodes ?? []);
+}
+
+/* ==================== 节点分组（Ctrl+G 创建 / Delete 解除选中组） ==================== */
+
+/** 用当前选中节点创建分组（≥2 个才创建） */
+function groupSelection() {
+  const selected = getSelectedNodeList();
+  if (selected.length < 2) {
+    store.selectedGroupId = null;
+    return;
+  }
+  const group = store.createGroup(selected.map((n) => n.id));
+  if (group) {
+    // 清空节点选中态（避免组内节点高亮干扰组选中）+ 通知父组件收起框选工具栏
+    addSelectedNodes([] as never[]);
+    emit('selection-change', []);
+  }
+}
+
+/** 鼠标悬停节点/边：记录 hover（上下游路径高亮） */
+function onNodeMouseEnter(event: NodeMouseEvent) {
+  store.hoverNodeId = event.node.id;
+}
+function onNodeMouseLeave() {
+  store.hoverNodeId = null;
 }
 
 /** 节点拖入（NodePalette HTML5 draggable） */
@@ -140,7 +212,7 @@ function onDragOver(event: DragEvent) {
   }
 }
 
-/** 节点拖拽结束：入撤销栈 + 同步 position 到 store */
+/** 节点拖拽结束：入撤销栈 + 同步 position 到 store + 重算分组包围框 */
 function onNodeDragStop(event: { node: FlowCanvasNode }) {
   const node = event.node;
   const index = props.nodes.findIndex((n) => n.id === node.id);
@@ -149,6 +221,7 @@ function onNodeDragStop(event: { node: FlowCanvasNode }) {
     const updated = [...props.nodes];
     updated[index] = { ...updated[index], position: { ...node.position } };
     emit('update:nodes', updated);
+    store.syncGroupBounds();
   }
 }
 
@@ -189,11 +262,101 @@ function selectAll() {
   addSelectedNodes(props.nodes as unknown as never[]);
 }
 
+/* ==================== 方向键遍历导航（对齐 n8n useCanvasTraversal 简化版） ==================== */
+
+/** 按 Y 坐标排序（上游取最近=Y 最大，下游取最近=Y 最小） */
+function byY(list: FlowCanvasNode[], dir: 'up' | 'down'): FlowCanvasNode[] {
+  return [...list].sort((a, b) => (dir === 'down' ? a.position.y - b.position.y : b.position.y - a.position.y));
+}
+
+/** 方向键选中：← 上游 / → 下游 / ↑↓ 兄弟（共享 target 或 source，按 Y） */
+function navigateDir(dir: 'up' | 'down' | 'left' | 'right') {
+  const current = store.selectedNodeId;
+  if (!current) return;
+  const cur = props.nodes.find((n) => n.id === current);
+  if (!cur) return;
+  let next: FlowCanvasNode | undefined;
+  if (dir === 'left') {
+    const ups = props.nodes.filter((n) => props.edges.some((e) => e.target === current && e.source === n.id));
+    next = byY(ups, 'up')[0];
+  } else if (dir === 'right') {
+    const downs = props.nodes.filter((n) => props.edges.some((e) => e.source === current && e.target === n.id));
+    next = byY(downs, 'down')[0];
+  } else {
+    // 兄弟：共享 target（同目标的上游们）或共享 source（同源的下游们）
+    const brotherIds = new Set<string>();
+    props.edges.forEach((e) => {
+      if (e.target === current || e.source === current) {
+        props.edges.forEach((e2) => {
+          if (e2.target === e.target && e2.target === current) brotherIds.add(e2.source);
+          if (e2.source === e.source && e2.source === current) brotherIds.add(e2.target);
+        });
+      }
+    });
+    const brothers = props.nodes.filter((n) => brotherIds.has(n.id) && n.id !== current);
+    const sorted = byY(brothers, dir);
+    const curY = cur.position.y;
+    // 取目标方向最近的（↑ 取 Y 小于当前的最大值，↓ 取 Y 大于当前的最小值）；无则取该方向最后一个
+    next = sorted.find((n) => (dir === 'up' ? n.position.y < curY : n.position.y > curY)) ?? sorted[sorted.length - 1];
+  }
+  if (next) {
+    // 设置应用选中态 + 画布高亮：清空旧选中，仅选中目标（VueFlow 内部选中状态决定节点高亮）
+    removeSelectedNodes(getSelectedNodeList() as never[]);
+    store.selectedNodeId = next.id;
+    addSelectedNodes([next] as unknown as never[]);
+    emit('node-click', next);
+  }
+}
+
+/** Shift+方向键：批量选中上游/下游全部节点 */
+function selectPath(dir: 'left' | 'right') {
+  const current = store.selectedNodeId;
+  if (!current) return;
+  const ids = dir === 'left' ? store.getUpstreamIds(current) : store.getDownstreamIds(current);
+  const list = props.nodes.filter((n) => ids.has(n.id));
+  if (list.length) addSelectedNodes(list as unknown as never[]);
+}
+
 function onKeyDown(e: KeyboardEvent) {
   if (props.readonly) return;
   // 输入框/文本域聚焦时不拦截（保留编辑行为）
   const target = e.target as HTMLElement | null;
   if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return;
+  // Delete：优先解除选中的分组
+  if (e.key === 'Delete' && store.selectedGroupId) {
+    store.removeGroup(store.selectedGroupId);
+    e.preventDefault();
+    return;
+  }
+  // 方向键导航（无修饰键）
+  const dirKey = e.key.toLowerCase();
+  if (!e.ctrlKey && !e.metaKey) {
+    if (dirKey === 'arrowup' || dirKey === 'arrowdown' || dirKey === 'arrowleft' || dirKey === 'arrowright') {
+      if (e.shiftKey) {
+        if (dirKey === 'arrowleft' || dirKey === 'arrowright') {
+          selectPath(dirKey === 'arrowleft' ? 'left' : 'right');
+          e.preventDefault();
+          return;
+        }
+      } else {
+        navigateDir(dirKey.slice(5) as 'up' | 'down' | 'left' | 'right');
+        e.preventDefault();
+        return;
+      }
+    }
+    // Shift+S：新建便利贴
+    if (e.shiftKey && e.key.toLowerCase() === 's') {
+      store.addNote();
+      e.preventDefault();
+      return;
+    }
+    // ?：快捷键帮助
+    if (e.key === '?') {
+      emit('shortcut-help');
+      e.preventDefault();
+      return;
+    }
+  }
   const mod = e.ctrlKey || e.metaKey;
   if (!mod) return;
   const key = e.key.toLowerCase();
@@ -206,6 +369,9 @@ function onKeyDown(e: KeyboardEvent) {
   } else if (key === 'd') {
     copy();
     paste();
+    e.preventDefault();
+  } else if (key === 'g') {
+    groupSelection();
     e.preventDefault();
   } else if (key === 'z') {
     if (e.shiftKey) {
@@ -222,9 +388,6 @@ function onKeyDown(e: KeyboardEvent) {
     e.preventDefault();
   }
 }
-
-onMounted(() => window.addEventListener('keydown', onKeyDown));
-onBeforeUnmount(() => window.removeEventListener('keydown', onKeyDown));
 
 defineExpose({ onRemoveNode });
 </script>
@@ -251,14 +414,22 @@ defineExpose({ onRemoveNode });
       @node-double-click="onNodeDoubleClick"
       @node-drag-stop="onNodeDragStop"
       @node-key-delete="(e) => onRemoveNode(e.node.id)"
+      @selection-end="onSelectionEnd"
+      @node-mouse-enter="onNodeMouseEnter"
+      @node-mouse-leave="onNodeMouseLeave"
     >
       <template #node-flow-node="nodeProps">
         <FlowNode v-bind="nodeProps" />
+      </template>
+      <template #node-flow-note="noteProps">
+        <FlowNote v-bind="noteProps" />
       </template>
       <Background pattern-color="#e4e7ed" :gap="20" />
       <Controls v-if="!props.readonly" />
       <MiniMap pannable zoomable />
     </VueFlow>
+    <!-- 节点分组覆盖层（flow 坐标经 viewport 投影，缩放平移实时跟随） -->
+    <FlowNodeGroup v-for="g in store.groups" :key="g.id" :group="g" :viewport="viewport" :selected="store.selectedGroupId === g.id" />
     <!-- 时间线播放小球（绝对定位于画布容器，跟随当前播放节点移动） -->
     <div v-if="props.playingNodeId" class="flow-canvas__ball" :style="{ transform: `translate(${ballPos.x}px, ${ballPos.y}px)` }">
       <span class="flow-canvas__ball-dot"></span>

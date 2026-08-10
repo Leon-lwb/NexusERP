@@ -2,6 +2,7 @@
 import { computed } from 'vue';
 import { Handle, Position } from '@vue-flow/core';
 import type { NodeProps } from '@vue-flow/core';
+import { Aim, CopyDocument, Delete, VideoPlay } from '@element-plus/icons-vue';
 import { getNodeTypeConfig } from '../nodeTypes';
 import { useFlowStore } from './useFlowStore';
 
@@ -47,12 +48,47 @@ const statusClass = computed(() => {
   }
 });
 
+/** 路径高亮 class（hover 时：上游蓝框 / 下游绿框 / 自身加强 / 无关调暗） */
+const pathClass = computed(() => {
+  switch (pathRole.value) {
+    case 'upstream':
+      return 'flow-node--path-up';
+    case 'downstream':
+      return 'flow-node--path-down';
+    case 'self':
+      return 'flow-node--path-self';
+    case 'dimmed':
+      return 'flow-node--path-dim';
+    default:
+      return '';
+  }
+});
+
 /** 时间线重放：是否当前播放节点（显示播放徽标） */
 const isPlaying = computed(() => store.playingNodeId === props.id);
+
+/**
+ * 上下游路径高亮角色（hover 节点时）：
+ * self=hover 目标 / upstream=上游链 / downstream=下游链 / dimmed=无关（调暗）
+ */
+const pathRole = computed<'self' | 'upstream' | 'downstream' | 'dimmed' | 'none'>(() => {
+  const hoverId = store.hoverNodeId;
+  if (!hoverId || hoverId === props.id) return hoverId === props.id ? 'self' : 'none';
+  const upstream = store.getUpstreamIds(hoverId);
+  if (upstream.has(props.id)) return 'upstream';
+  const downstream = store.getDownstreamIds(hoverId);
+  if (downstream.has(props.id)) return 'downstream';
+  return 'dimmed';
+});
+
+/** hover 浮动工具栏（事件总线 → FlowCanvas/designer 处理：测试/复制/删除/聚焦） */
+function toolbarAction(action: 'test' | 'duplicate' | 'delete' | 'focus') {
+  window.dispatchEvent(new CustomEvent('flow-node-action', { detail: { nodeId: props.id, action } }));
+}
 </script>
 
 <template>
-  <div class="flow-node" :class="[statusClass, { 'is-selected': props.selected }]">
+  <div class="flow-node" :class="[statusClass, pathClass, { 'is-selected': props.selected }]">
     <!-- 合并节点：多输入端口（按实际入边数动态渲染，带序号标签） -->
     <template v-if="props.data.type === 'merge'">
       <template v-for="i in mergeInputCount" :key="'in' + i">
@@ -137,6 +173,21 @@ const isPlaying = computed(() => store.playingNodeId === props.id);
     <div v-if="isPlaying" class="flow-node__playing">
       <span class="flow-node__playing-dot"></span>
       <span class="flow-node__playing-text">播放中</span>
+    </div>
+    <!-- hover 浮动工具栏（对齐 n8n CanvasNodeToolbar） -->
+    <div class="flow-node__toolbar">
+      <el-tooltip content="测试此节点" placement="top" :show-after="300">
+        <el-icon class="flow-node__toolbar-btn" @click.stop="toolbarAction('test')"><VideoPlay /></el-icon>
+      </el-tooltip>
+      <el-tooltip content="复制节点" placement="top" :show-after="300">
+        <el-icon class="flow-node__toolbar-btn" @click.stop="toolbarAction('duplicate')"><CopyDocument /></el-icon>
+      </el-tooltip>
+      <el-tooltip content="聚焦节点" placement="top" :show-after="300">
+        <el-icon class="flow-node__toolbar-btn" @click.stop="toolbarAction('focus')"><Aim /></el-icon>
+      </el-tooltip>
+      <el-tooltip content="删除节点" placement="top" :show-after="300">
+        <el-icon class="flow-node__toolbar-btn is-danger" @click.stop="toolbarAction('delete')"><Delete /></el-icon>
+      </el-tooltip>
     </div>
   </div>
 </template>
@@ -283,6 +334,72 @@ const isPlaying = computed(() => store.playingNodeId === props.id);
 .flow-node--skipped {
   opacity: 0.5;
   filter: grayscale(1);
+}
+
+/* ==================== 上下游路径高亮（hover 节点时） ==================== */
+
+.flow-node--path-dim {
+  opacity: 0.28;
+  filter: grayscale(0.5);
+}
+
+.flow-node--path-up {
+  box-shadow:
+    0 0 0 2px #409eff,
+    0 2px 8px rgba(64, 158, 255, 0.25);
+}
+
+.flow-node--path-down {
+  box-shadow:
+    0 0 0 2px #52c41a,
+    0 2px 8px rgba(82, 196, 26, 0.25);
+}
+
+.flow-node--path-self {
+  box-shadow:
+    0 0 0 2px #409eff,
+    0 0 0 5px rgba(64, 158, 255, 0.15),
+    0 2px 8px rgba(64, 158, 255, 0.35);
+}
+
+/* ==================== hover 浮动工具栏（对齐 n8n CanvasNodeToolbar） ==================== */
+
+.flow-node__toolbar {
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  transform: translate(-50%, -100%);
+  display: none;
+  align-items: center;
+  gap: 2px;
+  padding: 3px 6px;
+  background: #fff;
+  border: 1px solid #e4e7ed;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  z-index: 20;
+}
+
+.flow-node:hover .flow-node__toolbar {
+  display: flex;
+}
+
+.flow-node__toolbar-btn {
+  font-size: 14px;
+  color: #606266;
+  cursor: pointer;
+  padding: 3px;
+  border-radius: 4px;
+}
+
+.flow-node__toolbar-btn:hover {
+  background: #f0f7ff;
+  color: #409eff;
+}
+
+.flow-node__toolbar-btn.is-danger:hover {
+  background: #fef0f0;
+  color: #f56c6c;
 }
 
 /* 运行摘要（底部小字） */

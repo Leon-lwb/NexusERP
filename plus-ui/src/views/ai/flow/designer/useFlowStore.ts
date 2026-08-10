@@ -28,6 +28,18 @@ export interface FlowCanvasNode {
   position: { x: number; y: number };
   data: FlowNodeData;
   selected?: boolean;
+  /** 折叠分组内节点：VueFlow 不渲染但保留在数据中（保存时仍序列化，属流程一部分） */
+  hidden?: boolean;
+}
+
+/** 节点分组（对齐 n8n node groups 的简化版：包围框 + 标题栏，成员为普通节点） */
+export interface FlowGroup {
+  id: string;
+  name: string;
+  nodeIds: string[];
+  collapsed: boolean;
+  /** 包围框（flow 坐标，随成员/拖拽更新） */
+  bounds: { x: number; y: number; width: number; height: number };
 }
 
 export const useFlowStore = defineStore('aiFlow', () => {
@@ -61,6 +73,12 @@ export const useFlowStore = defineStore('aiFlow', () => {
   const flowId = ref<string | number | null>(null);
   /** 是否未保存变更（返回/离开时确认；保存成功或加载流程后清除） */
   const dirty = ref(false);
+  /** 节点分组（视图状态，不随 config 保存） */
+  const groups = ref<FlowGroup[]>([]);
+  /** 当前选中的分组 ID（高亮边框；Delete 解除分组） */
+  const selectedGroupId = ref<string | null>(null);
+  /** hover 节点 ID（上下游路径高亮用） */
+  const hoverNodeId = ref<string | null>(null);
 
   /** 选中节点 */
   const selectedNode = computed(() => {
@@ -76,6 +94,9 @@ export const useFlowStore = defineStore('aiFlow', () => {
     nodeStatusMap.value = {};
     currentInstanceId.value = null;
     nodeRunCache.value = {};
+    groups.value = [];
+    selectedGroupId.value = null;
+    hoverNodeId.value = null;
   }
 
   /** 设置节点运行快照（NDV 查看用，按 nodeId 覆盖为最新轮） */
@@ -89,20 +110,23 @@ export const useFlowStore = defineStore('aiFlow', () => {
    */
   function toConfigJson(): string {
     const data = {
-      nodes: nodes.value.map((n) => ({
-        id: n.id,
-        type: n.data.type,
-        position: [n.position.x, n.position.y],
-        data: {
-          label: n.data.label,
-          ...(n.data.config ? { config: n.data.config } : {}),
-          ...(n.data.onError ? { onError: n.data.onError } : {}),
-          ...(n.data.retryOnFail !== undefined ? { retryOnFail: n.data.retryOnFail } : {}),
-          ...(n.data.retryMaxTries !== undefined ? { retryMaxTries: n.data.retryMaxTries } : {}),
-          ...(n.data.waitBetweenTries !== undefined ? { waitBetweenTries: n.data.waitBetweenTries } : {}),
-          ...(n.data.timeoutSeconds !== undefined ? { timeoutSeconds: n.data.timeoutSeconds } : {})
-        }
-      })),
+      // 便利贴是本地视图标注，不随流程保存（后端无此节点类型）
+      nodes: nodes.value
+        .filter((n) => n.data.type !== 'flow-note')
+        .map((n) => ({
+          id: n.id,
+          type: n.data.type,
+          position: [n.position.x, n.position.y],
+          data: {
+            label: n.data.label,
+            ...(n.data.config ? { config: n.data.config } : {}),
+            ...(n.data.onError ? { onError: n.data.onError } : {}),
+            ...(n.data.retryOnFail !== undefined ? { retryOnFail: n.data.retryOnFail } : {}),
+            ...(n.data.retryMaxTries !== undefined ? { retryMaxTries: n.data.retryMaxTries } : {}),
+            ...(n.data.waitBetweenTries !== undefined ? { waitBetweenTries: n.data.waitBetweenTries } : {}),
+            ...(n.data.timeoutSeconds !== undefined ? { timeoutSeconds: n.data.timeoutSeconds } : {})
+          }
+        })),
       edges: edges.value.map(
         (e: any): Record<string, unknown> => ({
           id: e.id,
@@ -152,6 +176,10 @@ export const useFlowStore = defineStore('aiFlow', () => {
         markerEnd: 'arrowclosed',
         ...(e.loop ? { loop: true } : {})
       }));
+      // 分组/折叠是视图状态，不随配置保存——加载时重置
+      groups.value = [];
+      selectedGroupId.value = null;
+      hoverNodeId.value = null;
     } catch (e) {
       console.error('[Flow] config_json 解析失败:', e);
       nodes.value = [];
@@ -231,6 +259,152 @@ export const useFlowStore = defineStore('aiFlow', () => {
     selectedNodeId.value = node.id;
     dirty.value = true;
     return node;
+  }
+
+  /** 添加便利贴（本地注释，不随 config 保存） */
+  function addNote() {
+    const notes = nodes.value.filter((n) => n.data.type === 'flow-note').length;
+    const node: FlowCanvasNode = {
+      id: `note_${Date.now()}`,
+      type: 'flow-note',
+      position: { x: 220 + notes * 30, y: 140 + notes * 30 },
+      data: { label: '便利贴', type: 'flow-note' }
+    };
+    nodes.value = [...nodes.value, node];
+    selectedNodeId.value = node.id;
+    dirty.value = true;
+    return node;
+  }
+
+  /* ==================== 节点分组（对齐 n8n node groups 简化版） ==================== */
+
+  /** 节点默认尺寸（与 FlowNode .flow-node 一致，包围框计算用） */
+  const NODE_W = 160;
+  const NODE_H = 80;
+
+  /** 计算一组节点的包围框（flow 坐标） */
+  function computeGroupBounds(ids: string[]): { x: number; y: number; width: number; height: number } {
+    const list = nodes.value.filter((n) => ids.includes(n.id));
+    if (!list.length) return { x: 0, y: 0, width: NODE_W, height: NODE_H };
+    const minX = Math.min(...list.map((n) => n.position.x));
+    const minY = Math.min(...list.map((n) => n.position.y));
+    const maxX = Math.max(...list.map((n) => n.position.x + NODE_W));
+    const maxY = Math.max(...list.map((n) => n.position.y + NODE_H));
+    const PAD = 26; // 标题栏 + 边距
+    return { x: minX - 10, y: minY - PAD - 4, width: maxX - minX + 20, height: maxY - minY + PAD + 14 };
+  }
+
+  /** 创建分组（选中 ≥2 节点）；返回分组或 null */
+  function createGroup(ids: string[]): FlowGroup | null {
+    const valid = ids.filter((id) => nodes.value.some((n) => n.id === id) && !groups.value.some((g) => g.nodeIds.includes(id)));
+    if (valid.length < 2) return null;
+    const group: FlowGroup = {
+      id: `group_${Date.now()}`,
+      name: `分组 ${groups.value.length + 1}`,
+      nodeIds: valid,
+      collapsed: false,
+      bounds: computeGroupBounds(valid)
+    };
+    groups.value = [...groups.value, group];
+    selectedGroupId.value = group.id;
+    dirty.value = true;
+    return group;
+  }
+
+  /** 取消分组（节点保留在画布） */
+  function removeGroup(groupId: string) {
+    const g = groups.value.find((x) => x.id === groupId);
+    if (!g) return;
+    // 折叠态取消：恢复成员可见
+    if (g.collapsed) {
+      nodes.value = nodes.value.map((n) => (g.nodeIds.includes(n.id) ? { ...n, hidden: false } : n));
+      edges.value = edges.value.map((e) => {
+        const linked = g.nodeIds.includes(e.source) || g.nodeIds.includes(e.target);
+        return linked ? { ...e, hidden: false } : e;
+      });
+    }
+    groups.value = groups.value.filter((x) => x.id !== groupId);
+    if (selectedGroupId.value === groupId) selectedGroupId.value = null;
+    dirty.value = true;
+  }
+
+  /** 折叠/展开分组（组内节点与关联边 hidden，VueFlow 不渲染但数据保留） */
+  function toggleGroupCollapse(groupId: string) {
+    const g = groups.value.find((x) => x.id === groupId);
+    if (!g) return;
+    const collapsed = !g.collapsed;
+    groups.value = groups.value.map((x) => (x.id === groupId ? { ...x, collapsed } : x));
+    nodes.value = nodes.value.map((n) => (g.nodeIds.includes(n.id) ? { ...n, hidden: collapsed } : n));
+    edges.value = edges.value.map((e) => {
+      const linked = g.nodeIds.includes(e.source) || g.nodeIds.includes(e.target);
+      return linked ? { ...e, hidden: collapsed } : e;
+    });
+    dirty.value = true;
+  }
+
+  /** 重命名分组 */
+  function renameGroup(groupId: string, name: string) {
+    groups.value = groups.value.map((x) => (x.id === groupId ? { ...x, name: name.trim() || x.name } : x));
+    dirty.value = true;
+  }
+
+  /** 拖拽整组：组内节点 position 整体偏移 + 组框同步（flow 坐标增量） */
+  function moveGroup(groupId: string, dx: number, dy: number) {
+    const g = groups.value.find((x) => x.id === groupId);
+    if (!g || (dx === 0 && dy === 0)) return;
+    const ids = new Set(g.nodeIds);
+    nodes.value = nodes.value.map((n) => (ids.has(n.id) ? { ...n, position: { x: n.position.x + dx, y: n.position.y + dy } } : n));
+    groups.value = groups.value.map((x) => (x.id === groupId ? { ...x, bounds: { ...x.bounds, x: x.bounds.x + dx, y: x.bounds.y + dy } } : x));
+    dirty.value = true;
+  }
+
+  /** 成员拖动/布局后重算组包围框（保持组框贴合成员） */
+  function syncGroupBounds() {
+    groups.value = groups.value.map((g) => ({ ...g, bounds: computeGroupBounds(g.nodeIds) }));
+  }
+
+  /** 组内节点状态聚合摘要（标题栏徽标：成功/失败/运行计数） */
+  function groupStatusSummary(groupId: string): { success: number; failed: number; running: number } {
+    const g = groups.value.find((x) => x.id === groupId);
+    if (!g) return { success: 0, failed: 0, running: 0 };
+    let success = 0;
+    let failed = 0;
+    let running = 0;
+    for (const id of g.nodeIds) {
+      const s = nodeStatusMap.value[id];
+      if (s === 'SUCCEEDED') success++;
+      else if (s === 'FAILED') failed++;
+      else if (s === 'RUNNING') running++;
+    }
+    return { success, failed, running };
+  }
+
+  /** 上下游链路（路径高亮用，递归含 loop 边去重） */
+  function getUpstreamIds(nodeId: string): Set<string> {
+    const result = new Set<string>();
+    const stack = [...edges.value.filter((e: any) => e.target === nodeId).map((e: any) => e.source)];
+    while (stack.length) {
+      const id = stack.pop()!;
+      if (result.has(id)) continue;
+      result.add(id);
+      edges.value.forEach((e: any) => {
+        if (e.target === id && !result.has(e.source)) stack.push(e.source);
+      });
+    }
+    return result;
+  }
+  function getDownstreamIds(nodeId: string): Set<string> {
+    const result = new Set<string>();
+    const stack = [...edges.value.filter((e: any) => e.source === nodeId).map((e: any) => e.target)];
+    while (stack.length) {
+      const id = stack.pop()!;
+      if (result.has(id)) continue;
+      result.add(id);
+      edges.value.forEach((e: any) => {
+        if (e.source === id && !result.has(e.target)) stack.push(e.target);
+      });
+    }
+    return result;
   }
 
   /** 设置节点运行摘要（输出/错误，显示在节点卡片底部） */
@@ -355,6 +529,9 @@ export const useFlowStore = defineStore('aiFlow', () => {
     flowName,
     flowId,
     dirty,
+    groups,
+    selectedGroupId,
+    hoverNodeId,
     selectedNode,
     reset,
     toConfigJson,
@@ -369,6 +546,16 @@ export const useFlowStore = defineStore('aiFlow', () => {
     markDirty,
     clearDirty,
     addNode,
+    addNote,
+    createGroup,
+    removeGroup,
+    toggleGroupCollapse,
+    renameGroup,
+    moveGroup,
+    syncGroupBounds,
+    groupStatusSummary,
+    getUpstreamIds,
+    getDownstreamIds,
     snapshot,
     undo,
     redo,
