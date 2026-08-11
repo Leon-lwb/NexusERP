@@ -60,9 +60,9 @@ public interface IAiFlowService {
      * 新增流程（存草稿）
      *
      * @param bo 流程业务对象
-     * @return 影响行数
+     * @return 新流程ID（雪花主键，供前端跳转设计器）
      */
-    int insertByBo(AiFlowBo bo);
+    Long insertByBo(AiFlowBo bo);
 
     /**
      * 修改流程（仅 DRAFT/OFFLINE 可编辑）

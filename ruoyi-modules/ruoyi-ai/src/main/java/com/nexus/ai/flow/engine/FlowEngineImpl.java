@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.nexus.ai.context.AiRequestContext;
 import com.nexus.ai.flow.model.FlowEdgeDef;
 import com.nexus.ai.flow.model.FlowGraph;
@@ -100,6 +99,306 @@ public class FlowEngineImpl implements FlowEngine {
         final Long userIdF = userId;
         aiExecutor.execute(() -> runFlow(flow, graph, instanceId, input, tenantIdStr, userIdF, userName));
         return instanceId;
+    }
+
+    @Override
+    public Long startToNode(AiFlow flow, JsonNode input, String triggerType,
+                            String tenantIdStr, Long userId, String userName, String destinationNodeId) {
+        // 1. 解析图 + 校验 + 目标节点存在性（先于建实例，避免非法请求留孤儿 RUNNING 实例）
+        FlowGraph graph = FlowGraph.parse(flow.getConfigJson());
+        graph.validate(nodeRegistry::contains);
+        if (!graph.getNodes().containsKey(destinationNodeId)) {
+            throw new IllegalArgumentException("目标节点不存在: " + destinationNodeId);
+        }
+
+        // 2. 建实例（RUNNING）落库
+        AiFlowInstance instance = new AiFlowInstance();
+        instance.setFlowId(flow.getId());
+        instance.setFlowVersion(flow.getVersion() == null ? 1 : flow.getVersion());
+        instance.setTriggerType(triggerType);
+        instance.setTriggerBy(userId);
+        instance.setInputJson(input == null ? "{}" : input.toString());
+        instance.setConfigSnapshot(flow.getConfigJson());
+        instance.setStatus("RUNNING");
+        instance.setStartTime(new Date());
+        Long instanceId = TenantHelper.dynamic(tenantIdStr, () -> {
+            instanceMapper.insert(instance);
+            return instance.getId();
+        });
+
+        // 3. 计算可执行闭包：目标节点 + 全部传递上游（沿入边回溯）
+        Set<String> closure = new java.util.LinkedHashSet<>();
+        java.util.ArrayDeque<String> stack = new java.util.ArrayDeque<>();
+        stack.push(destinationNodeId);
+        while (!stack.isEmpty()) {
+            String id = stack.pop();
+            if (!closure.add(id)) {
+                continue;
+            }
+            for (FlowEdgeDef edge : graph.getInEdges(id)) {
+                if (!edge.isLoopEdge()) {
+                    stack.push(edge.getSource());
+                }
+            }
+        }
+
+        // 4. 注册停止标志 + 事件序号
+        stopRegistry.register(instanceId);
+        seqMap.put(instanceId, new AtomicLong(0));
+
+        // 5. 异步执行（仅闭包子图）
+        final Long userIdF = userId;
+        aiExecutor.execute(() -> runFlowToNode(flow, graph, instanceId, input, tenantIdStr, userIdF,
+            userName, destinationNodeId, closure));
+        return instanceId;
+    }
+
+    /**
+     * 部分执行主循环：仅调度闭包子图，目标节点执行完即终态
+     * <p>闭包内节点按拓扑序执行；fanOut 只对闭包内目标递减入度（闭包外节点不入队）。
+     * 目标节点成功 → SUCCEEDED；失败 → FAILED（与全量执行语义一致）。</p>
+     */
+    private void runFlowToNode(AiFlow flow, FlowGraph graph, Long instanceId, JsonNode input,
+                               String tenantIdStr, Long userId, String userName,
+                               String destinationNodeId, Set<String> closure) {
+        AiRequestContext.set(Long.valueOf(tenantIdStr), userId, userName, null, null, null);
+        try {
+            // 闭包子图入度（以闭包内入边为准）
+            Map<String, Integer> enqueued = new java.util.concurrent.ConcurrentHashMap<>();
+            for (String id : closure) {
+                int deg = 0;
+                for (FlowEdgeDef edge : graph.getInEdges(id)) {
+                    if (!edge.isLoopEdge() && closure.contains(edge.getSource())) {
+                        deg++;
+                    }
+                }
+                enqueued.put(id, deg);
+            }
+            // 就绪队列：闭包内入度 0 的节点
+            java.util.concurrent.BlockingQueue<String> queue = new java.util.concurrent.LinkedBlockingQueue<>();
+            for (var e : enqueued.entrySet()) {
+                if (e.getValue() == 0) {
+                    queue.add(e.getKey());
+                }
+            }
+
+            Map<String, AiFlowNodeRun> nodeRuns = new java.util.concurrent.ConcurrentHashMap<>();
+            Set<String> succeededNodes = java.util.concurrent.ConcurrentHashMap.newKeySet();
+            FlowState state = new FlowState(input);
+
+            java.util.concurrent.atomic.AtomicBoolean stoppedHolder = new java.util.concurrent.atomic.AtomicBoolean(false);
+            java.util.concurrent.atomic.AtomicReference<Throwable> errorHolder = new java.util.concurrent.atomic.AtomicReference<>();
+            AtomicInteger executedCount = new AtomicInteger(0);
+
+            // 执行次数护栏（防拓扑缺陷死循环，对齐全量执行的 maxExecutions 语义）。
+            // 需按节点级重试上限放大：retryOnFail 节点单次执行最多 retryMaxTries(2-5) 次尝试。
+            int retryFactor = flow.getMaxRetry() == null ? 1 : flow.getMaxRetry() + 1;
+            int maxClosureExecutions = closure.size() * retryFactor + 1;
+
+            // 串行执行闭包；目标节点执行后即停
+            while (!queue.isEmpty()) {
+                if (stopRegistry.isStopped(instanceId)) {
+                    stoppedHolder.set(true);
+                    break;
+                }
+                if (executedCount.get() >= maxClosureExecutions) {
+                    throw new IllegalStateException("部分执行超出闭包执行次数上限 " + maxClosureExecutions);
+                }
+                String nodeId = queue.poll();
+                if (nodeId == null) {
+                    break;
+                }
+                boolean ok = executeClosureNode(nodeId, graph, instanceId, state, enqueued, queue,
+                    nodeRuns, succeededNodes, flow, executedCount, tenantIdStr, userId, errorHolder, closure);
+                if (!ok || nodeId.equals(destinationNodeId)) {
+                    break;
+                }
+            }
+
+            // 提前结束（停止/失败/未到达目标）时，闭包内未执行节点标记 SKIPPED（对齐全量执行的 markAllRemainingSkipped）
+            if (stoppedHolder.get() || errorHolder.get() != null || !nodeRuns.containsKey(destinationNodeId)) {
+                markClosureRemainingSkipped(closure, nodeRuns, instanceId, flow.getId(), tenantIdStr);
+            }
+
+            // 终态：目标节点执行结果决定实例状态
+            AiFlowInstance existing = TenantHelper.dynamic(tenantIdStr, () -> instanceMapper.selectById(instanceId));
+            AiFlowInstance inst = new AiFlowInstance();
+            inst.setId(instanceId);
+            inst.setEndTime(new Date());
+            if (existing != null && existing.getStartTime() != null) {
+                inst.setDurationMs(System.currentTimeMillis() - existing.getStartTime().getTime());
+            }
+            int success = 0;
+            int failed = 0;
+            for (AiFlowNodeRun run : nodeRuns.values()) {
+                if ("SUCCEEDED".equals(run.getStatus())) {
+                    success++;
+                } else if ("FAILED".equals(run.getStatus())) {
+                    failed++;
+                }
+            }
+            inst.setNodeTotal(closure.size());
+            inst.setNodeSuccess(success);
+            inst.setNodeFailed(failed);
+            if (stoppedHolder.get()) {
+                inst.setStatus("STOPPED");
+                inst.setErrorMsg("用户请求停止");
+            } else if (errorHolder.get() != null) {
+                inst.setStatus("FAILED");
+                inst.setErrorMsg(truncate(safeMessage(errorHolder.get()), 2000));
+            } else {
+                AiFlowNodeRun destRun = nodeRuns.get(destinationNodeId);
+                if (destRun != null && "SUCCEEDED".equals(destRun.getStatus())) {
+                    inst.setStatus("SUCCEEDED");
+                    inst.setOutputJson(destRun.getOutputJson());
+                } else {
+                    inst.setStatus("FAILED");
+                    inst.setErrorMsg(destRun != null && destRun.getErrorMsg() != null ? destRun.getErrorMsg() : "目标节点未成功执行");
+                }
+            }
+            TenantHelper.dynamic(tenantIdStr, () -> {
+                instanceMapper.updateById(inst);
+                return null;
+            });
+            Map<String, Object> payload = new HashMap<>();
+            payload.put("instanceId", instanceId);
+            payload.put("flowId", flow.getId());
+            payload.put("status", inst.getStatus());
+            payload.put("seq", nextSeq(instanceId));
+            if (inst.getErrorMsg() != null) {
+                payload.put("errorMsg", inst.getErrorMsg());
+            }
+            payload.put("durationMs", inst.getDurationMs());
+            AiSseMessageHelper.sendFlowStatus(userId, payload);
+        } catch (Throwable e) {
+            log.error("[Flow] 部分执行异常 instanceId={} dest={}", instanceId, destinationNodeId, e);
+            finishInstanceOnError(instanceId, flow.getId(), e, tenantIdStr, userId);
+        } finally {
+            stopRegistry.unregister(instanceId);
+            seqMap.remove(instanceId);
+            AiRequestContext.clear();
+        }
+    }
+
+    /**
+     * 闭包内节点执行 + 扇出（仅入队闭包内目标）
+     * <p>复用 executeNodeAndFanOut 的执行逻辑，但 fanOut 用闭包受限版本，避免闭包外节点被调度。</p>
+     */
+    private boolean executeClosureNode(String nodeId, FlowGraph graph, Long instanceId, FlowState state,
+                                       Map<String, Integer> enqueued, java.util.concurrent.BlockingQueue<String> queue,
+                                       Map<String, AiFlowNodeRun> nodeRuns, Set<String> succeededNodes,
+                                       AiFlow flow, AtomicInteger executedCount,
+                                       String tenantIdStr, Long userId,
+                                       java.util.concurrent.atomic.AtomicReference<Throwable> errorHolder,
+                                       Set<String> closure) {
+        FlowNodeDef nodeDef = graph.getNode(nodeId);
+        FlowNodeProvider provider = nodeRegistry.getProvider(nodeDef.getType());
+        if (provider == null) {
+            throw new IllegalStateException("未注册的节点类型: " + nodeDef.getType());
+        }
+        int batchIndex = readBatchIndex(state, nodeId);
+        AiFlowNodeRun nodeRun = createNodeRun(instanceId, flow.getId(), nodeDef, batchIndex, tenantIdStr);
+        nodeRuns.put(nodeId, nodeRun);
+        sendNodeStart(instanceId, nodeDef, nodeRun, userId);
+        nodeRun.setInputJson(buildInputSnapshot(graph, state, nodeId));
+        try {
+            JsonNode output = runNodeWithRetry(nodeDef, provider, state, instanceId, userId, flow, graph, executedCount, tenantIdStr);
+            nodeRun.setStatus("SUCCEEDED");
+            nodeRun.setOutputJson(output == null ? "{}" : output.toString());
+            nodeRun.setErrorMsg(null);
+            updateNodeRun(nodeRun, tenantIdStr);
+            succeededNodes.add(nodeId);
+            state.putNodeOutput(nodeId, output);
+            sendNodeEnd(instanceId, nodeDef, nodeRun, output, userId);
+            boolean ifResult = "if".equals(nodeDef.getType())
+                && output != null && output.has("result") ? output.get("result").asBoolean() : true;
+            fanOutClosure(graph, nodeId, ifResult, state, enqueued, queue, closure);
+            return true;
+        } catch (Exception e) {
+            handleNodeFailure(nodeRun, nodeDef, e, tenantIdStr);
+            sendNodeEnd(instanceId, nodeDef, nodeRun, null, userId);
+            if ("CONTINUE".equals(nodeDef.getOnError())) {
+                com.fasterxml.jackson.databind.node.ObjectNode passthrough = MAPPER.createObjectNode();
+                passthrough.put("passthrough", true);
+                passthrough.put("error", e.getMessage());
+                nodeRun.setOutputJson(passthrough.toString());
+                updateNodeRun(nodeRun, tenantIdStr);
+                succeededNodes.add(nodeId);
+                state.putNodeOutput(nodeId, passthrough);
+                fanOutClosure(graph, nodeId, true, state, enqueued, queue, closure);
+                return true;
+            } else if ("ERROR_PORT".equals(nodeDef.getOnError())) {
+                com.fasterxml.jackson.databind.node.ObjectNode errorOutput = MAPPER.createObjectNode();
+                errorOutput.put("error", safeMessage(e));
+                errorOutput.put("nodeName", nodeDef.getName());
+                errorOutput.put("nodeId", nodeDef.getId());
+                state.putNodeOutput(nodeId, errorOutput);
+                boolean hasErrorEdge = graph.getOutEdges(nodeId).stream().anyMatch(FlowEdgeDef::isErrorBranch);
+                if (hasErrorEdge) {
+                    fanOutClosureError(graph, nodeId, enqueued, queue, closure);
+                    return true;
+                }
+                errorHolder.set(e);
+                return false;
+            } else {
+                errorHolder.set(e);
+                return false;
+            }
+        }
+    }
+
+    /**
+     * 闭包受限扇出：只对闭包内目标递减入度并入队（闭包外直接忽略）
+     */
+    private void fanOutClosure(FlowGraph graph, String nodeId, boolean ifResult, FlowState state,
+                               Map<String, Integer> enqueued, java.util.concurrent.BlockingQueue<String> queue,
+                               Set<String> closure) {
+        for (FlowEdgeDef edge : graph.getOutEdges(nodeId)) {
+            if (edge.isLoopEdge()) {
+                if (closure.contains(edge.getTarget())) {
+                    queue.add(edge.getTarget());
+                }
+                continue;
+            }
+            String target = edge.getTarget();
+            if (!closure.contains(target)) {
+                continue;
+            }
+            boolean pass = true;
+            if (edge.isTrueBranch()) {
+                pass = ifResult;
+            } else if (edge.isFalseBranch()) {
+                pass = !ifResult;
+            }
+            if (!pass) {
+                continue;
+            }
+            int remain = enqueued.merge(target, -1, Integer::sum);
+            if (remain == 0) {
+                queue.add(target);
+            }
+        }
+    }
+
+    /**
+     * 闭包受限错误分支扇出
+     */
+    private void fanOutClosureError(FlowGraph graph, String nodeId,
+                                    Map<String, Integer> enqueued, java.util.concurrent.BlockingQueue<String> queue,
+                                    Set<String> closure) {
+        for (FlowEdgeDef edge : graph.getOutEdges(nodeId)) {
+            if (!edge.isErrorBranch()) {
+                continue;
+            }
+            String target = edge.getTarget();
+            if (!closure.contains(target)) {
+                continue;
+            }
+            int remain = enqueued.merge(target, -1, Integer::sum);
+            if (remain == 0) {
+                queue.add(target);
+            }
+        }
     }
 
     @Override
@@ -860,6 +1159,34 @@ public class FlowEngineImpl implements FlowEngine {
             AiFlowNodeRun nodeRun = createNodeRun(instanceId, flowId, def, tenantIdStr);
             nodeRun.setStatus("SKIPPED");
             nodeRun.setErrorMsg("流程已停止或失败，跳过执行");
+            nodeRun.setStartTime(new Date());
+            nodeRun.setEndTime(new Date());
+            nodeRun.setDurationMs(0L);
+            TenantHelper.dynamic(tenantIdStr, () -> {
+                nodeRunMapper.updateById(nodeRun);
+                return null;
+            });
+            nodeRuns.put(nodeId, nodeRun);
+        }
+    }
+
+    /**
+     * 部分执行：标记闭包内未执行节点为 SKIPPED（提前停止/失败/未到达目标时）
+     * <p>与 {@link #markAllRemainingSkipped} 的区别：只处理闭包内节点（闭包外节点
+     * 本就不在部分执行范围内，不应产生运行记录）</p>
+     */
+    private void markClosureRemainingSkipped(Set<String> closure, Map<String, AiFlowNodeRun> nodeRuns,
+                                             Long instanceId, Long flowId, String tenantIdStr) {
+        for (String nodeId : closure) {
+            if (nodeRuns.containsKey(nodeId)) {
+                continue;
+            }
+            // 闭包节点必然存在于图中；node_run 记录需要 nodeName，缺失时降级用节点ID
+            FlowNodeDef nodeDef = new FlowNodeDef();
+            nodeDef.setId(nodeId);
+            AiFlowNodeRun nodeRun = createNodeRun(instanceId, flowId, nodeDef, tenantIdStr);
+            nodeRun.setStatus("SKIPPED");
+            nodeRun.setErrorMsg("部分执行提前结束，跳过执行");
             nodeRun.setStartTime(new Date());
             nodeRun.setEndTime(new Date());
             nodeRun.setDurationMs(0L);

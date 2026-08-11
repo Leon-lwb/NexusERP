@@ -32,6 +32,7 @@ public class AiFlowServiceImpl implements IAiFlowService {
 
     private final AiFlowMapper baseMapper;
     private final AiFlowInstanceMapper aiFlowInstanceMapper;
+    private final com.nexus.common.ai.mapper.AiFlowVersionMapper aiFlowVersionMapper;
 
     /**
      * 分页查询流程列表
@@ -97,11 +98,11 @@ public class AiFlowServiceImpl implements IAiFlowService {
      * 新增流程（存草稿）
      *
      * @param bo 流程业务对象
-     * @return 影响行数
+     * @return 新流程ID（雪花主键，供前端跳转设计器）
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public int insertByBo(AiFlowBo bo) {
+    public Long insertByBo(AiFlowBo bo) {
         // flowKey 为空时自动生成: flow_ + 时间戳后缀
         if (StringUtils.isBlank(bo.getFlowKey())) {
             bo.setFlowKey(generateFlowKey());
@@ -118,7 +119,8 @@ public class AiFlowServiceImpl implements IAiFlowService {
         if (entity.getMaxRetry() == null) {
             entity.setMaxRetry(1);
         }
-        return baseMapper.insert(entity);
+        baseMapper.insert(entity);
+        return entity.getId();
     }
 
     /**
@@ -167,8 +169,9 @@ public class AiFlowServiceImpl implements IAiFlowService {
     }
 
     /**
-     * 发布流程（DRAFT→PUBLISHED，版本+1）
-     * <p>图合法性校验由引擎层 {@code FlowGraph.validate()} 完成，P1 接入</p>
+     * 发布流程（DRAFT→PUBLISHED，版本+1，发布时落版本快照）
+     * <p>图合法性校验由引擎层 {@code FlowGraph.validate()} 完成，P1 接入；
+     * 发布成功即写入 ai_flow_version 快照（版本历史/恢复用）</p>
      *
      * @param id 流程ID
      * @return 影响行数
@@ -183,11 +186,22 @@ public class AiFlowServiceImpl implements IAiFlowService {
         if (!"DRAFT".equals(flow.getStatus())) {
             throw new ServiceException("仅 DRAFT 状态的流程可发布");
         }
+        int newVersion = flow.getVersion() == null ? 1 : flow.getVersion() + 1;
         AiFlow update = new AiFlow();
         update.setId(id);
         update.setStatus("PUBLISHED");
-        update.setVersion(flow.getVersion() == null ? 1 : flow.getVersion() + 1);
-        return baseMapper.updateById(update);
+        update.setVersion(newVersion);
+        int rows = baseMapper.updateById(update);
+
+        // 发布时落版本快照（版本历史/恢复/只读预览数据源）
+        com.nexus.common.ai.domain.entity.AiFlowVersion version = new com.nexus.common.ai.domain.entity.AiFlowVersion();
+        version.setFlowId(id);
+        version.setFlowVersion(newVersion);
+        version.setFlowName(flow.getFlowName());
+        version.setConfigJson(flow.getConfigJson());
+        version.setDescription("发布 v" + newVersion);
+        aiFlowVersionMapper.insert(version);
+        return rows;
     }
 
     /**

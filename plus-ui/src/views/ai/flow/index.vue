@@ -2,12 +2,12 @@
 import { computed, onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
-import type { AiFlow } from '@/api/ai/flow';
-import { deleteFlow, listFlow, offlineFlow, publishFlow, runFlow } from '@/api/ai/flow';
+import type { AiFlow, FlowTemplate } from '@/api/ai/flow';
+import { addFlow, deleteFlow, listFlow, listFlowTemplates, offlineFlow, publishFlow, runFlow } from '@/api/ai/flow';
 
 /**
  * AI 流程列表页
- * <p>流程 CRUD + 发布/下线 + 运行 + 进入设计器/历史 + Webhook 信息</p>
+ * <p>流程 CRUD + 发布/下线 + 运行 + 进入设计器/历史 + Webhook 信息 + 从模板创建</p>
  */
 
 const router = useRouter();
@@ -20,6 +20,48 @@ const query = reactive({
   flowName: '',
   status: ''
 });
+
+/** 模板库对话框状态 */
+const templateVisible = ref(false);
+const templateLoading = ref(false);
+const templates = ref<FlowTemplate[]>([]);
+const templateCreating = ref<string | null>(null);
+
+/** 打开模板库（首次加载模板列表） */
+async function openTemplates() {
+  templateVisible.value = true;
+  if (templates.value.length) return;
+  templateLoading.value = true;
+  try {
+    const res = await listFlowTemplates();
+    templates.value = res.data ?? [];
+  } catch (e: any) {
+    ElMessage.error('加载模板失败: ' + (e?.message ?? e));
+  } finally {
+    templateLoading.value = false;
+  }
+}
+
+/** 从模板创建流程（addFlow → 跳设计器编辑） */
+async function createFromTemplate(tpl: FlowTemplate) {
+  templateCreating.value = tpl.key;
+  try {
+    const res = await addFlow({
+      flowName: tpl.name,
+      configJson: tpl.configJson,
+      triggerType: 'MANUAL',
+      maxRetry: 1
+    });
+    const newId = res.data;
+    ElMessage.success('已从模板创建流程，可继续编辑后发布');
+    templateVisible.value = false;
+    router.push({ path: '/ai/flow/designer', query: { id: String(newId) } });
+  } catch (e: any) {
+    ElMessage.error('创建失败: ' + (e?.message ?? e));
+  } finally {
+    templateCreating.value = null;
+  }
+}
 
 /** Webhook 信息对话框 */
 const webhookVisible = ref(false);
@@ -143,6 +185,7 @@ onMounted(loadList);
       <el-form-item>
         <el-button type="primary" @click="loadList">搜索</el-button>
         <el-button type="success" @click="createFlow">新建流程</el-button>
+        <el-button plain @click="openTemplates">从模板创建</el-button>
       </el-form-item>
     </el-form>
 
@@ -208,6 +251,32 @@ curl -X POST {{ webhookUrl }} \
       </template>
     </el-dialog>
 
+    <!-- 模板库对话框（从模板创建） -->
+    <el-dialog v-model="templateVisible" title="从模板创建流程" width="720px" v-loading="templateLoading">
+      <el-alert
+        title="模板为纯本地节点（SQL/条件/通知），不依赖模型配置，创建后可立即测试运行。通知节点需在运行入参中提供 owner（接收用户ID）。"
+        type="info"
+        :closable="false"
+        style="margin-bottom: 12px"
+      />
+      <div v-if="templates.length" class="template-grid">
+        <div v-for="tpl in templates" :key="tpl.key" class="template-card">
+          <div class="template-card__header">
+            <span class="template-card__name">{{ tpl.name }}</span>
+            <el-tag size="small" effect="plain">{{ tpl.category }}</el-tag>
+          </div>
+          <div class="template-card__desc">{{ tpl.description }}</div>
+          <div v-if="tpl.inputExample" class="template-card__input">
+            运行入参示例: <code>{{ tpl.inputExample }}</code>
+          </div>
+          <el-button type="primary" size="small" class="template-card__btn" :loading="templateCreating === tpl.key" @click="createFromTemplate(tpl)">
+            使用此模板
+          </el-button>
+        </div>
+      </div>
+      <el-empty v-else-if="!templateLoading" description="暂无可用模板" />
+    </el-dialog>
+
     <pagination v-show="total > 0" v-model:page="query.pageNum" v-model:limit="query.pageSize" :total="total" @pagination="loadList" />
   </div>
 </template>
@@ -237,5 +306,63 @@ curl -X POST {{ webhookUrl }} \
   width: 100%;
   overflow-x: auto;
   white-space: pre-wrap;
+}
+
+/* 模板库卡片 */
+.template-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.template-card {
+  border: 1px solid #e4e7ed;
+  border-radius: 8px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+
+.template-card:hover {
+  border-color: #409eff;
+  box-shadow: 0 2px 12px rgba(64, 158, 255, 0.15);
+}
+
+.template-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.template-card__name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.template-card__desc {
+  font-size: 12px;
+  color: #606266;
+  line-height: 1.6;
+  flex: 1;
+}
+
+.template-card__input {
+  font-size: 11px;
+  color: #909399;
+}
+
+.template-card__input code {
+  background: #f5f7fa;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.template-card__btn {
+  align-self: flex-start;
 }
 </style>

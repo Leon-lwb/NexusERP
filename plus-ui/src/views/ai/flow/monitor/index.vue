@@ -20,8 +20,46 @@ const query = reactive({
   pageSize: 10,
   flowId: (route.query.flowId as string) ?? '',
   status: '',
-  triggerType: ''
+  triggerType: '',
+  keyword: '',
+  beginTime: '',
+  endTime: ''
 });
+
+/** 相对时间快捷筛选（今天/近7天/近30天） */
+function applyRelativeRange(days: number) {
+  const now = new Date();
+  // 当天 00:00:00 为下限（今天=今天0点；N天=今天0点- (N-1) 天）
+  const begin = new Date(now.getFullYear(), now.getMonth(), now.getDate() - (days - 1));
+  query.beginTime = formatDateTime(begin);
+  query.endTime = formatDateTime(now);
+  loadList();
+}
+
+function formatDateTime(d: Date): string {
+  const p = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+}
+
+/** 日期范围选择（el-date-picker daterange 绑定值 [begin, end]，转查询参数） */
+const dateRange = ref<[string, string] | null>(null);
+function onDateRangeChange(range: [string, string] | null) {
+  if (range && range.length === 2) {
+    query.beginTime = range[0] + ' 00:00:00';
+    query.endTime = range[1] + ' 23:59:59';
+  } else {
+    query.beginTime = '';
+    query.endTime = '';
+  }
+}
+
+/** 重置时间范围筛选（清空快捷选择与日期选择器） */
+function resetRange() {
+  dateRange.value = null;
+  query.beginTime = '';
+  query.endTime = '';
+  loadList();
+}
 
 /** 流程下拉候选 */
 const flowOptions = ref<Array<{ flowName: string; id: number | string }>>([]);
@@ -145,6 +183,27 @@ onBeforeUnmount(stopRefresh);
           <el-option label="Webhook" value="WEBHOOK" />
         </el-select>
       </el-form-item>
+      <el-form-item label="关键词">
+        <el-input v-model="query.keyword" placeholder="流程名称 / 实例ID" clearable style="width: 160px" @keyup.enter="loadList" @clear="loadList" />
+      </el-form-item>
+      <el-form-item label="时间范围">
+        <el-date-picker
+          v-model="dateRange"
+          type="daterange"
+          value-format="YYYY-MM-DD"
+          range-separator="至"
+          start-placeholder="开始日期"
+          end-placeholder="结束日期"
+          style="width: 240px"
+          @change="onDateRangeChange"
+        />
+        <div class="monitor-relative">
+          <el-button size="small" text @click="applyRelativeRange(1)">今天</el-button>
+          <el-button size="small" text @click="applyRelativeRange(7)">近7天</el-button>
+          <el-button size="small" text @click="applyRelativeRange(30)">近30天</el-button>
+          <el-button size="small" text @click="resetRange">全部</el-button>
+        </div>
+      </el-form-item>
       <el-form-item>
         <el-button type="primary" @click="loadList">搜索</el-button>
         <el-button @click="router.push('/ai/flow/index')">返回流程列表</el-button>
@@ -185,3 +244,12 @@ onBeforeUnmount(stopRefresh);
     <pagination v-show="total > 0" v-model:page="query.pageNum" v-model:limit="query.pageSize" :total="total" @pagination="loadList" />
   </div>
 </template>
+
+<style scoped>
+.monitor-relative {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  margin-left: 8px;
+}
+</style>

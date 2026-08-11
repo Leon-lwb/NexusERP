@@ -127,8 +127,47 @@ public class AiFlowInstanceServiceImpl implements IAiFlowInstanceService {
         lqw.eq(bo.getFlowId() != null, AiFlowInstance::getFlowId, bo.getFlowId());
         lqw.eq(StringUtils.isNotBlank(bo.getStatus()), AiFlowInstance::getStatus, bo.getStatus());
         lqw.eq(StringUtils.isNotBlank(bo.getTriggerType()), AiFlowInstance::getTriggerType, bo.getTriggerType());
+        // 关键词：模糊匹配流程名称（经 ai_flow 关联）或实例ID
+        if (StringUtils.isNotBlank(bo.getKeyword())) {
+            String kw = bo.getKeyword().trim();
+            // 流程名称匹配 → 收集匹配的流程ID
+            List<Long> matchedFlowIds = aiFlowMapper.selectList(
+                Wrappers.<AiFlow>lambdaQuery().like(AiFlow::getFlowName, kw)
+            ).stream().map(AiFlow::getId).toList();
+            // 纯数字且能解析为 Long（雪花ID 19 位内）时按实例ID精确匹配
+            Long kwId = kw.matches("\\d{1,19}") ? tryParseLong(kw) : null;
+            lqw.and(w -> {
+                if (!matchedFlowIds.isEmpty()) {
+                    w.in(AiFlowInstance::getFlowId, matchedFlowIds);
+                }
+                if (kwId != null) {
+                    if (!matchedFlowIds.isEmpty()) {
+                        w.or();
+                    }
+                    w.eq(AiFlowInstance::getId, kwId);
+                }
+                if (matchedFlowIds.isEmpty() && kwId == null) {
+                    // 无匹配：永不命中（保证空结果而非全量）
+                    w.eq(AiFlowInstance::getId, -1);
+                }
+            });
+        }
+        // 日期范围（startTime 落在 [beginTime, endTime]）
+        lqw.ge(bo.getBeginTime() != null, AiFlowInstance::getStartTime, bo.getBeginTime());
+        lqw.le(bo.getEndTime() != null, AiFlowInstance::getStartTime, bo.getEndTime());
         lqw.orderByDesc(AiFlowInstance::getCreateTime);
         return lqw;
+    }
+
+    /**
+     * 宽松解析 Long（超范围返回 null，避免雪花ID溢出）
+     */
+    private Long tryParseLong(String text) {
+        try {
+            return Long.parseLong(text);
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 
     /**

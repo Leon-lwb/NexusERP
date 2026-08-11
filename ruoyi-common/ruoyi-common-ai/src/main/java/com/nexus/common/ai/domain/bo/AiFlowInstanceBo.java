@@ -51,8 +51,14 @@ public class AiFlowInstanceBo extends BaseEntity {
     /** 开始时间 */
     private Date startTime;
 
-    /** 结束时间 */
+    /** 结束时间（查询过滤用：startTime 范围上限，配合 beginTime 做日期范围筛选） */
     private Date endTime;
+
+    /** 关键词（模糊匹配流程名称/实例ID） */
+    private String keyword;
+
+    /** 开始时间范围下限（startTime >= beginTime，配合相对时间筛选） */
+    private Date beginTime;
 
     /** 批量删除ID集合 */
     private Long[] ids;

@@ -52,6 +52,8 @@ export interface AiFlowNodeRun {
   outputJson?: string;
   errorMsg?: string;
   retryCount?: number;
+  /** 循环批次索引（split 循环轮次，非循环=0） */
+  batchIndex?: number;
   durationMs?: number;
   startTime?: string;
   endTime?: string;
@@ -270,5 +272,87 @@ export function nodeTest(flowId: number | string, nodeId: string, mockState?: st
     url: '/ai/flow/node-test',
     method: 'post',
     data: { flowId, nodeId, mockState }
+  });
+}
+
+/**
+ * 部分执行：运行到指定节点（含全部上游），对齐 n8n "Execute up to node"
+ * @param flowId 流程ID
+ * @param destinationNodeId 目标节点ID
+ * @param configJson 画布当前配置（可选，null 时回退 DB 配置）
+ * @param input 运行入参 JSON 字符串
+ */
+export function runFlowToNode(flowId: number | string, destinationNodeId: string, configJson?: string, input?: string) {
+  return request({
+    url: '/ai/flow/run-test-node',
+    method: 'post',
+    data: { flowId, destinationNodeId, configJson, input }
+  });
+}
+
+/** AI 流程版本快照类型 */
+export interface AiFlowVersion {
+  id: number | string;
+  flowId: number | string;
+  flowVersion: number;
+  flowName?: string;
+  /** 画布配置快照（仅详情接口返回，列表不返回） */
+  configJson?: string;
+  description?: string;
+  createTime?: string;
+  createBy?: number;
+}
+
+/**
+ * 查询流程的版本历史列表
+ * @param flowId 流程ID
+ */
+export function listFlowVersions(flowId: number | string) {
+  return request({
+    url: `/ai/flow/${flowId}/versions`,
+    method: 'get'
+  });
+}
+
+/**
+ * 查询版本快照详情（含 configJson，供只读预览）
+ * @param versionId 版本快照ID
+ */
+export function getFlowVersion(versionId: number | string) {
+  return request({
+    url: `/ai/flow/version/${versionId}`,
+    method: 'get'
+  });
+}
+
+/**
+ * 恢复版本（config_json 写回流程定义，状态置 DRAFT 需重新发布生效）
+ * @param versionId 版本快照ID
+ */
+export function restoreFlowVersion(versionId: number | string) {
+  return request({
+    url: '/ai/flow/version/restore',
+    method: 'post',
+    data: { versionId }
+  });
+}
+
+/** 内置流程模板类型 */
+export interface FlowTemplate {
+  key: string;
+  name: string;
+  category: string;
+  description: string;
+  inputExample?: string;
+  configJson: string;
+}
+
+/**
+ * 查询内置流程模板列表（ERP 场景：库存预警/采购对账/销售催办/生产巡检）
+ */
+export function listFlowTemplates() {
+  return request({
+    url: '/ai/flow/templates',
+    method: 'get'
   });
 }

@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Search } from '@element-plus/icons-vue';
 import { useFlowStore } from './useFlowStore';
+import type { FlowCanvasNode } from './useFlowStore';
 import NodePalette from './NodePalette.vue';
 import FlowCanvas from './FlowCanvas.vue';
 import NodeParameterForm from './NodeParameterForm.vue';
@@ -13,15 +14,20 @@ import type { NodeParamSchema, NodeTypeMeta } from '@/api/ai/flow';
 import {
   addFlow,
   getFlow,
+  getFlowVersion,
   getInstance,
+  listFlowVersions,
   listNodeRuns,
   listNodeTypes,
   nodeTest,
   publishFlow,
+  restoreFlowVersion,
   runFlowTest,
+  runFlowToNode,
   stopFlowRun,
   updateFlow
 } from '@/api/ai/flow';
+import type { AiFlowVersion } from '@/api/ai/flow';
 
 /**
  * 流程设计器页面
@@ -36,7 +42,8 @@ const store = useFlowStore();
 const loading = ref(false);
 const saving = ref(false);
 const running = ref(false);
-const runInput = ref('{}');
+// 流程级测试入参：持久化到 localStorage，刷新/重开设计器可复用（P11-C ③）
+const runInput = ref(localStorage.getItem('aiFlowTestInput') ?? '{}');
 const runOutput = ref('');
 const runError = ref('');
 /** 运行状态（面板展示：标签/耗时/节点统计/最终输出） */
@@ -223,45 +230,6 @@ function onNodeAction(payload: { nodeId: string; action: string }) {
   }
 }
 
-/** NDV：节点运行数据查看抽屉 */
-const ndvVisible = ref(false);
-const ndvNode = ref<{ id: string; label: string; run: any } | null>(null);
-
-/** 双击节点：拉取该节点最近一次运行快照（当前实例优先，无则回退上次运行实例） */
-async function onNodeDoubleClick(node: any) {
-  let instanceId = store.currentInstanceId;
-  if (!instanceId) {
-    instanceId = localStorage.getItem('aiFlowLastInstanceId');
-    if (instanceId) {
-      ElMessage.info('展示上次运行的数据（未运行过本次变更）');
-    } else {
-      ElMessage.info('请先运行流程后再双击查看节点数据');
-      return;
-    }
-  }
-  try {
-    const res = await listNodeRuns(instanceId);
-    const runs = res.data ?? [];
-    // 取该节点最新一条运行记录（按 startTime 排序，取最后一条）
-    const nodeRuns = runs.filter((r: any) => r.nodeId === node.id);
-    const latest = nodeRuns.length ? nodeRuns[nodeRuns.length - 1] : null;
-    ndvNode.value = { id: node.id, label: node.data.label || node.id, run: latest };
-    ndvVisible.value = true;
-  } catch (e: any) {
-    ElMessage.error('获取节点数据失败: ' + (e?.message ?? e));
-  }
-}
-
-/** NDV 快照解析 */
-function parseNdvJson(text?: string): unknown {
-  if (!text) return null;
-  try {
-    return JSON.parse(text);
-  } catch {
-    return text;
-  }
-}
-
 /** 单节点测试状态 */
 const nodeTestVisible = ref(false);
 const nodeTestMock = ref('{}');
@@ -422,6 +390,8 @@ async function run() {
   try {
     // 传画布当前配置（即使保存失败/未保存也能测；后端做图 + 节点校验）
     const res = await runFlowTest(store.flowId, store.toConfigJson(), runInput.value.trim() || undefined);
+    // 持久化测试入参（复用）
+    localStorage.setItem('aiFlowTestInput', runInput.value.trim() || '{}');
     store.currentInstanceId = res.data;
     // SSE 看门狗：无事件超时后切轮询兜底（终态为准，SSE 仅加速）
     armWatchdog();
@@ -630,6 +600,255 @@ function duplicateNode() {
   ElMessage.success('已复制节点');
 }
 
+/* ==================== NDV：三栏式节点数据查看器（双击节点） ==================== */
+
+/** NDV 抽屉可见性 */
+const ndvVisible = ref(false);
+/** NDV 目标节点 */
+const ndvNode = ref<{ id: string; label: string; runs: any[] } | null>(null);
+/** 当前选中的 Run 序号（循环批次切换） */
+const ndvRunIndex = ref(0);
+
+/** 当前选中的 Run */
+const ndvRun = computed(() => ndvNode.value?.runs?.[ndvRunIndex.value] ?? null);
+
+/** Run 选择器选项（多批次时展示 batchIndex） */
+const ndvRunOptions = computed(() => {
+  const runs = ndvNode.value?.runs ?? [];
+  return runs.map((r: any, i: number) => ({
+    label: `批次 ${r.batchIndex ?? 0} · ${r.status} · ${fmtDuration(r.durationMs)}`,
+    value: i
+  }));
+});
+
+/** 双击节点：拉取该节点全部运行快照（当前实例优先，无则回退上次运行实例） */
+async function onNodeDoubleClick(node: any) {
+  let instanceId = store.currentInstanceId;
+  if (!instanceId) {
+    instanceId = localStorage.getItem('aiFlowLastInstanceId');
+    if (instanceId) {
+      ElMessage.info('展示上次运行的数据（未运行过本次变更）');
+    } else {
+      ElMessage.info('请先运行流程后再双击查看节点数据');
+      return;
+    }
+  }
+  try {
+    const res = await listNodeRuns(instanceId);
+    const runs = res.data ?? [];
+    // 取该节点全部运行记录（循环批次；按起始时间排序）
+    const nodeRuns = runs.filter((r: any) => r.nodeId === node.id);
+    if (!nodeRuns.length) {
+      ndvNode.value = { id: node.id, label: node.data.label || node.id, runs: [] };
+      ndvVisible.value = true;
+      return;
+    }
+    ndvNode.value = { id: node.id, label: node.data.label || node.id, runs: nodeRuns };
+    ndvRunIndex.value = nodeRuns.length - 1;
+    ndvVisible.value = true;
+  } catch (e: any) {
+    ElMessage.error('获取节点数据失败: ' + (e?.message ?? e));
+  }
+}
+
+/** NDV 快照解析 */
+function parseNdvJson(text?: string): unknown {
+  if (!text) return null;
+  try {
+    return JSON.parse(text);
+  } catch {
+    return text;
+  }
+}
+
+/** 当前选中节点的真实运行输出（变量选择器运行时数据） */
+const ndvRealOutput = computed(() => {
+  const node = ndvNode.value;
+  if (!node || !node.id) return {};
+  const out = store.nodeOutputs?.[node.id];
+  return out && typeof out === 'object' ? (out as Record<string, unknown>) : {};
+});
+
+/** NDV 中栏参数 schema（按节点 id 求，模板内用） */
+function CurrentNdvSchemas(nodeId: string): NodeParamSchema[] {
+  const node = store.nodes.find((n) => n.id === nodeId);
+  if (!node) return [];
+  const meta = nodeTypes.value.find((t) => t.type === node.data.type);
+  return meta?.params ?? [];
+}
+
+/** NDV 中栏上游节点（变量选择器候选，按节点 id 求） */
+function NdvUpstreamNodes(nodeId: string): FlowCanvasNode[] {
+  const sourceIds = new Set<string>();
+  store.edges.forEach((e: any) => {
+    if (e.target === nodeId) sourceIds.add(e.source);
+  });
+  let changed = true;
+  while (changed) {
+    changed = false;
+    store.edges.forEach((e: any) => {
+      if (sourceIds.has(e.target) && !sourceIds.has(e.source) && e.source !== nodeId) {
+        sourceIds.add(e.source);
+        changed = true;
+      }
+    });
+  }
+  return store.nodes.filter((n) => sourceIds.has(n.id));
+}
+
+/** 部分执行：运行到当前选中节点（含上游） */
+async function runToNode() {
+  const node = store.selectedNode;
+  if (!node) {
+    ElMessage.warning('请先选中节点');
+    return;
+  }
+  if (!store.flowId) {
+    ElMessage.warning('请先保存流程');
+    return;
+  }
+  if (!(await saveFlow(false))) return;
+  running.value = true;
+  runStatus.value = 'RUNNING';
+  runOutput.value = '';
+  runError.value = '';
+  runDuration.value = null;
+  runStats.value = null;
+  runFinalOutput.value = '';
+  store.clearNodeStatus();
+  try {
+    const res = await runFlowToNode(store.flowId, node.id, store.toConfigJson(), runInput.value.trim() || undefined);
+    store.currentInstanceId = res.data;
+    // 持久化测试入参（复用）
+    localStorage.setItem('aiFlowTestInput', runInput.value.trim() || '{}');
+    armWatchdog();
+    ElMessage.success('已启动运行到节点，实例ID: ' + res.data);
+  } catch (e: any) {
+    running.value = false;
+    runStatus.value = null;
+    ElMessage.error('运行失败: ' + (e?.message ?? e));
+  }
+}
+
+/** 保存测试入参（复用） */
+function saveTestInput() {
+  localStorage.setItem('aiFlowTestInput', runInput.value.trim() || '{}');
+  ElMessage.success('已保存测试入参');
+}
+
+/* ==================== 版本历史（对齐 n8n Version History：列表/只读预览/恢复） ==================== */
+
+/** 版本历史抽屉可见性 */
+const versionDrawerVisible = ref(false);
+const versions = ref<AiFlowVersion[]>([]);
+const versionLoading = ref(false);
+const restoringVersionId = ref<string | number | null>(null);
+
+/** 打开版本历史抽屉 */
+async function openVersionHistory() {
+  if (!store.flowId) {
+    ElMessage.warning('请先保存流程');
+    return;
+  }
+  versionDrawerVisible.value = true;
+  await loadVersions();
+}
+
+async function loadVersions() {
+  if (!store.flowId) return;
+  versionLoading.value = true;
+  try {
+    const res = await listFlowVersions(store.flowId);
+    versions.value = res.data ?? [];
+  } catch (e: any) {
+    ElMessage.error('加载版本历史失败: ' + (e?.message ?? e));
+  } finally {
+    versionLoading.value = false;
+  }
+}
+
+/** 版本只读预览（独立 nodes/edges refs，不触碰当前画布 store） */
+const versionPreviewVisible = ref(false);
+const versionPreviewLoading = ref(false);
+const previewNodes = ref<any[]>([]);
+const previewEdges = ref<any[]>([]);
+const previewMeta = ref<AiFlowVersion | null>(null);
+
+/** 解析版本 configJson 为只读画布数据（与 store.fromConfigJson 同结构，但不写 store） */
+function parseConfigForPreview(configJson: string) {
+  const data = JSON.parse(configJson);
+  const rawNodes = Array.isArray(data.nodes) ? data.nodes : [];
+  const rawEdges = Array.isArray(data.edges) ? data.edges : [];
+  previewNodes.value = rawNodes.map((n: Record<string, any>) => ({
+    id: n.id,
+    type: 'flow-node',
+    position: Array.isArray(n.position) ? { x: n.position[0], y: n.position[1] } : { x: 0, y: 0 },
+    data: {
+      label: n.data?.label ?? n.id,
+      type: n.type,
+      config: n.data?.config ?? {},
+      onError: n.data?.onError,
+      retryOnFail: n.data?.retryOnFail,
+      retryMaxTries: n.data?.retryMaxTries,
+      waitBetweenTries: n.data?.waitBetweenTries,
+      timeoutSeconds: n.data?.timeoutSeconds
+    }
+  }));
+  previewEdges.value = rawEdges.map((e: Record<string, any>) => ({
+    id: e.id,
+    source: e.source,
+    target: e.target,
+    sourceHandle: e.sourceHandle,
+    targetHandle: e.targetHandle,
+    markerEnd: 'arrowclosed',
+    ...(e.loop ? { loop: true } : {})
+  }));
+}
+
+/** 版本只读预览（读详情接口拿 configJson → 独立画布渲染） */
+async function previewVersion(version: AiFlowVersion) {
+  versionPreviewLoading.value = true;
+  versionPreviewVisible.value = true;
+  previewMeta.value = version;
+  try {
+    const res = await getFlowVersion(version.id);
+    const detail = res.data;
+    parseConfigForPreview(detail?.configJson ?? '{"nodes":[],"edges":[]}');
+  } catch (e: any) {
+    ElMessage.error('加载版本详情失败: ' + (e?.message ?? e));
+    previewNodes.value = [];
+    previewEdges.value = [];
+  } finally {
+    versionPreviewLoading.value = false;
+  }
+}
+
+/** 恢复版本（写回流程定义，状态置 DRAFT 需重新发布生效） */
+async function restoreVersion(version: AiFlowVersion) {
+  try {
+    await ElMessageBox.confirm(
+      `确认恢复到 v${version.flowVersion}？恢复后当前画布配置将被该版本覆盖，流程状态转为草稿，需重新发布后生效。`,
+      '恢复版本',
+      { type: 'warning', confirmButtonText: '确认恢复', cancelButtonText: '取消' }
+    );
+  } catch {
+    return; // 取消
+  }
+  restoringVersionId.value = version.id;
+  try {
+    await restoreFlowVersion(version.id);
+    ElMessage.success('已恢复为 v' + version.flowVersion + '（状态置 DRAFT，请检查后重新发布）');
+    versionDrawerVisible.value = false;
+    // 重新加载画布（恢复后的配置）+ 刷新版本列表
+    await loadFlow(String(store.flowId));
+    await loadVersions();
+  } catch (e: any) {
+    ElMessage.error('恢复失败: ' + (e?.message ?? e));
+  } finally {
+    restoringVersionId.value = null;
+  }
+}
+
 onMounted(async () => {
   await loadNodeTypes();
   const flowId = route.query.id;
@@ -662,6 +881,7 @@ onBeforeUnmount(() => {
       <el-button @click="store.addNote()">便利贴</el-button>
       <el-button :loading="saving" @click="saveFlow()">保存</el-button>
       <el-button type="primary" @click="publish">发布</el-button>
+      <el-button @click="openVersionHistory">版本历史</el-button>
       <el-button @click="autoLayout">自动布局</el-button>
       <el-button type="success" :disabled="running" @click="run">测试运行</el-button>
       <el-button type="danger" :disabled="!running || !store.currentInstanceId" @click="stop"> 停止 </el-button>
@@ -777,6 +997,7 @@ onBeforeUnmount(() => {
           </el-collapse>
           <div class="flow-designer__actions">
             <el-button type="primary" plain size="small" @click="openNodeTest">测试此节点</el-button>
+            <el-button type="success" plain size="small" @click="runToNode">运行到节点</el-button>
             <el-button plain size="small" @click="duplicateNode">复制</el-button>
             <el-button type="danger" plain size="small" @click="canvasRef?.onRemoveNode(store.selectedNode.id)"> 删除节点 </el-button>
           </div>
@@ -790,6 +1011,7 @@ onBeforeUnmount(() => {
       <div class="flow-designer__run-input">
         <span class="flow-designer__run-label">运行入参 (JSON)</span>
         <el-input v-model="runInput" type="textarea" :rows="2" placeholder='{"name":"张三","amount":500}' />
+        <el-button size="small" @click="saveTestInput">保存测试入参</el-button>
       </div>
       <div v-if="runStatus" class="flow-designer__run-info">
         <el-tag size="small" :type="runTagType">{{ runStatusLabel }}</el-tag>
@@ -806,30 +1028,85 @@ onBeforeUnmount(() => {
       </el-collapse>
     </div>
 
-    <!-- NDV：节点运行数据抽屉（双击节点） -->
-    <el-drawer v-model="ndvVisible" :title="'节点数据: ' + (ndvNode?.label ?? '')" size="420px">
-      <template v-if="ndvNode?.run">
-        <div class="flow-designer__ndv-meta">
-          <el-tag size="small" :type="ndvNode.run.status === 'SUCCEEDED' ? 'success' : ndvNode.run.status === 'FAILED' ? 'danger' : 'info'">
-            {{ ndvNode.run.status }}
-          </el-tag>
-          <span class="flow-designer__ndv-sub">
-            批次 {{ ndvNode.run.batchIndex ?? 0 }} · 耗时 {{ ndvNode.run.durationMs ?? 0 }}ms · 重试 {{ ndvNode.run.retryCount ?? 0 }}
-          </span>
+    <!-- NDV：三栏式节点数据查看器（双击节点，对齐 n8n NDV） -->
+    <el-drawer v-model="ndvVisible" :title="'节点数据: ' + (ndvNode?.label ?? '')" size="92%" :with-header="false">
+      <template #default>
+        <div class="flow-designer__ndv">
+          <!-- 顶栏：节点信息 + Run 选择器 + 操作 -->
+          <div class="flow-designer__ndv-topbar">
+            <div class="flow-designer__ndv-title">
+              <span class="flow-designer__ndv-name">{{ ndvNode?.label }}</span>
+              <el-tag v-if="ndvRun" size="small" :type="ndvRun.status === 'SUCCEEDED' ? 'success' : ndvRun.status === 'FAILED' ? 'danger' : 'info'">
+                {{ ndvRun.status }}
+              </el-tag>
+            </div>
+            <div class="flow-designer__ndv-actions">
+              <el-select
+                v-if="ndvRunOptions.length"
+                :model-value="ndvRunIndex"
+                size="small"
+                style="width: 200px"
+                @update:model-value="(v) => (ndvRunIndex = Number(v))"
+              >
+                <el-option v-for="opt in ndvRunOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
+              </el-select>
+              <el-button size="small" @click="ndvVisible = false">关闭</el-button>
+            </div>
+          </div>
+
+          <!-- 三栏主体 -->
+          <div class="flow-designer__ndv-body">
+            <!-- 左栏：输入数据 -->
+            <div class="flow-designer__ndv-col">
+              <div class="flow-designer__ndv-col-title">输入数据</div>
+              <div v-if="ndvRun" class="flow-designer__ndv-col-body">
+                <JsonViewer :data="parseNdvJson(ndvRun.inputJson)" />
+              </div>
+              <el-empty v-else description="暂无输入数据" :image-size="50" />
+            </div>
+
+            <!-- 中栏：参数表单（复用节点配置，编辑当前画布节点） -->
+            <div class="flow-designer__ndv-col">
+              <div class="flow-designer__ndv-col-title">节点参数</div>
+              <div class="flow-designer__ndv-col-body">
+                <template v-if="ndvNode && store.nodes.find((n) => n.id === ndvNode.id)">
+                  <NodeParameterForm
+                    v-for="schema in CurrentNdvSchemas(ndvNode.id)"
+                    :key="schema.name"
+                    :schema="schema"
+                    :model-value="store.nodes.find((n) => n.id === ndvNode.id)?.data.config?.[schema.name] ?? schema.defaultValue"
+                    :node-type="store.nodes.find((n) => n.id === ndvNode.id)?.data.type"
+                    :upstream-nodes="NdvUpstreamNodes(ndvNode.id)"
+                    :node-outputs="ndvRealOutput"
+                    :config="store.nodes.find((n) => n.id === ndvNode.id)?.data.config"
+                    @update:model-value="
+                      (v) => {
+                        const node = store.nodes.find((n) => n.id === ndvNode.id);
+                        if (!node) return;
+                        const config = { ...(node.data.config ?? {}) };
+                        config[schema.name] = v;
+                        node.data.config = config;
+                        store.markDirty();
+                      }
+                    "
+                  />
+                </template>
+                <el-empty v-else description="当前画布无此节点" :image-size="50" />
+              </div>
+            </div>
+
+            <!-- 右栏：输出数据 -->
+            <div class="flow-designer__ndv-col">
+              <div class="flow-designer__ndv-col-title">输出数据</div>
+              <div v-if="ndvRun" class="flow-designer__ndv-col-body">
+                <JsonViewer :data="parseNdvJson(ndvRun.outputJson)" />
+              </div>
+              <el-alert v-if="ndvRun?.errorMsg" :title="ndvRun.errorMsg" type="error" :closable="false" class="flow-designer__ndv-error" />
+              <el-empty v-else-if="!ndvRun" description="该节点没有运行数据（可能被跳过或未执行）" :image-size="50" />
+            </div>
+          </div>
         </div>
-        <el-tabs>
-          <el-tab-pane label="输出">
-            <JsonViewer :data="parseNdvJson(ndvNode.run.outputJson)" />
-          </el-tab-pane>
-          <el-tab-pane label="输入">
-            <JsonViewer :data="parseNdvJson(ndvNode.run.inputJson)" />
-          </el-tab-pane>
-          <el-tab-pane v-if="ndvNode.run.errorMsg" label="错误">
-            <el-alert :title="ndvNode.run.errorMsg" type="error" :closable="false" />
-          </el-tab-pane>
-        </el-tabs>
       </template>
-      <el-empty v-else description="该节点没有运行数据（可能被跳过或未执行）" :image-size="60" />
     </el-drawer>
 
     <!-- 单节点测试抽屉 -->
@@ -886,6 +1163,51 @@ onBeforeUnmount(() => {
         <el-table-column label="功能" prop="desc" />
       </el-table>
     </el-dialog>
+
+    <!-- 版本历史抽屉（列表/恢复，对齐 n8n Version History） -->
+    <el-drawer v-model="versionDrawerVisible" title="版本历史" size="520px">
+      <div v-loading="versionLoading" class="flow-designer__versions">
+        <el-alert
+          title="每次发布生成一个版本快照。可查看历史版本画布（只读预览），或恢复某个版本——恢复后流程转为草稿，需重新发布生效。"
+          type="info"
+          :closable="false"
+          class="flow-designer__versions-tip"
+        />
+        <el-table :data="versions" border stripe size="small">
+          <el-table-column label="版本" width="80" align="center">
+            <template #default="{ row }">
+              <el-tag size="small" type="primary">v{{ row.flowVersion }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="发布时间" width="150">
+            <template #default="{ row }">{{ row.createTime ?? '-' }}</template>
+          </el-table-column>
+          <el-table-column label="操作" min-width="120">
+            <template #default="{ row }">
+              <el-button link type="primary" size="small" @click="previewVersion(row)">预览</el-button>
+              <el-button link type="warning" size="small" :loading="restoringVersionId === row.id" @click="restoreVersion(row)">恢复</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+        <el-empty v-if="!versionLoading && !versions.length" description="暂无版本记录（发布流程后生成快照）" :image-size="60" />
+      </div>
+    </el-drawer>
+
+    <!-- 版本只读预览（独立画布，不触碰当前编辑画布） -->
+    <el-drawer v-model="versionPreviewVisible" :title="'版本预览: v' + (previewMeta?.flowVersion ?? '')" size="70%">
+      <div v-loading="versionPreviewLoading" class="flow-designer__version-preview">
+        <div class="flow-designer__version-preview-header">
+          <span class="flow-designer__version-preview-meta">
+            {{ previewMeta?.flowName ?? '流程' }} · 发布 {{ previewMeta?.createTime ?? '-' }} · {{ previewNodes.length }} 个节点 /
+            {{ previewEdges.length }} 条连线
+          </span>
+          <el-button size="small" @click="versionPreviewVisible = false">关闭</el-button>
+        </div>
+        <div class="flow-designer__version-preview-canvas">
+          <FlowCanvas :nodes="previewNodes" :edges="previewEdges" readonly />
+        </div>
+      </div>
+    </el-drawer>
   </div>
 </template>
 
@@ -1236,5 +1558,117 @@ onBeforeUnmount(() => {
 .flow-designer__ndv-sub {
   font-size: 12px;
   color: #909399;
+}
+
+/* ==================== NDV 三栏布局（对齐 n8n） ==================== */
+
+.flow-designer__ndv {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.flow-designer__ndv-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  border-bottom: 1px solid #e4e7ed;
+  flex-shrink: 0;
+}
+
+.flow-designer__ndv-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.flow-designer__ndv-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: #303133;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.flow-designer__ndv-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.flow-designer__ndv-body {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+.flow-designer__ndv-col {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid #e4e7ed;
+}
+
+.flow-designer__ndv-col:last-child {
+  border-right: none;
+}
+
+.flow-designer__ndv-col-title {
+  padding: 8px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #606266;
+  background: #fafafa;
+  border-bottom: 1px solid #e4e7ed;
+  flex-shrink: 0;
+}
+
+.flow-designer__ndv-col-body {
+  flex: 1;
+  padding: 12px;
+  overflow-y: auto;
+}
+
+.flow-designer__ndv-error {
+  margin: 12px;
+}
+
+/* ==================== 版本历史（抽屉 + 只读预览） ==================== */
+
+.flow-designer__versions-tip {
+  margin-bottom: 12px;
+}
+
+.flow-designer__version-preview {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.flow-designer__version-preview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 2px 10px;
+  flex-shrink: 0;
+}
+
+.flow-designer__version-preview-meta {
+  font-size: 12px;
+  color: #909399;
+}
+
+.flow-designer__version-preview-canvas {
+  flex: 1;
+  min-height: 0;
+  border: 1px solid #e4e7ed;
+  border-radius: 6px;
+  overflow: hidden;
 }
 </style>

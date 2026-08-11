@@ -4071,6 +4071,33 @@ INSERT INTO `ai_model` VALUES (8314456971655094272, '000000', 420770895034792755
 INSERT INTO `ai_model` VALUES (8783273890412667904, '000000', 2961532303096290816, 'MiniMax-M2', 'MiniMax-M2', 'CHAT', 8192, 0.70, '0', '1', 103, 1, '2026-06-30 23:59:26', NULL, NULL, '0', NULL, NULL, NULL, NULL, 0.001000, 0.001000, 'CNY');
 
 -- ----------------------------
+-- Table structure for ai_flow_version
+-- ----------------------------
+DROP TABLE IF EXISTS `ai_flow_version`;
+CREATE TABLE `ai_flow_version`  (
+  `id` bigint(20) NOT NULL COMMENT '主键',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000' COMMENT '租户编号',
+  `flow_id` bigint(20) NOT NULL COMMENT '流程ID',
+  `flow_version` int(11) NOT NULL COMMENT '发布后的流程版本号',
+  `flow_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '流程名称(发布时快照)',
+  `config_json` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '画布配置快照(JSON: nodes+edges)',
+  `description` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '发布说明',
+  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
+  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
+  `attr1` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段1',
+  `attr2` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段2',
+  `attr3` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段3',
+  `attr4` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段4',
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_flow_id_version`(`flow_id`, `flow_version`) USING BTREE,
+  INDEX `idx_create_time`(`create_time`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'AI 流程版本快照' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
 -- Table structure for ai_prompt_template
 -- ----------------------------
 DROP TABLE IF EXISTS `ai_prompt_template`;

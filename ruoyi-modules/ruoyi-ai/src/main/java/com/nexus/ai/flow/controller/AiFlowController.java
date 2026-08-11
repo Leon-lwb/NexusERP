@@ -17,9 +17,12 @@ import com.nexus.common.ai.domain.bo.AiFlowBo;
 import com.nexus.common.ai.domain.entity.AiFlow;
 import com.nexus.common.ai.domain.entity.AiFlowInstance;
 import com.nexus.common.ai.domain.vo.AiFlowVo;
+import com.nexus.common.ai.domain.vo.AiFlowVersionVo;
 import com.nexus.common.ai.service.IAiFlowInstanceService;
 import com.nexus.common.ai.service.IAiFlowService;
+import com.nexus.common.ai.service.IAiFlowVersionService;
 import com.nexus.common.core.domain.R;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.common.satoken.utils.LoginHelper;
@@ -48,12 +51,16 @@ public class AiFlowController extends BaseController {
 
     /** AI 流程业务服务 */
     private final IAiFlowService aiFlowService;
+    /** AI 流程版本快照服务（版本历史/恢复） */
+    private final IAiFlowVersionService aiFlowVersionService;
     /** 流程运行实例服务（webhook x-wait 同步等待用） */
     private final IAiFlowInstanceService instanceService;
     /** 流程执行引擎 */
     private final FlowEngine flowEngine;
     /** 流程节点注册中心（node-types 元数据） */
     private final FlowNodeRegistry flowNodeRegistry;
+    /** 内置流程模板目录（templates 接口） */
+    private final com.nexus.ai.flow.template.FlowTemplateCatalog flowTemplateCatalog;
 
     /**
      * 分页查询流程列表
@@ -111,12 +118,12 @@ public class AiFlowController extends BaseController {
      * <p>权限标识：{@code ai:flow:add}</p>
      *
      * @param bo 流程业务对象
-     * @return 操作结果
+     * @return 新流程ID（前端创建后跳转设计器）
      */
     @SaCheckPermission("ai:flow:add")
     @PostMapping
-    public R<Void> add(@Validated @RequestBody AiFlowBo bo) {
-        return toAjax(aiFlowService.insertByBo(bo));
+    public R<Long> add(@Validated @RequestBody AiFlowBo bo) {
+        return R.ok(aiFlowService.insertByBo(bo));
     }
 
     /**
@@ -315,6 +322,67 @@ public class AiFlowController extends BaseController {
     }
 
     /**
+     * 部分执行：运行到指定节点（含全部上游），对齐 n8n "Execute up to node"
+     * <p>复用 run-test 的 DRAFT 豁免 + 画布当前配置覆盖语义；只执行目标节点闭包，
+     * 目标节点执行完即终态。用于设计器单独验证某节点前序链路。</p>
+     *
+     * @param request 测试请求（flowId + configJson + input + destinationNodeId）
+     * @return 实例ID
+     */
+    @SaCheckPermission("ai:flow:run")
+    @PostMapping("/run-test-node")
+    public R<Long> runTestNode(@RequestBody FlowRunToNodeRequest request) {
+        if (request.getFlowId() == null) {
+            return R.fail("flowId 不能为空");
+        }
+        if (request.getDestinationNodeId() == null || request.getDestinationNodeId().isBlank()) {
+            return R.fail("destinationNodeId 不能为空");
+        }
+        AiFlow flow = aiFlowService.selectById(request.getFlowId());
+        if (flow == null) {
+            return R.fail("流程不存在");
+        }
+        if (request.getConfigJson() != null && !request.getConfigJson().isBlank()) {
+            try {
+                MAPPER.readTree(request.getConfigJson());
+                flow.setConfigJson(request.getConfigJson());
+            } catch (Exception e) {
+                return R.fail("configJson 不是合法的 JSON: " + e.getMessage());
+            }
+        }
+        JsonNode input = null;
+        if (request.getInput() != null && !request.getInput().isBlank()) {
+            try {
+                input = MAPPER.readTree(request.getInput());
+            } catch (Exception e) {
+                return R.fail("input 不是合法的 JSON: " + e.getMessage());
+            }
+        }
+        try {
+            FlowGraph graph = FlowGraph.parse(flow.getConfigJson());
+            graph.validate(flowNodeRegistry::contains);
+            for (var entry : graph.getNodes().entrySet()) {
+                FlowNodeProvider provider = flowNodeRegistry.getProvider(entry.getValue().getType());
+                if (provider != null) {
+                    provider.validateConfig(entry.getValue().getConfig());
+                }
+            }
+        } catch (IllegalArgumentException e) {
+            return R.fail("测试校验失败: " + e.getMessage());
+        }
+        String tenantIdStr = LoginHelper.getTenantId();
+        Long userId = LoginHelper.getUserId();
+        String userName = LoginHelper.getUsername();
+        try {
+            Long instanceId = flowEngine.startToNode(flow, input, "TEST", tenantIdStr, userId, userName,
+                request.getDestinationNodeId());
+            return R.ok(instanceId);
+        } catch (IllegalArgumentException e) {
+            return R.fail("启动失败: " + e.getMessage());
+        }
+    }
+
+    /**
      * 单节点测试（设计器调试用）
      * <p>用 mockState 构建流程状态，单独执行指定节点 Provider 并返回输出。
      * 权限标识：{@code ai:flow:run}</p>
@@ -428,6 +496,81 @@ public class AiFlowController extends BaseController {
 
         public void setMockState(String mockState) {
             this.mockState = mockState;
+        }
+    }
+
+    /**
+     * 查询内置流程模板列表（对齐 n8n 模板库精简版，ERP 场景）
+     * <p>仅要求登录，无需权限。模板为纯本地节点（SQL/IF/CODE/NOTIFY），
+     * 从模板创建后可直接测试运行。</p>
+     *
+     * @return 模板列表（key/name/category/description/inputExample/configJson）
+     */
+    @GetMapping("/templates")
+    public R<List<Map<String, Object>>> templates() {
+        return R.ok(flowTemplateCatalog.getTemplates());
+    }
+
+    /**
+     * 查询流程的版本历史列表（按版本号降序，不含 configJson）
+     * <p>权限标识：{@code ai:flow:list}</p>
+     *
+     * @param flowId 流程ID
+     * @return 版本快照列表
+     */
+    @SaCheckPermission("ai:flow:list")
+    @GetMapping("/{flowId}/versions")
+    public R<List<AiFlowVersionVo>> versions(@PathVariable Long flowId) {
+        return R.ok(aiFlowVersionService.selectListByFlowId(flowId));
+    }
+
+    /**
+     * 查询版本快照详情（含 configJson，供只读预览）
+     * <p>权限标识：{@code ai:flow:list}</p>
+     *
+     * @param versionId 版本快照ID
+     * @return 版本快照详情
+     */
+    @SaCheckPermission("ai:flow:list")
+    @GetMapping("/version/{versionId}")
+    public R<AiFlowVersionVo> versionInfo(@PathVariable Long versionId) {
+        return R.ok(aiFlowVersionService.selectVoById(versionId));
+    }
+
+    /**
+     * 恢复版本：快照 config_json 写回流程定义，状态置 DRAFT（需重新发布生效）
+     * <p>权限标识：{@code ai:flow:edit}</p>
+     *
+     * @param request 恢复请求（versionId）
+     * @return 恢复后的流程ID
+     */
+    @SaCheckPermission("ai:flow:edit")
+    @PostMapping("/version/restore")
+    public R<Long> restoreVersion(@RequestBody FlowVersionRestoreRequest request) {
+        if (request.getVersionId() == null) {
+            return R.fail("versionId 不能为空");
+        }
+        try {
+            return R.ok(aiFlowVersionService.restore(request.getVersionId()));
+        } catch (ServiceException e) {
+            return R.fail(e.getMessage());
+        }
+    }
+
+    /**
+     * 恢复版本请求
+     *
+     * @param versionId 版本快照ID
+     */
+    public static class FlowVersionRestoreRequest {
+        private Long versionId;
+
+        public Long getVersionId() {
+            return versionId;
+        }
+
+        public void setVersionId(Long versionId) {
+            this.versionId = versionId;
         }
     }
 
@@ -590,6 +733,53 @@ public class AiFlowController extends BaseController {
 
         public void setInstanceId(Long instanceId) {
             this.instanceId = instanceId;
+        }
+    }
+
+    /**
+     * 部分执行（运行到指定节点）请求
+     *
+     * @param flowId           流程ID
+     * @param configJson       画布当前配置（可选；null 时用 DB 配置）
+     * @param input            运行入参（JSON 字符串）
+     * @param destinationNodeId 目标节点ID（执行到它为止）
+     */
+    public static class FlowRunToNodeRequest {
+        private Long flowId;
+        private String configJson;
+        private String input;
+        private String destinationNodeId;
+
+        public Long getFlowId() {
+            return flowId;
+        }
+
+        public void setFlowId(Long flowId) {
+            this.flowId = flowId;
+        }
+
+        public String getConfigJson() {
+            return configJson;
+        }
+
+        public void setConfigJson(String configJson) {
+            this.configJson = configJson;
+        }
+
+        public String getInput() {
+            return input;
+        }
+
+        public void setInput(String input) {
+            this.input = input;
+        }
+
+        public String getDestinationNodeId() {
+            return destinationNodeId;
+        }
+
+        public void setDestinationNodeId(String destinationNodeId) {
+            this.destinationNodeId = destinationNodeId;
         }
     }
 }

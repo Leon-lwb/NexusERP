@@ -25,6 +25,23 @@ public interface FlowEngine {
                String tenantIdStr, Long userId, String userName);
 
     /**
+     * 部分执行：运行到指定节点（含全部上游），对齐 n8n "Execute up to node"
+     * <p>只执行目标节点及其传递上游闭包，目标节点执行完即结束（其下游不参与）。
+     * 用于设计器单独调试某节点前序链路。</p>
+     *
+     * @param flow              流程定义
+     * @param input             运行入参（JSON），可为 null
+     * @param triggerType       触发方式（通常 TEST）
+     * @param tenantIdStr       租户ID
+     * @param userId            触发人ID
+     * @param userName          触发人名称
+     * @param destinationNodeId 目标节点ID（执行到它为止）
+     * @return 实例ID
+     */
+    Long startToNode(AiFlow flow, JsonNode input, String triggerType,
+                     String tenantIdStr, Long userId, String userName, String destinationNodeId);
+
+    /**
      * 请求停止实例（协作式，节点边界生效）
      *
      * @param instanceId 实例ID
