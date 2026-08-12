@@ -18,8 +18,12 @@ const stripHtml = (html: string) => html.replace(/<[^>]*>/g, '');
 export const dispatchRealtimeMessage = (raw: string) => {
   if (typeof raw !== 'string') return;
 
+  let isGreeting = false;
+
   try {
     const obj = JSON.parse(raw);
+    // 登录欢迎等问候消息（纯文本 message，非业务信封）直接标记已读展示，不计入未读
+    isGreeting = typeof obj?.message === 'string' && /好，欢迎登录/.test(obj.message);
     if (obj && obj.v === 1 && obj.type && obj.payload) {
       if (obj.type === 'USER_NOTIFICATION') {
         const p = obj.payload;
@@ -85,15 +89,27 @@ export const dispatchRealtimeMessage = (raw: string) => {
   }
 
   // 兜底：无法识别的消息作为站内通知弹窗
+  // 有 message 字段的 JSON（如登录欢迎）展示纯文本 message，避免列表显示整段 JSON
+  let displayMessage = raw;
+  try {
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed.message === 'string') {
+      displayMessage = parsed.message;
+    }
+  } catch {
+    /* raw 非 JSON，原样展示 */
+  }
   useNoticeStore().addNotice({
-    message: raw,
-    read: false,
+    message: displayMessage,
+    read: isGreeting,
     time: new Date().toLocaleString()
   });
-  ElNotification({
-    title: '消息',
-    message: raw,
-    type: 'success',
-    duration: 3000
-  });
+  if (!isGreeting) {
+    ElNotification({
+      title: '消息',
+      message: displayMessage,
+      type: 'success',
+      duration: 3000
+    });
+  }
 };

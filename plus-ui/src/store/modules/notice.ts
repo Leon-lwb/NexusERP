@@ -31,6 +31,13 @@ export const useNoticeStore = defineStore('notice', () => {
         exists.read = notice.read;
         return;
       }
+    } else if (notice.message !== undefined) {
+      // 无 id 消息（如登录欢迎等 SSE 兜底）按内容去重，避免多次登录/重复推送叠加
+      const exists = state.notices.find((n) => n.id === undefined && n.message === notice.message);
+      if (exists) {
+        exists.read = notice.read;
+        return;
+      }
     }
     state.notices.push(notice);
   };

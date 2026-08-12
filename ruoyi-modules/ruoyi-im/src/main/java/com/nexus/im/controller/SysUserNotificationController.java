@@ -57,13 +57,15 @@ public class SysUserNotificationController extends BaseController {
 
     /**
      * 将当前登录用户的全部未读通知标记为已读（通知中心"全部已读"）。
+     * <p>幂等操作：无未读通知时 UPDATE 影响 0 行也应视为成功，不能用 toAjax（0 行会返回 500）</p>
      *
      * @return 操作结果
      */
     @SaCheckLogin
     @PutMapping("/read/all")
     public R<Void> markAllRead() {
-        return toAjax(sysUserNotificationService.markAllRead());
+        sysUserNotificationService.markAllRead();
+        return R.ok();
     }
 
     /**
