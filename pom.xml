@@ -44,10 +44,8 @@
         <aws.sdk.version>2.28.22</aws.sdk.version>
         <!-- SMS 配置 -->
         <sms4j.version>3.3.5</sms4j.version>
-        <!-- 限制框架中的fastjson版本 -->
-        <fastjson.version>1.2.83</fastjson.version>
         <!-- fastjson2版本 -->
-        <fastjson2.version>2.0.61</fastjson2.version>
+        <fastjson2.version>2.0.64</fastjson2.version>
         <!-- 面向运行时的D-ORM依赖 -->
         <anyline.version>8.7.3-20251210</anyline.version>
         <!-- 工作流配置 -->
@@ -357,14 +355,15 @@
             </dependency>
 
             <dependency>
-                <groupId>com.alibaba</groupId>
-                <artifactId>fastjson</artifactId>
-                <version>${fastjson.version}</version>
-            </dependency>
-
-            <dependency>
                 <groupId>com.alibaba.fastjson2</groupId>
                 <artifactId>fastjson2</artifactId>
+                <version>${fastjson2.version}</version>
+            </dependency>
+            <!-- fastjson 1.x 兼容包（引擎为 fastjson2，无 1.x 漏洞）。
+                 用于兼容 JustAuth 等仍以 com.alibaba.fastjson.* 类型为契约的第三方库 -->
+            <dependency>
+                <groupId>com.alibaba</groupId>
+                <artifactId>fastjson</artifactId>
                 <version>${fastjson2.version}</version>
             </dependency>
 

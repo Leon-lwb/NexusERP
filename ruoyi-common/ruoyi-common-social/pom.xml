@@ -19,6 +19,20 @@
         <dependency>
             <groupId>me.zhyd.oauth</groupId>
             <artifactId>JustAuth</artifactId>
+            <exclusions>
+                <!-- 排除传递依赖的 fastjson 1.x（有漏洞），由下方 fastjson2 兼容包替代 -->
+                <exclusion>
+                    <groupId>com.alibaba</groupId>
+                    <artifactId>fastjson</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <!-- fastjson2 兼容包：JustAuth 的 AuthUser 等类以 com.alibaba.fastjson.* 类型为契约，
+             该坐标版本号即 fastjson2 版本，引擎为 fastjson2（无 1.x 漏洞） -->
+        <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>fastjson</artifactId>
         </dependency>
 
         <dependency>

@@ -1,7 +1,7 @@
 package com.nexus.erp.wm.domain.vo;
 
 import cn.idev.excel.annotation.ExcelProperty;
-import com.alibaba.fastjson.annotation.JSONField;
+import com.alibaba.fastjson2.annotation.JSONField;
 import io.github.linpeilie.annotations.AutoMapper;
 import lombok.Data;
 import com.nexus.erp.wm.domain.WmProductionIssue;
