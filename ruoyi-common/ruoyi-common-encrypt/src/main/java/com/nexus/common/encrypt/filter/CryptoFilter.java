@@ -10,6 +10,7 @@ import com.nexus.common.core.utils.SpringUtils;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.encrypt.annotation.ApiEncrypt;
 import com.nexus.common.encrypt.properties.ApiDecryptProperties;
+import com.nexus.common.encrypt.utils.EncryptUtils;
 import org.springframework.http.HttpMethod;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerExceptionResolver;
@@ -29,6 +30,8 @@ public class CryptoFilter implements Filter {
 
     public CryptoFilter(ApiDecryptProperties properties) {
         this.properties = properties;
+        EncryptUtils.validateRsaPublicKey(properties.getPublicKey());
+        EncryptUtils.validateRsaPrivateKey(properties.getPrivateKey());
     }
 
     @Override

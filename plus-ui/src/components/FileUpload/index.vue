@@ -73,7 +73,7 @@ const uploadList = ref<any[]>([]);
 
 const baseUrl = import.meta.env.VITE_APP_BASE_API;
 const uploadFileUrl = ref(baseUrl + '/resource/oss/upload'); // 上传文件服务器地址
-const headers = ref(globalHeaders());
+const headers = computed(() => globalHeaders());
 
 const fileList = ref<any[]>([]);
 const showTip = computed(() => props.isShowTip && (props.fileType || props.fileSize));

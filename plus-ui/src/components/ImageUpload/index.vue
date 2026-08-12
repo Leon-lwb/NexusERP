@@ -81,7 +81,7 @@ const dialogVisible = ref(false);
 
 const baseUrl = import.meta.env.VITE_APP_BASE_API;
 const uploadImgUrl = ref(baseUrl + '/resource/oss/upload'); // 上传的图片服务器地址
-const headers = ref(globalHeaders());
+const headers = computed(() => globalHeaders());
 
 const fileList = ref<any[]>([]);
 const showTip = computed(() => props.isShowTip && (props.fileType || props.fileSize));

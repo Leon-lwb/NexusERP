@@ -14,6 +14,7 @@ import com.nexus.common.core.domain.dto.UserOnlineDTO;
 import com.nexus.common.core.utils.MessageUtils;
 import com.nexus.common.core.utils.ServletUtils;
 import com.nexus.common.core.utils.SpringUtils;
+import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.core.utils.ip.AddressUtils;
 import com.nexus.common.log.event.LogininforEvent;
 import com.nexus.common.redis.utils.RedisUtils;
@@ -73,7 +74,7 @@ public class UserActionListener implements SaTokenListener {
         SpringUtils.context().publishEvent(logininforEvent);
         // 更新登录信息
         loginService.recordLoginInfo((Long) loginParameter.getExtra(LoginHelper.USER_KEY), ip);
-        log.info("user doLogin, userId:{}, token:{}", loginId, tokenValue);
+        log.info("user doLogin, userId:{}, token:***{}", loginId, StringUtils.right(tokenValue, 8));
     }
 
     /**
@@ -85,7 +86,7 @@ public class UserActionListener implements SaTokenListener {
         TenantHelper.dynamic(tenantId, () -> {
             RedisUtils.deleteObject(CacheConstants.ONLINE_TOKEN_KEY + tokenValue);
         });
-        log.info("user doLogout, userId:{}, token:{}", loginId, tokenValue);
+        log.info("user doLogout, userId:{}, token:***{}", loginId, StringUtils.right(tokenValue, 8));
     }
 
     /**
@@ -97,7 +98,7 @@ public class UserActionListener implements SaTokenListener {
         TenantHelper.dynamic(tenantId, () -> {
             RedisUtils.deleteObject(CacheConstants.ONLINE_TOKEN_KEY + tokenValue);
         });
-        log.info("user doKickout, userId:{}, token:{}", loginId, tokenValue);
+        log.info("user doKickout, userId:{}, token:***{}", loginId, StringUtils.right(tokenValue, 8));
     }
 
     /**
@@ -109,7 +110,7 @@ public class UserActionListener implements SaTokenListener {
         TenantHelper.dynamic(tenantId, () -> {
             RedisUtils.deleteObject(CacheConstants.ONLINE_TOKEN_KEY + tokenValue);
         });
-        log.info("user doReplaced, userId:{}, token:{}", loginId, tokenValue);
+        log.info("user doReplaced, userId:{}, token:***{}", loginId, StringUtils.right(tokenValue, 8));
     }
 
     /**
