@@ -48,7 +48,7 @@ Nexus-ERP 是一套面向制造业与贸易型企业的综合管理系统，涵�
 
 ```
 ruoyi-admin/              — Spring Boot 入口 (DromaraApplication)。组装所有模块。
-ruoyi-common/             — 共享库 (27 个子模块)。每个均为可自动配置的独立 jar。
+ruoyi-common/             — 共享库 (28 个子模块)。每个均为可自动配置的独立 jar。
   ruoyi-common-core/      —    基础层: 领域模型、枚举、异常、校验器、工具类
   ruoyi-common-web/       —    Web 层: 全局异常处理、响应包装、过滤器
   ruoyi-common-satoken/   —    认证 (Sa-Token + JWT)
@@ -57,6 +57,7 @@ ruoyi-common/             — 共享库 (27 个子模块)。每个均为可自�
   ruoyi-common-tenant/    —    多租户插件
   ruoyi-common-sse/       —    用于推送通知的服务器发送事件 (Server-Sent Events)
   ruoyi-common-ai/        —    AI 公共层: 实体类 (AiProvider/AiModel/AiSession/AiMessage)、Mapper、DTO、Service 接口
+  ruoyi-common-flow/      —    流程编排公共层: 实体类 (Flow/FlowInstance/FlowNodeRun/FlowVersion)、Mapper、BO/VO、Service
   ruoyi-common-cv/        —    视觉识别客户端 (VisionClient — 封装 Vision 服务: 人脸注册/1:1验证/1:N识别、物料OCR、探活)
   ruoyi-common-oss/       —    对象存储 (Minio / S3 协议)
   ruoyi-common-flowable/  —    Flowable 工作流引擎集成
@@ -67,6 +68,7 @@ ruoyi-modules/            — 业务模块
   ruoyi-mes/              —    MES 制造执行 (工单、安灯、数据采集、设备、质量、SPC)
   ruoyi-iot/              —    IoT 物联网 (设备管理、MQTT、消息管道、实时数据)
   ruoyi-ai/               —    AI 智能助手 (Agent 编排、Tool、SSE 推送、对话管理)
+  ruoyi-flow/             —    流程编排 (节点式流程引擎: AI/逻辑/集成/通知/控制节点，定时触发，SSE 推送)
   ruoyi-im/               —    即时通讯 (私聊、群聊、消息推送)
   ruoyi-flowable/         —    Flowable 工作流 REST API
   ruoyi-generator/        —    代码生成器
@@ -157,15 +159,24 @@ AI 模块 (`ruoyi-ai`) 按 LangChain4j Agent 架构组织:
 
 | 包 | 描述 |
 |---------|-------------|
-| `agent` | Agent 接口定义 (ErpQueryAgent)，使用 `@Agent` / `@SystemMessage` 注解声明 |
-| `config` | 配置类 (AiProperties — `nexus.ai` 前缀、AiThreadPoolConfig — 异步线程池) |
-| `context` | AiRequestContext — 异步线程传播 tenantId/userId (Sa-Token ThreadLocal 不自动传播) |
-| `controller` | AiChatController — REST 接口 (`/ai/chat/send`, `/ai/chat/history/{id}`, `/ai/chat/sessions`) |
-| `service/chat` | ChatModelFactory — 根据数据库配置动态构建 ChatModel/StreamingChatModel (带缓存) |
+| `agent` | Agent 接口定义 (ErpQueryAgent/ErpReportAgent/GraphExtractionAgent/WebSearchAgent)，使用 `@Agent` / `@SystemMessage` 注解声明 |
+| `config` | 配置类 (AiProperties — `nexus.ai` 前缀、AiThreadPoolConfig — 异步线程池、AiPromptTemplateInitializer、AiSqlExampleInitializer) |
+| `context` | AiRequestContext — 异步线程传播 tenantId/userId (Sa-Token ThreadLocal 不自动传播)；SearchSourceHolder — 搜索源上下文 |
+| `controller` | 所有 REST 控制器 (AiChatController、AiModelController、AiProviderController、AiKnowledgeController、AiKnowledgeGraphController、AiPromptTemplateController、AiSqlExampleController、AiTokenUsageController、AiImageController、AiAbTestController、McpMarketController、McpToolController) |
+| `domain/dto` | 共享 DTO (ImageGenerateRequest、McpToolTestResult) |
+| `listener` | AiModelChangeListener — 模型变更事件监听 |
+| `mcp/service` | MCP 服务层 (McpClientManager、ToolProviderFactory、McpToolServiceImpl、IMcpMarketService) |
+| `observability` | 可观测性 (LangChain4j 监听器: ChatModel/EmbeddingModel/Tool/Agent 监听，AgentStreamHelper、OutputChannel) |
+| `service/chat` | ChatModelFactory — 根据数据库配置动态构建 ChatModel/StreamingChatModel (带缓存)；PersistentChatMemoryStore；provider/ — 多厂商适配 (OpenAI/DeepSeek/通义千问/智谱/Ollama/MiniMax/MiMo/CustomApi) |
 | `service/facade` | AiServiceFacade — 统一入口: 路由对话 → 创建会话 → 构建 SupervisorAgent → 异步执行 → SSE 推送 |
-| `service/query` | ErpQueryService — ERP 数据源 SQL 执行 (`@DS("erp")` 切换到 ry-erp 库) |
+| `service/image` | 图片生成服务 (TongYiWanxImageService) |
+| `service/kg` | 知识图谱 (GraphExtractionParser、KnowledgeGraphService、CommunityService、GlobalSearchService、GraphStoreStrategy、LabelPropagationClustering) |
+| `service/prompt` | PromptTemplateService — 提示词模板管理 |
+| `service/query` | ErpQueryService — ERP 数据源 SQL 执行 (`@DS("erp")`)、SqlSafetyValidator — SQL 安全检查、SqlExampleService、ErpTableSchemaManager |
+| `service/rag` | RAG 检索增强 (RetrieverService、DocumentParserService、EmbeddingService、ChunkingService、KnowledgeProcessService、KnowledgeImportService、VectorStoreService、RerankService) |
 | `service/sse` | AiSseMessageHelper — SSE 消息编码 (JSON payload: type=AI_CONTENT/AI_THINKING/AI_DONE/AI_ERROR/AI_CHART) |
-| `tool` | LangChain4j Tool 实现: QueryAllTablesTool、QueryTableSchemaTool、ExecuteSqlQueryTool |
+| `service/token` | AiTokenUsageServiceImpl — Token 用量统计 |
+| `tool` | 统一工具包: LangChain4j `@Tool` 实现 (QueryAllTablesTool、QueryTableSchemaTool、ExecuteSqlQueryTool、ErpInventoryTool、ErpProductionTool、ErpPurchaseTool、ErpSalesTool、KnowledgeGraphTool、WebSearchTool、ErpToolHelper) + BuiltinToolProvider 包装器 + BuiltinToolRegistry + AiToolInitializer |
 
 AI 公共模块 (`ruoyi-common-ai`) 存放跨模块共享的实体和接口:
 
@@ -175,6 +186,38 @@ AI 公共模块 (`ruoyi-common-ai`) 存放跨模块共享的实体和接口:
 | `mapper` | MyBatis-Plus Mapper 接口 |
 | `dto` | AiChatRequest (聊天请求 DTO) |
 | `service` | IAiModelService 及实现 (模型配置查询) |
+
+### Flow 模块子包
+
+流程编排模块 (`ruoyi-flow`) 独立于 AI 模块，提供节点式流程编排引擎:
+
+| 包 | 描述 |
+|---------|-------------|
+| `controller` | FlowController — 流程定义 CRUD、发布/下线、运行/测试、版本管理、模板 (`/ai/flow/**`)；FlowInstanceController — 实例查询/重试 (`/ai/flow/instance/**`) |
+| `engine` | FlowEngine — 流程执行引擎 (DAG 拓扑排序、节点调度、异步执行、重试/超时)；FlowStopRegistry — 停止信号；FlowNodeStatus — 节点状态枚举 |
+| `expr` | FlowConditionEvaluator — 条件表达式评估；SpelFlowExpressionEvaluator — SpEL 表达式实现 |
+| `model` | FlowGraph (DAG 图)、FlowEdgeDef (边定义)、FlowNodeDef (节点定义) |
+| `node` | 核心接口: FlowNodeProvider (节点提供者 SPI)、FlowNodeRegistry (节点注册中心)、FlowExecutionContext (执行上下文)、NodeParamSchema (参数 Schema) |
+| `node/ai` | AI 节点: LlmNodeProvider (LLM 调用)、AgentNodeProvider (Agent 编排)、RagNodeProvider (RAG 检索)、ErpToolNodeProvider (ERP 工具) |
+| `node/logic` | 逻辑节点: IfNodeProvider (条件分支)、SetNodeProvider (变量赋值)、CodeNodeProvider (代码执行)、SqlNodeProvider (SQL 查询) |
+| `node/integration` | 集成节点: HttpNodeProvider (HTTP 请求 + SSRF 防护)、MqSendNodeProvider (MQ 消息发送)、OssNodeProvider (OSS 文件操作) |
+| `node/notify` | 通知节点: MailNodeProvider (邮件)、SmsNodeProvider (短信)、ImWebhookNodeProvider (IM Webhook)、NotifyNodeProvider (系统通知) |
+| `node/control` | 控制节点: WaitNodeProvider (等待)、MergeNodeProvider (合并)、SplitInBatchesProvider (分批)、AggregateNodeProvider (聚合) |
+| `schedule` | FlowScheduleJob — 定时触发流程 (SnailJob) |
+| `state` | FlowState — 流程状态枚举；FlowTemplateRenderer — 模板渲染引擎 |
+| `template` | FlowTemplateCatalog — 节点模板目录 |
+
+流程公共模块 (`ruoyi-common-flow`) 存放跨模块共享的实体和接口:
+
+| 包 | 描述 |
+|---------|-------------|
+| `domain/entity` | Flow、FlowInstance、FlowNodeRun、FlowVersion (对应 ai_flow/ai_flow_instance/ai_flow_node_run/ai_flow_version 表) |
+| `domain/bo` | FlowBo、FlowInstanceBo、FlowNodeRunBo、FlowVersionBo (请求 DTO) |
+| `domain/vo` | FlowVo、FlowInstanceVo、FlowNodeRunVo、FlowVersionVo (响应 DTO) |
+| `mapper` | MyBatis-Plus Mapper 接口 (FlowMapper、FlowInstanceMapper、FlowNodeRunMapper、FlowVersionMapper) |
+| `service` | IFlowService、IFlowInstanceService、IFlowVersionService 及实现 |
+
+> **注意**: API 路径 `/ai/flow/**` 保持不变，数据库表名 `ai_flow*` 保持不变。`ruoyi-flow` 依赖 `ruoyi-ai` (AI 节点需要 AiRequestContext/ChatModelFactory/RetrieverService 等)。
 
 ### 前端结构 (plus-ui)
 
