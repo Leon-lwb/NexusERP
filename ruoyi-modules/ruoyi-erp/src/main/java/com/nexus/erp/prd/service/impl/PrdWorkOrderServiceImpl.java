@@ -18,6 +18,7 @@ import com.nexus.common.core.domain.R;
 import com.nexus.common.core.utils.MapstructUtils;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.flowable.core.domain.ActStatus;
+import com.nexus.common.flowable.helper.FlowableProcInsIdHelper;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.erp.prd.domain.PrdProductionPlan;
@@ -47,10 +48,7 @@ import com.nexus.workflow.domain.WfMyBusiness;
 import com.nexus.workflow.service.IWfProcessService;
 import com.nexus.workflow.service.impl.WfMyBusinessServiceImpl;
 import lombok.extern.slf4j.Slf4j;
-import org.flowable.engine.HistoryService;
-import org.flowable.engine.RuntimeService;
-import org.flowable.engine.history.HistoricProcessInstance;
-import org.flowable.engine.runtime.ProcessInstance;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -87,8 +85,7 @@ public class PrdWorkOrderServiceImpl implements IPrdWorkOrderService {
     private final PrdProductionPlanMapper prdProductionPlanMapper;
     private final IWfProcessService processService;
     private final WfMyBusinessServiceImpl wfMyBusinessServiceImpl;
-    private final RuntimeService runtimeService;
-    private final HistoryService historyService;
+    private final FlowableProcInsIdHelper procInsIdHelper;
     private final PrdBackflushServiceImpl backflushService;
     private final PrdMaterialRequirementMapper requirementMapper;
     private final PrdMaterialRequirementDetailMapper detailMapper;
@@ -653,21 +650,10 @@ public boolean submit(String woIdStr, String selectFlowId) {
      */
     @Override
     public String getProcInsId(String woIdStr) {
-        try {
+        return procInsIdHelper.resolve(woIdStr, () -> {
             WfMyBusiness business = wfMyBusinessServiceImpl.getByDataId(woIdStr);
-            if (business != null && StringUtils.isNotBlank(business.getProcessInstanceId())) {
-                return business.getProcessInstanceId();
-            }
-        } catch (Exception ignored) {
-        }
-        ProcessInstance runtime = runtimeService.createProcessInstanceQuery()
-            .processInstanceBusinessKey(woIdStr).singleResult();
-        if (runtime != null) {
-            return runtime.getId();
-        }
-        HistoricProcessInstance hist = historyService.createHistoricProcessInstanceQuery()
-            .processInstanceBusinessKey(woIdStr).singleResult();
-        return hist != null ? hist.getId() : null;
+            return business != null ? business.getProcessInstanceId() : null;
+        });
     }
 
     /**
@@ -677,7 +663,7 @@ public boolean submit(String woIdStr, String selectFlowId) {
      * @param business Flowable 业务对象，含流程状态与关联工单 ID
      */
     @Override
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void afterFlowHandle(WfMyBusiness business) {
         Long woId = Long.parseLong(business.getDataId());
         PrdWorkOrder entity = baseMapper.selectById(woId);
@@ -763,7 +749,7 @@ public boolean submit(String woIdStr, String selectFlowId) {
      * @return 工单详情
      */
     @Override
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
     public Object getBusinessDataById(String dataId) {
         return selectById(Long.parseLong(dataId));
     }
@@ -790,6 +776,31 @@ public boolean submit(String woIdStr, String selectFlowId) {
     @Override
     public List<String> flowCandidateUsernamesOfTask(String taskNameId, Map<String, Object> values) {
         return null;
+    }
+
+    /**
+     * 更新工单IPQC聚合质检状态
+     *
+     * @param woId          工单ID
+     * @param qualityStatus 质检状态
+     * @param ipqcId        IPQC检验单ID
+     * @param ipqcCode      IPQC检验单号
+     * @param inspectorId   检验员ID
+     * @param inspectorName 检验员姓名
+     * @param ipqcTime      检验时间
+     * @return 影响行数
+     */
+    @Override
+    public int updateIpqcStatus(Long woId, String qualityStatus, Long ipqcId, String ipqcCode,
+                                 Long inspectorId, String inspectorName, Date ipqcTime) {
+        return baseMapper.update(null, Wrappers.<PrdWorkOrder>lambdaUpdate()
+            .set(PrdWorkOrder::getQualityStatus, qualityStatus)
+            .set(PrdWorkOrder::getQualityCheckId, ipqcId)
+            .set(PrdWorkOrder::getQualityCheckNo, ipqcCode)
+            .set(PrdWorkOrder::getInspectorId, inspectorId)
+            .set(PrdWorkOrder::getInspectorName, inspectorName)
+            .set(PrdWorkOrder::getInspectTime, ipqcTime)
+            .eq(PrdWorkOrder::getWoId, woId));
     }
 
     /**

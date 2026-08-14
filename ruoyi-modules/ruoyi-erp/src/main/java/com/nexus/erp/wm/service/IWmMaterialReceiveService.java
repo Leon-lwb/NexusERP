@@ -2,6 +2,7 @@ package com.nexus.erp.wm.service;
 
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
+import com.nexus.erp.wm.domain.WmMaterialReceive;
 import com.nexus.erp.wm.domain.bo.WmMaterialReceiveBo;
 import com.nexus.erp.wm.domain.vo.WmMaterialReceiveVo;
 import com.nexus.workflow.service.WfCallBackServiceI;
@@ -107,4 +108,20 @@ public interface IWmMaterialReceiveService extends WfCallBackServiceI {
      * @return 结果字符串
      */
     String getProcInsId(String receiveIdStr);
+
+    /**
+     * 根据ID查询物料入库单实体
+     *
+     * @param id 主键ID
+     * @return 物料入库单实体
+     */
+    WmMaterialReceive getById(Long id);
+
+    /**
+     * 更新物料入库单实体
+     *
+     * @param entity 物料入库单实体
+     * @return 影响行数
+     */
+    int updateById(WmMaterialReceive entity);
 }

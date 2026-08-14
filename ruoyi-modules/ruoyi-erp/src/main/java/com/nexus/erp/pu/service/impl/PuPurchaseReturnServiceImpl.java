@@ -29,10 +29,7 @@ import com.nexus.system.strategy.AutoCodeUtil;
 import com.nexus.workflow.domain.WfMyBusiness;
 import com.nexus.workflow.service.IWfProcessService;
 import com.nexus.workflow.service.impl.WfMyBusinessServiceImpl;
-import org.flowable.engine.HistoryService;
-import org.flowable.engine.RuntimeService;
-import org.flowable.engine.history.HistoricProcessInstance;
-import org.flowable.engine.runtime.ProcessInstance;
+import com.nexus.common.flowable.helper.FlowableProcInsIdHelper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -68,8 +65,7 @@ public class PuPurchaseReturnServiceImpl implements IPuPurchaseReturnService {
     private final AutoCodeUtil autoCodeUtil;
     private final IWfProcessService processService;
     private final WfMyBusinessServiceImpl wfMyBusinessServiceImpl;
-    private final RuntimeService runtimeService;
-    private final HistoryService historyService;
+    private final FlowableProcInsIdHelper procInsIdHelper;
     private final IPuInvoiceService puInvoiceService;
 
     /**
@@ -266,21 +262,10 @@ public class PuPurchaseReturnServiceImpl implements IPuPurchaseReturnService {
      */
     @Override
     public String getProcInsId(String returnIdStr) {
-        try {
+        return procInsIdHelper.resolve(returnIdStr, () -> {
             WfMyBusiness business = wfMyBusinessServiceImpl.getByDataId(returnIdStr);
-            if (business != null && StringUtils.isNotBlank(business.getProcessInstanceId())) {
-                return business.getProcessInstanceId();
-            }
-        } catch (Exception ignored) {
-        }
-        ProcessInstance runtime = runtimeService.createProcessInstanceQuery()
-            .processInstanceBusinessKey(returnIdStr).singleResult();
-        if (runtime != null) {
-            return runtime.getId();
-        }
-        HistoricProcessInstance hist = historyService.createHistoricProcessInstanceQuery()
-            .processInstanceBusinessKey(returnIdStr).singleResult();
-        return hist != null ? hist.getId() : null;
+            return business != null ? business.getProcessInstanceId() : null;
+        });
     }
 
     /**
@@ -297,7 +282,7 @@ public class PuPurchaseReturnServiceImpl implements IPuPurchaseReturnService {
      * @param business 流程业务对象
      */
     @Override
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void afterFlowHandle(WfMyBusiness business) {
         Long returnId = Long.parseLong(business.getDataId());
         PuPurchaseReturn entity = baseMapper.selectById(returnId);
@@ -322,7 +307,7 @@ public class PuPurchaseReturnServiceImpl implements IPuPurchaseReturnService {
      * @return 采购退货单视图对象
      */
     @Override
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
     public Object getBusinessDataById(String dataId) {
         return selectById(Long.parseLong(dataId));
     }

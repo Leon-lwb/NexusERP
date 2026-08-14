@@ -28,6 +28,11 @@
 
         <dependency>
             <groupId>com.nexus</groupId>
+            <artifactId>ruoyi-common-tenant</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.nexus</groupId>
             <artifactId>ruoyi-common-mybatis</artifactId>
         </dependency>
 

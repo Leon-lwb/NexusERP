@@ -91,7 +91,7 @@ public class AiChatModelListener implements ChatModelListener {
                     BigDecimal cost = aiTokenUsageService.calculateCost(modelId, inputTokens, outputTokens);
                     aiTokenUsageService.incrementDailyUsage(tenantId, userId,
                         userName != null ? userName : String.valueOf(userId),
-                        modelId, modelName != null ? modelName : "unknown",
+                        modelId, modelName != null ? modelName : provider.toString(),
                         inputTokens, outputTokens, cost);
                 } catch (Exception e) {
                     log.warn("[ChatModel] 更新日统计失败: {}", e.getMessage());

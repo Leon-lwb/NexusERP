@@ -1,7 +1,7 @@
 package com.nexus.erp.prd.report.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
-import com.baomidou.dynamic.datasource.annotation.DS;
+
 import com.nexus.common.core.domain.R;
 import com.nexus.erp.prd.report.service.PrdProductionReportServiceImpl;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +20,6 @@ import java.util.Map;
 @Validated
 @RequiredArgsConstructor
 @RestController
-@DS("erp")
 @RequestMapping("/erp/prd/report")
 public class PrdProductionReportController {
 

@@ -1,5 +1,6 @@
 package com.nexus.erp.so.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -17,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -84,6 +86,30 @@ public class SoSalesOrderLineServiceImpl implements ISoSalesOrderLineService {
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {
         return baseMapper.deleteBatchIds(List.of(ids));
+    }
+
+    /**
+     * 按条件查询销售订单行实体列表
+     */
+    @Override
+    public List<SoSalesOrderLine> list(Wrapper<SoSalesOrderLine> wrapper) {
+        return baseMapper.selectList(wrapper);
+    }
+
+    /**
+     * 按销售订单ID和物料ID更新OQC状态
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int updateOqcStatus(Long soId, Long materialId, String oqcStatus, Long oqcId, String oqcCode, Date oqcTime) {
+        return baseMapper.update(null, Wrappers.<SoSalesOrderLine>lambdaUpdate()
+            .set(SoSalesOrderLine::getOqcStatus, oqcStatus)
+            .set(SoSalesOrderLine::getOqcId, oqcId)
+            .set(SoSalesOrderLine::getOqcCode, oqcCode)
+            .set(SoSalesOrderLine::getOqcTime, oqcTime)
+            .eq(SoSalesOrderLine::getSoId, soId)
+            .eq(SoSalesOrderLine::getMaterialId, materialId)
+            .ne(SoSalesOrderLine::getLineStatus, "CANCELLED"));
     }
 
     /**

@@ -33,14 +33,7 @@ import com.nexus.erp.wm.mapper.WmSalesIssueLineMapper;
 import com.nexus.erp.wm.mapper.WmSalesIssueMapper;
 import com.nexus.erp.wm.service.IWmSalesIssueService;
 import com.nexus.erp.so.service.ISoFulfillmentWritebackService;
-import com.nexus.system.strategy.AutoCodeUtil;
 import com.nexus.workflow.domain.WfMyBusiness;
-import com.nexus.workflow.service.IWfProcessService;
-import com.nexus.workflow.service.impl.WfMyBusinessServiceImpl;
-import org.flowable.engine.HistoryService;
-import org.flowable.engine.RuntimeService;
-import org.flowable.engine.history.HistoricProcessInstance;
-import org.flowable.engine.runtime.ProcessInstance;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -77,16 +70,8 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
     private final WmMaterialStockMapper wmMaterialStockMapper;
     /** 库存流水数据访问映射器（Mapper） */
     private final WmMaterialStockTxMapper stockTxMapper;
-    /** 销售发料业务服务，提供销售发料相关能力 */
-    private final IWfProcessService processService;
-    /** 销售发料业务服务，提供销售发料相关能力 */
-    private final WfMyBusinessServiceImpl wfMyBusinessServiceImpl;
-    /** 销售发料业务服务，提供销售发料相关能力 */
-    private final RuntimeService runtimeService;
-    /** 销售发料业务服务，提供销售发料相关能力 */
-    private final HistoryService historyService;
-    /** 自动编码工具类 */
-    private final AutoCodeUtil autoCodeUtil;
+    /** WM 公共依赖（AutoCodeUtil / 流程服务 / 流程实例查询） */
+    private final WmServiceHelper wm;
     /** 销售发料业务服务，提供销售发料相关能力 */
     private final ISoFulfillmentWritebackService fulfillmentWritebackService;
     /** 可靠消息生产者：销售出库审批通过后发 OQC 自动创建消息 */
@@ -148,7 +133,7 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
     public int insertByBo(WmSalesIssueBo bo) {
         WmSalesIssue entity = MapstructUtils.convert(bo, WmSalesIssue.class);
         if (StringUtils.isBlank(entity.getIssueCode())) {
-            entity.setIssueCode(autoCodeUtil.genSerialCode("WM_SALES_ISSUE_CODE", null));
+            entity.setIssueCode(wm.autoCodeUtil.genSerialCode("WM_SALES_ISSUE_CODE", null));
         }
         int rows = baseMapper.insert(entity);
         insertLines(entity.getIssueId(), bo.getWmSalesIssueLineList());
@@ -378,7 +363,7 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
         variables.put("issueId", entity.getIssueId());
         variables.put("issueCode", entity.getIssueCode());
         variables.put("clientName", entity.getClientName());
-        R<Void> result = processService.startProcessByDataId(issueIdStr, selectFlowId, "wmSalesIssueService", variables);
+        R<Void> result = wm.processService.startProcessByDataId(issueIdStr, selectFlowId, "wmSalesIssueService", variables);
         if (R.isSuccess(result)) {
             return true;
         }
@@ -393,21 +378,10 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
      */
     @Override
     public String getProcInsId(String issueIdStr) {
-        try {
-            WfMyBusiness business = wfMyBusinessServiceImpl.getByDataId(issueIdStr);
-            if (business != null && StringUtils.isNotBlank(business.getProcessInstanceId())) {
-                return business.getProcessInstanceId();
-            }
-        } catch (Exception ignored) {
-        }
-        ProcessInstance runtime = runtimeService.createProcessInstanceQuery()
-            .processInstanceBusinessKey(issueIdStr).singleResult();
-        if (runtime != null) {
-            return runtime.getId();
-        }
-        HistoricProcessInstance hist = historyService.createHistoricProcessInstanceQuery()
-            .processInstanceBusinessKey(issueIdStr).singleResult();
-        return hist != null ? hist.getId() : null;
+        return wm.procInsIdHelper.resolve(issueIdStr, () -> {
+            WfMyBusiness business = wm.wfMyBusinessServiceImpl.getByDataId(issueIdStr);
+            return business != null ? business.getProcessInstanceId() : null;
+        });
     }
 
     /**
@@ -417,7 +391,7 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
      * @return 结果
      */
     @Override
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void afterFlowHandle(WfMyBusiness business) {
         Long issueId = Long.parseLong(business.getDataId());
         WmSalesIssue entity = baseMapper.selectById(issueId);
@@ -543,7 +517,7 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
      * @return 结果
      */
     @Override
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
     public Object getBusinessDataById(String dataId) {
         return selectById(Long.parseLong(dataId));
     }

@@ -84,9 +84,6 @@ public class WfCategoryServiceImpl implements IWfCategoryService {
 
     @Override
     public int deleteWithValidByIds(Collection<Long> ids, Boolean isValid) {
-        if(isValid){
-            //TODO 做一些业务上的校验,判断是否需要校验
-        }
         return baseMapper.deleteBatchIds(ids);
     }
 

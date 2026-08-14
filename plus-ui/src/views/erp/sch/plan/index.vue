@@ -91,7 +91,7 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="planList" @selection-change="handleSelectionChange" @row-click="handleRowClick" show-overflow-tooltip>
+    <el-table v-loading="loading" :data="list" @selection-change="handleSelectionChange" @row-click="handleRowClick" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="序号" type="index" align="center" />
       <el-table-column label="计划编码" align="center" prop="planCode" />
@@ -269,63 +269,76 @@ import { listPlan, getPlan, delPlan, addPlan, updatePlan } from '@/api/erp/sch/p
 import { useUserStore } from '@/store/modules/user';
 import ShiftManage from './ShiftManage.vue';
 import TeamManage from './TeamManage.vue';
+import type { FormInstance } from 'element-plus';
+import { useCrud } from '@/composables/useCrud';
 
-const { proxy } = getCurrentInstance();
+const { proxy } = getCurrentInstance() as any;
 const { sch_plan_period_type, sch_plan_status, sch_rotation_type } = toRefs(
   proxy.useDict('sch_plan_period_type', 'sch_plan_status', 'sch_rotation_type')
 );
 
+const planRef = ref<FormInstance>();
 const autoGenFlag = ref(false);
-const planList = ref([]);
-const open = ref(false);
-const loading = ref(true);
-const showSearch = ref(true);
-const ids = ref([]);
-const single = ref(true);
-const multiple = ref(true);
-const total = ref(0);
-const title = ref('');
-const isViewMode = ref(false);
 const activeTab = ref('shift');
-const selectedRow = ref({});
-const data = reactive({
-  form: {},
-  queryParams: {
-    pageNum: 1,
-    pageSize: 10,
-    planCode: null,
-    planName: null,
-    startDate: null,
-    endDate: null,
-    periodType: null,
-    rotationType: null,
-    status: null
-  },
-  rules: {
-    planCode: [{ required: true, message: '计划编码不能为空', trigger: 'blur' }],
-    planName: [{ required: true, message: '计划名称不能为空', trigger: 'blur' }],
-    startDate: [{ required: true, message: '开始日期不能为空', trigger: 'blur' }],
-    endDate: [{ required: true, message: '结束日期不能为空', trigger: 'blur' }],
-    rotationType: [{ required: true, message: '轮班方式不能为空', trigger: 'change' }]
-  }
+const selectedRow = ref<any>({});
+
+const queryParams = ref({
+  pageNum: 1, pageSize: 10, planCode: null, planName: null,
+  startDate: null, endDate: null, periodType: null, rotationType: null, status: null
 });
 
-const { queryParams, form, rules } = toRefs(data);
+const rules = {
+  planCode: [{ required: true, message: '计划编码不能为空', trigger: 'blur' }],
+  planName: [{ required: true, message: '计划名称不能为空', trigger: 'blur' }],
+  startDate: [{ required: true, message: '开始日期不能为空', trigger: 'blur' }],
+  endDate: [{ required: true, message: '结束日期不能为空', trigger: 'blur' }],
+  rotationType: [{ required: true, message: '轮班方式不能为空', trigger: 'change' }]
+};
 
-function getList() {
-  loading.value = true;
-  listPlan(queryParams.value).then((response) => {
-    planList.value = response.rows;
-    total.value = response.total;
-    loading.value = false;
-  });
+const {
+  loading, list, total, open, isViewMode, title, ids, single, multiple, showSearch, form,
+  getList, handleQuery, reset, handleDelete, handleExport, handleSelectionChange: rawSelectionChange, submitForm, cancel,
+  handleAdd: rawHandleAdd, handleUpdate: rawHandleUpdate, handleView: rawHandleView
+} = useCrud({
+  apis: { list: listPlan, get: getPlan, add: addPlan, update: updatePlan, del: delPlan },
+  idField: 'planId',
+  entityName: '排班计划',
+  formRef: planRef,
+  queryParams,
+  initForm: () => ({
+    planId: null, planCode: null, planName: null, startDate: null, endDate: null,
+    periodType: null, rotationType: null, status: null,
+    publishedBy: null, publishedTime: null, remark: null,
+    createBy: null, createTime: null, updateBy: null, updateTime: null
+  }),
+  exportUrl: '/sch/plan/export',
+  exportFileName: 'plan',
+  onReset: () => { autoGenFlag.value = false; }
+});
+
+function handleSelectionChange(selection: any[]) {
+  rawSelectionChange(selection);
+  selectedRow.value = selection.length === 1 ? selection[0] : {};
 }
 
-function handleSchedule(row) {
+function handleRowClick(row: any) {
+  selectedRow.value = row;
+}
+
+function handleAdd() {
+  rawHandleAdd();
+}
+function handleUpdate(row?: any) {
+  return rawHandleUpdate(row);
+}
+function handleView(row?: any) {
+  return rawHandleView(row);
+}
+
+function handleSchedule(row: any) {
   reset();
   isViewMode.value = true;
-  const _planId = row.planId || ids.value;
-  getPlan(_planId).then((response) => {
+  getPlan(row.planId || ids.value).then((response: any) => {
     form.value = response.data;
     open.value = true;
     title.value = '排班管理';
@@ -333,105 +346,9 @@ function handleSchedule(row) {
   });
 }
 
-function cancel() {
-  open.value = false;
-  reset();
-}
-
-function reset() {
-  autoGenFlag.value = false;
-  form.value = {
-    planId: null,
-    planCode: null,
-    planName: null,
-    startDate: null,
-    endDate: null,
-    periodType: null,
-    rotationType: null,
-    status: null,
-    publishedBy: null,
-    publishedTime: null,
-    remark: null,
-    createBy: null,
-    createTime: null,
-    updateBy: null,
-    updateTime: null
-  };
-  proxy.resetForm('planRef');
-}
-
-function handleQuery() {
-  queryParams.value.pageNum = 1;
-  getList();
-}
-
 function resetQuery() {
   proxy.resetForm('queryRef');
   handleQuery();
-}
-
-function handleSelectionChange(selection) {
-  ids.value = selection.map((item) => item.planId);
-  single.value = selection.length != 1;
-  multiple.value = !selection.length;
-  if (selection.length === 1) {
-    selectedRow.value = selection[0];
-  } else {
-    selectedRow.value = {};
-  }
-}
-
-function handleRowClick(row) {
-  selectedRow.value = row;
-}
-
-function handleAdd() {
-  reset();
-  isViewMode.value = false;
-  open.value = true;
-  title.value = '添加排班计划';
-}
-
-function handleUpdate(row) {
-  reset();
-  isViewMode.value = false;
-  const _planId = row.planId || ids.value;
-  getPlan(_planId).then((response) => {
-    form.value = response.data;
-    open.value = true;
-    title.value = '修改排班计划';
-  });
-}
-
-function handleView(row) {
-  reset();
-  isViewMode.value = true;
-  const _planId = row.planId || ids.value;
-  getPlan(_planId).then((response) => {
-    form.value = response.data;
-    open.value = true;
-    title.value = '查看排班计划';
-  });
-}
-
-function submitForm() {
-  proxy.$refs['planRef'].validate((valid) => {
-    if (valid) {
-      if (form.value.planId != null) {
-        updatePlan(form.value).then((response) => {
-          proxy.$modal.msgSuccess('修改成功');
-          open.value = false;
-          getList();
-        });
-      } else {
-        addPlan(form.value).then((response) => {
-          proxy.$modal.msgSuccess('新增成功');
-          open.value = false;
-          getList();
-        });
-      }
-    }
-  });
 }
 
 function handlePublish() {
@@ -439,58 +356,28 @@ function handlePublish() {
   form.value.publishedBy = currentUser;
   form.value.publishedTime = formatDateTime(new Date());
   form.value.status = 'published';
-
-  updatePlan(form.value)
-    .then((response) => {
-      proxy.$modal.msgSuccess('发布成功');
-      open.value = false;
-      getList();
-    })
-    .catch((error) => {
-      console.error('发布失败:', error);
-      proxy.$modal.msgError('发布失败');
-    });
+  updatePlan(form.value).then(() => {
+    proxy.$modal.msgSuccess('发布成功');
+    open.value = false;
+    getList();
+  }).catch(() => {
+    proxy.$modal.msgError('发布失败');
+  });
 }
 
-function formatDateTime(date) {
-  if (!(date instanceof Date)) {
-    date = new Date(date);
-  }
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  const hours = String(date.getHours()).padStart(2, '0');
-  const minutes = String(date.getMinutes()).padStart(2, '0');
-  const seconds = String(date.getSeconds()).padStart(2, '0');
-  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+function formatDateTime(date: any) {
+  if (!(date instanceof Date)) date = new Date(date);
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  const h = String(date.getHours()).padStart(2, '0');
+  const mi = String(date.getMinutes()).padStart(2, '0');
+  const s = String(date.getSeconds()).padStart(2, '0');
+  return `${y}-${m}-${d} ${h}:${mi}:${s}`;
 }
 
-function handleDelete(row) {
-  const _planIds = row.planId || ids.value;
-  proxy.$modal
-    .confirm('是否确认删除排班计划编号为"' + _planIds + '"的数据项？')
-    .then(function () {
-      return delPlan(_planIds);
-    })
-    .then(() => {
-      getList();
-      proxy.$modal.msgSuccess('删除成功');
-    })
-    .catch(() => {});
-}
-
-function handleExport() {
-  proxy.download(
-    'sch/plan/export',
-    {
-      ...queryParams.value
-    },
-    `plan_${new Date().getTime()}.xlsx`
-  );
-}
-
-function handleAutoGenChange(autoGenFlag) {
-  if (autoGenFlag) {
+function handleAutoGenChange(val: boolean) {
+  if (val) {
     form.value.planCode = 'AUTO_' + new Date().getTime();
   } else {
     form.value.planCode = null;
@@ -498,7 +385,6 @@ function handleAutoGenChange(autoGenFlag) {
 }
 
 function onShiftUpdated() {}
-
 function onTeamUpdated() {}
 
 getList();

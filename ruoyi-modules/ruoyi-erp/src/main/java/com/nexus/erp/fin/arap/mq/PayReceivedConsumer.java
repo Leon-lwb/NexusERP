@@ -7,11 +7,10 @@ import com.nexus.common.mq.constant.RoutingKeyConstants;
 import com.nexus.common.mq.consumer.BaseMessageConsumer;
 import com.nexus.common.mq.domain.PayReceivedMessage;
 import com.nexus.common.mq.producer.ReliableMessageProducer;
-import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.erp.fin.arap.constant.ArapConstants;
 import com.nexus.erp.fin.arap.domain.FinReceipt;
 import com.nexus.erp.fin.arap.domain.bo.FinSettlementBo;
-import com.nexus.erp.fin.arap.mapper.FinReceiptMapper;
+import com.nexus.erp.fin.arap.service.IFinReceiptService;
 import com.nexus.erp.fin.arap.service.IFinSettlementService;
 import com.nexus.erp.fin.gl.constant.GlConstants;
 import com.nexus.erp.fin.gl.mq.GlPostingMessage;
@@ -32,7 +31,7 @@ import java.util.List;
 
 /**
  * 支付收款通知消费者:pay 回调 -> 建 AR 收款单 -> GL 过账 -> FIFO 自动核销该客户未清发票。
- * <p>租户上下文由消息体 tenantIdStr 恢复(参考 GlPostingConsumer)。</p>
+ * <p>租户上下文由 BaseMessageConsumer 自动恢复。</p>
  *
  * @author nexus
  * @date 2026-07-30
@@ -43,7 +42,7 @@ import java.util.List;
 @DS("erp")
 public class PayReceivedConsumer extends BaseMessageConsumer<PayReceivedMessage> {
 
-    private final FinReceiptMapper receiptMapper;
+    private final IFinReceiptService receiptService;
     private final IFinSettlementService settlementService;
     private final ISoInvoiceService soInvoiceService;
     private final ReliableMessageProducer messageProducer;
@@ -54,18 +53,21 @@ public class PayReceivedConsumer extends BaseMessageConsumer<PayReceivedMessage>
         return PayReceivedMessage.class;
     }
 
-    /** 消费入口:恢复租户上下文后委托 doReceive 执行 */
+    /** 消费入口:委托 doReceive 执行 */
     @Override
     protected void doProcess(PayReceivedMessage message) {
         log.info("处理支付收款通知: payOrderNumber={}, amount={}, clientId={}",
             message.getPayOrderNumber(), message.getAmount(), message.getClientId());
-        String tenantId = message.getTenantIdStr();
-        if (tenantId != null) {
-            TenantHelper.dynamic(tenantId, () -> doReceive(message));
-        } else {
-            log.warn("支付收款通知租户ID为空,无租户上下文执行: payOrderNumber={}", message.getPayOrderNumber());
-            doReceive(message);
-        }
+        doReceive(message);
+    }
+
+    /**
+     * 解析租户ID：使用 tenantIdStr 避免 Long 精度丢失（"000000" → 0 → "0" 不匹配数据库）
+     */
+    @Override
+    protected String resolveTenantId(PayReceivedMessage message) {
+        String tid = message.getTenantIdStr();
+        return tid != null && !tid.isEmpty() ? tid : "000000";
     }
 
     /**
@@ -99,7 +101,7 @@ public class PayReceivedConsumer extends BaseMessageConsumer<PayReceivedMessage>
         receipt.setStatus(ArapConstants.RECEIPT_STATUS_CONFIRMED);
         receipt.setReceiptDate(new Date());
         receipt.setVersion(0);
-        receiptMapper.insert(receipt);
+        receiptService.save(receipt);
 
         // 2. 触发 GL 过账(ReceiptPoster 制单)
         GlPostingMessage glMsg = new GlPostingMessage();

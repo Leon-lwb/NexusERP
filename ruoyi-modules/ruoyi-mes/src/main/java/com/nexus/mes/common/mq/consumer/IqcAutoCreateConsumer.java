@@ -3,7 +3,6 @@ package com.nexus.mes.common.mq.consumer;
 import com.nexus.common.mq.constant.QueueConstants;
 import com.nexus.common.mq.consumer.BaseMessageConsumer;
 import com.nexus.common.mq.message.ReceiveApprovedMessage;
-import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.mes.qc.domain.bo.QcIqcBo;
 import com.nexus.mes.qc.service.IQcIqcService;
 import com.rabbitmq.client.Channel;
@@ -43,13 +42,7 @@ public class IqcAutoCreateConsumer extends BaseMessageConsumer<ReceiveApprovedMe
             message.getReceiveId(), message.getReceiveCode(),
             message.getMaterialCode(), message.getQuantity());
 
-        // 消费者线程无登录态，从消息恢复租户上下文（参考 WorkOrderReleaseConsumer:42-50）
-        // 租户ID格式: DDL默认 '000000'(6位零填充)，Long 0 -> "000000"
-        String tenantId = "000000";
-        if (message.getTenantId() != null && !Long.valueOf(0L).equals(message.getTenantId())) {
-            tenantId = String.format("%06d", message.getTenantId());
-        }
-        TenantHelper.dynamic(tenantId, () -> doCreateIqc(message));
+        doCreateIqc(message);
     }
 
     /**

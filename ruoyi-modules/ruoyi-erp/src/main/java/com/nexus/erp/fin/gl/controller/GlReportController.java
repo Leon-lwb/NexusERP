@@ -1,7 +1,7 @@
 package com.nexus.erp.fin.gl.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
-import com.baomidou.dynamic.datasource.annotation.DS;
+
 import lombok.RequiredArgsConstructor;
 import com.nexus.common.core.domain.R;
 import com.nexus.common.web.core.BaseController;
@@ -18,7 +18,6 @@ import java.util.List;
  * @date 2026-07-29
  */
 @RequiredArgsConstructor
-@DS("erp")
 @RestController
 @RequestMapping("/erp/fin/gl/report")
 public class GlReportController extends BaseController {

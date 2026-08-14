@@ -25,14 +25,7 @@ import com.nexus.erp.wm.domain.vo.WmArrivalNoticeVo;
 import com.nexus.erp.wm.mapper.WmArrivalNoticeLineMapper;
 import com.nexus.erp.wm.mapper.WmArrivalNoticeMapper;
 import com.nexus.erp.wm.service.IWmArrivalNoticeService;
-import com.nexus.system.strategy.AutoCodeUtil;
 import com.nexus.workflow.domain.WfMyBusiness;
-import com.nexus.workflow.service.IWfProcessService;
-import com.nexus.workflow.service.impl.WfMyBusinessServiceImpl;
-import org.flowable.engine.HistoryService;
-import org.flowable.engine.RuntimeService;
-import org.flowable.engine.history.HistoricProcessInstance;
-import org.flowable.engine.runtime.ProcessInstance;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -65,16 +58,8 @@ public class WmArrivalNoticeServiceImpl extends ServiceImpl<WmArrivalNoticeMappe
     private final PuPurchaseOrderMapper purchaseOrderMapper;
     /** 到货通知业务服务，提供到货通知相关能力 */
     private final PuPurchaseReceivingService purchaseReceivingService;
-    /** 到货通知业务服务，提供到货通知相关能力 */
-    private final IWfProcessService processService;
-    /** 到货通知业务服务，提供到货通知相关能力 */
-    private final WfMyBusinessServiceImpl wfMyBusinessServiceImpl;
-    /** 到货通知业务服务，提供到货通知相关能力 */
-    private final RuntimeService runtimeService;
-    /** 到货通知业务服务，提供到货通知相关能力 */
-    private final HistoryService historyService;
-    /** 自动编码工具类 */
-    private final AutoCodeUtil autoCodeUtil;
+    /** WM 公共依赖（AutoCodeUtil / 流程服务 / 流程实例查询） */
+    private final WmServiceHelper wm;
 
     /**
      * 分页查询到货通知列表
@@ -130,7 +115,7 @@ public class WmArrivalNoticeServiceImpl extends ServiceImpl<WmArrivalNoticeMappe
     public int insertByBo(WmArrivalNoticeBo bo) {
         WmArrivalNotice entity = MapstructUtils.convert(bo, WmArrivalNotice.class);
         if (StringUtils.isBlank(entity.getNoticeCode())) {
-            entity.setNoticeCode(autoCodeUtil.genSerialCode("WM_ARRIVAL_NOTICE_CODE", null));
+            entity.setNoticeCode(wm.autoCodeUtil.genSerialCode("WM_ARRIVAL_NOTICE_CODE", null));
         }
         int rows = baseMapper.insert(entity);
         insertOrUpdateLines(entity.getNoticeId(), bo.getWmArrivalNoticeLineList());
@@ -196,7 +181,7 @@ public class WmArrivalNoticeServiceImpl extends ServiceImpl<WmArrivalNoticeMappe
         variables.put("vendorId", notice.getVendorId());
         variables.put("vendorName", notice.getVendorName());
         variables.put("arrivalDate", notice.getArrivalDate());
-        R<Void> result = processService.startProcessByDataId(noticeIdStr, selectFlowId, "wmArrivalNoticeService", variables);
+        R<Void> result = wm.processService.startProcessByDataId(noticeIdStr, selectFlowId, "wmArrivalNoticeService", variables);
         if (R.isSuccess(result)) {
             return true;
         }
@@ -211,23 +196,10 @@ public class WmArrivalNoticeServiceImpl extends ServiceImpl<WmArrivalNoticeMappe
      */
     @Override
     public String getProcInsId(String noticeIdStr) {
-        try {
-            WfMyBusiness business = wfMyBusinessServiceImpl.getByDataId(noticeIdStr);
-            if (business != null && StringUtils.isNotBlank(business.getProcessInstanceId())) {
-                return business.getProcessInstanceId();
-            }
-        } catch (Exception ignored) {
-        }
-
-        ProcessInstance runtime = runtimeService.createProcessInstanceQuery()
-            .processInstanceBusinessKey(noticeIdStr).singleResult();
-        if (runtime != null) {
-            return runtime.getId();
-        }
-
-        HistoricProcessInstance hist = historyService.createHistoricProcessInstanceQuery()
-            .processInstanceBusinessKey(noticeIdStr).singleResult();
-        return hist != null ? hist.getId() : null;
+        return wm.procInsIdHelper.resolve(noticeIdStr, () -> {
+            WfMyBusiness business = wm.wfMyBusinessServiceImpl.getByDataId(noticeIdStr);
+            return business != null ? business.getProcessInstanceId() : null;
+        });
     }
 
     /**
@@ -294,7 +266,7 @@ public class WmArrivalNoticeServiceImpl extends ServiceImpl<WmArrivalNoticeMappe
      * @return 结果
      */
     @Override
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
     public Object getBusinessDataById(String dataId) {
         return selectById(Long.parseLong(dataId));
     }

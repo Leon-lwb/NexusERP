@@ -3,10 +3,9 @@ package com.nexus.erp.mq.consumer;
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.nexus.common.mq.constant.QueueConstants;
 import com.nexus.common.mq.consumer.BaseMessageConsumer;
-import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.erp.mq.message.ReworkStockMessage;
 import com.nexus.erp.prd.domain.PrdReworkOrder;
-import com.nexus.erp.prd.mapper.PrdReworkOrderMapper;
+import com.nexus.erp.prd.service.IPrdReworkOrderService;
 import com.rabbitmq.client.Channel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,7 +24,7 @@ import org.springframework.stereotype.Component;
 @DS("erp")
 public class ReworkStockConsumer extends BaseMessageConsumer<ReworkStockMessage> {
 
-    private final PrdReworkOrderMapper reworkOrderMapper;
+    private final IPrdReworkOrderService reworkOrderService;
 
     /**
      * 获取消息类型
@@ -45,23 +44,16 @@ public class ReworkStockConsumer extends BaseMessageConsumer<ReworkStockMessage>
     @Override
     protected void doProcess(ReworkStockMessage message) {
         log.info("处理返工库存消息: reworkId={}, operationType={}", message.getReworkId(), message.getOperationType());
-        // MQ消费者线程无登录态，需从消息恢复租户上下文，否则多租户拦截器跳过租户过滤导致跨租户读写
-        String tenantId = "000000";
-        if (message.getTenantId() != null && !Long.valueOf(0L).equals(message.getTenantId())) {
-            tenantId = String.format("%06d", message.getTenantId());
+        PrdReworkOrder rework = reworkOrderService.getById(message.getReworkId());
+        if (rework == null) {
+            log.warn("返工订单不存在: reworkId={}", message.getReworkId());
+            return;
         }
-        TenantHelper.dynamic(tenantId, () -> {
-            PrdReworkOrder rework = reworkOrderMapper.selectById(message.getReworkId());
-            if (rework == null) {
-                log.warn("返工订单不存在: reworkId={}", message.getReworkId());
-                return;
-            }
-            if ("ISSUE".equals(message.getOperationType())) {
-                log.info("返工订单[{}]出库完成，状态更新", rework.getReworkNo());
-            } else if ("RECEIVE".equals(message.getOperationType())) {
-                log.info("返工订单[{}]入库完成，状态更新", rework.getReworkNo());
-            }
-        });
+        if ("ISSUE".equals(message.getOperationType())) {
+            log.info("返工订单[{}]出库完成，状态更新", rework.getReworkNo());
+        } else if ("RECEIVE".equals(message.getOperationType())) {
+            log.info("返工订单[{}]入库完成，状态更新", rework.getReworkNo());
+        }
     }
 
     /**

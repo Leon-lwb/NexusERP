@@ -3,7 +3,6 @@ package com.nexus.mes.common.mq.consumer;
 import com.nexus.common.mq.constant.QueueConstants;
 import com.nexus.common.mq.consumer.BaseMessageConsumer;
 import com.nexus.common.mq.message.OqcAutoCreateMessage;
-import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.mes.qc.domain.bo.QcOqcBo;
 import com.nexus.mes.qc.service.IQcOqcService;
 import com.rabbitmq.client.Channel;
@@ -41,12 +40,7 @@ public class OqcAutoCreateConsumer extends BaseMessageConsumer<OqcAutoCreateMess
         log.info("收到销售出库审批通过消息: soId={}, materialCode={}, quantity={}",
             message.getSoId(), message.getMaterialCode(), message.getQuantity());
 
-        // 消费者线程无登录态，从消息恢复租户上下文（租户ID格式: Long 0 -> "000000"）
-        String tenantId = "000000";
-        if (message.getTenantId() != null && !Long.valueOf(0L).equals(message.getTenantId())) {
-            tenantId = String.format("%06d", message.getTenantId());
-        }
-        TenantHelper.dynamic(tenantId, () -> doCreateOqc(message));
+        doCreateOqc(message);
     }
 
     /**

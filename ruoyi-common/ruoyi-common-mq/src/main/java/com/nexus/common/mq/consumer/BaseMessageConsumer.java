@@ -2,6 +2,7 @@ package com.nexus.common.mq.consumer;
 
 import com.nexus.common.mq.domain.BaseMessage;
 import com.nexus.common.redis.utils.RedisUtils;
+import com.nexus.common.tenant.helper.TenantHelper;
 import com.rabbitmq.client.Channel;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.Message;
@@ -24,7 +25,8 @@ public abstract class BaseMessageConsumer<T extends BaseMessage> {
     private static final String RETRY_KEY_PREFIX = "mq:retry:";
 
     /**
-     * 处理业务逻辑，子类实现
+     * 处理业务逻辑，子类实现。
+     * <p>执行时已自动恢复租户上下文（由 {@link #resolveTenantId} 提供 tenantId）。</p>
      *
      * @param message 消息对象
      */
@@ -36,6 +38,20 @@ public abstract class BaseMessageConsumer<T extends BaseMessage> {
      * @return 消息类型
      */
     protected abstract Class<T> getMessageClass();
+
+    /**
+     * 解析消息所属租户 ID。
+     * <p>默认按 {@code BaseMessage.getTenantId()} 格式化为 6 位零填充字符串，
+     * tenantId 为 null 或 0 时降级为 {@code "000000"}（系统租户）。</p>
+     * <p>子类可覆盖以自定义租户解析逻辑，返回 {@code null} 表示不切换租户。</p>
+     *
+     * @param message 消息对象
+     * @return 租户 ID 字符串，{@code null} 表示不切换租户
+     */
+    protected String resolveTenantId(T message) {
+        Long tid = message.getTenantId();
+        return (tid != null && tid != 0L) ? String.format("%06d", tid) : "000000";
+    }
 
     /**
      * 消息消费模板方法，包含幂等检查、业务处理、ACK/NACK
@@ -55,7 +71,15 @@ public abstract class BaseMessageConsumer<T extends BaseMessage> {
                 return;
             }
             log.info("开始消费消息: messageId={}, sourceModule={}", messageId, message.getSourceModule());
-            doProcess(message);
+
+            // 从消息恢复租户上下文，包裹 doProcess 执行
+            String tenantId = resolveTenantId(message);
+            if (tenantId != null) {
+                TenantHelper.dynamic(tenantId, () -> doProcess(message));
+            } else {
+                doProcess(message);
+            }
+
             markConsumed(messageId);
             clearRetryCount(messageId);
             channel.basicAck(deliveryTag, false);

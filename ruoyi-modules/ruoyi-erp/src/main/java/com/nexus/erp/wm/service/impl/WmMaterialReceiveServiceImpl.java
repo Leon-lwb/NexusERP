@@ -3,8 +3,10 @@ package com.nexus.erp.wm.service.impl;
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
+import com.nexus.erp.wm.domain.WmMaterialReceive;
 import com.nexus.erp.wm.domain.bo.WmMaterialReceiveBo;
 import com.nexus.erp.wm.domain.vo.WmMaterialReceiveVo;
+import com.nexus.erp.wm.mapper.WmMaterialReceiveMapper;
 import com.nexus.erp.wm.service.IWmMaterialReceiveCrudService;
 import com.nexus.erp.wm.service.IWmMaterialReceiveExecutorService;
 import com.nexus.erp.wm.service.IWmMaterialReceiveService;
@@ -33,6 +35,8 @@ public class WmMaterialReceiveServiceImpl implements IWmMaterialReceiveService {
     private final IWmMaterialReceiveCrudService crudService;
     /** 执行器业务服务，提供执行器相关能力 */
     private final IWmMaterialReceiveExecutorService executorService;
+    /** 物料入库单Mapper，用于轻量实体操作 */
+    private final WmMaterialReceiveMapper materialReceiveMapper;
 
     /**
      * 分页查询物料领用列表
@@ -201,5 +205,27 @@ public class WmMaterialReceiveServiceImpl implements IWmMaterialReceiveService {
     @Override
     public List<String> flowCandidateUsernamesOfTask(String taskNameId, Map<String, Object> values) {
         return crudService.flowCandidateUsernamesOfTask(taskNameId, values);
+    }
+
+    /**
+     * 根据ID查询物料入库单实体
+     *
+     * @param id 主键ID
+     * @return 物料入库单实体
+     */
+    @Override
+    public WmMaterialReceive getById(Long id) {
+        return materialReceiveMapper.selectById(id);
+    }
+
+    /**
+     * 更新物料入库单实体
+     *
+     * @param entity 物料入库单实体
+     * @return 影响行数
+     */
+    @Override
+    public int updateById(WmMaterialReceive entity) {
+        return materialReceiveMapper.updateById(entity);
     }
 }

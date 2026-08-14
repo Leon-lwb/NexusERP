@@ -57,7 +57,7 @@ public class McpToolServiceImpl {
     /**
      * 新增工具
      */
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public int addTool(AiTool tool) {
         return aiToolMapper.insert(tool);
     }
@@ -65,7 +65,7 @@ public class McpToolServiceImpl {
     /**
      * 更新工具
      */
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public int updateTool(AiTool tool) {
         int result = aiToolMapper.updateById(tool);
         // 如果是 MCP 外部工具且配置变更，刷新连接
@@ -78,7 +78,7 @@ public class McpToolServiceImpl {
     /**
      * 删除工具
      */
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public int deleteTools(List<Long> ids) {
         // 过滤掉内置工具（不允许删除）
         List<Long> deletableIds = ids.stream()
@@ -100,7 +100,7 @@ public class McpToolServiceImpl {
     /**
      * 启用/停用工具
      */
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public int toggleToolStatus(Long id, String status) {
         AiTool tool = new AiTool();
         tool.setId(id);
@@ -134,7 +134,7 @@ public class McpToolServiceImpl {
      * 同步内置工具到数据库
      * <p>只同步新增工具，不覆盖已有状态</p>
      */
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public void syncBuiltinTools() {
         log.info("[MCP] 开始同步内置工具到数据库...");
         int addedCount = 0;

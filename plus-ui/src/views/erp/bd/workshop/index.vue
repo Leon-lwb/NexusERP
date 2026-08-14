@@ -57,7 +57,7 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="workshopList" @selection-change="handleSelectionChange" show-overflow-tooltip>
+    <el-table v-loading="loading" :data="list" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="车间编码" align="center" prop="workshopCode" />
       <el-table-column label="车间名称" align="center" prop="workshopName" min-width="120" show-overflow-tooltip />
@@ -223,263 +223,119 @@ import { listWorkshop, getWorkshop, delWorkshop, addWorkshop, updateWorkshop } f
 import { listUser } from '@/api/system/user';
 import { listDept } from '@/api/system/dept';
 import { previewCode } from '@/api/system/autocode/rule';
+import type { FormInstance } from 'element-plus';
+import { useCrud } from '@/composables/useCrud';
 
-const { proxy } = getCurrentInstance();
+const { proxy } = getCurrentInstance() as any;
 const { sys_core_status } = toRefs<any>(proxy.useDict('sys_core_status'));
+
+const workshopRef = ref<FormInstance>();
 const autoGenFlag = ref(false);
 
-const workshopList = ref([]);
-const open = ref(false);
-const loading = ref(true);
-const showSearch = ref(true);
-const ids = ref([]);
-const single = ref(true);
-const multiple = ref(true);
-const total = ref(0);
-const title = ref('');
-const isViewMode = ref(false); // 新增：标识是否为查看模式
-
-// 添加用户列表相关变量
+// 用户选择
 const userList = ref([]);
 const userLoading = ref(false);
 const userVisible = ref(false);
-const userTotal = ref(0); // 添加这行
+const userTotal = ref(0);
 const userQueryParams = reactive({
-  pageNum: 1,
-  pageSize: 10,
-  userName: undefined,
-  phonenumber: undefined
+  pageNum: 1, pageSize: 10, userName: undefined, phonenumber: undefined
 });
 
 // 部门树
 const deptOptions = ref([]);
 
-const data = reactive({
-  form: {},
-  queryParams: {
-    pageNum: 1,
-    pageSize: 10,
-    workshopCode: null,
-    workshopName: null,
-    workshopDesc: null,
-    managerName: null,
-    capacity: null,
-    status: null,
-    autoGenFlag: false
-  },
-  rules: {
-    workshopCode: [{ required: true, message: '车间编码不能为空', trigger: 'blur' }],
-    workshopName: [{ required: true, message: '车间名称不能为空', trigger: 'blur' }],
-    managerName: [{ required: true, message: '车间主任不能为空', trigger: 'blur' }],
-    status: [{ required: true, message: '状态不能为空', trigger: 'change' }]
-  }
+const queryParams = ref({
+  pageNum: 1, pageSize: 10,
+  workshopCode: null, workshopName: null, workshopDesc: null,
+  managerName: null, capacity: null, status: null
 });
 
-const { queryParams, form, rules } = toRefs(data);
+const rules = {
+  workshopCode: [{ required: true, message: '车间编码不能为空', trigger: 'blur' }],
+  workshopName: [{ required: true, message: '车间名称不能为空', trigger: 'blur' }],
+  managerName: [{ required: true, message: '车间主任不能为空', trigger: 'blur' }],
+  status: [{ required: true, message: '状态不能为空', trigger: 'change' }]
+};
 
-/** 查询车间设置列表 */
-function getList() {
-  loading.value = true;
-  listWorkshop(queryParams.value).then((response) => {
-    workshopList.value = response.rows;
-    total.value = response.total;
-    loading.value = false;
-  });
+const {
+  loading, list, total, open, isViewMode, title, ids, single, multiple, showSearch, form,
+  getList, handleQuery, handleDelete, handleExport, handleSelectionChange, submitForm, cancel,
+  handleAdd: rawHandleAdd,
+  handleUpdate: rawHandleUpdate,
+  handleView: rawHandleView
+} = useCrud({
+  apis: { list: listWorkshop, get: getWorkshop, add: addWorkshop, update: updateWorkshop, del: delWorkshop },
+  idField: 'workshopId',
+  entityName: '车间设置',
+  formRef: workshopRef,
+  queryParams,
+  initForm: () => ({
+    workshopId: null, workshopCode: null, workshopName: null, workshopDesc: null,
+    managerId: null, managerName: null, deptId: null, deptName: null,
+    capacity: null, status: null, sortOrder: null, remark: null,
+    attr1: null, attr2: null, attr3: null, attr4: null,
+    createBy: null, createTime: null, updateBy: null, updateTime: null
+  }),
+  exportUrl: '/erp/bd/workshop/export',
+  exportFileName: 'workshop',
+  onReset: () => { autoGenFlag.value = false; },
+  beforeSubmit: () => { if (autoGenFlag.value) form.value.workshopCode = undefined; },
+  afterLoad: () => { getDeptTree(); }
+});
+
+function handleAdd() {
+  rawHandleAdd(() => { autoGenFlag.value = false; getDeptTree(); });
+}
+function handleUpdate(row?: any) {
+  return rawHandleUpdate(row, () => { autoGenFlag.value = false; });
+}
+function handleView(row?: any) {
+  return rawHandleView(row, () => { autoGenFlag.value = false; });
 }
 
-// 取消按钮
-function cancel() {
-  open.value = false;
-  reset();
-}
-
-// 表单重置
-function reset() {
-  autoGenFlag.value = false;
-  form.value = {
-    workshopId: null,
-    workshopCode: null,
-    workshopName: null,
-    workshopDesc: null,
-    managerId: null,
-    managerName: null,
-    deptId: null,
-    deptName: null,
-    capacity: null,
-    status: null,
-    sortOrder: null,
-    remark: null,
-    attr1: null,
-    attr2: null,
-    attr3: null,
-    attr4: null,
-    createBy: null,
-    createTime: null,
-    updateBy: null,
-    updateTime: null
-  };
-  proxy.resetForm('workshopRef');
-  data.autoGenFlag = false;
-}
-
-/** 搜索按钮操作 */
-function handleQuery() {
-  queryParams.value.pageNum = 1;
-  getList();
-}
-
-/** 重置按钮操作 */
 function resetQuery() {
   proxy.resetForm('queryRef');
   handleQuery();
 }
 
-// 多选框选中数据
-function handleSelectionChange(selection) {
-  ids.value = selection.map((item) => item.workshopId);
-  single.value = selection.length != 1;
-  multiple.value = !selection.length;
+function handleAutoGenChange(val: boolean) {
+  if (val) {
+    previewCode('WORKSHOP_CODE').then((response: any) => { form.value.workshopCode = response; });
+  } else {
+    form.value.workshopCode = null;
+  }
 }
 
-/** 新增按钮操作 */
-function handleAdd() {
-  reset();
-  isViewMode.value = false; // 设置为编辑模式
-  open.value = true;
-  title.value = '添加车间设置';
-}
-
-/** 修改按钮操作 */
-function handleUpdate(row) {
-  reset();
-  isViewMode.value = false; // 设置为编辑模式
-  const _workshopId = row.workshopId || ids.value;
-  getWorkshop(_workshopId).then((response) => {
-    form.value = response.data;
-    open.value = true;
-    title.value = '修改车间设置';
-  });
-}
-
-/** 查看按钮操作 */
-function handleView(row) {
-  reset();
-  isViewMode.value = true; // 设置为查看模式
-  const _workshopId = row.workshopId || ids.value;
-  getWorkshop(_workshopId).then((response) => {
-    form.value = response.data;
-    open.value = true;
-    title.value = '查看车间设置';
-  });
-}
-
-/** 提交按钮 */
-function submitForm() {
-  proxy.$refs['workshopRef'].validate((valid) => {
-    if (valid) {
-      // 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号
-      if (autoGenFlag.value) {
-        form.value.workshopCode = undefined;
-      }
-      if (form.value.workshopId != null) {
-        updateWorkshop(form.value).then((response) => {
-          proxy.$modal.msgSuccess('修改成功');
-          open.value = false;
-          getList();
-        });
-      } else {
-        addWorkshop(form.value).then((response) => {
-          proxy.$modal.msgSuccess('新增成功');
-          open.value = false;
-          getList();
-        });
-      }
-    }
-  });
-}
-
-/** 删除按钮操作 */
-function handleDelete(row) {
-  const _workshopIds = row.workshopId || ids.value;
-  proxy.$modal
-    .confirm('是否确认删除车间设置编号为"' + _workshopIds + '"的数据项？')
-    .then(function () {
-      return delWorkshop(_workshopIds);
-    })
-    .then(() => {
-      getList();
-      proxy.$modal.msgSuccess('删除成功');
-    })
-    .catch(() => {});
-}
-
-/** 导出按钮操作 */
-function handleExport() {
-  proxy.download(
-    'bd/workshop/export',
-    {
-      ...queryParams.value
-    },
-    `workshop_${new Date().getTime()}.xlsx`
-  );
-}
-
-// 添加获取用户列表的方法
 function getUserList() {
   userLoading.value = true;
-  listUser(userQueryParams).then((response) => {
+  listUser(userQueryParams).then((response: any) => {
     userList.value = response.rows;
     userTotal.value = response.total;
     userLoading.value = false;
   });
 }
-
-// 打开用户选择对话框
-function openUserSelect() {
-  userVisible.value = true;
-  getUserList();
-}
-
-// 选择用户
-function selectUser(row) {
+function openUserSelect() { userVisible.value = true; getUserList(); }
+function selectUser(row: any) {
   form.value.managerId = row.userId;
   form.value.managerName = row.userName;
   userVisible.value = false;
 }
-
-// 重置用户查询
 function resetUserQuery() {
   userQueryParams.userName = undefined;
   userQueryParams.phonenumber = undefined;
   getUserList();
 }
 
-//自动生成编码
-function handleAutoGenChange(autoGenFlag) {
-  if (autoGenFlag) {
-    previewCode('WORKSHOP_CODE').then((response) => {
-      form.value.workshopCode = response;
-    });
-  } else {
-    form.value.workshopCode = null;
-  }
-}
-
-// ============ 部门树 ============
-/** 加载部门树（扁平列表构建为树） */
 function getDeptTree() {
-  listDept().then((response) => {
+  listDept().then((response: any) => {
     deptOptions.value = proxy.handleTree(response.data, 'deptId');
   });
 }
-
-/** 选择部门节点时同步部门名称 */
-function handleDeptChange(data) {
+function handleDeptChange(data: any) {
   form.value.deptId = data.deptId;
   form.value.deptName = data.deptName;
 }
 
 getList();
-getDeptTree();
 </script>
 

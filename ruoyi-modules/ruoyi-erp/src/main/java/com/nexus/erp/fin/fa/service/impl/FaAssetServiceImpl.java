@@ -1,5 +1,6 @@
 package com.nexus.erp.fin.fa.service.impl;
 
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.date.DateUtil;
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -31,6 +32,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * 固定资产卡片 Service 实现
@@ -222,10 +224,16 @@ public class FaAssetServiceImpl implements IFaAssetService {
         if (list == null || list.isEmpty()) {
             return;
         }
+        // 类别一次批量预取,避免逐条查库(N+1)
         Map<Long, FaAssetCategory> categoryMap = new HashMap<>();
+        List<Long> categoryIds = list.stream().map(FaAssetVo::getCategoryId)
+            .filter(Objects::nonNull).distinct().toList();
+        if (CollUtil.isNotEmpty(categoryIds)) {
+            categoryMapper.selectBatchIds(categoryIds)
+                .forEach(category -> categoryMap.put(category.getCategoryId(), category));
+        }
         for (FaAssetVo vo : list) {
-            FaAssetCategory category = categoryMap.computeIfAbsent(vo.getCategoryId(),
-                id -> categoryMapper.selectById(id));
+            FaAssetCategory category = categoryMap.get(vo.getCategoryId());
             if (category != null) {
                 vo.setCategoryName(category.getCategoryName());
                 vo.setCategoryMethod(category.getDepreciationMethod());

@@ -13,7 +13,6 @@ import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.exception.SseException;
 import com.nexus.common.core.exception.base.BaseException;
 import com.nexus.common.core.utils.StreamUtils;
-import com.nexus.common.json.utils.JsonUtils;
 import org.springframework.context.MessageSourceResolvable;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.core.annotation.Order;
@@ -69,10 +68,10 @@ public class GlobalExceptionHandler {
      */
     @ResponseStatus(org.springframework.http.HttpStatus.UNAUTHORIZED)
     @ExceptionHandler(SseException.class)
-    public String handleNotLoginException(SseException e, HttpServletRequest request) {
+    public R<Void> handleNotLoginException(SseException e, HttpServletRequest request) {
         String requestURI = request.getRequestURI();
         log.debug("请求地址'{}',认证失败'{}',无法访问系统资源", requestURI, e.getMessage());
-        return JsonUtils.toJsonString(R.fail(HttpStatus.HTTP_UNAUTHORIZED, "认证失败，无法访问系统资源"));
+        return R.fail(HttpStatus.HTTP_UNAUTHORIZED, "认证失败，无法访问系统资源");
     }
 
     /**

@@ -1,7 +1,7 @@
 package com.nexus.erp.so.report.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
-import com.baomidou.dynamic.datasource.annotation.DS;
+
 import com.nexus.common.core.domain.R;
 import com.nexus.erp.so.report.service.SoSalesReportServiceImpl;
 import lombok.RequiredArgsConstructor;
@@ -14,7 +14,6 @@ import java.util.Map;
 @Validated
 @RequiredArgsConstructor
 @RestController
-@DS("erp")
 @RequestMapping("/erp/so/report")
 public class SoSalesReportController {
 

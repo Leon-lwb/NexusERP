@@ -303,4 +303,14 @@ public class PrdSubcontractServiceImpl implements IPrdSubcontractService {
             .orderByDesc(PrdSubcontract::getCreateTime);
         return lqw;
     }
+
+    @Override
+    public PrdSubcontract getById(Long id) {
+        return baseMapper.selectById(id);
+    }
+
+    @Override
+    public boolean updateById(PrdSubcontract entity) {
+        return baseMapper.updateById(entity) > 0;
+    }
 }

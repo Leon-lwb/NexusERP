@@ -214,12 +214,8 @@ public class PrdProductionPlanController extends BaseController {
     @Log(title = "生产计划", businessType = BusinessType.UPDATE)
     @PostMapping("/generateMaterialRequirementsWithDetails/{planId}")
     public R<String> generateMaterialRequirementsWithDetails(@PathVariable Long planId) {
-        try {
-            List<PrdMaterialRequirement> requirements = prdProductionPlanService.generateMaterialRequirementsWithDetails(planId);
-            return R.ok("物料需求清单及明细生成成功，共生成" + requirements.size() + "条记录");
-        } catch (Exception e) {
-            return R.fail("物料需求清单及明细生成失败：" + e.getMessage());
-        }
+        List<PrdMaterialRequirement> requirements = prdProductionPlanService.generateMaterialRequirementsWithDetails(planId);
+        return R.ok("物料需求清单及明细生成成功，共生成" + requirements.size() + "条记录");
     }
 
     /**
@@ -236,11 +232,7 @@ public class PrdProductionPlanController extends BaseController {
     @Log(title = "生产计划", businessType = BusinessType.UPDATE)
     @PostMapping("/generateWorkOrders/{planId}")
     public R<String> generateWorkOrders(@PathVariable Long planId, @RequestBody List<Long> requirementIds) {
-        try {
-            Integer count = prdProductionPlanService.generateWorkOrders(planId, requirementIds);
-            return R.ok("成功生成 " + count + " 个工单");
-        } catch (Exception e) {
-            return R.fail("生成工单失败：" + e.getMessage());
-        }
+        Integer count = prdProductionPlanService.generateWorkOrders(planId, requirementIds);
+        return R.ok("成功生成 " + count + " 个工单");
     }
 }

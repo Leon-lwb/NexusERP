@@ -59,7 +59,7 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="workstationList" @selection-change="handleSelectionChange" show-overflow-tooltip>
+    <el-table v-loading="loading" :data="list" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="工作站编码" align="center" prop="workstationCode" />
       <el-table-column label="工作站名称" align="center" prop="workstationName" min-width="120" show-overflow-tooltip />
@@ -227,24 +227,17 @@
 import { listWorkstation, getWorkstation, delWorkstation, addWorkstation, updateWorkstation } from '@/api/erp/bd/workstation';
 import { listWorkshop } from '@/api/erp/bd/workshop';
 import { previewCode } from '@/api/system/autocode/rule';
+import type { FormInstance } from 'element-plus';
+import { useCrud } from '@/composables/useCrud';
 
-const { proxy } = getCurrentInstance();
+const { proxy } = getCurrentInstance() as any;
 const { sys_core_status } = toRefs<any>(proxy.useDict('sys_core_status'));
+
+const workstationRef = ref<FormInstance>();
 const autoGenFlag = ref(false);
 
-const workstationList = ref([]);
-const open = ref(false);
-const loading = ref(true);
-const showSearch = ref(true);
-const ids = ref([]);
-const single = ref(true);
-const multiple = ref(true);
-const total = ref(0);
-const title = ref('');
-const isViewMode = ref(false); // 新增：标识是否为查看模式
-
-// 添加车间列表相关变量
-const workshopList = ref([]);
+// 车间选择
+const workshopList = ref<any[]>([]);
 const workshopLoading = ref(false);
 const workshopVisible = ref(false);
 const workshopTotal = ref(0);
@@ -255,50 +248,39 @@ const workshopQueryParams = reactive({
   workshopName: undefined
 });
 
-const data = reactive({
-  form: {},
-  queryParams: {
-    pageNum: 1,
-    pageSize: 10,
-    workstationCode: null,
-    workstationName: null,
-    workshopCode: null,
-    workshopName: null,
-    workstationDesc: null,
-    equipmentId: null,
-    operatorCount: null,
-    status: null
-  },
-  rules: {
-    workstationCode: [{ required: true, message: '工作站编码不能为空', trigger: 'blur' }],
-    workstationName: [{ required: true, message: '工作站名称不能为空', trigger: 'blur' }],
-    workshopId: [{ required: true, message: '所属车间ID不能为空', trigger: 'blur' }],
-    status: [{ required: true, message: '状态不能为空', trigger: 'change' }]
-  }
+const queryParams = ref({
+  pageNum: 1,
+  pageSize: 10,
+  workstationCode: null,
+  workstationName: null,
+  workshopCode: null,
+  workshopName: null,
+  workstationDesc: null,
+  equipmentId: null,
+  operatorCount: null,
+  status: null
 });
 
-const { queryParams, form, rules } = toRefs(data);
+const rules = {
+  workstationCode: [{ required: true, message: '工作站编码不能为空', trigger: 'blur' }],
+  workstationName: [{ required: true, message: '工作站名称不能为空', trigger: 'blur' }],
+  workshopId: [{ required: true, message: '所属车间ID不能为空', trigger: 'blur' }],
+  status: [{ required: true, message: '状态不能为空', trigger: 'change' }]
+};
 
-/** 查询工作站列表 */
-function getList() {
-  loading.value = true;
-  listWorkstation(queryParams.value).then((response) => {
-    workstationList.value = response.rows;
-    total.value = response.total;
-    loading.value = false;
-  });
-}
-
-// 取消按钮
-function cancel() {
-  open.value = false;
-  reset();
-}
-
-// 表单重置
-function reset() {
-  autoGenFlag.value = false;
-  form.value = {
+const {
+  loading, list, total, open, isViewMode, title, ids, single, multiple, showSearch, form,
+  getList, handleQuery, handleDelete, handleExport, handleSelectionChange, submitForm, cancel,
+  handleAdd: rawHandleAdd,
+  handleUpdate: rawHandleUpdate,
+  handleView: rawHandleView
+} = useCrud({
+  apis: { list: listWorkstation, get: getWorkstation, add: addWorkstation, update: updateWorkstation, del: delWorkstation },
+  idField: 'workstationId',
+  entityName: '工作中心',
+  formRef: workstationRef,
+  queryParams,
+  initForm: () => ({
     workstationId: null,
     workstationCode: null,
     workstationName: null,
@@ -319,148 +301,60 @@ function reset() {
     createTime: null,
     updateBy: null,
     updateTime: null
-  };
-  proxy.resetForm('workstationRef');
-  data.autoGenFlag = false;
+  }),
+  exportUrl: '/erp/bd/workstation/export',
+  exportFileName: 'workstation',
+  onReset: () => { autoGenFlag.value = false; },
+  beforeSubmit: () => { if (autoGenFlag.value) form.value.workstationCode = undefined; }
+});
+
+function handleAdd() {
+  rawHandleAdd(() => { autoGenFlag.value = false; });
+}
+function handleUpdate(row?: any) {
+  return rawHandleUpdate(row, () => { autoGenFlag.value = false; });
+}
+function handleView(row?: any) {
+  return rawHandleView(row, () => { autoGenFlag.value = false; });
 }
 
-/** 搜索按钮操作 */
-function handleQuery() {
-  queryParams.value.pageNum = 1;
-  getList();
-}
-
-/** 重置按钮操作 */
 function resetQuery() {
   proxy.resetForm('queryRef');
   handleQuery();
 }
 
-// 多选框选中数据
-function handleSelectionChange(selection) {
-  ids.value = selection.map((item) => item.workstationId);
-  single.value = selection.length != 1;
-  multiple.value = !selection.length;
-}
-
-/** 新增按钮操作 */
-function handleAdd() {
-  reset();
-  isViewMode.value = false; // 设置为编辑模式
-  open.value = true;
-  title.value = '添加工作站';
-}
-
-/** 修改按钮操作 */
-function handleUpdate(row) {
-  reset();
-  isViewMode.value = false; // 设置为编辑模式
-  const _workstationId = row.workstationId || ids.value;
-  getWorkstation(_workstationId).then((response) => {
-    form.value = response.data;
-    open.value = true;
-    title.value = '修改工作站';
-  });
-}
-
-/** 查看按钮操作 */
-function handleView(row) {
-  reset();
-  isViewMode.value = true; // 设置为查看模式
-  const _workstationId = row.workstationId || ids.value;
-  getWorkstation(_workstationId).then((response) => {
-    form.value = response.data;
-    open.value = true;
-    title.value = '查看工作站';
-  });
-}
-
-/** 提交按钮 */
-function submitForm() {
-  proxy.$refs['workstationRef'].validate((valid) => {
-    if (valid) {
-      // 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号
-      if (autoGenFlag.value) {
-        form.value.workstationCode = undefined;
-      }
-      if (form.value.workstationId != null) {
-        updateWorkstation(form.value).then((response) => {
-          proxy.$modal.msgSuccess('修改成功');
-          open.value = false;
-          getList();
-        });
-      } else {
-        addWorkstation(form.value).then((response) => {
-          proxy.$modal.msgSuccess('新增成功');
-          open.value = false;
-          getList();
-        });
-      }
-    }
-  });
-}
-
-/** 删除按钮操作 */
-function handleDelete(row) {
-  const _workstationIds = row.workstationId || ids.value;
-  proxy.$modal
-    .confirm('是否确认删除工作站编号为"' + _workstationIds + '"的数据项？')
-    .then(function () {
-      return delWorkstation(_workstationIds);
-    })
-    .then(() => {
-      getList();
-      proxy.$modal.msgSuccess('删除成功');
-    })
-    .catch(() => {});
-}
-
-/** 导出按钮操作 */
-function handleExport() {
-  proxy.download(
-    'bd/workstation/export',
-    {
-      ...queryParams.value
-    },
-    `workstation_${new Date().getTime()}.xlsx`
-  );
-}
-
-// 添加获取车间列表的方法
+// 车间选择相关
 function getWorkshopList() {
   workshopLoading.value = true;
-  listWorkshop(workshopQueryParams).then((response) => {
+  listWorkshop(workshopQueryParams).then((response: any) => {
     workshopList.value = response.rows;
     workshopTotal.value = response.total;
     workshopLoading.value = false;
   });
 }
 
-// 打开车间选择对话框
 function openWorkshopSelect() {
   workshopVisible.value = true;
   getWorkshopList();
 }
 
-// 选择车间
-function selectWorkshop(row) {
+function selectWorkshop(row: any) {
   form.value.workshopId = row.workshopId;
   form.value.workshopCode = row.workshopCode;
   form.value.workshopName = row.workshopName;
   workshopVisible.value = false;
 }
 
-// 重置车间查询
 function resetWorkshopQuery() {
   workshopQueryParams.workshopCode = undefined;
   workshopQueryParams.workshopName = undefined;
   getWorkshopList();
 }
 
-//自动生成编码
-function handleAutoGenChange(autoGenFlag) {
-  if (autoGenFlag) {
-    previewCode('WORKSTATION_CODE').then((response) => {
+// 自动生成编码
+function handleAutoGenChange(val: boolean) {
+  if (val) {
+    previewCode('WORKSTATION_CODE').then((response: any) => {
       form.value.workstationCode = response;
     });
   } else {

@@ -1,13 +1,10 @@
 package com.nexus.erp.mq.consumer;
 
-import com.baomidou.dynamic.datasource.annotation.DS;
-import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.nexus.common.mq.constant.QueueConstants;
 import com.nexus.common.mq.consumer.BaseMessageConsumer;
 import com.nexus.common.mq.message.IpqcCompletedMessage;
-import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.erp.prd.domain.PrdWorkOrder;
-import com.nexus.erp.prd.mapper.PrdWorkOrderMapper;
+import com.nexus.erp.prd.service.IPrdWorkOrderService;
 import com.rabbitmq.client.Channel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,7 +28,6 @@ import java.util.Date;
 @Slf4j
 @RequiredArgsConstructor
 @Component
-@DS("erp")
 public class ErpIpqcCompletedConsumer extends BaseMessageConsumer<IpqcCompletedMessage> {
 
     /** 质检状态: 合格 */
@@ -41,7 +37,7 @@ public class ErpIpqcCompletedConsumer extends BaseMessageConsumer<IpqcCompletedM
     /** 质检状态: 待检 */
     private static final String QUALITY_PENDING = "PENDING";
 
-    private final PrdWorkOrderMapper workOrderMapper;
+    private final IPrdWorkOrderService workOrderService;
 
     /**
      * 获取消息类型
@@ -60,12 +56,7 @@ public class ErpIpqcCompletedConsumer extends BaseMessageConsumer<IpqcCompletedM
      */
     @Override
     protected void doProcess(IpqcCompletedMessage message) {
-        // MQ消费者线程无登录态，需从消息恢复租户上下文
-        String tenantId = "000000";
-        if (message.getTenantId() != null && !Long.valueOf(0L).equals(message.getTenantId())) {
-            tenantId = String.format("%06d", message.getTenantId());
-        }
-        TenantHelper.dynamic(tenantId, () -> doUpdate(message));
+        doUpdate(message);
     }
 
     /**
@@ -74,7 +65,7 @@ public class ErpIpqcCompletedConsumer extends BaseMessageConsumer<IpqcCompletedM
      * @param message IPQC检验完成消息
      */
     private void doUpdate(IpqcCompletedMessage message) {
-        PrdWorkOrder wo = workOrderMapper.selectById(message.getErpWoId());
+        PrdWorkOrder wo = workOrderService.selectPrdWorkOrderByWoId(message.getErpWoId());
         if (wo == null) {
             log.warn("ERP工单不存在: erpWoId={}", message.getErpWoId());
             return;
@@ -95,14 +86,9 @@ public class ErpIpqcCompletedConsumer extends BaseMessageConsumer<IpqcCompletedM
             newStatus = QUALITY_QUALIFIED;
         }
 
-        int rows = workOrderMapper.update(null, Wrappers.<PrdWorkOrder>lambdaUpdate()
-            .set(PrdWorkOrder::getQualityStatus, newStatus)
-            .set(PrdWorkOrder::getQualityCheckId, message.getIpqcId())
-            .set(PrdWorkOrder::getQualityCheckNo, message.getIpqcNo())
-            .set(PrdWorkOrder::getInspectorId, message.getInspectorId())
-            .set(PrdWorkOrder::getInspectorName, message.getInspectorName())
-            .set(PrdWorkOrder::getInspectTime, new Date())
-            .eq(PrdWorkOrder::getWoId, message.getErpWoId()));
+        int rows = workOrderService.updateIpqcStatus(
+            message.getErpWoId(), newStatus, message.getIpqcId(), message.getIpqcNo(),
+            message.getInspectorId(), message.getInspectorName(), new Date());
         log.info("IPQC回写工单完成: erpWoId={}, woNo={}, ipqcNo={}, result={}, newStatus={}, affectedRows={}",
             message.getErpWoId(), wo.getWoNo(), message.getIpqcNo(), message.getInspectResult(), newStatus, rows);
     }

@@ -15,7 +15,6 @@ import com.nexus.erp.fin.fa.domain.FaAssetCategory;
 import com.nexus.erp.fin.fa.domain.FaDepreciation;
 import com.nexus.erp.fin.fa.domain.bo.FaDepreciationRunBo;
 import com.nexus.erp.fin.fa.domain.vo.FaDepreciationVo;
-import com.nexus.erp.fin.fa.domain.vo.FaDepreciationVo;
 import com.nexus.erp.fin.fa.mapper.FaAssetCategoryMapper;
 import com.nexus.erp.fin.fa.mapper.FaAssetMapper;
 import com.nexus.erp.fin.fa.mapper.FaDepreciationMapper;
@@ -41,6 +40,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * 固定资产折旧 Service 实现(折旧引擎 + 期间批量过账)
@@ -82,9 +82,11 @@ public class FaDepreciationServiceImpl implements IFaDepreciationService {
     public List<FaDepreciationVo> preview(Long periodId) {
         GlPeriod period = requireOpenPeriod(periodId);
         List<FaDepreciation> plans = buildPlans(period);
+        // 资产批量预取,避免循环内逐条查库(N+1)
+        Map<Long, FaAsset> assetMap = preloadAssets(plans);
         List<FaDepreciationVo> vos = new ArrayList<>();
         for (FaDepreciation plan : plans) {
-            FaAsset asset = assetMapper.selectById(plan.getAssetId());
+            FaAsset asset = assetMap.get(plan.getAssetId());
             FaDepreciationVo vo = new FaDepreciationVo();
             vo.setAssetId(plan.getAssetId());
             vo.setPeriodId(plan.getPeriodId());
@@ -117,11 +119,13 @@ public class FaDepreciationServiceImpl implements IFaDepreciationService {
         if (total.signum() == 0) {
             return 0;
         }
-        // 汇总借:按费用科目聚合 / 贷:累计折旧 1602
+        // 汇总借:按费用科目聚合 / 贷:累计折旧 1602(资产/类别批量预取,避免 N+1)
+        Map<Long, FaAsset> assetMap = preloadAssets(plans);
+        Map<Long, FaAssetCategory> categoryMap = preloadCategories(assetMap.values().stream().toList());
         Map<Long, BigDecimal> debitByAccount = new HashMap<>();
         for (FaDepreciation plan : plans) {
-            FaAsset asset = assetMapper.selectById(plan.getAssetId());
-            FaAssetCategory category = categoryMapper.selectById(asset.getCategoryId());
+            FaAsset asset = assetMap.get(plan.getAssetId());
+            FaAssetCategory category = categoryMap.get(asset.getCategoryId());
             Long expenseAccountId = category != null && category.getDebitAccountId() != null
                 ? category.getDebitAccountId() : adminExpenseAccountId();
             debitByAccount.merge(expenseAccountId, nz(plan.getDepreciationAmount()), BigDecimal::add);
@@ -143,9 +147,10 @@ public class FaDepreciationServiceImpl implements IFaDepreciationService {
         req.setSummary("固定资产折旧-" + period.getPeriodName());
         req.setLines(lines);
         com.nexus.erp.fin.gl.domain.vo.GlVoucherVo voucher = voucherService.createAndPost(req);
-        // 回填折旧记录并累加资产累计折旧
+        // 回填折旧记录并累加资产累计折旧;过账后批量重读资产取最新 version 做乐观锁校验
+        Map<Long, FaAsset> freshAssetMap = preloadAssets(plans);
         for (FaDepreciation plan : plans) {
-            FaAsset asset = assetMapper.selectById(plan.getAssetId());
+            FaAsset asset = freshAssetMap.get(plan.getAssetId());
             if (asset == null) {
                 continue;
             }
@@ -239,6 +244,8 @@ public class FaDepreciationServiceImpl implements IFaDepreciationService {
         List<Long> doneAssetIds = baseMapper.selectList(new LambdaQueryWrapper<FaDepreciation>()
                 .eq(FaDepreciation::getPeriodId, period.getPeriodId()))
             .stream().map(FaDepreciation::getAssetId).toList();
+        // 类别批量预取,避免循环内逐条查库(N+1)
+        Map<Long, FaAssetCategory> categoryMap = preloadCategories(assets);
         List<FaDepreciation> plans = new ArrayList<>();
         for (FaAsset asset : assets) {
             if (doneAssetIds.contains(asset.getAssetId())) {
@@ -252,7 +259,7 @@ public class FaDepreciationServiceImpl implements IFaDepreciationService {
                 continue;
             }
             long monthsInService = (end.getYear() - inUse.getYear()) * 12L + (end.getMonthValue() - inUse.getMonthValue()) + 1;
-            FaAssetCategory category = categoryMapper.selectById(asset.getCategoryId());
+            FaAssetCategory category = categoryMap.get(asset.getCategoryId());
             if (category == null) {
                 continue;
             }
@@ -268,6 +275,28 @@ public class FaDepreciationServiceImpl implements IFaDepreciationService {
             plans.add(plan);
         }
         return plans;
+    }
+
+    /** 批量预取折旧计划关联资产,避免循环内逐条查库(N+1) */
+    private Map<Long, FaAsset> preloadAssets(List<FaDepreciation> plans) {
+        Map<Long, FaAsset> assetMap = new HashMap<>();
+        List<Long> assetIds = plans.stream().map(FaDepreciation::getAssetId).distinct().toList();
+        if (CollUtil.isNotEmpty(assetIds)) {
+            assetMapper.selectBatchIds(assetIds).forEach(asset -> assetMap.put(asset.getAssetId(), asset));
+        }
+        return assetMap;
+    }
+
+    /** 批量预取资产类别,避免循环内逐条查库(N+1) */
+    private Map<Long, FaAssetCategory> preloadCategories(List<FaAsset> assets) {
+        Map<Long, FaAssetCategory> categoryMap = new HashMap<>();
+        List<Long> categoryIds = assets.stream().map(FaAsset::getCategoryId)
+            .filter(Objects::nonNull).distinct().toList();
+        if (CollUtil.isNotEmpty(categoryIds)) {
+            categoryMapper.selectBatchIds(categoryIds)
+                .forEach(category -> categoryMap.put(category.getCategoryId(), category));
+        }
+        return categoryMap;
     }
 
     /** 累计折旧科目 1602 */

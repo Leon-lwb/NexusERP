@@ -38,6 +38,8 @@ public class JimuReportTokenService implements JmReportTokenServiceI {
      */
     @Override
     public String getToken(HttpServletRequest request) {
+        // 清理上一条请求在池化线程上残留的令牌, 防止跨请求串号
+        CURRENT_TOKEN.remove();
         // JimuReport 内部 AJAX 用 X-Access-Token / token header，前端首次访问用 URL 参数
         String token = request.getHeader("X-Access-Token");
         if (StringUtils.isBlank(token)) {
@@ -95,11 +97,16 @@ public class JimuReportTokenService implements JmReportTokenServiceI {
         if (StringUtils.isBlank(token)) {
             return null;
         }
-        LoginUser loginUser = LoginHelper.getLoginUser(token);
-        if (loginUser != null) {
-            return loginUser.getTenantId();
+        try {
+            LoginUser loginUser = LoginHelper.getLoginUser(token);
+            if (loginUser != null) {
+                return loginUser.getTenantId();
+            }
+            return null;
+        } finally {
+            // 令牌消费后立即清理, 防止池化线程上旧令牌残留到后续请求
+            CURRENT_TOKEN.remove();
         }
-        return null;
     }
 
     /**

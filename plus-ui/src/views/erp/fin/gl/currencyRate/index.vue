@@ -31,7 +31,7 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="dataList" @selection-change="handleSelectionChange" show-overflow-tooltip>
+    <el-table v-loading="loading" :data="list" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="币种" align="center" prop="currency" width="100" />
       <el-table-column label="本位币" align="center" prop="baseCurrency" width="100" />
@@ -86,104 +86,35 @@
 
 <script setup lang="ts" name="GlCurrencyRate">
 import { listCurrencyRate, getCurrencyRate, addCurrencyRate, updateCurrencyRate, delCurrencyRate } from '@/api/erp/fin/gl/currencyRate';
-import { CurrencyRateVO, CurrencyRateForm, CurrencyRateQuery } from '@/api/erp/fin/gl/currencyRate/types';
+import type { FormInstance } from 'element-plus';
+import { useCrud } from '@/composables/useCrud';
 
 const { proxy } = getCurrentInstance() as any;
 
-const dataList = ref<CurrencyRateVO[]>([]);
-const open = ref(false);
-const loading = ref(true);
-const showSearch = ref(true);
-const total = ref(0);
-const title = ref('');
-const ids = ref<number[]>([]);
-const single = ref(true);
-const multiple = ref(true);
+const formRef = ref<FormInstance>();
 
-const data = reactive({
-  form: {} as CurrencyRateForm,
-  queryParams: { pageNum: 1, pageSize: 20, currency: undefined, rateType: undefined } as CurrencyRateQuery,
-  rules: {
-    currency: [{ required: true, message: '币种不能为空', trigger: 'blur' }],
-    rateDate: [{ required: true, message: '汇率日期不能为空', trigger: 'change' }],
-    rate: [{ required: true, message: '汇率不能为空', trigger: 'blur' }]
-  }
+const queryParams = ref({ pageNum: 1, pageSize: 20, currency: undefined, rateType: undefined });
+
+const rules = {
+  currency: [{ required: true, message: '币种不能为空', trigger: 'blur' }],
+  rateDate: [{ required: true, message: '汇率日期不能为空', trigger: 'change' }],
+  rate: [{ required: true, message: '汇率不能为空', trigger: 'blur' }]
+};
+
+const { loading, list, total, open, title, ids, single, multiple, showSearch, form,
+  getList, handleQuery, handleDelete, handleSelectionChange, submitForm, cancel } = useCrud({
+  apis: { list: listCurrencyRate, get: getCurrencyRate, add: addCurrencyRate, update: updateCurrencyRate, del: delCurrencyRate },
+  idField: 'rateId',
+  entityName: '汇率',
+  formRef,
+  queryParams,
+  initForm: () => ({ rateId: undefined, currency: '', baseCurrency: 'CNY', rateDate: undefined, rate: 0, rateType: 'MIDDLE' } as any)
 });
-const { queryParams, form, rules } = toRefs(data);
 
-function getList() {
-  loading.value = true;
-  listCurrencyRate(queryParams.value).then((response) => {
-    dataList.value = response.rows;
-    total.value = response.total;
-    loading.value = false;
-  });
-}
-
-function handleQuery() {
-  queryParams.value.pageNum = 1;
-  getList();
-}
 function resetQuery() {
   proxy.resetForm('queryRef');
   handleQuery();
 }
-function handleSelectionChange(selection: CurrencyRateVO[]) {
-  ids.value = selection.map((item) => item.rateId);
-  single.value = selection.length !== 1;
-  multiple.value = !selection.length;
-}
 
-function reset() {
-  form.value = { rateId: undefined, currency: '', baseCurrency: 'CNY', rateDate: undefined, rate: 0, rateType: 'MIDDLE' };
-  proxy.resetForm('formRef');
-}
-
-function handleAdd() {
-  reset();
-  open.value = true;
-  title.value = '新增汇率';
-}
-function handleUpdate(row?: CurrencyRateVO) {
-  const rateId = row ? row.rateId : ids.value[0];
-  reset();
-  getCurrencyRate(rateId).then((response) => {
-    form.value = response.data as CurrencyRateForm;
-    open.value = true;
-    title.value = '修改汇率';
-  });
-}
-
-function submitForm() {
-  proxy.$refs['formRef'].validate(async (valid: boolean) => {
-    if (!valid) return;
-    if (form.value.rateId) {
-      await updateCurrencyRate(form.value);
-      proxy.$modal.msgSuccess('修改成功');
-    } else {
-      await addCurrencyRate(form.value);
-      proxy.$modal.msgSuccess('新增成功');
-    }
-    open.value = false;
-    getList();
-  });
-}
-
-function handleDelete(row?: CurrencyRateVO) {
-  const delIds = row ? [row.rateId] : ids.value;
-  proxy.$modal.confirm('确认删除选中的汇率记录?').then(async () => {
-    await delCurrencyRate(delIds);
-    proxy.$modal.msgSuccess('删除成功');
-    getList();
-  });
-}
-
-function cancel() {
-  open.value = false;
-  reset();
-}
-
-onMounted(() => {
-  getList();
-});
+getList();
 </script>

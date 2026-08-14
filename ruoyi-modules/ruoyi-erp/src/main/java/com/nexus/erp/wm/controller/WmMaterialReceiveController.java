@@ -115,11 +115,7 @@ public class WmMaterialReceiveController extends BaseController {
     @Log(title = "物料入库单", businessType = BusinessType.UPDATE)
     @PutMapping
     public R<Void> edit(@Validated @RequestBody WmMaterialReceiveBo bo) {
-        try {
-            return toAjax(wmMaterialReceiveService.updateWithValidation(bo));
-        } catch (RuntimeException e) {
-            return R.fail(e.getMessage());
-        }
+        return toAjax(wmMaterialReceiveService.updateWithValidation(bo));
     }
 
     /**
@@ -151,12 +147,8 @@ public class WmMaterialReceiveController extends BaseController {
     @Log(title = "物料入库单", businessType = BusinessType.UPDATE)
     @PostMapping("/execute/{receiveId}")
     public R<Void> executeReceive(@PathVariable Long receiveId) {
-        try {
-            wmMaterialReceiveService.executeReceive(receiveId);
-            return R.ok("物料入库执行成功");
-        } catch (RuntimeException e) {
-            return R.fail("物料入库执行失败：" + e.getMessage());
-        }
+        wmMaterialReceiveService.executeReceive(receiveId);
+        return R.ok("物料入库执行成功");
     }
 
     /**
@@ -174,11 +166,7 @@ public class WmMaterialReceiveController extends BaseController {
     @PostMapping("/{receiveId}/submit")
     public R<Void> submit(@PathVariable("receiveId") String receiveId,
                           @RequestParam(value = "selectFlowId", required = false) String selectFlowId) {
-        try {
-            return toAjax(wmMaterialReceiveService.submit(receiveId, selectFlowId));
-        } catch (RuntimeException e) {
-            return R.fail(e.getMessage());
-        }
+        return toAjax(wmMaterialReceiveService.submit(receiveId, selectFlowId));
     }
 
     /**
@@ -193,11 +181,7 @@ public class WmMaterialReceiveController extends BaseController {
     @Log(title = "物料入库单上架确认", businessType = BusinessType.UPDATE)
     @PutMapping("/shelf/{receiveId}")
     public R<Void> confirmShelf(@PathVariable Long receiveId) {
-        try {
-            return toAjax(wmMaterialReceiveService.confirmShelf(receiveId));
-        } catch (RuntimeException e) {
-            return R.fail(e.getMessage());
-        }
+        return toAjax(wmMaterialReceiveService.confirmShelf(receiveId));
     }
 
     /**

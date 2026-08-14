@@ -205,40 +205,77 @@
 // 导入条码相关的API方法
 import { addBarcode, delBarcode, generateBarcode, getBarcode, listBarcode, updateBarcode, listBarcodeConfig } from '@/api/erp/wm/barcode';
 import type { BarcodeConfigVO } from '@/api/erp/wm/barcode/types';
+import type { FormInstance } from 'element-plus';
+import { useCrud } from '@/composables/useCrud';
 
 // 获取当前实例
 const { proxy } = getCurrentInstance() as any;
 
-// 定义响应式数据
-const list = ref([]); // 条码列表
-const loading = ref(false); // 加载状态
-const showSearch = ref(true); // 显示搜索区域
-const ids = ref<any[]>([]); // 选中的ID数组
-const single = ref(true); // 单选状态
-const multiple = ref(true); // 多选状态
-const total = ref(0); // 总记录数
-const open = ref(false); // 编辑对话框显示状态
-const generateOpen = ref(false); // 生成对话框显示状态
-const viewOpen = ref(false); // 查看对话框显示状态
-const title = ref(''); // 对话框标题
+const formRef = ref<FormInstance>();
+const generateRef = ref<FormInstance>();
+
 const configOptions = ref<BarcodeConfigVO[]>([]); // 条码配置下拉选项
 
-// 定义页面数据
-const data = reactive({
-  // 查询参数
-  queryParams: {
-    pageNum: 1,
-    pageSize: 10,
-    barcodeCode: null,
-    configCode: null,
-    bizType: null,
-    bizId: null,
-    materialId: null,
-    stockId: null,
-    status: null
-  },
-  // 表单数据
-  form: {
+// 查看对话框
+const viewOpen = ref(false);
+const viewForm = ref({
+  barcodeId: undefined,
+  barcodeCode: '',
+  configId: undefined,
+  configCode: '',
+  bizType: '',
+  bizId: undefined,
+  bizLineId: undefined,
+  materialId: undefined,
+  batchId: undefined,
+  stockId: undefined,
+  status: 'ACTIVE',
+  remark: '',
+  generateTime: ''
+});
+
+// 生成条码对话框
+const generateOpen = ref(false);
+const generateForm = ref({
+  configCode: '',
+  bizType: '',
+  bizId: undefined,
+  materialId: undefined
+});
+const generateRules = {
+  configCode: [{ required: true, message: '请选择配置编码', trigger: 'change' }]
+};
+
+const queryParams = ref({
+  pageNum: 1,
+  pageSize: 10,
+  barcodeCode: null,
+  configCode: null,
+  bizType: null,
+  bizId: null,
+  materialId: null,
+  stockId: null,
+  status: null
+});
+
+const rules = {
+  barcodeCode: [{ required: true, message: '条码不能为空', trigger: 'blur' }],
+  configCode: [{ required: true, message: '请选择配置编码', trigger: 'change' }]
+};
+
+const {
+  loading, list, total, open, title, ids, single, multiple, showSearch, form,
+  getList, handleQuery, handleDelete, handleExport, handleSelectionChange, submitForm, cancel,
+  handleAdd: rawHandleAdd,
+  handleUpdate: rawHandleUpdate,
+  handleView: _rawHandleView
+} = useCrud({
+  apis: { list: listBarcode, get: getBarcode, add: addBarcode, update: updateBarcode, del: delBarcode },
+  idField: 'barcodeId',
+  entityName: '条码',
+  formRef: formRef,
+  queryParams,
+  initForm: () => ({
     barcodeId: undefined,
     barcodeCode: '',
     configId: undefined,
@@ -251,43 +288,25 @@ const data = reactive({
     stockId: undefined,
     status: 'ACTIVE',
     remark: ''
-  },
-  // 查看表单数据
-  viewForm: {
-    barcodeId: undefined,
-    barcodeCode: '',
-    configId: undefined,
-    configCode: '',
-    bizType: '',
-    bizId: undefined,
-    bizLineId: undefined,
-    materialId: undefined,
-    batchId: undefined,
-    stockId: undefined,
-    status: 'ACTIVE',
-    remark: '',
-    generateTime: ''
-  },
-  // 生成条码表单数据
-  generateForm: {
-    configCode: '',
-    bizType: '',
-    bizId: undefined,
-    materialId: undefined
-  },
-  // 表单验证规则
-  rules: {
-    barcodeCode: [{ required: true, message: '条码不能为空', trigger: 'blur' }],
-    configCode: [{ required: true, message: '请选择配置编码', trigger: 'change' }]
-  },
-  // 生成表单验证规则
-  generateRules: {
-    configCode: [{ required: true, message: '请选择配置编码', trigger: 'change' }]
-  }
+  }),
+  exportUrl: '/erp/wm/barcode/export',
+  exportFileName: 'barcode'
 });
 
-// 解构数据
-const { queryParams, form, viewForm, rules, generateForm, generateRules } = toRefs(data);
+function handleUpdate(row?: any) {
+  return rawHandleUpdate(row);
+}
+
+// 查看（使用独立对话框）
+function handleView(row: any) {
+  viewForm.value = { ...row };
+  viewOpen.value = true;
+}
+
+function resetQuery() {
+  proxy.resetForm('queryRef');
+  handleQuery();
+}
 
 /**
  * 获取条码配置下拉选项
@@ -329,54 +348,6 @@ function onCopySuccess(val: string) {
 }
 
 /**
- * 获取条码列表
- */
-function getList() {
-  loading.value = true;
-  listBarcode(queryParams.value)
-    .then((res: any) => {
-      list.value = res.rows;
-      total.value = res.total;
-    })
-    .finally(() => {
-      loading.value = false;
-    });
-}
-
-/**
- * 搜索按钮操作
- */
-function handleQuery() {
-  queryParams.value.pageNum = 1;
-  getList();
-}
-
-/**
- * 重置按钮操作
- */
-function resetQuery() {
-  proxy.resetForm('queryRef');
-  handleQuery();
-}
-
-/**
- * 多选框选中数据
- */
-function handleSelectionChange(selection: any[]) {
-  ids.value = selection.map((i) => i.barcodeId);
-  single.value = selection.length !== 1;
-  multiple.value = !selection.length;
-}
-
-/**
- * 查看按钮操作
- */
-function handleView(row: any) {
-  viewForm.value = { ...row };
-  viewOpen.value = true;
-}
-
-/**
  * 生成条码按钮操作
  */
 function handleGenerate() {
@@ -388,7 +359,7 @@ function handleGenerate() {
   };
   generateOpen.value = true;
   nextTick(() => {
-    proxy.$refs.generateRef?.clearValidate();
+    generateRef.value?.clearValidate();
   });
 }
 
@@ -396,64 +367,11 @@ function handleGenerate() {
  * 提交生成条码
  */
 function submitGenerate() {
-  proxy.$refs['generateRef'].validate((valid: boolean) => {
+  generateRef.value?.validate((valid: boolean) => {
     if (!valid) return;
     generateBarcode(generateForm.value).then((res: any) => {
       proxy.$modal.msgSuccess(`生成成功：${res.data}`);
       generateOpen.value = false;
-      getList();
-    });
-  });
-}
-
-/**
- * 修改按钮操作
- * @param row 选中的条码数据
- */
-function handleUpdate(row: any) {
-  const id = row?.barcodeId || ids.value[0];
-  getBarcode(id).then((res: any) => {
-    form.value = res.data;
-    open.value = true;
-    title.value = '修改条码实例';
-    nextTick(() => {
-      proxy.$refs.formRef?.clearValidate();
-    });
-  });
-}
-
-/**
- * 删除按钮操作
- * @param row 选中的条码数据
- */
-function handleDelete(row: any) {
-  const delIds = row?.barcodeId || ids.value;
-  proxy.$modal
-    .confirm('是否确认删除条码实例？')
-    .then(() => delBarcode(delIds))
-    .then(() => {
-      getList();
-      proxy.$modal.msgSuccess('删除成功');
-    });
-}
-
-/**
- * 导出按钮操作
- */
-function handleExport() {
-  proxy.download('/erp/wm/barcode/export', { ...queryParams.value }, `barcode_${Date.now()}.xlsx`);
-}
-
-/**
- * 提交表单
- */
-function submitForm() {
-  proxy.$refs['formRef'].validate((valid: boolean) => {
-    if (!valid) return;
-    const api = form.value.barcodeId ? updateBarcode : addBarcode;
-    api(form.value).then(() => {
-      proxy.$modal.msgSuccess('保存成功');
-      open.value = false;
       getList();
     });
   });

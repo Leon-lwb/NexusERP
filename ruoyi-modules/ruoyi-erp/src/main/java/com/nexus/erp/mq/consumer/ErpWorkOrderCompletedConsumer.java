@@ -4,7 +4,6 @@ import com.baomidou.dynamic.datasource.annotation.DS;
 import com.nexus.common.mq.constant.QueueConstants;
 import com.nexus.common.mq.consumer.BaseMessageConsumer;
 import com.nexus.common.mq.message.MesWorkOrderCompletedMessage;
-import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.erp.prd.domain.PrdWorkOrder;
 import com.nexus.erp.prd.domain.enums.WoStatusEnum;
 import com.nexus.erp.prd.service.IPrdWorkOrderService;
@@ -54,12 +53,7 @@ public class ErpWorkOrderCompletedConsumer extends BaseMessageConsumer<MesWorkOr
      */
     @Override
     protected void doProcess(MesWorkOrderCompletedMessage message) {
-        // MQ消费者线程无登录态，需从消息恢复租户上下文
-        String tenantId = "000000";
-        if (message.getTenantId() != null && !Long.valueOf(0L).equals(message.getTenantId())) {
-            tenantId = String.format("%06d", message.getTenantId());
-        }
-        TenantHelper.dynamic(tenantId, () -> doComplete(message));
+        doComplete(message);
     }
 
     /**

@@ -2,6 +2,7 @@ package com.nexus.erp.prd.service;
 
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
+import com.nexus.erp.prd.domain.PrdSubcontract;
 import com.nexus.erp.prd.domain.bo.PrdSubcontractBo;
 import com.nexus.erp.prd.domain.vo.PrdSubcontractVo;
 
@@ -133,4 +134,14 @@ public interface IPrdSubcontractService {
      * @return 操作日志列表
      */
     List<Map<String, Object>> getOperationLogs(Long subcontractId);
+
+    /**
+     * 根据 ID 查询委外订单实体（用于内部消费者等场景，不经过 VO 转换）
+     */
+    PrdSubcontract getById(Long id);
+
+    /**
+     * 更新委外订单实体（用于内部消费者等场景）
+     */
+    boolean updateById(PrdSubcontract entity);
 }

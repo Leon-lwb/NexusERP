@@ -47,7 +47,7 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="shiftList" @selection-change="handleSelectionChange" show-overflow-tooltip>
+    <el-table v-loading="loading" :data="list" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="序号" type="index" align="center" />
       <el-table-column label="班次编码" align="center" prop="shiftCode" />
@@ -193,84 +193,54 @@
 
 <script setup lang="ts" name="Shift">
 import { listShift, getShift, delShift, addShift, updateShift } from '@/api/erp/sch/shift';
+import type { FormInstance } from 'element-plus';
+import { useCrud } from '@/composables/useCrud';
 
-const { proxy } = getCurrentInstance();
+const { proxy } = getCurrentInstance() as any;
 const { sys_true_or_false, sch_shift_category } = toRefs(proxy.useDict('sys_true_or_false', 'sch_shift_category'));
 
-const shiftList = ref([]);
-const open = ref(false);
-const loading = ref(true);
-const showSearch = ref(true);
-const ids = ref([]);
-const single = ref(true);
-const multiple = ref(true);
-const total = ref(0);
-const title = ref('');
-const isViewMode = ref(false);
-const shiftRef = ref();
+const shiftRef = ref<FormInstance>();
 
-const data = reactive({
-  form: {},
-  queryParams: {
-    pageNum: 1,
-    pageSize: 10,
-    shiftCode: null,
-    shiftName: null,
-    shiftCategory: null
-  },
-  rules: {
-    shiftCode: [{ required: true, message: '班次编码不能为空', trigger: 'blur' }],
-    shiftName: [{ required: true, message: '班次名称不能为空', trigger: 'blur' }],
-    startTime: [{ required: true, message: '开始时间不能为空', trigger: 'blur' }],
-    endTime: [{ required: true, message: '结束时间不能为空', trigger: 'blur' }],
-    workHours: [{ required: true, message: '工时不能为空', trigger: 'blur' }]
-  }
+const queryParams = ref({
+  pageNum: 1, pageSize: 10, shiftCode: null, shiftName: null, shiftCategory: null
 });
 
-const { queryParams, form, rules } = toRefs(data);
+const rules = {
+  shiftCode: [{ required: true, message: '班次编码不能为空', trigger: 'blur' }],
+  shiftName: [{ required: true, message: '班次名称不能为空', trigger: 'blur' }],
+  startTime: [{ required: true, message: '开始时间不能为空', trigger: 'blur' }],
+  endTime: [{ required: true, message: '结束时间不能为空', trigger: 'blur' }],
+  workHours: [{ required: true, message: '工时不能为空', trigger: 'blur' }]
+};
 
-function getList() {
-  loading.value = true;
-  listShift(queryParams.value)
-    .then((response) => {
-      shiftList.value = response.rows;
-      total.value = response.total;
-      loading.value = false;
-    })
-    .catch(() => {
-      loading.value = false;
-    });
+const {
+  loading, list, total, open, isViewMode, title, ids, single, multiple, showSearch, form,
+  getList, handleQuery, handleDelete, handleExport, handleSelectionChange, submitForm, cancel,
+  handleAdd: rawHandleAdd, handleUpdate: rawHandleUpdate, handleView: rawHandleView
+} = useCrud({
+  apis: { list: listShift, get: getShift, add: addShift, update: updateShift, del: delShift },
+  idField: 'shiftId',
+  entityName: '班次',
+  formRef: shiftRef,
+  queryParams,
+  initForm: () => ({
+    shiftId: null, shiftCode: null, shiftName: null,
+    startTime: null, endTime: null, workHours: null, isCrossDay: null,
+    restStartTime: null, restEndTime: null, lateThreshold: null, earlyLeaveThreshold: null,
+    shiftCategory: null, color: null, sortOrder: null, remark: null
+  }),
+  exportUrl: '/erp/sch/shift/export',
+  exportFileName: '班次数据'
+});
+
+function handleAdd() {
+  rawHandleAdd();
 }
-
-function cancel() {
-  open.value = false;
-  reset();
+function handleUpdate(row?: any) {
+  return rawHandleUpdate(row);
 }
-
-function reset() {
-  form.value = {
-    shiftId: null,
-    shiftCode: null,
-    shiftName: null,
-    startTime: null,
-    endTime: null,
-    workHours: null,
-    isCrossDay: null,
-    restStartTime: null,
-    restEndTime: null,
-    lateThreshold: null,
-    earlyLeaveThreshold: null,
-    shiftCategory: null,
-    color: null,
-    sortOrder: null,
-    remark: null
-  };
-  proxy.resetForm('shiftRef');
-}
-
-function handleQuery() {
-  queryParams.value.pageNum = 1;
-  getList();
+function handleView(row?: any) {
+  return rawHandleView(row);
 }
 
 function resetQuery() {
@@ -278,78 +248,7 @@ function resetQuery() {
   handleQuery();
 }
 
-function handleSelectionChange(selection) {
-  ids.value = selection.map((item) => item.shiftId);
-  single.value = selection.length !== 1;
-  multiple.value = !selection.length;
-}
-
-function handleAdd() {
-  reset();
-  isViewMode.value = false;
-  open.value = true;
-  title.value = '添加班次';
-}
-
-function handleUpdate(row) {
-  reset();
-  isViewMode.value = false;
-  getShift(row.shiftId || ids.value[0]).then((response) => {
-    form.value = response.data;
-    open.value = true;
-    title.value = '修改班次';
-  });
-}
-
-function handleView(row) {
-  reset();
-  isViewMode.value = true;
-  getShift(row.shiftId || ids.value[0]).then((response) => {
-    form.value = response.data;
-    open.value = true;
-    title.value = '查看班次';
-  });
-}
-
-function handleDelete(row) {
-  const shiftIds = row.shiftId || ids.value;
-  proxy.$modal
-    .confirm('是否确认删除班次编号为"' + shiftIds + '"的数据项？')
-    .then(function () {
-      return delShift(shiftIds);
-    })
-    .then(() => {
-      getList();
-      proxy.$modal.msgSuccess('删除成功');
-    })
-    .catch(() => {});
-}
-
-function handleExport() {
-  proxy.download('/erp/sch/shift/export', { ...queryParams.value }, '班次数据.xlsx');
-}
-
-function submitForm() {
-  proxy.$refs['shiftRef'].validate((valid) => {
-    if (valid) {
-      if (form.value.shiftId != null) {
-        updateShift(form.value).then(() => {
-          proxy.$modal.msgSuccess('修改成功');
-          open.value = false;
-          getList();
-        });
-      } else {
-        addShift(form.value).then(() => {
-          proxy.$modal.msgSuccess('新增成功');
-          open.value = false;
-          getList();
-        });
-      }
-    }
-  });
-}
-
-function formatTime(timeStr) {
+function formatTime(timeStr: string) {
   if (!timeStr) return '-';
   if (typeof timeStr === 'string' && timeStr.length >= 8) {
     return timeStr.substring(0, 8);
@@ -357,7 +256,7 @@ function formatTime(timeStr) {
   return timeStr;
 }
 
-function getContrastColor(color) {
+function getContrastColor(color: string) {
   if (!color) return '#333333';
   const hex = color.replace('#', '');
   const r = parseInt(hex.substring(0, 2), 16);

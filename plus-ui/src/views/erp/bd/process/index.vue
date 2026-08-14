@@ -59,7 +59,7 @@
     </el-row>
 
     <!-- 技术债：关键工序/委外/质检列使用硬编码 el-tag，缺对应字典，待补字典后改 dict-tag -->
-    <el-table v-loading="loading" :data="processList" @selection-change="handleSelectionChange" show-overflow-tooltip>
+    <el-table v-loading="loading" :data="list" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="工序编码" align="center" prop="processCode" />
       <el-table-column label="工序名称" align="center" prop="processName" min-width="120" show-overflow-tooltip />
@@ -229,54 +229,69 @@
 <script setup lang="ts" name="Process">
 import { listProcess, getProcess, addProcess, updateProcess, delProcess } from '@/api/erp/bd/process';
 import { listWorkstation } from '@/api/erp/bd/workstation';
-import { ProcessVO, ProcessForm } from '@/api/erp/bd/process/types';
+import type { FormInstance } from 'element-plus';
+import { useCrud } from '@/composables/useCrud';
 
 const { proxy } = getCurrentInstance() as any;
 const { sys_core_status, sys_true_or_false, bd_process_category } = toRefs<any>(
   proxy.useDict('sys_core_status', 'sys_true_or_false', 'bd_process_category')
 );
 
-const processList = ref<ProcessVO[]>([]);
+const processRef = ref<FormInstance>();
 const workstationList = ref<any[]>([]);
-const open = ref(false);
-const loading = ref(true);
-const showSearch = ref(true);
-const ids = ref<Array<number | string>>([]);
-const single = ref(true);
-const multiple = ref(true);
-const total = ref(0);
-const title = ref('');
 
-const data = reactive({
-  form: {} as ProcessForm,
-  queryParams: {
-    pageNum: 1,
-    pageSize: 10,
-    processCode: undefined,
-    processName: undefined,
-    processCategory: undefined,
-    isKeyProcess: undefined,
-    status: undefined
-  },
-  rules: {
-    processCode: [{ required: true, message: '工序编码不能为空', trigger: 'blur' }],
-    processName: [{ required: true, message: '工序名称不能为空', trigger: 'blur' }]
-  }
+const queryParams = ref({
+  pageNum: 1,
+  pageSize: 10,
+  processCode: undefined,
+  processName: undefined,
+  processCategory: undefined,
+  isKeyProcess: undefined,
+  status: undefined
 });
 
-const { queryParams, form, rules } = toRefs(data);
+const rules = {
+  processCode: [{ required: true, message: '工序编码不能为空', trigger: 'blur' }],
+  processName: [{ required: true, message: '工序名称不能为空', trigger: 'blur' }]
+};
 
-/** 查询工序列表 */
-function getList() {
-  loading.value = true;
-  listProcess(queryParams.value).then((response: any) => {
-    processList.value = response.rows;
-    total.value = response.total;
-    loading.value = false;
-  });
-}
+const {
+  loading, list, total, open, isViewMode, title, ids, single, multiple, showSearch, form,
+  getList, handleQuery, handleDelete, handleExport, handleSelectionChange, submitForm, cancel,
+  handleAdd: rawHandleAdd,
+  handleUpdate: rawHandleUpdate,
+  handleView: rawHandleView
+} = useCrud({
+  apis: { list: listProcess, get: getProcess, add: addProcess, update: updateProcess, del: delProcess },
+  idField: 'processId',
+  entityName: '工序',
+  formRef: processRef,
+  queryParams,
+  initForm: () => ({
+    processId: undefined,
+    processCode: undefined,
+    processName: undefined,
+    processDesc: undefined,
+    processCategory: undefined,
+    workstationId: undefined,
+    workstationCode: undefined,
+    workstationName: undefined,
+    standardHours: undefined,
+    setupHours: undefined,
+    laborCount: undefined,
+    machineCount: undefined,
+    isKeyProcess: 0,
+    isOutsource: 0,
+    qualityRequired: 0,
+    status: 1,
+    remark: undefined
+  }),
+  exportUrl: '/erp/bd/process/export',
+  exportFileName: 'process',
+  onReset: () => { getWorkstationList(); }
+});
 
-/** 查询工作中心列表（用于下拉选择） */
+/** 工作中心列表 */
 function getWorkstationList() {
   listWorkstation({ status: 1 } as any).then((response: any) => {
     workstationList.value = response.rows || [];
@@ -297,111 +312,21 @@ function handleWorkstationChange(val: number) {
   }
 }
 
-/** 搜索按钮操作 */
-function handleQuery() {
-  queryParams.value.pageNum = 1;
-  getList();
+function handleAdd() {
+  rawHandleAdd(() => { getWorkstationList(); });
+}
+function handleUpdate(row?: any) {
+  return rawHandleUpdate(row, () => { getWorkstationList(); });
+}
+function handleView(row?: any) {
+  return rawHandleView(row, () => { getWorkstationList(); });
 }
 
-/** 重置按钮操作 */
 function resetQuery() {
   proxy.resetForm('queryRef');
   handleQuery();
 }
 
-/** 多选框选中数据 */
-function handleSelectionChange(selection: any[]) {
-  ids.value = selection.map((item: any) => item.processId);
-  single.value = selection.length !== 1;
-  multiple.value = !selection.length;
-}
-
-/** 重置表单 */
-function reset() {
-  form.value = {
-    processId: undefined,
-    processCode: undefined,
-    processName: undefined,
-    processDesc: undefined,
-    processCategory: undefined,
-    workstationId: undefined,
-    workstationCode: undefined,
-    workstationName: undefined,
-    standardHours: undefined,
-    setupHours: undefined,
-    laborCount: undefined,
-    machineCount: undefined,
-    isKeyProcess: 0,
-    isOutsource: 0,
-    qualityRequired: 0,
-    status: 1,
-    remark: undefined
-  };
-  proxy.resetForm('processRef');
-}
-
-/** 新增按钮操作 */
-function handleAdd() {
-  reset();
-  open.value = true;
-  title.value = '添加工序';
-}
-
-/** 修改按钮操作 */
-function handleUpdate(row?: any) {
-  reset();
-  const processId = row?.processId || ids.value[0];
-  getProcess(processId).then((response: any) => {
-    form.value = response.data;
-    open.value = true;
-    title.value = '修改工序';
-  });
-}
-
-/** 提交按钮 */
-function submitForm() {
-  proxy.$refs['processRef'].validate((valid: boolean) => {
-    if (valid) {
-      if (form.value.processId) {
-        updateProcess(form.value).then(() => {
-          proxy.$modal.msgSuccess('修改成功');
-          open.value = false;
-          getList();
-        });
-      } else {
-        addProcess(form.value).then(() => {
-          proxy.$modal.msgSuccess('新增成功');
-          open.value = false;
-          getList();
-        });
-      }
-    }
-  });
-}
-
-/** 删除按钮操作 */
-function handleDelete(row?: any) {
-  const processIds = row?.processId || ids.value;
-  proxy.$modal
-    .confirm('是否确认删除工序编号为"' + processIds + '"的数据项？')
-    .then(() => {
-      return delProcess(processIds);
-    })
-    .then(() => {
-      getList();
-      proxy.$modal.msgSuccess('删除成功');
-    })
-    .catch(() => {});
-}
-
-/** 导出按钮操作 */
-function handleExport() {
-  proxy.download('erp/bd/process/export', { ...queryParams.value }, `process_${new Date().getTime()}.xlsx`);
-}
-
-onMounted(() => {
-  getList();
-  getWorkstationList();
-});
+getList();
 </script>
 

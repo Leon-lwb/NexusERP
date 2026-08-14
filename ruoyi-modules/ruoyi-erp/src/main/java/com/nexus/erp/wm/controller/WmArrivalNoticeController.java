@@ -142,11 +142,7 @@ public class WmArrivalNoticeController extends BaseController {
     @PostMapping("/{noticeId}/submit")
     public R<Void> submit(@PathVariable("noticeId") String noticeId,
                           @RequestParam(value = "selectFlowId", required = false) String selectFlowId) {
-        try {
-            return toAjax(wmArrivalNoticeService.submit(noticeId, selectFlowId));
-        } catch (RuntimeException e) {
-            return R.fail(e.getMessage());
-        }
+        return toAjax(wmArrivalNoticeService.submit(noticeId, selectFlowId));
     }
 
     /**

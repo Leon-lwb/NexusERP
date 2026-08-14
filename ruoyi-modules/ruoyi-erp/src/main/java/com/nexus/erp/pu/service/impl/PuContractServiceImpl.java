@@ -29,10 +29,7 @@ import com.nexus.system.strategy.AutoCodeUtil;
 import com.nexus.workflow.domain.WfMyBusiness;
 import com.nexus.workflow.service.IWfProcessService;
 import com.nexus.workflow.service.impl.WfMyBusinessServiceImpl;
-import org.flowable.engine.HistoryService;
-import org.flowable.engine.RuntimeService;
-import org.flowable.engine.history.HistoricProcessInstance;
-import org.flowable.engine.runtime.ProcessInstance;
+import com.nexus.common.flowable.helper.FlowableProcInsIdHelper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -62,8 +59,7 @@ public class PuContractServiceImpl implements IPuContractService {
     private final AutoCodeUtil autoCodeUtil;
     private final IWfProcessService processService;
     private final WfMyBusinessServiceImpl wfMyBusinessServiceImpl;
-    private final RuntimeService runtimeService;
-    private final HistoryService historyService;
+    private final FlowableProcInsIdHelper procInsIdHelper;
 
     /**
      * 分页查询采购合同列表。
@@ -224,21 +220,10 @@ public class PuContractServiceImpl implements IPuContractService {
      */
     @Override
     public String getProcInsId(String contractIdStr) {
-        try {
+        return procInsIdHelper.resolve(contractIdStr, () -> {
             WfMyBusiness business = wfMyBusinessServiceImpl.getByDataId(contractIdStr);
-            if (business != null && StringUtils.isNotBlank(business.getProcessInstanceId())) {
-                return business.getProcessInstanceId();
-            }
-        } catch (Exception ignored) {
-        }
-        ProcessInstance runtime = runtimeService.createProcessInstanceQuery()
-            .processInstanceBusinessKey(contractIdStr).singleResult();
-        if (runtime != null) {
-            return runtime.getId();
-        }
-        HistoricProcessInstance hist = historyService.createHistoricProcessInstanceQuery()
-            .processInstanceBusinessKey(contractIdStr).singleResult();
-        return hist != null ? hist.getId() : null;
+            return business != null ? business.getProcessInstanceId() : null;
+        });
     }
 
     /**
@@ -247,7 +232,7 @@ public class PuContractServiceImpl implements IPuContractService {
      * @param business 工作流业务对象（含审批状态与数据ID）
      */
     @Override
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void afterFlowHandle(WfMyBusiness business) {
         Long contractId = Long.parseLong(business.getDataId());
         PuContract contract = baseMapper.selectById(contractId);
@@ -274,7 +259,7 @@ public class PuContractServiceImpl implements IPuContractService {
      * @return 采购合同业务对象
      */
     @Override
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
     public Object getBusinessDataById(String dataId) {
         return selectById(Long.parseLong(dataId));
     }

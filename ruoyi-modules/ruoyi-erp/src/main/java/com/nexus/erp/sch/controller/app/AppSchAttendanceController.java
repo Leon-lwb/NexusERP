@@ -1,8 +1,9 @@
 package com.nexus.erp.sch.controller.app;
 
+import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import com.baomidou.dynamic.datasource.annotation.DS;
+
 import com.nexus.common.tenant.helper.TenantHelper;
 import lombok.RequiredArgsConstructor;
 import com.nexus.common.core.domain.R;
@@ -110,12 +111,8 @@ public class AppSchAttendanceController {
         SchWorker currentWorker = workerList.get(0);
         Long workerId = currentWorker.getWorkerId();
 
-        try {
-            Map<String, Object> data = schAttendanceService.getTodayAttendanceStatus(workerId);
-            return R.ok(data);
-        } catch (Exception e) {
-            return R.fail(e.getMessage());
-        }
+        Map<String, Object> data = schAttendanceService.getTodayAttendanceStatus(workerId);
+        return R.ok(data);
     }
 
     /**
@@ -134,34 +131,30 @@ public class AppSchAttendanceController {
         SchWorker currentWorker = workerList.get(0);
         Long workerId = currentWorker.getWorkerId();
 
-        try {
-            Date now = new Date();
-            Map<String, Object> data = schAttendanceService.performClockIn(
-                    workerId,
-                    currentWorker.getUserName(),
-                    now,
-                    (String) params.get("deviceId"),
-                    (String) params.get("deviceName")
-            );
-            // 人脸验证(异步,不阻断打卡):照片随打卡请求上传(base64),存储 + 校验
-            Object faceImage = params.get("faceImage");
-            byte[] faceBytes = null;
-            if (faceImage instanceof String faceBase64 && !((String) faceImage).isBlank()) {
-                faceBytes = java.util.Base64.getDecoder().decode(((String) faceImage).split(",")[0]);
-            }
-            if (data.get("attendanceId") != null) {
-                schAttendanceService.asyncFaceVerify(
-                        Long.valueOf(data.get("attendanceId").toString()),
-                        workerId,
-                        TenantHelper.getTenantId(),
-                        faceBytes,
-                        true
-                );
-            }
-            return R.ok(data);
-        } catch (Exception e) {
-            return R.fail(e.getMessage());
+        Date now = new Date();
+        Map<String, Object> data = schAttendanceService.performClockIn(
+                workerId,
+                currentWorker.getUserName(),
+                now,
+                (String) params.get("deviceId"),
+                (String) params.get("deviceName")
+        );
+        // 人脸验证(异步,不阻断打卡):照片随打卡请求上传(base64),存储 + 校验
+        Object faceImage = params.get("faceImage");
+        byte[] faceBytes = null;
+        if (faceImage instanceof String faceBase64 && !((String) faceImage).isBlank()) {
+            faceBytes = java.util.Base64.getDecoder().decode(((String) faceImage).split(",")[0]);
         }
+        if (data.get("attendanceId") != null) {
+            schAttendanceService.asyncFaceVerify(
+                    Long.valueOf(data.get("attendanceId").toString()),
+                    workerId,
+                    TenantHelper.getTenantId(),
+                    faceBytes,
+                    true
+            );
+        }
+        return R.ok(data);
     }
 
     /**
@@ -180,21 +173,17 @@ public class AppSchAttendanceController {
         SchWorker currentWorker = workerList.get(0);
         Long workerId = currentWorker.getWorkerId();
 
-        try {
-            Date now = new Date();
-            Double overtimeHours = params.get("overtimeHours") != null ? Double.parseDouble(params.get("overtimeHours").toString()) : 0.0;
-            Map<String, Object> data = schAttendanceService.performClockOut(
-                    workerId,
-                    currentWorker.getUserName(),
-                    now,
-                    (String) params.get("deviceId"),
-                    (String) params.get("deviceName"),
-                    overtimeHours
-            );
-            return R.ok(data);
-        } catch (Exception e) {
-            return R.fail(e.getMessage());
-        }
+        Date now = new Date();
+        Double overtimeHours = params.get("overtimeHours") != null ? Double.parseDouble(params.get("overtimeHours").toString()) : 0.0;
+        Map<String, Object> data = schAttendanceService.performClockOut(
+                workerId,
+                currentWorker.getUserName(),
+                now,
+                (String) params.get("deviceId"),
+                (String) params.get("deviceName"),
+                overtimeHours
+        );
+        return R.ok(data);
     }
 
     /**
@@ -382,8 +371,6 @@ public class AppSchAttendanceController {
             return R.ok(data);
         } catch (NumberFormatException e) {
             return R.fail("经纬度参数格式错误");
-        } catch (Exception e) {
-            return R.fail(e.getMessage());
         }
     }
 

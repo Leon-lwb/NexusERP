@@ -27,3 +27,6 @@ pnpm-lock.yaml
 auto-imports.d.ts
 components.d.ts
 .eslintrc-auto-import.json
+
+# vue-tsc 输出(本地类型检查临时文件, 由 type-check:changed 生成)
+vue-tsc-out.txt

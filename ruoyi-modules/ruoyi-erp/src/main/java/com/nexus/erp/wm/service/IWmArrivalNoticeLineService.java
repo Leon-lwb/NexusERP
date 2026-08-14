@@ -62,4 +62,16 @@ public interface IWmArrivalNoticeLineService {
      * @return 影响行数
      */
     int deleteByIds(Long[] ids);
+
+    /**
+     * 按通知单ID和物料ID更新IQC结果
+     *
+     * @param noticeId   到货通知单ID
+     * @param materialId 物料ID
+     * @param iqcId      IQC检验单ID
+     * @param iqcCode    IQC检验单号
+     * @param iqcStatus  IQC检验状态
+     * @return 影响行数
+     */
+    int updateIqcResult(Long noticeId, Long materialId, Long iqcId, String iqcCode, String iqcStatus);
 }

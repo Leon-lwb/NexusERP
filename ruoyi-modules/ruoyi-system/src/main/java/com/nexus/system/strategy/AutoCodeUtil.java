@@ -134,7 +134,7 @@ public class AutoCodeUtil {
      * @return 生成的完整编码字符串
      */
     @DS("master")
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public synchronized String genSerialCode(String ruleCode, String inputCharacter) {
         try {
             ComputeContext ctx = computeSerialCode(ruleCode, inputCharacter);

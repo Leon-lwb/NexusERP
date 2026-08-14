@@ -69,7 +69,7 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="employeeScheduleList" @selection-change="handleSelectionChange" show-overflow-tooltip>
+    <el-table v-loading="loading" :data="list" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="序号" type="index" align="center" />
       <el-table-column label="人员姓名" align="center" prop="workerName" min-width="120" show-overflow-tooltip />
@@ -236,174 +236,60 @@
 
 <script setup lang="ts" name="EmployeeSchedule">
 import {
-  listEmployeeSchedule,
-  getEmployeeSchedule,
-  delEmployeeSchedule,
-  addEmployeeSchedule,
-  updateEmployeeSchedule
+  listEmployeeSchedule, getEmployeeSchedule, delEmployeeSchedule, addEmployeeSchedule, updateEmployeeSchedule
 } from '@/api/erp/sch/employee-schedule';
+import type { FormInstance } from 'element-plus';
+import { useCrud } from '@/composables/useCrud';
 
-const { proxy } = getCurrentInstance();
+const { proxy } = getCurrentInstance() as any;
 const { sys_true_or_false, sch_schedule_status } = toRefs(proxy.useDict('sys_true_or_false', 'sch_schedule_status'));
 
-const employeeScheduleList = ref([]);
-const open = ref(false);
-const loading = ref(true);
-const showSearch = ref(true);
-const ids = ref([]);
-const single = ref(true);
-const multiple = ref(true);
-const total = ref(0);
-const title = ref('');
-const isViewMode = ref(false);
+const employeeScheduleRef = ref<FormInstance>();
 
-const data = reactive({
-  form: {},
-  queryParams: {
-    pageNum: 1,
-    pageSize: 10,
-    workerName: null,
-    teamName: null,
-    shiftName: null,
-    scheduledDate: null,
-    scheduleStatus: null
-  },
-  rules: {
-    planId: [{ required: true, message: '排班计划ID不能为空', trigger: 'blur' }],
-    workerId: [{ required: true, message: '人员ID不能为空', trigger: 'blur' }],
-    shiftId: [{ required: true, message: '班次ID不能为空', trigger: 'blur' }],
-    scheduledDate: [{ required: true, message: '排班日期不能为空', trigger: 'blur' }]
-  }
+const queryParams = ref({
+  pageNum: 1, pageSize: 10, workerName: null, teamName: null, shiftName: null, scheduledDate: null, scheduleStatus: null
 });
 
-const { queryParams, form, rules } = toRefs(data);
+const rules = {
+  planId: [{ required: true, message: '排班计划ID不能为空', trigger: 'blur' }],
+  workerId: [{ required: true, message: '人员ID不能为空', trigger: 'blur' }],
+  shiftId: [{ required: true, message: '班次ID不能为空', trigger: 'blur' }],
+  scheduledDate: [{ required: true, message: '排班日期不能为空', trigger: 'blur' }]
+};
 
-function getList() {
-  loading.value = true;
-  listEmployeeSchedule(queryParams.value).then((response) => {
-    employeeScheduleList.value = response.rows;
-    total.value = response.total;
-    loading.value = false;
-  });
+const {
+  loading, list, total, open, isViewMode, title, ids, single, multiple, showSearch, form,
+  getList, handleQuery, handleDelete, handleExport, handleSelectionChange, submitForm, cancel,
+  handleAdd: rawHandleAdd, handleUpdate: rawHandleUpdate, handleView: rawHandleView
+} = useCrud({
+  apis: { list: listEmployeeSchedule, get: getEmployeeSchedule, add: addEmployeeSchedule, update: updateEmployeeSchedule, del: delEmployeeSchedule },
+  idField: 'scheduleId',
+  entityName: '排班记录',
+  formRef: employeeScheduleRef,
+  queryParams,
+  initForm: () => ({
+    scheduleId: null, planId: null, workerId: null, workerName: null,
+    teamId: null, teamName: null, shiftId: null, shiftName: null,
+    scheduledDate: null, startTime: null, endTime: null, actualShiftId: null,
+    scheduleStatus: null, isWorkingDay: null, remark: null
+  }),
+  exportUrl: '/erp/sch/employeeSchedule/export',
+  exportFileName: 'employee-schedule'
+});
+
+function handleAdd() {
+  rawHandleAdd();
 }
-
-function cancel() {
-  open.value = false;
-  reset();
+function handleUpdate(row?: any) {
+  return rawHandleUpdate(row);
 }
-
-function reset() {
-  form.value = {
-    scheduleId: null,
-    planId: null,
-    workerId: null,
-    workerName: null,
-    teamId: null,
-    teamName: null,
-    shiftId: null,
-    shiftName: null,
-    scheduledDate: null,
-    startTime: null,
-    endTime: null,
-    actualShiftId: null,
-    scheduleStatus: null,
-    isWorkingDay: null,
-    remark: null,
-    createBy: null,
-    createTime: null,
-    updateBy: null,
-    updateTime: null
-  };
-  proxy.resetForm('employeeScheduleRef');
-}
-
-function handleQuery() {
-  queryParams.value.pageNum = 1;
-  getList();
+function handleView(row?: any) {
+  return rawHandleView(row);
 }
 
 function resetQuery() {
   proxy.resetForm('queryRef');
   handleQuery();
-}
-
-function handleSelectionChange(selection) {
-  ids.value = selection.map((item) => item.scheduleId);
-  single.value = selection.length != 1;
-  multiple.value = !selection.length;
-}
-
-function handleAdd() {
-  reset();
-  isViewMode.value = false;
-  open.value = true;
-  title.value = '添加员工排班明细';
-}
-
-function handleUpdate(row) {
-  reset();
-  isViewMode.value = false;
-  const _scheduleId = row.scheduleId || ids.value;
-  getEmployeeSchedule(_scheduleId).then((response) => {
-    form.value = response.data;
-    open.value = true;
-    title.value = '修改员工排班明细';
-  });
-}
-
-function handleView(row) {
-  reset();
-  isViewMode.value = true;
-  const _scheduleId = row.scheduleId || ids.value;
-  getEmployeeSchedule(_scheduleId).then((response) => {
-    form.value = response.data;
-    open.value = true;
-    title.value = '查看员工排班明细';
-  });
-}
-
-function submitForm() {
-  proxy.$refs['employeeScheduleRef'].validate((valid) => {
-    if (valid) {
-      if (form.value.scheduleId != null) {
-        updateEmployeeSchedule(form.value).then((response) => {
-          proxy.$modal.msgSuccess('修改成功');
-          open.value = false;
-          getList();
-        });
-      } else {
-        addEmployeeSchedule(form.value).then((response) => {
-          proxy.$modal.msgSuccess('新增成功');
-          open.value = false;
-          getList();
-        });
-      }
-    }
-  });
-}
-
-function handleDelete(row) {
-  const _scheduleIds = row.scheduleId || ids.value;
-  proxy.$modal
-    .confirm('是否确认删除员工排班明细编号为"' + _scheduleIds + '"的数据项？')
-    .then(function () {
-      return delEmployeeSchedule(_scheduleIds);
-    })
-    .then(() => {
-      getList();
-      proxy.$modal.msgSuccess('删除成功');
-    })
-    .catch(() => {});
-}
-
-function handleExport() {
-  proxy.download(
-    'sch/employeeSchedule/export',
-    {
-      ...queryParams.value
-    },
-    `employee-schedule_${new Date().getTime()}.xlsx`
-  );
 }
 
 getList();

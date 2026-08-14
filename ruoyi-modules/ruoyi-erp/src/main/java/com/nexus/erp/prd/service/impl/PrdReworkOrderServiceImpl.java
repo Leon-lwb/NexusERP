@@ -240,6 +240,11 @@ public class PrdReworkOrderServiceImpl implements IPrdReworkOrderService {
         log.info("返工订单[{}]入库完成，物料[{}]，数量[{}]", rework.getReworkNo(), rework.getMaterialCode(), rework.getActualQty());
     }
 
+    @Override
+    public PrdReworkOrder getById(Long id) {
+        return baseMapper.selectById(id);
+    }
+
     private LambdaQueryWrapper<PrdReworkOrder> buildQueryWrapper(PrdReworkOrderBo bo) {
         LambdaQueryWrapper<PrdReworkOrder> lqw = Wrappers.lambdaQuery();
         lqw.like(StringUtils.isNotBlank(bo.getReworkNo()), PrdReworkOrder::getReworkNo, bo.getReworkNo());

@@ -1,7 +1,7 @@
 package com.nexus.erp.pu.report.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
-import com.baomidou.dynamic.datasource.annotation.DS;
+
 import com.nexus.common.core.domain.R;
 import com.nexus.erp.pu.report.service.PuPurchaseReportServiceImpl;
 import lombok.RequiredArgsConstructor;
@@ -14,7 +14,6 @@ import java.util.Map;
 @Validated
 @RequiredArgsConstructor
 @RestController
-@DS("erp")
 @RequestMapping("/erp/pu/report")
 public class PuPurchaseReportController {
 

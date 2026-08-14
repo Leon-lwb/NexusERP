@@ -14,7 +14,8 @@
     "lint:eslint": "eslint",
     "lint:eslint:fix": "eslint --fix",
     "prettier": "prettier --write .",
-    "type-check": "vue-tsc --noEmit"
+    "type-check": "vue-tsc --noEmit",
+    "type-check:changed": "vue-tsc --noEmit > vue-tsc-out.txt 2>&1 || node scripts/check-tsc-diff.mjs vue-tsc-out.txt"
   },
   "repository": {
     "type": "git",

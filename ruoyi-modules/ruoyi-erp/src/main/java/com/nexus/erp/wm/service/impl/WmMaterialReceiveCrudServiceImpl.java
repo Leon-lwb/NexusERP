@@ -42,10 +42,7 @@ import com.nexus.system.service.ISysUserService;
 import com.nexus.workflow.domain.WfMyBusiness;
 import com.nexus.workflow.service.IWfProcessService;
 import com.nexus.workflow.service.impl.WfMyBusinessServiceImpl;
-import org.flowable.engine.HistoryService;
-import org.flowable.engine.RuntimeService;
-import org.flowable.engine.history.HistoricProcessInstance;
-import org.flowable.engine.runtime.ProcessInstance;
+import com.nexus.common.flowable.helper.FlowableProcInsIdHelper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -87,10 +84,8 @@ public class WmMaterialReceiveCrudServiceImpl implements IWmMaterialReceiveCrudS
     private final IWfProcessService processService;
     /** 物料领用CRUD业务服务，提供物料领用CRUD相关能力 */
     private final WfMyBusinessServiceImpl wfMyBusinessServiceImpl;
-    /** 物料领用CRUD业务服务，提供物料领用CRUD相关能力 */
-    private final RuntimeService runtimeService;
-    /** 物料领用CRUD业务服务，提供物料领用CRUD相关能力 */
-    private final HistoryService historyService;
+    /** 流程实例ID三级降级查询助手 */
+    private final FlowableProcInsIdHelper procInsIdHelper;
     /** 执行器业务服务，提供执行器相关能力 */
     private final IWmMaterialReceiveExecutorService executorService;
     /** 消息提供器 */
@@ -312,23 +307,10 @@ public class WmMaterialReceiveCrudServiceImpl implements IWmMaterialReceiveCrudS
      */
     @Override
     public String getProcInsId(String receiveIdStr) {
-        try {
+        return procInsIdHelper.resolve(receiveIdStr, () -> {
             WfMyBusiness business = wfMyBusinessServiceImpl.getByDataId(receiveIdStr);
-            if (business != null && StringUtils.isNotBlank(business.getProcessInstanceId())) {
-                return business.getProcessInstanceId();
-            }
-        } catch (Exception ignored) {
-        }
-
-        ProcessInstance runtime = runtimeService.createProcessInstanceQuery()
-            .processInstanceBusinessKey(receiveIdStr).singleResult();
-        if (runtime != null) {
-            return runtime.getId();
-        }
-
-        HistoricProcessInstance hist = historyService.createHistoricProcessInstanceQuery()
-            .processInstanceBusinessKey(receiveIdStr).singleResult();
-        return hist != null ? hist.getId() : null;
+            return business != null ? business.getProcessInstanceId() : null;
+        });
     }
 
     /**
@@ -428,7 +410,7 @@ public class WmMaterialReceiveCrudServiceImpl implements IWmMaterialReceiveCrudS
      * @param business 工作流业务对象
      */
     @Override
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void afterFlowHandle(WfMyBusiness business) {
         Long receiveId = Long.parseLong(business.getDataId());
         WmMaterialReceive receive = baseMapper.selectById(receiveId);
@@ -465,7 +447,7 @@ public class WmMaterialReceiveCrudServiceImpl implements IWmMaterialReceiveCrudS
      * @return 业务数据对象
      */
     @Override
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
     public Object getBusinessDataById(String dataId) {
         return selectById(Long.parseLong(dataId));
     }

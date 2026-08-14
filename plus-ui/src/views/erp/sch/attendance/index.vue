@@ -64,7 +64,7 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="attendanceList" @selection-change="handleSelectionChange" show-overflow-tooltip>
+    <el-table v-loading="loading" :data="list" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="序号" type="index" align="center" />
       <el-table-column label="人员姓名" align="center" prop="workerName" min-width="120" show-overflow-tooltip />
@@ -182,158 +182,55 @@
 
 <script setup lang="ts" name="SchAttendance">
 import { listAttendance, getAttendance, delAttendance, addAttendance, updateAttendance } from '@/api/erp/sch/attendance';
+import type { FormInstance } from 'element-plus';
+import { useCrud } from '@/composables/useCrud';
 
-const { proxy } = getCurrentInstance();
+const { proxy } = getCurrentInstance() as any;
 const { sch_attendance_status, sch_source_type } = toRefs(proxy.useDict('sch_attendance_status', 'sch_source_type'));
 
-const attendanceList = ref([]);
-const open = ref(false);
-const loading = ref(true);
-const showSearch = ref(true);
-const ids = ref([]);
-const single = ref(true);
-const multiple = ref(true);
-const total = ref(0);
-const title = ref('');
-const isViewMode = ref(false);
+const attendanceRef = ref<FormInstance>();
 
-const data = reactive({
-  form: {},
-  queryParams: {
-    pageNum: 1,
-    pageSize: 10,
-    workerName: null,
-    recordDate: null,
-    attendanceStatus: null,
-    sourceType: null
-  },
-  rules: {
-    workerId: [{ required: true, message: '人员ID不能为空', trigger: 'blur' }],
-    recordDate: [{ required: true, message: '考勤日期不能为空', trigger: 'blur' }]
-  }
+const queryParams = ref({
+  pageNum: 1, pageSize: 10, workerName: null, recordDate: null, attendanceStatus: null, sourceType: null
 });
 
-const { queryParams, form, rules } = toRefs(data);
+const rules = {
+  workerId: [{ required: true, message: '人员ID不能为空', trigger: 'blur' }],
+  recordDate: [{ required: true, message: '考勤日期不能为空', trigger: 'blur' }]
+};
 
-function getList() {
-  loading.value = true;
-  listAttendance(queryParams.value).then((response) => {
-    attendanceList.value = response.rows;
-    total.value = response.total;
-    loading.value = false;
-  });
+const {
+  loading, list, total, open, isViewMode, title, ids, single, multiple, showSearch, form,
+  getList, handleQuery, handleDelete, handleExport, handleSelectionChange, submitForm, cancel,
+  handleAdd: rawHandleAdd, handleUpdate: rawHandleUpdate, handleView: rawHandleView
+} = useCrud({
+  apis: { list: listAttendance, get: getAttendance, add: addAttendance, update: updateAttendance, del: delAttendance },
+  idField: 'attendanceId',
+  entityName: '考勤记录',
+  formRef: attendanceRef,
+  queryParams,
+  initForm: () => ({
+    attendanceId: null, workerId: null, workerName: null, recordDate: null,
+    clockInTime: null, clockOutTime: null, lateMinutes: null, leaveEarlyMinutes: null,
+    overtimeHours: null, attendanceStatus: null, sourceType: null, remark: null
+  }),
+  exportUrl: '/erp/sch/attendance/export',
+  exportFileName: 'attendance'
+});
+
+function handleAdd() {
+  rawHandleAdd();
 }
-
-function cancel() {
-  open.value = false;
-  reset();
+function handleUpdate(row?: any) {
+  return rawHandleUpdate(row);
 }
-
-function reset() {
-  form.value = {
-    attendanceId: null,
-    workerId: null,
-    workerName: null,
-    recordDate: null,
-    clockInTime: null,
-    clockOutTime: null,
-    lateMinutes: null,
-    leaveEarlyMinutes: null,
-    overtimeHours: null,
-    attendanceStatus: null,
-    sourceType: null,
-    remark: null
-  };
-  proxy.resetForm('attendanceRef');
-}
-
-function handleQuery() {
-  queryParams.value.pageNum = 1;
-  getList();
+function handleView(row?: any) {
+  return rawHandleView(row);
 }
 
 function resetQuery() {
   proxy.resetForm('queryRef');
   handleQuery();
-}
-
-function handleSelectionChange(selection) {
-  ids.value = selection.map((item) => item.attendanceId);
-  single.value = selection.length != 1;
-  multiple.value = !selection.length;
-}
-
-function handleAdd() {
-  reset();
-  isViewMode.value = false;
-  open.value = true;
-  title.value = '添加考勤记录';
-}
-
-function handleUpdate(row) {
-  reset();
-  isViewMode.value = false;
-  const _attendanceId = row.attendanceId || ids.value;
-  getAttendance(_attendanceId).then((response) => {
-    form.value = response.data;
-    open.value = true;
-    title.value = '修改考勤记录';
-  });
-}
-
-function handleView(row) {
-  reset();
-  isViewMode.value = true;
-  const _attendanceId = row.attendanceId || ids.value;
-  getAttendance(_attendanceId).then((response) => {
-    form.value = response.data;
-    open.value = true;
-    title.value = '查看考勤记录';
-  });
-}
-
-function submitForm() {
-  proxy.$refs['attendanceRef'].validate((valid) => {
-    if (valid) {
-      if (form.value.attendanceId != null) {
-        updateAttendance(form.value).then((response) => {
-          proxy.$modal.msgSuccess('修改成功');
-          open.value = false;
-          getList();
-        });
-      } else {
-        addAttendance(form.value).then((response) => {
-          proxy.$modal.msgSuccess('新增成功');
-          open.value = false;
-          getList();
-        });
-      }
-    }
-  });
-}
-
-function handleDelete(row) {
-  const _attendanceIds = row.attendanceId || ids.value;
-  proxy.$modal
-    .confirm('是否确认删除考勤记录编号为"' + _attendanceIds + '"的数据项？')
-    .then(function () {
-      return delAttendance(_attendanceIds);
-    })
-    .then(() => {
-      getList();
-      proxy.$modal.msgSuccess('删除成功');
-    })
-    .catch(() => {});
-}
-
-function handleExport() {
-  proxy.download(
-    'erp/sch/attendance/export',
-    {
-      ...queryParams.value
-    },
-    `attendance_${new Date().getTime()}.xlsx`
-  );
 }
 
 getList();

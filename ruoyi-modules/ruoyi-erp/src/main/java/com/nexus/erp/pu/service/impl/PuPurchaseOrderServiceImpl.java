@@ -33,10 +33,7 @@ import com.nexus.system.strategy.AutoCodeUtil;
 import com.nexus.workflow.domain.WfMyBusiness;
 import com.nexus.workflow.service.IWfProcessService;
 import com.nexus.workflow.service.impl.WfMyBusinessServiceImpl;
-import org.flowable.engine.HistoryService;
-import org.flowable.engine.RuntimeService;
-import org.flowable.engine.history.HistoricProcessInstance;
-import org.flowable.engine.runtime.ProcessInstance;
+import com.nexus.common.flowable.helper.FlowableProcInsIdHelper;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -82,8 +79,7 @@ public class PuPurchaseOrderServiceImpl implements IPuPurchaseOrderService {
     private final AutoCodeUtil autoCodeUtil;
     private final IWfProcessService processService;
     private final WfMyBusinessServiceImpl wfMyBusinessServiceImpl;
-    private final RuntimeService runtimeService;
-    private final HistoryService historyService;
+    private final FlowableProcInsIdHelper procInsIdHelper;
 
     /**
      * 分页查询采购订单列表
@@ -271,23 +267,10 @@ public class PuPurchaseOrderServiceImpl implements IPuPurchaseOrderService {
      */
     @Override
     public String getProcInsId(String orderIdStr) {
-        try {
+        return procInsIdHelper.resolve(orderIdStr, () -> {
             WfMyBusiness business = wfMyBusinessServiceImpl.getByDataId(orderIdStr);
-            if (business != null && StringUtils.isNotBlank(business.getProcessInstanceId())) {
-                return business.getProcessInstanceId();
-            }
-        } catch (Exception ignored) {
-        }
-
-        ProcessInstance runtime = runtimeService.createProcessInstanceQuery()
-            .processInstanceBusinessKey(orderIdStr).singleResult();
-        if (runtime != null) {
-            return runtime.getId();
-        }
-
-        HistoricProcessInstance hist = historyService.createHistoricProcessInstanceQuery()
-            .processInstanceBusinessKey(orderIdStr).singleResult();
-        return hist != null ? hist.getId() : null;
+            return business != null ? business.getProcessInstanceId() : null;
+        });
     }
 
     /**
@@ -296,7 +279,7 @@ public class PuPurchaseOrderServiceImpl implements IPuPurchaseOrderService {
      * @param business 工作流业务对象（含审批状态与数据ID）
      */
     @Override
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void afterFlowHandle(WfMyBusiness business) {
         Long orderId = Long.parseLong(business.getDataId());
         PuPurchaseOrder order = baseMapper.selectById(orderId);
@@ -323,7 +306,7 @@ public class PuPurchaseOrderServiceImpl implements IPuPurchaseOrderService {
      * @return 采购订单业务对象
      */
     @Override
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
     public Object getBusinessDataById(String dataId) {
         return selectById(Long.parseLong(dataId));
     }

@@ -42,7 +42,7 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="dataList" @selection-change="handleSelectionChange" show-overflow-tooltip>
+    <el-table v-loading="loading" :data="list" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="单号" align="center" prop="receiptNo" width="180" />
       <el-table-column label="方向" align="center" prop="direction" width="90">
@@ -126,7 +126,9 @@
 </template>
 
 <script setup lang="ts" name="FinReceipt">
-import { listFinReceipt, addFinReceipt, delFinReceipt, confirmFinReceipt, cancelFinReceipt } from '@/api/erp/fin/receipt';
+import { listFinReceipt, getFinReceipt, delFinReceipt, addFinReceipt, updateFinReceipt, confirmFinReceipt, cancelFinReceipt } from '@/api/erp/fin/receipt';
+import type { FormInstance } from 'element-plus';
+import { useCrud } from '@/composables/useCrud';
 import { FinReceiptVO, FinReceiptForm, FinReceiptQuery } from '@/api/erp/fin/receipt/types';
 
 const { proxy } = getCurrentInstance() as any;
@@ -134,72 +136,44 @@ const { fin_receipt_type, fin_receipt_direction, fin_receipt_source, fin_receipt
   proxy.useDict('fin_receipt_type', 'fin_receipt_direction', 'fin_receipt_source', 'fin_receipt_status')
 );
 
-const dataList = ref<FinReceiptVO[]>([]);
-const open = ref(false);
-const loading = ref(true);
-const showSearch = ref(true);
-const total = ref(0);
-const title = ref('');
-const ids = ref<string[]>([]);
-const multiple = ref(true);
+const formRef = ref<FormInstance>();
 
-const data = reactive({
-  form: {} as FinReceiptForm,
-  queryParams: { pageNum: 1, pageSize: 20, receiptNo: undefined, direction: undefined, status: undefined } as FinReceiptQuery,
-  rules: {
-    direction: [{ required: true, message: '方向不能为空', trigger: 'change' }],
-    amount: [{ required: true, message: '金额不能为空', trigger: 'blur' }]
-  }
+const queryParams = ref<FinReceiptQuery>({
+  pageNum: 1, pageSize: 20, receiptNo: undefined, direction: undefined, status: undefined
 });
-const { queryParams, form, rules } = toRefs(data);
 
-function getList() {
-  loading.value = true;
-  listFinReceipt(queryParams.value).then((res) => {
-    dataList.value = res.rows;
-    total.value = res.total;
-    loading.value = false;
-  });
+const rules = {
+  direction: [{ required: true, message: '方向不能为空', trigger: 'change' }],
+  amount: [{ required: true, message: '金额不能为空', trigger: 'blur' }]
+};
+
+const {
+  loading, list, total, open, title, ids, multiple, showSearch, form,
+  getList, handleQuery, handleDelete, handleExport, handleSelectionChange, submitForm, cancel,
+  handleAdd: rawHandleAdd
+} = useCrud<FinReceiptForm, FinReceiptQuery>({
+  apis: { list: listFinReceipt, get: getFinReceipt, add: addFinReceipt, update: updateFinReceipt, del: delFinReceipt },
+  idField: 'receiptId',
+  entityName: '收款单',
+  formRef: formRef,
+  queryParams,
+  initForm: () => ({
+    direction: 'AR', receiptType: 'BANK', amount: 0, receiptDate: undefined,
+    clientId: undefined, vendorId: undefined, payerName: '', remark: ''
+  }),
+  exportUrl: '/erp/fin/receipt/export',
+  exportFileName: 'receipt'
+});
+
+function handleAdd() {
+  rawHandleAdd();
 }
-function handleQuery() {
-  queryParams.value.pageNum = 1;
-  getList();
-}
+
 function resetQuery() {
   proxy.resetForm('queryRef');
   handleQuery();
 }
-function handleSelectionChange(selection: FinReceiptVO[]) {
-  ids.value = selection.map((i) => i.receiptId);
-  multiple.value = !selection.length;
-}
-function reset() {
-  form.value = {
-    direction: 'AR',
-    receiptType: 'BANK',
-    amount: 0,
-    receiptDate: undefined,
-    clientId: undefined,
-    vendorId: undefined,
-    payerName: '',
-    remark: ''
-  };
-  proxy.resetForm('formRef');
-}
-function handleAdd() {
-  reset();
-  open.value = true;
-  title.value = '新增收付款单';
-}
-function submitForm() {
-  proxy.$refs['formRef'].validate(async (valid: boolean) => {
-    if (!valid) return;
-    await addFinReceipt(form.value);
-    proxy.$modal.msgSuccess('新增成功');
-    open.value = false;
-    getList();
-  });
-}
+
 function handleConfirm(row: FinReceiptVO) {
   proxy.$modal.confirm('确认收付款单【' + row.receiptNo + '】?确认后触发 GL 过账。').then(async () => {
     await confirmFinReceipt(row.receiptId);
@@ -214,19 +188,6 @@ function handleCancel(row: FinReceiptVO) {
     getList();
   });
 }
-function handleDelete(row?: FinReceiptVO) {
-  const delIds = row ? [row.receiptId] : ids.value;
-  proxy.$modal.confirm('确认删除选中的收付款单?').then(async () => {
-    await delFinReceipt(delIds);
-    proxy.$modal.msgSuccess('删除成功');
-    getList();
-  });
-}
-function cancel() {
-  open.value = false;
-  reset();
-}
-onMounted(() => {
-  getList();
-});
+
+getList();
 </script>

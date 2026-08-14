@@ -264,7 +264,7 @@ public class FormServiceImpl implements IFormService {
      * @param mainData 主表数据
      * @param subDataList 子表数据集合
      */
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public void saveMainSubData(Long mainTableId, Map<String, Object> mainData, List<Map<String, Object>> subDataList) {
         // 保存主表
         GenTable mainTable = genTableService.selectGenTableById(mainTableId);
@@ -408,7 +408,7 @@ public class FormServiceImpl implements IFormService {
      * @return 受影响记录数
      */
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public int addOrUpdateOnlineData(Long tableId, String tableName, Map<String, Object> map) {
         // data table whitelist
         assertAllowedDataTableByContext(tableId, tableName);
@@ -583,7 +583,7 @@ public class FormServiceImpl implements IFormService {
      * @param ids 待删除记录的主键 ID 列表
      */
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public void deleteOnlineData(Long tableId, String tableName, List<Long> ids) {
         if (CollectionUtils.isEmpty(ids)) {
             throw new IllegalArgumentException("删除ID不能为空");

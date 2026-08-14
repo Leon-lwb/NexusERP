@@ -144,11 +144,7 @@ public class PuPurchaseRequisitionController extends BaseController {
     @PostMapping("/{requisitionId}/submit")
     public R<Void> submitWithFlow(@PathVariable Long requisitionId,
                                    @RequestParam(value = "selectFlowId", required = false) String selectFlowId) {
-        try {
-            return toAjax(purchaseRequisitionService.submit(String.valueOf(requisitionId), selectFlowId));
-        } catch (RuntimeException e) {
-            return R.fail(e.getMessage());
-        }
+        return toAjax(purchaseRequisitionService.submit(String.valueOf(requisitionId), selectFlowId));
     }
 
     /**

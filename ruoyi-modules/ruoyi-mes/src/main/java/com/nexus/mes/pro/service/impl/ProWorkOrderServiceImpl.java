@@ -8,6 +8,7 @@ import com.nexus.common.core.utils.MapstructUtils;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.core.domain.R;
 import com.nexus.common.flowable.core.domain.ActStatus;
+import com.nexus.common.flowable.helper.FlowableProcInsIdHelper;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.common.mq.message.WorkOrderReleaseMessage;
@@ -41,10 +42,7 @@ import com.nexus.workflow.service.IWfProcessService;
 import com.nexus.workflow.service.impl.WfMyBusinessServiceImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.flowable.engine.HistoryService;
-import org.flowable.engine.RuntimeService;
-import org.flowable.engine.history.HistoricProcessInstance;
-import org.flowable.engine.runtime.ProcessInstance;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
@@ -76,8 +74,7 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
     private final IMesMbomService mesMbomService;
     private final IWfProcessService processService;
     private final WfMyBusinessServiceImpl wfMyBusinessServiceImpl;
-    private final RuntimeService runtimeService;
-    private final HistoryService historyService;
+    private final FlowableProcInsIdHelper procInsIdHelper;
     private final MesMqSendService mesMqSendService;
     private final EqEquipmentMapper equipmentMapper;
     /**
@@ -525,25 +522,10 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
     @Override
     @DS("master")
     public String getProcInsId(String mesWoIdStr) {
-        // 策略1: 查桥接表（WfMyBusinessServiceImpl 自身 @DS("master")）
-        try {
+        return procInsIdHelper.resolve(mesWoIdStr, () -> {
             WfMyBusiness business = wfMyBusinessServiceImpl.getByDataId(mesWoIdStr);
-            if (business != null && StringUtils.isNotBlank(business.getProcessInstanceId())) {
-                return business.getProcessInstanceId();
-            }
-        } catch (Exception e) {
-            log.warn("getByDataId 查询失败: dataId={}", mesWoIdStr, e);
-        }
-        // 策略2: 查Flowable运行时
-        ProcessInstance runtime = runtimeService.createProcessInstanceQuery()
-            .processInstanceBusinessKey(mesWoIdStr).singleResult();
-        if (runtime != null) {
-            return runtime.getId();
-        }
-        // 策略3: 查Flowable历史
-        HistoricProcessInstance hist = historyService.createHistoricProcessInstanceQuery()
-            .processInstanceBusinessKey(mesWoIdStr).singleResult();
-        return hist != null ? hist.getId() : null;
+            return business != null ? business.getProcessInstanceId() : null;
+        });
     }
 
     /**

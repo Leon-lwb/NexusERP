@@ -3,11 +3,10 @@ package com.nexus.erp.mq.consumer;
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.nexus.common.mq.constant.QueueConstants;
 import com.nexus.common.mq.consumer.BaseMessageConsumer;
-import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.erp.mq.message.PurchaseReceiveWritebackMessage;
 import com.nexus.erp.pu.service.IPuPurchaseReceiveWritebackService;
 import com.nexus.erp.wm.domain.WmMaterialReceive;
-import com.nexus.erp.wm.mapper.WmMaterialReceiveMapper;
+import com.nexus.erp.wm.service.IWmMaterialReceiveService;
 import com.rabbitmq.client.Channel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,7 +29,7 @@ import org.springframework.stereotype.Component;
 public class PurchaseReceiveWritebackConsumer extends BaseMessageConsumer<PurchaseReceiveWritebackMessage> {
 
     private final IPuPurchaseReceiveWritebackService purchaseReceiveWritebackService;
-    private final WmMaterialReceiveMapper materialReceiveMapper;
+    private final IWmMaterialReceiveService materialReceiveService;
 
     /**
      * 获取消息类型
@@ -51,18 +50,16 @@ public class PurchaseReceiveWritebackConsumer extends BaseMessageConsumer<Purcha
     protected void doProcess(PurchaseReceiveWritebackMessage message) {
         Long receiveId = message.getReceiveId();
         log.info("处理采购收货回写消息: receiveId={}", receiveId);
+        doWriteback(receiveId);
+    }
 
-        // MQ消费者线程没有租户上下文，需要从消息中获取租户ID并设置
-        // 否则TenantLineInnerInterceptor会给SQL自动添加tenant_id条件导致查不到数据
-        // 使用 tenantIdStr（String）而非 BaseMessage.tenantId（Long），
-        // 避免 "000000" → Long(0) → "0" 的精度丢失问题
-        String tenantId = message.getTenantIdStr();
-        if (tenantId != null) {
-            TenantHelper.dynamic(tenantId, () -> doWriteback(receiveId));
-        } else {
-            log.warn("消息中租户ID为空，尝试无租户上下文执行: receiveId={}", receiveId);
-            doWriteback(receiveId);
-        }
+    /**
+     * 解析租户ID：使用 tenantIdStr 避免 Long 精度丢失（如 "000000" → 0 → "0" 不匹配数据库）
+     */
+    @Override
+    protected String resolveTenantId(PurchaseReceiveWritebackMessage message) {
+        String tid = message.getTenantIdStr();
+        return tid != null && !tid.isEmpty() ? tid : "000000";
     }
 
     /**
@@ -71,7 +68,7 @@ public class PurchaseReceiveWritebackConsumer extends BaseMessageConsumer<Purcha
      * @param receiveId 入库单ID
      */
     private void doWriteback(Long receiveId) {
-        WmMaterialReceive receive = materialReceiveMapper.selectById(receiveId);
+        WmMaterialReceive receive = materialReceiveService.getById(receiveId);
         if (receive == null) {
             log.warn("入库单不存在: receiveId={}", receiveId);
             return;

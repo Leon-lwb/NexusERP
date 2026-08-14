@@ -2,6 +2,7 @@ package com.nexus.erp.fin.arap.service;
 
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
+import com.nexus.erp.fin.arap.domain.FinReceipt;
 import com.nexus.erp.fin.arap.domain.bo.FinReceiptBo;
 import com.nexus.erp.fin.arap.domain.vo.FinReceiptVo;
 
@@ -75,4 +76,9 @@ public interface IFinReceiptService {
      * 作废收付款单(仅 DRAFT 可作废;已确认单据需先反核销+反过账,F1 暂不支持)。
      */
     void cancel(Long receiptId);
+
+    /**
+     * 直接保存收付款单实体（用于内部消费者等场景，不经过 BO 转换）
+     */
+    boolean save(FinReceipt entity);
 }

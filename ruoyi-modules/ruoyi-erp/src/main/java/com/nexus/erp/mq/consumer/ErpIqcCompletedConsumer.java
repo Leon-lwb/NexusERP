@@ -1,15 +1,11 @@
 package com.nexus.erp.mq.consumer;
 
-import com.baomidou.dynamic.datasource.annotation.DS;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.nexus.common.mq.constant.QueueConstants;
 import com.nexus.common.mq.consumer.BaseMessageConsumer;
 import com.nexus.common.mq.message.IqcCompletedMessage;
-import com.nexus.common.tenant.helper.TenantHelper;
-import com.nexus.erp.wm.domain.WmArrivalNoticeLine;
 import com.nexus.erp.wm.domain.WmMaterialReceive;
-import com.nexus.erp.wm.mapper.WmArrivalNoticeLineMapper;
-import com.nexus.erp.wm.mapper.WmMaterialReceiveMapper;
+import com.nexus.erp.wm.service.IWmArrivalNoticeLineService;
+import com.nexus.erp.wm.service.IWmMaterialReceiveService;
 import com.rabbitmq.client.Channel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,11 +30,10 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @RequiredArgsConstructor
 @Component
-@DS("erp")
 public class ErpIqcCompletedConsumer extends BaseMessageConsumer<IqcCompletedMessage> {
 
-    private final WmMaterialReceiveMapper materialReceiveMapper;
-    private final WmArrivalNoticeLineMapper arrivalNoticeLineMapper;
+    private final IWmMaterialReceiveService materialReceiveService;
+    private final IWmArrivalNoticeLineService arrivalNoticeLineService;
 
     /**
      * 获取消息类型
@@ -57,13 +52,7 @@ public class ErpIqcCompletedConsumer extends BaseMessageConsumer<IqcCompletedMes
      */
     @Override
     protected void doProcess(IqcCompletedMessage message) {
-        // MQ消费者线程无登录态，需从消息恢复租户上下文，否则多租户拦截器加tenant_id条件查不到数据
-        // 租户ID格式: 默认'000000'(6位零填充)，Long 0 -> "000000"
-        String tenantId = "000000";
-        if (message.getTenantId() != null && !Long.valueOf(0L).equals(message.getTenantId())) {
-            tenantId = String.format("%06d", message.getTenantId());
-        }
-        TenantHelper.dynamic(tenantId, () -> doUpdate(message));
+        doUpdate(message);
     }
 
     /**
@@ -76,7 +65,7 @@ public class ErpIqcCompletedConsumer extends BaseMessageConsumer<IqcCompletedMes
      * @param message IQC检验完成消息
      */
     private void doUpdate(IqcCompletedMessage message) {
-        WmMaterialReceive receive = materialReceiveMapper.selectById(message.getReceiveId());
+        WmMaterialReceive receive = materialReceiveService.getById(message.getReceiveId());
         if (receive == null) {
             log.warn("收货单不存在: receiveId={}", message.getReceiveId());
             return;
@@ -85,17 +74,13 @@ public class ErpIqcCompletedConsumer extends BaseMessageConsumer<IqcCompletedMes
         // 1. 收货单头回写 iqc_id/iqc_code（展示用）
         receive.setIqcId(message.getIqcId());
         receive.setIqcCode(message.getIqcCode());
-        materialReceiveMapper.updateById(receive);
+        materialReceiveService.updateById(receive);
 
         // 2. 按物料行回写 wm_arrival_notice_line: iqc_id/iqc_code/iqc_status（门禁依据）
         if (receive.getNoticeId() != null && message.getMaterialId() != null) {
-            WmArrivalNoticeLine lineUpdate = new WmArrivalNoticeLine();
-            lineUpdate.setIqcId(message.getIqcId());
-            lineUpdate.setIqcCode(message.getIqcCode());
-            lineUpdate.setIqcStatus(message.getInspectResult());
-            int rows = arrivalNoticeLineMapper.update(lineUpdate, new LambdaQueryWrapper<WmArrivalNoticeLine>()
-                .eq(WmArrivalNoticeLine::getNoticeId, receive.getNoticeId())
-                .eq(WmArrivalNoticeLine::getMaterialId, message.getMaterialId()));
+            int rows = arrivalNoticeLineService.updateIqcResult(
+                receive.getNoticeId(), message.getMaterialId(),
+                message.getIqcId(), message.getIqcCode(), message.getInspectResult());
             log.info("IQC按行回写: receiveId={}, materialId={}, result={}, 影响行数={}",
                 message.getReceiveId(), message.getMaterialId(), message.getInspectResult(), rows);
         } else {

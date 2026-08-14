@@ -102,6 +102,28 @@ public class WmArrivalNoticeLineServiceImpl extends ServiceImpl<WmArrivalNoticeL
         return baseMapper.deleteBatchIds(List.of(ids));
     }
 
+    /**
+     * 按通知单ID和物料ID更新IQC结果
+     *
+     * @param noticeId   到货通知单ID
+     * @param materialId 物料ID
+     * @param iqcId      IQC检验单ID
+     * @param iqcCode    IQC检验单号
+     * @param iqcStatus  IQC检验状态
+     * @return 影响行数
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int updateIqcResult(Long noticeId, Long materialId, Long iqcId, String iqcCode, String iqcStatus) {
+        WmArrivalNoticeLine lineUpdate = new WmArrivalNoticeLine();
+        lineUpdate.setIqcId(iqcId);
+        lineUpdate.setIqcCode(iqcCode);
+        lineUpdate.setIqcStatus(iqcStatus);
+        return baseMapper.update(lineUpdate, new LambdaQueryWrapper<WmArrivalNoticeLine>()
+            .eq(WmArrivalNoticeLine::getNoticeId, noticeId)
+            .eq(WmArrivalNoticeLine::getMaterialId, materialId));
+    }
+
     private LambdaQueryWrapper<WmArrivalNoticeLine> buildQueryWrapper(WmArrivalNoticeLineBo bo) {
         LambdaQueryWrapper<WmArrivalNoticeLine> lqw = Wrappers.lambdaQuery();
         lqw.eq(bo.getNoticeId() != null, WmArrivalNoticeLine::getNoticeId, bo.getNoticeId());

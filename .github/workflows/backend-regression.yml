@@ -1,0 +1,62 @@
+# P0-6 回归门禁: 全仓后端编译 + 现有测试
+#
+# 背景: 根 pom 默认 <skipTests>true</skipTests>(CLAUDE.md 文档行为, 保持不动),
+# CI 通过 -DskipTests=false 覆盖。当前全仓仅有约 49 个测试类(im 20 / mes 17 /
+# admin 5 / erp 3 / ai 2 / iot 2), 本 workflow 保证"至少现有测试不回归",
+# 随 P1-10 逐步补充核心路径单测后此门禁的覆盖面自然扩大。
+#
+# 已知约束:
+#   - 单模块编译必须 -am(否则 .m2 旧 jar 报"找不到符号"), 此处直接根目录全量构建规避
+#   - 集成测试(@Tag("integration"))需 DB/Redis 环境, 默认不触发(见 im-tests.yml)
+name: Backend Regression
+
+on:
+  push:
+    branches:
+      - plus
+      - master
+    paths:
+      - 'ruoyi-admin/**'
+      - 'ruoyi-common/**'
+      - 'ruoyi-modules/**'
+      - 'ruoyi-extend/**'
+      - 'pom.xml'
+      - '.github/workflows/backend-regression.yml'
+  pull_request:
+    branches:
+      - plus
+      - master
+    paths:
+      - 'ruoyi-admin/**'
+      - 'ruoyi-common/**'
+      - 'ruoyi-modules/**'
+      - 'ruoyi-extend/**'
+      - 'pom.xml'
+      - '.github/workflows/backend-regression.yml'
+
+jobs:
+  compile-and-test:
+    name: Compile + Unit Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+
+      - name: Maven Compile + Test
+        # 根 pom 默认 <skipTests>true</skipTests>, 用 -DskipTests=false 覆盖
+        # 全量构建规避单模块 .m2 旧 jar 的"找不到符号"问题
+        run: mvn -B test -DskipTests=false
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## Backend Regression" >> $GITHUB_STEP_SUMMARY
+          echo "- 全仓 mvn test -DskipTests=false 结果见上方日志" >> $GITHUB_STEP_SUMMARY

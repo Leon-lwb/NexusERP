@@ -132,35 +132,41 @@
 <script setup lang="ts" name="BarcodeConfig">
 // 导入条形码配置相关的API方法
 import { addBarcodeConfig, delBarcodeConfig, getBarcodeConfig, listBarcodeConfig, updateBarcodeConfig } from '@/api/erp/wm/barcode';
+import type { FormInstance } from 'element-plus';
+import { useCrud } from '@/composables/useCrud';
 
 // 获取当前实例的代理对象
 const { proxy } = getCurrentInstance() as any;
 
-// 定义响应式数据
-const list = ref([]); // 条形码配置列表
-const loading = ref(false); // 加载状态
-const showSearch = ref(true); // 显示搜索区域
-const ids = ref<any[]>([]); // 选中的ID数组
-const single = ref(true); // 单选状态
-const multiple = ref(true); // 多选状态
-const open = ref(false); // 弹窗打开状态
-const total = ref(0); // 总记录数
-const title = ref(''); // 弹窗标题
+const formRef = ref<FormInstance>();
 
-// 定义表单和查询参数
-const data = reactive({
-  // 查询参数
-  queryParams: {
-    pageNum: 1,
-    pageSize: 10,
-    configCode: null,
-    configName: null,
-    bizType: null,
-    categoryId: null,
-    enableFlag: null
-  },
-  // 表单数据
-  form: {
+const queryParams = ref({
+  pageNum: 1,
+  pageSize: 10,
+  configCode: null,
+  configName: null,
+  bizType: null,
+  categoryId: null,
+  enableFlag: null
+});
+
+const rules = {
+  configCode: [{ required: true, message: '规则编码不能为空', trigger: 'blur' }],
+  configName: [{ required: true, message: '规则名称不能为空', trigger: 'blur' }]
+};
+
+const {
+  loading, list, total, open, title, ids, single, multiple, showSearch, form,
+  getList, handleQuery, handleDelete, handleExport, handleSelectionChange, submitForm, cancel,
+  handleAdd: rawHandleAdd,
+  handleUpdate: rawHandleUpdate
+} = useCrud({
+  apis: { list: listBarcodeConfig, get: getBarcodeConfig, add: addBarcodeConfig, update: updateBarcodeConfig, del: delBarcodeConfig },
+  idField: 'configId',
+  entityName: '条码配置',
+  formRef: formRef,
+  queryParams,
+  initForm: () => ({
     configId: undefined,
     configCode: '',
     configName: '',
@@ -172,130 +178,21 @@ const data = reactive({
     categoryId: undefined,
     enableFlag: 1,
     remark: ''
-  },
-  // 表单验证规则
-  rules: {
-    configCode: [{ required: true, message: '规则编码不能为空', trigger: 'blur' }],
-    configName: [{ required: true, message: '规则名称不能为空', trigger: 'blur' }]
-  }
+  }),
+  exportUrl: '/erp/wm/barcode/config/export',
+  exportFileName: 'barcode_config'
 });
 
-// 解构响应式数据
-const { queryParams, form, rules } = toRefs(data);
-
-/**
- * 获取条形码配置列表
- */
-function getList() {
-  loading.value = true;
-  listBarcodeConfig(queryParams.value)
-    .then((res: any) => {
-      list.value = res.rows;
-      total.value = res.total;
-    })
-    .finally(() => {
-      loading.value = false;
-    });
+function handleAdd() {
+  rawHandleAdd();
+}
+function handleUpdate(row?: any) {
+  return rawHandleUpdate(row);
 }
 
-/**
- * 搜索按钮操作
- */
-function handleQuery() {
-  queryParams.value.pageNum = 1;
-  getList();
-}
-
-/**
- * 重置按钮操作
- */
 function resetQuery() {
   proxy.resetForm('queryRef');
   handleQuery();
-}
-
-/**
- * 多选框选中数据
- */
-function handleSelectionChange(selection: any[]) {
-  ids.value = selection.map((i) => i.configId);
-  single.value = selection.length !== 1;
-  multiple.value = !selection.length;
-}
-
-/**
- * 新增按钮操作
- */
-function handleAdd() {
-  form.value = {
-    configId: undefined,
-    configCode: '',
-    configName: '',
-    prefix: '',
-    datePattern: 'yyyyMMdd',
-    sequenceLength: 6,
-    withCheckDigit: 0,
-    bizType: '',
-    categoryId: undefined,
-    enableFlag: 1,
-    remark: ''
-  };
-  open.value = true;
-  title.value = '新增条码配置';
-  nextTick(() => {
-    proxy.$refs.formRef?.clearValidate();
-  });
-}
-
-/**
- * 修改按钮操作
- */
-function handleUpdate(row: any) {
-  const id = row?.configId || ids.value[0];
-  getBarcodeConfig(id).then((res: any) => {
-    form.value = res.data;
-    open.value = true;
-    title.value = '修改条码配置';
-    nextTick(() => {
-      proxy.$refs.formRef?.clearValidate();
-    });
-  });
-}
-
-/**
- * 删除按钮操作
- */
-function handleDelete(row: any) {
-  const delIds = row?.configId || ids.value;
-  proxy.$modal
-    .confirm('是否确认删除条码配置？')
-    .then(() => delBarcodeConfig(delIds))
-    .then(() => {
-      getList();
-      proxy.$modal.msgSuccess('删除成功');
-    });
-}
-
-/**
- * 导出按钮操作
- */
-function handleExport() {
-  proxy.download('/erp/wm/barcode/config/export', { ...queryParams.value }, `barcode_config_${Date.now()}.xlsx`);
-}
-
-/**
- * 提交表单
- */
-function submitForm() {
-  proxy.$refs['formRef'].validate((valid: boolean) => {
-    if (!valid) return;
-    const api = form.value.configId ? updateBarcodeConfig : addBarcodeConfig;
-    api(form.value).then(() => {
-      proxy.$modal.msgSuccess('保存成功');
-      open.value = false;
-      getList();
-    });
-  });
 }
 
 // 页面加载时获取数据

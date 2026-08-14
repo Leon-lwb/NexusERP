@@ -299,7 +299,7 @@ public class SopDocumentServiceImpl implements ISopDocumentService, WfCallBackSe
      * <p>doing->IN_REVIEW ; pass->doPublish(PUBLISHED) ; reject/retrun->DRAFT ; stop/recall/revoke->DRAFT</p>
      */
     @Override
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void afterFlowHandle(WfMyBusiness business) {
         Long sopId = Long.parseLong(business.getDataId());
         SopDocument doc = baseMapper.selectById(sopId);

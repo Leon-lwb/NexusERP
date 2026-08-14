@@ -19,18 +19,11 @@ import com.nexus.erp.wm.mapper.WmTransferLineMapper;
 import com.nexus.erp.wm.mapper.WmTransferMapper;
 import com.nexus.erp.wm.service.IWmTransferService;
 import com.nexus.workflow.domain.WfMyBusiness;
-import com.nexus.workflow.service.IWfProcessService;
-import com.nexus.workflow.service.impl.WfMyBusinessServiceImpl;
-import org.flowable.engine.HistoryService;
-import org.flowable.engine.RuntimeService;
-import org.flowable.engine.history.HistoricProcessInstance;
-import org.flowable.engine.runtime.ProcessInstance;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
-import com.nexus.system.strategy.AutoCodeUtil;
 
 import java.math.BigDecimal;
 import java.util.Date;
@@ -50,22 +43,14 @@ import java.util.Map;
 @Service("wmTransferService")
 public class WmTransferServiceImpl implements IWmTransferService {
 
+    /** WM 公共依赖（AutoCodeUtil / 流程服务 / 流程实例查询） */
+    private final WmServiceHelper wm;
     /** 基础数据访问映射器（Mapper） */
     private final WmTransferMapper baseMapper;
     /** 行数据访问映射器（Mapper） */
     private final WmTransferLineMapper lineMapper;
     /** 库存操作业务服务，提供库存操作相关能力 */
     private final WmStockOperationServiceImpl stockOperationService;
-    /** 自动编码工具类 */
-    private final AutoCodeUtil autoCodeUtil;
-    /** 调拨业务服务，提供调拨相关能力 */
-    private final IWfProcessService processService;
-    /** 调拨业务服务，提供调拨相关能力 */
-    private final WfMyBusinessServiceImpl wfMyBusinessServiceImpl;
-    /** 调拨业务服务，提供调拨相关能力 */
-    private final RuntimeService runtimeService;
-    /** 调拨业务服务，提供调拨相关能力 */
-    private final HistoryService historyService;
 
     /**
      * 分页查询调拨列表
@@ -120,7 +105,7 @@ public class WmTransferServiceImpl implements IWmTransferService {
     public int insertByBo(WmTransferBo bo) {
         WmTransfer entity = MapstructUtils.convert(bo, WmTransfer.class);
         if (StringUtils.isBlank(entity.getTransferNo())) {
-            entity.setTransferNo(autoCodeUtil.genSerialCode("WM_TRANSFER_CODE", null));
+            entity.setTransferNo(wm.autoCodeUtil.genSerialCode("WM_TRANSFER_CODE", null));
         }
         entity.setStatus(STATUS_DRAFT);
         int rows = baseMapper.insert(entity);
@@ -254,7 +239,7 @@ public class WmTransferServiceImpl implements IWmTransferService {
         variables.put("requireTaskOnStart", true);
         variables.put("transferId", entity.getTransferId());
         variables.put("transferNo", entity.getTransferNo());
-        R<Void> result = processService.startProcessByDataId(transferIdStr, selectFlowId, "wmTransferService", variables);
+        R<Void> result = wm.processService.startProcessByDataId(transferIdStr, selectFlowId, "wmTransferService", variables);
         if (R.isSuccess(result)) {
             return true;
         }
@@ -269,21 +254,10 @@ public class WmTransferServiceImpl implements IWmTransferService {
      */
     @Override
     public String getProcInsId(String transferIdStr) {
-        try {
-            WfMyBusiness business = wfMyBusinessServiceImpl.getByDataId(transferIdStr);
-            if (business != null && StringUtils.isNotBlank(business.getProcessInstanceId())) {
-                return business.getProcessInstanceId();
-            }
-        } catch (Exception ignored) {
-        }
-        ProcessInstance runtime = runtimeService.createProcessInstanceQuery()
-            .processInstanceBusinessKey(transferIdStr).singleResult();
-        if (runtime != null) {
-            return runtime.getId();
-        }
-        HistoricProcessInstance hist = historyService.createHistoricProcessInstanceQuery()
-            .processInstanceBusinessKey(transferIdStr).singleResult();
-        return hist != null ? hist.getId() : null;
+        return wm.procInsIdHelper.resolve(transferIdStr, () -> {
+            WfMyBusiness business = wm.wfMyBusinessServiceImpl.getByDataId(transferIdStr);
+            return business != null ? business.getProcessInstanceId() : null;
+        });
     }
 
     /**
@@ -293,7 +267,7 @@ public class WmTransferServiceImpl implements IWmTransferService {
      * @return 结果
      */
     @Override
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void afterFlowHandle(WfMyBusiness business) {
         Long transferId = Long.parseLong(business.getDataId());
         WmTransfer entity = baseMapper.selectById(transferId);
@@ -318,7 +292,7 @@ public class WmTransferServiceImpl implements IWmTransferService {
      * @return 结果
      */
     @Override
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
     public Object getBusinessDataById(String dataId) {
         return selectById(Long.parseLong(dataId));
     }

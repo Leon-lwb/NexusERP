@@ -1,7 +1,7 @@
 package com.nexus.erp.fin.fa.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
-import com.baomidou.dynamic.datasource.annotation.DS;
+
 import com.nexus.common.core.domain.R;
 import com.nexus.common.log.annotation.Log;
 import com.nexus.common.log.enums.BusinessType;
@@ -23,7 +23,6 @@ import org.springframework.web.bind.annotation.*;
  */
 @Validated
 @RequiredArgsConstructor
-@DS("erp")
 @RestController
 @RequestMapping("/erp/fin/fa/disposal")
 public class FaDisposalController extends BaseController {

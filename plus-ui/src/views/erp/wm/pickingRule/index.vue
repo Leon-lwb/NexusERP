@@ -46,7 +46,7 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="pickingRuleList" @selection-change="handleSelectionChange" show-overflow-tooltip>
+    <el-table v-loading="loading" :data="list" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="序号" type="index" align="center" />
       <el-table-column label="规则编码" align="center" prop="ruleCode" />
@@ -128,59 +128,46 @@
 import { listPickingRule, getPickingRule, delPickingRule, addPickingRule, updatePickingRule } from '@/api/erp/wm/pickingrule';
 import { listWarehouse } from '@/api/erp/wm/warehouse';
 import { useCategoryTree } from '@/composables/erp/useCategoryTree';
+import type { FormInstance } from 'element-plus';
+import { useCrud } from '@/composables/useCrud';
 
 const { proxy } = getCurrentInstance() as any;
 const { wm_picking_strategy_type, wm_rule_status } = toRefs<any>(proxy.useDict('wm_picking_strategy_type', 'wm_rule_status'));
 
-const pickingRuleList = ref([]);
-const open = ref(false);
-const loading = ref(true);
-const showSearch = ref(true);
-const ids = ref([]);
-const single = ref(true);
-const multiple = ref(true);
-const total = ref(0);
-const title = ref('');
-const warehouseOptions = ref([]);
+const pickingRuleRef = ref<FormInstance>();
+const warehouseOptions = ref<any[]>([]);
 const { categoryTree: categoryOptions, getCategoryTree } = useCategoryTree(proxy);
 
-const data = reactive({
-  form: {},
-  queryParams: {
-    pageNum: 1,
-    pageSize: 10,
-    ruleCode: null,
-    ruleName: null,
-    strategyType: null
-  },
-  rules: {
-    ruleCode: [{ required: true, message: '规则编码不能为空', trigger: 'blur' }],
-    ruleName: [{ required: true, message: '规则名称不能为空', trigger: 'blur' }],
-    warehouseId: [{ required: true, message: '仓库不能为空', trigger: 'change' }],
-    strategyType: [{ required: true, message: '策略类型不能为空', trigger: 'change' }],
-    priority: [{ required: true, message: '优先级不能为空', trigger: 'blur' }],
-    status: [{ required: true, message: '状态不能为空', trigger: 'change' }]
-  }
+const queryParams = ref({
+  pageNum: 1,
+  pageSize: 10,
+  ruleCode: null,
+  ruleName: null,
+  strategyType: null
 });
 
-const { queryParams, form, rules } = toRefs(data);
+const rules = {
+  ruleCode: [{ required: true, message: '规则编码不能为空', trigger: 'blur' }],
+  ruleName: [{ required: true, message: '规则名称不能为空', trigger: 'blur' }],
+  warehouseId: [{ required: true, message: '仓库不能为空', trigger: 'change' }],
+  strategyType: [{ required: true, message: '策略类型不能为空', trigger: 'change' }],
+  priority: [{ required: true, message: '优先级不能为空', trigger: 'blur' }],
+  status: [{ required: true, message: '状态不能为空', trigger: 'change' }]
+};
 
-function getList() {
-  loading.value = true;
-  listPickingRule(queryParams.value).then((response: any) => {
-    pickingRuleList.value = response.rows;
-    total.value = response.total;
-    loading.value = false;
-  });
-}
-
-function cancel() {
-  open.value = false;
-  reset();
-}
-
-function reset() {
-  form.value = {
+const {
+  loading, list, total, open, isViewMode, title, ids, single, multiple, showSearch, form,
+  getList, handleQuery, handleDelete, handleExport, handleSelectionChange, submitForm, cancel,
+  handleAdd: rawHandleAdd,
+  handleUpdate: rawHandleUpdate,
+  handleView: rawHandleView
+} = useCrud({
+  apis: { list: listPickingRule, get: getPickingRule, add: addPickingRule, update: updatePickingRule, del: delPickingRule },
+  idField: 'ruleId',
+  entityName: '拣货规则',
+  formRef: pickingRuleRef,
+  queryParams,
+  initForm: () => ({
     ruleId: null,
     ruleCode: null,
     ruleName: null,
@@ -190,13 +177,27 @@ function reset() {
     priority: 1,
     status: '0',
     remark: null
-  };
-  proxy.resetForm('pickingRuleRef');
+  }),
+  exportUrl: '/erp/wm/pickingrule/export',
+  exportFileName: 'pickingrule',
+  onReset: () => { getWarehouseOptions(); }
+});
+
+/** 仓库下拉选项 */
+function getWarehouseOptions() {
+  listWarehouse({ pageSize: 100, pageNum: 1 }).then((response: any) => {
+    warehouseOptions.value = response.rows;
+  });
 }
 
-function handleQuery() {
-  queryParams.value.pageNum = 1;
-  getList();
+function handleAdd() {
+  rawHandleAdd(() => { getWarehouseOptions(); getCategoryTree(); });
+}
+function handleUpdate(row?: any) {
+  return rawHandleUpdate(row, () => { getWarehouseOptions(); getCategoryTree(); });
+}
+function handleView(row?: any) {
+  return rawHandleView(row, () => { getWarehouseOptions(); getCategoryTree(); });
 }
 
 function resetQuery() {
@@ -204,84 +205,6 @@ function resetQuery() {
   handleQuery();
 }
 
-function handleSelectionChange(selection: any[]) {
-  ids.value = selection.map((item: any) => item.ruleId);
-  single.value = selection.length != 1;
-  multiple.value = !selection.length;
-}
-
-function handleAdd() {
-  reset();
-  open.value = true;
-  title.value = '添加拣货规则';
-  getWarehouseOptions();
-  getCategoryTree();
-}
-
-function handleUpdate(row: any) {
-  reset();
-  const _ruleId = row.ruleId || ids.value;
-  getPickingRule(_ruleId).then((response: any) => {
-    form.value = response.data;
-    open.value = true;
-    title.value = '修改拣货规则';
-    getWarehouseOptions();
-    getCategoryTree();
-  });
-}
-
-function submitForm() {
-  proxy.$refs['pickingRuleRef'].validate((valid: boolean) => {
-    if (valid) {
-      if (form.value.ruleId != null) {
-        updatePickingRule(form.value).then(() => {
-          proxy.$modal.msgSuccess('修改成功');
-          open.value = false;
-          getList();
-        });
-      } else {
-        addPickingRule(form.value).then(() => {
-          proxy.$modal.msgSuccess('新增成功');
-          open.value = false;
-          getList();
-        });
-      }
-    }
-  });
-}
-
-function handleDelete(row: any) {
-  const _ruleIds = row.ruleId || ids.value;
-  proxy.$modal
-    .confirm('是否确认删除拣货规则编号为"' + _ruleIds + '"的数据项？')
-    .then(function () {
-      return delPickingRule(_ruleIds);
-    })
-    .then(() => {
-      getList();
-      proxy.$modal.msgSuccess('删除成功');
-    })
-    .catch(() => {});
-}
-
-function handleExport() {
-  proxy.download(
-    '/erp/wm/pickingrule/export',
-    {
-      ...queryParams.value
-    },
-    `pickingrule_${new Date().getTime()}.xlsx`
-  );
-}
-
-function getWarehouseOptions() {
-  listWarehouse({ pageSize: 100, pageNum: 1 }).then((response: any) => {
-    warehouseOptions.value = response.rows;
-  });
-}
-
-onActivated(() => {
-  getList();
-});
+getList();
 </script>
 

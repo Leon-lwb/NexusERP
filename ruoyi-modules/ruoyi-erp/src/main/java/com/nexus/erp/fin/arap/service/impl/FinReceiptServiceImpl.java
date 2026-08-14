@@ -194,4 +194,9 @@ public class FinReceiptServiceImpl implements IFinReceiptService {
         lqw.orderByDesc(FinReceipt::getCreateTime);
         return lqw;
     }
+
+    @Override
+    public boolean save(FinReceipt entity) {
+        return baseMapper.insert(entity) > 0;
+    }
 }

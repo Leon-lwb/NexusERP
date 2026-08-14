@@ -2,7 +2,6 @@ package com.nexus.erp.fin.gl.mq;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.nexus.common.mq.consumer.BaseMessageConsumer;
-import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.erp.fin.gl.poster.AccountingPoster;
 import com.nexus.erp.fin.gl.poster.AccountingPosterRegistry;
 import com.nexus.erp.fin.gl.poster.PostingContext;
@@ -15,7 +14,7 @@ import org.springframework.stereotype.Component;
 
 /**
  * GL 过账消费者:业务单据事件 -> 路由到对应 AccountingPoster 制单。
- * <p>租户上下文由消息体 tenantIdStr 恢复(参考 PurchaseReceiveWritebackConsumer)。</p>
+ * <p>租户上下文由 BaseMessageConsumer 自动恢复。</p>
  *
  * @author nexus
  * @date 2026-07-29
@@ -38,14 +37,16 @@ public class GlPostingConsumer extends BaseMessageConsumer<GlPostingMessage> {
     @Override
     protected void doProcess(GlPostingMessage message) {
         log.info("处理 GL 过账消息: source={}, sourceId={}", message.getSourceType(), message.getSourceId());
-        String tenantId = message.getTenantIdStr();
-        if (tenantId != null) {
-            TenantHelper.dynamic(tenantId, () -> doPost(message));
-        } else {
-            log.warn("GL 过账消息租户ID为空,无租户上下文执行: source={}, sourceId={}",
-                message.getSourceType(), message.getSourceId());
-            doPost(message);
-        }
+        doPost(message);
+    }
+
+    /**
+     * 解析租户ID：使用 tenantIdStr 避免 Long 精度丢失（"000000" → 0 → "0" 不匹配数据库）
+     */
+    @Override
+    protected String resolveTenantId(GlPostingMessage message) {
+        String tid = message.getTenantIdStr();
+        return tid != null && !tid.isEmpty() ? tid : "000000";
     }
 
     /** 执行过账:从 Registry 获取对应 AccountingPoster 并构建 PostingContext 调用 post() */

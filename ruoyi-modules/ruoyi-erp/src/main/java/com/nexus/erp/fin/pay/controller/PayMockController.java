@@ -1,7 +1,7 @@
 package com.nexus.erp.fin.pay.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
-import com.baomidou.dynamic.datasource.annotation.DS;
+
 import com.nexus.common.core.domain.R;
 import com.nexus.common.log.annotation.Log;
 import com.nexus.common.log.enums.BusinessType;
@@ -30,7 +30,6 @@ import java.math.BigDecimal;
  * @date 2026-08-01
  */
 @RequiredArgsConstructor
-@DS("erp")
 @RestController
 @RequestMapping("/erp/fin/pay/mock")
 public class PayMockController extends BaseController {

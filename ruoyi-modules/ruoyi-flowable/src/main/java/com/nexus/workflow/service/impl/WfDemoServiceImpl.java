@@ -103,7 +103,6 @@ public class WfDemoServiceImpl extends ServiceImpl<WfDemoMapper, WfDemo> impleme
      * 保存前的数据校验
      */
     private void validEntityBeforeSave(WfDemo entity){
-        //TODO 做一些数据校验,如唯一约束
     }
 
     /**
@@ -111,9 +110,6 @@ public class WfDemoServiceImpl extends ServiceImpl<WfDemoMapper, WfDemo> impleme
      */
     @Override
     public Boolean deleteWithValidByIds(Collection<Long> ids, Boolean isValid) {
-        if(isValid){
-            //TODO 做一些业务上的校验,判断是否需要校验
-        }
         return baseMapper.deleteBatchIds(ids) > 0;
     }
 
@@ -139,13 +135,11 @@ public class WfDemoServiceImpl extends ServiceImpl<WfDemoMapper, WfDemo> impleme
 
 	@Override
 	public Map<String, Object> flowValuesOfTask(String taskNameId, Map<String, Object> values) {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
 	public List<String> flowCandidateUsernamesOfTask(String taskNameId, Map<String, Object> values) {
-		// TODO Auto-generated method stub
 		return null;
 	}
 }

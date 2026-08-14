@@ -71,21 +71,36 @@ public class IotDeviceDataServiceImpl implements IIotDeviceDataService {
         return baseMapper.selectList(lqw);
     }
 
+    /** 单批删除上限，避免长事务锁表 */
+    private static final int DELETE_BATCH_SIZE = 1000;
+    /** 单次删除最大循环次数，防止积压场景下长时间占用调度线程 */
+    private static final int DELETE_MAX_BATCH_LOOP = 1000;
+
     /**
      * 删除采集时间早于 deadline 的设备数据，由清理定时任务调用。
+     * <p>参照 ImMessageClearTask 分批删除: 每批 LIMIT 1000 独立提交(无包裹事务),
+     * 避免大表单条 DELETE 的长事务锁表; 循环上限兜底防止积压场景无限循环,
+     * 中途失败保留已删批次, 下次调度继续。</p>
      *
      * @param deadline 截止时间（可空，空则跳过）
      * @return 删除行数
      */
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public int deleteBefore(Date deadline) {
         if (deadline == null) {
             return 0;
         }
-        LambdaQueryWrapper<IotDeviceData> lqw = Wrappers.<IotDeviceData>lambdaQuery()
-            .lt(IotDeviceData::getCollectTime, deadline);
-        return baseMapper.delete(lqw);
+        int total = 0;
+        for (int i = 0; i < DELETE_MAX_BATCH_LOOP; i++) {
+            int deleted = baseMapper.delete(Wrappers.<IotDeviceData>lambdaQuery()
+                .lt(IotDeviceData::getCollectTime, deadline)
+                .last("LIMIT " + DELETE_BATCH_SIZE));
+            total += deleted;
+            if (deleted < DELETE_BATCH_SIZE) {
+                break;
+            }
+        }
+        return total;
     }
 
 }

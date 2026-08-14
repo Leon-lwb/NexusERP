@@ -2,6 +2,7 @@ package com.nexus.erp.prd.service;
 
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
+import com.nexus.erp.prd.domain.PrdReworkOrder;
 import com.nexus.erp.prd.domain.bo.PrdReworkOrderBo;
 import com.nexus.erp.prd.domain.vo.PrdReworkOrderVo;
 
@@ -108,4 +109,12 @@ public interface IPrdReworkOrderService {
      * @param reworkId 返工订单 ID
      */
     void receiveMaterial(Long reworkId);
+
+    /**
+     * 根据 ID 查询返工订单实体（用于内部消费者等场景，不经过 VO 转换）
+     *
+     * @param id 返工订单 ID
+     * @return 返工订单实体，未找到返回 null
+     */
+    PrdReworkOrder getById(Long id);
 }

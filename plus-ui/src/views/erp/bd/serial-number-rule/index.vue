@@ -63,7 +63,7 @@
     </el-row>
 
     <!-- 技术债：状态列使用硬编码 el-tag，缺对应字典，待补字典后改 dict-tag -->
-    <el-table v-loading="loading" :data="ruleList" @selection-change="handleSelectionChange" show-overflow-tooltip>
+    <el-table v-loading="loading" :data="list" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="规则编码" align="center" prop="ruleCode" />
       <el-table-column label="规则名称" align="center" prop="ruleName" min-width="120" show-overflow-tooltip />
@@ -219,19 +219,12 @@ import {
   updateSerialNumberRule,
   generateSerialNumber
 } from '@/api/erp/bd/serial-number-rule';
+import type { FormInstance } from 'element-plus';
+import { useCrud } from '@/composables/useCrud';
 
-const { proxy } = getCurrentInstance();
+const { proxy } = getCurrentInstance() as any;
 
-const ruleList = ref([]);
-const open = ref(false);
-const loading = ref(true);
-const showSearch = ref(true);
-const ids = ref([]);
-const single = ref(true);
-const multiple = ref(true);
-const total = ref(0);
-const title = ref('');
-const isViewMode = ref(false);
+const ruleRef = ref<FormInstance>();
 
 const genVisible = ref(false);
 const genResult = ref('');
@@ -256,42 +249,35 @@ const rule_type_options = [
   { label: '批次号', value: 'BATCH_NO' }
 ];
 
-const data = reactive({
-  form: {} as any,
-  queryParams: {
-    pageNum: 1,
-    pageSize: 10,
-    ruleCode: null,
-    ruleName: null,
-    ruleType: null,
-    status: null
-  },
-  rules: {
-    ruleCode: [{ required: true, message: '规则编码不能为空', trigger: 'blur' }],
-    ruleName: [{ required: true, message: '规则名称不能为空', trigger: 'blur' }],
-    ruleType: [{ required: true, message: '规则类型不能为空', trigger: 'change' }],
-    status: [{ required: true, message: '状态不能为空', trigger: 'change' }]
-  }
+const queryParams = ref({
+  pageNum: 1,
+  pageSize: 10,
+  ruleCode: null,
+  ruleName: null,
+  ruleType: null,
+  status: null
 });
 
-const { queryParams, form, rules } = toRefs(data);
+const rules = {
+  ruleCode: [{ required: true, message: '规则编码不能为空', trigger: 'blur' }],
+  ruleName: [{ required: true, message: '规则名称不能为空', trigger: 'blur' }],
+  ruleType: [{ required: true, message: '规则类型不能为空', trigger: 'change' }],
+  status: [{ required: true, message: '状态不能为空', trigger: 'change' }]
+};
 
-function getList() {
-  loading.value = true;
-  listSerialNumberRule(queryParams.value).then((response) => {
-    ruleList.value = response.rows;
-    total.value = response.total;
-    loading.value = false;
-  });
-}
-
-function cancel() {
-  open.value = false;
-  reset();
-}
-
-function reset() {
-  form.value = {
+const {
+  loading, list, total, open, isViewMode, title, ids, single, multiple, showSearch, form,
+  getList, handleQuery, handleDelete, handleExport, handleSelectionChange, submitForm, cancel,
+  handleAdd: rawHandleAdd,
+  handleUpdate: rawHandleUpdate,
+  handleView: rawHandleView
+} = useCrud({
+  apis: { list: listSerialNumberRule, get: getSerialNumberRule, add: addSerialNumberRule, update: updateSerialNumberRule, del: delSerialNumberRule },
+  idField: 'ruleId',
+  entityName: '序列号规则',
+  formRef: ruleRef,
+  queryParams,
+  initForm: () => ({
     ruleId: null,
     ruleCode: null,
     ruleName: null,
@@ -304,13 +290,19 @@ function reset() {
     checkDigitRule: 'NONE',
     status: 'ACTIVE',
     remark: null
-  };
-  proxy.resetForm('ruleRef');
-}
+  }),
+  exportUrl: '/erp/bd/serialNumberRule/export',
+  exportFileName: 'serial-number-rule'
+});
 
-function handleQuery() {
-  queryParams.value.pageNum = 1;
-  getList();
+function handleAdd() {
+  rawHandleAdd();
+}
+function handleUpdate(row?: any) {
+  return rawHandleUpdate(row);
+}
+function handleView(row?: any) {
+  return rawHandleView(row);
 }
 
 function resetQuery() {
@@ -318,89 +310,10 @@ function resetQuery() {
   handleQuery();
 }
 
-function handleSelectionChange(selection: any[]) {
-  ids.value = selection.map((item) => item.ruleId);
-  single.value = selection.length !== 1;
-  multiple.value = !selection.length;
-}
-
-function handleAdd() {
-  reset();
-  isViewMode.value = false;
-  open.value = true;
-  title.value = '添加序列号规则';
-}
-
-function handleUpdate(row: any) {
-  reset();
-  isViewMode.value = false;
-  const _ruleId = row.ruleId || ids.value;
-  getSerialNumberRule(_ruleId).then((response) => {
-    form.value = response.data;
-    open.value = true;
-    title.value = '修改序列号规则';
-  });
-}
-
-function handleView(row: any) {
-  reset();
-  isViewMode.value = true;
-  const _ruleId = row.ruleId || ids.value;
-  getSerialNumberRule(_ruleId).then((response) => {
-    form.value = response.data;
-    open.value = true;
-    title.value = '查看序列号规则';
-  });
-}
-
-function submitForm() {
-  proxy.$refs['ruleRef'].validate((valid: boolean) => {
-    if (valid) {
-      if (form.value.ruleId != null) {
-        updateSerialNumberRule(form.value).then(() => {
-          proxy.$modal.msgSuccess('修改成功');
-          open.value = false;
-          getList();
-        });
-      } else {
-        addSerialNumberRule(form.value).then(() => {
-          proxy.$modal.msgSuccess('新增成功');
-          open.value = false;
-          getList();
-        });
-      }
-    }
-  });
-}
-
-function handleDelete(row: any) {
-  const _ruleIds = row.ruleId || ids.value;
-  proxy.$modal
-    .confirm('是否确认删除序列号规则编号为"' + _ruleIds + '"的数据项？')
-    .then(() => {
-      return delSerialNumberRule(_ruleIds);
-    })
-    .then(() => {
-      getList();
-      proxy.$modal.msgSuccess('删除成功');
-    })
-    .catch(() => {});
-}
-
-function handleExport() {
-  proxy.download(
-    'bd/serial-number-rule/export',
-    {
-      ...queryParams.value
-    },
-    `serial-number-rule_${new Date().getTime()}.xlsx`
-  );
-}
-
 function handleGenerate(row: any) {
   genRuleCode.value = row.ruleCode;
   genResult.value = '';
-  generateSerialNumber(row.ruleCode).then((response) => {
+  generateSerialNumber(row.ruleCode).then((response: any) => {
     genResult.value = response.data;
     genVisible.value = true;
   });

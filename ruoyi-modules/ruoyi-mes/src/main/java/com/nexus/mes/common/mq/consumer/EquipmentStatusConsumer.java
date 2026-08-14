@@ -4,7 +4,6 @@ import com.nexus.common.mq.constant.QueueConstants;
 import com.nexus.common.mq.consumer.BaseMessageConsumer;
 import com.nexus.common.mq.message.EquipmentStatusMessage;
 import com.nexus.common.redis.utils.RedisUtils;
-import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.mes.eq.service.IEqEquipmentService;
 import com.nexus.mes.pro.domain.vo.ProWorkOrderVo;
 import com.nexus.mes.pro.service.IProAndonService;
@@ -28,7 +27,7 @@ import java.util.stream.Collectors;
  *   <li>若存在受影响工单, 触发 EQUIPMENT 类型安灯呼叫(工单异常提示), 每设备 1 小时限频 1 条防抖动刷屏;</li>
  *   <li>无受影响工单则仅记日志, 不建安灯。</li>
  * </ol>
- * 消费者线程无 Sa-Token 上下文, 租户ID 从消息恢复(TenantHelper.dynamic);
+ * 租户上下文由 {@link BaseMessageConsumer#processMessage} 自动恢复;
  * DB 访问通过 @DS("mes") 的 Service 方法切换数据源。
  *
  * @author Nexus
@@ -62,9 +61,7 @@ public class EquipmentStatusConsumer extends BaseMessageConsumer<EquipmentStatus
             return;
         }
 
-        // 消费者线程无登录态, 从消息恢复租户上下文(与 WorkOrderReleaseConsumer 一致)
-        String tenantId = resolveTenantId(message.getTenantId());
-        TenantHelper.dynamic(tenantId, () -> handleFault(message));
+        handleFault(message);
     }
 
     /**
@@ -97,16 +94,6 @@ public class EquipmentStatusConsumer extends BaseMessageConsumer<EquipmentStatus
         } catch (Exception e) {
             log.warn("设备故障触发安灯失败: equipmentId={}, error={}", equipmentId, e.getMessage());
         }
-    }
-
-    /**
-     * 租户ID 格式: BaseMessage.tenantId 为 Long, 0/null -> 默认 "000000", 否则 6 位零填充
-     */
-    private String resolveTenantId(Long tenantId) {
-        if (tenantId == null || Long.valueOf(0L).equals(tenantId)) {
-            return "000000";
-        }
-        return String.format("%06d", tenantId);
     }
 
     @RabbitListener(queues = QueueConstants.MES_EQUIPMENT_STATUS_QUEUE)

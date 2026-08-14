@@ -1,7 +1,7 @@
 package com.nexus.erp.fin.report.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
-import com.baomidou.dynamic.datasource.annotation.DS;
+
 import com.nexus.common.core.domain.R;
 import com.nexus.common.log.annotation.Log;
 import com.nexus.common.log.enums.BusinessType;
@@ -25,7 +25,6 @@ import java.util.List;
  */
 @Validated
 @RequiredArgsConstructor
-@DS("erp")
 @RestController
 @RequestMapping("/erp/fin/closing")
 public class FinClosingController extends BaseController {

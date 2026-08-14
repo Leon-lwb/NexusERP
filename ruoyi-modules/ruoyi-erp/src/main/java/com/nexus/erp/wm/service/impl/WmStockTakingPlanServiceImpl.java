@@ -22,14 +22,7 @@ import com.nexus.erp.wm.mapper.WmStockTakingLineMapper;
 import com.nexus.erp.wm.mapper.WmStockTakingPlanMapper;
 import com.nexus.erp.wm.service.IWmStockOperationService;
 import com.nexus.erp.wm.service.IWmStockTakingPlanService;
-import com.nexus.system.strategy.AutoCodeUtil;
 import com.nexus.workflow.domain.WfMyBusiness;
-import com.nexus.workflow.service.IWfProcessService;
-import com.nexus.workflow.service.impl.WfMyBusinessServiceImpl;
-import org.flowable.engine.HistoryService;
-import org.flowable.engine.RuntimeService;
-import org.flowable.engine.history.HistoricProcessInstance;
-import org.flowable.engine.runtime.ProcessInstance;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -60,16 +53,8 @@ public class WmStockTakingPlanServiceImpl implements IWmStockTakingPlanService {
     private final WmMaterialStockMapper stockMapper;
     /** 库存操作业务服务，提供库存操作相关能力 */
     private final IWmStockOperationService stockOperationService;
-    /** 自动编码工具类 */
-    private final AutoCodeUtil autoCodeUtil;
-    /** 库存盘点计划业务服务，提供库存盘点计划相关能力 */
-    private final IWfProcessService processService;
-    /** 库存盘点计划业务服务，提供库存盘点计划相关能力 */
-    private final WfMyBusinessServiceImpl wfMyBusinessServiceImpl;
-    /** 库存盘点计划业务服务，提供库存盘点计划相关能力 */
-    private final RuntimeService runtimeService;
-    /** 库存盘点计划业务服务，提供库存盘点计划相关能力 */
-    private final HistoryService historyService;
+    /** WM 公共依赖（AutoCodeUtil / 流程服务 / 流程实例查询） */
+    private final WmServiceHelper wm;
 
     /**
      * 分页查询库存盘点计划列表
@@ -124,7 +109,7 @@ public class WmStockTakingPlanServiceImpl implements IWmStockTakingPlanService {
     public int insertByBo(WmStockTakingPlanBo bo) {
         WmStockTakingPlan entity = MapstructUtils.convert(bo, WmStockTakingPlan.class);
         if (StringUtils.isBlank(entity.getPlanCode())) {
-            entity.setPlanCode(autoCodeUtil.genSerialCode("WM_STOCKTAKING_CODE", null));
+            entity.setPlanCode(wm.autoCodeUtil.genSerialCode("WM_STOCKTAKING_CODE", null));
         }
         int rows = baseMapper.insert(entity);
         if (bo.getWmStockTakingLineList() != null) {
@@ -317,7 +302,7 @@ public class WmStockTakingPlanServiceImpl implements IWmStockTakingPlanService {
         variables.put("planCode", plan.getPlanCode());
         variables.put("planName", plan.getPlanName());
         variables.put("warehouseName", plan.getWarehouseName());
-        R<Void> result = processService.startProcessByDataId(planIdStr, selectFlowId, "wmStockTakingPlanService", variables);
+        R<Void> result = wm.processService.startProcessByDataId(planIdStr, selectFlowId, "wmStockTakingPlanService", variables);
         if (R.isSuccess(result)) {
             return true;
         }
@@ -332,21 +317,10 @@ public class WmStockTakingPlanServiceImpl implements IWmStockTakingPlanService {
      */
     @Override
     public String getProcInsId(String planIdStr) {
-        try {
-            WfMyBusiness business = wfMyBusinessServiceImpl.getByDataId(planIdStr);
-            if (business != null && StringUtils.isNotBlank(business.getProcessInstanceId())) {
-                return business.getProcessInstanceId();
-            }
-        } catch (Exception ignored) {
-        }
-        ProcessInstance runtime = runtimeService.createProcessInstanceQuery()
-            .processInstanceBusinessKey(planIdStr).singleResult();
-        if (runtime != null) {
-            return runtime.getId();
-        }
-        HistoricProcessInstance hist = historyService.createHistoricProcessInstanceQuery()
-            .processInstanceBusinessKey(planIdStr).singleResult();
-        return hist != null ? hist.getId() : null;
+        return wm.procInsIdHelper.resolve(planIdStr, () -> {
+            WfMyBusiness business = wm.wfMyBusinessServiceImpl.getByDataId(planIdStr);
+            return business != null ? business.getProcessInstanceId() : null;
+        });
     }
 
     /**
@@ -356,7 +330,7 @@ public class WmStockTakingPlanServiceImpl implements IWmStockTakingPlanService {
      * @return 结果
      */
     @Override
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void afterFlowHandle(WfMyBusiness business) {
         Long planId = Long.parseLong(business.getDataId());
         WmStockTakingPlan plan = baseMapper.selectById(planId);
@@ -383,7 +357,7 @@ public class WmStockTakingPlanServiceImpl implements IWmStockTakingPlanService {
      * @return 结果
      */
     @Override
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
     public Object getBusinessDataById(String dataId) {
         return selectById(Long.parseLong(dataId));
     }

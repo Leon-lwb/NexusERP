@@ -38,10 +38,7 @@ import com.nexus.system.strategy.AutoCodeUtil;
 import com.nexus.workflow.domain.WfMyBusiness;
 import com.nexus.workflow.service.IWfProcessService;
 import com.nexus.workflow.service.impl.WfMyBusinessServiceImpl;
-import org.flowable.engine.HistoryService;
-import org.flowable.engine.RuntimeService;
-import org.flowable.engine.history.HistoricProcessInstance;
-import org.flowable.engine.runtime.ProcessInstance;
+import com.nexus.common.flowable.helper.FlowableProcInsIdHelper;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -80,8 +77,7 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
     private final AutoCodeUtil autoCodeUtil;
     private final IWfProcessService processService;
     private final WfMyBusinessServiceImpl wfMyBusinessServiceImpl;
-    private final RuntimeService runtimeService;
-    private final HistoryService historyService;
+    private final FlowableProcInsIdHelper procInsIdHelper;
     private final ICreditCheckService creditCheckService;
     private final IWmStockReservationService stockReservationService;
     private final ApplicationEventPublisher applicationEventPublisher;
@@ -536,30 +532,17 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
      */
     @Override
     public String getProcInsId(String soIdStr) {
-        try {
+        return procInsIdHelper.resolve(soIdStr, () -> {
             WfMyBusiness business = wfMyBusinessServiceImpl.getByDataId(soIdStr);
-            if (business != null && StringUtils.isNotBlank(business.getProcessInstanceId())) {
-                return business.getProcessInstanceId();
-            }
-        } catch (Exception ignored) {
-        }
-
-        ProcessInstance runtime = runtimeService.createProcessInstanceQuery()
-            .processInstanceBusinessKey(soIdStr).singleResult();
-        if (runtime != null) {
-            return runtime.getId();
-        }
-
-        HistoricProcessInstance hist = historyService.createHistoricProcessInstanceQuery()
-            .processInstanceBusinessKey(soIdStr).singleResult();
-        return hist != null ? hist.getId() : null;
+            return business != null ? business.getProcessInstanceId() : null;
+        });
     }
 
     /**
      * 流程审批后处理（更新销售订单状态）
      */
     @Override
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void afterFlowHandle(WfMyBusiness business) {
         Long soId = Long.parseLong(business.getDataId());
         SoSalesOrderHeader order = baseMapper.selectById(soId);
@@ -583,7 +566,7 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
      * 根据数据ID获取业务数据
      */
     @Override
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
     public Object getBusinessDataById(String dataId) {
         return selectById(Long.parseLong(dataId));
     }

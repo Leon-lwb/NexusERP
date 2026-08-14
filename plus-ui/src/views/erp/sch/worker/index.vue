@@ -71,7 +71,7 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="workerList" @selection-change="handleSelectionChange" show-overflow-tooltip>
+    <el-table v-loading="loading" :data="list" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="序号" type="index" align="center" />
       <el-table-column label="员工工号" align="center" prop="employeeId" />
@@ -330,246 +330,108 @@
 import { listWorker, getWorker, delWorker, addWorker, updateWorker, listBuiltUserIds } from '@/api/erp/sch/worker';
 import { listUser } from '@/api/system/user';
 import { listWorkshop } from '@/api/erp/bd/workshop';
+import type { FormInstance } from 'element-plus';
+import { useCrud } from '@/composables/useCrud';
 
-const { proxy } = getCurrentInstance();
+const { proxy } = getCurrentInstance() as any;
 const { sch_skill_level, sch_work_category, sch_work_status, sys_user_sex, sys_core_status } = toRefs(
   proxy.useDict('sch_skill_level', 'sch_work_category', 'sch_work_status', 'sys_user_sex', 'sys_core_status')
 );
 
-const workerList = ref([]);
-const open = ref(false);
-const loading = ref(true);
-const showSearch = ref(true);
-const ids = ref([]);
-const single = ref(true);
-const multiple = ref(true);
-const total = ref(0);
-const title = ref('');
-const isViewMode = ref(false);
+const workerRef = ref<FormInstance>();
+
+// 是否已关联系统用户
+const hasUser = computed(() => !!form.value?.userId);
 
 // 系统用户选择
-const userList = ref([]);
+const userList = ref<any[]>([]);
 const userLoading = ref(false);
 const userVisible = ref(false);
 const userTotal = ref(0);
-const builtUserIds = ref([]); // 已建档工人的 userId 集合，用户选择弹窗中禁用
-const userQueryParams = reactive({
-  pageNum: 1,
-  pageSize: 10,
-  userName: undefined,
-  phonenumber: undefined
-});
+const builtUserIds = ref<any[]>([]);
+const userQueryParams = reactive({ pageNum: 1, pageSize: 10, userName: undefined, phonenumber: undefined });
 
 // 车间选择
-const workshopList = ref([]);
+const workshopList = ref<any[]>([]);
 const workshopLoading = ref(false);
 const workshopVisible = ref(false);
 const workshopTotal = ref(0);
-const workshopQueryParams = reactive({
-  pageNum: 1,
-  pageSize: 10,
-  workshopCode: undefined,
-  workshopName: undefined,
-  status: '1'
+const workshopQueryParams = reactive({ pageNum: 1, pageSize: 10, workshopCode: undefined, workshopName: undefined, status: '1' });
+
+const queryParams = ref({
+  pageNum: 1, pageSize: 10, userId: null, userName: null, phonenumber: null,
+  employeeId: null, workCategory: null, workStatus: null, workshopId: null,
+  entryDate: null, regularizationDate: null
 });
 
-const data = reactive({
-  form: {},
-  queryParams: {
-    pageNum: 1,
-    pageSize: 10,
-    userId: null,
-    userName: null,
-    phonenumber: null,
-    employeeId: null,
-    workCategory: null,
-    workStatus: null,
-    workshopId: null,
-    entryDate: null,
-    regularizationDate: null
-  },
-  rules: {
-    employeeId: [{ required: true, message: '员工工号不能为空', trigger: 'blur' }],
-    userName: [{ required: true, message: '员工姓名不能为空', trigger: 'blur' }]
-  }
+const rules = {
+  employeeId: [{ required: true, message: '员工工号不能为空', trigger: 'blur' }],
+  userName: [{ required: true, message: '员工姓名不能为空', trigger: 'blur' }]
+};
+
+const {
+  loading, list, total, open, isViewMode, title, ids, single, multiple, showSearch, form,
+  getList, handleQuery, handleDelete, handleExport, handleSelectionChange, submitForm, cancel,
+  handleAdd: rawHandleAdd, handleUpdate: rawHandleUpdate, handleView: rawHandleView
+} = useCrud({
+  apis: { list: listWorker, get: getWorker, add: addWorker, update: updateWorker, del: delWorker },
+  idField: 'workerId',
+  entityName: '生产工人档案',
+  formRef: workerRef,
+  queryParams,
+  initForm: () => ({
+    workerId: null, userId: null, workshopId: null, workshopName: null,
+    employeeId: null, workCategory: null, skillLevel: null, workStatus: null,
+    entryDate: null, regularizationDate: null, userName: null, phonenumber: null,
+    sex: null, createBy: null, updateBy: null, remark: null, createTime: null, updateTime: null
+  }),
+  exportUrl: '/sch/worker/export',
+  exportFileName: 'worker'
 });
 
-const { queryParams, form, rules } = toRefs(data);
-
-// 是否已关联系统用户：关联后身份字段只读带出，未关联（无账号工人）可手填
-const hasUser = computed(() => !!form.value.userId);
-
-function getList() {
-  loading.value = true;
-  listWorker(queryParams.value).then((response) => {
-    workerList.value = response.rows;
-    total.value = response.total;
-    loading.value = false;
-  });
-}
-
-function cancel() {
-  open.value = false;
-  reset();
-}
-
-function reset() {
-  form.value = {
-    workerId: null,
-    userId: null,
-    workshopId: null,
-    workshopName: null,
-    employeeId: null,
-    workCategory: null,
-    skillLevel: null,
-    workStatus: null,
-    entryDate: null,
-    regularizationDate: null,
-    userName: null,
-    phonenumber: null,
-    sex: null,
-    createBy: null,
-    updateBy: null,
-    remark: null,
-    createTime: null,
-    updateTime: null
-  };
-  proxy.resetForm('workerRef');
-}
-
-function handleQuery() {
-  queryParams.value.pageNum = 1;
-  getList();
-}
+function handleAdd() { rawHandleAdd(); }
+function handleUpdate(row?: any) { return rawHandleUpdate(row); }
+function handleView(row?: any) { return rawHandleView(row); }
 
 function resetQuery() {
   proxy.resetForm('queryRef');
   handleQuery();
 }
 
-function handleSelectionChange(selection) {
-  ids.value = selection.map((item) => item.workerId);
-  single.value = selection.length != 1;
-  multiple.value = !selection.length;
-}
-
-function handleAdd() {
-  reset();
-  isViewMode.value = false;
-  open.value = true;
-  title.value = '添加生产工人档案';
-}
-
-function handleUpdate(row) {
-  reset();
-  isViewMode.value = false;
-  const _workerId = row.workerId || ids.value;
-  getWorker(_workerId).then((response) => {
-    form.value = response.data;
-    open.value = true;
-    title.value = '修改生产工人档案';
-  });
-}
-
-function handleView(row) {
-  reset();
-  isViewMode.value = true;
-  const _workerId = row.workerId || ids.value;
-  getWorker(_workerId).then((response) => {
-    form.value = response.data;
-    open.value = true;
-    title.value = '查看生产工人档案';
-  });
-}
-
-function submitForm() {
-  proxy.$refs['workerRef'].validate((valid) => {
-    if (valid) {
-      if (form.value.workerId != null) {
-        updateWorker(form.value).then((response) => {
-          proxy.$modal.msgSuccess('修改成功');
-          open.value = false;
-          getList();
-        });
-      } else {
-        addWorker(form.value).then((response) => {
-          proxy.$modal.msgSuccess('新增成功');
-          open.value = false;
-          getList();
-        });
-      }
-    }
-  });
-}
-
-function handleDelete(row) {
-  const _workerIds = row.workerId || ids.value;
-  proxy.$modal
-    .confirm('是否确认删除生产工人档案编号为"' + _workerIds + '"的数据项？')
-    .then(function () {
-      return delWorker(_workerIds);
-    })
-    .then(() => {
-      getList();
-      proxy.$modal.msgSuccess('删除成功');
-    })
-    .catch(() => {});
-}
-
-function handleExport() {
-  proxy.download(
-    'sch/worker/export',
-    {
-      ...queryParams.value
-    },
-    `worker_${new Date().getTime()}.xlsx`
-  );
-}
-
 // ============ 系统用户选择 ============
-/** 是否已建档工人档案（编辑当前工人时，自身 userId 不算已建档） */
-function isUserBuilt(userId) {
+function isUserBuilt(userId: any) {
   return builtUserIds.value.includes(userId) && userId !== form.value.userId;
 }
-
-/** 已建档用户行高亮灰显 */
-function userRowClassName({ row }) {
+function userRowClassName({ row }: { row: any }) {
   return isUserBuilt(row.userId) ? 'built-user-row' : '';
 }
-
 function getUserList() {
   userLoading.value = true;
-  listUser(userQueryParams).then((response) => {
+  listUser(userQueryParams).then((response: any) => {
     userList.value = response.rows;
     userTotal.value = response.total;
     userLoading.value = false;
   });
 }
-
 function openUserSelect() {
   userVisible.value = true;
-  // 拉取已建档 userId 列表用于禁用
-  listBuiltUserIds().then((res) => {
+  listBuiltUserIds().then((res: any) => {
     builtUserIds.value = res.data || [];
     getUserList();
   });
 }
-
 function resetUserQuery() {
   userQueryParams.userName = undefined;
   userQueryParams.phonenumber = undefined;
   getUserList();
 }
-
-function selectUser(row) {
+function selectUser(row: any) {
   form.value.userId = row.userId;
-  // 优先用昵称（显示名）作为员工姓名，回退到账号
   form.value.userName = row.nickName || row.userName;
   form.value.phonenumber = row.phonenumber;
   form.value.sex = row.sex;
   userVisible.value = false;
 }
-
 function clearUserSelect() {
   form.value.userId = null;
 }
@@ -577,27 +439,24 @@ function clearUserSelect() {
 // ============ 车间选择 ============
 function getWorkshopList() {
   workshopLoading.value = true;
-  listWorkshop(workshopQueryParams).then((response) => {
+  listWorkshop(workshopQueryParams).then((response: any) => {
     workshopList.value = response.rows;
     workshopTotal.value = response.total;
     workshopLoading.value = false;
   });
 }
-
 function openWorkshopSelect() {
   workshopVisible.value = true;
   workshopQueryParams.status = '1';
   getWorkshopList();
 }
-
 function resetWorkshopQuery() {
   workshopQueryParams.workshopCode = undefined;
   workshopQueryParams.workshopName = undefined;
   workshopQueryParams.status = '1';
   getWorkshopList();
 }
-
-function selectWorkshop(row) {
+function selectWorkshop(row: any) {
   form.value.workshopId = row.workshopId;
   form.value.workshopName = row.workshopName;
   workshopVisible.value = false;

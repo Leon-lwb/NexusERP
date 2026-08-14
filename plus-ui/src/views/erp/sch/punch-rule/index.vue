@@ -47,7 +47,7 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="punchRuleList" @selection-change="handleSelectionChange" show-overflow-tooltip>
+    <el-table v-loading="loading" :data="list" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="序号" type="index" align="center" />
       <el-table-column label="规则名称" align="center" prop="ruleName" min-width="120" show-overflow-tooltip />
@@ -205,46 +205,29 @@
 
 <script setup lang="ts" name="PunchRule">
 import { listPunchRule, getPunchRule, delPunchRule, addPunchRule, updatePunchRule } from '@/api/erp/sch/punch-rule';
-import { ref, reactive, toRefs } from 'vue';
-import { getCurrentInstance } from 'vue';
+import type { FormInstance } from 'element-plus';
+import { useCrud } from '@/composables/useCrud';
 
-const { proxy } = getCurrentInstance();
+const { proxy } = getCurrentInstance() as any;
 const { sys_true_or_false } = toRefs(proxy.useDict('sys_true_or_false'));
 
-const punchRuleList = ref([]);
-const open = ref(false);
-const loading = ref(true);
-const showSearch = ref(true);
-const ids = ref([]);
-const single = ref(true);
-const multiple = ref(true);
-const total = ref(0);
-const title = ref('');
-const isViewMode = ref(false);
+const punchRuleRef = ref<FormInstance>();
 
-const data = reactive({
-  form: {},
-  queryParams: {
-    pageNum: 1,
-    pageSize: 10,
-    ruleName: null,
-    shiftName: null,
-    isEnabled: null
-  },
-  rules: {
-    ruleName: [{ required: true, message: '规则名称不能为空', trigger: 'blur' }],
-    workStartTime: [{ required: true, message: '上班时间不能为空', trigger: 'blur' }],
-    workEndTime: [{ required: true, message: '下班时间不能为空', trigger: 'blur' }],
-    allowClockInStart: [{ required: true, message: '允许上班打卡开始时间不能为空', trigger: 'blur' }],
-    allowClockInEnd: [{ required: true, message: '允许上班打卡结束时间不能为空', trigger: 'blur' }],
-    allowClockOutStart: [{ required: true, message: '允许下班打卡开始时间不能为空', trigger: 'blur' }],
-    allowClockOutEnd: [{ required: true, message: '允许下班打卡结束时间不能为空', trigger: 'blur' }]
-  }
+const queryParams = ref({
+  pageNum: 1, pageSize: 10, ruleName: null, shiftName: null, isEnabled: null
 });
 
-const { queryParams, form, rules } = toRefs(data);
+const rules = {
+  ruleName: [{ required: true, message: '规则名称不能为空', trigger: 'blur' }],
+  workStartTime: [{ required: true, message: '上班时间不能为空', trigger: 'blur' }],
+  workEndTime: [{ required: true, message: '下班时间不能为空', trigger: 'blur' }],
+  allowClockInStart: [{ required: true, message: '允许上班打卡开始时间不能为空', trigger: 'blur' }],
+  allowClockInEnd: [{ required: true, message: '允许上班打卡结束时间不能为空', trigger: 'blur' }],
+  allowClockOutStart: [{ required: true, message: '允许下班打卡开始时间不能为空', trigger: 'blur' }],
+  allowClockOutEnd: [{ required: true, message: '允许下班打卡结束时间不能为空', trigger: 'blur' }]
+};
 
-function handleTimeFields(data) {
+function handleTimeFields(data: any) {
   const timeFields = ['workStartTime', 'workEndTime', 'allowClockInStart', 'allowClockInEnd', 'allowClockOutStart', 'allowClockOutEnd'];
   timeFields.forEach((field) => {
     if (data[field]) {
@@ -260,142 +243,50 @@ function handleTimeFields(data) {
   return data;
 }
 
+const {
+  loading, list, total, open, isViewMode, title, ids, single, multiple, showSearch, form,
+  getList: rawGetList, handleQuery, handleDelete, handleExport, handleSelectionChange, submitForm, cancel,
+  handleAdd: rawHandleAdd, handleUpdate: rawHandleUpdate, handleView: rawHandleView
+} = useCrud({
+  apis: { list: listPunchRule, get: getPunchRule, add: addPunchRule, update: updatePunchRule, del: delPunchRule },
+  idField: 'ruleId',
+  entityName: '打卡规则',
+  formRef: punchRuleRef,
+  queryParams,
+  initForm: () => ({
+    ruleId: null, ruleName: null, shiftId: null, shiftName: null,
+    workStartTime: null, workEndTime: null, allowClockInStart: null, allowClockInEnd: null,
+    allowClockOutStart: null, allowClockOutEnd: null,
+    locationLat: null, locationLng: null, locationRadius: null, locationAddress: null,
+    allowWifiSsids: null, allowBluetoothDevices: null,
+    allowOutdoorPunch: null, outdoorRequirePhoto: null, allowSupplement: null,
+    supplementDeadline: null, lateThreshold: null, earlyLeaveThreshold: null, absentThreshold: null,
+    isEnabled: null, remark: null
+  }),
+  exportUrl: '/erp/sch/punchRule/export',
+  exportFileName: 'punchRule',
+  afterLoad: (data: any) => handleTimeFields(data)
+});
+
 function getList() {
-  loading.value = true;
-  listPunchRule(queryParams.value).then((response) => {
-    punchRuleList.value = response.rows.map((row) => handleTimeFields(row));
-    total.value = response.total;
-    loading.value = false;
+  return rawGetList().then(() => {
+    list.value = list.value.map((row: any) => handleTimeFields(row));
   });
 }
 
-function cancel() {
-  open.value = false;
-  reset();
+function handleAdd() {
+  rawHandleAdd();
 }
-
-function reset() {
-  form.value = {
-    ruleId: null,
-    ruleName: null,
-    shiftId: null,
-    shiftName: null,
-    workStartTime: null,
-    workEndTime: null,
-    allowClockInStart: null,
-    allowClockInEnd: null,
-    allowClockOutStart: null,
-    allowClockOutEnd: null,
-    locationLat: null,
-    locationLng: null,
-    locationRadius: null,
-    locationAddress: null,
-    allowWifiSsids: null,
-    allowBluetoothDevices: null,
-    allowOutdoorPunch: null,
-    outdoorRequirePhoto: null,
-    allowSupplement: null,
-    supplementDeadline: null,
-    lateThreshold: null,
-    earlyLeaveThreshold: null,
-    absentThreshold: null,
-    isEnabled: null,
-    remark: null,
-    createBy: null,
-    createTime: null,
-    updateBy: null,
-    updateTime: null
-  };
-  proxy.resetForm('punchRuleRef');
+function handleUpdate(row?: any) {
+  return rawHandleUpdate(row);
 }
-
-function handleQuery() {
-  queryParams.value.pageNum = 1;
-  getList();
+function handleView(row?: any) {
+  return rawHandleView(row);
 }
 
 function resetQuery() {
   proxy.resetForm('queryRef');
   handleQuery();
-}
-
-function handleSelectionChange(selection) {
-  ids.value = selection.map((item) => item.ruleId);
-  single.value = selection.length != 1;
-  multiple.value = !selection.length;
-}
-
-function handleAdd() {
-  reset();
-  isViewMode.value = false;
-  open.value = true;
-  title.value = '添加打卡规则';
-}
-
-function handleUpdate(row) {
-  reset();
-  isViewMode.value = false;
-  const _ruleId = row.ruleId || ids.value;
-  getPunchRule(_ruleId).then((response) => {
-    form.value = handleTimeFields(response.data);
-    open.value = true;
-    title.value = '修改打卡规则';
-  });
-}
-
-function handleView(row) {
-  reset();
-  isViewMode.value = true;
-  const _ruleId = row.ruleId || ids.value;
-  getPunchRule(_ruleId).then((response) => {
-    form.value = handleTimeFields(response.data);
-    open.value = true;
-    title.value = '查看打卡规则';
-  });
-}
-
-function submitForm() {
-  proxy.$refs['punchRuleRef'].validate((valid) => {
-    if (valid) {
-      if (form.value.ruleId != null) {
-        updatePunchRule(form.value).then((response) => {
-          proxy.$modal.msgSuccess('修改成功');
-          open.value = false;
-          getList();
-        });
-      } else {
-        addPunchRule(form.value).then((response) => {
-          proxy.$modal.msgSuccess('新增成功');
-          open.value = false;
-          getList();
-        });
-      }
-    }
-  });
-}
-
-function handleDelete(row) {
-  const _ruleIds = row.ruleId || ids.value;
-  proxy.$modal
-    .confirm('是否确认删除打卡规则编号为"' + _ruleIds + '"的数据项？')
-    .then(function () {
-      return delPunchRule(_ruleIds);
-    })
-    .then(() => {
-      getList();
-      proxy.$modal.msgSuccess('删除成功');
-    })
-    .catch(() => {});
-}
-
-function handleExport() {
-  proxy.download(
-    'sch/punchRule/export',
-    {
-      ...queryParams.value
-    },
-    `punchRule_${new Date().getTime()}.xlsx`
-  );
 }
 
 getList();

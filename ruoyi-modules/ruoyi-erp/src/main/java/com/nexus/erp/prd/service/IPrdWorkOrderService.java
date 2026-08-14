@@ -7,6 +7,7 @@ import com.nexus.erp.prd.domain.bo.PrdWorkOrderBo;
 import com.nexus.erp.prd.domain.vo.PrdWorkOrderVo;
 import com.nexus.workflow.service.WfCallBackServiceI;
 
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -212,4 +213,19 @@ public interface IPrdWorkOrderService extends WfCallBackServiceI {
      * @return 流程实例 ID
      */
     String getProcInsId(String woIdStr);
+
+    /**
+     * 更新工单IPQC聚合质检状态
+     *
+     * @param woId          工单ID
+     * @param qualityStatus 质检状态
+     * @param ipqcId        IPQC检验单ID
+     * @param ipqcCode      IPQC检验单号
+     * @param inspectorId   检验员ID
+     * @param inspectorName 检验员姓名
+     * @param ipqcTime      检验时间
+     * @return 影响行数
+     */
+    int updateIpqcStatus(Long woId, String qualityStatus, Long ipqcId, String ipqcCode,
+                         Long inspectorId, String inspectorName, Date ipqcTime);
 }

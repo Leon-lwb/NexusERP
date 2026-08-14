@@ -265,9 +265,8 @@ public class WmMaterialStock extends TenantEntity {
     private Long attr4;
 
     /**
-     * 删除标志
+     * 删除标志（库存表不启用逻辑删除，删除标志仅作数据审计保留）
      */
-    @TableLogic
     private String delFlag;
 
     /**

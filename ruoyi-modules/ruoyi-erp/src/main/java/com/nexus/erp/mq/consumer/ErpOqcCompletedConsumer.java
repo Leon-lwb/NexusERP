@@ -1,13 +1,11 @@
 package com.nexus.erp.mq.consumer;
 
-import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.nexus.common.mq.constant.QueueConstants;
 import com.nexus.common.mq.consumer.BaseMessageConsumer;
 import com.nexus.common.mq.message.OqcCompletedMessage;
-import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.erp.so.domain.SoSalesOrderLine;
-import com.nexus.erp.so.mapper.SoSalesOrderLineMapper;
+import com.nexus.erp.so.service.ISoSalesOrderLineService;
 import com.rabbitmq.client.Channel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,7 +30,6 @@ import java.util.List;
 @Slf4j
 @RequiredArgsConstructor
 @Component
-@DS("erp")
 public class ErpOqcCompletedConsumer extends BaseMessageConsumer<OqcCompletedMessage> {
 
     /** 销售订单行状态: 已取消 */
@@ -42,7 +39,7 @@ public class ErpOqcCompletedConsumer extends BaseMessageConsumer<OqcCompletedMes
     /** OQC检验状态: 不合格 */
     private static final String OQC_UNQUALIFIED = "UNQUALIFIED";
 
-    private final SoSalesOrderLineMapper salesOrderLineMapper;
+    private final ISoSalesOrderLineService salesOrderLineService;
 
     /**
      * 获取消息类型
@@ -61,12 +58,7 @@ public class ErpOqcCompletedConsumer extends BaseMessageConsumer<OqcCompletedMes
      */
     @Override
     protected void doProcess(OqcCompletedMessage message) {
-        // MQ消费者线程无登录态，需从消息恢复租户上下文，否则多租户拦截器加tenant_id条件查不到数据
-        String tenantId = "000000";
-        if (message.getTenantId() != null && !Long.valueOf(0L).equals(message.getTenantId())) {
-            tenantId = String.format("%06d", message.getTenantId());
-        }
-        TenantHelper.dynamic(tenantId, () -> doUpdate(message));
+        doUpdate(message);
     }
 
     /**
@@ -76,7 +68,7 @@ public class ErpOqcCompletedConsumer extends BaseMessageConsumer<OqcCompletedMes
      */
     private void doUpdate(OqcCompletedMessage message) {
         // 按 soId + materialId 定位行(排除已取消行)
-        List<SoSalesOrderLine> lines = salesOrderLineMapper.selectList(Wrappers.<SoSalesOrderLine>lambdaQuery()
+        List<SoSalesOrderLine> lines = salesOrderLineService.list(Wrappers.<SoSalesOrderLine>lambdaQuery()
             .eq(SoSalesOrderLine::getSoId, message.getSoId())
             .eq(SoSalesOrderLine::getMaterialId, message.getMaterialId())
             .ne(SoSalesOrderLine::getLineStatus, LINE_STATUS_CANCELLED));
@@ -86,14 +78,9 @@ public class ErpOqcCompletedConsumer extends BaseMessageConsumer<OqcCompletedMes
         }
 
         String oqcStatus = OQC_QUALIFIED.equals(message.getInspectResult()) ? OQC_QUALIFIED : OQC_UNQUALIFIED;
-        int rows = salesOrderLineMapper.update(null, Wrappers.<SoSalesOrderLine>lambdaUpdate()
-            .set(SoSalesOrderLine::getOqcStatus, oqcStatus)
-            .set(SoSalesOrderLine::getOqcId, message.getOqcId())
-            .set(SoSalesOrderLine::getOqcCode, message.getOqcCode())
-            .set(SoSalesOrderLine::getOqcTime, new Date())
-            .eq(SoSalesOrderLine::getSoId, message.getSoId())
-            .eq(SoSalesOrderLine::getMaterialId, message.getMaterialId())
-            .ne(SoSalesOrderLine::getLineStatus, LINE_STATUS_CANCELLED));
+        int rows = salesOrderLineService.updateOqcStatus(
+            message.getSoId(), message.getMaterialId(), oqcStatus,
+            message.getOqcId(), message.getOqcCode(), new Date());
         log.info("OQC回写销售订单行完成: soId={}, materialId={}, oqcCode={}, result={}, affectedRows={}",
             message.getSoId(), message.getMaterialId(), message.getOqcCode(), oqcStatus, rows);
     }
