@@ -1,35 +1,35 @@
-package com.nexus.ai.mcp.registry;
+package com.nexus.ai.tool;
 
-import com.nexus.ai.mcp.BuiltinToolProvider;
-import com.nexus.ai.tool.ErpSalesTool;
+import com.nexus.ai.tool.BuiltinToolProvider;
+import com.nexus.ai.tool.ErpInventoryTool;
 import org.springframework.stereotype.Component;
 
 /**
- * 销售查询工具提供者
+ * 库存查询工具提供者
  *
  * @author NexusERP
  */
 @Component
-public class ErpSalesToolProvider implements BuiltinToolProvider {
+public class ErpInventoryToolProvider implements BuiltinToolProvider {
 
     @Override
     public String getToolName() {
-        return "erp_sales";
+        return "erp_inventory";
     }
 
     @Override
     public String getDisplayName() {
-        return "销售查询工具";
+        return "库存查询工具";
     }
 
     @Override
     public String getDescription() {
-        return "查询月度销售趋势、客户排行、退货统计、订单履行率";
+        return "查询库存预警、出库趋势、库存金额分布、按仓库统计";
     }
 
     @Override
     public Class<?> getToolClass() {
-        return ErpSalesTool.class;
+        return ErpInventoryTool.class;
     }
 
     /**

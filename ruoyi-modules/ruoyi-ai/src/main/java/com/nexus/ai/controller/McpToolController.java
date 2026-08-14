@@ -1,7 +1,7 @@
-package com.nexus.ai.mcp.controller;
+package com.nexus.ai.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
-import com.nexus.ai.mcp.dto.McpToolTestResult;
+import com.nexus.ai.domain.dto.McpToolTestResult;
 import com.nexus.common.ai.domain.entity.AiTool;
 import com.nexus.ai.mcp.service.McpToolServiceImpl;
 import com.nexus.common.core.domain.R;

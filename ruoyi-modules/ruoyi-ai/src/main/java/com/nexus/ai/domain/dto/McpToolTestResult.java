@@ -1,4 +1,4 @@
-package com.nexus.ai.mcp.dto;
+package com.nexus.ai.domain.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

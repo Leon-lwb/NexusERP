@@ -4,7 +4,7 @@ import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.nexus.ai.config.AiProperties;
-import com.nexus.ai.controller.dto.ImageGenerateRequest;
+import com.nexus.ai.domain.dto.ImageGenerateRequest;
 import com.nexus.common.ai.domain.dto.image.ImageContext;
 import com.nexus.common.ai.domain.entity.AiImageRecord;
 import com.nexus.common.ai.domain.entity.AiModel;

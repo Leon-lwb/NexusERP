@@ -1,35 +1,35 @@
-package com.nexus.ai.mcp.registry;
+package com.nexus.ai.tool;
 
-import com.nexus.ai.mcp.BuiltinToolProvider;
-import com.nexus.ai.tool.ExecuteSqlQueryTool;
+import com.nexus.ai.tool.BuiltinToolProvider;
+import com.nexus.ai.tool.ErpPurchaseTool;
 import org.springframework.stereotype.Component;
 
 /**
- * 执行 SQL 查询工具提供者
+ * 采购查询工具提供者
  *
  * @author NexusERP
  */
 @Component
-public class ExecuteSqlQueryToolProvider implements BuiltinToolProvider {
+public class ErpPurchaseToolProvider implements BuiltinToolProvider {
 
     @Override
     public String getToolName() {
-        return "execute_sql_query";
+        return "erp_purchase";
     }
 
     @Override
     public String getDisplayName() {
-        return "执行 SQL 查询";
+        return "采购查询工具";
     }
 
     @Override
     public String getDescription() {
-        return "执行 SELECT SQL 查询（必须包含 tenant_id 条件）";
+        return "查询采购金额分布、供应商评估、在途订单、采购价格历史";
     }
 
     @Override
     public Class<?> getToolClass() {
-        return ExecuteSqlQueryTool.class;
+        return ErpPurchaseTool.class;
     }
 
     /**
@@ -40,6 +40,6 @@ public class ExecuteSqlQueryToolProvider implements BuiltinToolProvider {
      */
     @Override
     public String getCategories() {
-        return "QUERY";
+        return "ALL";
     }
 }

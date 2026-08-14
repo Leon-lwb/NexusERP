@@ -1,6 +1,6 @@
 package com.nexus.ai.service.prompt;
 
-import com.nexus.ai.mcp.BuiltinToolRegistry;
+import com.nexus.ai.tool.BuiltinToolRegistry;
 import com.nexus.ai.service.query.ErpTableSchemaManager;
 import com.nexus.ai.service.query.SqlExampleService;
 import com.nexus.common.ai.domain.entity.AiPromptTemplate;

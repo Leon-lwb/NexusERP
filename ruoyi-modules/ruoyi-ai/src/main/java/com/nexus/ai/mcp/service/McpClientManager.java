@@ -2,7 +2,7 @@ package com.nexus.ai.mcp.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nexus.ai.mcp.BuiltinToolRegistry;
+import com.nexus.ai.tool.BuiltinToolRegistry;
 import com.nexus.common.ai.domain.entity.AiTool;
 import com.nexus.common.ai.mapper.AiToolMapper;
 import dev.langchain4j.mcp.McpToolProvider;

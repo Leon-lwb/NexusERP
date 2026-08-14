@@ -1,4 +1,4 @@
-package com.nexus.ai.mcp;
+package com.nexus.ai.tool;
 
 import com.nexus.ai.mcp.service.McpToolServiceImpl;
 import lombok.RequiredArgsConstructor;

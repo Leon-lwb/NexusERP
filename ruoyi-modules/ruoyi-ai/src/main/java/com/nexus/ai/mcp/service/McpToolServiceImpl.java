@@ -1,9 +1,9 @@
 package com.nexus.ai.mcp.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.nexus.ai.mcp.BuiltinToolProvider;
-import com.nexus.ai.mcp.BuiltinToolRegistry;
-import com.nexus.ai.mcp.dto.McpToolTestResult;
+import com.nexus.ai.tool.BuiltinToolProvider;
+import com.nexus.ai.tool.BuiltinToolRegistry;
+import com.nexus.ai.domain.dto.McpToolTestResult;
 import com.nexus.common.ai.domain.entity.AiTool;
 import com.nexus.common.ai.mapper.AiToolMapper;
 import lombok.RequiredArgsConstructor;

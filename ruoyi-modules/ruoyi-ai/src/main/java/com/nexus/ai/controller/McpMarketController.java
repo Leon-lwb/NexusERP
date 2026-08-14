@@ -1,4 +1,4 @@
-package com.nexus.ai.mcp.controller;
+package com.nexus.ai.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.nexus.ai.mcp.service.IMcpMarketService;

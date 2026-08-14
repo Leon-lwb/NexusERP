@@ -1,4 +1,4 @@
-package com.nexus.ai.mcp;
+package com.nexus.ai.tool;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.nexus.common.ai.domain.entity.AiTool;

@@ -1,6 +1,6 @@
-package com.nexus.ai.mcp.registry;
+package com.nexus.ai.tool;
 
-import com.nexus.ai.mcp.BuiltinToolProvider;
+import com.nexus.ai.tool.BuiltinToolProvider;
 import com.nexus.ai.tool.KnowledgeGraphTool;
 import org.springframework.stereotype.Component;
 

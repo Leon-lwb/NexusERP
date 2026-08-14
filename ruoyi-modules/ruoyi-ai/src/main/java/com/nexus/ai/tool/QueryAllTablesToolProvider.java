@@ -1,35 +1,35 @@
-package com.nexus.ai.mcp.registry;
+package com.nexus.ai.tool;
 
-import com.nexus.ai.mcp.BuiltinToolProvider;
-import com.nexus.ai.tool.QueryTableSchemaTool;
+import com.nexus.ai.tool.BuiltinToolProvider;
+import com.nexus.ai.tool.QueryAllTablesTool;
 import org.springframework.stereotype.Component;
 
 /**
- * 查询表结构工具提供者
+ * 查询所有表工具提供者
  *
  * @author NexusERP
  */
 @Component
-public class QueryTableSchemaToolProvider implements BuiltinToolProvider {
+public class QueryAllTablesToolProvider implements BuiltinToolProvider {
 
     @Override
     public String getToolName() {
-        return "query_table_schema";
+        return "query_all_tables";
     }
 
     @Override
     public String getDisplayName() {
-        return "查询表结构";
+        return "查询所有表";
     }
 
     @Override
     public String getDescription() {
-        return "查询指定表的 CREATE TABLE DDL（优先从缓存获取）";
+        return "查询数据库中所有可用的 ERP 业务表（从缓存获取）";
     }
 
     @Override
     public Class<?> getToolClass() {
-        return QueryTableSchemaTool.class;
+        return QueryAllTablesTool.class;
     }
 
     /**

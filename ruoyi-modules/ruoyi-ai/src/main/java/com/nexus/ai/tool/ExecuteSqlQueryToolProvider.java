@@ -1,35 +1,35 @@
-package com.nexus.ai.mcp.registry;
+package com.nexus.ai.tool;
 
-import com.nexus.ai.mcp.BuiltinToolProvider;
-import com.nexus.ai.tool.QueryAllTablesTool;
+import com.nexus.ai.tool.BuiltinToolProvider;
+import com.nexus.ai.tool.ExecuteSqlQueryTool;
 import org.springframework.stereotype.Component;
 
 /**
- * 查询所有表工具提供者
+ * 执行 SQL 查询工具提供者
  *
  * @author NexusERP
  */
 @Component
-public class QueryAllTablesToolProvider implements BuiltinToolProvider {
+public class ExecuteSqlQueryToolProvider implements BuiltinToolProvider {
 
     @Override
     public String getToolName() {
-        return "query_all_tables";
+        return "execute_sql_query";
     }
 
     @Override
     public String getDisplayName() {
-        return "查询所有表";
+        return "执行 SQL 查询";
     }
 
     @Override
     public String getDescription() {
-        return "查询数据库中所有可用的 ERP 业务表（从缓存获取）";
+        return "执行 SELECT SQL 查询（必须包含 tenant_id 条件）";
     }
 
     @Override
     public Class<?> getToolClass() {
-        return QueryAllTablesTool.class;
+        return ExecuteSqlQueryTool.class;
     }
 
     /**

@@ -1,6 +1,6 @@
 package com.nexus.ai.mcp.service;
 
-import com.nexus.ai.mcp.BuiltinToolRegistry;
+import com.nexus.ai.tool.BuiltinToolRegistry;
 import dev.langchain4j.service.tool.ToolProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

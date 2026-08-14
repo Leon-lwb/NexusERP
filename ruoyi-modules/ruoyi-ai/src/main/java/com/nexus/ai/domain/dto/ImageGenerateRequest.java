@@ -1,4 +1,4 @@
-package com.nexus.ai.controller.dto;
+package com.nexus.ai.domain.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;

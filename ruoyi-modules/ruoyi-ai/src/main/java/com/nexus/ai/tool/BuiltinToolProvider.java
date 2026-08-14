@@ -1,4 +1,4 @@
-package com.nexus.ai.mcp;
+package com.nexus.ai.tool;
 
 /**
  * 内置工具提供者接口

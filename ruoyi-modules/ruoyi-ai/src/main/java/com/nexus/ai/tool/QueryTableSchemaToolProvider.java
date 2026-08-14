@@ -1,35 +1,35 @@
-package com.nexus.ai.mcp.registry;
+package com.nexus.ai.tool;
 
-import com.nexus.ai.mcp.BuiltinToolProvider;
-import com.nexus.ai.tool.ErpInventoryTool;
+import com.nexus.ai.tool.BuiltinToolProvider;
+import com.nexus.ai.tool.QueryTableSchemaTool;
 import org.springframework.stereotype.Component;
 
 /**
- * 库存查询工具提供者
+ * 查询表结构工具提供者
  *
  * @author NexusERP
  */
 @Component
-public class ErpInventoryToolProvider implements BuiltinToolProvider {
+public class QueryTableSchemaToolProvider implements BuiltinToolProvider {
 
     @Override
     public String getToolName() {
-        return "erp_inventory";
+        return "query_table_schema";
     }
 
     @Override
     public String getDisplayName() {
-        return "库存查询工具";
+        return "查询表结构";
     }
 
     @Override
     public String getDescription() {
-        return "查询库存预警、出库趋势、库存金额分布、按仓库统计";
+        return "查询指定表的 CREATE TABLE DDL（优先从缓存获取）";
     }
 
     @Override
     public Class<?> getToolClass() {
-        return ErpInventoryTool.class;
+        return QueryTableSchemaTool.class;
     }
 
     /**
@@ -40,6 +40,6 @@ public class ErpInventoryToolProvider implements BuiltinToolProvider {
      */
     @Override
     public String getCategories() {
-        return "ALL";
+        return "QUERY";
     }
 }

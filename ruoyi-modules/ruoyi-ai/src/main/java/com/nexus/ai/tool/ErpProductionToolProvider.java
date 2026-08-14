@@ -1,35 +1,35 @@
-package com.nexus.ai.mcp.registry;
+package com.nexus.ai.tool;
 
-import com.nexus.ai.mcp.BuiltinToolProvider;
-import com.nexus.ai.tool.ErpPurchaseTool;
+import com.nexus.ai.tool.BuiltinToolProvider;
+import com.nexus.ai.tool.ErpProductionTool;
 import org.springframework.stereotype.Component;
 
 /**
- * 采购查询工具提供者
+ * 生产查询工具提供者
  *
  * @author NexusERP
  */
 @Component
-public class ErpPurchaseToolProvider implements BuiltinToolProvider {
+public class ErpProductionToolProvider implements BuiltinToolProvider {
 
     @Override
     public String getToolName() {
-        return "erp_purchase";
+        return "erp_production";
     }
 
     @Override
     public String getDisplayName() {
-        return "采购查询工具";
+        return "生产查询工具";
     }
 
     @Override
     public String getDescription() {
-        return "查询采购金额分布、供应商评估、在途订单、采购价格历史";
+        return "查询在产工单、产能利用率、BOM展开、生产完成率";
     }
 
     @Override
     public Class<?> getToolClass() {
-        return ErpPurchaseTool.class;
+        return ErpProductionTool.class;
     }
 
     /**
