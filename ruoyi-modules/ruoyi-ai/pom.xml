@@ -132,17 +132,13 @@
             <version>1.18.3</version>
         </dependency>
 
-        <!-- OSS 文件存储（知识库文档上传 / 流程 OSS 节点） -->
+        <!-- OSS 文件存储（知识库文档上传） -->
         <dependency>
             <groupId>com.nexus</groupId>
             <artifactId>ruoyi-common-oss</artifactId>
         </dependency>
 
-        <!-- RabbitMQ 可靠消息（流程 mq_send 节点） -->
-        <dependency>
-            <groupId>com.nexus</groupId>
-            <artifactId>ruoyi-common-mq</artifactId>
-        </dependency>
+        
 
         <!-- 本地缓存（模型实例、会话记忆、向量存储等有界缓存） -->
         <dependency>
@@ -165,23 +161,11 @@
             </exclusions>
         </dependency>
 
-        <!-- SnailJob 任务调度（AI 流程定时触发） -->
-        <dependency>
-            <groupId>com.nexus</groupId>
-            <artifactId>ruoyi-common-job</artifactId>
-        </dependency>
+        
 
-        <!-- 邮件发送（mail 节点） -->
-        <dependency>
-            <groupId>com.nexus</groupId>
-            <artifactId>ruoyi-common-mail</artifactId>
-        </dependency>
+        
 
-        <!-- 短信发送（sms 节点） -->
-        <dependency>
-            <groupId>com.nexus</groupId>
-            <artifactId>ruoyi-common-sms</artifactId>
-        </dependency>
+        
 
     </dependencies>
 

@@ -23,6 +23,7 @@
         <module>ruoyi-report</module>
         <module>ruoyi-im</module>
         <module>ruoyi-ai</module>
+        <module>ruoyi-flow</module>
     </modules>
 
     <artifactId>ruoyi-modules</artifactId>

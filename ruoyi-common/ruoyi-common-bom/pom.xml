@@ -200,6 +200,13 @@
                 <version>${revision}</version>
             </dependency>
 
+            <!-- 流程编排公共模块 -->
+            <dependency>
+                <groupId>com.nexus</groupId>
+                <artifactId>ruoyi-common-flow</artifactId>
+                <version>${revision}</version>
+            </dependency>
+
             <!-- IoT 公共契约模块 -->
             <dependency>
                 <groupId>com.nexus</groupId>
