@@ -95,12 +95,13 @@ public interface IWmSnService {
      *
      * @param materialId    物料ID
      * @param quantity      生成数量
+     * @param batchId       关联批次ID（可空）
      * @param ruleId        生成规则ID
      * @param sourceDocId   来源单据ID
      * @param sourceDocType 来源单据类型
      * @param sourceDocNo   来源单据编号
      */
-    void batchGenerate(Long materialId, Integer quantity, Long ruleId, Long sourceDocId, String sourceDocType, String sourceDocNo);
+    void batchGenerate(Long materialId, Integer quantity, Long batchId, Long ruleId, Long sourceDocId, String sourceDocType, String sourceDocNo);
 
     /**
      * 变更序列号状态

@@ -29,6 +29,7 @@ export function exportSn(data: WmSnQuery) {
 export function batchGenerateSn(data: {
   materialId?: number;
   quantity: number;
+  batchId?: number;
   ruleId?: number;
   sourceDocId?: number;
   sourceDocType?: string;

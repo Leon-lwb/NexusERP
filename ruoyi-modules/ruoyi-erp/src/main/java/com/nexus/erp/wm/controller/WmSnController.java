@@ -99,7 +99,7 @@ public class WmSnController extends BaseController {
     @Log(title = "序列号管理-批量生成", businessType = BusinessType.INSERT)
     @PostMapping("/batchGenerate")
     public R<Void> batchGenerate(@RequestBody WmSnBo bo) {
-        wmSnService.batchGenerate(bo.getMaterialId(), bo.getQuantity(),
+        wmSnService.batchGenerate(bo.getMaterialId(), bo.getQuantity(), bo.getBatchId(),
             bo.getRuleId(), bo.getSourceDocId(), bo.getSourceDocType(), bo.getSourceDocNo());
         return R.ok();
     }

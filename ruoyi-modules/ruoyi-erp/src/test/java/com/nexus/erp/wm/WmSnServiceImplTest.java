@@ -32,6 +32,8 @@ class WmSnServiceImplTest {
 
     @Mock
     private WmSnMapper baseMapper;
+    @Mock
+    private com.nexus.erp.wm.mapper.WmBatchMapper batchMapper;
 
     @InjectMocks
     private WmSnServiceImpl wmSnService;
@@ -55,7 +57,7 @@ class WmSnServiceImplTest {
         when(baseMapper.selectList(any())).thenReturn(Collections.emptyList());
         when(baseMapper.insert(any(WmSn.class))).thenReturn(1);
 
-        wmSnService.batchGenerate(100L, 3, 1L, 200L, "PO", "PO20260601001");
+        wmSnService.batchGenerate(100L, 3, null, 1L, 200L, "PO", "PO20260601001");
 
         // 验证插入了3条记录
         verify(baseMapper, times(3)).insert(any(WmSn.class));
@@ -73,7 +75,7 @@ class WmSnServiceImplTest {
         when(baseMapper.selectList(any())).thenReturn(List.of(lastSn));
         when(baseMapper.insert(any(WmSn.class))).thenReturn(1);
 
-        wmSnService.batchGenerate(100L, 2, 1L, 200L, "PO", "PO20260601001");
+        wmSnService.batchGenerate(100L, 2, null, 1L, 200L, "PO", "PO20260601001");
 
         // 验证插入了2条记录
         verify(baseMapper, times(2)).insert(any(WmSn.class));
@@ -86,6 +88,41 @@ class WmSnServiceImplTest {
         // 由于已有SN202606010005，下一个序号应从6开始
         assertTrue(insertedSns.get(0).getSnCode().endsWith("0006"));
         assertTrue(insertedSns.get(1).getSnCode().endsWith("0007"));
+    }
+
+    /** 批量生成关联批次：SN 应写入 batchId/batchCode */
+    @Test
+    void testBatchGenerate_WithBatch() {
+        com.nexus.erp.wm.domain.WmBatch batch = new com.nexus.erp.wm.domain.WmBatch();
+        batch.setBatchId(9L);
+        batch.setBatchCode("B202608160001");
+        batch.setMaterialId(100L);
+        when(batchMapper.selectById(9L)).thenReturn(batch);
+        when(baseMapper.insert(any(WmSn.class))).thenReturn(1);
+
+        wmSnService.batchGenerate(100L, 2, 9L, 1L, 200L, "PO", "PO20260601001");
+
+        ArgumentCaptor<WmSn> captor = ArgumentCaptor.forClass(WmSn.class);
+        verify(baseMapper, times(2)).insert(captor.capture());
+        for (WmSn sn : captor.getAllValues()) {
+            assertEquals(9L, sn.getBatchId());
+            assertEquals("B202608160001", sn.getBatchCode());
+        }
+    }
+
+    /** 批量生成关联批次：批次物料不匹配应报错 */
+    @Test
+    void testBatchGenerate_BatchMaterialMismatch() {
+        com.nexus.erp.wm.domain.WmBatch batch = new com.nexus.erp.wm.domain.WmBatch();
+        batch.setBatchId(9L);
+        batch.setBatchCode("B202608160001");
+        batch.setMaterialId(999L);
+        when(batchMapper.selectById(9L)).thenReturn(batch);
+
+        ServiceException exception = assertThrows(ServiceException.class, () ->
+            wmSnService.batchGenerate(100L, 1, 9L, 1L, 200L, "PO", "PO001")
+        );
+        assertTrue(exception.getMessage().contains("不属于该物料"));
     }
 
     /**
@@ -214,12 +251,12 @@ class WmSnServiceImplTest {
     @Test
     void testBatchGenerate_InvalidQuantity() {
         ServiceException exception = assertThrows(ServiceException.class, () ->
-            wmSnService.batchGenerate(100L, 0, 1L, 200L, "PO", "PO001")
+            wmSnService.batchGenerate(100L, 0, null, 1L, 200L, "PO", "PO001")
         );
         assertTrue(exception.getMessage().contains("大于0"));
 
         assertThrows(ServiceException.class, () ->
-            wmSnService.batchGenerate(100L, -1, 1L, 200L, "PO", "PO001")
+            wmSnService.batchGenerate(100L, -1, null, 1L, 200L, "PO", "PO001")
         );
     }
 }

@@ -102,6 +102,13 @@
         <el-form-item label="生成数量" prop="quantity">
           <el-input-number v-model="batchGenerateForm.quantity" :min="1" :max="1000" controls-position="right" style="width: 100%" />
         </el-form-item>
+        <el-form-item label="关联批次" prop="batchId">
+          <el-select v-model="batchGenerateForm.batchId" placeholder="请选择批次（可空）" clearable filterable style="width: 100%">
+            <el-option v-for="item in batchOptions" :key="item.batchId"
+              :label="item.batchCode + '（' + (item.materialName || item.materialCode || '') + '）'"
+              :value="item.batchId" />
+          </el-select>
+        </el-form-item>
       </el-form>
       <template #footer>
         <div class="dialog-footer">
@@ -138,6 +145,7 @@
 
 <script setup lang="ts" name="WmSn">
 import { listSn, getSn, addSn, updateSn, delSn, batchGenerateSn, bindStock, unbindStock } from '@/api/erp/wm/sn';
+import { listBatch } from '@/api/erp/wm/batch';
 import { WmSnVO, WmSnQuery, WmSnForm } from '@/api/erp/wm/sn/types';
 import { listWarehouse } from '@/api/erp/wm/warehouse';
 import { useRouter } from 'vue-router';
@@ -172,7 +180,8 @@ const batchGenerateVisible = ref(false);
 const batchGenerateFormRef = ref<ElFormInstance>();
 const batchGenerateForm = ref({
   materialId: undefined as number | undefined,
-  quantity: 1
+  quantity: 1,
+  batchId: undefined as number | undefined
 });
 const batchGenerateRules = {
   materialId: [{ required: true, message: '物料ID不能为空', trigger: 'blur' }],
@@ -242,10 +251,28 @@ const handleExport = () => {
 };
 
 // 批量生成
+const batchOptions = ref<any[]>([]);
+
 const handleBatchGenerate = () => {
-  batchGenerateForm.value = { materialId: undefined, quantity: 1 };
+  batchGenerateForm.value = { materialId: undefined, quantity: 1, batchId: undefined };
+  batchOptions.value = [];
   batchGenerateVisible.value = true;
 };
+
+const loadBatchOptions = (materialId?: number) => {
+  listBatch({ pageNum: 1, pageSize: 200, materialId }).then((res: any) => {
+    batchOptions.value = res.rows || [];
+  });
+};
+
+// 物料ID变化时刷新批次下拉；有物料ID才加载
+watch(
+  () => batchGenerateForm.value.materialId,
+  (val) => {
+    if (val) loadBatchOptions(val);
+    else batchOptions.value = [];
+  }
+);
 
 const submitBatchGenerate = async () => {
   batchGenerateFormRef.value?.validate(async (valid: boolean) => {

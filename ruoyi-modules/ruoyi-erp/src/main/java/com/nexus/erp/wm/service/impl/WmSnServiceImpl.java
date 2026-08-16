@@ -12,9 +12,11 @@ import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.common.redis.utils.RedisUtils;
+import com.nexus.erp.wm.domain.WmBatch;
 import com.nexus.erp.wm.domain.WmSn;
 import com.nexus.erp.wm.domain.bo.WmSnBo;
 import com.nexus.erp.wm.domain.vo.WmSnVo;
+import com.nexus.erp.wm.mapper.WmBatchMapper;
 import com.nexus.erp.wm.mapper.WmSnMapper;
 import com.nexus.erp.wm.service.IWmSnService;
 import org.springframework.stereotype.Service;
@@ -40,6 +42,9 @@ public class WmSnServiceImpl implements IWmSnService {
 
     /** 基础数据访问映射器（Mapper） */
     private final WmSnMapper baseMapper;
+
+    /** 批次数据访问映射器（Mapper） */
+    private final WmBatchMapper batchMapper;
 
     /**
      * 分页查询序列号列表
@@ -184,6 +189,7 @@ public class WmSnServiceImpl implements IWmSnService {
      *
      * @param materialId    物料ID
      * @param quantity      生成数量
+     * @param batchId       关联批次ID（可空）
      * @param ruleId        生成规则ID
      * @param sourceDocId   来源单据ID
      * @param sourceDocType 来源单据类型
@@ -191,34 +197,37 @@ public class WmSnServiceImpl implements IWmSnService {
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void batchGenerate(Long materialId, Integer quantity, Long ruleId,
+    public void batchGenerate(Long materialId, Integer quantity, Long batchId, Long ruleId,
                               Long sourceDocId, String sourceDocType, String sourceDocNo) {
         if (quantity == null || quantity <= 0) {
             throw new ServiceException("生成数量必须大于0");
+        }
+        if (materialId == null) {
+            throw new ServiceException("物料ID不能为空");
         }
 
         String prefix = "SN";
         String dateStr = new SimpleDateFormat("yyyyMMdd").format(new Date());
 
+        // 关联批次：校验存在且物料一致，回填批次编码
+        String batchCode = null;
+        if (batchId != null) {
+            WmBatch batch = batchMapper.selectById(batchId);
+            if (batch == null) {
+                throw new ServiceException("关联批次不存在");
+            }
+            if (!materialId.equals(batch.getMaterialId())) {
+                throw new ServiceException("批次[" + batch.getBatchCode() + "]不属于该物料");
+            }
+            batchCode = batch.getBatchCode();
+        }
+
         // 序号使用 Redis 原子自增（跨实例唯一、重启不重置），首次访问当天键时按当日最大已有序号初始化
         String seqKey = "erp:sn:seq:" + dateStr;
         long startSeq;
         if (RedisUtils.setObjectIfAbsent(seqKey, 0L, Duration.ofHours(48))) {
-            LambdaQueryWrapper<WmSn> lqw = Wrappers.lambdaQuery();
-            lqw.likeRight(WmSn::getSnCode, prefix + dateStr);
-            lqw.orderByDesc(WmSn::getSnCode);
-            lqw.last("LIMIT 1");
-            List<WmSn> existingList = baseMapper.selectList(lqw);
-            long lastSeq = 0;
-            if (existingList != null && !existingList.isEmpty()) {
-                String lastCode = existingList.get(0).getSnCode();
-                try {
-                    lastSeq = Long.parseLong(lastCode.substring((prefix + dateStr).length()));
-                } catch (NumberFormatException e) {
-                    lastSeq = 0;
-                }
-            }
-            RedisUtils.setCacheObject(seqKey, lastSeq, Duration.ofHours(48));
+            startSeq = loadMaxSnSeq(prefix + dateStr);
+            RedisUtils.setCacheObject(seqKey, startSeq, Duration.ofHours(48));
         }
         startSeq = RedisUtils.incrAtomicValue(seqKey);
 
@@ -228,6 +237,8 @@ public class WmSnServiceImpl implements IWmSnService {
             WmSn sn = new WmSn();
             sn.setSnCode(prefix + dateStr + String.format("%04d", seq + i));
             sn.setMaterialId(materialId);
+            sn.setBatchId(batchId);
+            sn.setBatchCode(batchCode);
             sn.setRuleId(ruleId);
             sn.setSourceDocId(sourceDocId);
             sn.setSourceDocType(sourceDocType);
@@ -241,7 +252,24 @@ public class WmSnServiceImpl implements IWmSnService {
             baseMapper.insert(sn);
         }
 
-        log.info("批量生成序列号完成，物料ID：{}，数量：{}", materialId, quantity);
+        log.info("批量生成序列号完成，物料ID：{}，数量：{}，批次：{}", materialId, quantity, batchCode);
+    }
+
+    /** 查询当日最大 SN 序号（likeRight 前缀 + 截取 4 位序号） */
+    private long loadMaxSnSeq(String likeRightPrefix) {
+        List<WmSn> existingList = baseMapper.selectList(Wrappers.<WmSn>lambdaQuery()
+            .likeRight(WmSn::getSnCode, likeRightPrefix)
+            .orderByDesc(WmSn::getSnCode)
+            .last("LIMIT 1"));
+        if (existingList == null || existingList.isEmpty()) {
+            return 0L;
+        }
+        String lastCode = existingList.get(0).getSnCode();
+        try {
+            return Long.parseLong(lastCode.substring(likeRightPrefix.length()));
+        } catch (NumberFormatException e) {
+            return 0L;
+        }
     }
 
     /**
