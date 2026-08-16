@@ -18,6 +18,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
+import java.util.Date;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -99,5 +100,43 @@ class WmMaterialReceiveStockTest {
         Method m = WmMaterialReceiveExecutorServiceImpl.class.getDeclaredMethod("buildStockKey", WmMaterialStock.class);
         m.setAccessible(true);
         return (String) m.invoke(executor, stock);
+    }
+
+    /** 库存事务必须记录 SN（问题⑥回归） */
+    @Test
+    void recordStockTransaction_persistsSn() throws Exception {
+        com.nexus.erp.wm.domain.vo.WmMaterialReceiveVo receive =
+            new com.nexus.erp.wm.domain.vo.WmMaterialReceiveVo();
+        receive.setReceiveId(1L);
+        receive.setReceiveCode("CGRK20260816001");
+        receive.setReceiveDate(new Date());
+
+        WmMaterialStock stock = new WmMaterialStock();
+        stock.setMaterialId(100L);
+        stock.setMaterialCode("MAT001");
+        stock.setBatchId(9L);
+        stock.setBatchCode("B202608160001");
+        stock.setSnId(77L);
+        stock.setSnCode("SN202608160001");
+        stock.setWarehouseId(2L);
+        stock.setLocationId(6L);
+        stock.setRecptDate(new Date());
+
+        Method m = WmMaterialReceiveExecutorServiceImpl.class.getDeclaredMethod(
+            "recordStockTransaction",
+            com.nexus.erp.wm.domain.vo.WmMaterialReceiveVo.class,
+            WmMaterialStock.class, int.class, BigDecimal.class,
+            BigDecimal.class, BigDecimal.class, Long.class, String.class);
+        m.setAccessible(true);
+        m.invoke(executor, receive, stock, 1, new BigDecimal("1"),
+            BigDecimal.ZERO, new BigDecimal("1"), 5L, "TARGET_IN");
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<com.nexus.erp.wm.domain.WmMaterialStockTx> captor =
+            ArgumentCaptor.forClass(com.nexus.erp.wm.domain.WmMaterialStockTx.class);
+        verify(materialStockTxMapper).insert(captor.capture());
+        com.nexus.erp.wm.domain.WmMaterialStockTx tx = captor.getValue();
+        assertEquals(77L, tx.getSnId(), "库存事务必须落 sn_id");
+        assertEquals("SN202608160001", tx.getSnCode(), "库存事务必须落 sn_code");
     }
 }

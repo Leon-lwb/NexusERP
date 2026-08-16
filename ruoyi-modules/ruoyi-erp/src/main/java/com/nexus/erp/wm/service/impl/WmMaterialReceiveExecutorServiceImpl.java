@@ -629,6 +629,8 @@ public class WmMaterialReceiveExecutorServiceImpl implements IWmMaterialReceiveE
         stockTx.setBaseUomName(stock.getBaseUomName());
         stockTx.setBatchId(stock.getBatchId());
         stockTx.setBatchCode(stock.getBatchCode());
+        stockTx.setSnId(stock.getSnId());
+        stockTx.setSnCode(stock.getSnCode());
         stockTx.setWarehouseId(stock.getWarehouseId());
         stockTx.setWarehouseCode(stock.getWarehouseCode());
         stockTx.setWarehouseName(stock.getWarehouseName());
