@@ -31,6 +31,12 @@ public class ProWorkOrderStep extends TenantEntity {
     /** 工序序号(从1开始) */
     private Integer sequenceNum;
 
+    /** 工序类型: GENERAL/FLASH 等(与 pro_work_order_step.step_type 对齐) */
+    private String stepType;
+
+    /** 关联固件ID(刷写工序指定, 门禁依据: 完工前须该固件已刷写PASS) */
+    private Long firmwareId;
+
     /** ERP工序ID */
     private Long processId;
 

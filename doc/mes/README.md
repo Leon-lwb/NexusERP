@@ -79,5 +79,7 @@ e2e 回归脚本（需本机 redis 读验证码 + 后端已启动，登录走 RS
 | [p0-4-e2e-advanced.py](./scripts/p0-4-e2e-advanced.py) | P0-4 进阶场景 |
 | [p0-8-e2e-test.py](./scripts/p0-8-e2e-test.py) | P0-8 IoT 采集点绑定收尾 |
 | [fw-e2e-test.js](./scripts/fw-e2e-test.js) | 固件刷写(confirm/重刷/校验) + 测试项(3类型/唯一/限值) + 测试记录(开单/判定/追溯) + AUTO 上报(密钥鉴权/宽松批量/去重末值覆盖)，27 断言全绿 |
+| [fw-step-gate-test.js](./scripts/fw-step-gate-test.js) | 刷写工序门禁(工单步骤设 firmware_id → 完工前卡上全部在制SN须固件PASS刷写，否则拒绝过站)，9 断言 |
+| [fw-route-flash-test.js](./scripts/fw-route-flash-test.js) | 固件刷写工序+工艺链路(ERP bd_process FLASH 工序 + 工艺路线固件步骤 → 工单下达生成固件步骤落库)，8 断言 |
 
 固件脚本跑法：`node doc/mes/scripts/fw-e2e-test.js`（跑前建议清理 E2E 残留：`DELETE FROM fw_test_item WHERE item_code LIKE 'FM-%'` 等三条，见脚本注释/交付说明）。

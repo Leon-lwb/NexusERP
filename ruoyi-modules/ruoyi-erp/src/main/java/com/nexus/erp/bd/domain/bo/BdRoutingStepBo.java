@@ -60,6 +60,15 @@ public class BdRoutingStepBo implements Serializable {
 
     private Integer isKeyProcess;
 
+    /** 关联固件ID(固件刷写工艺步骤指定, 下发MES后驱动刷写门禁) */
+    private Long firmwareId;
+
+    /** 固件编码(冗余) */
+    private String firmwareCode;
+
+    /** 固件名称(冗余) */
+    private String firmwareName;
+
     private Integer isOutsource;
 
     private Integer qualityRequired;

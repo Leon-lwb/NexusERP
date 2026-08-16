@@ -18,7 +18,8 @@ import java.util.Map;
 public interface ErpRoutingStepMapper {
 
     @Select("SELECT step_id, routing_id, process_id, process_code, process_name, " +
-        "sequence_num, is_key_process, workstation_id, workstation_code " +
+        "sequence_num, is_key_process, workstation_id, workstation_code, " +
+        "firmware_id, firmware_code, firmware_name " +
         "FROM bd_routing_step WHERE routing_id = #{routingId} ORDER BY sequence_num")
     List<Map<String, Object>> selectRoutingStepsByRoutingId(@Param("routingId") Long routingId);
 }

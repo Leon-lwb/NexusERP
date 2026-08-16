@@ -125,6 +125,24 @@ public class BdRoutingStep extends com.nexus.common.tenant.core.TenantEntity {
     private Integer isKeyProcess;
 
     /**
+     * 关联固件ID(固件刷写工艺步骤指定, 下发MES工单步骤后驱动刷写门禁)
+     */
+    @ExcelProperty("固件ID")
+    private Long firmwareId;
+
+    /**
+     * 固件编码(冗余)
+     */
+    @ExcelProperty("固件编码")
+    private String firmwareCode;
+
+    /**
+     * 固件名称(冗余)
+     */
+    @ExcelProperty("固件名称")
+    private String firmwareName;
+
+    /**
      * 是否委外工序
      */
     @ExcelProperty("是否委外工序")

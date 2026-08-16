@@ -63,6 +63,9 @@ public class ProWorkOrderStepVo implements Serializable {
     /** 是否关键工序 */
     private Integer isKeyProcess;
 
+    /** 关联固件ID(固件刷写工序) */
+    private Long firmwareId;
+
     /** 开始时间 */
     private Date startTime;
 

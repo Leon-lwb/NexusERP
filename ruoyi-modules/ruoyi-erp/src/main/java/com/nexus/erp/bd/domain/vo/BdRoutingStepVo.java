@@ -74,6 +74,15 @@ public class BdRoutingStepVo implements Serializable {
     @ExcelProperty(value = "是否关键工序")
     private Integer isKeyProcess;
 
+    @ExcelProperty(value = "固件ID")
+    private Long firmwareId;
+
+    @ExcelProperty(value = "固件编码")
+    private String firmwareCode;
+
+    @ExcelProperty(value = "固件名称")
+    private String firmwareName;
+
     @ExcelProperty(value = "是否委外工序")
     private Integer isOutsource;
 

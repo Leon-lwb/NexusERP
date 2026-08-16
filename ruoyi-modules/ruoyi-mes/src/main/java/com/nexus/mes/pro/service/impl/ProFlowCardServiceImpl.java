@@ -5,13 +5,17 @@ import com.baomidou.lock.annotation.Lock4j;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.MapstructUtils;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
+import com.nexus.mes.fw.domain.FwFlashRecord;
+import com.nexus.mes.fw.mapper.FwFlashRecordMapper;
 import com.nexus.mes.ncr.service.INcrOrderService;
 import com.nexus.mes.pro.domain.ProFlowCard;
 import com.nexus.mes.pro.domain.ProFlowCardStep;
+import com.nexus.mes.pro.domain.ProSn;
 import com.nexus.mes.pro.domain.ProWorkOrder;
 import com.nexus.mes.pro.domain.ProWorkOrderStep;
 import com.nexus.mes.pro.domain.bo.ProEntryBo;
@@ -23,6 +27,7 @@ import com.nexus.mes.pro.domain.vo.ProFlowCardStepVo;
 import com.nexus.mes.pro.domain.vo.ProFlowCardVo;
 import com.nexus.mes.pro.mapper.ProFlowCardMapper;
 import com.nexus.mes.pro.mapper.ProFlowCardStepMapper;
+import com.nexus.mes.pro.mapper.ProSnMapper;
 import com.nexus.mes.pro.mapper.ProWorkOrderMapper;
 import com.nexus.mes.pro.mapper.ProWorkOrderStepMapper;
 import com.nexus.mes.pro.service.IProEntryCheckService;
@@ -33,6 +38,7 @@ import com.nexus.mes.qc.service.IQcIpqcService;
 import com.nexus.mes.sop.service.ISopProcessBindingService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -68,6 +74,13 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
     private final ISopProcessBindingService sopBindingService;
     /** NCR 不合格品服务(P0-4)：出站报工不良(defectQty>0)时自动创建 NCR 单。 */
     private final INcrOrderService ncrOrderService;
+    /** SN 服务：(刷写门禁) 按流转卡反查在制 SN 列表 */
+    private final ProSnMapper proSnMapper;
+    /** 刷写记录：(刷写门禁) 校验固件刷写 PASS 记录 */
+    private final FwFlashRecordMapper flashRecordMapper;
+    /** 刷写工序门禁开关: 工单步骤设 firmware_id 的工序, 完工前须该卡全部在制SN均已有对应固件 PASS 刷写记录 */
+    @Value("${mes.flash-step-gate:true}")
+    private boolean flashStepGateEnabled;
 
     @Override
     /**
@@ -257,6 +270,9 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
         // 数量校验：三个数量必须非负且合计不超过计划数量，防止负数/超量污染工单完工数量
         validateReportQuantities(goodQty, defectQty, scrapQty);
 
+        // 刷写门禁: 工单步骤指定 firmware_id 的刷写工序, 完工前须该卡全部在制 SN 均已有对应固件 PASS 刷写记录
+        checkFlashStepGate(stepRecordId, cardId);
+
         // 1. CAS更新工序状态 IN_PROGRESS -> COMPLETED
         int stepRows = stepMapper.update(null, Wrappers.<ProFlowCardStep>lambdaUpdate()
             .set(ProFlowCardStep::getStepStatus, STEP_COMPLETED)
@@ -307,6 +323,49 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
         BigDecimal total = goodQty.add(defectQty).add(scrapQty);
         if (total.compareTo(BigDecimal.ZERO) <= 0) {
             throw new RuntimeException("报工数量合计必须大于0");
+        }
+    }
+
+    /**
+     * 刷写工序门禁(固件刷写纳入工序步骤: 门禁强制)
+     * <p>工单步骤指定 firmware_id 的工序视为刷写工序: 完工前须该流转卡上全部在制 SN
+     * 均已存在对应固件的 PASS 刷写记录, 否则拒绝完工(未刷写不能过站)。</p>
+     */
+    private void checkFlashStepGate(Long stepRecordId, Long cardId) {
+        if (!flashStepGateEnabled) {
+            return;
+        }
+        ProFlowCardStep step = stepMapper.selectById(stepRecordId);
+        if (step == null || step.getWoStepId() == null) {
+            return;
+        }
+        ProWorkOrderStep woStep = workOrderStepMapper.selectById(step.getWoStepId());
+        // 非固件刷写工序(未指定固件)直接放行
+        if (woStep == null || woStep.getFirmwareId() == null) {
+            return;
+        }
+        // 卡上在制 SN 列表(无 SN 的批量卡不适用门禁)
+        List<ProSn> sns = proSnMapper.selectList(Wrappers.<ProSn>lambdaQuery()
+            .eq(ProSn::getCardId, cardId));
+        if (sns == null || sns.isEmpty()) {
+            return;
+        }
+        Long requiredFirmwareId = woStep.getFirmwareId();
+        List<String> unpassed = new ArrayList<>();
+        for (ProSn sn : sns) {
+            FwFlashRecord latest = flashRecordMapper.selectOne(Wrappers.<FwFlashRecord>lambdaQuery()
+                .eq(FwFlashRecord::getSnCode, sn.getSnCode())
+                .eq(FwFlashRecord::getFirmwareId, requiredFirmwareId)
+                .orderByDesc(FwFlashRecord::getFlashTime)
+                .orderByDesc(FwFlashRecord::getFlashRecordId)
+                .last("LIMIT 1"));
+            if (latest == null || !"PASS".equals(latest.getResult())) {
+                unpassed.add(sn.getSnCode() + "(" + (latest == null ? "未刷写" : latest.getResult()) + ")");
+            }
+        }
+        if (!unpassed.isEmpty()) {
+            throw new ServiceException("刷写门禁未通过: 工序[" + step.getProcessName() + "]要求固件#" + requiredFirmwareId
+                + " 已刷写且PASS, 未通过SN: " + String.join(", ", unpassed));
         }
     }
 

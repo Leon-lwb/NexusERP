@@ -11,7 +11,7 @@
  Target Server Version : 50714 (5.7.14)
  File Encoding         : 65001
 
- Date: 12/08/2026 23:11:17
+ Date: 16/08/2026 18:22:42
 */
 
 SET NAMES utf8mb4;
@@ -491,6 +491,190 @@ CREATE TABLE `eq_spare_stock_log`  (
 
 -- ----------------------------
 -- Records of eq_spare_stock_log
+-- ----------------------------
+
+-- ----------------------------
+-- Table structure for fw_firmware
+-- ----------------------------
+DROP TABLE IF EXISTS `fw_firmware`;
+CREATE TABLE `fw_firmware`  (
+  `firmware_id` bigint(20) NOT NULL COMMENT '固件ID',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '000000' COMMENT '租户ID',
+  `firmware_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '固件编码(自动编码 MES_FW_CODE)',
+  `firmware_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '固件名称',
+  `material_id` bigint(20) NOT NULL COMMENT '适用物料ID(产品)',
+  `material_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '适用物料编码',
+  `material_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '适用物料名称',
+  `version` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '版本号(如 1.2.3)',
+  `build_no` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '构建号',
+  `oss_id` bigint(20) NULL DEFAULT NULL COMMENT '固件文件OSS文件ID(sys_oss)',
+  `file_md5` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '固件文件MD5',
+  `file_size` bigint(20) NULL DEFAULT NULL COMMENT '固件文件大小(字节)',
+  `release_note` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '发布说明',
+  `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'DRAFT' COMMENT '状态: DRAFT/IN_REVIEW/RELEASED/ARCHIVED',
+  `is_default` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '0' COMMENT '是否物料默认版本(0否/1是, 物料内唯一)',
+  `select_flow_id` bigint(20) NULL DEFAULT NULL COMMENT '审批流配置ID(wf_custom_form.id)',
+  `published_by` bigint(20) NULL DEFAULT NULL COMMENT '发布人ID',
+  `publish_time` datetime NULL DEFAULT NULL COMMENT '发布时间',
+  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
+  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '0' COMMENT '删除标志(0存在/2删除)',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
+  PRIMARY KEY (`firmware_id`) USING BTREE,
+  UNIQUE INDEX `uk_tenant_firmware_code`(`tenant_id`, `firmware_code`) USING BTREE,
+  INDEX `idx_tenant_id`(`tenant_id`) USING BTREE,
+  INDEX `idx_material`(`material_id`) USING BTREE,
+  INDEX `idx_status`(`status`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '固件档案' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of fw_firmware
+-- ----------------------------
+INSERT INTO `fw_firmware` VALUES (2088871611594743809, '000000', 'FW20260816001', '测试', 5, 'GEAR_SET', '齿轮组', '1.0.0', 'CI-20260816-01', 2088871530275577857, '21c307a98a4cf86276b003b47340638d', 6752, '测试', 'DRAFT', '0', 2091000000000005001, NULL, NULL, 103, 1, '2026-08-16 14:12:56', 1, '2026-08-16 14:12:56', '0', '');
+INSERT INTO `fw_firmware` VALUES (2088889870117240834, '000000', 'FW20260816002', 'cs2', 2, 'IF20251018001', '电机Y132M-4 7.5KW', '1.0.0', 'aaa', 2088889865583198210, '21c307a98a4cf86276b003b47340638d', 6752, '', 'RELEASED', '1', 2091000000000005001, 1, '2026-08-16 15:26:18', 103, 1, '2026-08-16 15:25:29', 1, '2026-08-16 15:25:29', '0', '');
+
+-- ----------------------------
+-- Table structure for fw_flash_record
+-- ----------------------------
+DROP TABLE IF EXISTS `fw_flash_record`;
+CREATE TABLE `fw_flash_record`  (
+  `flash_record_id` bigint(20) NOT NULL COMMENT '刷写记录ID',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '000000' COMMENT '租户ID',
+  `flash_no` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '刷写记录号(自动编码 MES_FLASH_NO)',
+  `sn_id` bigint(20) NOT NULL COMMENT 'SN ID',
+  `sn_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'SN编码',
+  `mes_wo_id` bigint(20) NOT NULL COMMENT 'MES工单ID',
+  `wo_no` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '工单号',
+  `card_id` bigint(20) NULL DEFAULT NULL COMMENT '流转卡ID',
+  `step_record_id` bigint(20) NULL DEFAULT NULL COMMENT '流转卡工序记录ID(pro_flow_card_step)',
+  `process_id` bigint(20) NULL DEFAULT NULL COMMENT '工序ID',
+  `process_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '工序编码',
+  `process_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '工序名称',
+  `firmware_id` bigint(20) NOT NULL COMMENT '固件ID',
+  `firmware_version` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '固件版本',
+  `file_md5` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '实际刷写文件MD5',
+  `equipment_id` bigint(20) NULL DEFAULT NULL COMMENT '刷写设备ID(eq_equipment)',
+  `equipment_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '刷写设备编码',
+  `operator_id` bigint(20) NULL DEFAULT NULL COMMENT '操作人ID',
+  `operator_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '操作人姓名',
+  `flash_time` datetime NULL DEFAULT NULL COMMENT '刷写时间',
+  `result` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '结果: PASS/FAIL',
+  `fail_reason` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '失败原因',
+  `retry_count` int(11) NOT NULL DEFAULT 0 COMMENT '重试次数',
+  `flash_mode` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'MANUAL' COMMENT '刷写模式: AUTO/MANUAL',
+  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
+  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '0' COMMENT '删除标志(0存在/2删除)',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
+  PRIMARY KEY (`flash_record_id`) USING BTREE,
+  UNIQUE INDEX `uk_tenant_flash_no`(`tenant_id`, `flash_no`) USING BTREE,
+  INDEX `idx_tenant_id`(`tenant_id`) USING BTREE,
+  INDEX `idx_sn`(`sn_id`) USING BTREE,
+  INDEX `idx_firmware`(`firmware_id`) USING BTREE,
+  INDEX `idx_wo`(`mes_wo_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '固件刷写记录(SN级)' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of fw_flash_record
+-- ----------------------------
+
+-- ----------------------------
+-- Table structure for fw_test_item
+-- ----------------------------
+DROP TABLE IF EXISTS `fw_test_item`;
+CREATE TABLE `fw_test_item`  (
+  `test_item_id` bigint(20) NOT NULL COMMENT '测试项ID',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '000000' COMMENT '租户ID',
+  `item_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '测试项编码(如 RF-TXPWR)',
+  `item_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '测试项名称',
+  `material_id` bigint(20) NOT NULL COMMENT '适用物料ID',
+  `firmware_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '固件ID(0=该物料所有版本通用)',
+  `data_type` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'NUMERIC' COMMENT '数据类型: NUMERIC/TEXT/ENUM',
+  `unit` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '单位',
+  `upper_limit` decimal(18, 4) NULL DEFAULT NULL COMMENT '上限',
+  `lower_limit` decimal(18, 4) NULL DEFAULT NULL COMMENT '下限',
+  `target_value` decimal(18, 4) NULL DEFAULT NULL COMMENT '目标值',
+  `pass_enum` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT 'ENUM合格值(JSON数组)',
+  `is_required` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '1' COMMENT '是否必测(0否/1是)',
+  `sort_order` int(11) NOT NULL DEFAULT 0 COMMENT '排序',
+  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
+  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '0' COMMENT '删除标志(0存在/2删除)',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
+  PRIMARY KEY (`test_item_id`) USING BTREE,
+  UNIQUE INDEX `uk_tenant_material_item`(`tenant_id`, `material_id`, `firmware_id`, `item_code`) USING BTREE,
+  INDEX `idx_tenant_id`(`tenant_id`) USING BTREE,
+  INDEX `idx_material`(`material_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '测试项标准主数据' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of fw_test_item
+-- ----------------------------
+INSERT INTO `fw_test_item` VALUES (2088902653508710401, '000000', 'cs1', '测试1', 1001, 2088889870117240834, 'NUMERIC', 'dBm/V', 221.0000, 219.0000, 220.0000, NULL, '1', 1, 103, 1, '2026-08-16 16:16:17', 1, '2026-08-16 16:18:21', '0', NULL);
+
+-- ----------------------------
+-- Table structure for fw_test_record
+-- ----------------------------
+DROP TABLE IF EXISTS `fw_test_record`;
+CREATE TABLE `fw_test_record`  (
+  `test_record_id` bigint(20) NOT NULL COMMENT '测试记录ID',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '000000' COMMENT '租户ID',
+  `test_no` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '测试单号(一次SN测试一条单号, 共享多行)',
+  `sn_id` bigint(20) NOT NULL COMMENT 'SN ID',
+  `sn_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'SN编码',
+  `mes_wo_id` bigint(20) NOT NULL COMMENT 'MES工单ID',
+  `wo_no` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '工单号',
+  `card_id` bigint(20) NULL DEFAULT NULL COMMENT '流转卡ID',
+  `step_record_id` bigint(20) NULL DEFAULT NULL COMMENT '流转卡工序记录ID(测试工序)',
+  `process_id` bigint(20) NULL DEFAULT NULL COMMENT '工序ID',
+  `process_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '工序编码',
+  `process_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '工序名称',
+  `firmware_id` bigint(20) NULL DEFAULT NULL COMMENT '测试时固件ID',
+  `firmware_version` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '测试时固件版本',
+  `test_item_id` bigint(20) NOT NULL COMMENT '测试项ID',
+  `item_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '测试项编码(快照)',
+  `item_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '测试项名称(快照)',
+  `data_type` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '数据类型(快照)',
+  `unit` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '单位',
+  `numeric_value` decimal(18, 4) NULL DEFAULT NULL COMMENT '实测数值',
+  `text_value` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '实测文本',
+  `upper_limit` decimal(18, 4) NULL DEFAULT NULL COMMENT '上限(快照)',
+  `lower_limit` decimal(18, 4) NULL DEFAULT NULL COMMENT '下限(快照)',
+  `target_value` decimal(18, 4) NULL DEFAULT NULL COMMENT '目标值(快照)',
+  `pass_enum` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT 'ENUM合格值(快照)',
+  `result` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT '结果: PASS/FAIL(空=未测)',
+  `tester_id` bigint(20) NULL DEFAULT NULL COMMENT '测试人ID',
+  `tester_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '测试人姓名',
+  `equipment_id` bigint(20) NULL DEFAULT NULL COMMENT '测试设备ID',
+  `equipment_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '测试设备编码',
+  `test_time` datetime NULL DEFAULT NULL COMMENT '测试时间',
+  `test_mode` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'MANUAL' COMMENT '测试模式: AUTO/MANUAL',
+  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
+  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '0' COMMENT '删除标志(0存在/2删除)',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
+  PRIMARY KEY (`test_record_id`) USING BTREE,
+  UNIQUE INDEX `uk_tenant_test_no_item`(`tenant_id`, `test_no`, `test_item_id`) USING BTREE,
+  INDEX `idx_tenant_id`(`tenant_id`) USING BTREE,
+  INDEX `idx_sn`(`sn_id`) USING BTREE,
+  INDEX `idx_firmware`(`firmware_id`) USING BTREE,
+  INDEX `idx_wo`(`mes_wo_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '测试记录(SN级全检)' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of fw_test_record
 -- ----------------------------
 
 -- ----------------------------
@@ -1050,7 +1234,7 @@ CREATE TABLE `pro_flow_card`  (
 -- ----------------------------
 -- Records of pro_flow_card
 -- ----------------------------
-INSERT INTO `pro_flow_card` VALUES (1, '000000', 'FC-001', 1, 'WO-TEST-001', 1001, 'IF20251110001', '自行车', 50.0000, 0.0000, 0.0000, 3, 1, 'COMPLETED', 'BC-FC-001', '流转卡#1:首批50辆', 100, 1, '2026-06-21 20:59:31', NULL, '2026-07-27 23:14:00', '0');
+INSERT INTO `pro_flow_card` VALUES (1, '000000', 'FC-001', 1, 'WO-TEST-001', 1001, 'IF20251110001', '自行车', 50.0000, 0.0000, 0.0000, 3, 1, 'COMPLETED', 'BC-FC-001', '流转卡#1:首批50辆', 100, 1, '2026-06-21 20:59:31', NULL, '2026-08-16 17:53:11', '0');
 INSERT INTO `pro_flow_card` VALUES (2, '000000', 'FC-002', 1, 'WO-TEST-001', 1001, 'IF20251110001', '自行车', 50.0000, 0.0000, 0.0000, NULL, 1, 'CREATED', 'BC-FC-002', '流转卡#2:第二批50辆', 100, 1, '2026-06-21 20:59:31', NULL, '2026-06-21 20:59:31', '0');
 INSERT INTO `pro_flow_card` VALUES (2069625288491188226, '000000', 'FC-SCGD202606220001-5210', 2068925615991463937, 'SCGD202606220001', 1001, 'IF20251110001', '自行车', 50.0000, 50.0000, 0.0000, 2069625288629600258, NULL, 'CLOSED', 'FC2069625288491188226', NULL, 103, 1, '2026-06-24 11:34:55', 1, '2026-06-24 16:07:12', '0');
 INSERT INTO `pro_flow_card` VALUES (2074140031802568706, '000000', 'FC-SCGD202607060001-3908', 2074134800092008450, 'SCGD202607060001', 8003, 'RACK-001', '简易金属工具架', 10.0000, 10.0000, 0.0000, 2074140031869677570, NULL, 'CLOSED', 'FC2074140031802568706', NULL, 103, 1, '2026-07-06 22:34:54', 1, '2026-07-06 23:47:30', '0');
@@ -1113,7 +1297,7 @@ CREATE TABLE `pro_flow_card_step`  (
 -- ----------------------------
 INSERT INTO `pro_flow_card_step` VALUES (1, '000000', 1, 'FC-001', 1, 1, 10, 1, 'CUT', '切割', 1, 'GZZ0002', 0, 'COMPLETED', 30003, '王五', 50.0000, 49.0000, 1.0000, 0.0000, NULL, NULL, '切割完成:49良+1不良', NULL, NULL, NULL, NULL, NULL, 100, 1, '2026-06-21 20:59:31', NULL, '2026-06-21 20:59:31', '0');
 INSERT INTO `pro_flow_card_step` VALUES (2, '000000', 1, 'FC-001', 1, 2, 20, 2, 'WELD', '焊接', 2, 'GZZ0003', 1, 'COMPLETED', 30002, '李四', 50.0000, 50.0000, 0.0000, 0.0000, NULL, '2026-06-24 11:36:52', '焊接进行中(关键工序)', NULL, NULL, NULL, NULL, NULL, 100, 1, '2026-06-21 20:59:31', NULL, '2026-06-24 11:36:52', '0');
-INSERT INTO `pro_flow_card_step` VALUES (3, '000000', 1, 'FC-001', 1, 3, 30, 3, 'ASM', '装配', 1, 'GZZ0002', 1, 'IN_PROGRESS', 1, NULL, 50.0000, 50.0000, 0.0000, 0.0000, '2026-07-27 23:18:08', '2026-07-27 23:14:00', '待装配(关键工序)', 'PASS', NULL, NULL, NULL, NULL, 100, 1, '2026-06-21 20:59:31', NULL, '2026-07-27 23:18:08', '0');
+INSERT INTO `pro_flow_card_step` VALUES (3, '000000', 1, 'FC-001', 1, 3, 30, 3, 'ASM', '装配', 1, 'GZZ0002', 1, 'IN_PROGRESS', 1, NULL, 50.0000, 50.0000, 0.0000, 0.0000, '2026-07-27 23:18:08', NULL, '待装配(关键工序)', 'PASS', NULL, NULL, NULL, NULL, 100, 1, '2026-06-21 20:59:31', NULL, '2026-08-16 17:53:11', '0');
 INSERT INTO `pro_flow_card_step` VALUES (4, '000000', 1, 'FC-001', 1, 4, 40, 5, 'PKG', '包装', 3, 'GZZ0004', 0, 'PENDING', NULL, NULL, 50.0000, 0.0000, 0.0000, 0.0000, NULL, NULL, '待包装', NULL, NULL, NULL, NULL, NULL, 100, 1, '2026-06-21 20:59:31', NULL, '2026-07-27 23:18:08', '0');
 INSERT INTO `pro_flow_card_step` VALUES (2069625288629600258, '000000', 2069625288491188226, 'FC-SCGD202606220001-5210', 2068925615991463937, 2068925616075350017, 10, 1, 'CUT', '切割', 1, 'GZZ0002', 0, 'COMPLETED', NULL, '张明', 50.0000, 49.0000, 1.0000, 0.0000, '2026-06-24 14:44:22', '2026-06-24 15:00:47', NULL, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-06-24 11:34:55', 1, '2026-06-24 15:00:46', '0');
 INSERT INTO `pro_flow_card_step` VALUES (2069625288688320513, '000000', 2069625288491188226, 'FC-SCGD202606220001-5210', 2068925615991463937, 2068925616113098753, 20, 2, 'WELD', '焊接', 2, 'GZZ0003', 0, 'COMPLETED', 13, '李芳华', 50.0000, 50.0000, 0.0000, 0.0000, '2026-06-24 15:24:29', '2026-06-24 15:24:57', NULL, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-06-24 11:34:55', 1, '2026-06-24 15:24:56', '0');
@@ -1396,6 +1580,8 @@ CREATE TABLE `pro_work_order_step`  (
   `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '000000' COMMENT '租户ID',
   `mes_wo_id` bigint(20) NOT NULL COMMENT '所属MES工单ID',
   `sequence_num` int(4) NOT NULL DEFAULT 0 COMMENT '工序序号(从1开始)',
+  `step_type` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'GENERAL' COMMENT '工序类型: GENERAL/FLASH/TEST',
+  `firmware_id` bigint(20) NULL DEFAULT NULL COMMENT '固件ID(仅FLASH工序, 只可选RELEASED)',
   `process_id` bigint(20) NULL DEFAULT NULL COMMENT 'ERP工序ID(bd_routing_step.routing_step_id)',
   `process_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '工序编码(冗余)',
   `process_name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '工序名称(冗余)',
@@ -1424,45 +1610,45 @@ CREATE TABLE `pro_work_order_step`  (
 -- ----------------------------
 -- Records of pro_work_order_step
 -- ----------------------------
-INSERT INTO `pro_work_order_step` VALUES (1, '000000', 1, 10, 1, 'CUT', '切割', 1, 'GZZ0002', 100.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, '步1:钢板切割', 100, 1, '2026-06-21 20:59:31', NULL, '2026-06-21 20:59:31', '0');
-INSERT INTO `pro_work_order_step` VALUES (2, '000000', 1, 20, 2, 'WELD', '焊接', 2, 'GZZ0003', 100.0000, 0.0000, 0.0000, 'PENDING', 1, NULL, NULL, '步2:车架焊接(关键工序)', 100, 1, '2026-06-21 20:59:31', NULL, '2026-06-21 20:59:31', '0');
-INSERT INTO `pro_work_order_step` VALUES (3, '000000', 1, 30, 3, 'ASM', '装配', 1, 'GZZ0002', 100.0000, 0.0000, 0.0000, 'PENDING', 1, NULL, NULL, '步3:整车装配(关键工序)', 100, 1, '2026-06-21 20:59:31', NULL, '2026-06-21 20:59:31', '0');
-INSERT INTO `pro_work_order_step` VALUES (4, '000000', 1, 40, 5, 'PKG', '包装', 3, 'GZZ0004', 100.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, '步4:成品包装', 100, 1, '2026-06-21 20:59:31', NULL, '2026-06-21 20:59:31', '0');
-INSERT INTO `pro_work_order_step` VALUES (2068925616075350017, '000000', 2068925615991463937, 10, 1, 'CUT', '切割', 1, 'GZZ0002', 100.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-06-22 13:14:40', -1, '2026-06-22 13:14:40', '0');
-INSERT INTO `pro_work_order_step` VALUES (2068925616113098753, '000000', 2068925615991463937, 20, 2, 'WELD', '焊接', 2, 'GZZ0003', 100.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-06-22 13:14:40', -1, '2026-06-22 13:14:40', '0');
-INSERT INTO `pro_work_order_step` VALUES (2068925616125681666, '000000', 2068925615991463937, 30, 3, 'ASM', '装配', 1, 'GZZ0002', 100.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-06-22 13:14:40', -1, '2026-06-22 13:14:40', '0');
-INSERT INTO `pro_work_order_step` VALUES (2068925616142458881, '000000', 2068925615991463937, 40, 5, 'PKG', '包装', 3, 'GZZ0004', 100.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-06-22 13:14:40', -1, '2026-06-22 13:14:40', '0');
-INSERT INTO `pro_work_order_step` VALUES (2074134800092008451, '000000', 2074134800092008450, 10, 1, 'CUT', '切割', 1, 'GZZ0002', 10.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-06 22:14:07', -1, '2026-07-06 22:14:07', '0');
-INSERT INTO `pro_work_order_step` VALUES (2074134800150728706, '000000', 2074134800092008450, 20, 2, 'WELD', '焊接', 2, 'GZZ0003', 10.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-06 22:14:07', -1, '2026-07-06 22:14:07', '0');
-INSERT INTO `pro_work_order_step` VALUES (2074134800150728707, '000000', 2074134800092008450, 30, 3, 'ASM', '装配', 1, 'GZZ0002', 10.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-06 22:14:07', -1, '2026-07-06 22:14:07', '0');
-INSERT INTO `pro_work_order_step` VALUES (2074134800150728708, '000000', 2074134800092008450, 40, 5, 'PKG', '包装', 3, 'GZZ0004', 10.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-06 22:14:07', -1, '2026-07-06 22:14:07', '0');
-INSERT INTO `pro_work_order_step` VALUES (2074394214299254786, '000000', 2074394214269894658, 10, 1, 'CUT', '切割', 1, 'GZZ0002', 1.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-07 15:24:56', -1, '2026-07-07 15:24:56', '0');
-INSERT INTO `pro_work_order_step` VALUES (2074394214341197826, '000000', 2074394214269894658, 20, 2, 'WELD', '焊接', 2, 'GZZ0003', 1.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-07 15:24:56', -1, '2026-07-07 15:24:56', '0');
-INSERT INTO `pro_work_order_step` VALUES (2074394214353780737, '000000', 2074394214269894658, 30, 3, 'ASM', '装配', 1, 'GZZ0002', 1.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-07 15:24:56', -1, '2026-07-07 15:24:56', '0');
-INSERT INTO `pro_work_order_step` VALUES (2074394214366363650, '000000', 2074394214269894658, 40, 5, 'PKG', '包装', 3, 'GZZ0004', 1.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-07 15:24:56', -1, '2026-07-07 15:24:56', '0');
-INSERT INTO `pro_work_order_step` VALUES (2074766761289224194, '000000', 2074766761268252674, 10, 1, 'CUT', '切割', 1, 'GZZ0002', 1.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-08 16:05:18', -1, '2026-07-08 16:05:18', '0');
-INSERT INTO `pro_work_order_step` VALUES (2074766761360527361, '000000', 2074766761268252674, 20, 2, 'WELD', '焊接', 2, 'GZZ0003', 1.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-08 16:05:18', -1, '2026-07-08 16:05:18', '0');
-INSERT INTO `pro_work_order_step` VALUES (2074766761373110274, '000000', 2074766761268252674, 30, 3, 'ASM', '装配', 1, 'GZZ0002', 1.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-08 16:05:18', -1, '2026-07-08 16:05:18', '0');
-INSERT INTO `pro_work_order_step` VALUES (2074766761389887489, '000000', 2074766761268252674, 40, 5, 'PKG', '包装', 3, 'GZZ0004', 1.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-08 16:05:18', -1, '2026-07-08 16:05:18', '0');
-INSERT INTO `pro_work_order_step` VALUES (2074787137239027713, '000000', 2074787137209667586, 10, 1, 'CUT', '切割', 1, 'GZZ0002', 1.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-08 17:26:16', -1, '2026-07-08 17:26:16', '0');
-INSERT INTO `pro_work_order_step` VALUES (2074787137280970754, '000000', 2074787137209667586, 20, 2, 'WELD', '焊接', 2, 'GZZ0003', 1.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-08 17:26:16', -1, '2026-07-08 17:26:16', '0');
-INSERT INTO `pro_work_order_step` VALUES (2074787137297747969, '000000', 2074787137209667586, 30, 3, 'ASM', '装配', 1, 'GZZ0002', 1.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-08 17:26:16', -1, '2026-07-08 17:26:16', '0');
-INSERT INTO `pro_work_order_step` VALUES (2074787137310330881, '000000', 2074787137209667586, 40, 5, 'PKG', '包装', 3, 'GZZ0004', 1.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-08 17:26:16', -1, '2026-07-08 17:26:16', '0');
-INSERT INTO `pro_work_order_step` VALUES (2075397661861548033, '000000', 2075397661844770817, 10, 1, 'CUT', '切割', 1, 'GZZ0002', 1.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-10 09:52:16', -1, '2026-07-10 09:52:16', '0');
-INSERT INTO `pro_work_order_step` VALUES (2075397661953822721, '000000', 2075397661844770817, 20, 2, 'WELD', '焊接', 2, 'GZZ0003', 1.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-10 09:52:16', -1, '2026-07-10 09:52:16', '0');
-INSERT INTO `pro_work_order_step` VALUES (2075397661970599938, '000000', 2075397661844770817, 30, 3, 'ASM', '装配', 1, 'GZZ0002', 1.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-10 09:52:16', -1, '2026-07-10 09:52:16', '0');
-INSERT INTO `pro_work_order_step` VALUES (2075397661983182849, '000000', 2075397661844770817, 40, 5, 'PKG', '包装', 3, 'GZZ0004', 1.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-10 09:52:16', -1, '2026-07-10 09:52:16', '0');
-INSERT INTO `pro_work_order_step` VALUES (2080270525816516611, '000000', 2080270525816516609, 10, 1, 'CUT', '切割', 2, 'GZZ0003', 20.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-23 20:35:18', -1, '2026-07-23 20:35:18', '0');
-INSERT INTO `pro_work_order_step` VALUES (2080270525816516612, '000000', 2080270525816516609, 20, 2, 'WELD', '焊接', 6, 'GZZ0007', 20.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-23 20:35:18', -1, '2026-07-23 20:35:18', '0');
-INSERT INTO `pro_work_order_step` VALUES (2080270525816516613, '000000', 2080270525816516609, 30, 5, 'PKG', '包装', 9, 'GZZ0010', 20.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-23 20:35:18', -1, '2026-07-23 20:35:18', '0');
-INSERT INTO `pro_work_order_step` VALUES (2082127797928763393, '000000', 2082127796938907650, 10, 1, 'CUT', '切割', 1, 'GZZ0002', 5.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, 103, 1, '2026-07-28 23:35:26', 1, '2026-07-28 23:35:26', '0');
-INSERT INTO `pro_work_order_step` VALUES (2082127797941346305, '000000', 2082127796938907650, 20, 2, 'WELD', '焊接', 2, 'GZZ0003', 5.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, 103, 1, '2026-07-28 23:35:26', 1, '2026-07-28 23:35:26', '0');
-INSERT INTO `pro_work_order_step` VALUES (2082127797953929218, '000000', 2082127796938907650, 30, 3, 'ASM', '装配', 1, 'GZZ0002', 5.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, 103, 1, '2026-07-28 23:35:26', 1, '2026-07-28 23:35:26', '0');
-INSERT INTO `pro_work_order_step` VALUES (2082127797962317825, '000000', 2082127796938907650, 40, 5, 'PKG', '包装', 3, 'GZZ0004', 5.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, 103, 1, '2026-07-28 23:35:26', 1, '2026-07-28 23:35:26', '0');
-INSERT INTO `pro_work_order_step` VALUES (2082128181367840770, '000000', 2082128180742889473, 10, 1, 'CUT', '切割', 1, 'GZZ0002', 5.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, 103, 1, '2026-07-28 23:36:57', 1, '2026-07-28 23:36:57', '0');
-INSERT INTO `pro_work_order_step` VALUES (2082128181376229377, '000000', 2082128180742889473, 20, 2, 'WELD', '焊接', 2, 'GZZ0003', 5.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, 103, 1, '2026-07-28 23:36:57', 1, '2026-07-28 23:36:57', '0');
-INSERT INTO `pro_work_order_step` VALUES (2082128181380423681, '000000', 2082128180742889473, 30, 3, 'ASM', '装配', 1, 'GZZ0002', 5.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, 103, 1, '2026-07-28 23:36:57', 1, '2026-07-28 23:36:57', '0');
-INSERT INTO `pro_work_order_step` VALUES (2082128181397200897, '000000', 2082128180742889473, 40, 5, 'PKG', '包装', 3, 'GZZ0004', 5.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, 103, 1, '2026-07-28 23:36:57', 1, '2026-07-28 23:36:57', '0');
+INSERT INTO `pro_work_order_step` VALUES (1, '000000', 1, 10, 'GENERAL', NULL, 1, 'CUT', '切割', 1, 'GZZ0002', 100.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, '步1:钢板切割', 100, 1, '2026-06-21 20:59:31', NULL, '2026-06-21 20:59:31', '0');
+INSERT INTO `pro_work_order_step` VALUES (2, '000000', 1, 20, 'GENERAL', NULL, 2, 'WELD', '焊接', 2, 'GZZ0003', 100.0000, 0.0000, 0.0000, 'PENDING', 1, NULL, NULL, '步2:车架焊接(关键工序)', 100, 1, '2026-06-21 20:59:31', NULL, '2026-06-21 20:59:31', '0');
+INSERT INTO `pro_work_order_step` VALUES (3, '000000', 1, 30, 'GENERAL', NULL, 3, 'ASM', '装配', 1, 'GZZ0002', 100.0000, 0.0000, 0.0000, 'PENDING', 1, NULL, NULL, '步3:整车装配(关键工序)', 100, 1, '2026-06-21 20:59:31', NULL, '2026-08-16 17:53:11', '0');
+INSERT INTO `pro_work_order_step` VALUES (4, '000000', 1, 40, 'GENERAL', NULL, 5, 'PKG', '包装', 3, 'GZZ0004', 100.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, '步4:成品包装', 100, 1, '2026-06-21 20:59:31', NULL, '2026-06-21 20:59:31', '0');
+INSERT INTO `pro_work_order_step` VALUES (2068925616075350017, '000000', 2068925615991463937, 10, 'GENERAL', NULL, 1, 'CUT', '切割', 1, 'GZZ0002', 100.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-06-22 13:14:40', -1, '2026-06-22 13:14:40', '0');
+INSERT INTO `pro_work_order_step` VALUES (2068925616113098753, '000000', 2068925615991463937, 20, 'GENERAL', NULL, 2, 'WELD', '焊接', 2, 'GZZ0003', 100.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-06-22 13:14:40', -1, '2026-06-22 13:14:40', '0');
+INSERT INTO `pro_work_order_step` VALUES (2068925616125681666, '000000', 2068925615991463937, 30, 'GENERAL', NULL, 3, 'ASM', '装配', 1, 'GZZ0002', 100.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-06-22 13:14:40', -1, '2026-06-22 13:14:40', '0');
+INSERT INTO `pro_work_order_step` VALUES (2068925616142458881, '000000', 2068925615991463937, 40, 'GENERAL', NULL, 5, 'PKG', '包装', 3, 'GZZ0004', 100.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-06-22 13:14:40', -1, '2026-06-22 13:14:40', '0');
+INSERT INTO `pro_work_order_step` VALUES (2074134800092008451, '000000', 2074134800092008450, 10, 'GENERAL', NULL, 1, 'CUT', '切割', 1, 'GZZ0002', 10.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-06 22:14:07', -1, '2026-07-06 22:14:07', '0');
+INSERT INTO `pro_work_order_step` VALUES (2074134800150728706, '000000', 2074134800092008450, 20, 'GENERAL', NULL, 2, 'WELD', '焊接', 2, 'GZZ0003', 10.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-06 22:14:07', -1, '2026-07-06 22:14:07', '0');
+INSERT INTO `pro_work_order_step` VALUES (2074134800150728707, '000000', 2074134800092008450, 30, 'GENERAL', NULL, 3, 'ASM', '装配', 1, 'GZZ0002', 10.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-06 22:14:07', -1, '2026-07-06 22:14:07', '0');
+INSERT INTO `pro_work_order_step` VALUES (2074134800150728708, '000000', 2074134800092008450, 40, 'GENERAL', NULL, 5, 'PKG', '包装', 3, 'GZZ0004', 10.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-06 22:14:07', -1, '2026-07-06 22:14:07', '0');
+INSERT INTO `pro_work_order_step` VALUES (2074394214299254786, '000000', 2074394214269894658, 10, 'GENERAL', NULL, 1, 'CUT', '切割', 1, 'GZZ0002', 1.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-07 15:24:56', -1, '2026-07-07 15:24:56', '0');
+INSERT INTO `pro_work_order_step` VALUES (2074394214341197826, '000000', 2074394214269894658, 20, 'GENERAL', NULL, 2, 'WELD', '焊接', 2, 'GZZ0003', 1.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-07 15:24:56', -1, '2026-07-07 15:24:56', '0');
+INSERT INTO `pro_work_order_step` VALUES (2074394214353780737, '000000', 2074394214269894658, 30, 'GENERAL', NULL, 3, 'ASM', '装配', 1, 'GZZ0002', 1.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-07 15:24:56', -1, '2026-07-07 15:24:56', '0');
+INSERT INTO `pro_work_order_step` VALUES (2074394214366363650, '000000', 2074394214269894658, 40, 'GENERAL', NULL, 5, 'PKG', '包装', 3, 'GZZ0004', 1.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-07 15:24:56', -1, '2026-07-07 15:24:56', '0');
+INSERT INTO `pro_work_order_step` VALUES (2074766761289224194, '000000', 2074766761268252674, 10, 'GENERAL', NULL, 1, 'CUT', '切割', 1, 'GZZ0002', 1.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-08 16:05:18', -1, '2026-07-08 16:05:18', '0');
+INSERT INTO `pro_work_order_step` VALUES (2074766761360527361, '000000', 2074766761268252674, 20, 'GENERAL', NULL, 2, 'WELD', '焊接', 2, 'GZZ0003', 1.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-08 16:05:18', -1, '2026-07-08 16:05:18', '0');
+INSERT INTO `pro_work_order_step` VALUES (2074766761373110274, '000000', 2074766761268252674, 30, 'GENERAL', NULL, 3, 'ASM', '装配', 1, 'GZZ0002', 1.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-08 16:05:18', -1, '2026-07-08 16:05:18', '0');
+INSERT INTO `pro_work_order_step` VALUES (2074766761389887489, '000000', 2074766761268252674, 40, 'GENERAL', NULL, 5, 'PKG', '包装', 3, 'GZZ0004', 1.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-08 16:05:18', -1, '2026-07-08 16:05:18', '0');
+INSERT INTO `pro_work_order_step` VALUES (2074787137239027713, '000000', 2074787137209667586, 10, 'GENERAL', NULL, 1, 'CUT', '切割', 1, 'GZZ0002', 1.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-08 17:26:16', -1, '2026-07-08 17:26:16', '0');
+INSERT INTO `pro_work_order_step` VALUES (2074787137280970754, '000000', 2074787137209667586, 20, 'GENERAL', NULL, 2, 'WELD', '焊接', 2, 'GZZ0003', 1.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-08 17:26:16', -1, '2026-07-08 17:26:16', '0');
+INSERT INTO `pro_work_order_step` VALUES (2074787137297747969, '000000', 2074787137209667586, 30, 'GENERAL', NULL, 3, 'ASM', '装配', 1, 'GZZ0002', 1.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-08 17:26:16', -1, '2026-07-08 17:26:16', '0');
+INSERT INTO `pro_work_order_step` VALUES (2074787137310330881, '000000', 2074787137209667586, 40, 'GENERAL', NULL, 5, 'PKG', '包装', 3, 'GZZ0004', 1.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-08 17:26:16', -1, '2026-07-08 17:26:16', '0');
+INSERT INTO `pro_work_order_step` VALUES (2075397661861548033, '000000', 2075397661844770817, 10, 'GENERAL', NULL, 1, 'CUT', '切割', 1, 'GZZ0002', 1.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-10 09:52:16', -1, '2026-07-10 09:52:16', '0');
+INSERT INTO `pro_work_order_step` VALUES (2075397661953822721, '000000', 2075397661844770817, 20, 'GENERAL', NULL, 2, 'WELD', '焊接', 2, 'GZZ0003', 1.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-10 09:52:16', -1, '2026-07-10 09:52:16', '0');
+INSERT INTO `pro_work_order_step` VALUES (2075397661970599938, '000000', 2075397661844770817, 30, 'GENERAL', NULL, 3, 'ASM', '装配', 1, 'GZZ0002', 1.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-10 09:52:16', -1, '2026-07-10 09:52:16', '0');
+INSERT INTO `pro_work_order_step` VALUES (2075397661983182849, '000000', 2075397661844770817, 40, 'GENERAL', NULL, 5, 'PKG', '包装', 3, 'GZZ0004', 1.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-10 09:52:16', -1, '2026-07-10 09:52:16', '0');
+INSERT INTO `pro_work_order_step` VALUES (2080270525816516611, '000000', 2080270525816516609, 10, 'GENERAL', NULL, 1, 'CUT', '切割', 2, 'GZZ0003', 20.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-23 20:35:18', -1, '2026-07-23 20:35:18', '0');
+INSERT INTO `pro_work_order_step` VALUES (2080270525816516612, '000000', 2080270525816516609, 20, 'GENERAL', NULL, 2, 'WELD', '焊接', 6, 'GZZ0007', 20.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-23 20:35:18', -1, '2026-07-23 20:35:18', '0');
+INSERT INTO `pro_work_order_step` VALUES (2080270525816516613, '000000', 2080270525816516609, 30, 'GENERAL', NULL, 5, 'PKG', '包装', 9, 'GZZ0010', 20.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-23 20:35:18', -1, '2026-07-23 20:35:18', '0');
+INSERT INTO `pro_work_order_step` VALUES (2082127797928763393, '000000', 2082127796938907650, 10, 'GENERAL', NULL, 1, 'CUT', '切割', 1, 'GZZ0002', 5.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, 103, 1, '2026-07-28 23:35:26', 1, '2026-07-28 23:35:26', '0');
+INSERT INTO `pro_work_order_step` VALUES (2082127797941346305, '000000', 2082127796938907650, 20, 'GENERAL', NULL, 2, 'WELD', '焊接', 2, 'GZZ0003', 5.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, 103, 1, '2026-07-28 23:35:26', 1, '2026-07-28 23:35:26', '0');
+INSERT INTO `pro_work_order_step` VALUES (2082127797953929218, '000000', 2082127796938907650, 30, 'GENERAL', NULL, 3, 'ASM', '装配', 1, 'GZZ0002', 5.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, 103, 1, '2026-07-28 23:35:26', 1, '2026-07-28 23:35:26', '0');
+INSERT INTO `pro_work_order_step` VALUES (2082127797962317825, '000000', 2082127796938907650, 40, 'GENERAL', NULL, 5, 'PKG', '包装', 3, 'GZZ0004', 5.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, 103, 1, '2026-07-28 23:35:26', 1, '2026-07-28 23:35:26', '0');
+INSERT INTO `pro_work_order_step` VALUES (2082128181367840770, '000000', 2082128180742889473, 10, 'GENERAL', NULL, 1, 'CUT', '切割', 1, 'GZZ0002', 5.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, 103, 1, '2026-07-28 23:36:57', 1, '2026-07-28 23:36:57', '0');
+INSERT INTO `pro_work_order_step` VALUES (2082128181376229377, '000000', 2082128180742889473, 20, 'GENERAL', NULL, 2, 'WELD', '焊接', 2, 'GZZ0003', 5.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, 103, 1, '2026-07-28 23:36:57', 1, '2026-07-28 23:36:57', '0');
+INSERT INTO `pro_work_order_step` VALUES (2082128181380423681, '000000', 2082128180742889473, 30, 'GENERAL', NULL, 3, 'ASM', '装配', 1, 'GZZ0002', 5.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, 103, 1, '2026-07-28 23:36:57', 1, '2026-07-28 23:36:57', '0');
+INSERT INTO `pro_work_order_step` VALUES (2082128181397200897, '000000', 2082128180742889473, 40, 'GENERAL', NULL, 5, 'PKG', '包装', 3, 'GZZ0004', 5.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, 103, 1, '2026-07-28 23:36:57', 1, '2026-07-28 23:36:57', '0');
 
 -- ----------------------------
 -- Table structure for qc_ipqc
