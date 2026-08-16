@@ -68,3 +68,16 @@
 6. **IoT 阶段一详细计划位置**：总计划含 IoT 阶段一（Week 33-36），对应文档在 [doc/iot/plans/](../iot/plans/) — 信息提示项
 7. **验证报告不连续**：仅 Week 17 report 与 Week 21 verification-report，其他 Week 完成后未生成报告
 8. **Week 23 命名与内容不符**：文件名为 `implementation-plan` 但内容是 report 性质
+
+## 自动化测试脚本（scripts/）
+
+e2e 回归脚本（需本机 redis 读验证码 + 后端已启动，登录走 RSA+AES 加密；RSA 公钥均已与 `ruoyi-admin/application.yml` 的 `api-decrypt` 配套，2026-08 批量对齐）：
+
+| 脚本 | 覆盖 |
+|------|------|
+| [p0-4-e2e-test.py](./scripts/p0-4-e2e-test.py) | 工单/流转卡 P0-4 e2e |
+| [p0-4-e2e-advanced.py](./scripts/p0-4-e2e-advanced.py) | P0-4 进阶场景 |
+| [p0-8-e2e-test.py](./scripts/p0-8-e2e-test.py) | P0-8 IoT 采集点绑定收尾 |
+| [fw-e2e-test.js](./scripts/fw-e2e-test.js) | 固件刷写(confirm/重刷/校验) + 测试项(3类型/唯一/限值) + 测试记录(开单/判定/追溯) + AUTO 上报(密钥鉴权/宽松批量/去重末值覆盖)，27 断言全绿 |
+
+固件脚本跑法：`node doc/mes/scripts/fw-e2e-test.js`（跑前建议清理 E2E 残留：`DELETE FROM fw_test_item WHERE item_code LIKE 'FM-%'` 等三条，见脚本注释/交付说明）。

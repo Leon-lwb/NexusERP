@@ -5,7 +5,6 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.nexus.common.core.exception.ServiceException;
-import com.nexus.common.core.utils.MapstructUtils;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
@@ -29,14 +28,17 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * MES固件刷写记录 Service 业务层实现
  * <p>
- * M2 刷写作业: 管理员补录(insertByBo)宽松 + 工位作业确认(confirmFlash)严格,
+ * M2 刷写作业: 管理员补录(insertByBo)宽松 + 工位作业确认(confirmFlash)严格 + AUTO 设备上报(reportFlashBatch);
  * 记录号走 MES_FLASH_NO 自动编码(FL+yyyyMMdd+日流水), 冗余字段按主数据回填;
  * 同一 SN 允许多条(FAIL 重刷保留历史, 判定取最新一条)。
  * </p>
@@ -57,9 +59,6 @@ public class FwFlashRecordServiceImpl implements IFwFlashRecordService {
 
     /** SN状态-报废(禁止刷写) */
     private static final String SN_STATUS_SCRAPPED = "SCRAPPED";
-    /** 刷写结果-通过/失败 */
-    private static final String RESULT_PASS = "PASS";
-    private static final String RESULT_FAIL = "FAIL";
     /** 刷写模式-自动/手动 */
     private static final String MODE_AUTO = "AUTO";
     private static final String MODE_MANUAL = "MANUAL";
@@ -119,8 +118,10 @@ public class FwFlashRecordServiceImpl implements IFwFlashRecordService {
         record.setFlashMode(StringUtils.isBlank(bo.getFlashMode()) ? MODE_MANUAL : bo.getFlashMode());
         record.setRemark(bo.getRemark());
         record.setFlashTime(bo.getFlashTime() == null ? new Date() : bo.getFlashTime());
-        record.setOperatorId(LoginHelper.getUserId());
-        record.setOperatorName(LoginHelper.getUsername());
+        if (LoginHelper.isLogin()) {
+            record.setOperatorId(LoginHelper.getUserId());
+            record.setOperatorName(LoginHelper.getUsername());
+        }
         enrichRedundant(record);
         baseMapper.insert(record);
         log.info("刷写记录补录: flashNo={}, snCode={}, result={}", record.getFlashNo(), record.getSnCode(), record.getResult());
@@ -174,11 +175,68 @@ public class FwFlashRecordServiceImpl implements IFwFlashRecordService {
     }
 
     /**
-     * 刷写作业确认: 严格校验 SN 存在且非报废、固件存在且已发布、设备存在
+     * 刷写作业确认(页面): 严格校验后落单条记录
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean confirmFlash(FwFlashRecordBo bo) {
+        FwFlashRecord record = buildValidatedRecord(bo);
+        baseMapper.insert(record);
+        log.info("刷写作业确认: flashNo={}, snCode={}, firmwareId={}, result={}", record.getFlashNo(), record.getSnCode(), record.getFirmwareId(), record.getResult());
+        return true;
+    }
+
+    /**
+     * AUTO 设备批量上报刷写结果(宽松模式): 逐条校验落库, 失败项收集原因不中断
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Map<String, Object> reportFlashBatch(List<FwFlashRecordBo> list) {
+        if (list == null || list.isEmpty()) {
+            throw new ServiceException("上报数据不能为空");
+        }
+        Map<String, Object> result = new HashMap<>();
+        List<Map<String, String>> failed = new ArrayList<>();
+        int success = 0;
+        for (FwFlashRecordBo bo : list) {
+            try {
+                FwFlashRecord record = buildValidatedRecord(bo);
+                record.setFlashMode(MODE_AUTO);
+                baseMapper.insert(record);
+                success++;
+                log.info("刷写AUTO上报成功: flashNo={}, snCode={}, result={}", record.getFlashNo(), record.getSnCode(), record.getResult());
+            } catch (Exception e) {
+                Map<String, String> f = new HashMap<>();
+                f.put("snCode", bo.getSnCode());
+                f.put("reason", e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName());
+                failed.add(f);
+                log.warn("刷写AUTO上报失败: snCode={}, reason={}", bo.getSnCode(), f.get("reason"));
+            }
+        }
+        result.put("success", success);
+        result.put("failed", failed);
+        return result;
+    }
+
+    /**
+     * SN 远程搜索: 按 SN 编码模糊查询 pro_sn
+     */
+    @Override
+    public List<ProSnVo> listSnOptions(String snCode) {
+        LambdaQueryWrapper<ProSn> lqw = Wrappers.<ProSn>lambdaQuery()
+            .like(StringUtils.isNotBlank(snCode), ProSn::getSnCode, StringUtils.isNotBlank(snCode) ? snCode.trim() : null)
+            .orderByDesc(ProSn::getCreateTime)
+            .last("LIMIT 20");
+        return proSnMapper.selectVoList(lqw);
+    }
+
+    // ==================== 私有辅助方法 ====================
+
+    /**
+     * 校验并构造刷写记录(确认/上报共用): SN 存在且非报废 -> 固件存在且已发布 -> 设备存在(可选)
+     * -> 自动编码 + 冗余回填 + 默认操作人/时间/重试次数
+     */
+    private FwFlashRecord buildValidatedRecord(FwFlashRecordBo bo) {
         if (StringUtils.isBlank(bo.getSnCode())) {
             throw new ServiceException("SN编码不能为空");
         }
@@ -229,27 +287,13 @@ public class FwFlashRecordServiceImpl implements IFwFlashRecordService {
         record.setStepRecordId(bo.getStepRecordId());
         record.setRemark(bo.getRemark());
         record.setFlashTime(bo.getFlashTime() == null ? new Date() : bo.getFlashTime());
-        record.setOperatorId(LoginHelper.getUserId());
-        record.setOperatorName(LoginHelper.getUsername());
+        if (LoginHelper.isLogin()) {
+            record.setOperatorId(LoginHelper.getUserId());
+            record.setOperatorName(LoginHelper.getUsername());
+        }
         enrichRedundant(record);
-        baseMapper.insert(record);
-        log.info("刷写作业确认: flashNo={}, snCode={}, firmwareId={}, result={}", record.getFlashNo(), record.getSnCode(), record.getFirmwareId(), record.getResult());
-        return true;
+        return record;
     }
-
-    /**
-     * SN 远程搜索: 按 SN 编码模糊查询 pro_sn
-     */
-    @Override
-    public List<ProSnVo> listSnOptions(String snCode) {
-        LambdaQueryWrapper<ProSn> lqw = Wrappers.<ProSn>lambdaQuery()
-            .like(StringUtils.isNotBlank(snCode), ProSn::getSnCode, StringUtils.isNotBlank(snCode) ? snCode.trim() : null)
-            .orderByDesc(ProSn::getCreateTime)
-            .last("LIMIT 20");
-        return proSnMapper.selectVoList(lqw);
-    }
-
-    // ==================== 私有辅助方法 ====================
 
     /**
      * 冗余字段回填: SN(pro_sn)、固件版本(fw_firmware)、设备编码(eq_equipment)

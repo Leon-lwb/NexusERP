@@ -11,7 +11,7 @@ SUF = str(int(time.time()))[-6:]  # 每次运行唯一后缀, 避开软删除+uk
 BASE = "http://localhost:8080"
 CLIENT_ID = "e5cd7e4891bf95d1d19206ce24a7b32e"
 REDIS_PASS = "ruoyi123"
-RSA_PUB = "MFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBAKoR8mX0rGKLqzcWmOzbfj64K8ZIgOdHnzkXSOVOZbFu/TJhZ7rFAN+eaGkl3C4buccQd/EjEsj9ir7ijT7h96MCAwEAAQ=="
+RSA_PUB = "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDvEDuRIOM3oZPWj9Ukoc5pQklR4PFH6/clnjeFqjDLIgDyQvjxhgqAZQA+E9eD6qu6FsXPmK8djcL+nh3cFHz4pX473jDvO3Sve+8yL3VRQ0n2pRgQ2a01MJsy+WwTZCBYWf0VnLRIvANUoWQgy9vz94q7Va44dg7A1/3ICf+xAwIDAQAB"
 HEADER_FLAG = "encrypt-key"
 
 from Crypto.Cipher import AES, PKCS1_v1_5

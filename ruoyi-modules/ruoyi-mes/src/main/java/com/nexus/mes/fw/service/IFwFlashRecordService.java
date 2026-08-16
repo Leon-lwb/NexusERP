@@ -7,6 +7,7 @@ import com.nexus.mes.fw.domain.vo.FwFlashRecordVo;
 import com.nexus.mes.pro.domain.vo.ProSnVo;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * MES固件刷写记录 Service 接口
@@ -56,4 +57,10 @@ public interface IFwFlashRecordService {
      * SN 远程搜索(录入/确认弹窗下拉): 按 SN 编码模糊查询 pro_sn, 供选择回填
      */
     List<ProSnVo> listSnOptions(String snCode);
+
+    /**
+     * AUTO 设备批量上报刷写结果(开放接口, 宽松模式): 逐条校验落库,
+     * 返回 {success: 成功条数, failed: [{snCode, reason}]}
+     */
+    Map<String, Object> reportFlashBatch(List<FwFlashRecordBo> list);
 }

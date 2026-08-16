@@ -1,3 +1,7 @@
+--- # 设备自动化上报接口密钥(开发/测试: 上位机请求头 X-API-KEY 携带; 生产密钥见 application-prod.yml)
+mes:
+  api-key: nexus-mes-api-2026
+
 --- # 验证码配置
 # PC登录需要图形验证码，APP短信登录无需，APP密码登录在提交时弹出验证码
 captcha:

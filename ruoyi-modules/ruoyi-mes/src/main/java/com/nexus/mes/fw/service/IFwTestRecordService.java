@@ -60,4 +60,11 @@ public interface IFwTestRecordService {
      * 统计数据(测试总次数/通过率), 供概览
      */
     Map<String, Object> summary(FwTestRecordBo bo);
+
+    /**
+     * AUTO 设备批量上报测试结果(开放接口, 宽松模式):
+     * 每 SN 按测试项编码匹配物料标准自动判定落库(test_mode=AUTO),
+     * 返回 {success, failed:[{snCode,reason}], details:[{snCode,testNo,judged}]}
+     */
+    Map<String, Object> reportTestAutoBatch(List<com.nexus.mes.fw.domain.bo.FwTestReportBo> list);
 }
