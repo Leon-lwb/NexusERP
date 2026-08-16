@@ -67,12 +67,12 @@ public interface IWmBarcodeService {
      *
      * @return 生成后的条码值
      */
-    String generateAndSave(Long configId, String bizType, Long bizId, Long bizLineId, Long materialId, Long batchId, Long stockId, Date bizDate);
+    String generateAndSave(Long configId, String bizType, Long bizId, Long bizLineId, Long materialId, Long batchId, Long stockId, Long snId, Date bizDate);
 
     /**
      * 按配置编码生成条码并保存为实例记录
      *
      * @return 生成后的条码值
      */
-    String generateAndSaveByCode(String configCode, String bizType, Long bizId, Long bizLineId, Long materialId, Long batchId, Long stockId, Date bizDate);
+    String generateAndSaveByCode(String configCode, String bizType, Long bizId, Long bizLineId, Long materialId, Long batchId, Long stockId, Long snId, Date bizDate);
 }

@@ -144,9 +144,10 @@ public class WmBarcodeController extends BaseController {
                               @RequestParam(required = false) Long bizLineId,
                               @RequestParam(required = false) Long materialId,
                               @RequestParam(required = false) Long batchId,
-                              @RequestParam(required = false) Long stockId) {
+                              @RequestParam(required = false) Long stockId,
+                              @RequestParam(required = false) Long snId) {
         // 使用 R.ok(String msg, T data) 重载，避免 R.ok(String) 把条码误塞进 msg
-        return R.ok("查询成功", wmBarcodeService.generateAndSave(configId, bizType, bizId, bizLineId, materialId, batchId, stockId, new Date()));
+        return R.ok("查询成功", wmBarcodeService.generateAndSave(configId, bizType, bizId, bizLineId, materialId, batchId, stockId, snId, new Date()));
     }
 
     /**
@@ -171,8 +172,9 @@ public class WmBarcodeController extends BaseController {
                                     @RequestParam(required = false) Long bizLineId,
                                     @RequestParam(required = false) Long materialId,
                                     @RequestParam(required = false) Long batchId,
-                                    @RequestParam(required = false) Long stockId) {
+                                    @RequestParam(required = false) Long stockId,
+                                    @RequestParam(required = false) Long snId) {
         // 使用 R.ok(String msg, T data) 重载，避免 R.ok(String) 把条码误塞进 msg
-        return R.ok("查询成功", wmBarcodeService.generateAndSaveByCode(configCode, bizType, bizId, bizLineId, materialId, batchId, stockId, new Date()));
+        return R.ok("查询成功", wmBarcodeService.generateAndSaveByCode(configCode, bizType, bizId, bizLineId, materialId, batchId, stockId, snId, new Date()));
     }
 }

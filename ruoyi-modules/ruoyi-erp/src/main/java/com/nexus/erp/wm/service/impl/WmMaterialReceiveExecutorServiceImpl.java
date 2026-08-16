@@ -181,6 +181,7 @@ public class WmMaterialReceiveExecutorServiceImpl implements IWmMaterialReceiveE
                 stock.getMaterialId(),
                 stock.getBatchId(),
                 stock.getStockId(),
+                stock.getSnId(),
                 new Date()
             );
         }

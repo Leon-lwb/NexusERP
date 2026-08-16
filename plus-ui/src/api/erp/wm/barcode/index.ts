@@ -113,5 +113,6 @@ export const generateBarcode = (params: {
   materialId?: number;
   batchId?: number;
   stockId?: number;
+  snId?: number;
 }) =>
   request({ url: BARCODE_BASE + '/generateByCode', method: 'post', params });

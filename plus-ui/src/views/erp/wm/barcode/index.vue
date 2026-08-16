@@ -112,6 +112,7 @@
         <el-descriptions-item label="物料ID">{{ viewForm.materialId }}</el-descriptions-item>
         <el-descriptions-item label="批次ID">{{ viewForm.batchId }}</el-descriptions-item>
         <el-descriptions-item label="库存ID">{{ viewForm.stockId }}</el-descriptions-item>
+        <el-descriptions-item label="序列号ID">{{ viewForm.snId }}</el-descriptions-item>
         <el-descriptions-item label="状态">
           <el-tag v-if="viewForm.status === 'ACTIVE'" type="success">可用</el-tag>
           <el-tag v-else-if="viewForm.status === 'USED'" type="info">已使用</el-tag>
@@ -192,6 +193,9 @@
         <el-form-item label="物料ID" prop="materialId">
           <el-input v-model="generateForm.materialId" style="width: 100%" />
         </el-form-item>
+        <el-form-item label="序列号ID" prop="snId">
+          <el-input v-model="generateForm.snId" placeholder="序列号物料生成的条码绑定SN" style="width: 100%" />
+        </el-form-item>
       </el-form>
       <template #footer>
         <el-button type="primary" @click="submitGenerate">生 成</el-button>
@@ -229,6 +233,7 @@ const viewForm = ref({
   materialId: undefined,
   batchId: undefined,
   stockId: undefined,
+  snId: undefined,
   status: 'ACTIVE',
   remark: '',
   generateTime: ''
@@ -240,7 +245,8 @@ const generateForm = ref({
   configCode: '',
   bizType: '',
   bizId: undefined,
-  materialId: undefined
+  materialId: undefined,
+  snId: undefined
 });
 const generateRules = {
   configCode: [{ required: true, message: '请选择配置编码', trigger: 'change' }]
@@ -255,6 +261,7 @@ const queryParams = ref({
   bizId: null,
   materialId: null,
   stockId: null,
+  snId: null,
   status: null
 });
 
@@ -355,7 +362,8 @@ function handleGenerate() {
     configCode: '',
     bizType: '',
     bizId: undefined,
-    materialId: undefined
+    materialId: undefined,
+    snId: undefined
   };
   generateOpen.value = true;
   nextTick(() => {

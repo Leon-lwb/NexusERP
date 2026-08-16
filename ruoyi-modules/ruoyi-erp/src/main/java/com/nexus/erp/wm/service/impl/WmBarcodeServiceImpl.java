@@ -135,9 +135,9 @@ public class WmBarcodeServiceImpl implements IWmBarcodeService {
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public String generateAndSave(Long configId, String bizType, Long bizId, Long bizLineId, Long materialId, Long batchId, Long stockId, Date bizDate) {
+    public String generateAndSave(Long configId, String bizType, Long bizId, Long bizLineId, Long materialId, Long batchId, Long stockId, Long snId, Date bizDate) {
         WmBarcodeConfig config = configId == null ? null : barcodeConfigMapper.selectById(configId);
-        return generateAndSaveInternal(config, null, bizType, bizId, bizLineId, materialId, batchId, stockId, bizDate);
+        return generateAndSaveInternal(config, null, bizType, bizId, bizLineId, materialId, batchId, stockId, snId, bizDate);
     }
 
     /**
@@ -155,10 +155,10 @@ public class WmBarcodeServiceImpl implements IWmBarcodeService {
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public String generateAndSaveByCode(String configCode, String bizType, Long bizId, Long bizLineId, Long materialId, Long batchId, Long stockId, Date bizDate) {
+    public String generateAndSaveByCode(String configCode, String bizType, Long bizId, Long bizLineId, Long materialId, Long batchId, Long stockId, Long snId, Date bizDate) {
         WmBarcodeConfig config = StringUtils.isBlank(configCode) ? null : barcodeConfigMapper.selectOne(Wrappers.<WmBarcodeConfig>lambdaQuery()
             .eq(WmBarcodeConfig::getConfigCode, configCode));
-        return generateAndSaveInternal(config, configCode, bizType, bizId, bizLineId, materialId, batchId, stockId, bizDate);
+        return generateAndSaveInternal(config, configCode, bizType, bizId, bizLineId, materialId, batchId, stockId, snId, bizDate);
     }
 
     /**
@@ -169,7 +169,7 @@ public class WmBarcodeServiceImpl implements IWmBarcodeService {
      * - 再把数据库配置映射成轻量规则对象
      * - 最后生成条码并保存实例记录
      */
-    private String generateAndSaveInternal(WmBarcodeConfig config, String configCode, String bizType, Long bizId, Long bizLineId, Long materialId, Long batchId, Long stockId, Date bizDate) {
+    private String generateAndSaveInternal(WmBarcodeConfig config, String configCode, String bizType, Long bizId, Long bizLineId, Long materialId, Long batchId, Long stockId, Long snId, Date bizDate) {
         WmBarcodeConfig effectiveConfig = resolveEffectiveConfig(config, configCode);
         if (effectiveConfig == null) {
             throw new RuntimeException("条码配置不存在，且未找到可用默认配置");
@@ -189,6 +189,7 @@ public class WmBarcodeServiceImpl implements IWmBarcodeService {
         barcode.setMaterialId(materialId);
         barcode.setBatchId(batchId);
         barcode.setStockId(stockId);
+        barcode.setSnId(snId);
         barcode.setStatus("ACTIVE");
         barcode.setGenerateTime(bizDate == null ? new Date() : bizDate);
         barcode.setRemark("系统生成条码");
