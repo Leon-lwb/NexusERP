@@ -98,7 +98,7 @@
             <el-table-column label="转换率" align="center" prop="conversionRate" min-width="180">
               <template #default="scope">
                 <span style="font-weight: 600; color: #409eff">
-                  1 {{ selectedBaseUnit.uomSymbol }} = {{ scope.row.conversionRate }} {{ scope.row.uomSymbol }}
+                  1 {{ scope.row.uomSymbol }} = {{ scope.row.conversionRate }} {{ selectedBaseUnit.uomSymbol }}
                 </span>
               </template>
             </el-table-column>
