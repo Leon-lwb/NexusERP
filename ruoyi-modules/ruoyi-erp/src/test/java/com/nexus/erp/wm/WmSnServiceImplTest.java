@@ -13,12 +13,13 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.Collections;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.*;
 
 /**
@@ -34,6 +35,8 @@ class WmSnServiceImplTest {
     private WmSnMapper baseMapper;
     @Mock
     private com.nexus.erp.wm.mapper.WmBatchMapper batchMapper;
+    @Mock
+    private com.nexus.erp.wm.service.impl.DailyCodeSequenceProvider dailyCodeSequenceProvider;
 
     @InjectMocks
     private WmSnServiceImpl wmSnService;
@@ -47,6 +50,7 @@ class WmSnServiceImplTest {
         existingSn.setSnCode("SN202606010001");
         existingSn.setMaterialId(100L);
         existingSn.setStatus("IN_STOCK");
+        lenient().when(dailyCodeSequenceProvider.next(anyString(), any())).thenReturn(1L);
     }
 
     /**
@@ -54,7 +58,6 @@ class WmSnServiceImplTest {
      */
     @Test
     void testBatchGenerate() {
-        when(baseMapper.selectList(any())).thenReturn(Collections.emptyList());
         when(baseMapper.insert(any(WmSn.class))).thenReturn(1);
 
         wmSnService.batchGenerate(100L, 3, null, 1L, 200L, "PO", "PO20260601001");
@@ -68,11 +71,8 @@ class WmSnServiceImplTest {
      */
     @Test
     void testBatchGenerate_SequenceIncrement() {
-        // 模拟当天已有最大序号的序列号
-        WmSn lastSn = new WmSn();
-        lastSn.setSnCode("SN202606010005");
-
-        when(baseMapper.selectList(any())).thenReturn(List.of(lastSn));
+        // 序号提供器返回当日已有序号 6（原逻辑查询当日最大序号后自增）
+        when(dailyCodeSequenceProvider.next(anyString(), any())).thenReturn(6L);
         when(baseMapper.insert(any(WmSn.class))).thenReturn(1);
 
         wmSnService.batchGenerate(100L, 2, null, 1L, 200L, "PO", "PO20260601001");

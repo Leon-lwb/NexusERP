@@ -11,7 +11,6 @@ import com.nexus.common.core.utils.MapstructUtils;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
-import com.nexus.common.redis.utils.RedisUtils;
 import com.nexus.erp.wm.domain.WmBatch;
 import com.nexus.erp.wm.domain.WmSn;
 import com.nexus.erp.wm.domain.bo.WmSnBo;
@@ -23,7 +22,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.text.SimpleDateFormat;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -45,6 +43,9 @@ public class WmSnServiceImpl implements IWmSnService {
 
     /** 批次数据访问映射器（Mapper） */
     private final WmBatchMapper batchMapper;
+
+    /** 按日自增序号提供器（序列号并发安全） */
+    private final DailyCodeSequenceProvider dailyCodeSequenceProvider;
 
     /**
      * 分页查询序列号列表
@@ -222,14 +223,8 @@ public class WmSnServiceImpl implements IWmSnService {
             batchCode = batch.getBatchCode();
         }
 
-        // 序号使用 Redis 原子自增（跨实例唯一、重启不重置），首次访问当天键时按当日最大已有序号初始化
-        String seqKey = "erp:sn:seq:" + dateStr;
-        long startSeq;
-        if (RedisUtils.setObjectIfAbsent(seqKey, 0L, Duration.ofHours(48))) {
-            startSeq = loadMaxSnSeq(prefix + dateStr);
-            RedisUtils.setCacheObject(seqKey, startSeq, Duration.ofHours(48));
-        }
-        startSeq = RedisUtils.incrAtomicValue(seqKey);
+        // 序号使用锁内初始化 + Redis 原子自增（跨实例唯一、并发安全），首次访问当天键时按当日最大已有序号初始化
+        long startSeq = dailyCodeSequenceProvider.next("erp:sn:seq:" + dateStr, () -> loadMaxSnSeq(prefix + dateStr));
 
         long seq = startSeq;
         List<WmSn> batchList = new ArrayList<>();
