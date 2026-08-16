@@ -567,9 +567,15 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
     @Override
     /**
      * 获取
+     * <p>必须显式 @DS("mes") + @Transactional(REQUIRES_NEW): 该回调由 Flowable(master 事务)经 getBean 直接调用,
+     * 外层 master 事务已绑定连接, 仅靠 @DS 改 holder 无法切换(查询会落到 ry-vue 报 pro_work_order 不存在);
+     * REQUIRES_NEW 挂起外层事务、在 holder top="mes" 时另起新事务绑定 mes 连接(同 ERP WmArrivalNotice 先例)。
+     * 原始实现缺 REQUIRES_NEW 导致工单审批流程从未成功启动过(流程实例数为 0)。</p>
      * @param dataId ID
      * @return 返回结果
      */
+    @DS("mes")
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW, readOnly = true)
     public Object getBusinessDataById(String dataId) {
         return selectById(Long.parseLong(dataId));
     }

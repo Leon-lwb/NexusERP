@@ -4,7 +4,8 @@ import com.nexus.common.mq.domain.BaseMessage;
 import com.nexus.common.redis.utils.RedisUtils;
 import com.nexus.common.tenant.helper.TenantHelper;
 import com.rabbitmq.client.Channel;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.amqp.core.Message;
 
 import java.io.IOException;
@@ -16,8 +17,10 @@ import java.time.Duration;
  * @param <T> 消息类型
  * @author Nexus
  */
-@Slf4j
 public abstract class BaseMessageConsumer<T extends BaseMessage> {
+
+    /** 日志(protected, 供子类直接使用) */
+    protected static final Logger log = LoggerFactory.getLogger(BaseMessageConsumer.class);
 
     /** 消费幂等键前缀 */
     private static final String CONSUMED_KEY_PREFIX = "mq:consumed:";

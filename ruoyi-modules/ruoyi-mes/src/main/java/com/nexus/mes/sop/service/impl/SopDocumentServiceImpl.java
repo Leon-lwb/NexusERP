@@ -263,16 +263,11 @@ public class SopDocumentServiceImpl implements ISopDocumentService, WfCallBackSe
         if (!STATUS_DRAFT.equals(doc.getStatus())) {
             throw new RuntimeException("仅草稿状态可提交审批,当前: " + doc.getStatus());
         }
-        // CAS DRAFT -> IN_REVIEW
-        int rows = baseMapper.update(null, Wrappers.<SopDocument>lambdaUpdate()
-            .set(SopDocument::getStatus, STATUS_IN_REVIEW)
-            .eq(SopDocument::getSopId, sopId)
-            .eq(SopDocument::getStatus, STATUS_DRAFT));
-        if (rows == 0) {
-            throw new RuntimeException("SOP状态已变更,提交审批失败");
-        }
-        // selectFlowId 非空则走 Flowable;否则仅改状态(管理员兜底审批)
+        // selectFlowId 非空则走 Flowable; 否则仅改状态(管理员兜底审批)
         if (StringUtils.isNotBlank(selectFlowId)) {
+            // 启动前不得先改业务行/持行锁: 启动时 Flowable 会回调 afterFlowHandle(doing) 在 REQUIRES_NEW(mes) 里 UPDATE 同一行,
+            // 若外层先 UPDATE 持锁则回调等待外层、外层等流程返回 -> 死锁循环 -> 锁等待超时(同 FwFirmware 修复)。
+            // 失败即抛错回滚, 不做静默降级(状态由回调推进, 无半途 IN_REVIEW 残留)。
             Map<String, Object> variables = new HashMap<>();
             variables.put("dataId", sopId.toString());
             variables.put("requireTaskOnStart", true);
@@ -280,14 +275,18 @@ public class SopDocumentServiceImpl implements ISopDocumentService, WfCallBackSe
             variables.put("sopCode", doc.getSopCode());
             variables.put("sopName", doc.getSopName());
             variables.put("sopType", doc.getSopType());
-            try {
-                R<Void> result = processService.startProcessByDataId(sopId.toString(), selectFlowId, "sopDocumentService", variables);
-                if (!R.isSuccess(result)) {
-                    log.warn("Flowable启动失败,降级为直接IN_REVIEW: sopId={}, msg={}", sopId, result.getMsg());
-                }
-            } catch (Exception e) {
-                // Flowable未部署/异常时降级: 状态已为 IN_REVIEW, 管理员可走兜底审批
-                log.warn("Flowable启动异常,降级为直接IN_REVIEW: sopId={}", sopId, e);
+            R<Void> result = processService.startProcessByDataId(sopId.toString(), selectFlowId, "sopDocumentService", variables);
+            if (!R.isSuccess(result)) {
+                throw new RuntimeException("发起审批流程失败: " + result.getMsg());
+            }
+        } else {
+            // CAS DRAFT -> IN_REVIEW
+            int rows = baseMapper.update(null, Wrappers.<SopDocument>lambdaUpdate()
+                .set(SopDocument::getStatus, STATUS_IN_REVIEW)
+                .eq(SopDocument::getSopId, sopId)
+                .eq(SopDocument::getStatus, STATUS_DRAFT));
+            if (rows == 0) {
+                throw new RuntimeException("SOP状态已变更,提交审批失败");
             }
         }
         log.info("SOP提交审批: sopId={}, selectFlowId={}", sopId, selectFlowId);
@@ -299,6 +298,7 @@ public class SopDocumentServiceImpl implements ISopDocumentService, WfCallBackSe
      * <p>doing->IN_REVIEW ; pass->doPublish(PUBLISHED) ; reject/retrun->DRAFT ; stop/recall/revoke->DRAFT</p>
      */
     @Override
+    @DS("mes")
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void afterFlowHandle(WfMyBusiness business) {
         Long sopId = Long.parseLong(business.getDataId());
@@ -320,11 +320,17 @@ public class SopDocumentServiceImpl implements ISopDocumentService, WfCallBackSe
 
     /**
      * Flowable 回调钩子: 根据业务数据ID获取业务表单数据
+     * <p>必须显式 @DS("mes") + @Transactional(REQUIRES_NEW): 该回调由 Flowable(master 事务)经 getBean 直接调用,
+     * 外层 master 事务已绑定连接, 仅靠类级 @DS 改 holder 无法切换(查询会落到 ry-vue 报 sop_document 不存在);
+     * REQUIRES_NEW 挂起外层事务、在 holder top="mes"(方法级 @DS 已 push) 时另起新事务绑定 mes 连接
+     * (同 ERP WmArrivalNotice 先例)。</p>
      *
      * @param dataId 业务数据ID(sopId 字符串)
      * @return SopDocumentVo 或 null(解析失败时)
      */
     @Override
+    @DS("mes")
+    @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
     public Object getBusinessDataById(String dataId) {
         try {
             return baseMapper.selectVoById(Long.parseLong(dataId));
