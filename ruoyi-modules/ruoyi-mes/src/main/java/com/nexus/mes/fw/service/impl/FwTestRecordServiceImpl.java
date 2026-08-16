@@ -160,6 +160,7 @@ public class FwTestRecordServiceImpl implements IFwTestRecordService {
             r.setLowerLimit(item.getLowerLimit());
             r.setTargetValue(item.getTargetValue());
             r.setPassEnum(item.getPassEnum());
+            r.setResult(""); // 待测行默认未测(空串): 数据库列 NOT NULL, 判定后写 PASS/FAIL
             r.setEquipmentId(bo.getEquipmentId());
             r.setEquipmentCode(equipmentCode);
             r.setTestTime(now);
