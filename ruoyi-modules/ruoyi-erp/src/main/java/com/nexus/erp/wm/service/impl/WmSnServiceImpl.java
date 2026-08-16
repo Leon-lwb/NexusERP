@@ -92,6 +92,22 @@ public class WmSnServiceImpl implements IWmSnService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(WmSnBo bo) {
+        if (bo.getMaterialId() == null) {
+            throw new ServiceException("物料ID不能为空");
+        }
+        if (StringUtils.isBlank(bo.getSnCode())) {
+            String prefix = "SN";
+            String dateStr = new SimpleDateFormat("yyyyMMdd").format(new Date());
+            long seq = dailyCodeSequenceProvider.next("erp:sn:seq:" + dateStr, () -> loadMaxSnSeq(prefix + dateStr));
+            bo.setSnCode(prefix + dateStr + String.format("%04d", seq));
+        }
+        if (bo.getBatchId() != null && StringUtils.isBlank(bo.getBatchCode())) {
+            WmBatch batch = batchMapper.selectById(bo.getBatchId());
+            if (batch == null) {
+                throw new ServiceException("关联批次不存在");
+            }
+            bo.setBatchCode(batch.getBatchCode());
+        }
         WmSn entity = MapstructUtils.convert(bo, WmSn.class);
         return baseMapper.insert(entity);
     }

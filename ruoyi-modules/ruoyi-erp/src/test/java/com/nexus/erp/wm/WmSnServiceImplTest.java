@@ -1,15 +1,25 @@
 package com.nexus.erp.wm;
 
+import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.extra.spring.SpringUtil;
+import com.baomidou.mybatisplus.core.MybatisConfiguration;
+import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.erp.wm.domain.WmSn;
+import com.nexus.erp.wm.domain.bo.WmSnBo;
 import com.nexus.erp.wm.mapper.WmSnMapper;
 import com.nexus.erp.wm.service.impl.WmSnServiceImpl;
+import io.github.linpeilie.Converter;
+import org.apache.ibatis.builder.MapperBuilderAssistant;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
+import org.mockito.MockedStatic;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -42,6 +52,34 @@ class WmSnServiceImplTest {
     private WmSnServiceImpl wmSnService;
 
     private WmSn existingSn;
+
+    /** 静态 mock：MapstructUtils.CONVERTER 依赖 SpringUtils.getBean(Converter)，纯 Mockito 下先注入真实转换器子类 */
+    private static MockedStatic<SpringUtil> springUtilMock;
+    private static Converter converter;
+
+    @BeforeAll
+    static void initMapstructAndLambda() {
+        springUtilMock = mockStatic(SpringUtil.class);
+        converter = new Converter() {
+            @Override
+            public <S, T> T convert(S source, Class<T> targetType) {
+                return BeanUtil.copyProperties(source, targetType);
+            }
+        };
+        lenient().when(SpringUtil.getBean(Converter.class)).thenReturn(converter);
+
+        // 预热 MyBatis-Plus Lambda 缓存（insertByBo 自动编号路径可能经 provider 的 maxSeqLoader 触达 lambda）
+        MybatisConfiguration configuration = new MybatisConfiguration();
+        MapperBuilderAssistant assistant = new MapperBuilderAssistant(configuration, "");
+        TableInfoHelper.initTableInfo(assistant, WmSn.class);
+    }
+
+    @AfterAll
+    static void closeMapstruct() {
+        if (springUtilMock != null) {
+            springUtilMock.close();
+        }
+    }
 
     @BeforeEach
     void setUp() {
@@ -258,5 +296,28 @@ class WmSnServiceImplTest {
         assertThrows(ServiceException.class, () ->
             wmSnService.batchGenerate(100L, -1, null, 1L, 200L, "PO", "PO001")
         );
+    }
+
+    /** insertByBo：SN编码为空时自动生成，关联批次自动回填批次编码（问题⑦回归） */
+    @Test
+    void testInsertByBo_AutoCodeAndBatchBackfill() {
+        com.nexus.erp.wm.domain.WmBatch batch = new com.nexus.erp.wm.domain.WmBatch();
+        batch.setBatchId(9L);
+        batch.setBatchCode("B202608160001");
+        batch.setMaterialId(100L);
+        when(batchMapper.selectById(9L)).thenReturn(batch);
+        when(baseMapper.insert(any(WmSn.class))).thenReturn(1);
+
+        WmSnBo bo = new WmSnBo();
+        bo.setMaterialId(100L);
+        bo.setBatchId(9L);
+        // snCode 留空，期望自动生成
+        wmSnService.insertByBo(bo);
+
+        ArgumentCaptor<WmSn> captor = ArgumentCaptor.forClass(WmSn.class);
+        verify(baseMapper).insert(captor.capture());
+        WmSn inserted = captor.getValue();
+        assertTrue(inserted.getSnCode().matches("SN\\d{8}\\d{4}"));
+        assertEquals("B202608160001", inserted.getBatchCode());
     }
 }

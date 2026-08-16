@@ -87,6 +87,24 @@ public class WmBatchServiceImpl implements IWmBatchService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(WmBatchBo bo) {
+        if (bo.getMaterialId() == null) {
+            throw new ServiceException("物料ID不能为空");
+        }
+        if (StringUtils.isBlank(bo.getBatchCode())) {
+            bo.setBatchCode(generateBatchCode());
+        }
+        if (StringUtils.isBlank(bo.getStatus())) {
+            bo.setStatus("ACTIVE");
+        }
+        if (bo.getQuantity() == null) {
+            bo.setQuantity(BigDecimal.ZERO);
+        }
+        if (bo.getReceivedQty() == null) {
+            bo.setReceivedQty(BigDecimal.ZERO);
+        }
+        if (bo.getIssuedQty() == null) {
+            bo.setIssuedQty(BigDecimal.ZERO);
+        }
         WmBatch entity = MapstructUtils.convert(bo, WmBatch.class);
         return baseMapper.insert(entity);
     }

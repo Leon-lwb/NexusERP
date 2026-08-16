@@ -121,13 +121,32 @@ class WmBatchServiceImplTest {
         assertEquals(0, inserted.getIssuedQty().compareTo(BigDecimal.ZERO));
     }
 
-    /** insertByBo：批次编码为空时自动生成（问题⑦回归，见 Task 6） —— 此用例在 Task 6 完成前为占位 */
+    /** insertByBo：批次编码为空时自动生成，并补齐默认状态与数量（问题⑦回归） */
     @Test
-    void testInsertByBo_AutoCode() {
-        // 由 Task 6 补全：此处先占位保证编译
+    void testInsertByBo_AutoCodeAndDefaults() {
         WmBatchBo bo = new WmBatchBo();
         bo.setMaterialId(100L);
-        assertNotNull(bo.getMaterialId());
+        bo.setMaterialCode("MAT001");
+        when(baseMapper.insert(any(WmBatch.class))).thenReturn(1);
+
+        wmBatchService.insertByBo(bo);
+
+        ArgumentCaptor<WmBatch> captor = ArgumentCaptor.forClass(WmBatch.class);
+        verify(baseMapper).insert(captor.capture());
+        WmBatch inserted = captor.getValue();
+        assertTrue(inserted.getBatchCode().matches("B\\d{8}\\d{4}"));
+        assertEquals("ACTIVE", inserted.getStatus());
+        assertEquals(0, inserted.getQuantity().compareTo(BigDecimal.ZERO));
+    }
+
+    /** insertByBo：物料ID为空应报错 */
+    @Test
+    void testInsertByBo_RequiresMaterial() {
+        WmBatchBo bo = new WmBatchBo();
+        ServiceException exception = assertThrows(ServiceException.class, () ->
+            wmBatchService.insertByBo(bo)
+        );
+        assertTrue(exception.getMessage().contains("物料ID不能为空"));
     }
 
     /** 更新批次数量 - 收货时 received_qty 增加 */
