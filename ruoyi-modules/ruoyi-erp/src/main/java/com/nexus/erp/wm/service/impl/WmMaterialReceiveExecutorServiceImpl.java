@@ -382,6 +382,7 @@ public class WmMaterialReceiveExecutorServiceImpl implements IWmMaterialReceiveE
         return String.join("|",
             String.valueOf(stock.getMaterialId()),
             stock.getBatchId() != null ? stock.getBatchId().toString() : "",
+            stock.getSnId() != null ? stock.getSnId().toString() : "",
             stock.getWarehouseId() != null ? stock.getWarehouseId().toString() : "",
             stock.getAreaId() != null ? stock.getAreaId().toString() : "",
             stock.getLocationId() != null ? stock.getLocationId().toString() : "",
@@ -592,6 +593,7 @@ public class WmMaterialReceiveExecutorServiceImpl implements IWmMaterialReceiveE
         lqw.eq(StringUtils.isNotBlank(condition.getMaterialSpec()), WmMaterialStock::getMaterialSpec, condition.getMaterialSpec());
         lqw.eq(StringUtils.isNotBlank(condition.getBaseUomId()), WmMaterialStock::getBaseUomId, condition.getBaseUomId());
         lqw.eq(condition.getBatchId() != null, WmMaterialStock::getBatchId, condition.getBatchId());
+        lqw.eq(condition.getSnId() != null, WmMaterialStock::getSnId, condition.getSnId());
         lqw.eq(StringUtils.isNotBlank(condition.getBatchCode()), WmMaterialStock::getBatchCode, condition.getBatchCode());
         lqw.eq(WmMaterialStock::getWarehouseId, condition.getWarehouseId());
         lqw.eq(condition.getAreaId() != null, WmMaterialStock::getAreaId, condition.getAreaId());
