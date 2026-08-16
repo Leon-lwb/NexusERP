@@ -148,3 +148,22 @@
 | M1-19 | 多发票退货进项转出超冲（PuInvoiceServiceImpl:709） | ✅ 按发票行先消先冲逐张分配 |
 
 编译验证: mes/erp 通过
+
+---
+
+### 2026-08-16 wm 条码/批次/SN 关联修复（已修，详见 doc/erp/plans/2026-08-16-wm-barcode-batch-sn-remediation.md）
+
+- [x] wm 条码/批次/SN：snId贯通条码、batchGenerate关联批次、库存按SN落行、序号并发锁、库存事务SN维度、insertByBo自动编号（2026-08-16）
+
+| 项 | 问题 | 修复 | 提交 | 验证记录 |
+|----|------|------|------|---------|
+| ① | 条码实例未落 snId，无法按 SN 追溯一 SN 一条码 | generateAndSave[ByCode] 增 snId 参数并落 sn_id；入库执行器传 stock.snId；前端生成弹窗/详情/筛选支持 SN | 2a392966 | WmBarcodeServiceImplTest 1/1 绿 |
+| ② | SN 批量生成未关联批次 | batchGenerate(materialId, quantity, batchId, ...) 校验批次并回填 batch_id/batch_code；前端批次下拉 | d1ec9288 | WmSnServiceImplTest 12/12 绿 |
+| ③ | 库存唯一键/查询缺 SN 维度，同批次多 SN 合并一行 | uk(material_id,batch_id,warehouse_id,location_id,sn_id)；buildStockKey/selectOneStock 带 snId | c3e5903a | WmMaterialReceiveStockTest 3/3 绿 |
+| ④ | 批次/SN 序号初始化竞态 → 唯一键重复 | DailyCodeSequenceProvider：分布式锁内「读缓存→查库最大序号初始化→原子自增」；批次/SN 全部接入 | d7282786 | DailyCodeSequenceProviderTest 2/2 绿；旧 Redis 序号逻辑已删除 |
+| ⑤ | 条码前端无 SN 维度 | 同 ①（生成弹窗「序列号ID」、详情展示、查询参数） | 2a392966 | 前端静态检查通过 |
+| ⑥ | 库存事务流水缺 sn_id/sn_code | recordStockTransaction 追加 setSnId/setSnCode | 92280f6c | WmMaterialReceiveStockTest 3/3 绿 |
+| ⑦ | 手工新增批次/SN 需手填编码 | insertByBo：编码留空自动编号（provider）、默认状态/数量、materialId 必填校验、SN 按 batchId 回填批次码 | d6fbedcd | WmBatchServiceImplTest 7/7 + WmSnServiceImplTest 12/12 绿 |
+
+全套 wm 单测 25/25 通过（2026-08-16 回归）。
+数据说明：历史已合并的 SN 库存行不自动拆分（需按带 SN 的 TARGET_IN 流水重建，二期处理）；wm_barcode 的 12 条 material_id=1 测试痕迹与 2026-07-31 缺省条码属测试产物，可保留。
