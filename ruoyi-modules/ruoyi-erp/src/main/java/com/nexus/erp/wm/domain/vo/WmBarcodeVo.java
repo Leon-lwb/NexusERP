@@ -83,6 +83,11 @@ public class WmBarcodeVo implements Serializable {
     private Long stockId;
 
     /**
+     * 序列号ID
+     */
+    private Long snId;
+
+    /**
      * 状态
      */
     @ExcelProperty(value = "状态")

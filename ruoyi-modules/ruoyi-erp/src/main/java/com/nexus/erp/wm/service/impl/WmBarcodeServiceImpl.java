@@ -255,6 +255,8 @@ public class WmBarcodeServiceImpl implements IWmBarcodeService {
         lqw.eq(bo.getBizId() != null, WmBarcode::getBizId, bo.getBizId());
         lqw.eq(bo.getMaterialId() != null, WmBarcode::getMaterialId, bo.getMaterialId());
         lqw.eq(bo.getStockId() != null, WmBarcode::getStockId, bo.getStockId());
+        lqw.eq(bo.getBatchId() != null, WmBarcode::getBatchId, bo.getBatchId());
+        lqw.eq(bo.getSnId() != null, WmBarcode::getSnId, bo.getSnId());
         lqw.eq(StringUtils.isNotBlank(bo.getStatus()), WmBarcode::getStatus, bo.getStatus());
         return lqw;
     }
