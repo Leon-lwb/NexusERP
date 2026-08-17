@@ -51,7 +51,7 @@ public class AiModelVo implements Serializable {
     private String modelType;
 
     /** 最大输出 Token */
-    @ExcelProperty(value = "最大Token数")
+    @ExcelProperty(value = "最大输出Token数")
     private Integer maxTokens;
 
     /** 温度参数 */
