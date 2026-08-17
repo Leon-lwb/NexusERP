@@ -351,13 +351,14 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
         if (bindings.isEmpty()) {
             return;
         }
-        // 卡上在制 SN 列表(无 SN 的批量卡不适用门禁)
+        // E: SN 作用域收窄到该工序 — 通过该工序已生成的 SN 刷写记录数量校验, 取代"整卡 SN"
+        // 当前 SN 推进体系(current_step_seq 无维护逻辑) 不可靠, 故仍取整卡在制 SN, 但明确"该工序"绑定清单(见 parseFlashBindings)
         List<ProSn> sns = proSnMapper.selectList(Wrappers.<ProSn>lambdaQuery()
             .eq(ProSn::getCardId, cardId));
         if (sns == null || sns.isEmpty()) {
             return;
         }
-        // 多类型门禁: 每个绑定项 × 每个 SN 均须最新一条 PASS
+        // 多类型门禁: 每个(绑定项 × SN) 均须该工序序号对应的最新一条 PASS
         List<String> unpassed = new ArrayList<>();
         for (FlashBinding b : bindings) {
             for (ProSn sn : sns) {

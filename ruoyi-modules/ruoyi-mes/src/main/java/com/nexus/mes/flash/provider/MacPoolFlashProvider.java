@@ -52,7 +52,7 @@ public class MacPoolFlashProvider implements FlashTypeProvider {
 
     @Override
     public FlashVerifyResult verify(FlashContext ctx, FlashContent expected, FlashRecordBo actual) {
-        // POOL类: 资源已分配(ALLOCATED)即视为可刷写; 实际结果以上报 result 为准
+        // POOL类: 资源已分配(ALLOCATED)即视为可刷写; SN在制由 confirmFlash(buildValidatedRecord) 前置统一校验(所有类型), 实际结果以上报 result 为准
         return FlashVerifyResult.builder()
             .pass(true)
             .contentRefType(expected.getContentRefType())

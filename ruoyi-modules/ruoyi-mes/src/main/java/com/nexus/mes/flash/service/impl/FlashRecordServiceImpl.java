@@ -23,9 +23,11 @@ import com.nexus.mes.flash.provider.FlashTypeProvider;
 import com.nexus.mes.flash.provider.FlashTypeRegistry;
 import com.nexus.mes.flash.provider.FlashVerifyResult;
 import com.nexus.mes.flash.service.IFlashRecordService;
+import com.nexus.mes.pro.domain.ProFlowCardStep;
 import com.nexus.mes.pro.domain.ProSn;
 import com.nexus.mes.pro.domain.ProWorkOrderStep;
 import com.nexus.mes.pro.domain.vo.ProSnVo;
+import com.nexus.mes.pro.mapper.ProFlowCardStepMapper;
 import com.nexus.mes.pro.mapper.ProSnMapper;
 import com.nexus.mes.pro.mapper.ProWorkOrderStepMapper;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -66,10 +68,14 @@ public class FlashRecordServiceImpl implements IFlashRecordService {
     private final FlashTypeRegistry flashTypeRegistry;
     private final MesFlashTypeMapper mesFlashTypeMapper;
     private final ProWorkOrderStepMapper workOrderStepMapper;
+    private final ProFlowCardStepMapper flowCardStepMapper;
     private final ObjectMapper objectMapper;
 
     /** SN状态-报废(禁止刷写) */
     private static final String SN_STATUS_SCRAPPED = "SCRAPPED";
+    /** 流转卡工序状态常量(定位 SN 当前工序用) */
+    private static final String STEP_COMPLETED = "COMPLETED";
+    private static final String STEP_SKIPPED = "SKIPPED";
     /** 刷写模式-自动/手动 */
     private static final String MODE_AUTO = "AUTO";
     private static final String MODE_MANUAL = "MANUAL";
@@ -291,6 +297,60 @@ public class FlashRecordServiceImpl implements IFlashRecordService {
     // ==================== 私有辅助方法 ====================
 
     /**
+     * C: 工序绑定一致校验(三层防错之一)
+     * <p>SN 当前须处于刷写工序, 且刷写类型须在该工序绑定清单内(step_flash_config/content_ref)。
+     * 工序定位依据: pro_flow_card_step(流转卡工序记录), 按 SN.card_id + 最新非完成工序定位当前工序;
+     * 不依赖 pro_sn.current_step_seq(无维护逻辑, 不可靠)。
+     * 防止: SN不在刷写工序却强行刷写; 工单未绑定该类型内容却刷写。</p>
+     */
+    private void validateFlashStepBinding(ProSn sn, String typeCode, Long contentRefId) {
+        if (sn.getMesWoId() == null || sn.getCardId() == null) {
+            // 无流转卡上下文: 无法定位工序, 跳过(放宽, 不阻塞历史 SN)
+            return;
+        }
+        // 找该工单的刷写工序(step_type=FLASH 或含 content_ref/step_flash_config)
+        List<ProWorkOrderStep> flashSteps = workOrderStepMapper.selectList(Wrappers.<ProWorkOrderStep>lambdaQuery()
+            .eq(ProWorkOrderStep::getMesWoId, sn.getMesWoId())
+            .and(w -> w.eq(ProWorkOrderStep::getStepType, "FLASH")
+                .or().isNotNull(ProWorkOrderStep::getContentRefId)
+                .or().isNotNull(ProWorkOrderStep::getStepFlashConfig)));
+        if (flashSteps.isEmpty()) {
+            return;
+        }
+        // 定位 SN 当前工序(流转卡最新非完成工序); 退回 SN.current_step_seq; 都无则放宽
+        Integer curSeq = null;
+        ProFlowCardStep curStepRec = flowCardStepMapper.selectOne(Wrappers.<ProFlowCardStep>lambdaQuery()
+            .eq(ProFlowCardStep::getCardId, sn.getCardId())
+            .ne(ProFlowCardStep::getStepStatus, STEP_COMPLETED)
+            .ne(ProFlowCardStep::getStepStatus, STEP_SKIPPED)
+            .orderByAsc(ProFlowCardStep::getSequenceNum)
+            .last("LIMIT 1"));
+        if (curStepRec != null) {
+            curSeq = curStepRec.getSequenceNum();
+        } else if (sn.getCurrentStepSeq() != null) {
+            curSeq = sn.getCurrentStepSeq();
+        }
+        if (curSeq == null) {
+            return;
+        }
+        final Integer curSeqFinal = curSeq;
+        ProWorkOrderStep curStep = flashSteps.stream()
+            .filter(s -> s.getSequenceNum().equals(curSeqFinal)).findFirst().orElse(null);
+        if (curStep == null) {
+            throw new ServiceException("SN当前工序非刷写工序, 禁止刷写: snCode=" + sn.getSnCode()
+                + " 当前工序序号=" + curSeq + ", 刷写工序序号=" + flashSteps.stream().map(s -> s.getSequenceNum().toString()).collect(java.util.stream.Collectors.joining(",")));
+        }
+        // 该工序须绑定当前刷写类型(content_ref 或 step_flash_config 含 typeCode)
+        List<Map<String, Object>> bindings = parseStationBindings(curStep);
+        boolean matched = bindings.stream().anyMatch(b -> typeCode.equals(b.get("flashTypeCode"))
+            && (contentRefId == null || contentRefId.equals(b.get("contentRefId"))));
+        if (!matched) {
+            throw new ServiceException("当前刷写类型[" + typeCode + "]未绑定在该SN工序, 工序[" + curStep.getProcessName()
+                + "]绑定的刷写类型: " + bindings.stream().map(b -> (String) b.get("flashTypeCode")).collect(java.util.stream.Collectors.joining(",")));
+        }
+    }
+
+    /**
      * 校验并构造刷写记录(确认/上报共用): SN 存在且非报废 -> 固件存在且已发布 -> 设备存在(可选)
      * -> 自动编码 + 冗余回填 + 默认操作人/时间/重试次数
      */
@@ -320,6 +380,8 @@ public class FlashRecordServiceImpl implements IFlashRecordService {
         if (flashType == null) {
             throw new ServiceException("刷写类型未配置: " + typeCode);
         }
+        // C: 工序绑定一致校验 — SN当前工序须为刷写工序, 且刷写内容须在该工序绑定清单内
+        validateFlashStepBinding(sn, typeCode, bo.getContentRefId());
         FlashTypeProvider provider = flashTypeRegistry.getProvider(typeCode);
         FlashContext ctx = FlashContext.builder()
             .snId(sn.getSnId()).snCode(sn.getSnCode())
