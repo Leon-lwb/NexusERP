@@ -266,7 +266,7 @@ public class SopDocumentServiceImpl implements ISopDocumentService, WfCallBackSe
         // selectFlowId 非空则走 Flowable; 否则仅改状态(管理员兜底审批)
         if (StringUtils.isNotBlank(selectFlowId)) {
             // 启动前不得先改业务行/持行锁: 启动时 Flowable 会回调 afterFlowHandle(doing) 在 REQUIRES_NEW(mes) 里 UPDATE 同一行,
-            // 若外层先 UPDATE 持锁则回调等待外层、外层等流程返回 -> 死锁循环 -> 锁等待超时(同 FwFirmware 修复)。
+            // 若外层先 UPDATE 持锁则回调等待外层、外层等流程返回 -> 死锁循环 -> 锁等待超时(同 Firmware 修复)。
             // 失败即抛错回滚, 不做静默降级(状态由回调推进, 无半途 IN_REVIEW 残留)。
             Map<String, Object> variables = new HashMap<>();
             variables.put("dataId", sopId.toString());

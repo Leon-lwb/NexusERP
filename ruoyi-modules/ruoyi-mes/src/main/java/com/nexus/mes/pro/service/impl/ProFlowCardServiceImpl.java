@@ -10,8 +10,8 @@ import com.nexus.common.core.utils.MapstructUtils;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
-import com.nexus.mes.fw.domain.FwFlashRecord;
-import com.nexus.mes.fw.mapper.FwFlashRecordMapper;
+import com.nexus.mes.flash.domain.FlashRecord;
+import com.nexus.mes.flash.mapper.FlashRecordMapper;
 import com.nexus.mes.ncr.service.INcrOrderService;
 import com.nexus.mes.pro.domain.ProFlowCard;
 import com.nexus.mes.pro.domain.ProFlowCardStep;
@@ -77,10 +77,10 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
     /** SN 服务：(刷写门禁) 按流转卡反查在制 SN 列表 */
     private final ProSnMapper proSnMapper;
     /** 刷写记录：(刷写门禁) 校验固件刷写 PASS 记录 */
-    private final FwFlashRecordMapper flashRecordMapper;
-    /** 刷写工序门禁开关: 工单步骤设 firmware_id 的工序, 完工前须该卡全部在制SN均已有对应固件 PASS 刷写记录 */
-    @Value("${mes.flash-step-gate:true}")
-    private boolean flashStepGateEnabled;
+    private final FlashRecordMapper flashRecordMapper;
+    /** 刷写门禁模式: FORCE=FAIL拦截 / WARN=告警放行 / 其他=关闭 */
+    @Value("${mes.flash.gate.mode:FORCE}")
+    private String flashGateMode;
 
     @Override
     /**
@@ -332,7 +332,8 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
      * 均已存在对应固件的 PASS 刷写记录, 否则拒绝完工(未刷写不能过站)。</p>
      */
     private void checkFlashStepGate(Long stepRecordId, Long cardId) {
-        if (!flashStepGateEnabled) {
+        // 门禁模式: FORCE=拦截 / WARN=告警放行 / 其他=关闭
+        if (!"FORCE".equals(flashGateMode) && !"WARN".equals(flashGateMode)) {
             return;
         }
         ProFlowCardStep step = stepMapper.selectById(stepRecordId);
@@ -340,8 +341,8 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
             return;
         }
         ProWorkOrderStep woStep = workOrderStepMapper.selectById(step.getWoStepId());
-        // 非固件刷写工序(未指定固件)直接放行
-        if (woStep == null || woStep.getFirmwareId() == null) {
+        // 非刷写工序(未绑定刷写内容)直接放行
+        if (woStep == null || (woStep.getContentRefId() == null && StringUtils.isBlank(woStep.getStepFlashConfig()))) {
             return;
         }
         // 卡上在制 SN 列表(无 SN 的批量卡不适用门禁)
@@ -350,22 +351,28 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
         if (sns == null || sns.isEmpty()) {
             return;
         }
-        Long requiredFirmwareId = woStep.getFirmwareId();
+        // P0: 单类型固件门禁(按 content_ref_id 查最新刷写记录); 多类型 step_flash_config 门禁待 P1
+        Long requiredContentRefId = woStep.getContentRefId();
         List<String> unpassed = new ArrayList<>();
         for (ProSn sn : sns) {
-            FwFlashRecord latest = flashRecordMapper.selectOne(Wrappers.<FwFlashRecord>lambdaQuery()
-                .eq(FwFlashRecord::getSnCode, sn.getSnCode())
-                .eq(FwFlashRecord::getFirmwareId, requiredFirmwareId)
-                .orderByDesc(FwFlashRecord::getFlashTime)
-                .orderByDesc(FwFlashRecord::getFlashRecordId)
+            FlashRecord latest = flashRecordMapper.selectOne(Wrappers.<FlashRecord>lambdaQuery()
+                .eq(FlashRecord::getSnCode, sn.getSnCode())
+                .eq(FlashRecord::getContentRefId, requiredContentRefId)
+                .orderByDesc(FlashRecord::getFlashTime)
+                .orderByDesc(FlashRecord::getFlashRecordId)
                 .last("LIMIT 1"));
             if (latest == null || !"PASS".equals(latest.getResult())) {
                 unpassed.add(sn.getSnCode() + "(" + (latest == null ? "未刷写" : latest.getResult()) + ")");
             }
         }
         if (!unpassed.isEmpty()) {
-            throw new ServiceException("刷写门禁未通过: 工序[" + step.getProcessName() + "]要求固件#" + requiredFirmwareId
-                + " 已刷写且PASS, 未通过SN: " + String.join(", ", unpassed));
+            String msg = "刷写门禁未通过: 工序[" + step.getProcessName() + "]要求内容#" + requiredContentRefId
+                + " 已刷写且PASS, 未通过SN: " + String.join(", ", unpassed);
+            if ("WARN".equals(flashGateMode)) {
+                log.warn(msg + " (WARN模式放行)");
+                return;
+            }
+            throw new ServiceException(msg);
         }
     }
 

@@ -1,8 +1,10 @@
 --- # 设备自动化上报接口密钥(开发/测试: 上位机请求头 X-API-KEY 携带; 生产密钥见 application-prod.yml)
 mes:
   api-key: nexus-mes-api-2026
-  # 刷写工序门禁: 工单步骤指定 firmware_id 的工序, 完工前须该卡全部在制SN已有对应固件PASS刷写记录(关掉置 false)
-  flash-step-gate: true
+  # 刷写门禁模式: FORCE=FAIL拦截 / WARN=告警放行 / 其他=关闭(无SN工单始终放行)
+  flash:
+    gate:
+      mode: FORCE
 
 --- # 验证码配置
 # PC登录需要图形验证码，APP短信登录无需，APP密码登录在提交时弹出验证码

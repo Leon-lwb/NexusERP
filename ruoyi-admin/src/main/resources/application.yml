@@ -137,7 +137,7 @@ security:
     # AI 流程 Webhook 入站触发（内部按 flowKey/token 鉴权）
     - /ai/flow/webhook/**
     # 固件刷写/测试自动化上报接口（内部按 X-API-KEY 鉴权）
-    - /mes/fw/report/**
+    - /mes/flash/report/**
     # 积木报表（内部自行鉴权）
     - /jmreport/**
     - /drag/**

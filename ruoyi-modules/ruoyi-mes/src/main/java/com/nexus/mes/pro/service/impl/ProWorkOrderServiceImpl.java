@@ -414,9 +414,10 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
             step.setProcessName((String) rs.get("process_name"));
             step.setWorkcenterId(toLong(rs.get("workstation_id")));
             step.setWorkcenterCode((String) rs.get("workstation_code"));
-            // 固件刷写步骤: 工艺步骤指定 firmware_id 时下发到工单步骤(驱动刷写门禁)
+            // 刷写步骤: 工艺步骤指定 firmware_id 时下发为固件类内容绑定(ERP侧保留firmware_id字段名, MES桥接映射为content_ref)
             if (rs.get("firmware_id") != null) {
-                step.setFirmwareId(toLong(rs.get("firmware_id")));
+                step.setContentRefType("FIRMWARE");
+                step.setContentRefId(toLong(rs.get("firmware_id")));
             }
             step.setPlannedQty(workOrder.getPlannedQty());
             step.setStepStatus(STEP_PENDING);

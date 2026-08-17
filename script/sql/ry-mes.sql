@@ -494,10 +494,10 @@ CREATE TABLE `eq_spare_stock_log`  (
 -- ----------------------------
 
 -- ----------------------------
--- Table structure for fw_firmware
+-- Table structure for mes_firmware
 -- ----------------------------
-DROP TABLE IF EXISTS `fw_firmware`;
-CREATE TABLE `fw_firmware`  (
+DROP TABLE IF EXISTS `mes_firmware`;
+CREATE TABLE `mes_firmware`  (
   `firmware_id` bigint(20) NOT NULL COMMENT '固件ID',
   `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '000000' COMMENT '租户ID',
   `firmware_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '固件编码(自动编码 MES_FW_CODE)',
@@ -531,16 +531,16 @@ CREATE TABLE `fw_firmware`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '固件档案' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
--- Records of fw_firmware
+-- Records of mes_firmware
 -- ----------------------------
-INSERT INTO `fw_firmware` VALUES (2088871611594743809, '000000', 'FW20260816001', '测试', 5, 'GEAR_SET', '齿轮组', '1.0.0', 'CI-20260816-01', 2088871530275577857, '21c307a98a4cf86276b003b47340638d', 6752, '测试', 'DRAFT', '0', 2091000000000005001, NULL, NULL, 103, 1, '2026-08-16 14:12:56', 1, '2026-08-16 14:12:56', '0', '');
-INSERT INTO `fw_firmware` VALUES (2088889870117240834, '000000', 'FW20260816002', 'cs2', 2, 'IF20251018001', '电机Y132M-4 7.5KW', '1.0.0', 'aaa', 2088889865583198210, '21c307a98a4cf86276b003b47340638d', 6752, '', 'RELEASED', '1', 2091000000000005001, 1, '2026-08-16 15:26:18', 103, 1, '2026-08-16 15:25:29', 1, '2026-08-16 15:25:29', '0', '');
+INSERT INTO `mes_firmware` VALUES (2088871611594743809, '000000', 'FW20260816001', '测试', 5, 'GEAR_SET', '齿轮组', '1.0.0', 'CI-20260816-01', 2088871530275577857, '21c307a98a4cf86276b003b47340638d', 6752, '测试', 'DRAFT', '0', 2091000000000005001, NULL, NULL, 103, 1, '2026-08-16 14:12:56', 1, '2026-08-16 14:12:56', '0', '');
+INSERT INTO `mes_firmware` VALUES (2088889870117240834, '000000', 'FW20260816002', 'cs2', 2, 'IF20251018001', '电机Y132M-4 7.5KW', '1.0.0', 'aaa', 2088889865583198210, '21c307a98a4cf86276b003b47340638d', 6752, '', 'RELEASED', '1', 2091000000000005001, 1, '2026-08-16 15:26:18', 103, 1, '2026-08-16 15:25:29', 1, '2026-08-16 15:25:29', '0', '');
 
 -- ----------------------------
--- Table structure for fw_flash_record
+-- Table structure for mes_flash_record
 -- ----------------------------
-DROP TABLE IF EXISTS `fw_flash_record`;
-CREATE TABLE `fw_flash_record`  (
+DROP TABLE IF EXISTS `mes_flash_record`;
+CREATE TABLE `mes_flash_record`  (
   `flash_record_id` bigint(20) NOT NULL COMMENT '刷写记录ID',
   `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '000000' COMMENT '租户ID',
   `flash_no` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '刷写记录号(自动编码 MES_FLASH_NO)',
@@ -553,9 +553,13 @@ CREATE TABLE `fw_flash_record`  (
   `process_id` bigint(20) NULL DEFAULT NULL COMMENT '工序ID',
   `process_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '工序编码',
   `process_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '工序名称',
-  `firmware_id` bigint(20) NOT NULL COMMENT '固件ID',
-  `firmware_version` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '固件版本',
-  `file_md5` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '实际刷写文件MD5',
+  `flash_type_id` bigint(20) NULL DEFAULT NULL COMMENT '刷写类型ID(mes_flash_type)',
+  `flash_type_code` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '刷写类型标识(快照: firmware_file/config_file/mac/sn)',
+  `content_ref_type` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '内容引用类型: FIRMWARE/CONFIG/MAC_POOL/SN_POOL/EXTERNAL',
+  `content_ref_id` bigint(20) NULL DEFAULT NULL COMMENT '内容源记录ID(固件=mes_firmware_id, 池=mes_resource_item_id)',
+  `content_version` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '内容版本(固件类=固件版本)',
+  `content_payload` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '实际写入内容快照JSON(如 {"mac":"00:1A:2B:3C:4D:5E"})',
+  `content_checksum` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '内容校验值(泛化MD5/校验码)',
   `equipment_id` bigint(20) NULL DEFAULT NULL COMMENT '刷写设备ID(eq_equipment)',
   `equipment_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '刷写设备编码',
   `operator_id` bigint(20) NULL DEFAULT NULL COMMENT '操作人ID',
@@ -576,25 +580,26 @@ CREATE TABLE `fw_flash_record`  (
   UNIQUE INDEX `uk_tenant_flash_no`(`tenant_id`, `flash_no`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE,
   INDEX `idx_sn`(`sn_id`) USING BTREE,
-  INDEX `idx_firmware`(`firmware_id`) USING BTREE,
+  INDEX `idx_flash_type`(`tenant_id`, `flash_type_id`) USING BTREE,
+  INDEX `idx_content_ref`(`content_ref_type`, `content_ref_id`) USING BTREE,
   INDEX `idx_wo`(`mes_wo_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '固件刷写记录(SN级)' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '刷写记录(SN级,通用)' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
--- Records of fw_flash_record
+-- Records of mes_flash_record
 -- ----------------------------
 
 -- ----------------------------
--- Table structure for fw_test_item
+-- Table structure for mes_test_item
 -- ----------------------------
-DROP TABLE IF EXISTS `fw_test_item`;
-CREATE TABLE `fw_test_item`  (
+DROP TABLE IF EXISTS `mes_test_item`;
+CREATE TABLE `mes_test_item`  (
   `test_item_id` bigint(20) NOT NULL COMMENT '测试项ID',
   `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '000000' COMMENT '租户ID',
   `item_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '测试项编码(如 RF-TXPWR)',
   `item_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '测试项名称',
   `material_id` bigint(20) NOT NULL COMMENT '适用物料ID',
-  `firmware_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '固件ID(0=该物料所有版本通用)',
+  `content_ref_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '内容源ID(0=该物料所有版本通用, 固件类=mes_firmware_id)',
   `data_type` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'NUMERIC' COMMENT '数据类型: NUMERIC/TEXT/ENUM',
   `unit` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '单位',
   `upper_limit` decimal(18, 4) NULL DEFAULT NULL COMMENT '上限',
@@ -611,21 +616,21 @@ CREATE TABLE `fw_test_item`  (
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '0' COMMENT '删除标志(0存在/2删除)',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`test_item_id`) USING BTREE,
-  UNIQUE INDEX `uk_tenant_material_item`(`tenant_id`, `material_id`, `firmware_id`, `item_code`) USING BTREE,
+  UNIQUE INDEX `uk_tenant_material_item`(`tenant_id`, `material_id`, `content_ref_id`, `item_code`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE,
   INDEX `idx_material`(`material_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '测试项标准主数据' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
--- Records of fw_test_item
+-- Records of mes_test_item
 -- ----------------------------
-INSERT INTO `fw_test_item` VALUES (2088902653508710401, '000000', 'cs1', '测试1', 1001, 2088889870117240834, 'NUMERIC', 'dBm/V', 221.0000, 219.0000, 220.0000, NULL, '1', 1, 103, 1, '2026-08-16 16:16:17', 1, '2026-08-16 16:18:21', '0', NULL);
+INSERT INTO `mes_test_item` VALUES (2088902653508710401, '000000', 'cs1', '测试1', 1001, 2088889870117240834, 'NUMERIC', 'dBm/V', 221.0000, 219.0000, 220.0000, NULL, '1', 1, 103, 1, '2026-08-16 16:16:17', 1, '2026-08-16 16:18:21', '0', NULL);
 
 -- ----------------------------
--- Table structure for fw_test_record
+-- Table structure for mes_test_record
 -- ----------------------------
-DROP TABLE IF EXISTS `fw_test_record`;
-CREATE TABLE `fw_test_record`  (
+DROP TABLE IF EXISTS `mes_test_record`;
+CREATE TABLE `mes_test_record`  (
   `test_record_id` bigint(20) NOT NULL COMMENT '测试记录ID',
   `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '000000' COMMENT '租户ID',
   `test_no` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '测试单号(一次SN测试一条单号, 共享多行)',
@@ -638,8 +643,8 @@ CREATE TABLE `fw_test_record`  (
   `process_id` bigint(20) NULL DEFAULT NULL COMMENT '工序ID',
   `process_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '工序编码',
   `process_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '工序名称',
-  `firmware_id` bigint(20) NULL DEFAULT NULL COMMENT '测试时固件ID',
-  `firmware_version` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '测试时固件版本',
+  `content_ref_id` bigint(20) NULL DEFAULT NULL COMMENT '测试时内容源ID(固件类=mes_firmware_id)',
+  `content_version` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '测试时内容版本',
   `test_item_id` bigint(20) NOT NULL COMMENT '测试项ID',
   `item_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '测试项编码(快照)',
   `item_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '测试项名称(快照)',
@@ -669,12 +674,12 @@ CREATE TABLE `fw_test_record`  (
   UNIQUE INDEX `uk_tenant_test_no_item`(`tenant_id`, `test_no`, `test_item_id`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE,
   INDEX `idx_sn`(`sn_id`) USING BTREE,
-  INDEX `idx_firmware`(`firmware_id`) USING BTREE,
+  INDEX `idx_content_ref`(`content_ref_id`) USING BTREE,
   INDEX `idx_wo`(`mes_wo_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '测试记录(SN级全检)' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
--- Records of fw_test_record
+-- Records of mes_test_record
 -- ----------------------------
 
 -- ----------------------------
@@ -1581,7 +1586,9 @@ CREATE TABLE `pro_work_order_step`  (
   `mes_wo_id` bigint(20) NOT NULL COMMENT '所属MES工单ID',
   `sequence_num` int(4) NOT NULL DEFAULT 0 COMMENT '工序序号(从1开始)',
   `step_type` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'GENERAL' COMMENT '工序类型: GENERAL/FLASH/TEST',
-  `firmware_id` bigint(20) NULL DEFAULT NULL COMMENT '固件ID(仅FLASH工序, 只可选RELEASED)',
+  `content_ref_type` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '内容引用类型(单类型快捷绑定: FIRMWARE/CONFIG/MAC_POOL...)',
+  `content_ref_id` bigint(20) NULL DEFAULT NULL COMMENT '内容源记录ID(固件类=mes_firmware_id)',
+  `step_flash_config` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '多类型绑定JSON: [{"flashTypeCode":"firmware_file","contentRefId":123},{"flashTypeCode":"mac"}]',
   `process_id` bigint(20) NULL DEFAULT NULL COMMENT 'ERP工序ID(bd_routing_step.routing_step_id)',
   `process_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '工序编码(冗余)',
   `process_name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '工序名称(冗余)',
