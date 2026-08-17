@@ -60,7 +60,7 @@
       <el-table-column label="刷写记录号" align="center" prop="flashNo" min-width="160" />
       <el-table-column label="SN编码" align="center" prop="snCode" min-width="140" />
       <el-table-column label="工单号" align="center" prop="woNo" width="130" />
-      <el-table-column label="固件版本" align="center" prop="firmwareVersion" width="90" />
+      <el-table-column label="固件版本" align="center" prop="contentVersion" width="90" />
       <el-table-column label="工序" align="center" prop="processName" width="110" />
       <el-table-column label="设备编码" align="center" prop="equipmentCode" width="130" />
       <el-table-column label="操作人" align="center" prop="operatorName" width="100" />
@@ -113,15 +113,40 @@
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="固件" prop="firmwareId">
-              <el-select v-model="form.firmwareId" placeholder="选择固件" filterable style="width: 100%">
+            <el-form-item label="刷写类型" prop="flashTypeCode">
+              <el-select v-model="form.flashTypeCode" placeholder="选择刷写类型" style="width: 100%" @change="onFlashTypeChange">
+                <el-option label="刷写固件" value="firmware_file" />
+                <el-option label="刷写配置文件" value="config_file" />
+                <el-option label="刷写MAC" value="mac" />
+                <el-option label="刷写SN" value="sn" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12" v-if="form.flashTypeCode === 'firmware_file' || form.flashTypeCode === 'config_file'">
+            <el-form-item :label="form.flashTypeCode === 'config_file' ? '配置文件' : '固件'" prop="contentRefId">
+              <el-select
+                v-model="form.contentRefId"
+                :placeholder="form.flashTypeCode === 'config_file' ? '选择配置文件' : '选择固件'"
+                filterable
+                style="width: 100%"
+              >
                 <el-option
-                  v-for="f in firmwareOptions"
-                  :key="f.firmwareId"
-                  :label="(f.firmwareCode || '') + ' v' + (f.version || '')"
-                  :value="f.firmwareId"
+                  v-for="f in form.flashTypeCode === 'config_file' ? contentOptions : firmwareOptions"
+                  :key="f.contentRefId || f.contentFileId"
+                  :label="(f.firmwareCode || f.contentCode || '') + ' v' + (f.version || '')"
+                  :value="f.contentRefId || f.contentFileId"
                 />
               </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12" v-if="form.flashTypeCode === 'mac' || form.flashTypeCode === 'sn'">
+            <el-form-item :label="form.flashTypeCode === 'mac' ? 'MAC' : 'SN'">
+              <el-alert
+                type="info"
+                :closable="false"
+                show-icon
+                :title="form.flashTypeCode === 'mac' ? '从MAC资源池自动分配(一SN绑一MAC)' : '从SN资源池自动分配'"
+              />
             </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -178,7 +203,7 @@
           </el-col>
           <el-col :span="24">
             <el-form-item label="MD5">
-              <el-input v-model="form.fileMd5" placeholder="实际刷写文件MD5(可选, 默认按固件回填)" clearable />
+              <el-input v-model="form.contentChecksum" placeholder="实际刷写文件MD5(可选, 默认按固件回填)" clearable />
             </el-form-item>
           </el-col>
           <el-col :span="24">
@@ -202,7 +227,7 @@
         <el-descriptions-item label="刷写记录号">{{ detail.data.flashNo || '-' }}</el-descriptions-item>
         <el-descriptions-item label="SN编码">{{ detail.data.snCode || '-' }}</el-descriptions-item>
         <el-descriptions-item label="工单号">{{ detail.data.woNo || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="固件版本">{{ detail.data.firmwareVersion || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="固件版本">{{ detail.data.contentVersion || '-' }}</el-descriptions-item>
         <el-descriptions-item label="工序">{{ detail.data.processName || '-' }}</el-descriptions-item>
         <el-descriptions-item label="设备">{{ detail.data.equipmentCode || '-' }}</el-descriptions-item>
         <el-descriptions-item label="操作人">{{ detail.data.operatorName || '-' }}</el-descriptions-item>
@@ -213,7 +238,7 @@
         <el-descriptions-item label="重试次数">{{ detail.data.retryCount ?? '-' }}</el-descriptions-item>
         <el-descriptions-item label="模式">{{ detail.data.flashMode || '-' }}</el-descriptions-item>
         <el-descriptions-item label="创建时间">{{ detail.data.createTime || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="文件MD5" :span="2">{{ detail.data.fileMd5 || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="文件MD5" :span="2">{{ detail.data.contentChecksum || '-' }}</el-descriptions-item>
         <el-descriptions-item label="失败原因" :span="2">{{ detail.data.failReason || '-' }}</el-descriptions-item>
         <el-descriptions-item label="备注" :span="2">{{ detail.data.remark || '-' }}</el-descriptions-item>
       </el-descriptions>
@@ -228,6 +253,7 @@
 import { listFlash, getFlash, addFlash, updateFlash, delFlash, confirmFlash, listSnOptions, listReleasedFirmware } from '@/api/mes/flash/flash';
 import type { FwFlashRecordVO, FwFlashRecordQuery, FwFlashRecordForm } from '@/api/mes/flash/flash';
 import { listFirmware } from '@/api/mes/flash/firmware';
+import { listContent } from '@/api/mes/flash/content';
 import { listEquipment } from '@/api/mes/eq/equipment';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
@@ -267,7 +293,7 @@ const form = ref<FwFlashRecordForm>({ result: 'PASS', retryCount: 0, flashMode: 
 
 const rules = {
   snCode: [{ required: true, message: '请选择/输入SN编码', trigger: 'change' }],
-  firmwareId: [{ required: true, message: '请选择固件', trigger: 'change' }],
+  // contentRefId 校验由后端按 flashTypeCode 处理(firmware_file/config_file 必填, mac/sn 从池分配)
   result: [{ required: true, message: '请选择结果', trigger: 'change' }]
 };
 
@@ -306,6 +332,7 @@ const onSnChange = (snCode: string) => {
 };
 
 const firmwareOptions = ref<any[]>([]);
+const contentOptions = ref<any[]>([]);
 const equipmentOptions = ref<any[]>([]);
 
 async function loadOptions() {
@@ -316,8 +343,16 @@ async function loadOptions() {
     const res: any = await listFirmware({ pageNum: 1, pageSize: 1000 } as any);
     firmwareOptions.value = res.rows || [];
   }
+  // 配置文件选项(RELEASED, config_file 刷写用)
+  const cfgRes: any = await listContent({ pageNum: 1, pageSize: 1000, status: 'RELEASED' } as any);
+  contentOptions.value = (cfgRes.rows || []).map((c: any) => ({ ...c, contentRefId: c.contentFileId }));
   const eqRes: any = await listEquipment({ pageNum: 1, pageSize: 1000 } as any);
   equipmentOptions.value = eqRes.rows || [];
+}
+/** 切换刷写类型: 清空内容引用(mac/sn 无需, firmware/config 重新选) */
+function onFlashTypeChange() {
+  form.value.contentRefId = undefined;
+  form.value.contentChecksum = undefined;
 }
 
 function resetFormData() {
@@ -329,8 +364,9 @@ function resetFormData() {
     woNo: undefined,
     cardId: undefined,
     processName: undefined,
-    firmwareId: undefined,
-    fileMd5: undefined,
+    flashTypeCode: 'firmware_file',
+    contentRefId: undefined,
+    contentChecksum: undefined,
     equipmentId: undefined,
     flashTime: proxy?.parseTime(new Date()),
     result: 'PASS',
@@ -406,8 +442,8 @@ function handleEdit(row: FwFlashRecordVO) {
     woNo: r.woNo,
     cardId: r.cardId,
     processName: r.processName,
-    firmwareId: r.firmwareId,
-    fileMd5: r.fileMd5,
+    contentRefId: r.contentRefId,
+    contentChecksum: r.contentChecksum,
     equipmentId: r.equipmentId,
     flashTime: r.flashTime,
     result: r.result,

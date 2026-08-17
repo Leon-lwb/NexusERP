@@ -17,10 +17,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -80,6 +82,17 @@ public class FlashReportController extends BaseController {
         Map<String, Object> map = TenantHelper.dynamic("000000",
             () -> mesTestRecordService.reportTestAutoBatch(list));
         return R.ok(map);
+    }
+
+    /**
+     * 工位编排: 产线工位拉取 SN 待刷清单(X-API-KEY 鉴权, 返回工单刷写工序+每绑定项最新结果)
+     */
+    @GetMapping("/station/pending")
+    public R<List<Map<String, Object>>> stationPending(@RequestHeader(value = "X-API-KEY", required = false) String apiKey,
+                                                       @RequestParam String snCode,
+                                                       HttpServletRequest request) {
+        checkApiKey(apiKey, request);
+        return R.ok(mesFlashRecordService.selectStationPending(snCode));
     }
 
     // ==================== 私有辅助方法 ====================

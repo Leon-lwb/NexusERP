@@ -24,8 +24,12 @@ import com.nexus.mes.flash.provider.FlashTypeRegistry;
 import com.nexus.mes.flash.provider.FlashVerifyResult;
 import com.nexus.mes.flash.service.IFlashRecordService;
 import com.nexus.mes.pro.domain.ProSn;
+import com.nexus.mes.pro.domain.ProWorkOrderStep;
 import com.nexus.mes.pro.domain.vo.ProSnVo;
 import com.nexus.mes.pro.mapper.ProSnMapper;
+import com.nexus.mes.pro.mapper.ProWorkOrderStepMapper;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexus.system.strategy.AutoCodeUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -61,6 +65,8 @@ public class FlashRecordServiceImpl implements IFlashRecordService {
     private final AutoCodeUtil autoCodeUtil;
     private final FlashTypeRegistry flashTypeRegistry;
     private final MesFlashTypeMapper mesFlashTypeMapper;
+    private final ProWorkOrderStepMapper workOrderStepMapper;
+    private final ObjectMapper objectMapper;
 
     /** SN状态-报废(禁止刷写) */
     private static final String SN_STATUS_SCRAPPED = "SCRAPPED";
@@ -235,6 +241,53 @@ public class FlashRecordServiceImpl implements IFlashRecordService {
         return proSnMapper.selectVoList(lqw);
     }
 
+    /**
+     * 工位编排: 查 SN 工单刷写工序待刷清单
+     * <p>snCode → ProSn → ProWorkOrderStep(FLASH/content_ref非空) → 解析 step_flash_config/content_ref 得 bindings
+     * → 每 binding 查最新 mes_flash_record 结果, 返回产线工位待刷清单(含已刷结果)。</p>
+     */
+    @Override
+    public List<Map<String, Object>> selectStationPending(String snCode) {
+        if (StringUtils.isBlank(snCode)) {
+            throw new ServiceException("snCode不能为空");
+        }
+        ProSn sn = proSnMapper.selectOne(Wrappers.<ProSn>lambdaQuery()
+            .eq(ProSn::getSnCode, snCode.trim()));
+        if (sn == null) {
+            throw new ServiceException("SN不存在: " + snCode);
+        }
+        List<ProWorkOrderStep> steps = workOrderStepMapper.selectList(Wrappers.<ProWorkOrderStep>lambdaQuery()
+            .eq(ProWorkOrderStep::getMesWoId, sn.getMesWoId())
+            .and(w -> w.eq(ProWorkOrderStep::getStepType, "FLASH")
+                .or().isNotNull(ProWorkOrderStep::getContentRefId)
+                .or().isNotNull(ProWorkOrderStep::getStepFlashConfig)));
+        List<Map<String, Object>> pending = new ArrayList<>();
+        for (ProWorkOrderStep step : steps) {
+            for (Map<String, Object> b : parseStationBindings(step)) {
+                Long refId = (Long) b.get("contentRefId");
+                String typeCode = (String) b.get("flashTypeCode");
+                FlashRecord latest = baseMapper.selectOne(Wrappers.<FlashRecord>lambdaQuery()
+                    .eq(FlashRecord::getSnCode, snCode.trim())
+                    .eq(refId != null, FlashRecord::getContentRefId, refId)
+                    .eq(StringUtils.isNotBlank(typeCode), FlashRecord::getFlashTypeCode, typeCode)
+                    .orderByDesc(FlashRecord::getFlashTime)
+                    .orderByDesc(FlashRecord::getFlashRecordId)
+                    .last("LIMIT 1"));
+                Map<String, Object> row = new HashMap<>();
+                row.put("sequenceNum", step.getSequenceNum());
+                row.put("processCode", step.getProcessCode());
+                row.put("processName", step.getProcessName());
+                row.put("stepType", step.getStepType());
+                row.put("flashTypeCode", typeCode);
+                row.put("contentRefId", refId);
+                row.put("latestResult", latest != null ? latest.getResult() : null);
+                row.put("flashTime", latest != null ? latest.getFlashTime() : null);
+                pending.add(row);
+            }
+        }
+        return pending;
+    }
+
     // ==================== 私有辅助方法 ====================
 
     /**
@@ -324,6 +377,33 @@ public class FlashRecordServiceImpl implements IFlashRecordService {
     /**
      * 冗余字段回填: SN(pro_sn)、固件版本(mes_firmware)、设备编码(eq_equipment)
      */
+    /**
+     * 解析工序刷写绑定(工位编排用): step_flash_config 多类型优先, 否则单类型 content_ref_id(固件类)
+     */
+    private List<Map<String, Object>> parseStationBindings(ProWorkOrderStep step) {
+        List<Map<String, Object>> bindings = new ArrayList<>();
+        if (StringUtils.isNotBlank(step.getStepFlashConfig())) {
+            try {
+                JsonNode arr = objectMapper.readTree(step.getStepFlashConfig());
+                for (JsonNode b : arr) {
+                    Map<String, Object> m = new HashMap<>();
+                    m.put("flashTypeCode", b.has("flashTypeCode") ? b.get("flashTypeCode").asText() : "firmware_file");
+                    m.put("contentRefId", b.has("contentRefId") && b.get("contentRefId").canConvertToInt() ? b.get("contentRefId").asLong() : null);
+                    bindings.add(m);
+                }
+            } catch (Exception e) {
+                log.warn("解析 step_flash_config 失败: stepId={}, err={}", step.getStepId(), e.getMessage());
+            }
+        }
+        if (bindings.isEmpty() && step.getContentRefId() != null) {
+            Map<String, Object> m = new HashMap<>();
+            m.put("flashTypeCode", "firmware_file");
+            m.put("contentRefId", step.getContentRefId());
+            bindings.add(m);
+        }
+        return bindings;
+    }
+
     private void enrichRedundant(FlashRecord record) {
         if (record.getSnId() != null && StringUtils.isBlank(record.getSnCode())) {
             ProSn sn = proSnMapper.selectById(record.getSnId());

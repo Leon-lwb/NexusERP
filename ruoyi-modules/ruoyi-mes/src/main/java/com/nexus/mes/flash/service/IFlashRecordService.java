@@ -63,4 +63,9 @@ public interface IFlashRecordService {
      * 返回 {success: 成功条数, failed: [{snCode, reason}]}
      */
     Map<String, Object> reportFlashBatch(List<FlashRecordBo> list);
+
+    /**
+     * 工位编排: 查 SN 工单刷写工序待刷清单(每绑定项含最新刷写结果, 产线工位拉取)
+     */
+    List<Map<String, Object>> selectStationPending(String snCode);
 }

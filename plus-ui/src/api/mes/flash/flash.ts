@@ -14,9 +14,9 @@ export interface FwFlashRecordVO {
   processId?: number;
   processCode?: string;
   processName?: string;
-  firmwareId?: number;
-  firmwareVersion?: string;
-  fileMd5?: string;
+  contentRefId?: number;
+  contentVersion?: string;
+  contentChecksum?: string;
   equipmentId?: number;
   equipmentCode?: string;
   operatorId?: number;
@@ -36,7 +36,7 @@ export interface FwFlashRecordQuery extends PageQuery {
   snCode?: string;
   woNo?: string;
   equipmentCode?: string;
-  firmwareId?: number;
+  contentRefId?: number;
   result?: string;
   flashMode?: string;
   operatorId?: number;
@@ -57,9 +57,9 @@ export interface FwFlashRecordForm {
   processId?: number;
   processCode?: string;
   processName?: string;
-  firmwareId?: number;
-  firmwareVersion?: string;
-  fileMd5?: string;
+  contentRefId?: number;
+  contentVersion?: string;
+  contentChecksum?: string;
   equipmentId?: number;
   equipmentCode?: string;
   flashTime?: string;
