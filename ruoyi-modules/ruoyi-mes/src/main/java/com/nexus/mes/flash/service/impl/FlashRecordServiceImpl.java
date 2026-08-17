@@ -257,8 +257,8 @@ public class FlashRecordServiceImpl implements IFlashRecordService {
         if (sn == null) {
             throw new ServiceException("SN不存在: " + bo.getSnCode());
         }
-        if (SN_STATUS_SCRAPPED.equals(sn.getSnStatus())) {
-            throw new ServiceException("SN已报废, 禁止刷写: " + bo.getSnCode());
+        if (SN_STATUS_SCRAPPED.equals(sn.getSnStatus()) || "SHIPPED".equals(sn.getSnStatus())) {
+            throw new ServiceException("SN已报废或已发运, 禁止刷写: " + bo.getSnCode() + " 状态=" + sn.getSnStatus());
         }
         // 刷写类型路由: flashTypeCode 缺省 firmware_file(向后兼容固件刷写)
         String typeCode = StringUtils.isBlank(bo.getFlashTypeCode()) ? "firmware_file" : bo.getFlashTypeCode();
@@ -274,6 +274,7 @@ public class FlashRecordServiceImpl implements IFlashRecordService {
             .processId(bo.getProcessId()).processCode(bo.getProcessCode()).processName(bo.getProcessName())
             .stepRecordId(bo.getStepRecordId())
             .flashTypeId(flashType.getFlashTypeId()).flashTypeCode(typeCode)
+            .snMaterialId(sn.getMaterialId())
             .contentRefId(bo.getContentRefId())
             .build();
         // Provider 解析应刷内容(固件类: 查 mes_firmware 校验 RELEASED + 取 version/md5)

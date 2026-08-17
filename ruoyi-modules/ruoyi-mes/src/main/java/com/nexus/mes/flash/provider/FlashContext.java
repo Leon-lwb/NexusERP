@@ -28,6 +28,9 @@ public class FlashContext {
     private Long flashTypeId;
     private String flashTypeCode;
 
+    /** SN 物料ID(固件类物料匹配校验用) */
+    private Long snMaterialId;
+
     /** 入参内容引用ID(固件类=固件ID, 由 Bo.contentRefId 传入) */
     private Long contentRefId;
 }

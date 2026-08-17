@@ -16,6 +16,10 @@ import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.mes.common.bridge.IMesErpBridgeService;
 import com.nexus.mes.eq.domain.EqEquipment;
 import com.nexus.mes.eq.mapper.EqEquipmentMapper;
+import com.nexus.mes.flash.config.FwProperties;
+import com.nexus.mes.flash.domain.Firmware;
+import com.nexus.mes.flash.mapper.FirmwareMapper;
+import com.nexus.mes.flash.service.IFirmwareService;
 import com.nexus.mes.common.mq.MesMqSendService;
 import com.nexus.mes.ncr.domain.NcrOrder;
 import com.nexus.mes.ncr.domain.NcrReworkOrder;
@@ -89,6 +93,10 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
      */
     private final NcrReworkOrderMapper ncrReworkOrderMapper;
     private final NcrOrderMapper ncrOrderMapper;
+    /** 刷写配置: 工序打标关键字(nexus.mes.flash) */
+    private final FwProperties fwProperties;
+    /** 固件 Mapper: FLASH 工序自动带出物料默认 RELEASED 固件 */
+    private final FirmwareMapper firmwareMapper;
 
     @Override
     /**
@@ -414,10 +422,24 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
             step.setProcessName((String) rs.get("process_name"));
             step.setWorkcenterId(toLong(rs.get("workstation_id")));
             step.setWorkcenterCode((String) rs.get("workstation_code"));
-            // 刷写步骤: 工艺步骤指定 firmware_id 时下发为固件类内容绑定(ERP侧保留firmware_id字段名, MES桥接映射为content_ref)
-            if (rs.get("firmware_id") != null) {
+            // 工序打标: 按 process_code 关键字落 step_type (FLASH/TEST/GENERAL), 计划员可改标
+            step.setStepType(resolveStepType(step.getProcessCode()));
+            // 刷写内容绑定: 工艺步骤显式 firmware_id 优先; 否则 FLASH 工序自动带出物料默认 RELEASED 固件
+            Long firmwareId = toLong(rs.get("firmware_id"));
+            if (firmwareId == null && "FLASH".equals(step.getStepType()) && workOrder.getMaterialId() != null) {
+                Firmware defaultFw = firmwareMapper.selectOne(Wrappers.<Firmware>lambdaQuery()
+                    .eq(Firmware::getMaterialId, workOrder.getMaterialId())
+                    .eq(Firmware::getIsDefault, IFirmwareService.IS_DEFAULT_YES)
+                    .eq(Firmware::getStatus, IFirmwareService.STATUS_RELEASED)
+                    .last("LIMIT 1"));
+                if (defaultFw != null) {
+                    firmwareId = defaultFw.getFirmwareId();
+                    log.info("FLASH工序自动带出物料默认固件: woNo={}, processCode={}, firmwareId={}", workOrder.getWoNo(), step.getProcessCode(), firmwareId);
+                }
+            }
+            if (firmwareId != null) {
                 step.setContentRefType("FIRMWARE");
-                step.setContentRefId(toLong(rs.get("firmware_id")));
+                step.setContentRefId(firmwareId);
             }
             step.setPlannedQty(workOrder.getPlannedQty());
             step.setStepStatus(STEP_PENDING);
@@ -430,6 +452,26 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
             stepMapper.insert(step);
         }
         log.info("工序步骤生成完成: mesWoId={}, stepCount={}", workOrder.getMesWoId(), steps.size());
+    }
+
+    /**
+     * 工序打标: 按 process_code 关键字匹配 nexus.mes.flash.{flash|test}-keywords 落 step_type。
+     * FLASH: 刷写工序; TEST: 测试工序; 未命中 GENERAL(不阻塞)。
+     */
+    private String resolveStepType(String processCode) {
+        if (StringUtils.isBlank(processCode)) {
+            return "GENERAL";
+        }
+        String upper = processCode.toUpperCase();
+        if (fwProperties.getFlashKeywords() != null
+            && fwProperties.getFlashKeywords().stream().anyMatch(upper::contains)) {
+            return "FLASH";
+        }
+        if (fwProperties.getTestKeywords() != null
+            && fwProperties.getTestKeywords().stream().anyMatch(upper::contains)) {
+            return "TEST";
+        }
+        return "GENERAL";
     }
 
     /**

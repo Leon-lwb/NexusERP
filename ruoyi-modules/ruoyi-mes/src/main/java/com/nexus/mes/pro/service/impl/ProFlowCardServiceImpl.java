@@ -78,6 +78,8 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
     private final ProSnMapper proSnMapper;
     /** 刷写记录：(刷写门禁) 校验固件刷写 PASS 记录 */
     private final FlashRecordMapper flashRecordMapper;
+    /** JSON 解析(step_flash_config 多类型绑定) */
+    private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
     /** 刷写门禁模式: FORCE=FAIL拦截 / WARN=告警放行 / 其他=关闭 */
     @Value("${mes.flash.gate.mode:FORCE}")
     private String flashGateMode;
@@ -341,8 +343,12 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
             return;
         }
         ProWorkOrderStep woStep = workOrderStepMapper.selectById(step.getWoStepId());
-        // 非刷写工序(未绑定刷写内容)直接放行
-        if (woStep == null || (woStep.getContentRefId() == null && StringUtils.isBlank(woStep.getStepFlashConfig()))) {
+        if (woStep == null) {
+            return;
+        }
+        // 解析刷写绑定: step_flash_config 多类型优先, 否则单类型 content_ref_id(固件类)
+        List<FlashBinding> bindings = parseFlashBindings(woStep);
+        if (bindings.isEmpty()) {
             return;
         }
         // 卡上在制 SN 列表(无 SN 的批量卡不适用门禁)
@@ -351,23 +357,23 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
         if (sns == null || sns.isEmpty()) {
             return;
         }
-        // P0: 单类型固件门禁(按 content_ref_id 查最新刷写记录); 多类型 step_flash_config 门禁待 P1
-        Long requiredContentRefId = woStep.getContentRefId();
+        // 多类型门禁: 每个绑定项 × 每个 SN 均须最新一条 PASS
         List<String> unpassed = new ArrayList<>();
-        for (ProSn sn : sns) {
-            FlashRecord latest = flashRecordMapper.selectOne(Wrappers.<FlashRecord>lambdaQuery()
-                .eq(FlashRecord::getSnCode, sn.getSnCode())
-                .eq(FlashRecord::getContentRefId, requiredContentRefId)
-                .orderByDesc(FlashRecord::getFlashTime)
-                .orderByDesc(FlashRecord::getFlashRecordId)
-                .last("LIMIT 1"));
-            if (latest == null || !"PASS".equals(latest.getResult())) {
-                unpassed.add(sn.getSnCode() + "(" + (latest == null ? "未刷写" : latest.getResult()) + ")");
+        for (FlashBinding b : bindings) {
+            for (ProSn sn : sns) {
+                FlashRecord latest = flashRecordMapper.selectOne(Wrappers.<FlashRecord>lambdaQuery()
+                    .eq(FlashRecord::getSnCode, sn.getSnCode())
+                    .eq(FlashRecord::getContentRefId, b.contentRefId())
+                    .orderByDesc(FlashRecord::getFlashTime)
+                    .orderByDesc(FlashRecord::getFlashRecordId)
+                    .last("LIMIT 1"));
+                if (latest == null || !"PASS".equals(latest.getResult())) {
+                    unpassed.add(sn.getSnCode() + "(" + b.flashTypeCode() + ": " + (latest == null ? "未刷写" : latest.getResult()) + ")");
+                }
             }
         }
         if (!unpassed.isEmpty()) {
-            String msg = "刷写门禁未通过: 工序[" + step.getProcessName() + "]要求内容#" + requiredContentRefId
-                + " 已刷写且PASS, 未通过SN: " + String.join(", ", unpassed);
+            String msg = "刷写门禁未通过: 工序[" + step.getProcessName() + "]要求刷写内容已PASS, 未通过: " + String.join(", ", unpassed);
             if ("WARN".equals(flashGateMode)) {
                 log.warn(msg + " (WARN模式放行)");
                 return;
@@ -375,6 +381,35 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
             throw new ServiceException(msg);
         }
     }
+
+    /**
+     * 解析工序刷写绑定: step_flash_config(JSON 多类型数组)优先, 否则单类型 content_ref_id(固件类)。
+     * <p>step_flash_config 格式: [{"flashTypeCode":"firmware_file","contentRefId":123},{"flashTypeCode":"mac","contentRefId":456}]</p>
+     */
+    private List<FlashBinding> parseFlashBindings(ProWorkOrderStep woStep) {
+        List<FlashBinding> bindings = new ArrayList<>();
+        if (StringUtils.isNotBlank(woStep.getStepFlashConfig())) {
+            try {
+                com.fasterxml.jackson.databind.JsonNode arr = objectMapper.readTree(woStep.getStepFlashConfig());
+                for (com.fasterxml.jackson.databind.JsonNode b : arr) {
+                    if (b.has("contentRefId") && b.get("contentRefId").canConvertToInt()) {
+                        bindings.add(new FlashBinding(
+                            b.has("flashTypeCode") ? b.get("flashTypeCode").asText() : "firmware_file",
+                            b.get("contentRefId").asLong()));
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("解析 step_flash_config 失败, 回退单类型: woStepId={}, err={}", woStep.getStepId(), e.getMessage());
+            }
+        }
+        if (bindings.isEmpty() && woStep.getContentRefId() != null) {
+            bindings.add(new FlashBinding("firmware_file", woStep.getContentRefId()));
+        }
+        return bindings;
+    }
+
+    /** 刷写绑定项(flashTypeCode + contentRefId) */
+    private record FlashBinding(String flashTypeCode, Long contentRefId) {}
 
     /**
      * 完成流转卡
@@ -477,6 +512,8 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
     @Transactional(rollbackFor = Exception.class)
     @Override
     public void checkAndCompleteStep(Long cardId, Long stepRecordId) {
+        // 刷写门禁(派工聚合完工路径, 与 completeStep 一致; 覆盖 completeDispatch→本方法路径)
+        checkFlashStepGate(stepRecordId, cardId);
         // CAS 工序 IN_PROGRESS -> COMPLETED
         int rows = stepMapper.update(null, Wrappers.<ProFlowCardStep>lambdaUpdate()
             .set(ProFlowCardStep::getStepStatus, STEP_COMPLETED)

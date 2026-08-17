@@ -49,6 +49,10 @@ public class FirmwareFileFlashProvider implements FlashTypeProvider {
         if (!IFirmwareService.STATUS_RELEASED.equals(fw.getStatus())) {
             throw new ServiceException("仅已发布(RELEASED)固件可刷写: " + fw.getFirmwareCode() + " 当前=" + fw.getStatus());
         }
+        // 物料匹配: 固件适用物料须与 SN 物料一致(三层防错之一)
+        if (ctx.getSnMaterialId() != null && !ctx.getSnMaterialId().equals(fw.getMaterialId())) {
+            throw new ServiceException("固件物料与SN物料不匹配: 固件物料ID=" + fw.getMaterialId() + " SN物料ID=" + ctx.getSnMaterialId());
+        }
         return FlashContent.builder()
             .contentRefType("FIRMWARE")
             .contentRefId(fw.getFirmwareId())
