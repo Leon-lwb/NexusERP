@@ -388,7 +388,7 @@ public class FlashRecordServiceImpl implements IFlashRecordService {
                 for (JsonNode b : arr) {
                     Map<String, Object> m = new HashMap<>();
                     m.put("flashTypeCode", b.has("flashTypeCode") ? b.get("flashTypeCode").asText() : "firmware_file");
-                    m.put("contentRefId", b.has("contentRefId") && b.get("contentRefId").canConvertToInt() ? b.get("contentRefId").asLong() : null);
+                    m.put("contentRefId", b.has("contentRefId") && b.get("contentRefId").canConvertToLong() ? b.get("contentRefId").asLong() : null);
                     bindings.add(m);
                 }
             } catch (Exception e) {

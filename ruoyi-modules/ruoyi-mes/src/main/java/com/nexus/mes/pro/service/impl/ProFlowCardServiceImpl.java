@@ -392,7 +392,7 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
             try {
                 com.fasterxml.jackson.databind.JsonNode arr = objectMapper.readTree(woStep.getStepFlashConfig());
                 for (com.fasterxml.jackson.databind.JsonNode b : arr) {
-                    if (b.has("contentRefId") && b.get("contentRefId").canConvertToInt()) {
+                    if (b.has("contentRefId") && b.get("contentRefId").canConvertToLong()) {
                         bindings.add(new FlashBinding(
                             b.has("flashTypeCode") ? b.get("flashTypeCode").asText() : "firmware_file",
                             b.get("contentRefId").asLong()));
