@@ -34,8 +34,14 @@ public class ProWorkOrderStep extends TenantEntity {
     /** 工序类型: GENERAL/FLASH 等(与 pro_work_order_step.step_type 对齐) */
     private String stepType;
 
-    /** 关联固件ID(刷写工序指定, 门禁依据: 完工前须该固件已刷写PASS) */
-    private Long firmwareId;
+    /** 内容引用类型(单类型快捷绑定: FIRMWARE/CONFIG/MAC_POOL...) */
+    private String contentRefType;
+
+    /** 内容源记录ID(固件类=mes_firmware_id; 门禁依据: 完工前须该内容已刷写PASS) */
+    private Long contentRefId;
+
+    /** 多类型绑定JSON: [{"flashTypeCode":"firmware_file","contentRefId":123},{"flashTypeCode":"mac"}] */
+    private String stepFlashConfig;
 
     /** ERP工序ID */
     private Long processId;

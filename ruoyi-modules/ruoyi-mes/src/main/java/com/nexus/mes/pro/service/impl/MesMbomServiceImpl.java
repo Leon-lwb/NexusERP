@@ -104,13 +104,25 @@ public class MesMbomServiceImpl implements IMesMbomService {
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
     /**
      * 新增
+     * <p>桥接校验(跨erp数据源)在事务外执行, DB写入(仅mes库)在事务内执行,
+     * 避免 @Transactional 绑定 mes 数据源后桥接查询无法切换到 erp 的问题。</p>
      * @param bo bo
      * @return 受影响行数
      */
     public int insertByBo(MesMbomBo bo) {
+        // 事务外桥接校验: 明细行引用的ERP工序步骤/物料
+        validateLinesAgainstErp(bo.getRoutingId(), bo.getLines());
+        // 事务内写入(仅mes库)
+        return doInsertByBo(bo);
+    }
+
+    /**
+     * 事务内新增MBOM及明细行(仅写mes数据源, 无ERP跨库查询)
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public int doInsertByBo(MesMbomBo bo) {
         // 校验同一ERP BOM不能重复编制MBOM
         Long exist = baseMapper.selectCount(Wrappers.lambdaQuery(MesMbom.class)
             .eq(MesMbom::getBomId, bo.getBomId()));
@@ -121,19 +133,30 @@ public class MesMbomServiceImpl implements IMesMbomService {
         entity.setMbomStatus(entity.getMbomStatus() == null ? "DRAFT" : entity.getMbomStatus());
         int rows = baseMapper.insert(entity);
         if (bo.getLines() != null && !bo.getLines().isEmpty()) {
-            validateAndSaveLines(entity.getMbomId(), entity.getBomId(), entity.getRoutingId(), bo.getLines());
+            saveLines(entity.getMbomId(), entity.getBomId(), bo.getLines());
         }
         return rows;
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
     /**
      * 更新
+     * <p>与新增相同: 桥接校验在事务外, DB写入在事务内(见 insertByBo)。</p>
      * @param bo bo
      * @return 受影响行数
      */
     public int updateByBo(MesMbomBo bo) {
+        // 事务外桥接校验: 明细行引用的ERP工序步骤/物料
+        validateLinesAgainstErp(bo.getRoutingId(), bo.getLines());
+        // 事务内写入(仅mes库)
+        return doUpdateByBo(bo);
+    }
+
+    /**
+     * 事务内更新MBOM及明细行(先删后插, 仅写mes数据源, 无ERP跨库查询)
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public int doUpdateByBo(MesMbomBo bo) {
         // 校验bomId不与其他MBOM冲突(排除自身)
         if (bo.getBomId() != null && bo.getMbomId() != null) {
             Long exist = baseMapper.selectCount(Wrappers.lambdaQuery(MesMbom.class)
@@ -149,7 +172,7 @@ public class MesMbomServiceImpl implements IMesMbomService {
         lineMapper.delete(Wrappers.lambdaQuery(MesMbomLine.class)
             .eq(MesMbomLine::getMbomId, entity.getMbomId()));
         if (bo.getLines() != null && !bo.getLines().isEmpty()) {
-            validateAndSaveLines(entity.getMbomId(), entity.getBomId(), entity.getRoutingId(), bo.getLines());
+            saveLines(entity.getMbomId(), entity.getBomId(), bo.getLines());
         }
         return rows;
     }
@@ -241,10 +264,13 @@ public class MesMbomServiceImpl implements IMesMbomService {
     // ============ private helpers ============
 
     /**
-     * 校验并保存MBOM明细行(先删后插)
-     * 校验内容: routingStepId 归属 MBOM 的 routing_id; childMaterialId/processId/workstationId 存在于 ERP
+     * 桥接校验MBOM明细行(跨erp数据源, 必须在事务外调用)
+     * 校验内容: routingStepId 归属 MBOM 的 routing_id; childMaterialId 存在于 ERP
      */
-    private void validateAndSaveLines(Long mbomId, Long bomId, Long routingId, List<MesMbomLineBo> lineBos) {
+    private void validateLinesAgainstErp(Long routingId, List<MesMbomLineBo> lineBos) {
+        if (lineBos == null || lineBos.isEmpty()) {
+            return;
+        }
         // 若路由已指定,获取有效步骤ID集合用于校验
         Set<Long> validStepIds = null;
         if (routingId != null) {
@@ -271,7 +297,12 @@ public class MesMbomServiceImpl implements IMesMbomService {
                 throw new ServiceException("第" + (i + 1) + "行: 子项物料ID[" + lineBo.getChildMaterialId() + "]在ERP中不存在");
             }
         }
-        // 全部校验通过后批量插入
+    }
+
+    /**
+     * 保存MBOM明细行(仅写mes库, 事务内调用; 桥接校验已在事务外完成)
+     */
+    private void saveLines(Long mbomId, Long bomId, List<MesMbomLineBo> lineBos) {
         for (int i = 0; i < lineBos.size(); i++) {
             MesMbomLineBo lineBo = lineBos.get(i);
             MesMbomLine entity = MapstructUtils.convert(lineBo, MesMbomLine.class);

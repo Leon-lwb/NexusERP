@@ -12,7 +12,12 @@
               placement="top"
             >
               <span style="margin-right: 8px; display: inline-block">
-                <el-button v-if="!props.disabled" type="success" icon="Stamp" @click="handleCreateFlowCard" :disabled="remainingQty !== undefined && remainingQty <= 0"
+                <el-button
+                  v-if="!props.disabled"
+                  type="success"
+                  icon="Stamp"
+                  @click="handleCreateFlowCard"
+                  :disabled="remainingQty !== undefined && remainingQty <= 0"
                   >创建流转卡</el-button
                 >
               </span>
@@ -57,11 +62,23 @@
             <el-table-column label="序号" prop="sequenceNum" width="80" align="center" />
             <el-table-column label="工序编码" prop="processCode" width="140" />
             <el-table-column label="工序名称" prop="processName" />
+            <el-table-column label="工序类型" prop="stepType" width="110" align="center">
+              <template #default="scope">
+                <dict-tag :options="mes_step_type" :value="scope.row.stepType" />
+              </template>
+            </el-table-column>
             <el-table-column label="工作中心" prop="workcenterCode" width="140" />
             <el-table-column label="关键工序" prop="isKeyProcess" width="100" align="center">
               <template #default="scope">
                 <el-tag v-if="scope.row.isKeyProcess === 1" type="danger">是</el-tag>
                 <span v-else>否</span>
+              </template>
+            </el-table-column>
+            <el-table-column label="刷写内容" prop="contentRefType" width="170" align="center">
+              <template #default="scope">
+                <span v-if="scope.row.contentRefType"> {{ scope.row.contentRefType }} #{{ scope.row.contentRefId }} </span>
+                <span v-else-if="scope.row.stepFlashConfig" style="color: #909399">多类型绑定</span>
+                <span v-else>-</span>
               </template>
             </el-table-column>
             <el-table-column label="计划数量" prop="plannedQty" width="100" align="right" />
@@ -107,7 +124,13 @@
               </el-select>
             </el-form-item>
             <el-form-item>
-              <el-button type="primary" icon="Promotion" @click="handleSubmitFlow" v-if="workOrder.woStatus === 'CREATED' && !props.disabled" :disabled="!selectFlowId">
+              <el-button
+                type="primary"
+                icon="Promotion"
+                @click="handleSubmitFlow"
+                v-if="workOrder.woStatus === 'CREATED' && !props.disabled"
+                :disabled="!selectFlowId"
+              >
                 提交审批
               </el-button>
               <el-button type="info" icon="View" @click="handleViewFlow" v-if="procInsId"> 查看流程 </el-button>
@@ -127,7 +150,7 @@ import type { ProWorkOrderVO } from '@/api/mes/pro/types';
 import { checkPermi } from '@/utils/permission';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
-const { prd_wo_status, mes_step_status } = toRefs<any>(proxy?.useDict('prd_wo_status', 'mes_step_status'));
+const { prd_wo_status, mes_step_status, mes_step_type } = toRefs<any>(proxy?.useDict('prd_wo_status', 'mes_step_status', 'mes_step_type'));
 const route = useRoute();
 const router = useRouter();
 
@@ -148,9 +171,13 @@ const activeTab = ref('info');
 const existingFlowCards = ref<ProFlowCardVO[]>([]);
 const usedQty = ref<number>(0);
 const remainingQty = ref<number | undefined>(undefined);
-/** 是否可创建流转卡: 工单已下达/生产中 且 拥有创建权限 */
+/** 是否可创建流转卡: 工单已下达/生产中/部分完成 且 拥有创建权限 */
 const canCreateFlowCard = computed(
-  () => (workOrder.value.woStatus === 'RELEASED' || workOrder.value.woStatus === 'IN_PROGRESS') && checkPermi(['mes:pro:flowcard:add'])
+  () =>
+    (workOrder.value.woStatus === 'RELEASED' ||
+      workOrder.value.woStatus === 'IN_PROGRESS' ||
+      workOrder.value.woStatus === 'PARTIAL_COMPLETED') &&
+    checkPermi(['mes:pro:flowcard:add'])
 );
 
 const loadDetail = async (mesWoIdParam?: string) => {
@@ -166,8 +193,12 @@ const loadDetail = async (mesWoIdParam?: string) => {
   if (workOrder.value.woStatus && workOrder.value.woStatus !== 'CREATED') {
     loadProcInsId(mesWoId);
   }
-  // 已下达/生产中可创建流转卡,预加载已建流转卡用于数量校验
-  if (workOrder.value.woStatus === 'RELEASED' || workOrder.value.woStatus === 'IN_PROGRESS') {
+  // 已下达/生产中/部分完成可创建流转卡,预加载已建流转卡用于数量校验
+  if (
+    workOrder.value.woStatus === 'RELEASED' ||
+    workOrder.value.woStatus === 'IN_PROGRESS' ||
+    workOrder.value.woStatus === 'PARTIAL_COMPLETED'
+  ) {
     loadFlowCardSummary(mesWoId);
   }
 };

@@ -297,7 +297,10 @@ public class ProDispatchServiceImpl implements IProDispatchService {
     }
 
     /**
-     * 校验报工数量：非负且三者合计不超过派工计划数量
+     * 校验报工数量：非负且三者合计必须等于派工计划数量
+     * <p>派工为"一次报工即完工"模型(good_qty/completed_qty 覆写非累加, 状态直接 COMPLETED),
+     * 故报工时良品+不良+报废须全数分流等于计划数量, 不允许少报(少报会导致卡/工单 completed_qty 与
+     * planned_qty 脱节, 卡已COMPLETED但完工数不足, 污染工单完工判定)。</p>
      */
     private void validateReportQuantities(BigDecimal goodQty, BigDecimal defectQty, BigDecimal scrapQty, BigDecimal plannedQty) {
         if (goodQty == null || defectQty == null || scrapQty == null) {
@@ -312,8 +315,11 @@ public class ProDispatchServiceImpl implements IProDispatchService {
         if (total.compareTo(BigDecimal.ZERO) <= 0) {
             throw new RuntimeException("报工数量合计必须大于0");
         }
-        if (plannedQty != null && total.compareTo(plannedQty) > 0) {
-            throw new RuntimeException("报工数量合计不能超过派工计划数量 " + plannedQty);
+        if (plannedQty != null && total.compareTo(plannedQty) != 0) {
+            throw new RuntimeException(String.format(
+                "报工数量合计必须等于派工计划数量 %s(良品+不良+报废全数分流), 当前合计 %s",
+                plannedQty.stripTrailingZeros().toPlainString(),
+                total.stripTrailingZeros().toPlainString()));
         }
     }
 

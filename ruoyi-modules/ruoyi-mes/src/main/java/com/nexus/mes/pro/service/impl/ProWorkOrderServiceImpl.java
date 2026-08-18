@@ -16,6 +16,10 @@ import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.mes.common.bridge.IMesErpBridgeService;
 import com.nexus.mes.eq.domain.EqEquipment;
 import com.nexus.mes.eq.mapper.EqEquipmentMapper;
+import com.nexus.mes.flash.config.FwProperties;
+import com.nexus.mes.flash.domain.Firmware;
+import com.nexus.mes.flash.mapper.FirmwareMapper;
+import com.nexus.mes.flash.service.IFirmwareService;
 import com.nexus.mes.common.mq.MesMqSendService;
 import com.nexus.mes.ncr.domain.NcrOrder;
 import com.nexus.mes.ncr.domain.NcrReworkOrder;
@@ -89,6 +93,10 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
      */
     private final NcrReworkOrderMapper ncrReworkOrderMapper;
     private final NcrOrderMapper ncrOrderMapper;
+    /** 刷写配置: 工序打标关键字(nexus.mes.flash) */
+    private final FwProperties fwProperties;
+    /** 固件 Mapper: FLASH 工序自动带出物料默认 RELEASED 固件 */
+    private final FirmwareMapper firmwareMapper;
 
     @Override
     /**
@@ -414,9 +422,24 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
             step.setProcessName((String) rs.get("process_name"));
             step.setWorkcenterId(toLong(rs.get("workstation_id")));
             step.setWorkcenterCode((String) rs.get("workstation_code"));
-            // 固件刷写步骤: 工艺步骤指定 firmware_id 时下发到工单步骤(驱动刷写门禁)
-            if (rs.get("firmware_id") != null) {
-                step.setFirmwareId(toLong(rs.get("firmware_id")));
+            // 工序打标: 按 process_code 关键字落 step_type (FLASH/TEST/GENERAL), 计划员可改标
+            step.setStepType(resolveStepType(step.getProcessCode()));
+            // 刷写内容绑定: 工艺步骤显式 firmware_id 优先; 否则 FLASH 工序自动带出物料默认 RELEASED 固件
+            Long firmwareId = toLong(rs.get("firmware_id"));
+            if (firmwareId == null && "FLASH".equals(step.getStepType()) && workOrder.getMaterialId() != null) {
+                Firmware defaultFw = firmwareMapper.selectOne(Wrappers.<Firmware>lambdaQuery()
+                    .eq(Firmware::getMaterialId, workOrder.getMaterialId())
+                    .eq(Firmware::getIsDefault, IFirmwareService.IS_DEFAULT_YES)
+                    .eq(Firmware::getStatus, IFirmwareService.STATUS_RELEASED)
+                    .last("LIMIT 1"));
+                if (defaultFw != null) {
+                    firmwareId = defaultFw.getFirmwareId();
+                    log.info("FLASH工序自动带出物料默认固件: woNo={}, processCode={}, firmwareId={}", workOrder.getWoNo(), step.getProcessCode(), firmwareId);
+                }
+            }
+            if (firmwareId != null) {
+                step.setContentRefType("FIRMWARE");
+                step.setContentRefId(firmwareId);
             }
             step.setPlannedQty(workOrder.getPlannedQty());
             step.setStepStatus(STEP_PENDING);
@@ -429,6 +452,26 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
             stepMapper.insert(step);
         }
         log.info("工序步骤生成完成: mesWoId={}, stepCount={}", workOrder.getMesWoId(), steps.size());
+    }
+
+    /**
+     * 工序打标: 按 process_code 关键字匹配 nexus.mes.flash.{flash|test}-keywords 落 step_type。
+     * FLASH: 刷写工序; TEST: 测试工序; 未命中 GENERAL(不阻塞)。
+     */
+    private String resolveStepType(String processCode) {
+        if (StringUtils.isBlank(processCode)) {
+            return "GENERAL";
+        }
+        String upper = processCode.toUpperCase();
+        if (fwProperties.getFlashKeywords() != null
+            && fwProperties.getFlashKeywords().stream().anyMatch(upper::contains)) {
+            return "FLASH";
+        }
+        if (fwProperties.getTestKeywords() != null
+            && fwProperties.getTestKeywords().stream().anyMatch(upper::contains)) {
+            return "TEST";
+        }
+        return "GENERAL";
     }
 
     /**
@@ -609,11 +652,13 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
     }
 
     /**
-     * 工单完工(RELEASED/IN_PROGRESS -> COMPLETED) + MQ通知ERP
+     * 工单完工(RELEASED/IN_PROGRESS/PARTIAL_COMPLETED -> COMPLETED) + MQ通知ERP
      * <p>
-     * 由流转卡完工聚合触发。CAS更新状态，事务提交后异步发送MQ消息。
+     * 由流转卡完工聚合触发(仅当工单下所有流转卡均完工时调用)。CAS更新状态，事务提交后异步发送MQ消息。
      * 兼容工单从未进入 IN_PROGRESS 的场景(如流转卡在未开工状态下被直接完工):
      * 此时一并补写 actualStartDate，避免完工工单缺失开工时间。
+     * <p>
+     * 部分完工(PARTIAL_COMPLETED)由 completeCard 在仍有在制流转卡时置位, 不走此方法, 不通知ERP。
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -623,7 +668,9 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
             log.warn("MES工单不存在，跳过完工: mesWoId={}", mesWoId);
             return;
         }
-        if (!STATUS_IN_PROGRESS.equals(wo.getWoStatus()) && !STATUS_RELEASED.equals(wo.getWoStatus())) {
+        if (!STATUS_IN_PROGRESS.equals(wo.getWoStatus())
+            && !STATUS_RELEASED.equals(wo.getWoStatus())
+            && !STATUS_PARTIAL_COMPLETED.equals(wo.getWoStatus())) {
             log.warn("工单状态不满足完工条件，跳过: mesWoId={}, woStatus={}", mesWoId, wo.getWoStatus());
             return;
         }
@@ -668,14 +715,14 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
             }
         }
 
-        // CAS更新 RELEASED/IN_PROGRESS -> COMPLETED; 若工单从未开工(actualStartDate为空)则补写开工时间
+        // CAS更新 RELEASED/IN_PROGRESS/PARTIAL_COMPLETED -> COMPLETED; 若工单从未开工(actualStartDate为空)则补写开工时间
         Date now = new Date();
         int rows = baseMapper.update(null, Wrappers.<ProWorkOrder>lambdaUpdate()
             .set(ProWorkOrder::getWoStatus, STATUS_COMPLETED)
             .set(ProWorkOrder::getActualEndDate, now)
             .set(wo.getActualStartDate() == null, ProWorkOrder::getActualStartDate, now)
             .eq(ProWorkOrder::getMesWoId, mesWoId)
-            .in(ProWorkOrder::getWoStatus, STATUS_RELEASED, STATUS_IN_PROGRESS));
+            .in(ProWorkOrder::getWoStatus, STATUS_RELEASED, STATUS_IN_PROGRESS, STATUS_PARTIAL_COMPLETED));
         if (rows == 0) {
             log.warn("工单状态并发变更，跳过完工: mesWoId={}", mesWoId);
             return;

@@ -63,8 +63,14 @@ public class ProWorkOrderStepVo implements Serializable {
     /** 是否关键工序 */
     private Integer isKeyProcess;
 
-    /** 关联固件ID(固件刷写工序) */
-    private Long firmwareId;
+    /** 内容引用类型(单类型绑定: FIRMWARE/CONFIG/MAC_POOL...) */
+    private String contentRefType;
+
+    /** 内容源记录ID(固件类=mes_firmware_id) */
+    private Long contentRefId;
+
+    /** 多类型绑定JSON */
+    private String stepFlashConfig;
 
     /** 开始时间 */
     private Date startTime;

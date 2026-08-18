@@ -7,6 +7,16 @@
           <el-button style="float: right" type="primary" plain @click="goBack">返回</el-button>
           <el-button
             style="float: right; margin-right: 8px"
+            type="success"
+            plain
+            icon="MagicStick"
+            v-if="flowCard.cardStatus === 'IN_PROGRESS'"
+            v-hasPermi="['mes:pro:sn:add']"
+            @click="handleGenerateSn"
+            >生成SN</el-button
+          >
+          <el-button
+            style="float: right; margin-right: 8px"
             type="warning"
             plain
             icon="CircleCheck"
@@ -256,6 +266,7 @@ import type {
 } from '@/api/mes/pro/flowcardApi';
 import { addDispatch, listDispatchByStep } from '@/api/mes/pro/dispatch';
 import type { ProDispatchVO } from '@/api/mes/pro/dispatch';
+import { generateSnForCard } from '@/api/mes/pro/sn';
 import { listWorker } from '@/api/erp/sch/worker/index';
 import type { WorkerVO } from '@/api/erp/sch/worker/types';
 import type { FormInstance, FormRules } from 'element-plus';
@@ -343,6 +354,27 @@ const loadDetail = async () => {
   flowCard.value = res.data;
   // 加载每个工序的派工记录
   await loadStepDispatches();
+};
+
+// ===== 生成SN(SN管理物料刷写工单必经步骤: 建流转卡→生成SN→刷写→完工) =====
+const generateSnSubmitting = ref(false);
+const handleGenerateSn = async () => {
+  const qty = Number(flowCard.value.plannedQty) || 1;
+  try {
+    await proxy?.$modal.confirm(`确认按计划数量 ${qty} 生成SN? 生成后需逐台刷写, 刷写工序完工门禁将校验每台SN的刷写记录。`, '生成SN');
+  } catch {
+    return;
+  }
+  generateSnSubmitting.value = true;
+  try {
+    await generateSnForCard(flowCard.value.cardId, qty, 'IN_PRODUCTION');
+    proxy?.$modal.msgSuccess(`已生成 ${qty} 个SN`);
+    await loadDetail();
+  } catch (e: any) {
+    proxy?.$modal.msgError(e?.msg || e?.message || '生成SN失败');
+  } finally {
+    generateSnSubmitting.value = false;
+  }
 };
 
 // ===== 进站(P0-3) =====

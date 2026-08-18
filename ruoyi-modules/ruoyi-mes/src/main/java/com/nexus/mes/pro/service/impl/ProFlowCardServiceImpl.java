@@ -10,8 +10,8 @@ import com.nexus.common.core.utils.MapstructUtils;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
-import com.nexus.mes.fw.domain.FwFlashRecord;
-import com.nexus.mes.fw.mapper.FwFlashRecordMapper;
+import com.nexus.mes.flash.domain.FlashRecord;
+import com.nexus.mes.flash.mapper.FlashRecordMapper;
 import com.nexus.mes.ncr.service.INcrOrderService;
 import com.nexus.mes.pro.domain.ProFlowCard;
 import com.nexus.mes.pro.domain.ProFlowCardStep;
@@ -46,6 +46,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 /**
  * MES流转卡 Service 业务层实现
@@ -77,10 +78,12 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
     /** SN 服务：(刷写门禁) 按流转卡反查在制 SN 列表 */
     private final ProSnMapper proSnMapper;
     /** 刷写记录：(刷写门禁) 校验固件刷写 PASS 记录 */
-    private final FwFlashRecordMapper flashRecordMapper;
-    /** 刷写工序门禁开关: 工单步骤设 firmware_id 的工序, 完工前须该卡全部在制SN均已有对应固件 PASS 刷写记录 */
-    @Value("${mes.flash-step-gate:true}")
-    private boolean flashStepGateEnabled;
+    private final FlashRecordMapper flashRecordMapper;
+    /** JSON 解析(step_flash_config 多类型绑定) */
+    private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
+    /** 刷写门禁模式: FORCE=FAIL拦截 / WARN=告警放行 / 其他=关闭 */
+    @Value("${mes.flash.gate.mode:FORCE}")
+    private String flashGateMode;
 
     @Override
     /**
@@ -159,8 +162,9 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
             throw new RuntimeException("MES工单不存在: " + mesWoId);
         }
         if (!IProWorkOrderService.STATUS_RELEASED.equals(workOrder.getWoStatus())
-            && !IProWorkOrderService.STATUS_IN_PROGRESS.equals(workOrder.getWoStatus())) {
-            throw new RuntimeException("仅已下达或生产中的工单可创建流转卡,当前状态:" + workOrder.getWoStatus());
+            && !IProWorkOrderService.STATUS_IN_PROGRESS.equals(workOrder.getWoStatus())
+            && !IProWorkOrderService.STATUS_PARTIAL_COMPLETED.equals(workOrder.getWoStatus())) {
+            throw new RuntimeException("仅已下达、生产中或部分完成的工单可创建流转卡,当前状态:" + workOrder.getWoStatus());
         }
 
         // 2. 校验计划数量: 工单下所有流转卡计划数量之和不得超过工单计划数量(防止重复/超量创建)
@@ -267,8 +271,9 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
         log.info("完成工序: cardId={}, stepRecordId={}, good={}, defect={}, scrap={}",
             cardId, stepRecordId, goodQty, defectQty, scrapQty);
 
-        // 数量校验：三个数量必须非负且合计不超过计划数量，防止负数/超量污染工单完工数量
-        validateReportQuantities(goodQty, defectQty, scrapQty);
+        // 数量校验：非负且合计等于流转卡计划数量(良品+不良+报废全数分流), 防止少报污染完工数据
+        ProFlowCard cardForCheck = baseMapper.selectById(cardId);
+        validateReportQuantities(goodQty, defectQty, scrapQty, cardForCheck);
 
         // 刷写门禁: 工单步骤指定 firmware_id 的刷写工序, 完工前须该卡全部在制 SN 均已有对应固件 PASS 刷写记录
         checkFlashStepGate(stepRecordId, cardId);
@@ -309,9 +314,12 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
     }
 
     /**
-     * 校验报工数量：非负且三者合计不超过流转卡计划数量，防止负数/超量污染完工数据
+     * 校验报工数量：非负, 合计必须等于流转卡计划数量(良品+不良+报废全数分流)
+     * <p>出站完工为"一次报工即完工"模型(completed_qty 用 goodQty 覆写非累加), 故报工时
+     * 三者合计须等于卡 planned_qty, 不允许少报(少报会导致卡 completed_qty < planned_qty,
+     * 卡已COMPLETED但完工数不足, 污染工单完工数量判定)。</p>
      */
-    private void validateReportQuantities(BigDecimal goodQty, BigDecimal defectQty, BigDecimal scrapQty) {
+    private void validateReportQuantities(BigDecimal goodQty, BigDecimal defectQty, BigDecimal scrapQty, ProFlowCard card) {
         if (goodQty == null || defectQty == null || scrapQty == null) {
             throw new RuntimeException("报工数量不能为空");
         }
@@ -324,6 +332,14 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
         if (total.compareTo(BigDecimal.ZERO) <= 0) {
             throw new RuntimeException("报工数量合计必须大于0");
         }
+        if (card != null && card.getPlannedQty() != null
+            && total.compareTo(card.getPlannedQty()) != 0) {
+            throw new RuntimeException(String.format(
+                "报工数量合计必须等于流转卡计划数量 %s(良品+不良+报废全数分流), 当前合计 %s, 卡号 %s",
+                card.getPlannedQty().stripTrailingZeros().toPlainString(),
+                total.stripTrailingZeros().toPlainString(),
+                card.getCardNo()));
+        }
     }
 
     /**
@@ -332,7 +348,8 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
      * 均已存在对应固件的 PASS 刷写记录, 否则拒绝完工(未刷写不能过站)。</p>
      */
     private void checkFlashStepGate(Long stepRecordId, Long cardId) {
-        if (!flashStepGateEnabled) {
+        // 门禁模式: FORCE=拦截 / WARN=告警放行 / 其他=关闭
+        if (!"FORCE".equals(flashGateMode) && !"WARN".equals(flashGateMode)) {
             return;
         }
         ProFlowCardStep step = stepMapper.selectById(stepRecordId);
@@ -340,34 +357,81 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
             return;
         }
         ProWorkOrderStep woStep = workOrderStepMapper.selectById(step.getWoStepId());
-        // 非固件刷写工序(未指定固件)直接放行
-        if (woStep == null || woStep.getFirmwareId() == null) {
+        if (woStep == null) {
             return;
         }
-        // 卡上在制 SN 列表(无 SN 的批量卡不适用门禁)
+        // 解析刷写绑定: step_flash_config 多类型优先, 否则单类型 content_ref_id(固件类)
+        List<FlashBinding> bindings = parseFlashBindings(woStep);
+        if (bindings.isEmpty()) {
+            return;
+        }
+        // E: SN 作用域 — 刷写记录是 SN 级的, 故须校验卡上各 SN 的刷写记录; 无 SN 时:
+        //    刷写工序(有绑定)无 SN = 无法产生刷写记录 = 未刷写, 直接拦截(FORCE)/告警(WARN), 防派工绕过门禁
+        //    (不查 ERP 物料 SN 管理标志: 事务内 @DS("mes") 无法切 erp 数据源; 且绑定了刷写内容的工序业务上必须逐 SN 刷写)
         List<ProSn> sns = proSnMapper.selectList(Wrappers.<ProSn>lambdaQuery()
             .eq(ProSn::getCardId, cardId));
         if (sns == null || sns.isEmpty()) {
-            return;
+            String msg = "刷写门禁未通过: 工序[" + step.getProcessName() + "]为刷写工序但该卡无SN"
+                + "(刷写为SN级作业, 请先在流转卡详情页点「生成SN」生成SN后逐台刷写)";
+            if ("WARN".equals(flashGateMode)) {
+                log.warn(msg + " (WARN模式放行)");
+                return;
+            }
+            throw new ServiceException(msg);
         }
-        Long requiredFirmwareId = woStep.getFirmwareId();
+        // 多类型门禁: 每个(绑定项 × SN) 均须该工序序号对应的最新一条 PASS
         List<String> unpassed = new ArrayList<>();
-        for (ProSn sn : sns) {
-            FwFlashRecord latest = flashRecordMapper.selectOne(Wrappers.<FwFlashRecord>lambdaQuery()
-                .eq(FwFlashRecord::getSnCode, sn.getSnCode())
-                .eq(FwFlashRecord::getFirmwareId, requiredFirmwareId)
-                .orderByDesc(FwFlashRecord::getFlashTime)
-                .orderByDesc(FwFlashRecord::getFlashRecordId)
-                .last("LIMIT 1"));
-            if (latest == null || !"PASS".equals(latest.getResult())) {
-                unpassed.add(sn.getSnCode() + "(" + (latest == null ? "未刷写" : latest.getResult()) + ")");
+        for (FlashBinding b : bindings) {
+            for (ProSn sn : sns) {
+                FlashRecord latest = flashRecordMapper.selectOne(Wrappers.<FlashRecord>lambdaQuery()
+                    .eq(FlashRecord::getSnCode, sn.getSnCode())
+                    .eq(FlashRecord::getContentRefId, b.contentRefId())
+                    .orderByDesc(FlashRecord::getFlashTime)
+                    .orderByDesc(FlashRecord::getFlashRecordId)
+                    .last("LIMIT 1"));
+                if (latest == null || !"PASS".equals(latest.getResult())) {
+                    unpassed.add(sn.getSnCode() + "(" + b.flashTypeCode() + ": " + (latest == null ? "未刷写" : latest.getResult()) + ")");
+                }
             }
         }
         if (!unpassed.isEmpty()) {
-            throw new ServiceException("刷写门禁未通过: 工序[" + step.getProcessName() + "]要求固件#" + requiredFirmwareId
-                + " 已刷写且PASS, 未通过SN: " + String.join(", ", unpassed));
+            String msg = "刷写门禁未通过: 工序[" + step.getProcessName() + "]要求刷写内容已PASS, 未通过: " + String.join(", ", unpassed);
+            if ("WARN".equals(flashGateMode)) {
+                log.warn(msg + " (WARN模式放行)");
+                return;
+            }
+            throw new ServiceException(msg);
         }
     }
+
+    /**
+     * 解析工序刷写绑定: step_flash_config(JSON 多类型数组)优先, 否则单类型 content_ref_id(固件类)。
+     * <p>step_flash_config 格式: [{"flashTypeCode":"firmware_file","contentRefId":123},{"flashTypeCode":"mac","contentRefId":456}]</p>
+     */
+    private List<FlashBinding> parseFlashBindings(ProWorkOrderStep woStep) {
+        List<FlashBinding> bindings = new ArrayList<>();
+        if (StringUtils.isNotBlank(woStep.getStepFlashConfig())) {
+            try {
+                com.fasterxml.jackson.databind.JsonNode arr = objectMapper.readTree(woStep.getStepFlashConfig());
+                for (com.fasterxml.jackson.databind.JsonNode b : arr) {
+                    if (b.has("contentRefId") && b.get("contentRefId").canConvertToLong()) {
+                        bindings.add(new FlashBinding(
+                            b.has("flashTypeCode") ? b.get("flashTypeCode").asText() : "firmware_file",
+                            b.get("contentRefId").asLong()));
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("解析 step_flash_config 失败, 回退单类型: woStepId={}, err={}", woStep.getStepId(), e.getMessage());
+            }
+        }
+        if (bindings.isEmpty() && woStep.getContentRefId() != null) {
+            bindings.add(new FlashBinding("firmware_file", woStep.getContentRefId()));
+        }
+        return bindings;
+    }
+
+    /** 刷写绑定项(flashTypeCode + contentRefId) */
+    private record FlashBinding(String flashTypeCode, Long contentRefId) {}
 
     /**
      * 完成流转卡
@@ -416,19 +480,50 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
         card.setScrapQty(correctScrapQty);
         log.info("流转卡完工: cardId={}, completedQty={}, scrapQty={}", cardId, correctCompletedQty, correctScrapQty);
 
-        // 3. 聚合到工单 completed_qty（card 的 completedQty 已在步骤2中重算为正确值）
+        // 3. 读取工单(增量前快照, 用于完工数量判定; 本事务首次读 wo, 非缓存旧值)
+        ProWorkOrder wo = workOrderMapper.selectById(card.getMesWoId());
+        BigDecimal plannedQty = wo != null && wo.getPlannedQty() != null ? wo.getPlannedQty() : BigDecimal.ZERO;
+        BigDecimal woCompletedBefore = wo != null && wo.getCompletedQty() != null ? wo.getCompletedQty() : BigDecimal.ZERO;
+        BigDecimal woScrapBefore = wo != null && wo.getScrapQty() != null ? wo.getScrapQty() : BigDecimal.ZERO;
+
+        // 聚合到工单 completed_qty（card 的 completedQty 已在步骤2中重算为正确值）
         workOrderMapper.update(null, Wrappers.<ProWorkOrder>lambdaUpdate()
             .setSql("completed_qty = completed_qty + {0}", correctCompletedQty)
             .setSql("scrap_qty = scrap_qty + {0}", correctScrapQty)
             .eq(ProWorkOrder::getMesWoId, card.getMesWoId()));
 
-        // 4. 检查工单下是否还有非COMPLETED/CLOSED流转卡
-        Long activeCardCount = baseMapper.selectCount(Wrappers.<ProFlowCard>lambdaQuery()
-            .eq(ProFlowCard::getMesWoId, card.getMesWoId())
-            .notIn(ProFlowCard::getCardStatus, STATUS_COMPLETED, STATUS_CLOSED));
-        if (activeCardCount == 0) {
-            log.info("工单所有流转卡完工，触发工单完工: mesWoId={}", card.getMesWoId());
+        // 4. 判定工单是否全部完工: 累计(完工+报废) >= 计划数量 才转 COMPLETED, 否则 PARTIAL_COMPLETED
+        //    (避免: 计划10仅完工3/6, 即便所有流转卡已COMPLETED, 工单也不应判已完工; 以数量为准非卡数)
+        BigDecimal totalCompleted = woCompletedBefore.add(correctCompletedQty);
+        BigDecimal totalScrap = woScrapBefore.add(correctScrapQty);
+        if (totalCompleted.add(totalScrap).compareTo(plannedQty) >= 0) {
+            log.info("工单累计完工+报废({}+{})达计划({}), 触发工单完工: mesWoId={}",
+                totalCompleted.stripTrailingZeros().toPlainString(),
+                totalScrap.stripTrailingZeros().toPlainString(),
+                plannedQty.stripTrailingZeros().toPlainString(),
+                card.getMesWoId());
             proWorkOrderService.completeWo(card.getMesWoId());
+        } else {
+            // 部分完工: 累计未达计划, 工单标记 PARTIAL_COMPLETED(不通知ERP, 不触发完工入库)
+            // CAS: RELEASED/IN_PROGRESS -> PARTIAL_COMPLETED; 兼容未开工补 actualStartDate
+            Date now = new Date();
+            int partialRows = workOrderMapper.update(null, Wrappers.<ProWorkOrder>lambdaUpdate()
+                .set(ProWorkOrder::getWoStatus, IProWorkOrderService.STATUS_PARTIAL_COMPLETED)
+                .eq(ProWorkOrder::getMesWoId, card.getMesWoId())
+                .in(ProWorkOrder::getWoStatus,
+                    IProWorkOrderService.STATUS_RELEASED,
+                    IProWorkOrderService.STATUS_IN_PROGRESS));
+            if (partialRows > 0 && wo != null && wo.getActualStartDate() == null) {
+                workOrderMapper.update(null, Wrappers.<ProWorkOrder>lambdaUpdate()
+                    .set(ProWorkOrder::getActualStartDate, now)
+                    .eq(ProWorkOrder::getMesWoId, card.getMesWoId())
+                    .isNull(ProWorkOrder::getActualStartDate));
+            }
+            log.info("工单部分完工: 累计完工+报废({}+{})未达计划({}), 标记 PARTIAL_COMPLETED: mesWoId={}",
+                totalCompleted.stripTrailingZeros().toPlainString(),
+                totalScrap.stripTrailingZeros().toPlainString(),
+                plannedQty.stripTrailingZeros().toPlainString(),
+                card.getMesWoId());
         }
     }
 
@@ -470,6 +565,8 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
     @Transactional(rollbackFor = Exception.class)
     @Override
     public void checkAndCompleteStep(Long cardId, Long stepRecordId) {
+        // 刷写门禁(派工聚合完工路径, 与 completeStep 一致; 覆盖 completeDispatch→本方法路径)
+        checkFlashStepGate(stepRecordId, cardId);
         // CAS 工序 IN_PROGRESS -> COMPLETED
         int rows = stepMapper.update(null, Wrappers.<ProFlowCardStep>lambdaUpdate()
             .set(ProFlowCardStep::getStepStatus, STEP_COMPLETED)
