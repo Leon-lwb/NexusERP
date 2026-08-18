@@ -359,7 +359,7 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
             .eq(ProSn::getCardId, cardId));
         if (sns == null || sns.isEmpty()) {
             String msg = "刷写门禁未通过: 工序[" + step.getProcessName() + "]为刷写工序但该卡无SN"
-                + "(刷写为SN级作业, 须先建流转卡生成SN并逐台刷写)";
+                + "(刷写为SN级作业, 请先在流转卡详情页点「生成SN」生成SN后逐台刷写)";
             if ("WARN".equals(flashGateMode)) {
                 log.warn(msg + " (WARN模式放行)");
                 return;
