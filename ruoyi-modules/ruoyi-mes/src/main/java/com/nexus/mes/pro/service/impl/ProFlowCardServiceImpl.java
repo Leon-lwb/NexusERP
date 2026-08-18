@@ -162,8 +162,9 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
             throw new RuntimeException("MES工单不存在: " + mesWoId);
         }
         if (!IProWorkOrderService.STATUS_RELEASED.equals(workOrder.getWoStatus())
-            && !IProWorkOrderService.STATUS_IN_PROGRESS.equals(workOrder.getWoStatus())) {
-            throw new RuntimeException("仅已下达或生产中的工单可创建流转卡,当前状态:" + workOrder.getWoStatus());
+            && !IProWorkOrderService.STATUS_IN_PROGRESS.equals(workOrder.getWoStatus())
+            && !IProWorkOrderService.STATUS_PARTIAL_COMPLETED.equals(workOrder.getWoStatus())) {
+            throw new RuntimeException("仅已下达、生产中或部分完成的工单可创建流转卡,当前状态:" + workOrder.getWoStatus());
         }
 
         // 2. 校验计划数量: 工单下所有流转卡计划数量之和不得超过工单计划数量(防止重复/超量创建)
@@ -270,8 +271,9 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
         log.info("完成工序: cardId={}, stepRecordId={}, good={}, defect={}, scrap={}",
             cardId, stepRecordId, goodQty, defectQty, scrapQty);
 
-        // 数量校验：三个数量必须非负且合计不超过计划数量，防止负数/超量污染工单完工数量
-        validateReportQuantities(goodQty, defectQty, scrapQty);
+        // 数量校验：非负且合计等于流转卡计划数量(良品+不良+报废全数分流), 防止少报污染完工数据
+        ProFlowCard cardForCheck = baseMapper.selectById(cardId);
+        validateReportQuantities(goodQty, defectQty, scrapQty, cardForCheck);
 
         // 刷写门禁: 工单步骤指定 firmware_id 的刷写工序, 完工前须该卡全部在制 SN 均已有对应固件 PASS 刷写记录
         checkFlashStepGate(stepRecordId, cardId);
@@ -312,9 +314,12 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
     }
 
     /**
-     * 校验报工数量：非负且三者合计不超过流转卡计划数量，防止负数/超量污染完工数据
+     * 校验报工数量：非负, 合计必须等于流转卡计划数量(良品+不良+报废全数分流)
+     * <p>出站完工为"一次报工即完工"模型(completed_qty 用 goodQty 覆写非累加), 故报工时
+     * 三者合计须等于卡 planned_qty, 不允许少报(少报会导致卡 completed_qty < planned_qty,
+     * 卡已COMPLETED但完工数不足, 污染工单完工数量判定)。</p>
      */
-    private void validateReportQuantities(BigDecimal goodQty, BigDecimal defectQty, BigDecimal scrapQty) {
+    private void validateReportQuantities(BigDecimal goodQty, BigDecimal defectQty, BigDecimal scrapQty, ProFlowCard card) {
         if (goodQty == null || defectQty == null || scrapQty == null) {
             throw new RuntimeException("报工数量不能为空");
         }
@@ -326,6 +331,14 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
         BigDecimal total = goodQty.add(defectQty).add(scrapQty);
         if (total.compareTo(BigDecimal.ZERO) <= 0) {
             throw new RuntimeException("报工数量合计必须大于0");
+        }
+        if (card != null && card.getPlannedQty() != null
+            && total.compareTo(card.getPlannedQty()) != 0) {
+            throw new RuntimeException(String.format(
+                "报工数量合计必须等于流转卡计划数量 %s(良品+不良+报废全数分流), 当前合计 %s, 卡号 %s",
+                card.getPlannedQty().stripTrailingZeros().toPlainString(),
+                total.stripTrailingZeros().toPlainString(),
+                card.getCardNo()));
         }
     }
 
@@ -467,19 +480,50 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
         card.setScrapQty(correctScrapQty);
         log.info("流转卡完工: cardId={}, completedQty={}, scrapQty={}", cardId, correctCompletedQty, correctScrapQty);
 
-        // 3. 聚合到工单 completed_qty（card 的 completedQty 已在步骤2中重算为正确值）
+        // 3. 读取工单(增量前快照, 用于完工数量判定; 本事务首次读 wo, 非缓存旧值)
+        ProWorkOrder wo = workOrderMapper.selectById(card.getMesWoId());
+        BigDecimal plannedQty = wo != null && wo.getPlannedQty() != null ? wo.getPlannedQty() : BigDecimal.ZERO;
+        BigDecimal woCompletedBefore = wo != null && wo.getCompletedQty() != null ? wo.getCompletedQty() : BigDecimal.ZERO;
+        BigDecimal woScrapBefore = wo != null && wo.getScrapQty() != null ? wo.getScrapQty() : BigDecimal.ZERO;
+
+        // 聚合到工单 completed_qty（card 的 completedQty 已在步骤2中重算为正确值）
         workOrderMapper.update(null, Wrappers.<ProWorkOrder>lambdaUpdate()
             .setSql("completed_qty = completed_qty + {0}", correctCompletedQty)
             .setSql("scrap_qty = scrap_qty + {0}", correctScrapQty)
             .eq(ProWorkOrder::getMesWoId, card.getMesWoId()));
 
-        // 4. 检查工单下是否还有非COMPLETED/CLOSED流转卡
-        Long activeCardCount = baseMapper.selectCount(Wrappers.<ProFlowCard>lambdaQuery()
-            .eq(ProFlowCard::getMesWoId, card.getMesWoId())
-            .notIn(ProFlowCard::getCardStatus, STATUS_COMPLETED, STATUS_CLOSED));
-        if (activeCardCount == 0) {
-            log.info("工单所有流转卡完工，触发工单完工: mesWoId={}", card.getMesWoId());
+        // 4. 判定工单是否全部完工: 累计(完工+报废) >= 计划数量 才转 COMPLETED, 否则 PARTIAL_COMPLETED
+        //    (避免: 计划10仅完工3/6, 即便所有流转卡已COMPLETED, 工单也不应判已完工; 以数量为准非卡数)
+        BigDecimal totalCompleted = woCompletedBefore.add(correctCompletedQty);
+        BigDecimal totalScrap = woScrapBefore.add(correctScrapQty);
+        if (totalCompleted.add(totalScrap).compareTo(plannedQty) >= 0) {
+            log.info("工单累计完工+报废({}+{})达计划({}), 触发工单完工: mesWoId={}",
+                totalCompleted.stripTrailingZeros().toPlainString(),
+                totalScrap.stripTrailingZeros().toPlainString(),
+                plannedQty.stripTrailingZeros().toPlainString(),
+                card.getMesWoId());
             proWorkOrderService.completeWo(card.getMesWoId());
+        } else {
+            // 部分完工: 累计未达计划, 工单标记 PARTIAL_COMPLETED(不通知ERP, 不触发完工入库)
+            // CAS: RELEASED/IN_PROGRESS -> PARTIAL_COMPLETED; 兼容未开工补 actualStartDate
+            Date now = new Date();
+            int partialRows = workOrderMapper.update(null, Wrappers.<ProWorkOrder>lambdaUpdate()
+                .set(ProWorkOrder::getWoStatus, IProWorkOrderService.STATUS_PARTIAL_COMPLETED)
+                .eq(ProWorkOrder::getMesWoId, card.getMesWoId())
+                .in(ProWorkOrder::getWoStatus,
+                    IProWorkOrderService.STATUS_RELEASED,
+                    IProWorkOrderService.STATUS_IN_PROGRESS));
+            if (partialRows > 0 && wo != null && wo.getActualStartDate() == null) {
+                workOrderMapper.update(null, Wrappers.<ProWorkOrder>lambdaUpdate()
+                    .set(ProWorkOrder::getActualStartDate, now)
+                    .eq(ProWorkOrder::getMesWoId, card.getMesWoId())
+                    .isNull(ProWorkOrder::getActualStartDate));
+            }
+            log.info("工单部分完工: 累计完工+报废({}+{})未达计划({}), 标记 PARTIAL_COMPLETED: mesWoId={}",
+                totalCompleted.stripTrailingZeros().toPlainString(),
+                totalScrap.stripTrailingZeros().toPlainString(),
+                plannedQty.stripTrailingZeros().toPlainString(),
+                card.getMesWoId());
         }
     }
 

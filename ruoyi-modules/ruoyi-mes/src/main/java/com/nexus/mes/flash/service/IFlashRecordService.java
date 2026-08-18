@@ -68,4 +68,12 @@ public interface IFlashRecordService {
      * 工位编排: 查 SN 工单刷写工序待刷清单(每绑定项含最新刷写结果, 产线工位拉取)
      */
     List<Map<String, Object>> selectStationPending(String snCode);
+
+    /**
+     * 待刷写任务清单(登录态, 刷写作业页用): 按工单/流转卡聚合在制SN × 工单刷写工序绑定,
+     * 每行含 snId/snCode/woNo/cardId/sequenceNum/processName/flashTypeCode/contentRefId/
+     * contentVersion/contentChecksum/latestResult/flashTime/pendingFlag。
+     * <p>pendingFlag: 该 SN 该绑定项最新刷写结果非 PASS 视为待刷(未刷/FAIL 重刷)。</p>
+     */
+    List<Map<String, Object>> selectPendingTasks(Long mesWoId, Long cardId, String woNo);
 }

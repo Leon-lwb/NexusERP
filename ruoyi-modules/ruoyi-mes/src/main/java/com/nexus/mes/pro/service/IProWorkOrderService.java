@@ -26,6 +26,8 @@ public interface IProWorkOrderService extends WfCallBackServiceI {
     String STATUS_RELEASED = "RELEASED";
     /** 工单状态: 生产中 */
     String STATUS_IN_PROGRESS = "IN_PROGRESS";
+    /** 工单状态: 部分完成(部分流转卡已完工, 仍有在制流转卡; 全部完工才转 COMPLETED) */
+    String STATUS_PARTIAL_COMPLETED = "PARTIAL_COMPLETED";
     /** 工单状态: 已完工 */
     String STATUS_COMPLETED = "COMPLETED";
     /** 工单状态: 已取消 */
@@ -114,9 +116,10 @@ public interface IProWorkOrderService extends WfCallBackServiceI {
     String getProcInsId(String mesWoIdStr);
 
     /**
-     * 工单完工(IN_PROGRESS -> COMPLETED)
+     * 工单完工(IN_PROGRESS/PARTIAL_COMPLETED -> COMPLETED)
      * <p>
-     * 由流转卡完工聚合触发。完工后发送MQ消息通知ERP。
+     * 由流转卡完工聚合触发(仅当工单下所有流转卡均完工时调用)。完工后发送MQ消息通知ERP。
+     * 部分完工(PARTIAL_COMPLETED)由 completeCard 在仍有在制流转卡时置位, 不走此方法。
      *
      * @param mesWoId MES工单ID
      */

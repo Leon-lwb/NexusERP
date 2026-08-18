@@ -17,6 +17,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * MES固件刷写记录 Controller
@@ -98,5 +99,18 @@ public class FlashRecordController extends BaseController {
     @GetMapping("/sn-options")
     public R<List<ProSnVo>> snOptions(@RequestParam(required = false) String snCode) {
         return R.ok(mesFlashRecordService.listSnOptions(snCode));
+    }
+
+    /**
+     * 待刷写任务清单(刷写作业页): 按工单/流转卡聚合在制SN × 工单刷写工序绑定,
+     * 每行含最新刷写结果与 pendingFlag(非PASS视为待刷)。
+     * <p>产线用户在刷写作业页输入工单号/流转卡号即可看到该批SN的待刷清单, 免逐SN搜索。</p>
+     */
+    @SaCheckPermission("mes:flash:flash:list")
+    @GetMapping("/pending")
+    public R<List<Map<String, Object>>> pending(@RequestParam(required = false) Long mesWoId,
+                                                @RequestParam(required = false) Long cardId,
+                                                @RequestParam(required = false) String woNo) {
+        return R.ok(mesFlashRecordService.selectPendingTasks(mesWoId, cardId, woNo));
     }
 }

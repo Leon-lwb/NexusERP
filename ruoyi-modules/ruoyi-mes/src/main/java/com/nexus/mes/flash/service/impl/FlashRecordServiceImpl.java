@@ -12,10 +12,14 @@ import com.nexus.common.satoken.utils.LoginHelper;
 import com.nexus.mes.eq.domain.EqEquipment;
 import com.nexus.mes.eq.mapper.EqEquipmentMapper;
 import com.nexus.mes.flash.domain.FlashRecord;
+import com.nexus.mes.flash.domain.Firmware;
+import com.nexus.mes.flash.domain.MesContentFile;
 import com.nexus.mes.flash.domain.MesFlashType;
 import com.nexus.mes.flash.domain.bo.FlashRecordBo;
 import com.nexus.mes.flash.domain.vo.FlashRecordVo;
 import com.nexus.mes.flash.mapper.FlashRecordMapper;
+import com.nexus.mes.flash.mapper.FirmwareMapper;
+import com.nexus.mes.flash.mapper.MesContentFileMapper;
 import com.nexus.mes.flash.mapper.MesFlashTypeMapper;
 import com.nexus.mes.flash.provider.FlashContent;
 import com.nexus.mes.flash.provider.FlashContext;
@@ -67,6 +71,8 @@ public class FlashRecordServiceImpl implements IFlashRecordService {
     private final AutoCodeUtil autoCodeUtil;
     private final FlashTypeRegistry flashTypeRegistry;
     private final MesFlashTypeMapper mesFlashTypeMapper;
+    private final FirmwareMapper firmwareMapper;
+    private final MesContentFileMapper contentFileMapper;
     private final ProWorkOrderStepMapper workOrderStepMapper;
     private final ProFlowCardStepMapper flowCardStepMapper;
     private final ObjectMapper objectMapper;
@@ -289,6 +295,148 @@ public class FlashRecordServiceImpl implements IFlashRecordService {
                 row.put("latestResult", latest != null ? latest.getResult() : null);
                 row.put("flashTime", latest != null ? latest.getFlashTime() : null);
                 pending.add(row);
+            }
+        }
+        return pending;
+    }
+
+    /**
+     * 待刷写任务清单(登录态, 刷写作业页用): 按工单/流转卡聚合在制SN × 工单刷写工序绑定
+     * <p>每行: snId/snCode/woNo/cardId/sequenceNum/processName/flashTypeCode/contentRefId/
+     * contentVersion/contentChecksum/latestResult/flashTime/pendingFlag。
+     * pendingFlag: 该SN该绑定项最新刷写结果非PASS视为待刷(未刷/FAIL重刷)。
+     * <p>对齐 {@link #selectStationPending} 的绑定解析逻辑, 但按工单批量聚合在制SN(免逐SN拉取)。</p>
+     */
+    @Override
+    public List<Map<String, Object>> selectPendingTasks(Long mesWoId, Long cardId, String woNo) {
+        if (mesWoId == null && cardId == null && StringUtils.isBlank(woNo)) {
+            // 无筛选条件: 返回空, 避免全表扫描(产线按工单/流转卡拉取)
+            return new ArrayList<>();
+        }
+        // 1. 在制SN(按工单/流转卡筛选, 排除报废/已发运)
+        LambdaQueryWrapper<ProSn> snQuery = Wrappers.<ProSn>lambdaQuery()
+            .notIn(ProSn::getSnStatus, SN_STATUS_SCRAPPED, "SHIPPED")
+            .orderByAsc(ProSn::getSnCode);
+        if (mesWoId != null) {
+            snQuery.eq(ProSn::getMesWoId, mesWoId);
+        } else if (cardId != null) {
+            snQuery.eq(ProSn::getCardId, cardId);
+        } else {
+            snQuery.like(ProSn::getWoNo, woNo.trim());
+        }
+        List<ProSn> snList = proSnMapper.selectList(snQuery);
+        if (snList.isEmpty()) {
+            return new ArrayList<>();
+        }
+        // SN 去重工单(mesWoId)
+        List<Long> woIds = snList.stream().map(ProSn::getMesWoId).filter(java.util.Objects::nonNull).distinct().toList();
+        if (woIds.isEmpty()) {
+            return new ArrayList<>();
+        }
+        // 2. 工单刷写工序绑定(step_type=FLASH 或含 content_ref/step_flash_config)
+        List<ProWorkOrderStep> flashSteps = workOrderStepMapper.selectList(Wrappers.<ProWorkOrderStep>lambdaQuery()
+            .in(ProWorkOrderStep::getMesWoId, woIds)
+            .and(w -> w.eq(ProWorkOrderStep::getStepType, "FLASH")
+                .or().isNotNull(ProWorkOrderStep::getContentRefId)
+                .or().isNotNull(ProWorkOrderStep::getStepFlashConfig))
+            .orderByAsc(ProWorkOrderStep::getMesWoId)
+            .orderByAsc(ProWorkOrderStep::getSequenceNum));
+        if (flashSteps.isEmpty()) {
+            return new ArrayList<>();
+        }
+        // 按 mesWoId 分组工序绑定, 便于按 SN 的工单定位
+        Map<Long, List<ProWorkOrderStep>> stepsByWo = flashSteps.stream()
+            .collect(java.util.stream.Collectors.groupingBy(ProWorkOrderStep::getMesWoId));
+        // 预加载固件/配置文件版本(按 contentRefId 批量查, 减少N+1)
+        java.util.Set<Long> firmwareIds = new java.util.HashSet<>();
+        java.util.Set<Long> contentFileIds = new java.util.HashSet<>();
+        for (ProWorkOrderStep s : flashSteps) {
+            for (Map<String, Object> b : parseStationBindings(s)) {
+                Object refId = b.get("contentRefId");
+                if (refId instanceof Long id) {
+                    String tc = (String) b.get("flashTypeCode");
+                    if ("config_file".equals(tc)) {
+                        contentFileIds.add(id);
+                    } else {
+                        firmwareIds.add(id);
+                    }
+                }
+            }
+        }
+        Map<Long, Firmware> firmwareMap = firmwareIds.isEmpty() ? Map.of() :
+            firmwareMapper.selectBatchIds(firmwareIds).stream()
+                .collect(java.util.stream.Collectors.toMap(Firmware::getFirmwareId, f -> f, (a, b) -> a));
+        Map<Long, MesContentFile> contentFileMap = contentFileIds.isEmpty() ? Map.of() :
+            contentFileMapper.selectBatchIds(contentFileIds).stream()
+                .collect(java.util.stream.Collectors.toMap(MesContentFile::getContentFileId, c -> c, (a, b) -> a));
+        // 3. 逐 SN × 绑定项组装待刷行
+        List<Map<String, Object>> pending = new ArrayList<>();
+        for (ProSn sn : snList) {
+            List<ProWorkOrderStep> woSteps = stepsByWo.get(sn.getMesWoId());
+            if (woSteps == null || woSteps.isEmpty()) {
+                continue;
+            }
+            for (ProWorkOrderStep step : woSteps) {
+                List<Map<String, Object>> bindings = parseStationBindings(step);
+                if (bindings.isEmpty()) {
+                    continue;
+                }
+                for (Map<String, Object> b : bindings) {
+                    Long refId = (Long) b.get("contentRefId");
+                    String typeCode = (String) b.get("flashTypeCode");
+                    FlashRecord latest = baseMapper.selectOne(Wrappers.<FlashRecord>lambdaQuery()
+                        .eq(FlashRecord::getSnCode, sn.getSnCode())
+                        .eq(refId != null, FlashRecord::getContentRefId, refId)
+                        .eq(StringUtils.isNotBlank(typeCode), FlashRecord::getFlashTypeCode, typeCode)
+                        .orderByDesc(FlashRecord::getFlashTime)
+                        .orderByDesc(FlashRecord::getFlashRecordId)
+                        .last("LIMIT 1"));
+                    String latestResult = latest != null ? latest.getResult() : null;
+                    boolean pendingFlag = !"PASS".equals(latestResult);
+                    // 版本/校验码回填(固件类)
+                    String contentVersion = null;
+                    String contentChecksum = null;
+                    if (refId != null) {
+                        if ("config_file".equals(typeCode)) {
+                            MesContentFile cf = contentFileMap.get(refId);
+                            if (cf != null) {
+                                contentVersion = cf.getVersion();
+                                contentChecksum = cf.getFileMd5();
+                            }
+                        } else {
+                            Firmware fw = firmwareMap.get(refId);
+                            if (fw != null) {
+                                contentVersion = fw.getVersion();
+                                contentChecksum = fw.getFileMd5();
+                            }
+                        }
+                    }
+                    Map<String, Object> row = new HashMap<>();
+                    row.put("snId", sn.getSnId());
+                    row.put("snCode", sn.getSnCode());
+                    row.put("mesWoId", sn.getMesWoId());
+                    row.put("woNo", sn.getWoNo());
+                    row.put("cardId", sn.getCardId());
+                    row.put("cardNo", sn.getCardNo());
+                    row.put("materialId", sn.getMaterialId());
+                    row.put("materialCode", sn.getMaterialCode());
+                    row.put("materialName", sn.getMaterialName());
+                    row.put("snStatus", sn.getSnStatus());
+                    row.put("stepId", step.getStepId());
+                    row.put("sequenceNum", step.getSequenceNum());
+                    row.put("processId", step.getProcessId());
+                    row.put("processCode", step.getProcessCode());
+                    row.put("processName", step.getProcessName());
+                    row.put("stepType", step.getStepType());
+                    row.put("flashTypeCode", typeCode);
+                    row.put("contentRefId", refId);
+                    row.put("contentVersion", contentVersion);
+                    row.put("contentChecksum", contentChecksum);
+                    row.put("latestResult", latestResult);
+                    row.put("flashTime", latest != null ? latest.getFlashTime() : null);
+                    row.put("pendingFlag", pendingFlag);
+                    pending.add(row);
+                }
             }
         }
         return pending;

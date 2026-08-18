@@ -652,11 +652,13 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
     }
 
     /**
-     * 工单完工(RELEASED/IN_PROGRESS -> COMPLETED) + MQ通知ERP
+     * 工单完工(RELEASED/IN_PROGRESS/PARTIAL_COMPLETED -> COMPLETED) + MQ通知ERP
      * <p>
-     * 由流转卡完工聚合触发。CAS更新状态，事务提交后异步发送MQ消息。
+     * 由流转卡完工聚合触发(仅当工单下所有流转卡均完工时调用)。CAS更新状态，事务提交后异步发送MQ消息。
      * 兼容工单从未进入 IN_PROGRESS 的场景(如流转卡在未开工状态下被直接完工):
      * 此时一并补写 actualStartDate，避免完工工单缺失开工时间。
+     * <p>
+     * 部分完工(PARTIAL_COMPLETED)由 completeCard 在仍有在制流转卡时置位, 不走此方法, 不通知ERP。
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -666,7 +668,9 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
             log.warn("MES工单不存在，跳过完工: mesWoId={}", mesWoId);
             return;
         }
-        if (!STATUS_IN_PROGRESS.equals(wo.getWoStatus()) && !STATUS_RELEASED.equals(wo.getWoStatus())) {
+        if (!STATUS_IN_PROGRESS.equals(wo.getWoStatus())
+            && !STATUS_RELEASED.equals(wo.getWoStatus())
+            && !STATUS_PARTIAL_COMPLETED.equals(wo.getWoStatus())) {
             log.warn("工单状态不满足完工条件，跳过: mesWoId={}, woStatus={}", mesWoId, wo.getWoStatus());
             return;
         }
@@ -711,14 +715,14 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
             }
         }
 
-        // CAS更新 RELEASED/IN_PROGRESS -> COMPLETED; 若工单从未开工(actualStartDate为空)则补写开工时间
+        // CAS更新 RELEASED/IN_PROGRESS/PARTIAL_COMPLETED -> COMPLETED; 若工单从未开工(actualStartDate为空)则补写开工时间
         Date now = new Date();
         int rows = baseMapper.update(null, Wrappers.<ProWorkOrder>lambdaUpdate()
             .set(ProWorkOrder::getWoStatus, STATUS_COMPLETED)
             .set(ProWorkOrder::getActualEndDate, now)
             .set(wo.getActualStartDate() == null, ProWorkOrder::getActualStartDate, now)
             .eq(ProWorkOrder::getMesWoId, mesWoId)
-            .in(ProWorkOrder::getWoStatus, STATUS_RELEASED, STATUS_IN_PROGRESS));
+            .in(ProWorkOrder::getWoStatus, STATUS_RELEASED, STATUS_IN_PROGRESS, STATUS_PARTIAL_COMPLETED));
         if (rows == 0) {
             log.warn("工单状态并发变更，跳过完工: mesWoId={}", mesWoId);
             return;

@@ -48,12 +48,68 @@
         <el-button type="success" plain icon="EditPen" @click="handleConfirm" v-hasPermi="['mes:flash:flash:confirm']">刷写作业确认</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['mes:flash:flash:remove']"
+        <el-button type="warning" plain icon="Search" @click="pendingPanel = !pendingPanel">待刷写任务</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete()" v-hasPermi="['mes:flash:flash:remove']"
           >删除</el-button
         >
       </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" />
     </el-row>
+
+    <!-- 待刷写任务面板(按工单/流转卡拉取在制SN待刷清单) -->
+    <el-card v-if="pendingPanel" shadow="never" class="mb8" body-style="padding: 12px 16px;">
+      <template #header>
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <span style="font-weight: 600;"><el-icon style="vertical-align: -2px;"><Bell /></el-icon> 待刷写任务(按工单聚合在制SN × 刷写工序绑定)</span>
+          <el-link type="primary" :underline="false" @click="pendingPanel = false">收起 ▲</el-link>
+        </div>
+      </template>
+      <el-form :inline="true" label-width="80px">
+        <el-form-item label="工单号">
+          <el-input v-model="pendingQuery.woNo" placeholder="输入工单号(如 SCGD202608180001)" clearable style="width: 220px" @keyup.enter="loadPending" />
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" icon="Search" :loading="pendingLoading" @click="loadPending">查询待刷</el-button>
+          <el-button icon="Refresh" @click="pendingList = []; pendingQuery.woNo = undefined">清空</el-button>
+        </el-form-item>
+      </el-form>
+      <el-table v-loading="pendingLoading" :data="pendingList" size="small" border max-height="320">
+        <el-table-column label="SN编码" align="center" prop="snCode" min-width="160" />
+        <el-table-column label="工序" align="center" min-width="120">
+          <template #default="scope">{{ scope.row.processName || '-' }}</template>
+        </el-table-column>
+        <el-table-column label="刷写类型" align="center" width="100">
+          <template #default="scope">
+            <el-tag size="small" :type="scope.row.flashTypeCode === 'firmware_file' ? 'success' : 'info'">{{ flashTypeLabel(scope.row.flashTypeCode) }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="内容版本" align="center" prop="contentVersion" width="100" />
+        <el-table-column label="SN状态" align="center" width="100">
+          <template #default="scope">
+            <el-tag size="small" :type="scope.row.snStatus === 'IN_PRODUCTION' ? 'warning' : 'success'">{{ scope.row.snStatus }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="最新结果" align="center" width="100">
+          <template #default="scope">
+            <el-tag v-if="scope.row.latestResult" size="small" :type="scope.row.latestResult === 'PASS' ? 'success' : 'danger'">{{ scope.row.latestResult }}</el-tag>
+            <span v-else style="color: #909399;">未刷写</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="状态" align="center" width="90">
+          <template #default="scope">
+            <el-tag v-if="scope.row.pendingFlag" size="small" type="danger">待刷写</el-tag>
+            <el-tag v-else size="small" type="success">已PASS</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" align="center" width="110" fixed="right">
+          <template #default="scope">
+            <el-button link type="primary" icon="EditPen" :disabled="!scope.row.pendingFlag" @click="handlePendingFlash(scope.row)">去刷写</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+    </el-card>
 
     <el-table v-loading="loading" :data="flashList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="50" align="center" />
@@ -250,8 +306,8 @@
 </template>
 
 <script setup lang="ts" name="FwFlash">
-import { listFlash, getFlash, addFlash, updateFlash, delFlash, confirmFlash, listSnOptions, listReleasedFirmware } from '@/api/mes/flash/flash';
-import type { FwFlashRecordVO, FwFlashRecordQuery, FwFlashRecordForm } from '@/api/mes/flash/flash';
+import { listFlash, getFlash, addFlash, updateFlash, delFlash, confirmFlash, listSnOptions, listReleasedFirmware, listPendingFlash } from '@/api/mes/flash/flash';
+import type { FwFlashRecordVO, FwFlashRecordQuery, FwFlashRecordForm, PendingFlashTaskVO } from '@/api/mes/flash/flash';
 import { listFirmware } from '@/api/mes/flash/firmware';
 import { listContent } from '@/api/mes/flash/content';
 import { listEquipment } from '@/api/mes/eq/equipment';
@@ -517,4 +573,69 @@ function handleDelete(row?: FwFlashRecordVO) {
 onMounted(() => {
   getList();
 });
+
+// ==================== 待刷写任务面板(按工单/流转卡拉取在制SN待刷清单) ====================
+const pendingPanel = ref(false);
+const pendingLoading = ref(false);
+const pendingList = ref<PendingFlashTaskVO[]>([]);
+const pendingQuery = reactive<{ woNo?: string; cardNo?: string }>({ woNo: undefined, cardNo: undefined });
+
+const flashTypeLabel = (code?: string) => {
+  switch (code) {
+    case 'firmware_file':
+      return '固件';
+    case 'config_file':
+      return '配置文件';
+    case 'mac':
+      return 'MAC';
+    case 'sn':
+      return 'SN';
+    default:
+      return code || '-';
+  }
+};
+
+function loadPending() {
+  if (!pendingQuery.woNo && !pendingQuery.cardNo) {
+    proxy?.$modal.msgWarning('请输入工单号或流转卡号查询待刷任务');
+    return;
+  }
+  pendingLoading.value = true;
+  listPendingFlash({ woNo: pendingQuery.woNo, cardId: undefined })
+    .then((res: any) => {
+      pendingList.value = res.data || [];
+      if (pendingList.value.length === 0) {
+        proxy?.$modal.msgWarning('未查询到待刷任务(可能该工单无刷写工序绑定或无在制SN)');
+      } else {
+        proxy?.$modal.msgSuccess(`查询到 ${pendingList.value.length} 条待刷任务`);
+      }
+    })
+    .finally(() => {
+      pendingLoading.value = false;
+    });
+}
+
+/** 待刷行「去刷写」: 预填刷写作业确认弹窗(snCode + contentRefId + 工序信息) */
+function handlePendingFlash(row: PendingFlashTaskVO) {
+  dialog.isConfirm = true;
+  dialog.title = '刷写作业确认';
+  resetFormData();
+  // 预填: SN/工单/流转卡/工序/刷写类型/内容引用(固件类)
+  form.value.snId = row.snId;
+  form.value.snCode = row.snCode;
+  form.value.mesWoId = row.mesWoId;
+  form.value.woNo = row.woNo;
+  form.value.cardId = row.cardId;
+  form.value.processId = row.processId;
+  form.value.processCode = row.processCode;
+  form.value.processName = row.processName;
+  form.value.flashTypeCode = row.flashTypeCode || 'firmware_file';
+  form.value.contentRefId = row.contentRefId;
+  form.value.contentChecksum = row.contentChecksum;
+  // SN 下拉回填(让 el-select 显示该 SN)
+  snOptions.value = [{ snId: row.snId, snCode: row.snCode, woNo: row.woNo, snStatus: row.snStatus }];
+  loadOptions().then(() => {
+    dialog.visible = true;
+  });
+}
 </script>

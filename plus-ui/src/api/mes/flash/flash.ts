@@ -57,6 +57,7 @@ export interface FwFlashRecordForm {
   processId?: number;
   processCode?: string;
   processName?: string;
+  flashTypeCode?: string;
   contentRefId?: number;
   contentVersion?: string;
   contentChecksum?: string;
@@ -79,6 +80,33 @@ export interface SnOptionVO {
   materialCode?: string;
   materialName?: string;
   snStatus?: string;
+}
+
+/** 待刷写任务清单(按工单/流转卡聚合) */
+export interface PendingFlashTaskVO {
+  snId: number;
+  snCode: string;
+  mesWoId?: number;
+  woNo?: string;
+  cardId?: number;
+  cardNo?: string;
+  materialId?: number;
+  materialCode?: string;
+  materialName?: string;
+  snStatus?: string;
+  stepId?: number;
+  sequenceNum?: number;
+  processId?: number;
+  processCode?: string;
+  processName?: string;
+  stepType?: string;
+  flashTypeCode?: string;
+  contentRefId?: number;
+  contentVersion?: string;
+  contentChecksum?: string;
+  latestResult?: string;
+  flashTime?: string;
+  pendingFlag: boolean;
 }
 
 /** 分页查询刷写记录 */
@@ -108,3 +136,7 @@ export const listSnOptions = (snCode?: string): AxiosPromise<SnOptionVO[]> =>
 /** 固件下拉(仅已发布 RELEASED, 作业确认可选固件) */
 export const listReleasedFirmware = (): AxiosPromise<any[]> =>
   request({ url: '/mes/flash/firmware/list', method: 'get', params: { pageNum: 1, pageSize: 1000, status: 'RELEASED' } });
+
+/** 待刷写任务清单(按工单/流转卡聚合在制SN × 刷写工序绑定) */
+export const listPendingFlash = (params?: { mesWoId?: number; cardId?: number; woNo?: string }): AxiosPromise<PendingFlashTaskVO[]> =>
+  request({ url: '/mes/flash/flash/pending', method: 'get', params });

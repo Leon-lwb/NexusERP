@@ -11,7 +11,7 @@
  Target Server Version : 50714 (5.7.14)
  File Encoding         : 65001
 
- Date: 16/08/2026 18:22:42
+ Date: 19/08/2026 00:15:51
 */
 
 SET NAMES utf8mb4;
@@ -494,195 +494,6 @@ CREATE TABLE `eq_spare_stock_log`  (
 -- ----------------------------
 
 -- ----------------------------
--- Table structure for mes_firmware
--- ----------------------------
-DROP TABLE IF EXISTS `mes_firmware`;
-CREATE TABLE `mes_firmware`  (
-  `firmware_id` bigint(20) NOT NULL COMMENT '固件ID',
-  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '000000' COMMENT '租户ID',
-  `firmware_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '固件编码(自动编码 MES_FW_CODE)',
-  `firmware_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '固件名称',
-  `material_id` bigint(20) NOT NULL COMMENT '适用物料ID(产品)',
-  `material_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '适用物料编码',
-  `material_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '适用物料名称',
-  `version` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '版本号(如 1.2.3)',
-  `build_no` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '构建号',
-  `oss_id` bigint(20) NULL DEFAULT NULL COMMENT '固件文件OSS文件ID(sys_oss)',
-  `file_md5` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '固件文件MD5',
-  `file_size` bigint(20) NULL DEFAULT NULL COMMENT '固件文件大小(字节)',
-  `release_note` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '发布说明',
-  `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'DRAFT' COMMENT '状态: DRAFT/IN_REVIEW/RELEASED/ARCHIVED',
-  `is_default` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '0' COMMENT '是否物料默认版本(0否/1是, 物料内唯一)',
-  `select_flow_id` bigint(20) NULL DEFAULT NULL COMMENT '审批流配置ID(wf_custom_form.id)',
-  `published_by` bigint(20) NULL DEFAULT NULL COMMENT '发布人ID',
-  `publish_time` datetime NULL DEFAULT NULL COMMENT '发布时间',
-  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
-  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
-  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
-  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '0' COMMENT '删除标志(0存在/2删除)',
-  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
-  PRIMARY KEY (`firmware_id`) USING BTREE,
-  UNIQUE INDEX `uk_tenant_firmware_code`(`tenant_id`, `firmware_code`) USING BTREE,
-  INDEX `idx_tenant_id`(`tenant_id`) USING BTREE,
-  INDEX `idx_material`(`material_id`) USING BTREE,
-  INDEX `idx_status`(`status`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '固件档案' ROW_FORMAT = DYNAMIC;
-
--- ----------------------------
--- Records of mes_firmware
--- ----------------------------
-INSERT INTO `mes_firmware` VALUES (2088871611594743809, '000000', 'FW20260816001', '测试', 5, 'GEAR_SET', '齿轮组', '1.0.0', 'CI-20260816-01', 2088871530275577857, '21c307a98a4cf86276b003b47340638d', 6752, '测试', 'DRAFT', '0', 2091000000000005001, NULL, NULL, 103, 1, '2026-08-16 14:12:56', 1, '2026-08-16 14:12:56', '0', '');
-INSERT INTO `mes_firmware` VALUES (2088889870117240834, '000000', 'FW20260816002', 'cs2', 2, 'IF20251018001', '电机Y132M-4 7.5KW', '1.0.0', 'aaa', 2088889865583198210, '21c307a98a4cf86276b003b47340638d', 6752, '', 'RELEASED', '1', 2091000000000005001, 1, '2026-08-16 15:26:18', 103, 1, '2026-08-16 15:25:29', 1, '2026-08-16 15:25:29', '0', '');
-
--- ----------------------------
--- Table structure for mes_flash_record
--- ----------------------------
-DROP TABLE IF EXISTS `mes_flash_record`;
-CREATE TABLE `mes_flash_record`  (
-  `flash_record_id` bigint(20) NOT NULL COMMENT '刷写记录ID',
-  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '000000' COMMENT '租户ID',
-  `flash_no` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '刷写记录号(自动编码 MES_FLASH_NO)',
-  `sn_id` bigint(20) NOT NULL COMMENT 'SN ID',
-  `sn_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'SN编码',
-  `mes_wo_id` bigint(20) NOT NULL COMMENT 'MES工单ID',
-  `wo_no` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '工单号',
-  `card_id` bigint(20) NULL DEFAULT NULL COMMENT '流转卡ID',
-  `step_record_id` bigint(20) NULL DEFAULT NULL COMMENT '流转卡工序记录ID(pro_flow_card_step)',
-  `process_id` bigint(20) NULL DEFAULT NULL COMMENT '工序ID',
-  `process_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '工序编码',
-  `process_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '工序名称',
-  `flash_type_id` bigint(20) NULL DEFAULT NULL COMMENT '刷写类型ID(mes_flash_type)',
-  `flash_type_code` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '刷写类型标识(快照: firmware_file/config_file/mac/sn)',
-  `content_ref_type` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '内容引用类型: FIRMWARE/CONFIG/MAC_POOL/SN_POOL/EXTERNAL',
-  `content_ref_id` bigint(20) NULL DEFAULT NULL COMMENT '内容源记录ID(固件=mes_firmware_id, 池=mes_resource_item_id)',
-  `content_version` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '内容版本(固件类=固件版本)',
-  `content_payload` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '实际写入内容快照JSON(如 {"mac":"00:1A:2B:3C:4D:5E"})',
-  `content_checksum` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '内容校验值(泛化MD5/校验码)',
-  `equipment_id` bigint(20) NULL DEFAULT NULL COMMENT '刷写设备ID(eq_equipment)',
-  `equipment_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '刷写设备编码',
-  `operator_id` bigint(20) NULL DEFAULT NULL COMMENT '操作人ID',
-  `operator_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '操作人姓名',
-  `flash_time` datetime NULL DEFAULT NULL COMMENT '刷写时间',
-  `result` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '结果: PASS/FAIL',
-  `fail_reason` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '失败原因',
-  `retry_count` int(11) NOT NULL DEFAULT 0 COMMENT '重试次数',
-  `flash_mode` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'MANUAL' COMMENT '刷写模式: AUTO/MANUAL',
-  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
-  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
-  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
-  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '0' COMMENT '删除标志(0存在/2删除)',
-  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
-  PRIMARY KEY (`flash_record_id`) USING BTREE,
-  UNIQUE INDEX `uk_tenant_flash_no`(`tenant_id`, `flash_no`) USING BTREE,
-  INDEX `idx_tenant_id`(`tenant_id`) USING BTREE,
-  INDEX `idx_sn`(`sn_id`) USING BTREE,
-  INDEX `idx_flash_type`(`tenant_id`, `flash_type_id`) USING BTREE,
-  INDEX `idx_content_ref`(`content_ref_type`, `content_ref_id`) USING BTREE,
-  INDEX `idx_wo`(`mes_wo_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '刷写记录(SN级,通用)' ROW_FORMAT = DYNAMIC;
-
--- ----------------------------
--- Records of mes_flash_record
--- ----------------------------
-
--- ----------------------------
--- Table structure for mes_test_item
--- ----------------------------
-DROP TABLE IF EXISTS `mes_test_item`;
-CREATE TABLE `mes_test_item`  (
-  `test_item_id` bigint(20) NOT NULL COMMENT '测试项ID',
-  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '000000' COMMENT '租户ID',
-  `item_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '测试项编码(如 RF-TXPWR)',
-  `item_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '测试项名称',
-  `material_id` bigint(20) NOT NULL COMMENT '适用物料ID',
-  `content_ref_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '内容源ID(0=该物料所有版本通用, 固件类=mes_firmware_id)',
-  `data_type` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'NUMERIC' COMMENT '数据类型: NUMERIC/TEXT/ENUM',
-  `unit` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '单位',
-  `upper_limit` decimal(18, 4) NULL DEFAULT NULL COMMENT '上限',
-  `lower_limit` decimal(18, 4) NULL DEFAULT NULL COMMENT '下限',
-  `target_value` decimal(18, 4) NULL DEFAULT NULL COMMENT '目标值',
-  `pass_enum` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT 'ENUM合格值(JSON数组)',
-  `is_required` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '1' COMMENT '是否必测(0否/1是)',
-  `sort_order` int(11) NOT NULL DEFAULT 0 COMMENT '排序',
-  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
-  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
-  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
-  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '0' COMMENT '删除标志(0存在/2删除)',
-  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
-  PRIMARY KEY (`test_item_id`) USING BTREE,
-  UNIQUE INDEX `uk_tenant_material_item`(`tenant_id`, `material_id`, `content_ref_id`, `item_code`) USING BTREE,
-  INDEX `idx_tenant_id`(`tenant_id`) USING BTREE,
-  INDEX `idx_material`(`material_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '测试项标准主数据' ROW_FORMAT = DYNAMIC;
-
--- ----------------------------
--- Records of mes_test_item
--- ----------------------------
-INSERT INTO `mes_test_item` VALUES (2088902653508710401, '000000', 'cs1', '测试1', 1001, 2088889870117240834, 'NUMERIC', 'dBm/V', 221.0000, 219.0000, 220.0000, NULL, '1', 1, 103, 1, '2026-08-16 16:16:17', 1, '2026-08-16 16:18:21', '0', NULL);
-
--- ----------------------------
--- Table structure for mes_test_record
--- ----------------------------
-DROP TABLE IF EXISTS `mes_test_record`;
-CREATE TABLE `mes_test_record`  (
-  `test_record_id` bigint(20) NOT NULL COMMENT '测试记录ID',
-  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '000000' COMMENT '租户ID',
-  `test_no` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '测试单号(一次SN测试一条单号, 共享多行)',
-  `sn_id` bigint(20) NOT NULL COMMENT 'SN ID',
-  `sn_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'SN编码',
-  `mes_wo_id` bigint(20) NOT NULL COMMENT 'MES工单ID',
-  `wo_no` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '工单号',
-  `card_id` bigint(20) NULL DEFAULT NULL COMMENT '流转卡ID',
-  `step_record_id` bigint(20) NULL DEFAULT NULL COMMENT '流转卡工序记录ID(测试工序)',
-  `process_id` bigint(20) NULL DEFAULT NULL COMMENT '工序ID',
-  `process_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '工序编码',
-  `process_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '工序名称',
-  `content_ref_id` bigint(20) NULL DEFAULT NULL COMMENT '测试时内容源ID(固件类=mes_firmware_id)',
-  `content_version` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '测试时内容版本',
-  `test_item_id` bigint(20) NOT NULL COMMENT '测试项ID',
-  `item_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '测试项编码(快照)',
-  `item_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '测试项名称(快照)',
-  `data_type` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '数据类型(快照)',
-  `unit` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '单位',
-  `numeric_value` decimal(18, 4) NULL DEFAULT NULL COMMENT '实测数值',
-  `text_value` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '实测文本',
-  `upper_limit` decimal(18, 4) NULL DEFAULT NULL COMMENT '上限(快照)',
-  `lower_limit` decimal(18, 4) NULL DEFAULT NULL COMMENT '下限(快照)',
-  `target_value` decimal(18, 4) NULL DEFAULT NULL COMMENT '目标值(快照)',
-  `pass_enum` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT 'ENUM合格值(快照)',
-  `result` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT '结果: PASS/FAIL(空=未测)',
-  `tester_id` bigint(20) NULL DEFAULT NULL COMMENT '测试人ID',
-  `tester_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '测试人姓名',
-  `equipment_id` bigint(20) NULL DEFAULT NULL COMMENT '测试设备ID',
-  `equipment_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '测试设备编码',
-  `test_time` datetime NULL DEFAULT NULL COMMENT '测试时间',
-  `test_mode` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'MANUAL' COMMENT '测试模式: AUTO/MANUAL',
-  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
-  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
-  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
-  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '0' COMMENT '删除标志(0存在/2删除)',
-  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
-  PRIMARY KEY (`test_record_id`) USING BTREE,
-  UNIQUE INDEX `uk_tenant_test_no_item`(`tenant_id`, `test_no`, `test_item_id`) USING BTREE,
-  INDEX `idx_tenant_id`(`tenant_id`) USING BTREE,
-  INDEX `idx_sn`(`sn_id`) USING BTREE,
-  INDEX `idx_content_ref`(`content_ref_id`) USING BTREE,
-  INDEX `idx_wo`(`mes_wo_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '测试记录(SN级全检)' ROW_FORMAT = DYNAMIC;
-
--- ----------------------------
--- Records of mes_test_record
--- ----------------------------
-
--- ----------------------------
 -- Table structure for lt_lot
 -- ----------------------------
 DROP TABLE IF EXISTS `lt_lot`;
@@ -793,6 +604,260 @@ CREATE TABLE `lt_wo_consumption`  (
 INSERT INTO `lt_wo_consumption` VALUES (2081053452590546946, '000000', 2080270525816516609, NULL, 2081053196305989635, 'LOT20260726001', 99002, 'QC-RM-A', 2.0000, '2026-07-26 00:26:22', 1, NULL, NULL, 103, 1, '2026-07-26 00:26:22', 1, '2026-07-26 00:26:22', '0');
 
 -- ----------------------------
+-- Table structure for mes_content_file
+-- ----------------------------
+DROP TABLE IF EXISTS `mes_content_file`;
+CREATE TABLE `mes_content_file`  (
+  `content_file_id` bigint(20) NOT NULL COMMENT '配置文件ID',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '000000' COMMENT '租户ID',
+  `content_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '配置编码(自动编码 MES_CONFIG_CODE)',
+  `content_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '配置名称',
+  `content_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'CONFIG_FILE' COMMENT '配置类型: CONFIG_FILE(可扩展校准/证书)',
+  `material_id` bigint(20) NOT NULL COMMENT '适用物料ID',
+  `material_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
+  `material_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
+  `version` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '版本号',
+  `oss_id` bigint(20) NULL DEFAULT NULL COMMENT '配置文件OSS文件ID',
+  `file_md5` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '文件MD5',
+  `file_size` bigint(20) NULL DEFAULT NULL COMMENT '文件大小(字节)',
+  `release_note` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '发布说明',
+  `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'DRAFT' COMMENT 'DRAFT/IN_REVIEW/RELEASED/ARCHIVED',
+  `is_default` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '0' COMMENT '物料默认版本(0否/1是)',
+  `published_by` bigint(20) NULL DEFAULT NULL,
+  `publish_time` datetime NULL DEFAULT NULL,
+  `create_dept` bigint(20) NULL DEFAULT NULL,
+  `create_by` bigint(20) NULL DEFAULT NULL,
+  `create_time` datetime NULL DEFAULT NULL,
+  `update_by` bigint(20) NULL DEFAULT NULL,
+  `update_time` datetime NULL DEFAULT NULL,
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '0',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
+  PRIMARY KEY (`content_file_id`) USING BTREE,
+  UNIQUE INDEX `uk_tenant_content_code`(`tenant_id`, `content_code`) USING BTREE,
+  INDEX `idx_tenant_id`(`tenant_id`) USING BTREE,
+  INDEX `idx_material`(`material_id`) USING BTREE,
+  INDEX `idx_status`(`status`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '刷写内容档案(配置文件等, 审批发布)' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of mes_content_file
+-- ----------------------------
+INSERT INTO `mes_content_file` VALUES (2091000000000006102, '000000', 'CF20260817001', 'GW-1000出厂配置', 'CONFIG_FILE', 1001, 'IF20251018001', '电机Y132M-4 7.5KW', '1.0', 2088871530275577857, '21c307a98a4cf86276b003b47340638d', 6752, '出厂默认配置(波特率/服务器地址等)', 'RELEASED', '1', 1, '2026-08-17 22:16:17', 103, 1, '2026-08-17 22:16:17', NULL, NULL, '0', '正式测试数据');
+
+-- ----------------------------
+-- Table structure for mes_firmware
+-- ----------------------------
+DROP TABLE IF EXISTS `mes_firmware`;
+CREATE TABLE `mes_firmware`  (
+  `firmware_id` bigint(20) NOT NULL COMMENT '固件ID',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '000000' COMMENT '租户ID',
+  `firmware_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '固件编码(自动编码 MES_FW_CODE)',
+  `firmware_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '固件名称',
+  `material_id` bigint(20) NOT NULL COMMENT '适用物料ID(产品)',
+  `material_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '适用物料编码',
+  `material_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '适用物料名称',
+  `version` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '版本号(如 1.2.3)',
+  `build_no` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '构建号',
+  `oss_id` bigint(20) NULL DEFAULT NULL COMMENT '固件文件OSS文件ID(sys_oss)',
+  `file_md5` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '固件文件MD5',
+  `file_size` bigint(20) NULL DEFAULT NULL COMMENT '固件文件大小(字节)',
+  `release_note` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '发布说明',
+  `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'DRAFT' COMMENT '状态: DRAFT/IN_REVIEW/RELEASED/ARCHIVED',
+  `is_default` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '0' COMMENT '是否物料默认版本(0否/1是, 物料内唯一)',
+  `select_flow_id` bigint(20) NULL DEFAULT NULL COMMENT '审批流配置ID(wf_custom_form.id)',
+  `published_by` bigint(20) NULL DEFAULT NULL COMMENT '发布人ID',
+  `publish_time` datetime NULL DEFAULT NULL COMMENT '发布时间',
+  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
+  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '0' COMMENT '删除标志(0存在/2删除)',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
+  PRIMARY KEY (`firmware_id`) USING BTREE,
+  UNIQUE INDEX `uk_tenant_firmware_code`(`tenant_id`, `firmware_code`) USING BTREE,
+  INDEX `idx_tenant_id`(`tenant_id`) USING BTREE,
+  INDEX `idx_material`(`material_id`) USING BTREE,
+  INDEX `idx_status`(`status`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '固件档案' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of mes_firmware
+-- ----------------------------
+INSERT INTO `mes_firmware` VALUES (2088871611594743809, '000000', 'FW20260816001', '测试', 5, 'GEAR_SET', '齿轮组', '1.0.0', 'CI-20260816-01', 2088871530275577857, '21c307a98a4cf86276b003b47340638d', 6752, '测试', 'DRAFT', '0', 2091000000000005001, NULL, NULL, 103, 1, '2026-08-16 14:12:56', 1, '2026-08-16 14:12:56', '0', '');
+INSERT INTO `mes_firmware` VALUES (2088889870117240834, '000000', 'FW20260816002', 'cs2', 2, 'IF20251018001', '电机Y132M-4 7.5KW', '1.0.0', 'aaa', 2088889865583198210, '21c307a98a4cf86276b003b47340638d', 6752, '', 'RELEASED', '1', 2091000000000005001, 1, '2026-08-16 15:26:18', 103, 1, '2026-08-16 15:25:29', 1, '2026-08-16 15:25:29', '0', '');
+INSERT INTO `mes_firmware` VALUES (2089376872356917250, '000000', 'FW20260817010', 'GW-1000主控固件', 2089376872126230529, 'IF20260817011', '智能网关PCBA GW-1000', '1.0.0', 'CI-20260817', 2088871530275577900, '21c307a98a4cf86276b003b47340638d', 6752, 'GW-1000 首版主控固件(产线正式版)', 'RELEASED', '1', NULL, 1, '2026-08-17 23:40:40', 103, 1, '2026-08-17 23:40:40', 1, '2026-08-17 23:40:40', '0', '全链路正式数据-固件');
+INSERT INTO `mes_firmware` VALUES (2091000000000006101, '000000', 'FW20260817001', 'GW-1000主控固件', 1001, 'IF20251018001', '电机Y132M-4 7.5KW', '1.0.0', 'CI-20260817', 2088871530275577857, '21c307a98a4cf86276b003b47340638d', 6752, 'GW-1000 首版主控固件(产线正式版)', 'RELEASED', '1', NULL, 1, '2026-08-17 22:16:17', 103, 1, '2026-08-17 22:16:17', NULL, NULL, '0', '正式测试数据');
+
+-- ----------------------------
+-- Table structure for mes_flash_record
+-- ----------------------------
+DROP TABLE IF EXISTS `mes_flash_record`;
+CREATE TABLE `mes_flash_record`  (
+  `flash_record_id` bigint(20) NOT NULL COMMENT '刷写记录ID',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '000000' COMMENT '租户ID',
+  `flash_no` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '刷写记录号(自动编码 MES_FLASH_NO)',
+  `flash_type_id` bigint(20) NULL DEFAULT NULL COMMENT '刷写类型ID(mes_flash_type)',
+  `flash_type_code` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '刷写类型标识(快照: firmware_file/config_file/mac/sn)',
+  `sn_id` bigint(20) NOT NULL COMMENT 'SN ID',
+  `sn_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'SN编码',
+  `mes_wo_id` bigint(20) NOT NULL COMMENT 'MES工单ID',
+  `wo_no` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '工单号',
+  `card_id` bigint(20) NULL DEFAULT NULL COMMENT '流转卡ID',
+  `step_record_id` bigint(20) NULL DEFAULT NULL COMMENT '流转卡工序记录ID(pro_flow_card_step)',
+  `process_id` bigint(20) NULL DEFAULT NULL COMMENT '工序ID',
+  `process_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '工序编码',
+  `process_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '工序名称',
+  `content_ref_type` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '内容引用类型: FIRMWARE/CONFIG/MAC_POOL/SN_POOL/EXTERNAL',
+  `content_ref_id` bigint(20) NULL DEFAULT NULL COMMENT '内容源记录ID(固件=mes_firmware_id, 池=mes_resource_item_id)',
+  `content_version` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '内容版本(固件类=固件版本)',
+  `content_payload` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '实际写入内容快照JSON(如 {\"mac\":\"00:1A:2B:3C:4D:5E\"})',
+  `content_checksum` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '内容校验值(泛化MD5/校验码)',
+  `equipment_id` bigint(20) NULL DEFAULT NULL COMMENT '刷写设备ID(eq_equipment)',
+  `equipment_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '刷写设备编码',
+  `operator_id` bigint(20) NULL DEFAULT NULL COMMENT '操作人ID',
+  `operator_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '操作人姓名',
+  `flash_time` datetime NULL DEFAULT NULL COMMENT '刷写时间',
+  `result` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '结果: PASS/FAIL',
+  `fail_reason` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '失败原因',
+  `retry_count` int(11) NOT NULL DEFAULT 0 COMMENT '重试次数',
+  `flash_mode` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'MANUAL' COMMENT '刷写模式: AUTO/MANUAL',
+  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
+  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '0' COMMENT '删除标志(0存在/2删除)',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
+  PRIMARY KEY (`flash_record_id`) USING BTREE,
+  UNIQUE INDEX `uk_tenant_flash_no`(`tenant_id`, `flash_no`) USING BTREE,
+  INDEX `idx_tenant_id`(`tenant_id`) USING BTREE,
+  INDEX `idx_sn`(`sn_id`) USING BTREE,
+  INDEX `idx_wo`(`mes_wo_id`) USING BTREE,
+  INDEX `idx_flash_type`(`tenant_id`, `flash_type_id`) USING BTREE,
+  INDEX `idx_content_ref`(`content_ref_type`, `content_ref_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '固件刷写记录(SN级)' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of mes_flash_record
+-- ----------------------------
+INSERT INTO `mes_flash_record` VALUES (2089350828161765377, '000000', 'FL202608170002', 2091000000000006003, 'mac', 3, 'SN202606200003', 1, 'WO-TEST-001', 1, NULL, NULL, NULL, NULL, 'MAC_POOL', 2089350827679420417, NULL, '{\"mac\":\"00:1A:2B:3C:4D:5F\"}', NULL, NULL, NULL, NULL, NULL, '2026-08-17 21:57:10', 'PASS', NULL, 0, 'AUTO', -1, -1, '2026-08-17 21:57:10', -1, '2026-08-17 21:57:10', '0', NULL);
+INSERT INTO `mes_flash_record` VALUES (2089353941568471042, '000000', 'FL202608170004', 2091000000000006003, 'mac', 3, 'SN202606200003', 1, 'WO-TEST-001', 1, NULL, NULL, NULL, NULL, 'MAC_POOL', 2089350827679420417, NULL, '{\"mac\":\"00:1A:2B:3C:4D:5F\"}', NULL, NULL, NULL, NULL, NULL, '2026-08-17 22:09:33', 'PASS', NULL, 0, 'AUTO', -1, -1, '2026-08-17 22:09:33', -1, '2026-08-17 22:09:33', '0', NULL);
+INSERT INTO `mes_flash_record` VALUES (2089359892421816321, '000000', 'FL202608170006', 2091000000000006003, 'mac', 3, 'SN202606200003', 1, 'WO-TEST-001', 1, NULL, NULL, NULL, NULL, 'MAC_POOL', 2089350827679420417, NULL, '{\"mac\":\"00:1A:2B:3C:4D:5F\"}', NULL, NULL, NULL, NULL, NULL, '2026-08-17 22:33:11', 'PASS', NULL, 0, 'AUTO', -1, -1, '2026-08-17 22:33:11', -1, '2026-08-17 22:33:11', '0', NULL);
+INSERT INTO `mes_flash_record` VALUES (2089376873367744514, '000000', 'FL202608170009', 2091000000000006003, 'mac', 1, 'SN202606200001', 1, 'WO-TEST-001', 1, NULL, NULL, NULL, 'GW-1000 MAC刷写', 'MAC_POOL', 2089376872742793217, NULL, '{\"mac\":\"00:1A:2B:3C:4D:0B\"}', NULL, NULL, NULL, 1, 'admin', '2026-08-17 23:40:40', 'PASS', NULL, 0, 'AUTO', 103, 1, '2026-08-17 23:40:40', 1, '2026-08-17 23:40:40', '0', '全链路正式数据-MAC刷写');
+INSERT INTO `mes_flash_record` VALUES (2089381695185760257, '000000', 'FL202608170010', 2091000000000006003, 'mac', 1, 'SN202606200001', 1, 'WO-TEST-001', 1, NULL, NULL, NULL, 'test', 'MAC_POOL', 2089376872742793217, NULL, '{\"mac\":\"00:1A:2B:3C:4D:0B\"}', NULL, NULL, NULL, 1, 'admin', '2026-08-17 23:59:50', 'PASS', NULL, 0, 'AUTO', 103, 1, '2026-08-17 23:59:50', 1, '2026-08-17 23:59:50', '0', 'CEH-test');
+INSERT INTO `mes_flash_record` VALUES (2089383748683440130, '000000', 'FL202608180001', 2091000000000006003, 'mac', 1, 'SN202606200001', 1, 'WO-TEST-001', 1, NULL, NULL, NULL, 'C����-MAC', 'MAC_POOL', 2089376872742793217, NULL, '{\"mac\":\"00:1A:2B:3C:4D:0B\"}', NULL, NULL, NULL, 1, 'admin', '2026-08-18 00:07:59', 'PASS', NULL, 0, 'AUTO', 103, 1, '2026-08-18 00:07:59', 1, '2026-08-18 00:07:59', '0', 'CEH-pos');
+INSERT INTO `mes_flash_record` VALUES (2089724283822661634, '000000', 'FL202608180002', 2091000000000006001, 'firmware_file', 2089716723199512577, 'SN-FC-SCGD202608180001-7372-0001', 2089713975506821122, 'SCGD202608180001', 2089714042334666753, NULL, 90002001, 'FLASH', '固件刷写', 'FIRMWARE', 2089376872356917250, '1.0.0', NULL, '21c307a98a4cf86276b003b47340638d', 1, 'CNC-001', 1, 'admin', '2026-08-18 22:40:53', 'PASS', NULL, 0, 'MANUAL', 103, 1, '2026-08-18 22:41:09', 1, '2026-08-18 22:41:09', '0', NULL);
+INSERT INTO `mes_flash_record` VALUES (2089724337581056002, '000000', 'FL202608180003', 2091000000000006001, 'firmware_file', 2089716723199512578, 'SN-FC-SCGD202608180001-7372-0002', 2089713975506821122, 'SCGD202608180001', 2089714042334666753, NULL, 90002001, 'FLASH', '固件刷写', 'FIRMWARE', 2089376872356917250, '1.0.0', NULL, '21c307a98a4cf86276b003b47340638d', 1, 'CNC-001', 1, 'admin', '2026-08-18 22:41:15', 'PASS', NULL, 0, 'MANUAL', 103, 1, '2026-08-18 22:41:22', 1, '2026-08-18 22:41:22', '0', NULL);
+INSERT INTO `mes_flash_record` VALUES (2089724363686404097, '000000', 'FL202608180004', 2091000000000006001, 'firmware_file', 2089716723199512579, 'SN-FC-SCGD202608180001-7372-0003', 2089713975506821122, 'SCGD202608180001', 2089714042334666753, NULL, 90002001, 'FLASH', '固件刷写', 'FIRMWARE', 2089376872356917250, '1.0.0', NULL, '21c307a98a4cf86276b003b47340638d', 1, 'CNC-001', 1, 'admin', '2026-08-18 22:41:23', 'PASS', NULL, 0, 'MANUAL', 103, 1, '2026-08-18 22:41:28', 1, '2026-08-18 22:41:28', '0', NULL);
+INSERT INTO `mes_flash_record` VALUES (2089731575431307266, '000000', 'FL202608180005', 2091000000000006001, 'firmware_file', 2089731476877746177, 'SN-FC-SCGD202608180001-3431-0001', 2089713975506821122, 'SCGD202608180001', 2089731180571140098, NULL, 90002001, 'FLASH', '固件刷写', 'FIRMWARE', 2089376872356917250, '1.0.0', NULL, '21c307a98a4cf86276b003b47340638d', NULL, NULL, 1, 'admin', '2026-08-18 23:10:04', 'PASS', NULL, 0, 'AUTO', 103, 1, '2026-08-18 23:10:08', 1, '2026-08-18 23:10:08', '0', NULL);
+INSERT INTO `mes_flash_record` VALUES (2089731595194867713, '000000', 'FL202608180006', 2091000000000006001, 'firmware_file', 2089731476877746178, 'SN-FC-SCGD202608180001-3431-0002', 2089713975506821122, 'SCGD202608180001', 2089731180571140098, NULL, 90002001, 'FLASH', '固件刷写', 'FIRMWARE', 2089376872356917250, '1.0.0', NULL, '21c307a98a4cf86276b003b47340638d', NULL, NULL, 1, 'admin', '2026-08-18 23:10:09', 'PASS', NULL, 0, 'AUTO', 103, 1, '2026-08-18 23:10:12', 1, '2026-08-18 23:10:12', '0', NULL);
+INSERT INTO `mes_flash_record` VALUES (2089731603205988353, '000000', 'FL202608180007', 2091000000000006001, 'firmware_file', 2089731476877746179, 'SN-FC-SCGD202608180001-3431-0003', 2089713975506821122, 'SCGD202608180001', 2089731180571140098, NULL, 90002001, 'FLASH', '固件刷写', 'FIRMWARE', 2089376872356917250, '1.0.0', NULL, '21c307a98a4cf86276b003b47340638d', NULL, NULL, 1, 'admin', '2026-08-18 23:10:13', 'PASS', NULL, 0, 'AUTO', 103, 1, '2026-08-18 23:10:14', 1, '2026-08-18 23:10:14', '0', NULL);
+INSERT INTO `mes_flash_record` VALUES (2089731610382442497, '000000', 'FL202608180008', 2091000000000006001, 'firmware_file', 2089731476877746181, 'SN-FC-SCGD202608180001-3431-0005', 2089713975506821122, 'SCGD202608180001', 2089731180571140098, NULL, 90002001, 'FLASH', '固件刷写', 'FIRMWARE', 2089376872356917250, '1.0.0', NULL, '21c307a98a4cf86276b003b47340638d', NULL, NULL, 1, 'admin', '2026-08-18 23:10:15', 'PASS', NULL, 0, 'AUTO', 103, 1, '2026-08-18 23:10:16', 1, '2026-08-18 23:10:16', '0', NULL);
+INSERT INTO `mes_flash_record` VALUES (2089731618318065665, '000000', 'FL202608180009', 2091000000000006001, 'firmware_file', 2089731476877746182, 'SN-FC-SCGD202608180001-3431-0006', 2089713975506821122, 'SCGD202608180001', 2089731180571140098, NULL, 90002001, 'FLASH', '固件刷写', 'FIRMWARE', 2089376872356917250, '1.0.0', NULL, '21c307a98a4cf86276b003b47340638d', NULL, NULL, 1, 'admin', '2026-08-18 23:10:16', 'PASS', NULL, 0, 'AUTO', 103, 1, '2026-08-18 23:10:18', 1, '2026-08-18 23:10:18', '0', NULL);
+INSERT INTO `mes_flash_record` VALUES (2089731645094502402, '000000', 'FL202608180010', 2091000000000006001, 'firmware_file', 2089731476877746180, 'SN-FC-SCGD202608180001-3431-0004', 2089713975506821122, 'SCGD202608180001', 2089731180571140098, NULL, 90002001, 'FLASH', '固件刷写', 'FIRMWARE', 2089376872356917250, '1.0.0', NULL, '21c307a98a4cf86276b003b47340638d', NULL, NULL, 1, 'admin', '2026-08-18 23:10:22', 'PASS', NULL, 0, 'AUTO', 103, 1, '2026-08-18 23:10:24', 1, '2026-08-18 23:10:24', '0', NULL);
+INSERT INTO `mes_flash_record` VALUES (2089736293247459330, '000000', 'FL202608180011', 2091000000000006001, 'firmware_file', 2089736183729987585, 'SN-FC-SCGD202608180001-8898-0001', 2089713975506821122, 'SCGD202608180001', 2089736110841372674, NULL, 90002001, 'FLASH', '固件刷写', 'FIRMWARE', 2089376872356917250, '1.0.0', NULL, '21c307a98a4cf86276b003b47340638d', NULL, NULL, 1, 'admin', '2026-08-18 23:28:50', 'PASS', NULL, 0, 'AUTO', 103, 1, '2026-08-18 23:28:52', 1, '2026-08-18 23:28:52', '0', NULL);
+INSERT INTO `mes_flash_record` VALUES (2089742961444175874, '000000', 'FL202608180012', 2091000000000006001, 'firmware_file', 2089736183729987585, 'SN-FC-SCGD202608180001-8898-0001', 2089713975506821122, 'SCGD202608180001', 2089736110841372674, NULL, NULL, NULL, '固件刷写', 'FIRMWARE', 2089376872356917250, '1.0.0', NULL, '21c307a98a4cf86276b003b47340638d', NULL, NULL, 1, 'admin', '2026-08-18 23:55:22', 'PASS', NULL, 0, 'MANUAL', 103, 1, '2026-08-18 23:55:22', 1, '2026-08-18 23:55:22', '0', NULL);
+INSERT INTO `mes_flash_record` VALUES (2089742961586782209, '000000', 'FL202608180013', 2091000000000006001, 'firmware_file', 2089731476877746177, 'SN-FC-SCGD202608180001-3431-0001', 2089713975506821122, 'SCGD202608180001', 2089731180571140098, NULL, NULL, NULL, '固件刷写', 'FIRMWARE', 2089376872356917250, '1.0.0', NULL, '21c307a98a4cf86276b003b47340638d', NULL, NULL, 1, 'admin', '2026-08-18 23:55:22', 'PASS', NULL, 0, 'MANUAL', 103, 1, '2026-08-18 23:55:22', 1, '2026-08-18 23:55:22', '0', NULL);
+INSERT INTO `mes_flash_record` VALUES (2089742961708417025, '000000', 'FL202608180014', 2091000000000006001, 'firmware_file', 2089731476877746178, 'SN-FC-SCGD202608180001-3431-0002', 2089713975506821122, 'SCGD202608180001', 2089731180571140098, NULL, NULL, NULL, '固件刷写', 'FIRMWARE', 2089376872356917250, '1.0.0', NULL, '21c307a98a4cf86276b003b47340638d', NULL, NULL, 1, 'admin', '2026-08-18 23:55:22', 'PASS', NULL, 0, 'MANUAL', 103, 1, '2026-08-18 23:55:22', 1, '2026-08-18 23:55:22', '0', NULL);
+INSERT INTO `mes_flash_record` VALUES (2089742961834246145, '000000', 'FL202608180015', 2091000000000006001, 'firmware_file', 2089731476877746179, 'SN-FC-SCGD202608180001-3431-0003', 2089713975506821122, 'SCGD202608180001', 2089731180571140098, NULL, NULL, NULL, '固件刷写', 'FIRMWARE', 2089376872356917250, '1.0.0', NULL, '21c307a98a4cf86276b003b47340638d', NULL, NULL, 1, 'admin', '2026-08-18 23:55:22', 'PASS', NULL, 0, 'MANUAL', 103, 1, '2026-08-18 23:55:22', 1, '2026-08-18 23:55:22', '0', NULL);
+INSERT INTO `mes_flash_record` VALUES (2089742961960075265, '000000', 'FL202608180016', 2091000000000006001, 'firmware_file', 2089731476877746180, 'SN-FC-SCGD202608180001-3431-0004', 2089713975506821122, 'SCGD202608180001', 2089731180571140098, NULL, NULL, NULL, '固件刷写', 'FIRMWARE', 2089376872356917250, '1.0.0', NULL, '21c307a98a4cf86276b003b47340638d', NULL, NULL, 1, 'admin', '2026-08-18 23:55:22', 'PASS', NULL, 0, 'MANUAL', 103, 1, '2026-08-18 23:55:22', 1, '2026-08-18 23:55:22', '0', NULL);
+INSERT INTO `mes_flash_record` VALUES (2089742962090098690, '000000', 'FL202608180017', 2091000000000006001, 'firmware_file', 2089731476877746181, 'SN-FC-SCGD202608180001-3431-0005', 2089713975506821122, 'SCGD202608180001', 2089731180571140098, NULL, NULL, NULL, '固件刷写', 'FIRMWARE', 2089376872356917250, '1.0.0', NULL, '21c307a98a4cf86276b003b47340638d', NULL, NULL, 1, 'admin', '2026-08-18 23:55:22', 'PASS', NULL, 0, 'MANUAL', 103, 1, '2026-08-18 23:55:22', 1, '2026-08-18 23:55:22', '0', NULL);
+INSERT INTO `mes_flash_record` VALUES (2089742962220122113, '000000', 'FL202608180018', 2091000000000006001, 'firmware_file', 2089731476877746182, 'SN-FC-SCGD202608180001-3431-0006', 2089713975506821122, 'SCGD202608180001', 2089731180571140098, NULL, NULL, NULL, '固件刷写', 'FIRMWARE', 2089376872356917250, '1.0.0', NULL, '21c307a98a4cf86276b003b47340638d', NULL, NULL, 1, 'admin', '2026-08-18 23:55:22', 'PASS', NULL, 0, 'MANUAL', 103, 1, '2026-08-18 23:55:22', 1, '2026-08-18 23:55:22', '0', NULL);
+INSERT INTO `mes_flash_record` VALUES (2089742962354339842, '000000', 'FL202608180019', 2091000000000006001, 'firmware_file', 2089716723199512577, 'SN-FC-SCGD202608180001-7372-0001', 2089713975506821122, 'SCGD202608180001', 2089714042334666753, NULL, NULL, NULL, '固件刷写', 'FIRMWARE', 2089376872356917250, '1.0.0', NULL, '21c307a98a4cf86276b003b47340638d', NULL, NULL, 1, 'admin', '2026-08-18 23:55:22', 'PASS', NULL, 0, 'MANUAL', 103, 1, '2026-08-18 23:55:22', 1, '2026-08-18 23:55:22', '0', NULL);
+INSERT INTO `mes_flash_record` VALUES (2089742962484363266, '000000', 'FL202608180020', 2091000000000006001, 'firmware_file', 2089716723199512578, 'SN-FC-SCGD202608180001-7372-0002', 2089713975506821122, 'SCGD202608180001', 2089714042334666753, NULL, NULL, NULL, '固件刷写', 'FIRMWARE', 2089376872356917250, '1.0.0', NULL, '21c307a98a4cf86276b003b47340638d', NULL, NULL, 1, 'admin', '2026-08-18 23:55:22', 'PASS', NULL, 0, 'MANUAL', 103, 1, '2026-08-18 23:55:22', 1, '2026-08-18 23:55:22', '0', NULL);
+INSERT INTO `mes_flash_record` VALUES (2089742962622775298, '000000', 'FL202608180021', 2091000000000006001, 'firmware_file', 2089716723199512579, 'SN-FC-SCGD202608180001-7372-0003', 2089713975506821122, 'SCGD202608180001', 2089714042334666753, NULL, NULL, NULL, '固件刷写', 'FIRMWARE', 2089376872356917250, '1.0.0', NULL, '21c307a98a4cf86276b003b47340638d', NULL, NULL, 1, 'admin', '2026-08-18 23:55:22', 'PASS', NULL, 0, 'MANUAL', 103, 1, '2026-08-18 23:55:22', 1, '2026-08-18 23:55:22', '0', NULL);
+INSERT INTO `mes_flash_record` VALUES (2089742963293863938, '000000', 'FL202608180022', 2091000000000006001, 'firmware_file', 2089736183729987585, 'SN-FC-SCGD202608180001-8898-0001', 2089713975506821122, 'SCGD202608180001', 2089736110841372674, NULL, NULL, NULL, '固件刷写', 'FIRMWARE', 2089376872356917250, '1.0.0', NULL, '21c307a98a4cf86276b003b47340638d', NULL, NULL, 1, 'admin', '2026-08-18 23:55:23', 'PASS', NULL, 0, 'MANUAL', 103, 1, '2026-08-18 23:55:23', 1, '2026-08-18 23:55:23', '0', NULL);
+INSERT INTO `mes_flash_record` VALUES (2089742963407110146, '000000', 'FL202608180023', 2091000000000006001, 'firmware_file', 2089731476877746177, 'SN-FC-SCGD202608180001-3431-0001', 2089713975506821122, 'SCGD202608180001', 2089731180571140098, NULL, NULL, NULL, '固件刷写', 'FIRMWARE', 2089376872356917250, '1.0.0', NULL, '21c307a98a4cf86276b003b47340638d', NULL, NULL, 1, 'admin', '2026-08-18 23:55:23', 'PASS', NULL, 0, 'MANUAL', 103, 1, '2026-08-18 23:55:23', 1, '2026-08-18 23:55:23', '0', NULL);
+INSERT INTO `mes_flash_record` VALUES (2089742963595853826, '000000', 'FL202608180024', 2091000000000006001, 'firmware_file', 2089731476877746178, 'SN-FC-SCGD202608180001-3431-0002', 2089713975506821122, 'SCGD202608180001', 2089731180571140098, NULL, NULL, NULL, '固件刷写', 'FIRMWARE', 2089376872356917250, '1.0.0', NULL, '21c307a98a4cf86276b003b47340638d', NULL, NULL, 1, 'admin', '2026-08-18 23:55:23', 'PASS', NULL, 0, 'MANUAL', 103, 1, '2026-08-18 23:55:23', 1, '2026-08-18 23:55:23', '0', NULL);
+INSERT INTO `mes_flash_record` VALUES (2089742963725877250, '000000', 'FL202608180025', 2091000000000006001, 'firmware_file', 2089731476877746179, 'SN-FC-SCGD202608180001-3431-0003', 2089713975506821122, 'SCGD202608180001', 2089731180571140098, NULL, NULL, NULL, '固件刷写', 'FIRMWARE', 2089376872356917250, '1.0.0', NULL, '21c307a98a4cf86276b003b47340638d', NULL, NULL, 1, 'admin', '2026-08-18 23:55:23', 'PASS', NULL, 0, 'MANUAL', 103, 1, '2026-08-18 23:55:23', 1, '2026-08-18 23:55:23', '0', NULL);
+INSERT INTO `mes_flash_record` VALUES (2089742963839123457, '000000', 'FL202608180026', 2091000000000006001, 'firmware_file', 2089731476877746180, 'SN-FC-SCGD202608180001-3431-0004', 2089713975506821122, 'SCGD202608180001', 2089731180571140098, NULL, NULL, NULL, '固件刷写', 'FIRMWARE', 2089376872356917250, '1.0.0', NULL, '21c307a98a4cf86276b003b47340638d', NULL, NULL, 1, 'admin', '2026-08-18 23:55:23', 'PASS', NULL, 0, 'MANUAL', 103, 1, '2026-08-18 23:55:23', 1, '2026-08-18 23:55:23', '0', NULL);
+INSERT INTO `mes_flash_record` VALUES (2089742963952369665, '000000', 'FL202608180027', 2091000000000006001, 'firmware_file', 2089731476877746181, 'SN-FC-SCGD202608180001-3431-0005', 2089713975506821122, 'SCGD202608180001', 2089731180571140098, NULL, NULL, NULL, '固件刷写', 'FIRMWARE', 2089376872356917250, '1.0.0', NULL, '21c307a98a4cf86276b003b47340638d', NULL, NULL, 1, 'admin', '2026-08-18 23:55:23', 'PASS', NULL, 0, 'MANUAL', 103, 1, '2026-08-18 23:55:23', 1, '2026-08-18 23:55:23', '0', NULL);
+INSERT INTO `mes_flash_record` VALUES (2089742964061421570, '000000', 'FL202608180028', 2091000000000006001, 'firmware_file', 2089731476877746182, 'SN-FC-SCGD202608180001-3431-0006', 2089713975506821122, 'SCGD202608180001', 2089731180571140098, NULL, NULL, NULL, '固件刷写', 'FIRMWARE', 2089376872356917250, '1.0.0', NULL, '21c307a98a4cf86276b003b47340638d', NULL, NULL, 1, 'admin', '2026-08-18 23:55:23', 'PASS', NULL, 0, 'MANUAL', 103, 1, '2026-08-18 23:55:23', 1, '2026-08-18 23:55:23', '0', NULL);
+INSERT INTO `mes_flash_record` VALUES (2089742964166279169, '000000', 'FL202608180029', 2091000000000006001, 'firmware_file', 2089716723199512577, 'SN-FC-SCGD202608180001-7372-0001', 2089713975506821122, 'SCGD202608180001', 2089714042334666753, NULL, NULL, NULL, '固件刷写', 'FIRMWARE', 2089376872356917250, '1.0.0', NULL, '21c307a98a4cf86276b003b47340638d', NULL, NULL, 1, 'admin', '2026-08-18 23:55:23', 'PASS', NULL, 0, 'MANUAL', 103, 1, '2026-08-18 23:55:23', 1, '2026-08-18 23:55:23', '0', NULL);
+INSERT INTO `mes_flash_record` VALUES (2089742964262748162, '000000', 'FL202608180030', 2091000000000006001, 'firmware_file', 2089716723199512578, 'SN-FC-SCGD202608180001-7372-0002', 2089713975506821122, 'SCGD202608180001', 2089714042334666753, NULL, NULL, NULL, '固件刷写', 'FIRMWARE', 2089376872356917250, '1.0.0', NULL, '21c307a98a4cf86276b003b47340638d', NULL, NULL, 1, 'admin', '2026-08-18 23:55:23', 'PASS', NULL, 0, 'MANUAL', 103, 1, '2026-08-18 23:55:23', 1, '2026-08-18 23:55:23', '0', NULL);
+INSERT INTO `mes_flash_record` VALUES (2089742964367605762, '000000', 'FL202608180031', 2091000000000006001, 'firmware_file', 2089716723199512579, 'SN-FC-SCGD202608180001-7372-0003', 2089713975506821122, 'SCGD202608180001', 2089714042334666753, NULL, NULL, NULL, '固件刷写', 'FIRMWARE', 2089376872356917250, '1.0.0', NULL, '21c307a98a4cf86276b003b47340638d', NULL, NULL, 1, 'admin', '2026-08-18 23:55:23', 'PASS', NULL, 0, 'MANUAL', 103, 1, '2026-08-18 23:55:23', 1, '2026-08-18 23:55:23', '0', NULL);
+INSERT INTO `mes_flash_record` VALUES (2089743107447898114, '000000', 'FL202608180032', 2091000000000006001, 'firmware_file', 2089743107275931649, 'SN-FC-SCGD202608180002V6776-6871-0003', 2089743106437070849, 'SCGD202608180002V6776', 2089743106818752514, NULL, NULL, NULL, '固件刷写', 'FIRMWARE', 2089376872356917250, '1.0.0', NULL, '21c307a98a4cf86276b003b47340638d', NULL, NULL, 1, 'admin', '2026-08-18 23:55:57', 'PASS', NULL, 0, 'MANUAL', 103, 1, '2026-08-18 23:55:57', 1, '2026-08-18 23:55:57', '0', NULL);
+INSERT INTO `mes_flash_record` VALUES (2089743107544367106, '000000', 'FL202608180033', 2091000000000006001, 'firmware_file', 2089743107263348737, 'SN-FC-SCGD202608180002V6776-6871-0001', 2089743106437070849, 'SCGD202608180002V6776', 2089743106818752514, NULL, NULL, NULL, '固件刷写', 'FIRMWARE', 2089376872356917250, '1.0.0', NULL, '21c307a98a4cf86276b003b47340638d', NULL, NULL, 1, 'admin', '2026-08-18 23:55:57', 'PASS', NULL, 0, 'MANUAL', 103, 1, '2026-08-18 23:55:57', 1, '2026-08-18 23:55:57', '0', NULL);
+INSERT INTO `mes_flash_record` VALUES (2089743107645030401, '000000', 'FL202608180034', 2091000000000006001, 'firmware_file', 2089743107284320257, 'SN-FC-SCGD202608180002V6776-6871-0004', 2089743106437070849, 'SCGD202608180002V6776', 2089743106818752514, NULL, NULL, NULL, '固件刷写', 'FIRMWARE', 2089376872356917250, '1.0.0', NULL, '21c307a98a4cf86276b003b47340638d', NULL, NULL, 1, 'admin', '2026-08-18 23:55:57', 'PASS', NULL, 0, 'MANUAL', 103, 1, '2026-08-18 23:55:57', 1, '2026-08-18 23:55:57', '0', NULL);
+INSERT INTO `mes_flash_record` VALUES (2089743107745693697, '000000', 'FL202608180035', 2091000000000006001, 'firmware_file', 2089743107288514561, 'SN-FC-SCGD202608180002V6776-6871-0005', 2089743106437070849, 'SCGD202608180002V6776', 2089743106818752514, NULL, NULL, NULL, '固件刷写', 'FIRMWARE', 2089376872356917250, '1.0.0', NULL, '21c307a98a4cf86276b003b47340638d', NULL, NULL, 1, 'admin', '2026-08-18 23:55:57', 'PASS', NULL, 0, 'MANUAL', 103, 1, '2026-08-18 23:55:57', 1, '2026-08-18 23:55:57', '0', NULL);
+INSERT INTO `mes_flash_record` VALUES (2089743107850551298, '000000', 'FL202608180036', 2091000000000006001, 'firmware_file', 2089743107292708866, 'SN-FC-SCGD202608180002V6776-6871-0006', 2089743106437070849, 'SCGD202608180002V6776', 2089743106818752514, NULL, NULL, NULL, '固件刷写', 'FIRMWARE', 2089376872356917250, '1.0.0', NULL, '21c307a98a4cf86276b003b47340638d', NULL, NULL, 1, 'admin', '2026-08-18 23:55:57', 'PASS', NULL, 0, 'MANUAL', 103, 1, '2026-08-18 23:55:57', 1, '2026-08-18 23:55:57', '0', NULL);
+INSERT INTO `mes_flash_record` VALUES (2089743107942825985, '000000', 'FL202608180037', 2091000000000006001, 'firmware_file', 2089743107267543042, 'SN-FC-SCGD202608180002V6776-6871-0002', 2089743106437070849, 'SCGD202608180002V6776', 2089743106818752514, NULL, NULL, NULL, '固件刷写', 'FIRMWARE', 2089376872356917250, '1.0.0', NULL, '21c307a98a4cf86276b003b47340638d', NULL, NULL, 1, 'admin', '2026-08-18 23:55:57', 'PASS', NULL, 0, 'MANUAL', 103, 1, '2026-08-18 23:55:57', 1, '2026-08-18 23:55:57', '0', NULL);
+INSERT INTO `mes_flash_record` VALUES (2089743108781686786, '000000', 'FL202608180038', 2091000000000006001, 'firmware_file', 2089743108622303233, 'SN-FC-SCGD202608180002V6776-7235-0002', 2089743106437070849, 'SCGD202608180002V6776', 2089743108337090561, NULL, NULL, NULL, '固件刷写', 'FIRMWARE', 2089376872356917250, '1.0.0', NULL, '21c307a98a4cf86276b003b47340638d', NULL, NULL, 1, 'admin', '2026-08-18 23:55:57', 'PASS', NULL, 0, 'MANUAL', 103, 1, '2026-08-18 23:55:57', 1, '2026-08-18 23:55:57', '0', NULL);
+INSERT INTO `mes_flash_record` VALUES (2089743108873961473, '000000', 'FL202608180039', 2091000000000006001, 'firmware_file', 2089743108626497537, 'SN-FC-SCGD202608180002V6776-7235-0003', 2089743106437070849, 'SCGD202608180002V6776', 2089743108337090561, NULL, NULL, NULL, '固件刷写', 'FIRMWARE', 2089376872356917250, '1.0.0', NULL, '21c307a98a4cf86276b003b47340638d', NULL, NULL, 1, 'admin', '2026-08-18 23:55:57', 'PASS', NULL, 0, 'MANUAL', 103, 1, '2026-08-18 23:55:57', 1, '2026-08-18 23:55:57', '0', NULL);
+INSERT INTO `mes_flash_record` VALUES (2089743108978819073, '000000', 'FL202608180040', 2091000000000006001, 'firmware_file', 2089743108613914626, 'SN-FC-SCGD202608180002V6776-7235-0001', 2089743106437070849, 'SCGD202608180002V6776', 2089743108337090561, NULL, NULL, NULL, '固件刷写', 'FIRMWARE', 2089376872356917250, '1.0.0', NULL, '21c307a98a4cf86276b003b47340638d', NULL, NULL, 1, 'admin', '2026-08-18 23:55:57', 'PASS', NULL, 0, 'MANUAL', 103, 1, '2026-08-18 23:55:57', 1, '2026-08-18 23:55:57', '0', NULL);
+INSERT INTO `mes_flash_record` VALUES (2089743109075288065, '000000', 'FL202608180041', 2091000000000006001, 'firmware_file', 2089743108630691842, 'SN-FC-SCGD202608180002V6776-7235-0004', 2089743106437070849, 'SCGD202608180002V6776', 2089743108337090561, NULL, NULL, NULL, '固件刷写', 'FIRMWARE', 2089376872356917250, '1.0.0', NULL, '21c307a98a4cf86276b003b47340638d', NULL, NULL, 1, 'admin', '2026-08-18 23:55:57', 'PASS', NULL, 0, 'MANUAL', 103, 1, '2026-08-18 23:55:57', 1, '2026-08-18 23:55:57', '0', NULL);
+INSERT INTO `mes_flash_record` VALUES (2089743634931957762, '000000', 'FL202608180042', 2091000000000006001, 'firmware_file', 2089743634722242561, 'SN-FC-SCGD202608180002V2560-2653-0002', 2089743634013405186, 'SCGD202608180002V2560', 2089743634378309634, NULL, NULL, NULL, '固件刷写', 'FIRMWARE', 2089376872356917250, '1.0.0', NULL, '21c307a98a4cf86276b003b47340638d', NULL, NULL, 1, 'admin', '2026-08-18 23:58:03', 'PASS', NULL, 0, 'MANUAL', 103, 1, '2026-08-18 23:58:03', 1, '2026-08-18 23:58:03', '0', NULL);
+INSERT INTO `mes_flash_record` VALUES (2089743635124895746, '000000', 'FL202608180043', 2091000000000006001, 'firmware_file', 2089743634739019777, 'SN-FC-SCGD202608180002V2560-2653-0006', 2089743634013405186, 'SCGD202608180002V2560', 2089743634378309634, NULL, NULL, NULL, '固件刷写', 'FIRMWARE', 2089376872356917250, '1.0.0', NULL, '21c307a98a4cf86276b003b47340638d', NULL, NULL, 1, 'admin', '2026-08-18 23:58:03', 'PASS', NULL, 0, 'MANUAL', 103, 1, '2026-08-18 23:58:03', 1, '2026-08-18 23:58:03', '0', NULL);
+INSERT INTO `mes_flash_record` VALUES (2089743635238141954, '000000', 'FL202608180044', 2091000000000006001, 'firmware_file', 2089743634730631169, 'SN-FC-SCGD202608180002V2560-2653-0004', 2089743634013405186, 'SCGD202608180002V2560', 2089743634378309634, NULL, NULL, NULL, '固件刷写', 'FIRMWARE', 2089376872356917250, '1.0.0', NULL, '21c307a98a4cf86276b003b47340638d', NULL, NULL, 1, 'admin', '2026-08-18 23:58:03', 'PASS', NULL, 0, 'MANUAL', 103, 1, '2026-08-18 23:58:03', 1, '2026-08-18 23:58:03', '0', NULL);
+INSERT INTO `mes_flash_record` VALUES (2089743635342999553, '000000', 'FL202608180045', 2091000000000006001, 'firmware_file', 2089743634718048258, 'SN-FC-SCGD202608180002V2560-2653-0001', 2089743634013405186, 'SCGD202608180002V2560', 2089743634378309634, NULL, NULL, NULL, '固件刷写', 'FIRMWARE', 2089376872356917250, '1.0.0', NULL, '21c307a98a4cf86276b003b47340638d', NULL, NULL, 1, 'admin', '2026-08-18 23:58:03', 'PASS', NULL, 0, 'MANUAL', 103, 1, '2026-08-18 23:58:03', 1, '2026-08-18 23:58:03', '0', NULL);
+INSERT INTO `mes_flash_record` VALUES (2089743635456245762, '000000', 'FL202608180046', 2091000000000006001, 'firmware_file', 2089743634734825474, 'SN-FC-SCGD202608180002V2560-2653-0005', 2089743634013405186, 'SCGD202608180002V2560', 2089743634378309634, NULL, NULL, NULL, '固件刷写', 'FIRMWARE', 2089376872356917250, '1.0.0', NULL, '21c307a98a4cf86276b003b47340638d', NULL, NULL, 1, 'admin', '2026-08-18 23:58:03', 'PASS', NULL, 0, 'MANUAL', 103, 1, '2026-08-18 23:58:03', 1, '2026-08-18 23:58:03', '0', NULL);
+INSERT INTO `mes_flash_record` VALUES (2089743635561103362, '000000', 'FL202608180047', 2091000000000006001, 'firmware_file', 2089743634726436866, 'SN-FC-SCGD202608180002V2560-2653-0003', 2089743634013405186, 'SCGD202608180002V2560', 2089743634378309634, NULL, NULL, NULL, '固件刷写', 'FIRMWARE', 2089376872356917250, '1.0.0', NULL, '21c307a98a4cf86276b003b47340638d', NULL, NULL, 1, 'admin', '2026-08-18 23:58:03', 'PASS', NULL, 0, 'MANUAL', 103, 1, '2026-08-18 23:58:03', 1, '2026-08-18 23:58:03', '0', NULL);
+INSERT INTO `mes_flash_record` VALUES (2089743636341243906, '000000', 'FL202608180048', 2091000000000006001, 'firmware_file', 2089743636177666050, 'SN-FC-SCGD202608180002V2560-3019-0001', 2089743634013405186, 'SCGD202608180002V2560', 2089743635917619202, NULL, NULL, NULL, '固件刷写', 'FIRMWARE', 2089376872356917250, '1.0.0', NULL, '21c307a98a4cf86276b003b47340638d', NULL, NULL, 1, 'admin', '2026-08-18 23:58:03', 'PASS', NULL, 0, 'MANUAL', 103, 1, '2026-08-18 23:58:03', 1, '2026-08-18 23:58:03', '0', NULL);
+INSERT INTO `mes_flash_record` VALUES (2089743636450295810, '000000', 'FL202608180049', 2091000000000006001, 'firmware_file', 2089743636181860354, 'SN-FC-SCGD202608180002V2560-3019-0002', 2089743634013405186, 'SCGD202608180002V2560', 2089743635917619202, NULL, NULL, NULL, '固件刷写', 'FIRMWARE', 2089376872356917250, '1.0.0', NULL, '21c307a98a4cf86276b003b47340638d', NULL, NULL, 1, 'admin', '2026-08-18 23:58:03', 'PASS', NULL, 0, 'MANUAL', 103, 1, '2026-08-18 23:58:03', 1, '2026-08-18 23:58:03', '0', NULL);
+INSERT INTO `mes_flash_record` VALUES (2089743636538376193, '000000', 'FL202608180050', 2091000000000006001, 'firmware_file', 2089743636186054658, 'SN-FC-SCGD202608180002V2560-3019-0003', 2089743634013405186, 'SCGD202608180002V2560', 2089743635917619202, NULL, NULL, NULL, '固件刷写', 'FIRMWARE', 2089376872356917250, '1.0.0', NULL, '21c307a98a4cf86276b003b47340638d', NULL, NULL, 1, 'admin', '2026-08-18 23:58:03', 'PASS', NULL, 0, 'MANUAL', 103, 1, '2026-08-18 23:58:03', 1, '2026-08-18 23:58:03', '0', NULL);
+INSERT INTO `mes_flash_record` VALUES (2089743636634845185, '000000', 'FL202608180051', 2091000000000006001, 'firmware_file', 2089743636190248962, 'SN-FC-SCGD202608180002V2560-3019-0004', 2089743634013405186, 'SCGD202608180002V2560', 2089743635917619202, NULL, NULL, NULL, '固件刷写', 'FIRMWARE', 2089376872356917250, '1.0.0', NULL, '21c307a98a4cf86276b003b47340638d', NULL, NULL, 1, 'admin', '2026-08-18 23:58:03', 'PASS', NULL, 0, 'MANUAL', 103, 1, '2026-08-18 23:58:03', 1, '2026-08-18 23:58:03', '0', NULL);
+INSERT INTO `mes_flash_record` VALUES (2089745256047230978, '000000', 'FL202608190001', 2091000000000006001, 'firmware_file', 2089745255866875905, 'SN-FC-SCGD202608190001V9085-9166-0001', 2089745255220953090, 'SCGD202608190001V9085', 2089745255535525890, NULL, NULL, NULL, '固件刷写', 'FIRMWARE', 2089376872356917250, '1.0.0', NULL, '21c307a98a4cf86276b003b47340638d', NULL, NULL, 1, 'admin', '2026-08-19 00:04:29', 'PASS', NULL, 0, 'MANUAL', 103, 1, '2026-08-19 00:04:29', 1, '2026-08-19 00:04:29', '0', NULL);
+INSERT INTO `mes_flash_record` VALUES (2089745256147894273, '000000', 'FL202608190002', 2091000000000006001, 'firmware_file', 2089745255887847425, 'SN-FC-SCGD202608190001V9085-9166-0005', 2089745255220953090, 'SCGD202608190001V9085', 2089745255535525890, NULL, NULL, NULL, '固件刷写', 'FIRMWARE', 2089376872356917250, '1.0.0', NULL, '21c307a98a4cf86276b003b47340638d', NULL, NULL, 1, 'admin', '2026-08-19 00:04:29', 'PASS', NULL, 0, 'MANUAL', 103, 1, '2026-08-19 00:04:29', 1, '2026-08-19 00:04:29', '0', NULL);
+INSERT INTO `mes_flash_record` VALUES (2089745256248557569, '000000', 'FL202608190003', 2091000000000006001, 'firmware_file', 2089745255896236033, 'SN-FC-SCGD202608190001V9085-9166-0006', 2089745255220953090, 'SCGD202608190001V9085', 2089745255535525890, NULL, NULL, NULL, '固件刷写', 'FIRMWARE', 2089376872356917250, '1.0.0', NULL, '21c307a98a4cf86276b003b47340638d', NULL, NULL, 1, 'admin', '2026-08-19 00:04:29', 'PASS', NULL, 0, 'MANUAL', 103, 1, '2026-08-19 00:04:29', 1, '2026-08-19 00:04:29', '0', NULL);
+INSERT INTO `mes_flash_record` VALUES (2089745256345026561, '000000', 'FL202608190004', 2091000000000006001, 'firmware_file', 2089745255871070210, 'SN-FC-SCGD202608190001V9085-9166-0002', 2089745255220953090, 'SCGD202608190001V9085', 2089745255535525890, NULL, NULL, NULL, '固件刷写', 'FIRMWARE', 2089376872356917250, '1.0.0', NULL, '21c307a98a4cf86276b003b47340638d', NULL, NULL, 1, 'admin', '2026-08-19 00:04:29', 'PASS', NULL, 0, 'MANUAL', 103, 1, '2026-08-19 00:04:29', 1, '2026-08-19 00:04:29', '0', NULL);
+INSERT INTO `mes_flash_record` VALUES (2089745256462467074, '000000', 'FL202608190005', 2091000000000006001, 'firmware_file', 2089745255879458818, 'SN-FC-SCGD202608190001V9085-9166-0003', 2089745255220953090, 'SCGD202608190001V9085', 2089745255535525890, NULL, NULL, NULL, '固件刷写', 'FIRMWARE', 2089376872356917250, '1.0.0', NULL, '21c307a98a4cf86276b003b47340638d', NULL, NULL, 1, 'admin', '2026-08-19 00:04:29', 'PASS', NULL, 0, 'MANUAL', 103, 1, '2026-08-19 00:04:29', 1, '2026-08-19 00:04:29', '0', NULL);
+INSERT INTO `mes_flash_record` VALUES (2089745256571518977, '000000', 'FL202608190006', 2091000000000006001, 'firmware_file', 2089745255879458819, 'SN-FC-SCGD202608190001V9085-9166-0004', 2089745255220953090, 'SCGD202608190001V9085', 2089745255535525890, NULL, NULL, NULL, '固件刷写', 'FIRMWARE', 2089376872356917250, '1.0.0', NULL, '21c307a98a4cf86276b003b47340638d', NULL, NULL, 1, 'admin', '2026-08-19 00:04:29', 'PASS', NULL, 0, 'MANUAL', 103, 1, '2026-08-19 00:04:29', 1, '2026-08-19 00:04:29', '0', NULL);
+INSERT INTO `mes_flash_record` VALUES (2089745257464905730, '000000', 'FL202608190007', 2091000000000006001, 'firmware_file', 2089745257276162049, 'SN-FC-SCGD202608190001V9085-9513-0001', 2089745255220953090, 'SCGD202608190001V9085', 2089745256990949377, NULL, NULL, NULL, '固件刷写', 'FIRMWARE', 2089376872356917250, '1.0.0', NULL, '21c307a98a4cf86276b003b47340638d', NULL, NULL, 1, 'admin', '2026-08-19 00:04:30', 'PASS', NULL, 0, 'MANUAL', 103, 1, '2026-08-19 00:04:30', 1, '2026-08-19 00:04:30', '0', NULL);
+INSERT INTO `mes_flash_record` VALUES (2089745257561374721, '000000', 'FL202608190008', 2091000000000006001, 'firmware_file', 2089745257280356353, 'SN-FC-SCGD202608190001V9085-9513-0002', 2089745255220953090, 'SCGD202608190001V9085', 2089745256990949377, NULL, NULL, NULL, '固件刷写', 'FIRMWARE', 2089376872356917250, '1.0.0', NULL, '21c307a98a4cf86276b003b47340638d', NULL, NULL, 1, 'admin', '2026-08-19 00:04:30', 'PASS', NULL, 0, 'MANUAL', 103, 1, '2026-08-19 00:04:30', 1, '2026-08-19 00:04:30', '0', NULL);
+INSERT INTO `mes_flash_record` VALUES (2089745257653649409, '000000', 'FL202608190009', 2091000000000006001, 'firmware_file', 2089745257284550657, 'SN-FC-SCGD202608190001V9085-9513-0003', 2089745255220953090, 'SCGD202608190001V9085', 2089745256990949377, NULL, NULL, NULL, '固件刷写', 'FIRMWARE', 2089376872356917250, '1.0.0', NULL, '21c307a98a4cf86276b003b47340638d', NULL, NULL, 1, 'admin', '2026-08-19 00:04:30', 'PASS', NULL, 0, 'MANUAL', 103, 1, '2026-08-19 00:04:30', 1, '2026-08-19 00:04:30', '0', NULL);
+INSERT INTO `mes_flash_record` VALUES (2089745257745924098, '000000', 'FL202608190010', 2091000000000006001, 'firmware_file', 2089745257288744962, 'SN-FC-SCGD202608190001V9085-9513-0004', 2089745255220953090, 'SCGD202608190001V9085', 2089745256990949377, NULL, NULL, NULL, '固件刷写', 'FIRMWARE', 2089376872356917250, '1.0.0', NULL, '21c307a98a4cf86276b003b47340638d', NULL, NULL, 1, 'admin', '2026-08-19 00:04:30', 'PASS', NULL, 0, 'MANUAL', 103, 1, '2026-08-19 00:04:30', 1, '2026-08-19 00:04:30', '0', NULL);
+INSERT INTO `mes_flash_record` VALUES (2089745700538597377, '000000', 'FL202608190011', 2091000000000006001, 'firmware_file', 2089745700261773313, 'SN-FC-SCGD202608190001V5037-5122-0002', 2089745699615850497, 'SCGD202608190001V5037', 2089745699947200514, NULL, NULL, NULL, '固件刷写', 'FIRMWARE', 2089376872356917250, '1.0.0', NULL, '21c307a98a4cf86276b003b47340638d', NULL, NULL, 1, 'admin', '2026-08-19 00:06:15', 'PASS', NULL, 0, 'MANUAL', 103, 1, '2026-08-19 00:06:15', 1, '2026-08-19 00:06:15', '0', NULL);
+INSERT INTO `mes_flash_record` VALUES (2089745700643454978, '000000', 'FL202608190012', 2091000000000006001, 'firmware_file', 2089745700257579009, 'SN-FC-SCGD202608190001V5037-5122-0001', 2089745699615850497, 'SCGD202608190001V5037', 2089745699947200514, NULL, NULL, NULL, '固件刷写', 'FIRMWARE', 2089376872356917250, '1.0.0', NULL, '21c307a98a4cf86276b003b47340638d', NULL, NULL, 1, 'admin', '2026-08-19 00:06:15', 'PASS', NULL, 0, 'MANUAL', 103, 1, '2026-08-19 00:06:15', 1, '2026-08-19 00:06:15', '0', NULL);
+INSERT INTO `mes_flash_record` VALUES (2089745700744118273, '000000', 'FL202608190013', 2091000000000006001, 'firmware_file', 2089745700278550530, 'SN-FC-SCGD202608190001V5037-5122-0006', 2089745699615850497, 'SCGD202608190001V5037', 2089745699947200514, NULL, NULL, NULL, '固件刷写', 'FIRMWARE', 2089376872356917250, '1.0.0', NULL, '21c307a98a4cf86276b003b47340638d', NULL, NULL, 1, 'admin', '2026-08-19 00:06:15', 'PASS', NULL, 0, 'MANUAL', 103, 1, '2026-08-19 00:06:15', 1, '2026-08-19 00:06:15', '0', NULL);
+INSERT INTO `mes_flash_record` VALUES (2089745700848975873, '000000', 'FL202608190014', 2091000000000006001, 'firmware_file', 2089745700265967618, 'SN-FC-SCGD202608190001V5037-5122-0003', 2089745699615850497, 'SCGD202608190001V5037', 2089745699947200514, NULL, NULL, NULL, '固件刷写', 'FIRMWARE', 2089376872356917250, '1.0.0', NULL, '21c307a98a4cf86276b003b47340638d', NULL, NULL, 1, 'admin', '2026-08-19 00:06:15', 'PASS', NULL, 0, 'MANUAL', 103, 1, '2026-08-19 00:06:15', 1, '2026-08-19 00:06:15', '0', NULL);
+INSERT INTO `mes_flash_record` VALUES (2089745700953833474, '000000', 'FL202608190015', 2091000000000006001, 'firmware_file', 2089745700270161922, 'SN-FC-SCGD202608190001V5037-5122-0004', 2089745699615850497, 'SCGD202608190001V5037', 2089745699947200514, NULL, NULL, NULL, '固件刷写', 'FIRMWARE', 2089376872356917250, '1.0.0', NULL, '21c307a98a4cf86276b003b47340638d', NULL, NULL, 1, 'admin', '2026-08-19 00:06:15', 'PASS', NULL, 0, 'MANUAL', 103, 1, '2026-08-19 00:06:15', 1, '2026-08-19 00:06:15', '0', NULL);
+INSERT INTO `mes_flash_record` VALUES (2089745701054496770, '000000', 'FL202608190016', 2091000000000006001, 'firmware_file', 2089745700274356226, 'SN-FC-SCGD202608190001V5037-5122-0005', 2089745699615850497, 'SCGD202608190001V5037', 2089745699947200514, NULL, NULL, NULL, '固件刷写', 'FIRMWARE', 2089376872356917250, '1.0.0', NULL, '21c307a98a4cf86276b003b47340638d', NULL, NULL, 1, 'admin', '2026-08-19 00:06:15', 'PASS', NULL, 0, 'MANUAL', 103, 1, '2026-08-19 00:06:15', 1, '2026-08-19 00:06:15', '0', NULL);
+INSERT INTO `mes_flash_record` VALUES (2089745702002409473, '000000', 'FL202608190017', 2091000000000006001, 'firmware_file', 2089745701700419585, 'SN-FC-SCGD202608190001V5037-5475-0001', 2089745699615850497, 'SCGD202608190001V5037', 2089745701427789826, NULL, NULL, NULL, '固件刷写', 'FIRMWARE', 2089376872356917250, '1.0.0', NULL, '21c307a98a4cf86276b003b47340638d', NULL, NULL, 1, 'admin', '2026-08-19 00:06:16', 'PASS', NULL, 0, 'MANUAL', 103, 1, '2026-08-19 00:06:16', 1, '2026-08-19 00:06:16', '0', NULL);
+INSERT INTO `mes_flash_record` VALUES (2089745702107267074, '000000', 'FL202608190018', 2091000000000006001, 'firmware_file', 2089745701717196801, 'SN-FC-SCGD202608190001V5037-5475-0003', 2089745699615850497, 'SCGD202608190001V5037', 2089745701427789826, NULL, NULL, NULL, '固件刷写', 'FIRMWARE', 2089376872356917250, '1.0.0', NULL, '21c307a98a4cf86276b003b47340638d', NULL, NULL, 1, 'admin', '2026-08-19 00:06:16', 'PASS', NULL, 0, 'MANUAL', 103, 1, '2026-08-19 00:06:16', 1, '2026-08-19 00:06:16', '0', NULL);
+INSERT INTO `mes_flash_record` VALUES (2089745702207930369, '000000', 'FL202608190019', 2091000000000006001, 'firmware_file', 2089745701713002498, 'SN-FC-SCGD202608190001V5037-5475-0002', 2089745699615850497, 'SCGD202608190001V5037', 2089745701427789826, NULL, NULL, NULL, '固件刷写', 'FIRMWARE', 2089376872356917250, '1.0.0', NULL, '21c307a98a4cf86276b003b47340638d', NULL, NULL, 1, 'admin', '2026-08-19 00:06:16', 'PASS', NULL, 0, 'MANUAL', 103, 1, '2026-08-19 00:06:16', 1, '2026-08-19 00:06:16', '0', NULL);
+INSERT INTO `mes_flash_record` VALUES (2089745702321176578, '000000', 'FL202608190020', 2091000000000006001, 'firmware_file', 2089745701717196802, 'SN-FC-SCGD202608190001V5037-5475-0004', 2089745699615850497, 'SCGD202608190001V5037', 2089745701427789826, NULL, NULL, NULL, '固件刷写', 'FIRMWARE', 2089376872356917250, '1.0.0', NULL, '21c307a98a4cf86276b003b47340638d', NULL, NULL, 1, 'admin', '2026-08-19 00:06:16', 'PASS', NULL, 0, 'MANUAL', 103, 1, '2026-08-19 00:06:16', 1, '2026-08-19 00:06:16', '0', NULL);
+INSERT INTO `mes_flash_record` VALUES (2091000000000006140, '000000', 'FL20260817001', 2091000000000006001, 'firmware_file', 1, 'SN202606200001', 1, 'WO-TEST-001', 1, NULL, 1, 'CUT', '切割', 'FIRMWARE', 2091000000000006101, '1.0.0', NULL, '21c307a98a4cf86276b003b47340638d', NULL, NULL, 1, 'admin', '2026-08-17 22:16:17', 'PASS', NULL, 0, 'MANUAL', 103, 1, '2026-08-17 22:16:17', NULL, NULL, '0', '正式测试数据-固件刷写');
+INSERT INTO `mes_flash_record` VALUES (2091000000000006141, '000000', 'FL20260817002', 2091000000000006003, 'mac', 1, 'SN202606200001', 1, 'WO-TEST-001', 1, NULL, 1, 'CUT', '切割', 'MAC_POOL', 2091000000000006119, NULL, '{\"mac\":\"00:1A:2B:3C:4D:0A\"}', NULL, NULL, NULL, 1, 'admin', '2026-08-17 22:16:17', 'PASS', NULL, 0, 'MANUAL', 103, 1, '2026-08-17 22:16:17', NULL, NULL, '0', '正式测试数据-MAC刷写');
+
+-- ----------------------------
+-- Table structure for mes_flash_type
+-- ----------------------------
+DROP TABLE IF EXISTS `mes_flash_type`;
+CREATE TABLE `mes_flash_type`  (
+  `flash_type_id` bigint(20) NOT NULL COMMENT '刷写类型ID',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '000000' COMMENT '租户ID',
+  `type_code` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '类型标识: firmware_file/config_file/mac/sn/external_*',
+  `type_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '显示名',
+  `source_type` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '内容来源: FILE/POOL/EXTERNAL/INLINE',
+  `source_provider` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'SPI Provider bean名(如 firmwareFileFlashProvider)',
+  `source_config` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '来源配置JSON(审批流标识/池ID/REST模板)',
+  `verify_strategy` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'MD5_MATCH' COMMENT '校验策略: MD5_MATCH/RESOURCE_BOUND/CUSTOM',
+  `gate_enabled` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '1' COMMENT '是否参与完工门禁(0否/1是)',
+  `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'ENABLED' COMMENT 'ENABLED/DISABLED',
+  `sort_order` int(11) NOT NULL DEFAULT 0 COMMENT '排序',
+  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
+  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '0' COMMENT '删除标志(0存在/2删除)',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
+  PRIMARY KEY (`flash_type_id`) USING BTREE,
+  UNIQUE INDEX `uk_tenant_type_code`(`tenant_id`, `type_code`) USING BTREE,
+  INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '刷写类型定义(配置化目录)' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of mes_flash_type
+-- ----------------------------
+INSERT INTO `mes_flash_type` VALUES (2091000000000006001, '000000', 'firmware_file', '刷写固件', 'FILE', 'firmwareFileFlashProvider', NULL, 'MD5_MATCH', '1', 'ENABLED', 1, 103, 1, '2026-08-17 21:46:24', NULL, NULL, '0', '固件文件(审批发布, 绑工单/物料), MD5校验');
+INSERT INTO `mes_flash_type` VALUES (2091000000000006002, '000000', 'config_file', '刷写配置文件', 'FILE', 'configFileFlashProvider', NULL, 'MD5_MATCH', '1', 'ENABLED', 2, 103, 1, '2026-08-17 21:47:40', NULL, NULL, '0', '配置文件(审批发布), MD5校验');
+INSERT INTO `mes_flash_type` VALUES (2091000000000006003, '000000', 'mac', '刷写MAC', 'POOL', 'macPoolFlashProvider', NULL, 'RESOURCE_BOUND', '1', 'ENABLED', 3, 103, 1, '2026-08-17 21:47:40', NULL, NULL, '0', 'MAC资源池原子分配, 一SN绑一MAC');
+INSERT INTO `mes_flash_type` VALUES (2091000000000006004, '000000', 'sn', '刷写SN', 'POOL', 'snPoolFlashProvider', NULL, 'RESOURCE_BOUND', '1', 'ENABLED', 4, 103, 1, '2026-08-17 21:47:40', NULL, NULL, '0', 'SN资源池原子分配, 一SN绑一SN');
+INSERT INTO `mes_flash_type` VALUES (2091000000000006005, '000000', 'external_rest', '外部REST刷写', 'EXTERNAL', 'externalRestFlashProvider', NULL, 'CUSTOM', '0', 'ENABLED', 5, 103, 1, '2026-08-17 21:46:24', NULL, NULL, '0', '外部系统REST获取内容, SSRF防护禁内网; source_config配 {\"url\":\"http://...\",\"token\":\"...\"}');
+
+-- ----------------------------
 -- Table structure for mes_mbom
 -- ----------------------------
 DROP TABLE IF EXISTS `mes_mbom`;
@@ -822,6 +887,7 @@ CREATE TABLE `mes_mbom`  (
 INSERT INTO `mes_mbom` VALUES (1, '000000', 5, 1, '1.0', 'ACTIVE', '自行车制造BOM，关联ERP BOM#5', 100, 1, NULL, NULL, NULL, '0');
 INSERT INTO `mes_mbom` VALUES (2, '000000', 1, 2, '1.0', 'ACTIVE', '减速机JZQ-350制造BOM，关联ERP BOM#1', 100, 1, NULL, NULL, NULL, '0');
 INSERT INTO `mes_mbom` VALUES (30, '000000', 20, 3, '1.0', 'ACTIVE', '工具架MBOM，关联工艺路线和BOM', 103, 1, '2026-06-30 10:13:11', 1, '2026-06-30 10:13:11', '0');
+INSERT INTO `mes_mbom` VALUES (2089701818874478593, '000000', 2089376872235282434, 2089698804193546241, '1.0', 'ACTIVE', NULL, 103, 1, '2026-08-18 21:11:53', 1, '2026-08-18 21:12:04', '0');
 
 -- ----------------------------
 -- Table structure for mes_mbom_line
@@ -873,6 +939,193 @@ INSERT INTO `mes_mbom_line` VALUES (9, '000000', 2, 1, NULL, 10, 0.500000, 0.000
 INSERT INTO `mes_mbom_line` VALUES (100, '000000', 30, 20, 100, 8001, 2.000000, 0.0000, 11, 3, 1, '取侧板组件2件，装配至工具架', 0, 10, NULL, 103, 1, '2026-06-30 10:13:16', 1, '2026-06-30 10:13:16', '0');
 INSERT INTO `mes_mbom_line` VALUES (101, '000000', 30, 20, 101, 8002, 1.000000, 0.0000, 11, 3, 1, '取连接件包1套，装配至工具架', 0, 20, NULL, 103, 1, '2026-06-30 10:13:16', 1, '2026-06-30 10:13:16', '0');
 INSERT INTO `mes_mbom_line` VALUES (102, '000000', 30, 21, 102, 1, 1.500000, 2.0000, 9, 1, 1, '取钢板1.5kg，切割为侧板坯料', 0, 10, NULL, 103, 1, '2026-06-30 10:13:16', 1, '2026-06-30 10:13:16', '0');
+INSERT INTO `mes_mbom_line` VALUES (2089701818929004545, '000000', 2089701818874478593, 2089376872235282434, NULL, 2089376872126230529, 1.000000, 0.0000, 2089698804256460801, NULL, 3, '刷写', 0, 1, NULL, 103, 1, '2026-08-18 21:11:53', 1, '2026-08-18 21:11:53', '0');
+
+-- ----------------------------
+-- Table structure for mes_resource_item
+-- ----------------------------
+DROP TABLE IF EXISTS `mes_resource_item`;
+CREATE TABLE `mes_resource_item`  (
+  `item_id` bigint(20) NOT NULL COMMENT '资源项ID',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '000000' COMMENT '租户ID',
+  `pool_id` bigint(20) NOT NULL COMMENT '资源池ID',
+  `resource_value` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '资源值(如MAC 00:1A:2B:3C:4D:5E)',
+  `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'AVAILABLE' COMMENT 'AVAILABLE/ALLOCATED/USED/SCRAPPED',
+  `bound_sn_id` bigint(20) NULL DEFAULT NULL COMMENT '已绑定SN ID(一SN绑一资源)',
+  `bound_time` datetime NULL DEFAULT NULL COMMENT '绑定时间',
+  `create_dept` bigint(20) NULL DEFAULT NULL,
+  `create_by` bigint(20) NULL DEFAULT NULL,
+  `create_time` datetime NULL DEFAULT NULL,
+  `update_by` bigint(20) NULL DEFAULT NULL,
+  `update_time` datetime NULL DEFAULT NULL,
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '0',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
+  PRIMARY KEY (`item_id`) USING BTREE,
+  UNIQUE INDEX `uk_tenant_pool_value`(`tenant_id`, `pool_id`, `resource_value`) USING BTREE,
+  INDEX `idx_pool_status`(`pool_id`, `status`) USING BTREE,
+  INDEX `idx_bound_sn`(`bound_sn_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '资源池明细' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of mes_resource_item
+-- ----------------------------
+INSERT INTO `mes_resource_item` VALUES (2089376872742793217, '000000', 2089376872637935618, '00:1A:2B:3C:4D:0B', 'ALLOCATED', 1, '2026-08-17 23:40:40', 103, 1, '2026-08-17 23:40:40', 1, '2026-08-17 23:40:40', '0', NULL);
+INSERT INTO `mes_resource_item` VALUES (2089376872751181825, '000000', 2089376872637935618, '00:1A:2B:3C:4D:0C', 'AVAILABLE', NULL, NULL, 103, 1, '2026-08-17 23:40:40', 1, '2026-08-17 23:40:40', '0', NULL);
+INSERT INTO `mes_resource_item` VALUES (2089376872759570434, '000000', 2089376872637935618, '00:1A:2B:3C:4D:0D', 'AVAILABLE', NULL, NULL, 103, 1, '2026-08-17 23:40:40', 1, '2026-08-17 23:40:40', '0', NULL);
+INSERT INTO `mes_resource_item` VALUES (2089376872763764737, '000000', 2089376872637935618, '00:1A:2B:3C:4D:0E', 'AVAILABLE', NULL, NULL, 103, 1, '2026-08-17 23:40:40', 1, '2026-08-17 23:40:40', '0', NULL);
+INSERT INTO `mes_resource_item` VALUES (2089376872776347650, '000000', 2089376872637935618, '00:1A:2B:3C:4D:0F', 'AVAILABLE', NULL, NULL, 103, 1, '2026-08-17 23:40:40', 1, '2026-08-17 23:40:40', '0', NULL);
+INSERT INTO `mes_resource_item` VALUES (2089376872780541953, '000000', 2089376872637935618, '00:1A:2B:3C:4D:10', 'AVAILABLE', NULL, NULL, 103, 1, '2026-08-17 23:40:40', 1, '2026-08-17 23:40:40', '0', NULL);
+INSERT INTO `mes_resource_item` VALUES (2089376872784736257, '000000', 2089376872637935618, '00:1A:2B:3C:4D:11', 'AVAILABLE', NULL, NULL, 103, 1, '2026-08-17 23:40:40', 1, '2026-08-17 23:40:40', '0', NULL);
+INSERT INTO `mes_resource_item` VALUES (2089376872797319169, '000000', 2089376872637935618, '00:1A:2B:3C:4D:12', 'AVAILABLE', NULL, NULL, 103, 1, '2026-08-17 23:40:40', 1, '2026-08-17 23:40:40', '0', NULL);
+INSERT INTO `mes_resource_item` VALUES (2089376872805707778, '000000', 2089376872637935618, '00:1A:2B:3C:4D:13', 'AVAILABLE', NULL, NULL, 103, 1, '2026-08-17 23:40:40', 1, '2026-08-17 23:40:40', '0', NULL);
+INSERT INTO `mes_resource_item` VALUES (2089376872809902081, '000000', 2089376872637935618, '00:1A:2B:3C:4D:14', 'AVAILABLE', NULL, NULL, 103, 1, '2026-08-17 23:40:40', 1, '2026-08-17 23:40:40', '0', NULL);
+INSERT INTO `mes_resource_item` VALUES (2091000000000006110, '000000', 2091000000000006103, '00:1A:2B:3C:4D:01', 'AVAILABLE', NULL, NULL, 103, 1, '2026-08-17 22:16:17', NULL, NULL, '0', NULL);
+INSERT INTO `mes_resource_item` VALUES (2091000000000006111, '000000', 2091000000000006103, '00:1A:2B:3C:4D:02', 'AVAILABLE', NULL, NULL, 103, 1, '2026-08-17 22:16:17', NULL, NULL, '0', NULL);
+INSERT INTO `mes_resource_item` VALUES (2091000000000006112, '000000', 2091000000000006103, '00:1A:2B:3C:4D:03', 'AVAILABLE', NULL, NULL, 103, 1, '2026-08-17 22:16:17', NULL, NULL, '0', NULL);
+INSERT INTO `mes_resource_item` VALUES (2091000000000006113, '000000', 2091000000000006103, '00:1A:2B:3C:4D:04', 'AVAILABLE', NULL, NULL, 103, 1, '2026-08-17 22:16:17', NULL, NULL, '0', NULL);
+INSERT INTO `mes_resource_item` VALUES (2091000000000006114, '000000', 2091000000000006103, '00:1A:2B:3C:4D:05', 'AVAILABLE', NULL, NULL, 103, 1, '2026-08-17 22:16:17', NULL, NULL, '0', NULL);
+INSERT INTO `mes_resource_item` VALUES (2091000000000006115, '000000', 2091000000000006103, '00:1A:2B:3C:4D:06', 'AVAILABLE', NULL, NULL, 103, 1, '2026-08-17 22:16:17', NULL, NULL, '0', NULL);
+INSERT INTO `mes_resource_item` VALUES (2091000000000006116, '000000', 2091000000000006103, '00:1A:2B:3C:4D:07', 'AVAILABLE', NULL, NULL, 103, 1, '2026-08-17 22:16:17', NULL, NULL, '0', NULL);
+INSERT INTO `mes_resource_item` VALUES (2091000000000006117, '000000', 2091000000000006103, '00:1A:2B:3C:4D:08', 'AVAILABLE', NULL, NULL, 103, 1, '2026-08-17 22:16:17', NULL, NULL, '0', NULL);
+INSERT INTO `mes_resource_item` VALUES (2091000000000006118, '000000', 2091000000000006103, '00:1A:2B:3C:4D:09', 'AVAILABLE', NULL, NULL, 103, 1, '2026-08-17 22:16:17', NULL, NULL, '0', NULL);
+INSERT INTO `mes_resource_item` VALUES (2091000000000006119, '000000', 2091000000000006103, '00:1A:2B:3C:4D:0A', 'ALLOCATED', 1, '2026-08-17 22:16:17', 103, 1, '2026-08-17 22:16:17', NULL, NULL, '0', NULL);
+INSERT INTO `mes_resource_item` VALUES (2091000000000006130, '000000', 2091000000000006120, 'SN-GW1000-0001', 'AVAILABLE', NULL, NULL, 103, 1, '2026-08-17 22:16:17', NULL, NULL, '0', NULL);
+INSERT INTO `mes_resource_item` VALUES (2091000000000006131, '000000', 2091000000000006120, 'SN-GW1000-0002', 'AVAILABLE', NULL, NULL, 103, 1, '2026-08-17 22:16:17', NULL, NULL, '0', NULL);
+INSERT INTO `mes_resource_item` VALUES (2091000000000006132, '000000', 2091000000000006120, 'SN-GW1000-0003', 'AVAILABLE', NULL, NULL, 103, 1, '2026-08-17 22:16:17', NULL, NULL, '0', NULL);
+INSERT INTO `mes_resource_item` VALUES (2091000000000006133, '000000', 2091000000000006120, 'SN-GW1000-0004', 'AVAILABLE', NULL, NULL, 103, 1, '2026-08-17 22:16:17', NULL, NULL, '0', NULL);
+INSERT INTO `mes_resource_item` VALUES (2091000000000006134, '000000', 2091000000000006120, 'SN-GW1000-0005', 'AVAILABLE', NULL, NULL, 103, 1, '2026-08-17 22:16:17', NULL, NULL, '0', NULL);
+INSERT INTO `mes_resource_item` VALUES (2091000000000006135, '000000', 2091000000000006120, 'SN-GW1000-0006', 'AVAILABLE', NULL, NULL, 103, 1, '2026-08-17 22:16:17', NULL, NULL, '0', NULL);
+INSERT INTO `mes_resource_item` VALUES (2091000000000006136, '000000', 2091000000000006120, 'SN-GW1000-0007', 'AVAILABLE', NULL, NULL, 103, 1, '2026-08-17 22:16:17', NULL, NULL, '0', NULL);
+INSERT INTO `mes_resource_item` VALUES (2091000000000006137, '000000', 2091000000000006120, 'SN-GW1000-0008', 'AVAILABLE', NULL, NULL, 103, 1, '2026-08-17 22:16:17', NULL, NULL, '0', NULL);
+INSERT INTO `mes_resource_item` VALUES (2091000000000006138, '000000', 2091000000000006120, 'SN-GW1000-0009', 'AVAILABLE', NULL, NULL, 103, 1, '2026-08-17 22:16:17', NULL, NULL, '0', NULL);
+INSERT INTO `mes_resource_item` VALUES (2091000000000006139, '000000', 2091000000000006120, 'SN-GW1000-0010', 'AVAILABLE', NULL, NULL, 103, 1, '2026-08-17 22:16:17', NULL, NULL, '0', NULL);
+
+-- ----------------------------
+-- Table structure for mes_resource_pool
+-- ----------------------------
+DROP TABLE IF EXISTS `mes_resource_pool`;
+CREATE TABLE `mes_resource_pool`  (
+  `pool_id` bigint(20) NOT NULL COMMENT '资源池ID',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '000000' COMMENT '租户ID',
+  `pool_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '资源池编码(自动编码 MES_POOL_CODE)',
+  `pool_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '资源池名称',
+  `resource_type` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '资源类型: MAC/SN/CERT',
+  `source` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'INTERNAL' COMMENT '来源: INTERNAL(内部导入)/EXTERNAL(外部REST)',
+  `external_config` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '外部REST配置JSON(baseUrl/路径/鉴权, 经SSRF校验)',
+  `alloc_strategy` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'FIFO' COMMENT '分配策略: FIFO/随机',
+  `total_count` int(11) NULL DEFAULT NULL COMMENT '总数量',
+  `used_count` int(11) NOT NULL DEFAULT 0 COMMENT '已分配数量',
+  `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'ENABLED' COMMENT 'ENABLED/DISABLED',
+  `create_dept` bigint(20) NULL DEFAULT NULL,
+  `create_by` bigint(20) NULL DEFAULT NULL,
+  `create_time` datetime NULL DEFAULT NULL,
+  `update_by` bigint(20) NULL DEFAULT NULL,
+  `update_time` datetime NULL DEFAULT NULL,
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '0',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
+  PRIMARY KEY (`pool_id`) USING BTREE,
+  UNIQUE INDEX `uk_tenant_pool_code`(`tenant_id`, `pool_code`) USING BTREE,
+  INDEX `idx_tenant_id`(`tenant_id`) USING BTREE,
+  INDEX `idx_resource_type`(`resource_type`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '刷写资源池(MAC/SN等)' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of mes_resource_pool
+-- ----------------------------
+INSERT INTO `mes_resource_pool` VALUES (2089376872637935618, '000000', 'PL20260817012', 'GW-1000产线MAC池', 'MAC', 'INTERNAL', NULL, 'FIFO', 10, 1, 'ENABLED', 103, 1, '2026-08-17 23:40:40', 1, '2026-08-17 23:40:40', '0', '全链路正式数据-MAC池');
+
+-- ----------------------------
+-- Table structure for mes_test_item
+-- ----------------------------
+DROP TABLE IF EXISTS `mes_test_item`;
+CREATE TABLE `mes_test_item`  (
+  `test_item_id` bigint(20) NOT NULL COMMENT '测试项ID',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '000000' COMMENT '租户ID',
+  `item_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '测试项编码(如 RF-TXPWR)',
+  `item_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '测试项名称',
+  `material_id` bigint(20) NOT NULL COMMENT '适用物料ID',
+  `content_ref_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '内容源ID(0=该物料所有版本通用, 固件类=mes_firmware_id)',
+  `data_type` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'NUMERIC' COMMENT '数据类型: NUMERIC/TEXT/ENUM',
+  `unit` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '单位',
+  `upper_limit` decimal(18, 4) NULL DEFAULT NULL COMMENT '上限',
+  `lower_limit` decimal(18, 4) NULL DEFAULT NULL COMMENT '下限',
+  `target_value` decimal(18, 4) NULL DEFAULT NULL COMMENT '目标值',
+  `pass_enum` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT 'ENUM合格值(JSON数组)',
+  `is_required` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '1' COMMENT '是否必测(0否/1是)',
+  `sort_order` int(11) NOT NULL DEFAULT 0 COMMENT '排序',
+  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
+  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '0' COMMENT '删除标志(0存在/2删除)',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
+  PRIMARY KEY (`test_item_id`) USING BTREE,
+  UNIQUE INDEX `uk_tenant_material_item`(`tenant_id`, `material_id`, `content_ref_id`, `item_code`) USING BTREE,
+  INDEX `idx_tenant_id`(`tenant_id`) USING BTREE,
+  INDEX `idx_material`(`material_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '测试项标准主数据' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of mes_test_item
+-- ----------------------------
+INSERT INTO `mes_test_item` VALUES (2088902653508710401, '000000', 'cs1', '测试1', 1001, 2088889870117240834, 'NUMERIC', 'dBm/V', 221.0000, 219.0000, 220.0000, NULL, '1', 1, 103, 1, '2026-08-16 16:16:17', 1, '2026-08-16 16:18:21', '0', NULL);
+
+-- ----------------------------
+-- Table structure for mes_test_record
+-- ----------------------------
+DROP TABLE IF EXISTS `mes_test_record`;
+CREATE TABLE `mes_test_record`  (
+  `test_record_id` bigint(20) NOT NULL COMMENT '测试记录ID',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '000000' COMMENT '租户ID',
+  `test_no` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '测试单号(一次SN测试一条单号, 共享多行)',
+  `sn_id` bigint(20) NOT NULL COMMENT 'SN ID',
+  `sn_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'SN编码',
+  `mes_wo_id` bigint(20) NOT NULL COMMENT 'MES工单ID',
+  `wo_no` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '工单号',
+  `card_id` bigint(20) NULL DEFAULT NULL COMMENT '流转卡ID',
+  `step_record_id` bigint(20) NULL DEFAULT NULL COMMENT '流转卡工序记录ID(测试工序)',
+  `process_id` bigint(20) NULL DEFAULT NULL COMMENT '工序ID',
+  `process_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '工序编码',
+  `process_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '工序名称',
+  `content_ref_id` bigint(20) NULL DEFAULT NULL COMMENT '测试时内容源ID(固件类=mes_firmware_id)',
+  `content_version` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '测试时内容版本',
+  `test_item_id` bigint(20) NOT NULL COMMENT '测试项ID',
+  `item_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '测试项编码(快照)',
+  `item_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '测试项名称(快照)',
+  `data_type` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '数据类型(快照)',
+  `unit` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '单位',
+  `numeric_value` decimal(18, 4) NULL DEFAULT NULL COMMENT '实测数值',
+  `text_value` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '实测文本',
+  `upper_limit` decimal(18, 4) NULL DEFAULT NULL COMMENT '上限(快照)',
+  `lower_limit` decimal(18, 4) NULL DEFAULT NULL COMMENT '下限(快照)',
+  `target_value` decimal(18, 4) NULL DEFAULT NULL COMMENT '目标值(快照)',
+  `pass_enum` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT 'ENUM合格值(快照)',
+  `result` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT '结果: PASS/FAIL(空=未测)',
+  `tester_id` bigint(20) NULL DEFAULT NULL COMMENT '测试人ID',
+  `tester_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '测试人姓名',
+  `equipment_id` bigint(20) NULL DEFAULT NULL COMMENT '测试设备ID',
+  `equipment_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '测试设备编码',
+  `test_time` datetime NULL DEFAULT NULL COMMENT '测试时间',
+  `test_mode` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'MANUAL' COMMENT '测试模式: AUTO/MANUAL',
+  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
+  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '0' COMMENT '删除标志(0存在/2删除)',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
+  PRIMARY KEY (`test_record_id`) USING BTREE,
+  UNIQUE INDEX `uk_tenant_test_no_item`(`tenant_id`, `test_no`, `test_item_id`) USING BTREE,
+  INDEX `idx_tenant_id`(`tenant_id`) USING BTREE,
+  INDEX `idx_sn`(`sn_id`) USING BTREE,
+  INDEX `idx_wo`(`mes_wo_id`) USING BTREE,
+  INDEX `idx_content_ref`(`content_ref_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '测试记录(SN级全检)' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of mes_test_record
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for ncr_8d_report
@@ -1200,6 +1453,10 @@ INSERT INTO `pro_dispatch` VALUES (2075402351756120065, '000000', 'DIS-FC-SCGD20
 INSERT INTO `pro_dispatch` VALUES (2080299991368347649, '000000', 'DIS-FC-SCGD202607230001-7515-2707', 2080270525816516609, 'SCGD202607230001', 2080299927648481282, 'FC-SCGD202607230001-7515', 2080299927648481283, 10, 1, 'CUT', '切割', 2, 'GZZ0003', 12, '张明', 20.0000, 20.0000, 20.0000, 0.0000, 0.0000, 'COMPLETED', NULL, NULL, '2026-07-23 22:32:46', '2026-07-23 22:33:00', NULL, 103, 1, '2026-07-23 22:32:23', 1, '2026-07-23 22:32:23', '0');
 INSERT INTO `pro_dispatch` VALUES (2080300008791486466, '000000', 'DIS-FC-SCGD202607230001-7515-6861', 2080270525816516609, 'SCGD202607230001', 2080299927648481282, 'FC-SCGD202607230001-7515', 2080299927703007233, 20, 2, 'WELD', '焊接', 6, 'GZZ0007', 13, '李芳华', 20.0000, 20.0000, 20.0000, 0.0000, 0.0000, 'COMPLETED', NULL, NULL, '2026-07-23 22:32:45', '2026-07-23 22:32:57', NULL, 103, 1, '2026-07-23 22:32:27', 1, '2026-07-23 22:32:27', '0');
 INSERT INTO `pro_dispatch` VALUES (2080300025757446146, '000000', 'DIS-FC-SCGD202607230001-7515-0908', 2080270525816516609, 'SCGD202607230001', 2080299927648481282, 'FC-SCGD202607230001-7515', 2080299927703007234, 30, 5, 'PKG', '包装', 9, 'GZZ0010', 14, '王思远', 20.0000, 20.0000, 20.0000, 0.0000, 0.0000, 'COMPLETED', NULL, NULL, '2026-07-23 22:32:42', '2026-07-23 22:32:53', NULL, 103, 1, '2026-07-23 22:32:31', 1, '2026-07-23 22:32:31', '0');
+INSERT INTO `pro_dispatch` VALUES (2089705468250308610, '000000', 'DIS-FC-SCGD202608180001-3403-3141', 2089704730308657153, 'SCGD202608180001', 2089705007984164865, 'FC-SCGD202608180001-3403', 2089705007984164866, 1, 90002001, 'FLASH', '固件刷写', 3, '', 14, '王思远', 10.0000, 10.0000, 10.0000, 0.0000, 0.0000, 'COMPLETED', NULL, NULL, '2026-08-18 21:26:46', '2026-08-18 21:26:52', NULL, 103, 1, '2026-08-18 21:26:23', 1, '2026-08-18 21:26:23', '0');
+INSERT INTO `pro_dispatch` VALUES (2089710801203085314, '000000', 'DIS-FC-SCGD202608180001-3534-4622', 2089710626887811073, 'SCGD202608180001', 2089710754692448257, 'FC-SCGD202608180001-3534', 2089710754755362818, 1, 90002001, 'FLASH', '固件刷写', 3, '', 13, '李芳华', 5.0000, 5.0000, 5.0000, 0.0000, 0.0000, 'COMPLETED', NULL, NULL, '2026-08-18 21:48:08', '2026-08-18 21:48:16', NULL, 103, 1, '2026-08-18 21:47:35', 1, '2026-08-18 21:47:35', '0');
+INSERT INTO `pro_dispatch` VALUES (2089714118352232449, '000000', 'DIS-FC-SCGD202608180001-7372-5492', 2089713975506821122, 'SCGD202608180001', 2089714042334666753, 'FC-SCGD202608180001-7372', 2089714042397581313, 1, 90002001, 'FLASH', '固件刷写', 3, '', 13, '李芳华', 3.0000, 3.0000, 3.0000, 0.0000, 0.0000, 'COMPLETED', NULL, NULL, '2026-08-18 22:01:00', '2026-08-18 22:41:50', NULL, 103, 1, '2026-08-18 22:00:45', 1, '2026-08-18 22:00:45', '0');
+INSERT INTO `pro_dispatch` VALUES (2089731257016524801, '000000', 'DIS-FC-SCGD202608180001-3431-1673', 2089713975506821122, 'SCGD202608180001', 2089731180571140098, 'FC-SCGD202608180001-3431', 2089731180625666050, 1, 90002001, 'FLASH', '固件刷写', 3, '', 14, '王思远', 6.0000, 6.0000, 6.0000, 0.0000, 0.0000, 'COMPLETED', NULL, NULL, '2026-08-18 23:09:28', '2026-08-18 23:10:44', NULL, 103, 1, '2026-08-18 23:08:52', 1, '2026-08-18 23:08:52', '0');
 
 -- ----------------------------
 -- Table structure for pro_flow_card
@@ -1250,6 +1507,17 @@ INSERT INTO `pro_flow_card` VALUES (2075402210525515778, '000000', 'FC-SCGD20260
 INSERT INTO `pro_flow_card` VALUES (2080299927648481282, '000000', 'FC-SCGD202607230001-7515', 2080270525816516609, 'SCGD202607230001', 99001, 'QC-FP-001', '质检联动测试成品', 20.0000, 20.0000, 0.0000, 2080299927648481283, NULL, 'COMPLETED', 'FC2080299927648481282', NULL, 103, 1, '2026-07-23 22:32:08', 1, '2026-07-23 22:33:00', '0');
 INSERT INTO `pro_flow_card` VALUES (2082127798264307713, '000000', 'FC-RW20260728001-5826', 2082127796938907650, 'RW20260728001', 1001, 'IF20251110001', '自行车', 5.0000, 0.0000, 0.0000, 2082127798297862146, NULL, 'IN_PROGRESS', 'FC2082127798264307713', NULL, 103, 1, '2026-07-28 23:35:26', 1, '2026-07-28 23:35:25', '0');
 INSERT INTO `pro_flow_card` VALUES (2082128181665636354, '000000', 'FC-RW20260728003-7237', 2082128180742889473, 'RW20260728003', 1001, 'IF20251110001', '自行车', 5.0000, 5.0000, 0.0000, 2082128181686607873, NULL, 'COMPLETED', 'FC2082128181665636354', NULL, 103, 1, '2026-07-28 23:36:57', 1, '2026-07-28 23:36:57', '0');
+INSERT INTO `pro_flow_card` VALUES (2089714042334666753, '000000', 'FC-SCGD202608180001-7372', 2089713975506821122, 'SCGD202608180001', 2089376872126230529, 'IF20260817011', '智能网关PCBA GW-1000', 3.0000, 3.0000, 0.0000, 2089714042397581313, NULL, 'COMPLETED', 'FC2089714042334666753', NULL, 103, 1, '2026-08-18 22:00:27', 1, '2026-08-18 22:41:50', '0');
+INSERT INTO `pro_flow_card` VALUES (2089731180571140098, '000000', 'FC-SCGD202608180001-3431', 2089713975506821122, 'SCGD202608180001', 2089376872126230529, 'IF20260817011', '智能网关PCBA GW-1000', 6.0000, 6.0000, 0.0000, 2089731180625666050, NULL, 'COMPLETED', 'FC2089731180571140098', NULL, 103, 1, '2026-08-18 23:08:33', 1, '2026-08-18 23:39:38', '0');
+INSERT INTO `pro_flow_card` VALUES (2089736110841372674, '000000', 'FC-SCGD202608180001-8898', 2089713975506821122, 'SCGD202608180001', 2089376872126230529, 'IF20260817011', '智能网关PCBA GW-1000', 1.0000, 1.0000, 0.0000, 2089736110895898625, NULL, 'COMPLETED', 'FC2089736110841372674', NULL, 103, 1, '2026-08-18 23:28:09', 1, '2026-08-18 23:29:10', '0');
+INSERT INTO `pro_flow_card` VALUES (2089743106818752514, '000000', 'FC-SCGD202608180002V6776-6871', 2089743106437070849, 'SCGD202608180002V6776', 2089376872126230529, 'IF20260817011', '智能网关PCBA GW-1000', 6.0000, 6.0000, 0.0000, 2089743106839724034, NULL, 'COMPLETED', 'FC2089743106818752514', NULL, 103, 1, '2026-08-18 23:55:57', 1, '2026-08-18 23:55:57', '0');
+INSERT INTO `pro_flow_card` VALUES (2089743108337090561, '000000', 'FC-SCGD202608180002V6776-7235', 2089743106437070849, 'SCGD202608180002V6776', 2089376872126230529, 'IF20260817011', '智能网关PCBA GW-1000', 4.0000, 4.0000, 0.0000, 2089743108358062082, NULL, 'COMPLETED', 'FC2089743108337090561', NULL, 103, 1, '2026-08-18 23:55:57', 1, '2026-08-18 23:55:57', '0');
+INSERT INTO `pro_flow_card` VALUES (2089743634378309634, '000000', 'FC-SCGD202608180002V2560-2653', 2089743634013405186, 'SCGD202608180002V2560', 2089376872126230529, 'IF20260817011', '智能网关PCBA GW-1000', 6.0000, 6.0000, 0.0000, 2089743634403475458, NULL, 'COMPLETED', 'FC2089743634378309634', NULL, 103, 1, '2026-08-18 23:58:03', 1, '2026-08-18 23:58:02', '0');
+INSERT INTO `pro_flow_card` VALUES (2089743635917619202, '000000', 'FC-SCGD202608180002V2560-3019', 2089743634013405186, 'SCGD202608180002V2560', 2089376872126230529, 'IF20260817011', '智能网关PCBA GW-1000', 4.0000, 4.0000, 0.0000, 2089743635934396418, NULL, 'COMPLETED', 'FC2089743635917619202', NULL, 103, 1, '2026-08-18 23:58:03', 1, '2026-08-18 23:58:03', '0');
+INSERT INTO `pro_flow_card` VALUES (2089745255535525890, '000000', 'FC-SCGD202608190001V9085-9166', 2089745255220953090, 'SCGD202608190001V9085', 2089376872126230529, 'IF20260817011', '智能网关PCBA GW-1000', 6.0000, 6.0000, 0.0000, 2089745255552303106, NULL, 'COMPLETED', 'FC2089745255535525890', NULL, 103, 1, '2026-08-19 00:04:29', 1, '2026-08-19 00:04:29', '0');
+INSERT INTO `pro_flow_card` VALUES (2089745256990949377, '000000', 'FC-SCGD202608190001V9085-9513', 2089745255220953090, 'SCGD202608190001V9085', 2089376872126230529, 'IF20260817011', '智能网关PCBA GW-1000', 4.0000, 4.0000, 0.0000, 2089745257007726593, NULL, 'COMPLETED', 'FC2089745256990949377', NULL, 103, 1, '2026-08-19 00:04:30', 1, '2026-08-19 00:04:29', '0');
+INSERT INTO `pro_flow_card` VALUES (2089745699947200514, '000000', 'FC-SCGD202608190001V5037-5122', 2089745699615850497, 'SCGD202608190001V5037', 2089376872126230529, 'IF20260817011', '智能网关PCBA GW-1000', 6.0000, 6.0000, 0.0000, 2089745699963977730, NULL, 'COMPLETED', 'FC2089745699947200514', NULL, 103, 1, '2026-08-19 00:06:15', 1, '2026-08-19 00:06:15', '0');
+INSERT INTO `pro_flow_card` VALUES (2089745701427789826, '000000', 'FC-SCGD202608190001V5037-5475', 2089745699615850497, 'SCGD202608190001V5037', 2089376872126230529, 'IF20260817011', '智能网关PCBA GW-1000', 4.0000, 4.0000, 0.0000, 2089745701444567042, NULL, 'COMPLETED', 'FC2089745701427789826', NULL, 103, 1, '2026-08-19 00:06:15', 1, '2026-08-19 00:06:15', '0');
 
 -- ----------------------------
 -- Table structure for pro_flow_card_step
@@ -1300,8 +1568,8 @@ CREATE TABLE `pro_flow_card_step`  (
 -- ----------------------------
 -- Records of pro_flow_card_step
 -- ----------------------------
-INSERT INTO `pro_flow_card_step` VALUES (1, '000000', 1, 'FC-001', 1, 1, 10, 1, 'CUT', '切割', 1, 'GZZ0002', 0, 'COMPLETED', 30003, '王五', 50.0000, 49.0000, 1.0000, 0.0000, NULL, NULL, '切割完成:49良+1不良', NULL, NULL, NULL, NULL, NULL, 100, 1, '2026-06-21 20:59:31', NULL, '2026-06-21 20:59:31', '0');
-INSERT INTO `pro_flow_card_step` VALUES (2, '000000', 1, 'FC-001', 1, 2, 20, 2, 'WELD', '焊接', 2, 'GZZ0003', 1, 'COMPLETED', 30002, '李四', 50.0000, 50.0000, 0.0000, 0.0000, NULL, '2026-06-24 11:36:52', '焊接进行中(关键工序)', NULL, NULL, NULL, NULL, NULL, 100, 1, '2026-06-21 20:59:31', NULL, '2026-06-24 11:36:52', '0');
+INSERT INTO `pro_flow_card_step` VALUES (1, '000000', 1, 'FC-001', 1, 1, 10, 1, 'CUT', '切割', 1, 'GZZ0002', 0, 'COMPLETED', 30003, '王五', 50.0000, 49.0000, 1.0000, 0.0000, NULL, NULL, '切割完成:49良+1不良', NULL, NULL, NULL, NULL, NULL, 100, 1, '2026-06-21 20:59:31', NULL, '2026-08-18 00:07:59', '0');
+INSERT INTO `pro_flow_card_step` VALUES (2, '000000', 1, 'FC-001', 1, 2, 20, 2, 'WELD', '焊接', 2, 'GZZ0003', 1, 'COMPLETED', 30002, '李四', 50.0000, 50.0000, 0.0000, 0.0000, NULL, '2026-06-24 11:36:52', '焊接进行中(关键工序)', NULL, NULL, NULL, NULL, NULL, 100, 1, '2026-06-21 20:59:31', NULL, '2026-08-18 00:07:59', '0');
 INSERT INTO `pro_flow_card_step` VALUES (3, '000000', 1, 'FC-001', 1, 3, 30, 3, 'ASM', '装配', 1, 'GZZ0002', 1, 'IN_PROGRESS', 1, NULL, 50.0000, 50.0000, 0.0000, 0.0000, '2026-07-27 23:18:08', NULL, '待装配(关键工序)', 'PASS', NULL, NULL, NULL, NULL, 100, 1, '2026-06-21 20:59:31', NULL, '2026-08-16 17:53:11', '0');
 INSERT INTO `pro_flow_card_step` VALUES (4, '000000', 1, 'FC-001', 1, 4, 40, 5, 'PKG', '包装', 3, 'GZZ0004', 0, 'PENDING', NULL, NULL, 50.0000, 0.0000, 0.0000, 0.0000, NULL, NULL, '待包装', NULL, NULL, NULL, NULL, NULL, 100, 1, '2026-06-21 20:59:31', NULL, '2026-07-27 23:18:08', '0');
 INSERT INTO `pro_flow_card_step` VALUES (2069625288629600258, '000000', 2069625288491188226, 'FC-SCGD202606220001-5210', 2068925615991463937, 2068925616075350017, 10, 1, 'CUT', '切割', 1, 'GZZ0002', 0, 'COMPLETED', NULL, '张明', 50.0000, 49.0000, 1.0000, 0.0000, '2026-06-24 14:44:22', '2026-06-24 15:00:47', NULL, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-06-24 11:34:55', 1, '2026-06-24 15:00:46', '0');
@@ -1343,6 +1611,17 @@ INSERT INTO `pro_flow_card_step` VALUES (2082128181686607873, '000000', 20821281
 INSERT INTO `pro_flow_card_step` VALUES (2082128181694996481, '000000', 2082128181665636354, 'FC-RW20260728003-7237', 2082128180742889473, 2082128181376229377, 20, 2, 'WELD', '焊接', 2, 'GZZ0003', 0, 'COMPLETED', 1, NULL, 5.0000, 5.0000, 0.0000, 0.0000, '2026-07-28 23:36:57', '2026-07-28 23:36:57', NULL, 'PASS', NULL, 'PASS', NULL, NULL, 103, 1, '2026-07-28 23:36:57', 1, '2026-07-28 23:36:57', '0');
 INSERT INTO `pro_flow_card_step` VALUES (2082128181699190785, '000000', 2082128181665636354, 'FC-RW20260728003-7237', 2082128180742889473, 2082128181380423681, 30, 3, 'ASM', '装配', 1, 'GZZ0002', 0, 'COMPLETED', 1, NULL, 5.0000, 5.0000, 0.0000, 0.0000, '2026-07-28 23:36:58', '2026-07-28 23:36:58', NULL, 'PASS', NULL, 'PASS', NULL, NULL, 103, 1, '2026-07-28 23:36:57', 1, '2026-07-28 23:36:57', '0');
 INSERT INTO `pro_flow_card_step` VALUES (2082128181707579394, '000000', 2082128181665636354, 'FC-RW20260728003-7237', 2082128180742889473, 2082128181397200897, 40, 5, 'PKG', '包装', 3, 'GZZ0004', 0, 'COMPLETED', 1, NULL, 5.0000, 5.0000, 0.0000, 0.0000, '2026-07-28 23:36:58', '2026-07-28 23:36:58', NULL, 'PASS', NULL, 'PASS', NULL, NULL, 103, 1, '2026-07-28 23:36:57', 1, '2026-07-28 23:36:57', '0');
+INSERT INTO `pro_flow_card_step` VALUES (2089714042397581313, '000000', 2089714042334666753, 'FC-SCGD202608180001-7372', 2089713975506821122, 2089713975506821123, 1, 90002001, 'FLASH', '固件刷写', 3, '', 0, 'COMPLETED', 13, '李芳华', 3.0000, 3.0000, 0.0000, 0.0000, '2026-08-18 22:01:00', '2026-08-18 22:41:50', NULL, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-08-18 22:00:27', 1, '2026-08-18 22:41:50', '0');
+INSERT INTO `pro_flow_card_step` VALUES (2089731180625666050, '000000', 2089731180571140098, 'FC-SCGD202608180001-3431', 2089713975506821122, 2089713975506821123, 1, 90002001, 'FLASH', '固件刷写', 3, '', 0, 'COMPLETED', 14, '王思远', 6.0000, 6.0000, 0.0000, 0.0000, '2026-08-18 23:09:17', '2026-08-18 23:10:44', NULL, 'PASS', NULL, NULL, NULL, NULL, 103, 1, '2026-08-18 23:08:33', 1, '2026-08-18 23:39:38', '0');
+INSERT INTO `pro_flow_card_step` VALUES (2089736110895898625, '000000', 2089736110841372674, 'FC-SCGD202608180001-8898', 2089713975506821122, 2089713975506821123, 1, 90002001, 'FLASH', '固件刷写', 3, '', 0, 'COMPLETED', 13, NULL, 1.0000, 1.0000, 0.0000, 0.0000, '2026-08-18 23:28:22', '2026-08-18 23:29:10', NULL, 'PASS', NULL, 'PASS', NULL, NULL, 103, 1, '2026-08-18 23:28:09', 1, '2026-08-18 23:29:10', '0');
+INSERT INTO `pro_flow_card_step` VALUES (2089743106839724034, '000000', 2089743106818752514, 'FC-SCGD202608180002V6776-6871', 2089743106437070849, 2089743106671951873, 1, 90002001, 'FLASH', '固件刷写', 3, '', 0, 'COMPLETED', 1, NULL, 6.0000, 6.0000, 0.0000, 0.0000, '2026-08-18 23:55:57', '2026-08-18 23:55:57', NULL, 'PASS', NULL, 'PASS', NULL, NULL, 103, 1, '2026-08-18 23:55:57', 1, '2026-08-18 23:55:57', '0');
+INSERT INTO `pro_flow_card_step` VALUES (2089743108358062082, '000000', 2089743108337090561, 'FC-SCGD202608180002V6776-7235', 2089743106437070849, 2089743106671951873, 1, 90002001, 'FLASH', '固件刷写', 3, '', 0, 'COMPLETED', 1, NULL, 4.0000, 4.0000, 0.0000, 0.0000, '2026-08-18 23:55:57', '2026-08-18 23:55:57', NULL, 'PASS', NULL, 'PASS', NULL, NULL, 103, 1, '2026-08-18 23:55:57', 1, '2026-08-18 23:55:57', '0');
+INSERT INTO `pro_flow_card_step` VALUES (2089743634403475458, '000000', 2089743634378309634, 'FC-SCGD202608180002V2560-2653', 2089743634013405186, 2089743634231508993, 1, 90002001, 'FLASH', '固件刷写', 3, '', 0, 'COMPLETED', 1, NULL, 6.0000, 6.0000, 0.0000, 0.0000, '2026-08-18 23:58:03', '2026-08-18 23:58:03', NULL, 'PASS', NULL, 'PASS', NULL, NULL, 103, 1, '2026-08-18 23:58:03', 1, '2026-08-18 23:58:02', '0');
+INSERT INTO `pro_flow_card_step` VALUES (2089743635934396418, '000000', 2089743635917619202, 'FC-SCGD202608180002V2560-3019', 2089743634013405186, 2089743634231508993, 1, 90002001, 'FLASH', '固件刷写', 3, '', 0, 'COMPLETED', 1, NULL, 4.0000, 4.0000, 0.0000, 0.0000, '2026-08-18 23:58:03', '2026-08-18 23:58:03', NULL, 'PASS', NULL, 'PASS', NULL, NULL, 103, 1, '2026-08-18 23:58:03', 1, '2026-08-18 23:58:03', '0');
+INSERT INTO `pro_flow_card_step` VALUES (2089745255552303106, '000000', 2089745255535525890, 'FC-SCGD202608190001V9085-9166', 2089745255220953090, 2089745255401308162, 1, 90002001, 'FLASH', '固件刷写', 3, '', 0, 'COMPLETED', 1, NULL, 6.0000, 6.0000, 0.0000, 0.0000, '2026-08-19 00:04:29', '2026-08-19 00:04:29', NULL, 'PASS', NULL, 'PASS', NULL, NULL, 103, 1, '2026-08-19 00:04:29', 1, '2026-08-19 00:04:29', '0');
+INSERT INTO `pro_flow_card_step` VALUES (2089745257007726593, '000000', 2089745256990949377, 'FC-SCGD202608190001V9085-9513', 2089745255220953090, 2089745255401308162, 1, 90002001, 'FLASH', '固件刷写', 3, '', 0, 'COMPLETED', 1, NULL, 4.0000, 4.0000, 0.0000, 0.0000, '2026-08-19 00:04:30', '2026-08-19 00:04:30', NULL, 'PASS', NULL, 'PASS', NULL, NULL, 103, 1, '2026-08-19 00:04:30', 1, '2026-08-19 00:04:29', '0');
+INSERT INTO `pro_flow_card_step` VALUES (2089745699963977730, '000000', 2089745699947200514, 'FC-SCGD202608190001V5037-5122', 2089745699615850497, 2089745699808788482, 1, 90002001, 'FLASH', '固件刷写', 3, '', 0, 'COMPLETED', 1, NULL, 6.0000, 6.0000, 0.0000, 0.0000, '2026-08-19 00:06:15', '2026-08-19 00:06:15', NULL, 'PASS', NULL, 'PASS', NULL, NULL, 103, 1, '2026-08-19 00:06:15', 1, '2026-08-19 00:06:15', '0');
+INSERT INTO `pro_flow_card_step` VALUES (2089745701444567042, '000000', 2089745701427789826, 'FC-SCGD202608190001V5037-5475', 2089745699615850497, 2089745699808788482, 1, 90002001, 'FLASH', '固件刷写', 3, '', 0, 'COMPLETED', 1, NULL, 4.0000, 4.0000, 0.0000, 0.0000, '2026-08-19 00:06:16', '2026-08-19 00:06:16', NULL, 'PASS', NULL, 'PASS', NULL, NULL, 103, 1, '2026-08-19 00:06:15', 1, '2026-08-19 00:06:15', '0');
 
 -- ----------------------------
 -- Table structure for pro_sn
@@ -1387,6 +1666,56 @@ CREATE TABLE `pro_sn`  (
 INSERT INTO `pro_sn` VALUES (1, '000000', 'SN202606200001', 1, 'WO-TEST-001', 1, 'FC-001', 1001, 'IF20251110001', '自行车', 3, 'IN_PRODUCTION', NULL, NULL, 'MANUAL', '2026-06-20', '自行车SN#001-切割焊接已完成', 100, 1, NULL, NULL, NULL, '0');
 INSERT INTO `pro_sn` VALUES (2, '000000', 'SN202606200002', 1, 'WO-TEST-001', 1, 'FC-001', 1001, 'IF20251110001', '自行车', 3, 'IN_PRODUCTION', NULL, NULL, 'MANUAL', '2026-06-20', '自行车SN#002-切割焊接已完成', 100, 1, NULL, NULL, NULL, '0');
 INSERT INTO `pro_sn` VALUES (3, '000000', 'SN202606200003', 1, 'WO-TEST-001', 1, 'FC-001', 1001, 'IF20251110001', '自行车', 2, 'COMPLETED', NULL, NULL, 'MANUAL', '2026-06-20', '自行车SN#003-全部工序已完成', 100, 1, NULL, NULL, NULL, '0');
+INSERT INTO `pro_sn` VALUES (2089716723199512577, '000000', 'SN-FC-SCGD202608180001-7372-0001', 2089713975506821122, 'SCGD202608180001', 2089714042334666753, 'FC-SCGD202608180001-7372', 2089376872126230529, 'IF20260817011', '智能网关PCBA GW-1000', NULL, 'IN_PRODUCTION', NULL, NULL, 'BATCH', '2026-08-18', NULL, 103, 1, '2026-08-18 22:11:07', 1, '2026-08-18 22:11:07', '0');
+INSERT INTO `pro_sn` VALUES (2089716723199512578, '000000', 'SN-FC-SCGD202608180001-7372-0002', 2089713975506821122, 'SCGD202608180001', 2089714042334666753, 'FC-SCGD202608180001-7372', 2089376872126230529, 'IF20260817011', '智能网关PCBA GW-1000', NULL, 'IN_PRODUCTION', NULL, NULL, 'BATCH', '2026-08-18', NULL, 103, 1, '2026-08-18 22:11:07', 1, '2026-08-18 22:11:07', '0');
+INSERT INTO `pro_sn` VALUES (2089716723199512579, '000000', 'SN-FC-SCGD202608180001-7372-0003', 2089713975506821122, 'SCGD202608180001', 2089714042334666753, 'FC-SCGD202608180001-7372', 2089376872126230529, 'IF20260817011', '智能网关PCBA GW-1000', NULL, 'IN_PRODUCTION', NULL, NULL, 'BATCH', '2026-08-18', NULL, 103, 1, '2026-08-18 22:11:07', 1, '2026-08-18 22:11:07', '0');
+INSERT INTO `pro_sn` VALUES (2089731476877746177, '000000', 'SN-FC-SCGD202608180001-3431-0001', 2089713975506821122, 'SCGD202608180001', 2089731180571140098, 'FC-SCGD202608180001-3431', 2089376872126230529, 'IF20260817011', '智能网关PCBA GW-1000', NULL, 'IN_PRODUCTION', NULL, NULL, 'BATCH', '2026-08-18', NULL, 103, 1, '2026-08-18 23:09:44', 1, '2026-08-18 23:09:44', '0');
+INSERT INTO `pro_sn` VALUES (2089731476877746178, '000000', 'SN-FC-SCGD202608180001-3431-0002', 2089713975506821122, 'SCGD202608180001', 2089731180571140098, 'FC-SCGD202608180001-3431', 2089376872126230529, 'IF20260817011', '智能网关PCBA GW-1000', NULL, 'IN_PRODUCTION', NULL, NULL, 'BATCH', '2026-08-18', NULL, 103, 1, '2026-08-18 23:09:44', 1, '2026-08-18 23:09:44', '0');
+INSERT INTO `pro_sn` VALUES (2089731476877746179, '000000', 'SN-FC-SCGD202608180001-3431-0003', 2089713975506821122, 'SCGD202608180001', 2089731180571140098, 'FC-SCGD202608180001-3431', 2089376872126230529, 'IF20260817011', '智能网关PCBA GW-1000', NULL, 'IN_PRODUCTION', NULL, NULL, 'BATCH', '2026-08-18', NULL, 103, 1, '2026-08-18 23:09:44', 1, '2026-08-18 23:09:44', '0');
+INSERT INTO `pro_sn` VALUES (2089731476877746180, '000000', 'SN-FC-SCGD202608180001-3431-0004', 2089713975506821122, 'SCGD202608180001', 2089731180571140098, 'FC-SCGD202608180001-3431', 2089376872126230529, 'IF20260817011', '智能网关PCBA GW-1000', NULL, 'IN_PRODUCTION', NULL, NULL, 'BATCH', '2026-08-18', NULL, 103, 1, '2026-08-18 23:09:44', 1, '2026-08-18 23:09:44', '0');
+INSERT INTO `pro_sn` VALUES (2089731476877746181, '000000', 'SN-FC-SCGD202608180001-3431-0005', 2089713975506821122, 'SCGD202608180001', 2089731180571140098, 'FC-SCGD202608180001-3431', 2089376872126230529, 'IF20260817011', '智能网关PCBA GW-1000', NULL, 'IN_PRODUCTION', NULL, NULL, 'BATCH', '2026-08-18', NULL, 103, 1, '2026-08-18 23:09:44', 1, '2026-08-18 23:09:44', '0');
+INSERT INTO `pro_sn` VALUES (2089731476877746182, '000000', 'SN-FC-SCGD202608180001-3431-0006', 2089713975506821122, 'SCGD202608180001', 2089731180571140098, 'FC-SCGD202608180001-3431', 2089376872126230529, 'IF20260817011', '智能网关PCBA GW-1000', NULL, 'IN_PRODUCTION', NULL, NULL, 'BATCH', '2026-08-18', NULL, 103, 1, '2026-08-18 23:09:44', 1, '2026-08-18 23:09:44', '0');
+INSERT INTO `pro_sn` VALUES (2089736183729987585, '000000', 'SN-FC-SCGD202608180001-8898-0001', 2089713975506821122, 'SCGD202608180001', 2089736110841372674, 'FC-SCGD202608180001-8898', 2089376872126230529, 'IF20260817011', '智能网关PCBA GW-1000', NULL, 'IN_PRODUCTION', NULL, NULL, 'BATCH', '2026-08-18', NULL, 103, 1, '2026-08-18 23:28:26', 1, '2026-08-18 23:28:26', '0');
+INSERT INTO `pro_sn` VALUES (2089743107263348737, '000000', 'SN-FC-SCGD202608180002V6776-6871-0001', 2089743106437070849, 'SCGD202608180002V6776', 2089743106818752514, 'FC-SCGD202608180002V6776-6871', 2089376872126230529, 'IF20260817011', '智能网关PCBA GW-1000', NULL, 'IN_PRODUCTION', NULL, NULL, 'BATCH', '2026-08-18', NULL, 103, 1, '2026-08-18 23:55:57', 1, '2026-08-18 23:55:57', '0');
+INSERT INTO `pro_sn` VALUES (2089743107267543042, '000000', 'SN-FC-SCGD202608180002V6776-6871-0002', 2089743106437070849, 'SCGD202608180002V6776', 2089743106818752514, 'FC-SCGD202608180002V6776-6871', 2089376872126230529, 'IF20260817011', '智能网关PCBA GW-1000', NULL, 'IN_PRODUCTION', NULL, NULL, 'BATCH', '2026-08-18', NULL, 103, 1, '2026-08-18 23:55:57', 1, '2026-08-18 23:55:57', '0');
+INSERT INTO `pro_sn` VALUES (2089743107275931649, '000000', 'SN-FC-SCGD202608180002V6776-6871-0003', 2089743106437070849, 'SCGD202608180002V6776', 2089743106818752514, 'FC-SCGD202608180002V6776-6871', 2089376872126230529, 'IF20260817011', '智能网关PCBA GW-1000', NULL, 'IN_PRODUCTION', NULL, NULL, 'BATCH', '2026-08-18', NULL, 103, 1, '2026-08-18 23:55:57', 1, '2026-08-18 23:55:57', '0');
+INSERT INTO `pro_sn` VALUES (2089743107284320257, '000000', 'SN-FC-SCGD202608180002V6776-6871-0004', 2089743106437070849, 'SCGD202608180002V6776', 2089743106818752514, 'FC-SCGD202608180002V6776-6871', 2089376872126230529, 'IF20260817011', '智能网关PCBA GW-1000', NULL, 'IN_PRODUCTION', NULL, NULL, 'BATCH', '2026-08-18', NULL, 103, 1, '2026-08-18 23:55:57', 1, '2026-08-18 23:55:57', '0');
+INSERT INTO `pro_sn` VALUES (2089743107288514561, '000000', 'SN-FC-SCGD202608180002V6776-6871-0005', 2089743106437070849, 'SCGD202608180002V6776', 2089743106818752514, 'FC-SCGD202608180002V6776-6871', 2089376872126230529, 'IF20260817011', '智能网关PCBA GW-1000', NULL, 'IN_PRODUCTION', NULL, NULL, 'BATCH', '2026-08-18', NULL, 103, 1, '2026-08-18 23:55:57', 1, '2026-08-18 23:55:57', '0');
+INSERT INTO `pro_sn` VALUES (2089743107292708866, '000000', 'SN-FC-SCGD202608180002V6776-6871-0006', 2089743106437070849, 'SCGD202608180002V6776', 2089743106818752514, 'FC-SCGD202608180002V6776-6871', 2089376872126230529, 'IF20260817011', '智能网关PCBA GW-1000', NULL, 'IN_PRODUCTION', NULL, NULL, 'BATCH', '2026-08-18', NULL, 103, 1, '2026-08-18 23:55:57', 1, '2026-08-18 23:55:57', '0');
+INSERT INTO `pro_sn` VALUES (2089743108613914626, '000000', 'SN-FC-SCGD202608180002V6776-7235-0001', 2089743106437070849, 'SCGD202608180002V6776', 2089743108337090561, 'FC-SCGD202608180002V6776-7235', 2089376872126230529, 'IF20260817011', '智能网关PCBA GW-1000', NULL, 'IN_PRODUCTION', NULL, NULL, 'BATCH', '2026-08-18', NULL, 103, 1, '2026-08-18 23:55:57', 1, '2026-08-18 23:55:57', '0');
+INSERT INTO `pro_sn` VALUES (2089743108622303233, '000000', 'SN-FC-SCGD202608180002V6776-7235-0002', 2089743106437070849, 'SCGD202608180002V6776', 2089743108337090561, 'FC-SCGD202608180002V6776-7235', 2089376872126230529, 'IF20260817011', '智能网关PCBA GW-1000', NULL, 'IN_PRODUCTION', NULL, NULL, 'BATCH', '2026-08-18', NULL, 103, 1, '2026-08-18 23:55:57', 1, '2026-08-18 23:55:57', '0');
+INSERT INTO `pro_sn` VALUES (2089743108626497537, '000000', 'SN-FC-SCGD202608180002V6776-7235-0003', 2089743106437070849, 'SCGD202608180002V6776', 2089743108337090561, 'FC-SCGD202608180002V6776-7235', 2089376872126230529, 'IF20260817011', '智能网关PCBA GW-1000', NULL, 'IN_PRODUCTION', NULL, NULL, 'BATCH', '2026-08-18', NULL, 103, 1, '2026-08-18 23:55:57', 1, '2026-08-18 23:55:57', '0');
+INSERT INTO `pro_sn` VALUES (2089743108630691842, '000000', 'SN-FC-SCGD202608180002V6776-7235-0004', 2089743106437070849, 'SCGD202608180002V6776', 2089743108337090561, 'FC-SCGD202608180002V6776-7235', 2089376872126230529, 'IF20260817011', '智能网关PCBA GW-1000', NULL, 'IN_PRODUCTION', NULL, NULL, 'BATCH', '2026-08-18', NULL, 103, 1, '2026-08-18 23:55:57', 1, '2026-08-18 23:55:57', '0');
+INSERT INTO `pro_sn` VALUES (2089743634718048258, '000000', 'SN-FC-SCGD202608180002V2560-2653-0001', 2089743634013405186, 'SCGD202608180002V2560', 2089743634378309634, 'FC-SCGD202608180002V2560-2653', 2089376872126230529, 'IF20260817011', '智能网关PCBA GW-1000', NULL, 'IN_PRODUCTION', NULL, NULL, 'BATCH', '2026-08-18', NULL, 103, 1, '2026-08-18 23:58:03', 1, '2026-08-18 23:58:03', '0');
+INSERT INTO `pro_sn` VALUES (2089743634722242561, '000000', 'SN-FC-SCGD202608180002V2560-2653-0002', 2089743634013405186, 'SCGD202608180002V2560', 2089743634378309634, 'FC-SCGD202608180002V2560-2653', 2089376872126230529, 'IF20260817011', '智能网关PCBA GW-1000', NULL, 'IN_PRODUCTION', NULL, NULL, 'BATCH', '2026-08-18', NULL, 103, 1, '2026-08-18 23:58:03', 1, '2026-08-18 23:58:03', '0');
+INSERT INTO `pro_sn` VALUES (2089743634726436866, '000000', 'SN-FC-SCGD202608180002V2560-2653-0003', 2089743634013405186, 'SCGD202608180002V2560', 2089743634378309634, 'FC-SCGD202608180002V2560-2653', 2089376872126230529, 'IF20260817011', '智能网关PCBA GW-1000', NULL, 'IN_PRODUCTION', NULL, NULL, 'BATCH', '2026-08-18', NULL, 103, 1, '2026-08-18 23:58:03', 1, '2026-08-18 23:58:03', '0');
+INSERT INTO `pro_sn` VALUES (2089743634730631169, '000000', 'SN-FC-SCGD202608180002V2560-2653-0004', 2089743634013405186, 'SCGD202608180002V2560', 2089743634378309634, 'FC-SCGD202608180002V2560-2653', 2089376872126230529, 'IF20260817011', '智能网关PCBA GW-1000', NULL, 'IN_PRODUCTION', NULL, NULL, 'BATCH', '2026-08-18', NULL, 103, 1, '2026-08-18 23:58:03', 1, '2026-08-18 23:58:03', '0');
+INSERT INTO `pro_sn` VALUES (2089743634734825474, '000000', 'SN-FC-SCGD202608180002V2560-2653-0005', 2089743634013405186, 'SCGD202608180002V2560', 2089743634378309634, 'FC-SCGD202608180002V2560-2653', 2089376872126230529, 'IF20260817011', '智能网关PCBA GW-1000', NULL, 'IN_PRODUCTION', NULL, NULL, 'BATCH', '2026-08-18', NULL, 103, 1, '2026-08-18 23:58:03', 1, '2026-08-18 23:58:03', '0');
+INSERT INTO `pro_sn` VALUES (2089743634739019777, '000000', 'SN-FC-SCGD202608180002V2560-2653-0006', 2089743634013405186, 'SCGD202608180002V2560', 2089743634378309634, 'FC-SCGD202608180002V2560-2653', 2089376872126230529, 'IF20260817011', '智能网关PCBA GW-1000', NULL, 'IN_PRODUCTION', NULL, NULL, 'BATCH', '2026-08-18', NULL, 103, 1, '2026-08-18 23:58:03', 1, '2026-08-18 23:58:03', '0');
+INSERT INTO `pro_sn` VALUES (2089743636177666050, '000000', 'SN-FC-SCGD202608180002V2560-3019-0001', 2089743634013405186, 'SCGD202608180002V2560', 2089743635917619202, 'FC-SCGD202608180002V2560-3019', 2089376872126230529, 'IF20260817011', '智能网关PCBA GW-1000', NULL, 'IN_PRODUCTION', NULL, NULL, 'BATCH', '2026-08-18', NULL, 103, 1, '2026-08-18 23:58:03', 1, '2026-08-18 23:58:03', '0');
+INSERT INTO `pro_sn` VALUES (2089743636181860354, '000000', 'SN-FC-SCGD202608180002V2560-3019-0002', 2089743634013405186, 'SCGD202608180002V2560', 2089743635917619202, 'FC-SCGD202608180002V2560-3019', 2089376872126230529, 'IF20260817011', '智能网关PCBA GW-1000', NULL, 'IN_PRODUCTION', NULL, NULL, 'BATCH', '2026-08-18', NULL, 103, 1, '2026-08-18 23:58:03', 1, '2026-08-18 23:58:03', '0');
+INSERT INTO `pro_sn` VALUES (2089743636186054658, '000000', 'SN-FC-SCGD202608180002V2560-3019-0003', 2089743634013405186, 'SCGD202608180002V2560', 2089743635917619202, 'FC-SCGD202608180002V2560-3019', 2089376872126230529, 'IF20260817011', '智能网关PCBA GW-1000', NULL, 'IN_PRODUCTION', NULL, NULL, 'BATCH', '2026-08-18', NULL, 103, 1, '2026-08-18 23:58:03', 1, '2026-08-18 23:58:03', '0');
+INSERT INTO `pro_sn` VALUES (2089743636190248962, '000000', 'SN-FC-SCGD202608180002V2560-3019-0004', 2089743634013405186, 'SCGD202608180002V2560', 2089743635917619202, 'FC-SCGD202608180002V2560-3019', 2089376872126230529, 'IF20260817011', '智能网关PCBA GW-1000', NULL, 'IN_PRODUCTION', NULL, NULL, 'BATCH', '2026-08-18', NULL, 103, 1, '2026-08-18 23:58:03', 1, '2026-08-18 23:58:03', '0');
+INSERT INTO `pro_sn` VALUES (2089745255866875905, '000000', 'SN-FC-SCGD202608190001V9085-9166-0001', 2089745255220953090, 'SCGD202608190001V9085', 2089745255535525890, 'FC-SCGD202608190001V9085-9166', 2089376872126230529, 'IF20260817011', '智能网关PCBA GW-1000', NULL, 'IN_PRODUCTION', NULL, NULL, 'BATCH', '2026-08-19', NULL, 103, 1, '2026-08-19 00:04:29', 1, '2026-08-19 00:04:29', '0');
+INSERT INTO `pro_sn` VALUES (2089745255871070210, '000000', 'SN-FC-SCGD202608190001V9085-9166-0002', 2089745255220953090, 'SCGD202608190001V9085', 2089745255535525890, 'FC-SCGD202608190001V9085-9166', 2089376872126230529, 'IF20260817011', '智能网关PCBA GW-1000', NULL, 'IN_PRODUCTION', NULL, NULL, 'BATCH', '2026-08-19', NULL, 103, 1, '2026-08-19 00:04:29', 1, '2026-08-19 00:04:29', '0');
+INSERT INTO `pro_sn` VALUES (2089745255879458818, '000000', 'SN-FC-SCGD202608190001V9085-9166-0003', 2089745255220953090, 'SCGD202608190001V9085', 2089745255535525890, 'FC-SCGD202608190001V9085-9166', 2089376872126230529, 'IF20260817011', '智能网关PCBA GW-1000', NULL, 'IN_PRODUCTION', NULL, NULL, 'BATCH', '2026-08-19', NULL, 103, 1, '2026-08-19 00:04:29', 1, '2026-08-19 00:04:29', '0');
+INSERT INTO `pro_sn` VALUES (2089745255879458819, '000000', 'SN-FC-SCGD202608190001V9085-9166-0004', 2089745255220953090, 'SCGD202608190001V9085', 2089745255535525890, 'FC-SCGD202608190001V9085-9166', 2089376872126230529, 'IF20260817011', '智能网关PCBA GW-1000', NULL, 'IN_PRODUCTION', NULL, NULL, 'BATCH', '2026-08-19', NULL, 103, 1, '2026-08-19 00:04:29', 1, '2026-08-19 00:04:29', '0');
+INSERT INTO `pro_sn` VALUES (2089745255887847425, '000000', 'SN-FC-SCGD202608190001V9085-9166-0005', 2089745255220953090, 'SCGD202608190001V9085', 2089745255535525890, 'FC-SCGD202608190001V9085-9166', 2089376872126230529, 'IF20260817011', '智能网关PCBA GW-1000', NULL, 'IN_PRODUCTION', NULL, NULL, 'BATCH', '2026-08-19', NULL, 103, 1, '2026-08-19 00:04:29', 1, '2026-08-19 00:04:29', '0');
+INSERT INTO `pro_sn` VALUES (2089745255896236033, '000000', 'SN-FC-SCGD202608190001V9085-9166-0006', 2089745255220953090, 'SCGD202608190001V9085', 2089745255535525890, 'FC-SCGD202608190001V9085-9166', 2089376872126230529, 'IF20260817011', '智能网关PCBA GW-1000', NULL, 'IN_PRODUCTION', NULL, NULL, 'BATCH', '2026-08-19', NULL, 103, 1, '2026-08-19 00:04:29', 1, '2026-08-19 00:04:29', '0');
+INSERT INTO `pro_sn` VALUES (2089745257276162049, '000000', 'SN-FC-SCGD202608190001V9085-9513-0001', 2089745255220953090, 'SCGD202608190001V9085', 2089745256990949377, 'FC-SCGD202608190001V9085-9513', 2089376872126230529, 'IF20260817011', '智能网关PCBA GW-1000', NULL, 'IN_PRODUCTION', NULL, NULL, 'BATCH', '2026-08-19', NULL, 103, 1, '2026-08-19 00:04:30', 1, '2026-08-19 00:04:30', '0');
+INSERT INTO `pro_sn` VALUES (2089745257280356353, '000000', 'SN-FC-SCGD202608190001V9085-9513-0002', 2089745255220953090, 'SCGD202608190001V9085', 2089745256990949377, 'FC-SCGD202608190001V9085-9513', 2089376872126230529, 'IF20260817011', '智能网关PCBA GW-1000', NULL, 'IN_PRODUCTION', NULL, NULL, 'BATCH', '2026-08-19', NULL, 103, 1, '2026-08-19 00:04:30', 1, '2026-08-19 00:04:30', '0');
+INSERT INTO `pro_sn` VALUES (2089745257284550657, '000000', 'SN-FC-SCGD202608190001V9085-9513-0003', 2089745255220953090, 'SCGD202608190001V9085', 2089745256990949377, 'FC-SCGD202608190001V9085-9513', 2089376872126230529, 'IF20260817011', '智能网关PCBA GW-1000', NULL, 'IN_PRODUCTION', NULL, NULL, 'BATCH', '2026-08-19', NULL, 103, 1, '2026-08-19 00:04:30', 1, '2026-08-19 00:04:30', '0');
+INSERT INTO `pro_sn` VALUES (2089745257288744962, '000000', 'SN-FC-SCGD202608190001V9085-9513-0004', 2089745255220953090, 'SCGD202608190001V9085', 2089745256990949377, 'FC-SCGD202608190001V9085-9513', 2089376872126230529, 'IF20260817011', '智能网关PCBA GW-1000', NULL, 'IN_PRODUCTION', NULL, NULL, 'BATCH', '2026-08-19', NULL, 103, 1, '2026-08-19 00:04:30', 1, '2026-08-19 00:04:30', '0');
+INSERT INTO `pro_sn` VALUES (2089745700257579009, '000000', 'SN-FC-SCGD202608190001V5037-5122-0001', 2089745699615850497, 'SCGD202608190001V5037', 2089745699947200514, 'FC-SCGD202608190001V5037-5122', 2089376872126230529, 'IF20260817011', '智能网关PCBA GW-1000', NULL, 'IN_PRODUCTION', NULL, NULL, 'BATCH', '2026-08-19', NULL, 103, 1, '2026-08-19 00:06:15', 1, '2026-08-19 00:06:15', '0');
+INSERT INTO `pro_sn` VALUES (2089745700261773313, '000000', 'SN-FC-SCGD202608190001V5037-5122-0002', 2089745699615850497, 'SCGD202608190001V5037', 2089745699947200514, 'FC-SCGD202608190001V5037-5122', 2089376872126230529, 'IF20260817011', '智能网关PCBA GW-1000', NULL, 'IN_PRODUCTION', NULL, NULL, 'BATCH', '2026-08-19', NULL, 103, 1, '2026-08-19 00:06:15', 1, '2026-08-19 00:06:15', '0');
+INSERT INTO `pro_sn` VALUES (2089745700265967618, '000000', 'SN-FC-SCGD202608190001V5037-5122-0003', 2089745699615850497, 'SCGD202608190001V5037', 2089745699947200514, 'FC-SCGD202608190001V5037-5122', 2089376872126230529, 'IF20260817011', '智能网关PCBA GW-1000', NULL, 'IN_PRODUCTION', NULL, NULL, 'BATCH', '2026-08-19', NULL, 103, 1, '2026-08-19 00:06:15', 1, '2026-08-19 00:06:15', '0');
+INSERT INTO `pro_sn` VALUES (2089745700270161922, '000000', 'SN-FC-SCGD202608190001V5037-5122-0004', 2089745699615850497, 'SCGD202608190001V5037', 2089745699947200514, 'FC-SCGD202608190001V5037-5122', 2089376872126230529, 'IF20260817011', '智能网关PCBA GW-1000', NULL, 'IN_PRODUCTION', NULL, NULL, 'BATCH', '2026-08-19', NULL, 103, 1, '2026-08-19 00:06:15', 1, '2026-08-19 00:06:15', '0');
+INSERT INTO `pro_sn` VALUES (2089745700274356226, '000000', 'SN-FC-SCGD202608190001V5037-5122-0005', 2089745699615850497, 'SCGD202608190001V5037', 2089745699947200514, 'FC-SCGD202608190001V5037-5122', 2089376872126230529, 'IF20260817011', '智能网关PCBA GW-1000', NULL, 'IN_PRODUCTION', NULL, NULL, 'BATCH', '2026-08-19', NULL, 103, 1, '2026-08-19 00:06:15', 1, '2026-08-19 00:06:15', '0');
+INSERT INTO `pro_sn` VALUES (2089745700278550530, '000000', 'SN-FC-SCGD202608190001V5037-5122-0006', 2089745699615850497, 'SCGD202608190001V5037', 2089745699947200514, 'FC-SCGD202608190001V5037-5122', 2089376872126230529, 'IF20260817011', '智能网关PCBA GW-1000', NULL, 'IN_PRODUCTION', NULL, NULL, 'BATCH', '2026-08-19', NULL, 103, 1, '2026-08-19 00:06:15', 1, '2026-08-19 00:06:15', '0');
+INSERT INTO `pro_sn` VALUES (2089745701700419585, '000000', 'SN-FC-SCGD202608190001V5037-5475-0001', 2089745699615850497, 'SCGD202608190001V5037', 2089745701427789826, 'FC-SCGD202608190001V5037-5475', 2089376872126230529, 'IF20260817011', '智能网关PCBA GW-1000', NULL, 'IN_PRODUCTION', NULL, NULL, 'BATCH', '2026-08-19', NULL, 103, 1, '2026-08-19 00:06:16', 1, '2026-08-19 00:06:16', '0');
+INSERT INTO `pro_sn` VALUES (2089745701713002498, '000000', 'SN-FC-SCGD202608190001V5037-5475-0002', 2089745699615850497, 'SCGD202608190001V5037', 2089745701427789826, 'FC-SCGD202608190001V5037-5475', 2089376872126230529, 'IF20260817011', '智能网关PCBA GW-1000', NULL, 'IN_PRODUCTION', NULL, NULL, 'BATCH', '2026-08-19', NULL, 103, 1, '2026-08-19 00:06:16', 1, '2026-08-19 00:06:16', '0');
+INSERT INTO `pro_sn` VALUES (2089745701717196801, '000000', 'SN-FC-SCGD202608190001V5037-5475-0003', 2089745699615850497, 'SCGD202608190001V5037', 2089745701427789826, 'FC-SCGD202608190001V5037-5475', 2089376872126230529, 'IF20260817011', '智能网关PCBA GW-1000', NULL, 'IN_PRODUCTION', NULL, NULL, 'BATCH', '2026-08-19', NULL, 103, 1, '2026-08-19 00:06:16', 1, '2026-08-19 00:06:16', '0');
+INSERT INTO `pro_sn` VALUES (2089745701717196802, '000000', 'SN-FC-SCGD202608190001V5037-5475-0004', 2089745699615850497, 'SCGD202608190001V5037', 2089745701427789826, 'FC-SCGD202608190001V5037-5475', 2089376872126230529, 'IF20260817011', '智能网关PCBA GW-1000', NULL, 'IN_PRODUCTION', NULL, NULL, 'BATCH', '2026-08-19', NULL, 103, 1, '2026-08-19 00:06:16', 1, '2026-08-19 00:06:16', '0');
 
 -- ----------------------------
 -- Table structure for pro_step_check_rule
@@ -1503,6 +1832,12 @@ INSERT INTO `pro_work_order` VALUES (2075397661844770817, '000000', 207539756605
 INSERT INTO `pro_work_order` VALUES (2080270525816516609, '000000', 2080231171726180353, 'SCGD202607230001', 99001, 'QC-FP-001', '质检联动测试成品', 20.0000, 20.0000, 0.0000, 26, '件', '2026-07-23 00:00:00', '2026-07-24 00:00:00', '2026-07-23 22:32:34', '2026-07-23 22:33:00', 4, '包装车间#1', 99001, NULL, 99001, 'COMPLETED', 5, NULL, NULL, -1, -1, '2026-07-23 20:35:18', -1, '2026-07-23 22:33:00', '0', 'ERP');
 INSERT INTO `pro_work_order` VALUES (2082127796938907650, '000000', NULL, 'RW20260728001', 1001, 'IF20251110001', '自行车', 5.0000, 0.0000, 0.0000, 26, '件', NULL, NULL, '2026-07-28 23:35:26', NULL, 1, '注塑车间#1', 5, NULL, 1, 'IN_PROGRESS', 5, 'NCR返工: E2E返工', NULL, 103, 1, '2026-07-28 23:35:26', 1, '2026-07-28 23:35:25', '0', 'REWORK');
 INSERT INTO `pro_work_order` VALUES (2082128180742889473, '000000', NULL, 'RW20260728003', 1001, 'IF20251110001', '自行车', 5.0000, 5.0000, 0.0000, 26, '件', NULL, NULL, '2026-07-28 23:36:57', '2026-07-28 23:36:58', 1, '注塑车间#1', 5, NULL, 1, 'COMPLETED', 5, 'NCR返工: E2E返工', NULL, 103, 1, '2026-07-28 23:36:57', 1, '2026-07-28 23:36:57', '0', 'REWORK');
+INSERT INTO `pro_work_order` VALUES (2089713975506821122, '000000', 2089704568974753794, 'SCGD202608180001', 2089376872126230529, 'IF20260817011', '智能网关PCBA GW-1000', 10.0000, 10.0000, 0.0000, 26, '件', '2026-08-18 00:00:00', '2026-08-20 00:00:00', '2026-08-18 22:01:00', '2026-08-18 23:29:10', NULL, NULL, 2089376872235282434, NULL, 2089698804193546241, 'COMPLETED', 5, NULL, NULL, -1, -1, '2026-08-18 22:00:11', -1, '2026-08-18 23:39:38', '0', 'ERP');
+INSERT INTO `pro_work_order` VALUES (2089742340792041473, '000000', NULL, 'SCGD202608180002', 2089376872126230500, 'IF20260817011', '智能网关PCBA GW-1000', 10.0000, 0.0000, 0.0000, 26, '件', NULL, NULL, NULL, NULL, NULL, NULL, 2089376872235282400, NULL, 2089698804193546200, 'CANCELLED', 5, '刷写工单部分完工验证', NULL, 103, 1, '2026-08-18 23:52:54', 1, '2026-08-18 23:55:21', '0', 'MANUAL');
+INSERT INTO `pro_work_order` VALUES (2089743106437070849, '000000', NULL, 'SCGD202608180002V6776', 2089376872126230529, 'IF20260817011', '智能网关PCBA GW-1000', 10.0000, 10.0000, 0.0000, 26, '件', NULL, NULL, '2026-08-18 23:55:57', '2026-08-18 23:55:57', NULL, NULL, 2089376872235282434, NULL, 2089698804193546241, 'COMPLETED', 5, '刷写工单部分完工验证', NULL, 103, 1, '2026-08-18 23:55:57', 1, '2026-08-18 23:55:57', '0', 'MANUAL');
+INSERT INTO `pro_work_order` VALUES (2089743634013405186, '000000', NULL, 'SCGD202608180002V2560', 2089376872126230529, 'IF20260817011', '智能网关PCBA GW-1000', 10.0000, 10.0000, 0.0000, 26, '件', NULL, NULL, '2026-08-18 23:58:03', '2026-08-18 23:58:03', NULL, NULL, 2089376872235282434, NULL, 2089698804193546241, 'COMPLETED', 5, '刷写工单部分完工验证', NULL, 103, 1, '2026-08-18 23:58:03', 1, '2026-08-18 23:58:03', '0', 'MANUAL');
+INSERT INTO `pro_work_order` VALUES (2089745255220953090, '000000', NULL, 'SCGD202608190001V9085', 2089376872126230529, 'IF20260817011', '智能网关PCBA GW-1000', 10.0000, 10.0000, 0.0000, 26, '件', NULL, NULL, '2026-08-19 00:04:29', '2026-08-19 00:04:30', NULL, NULL, 2089376872235282434, NULL, 2089698804193546241, 'COMPLETED', 5, '刷写工单部分完工验证', NULL, 103, 1, '2026-08-19 00:04:29', 1, '2026-08-19 00:04:29', '0', 'MANUAL');
+INSERT INTO `pro_work_order` VALUES (2089745699615850497, '000000', NULL, 'SCGD202608190001V5037', 2089376872126230529, 'IF20260817011', '智能网关PCBA GW-1000', 10.0000, 10.0000, 0.0000, 26, '件', NULL, NULL, '2026-08-19 00:06:15', '2026-08-19 00:06:16', NULL, NULL, 2089376872235282434, NULL, 2089698804193546241, 'COMPLETED', 5, '刷写工单部分完工验证', NULL, 103, 1, '2026-08-19 00:06:15', 1, '2026-08-19 00:06:15', '0', 'MANUAL');
 
 -- ----------------------------
 -- Table structure for pro_work_order_bom_line
@@ -1575,6 +1910,13 @@ INSERT INTO `pro_work_order_bom_line` VALUES (2082128181405589505, '000000', 208
 INSERT INTO `pro_work_order_bom_line` VALUES (2082128181422366722, '000000', 2082128180742889473, 2, 5, NULL, 2002, 'IF20251203002', '车轮', 2.000000, 0.0100, 2.000200, 3, 30, 3, 'ASM', '装配', 1, 'GZZ0002', '工作站1', '车轮装配', 1, 2, '车轮在装配工序投入(反冲)', 103, 1, '2026-07-28 23:36:57', 1, '2026-07-28 23:36:57', '0');
 INSERT INTO `pro_work_order_bom_line` VALUES (2082128181434949633, '000000', 2082128180742889473, 3, 5, NULL, 2003, 'IF20251203003', '车把', 1.000000, 0.0100, 1.000100, 3, 30, 3, 'ASM', '装配', 1, 'GZZ0002', '工作站1', '车把装配', 1, 3, '车把在装配工序投入(反冲)', 103, 1, '2026-07-28 23:36:57', 1, '2026-07-28 23:36:57', '0');
 INSERT INTO `pro_work_order_bom_line` VALUES (2082128181443338242, '000000', 2082128180742889473, 4, 5, NULL, 10, 'LUBRICANT', '润滑油', 1.000000, 0.0000, 1.000000, 4, 40, 5, 'PKG', '包装', 3, 'GZZ0004', '工作站3', '包装前润滑处理', 0, 4, '润滑油在包装工序投入', 103, 1, '2026-07-28 23:36:57', 1, '2026-07-28 23:36:57', '0');
+INSERT INTO `pro_work_order_bom_line` VALUES (2089704730375766020, '000000', 2089704730308657153, 2089701818929004545, 2089376872235282434, NULL, 2089376872126230529, 'IF20260817011', '智能网关PCBA GW-1000', 1.000000, 0.0000, 1.000000, 2089698804256460801, 1, 90002001, 'FLASH', '固件刷写', 3, 'GZZ0004', '工作站3', '刷写', 0, 1, NULL, -1, -1, '2026-08-18 21:23:27', -1, '2026-08-18 21:23:27', '0');
+INSERT INTO `pro_work_order_bom_line` VALUES (2089710626950725634, '000000', 2089710626887811073, 2089701818929004545, 2089376872235282434, NULL, 2089376872126230529, 'IF20260817011', '智能网关PCBA GW-1000', 1.000000, 0.0000, 1.000000, 2089698804256460801, 1, 90002001, 'FLASH', '固件刷写', 3, 'GZZ0004', '工作站3', '刷写', 0, 1, NULL, -1, -1, '2026-08-18 21:46:53', -1, '2026-08-18 21:46:53', '0');
+INSERT INTO `pro_work_order_bom_line` VALUES (2089713975506821124, '000000', 2089713975506821122, 2089701818929004545, 2089376872235282434, NULL, 2089376872126230529, 'IF20260817011', '智能网关PCBA GW-1000', 1.000000, 0.0000, 1.000000, 2089698804256460801, 1, 90002001, 'FLASH', '固件刷写', 3, 'GZZ0004', '工作站3', '刷写', 0, 1, NULL, -1, -1, '2026-08-18 22:00:11', -1, '2026-08-18 22:00:11', '0');
+INSERT INTO `pro_work_order_bom_line` VALUES (2089743106684534786, '000000', 2089743106437070849, 2089701818929004545, 2089376872235282434, NULL, 2089376872126230529, 'IF20260817011', '智能网关PCBA GW-1000', 1.000000, 0.0000, 1.000000, 2089698804256460801, 1, 90002001, 'FLASH', '固件刷写', 3, 'GZZ0004', '工作站3', '刷写', 0, 1, NULL, 103, 1, '2026-08-18 23:55:57', 1, '2026-08-18 23:55:57', '0');
+INSERT INTO `pro_work_order_bom_line` VALUES (2089743634244091905, '000000', 2089743634013405186, 2089701818929004545, 2089376872235282434, NULL, 2089376872126230529, 'IF20260817011', '智能网关PCBA GW-1000', 1.000000, 0.0000, 1.000000, 2089698804256460801, 1, 90002001, 'FLASH', '固件刷写', 3, 'GZZ0004', '工作站3', '刷写', 0, 1, NULL, 103, 1, '2026-08-18 23:58:03', 1, '2026-08-18 23:58:03', '0');
+INSERT INTO `pro_work_order_bom_line` VALUES (2089745255413891073, '000000', 2089745255220953090, 2089701818929004545, 2089376872235282434, NULL, 2089376872126230529, 'IF20260817011', '智能网关PCBA GW-1000', 1.000000, 0.0000, 1.000000, 2089698804256460801, 1, 90002001, 'FLASH', '固件刷写', 3, 'GZZ0004', '工作站3', '刷写', 0, 1, NULL, 103, 1, '2026-08-19 00:04:29', 1, '2026-08-19 00:04:29', '0');
+INSERT INTO `pro_work_order_bom_line` VALUES (2089745699812982785, '000000', 2089745699615850497, 2089701818929004545, 2089376872235282434, NULL, 2089376872126230529, 'IF20260817011', '智能网关PCBA GW-1000', 1.000000, 0.0000, 1.000000, 2089698804256460801, 1, 90002001, 'FLASH', '固件刷写', 3, 'GZZ0004', '工作站3', '刷写', 0, 1, NULL, 103, 1, '2026-08-19 00:06:15', 1, '2026-08-19 00:06:15', '0');
 
 -- ----------------------------
 -- Table structure for pro_work_order_step
@@ -1588,7 +1930,7 @@ CREATE TABLE `pro_work_order_step`  (
   `step_type` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'GENERAL' COMMENT '工序类型: GENERAL/FLASH/TEST',
   `content_ref_type` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '内容引用类型(单类型快捷绑定: FIRMWARE/CONFIG/MAC_POOL...)',
   `content_ref_id` bigint(20) NULL DEFAULT NULL COMMENT '内容源记录ID(固件类=mes_firmware_id)',
-  `step_flash_config` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '多类型绑定JSON: [{"flashTypeCode":"firmware_file","contentRefId":123},{"flashTypeCode":"mac"}]',
+  `step_flash_config` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '多类型绑定JSON: [{\"flashTypeCode\":\"firmware_file\",\"contentRefId\":123},{\"flashTypeCode\":\"mac\"}]',
   `process_id` bigint(20) NULL DEFAULT NULL COMMENT 'ERP工序ID(bd_routing_step.routing_step_id)',
   `process_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '工序编码(冗余)',
   `process_name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '工序名称(冗余)',
@@ -1611,51 +1953,59 @@ CREATE TABLE `pro_work_order_step`  (
   PRIMARY KEY (`step_id`) USING BTREE,
   INDEX `idx_mes_wo_id`(`mes_wo_id`) USING BTREE,
   INDEX `idx_step_status`(`step_status`) USING BTREE,
-  INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
+  INDEX `idx_tenant_id`(`tenant_id`) USING BTREE,
+  INDEX `idx_step_type`(`tenant_id`, `step_type`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'MES工单工序步骤表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of pro_work_order_step
 -- ----------------------------
-INSERT INTO `pro_work_order_step` VALUES (1, '000000', 1, 10, 'GENERAL', NULL, 1, 'CUT', '切割', 1, 'GZZ0002', 100.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, '步1:钢板切割', 100, 1, '2026-06-21 20:59:31', NULL, '2026-06-21 20:59:31', '0');
-INSERT INTO `pro_work_order_step` VALUES (2, '000000', 1, 20, 'GENERAL', NULL, 2, 'WELD', '焊接', 2, 'GZZ0003', 100.0000, 0.0000, 0.0000, 'PENDING', 1, NULL, NULL, '步2:车架焊接(关键工序)', 100, 1, '2026-06-21 20:59:31', NULL, '2026-06-21 20:59:31', '0');
-INSERT INTO `pro_work_order_step` VALUES (3, '000000', 1, 30, 'GENERAL', NULL, 3, 'ASM', '装配', 1, 'GZZ0002', 100.0000, 0.0000, 0.0000, 'PENDING', 1, NULL, NULL, '步3:整车装配(关键工序)', 100, 1, '2026-06-21 20:59:31', NULL, '2026-08-16 17:53:11', '0');
-INSERT INTO `pro_work_order_step` VALUES (4, '000000', 1, 40, 'GENERAL', NULL, 5, 'PKG', '包装', 3, 'GZZ0004', 100.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, '步4:成品包装', 100, 1, '2026-06-21 20:59:31', NULL, '2026-06-21 20:59:31', '0');
-INSERT INTO `pro_work_order_step` VALUES (2068925616075350017, '000000', 2068925615991463937, 10, 'GENERAL', NULL, 1, 'CUT', '切割', 1, 'GZZ0002', 100.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-06-22 13:14:40', -1, '2026-06-22 13:14:40', '0');
-INSERT INTO `pro_work_order_step` VALUES (2068925616113098753, '000000', 2068925615991463937, 20, 'GENERAL', NULL, 2, 'WELD', '焊接', 2, 'GZZ0003', 100.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-06-22 13:14:40', -1, '2026-06-22 13:14:40', '0');
-INSERT INTO `pro_work_order_step` VALUES (2068925616125681666, '000000', 2068925615991463937, 30, 'GENERAL', NULL, 3, 'ASM', '装配', 1, 'GZZ0002', 100.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-06-22 13:14:40', -1, '2026-06-22 13:14:40', '0');
-INSERT INTO `pro_work_order_step` VALUES (2068925616142458881, '000000', 2068925615991463937, 40, 'GENERAL', NULL, 5, 'PKG', '包装', 3, 'GZZ0004', 100.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-06-22 13:14:40', -1, '2026-06-22 13:14:40', '0');
-INSERT INTO `pro_work_order_step` VALUES (2074134800092008451, '000000', 2074134800092008450, 10, 'GENERAL', NULL, 1, 'CUT', '切割', 1, 'GZZ0002', 10.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-06 22:14:07', -1, '2026-07-06 22:14:07', '0');
-INSERT INTO `pro_work_order_step` VALUES (2074134800150728706, '000000', 2074134800092008450, 20, 'GENERAL', NULL, 2, 'WELD', '焊接', 2, 'GZZ0003', 10.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-06 22:14:07', -1, '2026-07-06 22:14:07', '0');
-INSERT INTO `pro_work_order_step` VALUES (2074134800150728707, '000000', 2074134800092008450, 30, 'GENERAL', NULL, 3, 'ASM', '装配', 1, 'GZZ0002', 10.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-06 22:14:07', -1, '2026-07-06 22:14:07', '0');
-INSERT INTO `pro_work_order_step` VALUES (2074134800150728708, '000000', 2074134800092008450, 40, 'GENERAL', NULL, 5, 'PKG', '包装', 3, 'GZZ0004', 10.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-06 22:14:07', -1, '2026-07-06 22:14:07', '0');
-INSERT INTO `pro_work_order_step` VALUES (2074394214299254786, '000000', 2074394214269894658, 10, 'GENERAL', NULL, 1, 'CUT', '切割', 1, 'GZZ0002', 1.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-07 15:24:56', -1, '2026-07-07 15:24:56', '0');
-INSERT INTO `pro_work_order_step` VALUES (2074394214341197826, '000000', 2074394214269894658, 20, 'GENERAL', NULL, 2, 'WELD', '焊接', 2, 'GZZ0003', 1.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-07 15:24:56', -1, '2026-07-07 15:24:56', '0');
-INSERT INTO `pro_work_order_step` VALUES (2074394214353780737, '000000', 2074394214269894658, 30, 'GENERAL', NULL, 3, 'ASM', '装配', 1, 'GZZ0002', 1.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-07 15:24:56', -1, '2026-07-07 15:24:56', '0');
-INSERT INTO `pro_work_order_step` VALUES (2074394214366363650, '000000', 2074394214269894658, 40, 'GENERAL', NULL, 5, 'PKG', '包装', 3, 'GZZ0004', 1.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-07 15:24:56', -1, '2026-07-07 15:24:56', '0');
-INSERT INTO `pro_work_order_step` VALUES (2074766761289224194, '000000', 2074766761268252674, 10, 'GENERAL', NULL, 1, 'CUT', '切割', 1, 'GZZ0002', 1.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-08 16:05:18', -1, '2026-07-08 16:05:18', '0');
-INSERT INTO `pro_work_order_step` VALUES (2074766761360527361, '000000', 2074766761268252674, 20, 'GENERAL', NULL, 2, 'WELD', '焊接', 2, 'GZZ0003', 1.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-08 16:05:18', -1, '2026-07-08 16:05:18', '0');
-INSERT INTO `pro_work_order_step` VALUES (2074766761373110274, '000000', 2074766761268252674, 30, 'GENERAL', NULL, 3, 'ASM', '装配', 1, 'GZZ0002', 1.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-08 16:05:18', -1, '2026-07-08 16:05:18', '0');
-INSERT INTO `pro_work_order_step` VALUES (2074766761389887489, '000000', 2074766761268252674, 40, 'GENERAL', NULL, 5, 'PKG', '包装', 3, 'GZZ0004', 1.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-08 16:05:18', -1, '2026-07-08 16:05:18', '0');
-INSERT INTO `pro_work_order_step` VALUES (2074787137239027713, '000000', 2074787137209667586, 10, 'GENERAL', NULL, 1, 'CUT', '切割', 1, 'GZZ0002', 1.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-08 17:26:16', -1, '2026-07-08 17:26:16', '0');
-INSERT INTO `pro_work_order_step` VALUES (2074787137280970754, '000000', 2074787137209667586, 20, 'GENERAL', NULL, 2, 'WELD', '焊接', 2, 'GZZ0003', 1.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-08 17:26:16', -1, '2026-07-08 17:26:16', '0');
-INSERT INTO `pro_work_order_step` VALUES (2074787137297747969, '000000', 2074787137209667586, 30, 'GENERAL', NULL, 3, 'ASM', '装配', 1, 'GZZ0002', 1.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-08 17:26:16', -1, '2026-07-08 17:26:16', '0');
-INSERT INTO `pro_work_order_step` VALUES (2074787137310330881, '000000', 2074787137209667586, 40, 'GENERAL', NULL, 5, 'PKG', '包装', 3, 'GZZ0004', 1.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-08 17:26:16', -1, '2026-07-08 17:26:16', '0');
-INSERT INTO `pro_work_order_step` VALUES (2075397661861548033, '000000', 2075397661844770817, 10, 'GENERAL', NULL, 1, 'CUT', '切割', 1, 'GZZ0002', 1.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-10 09:52:16', -1, '2026-07-10 09:52:16', '0');
-INSERT INTO `pro_work_order_step` VALUES (2075397661953822721, '000000', 2075397661844770817, 20, 'GENERAL', NULL, 2, 'WELD', '焊接', 2, 'GZZ0003', 1.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-10 09:52:16', -1, '2026-07-10 09:52:16', '0');
-INSERT INTO `pro_work_order_step` VALUES (2075397661970599938, '000000', 2075397661844770817, 30, 'GENERAL', NULL, 3, 'ASM', '装配', 1, 'GZZ0002', 1.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-10 09:52:16', -1, '2026-07-10 09:52:16', '0');
-INSERT INTO `pro_work_order_step` VALUES (2075397661983182849, '000000', 2075397661844770817, 40, 'GENERAL', NULL, 5, 'PKG', '包装', 3, 'GZZ0004', 1.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-10 09:52:16', -1, '2026-07-10 09:52:16', '0');
-INSERT INTO `pro_work_order_step` VALUES (2080270525816516611, '000000', 2080270525816516609, 10, 'GENERAL', NULL, 1, 'CUT', '切割', 2, 'GZZ0003', 20.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-23 20:35:18', -1, '2026-07-23 20:35:18', '0');
-INSERT INTO `pro_work_order_step` VALUES (2080270525816516612, '000000', 2080270525816516609, 20, 'GENERAL', NULL, 2, 'WELD', '焊接', 6, 'GZZ0007', 20.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-23 20:35:18', -1, '2026-07-23 20:35:18', '0');
-INSERT INTO `pro_work_order_step` VALUES (2080270525816516613, '000000', 2080270525816516609, 30, 'GENERAL', NULL, 5, 'PKG', '包装', 9, 'GZZ0010', 20.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-23 20:35:18', -1, '2026-07-23 20:35:18', '0');
-INSERT INTO `pro_work_order_step` VALUES (2082127797928763393, '000000', 2082127796938907650, 10, 'GENERAL', NULL, 1, 'CUT', '切割', 1, 'GZZ0002', 5.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, 103, 1, '2026-07-28 23:35:26', 1, '2026-07-28 23:35:26', '0');
-INSERT INTO `pro_work_order_step` VALUES (2082127797941346305, '000000', 2082127796938907650, 20, 'GENERAL', NULL, 2, 'WELD', '焊接', 2, 'GZZ0003', 5.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, 103, 1, '2026-07-28 23:35:26', 1, '2026-07-28 23:35:26', '0');
-INSERT INTO `pro_work_order_step` VALUES (2082127797953929218, '000000', 2082127796938907650, 30, 'GENERAL', NULL, 3, 'ASM', '装配', 1, 'GZZ0002', 5.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, 103, 1, '2026-07-28 23:35:26', 1, '2026-07-28 23:35:26', '0');
-INSERT INTO `pro_work_order_step` VALUES (2082127797962317825, '000000', 2082127796938907650, 40, 'GENERAL', NULL, 5, 'PKG', '包装', 3, 'GZZ0004', 5.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, 103, 1, '2026-07-28 23:35:26', 1, '2026-07-28 23:35:26', '0');
-INSERT INTO `pro_work_order_step` VALUES (2082128181367840770, '000000', 2082128180742889473, 10, 'GENERAL', NULL, 1, 'CUT', '切割', 1, 'GZZ0002', 5.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, 103, 1, '2026-07-28 23:36:57', 1, '2026-07-28 23:36:57', '0');
-INSERT INTO `pro_work_order_step` VALUES (2082128181376229377, '000000', 2082128180742889473, 20, 'GENERAL', NULL, 2, 'WELD', '焊接', 2, 'GZZ0003', 5.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, 103, 1, '2026-07-28 23:36:57', 1, '2026-07-28 23:36:57', '0');
-INSERT INTO `pro_work_order_step` VALUES (2082128181380423681, '000000', 2082128180742889473, 30, 'GENERAL', NULL, 3, 'ASM', '装配', 1, 'GZZ0002', 5.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, 103, 1, '2026-07-28 23:36:57', 1, '2026-07-28 23:36:57', '0');
-INSERT INTO `pro_work_order_step` VALUES (2082128181397200897, '000000', 2082128180742889473, 40, 'GENERAL', NULL, 5, 'PKG', '包装', 3, 'GZZ0004', 5.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, 103, 1, '2026-07-28 23:36:57', 1, '2026-07-28 23:36:57', '0');
+INSERT INTO `pro_work_order_step` VALUES (1, '000000', 1, 10, 'FLASH', 'FIRMWARE', 2091000000000006101, '[{\"flashTypeCode\":\"firmware_file\",\"contentRefId\":2091000000000006101},{\"flashTypeCode\":\"mac\"}]', 1, 'CUT', '切割', 1, 'GZZ0002', 100.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, '步1:钢板切割', 100, 1, '2026-06-21 20:59:31', NULL, '2026-08-17 22:16:17', '0');
+INSERT INTO `pro_work_order_step` VALUES (2, '000000', 1, 20, 'GENERAL', NULL, NULL, NULL, 2, 'WELD', '焊接', 2, 'GZZ0003', 100.0000, 0.0000, 0.0000, 'PENDING', 1, NULL, NULL, '步2:车架焊接(关键工序)', 100, 1, '2026-06-21 20:59:31', NULL, '2026-06-21 20:59:31', '0');
+INSERT INTO `pro_work_order_step` VALUES (3, '000000', 1, 30, 'GENERAL', NULL, NULL, NULL, 3, 'ASM', '装配', 1, 'GZZ0002', 100.0000, 0.0000, 0.0000, 'PENDING', 1, NULL, NULL, '步3:整车装配(关键工序)', 100, 1, '2026-06-21 20:59:31', NULL, '2026-08-16 17:53:11', '0');
+INSERT INTO `pro_work_order_step` VALUES (4, '000000', 1, 40, 'GENERAL', NULL, NULL, NULL, 5, 'PKG', '包装', 3, 'GZZ0004', 100.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, '步4:成品包装', 100, 1, '2026-06-21 20:59:31', NULL, '2026-06-21 20:59:31', '0');
+INSERT INTO `pro_work_order_step` VALUES (2068925616075350017, '000000', 2068925615991463937, 10, 'GENERAL', NULL, NULL, NULL, 1, 'CUT', '切割', 1, 'GZZ0002', 100.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-06-22 13:14:40', -1, '2026-06-22 13:14:40', '0');
+INSERT INTO `pro_work_order_step` VALUES (2068925616113098753, '000000', 2068925615991463937, 20, 'GENERAL', NULL, NULL, NULL, 2, 'WELD', '焊接', 2, 'GZZ0003', 100.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-06-22 13:14:40', -1, '2026-06-22 13:14:40', '0');
+INSERT INTO `pro_work_order_step` VALUES (2068925616125681666, '000000', 2068925615991463937, 30, 'GENERAL', NULL, NULL, NULL, 3, 'ASM', '装配', 1, 'GZZ0002', 100.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-06-22 13:14:40', -1, '2026-06-22 13:14:40', '0');
+INSERT INTO `pro_work_order_step` VALUES (2068925616142458881, '000000', 2068925615991463937, 40, 'GENERAL', NULL, NULL, NULL, 5, 'PKG', '包装', 3, 'GZZ0004', 100.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-06-22 13:14:40', -1, '2026-06-22 13:14:40', '0');
+INSERT INTO `pro_work_order_step` VALUES (2074134800092008451, '000000', 2074134800092008450, 10, 'GENERAL', NULL, NULL, NULL, 1, 'CUT', '切割', 1, 'GZZ0002', 10.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-06 22:14:07', -1, '2026-07-06 22:14:07', '0');
+INSERT INTO `pro_work_order_step` VALUES (2074134800150728706, '000000', 2074134800092008450, 20, 'GENERAL', NULL, NULL, NULL, 2, 'WELD', '焊接', 2, 'GZZ0003', 10.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-06 22:14:07', -1, '2026-07-06 22:14:07', '0');
+INSERT INTO `pro_work_order_step` VALUES (2074134800150728707, '000000', 2074134800092008450, 30, 'GENERAL', NULL, NULL, NULL, 3, 'ASM', '装配', 1, 'GZZ0002', 10.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-06 22:14:07', -1, '2026-07-06 22:14:07', '0');
+INSERT INTO `pro_work_order_step` VALUES (2074134800150728708, '000000', 2074134800092008450, 40, 'GENERAL', NULL, NULL, NULL, 5, 'PKG', '包装', 3, 'GZZ0004', 10.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-06 22:14:07', -1, '2026-07-06 22:14:07', '0');
+INSERT INTO `pro_work_order_step` VALUES (2074394214299254786, '000000', 2074394214269894658, 10, 'GENERAL', NULL, NULL, NULL, 1, 'CUT', '切割', 1, 'GZZ0002', 1.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-07 15:24:56', -1, '2026-07-07 15:24:56', '0');
+INSERT INTO `pro_work_order_step` VALUES (2074394214341197826, '000000', 2074394214269894658, 20, 'GENERAL', NULL, NULL, NULL, 2, 'WELD', '焊接', 2, 'GZZ0003', 1.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-07 15:24:56', -1, '2026-07-07 15:24:56', '0');
+INSERT INTO `pro_work_order_step` VALUES (2074394214353780737, '000000', 2074394214269894658, 30, 'GENERAL', NULL, NULL, NULL, 3, 'ASM', '装配', 1, 'GZZ0002', 1.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-07 15:24:56', -1, '2026-07-07 15:24:56', '0');
+INSERT INTO `pro_work_order_step` VALUES (2074394214366363650, '000000', 2074394214269894658, 40, 'GENERAL', NULL, NULL, NULL, 5, 'PKG', '包装', 3, 'GZZ0004', 1.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-07 15:24:56', -1, '2026-07-07 15:24:56', '0');
+INSERT INTO `pro_work_order_step` VALUES (2074766761289224194, '000000', 2074766761268252674, 10, 'GENERAL', NULL, NULL, NULL, 1, 'CUT', '切割', 1, 'GZZ0002', 1.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-08 16:05:18', -1, '2026-07-08 16:05:18', '0');
+INSERT INTO `pro_work_order_step` VALUES (2074766761360527361, '000000', 2074766761268252674, 20, 'GENERAL', NULL, NULL, NULL, 2, 'WELD', '焊接', 2, 'GZZ0003', 1.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-08 16:05:18', -1, '2026-07-08 16:05:18', '0');
+INSERT INTO `pro_work_order_step` VALUES (2074766761373110274, '000000', 2074766761268252674, 30, 'GENERAL', NULL, NULL, NULL, 3, 'ASM', '装配', 1, 'GZZ0002', 1.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-08 16:05:18', -1, '2026-07-08 16:05:18', '0');
+INSERT INTO `pro_work_order_step` VALUES (2074766761389887489, '000000', 2074766761268252674, 40, 'GENERAL', NULL, NULL, NULL, 5, 'PKG', '包装', 3, 'GZZ0004', 1.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-08 16:05:18', -1, '2026-07-08 16:05:18', '0');
+INSERT INTO `pro_work_order_step` VALUES (2074787137239027713, '000000', 2074787137209667586, 10, 'GENERAL', NULL, NULL, NULL, 1, 'CUT', '切割', 1, 'GZZ0002', 1.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-08 17:26:16', -1, '2026-07-08 17:26:16', '0');
+INSERT INTO `pro_work_order_step` VALUES (2074787137280970754, '000000', 2074787137209667586, 20, 'GENERAL', NULL, NULL, NULL, 2, 'WELD', '焊接', 2, 'GZZ0003', 1.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-08 17:26:16', -1, '2026-07-08 17:26:16', '0');
+INSERT INTO `pro_work_order_step` VALUES (2074787137297747969, '000000', 2074787137209667586, 30, 'GENERAL', NULL, NULL, NULL, 3, 'ASM', '装配', 1, 'GZZ0002', 1.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-08 17:26:16', -1, '2026-07-08 17:26:16', '0');
+INSERT INTO `pro_work_order_step` VALUES (2074787137310330881, '000000', 2074787137209667586, 40, 'GENERAL', NULL, NULL, NULL, 5, 'PKG', '包装', 3, 'GZZ0004', 1.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-08 17:26:16', -1, '2026-07-08 17:26:16', '0');
+INSERT INTO `pro_work_order_step` VALUES (2075397661861548033, '000000', 2075397661844770817, 10, 'GENERAL', NULL, NULL, NULL, 1, 'CUT', '切割', 1, 'GZZ0002', 1.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-10 09:52:16', -1, '2026-07-10 09:52:16', '0');
+INSERT INTO `pro_work_order_step` VALUES (2075397661953822721, '000000', 2075397661844770817, 20, 'GENERAL', NULL, NULL, NULL, 2, 'WELD', '焊接', 2, 'GZZ0003', 1.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-10 09:52:16', -1, '2026-07-10 09:52:16', '0');
+INSERT INTO `pro_work_order_step` VALUES (2075397661970599938, '000000', 2075397661844770817, 30, 'GENERAL', NULL, NULL, NULL, 3, 'ASM', '装配', 1, 'GZZ0002', 1.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-10 09:52:16', -1, '2026-07-10 09:52:16', '0');
+INSERT INTO `pro_work_order_step` VALUES (2075397661983182849, '000000', 2075397661844770817, 40, 'GENERAL', NULL, NULL, NULL, 5, 'PKG', '包装', 3, 'GZZ0004', 1.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-10 09:52:16', -1, '2026-07-10 09:52:16', '0');
+INSERT INTO `pro_work_order_step` VALUES (2080270525816516611, '000000', 2080270525816516609, 10, 'GENERAL', NULL, NULL, NULL, 1, 'CUT', '切割', 2, 'GZZ0003', 20.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-23 20:35:18', -1, '2026-07-23 20:35:18', '0');
+INSERT INTO `pro_work_order_step` VALUES (2080270525816516612, '000000', 2080270525816516609, 20, 'GENERAL', NULL, NULL, NULL, 2, 'WELD', '焊接', 6, 'GZZ0007', 20.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-23 20:35:18', -1, '2026-07-23 20:35:18', '0');
+INSERT INTO `pro_work_order_step` VALUES (2080270525816516613, '000000', 2080270525816516609, 30, 'GENERAL', NULL, NULL, NULL, 5, 'PKG', '包装', 9, 'GZZ0010', 20.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-07-23 20:35:18', -1, '2026-07-23 20:35:18', '0');
+INSERT INTO `pro_work_order_step` VALUES (2082127797928763393, '000000', 2082127796938907650, 10, 'GENERAL', NULL, NULL, NULL, 1, 'CUT', '切割', 1, 'GZZ0002', 5.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, 103, 1, '2026-07-28 23:35:26', 1, '2026-07-28 23:35:26', '0');
+INSERT INTO `pro_work_order_step` VALUES (2082127797941346305, '000000', 2082127796938907650, 20, 'GENERAL', NULL, NULL, NULL, 2, 'WELD', '焊接', 2, 'GZZ0003', 5.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, 103, 1, '2026-07-28 23:35:26', 1, '2026-07-28 23:35:26', '0');
+INSERT INTO `pro_work_order_step` VALUES (2082127797953929218, '000000', 2082127796938907650, 30, 'GENERAL', NULL, NULL, NULL, 3, 'ASM', '装配', 1, 'GZZ0002', 5.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, 103, 1, '2026-07-28 23:35:26', 1, '2026-07-28 23:35:26', '0');
+INSERT INTO `pro_work_order_step` VALUES (2082127797962317825, '000000', 2082127796938907650, 40, 'GENERAL', NULL, NULL, NULL, 5, 'PKG', '包装', 3, 'GZZ0004', 5.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, 103, 1, '2026-07-28 23:35:26', 1, '2026-07-28 23:35:26', '0');
+INSERT INTO `pro_work_order_step` VALUES (2082128181367840770, '000000', 2082128180742889473, 10, 'GENERAL', NULL, NULL, NULL, 1, 'CUT', '切割', 1, 'GZZ0002', 5.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, 103, 1, '2026-07-28 23:36:57', 1, '2026-07-28 23:36:57', '0');
+INSERT INTO `pro_work_order_step` VALUES (2082128181376229377, '000000', 2082128180742889473, 20, 'GENERAL', NULL, NULL, NULL, 2, 'WELD', '焊接', 2, 'GZZ0003', 5.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, 103, 1, '2026-07-28 23:36:57', 1, '2026-07-28 23:36:57', '0');
+INSERT INTO `pro_work_order_step` VALUES (2082128181380423681, '000000', 2082128180742889473, 30, 'GENERAL', NULL, NULL, NULL, 3, 'ASM', '装配', 1, 'GZZ0002', 5.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, 103, 1, '2026-07-28 23:36:57', 1, '2026-07-28 23:36:57', '0');
+INSERT INTO `pro_work_order_step` VALUES (2082128181397200897, '000000', 2082128180742889473, 40, 'GENERAL', NULL, NULL, NULL, 5, 'PKG', '包装', 3, 'GZZ0004', 5.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, 103, 1, '2026-07-28 23:36:57', 1, '2026-07-28 23:36:57', '0');
+INSERT INTO `pro_work_order_step` VALUES (2089704730375766019, '000000', 2089704730308657153, 1, 'FLASH', 'FIRMWARE', 2089376872356917250, NULL, 90002001, 'FLASH', '固件刷写', 3, '', 10.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-08-18 21:23:27', -1, '2026-08-18 21:23:27', '0');
+INSERT INTO `pro_work_order_step` VALUES (2089710626887811074, '000000', 2089710626887811073, 1, 'FLASH', 'FIRMWARE', 2089376872356917250, NULL, 90002001, 'FLASH', '固件刷写', 3, '', 10.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-08-18 21:46:53', -1, '2026-08-18 21:46:53', '0');
+INSERT INTO `pro_work_order_step` VALUES (2089713975506821123, '000000', 2089713975506821122, 1, 'FLASH', 'FIRMWARE', 2089376872356917250, NULL, 90002001, 'FLASH', '固件刷写', 3, '', 10.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, -1, -1, '2026-08-18 22:00:11', -1, '2026-08-18 22:00:11', '0');
+INSERT INTO `pro_work_order_step` VALUES (2089743106671951873, '000000', 2089743106437070849, 1, 'FLASH', 'FIRMWARE', 2089376872356917250, NULL, 90002001, 'FLASH', '固件刷写', 3, '', 10.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, 103, 1, '2026-08-18 23:55:57', 1, '2026-08-18 23:55:57', '0');
+INSERT INTO `pro_work_order_step` VALUES (2089743634231508993, '000000', 2089743634013405186, 1, 'FLASH', 'FIRMWARE', 2089376872356917250, NULL, 90002001, 'FLASH', '固件刷写', 3, '', 10.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, 103, 1, '2026-08-18 23:58:03', 1, '2026-08-18 23:58:03', '0');
+INSERT INTO `pro_work_order_step` VALUES (2089745255401308162, '000000', 2089745255220953090, 1, 'FLASH', 'FIRMWARE', 2089376872356917250, NULL, 90002001, 'FLASH', '固件刷写', 3, '', 10.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, 103, 1, '2026-08-19 00:04:29', 1, '2026-08-19 00:04:29', '0');
+INSERT INTO `pro_work_order_step` VALUES (2089745699808788482, '000000', 2089745699615850497, 1, 'FLASH', 'FIRMWARE', 2089376872356917250, NULL, 90002001, 'FLASH', '固件刷写', 3, '', 10.0000, 0.0000, 0.0000, 'PENDING', 0, NULL, NULL, NULL, 103, 1, '2026-08-19 00:06:15', 1, '2026-08-19 00:06:15', '0');
 
 -- ----------------------------
 -- Table structure for qc_ipqc

@@ -171,9 +171,13 @@ const activeTab = ref('info');
 const existingFlowCards = ref<ProFlowCardVO[]>([]);
 const usedQty = ref<number>(0);
 const remainingQty = ref<number | undefined>(undefined);
-/** 是否可创建流转卡: 工单已下达/生产中 且 拥有创建权限 */
+/** 是否可创建流转卡: 工单已下达/生产中/部分完成 且 拥有创建权限 */
 const canCreateFlowCard = computed(
-  () => (workOrder.value.woStatus === 'RELEASED' || workOrder.value.woStatus === 'IN_PROGRESS') && checkPermi(['mes:pro:flowcard:add'])
+  () =>
+    (workOrder.value.woStatus === 'RELEASED' ||
+      workOrder.value.woStatus === 'IN_PROGRESS' ||
+      workOrder.value.woStatus === 'PARTIAL_COMPLETED') &&
+    checkPermi(['mes:pro:flowcard:add'])
 );
 
 const loadDetail = async (mesWoIdParam?: string) => {
@@ -189,8 +193,12 @@ const loadDetail = async (mesWoIdParam?: string) => {
   if (workOrder.value.woStatus && workOrder.value.woStatus !== 'CREATED') {
     loadProcInsId(mesWoId);
   }
-  // 已下达/生产中可创建流转卡,预加载已建流转卡用于数量校验
-  if (workOrder.value.woStatus === 'RELEASED' || workOrder.value.woStatus === 'IN_PROGRESS') {
+  // 已下达/生产中/部分完成可创建流转卡,预加载已建流转卡用于数量校验
+  if (
+    workOrder.value.woStatus === 'RELEASED' ||
+    workOrder.value.woStatus === 'IN_PROGRESS' ||
+    workOrder.value.woStatus === 'PARTIAL_COMPLETED'
+  ) {
     loadFlowCardSummary(mesWoId);
   }
 };
