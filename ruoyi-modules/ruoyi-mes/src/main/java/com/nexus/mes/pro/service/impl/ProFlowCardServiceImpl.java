@@ -46,6 +46,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 /**
  * MES流转卡 Service 业务层实现
@@ -78,6 +79,8 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
     private final ProSnMapper proSnMapper;
     /** 刷写记录：(刷写门禁) 校验固件刷写 PASS 记录 */
     private final FlashRecordMapper flashRecordMapper;
+    /** ERP 桥接(查物料 SN 管理标志, 判断无SN刷写工序是否须拦截) */
+    private final com.nexus.mes.common.bridge.IMesErpBridgeService mesErpBridgeService;
     /** JSON 解析(step_flash_config 多类型绑定) */
     private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
     /** 刷写门禁模式: FORCE=FAIL拦截 / WARN=告警放行 / 其他=关闭 */
@@ -351,11 +354,21 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
         if (bindings.isEmpty()) {
             return;
         }
-        // E: SN 作用域收窄到该工序 — 通过该工序已生成的 SN 刷写记录数量校验, 取代"整卡 SN"
-        // 当前 SN 推进体系(current_step_seq 无维护逻辑) 不可靠, 故仍取整卡在制 SN, 但明确"该工序"绑定清单(见 parseFlashBindings)
+        // E: SN 作用域 — 刷写记录是 SN 级的, 故须校验卡上各 SN 的刷写记录; 无 SN 时:
+        //    SN 管理物料(有刷写绑定)无 SN = 无刷写记录 = 未刷写, 须拦截(FORCE)/告警(WARN), 防派工绕过门禁
         List<ProSn> sns = proSnMapper.selectList(Wrappers.<ProSn>lambdaQuery()
             .eq(ProSn::getCardId, cardId));
         if (sns == null || sns.isEmpty()) {
+            if (isSerialManagedMaterial(woStep.getMesWoId())) {
+                String msg = "刷写门禁未通过: 工序[" + step.getProcessName() + "]为刷写工序但该卡无SN"
+                    + "(SN管理物料须先建流转卡生成SN并完成刷写)";
+                if ("WARN".equals(flashGateMode)) {
+                    log.warn(msg + " (WARN模式放行)");
+                    return;
+                }
+                throw new ServiceException(msg);
+            }
+            // 非 SN 管理物料(批量卡): 无 SN 视为通过
             return;
         }
         // 多类型门禁: 每个(绑定项 × SN) 均须该工序序号对应的最新一条 PASS
@@ -411,6 +424,28 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
 
     /** 刷写绑定项(flashTypeCode + contentRefId) */
     private record FlashBinding(String flashTypeCode, Long contentRefId) {}
+
+    /**
+     * 判断物料是否 SN 管理(is_serial_manage=1): 经 MesErpBridgeService 查 ERP 物料
+     * 刷写记录是 SN 级的, SN 管理物料的刷写工序无 SN 即视为未刷写(门禁拦截依据)
+     */
+    private boolean isSerialManagedMaterial(Long mesWoId) {
+        try {
+            ProWorkOrder wo = workOrderMapper.selectById(mesWoId);
+            if (wo == null || wo.getMaterialId() == null) {
+                return false;
+            }
+            Map<String, Object> mat = mesErpBridgeService.getMaterial(wo.getMaterialId());
+            if (mat == null) {
+                return false;
+            }
+            Object serial = mat.get("is_serial_manage");
+            return serial != null && "1".equals(String.valueOf(serial));
+        } catch (Exception e) {
+            log.warn("查询物料SN管理标志失败, 默认按非SN管理放行: mesWoId={}, err={}", mesWoId, e.getMessage());
+            return false;
+        }
+    }
 
     /**
      * 完成流转卡
