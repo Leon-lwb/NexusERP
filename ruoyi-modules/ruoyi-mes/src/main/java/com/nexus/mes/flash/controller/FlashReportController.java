@@ -98,9 +98,15 @@ public class FlashReportController extends BaseController {
     // ==================== 私有辅助方法 ====================
 
     /**
-     * API 密钥校验: 请求头 X-API-KEY 须与配置 mes.api-key 一致
+     * API 密钥校验: 请求头 X-API-KEY 须与配置 mes.api-key 一致。
+     * <p>安全: 配置为空/未配置时直接拒绝（fail-closed）——该接口在免登录白名单内，
+     * 密钥是唯一防线；空密钥若放行等于无防护（可伪造任意 SN 的 PASS 刷写记录绕过门禁）。</p>
      */
     private void checkApiKey(String headerKey, HttpServletRequest request) {
+        if (StringUtils.isBlank(apiKey)) {
+            log.error("mes.api-key 未配置（生产环境请通过环境变量 MES_API_KEY 注入），拒绝所有上报请求");
+            throw new ServiceException("上报服务未配置访问密钥，请联系管理员");
+        }
         if (StringUtils.isBlank(headerKey) || !apiKey.equals(headerKey.trim())) {
             log.warn("上报接口密钥校验失败: ip={}, uri={}, key={}", request.getRemoteAddr(), request.getRequestURI(), headerKey);
             throw new ServiceException("无效的API密钥");
