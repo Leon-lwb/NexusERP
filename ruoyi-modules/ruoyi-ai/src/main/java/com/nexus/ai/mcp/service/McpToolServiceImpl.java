@@ -64,9 +64,17 @@ public class McpToolServiceImpl {
 
     /**
      * 更新工具
+     * <p>安全：查询接口出参已对 configJson 敏感值脱敏为 ****，编辑回显原样提交会把
+     * 掩码写回库破坏连接——含掩码值时保留库内原 configJson（参照 AiProvider 的 apiKey 保护模式）。</p>
      */
     @Transactional(rollbackFor = Exception.class)
     public int updateTool(AiTool tool) {
+        if (tool.getConfigJson() != null && tool.getConfigJson().contains("\":\"****\"")) {
+            AiTool existing = aiToolMapper.selectById(tool.getId());
+            if (existing != null) {
+                tool.setConfigJson(existing.getConfigJson());
+            }
+        }
         int result = aiToolMapper.updateById(tool);
         // 如果是 MCP 外部工具且配置变更，刷新连接
         if (!BuiltinToolRegistry.TYPE_BUILTIN.equals(tool.getToolType())) {
@@ -165,9 +173,11 @@ public class McpToolServiceImpl {
                     newTool.setDisplayName(provider.getDisplayName());
                     newTool.setDescription(provider.getDescription());
                     newTool.setToolType(BuiltinToolRegistry.TYPE_BUILTIN);
-                    newTool.setStatus("ENABLED");
+                    // 安全：新内置工具默认 DISABLED，由管理员在工具管理页显式启用后再对聊天用户开放
+                    // （原默认 ENABLED：首次部署即把全库 SELECT/财务数据工具暴露给所有登录用户）
+                    newTool.setStatus("DISABLED");
                     aiToolMapper.insert(newTool);
-                    log.info("[MCP] 新增内置工具: {} ({})", provider.getToolName(), provider.getDisplayName());
+                    log.info("[MCP] 新增内置工具（默认禁用，需手动启用）: {} ({})", provider.getToolName(), provider.getDisplayName());
                     addedCount++;
                 }
             } catch (Exception e) {

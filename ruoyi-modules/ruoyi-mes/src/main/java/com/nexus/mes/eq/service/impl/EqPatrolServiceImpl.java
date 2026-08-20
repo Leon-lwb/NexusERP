@@ -274,13 +274,43 @@ public class EqPatrolServiceImpl implements IEqPatrolService {
      */
     @Override
     public TableDataInfo<EqPatrolRecordVo> selectRecordPage(EqPatrolRecordBo bo, PageQuery pageQuery) {
-        LambdaQueryWrapper<EqPatrolRecord> lqw = Wrappers.<EqPatrolRecord>lambdaQuery()
+        LambdaQueryWrapper<EqPatrolRecord> lqw = buildRecordQueryWrapper(bo);
+        Page<EqPatrolRecordVo> page = recordMapper.selectVoPage(pageQuery.build(), lqw);
+        return TableDataInfo.build(page);
+    }
+
+    /**
+     * 导出用全量记录查询（按 500/页分批拉取聚合，避免 PageQuery 上限截断导出数据）
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @return 全量记录列表
+     */
+    @Override
+    public List<EqPatrolRecordVo> selectRecordExportList(EqPatrolRecordBo bo) {
+        LambdaQueryWrapper<EqPatrolRecord> lqw = buildRecordQueryWrapper(bo);
+        List<EqPatrolRecordVo> all = new ArrayList<>();
+        int pageNum = 1;
+        int pageSize = PageQuery.MAX_PAGE_SIZE;
+        while (true) {
+            Page<EqPatrolRecordVo> page = recordMapper.selectVoPage(new Page<>(pageNum, pageSize), lqw);
+            all.addAll(page.getRecords());
+            if (all.size() >= page.getTotal() || page.getRecords().isEmpty()) {
+                break;
+            }
+            pageNum++;
+        }
+        return all;
+    }
+
+    /**
+     * 构建巡检记录查询条件（分页与导出共用）
+     */
+    private LambdaQueryWrapper<EqPatrolRecord> buildRecordQueryWrapper(EqPatrolRecordBo bo) {
+        return Wrappers.<EqPatrolRecord>lambdaQuery()
             .eq(bo.getTaskId() != null, EqPatrolRecord::getTaskId, bo.getTaskId())
             .eq(bo.getEquipmentId() != null, EqPatrolRecord::getEquipmentId, bo.getEquipmentId())
             .eq(StringUtils.isNotBlank(bo.getResult()), EqPatrolRecord::getResult, bo.getResult())
             .orderByDesc(EqPatrolRecord::getExecuteTime);
-        Page<EqPatrolRecordVo> page = recordMapper.selectVoPage(pageQuery.build(), lqw);
-        return TableDataInfo.build(page);
     }
 
     /**

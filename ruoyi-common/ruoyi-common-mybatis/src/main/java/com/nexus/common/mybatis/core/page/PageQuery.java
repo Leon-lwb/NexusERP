@@ -63,6 +63,14 @@ public class PageQuery implements Serializable {
     public static final int DEFAULT_PAGE_SIZE = Integer.MAX_VALUE;
 
     /**
+     * 分页大小硬上限。
+     * <p>安全：未传 pageSize 时默认值为 Integer.MAX_VALUE（全表拉取），大表一次请求即可拖走
+     * 整个租户的聊天记录/知识库正文并打爆内存。此处对 pageSize 钳制上限，
+     * 需要全量语义的调用方（如导出）应自行显式分批而非依赖无上限分页。</p>
+     */
+    public static final int MAX_PAGE_SIZE = 500;
+
+    /**
      * 构建分页对象
      */
     public <T> Page<T> build() {
@@ -70,6 +78,9 @@ public class PageQuery implements Serializable {
         Integer pageSize = ObjectUtil.defaultIfNull(getPageSize(), DEFAULT_PAGE_SIZE);
         if (pageNum <= 0) {
             pageNum = DEFAULT_PAGE_NUM;
+        }
+        if (pageSize > MAX_PAGE_SIZE) {
+            pageSize = MAX_PAGE_SIZE;
         }
         Page<T> page = new Page<>(pageNum, pageSize);
         List<OrderItem> orderItems = buildOrderItem();

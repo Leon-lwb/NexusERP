@@ -119,6 +119,14 @@ public interface IEqPatrolService {
      * @return 分页结果
      */
     TableDataInfo<EqPatrolRecordVo> selectRecordPage(EqPatrolRecordBo bo, PageQuery pageQuery);
+
+    /**
+     * 导出用全量记录查询（按 500/页分批拉取聚合，避免 PageQuery 上限截断导出数据）
+     *
+     * @param bo 业务对象（含筛选条件/字段值）
+     * @return 全量记录列表
+     */
+    List<EqPatrolRecordVo> selectRecordExportList(EqPatrolRecordBo bo);
     /**
      * 获取记录详情
      *

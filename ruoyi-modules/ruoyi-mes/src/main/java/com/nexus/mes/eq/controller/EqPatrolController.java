@@ -278,7 +278,8 @@ public class EqPatrolController extends BaseController {
     @PostMapping("/record/export")
     @Log(title = "巡检记录", businessType = BusinessType.EXPORT)
     public void recordExport(EqPatrolRecordBo bo, HttpServletResponse response) {
-        List<EqPatrolRecordVo> list = patrolService.selectRecordPage(bo, new PageQuery(1, 10000)).getRows();
+        // 分批拉取全量（PageQuery 全局上限 500 会截断单次大分页，导出走专用聚合方法）
+        List<EqPatrolRecordVo> list = patrolService.selectRecordExportList(bo);
         ExcelUtil.exportExcel(list, "巡检记录", EqPatrolRecordVo.class, response);
     }
 }

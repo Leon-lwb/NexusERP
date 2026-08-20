@@ -59,11 +59,13 @@ public class WebSearchTool {
         }
         try {
             // Jsoup 连接 + 读取均带超时，避免长连接阻塞
+            // 禁止跟随重定向：sanitizeUrl 只校验初始 URL，302 跳转到内网地址不会被复查（重定向型 SSRF）
             String body = Jsoup.connect(safeUrl)
                 .userAgent("Mozilla/5.0")
                 .timeout(15000)
                 .maxBodySize(300_000)
                 .ignoreContentType(true)
+                .followRedirects(false)
                 .get()
                 .body().text();
             // 截断过长内容
