@@ -82,7 +82,7 @@ public class AiProviderController extends BaseController {
      * @return 操作结果
      */
     @SaCheckPermission("ai:provider:add")
-    @Log(title = "AI厂商管理", businessType = BusinessType.INSERT)
+    @Log(title = "AI厂商管理", businessType = BusinessType.INSERT, excludeParamNames = {"apiKey"})
     @PostMapping
     public R<Void> add(@Validated @RequestBody AiProviderBo bo) {
         return toAjax(aiProviderService.insertByBo(bo));
@@ -96,7 +96,7 @@ public class AiProviderController extends BaseController {
      * @return 操作结果
      */
     @SaCheckPermission("ai:provider:edit")
-    @Log(title = "AI厂商管理", businessType = BusinessType.UPDATE)
+    @Log(title = "AI厂商管理", businessType = BusinessType.UPDATE, excludeParamNames = {"apiKey"})
     @PutMapping
     public R<Void> edit(@Validated @RequestBody AiProviderBo bo) {
         return toAjax(aiProviderService.updateByBo(bo));

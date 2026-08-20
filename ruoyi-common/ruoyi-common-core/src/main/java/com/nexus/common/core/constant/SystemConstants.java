@@ -83,9 +83,10 @@ public interface SystemConstants {
     Long DEFAULT_DEPT_ID = 100L;
 
     /**
-     * 排除敏感属性字段
+     * 排除敏感属性字段（操作日志/参数序列化全局脱敏：密码类 + 密钥类）
      */
-    String[] EXCLUDE_PROPERTIES = { "password", "oldPassword", "newPassword", "confirmPassword" };
+    String[] EXCLUDE_PROPERTIES = { "password", "oldPassword", "newPassword", "confirmPassword",
+        "apiKey", "apiSecret", "secretKey", "secret", "token", "accessToken", "clientSecret", "privateKey" };
 
 
 }

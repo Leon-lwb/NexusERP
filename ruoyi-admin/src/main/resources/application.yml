@@ -48,9 +48,10 @@ user:
     lockTime: 10
 
 # Jasypt加密配置
+# 生产必须通过环境变量 JASYPT_PASSWORD 覆盖默认口令——默认口令随仓库公开时，库内 ENC() 密文等同明文
 jasypt:
   encryptor:
-    password: ${JASYPT_PASSWORD:nexus-erp-dev}
+    password: ${JASYPT_PASSWORD:nJVt3Aj3ikA0aA27JLsG17wXl0phKpOoz88GJUNPwDw}
     algorithm: PBEWITHHMACSHA512ANDAES_256
 
 # Spring配置
@@ -115,8 +116,9 @@ sa-token:
   is-concurrent: true
   # 在多人登录同一账号时，是否共用一个token (为true时所有登录共用一个token, 为false时每次登录新建一个token)
   is-share: false
-  # jwt秘钥
-  jwt-secret-key: abcdefghijklmnopqrstuvwxyz
+  # jwt秘钥（生产必须通过环境变量 SA_TOKEN_JWT_SECRET_KEY 覆盖；此默认值仅限本地开发，
+  # 不得使用顺序字符串等弱秘钥——弱秘钥可被伪造任意用户 token）
+  jwt-secret-key: ${SA_TOKEN_JWT_SECRET_KEY:68HYmn7pmB0KciEO5408aT4J3MhvFXsnrekdodED-ns92EGA9YuXBAukgwOUkCjS}
 
 # security配置
 security:
