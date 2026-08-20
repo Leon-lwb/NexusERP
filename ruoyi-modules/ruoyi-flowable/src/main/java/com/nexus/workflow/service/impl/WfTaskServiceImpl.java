@@ -120,6 +120,36 @@ public class WfTaskServiceImpl extends FlowServiceFactory implements IWfTaskServ
     private final FlowTaskMapper flowTaskMapper;
 
     /**
+     * 校验当前登录用户是否有权办理该任务（assignee 本人、候选人、候选组 或 流程发起人的待办）。
+     * <p>防止"先抢占再完成"式越权：任何持审批权限的用户代替他人审批任意在途任务。</p>
+     *
+     * @param task 待办理任务
+     */
+    private void checkTaskHandlePermission(Task task) {
+        if (task == null) {
+            return;
+        }
+        String username = TaskUtils.getUserName();
+        if (username != null && username.equals(task.getAssignee())) {
+            return;
+        }
+        // 候选人/候选组身份链接（与 selectPageTodoProcessList 的 taskCandidateOrAssigned + candidateGroupIn 口径一致）
+        List<org.flowable.identitylink.api.IdentityLink> links = taskService.getIdentityLinksForTask(task.getId());
+        for (org.flowable.identitylink.api.IdentityLink link : links) {
+            if (IdentityLinkType.CANDIDATE.equals(link.getType())) {
+                if (username != null && username.equals(link.getUserId())) {
+                    return;
+                }
+                String groupId = link.getGroupId();
+                if (groupId != null && TaskUtils.getCandidateGroup().contains(groupId)) {
+                    return;
+                }
+            }
+        }
+        throw new ServiceException("当前用户不是该任务的办理人，无权操作此任务");
+    }
+
+    /**
      * 完成任务
      *
      * @param taskBo 请求实体参数
@@ -134,6 +164,7 @@ public class WfTaskServiceImpl extends FlowServiceFactory implements IWfTaskServ
         if (Objects.isNull(task)) {
             throw new ServiceException("任务不存在");
         }
+        checkTaskHandlePermission(task);
 
          // 处理节点表单数据保存
          if (ObjectUtil.isNotEmpty(taskBo.getVariables())) {
@@ -371,6 +402,7 @@ public class WfTaskServiceImpl extends FlowServiceFactory implements IWfTaskServ
         if (ObjectUtil.isNull(task)) {
             throw new RuntimeException("获取任务信息异常！");
         }
+        checkTaskHandlePermission(task);
         if (task.isSuspended()) {
             throw new RuntimeException("任务处于挂起状态");
         }
@@ -636,6 +668,7 @@ public class WfTaskServiceImpl extends FlowServiceFactory implements IWfTaskServ
         if (ObjectUtil.isNull(task)) {
             throw new RuntimeException("获取任务信息异常！");
         }
+        checkTaskHandlePermission(task);
         if (task.isSuspended()) {
             throw new RuntimeException("任务处于挂起状态");
         }
@@ -685,6 +718,7 @@ public class WfTaskServiceImpl extends FlowServiceFactory implements IWfTaskServ
         if (ObjectUtil.isNull(task)) {
             throw new RuntimeException("获取任务信息异常！");
         }
+        checkTaskHandlePermission(task);
         if (task.isSuspended()) {
             throw new RuntimeException("任务处于挂起状态");
         }
@@ -796,6 +830,10 @@ public class WfTaskServiceImpl extends FlowServiceFactory implements IWfTaskServ
 	public void taskJump(WfTaskBo bo) {
 		//校验任务是否存在
 		Task task = taskService.createTaskQuery().taskId(bo.getTaskId()).singleResult();
+		if (ObjectUtil.isNull(task)) {
+			throw new RuntimeException("获取任务信息异常！");
+		}
+		checkTaskHandlePermission(task);
         //当前节点id
         String currentActId = task.getTaskDefinitionKey();
         //获取流程实例id
