@@ -78,11 +78,27 @@ public class UserActionListener implements SaTokenListener {
     }
 
     /**
+     * 解析 token 中的租户 ID（踢下线/注销场景）。
+     * <p>容错：秘钥轮换后旧 JWT 验签必然失败（SaJwtException），此时按 null 租户降级处理
+     * ——仅清默认租户的在线缓存，绝不能让登录流程被 500 打断（登录内部 logoutByMaxLoginCount
+     * 会走到这里踢旧会话）。</p>
+     */
+    private String resolveTenantId(String tokenValue) {
+        try {
+            return Convert.toStr(StpUtil.getExtra(tokenValue, LoginHelper.TENANT_KEY));
+        } catch (cn.dev33.satoken.jwt.exception.SaJwtException e) {
+            log.warn("解析旧 token 租户信息失败（可能是秘钥轮换前的 token），降级处理: token:***{}",
+                StringUtils.right(tokenValue, 8));
+            return null;
+        }
+    }
+
+    /**
      * 每次注销时触发
      */
     @Override
     public void doLogout(String loginType, Object loginId, String tokenValue) {
-        String tenantId = Convert.toStr(StpUtil.getExtra(tokenValue, LoginHelper.TENANT_KEY));
+        String tenantId = resolveTenantId(tokenValue);
         TenantHelper.dynamic(tenantId, () -> {
             RedisUtils.deleteObject(CacheConstants.ONLINE_TOKEN_KEY + tokenValue);
         });
@@ -94,7 +110,7 @@ public class UserActionListener implements SaTokenListener {
      */
     @Override
     public void doKickout(String loginType, Object loginId, String tokenValue) {
-        String tenantId = Convert.toStr(StpUtil.getExtra(tokenValue, LoginHelper.TENANT_KEY));
+        String tenantId = resolveTenantId(tokenValue);
         TenantHelper.dynamic(tenantId, () -> {
             RedisUtils.deleteObject(CacheConstants.ONLINE_TOKEN_KEY + tokenValue);
         });
@@ -106,7 +122,7 @@ public class UserActionListener implements SaTokenListener {
      */
     @Override
     public void doReplaced(String loginType, Object loginId, String tokenValue) {
-        String tenantId = Convert.toStr(StpUtil.getExtra(tokenValue, LoginHelper.TENANT_KEY));
+        String tenantId = resolveTenantId(tokenValue);
         TenantHelper.dynamic(tenantId, () -> {
             RedisUtils.deleteObject(CacheConstants.ONLINE_TOKEN_KEY + tokenValue);
         });

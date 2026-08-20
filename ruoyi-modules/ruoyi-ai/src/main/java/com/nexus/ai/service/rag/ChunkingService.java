@@ -50,6 +50,15 @@ public class ChunkingService {
         int overlap = overlapChar != null ? overlapChar : DEFAULT_OVERLAP_SIZE;
         String sep = (separator != null && !separator.isEmpty()) ? separator : DEFAULT_SEPARATOR;
 
+        // 安全/健壮性：overlap >= chunkSize 时游标回退不前进（死循环/CPU 空转），
+        // chunkSize <= 0 或 overlap < 0 同样非法——统一钳制到安全区间
+        if (chunkSize <= 0) {
+            chunkSize = DEFAULT_CHUNK_SIZE;
+        }
+        if (overlap < 0 || overlap >= chunkSize) {
+            overlap = Math.min(DEFAULT_OVERLAP_SIZE, chunkSize / 2);
+        }
+
         if (content == null || content.isEmpty()) {
             return List.of();
         }
@@ -149,10 +158,15 @@ public class ChunkingService {
                 chunks.add(result);
             }
 
-            start = end - overlap;
-            if (start <= 0) {
-                start = end;
+            // 前进性保障：next 必须 > start，否则死循环。
+            // 尾块长度 <= overlap（如 970 字符 / 500 块 / 30 重叠的尾块恰好 30）或
+            // 句子边界提前结束 + 大 overlap 时，end-overlap 会回退到 start 及以前——
+            // 回退时退化为"至少前进剩余长度的一半"，保证游标严格单调前进。
+            int next = end - overlap;
+            if (next <= start) {
+                next = start + Math.max(1, (end - start) / 2);
             }
+            start = next;
         }
 
         log.debug("按固定大小切分完成: chunkSize={}, overlap={}, 片段数={}", chunkSize, overlap, chunks.size());
