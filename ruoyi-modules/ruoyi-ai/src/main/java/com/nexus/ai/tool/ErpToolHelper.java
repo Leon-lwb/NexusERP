@@ -32,6 +32,10 @@ public abstract class ErpToolHelper {
     private static final Pattern CLAUSE_PATTERN = Pattern.compile(
         "\\s+(ORDER\\s+BY|GROUP\\s+BY|HAVING|LIMIT)\\s+", Pattern.CASE_INSENSITIVE);
 
+    /** 子句关键字（FROM 别名提取时排除，防止无别名表把 WHERE/ORDER 等当别名吞掉 → 注入出 WHERE.tenant_id 语法错误） */
+    private static final java.util.Set<String> CLAUSE_KEYWORDS = java.util.Set.of(
+        "WHERE", "GROUP", "ORDER", "LIMIT", "HAVING", "JOIN", "UNION", "ON", "AND", "OR", "SET", "VALUES");
+
     /**
      * 注入租户隔离条件
      * <p>
@@ -42,6 +46,12 @@ public abstract class ErpToolHelper {
      * <p>
      * 对于 CTE（WITH ... AS）开头的 SQL，会跳过 CTE 定义部分，
      * 从主查询的 FROM 处提取表别名并注入条件。
+     * </p>
+     * <p>
+     * 注意：本类服务于硬编码 SQL 的业务工具（SQL 文本不含用户输入的 tenant_id 条件），
+     * 因此保留"含 TENANT_ID 字样即跳过"逻辑——工具自身预置的 tenant_id 参数化条件（如
+     * ErpInventoryTool.queryInventoryTurnover 的 tx.tenant_id = ?）无需重复注入。
+     * 用户可控 SQL 必须走 SqlSafetyValidator（剥离用户条件后强制重写）。
      * </p>
      *
      * @param sql      原始 SQL
@@ -73,8 +83,13 @@ public abstract class ErpToolHelper {
         Matcher fromMatcher = fromPattern.matcher(mainQuery);
         String tenantCol;
         if (fromMatcher.find()) {
-            if (fromMatcher.group(2) != null) {
-                tenantCol = fromMatcher.group(2) + ".tenant_id";
+            String alias = fromMatcher.group(2);
+            // 别名不得是 SQL 子句关键字（无别名表 + WHERE/ORDER 时，正则会把子句关键字当别名吞掉）
+            if (alias != null && CLAUSE_KEYWORDS.contains(alias.toUpperCase())) {
+                alias = null;
+            }
+            if (alias != null) {
+                tenantCol = alias + ".tenant_id";
             } else {
                 tenantCol = fromMatcher.group(1) + ".tenant_id";
             }

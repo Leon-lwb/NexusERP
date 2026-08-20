@@ -34,9 +34,9 @@ public class SqlSafetyValidator {
         "SLEEP|BENCHMARK|WAITFOR)\\b",
         Pattern.CASE_INSENSITIVE);
 
-    /** 禁止 UNION SELECT（允许 UNION ALL 用于 CTE 递归查询） */
-    private static final Pattern FORBIDDEN_UNION_SELECT = Pattern.compile(
-        "\\bUNION\\s+SELECT\\b", Pattern.CASE_INSENSITIVE);
+    /** 禁止 UNION（含 UNION ALL：多分支 SELECT 时租户条件只注入第一分支，第二分支零隔离 → 跨租户读取） */
+    private static final Pattern FORBIDDEN_UNION = Pattern.compile(
+        "\\bUNION\\b", Pattern.CASE_INSENSITIVE);
 
     /** 表名提取正则（匹配 FROM/JOIN 后的表名） */
     private static final Pattern TABLE_NAME_PATTERN =
@@ -80,7 +80,9 @@ public class SqlSafetyValidator {
         }
 
         // 0. 移除 SQL 注释（防止通过注释绕过关键词检测）
-        String cleanedSql = sql.replaceAll("/\\*.*?\\*/", " ");   // 块注释 /*...*/
+        // 块注释开启 DOTALL：跨行 /* \n TENANT_ID \n */ 也必须被清洗，否则藏匿的关键词
+        // 会让后续租户注入判断失效
+        String cleanedSql = sql.replaceAll("(?s)/\\*.*?\\*/", " ");  // 块注释 /*...*/（含跨行）
         cleanedSql = cleanedSql.replaceAll("--[^\\n]*", " ");      // 单行注释 --
         cleanedSql = cleanedSql.replaceAll("#[^\\n]*", " ");      // 单行注释 #
         String cleanedUpperSql = cleanedSql.trim().toUpperCase();
@@ -99,9 +101,9 @@ public class SqlSafetyValidator {
             log.warn("[AI-SQL] 包含禁止关键词: {}", matched);
             throw new IllegalArgumentException("SQL 包含禁止关键词: " + forbiddenMatcher.group());
         }
-        // 禁止 UNION SELECT（允许 UNION ALL 用于 CTE 递归）
-        if (FORBIDDEN_UNION_SELECT.matcher(cleanedUpperSql).find()) {
-            throw new IllegalArgumentException("SQL 包含禁止的 UNION SELECT");
+        // 禁止 UNION（含 UNION ALL，多分支零租户隔离风险）
+        if (FORBIDDEN_UNION.matcher(cleanedUpperSql).find()) {
+            throw new IllegalArgumentException("SQL 包含禁止的 UNION，请拆分为多条简单查询");
         }
 
         // 3. 表名白名单校验（动态查库，确保与实际 ERP 表一致）
@@ -116,8 +118,11 @@ public class SqlSafetyValidator {
         }
 
         // 4. 注入租户隔离条件（显式租户优先，回退 AiRequestContext）
+        // 安全：先重写用户书写的 tenant_id 等值条件为服务端租户（防伪造租户值），
+        // 再无条件追加服务端条件兜底
         Long effectiveTenantId = tenantId != null ? tenantId : AiRequestContext.getTenantId();
         if (effectiveTenantId != null) {
+            cleanedSql = rewriteTenantValues(cleanedSql, effectiveTenantId);
             cleanedSql = injectTenantCondition(cleanedSql, effectiveTenantId);
         } else {
             log.warn("[AI-SQL] 无法获取租户ID，跳过租户隔离");
@@ -176,17 +181,25 @@ public class SqlSafetyValidator {
     }
 
     /**
+     * 用户书写的 tenant_id 等值条件（含别名前缀）：{@code [别名.]tenant_id = '值'|数字}。
+     * <p>用于把用户/LLM 提供的租户值强制重写为服务端租户值（结构保持不变）。
+     * 别名前缀可选：裸 {@code tenant_id = 'x'} 与 {@code t.tenant_id = 'x'} 均命中；
+     * 列引用（SELECT tenant_id）无 = 条件不命中。</p>
+     */
+    private static final Pattern USER_TENANT_CONDITION = Pattern.compile(
+        "(?i)((?:[a-zA-Z_][a-zA-Z0-9_]*\\.)?tenant_id\\s*=\\s*)('[^']*'|[0-9]+)");
+
+    /**
      * 注入租户隔离条件
      * <p>从 SQL 提取主表别名（如 FROM wm_material_stock s），使用 "s.tenant_id = X" 避免多表 JOIN 列歧义</p>
+     * <p>安全：调用方须先经 {@link #rewriteTenantValues} 把用户条件值重写为服务端租户，
+     * 本方法无条件追加服务端条件兜底（原"包含 TENANT_ID 字样即跳过"可被 SELECT tenant_id FROM ... 绕过）</p>
      *
      * @param sql      原始 SQL（已清洗注释）
      * @param tenantId 租户ID
      * @return 注入租户条件后的 SQL
      */
     private String injectTenantCondition(String sql, Long tenantId) {
-        if (sql.toUpperCase().contains("TENANT_ID")) {
-            return sql;
-        }
         String tenantCol = extractOuterTenantColumn(sql);
         // 租户值按 RuoYi 6 位字符串格式注入（Long.valueOf("000000")=0 会丢失前导零，
         // 且数字字面量依赖 MySQL 隐式转换才能匹配 varchar 列——统一字符串+引号）
@@ -252,6 +265,16 @@ public class SqlSafetyValidator {
             else if (c == ')') depth--;
         }
         return depth > 0;
+    }
+
+    /**
+     * 把 SQL 中用户书写的 tenant_id 等值条件的值强制重写为服务端租户值。
+     * <p>不剥离条件结构（避免破坏 WHERE ... AND ... 语法）：{@code WHERE tenant_id='999999'}
+     * → {@code WHERE tenant_id=<服务端租户>}。等值条件被重写后，再由
+     * {@link #injectTenantCondition} 无条件追加服务端条件兜底（拦截 !=/IN 等绕过变体）。</p>
+     */
+    private String rewriteTenantValues(String sql, Long tenantId) {
+        return USER_TENANT_CONDITION.matcher(sql).replaceAll("$1" + tenantId);
     }
 
     /**
