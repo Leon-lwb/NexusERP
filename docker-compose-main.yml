@@ -133,6 +133,21 @@ services:
       SNAIL_PORT: 28080
       # JVM 参数（4C4G：NexusServer JVM 512M；SnailJob 调度客户端禁用，调度中心在辅助服务器）
       JAVA_OPTS: "-Xms256m -Xmx512m -XX:MaxMetaspaceSize=256m -XX:+UseZGC -Dsnail-job.enabled=false"
+      # ===== 安全密钥（从同目录 .env 读取，application-prod.yml 已改为 ${VAR:默认值} 引用）=====
+      # JWT 秘钥（不设则用仓库默认值，生产必须覆盖）
+      SA_TOKEN_JWT_SECRET_KEY: ${SA_TOKEN_JWT_SECRET_KEY}
+      # Jasypt 加密口令（生产独立口令；须与生产库 ai_provider 密文加密口令一致）
+      JASYPT_PASSWORD: ${JASYPT_PASSWORD}
+      # 生产数据库密码（与 nexus-mysql 的 MYSQL_ROOT_PASSWORD 一致）
+      PROD_DB_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      # 生产 Redis 密码（redis.conf 的 requirepass）
+      PROD_REDIS_PASSWORD: ${PROD_REDIS_PASSWORD}
+      # 生产 RabbitMQ 密码（与 RABBITMQ_DEFAULT_PASS 一致）
+      PROD_MQ_PASSWORD: ${RABBITMQ_DEFAULT_PASS}
+      # MES 设备上报密钥（/mes/flash/report/** 免登录接口唯一防线，不设则上报全部拒绝）
+      MES_API_KEY: ${MES_API_KEY}
+      # SnailJob 调度 token（调度中心在辅助服务器）
+      SNAIL_JOB_TOKEN: ${SNAIL_JOB_TOKEN:-SJ_cKqBTPzCsWA3VyuCfFoccmuIEGXjr5KT}
     volumes:
       # 日志目录
       - /docker/server/logs/:/ruoyi/server/logs/
