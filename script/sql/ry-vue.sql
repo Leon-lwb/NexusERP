@@ -4273,10 +4273,10 @@ CREATE TABLE `ai_provider`  (
 -- ----------------------------
 -- Records of ai_provider
 -- ----------------------------
-INSERT INTO `ai_provider` VALUES (1, '000000', 'DeepSeek', 'https://api.deepseek.com', 'Z1L15ZDCuBqIeCFC6JoMc3JDx8rJeSbO/2gycBtdtJRZSRWNrw64LPTfCfOGkHap', 'OPENAI', '1', NULL, NULL, NULL, 1, '2026-08-09 23:14:24', '0', NULL, NULL, NULL, NULL);
-INSERT INTO `ai_provider` VALUES (2, '000000', '本地Ollama', 'http://localhost:11434', 'YOkXtpT+eKGfwun/j+pGJK4qnWvkTi1xpXmZzzqXfZlYHquXozhFSa2LlW6jOgljXgCiryDMWYjfpcxAZqSLgSnGWiWzRCgmtfFYR4qtf4iTDRc0Fkj0uJwggeb6gguY', 'OLLAMA', '1', 103, 1, '2026-06-11 23:42:56', 1, '2026-06-28 19:09:22', '0', NULL, NULL, NULL, NULL);
-INSERT INTO `ai_provider` VALUES (2065468199226449922, '000000', '火山方舟', 'https://ark.cn-beijing.volces.com/api/coding/v3', 'HqU3HNFFsIQgnMKP/3ICRjDTrTZyi9nVEN8GNN9SVv/+tDc4ExQGXVP7pnJYsXfI', 'OPENAI', '1', 103, 1, '2026-06-13 00:16:08', 1, '2026-08-09 23:14:33', '0', NULL, NULL, NULL, NULL);
-INSERT INTO `ai_provider` VALUES (2072986564503326721, '000000', 'huggingface', 'https://wangghuan-nexusai.hf.space/v1', 'hpMicTS2zDK3whqau7VPivxRlqrXyOy0wCSJobntfZF0nYrNb8PFU/cBJxfbYmyn/Ex7B5I1ginh2DW5fc3rrZKTUmCvgnBCW5NUYuO+sLI=', 'OPENAI', '1', 103, 1, '2026-07-03 18:11:26', 1, '2026-07-03 18:14:43', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_provider` VALUES (1, '000000', 'DeepSeek', 'https://api.deepseek.com', 'Pajct04e5uhpNnlewu1irQjtDN3b/dT9pEfyXOVbRy8d2tkBc2UqnNmai2wKSxHf', 'OPENAI', '1', NULL, NULL, NULL, 1, '2026-08-09 23:14:24', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_provider` VALUES (2, '000000', '本地Ollama', 'http://localhost:11434', 'X6s81pOEHUoae0Q9aiMgkbAM1pl8v74GRFor/jSnKokfP+jGEHGDlqeAGBoYTzEjUhSKK2lQnFajprR74Y2xQzuHPVSEd+O+xOVjGia2tNhVIyFvwMv/YH8FMHerkgMe', 'OLLAMA', '1', 103, 1, '2026-06-11 23:42:56', 1, '2026-06-28 19:09:22', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_provider` VALUES (2065468199226449922, '000000', '火山方舟', 'https://ark.cn-beijing.volces.com/api/coding/v3', 'k61i88Ud8lKHZmGVuUx1ySPRrvgwHKT8QbS8lh+fwvlXFBxcVxMjNoz0nutzdAFz', 'OPENAI', '1', 103, 1, '2026-06-13 00:16:08', 1, '2026-08-09 23:14:33', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_provider` VALUES (2072986564503326721, '000000', 'huggingface', 'https://wangghuan-nexusai.hf.space/v1', 'ZYHcsyqaef3H+LsOsTMS+KifTQ5Uj21bcFlfuwx3FZSgKJPdIFYlyyKt6N4j95QlFYWsstmZI4bRMf7CJ+uGABaVN3JdoD9rB2ArFInOTyg=', 'OPENAI', '1', 103, 1, '2026-07-03 18:11:26', 1, '2026-07-03 18:14:43', '0', NULL, NULL, NULL, NULL);
 INSERT INTO `ai_provider` VALUES (2348956357081379840, '000000', '小米MiMo', 'https://token-plan-cn.xiaomimimo.com/v1', 'sk-PLEASE_REPLACE_MIMO_KEY', 'XIAOMI', '1', 103, 1, '2026-06-30 23:59:26', 1, '2026-07-01 00:01:30', '0', NULL, NULL, NULL, NULL);
 INSERT INTO `ai_provider` VALUES (2961532303096290816, '000000', 'MiniMax', 'https://api.minimax.io/v1', 'sk-PLEASE_REPLACE_MINIMAX_KEY', 'MINIMAX', '1', 103, 1, '2026-06-30 23:59:26', NULL, NULL, '0', NULL, NULL, NULL, NULL);
 INSERT INTO `ai_provider` VALUES (4207708950347927552, '000000', '通义千问', 'https://dashscope.aliyuncs.com', 'sk-PLEASE_REPLACE_DASHSCOPE_KEY', 'DASHSCOPE', '1', 103, 1, '2026-06-30 23:59:26', NULL, NULL, '0', NULL, NULL, NULL, NULL);
@@ -15204,6 +15204,7 @@ INSERT INTO `sys_menu` VALUES (3010, '发票修改', 3007, 3, '#', '', '', 1, 0,
 INSERT INTO `sys_menu` VALUES (3011, '发票删除', 3007, 4, '#', '', '', 1, 0, 'F', '0', '0', 'pay:invoice:remove', '#', 103, 1, '2026-05-02 16:13:09', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (3012, '导出发票', 3007, 5, '#', '', '', 1, 0, 'F', '0', '0', 'pay:invoice:export', '#', 103, 1, '2026-05-02 16:13:09', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (3013, '支付测试', 3000, 3, 'paytest', 'pay/paytest/index', '', 1, 0, 'C', '0', '0', 'pay:paytest:list', '#', 103, 1, '2026-05-02 16:13:09', 1, '2026-05-02 16:22:41', '支付测试菜单');
+INSERT INTO `sys_menu` VALUES (3014, '订单退款', 3001, 6, '#', '', '', 1, 0, 'F', '0', '0', 'pay:order:refund', '#', 103, 1, '2026-05-02 16:13:09', NULL, NULL, '支付退款按钮（安全修复补录：/pay/*/refund 接口权限，应仅授予财务/管理员）');
 INSERT INTO `sys_menu` VALUES (3020, '积木报表', 0, 15, 'report', NULL, '', 1, 0, 'M', '0', '0', '', 'tab', 103, 1, '2026-05-03 14:54:28', 1, '2026-06-17 17:38:21', '积木报表目录');
 INSERT INTO `sys_menu` VALUES (3021, '报表设计', 3020, 1, 'reportDesign', 'report/design/index', '', 1, 0, 'C', '0', '0', 'report:design:list', 'edit', 103, 1, '2026-05-03 14:54:28', NULL, NULL, '积木报表设计器菜单');
 INSERT INTO `sys_menu` VALUES (3022, '报表大屏', 3020, 2, 'reportDashboard', 'report/dashboard/index', '', 1, 0, 'C', '0', '0', 'report:dashboard:list', 'dashboard', 103, 1, '2026-05-03 14:54:28', NULL, NULL, '积木报表大屏设计器菜单');
@@ -17959,6 +17960,7 @@ INSERT INTO `sys_role_menu` VALUES (1, 1750);
 INSERT INTO `sys_role_menu` VALUES (1, 1751);
 INSERT INTO `sys_role_menu` VALUES (1, 1752);
 INSERT INTO `sys_role_menu` VALUES (1, 1753);
+INSERT INTO `sys_role_menu` VALUES (1, 3014);
 INSERT INTO `sys_role_menu` VALUES (3, 1);
 INSERT INTO `sys_role_menu` VALUES (3, 100);
 INSERT INTO `sys_role_menu` VALUES (3, 101);

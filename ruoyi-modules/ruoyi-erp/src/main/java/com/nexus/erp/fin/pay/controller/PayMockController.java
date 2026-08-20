@@ -12,6 +12,7 @@ import com.nexus.common.mq.producer.ReliableMessageProducer;
 import com.nexus.common.web.core.BaseController;
 import com.nexus.common.tenant.helper.TenantHelper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Profile;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -25,10 +26,13 @@ import java.math.BigDecimal;
  * <p>模拟第三方支付渠道(支付宝/微信)收款成功回调:发送 {@link PayReceivedMessage} 到
  * PAY_RECEIVED_CALLBACK 路由,由既有 {@code PayReceivedConsumer} 消费
  * (建 AR 收款单 → GL 过账 → FIFO 自动核销)。解决 pay 模块缺失导致的自动收款断链。</p>
+ * <p>安全:伪造收款入口等价于"凭空生成已收款核销记录"的财务舞弊工具,
+ * 仅允许 dev/test profile 注册,生产环境不加载。如生产确需联调,改走真实 pay 模块回调。</p>
  *
  * @author nexus
  * @date 2026-08-01
  */
+@Profile({"dev", "test", "local"})
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/erp/fin/pay/mock")

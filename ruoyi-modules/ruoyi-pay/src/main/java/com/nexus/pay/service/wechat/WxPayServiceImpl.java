@@ -151,6 +151,13 @@ public class WxPayServiceImpl implements IWxPayService {
                 return "success";
             } else if ("refund".equals(type)) {
                 RefundNotification transaction = notificationParser.parse(requestParam, RefundNotification.class);
+                // 安全校验：退款回调的商户订单号必须与路径订单号一致（与 pay 分支同口径），
+                // 防止重放他单退款报文篡改任意订单的退款状态
+                String outTradeNo = transaction.getOutTradeNo();
+                if (outTradeNo == null || !outTradeNo.equals(payOrder.getOrderNumber())) {
+                    log.error("微信退款回调订单号不匹配: 回调={}, 订单={}", outTradeNo, payOrder.getOrderNumber());
+                    return "fail";
+                }
                 payOrder.setOrderStatus(switch (transaction.getRefundStatus()) {
                     case SUCCESS -> "已退款";
                     case PROCESSING -> "退款处理中";

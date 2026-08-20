@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -58,6 +59,7 @@ public class PayController extends BaseController {
      * @return 支付链接或表单字符串（如支付宝当面付二维码链接或 PC 网页支付表单）
      * @throws Exception 调用支付 SDK 异常时抛出
      */
+    @SaCheckPermission("pay:order:query")
     @Operation(summary = "获取支付链接", description = "也不一定是链接，比如支付宝是一串表单代码")
     @Parameters({
             @Parameter(name = "channel", description = "支付方式", required = true),
@@ -118,6 +120,7 @@ public class PayController extends BaseController {
      * @return 刷新支付状态后的订单对象
      * @throws Exception 调用支付 SDK 异常时抛出
      */
+    @SaCheckPermission("pay:order:query")
     @Operation(summary = "查询支付状态")
     @Parameters({
             @Parameter(name = "orderNumber", description = "订单号", required = true)
@@ -139,6 +142,7 @@ public class PayController extends BaseController {
      * @param orderNumber 商户订单号
      * @return 退款后的订单对象；订单尚未支付时返回失败信息
      */
+    @SaCheckPermission("pay:order:refund")
     @Operation(summary = "退款")
     @Parameters({
             @Parameter(name = "orderNumber", description = "订单号", required = true)
