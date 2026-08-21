@@ -8,6 +8,10 @@ export interface StationDeviceVO {
   stationCode?: string;
   processCode?: string;
   appVersion?: string;
+  operatorCode?: string;
+  operatorName?: string;
+  /** 应用正常退出标记(服务端即时判离线) */
+  shutdown?: boolean;
   lastHeartbeat?: string;
   online: boolean;
 }

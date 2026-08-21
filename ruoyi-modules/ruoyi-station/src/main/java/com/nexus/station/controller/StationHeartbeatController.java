@@ -48,8 +48,10 @@ public class StationHeartbeatController {
     private String apiKey;
 
     /**
-     * 设备心跳上报(C10): 按 device_code upsert 台账, 更新绑定工位/工序/版本/心跳时间。
-     * <p>心跳 payload: {deviceCode, stationCode?, appVersion, stationTime}; 响应 data 为 {}。</p>
+     * 设备心跳上报(C10): 按 device_code upsert 台账, 更新绑定工位/工序/版本/当前操作员/心跳时间。
+     * <p>心跳 payload: {deviceCode, stationCode?, appVersion, stationTime, shutdown?, operatorCode?, operatorName?}。</p>
+     * <p>shutdown=true 为应用正常退出的「下线心跳」: 置 shutdown_flag=1 并清空当前操作员,
+     * 管理页据此即时判定离线(不等 3 分钟心跳超时); 下次启动心跳自动复位。</p>
      */
     @PostMapping("/heartbeat")
     @DS("mes")
@@ -64,6 +66,9 @@ public class StationHeartbeatController {
         }
         String stationCode = body.get("stationCode") == null ? null : String.valueOf(body.get("stationCode")).trim();
         String appVersion = body.get("appVersion") == null ? null : String.valueOf(body.get("appVersion")).trim();
+        String operatorCode = body.get("operatorCode") == null ? null : String.valueOf(body.get("operatorCode")).trim();
+        String operatorName = body.get("operatorName") == null ? null : String.valueOf(body.get("operatorName")).trim();
+        boolean shutdown = Boolean.parseBoolean(String.valueOf(body.get("shutdown")));
         // 工位码 → 工序码(心跳注册绑定优先, 工位码格式解析兜底)
         String processCode = stationPassService.resolveProcessCode(stationCode);
         Date now = new Date();
@@ -78,6 +83,9 @@ public class StationHeartbeatController {
                 device.setStationCode(StringUtils.blankToDefault(stationCode, null));
                 device.setProcessCode(processCode);
                 device.setAppVersion(appVersion);
+                device.setOperatorCode(StringUtils.blankToDefault(operatorCode, null));
+                device.setOperatorName(StringUtils.blankToDefault(operatorName, null));
+                device.setShutdownFlag(shutdown ? "1" : "0");
                 device.setLastHeartbeat(now);
                 deviceMapper.insert(device);
             } else {
@@ -85,12 +93,17 @@ public class StationHeartbeatController {
                     .set(MesStationDevice::getStationCode, StringUtils.blankToDefault(stationCode, null))
                     .set(MesStationDevice::getProcessCode, processCode)
                     .set(MesStationDevice::getAppVersion, StringUtils.blankToDefault(appVersion, null))
+                    // 下线心跳清空操作员; 普通心跳更新操作员(无操作员时清空, 反映下岗)
+                    .set(MesStationDevice::getOperatorCode, shutdown ? null : StringUtils.blankToDefault(operatorCode, null))
+                    .set(MesStationDevice::getOperatorName, shutdown ? null : StringUtils.blankToDefault(operatorName, null))
+                    .set(MesStationDevice::getShutdownFlag, shutdown ? "1" : "0")
                     .set(MesStationDevice::getLastHeartbeat, now)
                     .eq(MesStationDevice::getDeviceId, device.getDeviceId()));
             }
             return null;
         });
-        log.debug("工位终端心跳: device={}, station={}, version={}", deviceCode, stationCode, appVersion);
+        log.debug("工位终端心跳: device={}, station={}, version={}, operator={}, shutdown={}",
+            deviceCode, stationCode, appVersion, operatorCode, shutdown);
         return R.ok(new HashMap<>());
     }
 

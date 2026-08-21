@@ -54,6 +54,13 @@
         <el-table-column label="终端版本" prop="appVersion" align="center" width="100">
           <template #default="scope">{{ scope.row.appVersion || '-' }}</template>
         </el-table-column>
+        <el-table-column label="当前操作员" align="center" width="120">
+          <template #default="scope">
+            <span v-if="scope.row.operatorName">{{ scope.row.operatorName }}</span>
+            <span v-else-if="scope.row.operatorCode">{{ scope.row.operatorCode }}</span>
+            <span v-else class="text-muted">无人上岗</span>
+          </template>
+        </el-table-column>
         <el-table-column label="最后心跳" prop="lastHeartbeat" width="170">
           <template #default="scope">{{ scope.row.lastHeartbeat || '-' }}</template>
         </el-table-column>

@@ -36,6 +36,15 @@ public class MesStationDevice extends TenantEntity {
     /** 终端版本 */
     private String appVersion;
 
+    /** 当前操作员工号(心跳携带, 应用退出时清空) */
+    private String operatorCode;
+
+    /** 当前操作员姓名 */
+    private String operatorName;
+
+    /** 主动下线标记: 1=应用正常退出(即时离线判定, 优于心跳超时) */
+    private String shutdownFlag;
+
     /** 最后心跳时间 */
     private Date lastHeartbeat;
 

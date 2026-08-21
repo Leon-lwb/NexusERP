@@ -44,6 +44,7 @@ public class StationDeviceAdminController extends BaseController {
 
     /**
      * 设备台账列表(分页 + 在线状态计算列)
+     * <p>在线判定: shutdown_flag=1(应用正常退出)即时离线; 否则心跳 3 拍(60s/拍)内为在线。</p>
      */
     @SaCheckPermission("mes:station:device:list")
     @GetMapping("/list")
@@ -59,8 +60,12 @@ public class StationDeviceAdminController extends BaseController {
             m.put("stationCode", d.getStationCode());
             m.put("processCode", d.getProcessCode());
             m.put("appVersion", d.getAppVersion());
+            m.put("operatorCode", d.getOperatorCode());
+            m.put("operatorName", d.getOperatorName());
+            m.put("shutdown", "1".equals(d.getShutdownFlag()));
             m.put("lastHeartbeat", d.getLastHeartbeat());
-            boolean online = d.getLastHeartbeat() != null
+            boolean online = !"1".equals(d.getShutdownFlag())
+                && d.getLastHeartbeat() != null
                 && now.getTime() - d.getLastHeartbeat().getTime() < ONLINE_THRESHOLD_MS;
             m.put("online", online);
             return m;
@@ -69,7 +74,7 @@ public class StationDeviceAdminController extends BaseController {
     }
 
     /**
-     * 台账汇总(顶卡): 总数/在线数/离线数
+     * 台账汇总(顶卡): 总数/在线数/离线数(离线含正常退出与心跳超时)
      */
     @SaCheckPermission("mes:station:device:list")
     @GetMapping("/stats")
@@ -77,7 +82,7 @@ public class StationDeviceAdminController extends BaseController {
     public R<Map<String, Object>> stats() {
         List<MesStationDevice> rows = deviceMapper.selectList(null);
         Date now = new Date();
-        long online = rows.stream().filter(d -> d.getLastHeartbeat() != null
+        long online = rows.stream().filter(d -> !"1".equals(d.getShutdownFlag()) && d.getLastHeartbeat() != null
             && now.getTime() - d.getLastHeartbeat().getTime() < ONLINE_THRESHOLD_MS).count();
         Map<String, Object> data = new HashMap<>(4);
         data.put("total", rows.size());
