@@ -15422,6 +15422,7 @@ INSERT INTO `sys_menu` VALUES (4304, '配置新增', 4302, 2, '', '', '', 1, 0, 
 INSERT INTO `sys_menu` VALUES (4305, '配置修改', 4302, 3, '', '', '', 1, 0, 'F', '0', '0', 'mes:flash:content:edit', '#', 103, 1, '2026-08-17 21:56:41', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (4306, '配置删除', 4302, 4, '', '', '', 1, 0, 'F', '0', '0', 'mes:flash:content:remove', '#', 103, 1, '2026-08-17 21:56:41', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (4307, '配置发布', 4302, 5, '', '', '', 1, 0, 'F', '0', '0', 'mes:flash:content:release', '#', 103, 1, '2026-08-17 21:56:41', NULL, NULL, 'DRAFT→RELEASED');
+INSERT INTO `sys_menu` VALUES (4230, '工位终端', 4001, 22, 'station-device', 'mes/station/device/index', '', 1, 0, 'C', '0', '0', 'mes:station:device:list', 'monitor', 103, 1, '2026-08-21 15:50:00', NULL, NULL, '工位终端设备台账(心跳在线状态/工位绑定/终端版本)');
 INSERT INTO `sys_menu` VALUES (5000, '序列号管理', 2600, 3, 'sn', 'erp/wm/sn/index', NULL, 1, 0, 'C', '0', '0', 'wm:sn:list', 'code', 103, 1, '2026-06-03 00:38:59', 1, '2026-06-03 11:09:57', '序列号管理菜单');
 INSERT INTO `sys_menu` VALUES (5001, '序列号查询', 5000, 1, '', NULL, NULL, 1, 0, 'F', '0', '0', 'wm:sn:query', '#', 103, 1, '2026-06-03 00:38:59', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (5002, '序列号新增', 5000, 2, '', NULL, NULL, 1, 0, 'F', '0', '0', 'wm:sn:add', '#', 103, 1, '2026-06-03 00:38:59', NULL, NULL, '');
