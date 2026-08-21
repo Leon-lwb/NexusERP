@@ -137,12 +137,10 @@ public class ProSnServiceImpl implements IProSnService {
         }
         log.info("批量生成SN成功: cardId={}, quantity={}, startSeq={}", cardId, quantity, startSeq);
 
-        // 若指定批次, 发布 SnCreatedEvent -> lt 模块写 lt_sn_binding(SN↔批次绑定)
-        if (lotId != null) {
-            for (ProSn sn : snList) {
-                applicationEventPublisher.publishEvent(
-                    new SnCreatedEvent(sn.getSnId(), sn.getSnCode(), lotId, sn.getMaterialId()));
-            }
+        // 造码即发 SnCreatedEvent: lt 模块写 lt_sn_binding(lotId 非空时), label 模块打印 SN 标签
+        for (ProSn sn : snList) {
+            applicationEventPublisher.publishEvent(
+                new SnCreatedEvent(sn.getSnId(), sn.getSnCode(), lotId, sn.getMaterialId()));
         }
 
         // 4. 返回VO列表
@@ -200,11 +198,9 @@ public class ProSnServiceImpl implements IProSnService {
         sn.setRemark(remark);
         baseMapper.insert(sn);
 
-        // 若指定批次, 发布 SnCreatedEvent -> lt 模块写 lt_sn_binding(SN↔批次绑定)
-        if (lotId != null) {
-            applicationEventPublisher.publishEvent(
-                new SnCreatedEvent(sn.getSnId(), snCode, lotId, materialId));
-        }
+        // 造码即发 SnCreatedEvent: lt 模块写 lt_sn_binding(lotId 非空时), label 模块打印 SN 标签
+        applicationEventPublisher.publishEvent(
+            new SnCreatedEvent(sn.getSnId(), snCode, lotId, materialId));
 
         log.info("手动创建SN成功: snCode={}, parentSnId={}, lotId={}", snCode, parentSnId, lotId);
         return baseMapper.selectVoById(sn.getSnId());

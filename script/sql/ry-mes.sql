@@ -1293,8 +1293,75 @@ CREATE TABLE `ncr_defect_code`  (
 -- ----------------------------
 -- Records of ncr_defect_code
 -- ----------------------------
-INSERT INTO `ncr_defect_code` VALUES (2082122139464536065, '000000', 0, 'SURF', '表面缺陷', 1, '1', 0, NULL, 103, 1, '2026-07-28 23:12:57', 1, '2026-07-28 23:12:57', '0');
-INSERT INTO `ncr_defect_code` VALUES (2082122378246262786, '000000', 0, 'SURF9293', '表面缺陷', 1, '1', 0, NULL, 103, 1, '2026-07-28 23:13:54', 1, '2026-07-28 23:13:54', '0');
+INSERT INTO `ncr_defect_code` VALUES (946001, '000000', 0, 'D-APP', '外观不良', 1, 'Y', 1, NULL, 103, 1, '2026-08-21 22:00:00', NULL, NULL, '0');
+INSERT INTO `ncr_defect_code` VALUES (946002, '000000', 0, 'D-FUN', '功能不良', 1, 'Y', 2, NULL, 103, 1, '2026-08-21 22:00:00', NULL, NULL, '0');
+INSERT INTO `ncr_defect_code` VALUES (946003, '000000', 0, 'D-ASM', '组装不良', 1, 'Y', 3, NULL, 103, 1, '2026-08-21 22:00:00', NULL, NULL, '0');
+INSERT INTO `ncr_defect_code` VALUES (946004, '000000', 0, 'D-SW', '软件烧写', 1, 'Y', 4, NULL, 103, 1, '2026-08-21 22:00:00', NULL, NULL, '0');
+INSERT INTO `ncr_defect_code` VALUES (946005, '000000', 0, 'D-DIM', '尺寸超差', 1, 'Y', 5, NULL, 103, 1, '2026-08-21 22:00:00', NULL, NULL, '0');
+INSERT INTO `ncr_defect_code` VALUES (946006, '000000', 0, 'D-OTH', '其他', 1, 'Y', 6, NULL, 103, 1, '2026-08-21 22:00:00', NULL, NULL, '0');
+INSERT INTO `ncr_defect_code` VALUES (946011, '000000', 946001, 'D-APP-01', '划伤碰撞', 2, 'Y', 1, NULL, 103, 1, '2026-08-21 22:00:00', NULL, NULL, '0');
+INSERT INTO `ncr_defect_code` VALUES (946012, '000000', 946001, 'D-APP-02', '脏污氧化', 2, 'Y', 2, NULL, 103, 1, '2026-08-21 22:00:00', NULL, NULL, '0');
+INSERT INTO `ncr_defect_code` VALUES (946013, '000000', 946001, 'D-APP-03', '丝印标识', 2, 'Y', 3, NULL, 103, 1, '2026-08-21 22:00:00', NULL, NULL, '0');
+INSERT INTO `ncr_defect_code` VALUES (946014, '000000', 946002, 'D-FUN-01', '电性能', 2, 'Y', 1, NULL, 103, 1, '2026-08-21 22:00:00', NULL, NULL, '0');
+INSERT INTO `ncr_defect_code` VALUES (946015, '000000', 946002, 'D-FUN-02', '整机功能', 2, 'Y', 2, NULL, 103, 1, '2026-08-21 22:00:00', NULL, NULL, '0');
+INSERT INTO `ncr_defect_code` VALUES (946016, '000000', 946002, 'D-FUN-03', '射频声学', 2, 'Y', 3, NULL, 103, 1, '2026-08-21 22:00:00', NULL, NULL, '0');
+INSERT INTO `ncr_defect_code` VALUES (946017, '000000', 946003, 'D-ASM-01', '装配错漏', 2, 'Y', 1, NULL, 103, 1, '2026-08-21 22:00:00', NULL, NULL, '0');
+INSERT INTO `ncr_defect_code` VALUES (946018, '000000', 946003, 'D-ASM-02', '焊接连接', 2, 'Y', 2, NULL, 103, 1, '2026-08-21 22:00:00', NULL, NULL, '0');
+INSERT INTO `ncr_defect_code` VALUES (946019, '000000', 946003, 'D-ASM-03', '紧固密封', 2, 'Y', 3, NULL, 103, 1, '2026-08-21 22:00:00', NULL, NULL, '0');
+INSERT INTO `ncr_defect_code` VALUES (946020, '000000', 946004, 'D-SW-01', '烧写失败', 2, 'Y', 1, NULL, 103, 1, '2026-08-21 22:00:00', NULL, NULL, '0');
+INSERT INTO `ncr_defect_code` VALUES (946021, '000000', 946004, 'D-SW-02', '版本参数', 2, 'Y', 2, NULL, 103, 1, '2026-08-21 22:00:00', NULL, NULL, '0');
+INSERT INTO `ncr_defect_code` VALUES (946022, '000000', 946004, 'D-SW-03', '测试软件', 2, 'Y', 3, NULL, 103, 1, '2026-08-21 22:00:00', NULL, NULL, '0');
+INSERT INTO `ncr_defect_code` VALUES (946023, '000000', 946005, 'D-DIM-01', '结构尺寸', 2, 'Y', 1, NULL, 103, 1, '2026-08-21 22:00:00', NULL, NULL, '0');
+INSERT INTO `ncr_defect_code` VALUES (946024, '000000', 946005, 'D-DIM-02', '形位公差', 2, 'Y', 2, NULL, 103, 1, '2026-08-21 22:00:00', NULL, NULL, '0');
+INSERT INTO `ncr_defect_code` VALUES (946025, '000000', 946006, 'D-OTH-01', '其他', 2, 'Y', 1, NULL, 103, 1, '2026-08-21 22:00:00', NULL, NULL, '0');
+INSERT INTO `ncr_defect_code` VALUES (946101, '000000', 946011, 'D-APP-SCR', '表面划伤', 3, 'Y', 1, NULL, 103, 1, '2026-08-21 22:00:00', NULL, NULL, '0');
+INSERT INTO `ncr_defect_code` VALUES (946102, '000000', 946011, 'D-APP-DENT', '凹痕压伤', 3, 'Y', 2, NULL, 103, 1, '2026-08-21 22:00:00', NULL, NULL, '0');
+INSERT INTO `ncr_defect_code` VALUES (946103, '000000', 946011, 'D-APP-CHIP', '破损缺角', 3, 'Y', 3, NULL, 103, 1, '2026-08-21 22:00:00', NULL, NULL, '0');
+INSERT INTO `ncr_defect_code` VALUES (946104, '000000', 946012, 'D-APP-STAIN', '表面脏污', 3, 'Y', 1, NULL, 103, 1, '2026-08-21 22:00:00', NULL, NULL, '0');
+INSERT INTO `ncr_defect_code` VALUES (946105, '000000', 946012, 'D-APP-OXID', '氧化变色', 3, 'Y', 2, NULL, 103, 1, '2026-08-21 22:00:00', NULL, NULL, '0');
+INSERT INTO `ncr_defect_code` VALUES (946106, '000000', 946012, 'D-APP-GLUE', '胶残留', 3, 'Y', 3, NULL, 103, 1, '2026-08-21 22:00:00', NULL, NULL, '0');
+INSERT INTO `ncr_defect_code` VALUES (946107, '000000', 946013, 'D-APP-INK', '丝印不良', 3, 'Y', 1, NULL, 103, 1, '2026-08-21 22:00:00', NULL, NULL, '0');
+INSERT INTO `ncr_defect_code` VALUES (946108, '000000', 946013, 'D-APP-LABEL', '标签错贴', 3, 'Y', 2, NULL, 103, 1, '2026-08-21 22:00:00', NULL, NULL, '0');
+INSERT INTO `ncr_defect_code` VALUES (946109, '000000', 946013, 'D-APP-MARK', '标识缺失', 3, 'Y', 3, NULL, 103, 1, '2026-08-21 22:00:00', NULL, NULL, '0');
+INSERT INTO `ncr_defect_code` VALUES (946110, '000000', 946014, 'D-FUN-SHORT', '短路', 3, 'Y', 1, NULL, 103, 1, '2026-08-21 22:00:00', NULL, NULL, '0');
+INSERT INTO `ncr_defect_code` VALUES (946111, '000000', 946014, 'D-FUN-OPEN', '开路断路', 3, 'Y', 2, NULL, 103, 1, '2026-08-21 22:00:00', NULL, NULL, '0');
+INSERT INTO `ncr_defect_code` VALUES (946112, '000000', 946014, 'D-FUN-LEAK', '漏电', 3, 'Y', 3, NULL, 103, 1, '2026-08-21 22:00:00', NULL, NULL, '0');
+INSERT INTO `ncr_defect_code` VALUES (946113, '000000', 946014, 'D-FUN-VOLT', '电压超差', 3, 'Y', 4, NULL, 103, 1, '2026-08-21 22:00:00', NULL, NULL, '0');
+INSERT INTO `ncr_defect_code` VALUES (946114, '000000', 946015, 'D-FUN-NOPWR', '不开机', 3, 'Y', 1, NULL, 103, 1, '2026-08-21 22:00:00', NULL, NULL, '0');
+INSERT INTO `ncr_defect_code` VALUES (946115, '000000', 946015, 'D-FUN-BOOT', '启动异常', 3, 'Y', 2, NULL, 103, 1, '2026-08-21 22:00:00', NULL, NULL, '0');
+INSERT INTO `ncr_defect_code` VALUES (946116, '000000', 946015, 'D-FUN-RESET', '死机重启', 3, 'Y', 3, NULL, 103, 1, '2026-08-21 22:00:00', NULL, NULL, '0');
+INSERT INTO `ncr_defect_code` VALUES (946117, '000000', 946015, 'D-FUN-NOSIG', '无信号', 3, 'Y', 4, NULL, 103, 1, '2026-08-21 22:00:00', NULL, NULL, '0');
+INSERT INTO `ncr_defect_code` VALUES (946118, '000000', 946016, 'D-FUN-RF', '射频指标超差', 3, 'Y', 1, NULL, 103, 1, '2026-08-21 22:00:00', NULL, NULL, '0');
+INSERT INTO `ncr_defect_code` VALUES (946119, '000000', 946016, 'D-FUN-AUDIO', '音频异常', 3, 'Y', 2, NULL, 103, 1, '2026-08-21 22:00:00', NULL, NULL, '0');
+INSERT INTO `ncr_defect_code` VALUES (946120, '000000', 946016, 'D-FUN-MIC', '麦克风失效', 3, 'Y', 3, NULL, 103, 1, '2026-08-21 22:00:00', NULL, NULL, '0');
+INSERT INTO `ncr_defect_code` VALUES (946121, '000000', 946016, 'D-FUN-SPK', '喇叭失效', 3, 'Y', 4, NULL, 103, 1, '2026-08-21 22:00:00', NULL, NULL, '0');
+INSERT INTO `ncr_defect_code` VALUES (946122, '000000', 946017, 'D-ASM-MISS', '漏装', 3, 'Y', 1, NULL, 103, 1, '2026-08-21 22:00:00', NULL, NULL, '0');
+INSERT INTO `ncr_defect_code` VALUES (946123, '000000', 946017, 'D-ASM-WRONG', '错装', 3, 'Y', 2, NULL, 103, 1, '2026-08-21 22:00:00', NULL, NULL, '0');
+INSERT INTO `ncr_defect_code` VALUES (946124, '000000', 946017, 'D-ASM-REV', '反向安装', 3, 'Y', 3, NULL, 103, 1, '2026-08-21 22:00:00', NULL, NULL, '0');
+INSERT INTO `ncr_defect_code` VALUES (946125, '000000', 946017, 'D-ASM-FIT', '配合不良', 3, 'Y', 4, NULL, 103, 1, '2026-08-21 22:00:00', NULL, NULL, '0');
+INSERT INTO `ncr_defect_code` VALUES (946126, '000000', 946018, 'D-ASM-SOLDER', '虚焊假焊', 3, 'Y', 1, NULL, 103, 1, '2026-08-21 22:00:00', NULL, NULL, '0');
+INSERT INTO `ncr_defect_code` VALUES (946127, '000000', 946018, 'D-ASM-COLD', '冷焊', 3, 'Y', 2, NULL, 103, 1, '2026-08-21 22:00:00', NULL, NULL, '0');
+INSERT INTO `ncr_defect_code` VALUES (946128, '000000', 946018, 'D-ASM-BRIDGE', '连锡桥连', 3, 'Y', 3, NULL, 103, 1, '2026-08-21 22:00:00', NULL, NULL, '0');
+INSERT INTO `ncr_defect_code` VALUES (946129, '000000', 946019, 'D-ASM-SCREW', '螺丝浮高', 3, 'Y', 1, NULL, 103, 1, '2026-08-21 22:00:00', NULL, NULL, '0');
+INSERT INTO `ncr_defect_code` VALUES (946130, '000000', 946019, 'D-ASM-GAP', '缝隙超标', 3, 'Y', 2, NULL, 103, 1, '2026-08-21 22:00:00', NULL, NULL, '0');
+INSERT INTO `ncr_defect_code` VALUES (946131, '000000', 946019, 'D-ASM-GLUE', '点胶不良', 3, 'Y', 3, NULL, 103, 1, '2026-08-21 22:00:00', NULL, NULL, '0');
+INSERT INTO `ncr_defect_code` VALUES (946132, '000000', 946020, 'D-SW-FLASH', '烧写失败', 3, 'Y', 1, NULL, 103, 1, '2026-08-21 22:00:00', NULL, NULL, '0');
+INSERT INTO `ncr_defect_code` VALUES (946133, '000000', 946020, 'D-SW-VERIFY', '校验失败', 3, 'Y', 2, NULL, 103, 1, '2026-08-21 22:00:00', NULL, NULL, '0');
+INSERT INTO `ncr_defect_code` VALUES (946134, '000000', 946020, 'D-SW-CHKSUM', '校验和不符', 3, 'Y', 3, NULL, 103, 1, '2026-08-21 22:00:00', NULL, NULL, '0');
+INSERT INTO `ncr_defect_code` VALUES (946135, '000000', 946021, 'D-SW-VER', '版本错误', 3, 'Y', 1, NULL, 103, 1, '2026-08-21 22:00:00', NULL, NULL, '0');
+INSERT INTO `ncr_defect_code` VALUES (946136, '000000', 946021, 'D-SW-MAC', 'MAC地址异常', 3, 'Y', 2, NULL, 103, 1, '2026-08-21 22:00:00', NULL, NULL, '0');
+INSERT INTO `ncr_defect_code` VALUES (946137, '000000', 946021, 'D-SW-SN', 'SN写入异常', 3, 'Y', 3, NULL, 103, 1, '2026-08-21 22:00:00', NULL, NULL, '0');
+INSERT INTO `ncr_defect_code` VALUES (946138, '000000', 946022, 'D-SW-TEST', '综测失败', 3, 'Y', 1, NULL, 103, 1, '2026-08-21 22:00:00', NULL, NULL, '0');
+INSERT INTO `ncr_defect_code` VALUES (946139, '000000', 946022, 'D-SW-ITEM', '单项超差', 3, 'Y', 2, NULL, 103, 1, '2026-08-21 22:00:00', NULL, NULL, '0');
+INSERT INTO `ncr_defect_code` VALUES (946140, '000000', 946023, 'D-DIM-LEN', '长度超差', 3, 'Y', 1, NULL, 103, 1, '2026-08-21 22:00:00', NULL, NULL, '0');
+INSERT INTO `ncr_defect_code` VALUES (946141, '000000', 946023, 'D-DIM-WID', '宽度超差', 3, 'Y', 2, NULL, 103, 1, '2026-08-21 22:00:00', NULL, NULL, '0');
+INSERT INTO `ncr_defect_code` VALUES (946142, '000000', 946023, 'D-DIM-THK', '厚度超差', 3, 'Y', 3, NULL, 103, 1, '2026-08-21 22:00:00', NULL, NULL, '0');
+INSERT INTO `ncr_defect_code` VALUES (946143, '000000', 946023, 'D-DIM-HOLE', '孔位偏移', 3, 'Y', 4, NULL, 103, 1, '2026-08-21 22:00:00', NULL, NULL, '0');
+INSERT INTO `ncr_defect_code` VALUES (946144, '000000', 946024, 'D-DIM-FLAT', '平面度超差', 3, 'Y', 1, NULL, 103, 1, '2026-08-21 22:00:00', NULL, NULL, '0');
+INSERT INTO `ncr_defect_code` VALUES (946145, '000000', 946024, 'D-DIM-POS', '位置度超差', 3, 'Y', 2, NULL, 103, 1, '2026-08-21 22:00:00', NULL, NULL, '0');
+INSERT INTO `ncr_defect_code` VALUES (946146, '000000', 946025, 'D-OTH-UNK', '原因不明', 3, 'Y', 1, NULL, 103, 1, '2026-08-21 22:00:00', NULL, NULL, '0');
+INSERT INTO `ncr_defect_code` VALUES (946147, '000000', 946025, 'D-OTH-CUST', '客诉反馈', 3, 'Y', 2, NULL, 103, 1, '2026-08-21 22:00:00', NULL, NULL, '0');
+INSERT INTO `ncr_defect_code` VALUES (946148, '000000', 946025, 'D-OTH-REWORK', '返工遗留', 3, 'Y', 3, NULL, 103, 1, '2026-08-21 22:00:00', NULL, NULL, '0');
 
 -- ----------------------------
 -- Table structure for ncr_order
@@ -2557,5 +2624,34 @@ CREATE TABLE `tg_usage_record`  (
 -- ----------------------------
 INSERT INTO `tg_usage_record` VALUES (2081272379664936961, '000000', 2081272377081245697, 100, 'WO-E2E-001', 1, 'WS1', 1, 'admin', '2026-07-26 14:56:18', '2026-07-26 14:56:18', 500, 2.50, 'RETURNED', NULL, 103, 1, '2026-07-26 14:56:18', 1, '2026-07-26 14:56:18', '0');
 INSERT INTO `tg_usage_record` VALUES (2081272382944882689, '000000', 2081272377081245697, NULL, NULL, NULL, NULL, 1, 'admin', '2026-07-26 14:56:19', '2026-07-26 14:56:19', 600, NULL, 'RETURNED', NULL, 103, 1, '2026-07-26 14:56:19', 1, '2026-07-26 14:56:19', '0');
+
+-- ----------------------------
+-- Table structure for mes_label_template
+-- ----------------------------
+DROP TABLE IF EXISTS `mes_label_template`;
+CREATE TABLE `mes_label_template`  (
+  `template_id` bigint(20) NOT NULL COMMENT '模板ID',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000' COMMENT '租户ID',
+  `template_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '模板编码',
+  `template_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '模板名称',
+  `label_type` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'SN' COMMENT '标签类型: SN 标签(流转卡标签后续扩展)',
+  `label_lang` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'TSPL' COMMENT '打印机语言: TSPL/ZPL',
+  `width_mm` int(11) NULL DEFAULT 60 COMMENT '标签宽度(mm)',
+  `height_mm` int(11) NULL DEFAULT 40 COMMENT '标签高度(mm)',
+  `printer_host` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '网络打印机地址(TCP RAW 9100)',
+  `printer_port` int(11) NULL DEFAULT 9100 COMMENT '网络打印机端口',
+  `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '字段映射布局 JSON: {items:[{type,field,x,y,size,height}]}',
+  `enabled` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'Y' COMMENT '是否启用(Y/N): SN 造码打印仅消费启用模板',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
+  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
+  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
+  PRIMARY KEY (`template_id`) USING BTREE,
+  UNIQUE INDEX `uk_template_code`(`template_code`) USING BTREE,
+  INDEX `idx_label_type`(`label_type`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '标签打印模板' ROW_FORMAT = Dynamic;
 
 SET FOREIGN_KEY_CHECKS = 1;

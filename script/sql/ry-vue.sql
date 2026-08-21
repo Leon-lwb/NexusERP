@@ -15214,6 +15214,12 @@ INSERT INTO `sys_menu` VALUES (4216, '规则删除', 4207, 4, '', '', '', 1, 0, 
 INSERT INTO `sys_menu` VALUES (4217, '规则导出', 4207, 5, '', '', '', 1, 0, 'F', '0', '0', 'mes:pro:step-check-rule:export', '#', 103, 1, '2026-07-27 21:22:54', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (4218, '流转卡跳站', 4040, 8, '', '', '', 1, 0, 'F', '0', '0', 'mes:pro:flowcard:skip', '#', 103, 1, '2026-07-27 21:22:54', NULL, NULL, 'P0-3 工序跳站(首道禁跳,须原因)');
 INSERT INTO `sys_menu` VALUES (4230, '工位终端', 4001, 22, 'station-device', 'mes/station/device/index', '', 1, 0, 'C', '0', '0', 'mes:station:device:list', 'monitor', 103, 1, '2026-08-21 15:53:25', NULL, NULL, '工位终端设备台账(心跳在线状态/工位绑定/终端版本)');
+INSERT INTO `sys_menu` VALUES (4231, '标签模板', 4001, 23, 'label-template', 'mes/label/template/index', '', 1, 0, 'C', '0', '0', 'mes:label:template:list', 'edit', 103, 1, '2026-08-21 22:30:00', NULL, NULL, '标签打印模板(字段映射式, 服务端渲染 TSPL/ZPL, TCP 9100 直发)');
+INSERT INTO `sys_menu` VALUES (4232, '标签模板查询', 4231, 1, '', '', '', 1, 0, 'F', '0', '0', 'mes:label:template:query', '#', 103, 1, '2026-08-21 22:30:00', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (4233, '标签模板新增', 4231, 2, '', '', '', 1, 0, 'F', '0', '0', 'mes:label:template:add', '#', 103, 1, '2026-08-21 22:30:00', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (4234, '标签模板修改', 4231, 3, '', '', '', 1, 0, 'F', '0', '0', 'mes:label:template:edit', '#', 103, 1, '2026-08-21 22:30:00', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (4235, '标签模板删除', 4231, 4, '', '', '', 1, 0, 'F', '0', '0', 'mes:label:template:remove', '#', 103, 1, '2026-08-21 22:30:00', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (4236, '标签测试打印', 4231, 5, '', '', '', 1, 0, 'F', '0', '0', 'mes:label:template:print', '#', 103, 1, '2026-08-21 22:30:00', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (4241, 'NCR管理', 4002, 5, 'ncr', NULL, '', 1, 0, 'M', '0', '0', '', 'bug', 103, 1, '2026-07-28 22:24:17', NULL, NULL, 'MES不合格品(NCR)管理');
 INSERT INTO `sys_menu` VALUES (4242, 'NCR不合格品单', 4241, 1, 'ncr-order', 'mes/ncr/order/index', '', 1, 0, 'C', '0', '0', 'mes:ncr:order:list', 'edit', 103, 1, '2026-07-28 22:24:17', NULL, NULL, 'NCR不合格品处理单(状态机/处置/隔离)');
 INSERT INTO `sys_menu` VALUES (4243, '缺陷代码库', 4241, 2, 'defect-code', 'mes/ncr/defect-code/index', '', 1, 0, 'C', '0', '0', 'mes:ncr:defectcode:list', 'tree-table', 103, 1, '2026-07-28 22:24:17', NULL, NULL, '分层缺陷代码(类别/子类/代码)');

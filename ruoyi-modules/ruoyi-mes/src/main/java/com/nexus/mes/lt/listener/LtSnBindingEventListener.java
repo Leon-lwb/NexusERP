@@ -25,11 +25,16 @@ public class LtSnBindingEventListener {
 
     /**
      * SN 创建联动写 SN↔批次绑定
+     * <p>lotId 为空(未指定批次)时跳过——SnCreatedEvent 现为造码即发(供 label 打印等消费),
+     * 批次绑定仅在指定批次时生效。</p>
      *
      * @param event SN创建事件
      */
     @EventListener
     public void onSnCreated(SnCreatedEvent event) {
+        if (event.getLotId() == null) {
+            return;
+        }
         LtSnBindingBo bo = new LtSnBindingBo();
         bo.setSnId(event.getSnId());
         bo.setLotId(event.getLotId());

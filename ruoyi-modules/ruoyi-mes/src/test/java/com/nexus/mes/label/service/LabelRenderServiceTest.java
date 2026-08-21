@@ -1,0 +1,155 @@
+package com.nexus.mes.label.service;
+
+import com.nexus.common.core.exception.ServiceException;
+import com.nexus.mes.label.domain.MesLabelTemplate;
+import org.junit.jupiter.api.Test;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+/**
+ * LabelRenderService 单元测试 — TSPL/ZPL 双语言渲染矩阵(纯函数, 无 Spring 依赖)。
+ *
+ * @author Nexus
+ */
+class LabelRenderServiceTest {
+
+    private final LabelRenderService renderService = new LabelRenderService();
+
+    private MesLabelTemplate template(String lang, String content) {
+        MesLabelTemplate t = new MesLabelTemplate();
+        t.setTemplateCode("TPL-1");
+        t.setLabelType("SN");
+        t.setLabelLang(lang);
+        t.setWidthMm(60);
+        t.setHeightMm(40);
+        t.setPrinterHost("192.168.1.50");
+        t.setPrinterPort(9100);
+        t.setContent(content);
+        return t;
+    }
+
+    private Map<String, String> fields() {
+        Map<String, String> f = new HashMap<>();
+        f.put("snCode", "SN-FC-0001");
+        f.put("materialCode", "GW-1000");
+        f.put("materialName", "网关主板");
+        f.put("woNo", "MO-001");
+        f.put("cardNo", "FC-001");
+        f.put("productionDate", "2026-08-21");
+        return f;
+    }
+
+    // ==================== TSPL ====================
+
+    @Test
+    void tspl_rendersHeaderAndAllItemTypes() {
+        String content = """
+            {"items":[
+              {"type":"qrcode","field":"snCode","x":8,"y":8,"size":5},
+              {"type":"barcode","field":"snCode","x":8,"y":60,"height":48},
+              {"type":"text","field":"materialName","x":8,"y":120,"size":24}
+            ]}""";
+        String payload = renderService.render(template("TSPL", content), fields());
+
+        assertTrue(payload.startsWith("SIZE 60 mm,40 mm"), "应以 SIZE 头开始: " + payload);
+        assertTrue(payload.contains("GAP 2 mm,0"));
+        assertTrue(payload.contains("DIRECTION 1,0"));
+        assertTrue(payload.contains("QRCODE 8,8,H,5,A,0,M2,S7,\"SN-FC-0001\""));
+        assertTrue(payload.contains("BARCODE 8,60,\"128\",48,0,0,2,2,\"SN-FC-0001\""));
+        // 字号 24 = TSS24.BF2 基准字号的 1 倍放大
+        assertTrue(payload.contains("TEXT 8,120,\"TSS24.BF2\",0,1,1,\"网关主板\""));
+        assertTrue(payload.trim().endsWith("PRINT 1,1"));
+    }
+
+    @Test
+    void tspl_textSizeScalesFontMagnification() {
+        String content = "{\"items\":[{\"type\":\"text\",\"field\":\"materialName\",\"x\":0,\"y\":0,\"size\":48}]}";
+        String payload = renderService.render(template("TSPL", content), fields());
+        // 48/24 = 2 倍放大
+        assertTrue(payload.contains("\"TSS24.BF2\",0,2,2"), payload);
+    }
+
+    @Test
+    void tspl_escapesQuotesInValues() {
+        Map<String, String> f = fields();
+        f.put("materialName", "含\"引号\"物料");
+        String content = "{\"items\":[{\"type\":\"text\",\"field\":\"materialName\",\"x\":0,\"y\":0}]}";
+        String payload = renderService.render(template("TSPL", content), f);
+        assertTrue(payload.contains("\\\"引号\\\""), "双引号应转义: " + payload);
+    }
+
+    // ==================== ZPL ====================
+
+    @Test
+    void zpl_rendersHeaderAndAllItemTypes() {
+        String content = """
+            {"items":[
+              {"type":"qrcode","field":"snCode","x":8,"y":8,"size":5},
+              {"type":"barcode","field":"snCode","x":8,"y":60,"height":48},
+              {"type":"text","field":"materialName","x":8,"y":120,"size":24}
+            ]}""";
+        String payload = renderService.render(template("ZPL", content), fields());
+
+        assertTrue(payload.startsWith("^XA"));
+        assertTrue(payload.contains("^CI28"));
+        // 60mm * 8 dots/mm = 480
+        assertTrue(payload.contains("^PW480"));
+        assertTrue(payload.contains("^LL320"));
+        // 坐标 8mm * 8 = 64 dots
+        assertTrue(payload.contains("^FO64,64^BQN,2,5^FDQA,SN-FC-0001^FS"));
+        assertTrue(payload.contains("^FO64,480^BY2,3,"));
+        assertTrue(payload.contains("^FD网关主板^FS"));
+        assertTrue(payload.trim().endsWith("^XZ"));
+    }
+
+    // ==================== 公共行为 ====================
+
+    @Test
+    void missingFieldRendersEmptyString() {
+        String content = "{\"items\":[{\"type\":\"text\",\"field\":\"cardNo\",\"x\":0,\"y\":0}]}";
+        Map<String, String> empty = new HashMap<>();
+        String payload = renderService.render(template("TSPL", content), empty);
+        assertTrue(payload.contains(",\"\""), "缺失字段应渲染为空串: " + payload);
+    }
+
+    @Test
+    void unknownItemTypeThrows() {
+        String content = "{\"items\":[{\"type\":\"image\",\"field\":\"snCode\",\"x\":0,\"y\":0}]}";
+        ServiceException ex = assertThrows(ServiceException.class,
+            () -> renderService.render(template("TSPL", content), fields()));
+        assertTrue(ex.getMessage().contains("未知打印项类型"));
+    }
+
+    @Test
+    void itemWithoutFieldThrows() {
+        String content = "{\"items\":[{\"type\":\"text\",\"x\":0,\"y\":0}]}";
+        assertThrows(ServiceException.class,
+            () -> renderService.render(template("TSPL", content), fields()));
+    }
+
+    @Test
+    void malformedJsonThrows() {
+        assertThrows(ServiceException.class,
+            () -> renderService.render(template("TSPL", "{not-json"), fields()));
+    }
+
+    @Test
+    void emptyItemsThrows() {
+        assertThrows(ServiceException.class,
+            () -> renderService.render(template("TSPL", "{\"items\":[]}"), fields()));
+    }
+
+    @Test
+    void charset_tsplGbk_zplUtf8() {
+        MesLabelTemplate tspl = template("TSPL", "{\"items\":[]}");
+        MesLabelTemplate zpl = template("ZPL", "{\"items\":[]}");
+        // charsetOf 不依赖 content
+        assertEquals("GBK", renderService.charsetOf(tspl).name());
+        assertEquals("UTF-8", renderService.charsetOf(zpl).name());
+    }
+}
