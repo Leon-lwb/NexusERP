@@ -128,6 +128,8 @@ if (latest != null && "FAIL".equals(latest.getResult())) { holdOk = false; ... }
 - M3 立项评审：电子 SOP、上料防错、设备点检、追溯查询（后端配套见 station 设计文档 §六需求表）
 - 待办数据项：ncr_defect_code 造 level=3 且 enabled='Y' 的三级不良代码（C9 脱离静态兜底）
 - 待办验证项：Electron 页面级真机端到端冒烟（10 项清单，API 级已全通）；自动更新真机链路（latest.yml 发布目录搭建）
+- 待办（M3）**工位终端 ↔ 工作中心设备联动视图**（2026-08-21 评审结论：纯运维便利性增强，不加列不建新模型）：工位终端台账页经 station_code 解析的 workcenter/process 反查该工作中心设备清单展示（bd_workstation ↔ eq_equipment 已有 workcenter 关联链）；eq_equipment 详情页反向展示"由哪台工位机操控 + 在线状态"。与主流 MES 的 Work Center 模型同构（终端是工作中心属性，非独立资产），优先级排在真机冒烟之后
+- 待办（M3）**工位机设备编码自动录入**：现状为设置页手工录入（空=UNREGISTERED）；方案是把设备编码印进工位码条码第 6 段（`STN|车间|产线|工序|形态|设备号`），扫工位码绑定工位时自动回填 deviceCode，消除手工录入与编码不规范
 
 ### 里程碑判定
 
