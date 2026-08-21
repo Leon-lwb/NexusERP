@@ -109,23 +109,27 @@ if (latest != null && "FAIL".equals(latest.getResult())) { holdOk = false; ... }
 
 前置数据准备：执行 `script/sql/update/2026-08-21-station-device-channel.sql`；造 sch_worker 在岗档案、在制流转卡+SN、RELEASED 固件各一条。
 
-### 阶段 2：补测试与加固（1-2d，可与阶段 1 并行）
+### 阶段 2：补测试与加固（1-2d，可与阶段 1 并行）✅ 2026-08-21 完成
 
-- [ ] 后端 ruoyi-station 单测：StationPassService（四重校验矩阵、幂等重放、数量收口 CAS）、StationSnService（防环）、resolveProcessCode（心跳优先/格式解析）
-- [ ] 客户端：firmwareUrl 拼接的回归用例
-- [ ] 客户端既有优化项（来自 2026-08-21 前期审查，择要）：API Key 存储改 safeStorage、离线队列加上限/TTL、electron-log 文件日志
+- [x] 后端 ruoyi-station 单测：StationPassServiceTest 14 例（F-3/F-5/F-7 回归、四重校验矩阵、幂等重放、收口 CAS、工位码解析）+ StationSnServiceTest 7 例（防环/重复绑定/换板）——erp 提交 fcccba4f
+- [x] 客户端：firmwareUrl 拼接回归用例（相对路径下载拼接）——station 提交 7c70865
+- [x] 客户端加固：FirmwareDownloader 识别 HTTP 200 + JSON 错误体（冒烟报告遗留项）——station 提交 3617498
+- [ ] 客户端既有优化项（择要，未排期）：API Key 存储改 safeStorage、离线队列加上限/TTL、electron-log 文件日志
 
-### 阶段 3：M1 Task 8 自动更新 + 铺开准备（2-3d）
+### 阶段 3：M1 Task 8 自动更新 + 铺开准备（2-3d）✅ 2026-08-21 完成
 
-- [ ] electron-updater 接入（NSIS 已通）：差量更新、静默安装、失败回滚
-- [ ] 心跳已上报 appVersion（C10 已含）→ 后续灰度发布的版本依据已就位
-- [ ] mes_station_device 在 plus-ui 加只读管理页（设备在线状态/版本/最后心跳，运维需要）
+- [x] electron-updater 接入：静默下载 + 夜间窗口安装(02:00-05:00) + 差量更新 + 失败静默 4h 重查——station 提交 ecd9d93，**M1 全部 8 任务闭环**
+- [x] 心跳已上报 appVersion（C10 已含）→ 灰度发布的版本依据已就位
+- [x] mes_station_device 在 plus-ui 加只读管理页：/mes/station-admin/device（登录鉴权，与设备通道白名单分离）+ 菜单「生产执行→工位终端」——erp 提交 1c265281
 
 ### 阶段 4：标签打印 + M3 立项（另行排期）
 
 - 标签打印（M1 设计内未启动）：SN 标签 SnCreatedEvent 触发 + TSPL/ZPL 模板渲染下发
 - M3 立项评审：电子 SOP、上料防错、设备点检、追溯查询（后端配套见 station 设计文档 §六需求表）
+- 待办数据项：ncr_defect_code 造 level=3 且 enabled='Y' 的三级不良代码（C9 脱离静态兜底）
+- 待办验证项：Electron 页面级真机端到端冒烟（10 项清单，API 级已全通）；自动更新真机链路（latest.yml 发布目录搭建）
 
 ### 里程碑判定
 
-**阶段 0+1 完成 = M2 正式闭环**（客户端三形态全功能脱离降级 + 真机验证 + 幂等验收）。合计约 3-5 天。
+**阶段 0+1 完成 = M2 正式闭环**（客户端三形态全功能脱离降级 + 真机验证 + 幂等验收）✅
+**阶段 2+3 完成 = M1/M2 全部里程碑交付**（2026-08-21，含自动更新与管理端运维视图）✅
