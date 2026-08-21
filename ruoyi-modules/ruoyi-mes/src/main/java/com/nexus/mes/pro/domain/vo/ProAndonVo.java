@@ -49,6 +49,10 @@ public class ProAndonVo implements Serializable {
     /** 关联流转卡工序记录ID */
     private Long stepRecordId;
 
+    /** 工位编码(工位终端设备通道呼叫时冗余) */
+    @ExcelProperty("工位编码")
+    private String stationCode;
+
     /** 呼叫类型 */
     @ExcelProperty("呼叫类型")
     private String callType;

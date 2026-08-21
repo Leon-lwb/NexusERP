@@ -38,6 +38,15 @@ public class TestReportBo implements Serializable {
     /** 工序名称(可选) */
     private String processName;
 
+    /** 操作员用户ID(设备通道上报, C1 上岗返回; 缺失容忍) */
+    private Long operatorId;
+
+    /** 操作员工号(设备通道上报, 免登录时留痕; 缺失容忍) */
+    private String operatorCode;
+
+    /** 操作员姓名(设备通道上报; 缺失容忍) */
+    private String operatorName;
+
     /** 测试项实测值列表(必填, 至少一项) */
     @Valid
     @NotEmpty(message = "测试项实测值不能为空")

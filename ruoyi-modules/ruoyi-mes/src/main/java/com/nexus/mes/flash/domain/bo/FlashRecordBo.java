@@ -92,6 +92,9 @@ public class FlashRecordBo extends BaseEntity {
     /** 操作人姓名(查询用) */
     private String operatorName;
 
+    /** 操作人工号(设备通道上报, 免登录时留痕; 缺失容忍) */
+    private String operatorCode;
+
     /** 刷写时间(新增默认当前时间) */
     private Date flashTime;
 

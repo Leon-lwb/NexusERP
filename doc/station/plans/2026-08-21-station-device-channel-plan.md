@@ -1,8 +1,8 @@
 # NexusERP STATION 设备通道接口开发计划（nexus-station 工位终端后端支持）
 
-> **文档版本**: v1.0
+> **文档版本**: v2.0
 > **制定日期**: 2026-08-21
-> **状态**: 🔨 执行中 — C1 已交付，P0 前置已完成
+> **状态**: ✅ 全部交付（2026-08-21，批次0-6：C1-C12 + M1-a/M1-b；含 ruoyi-mes 依赖决策变更）
 > **需求来源**: nexus-station M2 计划表 1（契约权威定义）+ 2026-08-21 后端缺口审查
 > **服务对象**: nexus-station 工位智能终端（三形态工位：FLASH 烧录 / TEST 综测 / GENERAL 过站）
 > **前置文档**: `nexus-erp/doc/2026-08-19-Nexus客户端生态规划.md`、`nexus-station/doc/plans/2026-08-20-M2-过站综测安灯开发计划.md`
@@ -44,24 +44,24 @@ ruoyi-station（新建，2026-08-21）
 | # | 端点 | 方法 | 请求 | 响应 data | 实现要点 | 状态 |
 |---|------|------|------|-----------|----------|------|
 | C1 | `/mes/station/operator?code=` | GET | 工号条码 | `{userId, userName, employeeId?, workshopName?}` | sch_worker(@DS("erp")) → sys_user 两步校验 | ✅ |
-| C2 | `/mes/station/pass/validate` | POST | `{snCode, stationCode}` | `{pass, snInfo:{woNo,cardNo,materialName,currentProcessName}, checks:[{code:PREV_STEP\|STATION_MATCH\|DUPLICATE\|QUALITY_HOLD, ok, message}]}` | 聚合查 pro_flow_card_step/pro_sn/mes_test_record(@DS("mes"))，四重校验一次返回 | 🔶 |
-| C3 | `/mes/station/pass/report` | POST | `{snCode, stationCode, operatorId?, operatorCode?, result:PASS\|FAIL, defectCodes?, clientTs}` | `{}` | completeStep 设备通道版；**幂等键 snCode+stationCode+clientTs，落唯一索引兜底**（离线队列回放去重依赖） | 🔶 |
-| C4 | `/mes/station/pass/report-batch` | POST | `{stationCode, operatorCode?, goodQty, defects:[{code,qty}], clientTs}` | `{}` | 批量计数报工，同样幂等 | 🔶 |
-| C5 | `/mes/station/sn/bind` | POST | `{parentSnCode, componentSnCodes:[], operatorCode?}` | `{boundQty}` | 包装 ProSnService 绑定逻辑，批量 + 防环校验（A绑B后B不可再绑A） | 🔶 |
-| C6 | `/mes/station/sn/unbind` | POST | `{componentSnCode, newComponentSnCode?, reason, operatorCode?}` | `{}` | 解绑留痕，支持换板「解绑+重绑」一步完成 | 🔶 |
-| C7 | `/mes/station/andon/call` | POST | `{callType:MATERIAL\|REPAIR\|PERSON\|QUALITY, callReason?, stationCode, operatorCode?, woNo?, cardNo?}` | `{andonNo}` | **包装既有 `/mes/pro/andon/call`**（ProAndonController/MesAndonServiceImpl 已完整） | 🔶 |
-| C8 | `/mes/station/andon/latest?stationCode=` | GET | — | `{andonNo, callType, andonStatus:CALLED\|RESPONDED\|RESOLVED, callTime, responderName}` | 查 ProAndon 该工位最新一条(@DS("mes")) | 🔶 |
-| C9 | `/mes/station/defect-codes` | GET | — | `[{code, label}]` | sys_dict 或常量表 | 🔶 |
-| C10 | `/mes/flash/report/station/heartbeat` | POST | `{deviceCode, stationCode, appVersion, stationTime}` | `{}` | **需新建 `mes_station_device` 台账表**，upsert 更新 last_heartbeat | 🔶 |
+| C2 | `/mes/station/pass/validate` | POST | `{snCode, stationCode}` | `{pass, snInfo:{woNo,cardNo,materialName,currentProcessName}, checks:[{code:PREV_STEP\|STATION_MATCH\|DUPLICATE\|QUALITY_HOLD, ok, message}]}` | 聚合查 pro_flow_card_step/pro_sn/mes_test_record(@DS("mes"))，四重校验一次返回| ✅ |
+| C3 | `/mes/station/pass/report` | POST | `{snCode, stationCode, operatorId?, operatorCode?, result:PASS\|FAIL, defectCodes?, clientTs}` | `{}` | completeStep 设备通道版；**幂等键 snCode+stationCode+clientTs，落唯一索引兜底**（离线队列回放去重依赖）| ✅ |
+| C4 | `/mes/station/pass/report-batch` | POST | `{stationCode, operatorCode?, goodQty, defects:[{code,qty}], clientTs}` | `{}` | 批量计数报工，同样幂等| ✅ |
+| C5 | `/mes/station/sn/bind` | POST | `{parentSnCode, componentSnCodes:[], operatorCode?}` | `{boundQty}` | 包装 ProSnService 绑定逻辑，批量 + 防环校验（A绑B后B不可再绑A）| ✅ |
+| C6 | `/mes/station/sn/unbind` | POST | `{componentSnCode, newComponentSnCode?, reason, operatorCode?}` | `{}` | 解绑留痕，支持换板「解绑+重绑」一步完成| ✅ |
+| C7 | `/mes/station/andon/call` | POST | `{callType:MATERIAL\|REPAIR\|PERSON\|QUALITY, callReason?, stationCode, operatorCode?, woNo?, cardNo?}` | `{andonNo}` | **包装既有 `/mes/pro/andon/call`**（ProAndonController/MesAndonServiceImpl 已完整）| ✅ |
+| C8 | `/mes/station/andon/latest?stationCode=` | GET | — | `{andonNo, callType, andonStatus:CALLED\|RESPONDED\|RESOLVED, callTime, responderName}` | 查 ProAndon 该工位最新一条(@DS("mes"))| ✅ |
+| C9 | `/mes/station/defect-codes` | GET | — | `[{code, label}]` | sys_dict 或常量表| ✅ |
+| C10 | `/mes/flash/report/station/heartbeat` | POST | `{deviceCode, stationCode, appVersion, stationTime}` | `{}` | **需新建 `mes_station_device` 台账表**，upsert 更新 last_heartbeat| ✅ |
 | C11 | `/mes/flash/report/test/auto` | POST | 综测上报数组 | 批量结果 | 已存在（FlashReportController） | ✅ |
-| C12 | 刷写/测试上报 BO 增加字段 | — | `operatorId/operatorCode` | — | FlashReportBo/TestReportBo 加字段，缺失容忍（旧版客户端不传） | 🔶 |
+| C12 | 刷写/测试上报 BO 增加字段 | — | `operatorId/operatorCode` | — | FlashReportBo/TestReportBo 加字段，缺失容忍（旧版客户端不传）| ✅ |
 
 ### 2.1 M1 遗留契约
 
 | # | 端点 | 说明 | 状态 |
 |---|------|------|------|
-| M1-a | `POST /mes/flash/report/station/prepare` | 内容预取/池值预分配，幂等；客户端 404 时降级为直接刷写 | 🔶 |
-| M1-b | `GET /mes/flash/report/station/firmware/{id}/download` | 固件文件下载流（X-API-KEY），客户端做 MD5 校验；mes_firmware 表已有，**需确认文件存储后端（OSS/本地）** | 🔶 |
+| M1-a | `POST /mes/flash/report/station/prepare` | 内容预取/池值预分配，幂等；客户端 404 时降级为直接刷写| ✅ |
+| M1-b | `GET /mes/flash/report/station/firmware/{id}/download` | 固件文件下载流（X-API-KEY），客户端做 MD5 校验；mes_firmware 表已有，**需确认文件存储后端（OSS/本地）**| ✅ |
 
 ### 2.2 新建表（ry-mes 库）
 
@@ -89,13 +89,23 @@ CREATE TABLE mes_station_device (
 | 批次 | 内容 | 预估 | 解锁的 station 冒烟项 |
 |------|------|------|----------------------|
 | ✅ 批次0 | P0 前置（模块/excludes）+ C1 上岗 | 0.5d | 冒烟#2 扫工号上岗（降级标签消失） |
-| 批次1 | C7 + C8 安灯（纯包装既有 ProAndon 逻辑） | 1d | 冒烟#9 安灯四键呼叫 |
-| 批次2 | C2 + C3 过站校验/单件报工（四重校验聚合查询 + 幂等唯一索引） | 3-5d | 冒烟#3 过站红绿屏、#4 不良上报、#6 离线回放幂等验证 |
-| 批次3 | C4 + C12 批量报工 + BO 字段 | 1-2d | 冒烟#5 批量计数 |
-| 批次4 | C5 + C6 关键件绑定/解绑（防环校验） | 2d | 冒烟#8 关键件绑定 |
-| 批次5 | C10 心跳 + mes_station_device 建表 | 1d | 冒烟#10 心跳落库 |
-| 批次6 | C9 缺陷代码 + M1-a/M1-b prepare/固件下载（先确认存储方案） | 1-2d | 刷写闭环完整形态 |
+| ✅ 批次1 | C7 + C8 安灯（纯包装既有 ProAndon 逻辑） | 1d | 冒烟#9 安灯四键呼叫 |
+| ✅ 批次2 | C2 + C3 过站校验/单件报工（四重校验聚合查询 + 幂等唯一索引） | 3-5d | 冒烟#3 过站红绿屏、#4 不良上报、#6 离线回放幂等验证 |
+| ✅ 批次3 | C4 + C12 批量报工 + BO 字段 | 1-2d | 冒烟#5 批量计数 |
+| ✅ 批次4 | C5 + C6 关键件绑定/解绑（防环校验） | 2d | 冒烟#8 关键件绑定 |
+| ✅ 批次5 | C10 心跳 + mes_station_device 建表 | 1d | 冒烟#10 心跳落库 |
+| ✅ 批次6 | C9 缺陷代码 + M1-a/M1-b prepare/固件下载 | 1-2d | 刷写闭环完整形态 |
 | **合计** | | **10-13d** | 10 项冒烟全部脱离降级模式 |
+
+### 执行期决策记录（2026-08-21 实施时确定）
+
+1. **模块依赖变更**：原"物理独立不依赖 ruoyi-mes"改为 **ruoyi-station 依赖 ruoyi-mes**——C2/C3/C7 完整语义复制成本过高，直接注入 IProAndonService/IProFlowCardService/IProSnService 复用（安灯 SSE 推送、工序 CAS 状态机、completeCard 聚合、SN 完工）。
+2. **QUALITY_HOLD 综合判定**：最新综测 FAIL（mes_test_record）或所在流转卡存在未关闭 NCR（OPEN/REVIEW/DISPOSITION/IN_REWORK）或 SN 状态非 IN_PRODUCTION。
+3. **缺陷代码源**：`ncr_defect_code`（level=3 且 enabled='Y'），非新建 sys_dict 字典。
+4. **安灯工位**：`pro_andon` 新增 `station_code` 列（增量 SQL 含存在性判断可重复执行）。
+5. **C3 报工语义**：设备通道为 SN 级增量报工（step good/defect_qty 累加 + SN current_step_seq 前移），不触碰 completeStep 卡级全数分流校验路径；数量达标时本服务 CAS 收口并复用 completeCard。
+6. **C10 心跳**：upsert 时顺带维护 工位码↔工序码 绑定，为 C2/C4 的工位工序解析提供第一优先级来源（工位码格式 `STN|车间|产线|工序|形态` 解析为兜底）。
+7. **M1-b 固件下载**：不走 OSS 签名 URL（客户端下载器带 X-API-KEY 头直连本服务），后端按 FirmwareServiceImpl 跨库先例（DynamicDataSourceContextHolder.push("master")）读 sys_oss 并流式代理输出。
 
 ## 四、技术约定（本模块开发必读）
 

@@ -1337,6 +1337,7 @@ CREATE TABLE `pro_andon`  (
   `card_id` bigint(20) NULL DEFAULT NULL COMMENT '关联流转卡ID',
   `card_no` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '流转卡编号(冗余)',
   `step_record_id` bigint(20) NULL DEFAULT NULL COMMENT '关联流转卡工序记录ID',
+  `station_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '工位编码(设备通道呼叫)',
   `call_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '呼叫类型: QUALITY/MATERIAL/EQUIPMENT/OTHER',
   `call_reason` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '呼叫原因',
   `andon_status` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'CALLED' COMMENT 'CALLED/RESPONDED/RESOLVED/CANCELLED',
@@ -1361,7 +1362,8 @@ CREATE TABLE `pro_andon`  (
   INDEX `idx_andon_status`(`andon_status`) USING BTREE,
   INDEX `idx_call_type`(`call_type`) USING BTREE,
   INDEX `idx_mes_wo_id`(`mes_wo_id`) USING BTREE,
-  INDEX `idx_card_id`(`card_id`) USING BTREE
+  INDEX `idx_card_id`(`card_id`) USING BTREE,
+  INDEX `idx_station_code`(`station_code`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'MES安灯呼叫' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -2494,5 +2496,79 @@ CREATE TABLE `tg_usage_record`  (
 -- ----------------------------
 INSERT INTO `tg_usage_record` VALUES (2081272379664936961, '000000', 2081272377081245697, 100, 'WO-E2E-001', 1, 'WS1', 1, 'admin', '2026-07-26 14:56:18', '2026-07-26 14:56:18', 500, 2.50, 'RETURNED', NULL, 103, 1, '2026-07-26 14:56:18', 1, '2026-07-26 14:56:18', '0');
 INSERT INTO `tg_usage_record` VALUES (2081272382944882689, '000000', 2081272377081245697, NULL, NULL, NULL, NULL, 1, 'admin', '2026-07-26 14:56:19', '2026-07-26 14:56:19', 600, NULL, 'RETURNED', NULL, 103, 1, '2026-07-26 14:56:19', 1, '2026-07-26 14:56:19', '0');
+
+-- ----------------------------
+-- Table structure for mes_station_device (工位终端设备台账)
+-- ----------------------------
+DROP TABLE IF EXISTS `mes_station_device`;
+CREATE TABLE `mes_station_device`  (
+  `device_id` bigint(20) NOT NULL COMMENT '设备ID',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000',
+  `device_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '设备编码(工控机)',
+  `station_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '绑定工位编码',
+  `process_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '绑定工序编码',
+  `app_version` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '终端版本',
+  `last_heartbeat` datetime NULL DEFAULT NULL COMMENT '最后心跳时间',
+  `create_dept` bigint(20) NULL DEFAULT NULL,
+  `create_by` bigint(20) NULL DEFAULT NULL,
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP,
+  `update_by` bigint(20) NULL DEFAULT NULL,
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0',
+  PRIMARY KEY (`device_id`) USING BTREE,
+  UNIQUE INDEX `uk_device_code`(`device_code`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '工位终端设备台账' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Table structure for mes_station_report (工位终端报工记录/设备通道幂等承载)
+-- ----------------------------
+DROP TABLE IF EXISTS `mes_station_report`;
+CREATE TABLE `mes_station_report`  (
+  `report_id` bigint(20) NOT NULL COMMENT '报工记录ID',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000',
+  `report_type` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '报工类型: SINGLE(单件过站)/BATCH(批量计数)',
+  `sn_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT 'SN编码(SINGLE)',
+  `station_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '工位编码',
+  `card_id` bigint(20) NULL DEFAULT NULL COMMENT '流转卡ID',
+  `step_record_id` bigint(20) NULL DEFAULT NULL COMMENT '流转卡工序记录ID',
+  `mes_wo_id` bigint(20) NULL DEFAULT NULL COMMENT 'MES工单ID',
+  `wo_no` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '工单编号(冗余)',
+  `operator_id` bigint(20) NULL DEFAULT NULL COMMENT '操作员用户ID',
+  `operator_code` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '操作员工号',
+  `operator_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '操作员姓名',
+  `result` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '结果: PASS/FAIL(SINGLE)',
+  `defect_codes` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '不良代码(逗号分隔)',
+  `good_qty` decimal(18, 4) NULL DEFAULT 0.0000 COMMENT '良品数量',
+  `defect_qty` decimal(18, 4) NULL DEFAULT 0.0000 COMMENT '不良数量',
+  `client_ts` bigint(20) NOT NULL COMMENT '客户端时间戳(毫秒)',
+  `client_key` varchar(160) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '幂等键: SINGLE|sn|station|ts 或 BATCH|station|ts',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`report_id`) USING BTREE,
+  UNIQUE INDEX `uk_tenant_client_key`(`tenant_id`, `client_key`) USING BTREE,
+  INDEX `idx_sn_code`(`sn_code`) USING BTREE,
+  INDEX `idx_station_code`(`station_code`) USING BTREE,
+  INDEX `idx_step_record`(`step_record_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '工位终端报工记录(设备通道)' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Table structure for mes_sn_bind_log (关键件绑定操作日志)
+-- ----------------------------
+DROP TABLE IF EXISTS `mes_sn_bind_log`;
+CREATE TABLE `mes_sn_bind_log`  (
+  `log_id` bigint(20) NOT NULL COMMENT '日志ID',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000',
+  `action` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '操作: BIND/UNBIND/REBIND',
+  `parent_sn_id` bigint(20) NULL DEFAULT NULL COMMENT '父SN ID',
+  `parent_sn_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '父SN编码',
+  `component_sn_id` bigint(20) NULL DEFAULT NULL COMMENT '组件SN ID',
+  `component_sn_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '组件SN编码',
+  `new_component_sn_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '换板新组件SN编码(REBIND)',
+  `reason` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '操作原因(解绑/换板必填)',
+  `operator_code` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '操作员工号',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`log_id`) USING BTREE,
+  INDEX `idx_parent`(`parent_sn_id`) USING BTREE,
+  INDEX `idx_component`(`component_sn_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '关键件绑定操作日志' ROW_FORMAT = DYNAMIC;
 
 SET FOREIGN_KEY_CHECKS = 1;

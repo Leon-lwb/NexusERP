@@ -121,6 +121,16 @@ public class ProAndonServiceImpl implements IProAndonService {
     @Transactional(rollbackFor = Exception.class)
     public ProAndonVo callAndon(Long mesWoId, Long cardId, Long stepRecordId,
                                  String callType, String callReason) {
+        return callAndon(mesWoId, cardId, stepRecordId, callType, callReason, null, null);
+    }
+
+    /**
+     * 呼叫安灯(完整参数版): 旧签名内部转调, 行为不变; 设备通道额外携带 stationCode/operatorCode。
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public ProAndonVo callAndon(Long mesWoId, Long cardId, Long stepRecordId,
+                                 String callType, String callReason, String stationCode, String operatorCode) {
         // 1. 校验呼叫类型合法
         if (!isValidCallType(callType)) {
             throw new RuntimeException("非法呼叫类型: " + callType);
@@ -156,16 +166,20 @@ public class ProAndonServiceImpl implements IProAndonService {
         andon.setCardId(cardId);
         andon.setCardNo(cardNo);
         andon.setStepRecordId(stepRecordId);
+        andon.setStationCode(stationCode);
         andon.setCallType(callType);
         andon.setCallReason(callReason);
         andon.setAndonStatus(STATUS_CALLED);
         andon.setCallTime(new Date());
         andon.setSource(SOURCE_MANUAL);
-        // 手动路径填写呼叫人身份(IoT 路径由 MesAndonServiceImpl 在租户上下文内调用, callerId 可能为 null)
+        // 手动路径填写呼叫人身份(IoT 路径由 MesAndonServiceImpl 在租户上下文内调用, callerId 可能为 null);
+        // 设备通道(operatorCode 优先)与登录态同时存在时, 以登录态为准
         Long callerId = LoginHelper.getUserId();
         if (callerId != null) {
             andon.setCallerId(callerId);
             andon.setCallerName(LoginHelper.getUsername());
+        } else if (StringUtils.isNotBlank(operatorCode)) {
+            andon.setCallerName(operatorCode);
         }
         baseMapper.insert(andon);
 

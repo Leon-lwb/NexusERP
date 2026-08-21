@@ -42,6 +42,9 @@ public class ProAndon extends TenantEntity {
     /** 关联流转卡工序记录ID */
     private Long stepRecordId;
 
+    /** 工位编码(工位终端设备通道呼叫时冗余) */
+    private String stationCode;
+
     /** 呼叫类型: QUALITY/MATERIAL/EQUIPMENT/OTHER */
     private String callType;
 

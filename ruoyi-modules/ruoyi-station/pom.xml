@@ -54,6 +54,12 @@
             <artifactId>ruoyi-system</artifactId>
         </dependency>
 
+        <!-- 复用 MES 业务逻辑: 安灯 callAndon/流转卡工序状态机/SN 管理(Nexus 决策: 放弃物理独立) -->
+        <dependency>
+            <groupId>com.nexus</groupId>
+            <artifactId>ruoyi-mes</artifactId>
+        </dependency>
+
     </dependencies>
 
 </project>

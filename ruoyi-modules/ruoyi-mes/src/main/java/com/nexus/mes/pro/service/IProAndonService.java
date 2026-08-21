@@ -69,6 +69,21 @@ public interface IProAndonService {
                          String callType, String callReason);
 
     /**
+     * 呼叫安灯(完整参数版, 工位终端设备通道使用)
+     *
+     * @param mesWoId      关联MES工单ID(可空)
+     * @param cardId       关联流转卡ID(可空)
+     * @param stepRecordId 关联工序记录ID(可空)
+     * @param callType     呼叫类型
+     * @param callReason   呼叫原因
+     * @param stationCode  工位编码(可空, 冗余存储供工位维度查询)
+     * @param operatorCode 呼叫人工号(可空, 免登录通道无 LoginHelper 上下文时作为呼叫人留痕)
+     * @return 安灯视图对象
+     */
+    ProAndonVo callAndon(Long mesWoId, Long cardId, Long stepRecordId,
+                         String callType, String callReason, String stationCode, String operatorCode);
+
+    /**
      * 响应安灯(CALLED -> RESPONDED)
      */
     void respondAndon(Long andonId);

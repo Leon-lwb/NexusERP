@@ -34,6 +34,9 @@ public class ProAndonBo extends BaseEntity {
     /** 关联流转卡工序记录ID */
     private Long stepRecordId;
 
+    /** 工位编码(工位终端设备通道呼叫时冗余) */
+    private String stationCode;
+
     /** 呼叫类型: QUALITY/MATERIAL/EQUIPMENT/OTHER */
     @NotBlank(message = "呼叫类型不能为空")
     private String callType;

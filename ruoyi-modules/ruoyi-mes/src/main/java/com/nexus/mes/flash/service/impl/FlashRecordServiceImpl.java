@@ -141,10 +141,7 @@ public class FlashRecordServiceImpl implements IFlashRecordService {
         record.setFlashMode(StringUtils.isBlank(bo.getFlashMode()) ? MODE_MANUAL : bo.getFlashMode());
         record.setRemark(bo.getRemark());
         record.setFlashTime(bo.getFlashTime() == null ? new Date() : bo.getFlashTime());
-        if (LoginHelper.isLogin()) {
-            record.setOperatorId(LoginHelper.getUserId());
-            record.setOperatorName(LoginHelper.getUsername());
-        }
+        applyOperator(record, bo);
         enrichRedundant(record);
         baseMapper.insert(record);
         log.info("刷写记录补录: flashNo={}, snCode={}, result={}", record.getFlashNo(), record.getSnCode(), record.getResult());
@@ -576,10 +573,7 @@ public class FlashRecordServiceImpl implements IFlashRecordService {
         record.setStepRecordId(bo.getStepRecordId());
         record.setRemark(bo.getRemark());
         record.setFlashTime(bo.getFlashTime() == null ? new Date() : bo.getFlashTime());
-        if (LoginHelper.isLogin()) {
-            record.setOperatorId(LoginHelper.getUserId());
-            record.setOperatorName(LoginHelper.getUsername());
-        }
+        applyOperator(record, bo);
         enrichRedundant(record);
         return record;
     }
@@ -612,6 +606,26 @@ public class FlashRecordServiceImpl implements IFlashRecordService {
             bindings.add(m);
         }
         return bindings;
+    }
+
+    /**
+     * 操作人赋值: 登录态优先(PC 端), 免登录设备通道回退 BO 携带的 operatorId/operatorName,
+     * 均缺失时以 operatorCode 工号留痕到 operatorName(设备通道旧版客户端仅传工号)。
+     */
+    private void applyOperator(FlashRecord record, FlashRecordBo bo) {
+        if (LoginHelper.isLogin()) {
+            record.setOperatorId(LoginHelper.getUserId());
+            record.setOperatorName(LoginHelper.getUsername());
+            return;
+        }
+        if (bo.getOperatorId() != null) {
+            record.setOperatorId(bo.getOperatorId());
+        }
+        if (StringUtils.isNotBlank(bo.getOperatorName())) {
+            record.setOperatorName(bo.getOperatorName());
+        } else if (StringUtils.isNotBlank(bo.getOperatorCode())) {
+            record.setOperatorName(bo.getOperatorCode());
+        }
     }
 
     private void enrichRedundant(FlashRecord record) {

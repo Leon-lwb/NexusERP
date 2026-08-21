@@ -391,6 +391,15 @@ public class TestRecordServiceImpl implements ITestRecordService {
             r.setEquipmentCode(equipmentCode);
             r.setTestTime(now);
             r.setTestMode(MODE_AUTO);
+            // 设备通道操作员: BO 携带值优先, 免登录时以工号留痕; 旧版客户端不传则为空(容忍)
+            if (bo.getOperatorId() != null) {
+                r.setTesterId(bo.getOperatorId());
+            }
+            if (StringUtils.isNotBlank(bo.getOperatorName())) {
+                r.setTesterName(bo.getOperatorName());
+            } else if (StringUtils.isNotBlank(bo.getOperatorCode())) {
+                r.setTesterName(bo.getOperatorCode());
+            }
             r.setResult(""); // 先落空, 判定后更新(与 manual 待测行一致)
             baseMapper.insert(r);
             // 判定并更新

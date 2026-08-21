@@ -4,7 +4,16 @@ import com.nexus.common.core.domain.R;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.tenant.helper.TenantHelper;
+import com.nexus.station.domain.dto.StationAndonCallDto;
+import com.nexus.station.domain.dto.StationBatchReportDto;
+import com.nexus.station.domain.dto.StationPassReportDto;
+import com.nexus.station.domain.dto.StationPassValidateDto;
+import com.nexus.station.domain.dto.StationSnDtos;
+import com.nexus.station.mapper.StationDefectCodeMapper;
 import com.nexus.station.mapper.StationSchWorkerMapper;
+import com.nexus.station.service.StationAndonService;
+import com.nexus.station.service.StationPassService;
+import com.nexus.station.service.StationSnService;
 import com.nexus.system.domain.vo.SysUserVo;
 import com.nexus.system.service.ISysUserService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -13,12 +22,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -31,6 +43,14 @@ import java.util.Map;
  *
  * <ul>
  *   <li>GET /mes/station/operator?code=工号 — 扫员工工号条码上岗校验(M2 契约 C1)</li>
+ *   <li>POST /mes/station/pass/validate — SN 过站四重校验(C2)</li>
+ *   <li>POST /mes/station/pass/report — SN 单件过站报工(C3, 幂等)</li>
+ *   <li>POST /mes/station/pass/report-batch — 批量计数报工(C4, 幂等)</li>
+ *   <li>POST /mes/station/sn/bind — 关键件批量绑定(C5, 防环)</li>
+ *   <li>POST /mes/station/sn/unbind — 关键件解绑/换板(C6, 留痕)</li>
+ *   <li>GET /mes/station/defect-codes — 不良代码字典(C9, ncr_defect_code 三级代码)</li>
+ *   <li>POST /mes/station/andon/call — 安灯四键呼叫(C7)</li>
+ *   <li>GET /mes/station/andon/latest?stationCode= — 工位最新安灯状态(C8)</li>
  * </ul>
  *
  * @author Nexus
@@ -43,7 +63,11 @@ import java.util.Map;
 public class StationDeviceController {
 
     private final StationSchWorkerMapper schWorkerMapper;
+    private final StationDefectCodeMapper defectCodeMapper;
     private final ISysUserService sysUserService;
+    private final StationAndonService stationAndonService;
+    private final StationPassService stationPassService;
+    private final StationSnService stationSnService;
 
     /** 设备上报密钥(application.yml 配置, 生产务必修改) */
     @Value("${mes.api-key:nexus-mes-api-2026}")
@@ -86,6 +110,123 @@ public class StationDeviceController {
         data.put("userName", StringUtils.isNotBlank(user.getNickName()) ? user.getNickName() : worker.get("user_name"));
         data.put("employeeId", worker.get("employee_id"));
         data.put("workshopName", worker.get("workshop_name"));
+        return R.ok(data);
+    }
+
+    /**
+     * SN 过站四重校验(C2): PREV_STEP/STATION_MATCH/DUPLICATE/QUALITY_HOLD 一次返回,
+     * 客户端按 pass 渲染红绿屏。
+     */
+    @PostMapping("/pass/validate")
+    public R<Map<String, Object>> passValidate(@RequestHeader(value = "X-API-KEY", required = false) String headerKey,
+                                               @RequestBody StationPassValidateDto dto,
+                                               HttpServletRequest request) {
+        checkApiKey(headerKey, request);
+        Map<String, Object> data = TenantHelper.dynamic("000000",
+            () -> stationPassService.validate(dto.getSnCode(), dto.getStationCode()));
+        return R.ok(data);
+    }
+
+    /**
+     * SN 单件过站报工(C3): 幂等键 snCode+stationCode+clientTs 落唯一索引,
+     * 离线队列重放重复上报直接返回成功。
+     */
+    @PostMapping("/pass/report")
+    public R<Map<String, Object>> passReport(@RequestHeader(value = "X-API-KEY", required = false) String headerKey,
+                                             @RequestBody StationPassReportDto dto,
+                                             HttpServletRequest request) {
+        checkApiKey(headerKey, request);
+        Map<String, Object> data = TenantHelper.dynamic("000000",
+            () -> stationPassService.reportSingle(dto));
+        return R.ok(data);
+    }
+
+    /**
+     * 批量计数报工(C4): 幂等键 stationCode+clientTs, goodQty/defects 增量累加到工位在制工序。
+     */
+    @PostMapping("/pass/report-batch")
+    public R<Map<String, Object>> passReportBatch(@RequestHeader(value = "X-API-KEY", required = false) String headerKey,
+                                                  @RequestBody StationBatchReportDto dto,
+                                                  HttpServletRequest request) {
+        checkApiKey(headerKey, request);
+        Map<String, Object> data = TenantHelper.dynamic("000000",
+            () -> stationPassService.reportBatch(dto));
+        return R.ok(data);
+    }
+
+    /**
+     * 关键件批量绑定(C5): 组件挂到父SN(parent_sn_id), 防环校验(链上限10)。
+     */
+    @PostMapping("/sn/bind")
+    public R<Map<String, Object>> snBind(@RequestHeader(value = "X-API-KEY", required = false) String headerKey,
+                                         @RequestBody StationSnDtos.BindDto dto,
+                                         HttpServletRequest request) {
+        checkApiKey(headerKey, request);
+        Map<String, Object> data = TenantHelper.dynamic("000000",
+            () -> stationSnService.bind(dto));
+        return R.ok(data);
+    }
+
+    /**
+     * 关键件解绑/换板(C6): 解绑留痕; 传 newComponentSnCode 一步换板(解绑+重绑)。
+     */
+    @PostMapping("/sn/unbind")
+    public R<Map<String, Object>> snUnbind(@RequestHeader(value = "X-API-KEY", required = false) String headerKey,
+                                           @RequestBody StationSnDtos.UnbindDto dto,
+                                           HttpServletRequest request) {
+        checkApiKey(headerKey, request);
+        Map<String, Object> data = TenantHelper.dynamic("000000",
+            () -> stationSnService.unbind(dto));
+        return R.ok(data);
+    }
+
+    /**
+     * 不良代码字典(C9): ncr_defect_code 启用的三级代码, 映射 {code, label};
+     * 空表返回空数组(客户端有静态兜底表)。
+     */
+    @GetMapping("/defect-codes")
+    public R<List<Map<String, Object>>> defectCodes(@RequestHeader(value = "X-API-KEY", required = false) String headerKey,
+                                                    HttpServletRequest request) {
+        checkApiKey(headerKey, request);
+        List<Map<String, Object>> data = TenantHelper.dynamic("000000", () ->
+            defectCodeMapper.selectEnabledLeafCodes().stream()
+                .map(c -> {
+                    Map<String, Object> item = new HashMap<>(4);
+                    item.put("code", c.getCode());
+                    item.put("label", c.getName());
+                    return item;
+                })
+                .toList());
+        return R.ok(data);
+    }
+
+    /**
+     * 安灯四键呼叫(C7): MATERIAL/REPAIR/PERSON/QUALITY 映射后走既有安灯逻辑, SSE 推送到看板。
+     */
+    @PostMapping("/andon/call")
+    public R<Map<String, Object>> andonCall(@RequestHeader(value = "X-API-KEY", required = false) String headerKey,
+                                            @RequestBody StationAndonCallDto dto,
+                                            HttpServletRequest request) {
+        checkApiKey(headerKey, request);
+        if (StringUtils.isBlank(dto.getCallType())) {
+            throw new ServiceException("呼叫类型不能为空");
+        }
+        Map<String, Object> data = TenantHelper.dynamic("000000",
+            () -> stationAndonService.call(dto.getCallType(), dto.getCallReason(), dto.getStationCode(),
+                dto.getOperatorCode(), dto.getWoNo(), dto.getCardNo()));
+        return R.ok(data);
+    }
+
+    /**
+     * 工位最新安灯状态查询(C8): 无记录时 data=null(客户端顶栏隐藏状态标签)。
+     */
+    @GetMapping("/andon/latest")
+    public R<Map<String, Object>> andonLatest(@RequestHeader(value = "X-API-KEY", required = false) String headerKey,
+                                              @RequestParam String stationCode,
+                                              HttpServletRequest request) {
+        checkApiKey(headerKey, request);
+        Map<String, Object> data = TenantHelper.dynamic("000000",
+            () -> stationAndonService.latest(stationCode));
         return R.ok(data);
     }
 
