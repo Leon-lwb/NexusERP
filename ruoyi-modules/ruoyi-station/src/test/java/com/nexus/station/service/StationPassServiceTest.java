@@ -390,6 +390,30 @@ class StationPassServiceTest {
         verifyNoInteractions(schWorkerMapper);
     }
 
+    // ==================== 工位码归一化(M3 设备编码自动录入) ====================
+
+    @Test
+    void normalize_sixSegmentStationCode_stripsDeviceSegment() {
+        assertEquals("STN|注塑车间|产线1|ASM|GENERAL",
+            StationPassService.normalizeStationCode("STN|注塑车间|产线1|ASM|GENERAL|IPC-0007"));
+    }
+
+    @Test
+    void normalize_fiveSegmentAndBlankUnchanged() {
+        assertEquals("STN|注塑车间|产线1|ASM|GENERAL",
+            StationPassService.normalizeStationCode("STN|注塑车间|产线1|ASM|GENERAL"));
+        assertEquals("STN|注塑车间|产线1|ASM|GENERAL",
+            StationPassService.normalizeStationCode("STN|注塑车间|产线1|ASM|GENERAL|"));
+        assertNull(StationPassService.normalizeStationCode(null));
+        // 空白原样返回(入口处由 isBlank 校验拦截)
+        assertEquals(" ", StationPassService.normalizeStationCode(" "));
+    }
+
+    @Test
+    void normalize_nonStnPrefixWithPipesUntouched() {
+        assertEquals("CUSTOM|A|B|C|D|E", StationPassService.normalizeStationCode("CUSTOM|A|B|C|D|E"));
+    }
+
     // ==================== 辅助 ====================
 
     private ProSn inProductionSn() {

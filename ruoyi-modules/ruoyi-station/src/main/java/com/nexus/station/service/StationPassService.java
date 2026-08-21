@@ -92,7 +92,7 @@ public class StationPassService {
      */
     public Map<String, Object> validate(String snCode, String stationCode) {
         String sn = trim(snCode);
-        String station = trim(stationCode);
+        String station = normalizeStationCode(trim(stationCode));
         if (StringUtils.isBlank(sn) || StringUtils.isBlank(station)) {
             throw new ServiceException("snCode 与 stationCode 不能为空");
         }
@@ -221,7 +221,7 @@ public class StationPassService {
     @Transactional(rollbackFor = Exception.class)
     public Map<String, Object> reportSingle(StationPassReportDto dto, OperatorInfo operator) {
         String sn = trim(dto.getSnCode());
-        String station = trim(dto.getStationCode());
+        String station = normalizeStationCode(trim(dto.getStationCode()));
         String result = trim(dto.getResult());
         Long clientTs = dto.getClientTs();
         if (StringUtils.isBlank(sn) || StringUtils.isBlank(station)) {
@@ -400,7 +400,7 @@ public class StationPassService {
      */
     @Transactional(rollbackFor = Exception.class)
     public Map<String, Object> reportBatch(StationBatchReportDto dto, OperatorInfo operator) {
-        String station = trim(dto.getStationCode());
+        String station = normalizeStationCode(trim(dto.getStationCode()));
         Long clientTs = dto.getClientTs();
         if (StringUtils.isBlank(station)) {
             throw new ServiceException("stationCode 不能为空");
@@ -490,6 +490,24 @@ public class StationPassService {
     }
 
     // ==================== 公共辅助 ====================
+
+    /**
+     * 工位码归一化: STN 前缀且含第 6 段(设备编码, M3 工位码第6段设备编码自动录入)时截取前 5 段。
+     * 设备号是设备属性而非工位标识, 剥离后保证台账/安灯/报工记录的工位编码一致
+     * (客户端保存配置时已归一化, 此处为服务端防御, 兜底异常路径直传 6 段码)。
+     */
+    public static String normalizeStationCode(String stationCode) {
+        if (StringUtils.isBlank(stationCode)) {
+            return stationCode;
+        }
+        String station = stationCode.trim();
+        // limit=-1 保留尾部空段("STN|..|GENERAL|" 视为 6 段), 与客户端 split 行为对齐
+        String[] parts = station.split("\\|", -1);
+        if (parts.length >= 6 && "STN".equalsIgnoreCase(parts[0])) {
+            return String.join("|", java.util.Arrays.copyOf(parts, 5));
+        }
+        return station;
+    }
 
     /**
      * 工位码 → 工序码: ① mes_station_device 心跳注册绑定 ② 工位码格式 STN|车间|产线|工序|形态(取第4段)。

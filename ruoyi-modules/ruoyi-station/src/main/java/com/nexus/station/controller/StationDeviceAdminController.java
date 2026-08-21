@@ -9,9 +9,11 @@ import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.common.web.core.BaseController;
 import com.nexus.station.domain.MesStationDevice;
 import com.nexus.station.mapper.StationDeviceMapper;
+import com.nexus.station.service.StationDeviceLinkageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -23,7 +25,9 @@ import java.util.Map;
 /**
  * 工位终端设备台账管理接口 (plus-ui 管理端, 登录鉴权)
  * <p>
- * 只读运维视图: 设备在线状态(心跳超时判定)/绑定工位/终端版本。
+ * 只读运维视图: 设备在线状态(心跳超时判定)/绑定工位/终端版本;
+ * M3 联动视图: {deviceId}/equipments 工位终端→工作中心设备清单,
+ * by-workcenter/{workcenterId} 工作中心→工位终端清单(设备台账详情页反向展示)。
  * 台账数据由设备心跳(C10)自动 upsert, 管理端不提供增删改。
  * URL 前缀用 /mes/station-admin(不在 security.excludes 的 /mes/station/** 内,
  * 走 sa-token 登录鉴权 — 设备通道与管理通道分离)。
@@ -41,6 +45,7 @@ public class StationDeviceAdminController extends BaseController {
     private static final long ONLINE_THRESHOLD_MS = 3 * 60 * 1000L;
 
     private final StationDeviceMapper deviceMapper;
+    private final StationDeviceLinkageService linkageService;
 
     /**
      * 设备台账列表(分页 + 在线状态计算列)
@@ -89,5 +94,26 @@ public class StationDeviceAdminController extends BaseController {
         data.put("onlineCount", online);
         data.put("offlineCount", rows.size() - online);
         return R.ok(data);
+    }
+
+    /**
+     * 工位终端 → 工作中心设备清单(M3 联动视图·正向)
+     * <p>关联链: 台账工序编码 → bd_process 默认工作中心 → eq_equipment 反查(纯展示, 不改关联数据)。</p>
+     */
+    @SaCheckPermission("mes:station:device:list")
+    @GetMapping("/{deviceId}/equipments")
+    @DS("mes")
+    public R<Map<String, Object>> equipments(@PathVariable Long deviceId) {
+        return R.ok(linkageService.equipmentsOfDevice(deviceId));
+    }
+
+    /**
+     * 工作中心 → 工位终端清单(M3 联动视图·反向, 设备台账详情页展示"由哪台工位机操控 + 在线状态")
+     */
+    @SaCheckPermission("mes:station:device:list")
+    @GetMapping("/by-workcenter/{workcenterId}")
+    @DS("mes")
+    public R<Map<String, Object>> byWorkcenter(@PathVariable Long workcenterId) {
+        return R.ok(linkageService.devicesOfWorkcenter(workcenterId));
     }
 }

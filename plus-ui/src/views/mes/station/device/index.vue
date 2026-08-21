@@ -70,16 +70,60 @@
             <span v-else>-</span>
           </template>
         </el-table-column>
+        <el-table-column label="操作" align="center" width="130" fixed="right">
+          <template #default="scope">
+            <el-button link type="primary" icon="Link" @click="openLinkage(scope.row)">工作中心设备</el-button>
+          </template>
+        </el-table-column>
       </el-table>
 
       <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
     </el-card>
+
+    <!-- 工作中心设备联动弹窗(M3): 工位工序 → bd_process 默认工作中心 → eq_equipment 反查 -->
+    <el-dialog v-model="linkageVisible" :title="`工作中心设备 - ${linkageData.deviceCode || ''}`" width="760px" append-to-body>
+      <div v-loading="linkageLoading">
+        <el-descriptions :column="3" border size="small">
+          <el-descriptions-item label="工序">
+            {{ linkageData.processCode ? `${linkageData.processCode} ${linkageData.processName || ''}` : '-' }}
+          </el-descriptions-item>
+          <el-descriptions-item label="工作中心">{{ linkageWorkstationText }}</el-descriptions-item>
+          <el-descriptions-item label="所属车间">{{ linkageData.workstation?.workshopName || '-' }}</el-descriptions-item>
+        </el-descriptions>
+        <el-alert v-if="linkageData.message" :title="linkageData.message" type="info" show-icon :closable="false" style="margin-top: 12px" />
+        <el-table :data="linkageData.equipments" border size="small" style="margin-top: 12px">
+          <el-table-column label="设备编码" prop="equipmentCode" width="130" />
+          <el-table-column label="设备名称" prop="equipmentName" min-width="140" show-overflow-tooltip />
+          <el-table-column label="类型" align="center" width="100">
+            <template #default="scope">
+              <dict-tag v-if="scope.row.equipmentType" :options="mes_equipment_type" :value="scope.row.equipmentType" />
+              <span v-else>-</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="状态" align="center" width="90">
+            <template #default="scope">
+              <dict-tag v-if="scope.row.status" :options="mes_equipment_status" :value="scope.row.status" />
+              <span v-else>-</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="型号" prop="model" min-width="100">
+            <template #default="scope">{{ scope.row.model || '-' }}</template>
+          </el-table-column>
+          <el-table-column label="安装位置" prop="location" min-width="120" show-overflow-tooltip>
+            <template #default="scope">{{ scope.row.location || '-' }}</template>
+          </el-table-column>
+        </el-table>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts" name="StationDevice">
-import { listStationDevice, stationDeviceStats } from '@/api/mes/station/device';
-import type { StationDeviceVO, StationDeviceStats } from '@/api/mes/station/device';
+import { listStationDevice, stationDeviceStats, stationDeviceEquipments } from '@/api/mes/station/device';
+import type { StationDeviceVO, StationDeviceStats, StationDeviceLinkageVO } from '@/api/mes/station/device';
+
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
+const { mes_equipment_type, mes_equipment_status } = toRefs<any>(proxy?.useDict('mes_equipment_type', 'mes_equipment_status'));
 
 const dataList = ref<StationDeviceVO[]>([]);
 const loading = ref(true);
@@ -91,6 +135,30 @@ const queryParams = ref({
   pageNum: 1,
   pageSize: 10
 });
+
+/** 工作中心设备联动弹窗(M3) */
+const linkageVisible = ref(false);
+const linkageLoading = ref(false);
+const linkageData = ref<StationDeviceLinkageVO>({} as StationDeviceLinkageVO);
+
+const linkageWorkstationText = computed(() => {
+  const ws = linkageData.value.workstation;
+  const text = [ws?.workstationCode, ws?.workstationName].filter(Boolean).join(' - ');
+  return text || '-';
+});
+
+const openLinkage = async (row: StationDeviceVO) => {
+  linkageVisible.value = true;
+  linkageLoading.value = true;
+  try {
+    const res = await stationDeviceEquipments(row.deviceId);
+    linkageData.value = res.data;
+  } catch {
+    /* 请求拦截器已提示 */
+  } finally {
+    linkageLoading.value = false;
+  }
+};
 
 /** 心跳距今时长(离线诊断用) */
 const heartbeatAge = (lastHeartbeat: string): string => {

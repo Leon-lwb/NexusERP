@@ -266,6 +266,45 @@
           <el-empty v-else description="暂无数据, 点击刷新获取" :image-size="60" />
         </el-tab-pane>
 
+        <el-tab-pane v-if="hasStationPerm" label="工位终端" name="stationDevices">
+          <el-empty v-if="!detailData.workcenterId" description="该设备未关联工作中心, 无法关联工位终端" :image-size="60" />
+          <template v-else>
+            <el-alert v-if="detailStationMessage" :title="detailStationMessage" type="info" show-icon :closable="false" />
+            <div v-if="detailStationProcesses.length > 0" style="margin-top: 12px">
+              <el-tag v-for="p in detailStationProcesses" :key="p.processId" size="small" style="margin-right: 8px">
+                {{ p.processCode }} {{ p.processName }}
+              </el-tag>
+            </div>
+            <el-table :data="detailStationDevices" border size="small" style="margin-top: 12px" max-height="420">
+              <el-table-column label="设备编码" prop="deviceCode" width="130" />
+              <el-table-column label="在线状态" align="center" width="90">
+                <template #default="scope">
+                  <el-tag :type="scope.row.online ? 'success' : 'danger'" size="small">{{ scope.row.online ? '在线' : '离线' }}</el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column label="绑定工位" prop="stationCode" min-width="170" show-overflow-tooltip>
+                <template #default="scope">{{ scope.row.stationCode || '-' }}</template>
+              </el-table-column>
+              <el-table-column label="工序" prop="processCode" align="center" width="90">
+                <template #default="scope">{{ scope.row.processCode || '-' }}</template>
+              </el-table-column>
+              <el-table-column label="当前操作员" align="center" width="110">
+                <template #default="scope">
+                  <span v-if="scope.row.operatorName">{{ scope.row.operatorName }}</span>
+                  <span v-else-if="scope.row.operatorCode">{{ scope.row.operatorCode }}</span>
+                  <span v-else>-</span>
+                </template>
+              </el-table-column>
+              <el-table-column label="终端版本" prop="appVersion" align="center" width="90">
+                <template #default="scope">{{ scope.row.appVersion || '-' }}</template>
+              </el-table-column>
+              <el-table-column label="最后心跳" prop="lastHeartbeat" width="170">
+                <template #default="scope">{{ scope.row.lastHeartbeat || '-' }}</template>
+              </el-table-column>
+            </el-table>
+          </template>
+        </el-tab-pane>
+
         <el-tab-pane label="最近点检" name="inspection">
           <el-descriptions :column="1" border>
             <el-descriptions-item label="最近点检时间">{{ parseInspectTime(detailData.lastInspection) }}</el-descriptions-item>
@@ -342,6 +381,9 @@ import { listRepair } from '@/api/mes/eq/repair';
 import type { EqRepairVO } from '@/api/mes/eq/repair';
 import { listMaintenanceRecordByEquipment } from '@/api/mes/eq/maintenance-record';
 import type { EqMaintenanceRecordVO } from '@/api/mes/eq/maintenance-record';
+import { stationDevicesByWorkcenter } from '@/api/mes/station/device';
+import type { StationDeviceVO, ProcessInfo } from '@/api/mes/station/device';
+import { checkPermi } from '@/utils/permission';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const route = useRoute();
@@ -371,6 +413,11 @@ const detailIotLoading = ref(false);
 const detailInspectionItems = ref<{ item: string; standard: string }[]>([]);
 const detailRepairs = ref<EqRepairVO[]>([]);
 const detailMaintenance = ref<EqMaintenanceRecordVO[]>([]);
+/** 工位终端联动(M3): 该设备所属工作中心下的工位机(反向视图) */
+const hasStationPerm = checkPermi(['mes:station:device:list']);
+const detailStationDevices = ref<StationDeviceVO[]>([]);
+const detailStationProcesses = ref<ProcessInfo[]>([]);
+const detailStationMessage = ref('');
 
 const queryParams = ref<EqEquipmentQuery>({
   pageNum: 1,
@@ -585,6 +632,9 @@ const handleOpenDetail = async (row: EqEquipmentVO) => {
   detailIotData.value = {};
   detailRepairs.value = [];
   detailMaintenance.value = [];
+  detailStationDevices.value = [];
+  detailStationProcesses.value = [];
+  detailStationMessage.value = '';
   detailDrawer.value = true;
   try {
     const res = await getEquipment(row.equipmentId);
@@ -608,6 +658,22 @@ const handleOpenDetail = async (row: EqEquipmentVO) => {
     if (repairRes.status === 'fulfilled') detailRepairs.value = repairRes.value.rows || [];
     if (mtRes.status === 'fulfilled') detailMaintenance.value = (mtRes.value.data || []) as EqMaintenanceRecordVO[];
   });
+  // 工位终端联动(M3): 按工作中心反查操控该设备的工位机
+  loadDetailStationDevices();
+};
+
+/** 加载设备所属工作中心的工位终端清单(M3 联动视图·反向) */
+const loadDetailStationDevices = async () => {
+  const workcenterId = detailData.value.workcenterId;
+  if (!workcenterId) return;
+  try {
+    const res = await stationDevicesByWorkcenter(workcenterId);
+    detailStationProcesses.value = res.data?.processes || [];
+    detailStationDevices.value = res.data?.devices || [];
+    detailStationMessage.value = res.data?.message || '';
+  } catch {
+    /* 请求拦截器已提示 */
+  }
 };
 
 /** 加载设备 IoT 最新数据(详情抽屉 IoT Tab) */

@@ -64,7 +64,9 @@ public class StationHeartbeatController {
         if (StringUtils.isBlank(deviceCode)) {
             throw new ServiceException("deviceCode 不能为空");
         }
-        String stationCode = body.get("stationCode") == null ? null : String.valueOf(body.get("stationCode")).trim();
+        // 工位码归一化: 剥离第 6 段设备编码(设备属性不属于工位标识), 防止 6 段码落库导致台账工位标识分裂
+        String stationCode = StationPassService.normalizeStationCode(
+            body.get("stationCode") == null ? null : String.valueOf(body.get("stationCode")).trim());
         String appVersion = body.get("appVersion") == null ? null : String.valueOf(body.get("appVersion")).trim();
         String operatorCode = body.get("operatorCode") == null ? null : String.valueOf(body.get("operatorCode")).trim();
         String operatorName = body.get("operatorName") == null ? null : String.valueOf(body.get("operatorName")).trim();

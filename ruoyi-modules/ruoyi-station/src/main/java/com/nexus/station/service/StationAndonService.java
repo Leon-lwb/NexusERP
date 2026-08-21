@@ -53,6 +53,8 @@ public class StationAndonService {
     public Map<String, Object> call(String callType, String callReason, String stationCode,
                                     String operatorCode, String woNo, String cardNo) {
         String backendType = toBackendCallType(callType);
+        // 工位码归一化(剥离第 6 段设备编码), 与台账/报工记录的工位标识保持一致
+        String station = StationPassService.normalizeStationCode(stationCode);
         Long mesWoId = null;
         if (StringUtils.isNotBlank(woNo)) {
             ProWorkOrder wo = workOrderMapper.selectOne(Wrappers.<ProWorkOrder>lambdaQuery()
@@ -72,7 +74,7 @@ public class StationAndonService {
             cardId = card.getCardId();
         }
         ProAndonVo vo = proAndonService.callAndon(mesWoId, cardId, null, backendType,
-            callReason, stationCode, operatorCode);
+            callReason, station, operatorCode);
         Map<String, Object> data = new HashMap<>(2);
         data.put("andonNo", vo != null ? vo.getAndonNo() : "");
         return data;
@@ -89,7 +91,7 @@ public class StationAndonService {
             return null;
         }
         ProAndon andon = andonMapper.selectOne(Wrappers.<ProAndon>lambdaQuery()
-            .eq(ProAndon::getStationCode, stationCode.trim())
+            .eq(ProAndon::getStationCode, StationPassService.normalizeStationCode(stationCode))
             .orderByDesc(ProAndon::getCallTime)
             .last("LIMIT 1"));
         if (andon == null) {
