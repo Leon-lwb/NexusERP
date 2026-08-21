@@ -6,14 +6,17 @@ import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.station.domain.dto.StationAndonCallDto;
 import com.nexus.station.domain.dto.StationBatchReportDto;
+import com.nexus.station.domain.dto.StationInspectionSubmitDto;
 import com.nexus.station.domain.dto.StationPassReportDto;
 import com.nexus.station.domain.dto.StationPassValidateDto;
 import com.nexus.station.domain.dto.StationSnDtos;
 import com.nexus.station.mapper.StationDefectCodeMapper;
 import com.nexus.station.mapper.StationSchWorkerMapper;
 import com.nexus.station.service.StationAndonService;
+import com.nexus.station.service.StationInspectionService;
 import com.nexus.station.service.StationPassService;
 import com.nexus.station.service.StationSnService;
+import com.nexus.station.service.StationTraceService;
 import com.nexus.system.domain.vo.SysUserVo;
 import com.nexus.system.service.ISysUserService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -22,6 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -51,6 +55,9 @@ import java.util.Map;
  *   <li>GET /mes/station/defect-codes — 不良代码字典(C9, ncr_defect_code 三级代码)</li>
  *   <li>POST /mes/station/andon/call — 安灯四键呼叫(C7)</li>
  *   <li>GET /mes/station/andon/latest?stationCode= — 工位最新安灯状态(C8)</li>
+ *   <li>GET /mes/station/trace/{snCode} — SN 全履历追溯查询(M3 契约 C13)</li>
+ *   <li>GET /mes/station/inspection/tasks?stationCode= — 工位当日点检任务(M3 契约 C14)</li>
+ *   <li>POST /mes/station/inspection/submit — 点检提交留痕(M3 契约 C15, 不合格联动 FAULT+安灯)</li>
  * </ul>
  *
  * @author Nexus
@@ -68,6 +75,8 @@ public class StationDeviceController {
     private final StationAndonService stationAndonService;
     private final StationPassService stationPassService;
     private final StationSnService stationSnService;
+    private final StationTraceService stationTraceService;
+    private final StationInspectionService stationInspectionService;
 
     /** 设备上报密钥(application.yml 配置, 生产务必修改) */
     @Value("${mes.api-key:nexus-mes-api-2026}")
@@ -234,6 +243,52 @@ public class StationDeviceController {
         checkApiKey(headerKey, request);
         Map<String, Object> data = TenantHelper.dynamic("000000",
             () -> stationAndonService.latest(stationCode));
+        return R.ok(data);
+    }
+
+    /**
+     * SN 全履历追溯查询(M3 契约 C13): SN 概要 + 工序链 + 四源记录时间线(倒序)。
+     * <p>四源: 刷写/综测(按测试单分组)/过站报工/关键件绑定, 供工位端"这块板烧的什么版本"类现场问答。</p>
+     */
+    @GetMapping("/trace/{snCode}")
+    public R<Map<String, Object>> trace(@RequestHeader(value = "X-API-KEY", required = false) String headerKey,
+                                        @PathVariable String snCode,
+                                        HttpServletRequest request) {
+        checkApiKey(headerKey, request);
+        Map<String, Object> data = TenantHelper.dynamic("000000",
+            () -> stationTraceService.trace(snCode));
+        return R.ok(data);
+    }
+
+    /**
+     * 工位当日点检任务(M3 契约 C14): 联动链定位工位设备清单,
+     * 逐台返回点检项(eq_equipment.inspection_items, 兼容新旧格式)与当日已检状态。
+     */
+    @GetMapping("/inspection/tasks")
+    public R<Map<String, Object>> inspectionTasks(@RequestHeader(value = "X-API-KEY", required = false) String headerKey,
+                                                  @RequestParam String stationCode,
+                                                  HttpServletRequest request) {
+        checkApiKey(headerKey, request);
+        Map<String, Object> data = TenantHelper.dynamic("000000",
+            () -> stationInspectionService.tasks(stationCode));
+        return R.ok(data);
+    }
+
+    /**
+     * 工位点检提交(M3 契约 C15): 留痕 eq_inspection_record + 同步 last_inspection;
+     * 不合格联动 设备置 FAULT + REPAIR 安灯(均降级)。
+     * <p>操作员在事务外解析(sch_worker 在 ry-erp 库, 事务内连接已钉在 ry-mes)。</p>
+     */
+    @PostMapping("/inspection/submit")
+    public R<Map<String, Object>> inspectionSubmit(@RequestHeader(value = "X-API-KEY", required = false) String headerKey,
+                                                   @RequestBody StationInspectionSubmitDto dto,
+                                                   HttpServletRequest request) {
+        checkApiKey(headerKey, request);
+        Map<String, Object> data = TenantHelper.dynamic("000000", () -> {
+            StationPassService.OperatorInfo operator = stationPassService.resolveOperator(
+                null, dto.getOperatorCode());
+            return stationInspectionService.submit(dto, operator);
+        });
         return R.ok(data);
     }
 

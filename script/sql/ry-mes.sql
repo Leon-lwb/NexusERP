@@ -2654,4 +2654,31 @@ CREATE TABLE `mes_label_template`  (
   INDEX `idx_label_type`(`label_type`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '标签打印模板' ROW_FORMAT = Dynamic;
 
+-- ----------------------------
+-- Table structure for eq_inspection_record
+-- ----------------------------
+DROP TABLE IF EXISTS `eq_inspection_record`;
+CREATE TABLE `eq_inspection_record`  (
+  `record_id` bigint(20) NOT NULL COMMENT '记录ID',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000' COMMENT '租户ID',
+  `equipment_id` bigint(20) NOT NULL COMMENT '设备ID',
+  `station_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '工位编码(工位终端提交时留痕)',
+  `inspector_id` bigint(20) NULL DEFAULT NULL COMMENT '点检人ID',
+  `inspector_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '点检人姓名',
+  `operator_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '点检人工号(设备通道免登录留痕)',
+  `inspect_time` datetime(0) NOT NULL COMMENT '点检时间',
+  `results` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '逐项点检明细 JSON: [{item,standard,actual,pass}]',
+  `overall_pass` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '总判定: Y合格/N不合格',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
+  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
+  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
+  PRIMARY KEY (`record_id`) USING BTREE,
+  INDEX `idx_equipment_id`(`equipment_id`) USING BTREE,
+  INDEX `idx_inspect_time`(`inspect_time`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '设备点检记录(历史留痕, PC端与工位终端共用)' ROW_FORMAT = Dynamic;
+
 SET FOREIGN_KEY_CHECKS = 1;

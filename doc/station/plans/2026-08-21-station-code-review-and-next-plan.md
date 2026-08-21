@@ -131,7 +131,10 @@ if (latest != null && "FAIL".equals(latest.getResult())) { holdOk = false; ... }
   - 单测：LabelRenderServiceTest 10 例 + SnLabelPrintEventListenerTest 6 例全绿
   - v1 边界：流转卡标签/USB·BLE 通道/hiprint 设计器/打印留痕表均不做
 - M3 立项评审 ✅ 2026-08-21 盘点完成，按批次推进（**重要发现：电子 SOP 后端管理端已于 2026-07-26 完整交付**——sop_document/version/binding/view_log 四表 + Flowable 审批 + plus-ui 4 页面 + E2E 联调，设计文档"需新增 mes_sop_doc"的判断已过时，真正缺口是设备通道）：
-  - **批次 2**（下一批）：追溯查询（按 SN 聚合 mes_flash_record/mes_test_record/mes_station_report/mes_sn_bind_log 全履历接口 + 设备通道 + 客户端页）/ 设备点检（设备通道端点 + eq_inspection_record 留痕表 + 当日任务提醒，复用 PC 端 submitInspection 的 FAULT+安灯联动）
+  - **批次 2** ✅ 2026-08-21 交付（M3 轻量双件，双端）：
+    - 追溯查询（契约 C13）：`StationTraceService` 按 SN 聚合全履历 —— SN 概要 + 工序链 + 四源时间线倒序（刷写/综测按测试单分组/过站报工/关键件绑定），端点 `GET /mes/station/trace/{snCode}`；nexus-station 新增 `/trace` 追溯页（扫码 → 概要卡 + 工序链 chips + el-timeline 全履历）
+    - 设备点检（契约 C14/C15）：新表 `eq_inspection_record` 留痕（增量脚本 `2026-08-21-mes-inspection-record.sql`，已本地执行）；`StationInspectionService` 当日任务（复用联动链定位设备 + inspection_items 新旧 JSON 格式兼容 + 当日已检判定）与提交（写留痕 + 同步 last_inspection 对齐 PC 端格式 + 不合格复用 `IEqEquipmentService.updateStatus` 置 FAULT + REPAIR 安灯，均降级）；nexus-station 新增 `/checkup` 点检页（设备卡片 + 逐项正常/异常表单，异常提示联动后果）
+    - 单测 16 例（StationTraceServiceTest 5 + StationInspectionServiceTest 11）全绿；home.vue 新增全形态「工位工具」入口（追溯/点检）
   - **批次 3**：SOP 设备通道（免登录拉取 + OSS 流式代理仿固件下载 + 版本号轮询）+ 版本强控门禁（版本不符禁止开工）+ nexus-station SOP 全屏轮播页
   - **批次 4**：上料防错（mes_material_load 料站表 + BOM 比对含 bd_bom_alternative 替代料 + 客户端上料页）
 - 待办数据项：ncr_defect_code 造 level=3 且 enabled='Y' 的三级不良代码 ✅ 2026-08-21 交付：`2026-08-21-ncr-defect-code-seed.sql`（6 一级 × 15 二级 × 48 三级，946xxx 固定 ID 段，INSERT IGNORE 可重复执行，软删存量 SURF/SURF9293 测试数据；注意 enabled 为 Y/N 口径非 DDL 注释的 1/0），C9 已脱离客户端静态兜底（脚本已在本机 ry-mes 执行验证，C9 口径命中 48 条）
