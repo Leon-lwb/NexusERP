@@ -60,6 +60,43 @@
             <artifactId>ruoyi-mes</artifactId>
         </dependency>
 
+        <!-- 单元测试（test scope，不打入生产包；对齐 ruoyi-mes 配置） -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+            <exclusions>
+                <!-- 排除 JUnit Vintage，只用 JUnit 5 -->
+                <exclusion>
+                    <groupId>org.junit.vintage</groupId>
+                    <artifactId>junit-vintage-engine</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
     </dependencies>
+
+    <properties>
+        <!-- 覆盖根 pom 的 groups 过滤(根 pom 按 profiles.active 限制只执行带 @Tag 的测试,
+             导致无 @Tag 测试不执行)，覆盖为空=全部执行 -->
+        <station.groups></station.groups>
+        <station.excludedGroups>integration</station.excludedGroups>
+        <argLine>-Dfile.encoding=UTF-8</argLine>
+    </properties>
+
+    <build>
+        <plugins>
+            <!-- 覆盖根 pom surefire 配置，使无 @Tag 测试在所有 profile 下执行 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <argLine>@{argLine} -Dfile.encoding=UTF-8 -Djdk.net.URLClassPath.disableClassPathURLCheck=true</argLine>
+                    <groups combine.self="override">${station.groups}</groups>
+                    <excludedGroups combine.self="override">${station.excludedGroups}</excludedGroups>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 
 </project>
