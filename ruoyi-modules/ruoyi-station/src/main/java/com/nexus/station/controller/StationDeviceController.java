@@ -130,14 +130,18 @@ public class StationDeviceController {
     /**
      * SN 单件过站报工(C3): 幂等键 snCode+stationCode+clientTs 落唯一索引,
      * 离线队列重放重复上报直接返回成功。
+     * <p>操作员在事务外解析(sch_worker 在 ry-erp 库, 事务内连接已钉在 ry-mes)。</p>
      */
     @PostMapping("/pass/report")
     public R<Map<String, Object>> passReport(@RequestHeader(value = "X-API-KEY", required = false) String headerKey,
                                              @RequestBody StationPassReportDto dto,
                                              HttpServletRequest request) {
         checkApiKey(headerKey, request);
-        Map<String, Object> data = TenantHelper.dynamic("000000",
-            () -> stationPassService.reportSingle(dto));
+        Map<String, Object> data = TenantHelper.dynamic("000000", () -> {
+            StationPassService.OperatorInfo operator = stationPassService.resolveOperator(
+                dto.getOperatorId(), dto.getOperatorCode());
+            return stationPassService.reportSingle(dto, operator);
+        });
         return R.ok(data);
     }
 
@@ -149,8 +153,11 @@ public class StationDeviceController {
                                                   @RequestBody StationBatchReportDto dto,
                                                   HttpServletRequest request) {
         checkApiKey(headerKey, request);
-        Map<String, Object> data = TenantHelper.dynamic("000000",
-            () -> stationPassService.reportBatch(dto));
+        Map<String, Object> data = TenantHelper.dynamic("000000", () -> {
+            StationPassService.OperatorInfo operator = stationPassService.resolveOperator(
+                null, dto.getOperatorCode());
+            return stationPassService.reportBatch(dto, operator);
+        });
         return R.ok(data);
     }
 

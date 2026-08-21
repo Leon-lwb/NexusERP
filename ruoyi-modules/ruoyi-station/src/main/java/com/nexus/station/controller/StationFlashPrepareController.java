@@ -3,6 +3,7 @@ package com.nexus.station.controller;
 import cn.hutool.core.io.IoUtil;
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.nexus.common.core.domain.R;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.oss.core.OssClient;
@@ -10,9 +11,7 @@ import com.nexus.common.oss.factory.OssFactory;
 import com.nexus.common.satoken.utils.LoginHelper;
 import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.mes.flash.domain.Firmware;
-import com.nexus.mes.flash.domain.MesFlashType;
 import com.nexus.mes.flash.mapper.FirmwareMapper;
-import com.nexus.mes.flash.mapper.MesFlashTypeMapper;
 import com.nexus.mes.flash.provider.FlashContent;
 import com.nexus.mes.flash.provider.FlashContext;
 import com.nexus.mes.flash.provider.FlashTypeProvider;
@@ -63,7 +62,6 @@ import java.util.Map;
 public class StationFlashPrepareController {
 
     private final FirmwareMapper firmwareMapper;
-    private final MesFlashTypeMapper flashTypeMapper;
     private final ProSnMapper proSnMapper;
     private final FlashTypeRegistry flashTypeRegistry;
     private final IFlashRecordService flashRecordService;
@@ -76,22 +74,22 @@ public class StationFlashPrepareController {
 
     /**
      * 刷写内容预取(M1-a): {snCode, flashTypeCode} → 定位 SN 待刷项, 预解析应刷内容。
-     * <p>固件类返回 firmwareUrl(M1-b 下载端点)/contentChecksum/contentVersion;
+     * <p>固件类返回 firmwareUrl(M1-b 下载端点, 相对路径)/contentChecksum/contentVersion;
      * 池类(MAC/SN)调用 Provider.allocate 预分配资源。幂等: 池资源已绑定时返回既有绑定。</p>
      * <p>无待刷项返回 data=null, 客户端按无任务处理(或 404 降级直接刷写)。</p>
      */
     @PostMapping("/station/prepare")
     @DS("mes")
-    public Map<String, Object> prepare(@RequestHeader(value = "X-API-KEY", required = false) String headerKey,
-                                       @RequestBody Map<String, Object> body,
-                                       HttpServletRequest request) {
+    public R<Map<String, Object>> prepare(@RequestHeader(value = "X-API-KEY", required = false) String headerKey,
+                                          @RequestBody Map<String, Object> body,
+                                          HttpServletRequest request) {
         checkApiKey(headerKey, request);
         String snCode = body.get("snCode") == null ? null : String.valueOf(body.get("snCode")).trim();
         String flashTypeCode = body.get("flashTypeCode") == null ? null : String.valueOf(body.get("flashTypeCode")).trim();
         if (StringUtils.isBlank(snCode)) {
             throw new ServiceException("snCode 不能为空");
         }
-        return TenantHelper.dynamic("000000", () -> doPrepare(snCode, flashTypeCode));
+        return R.ok(TenantHelper.dynamic("000000", () -> doPrepare(snCode, flashTypeCode)));
     }
 
     /**
@@ -99,6 +97,7 @@ public class StationFlashPrepareController {
      * (客户端下载器直连本服务并带 X-API-KEY 头, 不走签名 URL)。
      */
     @GetMapping("/firmware/{firmwareId}/download")
+    @DS("mes")
     public void downloadFirmware(@RequestHeader(value = "X-API-KEY", required = false) String headerKey,
                                  @PathVariable Long firmwareId,
                                  HttpServletRequest request,
@@ -212,14 +211,9 @@ public class StationFlashPrepareController {
         }
     }
 
-    /** 是否固件类刷写类型(下载端点仅对固件文件类有意义)。 */
+    /** 是否固件文件类刷写类型(下载端点仅对固件文件类有意义)。 */
     private boolean isFirmwareType(String typeCode) {
-        if (StringUtils.isBlank(typeCode)) {
-            return false;
-        }
-        MesFlashType flashType = flashTypeMapper.selectOne(Wrappers.<MesFlashType>lambdaQuery()
-            .eq(MesFlashType::getTypeCode, typeCode).last("LIMIT 1"));
-        return flashType != null && "firmware_file".equals(typeCode);
+        return "firmware_file".equals(typeCode);
     }
 
     /**

@@ -1,6 +1,7 @@
 package com.nexus.station.service;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
+import com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.StringUtils;
@@ -116,8 +117,9 @@ public class StationPassService {
         snInfo.put("cardNo", proSn.getCardNo());
         snInfo.put("materialName", proSn.getMaterialName());
 
-        // 定位 SN 当前工序(按 current_step_seq 定位工序记录)
-        ProFlowCardStep currentStep = selectStepBySeq(proSn.getCardId(), proSn.getCurrentStepSeq());
+        // 定位 SN 当前工序(卡上第一条未完成工序按 seq 升序, 对齐 FlashRecordServiceImpl;
+        // pro_sn.current_step_seq 无维护逻辑不可靠, 仅作兜底)
+        ProFlowCardStep currentStep = resolveCurrentStep(proSn.getCardId(), proSn.getCurrentStepSeq());
         snInfo.put("currentProcessName", currentStep != null ? currentStep.getProcessName() : null);
 
         // 工位码 → 工序码: ① mes_station_device 心跳绑定 ② 工位码格式 STN|车间|产线|工序|形态
@@ -171,15 +173,15 @@ public class StationPassService {
         checks.add(check(CHECK_DUPLICATE, dupOk, dupOk ? null : "该 SN 已在此工位报工过站(PASS), 禁止重复过站"));
 
         // --- 校验4 QUALITY_HOLD: 最新综测 FAIL / 未关闭 NCR ---
+        // 取最新一条测试记录(不限 result)再判定, 复测 PASS 后放行; 只查 FAIL 会把历史失败误判为永久扣押
         boolean holdOk = true;
         String holdMsg = null;
         TestRecord latestTest = testRecordMapper.selectOne(Wrappers.<TestRecord>lambdaQuery()
             .eq(TestRecord::getSnCode, sn)
-            .eq(TestRecord::getResult, "FAIL")
             .orderByDesc(TestRecord::getTestTime)
             .orderByDesc(TestRecord::getTestRecordId)
             .last("LIMIT 1"));
-        if (latestTest != null) {
+        if (latestTest != null && "FAIL".equals(latestTest.getResult())) {
             holdOk = false;
             holdMsg = "最新综测结果 FAIL(测试单 " + latestTest.getTestNo() + "), 质量扣押";
         } else if (proSn.getCardId() != null) {
@@ -209,12 +211,15 @@ public class StationPassService {
     /**
      * SN 单件过站报工(C3): 幂等键 SINGLE|sn|station|clientTs 落唯一索引,
      * 重复上报(离线队列重放)直接返回成功。
+     * <p>操作员由调用方在事务外解析传入: 本方法 @Transactional 会把连接钉在 ry-mes
+     * (动态数据源在同一事务内只持有一个物理连接), 事务内查 sch_worker(ry-erp) 必然失败。</p>
      *
-     * @param dto 报工请求
+     * @param dto      报工请求
+     * @param operator 事务外解析好的操作员(可空)
      * @return 空对象(契约 data 为 {})
      */
     @Transactional(rollbackFor = Exception.class)
-    public Map<String, Object> reportSingle(StationPassReportDto dto) {
+    public Map<String, Object> reportSingle(StationPassReportDto dto, OperatorInfo operator) {
         String sn = trim(dto.getSnCode());
         String station = trim(dto.getStationCode());
         String result = trim(dto.getResult());
@@ -245,17 +250,16 @@ public class StationPassService {
         if (!"IN_PRODUCTION".equals(proSn.getSnStatus())) {
             throw new ServiceException("SN 状态为 " + proSn.getSnStatus() + ", 非在制状态, 禁止过站报工");
         }
-        ProFlowCardStep step = selectStepBySeq(proSn.getCardId(), proSn.getCurrentStepSeq());
+        ProFlowCardStep step = resolveCurrentStep(proSn.getCardId(), proSn.getCurrentStepSeq());
         if (step == null) {
-            throw new ServiceException("SN 未找到当前工序记录(seq=" + proSn.getCurrentStepSeq() + ")");
+            throw new ServiceException("SN 未找到当前工序记录(卡上无未完成工序)");
         }
         ProFlowCard card = flowCardMapper.selectById(proSn.getCardId());
         if (card == null) {
             throw new ServiceException("SN 所属流转卡不存在: " + proSn.getCardNo());
         }
 
-        // 3. 操作员回填(operatorCode → sch_worker 档案)
-        OperatorInfo operator = resolveOperator(dto.getOperatorId(), dto.getOperatorCode());
+        // 3. 操作员由调用方在事务外解析传入(本事务连接钉在 ry-mes, 无法再查 ry-erp 的 sch_worker)
 
         // 4. 幂等行先落库(同事务; 并发重放撞唯一索引整体返回成功)
         MesStationReport report = new MesStationReport();
@@ -303,9 +307,10 @@ public class StationPassService {
      * SN 前移: 末道工序 → SN 完工 + 卡工序收口; 非末道 → current_step_seq+1。
      */
     private void advanceSn(ProSn proSn, ProFlowCardStep step, ProFlowCard card) {
-        Integer maxSeq = stepMapper.selectList(Wrappers.<ProFlowCardStep>lambdaQuery()
-                .eq(ProFlowCardStep::getCardId, proSn.getCardId()))
-            .stream().map(ProFlowCardStep::getSequenceNum)
+        List<ProFlowCardStep> cardSteps = stepMapper.selectList(Wrappers.<ProFlowCardStep>lambdaQuery()
+            .eq(ProFlowCardStep::getCardId, proSn.getCardId())
+            .orderByAsc(ProFlowCardStep::getSequenceNum));
+        Integer maxSeq = cardSteps.stream().map(ProFlowCardStep::getSequenceNum)
             .filter(java.util.Objects::nonNull)
             .max(Integer::compareTo)
             .orElse(null);
@@ -318,9 +323,16 @@ public class StationPassService {
             proSnService.completeSn(proSn.getSnId());
             log.info("SN 末道工序过站完成, SN 完工: snId={}, snCode={}", proSn.getSnId(), proSn.getSnCode());
         } else {
-            proSnMapper.update(null, Wrappers.<ProSn>lambdaUpdate()
-                .set(ProSn::getCurrentStepSeq, step.getSequenceNum() + 1)
-                .eq(ProSn::getSnId, proSn.getSnId()));
+            // 写实际下一道工序的 seq(工序序号不连续时 30→40 而非 30+1), 与 resolveCurrentStep 兜底口径一致
+            Integer nextSeq = cardSteps.stream().map(ProFlowCardStep::getSequenceNum)
+                .filter(s -> s != null && s > step.getSequenceNum())
+                .min(Integer::compareTo)
+                .orElse(null);
+            if (nextSeq != null) {
+                proSnMapper.update(null, Wrappers.<ProSn>lambdaUpdate()
+                    .set(ProSn::getCurrentStepSeq, nextSeq)
+                    .eq(ProSn::getSnId, proSn.getSnId()));
+            }
         }
     }
 
@@ -380,12 +392,14 @@ public class StationPassService {
     /**
      * 批量计数报工(C4): 幂等键 BATCH|station|clientTs; 按工位工序定位当前唯一在制工序,
      * goodQty/defectQty 增量累加(GENERAL 计数工位无 SN 粒度)。
+     * <p>操作员由调用方在事务外解析传入(事务连接钉在 ry-mes, 无法查 ry-erp 的 sch_worker)。</p>
      *
-     * @param dto 批量报工请求
+     * @param dto      批量报工请求
+     * @param operator 事务外解析好的操作员(可空)
      * @return 空对象(契约 data 为 {})
      */
     @Transactional(rollbackFor = Exception.class)
-    public Map<String, Object> reportBatch(StationBatchReportDto dto) {
+    public Map<String, Object> reportBatch(StationBatchReportDto dto, OperatorInfo operator) {
         String station = trim(dto.getStationCode());
         Long clientTs = dto.getClientTs();
         if (StringUtils.isBlank(station)) {
@@ -439,8 +453,7 @@ public class StationPassService {
             throw new ServiceException("工序所属流转卡不存在: stepRecordId=" + step.getStepRecordId());
         }
 
-        // 3. 操作员回填 + 幂等行落库
-        OperatorInfo operator = resolveOperator(null, dto.getOperatorCode());
+        // 3. 操作员由调用方在事务外解析传入; 幂等行落库
         MesStationReport report = new MesStationReport();
         report.setReportType("BATCH");
         report.setStationCode(station);
@@ -502,20 +515,37 @@ public class StationPassService {
         return null;
     }
 
-    /** 按 cardId + sequenceNum 定位工序记录。 */
-    public ProFlowCardStep selectStepBySeq(Long cardId, Integer sequenceNum) {
-        if (cardId == null || sequenceNum == null) {
+    /**
+     * 定位 SN 当前工序: 卡上第一条未完成工序(COMPLETED/SKIPPED 除外)按 seq 升序;
+     * 卡上全部完成则兜底按 current_step_seq 直查(无未完成工序时 SN 应已完工, 兜底返回 null)。
+     * 与 FlashRecordServiceImpl 的定位口径一致(pro_sn.current_step_seq 无维护逻辑, 不可靠)。
+     */
+    public ProFlowCardStep resolveCurrentStep(Long cardId, Integer currentStepSeq) {
+        if (cardId == null) {
+            return null;
+        }
+        ProFlowCardStep step = stepMapper.selectOne(Wrappers.<ProFlowCardStep>lambdaQuery()
+            .eq(ProFlowCardStep::getCardId, cardId)
+            .notIn(ProFlowCardStep::getStepStatus, "COMPLETED", "SKIPPED")
+            .orderByAsc(ProFlowCardStep::getSequenceNum)
+            .last("LIMIT 1"));
+        if (step != null) {
+            return step;
+        }
+        if (currentStepSeq == null) {
             return null;
         }
         return stepMapper.selectOne(Wrappers.<ProFlowCardStep>lambdaQuery()
             .eq(ProFlowCardStep::getCardId, cardId)
-            .eq(ProFlowCardStep::getSequenceNum, sequenceNum)
+            .eq(ProFlowCardStep::getSequenceNum, currentStepSeq)
             .last("LIMIT 1"));
     }
 
     /**
      * 操作员解析: operatorId 直用; 否则 operatorCode → sch_worker 档案(user_id/user_name)。
      * 均缺失返回空信息(容忍, 字段落 null)。
+     * <p>数据源: 本类级 @DS("mes") 会覆盖 Mapper 接口上的 @DS("erp")(同类内调用不走 AOP 代理),
+     * 故用编程式 push("erp") 切库查 ry-erp 的 sch_worker(对齐 MesErpBridgeServiceImpl 模式)。</p>
      */
     public OperatorInfo resolveOperator(Long operatorId, String operatorCode) {
         if (operatorId != null) {
@@ -523,7 +553,14 @@ public class StationPassService {
         }
         String code = trim(operatorCode);
         if (StringUtils.isNotBlank(code)) {
-            Map<String, Object> worker = TenantHelper.dynamic("000000", () -> schWorkerMapper.selectByEmployeeId(code));
+            Map<String, Object> worker = TenantHelper.dynamic("000000", () -> {
+                DynamicDataSourceContextHolder.push("erp");
+                try {
+                    return schWorkerMapper.selectByEmployeeId(code);
+                } finally {
+                    DynamicDataSourceContextHolder.poll();
+                }
+            });
             if (worker != null) {
                 Object userId = worker.get("user_id");
                 Long uid = userId == null ? null : Long.valueOf(String.valueOf(userId));

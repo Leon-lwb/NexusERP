@@ -12,7 +12,9 @@
 ### 开发计划（plans/）
 | 文档 | 主题 | 状态 |
 |------|------|------|
-| [2026-08-21-station-device-channel-plan.md](./plans/2026-08-21-station-device-channel-plan.md) | 设备通道接口开发计划（契约 C1-C12 清单、模块设计、排期） | 🔨 执行中 |
+| [2026-08-21-station-device-channel-plan.md](./plans/2026-08-21-station-device-channel-plan.md) | 设备通道接口开发计划（契约 C1-C12 清单、模块设计、排期） | ✅ 批次0-6 已交付（commit c3c27907） |
+| [2026-08-21-station-code-review-and-next-plan.md](./plans/2026-08-21-station-code-review-and-next-plan.md) | 双端代码审查（3 个集成缺陷 F-1~F-4 已修复）+ 下一阶段计划 | ✅ 阶段0 完成 |
+| [2026-08-21-station-smoke-test-report.md](./plans/2026-08-21-station-smoke-test-report.md) | 阶段1 API 级联调冒烟报告：C1-C12+M1-a/b 全链验通；联调新发现并修复 F-5~F-8（跨库×事务×数据源注解类缺陷）；沉淀 4 条开发约定 | ✅ 阶段1 完成 |
 
 ## 模块概览
 
