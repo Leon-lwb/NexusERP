@@ -98,11 +98,8 @@ const getList = async () => {
   loading.value = true;
   try {
     const res = await listStationDevice(queryParams.value);
-    // 服务端 list 已全量返回(按最后心跳倒序), 前端分页展示
-    const rows: StationDeviceVO[] = (res.data as unknown as StationDeviceVO[]) ?? [];
-    total.value = rows.length;
-    const start = (queryParams.value.pageNum - 1) * queryParams.value.pageSize;
-    dataList.value = rows.slice(start, start + queryParams.value.pageSize);
+    dataList.value = res.rows ?? [];
+    total.value = res.total ?? 0;
   } finally {
     loading.value = false;
   }
