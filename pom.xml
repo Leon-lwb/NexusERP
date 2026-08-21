@@ -418,6 +418,13 @@
                 <version>${revision}</version>
             </dependency>
 
+            <!--  工位终端设备通道模块（nexus-station）  -->
+            <dependency>
+                <groupId>com.nexus</groupId>
+                <artifactId>ruoyi-station</artifactId>
+                <version>${revision}</version>
+            </dependency>
+
             <!--  IoT物联网模块  -->
             <dependency>
                 <groupId>com.nexus</groupId>

@@ -140,6 +140,8 @@ security:
     - /ai/flow/webhook/**
     # 固件刷写/测试自动化上报接口（内部按 X-API-KEY 鉴权）
     - /mes/flash/report/**
+    # 工位终端设备通道接口（nexus-station，内部按 X-API-KEY 鉴权）
+    - /mes/station/**
     # 积木报表（内部自行鉴权）
     - /jmreport/**
     - /drag/**
