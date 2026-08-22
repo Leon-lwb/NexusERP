@@ -9,13 +9,14 @@ Nexus-ERP 是一套面向制造业与贸易型企业的综合管理系统，涵�
 
 ### 关联开源项目
 
-| 项目 | 说明 | 地址 |
-|------|------|------|
-| **Nexus-ERP** | 综合管理系统主仓库（本仓库，Web 端） | [Gitee](https://gitee.com/helloworld_wh18/nexus-erp)（分支 `plus`） |
+| 项目                       | 说明                                | 地址 |
+|--------------------------|-----------------------------------|------|
+| **Nexus-ERP**            | 综合管理系统主仓库（本仓库，Web 端）              | [Gitee](https://gitee.com/NexusERP/nexus-erp)（分支 `plus`） |
 | **Nexus-Vision-Service** | 独立视觉识别服务（人脸识别 + OCR 物料识别，FastAPI） | [Gitee](https://gitee.com/NexusERP/nexus-vision-service) |
-| **Nexus-App** | 移动端 App（uni-app，支持人脸打卡、标签拍照识别等） | [Gitee](https://gitee.com/helloworld_wh18/nexus-app) |
+| **Nexus-App**            | 移动端 App（uni-app，支持人脸打卡、标签拍照识别等）   | [Gitee](https://gitee.com/NexusERP/nexus-app) |
+| **Nexus-Station**        | 工位机 App（Electron，支持车间操作台登录、数据采集等）   | [Gitee](https://gitee.com/NexusERP/nexus-station) |
 
-> 三者协作方式：Web / App 通过 Nexus-ERP 后端 `/cv/*` 接口代理调用 Nexus-Vision-Service，实现人脸识别、物料标签 OCR 等视觉能力（详见下文"视觉识别（CV）"章节）。
+> 协作方式：Web / App / Station 通过 Nexus-ERP 后端 `/cv/*` 接口代理调用 Nexus-Vision-Service，实现人脸识别、物料标签 OCR 等视觉能力（详见下文"视觉识别（CV）"章节）。
 
 ---
 
@@ -32,6 +33,7 @@ Nexus-ERP 不只是一个通用后台，而是一个以企业经营流程为核�
 - **专属大模型**：基于Qwen系列开源模型微调，创建NexusAI大模型，提升智能助手的回复质量与业务理解能力。
 - **即时通讯**：内置 IM 模块，支持私聊、群聊、消息推送，打通企业内部沟通链路。
 - **移动端 App**：配套 Nexus-App（uni-app），覆盖 Android / iOS / H5 / 微信小程序，支持人脸打卡、标签拍照识别、扫码作业等移动场景。
+- **工位机 App**：配套 Nexus-Station（Electron），覆盖车间操作台登录、数据采集等场景。
 
 ---
 
