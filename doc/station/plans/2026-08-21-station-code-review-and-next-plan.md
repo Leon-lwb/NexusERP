@@ -140,7 +140,12 @@ if (latest != null && "FAIL".equals(latest.getResult())) { holdOk = false; ... }
     - 客户端（nexus-station）：`protocol.handle('sop')` 自定义协议映射 userData/sop 本地缓存（路径白名单防穿越，iframe/video/img 兼容 dev 与打包）；`SopDownloader`（版本号文件名天然缓存 + 旧版清理，5 例单测）；`/sop` 作业指导页（多文档页签 + PDF iframe / 图片 8s 自动轮播 / 视频循环，页内版本号与手动重载）；**版本强控**：App.vue 顶栏 SOP chip + 版本不符全局红条 + 5 分钟轮询比对（新增/版本变化/移除任一差异即置位），`pass.vue run()` 与 `home.vue flash()` 开头阻断开工并引导重新加载；未绑定 SOP 的工位不阻断
     - 单测：StationSopServiceTest 11 例 + SopDownloader 5 例全绿
     - v1 边界：服务端过站强控/PDF 逐页轮播/Word 预览/SSE 推送/历史版本下载均不做（客户端强控 + 整文档展示 + 5 分钟轮询）
-  - **批次 4**：上料防错（mes_material_load 料站表 + BOM 比对含 bd_bom_alternative 替代料 + 客户端上料页）
+  - **批次 4** ✅ 2026-08-21 交付（上料防错，M3 收官）：
+    - 比对基准选型：工单 MBOM 快照 `pro_work_order_bom_line`（唯一同时具备工位/工序维度且工单生命周期内不可变；定位链复用 reportBatch 唯一 IN_PROGRESS 语义，快照行按 process_code 过滤 + NULL 工序行兜底）；替代料经 `bd_bom_alternative`（bom_detail_id，跨 erp 现查，生效期+状态过滤）扩展允许集合
+    - 后端（契约 C19/C20，新增 `StationMaterialService` + `StationMaterialController /mes/station/material/**`）：C19 扫码按前缀分流（B→wm_batch 批次码 / RC→wm_barcode 条码实例）→ 比对 → 匹配写 `mes_material_load` 台账（新表，同工单+工位+物料旧 ACTIVE 置 REPLACED 换料语义），不匹配返回允许上料清单（客户端红屏引导）；C20 应上物料清单逐项合并已上批次（缺料标记）
+    - 客户端（nexus-station）：`/material` 上料页（套 pass.vue 红绿屏：绿屏物料/批次/用量+替代料标记，红屏扫码识别+允许清单表格；下方「当前上料状态」卡缺料高亮）+ home 工具入口第四卡
+    - 单测 StationMaterialServiceTest 10 例全绿（B/RC 解析、主料/替代料匹配、换料置 REPLACED、不匹配 allowed 清单、无在制工单、条码前缀/不存在/空参校验、current 合并）
+    - v1 边界：用量计量/耗尽提醒、lt_lot 批次码、卸料操作、PC 端台账查询页不做
 - 待办数据项：ncr_defect_code 造 level=3 且 enabled='Y' 的三级不良代码 ✅ 2026-08-21 交付：`2026-08-21-ncr-defect-code-seed.sql`（6 一级 × 15 二级 × 48 三级，946xxx 固定 ID 段，INSERT IGNORE 可重复执行，软删存量 SURF/SURF9293 测试数据；注意 enabled 为 Y/N 口径非 DDL 注释的 1/0），C9 已脱离客户端静态兜底（脚本已在本机 ry-mes 执行验证，C9 口径命中 48 条）
 - 待办验证项：Electron 页面级真机端到端冒烟（10 项清单，API 级已全通）；自动更新真机链路（latest.yml 发布目录搭建）；标签打印真机验证（测试打印按钮 + 打印机在线）
 - 待办（M3）**工位终端 ↔ 工作中心设备联动视图** ✅ 2026-08-21 交付（评审结论：纯运维便利性增强，不加列不建新模型）：后端新增 `StationErpProcessMapper`（bd_process/bd_workstation 跨库只读，@DS("erp")）+ `StationDeviceLinkageService` + 两个管理端只读端点（正向 `GET /mes/station-admin/device/{deviceId}/equipments`、反向 `GET /mes/station-admin/device/by-workcenter/{workcenterId}`，均权限 `mes:station:device:list`）；plus-ui 工位终端台账页新增「工作中心设备」弹窗，eq_equipment 设备详情抽屉新增「工位终端」页签（checkPermi 守卫，展示工序集+工位机+在线状态）。关联链 `mes_station_device.process_code → bd_process 默认工作中心 → eq_equipment.workcenter_id`，零 schema 变更，与主流 MES 的 Work Center 模型同构（终端是工作中心属性，非独立资产）；单测 StationDeviceLinkageServiceTest 7 例（全链/无工作中心/工序码兜底解析/主数据已删/在线状态矩阵）
@@ -150,4 +155,4 @@ if (latest != null && "FAIL".equals(latest.getResult())) { holdOk = false; ... }
 
 **阶段 0+1 完成 = M2 正式闭环**（客户端三形态全功能脱离降级 + 真机验证 + 幂等验收）✅
 **阶段 2+3 完成 = M1/M2 全部里程碑交付**（2026-08-21，含自动更新与管理端运维视图）✅
-**阶段 4 标签打印 + 造数完成 = M1 设计内全部功能项闭环**（2026-08-21，SN 标签打印 v1 + C9 不良代码字典数据）；**批次 2/3 完成 = M3 四大模块中三模块闭环**（追溯/点检/SOP 全链路，2026-08-21）；M3 剩余上料防错按批次 4 路线图推进
+**阶段 4 标签打印 + 造数完成 = M1 设计内全部功能项闭环**（2026-08-21，SN 标签打印 v1 + C9 不良代码字典数据）；**批次 2/3/4 完成 = M3 四大模块全闭环**（追溯/点检/SOP 全链路/上料防错，2026-08-21，契约 C13-C20）——**M1/M2/M3 全部里程碑交付**。剩余待办仅真机验证项（Electron 端到端冒烟 10 项清单、自动更新链路、标签打印与四批新页面实测）与既有优化项（safeStorage/离线队列上限/electron-log）

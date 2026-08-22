@@ -3,7 +3,7 @@
 > **创建日期**: 2026-08-21
 > **模块代码**: `ruoyi-modules/ruoyi-station`（包名 `com.nexus.station`）
 > **服务对象**: [nexus-station](../../../nexus-station) 工位智能终端（Electron + Vue 3，烧录/FCT/装配工位工控机）
-> **状态**: ✅ C1-C18 + M1-a/M1-b 全部交付（2026-08-21，批次0-6 + 阶段4 批次1/2/3）
+> **状态**: ✅ C1-C20 + M1-a/M1-b 全部交付（2026-08-21，批次0-6 + 阶段4 全部四批次，M1/M2/M3 全闭环）
 
 本目录包含 NexusERP 为 nexus-station 工位终端提供后端能力支持的接口契约与开发计划。全部接口为 **X-API-KEY 免登录设备通道**（请求头 `X-API-KEY`，密钥配置 `mes.api-key`），URL 前缀 `/mes/station/**`（`security.excludes` 已放行），租户固定 `000000`。
 
@@ -66,5 +66,7 @@ ruoyi-station/
 | C16 | `GET /mes/station/sop/current` 工位当前 SOP 文档列表（M3，按工序绑定顺序返回 PUBLISHED 多文档，登记查阅留痕） | ✅ 已交付 |
 | C17 | `GET /mes/station/sop/{sopId}/download` SOP 文件流式代理下载（M3，MinIO 私有桶，仿固件下载 M1-b） | ✅ 已交付 |
 | C18 | `GET /mes/station/sop/version-check` SOP 版本轻量查询（M3，客户端 5 分钟轮询比对触发版本强控） | ✅ 已交付 |
+| C19 | `POST /mes/station/material/load` 上料校验+登记（M3，MBOM 快照含替代料比对 + mes_material_load 台账换料语义） | ✅ 已交付 |
+| C20 | `GET /mes/station/material/current` 当前上料状态（M3，应上物料清单逐项合并已上批次） | ✅ 已交付 |
 
 > 契约的权威定义以 nexus-station 侧 M2 计划为准：`nexus-station/doc/plans/2026-08-20-M2-过站综测安灯开发计划.md` 表 1。本目录文档为其后端实施视角的镜像与排期。
