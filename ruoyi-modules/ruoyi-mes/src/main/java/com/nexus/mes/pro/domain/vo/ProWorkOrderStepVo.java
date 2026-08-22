@@ -72,6 +72,9 @@ public class ProWorkOrderStepVo implements Serializable {
     /** 多类型绑定JSON */
     private String stepFlashConfig;
 
+    /** 固件来源: PACKAGE(发布包)/ROUTING(工艺路线)/MATERIAL_DEFAULT(物料默认)/MANUAL(手动指定) */
+    private String firmwareSource;
+
     /** 开始时间 */
     private Date startTime;
 

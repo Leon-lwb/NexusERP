@@ -84,6 +84,10 @@ public class SoSalesOrderLineBo extends BaseEntity {
     private Long deliveryPriority;
     /** 客户行参考 */
     private String customerLineRef;
+    /** 客户产品代号(用于MES发布包精确匹配) */
+    private String customerProductCode;
+    /** 客户产品名称 */
+    private String customerProductName;
     /** 排序号 */
     private Long sortOrder;
     /** 扩展字段1 */

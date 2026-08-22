@@ -208,6 +208,23 @@ public class PrdWorkOrderVo implements Serializable {
     private String bomName;
 
     /**
+     * 客户ID(来源销售订单头)
+     */
+    private Long clientId;
+
+    /**
+     * 客户名称(冗余)
+     */
+    @ExcelProperty("客户名称")
+    private String clientName;
+
+    /**
+     * 客户产品代号(来源销售订单行, MES发布包精确匹配键)
+     */
+    @ExcelProperty("客户产品代号")
+    private String customerProductCode;
+
+    /**
      * attr2
      */
     private String attr2;

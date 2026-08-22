@@ -6,7 +6,9 @@
           <span class="card-title">{{ title }}</span>
           <div class="card-actions">
             <el-button type="primary" @click="submitForm" v-if="!isViewMode && !props.disabled">保存</el-button>
-            <el-button type="success" @click="handleSubmitFlow" v-if="!isViewMode && !props.disabled && form.orderStatus === 'DRAFT'">提交审批</el-button>
+            <el-button type="success" @click="handleSubmitFlow" v-if="!isViewMode && !props.disabled && form.orderStatus === 'DRAFT'"
+              >提交审批</el-button
+            >
             <el-button type="info" @click="onViewFlow" v-if="form.orderStatus === 'APPROVING' || form.orderStatus === 'APPROVED'">查看流程</el-button>
             <el-button @click="cancel" v-if="!props.disabled">取消</el-button>
           </div>
@@ -22,7 +24,13 @@
                   <el-form-item label="销售订单编号" prop="soNo">
                     <div style="display: flex; align-items: center; gap: 10px">
                       <el-input v-model="form.soNo" placeholder="请输入销售订单编号" :disabled="autoGenFlag || isViewMode" style="flex: 1" />
-                      <el-switch v-model="autoGenFlag" active-color="#13ce66" active-text="生成" @change="handleAutoGenChange" :disabled="isViewMode || props.disabled">
+                      <el-switch
+                        v-model="autoGenFlag"
+                        active-color="#13ce66"
+                        active-text="生成"
+                        @change="handleAutoGenChange"
+                        :disabled="isViewMode || props.disabled"
+                      >
                       </el-switch>
                     </div>
                   </el-form-item>
@@ -117,7 +125,9 @@
                 <el-col :xs="24" :sm="12" :md="8" :lg="6">
                   <el-form-item
                     label="审批流程提示"
-                    v-if="!isViewMode && !props.disabled && !loadingFlow && flowOptions.length === 0 && (!form.selectFlowId || form.selectFlowId === '')"
+                    v-if="
+                      !isViewMode && !props.disabled && !loadingFlow && flowOptions.length === 0 && (!form.selectFlowId || form.selectFlowId === '')
+                    "
                   >
                     <el-alert
                       type="warning"
@@ -374,6 +384,18 @@
                     </el-row>
                   </template>
                 </el-table-column>
+                <el-table-column label="客户产品代号" prop="customerProductCode" width="150">
+                  <template #default="scope">
+                    <el-input v-model="scope.row.customerProductCode" placeholder="客户内部编号(可空)" v-if="!isViewMode && !props.disabled" />
+                    <span v-else>{{ scope.row.customerProductCode || '-' }}</span>
+                  </template>
+                </el-table-column>
+                <el-table-column label="客户产品名称" prop="customerProductName" width="150">
+                  <template #default="scope">
+                    <el-input v-model="scope.row.customerProductName" placeholder="客户对该产品的称呼" v-if="!isViewMode && !props.disabled" />
+                    <span v-else>{{ scope.row.customerProductName || '-' }}</span>
+                  </template>
+                </el-table-column>
                 <el-table-column label="订单数量" prop="orderedQty" width="150">
                   <template #default="scope">
                     <el-input-number
@@ -395,7 +417,14 @@
                 </el-table-column>
                 <el-table-column label="单位" prop="unit" width="150">
                   <template #default="scope">
-                    <el-select v-model="scope.row.unit" placeholder="请选择单位" v-if="!isViewMode && !props.disabled" filterable clearable style="width: 100%">
+                    <el-select
+                      v-model="scope.row.unit"
+                      placeholder="请选择单位"
+                      v-if="!isViewMode && !props.disabled"
+                      filterable
+                      clearable
+                      style="width: 100%"
+                    >
                       <el-option v-for="u in uomOptions" :key="u.uomId" :label="u.uomName" :value="u.uomName" />
                     </el-select>
                     <span v-else>{{ scope.row.unit }}</span>
@@ -568,7 +597,14 @@
                 </el-table-column>
                 <el-table-column label="默认仓库" prop="warehouseId" width="160">
                   <template #default="scope">
-                    <el-select v-model="scope.row.warehouseId" placeholder="请选择仓库" filterable clearable style="width: 100%" v-if="!isViewMode && !props.disabled">
+                    <el-select
+                      v-model="scope.row.warehouseId"
+                      placeholder="请选择仓库"
+                      filterable
+                      clearable
+                      style="width: 100%"
+                      v-if="!isViewMode && !props.disabled"
+                    >
                       <el-option v-for="w in warehouseOptions" :key="w.warehouseId" :label="w.warehouseName" :value="w.warehouseId" />
                     </el-select>
                     <span v-else>{{ scope.row.warehouseName || '-' }}</span>
@@ -617,19 +653,27 @@ import type { CustomerOrderVO } from '@/api/erp/so/customer-order/types';
 import type { OrderheaderForm } from '@/api/erp/so/orderheader/types';
 
 const { proxy } = getCurrentInstance() as any;
-const { so_credit_status, so_order_status, sys_true_or_false, so_currency_type, so_order_line_status, so_order_priority, bd_material_type, bd_quality_status } =
-  toRefs<any>(
-    proxy.useDict(
-      'so_credit_status',
-      'so_order_status',
-      'sys_true_or_false',
-      'so_currency_type',
-      'so_order_line_status',
-      'so_order_priority',
-      'bd_material_type',
-      'bd_quality_status'
-    )
-  );
+const {
+  so_credit_status,
+  so_order_status,
+  sys_true_or_false,
+  so_currency_type,
+  so_order_line_status,
+  so_order_priority,
+  bd_material_type,
+  bd_quality_status
+} = toRefs<any>(
+  proxy.useDict(
+    'so_credit_status',
+    'so_order_status',
+    'sys_true_or_false',
+    'so_currency_type',
+    'so_order_line_status',
+    'so_order_priority',
+    'bd_material_type',
+    'bd_quality_status'
+  )
+);
 
 /** 流程详情 / HistoricDetail 嵌入时传入 */
 const props = defineProps({
@@ -1008,6 +1052,8 @@ function handleAddSoSalesOrderLine() {
     warehouseId: null,
     deliveryPriority: '',
     customerLineRef: '',
+    customerProductCode: '',
+    customerProductName: '',
     sortOrder: soSalesOrderLineList.value.length + 1,
     remark: ''
   };

@@ -11,6 +11,7 @@ import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.common.web.core.BaseController;
 import com.nexus.mes.pro.domain.bo.ProWorkOrderBo;
+import com.nexus.mes.pro.domain.bo.UpdateStepFirmwareBo;
 import com.nexus.mes.pro.domain.vo.ProWorkOrderVo;
 import com.nexus.mes.pro.service.IProWorkOrderService;
 import org.springframework.validation.annotation.Validated;
@@ -100,6 +101,21 @@ public class ProWorkOrderController extends BaseController {
     @PutMapping("/release/{mesWoId}")
     public R<Void> release(@PathVariable Long mesWoId) {
         proWorkOrderService.release(mesWoId);
+        return R.ok();
+    }
+
+    /**
+     * 更新工单工序的固件版本(仅CREATED状态工单, 仅FLASH工序, 固件须RELEASED且物料匹配)
+     * <p>生产负责人在工单下达前确认/更改固件版本; 下达后固件冻结不可再改。</p>
+     */
+    @SaCheckPermission("mes:pro:work:edit")
+    @Log(title = "MES工单工序固件更改", businessType = BusinessType.UPDATE)
+    @PutMapping("/{mesWoId}/step/{stepId}/firmware")
+    public R<Void> updateStepFirmware(@PathVariable Long mesWoId,
+                                      @PathVariable Long stepId,
+                                      @Validated @RequestBody UpdateStepFirmwareBo bo) {
+        bo.setStepId(stepId);
+        proWorkOrderService.updateStepFirmware(mesWoId, bo);
         return R.ok();
     }
 

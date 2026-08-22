@@ -43,6 +43,9 @@ public class ProWorkOrderStep extends TenantEntity {
     /** 多类型绑定JSON: [{"flashTypeCode":"firmware_file","contentRefId":123},{"flashTypeCode":"mac"}] */
     private String stepFlashConfig;
 
+    /** 固件来源: PACKAGE(发布包)/ROUTING(工艺路线)/MATERIAL_DEFAULT(物料默认)/MANUAL(手动指定), 前端展示用 */
+    private String firmwareSource;
+
     /** ERP工序ID */
     private Long processId;
 

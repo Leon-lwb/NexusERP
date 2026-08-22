@@ -10774,6 +10774,9 @@ INSERT INTO `sys_auto_code_part` VALUES (2058014518088437812, '000000', 292, 3, 
 INSERT INTO `sys_auto_code_part` VALUES (2058014518088437813, '000000', 293, 1, 'FIXCHAR', 'PREFIX', '前缀', 2, NULL, NULL, 'CF', NULL, NULL, NULL, NULL, NULL, '', NULL, NULL, 0, 0, NULL, NULL, '2026-08-17 21:56:41', NULL, NULL, '0');
 INSERT INTO `sys_auto_code_part` VALUES (2058014518088437814, '000000', 293, 2, 'NOWDATE', 'DATE', '日期', 8, 'yyyyMMdd', NULL, NULL, NULL, NULL, NULL, NULL, NULL, '', NULL, NULL, 0, 0, NULL, NULL, '2026-08-17 21:56:41', NULL, NULL, '0');
 INSERT INTO `sys_auto_code_part` VALUES (2058014518088437815, '000000', 293, 3, 'SERIALNO', 'SERIAL', '流水号', 3, NULL, NULL, NULL, 1, 1, NULL, 'Y', 'DAY', '', NULL, NULL, 0, 0, NULL, NULL, '2026-08-17 21:56:41', NULL, NULL, '0');
+INSERT INTO `sys_auto_code_part` VALUES (2058014518088437816, '000000', 294, 1, 'FIXCHAR', 'PREFIX', '前缀', 2, NULL, NULL, 'RP', NULL, NULL, NULL, NULL, NULL, '', NULL, NULL, 0, 0, NULL, NULL, '2026-08-22 10:00:00', NULL, NULL, '0');
+INSERT INTO `sys_auto_code_part` VALUES (2058014518088437817, '000000', 294, 2, 'NOWDATE', 'DATE', '日期', 8, 'yyyyMMdd', NULL, NULL, NULL, NULL, NULL, NULL, NULL, '', NULL, NULL, 0, 0, NULL, NULL, '2026-08-22 10:00:00', NULL, NULL, '0');
+INSERT INTO `sys_auto_code_part` VALUES (2058014518088437818, '000000', 294, 3, 'SERIALNO', 'SERIAL', '流水号', 3, NULL, NULL, NULL, 1, 1, NULL, 'Y', 'DAY', '', NULL, NULL, 0, 0, NULL, NULL, '2026-08-22 10:00:00', NULL, NULL, '0');
 
 -- ----------------------------
 -- Table structure for sys_auto_code_result
@@ -10974,6 +10977,7 @@ INSERT INTO `sys_auto_code_rule` VALUES (290, '000000', 'MES_FLASH_NO', 'MES刷�
 INSERT INTO `sys_auto_code_rule` VALUES (291, '000000', 'MES_TEST_NO', 'MES测试单号', 'FT+日期+4位日循环流水号', 14, 'N', NULL, 'L', 'Y', '', NULL, NULL, 0, 0, NULL, NULL, '2026-08-16 13:56:57', NULL, NULL, '0');
 INSERT INTO `sys_auto_code_rule` VALUES (292, '000000', 'MES_POOL_CODE', 'MES资源池编码', 'PL+日期+3位日循环流水号', 15, 'N', NULL, 'L', 'Y', '', NULL, NULL, 0, 0, NULL, NULL, '2026-08-17 21:56:41', NULL, NULL, '0');
 INSERT INTO `sys_auto_code_rule` VALUES (293, '000000', 'MES_CONFIG_CODE', 'MES配置文件编码', 'CF+日期+3位日循环流水号', 15, 'N', NULL, 'L', 'Y', '', NULL, NULL, 0, 0, NULL, NULL, '2026-08-17 21:56:41', NULL, NULL, '0');
+INSERT INTO `sys_auto_code_rule` VALUES (294, '000000', 'MES_RP_CODE', 'MES发布包编码', 'RP+日期+3位日循环流水号', 15, 'N', NULL, 'L', 'Y', '', NULL, NULL, 0, 0, NULL, NULL, '2026-08-22 10:00:00', NULL, NULL, '0');
 
 -- ----------------------------
 -- Table structure for sys_client
@@ -13334,6 +13338,22 @@ INSERT INTO `sys_dict_data` VALUES (600981, '000000', 1, '可用', 'AVAILABLE', 
 INSERT INTO `sys_dict_data` VALUES (600982, '000000', 2, '已分配', 'ALLOCATED', 'mes_resource_status', NULL, 'warning', 'N', 103, 1, '2026-08-17 21:56:41', NULL, NULL, '已绑定SN待刷写');
 INSERT INTO `sys_dict_data` VALUES (600983, '000000', 3, '已使用', 'USED', 'mes_resource_status', NULL, 'primary', 'N', 103, 1, '2026-08-17 21:56:41', NULL, NULL, '已刷写完成');
 INSERT INTO `sys_dict_data` VALUES (600984, '000000', 4, '已作废', 'SCRAPPED', 'mes_resource_status', NULL, 'danger', 'N', 103, 1, '2026-08-17 21:56:41', NULL, NULL, '作废不可用');
+INSERT INTO `sys_dict_data` VALUES (601011, '000000', 1, '草稿', 'DRAFT', 'mes_release_pkg_status', NULL, 'info', 'Y', 103, 1, '2026-08-22 10:00:00', NULL, NULL, '发布包状态-草稿(可编辑/提交审批)');
+INSERT INTO `sys_dict_data` VALUES (601012, '000000', 2, '审批中', 'IN_REVIEW', 'mes_release_pkg_status', NULL, 'warning', 'N', 103, 1, '2026-08-22 10:00:00', NULL, NULL, '发布包状态-审批中(Flowable流转中)');
+INSERT INTO `sys_dict_data` VALUES (601013, '000000', 3, '已发布', 'RELEASED', 'mes_release_pkg_status', NULL, 'success', 'N', 103, 1, '2026-08-22 10:00:00', NULL, NULL, '发布包状态-已发布(可匹配生成工单)');
+INSERT INTO `sys_dict_data` VALUES (601014, '000000', 4, '已归档', 'ARCHIVED', 'mes_release_pkg_status', NULL, 'default', 'N', 103, 1, '2026-08-22 10:00:00', NULL, NULL, '发布包状态-已归档(不可再用于新工单)');
+INSERT INTO `sys_dict_data` VALUES (601021, '000000', 1, '替换', 'REPLACE', 'mes_release_pkg_action', NULL, 'warning', 'Y', 103, 1, '2026-08-22 10:00:00', NULL, NULL, '替换标准BOM中的原物料');
+INSERT INTO `sys_dict_data` VALUES (601022, '000000', 2, '新增', 'ADD', 'mes_release_pkg_action', NULL, 'primary', 'N', 103, 1, '2026-08-22 10:00:00', NULL, NULL, '在BOM快照中新增一行');
+INSERT INTO `sys_dict_data` VALUES (601023, '000000', 3, '移除', 'REMOVE', 'mes_release_pkg_action', NULL, 'danger', 'N', 103, 1, '2026-08-22 10:00:00', NULL, NULL, '从BOM快照中移除原物料行');
+INSERT INTO `sys_dict_data` VALUES (601031, '000000', 1, '刷写绑定', 'FLASH', 'mes_release_cfg_group', NULL, 'primary', 'N', 103, 1, '2026-08-22 10:00:00', NULL, NULL, '注入工单工序stepFlashConfig(键=flashTypeCode, 值=contentRefId)');
+INSERT INTO `sys_dict_data` VALUES (601032, '000000', 2, '测试参数', 'TEST_PARAM', 'mes_release_cfg_group', NULL, 'warning', 'N', 103, 1, '2026-08-22 10:00:00', NULL, NULL, '测试工序参数(如高温85℃/老化时长)');
+INSERT INTO `sys_dict_data` VALUES (601033, '000000', 3, '标签规格', 'LABEL', 'mes_release_cfg_group', NULL, 'success', 'N', 103, 1, '2026-08-22 10:00:00', NULL, NULL, '标签/铭牌模板规格');
+INSERT INTO `sys_dict_data` VALUES (601034, '000000', 4, '包装规格', 'PACKAGING', 'mes_release_cfg_group', NULL, 'info', 'N', 103, 1, '2026-08-22 10:00:00', NULL, NULL, '包装/卡通箱规格');
+INSERT INTO `sys_dict_data` VALUES (601035, '000000', 5, '工艺参数', 'PROCESS', 'mes_release_cfg_group', NULL, 'default', 'N', 103, 1, '2026-08-22 10:00:00', NULL, NULL, '其他工艺执行参数');
+INSERT INTO `sys_dict_data` VALUES (601041, '000000', 1, '发布包', 'PACKAGE', 'mes_firmware_source', NULL, 'primary', 'N', 103, 1, '2026-08-22 10:00:00', NULL, NULL, '客户定制化发布包固件映射');
+INSERT INTO `sys_dict_data` VALUES (601042, '000000', 2, '工艺路线', 'ROUTING', 'mes_firmware_source', NULL, 'warning', 'N', 103, 1, '2026-08-22 10:00:00', NULL, NULL, '工艺路线步骤显式指定固件');
+INSERT INTO `sys_dict_data` VALUES (601043, '000000', 3, '物料默认', 'MATERIAL_DEFAULT', 'mes_firmware_source', NULL, 'info', 'N', 103, 1, '2026-08-22 10:00:00', NULL, NULL, '物料默认RELEASED固件兜底');
+INSERT INTO `sys_dict_data` VALUES (601044, '000000', 4, '手动指定', 'MANUAL', 'mes_firmware_source', NULL, 'success', 'N', 103, 1, '2026-08-22 10:00:00', NULL, NULL, '生产负责人在工单上手动更改');
 INSERT INTO `sys_dict_data` VALUES (610110, '000000', 1, '工程BOM', 'EBOM', 'bd_bom_type', '', 'primary', 'N', 103, 1, '2026-06-16 18:04:23', NULL, NULL, '工程BOM - 设计部门维护');
 INSERT INTO `sys_dict_data` VALUES (610111, '000000', 2, '制造BOM', 'MBOM', 'bd_bom_type', '', 'success', 'N', 103, 1, '2026-06-16 18:04:23', NULL, NULL, '制造BOM - 工艺部门维护');
 INSERT INTO `sys_dict_data` VALUES (610112, '000000', 3, '服务BOM', 'SBOM', 'bd_bom_type', '', 'warning', 'N', 103, 1, '2026-06-16 18:04:23', NULL, NULL, '服务BOM - 售后部门维护');
@@ -13815,6 +13835,10 @@ INSERT INTO `sys_dict_type` VALUES (600905, '000000', '测试数据类型', 'mes
 INSERT INTO `sys_dict_type` VALUES (600906, '000000', '刷写内容来源', 'mes_flash_source', 103, 1, '2026-08-17 21:46:25', NULL, NULL, 'MES刷写内容来源(FILE/POOL/EXTERNAL/INLINE)');
 INSERT INTO `sys_dict_type` VALUES (600908, '000000', '资源类型', 'mes_resource_type', 103, 1, '2026-08-17 21:56:41', NULL, NULL, 'MES刷写资源池类型(MAC/SN/CERT)');
 INSERT INTO `sys_dict_type` VALUES (600909, '000000', '资源项状态', 'mes_resource_status', 103, 1, '2026-08-17 21:56:41', NULL, NULL, 'MES资源项状态(AVAILABLE/ALLOCATED/USED/SCRAPPED)');
+INSERT INTO `sys_dict_type` VALUES (600910, '000000', '发布包状态', 'mes_release_pkg_status', 103, 1, '2026-08-22 10:00:00', NULL, NULL, 'MES发布包生命周期状态(DRAFT/IN_REVIEW/RELEASED/ARCHIVED)');
+INSERT INTO `sys_dict_type` VALUES (600911, '000000', 'BOM选配操作', 'mes_release_pkg_action', 103, 1, '2026-08-22 10:00:00', NULL, NULL, 'MES发布包BOM选配操作类型(REPLACE/ADD/REMOVE)');
+INSERT INTO `sys_dict_type` VALUES (600912, '000000', '发布包配置分组', 'mes_release_cfg_group', 103, 1, '2026-08-22 10:00:00', NULL, NULL, 'MES发布包配置项分组(FLASH/TEST_PARAM/LABEL/PACKAGING/PROCESS)');
+INSERT INTO `sys_dict_type` VALUES (600913, '000000', '固件来源', 'mes_firmware_source', 103, 1, '2026-08-22 10:00:00', NULL, NULL, 'MES工单工序固件绑定来源(PACKAGE/ROUTING/MATERIAL_DEFAULT/MANUAL)');
 INSERT INTO `sys_dict_type` VALUES (3000097, '000000', '产能日历状态', 'prd_calendar_status', 103, 1, '2026-05-29 17:57:25', NULL, NULL, '产能日历记录状态');
 INSERT INTO `sys_dict_type` VALUES (3000100, '000000', '产能对象类型', 'prd_calendar_object_type', 103, 1, '2026-05-29 17:57:25', NULL, NULL, '产能日历关联对象类型');
 INSERT INTO `sys_dict_type` VALUES (3000210, '000000', '产能对象类型', 'prd_capacity_object_type', 103, 1, '2026-05-30 00:46:49', NULL, NULL, '产能日历对象类型');
@@ -15279,6 +15303,17 @@ INSERT INTO `sys_menu` VALUES (4304, '配置新增', 4302, 2, '', '', '', 1, 0, 
 INSERT INTO `sys_menu` VALUES (4305, '配置修改', 4302, 3, '', '', '', 1, 0, 'F', '0', '0', 'mes:flash:content:edit', '#', 103, 1, '2026-08-17 21:56:41', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (4306, '配置删除', 4302, 4, '', '', '', 1, 0, 'F', '0', '0', 'mes:flash:content:remove', '#', 103, 1, '2026-08-17 21:56:41', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (4307, '配置发布', 4302, 5, '', '', '', 1, 0, 'F', '0', '0', 'mes:flash:content:release', '#', 103, 1, '2026-08-17 21:56:41', NULL, NULL, 'DRAFT→RELEASED');
+INSERT INTO `sys_menu` VALUES (4310, '发布包管理', 4000, 14, 'release', NULL, NULL, 1, 0, 'M', '0', '0', NULL, 'component', 103, 1, '2026-08-22 10:00:00', NULL, NULL, 'MES客户定制化发布包(固件/BOM选配/配置)');
+INSERT INTO `sys_menu` VALUES (4311, '发布包档案', 4310, 1, 'package', 'mes/release/package/index', NULL, 1, 0, 'C', '0', '0', 'mes:release:package:list', 'component', 103, 1, '2026-08-22 10:00:00', NULL, NULL, '客户定制化发布包(版本/审批/固件映射/BOM选配/配置项)');
+INSERT INTO `sys_menu` VALUES (4312, '发布包查询', 4311, 1, '', '', '', 1, 0, 'F', '0', '0', 'mes:release:package:query', '#', 103, 1, '2026-08-22 10:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (4313, '发布包新增', 4311, 2, '', '', '', 1, 0, 'F', '0', '0', 'mes:release:package:add', '#', 103, 1, '2026-08-22 10:00:00', NULL, NULL, '新增发布包(自动编码, 状态DRAFT)');
+INSERT INTO `sys_menu` VALUES (4314, '发布包修改', 4311, 3, '', '', '', 1, 0, 'F', '0', '0', 'mes:release:package:edit', '#', 103, 1, '2026-08-22 10:00:00', NULL, NULL, '仅 DRAFT/ARCHIVED 可编辑');
+INSERT INTO `sys_menu` VALUES (4315, '发布包删除', 4311, 4, '', '', '', 1, 0, 'F', '0', '0', 'mes:release:package:remove', '#', 103, 1, '2026-08-22 10:00:00', NULL, NULL, '仅 DRAFT 可删');
+INSERT INTO `sys_menu` VALUES (4316, '提交审批', 4311, 5, '', '', '', 1, 0, 'F', '0', '0', 'mes:release:package:submit', '#', 103, 1, '2026-08-22 10:00:00', NULL, NULL, 'DRAFT -> IN_REVIEW (Flowable)');
+INSERT INTO `sys_menu` VALUES (4317, '审批通过', 4311, 6, '', '', '', 1, 0, 'F', '0', '0', 'mes:release:package:approve', '#', 103, 1, '2026-08-22 10:00:00', NULL, NULL, '兜底通过: IN_REVIEW -> RELEASED');
+INSERT INTO `sys_menu` VALUES (4318, '审批驳回', 4311, 7, '', '', '', 1, 0, 'F', '0', '0', 'mes:release:package:reject', '#', 103, 1, '2026-08-22 10:00:00', NULL, NULL, '兜底驳回: IN_REVIEW -> DRAFT');
+INSERT INTO `sys_menu` VALUES (4319, '发布包归档', 4311, 8, '', '', '', 1, 0, 'F', '0', '0', 'mes:release:package:archive', '#', 103, 1, '2026-08-22 10:00:00', NULL, NULL, 'RELEASED -> ARCHIVED(归档后不参与匹配)');
+INSERT INTO `sys_menu` VALUES (4320, '设为默认', 4311, 9, '', '', '', 1, 0, 'F', '0', '0', 'mes:release:package:default', '#', 103, 1, '2026-08-22 10:00:00', NULL, NULL, '客户+物料内默认包唯一(仅RELEASED)');
 INSERT INTO `sys_menu` VALUES (5000, '序列号管理', 2600, 3, 'sn', 'erp/wm/sn/index', NULL, 1, 0, 'C', '0', '0', 'wm:sn:list', 'code', 103, 1, '2026-06-03 00:38:59', 1, '2026-06-03 11:09:57', '序列号管理菜单');
 INSERT INTO `sys_menu` VALUES (5001, '序列号查询', 5000, 1, '', NULL, NULL, 1, 0, 'F', '0', '0', 'wm:sn:query', '#', 103, 1, '2026-06-03 00:38:59', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (5002, '序列号新增', 5000, 2, '', NULL, NULL, 1, 0, 'F', '0', '0', 'wm:sn:add', '#', 103, 1, '2026-06-03 00:38:59', NULL, NULL, '');
@@ -20197,6 +20232,7 @@ INSERT INTO `wf_custom_form` VALUES (2058475035752030209, '销售退货', 'soRet
 INSERT INTO `wf_custom_form` VALUES (2061989953741484034, '盘点计划', 'wmStockTakingPlanService', '盘点计划审批流程', 'b07999f0-5eef-11f1-82e9-00ff6700037c', 'erp/wm/stocktaking/form', '() => import(`@/views/erp/wm/stocktaking/form`)', 2061990140060856322, '1', '2026-06-03 09:54:50', 1, '2026-06-03 09:58:21', '000000', 103);
 INSERT INTO `wf_custom_form` VALUES (2062368011052814337, '到货通知', 'wmArrivalNoticeService', '到货通知审批流程', '8826d868-5fc1-11f1-a16b-00ff6700037c', 'erp/wm/arrivalnotice/form', '() => import(`@/views/erp/wm/arrivalnotice/form`)', 2062368087598862338, '1', '2026-06-04 10:57:05', 1, '2026-06-04 11:00:26', '000000', 103);
 INSERT INTO `wf_custom_form` VALUES (2091000000000005001, '固件发布审批', 'mesFirmwareService', '固件发布审批流程', 'fbf26c2e-9939-11f1-a388-00ff3b9d4ecf', 'mes/fw/firmware/form', '() => import(`@/views/mes/fw/firmware/form`)', 2088873132092858370, '1', '2026-08-16 13:56:57', 1, '2026-08-16 15:16:44', '000000', 103);
+INSERT INTO `wf_custom_form` VALUES (2091000000000005002, '发布包发布审批', 'mesReleasePackageService', '', '', 'mes/release/package/index', '', NULL, '1', '2026-08-22 10:00:00', NULL, NULL, '000000', 103);
 
 -- ----------------------------
 -- Table structure for wf_custom_rule

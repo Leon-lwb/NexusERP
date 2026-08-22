@@ -24,6 +24,11 @@ import com.nexus.mes.flash.mapper.FlashRecordMapper;
 import com.nexus.mes.flash.service.IFirmwareService;
 import com.nexus.mes.pro.domain.ProWorkOrderStep;
 import com.nexus.mes.pro.mapper.ProWorkOrderStepMapper;
+import com.nexus.mes.release.domain.ReleasePackage;
+import com.nexus.mes.release.domain.ReleasePkgFirmware;
+import com.nexus.mes.release.mapper.ReleasePackageMapper;
+import com.nexus.mes.release.mapper.ReleasePkgFirmwareMapper;
+import com.nexus.mes.release.service.IReleasePackageService;
 import com.nexus.system.domain.vo.SysOssVo;
 import com.nexus.system.service.ISysOssService;
 import com.nexus.system.strategy.AutoCodeUtil;
@@ -67,6 +72,9 @@ public class FirmwareServiceImpl implements IFirmwareService, WfCallBackServiceI
     private final FirmwareMapper baseMapper;
     private final FlashRecordMapper flashRecordMapper;
     private final ProWorkOrderStepMapper stepMapper;
+    /** 发布包映射 Mapper: 归档守卫(被 RELEASED 发布包映射的固件禁归档) */
+    private final ReleasePkgFirmwareMapper releasePkgFirmwareMapper;
+    private final ReleasePackageMapper releasePackageMapper;
     private final AutoCodeUtil autoCodeUtil;
     private final ISysOssService ossService;
     private final IWfProcessService processService;
@@ -428,6 +436,20 @@ public class FirmwareServiceImpl implements IFirmwareService, WfCallBackServiceI
             .eq(FlashRecord::getContentRefId, firmwareId));
         if (flashCount != null && flashCount > 0) {
             throw new ServiceException("固件已产生刷写记录, 不可归档(追溯完整性)");
+        }
+        // 发布包守卫: 已被 RELEASED 状态发布包映射的固件不可归档——
+        // 归档会导致后续按包生成的工单在创建时被 fail-loudly 拦截, 须先更新发布包的固件映射
+        List<ReleasePkgFirmware> pkgMappings = releasePkgFirmwareMapper.selectList(
+            Wrappers.<ReleasePkgFirmware>lambdaQuery().eq(ReleasePkgFirmware::getFirmwareId, firmwareId));
+        if (pkgMappings != null && !pkgMappings.isEmpty()) {
+            List<Long> packageIds = pkgMappings.stream()
+                .map(ReleasePkgFirmware::getPackageId).distinct().toList();
+            Long releasedPkgCount = releasePackageMapper.selectCount(Wrappers.<ReleasePackage>lambdaQuery()
+                .in(ReleasePackage::getPackageId, packageIds)
+                .eq(ReleasePackage::getStatus, IReleasePackageService.STATUS_RELEASED));
+            if (releasedPkgCount != null && releasedPkgCount > 0) {
+                throw new ServiceException("固件已被已发布(RELEASED)发布包映射, 不可归档, 请先更新发布包的固件映射");
+            }
         }
         int rows = baseMapper.update(null, Wrappers.<Firmware>lambdaUpdate()
             .set(Firmware::getStatus, STATUS_ARCHIVED)

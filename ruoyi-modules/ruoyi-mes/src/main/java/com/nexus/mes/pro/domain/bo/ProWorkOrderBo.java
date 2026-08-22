@@ -90,6 +90,9 @@ public class ProWorkOrderBo extends BaseEntity {
     /** 工单来源(ERP/REWORK/MANUAL) */
     private String sourceType;
 
+    /** 发布包ID(手动来源工单可选定客户定制化发布包, 下达幂等生成工序时按包覆写) */
+    private Long releasePackageId;
+
     /** 批量删除ID集合 */
     private Long[] ids;
 }

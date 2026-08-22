@@ -41,6 +41,18 @@
             <el-descriptions-item label="工艺路线">{{
               workOrder.routingCode && workOrder.routingName ? workOrder.routingCode + ' - ' + workOrder.routingName : workOrder.routingId || '-'
             }}</el-descriptions-item>
+            <el-descriptions-item label="发布包">
+              <span v-if="workOrder.releasePackageCode"> {{ workOrder.releasePackageCode }} (v{{ workOrder.releasePackageVer }}) </span>
+              <span v-else>-</span>
+            </el-descriptions-item>
+            <el-descriptions-item label="定制配置">
+              <template v-if="releaseConfigItems.length">
+                <el-tag v-for="(c, i) in releaseConfigItems" :key="i" size="small" style="margin: 2px" type="warning">
+                  {{ c.configKey }}={{ c.configValue }}
+                </el-tag>
+              </template>
+              <span v-else>-</span>
+            </el-descriptions-item>
             <el-descriptions-item label="关联设备">{{
               workOrder.equipmentCode && workOrder.equipmentName
                 ? workOrder.equipmentCode + ' - ' + workOrder.equipmentName
@@ -58,6 +70,14 @@
         </el-tab-pane>
 
         <el-tab-pane label="工序步骤" name="steps">
+          <el-alert
+            v-if="flashUnboundNames"
+            type="error"
+            :closable="false"
+            show-icon
+            style="margin-bottom: 8px"
+            :title="`以下刷写工序未绑定刷写内容(固件/配置), 下达/提交审批将被拦截: ${flashUnboundNames}`"
+          />
           <el-table :data="workOrder.steps" border>
             <el-table-column label="序号" prop="sequenceNum" width="80" align="center" />
             <el-table-column label="工序编码" prop="processCode" width="140" />
@@ -74,11 +94,32 @@
                 <span v-else>否</span>
               </template>
             </el-table-column>
-            <el-table-column label="刷写内容" prop="contentRefType" width="170" align="center">
+            <el-table-column label="刷写内容" min-width="220" align="center">
               <template #default="scope">
-                <span v-if="scope.row.contentRefType"> {{ scope.row.contentRefType }} #{{ scope.row.contentRefId }} </span>
+                <span v-if="scope.row.stepType === 'FLASH' && !scope.row.contentRefType && !scope.row.stepFlashConfig" style="color: #f56c6c"
+                  >未绑定</span
+                >
+                <span v-else-if="scope.row.contentRefType">
+                  {{ scope.row.contentRefType }} #{{ scope.row.contentRefId }}
+                  <el-tag v-if="scope.row.firmwareSource" size="small" type="info" style="margin-left: 4px">{{
+                    firmwareSourceLabel(scope.row.firmwareSource)
+                  }}</el-tag>
+                </span>
                 <span v-else-if="scope.row.stepFlashConfig" style="color: #909399">多类型绑定</span>
                 <span v-else>-</span>
+              </template>
+            </el-table-column>
+            <el-table-column v-if="workOrder.woStatus === 'CREATED' && !props.disabled" label="固件操作" width="110" align="center">
+              <template #default="scope">
+                <el-button
+                  v-if="scope.row.stepType === 'FLASH'"
+                  link
+                  type="primary"
+                  icon="Edit"
+                  @click="handleChangeFirmware(scope.row)"
+                  v-hasPermi="['mes:pro:work:edit']"
+                  >{{ scope.row.contentRefType ? '更改' : '绑定' }}</el-button
+                >
               </template>
             </el-table-column>
             <el-table-column label="计划数量" prop="plannedQty" width="100" align="right" />
@@ -106,6 +147,12 @@
             <el-table-column label="工序" prop="processName" width="100" />
             <el-table-column label="工位" prop="workstationName" width="100" />
             <el-table-column label="作业内容" prop="operationContent" min-width="150" show-overflow-tooltip />
+            <el-table-column label="备注" prop="remark" min-width="160" show-overflow-tooltip>
+              <template #default="scope">
+                <el-tag v-if="isPkgSelected(scope.row)" type="warning" size="small">发布包选配</el-tag>
+                <span style="margin-left: 4px">{{ scope.row.remark }}</span>
+              </template>
+            </el-table-column>
             <el-table-column label="倒冲" prop="backflushFlag" width="60" align="center">
               <template #default="scope">
                 <el-tag v-if="scope.row.backflushFlag === 1" type="warning" size="small">是</el-tag>
@@ -139,18 +186,24 @@
         </el-tab-pane>
       </el-tabs>
     </el-card>
+
+    <!-- 固件版本选择弹窗(CREATED状态工单, FLASH工序更改/绑定固件) -->
+    <FirmwareSelectDialog ref="firmwareSelectRef" @select="handleFirmwareSelected" />
   </div>
 </template>
 
 <script setup lang="ts" name="MesWorkOrderDetail">
-import { getWorkOrder, submitWorkOrderFlow, getWorkOrderProcId, getProcessList } from '@/api/mes/pro/workorder';
+import { getWorkOrder, submitWorkOrderFlow, getWorkOrderProcId, getProcessList, updateStepFirmware } from '@/api/mes/pro/workorder';
 import { addFlowCard, listFlowCardByWoId } from '@/api/mes/pro/flowcardApi';
 import type { ProFlowCardVO } from '@/api/mes/pro/flowcard';
-import type { ProWorkOrderVO } from '@/api/mes/pro/types';
+import type { ProWorkOrderVO, ProWorkOrderStepVO } from '@/api/mes/pro/types';
+import FirmwareSelectDialog from './components/FirmwareSelectDialog.vue';
 import { checkPermi } from '@/utils/permission';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
-const { prd_wo_status, mes_step_status, mes_step_type } = toRefs<any>(proxy?.useDict('prd_wo_status', 'mes_step_status', 'mes_step_type'));
+const { prd_wo_status, mes_step_status, mes_step_type, mes_firmware_source } = toRefs<any>(
+  proxy?.useDict('prd_wo_status', 'mes_step_status', 'mes_step_type', 'mes_firmware_source')
+);
 const route = useRoute();
 const router = useRouter();
 
@@ -174,11 +227,57 @@ const remainingQty = ref<number | undefined>(undefined);
 /** 是否可创建流转卡: 工单已下达/生产中/部分完成 且 拥有创建权限 */
 const canCreateFlowCard = computed(
   () =>
-    (workOrder.value.woStatus === 'RELEASED' ||
-      workOrder.value.woStatus === 'IN_PROGRESS' ||
-      workOrder.value.woStatus === 'PARTIAL_COMPLETED') &&
+    (workOrder.value.woStatus === 'RELEASED' || workOrder.value.woStatus === 'IN_PROGRESS' || workOrder.value.woStatus === 'PARTIAL_COMPLETED') &&
     checkPermi(['mes:pro:flowcard:add'])
 );
+
+// ==================== 发布包/固件绑定相关 ====================
+
+const firmwareSelectRef = ref<InstanceType<typeof FirmwareSelectDialog>>();
+/** 当前正在更改固件的工序步骤 */
+const currentStep = ref<ProWorkOrderStepVO | null>(null);
+
+/** 发布包配置项快照(解析 releaseConfig JSON) */
+const releaseConfigItems = computed<any[]>(() => {
+  if (!workOrder.value.releaseConfig) return [];
+  try {
+    return JSON.parse(workOrder.value.releaseConfig);
+  } catch (e) {
+    return [];
+  }
+});
+
+/** 未绑定刷写内容的 FLASH 工序(下达/提交审批门禁警示) */
+const flashUnboundNames = computed(() => {
+  const steps = workOrder.value.steps || [];
+  return steps
+    .filter((s: ProWorkOrderStepVO) => s.stepType === 'FLASH' && !s.contentRefType && !s.stepFlashConfig)
+    .map((s: ProWorkOrderStepVO) => `工序${s.sequenceNum}-${s.processName}`)
+    .join('、');
+});
+
+/** BOM快照行是否为发布包选配覆写行(备注含标记) */
+const isPkgSelected = (row: any) => !!row.remark && row.remark.includes('发布包选配');
+
+/** 固件来源标签翻译 */
+const firmwareSourceLabel = (value: string) => {
+  const dict = mes_firmware_source.value?.find((d: any) => d.value === value);
+  return dict?.label || value;
+};
+
+/** 更改/绑定工序固件(仅CREATED状态, 弹窗选择该物料已发布固件) */
+const handleChangeFirmware = (row: ProWorkOrderStepVO) => {
+  currentStep.value = row;
+  firmwareSelectRef.value?.open(row, workOrder.value.materialId, workOrder.value.materialCode, workOrder.value.materialName);
+};
+
+/** 固件选择确认 -> 调用后端更新(校验状态/固件RELEASED/物料匹配) */
+const handleFirmwareSelected = async (fw: any) => {
+  if (!currentStep.value) return;
+  await updateStepFirmware(workOrder.value.mesWoId, currentStep.value.stepId, fw.firmwareId);
+  proxy?.$modal.msgSuccess(`工序固件已更新为 ${fw.firmwareCode} (v${fw.version}), 下达后冻结`);
+  loadDetail();
+};
 
 const loadDetail = async (mesWoIdParam?: string) => {
   const mesWoId = mesWoIdParam || (route.params.mesWoId as string);
@@ -194,11 +293,7 @@ const loadDetail = async (mesWoIdParam?: string) => {
     loadProcInsId(mesWoId);
   }
   // 已下达/生产中/部分完成可创建流转卡,预加载已建流转卡用于数量校验
-  if (
-    workOrder.value.woStatus === 'RELEASED' ||
-    workOrder.value.woStatus === 'IN_PROGRESS' ||
-    workOrder.value.woStatus === 'PARTIAL_COMPLETED'
-  ) {
+  if (workOrder.value.woStatus === 'RELEASED' || workOrder.value.woStatus === 'IN_PROGRESS' || workOrder.value.woStatus === 'PARTIAL_COMPLETED') {
     loadFlowCardSummary(mesWoId);
   }
 };

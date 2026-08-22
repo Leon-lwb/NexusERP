@@ -734,6 +734,10 @@ public boolean submit(String woIdStr, String selectFlowId) {
             message.setPlannedEndDate(entity.getPlanEndDate());
             message.setWorkshopId(entity.getWorkshopId());
             message.setBomId(entity.getBomId());
+            // 客户信息透传: MES 按客户+物料(+客户产品代号)匹配客户定制化发布包(mes_release_package)
+            message.setClientId(entity.getClientId());
+            message.setClientName(entity.getClientName());
+            message.setCustomerProductCode(entity.getCustomerProductCode());
             messageProducer.send(ExchangeConstants.TOPIC_EXCHANGE, RoutingKeyConstants.MES_WORKORDER_RELEASE, message);
             log.info("工单下达消息已发送: woId={}, woNo={}", entity.getWoId(), entity.getWoNo());
         } catch (Exception e) {

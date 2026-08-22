@@ -195,6 +195,21 @@ public class PrdWorkOrderBo extends BaseEntity {
     private String bomName;
 
     /**
+     * 客户ID(来源销售订单头, MQ透传给MES用于发布包匹配)
+     */
+    private Long clientId;
+
+    /**
+     * 客户名称(冗余)
+     */
+    private String clientName;
+
+    /**
+     * 客户产品代号(来源销售订单行, 发布包精确匹配键)
+     */
+    private String customerProductCode;
+
+    /**
      * 是否倒冲（0=否 1=是）
      */
     private Integer backflushFlag;

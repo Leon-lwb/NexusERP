@@ -37,6 +37,14 @@ export interface ProWorkOrderVO {
   equipmentCode?: string;
   /** 关联设备名称(富集) */
   equipmentName?: string;
+  /** 发布包ID(工单按此包生成, 可追溯) */
+  releasePackageId?: number;
+  /** 发布包编码(冗余) */
+  releasePackageCode?: string;
+  /** 发布包版本(冗余快照) */
+  releasePackageVer?: string;
+  /** 发布包配置项快照(JSON数组) */
+  releaseConfig?: string;
 }
 
 export interface ProWorkOrderStepVO {
@@ -56,6 +64,16 @@ export interface ProWorkOrderStepVO {
   startTime: string;
   endTime: string;
   remark: string;
+  /** 工序类型: GENERAL/FLASH/TEST */
+  stepType?: string;
+  /** 内容引用类型(单类型绑定: FIRMWARE/CONFIG/MAC_POOL...) */
+  contentRefType?: string;
+  /** 内容源记录ID(固件类=mes_firmware_id, 门禁依据) */
+  contentRefId?: number;
+  /** 多类型绑定JSON */
+  stepFlashConfig?: string;
+  /** 固件来源: PACKAGE/ROUTING/MATERIAL_DEFAULT/MANUAL */
+  firmwareSource?: string;
 }
 
 export interface ProWorkOrderForm {
@@ -77,6 +95,8 @@ export interface ProWorkOrderForm {
   planEndDate?: string;
   remark?: string;
   selectFlowId?: number;
+  /** 发布包ID(手动来源工单可选定客户定制化发布包) */
+  releasePackageId?: number;
 }
 
 export interface ProWorkOrderQuery extends PageQuery {

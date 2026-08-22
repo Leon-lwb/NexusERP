@@ -1,12 +1,16 @@
 package com.nexus.mes.pro.service.impl;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
+import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.lang.Dict;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.nexus.common.core.utils.MapstructUtils;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.core.domain.R;
+import com.nexus.common.core.exception.ServiceException;
+import com.nexus.common.json.utils.JsonUtils;
 import com.nexus.common.flowable.core.domain.ActStatus;
 import com.nexus.common.flowable.helper.FlowableProcInsIdHelper;
 import com.nexus.common.mybatis.core.page.PageQuery;
@@ -29,6 +33,7 @@ import com.nexus.mes.pro.domain.ProWorkOrder;
 import com.nexus.mes.pro.domain.ProWorkOrderBomLine;
 import com.nexus.mes.pro.domain.ProWorkOrderStep;
 import com.nexus.mes.pro.domain.bo.ProWorkOrderBo;
+import com.nexus.mes.pro.domain.bo.UpdateStepFirmwareBo;
 import com.nexus.mes.pro.domain.vo.ProWorkOrderBomLineVo;
 import com.nexus.mes.pro.domain.vo.ProWorkOrderStepVo;
 import com.nexus.mes.pro.domain.vo.ProWorkOrderVo;
@@ -41,6 +46,11 @@ import com.nexus.mes.pro.domain.vo.MesMbomLineVo;
 import com.nexus.mes.pro.service.IProWorkOrderService;
 import com.nexus.mes.qc.domain.QcIpqc;
 import com.nexus.mes.qc.mapper.QcIpqcMapper;
+import com.nexus.mes.release.domain.vo.ReleasePackageVo;
+import com.nexus.mes.release.domain.vo.ReleasePkgBomItemVo;
+import com.nexus.mes.release.domain.vo.ReleasePkgConfigVo;
+import com.nexus.mes.release.domain.vo.ReleasePkgFirmwareVo;
+import com.nexus.mes.release.service.IReleasePackageService;
 import com.nexus.workflow.domain.WfMyBusiness;
 import com.nexus.workflow.service.IWfProcessService;
 import com.nexus.workflow.service.impl.WfMyBusinessServiceImpl;
@@ -97,6 +107,8 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
     private final FwProperties fwProperties;
     /** 固件 Mapper: FLASH 工序自动带出物料默认 RELEASED 固件 */
     private final FirmwareMapper firmwareMapper;
+    /** 发布包服务: 客户定制化配置匹配(固件映射/BOM选配/配置项覆写工单) */
+    private final IReleasePackageService releasePackageService;
 
     @Override
     /**
@@ -271,17 +283,43 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
         if (wo.getBomId() != null) {
             mbom = mesMbomService.selectByBomId(wo.getBomId());
         }
-        // 事务内: CAS状态更新 + 幂等快照步骤/BOM
-        doReleaseAndSnapshot(mesWoId, wo, routingSteps, mbom);
+        // 手动来源工单可选定发布包: 幂等生成工序时按包覆写(固件映射/BOM选配/FLASH配置)
+        ReleasePackageVo releasePackage = null;
+        if (wo.getReleasePackageId() != null) {
+            releasePackage = releasePackageService.selectDetailById(wo.getReleasePackageId());
+            if (releasePackage == null) {
+                throw new ServiceException("工单关联的发布包不存在: releasePackageId=" + wo.getReleasePackageId());
+            }
+        }
+        // 事务内: 幂等快照步骤/BOM -> FLASH门禁 -> CAS状态冻结
+        doReleaseAndSnapshot(mesWoId, wo, routingSteps, mbom, releasePackage);
     }
 
     /**
      * 事务内下达 + 幂等快照(ERP来源工单可能已在createFromErpMessage时快照,此处幂等保护)
+     * <p>顺序: 幂等快照(步骤/MBOM) -> FLASH门禁 -> CAS状态冻结。
+     * 快照先于CAS: 手动来源工单的工序在此处才生成, 门禁在校验时点须已可见全部工序;
+     * 门禁先于CAS: 拦截时工单状态未变, 生产负责人修正刷写绑定后可重新下达。</p>
      */
     @Transactional(rollbackFor = Exception.class)
     public void doReleaseAndSnapshot(Long mesWoId, ProWorkOrder wo,
-                                     List<Map<String, Object>> routingSteps, MesMbomVo mbom) {
-        // CAS更新状态
+                                     List<Map<String, Object>> routingSteps, MesMbomVo mbom,
+                                     ReleasePackageVo releasePackage) {
+        // 幂等快照步骤(若尚未生成)
+        Long stepCount = stepMapper.selectCount(Wrappers.lambdaQuery(ProWorkOrderStep.class)
+            .eq(ProWorkOrderStep::getMesWoId, mesWoId));
+        if ((stepCount == null || stepCount == 0) && routingSteps != null && !routingSteps.isEmpty()) {
+            generateStepsFromRouting(wo, routingSteps, releasePackage);
+        }
+        // 幂等快照MBOM(若尚未生成)
+        Long bomLineCount = woBomLineMapper.selectCount(Wrappers.lambdaQuery(ProWorkOrderBomLine.class)
+            .eq(ProWorkOrderBomLine::getMesWoId, mesWoId));
+        if ((bomLineCount == null || bomLineCount == 0) && mbom != null && mbom.getLines() != null && !mbom.getLines().isEmpty()) {
+            snapshotBomLines(wo, mbom, releasePackage);
+        }
+        // FLASH门禁: 每个刷写工序必须已绑定刷写内容(固件/配置/池), 未绑定的下达拦截
+        assertFlashStepsBound(mesWoId);
+        // CAS更新状态(冻结固件/BOM绑定, 下达后不可再改)
         int rows = baseMapper.update(null, Wrappers.<ProWorkOrder>lambdaUpdate()
             .set(ProWorkOrder::getWoStatus, STATUS_RELEASED)
             .eq(ProWorkOrder::getMesWoId, mesWoId)
@@ -289,19 +327,130 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
         if (rows == 0) {
             throw new RuntimeException("工单状态已变更或不存在，仅新建状态工单可下达");
         }
-        // 幂等快照步骤(若尚未生成)
-        Long stepCount = stepMapper.selectCount(Wrappers.lambdaQuery(ProWorkOrderStep.class)
+        // 手动来源工单绑定发布包: 回填发布包快照字段(编码/版本/配置项, ERP来源工单创建时已落)
+        if (releasePackage != null && wo.getReleasePackageId() != null) {
+            baseMapper.update(null, Wrappers.<ProWorkOrder>lambdaUpdate()
+                .set(ProWorkOrder::getReleasePackageCode, releasePackage.getPackageCode())
+                .set(ProWorkOrder::getReleasePackageVer, releasePackage.getVersion())
+                .set(ProWorkOrder::getReleaseConfig, buildReleaseConfigSnapshot(releasePackage))
+                .eq(ProWorkOrder::getMesWoId, mesWoId));
+        }
+        log.info("MES工单下达成功: mesWoId={}, releasePackage={}", mesWoId,
+            releasePackage != null ? releasePackage.getPackageCode() + " v" + releasePackage.getVersion() : "无");
+    }
+
+    /**
+     * FLASH门禁: 校验工单下所有刷写工序均已绑定刷写内容(单类型 contentRefId 或多类型 stepFlashConfig)
+     * <p>挂在 release() 直达路径与 submit() 审批提交前双入口;
+     * 审批通过回调(afterFlowHandle)直接置 RELEASED 不再重复校验, 由提交时点校验兜底。</p>
+     */
+    private void assertFlashStepsBound(Long mesWoId) {
+        List<ProWorkOrderStep> flashSteps = stepMapper.selectList(Wrappers.<ProWorkOrderStep>lambdaQuery()
+            .eq(ProWorkOrderStep::getMesWoId, mesWoId)
+            .eq(ProWorkOrderStep::getStepType, "FLASH"));
+        if (flashSteps == null || flashSteps.isEmpty()) {
+            return;
+        }
+        StringBuilder unbound = new StringBuilder();
+        for (ProWorkOrderStep step : flashSteps) {
+            boolean bound = step.getContentRefId() != null || StringUtils.isNotBlank(step.getStepFlashConfig());
+            if (!bound) {
+                if (unbound.length() > 0) {
+                    unbound.append("、");
+                }
+                unbound.append("工序[").append(step.getSequenceNum()).append("-").append(step.getProcessName()).append("]");
+            }
+        }
+        if (unbound.length() > 0) {
+            throw new ServiceException("以下刷写工序未绑定刷写内容(固件/配置), 请先确认后再下达: " + unbound);
+        }
+    }
+
+    /**
+     * 更新工单工序的固件版本(生产负责人在工单下达前确认/更改, 下达后冻结)
+     * <p>
+     * 校验链: 工单 CREATED -> 步骤属于该工单且为 FLASH 工序 -> 固件 RELEASED -> 固件适用物料与工单产品一致。
+     * 更新单类型绑定(contentRefType/contentRefId, 门禁依据)并置 firmware_source=MANUAL;
+     * 若步骤存在多类型刷写绑定JSON(stepFlashConfig), 其中的固件项同步改写——
+     * 门禁解析 stepFlashConfig 优先于单类型绑定, 两者不一致会导致固件刷写漏检。
+     * </p>
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void updateStepFirmware(Long mesWoId, UpdateStepFirmwareBo bo) {
+        ProWorkOrder wo = baseMapper.selectById(mesWoId);
+        if (wo == null) {
+            throw new ServiceException("工单不存在: mesWoId=" + mesWoId);
+        }
+        if (!STATUS_CREATED.equals(wo.getWoStatus())) {
+            throw new ServiceException("仅新建状态工单可更改工序固件, 当前: " + wo.getWoStatus());
+        }
+        ProWorkOrderStep step = stepMapper.selectById(bo.getStepId());
+        if (step == null || !mesWoId.equals(step.getMesWoId())) {
+            throw new ServiceException("工序步骤不存在或不属于该工单: stepId=" + bo.getStepId());
+        }
+        if (!"FLASH".equals(step.getStepType())) {
+            throw new ServiceException("非刷写工序不可绑定固件: " + step.getProcessName());
+        }
+        Firmware fw = firmwareMapper.selectById(bo.getFirmwareId());
+        if (fw == null) {
+            throw new ServiceException("固件不存在: firmwareId=" + bo.getFirmwareId());
+        }
+        if (!IFirmwareService.STATUS_RELEASED.equals(fw.getStatus())) {
+            throw new ServiceException("仅已发布(RELEASED)固件可用于生产, 固件 " + fw.getFirmwareCode() + " 当前: " + fw.getStatus());
+        }
+        if (wo.getMaterialId() != null && !wo.getMaterialId().equals(fw.getMaterialId())) {
+            throw new ServiceException("固件 " + fw.getFirmwareCode() + " 适用物料与工单产品不一致, 不可绑定");
+        }
+        String flashConfig = rewriteFlashConfigFirmware(step.getStepFlashConfig(), bo.getFirmwareId());
+        int rows = stepMapper.update(null, Wrappers.<ProWorkOrderStep>lambdaUpdate()
+            .set(ProWorkOrderStep::getContentRefType, "FIRMWARE")
+            .set(ProWorkOrderStep::getContentRefId, bo.getFirmwareId())
+            .set(ProWorkOrderStep::getFirmwareSource, "MANUAL")
+            .set(ProWorkOrderStep::getStepFlashConfig, flashConfig)
+            .eq(ProWorkOrderStep::getStepId, bo.getStepId())
             .eq(ProWorkOrderStep::getMesWoId, mesWoId));
-        if ((stepCount == null || stepCount == 0) && routingSteps != null && !routingSteps.isEmpty()) {
-            generateStepsFromRouting(wo, routingSteps);
+        if (rows == 0) {
+            throw new ServiceException("工序固件更新失败, 步骤状态已变更: stepId=" + bo.getStepId());
         }
-        // 幂等快照MBOM(若尚未生成)
-        Long bomLineCount = woBomLineMapper.selectCount(Wrappers.lambdaQuery(ProWorkOrderBomLine.class)
-            .eq(ProWorkOrderBomLine::getMesWoId, mesWoId));
-        if ((bomLineCount == null || bomLineCount == 0) && mbom != null && mbom.getLines() != null && !mbom.getLines().isEmpty()) {
-            snapshotBomLines(wo, mbom);
+        log.info("工单工序固件更改: mesWoId={}, stepId={}, process={}, firmware={}({}), 来源=MANUAL",
+            mesWoId, bo.getStepId(), step.getProcessName(), fw.getFirmwareCode(), fw.getVersion());
+    }
+
+    /**
+     * 改写多类型刷写绑定JSON中的固件项(其余刷写类型项保持不变, 固件项置顶)
+     *
+     * @return 改写后的JSON; 原绑定为空时返回 null(单类型绑定已表达, 无需多类型JSON)
+     */
+    private String rewriteFlashConfigFirmware(String stepFlashConfig, Long firmwareId) {
+        if (StringUtils.isBlank(stepFlashConfig)) {
+            return null;
         }
-        log.info("MES工单下达成功: mesWoId={}", mesWoId);
+        List<Dict> entries;
+        try {
+            entries = JsonUtils.parseArrayMap(stepFlashConfig);
+        } catch (Exception e) {
+            log.warn("工序多类型刷写绑定JSON解析失败, 忽略改写: {}", stepFlashConfig, e);
+            return null;
+        }
+        if (entries == null || entries.isEmpty()) {
+            return null;
+        }
+        List<Map<String, Object>> result = new ArrayList<>();
+        Map<String, Object> fwEntry = new HashMap<>();
+        fwEntry.put("flashTypeCode", "firmware_file");
+        fwEntry.put("contentRefId", firmwareId);
+        result.add(fwEntry);
+        for (Dict entry : entries) {
+            if ("firmware_file".equals(entry.getStr("flashTypeCode"))) {
+                continue;
+            }
+            Map<String, Object> item = new HashMap<>();
+            item.put("flashTypeCode", entry.getStr("flashTypeCode"));
+            item.put("contentRefId", entry.getLong("contentRefId"));
+            result.add(item);
+        }
+        return JsonUtils.toJsonString(result);
     }
 
     /**
@@ -359,19 +508,35 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
             mbom = mesMbomService.selectByBomId(message.getBomId());
         }
 
+        // 匹配客户定制化发布包(事务外加载):
+        // 匹配规则: 客户+物料+客户产品代号精确 -> 客户+物料默认包, 仅取 RELEASED 且有效期内;
+        // 无匹配返回 null, 工单按标准工艺路线/标准BOM生成(传统方式, 完全兼容)
+        ReleasePackageVo releasePackage = null;
+        if (message.getClientId() != null && message.getMaterialId() != null) {
+            releasePackage = releasePackageService.matchPackage(
+                message.getClientId(), message.getMaterialId(), message.getCustomerProductCode());
+            if (releasePackage != null) {
+                log.info("匹配到客户定制化发布包: woNo={}, clientId={}, packageCode={}, version={}",
+                    message.getWoNo(), message.getClientId(), releasePackage.getPackageCode(), releasePackage.getVersion());
+            }
+        }
+
         // 3. 【事务内】创建MES工单及工序及BOM快照（仅写mes库）
-        doCreateWorkOrderAndSteps(message, unitId, unitName, workshopName, routingId, routingSteps, mbom);
+        doCreateWorkOrderAndSteps(message, unitId, unitName, workshopName, routingId, routingSteps, mbom, releasePackage);
     }
 
     /**
      * 事务内创建工单及工序（仅操作mes数据源）
+     *
+     * @param releasePackage 匹配到的客户定制化发布包(可空, 空则按标准工艺路线/标准BOM生成)
      */
     @Transactional(rollbackFor = Exception.class)
     public void doCreateWorkOrderAndSteps(WorkOrderReleaseMessage message,
                                           Long unitId, String unitName,
                                           String workshopName, Long routingId,
                                           List<Map<String, Object>> routingSteps,
-                                          MesMbomVo mbom) {
+                                          MesMbomVo mbom,
+                                          ReleasePackageVo releasePackage) {
         // 创建MES工单主记录
         ProWorkOrder workOrder = new ProWorkOrder();
         workOrder.setErpWoId(message.getWoId());
@@ -390,19 +555,28 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
         workOrder.setRoutingId(routingId);
         workOrder.setWoStatus(STATUS_CREATED);
         workOrder.setPriority(5);
+        // 发布包快照落工单(可追溯): 工单按哪个包的哪个版本生成
+        if (releasePackage != null) {
+            workOrder.setReleasePackageId(releasePackage.getPackageId());
+            workOrder.setReleasePackageCode(releasePackage.getPackageCode());
+            workOrder.setReleasePackageVer(releasePackage.getVersion());
+            workOrder.setReleaseConfig(buildReleaseConfigSnapshot(releasePackage));
+        }
         baseMapper.insert(workOrder);
-        log.info("MES工单创建成功: mesWoId={}, woNo={}", workOrder.getMesWoId(), workOrder.getWoNo());
+        log.info("MES工单创建成功: mesWoId={}, woNo={}, releasePackage={}",
+            workOrder.getMesWoId(), workOrder.getWoNo(),
+            releasePackage != null ? releasePackage.getPackageCode() + " v" + releasePackage.getVersion() : "无");
 
-        // 按工艺路线步骤生成工序
+        // 按工艺路线步骤生成工序(发布包固件映射覆写固件绑定/注入多类型刷写配置)
         if (routingSteps != null && !routingSteps.isEmpty()) {
-            generateStepsFromRouting(workOrder, routingSteps);
+            generateStepsFromRouting(workOrder, routingSteps, releasePackage);
         } else {
             log.warn("未找到工艺路线或无步骤,跳过工序生成: woNo={}, routingId={}", message.getWoNo(), routingId);
         }
 
-        // MBOM快照: 将MBOM明细快照到 pro_work_order_bom_line(隔离后续MBOM/ERP变更)
+        // MBOM快照: 将MBOM明细快照到 pro_work_order_bom_line(隔离后续MBOM/ERP变更); 发布包BOM选配覆写(REPLACE/ADD/REMOVE)
         if (mbom != null && mbom.getLines() != null && !mbom.getLines().isEmpty()) {
-            snapshotBomLines(workOrder, mbom);
+            snapshotBomLines(workOrder, mbom, releasePackage);
         }
 
         log.info("MES工单及工序创建完成: mesWoId={}, woNo={}", workOrder.getMesWoId(), workOrder.getWoNo());
@@ -410,8 +584,16 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
 
     /**
      * 按ERP工艺路线步骤生成MES工单工序（事务内调用，routingSteps已预加载）
+     * <p>
+     * 刷写内容绑定优先级(仅FLASH工序):
+     * ① 发布包固件映射(routingStepId 精确 -> processId 宽泛, 客户定制覆写, 映射固件须仍为 RELEASED 且物料匹配, 否则 fail-loudly);
+     * ② 工艺路线步骤默认固件(bd_routing_step.firmware_id, 不限工序类型, 保持原行为);
+     * ③ 物料默认 RELEASED 固件(全局兜底)。
+     * 发布包 FLASH 组配置项按工序注入 stepFlashConfig(非固件类型: config_file/mac/sn/external_*)。
+     * </p>
      */
-    private void generateStepsFromRouting(ProWorkOrder workOrder, List<Map<String, Object>> routingSteps) {
+    private void generateStepsFromRouting(ProWorkOrder workOrder, List<Map<String, Object>> routingSteps,
+                                          ReleasePackageVo releasePackage) {
         List<ProWorkOrderStep> steps = new ArrayList<>();
         for (Map<String, Object> rs : routingSteps) {
             ProWorkOrderStep step = new ProWorkOrderStep();
@@ -424,23 +606,61 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
             step.setWorkcenterCode((String) rs.get("workstation_code"));
             // 工序打标: 按 process_code 关键字落 step_type (FLASH/TEST/GENERAL), 计划员可改标
             step.setStepType(resolveStepType(step.getProcessCode()));
-            // 刷写内容绑定: 工艺步骤显式 firmware_id 优先; 否则 FLASH 工序自动带出物料默认 RELEASED 固件
-            Long firmwareId = toLong(rs.get("firmware_id"));
-            if (firmwareId == null && "FLASH".equals(step.getStepType()) && workOrder.getMaterialId() != null) {
-                Firmware defaultFw = firmwareMapper.selectOne(Wrappers.<Firmware>lambdaQuery()
-                    .eq(Firmware::getMaterialId, workOrder.getMaterialId())
-                    .eq(Firmware::getIsDefault, IFirmwareService.IS_DEFAULT_YES)
-                    .eq(Firmware::getStatus, IFirmwareService.STATUS_RELEASED)
-                    .last("LIMIT 1"));
-                if (defaultFw != null) {
-                    firmwareId = defaultFw.getFirmwareId();
-                    log.info("FLASH工序自动带出物料默认固件: woNo={}, processCode={}, firmwareId={}", workOrder.getWoNo(), step.getProcessCode(), firmwareId);
+            Long routingStepId = toLong(rs.get("step_id"));
+
+            Long firmwareId = null;
+            String firmwareSource = null;
+            if ("FLASH".equals(step.getStepType())) {
+                // ① 发布包固件映射(客户定制, 优先级最高)
+                if (releasePackage != null) {
+                    firmwareId = matchFirmwareFromPackage(
+                        releasePackage.getFirmwareMappings(), routingStepId, step.getProcessId());
+                    if (firmwareId != null) {
+                        assertFirmwareUsable(firmwareId, workOrder, releasePackage);
+                        firmwareSource = "PACKAGE";
+                    }
+                }
+                // ② 工艺路线步骤默认固件
+                if (firmwareId == null) {
+                    firmwareId = toLong(rs.get("firmware_id"));
+                    if (firmwareId != null) {
+                        firmwareSource = "ROUTING";
+                    }
+                }
+                // ③ 物料默认固件(全局兜底)
+                if (firmwareId == null && workOrder.getMaterialId() != null) {
+                    Firmware defaultFw = firmwareMapper.selectOne(Wrappers.<Firmware>lambdaQuery()
+                        .eq(Firmware::getMaterialId, workOrder.getMaterialId())
+                        .eq(Firmware::getIsDefault, IFirmwareService.IS_DEFAULT_YES)
+                        .eq(Firmware::getStatus, IFirmwareService.STATUS_RELEASED)
+                        .last("LIMIT 1"));
+                    if (defaultFw != null) {
+                        firmwareId = defaultFw.getFirmwareId();
+                        firmwareSource = "MATERIAL_DEFAULT";
+                        log.info("FLASH工序自动带出物料默认固件: woNo={}, processCode={}, firmwareId={}", workOrder.getWoNo(), step.getProcessCode(), firmwareId);
+                    }
+                }
+            } else {
+                // 非FLASH工序保持原行为: 工艺路线步骤显式固件仍然生效
+                firmwareId = toLong(rs.get("firmware_id"));
+                if (firmwareId != null) {
+                    firmwareSource = "ROUTING";
                 }
             }
             if (firmwareId != null) {
                 step.setContentRefType("FIRMWARE");
                 step.setContentRefId(firmwareId);
+                step.setFirmwareSource(firmwareSource);
             }
+
+            // 发布包 FLASH 组配置项注入多类型刷写绑定(JSON数组, 固件绑定同时写入避免门禁漏检)
+            if (releasePackage != null && "FLASH".equals(step.getStepType())) {
+                String flashConfig = buildStepFlashConfig(releasePackage.getConfigItems(), step.getProcessId(), firmwareId);
+                if (flashConfig != null) {
+                    step.setStepFlashConfig(flashConfig);
+                }
+            }
+
             step.setPlannedQty(workOrder.getPlannedQty());
             step.setStepStatus(STEP_PENDING);
             step.setIsKeyProcess(toInt(rs.get("is_key_process")));
@@ -451,7 +671,132 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
         for (ProWorkOrderStep step : steps) {
             stepMapper.insert(step);
         }
-        log.info("工序步骤生成完成: mesWoId={}, stepCount={}", workOrder.getMesWoId(), steps.size());
+        log.info("工序步骤生成完成: mesWoId={}, stepCount={}, releasePackage={}",
+            workOrder.getMesWoId(), steps.size(), releasePackage != null ? releasePackage.getPackageCode() : "无");
+    }
+
+    /**
+     * 从发布包固件映射中匹配固件ID: routingStepId 精确匹配优先, processId 宽泛匹配兜底
+     * <p>processId 兜底不要求映射行的 routingStepId 为空: 工艺路线升版后 stepId 变化,
+     * 按工序匹配仍能命中(客户定制意图挂在工序维度)。</p>
+     */
+    private Long matchFirmwareFromPackage(List<ReleasePkgFirmwareVo> mappings,
+                                           Long routingStepId, Long processId) {
+        if (mappings == null || mappings.isEmpty()) {
+            return null;
+        }
+        if (routingStepId != null) {
+            for (ReleasePkgFirmwareVo m : mappings) {
+                if (routingStepId.equals(m.getRoutingStepId())) {
+                    return m.getFirmwareId();
+                }
+            }
+        }
+        if (processId != null) {
+            for (ReleasePkgFirmwareVo m : mappings) {
+                if (processId.equals(m.getProcessId())) {
+                    return m.getFirmwareId();
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * 校验发布包映射的固件在工单生成时点仍可用(RELEASED + 物料匹配)。
+     * <p>fail-loudly: 定制固件失效时拒绝静默回退到默认固件——定制工单刷错固件的代价远大于停线排查。</p>
+     */
+    private void assertFirmwareUsable(Long firmwareId, ProWorkOrder workOrder, ReleasePackageVo releasePackage) {
+        Firmware fw = firmwareMapper.selectById(firmwareId);
+        if (fw == null) {
+            throw new ServiceException(String.format(
+                "发布包[%s v%s]映射的固件不存在(firmwareId=%s), 请更新发布包后再生成工单",
+                releasePackage.getPackageCode(), releasePackage.getVersion(), firmwareId));
+        }
+        if (!IFirmwareService.STATUS_RELEASED.equals(fw.getStatus())) {
+            throw new ServiceException(String.format(
+                "发布包[%s v%s]映射的固件 %s 当前状态为 %s(非已发布), 请更新发布包后再生成工单",
+                releasePackage.getPackageCode(), releasePackage.getVersion(), fw.getFirmwareCode(), fw.getStatus()));
+        }
+        if (workOrder.getMaterialId() != null && !workOrder.getMaterialId().equals(fw.getMaterialId())) {
+            throw new ServiceException(String.format(
+                "发布包[%s v%s]映射的固件 %s 适用物料与工单产品不一致, 请更新发布包后再生成工单",
+                releasePackage.getPackageCode(), releasePackage.getVersion(), fw.getFirmwareCode()));
+        }
+    }
+
+    /**
+     * 从发布包 FLASH 组配置项构建工序的多类型刷写绑定JSON
+     * <p>
+     * 格式: [{"flashTypeCode":"firmware_file","contentRefId":123},{"flashTypeCode":"config_file","contentRefId":456}]。
+     * config_key=刷写类型编码(mes_flash_type.type_code), config_value=内容源记录ID。
+     * ① 固件绑定同时写入数组首位——门禁解析 stepFlashConfig 优先于单类型 contentRefId,
+     *    若只写配置项会导致固件绑定漏检;
+     * ② flashTypeCode=firmware_file 的配置项跳过(固件绑定走固件映射表, 避免双来源冲突);
+     * ③ FLASH 组配置项须绑定工序(processId), 全局项不注入步骤仅随 releaseConfig 快照。
+     * </p>
+     *
+     * @return 注入JSON; 无配置项命中返回 null
+     */
+    private String buildStepFlashConfig(List<ReleasePkgConfigVo> configs, Long processId, Long firmwareId) {
+        if (configs == null || configs.isEmpty()) {
+            return null;
+        }
+        List<Map<String, Object>> entries = new ArrayList<>();
+        if (firmwareId != null) {
+            Map<String, Object> fwEntry = new HashMap<>();
+            fwEntry.put("flashTypeCode", "firmware_file");
+            fwEntry.put("contentRefId", firmwareId);
+            entries.add(fwEntry);
+        }
+        for (ReleasePkgConfigVo c : configs) {
+            if (!"FLASH".equals(c.getConfigGroup())) {
+                continue;
+            }
+            if (c.getProcessId() == null || !c.getProcessId().equals(processId)) {
+                continue;
+            }
+            if ("firmware_file".equals(c.getConfigKey())) {
+                continue;
+            }
+            Long contentRefId;
+            try {
+                contentRefId = Long.parseLong(c.getConfigValue());
+            } catch (NumberFormatException e) {
+                log.warn("发布包FLASH配置项值非内容源ID(数字), 跳过注入: key={}, value={}", c.getConfigKey(), c.getConfigValue());
+                continue;
+            }
+            Map<String, Object> entry = new HashMap<>();
+            entry.put("flashTypeCode", c.getConfigKey());
+            entry.put("contentRefId", contentRefId);
+            entries.add(entry);
+        }
+        // 仅固件项(无配置项命中)时无需写多类型JSON, 单类型绑定已表达
+        if (entries.size() <= (firmwareId != null ? 1 : 0)) {
+            return null;
+        }
+        return JsonUtils.toJsonString(entries);
+    }
+
+    /**
+     * 构建发布包配置项快照JSON(全量, 含非FLASH组), 落 pro_work_order.release_config 供工位/报表消费
+     */
+    private String buildReleaseConfigSnapshot(ReleasePackageVo releasePackage) {
+        if (releasePackage.getConfigItems() == null || releasePackage.getConfigItems().isEmpty()) {
+            return null;
+        }
+        List<Map<String, Object>> snapshot = new ArrayList<>();
+        for (ReleasePkgConfigVo c : releasePackage.getConfigItems()) {
+            Map<String, Object> item = new HashMap<>();
+            item.put("configGroup", c.getConfigGroup());
+            item.put("configKey", c.getConfigKey());
+            item.put("configValue", c.getConfigValue());
+            item.put("configType", c.getConfigType());
+            item.put("processId", c.getProcessId());
+            item.put("processCode", c.getProcessCode());
+            snapshot.add(item);
+        }
+        return JsonUtils.toJsonString(snapshot);
     }
 
     /**
@@ -476,11 +821,20 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
 
     /**
      * 快照MBOM明细到工单BOM快照表(事务内调用, MBOM行已含富集信息)
+     * <p>发布包BOM选配(REPLACE/ADD/REMOVE)在快照副本上覆写, 不修改MBOM主数据。</p>
      */
-    private void snapshotBomLines(ProWorkOrder workOrder, MesMbomVo mbom) {
-        List<MesMbomLineVo> lines = mbom.getLines();
-        if (lines == null || lines.isEmpty()) {
+    private void snapshotBomLines(ProWorkOrder workOrder, MesMbomVo mbom, ReleasePackageVo releasePackage) {
+        // 深拷贝行副本: 选配覆写(REPLACE 原位改写行对象)不得泄漏修改 MBOM 查询结果
+        List<MesMbomLineVo> lines = new ArrayList<>();
+        for (MesMbomLineVo line : mbom.getLines()) {
+            lines.add(BeanUtil.toBean(line, MesMbomLineVo.class));
+        }
+        if (lines.isEmpty()) {
             return;
+        }
+        // 发布包BOM选配覆写(仅在工单快照上生效)
+        if (releasePackage != null) {
+            applyBomItems(lines, releasePackage.getBomItems());
         }
         List<ProWorkOrderBomLine> snapshots = new ArrayList<>();
         for (int i = 0; i < lines.size(); i++) {
@@ -516,7 +870,85 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
         for (ProWorkOrderBomLine snapshot : snapshots) {
             woBomLineMapper.insert(snapshot);
         }
-        log.info("MBOM快照生成完成: mesWoId={}, bomLineCount={}", workOrder.getMesWoId(), snapshots.size());
+        log.info("MBOM快照生成完成: mesWoId={}, bomLineCount={}, releasePackage={}",
+            workOrder.getMesWoId(), snapshots.size(), releasePackage != null ? releasePackage.getPackageCode() : "无");
+    }
+
+    /**
+     * 应用发布包BOM选配(REPLACE/ADD/REMOVE)到MBOM快照行副本
+     * <p>
+     * 定位方式: bomDetailId 精确指定优先, 否则按原物料 childMaterialId 定位——
+     * 按子件物料定位抗 BOM/MBOM 版本变更, 语义为"把某物料换成/移除某物料"。
+     * 覆写行追加备注标记"发布包选配", 供前端展示与追溯。
+     * </p>
+     */
+    private void applyBomItems(List<MesMbomLineVo> lines, List<ReleasePkgBomItemVo> items) {
+        if (items == null || items.isEmpty()) {
+            return;
+        }
+        for (ReleasePkgBomItemVo item : items) {
+            String action = item.getActionType();
+            switch (action) {
+                case "REPLACE":
+                    boolean replaced = false;
+                    for (MesMbomLineVo line : lines) {
+                        if (!matchBomLine(line, item)) {
+                            continue;
+                        }
+                        line.setChildMaterialId(item.getTargetMaterialId());
+                        line.setChildMaterialCode(item.getTargetMaterialCode());
+                        line.setChildMaterialName(item.getTargetMaterialName());
+                        if (item.getQuantityPerParent() != null) {
+                            line.setQuantityPerParent(item.getQuantityPerParent());
+                        }
+                        line.setRemark(appendRemark(line.getRemark(),
+                            "发布包选配(替换: " + item.getChildMaterialCode() + " -> " + item.getTargetMaterialCode() + ")"));
+                        replaced = true;
+                    }
+                    if (!replaced) {
+                        log.warn("发布包BOM选配[REPLACE]未命中快照行: 原物料={}, bomDetailId={}",
+                            item.getChildMaterialCode(), item.getBomDetailId());
+                    }
+                    break;
+                case "ADD":
+                    MesMbomLineVo newLine = new MesMbomLineVo();
+                    newLine.setChildMaterialId(item.getTargetMaterialId());
+                    newLine.setChildMaterialCode(item.getTargetMaterialCode());
+                    newLine.setChildMaterialName(item.getTargetMaterialName());
+                    newLine.setQuantityPerParent(item.getQuantityPerParent());
+                    newLine.setLossRate(BigDecimal.ZERO);
+                    newLine.setSortOrder(lines.size() + 1);
+                    newLine.setRemark(appendRemark(null, "发布包选配(新增)"));
+                    lines.add(newLine);
+                    break;
+                case "REMOVE":
+                    boolean removed = lines.removeIf(line -> matchBomLine(line, item));
+                    if (!removed) {
+                        log.warn("发布包BOM选配[REMOVE]未命中快照行: 原物料={}, bomDetailId={}",
+                            item.getChildMaterialCode(), item.getBomDetailId());
+                    }
+                    break;
+                default:
+                    log.warn("发布包BOM选配操作类型未知, 跳过: {}", action);
+            }
+        }
+    }
+
+    /**
+     * BOM选配定位: bomDetailId 精确指定优先, 否则按原物料ID匹配
+     */
+    private boolean matchBomLine(MesMbomLineVo line, ReleasePkgBomItemVo item) {
+        if (item.getBomDetailId() != null) {
+            return item.getBomDetailId().equals(line.getBomDetailId());
+        }
+        return item.getChildMaterialId() != null && item.getChildMaterialId().equals(line.getChildMaterialId());
+    }
+
+    /**
+     * 追加备注(保留原备注, 以分号分隔)
+     */
+    private String appendRemark(String original, String extra) {
+        return StringUtils.isBlank(original) ? extra : original + "; " + extra;
     }
 
     // ==================== Flowable 审批流方法 ====================
@@ -537,6 +969,9 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
         if (!STATUS_CREATED.equals(entity.getWoStatus())) {
             throw new RuntimeException("只有新建状态的工单才能提交审批");
         }
+        // FLASH门禁前置校验: 审批通过回调(afterFlowHandle)将直接置 RELEASED 不再走 doReleaseAndSnapshot,
+        // 提交时点拦截未绑定刷写内容的工序, 覆盖审批下达路径(与 release() 直达路径双入口)
+        assertFlashStepsBound(mesWoId);
         // 解析selectFlowId
         if (StringUtils.isBlank(selectFlowId)) {
             if (entity.getSelectFlowId() != null) {

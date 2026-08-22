@@ -4,6 +4,7 @@ import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.common.mq.message.WorkOrderReleaseMessage;
 import com.nexus.mes.pro.domain.bo.ProWorkOrderBo;
+import com.nexus.mes.pro.domain.bo.UpdateStepFirmwareBo;
 import com.nexus.mes.pro.domain.vo.ProWorkOrderStepVo;
 import com.nexus.mes.pro.domain.vo.ProWorkOrderVo;
 import com.nexus.workflow.service.WfCallBackServiceI;
@@ -88,6 +89,16 @@ public interface IProWorkOrderService extends WfCallBackServiceI {
      * 下达工单(CREATED -> RELEASED)
      */
     void release(Long mesWoId);
+
+    /**
+     * 更新工单工序的固件版本(生产负责人下达前确认/更改)
+     * <p>仅 CREATED 状态工单可操作; 仅 FLASH 工序可绑定; 固件须 RELEASED 且适用物料与工单产品一致;
+     * 多类型刷写绑定(stepFlashConfig)中的固件项同步改写, 保持与单类型绑定一致(门禁解析优先级要求)。</p>
+     *
+     * @param mesWoId MES工单ID
+     * @param bo      步骤固件更新请求
+     */
+    void updateStepFirmware(Long mesWoId, UpdateStepFirmwareBo bo);
 
     /**
      * 消费ERP工单下达消息，创建MES工单及工序

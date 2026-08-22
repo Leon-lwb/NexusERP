@@ -53,6 +53,15 @@ export const releaseWorkOrder = (mesWoId: string | number) => {
   });
 };
 
+/** 更新工单工序的固件版本(仅CREATED状态工单, 仅FLASH工序, 固件须RELEASED且物料匹配) */
+export const updateStepFirmware = (mesWoId: string | number, stepId: string | number, firmwareId: number) => {
+  return request({
+    url: `/mes/pro/work/${mesWoId}/step/${stepId}/firmware`,
+    method: 'put',
+    data: { firmwareId }
+  });
+};
+
 /** 提交审批 */
 export const submitWorkOrderFlow = (mesWoId: string | number, selectFlowId?: string) => {
   return request({

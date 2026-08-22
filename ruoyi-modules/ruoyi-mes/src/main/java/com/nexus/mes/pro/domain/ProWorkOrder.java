@@ -97,6 +97,18 @@ public class ProWorkOrder extends TenantEntity {
     /** 工单来源(ERP/REWORK/MANUAL) */
     private String sourceType;
 
+    /** 发布包ID(mes_release_package, 工单按此包生成, 可追溯) */
+    private Long releasePackageId;
+
+    /** 发布包编码(冗余) */
+    private String releasePackageCode;
+
+    /** 发布包版本(冗余快照) */
+    private String releasePackageVer;
+
+    /** 发布包配置项快照(JSON数组, 供工位/报表消费) */
+    private String releaseConfig;
+
     /** 删除标志 */
     @TableLogic
     private String delFlag;

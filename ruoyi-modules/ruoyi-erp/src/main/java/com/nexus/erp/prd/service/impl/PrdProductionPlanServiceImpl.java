@@ -35,7 +35,11 @@ import com.nexus.erp.prd.mapper.PrdWorkOrderMapper;
 import com.nexus.erp.prd.service.IPrdMaterialRequirementService;
 import com.nexus.erp.prd.service.IPrdProductionPlanService;
 import com.nexus.erp.prd.service.IPrdWorkOrderService;
+import com.nexus.erp.so.domain.SoSalesOrderHeader;
+import com.nexus.erp.so.domain.SoSalesOrderLine;
 import com.nexus.erp.so.domain.vo.SoSalesOrderLineVo;
+import com.nexus.erp.so.mapper.SoSalesOrderHeaderMapper;
+import com.nexus.erp.so.mapper.SoSalesOrderLineMapper;
 import com.nexus.erp.so.service.ISoSalesOrderLineService;
 import com.nexus.system.strategy.AutoCodeUtil;
 import org.springframework.stereotype.Service;
@@ -67,6 +71,9 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
     private final BdBomDetailMapper bdBomDetailMapper;
     private final IPrdMaterialRequirementService prdMaterialRequirementService;
     private final ISoSalesOrderLineService soSalesOrderLineService;
+    /** SO行/头 Mapper: 工单生成时解析客户信息(直调 Mapper 避免 Service 循环依赖) */
+    private final SoSalesOrderLineMapper soSalesOrderLineMapper;
+    private final SoSalesOrderHeaderMapper soSalesOrderHeaderMapper;
     private final AutoCodeUtil autoCodeUtil;
     private final PrdWorkOrderMapper prdWorkOrderMapper;
     private final IPrdWorkOrderService prdWorkOrderService;
@@ -589,6 +596,25 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
             throw new RuntimeException("生产计划不存在");
         }
 
+        // 解析销售订单客户信息(计划来源行 -> SO行 -> SO头), 落到工单并经MQ透传给MES匹配客户定制化发布包;
+        // 非销售订单驱动的计划 orderLineId 为空, 客户信息保持空(MES走标准工艺路线不覆写)
+        Long soClientId = null;
+        String soClientName = null;
+        String soCustomerProductCode = null;
+        if (plan.getOrderLineId() != null) {
+            SoSalesOrderLine soLine = soSalesOrderLineMapper.selectById(plan.getOrderLineId());
+            if (soLine != null) {
+                soCustomerProductCode = soLine.getCustomerProductCode();
+                if (soLine.getSoId() != null) {
+                    SoSalesOrderHeader soHeader = soSalesOrderHeaderMapper.selectById(soLine.getSoId());
+                    if (soHeader != null) {
+                        soClientId = soHeader.getClientId();
+                        soClientName = soHeader.getClientName();
+                    }
+                }
+            }
+        }
+
         int count = 0;
         for (Long requirementId : requirementIds) {
             PrdMaterialRequirement requirement = prdMaterialRequirementService
@@ -631,6 +657,9 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
             wo.setCompletedQty(BigDecimal.ZERO);
             wo.setScrapQty(BigDecimal.ZERO);
             wo.setBomId(requirement.getBomId());
+            wo.setClientId(soClientId);
+            wo.setClientName(soClientName);
+            wo.setCustomerProductCode(soCustomerProductCode);
             wo.setWoStatus(IPrdWorkOrderService.STATUS_CREATED);
             wo.setPlanStartDate(new Date());
 

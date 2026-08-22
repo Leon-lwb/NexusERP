@@ -122,6 +122,20 @@ public class ProWorkOrderVo implements Serializable {
     @ExcelProperty("工单来源")
     private String sourceType;
 
+    /** 发布包ID(工单按此包生成, 可追溯) */
+    private Long releasePackageId;
+
+    /** 发布包编码(冗余) */
+    @ExcelProperty("发布包编码")
+    private String releasePackageCode;
+
+    /** 发布包版本(冗余快照) */
+    @ExcelProperty("发布包版本")
+    private String releasePackageVer;
+
+    /** 发布包配置项快照(JSON数组, 供工位/报表消费) */
+    private String releaseConfig;
+
     /** 工序步骤列表(详情查询时填充) */
     private List<ProWorkOrderStepVo> steps;
 

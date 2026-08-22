@@ -82,7 +82,27 @@
                 <equipment-select v-model="form.equipmentId" />
               </el-form-item>
             </el-col>
+            <el-col :xs="24" :sm="12" :md="8" :lg="6">
+              <el-form-item label="发布包" prop="releasePackageId">
+                <el-select v-model="form.releasePackageId" placeholder="客户定制化配置(可选)" filterable clearable style="width: 100%">
+                  <el-option
+                    v-for="item in packageOptions"
+                    :key="item.packageId"
+                    :label="`${item.clientName} v${item.version}${item.customerProductCode ? ' / ' + item.customerProductCode : ''}${item.isDefault === '1' ? '(默认)' : ''}`"
+                    :value="item.packageId"
+                  />
+                </el-select>
+              </el-form-item>
+            </el-col>
           </el-row>
+          <el-alert
+            v-if="form.releasePackageId"
+            type="info"
+            :closable="false"
+            show-icon
+            title="已选定发布包: 工单下达时将按发布包覆写工序固件映射/BOM选配/刷写配置(在标准工艺路线基础上增量覆写)"
+            style="margin-bottom: 12px"
+          />
 
           <el-divider content-position="left">计划时间</el-divider>
           <el-row :gutter="20">
@@ -129,6 +149,7 @@ import { getWorkOrder, addWorkOrder, updateWorkOrder } from '@/api/mes/pro/worko
 import { listMaterial } from '@/api/erp/bd/material/index';
 import { listBom } from '@/api/erp/bd/bom/index';
 import { listRouting } from '@/api/erp/bd/routing/index';
+import { listReleasePackage } from '@/api/mes/release/package';
 import EquipmentSelect from '@/components/EquipmentSelect/index.vue';
 import type { ProWorkOrderForm } from '@/api/mes/pro/types';
 
@@ -141,6 +162,8 @@ const formRef = ref();
 const materialOptions = ref<any[]>([]);
 const bomOptions = ref<any[]>([]);
 const routingOptions = ref<any[]>([]);
+/** 该物料已发布的客户定制化发布包(手动工单下达时按包覆写) */
+const packageOptions = ref<any[]>([]);
 
 const initForm: ProWorkOrderForm = {
   woNo: undefined,
@@ -154,6 +177,7 @@ const initForm: ProWorkOrderForm = {
   priority: 0,
   planStartDate: undefined,
   planEndDate: undefined,
+  releasePackageId: undefined,
   remark: undefined
 };
 const form = ref<ProWorkOrderForm>({ ...initForm });
@@ -193,8 +217,10 @@ const loadWorkOrder = async (id: string) => {
     priority: data.priority,
     planStartDate: data.planStartDate,
     planEndDate: data.planEndDate,
+    releasePackageId: data.releasePackageId,
     remark: data.remark
   };
+  loadPackages(data.materialId);
 };
 
 const loadMaterials = async () => {
@@ -213,6 +239,23 @@ const handleMaterialChange = (materialId: number) => {
   if (m) {
     form.value.materialCode = m.materialCode;
     form.value.materialName = m.materialName;
+  }
+  // 物料变更后已选发布包失效, 重新加载该物料的已发布包
+  form.value.releasePackageId = undefined;
+  loadPackages(materialId);
+};
+
+/** 加载该物料已发布的客户定制化发布包(手动工单可选定, 下达时按包覆写) */
+const loadPackages = async (materialId?: number) => {
+  if (!materialId) {
+    packageOptions.value = [];
+    return;
+  }
+  try {
+    const res = await listReleasePackage({ materialId, status: 'RELEASED', pageNum: 1, pageSize: 100 });
+    packageOptions.value = res.rows || [];
+  } catch (e) {
+    packageOptions.value = [];
   }
 };
 
