@@ -31,6 +31,7 @@
 SET NAMES utf8mb4;
 
 -- ---------- 0. 清理(仅限本套测试数据 ID 前缀 2099 与测试痕迹) ----------
+DELETE FROM `ry-mes`.mes_flash_record     WHERE sn_code LIKE 'SNQCFLASH%' OR sn_code LIKE 'SNQCTEST%';
 DELETE FROM `ry-mes`.mes_material_load    WHERE mes_wo_id = 2099000000000000001;
 DELETE FROM `ry-mes`.mes_station_report   WHERE sn_code LIKE 'SNQCTEST%' OR sn_code LIKE 'SNQCCOMP%'
    OR station_code IN ('STN|TEST|L1|QC|GENERAL', 'STN|TEST|L1|QC|FLASH');
@@ -39,8 +40,8 @@ DELETE FROM `ry-mes`.eq_inspection_record WHERE equipment_id = 20990000000000004
 DELETE FROM `ry-mes`.pro_andon            WHERE station_code IN ('STN|TEST|L1|QC|GENERAL', 'STN|TEST|L1|QC|FLASH');
 DELETE FROM `ry-mes`.sop_view_log         WHERE sop_id IN (2099000000000000501, 2099000000000000502);
 DELETE FROM `ry-mes`.pro_sn               WHERE sn_id BETWEEN 2099000000000000101 AND 2099000000000000206;
-DELETE FROM `ry-mes`.pro_flow_card_step   WHERE card_id = 2099000000000000021;
-DELETE FROM `ry-mes`.pro_flow_card        WHERE card_id = 2099000000000000021;
+DELETE FROM `ry-mes`.pro_flow_card_step   WHERE card_id IN (2099000000000000021, 2099000000000000022);
+DELETE FROM `ry-mes`.pro_flow_card        WHERE card_id IN (2099000000000000021, 2099000000000000022);
 DELETE FROM `ry-mes`.pro_work_order_bom_line WHERE mes_wo_id = 2099000000000000001;
 DELETE FROM `ry-mes`.pro_work_order_step  WHERE mes_wo_id = 2099000000000000001;
 DELETE FROM `ry-mes`.pro_work_order       WHERE mes_wo_id = 2099000000000000001;
@@ -98,15 +99,16 @@ SELECT 2099000000000000001, '000000', 'WO-QCTEST-001', m.material_id, m.material
 FROM `ry-erp`.bd_material m WHERE m.material_id = 1001;
 
 -- 工单刷写工序: 绑定 RELEASED 固件 FW20260817001(物料匹配, OSS 文件存在)
--- (FLASH 形态工位扫主 SN 即可拉到待刷清单, mock 驱动可完整走通)
+-- sequence_num 必须与刷写卡(FC-QCTEST-F001)当前工序 seq 一致 — 后端上报门禁
+-- 要求 SN 当前工序序号 == 刷写工序序号, 不一致会被业务拒绝(禁止刷写)
 INSERT INTO `ry-mes`.pro_work_order_step
   (step_id, tenant_id, mes_wo_id, sequence_num, step_type, content_ref_type, content_ref_id,
    process_id, process_code, process_name, workcenter_id, workcenter_code,
    planned_qty, completed_qty, scrap_qty, step_status, is_key_process, remark,
    create_dept, create_by, create_time, update_by, update_time, del_flag)
-VALUES (2099000000000000011, '000000', 2099000000000000001, 50, 'FLASH', 'FIRMWARE', 2091000000000006101,
+VALUES (2099000000000000011, '000000', 2099000000000000001, 10, 'FLASH', 'FIRMWARE', 2091000000000006101,
   90002001, 'FLASH', '固件烧录', NULL, NULL,
-  10, 0, 0, 'PENDING', 1, '测试固件 FW20260817001', -1, -1, NOW(), NULL, NOW(), '0');
+  3, 0, 0, 'PENDING', 1, '测试固件 FW20260817001', -1, -1, NOW(), NULL, NOW(), '0');
 
 -- 流转卡(在制, 当前工序=QC)
 INSERT INTO `ry-mes`.pro_flow_card
@@ -139,27 +141,55 @@ VALUES
    NOW(), NULL, 'QC测试工位当前在制工序',
    -1, -1, NOW(), NULL, NOW(), '0');
 
--- ---------- 3. ry-mes: SN(5 个主件在制 + 6 个组件供绑定) ----------
+-- ---------- 2.1 刷写专用流转卡(单 FLASH 工序) ----------
+-- 刷写上报门禁要求 SN 当前工序 == 刷写工序, 与过站卡(QC 当前工序)互斥,
+-- 故单独立卡: FLASH 形态工位扫 SNQCFLASH000x 拉清单并执行刷写
+INSERT INTO `ry-mes`.pro_flow_card
+  (card_id, tenant_id, card_no, mes_wo_id, wo_no, material_id, material_code, material_name,
+   planned_qty, completed_qty, scrap_qty, current_step_id, current_step_seq, card_status,
+   barcode, remark, create_dept, create_by, create_time, update_by, update_time, del_flag)
+SELECT 2099000000000000022, '000000', 'FC-QCTEST-F001', 2099000000000000001, 'WO-QCTEST-001',
+  m.material_id, m.material_code, m.material_name,
+  3, 0, 0, 2099000000000000034, 10, 'IN_PROGRESS',
+  'BC-QCTEST-F001', '工位机QC测试工位刷写专用卡', -1, -1, NOW(), NULL, NOW(), '0'
+FROM `ry-erp`.bd_material m WHERE m.material_id = 1001;
+
+INSERT INTO `ry-mes`.pro_flow_card_step
+  (step_record_id, tenant_id, card_id, card_no, mes_wo_id, wo_step_id, sequence_num,
+   process_id, process_code, process_name, workcenter_id, workcenter_code, is_key_process, step_status,
+   operator_id, operator_name, planned_qty, good_qty, defect_qty, scrap_qty,
+   actual_start_time, actual_end_time, remark, create_dept, create_by, create_time, update_by, update_time, del_flag)
+VALUES
+  (2099000000000000034, '000000', 2099000000000000022, 'FC-QCTEST-F001', 2099000000000000001, NULL, 10,
+   90002001, 'FLASH', '固件烧录', NULL, NULL, 1, 'IN_PROGRESS', NULL, NULL, 3, 0, 0, 0,
+   NOW(), NULL, 'QC测试工位刷写在制工序(seq 与工单刷写工序一致)',
+   -1, -1, NOW(), NULL, NOW(), '0');
+
+-- ---------- 3. ry-mes: SN(过站主件 5 + 刷写专用 3 + 组件 6) ----------
 INSERT INTO `ry-mes`.pro_sn
   (sn_id, tenant_id, sn_code, mes_wo_id, wo_no, card_id, card_no,
    material_id, material_code, material_name, current_step_seq, sn_status, source, production_date,
    create_dept, create_by, create_time, update_by, update_time, del_flag)
-SELECT x.sn_id, '000000', x.sn_code, 2099000000000000001, 'WO-QCTEST-001', 2099000000000000021, 'FC-QCTEST-0001',
-  m.material_id, m.material_code, m.material_name, 30, x.sn_status, 'MANUAL', CURDATE(),
+SELECT x.sn_id, '000000', x.sn_code, 2099000000000000001, 'WO-QCTEST-001', x.card_id, x.card_no,
+  m.material_id, m.material_code, m.material_name, x.step_seq, x.sn_status, 'MANUAL', CURDATE(),
   -1, -1, NOW(), NULL, NOW(), '0'
 FROM `ry-erp`.bd_material m
 JOIN (
-  SELECT 2099000000000000101 AS sn_id, 'SNQCTEST0001' AS sn_code, 'IN_PRODUCTION' AS sn_status UNION ALL
-  SELECT 2099000000000000102, 'SNQCTEST0002', 'IN_PRODUCTION' UNION ALL
-  SELECT 2099000000000000103, 'SNQCTEST0003', 'IN_PRODUCTION' UNION ALL
-  SELECT 2099000000000000104, 'SNQCTEST0004', 'IN_PRODUCTION' UNION ALL
-  SELECT 2099000000000000105, 'SNQCTEST0005', 'IN_PRODUCTION' UNION ALL
-  SELECT 2099000000000000201, 'SNQCCOMP0001', 'COMPLETED'   UNION ALL
-  SELECT 2099000000000000202, 'SNQCCOMP0002', 'COMPLETED'   UNION ALL
-  SELECT 2099000000000000203, 'SNQCCOMP0003', 'COMPLETED'   UNION ALL
-  SELECT 2099000000000000204, 'SNQCCOMP0004', 'COMPLETED'   UNION ALL
-  SELECT 2099000000000000205, 'SNQCCOMP0005', 'COMPLETED'   UNION ALL
-  SELECT 2099000000000000206, 'SNQCCOMP0006', 'COMPLETED'
+  SELECT 2099000000000000101 AS sn_id, 'SNQCTEST0001' AS sn_code, 'IN_PRODUCTION' AS sn_status,
+    2099000000000000021 AS card_id, 'FC-QCTEST-0001' AS card_no, 30 AS step_seq UNION ALL
+  SELECT 2099000000000000102, 'SNQCTEST0002', 'IN_PRODUCTION', 2099000000000000021, 'FC-QCTEST-0001', 30 UNION ALL
+  SELECT 2099000000000000103, 'SNQCTEST0003', 'IN_PRODUCTION', 2099000000000000021, 'FC-QCTEST-0001', 30 UNION ALL
+  SELECT 2099000000000000104, 'SNQCTEST0004', 'IN_PRODUCTION', 2099000000000000021, 'FC-QCTEST-0001', 30 UNION ALL
+  SELECT 2099000000000000105, 'SNQCTEST0005', 'IN_PRODUCTION', 2099000000000000021, 'FC-QCTEST-0001', 30 UNION ALL
+  SELECT 2099000000000000106, 'SNQCFLASH0001', 'IN_PRODUCTION', 2099000000000000022, 'FC-QCTEST-F001', 10 UNION ALL
+  SELECT 2099000000000000107, 'SNQCFLASH0002', 'IN_PRODUCTION', 2099000000000000022, 'FC-QCTEST-F001', 10 UNION ALL
+  SELECT 2099000000000000108, 'SNQCFLASH0003', 'IN_PRODUCTION', 2099000000000000022, 'FC-QCTEST-F001', 10 UNION ALL
+  SELECT 2099000000000000201, 'SNQCCOMP0001', 'COMPLETED',   2099000000000000021, 'FC-QCTEST-0001', 30 UNION ALL
+  SELECT 2099000000000000202, 'SNQCCOMP0002', 'COMPLETED',   2099000000000000021, 'FC-QCTEST-0001', 30 UNION ALL
+  SELECT 2099000000000000203, 'SNQCCOMP0003', 'COMPLETED',   2099000000000000021, 'FC-QCTEST-0001', 30 UNION ALL
+  SELECT 2099000000000000204, 'SNQCCOMP0004', 'COMPLETED',   2099000000000000021, 'FC-QCTEST-0001', 30 UNION ALL
+  SELECT 2099000000000000205, 'SNQCCOMP0005', 'COMPLETED',   2099000000000000021, 'FC-QCTEST-0001', 30 UNION ALL
+  SELECT 2099000000000000206, 'SNQCCOMP0006', 'COMPLETED',   2099000000000000021, 'FC-QCTEST-0001', 30
 ) x ON m.material_id = 1001;
 
 -- ---------- 4. ry-mes: 工单 MBOM 快照(上料防错基准) ----------
@@ -224,6 +254,7 @@ VALUES
 SELECT '工位码(6段)' AS item, 'STN|TEST|L1|QC|GENERAL|GZZ0002' AS value_
 UNION ALL SELECT '刷写形态工位码', 'STN|TEST|L1|QC|FLASH|GZZ0002'
 UNION ALL SELECT '主SN(过站)', 'SNQCTEST0001 ~ SNQCTEST0005'
+UNION ALL SELECT '刷写SN(FLASH工位扫此SN)', 'SNQCFLASH0001 ~ SNQCFLASH0003'
 UNION ALL SELECT '组件SN(绑定)', 'SNQCCOMP0001 ~ SNQCCOMP0006'
 UNION ALL SELECT '上岗工号', 'SCZX20251222017 (张明)'
 UNION ALL SELECT '上料批次', 'B20260822001(主料) / B20260822002(替代料) / B202606040001(错误料应拦截)'
