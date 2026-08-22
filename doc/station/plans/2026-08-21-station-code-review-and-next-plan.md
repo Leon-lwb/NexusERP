@@ -135,7 +135,11 @@ if (latest != null && "FAIL".equals(latest.getResult())) { holdOk = false; ... }
     - 追溯查询（契约 C13）：`StationTraceService` 按 SN 聚合全履历 —— SN 概要 + 工序链 + 四源时间线倒序（刷写/综测按测试单分组/过站报工/关键件绑定），端点 `GET /mes/station/trace/{snCode}`；nexus-station 新增 `/trace` 追溯页（扫码 → 概要卡 + 工序链 chips + el-timeline 全履历）
     - 设备点检（契约 C14/C15）：新表 `eq_inspection_record` 留痕（增量脚本 `2026-08-21-mes-inspection-record.sql`，已本地执行）；`StationInspectionService` 当日任务（复用联动链定位设备 + inspection_items 新旧 JSON 格式兼容 + 当日已检判定）与提交（写留痕 + 同步 last_inspection 对齐 PC 端格式 + 不合格复用 `IEqEquipmentService.updateStatus` 置 FAULT + REPAIR 安灯，均降级）；nexus-station 新增 `/checkup` 点检页（设备卡片 + 逐项正常/异常表单，异常提示联动后果）
     - 单测 16 例（StationTraceServiceTest 5 + StationInspectionServiceTest 11）全绿；home.vue 新增全形态「工位工具」入口（追溯/点检）
-  - **批次 3**：SOP 设备通道（免登录拉取 + OSS 流式代理仿固件下载 + 版本号轮询）+ 版本强控门禁（版本不符禁止开工）+ nexus-station SOP 全屏轮播页
+  - **批次 3** ✅ 2026-08-21 交付（SOP 设备通道全链路，双端）：
+    - 后端（契约 C16-C18，新增 `StationSopService` + `StationSopController /mes/station/sop/**`）：C16 按工位工序码查 `sop_process_binding.process_code`（冗余列免 ERP 跨库）→ 多文档列表（仅 PUBLISHED，is_default 优先，逐文档登记 SopViewLog 查阅留痕，viewerName=在岗操作员）；C17 文件流式代理（照固件下载 M1-b 模板：fileOssId String→Long、PUBLISHED 门禁、Content-Type 按 fileType 细化）；C18 版本轻量查询（sopId+versionNo，轮询比对）
+    - 客户端（nexus-station）：`protocol.handle('sop')` 自定义协议映射 userData/sop 本地缓存（路径白名单防穿越，iframe/video/img 兼容 dev 与打包）；`SopDownloader`（版本号文件名天然缓存 + 旧版清理，5 例单测）；`/sop` 作业指导页（多文档页签 + PDF iframe / 图片 8s 自动轮播 / 视频循环，页内版本号与手动重载）；**版本强控**：App.vue 顶栏 SOP chip + 版本不符全局红条 + 5 分钟轮询比对（新增/版本变化/移除任一差异即置位），`pass.vue run()` 与 `home.vue flash()` 开头阻断开工并引导重新加载；未绑定 SOP 的工位不阻断
+    - 单测：StationSopServiceTest 11 例 + SopDownloader 5 例全绿
+    - v1 边界：服务端过站强控/PDF 逐页轮播/Word 预览/SSE 推送/历史版本下载均不做（客户端强控 + 整文档展示 + 5 分钟轮询）
   - **批次 4**：上料防错（mes_material_load 料站表 + BOM 比对含 bd_bom_alternative 替代料 + 客户端上料页）
 - 待办数据项：ncr_defect_code 造 level=3 且 enabled='Y' 的三级不良代码 ✅ 2026-08-21 交付：`2026-08-21-ncr-defect-code-seed.sql`（6 一级 × 15 二级 × 48 三级，946xxx 固定 ID 段，INSERT IGNORE 可重复执行，软删存量 SURF/SURF9293 测试数据；注意 enabled 为 Y/N 口径非 DDL 注释的 1/0），C9 已脱离客户端静态兜底（脚本已在本机 ry-mes 执行验证，C9 口径命中 48 条）
 - 待办验证项：Electron 页面级真机端到端冒烟（10 项清单，API 级已全通）；自动更新真机链路（latest.yml 发布目录搭建）；标签打印真机验证（测试打印按钮 + 打印机在线）
@@ -146,4 +150,4 @@ if (latest != null && "FAIL".equals(latest.getResult())) { holdOk = false; ... }
 
 **阶段 0+1 完成 = M2 正式闭环**（客户端三形态全功能脱离降级 + 真机验证 + 幂等验收）✅
 **阶段 2+3 完成 = M1/M2 全部里程碑交付**（2026-08-21，含自动更新与管理端运维视图）✅
-**阶段 4 标签打印 + 造数完成 = M1 设计内全部功能项闭环**（2026-08-21，SN 标签打印 v1 + C9 不良代码字典数据）；M3 剩余按批次 2-4 路线图推进
+**阶段 4 标签打印 + 造数完成 = M1 设计内全部功能项闭环**（2026-08-21，SN 标签打印 v1 + C9 不良代码字典数据）；**批次 2/3 完成 = M3 四大模块中三模块闭环**（追溯/点检/SOP 全链路，2026-08-21）；M3 剩余上料防错按批次 4 路线图推进
