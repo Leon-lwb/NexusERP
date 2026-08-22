@@ -22,8 +22,13 @@
 --
 -- 重跑说明: 脚本可重复执行。开头清理段会删除本套测试数据与测试产生的业务痕迹
 --   (报工/绑定/点检/上料台账/安灯/SOP查阅日志), 不触碰其它任何现有数据。
--- 执行: mysql --default-character-set=utf8mb8 -uroot -p < 本文件
+-- 执行: mysql --default-character-set=utf8mb4 -uroot -p < 本文件
+--   注意: 本机 MySQL 服务端为 latin1 且忽略客户端握手字符集(--default-character-set
+--   不生效), 文件内 SET NAMES utf8mb4 是中文正确入库的关键, 勿删。
 -- =====================================================================
+
+-- 强制会话字符集: 保证本文件 UTF-8 中文字面量不被 latin1 会话双重编码成乱码
+SET NAMES utf8mb4;
 
 -- ---------- 0. 清理(仅限本套测试数据 ID 前缀 2099 与测试痕迹) ----------
 DELETE FROM `ry-mes`.mes_material_load    WHERE mes_wo_id = 2099000000000000001;
