@@ -21,8 +21,8 @@
         </el-col>
         <el-col :span="6" class="search-actions">
           <el-form-item>
-            <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+            <el-button type="primary" icon="Search" @click="handleQuery()">搜索</el-button>
+            <el-button icon="Refresh" @click="resetQuery()">重置</el-button>
           </el-form-item>
         </el-col>
       </el-row>
@@ -30,7 +30,7 @@
 
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
-        <el-button type="primary" plain icon="Refresh" @click="handleReconcile" v-hasPermi="['wm:reconciliation:edit']">执行校验</el-button>
+        <el-button type="primary" plain icon="Refresh" @click="handleReconcile()" v-hasPermi="['wm:reconciliation:edit']">执行校验</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete()" v-hasPermi="['wm:reconciliation:remove']"
@@ -38,7 +38,7 @@
         >
       </el-col>
       <el-col :span="1.5">
-        <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['wm:reconciliation:export']">导出</el-button>
+        <el-button type="warning" plain icon="Download" @click="handleExport()" v-hasPermi="['wm:reconciliation:export']">导出</el-button>
       </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" />
     </el-row>
@@ -78,63 +78,60 @@
 </template>
 
 <script setup name="WmReconciliation" lang="ts">
-import { listReconciliation, delReconciliation, reconcile } from '@/api/erp/wm/reconciliation';
-import { WmReconciliationVO, WmReconciliationQuery } from '@/api/erp/wm/reconciliation/types';
+import { listReconciliation, getReconciliation, delReconciliation, reconcile } from '@/api/erp/wm/reconciliation';
+import { WmReconciliationQuery } from '@/api/erp/wm/reconciliation/types';
+import type { FormInstance } from 'element-plus';
+import { useCrud } from '@/composables/useCrud';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { wm_recon_status } = toRefs<any>(proxy?.useDict('wm_recon_status'));
 
-const reconciliationList = ref<WmReconciliationVO[]>([]);
-const loading = ref(true);
-const showSearch = ref(true);
-const ids = ref<Array<number | string>>([]);
-const single = ref(true);
-const multiple = ref(true);
-const total = ref(0);
-
-const queryRef = ref<ElFormInstance>();
 const queryParams = ref<WmReconciliationQuery>({ pageNum: 1, pageSize: 10 });
 
-const getList = async () => {
-  loading.value = true;
-  const res = await listReconciliation(queryParams.value);
-  reconciliationList.value = res.rows;
-  total.value = res.total;
-  loading.value = false;
-};
+// 列表骨架（校验记录由“执行校验”生成，后端无新增/修改表单；
+// add/update 仅为满足 useCrud 签名传入的占位，页面不会调用）
+const {
+  loading,
+  list: reconciliationList,
+  total,
+  ids,
+  multiple,
+  showSearch,
+  getList,
+  handleQuery,
+  handleDelete,
+  handleExport,
+  handleSelectionChange
+} = useCrud({
+  apis: {
+    list: listReconciliation,
+    get: getReconciliation,
+    add: () => Promise.resolve(),
+    update: () => Promise.resolve(),
+    del: delReconciliation
+  },
+  idField: 'reconId',
+  entityName: '库存校验记录',
+  formRef: ref<FormInstance>(),
+  queryParams,
+  initForm: () => ({}),
+  exportUrl: 'erp/wm/reconciliation/export',
+  exportFileName: '库存校验'
+});
 
-const handleQuery = () => {
-  queryParams.value.pageNum = 1;
-  getList();
-};
-const resetQuery = () => {
-  queryRef.value?.resetFields();
+/** 重置按钮操作 */
+function resetQuery() {
+  proxy?.resetForm('queryRef');
   handleQuery();
-};
-const handleSelectionChange = (selection: WmReconciliationVO[]) => {
-  ids.value = selection.map((item) => item.reconId);
-  single.value = selection.length !== 1;
-  multiple.value = !selection.length;
-};
+}
 
-const handleReconcile = async () => {
+/** 执行校验 */
+async function handleReconcile() {
   loading.value = true;
   await reconcile();
   proxy?.$modal.msgSuccess('校验完成');
   getList();
-};
-
-const handleDelete = async (row?: WmReconciliationVO) => {
-  const reconIds = row?.reconId || ids.value;
-  await proxy?.$modal.confirm('是否确认删除编号为"' + reconIds + '"的数据项？');
-  await delReconciliation(reconIds);
-  proxy?.$modal.msgSuccess('删除成功');
-  getList();
-};
-
-const handleExport = () => {
-  proxy?.download('erp/wm/reconciliation/export', { ...queryParams.value }, `库存校验_${new Date().getTime()}.xlsx`);
-};
+}
 
 onMounted(() => {
   getList();

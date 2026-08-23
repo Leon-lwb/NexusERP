@@ -21,8 +21,8 @@
         </el-col>
         <el-col :span="6" class="search-actions">
           <el-form-item>
-            <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+            <el-button type="primary" icon="Search" @click="handleQuery()">搜索</el-button>
+            <el-button icon="Refresh" @click="resetQuery()">重置</el-button>
           </el-form-item>
         </el-col>
       </el-row>
@@ -30,21 +30,21 @@
 
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
-        <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['wm:stocktaking:add']">新增</el-button>
+        <el-button type="primary" plain icon="Plus" @click="handleAdd()" v-hasPermi="['wm:stocktaking:add']">新增</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['wm:stocktaking:edit']">修改</el-button>
+        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate()" v-hasPermi="['wm:stocktaking:edit']">修改</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['wm:stocktaking:remove']"
+        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete()" v-hasPermi="['wm:stocktaking:remove']"
           >删除</el-button
         >
       </el-col>
       <el-col :span="1.5">
-        <el-button type="info" plain icon="View" :disabled="single" @click="handleView" v-hasPermi="['wm:stocktaking:query']">查看</el-button>
+        <el-button type="info" plain icon="View" :disabled="single" @click="handleView()" v-hasPermi="['wm:stocktaking:query']">查看</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['wm:stocktaking:export']">导出</el-button>
+        <el-button type="warning" plain icon="Download" @click="handleExport()" v-hasPermi="['wm:stocktaking:export']">导出</el-button>
       </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
@@ -89,66 +89,61 @@
 </template>
 
 <script setup lang="ts" name="StockTaking">
-import { listStockTakingPlan, delStockTakingPlan } from '@/api/erp/wm/stocktaking';
+import { listStockTakingPlan, getStockTakingPlan, addStockTakingPlan, updateStockTakingPlan, delStockTakingPlan } from '@/api/erp/wm/stocktaking';
 import { useRouter } from 'vue-router';
+import type { FormInstance } from 'element-plus';
+import { useCrud } from '@/composables/useCrud';
 
 const router = useRouter();
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { wm_stocktaking_status } = toRefs<any>(proxy.useDict('wm_stocktaking_status'));
 
-const planList = ref([]);
-const loading = ref(true);
-const showSearch = ref(true);
-const ids = ref([]);
-const single = ref(true);
-const multiple = ref(true);
-const total = ref(0);
-
-const data = reactive({
-  queryParams: {
-    pageNum: 1,
-    pageSize: 10,
-    planCode: null,
-    planName: null,
-    status: null
-  }
+const queryParams = ref({
+  pageNum: 1,
+  pageSize: 10,
+  planCode: null,
+  planName: null,
+  status: null
 });
 
-const { queryParams } = toRefs(data);
+// 列表骨架（新增/修改/查看为路由表单页，保留本地 router.push 跳转逻辑）
+const {
+  loading,
+  list: planList,
+  total,
+  ids,
+  single,
+  multiple,
+  showSearch,
+  getList,
+  handleQuery,
+  handleDelete,
+  handleExport,
+  handleSelectionChange
+} = useCrud({
+  apis: { list: listStockTakingPlan, get: getStockTakingPlan, add: addStockTakingPlan, update: updateStockTakingPlan, del: delStockTakingPlan },
+  idField: 'planId',
+  entityName: '盘点',
+  formRef: ref<FormInstance>(),
+  queryParams,
+  initForm: () => ({}),
+  exportUrl: '/erp/wm/stocktaking/export',
+  exportFileName: 'stocktaking'
+});
 
-function getList() {
-  loading.value = true;
-  listStockTakingPlan(queryParams.value).then((response: any) => {
-    planList.value = response.rows;
-    total.value = response.total;
-    loading.value = false;
-  });
-}
-
-function handleQuery() {
-  queryParams.value.pageNum = 1;
-  getList();
-}
-
+/** 重置按钮操作 */
 function resetQuery() {
   proxy.resetForm('queryRef');
   handleQuery();
 }
 
-function handleSelectionChange(selection: any[]) {
-  ids.value = selection.map((item: any) => item.planId);
-  single.value = selection.length != 1;
-  multiple.value = !selection.length;
-}
-
+/** 新增按钮操作 */
 function handleAdd() {
   router.push({ path: '/erp/wm/stocktaking/form', query: { action: 'add' } });
 }
 
-function handleUpdate(row: any) {
-  if (row && row.type && row instanceof Event) {
-    row = null;
-  }
+/** 修改按钮操作 */
+function handleUpdate(row?: any) {
   if (!row) {
     if (ids.value.length !== 1) {
       proxy.$modal.msgWarning('请选择一条数据进行修改');
@@ -164,10 +159,8 @@ function handleUpdate(row: any) {
   router.push({ path: '/erp/wm/stocktaking/form', query: { id: row.planId, action: 'edit' } });
 }
 
-function handleView(row: any) {
-  if (row && row.type && row instanceof Event) {
-    row = null;
-  }
+/** 查看按钮操作 */
+function handleView(row?: any) {
   if (!row) {
     if (ids.value.length !== 1) {
       proxy.$modal.msgWarning('请选择一条数据进行查看');
@@ -181,24 +174,6 @@ function handleView(row: any) {
     row = selected;
   }
   router.push({ path: '/erp/wm/stocktaking/form', query: { id: row.planId, action: 'view' } });
-}
-
-function handleDelete(row: any) {
-  const _ids = row.planId || ids.value;
-  proxy.$modal
-    .confirm('是否确认删除盘点编号为"' + _ids + '"的数据项？')
-    .then(function () {
-      return delStockTakingPlan(_ids);
-    })
-    .then(() => {
-      getList();
-      proxy.$modal.msgSuccess('删除成功');
-    })
-    .catch(() => {});
-}
-
-function handleExport() {
-  proxy.download('/erp/wm/stocktaking/export', { ...queryParams.value }, `stocktaking_${new Date().getTime()}.xlsx`);
 }
 
 onActivated(() => {

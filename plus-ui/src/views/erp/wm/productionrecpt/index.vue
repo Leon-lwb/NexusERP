@@ -21,8 +21,8 @@
         </el-col>
         <el-col :span="6" class="search-actions">
           <el-form-item>
-            <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+            <el-button type="primary" icon="Search" @click="handleQuery()">搜索</el-button>
+            <el-button icon="Refresh" @click="resetQuery()">重置</el-button>
           </el-form-item>
         </el-col>
       </el-row>
@@ -30,7 +30,7 @@
 
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
-        <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['wm:productionrecpt:add']">新增</el-button>
+        <el-button type="primary" plain icon="Plus" @click="handleAdd()" v-hasPermi="['wm:productionrecpt:add']">新增</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate()" v-hasPermi="['wm:productionrecpt:edit']"
@@ -43,7 +43,7 @@
         >
       </el-col>
       <el-col :span="1.5">
-        <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['wm:productionrecpt:export']">导出</el-button>
+        <el-button type="warning" plain icon="Download" @click="handleExport()" v-hasPermi="['wm:productionrecpt:export']">导出</el-button>
       </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" />
     </el-row>
@@ -188,8 +188,8 @@
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button type="primary" @click="submitForm">确 定</el-button>
-        <el-button @click="cancel">取 消</el-button>
+        <el-button type="primary" @click="submitForm()">确 定</el-button>
+        <el-button @click="cancel()">取 消</el-button>
       </template>
     </el-dialog>
 
@@ -199,8 +199,8 @@
           ><el-input v-model="workOrderQueryParams.woNo" placeholder="请输入工单号" clearable @keyup.enter="getWorkOrderList"
         /></el-form-item>
         <el-form-item
-          ><el-button type="primary" icon="Search" @click="getWorkOrderList">搜索</el-button
-          ><el-button icon="Refresh" @click="resetWorkOrderQuery">重置</el-button></el-form-item
+          ><el-button type="primary" icon="Search" @click="getWorkOrderList()">搜索</el-button
+          ><el-button icon="Refresh" @click="resetWorkOrderQuery()">重置</el-button></el-form-item
         >
       </el-form>
       <el-table v-loading="workOrderLoading" :data="workOrderList" highlight-current-row height="400" show-overflow-tooltip>
@@ -239,8 +239,8 @@
           ><el-input v-model="warehouseQueryParams.warehouseName" placeholder="请输入仓库名称" clearable @keyup.enter="getWarehouseList"
         /></el-form-item>
         <el-form-item
-          ><el-button type="primary" icon="Search" @click="getWarehouseList">搜索</el-button
-          ><el-button icon="Refresh" @click="resetWarehouseQuery">重置</el-button></el-form-item
+          ><el-button type="primary" icon="Search" @click="getWarehouseList()">搜索</el-button
+          ><el-button icon="Refresh" @click="resetWarehouseQuery()">重置</el-button></el-form-item
         >
       </el-form>
       <el-table
@@ -284,26 +284,17 @@ import MaterialSelectDialog from '@/components/MaterialSelectDialog/index.vue';
 import { listWarehouse } from '@/api/erp/wm/warehouse';
 import { listStoragelocation } from '@/api/erp/wm/storagelocation';
 import { previewCode } from '@/api/system/autocode/rule';
+import { useCrud } from '@/composables/useCrud';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { wm_production_recpt_status } = toRefs<any>(proxy?.useDict('wm_production_recpt_status'));
 
-const recptList = ref<ProductionRecptVO[]>([]);
-const loading = ref(true);
-const showSearch = ref(true);
-const ids = ref<Array<number | string>>([]);
-const single = ref(true);
-const multiple = ref(true);
-const total = ref(0);
-const title = ref('');
-const open = ref(false);
-/** 入库单号自动生成开关：开启时由后端按 WM_PRODUCTION_RECPT_CODE 规则生成 */
-const autoGenFlag = ref(false);
-
 const queryRef = ref<ElFormInstance>();
 const recptRef = ref<ElFormInstance>();
 const queryParams = ref<ProductionRecptQuery>({ pageNum: 1, pageSize: 10 });
-const form = ref<ProductionRecptForm>({});
+/** 入库单号自动生成开关：开启时由后端按 WM_PRODUCTION_RECPT_CODE 规则生成 */
+const autoGenFlag = ref(false);
+
 const warehouseDisplay = ref('');
 
 const workOrderSelectOpen = ref(false);
@@ -327,43 +318,62 @@ const rules = {
   quantity: [{ required: true, message: '入库数量不能为空', trigger: 'blur' }]
 };
 
-const getList = async () => {
-  loading.value = true;
-  const res = await listProductionRecpt(queryParams.value);
-  recptList.value = res.rows;
-  total.value = res.total;
-  loading.value = false;
-};
+const {
+  loading,
+  list: recptList,
+  total,
+  open,
+  title,
+  ids,
+  single,
+  multiple,
+  showSearch,
+  form,
+  getList,
+  handleQuery,
+  handleAdd: rawHandleAdd,
+  handleUpdate,
+  submitForm,
+  cancel,
+  handleDelete,
+  handleExport,
+  handleSelectionChange
+} = useCrud<ProductionRecptForm, ProductionRecptQuery>({
+  apis: { list: listProductionRecpt, get: getProductionRecpt, add: addProductionRecpt, update: updateProductionRecpt, del: delProductionRecpt },
+  idField: 'recptId',
+  entityName: '生产完工入库',
+  formRef: recptRef,
+  queryParams,
+  initForm: () => ({}),
+  exportUrl: 'erp/wm/productionrecpt/export',
+  exportFileName: '生产完工入库',
+  onReset: () => {
+    // 重置自动生成开关（新增时由 extraInit 重新开启，修改时保持关闭）
+    autoGenFlag.value = false;
+    warehouseDisplay.value = '';
+    locationOptions.value = [];
+  },
+  beforeSubmit: () => {
+    // 自动生成开启时清空编号，由后端 isBlank 兜底生成，避免预览消耗流水号
+    if (autoGenFlag.value) {
+      form.value.recptCode = undefined;
+    }
+  },
+  afterLoad: (data: any) => {
+    if (data.warehouseName) {
+      warehouseDisplay.value = data.warehouseName;
+    }
+    if (data.warehouseId) {
+      loadLocations(data.warehouseId);
+    }
+  }
+});
 
-const handleQuery = () => {
-  queryParams.value.pageNum = 1;
-  getList();
-};
-const resetQuery = () => {
+/** 重置按钮操作 */
+function resetQuery() {
   queryRef.value?.resetFields();
   handleQuery();
-};
-const handleSelectionChange = (selection: ProductionRecptVO[]) => {
-  ids.value = selection.map((item) => item.recptId);
-  single.value = selection.length !== 1;
-  multiple.value = !selection.length;
-};
-
-const reset = () => {
-  form.value = {};
-  warehouseDisplay.value = '';
-  locationOptions.value = [];
-  recptRef.value?.resetFields();
-};
-
-const handleAdd = () => {
-  reset();
-  open.value = true;
-  title.value = '新增生产完工入库';
-  // 默认自动生成入库单号并预览（不消耗流水号）
-  autoGenFlag.value = true;
-  fetchPreviewCode();
-};
+}
 
 /** 预览入库单号（不落库，不消耗流水号），失败时回退为手动输入 */
 const fetchPreviewCode = async () => {
@@ -385,66 +395,27 @@ const handleAutoGenChange = (val: boolean) => {
   }
 };
 
-const handleUpdate = async (row?: ProductionRecptVO) => {
-  reset();
-  // 修改时编号不可变更，关闭自动生成开关
-  autoGenFlag.value = false;
-  const recptId = row?.recptId || ids.value[0];
-  const res = await getProductionRecpt(recptId);
-  form.value = res.data;
-  if (res.data.warehouseName) {
-    warehouseDisplay.value = res.data.warehouseName;
-  }
-  if (res.data.warehouseId) {
-    loadLocations(res.data.warehouseId);
-  }
-  open.value = true;
-  title.value = '修改生产完工入库';
-};
-
-const submitForm = () => {
-  recptRef.value?.validate(async (valid: boolean) => {
-    if (valid) {
-      // 自动生成开启时清空编号，由后端 isBlank 兜底生成，避免预览消耗流水号
-      if (autoGenFlag.value) {
-        form.value.recptCode = undefined;
-      }
-      if (form.value.recptId) {
-        await updateProductionRecpt(form.value);
-        proxy?.$modal.msgSuccess('修改成功');
-      } else {
-        await addProductionRecpt(form.value);
-        proxy?.$modal.msgSuccess('新增成功');
-      }
-      open.value = false;
-      getList();
-    }
+// 覆盖 useCrud 新增：打开弹窗时默认开启自动生成并预览编码（不消耗流水号）
+function handleAdd() {
+  rawHandleAdd(() => {
+    autoGenFlag.value = true;
+    fetchPreviewCode();
   });
-};
+}
 
-const handleDelete = async (row?: ProductionRecptVO) => {
-  const recptIds = row?.recptId || ids.value;
-  await proxy?.$modal.confirm('是否确认删除编号为"' + recptIds + '"的数据项？');
-  await delProductionRecpt(recptIds);
-  proxy?.$modal.msgSuccess('删除成功');
-  getList();
-};
-
-const handleExecute = async (row: ProductionRecptVO) => {
-  await proxy?.$modal.confirm('确认执行入库单"' + row.recptCode + '"？执行后将增加成品库存，不可撤销。');
-  await executeProductionRecpt(row.recptId);
-  proxy?.$modal.msgSuccess('入库执行成功');
-  getList();
-};
-
-const cancel = () => {
-  open.value = false;
-  reset();
-};
-
-const handleExport = () => {
-  proxy?.download('erp/wm/productionrecpt/export', { ...queryParams.value }, `生产完工入库_${new Date().getTime()}.xlsx`);
-};
+/** 执行入库（行内，仅草稿状态） */
+function handleExecute(row: ProductionRecptVO) {
+  proxy?.$modal
+    .confirm('确认执行入库单"' + row.recptCode + '"？执行后将增加成品库存，不可撤销。')
+    .then(() => {
+      return executeProductionRecpt(row.recptId);
+    })
+    .then(() => {
+      proxy?.$modal.msgSuccess('入库执行成功');
+      getList();
+    })
+    .catch(() => {});
+}
 
 const getWorkOrderList = async () => {
   workOrderLoading.value = true;

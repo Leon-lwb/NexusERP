@@ -13,7 +13,7 @@ const BASE = '/erp/pu/order';
  * @param query 采购订单查询条件
  * @returns 采购订单列表及总数
  */
-export const listPurchaseOrder = (query: PurchaseOrderQuery): AxiosPromise<{ rows: PurchaseOrderVO[]; total: number }> =>
+export const listPurchaseOrder = (query: PurchaseOrderQuery): AxiosPromise<PurchaseOrderVO[]> =>
   request({
     url: BASE + '/list',
     method: 'get',

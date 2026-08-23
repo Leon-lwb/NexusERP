@@ -4,7 +4,7 @@
       <el-row :gutter="16">
         <el-col :span="6">
           <el-form-item label="凭证号" prop="voucherNo">
-            <el-input v-model="queryParams.voucherNo" placeholder="请输入凭证号" clearable @keyup.enter="handleQuery" />
+            <el-input v-model="queryParams.voucherNo" placeholder="请输入凭证号" clearable @keyup.enter="handleQuery()" />
           </el-form-item>
         </el-col>
         <el-col :span="6">
@@ -23,8 +23,8 @@
         </el-col>
         <el-col :span="6" class="search-actions">
           <el-form-item>
-            <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+            <el-button type="primary" icon="Search" @click="handleQuery()">搜索</el-button>
+            <el-button icon="Refresh" @click="resetQuery()">重置</el-button>
           </el-form-item>
         </el-col>
       </el-row>
@@ -32,7 +32,7 @@
 
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
-        <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['fin:gl:voucher:add']">新增凭证</el-button>
+        <el-button type="primary" plain icon="Plus" @click="handleAdd()" v-hasPermi="['fin:gl:voucher:add']">新增凭证</el-button>
       </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
@@ -135,14 +135,14 @@
 
         <el-row :gutter="10" class="mb8" v-if="!isViewMode">
           <el-col :span="1.5">
-            <el-button type="primary" icon="Plus" @click="handleAddLine">添加分录行</el-button>
+            <el-button type="primary" icon="Plus" @click="handleAddLine()">添加分录行</el-button>
           </el-col>
           <el-col :span="1.5">
-            <el-button type="danger" icon="Delete" @click="handleDeleteLine">删除选中行</el-button>
+            <el-button type="danger" icon="Delete" @click="handleDeleteLine()">删除选中行</el-button>
           </el-col>
         </el-row>
 
-        <el-table :data="form.voucherLineList" @selection-change="handleLineSelectionChange" border size="small" show-overflow-tooltip>
+        <el-table :data="lineList" @selection-change="handleLineSelectionChange" border size="small" show-overflow-tooltip>
           <el-table-column type="selection" width="45" v-if="!isViewMode" />
           <el-table-column label="行号" width="55" type="index" />
           <el-table-column label="科目" min-width="220">
@@ -205,7 +205,7 @@
             >贷方合计:<b>{{ totalCredit }}</b></span
           >
           <span :class="diff === 0 ? 'ok' : 'err'">差额:{{ diff }}</span>
-          <el-tag v-if="diff === 0 && form.voucherLineList.length > 0" type="success" size="small">借贷平衡</el-tag>
+          <el-tag v-if="diff === 0 && lineList.length > 0" type="success" size="small">借贷平衡</el-tag>
           <el-tag v-else type="danger" size="small">不平衡</el-tag>
         </div>
 
@@ -228,61 +228,50 @@ import { listVoucher, getVoucher, addVoucher, updateVoucher, delVoucher, postVou
 import { VoucherVO, VoucherForm, VoucherLineForm, VoucherQuery } from '@/api/erp/fin/gl/voucher/types';
 import { leafAccounts } from '@/api/erp/fin/gl/account';
 import { AccountVO } from '@/api/erp/fin/gl/account/types';
+import type { FormInstance } from 'element-plus';
+import { useCrud } from '@/composables/useCrud';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { gl_voucher_word, gl_voucher_status, gl_voucher_source } = toRefs<any>(
   proxy.useDict('gl_voucher_word', 'gl_voucher_status', 'gl_voucher_source')
 );
 
-const dataList = ref<VoucherVO[]>([]);
+const formRef = ref<FormInstance>();
 const leafAccountList = ref<AccountVO[]>([]);
-const open = ref(false);
-const loading = ref(true);
-const showSearch = ref(true);
-const total = ref(0);
-const title = ref('');
-const isViewMode = ref(false);
 const checkedLines = ref<number[]>([]);
 
-const data = reactive({
-  form: { voucherLineList: [] } as VoucherForm,
-  queryParams: { pageNum: 1, pageSize: 10, voucherNo: undefined, status: undefined, voucherSource: undefined } as VoucherQuery,
-  rules: {
-    voucherDate: [{ required: true, message: '凭证日期不能为空', trigger: 'change' }]
-  }
-});
-const { queryParams, form, rules } = toRefs(data);
+// 凭证分录行本地编辑（同 so/contract 明细行模式），提交前并入 form.voucherLineList
+const lineList = ref<VoucherLineForm[]>([]);
 
-const totalDebit = computed(() => (form.value.voucherLineList || []).reduce((s, r) => s + Number(r.debit || 0), 0));
-const totalCredit = computed(() => (form.value.voucherLineList || []).reduce((s, r) => s + Number(r.credit || 0), 0));
-const diff = computed(() => Number((totalDebit.value - totalCredit.value).toFixed(2)));
+const queryParams = ref<VoucherQuery>({ pageNum: 1, pageSize: 10, voucherNo: undefined, status: undefined, voucherSource: undefined });
 
-function getList() {
-  loading.value = true;
-  listVoucher(queryParams.value).then((response) => {
-    dataList.value = response.rows;
-    total.value = response.total;
-    loading.value = false;
-  });
-}
+const rules = {
+  voucherDate: [{ required: true, message: '凭证日期不能为空', trigger: 'change' }]
+};
 
-function loadLeafAccounts() {
-  leafAccounts().then((response) => {
-    leafAccountList.value = response.data;
-  });
-}
-
-function handleQuery() {
-  queryParams.value.pageNum = 1;
-  getList();
-}
-function resetQuery() {
-  proxy.resetForm('queryRef');
-  handleQuery();
-}
-
-function reset() {
-  form.value = {
+const {
+  loading,
+  list: dataList,
+  total,
+  open,
+  isViewMode,
+  title,
+  showSearch,
+  form,
+  getList,
+  handleQuery,
+  handleAdd,
+  handleUpdate,
+  handleView,
+  cancel,
+  handleDelete
+} = useCrud<VoucherVO, VoucherQuery>({
+  apis: { list: listVoucher, get: getVoucher, add: addVoucher, update: updateVoucher, del: delVoucher },
+  idField: 'voucherId',
+  entityName: '记账凭证',
+  formRef,
+  queryParams,
+  initForm: () => ({
     voucherId: undefined,
     voucherNo: '',
     voucherWord: 'J',
@@ -290,52 +279,69 @@ function reset() {
     voucherSource: 'MANUAL',
     attachmentCount: 0,
     currency: 'CNY',
-    remark: '',
-    voucherLineList: []
-  };
-  checkedLines.value = [];
-  proxy.resetForm('formRef');
-}
+    remark: ''
+  }),
+  onReset: () => {
+    lineList.value = [];
+    checkedLines.value = [];
+  },
+  afterLoad: (data: VoucherVO) => {
+    lineList.value = data.voucherLineList || [];
+  }
+});
 
-function handleAdd() {
-  reset();
-  isViewMode.value = false;
-  open.value = true;
-  title.value = '新增凭证';
-}
+const totalDebit = computed(() => lineList.value.reduce((s, r) => s + Number(r.debit || 0), 0));
+const totalCredit = computed(() => lineList.value.reduce((s, r) => s + Number(r.credit || 0), 0));
+const diff = computed(() => Number((totalDebit.value - totalCredit.value).toFixed(2)));
 
-function handleView(row: VoucherVO) {
-  reset();
-  isViewMode.value = true;
-  getVoucher(row.voucherId).then((response) => {
-    form.value = response.data as VoucherForm;
-    open.value = true;
-    title.value = '查看凭证';
+function loadLeafAccounts() {
+  leafAccounts().then((response) => {
+    leafAccountList.value = response.data;
   });
 }
 
-function handleUpdate(row: VoucherVO) {
-  reset();
-  isViewMode.value = false;
-  getVoucher(row.voucherId).then((response) => {
-    form.value = response.data as VoucherForm;
-    open.value = true;
-    title.value = '修改凭证';
+function resetQuery() {
+  proxy.resetForm('queryRef');
+  handleQuery();
+}
+
+/** 提交凭证:本地保留分录行数与借贷平衡校验(useCrud 标准提交不含凭证特有校验) */
+function submitForm() {
+  formRef.value?.validate((valid: boolean) => {
+    if (!valid) return;
+    if (lineList.value.length === 0) {
+      proxy.$modal.msgError('至少一行分录');
+      return;
+    }
+    if (diff.value !== 0) {
+      proxy.$modal.msgError('借贷不平衡,差额 ' + diff.value + ',无法保存');
+      return;
+    }
+    form.value.voucherLineList = lineList.value;
+    const isEdit = form.value.voucherId != null;
+    const request = isEdit ? updateVoucher(form.value as VoucherForm) : addVoucher(form.value as VoucherForm);
+    request
+      .then(() => {
+        proxy.$modal.msgSuccess(isEdit ? '修改成功' : '新增成功');
+        open.value = false;
+        getList();
+      })
+      .catch(() => {});
   });
 }
 
 function handleAddLine() {
-  form.value.voucherLineList.push({ accountId: 0, debit: 0, credit: 0 } as VoucherLineForm);
+  lineList.value.push({ accountId: 0, debit: 0, credit: 0 } as VoucherLineForm);
 }
 function handleLineSelectionChange(selection: VoucherLineForm[]) {
-  checkedLines.value = selection.map((sel) => form.value.voucherLineList.indexOf(sel));
+  checkedLines.value = selection.map((sel) => lineList.value.indexOf(sel));
 }
 function handleDeleteLine() {
   if (checkedLines.value.length === 0) {
     proxy.$modal.msgWarning('请先选择要删除的行');
     return;
   }
-  form.value.voucherLineList = form.value.voucherLineList.filter((_, idx) => !checkedLines.value.includes(idx));
+  lineList.value = lineList.value.filter((_, idx) => !checkedLines.value.includes(idx));
   checkedLines.value = [];
 }
 
@@ -356,70 +362,41 @@ function onAmountChange(row: VoucherLineForm, field: 'debit' | 'credit') {
   }
 }
 
-function submitForm() {
-  (proxy.$refs['formRef'] as any).validate(async (valid: boolean) => {
-    if (!valid) return;
-    if (!form.value.voucherLineList || form.value.voucherLineList.length === 0) {
-      proxy.$modal.msgError('至少一行分录');
-      return;
-    }
-    if (diff.value !== 0) {
-      proxy.$modal.msgError('借贷不平衡,差额 ' + diff.value + ',无法保存');
-      return;
-    }
-    if (form.value.voucherId) {
-      await updateVoucher(form.value);
-      proxy.$modal.msgSuccess('修改成功');
-    } else {
-      await addVoucher(form.value);
-      proxy.$modal.msgSuccess('新增成功');
-    }
-    open.value = false;
-    getList();
-  });
-}
-
-function handleDelete(row: VoucherVO) {
-  proxy.$modal.confirm('确认删除凭证【' + row.voucherNo + '】?').then(async () => {
-    await delVoucher(row.voucherId);
-    proxy.$modal.msgSuccess('删除成功');
-    getList();
-  });
-}
-
 function handlePost(row: VoucherVO) {
-  proxy.$modal.confirm('确认过账凭证【' + row.voucherNo + '】?过账后将更新科目余额。').then(async () => {
-    await postVoucher(row.voucherId);
-    proxy.$modal.msgSuccess('过账成功');
-    getList();
-  });
+  proxy.$modal
+    .confirm('确认过账凭证【' + row.voucherNo + '】?过账后将更新科目余额。')
+    .then(async () => {
+      await postVoucher(row.voucherId);
+      proxy.$modal.msgSuccess('过账成功');
+      getList();
+    })
+    .catch(() => {});
 }
 
 function handleUnpost(row: VoucherVO) {
-  proxy.$modal.confirm('确认反过账凭证【' + row.voucherNo + '】?将回滚科目余额。').then(async () => {
-    await unpostVoucher(row.voucherId);
-    proxy.$modal.msgSuccess('反过账成功');
-    getList();
-  });
+  proxy.$modal
+    .confirm('确认反过账凭证【' + row.voucherNo + '】?将回滚科目余额。')
+    .then(async () => {
+      await unpostVoucher(row.voucherId);
+      proxy.$modal.msgSuccess('反过账成功');
+      getList();
+    })
+    .catch(() => {});
 }
 
 function handleCancel(row: VoucherVO) {
-  proxy.$modal.confirm('确认作废凭证【' + row.voucherNo + '】?').then(async () => {
-    await cancelVoucher(row.voucherId);
-    proxy.$modal.msgSuccess('作废成功');
-    getList();
-  });
+  proxy.$modal
+    .confirm('确认作废凭证【' + row.voucherNo + '】?')
+    .then(async () => {
+      await cancelVoucher(row.voucherId);
+      proxy.$modal.msgSuccess('作废成功');
+      getList();
+    })
+    .catch(() => {});
 }
 
-function cancel() {
-  open.value = false;
-  reset();
-}
-
-onMounted(() => {
-  loadLeafAccounts();
-  getList();
-});
+loadLeafAccounts();
+getList();
 </script>
 
 <style scoped>

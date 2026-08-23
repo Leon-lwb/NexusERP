@@ -16,8 +16,8 @@
         </el-col>
         <el-col :span="6" :offset="6" class="search-actions">
           <el-form-item>
-            <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+            <el-button type="primary" icon="Search" @click="handleQuery()">搜索</el-button>
+            <el-button icon="Refresh" @click="resetQuery()">重置</el-button>
           </el-form-item>
         </el-col>
       </el-row>
@@ -25,19 +25,21 @@
 
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
-        <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['wm:miscissue:add']">新增</el-button>
+        <el-button type="primary" plain icon="Plus" @click="handleAdd()" v-hasPermi="['wm:miscissue:add']">新增</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['wm:miscissue:edit']">修改</el-button>
+        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate()" v-hasPermi="['wm:miscissue:edit']">修改</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['wm:miscissue:remove']">删除</el-button>
+        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete()" v-hasPermi="['wm:miscissue:remove']"
+          >删除</el-button
+        >
       </el-col>
       <el-col :span="1.5">
-        <el-button type="info" plain icon="View" :disabled="single" @click="handleView" v-hasPermi="['wm:miscissue:query']">查看</el-button>
+        <el-button type="info" plain icon="View" :disabled="single" @click="handleView()" v-hasPermi="['wm:miscissue:query']">查看</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['wm:miscissue:export']">导出</el-button>
+        <el-button type="warning" plain icon="Download" @click="handleExport()" v-hasPermi="['wm:miscissue:export']">导出</el-button>
       </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
@@ -76,65 +78,61 @@
 </template>
 
 <script setup lang="ts" name="MiscIssue">
-import { listMiscIssue, delMiscIssue } from '@/api/erp/wm/miscissue';
+import { listMiscIssue, getMiscIssue, addMiscIssue, updateMiscIssue, delMiscIssue } from '@/api/erp/wm/miscissue';
+import type { FormInstance } from 'element-plus';
+import { useCrud } from '@/composables/useCrud';
 import { useRouter } from 'vue-router';
 
 const router = useRouter();
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { wm_misc_status, wm_misc_issue_type } = toRefs<any>(proxy.useDict('wm_misc_status', 'wm_misc_issue_type'));
 
-const issueList = ref([]);
-const loading = ref(true);
-const showSearch = ref(true);
-const ids = ref([]);
-const single = ref(true);
-const multiple = ref(true);
-const total = ref(0);
-
-const data = reactive({
-  queryParams: {
-    pageNum: 1,
-    pageSize: 10,
-    issueCode: null,
-    status: null
-  }
+const queryParams = ref({
+  pageNum: 1,
+  pageSize: 10,
+  issueCode: null,
+  status: null
 });
 
-const { queryParams } = toRefs(data);
+// 列表骨架（新增/修改/查看为路由表单页 form.vue，保留本地 router.push 跳转逻辑；
+// get/add/update 仅满足 useCrud 签名传入，列表页不会调用）
+const {
+  loading,
+  list: issueList,
+  total,
+  ids,
+  single,
+  multiple,
+  showSearch,
+  getList,
+  handleQuery,
+  handleDelete,
+  handleExport,
+  handleSelectionChange
+} = useCrud({
+  apis: { list: listMiscIssue, get: getMiscIssue, add: addMiscIssue, update: updateMiscIssue, del: delMiscIssue },
+  idField: 'issueId',
+  entityName: '出库单',
+  formRef: ref<FormInstance>(),
+  queryParams,
+  initForm: () => ({}),
+  exportUrl: '/erp/wm/miscissue/export',
+  exportFileName: 'miscissue'
+});
 
-function getList() {
-  loading.value = true;
-  listMiscIssue(queryParams.value).then((response: any) => {
-    issueList.value = response.rows;
-    total.value = response.total;
-    loading.value = false;
-  });
-}
-
-function handleQuery() {
-  queryParams.value.pageNum = 1;
-  getList();
-}
-
+/** 重置按钮操作 */
 function resetQuery() {
   proxy.resetForm('queryRef');
   handleQuery();
 }
 
-function handleSelectionChange(selection: any[]) {
-  ids.value = selection.map((item: any) => item.issueId);
-  single.value = selection.length != 1;
-  multiple.value = !selection.length;
-}
-
+/** 新增按钮操作（跳转路由表单页） */
 function handleAdd() {
   router.push({ path: '/erp/wm/miscissue/form', query: { action: 'add' } });
 }
 
-function handleUpdate(row: any) {
-  if (row && row.type && row instanceof Event) {
-    row = null;
-  }
+/** 修改按钮操作（跳转路由表单页） */
+function handleUpdate(row?: any) {
   if (!row) {
     if (ids.value.length !== 1) {
       proxy.$modal.msgWarning('请选择一条数据进行修改');
@@ -150,10 +148,8 @@ function handleUpdate(row: any) {
   router.push({ path: '/erp/wm/miscissue/form', query: { id: row.issueId, action: 'edit' } });
 }
 
-function handleView(row: any) {
-  if (row && row.type && row instanceof Event) {
-    row = null;
-  }
+/** 查看按钮操作（跳转路由表单页） */
+function handleView(row?: any) {
   if (!row) {
     if (ids.value.length !== 1) {
       proxy.$modal.msgWarning('请选择一条数据进行查看');
@@ -167,24 +163,6 @@ function handleView(row: any) {
     row = selected;
   }
   router.push({ path: '/erp/wm/miscissue/form', query: { id: row.issueId, action: 'view' } });
-}
-
-function handleDelete(row: any) {
-  const _ids = row.issueId || ids.value;
-  proxy.$modal
-    .confirm('是否确认删除出库单编号为"' + _ids + '"的数据项？')
-    .then(function () {
-      return delMiscIssue(_ids);
-    })
-    .then(() => {
-      getList();
-      proxy.$modal.msgSuccess('删除成功');
-    })
-    .catch(() => {});
-}
-
-function handleExport() {
-  proxy.download('/erp/wm/miscissue/export', { ...queryParams.value }, `miscissue_${new Date().getTime()}.xlsx`);
 }
 
 onActivated(() => {

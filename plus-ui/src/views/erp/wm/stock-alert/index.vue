@@ -30,8 +30,8 @@
         </el-col>
         <el-col :span="6" :offset="18" class="search-actions">
           <el-form-item>
-            <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+            <el-button type="primary" icon="Search" @click="handleQuery()">搜索</el-button>
+            <el-button icon="Refresh" @click="resetQuery()">重置</el-button>
           </el-form-item>
         </el-col>
       </el-row>
@@ -39,7 +39,7 @@
 
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
-        <el-button type="primary" plain icon="Refresh" @click="handleCheck" v-hasPermi="['wm:stockAlert:edit']">执行检查</el-button>
+        <el-button type="primary" plain icon="Refresh" @click="handleCheck()" v-hasPermi="['wm:stockAlert:edit']">执行检查</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete()" v-hasPermi="['wm:stockAlert:remove']"
@@ -47,7 +47,7 @@
         >
       </el-col>
       <el-col :span="1.5">
-        <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['wm:stockAlert:export']">导出</el-button>
+        <el-button type="warning" plain icon="Download" @click="handleExport()" v-hasPermi="['wm:stockAlert:export']">导出</el-button>
       </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" />
     </el-row>
@@ -111,80 +111,74 @@
 </template>
 
 <script setup name="WmStockAlert" lang="ts">
-import { listStockAlert, delStockAlert, checkStockAlert, handleStockAlert } from '@/api/erp/wm/stock-alert';
+import { listStockAlert, getStockAlert, updateStockAlert, delStockAlert, checkStockAlert, handleStockAlert } from '@/api/erp/wm/stock-alert';
 import { WmStockAlertVO, WmStockAlertQuery } from '@/api/erp/wm/stock-alert/types';
+import type { FormInstance } from 'element-plus';
+import { useCrud } from '@/composables/useCrud';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { wm_stock_alert_type, wm_alert_level } = toRefs<any>(proxy?.useDict('wm_stock_alert_type', 'wm_alert_level'));
 
-const stockAlertList = ref<WmStockAlertVO[]>([]);
-const loading = ref(true);
-const showSearch = ref(true);
-const ids = ref<Array<number | string>>([]);
-const single = ref(true);
-const multiple = ref(true);
-const total = ref(0);
+// 库存预警由系统检查生成，无新增接口（页面亦无新增入口），占位仅为满足 useCrud 的 API 签名
+const readonlyApi = () => Promise.resolve({ data: {} as any });
+
 const handleVisible = ref(false);
 const handleForm = ref({ alertId: undefined as number | undefined, handledRemark: '' });
 
-const queryRef = ref<ElFormInstance>();
 const handleFormRef = ref<ElFormInstance>();
 
 const queryParams = ref<WmStockAlertQuery>({ pageNum: 1, pageSize: 10 });
 
-const getList = async () => {
-  loading.value = true;
-  const res = await listStockAlert(queryParams.value);
-  stockAlertList.value = res.rows;
-  total.value = res.total;
-  loading.value = false;
-};
+const {
+  loading,
+  list: stockAlertList,
+  total,
+  multiple,
+  showSearch,
+  getList,
+  handleQuery,
+  handleDelete,
+  handleExport,
+  handleSelectionChange
+} = useCrud({
+  apis: { list: listStockAlert, get: getStockAlert, add: readonlyApi, update: updateStockAlert, del: delStockAlert },
+  idField: 'alertId',
+  entityName: '库存预警',
+  formRef: ref<FormInstance>(),
+  queryParams,
+  initForm: () => ({}),
+  exportUrl: 'erp/wm/stock-alert/export',
+  exportFileName: '库存预警'
+});
 
-const handleQuery = () => {
-  queryParams.value.pageNum = 1;
-  getList();
-};
-const resetQuery = () => {
-  queryRef.value?.resetFields();
+/** 重置按钮操作 */
+function resetQuery() {
+  proxy.resetForm('queryRef');
   handleQuery();
-};
-const handleSelectionChange = (selection: WmStockAlertVO[]) => {
-  ids.value = selection.map((item) => item.alertId);
-  single.value = selection.length !== 1;
-  multiple.value = !selection.length;
-};
+}
 
-const handleCheck = async () => {
+/** 执行库存预警检查 */
+async function handleCheck() {
   loading.value = true;
   await checkStockAlert();
   proxy?.$modal.msgSuccess('检查完成');
   getList();
-};
+}
 
-const handleDelete = async (row?: WmStockAlertVO) => {
-  const alertIds = row?.alertId || ids.value;
-  await proxy?.$modal.confirm('是否确认删除编号为"' + alertIds + '"的数据项？');
-  await delStockAlert(alertIds);
-  proxy?.$modal.msgSuccess('删除成功');
-  getList();
-};
-
-const handleHandle = (row: WmStockAlertVO) => {
+/** 打开处理预警弹窗 */
+function handleHandle(row: WmStockAlertVO) {
   handleForm.value.alertId = row.alertId;
   handleForm.value.handledRemark = '';
   handleVisible.value = true;
-};
+}
 
-const submitHandle = async () => {
+/** 提交预警处理 */
+async function submitHandle() {
   await handleStockAlert(handleForm.value.alertId!, handleForm.value.handledRemark);
   proxy?.$modal.msgSuccess('处理成功');
   handleVisible.value = false;
   getList();
-};
-
-const handleExport = () => {
-  proxy?.download('erp/wm/stock-alert/export', { ...queryParams.value }, `库存预警_${new Date().getTime()}.xlsx`);
-};
+}
 
 onMounted(() => {
   getList();

@@ -92,8 +92,8 @@ export const updateCategory = (data: Partial<FaAssetCategoryVO>): AxiosPromise<a
   return request({ url: '/erp/fin/fa/category', method: 'put', data });
 };
 
-export const delCategory = (categoryIds: number[]): AxiosPromise<any> => {
-  return request({ url: `/erp/fin/fa/category/${categoryIds.join(',')}`, method: 'delete' });
+export const delCategory = (categoryIds: string | number | (string | number)[]): AxiosPromise<any> => {
+  return request({ url: `/erp/fin/fa/category/${categoryIds}`, method: 'delete' });
 };
 
 // ===== 资产卡片 =====
@@ -113,8 +113,8 @@ export const updateAsset = (data: Partial<FaAssetVO>): AxiosPromise<any> => {
   return request({ url: '/erp/fin/fa/asset', method: 'put', data });
 };
 
-export const delAsset = (assetIds: number[]): AxiosPromise<any> => {
-  return request({ url: `/erp/fin/fa/asset/${assetIds.join(',')}`, method: 'delete' });
+export const delAsset = (assetIds: string | number | (string | number)[]): AxiosPromise<any> => {
+  return request({ url: `/erp/fin/fa/asset/${assetIds}`, method: 'delete' });
 };
 
 export const adjustAssetValue = (assetId: number, newValue: number): AxiosPromise<any> => {

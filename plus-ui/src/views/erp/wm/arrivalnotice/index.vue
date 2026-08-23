@@ -45,8 +45,8 @@
         </el-col>
         <el-col :span="6" :offset="6" class="search-actions">
           <el-form-item>
-            <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+            <el-button type="primary" icon="Search" @click="handleQuery()">搜索</el-button>
+            <el-button icon="Refresh" @click="resetQuery()">重置</el-button>
           </el-form-item>
         </el-col>
       </el-row>
@@ -54,26 +54,26 @@
 
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
-        <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['wm:arrivalnotice:add']">新增</el-button>
+        <el-button type="primary" plain icon="Plus" @click="handleAdd()" v-hasPermi="['wm:arrivalnotice:add']">新增</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['wm:arrivalnotice:edit']">修改</el-button>
+        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate()" v-hasPermi="['wm:arrivalnotice:edit']">修改</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['wm:arrivalnotice:remove']"
+        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete()" v-hasPermi="['wm:arrivalnotice:remove']"
           >删除</el-button
         >
       </el-col>
       <el-col :span="1.5">
-        <el-button type="info" plain icon="View" :disabled="single" @click="handleView" v-hasPermi="['wm:arrivalnotice:query']">查看</el-button>
+        <el-button type="info" plain icon="View" :disabled="single" @click="handleView()" v-hasPermi="['wm:arrivalnotice:query']">查看</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="success" plain icon="Promotion" :disabled="single" @click="handleSubmit" v-hasPermi="['wm:arrivalnotice:submit']"
+        <el-button type="success" plain icon="Promotion" :disabled="single" @click="handleSubmit()" v-hasPermi="['wm:arrivalnotice:submit']"
           >提交审批</el-button
         >
       </el-col>
       <el-col :span="1.5">
-        <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['wm:arrivalnotice:export']">导出</el-button>
+        <el-button type="warning" plain icon="Download" @click="handleExport()" v-hasPermi="['wm:arrivalnotice:export']">导出</el-button>
       </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
@@ -166,12 +166,12 @@
                 <el-col :span="18">
                   <el-input v-model="form.vendorName" placeholder="请选择供应商" readonly>
                     <template #append>
-                      <el-button v-if="!isViewMode" icon="Search" @click="handleOpenVendorDialog" />
+                      <el-button v-if="!isViewMode" icon="Search" @click="handleOpenVendorDialog()" />
                     </template>
                   </el-input>
                 </el-col>
                 <el-col :span="6">
-                  <el-button v-if="form.vendorId && !isViewMode" type="danger" icon="Delete" @click="clearVendor" />
+                  <el-button v-if="form.vendorId && !isViewMode" type="danger" icon="Delete" @click="clearVendor()" />
                 </el-col>
               </el-row>
               <el-input v-model="form.vendorId" style="display: none" />
@@ -220,8 +220,8 @@
       </el-form>
       <template #footer>
         <div class="dialog-footer">
-          <el-button type="primary" @click="submitForm" v-if="!isViewMode">确 定</el-button>
-          <el-button @click="cancel">{{ isViewMode ? '关 闭' : '取 消' }}</el-button>
+          <el-button type="primary" @click="submitForm()" v-if="!isViewMode">确 定</el-button>
+          <el-button @click="cancel()">{{ isViewMode ? '关 闭' : '取 消' }}</el-button>
         </div>
       </template>
     </el-dialog>
@@ -236,8 +236,8 @@
           <el-input v-model="vendorQueryParams.vendorCode" placeholder="请输入供应商编码" clearable @keyup.enter="handleVendorQuery" />
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" icon="Search" @click="handleVendorQuery">搜索</el-button>
-          <el-button icon="Refresh" @click="resetVendorQuery">重置</el-button>
+          <el-button type="primary" icon="Search" @click="handleVendorQuery()">搜索</el-button>
+          <el-button icon="Refresh" @click="resetVendorQuery()">重置</el-button>
         </el-form-item>
       </el-form>
 
@@ -274,26 +274,18 @@ import {
   submitArrivalnotice,
   getArrivalnoticeProcId
 } from '@/api/erp/wm/arrivalnotice';
-import type { ArrivalnoticeForm, ArrivalnoticeVO } from '@/api/erp/wm/arrivalnotice/types';
-import { getProcesss } from '@/api/workflow/process/index';
 import { previewCode } from '@/api/system/autocode/rule';
 import { listVendor } from '@/api/erp/bd/vendor';
+import type { FormInstance } from 'element-plus';
+import { useCrud } from '@/composables/useCrud';
 import { useRouter } from 'vue-router';
 
 const router = useRouter();
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { wm_notice_status } = toRefs<any>(proxy.useDict('wm_notice_status'));
 
-const arrivalnoticeList = ref<ArrivalnoticeVO[]>([]);
-const open = ref(false);
-const loading = ref(true);
-const showSearch = ref(true);
-const ids = ref([]);
-const single = ref(true);
-const multiple = ref(true);
-const total = ref(0);
-const title = ref('');
-const isViewMode = ref(false);
+const arrivalnoticeRef = ref<FormInstance>();
+/** 通知单编号自动生成开关：开启时由后端按 WM_ARRIVAL_NOTICE_CODE 规则生成 */
 const autoGenFlag = ref(false);
 
 // 供应商选择相关变量
@@ -309,45 +301,50 @@ const vendorQueryParams = ref({
   vendorCode: null
 });
 
-const data = reactive({
-  form: {} as ArrivalnoticeForm,
-  queryParams: {
-    pageNum: 1,
-    pageSize: 10,
-    noticeCode: null,
-    noticeName: null,
-    purOrderCode: null,
-    vendorName: null,
-    arrivalDate: null,
-    status: null
-  },
-  rules: {
-    noticeCode: [{ required: true, message: '通知单编号不能为空', trigger: 'blur' }],
-    noticeName: [{ required: true, message: '通知单名称不能为空', trigger: 'blur' }]
-  }
+const queryParams = ref({
+  pageNum: 1,
+  pageSize: 10,
+  noticeCode: null,
+  noticeName: null,
+  purOrderCode: null,
+  vendorName: null,
+  arrivalDate: null,
+  status: null
 });
 
-const { queryParams, form, rules } = toRefs(data);
+const rules = {
+  noticeCode: [{ required: true, message: '通知单编号不能为空', trigger: 'blur' }],
+  noticeName: [{ required: true, message: '通知单名称不能为空', trigger: 'blur' }]
+};
 
-/** 查询到货通知列表 */
-function getList() {
-  loading.value = true;
-  listArrivalnotice(queryParams.value).then((response: any) => {
-    arrivalnoticeList.value = response.rows;
-    total.value = response.total;
-    loading.value = false;
-  });
-}
-
-// 取消按钮
-function cancel() {
-  open.value = false;
-  reset();
-}
-
-// 表单重置
-function reset() {
-  form.value = {
+// 列表骨架 + 新增弹窗（新增走 dialog；修改/查看为路由表单页 form.vue，本地 router.push 覆盖）
+const {
+  loading,
+  list: arrivalnoticeList,
+  total,
+  open,
+  isViewMode,
+  title,
+  ids,
+  single,
+  multiple,
+  showSearch,
+  form,
+  getList,
+  handleQuery,
+  handleAdd,
+  submitForm,
+  cancel,
+  handleDelete,
+  handleExport,
+  handleSelectionChange
+} = useCrud({
+  apis: { list: listArrivalnotice, get: getArrivalnotice, add: addArrivalnotice, update: updateArrivalnotice, del: delArrivalnotice },
+  idField: 'noticeId',
+  entityName: '到货通知',
+  formRef: arrivalnoticeRef,
+  queryParams,
+  initForm: () => ({
     noticeId: null,
     noticeCode: null,
     noticeName: null,
@@ -369,15 +366,19 @@ function reset() {
     createTime: null,
     updateBy: null,
     updateTime: null
-  };
-  proxy.resetForm('arrivalnoticeRef');
-}
-
-/** 搜索按钮操作 */
-function handleQuery() {
-  queryParams.value.pageNum = 1;
-  getList();
-}
+  }),
+  exportUrl: '/erp/wm/arrivalnotice/export',
+  exportFileName: 'arrivalnotice',
+  onReset: () => {
+    autoGenFlag.value = false;
+  },
+  beforeSubmit: () => {
+    // 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号
+    if (autoGenFlag.value) {
+      form.value.noticeCode = undefined;
+    }
+  }
+});
 
 /** 重置按钮操作 */
 function resetQuery() {
@@ -385,27 +386,8 @@ function resetQuery() {
   handleQuery();
 }
 
-// 多选框选中数据
-function handleSelectionChange(selection: any[]) {
-  ids.value = selection.map((item: any) => item.noticeId);
-  single.value = selection.length != 1;
-  multiple.value = !selection.length;
-}
-
-/** 新增按钮操作 */
-function handleAdd() {
-  reset();
-  isViewMode.value = false;
-  open.value = true;
-  title.value = '添加到货通知';
-}
-
-/** 修改按钮操作 */
-function handleUpdate(row: any) {
-  if (row && row.type && row instanceof Event) {
-    row = null;
-  }
-
+/** 修改按钮操作（跳转路由表单页） */
+function handleUpdate(row?: any) {
   if (!row) {
     if (ids.value.length !== 1) {
       proxy.$modal.msgWarning('请选择一条数据进行修改');
@@ -426,12 +408,8 @@ function handleUpdate(row: any) {
   });
 }
 
-/** 查看按钮操作 */
-function handleView(row: any) {
-  if (row && row.type && row instanceof Event) {
-    row = null;
-  }
-
+/** 查看按钮操作（跳转路由表单页） */
+function handleView(row?: any) {
   if (!row) {
     if (ids.value.length !== 1) {
       proxy.$modal.msgWarning('请选择一条数据进行查看');
@@ -450,46 +428,6 @@ function handleView(row: any) {
     path: '/erp/wm/arrivalnotice/form',
     query: { id: noticeId, action: 'view' }
   });
-}
-
-/** 提交按钮 */
-function submitForm() {
-  (proxy.$refs['arrivalnoticeRef'] as any).validate((valid: boolean) => {
-    if (valid) {
-      // 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号
-      if (autoGenFlag.value) {
-        form.value.noticeCode = undefined;
-      }
-      if (form.value.noticeId != null) {
-        updateArrivalnotice(form.value).then(() => {
-          proxy.$modal.msgSuccess('修改成功');
-          open.value = false;
-          getList();
-        });
-      } else {
-        addArrivalnotice(form.value).then(() => {
-          proxy.$modal.msgSuccess('新增成功');
-          open.value = false;
-          getList();
-        });
-      }
-    }
-  });
-}
-
-/** 删除按钮操作 */
-function handleDelete(row: any) {
-  const _noticeIds = row.noticeId || ids.value;
-  proxy.$modal
-    .confirm('是否确认删除到货通知编号为"' + _noticeIds + '"的数据项？')
-    .then(function () {
-      return delArrivalnotice(_noticeIds);
-    })
-    .then(() => {
-      getList();
-      proxy.$modal.msgSuccess('删除成功');
-    })
-    .catch(() => {});
 }
 
 /** 顶部提交审批按钮 */
@@ -516,12 +454,15 @@ function handleSubmitFlowRow(row: any) {
     proxy.$modal.msgWarning('该单据未选择审批流程，请先编辑选择流程并保存');
     return;
   }
-  proxy.$modal.confirm('确认提交到货通知【' + row.noticeCode + '】审批？').then(() => {
-    submitArrivalnotice(String(row.noticeId), String(row.selectFlowId)).then(() => {
-      proxy.$modal.msgSuccess('提交审批成功');
-      getList();
-    });
-  });
+  proxy.$modal
+    .confirm('确认提交到货通知【' + row.noticeCode + '】审批？')
+    .then(() => {
+      submitArrivalnotice(String(row.noticeId), String(row.selectFlowId)).then(() => {
+        proxy.$modal.msgSuccess('提交审批成功');
+        getList();
+      });
+    })
+    .catch(() => {});
 }
 
 /** 列表行查看流程 */
@@ -538,17 +479,6 @@ function onViewFlowRow(row: any) {
       query: { processed: 'false' }
     });
   });
-}
-
-/** 导出按钮操作 */
-function handleExport() {
-  proxy.download(
-    '/erp/wm/arrivalnotice/export',
-    {
-      ...queryParams.value
-    },
-    `arrivalnotice_${new Date().getTime()}.xlsx`
-  );
 }
 
 // 自动生成编码

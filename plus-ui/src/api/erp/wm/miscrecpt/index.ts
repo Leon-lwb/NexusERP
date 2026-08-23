@@ -4,8 +4,7 @@ import { MiscRecptQuery, MiscRecptVO, MiscRecptForm } from './types';
 
 const BASE = '/erp/wm/miscrecpt';
 
-export const listMiscRecpt = (query: MiscRecptQuery): AxiosPromise<{ rows: MiscRecptVO[]; total: number }> =>
-  request({ url: BASE + '/list', method: 'get', params: query });
+export const listMiscRecpt = (query: MiscRecptQuery): AxiosPromise<MiscRecptVO[]> => request({ url: BASE + '/list', method: 'get', params: query });
 
 export const getMiscRecpt = (id: string | number): AxiosPromise<MiscRecptVO> => request({ url: BASE + '/' + id, method: 'get' });
 

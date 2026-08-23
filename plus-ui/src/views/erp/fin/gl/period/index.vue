@@ -4,7 +4,7 @@
       <el-row :gutter="16">
         <el-col :span="6">
           <el-form-item label="会计年度" prop="fiscalYear">
-            <el-input v-model="queryParams.fiscalYear" placeholder="如 2026" clearable @keyup.enter="handleQuery" />
+            <el-input v-model="queryParams.fiscalYear" placeholder="如 2026" clearable @keyup.enter="handleQuery()" />
           </el-form-item>
         </el-col>
         <el-col :span="6">
@@ -16,8 +16,8 @@
         </el-col>
         <el-col :span="6" class="search-actions">
           <el-form-item>
-            <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+            <el-button type="primary" icon="Search" @click="handleQuery()">搜索</el-button>
+            <el-button icon="Refresh" @click="resetQuery()">重置</el-button>
           </el-form-item>
         </el-col>
       </el-row>
@@ -25,7 +25,7 @@
 
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
-        <el-button type="primary" plain icon="Calendar" @click="handleGenerate" v-hasPermi="['fin:gl:period:edit']">生成年度期间</el-button>
+        <el-button type="primary" plain icon="Calendar" @click="handleGenerate()" v-hasPermi="['fin:gl:period:edit']">生成年度期间</el-button>
       </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
@@ -96,35 +96,37 @@
 <script setup lang="ts" name="GlPeriod">
 import { listPeriod, closePeriod, lockPeriod, reopenPeriod, generateYearPeriods } from '@/api/erp/fin/gl/period';
 import { PeriodVO, PeriodQuery } from '@/api/erp/fin/gl/period/types';
+import type { FormInstance } from 'element-plus';
+import { useCrud } from '@/composables/useCrud';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { gl_period_status } = toRefs<any>(proxy.useDict('gl_period_status'));
 
-const dataList = ref<PeriodVO[]>([]);
-const loading = ref(true);
-const showSearch = ref(true);
-const total = ref(0);
 const genOpen = ref(false);
 const genYear = ref(new Date().getFullYear());
 
-const data = reactive({
-  queryParams: { pageNum: 1, pageSize: 20, fiscalYear: undefined, status: undefined } as PeriodQuery
+// 会计期间由"生成年度期间"批量创建，无行级增删改，以下占位仅为满足 useCrud 的 API 签名，不会被调用
+const formRef = ref<FormInstance>();
+const readonlyApi = () => Promise.resolve({ data: {} as any });
+
+const queryParams = ref<PeriodQuery>({ pageNum: 1, pageSize: 20, fiscalYear: undefined, status: undefined });
+
+const {
+  loading,
+  list: dataList,
+  total,
+  showSearch,
+  getList,
+  handleQuery
+} = useCrud<PeriodVO, PeriodQuery>({
+  apis: { list: listPeriod, get: readonlyApi, add: readonlyApi, update: readonlyApi, del: readonlyApi },
+  idField: 'periodId',
+  entityName: '会计期间',
+  formRef,
+  queryParams,
+  initForm: () => ({})
 });
-const { queryParams } = toRefs(data);
 
-function getList() {
-  loading.value = true;
-  listPeriod(queryParams.value).then((response) => {
-    dataList.value = response.rows;
-    total.value = response.total;
-    loading.value = false;
-  });
-}
-
-function handleQuery() {
-  queryParams.value.pageNum = 1;
-  getList();
-}
 function resetQuery() {
   proxy.resetForm('queryRef');
   handleQuery();
@@ -153,7 +155,5 @@ function handleAction(row: PeriodVO, action: 'close' | 'lock' | 'reopen') {
   });
 }
 
-onMounted(() => {
-  getList();
-});
+getList();
 </script>

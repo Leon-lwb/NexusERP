@@ -5,7 +5,7 @@
       <el-row :gutter="16">
         <el-col :span="6">
           <el-form-item label="资产名称" prop="keyword">
-            <el-input v-model="queryParams.keyword" placeholder="请输入资产名称" clearable @keyup.enter="handleQuery" />
+            <el-input v-model="queryParams.keyword" placeholder="请输入资产名称" clearable @keyup.enter="handleQuery()" />
           </el-form-item>
         </el-col>
         <el-col :span="6">
@@ -24,8 +24,8 @@
         </el-col>
         <el-col :span="6" class="search-actions">
           <el-form-item>
-            <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+            <el-button type="primary" icon="Search" @click="handleQuery()">搜索</el-button>
+            <el-button icon="Refresh" @click="resetQuery()">重置</el-button>
           </el-form-item>
         </el-col>
       </el-row>
@@ -34,7 +34,7 @@
     <!-- 操作按钮区域 -->
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
-        <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['fa:asset:add']">新增卡片</el-button>
+        <el-button type="primary" plain icon="Plus" @click="handleAdd()" v-hasPermi="['fa:asset:add']">新增卡片</el-button>
       </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
@@ -63,7 +63,7 @@
       </el-table-column>
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="230" :show-overflow-tooltip="false">
         <template #default="scope">
-          <el-button link type="primary" icon="Edit" @click="handleEdit(scope.row)" v-hasPermi="['fa:asset:edit']">修改</el-button>
+          <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['fa:asset:edit']">修改</el-button>
           <el-button
             v-if="scope.row.status === 'CWIP'"
             link
@@ -146,24 +146,18 @@
 </template>
 
 <script setup lang="ts" name="FinFaAsset">
-import { activateAsset, addAsset, delAsset, listAsset, updateAsset, FaAssetVO } from '@/api/erp/fin/fa';
-import { listAllCategory } from '@/api/erp/fin/fa';
-import { FaAssetCategoryVO } from '@/api/erp/fin/fa';
+import { activateAsset, addAsset, delAsset, getAsset, listAsset, updateAsset, listAllCategory, FaAssetVO, FaAssetCategoryVO } from '@/api/erp/fin/fa';
+import type { FormInstance } from 'element-plus';
+import { useCrud } from '@/composables/useCrud';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { fa_asset_status, fa_depreciation_method } = toRefs<any>(proxy.useDict('fa_asset_status', 'fa_depreciation_method'));
 
-const dataList = ref<FaAssetVO[]>([]);
+const formRef = ref<FormInstance>();
 const categoryOptions = ref<FaAssetCategoryVO[]>([]);
-const loading = ref(true);
-const showSearch = ref(true);
-const total = ref(0);
-const open = ref(false);
-const title = ref('');
-const formRef = ref();
 
 const queryParams = ref({ pageNum: 1, pageSize: 10, keyword: '', categoryId: undefined, status: undefined });
-const form = ref<Partial<FaAssetVO>>({});
+
 const rules = {
   assetName: [{ required: true, message: '资产名称不能为空', trigger: 'blur' }],
   categoryId: [{ required: true, message: '资产类别不能为空', trigger: 'change' }],
@@ -171,6 +165,34 @@ const rules = {
   usefulLife: [{ required: true, message: '使用年限不能为空', trigger: 'blur' }],
   acquisitionDate: [{ required: true, message: '购置日期不能为空', trigger: 'change' }]
 };
+
+const {
+  loading,
+  list: dataList,
+  total,
+  open,
+  title,
+  showSearch,
+  form,
+  getList,
+  handleQuery,
+  handleAdd,
+  handleUpdate,
+  submitForm,
+  cancel,
+  handleDelete
+} = useCrud<FaAssetVO, any>({
+  apis: { list: listAsset, get: getAsset, add: addAsset, update: updateAsset, del: delAsset },
+  idField: 'assetId',
+  entityName: '资产卡片',
+  formRef,
+  queryParams,
+  initForm: () => ({
+    status: 'IN_USE',
+    acquisitionDate: new Date().toISOString().slice(0, 10),
+    inUseDate: new Date().toISOString().slice(0, 10)
+  })
+});
 
 function methodLabel(method: string) {
   return (
@@ -188,23 +210,6 @@ function statusType(status: string) {
 
 function fmt(v: number | undefined | null) {
   return Number(v || 0).toFixed(2);
-}
-
-function getList() {
-  loading.value = true;
-  listAsset(queryParams.value)
-    .then((response) => {
-      dataList.value = response.rows;
-      total.value = response.total;
-    })
-    .finally(() => {
-      loading.value = false;
-    });
-}
-
-function handleQuery() {
-  queryParams.value.pageNum = 1;
-  getList();
 }
 
 function resetQuery() {
@@ -230,56 +235,7 @@ function onCategoryChange(categoryId: number) {
   }
 }
 
-function reset() {
-  form.value = {
-    status: 'IN_USE',
-    acquisitionDate: new Date().toISOString().slice(0, 10),
-    inUseDate: new Date().toISOString().slice(0, 10)
-  } as any;
-}
-
-function handleAdd() {
-  reset();
-  open.value = true;
-  title.value = '新增资产卡片';
-}
-
-function handleEdit(row: FaAssetVO) {
-  form.value = { ...row };
-  open.value = true;
-  title.value = '修改资产卡片';
-}
-
-function submitForm() {
-  formRef.value.validate((valid: boolean) => {
-    if (!valid) return;
-    const action = form.value.assetId ? updateAsset(form.value) : addAsset(form.value);
-    action
-      .then(() => {
-        proxy.$modal.msgSuccess(form.value.assetId ? '修改成功' : '新增成功');
-        open.value = false;
-        getList();
-      })
-      .catch(() => {});
-  });
-}
-
-function cancel() {
-  open.value = false;
-  reset();
-}
-
-function handleDelete(row: FaAssetVO) {
-  proxy.$modal
-    .confirm(`确认删除资产【${row.assetName}】?`)
-    .then(() => delAsset([row.assetId]))
-    .then(() => {
-      proxy.$modal.msgSuccess('删除成功');
-      getList();
-    })
-    .catch(() => {});
-}
-
+/** 转固:在建资产投入使用 */
 function handleActivate(row: FaAssetVO) {
   proxy.$modal
     .confirm(`确认将资产【${row.assetName}】转固?`)
@@ -291,10 +247,8 @@ function handleActivate(row: FaAssetVO) {
     .catch(() => {});
 }
 
-onMounted(() => {
-  getList();
-  loadCategories();
-});
+getList();
+loadCategories();
 </script>
 
 <style scoped>

@@ -31,8 +31,8 @@
         </el-col>
         <el-col :span="6" :offset="12" class="search-actions">
           <el-form-item>
-            <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+            <el-button type="primary" icon="Search" @click="handleQuery()">搜索</el-button>
+            <el-button icon="Refresh" @click="resetQuery()">重置</el-button>
           </el-form-item>
         </el-col>
       </el-row>
@@ -40,16 +40,16 @@
 
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
-        <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['wm:sn:add']">新增</el-button>
+        <el-button type="primary" plain icon="Plus" @click="handleAdd()" v-hasPermi="['wm:sn:add']">新增</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete()" v-hasPermi="['wm:sn:remove']">删除</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['wm:sn:export']">导出</el-button>
+        <el-button type="warning" plain icon="Download" @click="handleExport()" v-hasPermi="['wm:sn:export']">导出</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="success" plain icon="List" @click="handleBatchGenerate" v-hasPermi="['wm:sn:add']">批量生成</el-button>
+        <el-button type="success" plain icon="List" @click="handleBatchGenerate()" v-hasPermi="['wm:sn:add']">批量生成</el-button>
       </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" />
     </el-row>
@@ -149,24 +149,16 @@
 <script setup lang="ts" name="WmSn">
 import { listSn, getSn, addSn, updateSn, delSn, batchGenerateSn, bindStock, unbindStock } from '@/api/erp/wm/sn';
 import { listBatch } from '@/api/erp/wm/batch';
-import { WmSnVO, WmSnQuery, WmSnForm } from '@/api/erp/wm/sn/types';
+import { WmSnVO, WmSnQuery } from '@/api/erp/wm/sn/types';
 import { listWarehouse } from '@/api/erp/wm/warehouse';
 import { useRouter } from 'vue-router';
+import type { FormInstance } from 'element-plus';
+import { useCrud } from '@/composables/useCrud';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { wm_sn_status } = toRefs<any>(proxy.useDict('wm_sn_status'));
 
 const router = useRouter();
-
-const snList = ref<WmSnVO[]>([]);
-const loading = ref(true);
-const showSearch = ref(true);
-const ids = ref<Array<number | string>>([]);
-const single = ref(true);
-const multiple = ref(true);
-const total = ref(0);
-
-const queryRef = ref<ElFormInstance>();
 
 const queryParams = ref<WmSnQuery>({
   pageNum: 1,
@@ -178,7 +170,48 @@ const queryParams = ref<WmSnQuery>({
   batchCode: undefined
 });
 
-// 批量生成
+// 列表骨架（新增/修改为路由表单页，保留本地 router.push 跳转逻辑）
+const {
+  loading,
+  list: snList,
+  total,
+  ids,
+  multiple,
+  showSearch,
+  getList,
+  handleQuery,
+  handleDelete,
+  handleExport,
+  handleSelectionChange
+} = useCrud({
+  apis: { list: listSn, get: getSn, add: addSn, update: updateSn, del: delSn },
+  idField: 'snId',
+  entityName: '序列号',
+  formRef: ref<FormInstance>(),
+  queryParams,
+  initForm: () => ({}),
+  exportUrl: '/erp/wm/sn/export',
+  exportFileName: '序列号'
+});
+
+/** 重置按钮操作 */
+function resetQuery() {
+  proxy.resetForm('queryRef');
+  handleQuery();
+}
+
+/** 新增按钮操作 */
+function handleAdd() {
+  router.push({ path: '/erp/wm/sn/form', query: { action: 'add' } });
+}
+
+/** 修改按钮操作 */
+function handleUpdate(row: WmSnVO) {
+  const snId = row.snId || ids.value[0];
+  router.push({ path: '/erp/wm/sn/form', query: { snId: snId as string, action: 'edit' } });
+}
+
+// ---------- 批量生成 ----------
 const batchGenerateVisible = ref(false);
 const batchGenerateFormRef = ref<ElFormInstance>();
 const batchGenerateForm = ref({
@@ -191,69 +224,6 @@ const batchGenerateRules = {
   quantity: [{ required: true, message: '生成数量不能为空', trigger: 'blur' }]
 };
 
-// 绑定库存
-const bindVisible = ref(false);
-const bindFormRef = ref<ElFormInstance>();
-const bindForm = ref({
-  snId: undefined as number | undefined,
-  stockId: undefined as number | undefined,
-  warehouseId: undefined as number | undefined,
-  locationId: undefined as number | undefined
-});
-const bindRules = {
-  warehouseId: [{ required: true, message: '仓库不能为空', trigger: 'change' }]
-};
-const warehouseOptions = ref<any[]>([]);
-
-const getList = async () => {
-  loading.value = true;
-  try {
-    const res = await listSn(queryParams.value);
-    snList.value = res.rows;
-    total.value = res.total;
-  } finally {
-    loading.value = false;
-  }
-};
-
-const handleQuery = () => {
-  queryParams.value.pageNum = 1;
-  getList();
-};
-
-const resetQuery = () => {
-  queryRef.value?.resetFields();
-  handleQuery();
-};
-
-const handleSelectionChange = (selection: WmSnVO[]) => {
-  ids.value = selection.map((item) => item.snId);
-  single.value = selection.length !== 1;
-  multiple.value = !selection.length;
-};
-
-const handleAdd = () => {
-  router.push({ path: '/erp/wm/sn/form', query: { action: 'add' } });
-};
-
-const handleUpdate = (row: WmSnVO) => {
-  const snId = row.snId || ids.value[0];
-  router.push({ path: '/erp/wm/sn/form', query: { snId: snId as string, action: 'edit' } });
-};
-
-const handleDelete = async (row?: WmSnVO) => {
-  const snIds = row?.snId || ids.value;
-  await proxy?.$modal.confirm('是否确认删除编号为"' + snIds + '"的数据项？');
-  await delSn(snIds);
-  proxy?.$modal.msgSuccess('删除成功');
-  getList();
-};
-
-const handleExport = () => {
-  proxy?.download('/erp/wm/sn/export', { ...queryParams.value }, `序列号_${new Date().getTime()}.xlsx`);
-};
-
-// 批量生成
 const batchOptions = ref<any[]>([]);
 
 const handleBatchGenerate = () => {
@@ -288,7 +258,20 @@ const submitBatchGenerate = async () => {
   });
 };
 
-// 绑定库存
+// ---------- 绑定库存 ----------
+const bindVisible = ref(false);
+const bindFormRef = ref<ElFormInstance>();
+const bindForm = ref({
+  snId: undefined as number | undefined,
+  stockId: undefined as number | undefined,
+  warehouseId: undefined as number | undefined,
+  locationId: undefined as number | undefined
+});
+const bindRules = {
+  warehouseId: [{ required: true, message: '仓库不能为空', trigger: 'change' }]
+};
+const warehouseOptions = ref<any[]>([]);
+
 const handleBind = (row: WmSnVO) => {
   bindForm.value = {
     snId: row.snId,
@@ -311,7 +294,7 @@ const submitBind = async () => {
   });
 };
 
-// 解绑库存
+// ---------- 解绑库存 ----------
 const handleUnbind = async (row: WmSnVO) => {
   await proxy?.$modal.confirm('是否确认解绑序列号"' + row.snCode + '"的库存？');
   await unbindStock(row.snId);

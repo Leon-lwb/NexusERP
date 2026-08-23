@@ -20,8 +20,8 @@
         </el-col>
         <el-col :span="6" class="search-actions">
           <el-form-item>
-            <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+            <el-button type="primary" icon="Search" @click="handleQuery()">搜索</el-button>
+            <el-button icon="Refresh" @click="resetQuery()">重置</el-button>
           </el-form-item>
         </el-col>
       </el-row>
@@ -32,7 +32,7 @@
         <el-button type="primary" plain icon="Plus" @click="handleReserve()" v-hasPermi="['wm:reservation:add']">手动预留</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['wm:reservation:export']">导出</el-button>
+        <el-button type="warning" plain icon="Download" @click="handleExport()" v-hasPermi="['wm:reservation:export']">导出</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button type="info" plain icon="View" @click="detailVisible = true" v-hasPermi="['wm:reservation:list']">预留明细</el-button>
@@ -242,36 +242,41 @@ import { listMaterial } from '@/api/erp/bd/material';
 import { listWarehouse } from '@/api/erp/wm/warehouse';
 import { listOrderheader } from '@/api/erp/so/orderheader';
 import { listWork } from '@/api/erp/prd/work';
+import type { FormInstance } from 'element-plus';
+import { useCrud } from '@/composables/useCrud';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 
-const summaryList = ref<ReservationSummaryVO[]>([]);
-const loading = ref(true);
-const showSearch = ref(true);
-const total = ref(0);
-const queryRef = ref<ElFormInstance>();
+// 预留汇总为只读列表（无标准详情/新增/修改/删除接口），占位仅为满足 useCrud 的 API 签名，不会被调用
+const readonlyApi = () => Promise.resolve({ data: {} as any });
 
 const queryParams = ref<ReservationQuery>({ pageNum: 1, pageSize: 10 });
 
-const getList = async () => {
-  loading.value = true;
-  const res = await listReservationSummary(queryParams.value);
-  summaryList.value = res.rows;
-  total.value = res.total;
-  loading.value = false;
-};
+const {
+  loading,
+  list: summaryList,
+  total,
+  showSearch,
+  getList,
+  handleQuery,
+  handleExport
+} = useCrud({
+  apis: { list: listReservationSummary, get: readonlyApi, add: readonlyApi, update: readonlyApi, del: readonlyApi },
+  idField: 'stockId',
+  entityName: '库存预留',
+  formRef: ref<FormInstance>(),
+  queryParams,
+  initForm: () => ({}),
+  // 沿用原实现：预留汇总导出走库存导出接口
+  exportUrl: 'erp/wm/stock/export',
+  exportFileName: '库存预留'
+});
 
-const handleQuery = () => {
-  queryParams.value.pageNum = 1;
-  getList();
-};
-const resetQuery = () => {
-  queryRef.value?.resetFields();
+/** 重置按钮操作 */
+function resetQuery() {
+  proxy.resetForm('queryRef');
   handleQuery();
-};
-const handleExport = () => {
-  proxy?.download('erp/wm/stock/export', { ...queryParams.value }, `库存预留_${new Date().getTime()}.xlsx`);
-};
+}
 
 // ---------- 手动预留 ----------
 const reserveVisible = ref(false);

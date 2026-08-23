@@ -13,7 +13,7 @@ const BASE = '/erp/pu/return';
  * @param query 采购退货单查询条件
  * @returns 采购退货单列表及总数
  */
-export const listPurchaseReturn = (query: PurchaseReturnQuery): AxiosPromise<{ rows: PurchaseReturnVO[]; total: number }> =>
+export const listPurchaseReturn = (query: PurchaseReturnQuery): AxiosPromise<PurchaseReturnVO[]> =>
   request({
     url: BASE + '/list',
     method: 'get',

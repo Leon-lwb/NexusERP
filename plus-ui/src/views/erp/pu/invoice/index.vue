@@ -5,12 +5,12 @@
       <el-row :gutter="16">
         <el-col :span="6">
           <el-form-item label="发票号" prop="invoiceNo">
-            <el-input v-model="queryParams.invoiceNo" placeholder="请输入发票号" clearable @keyup.enter="handleQuery" />
+            <el-input v-model="queryParams.invoiceNo" placeholder="请输入发票号" clearable @keyup.enter="handleQuery()" />
           </el-form-item>
         </el-col>
         <el-col :span="6">
           <el-form-item label="供应商" prop="vendorName">
-            <el-input v-model="queryParams.vendorName" placeholder="请输入供应商名称" clearable @keyup.enter="handleQuery" />
+            <el-input v-model="queryParams.vendorName" placeholder="请输入供应商名称" clearable @keyup.enter="handleQuery()" />
           </el-form-item>
         </el-col>
         <el-col :span="6">
@@ -29,8 +29,8 @@
         </el-col>
         <el-col :span="6" :offset="18" class="search-actions">
           <el-form-item>
-            <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+            <el-button type="primary" icon="Search" @click="handleQuery()">搜索</el-button>
+            <el-button icon="Refresh" @click="resetQuery()">重置</el-button>
           </el-form-item>
         </el-col>
       </el-row>
@@ -39,19 +39,19 @@
     <!-- 操作按钮 -->
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
-        <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['pu:invoice:add']">新增</el-button>
+        <el-button type="primary" plain icon="Plus" @click="handleAdd()" v-hasPermi="['pu:invoice:add']">新增</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate()" v-hasPermi="['pu:invoice:edit']">修改</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="info" plain icon="DocumentAdd" @click="handleGenFromPo" v-hasPermi="['pu:invoice:add']">从订单生成</el-button>
+        <el-button type="info" plain icon="DocumentAdd" @click="handleGenFromPo()" v-hasPermi="['pu:invoice:add']">从订单生成</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete()" v-hasPermi="['pu:invoice:remove']">删除</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['pu:invoice:export']">导出</el-button>
+        <el-button type="warning" plain icon="Download" @click="handleExport()" v-hasPermi="['pu:invoice:export']">导出</el-button>
       </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
@@ -194,7 +194,7 @@
                 <el-form-item label="供应商" prop="vendorName">
                   <el-input v-model="form.vendorName" readonly>
                     <template #append>
-                      <el-button icon="Search" @click="openVendorDialog" />
+                      <el-button icon="Search" @click="openVendorDialog()" />
                     </template>
                   </el-input>
                 </el-form-item>
@@ -300,10 +300,10 @@
           <el-tab-pane label="发票明细" name="line">
             <el-row :gutter="10" class="mb8">
               <el-col :span="1.5">
-                <el-button type="primary" icon="Plus" @click="handleAddLine" v-if="!isViewMode">添加行</el-button>
+                <el-button type="primary" icon="Plus" @click="handleAddLine()" v-if="!isViewMode">添加行</el-button>
               </el-col>
               <el-col :span="1.5">
-                <el-button type="danger" icon="Delete" @click="handleDeleteLine" v-if="!isViewMode">删除行</el-button>
+                <el-button type="danger" icon="Delete" @click="handleDeleteLine()" v-if="!isViewMode">删除行</el-button>
               </el-col>
             </el-row>
             <el-table :data="lineList" @selection-change="handleLineSelectionChange" border size="small" show-overflow-tooltip>
@@ -415,7 +415,7 @@
       </el-form>
       <template #footer>
         <el-button @click="verifyOpen = false">取 消</el-button>
-        <el-button type="primary" @click="submitVerify">确 定</el-button>
+        <el-button type="primary" @click="submitVerify()">确 定</el-button>
       </template>
     </el-dialog>
 
@@ -444,7 +444,7 @@
       </el-form>
       <template #footer>
         <el-button @click="genFromPoOpen = false">取 消</el-button>
-        <el-button type="primary" @click="submitGenFromPo">确 定</el-button>
+        <el-button type="primary" @click="submitGenFromPo()">确 定</el-button>
       </template>
     </el-dialog>
 
@@ -452,14 +452,14 @@
     <el-dialog v-model="vendorDialog.visible" title="选择供应商" width="640px" append-to-body>
       <el-form :model="vendorDialog.query" :inline="true">
         <el-form-item label="编码">
-          <el-input v-model="vendorDialog.query.vendorCode" clearable @keyup.enter="queryVendors" />
+          <el-input v-model="vendorDialog.query.vendorCode" clearable @keyup.enter="queryVendors()" />
         </el-form-item>
         <el-form-item label="名称">
-          <el-input v-model="vendorDialog.query.vendorName" clearable @keyup.enter="queryVendors" />
+          <el-input v-model="vendorDialog.query.vendorName" clearable @keyup.enter="queryVendors()" />
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" icon="Search" @click="queryVendors">搜索</el-button>
-          <el-button icon="Refresh" @click="resetVendorQuery">重置</el-button>
+          <el-button type="primary" icon="Search" @click="queryVendors()">搜索</el-button>
+          <el-button icon="Refresh" @click="resetVendorQuery()">重置</el-button>
         </el-form-item>
       </el-form>
       <el-table :data="vendorDialog.list" height="360" @row-dblclick="selectVendor">
@@ -484,13 +484,13 @@
     <el-dialog v-model="materialDialogVisible" title="选择物料" width="640px" append-to-body>
       <el-form :inline="true">
         <el-form-item label="编码">
-          <el-input v-model="materialQuery.materialCode" clearable @keyup.enter="queryMaterials" />
+          <el-input v-model="materialQuery.materialCode" clearable @keyup.enter="queryMaterials()" />
         </el-form-item>
         <el-form-item label="名称">
-          <el-input v-model="materialQuery.materialName" clearable @keyup.enter="queryMaterials" />
+          <el-input v-model="materialQuery.materialName" clearable @keyup.enter="queryMaterials()" />
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" icon="Search" @click="queryMaterials">搜索</el-button>
+          <el-button type="primary" icon="Search" @click="queryMaterials()">搜索</el-button>
         </el-form-item>
       </el-form>
       <el-table :data="materialList" height="360">
@@ -532,30 +532,21 @@ import {
 } from '@/api/erp/pu/invoice';
 import { listVendor } from '@/api/erp/bd/vendor';
 import { listMaterial } from '@/api/erp/bd/material';
-import { InvoiceVO, InvoiceForm, InvoiceLineForm, MatchResult } from '@/api/erp/pu/invoice/types';
+import { InvoiceVO, InvoiceLineForm, MatchResult } from '@/api/erp/pu/invoice/types';
+import type { FormInstance } from 'element-plus';
+import { useCrud } from '@/composables/useCrud';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
+const formRef = ref<FormInstance>();
 const { pu_invoice_type, pu_invoice_status, pu_invoice_cert_status, invoice_issue_channel } = toRefs<any>(
   proxy.useDict('pu_invoice_type', 'pu_invoice_status', 'pu_invoice_cert_status', 'invoice_issue_channel')
 );
-
-// 列表数据
-const dataList = ref<InvoiceVO[]>([]);
-const open = ref(false);
-const loading = ref(true);
-const showSearch = ref(true);
-const ids = ref<number[]>([]);
-const single = ref(true);
-const multiple = ref(true);
-const total = ref(0);
-const title = ref('');
-const isViewMode = ref(false);
-const activeTab = ref('basic');
 
 // 明细行数据
 const lineList = ref<InvoiceLineForm[]>([]);
 const checkedLines = ref<number[]>([]);
 const currentLineIndex = ref(-1);
+const activeTab = ref('basic');
 
 // 物料选择对话框
 const materialDialogVisible = ref(false);
@@ -571,42 +562,50 @@ const vendorDialog = reactive({
   query: { vendorCode: '', vendorName: '', pageNum: 1, pageSize: 10 } as any
 });
 
-const data = reactive({
-  form: {} as InvoiceForm,
-  queryParams: {
-    pageNum: 1,
-    pageSize: 10,
-    invoiceNo: undefined,
-    vendorName: undefined,
-    status: undefined,
-    certStatus: undefined
-  },
-  rules: {
-    invoiceNo: [{ required: true, message: '发票号不能为空', trigger: 'blur' }]
-  }
+// 查询参数
+const queryParams = ref({
+  pageNum: 1,
+  pageSize: 10,
+  invoiceNo: undefined,
+  vendorName: undefined,
+  status: undefined,
+  certStatus: undefined
 });
 
-const { queryParams, form, rules } = toRefs(data);
+// 表单校验规则
+const rules = {
+  invoiceNo: [{ required: true, message: '发票号不能为空', trigger: 'blur' }]
+};
 
-/** 查询列表 */
-function getList() {
-  loading.value = true;
-  listInvoice(queryParams.value).then((response) => {
-    dataList.value = response.rows;
-    total.value = response.total;
-    loading.value = false;
-  });
-}
-
-/** 取消 */
-function cancel() {
-  open.value = false;
-  reset();
-}
-
-/** 重置表单 */
-function reset() {
-  form.value = {
+const {
+  loading,
+  list: dataList,
+  total,
+  open,
+  isViewMode,
+  title,
+  ids,
+  single,
+  multiple,
+  showSearch,
+  form,
+  getList,
+  handleQuery,
+  handleAdd,
+  handleUpdate,
+  handleView,
+  submitForm,
+  cancel,
+  handleDelete,
+  handleExport,
+  handleSelectionChange
+} = useCrud({
+  apis: { list: listInvoice, get: getInvoice, add: addInvoice, update: updateInvoice, del: delInvoice },
+  idField: 'invoiceId',
+  entityName: '采购进项发票',
+  formRef,
+  queryParams,
+  initForm: () => ({
     invoiceId: undefined,
     invoiceNo: '',
     invoiceCode: '',
@@ -631,104 +630,25 @@ function reset() {
     issueChannel: 'MANUAL',
     remark: '',
     puInvoiceLineList: []
-  };
-  lineList.value = [];
-  activeTab.value = 'basic';
-  proxy.resetForm('formRef');
-}
-
-/** 搜索 */
-function handleQuery() {
-  queryParams.value.pageNum = 1;
-  getList();
-}
+  }),
+  exportUrl: 'erp/pu/invoice/export',
+  exportFileName: 'pu_invoice',
+  onReset: () => {
+    lineList.value = [];
+    activeTab.value = 'basic';
+  },
+  beforeSubmit: () => {
+    form.value.puInvoiceLineList = lineList.value;
+  },
+  afterLoad: (data: any) => {
+    lineList.value = data.puInvoiceLineList || [];
+  }
+});
 
 /** 重置搜索 */
 function resetQuery() {
   proxy.resetForm('queryRef');
   handleQuery();
-}
-
-/** 多选框选中数据 */
-function handleSelectionChange(selection: InvoiceVO[]) {
-  ids.value = selection.map((item) => item.invoiceId);
-  single.value = selection.length !== 1;
-  multiple.value = !selection.length;
-}
-
-/** 新增 */
-function handleAdd() {
-  reset();
-  isViewMode.value = false;
-  open.value = true;
-  title.value = '登记采购进项发票';
-}
-
-/** 修改 */
-function handleUpdate(row?: InvoiceVO) {
-  reset();
-  isViewMode.value = false;
-  const invoiceId = row?.invoiceId || ids.value[0];
-  getInvoice(invoiceId).then((response) => {
-    form.value = response.data;
-    lineList.value = response.data.puInvoiceLineList || [];
-    open.value = true;
-    title.value = '修改采购进项发票';
-  });
-}
-
-/** 查看 */
-function handleView(row: InvoiceVO) {
-  reset();
-  isViewMode.value = true;
-  getInvoice(row.invoiceId).then((response) => {
-    form.value = response.data;
-    lineList.value = response.data.puInvoiceLineList || [];
-    open.value = true;
-    title.value = '查看采购进项发票';
-  });
-}
-
-/** 提交表单 */
-function submitForm() {
-  (proxy.$refs['formRef'] as any).validate((valid: boolean) => {
-    if (valid) {
-      form.value.puInvoiceLineList = lineList.value;
-      if (form.value.invoiceId != null) {
-        updateInvoice(form.value).then(() => {
-          proxy.$modal.msgSuccess('修改成功');
-          open.value = false;
-          getList();
-        });
-      } else {
-        addInvoice(form.value).then(() => {
-          proxy.$modal.msgSuccess('登记成功');
-          open.value = false;
-          getList();
-        });
-      }
-    }
-  });
-}
-
-/** 删除 */
-function handleDelete(row?: InvoiceVO) {
-  const invoiceIds = row?.invoiceId || ids.value;
-  proxy.$modal
-    .confirm('是否确认删除采购进项发票编号为"' + invoiceIds + '"的数据项?')
-    .then(function () {
-      return delInvoice(invoiceIds);
-    })
-    .then(() => {
-      getList();
-      proxy.$modal.msgSuccess('删除成功');
-    })
-    .catch(() => {});
-}
-
-/** 导出 */
-function handleExport() {
-  proxy.download('erp/pu/invoice/export', { ...queryParams.value }, `pu_invoice_${new Date().getTime()}.xlsx`);
 }
 
 /** 添加明细行 */

@@ -32,7 +32,7 @@
 
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
-        <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['fin:arap:receipt:add']">新增</el-button>
+        <el-button type="primary" plain icon="Plus" @click="handleAdd()" v-hasPermi="['fin:arap:receipt:add']">新增</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['fin:arap:receipt:remove']"
@@ -171,17 +171,17 @@ const {
   form,
   getList,
   handleQuery,
+  handleAdd,
   handleDelete,
   handleExport,
   handleSelectionChange,
   submitForm,
-  cancel,
-  handleAdd: rawHandleAdd
+  cancel
 } = useCrud<FinReceiptForm, FinReceiptQuery>({
   apis: { list: listFinReceipt, get: getFinReceipt, add: addFinReceipt, update: updateFinReceipt, del: delFinReceipt },
   idField: 'receiptId',
-  entityName: '收款单',
-  formRef: formRef,
+  entityName: '收付款单',
+  formRef,
   queryParams,
   initForm: () => ({
     direction: 'AR',
@@ -196,10 +196,6 @@ const {
   exportUrl: '/erp/fin/receipt/export',
   exportFileName: 'receipt'
 });
-
-function handleAdd() {
-  rawHandleAdd();
-}
 
 function resetQuery() {
   proxy.resetForm('queryRef');

@@ -26,8 +26,8 @@
         </el-col>
         <el-col :span="6" :offset="18" class="search-actions">
           <el-form-item>
-            <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+            <el-button type="primary" icon="Search" @click="handleQuery()">搜索</el-button>
+            <el-button icon="Refresh" @click="resetQuery()">重置</el-button>
           </el-form-item>
         </el-col>
       </el-row>
@@ -35,16 +35,16 @@
 
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
-        <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['wm:batch:add']">新增</el-button>
+        <el-button type="primary" plain icon="Plus" @click="handleAdd()" v-hasPermi="['wm:batch:add']">新增</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['wm:batch:remove']">删除</el-button>
+        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete()" v-hasPermi="['wm:batch:remove']">删除</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['wm:batch:export']">导出</el-button>
+        <el-button type="warning" plain icon="Download" @click="handleExport()" v-hasPermi="['wm:batch:export']">导出</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="info" plain icon="Timer" @click="handleCheckExpiry" v-hasPermi="['wm:batch:edit']">检查过期</el-button>
+        <el-button type="info" plain icon="Timer" @click="handleCheckExpiry()" v-hasPermi="['wm:batch:edit']">检查过期</el-button>
       </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
@@ -94,7 +94,7 @@
       </el-form>
       <template #footer>
         <div class="dialog-footer">
-          <el-button type="primary" @click="submitChangeStatus">确 定</el-button>
+          <el-button type="primary" @click="submitChangeStatus()">确 定</el-button>
           <el-button @click="statusDialogVisible = false">取 消</el-button>
         </div>
       </template>
@@ -103,76 +103,68 @@
 </template>
 
 <script setup lang="ts" name="WmBatch">
-import { listBatch, delBatch, changeStatus, checkExpiry } from '@/api/erp/wm/batch';
+import { listBatch, getBatch, addBatch, updateBatch, delBatch, changeStatus, checkExpiry } from '@/api/erp/wm/batch';
 import { WmBatchVO, WmBatchQuery } from '@/api/erp/wm/batch/types';
+import type { FormInstance } from 'element-plus';
+import { useCrud } from '@/composables/useCrud';
 import { useRouter } from 'vue-router';
 
 const router = useRouter();
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { wm_batch_status } = toRefs<any>(proxy.useDict('wm_batch_status'));
 
-const batchList = ref<WmBatchVO[]>([]);
-const loading = ref(true);
-const showSearch = ref(true);
-const ids = ref<Array<number | string>>([]);
-const single = ref(true);
-const multiple = ref(true);
-const total = ref(0);
-
 const statusDialogVisible = ref(false);
 const statusForm = ref({ batchId: null as number | null, currentStatus: '', newStatus: '' });
 
-const data = reactive({
-  queryParams: {
-    pageNum: 1,
-    pageSize: 10,
-    batchCode: null,
-    materialCode: null,
-    materialName: null,
-    vendorCode: null,
-    warehouseId: null,
-    status: null
-  } as WmBatchQuery
+const queryParams = ref({
+  pageNum: 1,
+  pageSize: 10,
+  batchCode: null,
+  materialCode: null,
+  materialName: null,
+  vendorCode: null,
+  warehouseId: null,
+  status: null
+} as WmBatchQuery);
+
+// 列表骨架（新增/修改为路由表单页 form.vue，保留本地 router.push 跳转逻辑；
+// get/add/update 仅满足 useCrud 签名传入，列表页不会调用）
+const {
+  loading,
+  list: batchList,
+  total,
+  ids,
+  multiple,
+  showSearch,
+  getList,
+  handleQuery,
+  handleDelete,
+  handleExport,
+  handleSelectionChange
+} = useCrud({
+  apis: { list: listBatch, get: getBatch, add: addBatch, update: updateBatch, del: delBatch },
+  idField: 'batchId',
+  entityName: '批次',
+  formRef: ref<FormInstance>(),
+  queryParams,
+  initForm: () => ({}),
+  exportUrl: '/erp/wm/batch/export',
+  exportFileName: '批次管理'
 });
 
-const { queryParams } = toRefs(data);
-
-function getList() {
-  loading.value = true;
-  listBatch(queryParams.value)
-    .then((response: any) => {
-      batchList.value = response.rows;
-      total.value = response.total;
-    })
-    .finally(() => {
-      loading.value = false;
-    });
-}
-
-function handleQuery() {
-  queryParams.value.pageNum = 1;
-  getList();
-}
-
+/** 重置按钮操作 */
 function resetQuery() {
   proxy.resetForm('queryRef');
   handleQuery();
 }
 
-function handleSelectionChange(selection: WmBatchVO[]) {
-  ids.value = selection.map((item: WmBatchVO) => item.batchId);
-  single.value = selection.length !== 1;
-  multiple.value = !selection.length;
-}
-
+/** 新增按钮操作（跳转路由表单页） */
 function handleAdd() {
   router.push({ path: '/erp/wm/batch/form', query: { action: 'add' } });
 }
 
-function handleUpdate(row: any) {
-  if (row && row.type && row instanceof Event) {
-    row = null;
-  }
+/** 修改按钮操作（跳转路由表单页） */
+function handleUpdate(row?: any) {
   if (!row) {
     if (ids.value.length !== 1) {
       proxy.$modal.msgWarning('请选择一条数据进行修改');
@@ -188,24 +180,7 @@ function handleUpdate(row: any) {
   router.push({ path: '/erp/wm/batch/form', query: { batchId: row.batchId, action: 'edit' } });
 }
 
-function handleDelete(row: any) {
-  const _ids = row?.batchId || ids.value;
-  proxy.$modal
-    .confirm('是否确认删除批次编号为"' + _ids + '"的数据项？')
-    .then(function () {
-      return delBatch(_ids);
-    })
-    .then(() => {
-      getList();
-      proxy.$modal.msgSuccess('删除成功');
-    })
-    .catch(() => {});
-}
-
-function handleExport() {
-  proxy.download('/erp/wm/batch/export', { ...queryParams.value }, `批次管理_${new Date().getTime()}.xlsx`);
-}
-
+/** 检查过期 */
 function handleCheckExpiry() {
   proxy.$modal
     .confirm('确认执行过期批次检查吗？')
@@ -219,6 +194,7 @@ function handleCheckExpiry() {
     .catch(() => {});
 }
 
+/** 变更状态 */
 function handleChangeStatus(row: WmBatchVO) {
   statusForm.value.batchId = row.batchId;
   statusForm.value.currentStatus = row.status;

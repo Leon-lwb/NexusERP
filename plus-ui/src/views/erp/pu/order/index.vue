@@ -5,12 +5,12 @@
       <el-row :gutter="16">
         <el-col :span="6">
           <el-form-item label="订单号" prop="orderNo">
-            <el-input v-model="queryParams.orderNo" placeholder="请输入订单号" clearable @keyup.enter="handleQuery" />
+            <el-input v-model="queryParams.orderNo" placeholder="请输入订单号" clearable @keyup.enter="handleQuery()" />
           </el-form-item>
         </el-col>
         <el-col :span="6">
           <el-form-item label="供应商" prop="vendorName">
-            <el-input v-model="queryParams.vendorName" placeholder="请输入供应商" clearable @keyup.enter="handleQuery" />
+            <el-input v-model="queryParams.vendorName" placeholder="请输入供应商" clearable @keyup.enter="handleQuery()" />
           </el-form-item>
         </el-col>
         <el-col :span="6">
@@ -22,8 +22,8 @@
         </el-col>
         <el-col :span="6" class="search-actions">
           <el-form-item>
-            <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+            <el-button type="primary" icon="Search" @click="handleQuery()">搜索</el-button>
+            <el-button icon="Refresh" @click="resetQuery()">重置</el-button>
           </el-form-item>
         </el-col>
       </el-row>
@@ -32,35 +32,35 @@
     <!-- 操作按钮区域 -->
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
-        <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['pu:order:add']"> 新增 </el-button>
+        <el-button type="primary" plain icon="Plus" @click="handleAdd()" v-hasPermi="['pu:order:add']"> 新增 </el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['pu:order:edit']"> 修改 </el-button>
+        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate()" v-hasPermi="['pu:order:edit']"> 修改 </el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['pu:order:remove']"> 删除 </el-button>
+        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete()" v-hasPermi="['pu:order:remove']"> 删除 </el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="info" plain icon="View" :disabled="single" @click="handleView" v-hasPermi="['pu:order:query']"> 查看 </el-button>
+        <el-button type="info" plain icon="View" :disabled="single" @click="handleView()" v-hasPermi="['pu:order:query']"> 查看 </el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['pu:order:export']"> 导出 </el-button>
+        <el-button type="warning" plain icon="Download" @click="handleExport()" v-hasPermi="['pu:order:export']"> 导出 </el-button>
       </el-col>
       <!--
       <el-col :span="1.5">
-        <el-button type="success" plain icon="Promotion" :disabled="single" @click="handleSubmit" v-hasPermi="['pu:order:edit']"> 提交 </el-button>
+        <el-button type="success" plain icon="Promotion" :disabled="single" @click="handleSubmit()" v-hasPermi="['pu:order:edit']"> 提交 </el-button>
       </el-col>
       -->
       <!--
       <el-col :span="1.5">
-        <el-button type="primary" plain icon="Check" :disabled="single" @click="handleApprove" v-hasPermi="['pu:order:edit']"> 审批 </el-button>
+        <el-button type="primary" plain icon="Check" :disabled="single" @click="handleApprove()" v-hasPermi="['pu:order:edit']"> 审批 </el-button>
       </el-col>
       -->
       <el-col :span="1.5">
-        <el-button type="success" plain icon="Goods" :disabled="single" @click="handleReceive" v-hasPermi="['pu:order:edit']"> 收货联动 </el-button>
+        <el-button type="success" plain icon="Goods" :disabled="single" @click="handleReceive()" v-hasPermi="['pu:order:edit']"> 收货联动 </el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="danger" plain icon="Warning" @click="handleDiffReport" v-hasPermi="['pu:order:list']"> 差异报表 </el-button>
+        <el-button type="danger" plain icon="Warning" @click="handleDiffReport()" v-hasPermi="['pu:order:list']"> 差异报表 </el-button>
       </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
@@ -125,32 +125,116 @@
 </template>
 
 <script setup lang="ts" name="PurchaseOrder">
-// 导入采购订单相关的API函数
-import { listPurchaseOrder, delPurchaseOrder, receivePurchaseOrder, getDiffReport, listOrderLines } from '@/api/erp/pu/order';
+import {
+  listPurchaseOrder,
+  getPurchaseOrder,
+  addPurchaseOrder,
+  updatePurchaseOrder,
+  delPurchaseOrder,
+  receivePurchaseOrder,
+  getDiffReport,
+  listOrderLines
+} from '@/api/erp/pu/order';
+import { useRouter } from 'vue-router';
+import type { FormInstance } from 'element-plus';
+import { useCrud } from '@/composables/useCrud';
 
-// 获取当前实例并获取字典数据
+const router = useRouter();
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { pu_purchase_order_status } = toRefs<any>(proxy.useDict('pu_purchase_order_status'));
 
-// 定义响应式数据
-const orderList = ref([]); // 采购订单列表
-const loading = ref(true); // 加载状态
-const showSearch = ref(true); // 显示搜索区域
-const ids = ref([]); // 选中的ID数组
-const single = ref(true); // 单选状态
-const multiple = ref(true); // 多选状态
-const total = ref(0); // 总记录数
-
+// 订单明细行（展开行按需加载）
 const orderLinesMap = ref<Record<number, any[]>>({});
 // el-table expand-row-keys 要求 string[]（与 row-key 字符串匹配）
 const expandedRows = ref<string[]>([]);
 
+// 查询参数
+const queryParams = ref({
+  pageNum: 1,
+  pageSize: 10,
+  orderNo: null,
+  vendorName: null,
+  status: null
+});
+
+// 列表骨架（新增/修改/查看为路由表单页，保留本地 router.push 跳转逻辑）
+const {
+  loading,
+  list: orderList,
+  total,
+  ids,
+  single,
+  multiple,
+  showSearch,
+  getList,
+  handleQuery,
+  handleDelete,
+  handleExport,
+  handleSelectionChange
+} = useCrud({
+  apis: { list: listPurchaseOrder, get: getPurchaseOrder, add: addPurchaseOrder, update: updatePurchaseOrder, del: delPurchaseOrder },
+  idField: 'orderId',
+  entityName: '采购订单',
+  formRef: ref<FormInstance>(),
+  queryParams,
+  initForm: () => ({}),
+  exportUrl: '/erp/pu/order/export',
+  exportFileName: 'pu_order'
+});
+
+/** 重置按钮操作 */
+function resetQuery() {
+  proxy.resetForm('queryRef');
+  handleQuery();
+}
+
+/** 新增按钮操作 */
+function handleAdd() {
+  router.push({ path: '/erp/pu/order/form', query: { action: 'add' } });
+}
+
+/** 修改按钮操作 */
+function handleUpdate(row?: any) {
+  if (!row) {
+    if (ids.value.length !== 1) {
+      proxy.$modal.msgWarning('请选择一条数据进行修改');
+      return;
+    }
+    const selected = orderList.value.find((item: any) => item.orderId == ids.value[0]);
+    if (!selected) {
+      proxy.$modal.msgWarning('未找到选中的数据');
+      return;
+    }
+    row = selected;
+  }
+  router.push({ path: '/erp/pu/order/form', query: { id: row.orderId, action: 'edit' } });
+}
+
+/** 查看按钮操作 */
+function handleView(row?: any) {
+  if (!row) {
+    if (ids.value.length !== 1) {
+      proxy.$modal.msgWarning('请选择一条数据进行查看');
+      return;
+    }
+    const selected = orderList.value.find((item: any) => item.orderId == ids.value[0]);
+    if (!selected) {
+      proxy.$modal.msgWarning('未找到选中的数据');
+      return;
+    }
+    row = selected;
+  }
+  router.push({ path: '/erp/pu/order/form', query: { id: row.orderId, action: 'view' } });
+}
+
+/** 加载订单明细行 */
 const loadOrderLines = async (orderId: number) => {
   if (orderLinesMap.value[orderId]) return;
   const res = await listOrderLines(orderId);
   orderLinesMap.value[orderId] = res.data || [];
 };
 
+/** 展开行变化时按需加载明细 */
 const handleExpandChange = (row: any, expandedRows: any[]) => {
   if (expandedRows.includes(row)) {
     loadOrderLines(row.orderId);
@@ -159,22 +243,22 @@ const handleExpandChange = (row: any, expandedRows: any[]) => {
 
 const getReceiveStatusType = (status: string): 'success' | 'warning' | 'danger' | 'info' | 'primary' => {
   const map: Record<string, 'success' | 'warning' | 'danger' | 'info' | 'primary'> = {
-    'NOT_RECEIVED': 'info',
-    'PENDING': 'info',
-    'PARTIAL_RECEIVED': 'warning',
-    'FULL_RECEIVED': 'success',
-    'OVER_RECEIVED': 'danger'
+    NOT_RECEIVED: 'info',
+    PENDING: 'info',
+    PARTIAL_RECEIVED: 'warning',
+    FULL_RECEIVED: 'success',
+    OVER_RECEIVED: 'danger'
   };
   return map[status] || 'info';
 };
 
 const getReceiveStatusLabel = (status: string): string => {
   const map: Record<string, string> = {
-    'NOT_RECEIVED': '未收货',
-    'PENDING': '待收货',
-    'PARTIAL_RECEIVED': '部分到货',
-    'FULL_RECEIVED': '全部到货',
-    'OVER_RECEIVED': '超收'
+    NOT_RECEIVED: '未收货',
+    PENDING: '待收货',
+    PARTIAL_RECEIVED: '部分到货',
+    FULL_RECEIVED: '全部到货',
+    OVER_RECEIVED: '超收'
   };
   return map[status] || status || '未知';
 };
@@ -192,96 +276,6 @@ const getProgressColor = (row: any): string => {
   if (progress > 0) return '#e6a23c';
   return '#909399';
 };
-
-// 查询参数
-const data = reactive({
-  queryParams: {
-    pageNum: 1,
-    pageSize: 10,
-    orderNo: null,
-    vendorName: null,
-    status: null
-  }
-});
-const { queryParams } = toRefs(data);
-
-/**
- * 获取采购订单列表
- */
-function getList() {
-  loading.value = true;
-  listPurchaseOrder(queryParams.value).then((res: any) => {
-    orderList.value = res.rows;
-    total.value = res.total;
-    loading.value = false;
-  });
-}
-
-/**
- * 搜索按钮操作
- */
-function handleQuery() {
-  queryParams.value.pageNum = 1;
-  getList();
-}
-
-/**
- * 重置按钮操作
- */
-function resetQuery() {
-  proxy.resetForm('queryRef');
-  handleQuery();
-}
-
-/**
- * 多选框选中数据
- */
-function handleSelectionChange(selection: any[]) {
-  ids.value = selection.map((i: any) => i.orderId);
-  single.value = selection.length != 1;
-  multiple.value = !selection.length;
-}
-
-/**
- * 新增按钮操作
- */
-function handleAdd() {
-  proxy.$router.push({ path: '/erp/pu/order/form', query: { action: 'add' } });
-}
-
-/**
- * 修改按钮操作
- */
-function handleUpdate() {
-  proxy.$router.push({ path: '/erp/pu/order/form', query: { id: ids.value[0], action: 'edit' } });
-}
-
-/**
- * 查看按钮操作
- */
-function handleView() {
-  proxy.$router.push({ path: '/erp/pu/order/form', query: { id: ids.value[0], action: 'view' } });
-}
-
-/**
- * 删除按钮操作
- */
-function handleDelete() {
-  proxy.$modal
-    .confirm('是否确认删除采购订单?')
-    .then(() => delPurchaseOrder(ids.value))
-    .then(() => {
-      getList();
-      proxy.$modal.msgSuccess('删除成功');
-    });
-}
-
-/**
- * 导出按钮操作
- */
-function handleExport() {
-  proxy.download('/erp/pu/order/export', { ...queryParams.value }, `pu_order_${Date.now()}.xlsx`);
-}
 
 /**
  * 收货联动按钮操作
@@ -309,9 +303,9 @@ function handleDiffReport() {
         '<tr style="background:#f5f7fa;"><th style="padding:8px;border:1px solid #ebeef5;">订单行ID</th><th style="padding:8px;border:1px solid #ebeef5;">物料编码</th><th style="padding:8px;border:1px solid #ebeef5;">订单数量</th><th style="padding:8px;border:1px solid #ebeef5;">已收数量</th><th style="padding:8px;border:1px solid #ebeef5;">状态</th></tr>';
       diffData.forEach((item: any) => {
         const statusMap: Record<string, string> = {
-          'PARTIAL_RECEIVED': '<span style="color:#e6a23c;">部分到货</span>',
-          'OVER_RECEIVED': '<span style="color:#f56c6c;">超收</span>',
-          'SHORT_RECEIVED': '<span style="color:#909399;">短收</span>'
+          PARTIAL_RECEIVED: '<span style="color:#e6a23c;">部分到货</span>',
+          OVER_RECEIVED: '<span style="color:#f56c6c;">超收</span>',
+          SHORT_RECEIVED: '<span style="color:#909399;">短收</span>'
         };
         html += `<tr><td style="padding:8px;border:1px solid #ebeef5;">${item.lineId || '-'}</td>`;
         html += `<td style="padding:8px;border:1px solid #ebeef5;">${item.materialCode || '-'}</td>`;

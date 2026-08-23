@@ -92,8 +92,8 @@
             </el-col>
             <el-col :span="6" class="search-actions">
               <el-form-item>
-                <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-                <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+                <el-button type="primary" icon="Search" @click="handleQuery()">搜索</el-button>
+                <el-button icon="Refresh" @click="resetQuery()">重置</el-button>
               </el-form-item>
             </el-col>
           </el-row>
@@ -101,19 +101,21 @@
 
         <el-row :gutter="10" class="mb8">
           <el-col :span="1.5">
-            <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['wm:stock:add']">新增</el-button>
+            <el-button type="primary" plain icon="Plus" @click="handleAdd()" v-hasPermi="['wm:stock:add']">新增</el-button>
           </el-col>
           <el-col :span="1.5">
-            <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['wm:stock:edit']">修改</el-button>
+            <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate()" v-hasPermi="['wm:stock:edit']">修改</el-button>
           </el-col>
           <el-col :span="1.5">
-            <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['wm:stock:remove']">删除</el-button>
+            <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete()" v-hasPermi="['wm:stock:remove']"
+              >删除</el-button
+            >
           </el-col>
           <el-col :span="1.5">
-            <el-button type="info" plain icon="View" :disabled="single" @click="handleView" v-hasPermi="['wm:stock:query']">查看</el-button>
+            <el-button type="info" plain icon="View" :disabled="single" @click="handleView()" v-hasPermi="['wm:stock:query']">查看</el-button>
           </el-col>
           <el-col :span="1.5">
-            <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['wm:stock:export']">导出</el-button>
+            <el-button type="warning" plain icon="Download" @click="handleExport()" v-hasPermi="['wm:stock:export']">导出</el-button>
           </el-col>
           <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
         </el-row>
@@ -341,25 +343,17 @@
 
 <script setup lang="ts" name="Stock">
 import { listStock, getStock, delStock, addStock, updateStock, getCategoryStocks } from '@/api/erp/wm/stock';
-import type { StockForm, StockVO } from '@/api/erp/wm/stock/types';
 import { useCategoryTree } from '@/composables/erp/useCategoryTree';
 import { getWareHouseTree } from '@/api/erp/wm/warehouse';
 import { listVendor, getVendor } from '@/api/erp/bd/vendor';
 import MaterialSelectDialog from '@/components/MaterialSelectDialog/index.vue';
+import type { FormInstance } from 'element-plus';
+import { useCrud } from '@/composables/useCrud';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { sys_true_or_false } = toRefs<any>(proxy.useDict('sys_true_or_false'));
 
-const stockList = ref<StockVO[]>([]);
-const open = ref(false);
-const loading = ref(true);
-const showSearch = ref(true);
-const ids = ref([]);
-const single = ref(true);
-const multiple = ref(true);
-const total = ref(0);
-const title = ref('');
-const isViewMode = ref(false);
+const stockRef = ref<FormInstance>();
 
 // 分类树（共享 composable）
 const { categoryTree, categoryTreeRef, categoryFilterText, getCategoryTree, filterCategoryNode, debouncedFilter } = useCategoryTree(proxy);
@@ -387,27 +381,23 @@ const cascaderProps = {
 const vendorOptions = ref<any[]>([]);
 const vendorLoading = ref(false);
 
-const data = reactive({
-  form: {} as StockForm,
-  queryParams: {
-    pageNum: 1,
-    pageSize: 10,
-    materialCode: null,
-    materialName: null,
-    batchCode: null,
-    warehouseName: null,
-    recptDate: null,
-    expireDate: null,
-    frozenFlag: null
-  },
-  rules: {
-    materialId: [{ required: true, message: '产品物料不能为空', trigger: 'change' }],
-    warehouseId: [{ required: true, message: '仓库/库区/库位不能为空', trigger: 'change' }],
-    frozenFlag: [{ required: true, message: '冻结标志不能为空', trigger: 'change' }]
-  }
+const queryParams = ref({
+  pageNum: 1,
+  pageSize: 10,
+  materialCode: null,
+  materialName: null,
+  batchCode: null,
+  warehouseName: null,
+  recptDate: null,
+  expireDate: null,
+  frozenFlag: null
 });
 
-const { queryParams, form, rules } = toRefs(data);
+const rules = {
+  materialId: [{ required: true, message: '产品物料不能为空', trigger: 'change' }],
+  warehouseId: [{ required: true, message: '仓库/库区/库位不能为空', trigger: 'change' }],
+  frozenFlag: [{ required: true, message: '冻结标志不能为空', trigger: 'change' }]
+};
 
 /** 标准化仓库树：统一 label/value 字段供 el-cascader 使用 */
 const normalizedWarehouseTree = computed(() => {
@@ -437,66 +427,34 @@ const normalizedWarehouseTree = computed(() => {
   return convert(warehouseTree.value);
 });
 
-/** 查询库存清单列表 */
-function getList() {
-  loading.value = true;
-  listStock(queryParams.value)
-    .then((response: any) => {
-      stockList.value = response.rows;
-      total.value = response.total;
-    })
-    .catch(() => {
-      proxy.$modal.msgError('查询库存列表失败');
-    })
-    .finally(() => {
-      loading.value = false;
-    });
-}
-
-/** 树节点点击事件：进入分类筛选模式，载入该分类（含子分类）全部库存 */
-function handleNodeClick(nodeData: any) {
-  activeCategoryId.value = nodeData.categoryId;
-  isCategoryMode.value = true;
-  loading.value = true;
-  // 后端 getCategoryStocks 会自动展开子分类，无需前端再调 getAllChildrenIds
-  getCategoryStocks([nodeData.categoryId])
-    .then((res: any) => {
-      if (res && res.code === 200) {
-        stockList.value = res.data?.stocks || [];
-        total.value = stockList.value.length;
-      } else {
-        stockList.value = [];
-        total.value = 0;
-        proxy.$modal.msgError('获取库存数据失败');
-      }
-    })
-    .catch(() => {
-      stockList.value = [];
-      total.value = 0;
-      proxy.$modal.msgError('请求出现异常');
-    })
-    .finally(() => {
-      loading.value = false;
-    });
-}
-
-/** 清除分类筛选，回到分页列表 */
-function clearCategoryFilter() {
-  activeCategoryId.value = null;
-  isCategoryMode.value = false;
-  categoryTreeRef.value?.setCurrentKey(undefined);
-  handleQuery();
-}
-
-// 取消按钮
-function cancel() {
-  open.value = false;
-  reset();
-}
-
-// 表单重置
-function reset() {
-  form.value = {
+const {
+  loading,
+  list: stockList,
+  total,
+  open,
+  isViewMode,
+  title,
+  single,
+  multiple,
+  showSearch,
+  form,
+  getList: crudGetList,
+  handleQuery: crudHandleQuery,
+  handleAdd: rawHandleAdd,
+  handleUpdate,
+  handleView,
+  submitForm,
+  cancel,
+  handleDelete,
+  handleExport,
+  handleSelectionChange
+} = useCrud({
+  apis: { list: listStock, get: getStock, add: addStock, update: updateStock, del: delStock },
+  idField: 'stockId',
+  entityName: '库存清单',
+  formRef: stockRef,
+  queryParams,
+  initForm: () => ({
     stockId: null,
     categoryId: null,
     materialId: null,
@@ -527,32 +485,76 @@ function reset() {
     recptDate: null,
     expireDate: null,
     frozenFlag: null
-  };
-  selectedWarehouse.value = null;
-  vendorOptions.value = [];
-  proxy.resetForm('stockRef');
+  }),
+  exportUrl: '/erp/wm/stock/export',
+  exportFileName: 'stock',
+  onReset: () => {
+    selectedWarehouse.value = null;
+    vendorOptions.value = [];
+  },
+  afterLoad: (data: any) => {
+    // 编辑/查看回显：预载供应商选项；等仓库树就绪后再还原级联选中值
+    loadVendorOption(data.vendorId);
+    loadWarehouseTree().then(() => restoreWarehouseSelection());
+  }
+});
+
+/** 查询库存清单列表（分类筛选模式下走分类接口，绕过分页） */
+function getList() {
+  if (isCategoryMode.value && activeCategoryId.value != null) {
+    loading.value = true;
+    // 后端 getCategoryStocks 会自动展开子分类，无需前端再调 getAllChildrenIds
+    getCategoryStocks([activeCategoryId.value])
+      .then((res: any) => {
+        if (res && res.code === 200) {
+          stockList.value = res.data?.stocks || [];
+          total.value = stockList.value.length;
+        } else {
+          stockList.value = [];
+          total.value = 0;
+          proxy.$modal.msgError('获取库存数据失败');
+        }
+      })
+      .catch(() => {
+        stockList.value = [];
+        total.value = 0;
+        proxy.$modal.msgError('请求出现异常');
+      })
+      .finally(() => {
+        loading.value = false;
+      });
+  } else {
+    crudGetList();
+  }
 }
 
-/** 搜索按钮操作（退出分类模式） */
+/** 树节点点击事件：进入分类筛选模式，载入该分类（含子分类）全部库存 */
+function handleNodeClick(nodeData: any) {
+  activeCategoryId.value = nodeData.categoryId;
+  isCategoryMode.value = true;
+  getList();
+}
+
+/** 清除分类筛选，回到分页列表 */
+function clearCategoryFilter() {
+  activeCategoryId.value = null;
+  isCategoryMode.value = false;
+  categoryTreeRef.value?.setCurrentKey(undefined);
+  handleQuery();
+}
+
+/** 搜索按钮操作（退出分类筛选模式，回到分页列表） */
 function handleQuery() {
   isCategoryMode.value = false;
   activeCategoryId.value = null;
   categoryTreeRef.value?.setCurrentKey(undefined);
-  queryParams.value.pageNum = 1;
-  getList();
+  crudHandleQuery();
 }
 
 /** 重置按钮操作 */
 function resetQuery() {
   proxy.resetForm('queryRef');
   handleQuery();
-}
-
-// 多选框选中数据
-function handleSelectionChange(selection: any[]) {
-  ids.value = selection.map((item: any) => item.stockId);
-  single.value = selection.length != 1;
-  multiple.value = !selection.length;
 }
 
 /** 加载仓库树（弹窗打开时调用，已加载则跳过）。返回 Promise 以便编辑回显时等待树就绪 */
@@ -674,103 +676,11 @@ function restoreWarehouseSelection() {
   selectedWarehouse.value = f.locationId || f.areaId || f.warehouseId || null;
 }
 
-/** 新增按钮操作 */
+/** 新增按钮操作（预载仓库树供级联选择） */
 function handleAdd() {
-  reset();
-  isViewMode.value = false;
-  loadWarehouseTree();
-  open.value = true;
-  title.value = '添加库存清单';
-}
-
-/** 修改按钮操作 */
-function handleUpdate(row: any) {
-  reset();
-  isViewMode.value = false;
-  const _stockId = row.stockId || ids.value;
-  getStock(_stockId)
-    .then((response: any) => {
-      form.value = response.data;
-      loadVendorOption(form.value.vendorId);
-      // 等仓库树就绪后再还原级联选中值，确保回显正确
-      return loadWarehouseTree();
-    })
-    .then(() => {
-      restoreWarehouseSelection();
-      open.value = true;
-      title.value = '修改库存清单';
-    })
-    .catch(() => {
-      proxy.$modal.msgError('获取库存详情失败');
-    });
-}
-
-/** 查看按钮操作 */
-function handleView(row: any) {
-  reset();
-  isViewMode.value = true;
-  const _stockId = row.stockId || ids.value;
-  getStock(_stockId)
-    .then((response: any) => {
-      form.value = response.data;
-      loadVendorOption(form.value.vendorId);
-      return loadWarehouseTree();
-    })
-    .then(() => {
-      restoreWarehouseSelection();
-      open.value = true;
-      title.value = '查看库存清单';
-    })
-    .catch(() => {
-      proxy.$modal.msgError('获取库存详情失败');
-    });
-}
-
-/** 提交按钮 */
-function submitForm() {
-  (proxy.$refs['stockRef'] as any).validate((valid: boolean) => {
-    if (valid) {
-      if (form.value.stockId != null) {
-        updateStock(form.value).then(() => {
-          proxy.$modal.msgSuccess('修改成功');
-          open.value = false;
-          getList();
-        });
-      } else {
-        addStock(form.value).then(() => {
-          proxy.$modal.msgSuccess('新增成功');
-          open.value = false;
-          getList();
-        });
-      }
-    }
+  rawHandleAdd(() => {
+    loadWarehouseTree();
   });
-}
-
-/** 删除按钮操作 */
-function handleDelete(row: any) {
-  const _stockIds = row.stockId || ids.value;
-  proxy.$modal
-    .confirm('是否确认删除库存清单编号为"' + _stockIds + '"的数据项？')
-    .then(function () {
-      return delStock(_stockIds);
-    })
-    .then(() => {
-      getList();
-      proxy.$modal.msgSuccess('删除成功');
-    })
-    .catch(() => {});
-}
-
-/** 导出按钮操作 */
-function handleExport() {
-  proxy.download(
-    '/erp/wm/stock/export',
-    {
-      ...queryParams.value
-    },
-    `stock_${new Date().getTime()}.xlsx`
-  );
 }
 
 getList();

@@ -5,13 +5,13 @@
       <el-row :gutter="16">
         <el-col :span="6">
           <el-form-item label="资产名称" prop="keyword">
-            <el-input v-model="queryParams.keyword" placeholder="请输入资产名称" clearable @keyup.enter="handleQuery" />
+            <el-input v-model="queryParams.keyword" placeholder="请输入资产名称" clearable @keyup.enter="handleQuery()" />
           </el-form-item>
         </el-col>
         <el-col :span="6" class="search-actions">
           <el-form-item>
-            <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+            <el-button type="primary" icon="Search" @click="handleQuery()">搜索</el-button>
+            <el-button icon="Refresh" @click="resetQuery()">重置</el-button>
           </el-form-item>
         </el-col>
       </el-row>
@@ -20,7 +20,7 @@
     <!-- 操作按钮区域 -->
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
-        <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['fa:disposal:add']">处置资产</el-button>
+        <el-button type="primary" plain icon="Plus" @click="handleAdd()" v-hasPermi="['fa:disposal:add']">处置资产</el-button>
       </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
@@ -53,7 +53,7 @@
 
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
-    <el-dialog v-model="open" title="处置资产" width="500px" append-to-body>
+    <el-dialog v-model="open" :title="title" width="500px" append-to-body>
       <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
         <el-form-item label="资产" prop="assetId">
           <el-select v-model="form.assetId" filterable placeholder="请选择使用中的资产" style="width: 100%">
@@ -89,19 +89,19 @@
 
 <script setup lang="ts" name="FinFaDisposal">
 import { addDisposal, listAsset, listDisposal, FaDisposalVO } from '@/api/erp/fin/fa';
+import type { FormInstance } from 'element-plus';
+import { useCrud } from '@/composables/useCrud';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 
-const dataList = ref<FaDisposalVO[]>([]);
+const formRef = ref<FormInstance>();
 const assetOptions = ref<any[]>([]);
-const loading = ref(true);
-const showSearch = ref(true);
-const total = ref(0);
-const open = ref(false);
-const formRef = ref();
+
+// 处置为一次性登记(无修改/删除),get/update 占位仅为满足 useCrud 的 API 签名,不会被调用
+const readonlyApi = () => Promise.resolve({ data: {} as any });
 
 const queryParams = ref({ pageNum: 1, pageSize: 10, keyword: '' });
-const form = ref<Partial<FaDisposalVO>>({});
+
 const rules = {
   assetId: [{ required: true, message: '请选择资产', trigger: 'change' }],
   disposalType: [{ required: true, message: '处置类型不能为空', trigger: 'change' }],
@@ -109,25 +109,34 @@ const rules = {
   disposalPrice: [{ required: true, message: '处置收入不能为空', trigger: 'blur' }]
 };
 
+const {
+  loading,
+  list: dataList,
+  total,
+  open,
+  title,
+  showSearch,
+  form,
+  getList,
+  handleQuery,
+  handleAdd,
+  submitForm,
+  cancel
+} = useCrud<FaDisposalVO, any>({
+  apis: { list: listDisposal, get: readonlyApi, add: addDisposal, update: readonlyApi, del: readonlyApi },
+  idField: 'disposalId',
+  entityName: '资产处置',
+  formRef,
+  queryParams,
+  initForm: () => ({
+    disposalType: 'SALE',
+    disposalPrice: 0,
+    disposalDate: new Date().toISOString().slice(0, 10)
+  })
+});
+
 function fmt(v: number | undefined | null) {
   return Number(v || 0).toFixed(2);
-}
-
-function getList() {
-  loading.value = true;
-  listDisposal(queryParams.value)
-    .then((response) => {
-      dataList.value = response.rows;
-      total.value = response.total;
-    })
-    .finally(() => {
-      loading.value = false;
-    });
-}
-
-function handleQuery() {
-  queryParams.value.pageNum = 1;
-  getList();
 }
 
 function resetQuery() {
@@ -141,37 +150,8 @@ function loadAssets() {
   });
 }
 
-function reset() {
-  form.value = { disposalType: 'SALE', disposalPrice: 0, disposalDate: new Date().toISOString().slice(0, 10) } as any;
-}
-
-function handleAdd() {
-  reset();
-  open.value = true;
-}
-
-function submitForm() {
-  formRef.value.validate((valid: boolean) => {
-    if (!valid) return;
-    addDisposal(form.value)
-      .then(() => {
-        proxy.$modal.msgSuccess('处置完成并已过账');
-        open.value = false;
-        getList();
-      })
-      .catch(() => {});
-  });
-}
-
-function cancel() {
-  open.value = false;
-  reset();
-}
-
-onMounted(() => {
-  getList();
-  loadAssets();
-});
+getList();
+loadAssets();
 </script>
 
 <style scoped>

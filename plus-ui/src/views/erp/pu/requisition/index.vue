@@ -5,12 +5,12 @@
       <el-row :gutter="16">
         <el-col :span="6">
           <el-form-item label="申请单号" prop="requisitionNo">
-            <el-input v-model="queryParams.requisitionNo" placeholder="请输入申请单号" clearable @keyup.enter="handleQuery" />
+            <el-input v-model="queryParams.requisitionNo" placeholder="请输入申请单号" clearable @keyup.enter="handleQuery()" />
           </el-form-item>
         </el-col>
         <el-col :span="6">
           <el-form-item label="申请名称" prop="requisitionName">
-            <el-input v-model="queryParams.requisitionName" placeholder="请输入申请名称" clearable @keyup.enter="handleQuery" />
+            <el-input v-model="queryParams.requisitionName" placeholder="请输入申请名称" clearable @keyup.enter="handleQuery()" />
           </el-form-item>
         </el-col>
         <el-col :span="6">
@@ -22,8 +22,8 @@
         </el-col>
         <el-col :span="6" class="search-actions">
           <el-form-item>
-            <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+            <el-button type="primary" icon="Search" @click="handleQuery()">搜索</el-button>
+            <el-button icon="Refresh" @click="resetQuery()">重置</el-button>
           </el-form-item>
         </el-col>
       </el-row>
@@ -32,41 +32,41 @@
     <!-- 操作按钮区域 -->
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
-        <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['pu:requisition:add']"> 新增 </el-button>
+        <el-button type="primary" plain icon="Plus" @click="handleAdd()" v-hasPermi="['pu:requisition:add']"> 新增 </el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['pu:requisition:edit']"> 修改 </el-button>
+        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate()" v-hasPermi="['pu:requisition:edit']"> 修改 </el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['pu:requisition:remove']">
+        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete()" v-hasPermi="['pu:requisition:remove']">
           删除
         </el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="info" plain icon="View" :disabled="single" @click="handleView" v-hasPermi="['pu:requisition:query']"> 查看 </el-button>
+        <el-button type="info" plain icon="View" :disabled="single" @click="handleView()" v-hasPermi="['pu:requisition:query']"> 查看 </el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['pu:requisition:export']"> 导出 </el-button>
+        <el-button type="warning" plain icon="Download" @click="handleExport()" v-hasPermi="['pu:requisition:export']"> 导出 </el-button>
       </el-col>
       <!--
       <el-col :span="1.5">
-        <el-button type="success" plain icon="Promotion" :disabled="single" @click="handleSubmit" v-hasPermi="['pu:requisition:edit']">
+        <el-button type="success" plain icon="Promotion" :disabled="single" @click="handleSubmit()" v-hasPermi="['pu:requisition:edit']">
           提交
         </el-button>
       </el-col>
       -->
       <!--
       <el-col :span="1.5">
-        <el-button type="primary" plain icon="Check" :disabled="single" @click="handleApprove" v-hasPermi="['pu:requisition:edit']"> 审批 </el-button>
+        <el-button type="primary" plain icon="Check" :disabled="single" @click="handleApprove()" v-hasPermi="['pu:requisition:edit']"> 审批 </el-button>
       </el-col>
       -->
       <el-col :span="1.5">
-        <el-button type="success" plain icon="Position" :disabled="single" @click="handleConvert" v-hasPermi="['pu:requisition:edit']">
+        <el-button type="success" plain icon="Position" :disabled="single" @click="handleConvert()" v-hasPermi="['pu:requisition:edit']">
           转单
         </el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="warning" plain icon="Download" @click="handleGenerateFromLowStock" v-hasPermi="['pu:requisition:add']">
+        <el-button type="warning" plain icon="Download" @click="handleGenerateFromLowStock()" v-hasPermi="['pu:requisition:add']">
           低库存生成
         </el-button>
       </el-col>
@@ -104,109 +104,107 @@
 
 <script setup lang="ts" name="PurchaseRequisition">
 // 导入采购请购单相关的API函数
-import { listPurchaseRequisition, delPurchaseRequisition, convertPurchaseRequisition, generateFromLowStock } from '@/api/erp/pu/requisition';
+import {
+  listPurchaseRequisition,
+  getPurchaseRequisition,
+  addPurchaseRequisition,
+  updatePurchaseRequisition,
+  delPurchaseRequisition,
+  convertPurchaseRequisition,
+  generateFromLowStock
+} from '@/api/erp/pu/requisition';
+import { useRouter } from 'vue-router';
+import type { FormInstance } from 'element-plus';
+import { useCrud } from '@/composables/useCrud';
 
+const router = useRouter();
 // 获取当前实例并获取字典数据
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { pu_purchase_requisition_status } = toRefs<any>(proxy.useDict('pu_purchase_requisition_status'));
 
-// 定义响应式数据
-const requisitionList = ref([]); // 采购请购单列表
-const loading = ref(true); // 加载状态
-const showSearch = ref(true); // 显示搜索区域
-const ids = ref([]); // 选中的ID数组
-const single = ref(true); // 单选状态
-const multiple = ref(true); // 多选状态
-const total = ref(0); // 总记录数
-
 // 查询参数
-const data = reactive({
-  queryParams: {
-    pageNum: 1,
-    pageSize: 10,
-    requisitionNo: null,
-    requisitionName: null,
-    status: null
-  }
+const queryParams = ref({
+  pageNum: 1,
+  pageSize: 10,
+  requisitionNo: null,
+  requisitionName: null,
+  status: null
 });
-const { queryParams } = toRefs(data);
 
-/**
- * 获取采购请购单列表
- */
-function getList() {
-  loading.value = true;
-  listPurchaseRequisition(queryParams.value).then((res: any) => {
-    requisitionList.value = res.rows;
-    total.value = res.total;
-    loading.value = false;
-  });
-}
+// 列表骨架（新增/修改/查看为路由表单页，保留本地 router.push 跳转逻辑）
+const {
+  loading,
+  list: requisitionList,
+  total,
+  ids,
+  single,
+  multiple,
+  showSearch,
+  getList,
+  handleQuery,
+  handleDelete,
+  handleExport,
+  handleSelectionChange
+} = useCrud({
+  apis: {
+    list: listPurchaseRequisition,
+    get: getPurchaseRequisition,
+    add: addPurchaseRequisition,
+    update: updatePurchaseRequisition,
+    del: delPurchaseRequisition
+  },
+  idField: 'requisitionId',
+  entityName: '采购申请',
+  formRef: ref<FormInstance>(),
+  queryParams,
+  initForm: () => ({}),
+  exportUrl: '/erp/pu/requisition/export',
+  exportFileName: 'pu_requisition'
+});
 
-/**
- * 搜索按钮操作
- */
-function handleQuery() {
-  queryParams.value.pageNum = 1;
-  getList();
-}
-
-/**
- * 重置按钮操作
- */
+/** 重置按钮操作 */
 function resetQuery() {
   proxy.resetForm('queryRef');
   handleQuery();
 }
 
-/**
- * 多选框选中数据
- */
-function handleSelectionChange(selection: any[]) {
-  ids.value = selection.map((i: any) => i.requisitionId);
-  single.value = selection.length != 1;
-  multiple.value = !selection.length;
-}
-
-/**
- * 新增按钮操作
- */
+/** 新增按钮操作 */
 function handleAdd() {
-  proxy.$router.push({ path: '/erp/pu/requisition/form', query: { action: 'add' } });
+  router.push({ path: '/erp/pu/requisition/form', query: { action: 'add' } });
 }
 
-/**
- * 修改按钮操作
- */
-function handleUpdate() {
-  proxy.$router.push({ path: '/erp/pu/requisition/form', query: { id: ids.value[0], action: 'edit' } });
+/** 修改按钮操作 */
+function handleUpdate(row?: any) {
+  if (!row) {
+    if (ids.value.length !== 1) {
+      proxy.$modal.msgWarning('请选择一条数据进行修改');
+      return;
+    }
+    const selected = requisitionList.value.find((item: any) => item.requisitionId == ids.value[0]);
+    if (!selected) {
+      proxy.$modal.msgWarning('未找到选中的数据');
+      return;
+    }
+    row = selected;
+  }
+  router.push({ path: '/erp/pu/requisition/form', query: { id: row.requisitionId, action: 'edit' } });
 }
 
-/**
- * 查看按钮操作
- */
-function handleView() {
-  proxy.$router.push({ path: '/erp/pu/requisition/form', query: { id: ids.value[0], action: 'view' } });
-}
-
-/**
- * 删除按钮操作
- */
-function handleDelete() {
-  proxy.$modal
-    .confirm('是否确认删除采购申请?')
-    .then(() => delPurchaseRequisition(ids.value))
-    .then(() => {
-      getList();
-      proxy.$modal.msgSuccess('删除成功');
-    });
-}
-
-/**
- * 导出按钮操作
- */
-function handleExport() {
-  proxy.download('/erp/pu/requisition/export', { ...queryParams.value }, `pu_requisition_${Date.now()}.xlsx`);
+/** 查看按钮操作 */
+function handleView(row?: any) {
+  if (!row) {
+    if (ids.value.length !== 1) {
+      proxy.$modal.msgWarning('请选择一条数据进行查看');
+      return;
+    }
+    const selected = requisitionList.value.find((item: any) => item.requisitionId == ids.value[0]);
+    if (!selected) {
+      proxy.$modal.msgWarning('未找到选中的数据');
+      return;
+    }
+    row = selected;
+  }
+  router.push({ path: '/erp/pu/requisition/form', query: { id: row.requisitionId, action: 'view' } });
 }
 
 /**

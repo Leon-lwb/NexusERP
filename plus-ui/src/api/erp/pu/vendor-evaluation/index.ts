@@ -13,7 +13,7 @@ const BASE = '/erp/pu/vendor-evaluation';
  * @param query 供应商评估查询条件
  * @returns 供应商评估列表及总数
  */
-export const listVendorEvaluation = (query: VendorEvaluationQuery): AxiosPromise<{ rows: VendorEvaluationVO[]; total: number }> =>
+export const listVendorEvaluation = (query: VendorEvaluationQuery): AxiosPromise<VendorEvaluationVO[]> =>
   request({
     url: BASE + '/list',
     method: 'get',

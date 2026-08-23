@@ -1,23 +1,33 @@
 <template>
   <div class="app-container">
-    <el-form :inline="true" label-width="90px" class="list-search">
-      <el-form-item label="事务类型">
-        <el-select v-model="queryParams.txType" placeholder="全部" clearable style="width: 160px" @change="getList">
-          <el-option label="采购入库" value="RECEIVE_IN" />
-          <el-option label="生产领料" value="PRODUCTION_ISSUE" />
-          <el-option label="销售出库" value="SALES_OUT" />
-          <el-option label="杂项入库" value="MISC_IN" />
-          <el-option label="杂项出库" value="MISC_OUT" />
-        </el-select>
-      </el-form-item>
-      <el-form-item>
-        <el-button type="primary" icon="Search" @click="getList">查询</el-button>
-        <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-      </el-form-item>
-      <el-form-item style="float: right">
-        <el-button type="warning" icon="Money" :loading="provisioning" @click="doProvision">期间暂估</el-button>
-      </el-form-item>
+    <el-form :model="queryParams" ref="queryRef" v-show="showSearch" label-width="90px" class="list-search">
+      <el-row :gutter="16">
+        <el-col :span="6">
+          <el-form-item label="事务类型" prop="txType">
+            <el-select v-model="queryParams.txType" placeholder="全部" clearable style="width: 100%" @change="getList()">
+              <el-option label="采购入库" value="RECEIVE_IN" />
+              <el-option label="生产领料" value="PRODUCTION_ISSUE" />
+              <el-option label="销售出库" value="SALES_OUT" />
+              <el-option label="杂项入库" value="MISC_IN" />
+              <el-option label="杂项出库" value="MISC_OUT" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :span="6" :offset="12" class="search-actions">
+          <el-form-item>
+            <el-button type="primary" icon="Search" @click="handleQuery()">查询</el-button>
+            <el-button icon="Refresh" @click="resetQuery()">重置</el-button>
+          </el-form-item>
+        </el-col>
+      </el-row>
     </el-form>
+
+    <el-row :gutter="10" class="mb8">
+      <el-col :span="1.5">
+        <el-button type="warning" plain icon="Money" :loading="provisioning" @click="doProvision()">期间暂估</el-button>
+      </el-col>
+      <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
+    </el-row>
 
     <el-alert
       title="库存流水成本过账:采购入库借存货/贷应付暂估,出库(领料/销售/杂项)借成本/贷存货。已过账流水不可重复过账(幂等)。"
@@ -67,35 +77,42 @@
 
 <script setup lang="ts" name="FinCostIndex">
 import { costProvision, listStockTx, postCostTx } from '@/api/erp/fin/cost';
+import type { FormInstance } from 'element-plus';
+import { useCrud } from '@/composables/useCrud';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 
-const dataList = ref<any[]>([]);
-const loading = ref(false);
-const total = ref(0);
 const provisioning = ref(false);
 
+// 成本过账为只读列表页（无新增/修改/删除），以下占位仅为满足 useCrud 的 API 签名，不会被调用
+const formRef = ref<FormInstance>();
+const readonlyApi = () => Promise.resolve({ data: {} as any });
+
 const queryParams = ref({ pageNum: 1, pageSize: 10, txType: '' });
+
+const {
+  loading,
+  list: dataList,
+  total,
+  showSearch,
+  getList,
+  handleQuery
+} = useCrud({
+  apis: { list: listStockTx, get: readonlyApi, add: readonlyApi, update: readonlyApi, del: readonlyApi },
+  idField: 'txId',
+  entityName: '成本流水',
+  formRef,
+  queryParams,
+  initForm: () => ({})
+});
 
 function fmt(v: number | undefined | null) {
   return Number(v || 0).toFixed(2);
 }
 
-function getList() {
-  loading.value = true;
-  listStockTx(queryParams.value)
-    .then((response) => {
-      dataList.value = response.rows;
-      total.value = response.total;
-    })
-    .finally(() => {
-      loading.value = false;
-    });
-}
-
 function resetQuery() {
-  queryParams.value = { pageNum: 1, pageSize: 10, txType: '' };
-  getList();
+  proxy.resetForm('queryRef');
+  handleQuery();
 }
 
 function doPost(row: any) {
@@ -125,7 +142,5 @@ function doProvision() {
     .catch(() => {});
 }
 
-onMounted(() => {
-  getList();
-});
+getList();
 </script>

@@ -1,121 +1,118 @@
 <template>
-  <div class="p-2">
+  <div class="app-container">
     <!-- 搜索区域 -->
-    <el-card shadow="never" class="mb-2">
-      <el-form :model="queryParams" ref="queryFormRef" label-width="100px" class="list-search">
-        <el-row :gutter="16">
-          <el-col :span="6">
-            <el-form-item label="合同编号" prop="contractNo">
-              <el-input v-model="queryParams.contractNo" placeholder="请输入合同编号" clearable @keyup.enter="handleQuery" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="6">
-            <el-form-item label="合同名称" prop="contractName">
-              <el-input v-model="queryParams.contractName" placeholder="请输入合同名称" clearable @keyup.enter="handleQuery" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="6">
-            <el-form-item label="供应商" prop="vendorName">
-              <el-input v-model="queryParams.vendorName" placeholder="请输入供应商名称" clearable @keyup.enter="handleQuery" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="6">
-            <el-form-item label="合同状态" prop="status">
-              <el-select v-model="queryParams.status" placeholder="请选择状态" clearable style="width: 100%">
-                <el-option v-for="item in statusOptions" :key="item.value" :label="item.label" :value="item.value" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="6">
-            <el-form-item label="合同类型" prop="contractType">
-              <el-select v-model="queryParams.contractType" placeholder="请选择类型" clearable style="width: 100%">
-                <el-option label="框架合同" value="FRAMEWORK" />
-                <el-option label="现货合同" value="SPOT" />
-                <el-option label="服务合同" value="SERVICE" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="6" :offset="12" class="search-actions">
-            <el-form-item>
-              <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-              <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-            </el-form-item>
-          </el-col>
-        </el-row>
-      </el-form>
-    </el-card>
+    <el-form :model="queryParams" ref="queryRef" v-show="showSearch" label-width="100px" class="list-search">
+      <el-row :gutter="16">
+        <el-col :span="6">
+          <el-form-item label="合同编号" prop="contractNo">
+            <el-input v-model="queryParams.contractNo" placeholder="请输入合同编号" clearable @keyup.enter="handleQuery()" />
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="合同名称" prop="contractName">
+            <el-input v-model="queryParams.contractName" placeholder="请输入合同名称" clearable @keyup.enter="handleQuery()" />
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="供应商" prop="vendorName">
+            <el-input v-model="queryParams.vendorName" placeholder="请输入供应商名称" clearable @keyup.enter="handleQuery()" />
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="合同状态" prop="status">
+            <el-select v-model="queryParams.status" placeholder="请选择状态" clearable style="width: 100%">
+              <el-option v-for="item in statusOptions" :key="item.value" :label="item.label" :value="item.value" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="合同类型" prop="contractType">
+            <el-select v-model="queryParams.contractType" placeholder="请选择类型" clearable style="width: 100%">
+              <el-option label="框架合同" value="FRAMEWORK" />
+              <el-option label="现货合同" value="SPOT" />
+              <el-option label="服务合同" value="SERVICE" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :span="6" :offset="12" class="search-actions">
+          <el-form-item>
+            <el-button type="primary" icon="Search" @click="handleQuery()">搜索</el-button>
+            <el-button icon="Refresh" @click="resetQuery()">重置</el-button>
+          </el-form-item>
+        </el-col>
+      </el-row>
+    </el-form>
 
     <!-- 操作区域 -->
-    <el-card shadow="never">
-      <template #header>
-        <el-row :gutter="10">
-          <el-col :span="1.5">
-            <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['pu:contract:add']">新增</el-button>
-          </el-col>
-          <el-col :span="1.5">
-            <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['pu:contract:export']">导出</el-button>
-          </el-col>
-        </el-row>
-      </template>
+    <el-row :gutter="10" class="mb8">
+      <el-col :span="1.5">
+        <el-button type="primary" plain icon="Plus" @click="handleAdd()" v-hasPermi="['pu:contract:add']">新增</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button type="warning" plain icon="Download" @click="handleExport()" v-hasPermi="['pu:contract:export']">导出</el-button>
+      </el-col>
+      <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
+    </el-row>
 
-      <!-- 数据表格 -->
-      <el-table v-loading="loading" :data="contractList" show-overflow-tooltip>
-        <el-table-column label="序号" type="index" align="center" />
-        <el-table-column label="合同编号" align="center" prop="contractNo" />
-        <el-table-column label="合同名称" align="center" prop="contractName" min-width="120" show-overflow-tooltip />
-        <el-table-column label="供应商" align="center" prop="vendorName" min-width="120" show-overflow-tooltip />
-        <!-- 技术债:合同类型为硬编码映射,暂无对应字典,待补字典后改 dict-tag -->
-        <el-table-column label="合同类型" align="center" prop="contractType">
-          <template #default="scope">
-            <span v-if="scope.row.contractType === 'FRAMEWORK'">框架合同</span>
-            <span v-else-if="scope.row.contractType === 'SPOT'">现货合同</span>
-            <span v-else-if="scope.row.contractType === 'SERVICE'">服务合同</span>
-            <span v-else>{{ scope.row.contractType }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="合同金额" align="right" prop="totalAmount" />
-        <el-table-column label="签订日期" align="center" prop="signDate">
-          <template #default="scope">
-            <span>{{ scope.row.signDate ? scope.row.signDate.substring(0, 10) : '' }}</span>
-          </template>
-        </el-table-column>
-        <!-- 技术债:合同状态为硬编码 el-tag,暂无对应字典,待补字典后改 dict-tag -->
-        <el-table-column label="状态" align="center" prop="status">
-          <template #default="scope">
-            <el-tag :type="getStatusType(scope.row.status)">{{ getStatusLabel(scope.row.status) }}</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
-          <template #default="scope">
-            <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
-            <el-button
-              link
-              type="primary"
-              icon="Edit"
-              @click="handleUpdate(scope.row)"
-              v-if="scope.row.status === 'DRAFT' || scope.row.status === 'REJECTED'"
-              v-hasPermi="['pu:contract:edit']"
-              >编辑</el-button
-            >
-            <el-button
-              link
-              type="danger"
-              icon="Delete"
-              @click="handleDelete(scope.row)"
-              v-if="scope.row.status === 'DRAFT'"
-              v-hasPermi="['pu:contract:remove']"
-              >删除</el-button
-            >
-          </template>
-        </el-table-column>
-      </el-table>
+    <!-- 数据表格 -->
+    <el-table v-loading="loading" :data="contractList" @selection-change="handleSelectionChange" show-overflow-tooltip>
+      <el-table-column type="selection" width="55" align="center" />
+      <el-table-column label="序号" type="index" align="center" />
+      <el-table-column label="合同编号" align="center" prop="contractNo" />
+      <el-table-column label="合同名称" align="center" prop="contractName" min-width="120" show-overflow-tooltip />
+      <el-table-column label="供应商" align="center" prop="vendorName" min-width="120" show-overflow-tooltip />
+      <!-- 技术债:合同类型为硬编码映射,暂无对应字典,待补字典后改 dict-tag -->
+      <el-table-column label="合同类型" align="center" prop="contractType">
+        <template #default="scope">
+          <span v-if="scope.row.contractType === 'FRAMEWORK'">框架合同</span>
+          <span v-else-if="scope.row.contractType === 'SPOT'">现货合同</span>
+          <span v-else-if="scope.row.contractType === 'SERVICE'">服务合同</span>
+          <span v-else>{{ scope.row.contractType }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="合同金额" align="right" prop="totalAmount" />
+      <el-table-column label="签订日期" align="center" prop="signDate">
+        <template #default="scope">
+          <span>{{ scope.row.signDate ? scope.row.signDate.substring(0, 10) : '' }}</span>
+        </template>
+      </el-table-column>
+      <!-- 技术债:合同状态为硬编码 el-tag,暂无对应字典,待补字典后改 dict-tag -->
+      <el-table-column label="状态" align="center" prop="status">
+        <template #default="scope">
+          <el-tag :type="getStatusType(scope.row.status)">{{ getStatusLabel(scope.row.status) }}</el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
+        <template #default="scope">
+          <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
+          <el-button
+            link
+            type="primary"
+            icon="Edit"
+            @click="handleUpdate(scope.row)"
+            v-if="scope.row.status === 'DRAFT' || scope.row.status === 'REJECTED'"
+            v-hasPermi="['pu:contract:edit']"
+            >编辑</el-button
+          >
+          <el-button
+            link
+            type="danger"
+            icon="Delete"
+            @click="handleDelete(scope.row)"
+            v-if="scope.row.status === 'DRAFT'"
+            v-hasPermi="['pu:contract:remove']"
+            >删除</el-button
+          >
+        </template>
+      </el-table-column>
+    </el-table>
 
-      <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
-    </el-card>
+    <!-- 分页组件 -->
+    <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
     <!-- 新增/修改对话框 -->
-    <el-dialog :title="dialogTitle" v-model="dialogVisible" width="1200px" append-to-body>
-      <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
+    <el-dialog :title="title" v-model="open" width="1200px" append-to-body>
+      <el-form ref="formRef" :model="form" :rules="rules" label-width="100px" :disabled="isViewMode">
         <el-row :gutter="20">
           <el-col :span="8">
             <el-form-item label="合同编号" prop="contractNo">
@@ -129,9 +126,9 @@
           </el-col>
           <el-col :span="8">
             <el-form-item label="供应商" prop="vendorId">
-              <el-input v-model="form.vendorName" placeholder="请选择供应商" readonly @click="openVendorDialog">
+              <el-input v-model="form.vendorName" placeholder="请选择供应商" readonly @click="openVendorDialog()">
                 <template #append>
-                  <el-button icon="Search" @click="openVendorDialog" />
+                  <el-button icon="Search" @click="openVendorDialog()" />
                 </template>
               </el-input>
             </el-form-item>
@@ -255,30 +252,27 @@
             </template>
           </el-table-column>
         </el-table>
-        <el-button class="mt-2" type="primary" plain icon="Plus" @click="addLine">添加明细行</el-button>
+        <el-button class="mt-2" type="primary" plain icon="Plus" @click="addLine()">添加明细行</el-button>
       </el-form>
-
       <template #footer>
-        <el-button @click="dialogVisible = false">取 消</el-button>
-        <el-button type="primary" @click="submitForm">确 定</el-button>
+        <div class="dialog-footer">
+          <el-button type="primary" @click="submitForm" v-if="!isViewMode">确 定</el-button>
+          <el-button @click="cancel">{{ isViewMode ? '关 闭' : '取 消' }}</el-button>
+        </div>
       </template>
     </el-dialog>
   </div>
 </template>
 
 <script setup name="PuContract" lang="ts">
-import { ref, reactive } from 'vue';
 import { listContract, getContract, addContract, updateContract, delContract } from '@/api/erp/pu/contract';
-import { ElMessage, ElMessageBox } from 'element-plus';
+import type { FormInstance } from 'element-plus';
+import { useCrud } from '@/composables/useCrud';
 
-const loading = ref(false);
-const total = ref(0);
-const contractList = ref([]);
-const dialogVisible = ref(false);
-const dialogTitle = ref('');
-const queryFormRef = ref();
-const formRef = ref();
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
+const formRef = ref<FormInstance>();
 
+// 合同状态选项（暂无对应字典，硬编码）
 const statusOptions = [
   { value: 'DRAFT', label: '草稿' },
   { value: 'APPROVING', label: '审批中' },
@@ -289,42 +283,74 @@ const statusOptions = [
   { value: 'REJECTED', label: '已驳回' }
 ];
 
-const queryParams = reactive({
+// 查询参数
+const queryParams = ref({
+  pageNum: 1,
+  pageSize: 10,
   contractNo: undefined,
   contractName: undefined,
   vendorName: undefined,
   status: undefined,
-  contractType: undefined,
-  pageNum: 1,
-  pageSize: 10
+  contractType: undefined
 });
 
-const initForm = () => ({
-  contractId: undefined,
-  contractNo: undefined,
-  contractName: undefined,
-  vendorId: undefined,
-  vendorCode: undefined,
-  vendorName: undefined,
-  contractType: undefined,
-  signDate: undefined,
-  effectiveDate: undefined,
-  expiryDate: undefined,
-  totalAmount: undefined,
-  currency: 'CNY',
-  paymentTerms: undefined,
-  status: 'DRAFT',
-  selectFlowId: undefined,
-  remark: undefined,
-  puContractLineList: []
-});
-
-const form = ref(initForm());
-
+// 表单校验规则
 const rules = {
   contractName: [{ required: true, message: '合同名称不能为空', trigger: 'blur' }]
 };
 
+const {
+  loading,
+  list: contractList,
+  total,
+  open,
+  isViewMode,
+  title,
+  ids,
+  single,
+  multiple,
+  showSearch,
+  form,
+  getList,
+  handleQuery,
+  handleAdd,
+  handleUpdate,
+  handleView,
+  submitForm,
+  cancel,
+  handleDelete,
+  handleExport,
+  handleSelectionChange
+} = useCrud({
+  apis: { list: listContract, get: getContract, add: addContract, update: updateContract, del: delContract },
+  idField: 'contractId',
+  entityName: '采购合同',
+  formRef,
+  queryParams,
+  initForm: () => ({
+    contractId: undefined,
+    contractNo: undefined,
+    contractName: undefined,
+    vendorId: undefined,
+    vendorCode: undefined,
+    vendorName: undefined,
+    contractType: undefined,
+    signDate: undefined,
+    effectiveDate: undefined,
+    expiryDate: undefined,
+    totalAmount: undefined,
+    currency: 'CNY',
+    paymentTerms: undefined,
+    status: 'DRAFT',
+    selectFlowId: undefined,
+    remark: undefined,
+    puContractLineList: []
+  }),
+  exportUrl: 'erp/pu/contract/export',
+  exportFileName: 'pu_contract'
+});
+
+/** 获取状态标签类型 */
 const getStatusType = (status: string): 'success' | 'warning' | 'danger' | 'info' | 'primary' => {
   const map: Record<string, 'success' | 'warning' | 'danger' | 'info' | 'primary'> = {
     DRAFT: 'info',
@@ -338,6 +364,7 @@ const getStatusType = (status: string): 'success' | 'warning' | 'danger' | 'info
   return map[status] || 'info';
 };
 
+/** 获取状态标签文本 */
 const getStatusLabel = (status: string) => {
   const map: Record<string, string> = {
     DRAFT: '草稿',
@@ -351,72 +378,14 @@ const getStatusLabel = (status: string) => {
   return map[status] || status;
 };
 
-const getList = async () => {
-  loading.value = true;
-  try {
-    const res = await listContract(queryParams);
-    contractList.value = res.rows;
-    total.value = res.total;
-  } finally {
-    loading.value = false;
-  }
-};
-
-const handleQuery = () => {
-  queryParams.pageNum = 1;
-  getList();
-};
-
-const resetQuery = () => {
-  queryFormRef.value?.resetFields();
+/** 重置搜索 */
+function resetQuery() {
+  proxy.resetForm('queryRef');
   handleQuery();
-};
+}
 
-const handleAdd = () => {
-  form.value = initForm();
-  dialogTitle.value = '新增采购合同';
-  dialogVisible.value = true;
-};
-
-const handleUpdate = async (row: any) => {
-  const res = await getContract(row.contractId);
-  form.value = res.data;
-  dialogTitle.value = '修改采购合同';
-  dialogVisible.value = true;
-};
-
-const handleView = async (row: any) => {
-  const res = await getContract(row.contractId);
-  form.value = res.data;
-  dialogTitle.value = '查看采购合同';
-  dialogVisible.value = true;
-};
-
-const handleDelete = async (row: any) => {
-  await ElMessageBox.confirm('是否确认删除合同【' + row.contractNo + '】？', '提示');
-  await delContract([row.contractId]);
-  ElMessage.success('删除成功');
-  getList();
-};
-
-const handleExport = () => {
-  // Export logic
-};
-
-const submitForm = async () => {
-  await formRef.value?.validate();
-  if (form.value.contractId) {
-    await updateContract(form.value);
-    ElMessage.success('修改成功');
-  } else {
-    await addContract(form.value);
-    ElMessage.success('新增成功');
-  }
-  dialogVisible.value = false;
-  getList();
-};
-
-const addLine = () => {
+/** 添加明细行 */
+function addLine() {
   form.value.puContractLineList.push({
     lineId: undefined,
     contractId: undefined,
@@ -432,20 +401,23 @@ const addLine = () => {
     sortOrder: form.value.puContractLineList.length + 1,
     remark: undefined
   });
-};
+}
 
-const removeLine = (index: number) => {
+/** 删除明细行 */
+function removeLine(index: number) {
   form.value.puContractLineList.splice(index, 1);
-};
+}
 
-const calcLineAmount = (row: any) => {
+/** 计算行金额 */
+function calcLineAmount(row: any) {
   row.lineAmount = (row.unitPrice || 0) * (row.quantity || 0);
-};
+}
 
-const openVendorDialog = () => {
+/** 打开供应商选择弹窗（待集成） */
+function openVendorDialog() {
   // 供应商选择弹窗逻辑（可复用现有组件）
-  ElMessage.info('供应商选择弹窗待集成');
-};
+  proxy.$modal.msgInfo('供应商选择弹窗待集成');
+}
 
 getList();
 </script>

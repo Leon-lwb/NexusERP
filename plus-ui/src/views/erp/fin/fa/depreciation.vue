@@ -1,15 +1,21 @@
 <template>
   <div class="app-container">
-    <el-form :inline="true" label-width="90px" class="list-search">
-      <el-form-item label="会计期间">
-        <el-select v-model="periodId" placeholder="请选择期间" filterable style="width: 200px" @change="onPeriodChange">
-          <el-option v-for="p in periodList" :key="p.periodId" :label="p.periodName" :value="p.periodId" />
-        </el-select>
-      </el-form-item>
-      <el-form-item>
-        <el-button type="primary" icon="View" @click="loadPlan">计划预览</el-button>
-        <el-button type="warning" icon="RefreshRight" :loading="running" @click="doRun">计提并过账</el-button>
-      </el-form-item>
+    <el-form :model="queryParams" ref="queryRef" label-width="90px" class="list-search">
+      <el-row :gutter="16">
+        <el-col :span="6">
+          <el-form-item label="会计期间" prop="periodId">
+            <el-select v-model="queryParams.periodId" placeholder="请选择期间" filterable style="width: 100%" @change="onPeriodChange">
+              <el-option v-for="p in periodList" :key="p.periodId" :label="p.periodName" :value="p.periodId" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :span="6" :offset="12" class="search-actions">
+          <el-form-item>
+            <el-button type="primary" icon="View" @click="loadPlan()">计划预览</el-button>
+            <el-button type="warning" icon="RefreshRight" :loading="running" @click="doRun()">计提并过账</el-button>
+          </el-form-item>
+        </el-col>
+      </el-row>
     </el-form>
 
     <el-alert
@@ -65,19 +71,35 @@
 <script setup lang="ts" name="FinFaDepreciation">
 import { depreciationPlan, listDepreciation, runDepreciation, FaDepreciationVO } from '@/api/erp/fin/fa';
 import { listPeriod } from '@/api/erp/fin/gl/period';
+import type { FormInstance } from 'element-plus';
+import { useCrud } from '@/composables/useCrud';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 
 const periodList = ref<any[]>([]);
-const periodId = ref<number>();
-const loading = ref(false);
 const running = ref(false);
 const activeTab = ref('plan');
 const planList = ref<FaDepreciationVO[]>([]);
-const dataList = ref<FaDepreciationVO[]>([]);
-const total = ref(0);
 
-const queryParams = ref({ pageNum: 1, pageSize: 10 });
+// 折旧记录为只读列表(计提通过"计提并过账"批量执行),以下占位仅为满足 useCrud 的 API 签名,不会被调用
+const formRef = ref<FormInstance>();
+const readonlyApi = () => Promise.resolve({ data: {} as any });
+
+const queryParams = ref({ pageNum: 1, pageSize: 10, periodId: undefined as number | undefined });
+
+const {
+  loading,
+  list: dataList,
+  total,
+  getList: queryHistoryList
+} = useCrud({
+  apis: { list: listDepreciation, get: readonlyApi, add: readonlyApi, update: readonlyApi, del: readonlyApi },
+  idField: 'depreciationId',
+  entityName: '折旧记录',
+  formRef,
+  queryParams,
+  initForm: () => ({})
+});
 
 const planTotal = computed(() => planList.value.reduce((s, x) => s + Number(x.depreciationAmount || 0), 0));
 
@@ -88,11 +110,17 @@ function fmt(v: number | undefined | null) {
 function loadPeriods() {
   listPeriod({ pageNum: 1, pageSize: 200 } as any).then((response) => {
     periodList.value = response.rows;
-    if (periodList.value.length > 0 && !periodId.value) {
-      periodId.value = periodList.value[0].periodId;
+    if (periodList.value.length > 0 && !queryParams.value.periodId) {
+      queryParams.value.periodId = periodList.value[0].periodId;
       loadPlan();
     }
   });
+}
+
+/** 历史记录按期间过滤,未选期间时跳过查询 */
+function getList() {
+  if (!queryParams.value.periodId) return;
+  return queryHistoryList();
 }
 
 function onPeriodChange() {
@@ -109,9 +137,9 @@ function onTabChange() {
 }
 
 function loadPlan() {
-  if (!periodId.value) return;
+  if (!queryParams.value.periodId) return;
   loading.value = true;
-  depreciationPlan(periodId.value)
+  depreciationPlan(queryParams.value.periodId)
     .then((response) => {
       planList.value = response.data || [];
     })
@@ -120,26 +148,13 @@ function loadPlan() {
     });
 }
 
-function getList() {
-  if (!periodId.value) return;
-  loading.value = true;
-  listDepreciation({ ...queryParams.value, periodId: periodId.value })
-    .then((response) => {
-      dataList.value = response.rows;
-      total.value = response.total;
-    })
-    .finally(() => {
-      loading.value = false;
-    });
-}
-
 function doRun() {
-  if (!periodId.value) return;
+  if (!queryParams.value.periodId) return;
   proxy.$modal
     .confirm('确认按所选期间计提折旧并过账?同期间重复执行将幂等跳过。')
     .then(() => {
       running.value = true;
-      return runDepreciation(periodId.value);
+      return runDepreciation(queryParams.value.periodId);
     })
     .then(() => {
       proxy.$modal.msgSuccess('计提完成');

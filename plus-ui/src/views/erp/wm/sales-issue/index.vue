@@ -45,8 +45,8 @@
         </el-col>
         <el-col :span="6" :offset="6" class="search-actions">
           <el-form-item>
-            <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+            <el-button type="primary" icon="Search" @click="handleQuery()">搜索</el-button>
+            <el-button icon="Refresh" @click="resetQuery()">重置</el-button>
           </el-form-item>
         </el-col>
       </el-row>
@@ -55,18 +55,18 @@
     <!-- 操作按钮区域 -->
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
-        <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['wm:salesIssue:add']"> 新增 </el-button>
+        <el-button type="primary" plain icon="Plus" @click="handleAdd()" v-hasPermi="['wm:salesIssue:add']"> 新增 </el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['wm:salesIssue:edit']"> 修改 </el-button>
+        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate()" v-hasPermi="['wm:salesIssue:edit']"> 修改 </el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['wm:salesIssue:remove']">
+        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete()" v-hasPermi="['wm:salesIssue:remove']">
           删除
         </el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['wm:salesIssue:export']"> 导出 </el-button>
+        <el-button type="warning" plain icon="Download" @click="handleExport()" v-hasPermi="['wm:salesIssue:export']"> 导出 </el-button>
       </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" />
     </el-row>
@@ -172,6 +172,9 @@
 <script setup lang="ts" name="SalesIssue">
 import {
   listSalesIssue,
+  getSalesIssue,
+  addSalesIssue,
+  updateSalesIssue,
   delSalesIssue,
   confirmSalesIssue,
   completeSalesIssue,
@@ -179,64 +182,60 @@ import {
   getSalesIssueProcId
 } from '@/api/erp/wm/sales-issue';
 import { useRouter } from 'vue-router';
+import type { FormInstance } from 'element-plus';
+import { useCrud } from '@/composables/useCrud';
 
 const router = useRouter();
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { wm_sales_status } = toRefs<any>(proxy.useDict('wm_sales_status'));
 
-const salesIssueList = ref([]);
-const loading = ref(true);
-const showSearch = ref(true);
-const ids = ref([]);
-const single = ref(true);
-const multiple = ref(true);
-const total = ref(0);
 const dateRange = ref([]);
 
-const data = reactive({
-  queryParams: {
-    pageNum: 1,
-    pageSize: 10,
-    issueCode: null,
-    issueName: null,
-    soNo: null,
-    clientName: null,
-    warehouseName: null,
-    status: null,
-    issueDate: null
-  }
+const queryParams = ref({
+  pageNum: 1,
+  pageSize: 10,
+  issueCode: null,
+  issueName: null,
+  soNo: null,
+  clientName: null,
+  warehouseName: null,
+  status: null,
+  issueDate: null
 });
 
-const { queryParams } = toRefs(data);
-
-/** 查询销售出库列表 */
-function getList() {
-  loading.value = true;
-  listSalesIssue(proxy.addDateRange(queryParams.value, dateRange.value)).then((response: any) => {
-    salesIssueList.value = response.rows;
-    total.value = response.total;
-    loading.value = false;
-  });
-}
-
-/** 搜索按钮操作 */
-function handleQuery() {
-  queryParams.value.pageNum = 1;
-  getList();
-}
+// 列表骨架（新增/修改/查看为路由表单页，保留本地 router.push 跳转逻辑）
+const {
+  loading,
+  list: salesIssueList,
+  total,
+  ids,
+  single,
+  multiple,
+  showSearch,
+  getList,
+  handleQuery,
+  handleDelete,
+  handleExport,
+  handleSelectionChange
+} = useCrud({
+  apis: { list: listSalesIssue, get: getSalesIssue, add: addSalesIssue, update: updateSalesIssue, del: delSalesIssue },
+  idField: 'issueId',
+  entityName: '销售出库',
+  formRef: ref<FormInstance>(),
+  queryParams,
+  initForm: () => ({}),
+  exportUrl: '/erp/wm/sales-issue/export',
+  exportFileName: 'sales-issue',
+  beforeList: (query) => {
+    proxy.addDateRange(query, dateRange.value);
+  }
+});
 
 /** 重置按钮操作 */
 function resetQuery() {
   dateRange.value = [];
   proxy.resetForm('queryRef');
   handleQuery();
-}
-
-/** 多选框选中数据 */
-function handleSelectionChange(selection: any[]) {
-  ids.value = selection.map((item: any) => item.issueId);
-  single.value = selection.length !== 1;
-  multiple.value = !selection.length;
 }
 
 /** 新增按钮操作 */
@@ -248,20 +247,42 @@ function handleAdd() {
 }
 
 /** 修改按钮操作 */
-function handleUpdate(row: any) {
-  const issueId = row.issueId || ids.value[0];
+function handleUpdate(row?: any) {
+  if (!row) {
+    if (ids.value.length !== 1) {
+      proxy.$modal.msgWarning('请选择一条数据进行修改');
+      return;
+    }
+    const selected = salesIssueList.value.find((item: any) => item.issueId == ids.value[0]);
+    if (!selected) {
+      proxy.$modal.msgWarning('未找到选中的数据');
+      return;
+    }
+    row = selected;
+  }
   router.push({
     path: '/erp/wm/sales-issue/form',
-    query: { id: issueId, action: 'edit' }
+    query: { id: row.issueId, action: 'edit' }
   });
 }
 
 /** 查看按钮操作 */
-function handleView(row: any) {
-  const issueId = row.issueId;
+function handleView(row?: any) {
+  if (!row) {
+    if (ids.value.length !== 1) {
+      proxy.$modal.msgWarning('请选择一条数据进行查看');
+      return;
+    }
+    const selected = salesIssueList.value.find((item: any) => item.issueId == ids.value[0]);
+    if (!selected) {
+      proxy.$modal.msgWarning('未找到选中的数据');
+      return;
+    }
+    row = selected;
+  }
   router.push({
     path: '/erp/wm/sales-issue/form',
-    query: { id: issueId, action: 'view' }
+    query: { id: row.issueId, action: 'view' }
   });
 }
 
@@ -320,32 +341,6 @@ function handleComplete(row: any) {
       proxy.$modal.msgSuccess('出库完成');
     })
     .catch(() => {});
-}
-
-/** 删除按钮操作 */
-function handleDelete(row: any) {
-  const _issueIds = row.issueId || ids.value;
-  proxy.$modal
-    .confirm('是否确认删除销售出库编号为"' + _issueIds + '"的数据项？')
-    .then(function () {
-      return delSalesIssue(_issueIds);
-    })
-    .then(() => {
-      getList();
-      proxy.$modal.msgSuccess('删除成功');
-    })
-    .catch(() => {});
-}
-
-/** 导出按钮操作 */
-function handleExport() {
-  proxy.download(
-    '/erp/wm/sales-issue/export',
-    {
-      ...queryParams.value
-    },
-    `sales-issue_${new Date().getTime()}.xlsx`
-  );
 }
 
 /** 格式化金额 */

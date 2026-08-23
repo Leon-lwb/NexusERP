@@ -1,26 +1,36 @@
 <template>
   <div class="app-container">
-    <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="68px">
-      <el-form-item label="物料编码" prop="materialCode">
-        <el-input v-model="queryParams.materialCode" placeholder="请输入物料编码" clearable @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item label="物料名称" prop="materialName">
-        <el-input v-model="queryParams.materialName" placeholder="请输入物料名称" clearable @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item label="仓库" prop="warehouseId">
-        <el-select v-model="queryParams.warehouseId" placeholder="请选择仓库" clearable>
-          <el-option v-for="item in warehouseOptions" :key="item.warehouseId" :label="item.warehouseName" :value="item.warehouseId" />
-        </el-select>
-      </el-form-item>
-      <el-form-item>
-        <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-        <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-      </el-form-item>
+    <el-form :model="queryParams" ref="queryRef" v-show="showSearch" label-width="100px" class="list-search">
+      <el-row :gutter="16">
+        <el-col :span="6">
+          <el-form-item label="物料编码" prop="materialCode">
+            <el-input v-model="queryParams.materialCode" placeholder="请输入物料编码" clearable @keyup.enter="handleQuery" />
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="物料名称" prop="materialName">
+            <el-input v-model="queryParams.materialName" placeholder="请输入物料名称" clearable @keyup.enter="handleQuery" />
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="仓库" prop="warehouseId">
+            <el-select v-model="queryParams.warehouseId" placeholder="请选择仓库" clearable style="width: 100%">
+              <el-option v-for="item in warehouseOptions" :key="item.warehouseId" :label="item.warehouseName" :value="item.warehouseId" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :span="6" class="search-actions">
+          <el-form-item>
+            <el-button type="primary" icon="Search" @click="handleQuery()">搜索</el-button>
+            <el-button icon="Refresh" @click="resetQuery()">重置</el-button>
+          </el-form-item>
+        </el-col>
+      </el-row>
     </el-form>
 
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
-        <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['wm:valuation:export']">导出</el-button>
+        <el-button type="warning" plain icon="Download" @click="handleExport()" v-hasPermi="['wm:valuation:export']">导出</el-button>
       </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
@@ -53,56 +63,50 @@
 <script setup lang="ts" name="Valuation">
 import { listValuation } from '@/api/erp/wm/valuation';
 import { listWarehouse } from '@/api/erp/wm/warehouse';
+import type { FormInstance } from 'element-plus';
+import { useCrud } from '@/composables/useCrud';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 
-const valuationList = ref([]);
-const loading = ref(true);
-const showSearch = ref(true);
-const total = ref(0);
+// 库存计价为只读报表页面（无详情/新增/修改/删除接口），占位仅为满足 useCrud 的 API 签名，不会被调用
+const readonlyApi = () => Promise.resolve({ data: {} as any });
+
 const warehouseOptions = ref([]);
 
-const data = reactive({
-  queryParams: {
-    pageNum: 1,
-    pageSize: 10,
-    materialCode: null,
-    materialName: null,
-    warehouseId: null
-  }
+const queryParams = ref({
+  pageNum: 1,
+  pageSize: 10,
+  materialCode: null,
+  materialName: null,
+  warehouseId: null
 });
 
-const { queryParams } = toRefs(data);
+const {
+  loading,
+  list: valuationList,
+  total,
+  showSearch,
+  getList,
+  handleQuery,
+  handleExport
+} = useCrud({
+  apis: { list: listValuation, get: readonlyApi, add: readonlyApi, update: readonlyApi, del: readonlyApi },
+  idField: 'valuationId',
+  entityName: '库存计价',
+  formRef: ref<FormInstance>(),
+  queryParams,
+  initForm: () => ({}),
+  exportUrl: '/erp/wm/valuation/export',
+  exportFileName: 'valuation'
+});
 
-function getList() {
-  loading.value = true;
-  listValuation(queryParams.value).then((response: any) => {
-    valuationList.value = response.rows;
-    total.value = response.total;
-    loading.value = false;
-  });
-}
-
-function handleQuery() {
-  queryParams.value.pageNum = 1;
-  getList();
-}
-
+/** 重置按钮操作 */
 function resetQuery() {
   proxy.resetForm('queryRef');
   handleQuery();
 }
 
-function handleExport() {
-  proxy.download(
-    '/erp/wm/valuation/export',
-    {
-      ...queryParams.value
-    },
-    `valuation_${new Date().getTime()}.xlsx`
-  );
-}
-
+/** 格式化金额 */
 function formatMoney(value: number) {
   if (value === null || value === undefined) return '0.00';
   return value.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');

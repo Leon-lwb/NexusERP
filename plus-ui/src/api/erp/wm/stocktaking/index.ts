@@ -4,7 +4,7 @@ import { StockTakingPlanQuery, StockTakingPlanVO, StockTakingPlanForm } from './
 
 const BASE = '/erp/wm/stocktaking';
 
-export const listStockTakingPlan = (query: StockTakingPlanQuery): AxiosPromise<{ rows: StockTakingPlanVO[]; total: number }> =>
+export const listStockTakingPlan = (query: StockTakingPlanQuery): AxiosPromise<StockTakingPlanVO[]> =>
   request({ url: BASE + '/list', method: 'get', params: query });
 
 export const getStockTakingPlan = (id: string | number): AxiosPromise<StockTakingPlanVO> => request({ url: BASE + '/' + id, method: 'get' });

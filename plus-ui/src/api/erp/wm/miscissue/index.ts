@@ -4,8 +4,7 @@ import { MiscIssueQuery, MiscIssueVO, MiscIssueForm } from './types';
 
 const BASE = '/erp/wm/miscissue';
 
-export const listMiscIssue = (query: MiscIssueQuery): AxiosPromise<{ rows: MiscIssueVO[]; total: number }> =>
-  request({ url: BASE + '/list', method: 'get', params: query });
+export const listMiscIssue = (query: MiscIssueQuery): AxiosPromise<MiscIssueVO[]> => request({ url: BASE + '/list', method: 'get', params: query });
 
 export const getMiscIssue = (id: string | number): AxiosPromise<MiscIssueVO> => request({ url: BASE + '/' + id, method: 'get' });
 

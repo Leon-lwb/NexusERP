@@ -4,12 +4,12 @@
       <el-row :gutter="16">
         <el-col :span="6">
           <el-form-item label="供应商名称" prop="vendorName">
-            <el-input v-model="queryParams.vendorName" placeholder="请输入供应商名称" clearable @keyup.enter="handleQuery" />
+            <el-input v-model="queryParams.vendorName" placeholder="请输入供应商名称" clearable @keyup.enter="handleQuery()" />
           </el-form-item>
         </el-col>
         <el-col :span="6">
           <el-form-item label="评估周期" prop="evalPeriod">
-            <el-input v-model="queryParams.evalPeriod" placeholder="请输入评估周期" clearable @keyup.enter="handleQuery" />
+            <el-input v-model="queryParams.evalPeriod" placeholder="请输入评估周期" clearable @keyup.enter="handleQuery()" />
           </el-form-item>
         </el-col>
         <el-col :span="6">
@@ -21,8 +21,8 @@
         </el-col>
         <el-col :span="6" class="search-actions">
           <el-form-item>
-            <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+            <el-button type="primary" icon="Search" @click="handleQuery()">搜索</el-button>
+            <el-button icon="Refresh" @click="resetQuery()">重置</el-button>
           </el-form-item>
         </el-col>
       </el-row>
@@ -30,20 +30,27 @@
 
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
-        <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['pu:vendorEvaluation:add']"> 新增 </el-button>
+        <el-button type="primary" plain icon="Plus" @click="handleAdd()" v-hasPermi="['pu:vendorEvaluation:add']"> 新增 </el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['pu:vendorEvaluation:remove']">
+        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete()" v-hasPermi="['pu:vendorEvaluation:remove']">
           删除
         </el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="success" plain icon="Calculator" :disabled="single" @click="handleCalculate" v-hasPermi="['pu:vendorEvaluation:calculate']">
+        <el-button
+          type="success"
+          plain
+          icon="Calculator"
+          :disabled="single"
+          @click="handleCalculate()"
+          v-hasPermi="['pu:vendorEvaluation:calculate']"
+        >
           计算评估
         </el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="warning" plain icon="Operation" @click="handleBatchCalculate" v-hasPermi="['pu:vendorEvaluation:batchCalculate']">
+        <el-button type="warning" plain icon="Operation" @click="handleBatchCalculate()" v-hasPermi="['pu:vendorEvaluation:batchCalculate']">
           批量计算
         </el-button>
       </el-col>
@@ -97,76 +104,88 @@
 </template>
 
 <script setup lang="ts" name="VendorEvaluation">
-import { listVendorEvaluation, delVendorEvaluation, calculateVendorEvaluation, batchCalculateAll } from '@/api/erp/pu/vendor-evaluation';
+import {
+  listVendorEvaluation,
+  getVendorEvaluation,
+  addVendorEvaluation,
+  updateVendorEvaluation,
+  delVendorEvaluation,
+  calculateVendorEvaluation,
+  batchCalculateAll
+} from '@/api/erp/pu/vendor-evaluation';
+import { useRouter } from 'vue-router';
+import type { FormInstance } from 'element-plus';
+import { useCrud } from '@/composables/useCrud';
 
+const router = useRouter();
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { pu_vendor_eval_level } = toRefs<any>(proxy.useDict('pu_vendor_eval_level'));
 
-const vendorEvaluationList = ref([]);
-const loading = ref(true);
-const showSearch = ref(true);
-const ids = ref([]);
-const single = ref(true);
-const multiple = ref(true);
-const total = ref(0);
-
-const data = reactive({
-  queryParams: {
-    pageNum: 1,
-    pageSize: 10,
-    vendorName: null,
-    evalPeriod: null,
-    evalLevel: null
-  }
+// 查询参数
+const queryParams = ref({
+  pageNum: 1,
+  pageSize: 10,
+  vendorName: null,
+  evalPeriod: null,
+  evalLevel: null
 });
-const { queryParams } = toRefs(data);
 
-function getList() {
-  loading.value = true;
-  listVendorEvaluation(queryParams.value).then((res: any) => {
-    vendorEvaluationList.value = res.rows;
-    total.value = res.total;
-    loading.value = false;
-  });
+// 当前选中行（计算评估按供应商维度执行，需取选中行的 vendorId 而非评估ID）
+const selectedRow = ref<any>(null);
+
+// 列表骨架（新增/修改/查看为路由表单页，保留本地 router.push 跳转逻辑）
+const {
+  loading,
+  list: vendorEvaluationList,
+  total,
+  ids,
+  single,
+  multiple,
+  showSearch,
+  getList,
+  handleQuery,
+  handleDelete,
+  handleSelectionChange: crudSelectionChange
+} = useCrud({
+  apis: { list: listVendorEvaluation, get: getVendorEvaluation, add: addVendorEvaluation, update: updateVendorEvaluation, del: delVendorEvaluation },
+  idField: 'evaluationId',
+  entityName: '供应商评估',
+  formRef: ref<FormInstance>(),
+  queryParams,
+  initForm: () => ({})
+});
+
+/** 多选框选中数据（在通用逻辑之上记录当前选中行） */
+function handleSelectionChange(selection: any[]) {
+  crudSelectionChange(selection);
+  selectedRow.value = selection.length === 1 ? selection[0] : null;
 }
 
-function handleQuery() {
-  queryParams.value.pageNum = 1;
-  getList();
-}
-
+/** 重置按钮操作 */
 function resetQuery() {
   proxy.resetForm('queryRef');
   handleQuery();
 }
 
-function handleSelectionChange(selection: any[]) {
-  ids.value = selection.map((i: any) => i.evalId);
-  single.value = selection.length != 1;
-  multiple.value = !selection.length;
-}
-
+/** 新增按钮操作 */
 function handleAdd() {
-  proxy.$router.push({ path: '/erp/pu/vendor-evaluation/form', query: { action: 'add' } });
+  router.push({ path: '/erp/pu/vendor-evaluation/form', query: { action: 'add' } });
 }
 
-function handleDelete() {
-  proxy.$modal
-    .confirm('是否确认删除供应商评估?')
-    .then(() => delVendorEvaluation(ids.value))
-    .then(() => {
-      getList();
-      proxy.$modal.msgSuccess('删除成功');
-    });
-}
-
+/** 计算评估（后端按供应商维度重算，取选中行 vendorId） */
 function handleCalculate() {
-  calculateVendorEvaluation(ids.value[0]).then(() => {
+  const vendorId = selectedRow.value?.vendorId;
+  if (vendorId == null) {
+    proxy.$modal.msgWarning('请选择一条评估记录');
+    return;
+  }
+  calculateVendorEvaluation(vendorId).then(() => {
     proxy.$modal.msgSuccess('计算成功');
     getList();
   });
 }
 
+/** 批量计算 */
 function handleBatchCalculate() {
   proxy.$modal
     .confirm('是否确认批量计算所有供应商评估?')
@@ -186,10 +205,10 @@ function getScoreType(score: number): 'success' | 'warning' | 'danger' | 'info' 
 
 function getEvalLevelType(level: string): 'success' | 'warning' | 'danger' | 'info' | 'primary' {
   const typeMap: Record<string, 'success' | 'warning' | 'danger' | 'info' | 'primary'> = {
-    'A': 'success',
-    'B': 'primary',
-    'C': 'warning',
-    'D': 'danger'
+    A: 'success',
+    B: 'primary',
+    C: 'warning',
+    D: 'danger'
   };
   return typeMap[level] || 'info';
 }

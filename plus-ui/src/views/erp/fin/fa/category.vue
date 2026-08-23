@@ -5,13 +5,13 @@
       <el-row :gutter="16">
         <el-col :span="6">
           <el-form-item label="类别名称" prop="categoryName">
-            <el-input v-model="queryParams.categoryName" placeholder="请输入类别名称" clearable @keyup.enter="handleQuery" />
+            <el-input v-model="queryParams.categoryName" placeholder="请输入类别名称" clearable @keyup.enter="handleQuery()" />
           </el-form-item>
         </el-col>
         <el-col :span="6" class="search-actions">
           <el-form-item>
-            <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+            <el-button type="primary" icon="Search" @click="handleQuery()">搜索</el-button>
+            <el-button icon="Refresh" @click="resetQuery()">重置</el-button>
           </el-form-item>
         </el-col>
       </el-row>
@@ -20,7 +20,7 @@
     <!-- 操作按钮区域 -->
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
-        <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['fa:category:add']">新增</el-button>
+        <el-button type="primary" plain icon="Plus" @click="handleAdd()" v-hasPermi="['fa:category:add']">新增</el-button>
       </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
@@ -44,7 +44,7 @@
       </el-table-column>
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="140" :show-overflow-tooltip="false">
         <template #default="scope">
-          <el-button link type="primary" icon="Edit" @click="handleEdit(scope.row)" v-hasPermi="['fa:category:edit']">修改</el-button>
+          <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['fa:category:edit']">修改</el-button>
           <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['fa:category:remove']">删除</el-button>
         </template>
       </el-table-column>
@@ -106,50 +106,63 @@
 </template>
 
 <script setup lang="ts" name="FinFaCategory">
-import { addCategory, delCategory, listCategory, updateCategory, FaAssetCategoryVO } from '@/api/erp/fin/fa';
+import { addCategory, delCategory, getCategory, listCategory, updateCategory, FaAssetCategoryVO } from '@/api/erp/fin/fa';
 import { leafAccounts } from '@/api/erp/fin/gl/account';
 import { AccountVO } from '@/api/erp/fin/gl/account/types';
+import type { FormInstance } from 'element-plus';
+import { useCrud } from '@/composables/useCrud';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { fa_depreciation_method } = toRefs<any>(proxy.useDict('fa_depreciation_method'));
 
-const dataList = ref<FaAssetCategoryVO[]>([]);
-const accountOptions = ref<any[]>([]);
-const loading = ref(true);
-const showSearch = ref(true);
-const total = ref(0);
-const open = ref(false);
-const title = ref('');
-const formRef = ref();
+const formRef = ref<FormInstance>();
+const accountOptions = ref<AccountVO[]>([]);
+// 净残值率以百分比编辑,提交前换算为小数存 salvageValueRate
 const salvageRate = ref(5);
 
 const queryParams = ref({ pageNum: 1, pageSize: 10, categoryName: '' });
-const form = ref<Partial<FaAssetCategoryVO>>({});
+
 const rules = {
   categoryName: [{ required: true, message: '类别名称不能为空', trigger: 'blur' }],
   depreciationMethod: [{ required: true, message: '折旧方法不能为空', trigger: 'change' }],
   usefulLife: [{ required: true, message: '使用年限不能为空', trigger: 'blur' }]
 };
 
+const {
+  loading,
+  list: dataList,
+  total,
+  open,
+  title,
+  showSearch,
+  form,
+  getList,
+  handleQuery,
+  handleAdd,
+  handleUpdate,
+  submitForm,
+  cancel,
+  handleDelete
+} = useCrud<FaAssetCategoryVO, any>({
+  apis: { list: listCategory, get: getCategory, add: addCategory, update: updateCategory, del: delCategory },
+  idField: 'categoryId',
+  entityName: '资产类别',
+  formRef,
+  queryParams,
+  initForm: () => ({ depreciationMethod: 'STRAIGHT_LINE', usefulLife: 120, status: '0', sortOrder: 0 }),
+  onReset: () => {
+    salvageRate.value = 5;
+  },
+  beforeSubmit: (data: FaAssetCategoryVO) => {
+    data.salvageValueRate = Number((salvageRate.value || 0) / 100);
+  },
+  afterLoad: (data: FaAssetCategoryVO) => {
+    salvageRate.value = Number(data.salvageValueRate || 0) * 100;
+  }
+});
+
 function methodLabel(method: string) {
   return ({ STRAIGHT_LINE: '直线法', DOUBLE_DECLINING: '双倍余额递减法', SUM_OF_YEARS: '年数总和法', MANUAL: '手工' } as any)[method] || method;
-}
-
-function getList() {
-  loading.value = true;
-  listCategory(queryParams.value)
-    .then((response) => {
-      dataList.value = response.rows;
-      total.value = response.total;
-    })
-    .finally(() => {
-      loading.value = false;
-    });
-}
-
-function handleQuery() {
-  queryParams.value.pageNum = 1;
-  getList();
 }
 
 function resetQuery() {
@@ -163,57 +176,6 @@ function loadAccounts() {
   });
 }
 
-function reset() {
-  form.value = { depreciationMethod: 'STRAIGHT_LINE', usefulLife: 120, status: '0', sortOrder: 0 };
-  salvageRate.value = 5;
-}
-
-function handleAdd() {
-  reset();
-  open.value = true;
-  title.value = '新增资产类别';
-}
-
-function handleEdit(row: FaAssetCategoryVO) {
-  form.value = { ...row };
-  salvageRate.value = Number(row.salvageValueRate || 0) * 100;
-  open.value = true;
-  title.value = '修改资产类别';
-}
-
-function submitForm() {
-  formRef.value.validate((valid: boolean) => {
-    if (!valid) return;
-    const data = { ...form.value, salvageValueRate: Number((salvageRate.value || 0) / 100) } as any;
-    const action = data.categoryId ? updateCategory(data) : addCategory(data);
-    action
-      .then(() => {
-        proxy.$modal.msgSuccess(data.categoryId ? '修改成功' : '新增成功');
-        open.value = false;
-        getList();
-      })
-      .catch(() => {});
-  });
-}
-
-function cancel() {
-  open.value = false;
-  reset();
-}
-
-function handleDelete(row: FaAssetCategoryVO) {
-  proxy.$modal
-    .confirm(`确认删除类别【${row.categoryName}】?`)
-    .then(() => delCategory([row.categoryId]))
-    .then(() => {
-      proxy.$modal.msgSuccess('删除成功');
-      getList();
-    })
-    .catch(() => {});
-}
-
-onMounted(() => {
-  getList();
-  loadAccounts();
-});
+getList();
+loadAccounts();
 </script>

@@ -16,8 +16,8 @@
         </el-col>
         <el-col :span="6" :offset="6" class="search-actions">
           <el-form-item>
-            <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+            <el-button type="primary" icon="Search" @click="handleQuery()">搜索</el-button>
+            <el-button icon="Refresh" @click="resetQuery()">重置</el-button>
           </el-form-item>
         </el-col>
       </el-row>
@@ -25,19 +25,19 @@
 
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
-        <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['wm:transfer:add']">新增</el-button>
+        <el-button type="primary" plain icon="Plus" @click="handleAdd()" v-hasPermi="['wm:transfer:add']">新增</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['wm:transfer:edit']">修改</el-button>
+        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate()" v-hasPermi="['wm:transfer:edit']">修改</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['wm:transfer:remove']">删除</el-button>
+        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete()" v-hasPermi="['wm:transfer:remove']">删除</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="info" plain icon="View" :disabled="single" @click="handleView" v-hasPermi="['wm:transfer:query']">查看</el-button>
+        <el-button type="info" plain icon="View" :disabled="single" @click="handleView()" v-hasPermi="['wm:transfer:query']">查看</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['wm:transfer:export']">导出</el-button>
+        <el-button type="warning" plain icon="Download" @click="handleExport()" v-hasPermi="['wm:transfer:export']">导出</el-button>
       </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
@@ -116,65 +116,69 @@
 </template>
 
 <script setup lang="ts" name="Transfer">
-import { listTransfer, delTransfer, submitTransferFlow, getTransferProcId, executeTransfer } from '@/api/erp/wm/transfer';
+import {
+  listTransfer,
+  getTransfer,
+  addTransfer,
+  updateTransfer,
+  delTransfer,
+  submitTransferFlow,
+  getTransferProcId,
+  executeTransfer
+} from '@/api/erp/wm/transfer';
 import { useRouter } from 'vue-router';
+import type { FormInstance } from 'element-plus';
+import { useCrud } from '@/composables/useCrud';
 
 const router = useRouter();
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { wm_transfer_status } = toRefs<any>(proxy.useDict('wm_transfer_status'));
 
-const transferList = ref([]);
-const loading = ref(true);
-const showSearch = ref(true);
-const ids = ref([]);
-const single = ref(true);
-const multiple = ref(true);
-const total = ref(0);
-
-const data = reactive({
-  queryParams: {
-    pageNum: 1,
-    pageSize: 10,
-    transferNo: null,
-    status: null
-  }
+const queryParams = ref({
+  pageNum: 1,
+  pageSize: 10,
+  transferNo: null,
+  status: null
 });
 
-const { queryParams } = toRefs(data);
+// 列表骨架（新增/修改/查看为路由表单页，保留本地 router.push 跳转逻辑）
+const {
+  loading,
+  list: transferList,
+  total,
+  ids,
+  single,
+  multiple,
+  showSearch,
+  getList,
+  handleQuery,
+  handleDelete,
+  handleExport,
+  handleSelectionChange
+} = useCrud({
+  apis: { list: listTransfer, get: getTransfer, add: addTransfer, update: updateTransfer, del: delTransfer },
+  idField: 'transferId',
+  entityName: '调拨单',
+  formRef: ref<FormInstance>(),
+  queryParams,
+  initForm: () => ({}),
+  exportUrl: '/erp/wm/transfer/export',
+  exportFileName: 'transfer'
+});
 
-function getList() {
-  loading.value = true;
-  listTransfer(queryParams.value).then((response: any) => {
-    transferList.value = response.rows;
-    total.value = response.total;
-    loading.value = false;
-  });
-}
-
-function handleQuery() {
-  queryParams.value.pageNum = 1;
-  getList();
-}
-
+/** 重置按钮操作 */
 function resetQuery() {
   proxy.resetForm('queryRef');
   handleQuery();
 }
 
-function handleSelectionChange(selection: any[]) {
-  ids.value = selection.map((item: any) => item.transferId);
-  single.value = selection.length != 1;
-  multiple.value = !selection.length;
-}
-
+/** 新增按钮操作 */
 function handleAdd() {
   router.push({ path: '/erp/wm/transfer/form', query: { action: 'add' } });
 }
 
-function handleUpdate(row: any) {
-  if (row && row.type && row instanceof Event) {
-    row = null;
-  }
+/** 修改按钮操作 */
+function handleUpdate(row?: any) {
   if (!row) {
     if (ids.value.length !== 1) {
       proxy.$modal.msgWarning('请选择一条数据进行修改');
@@ -190,10 +194,8 @@ function handleUpdate(row: any) {
   router.push({ path: '/erp/wm/transfer/form', query: { id: row.transferId, action: 'edit' } });
 }
 
-function handleView(row: any) {
-  if (row && row.type && row instanceof Event) {
-    row = null;
-  }
+/** 查看按钮操作 */
+function handleView(row?: any) {
   if (!row) {
     if (ids.value.length !== 1) {
       proxy.$modal.msgWarning('请选择一条数据进行查看');
@@ -250,24 +252,6 @@ function handleExecute(row: any) {
       proxy.$modal.msgSuccess('调拨执行成功');
     })
     .catch(() => {});
-}
-
-function handleDelete(row: any) {
-  const _ids = row.transferId || ids.value;
-  proxy.$modal
-    .confirm('是否确认删除调拨单编号为"' + _ids + '"的数据项？')
-    .then(function () {
-      return delTransfer(_ids);
-    })
-    .then(() => {
-      getList();
-      proxy.$modal.msgSuccess('删除成功');
-    })
-    .catch(() => {});
-}
-
-function handleExport() {
-  proxy.download('/erp/wm/transfer/export', { ...queryParams.value }, `transfer_${new Date().getTime()}.xlsx`);
 }
 
 onActivated(() => {

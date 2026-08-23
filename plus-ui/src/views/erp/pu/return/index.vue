@@ -4,17 +4,17 @@
       <el-row :gutter="16">
         <el-col :span="6">
           <el-form-item label="退货单号" prop="returnNo">
-            <el-input v-model="queryParams.returnNo" placeholder="请输入退货单号" clearable @keyup.enter="handleQuery" />
+            <el-input v-model="queryParams.returnNo" placeholder="请输入退货单号" clearable @keyup.enter="handleQuery()" />
           </el-form-item>
         </el-col>
         <el-col :span="6">
           <el-form-item label="采购订单号" prop="orderNo">
-            <el-input v-model="queryParams.orderNo" placeholder="请输入采购订单号" clearable @keyup.enter="handleQuery" />
+            <el-input v-model="queryParams.orderNo" placeholder="请输入采购订单号" clearable @keyup.enter="handleQuery()" />
           </el-form-item>
         </el-col>
         <el-col :span="6">
           <el-form-item label="供应商" prop="vendorName">
-            <el-input v-model="queryParams.vendorName" placeholder="请输入供应商" clearable @keyup.enter="handleQuery" />
+            <el-input v-model="queryParams.vendorName" placeholder="请输入供应商" clearable @keyup.enter="handleQuery()" />
           </el-form-item>
         </el-col>
         <el-col :span="6">
@@ -26,8 +26,8 @@
         </el-col>
         <el-col :span="6" :offset="18" class="search-actions">
           <el-form-item>
-            <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+            <el-button type="primary" icon="Search" @click="handleQuery()">搜索</el-button>
+            <el-button icon="Refresh" @click="resetQuery()">重置</el-button>
           </el-form-item>
         </el-col>
       </el-row>
@@ -35,16 +35,16 @@
 
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
-        <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['pu:return:add']">新增</el-button>
+        <el-button type="primary" plain icon="Plus" @click="handleAdd()" v-hasPermi="['pu:return:add']">新增</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['pu:return:edit']">修改</el-button>
+        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate()" v-hasPermi="['pu:return:edit']">修改</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['pu:return:remove']">删除</el-button>
+        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete()" v-hasPermi="['pu:return:remove']">删除</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['pu:return:export']">导出</el-button>
+        <el-button type="warning" plain icon="Download" @click="handleExport()" v-hasPermi="['pu:return:export']">导出</el-button>
       </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
@@ -114,121 +114,104 @@
 </template>
 
 <script setup lang="ts" name="PurchaseReturn">
-import { listPurchaseReturn, delPurchaseReturn, submitPurchaseReturnFlow, getPurchaseReturnProcId } from '@/api/erp/pu/return';
+import {
+  listPurchaseReturn,
+  getPurchaseReturn,
+  addPurchaseReturn,
+  updatePurchaseReturn,
+  delPurchaseReturn,
+  submitPurchaseReturnFlow,
+  getPurchaseReturnProcId
+} from '@/api/erp/pu/return';
 import { useRouter } from 'vue-router';
+import type { FormInstance } from 'element-plus';
+import { useCrud } from '@/composables/useCrud';
 
 const router = useRouter();
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { pu_purchase_return_status } = toRefs<any>(proxy.useDict('pu_purchase_return_status'));
 
-const returnList = ref([]);
-const loading = ref(true);
-const showSearch = ref(true);
-const ids = ref([]);
-const single = ref(true);
-const multiple = ref(true);
-const total = ref(0);
-
-const data = reactive({
-  queryParams: {
-    pageNum: 1,
-    pageSize: 10,
-    returnNo: null,
-    orderNo: null,
-    vendorName: null,
-    status: null
-  }
+// 查询参数
+const queryParams = ref({
+  pageNum: 1,
+  pageSize: 10,
+  returnNo: null,
+  orderNo: null,
+  vendorName: null,
+  status: null
 });
-const { queryParams } = toRefs(data);
 
-function getList() {
-  loading.value = true;
-  listPurchaseReturn(queryParams.value).then((res: any) => {
-    returnList.value = res.rows;
-    total.value = res.total;
-    loading.value = false;
-  });
-}
+// 列表骨架（新增/修改/查看为路由表单页，保留本地 router.push 跳转逻辑）
+const {
+  loading,
+  list: returnList,
+  total,
+  ids,
+  single,
+  multiple,
+  showSearch,
+  getList,
+  handleQuery,
+  handleDelete,
+  handleExport,
+  handleSelectionChange
+} = useCrud({
+  apis: { list: listPurchaseReturn, get: getPurchaseReturn, add: addPurchaseReturn, update: updatePurchaseReturn, del: delPurchaseReturn },
+  idField: 'returnId',
+  entityName: '采购退货单',
+  formRef: ref<FormInstance>(),
+  queryParams,
+  initForm: () => ({}),
+  exportUrl: '/erp/pu/return/export',
+  exportFileName: 'pu_return'
+});
 
-function handleQuery() {
-  queryParams.value.pageNum = 1;
-  getList();
-}
-
+/** 重置按钮操作 */
 function resetQuery() {
   proxy.resetForm('queryRef');
   handleQuery();
 }
 
-function handleSelectionChange(selection: any[]) {
-  ids.value = selection.map((i: any) => i.returnId);
-  single.value = selection.length != 1;
-  multiple.value = !selection.length;
-}
-
+/** 新增按钮操作 */
 function handleAdd() {
   router.push({ path: '/erp/pu/return/form', query: { action: 'add' } });
 }
 
+/** 修改按钮操作 */
 function handleUpdate(row?: any) {
-  if (row && row.type && row instanceof Event) {
-    row = null;
-  }
   if (!row) {
     if (ids.value.length !== 1) {
-      proxy.$modal.msgWarning('请选择一条数据');
+      proxy.$modal.msgWarning('请选择一条数据进行修改');
       return;
     }
-    const r = returnList.value.find((i: any) => i.returnId == ids.value[0]);
-    if (!r) {
-      proxy.$modal.msgWarning('请选择一条数据');
+    const selected = returnList.value.find((i: any) => i.returnId == ids.value[0]);
+    if (!selected) {
+      proxy.$modal.msgWarning('未找到选中的数据');
       return;
     }
-    row = r;
+    row = selected;
   }
   router.push({ path: '/erp/pu/return/form', query: { id: row.returnId, action: 'edit' } });
 }
 
+/** 查看按钮操作 */
 function handleView(row?: any) {
-  if (row && row.type && row instanceof Event) {
-    row = null;
-  }
   if (!row) {
     if (ids.value.length !== 1) {
-      proxy.$modal.msgWarning('请选择一条数据');
+      proxy.$modal.msgWarning('请选择一条数据进行查看');
       return;
     }
-    const r = returnList.value.find((i: any) => i.returnId == ids.value[0]);
-    if (!r) {
-      proxy.$modal.msgWarning('请选择一条数据');
+    const selected = returnList.value.find((i: any) => i.returnId == ids.value[0]);
+    if (!selected) {
+      proxy.$modal.msgWarning('未找到选中的数据');
       return;
     }
-    row = r;
+    row = selected;
   }
   router.push({ path: '/erp/pu/return/form', query: { id: row.returnId, action: 'view' } });
 }
 
-function handleDelete(row?: any) {
-  // 工具栏点击时传入 MouseEvent，取选中行 ID；单行操作传入行对象
-  const _ids = row && !(row instanceof Event) ? row.returnId : ids.value;
-  if (!_ids || (Array.isArray(_ids) && _ids.length === 0)) {
-    proxy.$modal.msgWarning('请先选择要删除的退货单');
-    return;
-  }
-  proxy.$modal
-    .confirm('是否确认删除采购退货单?')
-    .then(() => delPurchaseReturn(_ids))
-    .then(() => {
-      getList();
-      proxy.$modal.msgSuccess('删除成功');
-    })
-    .catch(() => {});
-}
-
-function handleExport() {
-  proxy.download('/erp/pu/return/export', { ...queryParams.value }, `pu_return_${Date.now()}.xlsx`);
-}
-
+/** 提交审批 */
 function handleSubmit(row: any) {
   const id = row.returnId || ids.value[0];
   if (!id) {
@@ -247,6 +230,7 @@ function handleSubmit(row: any) {
     .catch(() => {});
 }
 
+/** 查看审批流程 */
 function handleViewFlow(row: any) {
   const id = row.returnId || ids.value[0];
   if (!id) {

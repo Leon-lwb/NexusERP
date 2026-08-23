@@ -4,8 +4,7 @@ import { TransferQuery, TransferVO, TransferForm } from './types';
 
 const BASE = '/erp/wm/transfer';
 
-export const listTransfer = (query: TransferQuery): AxiosPromise<{ rows: TransferVO[]; total: number }> =>
-  request({ url: BASE + '/list', method: 'get', params: query });
+export const listTransfer = (query: TransferQuery): AxiosPromise<TransferVO[]> => request({ url: BASE + '/list', method: 'get', params: query });
 
 export const getTransfer = (id: string | number): AxiosPromise<TransferVO> => request({ url: BASE + '/' + id, method: 'get' });
 

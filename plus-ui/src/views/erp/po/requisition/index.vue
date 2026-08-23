@@ -5,17 +5,17 @@
       <el-row :gutter="16">
         <el-col :span="6">
           <el-form-item label="请购单号" prop="requisitionNo">
-            <el-input v-model="queryParams.requisitionNo" placeholder="请输入请购单号" clearable @keyup.enter="handleQuery" />
+            <el-input v-model="queryParams.requisitionNo" placeholder="请输入请购单号" clearable @keyup.enter="handleQuery()" />
           </el-form-item>
         </el-col>
         <el-col :span="6">
           <el-form-item label="部门" prop="deptName">
-            <el-input v-model="queryParams.deptName" placeholder="请输入部门" clearable @keyup.enter="handleQuery" />
+            <el-input v-model="queryParams.deptName" placeholder="请输入部门" clearable @keyup.enter="handleQuery()" />
           </el-form-item>
         </el-col>
         <el-col :span="6">
           <el-form-item label="申请人" prop="applicantName">
-            <el-input v-model="queryParams.applicantName" placeholder="请输入申请人" clearable @keyup.enter="handleQuery" />
+            <el-input v-model="queryParams.applicantName" placeholder="请输入申请人" clearable @keyup.enter="handleQuery()" />
           </el-form-item>
         </el-col>
         <!-- 技术债:状态为硬编码 el-option,暂无对应字典,待补字典后改 useDict -->
@@ -32,8 +32,8 @@
         </el-col>
         <el-col :span="6" :offset="18" class="search-actions">
           <el-form-item>
-            <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+            <el-button type="primary" icon="Search" @click="handleQuery()">搜索</el-button>
+            <el-button icon="Refresh" @click="resetQuery()">重置</el-button>
           </el-form-item>
         </el-col>
       </el-row>
@@ -42,7 +42,7 @@
     <!-- 操作按钮 -->
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
-        <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['po:requisition:add']">新增</el-button>
+        <el-button type="primary" plain icon="Plus" @click="handleAdd()" v-hasPermi="['po:requisition:add']">新增</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate()" v-hasPermi="['po:requisition:edit']">修改</el-button>
@@ -53,7 +53,7 @@
         >
       </el-col>
       <el-col :span="1.5">
-        <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['po:requisition:export']">导出</el-button>
+        <el-button type="warning" plain icon="Download" @click="handleExport()" v-hasPermi="['po:requisition:export']">导出</el-button>
       </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
@@ -139,10 +139,10 @@
         <el-divider content-position="center">请购明细</el-divider>
         <el-row :gutter="10" class="mb8">
           <el-col :span="1.5">
-            <el-button type="primary" icon="Plus" @click="handleAddLine" v-if="!isViewMode">添加行</el-button>
+            <el-button type="primary" icon="Plus" @click="handleAddLine()" v-if="!isViewMode">添加行</el-button>
           </el-col>
           <el-col :span="1.5">
-            <el-button type="danger" icon="Delete" @click="handleDeleteLine" v-if="!isViewMode">删除行</el-button>
+            <el-button type="danger" icon="Delete" @click="handleDeleteLine()" v-if="!isViewMode">删除行</el-button>
           </el-col>
         </el-row>
         <el-table :data="lineList" @selection-change="handleLineSelectionChange" border size="small" show-overflow-tooltip>
@@ -200,14 +200,14 @@
     <el-dialog title="选择申请人" v-model="userDialog.visible" width="800px" append-to-body>
       <el-form :inline="true" :model="userDialog.queryParams">
         <el-form-item label="用户名称" prop="userName">
-          <el-input v-model="userDialog.queryParams.userName" placeholder="请输入用户名称" clearable @keyup.enter="searchUser" />
+          <el-input v-model="userDialog.queryParams.userName" placeholder="请输入用户名称" clearable @keyup.enter="searchUser()" />
         </el-form-item>
         <el-form-item label="手机号码" prop="phonenumber">
-          <el-input v-model="userDialog.queryParams.phonenumber" placeholder="请输入手机号码" clearable @keyup.enter="searchUser" />
+          <el-input v-model="userDialog.queryParams.phonenumber" placeholder="请输入手机号码" clearable @keyup.enter="searchUser()" />
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" icon="Search" @click="searchUser">搜索</el-button>
-          <el-button icon="Refresh" @click="resetUserQuery">重置</el-button>
+          <el-button type="primary" icon="Search" @click="searchUser()">搜索</el-button>
+          <el-button icon="Refresh" @click="resetUserQuery()">重置</el-button>
         </el-form-item>
       </el-form>
       <el-table v-loading="userDialog.loading" :data="userDialog.list" height="400" @row-dblclick="selectUser">
@@ -228,6 +228,31 @@
         @pagination="getUserList"
       />
     </el-dialog>
+
+    <!-- 物料选择对话框 -->
+    <el-dialog v-model="materialDialogVisible" title="选择物料" width="640px" append-to-body>
+      <el-form :inline="true">
+        <el-form-item label="编码">
+          <el-input v-model="materialQuery.materialCode" clearable @keyup.enter="queryMaterials()" />
+        </el-form-item>
+        <el-form-item label="名称">
+          <el-input v-model="materialQuery.materialName" clearable @keyup.enter="queryMaterials()" />
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" icon="Search" @click="queryMaterials()">搜索</el-button>
+        </el-form-item>
+      </el-form>
+      <el-table :data="materialList" height="360">
+        <el-table-column label="物料编码" prop="materialCode" width="140" />
+        <el-table-column label="物料名称" prop="materialName" show-overflow-tooltip />
+        <el-table-column label="规格" prop="materialSpec" show-overflow-tooltip />
+        <el-table-column label="操作" width="80" align="center">
+          <template #default="scope">
+            <el-button link type="primary" @click="selectMaterial(scope.row)">选择</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+    </el-dialog>
   </div>
 </template>
 
@@ -235,24 +260,12 @@
 import { listRequisition, getRequisition, delRequisition, addRequisition, updateRequisition } from '@/api/erp/po/requisition';
 import { listMaterial } from '@/api/erp/bd/material';
 import { listUser } from '@/api/system/user';
-import { RequisitionVO, RequisitionForm, RequisitionDetailForm } from '@/api/erp/po/requisition/types';
+import { RequisitionVO, RequisitionDetailForm } from '@/api/erp/po/requisition/types';
 import type { FormInstance } from 'element-plus';
+import { useCrud } from '@/composables/useCrud';
 
-const { proxy } = getCurrentInstance();
-
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const formRef = ref<FormInstance>();
-
-// 列表数据
-const dataList = ref<RequisitionVO[]>([]);
-const open = ref(false);
-const loading = ref(true);
-const showSearch = ref(true);
-const ids = ref<number[]>([]);
-const single = ref(true);
-const multiple = ref(true);
-const total = ref(0);
-const title = ref('');
-const isViewMode = ref(false);
 
 // 明细行数据
 const lineList = ref<RequisitionDetailForm[]>([]);
@@ -264,22 +277,73 @@ const materialDialogVisible = ref(false);
 const materialList = ref<any[]>([]);
 const materialQuery = ref({ materialCode: '', materialName: '', pageNum: 1, pageSize: 20 });
 
-const data = reactive({
-  form: {} as RequisitionForm,
-  queryParams: {
-    pageNum: 1,
-    pageSize: 10,
-    requisitionNo: undefined,
-    deptName: undefined,
-    applicantName: undefined,
-    status: undefined
-  },
-  rules: {
-    requisitionNo: [{ required: true, message: '请购单号不能为空', trigger: 'blur' }]
-  }
+// 查询参数
+const queryParams = ref({
+  pageNum: 1,
+  pageSize: 10,
+  requisitionNo: undefined,
+  deptName: undefined,
+  applicantName: undefined,
+  status: undefined
 });
 
-const { queryParams, form, rules } = toRefs(data);
+// 表单校验规则
+const rules = {
+  requisitionNo: [{ required: true, message: '请购单号不能为空', trigger: 'blur' }]
+};
+
+const {
+  loading,
+  list: dataList,
+  total,
+  open,
+  isViewMode,
+  title,
+  ids,
+  single,
+  multiple,
+  showSearch,
+  form,
+  getList,
+  handleQuery,
+  handleAdd,
+  handleUpdate,
+  handleView,
+  submitForm,
+  cancel,
+  handleDelete,
+  handleExport,
+  handleSelectionChange
+} = useCrud({
+  apis: { list: listRequisition, get: getRequisition, add: addRequisition, update: updateRequisition, del: delRequisition },
+  idField: 'requisitionId',
+  entityName: '部门请购单',
+  formRef,
+  queryParams,
+  initForm: () => ({
+    requisitionId: undefined,
+    requisitionNo: '',
+    status: 'draft',
+    deptId: undefined,
+    deptName: '',
+    applicantId: undefined,
+    applicantName: '',
+    requiredDate: undefined,
+    remark: '',
+    poRequisitionDetailList: []
+  }),
+  exportUrl: 'erp/po/requisition/export',
+  exportFileName: 'requisition',
+  onReset: () => {
+    lineList.value = [];
+  },
+  beforeSubmit: () => {
+    form.value.poRequisitionDetailList = lineList.value;
+  },
+  afterLoad: (data: any) => {
+    lineList.value = data.poRequisitionDetailList || [];
+  }
+});
 
 /** 获取状态标签类型 */
 function getStatusType(status: string): 'success' | 'warning' | 'danger' | 'info' | 'primary' {
@@ -305,132 +369,10 @@ function getStatusLabel(status: string) {
   return map[status] || status;
 }
 
-/** 查询列表 */
-function getList() {
-  loading.value = true;
-  listRequisition(queryParams.value).then((response) => {
-    dataList.value = response.rows;
-    total.value = response.total;
-    loading.value = false;
-  });
-}
-
-/** 取消 */
-function cancel() {
-  open.value = false;
-  reset();
-}
-
-/** 重置表单 */
-function reset() {
-  form.value = {
-    requisitionId: undefined,
-    requisitionNo: '',
-    status: 'draft',
-    deptId: undefined,
-    deptName: '',
-    applicantId: undefined,
-    applicantName: '',
-    requiredDate: undefined,
-    remark: '',
-    poRequisitionDetailList: []
-  };
-  lineList.value = [];
-  proxy.resetForm('formRef');
-}
-
-/** 搜索 */
-function handleQuery() {
-  queryParams.value.pageNum = 1;
-  getList();
-}
-
 /** 重置搜索 */
 function resetQuery() {
   proxy.resetForm('queryRef');
   handleQuery();
-}
-
-/** 多选框选中数据 */
-function handleSelectionChange(selection: RequisitionVO[]) {
-  ids.value = selection.map((item) => item.requisitionId);
-  single.value = selection.length !== 1;
-  multiple.value = !selection.length;
-}
-
-/** 新增 */
-function handleAdd() {
-  reset();
-  isViewMode.value = false;
-  open.value = true;
-  title.value = '添加部门请购单';
-}
-
-/** 修改 */
-function handleUpdate(row?: RequisitionVO) {
-  reset();
-  isViewMode.value = false;
-  const requisitionId = row?.requisitionId || ids.value[0];
-  getRequisition(requisitionId).then((response) => {
-    form.value = response.data;
-    lineList.value = response.data.poRequisitionDetailList || [];
-    open.value = true;
-    title.value = '修改部门请购单';
-  });
-}
-
-/** 查看 */
-function handleView(row: RequisitionVO) {
-  reset();
-  isViewMode.value = true;
-  getRequisition(row.requisitionId).then((response) => {
-    form.value = response.data;
-    lineList.value = response.data.poRequisitionDetailList || [];
-    open.value = true;
-    title.value = '查看部门请购单';
-  });
-}
-
-/** 提交表单 */
-function submitForm() {
-  formRef.value?.validate((valid: boolean) => {
-    if (valid) {
-      form.value.poRequisitionDetailList = lineList.value;
-      if (form.value.requisitionId != null) {
-        updateRequisition(form.value).then(() => {
-          proxy.$modal.msgSuccess('修改成功');
-          open.value = false;
-          getList();
-        });
-      } else {
-        addRequisition(form.value).then(() => {
-          proxy.$modal.msgSuccess('新增成功');
-          open.value = false;
-          getList();
-        });
-      }
-    }
-  });
-}
-
-/** 删除 */
-function handleDelete(row?: RequisitionVO) {
-  const requisitionIds = row?.requisitionId || ids.value;
-  proxy.$modal
-    .confirm('是否确认删除部门请购单编号为"' + requisitionIds + '"的数据项？')
-    .then(function () {
-      return delRequisition(requisitionIds);
-    })
-    .then(() => {
-      getList();
-      proxy.$modal.msgSuccess('删除成功');
-    })
-    .catch(() => {});
-}
-
-/** 导出 */
-function handleExport() {
-  proxy.download('erp/po/requisition/export', { ...queryParams.value }, `requisition_${new Date().getTime()}.xlsx`);
 }
 
 /** 添加明细行 */
