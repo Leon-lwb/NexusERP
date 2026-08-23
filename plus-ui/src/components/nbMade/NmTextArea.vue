@@ -1,19 +1,12 @@
 <template>
-  <el-input
-    type="textarea"
-    :disabled="disabled"
-    :rows="2"
-    :placeholder="nm.tableTypeDesc"
-    v-model="localValue"
-    @change="commonComponent"
-  />
+  <el-input type="textarea" :disabled="disabled" :rows="2" :placeholder="nm.tableTypeDesc" v-model="localValue" @change="commonComponent" />
 </template>
 
 <script>
 import { ref, watch, onMounted } from 'vue';
 
 export default {
-  name: "NmTextArea",
+  name: 'NmTextArea',
   props: {
     nm: {
       type: Object,
@@ -32,9 +25,12 @@ export default {
     const localValue = ref(props.value);
 
     // 监听 props.value 的变化，确保 localValue 与 props.value 保持同步
-    watch(() => props.value, (newValue) => {
-      localValue.value = newValue;
-    });
+    watch(
+      () => props.value,
+      (newValue) => {
+        localValue.value = newValue;
+      }
+    );
 
     // 监听 localValue 的变化，触发 update:value 事件
     watch(localValue, (newValue) => {
@@ -59,5 +55,4 @@ export default {
 };
 </script>
 
-<style scoped>
-</style>
+<style scoped></style>

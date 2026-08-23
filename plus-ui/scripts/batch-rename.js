@@ -22,7 +22,7 @@ const VIEWS_RENAMES = [
   ['erp/wm/stockAlert', 'erp/wm/stock-alert'],
   ['system/tenantPackage', 'system/tenant-package'],
   ['tool/gen/online/components/DispTag', 'tool/gen/online/components/disp-tag'],
-  ['workflow/customForm', 'workflow/custom-form'],
+  ['workflow/customForm', 'workflow/custom-form']
 ];
 
 const API_RENAMES = [
@@ -40,7 +40,7 @@ const API_RENAMES = [
   ['system/ossConfig', 'system/oss-config'],
   ['system/tenantPackage', 'system/tenant-package'],
   ['workflow/customForm', 'workflow/custom-form'],
-  ['workflow/workflowCommon', 'workflow/workflow-common'],
+  ['workflow/workflowCommon', 'workflow/workflow-common']
 ];
 
 // ========== 文件内容替换规则 ==========
@@ -154,7 +154,7 @@ function walkFiles(dir, extensions, callback) {
       if (!entry.name.startsWith('.') && entry.name !== 'node_modules') {
         walkFiles(fullPath, extensions, callback);
       }
-    } else if (entry.isFile() && extensions.some(ext => entry.name.endsWith(ext))) {
+    } else if (entry.isFile() && extensions.some((ext) => entry.name.endsWith(ext))) {
       callback(fullPath);
     }
   }

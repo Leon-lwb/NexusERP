@@ -100,14 +100,9 @@
     <el-dialog :title="dialog.title" v-model="dialog.visible" width="80%" top="5vh">
       <!-- 单表预览 -->
       <div v-if="previewData.type === 'single'">
-        <el-form  label-width="120px">
+        <el-form label-width="120px">
           <el-row :gutter="20">
-            <el-col
-              v-for="field in previewData.mainFields"
-              :key="field.columnName"
-              :span="field.formSpan || 24"
-              v-if="isMainVisible(field)"
-            >
+            <el-col v-for="field in previewData.mainFields" :key="field.columnName" :span="field.formSpan || 24" v-if="isMainVisible(field)">
               <el-form-item :label="field.columnComment" :required="isMainRequired(field)">
                 <component
                   :is="getComponentType(field.htmlType)"
@@ -128,14 +123,9 @@
       <div v-else-if="previewData.type === 'main-sub'">
         <!-- 主表部分 -->
         <el-card header="主表信息">
-          <el-form  label-width="120px">
+          <el-form label-width="120px">
             <el-row :gutter="20">
-              <el-col
-                v-for="field in previewData.mainFields"
-                :key="field.columnName"
-                :span="field.formSpan || 24"
-                v-if="isMainVisible(field)"
-              >
+              <el-col v-for="field in previewData.mainFields" :key="field.columnName" :span="field.formSpan || 24" v-if="isMainVisible(field)">
                 <el-form-item :label="field.columnComment" :required="isMainRequired(field)">
                   <component
                     :is="getComponentType(field.htmlType)"
@@ -158,12 +148,7 @@
             <el-button type="primary" @click="addSubRow">+ 添加子项</el-button>
           </div>
 
-          <el-table
-            :data="previewData.subForms"
-            border
-            stripe
-            class="sub-table"
-          >
+          <el-table :data="previewData.subForms" border stripe class="sub-table">
             <el-table-column
               v-for="field in previewData.subFields"
               :key="field.columnName"
@@ -185,18 +170,9 @@
               </template>
             </el-table-column>
 
-            <el-table-column
-              label="操作"
-              width="80"
-              fixed="right"
-            >
+            <el-table-column label="操作" width="80" fixed="right">
               <template #default="{ $index }">
-                <el-button
-                  link
-                  type="danger"
-                  icon="Delete"
-                  @click="removeSubRow($index)"
-                />
+                <el-button link type="danger" icon="Delete" @click="removeSubRow($index)" />
               </template>
             </el-table-column>
           </el-table>
@@ -217,7 +193,7 @@
           :name="(key as any).substring((key as any).lastIndexOf('/') + 1, (key as any).indexOf('.vm'))"
           :key="value"
         >
-          <el-link :underline="false" icon="DocumentCopy" v-copyText="value" v-copyText:callback="copyTextSuccess" style="float:right"
+          <el-link :underline="false" icon="DocumentCopy" v-copyText="value" v-copyText:callback="copyTextSuccess" style="float: right"
             >&nbsp;复制</el-link
           >
           <pre>{{ value }}</pre>
@@ -236,12 +212,12 @@ import importTable from './importTable.vue';
 import router from '@/router';
 import { ComponentInternalInstance } from 'vue';
 import { ElForm, DateModelType } from 'element-plus';
-import { useOnline } from '@/views/workflow/hooks/useOnline'
-import { useOnlineRuntime, type UiState, type RuntimeLinkageState } from '@/composables/online/useOnlineRuntime'
+import { useOnline } from '@/views/workflow/hooks/useOnline';
+import { useOnlineRuntime, type UiState, type RuntimeLinkageState } from '@/composables/online/useOnlineRuntime';
 
 const route = useRoute();
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
-const { getComponentType } = useOnline()
+const { getComponentType } = useOnline();
 const {
   safeParseJSON,
   applyCommonDataInfo,
@@ -256,8 +232,8 @@ const {
   computeRuntimeLinkageState,
   applyOnSubChange,
   handleSubToSub: handleSubToSubRuntime,
-  applyOnSubTrigger,
-} = useOnlineRuntime()
+  applyOnSubTrigger
+} = useOnlineRuntime();
 
 const tableList = ref<TableVO[]>([]);
 const loading = ref(true);
@@ -267,37 +243,37 @@ const single = ref(true);
 const multiple = ref(true);
 const total = ref(0);
 const dateRange = ref<[DateModelType, DateModelType]>(['', '']);
-const uniqueId = ref("");
+const uniqueId = ref('');
 const dataNameList = ref<Array<string>>([]);
 
 const queryFormRef = ref(ElForm);
 const importRef = ref(importTable);
 
 const queryParams = reactive<TableQuery>({
-    pageNum: 1,
-    pageSize: 10,
-    tableName: '',
-    tableComment: '',
-    dataName: ""
-})
+  pageNum: 1,
+  pageSize: 10,
+  tableName: '',
+  tableComment: '',
+  dataName: ''
+});
 
-const onlPreview = reactive <any>({
-    data: {}
-})
+const onlPreview = reactive<any>({
+  data: {}
+});
 
-type OnlineField = OnlFieldVo & Record<string, any>
+type OnlineField = OnlFieldVo & Record<string, any>;
 
 // 预览数据结构
 interface PreviewData {
-  type: 'single' | 'main-sub' | null
-  mainFields: OnlineField[]
-  subFields: OnlineField[]
-  mainForm: Record<string, any>
-  subForms: Record<string, any>[]
-  foreignKey: string
-  mainTableId: string | number | null
-  mainTableName: string
-  subTableName: string
+  type: 'single' | 'main-sub' | null;
+  mainFields: OnlineField[];
+  subFields: OnlineField[];
+  mainForm: Record<string, any>;
+  subForms: Record<string, any>[];
+  foreignKey: string;
+  mainTableId: string | number | null;
+  mainTableName: string;
+  subTableName: string;
 }
 
 const previewData = reactive<PreviewData>({
@@ -310,117 +286,125 @@ const previewData = reactive<PreviewData>({
   mainTableId: null,
   mainTableName: '',
   subTableName: ''
-})
+});
 
 // runtime state for "preview == OnlineTest" behaviors
 const workflowCtx = computed<Record<string, any>>(() => {
-  const q: any = route.query || {}
-  return { ...q }
-})
+  const q: any = route.query || {};
+  return { ...q };
+});
 
-const emptyUiState = (): UiState => ({ visible: {}, disabled: {}, required: {} })
-const emptyLinkageState = (): RuntimeLinkageState => ({ dictOptions: {}, popupParams: {}, clearFields: [] })
+const emptyUiState = (): UiState => ({ visible: {}, disabled: {}, required: {} });
+const emptyLinkageState = (): RuntimeLinkageState => ({ dictOptions: {}, popupParams: {}, clearFields: [] });
 
-const mainUiState = ref<UiState>(emptyUiState())
-const mainLinkageState = ref<RuntimeLinkageState>(emptyLinkageState())
-const subUiStates = ref<UiState[]>([])
-const subLinkageStates = ref<RuntimeLinkageState[]>([])
+const mainUiState = ref<UiState>(emptyUiState());
+const mainLinkageState = ref<RuntimeLinkageState>(emptyLinkageState());
+const subUiStates = ref<UiState[]>([]);
+const subLinkageStates = ref<RuntimeLinkageState[]>([]);
 
 const refreshMainRuntime = () => {
-  const ctx = { ...(previewData.mainForm || {}), workflow: workflowCtx.value }
-  const { ui, effects } = computeUiStateWithEffects(previewData.mainFields, ctx)
-  mainUiState.value = ui
-  effects.clearFields.forEach((k) => { if (k) (previewData.mainForm as any)[k] = null })
+  const ctx = { ...(previewData.mainForm || {}), workflow: workflowCtx.value };
+  const { ui, effects } = computeUiStateWithEffects(previewData.mainFields, ctx);
+  mainUiState.value = ui;
+  effects.clearFields.forEach((k) => {
+    if (k) (previewData.mainForm as any)[k] = null;
+  });
 
-  const linkage = computeRuntimeLinkageState(previewData.mainFields, ctx)
-  mainLinkageState.value = linkage
-  linkage.clearFields.forEach((k) => { if (k) (previewData.mainForm as any)[k] = null })
-}
+  const linkage = computeRuntimeLinkageState(previewData.mainFields, ctx);
+  mainLinkageState.value = linkage;
+  linkage.clearFields.forEach((k) => {
+    if (k) (previewData.mainForm as any)[k] = null;
+  });
+};
 
 const refreshSubRuntime = (rowIndex: number) => {
-  const row = previewData.subForms?.[rowIndex]
-  if (!row) return
-  const ctx = { ...(previewData.mainForm || {}), ...(row || {}), workflow: workflowCtx.value }
-  const { ui, effects } = computeUiStateWithEffects(previewData.subFields, ctx)
-  subUiStates.value[rowIndex] = ui
-  effects.clearFields.forEach((k) => { if (k) (row as any)[k] = null })
+  const row = previewData.subForms?.[rowIndex];
+  if (!row) return;
+  const ctx = { ...(previewData.mainForm || {}), ...(row || {}), workflow: workflowCtx.value };
+  const { ui, effects } = computeUiStateWithEffects(previewData.subFields, ctx);
+  subUiStates.value[rowIndex] = ui;
+  effects.clearFields.forEach((k) => {
+    if (k) (row as any)[k] = null;
+  });
 
-  const linkage = computeRuntimeLinkageState(previewData.subFields, ctx)
-  subLinkageStates.value[rowIndex] = linkage
-  linkage.clearFields.forEach((k) => { if (k) (row as any)[k] = null })
-}
+  const linkage = computeRuntimeLinkageState(previewData.subFields, ctx);
+  subLinkageStates.value[rowIndex] = linkage;
+  linkage.clearFields.forEach((k) => {
+    if (k) (row as any)[k] = null;
+  });
+};
 
 const refreshAllRuntime = () => {
-  refreshMainRuntime()
-  subUiStates.value = []
-  subLinkageStates.value = []
-  ;(previewData.subForms || []).forEach((_, idx) => refreshSubRuntime(idx))
-}
+  refreshMainRuntime();
+  subUiStates.value = [];
+  subLinkageStates.value = [];
+  (previewData.subForms || []).forEach((_, idx) => refreshSubRuntime(idx));
+};
 
 const isMainVisible = (field: any) => {
-  const k = field?.columnName
-  if (!k) return true
-  return mainUiState.value?.visible?.[k] !== false
-}
+  const k = field?.columnName;
+  if (!k) return true;
+  return mainUiState.value?.visible?.[k] !== false;
+};
 
 const shouldDisableField = (field: any) => {
   try {
-    const cfg: any = safeParseJSON(field?.onChange || '{}')
-    return !!cfg?.onCodeGenerate?.autoGenerateRule
+    const cfg: any = safeParseJSON(field?.onChange || '{}');
+    return !!cfg?.onCodeGenerate?.autoGenerateRule;
   } catch {
-    return false
+    return false;
   }
-}
+};
 
 const isMainDisabled = (field: any) => {
-  const k = field?.columnName
-  const runtimeDisabled = k ? mainUiState.value?.disabled?.[k] === true : false
-  return shouldDisableField(field) || runtimeDisabled
-}
+  const k = field?.columnName;
+  const runtimeDisabled = k ? mainUiState.value?.disabled?.[k] === true : false;
+  return shouldDisableField(field) || runtimeDisabled;
+};
 
 const isMainRequired = (field: any) => {
-  const k = field?.columnName
-  return k ? mainUiState.value?.required?.[k] === true : false
-}
+  const k = field?.columnName;
+  return k ? mainUiState.value?.required?.[k] === true : false;
+};
 
 const getMainRuntimeNm = (field: any) => {
-  const k = field?.columnName
-  if (!k) return field
+  const k = field?.columnName;
+  if (!k) return field;
   return {
     ...field,
     runtimeDictCode: mainLinkageState.value?.dictOptions?.[k],
-    runtimePopupParams: mainLinkageState.value?.popupParams?.[k],
-  }
-}
+    runtimePopupParams: mainLinkageState.value?.popupParams?.[k]
+  };
+};
 
 const isSubVisible = (field: any, rowIndex: number) => {
-  const k = field?.columnName
-  if (!k) return true
-  return subUiStates.value?.[rowIndex]?.visible?.[k] !== false
-}
+  const k = field?.columnName;
+  if (!k) return true;
+  return subUiStates.value?.[rowIndex]?.visible?.[k] !== false;
+};
 
 const isSubDisabled = (field: any, rowIndex: number) => {
-  const k = field?.columnName
-  return k ? subUiStates.value?.[rowIndex]?.disabled?.[k] === true : false
-}
+  const k = field?.columnName;
+  return k ? subUiStates.value?.[rowIndex]?.disabled?.[k] === true : false;
+};
 
 const getSubRuntimeNm = (field: any, row: any, rowIndex: number) => {
-  const k = field?.columnName
-  if (!k) return field
+  const k = field?.columnName;
+  if (!k) return field;
   return {
     ...field,
     runtimeDictCode: subLinkageStates.value?.[rowIndex]?.dictOptions?.[k],
-    runtimePopupParams: subLinkageStates.value?.[rowIndex]?.popupParams?.[k],
-  }
-}
+    runtimePopupParams: subLinkageStates.value?.[rowIndex]?.popupParams?.[k]
+  };
+};
 
-const codePreview = ref <any>({
-    data: {},
-    activeName: 'domain.java'
-})
+const codePreview = ref<any>({
+  data: {},
+  activeName: 'domain.java'
+});
 const codeDialog = reactive<DialogOption>({
-    visible: false,
-    title: '代码预览'
+  visible: false,
+  title: '代码预览'
 });
 
 const indexInner = ref(0);
@@ -429,255 +413,252 @@ const olLabelCol = { xs: { span: 24 }, sm: { span: 5 } };
 const olWrapperCol = { xs: { span: 24 }, sm: { span: 16 } };
 
 const dialog = reactive<DialogOption>({
-    visible: false,
-    title: '界面预览'
+  visible: false,
+  title: '界面预览'
 });
 
 const handleMainCommonComponent = (nm: any, field: OnlineField) => {
-  applyCommonDataInfo(nm, previewData.mainForm)
+  applyCommonDataInfo(nm, previewData.mainForm);
 
   // preview == OnlineTest: clear/setValue -> onMainChange -> runtime refresh
-  const ctx0 = { ...(previewData.mainForm || {}), workflow: workflowCtx.value }
-  applyOnClear(field, ctx0, (k, v) => { (previewData.mainForm as any)[k] = v })
-  applyOnSetValue(field, { ...(previewData.mainForm || {}), workflow: workflowCtx.value }, (k, v) => { (previewData.mainForm as any)[k] = v })
-  applyOnMainChange(field, previewData.mainForm, (previewData.mainForm as any)?.[field?.columnName])
+  const ctx0 = { ...(previewData.mainForm || {}), workflow: workflowCtx.value };
+  applyOnClear(field, ctx0, (k, v) => {
+    (previewData.mainForm as any)[k] = v;
+  });
+  applyOnSetValue(field, { ...(previewData.mainForm || {}), workflow: workflowCtx.value }, (k, v) => {
+    (previewData.mainForm as any)[k] = v;
+  });
+  applyOnMainChange(field, previewData.mainForm, (previewData.mainForm as any)?.[field?.columnName]);
 
-  refreshAllRuntime()
-  if (nm?.columnName) onlPreview.data[nm.columnName] = nm.commonDataInfo
-}
+  refreshAllRuntime();
+  if (nm?.columnName) onlPreview.data[nm.columnName] = nm.commonDataInfo;
+};
 
 const handleSubCommonComponent = (nm: any, field: OnlineField, row: Record<string, any>) => {
-  applyCommonDataInfo(nm, row)
-  if (nm?.columnName) onlPreview.data[nm.columnName] = nm.commonDataInfo
+  applyCommonDataInfo(nm, row);
+  if (nm?.columnName) onlPreview.data[nm.columnName] = nm.commonDataInfo;
 
-  const idx = (previewData.subForms || []).indexOf(row)
-  const ctx0 = { ...(previewData.mainForm || {}), ...(row || {}), workflow: workflowCtx.value }
-  applyOnClear(field, ctx0, (k, v) => { (row as any)[k] = v })
-  applyOnSetValue(field, ctx0, (k, v) => { (row as any)[k] = v })
+  const idx = (previewData.subForms || []).indexOf(row);
+  const ctx0 = { ...(previewData.mainForm || {}), ...(row || {}), workflow: workflowCtx.value };
+  applyOnClear(field, ctx0, (k, v) => {
+    (row as any)[k] = v;
+  });
+  applyOnSetValue(field, ctx0, (k, v) => {
+    (row as any)[k] = v;
+  });
 
-  applyOnSubChange(field, row, previewData.mainForm)
-  applyOnSubTrigger(previewData.mainFields, previewData.subForms, previewData.mainForm)
-  if (idx >= 0) refreshSubRuntime(idx)
-  refreshMainRuntime()
-}
+  applyOnSubChange(field, row, previewData.mainForm);
+  applyOnSubTrigger(previewData.mainFields, previewData.subForms, previewData.mainForm);
+  if (idx >= 0) refreshSubRuntime(idx);
+  refreshMainRuntime();
+};
 
 const handleMainFieldChange = (field: OnlineField, newValue: any) => {
-  handleMainToMainRuntime(field, newValue, previewData.mainForm as any, workflowCtx.value)
-  refreshAllRuntime()
-}
+  handleMainToMainRuntime(field, newValue, previewData.mainForm as any, workflowCtx.value);
+  refreshAllRuntime();
+};
 
 const handleSubFieldChange = (field: OnlineField, newValue: any, row: Record<string, any>) => {
-  const idx = (previewData.subForms || []).indexOf(row)
-  handleSubToSubRuntime(field, newValue, row as any, previewData.mainForm as any, workflowCtx.value)
-  applyOnSubTrigger(previewData.mainFields, previewData.subForms, previewData.mainForm)
-  if (idx >= 0) refreshSubRuntime(idx)
-  refreshMainRuntime()
-}
+  const idx = (previewData.subForms || []).indexOf(row);
+  handleSubToSubRuntime(field, newValue, row as any, previewData.mainForm as any, workflowCtx.value);
+  applyOnSubTrigger(previewData.mainFields, previewData.subForms, previewData.mainForm);
+  if (idx >= 0) refreshSubRuntime(idx);
+  refreshMainRuntime();
+};
 
-const submitOnlForm = () => {
-
-}
-const resetOnlForm = () => {
-
-}
+const submitOnlForm = () => {};
+const resetOnlForm = () => {};
 
 // 新建表设计器
 const handleNewTable = () => {
   // 跳转到表设计器页面
-  router.push('/online/db')
-}
+  router.push('/online/db');
+};
 
 onActivated(() => {
   const time = route.query.t;
   if (time != null && time != uniqueId.value) {
-      uniqueId.value = time as string;
-      queryParams.pageNum = Number(route.query.pageNum);
-      dateRange.value = ['', ''];
-      queryFormRef.value.resetFields();
-      getList();
+    uniqueId.value = time as string;
+    queryParams.pageNum = Number(route.query.pageNum);
+    dateRange.value = ['', ''];
+    queryFormRef.value.resetFields();
+    getList();
   }
-})
+});
 
 /** 查询多数据源名称 */
 const getDataNameList = async () => {
-  const res = await getDataNames()
+  const res = await getDataNames();
   dataNameList.value = res.data;
-}
+};
 
 /** 查询表集合 */
 const getList = async () => {
-    loading.value = true;
-    const res = await list(proxy?.addDateRange(queryParams, dateRange.value));
-    tableList.value = res.rows;
-    total.value = res.total;
-    loading.value = false;
-}
+  loading.value = true;
+  const res = await list(proxy?.addDateRange(queryParams, dateRange.value));
+  tableList.value = res.rows;
+  total.value = res.total;
+  loading.value = false;
+};
 /** 搜索按钮操作 */
 const handleQuery = () => {
-    queryParams.pageNum = 1;
-    getList();
-}
+  queryParams.pageNum = 1;
+  getList();
+};
 /** 重置按钮操作 */
 const resetQuery = () => {
-    dateRange.value = ['', ''];
-    queryFormRef.value.resetFields();
-    handleQuery();
-}
+  dateRange.value = ['', ''];
+  queryFormRef.value.resetFields();
+  handleQuery();
+};
 
 /** 代码预览按钮 */
 const handleCodePreview = async (row: TableVO) => {
-    const res = await previewTable(row.tableId);
-    codePreview.value.data = res.data;
-    codeDialog.visible = true;
-    codePreview.value.activeName = 'domain.java';
-}
+  const res = await previewTable(row.tableId);
+  codePreview.value.data = res.data;
+  codeDialog.visible = true;
+  codePreview.value.activeName = 'domain.java';
+};
 
 /** 生成代码操作 */
 const handleGenTable = async (row?: TableVO) => {
-    const tbIds = row?.tableId || ids.value;
-    if (tbIds == "") {
-        proxy?.$modal.msgError('请选择要生成的数据');
-        return;
-    }
-    if (row?.genType === "1") {
-        await genCode(row.tableId);
-        proxy?.$modal.msgSuccess('成功生成到自定义路径：' + row.genPath);
-    } else {
-        proxy?.$download.zip('/tool/gen/batchGenCode?tableIdStr=' + tbIds, 'nbmade.zip');
-    }
-}
+  const tbIds = row?.tableId || ids.value;
+  if (tbIds == '') {
+    proxy?.$modal.msgError('请选择要生成的数据');
+    return;
+  }
+  if (row?.genType === '1') {
+    await genCode(row.tableId);
+    proxy?.$modal.msgSuccess('成功生成到自定义路径：' + row.genPath);
+  } else {
+    proxy?.$download.zip('/tool/gen/batchGenCode?tableIdStr=' + tbIds, 'nbmade.zip');
+  }
+};
 /** 同步数据库操作 */
 const handleSynchDb = async (row: TableVO) => {
-    const tableId = row.tableId;
-    await proxy?.$modal.confirm('确认要强制同步"' + row.tableName + '"表结构吗？');
-    await synchDb(tableId);
-    proxy?.$modal.msgSuccess('同步成功');
-}
+  const tableId = row.tableId;
+  await proxy?.$modal.confirm('确认要强制同步"' + row.tableName + '"表结构吗？');
+  await synchDb(tableId);
+  proxy?.$modal.msgSuccess('同步成功');
+};
 /** 打开导入表弹窗 */
 const openImportTable = () => {
-    importRef.value.show(queryParams.dataName);
-}
+  importRef.value.show(queryParams.dataName);
+};
 
 /** 预览按钮 */
 const handlePreview = async (row: TableVO) => {
   try {
     // 清空旧数据
-    previewData.type = null
-    previewData.mainForm = {}
-    previewData.subForms = []
-    previewData.mainTableId = row.tableId
-    previewData.mainTableName = row.tableName
-    previewData.subTableName = ''
-    previewData.foreignKey = ''
+    previewData.type = null;
+    previewData.mainForm = {};
+    previewData.subForms = [];
+    previewData.mainTableId = row.tableId;
+    previewData.mainTableName = row.tableName;
+    previewData.subTableName = '';
+    previewData.foreignKey = '';
 
     // 获取表单结构
-    const formRes = await getOnlineForm(row.tableId)
-    const formData = formRes.data
+    const formRes = await getOnlineForm(row.tableId);
+    const formData = formRes.data;
 
     // 判断表单类型
     if (formData.type === 'main-sub') {
       // 主子表处理
-      previewData.type = 'main-sub'
-      previewData.mainFields = formData.main.columnsVo || []
-      previewData.subFields = formData.sub.columnsVo || []
-      previewData.foreignKey = formData.foreignKey || ''
-      previewData.subTableName = formData.sub?.tableName || ''
+      previewData.type = 'main-sub';
+      previewData.mainFields = formData.main.columnsVo || [];
+      previewData.subFields = formData.sub.columnsVo || [];
+      previewData.foreignKey = formData.foreignKey || '';
+      previewData.subTableName = formData.sub?.tableName || '';
 
       // 初始化主表默认值
       previewData.mainFields.forEach((f) => {
-        if (f?.columnName) previewData.mainForm[f.columnName] = previewData.mainForm[f.columnName] ?? null
-      })
+        if (f?.columnName) previewData.mainForm[f.columnName] = previewData.mainForm[f.columnName] ?? null;
+      });
       // 初始化子表至少一行
-      addSubRow()
+      addSubRow();
       // 编码产生：打开预览时自动填充（为空才填）
-      initAutoGenerateForForm(previewData.mainFields, previewData.mainForm)
+      initAutoGenerateForForm(previewData.mainFields, previewData.mainForm);
     } else if (formData.type === 'single') {
       // 单表处理
-      previewData.type = 'single'
-      previewData.mainFields = formData.data.columnsVo || []
+      previewData.type = 'single';
+      previewData.mainFields = formData.data.columnsVo || [];
 
       previewData.mainFields.forEach((f) => {
-        if (f?.columnName) previewData.mainForm[f.columnName] = previewData.mainForm[f.columnName] ?? null
-      })
-      initAutoGenerateForForm(previewData.mainFields, previewData.mainForm)
-    }
-    else if (formData.type === 'sub') {
-      proxy?.$modal.msgError('附子表单类型不能预览！')
-      return
+        if (f?.columnName) previewData.mainForm[f.columnName] = previewData.mainForm[f.columnName] ?? null;
+      });
+      initAutoGenerateForForm(previewData.mainFields, previewData.mainForm);
+    } else if (formData.type === 'sub') {
+      proxy?.$modal.msgError('附子表单类型不能预览！');
+      return;
     }
 
-    refreshAllRuntime()
-    dialog.visible = true
+    refreshAllRuntime();
+    dialog.visible = true;
   } catch (error) {
-    proxy?.$modal.msgError('数据加载失败')
+    proxy?.$modal.msgError('数据加载失败');
   }
-}
+};
 
 // 添加子表行
 const addSubRow = () => {
   const row = (previewData.subFields || []).reduce((acc: any, cur: any) => {
-    if (cur?.columnName) acc[cur.columnName] = null
-    return acc
-  }, {})
+    if (cur?.columnName) acc[cur.columnName] = null;
+    return acc;
+  }, {});
   // apply row defaults (onChange.onRowAdd)
-  applyOnRowAdd(previewData.subFields, row, previewData.mainForm as any, workflowCtx.value)
-  previewData.subForms.push(row)
-  applyOnSubTrigger(previewData.mainFields, previewData.subForms, previewData.mainForm)
-  refreshSubRuntime(previewData.subForms.length - 1)
-  refreshMainRuntime()
-}
+  applyOnRowAdd(previewData.subFields, row, previewData.mainForm as any, workflowCtx.value);
+  previewData.subForms.push(row);
+  applyOnSubTrigger(previewData.mainFields, previewData.subForms, previewData.mainForm);
+  refreshSubRuntime(previewData.subForms.length - 1);
+  refreshMainRuntime();
+};
 
 // 删除子表行
 const removeSubRow = (index: number) => {
   if (previewData.subForms.length > 1) {
-    previewData.subForms.splice(index, 1)
-    applyOnSubTrigger(previewData.mainFields, previewData.subForms, previewData.mainForm)
-    refreshAllRuntime()
+    previewData.subForms.splice(index, 1);
+    applyOnSubTrigger(previewData.mainFields, previewData.subForms, previewData.mainForm);
+    refreshAllRuntime();
   } else {
-    proxy?.$modal.msgWarning('至少需要保留一个子项')
+    proxy?.$modal.msgWarning('至少需要保留一个子项');
   }
-}
+};
 
 // 提交处理
 const handleSubmit = async () => {
   try {
     if (!previewData.mainTableId || !previewData.mainTableName) {
-      proxy?.$modal.msgError('缺少表信息，无法提交')
-      return
+      proxy?.$modal.msgError('缺少表信息，无法提交');
+      return;
     }
 
-    refreshAllRuntime()
+    refreshAllRuntime();
 
-    const mainErrors = validateBySchema(
-      previewData.mainFields,
-      { ...(previewData.mainForm || {}), workflow: workflowCtx.value },
-      mainUiState.value
-    )
+    const mainErrors = validateBySchema(previewData.mainFields, { ...(previewData.mainForm || {}), workflow: workflowCtx.value }, mainUiState.value);
     if (mainErrors.length) {
-      proxy?.$modal.msgError(mainErrors[0].message)
-      return
+      proxy?.$modal.msgError(mainErrors[0].message);
+      return;
     }
 
     if (previewData.type === 'main-sub') {
       // 过滤空子项
-      const validSubs = previewData.subForms.filter(sub =>
-        Object.values(sub).some(v => v !== null && v !== undefined && v !== '')
-      )
+      const validSubs = previewData.subForms.filter((sub) => Object.values(sub).some((v) => v !== null && v !== undefined && v !== ''));
 
       // 子表校验（仅校验非空行）
       for (let i = 0; i < previewData.subForms.length; i++) {
-        const row = previewData.subForms[i]
-        const isEmptyRow = !Object.values(row || {}).some(v => v !== null && v !== undefined && v !== '')
-        if (isEmptyRow) continue
-        const ui = subUiStates.value[i] || emptyUiState()
+        const row = previewData.subForms[i];
+        const isEmptyRow = !Object.values(row || {}).some((v) => v !== null && v !== undefined && v !== '');
+        if (isEmptyRow) continue;
+        const ui = subUiStates.value[i] || emptyUiState();
         const rowErrors = validateBySchema(
           previewData.subFields,
           { ...(previewData.mainForm || {}), ...(row || {}), workflow: workflowCtx.value },
           ui
-        )
+        );
         if (rowErrors.length) {
-          proxy?.$modal.msgError(`子表第${i + 1}行：${rowErrors[0].message}`)
-          return
+          proxy?.$modal.msgError(`子表第${i + 1}行：${rowErrors[0].message}`);
+          return;
         }
       }
 
@@ -687,122 +668,124 @@ const handleSubmit = async () => {
           tableName: previewData.subTableName,
           data: validSubs
         }
-      }
-      await addOrUpdateOnlineData(previewData.mainTableId, previewData.mainTableName, payload)
+      };
+      await addOrUpdateOnlineData(previewData.mainTableId, previewData.mainTableName, payload);
     } else if (previewData.type === 'single') {
-      await addOrUpdateOnlineData(previewData.mainTableId, previewData.mainTableName, previewData.mainForm)
+      await addOrUpdateOnlineData(previewData.mainTableId, previewData.mainTableName, previewData.mainForm);
     } else {
-      proxy?.$modal.msgError('未知表单类型，无法提交')
-      return
+      proxy?.$modal.msgError('未知表单类型，无法提交');
+      return;
     }
 
-    proxy?.$modal.msgSuccess('操作成功')
-    dialog.visible = false
-    getList()
+    proxy?.$modal.msgSuccess('操作成功');
+    dialog.visible = false;
+    getList();
   } catch (error) {
-    proxy?.$modal.msgError('操作失败')
+    proxy?.$modal.msgError('操作失败');
   }
-}
+};
 /** 复制代码成功 */
 const copyTextSuccess = () => {
-    proxy?.$modal.msgSuccess('复制成功');
-}
+  proxy?.$modal.msgSuccess('复制成功');
+};
 // 多选框选中数据
 const handleSelectionChange = (selection: TableVO[]) => {
-    ids.value = selection.map(item => item.tableId);
-    single.value = selection.length != 1;
-    multiple.value = !selection.length;
-}
+  ids.value = selection.map((item) => item.tableId);
+  single.value = selection.length != 1;
+  multiple.value = !selection.length;
+};
 /** 修改按钮操作 */
 const handleEditTable = (row?: TableVO) => {
-    const tableId = row?.tableId || ids.value[0];
-    router.push({ path: '/online/edit/' + tableId, query: { pageNum: queryParams.pageNum } });
-}
+  const tableId = row?.tableId || ids.value[0];
+  router.push({ path: '/online/edit/' + tableId, query: { pageNum: queryParams.pageNum } });
+};
 /** 删除按钮操作 */
 const handleDelete = async (row?: TableVO) => {
-    const tableIds = row?.tableId || ids.value;
-    await proxy?.$modal.confirm('是否确认删除表编号为"' + tableIds + '"的数据项？');
-    await delTable(tableIds);
-    getList();
-    proxy?.$modal.msgSuccess('删除成功');
-}
+  const tableIds = row?.tableId || ids.value;
+  await proxy?.$modal.confirm('是否确认删除表编号为"' + tableIds + '"的数据项？');
+  await delTable(tableIds);
+  getList();
+  proxy?.$modal.msgSuccess('删除成功');
+};
 
 /** online表单功能测试按钮操作 */
 const handleTest = (row?: TableVO) => {
-    if (row?.tplCategory === "sub") {
-      proxy?.$modal.msgError('附子表不支持在线表单功能测试！');
-      return;
-    }
-    const tableId = row?.tableId;
-    const tableName = row?.tableName;
-    // 直接使用路径跳转，绕过命名路由匹配
-    const pathTarget = {
-      path: `/online/test/${String(tableId || '')}/${encodeURIComponent(String(tableName || ''))}`,
-      query: { t: Date.now() }
-    } as const;
-    router.push({
+  if (row?.tplCategory === 'sub') {
+    proxy?.$modal.msgError('附子表不支持在线表单功能测试！');
+    return;
+  }
+  const tableId = row?.tableId;
+  const tableName = row?.tableName;
+  // 直接使用路径跳转，绕过命名路由匹配
+  const pathTarget = {
+    path: `/online/test/${String(tableId || '')}/${encodeURIComponent(String(tableName || ''))}`,
+    query: { t: Date.now() }
+  } as const;
+  router
+    .push({
       path: `/redirect${pathTarget.path}`,
       query: pathTarget.query
-    }).catch(e => {
+    })
+    .catch((e) => {
       console.error('redirect 跳转失败，执行硬跳转兜底:', e);
-      const href = router.resolve(pathTarget).href
-      window.location.href = href
+      const href = router.resolve(pathTarget).href;
+      window.location.href = href;
     });
-}
+};
 
 onMounted(() => {
-    getList();
-    getDataNameList();
-})
+  getList();
+  getDataNameList();
+});
 </script>
 <style lang="scss" scoped>
-  .olFromItem {
-    width: 100%;
+.olFromItem {
+  width: 100%;
+}
+.sub-item {
+  position: relative;
+  margin-top: 20px;
+  padding: 20px;
+  border: 1px solid #ebeef5;
+  border-radius: 4px;
+  transition: all 0.3s;
+
+  &:hover {
+    box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
   }
-  .sub-item {
-    position: relative;
-    margin-top: 20px;
-    padding: 20px;
-    border: 1px solid #ebeef5;
-    border-radius: 4px;
-    transition: all 0.3s;
+}
 
-    &:hover {
-      box-shadow: 0 2px 12px 0 rgba(0,0,0,.1);
-    }
-  }
+.float-right {
+  position: absolute;
+  right: 20px;
+  top: 20px;
+}
 
-  .float-right {
-    position: absolute;
-    right: 20px;
-    top: 20px;
-  }
+.mt-4 {
+  margin-top: 1rem;
+}
 
-  .mt-4 {
-    margin-top: 1rem;
-  }
+.el-form-item.is-required .el-form-item__label::before {
+  content: '*';
+  color: #f56c6c;
+  margin-right: 4px;
+}
 
-  .el-form-item.is-required .el-form-item__label::before {
-    content: '*';
-    color: #f56c6c;
-    margin-right: 4px;
-  }
+.sub-table {
+  margin-top: 15px;
 
-  .sub-table {
-    margin-top: 15px;
-
-    .el-table__cell {
-      padding: 8px 0;
-    }
-
-    .cell {
-      padding: 0 8px;
-    }
+  .el-table__cell {
+    padding: 8px 0;
   }
 
-  // 调整组件内部间距
-  .el-input, .el-select {
-    width: 100%;
+  .cell {
+    padding: 0 8px;
   }
+}
 
+// 调整组件内部间距
+.el-input,
+.el-select {
+  width: 100%;
+}
 </style>

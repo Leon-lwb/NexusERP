@@ -455,12 +455,7 @@ export const useImStore = defineStore('im', () => {
    * 发送消息
    * @param mentionUserIds P1-5: 群聊被 @ 的成员 userId 列表
    */
-  async function send(
-    content: string,
-    msgType: 'text' | 'image' | 'file' = 'text',
-    forwardFrom?: string,
-    mentionUserIds?: (number | string)[]
-  ) {
+  async function send(content: string, msgType: 'text' | 'image' | 'file' = 'text', forwardFrom?: string, mentionUserIds?: (number | string)[]) {
     if (!active.value || !content) return;
     const key = activeKey.value;
     const conv: ActiveConv = { ...active.value };
@@ -761,10 +756,7 @@ export const useImStore = defineStore('im', () => {
       if (!Number.isNaN(wmMaxId)) {
         for (let i = 0; i < arr.length; i++) {
           const m = arr[i];
-          if (m.messageId
-              && String(m.fromUserId) === wmFromId
-              && Number(m.messageId) <= wmMaxId
-              && !m.isRead) {
+          if (m.messageId && String(m.fromUserId) === wmFromId && Number(m.messageId) <= wmMaxId && !m.isRead) {
             arr[i] = { ...m, isRead: true };
             changed = true;
           }

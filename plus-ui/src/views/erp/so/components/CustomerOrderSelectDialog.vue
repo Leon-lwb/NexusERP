@@ -9,7 +9,7 @@
         <el-input v-model="queryParams.clientName" placeholder="请输入客户名称" clearable @keyup.enter="handleQuery" />
       </el-form-item>
       <el-form-item label="订单状态">
-        <el-select v-model="queryParams.status" placeholder="请选择" clearable style="width: 160px;">
+        <el-select v-model="queryParams.status" placeholder="请选择" clearable style="width: 160px">
           <el-option v-for="dict in so_customer_order_status" :key="dict.value" :label="dict.label" :value="dict.value" />
         </el-select>
       </el-form-item>

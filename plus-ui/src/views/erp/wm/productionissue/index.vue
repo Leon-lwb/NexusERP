@@ -209,4 +209,3 @@ onActivated(() => {
   getList();
 });
 </script>
-

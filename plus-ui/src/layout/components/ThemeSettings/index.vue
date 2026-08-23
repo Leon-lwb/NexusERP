@@ -60,11 +60,7 @@
           </div>
           <div class="custom-color">
             <span>自定义颜色</span>
-            <el-color-picker
-              v-model="customColor"
-              :predefine="predefineColors"
-              @change="handleCustomColorChange"
-            />
+            <el-color-picker v-model="customColor" :predefine="predefineColors" @change="handleCustomColorChange" />
           </div>
         </section>
 
@@ -234,9 +230,21 @@ import { ThemeModeEnum, ContentDensityEnum, TabsModeEnum } from '@/enums/ThemeEn
 import { NavTypeEnum } from '@/enums/NavTypeEnum';
 import { SideThemeEnum } from '@/enums/SideThemeEnum';
 import {
-  Setting, Sunny, Moon, Brush, Menu, Check,
-  ScaleToOriginal, DocumentCopy, Tools, Lock,
-  Picture, VideoPlay, DocumentChecked, Refresh, View
+  Setting,
+  Sunny,
+  Moon,
+  Brush,
+  Menu,
+  Check,
+  ScaleToOriginal,
+  DocumentCopy,
+  Tools,
+  Lock,
+  Picture,
+  VideoPlay,
+  DocumentChecked,
+  Refresh,
+  View
 } from '@element-plus/icons-vue';
 
 const themeStore = useThemeStore();
@@ -244,10 +252,7 @@ const visible = ref(false);
 const customColor = ref(themeStore.brandColor);
 
 // 预定义颜色
-const predefineColors = [
-  '#409EFF', '#67C23A', '#E6A23C', '#F56C6C',
-  '#9B59B6', '#00CED1', '#1E90FF', '#FF69B4'
-];
+const predefineColors = ['#409EFF', '#67C23A', '#E6A23C', '#F56C6C', '#9B59B6', '#00CED1', '#1E90FF', '#FF69B4'];
 
 // 主题模式选项
 const themeModes = [
@@ -369,11 +374,13 @@ const resetSettings = () => {
     confirmButtonText: '确定',
     cancelButtonText: '取消',
     type: 'warning'
-  }).then(() => {
-    themeStore.resetConfig();
-    customColor.value = themeStore.brandColor;
-    ElMessage.success('主题设置已重置');
-  }).catch(() => {});
+  })
+    .then(() => {
+      themeStore.resetConfig();
+      customColor.value = themeStore.brandColor;
+      ElMessage.success('主题设置已重置');
+    })
+    .catch(() => {});
 };
 
 // 打开设置面板

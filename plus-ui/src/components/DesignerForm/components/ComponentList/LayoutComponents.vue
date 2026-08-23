@@ -2,13 +2,7 @@
   <div class="component-group">
     <div class="group-title">布局组件</div>
     <div class="component-items">
-      <div 
-        v-for="(item, index) in layoutComponents" 
-        :key="index"
-        class="component-item" 
-        draggable="true"
-        @dragstart="handleDragStart($event, item)"
-      >
+      <div v-for="(item, index) in layoutComponents" :key="index" class="component-item" draggable="true" @dragstart="handleDragStart($event, item)">
         <el-icon><component :is="item.icon" /></el-icon>
         <span>{{ item.label }}</span>
       </div>
@@ -17,17 +11,12 @@
 </template>
 
 <script lang="ts" setup>
-import { ref } from 'vue'
-import { markRaw } from 'vue'
-import {
-  Grid,
-  Menu,
-  Tickets,
-  Collection
-} from '@element-plus/icons-vue'
-import type { ComponentDefinition } from '../../types'
+import { ref } from 'vue';
+import { markRaw } from 'vue';
+import { Grid, Menu, Tickets, Collection } from '@element-plus/icons-vue';
+import type { ComponentDefinition } from '../../types';
 
-const emit = defineEmits(['dragstart'])
+const emit = defineEmits(['dragstart']);
 
 const layoutComponents = ref<ComponentDefinition[]>([
   {
@@ -70,11 +59,11 @@ const layoutComponents = ref<ComponentDefinition[]>([
       shadow: 'hover'
     }
   }
-])
+]);
 
 const handleDragStart = (e: DragEvent, item: ComponentDefinition) => {
-  emit('dragstart', e, item)
-}
+  emit('dragstart', e, item);
+};
 </script>
 
 <style lang="scss" scoped>
@@ -120,4 +109,4 @@ const handleDragStart = (e: DragEvent, item: ComponentDefinition) => {
     }
   }
 }
-</style> 
+</style>

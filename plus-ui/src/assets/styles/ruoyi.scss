@@ -203,7 +203,9 @@ h6 {
   box-shadow: var(--app-shadow-sm);
   border-color: var(--el-border-color-lighter);
   overflow: hidden;
-  transition: box-shadow 0.2s ease, transform 0.2s ease;
+  transition:
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
 }
 
 .el-card:hover {

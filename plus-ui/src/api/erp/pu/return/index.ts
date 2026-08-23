@@ -14,10 +14,10 @@ const BASE = '/erp/pu/return';
  * @returns 采购退货单列表及总数
  */
 export const listPurchaseReturn = (query: PurchaseReturnQuery): AxiosPromise<{ rows: PurchaseReturnVO[]; total: number }> =>
-  request({ 
-    url: BASE + '/list', 
-    method: 'get', 
-    params: query 
+  request({
+    url: BASE + '/list',
+    method: 'get',
+    params: query
   });
 
 /**
@@ -26,9 +26,9 @@ export const listPurchaseReturn = (query: PurchaseReturnQuery): AxiosPromise<{ r
  * @returns 采购退货单详细信息
  */
 export const getPurchaseReturn = (id: string | number): AxiosPromise<PurchaseReturnVO> =>
-  request({ 
-    url: BASE + '/' + id, 
-    method: 'get' 
+  request({
+    url: BASE + '/' + id,
+    method: 'get'
   });
 
 /**
@@ -37,10 +37,10 @@ export const getPurchaseReturn = (id: string | number): AxiosPromise<PurchaseRet
  * @returns 请求结果
  */
 export const addPurchaseReturn = (data: PurchaseReturnForm) =>
-  request({ 
-    url: BASE, 
-    method: 'post', 
-    data 
+  request({
+    url: BASE,
+    method: 'post',
+    data
   });
 
 /**
@@ -49,10 +49,10 @@ export const addPurchaseReturn = (data: PurchaseReturnForm) =>
  * @returns 请求结果
  */
 export const updatePurchaseReturn = (data: PurchaseReturnForm) =>
-  request({ 
-    url: BASE, 
-    method: 'put', 
-    data 
+  request({
+    url: BASE,
+    method: 'put',
+    data
   });
 
 /**
@@ -61,9 +61,9 @@ export const updatePurchaseReturn = (data: PurchaseReturnForm) =>
  * @returns 请求结果
  */
 export const delPurchaseReturn = (id: string | number | (string | number)[]) =>
-  request({ 
-    url: BASE + '/' + id, 
-    method: 'delete' 
+  request({
+    url: BASE + '/' + id,
+    method: 'delete'
   });
 
 /**
@@ -72,10 +72,10 @@ export const delPurchaseReturn = (id: string | number | (string | number)[]) =>
  * @returns 下载链接
  */
 export const exportPurchaseReturn = (query: PurchaseReturnQuery) =>
-  request({ 
-    url: BASE + '/export', 
-    method: 'post', 
-    params: query 
+  request({
+    url: BASE + '/export',
+    method: 'post',
+    params: query
   });
 
 /**
@@ -83,10 +83,10 @@ export const exportPurchaseReturn = (query: PurchaseReturnQuery) =>
  * @param id 采购退货单ID
  * @returns 请求结果
  */
-export const confirmPurchaseReturn = (id: number) => 
-  request({ 
-    url: BASE + '/confirm/' + id, 
-    method: 'put' 
+export const confirmPurchaseReturn = (id: number) =>
+  request({
+    url: BASE + '/confirm/' + id,
+    method: 'put'
   });
 
 /**
@@ -109,5 +109,4 @@ export const submitPurchaseReturnFlow = (id: string | number, selectFlowId?: str
 /**
  * 获取流程实例ID
  */
-export const getPurchaseReturnProcId = (id: string | number) =>
-  request({ url: BASE + '/' + id + '/proc', method: 'get' });
+export const getPurchaseReturnProcId = (id: string | number) => request({ url: BASE + '/' + id + '/proc', method: 'get' });

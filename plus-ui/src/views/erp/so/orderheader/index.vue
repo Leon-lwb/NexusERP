@@ -440,4 +440,3 @@ onActivated(() => {
   getList();
 });
 </script>
-

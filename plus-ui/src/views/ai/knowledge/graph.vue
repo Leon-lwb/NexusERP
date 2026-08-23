@@ -12,7 +12,9 @@
       <el-button v-if="!building && graph" type="warning" size="small" icon="RefreshRight" @click="handleRebuild">重建</el-button>
       <el-button v-if="!building && graph" type="danger" size="small" icon="Delete" @click="handleDelete">删除</el-button>
       <el-button v-if="!building" size="small" icon="Refresh" @click="loadAll">刷新</el-button>
-      <el-button v-if="graph && entities.length" size="small" :icon="isFullscreen ? 'Aim' : 'FullScreen'" @click="toggleFullscreen">{{ isFullscreen ? '退出全屏' : '全屏' }}</el-button>
+      <el-button v-if="graph && entities.length" size="small" :icon="isFullscreen ? 'Aim' : 'FullScreen'" @click="toggleFullscreen">{{
+        isFullscreen ? '退出全屏' : '全屏'
+      }}</el-button>
     </div>
 
     <!-- 进度条 -->
@@ -28,7 +30,9 @@
     <!-- 图谱可视化 -->
     <div v-if="!graph" class="kg-empty">
       <el-empty description="尚未构建知识图谱，点击「构建图谱」开始">
-        <template #image><el-icon size="60"><Share /></el-icon></template>
+        <template #image
+          ><el-icon size="60"><Share /></el-icon
+        ></template>
       </el-empty>
     </div>
     <div v-else ref="chartWrapper" class="kg-chart-wrapper" :class="{ 'is-fullscreen': isFullscreen }">
@@ -69,7 +73,12 @@
         </el-table>
       </el-tab-pane>
       <el-tab-pane label="全局检索" name="global">
-        <el-input v-model="globalQuery" placeholder="输入整体/主题问题，如「这批文档主要涉及哪些业务关系」" clearable @keyup.enter="handleGlobalSearch">
+        <el-input
+          v-model="globalQuery"
+          placeholder="输入整体/主题问题，如「这批文档主要涉及哪些业务关系」"
+          clearable
+          @keyup.enter="handleGlobalSearch"
+        >
           <template #append>
             <el-button :loading="globalLoading" @click="handleGlobalSearch">检索</el-button>
           </template>
@@ -98,253 +107,276 @@
 </template>
 
 <script setup lang="ts">
-import * as echarts from 'echarts'
-import { ComponentInternalInstance } from 'vue'
+import * as echarts from 'echarts';
+import { ComponentInternalInstance } from 'vue';
 import {
-  getGraph, getGraphProgress, listGraphEntity, listGraphRelation, listGraphCommunity,
-  getEntityNeighbors, globalSearch, buildGraph, rebuildGraph, deleteGraph,
-  type AiKnowledgeGraph, type AiKgEntity, type AiKgRelation, type AiKgCommunity, type GraphProgress
-} from '@/api/ai/knowledgeGraph'
+  getGraph,
+  getGraphProgress,
+  listGraphEntity,
+  listGraphRelation,
+  listGraphCommunity,
+  getEntityNeighbors,
+  globalSearch,
+  buildGraph,
+  rebuildGraph,
+  deleteGraph,
+  type AiKnowledgeGraph,
+  type AiKgEntity,
+  type AiKgRelation,
+  type AiKgCommunity,
+  type GraphProgress
+} from '@/api/ai/knowledgeGraph';
 
-const { proxy } = getCurrentInstance() as ComponentInternalInstance
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 
-const props = defineProps<{ knowledgeId: number }>()
+const props = defineProps<{ knowledgeId: number }>();
 
-const graph = ref<AiKnowledgeGraph | null>(null)
-const progress = ref<GraphProgress | null>(null)
-const building = ref(false)
-const entities = ref<AiKgEntity[]>([])
-const relations = ref<AiKgRelation[]>([])
-const communities = ref<AiKgCommunity[]>([])
-const activeTab = ref('entity')
-const neighbors = ref<any>(null)
-const selectedEntityName = ref('')
-const globalQuery = ref('')
-const globalResult = ref<any>(null)
-const globalLoading = ref(false)
+const graph = ref<AiKnowledgeGraph | null>(null);
+const progress = ref<GraphProgress | null>(null);
+const building = ref(false);
+const entities = ref<AiKgEntity[]>([]);
+const relations = ref<AiKgRelation[]>([]);
+const communities = ref<AiKgCommunity[]>([]);
+const activeTab = ref('entity');
+const neighbors = ref<any>(null);
+const selectedEntityName = ref('');
+const globalQuery = ref('');
+const globalResult = ref<any>(null);
+const globalLoading = ref(false);
 
-const isFullscreen = ref(false)
-const chartWrapper = ref<HTMLElement>()
+const isFullscreen = ref(false);
+const chartWrapper = ref<HTMLElement>();
 
-const chartRef = ref<HTMLElement>()
-let chartInstance: echarts.ECharts | null = null
-let resizeObserver: ResizeObserver | null = null
-let intersectionObserver: IntersectionObserver | null = null
-let pollTimer: ReturnType<typeof setInterval> | null = null
+const chartRef = ref<HTMLElement>();
+let chartInstance: echarts.ECharts | null = null;
+let resizeObserver: ResizeObserver | null = null;
+let intersectionObserver: IntersectionObserver | null = null;
+let pollTimer: ReturnType<typeof setInterval> | null = null;
 
-const LOAD_PAGE_SIZE = 500
+const LOAD_PAGE_SIZE = 500;
 
 const progressPct = computed(() => {
-  const p = progress.value
-  if (!p) return 0
-  const stage = p.stage
+  const p = progress.value;
+  if (!p) return 0;
+  const stage = p.stage;
   if (stage === 'SUMMARIZING') {
-    const total = p.communityTotal || 0
-    return total ? Math.round(((p.communitySummarized || 0) / total) * 100) : 0
+    const total = p.communityTotal || 0;
+    return total ? Math.round(((p.communitySummarized || 0) / total) * 100) : 0;
   }
   if (stage === 'DETECTING' || stage === 'PENDING') {
-    return 100 // 配合 indeterminate 走不定进度条
+    return 100; // 配合 indeterminate 走不定进度条
   }
   // EXTRACTING / 默认
-  if (!p.total) return 0
-  return Math.round(((p.processed || 0) / p.total) * 100)
-})
+  if (!p.total) return 0;
+  return Math.round(((p.processed || 0) / p.total) * 100);
+});
 const progressIndeterminate = computed(() => {
-  const stage = progress.value?.stage
-  return stage === 'DETECTING' || stage === 'PENDING'
-})
+  const stage = progress.value?.stage;
+  return stage === 'DETECTING' || stage === 'PENDING';
+});
 const progressStatus = computed(() => {
-  if (progress.value?.graphStatus === '3') return 'exception'
-  if (progress.value?.graphStatus === '2') return 'success'
-  return undefined
-})
+  if (progress.value?.graphStatus === '3') return 'exception';
+  if (progress.value?.graphStatus === '2') return 'success';
+  return undefined;
+});
 const progressTip = computed(() => {
-  const p = progress.value
-  if (!p) return ''
-  const stage = p.stage
+  const p = progress.value;
+  if (!p) return '';
+  const stage = p.stage;
   if (stage === 'EXTRACTING') {
-    return `实体抽取中 ${p.processed || 0} / ${p.total || 0} 切片${p.failed ? '（失败 ' + p.failed + '）' : ''}`
+    return `实体抽取中 ${p.processed || 0} / ${p.total || 0} 切片${p.failed ? '（失败 ' + p.failed + '）' : ''}`;
   }
   if (stage === 'DETECTING') {
-    return '社区检测中…'
+    return '社区检测中…';
   }
   if (stage === 'SUMMARIZING') {
-    return `社区摘要生成中 ${p.communitySummarized || 0} / ${p.communityTotal || 0}`
+    return `社区摘要生成中 ${p.communitySummarized || 0} / ${p.communityTotal || 0}`;
   }
-  return `已处理 ${p.processed || 0} / ${p.total || 0} 切片${p.failed ? '（失败 ' + p.failed + '）' : ''}`
-})
+  return `已处理 ${p.processed || 0} / ${p.total || 0} 切片${p.failed ? '（失败 ' + p.failed + '）' : ''}`;
+});
 
 onMounted(() => {
-  loadAll()
-  document.addEventListener('fullscreenchange', handleFullscreenChange)
-  document.addEventListener('webkitfullscreenchange', handleFullscreenChange)
-})
+  loadAll();
+  document.addEventListener('fullscreenchange', handleFullscreenChange);
+  document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+});
 
 onUnmounted(() => {
-  if (isFullscreen.value) exitFullscreen()
-  document.removeEventListener('fullscreenchange', handleFullscreenChange)
-  document.removeEventListener('webkitfullscreenchange', handleFullscreenChange)
-  stopPolling()
-  resizeObserver?.disconnect()
-  intersectionObserver?.disconnect()
-  chartInstance?.dispose()
-  chartInstance = null
-})
+  if (isFullscreen.value) exitFullscreen();
+  document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+  stopPolling();
+  resizeObserver?.disconnect();
+  intersectionObserver?.disconnect();
+  chartInstance?.dispose();
+  chartInstance = null;
+});
 
-watch(() => props.knowledgeId, () => {
-  if (isFullscreen.value) exitFullscreen()
-  // 切换知识库：先销毁旧 echarts 实例与 observer，避免 setOption 作用于脱离 DOM 的旧实例导致新容器无图
-  chartInstance?.dispose()
-  chartInstance = null
-  resizeObserver?.disconnect()
-  resizeObserver = null
-  intersectionObserver?.disconnect()
-  intersectionObserver = null
-  graph.value = null
-  entities.value = []
-  relations.value = []
-  communities.value = []
-  neighbors.value = null
-  loadAll()
-})
+watch(
+  () => props.knowledgeId,
+  () => {
+    if (isFullscreen.value) exitFullscreen();
+    // 切换知识库：先销毁旧 echarts 实例与 observer，避免 setOption 作用于脱离 DOM 的旧实例导致新容器无图
+    chartInstance?.dispose();
+    chartInstance = null;
+    resizeObserver?.disconnect();
+    resizeObserver = null;
+    intersectionObserver?.disconnect();
+    intersectionObserver = null;
+    graph.value = null;
+    entities.value = [];
+    relations.value = [];
+    communities.value = [];
+    neighbors.value = null;
+    loadAll();
+  }
+);
 
 /** 加载图谱 + 实体/关系/社区 */
 async function loadAll() {
-  const res: any = await getGraph(props.knowledgeId)
-  graph.value = res.data || null
+  const res: any = await getGraph(props.knowledgeId);
+  graph.value = res.data || null;
   if (graph.value) {
     if (graph.value.graphStatus === '1') {
-      building.value = true
-      startPolling()
+      building.value = true;
+      startPolling();
     } else if (graph.value.graphStatus === '2') {
-      await loadGraphData()
+      await loadGraphData();
     }
   }
 }
 
 async function loadGraphData() {
-  const graphId = graph.value?.id
-  if (!graphId) return
+  const graphId = graph.value?.id;
+  if (!graphId) return;
   const [entRes, relRes, comRes]: any[] = await Promise.all([
     listGraphEntity({ graphId, pageNum: 1, pageSize: LOAD_PAGE_SIZE }),
     listGraphRelation({ graphId, pageNum: 1, pageSize: LOAD_PAGE_SIZE }),
     listGraphCommunity({ graphId, pageNum: 1, pageSize: LOAD_PAGE_SIZE })
-  ])
-  entities.value = entRes.rows || []
-  relations.value = relRes.rows || []
-  communities.value = comRes.rows || []
-  nextTick(renderChart)
+  ]);
+  entities.value = entRes.rows || [];
+  relations.value = relRes.rows || [];
+  communities.value = comRes.rows || [];
+  nextTick(renderChart);
 }
 
 /** 构建 */
 function handleBuild() {
-  if (!props.knowledgeId) return
+  if (!props.knowledgeId) return;
   buildGraph(props.knowledgeId).then(() => {
-    proxy?.$modal.msgSuccess('已开始构建图谱')
-    building.value = true
-    progress.value = null
-    startPolling()
-  })
+    proxy?.$modal.msgSuccess('已开始构建图谱');
+    building.value = true;
+    progress.value = null;
+    startPolling();
+  });
 }
 
 /** 重建 */
 function handleRebuild() {
-  proxy?.$modal.confirm('将清空当前图谱全部实体/关系/社区并全量重抽，确认？').then(() => {
-    return rebuildGraph(props.knowledgeId)
-  }).then(() => {
-    proxy?.$modal.msgSuccess('已开始重建图谱')
-    building.value = true
-    progress.value = null
-    startPolling()
-  }).catch(() => {})
+  proxy?.$modal
+    .confirm('将清空当前图谱全部实体/关系/社区并全量重抽，确认？')
+    .then(() => {
+      return rebuildGraph(props.knowledgeId);
+    })
+    .then(() => {
+      proxy?.$modal.msgSuccess('已开始重建图谱');
+      building.value = true;
+      progress.value = null;
+      startPolling();
+    })
+    .catch(() => {});
 }
 
 /** 删除 */
 function handleDelete() {
-  proxy?.$modal.confirm('将删除图谱及全部实体/关系/社区（保留文档切片），确认？').then(() => {
-    return deleteGraph(props.knowledgeId)
-  }).then(() => {
-    proxy?.$modal.msgSuccess('删除成功')
-    graph.value = null
-    entities.value = []
-    relations.value = []
-    communities.value = []
-    neighbors.value = null
-    chartInstance?.clear()
-  }).catch(() => {})
+  proxy?.$modal
+    .confirm('将删除图谱及全部实体/关系/社区（保留文档切片），确认？')
+    .then(() => {
+      return deleteGraph(props.knowledgeId);
+    })
+    .then(() => {
+      proxy?.$modal.msgSuccess('删除成功');
+      graph.value = null;
+      entities.value = [];
+      relations.value = [];
+      communities.value = [];
+      neighbors.value = null;
+      chartInstance?.clear();
+    })
+    .catch(() => {});
 }
 
 /** 进度轮询 */
 function startPolling() {
-  stopPolling()
+  stopPolling();
   pollTimer = setInterval(async () => {
-    const res: any = await getGraphProgress(props.knowledgeId)
-    progress.value = res.data
-    const status = res.data?.graphStatus
+    const res: any = await getGraphProgress(props.knowledgeId);
+    progress.value = res.data;
+    const status = res.data?.graphStatus;
     // 只认 2(完成)/3(失败) 为终止态：rebuild 会先把 status 置 0 再异步构建，
     // 若把 0 当终止会误判"未构建"→进度消失、按钮重现而后端仍在跑
     if (status === '2' || status === '3') {
-      stopPolling()
-      building.value = false
+      stopPolling();
+      building.value = false;
       if (status === '2') {
-        await loadAll()
-        const errMsg = graph.value?.errorMessage
+        await loadAll();
+        const errMsg = graph.value?.errorMessage;
         if (errMsg && errMsg.includes('失败')) {
-          proxy?.$modal.msgWarning('图谱构建完成（' + errMsg + '）')
+          proxy?.$modal.msgWarning('图谱构建完成（' + errMsg + '）');
         } else {
-          proxy?.$modal.msgSuccess('图谱构建完成')
+          proxy?.$modal.msgSuccess('图谱构建完成');
         }
       } else if (status === '3') {
-        proxy?.$modal.msgError('图谱构建失败：' + (graph.value?.errorMessage || ''))
+        proxy?.$modal.msgError('图谱构建失败：' + (graph.value?.errorMessage || ''));
       }
     }
-  }, 2000)
+  }, 2000);
 }
 
 function stopPolling() {
   if (pollTimer) {
-    clearInterval(pollTimer)
-    pollTimer = null
+    clearInterval(pollTimer);
+    pollTimer = null;
   }
 }
 
 /** 全屏切换 */
 function toggleFullscreen() {
-  if (isFullscreen.value) exitFullscreen()
-  else enterFullscreen()
+  if (isFullscreen.value) exitFullscreen();
+  else enterFullscreen();
 }
 
 /** 进入全屏：优先使用浏览器原生 Fullscreen API */
 function enterFullscreen() {
-  const el = chartWrapper.value
-  if (!el) return
-  const req = el.requestFullscreen || (el as any).webkitRequestFullscreen || (el as any).msRequestFullscreen
+  const el = chartWrapper.value;
+  if (!el) return;
+  const req = el.requestFullscreen || (el as any).webkitRequestFullscreen || (el as any).msRequestFullscreen;
   if (req) {
-    req.call(el)
+    req.call(el);
   } else {
     // 回退老旧浏览器不支持 Fullscreen API，使用 CSS 全屏类名（.is-fullscreen 已处理）
-    isFullscreen.value = true
-    nextTick(() => chartInstance?.resize())
+    isFullscreen.value = true;
+    nextTick(() => chartInstance?.resize());
   }
 }
 
 /** 退出全屏。同时监听 fullscreenchange 与元素/按键 ESC 退出时统一兜底 */
 function exitFullscreen() {
-  const exit = document.exitFullscreen || (document as any).webkitExitFullscreen || (document as any).msExitFullscreen
+  const exit = document.exitFullscreen || (document as any).webkitExitFullscreen || (document as any).msExitFullscreen;
   if (exit && document.fullscreenElement) {
-    exit.call(document)
+    exit.call(document);
   } else {
-    isFullscreen.value = false
-    nextTick(() => chartInstance?.resize())
+    isFullscreen.value = false;
+    nextTick(() => chartInstance?.resize());
   }
 }
 
 /** 监听原生全屏状态变化，保持 isFullscreen 与浏览器同步，并触发 resize */
 function handleFullscreenChange() {
-  const wasFullscreen = isFullscreen.value
-  isFullscreen.value = !!(document.fullscreenElement || (document as any).webkitFullscreenElement || (document as any).msFullscreenElement)
+  const wasFullscreen = isFullscreen.value;
+  isFullscreen.value = !!(document.fullscreenElement || (document as any).webkitFullscreenElement || (document as any).msFullscreenElement);
   if (wasFullscreen !== isFullscreen.value) {
-    nextTick(() => chartInstance?.resize())
+    nextTick(() => chartInstance?.resize());
   }
 }
 
@@ -354,151 +386,217 @@ function handleFullscreenChange() {
  * （如 Tab 从"文档管理"切到"知识图谱"、菜单重入），可见时 resize 修正 width=0 初始化导致的偏移</p>
  */
 function setupObservers() {
-  if (!chartRef.value) return
+  if (!chartRef.value) return;
   if (!resizeObserver) {
-    resizeObserver = new ResizeObserver(() => chartInstance?.resize())
-    resizeObserver.observe(chartRef.value)
+    resizeObserver = new ResizeObserver(() => chartInstance?.resize());
+    resizeObserver.observe(chartRef.value);
   }
   if (!intersectionObserver) {
     intersectionObserver = new IntersectionObserver((entries) => {
       if (entries[0]?.isIntersecting && entries[0].intersectionRatio > 0) {
-        chartInstance?.resize()
+        chartInstance?.resize();
       }
-    })
-    intersectionObserver.observe(chartRef.value)
+    });
+    intersectionObserver.observe(chartRef.value);
   }
 }
 
 /** 渲染 echarts 力导向图（按社区着色） */
 function renderChart() {
-  if (!chartRef.value || !entities.value.length) return
+  if (!chartRef.value || !entities.value.length) return;
   if (!chartInstance) {
-    chartInstance = echarts.init(chartRef.value)
+    chartInstance = echarts.init(chartRef.value);
     chartInstance.on('click', (params: any) => {
       if (params.dataType === 'node' && params.data?.id) {
-        handleNodeClick(String(params.data.id))
+        handleNodeClick(String(params.data.id));
       }
-    })
+    });
     // 节点拖拽联动：拖动开始时聚焦邻接节点（高亮 + 关联节点跟随）
     chartInstance.on('dragstart', (params: any) => {
       if (params.dataType === 'node') {
-        chartInstance?.dispatchAction({ type: 'focusNodeAdjacency', seriesIndex: 0, dataIndex: params.dataIndex })
+        chartInstance?.dispatchAction({ type: 'focusNodeAdjacency', seriesIndex: 0, dataIndex: params.dataIndex });
       }
-    })
+    });
     // 拖拽结束时解除邻接聚焦，恢复整体视图
     chartInstance.on('dragend', (params: any) => {
       if (params.dataType === 'node') {
-        chartInstance?.dispatchAction({ type: 'unfocusNodeAdjacency', seriesIndex: 0, dataIndex: params.dataIndex })
+        chartInstance?.dispatchAction({ type: 'unfocusNodeAdjacency', seriesIndex: 0, dataIndex: params.dataIndex });
       }
-    })
+    });
     // init 后挂载 observer：此处 chartRef 必然存在（onMounted 时数据未加载、chartRef 尚不存在，旧逻辑里 observer 永不创建）
-    setupObservers()
+    setupObservers();
   }
-  const communityIds = [...new Set(entities.value.map((e) => e.communityId).filter((c) => c != null))] as number[]
-  const categories = communityIds.map((id) => ({ name: '社区 ' + id }))
+  const communityIds = [...new Set(entities.value.map((e) => e.communityId).filter((c) => c != null))] as number[];
+  const categories = communityIds.map((id) => ({ name: '社区 ' + id }));
   const catIndex = (id?: number) => {
-    const i = communityIds.indexOf(id as number)
-    return i >= 0 ? i : -1
-  }
+    const i = communityIds.indexOf(id as number);
+    return i >= 0 ? i : -1;
+  };
   const nodes = entities.value.map((e) => ({
     id: String(e.id),
     name: e.entityName,
     category: catIndex(e.communityId),
     symbolSize: 14 + Math.min((e.mentionCount || 1) * 3, 30),
     value: e
-  }))
+  }));
   const links = relations.value.map((r) => ({
     source: String(r.sourceEntityId),
     target: String(r.targetEntityId),
     value: r.relationType
-  }))
+  }));
   const option: any = {
     tooltip: { formatter: (p: any) => (p.dataType === 'node' ? p.data.name : `${p.data.source} -${p.data.value}-> ${p.data.target}`) },
     legend: [{ data: categories.map((c) => c.name), orient: 'vertical', right: 10, top: 20 }],
-    series: [{
-      type: 'graph',
-      layout: 'force',
-      roam: true,
-      categories,
-      data: nodes,
-      links,
-      force: { repulsion: 140, edgeLength: [60, 120], gravity: 0.08, layoutAnimation: true },
-      draggable: true,
-      // 拖拽节点时关联节点跟随移动的联动特效
-      label: { show: true, position: 'right', fontSize: 10 },
-      lineStyle: { color: 'source', opacity: 0.5, curveness: 0.1 },
-      emphasis: {
-        focus: 'adjacency',
-        lineStyle: { width: 3, opacity: 1 },
-        label: { fontSize: 12, fontWeight: 'bold' }
-      },
-      // 选中节点拖动时，邻接节点同步高亮联动
-      select: { disabled: true }
-    }]
-  }
-  chartInstance.setOption(option, true)
+    series: [
+      {
+        type: 'graph',
+        layout: 'force',
+        roam: true,
+        categories,
+        data: nodes,
+        links,
+        force: { repulsion: 140, edgeLength: [60, 120], gravity: 0.08, layoutAnimation: true },
+        draggable: true,
+        // 拖拽节点时关联节点跟随移动的联动特效
+        label: { show: true, position: 'right', fontSize: 10 },
+        lineStyle: { color: 'source', opacity: 0.5, curveness: 0.1 },
+        emphasis: {
+          focus: 'adjacency',
+          lineStyle: { width: 3, opacity: 1 },
+          label: { fontSize: 12, fontWeight: 'bold' }
+        },
+        // 选中节点拖动时，邻接节点同步高亮联动
+        select: { disabled: true }
+      }
+    ]
+  };
+  chartInstance.setOption(option, true);
 }
 
 /** 节点点击 → 加载邻居 */
 function handleNodeClick(entityId: string) {
   getEntityNeighbors(entityId).then((res: any) => {
-    neighbors.value = res.data
-    const ent = res.data?.entity
-    selectedEntityName.value = ent?.entityName || ''
-    activeTab.value = 'neighbors'
-  })
+    neighbors.value = res.data;
+    const ent = res.data?.entity;
+    selectedEntityName.value = ent?.entityName || '';
+    activeTab.value = 'neighbors';
+  });
 }
 
 /** 全局检索 */
 function handleGlobalSearch() {
   if (!globalQuery.value.trim()) {
-    proxy?.$modal.msgWarning('请输入查询问题')
-    return
+    proxy?.$modal.msgWarning('请输入查询问题');
+    return;
   }
-  globalLoading.value = true
-  globalSearch(props.knowledgeId, globalQuery.value).then((res: any) => {
-    globalResult.value = res.data
-  }).finally(() => {
-    globalLoading.value = false
-  })
+  globalLoading.value = true;
+  globalSearch(props.knowledgeId, globalQuery.value)
+    .then((res: any) => {
+      globalResult.value = res.data;
+    })
+    .finally(() => {
+      globalLoading.value = false;
+    });
 }
 
 function statusText(s?: string) {
-  return { '0': '未构建', '1': '构建中', '2': '已完成', '3': '失败' }[s || ''] || '未知'
+  return { '0': '未构建', '1': '构建中', '2': '已完成', '3': '失败' }[s || ''] || '未知';
 }
 function statusType(s?: string): any {
-  return { '0': 'info', '1': 'warning', '2': 'success', '3': 'danger' }[s || ''] || 'info'
+  return { '0': 'info', '1': 'warning', '2': 'success', '3': 'danger' }[s || ''] || 'info';
 }
 function summaryStatusText(s?: string) {
-  return { '0': '待生成', '1': '生成中', '2': '已完成', '3': '失败' }[s || ''] || '未知'
+  return { '0': '待生成', '1': '生成中', '2': '已完成', '3': '失败' }[s || ''] || '未知';
 }
 function summaryStatusType(s?: string): any {
-  return { '0': 'info', '1': 'warning', '2': 'success', '3': 'danger' }[s || ''] || 'info'
+  return { '0': 'info', '1': 'warning', '2': 'success', '3': 'danger' }[s || ''] || 'info';
 }
 </script>
 
 <style scoped>
-.kg-container { display: flex; flex-direction: column; gap: 8px; }
-.kg-toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.kg-stats { font-size: 12px; color: var(--el-text-color-secondary); }
-.kg-chart-wrapper { position: relative; }
-.kg-chart { width: 100%; height: 380px; border: 1px solid var(--el-border-color-lighter); border-radius: 4px; }
-.kg-empty { height: 380px; display: flex; align-items: center; justify-content: center; }
-.kg-chart--fullscreen { height: 100%; border: none; border-radius: 0; }
+.kg-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.kg-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.kg-stats {
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+}
+.kg-chart-wrapper {
+  position: relative;
+}
+.kg-chart {
+  width: 100%;
+  height: 380px;
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 4px;
+}
+.kg-empty {
+  height: 380px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.kg-chart--fullscreen {
+  height: 100%;
+  border: none;
+  border-radius: 0;
+}
 /* 全屏：优先由浏览器原生 Fullscreen API 接管；此规则作为老旧浏览器回退与内容兜底 */
 .kg-chart-wrapper.is-fullscreen {
   position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   z-index: 9999;
-  width: 100vw; height: 100vh;
+  width: 100vw;
+  height: 100vh;
   background: var(--el-bg-color, #fff);
 }
-:fullscreen .kg-chart { height: 100%; border: none; border-radius: 0; }
-:-webkit-full-screen .kg-chart { height: 100%; border: none; border-radius: 0; }
-:fullscreen .kg-chart-wrapper.is-fullscreen { width: 100%; height: 100%; }
-.kg-tabs { margin-top: 4px; }
-.kg-global-result { margin-top: 12px; padding: 10px; border: 1px solid var(--el-border-color-lighter); border-radius: 4px; background: var(--el-fill-color-lighter); }
-.kg-global-answer { font-size: 13px; line-height: 1.7; white-space: pre-wrap; }
-.kg-global-communities { margin-top: 8px; font-size: 12px; color: var(--el-text-color-secondary); }
-.kg-progress-tip { font-size: 12px; color: var(--el-text-color-secondary); }
+:fullscreen .kg-chart {
+  height: 100%;
+  border: none;
+  border-radius: 0;
+}
+:-webkit-full-screen .kg-chart {
+  height: 100%;
+  border: none;
+  border-radius: 0;
+}
+:fullscreen .kg-chart-wrapper.is-fullscreen {
+  width: 100%;
+  height: 100%;
+}
+.kg-tabs {
+  margin-top: 4px;
+}
+.kg-global-result {
+  margin-top: 12px;
+  padding: 10px;
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 4px;
+  background: var(--el-fill-color-lighter);
+}
+.kg-global-answer {
+  font-size: 13px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+}
+.kg-global-communities {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+}
+.kg-progress-tip {
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+}
 </style>

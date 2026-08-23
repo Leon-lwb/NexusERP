@@ -34,12 +34,12 @@
       <el-table-column label="库存数量" align="center" prop="quantity" />
       <el-table-column label="单位成本" align="center" prop="unitCost">
         <template #default="scope">
-          <span style="color: #f56c6c; font-weight: bold;">{{ formatMoney(scope.row.unitCost) }}</span>
+          <span style="color: #f56c6c; font-weight: bold">{{ formatMoney(scope.row.unitCost) }}</span>
         </template>
       </el-table-column>
       <el-table-column label="库存总金额" align="center" prop="totalCost">
         <template #default="scope">
-          <span style="color: #f56c6c; font-weight: bold;">{{ formatMoney(scope.row.totalCost) }}</span>
+          <span style="color: #f56c6c; font-weight: bold">{{ formatMoney(scope.row.totalCost) }}</span>
         </template>
       </el-table-column>
       <el-table-column label="仓库" align="center" prop="warehouseName" />

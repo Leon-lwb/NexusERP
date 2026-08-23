@@ -40,11 +40,9 @@ export function closeSubcontract(subcontractId: number) {
 
 const BASE = '/erp/prd/subcontract';
 
-export const issueSubcontractMaterial = (subcontractId: number) =>
-  request({ url: BASE + '/issue/' + subcontractId, method: 'put' });
+export const issueSubcontractMaterial = (subcontractId: number) => request({ url: BASE + '/issue/' + subcontractId, method: 'put' });
 
-export const receiveSubcontractMaterial = (subcontractId: number) =>
-  request({ url: BASE + '/receive/' + subcontractId, method: 'put' });
+export const receiveSubcontractMaterial = (subcontractId: number) => request({ url: BASE + '/receive/' + subcontractId, method: 'put' });
 
 export function submitApproval(id: string | number) {
   return request({ url: '/erp/prd/subcontract/submit/' + id, method: 'post' });

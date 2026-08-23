@@ -14,15 +14,7 @@
           </div>
 
           <div v-for="(c, idx) in local.all" :key="`all-${idx}`" class="cond-row">
-            <el-select
-              v-model="c.field"
-              filterable
-              clearable
-              allow-create
-              default-first-option
-              placeholder="字段"
-              style="width: 220px"
-            >
+            <el-select v-model="c.field" filterable clearable allow-create default-first-option placeholder="字段" style="width: 220px">
               <el-option v-for="f in fields" :key="f.value" :label="f.label" :value="f.value" />
             </el-select>
 
@@ -33,7 +25,7 @@
             <template v-if="needsValue(c.op)">
               <el-select
                 v-if="isListOp(c.op)"
-                v-model="(c.value as any)"
+                v-model="c.value as any"
                 multiple
                 filterable
                 clearable
@@ -43,13 +35,7 @@
                 placeholder="值（多个）"
                 style="width: 260px"
               />
-              <el-input
-                v-else
-                v-model="(c.value as any)"
-                placeholder="值"
-                style="width: 260px"
-                clearable
-              />
+              <el-input v-else v-model="c.value as any" placeholder="值" style="width: 260px" clearable />
             </template>
             <span v-else class="cond-value-muted">（无需值）</span>
 
@@ -64,15 +50,7 @@
           </div>
 
           <div v-for="(c, idx) in local.any" :key="`any-${idx}`" class="cond-row">
-            <el-select
-              v-model="c.field"
-              filterable
-              clearable
-              allow-create
-              default-first-option
-              placeholder="字段"
-              style="width: 220px"
-            >
+            <el-select v-model="c.field" filterable clearable allow-create default-first-option placeholder="字段" style="width: 220px">
               <el-option v-for="f in fields" :key="f.value" :label="f.label" :value="f.value" />
             </el-select>
 
@@ -83,7 +61,7 @@
             <template v-if="needsValue(c.op)">
               <el-select
                 v-if="isListOp(c.op)"
-                v-model="(c.value as any)"
+                v-model="c.value as any"
                 multiple
                 filterable
                 clearable
@@ -93,13 +71,7 @@
                 placeholder="值（多个）"
                 style="width: 260px"
               />
-              <el-input
-                v-else
-                v-model="(c.value as any)"
-                placeholder="值"
-                style="width: 260px"
-                clearable
-              />
+              <el-input v-else v-model="c.value as any" placeholder="值" style="width: 260px" clearable />
             </template>
             <span v-else class="cond-value-muted">（无需值）</span>
 
@@ -112,71 +84,66 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, watch } from 'vue'
+import { reactive, ref, watch } from 'vue';
 
-type Op =
-  | 'eq' | 'ne'
-  | 'gt' | 'ge' | 'lt' | 'le'
-  | 'in' | 'notIn'
-  | 'empty' | 'notEmpty'
-  | 'contains'
+type Op = 'eq' | 'ne' | 'gt' | 'ge' | 'lt' | 'le' | 'in' | 'notIn' | 'empty' | 'notEmpty' | 'contains';
 
-export type WhenCond = { field: string; op: Op; value?: any }
-export type WhenClause = { all?: WhenCond[]; any?: WhenCond[] }
-export type FieldOption = { label: string; value: string }
+export type WhenCond = { field: string; op: Op; value?: any };
+export type WhenClause = { all?: WhenCond[]; any?: WhenCond[] };
+export type FieldOption = { label: string; value: string };
 
-const OPS: Op[] = ['eq','ne','gt','ge','lt','le','in','notIn','empty','notEmpty','contains']
+const OPS: Op[] = ['eq', 'ne', 'gt', 'ge', 'lt', 'le', 'in', 'notIn', 'empty', 'notEmpty', 'contains'];
 
 const props = defineProps<{
-  modelValue?: WhenClause
-  fields: FieldOption[]
-}>()
+  modelValue?: WhenClause;
+  fields: FieldOption[];
+}>();
 
 const emit = defineEmits<{
-  (e: 'update:modelValue', v?: WhenClause): void
-}>()
+  (e: 'update:modelValue', v?: WhenClause): void;
+}>();
 
-const activeTab = ref<'all'|'any'>('all')
-const enabled = ref(false)
-const local = reactive<{ all: WhenCond[]; any: WhenCond[] }>({ all: [], any: [] })
+const activeTab = ref<'all' | 'any'>('all');
+const enabled = ref(false);
+const local = reactive<{ all: WhenCond[]; any: WhenCond[] }>({ all: [], any: [] });
 
-const needsValue = (op: Op) => !['empty', 'notEmpty'].includes(op)
-const isListOp = (op: Op) => ['in', 'notIn'].includes(op)
+const needsValue = (op: Op) => !['empty', 'notEmpty'].includes(op);
+const isListOp = (op: Op) => ['in', 'notIn'].includes(op);
 
 const normalize = () => {
   if (!enabled.value) {
-    emit('update:modelValue', undefined)
-    return
+    emit('update:modelValue', undefined);
+    return;
   }
-  const out: WhenClause = {}
-  if (local.all.length) out.all = local.all.map((c) => ({ ...c }))
-  if (local.any.length) out.any = local.any.map((c) => ({ ...c }))
-  emit('update:modelValue', (out.all?.length || out.any?.length) ? out : undefined)
-}
+  const out: WhenClause = {};
+  if (local.all.length) out.all = local.all.map((c) => ({ ...c }));
+  if (local.any.length) out.any = local.any.map((c) => ({ ...c }));
+  emit('update:modelValue', out.all?.length || out.any?.length ? out : undefined);
+};
 
 watch(
   () => props.modelValue,
   (v) => {
-    const all = Array.isArray(v?.all) ? v!.all! : []
-    const any = Array.isArray(v?.any) ? v!.any! : []
-    local.all = all.map((c: any) => ({ field: String(c?.field || ''), op: (c?.op || 'eq') as Op, value: c?.value }))
-    local.any = any.map((c: any) => ({ field: String(c?.field || ''), op: (c?.op || 'eq') as Op, value: c?.value }))
-    enabled.value = (local.all.length + local.any.length) > 0
+    const all = Array.isArray(v?.all) ? v!.all! : [];
+    const any = Array.isArray(v?.any) ? v!.any! : [];
+    local.all = all.map((c: any) => ({ field: String(c?.field || ''), op: (c?.op || 'eq') as Op, value: c?.value }));
+    local.any = any.map((c: any) => ({ field: String(c?.field || ''), op: (c?.op || 'eq') as Op, value: c?.value }));
+    enabled.value = local.all.length + local.any.length > 0;
   },
   { immediate: true, deep: true }
-)
+);
 
-watch([() => enabled.value, () => local.all, () => local.any], normalize, { deep: true })
+watch([() => enabled.value, () => local.all, () => local.any], normalize, { deep: true });
 
 const add = (k: 'all' | 'any') => {
-  local[k].push({ field: '', op: 'eq', value: '' })
-}
+  local[k].push({ field: '', op: 'eq', value: '' });
+};
 const remove = (k: 'all' | 'any', idx: number) => {
-  local[k].splice(idx, 1)
-}
+  local[k].splice(idx, 1);
+};
 const clear = (k: 'all' | 'any') => {
-  local[k].splice(0, local[k].length)
-}
+  local[k].splice(0, local[k].length);
+};
 </script>
 
 <style scoped>

@@ -2,7 +2,16 @@
   <div class="app-container">
     <el-form :inline="true">
       <el-form-item label="供应商">
-        <el-select v-model="selectedVendor" filterable remote :remote-method="searchVendor" placeholder="请选择供应商" clearable @change="loadReport" style="width: 250px;">
+        <el-select
+          v-model="selectedVendor"
+          filterable
+          remote
+          :remote-method="searchVendor"
+          placeholder="请选择供应商"
+          clearable
+          @change="loadReport"
+          style="width: 250px"
+        >
           <el-option v-for="v in vendorOptions" :key="v.vendorId" :label="v.vendorName" :value="v.vendorId" />
         </el-select>
       </el-form-item>
@@ -14,18 +23,18 @@
     <el-row :gutter="20">
       <el-col :span="12">
         <el-card header="评估雷达图">
-          <div ref="radarChartRef" style="height: 350px;"></div>
+          <div ref="radarChartRef" style="height: 350px"></div>
         </el-card>
       </el-col>
       <el-col :span="12">
         <el-card header="评估趋势">
-          <div ref="trendChartRef" style="height: 350px;"></div>
+          <div ref="trendChartRef" style="height: 350px"></div>
         </el-card>
       </el-col>
     </el-row>
 
-    <el-card header="评估等级分布" style="margin-top: 20px;">
-      <div ref="pieChartRef" style="height: 300px;"></div>
+    <el-card header="评估等级分布" style="margin-top: 20px">
+      <div ref="pieChartRef" style="height: 300px"></div>
     </el-card>
   </div>
 </template>
@@ -88,7 +97,12 @@ const renderRadarChart = () => {
   }
   const latest = trendData.value.length > 0 ? trendData.value[trendData.value.length - 1] : null;
   if (!latest) {
-    radarChart.setOption({ title: { text: '暂无数据', left: 'center', top: 'center', textStyle: { color: '#999', fontSize: 14 } }, xAxis: { show: false }, yAxis: { show: false }, series: [] });
+    radarChart.setOption({
+      title: { text: '暂无数据', left: 'center', top: 'center', textStyle: { color: '#999', fontSize: 14 } },
+      xAxis: { show: false },
+      yAxis: { show: false },
+      series: []
+    });
     return;
   }
   radarChart.setOption({
@@ -100,14 +114,18 @@ const renderRadarChart = () => {
         { name: '价格竞争力', max: 100 }
       ]
     },
-    series: [{
-      type: 'radar',
-      data: [{
-        value: [latest.deliveryRate || 0, latest.qualityRate || 0, latest.priceScore || 0],
-        name: latest.evalPeriod || '',
-        areaStyle: { opacity: 0.2 }
-      }]
-    }]
+    series: [
+      {
+        type: 'radar',
+        data: [
+          {
+            value: [latest.deliveryRate || 0, latest.qualityRate || 0, latest.priceScore || 0],
+            name: latest.evalPeriod || '',
+            areaStyle: { opacity: 0.2 }
+          }
+        ]
+      }
+    ]
   });
 };
 
@@ -117,7 +135,12 @@ const renderTrendChart = () => {
     trendChart = echarts.init(trendChartRef.value);
   }
   if (trendData.value.length === 0) {
-    trendChart.setOption({ title: { text: '暂无数据', left: 'center', top: 'center', textStyle: { color: '#999', fontSize: 14 } }, xAxis: { show: false }, yAxis: { show: false }, series: [] });
+    trendChart.setOption({
+      title: { text: '暂无数据', left: 'center', top: 'center', textStyle: { color: '#999', fontSize: 14 } },
+      xAxis: { show: false },
+      yAxis: { show: false },
+      series: []
+    });
     return;
   }
   const periods = trendData.value.map((d: any) => d.evalPeriod);
@@ -126,13 +149,21 @@ const renderTrendChart = () => {
     tooltip: { trigger: 'axis' },
     xAxis: { type: 'category', data: periods },
     yAxis: { type: 'value', min: 0, max: 100 },
-    series: [{
-      type: 'line',
-      data: scores,
-      smooth: true,
-      areaStyle: { opacity: 0.1 },
-      markLine: { data: [{ yAxis: 90, name: 'A级' }, { yAxis: 80, name: 'B级' }, { yAxis: 60, name: 'C级' }] }
-    }]
+    series: [
+      {
+        type: 'line',
+        data: scores,
+        smooth: true,
+        areaStyle: { opacity: 0.1 },
+        markLine: {
+          data: [
+            { yAxis: 90, name: 'A级' },
+            { yAxis: 80, name: 'B级' },
+            { yAxis: 60, name: 'C级' }
+          ]
+        }
+      }
+    ]
   });
 };
 
@@ -146,27 +177,39 @@ const renderPieChart = (data: Record<string, number>) => {
   pieChart.setOption({
     tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
     legend: { bottom: 0 },
-    series: [{
-      type: 'pie',
-      radius: ['40%', '70%'],
-      data: pieData,
-      emphasis: { itemStyle: { shadowBlur: 10, shadowOffsetX: 0, shadowColor: 'rgba(0, 0, 0, 0.5)' } },
-      itemStyle: {
-        color: (params: any) => colorMap[params.name] || '#909399'
+    series: [
+      {
+        type: 'pie',
+        radius: ['40%', '70%'],
+        data: pieData,
+        emphasis: { itemStyle: { shadowBlur: 10, shadowOffsetX: 0, shadowColor: 'rgba(0, 0, 0, 0.5)' } },
+        itemStyle: {
+          color: (params: any) => colorMap[params.name] || '#909399'
+        }
       }
-    }]
+    ]
   });
 };
 
 const clearTrend = () => {
   if (trendChart) {
-    trendChart.setOption({ title: { text: '请选择供应商', left: 'center', top: 'center', textStyle: { color: '#999', fontSize: 14 } }, xAxis: { show: false }, yAxis: { show: false }, series: [] });
+    trendChart.setOption({
+      title: { text: '请选择供应商', left: 'center', top: 'center', textStyle: { color: '#999', fontSize: 14 } },
+      xAxis: { show: false },
+      yAxis: { show: false },
+      series: []
+    });
   }
 };
 
 const clearRadar = () => {
   if (radarChart) {
-    radarChart.setOption({ title: { text: '请选择供应商', left: 'center', top: 'center', textStyle: { color: '#999', fontSize: 14 } }, xAxis: { show: false }, yAxis: { show: false }, series: [] });
+    radarChart.setOption({
+      title: { text: '请选择供应商', left: 'center', top: 'center', textStyle: { color: '#999', fontSize: 14 } },
+      xAxis: { show: false },
+      yAxis: { show: false },
+      series: []
+    });
   }
 };
 

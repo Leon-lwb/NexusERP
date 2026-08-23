@@ -6,7 +6,7 @@
           <el-form-item label="流程名称" prop="processName">
             <el-input v-model="queryParams.processName" placeholder="请输入流程名称" clearable style="width: 200px" @keyup.enter="handleQuery" />
           </el-form-item>
-          <el-form-item label="接收时间" style="width: 308px;">
+          <el-form-item label="接收时间" style="width: 308px">
             <el-date-picker
               v-model="dateRange"
               value-format="YYYY-MM-DD"
@@ -37,11 +37,11 @@
         <el-table-column type="selection" width="55" align="center" />
         <el-table-column label="任务编号" align="center" prop="taskId" :show-overflow-tooltip="true" />
         <el-table-column label="流程名称" align="center" prop="procDefName" />
-        <el-table-column label="业务ID" align="center" prop="dataId"/>
+        <el-table-column label="业务ID" align="center" prop="dataId" />
         <el-table-column label="任务节点" align="center" prop="taskName" />
         <el-table-column label="流程版本" align="center">
           <template #default="scope">
-            <el-tag>v{{scope.row.procDefVersion}}</el-tag>
+            <el-tag>v{{ scope.row.procDefVersion }}</el-tag>
           </template>
         </el-table-column>
         <el-table-column label="流程发起人" align="center" prop="startUserName" />
@@ -62,10 +62,10 @@
 
 <script setup name="Todo" lang="ts">
 import { listTodoProcess } from '@/api/workflow/work/process';
-import { ProcessVO, ProcessQuery } from "@/api/workflow/work/types";
-import {DateModelType} from "element-plus";
+import { ProcessVO, ProcessQuery } from '@/api/workflow/work/types';
+import { DateModelType } from 'element-plus';
 
-import { ComponentInternalInstance } from "vue";
+import { ComponentInternalInstance } from 'vue';
 
 const router = useRouter();
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
@@ -77,7 +77,7 @@ const ids = ref<Array<number | string>>([]);
 const single = ref(true);
 const multiple = ref(true);
 const total = ref(0);
-const dateRange = ref<[DateModelType, DateModelType]>(['','']);
+const dateRange = ref<[DateModelType, DateModelType]>(['', '']);
 
 const queryFormRef = ref(ElForm);
 
@@ -94,17 +94,17 @@ const getList = async () => {
   todoList.value = res.rows;
   total.value = res.total;
   loading.value = false;
-}
+};
 /** 搜索按钮操作 */
 const handleQuery = () => {
   queryParams.value.pageNum = 1;
   getList();
-}
+};
 /** 重置按钮操作 */
 const resetQuery = () => {
   queryFormRef.value.resetFields();
   handleQuery();
-}
+};
 /** 跳转到处理页面 */
 const handleProcess = (row: ProcessVO) => {
   router.push({
@@ -114,14 +114,18 @@ const handleProcess = (row: ProcessVO) => {
       dataId: row.dataId,
       processed: true
     }
-  })
-}
+  });
+};
 /** 导出按钮操作 */
 const handleExport = () => {
-  proxy?.download("workflow/process/todoExport", {
-    ...queryParams.value
-  }, `todo_${new Date().getTime()}.xlsx`);
-}
+  proxy?.download(
+    'workflow/process/todoExport',
+    {
+      ...queryParams.value
+    },
+    `todo_${new Date().getTime()}.xlsx`
+  );
+};
 
 onMounted(() => {
   getList();

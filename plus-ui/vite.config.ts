@@ -55,17 +55,7 @@ export default defineConfig(({ mode, command }) => {
     },
     // 预编译
     optimizeDeps: {
-      include: [
-        'vue',
-        'vue-router',
-        'pinia',
-        'axios',
-        '@vueuse/core',
-        'echarts',
-        '@vueup/vue-quill',
-        'image-conversion',
-        'three'
-      ]
+      include: ['vue', 'vue-router', 'pinia', 'axios', '@vueuse/core', 'echarts', '@vueup/vue-quill', 'image-conversion', 'three']
     },
     build: {
       chunkSizeWarningLimit: 1000,
@@ -76,25 +66,9 @@ export default defineConfig(({ mode, command }) => {
             'vendor-vue': ['vue', 'vue-router', 'pinia', '@vueuse/core'],
             'vendor-element': ['element-plus', '@element-plus/icons-vue'],
             'vendor-echarts': ['echarts'],
-            'vendor-bpmn': [
-              'bpmn-js',
-              'bpmn-js-task-resize',
-              'bpmn-js-token-simulation',
-              'diagram-js',
-              'diagram-js-minimap',
-              'xml-js'
-            ],
+            'vendor-bpmn': ['bpmn-js', 'bpmn-js-task-resize', 'bpmn-js-token-simulation', 'diagram-js', 'diagram-js-minimap', 'xml-js'],
             'vendor-three': ['three'],
-            'vendor-utils': [
-              'axios',
-              'crypto-js',
-              'js-cookie',
-              'jsencrypt',
-              'file-saver',
-              'nprogress',
-              'await-to-js',
-              'image-conversion'
-            ]
+            'vendor-utils': ['axios', 'crypto-js', 'js-cookie', 'jsencrypt', 'file-saver', 'nprogress', 'await-to-js', 'image-conversion']
           }
         }
       }

@@ -30,59 +30,57 @@
 </template>
 
 <script lang="ts" setup>
-  defineOptions({ name: 'ScriptTask' })
-  const props = defineProps({
-    id: String,
-    type: String
-  })
+defineOptions({ name: 'ScriptTask' });
+const props = defineProps({
+  id: String,
+  type: String
+});
 
-  const defaultTaskForm = ref({
-    scriptFormat: '',
-    script: '',
-    resource: '',
-    resultVariable: ''
-  })
-  const scriptTaskForm = ref<any>({})
-  const bpmnElement = ref()
+const defaultTaskForm = ref({
+  scriptFormat: '',
+  script: '',
+  resource: '',
+  resultVariable: ''
+});
+const scriptTaskForm = ref<any>({});
+const bpmnElement = ref();
 
-  const bpmnInstances = () => (window as any)?.bpmnInstances
+const bpmnInstances = () => (window as any)?.bpmnInstances;
 
-  const resetTaskForm = () => {
-    for (let key in defaultTaskForm.value) {
-      let value = bpmnElement.value?.businessObject[key] || defaultTaskForm.value[key]
-      scriptTaskForm.value[key] = value
-    }
-    scriptTaskForm.value.scriptType = scriptTaskForm.value.script ? 'inline' : 'external'
+const resetTaskForm = () => {
+  for (const key in defaultTaskForm.value) {
+    const value = bpmnElement.value?.businessObject[key] || defaultTaskForm.value[key];
+    scriptTaskForm.value[key] = value;
   }
+  scriptTaskForm.value.scriptType = scriptTaskForm.value.script ? 'inline' : 'external';
+};
 
-  const updateElementTask = () => {
-    let taskAttr = Object.create(null)
-    taskAttr.scriptFormat = scriptTaskForm.value.scriptFormat || null
-    taskAttr.resultVariable = scriptTaskForm.value.resultVariable || null
-    if (scriptTaskForm.value.scriptType === 'inline') {
-      taskAttr.script = scriptTaskForm.value.script || null
-      taskAttr.resource = null
-    } else {
-      taskAttr.resource = scriptTaskForm.value.resource || null
-      taskAttr.script = null
-    }
-    bpmnInstances().modeling.updateProperties(toRaw(bpmnElement.value), taskAttr)
+const updateElementTask = () => {
+  const taskAttr = Object.create(null);
+  taskAttr.scriptFormat = scriptTaskForm.value.scriptFormat || null;
+  taskAttr.resultVariable = scriptTaskForm.value.resultVariable || null;
+  if (scriptTaskForm.value.scriptType === 'inline') {
+    taskAttr.script = scriptTaskForm.value.script || null;
+    taskAttr.resource = null;
+  } else {
+    taskAttr.resource = scriptTaskForm.value.resource || null;
+    taskAttr.script = null;
   }
+  bpmnInstances().modeling.updateProperties(toRaw(bpmnElement.value), taskAttr);
+};
 
-  watch(
-    () => props.id,
-    () => {
-      bpmnElement.value = bpmnInstances().bpmnElement
-      nextTick(() => {
-        resetTaskForm()
-      })
-    },
-    { immediate: true }
-  )
+watch(
+  () => props.id,
+  () => {
+    bpmnElement.value = bpmnInstances().bpmnElement;
+    nextTick(() => {
+      resetTaskForm();
+    });
+  },
+  { immediate: true }
+);
 
-  onBeforeUnmount(() => {
-    bpmnElement.value = null
-  })
-
-
+onBeforeUnmount(() => {
+  bpmnElement.value = null;
+});
 </script>

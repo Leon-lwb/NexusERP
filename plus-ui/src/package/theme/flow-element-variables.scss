@@ -14,7 +14,7 @@
   border-bottom: 1px solid #e8e8e8;
 }
 
-div[class^="el-drawer"]:focus,
+div[class^='el-drawer']:focus,
 span:focus {
   outline: none;
 }
@@ -55,7 +55,7 @@ span:focus {
     width: 100%;
   }
   .el-divider:not(.el-divider--horizontal) {
-    margin: 0 8px ;
+    margin: 0 8px;
   }
   .el-divider.el-divider--horizontal {
     margin: 16px 0;

@@ -1,4 +1,3 @@
-/* eslint-disable no-func-assign */
 /**
  * Flatten array, one level deep.
  *
@@ -32,7 +31,13 @@ function isNumber(obj) {
 }
 function isFunction(obj) {
   var tag = nativeToString.call(obj);
-  return tag === '[object Function]' || tag === '[object AsyncFunction]' || tag === '[object GeneratorFunction]' || tag === '[object AsyncGeneratorFunction]' || tag === '[object Proxy]';
+  return (
+    tag === '[object Function]' ||
+    tag === '[object AsyncFunction]' ||
+    tag === '[object GeneratorFunction]' ||
+    tag === '[object AsyncGeneratorFunction]' ||
+    tag === '[object Proxy]'
+  );
 }
 function isString(obj) {
   return nativeToString.call(obj) === '[object String]';
@@ -75,7 +80,7 @@ function has(target, key) {
 function find(collection, matcher) {
   matcher = toMatcher(matcher);
   var match;
-  forEach(collection, function(val, key) {
+  forEach(collection, function (val, key) {
     if (matcher(val, key)) {
       match = val;
       return false;
@@ -95,7 +100,7 @@ function find(collection, matcher) {
 function findIndex(collection, matcher) {
   matcher = toMatcher(matcher);
   var idx = isArray(collection) ? -1 : undefined;
-  forEach(collection, function(val, key) {
+  forEach(collection, function (val, key) {
     if (matcher(val, key)) {
       idx = key;
       return false;
@@ -114,7 +119,7 @@ function findIndex(collection, matcher) {
 
 function filter(collection, matcher) {
   var result = [];
-  forEach(collection, function(val, key) {
+  forEach(collection, function (val, key) {
     if (matcher(val, key)) {
       result.push(val);
     }
@@ -167,7 +172,7 @@ function without(arr, matcher) {
 
   ensureArray(arr);
   matcher = toMatcher(matcher);
-  return arr.filter(function(el, idx) {
+  return arr.filter(function (el, idx) {
     return !matcher(el, idx);
   });
 }
@@ -182,7 +187,7 @@ function without(arr, matcher) {
  */
 
 function reduce(collection, iterator, result) {
-  forEach(collection, function(value, idx) {
+  forEach(collection, function (value, idx) {
     result = iterator(result, value, idx);
   });
   return result;
@@ -198,9 +203,13 @@ function reduce(collection, iterator, result) {
  */
 
 function every(collection, matcher) {
-  return !!reduce(collection, function(matches, val, key) {
-    return matches && matcher(val, key);
-  }, true);
+  return !!reduce(
+    collection,
+    function (matches, val, key) {
+      return matches && matcher(val, key);
+    },
+    true
+  );
 }
 /**
  * Return true if some elements in the collection
@@ -227,7 +236,7 @@ function some(collection, matcher) {
 
 function map(collection, fn) {
   var result = [];
-  forEach(collection, function(val, key) {
+  forEach(collection, function (val, key) {
     result.push(fn(val, key));
   });
   return result;
@@ -241,7 +250,7 @@ function map(collection, fn) {
  */
 
 function keys(collection) {
-  return collection && Object.keys(collection) || [];
+  return (collection && Object.keys(collection)) || [];
 }
 /**
  * Shorthand for `keys(o).length`.
@@ -263,7 +272,7 @@ function size(collection) {
  */
 
 function values(collection) {
-  return map(collection, function(val) {
+  return map(collection, function (val) {
     return val;
   });
 }
@@ -279,7 +288,7 @@ function values(collection) {
 function groupBy(collection, extractor) {
   var grouped = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
   extractor = toExtractor(extractor);
-  forEach(collection, function(val) {
+  forEach(collection, function (val) {
     var discriminator = extractor(val) || '_';
     var group = grouped[discriminator];
 
@@ -299,10 +308,10 @@ function uniqueBy(extractor) {
     collections[_key - 1] = arguments[_key];
   }
 
-  forEach(collections, function(c) {
+  forEach(collections, function (c) {
     return groupBy(c, extractor, grouped);
   });
-  var result = map(grouped, function(val, key) {
+  var result = map(grouped, function (val, key) {
     return val[0];
   });
   return result;
@@ -320,7 +329,7 @@ var unionBy = uniqueBy;
 function sortBy(collection, extractor) {
   extractor = toExtractor(extractor);
   var sorted = [];
-  forEach(collection, function(value, key) {
+  forEach(collection, function (value, key) {
     var disc = extractor(value, key);
     var entry = {
       d: disc,
@@ -338,7 +347,7 @@ function sortBy(collection, extractor) {
 
     sorted.push(entry);
   });
-  return map(sorted, function(e) {
+  return map(sorted, function (e) {
     return e.v;
   });
 }
@@ -357,23 +366,27 @@ function sortBy(collection, extractor) {
  */
 
 function matchPattern(pattern) {
-  return function(el) {
-    return every(pattern, function(val, key) {
+  return function (el) {
+    return every(pattern, function (val, key) {
       return el[key] === val;
     });
   };
 }
 
 function toExtractor(extractor) {
-  return isFunction(extractor) ? extractor : function(e) {
-    return e[extractor];
-  };
+  return isFunction(extractor)
+    ? extractor
+    : function (e) {
+        return e[extractor];
+      };
 }
 
 function toMatcher(matcher) {
-  return isFunction(matcher) ? matcher : function(e) {
-    return e === matcher;
-  };
+  return isFunction(matcher)
+    ? matcher
+    : function (e) {
+        return e === matcher;
+      };
 }
 
 function identity(arg) {
@@ -465,14 +478,14 @@ function debounce(fn, timeout) {
 
 function throttle(fn, interval) {
   var throttling = false;
-  return function() {
+  return function () {
     if (throttling) {
       return;
     }
 
     fn.apply(void 0, arguments);
     throttling = true;
-    setTimeout(function() {
+    setTimeout(function () {
       throttling = false;
     }, interval);
   };
@@ -494,11 +507,11 @@ function _typeof(obj) {
   '@babel/helpers - typeof';
 
   if (typeof Symbol === 'function' && typeof Symbol.iterator === 'symbol') {
-    _typeof = function(obj) {
+    _typeof = function (obj) {
       return typeof obj;
     };
   } else {
-    _typeof = function(obj) {
+    _typeof = function (obj) {
       return obj && typeof Symbol === 'function' && obj.constructor === Symbol && obj !== Symbol.prototype ? 'symbol' : typeof obj;
     };
   }
@@ -507,19 +520,21 @@ function _typeof(obj) {
 }
 
 function _extends() {
-  _extends = Object.assign || function(target) {
-    for (var i = 1; i < arguments.length; i++) {
-      var source = arguments[i];
+  _extends =
+    Object.assign ||
+    function (target) {
+      for (var i = 1; i < arguments.length; i++) {
+        var source = arguments[i];
 
-      for (var key in source) {
-        if (Object.prototype.hasOwnProperty.call(source, key)) {
-          target[key] = source[key];
+        for (var key in source) {
+          if (Object.prototype.hasOwnProperty.call(source, key)) {
+            target[key] = source[key];
+          }
         }
       }
-    }
 
-    return target;
-  };
+      return target;
+    };
 
   return _extends.apply(this, arguments);
 }
@@ -552,7 +567,7 @@ function assign(target) {
 
 function set(target, path, value) {
   var currentTarget = target;
-  forEach(path, function(key, idx) {
+  forEach(path, function (key, idx) {
     if (typeof key !== 'number' && typeof key !== 'string') {
       throw new Error('illegal key type: ' + _typeof(key) + '. Key should be of type number or string.');
     }
@@ -594,7 +609,7 @@ function set(target, path, value) {
 
 function get(target, path, defaultValue) {
   var currentTarget = target;
-  forEach(path, function(key) {
+  forEach(path, function (key) {
     // accessing nil property yields <undefined>
     if (isNil(currentTarget)) {
       currentTarget = undefined;
@@ -617,7 +632,7 @@ function get(target, path, defaultValue) {
 function pick(target, properties) {
   var result = {};
   var obj = Object(target);
-  forEach(properties, function(prop) {
+  forEach(properties, function (prop) {
     if (prop in obj) {
       result[prop] = target[prop];
     }
@@ -636,7 +651,7 @@ function pick(target, properties) {
 function omit(target, properties) {
   var result = {};
   var obj = Object(target);
-  forEach(obj, function(prop, key) {
+  forEach(obj, function (prop, key) {
     if (properties.indexOf(key) === -1) {
       result[key] = prop;
     }
@@ -663,13 +678,13 @@ function merge(target) {
     return target;
   }
 
-  forEach(sources, function(source) {
+  forEach(sources, function (source) {
     // skip non-obj sources, i.e. null
     if (!source || !isObject(source)) {
       return;
     }
 
-    forEach(source, function(sourceVal, key) {
+    forEach(source, function (sourceVal, key) {
       if (key === '__proto__') {
         return;
       }
@@ -691,4 +706,42 @@ function merge(target) {
   return target;
 }
 
-export { assign, bind, debounce, ensureArray, every, filter, find, findIndex, flatten, forEach, get, groupBy, has, isArray, isDefined, isFunction, isNil, isNumber, isObject, isString, isUndefined, keys, map, matchPattern, merge, omit, pick, reduce, set, size, some, sortBy, throttle, unionBy, uniqueBy, values, without };
+export {
+  assign,
+  bind,
+  debounce,
+  ensureArray,
+  every,
+  filter,
+  find,
+  findIndex,
+  flatten,
+  forEach,
+  get,
+  groupBy,
+  has,
+  isArray,
+  isDefined,
+  isFunction,
+  isNil,
+  isNumber,
+  isObject,
+  isString,
+  isUndefined,
+  keys,
+  map,
+  matchPattern,
+  merge,
+  omit,
+  pick,
+  reduce,
+  set,
+  size,
+  some,
+  sortBy,
+  throttle,
+  unionBy,
+  uniqueBy,
+  values,
+  without
+};

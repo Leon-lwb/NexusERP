@@ -1,4 +1,4 @@
-import request from '@/utils/request'
+import request from '@/utils/request';
 
 // 查询流程列表
 export function listProcess(query?: any) {
@@ -6,7 +6,7 @@ export function listProcess(query?: any) {
     url: '/workflow/process/list',
     method: 'get',
     params: query
-  })
+  });
 }
 
 // 查询流程列表
@@ -15,7 +15,7 @@ export function getProcessForm(query?: any) {
     url: '/workflow/process/getProcessForm',
     method: 'get',
     params: query
-  })
+  });
 }
 
 // 部署流程实例
@@ -24,26 +24,26 @@ export function startProcess(processDefId?: any, data?: any) {
     url: '/workflow/process/start/' + processDefId,
     method: 'post',
     data: data
-  })
+  });
 }
 
 // 部署自定义业务流程实例
-export function startByDataId(dataId?: any,selectFlowId?: any, serviceName?: any, data?: any) {
+export function startByDataId(dataId?: any, selectFlowId?: any, serviceName?: any, data?: any) {
   return request({
-    url: '/workflow/process/startByDataId/' + dataId + '/' + selectFlowId + '/'+ serviceName,
+    url: '/workflow/process/startByDataId/' + dataId + '/' + selectFlowId + '/' + serviceName,
     method: 'post',
     data: data
-  })
+  });
 }
 
 // 查询当前节点是否是属于退回或驳回的第一个发起人节点,业务数据dataid
 
-export function isFirstInitiator(dataId?: any,data?: any) {
+export function isFirstInitiator(dataId?: any, data?: any) {
   return request({
     url: '/workflow/task/isFirstInitiator/' + dataId,
     method: 'post',
     data: data
-  })
+  });
 }
 
 //根据当前服务名查询关联流程信息
@@ -52,19 +52,18 @@ export function getProcesss(query?: any) {
     url: '/workflow/process/getProcesss',
     method: 'get',
     params: query
-  })
+  });
 }
-
 
 // 删除自定义业务任务关联表与流程历史表
 //以便可以重新发起流程,业务数据dataid
 
-export function deleteActivityAndJoin(dataId?: any,data?: any) {
+export function deleteActivityAndJoin(dataId?: any, data?: any) {
   return request({
     url: '/workflow/task/deleteActivityAndJoin/' + dataId,
     method: 'post',
     data: data
-  })
+  });
 }
 
 // 删除流程实例
@@ -72,7 +71,7 @@ export function delProcess(ids?: any) {
   return request({
     url: '/workflow/process/instance/' + ids,
     method: 'delete'
-  })
+  });
 }
 
 // 获取流程图
@@ -80,7 +79,7 @@ export function getBpmnXml(processDefId?: any) {
   return request({
     url: '/workflow/process/bpmnXml/' + processDefId,
     method: 'get'
-  })
+  });
 }
 
 export function detailProcess(query?: any) {
@@ -88,7 +87,7 @@ export function detailProcess(query?: any) {
     url: '/workflow/process/detail',
     method: 'get',
     params: query
-  })
+  });
 }
 
 // 钉钉流程转bpmn
@@ -97,7 +96,7 @@ export function dingdingToBpmn(data?: any) {
     url: '/workflow/process/ddtobpmn',
     method: 'post',
     data: data
-  })
+  });
 }
 
 export function detailProcessByDataId(query?: any) {
@@ -105,7 +104,7 @@ export function detailProcessByDataId(query?: any) {
     url: '/workflow/process/detailbydataid',
     method: 'get',
     params: query
-  })
+  });
 }
 
 //判断流程是否结束了,用在消息点击里判断
@@ -114,7 +113,7 @@ export function processIscompleted(query?: any) {
     url: '/workflow/process/iscompleted',
     method: 'get',
     params: query
-  })
+  });
 }
 
 // 我的发起的流程
@@ -123,7 +122,7 @@ export function listOwnProcess(query?: any) {
     url: '/workflow/process/ownList',
     method: 'get',
     params: query
-  })
+  });
 }
 
 // 我待办的流程
@@ -132,7 +131,7 @@ export function listTodoProcess(query?: any) {
     url: '/workflow/process/todoList',
     method: 'get',
     params: query
-  })
+  });
 }
 
 // 我待签的流程
@@ -141,7 +140,7 @@ export function listClaimProcess(query?: any) {
     url: '/workflow/process/claimList',
     method: 'get',
     params: query
-  })
+  });
 }
 
 // 我已办的流程
@@ -150,7 +149,7 @@ export function listFinishedProcess(query?: any) {
     url: '/workflow/process/finishedList',
     method: 'get',
     params: query
-  })
+  });
 }
 
 // 查询流程抄送列表
@@ -159,7 +158,7 @@ export function listCopyProcess(query?: any) {
     url: '/workflow/process/copyList',
     method: 'get',
     params: query
-  })
+  });
 }
 
 // 查询流程我的抄送列表
@@ -168,16 +167,16 @@ export function listMyCopyProcess(query?: any) {
     url: '/workflow/process/myCopyList',
     method: 'get',
     params: query
-  })
+  });
 }
 
 //抄送人已读状态
 export function updateCcReaded(parameter?: any) {
   return request({
     url: '/workflow/process/updateViewStatust',
-    method:'get',
+    method: 'get',
     params: parameter
-  })
+  });
 }
 
 // 取消申请
@@ -186,5 +185,5 @@ export function stopProcess(data?: any) {
     url: '/workflow/task/stopProcess',
     method: 'post',
     data: data
-  })
+  });
 }

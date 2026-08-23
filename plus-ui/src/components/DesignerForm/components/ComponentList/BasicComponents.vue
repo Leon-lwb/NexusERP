@@ -2,13 +2,7 @@
   <div class="component-group">
     <div class="group-title">基础组件</div>
     <div class="group-content">
-      <div
-        v-for="item in basicComponents"
-        :key="item.type"
-        class="component-item"
-        draggable="true"
-        @dragstart="handleDragStart($event, item)"
-      >
+      <div v-for="item in basicComponents" :key="item.type" class="component-item" draggable="true" @dragstart="handleDragStart($event, item)">
         <el-icon><component :is="item.icon" /></el-icon>
         <span>{{ item.label }}</span>
       </div>
@@ -17,7 +11,7 @@
 </template>
 
 <script lang="ts" setup>
-import { onMounted } from 'vue'
+import { onMounted } from 'vue';
 import {
   Document,
   Edit,
@@ -34,12 +28,12 @@ import {
   Link,
   Star,
   Brush
-} from '@element-plus/icons-vue'
-import { listDept } from '@/api/system/dept'
-import { listUser } from '@/api/system/user'
-import { ElMessage } from 'element-plus'
+} from '@element-plus/icons-vue';
+import { listDept } from '@/api/system/dept';
+import { listUser } from '@/api/system/user';
+import { ElMessage } from 'element-plus';
 
-const emit = defineEmits(['dragstart'])
+const emit = defineEmits(['dragstart']);
 
 const basicComponents = [
   {
@@ -223,60 +217,60 @@ const basicComponents = [
       ]
     }
   }
-]
+];
 
 const handleDragStart = (e: DragEvent, item: any) => {
-  emit('dragstart', e, item)
-}
+  emit('dragstart', e, item);
+};
 
 const loadDeptOptions = async () => {
   try {
     const query = {
       pageNum: 1,
       pageSize: 1000
-    }
-    const response = await listDept(query)
+    };
+    const response = await listDept(query);
     if (response && response.rows) {
-      const deptComponent = basicComponents.find(c => c.type === 'dept-select')
+      const deptComponent = basicComponents.find((c) => c.type === 'dept-select');
       if (deptComponent) {
         deptComponent.props.options = response.rows.map((dept: any) => ({
           label: dept.deptName,
           value: dept.deptId
-        }))
+        }));
       }
     }
   } catch (error) {
-    console.error('加载部门选项失败:', error)
-    ElMessage.error('加载部门选项失败')
+    console.error('加载部门选项失败:', error);
+    ElMessage.error('加载部门选项失败');
   }
-}
+};
 
 const loadUserOptions = async () => {
   try {
     const query = {
       pageNum: 1,
       pageSize: 1000
-    }
-    const response = await listUser(query)
+    };
+    const response = await listUser(query);
     if (response && response.rows) {
-      const userComponent = basicComponents.find(c => c.type === 'user-select')
+      const userComponent = basicComponents.find((c) => c.type === 'user-select');
       if (userComponent) {
         userComponent.props.options = response.rows.map((user: any) => ({
           label: user.userName,
           value: user.userId
-        }))
+        }));
       }
     }
   } catch (error) {
-    console.error('加载用户选项失败:', error)
-    ElMessage.error('加载用户选项失败')
+    console.error('加载用户选项失败:', error);
+    ElMessage.error('加载用户选项失败');
   }
-}
+};
 
 onMounted(() => {
-  loadDeptOptions()
-  loadUserOptions()
-})
+  loadDeptOptions();
+  loadUserOptions();
+});
 </script>
 
 <style lang="scss" scoped>
@@ -320,4 +314,4 @@ onMounted(() => {
     }
   }
 }
-</style> 
+</style>

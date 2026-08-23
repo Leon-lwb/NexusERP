@@ -1,31 +1,31 @@
-import request from '@/utils/request'
+import request from '@/utils/request';
 
 /** AI 厂商配置类型 */
 export interface AiProvider {
-  id?: number
-  name: string
-  apiHost: string
-  apiKey?: string
-  providerType: string
-  status: string
+  id?: number;
+  name: string;
+  apiHost: string;
+  apiKey?: string;
+  providerType: string;
+  status: string;
 }
 
 /** AI 模型配置类型 */
 export interface AiModel {
-  id?: number
-  providerId: number
-  providerName?: string
+  id?: number;
+  providerId: number;
+  providerName?: string;
   /** 厂商类型（OPENAI/OLLAMA/DEEPSEEK/DASHSCOPE/ZHIPU...），区分本地 vs 官网 */
-  providerType?: string
+  providerType?: string;
   /** API 请求地址，区分实际调用 endpoint */
-  apiHost?: string
-  modelName: string
-  displayName?: string
-  modelType: string
-  maxTokens?: number
-  temperature?: number
-  isDefault: string
-  status: string
+  apiHost?: string;
+  modelName: string;
+  displayName?: string;
+  modelType: string;
+  maxTokens?: number;
+  temperature?: number;
+  isDefault: string;
+  status: string;
 }
 
 // ==================== 厂商管理 API ====================
@@ -39,7 +39,7 @@ export function listProvider(query?: object) {
     url: '/ai/provider/list',
     method: 'get',
     params: query
-  })
+  });
 }
 
 /**
@@ -50,7 +50,7 @@ export function getProvider(id: number) {
   return request({
     url: `/ai/provider/${id}`,
     method: 'get'
-  })
+  });
 }
 
 /**
@@ -62,7 +62,7 @@ export function addProvider(data: AiProvider) {
     url: '/ai/provider',
     method: 'post',
     data
-  })
+  });
 }
 
 /**
@@ -74,7 +74,7 @@ export function updateProvider(data: AiProvider) {
     url: '/ai/provider',
     method: 'put',
     data
-  })
+  });
 }
 
 /**
@@ -85,7 +85,7 @@ export function delProvider(ids: Array<number | string>) {
   return request({
     url: `/ai/provider/${ids}`,
     method: 'delete'
-  })
+  });
 }
 
 // ==================== 模型管理 API ====================
@@ -99,7 +99,7 @@ export function listModel(query?: object) {
     url: '/ai/model/list',
     method: 'get',
     params: query
-  })
+  });
 }
 
 /**
@@ -112,7 +112,7 @@ export function listModelOptions(modelType?: string) {
     url: '/ai/model/options',
     method: 'get',
     params: modelType ? { modelType } : {}
-  })
+  });
 }
 
 /**
@@ -123,7 +123,7 @@ export function getModel(id: number) {
   return request({
     url: `/ai/model/${id}`,
     method: 'get'
-  })
+  });
 }
 
 /**
@@ -135,7 +135,7 @@ export function addModel(data: AiModel) {
     url: '/ai/model',
     method: 'post',
     data
-  })
+  });
 }
 
 /**
@@ -147,7 +147,7 @@ export function updateModel(data: AiModel) {
     url: '/ai/model',
     method: 'put',
     data
-  })
+  });
 }
 
 /**
@@ -158,7 +158,7 @@ export function delModel(ids: Array<number | string>) {
   return request({
     url: `/ai/model/${ids}`,
     method: 'delete'
-  })
+  });
 }
 
 /**
@@ -169,5 +169,5 @@ export function setDefaultModel(id: number) {
   return request({
     url: `/ai/model/setDefault/${id}`,
     method: 'put'
-  })
+  });
 }

@@ -35,7 +35,7 @@
     </el-form>
 
     <!-- 物料信息卡片 -->
-    <el-card v-if="selectedMaterial" class="material-info-card" style="margin-bottom: 20px;">
+    <el-card v-if="selectedMaterial" class="material-info-card" style="margin-bottom: 20px">
       <template #header>
         <span class="card-title">物料信息</span>
       </template>
@@ -93,7 +93,7 @@
       </el-table>
 
       <!-- 价格统计信息 -->
-      <el-row :gutter="20" style="margin-top: 20px;">
+      <el-row :gutter="20" style="margin-top: 20px">
         <el-col :span="6">
           <el-statistic title="最低价格" :value="lowestPrice" :precision="4" />
         </el-col>
@@ -110,13 +110,13 @@
     </el-card>
 
     <!-- 价格对比图表 -->
-    <el-row :gutter="20" style="margin-top: 20px;" v-if="priceList.length > 0">
+    <el-row :gutter="20" style="margin-top: 20px" v-if="priceList.length > 0">
       <el-col :span="12">
         <el-card>
           <template #header>
             <span class="card-title">供应商价格柱状图</span>
           </template>
-          <div ref="barChartRef" style="height: 350px;"></div>
+          <div ref="barChartRef" style="height: 350px"></div>
         </el-card>
       </el-col>
       <el-col :span="12">
@@ -124,7 +124,7 @@
           <template #header>
             <span class="card-title">价格趋势折线图</span>
           </template>
-          <div ref="trendChartRef" style="height: 350px;"></div>
+          <div ref="trendChartRef" style="height: 350px"></div>
         </el-card>
       </el-col>
     </el-row>

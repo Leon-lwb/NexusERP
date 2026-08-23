@@ -15,9 +15,9 @@ import { ref, watch, onMounted } from 'vue';
 import FileUpload from '@/components/FileUpload/index.vue';
 
 export default {
-  name: "nmFile",
+  name: 'nmFile',
   components: {
-    FileUpload,
+    FileUpload
   },
   props: {
     nm: {
@@ -37,9 +37,12 @@ export default {
     const localValue = ref(props.value);
 
     // 监听 props.value 的变化，确保 localValue 与 props.value 保持同步
-    watch(() => props.value, (newValue) => {
-      localValue.value = newValue;
-    });
+    watch(
+      () => props.value,
+      (newValue) => {
+        localValue.value = newValue;
+      }
+    );
 
     // 监听 localValue 的变化，触发 update:value 事件
     watch(localValue, (newValue) => {
@@ -63,10 +66,8 @@ export default {
     };
   },
   methods: {
-    handleRemove(file, fileList) {
-    },
-    handlePreview(file) {
-    },
+    handleRemove(file, fileList) {},
+    handlePreview(file) {},
     handleExceed(files, fileList) {
       this.$message.warning(`当前限制选择 3 个文件，本次选择了 ${files.length} 个文件，共选择了 ${files.length + fileList.length} 个文件`);
     },
@@ -77,5 +78,4 @@ export default {
 };
 </script>
 
-<style scoped>
-</style>
+<style scoped></style>

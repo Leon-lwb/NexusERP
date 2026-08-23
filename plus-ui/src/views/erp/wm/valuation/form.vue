@@ -76,13 +76,13 @@
 </template>
 
 <script setup lang="ts" name="ValuationForm">
-import { listValuation } from '@/api/erp/wm/valuation'
-import { useRoute, useRouter } from 'vue-router'
+import { listValuation } from '@/api/erp/wm/valuation';
+import { useRoute, useRouter } from 'vue-router';
 
-const route = useRoute()
-const router = useRouter()
+const route = useRoute();
+const router = useRouter();
 
-const title = ref('库存估值详情')
+const title = ref('库存估值详情');
 
 const form = ref<any>({
   materialId: null,
@@ -96,31 +96,31 @@ const form = ref<any>({
   warehouseId: null,
   warehouseName: null,
   locationName: null
-})
+});
 
 onMounted(() => {
-  const materialId = route.query.materialId as any
-  const warehouseId = route.query.warehouseId as any
+  const materialId = route.query.materialId as any;
+  const warehouseId = route.query.warehouseId as any;
 
   if (materialId) {
-    loadDetail(materialId, warehouseId)
+    loadDetail(materialId, warehouseId);
   }
-})
+});
 
 function loadDetail(materialId: any, warehouseId: any) {
-  const params: any = { pageNum: 1, pageSize: 1, materialId: materialId }
+  const params: any = { pageNum: 1, pageSize: 1, materialId: materialId };
   if (warehouseId) {
-    params.warehouseId = warehouseId
+    params.warehouseId = warehouseId;
   }
   listValuation(params).then((res: any) => {
     if (res.rows && res.rows.length > 0) {
-      form.value = res.rows[0]
+      form.value = res.rows[0];
     }
-  })
+  });
 }
 
 function cancel() {
-  router.push('/erp/wmRule/valuation')
+  router.push('/erp/wmRule/valuation');
 }
 </script>
 

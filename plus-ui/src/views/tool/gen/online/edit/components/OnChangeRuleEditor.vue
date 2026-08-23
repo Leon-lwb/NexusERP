@@ -148,14 +148,7 @@
 
         <el-input v-model="raw" type="textarea" :rows="14" placeholder="onChange JSON" />
 
-        <el-alert
-          v-if="validationErrors.length"
-          class="mt-2"
-          type="error"
-          show-icon
-          :closable="false"
-          title="JSON 校验失败"
-        >
+        <el-alert v-if="validationErrors.length" class="mt-2" type="error" show-icon :closable="false" title="JSON 校验失败">
           <template #default>
             <div v-for="(e, i) in validationErrors" :key="i">{{ e }}</div>
           </template>
@@ -166,48 +159,73 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from 'vue'
-import { validateOnChange } from '@/composables/online/fieldConfig'
-import type { FieldOption } from './WhenBuilder.vue'
-import LegacyRuleEditor from './rules/LegacyRuleEditor.vue'
-import RuleList from './rules/RuleList.vue'
-import ToggleRuleEditor from './rules/ToggleRuleEditor.vue'
-import ClearRuleEditor from './rules/ClearRuleEditor.vue'
-import SetValueRuleEditor from './rules/SetValueRuleEditor.vue'
-import ValidateRuleEditor from './rules/ValidateRuleEditor.vue'
-import DictCascadeRuleEditor from './rules/DictCascadeRuleEditor.vue'
-import PopupQueryRuleEditor from './rules/PopupQueryRuleEditor.vue'
+import { computed, reactive, ref, watch } from 'vue';
+import { validateOnChange } from '@/composables/online/fieldConfig';
+import type { FieldOption } from './WhenBuilder.vue';
+import LegacyRuleEditor from './rules/LegacyRuleEditor.vue';
+import RuleList from './rules/RuleList.vue';
+import ToggleRuleEditor from './rules/ToggleRuleEditor.vue';
+import ClearRuleEditor from './rules/ClearRuleEditor.vue';
+import SetValueRuleEditor from './rules/SetValueRuleEditor.vue';
+import ValidateRuleEditor from './rules/ValidateRuleEditor.vue';
+import DictCascadeRuleEditor from './rules/DictCascadeRuleEditor.vue';
+import PopupQueryRuleEditor from './rules/PopupQueryRuleEditor.vue';
 
-type AnyObj = Record<string, any>
+type AnyObj = Record<string, any>;
 
-type CodeGenerate = { autoGenerateRule?: string; generateParams?: Record<string, any> }
-type FormulaBlock = { formula?: string; targetFields?: string[] | string; triggerCondition?: string }
-type SubTrigger = { triggerType?: 'aggregate'|'sum'|'count'|'average'|'max'|'min'; formula?: string; targetFields?: string[] | string }
+type CodeGenerate = { autoGenerateRule?: string; generateParams?: Record<string, any> };
+type FormulaBlock = { formula?: string; targetFields?: string[] | string; triggerCondition?: string };
+type SubTrigger = { triggerType?: 'aggregate' | 'sum' | 'count' | 'average' | 'max' | 'min'; formula?: string; targetFields?: string[] | string };
 
-type ToggleRule = { when?: any; targets: string[] | string; value: boolean; elseValue?: boolean; clearOnFalse?: boolean; priority?: number }
-type ClearRule = { when?: any; targets: string[] | string; priority?: number }
-type SetValueRule = { when?: any; targets: string[] | string; mode: 'const'|'copy'|'formula'; value?: any; from?: string; formula?: string; overwrite?: boolean; priority?: number }
-type ValidateRule = { when?: any; type: 'regex'|'range'|'compare'|'in'|'notIn'; field?: string; fields?: string[]; message: string; params?: AnyObj; priority?: number }
-type DictCascadeRule = { when?: any; targets: string[] | string; from: string; optionMatchField?: string; emptyMode?: 'none'|'all'; clearOnChange?: boolean; priority?: number }
-type PopupQueryRule = { when?: any; targets: string[] | string; params: AnyObj | any[]; merge?: boolean; priority?: number }
+type ToggleRule = { when?: any; targets: string[] | string; value: boolean; elseValue?: boolean; clearOnFalse?: boolean; priority?: number };
+type ClearRule = { when?: any; targets: string[] | string; priority?: number };
+type SetValueRule = {
+  when?: any;
+  targets: string[] | string;
+  mode: 'const' | 'copy' | 'formula';
+  value?: any;
+  from?: string;
+  formula?: string;
+  overwrite?: boolean;
+  priority?: number;
+};
+type ValidateRule = {
+  when?: any;
+  type: 'regex' | 'range' | 'compare' | 'in' | 'notIn';
+  field?: string;
+  fields?: string[];
+  message: string;
+  params?: AnyObj;
+  priority?: number;
+};
+type DictCascadeRule = {
+  when?: any;
+  targets: string[] | string;
+  from: string;
+  optionMatchField?: string;
+  emptyMode?: 'none' | 'all';
+  clearOnChange?: boolean;
+  priority?: number;
+};
+type PopupQueryRule = { when?: any; targets: string[] | string; params: AnyObj | any[]; merge?: boolean; priority?: number };
 
 type OnChangeConfig = {
-  onCodeGenerate?: CodeGenerate
-  onMainChange?: FormulaBlock
-  onSubChange?: FormulaBlock
-  onSubTrigger?: SubTrigger
-  onVisible?: ToggleRule[]
-  onDisable?: ToggleRule[]
-  onRequired?: ToggleRule[]
-  onClear?: ClearRule[]
-  onSetValue?: SetValueRule[]
-  onValidate?: ValidateRule[]
-  onDictCascade?: DictCascadeRule[]
-  onPopupQuery?: PopupQueryRule[]
-  onRowAdd?: SetValueRule[]
-  onRowValidate?: ValidateRule[]
-  [k: string]: any
-}
+  onCodeGenerate?: CodeGenerate;
+  onMainChange?: FormulaBlock;
+  onSubChange?: FormulaBlock;
+  onSubTrigger?: SubTrigger;
+  onVisible?: ToggleRule[];
+  onDisable?: ToggleRule[];
+  onRequired?: ToggleRule[];
+  onClear?: ClearRule[];
+  onSetValue?: SetValueRule[];
+  onValidate?: ValidateRule[];
+  onDictCascade?: DictCascadeRule[];
+  onPopupQuery?: PopupQueryRule[];
+  onRowAdd?: SetValueRule[];
+  onRowValidate?: ValidateRule[];
+  [k: string]: any;
+};
 
 const KNOWN_KEYS = new Set([
   'onCodeGenerate',
@@ -223,156 +241,160 @@ const KNOWN_KEYS = new Set([
   'onDictCascade',
   'onPopupQuery',
   'onRowAdd',
-  'onRowValidate',
-])
+  'onRowValidate'
+]);
 
 const props = defineProps<{
-  modelValue?: string | AnyObj | null
-  fields: FieldOption[]
-  targets?: FieldOption[]
-}>()
+  modelValue?: string | AnyObj | null;
+  fields: FieldOption[];
+  targets?: FieldOption[];
+}>();
 
 const emit = defineEmits<{
-  (e: 'update:modelValue', v: string): void
-}>()
+  (e: 'update:modelValue', v: string): void;
+}>();
 
-const activeTab = ref('legacy')
+const activeTab = ref('legacy');
 
-const targets = computed(() => props.targets?.length ? props.targets : props.fields)
+const targets = computed(() => (props.targets?.length ? props.targets : props.fields));
 
 const legacy = reactive<{
-  code: CodeGenerate | null
-  main: FormulaBlock | null
-  sub: FormulaBlock | null
-  trigger: SubTrigger | null
+  code: CodeGenerate | null;
+  main: FormulaBlock | null;
+  sub: FormulaBlock | null;
+  trigger: SubTrigger | null;
 }>({
   code: null,
   main: null,
   sub: null,
-  trigger: null,
-})
+  trigger: null
+});
 
-const onVisible = ref<ToggleRule[]>([])
-const onDisable = ref<ToggleRule[]>([])
-const onRequired = ref<ToggleRule[]>([])
-const onClear = ref<ClearRule[]>([])
-const onSetValue = ref<SetValueRule[]>([])
-const onValidate = ref<ValidateRule[]>([])
-const onDictCascade = ref<DictCascadeRule[]>([])
-const onPopupQuery = ref<PopupQueryRule[]>([])
-const onRowAdd = ref<SetValueRule[]>([])
-const onRowValidate = ref<ValidateRule[]>([])
-const extras = ref<AnyObj>({})
+const onVisible = ref<ToggleRule[]>([]);
+const onDisable = ref<ToggleRule[]>([]);
+const onRequired = ref<ToggleRule[]>([]);
+const onClear = ref<ClearRule[]>([]);
+const onSetValue = ref<SetValueRule[]>([]);
+const onValidate = ref<ValidateRule[]>([]);
+const onDictCascade = ref<DictCascadeRule[]>([]);
+const onPopupQuery = ref<PopupQueryRule[]>([]);
+const onRowAdd = ref<SetValueRule[]>([]);
+const onRowValidate = ref<ValidateRule[]>([]);
+const extras = ref<AnyObj>({});
 
-const raw = ref<string>('{}')
+const raw = ref<string>('{}');
 
 const safeParseObject = (input: any): AnyObj => {
-  if (input == null) return {}
-  if (typeof input === 'object' && !Array.isArray(input)) return input as AnyObj
-  if (typeof input !== 'string') return {}
-  const s = input.trim()
-  if (!s) return {}
+  if (input == null) return {};
+  if (typeof input === 'object' && !Array.isArray(input)) return input as AnyObj;
+  if (typeof input !== 'string') return {};
+  const s = input.trim();
+  if (!s) return {};
   try {
-    const obj = JSON.parse(s)
-    return (obj && typeof obj === 'object' && !Array.isArray(obj)) ? obj : {}
+    const obj = JSON.parse(s);
+    return obj && typeof obj === 'object' && !Array.isArray(obj) ? obj : {};
   } catch {
-    return {}
+    return {};
   }
-}
+};
 
-const removeAt = <T>(arr: { value: T[] }, idx: number) => {
-  arr.value.splice(idx, 1)
-}
+const removeAt = <T,>(arr: { value: T[] }, idx: number) => {
+  arr.value.splice(idx, 1);
+};
 
-const normalizeArr = <T>(v: any): T[] => (Array.isArray(v) ? v.filter(Boolean) : [])
+const normalizeArr = <T,>(v: any): T[] => (Array.isArray(v) ? v.filter(Boolean) : []);
 
 const pickExtras = (cfg: AnyObj): AnyObj => {
-  const out: AnyObj = {}
+  const out: AnyObj = {};
   Object.keys(cfg || {}).forEach((k) => {
-    if (!KNOWN_KEYS.has(k)) out[k] = cfg[k]
-  })
-  return out
-}
+    if (!KNOWN_KEYS.has(k)) out[k] = cfg[k];
+  });
+  return out;
+};
 
 const syncFromConfig = (cfg: OnChangeConfig) => {
-  legacy.code = cfg.onCodeGenerate ?? null
-  legacy.main = cfg.onMainChange ?? null
-  legacy.sub = cfg.onSubChange ?? null
-  legacy.trigger = cfg.onSubTrigger ?? null
+  legacy.code = cfg.onCodeGenerate ?? null;
+  legacy.main = cfg.onMainChange ?? null;
+  legacy.sub = cfg.onSubChange ?? null;
+  legacy.trigger = cfg.onSubTrigger ?? null;
 
-  onVisible.value = normalizeArr<ToggleRule>(cfg.onVisible)
-  onDisable.value = normalizeArr<ToggleRule>(cfg.onDisable)
-  onRequired.value = normalizeArr<ToggleRule>(cfg.onRequired)
-  onClear.value = normalizeArr<ClearRule>(cfg.onClear)
-  onSetValue.value = normalizeArr<SetValueRule>(cfg.onSetValue)
-  onValidate.value = normalizeArr<ValidateRule>(cfg.onValidate)
-  onDictCascade.value = normalizeArr<DictCascadeRule>(cfg.onDictCascade)
-  onPopupQuery.value = normalizeArr<PopupQueryRule>(cfg.onPopupQuery)
-  onRowAdd.value = normalizeArr<SetValueRule>(cfg.onRowAdd)
-  onRowValidate.value = normalizeArr<ValidateRule>(cfg.onRowValidate)
+  onVisible.value = normalizeArr<ToggleRule>(cfg.onVisible);
+  onDisable.value = normalizeArr<ToggleRule>(cfg.onDisable);
+  onRequired.value = normalizeArr<ToggleRule>(cfg.onRequired);
+  onClear.value = normalizeArr<ClearRule>(cfg.onClear);
+  onSetValue.value = normalizeArr<SetValueRule>(cfg.onSetValue);
+  onValidate.value = normalizeArr<ValidateRule>(cfg.onValidate);
+  onDictCascade.value = normalizeArr<DictCascadeRule>(cfg.onDictCascade);
+  onPopupQuery.value = normalizeArr<PopupQueryRule>(cfg.onPopupQuery);
+  onRowAdd.value = normalizeArr<SetValueRule>(cfg.onRowAdd);
+  onRowValidate.value = normalizeArr<ValidateRule>(cfg.onRowValidate);
 
-  extras.value = pickExtras(cfg as any)
-}
+  extras.value = pickExtras(cfg as any);
+};
 
 const buildConfig = (): OnChangeConfig => {
-  const out: OnChangeConfig = { ...(extras.value || {}) }
+  const out: OnChangeConfig = { ...(extras.value || {}) };
 
-  if (legacy.code) out.onCodeGenerate = { ...(legacy.code as any) }
-  if (legacy.main) out.onMainChange = { ...(legacy.main as any) }
-  if (legacy.sub) out.onSubChange = { ...(legacy.sub as any) }
-  if (legacy.trigger) out.onSubTrigger = { ...(legacy.trigger as any) }
+  if (legacy.code) out.onCodeGenerate = { ...(legacy.code as any) };
+  if (legacy.main) out.onMainChange = { ...(legacy.main as any) };
+  if (legacy.sub) out.onSubChange = { ...(legacy.sub as any) };
+  if (legacy.trigger) out.onSubTrigger = { ...(legacy.trigger as any) };
 
-  if (onVisible.value.length) out.onVisible = onVisible.value.map(r => ({ ...(r as any) }))
-  if (onDisable.value.length) out.onDisable = onDisable.value.map(r => ({ ...(r as any) }))
-  if (onRequired.value.length) out.onRequired = onRequired.value.map(r => ({ ...(r as any) }))
-  if (onClear.value.length) out.onClear = onClear.value.map(r => ({ ...(r as any) }))
-  if (onSetValue.value.length) out.onSetValue = onSetValue.value.map(r => ({ ...(r as any) }))
-  if (onValidate.value.length) out.onValidate = onValidate.value.map(r => ({ ...(r as any) }))
-  if (onDictCascade.value.length) out.onDictCascade = onDictCascade.value.map(r => ({ ...(r as any) }))
-  if (onPopupQuery.value.length) out.onPopupQuery = onPopupQuery.value.map(r => ({ ...(r as any) }))
-  if (onRowAdd.value.length) out.onRowAdd = onRowAdd.value.map(r => ({ ...(r as any) }))
-  if (onRowValidate.value.length) out.onRowValidate = onRowValidate.value.map(r => ({ ...(r as any) }))
+  if (onVisible.value.length) out.onVisible = onVisible.value.map((r) => ({ ...(r as any) }));
+  if (onDisable.value.length) out.onDisable = onDisable.value.map((r) => ({ ...(r as any) }));
+  if (onRequired.value.length) out.onRequired = onRequired.value.map((r) => ({ ...(r as any) }));
+  if (onClear.value.length) out.onClear = onClear.value.map((r) => ({ ...(r as any) }));
+  if (onSetValue.value.length) out.onSetValue = onSetValue.value.map((r) => ({ ...(r as any) }));
+  if (onValidate.value.length) out.onValidate = onValidate.value.map((r) => ({ ...(r as any) }));
+  if (onDictCascade.value.length) out.onDictCascade = onDictCascade.value.map((r) => ({ ...(r as any) }));
+  if (onPopupQuery.value.length) out.onPopupQuery = onPopupQuery.value.map((r) => ({ ...(r as any) }));
+  if (onRowAdd.value.length) out.onRowAdd = onRowAdd.value.map((r) => ({ ...(r as any) }));
+  if (onRowValidate.value.length) out.onRowValidate = onRowValidate.value.map((r) => ({ ...(r as any) }));
 
-  return out
-}
+  return out;
+};
 
 const stringify = (obj: AnyObj) => {
-  try { return JSON.stringify(obj || {}, null, 2) } catch { return '{}' }
-}
+  try {
+    return JSON.stringify(obj || {}, null, 2);
+  } catch {
+    return '{}';
+  }
+};
 
-const unknownKeys = computed(() => Object.keys(extras.value || {}).sort())
+const unknownKeys = computed(() => Object.keys(extras.value || {}).sort());
 
 const syncRawFromStructured = () => {
-  raw.value = stringify(buildConfig())
-}
+  raw.value = stringify(buildConfig());
+};
 
 const applyRawToStructured = () => {
-  const cfg = safeParseObject(raw.value) as OnChangeConfig
-  syncFromConfig(cfg)
-}
+  const cfg = safeParseObject(raw.value) as OnChangeConfig;
+  syncFromConfig(cfg);
+};
 
 const resetAll = () => {
-  syncFromConfig({})
-  raw.value = '{}'
-}
+  syncFromConfig({});
+  raw.value = '{}';
+};
 
 const validationErrors = computed(() => {
-  const vr = validateOnChange(raw.value)
-  return vr.ok ? [] : (vr.errors || [])
-})
+  const vr = validateOnChange(raw.value);
+  return vr.ok ? [] : vr.errors || [];
+});
 
-let syncing = false
+let syncing = false;
 watch(
   () => props.modelValue,
   (v) => {
-    syncing = true
-    const cfg = safeParseObject(v) as OnChangeConfig
-    syncFromConfig(cfg)
-    raw.value = stringify(cfg)
-    syncing = false
+    syncing = true;
+    const cfg = safeParseObject(v) as OnChangeConfig;
+    syncFromConfig(cfg);
+    raw.value = stringify(cfg);
+    syncing = false;
   },
   { immediate: true, deep: false }
-)
+);
 
 watch(
   () => [
@@ -390,52 +412,52 @@ watch(
     onPopupQuery.value,
     onRowAdd.value,
     onRowValidate.value,
-    extras.value,
+    extras.value
   ],
   () => {
-    if (syncing) return
-    const cfg = buildConfig()
-    const s = stringify(cfg)
-    raw.value = s
-    emit('update:modelValue', s)
+    if (syncing) return;
+    const cfg = buildConfig();
+    const s = stringify(cfg);
+    raw.value = s;
+    emit('update:modelValue', s);
   },
   { deep: true }
-)
+);
 
-const addToggle = (kind: 'visible'|'disable'|'required') => {
-  const base: ToggleRule = { targets: [], value: true, priority: 100 }
-  if (kind === 'visible') onVisible.value.push({ ...base, clearOnFalse: false })
-  else if (kind === 'disable') onDisable.value.push({ ...base })
-  else onRequired.value.push({ ...base })
-}
+const addToggle = (kind: 'visible' | 'disable' | 'required') => {
+  const base: ToggleRule = { targets: [], value: true, priority: 100 };
+  if (kind === 'visible') onVisible.value.push({ ...base, clearOnFalse: false });
+  else if (kind === 'disable') onDisable.value.push({ ...base });
+  else onRequired.value.push({ ...base });
+};
 
 const addClear = () => {
-  onClear.value.push({ targets: [], priority: 100 })
-}
+  onClear.value.push({ targets: [], priority: 100 });
+};
 
 const addSetValue = () => {
-  onSetValue.value.push({ targets: [], mode: 'copy', from: '', overwrite: true, priority: 100 })
-}
+  onSetValue.value.push({ targets: [], mode: 'copy', from: '', overwrite: true, priority: 100 });
+};
 
 const addValidate = () => {
-  onValidate.value.push({ type: 'regex', message: '校验失败', params: { pattern: '' }, priority: 100 })
-}
+  onValidate.value.push({ type: 'regex', message: '校验失败', params: { pattern: '' }, priority: 100 });
+};
 
 const addDictCascade = () => {
-  onDictCascade.value.push({ targets: [], from: '', optionMatchField: 'parentId', emptyMode: 'none', clearOnChange: true, priority: 100 })
-}
+  onDictCascade.value.push({ targets: [], from: '', optionMatchField: 'parentId', emptyMode: 'none', clearOnChange: true, priority: 100 });
+};
 
 const addPopupQuery = () => {
-  onPopupQuery.value.push({ targets: [], merge: true, params: [], priority: 100 })
-}
+  onPopupQuery.value.push({ targets: [], merge: true, params: [], priority: 100 });
+};
 
 const addRowAdd = () => {
-  onRowAdd.value.push({ targets: [], mode: 'copy', from: '', overwrite: true, priority: 100 })
-}
+  onRowAdd.value.push({ targets: [], mode: 'copy', from: '', overwrite: true, priority: 100 });
+};
 
 const addRowValidate = () => {
-  onRowValidate.value.push({ type: 'regex', message: '校验失败', params: { pattern: '' }, priority: 100 })
-}
+  onRowValidate.value.push({ type: 'regex', message: '校验失败', params: { pattern: '' }, priority: 100 });
+};
 </script>
 
 <style scoped>
@@ -447,6 +469,10 @@ const addRowValidate = () => {
   gap: 8px;
   margin-bottom: 10px;
 }
-.mb-2 { margin-bottom: 10px; }
-.mt-2 { margin-top: 10px; }
+.mb-2 {
+  margin-bottom: 10px;
+}
+.mt-2 {
+  margin-top: 10px;
+}
 </style>

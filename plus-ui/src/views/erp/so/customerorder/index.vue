@@ -106,8 +106,8 @@
         <el-row :gutter="20">
           <el-col :span="16">
             <el-form-item label="客户订单号" prop="coNo">
-              <div style="display: flex; align-items: center; gap: 10px;">
-                <el-input v-model="form.coNo" placeholder="请输入客户订单号" :disabled="autoGenFlag || isViewMode" style="flex: 1;" />
+              <div style="display: flex; align-items: center; gap: 10px">
+                <el-input v-model="form.coNo" placeholder="请输入客户订单号" :disabled="autoGenFlag || isViewMode" style="flex: 1" />
                 <el-switch v-model="autoGenFlag" active-color="#13ce66" active-text="自动生成" @change="handleAutoGenChange" :disabled="isViewMode">
                 </el-switch>
               </div>
@@ -223,13 +223,7 @@
           </el-col>
           <el-col :span="12">
             <el-form-item label="销售部门" prop="deptId">
-              <dept-select
-                v-model="form.deptId"
-                category="SALES"
-                placeholder="请选择销售部门"
-                :disabled="isViewMode"
-                @change="handleDeptChange"
-              />
+              <dept-select v-model="form.deptId" category="SALES" placeholder="请选择销售部门" :disabled="isViewMode" @change="handleDeptChange" />
               <el-input v-model="form.deptName" style="display: none" />
             </el-form-item>
           </el-col>
@@ -718,4 +712,3 @@ function searchUser() {
 
 getList();
 </script>
-

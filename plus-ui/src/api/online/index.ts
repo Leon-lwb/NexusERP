@@ -27,16 +27,16 @@ export const getDataNames = () => {
 };
 
 // 查询online表列表数据
-export const listOnlineData = (tableId: string | number, tableName: string, query: PageQuery ) => {
+export const listOnlineData = (tableId: string | number, tableName: string, query: PageQuery) => {
   return request({
-    url: '/tool/gen/online/data/'+ tableId,
+    url: '/tool/gen/online/data/' + tableId,
     method: 'get',
     params: query
   });
 };
 
 // 查询 popup（字典表/关联表）数据：专用于弹窗选择
-export const listPopupData = (tableId: string | number, dictTableName: string, query: PageQuery ) => {
+export const listPopupData = (tableId: string | number, dictTableName: string, query: PageQuery) => {
   return request({
     url: '/tool/gen/online/popupData/' + tableId + '/' + dictTableName,
     method: 'get',
@@ -45,27 +45,27 @@ export const listPopupData = (tableId: string | number, dictTableName: string, q
 };
 
 // 查询online字典表列表数据
-export const listTableData = (tableName: string, query: PageQuery ) => {
+export const listTableData = (tableName: string, query: PageQuery) => {
   return request({
-    url: '/tool/gen/online/tableData/'+ tableName,
+    url: '/tool/gen/online/tableData/' + tableName,
     method: 'get',
     params: query
   });
 };
 
 // 新增或更新online表单数据
-export const addOrUpdateOnlineData = (tableId: string | number, tableName: string, data: any ) => {
+export const addOrUpdateOnlineData = (tableId: string | number, tableName: string, data: any) => {
   return request({
-    url: '/tool/gen/online/data/'+ tableId,
+    url: '/tool/gen/online/data/' + tableId,
     method: 'post',
     data: data
   });
 };
 
 // 新增或更新online表单数据
-export const addOrUpdateOnlineDataByName = (tableName: string, data: any ) => {
+export const addOrUpdateOnlineDataByName = (tableName: string, data: any) => {
   return request({
-    url: '/tool/gen/online/dataByName/'+ tableName,
+    url: '/tool/gen/online/dataByName/' + tableName,
     method: 'post',
     data: data
   });
@@ -81,7 +81,7 @@ export function delOnlineData(tableId: number, tableName: string, ids: (string |
 }
 
 // 获取online表单详细数据
-export function getOnlineData(tableId: number, tableName: string, id: (string | number)) {
+export function getOnlineData(tableId: number, tableName: string, id: string | number) {
   return request({
     url: `/tool/gen/online/data/${tableId}/${id}`,
     method: 'get'
@@ -89,10 +89,6 @@ export function getOnlineData(tableId: number, tableName: string, id: (string | 
 }
 
 // 弹窗详情数据
-export const getPopupDetail = (
-  tableId: string | number,
-  tableName: string,
-  id: string | number
-) => {
-  return request.get(`/tool/gen/online/popupDetail/${tableId}/${tableName}/${id}`)
-}
+export const getPopupDetail = (tableId: string | number, tableName: string, id: string | number) => {
+  return request.get(`/tool/gen/online/popupDetail/${tableId}/${tableName}/${id}`);
+};

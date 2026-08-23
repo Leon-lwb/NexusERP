@@ -6,7 +6,7 @@
           <el-form-item label="流程名称" prop="processName">
             <el-input v-model="queryParams.processName" placeholder="请输入流程名称" clearable style="width: 200px" @keyup.enter="handleQuery" />
           </el-form-item>
-          <el-form-item label="接收时间" style="width: 308px;">
+          <el-form-item label="接收时间" style="width: 308px">
             <el-date-picker
               v-model="dateRange"
               value-format="YYYY-MM-DD"
@@ -33,7 +33,6 @@
         </el-row>
       </template>
 
-
       <el-table v-loading="loading" :data="claimList">
         <el-table-column type="selection" width="55" align="center" />
         <el-table-column label="任务编号" align="center" prop="taskId" :show-overflow-tooltip="true" />
@@ -41,7 +40,7 @@
         <el-table-column label="任务节点" align="center" prop="taskName" />
         <el-table-column label="流程版本" align="center">
           <template #default="scope">
-            <el-tag>v{{scope.row.procDefVersion}}</el-tag>
+            <el-tag>v{{ scope.row.procDefVersion }}</el-tag>
           </template>
         </el-table-column>
         <el-table-column label="流程发起人" align="center" prop="startUserName" />
@@ -61,12 +60,12 @@
 </template>
 
 <script setup name="Claim" lang="ts">
-import { listClaimProcess } from "@/api/workflow/work/process";
-import { claimTask } from "@/api/workflow/work/task";
+import { listClaimProcess } from '@/api/workflow/work/process';
+import { claimTask } from '@/api/workflow/work/task';
 
-import { ComponentInternalInstance } from "vue";
-import { ProcessQuery, ProcessVO } from "@/api/workflow/work/types";
-import { DateModelType } from "element-plus";
+import { ComponentInternalInstance } from 'vue';
+import { ProcessQuery, ProcessVO } from '@/api/workflow/work/types';
+import { DateModelType } from 'element-plus';
 
 const router = useRouter();
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
@@ -78,7 +77,7 @@ const ids = ref<Array<number | string>>([]);
 const single = ref(true);
 const multiple = ref(true);
 const total = ref(0);
-const dateRange = ref<[DateModelType, DateModelType]>(['','']);
+const dateRange = ref<[DateModelType, DateModelType]>(['', '']);
 
 const queryFormRef = ref(ElForm);
 
@@ -95,29 +94,33 @@ const getList = async () => {
   claimList.value = res.rows;
   total.value = res.total;
   loading.value = false;
-}
+};
 /** 搜索按钮操作 */
 const handleQuery = () => {
   queryParams.value.pageNum = 1;
   getList();
-}
+};
 /** 重置按钮操作 */
 const resetQuery = () => {
   queryFormRef.value.resetFields();
   handleQuery();
-}
+};
 /** 签收按钮操作 */
 const handleClaim = async (row: ProcessVO) => {
-  const res = await claimTask({ taskId: row.taskId })
+  const res = await claimTask({ taskId: row.taskId });
   proxy?.$modal.msgSuccess(res.msg);
-  router.push({ path: '/work/todo' })
-}
+  router.push({ path: '/work/todo' });
+};
 /** 导出按钮操作 */
 const handleExport = () => {
-  proxy?.download("workflow/process/claimExport", {
-    ...queryParams.value
-  }, `claim_${new Date().getTime()}.xlsx`);
-}
+  proxy?.download(
+    'workflow/process/claimExport',
+    {
+      ...queryParams.value
+    },
+    `claim_${new Date().getTime()}.xlsx`
+  );
+};
 
 onMounted(() => {
   getList();

@@ -1,4 +1,4 @@
-import { Renderer } from 'marked'
+import { Renderer } from 'marked';
 
 /**
  * AI Markdown 渲染器
@@ -6,7 +6,7 @@ import { Renderer } from 'marked'
  */
 
 /** ECharts 配置关键字段 */
-const ECHARTS_KEY_FIELDS = ['xAxis', 'yAxis', 'series', 'title', 'legend', 'gauge', 'pie', 'radar', 'geo']
+const ECHARTS_KEY_FIELDS = ['xAxis', 'yAxis', 'series', 'title', 'legend', 'gauge', 'pie', 'radar', 'geo'];
 
 /**
  * HTML 净化：移除危险的 HTML 标签和属性，防止 XSS 攻击
@@ -14,20 +14,22 @@ const ECHARTS_KEY_FIELDS = ['xAxis', 'yAxis', 'series', 'title', 'legend', 'gaug
  * @returns 净化后的 HTML
  */
 export function sanitizeHtml(html: string): string {
-  if (!html) return ''
-  return html
-    // 移除 script 标签及内容
-    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-    // 移除 iframe 标签
-    .replace(/<iframe\b[^>]*>.*?<\/iframe>/gi, '')
-    // 移除 object/embed 标签
-    .replace(/<(object|embed|applet|form|input|textarea|select|button)\b[^>]*>.*?<\/\1>/gi, '')
-    // 移除所有 on* 事件属性
-    .replace(/\s+on\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, '')
-    // 移除 javascript: 协议
-    .replace(/href\s*=\s*(?:"javascript:[^"]*"|'javascript:[^']*')/gi, 'href="#"')
-    // 移除 style 中的 expression/url
-    .replace(/style\s*=\s*(?:"[^"]*expression\([^"]*"|'[^']*expression\([^']*')/gi, '')
+  if (!html) return '';
+  return (
+    html
+      // 移除 script 标签及内容
+      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+      // 移除 iframe 标签
+      .replace(/<iframe\b[^>]*>.*?<\/iframe>/gi, '')
+      // 移除 object/embed 标签
+      .replace(/<(object|embed|applet|form|input|textarea|select|button)\b[^>]*>.*?<\/\1>/gi, '')
+      // 移除所有 on* 事件属性
+      .replace(/\s+on\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, '')
+      // 移除 javascript: 协议
+      .replace(/href\s*=\s*(?:"javascript:[^"]*"|'javascript:[^']*')/gi, 'href="#"')
+      // 移除 style 中的 expression/url
+      .replace(/style\s*=\s*(?:"[^"]*expression\([^"]*"|'[^']*expression\([^']*')/gi, '')
+  );
 }
 
 /**
@@ -37,27 +39,27 @@ export function sanitizeHtml(html: string): string {
  * @returns 是否为 ECharts 配置
  */
 export function isEchartsConfig(code: string, language?: string): boolean {
-  if (!code || typeof code !== 'string') return false
+  if (!code || typeof code !== 'string') return false;
 
   // echarts 语言直接返回 true
-  if (language === 'echarts') return true
+  if (language === 'echarts') return true;
 
   // json/javascript 语言需要检测内容
   if (language === 'json' || language === 'javascript' || language === 'js' || !language) {
-    const trimmed = code.trim()
-    if (!trimmed.startsWith('{')) return false
+    const trimmed = code.trim();
+    if (!trimmed.startsWith('{')) return false;
 
     // 检查是否包含 ECharts 关键字段
-    let matchCount = 0
+    let matchCount = 0;
     for (const field of ECHARTS_KEY_FIELDS) {
       if (trimmed.includes(`"${field}"`) || trimmed.includes(`'${field}'`) || trimmed.includes(`${field}:`)) {
-        matchCount++
+        matchCount++;
       }
     }
-    return matchCount >= 2
+    return matchCount >= 2;
   }
 
-  return false
+  return false;
 }
 
 /**
@@ -66,24 +68,24 @@ export function isEchartsConfig(code: string, language?: string): boolean {
  * @returns marked Renderer 实例
  */
 export function createAiRenderer(): Renderer {
-  const renderer = new Renderer()
+  const renderer = new Renderer();
 
   // marked v18 中 code 方法接收 token 对象
   renderer.code = function (token: any): string {
-    const code = token.text || ''
-    const language = token.lang || ''
+    const code = token.text || '';
+    const language = token.lang || '';
 
     if (language === 'echarts' || isEchartsConfig(code, language)) {
       // 渲染为 ECharts 容器，由前端 Vue 组件扫描并挂载
-      const encoded = encodeURIComponent(code)
-      return `<div class="echarts-container" data-option="${encoded}" style="width:100%;height:300px;margin:8px 0;"></div>`
+      const encoded = encodeURIComponent(code);
+      return `<div class="echarts-container" data-option="${encoded}" style="width:100%;height:300px;margin:8px 0;"></div>`;
     }
     // 普通代码块
-    const escaped = code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-    return `<pre><code class="language-${language}">${escaped}</code></pre>`
-  }
+    const escaped = code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    return `<pre><code class="language-${language}">${escaped}</code></pre>`;
+  };
 
-  return renderer
+  return renderer;
 }
 
 /**
@@ -93,24 +95,24 @@ export function createAiRenderer(): Renderer {
  * @param depth 当前递归深度（防止过深递归）
  */
 export function sanitizeOption(option: any, depth = 0): void {
-  if (!option || typeof option !== 'object' || depth > 10) return
+  if (!option || typeof option !== 'object' || depth > 10) return;
 
-  const forbiddenKeys = ['formatter', 'callback', 'function', 'onclick', 'onmouseover', 'onmouseout']
-  const dangerousPatterns = /function\s*\(|=>|\bnew\s+|\beval\b|\bFunction\b/
+  const forbiddenKeys = ['formatter', 'callback', 'function', 'onclick', 'onmouseover', 'onmouseout'];
+  const dangerousPatterns = /function\s*\(|=>|\bnew\s+|\beval\b|\bFunction\b/;
 
   for (const key of Object.keys(option)) {
-    const value = option[key]
+    const value = option[key];
 
     // 删除禁止的键
     if (forbiddenKeys.includes(key)) {
-      delete option[key]
-      continue
+      delete option[key];
+      continue;
     }
 
     // 字符串值中包含危险代码
     if (typeof value === 'string' && dangerousPatterns.test(value)) {
-      delete option[key]
-      continue
+      delete option[key];
+      continue;
     }
 
     // 递归处理嵌套对象和数组
@@ -118,11 +120,11 @@ export function sanitizeOption(option: any, depth = 0): void {
       if (Array.isArray(value)) {
         for (const item of value) {
           if (typeof item === 'object' && item !== null) {
-            sanitizeOption(item, depth + 1)
+            sanitizeOption(item, depth + 1);
           }
         }
       } else {
-        sanitizeOption(value, depth + 1)
+        sanitizeOption(value, depth + 1);
       }
     }
   }

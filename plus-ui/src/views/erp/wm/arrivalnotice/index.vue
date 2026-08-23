@@ -134,8 +134,8 @@
         <el-row :gutter="20">
           <el-col :span="8">
             <el-form-item label="通知单编号" prop="noticeCode">
-              <div style="display: flex; align-items: center; gap: 10px;">
-                <el-input v-model="form.noticeCode" placeholder="请输入通知单编号" :disabled="autoGenFlag || isViewMode" style="flex: 1;" />
+              <div style="display: flex; align-items: center; gap: 10px">
+                <el-input v-model="form.noticeCode" placeholder="请输入通知单编号" :disabled="autoGenFlag || isViewMode" style="flex: 1" />
                 <el-switch
                   v-model="autoGenFlag"
                   inline-prompt
@@ -629,4 +629,3 @@ onActivated(() => {
   getList();
 });
 </script>
-

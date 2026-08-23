@@ -449,4 +449,3 @@ const openVendorDialog = () => {
 
 getList();
 </script>
-

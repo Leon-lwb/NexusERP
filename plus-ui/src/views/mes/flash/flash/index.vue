@@ -61,18 +61,33 @@
     <!-- 待刷写任务面板(按工单/流转卡拉取在制SN待刷清单) -->
     <el-card v-if="pendingPanel" shadow="never" class="mb8" body-style="padding: 12px 16px;">
       <template #header>
-        <div style="display: flex; align-items: center; justify-content: space-between;">
-          <span style="font-weight: 600;"><el-icon style="vertical-align: -2px;"><Bell /></el-icon> 待刷写任务(按工单聚合在制SN × 刷写工序绑定)</span>
+        <div style="display: flex; align-items: center; justify-content: space-between">
+          <span style="font-weight: 600"
+            ><el-icon style="vertical-align: -2px"><Bell /></el-icon> 待刷写任务(按工单聚合在制SN × 刷写工序绑定)</span
+          >
           <el-link type="primary" :underline="false" @click="pendingPanel = false">收起 ▲</el-link>
         </div>
       </template>
       <el-form :inline="true" label-width="80px">
         <el-form-item label="工单号">
-          <el-input v-model="pendingQuery.woNo" placeholder="输入工单号(如 SCGD202608180001)" clearable style="width: 220px" @keyup.enter="loadPending" />
+          <el-input
+            v-model="pendingQuery.woNo"
+            placeholder="输入工单号(如 SCGD202608180001)"
+            clearable
+            style="width: 220px"
+            @keyup.enter="loadPending"
+          />
         </el-form-item>
         <el-form-item>
           <el-button type="primary" icon="Search" :loading="pendingLoading" @click="loadPending">查询待刷</el-button>
-          <el-button icon="Refresh" @click="pendingList = []; pendingQuery.woNo = undefined">清空</el-button>
+          <el-button
+            icon="Refresh"
+            @click="
+              pendingList = [];
+              pendingQuery.woNo = undefined;
+            "
+            >清空</el-button
+          >
         </el-form-item>
       </el-form>
       <el-table v-loading="pendingLoading" :data="pendingList" size="small" border max-height="320">
@@ -82,7 +97,9 @@
         </el-table-column>
         <el-table-column label="刷写类型" align="center" width="100">
           <template #default="scope">
-            <el-tag size="small" :type="scope.row.flashTypeCode === 'firmware_file' ? 'success' : 'info'">{{ flashTypeLabel(scope.row.flashTypeCode) }}</el-tag>
+            <el-tag size="small" :type="scope.row.flashTypeCode === 'firmware_file' ? 'success' : 'info'">{{
+              flashTypeLabel(scope.row.flashTypeCode)
+            }}</el-tag>
           </template>
         </el-table-column>
         <el-table-column label="内容版本" align="center" prop="contentVersion" width="100" />
@@ -93,8 +110,10 @@
         </el-table-column>
         <el-table-column label="最新结果" align="center" width="100">
           <template #default="scope">
-            <el-tag v-if="scope.row.latestResult" size="small" :type="scope.row.latestResult === 'PASS' ? 'success' : 'danger'">{{ scope.row.latestResult }}</el-tag>
-            <span v-else style="color: #909399;">未刷写</span>
+            <el-tag v-if="scope.row.latestResult" size="small" :type="scope.row.latestResult === 'PASS' ? 'success' : 'danger'">{{
+              scope.row.latestResult
+            }}</el-tag>
+            <span v-else style="color: #909399">未刷写</span>
           </template>
         </el-table-column>
         <el-table-column label="状态" align="center" width="90">
@@ -306,7 +325,17 @@
 </template>
 
 <script setup lang="ts" name="FwFlash">
-import { listFlash, getFlash, addFlash, updateFlash, delFlash, confirmFlash, listSnOptions, listReleasedFirmware, listPendingFlash } from '@/api/mes/flash/flash';
+import {
+  listFlash,
+  getFlash,
+  addFlash,
+  updateFlash,
+  delFlash,
+  confirmFlash,
+  listSnOptions,
+  listReleasedFirmware,
+  listPendingFlash
+} from '@/api/mes/flash/flash';
 import type { FwFlashRecordVO, FwFlashRecordQuery, FwFlashRecordForm, PendingFlashTaskVO } from '@/api/mes/flash/flash';
 import { listFirmware } from '@/api/mes/flash/firmware';
 import { listContent } from '@/api/mes/flash/content';

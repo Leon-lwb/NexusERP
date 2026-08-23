@@ -537,4 +537,3 @@ function resetUserQuery() {
 
 getList();
 </script>
-

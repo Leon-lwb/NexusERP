@@ -179,7 +179,10 @@
 .el-input-number__decrease,
 .el-input-number__increase {
   border-radius: var(--app-radius-md);
-  transition: box-shadow 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+  transition:
+    box-shadow 0.2s ease,
+    border-color 0.2s ease,
+    background-color 0.2s ease;
 }
 
 .el-input__wrapper.is-focus,
@@ -193,7 +196,11 @@
 // Buttons
 .el-button {
   border-radius: var(--app-radius-md);
-  transition: transform 0.15s ease, box-shadow 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.2s ease,
+    background-color 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .el-button:not(.is-text):not(.is-link):hover {
@@ -261,7 +268,10 @@
 .el-pagination .btn-next,
 .el-pagination .el-pager li {
   border-radius: var(--app-radius-sm);
-  transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .el-pagination .el-pager li.is-active {

@@ -7,23 +7,17 @@ const BASE = '/erp/wm/transfer';
 export const listTransfer = (query: TransferQuery): AxiosPromise<{ rows: TransferVO[]; total: number }> =>
   request({ url: BASE + '/list', method: 'get', params: query });
 
-export const getTransfer = (id: string | number): AxiosPromise<TransferVO> =>
-  request({ url: BASE + '/' + id, method: 'get' });
+export const getTransfer = (id: string | number): AxiosPromise<TransferVO> => request({ url: BASE + '/' + id, method: 'get' });
 
-export const addTransfer = (data: TransferForm) =>
-  request({ url: BASE, method: 'post', data });
+export const addTransfer = (data: TransferForm) => request({ url: BASE, method: 'post', data });
 
-export const updateTransfer = (data: TransferForm) =>
-  request({ url: BASE, method: 'put', data });
+export const updateTransfer = (data: TransferForm) => request({ url: BASE, method: 'put', data });
 
-export const delTransfer = (id: string | number | (string | number)[]) =>
-  request({ url: BASE + '/' + id, method: 'delete' });
+export const delTransfer = (id: string | number | (string | number)[]) => request({ url: BASE + '/' + id, method: 'delete' });
 
-export const exportTransfer = (query: TransferQuery) =>
-  request({ url: BASE + '/export', method: 'post', params: query });
+export const exportTransfer = (query: TransferQuery) => request({ url: BASE + '/export', method: 'post', params: query });
 
-export const executeTransfer = (id: number) =>
-  request({ url: BASE + '/execute/' + id, method: 'put' });
+export const executeTransfer = (id: number) => request({ url: BASE + '/execute/' + id, method: 'put' });
 
 // ==================== Flowable 审批 ====================
 

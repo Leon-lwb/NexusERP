@@ -2,7 +2,7 @@
   <div class="app-container">
     <!-- 面包屑上下文 -->
     <el-card v-if="currentWarehouse" class="mb8" shadow="never">
-      <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="display: flex; align-items: center; gap: 12px">
         <el-button link icon="ArrowLeft" @click="goBackToWarehouse">返回仓库列表</el-button>
         <el-divider direction="vertical" />
         <span
@@ -118,7 +118,13 @@
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="库区编码" prop="areaCode">
-              <auto-gen-code-field ref="codeRef" v-model="form.areaCode" rule-code="WM_AREA_CODE" :disabled="isViewMode" placeholder="请输入库区编码" />
+              <auto-gen-code-field
+                ref="codeRef"
+                v-model="form.areaCode"
+                rule-code="WM_AREA_CODE"
+                :disabled="isViewMode"
+                placeholder="请输入库区编码"
+              />
             </el-form-item>
           </el-col>
           <el-col :span="12">

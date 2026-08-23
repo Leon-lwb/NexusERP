@@ -39,126 +39,122 @@
 </template>
 
 <script lang="ts" setup>
-  defineOptions({ name: 'FlowCondition' })
+defineOptions({ name: 'FlowCondition' });
 
-  const props = defineProps({
-    businessObject: Object,
-    type: String
-  })
-  const flowConditionForm = ref<any>({})
-  const bpmnElement = ref()
-  const bpmnElementSource = ref()
-  const bpmnElementSourceRef = ref()
+const props = defineProps({
+  businessObject: Object,
+  type: String
+});
+const flowConditionForm = ref<any>({});
+const bpmnElement = ref();
+const bpmnElementSource = ref();
+const bpmnElementSourceRef = ref();
 
-  const flowConditionRef = ref()
-  const bpmnInstances = () => (window as any)?.bpmnInstances
+const flowConditionRef = ref();
+const bpmnInstances = () => (window as any)?.bpmnInstances;
 
-  const resetFlowCondition = () => {
-    bpmnElement.value = bpmnInstances().bpmnElement
-    bpmnElementSource.value = bpmnElement.value.source
-    bpmnElementSourceRef.value = bpmnElement.value.businessObject.sourceRef
-    if (
-      bpmnElementSourceRef.value &&
-      bpmnElementSourceRef.value.default &&
-      bpmnElementSourceRef.value.default.id === bpmnElement.value.id &&
-      flowConditionForm.value.type == 'default'
-    ) {
-      // 默认
-      flowConditionForm.value = { type: 'default' }
-    } else if (!bpmnElement.value.businessObject.conditionExpression) {
-      // 普通
-      flowConditionForm.value = { type: 'normal' }
-    } else {
-      // 带条件
-      const conditionExpression = bpmnElement.value.businessObject.conditionExpression
-      flowConditionForm.value = { ...conditionExpression, type: 'condition' }
-      // resource 可直接标识 是否是外部资源脚本
-      if (flowConditionForm.value.resource) {
-        flowConditionForm.value['conditionType'] = 'script'
-        flowConditionForm.value['scriptType'] = 'externalScript'
-        return
-      }
-      if (conditionExpression.language) {
-        flowConditionForm.value['conditionType'] = 'script'
-        flowConditionForm.value['scriptType'] = 'inlineScript'
-
-        return
-      }
-      flowConditionForm.value['conditionType'] = 'expression'
+const resetFlowCondition = () => {
+  bpmnElement.value = bpmnInstances().bpmnElement;
+  bpmnElementSource.value = bpmnElement.value.source;
+  bpmnElementSourceRef.value = bpmnElement.value.businessObject.sourceRef;
+  if (
+    bpmnElementSourceRef.value &&
+    bpmnElementSourceRef.value.default &&
+    bpmnElementSourceRef.value.default.id === bpmnElement.value.id &&
+    flowConditionForm.value.type == 'default'
+  ) {
+    // 默认
+    flowConditionForm.value = { type: 'default' };
+  } else if (!bpmnElement.value.businessObject.conditionExpression) {
+    // 普通
+    flowConditionForm.value = { type: 'normal' };
+  } else {
+    // 带条件
+    const conditionExpression = bpmnElement.value.businessObject.conditionExpression;
+    flowConditionForm.value = { ...conditionExpression, type: 'condition' };
+    // resource 可直接标识 是否是外部资源脚本
+    if (flowConditionForm.value.resource) {
+      flowConditionForm.value['conditionType'] = 'script';
+      flowConditionForm.value['scriptType'] = 'externalScript';
+      return;
     }
+    if (conditionExpression.language) {
+      flowConditionForm.value['conditionType'] = 'script';
+      flowConditionForm.value['scriptType'] = 'inlineScript';
+
+      return;
+    }
+    flowConditionForm.value['conditionType'] = 'expression';
   }
-  const updateFlowType = (flowType) => {
-    // 正常条件类
-    if (flowType === 'condition') {
-      flowConditionRef.value = bpmnInstances().moddle.create('bpmn:FormalExpression')
-      bpmnInstances().modeling.updateProperties(toRaw(bpmnElement.value), {
-        conditionExpression: flowConditionRef.value
-      })
-      return
-    }
-    // 默认路径
-    if (flowType === 'default') {
-      bpmnInstances().modeling.updateProperties(toRaw(bpmnElement.value), {
-        conditionExpression: null
-      })
-      bpmnInstances().modeling.updateProperties(toRaw(bpmnElementSource.value), {
-        default: bpmnElement.value
-      })
-      return
-    }
-    // 正常路径，如果来源节点的默认路径是当前连线时，清除父元素的默认路径配置
-    if (
-      bpmnElementSourceRef.value.default &&
-      bpmnElementSourceRef.value.default.id === bpmnElement.value.id
-    ) {
-      bpmnInstances().modeling.updateProperties(toRaw(bpmnElementSource.value), {
-        default: null
-      })
-    }
+};
+const updateFlowType = (flowType) => {
+  // 正常条件类
+  if (flowType === 'condition') {
+    flowConditionRef.value = bpmnInstances().moddle.create('bpmn:FormalExpression');
+    bpmnInstances().modeling.updateProperties(toRaw(bpmnElement.value), {
+      conditionExpression: flowConditionRef.value
+    });
+    return;
+  }
+  // 默认路径
+  if (flowType === 'default') {
     bpmnInstances().modeling.updateProperties(toRaw(bpmnElement.value), {
       conditionExpression: null
-    })
+    });
+    bpmnInstances().modeling.updateProperties(toRaw(bpmnElementSource.value), {
+      default: bpmnElement.value
+    });
+    return;
   }
-  const updateFlowCondition = () => {
-    let { conditionType, scriptType, body, resource, language } = flowConditionForm.value
-    let condition
-    if (conditionType === 'expression') {
-      condition = bpmnInstances().moddle.create('bpmn:FormalExpression', { body })
+  // 正常路径，如果来源节点的默认路径是当前连线时，清除父元素的默认路径配置
+  if (bpmnElementSourceRef.value.default && bpmnElementSourceRef.value.default.id === bpmnElement.value.id) {
+    bpmnInstances().modeling.updateProperties(toRaw(bpmnElementSource.value), {
+      default: null
+    });
+  }
+  bpmnInstances().modeling.updateProperties(toRaw(bpmnElement.value), {
+    conditionExpression: null
+  });
+};
+const updateFlowCondition = () => {
+  const { conditionType, scriptType, body, resource, language } = flowConditionForm.value;
+  let condition;
+  if (conditionType === 'expression') {
+    condition = bpmnInstances().moddle.create('bpmn:FormalExpression', { body });
+  } else {
+    if (scriptType === 'inlineScript') {
+      condition = bpmnInstances().moddle.create('bpmn:FormalExpression', { body, language });
+      // this.$set(this.flowConditionForm, "resource", "");
+      flowConditionForm.value['resource'] = '';
     } else {
-      if (scriptType === 'inlineScript') {
-        condition = bpmnInstances().moddle.create('bpmn:FormalExpression', { body, language })
-        // this.$set(this.flowConditionForm, "resource", "");
-        flowConditionForm.value['resource'] = ''
-      } else {
-        // this.$set(this.flowConditionForm, "body", "");
-        flowConditionForm.value['body'] = ''
-        condition = bpmnInstances().moddle.create('bpmn:FormalExpression', {
-          resource,
-          language
-        })
-      }
+      // this.$set(this.flowConditionForm, "body", "");
+      flowConditionForm.value['body'] = '';
+      condition = bpmnInstances().moddle.create('bpmn:FormalExpression', {
+        resource,
+        language
+      });
     }
-    bpmnInstances().modeling.updateProperties(toRaw(bpmnElement.value), {
-      conditionExpression: condition
-    })
   }
+  bpmnInstances().modeling.updateProperties(toRaw(bpmnElement.value), {
+    conditionExpression: condition
+  });
+};
 
-  watch(
-    () => props.businessObject,
-    (val) => {
-      nextTick(() => {
-        resetFlowCondition()
-      })
-    },
-    {
-      immediate: true
-    }
-  )
+watch(
+  () => props.businessObject,
+  (val) => {
+    nextTick(() => {
+      resetFlowCondition();
+    });
+  },
+  {
+    immediate: true
+  }
+);
 
-  onBeforeUnmount(() => {
-    bpmnElement.value = null
-    bpmnElementSource.value = null
-    bpmnElementSourceRef.value = null
-  })
-
+onBeforeUnmount(() => {
+  bpmnElement.value = null;
+  bpmnElementSource.value = null;
+  bpmnElementSourceRef.value = null;
+});
 </script>

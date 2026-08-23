@@ -11,8 +11,8 @@
 </template>
 
 <script setup lang="ts">
-defineProps<{ title: string }>()
-defineEmits<{ (e: 'add'): void }>()
+defineProps<{ title: string }>();
+defineEmits<{ (e: 'add'): void }>();
 </script>
 
 <style scoped>
@@ -29,4 +29,3 @@ defineEmits<{ (e: 'add'): void }>()
   font-weight: 600;
 }
 </style>
-

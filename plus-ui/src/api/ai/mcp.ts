@@ -1,15 +1,15 @@
-import request from '@/utils/request'
+import request from '@/utils/request';
 
 /** AI 工具配置类型 */
 export interface AiTool {
-  id?: number
-  tenantId?: number
-  toolName: string
-  displayName: string
-  description: string
-  toolType: string
-  configJson?: string
-  status: string
+  id?: number;
+  tenantId?: number;
+  toolName: string;
+  displayName: string;
+  description: string;
+  toolType: string;
+  configJson?: string;
+  status: string;
 }
 
 // ==================== MCP 工具管理 API ====================
@@ -22,7 +22,7 @@ export function listTool(query?: object) {
     url: '/ai/mcp/tool/list',
     method: 'get',
     params: query
-  })
+  });
 }
 
 /**
@@ -32,7 +32,7 @@ export function listEnabledTool() {
   return request({
     url: '/ai/mcp/tool/enabled',
     method: 'get'
-  })
+  });
 }
 
 /**
@@ -43,7 +43,7 @@ export function getTool(id: number) {
   return request({
     url: `/ai/mcp/tool/${id}`,
     method: 'get'
-  })
+  });
 }
 
 /**
@@ -55,7 +55,7 @@ export function addTool(data: AiTool) {
     url: '/ai/mcp/tool',
     method: 'post',
     data
-  })
+  });
 }
 
 /**
@@ -67,7 +67,7 @@ export function updateTool(data: AiTool) {
     url: '/ai/mcp/tool',
     method: 'put',
     data
-  })
+  });
 }
 
 /**
@@ -78,7 +78,7 @@ export function delTool(ids: Array<number | string>) {
   return request({
     url: `/ai/mcp/tool/${ids}`,
     method: 'delete'
-  })
+  });
 }
 
 /**
@@ -91,7 +91,7 @@ export function toggleToolStatus(id: number, status: string) {
     url: `/ai/mcp/tool/${id}/status`,
     method: 'put',
     params: { status }
-  })
+  });
 }
 
 /**
@@ -101,7 +101,7 @@ export function syncBuiltinTools() {
   return request({
     url: '/ai/mcp/tool/sync',
     method: 'post'
-  })
+  });
 }
 
 /**
@@ -112,5 +112,5 @@ export function testTool(id: number) {
   return request({
     url: `/ai/mcp/tool/${id}/test`,
     method: 'post'
-  })
+  });
 }

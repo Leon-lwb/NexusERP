@@ -25,8 +25,7 @@ export const initWebSocket = (url: any) => {
       retries: 3,
       // 重连间隔
       delay: 1000,
-      onFailed() {
-      }
+      onFailed() {}
     },
     heartbeat: {
       message: JSON.stringify({ type: 'ping' }),

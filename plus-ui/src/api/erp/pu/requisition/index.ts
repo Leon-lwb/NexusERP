@@ -14,10 +14,10 @@ const BASE = '/erp/pu/requisition';
  * @returns 采购请购单列表及总数
  */
 export const listPurchaseRequisition = (query: PurchaseRequisitionQuery): AxiosPromise<{ rows: PurchaseRequisitionVO[]; total: number }> =>
-  request({ 
-    url: BASE + '/list', 
-    method: 'get', 
-    params: query 
+  request({
+    url: BASE + '/list',
+    method: 'get',
+    params: query
   });
 
 /**
@@ -26,9 +26,9 @@ export const listPurchaseRequisition = (query: PurchaseRequisitionQuery): AxiosP
  * @returns 采购请购单详细信息
  */
 export const getPurchaseRequisition = (id: string | number): AxiosPromise<PurchaseRequisitionVO> =>
-  request({ 
-    url: BASE + '/' + id, 
-    method: 'get' 
+  request({
+    url: BASE + '/' + id,
+    method: 'get'
   });
 
 /**
@@ -37,10 +37,10 @@ export const getPurchaseRequisition = (id: string | number): AxiosPromise<Purcha
  * @returns 请求结果
  */
 export const addPurchaseRequisition = (data: PurchaseRequisitionForm) =>
-  request({ 
-    url: BASE, 
-    method: 'post', 
-    data 
+  request({
+    url: BASE,
+    method: 'post',
+    data
   });
 
 /**
@@ -49,10 +49,10 @@ export const addPurchaseRequisition = (data: PurchaseRequisitionForm) =>
  * @returns 请求结果
  */
 export const updatePurchaseRequisition = (data: PurchaseRequisitionForm) =>
-  request({ 
-    url: BASE, 
-    method: 'put', 
-    data 
+  request({
+    url: BASE,
+    method: 'put',
+    data
   });
 
 /**
@@ -61,9 +61,9 @@ export const updatePurchaseRequisition = (data: PurchaseRequisitionForm) =>
  * @returns 请求结果
  */
 export const delPurchaseRequisition = (id: string | number | (string | number)[]) =>
-  request({ 
-    url: BASE + '/' + id, 
-    method: 'delete' 
+  request({
+    url: BASE + '/' + id,
+    method: 'delete'
   });
 
 /**
@@ -72,10 +72,10 @@ export const delPurchaseRequisition = (id: string | number | (string | number)[]
  * @returns 下载链接
  */
 export const exportPurchaseRequisition = (query: PurchaseRequisitionQuery) =>
-  request({ 
-    url: BASE + '/export', 
-    method: 'post', 
-    params: query 
+  request({
+    url: BASE + '/export',
+    method: 'post',
+    params: query
   });
 
 // /**

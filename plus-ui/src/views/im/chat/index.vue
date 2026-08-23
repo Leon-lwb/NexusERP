@@ -125,19 +125,19 @@
                     <div v-if="m.revoked" class="msg-content revoked">该消息已被撤回</div>
                     <template v-else>
                       <div v-if="m.forwardFrom" class="msg-fwd">转发消息</div>
-                    <div v-if="m.msgType === 'image'" class="msg-image">
-                      <el-image :src="m.content" :preview-src-list="[m.content]" fit="cover" hide-on-click-modal class="img-thumb" />
-                    </div>
-                    <div v-else-if="m.msgType === 'file'" class="msg-file">
-                      <el-link :href="m.content" target="_blank" type="primary" :underline="false">
-                        <el-icon class="mr-1"><Document /></el-icon>{{ fileName(m.content) }}
-                      </el-link>
-                    </div>
-                    <div v-else class="msg-content">
-                      <!-- P1-5: 被 @ 标记 -->
-                      <el-tag v-if="m.mentioned" size="small" type="warning" effect="plain" class="mention-flag">@你</el-tag>
-                      <span>{{ m.content }}</span>
-                    </div>
+                      <div v-if="m.msgType === 'image'" class="msg-image">
+                        <el-image :src="m.content" :preview-src-list="[m.content]" fit="cover" hide-on-click-modal class="img-thumb" />
+                      </div>
+                      <div v-else-if="m.msgType === 'file'" class="msg-file">
+                        <el-link :href="m.content" target="_blank" type="primary" :underline="false">
+                          <el-icon class="mr-1"><Document /></el-icon>{{ fileName(m.content) }}
+                        </el-link>
+                      </div>
+                      <div v-else class="msg-content">
+                        <!-- P1-5: 被 @ 标记 -->
+                        <el-tag v-if="m.mentioned" size="small" type="warning" effect="plain" class="mention-flag">@你</el-tag>
+                        <span>{{ m.content }}</span>
+                      </div>
                     </template>
                     <div v-if="!m.revoked" class="msg-actions">
                       <span v-if="imStore.canRevoke(m)" class="msg-act" @click="onRevoke(m)">撤回</span>
@@ -159,18 +159,10 @@
                     <el-button :icon="Paperclip" size="small" circle title="发送文件" />
                   </el-upload>
                   <!-- P1-5: @ 提及按钮（仅群聊显示） -->
-                  <el-button v-if="active?.chatType === 'GROUP'" size="small" circle title="@ 群成员" @click="openMentionPicker">
-                    @
-                  </el-button>
+                  <el-button v-if="active?.chatType === 'GROUP'" size="small" circle title="@ 群成员" @click="openMentionPicker"> @ </el-button>
                   <!-- P1-5: 已选 @ 成员标签 -->
                   <div v-if="active?.chatType === 'GROUP' && mentionSelected.length" class="mention-tags-inline">
-                    <el-tag
-                      v-for="u in mentionSelected"
-                      :key="u.userId"
-                      size="small"
-                      closable
-                      @close="removeMention(u)"
-                    >
+                    <el-tag v-for="u in mentionSelected" :key="u.userId" size="small" closable @close="removeMention(u)">
                       @{{ u.nickName || u.userName }}
                     </el-tag>
                   </div>
@@ -516,9 +508,7 @@ const onSend = () => {
   }
   // P1-5: 群聊时携带已选 @ 成员 userId 列表
   const mentionUserIds =
-    active.value?.chatType === 'GROUP' && mentionSelected.value.length
-      ? mentionSelected.value.map((u: any) => u.userId)
-      : undefined;
+    active.value?.chatType === 'GROUP' && mentionSelected.value.length ? mentionSelected.value.map((u: any) => u.userId) : undefined;
   void imStore.send(content, 'text', undefined, mentionUserIds);
   // P1-5: 发送后清空已选 @ 列表
   mentionSelected.value = [];

@@ -27,49 +27,49 @@ export interface TableVO extends BaseEntity {
   parentMenuName?: any;
   tree: boolean;
   crud: boolean;
-  columnsVo: OnlFieldVo[]
-  subColumnsVo?: OnlFieldVo[]
+  columnsVo: OnlFieldVo[];
+  subColumnsVo?: OnlFieldVo[];
 }
 
 export interface OnlFieldVo {
-  columnName: string
-  columnComment: string
-  htmlType: 'input' | 'select' | 'date' | 'radio' | 'checkbox' | 'textarea' | 'number'
-  dictType?: string
-  isRequired: string  // 修改为字符串类型
-  formSpan?: number
-  columnType: string
-  dictData?: DictItem[] // 新增字典数据
+  columnName: string;
+  columnComment: string;
+  htmlType: 'input' | 'select' | 'date' | 'radio' | 'checkbox' | 'textarea' | 'number';
+  dictType?: string;
+  isRequired: string; // 修改为字符串类型
+  formSpan?: number;
+  columnType: string;
+  dictData?: DictItem[]; // 新增字典数据
 }
 
 export interface DictItem {
-  dictValue: string
-  dictLabel: string
+  dictValue: string;
+  dictLabel: string;
 }
 
 export interface TableQuery {
-  pageNum: number
-  pageSize: number
-  tableName: string
-  tableComment: string
-  dataName: string
-  queryType?: string
-  queryFields?: string[]
-  queryConditions?: any[]
-  sortFields?: string[]
+  pageNum: number;
+  pageSize: number;
+  tableName: string;
+  tableComment: string;
+  dataName: string;
+  queryType?: string;
+  queryFields?: string[];
+  queryConditions?: any[];
+  sortFields?: string[];
 }
 
 export interface TableColumn {
-  columnName: string
-  columnType: string
-  columnComment: string
-  isNullable: string
-  javaField: string
-  htmlType: string
-  dictType?: string
-  dictFields?: string
-  mapping?: string
-  onChange?: string
+  columnName: string;
+  columnType: string;
+  columnComment: string;
+  isNullable: string;
+  javaField: string;
+  htmlType: string;
+  dictType?: string;
+  dictFields?: string;
+  mapping?: string;
+  onChange?: string;
 }
 
 export interface DbColumnVO extends BaseEntity {

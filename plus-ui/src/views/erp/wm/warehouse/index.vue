@@ -95,7 +95,13 @@
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="仓库编码" prop="warehouseCode">
-              <auto-gen-code-field ref="codeRef" v-model="form.warehouseCode" rule-code="WAREHOUSE_CODE" :disabled="isViewMode" placeholder="请输入仓库编码" />
+              <auto-gen-code-field
+                ref="codeRef"
+                v-model="form.warehouseCode"
+                rule-code="WAREHOUSE_CODE"
+                :disabled="isViewMode"
+                placeholder="请输入仓库编码"
+              />
             </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -212,7 +218,13 @@
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="归属部门" prop="deptId">
-              <dept-select v-model="form.deptId" category="WAREHOUSE" placeholder="请选择归属部门" :disabled="isViewMode" @change="handleDeptChange" />
+              <dept-select
+                v-model="form.deptId"
+                category="WAREHOUSE"
+                placeholder="请选择归属部门"
+                :disabled="isViewMode"
+                @change="handleDeptChange"
+              />
               <el-input v-model="form.deptName" style="display: none" />
             </el-form-item>
           </el-col>

@@ -6,7 +6,10 @@
           <span>{{ title }}</span>
           <div>
             <el-button type="primary" @click="submitForm" v-if="!isViewMode && !props.disabled">保存</el-button>
-            <el-button type="success" @click="handleSubmitFlow" v-if="!isViewMode && !props.disabled && (form.status === 'DRAFT' || form.status === 'REJECTED')"
+            <el-button
+              type="success"
+              @click="handleSubmitFlow"
+              v-if="!isViewMode && !props.disabled && (form.status === 'DRAFT' || form.status === 'REJECTED')"
               >提交审批</el-button
             >
             <el-button type="warning" @click="handleConfirmShelf" v-if="pageType === 'shelf' && form.status === 'APPROVED' && !isViewMode"
@@ -25,7 +28,13 @@
             <el-form-item label="入库单编号" prop="receiveCode">
               <div style="display: flex; align-items: center; gap: 10px">
                 <el-input v-model="form.receiveCode" placeholder="请输入入库单编号" :disabled="autoGenFlag || isViewMode" style="flex: 1" />
-                <el-switch v-model="autoGenFlag" active-color="#13ce66" active-text="生成" @change="handleAutoGenChange" :disabled="isViewMode || props.disabled">
+                <el-switch
+                  v-model="autoGenFlag"
+                  active-color="#13ce66"
+                  active-text="生成"
+                  @change="handleAutoGenChange"
+                  :disabled="isViewMode || props.disabled"
+                >
                 </el-switch>
               </div>
             </el-form-item>
@@ -936,7 +945,7 @@ function rowWmMaterialReceiveLineIndex({ row, rowIndex }: any) {
 
 /** 物料入库单行添加按钮操作 */
 function handleAddWmMaterialReceiveLine() {
-  let obj: any = {};
+  const obj: any = {};
   obj.sourceDocLineId = '';
   obj.materialId = '';
   obj.materialCode = '';
@@ -1174,7 +1183,7 @@ function handleWarehouseChange(value: any) {
 function findNodeById(nodes: any[], id: any, idField: string): any {
   if (!nodes || !Array.isArray(nodes)) return null;
 
-  for (let node of nodes) {
+  for (const node of nodes) {
     if (node[idField] === id) {
       return node;
     }
@@ -1192,7 +1201,7 @@ function findPathNodes(nodes: any[], selectedValue: any): any[] {
 
   // 使用 value 字段查找节点（标准化后的树中每个节点都有 value 字段）
   let path: any[] = [];
-  let currentNode = findNodeById(nodes, selectedValue, 'value');
+  const currentNode = findNodeById(nodes, selectedValue, 'value');
 
   if (currentNode) {
     path.push(currentNode);
@@ -1210,7 +1219,7 @@ function findParentPath(nodes: any[], node: any): any[] {
 
   // 深度优先搜索查找父节点
   function dfs(currentNodes: any[], targetNode: any, path: any[]): any[] {
-    for (let n of currentNodes) {
+    for (const n of currentNodes) {
       // 如果当前节点是目标节点的父节点
       if (n.children && n.children.some((child: any) => child.value === targetNode.value)) {
         return [n, ...path];

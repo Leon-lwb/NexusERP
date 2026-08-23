@@ -18,7 +18,7 @@ export default function PaletteProvider(palette, create, elementFactory, spaceTo
 
 PaletteProvider.$inject = ['palette', 'create', 'elementFactory', 'spaceTool', 'lassoTool', 'handTool', 'globalConnect', 'translate'];
 
-PaletteProvider.prototype.getPaletteEntries = function() {
+PaletteProvider.prototype.getPaletteEntries = function () {
   var actions = {};
   var create = this._create;
   var elementFactory = this._elementFactory;
@@ -84,7 +84,7 @@ PaletteProvider.prototype.getPaletteEntries = function() {
       className: 'bpmn-icon-hand-tool',
       title: translate('Activate the hand tool'),
       action: {
-        click: function(event) {
+        click: function (event) {
           handTool.activateHand(event);
         }
       }
@@ -94,7 +94,7 @@ PaletteProvider.prototype.getPaletteEntries = function() {
       className: 'bpmn-icon-lasso-tool',
       title: translate('Activate the lasso tool'),
       action: {
-        click: function(event) {
+        click: function (event) {
           lassoTool.activateSelection(event);
         }
       }
@@ -104,7 +104,7 @@ PaletteProvider.prototype.getPaletteEntries = function() {
       className: 'bpmn-icon-space-tool',
       title: translate('Activate the create/remove space tool'),
       action: {
-        click: function(event) {
+        click: function (event) {
           spaceTool.activateSelection(event);
         }
       }
@@ -114,7 +114,7 @@ PaletteProvider.prototype.getPaletteEntries = function() {
       className: 'bpmn-icon-connection-multi',
       title: translate('Activate the global connect tool'),
       action: {
-        click: function(event) {
+        click: function (event) {
           globalConnect.toggle(event);
         }
       }

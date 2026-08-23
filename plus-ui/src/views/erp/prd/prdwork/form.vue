@@ -6,7 +6,9 @@
           <span>{{ title }}</span>
           <div>
             <el-button type="primary" @click="submitForm" v-if="!isViewMode && !props.disabled">保存</el-button>
-            <el-button type="success" @click="handleSubmitFlow" v-if="!isViewMode && !props.disabled && form.woStatus === 'CREATED' && form.woId">提交审批</el-button>
+            <el-button type="success" @click="handleSubmitFlow" v-if="!isViewMode && !props.disabled && form.woStatus === 'CREATED' && form.woId"
+              >提交审批</el-button
+            >
             <el-button type="info" @click="onViewFlow" v-if="form.woStatus === 'APPROVING' || form.woStatus === 'APPROVED'">查看流程</el-button>
             <el-button @click="cancel" v-if="!props.disabled">取消</el-button>
           </div>
@@ -18,9 +20,15 @@
         <el-row :gutter="20">
           <el-col :span="8">
             <el-form-item label="工单编号" prop="woNo">
-              <div style="display: flex; align-items: center; gap: 10px;">
-                <el-input v-model="form.woNo" placeholder="请输入工单编号" :disabled="autoGenFlag || isViewMode" style="flex: 1;" />
-                <el-switch v-model="autoGenFlag" active-color="#13ce66" active-text="生成" @change="handleAutoGenChange" :disabled="isViewMode || props.disabled">
+              <div style="display: flex; align-items: center; gap: 10px">
+                <el-input v-model="form.woNo" placeholder="请输入工单编号" :disabled="autoGenFlag || isViewMode" style="flex: 1" />
+                <el-switch
+                  v-model="autoGenFlag"
+                  active-color="#13ce66"
+                  active-text="生成"
+                  @change="handleAutoGenChange"
+                  :disabled="isViewMode || props.disabled"
+                >
                 </el-switch>
               </div>
             </el-form-item>
@@ -130,7 +138,7 @@
         <el-row :gutter="20">
           <el-col :span="24">
             <el-form-item label="分配车间" prop="workshopList">
-              <div style="display: flex; align-items: flex-start; gap: 10px;">
+              <div style="display: flex; align-items: flex-start; gap: 10px">
                 <el-select
                   v-model="form.workshopList"
                   multiple
@@ -138,7 +146,7 @@
                   collapse-tags-tooltip
                   :max-collapse-tags="3"
                   placeholder="请选择车间"
-                  style="flex: 1; min-width: 300px;"
+                  style="flex: 1; min-width: 300px"
                   :disabled="isViewMode || props.disabled"
                   @remove-tag="handleWorkshopRemove"
                 >
@@ -163,13 +171,15 @@
             >
           </el-col>
           <el-col :span="1.5">
-            <span v-if="!isViewMode && !props.disabled && (!form.workshopList || form.workshopList.length === 0)" style="color: #909399;">请先选择车间</span>
+            <span v-if="!isViewMode && !props.disabled && (!form.workshopList || form.workshopList.length === 0)" style="color: #909399"
+              >请先选择车间</span
+            >
           </el-col>
         </el-row>
         <el-row :gutter="20">
           <el-col :span="24">
             <el-form-item label="分配工作站">
-              <el-table :data="form.workstationList" border size="small" style="width: 100%; margin-bottom: 10px;">
+              <el-table :data="form.workstationList" border size="small" style="width: 100%; margin-bottom: 10px">
                 <el-table-column type="index" label="顺序" width="60" align="center" />
                 <el-table-column label="工作站编码" prop="resourceCode" width="120" />
                 <el-table-column label="工作站名称" prop="resourceName" />
@@ -197,13 +207,15 @@
             >
           </el-col>
           <el-col :span="1.5">
-            <span v-if="!isViewMode && !props.disabled && (!form.workshopList || form.workshopList.length === 0)" style="color: #909399;">请先选择车间</span>
+            <span v-if="!isViewMode && !props.disabled && (!form.workshopList || form.workshopList.length === 0)" style="color: #909399"
+              >请先选择车间</span
+            >
           </el-col>
         </el-row>
         <el-row :gutter="20">
           <el-col :span="24">
             <el-form-item label="分配班组">
-              <el-table :data="form.teamList" border size="small" style="width: 100%; margin-bottom: 10px;">
+              <el-table :data="form.teamList" border size="small" style="width: 100%; margin-bottom: 10px">
                 <el-table-column type="index" label="顺序" width="60" align="center" />
                 <el-table-column label="班组编码" prop="resourceCode" width="120" />
                 <el-table-column label="班组名称" prop="resourceName" />
@@ -503,11 +515,11 @@
         :title="`已选车间：${getSelectedWorkshopNames()}`"
         type="info"
         :closable="false"
-        style="margin-bottom: 15px;"
+        style="margin-bottom: 15px"
       />
       <el-form :model="workstationQueryParams" :inline="true">
         <el-form-item label="所属车间" prop="workshopId">
-          <el-select v-model="workstationQueryParams.workshopId" placeholder="请选择车间" clearable style="width: 200px;">
+          <el-select v-model="workstationQueryParams.workshopId" placeholder="请选择车间" clearable style="width: 200px">
             <el-option v-for="item in selectedWorkshopOptions" :key="item.workshopId" :label="item.workshopName" :value="item.workshopId" />
           </el-select>
         </el-form-item>
@@ -556,7 +568,7 @@
           <el-input v-model="teamQueryParams.teamName" placeholder="请输入班组名称" clearable @keyup.enter="getTeamList" />
         </el-form-item>
         <el-form-item label="所属车间" prop="workshopId">
-          <el-select v-model="teamQueryParams.workshopId" placeholder="请选择车间" clearable style="width: 150px;">
+          <el-select v-model="teamQueryParams.workshopId" placeholder="请选择车间" clearable style="width: 150px">
             <el-option v-for="item in selectedWorkshopOptions" :key="item.workshopId" :label="item.workshopName" :value="item.workshopId" />
           </el-select>
         </el-form-item>

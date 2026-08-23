@@ -1,6 +1,6 @@
 <template>
   <div class="app-container">
-  <!-- 显示DEMO数据 -->
+    <!-- 显示DEMO数据 -->
     <el-form ref="formRef" :model="form" label-width="80px" :disabled="disabled">
       <el-form-item label="用户账号" prop="userName">
         <el-input v-model="form.userName" placeholder="" />
@@ -26,120 +26,124 @@
 </template>
 
 <script setup name="wfDemo" lang="ts">
-  import {getDemo, delDemo, addDemo, updateDemo } from '@/api/workflow/demo/index';
+import { getDemo, delDemo, addDemo, updateDemo } from '@/api/workflow/demo/index';
 
-  const props = defineProps({
-    //表单禁用
-    disabled: {
-      type: Boolean,
-      default: false,
-      required: false
+const props = defineProps({
+  //表单禁用
+  disabled: {
+    type: Boolean,
+    default: false,
+    required: false
+  },
+  /*流程自定义表单数据*/
+  customFormData: {
+    type: Object,
+    default: () => {
+      return {};
     },
-    /*流程自定义表单数据*/
-    customFormData:{
-       type:Object,
-       default:()=>{return {}},
-       required:false
-    },
-  })
-  const { proxy } = getCurrentInstance() as ComponentInternalInstance;
-  // 按钮loading
-  const buttonLoading = ref(false)
-  // 弹出层标题
-  const title = ref("")
-  // 是否显示弹出层
-  const open = ref(true)
-  // 表单参数
-  const form = ref<any>({})
-  const formRef = ref(null)
+    required: false
+  }
+});
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
+// 按钮loading
+const buttonLoading = ref(false);
+// 弹出层标题
+const title = ref('');
+// 是否显示弹出层
+const open = ref(true);
+// 表单参数
+const form = ref<any>({});
+const formRef = ref(null);
 
-  // 取消按钮
-  const cancel = () => {
-    open.value = false;
-    reset();
-  }
-  // 表单重置
-  const reset = () => {
-    form.value = {
-      demoId: undefined,
-      userName: undefined,
-      nickName: undefined,
-      email: undefined,
-      avatar: undefined,
-      status: undefined,
-      delFlag: undefined,
-      createBy: undefined,
-      createTime: undefined,
-      updateBy: undefined,
-      updateTime: undefined,
-      remark: undefined
-    };
-    formRef.value?.resetFields();
-  }
-  /** 新增按钮操作 */
-  const handleAdd = () => {
-    reset();
+// 取消按钮
+const cancel = () => {
+  open.value = false;
+  reset();
+};
+// 表单重置
+const reset = () => {
+  form.value = {
+    demoId: undefined,
+    userName: undefined,
+    nickName: undefined,
+    email: undefined,
+    avatar: undefined,
+    status: undefined,
+    delFlag: undefined,
+    createBy: undefined,
+    createTime: undefined,
+    updateBy: undefined,
+    updateTime: undefined,
+    remark: undefined
+  };
+  formRef.value?.resetFields();
+};
+/** 新增按钮操作 */
+const handleAdd = () => {
+  reset();
+  open.value = true;
+  title.value = '添加DEMO';
+};
+/** 查看按钮操作 */
+const handleView = (row) => {
+  loading.value = true;
+  reset();
+  const demoId = row.demoId;
+  getDemo(demoId).then((response) => {
+    loading.value = false;
+    form.value = response.data;
     open.value = true;
-    title.value = "添加DEMO";
-  }
-  /** 查看按钮操作 */
-  const handleView = (row) => {
-    loading.value = true;
-    reset();
-    const demoId = row.demoId
-    getDemo(demoId).then(response => {
-      loading.value = false;
-      form.value = response.data;
-      open.value = true;
-      title.value = "DEMO详情";
-    });
-  }
-  /** 修改按钮操作 */
-  const handleUpdate = (row) => {
-    loading.value = true;
-    reset();
-    const demoId = row.demoId
-    getDemo(demoId).then(response => {
-      loading.value = false;
-      form.value = response.data;
-      open.value = true;
-      title.value = "修改DEMO";
-    });
-  }
-  /** 提交按钮 */
-  const submitForm = () => {
-    formRef.validate(valid => {
-      if (valid) {
-        buttonLoading.value = true;
-        if (form.value.demoId != null) {
-          updateDemo(form.value).then(response => {
-            proxy?.$modal.msgSuccess("修改成功");
+    title.value = 'DEMO详情';
+  });
+};
+/** 修改按钮操作 */
+const handleUpdate = (row) => {
+  loading.value = true;
+  reset();
+  const demoId = row.demoId;
+  getDemo(demoId).then((response) => {
+    loading.value = false;
+    form.value = response.data;
+    open.value = true;
+    title.value = '修改DEMO';
+  });
+};
+/** 提交按钮 */
+const submitForm = () => {
+  formRef.validate((valid) => {
+    if (valid) {
+      buttonLoading.value = true;
+      if (form.value.demoId != null) {
+        updateDemo(form.value)
+          .then((response) => {
+            proxy?.$modal.msgSuccess('修改成功');
             open.value = false;
             getList();
-          }).finally(() => {
+          })
+          .finally(() => {
             buttonLoading.value = false;
           });
-        } else {
-          addDemo(form.value).then(response => {
-            proxy?.$modal.msgSuccess("新增成功");
+      } else {
+        addDemo(form.value)
+          .then((response) => {
+            proxy?.$modal.msgSuccess('新增成功');
             open.value = false;
             getList();
-          }).finally(() => {
+          })
+          .finally(() => {
             buttonLoading.value = false;
           });
-        }
       }
-    });
-  }
-
-  onMounted(() => {
-    //流程调用自定义表单的传入参数
-    if(props.customFormData != null) {
-      form.value = props.customFormData;
     }
-  })
+  });
+};
 
+onMounted(() => {
+  //流程调用自定义表单的传入参数
+  if (props.customFormData != null) {
+    form.value = props.customFormData;
+  }
+});
 </script>
 
-<style>
-</style>
+<style></style>

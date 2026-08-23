@@ -38,30 +38,26 @@ for (const line of output.split(/\r?\n/)) {
 let baseRef = baseRefArg;
 if (!baseRef) {
   // CI: PR 目标分支由 Actions 注入; 本地默认与上一次提交比较
-  baseRef = process.env.GITHUB_BASE_SHA
-    || process.env.GITHUB_BASE_REF
-    || 'HEAD~1';
+  baseRef = process.env.GITHUB_BASE_SHA || process.env.GITHUB_BASE_REF || 'HEAD~1';
 }
 let changed = [];
 try {
   changed = execSync(`git diff --name-only --diff-filter=ACMR ${baseRef}...HEAD`, { encoding: 'utf8' })
     .split(/\r?\n/)
     .filter(Boolean)
-    .map(p => p.replace(/\\/g, '/'));
+    .map((p) => p.replace(/\\/g, '/'));
 } catch {
   // 本地浅克隆/无 base 时退回与 HEAD~1 比较
   changed = execSync('git diff --name-only --diff-filter=ACMR HEAD~1', { encoding: 'utf8' })
     .split(/\r?\n/)
     .filter(Boolean)
-    .map(p => p.replace(/\\/g, '/'));
+    .map((p) => p.replace(/\\/g, '/'));
 }
 
 // 变更文件里属于 plus-ui 的部分(去掉 plus-ui/ 前缀与 tsc 输出对齐)
-const changedInUi = changed
-  .filter(p => p.startsWith('plus-ui/'))
-  .map(p => p.slice('plus-ui/'.length));
+const changedInUi = changed.filter((p) => p.startsWith('plus-ui/')).map((p) => p.slice('plus-ui/'.length));
 
-const errorsInChanged = [...errorFileSet].filter(f => changedInUi.includes(f));
+const errorsInChanged = [...errorFileSet].filter((f) => changedInUi.includes(f));
 const totalErrors = errorFileSet.size;
 
 if (errorsInChanged.length === 0) {

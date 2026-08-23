@@ -30,7 +30,9 @@
             <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['ai:prompt:add']">新增</el-button>
           </el-col>
           <el-col :span="1.5">
-            <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete()" v-hasPermi="['ai:prompt:remove']">删除</el-button>
+            <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete()" v-hasPermi="['ai:prompt:remove']"
+              >删除</el-button
+            >
           </el-col>
         </el-row>
       </template>
@@ -101,17 +103,17 @@
 </template>
 
 <script setup name="AiPrompt" lang="ts">
-import { listPromptTemplate, getPromptTemplate, addPromptTemplate, updatePromptTemplate, delPromptTemplate } from '@/api/ai/prompt'
+import { listPromptTemplate, getPromptTemplate, addPromptTemplate, updatePromptTemplate, delPromptTemplate } from '@/api/ai/prompt';
 
-const { proxy } = getCurrentInstance() as ComponentInternalInstance
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 
-const templateList = ref<any[]>([])
-const loading = ref(true)
-const multiple = ref(true)
-const total = ref(0)
-const ids = ref<Array<number>>([])
-const dialogVisible = ref(false)
-const dialogTitle = ref('')
+const templateList = ref<any[]>([]);
+const loading = ref(true);
+const multiple = ref(true);
+const total = ref(0);
+const ids = ref<Array<number>>([]);
+const dialogVisible = ref(false);
+const dialogTitle = ref('');
 
 const queryParams = ref<any>({
   pageNum: 1,
@@ -119,42 +121,42 @@ const queryParams = ref<any>({
   templateName: undefined,
   templateKey: undefined,
   status: undefined
-})
+});
 
-const form = ref<any>({})
+const form = ref<any>({});
 const rules = ref<any>({
   templateName: [{ required: true, message: '模板名称不能为空', trigger: 'blur' }],
   templateKey: [{ required: true, message: '模板标识不能为空', trigger: 'blur' }],
   content: [{ required: true, message: '模板内容不能为空', trigger: 'blur' }]
-})
+});
 
 /** 查询列表 */
 const getList = () => {
-  loading.value = true
+  loading.value = true;
   listPromptTemplate(queryParams.value).then((res: any) => {
-    templateList.value = res.rows
-    total.value = res.total
-    loading.value = false
-  })
-}
+    templateList.value = res.rows;
+    total.value = res.total;
+    loading.value = false;
+  });
+};
 
 /** 搜索 */
 const handleQuery = () => {
-  queryParams.value.pageNum = 1
-  getList()
-}
+  queryParams.value.pageNum = 1;
+  getList();
+};
 
 /** 重置 */
 const resetQuery = () => {
-  proxy?.resetForm('queryFormRef')
-  handleQuery()
-}
+  proxy?.resetForm('queryFormRef');
+  handleQuery();
+};
 
 /** 多选 */
 const handleSelectionChange = (selection: any[]) => {
-  ids.value = selection.map(item => item.id)
-  multiple.value = !selection.length
-}
+  ids.value = selection.map((item) => item.id);
+  multiple.value = !selection.length;
+};
 
 /** 重置表单 */
 const reset = () => {
@@ -166,64 +168,68 @@ const reset = () => {
     description: undefined,
     isDefault: '0',
     status: '1'
-  }
-  proxy?.resetForm('formRef')
-}
+  };
+  proxy?.resetForm('formRef');
+};
 
 /** 新增 */
 const handleAdd = () => {
-  reset()
-  dialogVisible.value = true
-  dialogTitle.value = '新增 Prompt 模板'
-}
+  reset();
+  dialogVisible.value = true;
+  dialogTitle.value = '新增 Prompt 模板';
+};
 
 /** 修改 */
 const handleUpdate = (row: any) => {
-  reset()
+  reset();
   getPromptTemplate(row.id).then((res: any) => {
-    form.value = res.data
-    dialogVisible.value = true
-    dialogTitle.value = '修改 Prompt 模板'
-  })
-}
+    form.value = res.data;
+    dialogVisible.value = true;
+    dialogTitle.value = '修改 Prompt 模板';
+  });
+};
 
 /** 提交 */
 const submitForm = () => {
   proxy?.validateForm('formRef', () => {
     if (form.value.id != null) {
       updatePromptTemplate(form.value).then(() => {
-        proxy?.$modal.msgSuccess('修改成功')
-        dialogVisible.value = false
-        getList()
-      })
+        proxy?.$modal.msgSuccess('修改成功');
+        dialogVisible.value = false;
+        getList();
+      });
     } else {
       addPromptTemplate(form.value).then(() => {
-        proxy?.$modal.msgSuccess('新增成功')
-        dialogVisible.value = false
-        getList()
-      })
+        proxy?.$modal.msgSuccess('新增成功');
+        dialogVisible.value = false;
+        getList();
+      });
     }
-  })
-}
+  });
+};
 
 /** 删除 */
 const handleDelete = (row?: any) => {
-  const deleteIds = row?.id ? [row.id] : ids.value
-  proxy?.$modal.confirm('是否确认删除所选模板？').then(() => {
-    return delPromptTemplate(deleteIds)
-  }).then(() => {
-    getList()
-    proxy?.$modal.msgSuccess('删除成功')
-  }).catch(() => {})
-}
+  const deleteIds = row?.id ? [row.id] : ids.value;
+  proxy?.$modal
+    .confirm('是否确认删除所选模板？')
+    .then(() => {
+      return delPromptTemplate(deleteIds);
+    })
+    .then(() => {
+      getList();
+      proxy?.$modal.msgSuccess('删除成功');
+    })
+    .catch(() => {});
+};
 
 /** 取消 */
 const cancel = () => {
-  dialogVisible.value = false
-  reset()
-}
+  dialogVisible.value = false;
+  reset();
+};
 
 onMounted(() => {
-  getList()
-})
+  getList();
+});
 </script>

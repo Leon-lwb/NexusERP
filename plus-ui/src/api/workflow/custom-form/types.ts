@@ -46,5 +46,5 @@ export interface WfCustomForm {
 export interface CustomFormVO {
   id: string | number;
   deployId: string;
-	flowName: string;
+  flowName: string;
 }

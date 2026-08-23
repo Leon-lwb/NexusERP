@@ -50,7 +50,7 @@ const props = withDefaults(defineProps<Props>(), {
 
 const values = computed(() => {
   if (props.value === '' || props.value === null || typeof props.value === 'undefined') return [];
-  if (typeof props.value === 'number' || typeof props.value === 'boolean') return [props.value]
+  if (typeof props.value === 'number' || typeof props.value === 'boolean') return [props.value];
   return Array.isArray(props.value) ? props.value.map((item) => '' + item) : String(props.value).split(props.separator);
 });
 
@@ -88,8 +88,8 @@ const handleArray = (array: Array<string | number>) => {
 };
 
 const isValueMatch = (itemValue: any) => {
-  return values.value.some(val => val == itemValue)
-}
+  return values.value.some((val) => val == itemValue);
+};
 </script>
 
 <style lang="scss" scoped>

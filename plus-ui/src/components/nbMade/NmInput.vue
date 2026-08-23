@@ -47,48 +47,50 @@ const props = defineProps({
 
 const emit = defineEmits(['update:value', 'commonComponent']);
 
-const localValue = ref<any>(null)
+const localValue = ref<any>(null);
 
 // 增强watch处理
-watch(() => props.value, (newVal) => {
-  // 根据类型转换输入值
-  switch(props.nm.javaType) {
-    case 'Long':
-    case 'Integer':
-      localValue.value = Number(newVal) || 0
-      break
-    case 'BigDecimal':
-    case 'Double':
-      localValue.value = parseFloat(newVal) || 0
-      break
-    default:
-      localValue.value = String(newVal || '')
+watch(
+  () => props.value,
+  (newVal) => {
+    // 根据类型转换输入值
+    switch (props.nm.javaType) {
+      case 'Long':
+      case 'Integer':
+        localValue.value = Number(newVal) || 0;
+        break;
+      case 'BigDecimal':
+      case 'Double':
+        localValue.value = parseFloat(newVal) || 0;
+        break;
+      default:
+        localValue.value = String(newVal || '');
+    }
   }
-})
+);
 
 const commonComponent = () => {
   // 输出时转换类型
-  let outputValue: any = localValue.value
-  switch(props.nm.javaType) {
+  let outputValue: any = localValue.value;
+  switch (props.nm.javaType) {
     case 'Long':
     case 'Integer':
-      outputValue = Number(outputValue) || 0
-      break
+      outputValue = Number(outputValue) || 0;
+      break;
     case 'BigDecimal':
-      outputValue = parseFloat(outputValue).toFixed(2)
-      break
+      outputValue = parseFloat(outputValue).toFixed(2);
+      break;
   }
-  emit('update:value', outputValue)
+  emit('update:value', outputValue);
   emit('commonComponent', {
     ...props.nm,
     commonDataInfo: { [props.nm.columnName]: outputValue }
-  })
-}
+  });
+};
 
 onMounted(() => {
   localValue.value = props.value;
 });
 </script>
 
-<style scoped>
-</style>
+<style scoped></style>

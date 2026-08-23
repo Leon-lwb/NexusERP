@@ -409,7 +409,7 @@ const getCategoryList = async () => {
 
 const onSaveDesigner = async (str: string) => {
   bpmnXml.value = str;
-  let dataBody = {
+  const dataBody = {
     modelId: designerForm.modelId,
     bpmnXml: str
   };

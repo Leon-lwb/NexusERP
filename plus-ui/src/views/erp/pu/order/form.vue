@@ -28,7 +28,13 @@
             <el-form-item label="订单号" prop="orderNo">
               <div style="display: flex; align-items: center; gap: 10px">
                 <el-input v-model="form.orderNo" :disabled="autoGenFlag || isViewMode" style="flex: 1" />
-                <el-switch v-model="autoGenFlag" active-color="#13ce66" active-text="生成" @change="handleAutoGenChange" :disabled="isViewMode || props.disabled">
+                <el-switch
+                  v-model="autoGenFlag"
+                  active-color="#13ce66"
+                  active-text="生成"
+                  @change="handleAutoGenChange"
+                  :disabled="isViewMode || props.disabled"
+                >
                 </el-switch>
               </div>
             </el-form-item>

@@ -3,7 +3,7 @@
     <div class="panel-header">
       <h3>属性设置</h3>
     </div>
-    
+
     <div class="panel-content">
       <!-- 表属性 -->
       <div v-if="selectedTable && !selectedField" class="table-properties">
@@ -30,7 +30,7 @@
           </el-form-item>
         </el-form>
       </div>
-      
+
       <!-- 字段属性 -->
       <div v-else-if="selectedField" class="field-properties">
         <h4>字段属性</h4>
@@ -64,19 +64,13 @@
             <el-input v-model="fieldForm.comment" @blur="handleFieldUpdate" />
           </el-form-item>
           <el-form-item label="约束">
-            <el-checkbox v-model="fieldForm.isPrimaryKey" @change="handleFieldUpdate">
-              主键
-            </el-checkbox>
-            <el-checkbox v-model="fieldForm.isNotNull" @change="handleFieldUpdate">
-              非空
-            </el-checkbox>
-            <el-checkbox v-model="fieldForm.isUnique" @change="handleFieldUpdate">
-              唯一
-            </el-checkbox>
+            <el-checkbox v-model="fieldForm.isPrimaryKey" @change="handleFieldUpdate"> 主键 </el-checkbox>
+            <el-checkbox v-model="fieldForm.isNotNull" @change="handleFieldUpdate"> 非空 </el-checkbox>
+            <el-checkbox v-model="fieldForm.isUnique" @change="handleFieldUpdate"> 唯一 </el-checkbox>
           </el-form-item>
         </el-form>
       </div>
-      
+
       <!-- 空状态 -->
       <div v-else class="empty-state">
         <el-empty description="请选择一个表或字段" />
@@ -86,47 +80,47 @@
 </template>
 
 <script setup name="DbPropertyPanel" lang="ts">
-import { ref, watch, computed } from 'vue'
+import { ref, watch, computed } from 'vue';
 
 interface Table {
-  id: string
-  name: string
-  comment: string
-  engine: string
-  charset: string
-  fields: Field[]
+  id: string;
+  name: string;
+  comment: string;
+  engine: string;
+  charset: string;
+  fields: Field[];
 }
 
 interface Field {
-  id: string
-  name: string
-  type: string
-  length?: number
-  precision?: number
-  scale?: number
-  defaultValue?: string
-  comment: string
-  isPrimaryKey: boolean
-  isNotNull: boolean
-  isUnique: boolean
+  id: string;
+  name: string;
+  type: string;
+  length?: number;
+  precision?: number;
+  scale?: number;
+  defaultValue?: string;
+  comment: string;
+  isPrimaryKey: boolean;
+  isNotNull: boolean;
+  isUnique: boolean;
 }
 
 const props = defineProps<{
-  selectedTable?: Table | null
-  selectedField?: Field | null
-}>()
+  selectedTable?: Table | null;
+  selectedField?: Field | null;
+}>();
 
 const emit = defineEmits<{
-  updateTable: [tableId: string, updates: Partial<Table>]
-  updateField: [fieldId: string, updates: Partial<Field>]
-}>()
+  updateTable: [tableId: string, updates: Partial<Table>];
+  updateField: [fieldId: string, updates: Partial<Field>];
+}>();
 
 const tableForm = ref({
   name: '',
   comment: '',
   engine: 'InnoDB',
   charset: 'utf8mb4'
-})
+});
 
 const fieldForm = ref({
   name: '',
@@ -139,66 +133,74 @@ const fieldForm = ref({
   isPrimaryKey: false,
   isNotNull: false,
   isUnique: false
-})
+});
 
 // 是否显示长度字段
 const showLength = computed(() => {
-  return ['varchar', 'char', 'text'].includes(fieldForm.value.type)
-})
+  return ['varchar', 'char', 'text'].includes(fieldForm.value.type);
+});
 
 // 是否显示精度字段
 const showPrecision = computed(() => {
-  return ['decimal', 'float', 'double'].includes(fieldForm.value.type)
-})
+  return ['decimal', 'float', 'double'].includes(fieldForm.value.type);
+});
 
 // 是否显示小数位字段
 const showScale = computed(() => {
-  return ['decimal'].includes(fieldForm.value.type)
-})
+  return ['decimal'].includes(fieldForm.value.type);
+});
 
 // 监听选中的表变化
-watch(() => props.selectedTable, (newTable) => {
-  if (newTable) {
-    tableForm.value = {
-      name: newTable.name,
-      comment: newTable.comment,
-      engine: newTable.engine,
-      charset: newTable.charset
+watch(
+  () => props.selectedTable,
+  (newTable) => {
+    if (newTable) {
+      tableForm.value = {
+        name: newTable.name,
+        comment: newTable.comment,
+        engine: newTable.engine,
+        charset: newTable.charset
+      };
     }
-  }
-}, { immediate: true })
+  },
+  { immediate: true }
+);
 
 // 监听选中的字段变化
-watch(() => props.selectedField, (newField) => {
-  if (newField) {
-    fieldForm.value = {
-      name: newField.name,
-      type: newField.type,
-      length: newField.length || 255,
-      precision: newField.precision || 10,
-      scale: newField.scale || 2,
-      defaultValue: newField.defaultValue || '',
-      comment: newField.comment,
-      isPrimaryKey: newField.isPrimaryKey,
-      isNotNull: newField.isNotNull,
-      isUnique: newField.isUnique
+watch(
+  () => props.selectedField,
+  (newField) => {
+    if (newField) {
+      fieldForm.value = {
+        name: newField.name,
+        type: newField.type,
+        length: newField.length || 255,
+        precision: newField.precision || 10,
+        scale: newField.scale || 2,
+        defaultValue: newField.defaultValue || '',
+        comment: newField.comment,
+        isPrimaryKey: newField.isPrimaryKey,
+        isNotNull: newField.isNotNull,
+        isUnique: newField.isUnique
+      };
     }
-  }
-}, { immediate: true })
+  },
+  { immediate: true }
+);
 
 // 更新表属性
 const handleTableUpdate = () => {
   if (props.selectedTable) {
-    emit('updateTable', props.selectedTable.id, { ...tableForm.value })
+    emit('updateTable', props.selectedTable.id, { ...tableForm.value });
   }
-}
+};
 
 // 更新字段属性
 const handleFieldUpdate = () => {
   if (props.selectedField) {
-    emit('updateField', props.selectedField.id, { ...fieldForm.value })
+    emit('updateField', props.selectedField.id, { ...fieldForm.value });
   }
-}
+};
 </script>
 
 <style lang="scss" scoped>
@@ -211,7 +213,7 @@ const handleFieldUpdate = () => {
 .panel-header {
   padding: 16px;
   border-bottom: 1px solid #e4e7ed;
-  
+
   h3 {
     margin: 0;
     font-size: 16px;
@@ -246,12 +248,12 @@ const handleFieldUpdate = () => {
   .el-form-item {
     margin-bottom: 16px;
   }
-  
+
   .el-form-item__label {
     font-size: 12px;
     color: #606266;
   }
-  
+
   .el-checkbox {
     margin-right: 16px;
   }

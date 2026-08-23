@@ -1,4 +1,4 @@
-import request from '@/utils/request'
+import request from '@/utils/request';
 
 // 表设计器相关 API - 适配到新的统一接口
 
@@ -10,7 +10,7 @@ export function saveTableDesign(data: any) {
     url: '/tool/gen/design',
     method: 'post',
     data
-  })
+  });
 }
 
 /**
@@ -21,7 +21,7 @@ export function generateSql(data: any) {
     url: '/tool/gen/design/generateSql',
     method: 'post',
     data
-  })
+  });
 }
 
 /**
@@ -32,7 +32,7 @@ export function createTable(data: any) {
     url: '/tool/gen/design/createTable',
     method: 'post',
     data
-  })
+  });
 }
 
 /**
@@ -43,7 +43,7 @@ export function importToGenTable(data: any) {
     url: '/tool/gen/design/importToGen',
     method: 'post',
     data
-  })
+  });
 }
 
 /**
@@ -54,7 +54,7 @@ export function getDesignList(params?: any) {
     url: '/tool/gen/design/list',
     method: 'get',
     params
-  })
+  });
 }
 
 /**
@@ -64,7 +64,7 @@ export function getDesignDetail(id: string) {
   return request({
     url: `/tool/gen/design/${id}`,
     method: 'get'
-  })
+  });
 }
 
 /**
@@ -74,5 +74,5 @@ export function deleteDesign(id: string) {
   return request({
     url: `/tool/gen/design/${id}`,
     method: 'delete'
-  })
+  });
 }

@@ -131,22 +131,22 @@
 </template>
 
 <script setup lang="ts" name="PayInvoice">
-import { listPayInvoice, getPayInvoice, delPayInvoice, addPayInvoice, updatePayInvoice } from "@/api/pay/invoice"
+import { listPayInvoice, getPayInvoice, delPayInvoice, addPayInvoice, updatePayInvoice } from '@/api/pay/invoice';
 
-const { proxy } = getCurrentInstance()
+const { proxy } = getCurrentInstance();
 
-const { pay_invoice_type } = toRefs<any>(proxy.useDict('pay_invoice_type'))
+const { pay_invoice_type } = toRefs<any>(proxy.useDict('pay_invoice_type'));
 
-const invoiceList = ref([])
-const open = ref(false)
-const loading = ref(true)
-const showSearch = ref(true)
-const ids = ref([])
-const single = ref(true)
-const multiple = ref(true)
-const total = ref(0)
-const title = ref("")
-const isViewMode = ref(false)
+const invoiceList = ref([]);
+const open = ref(false);
+const loading = ref(true);
+const showSearch = ref(true);
+const ids = ref([]);
+const single = ref(true);
+const multiple = ref(true);
+const total = ref(0);
+const title = ref('');
+const isViewMode = ref(false);
 
 const data = reactive({
   form: {},
@@ -155,37 +155,31 @@ const data = reactive({
     pageSize: 10,
     orderNumber: null,
     invoiceType: null,
-    invoiceHeader: null,
+    invoiceHeader: null
   },
   rules: {
-    orderNumber: [
-      { required: true, message: "订单号不能为空", trigger: "blur" }
-    ],
-    invoiceType: [
-      { required: true, message: "发票类型不能为空", trigger: "change" }
-    ],
-    invoiceHeader: [
-      { required: true, message: "发票抬头不能为空", trigger: "blur" }
-    ],
+    orderNumber: [{ required: true, message: '订单号不能为空', trigger: 'blur' }],
+    invoiceType: [{ required: true, message: '发票类型不能为空', trigger: 'change' }],
+    invoiceHeader: [{ required: true, message: '发票抬头不能为空', trigger: 'blur' }]
   }
-})
+});
 
-const { queryParams, form, rules } = toRefs(data)
+const { queryParams, form, rules } = toRefs(data);
 
 /** 查询发票列表 */
 function getList() {
-  loading.value = true
-  listPayInvoice(queryParams.value).then(response => {
-    invoiceList.value = response.rows
-    total.value = response.total
-    loading.value = false
-  })
+  loading.value = true;
+  listPayInvoice(queryParams.value).then((response) => {
+    invoiceList.value = response.rows;
+    total.value = response.total;
+    loading.value = false;
+  });
 }
 
 // 取消按钮
 function cancel() {
-  open.value = false
-  reset()
+  open.value = false;
+  reset();
 }
 
 // 表单重置
@@ -199,100 +193,108 @@ function reset() {
     invoicePhone: null,
     invoiceEmail: null,
     invoiceRemark: null,
-    remark: null,
-  }
-  proxy.resetForm("invoiceRef")
+    remark: null
+  };
+  proxy.resetForm('invoiceRef');
 }
 
 /** 搜索按钮操作 */
 function handleQuery() {
-  queryParams.value.pageNum = 1
-  getList()
+  queryParams.value.pageNum = 1;
+  getList();
 }
 
 /** 重置按钮操作 */
 function resetQuery() {
-  proxy.resetForm("queryRef")
-  handleQuery()
+  proxy.resetForm('queryRef');
+  handleQuery();
 }
 
 // 多选框选中数据
 function handleSelectionChange(selection) {
-  ids.value = selection.map(item => item.invoiceId)
-  single.value = selection.length != 1
-  multiple.value = !selection.length
+  ids.value = selection.map((item) => item.invoiceId);
+  single.value = selection.length != 1;
+  multiple.value = !selection.length;
 }
 
 /** 新增按钮操作 */
 function handleAdd() {
-  reset()
-  isViewMode.value = false
-  open.value = true
-  title.value = "添加发票"
+  reset();
+  isViewMode.value = false;
+  open.value = true;
+  title.value = '添加发票';
 }
 
 /** 修改按钮操作 */
 function handleUpdate(row) {
-  reset()
-  isViewMode.value = false
-  const _invoiceId = row.invoiceId || ids.value
-  getPayInvoice(_invoiceId).then(response => {
-    form.value = response.data
-    open.value = true
-    title.value = "修改发票"
-  })
+  reset();
+  isViewMode.value = false;
+  const _invoiceId = row.invoiceId || ids.value;
+  getPayInvoice(_invoiceId).then((response) => {
+    form.value = response.data;
+    open.value = true;
+    title.value = '修改发票';
+  });
 }
 
 /** 查看按钮操作 */
 function handleView(row) {
-  reset()
-  isViewMode.value = true
-  const _invoiceId = row.invoiceId || ids.value
-  getPayInvoice(_invoiceId).then(response => {
-    form.value = response.data
-    open.value = true
-    title.value = "查看发票"
-  })
+  reset();
+  isViewMode.value = true;
+  const _invoiceId = row.invoiceId || ids.value;
+  getPayInvoice(_invoiceId).then((response) => {
+    form.value = response.data;
+    open.value = true;
+    title.value = '查看发票';
+  });
 }
 
 /** 提交按钮 */
 function submitForm() {
-  proxy.$refs["invoiceRef"].validate(valid => {
+  proxy.$refs['invoiceRef'].validate((valid) => {
     if (valid) {
       if (form.value.invoiceId != null) {
-        updatePayInvoice(form.value).then(response => {
-          proxy.$modal.msgSuccess("修改成功")
-          open.value = false
-          getList()
-        })
+        updatePayInvoice(form.value).then((response) => {
+          proxy.$modal.msgSuccess('修改成功');
+          open.value = false;
+          getList();
+        });
       } else {
-        addPayInvoice(form.value).then(response => {
-          proxy.$modal.msgSuccess("新增成功")
-          open.value = false
-          getList()
-        })
+        addPayInvoice(form.value).then((response) => {
+          proxy.$modal.msgSuccess('新增成功');
+          open.value = false;
+          getList();
+        });
       }
     }
-  })
+  });
 }
 
 /** 删除按钮操作 */
 function handleDelete(row) {
-  const _invoiceIds = row.invoiceId || ids.value
-  proxy.$modal.confirm('是否确认删除发票编号为"' + _invoiceIds + '"的数据项？').then(function () {
-    return delPayInvoice(_invoiceIds)
-  }).then(() => {
-    getList()
-    proxy.$modal.msgSuccess("删除成功")
-  }).catch(() => { })
+  const _invoiceIds = row.invoiceId || ids.value;
+  proxy.$modal
+    .confirm('是否确认删除发票编号为"' + _invoiceIds + '"的数据项？')
+    .then(function () {
+      return delPayInvoice(_invoiceIds);
+    })
+    .then(() => {
+      getList();
+      proxy.$modal.msgSuccess('删除成功');
+    })
+    .catch(() => {});
 }
 
 /** 导出按钮操作 */
 function handleExport() {
-  proxy.download('pay/invoice/export', {
-    ...queryParams.value
-  }, `pay_invoice_${new Date().getTime()}.xlsx`)
+  proxy.download(
+    'pay/invoice/export',
+    {
+      ...queryParams.value
+    },
+    `pay_invoice_${new Date().getTime()}.xlsx`
+  );
 }
 
-getList()
+getList();
 </script>

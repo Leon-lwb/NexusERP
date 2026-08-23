@@ -44,8 +44,8 @@ export const listTreeByPlanNo = (planNo: string) => {
   return request({
     url: '/erp/prd/requirement/treeByPlanNo/' + planNo,
     method: 'get'
-  })
-}
+  });
+};
 
 export const importBomDetails = (bomId: number, totalRequiredQuantity: number): AxiosPromise<any> => {
   return request({

@@ -1,4 +1,4 @@
-import { AppTypeVo } from "@/api/workflow/category/types";
+import { AppTypeVo } from '@/api/workflow/category/types';
 export interface ModelVO extends BaseEntity {
   modelId: string;
   modelKey: string;

@@ -50,7 +50,10 @@
       <div v-else-if="qrCodeUrl" style="margin-top: 16px">
         <el-alert title="请使用沙箱版支付宝APP扫描二维码" type="warning" :closable="false" show-icon style="margin-bottom: 12px" />
         <div style="text-align: center; margin: 16px 0">
-          <img :src="'https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=' + encodeURIComponent(qrCodeUrl)" style="border: 1px solid #eee; padding: 8px; max-width: 100%" />
+          <img
+            :src="'https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=' + encodeURIComponent(qrCodeUrl)"
+            style="border: 1px solid #eee; padding: 8px; max-width: 100%"
+          />
         </div>
         <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap">
           <el-button @click="queryOrderStatus" :loading="querying">手动查询状态</el-button>
@@ -74,36 +77,36 @@
 </template>
 
 <script setup lang="ts" name="PayTest">
-import { addPayOrder } from "@/api/pay/order"
-import request from "@/utils/request"
+import { addPayOrder } from '@/api/pay/order';
+import request from '@/utils/request';
 
-const { proxy } = getCurrentInstance()
-const { pay_pay_type, pay_order_status } = toRefs<any>(proxy.useDict('pay_pay_type', 'pay_order_status'))
+const { proxy } = getCurrentInstance();
+const { pay_pay_type, pay_order_status } = toRefs<any>(proxy.useDict('pay_pay_type', 'pay_order_status'));
 
-const formRef = ref(null)
-const orderNumber = ref("")
-const orderStatus = ref("")
-const qrCodeUrl = ref("")
-const payFormHtml = ref("")
-const querying = ref(false)
-const polling = ref(false)
-let pollTimer: ReturnType<typeof setInterval> | null = null
+const formRef = ref(null);
+const orderNumber = ref('');
+const orderStatus = ref('');
+const qrCodeUrl = ref('');
+const payFormHtml = ref('');
+const querying = ref(false);
+const polling = ref(false);
+let pollTimer: ReturnType<typeof setInterval> | null = null;
 
 const form = reactive({
-  orderContent: "测试商品",
-  totalAmount: "1",
-  payType: "alipay",
-})
+  orderContent: '测试商品',
+  totalAmount: '1',
+  payType: 'alipay'
+});
 
 function resetForm() {
-  stopPolling()
-  form.orderContent = "测试商品"
-  form.totalAmount = "1"
-  form.payType = "alipay"
-  orderNumber.value = ""
-  orderStatus.value = ""
-  qrCodeUrl.value = ""
-  payFormHtml.value = ""
+  stopPolling();
+  form.orderContent = '测试商品';
+  form.totalAmount = '1';
+  form.payType = 'alipay';
+  orderNumber.value = '';
+  orderStatus.value = '';
+  qrCodeUrl.value = '';
+  payFormHtml.value = '';
 }
 
 async function handleCreateOrderAndPay() {
@@ -111,105 +114,105 @@ async function handleCreateOrderAndPay() {
     const res = await addPayOrder({
       orderContent: form.orderContent,
       totalAmount: form.totalAmount,
-      payType: form.payType,
-    })
-    const order = res.data
-    orderNumber.value = order.orderNumber
+      payType: form.payType
+    });
+    const order = res.data;
+    orderNumber.value = order.orderNumber;
 
     const payRes = await request({
       url: `/pay/${form.payType}/url/${order.orderNumber}`,
       method: 'get'
-    })
-    const data = payRes.data
+    });
+    const data = payRes.data;
 
     if (data && (data.startsWith('https://') || data.startsWith('alipay:'))) {
-      qrCodeUrl.value = data
-      payFormHtml.value = ""
+      qrCodeUrl.value = data;
+      payFormHtml.value = '';
     } else if (data && data.startsWith('<form')) {
-      payFormHtml.value = data
-      qrCodeUrl.value = ""
+      payFormHtml.value = data;
+      qrCodeUrl.value = '';
     } else {
-      proxy.$modal.msgError("未知的支付链接格式")
-      return
+      proxy.$modal.msgError('未知的支付链接格式');
+      return;
     }
-    orderStatus.value = "waiting"
-    proxy.$modal.msgSuccess("订单创建成功，请使用沙箱版支付宝扫码")
+    orderStatus.value = 'waiting';
+    proxy.$modal.msgSuccess('订单创建成功，请使用沙箱版支付宝扫码');
     // 自动开始轮询
-    startPolling()
+    startPolling();
   } catch (error) {
-    proxy.$modal.msgError("操作失败：" + (error.message || "未知错误"))
+    proxy.$modal.msgError('操作失败：' + (error.message || '未知错误'));
   }
 }
 
 function openPayUrl() {
-  if (!payFormHtml.value) return
-  const win = window.open('', '_blank')
+  if (!payFormHtml.value) return;
+  const win = window.open('', '_blank');
   if (win) {
-    win.document.write(payFormHtml.value)
-    win.document.close()
+    win.document.write(payFormHtml.value);
+    win.document.close();
   }
 }
 
 async function queryOrderStatus() {
-  if (!orderNumber.value) return
+  if (!orderNumber.value) return;
   try {
-    querying.value = true
+    querying.value = true;
     const res = await request({
       url: `/pay/query/${orderNumber.value}`,
       method: 'post'
-    })
-    orderStatus.value = res.data.orderStatus
+    });
+    orderStatus.value = res.data.orderStatus;
     if (res.data.orderStatus === '已支付') {
-      stopPolling()
-      proxy.$modal.msgSuccess("支付成功！")
+      stopPolling();
+      proxy.$modal.msgSuccess('支付成功！');
     } else {
-      proxy.$modal.msgInfo("当前状态：" + (res.data.orderStatus || "未知"))
+      proxy.$modal.msgInfo('当前状态：' + (res.data.orderStatus || '未知'));
     }
   } catch (error) {
-    proxy.$modal.msgError("查询失败: " + (error.message || ""))
+    proxy.$modal.msgError('查询失败: ' + (error.message || ''));
   } finally {
-    querying.value = false
+    querying.value = false;
   }
 }
 
 function startPolling() {
-  if (polling.value) return
-  polling.value = true
+  if (polling.value) return;
+  polling.value = true;
   // 立即查询一次
-  queryOrderStatusSilent()
+  queryOrderStatusSilent();
   // 每5秒轮询一次，最多轮询30次（2.5分钟）
-  let count = 0
+  let count = 0;
   pollTimer = setInterval(() => {
-    count++
+    count++;
     if (count > 30 || orderStatus.value === '已支付') {
-      stopPolling()
-      return
+      stopPolling();
+      return;
     }
-    queryOrderStatusSilent()
-  }, 5000)
+    queryOrderStatusSilent();
+  }, 5000);
 }
 
 function stopPolling() {
-  polling.value = false
+  polling.value = false;
   if (pollTimer) {
-    clearInterval(pollTimer)
-    pollTimer = null
+    clearInterval(pollTimer);
+    pollTimer = null;
   }
 }
 
 async function queryOrderStatusSilent() {
-  if (!orderNumber.value) return
+  if (!orderNumber.value) return;
   try {
     const res = await request({
       url: `/pay/query/${orderNumber.value}`,
       method: 'post'
-    })
-    const newStatus = res.data.orderStatus
+    });
+    const newStatus = res.data.orderStatus;
     if (newStatus !== orderStatus.value) {
-      orderStatus.value = newStatus
+      orderStatus.value = newStatus;
       if (newStatus === '已支付') {
-        stopPolling()
-        proxy.$modal.msgSuccess("支付成功！检测到支付已完成")
+        stopPolling();
+        proxy.$modal.msgSuccess('支付成功！检测到支付已完成');
       }
     }
   } catch {
@@ -224,8 +227,12 @@ async function queryOrderStatusSilent() {
 }
 
 @keyframes rotating {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 .is-loading {
   animation: rotating 1s linear infinite;

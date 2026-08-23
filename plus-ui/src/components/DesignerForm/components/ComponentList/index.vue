@@ -14,17 +14,17 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, markRaw } from 'vue'
-import BasicComponents from './BasicComponents.vue'
-import LayoutComponents from './LayoutComponents.vue'
-import AdvancedComponents from './AdvancedComponents.vue'
-import { Plus } from '@element-plus/icons-vue'
+import { ref, markRaw } from 'vue';
+import BasicComponents from './BasicComponents.vue';
+import LayoutComponents from './LayoutComponents.vue';
+import AdvancedComponents from './AdvancedComponents.vue';
+import { Plus } from '@element-plus/icons-vue';
 
-const emit = defineEmits(['dragstart'])
+const emit = defineEmits(['dragstart']);
 
 const handleDragStart = (e: DragEvent, item: any) => {
-  emit('dragstart', e, item)
-}
+  emit('dragstart', e, item);
+};
 
 const advancedComponents = ref([
   {
@@ -43,7 +43,7 @@ const advancedComponents = ref([
       isNullable: 'YES'
     }
   }
-])
+]);
 </script>
 
 <style lang="scss" scoped>
@@ -84,4 +84,4 @@ const advancedComponents = ref([
     }
   }
 }
-</style> 
+</style>

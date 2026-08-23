@@ -3,11 +3,11 @@
   <el-dialog title="导入表" v-model="visible" width="1100px" top="5vh" append-to-body>
     <el-form :model="queryParams" ref="queryFormRef" :inline="true">
       <el-form-item label="数据源" prop="dataName">
-            <el-select v-model="queryParams.dataName" filterable placeholder="请选择/输入数据源名称" style="width: 200px">
-              <el-option v-for="item in dataNameList" :key="item" :label="item" :value="item"> </el-option>
-            </el-select>
-          </el-form-item>
-          <el-form-item label="表名称" prop="tableName">
+        <el-select v-model="queryParams.dataName" filterable placeholder="请选择/输入数据源名称" style="width: 200px">
+          <el-option v-for="item in dataNameList" :key="item" :label="item" :value="item"> </el-option>
+        </el-select>
+      </el-form-item>
+      <el-form-item label="表名称" prop="tableName">
         <el-input v-model="queryParams.tableName" placeholder="请输入表名称" clearable @keyup.enter="handleQuery" />
       </el-form-item>
       <el-form-item label="表描述" prop="tableComment">
@@ -26,7 +26,7 @@
         <el-table-column prop="createTime" label="创建时间"></el-table-column>
         <el-table-column prop="updateTime" label="更新时间"></el-table-column>
       </el-table>
-      <pagination v-show="total>0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
+      <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
     </el-row>
     <template #footer>
       <div class="dialog-footer">
@@ -53,72 +53,72 @@ const tableRef = ref(ElTable);
 const queryFormRef = ref(ElForm);
 
 const queryParams = reactive<DbTableQuery>({
-    pageNum: 1,
-    pageSize: 10,
-    dataName: '',
-    tableName: '',
-    tableComment: ''
+  pageNum: 1,
+  pageSize: 10,
+  dataName: '',
+  tableName: '',
+  tableComment: ''
 });
 const dataNameList = ref<Array<string>>([]);
 
-const emit = defineEmits(["ok"]);
+const emit = defineEmits(['ok']);
 
 /** 查询参数列表 */
 const show = (dataName: string) => {
-    getDataNameList();
-    if(dataName){
-      queryParams.dataName = dataName;
-    } else {
-      queryParams.dataName = 'master';
-    }
-    getList();
-    visible.value = true;
-}
+  getDataNameList();
+  if (dataName) {
+    queryParams.dataName = dataName;
+  } else {
+    queryParams.dataName = 'master';
+  }
+  getList();
+  visible.value = true;
+};
 /** 单击选择行 */
 const clickRow = (row: DbTableVO) => {
-    tableRef.value.toggleRowSelection(row);
-}
+  tableRef.value.toggleRowSelection(row);
+};
 /** 多选框选中数据 */
 const handleSelectionChange = (selection: DbTableVO[]) => {
-    tables.value = selection.map(item => item.tableName);
-}
+  tables.value = selection.map((item) => item.tableName);
+};
 /** 查询表数据 */
 const getList = async () => {
-    const res = await listDbTable(queryParams);
-    dbTableList.value = res.rows;
-    total.value = res.total;
-}
+  const res = await listDbTable(queryParams);
+  dbTableList.value = res.rows;
+  total.value = res.total;
+};
 /** 搜索按钮操作 */
 const handleQuery = () => {
-    queryParams.pageNum = 1;
-    getList();
-}
+  queryParams.pageNum = 1;
+  getList();
+};
 /** 重置按钮操作 */
 const resetQuery = () => {
-    queryFormRef.value.resetFields();
-    handleQuery();
-}
+  queryFormRef.value.resetFields();
+  handleQuery();
+};
 /** 导入按钮操作 */
 const handleImportTable = async () => {
-    const tableNames = tables.value.join(",");
-    if (tableNames == "") {
-        proxy?.$modal.msgError("请选择要导入的表");
-        return;
-    }
-    const res = await importTable({ tables: tableNames, dataName: queryParams.dataName });
-    proxy?.$modal.msgSuccess(res.msg);
-    if (res.code === 200) {
-        visible.value = false;
-        emit("ok");
-    }
-}
+  const tableNames = tables.value.join(',');
+  if (tableNames == '') {
+    proxy?.$modal.msgError('请选择要导入的表');
+    return;
+  }
+  const res = await importTable({ tables: tableNames, dataName: queryParams.dataName });
+  proxy?.$modal.msgSuccess(res.msg);
+  if (res.code === 200) {
+    visible.value = false;
+    emit('ok');
+  }
+};
 /** 查询多数据源名称 */
 const getDataNameList = async () => {
-  const res = await getDataNames()
+  const res = await getDataNames();
   dataNameList.value = res.data;
-}
+};
 
 defineExpose({
-    show,
+  show
 });
 </script>

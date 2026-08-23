@@ -67,17 +67,17 @@
 
     <!-- 流程图 -->
     <el-dialog :title="processDialog.title" v-model="processDialog.visible" width="70%">
-      <process-viewer :key="`designer-${reloadIndex}`" :xml="processXml" :style="{height: '650px'}" />
+      <process-viewer :key="`designer-${reloadIndex}`" :xml="processXml" :style="{ height: '650px' }" />
     </el-dialog>
   </div>
 </template>
 
 <script setup name="WorkProcess" lang="ts">
-import { listProcess, getBpmnXml } from "@/api/workflow/work/process";
+import { listProcess, getBpmnXml } from '@/api/workflow/work/process';
 import { listAllCategory } from '@/api/workflow/category/index';
-import { ProcessQuery, ProcessVO } from "@/api/workflow/work/types";
-import { CategoryVO } from "@/api/workflow/category/types";
-import { ComponentInternalInstance } from "vue";
+import { ProcessQuery, ProcessVO } from '@/api/workflow/work/types';
+import { CategoryVO } from '@/api/workflow/category/types';
+import { ComponentInternalInstance } from 'vue';
 
 const router = useRouter();
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
@@ -87,7 +87,7 @@ const loading = ref(true);
 const showSearch = ref(true);
 const total = ref(0);
 const reloadIndex = ref(0);
-const processXml = ref("");
+const processXml = ref('');
 const categoryOptions = ref<CategoryVO[]>([]);
 
 const queryFormRef = ref(ElForm);
@@ -109,7 +109,7 @@ const queryParams = ref<ProcessQuery>({
 const getCategoryList = async () => {
   const res = await listAllCategory();
   categoryOptions.value = res.data;
-}
+};
 /** 查询流程列表 */
 const getList = async () => {
   loading.value = true;
@@ -117,17 +117,17 @@ const getList = async () => {
   processList.value = res.rows;
   total.value = res.total;
   loading.value = false;
-}
+};
 /** 搜索按钮操作 */
 const handleQuery = () => {
   queryParams.value.pageNum = 1;
   getList();
-}
+};
 /** 重置按钮操作 */
 const resetQuery = () => {
   queryFormRef.value.resetFields();
   handleQuery();
-}
+};
 /** 查看流程图 */
 const handleProcessView = async (row: any) => {
   reloadIndex.value++;
@@ -135,26 +135,30 @@ const handleProcessView = async (row: any) => {
   const res = await getBpmnXml(row.definitionId);
   processXml.value = res.data;
   processDialog.visible = true;
-}
+};
 /** 发起流程 */
 const handleStart = (row: ProcessVO) => {
   router.push({
     path: '/workflow/process/start/' + row.deploymentId,
     query: {
-      definitionId: row.definitionId,
+      definitionId: row.definitionId
     }
-  })
+  });
 };
 /** 导出按钮操作 */
 const handleExport = () => {
-  proxy?.download("workflow/process/startExport", {
-    ...queryParams.value
-  }, `start_process_${new Date().getTime()}.xlsx`);
-}
+  proxy?.download(
+    'workflow/process/startExport',
+    {
+      ...queryParams.value
+    },
+    `start_process_${new Date().getTime()}.xlsx`
+  );
+};
 
 const categoryFormat = (row: ProcessVO) => {
-  return categoryOptions.value.find(k => k.code === row.category)?.categoryName ?? '';
-}
+  return categoryOptions.value.find((k) => k.code === row.category)?.categoryName ?? '';
+};
 
 onMounted(() => {
   getCategoryList();

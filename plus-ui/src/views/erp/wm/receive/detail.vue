@@ -69,20 +69,16 @@
         <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['wm:detail:add']">新增</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate"
-          v-hasPermi="['wm:detail:edit']">修改</el-button>
+        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['wm:detail:edit']">修改</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete"
-          v-hasPermi="['wm:detail:remove']">删除</el-button>
+        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['wm:detail:remove']">删除</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="info" plain icon="View" :disabled="single" @click="handleView"
-          v-hasPermi="['wm:detail:query']">查看</el-button>
+        <el-button type="info" plain icon="View" :disabled="single" @click="handleView" v-hasPermi="['wm:detail:query']">查看</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="warning" plain icon="Download" @click="handleExport"
-          v-hasPermi="['wm:detail:export']">导出</el-button>
+        <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['wm:detail:export']">导出</el-button>
       </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
@@ -113,16 +109,13 @@
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
-          <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)"
-            v-hasPermi="['wm:detail:edit']">修改</el-button>
-          <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)"
-            v-hasPermi="['wm:detail:remove']">删除</el-button>
+          <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['wm:detail:edit']">修改</el-button>
+          <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['wm:detail:remove']">删除</el-button>
         </template>
       </el-table-column>
     </el-table>
 
-    <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize"
-      @pagination="getList" />
+    <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
     <!-- 添加或修改物料入库单明细对话框 -->
     <el-dialog :title="title" v-model="open" width="960px" append-to-body>
@@ -270,22 +263,22 @@
 </template>
 
 <script setup lang="ts" name="Detail">
-import { listDetail, getDetail, delDetail, addDetail, updateDetail } from "@/api/erp/wm/detail"
-import { useRoute } from 'vue-router'
+import { listDetail, getDetail, delDetail, addDetail, updateDetail } from '@/api/erp/wm/detail';
+import { useRoute } from 'vue-router';
 
-const { proxy } = getCurrentInstance() as any
-const route = useRoute()
+const { proxy } = getCurrentInstance() as any;
+const route = useRoute();
 
-const detailList = ref([])
-const open = ref(false)
-const loading = ref(true)
-const showSearch = ref(true)
-const ids = ref([])
-const single = ref(true)
-const multiple = ref(true)
-const total = ref(0)
-const title = ref("")
-const isViewMode = ref(false)
+const detailList = ref([]);
+const open = ref(false);
+const loading = ref(true);
+const showSearch = ref(true);
+const ids = ref([]);
+const single = ref(true);
+const multiple = ref(true);
+const total = ref(0);
+const title = ref('');
+const isViewMode = ref(false);
 
 const data = reactive({
   form: {},
@@ -311,44 +304,40 @@ const data = reactive({
     areaName: null,
     locationId: null,
     locationCode: null,
-    locationName: null,
+    locationName: null
   },
   rules: {
-    materialId: [
-      { required: true, message: "产品物料ID不能为空", trigger: "blur" }
-    ],
-    quantity: [
-      { required: true, message: "入库数量不能为空", trigger: "blur" }
-    ],
+    materialId: [{ required: true, message: '产品物料ID不能为空', trigger: 'blur' }],
+    quantity: [{ required: true, message: '入库数量不能为空', trigger: 'blur' }]
   }
-})
+});
 
-const { queryParams, form, rules } = toRefs(data)
+const { queryParams, form, rules } = toRefs(data);
 
 onMounted(() => {
   // 检查是否有传入的参数，如果有则直接打开新增对话框
-  const action = route.query.action
+  const action = route.query.action;
   if (action === 'add') {
-    handleAddFromReceive()
+    handleAddFromReceive();
   } else {
-    getList()
+    getList();
   }
-})
+});
 
 /** 查询物料入库单明细列表 */
 function getList() {
-  loading.value = true
+  loading.value = true;
   listDetail(queryParams.value).then((response: any) => {
-    detailList.value = response.rows
-    total.value = response.total
-    loading.value = false
-  })
+    detailList.value = response.rows;
+    total.value = response.total;
+    loading.value = false;
+  });
 }
 
 // 取消按钮
 function cancel() {
-  open.value = false
-  reset()
+  open.value = false;
+  reset();
 }
 
 // 表单重置
@@ -384,117 +373,125 @@ function reset() {
     createTime: null,
     updateBy: null,
     updateTime: null
-  }
-  proxy.resetForm("detailRef")
+  };
+  proxy.resetForm('detailRef');
 }
 
 /** 搜索按钮操作 */
 function handleQuery() {
-  queryParams.value.pageNum = 1
-  getList()
+  queryParams.value.pageNum = 1;
+  getList();
 }
 
 /** 重置按钮操作 */
 function resetQuery() {
-  proxy.resetForm("queryRef")
-  handleQuery()
+  proxy.resetForm('queryRef');
+  handleQuery();
 }
 
 // 多选框选中数据
 function handleSelectionChange(selection: any[]) {
-  ids.value = selection.map((item: any) => item.detailId)
-  single.value = selection.length != 1
-  multiple.value = !selection.length
+  ids.value = selection.map((item: any) => item.detailId);
+  single.value = selection.length != 1;
+  multiple.value = !selection.length;
 }
 
 /** 新增按钮操作 */
 function handleAdd() {
-  reset()
-  isViewMode.value = false
-  open.value = true
-  title.value = "添加物料入库单明细"
+  reset();
+  isViewMode.value = false;
+  open.value = true;
+  title.value = '添加物料入库单明细';
 }
 
 /** 新增按钮操作 - 从收货单跳转过来 */
 function handleAddFromReceive() {
-  reset()
-  isViewMode.value = false
+  reset();
+  isViewMode.value = false;
 
   // 从路由参数中获取值并填入表单
-  form.value.lineId = route.query.lineId
-  form.value.materialId = route.query.materialId
-  form.value.materialCode = route.query.materialCode
-  form.value.materialName = route.query.materialName
-  form.value.baseUomId = route.query.baseUomId
-  form.value.baseUomName = route.query.baseUomName
-  form.value.quantity = route.query.quantity
+  form.value.lineId = route.query.lineId;
+  form.value.materialId = route.query.materialId;
+  form.value.materialCode = route.query.materialCode;
+  form.value.materialName = route.query.materialName;
+  form.value.baseUomId = route.query.baseUomId;
+  form.value.baseUomName = route.query.baseUomName;
+  form.value.quantity = route.query.quantity;
 
-  open.value = true
-  title.value = "添加物料入库单明细"
+  open.value = true;
+  title.value = '添加物料入库单明细';
 }
 
 /** 修改按钮操作 */
 function handleUpdate(row: any) {
-  reset()
-  isViewMode.value = false
-  const _detailId = row.detailId || ids.value
+  reset();
+  isViewMode.value = false;
+  const _detailId = row.detailId || ids.value;
   getDetail(_detailId).then((response: any) => {
-    form.value = response.data
-    open.value = true
-    title.value = "修改物料入库单明细"
-  })
+    form.value = response.data;
+    open.value = true;
+    title.value = '修改物料入库单明细';
+  });
 }
 
 /** 查看按钮操作 */
 function handleView(row: any) {
-  reset()
-  isViewMode.value = true
-  const _detailId = row.detailId || ids.value
+  reset();
+  isViewMode.value = true;
+  const _detailId = row.detailId || ids.value;
   getDetail(_detailId).then((response: any) => {
-    form.value = response.data
-    open.value = true
-    title.value = "查看物料入库单明细"
-  })
+    form.value = response.data;
+    open.value = true;
+    title.value = '查看物料入库单明细';
+  });
 }
 
 /** 提交按钮 */
 function submitForm() {
-  proxy.$refs["detailRef"].validate((valid: boolean) => {
+  proxy.$refs['detailRef'].validate((valid: boolean) => {
     if (valid) {
       if (form.value.detailId != null) {
         updateDetail(form.value).then(() => {
-          proxy.$modal.msgSuccess("修改成功")
-          open.value = false
-          getList()
-        })
+          proxy.$modal.msgSuccess('修改成功');
+          open.value = false;
+          getList();
+        });
       } else {
         addDetail(form.value).then(() => {
-          proxy.$modal.msgSuccess("新增成功")
-          open.value = false
-          getList()
-        })
+          proxy.$modal.msgSuccess('新增成功');
+          open.value = false;
+          getList();
+        });
       }
     }
-  })
+  });
 }
 
 /** 删除按钮操作 */
 function handleDelete(row: any) {
-  const _detailIds = row.detailId || ids.value
-  proxy.$modal.confirm('是否确认删除物料入库单明细编号为"' + _detailIds + '"的数据项？').then(function () {
-    return delDetail(_detailIds)
-  }).then(() => {
-    getList()
-    proxy.$modal.msgSuccess("删除成功")
-  }).catch(() => { })
+  const _detailIds = row.detailId || ids.value;
+  proxy.$modal
+    .confirm('是否确认删除物料入库单明细编号为"' + _detailIds + '"的数据项？')
+    .then(function () {
+      return delDetail(_detailIds);
+    })
+    .then(() => {
+      getList();
+      proxy.$modal.msgSuccess('删除成功');
+    })
+    .catch(() => {});
 }
 
 /** 导出按钮操作 */
 function handleExport() {
-  proxy.download('/erp/wm/detail/export', {
-    ...queryParams.value
-  }, `detail_${new Date().getTime()}.xlsx`)
+  proxy.download(
+    '/erp/wm/detail/export',
+    {
+      ...queryParams.value
+    },
+    `detail_${new Date().getTime()}.xlsx`
+  );
 }
 
-getList()
+getList();
 </script>

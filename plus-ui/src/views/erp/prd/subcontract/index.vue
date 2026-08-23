@@ -578,4 +578,3 @@ onMounted(() => {
   getList();
 });
 </script>
-

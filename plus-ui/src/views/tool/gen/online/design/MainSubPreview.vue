@@ -4,11 +4,7 @@
     <el-form :model="formData.main" label-width="120px">
       <el-row v-for="field in mainFields" :key="field.columnName">
         <el-form-item :label="field.columnComment" :required="field.isRequired">
-          <component 
-            :is="getComponent(field)"
-            v-model="formData.main[field.columnName]"
-            :options="field.dictData"
-          />
+          <component :is="getComponent(field)" v-model="formData.main[field.columnName]" :options="field.dictData" />
         </el-form-item>
       </el-row>
     </el-form>
@@ -20,11 +16,7 @@
       <el-form :model="sub" label-width="120px">
         <el-row v-for="field in subFields" :key="field.columnName">
           <el-form-item :label="field.columnComment" :required="field.isRequired">
-            <component 
-              :is="getComponent(field)"
-              v-model="sub[field.columnName]"
-              :options="field.dictData"
-            />
+            <component :is="getComponent(field)" v-model="sub[field.columnName]" :options="field.dictData" />
           </el-form-item>
         </el-row>
       </el-form>
@@ -34,30 +26,30 @@
 </template>
 
 <script setup lang="ts">
-import { getComponentType } from '@/views/workflow/hooks/useOnline'
+import { getComponentType } from '@/views/workflow/hooks/useOnline';
 
 const props = defineProps({
   mainFields: Array as PropType<OnlFieldVo[]>,
   subFields: Array as PropType<OnlFieldVo[]>,
   initialData: Object
-})
+});
 
 const formData = reactive({
   main: props.initialData?.main || {},
   subs: props.initialData?.subs?.length ? [...props.initialData.subs] : [{}]
-})
+});
 
 const getComponent = (field: OnlFieldVo) => {
-  return getComponentType(field.htmlType)
-}
+  return getComponentType(field.htmlType);
+};
 
 const addSub = () => {
-  formData.subs.push({})
-}
+  formData.subs.push({});
+};
 
 const removeSub = (index: number) => {
   if (formData.subs.length > 1) {
-    formData.subs.splice(index, 1)
+    formData.subs.splice(index, 1);
   }
-}
+};
 </script>

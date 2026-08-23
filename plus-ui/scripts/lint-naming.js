@@ -24,14 +24,7 @@ const PROJECT_ROOT = path.resolve(__dirname, '..');
 const SRC_DIR = path.join(PROJECT_ROOT, 'src');
 
 // 页面级 Vue 文件白名单（允许全小写）
-const PAGE_VUE_WHITELIST = new Set([
-  'index.vue',
-  'form.vue',
-  'detail.vue',
-  'list.vue',
-  'config.vue',
-  'part.vue'
-]);
+const PAGE_VUE_WHITELIST = new Set(['index.vue', 'form.vue', 'detail.vue', 'list.vue', 'config.vue', 'part.vue']);
 
 // ==================== 命名转换工具函数 ====================
 
@@ -52,9 +45,7 @@ function toPascalCase(str) {
     .split(/\s+/)
     .filter(Boolean);
 
-  const pascal = words
-    .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
-    .join('');
+  const pascal = words.map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join('');
 
   return pascal + ext;
 }
@@ -249,24 +240,19 @@ function runScan(scopeFilter = null) {
 
     if (!fs.existsSync(config.basePath)) continue;
 
-    walk(
-      config.basePath,
-      config.pattern,
-      config.type,
-      (relPath, fullPath, name) => {
-        const result = config.validate(name);
-        if (!result.valid) {
-          allIssues.push({
-            ruleId: config.id,
-            ruleName: config.name,
-            relativePath: path.relative(PROJECT_ROOT, fullPath).replace(/\\/g, '/'),
-            fileName: name,
-            message: result.message,
-            suggest: result.suggest
-          });
-        }
+    walk(config.basePath, config.pattern, config.type, (relPath, fullPath, name) => {
+      const result = config.validate(name);
+      if (!result.valid) {
+        allIssues.push({
+          ruleId: config.id,
+          ruleName: config.name,
+          relativePath: path.relative(PROJECT_ROOT, fullPath).replace(/\\/g, '/'),
+          fileName: name,
+          message: result.message,
+          suggest: result.suggest
+        });
       }
-    );
+    });
   }
 
   if (!scopeFilter || scopeFilter === 'consistency') {

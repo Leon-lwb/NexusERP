@@ -39,15 +39,7 @@
     </div>
 
     <div v-else-if="local.type === 'compare'" class="rule-row">
-      <el-select
-        v-model="local.params.left"
-        filterable
-        clearable
-        allow-create
-        default-first-option
-        placeholder="left"
-        style="width: 220px"
-      >
+      <el-select v-model="local.params.left" filterable clearable allow-create default-first-option placeholder="left" style="width: 220px">
         <el-option v-for="f in fields" :key="f.value" :label="f.label" :value="f.value" />
       </el-select>
       <el-select v-model="local.params.op" placeholder="op" style="width: 120px">
@@ -58,15 +50,7 @@
         <el-option label="lt" value="lt" />
         <el-option label="le" value="le" />
       </el-select>
-      <el-select
-        v-model="local.params.right"
-        filterable
-        clearable
-        allow-create
-        default-first-option
-        placeholder="right"
-        style="width: 220px"
-      >
+      <el-select v-model="local.params.right" filterable clearable allow-create default-first-option placeholder="right" style="width: 220px">
         <el-option v-for="f in fields" :key="f.value" :label="f.label" :value="f.value" />
       </el-select>
     </div>
@@ -90,71 +74,67 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, watch } from 'vue'
-import WhenBuilder, { type FieldOption, type WhenClause } from '../WhenBuilder.vue'
+import { reactive, watch } from 'vue';
+import WhenBuilder, { type FieldOption, type WhenClause } from '../WhenBuilder.vue';
 
 type ValidateRule = {
-  when?: WhenClause
-  type: 'regex' | 'range' | 'compare' | 'in' | 'notIn'
-  field?: string
-  fields?: string[]
-  message: string
-  params?: Record<string, any>
-  priority?: number
-}
+  when?: WhenClause;
+  type: 'regex' | 'range' | 'compare' | 'in' | 'notIn';
+  field?: string;
+  fields?: string[];
+  message: string;
+  params?: Record<string, any>;
+  priority?: number;
+};
 
 const props = defineProps<{
-  modelValue: ValidateRule
-  fields: FieldOption[]
-}>()
+  modelValue: ValidateRule;
+  fields: FieldOption[];
+}>();
 
 const emit = defineEmits<{
-  (e: 'update:modelValue', v: ValidateRule): void
-  (e: 'remove'): void
-}>()
+  (e: 'update:modelValue', v: ValidateRule): void;
+  (e: 'remove'): void;
+}>();
 
 const local = reactive<any>({
   type: 'regex',
   message: '校验失败',
   params: {},
-  ...props.modelValue,
-})
+  ...props.modelValue
+});
 
 const ensureParamsShape = () => {
-  if (!local.params || typeof local.params !== 'object') local.params = {}
+  if (!local.params || typeof local.params !== 'object') local.params = {};
   if (local.type === 'regex') {
-    local.params.pattern = local.params.pattern ?? ''
+    local.params.pattern = local.params.pattern ?? '';
   } else if (local.type === 'range') {
-    local.params.min = local.params.min ?? undefined
-    local.params.max = local.params.max ?? undefined
+    local.params.min = local.params.min ?? undefined;
+    local.params.max = local.params.max ?? undefined;
   } else if (local.type === 'compare') {
-    local.params.left = local.params.left ?? ''
-    local.params.right = local.params.right ?? ''
-    local.params.op = local.params.op ?? 'eq'
+    local.params.left = local.params.left ?? '';
+    local.params.right = local.params.right ?? '';
+    local.params.op = local.params.op ?? 'eq';
   } else if (local.type === 'in' || local.type === 'notIn') {
-    local.params.list = Array.isArray(local.params.list) ? local.params.list : []
+    local.params.list = Array.isArray(local.params.list) ? local.params.list : [];
   }
-}
+};
 
 watch(
   () => props.modelValue,
   (v) => {
-    Object.assign(local, v || {})
-    ensureParamsShape()
+    Object.assign(local, v || {});
+    ensureParamsShape();
   },
   { deep: true, immediate: true }
-)
+);
 
 watch(
   () => local.type,
   () => ensureParamsShape()
-)
+);
 
-watch(
-  local,
-  () => emit('update:modelValue', { ...local, params: { ...(local.params || {}) } }),
-  { deep: true }
-)
+watch(local, () => emit('update:modelValue', { ...local, params: { ...(local.params || {}) } }), { deep: true });
 </script>
 
 <style scoped>
@@ -169,4 +149,3 @@ watch(
   margin-bottom: 10px;
 }
 </style>
-

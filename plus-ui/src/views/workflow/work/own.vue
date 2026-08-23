@@ -14,7 +14,7 @@
               <el-option v-for="item in categoryOptions" :key="item.categoryId" :label="item.categoryName" :value="item.code" />
             </el-select>
           </el-form-item>
-          <el-form-item label="提交时间" style="width: 308px;">
+          <el-form-item label="提交时间" style="width: 308px">
             <el-date-picker
               v-model="dateRange"
               value-format="YYYY-MM-DD"
@@ -88,17 +88,17 @@
 </template>
 
 <script setup name="Own" lang="ts">
-import { listOwnProcess, stopProcess, delProcess } from "@/api/workflow/work/process";
+import { listOwnProcess, stopProcess, delProcess } from '@/api/workflow/work/process';
 import { listAllCategory } from '@/api/workflow/category/index';
-import { ProcessQuery, ProcessVO } from "@/api/workflow/work/types";
-import { CategoryVO } from "@/api/workflow/category/types";
-import { DateModelType } from "element-plus";
+import { ProcessQuery, ProcessVO } from '@/api/workflow/work/types';
+import { CategoryVO } from '@/api/workflow/category/types';
+import { DateModelType } from 'element-plus';
 
-import { ComponentInternalInstance } from "vue";
+import { ComponentInternalInstance } from 'vue';
 
 const router = useRouter();
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
-const { wf_process_status } = toRefs<any>(proxy?.useDict("wf_process_status"));
+const { wf_process_status } = toRefs<any>(proxy?.useDict('wf_process_status'));
 
 const categoryOptions = ref<CategoryVO[]>([]);
 
@@ -109,7 +109,7 @@ const ids = ref<Array<number | string>>([]);
 const single = ref(true);
 const multiple = ref(true);
 const total = ref(0);
-const dateRange = ref<[DateModelType, DateModelType]>(['','']);
+const dateRange = ref<[DateModelType, DateModelType]>(['', '']);
 
 const queryFormRef = ref(ElForm);
 
@@ -133,23 +133,23 @@ const getList = async () => {
   ownProcessList.value = res.rows;
   total.value = res.total;
   loading.value = false;
-}
+};
 /** 搜索按钮操作 */
 const handleQuery = () => {
   queryParams.value.pageNum = 1;
   getList();
-}
+};
 /** 重置按钮操作 */
 const resetQuery = () => {
   queryFormRef.value.resetFields();
   handleQuery();
-}
+};
 /** 多选框选中数据 */
 const handleSelectionChange = (selection: ProcessVO[]) => {
-  ids.value = selection.map(item => item.procInsId);
+  ids.value = selection.map((item) => item.procInsId);
   single.value = selection.length != 1;
   multiple.value = !selection.length;
-}
+};
 /** 流程详情 */
 const handleDetails = (row: ProcessVO) => {
   router.push({
@@ -158,14 +158,14 @@ const handleDetails = (row: ProcessVO) => {
       taskId: row.taskId,
       processed: false
     }
-  })
-}
+  });
+};
 /** 取消流程申请 */
 const handleStop = async (row: ProcessVO) => {
-  await stopProcess( { procInsId: row.procInsId });
-  proxy?.$modal.msgSuccess("操作成功");
+  await stopProcess({ procInsId: row.procInsId });
+  proxy?.$modal.msgSuccess('操作成功');
   getList();
-}
+};
 /** 再次发起流程 */
 const handleAgain = (row: ProcessVO) => {
   // router.push({
@@ -175,26 +175,30 @@ const handleAgain = (row: ProcessVO) => {
   //     procInsId: row.procInsId
   //   }
   // })
-}
+};
 /** 删除按钮操作 */
 const handleDelete = async (row?: ProcessVO) => {
   const procInsIds = row?.procInsId || ids.value;
   await proxy?.$modal.confirm('是否确认删除流程定义编号为"' + procInsIds + '"的数据项?');
   await delProcess(procInsIds);
   getList();
-  proxy?.$modal.msgSuccess("删除成功");
-}
+  proxy?.$modal.msgSuccess('删除成功');
+};
 
 /** 导出按钮操作 */
 const handleExport = () => {
-  proxy?.download("workflow/process/ownExport", {
-    ...queryParams.value
-  }, `own_process_${new Date().getTime()}.xlsx`);
-}
+  proxy?.download(
+    'workflow/process/ownExport',
+    {
+      ...queryParams.value
+    },
+    `own_process_${new Date().getTime()}.xlsx`
+  );
+};
 
 const categoryFormat = (row: ProcessVO) => {
-  return categoryOptions.value.find(k => k.code === row.category)?.categoryName ?? '';
-}
+  return categoryOptions.value.find((k) => k.code === row.category)?.categoryName ?? '';
+};
 
 onMounted(() => {
   getCategoryList();

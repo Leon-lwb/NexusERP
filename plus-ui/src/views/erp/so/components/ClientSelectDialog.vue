@@ -34,8 +34,8 @@
 </template>
 
 <script setup lang="ts" name="ClientSelectDialog">
-import { listClient } from "@/api/erp/bd/client";
-import type { ClientVO } from "@/api/erp/bd/client/types";
+import { listClient } from '@/api/erp/bd/client';
+import type { ClientVO } from '@/api/erp/bd/client/types';
 
 const emit = defineEmits(['confirm']);
 
@@ -68,13 +68,15 @@ function open() {
 /** 查询客户列表 */
 function getList() {
   loading.value = true;
-  listClient(queryParams.value).then((response: any) => {
-    clientList.value = response.rows || [];
-    total.value = response.total || 0;
-    loading.value = false;
-  }).catch(() => {
-    loading.value = false;
-  });
+  listClient(queryParams.value)
+    .then((response: any) => {
+      clientList.value = response.rows || [];
+      total.value = response.total || 0;
+      loading.value = false;
+    })
+    .catch(() => {
+      loading.value = false;
+    });
 }
 
 /** 搜索 */

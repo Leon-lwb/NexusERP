@@ -16,21 +16,10 @@
       <!-- 单选模式：显示单选按钮 -->
       <el-table-column v-else type="radio" width="55">
         <template #default="{ row }">
-          <el-radio 
-            v-model="selectedRadioValue" 
-            :label="getRowKey(row)"
-            @change="handleRadioChange(row)"
-          >
-            &nbsp;
-          </el-radio>
+          <el-radio v-model="selectedRadioValue" :label="getRowKey(row)" @change="handleRadioChange(row)"> &nbsp; </el-radio>
         </template>
       </el-table-column>
-      <el-table-column
-        v-for="(label, field) in dictFields"
-        :key="field"
-        :prop="field"
-        :label="label"
-      >
+      <el-table-column v-for="(label, field) in dictFields" :key="field" :prop="field" :label="label">
         <template #default="{ row }">
           {{ row[field] || '-' }}
         </template>
@@ -53,11 +42,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, nextTick } from 'vue'
-import { listTableData } from "@/api/online";
+import { ref, watch, nextTick } from 'vue';
+import { listTableData } from '@/api/online';
 
 interface Mapping {
-  [key: string]: string
+  [key: string]: string;
 }
 
 const props = defineProps({
@@ -83,85 +72,89 @@ const props = defineProps({
     type: Boolean,
     default: false
   }
-})
+});
 
-const emit = defineEmits(['update:visible', 'select'])
+const emit = defineEmits(['update:visible', 'select']);
 
-const visible = ref(false)
-const loading = ref(false)
-const dataList = ref<any[]>([])
-const total = ref(0)
+const visible = ref(false);
+const loading = ref(false);
+const dataList = ref<any[]>([]);
+const total = ref(0);
 const tableRef = ref();
 const selectedRadioValue = ref<string | number>(''); // 单选模式下的选中值
 const getRowKey = (row: any) => {
   return row[Object.keys(props.dictFields)[0]];
 };
 
-watch(() => props.selectedValues, (newVal) => {
-  nextTick(() => {
-    if (props.multiple) {
-      // 多选模式：处理多选框
-      dataList.value.forEach(row => {
-        const key = getRowKey(row);
-        const isSelected = newVal.includes(key);
-        tableRef.value?.toggleRowSelection(row, isSelected);
-      });
-    } else {
-      // 单选模式：处理单选按钮
-      if (newVal.length > 0) {
-        selectedRadioValue.value = newVal[0];
-        // 找到对应的行并设置为选中状态
-        const selectedRow = dataList.value.find(row => getRowKey(row) === newVal[0]);
-        if (selectedRow) {
-          selectedRows.value = [selectedRow];
+watch(
+  () => props.selectedValues,
+  (newVal) => {
+    nextTick(() => {
+      if (props.multiple) {
+        // 多选模式：处理多选框
+        dataList.value.forEach((row) => {
+          const key = getRowKey(row);
+          const isSelected = newVal.includes(key);
+          tableRef.value?.toggleRowSelection(row, isSelected);
+        });
+      } else {
+        // 单选模式：处理单选按钮
+        if (newVal.length > 0) {
+          selectedRadioValue.value = newVal[0];
+          // 找到对应的行并设置为选中状态
+          const selectedRow = dataList.value.find((row) => getRowKey(row) === newVal[0]);
+          if (selectedRow) {
+            selectedRows.value = [selectedRow];
+          }
         }
       }
-    }
-  });
-}, { immediate: true, deep: true });
+    });
+  },
+  { immediate: true, deep: true }
+);
 
 const queryParams = ref({
   pageNum: 1,
   pageSize: 10
-})
-const selectedRows = ref<any[]>([])
+});
+const selectedRows = ref<any[]>([]);
 
 //同步内部状态到父组件
 watch(visible, (newVal) => {
-  emit('update:visible', newVal)
-})
+  emit('update:visible', newVal);
+});
 
-watch(() => props.visible, val => {
-  visible.value = val
-  if (val) {
-    resetQuery()
-    getList()
+watch(
+  () => props.visible,
+  (val) => {
+    visible.value = val;
+    if (val) {
+      resetQuery();
+      getList();
+    }
   }
-})
+);
 
 const getList = async () => {
   try {
-    loading.value = true
-    const res = await listTableData(
-      props.dictType,
-      queryParams.value
-    )
-    dataList.value = res.rows
-    total.value = res.total
+    loading.value = true;
+    const res = await listTableData(props.dictType, queryParams.value);
+    dataList.value = res.rows;
+    total.value = res.total;
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 const handlePageChange = (pagination: any) => {
-  queryParams.value.pageNum = pagination.pageNum
-  queryParams.value.pageSize = pagination.pageSize
-  getList()
-}
+  queryParams.value.pageNum = pagination.pageNum;
+  queryParams.value.pageSize = pagination.pageSize;
+  getList();
+};
 
 const handleSelectionChange = (selection: any[]) => {
-  selectedRows.value = selection
-}
+  selectedRows.value = selection;
+};
 
 const handleRadioChange = (row: any) => {
   // 单选模式下，直接设置选中的行
@@ -177,31 +170,31 @@ const handleRowClick = (row: any) => {
 };
 
 const handleConfirm = () => {
-  if (selectedRows.value.length === 0) return
-  const mappedData = selectedRows.value.map(row => {
-    const result: any = {}
+  if (selectedRows.value.length === 0) return;
+  const mappedData = selectedRows.value.map((row) => {
+    const result: any = {};
     Object.entries(props.mapping).forEach(([srcField, targetField]) => {
-      result[targetField] = row[srcField]
-    })
-    return result
-  })
+      result[targetField] = row[srcField];
+    });
+    return result;
+  });
 
   // 根据 multiple 属性决定返回格式
   if (props.multiple) {
-    emit('select', mappedData)
+    emit('select', mappedData);
   } else {
-    emit('select', mappedData[0])
+    emit('select', mappedData[0]);
   }
-  visible.value = false
-}
+  visible.value = false;
+};
 
 const resetQuery = () => {
-  queryParams.value.pageNum = 1
-  queryParams.value.pageSize = 10
+  queryParams.value.pageNum = 1;
+  queryParams.value.pageSize = 10;
   // 重置选中状态
-  selectedRows.value = []
+  selectedRows.value = [];
   if (!props.multiple) {
-    selectedRadioValue.value = ''
+    selectedRadioValue.value = '';
   }
-}
+};
 </script>

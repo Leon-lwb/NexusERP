@@ -20,7 +20,13 @@
             <el-form-item label="通知单编号" prop="noticeCode">
               <div style="display: flex; align-items: center; gap: 10px">
                 <el-input v-model="form.noticeCode" placeholder="请输入通知单编号" :disabled="autoGenFlag || isViewMode" style="flex: 1" />
-                <el-switch v-model="autoGenFlag" active-color="#13ce66" active-text="生成" @change="handleAutoGenChange" :disabled="isViewMode || props.disabled">
+                <el-switch
+                  v-model="autoGenFlag"
+                  active-color="#13ce66"
+                  active-text="生成"
+                  @change="handleAutoGenChange"
+                  :disabled="isViewMode || props.disabled"
+                >
                 </el-switch>
               </div>
             </el-form-item>

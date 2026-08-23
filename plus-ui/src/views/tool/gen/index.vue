@@ -123,11 +123,7 @@
       <div v-if="previewData.type === 'single'">
         <el-form label-width="120px">
           <el-row :gutter="20">
-            <el-col
-              v-for="field in previewData.mainFields"
-              :key="field.columnName"
-              :span="field.formSpan || 24"
-            >
+            <el-col v-for="field in previewData.mainFields" :key="field.columnName" :span="field.formSpan || 24">
               <el-form-item :label="field.columnComment" :required="field.required">
                 <component
                   :is="getComponentType(field.htmlType)"
@@ -148,11 +144,7 @@
         <el-card header="主表信息">
           <el-form label-width="120px">
             <el-row :gutter="20">
-              <el-col
-                v-for="field in previewData.mainFields"
-                :key="field.columnName"
-                :span="field.formSpan || 24"
-              >
+              <el-col v-for="field in previewData.mainFields" :key="field.columnName" :span="field.formSpan || 24">
                 <el-form-item :label="field.columnComment" :required="field.required">
                   <component
                     :is="getComponentType(field.htmlType)"
@@ -173,12 +165,7 @@
             <el-button type="primary" @click="addSubRow">+ 添加子项</el-button>
           </div>
 
-          <el-table
-            :data="previewData.subForms"
-            border
-            stripe
-            class="sub-table"
-          >
+          <el-table :data="previewData.subForms" border stripe class="sub-table">
             <el-table-column
               v-for="field in previewData.subFields"
               :key="field.columnName"
@@ -187,27 +174,13 @@
               min-width="180"
             >
               <template #default="{ row }">
-                <component
-                  :is="getComponentType(field.htmlType)"
-                  v-model:value="row[field.columnName]"
-                  :nm="field"
-                  :disabled="!field.edit"
-                />
+                <component :is="getComponentType(field.htmlType)" v-model:value="row[field.columnName]" :nm="field" :disabled="!field.edit" />
               </template>
             </el-table-column>
 
-            <el-table-column
-              label="操作"
-              width="80"
-              fixed="right"
-            >
+            <el-table-column label="操作" width="80" fixed="right">
               <template #default="{ $index }">
-                <el-button
-                  link
-                  type="danger"
-                  icon="Delete"
-                  @click="removeSubRow($index)"
-                />
+                <el-button link type="danger" icon="Delete" @click="removeSubRow($index)" />
               </template>
             </el-table-column>
           </el-table>
@@ -489,12 +462,12 @@ const removeSubRow = (index: number) => {
 // 清理字段数据（将后端字段映射为前端字段）
 const sanitizeColumns = (cols: any[]): any[] => {
   if (!Array.isArray(cols)) return cols;
-  return cols.map(col => {
+  return cols.map((col) => {
     const c = { ...col };
     // 将后端字段映射为前端使用的字段（同时保留原始字段用于兼容）
-    c.list = c.isList === '1' || c.isList === true || c.isList === 'true';  // 是否列表显示
+    c.list = c.isList === '1' || c.isList === true || c.isList === 'true'; // 是否列表显示
     c.query = c.isQuery === '1' || c.isQuery === true || c.isQuery === 'true'; // 是否查询字段
-    c.edit = c.isEdit === '1' || c.isEdit === true || c.isEdit === 'true';   // 是否编辑字段
+    c.edit = c.isEdit === '1' || c.isEdit === true || c.isEdit === 'true'; // 是否编辑字段
     c.insert = c.isInsert === '1' || c.isInsert === true || c.isInsert === 'true'; // 是否插入字段
     c.required = c.isRequired === '1' || c.isRequired === true || c.isRequired === 'true'; // 是否必填
     c.pk = c.isPk === '1' || c.isPk === true || c.isPk === 'true'; // 是否主键

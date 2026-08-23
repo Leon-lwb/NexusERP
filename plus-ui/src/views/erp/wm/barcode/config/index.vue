@@ -156,8 +156,23 @@ const rules = {
 };
 
 const {
-  loading, list, total, open, title, ids, single, multiple, showSearch, form,
-  getList, handleQuery, handleDelete, handleExport, handleSelectionChange, submitForm, cancel,
+  loading,
+  list,
+  total,
+  open,
+  title,
+  ids,
+  single,
+  multiple,
+  showSearch,
+  form,
+  getList,
+  handleQuery,
+  handleDelete,
+  handleExport,
+  handleSelectionChange,
+  submitForm,
+  cancel,
   handleAdd: rawHandleAdd,
   handleUpdate: rawHandleUpdate
 } = useCrud({

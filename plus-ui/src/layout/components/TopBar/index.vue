@@ -12,58 +12,58 @@
 </template>
 
 <script setup>
-import SidebarItem from '../Sidebar/SidebarItem'
-import {useAppStore} from '@/store/modules/app'
-import {useThemeStore} from '@/store/modules/theme'
-import {usePermissionStore} from '@/store/modules/permission'
+import SidebarItem from '../Sidebar/SidebarItem';
+import { useAppStore } from '@/store/modules/app';
+import { useThemeStore } from '@/store/modules/theme';
+import { usePermissionStore } from '@/store/modules/permission';
 
-const route = useRoute()
-const appStore = useAppStore()
-const themeStore = useThemeStore()
-const permissionStore = usePermissionStore()
+const route = useRoute();
+const appStore = useAppStore();
+const themeStore = useThemeStore();
+const permissionStore = usePermissionStore();
 
-const sidebarRouters = computed(() => permissionStore.sidebarRouters)
-const theme = computed(() => themeStore.brandColor)
-const device = computed(() => appStore.device)
+const sidebarRouters = computed(() => permissionStore.sidebarRouters);
+const theme = computed(() => themeStore.brandColor);
+const device = computed(() => appStore.device);
 const activeMenu = computed(() => {
-  const { meta, path } = route
+  const { meta, path } = route;
   if (meta.activeMenu) {
-    return meta.activeMenu
+    return meta.activeMenu;
   }
-  return path
-})
+  return path;
+});
 
-const visibleNumber = ref(5)
+const visibleNumber = ref(5);
 const topMenus = computed(() => {
-  return permissionStore.sidebarRouters.filter((f) => !f.hidden).slice(0, visibleNumber.value)
-})
+  return permissionStore.sidebarRouters.filter((f) => !f.hidden).slice(0, visibleNumber.value);
+});
 const moreRoutes = computed(() => {
-  return permissionStore.sidebarRouters.filter((f) => !f.hidden).slice(visibleNumber.value, sidebarRouters.value.length - visibleNumber.value)
-})
+  return permissionStore.sidebarRouters.filter((f) => !f.hidden).slice(visibleNumber.value, sidebarRouters.value.length - visibleNumber.value);
+});
 function setVisibleNumber() {
-  let width = document.body.getBoundingClientRect().width
+  let width = document.body.getBoundingClientRect().width;
   if (width >= 1000) {
-    width -= 500
+    width -= 500;
   }
-  visibleNumber.value = parseInt(width / 3 / 85)
+  visibleNumber.value = parseInt(width / 3 / 85);
 }
 
 onMounted(() => {
-  window.addEventListener('resize', setVisibleNumber)
-})
+  window.addEventListener('resize', setVisibleNumber);
+});
 onBeforeUnmount(() => {
-  window.removeEventListener('resize', setVisibleNumber)
-})
+  window.removeEventListener('resize', setVisibleNumber);
+});
 
 onMounted(() => {
-  setVisibleNumber()
-})
+  setVisibleNumber();
+});
 </script>
 
 <style lang="scss">
-
 /* menu item */
-#app .topbar-menu.el-menu--horizontal .el-sub-menu__title, #app .topbar-menu.el-menu--horizontal .el-menu-item {
+#app .topbar-menu.el-menu--horizontal .el-sub-menu__title,
+#app .topbar-menu.el-menu--horizontal .el-menu-item {
   padding: 0 10px !important;
 }
 
@@ -76,7 +76,10 @@ onMounted(() => {
   margin: 0 10px !important;
 }
 
-.el-sub-menu.is-active .svg-icon, .el-menu-item.is-active .svg-icon + span, .el-sub-menu.is-active .svg-icon + span, .el-sub-menu.is-active .el-sub-menu__title span {
+.el-sub-menu.is-active .svg-icon,
+.el-menu-item.is-active .svg-icon + span,
+.el-sub-menu.is-active .svg-icon + span,
+.el-sub-menu.is-active .el-sub-menu__title span {
   color: v-bind(theme);
 }
 
@@ -85,7 +88,7 @@ onMounted(() => {
   float: left;
   line-height: 50px !important;
   color: #303133 !important;
-  margin: 0 15px -3px!important;
+  margin: 0 15px -3px !important;
 }
 
 /* topbar more arrow */
@@ -97,7 +100,8 @@ onMounted(() => {
 }
 
 /* menu__title el-menu-item */
-.topbar-menu.el-menu--horizontal .el-sub-menu__title, .topbar-menu.el-menu--horizontal .el-menu-item {
+.topbar-menu.el-menu--horizontal .el-sub-menu__title,
+.topbar-menu.el-menu--horizontal .el-menu-item {
   height: 60px;
 }
 </style>

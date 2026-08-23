@@ -6,7 +6,9 @@
           <span>{{ title }}</span>
           <div>
             <el-button type="primary" @click="submitForm" v-if="!isViewMode && !props.disabled">保存</el-button>
-            <el-button type="success" @click="handleSubmitFlow" v-if="!isViewMode && !props.disabled && form.status === 'DRAFT' && form.returnId">提交审批</el-button>
+            <el-button type="success" @click="handleSubmitFlow" v-if="!isViewMode && !props.disabled && form.status === 'DRAFT' && form.returnId"
+              >提交审批</el-button
+            >
             <el-button type="info" @click="onViewFlow" v-if="form.status === 'APPROVING' || form.status === 'CONFIRMED'">查看流程</el-button>
             <el-button @click="cancel" v-if="!props.disabled">取消</el-button>
           </div>
@@ -20,7 +22,13 @@
             <el-form-item label="退货单编号" prop="returnNo">
               <div style="display: flex; align-items: center; gap: 10px">
                 <el-input v-model="form.returnNo" placeholder="请输入退货单编号" :disabled="autoGenFlag || isViewMode" style="flex: 1" />
-                <el-switch v-model="autoGenFlag" active-color="#13ce66" active-text="生成" @change="handleAutoGenChange" :disabled="isViewMode || props.disabled">
+                <el-switch
+                  v-model="autoGenFlag"
+                  active-color="#13ce66"
+                  active-text="生成"
+                  @change="handleAutoGenChange"
+                  :disabled="isViewMode || props.disabled"
+                >
                 </el-switch>
               </div>
             </el-form-item>

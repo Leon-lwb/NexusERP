@@ -7,11 +7,7 @@
         <el-button @click="handlePreview">预览</el-button>
       </div>
     </div>
-    <div 
-      class="canvas-content"
-      @dragover.prevent
-      @drop="handleDrop"
-    >
+    <div class="canvas-content" @dragover.prevent @drop="handleDrop">
       <el-form
         ref="formRef"
         :model="formData"
@@ -38,23 +34,23 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, reactive } from 'vue'
-import type { FormComponent, FormConfig, FormContent } from '../../types'
-import { ElMessage } from 'element-plus'
+import { ref, reactive } from 'vue';
+import type { FormComponent, FormConfig, FormContent } from '../../types';
+import { ElMessage } from 'element-plus';
 
 const props = defineProps<{
-  formContent: FormContent
-}>()
+  formContent: FormContent;
+}>();
 
-const emit = defineEmits(['update:formContent', 'save', 'preview'])
+const emit = defineEmits(['update:formContent', 'save', 'preview']);
 
-const formRef = ref()
-const formData = reactive({})
-const formConfig = ref<FormConfig>(props.formContent.config)
-const formComponents = ref<FormComponent[]>(props.formContent.components)
+const formRef = ref();
+const formData = reactive({});
+const formConfig = ref<FormConfig>(props.formContent.config);
+const formComponents = ref<FormComponent[]>(props.formContent.components);
 
 const handleDrop = (e: DragEvent) => {
-  const component = JSON.parse(e.dataTransfer?.getData('component') || '{}')
+  const component = JSON.parse(e.dataTransfer?.getData('component') || '{}');
   if (component) {
     const newComponent: FormComponent = {
       id: Date.now().toString(),
@@ -65,41 +61,41 @@ const handleDrop = (e: DragEvent) => {
       props: { ...component.props },
       required: false,
       isMaster: false
-    }
-    formComponents.value.push(newComponent)
+    };
+    formComponents.value.push(newComponent);
   }
-}
+};
 
 const handleDeleteComponent = (index: number) => {
-  formComponents.value.splice(index, 1)
-}
+  formComponents.value.splice(index, 1);
+};
 
 const handleCopyComponent = (index: number) => {
-  const component = formComponents.value[index]
+  const component = formComponents.value[index];
   const newComponent: FormComponent = {
     ...component,
     id: Date.now().toString(),
     field: `field_${Date.now()}`
-  }
-  formComponents.value.splice(index + 1, 0, newComponent)
-}
+  };
+  formComponents.value.splice(index + 1, 0, newComponent);
+};
 
 const handleSave = () => {
   const formContent: FormContent = {
     config: formConfig.value,
     components: formComponents.value
-  }
-  emit('update:formContent', formContent)
-  emit('save', formContent)
-  ElMessage.success('保存成功')
-}
+  };
+  emit('update:formContent', formContent);
+  emit('save', formContent);
+  ElMessage.success('保存成功');
+};
 
 const handlePreview = () => {
   emit('preview', {
     config: formConfig.value,
     components: formComponents.value
-  })
-}
+  });
+};
 </script>
 
 <style lang="scss" scoped>
@@ -140,4 +136,4 @@ const handlePreview = () => {
     }
   }
 }
-</style> 
+</style>

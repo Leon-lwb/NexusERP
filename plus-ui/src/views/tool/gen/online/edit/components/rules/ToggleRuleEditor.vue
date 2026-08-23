@@ -1,15 +1,7 @@
 <template>
   <el-card shadow="never" class="rule-card">
     <div class="rule-row">
-      <el-select
-        v-model="targetsModel"
-        multiple
-        filterable
-        clearable
-        collapse-tags
-        placeholder="targets（目标字段）"
-        style="width: 360px"
-      >
+      <el-select v-model="targetsModel" multiple filterable clearable collapse-tags placeholder="targets（目标字段）" style="width: 360px">
         <el-option v-for="t in targets" :key="t.value" :label="t.label" :value="t.value" />
       </el-select>
 
@@ -22,12 +14,7 @@
 
     <div class="rule-row">
       <el-switch v-model="hasElse" active-text="elseValue启用" inactive-text="elseValue不启用" />
-      <el-switch
-        v-if="hasElse"
-        v-model="elseValue"
-        active-text="else=true"
-        inactive-text="else=false"
-      />
+      <el-switch v-if="hasElse" v-model="elseValue" active-text="else=true" inactive-text="else=false" />
 
       <el-checkbox v-if="showClearOnFalse" v-model="local.clearOnFalse">clearOnFalse</el-checkbox>
     </div>
@@ -37,70 +24,70 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from 'vue'
-import WhenBuilder, { type FieldOption, type WhenClause } from '../WhenBuilder.vue'
+import { computed, reactive, ref, watch } from 'vue';
+import WhenBuilder, { type FieldOption, type WhenClause } from '../WhenBuilder.vue';
 
 type ToggleRule = {
-  when?: WhenClause
-  targets: string[] | string
-  value: boolean
-  elseValue?: boolean
-  clearOnFalse?: boolean
-  priority?: number
-}
+  when?: WhenClause;
+  targets: string[] | string;
+  value: boolean;
+  elseValue?: boolean;
+  clearOnFalse?: boolean;
+  priority?: number;
+};
 
 const props = defineProps<{
-  modelValue: ToggleRule
-  targets: FieldOption[]
-  fields: FieldOption[]
-  showClearOnFalse?: boolean
-}>()
+  modelValue: ToggleRule;
+  targets: FieldOption[];
+  fields: FieldOption[];
+  showClearOnFalse?: boolean;
+}>();
 
 const emit = defineEmits<{
-  (e: 'update:modelValue', v: ToggleRule): void
-  (e: 'remove'): void
-}>()
+  (e: 'update:modelValue', v: ToggleRule): void;
+  (e: 'remove'): void;
+}>();
 
-const local = reactive<ToggleRule>({ ...props.modelValue })
+const local = reactive<ToggleRule>({ ...props.modelValue });
 
 watch(
   () => props.modelValue,
   (v) => Object.assign(local, v || {}),
   { deep: true }
-)
+);
 
-watch(
-  local,
-  () => emit('update:modelValue', { ...local, targets: local.targets }),
-  { deep: true }
-)
+watch(local, () => emit('update:modelValue', { ...local, targets: local.targets }), { deep: true });
 
 const targetsModel = computed<string[]>({
   get: () => {
-    const v: any = local.targets
-    if (Array.isArray(v)) return v
-    if (typeof v === 'string' && v) return v.split(',').map(s => s.trim()).filter(Boolean)
-    return []
+    const v: any = local.targets;
+    if (Array.isArray(v)) return v;
+    if (typeof v === 'string' && v)
+      return v
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
+    return [];
   },
   set: (arr) => {
-    local.targets = arr
+    local.targets = arr;
   }
-})
+});
 
-const hasElse = ref(local.elseValue !== undefined)
-const elseValue = ref<boolean>(local.elseValue ?? false)
+const hasElse = ref(local.elseValue !== undefined);
+const elseValue = ref<boolean>(local.elseValue ?? false);
 
 watch(
   () => props.modelValue?.elseValue,
   (v) => {
-    hasElse.value = v !== undefined
-    elseValue.value = v ?? false
+    hasElse.value = v !== undefined;
+    elseValue.value = v ?? false;
   }
-)
+);
 
 watch([hasElse, elseValue], () => {
-  local.elseValue = hasElse.value ? elseValue.value : undefined
-})
+  local.elseValue = hasElse.value ? elseValue.value : undefined;
+});
 </script>
 
 <style scoped>
@@ -115,4 +102,3 @@ watch([hasElse, elseValue], () => {
   margin-bottom: 10px;
 }
 </style>
-

@@ -100,11 +100,9 @@ export const getCurrentBom = (parentId: number): AxiosPromise<BomVO> => {
   });
 };
 
-export const activateBomVersion = (bomId: number) =>
-  request({ url: '/erp/bd/bom/activateVersion/' + bomId, method: 'put' });
+export const activateBomVersion = (bomId: number) => request({ url: '/erp/bd/bom/activateVersion/' + bomId, method: 'put' });
 
-export const verifyBom = (bomId: number): AxiosPromise<string> =>
-  request({ url: '/erp/bd/bom/verify/' + bomId, method: 'get' });
+export const verifyBom = (bomId: number): AxiosPromise<string> => request({ url: '/erp/bd/bom/verify/' + bomId, method: 'get' });
 
 export const getBomTree = (bomId: number): AxiosPromise<BomTreeNodeVo> => {
   return request({

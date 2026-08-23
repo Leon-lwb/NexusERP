@@ -101,14 +101,30 @@ const rules = {
   rate: [{ required: true, message: '汇率不能为空', trigger: 'blur' }]
 };
 
-const { loading, list, total, open, title, ids, single, multiple, showSearch, form,
-  getList, handleQuery, handleDelete, handleSelectionChange, submitForm, cancel } = useCrud({
+const {
+  loading,
+  list,
+  total,
+  open,
+  title,
+  ids,
+  single,
+  multiple,
+  showSearch,
+  form,
+  getList,
+  handleQuery,
+  handleDelete,
+  handleSelectionChange,
+  submitForm,
+  cancel
+} = useCrud({
   apis: { list: listCurrencyRate, get: getCurrencyRate, add: addCurrencyRate, update: updateCurrencyRate, del: delCurrencyRate },
   idField: 'rateId',
   entityName: '汇率',
   formRef,
   queryParams,
-  initForm: () => ({ rateId: undefined, currency: '', baseCurrency: 'CNY', rateDate: undefined, rate: 0, rateType: 'MIDDLE' } as any)
+  initForm: () => ({ rateId: undefined, currency: '', baseCurrency: 'CNY', rateDate: undefined, rate: 0, rateType: 'MIDDLE' }) as any
 });
 
 function resetQuery() {

@@ -104,9 +104,12 @@
         </el-form-item>
         <el-form-item label="关联批次" prop="batchId">
           <el-select v-model="batchGenerateForm.batchId" placeholder="请选择批次（可空）" clearable filterable style="width: 100%">
-            <el-option v-for="item in batchOptions" :key="item.batchId"
+            <el-option
+              v-for="item in batchOptions"
+              :key="item.batchId"
               :label="item.batchCode + '（' + (item.materialName || item.materialCode || '') + '）'"
-              :value="item.batchId" />
+              :value="item.batchId"
+            />
           </el-select>
         </el-form-item>
       </el-form>

@@ -6,7 +6,7 @@
           <el-form-item label="流程名称" prop="processName">
             <el-input v-model="queryParams.processName" placeholder="请输入流程名称" clearable style="width: 200px" @keyup.enter="handleQuery" />
           </el-form-item>
-          <el-form-item label="审批时间" style="width: 308px;">
+          <el-form-item label="审批时间" style="width: 308px">
             <el-date-picker
               v-model="dateRange"
               value-format="YYYY-MM-DD"
@@ -48,7 +48,7 @@
               <el-button link type="primary" icon="View" @click="handleDetails(scope.row)" v-hasPermi="['workflow:process:query']"></el-button>
             </el-tooltip>
             <el-tooltip content="收回" placement="top">
-            <el-button link type="primary" icon="TurnOff" @click="handleRecall(scope.row)" v-hasPermi="['workflow:process:recall']"></el-button>
+              <el-button link type="primary" icon="TurnOff" @click="handleRecall(scope.row)" v-hasPermi="['workflow:process:recall']"></el-button>
             </el-tooltip>
             <el-tooltip content="撤回" placement="top">
               <el-button link type="primary" icon="CloseBold" @click="handleRevoke(scope.row)" v-hasPermi="['workflow:process:revoke']"></el-button>
@@ -63,12 +63,12 @@
 </template>
 
 <script setup name="Finished" lang="ts">
-import { listFinishedProcess } from "@/api/workflow/work/process";
-import { revokeProcess, recallProcess } from "@/api/workflow/work/task";
-import {ProcessQuery, ProcessVO} from "@/api/workflow/work/types";
-import {DateModelType} from "element-plus";
+import { listFinishedProcess } from '@/api/workflow/work/process';
+import { revokeProcess, recallProcess } from '@/api/workflow/work/task';
+import { ProcessQuery, ProcessVO } from '@/api/workflow/work/types';
+import { DateModelType } from 'element-plus';
 
-import { ComponentInternalInstance } from "vue";
+import { ComponentInternalInstance } from 'vue';
 
 const router = useRouter();
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
@@ -80,7 +80,7 @@ const ids = ref<Array<number | string>>([]);
 const single = ref(true);
 const multiple = ref(true);
 const total = ref(0);
-const dateRange = ref<[DateModelType, DateModelType]>(['','']);
+const dateRange = ref<[DateModelType, DateModelType]>(['', '']);
 
 const queryFormRef = ref(ElForm);
 
@@ -97,17 +97,17 @@ const getList = async () => {
   finishedList.value = res.rows;
   total.value = res.total;
   loading.value = false;
-}
+};
 /** 搜索按钮操作 */
 const handleQuery = () => {
   queryParams.value.pageNum = 1;
   getList();
-}
+};
 /** 重置按钮操作 */
 const resetQuery = () => {
   queryFormRef.value.resetFields();
   handleQuery();
-}
+};
 /** 流程流转记录 */
 const handleDetails = (row: any) => {
   router.push({
@@ -116,21 +116,21 @@ const handleDetails = (row: any) => {
       taskId: row.taskId,
       processed: false
     }
-  })
-}
+  });
+};
 
 /** 收回任务 */
 const handleRecall = (row: any) => {
-    const params = {
-      procInsId: row.procInsId,
-      taskId: row.taskId,
-      dataId: row.dataId
-    }
-    recallProcess(params).then( res => {
-      proxy?.$modal.msgSuccess(res.msg);
-      getList();
-    });
-  }
+  const params = {
+    procInsId: row.procInsId,
+    taskId: row.taskId,
+    dataId: row.dataId
+  };
+  recallProcess(params).then((res) => {
+    proxy?.$modal.msgSuccess(res.msg);
+    getList();
+  });
+};
 
 /** 撤回任务 */
 const handleRevoke = async (row: any) => {
@@ -142,13 +142,17 @@ const handleRevoke = async (row: any) => {
   const res = await revokeProcess(params);
   proxy?.$modal.msgSuccess(res.msg);
   getList();
-}
+};
 /** 导出按钮操作 */
 const handleExport = () => {
-  proxy?.download("workflow/process/finishedExport", {
-    ...queryParams.value
-  }, `finished_${new Date().getTime()}.xlsx`);
-}
+  proxy?.download(
+    'workflow/process/finishedExport',
+    {
+      ...queryParams.value
+    },
+    `finished_${new Date().getTime()}.xlsx`
+  );
+};
 
 onMounted(() => {
   getList();

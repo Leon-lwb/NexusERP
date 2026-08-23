@@ -126,7 +126,15 @@
 </template>
 
 <script setup lang="ts" name="FinReceipt">
-import { listFinReceipt, getFinReceipt, delFinReceipt, addFinReceipt, updateFinReceipt, confirmFinReceipt, cancelFinReceipt } from '@/api/erp/fin/receipt';
+import {
+  listFinReceipt,
+  getFinReceipt,
+  delFinReceipt,
+  addFinReceipt,
+  updateFinReceipt,
+  confirmFinReceipt,
+  cancelFinReceipt
+} from '@/api/erp/fin/receipt';
 import type { FormInstance } from 'element-plus';
 import { useCrud } from '@/composables/useCrud';
 import { FinReceiptVO, FinReceiptForm, FinReceiptQuery } from '@/api/erp/fin/receipt/types';
@@ -139,7 +147,11 @@ const { fin_receipt_type, fin_receipt_direction, fin_receipt_source, fin_receipt
 const formRef = ref<FormInstance>();
 
 const queryParams = ref<FinReceiptQuery>({
-  pageNum: 1, pageSize: 20, receiptNo: undefined, direction: undefined, status: undefined
+  pageNum: 1,
+  pageSize: 20,
+  receiptNo: undefined,
+  direction: undefined,
+  status: undefined
 });
 
 const rules = {
@@ -148,8 +160,22 @@ const rules = {
 };
 
 const {
-  loading, list, total, open, title, ids, multiple, showSearch, form,
-  getList, handleQuery, handleDelete, handleExport, handleSelectionChange, submitForm, cancel,
+  loading,
+  list,
+  total,
+  open,
+  title,
+  ids,
+  multiple,
+  showSearch,
+  form,
+  getList,
+  handleQuery,
+  handleDelete,
+  handleExport,
+  handleSelectionChange,
+  submitForm,
+  cancel,
   handleAdd: rawHandleAdd
 } = useCrud<FinReceiptForm, FinReceiptQuery>({
   apis: { list: listFinReceipt, get: getFinReceipt, add: addFinReceipt, update: updateFinReceipt, del: delFinReceipt },
@@ -158,8 +184,14 @@ const {
   formRef: formRef,
   queryParams,
   initForm: () => ({
-    direction: 'AR', receiptType: 'BANK', amount: 0, receiptDate: undefined,
-    clientId: undefined, vendorId: undefined, payerName: '', remark: ''
+    direction: 'AR',
+    receiptType: 'BANK',
+    amount: 0,
+    receiptDate: undefined,
+    clientId: undefined,
+    vendorId: undefined,
+    payerName: '',
+    remark: ''
   }),
   exportUrl: '/erp/fin/receipt/export',
   exportFileName: 'receipt'

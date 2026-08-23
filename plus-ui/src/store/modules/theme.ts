@@ -103,46 +103,62 @@ export const useThemeStore = defineStore('theme', () => {
     };
   };
 
-  watch(themeMode, (newMode) => {
-    const html = document.documentElement;
-    html.classList.remove('dark', 'high-contrast');
+  watch(
+    themeMode,
+    (newMode) => {
+      const html = document.documentElement;
+      html.classList.remove('dark', 'high-contrast');
 
-    switch (newMode) {
-      case ThemeModeEnum.DARK:
-        html.classList.add('dark');
-        sideTheme.value = SideThemeEnum.DARK;
-        break;
-      case ThemeModeEnum.HIGH_CONTRAST:
-        html.classList.add('high-contrast');
-        break;
-      case ThemeModeEnum.LIGHT:
-      default:
-        break;
-    }
+      switch (newMode) {
+        case ThemeModeEnum.DARK:
+          html.classList.add('dark');
+          sideTheme.value = SideThemeEnum.DARK;
+          break;
+        case ThemeModeEnum.HIGH_CONTRAST:
+          html.classList.add('high-contrast');
+          break;
+        case ThemeModeEnum.LIGHT:
+        default:
+          break;
+      }
 
-    saveConfig();
-  }, { immediate: true });
+      saveConfig();
+    },
+    { immediate: true }
+  );
 
-  watch(brandColor, (newColor) => {
-    handleThemeStyle(newColor);
-    saveConfig();
-  }, { immediate: true });
+  watch(
+    brandColor,
+    (newColor) => {
+      handleThemeStyle(newColor);
+      saveConfig();
+    },
+    { immediate: true }
+  );
 
-  watch(contentDensity, (newDensity) => {
-    const html = document.documentElement;
-    if (newDensity === ContentDensityEnum.COMPACT) {
-      html.classList.add('density-compact');
-      html.classList.remove('density-comfortable');
-    } else {
-      html.classList.add('density-comfortable');
-      html.classList.remove('density-compact');
-    }
-    saveConfig();
-  }, { immediate: true });
+  watch(
+    contentDensity,
+    (newDensity) => {
+      const html = document.documentElement;
+      if (newDensity === ContentDensityEnum.COMPACT) {
+        html.classList.add('density-compact');
+        html.classList.remove('density-comfortable');
+      } else {
+        html.classList.add('density-comfortable');
+        html.classList.remove('density-compact');
+      }
+      saveConfig();
+    },
+    { immediate: true }
+  );
 
-  watch([sideTheme, navType, tabsMode, tabsIcon, fixedHeader, sidebarLogo, animationEnable], () => {
-    saveConfig();
-  }, { deep: true });
+  watch(
+    [sideTheme, navType, tabsMode, tabsIcon, fixedHeader, sidebarLogo, animationEnable],
+    () => {
+      saveConfig();
+    },
+    { deep: true }
+  );
 
   const setThemeMode = (mode: ThemeModeEnum) => {
     themeMode.value = mode;

@@ -13,12 +13,12 @@
 
 ## 2. 命名风格定义
 
-| 风格 | 示例 | 适用场景 |
-|-----|------|---------|
-| **kebab-case** | `employee-schedule`, `serial-number-rule` | 目录、URL 路由、样式文件、静态资源 |
-| **camelCase** | `useDialog`, `fieldConfig`, `authUtils` | JS/TS 函数文件、Hook 文件、工具类文件 |
-| **PascalCase** | `FormDesigner`, `EmployeeSchedule` | Vue 单文件组件（SFC）、枚举/常量文件 |
-| **全小写** | `index`, `form`, `detail`, `bom`, `erp` | 约定俗成的页面入口文件、业务缩写模块 |
+| 风格           | 示例                                      | 适用场景                              |
+| -------------- | ----------------------------------------- | ------------------------------------- |
+| **kebab-case** | `employee-schedule`, `serial-number-rule` | 目录、URL 路由、样式文件、静态资源    |
+| **camelCase**  | `useDialog`, `fieldConfig`, `authUtils`   | JS/TS 函数文件、Hook 文件、工具类文件 |
+| **PascalCase** | `FormDesigner`, `EmployeeSchedule`        | Vue 单文件组件（SFC）、枚举/常量文件  |
+| **全小写**     | `index`, `form`, `detail`, `bom`, `erp`   | 约定俗成的页面入口文件、业务缩写模块  |
 
 ## 3. 目录命名规范
 
@@ -68,18 +68,18 @@ components/
 
 ### 3.5 其他源码目录
 
-| 目录 | 规范 | 说明 |
-|-----|------|------|
-| `src/composables/` | camelCase | 组合式函数 |
-| `src/directive/` | camelCase | 指令文件 |
-| `src/enums/` | PascalCase | 枚举定义 |
-| `src/hooks/` | camelCase | Vue Hooks |
-| `src/modules/` | PascalCase / camelCase | 复杂模块用大驼峰，简单模块用小驼峰 |
-| `src/plugins/` | camelCase | 插件 |
-| `src/router/` | camelCase | 路由配置 |
-| `src/store/` | camelCase | 状态管理 |
-| `src/types/` | camelCase | 类型定义 |
-| `src/utils/` | camelCase | 工具函数 |
+| 目录               | 规范                   | 说明                               |
+| ------------------ | ---------------------- | ---------------------------------- |
+| `src/composables/` | camelCase              | 组合式函数                         |
+| `src/directive/`   | camelCase              | 指令文件                           |
+| `src/enums/`       | PascalCase             | 枚举定义                           |
+| `src/hooks/`       | camelCase              | Vue Hooks                          |
+| `src/modules/`     | PascalCase / camelCase | 复杂模块用大驼峰，简单模块用小驼峰 |
+| `src/plugins/`     | camelCase              | 插件                               |
+| `src/router/`      | camelCase              | 路由配置                           |
+| `src/store/`       | camelCase              | 状态管理                           |
+| `src/types/`       | camelCase              | 类型定义                           |
+| `src/utils/`       | camelCase              | 工具函数                           |
 
 ## 4. 文件命名规范
 
@@ -117,13 +117,13 @@ views/erp/sch/plan/
 
 ### 4.2 TypeScript / JavaScript 文件
 
-| 文件类型 | 规范 | 示例 |
-|---------|------|------|
-| 工具函数 | camelCase | `request.ts`, `auth.ts`, `validate.ts` |
-| Hook 文件 | camelCase | `useDialog.ts`, `useFlowable.ts` |
-| 常量/枚举 | PascalCase | `LanguageEnum.ts`, `ThemeEnum.ts` |
-| API 入口 | camelCase | `index.ts`, `chat.ts`, `notification.ts` |
-| 类型定义 | camelCase | `types.ts`, `global.d.ts` |
+| 文件类型  | 规范       | 示例                                     |
+| --------- | ---------- | ---------------------------------------- |
+| 工具函数  | camelCase  | `request.ts`, `auth.ts`, `validate.ts`   |
+| Hook 文件 | camelCase  | `useDialog.ts`, `useFlowable.ts`         |
+| 常量/枚举 | PascalCase | `LanguageEnum.ts`, `ThemeEnum.ts`        |
+| API 入口  | camelCase  | `index.ts`, `chat.ts`, `notification.ts` |
+| 类型定义  | camelCase  | `types.ts`, `global.d.ts`                |
 
 ### 4.3 样式文件（`.scss` / `.css`）
 
@@ -142,19 +142,20 @@ views/erp/sch/plan/
 
 ERP 系统中大量业务缩写保持全小写，不进行驼峰转换：
 
-| 缩写 | 含义 | 正确示例 | 错误示例 |
-|-----|------|---------|---------|
-| `erp` | 企业资源计划 | `erp/` | `ERP/` |
-| `bd` | 基础数据 | `bd/` | `bD/`, `Bd/` |
-| `prd` | 生产 | `prd-plan/` | `prdPlan/` |
-| `pu` | 采购 | `pu/` | `PU/` |
-| `sch` | 排程 | `sch/` | `Sch/` |
-| `so` | 销售 | `so/` | `SO/` |
-| `wm` | 仓库 | `wm/` | `WM/` |
+| 缩写  | 含义         | 正确示例    | 错误示例     |
+| ----- | ------------ | ----------- | ------------ |
+| `erp` | 企业资源计划 | `erp/`      | `ERP/`       |
+| `bd`  | 基础数据     | `bd/`       | `bD/`, `Bd/` |
+| `prd` | 生产         | `prd-plan/` | `prdPlan/`   |
+| `pu`  | 采购         | `pu/`       | `PU/`        |
+| `sch` | 排程         | `sch/`      | `Sch/`       |
+| `so`  | 销售         | `so/`       | `SO/`        |
+| `wm`  | 仓库         | `wm/`       | `WM/`        |
 
 ### 5.2 语言文件例外
 
 国际化语言文件允许使用下划线：
+
 - `zh_CN.ts` ✅
 - `en_US.ts` ✅
 

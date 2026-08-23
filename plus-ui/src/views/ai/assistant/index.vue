@@ -46,7 +46,11 @@
 
           <div v-for="(msg, index) in messages" :key="index" :class="['message-item', msg.role === 'user' ? 'user-message' : 'ai-message']">
             <div class="avatar">
-              <el-avatar :size="36" :icon="msg.role === 'user' ? UserFilled : ChatDotRound" :style="{ background: msg.role === 'user' ? '#409eff' : '#67c23a' }" />
+              <el-avatar
+                :size="36"
+                :icon="msg.role === 'user' ? UserFilled : ChatDotRound"
+                :style="{ background: msg.role === 'user' ? '#409eff' : '#67c23a' }"
+              />
             </div>
             <div class="message-body">
               <div class="message-role">{{ msg.role === 'user' ? '我' : 'NexusERP AI' }}</div>
@@ -89,16 +93,12 @@
               </div>
               <!-- 反馈按钮（仅 AI 消息且有内容时显示） -->
               <div v-if="msg.role === 'assistant' && msg.content && !msg.content.startsWith('[错误]')" class="message-feedback">
-                <span
-                  :class="['feedback-btn', { active: msg.feedback === 'LIKE' }]"
-                  @click="handleFeedback(msg, 'LIKE')"
-                  title="有帮助"
-                >&#x1F44D;</span>
-                <span
-                  :class="['feedback-btn', { active: msg.feedback === 'DISLIKE' }]"
-                  @click="handleFeedback(msg, 'DISLIKE')"
-                  title="需改进"
-                >&#x1F44E;</span>
+                <span :class="['feedback-btn', { active: msg.feedback === 'LIKE' }]" @click="handleFeedback(msg, 'LIKE')" title="有帮助"
+                  >&#x1F44D;</span
+                >
+                <span :class="['feedback-btn', { active: msg.feedback === 'DISLIKE' }]" @click="handleFeedback(msg, 'DISLIKE')" title="需改进"
+                  >&#x1F44E;</span
+                >
               </div>
             </div>
           </div>
@@ -121,12 +121,7 @@
         <div class="input-area">
           <div class="input-toolbar">
             <div class="mode-tabs">
-              <span
-                v-for="m in modeOptions"
-                :key="m.value"
-                :class="['mode-tab', { active: chatMode === m.value }]"
-                @click="chatMode = m.value"
-              >
+              <span v-for="m in modeOptions" :key="m.value" :class="['mode-tab', { active: chatMode === m.value }]" @click="chatMode = m.value">
                 <el-icon v-if="m.icon" :size="14"><component :is="m.icon" /></el-icon>
                 {{ m.label }}
               </span>
@@ -152,12 +147,8 @@
             :disabled="loading"
           />
           <div class="input-actions">
-            <el-button type="primary" :icon="Promotion" @click="sendMessage" :loading="loading">
-              发送
-            </el-button>
-            <el-button @click="clearMessages">
-              清空对话
-            </el-button>
+            <el-button type="primary" :icon="Promotion" @click="sendMessage" :loading="loading"> 发送 </el-button>
+            <el-button @click="clearMessages"> 清空对话 </el-button>
           </div>
         </div>
       </el-card>
@@ -175,7 +166,13 @@
         </el-checkbox-group>
         <el-empty v-if="availableTools.length === 0" description="暂无可用的 MCP 工具" />
         <template #footer>
-          <el-button @click="selectedToolIds = []; toolDrawerVisible = false">使用全部</el-button>
+          <el-button
+            @click="
+              selectedToolIds = [];
+              toolDrawerVisible = false;
+            "
+            >使用全部</el-button
+          >
           <el-button type="primary" @click="toolDrawerVisible = false">确认</el-button>
         </template>
       </el-drawer>
@@ -209,55 +206,81 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
-import { Promotion, Loading, ChatDotRound, UserFilled, Plus, Edit, Delete, CircleCheck, Download, SetUp, DataAnalysis, Collection, MagicStick, Link } from '@element-plus/icons-vue'
-import { sendAiMessage, getChatHistory, getChatSessions, deleteSession, renameSession, messageFeedback, exportSession, getTokenUsage, type AiMessage as AiMessageDto, type AiSession } from '@/api/ai/chat'
-import { getAvailableMcpTools } from '@/api/ai/mcpTool'
-import { marked } from 'marked'
-import * as echarts from 'echarts'
-import { ElMessageBox } from 'element-plus'
-import { createAiRenderer, sanitizeOption, sanitizeHtml } from '@/utils/aiRenderers'
-import DeepThinking from '@/components/ai/DeepThinking.vue'
-import WebSearchToggle from '@/components/ai/WebSearchToggle.vue'
-import ModelSelect from '@/components/ai/ModelSelect.vue'
-import 'github-markdown-css'
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
+import {
+  Promotion,
+  Loading,
+  ChatDotRound,
+  UserFilled,
+  Plus,
+  Edit,
+  Delete,
+  CircleCheck,
+  Download,
+  SetUp,
+  DataAnalysis,
+  Collection,
+  MagicStick,
+  Link
+} from '@element-plus/icons-vue';
+import {
+  sendAiMessage,
+  getChatHistory,
+  getChatSessions,
+  deleteSession,
+  renameSession,
+  messageFeedback,
+  exportSession,
+  getTokenUsage,
+  type AiMessage as AiMessageDto,
+  type AiSession
+} from '@/api/ai/chat';
+import { getAvailableMcpTools } from '@/api/ai/mcpTool';
+import { marked } from 'marked';
+import * as echarts from 'echarts';
+import { ElMessageBox } from 'element-plus';
+import { createAiRenderer, sanitizeOption, sanitizeHtml } from '@/utils/aiRenderers';
+import DeepThinking from '@/components/ai/DeepThinking.vue';
+import WebSearchToggle from '@/components/ai/WebSearchToggle.vue';
+import ModelSelect from '@/components/ai/ModelSelect.vue';
+import 'github-markdown-css';
 
 /** 工具调用状态 */
 interface ToolCallInfo {
-  toolName: string
-  arguments?: string
-  duration?: number
-  resultSummary?: string
-  status: 'running' | 'completed'
+  toolName: string;
+  arguments?: string;
+  duration?: number;
+  resultSummary?: string;
+  status: 'running' | 'completed';
 }
 
 /** 前端聊天消息类型 */
 interface ChatMessage {
-  id?: number | string
-  role: 'user' | 'assistant'
-  content: string
-  toolCalls?: ToolCallInfo[]
-  thinking?: string
+  id?: number | string;
+  role: 'user' | 'assistant';
+  content: string;
+  toolCalls?: ToolCallInfo[];
+  thinking?: string;
   /** 推理过程内容（DeepSeek-R1 等推理模型的思考链） */
-  reasoning?: string
+  reasoning?: string;
   /** 联网搜索来源卡片 */
-  webSources?: Array<{ title: string; url: string }>
-  feedback?: string  // LIKE / DISLIKE
+  webSources?: Array<{ title: string; url: string }>;
+  feedback?: string; // LIKE / DISLIKE
 }
 
-const inputText = ref('')
-const messages = ref<ChatMessage[]>([])
-const thinking = ref(false)
-const loading = ref(false)
-const sessionLoading = ref(false)
-const messageListRef = ref<HTMLElement>()
-const sessions = ref<AiSession[]>([])
-const currentSessionId = ref<number | string | null>(null)
-const chatMode = ref('auto')
+const inputText = ref('');
+const messages = ref<ChatMessage[]>([]);
+const thinking = ref(false);
+const loading = ref(false);
+const sessionLoading = ref(false);
+const messageListRef = ref<HTMLElement>();
+const sessions = ref<AiSession[]>([]);
+const currentSessionId = ref<number | string | null>(null);
+const chatMode = ref('auto');
 /** 选中模型名称（为空使用默认模型），ModelSelect 组件会预选默认模型 */
-const selectedModel = ref('')
-const enableThinking = ref(false)
-const enableWebSearch = ref(false)
+const selectedModel = ref('');
+const enableThinking = ref(false);
+const enableWebSearch = ref(false);
 
 /** 对话模式选项 */
 const modeOptions = [
@@ -265,278 +288,297 @@ const modeOptions = [
   { value: 'chat', label: '对话', icon: ChatDotRound },
   { value: 'agent', label: '数据查询', icon: DataAnalysis },
   { value: 'rag', label: '知识库', icon: Collection }
-]
+];
 
 /** MCP 工具选择器状态 */
-const toolDrawerVisible = ref(false)
-const availableTools = ref<any[]>([])
-const selectedToolIds = ref<number[]>([])
+const toolDrawerVisible = ref(false);
+const availableTools = ref<any[]>([]);
+const selectedToolIds = ref<number[]>([]);
 
 /** Token 用量 */
-const tokenUsage = ref<number>(0)
+const tokenUsage = ref<number>(0);
 
 /** 根据当前模式显示不同的输入提示 */
 const modePlaceholder = computed(() => {
   switch (chatMode.value) {
-    case 'agent': return '输入数据查询需求，如：查询本月采购订单总金额'
-    case 'rag': return '输入知识检索问题，如：如何创建采购订单'
-    case 'chat': return '输入任意问题，与 AI 自由对话'
-    default: return '输入问题，AI 将自动选择最佳模式'
+    case 'agent':
+      return '输入数据查询需求，如：查询本月采购订单总金额';
+    case 'rag':
+      return '输入知识检索问题，如：如何创建采购订单';
+    case 'chat':
+      return '输入任意问题，与 AI 自由对话';
+    default:
+      return '输入问题，AI 将自动选择最佳模式';
   }
-})
+});
 
 /** 右键菜单状态 */
-const contextMenu = ref({ visible: false, x: 0, y: 0, session: null as AiSession | null })
-const renameDialogVisible = ref(false)
-const renameTitle = ref('')
+const contextMenu = ref({ visible: false, x: 0, y: 0, session: null as AiSession | null });
+const renameDialogVisible = ref(false);
+const renameTitle = ref('');
 
-const quickTips = [
-  '查询所有业务表',
-  '本月采购订单总金额',
-  '各仓库库存总量',
-  '生产工单完成情况'
-]
+const quickTips = ['查询所有业务表', '本月采购订单总金额', '各仓库库存总量', '生产工单完成情况'];
 
 /**
  * AI SSE 消息监听器
  */
 function onAiSseMessage(event: Event) {
-  const detail = (event as CustomEvent).detail
-  if (!detail) return
+  const detail = (event as CustomEvent).detail;
+  if (!detail) return;
 
   switch (detail.type) {
     case 'AI_THINKING':
-      thinking.value = true
-      break
+      thinking.value = true;
+      break;
     case 'AI_CONTENT_INCREMENT':
       // 流式 Token 追加模式
-      thinking.value = false
-      const incMsg = messages.value[messages.value.length - 1]
+      thinking.value = false;
+      const incMsg = messages.value[messages.value.length - 1];
       if (incMsg && incMsg.role === 'assistant') {
-        incMsg.content += detail.content
+        incMsg.content += detail.content;
       } else {
-        messages.value.push({ role: 'assistant', content: detail.content })
+        messages.value.push({ role: 'assistant', content: detail.content });
       }
-      nextTick(() => scrollToBottom())
-      break
+      nextTick(() => scrollToBottom());
+      break;
     case 'AI_CONTENT':
       // Agent 模式完整替换
-      thinking.value = false
-      loading.value = false
-      const lastMsg = messages.value[messages.value.length - 1]
+      thinking.value = false;
+      loading.value = false;
+      const lastMsg = messages.value[messages.value.length - 1];
       if (lastMsg && lastMsg.role === 'assistant') {
-        lastMsg.content = detail.content
+        lastMsg.content = detail.content;
       } else {
-        messages.value.push({ role: 'assistant', content: detail.content })
+        messages.value.push({ role: 'assistant', content: detail.content });
       }
-      nextTick(() => scrollToBottom())
-      break
+      nextTick(() => scrollToBottom());
+      break;
     case 'AI_DONE':
-      thinking.value = false
-      loading.value = false
+      thinking.value = false;
+      loading.value = false;
       // 刷新会话列表（新会话可能已创建）
-      loadSessions()
+      loadSessions();
       // 扫描并挂载 ECharts 容器
-      nextTick(() => mountEchartsContainers())
-      break
+      nextTick(() => mountEchartsContainers());
+      break;
     case 'AI_ERROR':
-      thinking.value = false
-      loading.value = false
-      messages.value.push({ role: 'assistant', content: `[错误] ${detail.content}` })
-      break
+      thinking.value = false;
+      loading.value = false;
+      messages.value.push({ role: 'assistant', content: `[错误] ${detail.content}` });
+      break;
     case 'AI_CHART':
-      break
+      break;
     case 'AI_IMAGE': {
       // 文生图结果：解析 {url, prompt}，追加 markdown 图片到当前 assistant 消息
-      thinking.value = false
-      let imgInfo: { url?: string; prompt?: string } = {}
-      try { imgInfo = JSON.parse(detail.content || '{}') } catch { /* ignore */ }
-      const imgMd = `\n\n![${imgInfo.prompt || 'image'}](${imgInfo.url})\n`
-      const imgMsg = messages.value[messages.value.length - 1]
-      if (imgMsg && imgMsg.role === 'assistant') {
-        imgMsg.content += imgMd
-      } else {
-        messages.value.push({ role: 'assistant', content: imgMd.trim() })
+      thinking.value = false;
+      let imgInfo: { url?: string; prompt?: string } = {};
+      try {
+        imgInfo = JSON.parse(detail.content || '{}');
+      } catch {
+        /* ignore */
       }
-      loading.value = false
-      nextTick(() => scrollToBottom())
-      break
+      const imgMd = `\n\n![${imgInfo.prompt || 'image'}](${imgInfo.url})\n`;
+      const imgMsg = messages.value[messages.value.length - 1];
+      if (imgMsg && imgMsg.role === 'assistant') {
+        imgMsg.content += imgMd;
+      } else {
+        messages.value.push({ role: 'assistant', content: imgMd.trim() });
+      }
+      loading.value = false;
+      nextTick(() => scrollToBottom());
+      break;
     }
     case 'AI_WEB_SEARCH': {
       // 联网搜索来源卡片：解析 {sources:[{title,url}]}，挂到当前 assistant 消息
-      let srcInfo: { sources?: Array<{ title?: string; url?: string }> } = {}
-      try { srcInfo = JSON.parse(detail.content || '{}') } catch { /* ignore */ }
-      const sources = (srcInfo.sources || []).map(s => ({ title: s.title || s.url || '', url: s.url || '' }))
-      const srcMsg = messages.value[messages.value.length - 1]
-      if (srcMsg && srcMsg.role === 'assistant') {
-        srcMsg.webSources = sources
-      } else {
-        messages.value.push({ role: 'assistant', content: '', webSources: sources })
+      let srcInfo: { sources?: Array<{ title?: string; url?: string }> } = {};
+      try {
+        srcInfo = JSON.parse(detail.content || '{}');
+      } catch {
+        /* ignore */
       }
-      nextTick(() => scrollToBottom())
-      break
+      const sources = (srcInfo.sources || []).map((s) => ({ title: s.title || s.url || '', url: s.url || '' }));
+      const srcMsg = messages.value[messages.value.length - 1];
+      if (srcMsg && srcMsg.role === 'assistant') {
+        srcMsg.webSources = sources;
+      } else {
+        messages.value.push({ role: 'assistant', content: '', webSources: sources });
+      }
+      nextTick(() => scrollToBottom());
+      break;
     }
     case 'AI_THINKING_TOKEN': {
       // 推理 token 流（DeepSeek-R1 等），追加到当前 assistant 消息的 reasoning 字段
-      const reasonMsg = messages.value[messages.value.length - 1]
+      const reasonMsg = messages.value[messages.value.length - 1];
       if (reasonMsg && reasonMsg.role === 'assistant') {
-        reasonMsg.reasoning = (reasonMsg.reasoning || '') + detail.content
+        reasonMsg.reasoning = (reasonMsg.reasoning || '') + detail.content;
       } else {
-        messages.value.push({ role: 'assistant', content: '', reasoning: detail.content })
+        messages.value.push({ role: 'assistant', content: '', reasoning: detail.content });
       }
-      nextTick(() => scrollToBottom())
-      break
+      nextTick(() => scrollToBottom());
+      break;
     }
     case 'AI_TOOL_START': {
       // 工具调用开始
-      thinking.value = false
-      let toolInfo: { toolName?: string; arguments?: string } = {}
-      try { toolInfo = JSON.parse(detail.content || '{}') } catch { /* ignore */ }
-      const toolStartMsg = messages.value[messages.value.length - 1]
+      thinking.value = false;
+      let toolInfo: { toolName?: string; arguments?: string } = {};
+      try {
+        toolInfo = JSON.parse(detail.content || '{}');
+      } catch {
+        /* ignore */
+      }
+      const toolStartMsg = messages.value[messages.value.length - 1];
       if (toolStartMsg && toolStartMsg.role === 'assistant') {
-        if (!toolStartMsg.toolCalls) toolStartMsg.toolCalls = []
+        if (!toolStartMsg.toolCalls) toolStartMsg.toolCalls = [];
         toolStartMsg.toolCalls.push({
           toolName: toolInfo.toolName || 'unknown',
           arguments: toolInfo.arguments,
           status: 'running'
-        })
+        });
       } else {
         messages.value.push({
           role: 'assistant',
           content: '',
-          toolCalls: [{
-            toolName: toolInfo.toolName || 'unknown',
-            arguments: toolInfo.arguments,
-            status: 'running'
-          }]
-        })
+          toolCalls: [
+            {
+              toolName: toolInfo.toolName || 'unknown',
+              arguments: toolInfo.arguments,
+              status: 'running'
+            }
+          ]
+        });
       }
-      nextTick(() => scrollToBottom())
-      break
+      nextTick(() => scrollToBottom());
+      break;
     }
     case 'AI_TOOL_END': {
       // 工具调用完成
-      let toolEndInfo: { toolName?: string; duration?: number; resultSummary?: string } = {}
-      try { toolEndInfo = JSON.parse(detail.content || '{}') } catch { /* ignore */ }
+      let toolEndInfo: { toolName?: string; duration?: number; resultSummary?: string } = {};
+      try {
+        toolEndInfo = JSON.parse(detail.content || '{}');
+      } catch {
+        /* ignore */
+      }
       // 查找最近一条包含该工具的 assistant 消息，更新状态
-      const toolEndMsg = messages.value[messages.value.length - 1]
+      const toolEndMsg = messages.value[messages.value.length - 1];
       if (toolEndMsg && toolEndMsg.role === 'assistant' && toolEndMsg.toolCalls) {
-        const runningTool = [...toolEndMsg.toolCalls].reverse().find(
-          tc => tc.toolName === toolEndInfo.toolName && tc.status === 'running'
-        )
+        const runningTool = [...toolEndMsg.toolCalls].reverse().find((tc) => tc.toolName === toolEndInfo.toolName && tc.status === 'running');
         if (runningTool) {
-          runningTool.status = 'completed'
-          runningTool.duration = toolEndInfo.duration
-          runningTool.resultSummary = toolEndInfo.resultSummary
+          runningTool.status = 'completed';
+          runningTool.duration = toolEndInfo.duration;
+          runningTool.resultSummary = toolEndInfo.resultSummary;
         }
       }
-      nextTick(() => scrollToBottom())
-      break
+      nextTick(() => scrollToBottom());
+      break;
     }
     case 'AI_AGENT_THINKING': {
       // Agent 思考过程
-      thinking.value = false
-      let thinkInfo: { agentName?: string; message?: string } = {}
-      try { thinkInfo = JSON.parse(detail.content || '{}') } catch { /* ignore */ }
-      const thinkMsg = messages.value[messages.value.length - 1]
+      thinking.value = false;
+      let thinkInfo: { agentName?: string; message?: string } = {};
+      try {
+        thinkInfo = JSON.parse(detail.content || '{}');
+      } catch {
+        /* ignore */
+      }
+      const thinkMsg = messages.value[messages.value.length - 1];
       if (thinkMsg && thinkMsg.role === 'assistant') {
-        thinkMsg.thinking = thinkInfo.message || ''
+        thinkMsg.thinking = thinkInfo.message || '';
       } else {
         messages.value.push({
           role: 'assistant',
           content: '',
           thinking: thinkInfo.message || ''
-        })
+        });
       }
-      nextTick(() => scrollToBottom())
-      break
+      nextTick(() => scrollToBottom());
+      break;
     }
   }
 }
 
 /** 渲染 Markdown（含 ECharts 代码块识别 + XSS 净化） */
 function renderMarkdown(content: string) {
-  const renderer = createAiRenderer()
-  const html = marked.parse(content || '', { renderer })
-  return sanitizeHtml(typeof html === 'string' ? html : '')
+  const renderer = createAiRenderer();
+  const html = marked.parse(content || '', { renderer });
+  return sanitizeHtml(typeof html === 'string' ? html : '');
 }
 
 /** 滚动到底部 */
 function scrollToBottom() {
   if (messageListRef.value) {
-    messageListRef.value.scrollTop = messageListRef.value.scrollHeight
+    messageListRef.value.scrollTop = messageListRef.value.scrollHeight;
   }
 }
 
 /** 加载会话列表 */
 async function loadSessions() {
-  sessionLoading.value = true
+  sessionLoading.value = true;
   try {
-    const res = await getChatSessions()
+    const res = await getChatSessions();
     // 兼容两种响应格式：R.ok 直接返回 data 字段，或 { rows: [...] }
-    const list = res?.data ?? res?.rows ?? (Array.isArray(res) ? res : [])
-    sessions.value = list
+    const list = res?.data ?? res?.rows ?? (Array.isArray(res) ? res : []);
+    sessions.value = list;
   } catch (e) {
-    console.error('[AI] 加载会话列表失败', e)
+    console.error('[AI] 加载会话列表失败', e);
   } finally {
-    sessionLoading.value = false
+    sessionLoading.value = false;
   }
 }
 
 /** 切换会话 */
 async function switchSession(sessionId: number | string) {
-  if (currentSessionId.value === sessionId) return
-  currentSessionId.value = sessionId as any
-  messages.value = []
-  loading.value = true
+  if (currentSessionId.value === sessionId) return;
+  currentSessionId.value = sessionId as any;
+  messages.value = [];
+  loading.value = true;
   try {
-    const res = await getChatHistory(sessionId as any)
+    const res = await getChatHistory(sessionId as any);
     // 兼容多种响应格式：R.ok(data)、{ rows: [...] }、直接数组
-    let history: AiMessageDto[] = []
+    let history: AiMessageDto[] = [];
     if (Array.isArray(res)) {
-      history = res
+      history = res;
     } else if (Array.isArray(res?.data)) {
-      history = res.data
+      history = res.data;
     } else if (Array.isArray(res?.rows)) {
-      history = res.rows
+      history = res.rows;
     } else if (res?.data?.rows && Array.isArray(res.data.rows)) {
-      history = res.data.rows
+      history = res.data.rows;
     }
-    messages.value = history.map(m => ({
+    messages.value = history.map((m) => ({
       id: m.id,
-      role: m.role === 'USER' ? 'user' as const : 'assistant' as const,
+      role: m.role === 'USER' ? ('user' as const) : ('assistant' as const),
       content: m.content,
       reasoning: (m as any).thinkingContent,
       feedback: (m as any).feedback
-    }))
-    nextTick(() => scrollToBottom())
+    }));
+    nextTick(() => scrollToBottom());
   } catch (e: any) {
-    console.error('[AI] 加载聊天历史失败', e)
-    ElMessage.error('加载聊天历史失败: ' + (e.message || e))
+    console.error('[AI] 加载聊天历史失败', e);
+    ElMessage.error('加载聊天历史失败: ' + (e.message || e));
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 
 /** 新建会话 */
 function newSession() {
-  currentSessionId.value = null
-  messages.value = []
-  thinking.value = false
-  loading.value = false
+  currentSessionId.value = null;
+  messages.value = [];
+  thinking.value = false;
+  loading.value = false;
 }
 
 /** 发送消息 */
 async function sendMessage() {
-  const text = inputText.value.trim()
-  if (!text || loading.value) return
+  const text = inputText.value.trim();
+  if (!text || loading.value) return;
 
-  messages.value.push({ role: 'user', content: text })
-  inputText.value = ''
-  loading.value = true
+  messages.value.push({ role: 'user', content: text });
+  inputText.value = '';
+  loading.value = true;
 
-  await nextTick()
-  scrollToBottom()
+  await nextTick();
+  scrollToBottom();
 
   try {
     const res = await sendAiMessage({
@@ -547,38 +589,38 @@ async function sendMessage() {
       enableThinking: enableThinking.value || undefined,
       enableWebSearch: enableWebSearch.value || undefined,
       enabledToolIds: selectedToolIds.value.length > 0 ? selectedToolIds.value : undefined
-    })
+    });
     // 后端返回 sessionId（新会话时为新 ID）
-    const sid = res?.data ?? res
+    const sid = res?.data ?? res;
     if (sid && (typeof sid === 'number' || typeof sid === 'string')) {
-      currentSessionId.value = sid as any
+      currentSessionId.value = sid as any;
     }
   } catch (e: any) {
-    loading.value = false
-    thinking.value = false
-    messages.value.push({ role: 'assistant', content: `[请求失败] ${e.message}` })
+    loading.value = false;
+    thinking.value = false;
+    messages.value.push({ role: 'assistant', content: `[请求失败] ${e.message}` });
   }
 }
 
 /** 打开 MCP 工具选择器 */
 async function openToolDrawer() {
-  toolDrawerVisible.value = true
+  toolDrawerVisible.value = true;
   if (availableTools.value.length === 0) {
     try {
-      const res = await getAvailableMcpTools()
-      availableTools.value = res?.data ?? res ?? []
+      const res = await getAvailableMcpTools();
+      availableTools.value = res?.data ?? res ?? [];
     } catch (e) {
-      console.error('[AI] 获取 MCP 工具列表失败', e)
+      console.error('[AI] 获取 MCP 工具列表失败', e);
     }
   }
 }
 
 /** 刷新 Token 用量 */
 async function refreshTokenUsage() {
-  if (!currentSessionId.value) return
+  if (!currentSessionId.value) return;
   try {
-    const res = await getTokenUsage(currentSessionId.value as number)
-    tokenUsage.value = res?.data?.totalTokens ?? 0
+    const res = await getTokenUsage(currentSessionId.value as number);
+    tokenUsage.value = res?.data?.totalTokens ?? 0;
   } catch {
     // 忽略
   }
@@ -586,50 +628,50 @@ async function refreshTokenUsage() {
 
 /** 快捷提示 */
 function sendQuick(tip: string) {
-  inputText.value = tip
-  sendMessage()
+  inputText.value = tip;
+  sendMessage();
 }
 
 /** 清空当前对话 */
 function clearMessages() {
-  messages.value = []
-  thinking.value = false
-  loading.value = false
+  messages.value = [];
+  thinking.value = false;
+  loading.value = false;
 }
 
 /** 格式化时间 */
 function formatTime(time: string) {
-  if (!time) return ''
-  const d = new Date(time)
-  const now = new Date()
-  const isToday = d.toDateString() === now.toDateString()
+  if (!time) return '';
+  const d = new Date(time);
+  const now = new Date();
+  const isToday = d.toDateString() === now.toDateString();
   if (isToday) {
-    return d.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+    return d.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
   }
-  return d.toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' })
+  return d.toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' });
 }
 
 /** 截断文本 */
 function truncateText(text: string, maxLen: number) {
-  if (!text) return ''
-  return text.length > maxLen ? text.substring(0, maxLen) + '...' : text
+  if (!text) return '';
+  return text.length > maxLen ? text.substring(0, maxLen) + '...' : text;
 }
 
 /** 消息反馈 */
 async function handleFeedback(msg: ChatMessage, feedback: string) {
   if (!msg.id) {
     // 新消息尚未保存到后端，提示用户刷新后操作
-    ElMessage.info('请等待消息保存后再反馈')
-    return
+    ElMessage.info('请等待消息保存后再反馈');
+    return;
   }
   // 如果点击已选中的反馈，则取消
-  const newFeedback = msg.feedback === feedback ? 'NONE' : feedback
+  const newFeedback = msg.feedback === feedback ? 'NONE' : feedback;
   try {
-    await messageFeedback(msg.id, newFeedback)
-    msg.feedback = newFeedback === 'NONE' ? undefined : newFeedback
+    await messageFeedback(msg.id, newFeedback);
+    msg.feedback = newFeedback === 'NONE' ? undefined : newFeedback;
   } catch (e: any) {
-    console.error('[AI] 反馈失败', e)
-    ElMessage.error('反馈提交失败')
+    console.error('[AI] 反馈失败', e);
+    ElMessage.error('反馈提交失败');
   }
 }
 
@@ -640,68 +682,68 @@ function showContextMenu(event: MouseEvent, session: AiSession) {
     x: event.clientX,
     y: event.clientY,
     session
-  }
+  };
 }
 
 /** 隐藏右键菜单 */
 function hideContextMenu() {
-  contextMenu.value.visible = false
+  contextMenu.value.visible = false;
 }
 
 /** 重命名会话 */
 function handleRename() {
-  if (!contextMenu.value.session) return
-  renameTitle.value = contextMenu.value.session.title || ''
-  renameDialogVisible.value = true
-  hideContextMenu()
+  if (!contextMenu.value.session) return;
+  renameTitle.value = contextMenu.value.session.title || '';
+  renameDialogVisible.value = true;
+  hideContextMenu();
 }
 
 /** 确认重命名 */
 async function confirmRename() {
-  if (!contextMenu.value.session || !renameTitle.value.trim()) return
+  if (!contextMenu.value.session || !renameTitle.value.trim()) return;
   try {
-    await renameSession({ id: contextMenu.value.session.id, title: renameTitle.value.trim() })
+    await renameSession({ id: contextMenu.value.session.id, title: renameTitle.value.trim() });
     // 更新本地列表
-    const s = sessions.value.find(item => item.id === contextMenu.value.session!.id)
-    if (s) s.title = renameTitle.value.trim()
-    renameDialogVisible.value = false
+    const s = sessions.value.find((item) => item.id === contextMenu.value.session!.id);
+    if (s) s.title = renameTitle.value.trim();
+    renameDialogVisible.value = false;
   } catch (e: any) {
-    console.error('[AI] 重命名会话失败', e)
+    console.error('[AI] 重命名会话失败', e);
   }
 }
 
 /** 导出会话为 Markdown 文件 */
 async function handleExport() {
-  if (!contextMenu.value.session) return
-  const session = contextMenu.value.session
-  hideContextMenu()
+  if (!contextMenu.value.session) return;
+  const session = contextMenu.value.session;
+  hideContextMenu();
   try {
-    const res = await exportSession(session.id)
-    const blob = new Blob([res], { type: 'text/markdown;charset=utf-8' })
-    const url = window.URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = `${session.title || 'AI对话'}.md`
-    link.click()
-    window.URL.revokeObjectURL(url)
-    ElMessage.success('导出成功')
+    const res = await exportSession(session.id);
+    const blob = new Blob([res], { type: 'text/markdown;charset=utf-8' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${session.title || 'AI对话'}.md`;
+    link.click();
+    window.URL.revokeObjectURL(url);
+    ElMessage.success('导出成功');
   } catch (e: any) {
-    console.error('[AI] 导出会话失败', e)
-    ElMessage.error('导出失败')
+    console.error('[AI] 导出会话失败', e);
+    ElMessage.error('导出失败');
   }
 }
 
 /** 删除会话 */
 async function handleDelete() {
-  if (!contextMenu.value.session) return
-  const session = contextMenu.value.session
-  hideContextMenu()
+  if (!contextMenu.value.session) return;
+  const session = contextMenu.value.session;
+  hideContextMenu();
   try {
-    await ElMessageBox.confirm('确定删除该会话及其所有消息？', '提示', { type: 'warning' })
-    await deleteSession([session.id])
-    sessions.value = sessions.value.filter(s => s.id !== session.id)
+    await ElMessageBox.confirm('确定删除该会话及其所有消息？', '提示', { type: 'warning' });
+    await deleteSession([session.id]);
+    sessions.value = sessions.value.filter((s) => s.id !== session.id);
     if (currentSessionId.value === session.id) {
-      newSession()
+      newSession();
     }
   } catch {
     // 用户取消
@@ -710,54 +752,54 @@ async function handleDelete() {
 
 /** 点击空白处关闭右键菜单 */
 function onGlobalClick() {
-  hideContextMenu()
+  hideContextMenu();
 }
 
 /** 跟踪 ECharts 实例和 ResizeObserver，用于组件卸载时清理 */
-const echartsInstances: echarts.ECharts[] = []
-const echartsResizeObservers: ResizeObserver[] = []
+const echartsInstances: echarts.ECharts[] = [];
+const echartsResizeObservers: ResizeObserver[] = [];
 
 /** 扫描 DOM 中的 echarts-container 并挂载 ECharts 实例 */
 function mountEchartsContainers() {
-  if (!messageListRef.value) return
-  const containers = messageListRef.value.querySelectorAll('.echarts-container:not([data-mounted])')
+  if (!messageListRef.value) return;
+  const containers = messageListRef.value.querySelectorAll('.echarts-container:not([data-mounted])');
   containers.forEach((el) => {
-    const optionStr = (el as HTMLElement).dataset.option
-    if (!optionStr) return
+    const optionStr = (el as HTMLElement).dataset.option;
+    if (!optionStr) return;
     try {
-      const option = JSON.parse(decodeURIComponent(optionStr))
+      const option = JSON.parse(decodeURIComponent(optionStr));
       // 安全过滤：移除可能包含 JavaScript 函数的字段
-      sanitizeOption(option)
+      sanitizeOption(option);
       // 标记已挂载，避免重复渲染
-      el.setAttribute('data-mounted', 'true')
-      const chart = echarts.init(el as HTMLElement)
-      chart.setOption(option, true)
-      echartsInstances.push(chart)
+      el.setAttribute('data-mounted', 'true');
+      const chart = echarts.init(el as HTMLElement);
+      chart.setOption(option, true);
+      echartsInstances.push(chart);
       // 监听容器大小变化
-      const ro = new ResizeObserver(() => chart.resize())
-      ro.observe(el as HTMLElement)
-      echartsResizeObservers.push(ro)
+      const ro = new ResizeObserver(() => chart.resize());
+      ro.observe(el as HTMLElement);
+      echartsResizeObservers.push(ro);
     } catch (e) {
-      console.error('ECharts 容器挂载失败:', e)
+      console.error('ECharts 容器挂载失败:', e);
     }
-  })
+  });
 }
 
 onMounted(() => {
-  window.addEventListener('ai-sse-message', onAiSseMessage)
-  window.addEventListener('click', onGlobalClick)
-  loadSessions()
-})
+  window.addEventListener('ai-sse-message', onAiSseMessage);
+  window.addEventListener('click', onGlobalClick);
+  loadSessions();
+});
 
 onUnmounted(() => {
-  window.removeEventListener('ai-sse-message', onAiSseMessage)
-  window.removeEventListener('click', onGlobalClick)
+  window.removeEventListener('ai-sse-message', onAiSseMessage);
+  window.removeEventListener('click', onGlobalClick);
   // 清理 ECharts 实例和 ResizeObserver，防止内存泄漏
-  echartsResizeObservers.forEach(ro => ro.disconnect())
-  echartsResizeObservers.length = 0
-  echartsInstances.forEach(chart => chart.dispose())
-  echartsInstances.length = 0
-})
+  echartsResizeObservers.forEach((ro) => ro.disconnect());
+  echartsResizeObservers.length = 0;
+  echartsInstances.forEach((chart) => chart.dispose());
+  echartsInstances.length = 0;
+});
 </script>
 
 <style scoped lang="scss">
@@ -1063,7 +1105,9 @@ onUnmounted(() => {
     border-radius: 4px;
     user-select: none;
     filter: grayscale(100%);
-    transition: filter 0.2s, background-color 0.2s;
+    transition:
+      filter 0.2s,
+      background-color 0.2s;
 
     &:hover {
       filter: grayscale(0%);
@@ -1214,7 +1258,8 @@ onUnmounted(() => {
     width: 100%;
     margin: 8px 0;
 
-    th, td {
+    th,
+    td {
       border: 1px solid #dcdfe6;
       padding: 6px 10px;
       text-align: left;

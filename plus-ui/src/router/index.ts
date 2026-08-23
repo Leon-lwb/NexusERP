@@ -725,7 +725,7 @@ export const dynamicRoutes: RouteRecordRaw[] = [
         meta: { title: '设备实时数据', activeMenu: '/iot/device' }
       }
     ]
-  },
+  }
 ];
 
 /**

@@ -1,23 +1,23 @@
-import request from '@/utils/request'
+import request from '@/utils/request';
 
 /** AI 会话类型 */
 export interface AiSession {
-  id: number | string
-  userId: number
-  title: string
-  modelName: string
-  createTime: string
+  id: number | string;
+  userId: number;
+  title: string;
+  modelName: string;
+  createTime: string;
 }
 
 /** AI 消息类型 */
 export interface AiMessage {
-  id: number | string
-  sessionId: number | string
-  role: 'USER' | 'ASSISTANT' | 'SYSTEM'
-  content: string
+  id: number | string;
+  sessionId: number | string;
+  role: 'USER' | 'ASSISTANT' | 'SYSTEM';
+  content: string;
   /** 推理过程内容（enableThinking 时存） */
-  thinkingContent?: string
-  createTime: string
+  thinkingContent?: string;
+  createTime: string;
 }
 
 /**
@@ -26,22 +26,22 @@ export interface AiMessage {
  * @returns 会话ID
  */
 export function sendAiMessage(data: {
-  sessionId?: number
-  content: string
-  model?: string
-  mode?: string
+  sessionId?: number;
+  content: string;
+  model?: string;
+  mode?: string;
   /** 是否开启推理（Thinking）模式 */
-  enableThinking?: boolean
+  enableThinking?: boolean;
   /** 是否开启联网搜索 */
-  enableWebSearch?: boolean
+  enableWebSearch?: boolean;
   /** 本次对话启用的 MCP 工具 ID 列表 */
-  enabledToolIds?: number[]
+  enabledToolIds?: number[];
 }) {
   return request({
     url: '/ai/chat/send',
     method: 'post',
     data
-  })
+  });
 }
 
 /**
@@ -52,7 +52,7 @@ export function getChatHistory(sessionId: number | string) {
   return request({
     url: `/ai/chat/history/${sessionId}`,
     method: 'get'
-  })
+  });
 }
 
 /**
@@ -62,7 +62,7 @@ export function getChatSessions() {
   return request({
     url: '/ai/chat/sessions',
     method: 'get'
-  })
+  });
 }
 
 /**
@@ -73,7 +73,7 @@ export function deleteSession(ids: Array<number | string>) {
   return request({
     url: `/ai/chat/session/${ids}`,
     method: 'delete'
-  })
+  });
 }
 
 /**
@@ -85,7 +85,7 @@ export function renameSession(data: { id: number; title: string }) {
     url: '/ai/chat/session',
     method: 'put',
     data
-  })
+  });
 }
 
 /**
@@ -98,7 +98,7 @@ export function messageFeedback(messageId: number | string, feedback: string) {
     url: `/ai/chat/message/${messageId}/feedback`,
     method: 'put',
     params: { feedback }
-  })
+  });
 }
 
 /**
@@ -110,7 +110,7 @@ export function exportSession(sessionId: number | string) {
     url: `/ai/chat/export/${sessionId}`,
     method: 'get',
     responseType: 'blob'
-  })
+  });
 }
 
 /**
@@ -121,5 +121,5 @@ export function getTokenUsage(sessionId: number | string) {
   return request({
     url: `/ai/chat/token-usage/${sessionId}`,
     method: 'get'
-  })
+  });
 }

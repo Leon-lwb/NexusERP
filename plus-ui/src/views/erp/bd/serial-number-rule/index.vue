@@ -123,7 +123,7 @@
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="规则类型" prop="ruleType">
-              <el-select v-model="form.ruleType" placeholder="请选择规则类型" style="width: 100%;">
+              <el-select v-model="form.ruleType" placeholder="请选择规则类型" style="width: 100%">
                 <el-option label="产品序列号" value="PRODUCT_SN" />
                 <el-option label="条码" value="BARCODE" />
                 <el-option label="批次号" value="BATCH_NO" />
@@ -146,12 +146,12 @@
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="流水号长度" prop="seqLength">
-              <el-input-number v-model="form.seqLength" :min="1" :max="10" placeholder="补零位数" style="width: 100%;" />
+              <el-input-number v-model="form.seqLength" :min="1" :max="10" placeholder="补零位数" style="width: 100%" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
             <el-form-item label="重置周期" prop="seqCycle">
-              <el-select v-model="form.seqCycle" placeholder="请选择重置周期" style="width: 100%;">
+              <el-select v-model="form.seqCycle" placeholder="请选择重置周期" style="width: 100%">
                 <el-option label="不重置" value="NONE" />
                 <el-option label="每天" value="DAY" />
                 <el-option label="每月" value="MONTH" />
@@ -163,7 +163,7 @@
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="校验位规则" prop="checkDigitRule">
-              <el-select v-model="form.checkDigitRule" placeholder="请选择校验位规则" style="width: 100%;">
+              <el-select v-model="form.checkDigitRule" placeholder="请选择校验位规则" style="width: 100%">
                 <el-option label="无校验位" value="NONE" />
                 <el-option label="MOD10" value="MOD10" />
                 <el-option label="MOD11" value="MOD11" />
@@ -197,9 +197,9 @@
 
     <!-- 生成序列号结果对话框 -->
     <el-dialog title="生成序列号" v-model="genVisible" width="400px" append-to-body>
-      <div style="text-align: center; padding: 20px 0;">
-        <p style="margin-bottom: 10px; color: #909399;">规则: {{ genRuleCode }}</p>
-        <p style="font-size: 24px; font-weight: bold; font-family: monospace; color: #303133;">{{ genResult }}</p>
+      <div style="text-align: center; padding: 20px 0">
+        <p style="margin-bottom: 10px; color: #909399">规则: {{ genRuleCode }}</p>
+        <p style="font-size: 24px; font-weight: bold; font-family: monospace; color: #303133">{{ genResult }}</p>
       </div>
       <template #footer>
         <div class="dialog-footer">
@@ -266,8 +266,24 @@ const rules = {
 };
 
 const {
-  loading, list, total, open, isViewMode, title, ids, single, multiple, showSearch, form,
-  getList, handleQuery, handleDelete, handleExport, handleSelectionChange, submitForm, cancel,
+  loading,
+  list,
+  total,
+  open,
+  isViewMode,
+  title,
+  ids,
+  single,
+  multiple,
+  showSearch,
+  form,
+  getList,
+  handleQuery,
+  handleDelete,
+  handleExport,
+  handleSelectionChange,
+  submitForm,
+  cancel,
   handleAdd: rawHandleAdd,
   handleUpdate: rawHandleUpdate,
   handleView: rawHandleView
@@ -321,4 +337,3 @@ function handleGenerate(row: any) {
 
 getList();
 </script>
-

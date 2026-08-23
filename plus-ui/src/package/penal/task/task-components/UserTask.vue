@@ -11,30 +11,31 @@
       </el-radio-group>
     </el-row>
     <el-row>
-      <div v-if="dataType === 'USERS'" style="width: 100%;">
+      <div v-if="dataType === 'USERS'" style="width: 100%">
         <el-tag v-for="userText in selectedUser.text" :key="userText" effect="plain">
-          {{userText}}
+          {{ userText }}
         </el-tag>
         <div class="element-drawer__button">
           <el-button size="small" type="primary" icon="el-icon-plus" @click="onSelectUsers()">添加用户</el-button>
         </div>
       </div>
-      <div v-if="dataType === 'ROLES'" style="width: 100%;">
+      <div v-if="dataType === 'ROLES'" style="width: 100%">
         <el-select v-model="roleIds" multiple size="small" placeholder="请选择 角色" @change="changeSelectRoles">
           <el-option
             v-for="item in roleOptions"
             :key="item.roleId"
             :label="item.roleName"
             :value="`ROLE${item.roleId}`"
-            :disabled="item.status === 1">
+            :disabled="item.status === 1"
+          >
           </el-option>
         </el-select>
       </div>
-      <div v-if="dataType === 'DEPTS'" style="width: 100%;">
+      <div v-if="dataType === 'DEPTS'" style="width: 100%">
         <el-tree-select
           v-model="deptIds"
           :data="deptTreeData"
-          :props="{ value: 'id', label: 'label', children: 'children'}"
+          :props="{ value: 'id', label: 'label', children: 'children' }"
           show-checkbox
           default-expand-all
           multiple
@@ -42,7 +43,7 @@
           checkStrictly
           :checkedKeys="deptIds"
           @check="nodeClick"
-          >
+        >
         </el-tree-select>
       </div>
     </el-row>
@@ -107,12 +108,7 @@
             <el-table-column label="用户名" align="center" prop="nickName" />
             <el-table-column label="部门" align="center" prop="dept.deptName" />
           </el-table>
-          <pagination
-            :total="userTotal"
-            :page.sync="queryParams.pageNum"
-            :limit.sync="queryParams.pageSize"
-            @pagination="getUserList"
-          />
+          <pagination :total="userTotal" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getUserList" />
         </el-col>
       </el-row>
       <template #footer class="dialog-footer">
@@ -121,438 +117,436 @@
       </template>
     </el-dialog>
   </div>
-
 </template>
 
 <script lang="ts" setup>
-  import { listUser, deptTreeSelect } from "@/api/system/user";
-  import { listRole } from "@/api/system/role";
+import { listUser, deptTreeSelect } from '@/api/system/user';
+import { listRole } from '@/api/system/role';
 
-  defineOptions({ name: 'UserTask' })
-  const props = defineProps({
-    id: String,
-    type: String
-  })
+defineOptions({ name: 'UserTask' });
+const props = defineProps({
+  id: String,
+  type: String
+});
 
-  const userTaskForm = ref({
-    dataType: '',
-    assignee: '',
-    candidateUsers: '',
-    candidateGroups: '',
-    text: '',
-    // dueDate: '',
-    // followUpDate: '',
-    // priority: ''
-  })
+const userTaskForm = ref({
+  dataType: '',
+  assignee: '',
+  candidateUsers: '',
+  candidateGroups: '',
+  text: ''
+  // dueDate: '',
+  // followUpDate: '',
+  // priority: ''
+});
 
-  const { proxy } = getCurrentInstance() as ComponentInternalInstance
-  const bpmnElement = ref()
-  const multiLoopInstance = ref(null)
-  const bpmnInstances = () => (window as any)?.bpmnInstances
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
+const bpmnElement = ref();
+const multiLoopInstance = ref(null);
+const bpmnInstances = () => (window as any)?.bpmnInstances;
 
-  const dateRange = ref<[DateModelType, DateModelType]>(['', '']);
-  const loading = ref(false)
-  const dataType = ref('USERS')
-  const selectedUser = ref({
-    ids: [],
-    text: []
-  })
-  const userOpen = ref(false)
-  const deptName = ref(undefined)
-  const deptOptions = ref<any[]>([])
-  const deptProps = ref({
-    label: "label",
-    children: "children"
-  })
-  const deptTempOptions = ref<any[]>([])
-  const userTableList = ref<any[]>([])
-  const userTotal = ref(0)
-  const selectedUserDate = ref<any[]>([])
-  const roleOptions = ref<any[]>([])
-  const roleIds = ref<any[]>([])
-  const deptTreeData = ref<any[]>([])
-  const deptIds = ref<any[]>([])
-  // 查询参数
-  const queryParams = ref({
-    pageNum: 1,
-    pageSize: 10,
-    deptId: ''
-  })
-  const showMultiFlog = ref(false)
-  const isSequential = ref(false)
-  const multiLoopType = ref('Null')
-  const CustomCompletionCondition = ref('${nrOfCompletedInstances/nrOfInstances>=1}')
+const dateRange = ref<[DateModelType, DateModelType]>(['', '']);
+const loading = ref(false);
+const dataType = ref('USERS');
+const selectedUser = ref({
+  ids: [],
+  text: []
+});
+const userOpen = ref(false);
+const deptName = ref(undefined);
+const deptOptions = ref<any[]>([]);
+const deptProps = ref({
+  label: 'label',
+  children: 'children'
+});
+const deptTempOptions = ref<any[]>([]);
+const userTableList = ref<any[]>([]);
+const userTotal = ref(0);
+const selectedUserDate = ref<any[]>([]);
+const roleOptions = ref<any[]>([]);
+const roleIds = ref<any[]>([]);
+const deptTreeData = ref<any[]>([]);
+const deptIds = ref<any[]>([]);
+// 查询参数
+const queryParams = ref({
+  pageNum: 1,
+  pageSize: 10,
+  deptId: ''
+});
+const showMultiFlog = ref(false);
+const isSequential = ref(false);
+const multiLoopType = ref('Null');
+const CustomCompletionCondition = ref('${nrOfCompletedInstances/nrOfInstances>=1}');
 
-  const multipleTable = ref(null)
-  const tree = ref(null)
+const multipleTable = ref(null);
+const tree = ref(null);
 
-  const resetTaskForm = () => {
-    bpmnElement.value = bpmnInstances().bpmnElement
-    const bpmnElementObj = toRaw(bpmnElement.value?.businessObject);
-    if (!bpmnElementObj) {
-      return;
+const resetTaskForm = () => {
+  bpmnElement.value = bpmnInstances().bpmnElement;
+  const bpmnElementObj = toRaw(bpmnElement.value?.businessObject);
+  if (!bpmnElementObj) {
+    return;
+  }
+  clearOptionsData();
+  dataType.value = bpmnElementObj['dataType'];
+  if (dataType.value === 'USERS') {
+    const userIdData = bpmnElementObj['candidateUsers'] || bpmnElementObj['assignee'];
+    const userText = bpmnElementObj['text'] || [];
+    if (userIdData && userIdData.toString().length > 0 && userText && userText.length > 0) {
+      selectedUser.value.ids = userIdData?.toString().split(',');
+      selectedUser.value.text = userText?.split(',');
     }
-    clearOptionsData()
-    dataType.value = bpmnElementObj['dataType'];
-    if (dataType.value === 'USERS') {
-      let userIdData = bpmnElementObj['candidateUsers'] || bpmnElementObj['assignee'];
-      let userText = bpmnElementObj['text'] || [];
-      if (userIdData && userIdData.toString().length > 0 && userText && userText.length > 0) {
-        selectedUser.value.ids = userIdData?.toString().split(',');
-        selectedUser.value.text = userText?.split(',');
-      }
-      if (selectedUser.value.ids.length > 1) {
-        showMultiFlog.value = true;
-      }
-    } else if (dataType.value === 'ROLES') {
-      getRoleOptions();
-      let roleIdData = bpmnElementObj['candidateGroups'] || [];
-      if (roleIdData && roleIdData.length > 0) {
-        roleIds.value = roleIdData.split(',')
-      }
-      showMultiFlog.value = true;
-    } else if (dataType.value === 'DEPTS') {
-      getDeptTreeData();
-      let deptIdData = bpmnElementObj['candidateGroups'] || [];
-      if (deptIdData && deptIdData.length > 0) {
-        deptIds.value = deptIdData.split(',');
-      }
+    if (selectedUser.value.ids.length > 1) {
       showMultiFlog.value = true;
     }
-    getElementLoop(bpmnElementObj);
-  }
-  /**
-    * 清空选项数据
-    */
-  const clearOptionsData = () => {
-    selectedUser.value.ids = [];
-    selectedUser.value.text = [];
-    roleIds.value = [];
-    deptIds.value = [];
-  }
-  // 完成条件
-  const updateLoopCondition = (condition) => {
-
-  }
-  /**
-    * 更新节点数据
-    */
-  const updateElementTask = () => {
-    const taskAttr = Object.create(null);
-    for (let key in userTaskForm.value) {
-        taskAttr[key] = userTaskForm.value[key] || null;
+  } else if (dataType.value === 'ROLES') {
+    getRoleOptions();
+    const roleIdData = bpmnElementObj['candidateGroups'] || [];
+    if (roleIdData && roleIdData.length > 0) {
+      roleIds.value = roleIdData.split(',');
     }
-    bpmnInstances().modeling.updateProperties(toRaw(bpmnElement.value), taskAttr)
-  }
-  /**
-    * 查询部门下拉树结构
-    */
-  const getDeptOptions = () => {
-    return new Promise((resolve, reject) => {
-      if (!deptOptions.value || deptOptions.value.length <= 0) {
-        deptTreeSelect().then(response => {
-          deptTempOptions.value = response.data;
-          deptOptions.value = response.data;
-          resolve()
-        })
-      } else {
-        reject()
-      }
-    });
-  }
-
-  /**
-    * 查询部门下拉树结构（含部门前缀）
-    */
-  const getDeptTreeData = () => {
-    return new Promise((resolve, reject) => {
-      if (!deptTreeData.value || deptTreeData.value.length <= 0) {
-        getDeptOptions().then(() => {
-          deptTreeData.value = refactorTree(deptOptions.value);
-          resolve()
-        }).catch(() => {
-          reject()
-        })
-      } else {
-        resolve()
-      }
-    })
-  }
-
-  const  refactorTree = (data) => {
-    return data.map(node => {
-      let treeData = { id: `DEPT${node.id}`, label: node.label, parentId: node.parentId, weight: node.weight };
-      if (node.children && node.children.length > 0) {
-        treeData.children = refactorTree(node.children);
-      }
-      return treeData;
-    });
-  }
-
-  /**
-    * 查询部门下拉树结构
-    */
-  const  getRoleOptions = () => {
-    if (!roleOptions.value || roleOptions.value.length <= 0) {
-      listRole().then(response => roleOptions.value = response.rows);
+    showMultiFlog.value = true;
+  } else if (dataType.value === 'DEPTS') {
+    getDeptTreeData();
+    const deptIdData = bpmnElementObj['candidateGroups'] || [];
+    if (deptIdData && deptIdData.length > 0) {
+      deptIds.value = deptIdData.split(',');
     }
+    showMultiFlog.value = true;
   }
-  /** 查询用户列表 */
-  const  getUserList = () => {
-      listUser(proxy?.addDateRange(queryParams.value, dateRange.value)).then(response => {
-        userTableList.value = response.rows;
-        userTotal.value = response.total;
+  getElementLoop(bpmnElementObj);
+};
+/**
+ * 清空选项数据
+ */
+const clearOptionsData = () => {
+  selectedUser.value.ids = [];
+  selectedUser.value.text = [];
+  roleIds.value = [];
+  deptIds.value = [];
+};
+// 完成条件
+const updateLoopCondition = (condition) => {};
+/**
+ * 更新节点数据
+ */
+const updateElementTask = () => {
+  const taskAttr = Object.create(null);
+  for (const key in userTaskForm.value) {
+    taskAttr[key] = userTaskForm.value[key] || null;
+  }
+  bpmnInstances().modeling.updateProperties(toRaw(bpmnElement.value), taskAttr);
+};
+/**
+ * 查询部门下拉树结构
+ */
+const getDeptOptions = () => {
+  return new Promise((resolve, reject) => {
+    if (!deptOptions.value || deptOptions.value.length <= 0) {
+      deptTreeSelect().then((response) => {
+        deptTempOptions.value = response.data;
+        deptOptions.value = response.data;
+        resolve();
       });
-  }
-  // 筛选节点
-  const  filterNode = (value, data) => {
-      if (!value) return true;
-      return data.label.indexOf(value) !== -1;
-  }
-  // 节点单击事件
-  const  handleNodeClick = (data) => {
-      queryParams.value.deptId = data.id;
-      getUserList();
-  }
-  // 关闭标签
-  const  handleClose = (tag) => {
-      selectedUserDate.value.splice(selectedUserDate.value?.indexOf(tag), 1);
-      multipleTable.value?.toggleRowSelection(tag);
-  }
-  // 多选框选中数据
-  const  handleSelectionChange = (selection) => {
-      selectedUserDate.value = selection;
-  }
-  const  onSelectUsers = () => {
-      selectedUserDate.value = []
-      multipleTable.value?.clearSelection();
-      getDeptOptions();
-      userOpen.value = true;
-  }
-  const  handleTaskUserComplete = () => {
-    if (!selectedUserDate.value || selectedUserDate.value.length <= 0) {
-      proxy?.$modal.msgError('请选择用户');
-      return;
-    }
-    userTaskForm.value.dataType = 'USERS';
-    selectedUser.value.text = selectedUserDate.value.map(k => k.nickName) || [];
-    if (selectedUserDate.value.length === 1) {
-      let data = selectedUserDate.value[0];
-      userTaskForm.value.assignee = data.userName;
-      userTaskForm.value.text = data.nickName;
-      userTaskForm.value.candidateUsers = '';
-      showMultiFlog.value = false;
-      multiLoopType.value = 'Null';
-      changeMultiLoopType();
     } else {
-      userTaskForm.value.candidateUsers = selectedUserDate.value.map(k => k.userName).join() || '';
-      userTaskForm.value.text = selectedUserDate.value.map(k => k.nickName).join() || '';
-      userTaskForm.value.assignee = '';
-      showMultiFlog.value = true;
+      reject();
     }
-    updateElementTask()
-    userOpen.value = false;
-  }
-  const  changeSelectRoles = (val) => {
-    let groups = null;
-    let text = null;
-    if (val && val.length > 0) {
-      userTaskForm.value.dataType = 'ROLES';
-      groups = val.join() || null;
-      let textArr = roleOptions.value.filter(k => val.indexOf(`ROLE${k.roleId}`) >= 0);
-      text = textArr?.map(k => k.roleName).join() || null;
-    } else {
-      userTaskForm.value.dataType = '';
-      multiLoopType.value = 'Null';
-    }
-    userTaskForm.value.candidateGroups = groups;
-    userTaskForm.value.text = text;
-    updateElementTask();
-    changeMultiLoopType();
-  }
+  });
+};
 
-  const nodeClick = (data, node, vm) => {
-    const checkedIds = JSON.parse(JSON.stringify(node.checkedNodes))
-    let groups = null;
-    let text = null;
-    deptIds.value = checkedIds;
-    if (checkedIds && checkedIds.length > 0) {
-      userTaskForm.value.dataType = 'DEPTS';
-      groups = checkedIds?.map(k => k.id).join() || null;
-      text = checkedIds?.map(k => k.label).join() || '';
+/**
+ * 查询部门下拉树结构（含部门前缀）
+ */
+const getDeptTreeData = () => {
+  return new Promise((resolve, reject) => {
+    if (!deptTreeData.value || deptTreeData.value.length <= 0) {
+      getDeptOptions()
+        .then(() => {
+          deptTreeData.value = refactorTree(deptOptions.value);
+          resolve();
+        })
+        .catch(() => {
+          reject();
+        });
     } else {
-      userTaskForm.value.dataType = '';
-      multiLoopType.value = 'Null';
+      resolve();
     }
-    userTaskForm.value.candidateGroups = groups;
-    userTaskForm.value.text = text || '';
-    updateElementTask();
-    changeMultiLoopType();
-  }
+  });
+};
 
-  const  checkedDeptChange = (checkedIds) => {
-    let groups = null;
-    let text = null;
-    const selectedIds = toRaw(checkedIds)
-    deptIds.value = selectedIds;
-    if (selectedIds && selectedIds.length > 0) {
-      userTaskForm.value.dataType = 'DEPTS';
-      groups = selectedIds.join() || null;
-      let textArr = []
-      let treeStarkData = JSON.parse(JSON.stringify(deptTreeData.value));
-      selectedIds.forEach(id => {
-        let stark = []
+const refactorTree = (data) => {
+  return data.map((node) => {
+    const treeData = { id: `DEPT${node.id}`, label: node.label, parentId: node.parentId, weight: node.weight };
+    if (node.children && node.children.length > 0) {
+      treeData.children = refactorTree(node.children);
+    }
+    return treeData;
+  });
+};
+
+/**
+ * 查询部门下拉树结构
+ */
+const getRoleOptions = () => {
+  if (!roleOptions.value || roleOptions.value.length <= 0) {
+    listRole().then((response) => (roleOptions.value = response.rows));
+  }
+};
+/** 查询用户列表 */
+const getUserList = () => {
+  listUser(proxy?.addDateRange(queryParams.value, dateRange.value)).then((response) => {
+    userTableList.value = response.rows;
+    userTotal.value = response.total;
+  });
+};
+// 筛选节点
+const filterNode = (value, data) => {
+  if (!value) return true;
+  return data.label.indexOf(value) !== -1;
+};
+// 节点单击事件
+const handleNodeClick = (data) => {
+  queryParams.value.deptId = data.id;
+  getUserList();
+};
+// 关闭标签
+const handleClose = (tag) => {
+  selectedUserDate.value.splice(selectedUserDate.value?.indexOf(tag), 1);
+  multipleTable.value?.toggleRowSelection(tag);
+};
+// 多选框选中数据
+const handleSelectionChange = (selection) => {
+  selectedUserDate.value = selection;
+};
+const onSelectUsers = () => {
+  selectedUserDate.value = [];
+  multipleTable.value?.clearSelection();
+  getDeptOptions();
+  userOpen.value = true;
+};
+const handleTaskUserComplete = () => {
+  if (!selectedUserDate.value || selectedUserDate.value.length <= 0) {
+    proxy?.$modal.msgError('请选择用户');
+    return;
+  }
+  userTaskForm.value.dataType = 'USERS';
+  selectedUser.value.text = selectedUserDate.value.map((k) => k.nickName) || [];
+  if (selectedUserDate.value.length === 1) {
+    const data = selectedUserDate.value[0];
+    userTaskForm.value.assignee = data.userName;
+    userTaskForm.value.text = data.nickName;
+    userTaskForm.value.candidateUsers = '';
+    showMultiFlog.value = false;
+    multiLoopType.value = 'Null';
+    changeMultiLoopType();
+  } else {
+    userTaskForm.value.candidateUsers = selectedUserDate.value.map((k) => k.userName).join() || '';
+    userTaskForm.value.text = selectedUserDate.value.map((k) => k.nickName).join() || '';
+    userTaskForm.value.assignee = '';
+    showMultiFlog.value = true;
+  }
+  updateElementTask();
+  userOpen.value = false;
+};
+const changeSelectRoles = (val) => {
+  let groups = null;
+  let text = null;
+  if (val && val.length > 0) {
+    userTaskForm.value.dataType = 'ROLES';
+    groups = val.join() || null;
+    const textArr = roleOptions.value.filter((k) => val.indexOf(`ROLE${k.roleId}`) >= 0);
+    text = textArr?.map((k) => k.roleName).join() || null;
+  } else {
+    userTaskForm.value.dataType = '';
+    multiLoopType.value = 'Null';
+  }
+  userTaskForm.value.candidateGroups = groups;
+  userTaskForm.value.text = text;
+  updateElementTask();
+  changeMultiLoopType();
+};
+
+const nodeClick = (data, node, vm) => {
+  const checkedIds = JSON.parse(JSON.stringify(node.checkedNodes));
+  let groups = null;
+  let text = null;
+  deptIds.value = checkedIds;
+  if (checkedIds && checkedIds.length > 0) {
+    userTaskForm.value.dataType = 'DEPTS';
+    groups = checkedIds?.map((k) => k.id).join() || null;
+    text = checkedIds?.map((k) => k.label).join() || '';
+  } else {
+    userTaskForm.value.dataType = '';
+    multiLoopType.value = 'Null';
+  }
+  userTaskForm.value.candidateGroups = groups;
+  userTaskForm.value.text = text || '';
+  updateElementTask();
+  changeMultiLoopType();
+};
+
+const checkedDeptChange = (checkedIds) => {
+  let groups = null;
+  let text = null;
+  const selectedIds = toRaw(checkedIds);
+  deptIds.value = selectedIds;
+  if (selectedIds && selectedIds.length > 0) {
+    userTaskForm.value.dataType = 'DEPTS';
+    groups = selectedIds.join() || null;
+    const textArr = [];
+    const treeStarkData = JSON.parse(JSON.stringify(deptTreeData.value));
+    selectedIds.forEach((id) => {
+      let stark = [];
+      stark = stark.concat(treeStarkData);
+      while (stark.length) {
+        const temp = stark.shift();
+        if (temp.children) {
+          stark = temp.children.concat(stark);
+        }
+        if (id === temp.id) {
+          textArr.push(temp);
+        }
+      }
+    });
+    text = textArr?.map((k) => k.label).join() || '';
+  } else {
+    userTaskForm.value.dataType = '';
+    multiLoopType.value = 'Null';
+  }
+  userTaskForm.value.candidateGroups = groups;
+  userTaskForm.value.text = text || '';
+  updateElementTask();
+  changeMultiLoopType();
+};
+const changeDataType = (val) => {
+  if (val === 'ROLES' || val === 'DEPTS' || (val === 'USERS' && selectedUser.value.ids.length > 1)) {
+    showMultiFlog.value = true;
+  } else {
+    showMultiFlog.value = false;
+  }
+  multiLoopType.value = 'Null';
+  changeMultiLoopType();
+  // 清空 userTaskForm 所有属性值
+  Object.keys(userTaskForm.value).forEach((key) => (userTaskForm.value[key] = null));
+  userTaskForm.value.dataType = val;
+  if (val === 'USERS') {
+    if (selectedUser.value && selectedUser.value.ids && selectedUser.value.ids.length > 0) {
+      if (selectedUser.value.ids.length === 1) {
+        userTaskForm.value.assignee = selectedUser.value.ids[0];
+      } else {
+        userTaskForm.value.candidateUsers = selectedUser.value.ids.join();
+      }
+      userTaskForm.value.text = selectedUser.value.text?.join() || '';
+    }
+  } else if (val === 'ROLES') {
+    getRoleOptions();
+    if (roleIds.value && roleIds.value.length > 0) {
+      userTaskForm.value.candidateGroups = roleIds.value.join() || '';
+      const textArr = roleOptions.value.filter((k) => roleIds.value.indexOf(`ROLE${k.roleId}`) >= 0);
+      userTaskForm.value.text = textArr?.map((k) => k.roleName).join() || '';
+    }
+  } else if (val === 'DEPTS') {
+    getDeptTreeData();
+    if (deptIds.value && deptIds.value.length > 0) {
+      userTaskForm.value.candidateGroups = deptIds.value.join() || '';
+      const textArr = [];
+      const treeStarkData = JSON.parse(JSON.stringify(deptTreeData.value));
+      deptIds.value.forEach((id) => {
+        let stark = [];
         stark = stark.concat(treeStarkData);
-        while(stark.length) {
-          let temp = stark.shift();
-          if(temp.children) {
+        while (stark.length) {
+          const temp = stark.shift();
+          if (temp.children) {
             stark = temp.children.concat(stark);
           }
-          if(id === temp.id) {
+          if (id === temp.id) {
             textArr.push(temp);
           }
         }
-      })
-      text = textArr?.map(k => k.label).join() || '';
-    } else {
-      userTaskForm.value.dataType = '';
-      multiLoopType.value = 'Null';
+      });
+      userTaskForm.value.text = textArr?.map((k) => k.label).join() || '';
     }
-    userTaskForm.value.candidateGroups = groups;
-    userTaskForm.value.text = text || '';
-    updateElementTask();
-    changeMultiLoopType();
+  } else if (val === 'MANAGER') {
+    userTaskForm.value.assignee = '${DepManagerHandler.getUser(execution)}';
+    userTaskForm.value.text = '部门经理';
+  } else if (val === 'INITIATOR') {
+    userTaskForm.value.assignee = '${initiator}';
+    userTaskForm.value.text = '流程发起人';
   }
-  const  changeDataType = (val) => {
-    if (val === 'ROLES' || val === 'DEPTS' || (val === 'USERS' && selectedUser.value.ids.length > 1)) {
-      showMultiFlog.value = true;
-    } else {
-      showMultiFlog.value = false;
-    }
+  updateElementTask();
+};
+const getElementLoop = (businessObject) => {
+  if (!businessObject.loopCharacteristics) {
     multiLoopType.value = 'Null';
-    changeMultiLoopType();
-    // 清空 userTaskForm 所有属性值
-    Object.keys(userTaskForm.value).forEach(key => userTaskForm.value[key] = null);
-    userTaskForm.value.dataType = val;
-    if (val === 'USERS') {
-      if (selectedUser.value && selectedUser.value.ids && selectedUser.value.ids.length > 0) {
-        if (selectedUser.value.ids.length === 1) {
-          userTaskForm.value.assignee = selectedUser.value.ids[0];
-        } else {
-          userTaskForm.value.candidateUsers = selectedUser.value.ids.join()
-        }
-        userTaskForm.value.text = selectedUser.value.text?.join() || ''
-      }
-    } else if (val === 'ROLES') {
-      getRoleOptions();
-      if (roleIds.value&& roleIds.value.length > 0) {
-        userTaskForm.value.candidateGroups = roleIds.value.join() || '';
-        let textArr = roleOptions.value.filter(k => roleIds.value.indexOf(`ROLE${k.roleId}`) >= 0);
-        userTaskForm.value.text = textArr?.map(k => k.roleName).join() || '';
-      }
-    } else if (val === 'DEPTS') {
-      getDeptTreeData();
-      if (deptIds.value && deptIds.value.length > 0) {
-        userTaskForm.value.candidateGroups = deptIds.value.join() || '';
-        let textArr = []
-        let treeStarkData = JSON.parse(JSON.stringify(deptTreeData.value));
-        deptIds.value.forEach(id => {
-          let stark = []
-          stark = stark.concat(treeStarkData);
-          while(stark.length) {
-            let temp = stark.shift();
-            if(temp.children) {
-              stark = temp.children.concat(stark);
-            }
-            if(id === temp.id) {
-              textArr.push(temp);
-            }
-          }
-        })
-        userTaskForm.value.text = textArr?.map(k => k.label).join() || '';
-      }
-    } else if (val === 'MANAGER') {
-      userTaskForm.value.assignee = "${DepManagerHandler.getUser(execution)}";
-      userTaskForm.value.text = "部门经理";
+    return;
+  }
+  isSequential.value = businessObject.loopCharacteristics.isSequential;
+  if (businessObject.loopCharacteristics.completionCondition) {
+    if (businessObject.loopCharacteristics.completionCondition.body === '${nrOfCompletedInstances >= nrOfInstances}') {
+      multiLoopType.value = 'SequentialMultiInstance';
+    } else if (businessObject.loopCharacteristics.completionCondition.body === '${nrOfCompletedInstances > 0}') {
+      multiLoopType.value = 'ParallelMultiInstance';
+    } else {
+      multiLoopType.value = 'CustomMultiInstance';
+    }
+  }
+};
+const changeMultiLoopType = () => {
+  // 取消多实例配置
+  if (multiLoopType.value === 'Null') {
+    bpmnInstances().modeling.updateProperties(toRaw(bpmnElement.value), { loopCharacteristics: null, assignee: null });
+    return;
+  }
+  multiLoopInstance.value = bpmnInstances().moddle.create('bpmn:MultiInstanceLoopCharacteristics', { isSequential: isSequential.value });
+  // 更新多实例配置
+  bpmnInstances().modeling.updateProperties(toRaw(bpmnElement.value), {
+    loopCharacteristics: toRaw(multiLoopInstance.value),
+    assignee: '${assignee}'
+  });
+  // 完成条件
+  let completionCondition = null;
+  // 会签
+  if (multiLoopType.value === 'SequentialMultiInstance') {
+    completionCondition = bpmnInstances().moddle.create('bpmn:FormalExpression', { body: '${nrOfCompletedInstances >= nrOfInstances}' });
+  }
+  // 或签
+  if (multiLoopType.value === 'ParallelMultiInstance') {
+    completionCondition = bpmnInstances().moddle.create('bpmn:FormalExpression', { body: '${nrOfCompletedInstances > 0}' });
+  }
+  // 自定义会签
+  if (multiLoopType.value === 'CustomMultiInstance') {
+    completionCondition = bpmnInstances().moddle.create('bpmn:FormalExpression', { body: CustomCompletionCondition.value });
+  }
+  // 更新模块属性信息
+  bpmnInstances().modeling.updateModdleProperties(toRaw(bpmnElement.value), multiLoopInstance.value, {
+    collection: '${multiInstanceHandler.getUserNames(execution)}',
+    elementVariable: 'assignee',
+    completionCondition
+  });
+};
 
-    } else if (val === 'INITIATOR') {
-      userTaskForm.value.assignee = "${initiator}";
-      userTaskForm.value.text = "流程发起人";
-    }
-    updateElementTask();
-  }
-  const  getElementLoop = (businessObject) => {
-    if (!businessObject.loopCharacteristics) {
-      multiLoopType.value = "Null";
-      return;
-    }
-    isSequential.value = businessObject.loopCharacteristics.isSequential;
-    if (businessObject.loopCharacteristics.completionCondition) {
-      if (businessObject.loopCharacteristics.completionCondition.body === "${nrOfCompletedInstances >= nrOfInstances}") {
-        multiLoopType.value = "SequentialMultiInstance";
-      } else if (businessObject.loopCharacteristics.completionCondition.body === "${nrOfCompletedInstances > 0}") {
-        multiLoopType.value = "ParallelMultiInstance";
-      } else {
-        multiLoopType.value = "CustomMultiInstance";
-      }
-    }
-  }
-  const  changeMultiLoopType = () => {
-    // 取消多实例配置
-    if (multiLoopType.value === "Null") {
-      bpmnInstances().modeling.updateProperties(toRaw(bpmnElement.value), { loopCharacteristics: null, assignee: null });
-      return;
-    }
-    multiLoopInstance.value = bpmnInstances().moddle.create("bpmn:MultiInstanceLoopCharacteristics", { isSequential: isSequential.value });
-    // 更新多实例配置
-    bpmnInstances().modeling.updateProperties(toRaw(bpmnElement.value), {
-      loopCharacteristics: toRaw(multiLoopInstance.value),
-      assignee: '${assignee}'
+watch(
+  () => props.id,
+  () => {
+    bpmnElement.value = bpmnInstances().bpmnElement;
+    nextTick(() => {
+      resetTaskForm();
     });
-    // 完成条件
-    let completionCondition = null;
-    // 会签
-    if (multiLoopType.value === "SequentialMultiInstance") {
-      completionCondition = bpmnInstances().moddle.create("bpmn:FormalExpression", { body: "${nrOfCompletedInstances >= nrOfInstances}" });
-    }
-    // 或签
-    if (multiLoopType.value === "ParallelMultiInstance") {
-      completionCondition = bpmnInstances().moddle.create("bpmn:FormalExpression", { body: "${nrOfCompletedInstances > 0}" });
-    }
-    // 自定义会签
-    if (multiLoopType.value === "CustomMultiInstance") {
-      completionCondition = bpmnInstances().moddle.create("bpmn:FormalExpression", { body: CustomCompletionCondition.value });
-    }
-    // 更新模块属性信息
-    bpmnInstances().modeling.updateModdleProperties(toRaw(bpmnElement.value), multiLoopInstance.value, {
-      collection: '${multiInstanceHandler.getUserNames(execution)}',
-      elementVariable: 'assignee',
-      completionCondition
-    });
+  },
+  { immediate: true }
+);
+watch(
+  // 根据名称筛选部门树
+  () => deptName.value,
+  (val) => {
+    tree.value?.filter(val);
   }
+);
 
-  watch(
-    () => props.id,
-    () => {
-      bpmnElement.value = bpmnInstances().bpmnElement
-      nextTick(() => {
-        resetTaskForm()
-      })
-    },
-    { immediate: true }
-  )
-  watch(
-    // 根据名称筛选部门树
-    () => deptName.value,
-    (val) => {
-      tree.value?.filter(val);
-    }
-  )
-
-  onBeforeUnmount(() => {
-    multiLoopInstance.value = null;
-    bpmnElement.value = null;
-  })
+onBeforeUnmount(() => {
+  multiLoopInstance.value = null;
+  bpmnElement.value = null;
+});
 </script>
 
 <style scoped lang="scss">
@@ -575,5 +569,4 @@
   font-size: 14px;
   color: #606266;
 }
-
 </style>

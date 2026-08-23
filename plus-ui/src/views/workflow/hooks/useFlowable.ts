@@ -1,4 +1,4 @@
-import { listCustomForm } from "@/api/workflow/custom-form";
+import { listCustomForm } from '@/api/workflow/custom-form';
 
 export const useFlowable = () => {
   const customformList = ref<any>([]);
@@ -31,25 +31,25 @@ export const useFlowable = () => {
 
   const allFormComponent = computed(() => {
     return customformList.value;
-  })
+  });
   /* 挂载自定义业务表单列表 */
-   const ListCustomForForm = async () => {
-    listCustomForm(formQueryParams).then(res => {
-      let  cfList = res.rows;
-       cfList.forEach((item, index) => {
-          let cms = {
-            text:item.flowName,
-            routeName:item.routeName,
-              component: resolveFormComponent(item.routeName),
-            businessTable:'wf_demo'
-          }
-          customformList.value.push(cms);
-       })
-    })
-  }
+  const ListCustomForForm = async () => {
+    listCustomForm(formQueryParams).then((res) => {
+      const cfList = res.rows;
+      cfList.forEach((item, index) => {
+        const cms = {
+          text: item.flowName,
+          routeName: item.routeName,
+          component: resolveFormComponent(item.routeName),
+          businessTable: 'wf_demo'
+        };
+        customformList.value.push(cms);
+      });
+    });
+  };
   const getFormComponent = (routeName) => {
-    return allFormComponent.value.find((item) => item.routeName === routeName) || {}
-  }
+    return allFormComponent.value.find((item) => item.routeName === routeName) || {};
+  };
 
   onMounted(() => {
     ListCustomForForm();
@@ -58,5 +58,5 @@ export const useFlowable = () => {
   return {
     allFormComponent,
     getFormComponent
-  }
-}
+  };
+};

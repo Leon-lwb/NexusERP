@@ -1,19 +1,14 @@
 <template>
-  <el-checkbox
-    :disabled="disabled"
-    v-model="localValue"
-    :dictCode="dictcode"
-    @change="commonmomponent"
-  />
+  <el-checkbox :disabled="disabled" v-model="localValue" :dictCode="dictcode" @change="commonmomponent" />
 </template>
 
 <script>
 import { ref, watch, onMounted } from 'vue';
 
 export default {
-  name: "nmCheckbox",
+  name: 'nmCheckbox',
   components: {
-    ElCheckbox,
+    ElCheckbox
   },
   props: {
     nm: {
@@ -34,9 +29,12 @@ export default {
     const localValue = ref(props.value);
 
     // 监听 props.value 的变化，确保 localValue 与 props.value 保持同步
-    watch(() => props.value, (newValue) => {
-      localValue.value = newValue;
-    });
+    watch(
+      () => props.value,
+      (newValue) => {
+        localValue.value = newValue;
+      }
+    );
 
     // 监听 localValue 的变化，触发 update:value 事件
     watch(localValue, (newValue) => {
@@ -63,5 +61,4 @@ export default {
 };
 </script>
 
-<style scoped>
-</style>
+<style scoped></style>

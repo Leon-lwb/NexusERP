@@ -150,9 +150,25 @@ const rules = {
 };
 
 const {
-  loading, list, total, open, title, ids, single, multiple, showSearch, form,
-  getList, handleQuery, handleDelete, handleExport, handleSelectionChange, submitForm, cancel,
-  handleAdd: rawHandleAdd, handleUpdate: rawHandleUpdate
+  loading,
+  list,
+  total,
+  open,
+  title,
+  ids,
+  single,
+  multiple,
+  showSearch,
+  form,
+  getList,
+  handleQuery,
+  handleDelete,
+  handleExport,
+  handleSelectionChange,
+  submitForm,
+  cancel,
+  handleAdd: rawHandleAdd,
+  handleUpdate: rawHandleUpdate
 } = useCrud({
   apis: { list: listPutawayRule, get: getPutawayRule, add: addPutawayRule, update: updatePutawayRule, del: delPutawayRule },
   idField: 'ruleId',
@@ -160,19 +176,34 @@ const {
   formRef: putawayRuleRef,
   queryParams,
   initForm: () => ({
-    ruleId: null, ruleCode: null, ruleName: null, warehouseId: null,
-    materialCategoryId: null, strategyType: null, priority: 1, status: '0', remark: null
+    ruleId: null,
+    ruleCode: null,
+    ruleName: null,
+    warehouseId: null,
+    materialCategoryId: null,
+    strategyType: null,
+    priority: 1,
+    status: '0',
+    remark: null
   }),
   exportUrl: '/erp/wm/putawayrule/export',
   exportFileName: 'putawayrule',
-  onReset: () => { getWarehouseOptions(); }
+  onReset: () => {
+    getWarehouseOptions();
+  }
 });
 
 function handleAdd() {
-  rawHandleAdd(() => { getWarehouseOptions(); getCategoryTree(); });
+  rawHandleAdd(() => {
+    getWarehouseOptions();
+    getCategoryTree();
+  });
 }
 function handleUpdate(row?: any) {
-  return rawHandleUpdate(row, () => { getWarehouseOptions(); getCategoryTree(); });
+  return rawHandleUpdate(row, () => {
+    getWarehouseOptions();
+    getCategoryTree();
+  });
 }
 
 function resetQuery() {
@@ -181,9 +212,12 @@ function resetQuery() {
 }
 
 function getWarehouseOptions() {
-  listWarehouse({ pageSize: 100, pageNum: 1 }).then((response: any) => { warehouseOptions.value = response.rows; });
+  listWarehouse({ pageSize: 100, pageNum: 1 }).then((response: any) => {
+    warehouseOptions.value = response.rows;
+  });
 }
 
-onActivated(() => { getList(); });
+onActivated(() => {
+  getList();
+});
 </script>
-

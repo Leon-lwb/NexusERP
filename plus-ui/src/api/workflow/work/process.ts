@@ -102,9 +102,9 @@ export function listCopyProcess(query?: any) {
 export function updateCcReaded(parameter?: any) {
   return request({
     url: '/workflow/process/updateViewStatust',
-    method:'get',
+    method: 'get',
     params: parameter
-  })
+  });
 }
 
 // 取消申请
@@ -122,17 +122,16 @@ export function getProcesss(query?: any) {
     url: '/workflow/process/getProcesss',
     method: 'get',
     params: query
-  })
+  });
 }
-
 
 // 删除自定义业务任务关联表与流程历史表
 //以便可以重新发起流程,业务数据dataid
 
-export function deleteActivityAndJoin(dataId?: any,data?: any) {
+export function deleteActivityAndJoin(dataId?: any, data?: any) {
   return request({
     url: '/workflow/task/deleteActivityAndJoin/' + dataId,
     method: 'post',
     data: data
-  })
+  });
 }

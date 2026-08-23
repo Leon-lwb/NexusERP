@@ -14,10 +14,10 @@ const BASE = '/erp/pu/order';
  * @returns 采购订单列表及总数
  */
 export const listPurchaseOrder = (query: PurchaseOrderQuery): AxiosPromise<{ rows: PurchaseOrderVO[]; total: number }> =>
-  request({ 
-    url: BASE + '/list', 
-    method: 'get', 
-    params: query 
+  request({
+    url: BASE + '/list',
+    method: 'get',
+    params: query
   });
 
 /**
@@ -26,9 +26,9 @@ export const listPurchaseOrder = (query: PurchaseOrderQuery): AxiosPromise<{ row
  * @returns 采购订单详细信息
  */
 export const getPurchaseOrder = (id: string | number): AxiosPromise<PurchaseOrderVO> =>
-  request({ 
-    url: BASE + '/' + id, 
-    method: 'get' 
+  request({
+    url: BASE + '/' + id,
+    method: 'get'
   });
 
 /**
@@ -37,10 +37,10 @@ export const getPurchaseOrder = (id: string | number): AxiosPromise<PurchaseOrde
  * @returns 请求结果
  */
 export const addPurchaseOrder = (data: PurchaseOrderForm) =>
-  request({ 
-    url: BASE, 
-    method: 'post', 
-    data 
+  request({
+    url: BASE,
+    method: 'post',
+    data
   });
 
 /**
@@ -49,10 +49,10 @@ export const addPurchaseOrder = (data: PurchaseOrderForm) =>
  * @returns 请求结果
  */
 export const updatePurchaseOrder = (data: PurchaseOrderForm) =>
-  request({ 
-    url: BASE, 
-    method: 'put', 
-    data 
+  request({
+    url: BASE,
+    method: 'put',
+    data
   });
 
 /**
@@ -61,9 +61,9 @@ export const updatePurchaseOrder = (data: PurchaseOrderForm) =>
  * @returns 请求结果
  */
 export const delPurchaseOrder = (id: string | number | (string | number)[]) =>
-  request({ 
-    url: BASE + '/' + id, 
-    method: 'delete' 
+  request({
+    url: BASE + '/' + id,
+    method: 'delete'
   });
 
 /**
@@ -72,10 +72,10 @@ export const delPurchaseOrder = (id: string | number | (string | number)[]) =>
  * @returns 下载链接
  */
 export const exportPurchaseOrder = (query: PurchaseOrderQuery) =>
-  request({ 
-    url: BASE + '/export', 
-    method: 'post', 
-    params: query 
+  request({
+    url: BASE + '/export',
+    method: 'post',
+    params: query
   });
 
 // /**
@@ -105,10 +105,10 @@ export const exportPurchaseOrder = (query: PurchaseOrderQuery) =>
  * @param id 采购订单ID
  * @returns 请求结果
  */
-export const closePurchaseOrder = (id: number) => 
-  request({ 
-    url: BASE + '/close/' + id, 
-    method: 'put' 
+export const closePurchaseOrder = (id: number) =>
+  request({
+    url: BASE + '/close/' + id,
+    method: 'put'
   });
 
 /**
@@ -116,10 +116,10 @@ export const closePurchaseOrder = (id: number) =>
  * @param id 采购订单ID
  * @returns 请求结果
  */
-export const cancelPurchaseOrder = (id: number) => 
-  request({ 
-    url: BASE + '/cancel/' + id, 
-    method: 'put' 
+export const cancelPurchaseOrder = (id: number) =>
+  request({
+    url: BASE + '/cancel/' + id,
+    method: 'put'
   });
 
 /**
@@ -127,10 +127,10 @@ export const cancelPurchaseOrder = (id: number) =>
  * @param id 采购订单ID
  * @returns 请求结果
  */
-export const receivePurchaseOrder = (id: number) => 
-  request({ 
-    url: BASE + '/receive/' + id, 
-    method: 'post' 
+export const receivePurchaseOrder = (id: number) =>
+  request({
+    url: BASE + '/receive/' + id,
+    method: 'post'
   });
 
 /**

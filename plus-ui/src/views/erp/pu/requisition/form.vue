@@ -28,7 +28,13 @@
             <el-form-item label="申请单号" prop="requisitionNo">
               <div style="display: flex; align-items: center; gap: 10px">
                 <el-input v-model="form.requisitionNo" placeholder="请输入申请单号" :disabled="autoGenFlag || isViewMode" style="flex: 1" />
-                <el-switch v-model="autoGenFlag" active-color="#13ce66" active-text="生成" @change="handleAutoGenChange" :disabled="isViewMode || props.disabled">
+                <el-switch
+                  v-model="autoGenFlag"
+                  active-color="#13ce66"
+                  active-text="生成"
+                  @change="handleAutoGenChange"
+                  :disabled="isViewMode || props.disabled"
+                >
                 </el-switch>
               </div>
             </el-form-item>
@@ -128,7 +134,9 @@
             <el-button type="danger" icon="Delete" @click="handleDeleteLine" v-if="!isViewMode && !props.disabled">删除</el-button>
           </el-col>
           <el-col :span="1.5">
-            <el-button type="success" icon="Position" @click="handleConvert" v-if="!isViewMode && !props.disabled && form.requisitionId">转采购订单</el-button>
+            <el-button type="success" icon="Position" @click="handleConvert" v-if="!isViewMode && !props.disabled && form.requisitionId"
+              >转采购订单</el-button
+            >
           </el-col>
         </el-row>
 

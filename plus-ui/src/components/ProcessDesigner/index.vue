@@ -5,12 +5,7 @@
       v-bind="controlForm"
       keyboard
       ref="processDesigner"
-      :events="[
-        'element.click',
-        'connection.added',
-        'connection.removed',
-        'connection.changed'
-      ]"
+      :events="['element.click', 'connection.added', 'connection.removed', 'connection.changed']"
       @element-click="elementClick"
       @init-finished="initModeler"
       @element-contextmenu="elementContextmenu"
@@ -20,7 +15,9 @@
 
     <!-- demo config -->
     <div class="demo-control-bar">
-      <div class="open-model-button" @click="controlDrawerVisible = true"><el-icon><setting /></el-icon></div>
+      <div class="open-model-button" @click="controlDrawerVisible = true">
+        <el-icon><setting /></el-icon>
+      </div>
     </div>
     <el-drawer v-model="controlDrawerVisible" size="400px" title="偏好设置" append-to-body destroy-on-close>
       <el-form :model="controlForm" size="small" label-width="100px" class="control-form" @submit.prevent>
@@ -60,153 +57,149 @@
 </template>
 
 <script lang="ts" setup>
-  import MyProcessDesigner from '@/package/designer';
-  // import MyProcessPalette from '@/package/palette';
-  import MyProcessPenal from '@/package/penal';
-  // 自定义渲染（隐藏了 label 标签）
-  import CustomRenderer from '@/modules/custom-renderer';
-  // 自定义元素选中时的弹出菜单（修改 默认任务 为 用户任务）
-  import CustomContentPadProvider from '@/package/designer/plugins/content-pad';
-  // 自定义左侧菜单（修改 默认任务 为 用户任务）
-  import CustomPaletteProvider from '@/package/designer/plugins/palette';
+import MyProcessDesigner from '@/package/designer';
+// import MyProcessPalette from '@/package/palette';
+import MyProcessPenal from '@/package/penal';
+// 自定义渲染（隐藏了 label 标签）
+import CustomRenderer from '@/modules/custom-renderer';
+// 自定义元素选中时的弹出菜单（修改 默认任务 为 用户任务）
+import CustomContentPadProvider from '@/package/designer/plugins/content-pad';
+// 自定义左侧菜单（修改 默认任务 为 用户任务）
+import CustomPaletteProvider from '@/package/designer/plugins/palette';
 
-  import '@/package/theme/index.scss';
-  import 'bpmn-js/dist/assets/diagram-js.css';
-  import 'bpmn-js/dist/assets/bpmn-font/css/bpmn.css';
-  import 'bpmn-js/dist/assets/bpmn-font/css/bpmn-codes.css';
+import '@/package/theme/index.scss';
+import 'bpmn-js/dist/assets/diagram-js.css';
+import 'bpmn-js/dist/assets/bpmn-font/css/bpmn.css';
+import 'bpmn-js/dist/assets/bpmn-font/css/bpmn-codes.css';
 
-  defineOptions({ name: 'ProcessDesigner' })
+defineOptions({ name: 'ProcessDesigner' });
 
-  const props = defineProps({
-        bpmnXml: {
-          type: String,
-          required: true
-        },
-        designerForm: {
-          type: Object,
-          required: true
-        }
-    })
-  const emit = defineEmits([
-    'save'
-  ])
+const props = defineProps({
+  bpmnXml: {
+    type: String,
+    required: true
+  },
+  designerForm: {
+    type: Object,
+    required: true
+  }
+});
+const emit = defineEmits(['save']);
 
-  const height = ref(document.documentElement.clientHeight - 94.5 + "px;")
-  let xmlString = props.bpmnXml
-  const modeler = ref(null)
-  const element = ref(null)
-  const controlDrawerVisible = ref(false)
-  const infoTipVisible = ref(false)
-  const pageMode = ref(false)
-  const controlForm =  ref({
-    appType: props.designerForm.appType,
-    processId: props.designerForm.processKey || '',
-    processName: props.designerForm.processName || '',
-    simulation: true,
-    labelEditing: false,
-    labelVisible: false,
-    prefix: 'flowable',
-    headerButtonSize: 'default',
-    additionalModel: [CustomContentPadProvider, CustomPaletteProvider]
-  })
-  const addis = ref({
-    CustomContentPadProvider,
-    CustomPaletteProvider
-  })
-  const reloadIndex = ref(0)
+const height = ref(document.documentElement.clientHeight - 94.5 + 'px;');
+let xmlString = props.bpmnXml;
+const modeler = ref(null);
+const element = ref(null);
+const controlDrawerVisible = ref(false);
+const infoTipVisible = ref(false);
+const pageMode = ref(false);
+const controlForm = ref({
+  appType: props.designerForm.appType,
+  processId: props.designerForm.processKey || '',
+  processName: props.designerForm.processName || '',
+  simulation: true,
+  labelEditing: false,
+  labelVisible: false,
+  prefix: 'flowable',
+  headerButtonSize: 'default',
+  additionalModel: [CustomContentPadProvider, CustomPaletteProvider]
+});
+const addis = ref({
+  CustomContentPadProvider,
+  CustomPaletteProvider
+});
+const reloadIndex = ref(0);
 
-  const reloadProcessDesigner = (notDeep) => {
-    controlForm.value['additionalModel'] = [];
-    for (const key in addis.value) {
-      if (addis.value[key]) {
-        controlForm.value['additionalModel'].push(addis.value[key]);
-      }
+const reloadProcessDesigner = (notDeep) => {
+  controlForm.value['additionalModel'] = [];
+  for (const key in addis.value) {
+    if (addis.value[key]) {
+      controlForm.value['additionalModel'].push(addis.value[key]);
     }
-    !notDeep && (xmlString = undefined);
-    reloadIndex.value += 1;
-    modeler.value = null; // 避免 panel 异常
   }
-  const changeLabelEditingStatus = (status) => {
-    addis.value['labelEditing'] = status ? { labelEditingProvider: ['value', ''] } : false;
-    reloadProcessDesigner();
-  }
-  const changeLabelVisibleStatus = (status) => {
-    addis.value['customRenderer'] = status ? CustomRenderer : false;
-    reloadProcessDesigner();
-  }
-  const elementClick = (element) => {
-    element.value = element;
-  }
-  const initModeler = (initmodeler) => {
-    setTimeout(() => {
-      modeler.value = initmodeler;
-    }, 10);
-  }
-  const elementContextmenu = (element) => {
-  }
-  const onSaveProcess = (saveData) => {
-    emit('save', saveData);
-  }
-
+  !notDeep && (xmlString = undefined);
+  reloadIndex.value += 1;
+  modeler.value = null; // 避免 panel 异常
+};
+const changeLabelEditingStatus = (status) => {
+  addis.value['labelEditing'] = status ? { labelEditingProvider: ['value', ''] } : false;
+  reloadProcessDesigner();
+};
+const changeLabelVisibleStatus = (status) => {
+  addis.value['customRenderer'] = status ? CustomRenderer : false;
+  reloadProcessDesigner();
+};
+const elementClick = (element) => {
+  element.value = element;
+};
+const initModeler = (initmodeler) => {
+  setTimeout(() => {
+    modeler.value = initmodeler;
+  }, 10);
+};
+const elementContextmenu = (element) => {};
+const onSaveProcess = (saveData) => {
+  emit('save', saveData);
+};
 </script>
 
 <style lang="scss">
-  body {
-    //overflow: hidden;
-    margin: 0;
-    box-sizing: border-box;
+body {
+  //overflow: hidden;
+  margin: 0;
+  box-sizing: border-box;
+}
+body,
+body * {
+  /* 滚动条 */
+  &::-webkit-scrollbar-track-piece {
+    background-color: #fff; /*滚动条的背景颜色*/
+    -webkit-border-radius: 0; /*滚动条的圆角宽度*/
   }
-  body,
-  body * {
-    /* 滚动条 */
-    &::-webkit-scrollbar-track-piece {
-      background-color: #fff; /*滚动条的背景颜色*/
-      -webkit-border-radius: 0; /*滚动条的圆角宽度*/
-    }
 
-    &::-webkit-scrollbar {
-      width: 10px; /*滚动条的宽度*/
-      height: 8px; /*滚动条的高度*/
-    }
-
-    &::-webkit-scrollbar-thumb:vertical {
-      /*垂直滚动条的样式*/
-      height: 50px;
-      background-color: rgba(153, 153, 153, 0.5);
-      -webkit-border-radius: 4px;
-      outline: 2px solid #fff;
-      outline-offset: -2px;
-      border: 2px solid #fff;
-    }
-
-    &::-webkit-scrollbar-thumb {
-      /*滚动条的hover样式*/
-      background-color: rgba(159, 159, 159, 0.3);
-      -webkit-border-radius: 4px;
-    }
-
-    &::-webkit-scrollbar-thumb:hover {
-      /*滚动条的hover样式*/
-      background-color: rgba(159, 159, 159, 0.5);
-      -webkit-border-radius: 4px;
-    }
+  &::-webkit-scrollbar {
+    width: 10px; /*滚动条的宽度*/
+    height: 8px; /*滚动条的高度*/
   }
-  .demo-control-bar {
-    position: fixed;
-    right: 8px;
-    bottom: 48px;
-    z-index: 1;
+
+  &::-webkit-scrollbar-thumb:vertical {
+    /*垂直滚动条的样式*/
+    height: 50px;
+    background-color: rgba(153, 153, 153, 0.5);
+    -webkit-border-radius: 4px;
+    outline: 2px solid #fff;
+    outline-offset: -2px;
+    border: 2px solid #fff;
   }
-  .open-model-button {
-    width: 48px;
-    height: 48px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 4px;
-    font-size: 32px;
-    background: rgba(64, 158, 255, 1);
-    color: #ffffff;
-    cursor: pointer;
+
+  &::-webkit-scrollbar-thumb {
+    /*滚动条的hover样式*/
+    background-color: rgba(159, 159, 159, 0.3);
+    -webkit-border-radius: 4px;
   }
+
+  &::-webkit-scrollbar-thumb:hover {
+    /*滚动条的hover样式*/
+    background-color: rgba(159, 159, 159, 0.5);
+    -webkit-border-radius: 4px;
+  }
+}
+.demo-control-bar {
+  position: fixed;
+  right: 8px;
+  bottom: 48px;
+  z-index: 1;
+}
+.open-model-button {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  font-size: 32px;
+  background: rgba(64, 158, 255, 1);
+  color: #ffffff;
+  cursor: pointer;
+}
 </style>

@@ -1,11 +1,6 @@
 <template>
   <div class="tinymce-editor">
-    <editor
-      :placeholder="nm.tableTypeDesc"
-      v-model="nm.commonDataInfo"
-      :disabled="disabled"
-      @update:modelValue="handleModelValueUpdate"
-    />
+    <editor :placeholder="nm.tableTypeDesc" v-model="nm.commonDataInfo" :disabled="disabled" @update:modelValue="handleModelValueUpdate" />
   </div>
 </template>
 
@@ -13,7 +8,7 @@
 import Editor from '@/components/Editor/index.vue';
 
 export default {
-  name: "NmEditor",
+  name: 'NmEditor',
   components: {
     Editor
   },
@@ -49,5 +44,4 @@ export default {
 };
 </script>
 
-<style scoped>
-</style>
+<style scoped></style>

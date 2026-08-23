@@ -248,4 +248,3 @@ onActivated(() => {
   getList();
 });
 </script>
-

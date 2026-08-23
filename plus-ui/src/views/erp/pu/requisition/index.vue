@@ -104,12 +104,7 @@
 
 <script setup lang="ts" name="PurchaseRequisition">
 // 导入采购请购单相关的API函数
-import {
-  listPurchaseRequisition,
-  delPurchaseRequisition,
-  convertPurchaseRequisition,
-  generateFromLowStock
-} from '@/api/erp/pu/requisition';
+import { listPurchaseRequisition, delPurchaseRequisition, convertPurchaseRequisition, generateFromLowStock } from '@/api/erp/pu/requisition';
 
 // 获取当前实例并获取字典数据
 const { proxy } = getCurrentInstance() as any;
@@ -246,4 +241,3 @@ onActivated(() => {
   getList();
 });
 </script>
-

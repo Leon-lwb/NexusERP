@@ -89,7 +89,15 @@
             </el-col>
             <el-col :span="8">
               <el-form-item label="透明度">
-                <el-input-number v-model="formData.opacity" :precision="2" :min="0" :max="1" :step="0.1" controls-position="right" style="width: 100%" />
+                <el-input-number
+                  v-model="formData.opacity"
+                  :precision="2"
+                  :min="0"
+                  :max="1"
+                  :step="0.1"
+                  controls-position="right"
+                  style="width: 100%"
+                />
               </el-form-item>
             </el-col>
             <el-col :span="8">
@@ -239,12 +247,12 @@
  *
  * @author nexus
  */
-const visible = defineModel<boolean>({ default: false })
+const visible = defineModel<boolean>({ default: false });
 
 const props = defineProps<{
   /** 表单数据引用，直接修改父组件的 form 对象 */
-  formData: Record<string, any>
-}>()
+  formData: Record<string, any>;
+}>();
 
-const activeTab = ref('position')
+const activeTab = ref('position');
 </script>

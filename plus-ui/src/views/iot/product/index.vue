@@ -103,12 +103,12 @@
           <el-input v-model="form.productName" placeholder="请输入产品名称" />
         </el-form-item>
         <el-form-item label="产品类型" prop="productType">
-          <el-select v-model="form.productType" placeholder="请选择产品类型" style="width: 100%;">
+          <el-select v-model="form.productType" placeholder="请选择产品类型" style="width: 100%">
             <el-option v-for="dict in product_type" :key="dict.value" :label="dict.label" :value="dict.value" />
           </el-select>
         </el-form-item>
         <el-form-item label="协议类型" prop="protocolType">
-          <el-select v-model="form.protocolType" placeholder="请选择协议类型" style="width: 100%;">
+          <el-select v-model="form.protocolType" placeholder="请选择协议类型" style="width: 100%">
             <el-option v-for="dict in iot_protocol_type" :key="dict.value" :label="dict.label" :value="dict.value" />
           </el-select>
         </el-form-item>
@@ -301,4 +301,3 @@ function handleExport() {
 
 getList();
 </script>
-

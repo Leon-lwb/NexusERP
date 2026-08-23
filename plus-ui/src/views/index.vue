@@ -2,38 +2,60 @@
   <div class="app-container home">
     <!-- 统计卡片 -->
     <el-row :gutter="20">
-      <el-col
-        :xs="24"
-        :sm="12"
-        :md="12"
-        :lg="6"
-        v-for="(item, index) in statCards"
-        :key="index"
-        class="stat-col"
-      >
+      <el-col :xs="24" :sm="12" :md="12" :lg="6" v-for="(item, index) in statCards" :key="index" class="stat-col">
         <el-card class="stat-card" shadow="hover" v-loading="loading">
           <div class="stat-content">
             <div class="stat-icon" :style="{ background: item.bgGradient }">
               <svg class="stat-svg-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <!-- 销售额 -->
                 <g v-if="item.icon === 'sales'">
-                  <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path
+                    d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
                 </g>
                 <!-- 客户 -->
                 <g v-if="item.icon === 'customer'">
-                  <path d="M17 21v-2a4 4 0 00-4-4H7a4 4 0 00-4 4v2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-                  <circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="1.8"/>
-                  <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path
+                    d="M17 21v-2a4 4 0 00-4-4H7a4 4 0 00-4 4v2"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                  <circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="1.8" />
+                  <path
+                    d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
                 </g>
                 <!-- 商品 -->
                 <g v-if="item.icon === 'product'">
-                  <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4H6z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-                  <path d="M3 6h18M16 10a4 4 0 01-8 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path
+                    d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4H6z"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                  <path d="M3 6h18M16 10a4 4 0 01-8 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
                 </g>
                 <!-- 任务 -->
                 <g v-if="item.icon === 'task'">
-                  <path d="M9 11l3 3L22 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-                  <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M9 11l3 3L22 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+                  <path
+                    d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
                 </g>
               </svg>
             </div>
@@ -41,7 +63,16 @@
               <div class="stat-title">{{ item.title }}</div>
               <div class="stat-value" :style="{ color: item.color }">{{ animatedValues[index] }}</div>
               <div v-if="item.trend" class="stat-trend" :class="item.trend > 0 ? 'up' : 'down'">
-                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="12"
+                  height="12"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
                   <polyline v-if="item.trend > 0" points="23 6 13.5 15.5 8.5 10.5 1 18" />
                   <polyline v-else points="23 18 13.5 8.5 8.5 13.5 1 6" />
                 </svg>
@@ -62,8 +93,17 @@
             <div class="card-header">
               <div class="header-left">
                 <div class="header-icon sales-icon">
-                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="16"
+                    height="16"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
                   </svg>
                 </div>
                 <span>销售趋势</span>
@@ -87,10 +127,19 @@
             <div class="card-header">
               <div class="header-left">
                 <div class="header-icon product-icon">
-                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4H6z"/>
-                    <path d="M3 6h18"/>
-                    <path d="M16 10a4 4 0 01-8 0"/>
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="16"
+                    height="16"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4H6z" />
+                    <path d="M3 6h18" />
+                    <path d="M16 10a4 4 0 01-8 0" />
                   </svg>
                 </div>
                 <span>热门商品排行</span>
@@ -111,19 +160,38 @@
             <div class="card-header">
               <div class="header-left">
                 <div class="header-icon order-icon">
-                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
-                    <polyline points="14 2 14 8 20 8"/>
-                    <line x1="16" y1="13" x2="8" y2="13"/>
-                    <line x1="16" y1="17" x2="8" y2="17"/>
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="16"
+                    height="16"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+                    <polyline points="14 2 14 8 20 8" />
+                    <line x1="16" y1="13" x2="8" y2="13" />
+                    <line x1="16" y1="17" x2="8" y2="17" />
                   </svg>
                 </div>
                 <span>最新订单</span>
               </div>
               <el-link type="primary" :underline="false" size="small">
                 查看更多
-                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-left:2px;vertical-align:-1px">
-                  <polyline points="9 18 15 12 9 6"/>
+                <svg
+                  viewBox="0 0 24 24"
+                  width="12"
+                  height="12"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  style="margin-left: 2px; vertical-align: -1px"
+                >
+                  <polyline points="9 18 15 12 9 6" />
                 </svg>
               </el-link>
             </div>
@@ -170,17 +238,36 @@
             <div class="card-header">
               <div class="header-left">
                 <div class="header-icon task-icon">
-                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M9 11l3 3L22 4"/>
-                    <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="16"
+                    height="16"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M9 11l3 3L22 4" />
+                    <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
                   </svg>
                 </div>
                 <span>任务进度</span>
               </div>
               <el-link type="primary" :underline="false" size="small">
                 查看全部
-                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-left:2px;vertical-align:-1px">
-                  <polyline points="9 18 15 12 9 6"/>
+                <svg
+                  viewBox="0 0 24 24"
+                  width="12"
+                  height="12"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  style="margin-left: 2px; vertical-align: -1px"
+                >
+                  <polyline points="9 18 15 12 9 6" />
                 </svg>
               </el-link>
             </div>
@@ -192,9 +279,18 @@
                   <div class="task-name">{{ task.name }}</div>
                   <div class="task-meta">
                     <span class="task-executor">
-                      <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
-                        <circle cx="12" cy="7" r="4"/>
+                      <svg
+                        viewBox="0 0 24 24"
+                        width="12"
+                        height="12"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
+                        <circle cx="12" cy="7" r="4" />
                       </svg>
                       {{ task.executor }}
                     </span>
@@ -204,11 +300,7 @@
                 <div class="task-percent">{{ task.progress }}%</div>
               </div>
               <div class="task-progress-bar">
-                <div
-                  class="task-progress-fill"
-                  :class="getTaskProgressClass(task.progress)"
-                  :style="{ width: task.progress + '%' }"
-                ></div>
+                <div class="task-progress-fill" :class="getTaskProgressClass(task.progress)" :style="{ width: task.progress + '%' }"></div>
               </div>
             </div>
           </div>
@@ -220,49 +312,81 @@
 </template>
 
 <script setup lang="ts" name="Index">
-import { ref, onMounted, onUnmounted, nextTick } from 'vue'
-import * as echarts from 'echarts'
+import { ref, onMounted, onUnmounted, nextTick } from 'vue';
+import * as echarts from 'echarts';
 
 // ==================== 类型定义 ====================
 interface StatCard {
-  title: string
-  value: number
-  prefix?: string
-  suffix?: string
-  icon: string
-  bgGradient: string
-  color: string
-  trend?: number
+  title: string;
+  value: number;
+  prefix?: string;
+  suffix?: string;
+  icon: string;
+  bgGradient: string;
+  color: string;
+  trend?: number;
 }
 
 interface OrderItem {
-  orderNo: string
-  customer: string
-  amount: number
-  status: string
-  createTime: string
+  orderNo: string;
+  customer: string;
+  amount: number;
+  status: string;
+  createTime: string;
 }
 
 interface TaskItem {
-  name: string
-  executor: string
-  progress: number
-  status: string
+  name: string;
+  executor: string;
+  progress: number;
+  status: string;
 }
 
 // ==================== 状态 ====================
-const loading = ref(false)
-const chartLoading = ref(false)
+const loading = ref(false);
+const chartLoading = ref(false);
 
 // ==================== 数据 ====================
 const statCards = ref<StatCard[]>([
-  { title: '总销售额', value: 128560, prefix: '¥', icon: 'sales', bgGradient: 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)', color: '#2563eb', trend: 12.5 },
-  { title: '客户数量', value: 1248, suffix: ' 家', icon: 'customer', bgGradient: 'linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%)', color: '#16a34a', trend: 8.2 },
-  { title: '商品数量', value: 3652, suffix: ' 件', icon: 'product', bgGradient: 'linear-gradient(135deg, #ffedd5 0%, #fed7aa 100%)', color: '#ea580c', trend: -2.4 },
-  { title: '待办任务', value: 18, suffix: ' 个', icon: 'task', bgGradient: 'linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%)', color: '#db2777', trend: 5.1 }
-])
+  {
+    title: '总销售额',
+    value: 128560,
+    prefix: '¥',
+    icon: 'sales',
+    bgGradient: 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)',
+    color: '#2563eb',
+    trend: 12.5
+  },
+  {
+    title: '客户数量',
+    value: 1248,
+    suffix: ' 家',
+    icon: 'customer',
+    bgGradient: 'linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%)',
+    color: '#16a34a',
+    trend: 8.2
+  },
+  {
+    title: '商品数量',
+    value: 3652,
+    suffix: ' 件',
+    icon: 'product',
+    bgGradient: 'linear-gradient(135deg, #ffedd5 0%, #fed7aa 100%)',
+    color: '#ea580c',
+    trend: -2.4
+  },
+  {
+    title: '待办任务',
+    value: 18,
+    suffix: ' 个',
+    icon: 'task',
+    bgGradient: 'linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%)',
+    color: '#db2777',
+    trend: 5.1
+  }
+]);
 
-const animatedValues = ref<string[]>(statCards.value.map(() => '0'))
+const animatedValues = ref<string[]>(statCards.value.map(() => '0'));
 
 const latestOrders = ref<OrderItem[]>([
   { orderNo: 'NO20230801001', customer: '阿里巴巴', amount: 12800, status: '已完成', createTime: '2023-08-01 14:30' },
@@ -270,7 +394,7 @@ const latestOrders = ref<OrderItem[]>([
   { orderNo: 'NO20230801003', customer: '百度公司', amount: 15200, status: '待发货', createTime: '2023-08-01 09:45' },
   { orderNo: 'NO20230801004', customer: '字节跳动', amount: 6800, status: '已付款', createTime: '2023-08-01 08:15' },
   { orderNo: 'NO20230731001', customer: '京东商城', amount: 21500, status: '已完成', createTime: '2023-07-31 17:30' }
-])
+]);
 
 const tasks = ref<TaskItem[]>([
   { name: '完成年度销售报告', executor: '张三', progress: 100, status: '已完成' },
@@ -278,18 +402,18 @@ const tasks = ref<TaskItem[]>([
   { name: '新产品上线准备', executor: '王五', progress: 60, status: '进行中' },
   { name: '供应商资质审核', executor: '赵六', progress: 30, status: '进行中' },
   { name: '系统安全检测', executor: '钱七', progress: 0, status: '未开始' }
-])
+]);
 
 // ==================== 图表 ====================
-const salesChartRef = ref<HTMLDivElement | null>(null)
-const productChartRef = ref<HTMLDivElement | null>(null)
-let salesChart: echarts.ECharts | null = null
-let productChart: echarts.ECharts | null = null
-const salesPeriod = ref('year')
+const salesChartRef = ref<HTMLDivElement | null>(null);
+const productChartRef = ref<HTMLDivElement | null>(null);
+let salesChart: echarts.ECharts | null = null;
+let productChart: echarts.ECharts | null = null;
+const salesPeriod = ref('year');
 
 // ==================== 工具函数 ====================
 function formatNumber(num: number): string {
-  return num.toLocaleString('zh-CN')
+  return num.toLocaleString('zh-CN');
 }
 
 const orderStatusMap: Record<string, any> = {
@@ -297,20 +421,20 @@ const orderStatusMap: Record<string, any> = {
   '已发货': 'primary',
   '待发货': 'warning',
   '已付款': 'info'
-}
+};
 
 const taskStatusMap: Record<string, any> = {
   '已完成': 'success',
   '进行中': 'warning',
   '未开始': 'info'
-}
+};
 
 function getOrderStatusType(status: string) {
-  return orderStatusMap[status] || 'info'
+  return orderStatusMap[status] || 'info';
 }
 
 function getTaskStatusType(status: string) {
-  return taskStatusMap[status] || 'info'
+  return taskStatusMap[status] || 'info';
 }
 
 // 状态样式类
@@ -320,8 +444,8 @@ function getOrderStatusClass(status: string) {
     '已发货': 'primary',
     '待发货': 'warning',
     '已付款': 'info'
-  }
-  return map[status] || 'info'
+  };
+  return map[status] || 'info';
 }
 
 function getTaskStatusClass(status: string) {
@@ -329,43 +453,43 @@ function getTaskStatusClass(status: string) {
     '已完成': 'success',
     '进行中': 'warning',
     '未开始': 'info'
-  }
-  return map[status] || 'info'
+  };
+  return map[status] || 'info';
 }
 
 function getTaskProgressClass(progress: number) {
-  if (progress === 100) return 'success'
-  if (progress >= 60) return 'primary'
-  if (progress >= 30) return 'warning'
-  return 'info'
+  if (progress === 100) return 'success';
+  if (progress >= 60) return 'primary';
+  if (progress >= 30) return 'warning';
+  return 'info';
 }
 
 // 数字递增动画
 function animateValue(index: number, target: number, duration: number = 1200) {
-  const startTime = performance.now()
-  const prefix = statCards.value[index].prefix || ''
-  const suffix = statCards.value[index].suffix || ''
+  const startTime = performance.now();
+  const prefix = statCards.value[index].prefix || '';
+  const suffix = statCards.value[index].suffix || '';
 
   function update(currentTime: number) {
-    const elapsed = currentTime - startTime
-    const progress = Math.min(elapsed / duration, 1)
+    const elapsed = currentTime - startTime;
+    const progress = Math.min(elapsed / duration, 1);
     // easeOutQuart 缓动
-    const easeProgress = 1 - Math.pow(1 - progress, 4)
-    const current = Math.floor(easeProgress * target)
-    animatedValues.value[index] = prefix + formatNumber(current) + suffix
+    const easeProgress = 1 - Math.pow(1 - progress, 4);
+    const current = Math.floor(easeProgress * target);
+    animatedValues.value[index] = prefix + formatNumber(current) + suffix;
 
     if (progress < 1) {
-      requestAnimationFrame(update)
+      requestAnimationFrame(update);
     }
   }
 
-  requestAnimationFrame(update)
+  requestAnimationFrame(update);
 }
 
 function initNumberAnimation() {
   statCards.value.forEach((card, index) => {
-    animateValue(index, card.value, 1200)
-  })
+    animateValue(index, card.value, 1200);
+  });
 }
 
 // ==================== 图表配置 ====================
@@ -382,19 +506,19 @@ const salesDataMap: Record<string, { categories: string[]; data: number[] }> = {
     categories: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'],
     data: [1200, 1900, 1500, 2500, 1800, 2200, 2800, 3500, 3100, 4200, 4800, 5600]
   }
-}
+};
 
 function updateSalesChart() {
-  if (!salesChart) return
-  const periodData = salesDataMap[salesPeriod.value]
+  if (!salesChart) return;
+  const periodData = salesDataMap[salesPeriod.value];
   salesChart.setOption({
     xAxis: { data: periodData.categories },
     series: [{ data: periodData.data }]
-  })
+  });
 }
 
 function getSalesChartOption(): echarts.EChartsOption {
-  const periodData = salesDataMap[salesPeriod.value]
+  const periodData = salesDataMap[salesPeriod.value];
   return {
     tooltip: {
       trigger: 'axis',
@@ -404,13 +528,13 @@ function getSalesChartOption(): echarts.EChartsOption {
       textStyle: { color: '#1e293b' },
       extraCssText: 'box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08); border-radius: 8px;',
       formatter: (params: any) => {
-        const p = params[0]
+        const p = params[0];
         return `<div style="font-weight:600;margin-bottom:4px">${p.name}</div>
                 <div style="display:flex;align-items:center;gap:6px">
                   <span style="width:8px;height:8px;border-radius:50%;background:${p.color}"></span>
                   <span style="color:#64748b">销售额：</span>
                   <span style="font-weight:700">¥${formatNumber(p.value)}</span>
-                </div>`
+                </div>`;
       }
     },
     grid: {
@@ -433,47 +557,49 @@ function getSalesChartOption(): echarts.EChartsOption {
       axisLine: { show: false },
       axisTick: { show: false },
       splitLine: { lineStyle: { color: '#f1f5f9', type: 'dashed' } },
-      axisLabel: { color: '#64748b', fontSize: 12, formatter: (v: number) => v >= 1000 ? (v / 1000) + 'k' : v }
+      axisLabel: { color: '#64748b', fontSize: 12, formatter: (v: number) => (v >= 1000 ? v / 1000 + 'k' : v) }
     },
-    series: [{
-      data: periodData.data,
-      type: 'line',
-      smooth: true,
-      symbolSize: 10,
-      symbol: 'circle',
-      showSymbol: false,
-      itemStyle: {
-        color: '#3b82f6',
-        borderWidth: 3,
-        borderColor: '#fff'
-      },
-      lineStyle: {
-        width: 3,
-        shadowColor: 'rgba(59, 130, 246, 0.25)',
-        shadowBlur: 12,
-        shadowOffsetY: 6
-      },
-      areaStyle: {
-        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-          { offset: 0, color: 'rgba(59, 130, 246, 0.2)' },
-          { offset: 0.6, color: 'rgba(59, 130, 246, 0.05)' },
-          { offset: 1, color: 'rgba(59, 130, 246, 0)' }
-        ])
-      },
-      emphasis: {
-        scale: true,
+    series: [
+      {
+        data: periodData.data,
+        type: 'line',
+        smooth: true,
+        symbolSize: 10,
+        symbol: 'circle',
+        showSymbol: false,
         itemStyle: {
+          color: '#3b82f6',
+          borderWidth: 3,
+          borderColor: '#fff'
+        },
+        lineStyle: {
+          width: 3,
+          shadowColor: 'rgba(59, 130, 246, 0.25)',
           shadowBlur: 12,
-          shadowColor: 'rgba(59, 130, 246, 0.4)'
+          shadowOffsetY: 6
+        },
+        areaStyle: {
+          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+            { offset: 0, color: 'rgba(59, 130, 246, 0.2)' },
+            { offset: 0.6, color: 'rgba(59, 130, 246, 0.05)' },
+            { offset: 1, color: 'rgba(59, 130, 246, 0)' }
+          ])
+        },
+        emphasis: {
+          scale: true,
+          itemStyle: {
+            shadowBlur: 12,
+            shadowColor: 'rgba(59, 130, 246, 0.4)'
+          }
         }
       }
-    }]
-  }
+    ]
+  };
 }
 
 function getProductChartOption(): echarts.EChartsOption {
-  const colors = ['#3b82f6', '#0ea5e9', '#06b6d4', '#14b8a6', '#10b981']
-  const data = [220, 180, 150, 120, 100]
+  const colors = ['#3b82f6', '#0ea5e9', '#06b6d4', '#14b8a6', '#10b981'];
+  const data = [220, 180, 150, 120, 100];
   return {
     tooltip: {
       trigger: 'axis',
@@ -484,12 +610,12 @@ function getProductChartOption(): echarts.EChartsOption {
       textStyle: { color: '#1e293b' },
       extraCssText: 'box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08); border-radius: 8px;',
       formatter: (params: any) => {
-        const p = params[0]
+        const p = params[0];
         return `<div style="display:flex;align-items:center;gap:6px">
                   <span style="width:8px;height:8px;border-radius:50%;background:${p.color}"></span>
                   <span style="color:#64748b">${p.name}：</span>
                   <span style="font-weight:700">${p.value} 件</span>
-                </div>`
+                </div>`;
       }
     },
     grid: {
@@ -513,59 +639,61 @@ function getProductChartOption(): echarts.EChartsOption {
       axisTick: { show: false },
       axisLabel: { color: '#475569', fontSize: 13, fontWeight: 500 }
     },
-    series: [{
-      data: data.map((val, idx) => ({
-        value: val,
-        itemStyle: {
-          color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [
-            { offset: 0, color: colors[idx] + 'cc' },
-            { offset: 1, color: colors[idx] }
-          ]),
-          borderRadius: [0, 6, 6, 0]
-        }
-      })),
-      type: 'bar',
-      barWidth: '50%',
-      label: {
-        show: true,
-        position: 'right',
-        color: '#64748b',
-        fontSize: 12,
-        fontWeight: 600,
-        formatter: '{c}'
-      },
-      emphasis: {
-        itemStyle: {
-          shadowBlur: 10,
-          shadowColor: 'rgba(0, 0, 0, 0.1)'
+    series: [
+      {
+        data: data.map((val, idx) => ({
+          value: val,
+          itemStyle: {
+            color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [
+              { offset: 0, color: colors[idx] + 'cc' },
+              { offset: 1, color: colors[idx] }
+            ]),
+            borderRadius: [0, 6, 6, 0]
+          }
+        })),
+        type: 'bar',
+        barWidth: '50%',
+        label: {
+          show: true,
+          position: 'right',
+          color: '#64748b',
+          fontSize: 12,
+          fontWeight: 600,
+          formatter: '{c}'
+        },
+        emphasis: {
+          itemStyle: {
+            shadowBlur: 10,
+            shadowColor: 'rgba(0, 0, 0, 0.1)'
+          }
         }
       }
-    }]
-  }
+    ]
+  };
 }
 
 // ==================== 生命周期 ====================
 function initCharts() {
   if (salesChartRef.value) {
-    salesChart = echarts.init(salesChartRef.value)
-    salesChart.setOption(getSalesChartOption())
+    salesChart = echarts.init(salesChartRef.value);
+    salesChart.setOption(getSalesChartOption());
   }
 
   if (productChartRef.value) {
-    productChart = echarts.init(productChartRef.value)
-    productChart.setOption(getProductChartOption())
+    productChart = echarts.init(productChartRef.value);
+    productChart.setOption(getProductChartOption());
   }
 }
 
 function handleResize() {
-  salesChart?.resize()
-  productChart?.resize()
+  salesChart?.resize();
+  productChart?.resize();
 }
 
 // 模拟数据加载（预留 API 接入结构）
 async function loadDashboardData() {
-  loading.value = true
-  chartLoading.value = true
+  loading.value = true;
+  chartLoading.value = true;
 
   try {
     // TODO: 替换为实际 API 调用
@@ -576,32 +704,32 @@ async function loadDashboardData() {
     // ])
 
     // 模拟网络延迟
-    await new Promise(resolve => setTimeout(resolve, 500))
+    await new Promise((resolve) => setTimeout(resolve, 500));
 
     // 数据已在响应式变量中初始化，实际项目中替换为接口返回值
   } catch (error) {
-    console.error('首页数据加载失败:', error)
+    console.error('首页数据加载失败:', error);
   } finally {
-    loading.value = false
-    chartLoading.value = false
+    loading.value = false;
+    chartLoading.value = false;
 
     nextTick(() => {
-      initCharts()
-      initNumberAnimation()
-    })
+      initCharts();
+      initNumberAnimation();
+    });
   }
 }
 
 onMounted(() => {
-  loadDashboardData()
-  window.addEventListener('resize', handleResize)
-})
+  loadDashboardData();
+  window.addEventListener('resize', handleResize);
+});
 
 onUnmounted(() => {
-  window.removeEventListener('resize', handleResize)
-  salesChart?.dispose()
-  productChart?.dispose()
-})
+  window.removeEventListener('resize', handleResize);
+  salesChart?.dispose();
+  productChart?.dispose();
+});
 </script>
 
 <style scoped>
@@ -745,10 +873,18 @@ onUnmounted(() => {
   color: #fff;
 }
 
-.header-icon.sales-icon { background: linear-gradient(135deg, #3b82f6, #60a5fa); }
-.header-icon.product-icon { background: linear-gradient(135deg, #0ea5e9, #38bdf8); }
-.header-icon.order-icon { background: linear-gradient(135deg, #f59e0b, #fbbf24); }
-.header-icon.task-icon { background: linear-gradient(135deg, #10b981, #34d399); }
+.header-icon.sales-icon {
+  background: linear-gradient(135deg, #3b82f6, #60a5fa);
+}
+.header-icon.product-icon {
+  background: linear-gradient(135deg, #0ea5e9, #38bdf8);
+}
+.header-icon.order-icon {
+  background: linear-gradient(135deg, #f59e0b, #fbbf24);
+}
+.header-icon.task-icon {
+  background: linear-gradient(135deg, #10b981, #34d399);
+}
 
 /* 订单表格 */
 .order-no {
@@ -786,14 +922,34 @@ onUnmounted(() => {
   flex-shrink: 0;
 }
 
-.status-badge.success { background: #dcfce7; color: #16a34a; }
-.status-badge.success .status-dot { background: #22c55e; }
-.status-badge.primary { background: #dbeafe; color: #2563eb; }
-.status-badge.primary .status-dot { background: #3b82f6; }
-.status-badge.warning { background: #fef3c7; color: #d97706; }
-.status-badge.warning .status-dot { background: #f59e0b; }
-.status-badge.info { background: #f1f5f9; color: #64748b; }
-.status-badge.info .status-dot { background: #94a3b8; }
+.status-badge.success {
+  background: #dcfce7;
+  color: #16a34a;
+}
+.status-badge.success .status-dot {
+  background: #22c55e;
+}
+.status-badge.primary {
+  background: #dbeafe;
+  color: #2563eb;
+}
+.status-badge.primary .status-dot {
+  background: #3b82f6;
+}
+.status-badge.warning {
+  background: #fef3c7;
+  color: #d97706;
+}
+.status-badge.warning .status-dot {
+  background: #f59e0b;
+}
+.status-badge.info {
+  background: #f1f5f9;
+  color: #64748b;
+}
+.status-badge.info .status-dot {
+  background: #94a3b8;
+}
 
 /* 任务列表 */
 .task-list {
@@ -849,9 +1005,18 @@ onUnmounted(() => {
   border-radius: 12px;
 }
 
-.task-status.success { background: #dcfce7; color: #16a34a; }
-.task-status.warning { background: #fef3c7; color: #d97706; }
-.task-status.info { background: #f1f5f9; color: #64748b; }
+.task-status.success {
+  background: #dcfce7;
+  color: #16a34a;
+}
+.task-status.warning {
+  background: #fef3c7;
+  color: #d97706;
+}
+.task-status.info {
+  background: #f1f5f9;
+  color: #64748b;
+}
 
 .task-percent {
   font-size: 16px;
@@ -874,10 +1039,18 @@ onUnmounted(() => {
   transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.task-progress-fill.success { background: linear-gradient(90deg, #22c55e, #4ade80); }
-.task-progress-fill.primary { background: linear-gradient(90deg, #3b82f6, #60a5fa); }
-.task-progress-fill.warning { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
-.task-progress-fill.info { background: linear-gradient(90deg, #94a3b8, #cbd5e1); }
+.task-progress-fill.success {
+  background: linear-gradient(90deg, #22c55e, #4ade80);
+}
+.task-progress-fill.primary {
+  background: linear-gradient(90deg, #3b82f6, #60a5fa);
+}
+.task-progress-fill.warning {
+  background: linear-gradient(90deg, #f59e0b, #fbbf24);
+}
+.task-progress-fill.info {
+  background: linear-gradient(90deg, #94a3b8, #cbd5e1);
+}
 
 :deep(.el-card) {
   border-radius: 12px;

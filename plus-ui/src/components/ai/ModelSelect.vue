@@ -9,12 +9,7 @@
     style="width: 100%"
     @update:model-value="onChange"
   >
-    <el-option
-      v-for="item in options"
-      :key="item.id"
-      :label="(item.displayName || item.modelName)"
-      :value="item[valueField]"
-    >
+    <el-option v-for="item in options" :key="item.id" :label="item.displayName || item.modelName" :value="item[valueField]">
       <span class="model-opt">
         <el-tag size="small" effect="plain" :type="providerTagType(item.providerType)">
           {{ providerTagText(item.providerType) }}
@@ -27,8 +22,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { listModelOptions, type AiModel } from '@/api/ai/model'
+import { ref, onMounted } from 'vue';
+import { listModelOptions, type AiModel } from '@/api/ai/model';
 
 /**
  * AI 模型选择器（按 modelType 分类加载启用模型）
@@ -37,14 +32,14 @@ import { listModelOptions, type AiModel } from '@/api/ai/model'
  */
 interface Props {
   /** 模型分类：CHAT/EMBEDDING/RERANK/IMAGE */
-  modelType: string
+  modelType: string;
   /** 选中值（modelName 字符串 或 id 数字） */
-  modelValue?: string | number
+  modelValue?: string | number;
   /** 绑定值取哪个字段：对话用 modelName，文生图用 id */
-  valueField?: 'modelName' | 'id'
-  placeholder?: string
-  disabled?: boolean
-  clearable?: boolean
+  valueField?: 'modelName' | 'id';
+  placeholder?: string;
+  disabled?: boolean;
+  clearable?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -52,52 +47,52 @@ const props = withDefaults(defineProps<Props>(), {
   placeholder: '请选择模型',
   disabled: false,
   clearable: false
-})
+});
 
 const emit = defineEmits<{
-  (e: 'update:modelValue', value: string | number | undefined): void
-  (e: 'change', model: AiModel | undefined): void
-}>()
+  (e: 'update:modelValue', value: string | number | undefined): void;
+  (e: 'change', model: AiModel | undefined): void;
+}>();
 
-const options = ref<AiModel[]>([])
-const loading = ref(false)
+const options = ref<AiModel[]>([]);
+const loading = ref(false);
 
 async function loadOptions() {
-  loading.value = true
+  loading.value = true;
   try {
-    const res: any = await listModelOptions(props.modelType)
-    options.value = res.data || []
+    const res: any = await listModelOptions(props.modelType);
+    options.value = res.data || [];
     // 无选中值时预选默认模型（首屏即显示将使用的模型）
     if (props.modelValue === undefined || props.modelValue === null || props.modelValue === '') {
       if (options.value.length) {
-        const def = options.value.find((m) => m.isDefault === '1') || options.value[0]
-        emit('update:modelValue', def[props.valueField])
-        emit('change', def)
+        const def = options.value.find((m) => m.isDefault === '1') || options.value[0];
+        emit('update:modelValue', def[props.valueField]);
+        emit('change', def);
       }
     }
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 
 function onChange(val: string | number | undefined) {
-  emit('update:modelValue', val)
-  const matched = options.value.find((m) => m[props.valueField] === val)
-  emit('change', matched)
+  emit('update:modelValue', val);
+  const matched = options.value.find((m) => m[props.valueField] === val);
+  emit('change', matched);
 }
 
 /** 厂商类型标签样式：本地(Ollama)用 warning 提示，云上厂商用 info */
 function providerTagType(providerType?: string): any {
-  if (providerType === 'OLLAMA') return 'warning'
-  return 'info'
+  if (providerType === 'OLLAMA') return 'warning';
+  return 'info';
 }
 
 /** 厂商类型标签文本 */
 function providerTagText(providerType?: string): string {
-  return providerType || '未知'
+  return providerType || '未知';
 }
 
-onMounted(loadOptions)
+onMounted(loadOptions);
 </script>
 
 <style scoped>

@@ -20,7 +20,7 @@ export interface CategoryVO extends BaseEntity {
 /**
  * 流程APP分类返回对象
  */
-export interface AppTypeVo  {
+export interface AppTypeVo {
   id: string | number;
   name: string;
 }

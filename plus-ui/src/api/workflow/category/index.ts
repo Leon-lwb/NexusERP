@@ -36,7 +36,6 @@ export function getAppType(code?: string | number): AxiosPromise<AppTypeVo> {
   });
 }
 
-
 // 新增流程分类
 export function addCategory(data: CategoryForm) {
   return request({

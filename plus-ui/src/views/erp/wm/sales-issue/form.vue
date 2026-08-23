@@ -6,9 +6,15 @@
           <span>{{ title }}</span>
           <div>
             <el-button type="primary" @click="submitForm" v-if="!isViewMode && !props.disabled && form.status === 'DRAFT'">保存</el-button>
-            <el-button type="success" @click="handleConfirm" v-if="!isViewMode && !props.disabled && form.status === 'APPROVED' && form.issueId">确认</el-button>
-            <el-button type="warning" @click="handleComplete" v-if="!isViewMode && !props.disabled && form.status === 'CONFIRMED'">完成出库</el-button>
-            <el-button type="primary" @click="handleSubmitFlow" v-if="!isViewMode && !props.disabled && form.status === 'DRAFT' && form.issueId">提交审批</el-button>
+            <el-button type="success" @click="handleConfirm" v-if="!isViewMode && !props.disabled && form.status === 'APPROVED' && form.issueId"
+              >确认</el-button
+            >
+            <el-button type="warning" @click="handleComplete" v-if="!isViewMode && !props.disabled && form.status === 'CONFIRMED'"
+              >完成出库</el-button
+            >
+            <el-button type="primary" @click="handleSubmitFlow" v-if="!isViewMode && !props.disabled && form.status === 'DRAFT' && form.issueId"
+              >提交审批</el-button
+            >
             <el-button type="info" @click="onViewFlow" v-if="form.status === 'APPROVING' || form.status === 'APPROVED'">查看流程</el-button>
             <el-button @click="cancel" v-if="!props.disabled">取消</el-button>
           </div>
@@ -23,7 +29,13 @@
             <el-form-item label="出库单编号" prop="issueCode">
               <div style="display: flex; align-items: center; gap: 10px">
                 <el-input v-model="form.issueCode" placeholder="请输入出库单编号" :disabled="autoGenFlag || isViewMode" style="flex: 1" />
-                <el-switch v-model="autoGenFlag" active-color="#13ce66" active-text="生成" @change="handleAutoGenChange" :disabled="isViewMode || props.disabled">
+                <el-switch
+                  v-model="autoGenFlag"
+                  active-color="#13ce66"
+                  active-text="生成"
+                  @change="handleAutoGenChange"
+                  :disabled="isViewMode || props.disabled"
+                >
                 </el-switch>
               </div>
             </el-form-item>
@@ -132,13 +144,22 @@
         <el-divider content-position="center">出库明细</el-divider>
         <el-row :gutter="10" class="mb8">
           <el-col :span="1.5">
-            <el-button type="primary" icon="Plus" @click="handleAddLine" v-if="!isViewMode && !props.disabled && form.status === 'DRAFT'"> 添加物料 </el-button>
+            <el-button type="primary" icon="Plus" @click="handleAddLine" v-if="!isViewMode && !props.disabled && form.status === 'DRAFT'">
+              添加物料
+            </el-button>
           </el-col>
           <el-col :span="1.5">
-            <el-button type="danger" icon="Delete" @click="handleDeleteLine" v-if="!isViewMode && !props.disabled && form.status === 'DRAFT'"> 删除 </el-button>
+            <el-button type="danger" icon="Delete" @click="handleDeleteLine" v-if="!isViewMode && !props.disabled && form.status === 'DRAFT'">
+              删除
+            </el-button>
           </el-col>
           <el-col :span="1.5">
-            <el-button type="info" icon="Download" @click="handleImportFromOrder" v-if="!isViewMode && !props.disabled && form.status === 'DRAFT' && form.soId">
+            <el-button
+              type="info"
+              icon="Download"
+              @click="handleImportFromOrder"
+              v-if="!isViewMode && !props.disabled && form.status === 'DRAFT' && form.soId"
+            >
               从订单导入
             </el-button>
           </el-col>
@@ -149,7 +170,12 @@
           <el-table-column label="序号" align="center" prop="index" width="60" />
           <el-table-column label="物料编码" prop="materialCode" width="140">
             <template #default="scope">
-              <el-input v-model="scope.row.materialCode" placeholder="选择物料" readonly v-if="!isViewMode && !props.disabled && form.status === 'DRAFT'">
+              <el-input
+                v-model="scope.row.materialCode"
+                placeholder="选择物料"
+                readonly
+                v-if="!isViewMode && !props.disabled && form.status === 'DRAFT'"
+              >
                 <template #append>
                   <el-button icon="Search" @click="openMaterialSelect(scope.$index)" />
                 </template>
@@ -162,7 +188,12 @@
           <el-table-column label="单位" prop="baseUomName" width="80" />
           <el-table-column label="批次号" prop="batchCode" width="140">
             <template #default="scope">
-              <el-input v-model="scope.row.batchCode" placeholder="选择批次" readonly v-if="!isViewMode && !props.disabled && form.status === 'DRAFT'">
+              <el-input
+                v-model="scope.row.batchCode"
+                placeholder="选择批次"
+                readonly
+                v-if="!isViewMode && !props.disabled && form.status === 'DRAFT'"
+              >
                 <template #append>
                   <el-button icon="Search" @click="openBatchSelect(scope.$index)" :disabled="!scope.row.materialId" />
                 </template>
@@ -172,7 +203,12 @@
           </el-table-column>
           <el-table-column label="库位" prop="locationName" width="120">
             <template #default="scope">
-              <el-input v-model="scope.row.locationName" placeholder="选择库位" readonly v-if="!isViewMode && !props.disabled && form.status === 'DRAFT'">
+              <el-input
+                v-model="scope.row.locationName"
+                placeholder="选择库位"
+                readonly
+                v-if="!isViewMode && !props.disabled && form.status === 'DRAFT'"
+              >
                 <template #append>
                   <el-button icon="Search" @click="openLocationSelect(scope.$index)" :disabled="!form.warehouseId" />
                 </template>

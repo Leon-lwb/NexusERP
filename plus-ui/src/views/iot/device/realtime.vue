@@ -2,16 +2,16 @@
   <div class="app-container">
     <!-- 设备信息头部 -->
     <el-card shadow="hover" class="mb-2">
-      <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
+      <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap">
         <div>
-          <span style="font-weight: bold; font-size: 16px;">{{ deviceInfo.deviceName || '--' }}</span>
-          <el-tag :type="connectionStatus === 'ONLINE' ? 'success' : 'info'" style="margin-left: 10px;">
+          <span style="font-weight: bold; font-size: 16px">{{ deviceInfo.deviceName || '--' }}</span>
+          <el-tag :type="connectionStatus === 'ONLINE' ? 'success' : 'info'" style="margin-left: 10px">
             {{ connectionStatus === 'ONLINE' ? '在线' : '离线' }}
           </el-tag>
         </div>
-        <div style="color: #909399; font-size: 13px;">设备编码: {{ deviceInfo.deviceCode || '--' }}</div>
-        <div style="color: #909399; font-size: 13px;">产品: {{ deviceInfo.productName || '--' }}</div>
-        <div style="color: #909399; font-size: 13px;">协议: {{ deviceInfo.protocolType || '--' }}</div>
+        <div style="color: #909399; font-size: 13px">设备编码: {{ deviceInfo.deviceCode || '--' }}</div>
+        <div style="color: #909399; font-size: 13px">产品: {{ deviceInfo.productName || '--' }}</div>
+        <div style="color: #909399; font-size: 13px">协议: {{ deviceInfo.protocolType || '--' }}</div>
         <el-button type="primary" plain size="small" @click="proxy.$router.back()">返回列表</el-button>
       </div>
     </el-card>
@@ -20,8 +20,8 @@
     <el-row :gutter="10" class="mb-2">
       <el-col v-for="(val, key) in latestProps" :key="key" :xs="12" :sm="8" :md="6" :lg="4" class="mb-1">
         <el-card shadow="hover" body-style="padding: 12px 16px;">
-          <div style="color: #909399; font-size: 12px; margin-bottom: 4px;">{{ key }}</div>
-          <div style="font-size: 22px; font-weight: bold; color: #303133;">{{ val }}</div>
+          <div style="color: #909399; font-size: 12px; margin-bottom: 4px">{{ key }}</div>
+          <div style="font-size: 22px; font-weight: bold; color: #303133">{{ val }}</div>
         </el-card>
       </el-col>
       <el-col v-if="Object.keys(latestProps).length === 0" :span="24">
@@ -36,7 +36,7 @@
           <template #header>
             <span>实时数据 ({{ realtimePoints }} points, {{ updateInterval / 1000 }}s interval)</span>
           </template>
-          <div ref="realtimeChartRef" style="height: 320px;" />
+          <div ref="realtimeChartRef" style="height: 320px" />
         </el-card>
       </el-col>
       <el-col :xs="24" :lg="12" class="mb-2">
@@ -44,7 +44,7 @@
           <template #header>
             <span>历史趋势 (近 1 小时)</span>
           </template>
-          <div ref="historyChartRef" style="height: 320px;" />
+          <div ref="historyChartRef" style="height: 320px" />
         </el-card>
       </el-col>
     </el-row>

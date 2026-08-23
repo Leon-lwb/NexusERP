@@ -148,13 +148,7 @@ export function uploadOss(file: File): AxiosPromise<{ fileName: string; url: str
  * @param chatType 可选筛选：PRIVATE / GROUP
  * @param targetId 可选筛选：指定私聊对方 userId 或群 groupId
  */
-export function searchMessages(params: {
-  keyword: string;
-  chatType?: string;
-  targetId?: number | string;
-  pageNum?: number;
-  pageSize?: number;
-}) {
+export function searchMessages(params: { keyword: string; chatType?: string; targetId?: number | string; pageNum?: number; pageSize?: number }) {
   return request({
     url: '/im/app/messages/search',
     method: 'get',

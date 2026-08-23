@@ -25,7 +25,15 @@
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['system:area:edit']">修改</el-button>
           <el-button link type="primary" icon="Plus" @click="handleAdd(scope.row)" v-hasPermi="['system:area:add']">新增</el-button>
           <el-button link type="primary" icon="View" @click="handleExpand(scope.row)" v-hasPermi="['system:area:list']">查询</el-button>
-          <el-button v-if="scope.row.parentAreaId != 0" link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['system:area:remove']">删除</el-button>
+          <el-button
+            v-if="scope.row.parentAreaId != 0"
+            link
+            type="primary"
+            icon="Delete"
+            @click="handleDelete(scope.row)"
+            v-hasPermi="['system:area:remove']"
+            >删除</el-button
+          >
         </template>
       </el-table-column>
     </el-table>
@@ -63,12 +71,7 @@
           <el-col :span="12">
             <el-form-item label="层级" prop="layered">
               <el-select v-model="form.layered" placeholder="请选择层级" clearable>
-                <el-option
-                  v-for="dict in sys_area_level"
-                  :key="dict.value"
-                  :label="dict.label"
-                  :value="dict.value"
-                />
+                <el-option v-for="dict in sys_area_level" :key="dict.value" :label="dict.label" :value="dict.value" />
               </el-select>
             </el-form-item>
           </el-col>
@@ -100,19 +103,19 @@
 </template>
 
 <script setup lang="ts" name="Area">
-import { ref, reactive, toRefs, getCurrentInstance } from 'vue'
-import { listArea, listAreaExcludeChild, getArea, delArea, addArea, updateArea } from "@/api/system/area"
+import { ref, reactive, toRefs, getCurrentInstance } from 'vue';
+import { listArea, listAreaExcludeChild, getArea, delArea, addArea, updateArea } from '@/api/system/area';
 
-const { proxy } = getCurrentInstance()
-const { sys_area_level } = toRefs<any>(proxy.useDict("sys_area_level"))
+const { proxy } = getCurrentInstance();
+const { sys_area_level } = toRefs<any>(proxy.useDict('sys_area_level'));
 
-const areaList = ref([])
-const open = ref(false)
-const loading = ref(true)
-const title = ref("")
-const areaOptions = ref([])
-const expandedRowKeys = ref([])
-const areaRef = ref()
+const areaList = ref([]);
+const open = ref(false);
+const loading = ref(true);
+const title = ref('');
+const areaOptions = ref([]);
+const expandedRowKeys = ref([]);
+const areaRef = ref();
 
 const data = reactive({
   form: {},
@@ -121,39 +124,41 @@ const data = reactive({
     layered: 1
   },
   rules: {
-    parentAreaId: [{ required: true, message: "上级地区不能为空", trigger: "blur" }],
-    areaName: [{ required: true, message: "地区名称不能为空", trigger: "blur" }],
-    areaId: [{ required: true, message: "地区代码不能为空", trigger: "blur" }],
-    sort: [{ required: true, message: "显示排序不能为空", trigger: "blur" }],
-    layered: [{ required: true, message: "层级不能为空", trigger: "blur" }]
-  },
-})
+    parentAreaId: [{ required: true, message: '上级地区不能为空', trigger: 'blur' }],
+    areaName: [{ required: true, message: '地区名称不能为空', trigger: 'blur' }],
+    areaId: [{ required: true, message: '地区代码不能为空', trigger: 'blur' }],
+    sort: [{ required: true, message: '显示排序不能为空', trigger: 'blur' }],
+    layered: [{ required: true, message: '层级不能为空', trigger: 'blur' }]
+  }
+});
 
-const { queryParams, form, rules } = toRefs(data)
+const { queryParams, form, rules } = toRefs(data);
 
 function getList() {
-  loading.value = true
-  listArea(queryParams.value).then(response => {
-    areaList.value = []
-    if (response.data && Array.isArray(response.data)) {
-      const filteredData = response.data.filter(item => item !== null && item !== undefined)
-      const dataWithHasChildren = filteredData.map(item => ({
-        ...item,
-        hasChildren: item.layered < 4
-      }))
-      areaList.value = dataWithHasChildren
-    }
-    loading.value = false
-    expandedRowKeys.value = []
-  }).catch(() => {
-    proxy.$modal.msgError('获取数据失败')
-    loading.value = false
-  })
+  loading.value = true;
+  listArea(queryParams.value)
+    .then((response) => {
+      areaList.value = [];
+      if (response.data && Array.isArray(response.data)) {
+        const filteredData = response.data.filter((item) => item !== null && item !== undefined);
+        const dataWithHasChildren = filteredData.map((item) => ({
+          ...item,
+          hasChildren: item.layered < 4
+        }));
+        areaList.value = dataWithHasChildren;
+      }
+      loading.value = false;
+      expandedRowKeys.value = [];
+    })
+    .catch(() => {
+      proxy.$modal.msgError('获取数据失败');
+      loading.value = false;
+    });
 }
 
 function cancel() {
-  open.value = false
-  reset()
+  open.value = false;
+  reset();
 }
 
 function reset() {
@@ -167,124 +172,130 @@ function reset() {
     layered: undefined,
     sort: 0,
     address: undefined
-  }
-  proxy.resetForm("areaRef")
+  };
+  proxy.resetForm('areaRef');
 }
 
 function handleAdd(row) {
-  reset()
-  listArea(queryParams.value).then(response => {
+  reset();
+  listArea(queryParams.value).then((response) => {
     if (response.data && Array.isArray(response.data)) {
-      const filteredData = response.data.filter(item => item !== null && item !== undefined)
-      const dataWithHasChildren = filteredData.map(item => ({
+      const filteredData = response.data.filter((item) => item !== null && item !== undefined);
+      const dataWithHasChildren = filteredData.map((item) => ({
         ...item,
         hasChildren: item.layered < 4
-      }))
-      areaOptions.value = []
-      const data = { areaId: 0, areaName: '顶级节点', children: [] }
-      data.children = dataWithHasChildren
-      areaOptions.value.push(data)
+      }));
+      areaOptions.value = [];
+      const data = { areaId: 0, areaName: '顶级节点', children: [] };
+      data.children = dataWithHasChildren;
+      areaOptions.value.push(data);
     }
-  })
+  });
   if (row != undefined) {
-    form.value.parentAreaId = row.areaId
+    form.value.parentAreaId = row.areaId;
   } else {
-    form.value.parentAreaId = 0
+    form.value.parentAreaId = 0;
   }
-  open.value = true
-  title.value = "添加行政区划"
+  open.value = true;
+  title.value = '添加行政区划';
 }
 
 function handleExpand(row) {
   const query = {
     parentAreaId: row.areaId,
     layered: row.layered + 1
-  }
+  };
 
-  listArea(query).then(response => {
-    if (!response.data || response.data.length === 0) {
-      proxy.$modal.msgWarning("该行政区划下无子节点！")
-    } else {
-      const childrenData = response.data.map(item => {
-        const { children, ...rest } = item
-        return { ...rest, hasChildren: item.layered < 4 }
-      })
+  listArea(query)
+    .then((response) => {
+      if (!response.data || response.data.length === 0) {
+        proxy.$modal.msgWarning('该行政区划下无子节点！');
+      } else {
+        const childrenData = response.data.map((item) => {
+          const { children, ...rest } = item;
+          return { ...rest, hasChildren: item.layered < 4 };
+        });
 
-      const updateAreaList = (list) => {
-        return list.map(item => {
-          if (item.areaId === row.areaId) {
-            return { ...item, children: childrenData, hasChildren: childrenData.length > 0 }
-          }
-          if (item.children && item.children.length > 0) {
-            return { ...item, children: updateAreaList(item.children) }
-          }
-          return item
-        })
+        const updateAreaList = (list) => {
+          return list.map((item) => {
+            if (item.areaId === row.areaId) {
+              return { ...item, children: childrenData, hasChildren: childrenData.length > 0 };
+            }
+            if (item.children && item.children.length > 0) {
+              return { ...item, children: updateAreaList(item.children) };
+            }
+            return item;
+          });
+        };
+
+        areaList.value = updateAreaList(areaList.value);
+        if (!expandedRowKeys.value.includes(row.areaId)) {
+          expandedRowKeys.value = [...expandedRowKeys.value, row.areaId];
+        }
       }
-
-      areaList.value = updateAreaList(areaList.value)
-      if (!expandedRowKeys.value.includes(row.areaId)) {
-        expandedRowKeys.value = [...expandedRowKeys.value, row.areaId]
-      }
-    }
-  }).catch(() => {
-    proxy.$modal.msgError('展开失败')
-  })
+    })
+    .catch(() => {
+      proxy.$modal.msgError('展开失败');
+    });
 }
 
 function handleUpdate(row) {
-  reset()
-  listAreaExcludeChild(row.areaId).then(response => {
+  reset();
+  listAreaExcludeChild(row.areaId).then((response) => {
     if (response.data && Array.isArray(response.data)) {
-      const filteredData = response.data.filter(item => item !== null && item !== undefined)
-      const dataWithHasChildren = filteredData.map(item => ({
+      const filteredData = response.data.filter((item) => item !== null && item !== undefined);
+      const dataWithHasChildren = filteredData.map((item) => ({
         ...item,
         hasChildren: item.layered < 4
-      }))
-      areaOptions.value = []
-      const data = { areaId: 0, areaName: '顶级节点', children: [] }
-      data.children = dataWithHasChildren
-      areaOptions.value.push(data)
+      }));
+      areaOptions.value = [];
+      const data = { areaId: 0, areaName: '顶级节点', children: [] };
+      data.children = dataWithHasChildren;
+      areaOptions.value.push(data);
     }
-  })
-  getArea(row.pkid).then(response => {
-    form.value = response.data
+  });
+  getArea(row.pkid).then((response) => {
+    form.value = response.data;
     if (form.value.layered !== undefined && form.value.layered !== null) {
-      form.value.layered = parseInt(form.value.layered)
+      form.value.layered = parseInt(form.value.layered);
     }
-    open.value = true
-    title.value = "修改行政区划"
-  })
+    open.value = true;
+    title.value = '修改行政区划';
+  });
 }
 
 function submitForm() {
-  proxy.$refs["areaRef"].validate(valid => {
+  proxy.$refs['areaRef'].validate((valid) => {
     if (valid) {
       if (form.value.pkid != undefined) {
         updateArea(form.value).then(() => {
-          proxy.$modal.msgSuccess("修改成功")
-          open.value = false
-          getList()
-        })
+          proxy.$modal.msgSuccess('修改成功');
+          open.value = false;
+          getList();
+        });
       } else {
         addArea(form.value).then(() => {
-          proxy.$modal.msgSuccess("新增成功")
-          open.value = false
-          getList()
-        })
+          proxy.$modal.msgSuccess('新增成功');
+          open.value = false;
+          getList();
+        });
       }
     }
-  })
+  });
 }
 
 function handleDelete(row) {
-  proxy.$modal.confirm('是否确认删除名称为"' + row.areaName + '"的数据项?').then(function() {
-    return delArea(row.pkid)
-  }).then(() => {
-    getList()
-    proxy.$modal.msgSuccess("删除成功")
-  }).catch(() => {})
+  proxy.$modal
+    .confirm('是否确认删除名称为"' + row.areaName + '"的数据项?')
+    .then(function () {
+      return delArea(row.pkid);
+    })
+    .then(() => {
+      getList();
+      proxy.$modal.msgSuccess('删除成功');
+    })
+    .catch(() => {});
 }
 
-getList()
+getList();
 </script>

@@ -103,7 +103,7 @@
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="所属产品" prop="productId">
-              <el-select v-model="form.productId" placeholder="请选择产品" filterable style="width: 100%;">
+              <el-select v-model="form.productId" placeholder="请选择产品" filterable style="width: 100%">
                 <el-option v-for="item in productOptions" :key="item.productId" :label="item.productName" :value="item.productId" />
               </el-select>
             </el-form-item>
@@ -122,7 +122,7 @@
           </el-col>
           <el-col :span="12">
             <el-form-item label="协议类型" prop="protocolType">
-              <el-select v-model="form.protocolType" placeholder="请选择协议类型" style="width: 100%;">
+              <el-select v-model="form.protocolType" placeholder="请选择协议类型" style="width: 100%">
                 <el-option v-for="dict in iot_protocol_type" :key="dict.value" :label="dict.label" :value="dict.value" />
               </el-select>
             </el-form-item>
@@ -425,4 +425,3 @@ async function submitMesBind() {
 loadProductOptions();
 getList();
 </script>
-

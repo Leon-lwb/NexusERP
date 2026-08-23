@@ -156,8 +156,24 @@ const rules = {
 };
 
 const {
-  loading, list, total, open, isViewMode, title, ids, single, multiple, showSearch, form,
-  getList, handleQuery, handleDelete, handleExport, handleSelectionChange, submitForm, cancel,
+  loading,
+  list,
+  total,
+  open,
+  isViewMode,
+  title,
+  ids,
+  single,
+  multiple,
+  showSearch,
+  form,
+  getList,
+  handleQuery,
+  handleDelete,
+  handleExport,
+  handleSelectionChange,
+  submitForm,
+  cancel,
   handleAdd: rawHandleAdd,
   handleUpdate: rawHandleUpdate,
   handleView: rawHandleView
@@ -180,7 +196,9 @@ const {
   }),
   exportUrl: '/erp/wm/pickingrule/export',
   exportFileName: 'pickingrule',
-  onReset: () => { getWarehouseOptions(); }
+  onReset: () => {
+    getWarehouseOptions();
+  }
 });
 
 /** 仓库下拉选项 */
@@ -191,13 +209,22 @@ function getWarehouseOptions() {
 }
 
 function handleAdd() {
-  rawHandleAdd(() => { getWarehouseOptions(); getCategoryTree(); });
+  rawHandleAdd(() => {
+    getWarehouseOptions();
+    getCategoryTree();
+  });
 }
 function handleUpdate(row?: any) {
-  return rawHandleUpdate(row, () => { getWarehouseOptions(); getCategoryTree(); });
+  return rawHandleUpdate(row, () => {
+    getWarehouseOptions();
+    getCategoryTree();
+  });
 }
 function handleView(row?: any) {
-  return rawHandleView(row, () => { getWarehouseOptions(); getCategoryTree(); });
+  return rawHandleView(row, () => {
+    getWarehouseOptions();
+    getCategoryTree();
+  });
 }
 
 function resetQuery() {
@@ -207,4 +234,3 @@ function resetQuery() {
 
 getList();
 </script>
-

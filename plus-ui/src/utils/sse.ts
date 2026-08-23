@@ -12,8 +12,7 @@ export const initSSE = (url: any) => {
     autoReconnect: {
       retries: 5,
       delay: 5000,
-      onFailed() {
-      }
+      onFailed() {}
     }
   });
 

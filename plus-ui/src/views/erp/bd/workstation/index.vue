@@ -93,8 +93,8 @@
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="工作站编码" prop="workstationCode">
-              <div style="display: flex; align-items: center; gap: 10px;">
-                <el-input v-model="form.workstationCode" placeholder="请输入工作站编码" :disabled="autoGenFlag || isViewMode" style="flex: 1;" />
+              <div style="display: flex; align-items: center; gap: 10px">
+                <el-input v-model="form.workstationCode" placeholder="请输入工作站编码" :disabled="autoGenFlag || isViewMode" style="flex: 1" />
                 <el-switch v-model="autoGenFlag" active-color="#13ce66" active-text="自动生成" @change="handleAutoGenChange" :disabled="isViewMode">
                 </el-switch>
               </div>
@@ -269,8 +269,24 @@ const rules = {
 };
 
 const {
-  loading, list, total, open, isViewMode, title, ids, single, multiple, showSearch, form,
-  getList, handleQuery, handleDelete, handleExport, handleSelectionChange, submitForm, cancel,
+  loading,
+  list,
+  total,
+  open,
+  isViewMode,
+  title,
+  ids,
+  single,
+  multiple,
+  showSearch,
+  form,
+  getList,
+  handleQuery,
+  handleDelete,
+  handleExport,
+  handleSelectionChange,
+  submitForm,
+  cancel,
   handleAdd: rawHandleAdd,
   handleUpdate: rawHandleUpdate,
   handleView: rawHandleView
@@ -304,18 +320,28 @@ const {
   }),
   exportUrl: '/erp/bd/workstation/export',
   exportFileName: 'workstation',
-  onReset: () => { autoGenFlag.value = false; },
-  beforeSubmit: () => { if (autoGenFlag.value) form.value.workstationCode = undefined; }
+  onReset: () => {
+    autoGenFlag.value = false;
+  },
+  beforeSubmit: () => {
+    if (autoGenFlag.value) form.value.workstationCode = undefined;
+  }
 });
 
 function handleAdd() {
-  rawHandleAdd(() => { autoGenFlag.value = false; });
+  rawHandleAdd(() => {
+    autoGenFlag.value = false;
+  });
 }
 function handleUpdate(row?: any) {
-  return rawHandleUpdate(row, () => { autoGenFlag.value = false; });
+  return rawHandleUpdate(row, () => {
+    autoGenFlag.value = false;
+  });
 }
 function handleView(row?: any) {
-  return rawHandleView(row, () => { autoGenFlag.value = false; });
+  return rawHandleView(row, () => {
+    autoGenFlag.value = false;
+  });
 }
 
 function resetQuery() {
@@ -364,4 +390,3 @@ function handleAutoGenChange(val: boolean) {
 
 getList();
 </script>
-

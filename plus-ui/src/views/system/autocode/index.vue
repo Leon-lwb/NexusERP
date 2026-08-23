@@ -33,8 +33,18 @@
 
           <div class="autocode-actions">
             <el-button v-hasPermi="['system:autocode:rule:add']" type="primary" plain icon="Plus" @click="handleTypeAdd">新增</el-button>
-            <el-button v-hasPermi="['system:autocode:rule:edit']" type="success" plain icon="Edit" :disabled="typeSingle" @click="handleTypeUpdate()">修改</el-button>
-            <el-button v-hasPermi="['system:autocode:rule:remove']" type="danger" plain icon="Delete" :disabled="typeMultiple" @click="handleTypeDelete()">删除</el-button>
+            <el-button v-hasPermi="['system:autocode:rule:edit']" type="success" plain icon="Edit" :disabled="typeSingle" @click="handleTypeUpdate()"
+              >修改</el-button
+            >
+            <el-button
+              v-hasPermi="['system:autocode:rule:remove']"
+              type="danger"
+              plain
+              icon="Delete"
+              :disabled="typeMultiple"
+              @click="handleTypeDelete()"
+              >删除</el-button
+            >
           </div>
 
           <div class="autocode-table-wrap">
@@ -63,10 +73,22 @@
               <el-table-column label="操作" fixed="right" align="center" width="120" class-name="small-padding fixed-width">
                 <template #default="scope">
                   <el-tooltip content="修改" placement="top">
-                    <el-button v-hasPermi="['system:autocode:rule:edit']" link type="primary" icon="Edit" @click="handleTypeUpdate(scope.row)"></el-button>
+                    <el-button
+                      v-hasPermi="['system:autocode:rule:edit']"
+                      link
+                      type="primary"
+                      icon="Edit"
+                      @click="handleTypeUpdate(scope.row)"
+                    ></el-button>
                   </el-tooltip>
                   <el-tooltip content="删除" placement="top">
-                    <el-button v-hasPermi="['system:autocode:rule:remove']" link type="primary" icon="Delete" @click="handleTypeDelete(scope.row)"></el-button>
+                    <el-button
+                      v-hasPermi="['system:autocode:rule:remove']"
+                      link
+                      type="primary"
+                      icon="Delete"
+                      @click="handleTypeDelete(scope.row)"
+                    ></el-button>
                   </el-tooltip>
                 </template>
               </el-table-column>
@@ -99,10 +121,22 @@
           <div v-show="showDataSearch" class="autocode-form-scroll">
             <el-form ref="dataQueryFormRef" :model="dataQueryParams" :inline="true">
               <el-form-item label="组成编码" prop="partCode">
-                <el-input v-model="dataQueryParams.partCode" placeholder="请输入组成编码" clearable :disabled="!hasCurrentRule" @keyup.enter="handleDataQuery" />
+                <el-input
+                  v-model="dataQueryParams.partCode"
+                  placeholder="请输入组成编码"
+                  clearable
+                  :disabled="!hasCurrentRule"
+                  @keyup.enter="handleDataQuery"
+                />
               </el-form-item>
               <el-form-item label="组成名称" prop="partName">
-                <el-input v-model="dataQueryParams.partName" placeholder="请输入组成名称" clearable :disabled="!hasCurrentRule" @keyup.enter="handleDataQuery" />
+                <el-input
+                  v-model="dataQueryParams.partName"
+                  placeholder="请输入组成名称"
+                  clearable
+                  :disabled="!hasCurrentRule"
+                  @keyup.enter="handleDataQuery"
+                />
               </el-form-item>
               <el-form-item>
                 <el-button type="primary" icon="Search" :disabled="!hasCurrentRule" @click="handleDataQuery">搜索</el-button>
@@ -112,9 +146,27 @@
           </div>
 
           <div class="autocode-actions">
-            <el-button v-hasPermi="['system:autocode:part:add']" type="primary" plain icon="Plus" :disabled="!hasCurrentRule" @click="handleDataAdd">新增</el-button>
-            <el-button v-hasPermi="['system:autocode:part:edit']" type="success" plain icon="Edit" :disabled="dataSingle || !hasCurrentRule" @click="handleDataUpdate()">修改</el-button>
-            <el-button v-hasPermi="['system:autocode:part:remove']" type="danger" plain icon="Delete" :disabled="dataMultiple || !hasCurrentRule" @click="handleDataDelete()">删除</el-button>
+            <el-button v-hasPermi="['system:autocode:part:add']" type="primary" plain icon="Plus" :disabled="!hasCurrentRule" @click="handleDataAdd"
+              >新增</el-button
+            >
+            <el-button
+              v-hasPermi="['system:autocode:part:edit']"
+              type="success"
+              plain
+              icon="Edit"
+              :disabled="dataSingle || !hasCurrentRule"
+              @click="handleDataUpdate()"
+              >修改</el-button
+            >
+            <el-button
+              v-hasPermi="['system:autocode:part:remove']"
+              type="danger"
+              plain
+              icon="Delete"
+              :disabled="dataMultiple || !hasCurrentRule"
+              @click="handleDataDelete()"
+              >删除</el-button
+            >
           </div>
 
           <div class="autocode-table-wrap">
@@ -132,10 +184,22 @@
               <el-table-column label="操作" fixed="right" align="center" width="120" class-name="small-padding fixed-width">
                 <template #default="scope">
                   <el-tooltip content="修改" placement="top">
-                    <el-button v-hasPermi="['system:autocode:part:edit']" link type="primary" icon="Edit" @click="handleDataUpdate(scope.row)"></el-button>
+                    <el-button
+                      v-hasPermi="['system:autocode:part:edit']"
+                      link
+                      type="primary"
+                      icon="Edit"
+                      @click="handleDataUpdate(scope.row)"
+                    ></el-button>
                   </el-tooltip>
                   <el-tooltip content="删除" placement="top">
-                    <el-button v-hasPermi="['system:autocode:part:remove']" link type="primary" icon="Delete" @click="handleDataDelete(scope.row)"></el-button>
+                    <el-button
+                      v-hasPermi="['system:autocode:part:remove']"
+                      link
+                      type="primary"
+                      icon="Delete"
+                      @click="handleDataDelete(scope.row)"
+                    ></el-button>
                   </el-tooltip>
                 </template>
               </el-table-column>
@@ -236,28 +300,28 @@
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="日期时间格式" prop="dateFormat" v-if="dataForm.partType=='NOWDATE'">
+            <el-form-item label="日期时间格式" prop="dateFormat" v-if="dataForm.partType == 'NOWDATE'">
               <el-input v-model="dataForm.dateFormat" placeholder="请输入日期时间格式" />
             </el-form-item>
-            <el-form-item label="输入字符" prop="inputCharacter" v-if="dataForm.partType=='INPUTCHAR'">
+            <el-form-item label="输入字符" prop="inputCharacter" v-if="dataForm.partType == 'INPUTCHAR'">
               <el-input v-model="dataForm.inputCharacter" placeholder="请填写输入字符" />
             </el-form-item>
-            <el-form-item label="固定字符" prop="fixCharacter" v-if="dataForm.partType=='FIXCHAR'">
+            <el-form-item label="固定字符" prop="fixCharacter" v-if="dataForm.partType == 'FIXCHAR'">
               <el-input v-model="dataForm.fixCharacter" placeholder="请填写固定字符" />
             </el-form-item>
-            <el-form-item label="起始流水号" prop="seriaStartNo" v-if="dataForm.partType=='SERIALNO'">
+            <el-form-item label="起始流水号" prop="seriaStartNo" v-if="dataForm.partType == 'SERIALNO'">
               <el-input-number v-model="dataForm.seriaStartNo" placeholder="请填写起始流水号" />
             </el-form-item>
           </el-col>
         </el-row>
         <el-row>
           <el-col :span="12">
-            <el-form-item label="流水号步长" prop="seriaStep" v-if="dataForm.partType=='SERIALNO'">
+            <el-form-item label="流水号步长" prop="seriaStep" v-if="dataForm.partType == 'SERIALNO'">
               <el-input-number v-model="dataForm.seriaStep" placeholder="请填写流水号步长" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="是否循环" prop="cycleFlag" v-if="dataForm.partType=='SERIALNO'">
+            <el-form-item label="是否循环" prop="cycleFlag" v-if="dataForm.partType == 'SERIALNO'">
               <el-radio-group v-model="dataForm.cycleFlag">
                 <el-radio label="Y">是</el-radio>
                 <el-radio label="N">否</el-radio>
@@ -267,7 +331,7 @@
         </el-row>
         <el-row>
           <el-col :span="12">
-            <el-form-item label="循环方式" prop="cycleMethod" v-if="dataForm.partType =='SERIALNO' && dataForm.cycleFlag =='Y'">
+            <el-form-item label="循环方式" prop="cycleMethod" v-if="dataForm.partType == 'SERIALNO' && dataForm.cycleFlag == 'Y'">
               <el-select v-model="dataForm.cycleMethod">
                 <el-option v-for="item in sys_autocode_cyclemethod" :key="item.value" :label="item.label" :value="item.value"></el-option>
               </el-select>
@@ -293,29 +357,31 @@
 </template>
 
 <script setup name="AutoCode" lang="ts">
-import { ref, reactive, onMounted, toRefs, computed, nextTick, getCurrentInstance } from 'vue'
-import { listRule, getRule, delRule, addRule, updateRule } from "@/api/system/autocode/rule"
-import { listPart, getPart, delPart, addPart, updatePart } from "@/api/system/autocode/part"
+import { ref, reactive, onMounted, toRefs, computed, nextTick, getCurrentInstance } from 'vue';
+import { listRule, getRule, delRule, addRule, updateRule } from '@/api/system/autocode/rule';
+import { listPart, getPart, delPart, addPart, updatePart } from '@/api/system/autocode/part';
 
-const { proxy } = getCurrentInstance() as any
-const { sys_yes_no, sys_autocode_parttype, sys_autocode_cyclemethod } = toRefs<any>(proxy.useDict("sys_yes_no", "sys_autocode_parttype", "sys_autocode_cyclemethod"))
+const { proxy } = getCurrentInstance() as any;
+const { sys_yes_no, sys_autocode_parttype, sys_autocode_cyclemethod } = toRefs<any>(
+  proxy.useDict('sys_yes_no', 'sys_autocode_parttype', 'sys_autocode_cyclemethod')
+);
 
 // ========== 编码规则相关 ==========
-const typeList = ref<any[]>([])
-const typeLoading = ref(true)
-const showTypeSearch = ref(true)
-const typeIds = ref<Array<number | string>>([])
-const typeSingle = ref(true)
-const typeMultiple = ref(true)
-const typeTotal = ref(0)
-const typeTableRef = ref<any>()
-const typeQueryFormRef = ref<any>()
-const typeFormRef = ref<any>()
+const typeList = ref<any[]>([]);
+const typeLoading = ref(true);
+const showTypeSearch = ref(true);
+const typeIds = ref<Array<number | string>>([]);
+const typeSingle = ref(true);
+const typeMultiple = ref(true);
+const typeTotal = ref(0);
+const typeTableRef = ref<any>();
+const typeQueryFormRef = ref<any>();
+const typeFormRef = ref<any>();
 
 const typeDialog = reactive({
   visible: false,
   title: ''
-})
+});
 
 const typeInitFormData = {
   ruleId: undefined,
@@ -328,7 +394,7 @@ const typeInitFormData = {
   paddedMethod: 'L',
   enableFlag: 'Y',
   remark: ''
-}
+};
 
 const typeState = reactive({
   form: { ...typeInitFormData },
@@ -340,36 +406,36 @@ const typeState = reactive({
     enableFlag: undefined
   },
   rules: {
-    ruleCode: [{ required: true, message: "规则编码不能为空", trigger: "blur" }],
-    ruleName: [{ required: true, message: "规则名称不能为空", trigger: "blur" }],
+    ruleCode: [{ required: true, message: '规则编码不能为空', trigger: 'blur' }],
+    ruleName: [{ required: true, message: '规则名称不能为空', trigger: 'blur' }],
     remark: [{ max: 250, message: '长度必须小于250个字符', trigger: 'blur' }]
   }
-})
+});
 
-const { queryParams: typeQueryParams, form: typeForm, rules: typeRules } = toRefs(typeState)
+const { queryParams: typeQueryParams, form: typeForm, rules: typeRules } = toRefs(typeState);
 
 // ========== 规则组成相关 ==========
-const currentRule = ref<any>(null)
-const hasCurrentRule = computed(() => !!currentRule.value)
+const currentRule = ref<any>(null);
+const hasCurrentRule = computed(() => !!currentRule.value);
 const currentRuleLabel = computed(() => {
-  if (!currentRule.value) return '请先选择编码规则'
-  return `${currentRule.value.ruleName} / ${currentRule.value.ruleCode}`
-})
+  if (!currentRule.value) return '请先选择编码规则';
+  return `${currentRule.value.ruleName} / ${currentRule.value.ruleCode}`;
+});
 
-const dataList = ref<any[]>([])
-const dataLoading = ref(false)
-const showDataSearch = ref(true)
-const dataIds = ref<Array<number | string>>([])
-const dataSingle = ref(true)
-const dataMultiple = ref(true)
-const dataTotal = ref(0)
-const dataQueryFormRef = ref<any>()
-const dataFormRef = ref<any>()
+const dataList = ref<any[]>([]);
+const dataLoading = ref(false);
+const showDataSearch = ref(true);
+const dataIds = ref<Array<number | string>>([]);
+const dataSingle = ref(true);
+const dataMultiple = ref(true);
+const dataTotal = ref(0);
+const dataQueryFormRef = ref<any>();
+const dataFormRef = ref<any>();
 
 const dataDialog = reactive({
   visible: false,
   title: ''
-})
+});
 
 const dataInitFormData = {
   partId: undefined,
@@ -387,7 +453,7 @@ const dataInitFormData = {
   cycleFlag: 'N',
   cycleMethod: '',
   remark: ''
-}
+};
 
 const dataState = reactive({
   form: { ...dataInitFormData },
@@ -399,208 +465,208 @@ const dataState = reactive({
     partName: undefined
   },
   rules: {
-    partCode: [{ required: true, message: "组成编码不能为空", trigger: "blur" }],
-    partName: [{ required: true, message: "组成名称不能为空", trigger: "blur" }],
-    partIndex: [{ required: true, message: "组成序号不能为空", trigger: "blur" }],
+    partCode: [{ required: true, message: '组成编码不能为空', trigger: 'blur' }],
+    partName: [{ required: true, message: '组成名称不能为空', trigger: 'blur' }],
+    partIndex: [{ required: true, message: '组成序号不能为空', trigger: 'blur' }],
     remark: [{ max: 250, message: '长度必须小于250个字符', trigger: 'blur' }]
   }
-})
+});
 
-const { queryParams: dataQueryParams, form: dataForm, rules: dataRules } = toRefs(dataState)
+const { queryParams: dataQueryParams, form: dataForm, rules: dataRules } = toRefs(dataState);
 
 // ========== 编码规则方法 ==========
 const getTypeList = () => {
-  typeLoading.value = true
+  typeLoading.value = true;
   listRule(proxy.addDateRange(typeQueryParams.value, [])).then((response: any) => {
-    typeList.value = response.rows
-    typeTotal.value = response.total
-    typeLoading.value = false
-    ensureCurrentType()
-  })
-}
+    typeList.value = response.rows;
+    typeTotal.value = response.total;
+    typeLoading.value = false;
+    ensureCurrentType();
+  });
+};
 
 const ensureCurrentType = () => {
   if (!typeList.value.length) {
-    currentRule.value = null
-    dataQueryParams.value.ruleId = undefined
-    dataList.value = []
-    dataTotal.value = 0
-    return
+    currentRule.value = null;
+    dataQueryParams.value.ruleId = undefined;
+    dataList.value = [];
+    dataTotal.value = 0;
+    return;
   }
-  const current = currentRule.value && typeList.value.find((item: any) => item.ruleId === currentRule.value?.ruleId)
-  const nextRow = current || typeList.value[0]
-  setCurrentType(nextRow)
-}
+  const current = currentRule.value && typeList.value.find((item: any) => item.ruleId === currentRule.value?.ruleId);
+  const nextRow = current || typeList.value[0];
+  setCurrentType(nextRow);
+};
 
 const setCurrentType = (row: any) => {
-  currentRule.value = row
-  dataQueryParams.value.ruleId = row.ruleId
-  dataQueryParams.value.pageNum = 1
-  dataQueryParams.value.partCode = undefined
-  dataQueryParams.value.partName = undefined
-  getDataList()
-  nextTick(() => typeTableRef.value?.setCurrentRow(row))
-}
+  currentRule.value = row;
+  dataQueryParams.value.ruleId = row.ruleId;
+  dataQueryParams.value.pageNum = 1;
+  dataQueryParams.value.partCode = undefined;
+  dataQueryParams.value.partName = undefined;
+  getDataList();
+  nextTick(() => typeTableRef.value?.setCurrentRow(row));
+};
 
 const handleTypeRowClick = (row: any) => {
-  setCurrentType(row)
-}
+  setCurrentType(row);
+};
 
 const handleTypeQuery = () => {
-  typeQueryParams.value.pageNum = 1
-  getTypeList()
-}
+  typeQueryParams.value.pageNum = 1;
+  getTypeList();
+};
 
 const handleTypeResetQuery = () => {
-  typeQueryFormRef.value?.resetFields()
-  handleTypeQuery()
-}
+  typeQueryFormRef.value?.resetFields();
+  handleTypeQuery();
+};
 
 const handleTypeAdd = () => {
-  resetTypeForm()
-  typeDialog.visible = true
-  typeDialog.title = '添加编码规则'
-}
+  resetTypeForm();
+  typeDialog.visible = true;
+  typeDialog.title = '添加编码规则';
+};
 
 const handleTypeSelectionChange = (selection: any[]) => {
-  typeIds.value = selection.map((item) => item.ruleId)
-  typeSingle.value = selection.length != 1
-  typeMultiple.value = !selection.length
-}
+  typeIds.value = selection.map((item) => item.ruleId);
+  typeSingle.value = selection.length != 1;
+  typeMultiple.value = !selection.length;
+};
 
 const handleTypeUpdate = async (row?: any) => {
-  resetTypeForm()
-  const ruleId = row?.ruleId || typeIds.value[0]
-  const res = await getRule(ruleId)
-  Object.assign(typeForm.value, res.data)
-  typeDialog.visible = true
-  typeDialog.title = '修改编码规则'
-}
+  resetTypeForm();
+  const ruleId = row?.ruleId || typeIds.value[0];
+  const res = await getRule(ruleId);
+  Object.assign(typeForm.value, res.data);
+  typeDialog.visible = true;
+  typeDialog.title = '修改编码规则';
+};
 
 const submitTypeForm = () => {
   typeFormRef.value?.validate(async (valid: boolean) => {
     if (valid) {
-      typeForm.value.ruleId ? await updateRule(typeForm.value) : await addRule(typeForm.value)
-      proxy?.$modal.msgSuccess('操作成功')
-      typeDialog.visible = false
-      getTypeList()
+      typeForm.value.ruleId ? await updateRule(typeForm.value) : await addRule(typeForm.value);
+      proxy?.$modal.msgSuccess('操作成功');
+      typeDialog.visible = false;
+      getTypeList();
     }
-  })
-}
+  });
+};
 
 const handleTypeDelete = async (row?: any) => {
-  const ruleIds = row?.ruleId || typeIds.value
-  await proxy?.$modal.confirm('是否确认删除编码规则为"' + ruleIds + '"的数据项？')
-  await delRule(ruleIds)
-  getTypeList()
-  proxy?.$modal.msgSuccess('删除成功')
-}
+  const ruleIds = row?.ruleId || typeIds.value;
+  await proxy?.$modal.confirm('是否确认删除编码规则为"' + ruleIds + '"的数据项？');
+  await delRule(ruleIds);
+  getTypeList();
+  proxy?.$modal.msgSuccess('删除成功');
+};
 
 const cancelType = () => {
-  resetTypeForm()
-  typeDialog.visible = false
-}
+  resetTypeForm();
+  typeDialog.visible = false;
+};
 
 const resetTypeForm = () => {
-  typeForm.value = { ...typeInitFormData }
-  typeFormRef.value?.resetFields()
-}
+  typeForm.value = { ...typeInitFormData };
+  typeFormRef.value?.resetFields();
+};
 
 // ========== 规则组成方法 ==========
 const getDataList = () => {
   if (!currentRule.value) {
-    dataList.value = []
-    dataTotal.value = 0
-    dataLoading.value = false
-    return
+    dataList.value = [];
+    dataTotal.value = 0;
+    dataLoading.value = false;
+    return;
   }
-  dataLoading.value = true
+  dataLoading.value = true;
   listPart(dataQueryParams.value).then((response: any) => {
-    dataList.value = response.rows
-    dataTotal.value = response.total
-    dataLoading.value = false
-  })
-}
+    dataList.value = response.rows;
+    dataTotal.value = response.total;
+    dataLoading.value = false;
+  });
+};
 
 const handleDataQuery = () => {
-  if (!currentRule.value) return
-  dataQueryParams.value.pageNum = 1
-  getDataList()
-}
+  if (!currentRule.value) return;
+  dataQueryParams.value.pageNum = 1;
+  getDataList();
+};
 
 const handleDataResetQuery = () => {
-  dataQueryFormRef.value?.resetFields()
-  dataQueryParams.value.partCode = undefined
-  dataQueryParams.value.partName = undefined
-  handleDataQuery()
-}
+  dataQueryFormRef.value?.resetFields();
+  dataQueryParams.value.partCode = undefined;
+  dataQueryParams.value.partName = undefined;
+  handleDataQuery();
+};
 
 const handleDataAdd = () => {
   if (!currentRule.value) {
-    proxy?.$modal.msgWarning('请先选择编码规则')
-    return
+    proxy?.$modal.msgWarning('请先选择编码规则');
+    return;
   }
-  resetDataForm()
-  dataForm.value.ruleId = currentRule.value.ruleId
-  dataDialog.visible = true
-  dataDialog.title = '添加规则组成'
-}
+  resetDataForm();
+  dataForm.value.ruleId = currentRule.value.ruleId;
+  dataDialog.visible = true;
+  dataDialog.title = '添加规则组成';
+};
 
 const handleDataSelectionChange = (selection: any[]) => {
-  dataIds.value = selection.map((item) => item.partId)
-  dataSingle.value = selection.length != 1
-  dataMultiple.value = !selection.length
-}
+  dataIds.value = selection.map((item) => item.partId);
+  dataSingle.value = selection.length != 1;
+  dataMultiple.value = !selection.length;
+};
 
 const handleDataUpdate = async (row?: any) => {
   if (!currentRule.value) {
-    proxy?.$modal.msgWarning('请先选择编码规则')
-    return
+    proxy?.$modal.msgWarning('请先选择编码规则');
+    return;
   }
-  resetDataForm()
-  const partId = row?.partId || dataIds.value[0]
-  const res = await getPart(partId)
-  Object.assign(dataForm.value, res.data)
-  dataDialog.visible = true
-  dataDialog.title = '修改规则组成'
-}
+  resetDataForm();
+  const partId = row?.partId || dataIds.value[0];
+  const res = await getPart(partId);
+  Object.assign(dataForm.value, res.data);
+  dataDialog.visible = true;
+  dataDialog.title = '修改规则组成';
+};
 
 const submitDataForm = () => {
   dataFormRef.value?.validate(async (valid: boolean) => {
     if (valid) {
-      dataForm.value.partId ? await updatePart(dataForm.value) : await addPart(dataForm.value)
-      proxy?.$modal.msgSuccess('操作成功')
-      dataDialog.visible = false
-      await getDataList()
+      dataForm.value.partId ? await updatePart(dataForm.value) : await addPart(dataForm.value);
+      proxy?.$modal.msgSuccess('操作成功');
+      dataDialog.visible = false;
+      await getDataList();
     }
-  })
-}
+  });
+};
 
 const handleDataDelete = async (row?: any) => {
   if (!currentRule.value) {
-    proxy?.$modal.msgWarning('请先选择编码规则')
-    return
+    proxy?.$modal.msgWarning('请先选择编码规则');
+    return;
   }
-  const partIds = row?.partId || dataIds.value
-  await proxy?.$modal.confirm('是否确认删除规则组成ID为"' + partIds + '"的数据项？')
-  await delPart(partIds)
-  await getDataList()
-  proxy?.$modal.msgSuccess('删除成功')
-}
+  const partIds = row?.partId || dataIds.value;
+  await proxy?.$modal.confirm('是否确认删除规则组成ID为"' + partIds + '"的数据项？');
+  await delPart(partIds);
+  await getDataList();
+  proxy?.$modal.msgSuccess('删除成功');
+};
 
 const cancelData = () => {
-  dataDialog.visible = false
-  resetDataForm()
-}
+  dataDialog.visible = false;
+  resetDataForm();
+};
 
 const resetDataForm = () => {
-  dataForm.value = { ...dataInitFormData }
-  dataFormRef.value?.resetFields()
-}
+  dataForm.value = { ...dataInitFormData };
+  dataFormRef.value?.resetFields();
+};
 
 onMounted(() => {
-  getTypeList()
-})
+  getTypeList();
+});
 </script>
 
 <style lang="scss" scoped>

@@ -1,13 +1,6 @@
 import request from '@/utils/request';
 import { AxiosPromise } from 'axios';
-import {
-  BarcodeConfigForm,
-  BarcodeConfigQuery,
-  BarcodeConfigVO,
-  BarcodeForm,
-  BarcodeQuery,
-  BarcodeVO
-} from './types';
+import { BarcodeConfigForm, BarcodeConfigQuery, BarcodeConfigVO, BarcodeForm, BarcodeQuery, BarcodeVO } from './types';
 
 /**
  * 条形码配置基础路径
@@ -32,32 +25,28 @@ export const listBarcodeConfig = (query: BarcodeConfigQuery): AxiosPromise<{ row
  * @param id 条形码配置ID
  * @returns 条形码配置详细信息
  */
-export const getBarcodeConfig = (id: string | number): AxiosPromise<BarcodeConfigVO> =>
-  request({ url: CONFIG_BASE + '/' + id, method: 'get' });
+export const getBarcodeConfig = (id: string | number): AxiosPromise<BarcodeConfigVO> => request({ url: CONFIG_BASE + '/' + id, method: 'get' });
 
 /**
  * 新增条形码配置
  * @param data 条形码配置表单数据
  * @returns 请求结果
  */
-export const addBarcodeConfig = (data: BarcodeConfigForm) =>
-  request({ url: CONFIG_BASE, method: 'post', data });
+export const addBarcodeConfig = (data: BarcodeConfigForm) => request({ url: CONFIG_BASE, method: 'post', data });
 
 /**
  * 修改条形码配置
  * @param data 条形码配置表单数据
  * @returns 请求结果
  */
-export const updateBarcodeConfig = (data: BarcodeConfigForm) =>
-  request({ url: CONFIG_BASE, method: 'put', data });
+export const updateBarcodeConfig = (data: BarcodeConfigForm) => request({ url: CONFIG_BASE, method: 'put', data });
 
 /**
  * 删除条形码配置
  * @param id 条形码配置ID或ID数组
  * @returns 请求结果
  */
-export const delBarcodeConfig = (id: string | number | (string | number)[]) =>
-  request({ url: CONFIG_BASE + '/' + id, method: 'delete' });
+export const delBarcodeConfig = (id: string | number | (string | number)[]) => request({ url: CONFIG_BASE + '/' + id, method: 'delete' });
 
 /**
  * 查询条形码实例列表
@@ -72,32 +61,28 @@ export const listBarcode = (query: BarcodeQuery): AxiosPromise<{ rows: BarcodeVO
  * @param id 条形码实例ID
  * @returns 条形码实例详细信息
  */
-export const getBarcode = (id: string | number): AxiosPromise<BarcodeVO> =>
-  request({ url: BARCODE_BASE + '/' + id, method: 'get' });
+export const getBarcode = (id: string | number): AxiosPromise<BarcodeVO> => request({ url: BARCODE_BASE + '/' + id, method: 'get' });
 
 /**
  * 新增条形码实例
  * @param data 条形码实例表单数据
  * @returns 请求结果
  */
-export const addBarcode = (data: BarcodeForm) =>
-  request({ url: BARCODE_BASE, method: 'post', data });
+export const addBarcode = (data: BarcodeForm) => request({ url: BARCODE_BASE, method: 'post', data });
 
 /**
  * 修改条形码实例
  * @param data 条形码实例表单数据
  * @returns 请求结果
  */
-export const updateBarcode = (data: BarcodeForm) =>
-  request({ url: BARCODE_BASE, method: 'put', data });
+export const updateBarcode = (data: BarcodeForm) => request({ url: BARCODE_BASE, method: 'put', data });
 
 /**
  * 删除条形码实例
  * @param id 条形码实例ID或ID数组
  * @returns 请求结果
  */
-export const delBarcode = (id: string | number | (string | number)[]) =>
-  request({ url: BARCODE_BASE + '/' + id, method: 'delete' });
+export const delBarcode = (id: string | number | (string | number)[]) => request({ url: BARCODE_BASE + '/' + id, method: 'delete' });
 
 /**
  * 根据配置生成条形码
@@ -114,5 +99,4 @@ export const generateBarcode = (params: {
   batchId?: number;
   stockId?: number;
   snId?: number;
-}) =>
-  request({ url: BARCODE_BASE + '/generateByCode', method: 'post', params });
+}) => request({ url: BARCODE_BASE + '/generateByCode', method: 'post', params });

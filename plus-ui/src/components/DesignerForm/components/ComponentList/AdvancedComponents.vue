@@ -2,10 +2,10 @@
   <div class="component-group">
     <div class="group-title">高级组件</div>
     <div class="component-items">
-      <div 
-        v-for="(item, index) in advancedComponents" 
+      <div
+        v-for="(item, index) in advancedComponents"
         :key="index"
-        class="component-item" 
+        class="component-item"
         draggable="true"
         @dragstart="handleDragStart($event, item)"
       >
@@ -17,16 +17,12 @@
 </template>
 
 <script lang="ts" setup>
-import { ref } from 'vue'
-import { markRaw } from 'vue'
-import {
-  Plus,
-  OfficeBuilding,
-  User
-} from '@element-plus/icons-vue'
-import type { ComponentDefinition } from '../../types'
+import { ref } from 'vue';
+import { markRaw } from 'vue';
+import { Plus, OfficeBuilding, User } from '@element-plus/icons-vue';
+import type { ComponentDefinition } from '../../types';
 
-const emit = defineEmits(['dragstart'])
+const emit = defineEmits(['dragstart']);
 
 const advancedComponents = ref<ComponentDefinition[]>([
   {
@@ -50,7 +46,7 @@ const advancedComponents = ref<ComponentDefinition[]>([
     type: 'dept-select',
     icon: markRaw(OfficeBuilding),
     component: markRaw(OfficeBuilding),
-    props: { 
+    props: {
       placeholder: '请选择部门',
       multiple: false,
       clearable: true
@@ -61,17 +57,17 @@ const advancedComponents = ref<ComponentDefinition[]>([
     type: 'user-select',
     icon: markRaw(User),
     component: markRaw(User),
-    props: { 
+    props: {
       placeholder: '请选择人员',
       multiple: false,
       clearable: true
     }
   }
-])
+]);
 
 const handleDragStart = (e: DragEvent, item: ComponentDefinition) => {
-  emit('dragstart', e, item)
-}
+  emit('dragstart', e, item);
+};
 </script>
 
 <style lang="scss" scoped>
@@ -117,4 +113,4 @@ const handleDragStart = (e: DragEvent, item: ComponentDefinition) => {
     }
   }
 }
-</style> 
+</style>

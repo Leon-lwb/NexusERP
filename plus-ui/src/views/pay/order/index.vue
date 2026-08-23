@@ -128,21 +128,21 @@
 </template>
 
 <script setup lang="ts" name="PayOrder">
-import { listPayOrder, getPayOrder, delPayOrder, addPayOrder, updatePayOrder } from "@/api/pay/order"
+import { listPayOrder, getPayOrder, delPayOrder, addPayOrder, updatePayOrder } from '@/api/pay/order';
 
-const { proxy } = getCurrentInstance()
-const { pay_order_status, pay_pay_type } = toRefs<any>(proxy.useDict('pay_order_status', 'pay_pay_type'))
+const { proxy } = getCurrentInstance();
+const { pay_order_status, pay_pay_type } = toRefs<any>(proxy.useDict('pay_order_status', 'pay_pay_type'));
 
-const orderList = ref([])
-const open = ref(false)
-const loading = ref(true)
-const showSearch = ref(true)
-const ids = ref([])
-const single = ref(true)
-const multiple = ref(true)
-const total = ref(0)
-const title = ref("")
-const isViewMode = ref(false)
+const orderList = ref([]);
+const open = ref(false);
+const loading = ref(true);
+const showSearch = ref(true);
+const ids = ref([]);
+const single = ref(true);
+const multiple = ref(true);
+const total = ref(0);
+const title = ref('');
+const isViewMode = ref(false);
 
 const data = reactive({
   form: {},
@@ -152,31 +152,29 @@ const data = reactive({
     orderNumber: null,
     orderStatus: null,
     payType: null,
-    orderContent: null,
+    orderContent: null
   },
   rules: {
-    orderContent: [
-      { required: true, message: "订单内容不能为空", trigger: "blur" }
-    ],
+    orderContent: [{ required: true, message: '订单内容不能为空', trigger: 'blur' }]
   }
-})
+});
 
-const { queryParams, form, rules } = toRefs(data)
+const { queryParams, form, rules } = toRefs(data);
 
 /** 查询订单列表 */
 function getList() {
-  loading.value = true
-  listPayOrder(queryParams.value).then(response => {
-    orderList.value = response.rows
-    total.value = response.total
-    loading.value = false
-  })
+  loading.value = true;
+  listPayOrder(queryParams.value).then((response) => {
+    orderList.value = response.rows;
+    total.value = response.total;
+    loading.value = false;
+  });
 }
 
 // 取消按钮
 function cancel() {
-  open.value = false
-  reset()
+  open.value = false;
+  reset();
 }
 
 // 表单重置
@@ -190,100 +188,108 @@ function reset() {
     orderMessage: null,
     payType: null,
     orderStatus: null,
-    remark: null,
-  }
-  proxy.resetForm("orderRef")
+    remark: null
+  };
+  proxy.resetForm('orderRef');
 }
 
 /** 搜索按钮操作 */
 function handleQuery() {
-  queryParams.value.pageNum = 1
-  getList()
+  queryParams.value.pageNum = 1;
+  getList();
 }
 
 /** 重置按钮操作 */
 function resetQuery() {
-  proxy.resetForm("queryRef")
-  handleQuery()
+  proxy.resetForm('queryRef');
+  handleQuery();
 }
 
 // 多选框选中数据
 function handleSelectionChange(selection) {
-  ids.value = selection.map(item => item.orderId)
-  single.value = selection.length != 1
-  multiple.value = !selection.length
+  ids.value = selection.map((item) => item.orderId);
+  single.value = selection.length != 1;
+  multiple.value = !selection.length;
 }
 
 /** 新增按钮操作 */
 function handleAdd() {
-  reset()
-  isViewMode.value = false
-  open.value = true
-  title.value = "添加订单"
+  reset();
+  isViewMode.value = false;
+  open.value = true;
+  title.value = '添加订单';
 }
 
 /** 修改按钮操作 */
 function handleUpdate(row) {
-  reset()
-  isViewMode.value = false
-  const _orderId = row.orderId || ids.value
-  getPayOrder(_orderId).then(response => {
-    form.value = response.data
-    open.value = true
-    title.value = "修改订单"
-  })
+  reset();
+  isViewMode.value = false;
+  const _orderId = row.orderId || ids.value;
+  getPayOrder(_orderId).then((response) => {
+    form.value = response.data;
+    open.value = true;
+    title.value = '修改订单';
+  });
 }
 
 /** 查看按钮操作 */
 function handleView(row) {
-  reset()
-  isViewMode.value = true
-  const _orderId = row.orderId || ids.value
-  getPayOrder(_orderId).then(response => {
-    form.value = response.data
-    open.value = true
-    title.value = "查看订单"
-  })
+  reset();
+  isViewMode.value = true;
+  const _orderId = row.orderId || ids.value;
+  getPayOrder(_orderId).then((response) => {
+    form.value = response.data;
+    open.value = true;
+    title.value = '查看订单';
+  });
 }
 
 /** 提交按钮 */
 function submitForm() {
-  proxy.$refs["orderRef"].validate(valid => {
+  proxy.$refs['orderRef'].validate((valid) => {
     if (valid) {
       if (form.value.orderId != null) {
-        updatePayOrder(form.value).then(response => {
-          proxy.$modal.msgSuccess("修改成功")
-          open.value = false
-          getList()
-        })
+        updatePayOrder(form.value).then((response) => {
+          proxy.$modal.msgSuccess('修改成功');
+          open.value = false;
+          getList();
+        });
       } else {
-        addPayOrder(form.value).then(response => {
-          proxy.$modal.msgSuccess("新增成功")
-          open.value = false
-          getList()
-        })
+        addPayOrder(form.value).then((response) => {
+          proxy.$modal.msgSuccess('新增成功');
+          open.value = false;
+          getList();
+        });
       }
     }
-  })
+  });
 }
 
 /** 删除按钮操作 */
 function handleDelete(row) {
-  const _orderIds = row.orderId || ids.value
-  proxy.$modal.confirm('是否确认删除订单编号为"' + _orderIds + '"的数据项？').then(function () {
-    return delPayOrder(_orderIds)
-  }).then(() => {
-    getList()
-    proxy.$modal.msgSuccess("删除成功")
-  }).catch(() => { })
+  const _orderIds = row.orderId || ids.value;
+  proxy.$modal
+    .confirm('是否确认删除订单编号为"' + _orderIds + '"的数据项？')
+    .then(function () {
+      return delPayOrder(_orderIds);
+    })
+    .then(() => {
+      getList();
+      proxy.$modal.msgSuccess('删除成功');
+    })
+    .catch(() => {});
 }
 
 /** 导出按钮操作 */
 function handleExport() {
-  proxy.download('pay/order/export', {
-    ...queryParams.value
-  }, `pay_order_${new Date().getTime()}.xlsx`)
+  proxy.download(
+    'pay/order/export',
+    {
+      ...queryParams.value
+    },
+    `pay_order_${new Date().getTime()}.xlsx`
+  );
 }
 
-getList()
+getList();
 </script>

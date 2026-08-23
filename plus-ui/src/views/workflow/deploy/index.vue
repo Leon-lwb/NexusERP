@@ -70,10 +70,10 @@
       <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
     </el-card>
 
-<!--    &lt;!&ndash; 流程图对话框 &ndash;&gt;-->
-<!--    <el-dialog :title="processDialog.title" v-model="processDialog.visible" width="500px" append-to-body>-->
-<!--      <process-viewer :key="`designer-${processView.index}`" :xml="processView.xmlData" :style="{height: '400px'}" />-->
-<!--    </el-dialog>-->
+    <!--    &lt;!&ndash; 流程图对话框 &ndash;&gt;-->
+    <!--    <el-dialog :title="processDialog.title" v-model="processDialog.visible" width="500px" append-to-body>-->
+    <!--      <process-viewer :key="`designer-${processView.index}`" :xml="processView.xmlData" :style="{height: '400px'}" />-->
+    <!--    </el-dialog>-->
 
     <!-- 版本管理 -->
     <el-dialog title="版本管理" v-model="publishDialog.visible" width="700px" append-to-body>
@@ -100,10 +100,22 @@
         <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
           <template #default="scope">
             <el-tooltip content="挂起" placement="top">
-              <el-button link type="primary" icon="VideoPause" @click="handleChangeState(scope.row, 'suspended')" v-hasPermi="['workflow:deploy:status']"></el-button>
+              <el-button
+                link
+                type="primary"
+                icon="VideoPause"
+                @click="handleChangeState(scope.row, 'suspended')"
+                v-hasPermi="['workflow:deploy:status']"
+              ></el-button>
             </el-tooltip>
             <el-tooltip content="激活" placement="top">
-              <el-button link type="primary" icon="VideoPlay" @click="handleChangeState(scope.row, 'active')" v-hasPermi="['workflow:deploy:status']"></el-button>
+              <el-button
+                link
+                type="primary"
+                icon="VideoPlay"
+                @click="handleChangeState(scope.row, 'active')"
+                v-hasPermi="['workflow:deploy:status']"
+              ></el-button>
             </el-tooltip>
             <el-tooltip content="删除" placement="top">
               <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['workflow:deploy:remove']"></el-button>
@@ -111,19 +123,25 @@
           </template>
         </el-table-column>
       </el-table>
-      <pagination v-show="publishTotal > 0" :total="publishTotal" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getPublishList" />
+      <pagination
+        v-show="publishTotal > 0"
+        :total="publishTotal"
+        v-model:page="queryParams.pageNum"
+        v-model:limit="queryParams.pageSize"
+        @pagination="getPublishList"
+      />
     </el-dialog>
   </div>
 </template>
 
 <script setup name="Deploy" lang="ts">
-import { listAllCategory } from '@/api/workflow/category/index'
-import { listDeploy, listPublish, getBpmnXml, changeState, delDeploy } from '@/api/workflow/deploy/index'
-import { ComponentInternalInstance } from "vue";
-import { CategoryVO } from "@/api/workflow/category/types";
-import {DeployVO, ProcessQuery} from "@/api/workflow/deploy/types";
+import { listAllCategory } from '@/api/workflow/category/index';
+import { listDeploy, listPublish, getBpmnXml, changeState, delDeploy } from '@/api/workflow/deploy/index';
+import { ComponentInternalInstance } from 'vue';
+import { CategoryVO } from '@/api/workflow/category/types';
+import { DeployVO, ProcessQuery } from '@/api/workflow/deploy/types';
 import { ElForm } from 'element-plus';
-import {ModelVO} from "@/api/workflow/model/types";
+import { ModelVO } from '@/api/workflow/model/types';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 
@@ -131,7 +149,7 @@ const categoryOptions = ref<CategoryVO[]>([]);
 
 const deployList = ref<DeployVO[]>([]);
 const loading = ref(true);
-const showSearch = ref(true)
+const showSearch = ref(true);
 const ids = ref<Array<string>>([]);
 const single = ref(true);
 const multiple = ref(true);
@@ -174,62 +192,60 @@ const getList = async () => {
   deployList.value = res.rows;
   total.value = res.total;
   loading.value = false;
-}
+};
 /** 搜索按钮操作 */
 const handleQuery = () => {
   queryParams.value.pageNum = 1;
   getList();
-}
+};
 /** 重置按钮操作 */
 const resetQuery = () => {
   queryFormRef.value.resetFields();
   handleQuery();
-}
+};
 /** 多选框选中数据 */
 const handleSelectionChange = (selection: DeployVO[]) => {
-  ids.value = selection.map(item => item.deploymentId);
+  ids.value = selection.map((item) => item.deploymentId);
   single.value = selection.length != 1;
   multiple.value = !selection.length;
-}
+};
 /** 删除按钮操作 */
 const handleDelete = async (row?: DeployVO) => {
   const deploymentIds = row?.deploymentId || ids.value;
   await proxy?.$modal.confirm('是否确认删除参数编号为"' + deploymentIds + '"的数据项？');
   await delDeploy(deploymentIds);
   getList();
-  proxy?.$modal.msgSuccess("删除成功");
-}
+  proxy?.$modal.msgSuccess('删除成功');
+};
 const getPublishList = async () => {
   publishLoading.value = true;
   const res = await listPublish(queryParams.value);
   publishList.value = res.rows;
   publishTotal.value = res.total;
   publishLoading.value = false;
-}
+};
 const handlePublish = (row: DeployVO) => {
   queryParams.value.processKey = row.processKey;
   publishDialog.visible = true;
   getPublishList();
-}
-const handleProcessView = (row: DeployVO) => {
-
-}
+};
+const handleProcessView = (row: DeployVO) => {};
 const handleChangeState = async (row: DeployVO, state: string) => {
   const params = {
     definitionId: row.definitionId,
     state: state
-  }
+  };
   await changeState(params);
-  proxy?.$modal.msgSuccess("操作成功");
+  proxy?.$modal.msgSuccess('操作成功');
   getPublishList();
-}
+};
 
 const categoryFormat = (row: ModelVO) => {
-  return categoryOptions.value.find(k => k.code === row.category)?.categoryName ?? '';
-}
+  return categoryOptions.value.find((k) => k.code === row.category)?.categoryName ?? '';
+};
 
 onMounted(() => {
   getCategoryList();
   getList();
-})
+});
 </script>

@@ -39,7 +39,14 @@
             </el-row>
           </template>
 
-          <el-table v-loading="loading" border :data="knowledgeList" @selection-change="handleSelectionChange" highlight-current-row @current-change="handleCurrentChange">
+          <el-table
+            v-loading="loading"
+            border
+            :data="knowledgeList"
+            @selection-change="handleSelectionChange"
+            highlight-current-row
+            @current-change="handleCurrentChange"
+          >
             <el-table-column type="selection" width="55" align="center" />
             <el-table-column label="知识库名称" align="center" prop="knowledgeName" :show-overflow-tooltip="true" />
             <el-table-column label="描述" align="center" prop="description" :show-overflow-tooltip="true" />
@@ -66,7 +73,13 @@
               </template>
             </el-table-column>
           </el-table>
-          <pagination v-show="total > 0" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" :total="total" @pagination="getList" />
+          <pagination
+            v-show="total > 0"
+            v-model:page="queryParams.pageNum"
+            v-model:limit="queryParams.pageSize"
+            :total="total"
+            @pagination="getList"
+          />
         </el-card>
       </el-col>
 
@@ -75,86 +88,101 @@
         <el-tabs v-model="kgTab" class="knowledge-tabs">
           <el-tab-pane label="文档管理" name="doc">
             <el-card shadow="hover">
-          <template #header>
-            <el-row :gutter="10" class="mb8">
-              <el-col :span="12">
-                <span class="font-bold">{{ selectedKnowledge.knowledgeName }} - 文档管理</span>
-              </el-col>
-              <el-col :span="12" style="text-align: right">
-                <el-upload ref="uploadRef" :show-file-list="false" :before-upload="handleBeforeUpload" :http-request="handleUpload" :multiple="true" accept=".pdf,.docx,.doc,.xlsx,.xls,.txt,.csv,.md,.html">
-                  <el-button type="primary" plain icon="Upload">上传文档</el-button>
-                </el-upload>
-              </el-col>
-            </el-row>
-          </template>
+              <template #header>
+                <el-row :gutter="10" class="mb8">
+                  <el-col :span="12">
+                    <span class="font-bold">{{ selectedKnowledge.knowledgeName }} - 文档管理</span>
+                  </el-col>
+                  <el-col :span="12" style="text-align: right">
+                    <el-upload
+                      ref="uploadRef"
+                      :show-file-list="false"
+                      :before-upload="handleBeforeUpload"
+                      :http-request="handleUpload"
+                      :multiple="true"
+                      accept=".pdf,.docx,.doc,.xlsx,.xls,.txt,.csv,.md,.html"
+                    >
+                      <el-button type="primary" plain icon="Upload">上传文档</el-button>
+                    </el-upload>
+                  </el-col>
+                </el-row>
+              </template>
 
-          <el-table v-loading="docLoading" border :data="documentList">
-            <el-table-column label="文件名" align="center" prop="fileName" :show-overflow-tooltip="true" />
-            <el-table-column label="文件大小" align="center" prop="fileSize" width="100">
-              <template #default="scope">
-                <span>{{ formatFileSize(scope.row.fileSize) }}</span>
-              </template>
-            </el-table-column>
-            <el-table-column label="分段数" align="center" prop="chunkCount" width="80" />
-            <el-table-column label="状态" align="center" prop="status" width="100">
-              <template #default="scope">
-                <el-tag :type="docStatusType(scope.row.status)">{{ docStatusText(scope.row.status) }}</el-tag>
-              </template>
-            </el-table-column>
-            <el-table-column label="错误信息" align="center" prop="errorMessage" :show-overflow-tooltip="true" />
-            <el-table-column label="操作" align="center" width="150" class-name="small-padding fixed-width">
-              <template #default="scope">
-                <el-tooltip content="查看片段" placement="top">
-                  <el-button link type="primary" icon="View" @click="handleViewChunks(scope.row)"></el-button>
-                </el-tooltip>
-                <el-tooltip v-if="scope.row.status === '3' || scope.row.status === '0'" content="重试" placement="top">
-                  <el-button link type="warning" icon="RefreshRight" @click="handleRetryDoc(scope.row)"></el-button>
-                </el-tooltip>
-                <el-tooltip content="删除" placement="top">
-                  <el-button link type="primary" icon="Delete" @click="handleDeleteDoc(scope.row)"></el-button>
-                </el-tooltip>
-              </template>
-            </el-table-column>
-          </el-table>
+              <el-table v-loading="docLoading" border :data="documentList">
+                <el-table-column label="文件名" align="center" prop="fileName" :show-overflow-tooltip="true" />
+                <el-table-column label="文件大小" align="center" prop="fileSize" width="100">
+                  <template #default="scope">
+                    <span>{{ formatFileSize(scope.row.fileSize) }}</span>
+                  </template>
+                </el-table-column>
+                <el-table-column label="分段数" align="center" prop="chunkCount" width="80" />
+                <el-table-column label="状态" align="center" prop="status" width="100">
+                  <template #default="scope">
+                    <el-tag :type="docStatusType(scope.row.status)">{{ docStatusText(scope.row.status) }}</el-tag>
+                  </template>
+                </el-table-column>
+                <el-table-column label="错误信息" align="center" prop="errorMessage" :show-overflow-tooltip="true" />
+                <el-table-column label="操作" align="center" width="150" class-name="small-padding fixed-width">
+                  <template #default="scope">
+                    <el-tooltip content="查看片段" placement="top">
+                      <el-button link type="primary" icon="View" @click="handleViewChunks(scope.row)"></el-button>
+                    </el-tooltip>
+                    <el-tooltip v-if="scope.row.status === '3' || scope.row.status === '0'" content="重试" placement="top">
+                      <el-button link type="warning" icon="RefreshRight" @click="handleRetryDoc(scope.row)"></el-button>
+                    </el-tooltip>
+                    <el-tooltip content="删除" placement="top">
+                      <el-button link type="primary" icon="Delete" @click="handleDeleteDoc(scope.row)"></el-button>
+                    </el-tooltip>
+                  </template>
+                </el-table-column>
+              </el-table>
             </el-card>
           </el-tab-pane>
           <el-tab-pane label="检索测试" name="retrieval">
             <el-card shadow="hover">
-          <template #header>
-            <span class="font-bold">检索测试</span>
-          </template>
-          <!-- 参数控制 -->
-          <el-form :inline="true" size="small" style="margin-bottom: 10px">
-            <el-form-item label="Top K">
-              <el-input-number v-model="testParams.topK" :min="1" :max="20" controls-position="right" style="width: 100px" />
-            </el-form-item>
-            <el-form-item label="阈值">
-              <el-input-number v-model="testParams.threshold" :min="0" :max="1" :step="0.1" :precision="2" controls-position="right" style="width: 100px" />
-            </el-form-item>
-            <el-form-item label="混合检索">
-              <el-switch v-model="testParams.enableHybrid" />
-            </el-form-item>
-            <el-form-item label="重排序">
-              <el-switch v-model="testParams.enableRerank" />
-            </el-form-item>
-          </el-form>
-          <el-form @submit.prevent>
-            <el-form-item style="flex: 1">
-              <el-input v-model="retrievalQuery" placeholder="输入检索文本" clearable @keyup.enter="handleRetrievalTest" />
-            </el-form-item>
-            <el-form-item>
-              <el-button type="primary" icon="Search" :loading="retrievalLoading" @click="handleRetrievalTest">测试</el-button>
-            </el-form-item>
-          </el-form>
-          <div v-if="retrievalResults.length > 0" class="retrieval-results">
-            <div v-for="(item, index) in retrievalResults" :key="index" class="retrieval-result-item">
-              <div class="result-header">
-                <el-tag size="small" type="info">#{{ index + 1 }}</el-tag>
+              <template #header>
+                <span class="font-bold">检索测试</span>
+              </template>
+              <!-- 参数控制 -->
+              <el-form :inline="true" size="small" style="margin-bottom: 10px">
+                <el-form-item label="Top K">
+                  <el-input-number v-model="testParams.topK" :min="1" :max="20" controls-position="right" style="width: 100px" />
+                </el-form-item>
+                <el-form-item label="阈值">
+                  <el-input-number
+                    v-model="testParams.threshold"
+                    :min="0"
+                    :max="1"
+                    :step="0.1"
+                    :precision="2"
+                    controls-position="right"
+                    style="width: 100px"
+                  />
+                </el-form-item>
+                <el-form-item label="混合检索">
+                  <el-switch v-model="testParams.enableHybrid" />
+                </el-form-item>
+                <el-form-item label="重排序">
+                  <el-switch v-model="testParams.enableRerank" />
+                </el-form-item>
+              </el-form>
+              <el-form @submit.prevent>
+                <el-form-item style="flex: 1">
+                  <el-input v-model="retrievalQuery" placeholder="输入检索文本" clearable @keyup.enter="handleRetrievalTest" />
+                </el-form-item>
+                <el-form-item>
+                  <el-button type="primary" icon="Search" :loading="retrievalLoading" @click="handleRetrievalTest">测试</el-button>
+                </el-form-item>
+              </el-form>
+              <div v-if="retrievalResults.length > 0" class="retrieval-results">
+                <div v-for="(item, index) in retrievalResults" :key="index" class="retrieval-result-item">
+                  <div class="result-header">
+                    <el-tag size="small" type="info">#{{ index + 1 }}</el-tag>
+                  </div>
+                  <div class="result-content">{{ typeof item === 'string' ? item : item.content }}</div>
+                </div>
               </div>
-              <div class="result-content">{{ typeof item === 'string' ? item : item.content }}</div>
-            </div>
-          </div>
-          <el-empty v-else-if="retrievalQueried" description="未检索到相关内容" />
+              <el-empty v-else-if="retrievalQueried" description="未检索到相关内容" />
             </el-card>
           </el-tab-pane>
           <el-tab-pane label="知识图谱" name="graph">
@@ -175,12 +203,7 @@
         </el-form-item>
         <el-form-item label="Embedding模型" prop="embeddingModel">
           <el-select v-model="form.embeddingModel" placeholder="请选择 Embedding 模型" style="width: 100%">
-            <el-option
-              v-for="item in embeddingModels"
-              :key="item.modelName"
-              :label="item.displayName || item.modelName"
-              :value="item.modelName"
-            />
+            <el-option v-for="item in embeddingModels" :key="item.modelName" :label="item.displayName || item.modelName" :value="item.modelName" />
           </el-select>
           <div v-if="embeddingModels.length === 0" style="color: #f56c6c; font-size: 12px; margin-top: 4px">
             未找到可用的 Embedding 模型，请先到【AI模型管理】中添加 EMBEDDING 类型模型
@@ -261,127 +284,139 @@
 </template>
 
 <script setup lang="ts" name="Knowledge">
-import { listKnowledge, getKnowledge, addKnowledge, updateKnowledge, delKnowledge, listDocumentByKnowledge, delDocument, uploadDocument, listChunkByDocument, retryDocument, knowledgeRetrieval } from '@/api/ai/knowledge'
-import { listModel } from '@/api/ai/model'
-import { ComponentInternalInstance } from 'vue'
+import {
+  listKnowledge,
+  getKnowledge,
+  addKnowledge,
+  updateKnowledge,
+  delKnowledge,
+  listDocumentByKnowledge,
+  delDocument,
+  uploadDocument,
+  listChunkByDocument,
+  retryDocument,
+  knowledgeRetrieval
+} from '@/api/ai/knowledge';
+import { listModel } from '@/api/ai/model';
+import { ComponentInternalInstance } from 'vue';
 
-const { proxy } = getCurrentInstance() as ComponentInternalInstance
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 
-const knowledgeList = ref<any[]>([])
-const documentList = ref<any[]>([])
-const chunkList = ref<any[]>([])
-const loading = ref(false)
-const docLoading = ref(false)
-const chunkLoading = ref(false)
-const showSearch = ref(true)
-const total = ref(0)
-const ids = ref<Array<number | string>>([])
-const single = ref(true)
-const multiple = ref(true)
-const selectedKnowledge = ref<any>(null)
-const showAdvanced = ref(false)
+const knowledgeList = ref<any[]>([]);
+const documentList = ref<any[]>([]);
+const chunkList = ref<any[]>([]);
+const loading = ref(false);
+const docLoading = ref(false);
+const chunkLoading = ref(false);
+const showSearch = ref(true);
+const total = ref(0);
+const ids = ref<Array<number | string>>([]);
+const single = ref(true);
+const multiple = ref(true);
+const selectedKnowledge = ref<any>(null);
+const showAdvanced = ref(false);
 
 /** 知识图谱 Tab 组件（懒加载，避免首屏加载 echarts） */
-const Graph = defineAsyncComponent(() => import('./graph.vue'))
+const Graph = defineAsyncComponent(() => import('./graph.vue'));
 /** 右侧详情当前 Tab */
-const kgTab = ref('doc')
+const kgTab = ref('doc');
 
 // 检索测试相关
-const retrievalQuery = ref('')
-const retrievalResults = ref<any[]>([])
-const retrievalLoading = ref(false)
-const retrievalQueried = ref(false)
+const retrievalQuery = ref('');
+const retrievalResults = ref<any[]>([]);
+const retrievalLoading = ref(false);
+const retrievalQueried = ref(false);
 const testParams = reactive({
   topK: 5,
   threshold: 0.5,
   enableHybrid: false,
   enableRerank: false
-})
+});
 
 const queryParams = ref<any>({
   pageNum: 1,
   pageSize: 10,
   knowledgeName: undefined,
   status: undefined
-})
+});
 
-const form = ref<any>({})
+const form = ref<any>({});
 const rules = ref({
   knowledgeName: [{ required: true, message: '知识库名称不能为空', trigger: 'blur' }],
   embeddingModel: [{ required: true, message: '请选择 Embedding 模型', trigger: 'change' }]
-})
+});
 
 /** Embedding 模型列表 */
-const embeddingModels = ref<any[]>([])
+const embeddingModels = ref<any[]>([]);
 
 /** 加载 Embedding 模型列表 */
 function loadEmbeddingModels() {
   listModel({ modelType: 'EMBEDDING', status: '1', pageNum: 1, pageSize: 100 }).then((res: any) => {
-    embeddingModels.value = res.rows || []
-  })
+    embeddingModels.value = res.rows || [];
+  });
 }
 
 const dialog = reactive<{ visible: boolean; title: string }>({
   visible: false,
   title: ''
-})
+});
 
 const chunkDialog = reactive<{ visible: boolean }>({
   visible: false
-})
+});
 
 /** 查询知识库列表 */
 function getList() {
-  loading.value = true
+  loading.value = true;
   listKnowledge(queryParams.value).then((res: any) => {
-    knowledgeList.value = res.rows
-    total.value = res.total
-    loading.value = false
-  })
+    knowledgeList.value = res.rows;
+    total.value = res.total;
+    loading.value = false;
+  });
 }
 
 /** 搜索 */
 function handleQuery() {
-  queryParams.value.pageNum = 1
-  getList()
+  queryParams.value.pageNum = 1;
+  getList();
 }
 
 /** 重置 */
 function resetQuery() {
-  proxy?.resetForm('queryFormRef')
-  handleQuery()
+  proxy?.resetForm('queryFormRef');
+  handleQuery();
 }
 
 /** 多选框选中数据 */
 function handleSelectionChange(selection: any[]) {
-  ids.value = selection.map(item => item.id)
-  single.value = selection.length !== 1
-  multiple.value = !selection.length
+  ids.value = selection.map((item) => item.id);
+  single.value = selection.length !== 1;
+  multiple.value = !selection.length;
 }
 
 /** 选中知识库行 */
 function handleCurrentChange(row: any) {
-  selectedKnowledge.value = row
+  selectedKnowledge.value = row;
   // 切换知识库时清空检索结果，重置测试参数为知识库配置
-  retrievalResults.value = []
-  retrievalQueried.value = false
-  retrievalQuery.value = ''
+  retrievalResults.value = [];
+  retrievalQueried.value = false;
+  retrievalQuery.value = '';
   if (row) {
-    testParams.topK = row.retrieveLimit || 5
-    testParams.threshold = row.similarityThreshold || 0.5
-    testParams.enableHybrid = row.enableHybrid === 1
-    testParams.enableRerank = row.enableRerank === 1
-    loadDocuments(row.id)
+    testParams.topK = row.retrieveLimit || 5;
+    testParams.threshold = row.similarityThreshold || 0.5;
+    testParams.enableHybrid = row.enableHybrid === 1;
+    testParams.enableRerank = row.enableRerank === 1;
+    loadDocuments(row.id);
   }
 }
 
 /** 加载文档列表 */
 function loadDocuments(knowledgeId: number) {
-  docLoading.value = true
+  docLoading.value = true;
   listDocumentByKnowledge(knowledgeId).then((res: any) => {
-    documentList.value = res.data
-    docLoading.value = false
-  })
+    documentList.value = res.data;
+    docLoading.value = false;
+  });
 }
 
 /** 重置表单 */
@@ -403,41 +438,48 @@ function reset() {
     enableHybrid: 0,
     hybridAlpha: 0.5,
     systemPrompt: undefined
-  }
-  showAdvanced.value = false
-  proxy?.resetForm('knowledgeFormRef')
+  };
+  showAdvanced.value = false;
+  proxy?.resetForm('knowledgeFormRef');
 }
 
 /** 新增 */
 function handleAdd() {
-  reset()
-  loadEmbeddingModels()
-  dialog.visible = true
-  dialog.title = '新增知识库'
+  reset();
+  loadEmbeddingModels();
+  dialog.visible = true;
+  dialog.title = '新增知识库';
 }
 
 /** 修改 */
 function handleUpdate(row: any) {
-  reset()
-  loadEmbeddingModels()
+  reset();
+  loadEmbeddingModels();
   getKnowledge(row.id).then((res: any) => {
-    form.value = res.data
+    form.value = res.data;
     // 确保高级配置字段有默认值
-    if (form.value.separator === undefined) form.value.separator = '#'
-    if (form.value.overlapChar === undefined) form.value.overlapChar = 30
-    if (form.value.textBlockSize === undefined) form.value.textBlockSize = 500
-    if (form.value.retrieveLimit === undefined) form.value.retrieveLimit = 5
-    if (form.value.similarityThreshold === undefined) form.value.similarityThreshold = 0.5
-    if (form.value.enableRerank === undefined) form.value.enableRerank = 0
-    if (form.value.enableHybrid === undefined) form.value.enableHybrid = 0
-    if (form.value.hybridAlpha === undefined) form.value.hybridAlpha = 0.5
+    if (form.value.separator === undefined) form.value.separator = '#';
+    if (form.value.overlapChar === undefined) form.value.overlapChar = 30;
+    if (form.value.textBlockSize === undefined) form.value.textBlockSize = 500;
+    if (form.value.retrieveLimit === undefined) form.value.retrieveLimit = 5;
+    if (form.value.similarityThreshold === undefined) form.value.similarityThreshold = 0.5;
+    if (form.value.enableRerank === undefined) form.value.enableRerank = 0;
+    if (form.value.enableHybrid === undefined) form.value.enableHybrid = 0;
+    if (form.value.hybridAlpha === undefined) form.value.hybridAlpha = 0.5;
     // 如果有高级配置字段则展开
-    if (form.value.separator !== '#' || form.value.overlapChar !== 30 || form.value.textBlockSize !== 500 || form.value.enableRerank === 1 || form.value.enableHybrid === 1 || form.value.systemPrompt) {
-      showAdvanced.value = true
+    if (
+      form.value.separator !== '#' ||
+      form.value.overlapChar !== 30 ||
+      form.value.textBlockSize !== 500 ||
+      form.value.enableRerank === 1 ||
+      form.value.enableHybrid === 1 ||
+      form.value.systemPrompt
+    ) {
+      showAdvanced.value = true;
     }
-    dialog.visible = true
-    dialog.title = '修改知识库'
-  })
+    dialog.visible = true;
+    dialog.title = '修改知识库';
+  });
 }
 
 /** 提交 */
@@ -446,103 +488,117 @@ function submitForm() {
     if (valid) {
       if (form.value.id) {
         updateKnowledge(form.value).then(() => {
-          proxy?.$modal.msgSuccess('修改成功')
-          dialog.visible = false
-          getList()
-        })
+          proxy?.$modal.msgSuccess('修改成功');
+          dialog.visible = false;
+          getList();
+        });
       } else {
         addKnowledge(form.value).then(() => {
-          proxy?.$modal.msgSuccess('新增成功')
-          dialog.visible = false
-          getList()
-        })
+          proxy?.$modal.msgSuccess('新增成功');
+          dialog.visible = false;
+          getList();
+        });
       }
     }
-  })
+  });
 }
 
 /** 删除知识库 */
 function handleDelete(row?: any) {
-  const deleteIds = row?.id ? [row.id] : ids.value
-  proxy?.$modal.confirm('是否确认删除所选知识库？').then(() => {
-    return delKnowledge(deleteIds)
-  }).then(() => {
-    getList()
-    proxy?.$modal.msgSuccess('删除成功')
-  }).catch(() => {})
+  const deleteIds = row?.id ? [row.id] : ids.value;
+  proxy?.$modal
+    .confirm('是否确认删除所选知识库？')
+    .then(() => {
+      return delKnowledge(deleteIds);
+    })
+    .then(() => {
+      getList();
+      proxy?.$modal.msgSuccess('删除成功');
+    })
+    .catch(() => {});
 }
 
 /** 删除文档 */
 function handleDeleteDoc(row: any) {
-  proxy?.$modal.confirm(`是否确认删除文档"${row.fileName}"？`).then(() => {
-    return delDocument([row.id])
-  }).then(() => {
-    if (selectedKnowledge.value) {
-      loadDocuments(selectedKnowledge.value.id)
-    }
-    proxy?.$modal.msgSuccess('删除成功')
-  }).catch(() => {})
+  proxy?.$modal
+    .confirm(`是否确认删除文档"${row.fileName}"？`)
+    .then(() => {
+      return delDocument([row.id]);
+    })
+    .then(() => {
+      if (selectedKnowledge.value) {
+        loadDocuments(selectedKnowledge.value.id);
+      }
+      proxy?.$modal.msgSuccess('删除成功');
+    })
+    .catch(() => {});
 }
 
 /** 重试文档 */
 function handleRetryDoc(row: any) {
-  proxy?.$modal.confirm(`是否重新处理文档"${row.fileName}"？`).then(() => {
-    return retryDocument(row.id)
-  }).then(() => {
-    proxy?.$modal.msgSuccess('已提交重新处理')
-    if (selectedKnowledge.value) {
-      setTimeout(() => {
-        loadDocuments(selectedKnowledge.value.id)
-      }, 1000)
-    }
-  }).catch(() => {})
+  proxy?.$modal
+    .confirm(`是否重新处理文档"${row.fileName}"？`)
+    .then(() => {
+      return retryDocument(row.id);
+    })
+    .then(() => {
+      proxy?.$modal.msgSuccess('已提交重新处理');
+      if (selectedKnowledge.value) {
+        setTimeout(() => {
+          loadDocuments(selectedKnowledge.value.id);
+        }, 1000);
+      }
+    })
+    .catch(() => {});
 }
 
 /** 上传前校验 */
 function handleBeforeUpload(file: any) {
-  const maxSize = 50 * 1024 * 1024 // 50MB
+  const maxSize = 50 * 1024 * 1024; // 50MB
   if (file.size > maxSize) {
-    proxy?.$modal.msgError('文件大小不能超过 50MB')
-    return false
+    proxy?.$modal.msgError('文件大小不能超过 50MB');
+    return false;
   }
-  return true
+  return true;
 }
 
 /** 自定义上传 */
 function handleUpload(params: any) {
-  if (!selectedKnowledge.value) return
-  uploadDocument(selectedKnowledge.value.id, params.file).then(() => {
-    proxy?.$modal.msgSuccess('文档上传成功，正在后台解析中...')
-    // 延迟刷新文档列表
-    setTimeout(() => {
-      if (selectedKnowledge.value) {
-        loadDocuments(selectedKnowledge.value.id)
-      }
-    }, 2000)
-  }).catch(() => {
-    proxy?.$modal.msgError('文档上传失败')
-  })
+  if (!selectedKnowledge.value) return;
+  uploadDocument(selectedKnowledge.value.id, params.file)
+    .then(() => {
+      proxy?.$modal.msgSuccess('文档上传成功，正在后台解析中...');
+      // 延迟刷新文档列表
+      setTimeout(() => {
+        if (selectedKnowledge.value) {
+          loadDocuments(selectedKnowledge.value.id);
+        }
+      }, 2000);
+    })
+    .catch(() => {
+      proxy?.$modal.msgError('文档上传失败');
+    });
 }
 
 /** 查看片段 */
 function handleViewChunks(row: any) {
-  chunkLoading.value = true
-  chunkDialog.visible = true
+  chunkLoading.value = true;
+  chunkDialog.visible = true;
   listChunkByDocument(row.id).then((res: any) => {
-    chunkList.value = res.data
-    chunkLoading.value = false
-  })
+    chunkList.value = res.data;
+    chunkLoading.value = false;
+  });
 }
 
 /** 检索测试 */
 function handleRetrievalTest() {
   if (!retrievalQuery.value.trim()) {
-    proxy?.$modal.msgWarning('请输入检索文本')
-    return
+    proxy?.$modal.msgWarning('请输入检索文本');
+    return;
   }
-  if (!selectedKnowledge.value) return
-  retrievalLoading.value = true
-  retrievalQueried.value = true
+  if (!selectedKnowledge.value) return;
+  retrievalLoading.value = true;
+  retrievalQueried.value = true;
   knowledgeRetrieval({
     knowledgeId: selectedKnowledge.value.id,
     query: retrievalQuery.value,
@@ -552,59 +608,72 @@ function handleRetrievalTest() {
     rerankModel: selectedKnowledge.value.rerankModel || undefined,
     enableHybrid: testParams.enableHybrid,
     hybridAlpha: selectedKnowledge.value.hybridAlpha || 0.5
-  }).then((res: any) => {
-    retrievalResults.value = res.data || []
-  }).catch(() => {
-    retrievalResults.value = []
-  }).finally(() => {
-    retrievalLoading.value = false
   })
+    .then((res: any) => {
+      retrievalResults.value = res.data || [];
+    })
+    .catch(() => {
+      retrievalResults.value = [];
+    })
+    .finally(() => {
+      retrievalLoading.value = false;
+    });
 }
 
 /** 格式化文件大小 */
 function formatFileSize(bytes: number) {
-  if (!bytes) return '0 B'
-  const units = ['B', 'KB', 'MB', 'GB']
-  let i = 0
-  let size = bytes
+  if (!bytes) return '0 B';
+  const units = ['B', 'KB', 'MB', 'GB'];
+  let i = 0;
+  let size = bytes;
   while (size >= 1024 && i < units.length - 1) {
-    size /= 1024
-    i++
+    size /= 1024;
+    i++;
   }
-  return size.toFixed(1) + ' ' + units[i]
+  return size.toFixed(1) + ' ' + units[i];
 }
 
 /** 文档状态标签类型 */
 function docStatusType(status: string) {
   switch (status) {
-    case '0': return 'info'
-    case '1': return 'warning'
-    case '2': return 'success'
-    case '3': return 'danger'
-    default: return 'info'
+    case '0':
+      return 'info';
+    case '1':
+      return 'warning';
+    case '2':
+      return 'success';
+    case '3':
+      return 'danger';
+    default:
+      return 'info';
   }
 }
 
 /** 文档状态文本 */
 function docStatusText(status: string) {
   switch (status) {
-    case '0': return '待解析'
-    case '1': return '解析中'
-    case '2': return '已完成'
-    case '3': return '失败'
-    default: return '未知'
+    case '0':
+      return '待解析';
+    case '1':
+      return '解析中';
+    case '2':
+      return '已完成';
+    case '3':
+      return '失败';
+    default:
+      return '未知';
   }
 }
 
 /** 取消 */
 function cancel() {
-  dialog.visible = false
-  reset()
+  dialog.visible = false;
+  reset();
 }
 
 onMounted(() => {
-  getList()
-})
+  getList();
+});
 </script>
 
 <style scoped>

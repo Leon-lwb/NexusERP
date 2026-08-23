@@ -105,8 +105,8 @@
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="入库单号" prop="recptCode">
-              <div style="display: flex; align-items: center; gap: 10px;">
-                <el-input v-model="form.recptCode" placeholder="请输入入库单号" :disabled="autoGenFlag || !!form.recptId" style="flex: 1;" />
+              <div style="display: flex; align-items: center; gap: 10px">
+                <el-input v-model="form.recptCode" placeholder="请输入入库单号" :disabled="autoGenFlag || !!form.recptId" style="flex: 1" />
                 <el-switch
                   v-model="autoGenFlag"
                   inline-prompt

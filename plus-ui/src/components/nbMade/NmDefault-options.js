@@ -26,4 +26,4 @@ export default {
     'code',
     'codeblock'
   ]
-}
+};

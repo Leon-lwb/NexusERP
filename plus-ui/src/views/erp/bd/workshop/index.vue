@@ -88,8 +88,8 @@
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="车间编码" prop="workshopCode">
-              <div style="display: flex; align-items: center; gap: 10px;">
-                <el-input v-model="form.workshopCode" placeholder="请输入车间编码" :disabled="autoGenFlag || isViewMode" style="flex: 1;" />
+              <div style="display: flex; align-items: center; gap: 10px">
+                <el-input v-model="form.workshopCode" placeholder="请输入车间编码" :disabled="autoGenFlag || isViewMode" style="flex: 1" />
                 <el-switch v-model="autoGenFlag" active-color="#13ce66" active-text="自动生成" @change="handleAutoGenChange" :disabled="isViewMode">
                 </el-switch>
               </div>
@@ -238,16 +238,24 @@ const userLoading = ref(false);
 const userVisible = ref(false);
 const userTotal = ref(0);
 const userQueryParams = reactive({
-  pageNum: 1, pageSize: 10, userName: undefined, phonenumber: undefined
+  pageNum: 1,
+  pageSize: 10,
+  userName: undefined,
+  phonenumber: undefined
 });
 
 // 部门树
 const deptOptions = ref([]);
 
 const queryParams = ref({
-  pageNum: 1, pageSize: 10,
-  workshopCode: null, workshopName: null, workshopDesc: null,
-  managerName: null, capacity: null, status: null
+  pageNum: 1,
+  pageSize: 10,
+  workshopCode: null,
+  workshopName: null,
+  workshopDesc: null,
+  managerName: null,
+  capacity: null,
+  status: null
 });
 
 const rules = {
@@ -258,8 +266,24 @@ const rules = {
 };
 
 const {
-  loading, list, total, open, isViewMode, title, ids, single, multiple, showSearch, form,
-  getList, handleQuery, handleDelete, handleExport, handleSelectionChange, submitForm, cancel,
+  loading,
+  list,
+  total,
+  open,
+  isViewMode,
+  title,
+  ids,
+  single,
+  multiple,
+  showSearch,
+  form,
+  getList,
+  handleQuery,
+  handleDelete,
+  handleExport,
+  handleSelectionChange,
+  submitForm,
+  cancel,
   handleAdd: rawHandleAdd,
   handleUpdate: rawHandleUpdate,
   handleView: rawHandleView
@@ -270,27 +294,55 @@ const {
   formRef: workshopRef,
   queryParams,
   initForm: () => ({
-    workshopId: null, workshopCode: null, workshopName: null, workshopDesc: null,
-    managerId: null, managerName: null, deptId: null, deptName: null,
-    capacity: null, status: null, sortOrder: null, remark: null,
-    attr1: null, attr2: null, attr3: null, attr4: null,
-    createBy: null, createTime: null, updateBy: null, updateTime: null
+    workshopId: null,
+    workshopCode: null,
+    workshopName: null,
+    workshopDesc: null,
+    managerId: null,
+    managerName: null,
+    deptId: null,
+    deptName: null,
+    capacity: null,
+    status: null,
+    sortOrder: null,
+    remark: null,
+    attr1: null,
+    attr2: null,
+    attr3: null,
+    attr4: null,
+    createBy: null,
+    createTime: null,
+    updateBy: null,
+    updateTime: null
   }),
   exportUrl: '/erp/bd/workshop/export',
   exportFileName: 'workshop',
-  onReset: () => { autoGenFlag.value = false; },
-  beforeSubmit: () => { if (autoGenFlag.value) form.value.workshopCode = undefined; },
-  afterLoad: () => { getDeptTree(); }
+  onReset: () => {
+    autoGenFlag.value = false;
+  },
+  beforeSubmit: () => {
+    if (autoGenFlag.value) form.value.workshopCode = undefined;
+  },
+  afterLoad: () => {
+    getDeptTree();
+  }
 });
 
 function handleAdd() {
-  rawHandleAdd(() => { autoGenFlag.value = false; getDeptTree(); });
+  rawHandleAdd(() => {
+    autoGenFlag.value = false;
+    getDeptTree();
+  });
 }
 function handleUpdate(row?: any) {
-  return rawHandleUpdate(row, () => { autoGenFlag.value = false; });
+  return rawHandleUpdate(row, () => {
+    autoGenFlag.value = false;
+  });
 }
 function handleView(row?: any) {
-  return rawHandleView(row, () => { autoGenFlag.value = false; });
+  return rawHandleView(row, () => {
+    autoGenFlag.value = false;
+  });
 }
 
 function resetQuery() {
@@ -300,7 +352,9 @@ function resetQuery() {
 
 function handleAutoGenChange(val: boolean) {
   if (val) {
-    previewCode('WORKSHOP_CODE').then((response: any) => { form.value.workshopCode = response; });
+    previewCode('WORKSHOP_CODE').then((response: any) => {
+      form.value.workshopCode = response;
+    });
   } else {
     form.value.workshopCode = null;
   }
@@ -314,7 +368,10 @@ function getUserList() {
     userLoading.value = false;
   });
 }
-function openUserSelect() { userVisible.value = true; getUserList(); }
+function openUserSelect() {
+  userVisible.value = true;
+  getUserList();
+}
 function selectUser(row: any) {
   form.value.managerId = row.userId;
   form.value.managerName = row.userName;
@@ -338,4 +395,3 @@ function handleDeptChange(data: any) {
 
 getList();
 </script>
-

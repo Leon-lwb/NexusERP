@@ -26,7 +26,7 @@
             {{ previewData.tables?.length || 0 }}
           </el-descriptions-item>
         </el-descriptions>
-        
+
         <div v-if="previewData.tables?.length" class="tables-section">
           <h4>表结构预览</h4>
           <div class="tables-scroll">
@@ -61,13 +61,11 @@
             </div>
           </div>
         </div>
-        
+
         <div v-if="previewData.relations?.length" class="relations-preview">
           <h4>关系预览</h4>
           <div v-for="(relation, index) in previewData.relations" :key="index" class="relation-preview">
-            <el-tag type="info">
-              {{ relation.fromTable }}.{{ relation.fromField }} → {{ relation.toTable }}.{{ relation.toField }}
-            </el-tag>
+            <el-tag type="info"> {{ relation.fromTable }}.{{ relation.fromField }} → {{ relation.toTable }}.{{ relation.toField }} </el-tag>
           </div>
         </div>
       </div>
@@ -76,63 +74,67 @@
 </template>
 
 <script setup name="PreviewPanel" lang="ts">
-import { ref, watch, nextTick } from 'vue'
-const emit = defineEmits(['close'])
+import { ref, watch, nextTick } from 'vue';
+const emit = defineEmits(['close']);
 
 interface PreviewData {
-  designName?: string
-  tableName?: string
-  tableComment?: string
+  designName?: string;
+  tableName?: string;
+  tableComment?: string;
   tables?: Array<{
-    name: string
-    comment?: string
-    engine?: string
-    charset?: string
+    name: string;
+    comment?: string;
+    engine?: string;
+    charset?: string;
     fields: Array<{
-      name: string
-      type: string
-      length?: number
-      precision?: number
-      scale?: number
-      defaultValue?: string
-      comment?: string
-      isPrimaryKey?: boolean
-      isNotNull?: boolean
-      isUnique?: boolean
-    }>
-  }>
+      name: string;
+      type: string;
+      length?: number;
+      precision?: number;
+      scale?: number;
+      defaultValue?: string;
+      comment?: string;
+      isPrimaryKey?: boolean;
+      isNotNull?: boolean;
+      isUnique?: boolean;
+    }>;
+  }>;
   relations?: Array<{
-    fromTable: string
-    fromField: string
-    toTable: string
-    toField: string
-  }>
+    fromTable: string;
+    fromField: string;
+    toTable: string;
+    toField: string;
+  }>;
 }
 
 const props = defineProps<{
-  designData?: any
-}>()
+  designData?: any;
+}>();
 
-const previewData = ref<PreviewData | null>(null)
+const previewData = ref<PreviewData | null>(null);
 
 // 监听设计数据变化，更新预览
-watch(() => props.designData, (newData) => {
-  if (newData) {
-    nextTick(() => {
-      updatePreview(newData)
-    })
-  } else {
-    previewData.value = null
-  }
-}, { immediate: true, deep: true })
+watch(
+  () => props.designData,
+  (newData) => {
+    if (newData) {
+      nextTick(() => {
+        updatePreview(newData);
+      });
+    } else {
+      previewData.value = null;
+    }
+  },
+  { immediate: true, deep: true }
+);
 
 const updatePreview = (data: any) => {
   try {
     if (!data) {
-      previewData.value = null
-      return
+      previewData.value = null;
+      return;
     }
-    
+
     previewData.value = {
       designName: data.designName || '',
       tableName: data.tableName || '',
@@ -161,24 +163,24 @@ const updatePreview = (data: any) => {
         toTable: relation.toTable || '',
         toField: relation.toField || ''
       }))
-    }
+    };
   } catch (error) {
-    console.error('更新预览数据失败:', error)
-    previewData.value = null
+    console.error('更新预览数据失败:', error);
+    previewData.value = null;
   }
-}
+};
 
 const handleRefresh = () => {
   if (props.designData) {
-    updatePreview(props.designData)
+    updatePreview(props.designData);
   }
-}
+};
 
 // 暴露方法给父组件
 defineExpose({
   updatePreview,
   refresh: handleRefresh
-})
+});
 </script>
 
 <style lang="scss" scoped>
@@ -196,7 +198,7 @@ defineExpose({
   padding: 16px;
   background: white;
   border-bottom: 1px solid #e4e7ed;
-  
+
   h3 {
     margin: 0;
     font-size: 16px;
@@ -219,55 +221,55 @@ defineExpose({
 .preview-data {
   .tables-section {
     margin-top: 20px;
-    
+
     h4 {
       margin: 0 0 12px 0;
       font-size: 14px;
       font-weight: 500;
       color: #606266;
     }
-    
+
     .tables-scroll {
       max-height: 40vh;
       overflow: auto;
     }
-    
+
     .tables-scroll .table-preview {
       margin-bottom: 16px;
-      
+
       .table-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        
+
         .table-name {
           font-weight: 500;
           color: #303133;
         }
       }
-      
+
       .table-comment {
         margin: 8px 0;
         color: #909399;
         font-size: 12px;
       }
-      
+
       .fields-preview {
         margin-top: 12px;
       }
     }
   }
-  
+
   .relations-preview {
     margin-top: 20px;
-    
+
     h4 {
       margin: 0 0 16px 0;
       font-size: 14px;
       font-weight: 500;
       color: #606266;
     }
-    
+
     .relation-preview {
       margin-bottom: 8px;
     }

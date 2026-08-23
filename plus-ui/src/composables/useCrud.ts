@@ -67,20 +67,8 @@ export interface UseCrudOptions<T, Q extends PageQuery> {
  * @returns        CRUD 相关的响应式状态与方法
  */
 export function useCrud<T extends Record<string, any>, Q extends PageQuery>(options: UseCrudOptions<T, Q>) {
-  const {
-    apis,
-    idField,
-    entityName,
-    formRef,
-    queryParams,
-    initForm,
-    exportUrl,
-    exportFileName,
-    beforeList,
-    onReset,
-    beforeSubmit,
-    afterLoad
-  } = options;
+  const { apis, idField, entityName, formRef, queryParams, initForm, exportUrl, exportFileName, beforeList, onReset, beforeSubmit, afterLoad } =
+    options;
 
   /** 加载状态 */
   const loading = ref(false);

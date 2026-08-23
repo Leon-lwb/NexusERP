@@ -32,8 +32,6 @@ export function completeReworkOrder(reworkId: number) {
 
 const BASE = '/erp/prd/rework';
 
-export const issueReworkMaterial = (reworkId: number) =>
-  request({ url: BASE + '/issue/' + reworkId, method: 'put' });
+export const issueReworkMaterial = (reworkId: number) => request({ url: BASE + '/issue/' + reworkId, method: 'put' });
 
-export const receiveReworkMaterial = (reworkId: number) =>
-  request({ url: BASE + '/receive/' + reworkId, method: 'put' });
+export const receiveReworkMaterial = (reworkId: number) => request({ url: BASE + '/receive/' + reworkId, method: 'put' });

@@ -1,15 +1,7 @@
 <template>
   <el-card shadow="never" class="rule-card">
     <div class="rule-row">
-      <el-select
-        v-model="targetsModel"
-        multiple
-        filterable
-        clearable
-        collapse-tags
-        placeholder="targets（popup 字段）"
-        style="width: 360px"
-      >
+      <el-select v-model="targetsModel" multiple filterable clearable collapse-tags placeholder="targets（popup 字段）" style="width: 360px">
         <el-option v-for="t in targets" :key="t.value" :label="t.label" :value="t.value" />
       </el-select>
 
@@ -62,89 +54,99 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from 'vue'
-import WhenBuilder, { type FieldOption, type WhenClause } from '../WhenBuilder.vue'
+import { computed, reactive, ref, watch } from 'vue';
+import WhenBuilder, { type FieldOption, type WhenClause } from '../WhenBuilder.vue';
 
-type PopupQueryParam = { key: string; mode: 'const' | 'copy' | 'formula'; value?: any; from?: string; formula?: string }
-type PopupQueryRule = { when?: WhenClause; targets: string[] | string; params: Record<string, any> | PopupQueryParam[]; merge?: boolean; priority?: number }
+type PopupQueryParam = { key: string; mode: 'const' | 'copy' | 'formula'; value?: any; from?: string; formula?: string };
+type PopupQueryRule = {
+  when?: WhenClause;
+  targets: string[] | string;
+  params: Record<string, any> | PopupQueryParam[];
+  merge?: boolean;
+  priority?: number;
+};
 
 const props = defineProps<{
-  modelValue: PopupQueryRule
-  targets: FieldOption[]
-  fields: FieldOption[]
-}>()
+  modelValue: PopupQueryRule;
+  targets: FieldOption[];
+  fields: FieldOption[];
+}>();
 
 const emit = defineEmits<{
-  (e: 'update:modelValue', v: PopupQueryRule): void
-  (e: 'remove'): void
-}>()
+  (e: 'update:modelValue', v: PopupQueryRule): void;
+  (e: 'remove'): void;
+}>();
 
 const local = reactive<PopupQueryRule>({
   merge: true,
   params: [],
-  ...props.modelValue,
-})
+  ...props.modelValue
+});
 
-const params = ref<PopupQueryParam[]>([])
-const paramsIsObject = ref(false)
+const params = ref<PopupQueryParam[]>([]);
+const paramsIsObject = ref(false);
 
 const toArrayParams = (v: any): PopupQueryParam[] => {
-  if (Array.isArray(v)) return v as any
+  if (Array.isArray(v)) return v as any;
   if (v && typeof v === 'object') {
-    return Object.keys(v).map((k) => ({ key: k, mode: 'const', value: (v as any)[k] }))
+    return Object.keys(v).map((k) => ({ key: k, mode: 'const', value: (v as any)[k] }));
   }
-  return []
-}
+  return [];
+};
 
 const syncParamsFromLocal = () => {
-  paramsIsObject.value = !!(local.params && typeof local.params === 'object' && !Array.isArray(local.params))
+  paramsIsObject.value = !!(local.params && typeof local.params === 'object' && !Array.isArray(local.params));
   params.value = toArrayParams(local.params).map((p) => ({
     key: String(p.key || ''),
     mode: (p.mode || 'copy') as any,
     value: p.value,
     from: p.from,
-    formula: p.formula,
-  }))
-  local.params = params.value
-}
+    formula: p.formula
+  }));
+  local.params = params.value;
+};
 
 watch(
   () => props.modelValue,
   (v) => {
-    Object.assign(local, v || {})
-    syncParamsFromLocal()
+    Object.assign(local, v || {});
+    syncParamsFromLocal();
   },
   { deep: true, immediate: true }
-)
+);
 
 watch(
   params,
-  () => { local.params = params.value },
+  () => {
+    local.params = params.value;
+  },
   { deep: true }
-)
+);
 
-watch(
-  local,
-  () => emit('update:modelValue', { ...local, targets: local.targets, params: local.params }),
-  { deep: true }
-)
+watch(local, () => emit('update:modelValue', { ...local, targets: local.targets, params: local.params }), { deep: true });
 
 const targetsModel = computed<string[]>({
   get: () => {
-    const v: any = local.targets
-    if (Array.isArray(v)) return v
-    if (typeof v === 'string' && v) return v.split(',').map(s => s.trim()).filter(Boolean)
-    return []
+    const v: any = local.targets;
+    if (Array.isArray(v)) return v;
+    if (typeof v === 'string' && v)
+      return v
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
+    return [];
   },
-  set: (arr) => { local.targets = arr }
-})
+  set: (arr) => {
+    local.targets = arr;
+  }
+});
 
 const addParam = () => {
-  params.value.push({ key: '', mode: 'copy', from: '' })
-}
+  params.value.push({ key: '', mode: 'copy', from: '' });
+};
 const removeParam = (idx: number) => {
-  params.value.splice(idx, 1)
-}
+  params.value.splice(idx, 1);
+};
 </script>
 
 <style scoped>
@@ -181,4 +183,3 @@ const removeParam = (idx: number) => {
   margin-bottom: 8px;
 }
 </style>
-

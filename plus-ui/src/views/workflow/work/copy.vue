@@ -54,10 +54,10 @@
 
 <script setup name="Copy" lang="ts">
 //import { listCopyProcess, updateCcReaded  } from "@/api/workflow/work/process"
-import { listCopyProcess, updateCcReaded  } from "@/api/workflow/work/process"
-import {ProcessQuery, ProcessVO} from "@/api/workflow/work/types";
+import { listCopyProcess, updateCcReaded } from '@/api/workflow/work/process';
+import { ProcessQuery, ProcessVO } from '@/api/workflow/work/types';
 
-import { ComponentInternalInstance } from "vue";
+import { ComponentInternalInstance } from 'vue';
 
 const router = useRouter();
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
@@ -75,12 +75,12 @@ const queryFormRef = ref(ElForm);
 const queryParams = ref<ProcessQuery>({
   pageNum: 1,
   pageSize: 10,
-  processId: "",
-  processName: "",
-  categoryId: "",
-  taskId: "",
-  userId: "",
-  originatorName: ""
+  processId: '',
+  processName: '',
+  categoryId: '',
+  taskId: '',
+  userId: '',
+  originatorName: ''
 });
 
 /** 查询待办列表 */
@@ -90,43 +90,47 @@ const getList = async () => {
   copyList.value = res.rows;
   total.value = res.total;
   loading.value = false;
-}
+};
 /** 搜索按钮操作 */
 const handleQuery = () => {
   queryParams.value.pageNum = 1;
   getList();
-}
+};
 /** 重置按钮操作 */
 const resetQuery = () => {
   queryFormRef.value.resetFields();
   handleQuery();
-}
+};
 // 多选框选中数据
 const handleSelectionChange = (selection) => {
-  ids.value = selection.map(item => item.copyId)
-  single.value = selection.length!==1
-  multiple.value = !selection.length
-}
+  ids.value = selection.map((item) => item.copyId);
+  single.value = selection.length !== 1;
+  multiple.value = !selection.length;
+};
 /** 流程详情 */
 const handleDetails = (row: ProcessVO) => {
-  updateCcReaded({ id: row.copyId }).then(res => {
+  updateCcReaded({ id: row.copyId }).then((res) => {
     if (res.success) {
     }
-  })
+  });
   router.push({
     path: '/workflow/process/detail/' + row.instanceId,
     query: {
       taskId: row.taskId,
       processed: false
     }
-  })
-}
+  });
+};
 /** 导出按钮操作 */
 const handleExport = () => {
-  proxy?.download("workflow/process/copyExport", {
-    ...queryParams.value
-  }, `copy_process_${new Date().getTime()}.xlsx`);
-}
+  proxy?.download(
+    'workflow/process/copyExport',
+    {
+      ...queryParams.value
+    },
+    `copy_process_${new Date().getTime()}.xlsx`
+  );
+};
 
 onMounted(() => {
   getList();

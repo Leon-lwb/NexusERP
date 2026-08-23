@@ -45,9 +45,9 @@
         <el-table-column label="分类名称" align="center" prop="categoryName" />
         <el-table-column label="分类编码" align="center" prop="code" />
         <el-table-column label="应用类型" align="center" prop="appType" width="100">
-        <template #default="scope">
-          <dict-tag :options="wf_app_type" :value="scope.row.appType"/>
-        </template>
+          <template #default="scope">
+            <dict-tag :options="wf_app_type" :value="scope.row.appType" />
+          </template>
         </el-table-column>
         <el-table-column label="备注" align="center" prop="remark" />
         <el-table-column label="操作" align="center" width="150" class-name="small-padding fixed-width">
@@ -75,12 +75,7 @@
         </el-form-item>
         <el-form-item label="应用类型" prop="appType">
           <el-select v-model="form.appType" placeholder="请选择应用类型">
-            <el-option
-              v-for="dict in wf_app_type"
-              :key="dict.value"
-              :label="dict.label"
-              :value="dict.value"
-            ></el-option>
+            <el-option v-for="dict in wf_app_type" :key="dict.value" :label="dict.label" :value="dict.value"></el-option>
           </el-select>
         </el-form-item>
         <el-form-item label="备注" prop="remark">
@@ -99,11 +94,11 @@
 
 <script setup name="Category" lang="ts">
 import { listCategory, getCategory, delCategory, addCategory, updateCategory } from '@/api/workflow/category/index';
-import { CategoryForm, CategoryQuery, CategoryVO } from "@/api/workflow/category/types";
-import { ComponentInternalInstance } from "vue";
+import { CategoryForm, CategoryQuery, CategoryVO } from '@/api/workflow/category/types';
+import { ComponentInternalInstance } from 'vue';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
-const { wf_app_type } = toRefs<any>(proxy?.useDict("wf_app_type"));
+const { wf_app_type } = toRefs<any>(proxy?.useDict('wf_app_type'));
 
 const categoryList = ref<CategoryVO[]>([]);
 const loading = ref(true);
@@ -125,9 +120,9 @@ const initFormData: CategoryForm = {
   appType: '',
   code: '',
   remark: ''
-}
+};
 const data = reactive<PageData<CategoryForm, CategoryQuery>>({
-  form: {...initFormData},
+  form: { ...initFormData },
   queryParams: {
     pageNum: 1,
     pageSize: 10,
@@ -135,9 +130,9 @@ const data = reactive<PageData<CategoryForm, CategoryQuery>>({
     code: ''
   },
   rules: {
-    categoryName: [{ required: true, message: "分类名称不能为空", trigger: "blur" }],
-    code: [{ required: true, message: "分类编码不能为空", trigger: "blur" }],
-    appType: [{ required: true, message: "应用类型不能为空", trigger: "blur" }]
+    categoryName: [{ required: true, message: '分类名称不能为空', trigger: 'blur' }],
+    code: [{ required: true, message: '分类编码不能为空', trigger: 'blur' }],
+    appType: [{ required: true, message: '应用类型不能为空', trigger: 'blur' }]
   }
 });
 
@@ -150,79 +145,83 @@ const getList = async () => {
   categoryList.value = res.rows;
   total.value = res.total;
   loading.value = false;
-}
+};
 /** 取消按钮 */
 const cancel = () => {
   reset();
   dialog.visible = false;
-}
+};
 /** 表单重置 */
 const reset = () => {
-  form.value = {...initFormData};
+  form.value = { ...initFormData };
   categoryFormRef.value.resetFields();
-}
+};
 /** 搜索按钮操作 */
 const handleQuery = () => {
   queryParams.value.pageNum = 1;
   getList();
-}
+};
 /** 重置按钮操作 */
 const resetQuery = () => {
   queryFormRef.value.resetFields();
   handleQuery();
-}
+};
 /** 多选框选中数据 */
 const handleSelectionChange = (selection: CategoryVO[]) => {
-  ids.value = selection.map(item => item.categoryId);
+  ids.value = selection.map((item) => item.categoryId);
   single.value = selection.length != 1;
   multiple.value = !selection.length;
-}
+};
 /** 新增按钮操作 */
 const handleAdd = () => {
   dialog.visible = true;
-  dialog.title = "添加参数";
+  dialog.title = '添加参数';
   nextTick(() => {
     reset();
-  })
-}
+  });
+};
 /** 修改按钮操作 */
 const handleUpdate = (row?: CategoryVO) => {
   dialog.visible = true;
-  dialog.title = "修改参数";
+  dialog.title = '修改参数';
   const categoryId = row?.categoryId || ids.value[0];
   nextTick(async () => {
     reset();
     const res = await getCategory(categoryId);
     form.value = res.data;
-  })
-}
+  });
+};
 /** 提交按钮 */
 const submitForm = () => {
   categoryFormRef.value.validate(async (valid: boolean) => {
     if (valid) {
       form.value.categoryId ? await updateCategory(form.value) : await addCategory(form.value);
-      proxy?.$modal.msgSuccess("操作成功");
+      proxy?.$modal.msgSuccess('操作成功');
       dialog.visible = false;
       getList();
     }
   });
-}
+};
 /** 删除按钮操作 */
 const handleDelete = async (row?: CategoryVO) => {
   const categoryIds = row?.categoryId || ids.value;
   await proxy?.$modal.confirm('是否确认删除参数编号为"' + categoryIds + '"的数据项？');
   await delCategory(categoryIds);
   getList();
-  proxy?.$modal.msgSuccess("删除成功");
-}
+  proxy?.$modal.msgSuccess('删除成功');
+};
 /** 导出按钮操作 */
 const handleExport = () => {
-  proxy?.download("workflow/category/export", {
-    ...queryParams.value
-  }, `category_${new Date().getTime()}.xlsx`);
-}
+  proxy?.download(
+    'workflow/category/export',
+    {
+      ...queryParams.value
+    },
+    `category_${new Date().getTime()}.xlsx`
+  );
+};
 
 onMounted(() => {
   getList();
-})
+});
 </script>

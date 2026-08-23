@@ -13,9 +13,9 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, watch, nextTick } from 'vue'
-import Editor from '@/components/Editor/index.vue'
-import { propTypes } from '@/utils/propTypes'
+import { ref, watch, nextTick } from 'vue';
+import Editor from '@/components/Editor/index.vue';
+import { propTypes } from '@/utils/propTypes';
 
 const props = defineProps({
   /* 编辑器的内容 */
@@ -30,37 +30,41 @@ const props = defineProps({
   fileSize: propTypes.number.def(5),
   /* 类型（base64格式、url格式） */
   type: propTypes.string.def('url')
-})
+});
 
-const emit = defineEmits(['update:modelValue', 'change'])
+const emit = defineEmits(['update:modelValue', 'change']);
 
-const content = ref('')
+const content = ref('');
 
 // 监听 modelValue 的变化
-watch(() => props.modelValue, (newValue) => {
-  content.value = newValue || ''
-}, { immediate: true })
+watch(
+  () => props.modelValue,
+  (newValue) => {
+    content.value = newValue || '';
+  },
+  { immediate: true }
+);
 
 // 处理内容更新
 const handleModelValueUpdate = (value: string) => {
-  emit('update:modelValue', value)
+  emit('update:modelValue', value);
   // 确保在更新 modelValue 后触发 change 事件
   nextTick(() => {
-    emit('change', value)
-  })
-}
+    emit('change', value);
+  });
+};
 </script>
 
 <style lang="scss" scoped>
 .rich-editor {
   width: 100%;
-  
+
   :deep(.ql-container) {
     min-height: 200px;
   }
-  
+
   :deep(.ql-editor) {
     min-height: 200px;
   }
 }
-</style> 
+</style>

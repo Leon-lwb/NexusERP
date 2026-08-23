@@ -170,9 +170,7 @@ export const imCache = {
 
   /** 全量保存指定会话的消息（裁剪到最近 N 条） */
   async saveMessage(chatId: string, messages: any[]): Promise<void> {
-    const trimmed = messages.length > MAX_MESSAGES_PER_CONVERSATION
-      ? messages.slice(-MAX_MESSAGES_PER_CONVERSATION)
-      : messages;
+    const trimmed = messages.length > MAX_MESSAGES_PER_CONVERSATION ? messages.slice(-MAX_MESSAGES_PER_CONVERSATION) : messages;
     scheduleWrite(chatId, trimmed);
     await touchLru(chatId);
   },

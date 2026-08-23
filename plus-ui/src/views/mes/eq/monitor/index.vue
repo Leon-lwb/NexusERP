@@ -81,7 +81,12 @@
           <template #header>
             <div class="card-header">
               <span>活跃维修单</span>
-              <el-button link type="warning" icon="WarnTriangleFilled" @click="router.push('/mes/eq-maintain/repair')" v-hasPermi="['mes:eq:repair:list']"
+              <el-button
+                link
+                type="warning"
+                icon="WarnTriangleFilled"
+                @click="router.push('/mes/eq-maintain/repair')"
+                v-hasPermi="['mes:eq:repair:list']"
                 >查看全部</el-button
               >
             </div>

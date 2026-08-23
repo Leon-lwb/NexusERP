@@ -22,8 +22,20 @@ export function delCapacityCalendar(calendarIds: string | number | (string | num
   return request({ url: '/erp/prd/capacityCalendar/' + calendarIds, method: 'delete' });
 }
 
-export function generateFromSchedule(planId: number, startDate: string, endDate: string, objectType: string, objectId: number, objectCode: string, objectName: string) {
-  return request({ url: '/erp/prd/capacityCalendar/generate', method: 'post', params: { planId, startDate, endDate, objectType, objectId, objectCode, objectName } });
+export function generateFromSchedule(
+  planId: number,
+  startDate: string,
+  endDate: string,
+  objectType: string,
+  objectId: number,
+  objectCode: string,
+  objectName: string
+) {
+  return request({
+    url: '/erp/prd/capacityCalendar/generate',
+    method: 'post',
+    params: { planId, startDate, endDate, objectType, objectId, objectCode, objectName }
+  });
 }
 
 export function queryAvailableCapacity(objectType: string, objectId: number, startDate: string, endDate: string): AxiosPromise<CapacityCalendarVO[]> {

@@ -78,7 +78,7 @@
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column type="expand">
         <template #default="props">
-          <el-table :data="orderLinesMap[props.row.orderId] || []" border size="small" style="margin: 8px 20px;" show-overflow-tooltip>
+          <el-table :data="orderLinesMap[props.row.orderId] || []" border size="small" style="margin: 8px 20px" show-overflow-tooltip>
             <el-table-column label="物料编码" prop="materialCode" width="120" />
             <el-table-column label="物料名称" prop="materialName" min-width="150" />
             <el-table-column label="规格型号" prop="materialSpec" width="120" />
@@ -126,13 +126,7 @@
 
 <script setup lang="ts" name="PurchaseOrder">
 // 导入采购订单相关的API函数
-import {
-  listPurchaseOrder,
-  delPurchaseOrder,
-  receivePurchaseOrder,
-  getDiffReport,
-  listOrderLines
-} from '@/api/erp/pu/order';
+import { listPurchaseOrder, delPurchaseOrder, receivePurchaseOrder, getDiffReport, listOrderLines } from '@/api/erp/pu/order';
 
 // 获取当前实例并获取字典数据
 const { proxy } = getCurrentInstance() as any;
@@ -334,4 +328,3 @@ onActivated(() => {
   getList();
 });
 </script>
-

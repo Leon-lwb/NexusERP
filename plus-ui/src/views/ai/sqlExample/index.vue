@@ -102,28 +102,28 @@
 </template>
 
 <script setup lang="ts" name="AiSqlExample">
-import { ref, reactive } from 'vue'
-import { Search, Refresh, Plus, Edit, Delete } from '@element-plus/icons-vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { listSqlExample, getSqlExample, addSqlExample, updateSqlExample, delSqlExample } from '@/api/ai/sqlExample'
+import { ref, reactive } from 'vue';
+import { Search, Refresh, Plus, Edit, Delete } from '@element-plus/icons-vue';
+import { ElMessage, ElMessageBox } from 'element-plus';
+import { listSqlExample, getSqlExample, addSqlExample, updateSqlExample, delSqlExample } from '@/api/ai/sqlExample';
 
-defineOptions({ name: 'AiSqlExample' })
+defineOptions({ name: 'AiSqlExample' });
 
-const loading = ref(false)
-const showSearch = ref(true)
-const dataList = ref<any[]>([])
-const total = ref(0)
-const ids = ref<number[]>([])
-const multiple = ref(true)
-const dialogVisible = ref(false)
-const dialogTitle = ref('')
+const loading = ref(false);
+const showSearch = ref(true);
+const dataList = ref<any[]>([]);
+const total = ref(0);
+const ids = ref<number[]>([]);
+const multiple = ref(true);
+const dialogVisible = ref(false);
+const dialogTitle = ref('');
 
 const queryParams = reactive({
   pageNum: 1,
   pageSize: 10,
   category: undefined as string | undefined,
   question: undefined as string | undefined
-})
+});
 
 const form = reactive({
   id: undefined as number | undefined,
@@ -133,16 +133,16 @@ const form = reactive({
   sortOrder: 0,
   status: '0',
   description: ''
-})
+});
 
 const rules = {
   question: [{ required: true, message: '问题不能为空', trigger: 'blur' }],
   sqlTemplate: [{ required: true, message: 'SQL 模板不能为空', trigger: 'blur' }],
   category: [{ required: true, message: '请选择分类', trigger: 'change' }]
-}
+};
 
-const queryFormRef = ref()
-const formRef = ref()
+const queryFormRef = ref();
+const formRef = ref();
 
 /** 分类标签颜色 */
 function categoryTagType(category: string) {
@@ -151,99 +151,101 @@ function categoryTagType(category: string) {
     SALES: 'success',
     PURCHASE: 'primary',
     PRODUCTION: 'danger'
-  }
-  return map[category] || 'info'
+  };
+  return map[category] || 'info';
 }
 
 /** 查询列表 */
 function getList() {
-  loading.value = true
+  loading.value = true;
   listSqlExample(queryParams).then((res: any) => {
-    dataList.value = res.rows
-    total.value = res.total
-    loading.value = false
-  })
+    dataList.value = res.rows;
+    total.value = res.total;
+    loading.value = false;
+  });
 }
 
 /** 搜索 */
 function handleQuery() {
-  queryParams.pageNum = 1
-  getList()
+  queryParams.pageNum = 1;
+  getList();
 }
 
 /** 重置 */
 function resetQuery() {
-  queryFormRef.value?.resetFields()
-  handleQuery()
+  queryFormRef.value?.resetFields();
+  handleQuery();
 }
 
 /** 多选 */
 function handleSelectionChange(selection: any[]) {
-  ids.value = selection.map(item => item.id)
-  multiple.value = !selection.length
+  ids.value = selection.map((item) => item.id);
+  multiple.value = !selection.length;
 }
 
 /** 重置表单 */
 function resetForm() {
-  form.id = undefined
-  form.question = ''
-  form.sqlTemplate = ''
-  form.category = 'INVENTORY'
-  form.sortOrder = 0
-  form.status = '0'
-  form.description = ''
+  form.id = undefined;
+  form.question = '';
+  form.sqlTemplate = '';
+  form.category = 'INVENTORY';
+  form.sortOrder = 0;
+  form.status = '0';
+  form.description = '';
 }
 
 /** 新增 */
 function handleAdd() {
-  resetForm()
-  dialogTitle.value = '新增 SQL 示例'
-  dialogVisible.value = true
+  resetForm();
+  dialogTitle.value = '新增 SQL 示例';
+  dialogVisible.value = true;
 }
 
 /** 修改 */
 function handleUpdate(row: any) {
-  resetForm()
-  const exampleId = row.id || ids.value[0]
+  resetForm();
+  const exampleId = row.id || ids.value[0];
   getSqlExample(exampleId).then((res: any) => {
-    Object.assign(form, res.data)
-    dialogTitle.value = '修改 SQL 示例'
-    dialogVisible.value = true
-  })
+    Object.assign(form, res.data);
+    dialogTitle.value = '修改 SQL 示例';
+    dialogVisible.value = true;
+  });
 }
 
 /** 提交 */
 function submitForm() {
   formRef.value?.validate((valid: boolean) => {
-    if (!valid) return
+    if (!valid) return;
     if (form.id) {
       updateSqlExample(form).then(() => {
-        ElMessage.success('修改成功')
-        dialogVisible.value = false
-        getList()
-      })
+        ElMessage.success('修改成功');
+        dialogVisible.value = false;
+        getList();
+      });
     } else {
       addSqlExample(form).then(() => {
-        ElMessage.success('新增成功')
-        dialogVisible.value = false
-        getList()
-      })
+        ElMessage.success('新增成功');
+        dialogVisible.value = false;
+        getList();
+      });
     }
-  })
+  });
 }
 
 /** 删除 */
 function handleDelete(row?: any) {
-  const deleteIds = row?.id ? [row.id] : ids.value
-  ElMessageBox.confirm('是否确认删除选中的数据？', '提示', { type: 'warning' }).then(() => {
-    delSqlExample(deleteIds).then(() => {
-      ElMessage.success('删除成功')
-      getList()
+  const deleteIds = row?.id ? [row.id] : ids.value;
+  ElMessageBox.confirm('是否确认删除选中的数据？', '提示', { type: 'warning' })
+    .then(() => {
+      delSqlExample(deleteIds).then(() => {
+        ElMessage.success('删除成功');
+        getList();
+      });
     })
-  }).catch(() => {})
+    .catch(() => {});
 }
 
-getList()
+getList();
 </script>
 
 <style scoped>

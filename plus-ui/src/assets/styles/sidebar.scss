@@ -194,7 +194,6 @@
       }
     }
 
-
     & .el-sub-menu {
       overflow: hidden;
       border-radius: var(--app-radius-md);
@@ -207,7 +206,6 @@
       &.is-active .el-sub-menu__title.el-tooltip__trigger {
         background-color: var(--el-menu-active-color) !important;
       }
-
 
       & > .el-sub-menu__title {
         padding: 0 !important;
@@ -286,12 +284,12 @@
   }
 }
 // 收起菜单后悬浮的菜单样式
-.el-popper.is-pure{
+.el-popper.is-pure {
   border-radius: var(--app-radius-md);
-  .el-menu--popup{
+  .el-menu--popup {
     border-radius: var(--app-radius-md);
   }
-  .el-menu-item{
+  .el-menu-item {
     border-radius: var(--app-radius-sm);
   }
 }

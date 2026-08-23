@@ -1,24 +1,7 @@
 <template>
-  <el-select
-    v-model="localValue"
-    :placeholder="nm.tableTypeDesc"
-    ref="selectTree"
-    @change="commonComponent"
-    class="setstyle"
-  >
-    <el-option
-      :key="nm.commonDataInfo"
-      :value="nm.commonDataInfo"
-      :label="nm.tableTypeDesc"
-      hidden
-    />
-    <el-tree
-      :data="nm.commonCateDictCode"
-      :props="defaultProps"
-      @node-click="handleClickNode"
-      node-key="id"
-      class="setstyle"
-    />
+  <el-select v-model="localValue" :placeholder="nm.tableTypeDesc" ref="selectTree" @change="commonComponent" class="setstyle">
+    <el-option :key="nm.commonDataInfo" :value="nm.commonDataInfo" :label="nm.tableTypeDesc" hidden />
+    <el-tree :data="nm.commonCateDictCode" :props="defaultProps" @node-click="handleClickNode" node-key="id" class="setstyle" />
   </el-select>
 </template>
 
@@ -26,7 +9,7 @@
 import { ref, watch, onMounted } from 'vue';
 
 export default {
-  name: "nmCatTree",
+  name: 'nmCatTree',
   props: {
     nm: {
       type: Object,
@@ -50,9 +33,12 @@ export default {
     const selectTree = ref(null);
 
     // 监听 props.value 的变化，确保 localValue 与 props.value 保持同步
-    watch(() => props.value, (newValue) => {
-      localValue.value = newValue;
-    });
+    watch(
+      () => props.value,
+      (newValue) => {
+        localValue.value = newValue;
+      }
+    );
 
     // 监听 localValue 的变化，触发 update:value 事件
     watch(localValue, (newValue) => {

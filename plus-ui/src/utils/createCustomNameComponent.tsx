@@ -37,7 +37,9 @@ export function createCustomNameComponent(loader: () => Promise<any>, options: O
       return defineComponent({
         name: 'ErrorComponent',
         render() {
-          return h('div', { style: 'padding: 20px; color: red;' }, 
+          return h(
+            'div',
+            { style: 'padding: 20px; color: red;' },
             `Failed to load component: ${name || 'Unknown'}. Error: ${loadError?.message || 'Component not found'}`
           );
         }

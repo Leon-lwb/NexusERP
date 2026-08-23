@@ -256,8 +256,24 @@ const rules = {
 };
 
 const {
-  loading, list, total, open, isViewMode, title, ids, single, multiple, showSearch, form,
-  getList, handleQuery, handleDelete, handleExport, handleSelectionChange, submitForm, cancel,
+  loading,
+  list,
+  total,
+  open,
+  isViewMode,
+  title,
+  ids,
+  single,
+  multiple,
+  showSearch,
+  form,
+  getList,
+  handleQuery,
+  handleDelete,
+  handleExport,
+  handleSelectionChange,
+  submitForm,
+  cancel,
   handleAdd: rawHandleAdd,
   handleUpdate: rawHandleUpdate,
   handleView: rawHandleView
@@ -288,7 +304,9 @@ const {
   }),
   exportUrl: '/erp/bd/process/export',
   exportFileName: 'process',
-  onReset: () => { getWorkstationList(); }
+  onReset: () => {
+    getWorkstationList();
+  }
 });
 
 /** 工作中心列表 */
@@ -313,13 +331,19 @@ function handleWorkstationChange(val: number) {
 }
 
 function handleAdd() {
-  rawHandleAdd(() => { getWorkstationList(); });
+  rawHandleAdd(() => {
+    getWorkstationList();
+  });
 }
 function handleUpdate(row?: any) {
-  return rawHandleUpdate(row, () => { getWorkstationList(); });
+  return rawHandleUpdate(row, () => {
+    getWorkstationList();
+  });
 }
 function handleView(row?: any) {
-  return rawHandleView(row, () => { getWorkstationList(); });
+  return rawHandleView(row, () => {
+    getWorkstationList();
+  });
 }
 
 function resetQuery() {
@@ -329,4 +353,3 @@ function resetQuery() {
 
 getList();
 </script>
-

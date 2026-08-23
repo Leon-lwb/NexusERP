@@ -48,7 +48,7 @@ export default function ContextPadProvider(
     this._autoPlace = injector.get('autoPlace', false);
   }
 
-  eventBus.on('create.end', 250, function(event) {
+  eventBus.on('create.end', 250, function (event) {
     var context = event.context;
     var shape = context.shape;
 
@@ -80,7 +80,7 @@ ContextPadProvider.$inject = [
   'elementRegistry'
 ];
 
-ContextPadProvider.prototype.getContextPadEntries = function(element) {
+ContextPadProvider.prototype.getContextPadEntries = function (element) {
   var contextPad = this._contextPad;
   var modeling = this._modeling;
   var elementFactory = this._elementFactory;
@@ -152,11 +152,11 @@ ContextPadProvider.prototype.getContextPadEntries = function(element) {
     }
 
     var append = autoPlace
-      ? function(event, element) {
-        var shape = elementFactory.createShape(assign({ type: type }, options));
+      ? function (event, element) {
+          var shape = elementFactory.createShape(assign({ type: type }, options));
 
-        autoPlace.append(element, shape);
-      }
+          autoPlace.append(element, shape);
+        }
       : appendStart;
 
     return {
@@ -171,7 +171,7 @@ ContextPadProvider.prototype.getContextPadEntries = function(element) {
   }
 
   function splitLaneHandler(count) {
-    return function(event, element) {
+    return function (event, element) {
       // actual split
       modeling.splitLane(element, count);
 
@@ -190,7 +190,7 @@ ContextPadProvider.prototype.getContextPadEntries = function(element) {
         className: 'bpmn-icon-lane-insert-above',
         title: translate('Add Lane above'),
         action: {
-          click: function(event, element) {
+          click: function (event, element) {
             modeling.addLane(element, 'top');
           }
         }
@@ -231,7 +231,7 @@ ContextPadProvider.prototype.getContextPadEntries = function(element) {
         className: 'bpmn-icon-lane-insert-below',
         title: translate('Add Lane below'),
         action: {
-          click: function(event, element) {
+          click: function (event, element) {
             modeling.addLane(element, 'bottom');
           }
         }
@@ -301,7 +301,7 @@ ContextPadProvider.prototype.getContextPadEntries = function(element) {
         className: 'bpmn-icon-screw-wrench',
         title: translate('Change type'),
         action: {
-          click: function(event, element) {
+          click: function (event, element) {
             var position = assign(getReplaceMenuPosition(element), {
               cursor: { x: event.x, y: event.y }
             });
@@ -380,7 +380,7 @@ function isEventType(eventBo, type, definition) {
   var isDefinition = false;
 
   var definitions = eventBo.eventDefinitions || [];
-  forEach(definitions, function(def) {
+  forEach(definitions, function (def) {
     if (def.$type === definition) {
       isDefinition = true;
     }
