@@ -28,8 +28,8 @@
         </el-col>
         <el-col :span="6" :offset="18" class="search-actions">
           <el-form-item>
-            <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+            <el-button type="primary" icon="Search" @click="handleQuery()">搜索</el-button>
+            <el-button icon="Refresh" @click="resetQuery()">重置</el-button>
           </el-form-item>
         </el-col>
       </el-row>
@@ -37,19 +37,19 @@
 
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
-        <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['iot:device:add']">新增</el-button>
+        <el-button type="primary" plain icon="Plus" @click="handleAdd()" v-hasPermi="['iot:device:add']">新增</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['iot:device:edit']">修改</el-button>
+        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate()" v-hasPermi="['iot:device:edit']">修改</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['iot:device:remove']">删除</el-button>
+        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete()" v-hasPermi="['iot:device:remove']">删除</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="info" plain icon="View" :disabled="single" @click="handleView" v-hasPermi="['iot:device:query']">查看</el-button>
+        <el-button type="info" plain icon="View" :disabled="single" @click="handleView()" v-hasPermi="['iot:device:query']">查看</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['iot:device:export']">导出</el-button>
+        <el-button type="warning" plain icon="Download" @click="handleExport()" v-hasPermi="['iot:device:export']">导出</el-button>
       </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
@@ -154,8 +154,8 @@
       </el-form>
       <template #footer>
         <div class="dialog-footer">
-          <el-button type="primary" @click="submitForm" v-if="!isViewMode">确 定</el-button>
-          <el-button @click="cancel">{{ isViewMode ? '关 闭' : '取 消' }}</el-button>
+          <el-button type="primary" @click="submitForm()" v-if="!isViewMode">确 定</el-button>
+          <el-button @click="cancel()">{{ isViewMode ? '关 闭' : '取 消' }}</el-button>
         </div>
       </template>
     </el-dialog>
@@ -179,7 +179,7 @@
       </el-form>
       <template #footer>
         <el-button @click="mesBindDialog.visible = false">取消</el-button>
-        <el-button type="primary" @click="submitMesBind">确定</el-button>
+        <el-button type="primary" @click="submitMesBind()">确定</el-button>
       </template>
     </el-dialog>
   </div>
@@ -187,10 +187,12 @@
 
 <script setup lang="ts" name="IotDevice">
 import { listDevice, getDevice, delDevice, addDevice, updateDevice } from '@/api/iot/device';
-import type { DeviceVO, DeviceQuery, DeviceForm } from '@/api/iot/device/types';
+import type { DeviceVO, DeviceQuery } from '@/api/iot/device/types';
 import { listProduct } from '@/api/iot/product';
 import { listMesEquipmentForBind, updateMesEquipmentLink } from '@/api/mes/eq/equipment';
 import { useRouter } from 'vue-router';
+import type { FormInstance } from 'element-plus';
+import { useCrud } from '@/composables/useCrud';
 
 const router = useRouter();
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
@@ -198,67 +200,52 @@ const { iot_protocol_type, iot_connection_status, iot_device_status } = toRefs<a
   proxy.useDict('iot_protocol_type', 'iot_connection_status', 'iot_device_status')
 );
 
-const deviceList = ref<DeviceVO[]>([]);
-const productOptions = ref([]);
-const open = ref(false);
-const loading = ref(true);
-const showSearch = ref(true);
-const ids = ref([]);
-const single = ref(true);
-const multiple = ref(true);
-const total = ref(0);
-const title = ref('');
-const isViewMode = ref(false);
+const deviceRef = ref<FormInstance>();
+const productOptions = ref<any[]>([]);
 
-const data = reactive<{
-  form: DeviceForm;
-  queryParams: DeviceQuery;
-  rules: ElFormRules;
-}>({
-  form: {} as DeviceForm,
-  queryParams: {
-    pageNum: 1,
-    pageSize: 10,
-    deviceCode: null,
-    deviceName: null,
-    protocolType: null,
-    status: null
-  },
-  rules: {
-    productId: [{ required: true, message: '所属产品不能为空', trigger: 'change' }],
-    deviceCode: [{ required: true, message: '设备编码不能为空', trigger: 'blur' }],
-    deviceName: [{ required: true, message: '设备名称不能为空', trigger: 'blur' }]
-  }
+const queryParams = ref<DeviceQuery>({
+  pageNum: 1,
+  pageSize: 10,
+  deviceCode: null,
+  deviceName: null,
+  protocolType: null,
+  status: null
 });
 
-const { queryParams, form, rules } = toRefs(data);
+const rules = {
+  productId: [{ required: true, message: '所属产品不能为空', trigger: 'change' }],
+  deviceCode: [{ required: true, message: '设备编码不能为空', trigger: 'blur' }],
+  deviceName: [{ required: true, message: '设备名称不能为空', trigger: 'blur' }]
+};
 
-/** 查询设备列表 */
-function getList() {
-  loading.value = true;
-  listDevice(queryParams.value).then((response) => {
-    deviceList.value = response.rows;
-    total.value = response.total;
-    loading.value = false;
-  });
-}
-
-/** 加载产品下拉选项 */
-function loadProductOptions() {
-  listProduct({ pageNum: 1, pageSize: 999 }).then((response) => {
-    productOptions.value = response.rows;
-  });
-}
-
-// 取消按钮
-function cancel() {
-  open.value = false;
-  reset();
-}
-
-// 表单重置
-function reset() {
-  form.value = {
+const {
+  loading,
+  list: deviceList,
+  total,
+  open,
+  isViewMode,
+  title,
+  single,
+  multiple,
+  showSearch,
+  form,
+  getList,
+  handleQuery,
+  handleDelete,
+  handleExport,
+  handleSelectionChange,
+  submitForm,
+  cancel,
+  handleAdd: rawHandleAdd,
+  handleUpdate: rawHandleUpdate,
+  handleView: rawHandleView
+} = useCrud({
+  apis: { list: listDevice, get: getDevice, add: addDevice, update: updateDevice, del: delDevice },
+  idField: 'deviceId',
+  entityName: '设备',
+  formRef: deviceRef,
+  queryParams,
+  initForm: () => ({
     deviceId: null,
     deviceCode: null,
     deviceName: null,
@@ -270,15 +257,10 @@ function reset() {
     mesEquipmentId: null,
     status: 'ACTIVE',
     remark: null
-  };
-  proxy.resetForm('deviceRef');
-}
-
-/** 搜索按钮操作 */
-function handleQuery() {
-  queryParams.value.pageNum = 1;
-  getList();
-}
+  }),
+  exportUrl: 'iot/device/export',
+  exportFileName: 'iot_device'
+});
 
 /** 重置按钮操作 */
 function resetQuery() {
@@ -286,95 +268,31 @@ function resetQuery() {
   handleQuery();
 }
 
-// 多选框选中数据
-function handleSelectionChange(selection) {
-  ids.value = selection.map((item) => item.deviceId);
-  single.value = selection.length != 1;
-  multiple.value = !selection.length;
-}
-
-/** 实时数据按钮操作 */
-function handleRealtime(row) {
-  proxy.$router.push('/iot/device/realtime/' + row.deviceId);
-}
-
 /** 新增按钮操作 */
 function handleAdd() {
-  reset();
-  isViewMode.value = false;
-  open.value = true;
-  title.value = '添加设备';
+  rawHandleAdd(loadProductOptions);
 }
 
 /** 修改按钮操作 */
-function handleUpdate(row) {
-  reset();
-  isViewMode.value = false;
-  const _deviceId = row.deviceId || ids.value;
-  getDevice(_deviceId).then((response) => {
-    form.value = response.data;
-    open.value = true;
-    title.value = '修改设备';
-  });
+function handleUpdate(row?: DeviceVO) {
+  return rawHandleUpdate(row, loadProductOptions);
 }
 
 /** 查看按钮操作 */
-function handleView(row) {
-  reset();
-  isViewMode.value = true;
-  const _deviceId = row.deviceId || ids.value;
-  getDevice(_deviceId).then((response) => {
-    form.value = response.data;
-    open.value = true;
-    title.value = '查看设备';
+function handleView(row?: DeviceVO) {
+  return rawHandleView(row, loadProductOptions);
+}
+
+/** 加载产品下拉选项 */
+function loadProductOptions() {
+  listProduct({ pageNum: 1, pageSize: 999 }).then((response) => {
+    productOptions.value = response.rows;
   });
 }
 
-/** 提交按钮 */
-function submitForm() {
-  (proxy.$refs['deviceRef'] as ElFormInstance).validate((valid) => {
-    if (valid) {
-      if (form.value.deviceId != null) {
-        updateDevice(form.value).then((response) => {
-          proxy.$modal.msgSuccess('修改成功');
-          open.value = false;
-          getList();
-        });
-      } else {
-        addDevice(form.value).then((response) => {
-          proxy.$modal.msgSuccess('新增成功');
-          open.value = false;
-          getList();
-        });
-      }
-    }
-  });
-}
-
-/** 删除按钮操作 */
-function handleDelete(row) {
-  const _deviceIds = row.deviceId || ids.value;
-  proxy.$modal
-    .confirm('是否确认删除设备编号为"' + _deviceIds + '"的数据项？')
-    .then(function () {
-      return delDevice(_deviceIds);
-    })
-    .then(() => {
-      getList();
-      proxy.$modal.msgSuccess('删除成功');
-    })
-    .catch(() => {});
-}
-
-/** 导出按钮操作 */
-function handleExport() {
-  proxy.download(
-    'iot/device/export',
-    {
-      ...queryParams.value
-    },
-    `iot_device_${new Date().getTime()}.xlsx`
-  );
+/** 实时数据按钮操作 */
+function handleRealtime(row: DeviceVO) {
+  router.push('/iot/device/realtime/' + row.deviceId);
 }
 
 /** 跳转到 MES 设备台账（带 equipmentId 查询参数） */

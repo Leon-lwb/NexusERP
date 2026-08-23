@@ -1,81 +1,79 @@
 <template>
-  <div class="p-2">
-    <el-card>
-      <el-form :model="queryParams" ref="queryFormRef" v-show="showSearch" label-width="90px" class="list-search">
-        <el-row :gutter="16">
-          <el-col :span="6">
-            <el-form-item label="工序名称" prop="processName">
-              <el-input v-model="queryParams.processName" placeholder="请输入工序名称" clearable @keyup.enter="handleQuery" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="6">
-            <el-form-item label="默认" prop="isDefault">
-              <el-select v-model="queryParams.isDefault" placeholder="请选择" clearable style="width: 100%">
-                <el-option label="是" value="1" />
-                <el-option label="否" value="0" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="6" class="search-actions">
-            <el-form-item>
-              <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-              <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-            </el-form-item>
-          </el-col>
-        </el-row>
-      </el-form>
-
-      <el-row :gutter="10" class="mb8">
-        <el-col :span="1.5">
-          <el-button type="success" plain icon="Plus" @click="handleAdd" v-hasPermi="['mes:sop:binding:add']">新增绑定</el-button>
+  <div class="app-container">
+    <el-form :model="queryParams" ref="queryRef" v-show="showSearch" label-width="90px" class="list-search">
+      <el-row :gutter="16">
+        <el-col :span="6">
+          <el-form-item label="工序名称" prop="processName">
+            <el-input v-model="queryParams.processName" placeholder="请输入工序名称" clearable @keyup.enter="handleQuery" />
+          </el-form-item>
         </el-col>
-        <el-col :span="1.5">
-          <el-button type="danger" plain icon="Delete" :disabled="!ids.length" @click="handleDelete" v-hasPermi="['mes:sop:binding:remove']"
-            >删除</el-button
-          >
+        <el-col :span="6">
+          <el-form-item label="默认" prop="isDefault">
+            <el-select v-model="queryParams.isDefault" placeholder="请选择" clearable style="width: 100%">
+              <el-option label="是" value="1" />
+              <el-option label="否" value="0" />
+            </el-select>
+          </el-form-item>
         </el-col>
-        <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
+        <el-col :span="6" class="search-actions">
+          <el-form-item>
+            <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+          </el-form-item>
+        </el-col>
       </el-row>
+    </el-form>
 
-      <el-table v-loading="loading" :data="dataList" show-overflow-tooltip @selection-change="handleSelectionChange">
-        <el-table-column type="selection" width="55" align="center" />
-        <el-table-column label="工序编码" prop="processCode" min-width="130" />
-        <el-table-column label="工序名称" prop="processName" min-width="130" />
-        <el-table-column label="工序类别" prop="processCategory" align="center" width="100">
-          <template #default="scope">
-            <el-tag v-if="scope.row.processCategory" :type="categoryTag(scope.row.processCategory)">{{
-              categoryLabel(scope.row.processCategory)
-            }}</el-tag>
-            <span v-else>-</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="SOP编码" prop="sopCode" min-width="140" />
-        <el-table-column label="SOP名称" prop="sopName" min-width="140" />
-        <el-table-column label="SOP状态" prop="sopStatus" align="center" width="90">
-          <template #default="scope"><dict-tag :options="mes_sop_status" :value="scope.row.sopStatus" v-if="scope.row.sopStatus" /></template>
-        </el-table-column>
-        <el-table-column label="指定版本" prop="versionNo" align="center" width="90">
-          <template #default="scope">{{ scope.row.versionNo || '最新' }}</template>
-        </el-table-column>
-        <el-table-column label="默认" prop="isDefault" align="center" width="70">
-          <template #default="scope">
-            <el-tag type="success" v-if="scope.row.isDefault === '1'">默认</el-tag>
-            <span v-else>-</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="100">
-          <template #default="scope">
-            <el-button link type="danger" icon="Delete" @click="handleDeleteRow(scope.row)" v-hasPermi="['mes:sop:binding:remove']">删除</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
+    <el-row :gutter="10" class="mb8">
+      <el-col :span="1.5">
+        <el-button type="success" plain icon="Plus" @click="handleAdd" v-hasPermi="['mes:sop:binding:add']">新增绑定</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete()" v-hasPermi="['mes:sop:binding:remove']"
+          >删除</el-button
+        >
+      </el-col>
+      <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
+    </el-row>
 
-      <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
-    </el-card>
+    <el-table v-loading="loading" :data="list" show-overflow-tooltip @selection-change="handleSelectionChange">
+      <el-table-column type="selection" width="55" align="center" />
+      <el-table-column label="工序编码" prop="processCode" min-width="130" />
+      <el-table-column label="工序名称" prop="processName" min-width="130" />
+      <el-table-column label="工序类别" prop="processCategory" align="center" width="100">
+        <template #default="scope">
+          <el-tag v-if="scope.row.processCategory" :type="categoryTag(scope.row.processCategory)">{{
+            categoryLabel(scope.row.processCategory)
+          }}</el-tag>
+          <span v-else>-</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="SOP编码" prop="sopCode" min-width="140" />
+      <el-table-column label="SOP名称" prop="sopName" min-width="140" />
+      <el-table-column label="SOP状态" prop="sopStatus" align="center" width="90">
+        <template #default="scope"><dict-tag :options="mes_sop_status" :value="scope.row.sopStatus" v-if="scope.row.sopStatus" /></template>
+      </el-table-column>
+      <el-table-column label="指定版本" prop="versionNo" align="center" width="90">
+        <template #default="scope">{{ scope.row.versionNo || '最新' }}</template>
+      </el-table-column>
+      <el-table-column label="默认" prop="isDefault" align="center" width="70">
+        <template #default="scope">
+          <el-tag type="success" v-if="scope.row.isDefault === '1'">默认</el-tag>
+          <span v-else>-</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="100">
+        <template #default="scope">
+          <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['mes:sop:binding:remove']">删除</el-button>
+        </template>
+      </el-table-column>
+    </el-table>
+
+    <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
     <!-- 新增绑定对话框 -->
-    <el-dialog title="新增工序SOP绑定" v-model="dialog.visible" width="640px" append-to-body>
-      <el-form ref="bindFormRef" :model="form" :rules="rules" label-width="100px">
+    <el-dialog :title="title" v-model="open" width="640px" append-to-body>
+      <el-form ref="bindRef" :model="form" :rules="rules" label-width="100px">
         <el-form-item label="工序" prop="processId">
           <el-input v-model="form.processName" placeholder="请选择工序" readonly>
             <template #append><el-button icon="Search" @click="openProcessDialog" /></template>
@@ -99,7 +97,7 @@
       </el-form>
       <template #footer>
         <el-button type="primary" @click="submitForm">确 定</el-button>
-        <el-button @click="dialog.visible = false">取 消</el-button>
+        <el-button @click="cancel">取 消</el-button>
       </template>
     </el-dialog>
 
@@ -163,35 +161,25 @@
 </template>
 
 <script setup lang="ts" name="SopBinding">
-import { listBinding, addBinding, delBinding } from '@/api/mes/sop/binding';
-import type { SopProcessBindingVO, SopProcessBindingQuery, SopProcessBindingForm } from '@/api/mes/sop/binding';
+import { listBinding, getBinding, addBinding, delBinding } from '@/api/mes/sop/binding';
+import type { SopProcessBindingVO, SopProcessBindingQuery } from '@/api/mes/sop/binding';
 import { listDocument } from '@/api/mes/sop/document';
 import { listProcess } from '@/api/erp/bd/process';
+import { useCrud } from '@/composables/useCrud';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { mes_sop_status, mes_sop_type } = toRefs<any>(proxy?.useDict('mes_sop_status', 'mes_sop_type'));
-const dataList = ref<SopProcessBindingVO[]>([]);
-const total = ref(0);
-const loading = ref(true);
-const ids = ref<number[]>([]);
-const queryParams = reactive<SopProcessBindingQuery>({ pageNum: 1, pageSize: 10 } as any);
-const showSearch = ref(true);
-const queryFormRef = ref<ElFormInstance>();
-const bindFormRef = ref<ElFormInstance>();
-const dialog = reactive({ visible: false });
-const form = reactive<SopProcessBindingForm>({ processId: 0, sopId: 0, isDefault: '0', sortOrder: 0 } as SopProcessBindingForm);
 
-const processDialog = reactive({
-  visible: false,
-  list: [] as any[],
-  total: 0,
-  query: { pageNum: 1, pageSize: 10, processCode: '', processName: '' }
-});
-const sopDialog = reactive({
-  visible: false,
-  list: [] as any[],
-  total: 0,
-  query: { pageNum: 1, pageSize: 10, sopCode: '', sopName: '', status: 'PUBLISHED' }
+const bindRef = ref<ElFormInstance>();
+
+// 绑定为新增/删除型页面(无修改接口)，update 以下占位仅为满足 useCrud 的 API 签名，不会被调用
+const readonlyApi = () => Promise.resolve({ data: {} as any });
+
+const queryParams = ref<SopProcessBindingQuery>({
+  pageNum: 1,
+  pageSize: 10,
+  processName: undefined,
+  isDefault: undefined
 });
 
 // 工序类别本地映射(ERP process_category 无系统字典, 本地展示)
@@ -210,30 +198,29 @@ const rules: ElFormRules = {
   sopId: [{ required: true, message: '请选择SOP', trigger: 'change' }]
 };
 
-const getList = async () => {
-  loading.value = true;
-  try {
-    const res = await listBinding(queryParams);
-    dataList.value = res.rows;
-    total.value = res.total;
-  } finally {
-    loading.value = false;
-  }
-};
-const handleQuery = () => {
-  queryParams.pageNum = 1;
-  getList();
-};
-const resetQuery = () => {
-  proxy!.resetForm('queryFormRef');
-  handleQuery();
-};
-const handleSelectionChange = (selection: SopProcessBindingVO[]) => {
-  ids.value = selection.map((i) => i.bindingId);
-};
-
-const handleAdd = () => {
-  Object.assign(form, {
+const {
+  loading,
+  list,
+  total,
+  open,
+  title,
+  multiple,
+  showSearch,
+  form,
+  getList,
+  handleQuery,
+  handleDelete,
+  handleSelectionChange,
+  submitForm,
+  cancel,
+  handleAdd: rawHandleAdd
+} = useCrud<SopProcessBindingVO, SopProcessBindingQuery>({
+  apis: { list: listBinding, get: getBinding, add: addBinding, update: readonlyApi, del: delBinding },
+  idField: 'bindingId',
+  entityName: '工序SOP绑定',
+  formRef: bindRef,
+  queryParams,
+  initForm: () => ({
     bindingId: undefined,
     processId: 0,
     processCode: '',
@@ -245,30 +232,31 @@ const handleAdd = () => {
     isDefault: '0',
     sortOrder: 0,
     remark: ''
-  });
-  dialog.visible = true;
-};
-const submitForm = () => {
-  bindFormRef.value?.validate(async (valid) => {
-    if (!valid) return;
-    await addBinding(form);
-    proxy!.$modal.msgSuccess('新增绑定成功');
-    dialog.visible = false;
-    getList();
-  });
-};
-const handleDelete = async () => {
-  await proxy!.$modal.confirm('确认删除选中绑定?');
-  await delBinding(ids.value);
-  proxy!.$modal.msgSuccess('删除成功');
-  getList();
-};
-const handleDeleteRow = async (row: SopProcessBindingVO) => {
-  await proxy!.$modal.confirm('确认删除该绑定?');
-  await delBinding(row.bindingId);
-  proxy!.$modal.msgSuccess('删除成功');
-  getList();
-};
+  })
+});
+
+const processDialog = reactive({
+  visible: false,
+  list: [] as any[],
+  total: 0,
+  query: { pageNum: 1, pageSize: 10, processCode: '', processName: '' }
+});
+const sopDialog = reactive({
+  visible: false,
+  list: [] as any[],
+  total: 0,
+  query: { pageNum: 1, pageSize: 10, sopCode: '', sopName: '', status: 'PUBLISHED' }
+});
+
+/** 新增（包装避免 @click 事件对象被误传为 extraInit） */
+function handleAdd() {
+  rawHandleAdd();
+}
+
+function resetQuery() {
+  proxy?.resetForm('queryRef');
+  handleQuery();
+}
 
 // ===== 工序选择器(ERP bd_process) =====
 const openProcessDialog = () => {
@@ -282,10 +270,10 @@ const queryProcesses = () => {
   });
 };
 const selectProcess = (row: any) => {
-  form.processId = row.processId;
-  form.processCode = row.processCode;
-  form.processName = row.processName;
-  form.processCategory = row.processCategory;
+  form.value.processId = row.processId;
+  form.value.processCode = row.processCode;
+  form.value.processName = row.processName;
+  form.value.processCategory = row.processCategory;
   processDialog.visible = false;
 };
 
@@ -301,10 +289,10 @@ const querySops = () => {
   });
 };
 const selectSop = (row: any) => {
-  form.sopId = row.sopId;
-  form.sopName = row.sopName;
+  form.value.sopId = row.sopId;
+  form.value.sopName = row.sopName;
   sopDialog.visible = false;
 };
 
-onMounted(() => getList());
+getList();
 </script>

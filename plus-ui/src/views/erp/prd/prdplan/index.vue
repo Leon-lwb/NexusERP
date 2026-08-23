@@ -33,8 +33,8 @@
         </el-col>
         <el-col :span="6" :offset="18" class="search-actions">
           <el-form-item>
-            <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+            <el-button type="primary" icon="Search" @click="handleQuery()">搜索</el-button>
+            <el-button icon="Refresh" @click="resetQuery()">重置</el-button>
           </el-form-item>
         </el-col>
       </el-row>
@@ -42,19 +42,19 @@
 
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
-        <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['prd:plan:add']">新增</el-button>
+        <el-button type="primary" plain icon="Plus" @click="handleAdd()" v-hasPermi="['prd:plan:add']">新增</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['prd:plan:edit']">修改</el-button>
+        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate()" v-hasPermi="['prd:plan:edit']">修改</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['prd:plan:remove']">删除</el-button>
+        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete()" v-hasPermi="['prd:plan:remove']">删除</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="info" plain icon="View" :disabled="single" @click="handleView" v-hasPermi="['prd:plan:query']">查看</el-button>
+        <el-button type="info" plain icon="View" :disabled="single" @click="handleView()" v-hasPermi="['prd:plan:query']">查看</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['prd:plan:export']">导出</el-button>
+        <el-button type="warning" plain icon="Download" @click="handleExport()" v-hasPermi="['prd:plan:export']">导出</el-button>
       </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
@@ -117,56 +117,50 @@
 </template>
 
 <script setup lang="ts" name="PrdPlan">
-import { listPlan, delPlan } from '@/api/erp/prd/plan';
+import { listPlan, getPlan, addPlan, updatePlan, delPlan } from '@/api/erp/prd/plan';
 import { useRouter } from 'vue-router';
-import { onActivated } from 'vue';
+import type { FormInstance } from 'element-plus';
+import { useCrud } from '@/composables/useCrud';
 
 const router = useRouter();
-const { proxy } = getCurrentInstance();
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { prd_plan_type, prd_plan_status, so_order_priority, sys_true_or_false } = toRefs<any>(
   proxy.useDict('prd_plan_type', 'prd_plan_status', 'so_order_priority', 'sys_true_or_false')
 );
 
-const planList = ref([]);
-const loading = ref(true);
-const showSearch = ref(true);
-const ids = ref([]);
-const single = ref(true);
-const multiple = ref(true);
-const total = ref(0);
-
-const data = reactive({
-  queryParams: {
-    pageNum: 1,
-    pageSize: 10,
-    planNo: null,
-    planName: null,
-    planDate: null,
-    status: null,
-    totalQuantity: null,
-    confirmedTime: null,
-    releasedTime: null,
-    closedTime: null
-  }
+const queryParams = ref({
+  pageNum: 1,
+  pageSize: 10,
+  planNo: null,
+  planName: null,
+  planDate: null,
+  status: null
 });
 
-const { queryParams } = toRefs(data);
-
-/** 查询生产计划列表 */
-function getList() {
-  loading.value = true;
-  listPlan(queryParams.value).then((response) => {
-    planList.value = response.rows;
-    total.value = response.total;
-    loading.value = false;
-  });
-}
-
-/** 搜索按钮操作 */
-function handleQuery() {
-  queryParams.value.pageNum = 1;
-  getList();
-}
+// 列表骨架（新增/修改/查看为路由表单页，保留本地 router.push 跳转逻辑）
+const {
+  loading,
+  list: planList,
+  total,
+  ids,
+  single,
+  multiple,
+  showSearch,
+  getList,
+  handleQuery,
+  handleDelete,
+  handleExport,
+  handleSelectionChange
+} = useCrud({
+  apis: { list: listPlan, get: getPlan, add: addPlan, update: updatePlan, del: delPlan },
+  idField: 'planId',
+  entityName: '生产计划',
+  formRef: ref<FormInstance>(),
+  queryParams,
+  initForm: () => ({}),
+  exportUrl: 'erp/prd/plan/export',
+  exportFileName: 'plan'
+});
 
 /** 重置按钮操作 */
 function resetQuery() {
@@ -174,34 +168,23 @@ function resetQuery() {
   handleQuery();
 }
 
-// 多选框选中数据
-function handleSelectionChange(selection) {
-  ids.value = selection.map((item) => item.planId);
-  single.value = selection.length != 1;
-  multiple.value = !selection.length;
-}
-
 /** 修改按钮操作 */
-function handleUpdate(row) {
-  if (row && row.type && row instanceof Event) {
-    row = null;
-  }
+function handleUpdate(row?: any) {
   if (!row) {
     if (ids.value.length !== 1) {
       proxy.$modal.msgWarning('请选择一条数据进行修改');
       return;
     }
-    const selectedRow = planList.value.find((item) => item.planId == ids.value[0]);
-    if (!selectedRow) {
+    const selected = planList.value.find((item: any) => item.planId == ids.value[0]);
+    if (!selected) {
       proxy.$modal.msgWarning('未找到选中的数据');
       return;
     }
-    row = selectedRow;
+    row = selected;
   }
-  const planId = row.planId;
   router.push({
     path: '/erp/prd/prdplan/form',
-    query: { id: planId, action: 'edit' }
+    query: { id: row.planId, action: 'edit' }
   });
 }
 
@@ -214,53 +197,23 @@ function handleAdd() {
 }
 
 /** 查看按钮操作 */
-function handleView(row) {
-  if (row && row.type && row instanceof Event) {
-    row = null;
-  }
+function handleView(row?: any) {
   if (!row) {
     if (ids.value.length !== 1) {
       proxy.$modal.msgWarning('请选择一条数据进行查看');
       return;
     }
-    const selectedRow = planList.value.find((item) => item.planId == ids.value[0]);
-    if (!selectedRow) {
+    const selected = planList.value.find((item: any) => item.planId == ids.value[0]);
+    if (!selected) {
       proxy.$modal.msgWarning('未找到选中的数据');
       return;
     }
-    row = selectedRow;
+    row = selected;
   }
-  const planId = row.planId;
   router.push({
     path: '/erp/prd/prdplan/form',
-    query: { id: planId, action: 'view' }
+    query: { id: row.planId, action: 'view' }
   });
-}
-
-/** 删除按钮操作 */
-function handleDelete(row) {
-  const _planIds = row.planId || ids.value;
-  proxy.$modal
-    .confirm('是否确认删除生产计划编号为"' + _planIds + '"的数据项？')
-    .then(function () {
-      return delPlan(_planIds);
-    })
-    .then(() => {
-      getList();
-      proxy.$modal.msgSuccess('删除成功');
-    })
-    .catch(() => {});
-}
-
-/** 导出按钮操作 */
-function handleExport() {
-  proxy.download(
-    'erp/prd/plan/export',
-    {
-      ...queryParams.value
-    },
-    `plan_${new Date().getTime()}.xlsx`
-  );
 }
 
 onActivated(() => {

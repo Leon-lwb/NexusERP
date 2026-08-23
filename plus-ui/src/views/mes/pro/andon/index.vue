@@ -1,5 +1,5 @@
 <template>
-  <div class="p-2">
+  <div class="app-container">
     <!-- 统计卡片区 -->
     <el-row :gutter="12" class="mb-2">
       <el-col :span="6">
@@ -36,110 +36,108 @@
       </el-col>
     </el-row>
 
-    <el-card>
-      <el-form :model="queryParams" ref="queryFormRef" v-show="showSearch" label-width="100px" class="list-search">
-        <el-row :gutter="16">
-          <el-col :span="6">
-            <el-form-item label="安灯编号" prop="andonNo">
-              <el-input v-model="queryParams.andonNo" placeholder="请输入安灯编号" clearable @keyup.enter="handleQuery" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="6">
-            <el-form-item label="呼叫类型" prop="callType">
-              <el-select v-model="queryParams.callType" placeholder="请选择类型" clearable style="width: 100%">
-                <el-option v-for="dict in mes_andon_call_type" :key="dict.value" :label="dict.label" :value="dict.value" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="6">
-            <el-form-item label="状态" prop="andonStatus">
-              <el-select v-model="queryParams.andonStatus" placeholder="请选择状态" clearable style="width: 100%">
-                <el-option v-for="dict in mes_andon_status" :key="dict.value" :label="dict.label" :value="dict.value" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="6" class="search-actions">
-            <el-form-item>
-              <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-              <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-            </el-form-item>
-          </el-col>
-        </el-row>
-      </el-form>
-
-      <el-row :gutter="10" class="mb8">
-        <el-col :span="1.5">
-          <el-button type="warning" plain icon="Bell" @click="handleOpenCall" v-hasPermi="['mes:pro:andon:call']">发起呼叫</el-button>
+    <el-form :model="queryParams" ref="queryRef" v-show="showSearch" label-width="100px" class="list-search">
+      <el-row :gutter="16">
+        <el-col :span="6">
+          <el-form-item label="安灯编号" prop="andonNo">
+            <el-input v-model="queryParams.andonNo" placeholder="请输入安灯编号" clearable @keyup.enter="handleQuery()" />
+          </el-form-item>
         </el-col>
-        <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
+        <el-col :span="6">
+          <el-form-item label="呼叫类型" prop="callType">
+            <el-select v-model="queryParams.callType" placeholder="请选择类型" clearable style="width: 100%">
+              <el-option v-for="dict in mes_andon_call_type" :key="dict.value" :label="dict.label" :value="dict.value" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="状态" prop="andonStatus">
+            <el-select v-model="queryParams.andonStatus" placeholder="请选择状态" clearable style="width: 100%">
+              <el-option v-for="dict in mes_andon_status" :key="dict.value" :label="dict.label" :value="dict.value" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :span="6" class="search-actions">
+          <el-form-item>
+            <el-button type="primary" icon="Search" @click="handleQuery()">搜索</el-button>
+            <el-button icon="Refresh" @click="resetQuery()">重置</el-button>
+          </el-form-item>
+        </el-col>
       </el-row>
+    </el-form>
 
-      <el-table v-loading="loading" :data="dataList" show-overflow-tooltip>
-        <el-table-column label="安灯编号" prop="andonNo" />
-        <el-table-column label="工单编号" prop="woNo">
-          <template #default="scope">{{ scope.row.woNo || '-' }}</template>
-        </el-table-column>
-        <el-table-column label="流转卡" prop="cardNo">
-          <template #default="scope">{{ scope.row.cardNo || '-' }}</template>
-        </el-table-column>
-        <el-table-column label="呼叫类型" prop="callType" align="center">
-          <template #default="scope">
-            <dict-tag :options="mes_andon_call_type" :value="scope.row.callType" />
-          </template>
-        </el-table-column>
-        <el-table-column label="呼叫人" prop="callerName">
-          <template #default="scope">{{ scope.row.callerName || '-' }}</template>
-        </el-table-column>
-        <el-table-column label="来源" prop="source" align="center">
-          <template #default="scope">
-            <dict-tag :options="mes_data_source" :value="scope.row.source" />
-          </template>
-        </el-table-column>
-        <el-table-column label="持续(分)" prop="durationMinutes" align="right">
-          <template #default="scope">{{ scope.row.durationMinutes ?? '-' }}</template>
-        </el-table-column>
-        <el-table-column label="呼叫时间" prop="callTime" />
-        <el-table-column label="状态" prop="andonStatus" align="center">
-          <template #default="scope">
-            <dict-tag :options="mes_andon_status" :value="scope.row.andonStatus" />
-          </template>
-        </el-table-column>
-        <el-table-column label="呼叫原因" prop="callReason" min-width="120" show-overflow-tooltip />
-        <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
-          <template #default="scope">
-            <el-button
-              link
-              type="warning"
-              icon="Headset"
-              @click="handleRespond(scope.row)"
-              v-if="scope.row.andonStatus === 'CALLED'"
-              v-hasPermi="['mes:pro:andon:respond']"
-              >响应</el-button
-            >
-            <el-button
-              link
-              type="success"
-              icon="CircleCheck"
-              @click="handleResolve(scope.row)"
-              v-if="scope.row.andonStatus === 'RESPONDED'"
-              v-hasPermi="['mes:pro:andon:resolve']"
-              >解决</el-button
-            >
-            <el-button
-              link
-              type="danger"
-              icon="Close"
-              @click="handleCancel(scope.row)"
-              v-if="scope.row.andonStatus === 'CALLED'"
-              v-hasPermi="['mes:pro:andon:cancel']"
-              >取消</el-button
-            >
-          </template>
-        </el-table-column>
-      </el-table>
+    <el-row :gutter="10" class="mb8">
+      <el-col :span="1.5">
+        <el-button type="warning" plain icon="Bell" @click="handleOpenCall()" v-hasPermi="['mes:pro:andon:call']">发起呼叫</el-button>
+      </el-col>
+      <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
+    </el-row>
 
-      <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
-    </el-card>
+    <el-table v-loading="loading" :data="dataList" show-overflow-tooltip>
+      <el-table-column label="安灯编号" prop="andonNo" />
+      <el-table-column label="工单编号" prop="woNo">
+        <template #default="scope">{{ scope.row.woNo || '-' }}</template>
+      </el-table-column>
+      <el-table-column label="流转卡" prop="cardNo">
+        <template #default="scope">{{ scope.row.cardNo || '-' }}</template>
+      </el-table-column>
+      <el-table-column label="呼叫类型" prop="callType" align="center">
+        <template #default="scope">
+          <dict-tag :options="mes_andon_call_type" :value="scope.row.callType" />
+        </template>
+      </el-table-column>
+      <el-table-column label="呼叫人" prop="callerName">
+        <template #default="scope">{{ scope.row.callerName || '-' }}</template>
+      </el-table-column>
+      <el-table-column label="来源" prop="source" align="center">
+        <template #default="scope">
+          <dict-tag :options="mes_data_source" :value="scope.row.source" />
+        </template>
+      </el-table-column>
+      <el-table-column label="持续(分)" prop="durationMinutes" align="right">
+        <template #default="scope">{{ scope.row.durationMinutes ?? '-' }}</template>
+      </el-table-column>
+      <el-table-column label="呼叫时间" prop="callTime" />
+      <el-table-column label="状态" prop="andonStatus" align="center">
+        <template #default="scope">
+          <dict-tag :options="mes_andon_status" :value="scope.row.andonStatus" />
+        </template>
+      </el-table-column>
+      <el-table-column label="呼叫原因" prop="callReason" min-width="120" show-overflow-tooltip />
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
+        <template #default="scope">
+          <el-button
+            link
+            type="warning"
+            icon="Headset"
+            @click="handleRespond(scope.row)"
+            v-if="scope.row.andonStatus === 'CALLED'"
+            v-hasPermi="['mes:pro:andon:respond']"
+            >响应</el-button
+          >
+          <el-button
+            link
+            type="success"
+            icon="CircleCheck"
+            @click="handleResolve(scope.row)"
+            v-if="scope.row.andonStatus === 'RESPONDED'"
+            v-hasPermi="['mes:pro:andon:resolve']"
+            >解决</el-button
+          >
+          <el-button
+            link
+            type="danger"
+            icon="Close"
+            @click="handleCancel(scope.row)"
+            v-if="scope.row.andonStatus === 'CALLED'"
+            v-hasPermi="['mes:pro:andon:cancel']"
+            >取消</el-button
+          >
+        </template>
+      </el-table-column>
+    </el-table>
+
+    <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
     <!-- 发起呼叫对话框 -->
     <el-dialog v-model="callDialog.visible" title="发起安灯呼叫" width="500px" append-to-body>
@@ -152,14 +150,14 @@
         <el-form-item label="关联工单">
           <el-input v-model="callWoNo" placeholder="可选, 选择工单" readonly clearable @clear="callForm.mesWoId = undefined">
             <template #append>
-              <el-button icon="Search" @click="openWoSelect" />
+              <el-button icon="Search" @click="openWoSelect()" />
             </template>
           </el-input>
         </el-form-item>
         <el-form-item label="关联流转卡">
           <el-input v-model="callCardNo" placeholder="可选, 选择流转卡" readonly clearable @clear="callForm.cardId = undefined">
             <template #append>
-              <el-button icon="Search" @click="openCardSelect" />
+              <el-button icon="Search" @click="openCardSelect()" />
             </template>
           </el-input>
         </el-form-item>
@@ -245,20 +243,18 @@
 
 <script setup lang="ts" name="MesAndon">
 import { ElNotification } from 'element-plus';
-import { listAndon, andonStats, callAndon, respondAndon, resolveAndon, cancelAndon } from '@/api/mes/pro/andon';
+import { listAndon, getAndon, andonStats, callAndon, respondAndon, resolveAndon, cancelAndon } from '@/api/mes/pro/andon';
 import type { ProAndonVO, ProAndonQuery, AndonStats } from '@/api/mes/pro/andon';
 import { listWorkOrder } from '@/api/mes/pro/workorder';
 import { listFlowCard } from '@/api/mes/pro/flowcardApi';
+import type { FormInstance } from 'element-plus';
+import { useCrud } from '@/composables/useCrud';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { mes_andon_call_type, mes_andon_status, mes_data_source, prd_wo_status } = toRefs<any>(
-  proxy?.useDict('mes_andon_call_type', 'mes_andon_status', 'mes_data_source', 'prd_wo_status')
+  proxy.useDict('mes_andon_call_type', 'mes_andon_status', 'mes_data_source', 'prd_wo_status')
 );
 
-const dataList = ref<ProAndonVO[]>([]);
-const loading = ref(true);
-const showSearch = ref(true);
-const total = ref(0);
 const stats = ref<AndonStats>({ activeCount: 0, statusCount: {}, typeCount: {} });
 
 const queryParams = ref<ProAndonQuery>({
@@ -293,37 +289,45 @@ const cardDialog = reactive({
   query: { pageNum: 1, pageSize: 10, cardNo: '' as string }
 });
 
-const getList = async () => {
-  loading.value = true;
-  try {
-    const res = await listAndon(queryParams.value);
-    dataList.value = res.rows;
-    total.value = res.total;
-  } finally {
-    loading.value = false;
-  }
-};
+// 安灯由现场呼叫产生，页面无标准新增/修改/删除弹窗（响应/解决/取消等业务操作走本地方法），
+// add/update/del 占位仅为满足 useCrud 的 API 签名
+const readonlyApi = () => Promise.resolve({ data: {} as any });
 
-const loadStats = async () => {
+// 列表骨架（发起呼叫/响应/解决/取消走本地方法）
+const {
+  loading,
+  list: dataList,
+  total,
+  showSearch,
+  getList,
+  handleQuery
+} = useCrud({
+  apis: { list: listAndon, get: getAndon, add: readonlyApi, update: readonlyApi, del: readonlyApi },
+  idField: 'andonId',
+  entityName: '安灯',
+  formRef: ref<FormInstance>(),
+  queryParams,
+  initForm: () => ({})
+});
+
+/** 重置按钮操作 */
+function resetQuery() {
+  proxy.resetForm('queryRef');
+  handleQuery();
+}
+
+/** 加载看板聚合统计 */
+async function loadStats() {
   try {
     const res = await andonStats();
     stats.value = res.data;
   } catch {
     /* 忽略 */
   }
-};
+}
 
-const handleQuery = () => {
-  queryParams.value.pageNum = 1;
-  getList();
-};
-
-const resetQuery = () => {
-  proxy?.resetForm('queryFormRef');
-  handleQuery();
-};
-
-const handleOpenCall = () => {
+/** 打开发起呼叫对话框 */
+function handleOpenCall() {
   callForm.callType = '';
   callForm.mesWoId = undefined;
   callForm.cardId = undefined;
@@ -331,85 +335,89 @@ const handleOpenCall = () => {
   callWoNo.value = '';
   callCardNo.value = '';
   callDialog.visible = true;
-};
+}
 
-const submitCall = async () => {
+/** 提交呼叫 */
+async function submitCall() {
   if (!callForm.callType) {
-    proxy?.$modal.msgWarning('请选择呼叫类型');
+    proxy.$modal.msgWarning('请选择呼叫类型');
     return;
   }
   await callAndon(callForm.mesWoId, callForm.cardId, undefined, callForm.callType, callForm.callReason);
-  proxy?.$modal.msgSuccess('呼叫成功');
+  proxy.$modal.msgSuccess('呼叫成功');
   callDialog.visible = false;
   getList();
   loadStats();
-};
+}
 
-const handleRespond = async (row: ProAndonVO) => {
-  await proxy?.$modal.confirm('确认响应安灯"' + row.andonNo + '"？');
+/** 响应安灯 */
+async function handleRespond(row: ProAndonVO) {
+  await proxy.$modal.confirm('确认响应安灯"' + row.andonNo + '"？');
   await respondAndon(row.andonId);
-  proxy?.$modal.msgSuccess('响应成功');
+  proxy.$modal.msgSuccess('响应成功');
   getList();
   loadStats();
-};
+}
 
-const handleResolve = async (row: ProAndonVO) => {
-  const { value: remark } = await proxy?.$modal.prompt('请输入解决备注(可选):', '解决 - ' + row.andonNo);
+/** 解决安灯 */
+async function handleResolve(row: ProAndonVO) {
+  const { value: remark } = await proxy.$modal.prompt('请输入解决备注(可选):', '解决 - ' + row.andonNo);
   await resolveAndon(row.andonId, remark || undefined);
-  proxy?.$modal.msgSuccess('解决成功');
+  proxy.$modal.msgSuccess('解决成功');
   getList();
   loadStats();
-};
+}
 
-const handleCancel = async (row: ProAndonVO) => {
-  await proxy?.$modal.confirm('确认取消安灯"' + row.andonNo + '"？');
+/** 取消安灯 */
+async function handleCancel(row: ProAndonVO) {
+  await proxy.$modal.confirm('确认取消安灯"' + row.andonNo + '"？');
   await cancelAndon(row.andonId);
-  proxy?.$modal.msgSuccess('取消成功');
+  proxy.$modal.msgSuccess('取消成功');
   getList();
   loadStats();
-};
+}
 
 // ============ 工单选择 ============
-const openWoSelect = () => {
+function openWoSelect() {
   woDialog.visible = true;
   queryWorkOrders();
-};
-const queryWorkOrders = () => {
+}
+function queryWorkOrders() {
   listWorkOrder(woDialog.query as any).then((res: any) => {
     woDialog.list = res.rows || [];
     woDialog.total = res.total || 0;
   });
-};
-const resetWoQuery = () => {
+}
+function resetWoQuery() {
   woDialog.query = { pageNum: 1, pageSize: 10, woNo: '' };
   queryWorkOrders();
-};
-const selectWorkOrder = (row: any) => {
+}
+function selectWorkOrder(row: any) {
   callForm.mesWoId = row.mesWoId;
   callWoNo.value = row.woNo;
   woDialog.visible = false;
-};
+}
 
 // ============ 流转卡选择 ============
-const openCardSelect = () => {
+function openCardSelect() {
   cardDialog.visible = true;
   queryFlowCards();
-};
-const queryFlowCards = () => {
+}
+function queryFlowCards() {
   listFlowCard(cardDialog.query as any).then((res: any) => {
     cardDialog.list = res.rows || [];
     cardDialog.total = res.total || 0;
   });
-};
-const resetCardQuery = () => {
+}
+function resetCardQuery() {
   cardDialog.query = { pageNum: 1, pageSize: 10, cardNo: '' };
   queryFlowCards();
-};
-const selectFlowCard = (row: any) => {
+}
+function selectFlowCard(row: any) {
   callForm.cardId = row.cardId;
   callCardNo.value = row.cardNo;
   cardDialog.visible = false;
-};
+}
 
 // SSE 实时刷新: 监听 mes-andon CustomEvent(由 utils/sse.ts 分发)
 const handleAndonEvent = (e: Event) => {

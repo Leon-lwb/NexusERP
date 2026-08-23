@@ -1,102 +1,100 @@
 <template>
-  <div class="p-2">
-    <el-card>
-      <el-form :model="queryParams" ref="queryFormRef" v-show="showSearch" label-width="100px" class="list-search">
-        <el-row :gutter="16">
-          <el-col :span="6">
-            <el-form-item label="SN编码" prop="snCode">
-              <el-input v-model="queryParams.snCode" placeholder="请输入SN编码" clearable @keyup.enter="handleQuery" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="6">
-            <el-form-item label="状态" prop="snStatus">
-              <el-select v-model="queryParams.snStatus" placeholder="请选择状态" clearable style="width: 100%">
-                <el-option v-for="dict in mes_sn_status" :key="dict.value" :label="dict.label" :value="dict.value" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="6" :offset="6" class="search-actions">
-            <el-form-item>
-              <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-              <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-            </el-form-item>
-          </el-col>
-        </el-row>
-      </el-form>
-
-      <el-row :gutter="10" class="mb8">
-        <el-col :span="1.5">
-          <el-button type="success" plain icon="Plus" @click="handleOpenGenerate" v-hasPermi="['mes:pro:sn:add']">批量生成SN</el-button>
+  <div class="app-container">
+    <el-form :model="queryParams" ref="queryRef" v-show="showSearch" label-width="100px" class="list-search">
+      <el-row :gutter="16">
+        <el-col :span="6">
+          <el-form-item label="SN编码" prop="snCode">
+            <el-input v-model="queryParams.snCode" placeholder="请输入SN编码" clearable @keyup.enter="handleQuery()" />
+          </el-form-item>
         </el-col>
-        <el-col :span="1.5">
-          <el-button type="warning" plain icon="Edit" @click="handleOpenCreate" v-hasPermi="['mes:pro:sn:add']">手动建SN</el-button>
+        <el-col :span="6">
+          <el-form-item label="状态" prop="snStatus">
+            <el-select v-model="queryParams.snStatus" placeholder="请选择状态" clearable style="width: 100%">
+              <el-option v-for="dict in mes_sn_status" :key="dict.value" :label="dict.label" :value="dict.value" />
+            </el-select>
+          </el-form-item>
         </el-col>
-        <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
+        <el-col :span="6" :offset="6" class="search-actions">
+          <el-form-item>
+            <el-button type="primary" icon="Search" @click="handleQuery()">搜索</el-button>
+            <el-button icon="Refresh" @click="resetQuery()">重置</el-button>
+          </el-form-item>
+        </el-col>
       </el-row>
+    </el-form>
 
-      <el-table v-loading="loading" :data="dataList" show-overflow-tooltip>
-        <el-table-column label="SN编码" prop="snCode" />
-        <el-table-column label="工单编号" prop="woNo">
-          <template #default="scope">{{ scope.row.woNo || '-' }}</template>
-        </el-table-column>
-        <el-table-column label="流转卡" prop="cardNo">
-          <template #default="scope">{{ scope.row.cardNo || '-' }}</template>
-        </el-table-column>
-        <el-table-column label="物料" prop="materialName" min-width="120" show-overflow-tooltip>
-          <template #default="scope">{{ scope.row.materialCode }} {{ scope.row.materialName }}</template>
-        </el-table-column>
-        <el-table-column label="父SN" prop="parentSnCode">
-          <template #default="scope">{{ scope.row.parentSnCode || '-' }}</template>
-        </el-table-column>
-        <el-table-column label="生产日期" prop="productionDate" />
-        <el-table-column label="状态" prop="snStatus" align="center">
-          <template #default="scope">
-            <dict-tag :options="mes_sn_status" :value="scope.row.snStatus" />
-          </template>
-        </el-table-column>
-        <el-table-column label="来源" prop="source" align="center">
-          <template #default="scope">
-            <el-tag :type="scope.row.source === 'BATCH' ? 'primary' : 'info'" size="small">
-              {{ scope.row.source === 'BATCH' ? '批量' : '手动' }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
-          <template #default="scope">
-            <el-button link type="primary" icon="View" @click="handleTrace(scope.row)" v-hasPermi="['mes:pro:sn:query']">追溯</el-button>
-            <el-button
-              link
-              type="success"
-              icon="CircleCheck"
-              @click="handleComplete(scope.row)"
-              v-if="scope.row.snStatus === 'IN_PRODUCTION'"
-              v-hasPermi="['mes:pro:sn:complete']"
-              >完工</el-button
-            >
-            <el-button
-              link
-              type="danger"
-              icon="Close"
-              @click="handleScrap(scope.row)"
-              v-if="scope.row.snStatus === 'IN_PRODUCTION' || scope.row.snStatus === 'COMPLETED'"
-              v-hasPermi="['mes:pro:sn:scrap']"
-              >报废</el-button
-            >
-            <el-button
-              link
-              type="primary"
-              icon="Promotion"
-              @click="handleShip(scope.row)"
-              v-if="scope.row.snStatus === 'COMPLETED'"
-              v-hasPermi="['mes:pro:sn:ship']"
-              >发货</el-button
-            >
-          </template>
-        </el-table-column>
-      </el-table>
+    <el-row :gutter="10" class="mb8">
+      <el-col :span="1.5">
+        <el-button type="success" plain icon="Plus" @click="handleOpenGenerate()" v-hasPermi="['mes:pro:sn:add']">批量生成SN</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button type="warning" plain icon="Edit" @click="handleOpenCreate()" v-hasPermi="['mes:pro:sn:add']">手动建SN</el-button>
+      </el-col>
+      <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
+    </el-row>
 
-      <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
-    </el-card>
+    <el-table v-loading="loading" :data="dataList" show-overflow-tooltip>
+      <el-table-column label="SN编码" prop="snCode" />
+      <el-table-column label="工单编号" prop="woNo">
+        <template #default="scope">{{ scope.row.woNo || '-' }}</template>
+      </el-table-column>
+      <el-table-column label="流转卡" prop="cardNo">
+        <template #default="scope">{{ scope.row.cardNo || '-' }}</template>
+      </el-table-column>
+      <el-table-column label="物料" prop="materialName" min-width="120" show-overflow-tooltip>
+        <template #default="scope">{{ scope.row.materialCode }} {{ scope.row.materialName }}</template>
+      </el-table-column>
+      <el-table-column label="父SN" prop="parentSnCode">
+        <template #default="scope">{{ scope.row.parentSnCode || '-' }}</template>
+      </el-table-column>
+      <el-table-column label="生产日期" prop="productionDate" />
+      <el-table-column label="状态" prop="snStatus" align="center">
+        <template #default="scope">
+          <dict-tag :options="mes_sn_status" :value="scope.row.snStatus" />
+        </template>
+      </el-table-column>
+      <el-table-column label="来源" prop="source" align="center">
+        <template #default="scope">
+          <el-tag :type="scope.row.source === 'BATCH' ? 'primary' : 'info'" size="small">
+            {{ scope.row.source === 'BATCH' ? '批量' : '手动' }}
+          </el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
+        <template #default="scope">
+          <el-button link type="primary" icon="View" @click="handleTrace(scope.row)" v-hasPermi="['mes:pro:sn:query']">追溯</el-button>
+          <el-button
+            link
+            type="success"
+            icon="CircleCheck"
+            @click="handleComplete(scope.row)"
+            v-if="scope.row.snStatus === 'IN_PRODUCTION'"
+            v-hasPermi="['mes:pro:sn:complete']"
+            >完工</el-button
+          >
+          <el-button
+            link
+            type="danger"
+            icon="Close"
+            @click="handleScrap(scope.row)"
+            v-if="scope.row.snStatus === 'IN_PRODUCTION' || scope.row.snStatus === 'COMPLETED'"
+            v-hasPermi="['mes:pro:sn:scrap']"
+            >报废</el-button
+          >
+          <el-button
+            link
+            type="primary"
+            icon="Promotion"
+            @click="handleShip(scope.row)"
+            v-if="scope.row.snStatus === 'COMPLETED'"
+            v-hasPermi="['mes:pro:sn:ship']"
+            >发货</el-button
+          >
+        </template>
+      </el-table-column>
+    </el-table>
+
+    <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
     <!-- 批量生成对话框 -->
     <el-dialog v-model="generateDialog.visible" title="批量生成SN" width="500px" append-to-body>
@@ -132,14 +130,14 @@
         <el-form-item label="物料" required>
           <el-input v-model="createForm.materialCode" placeholder="请选择物料" readonly>
             <template #append>
-              <el-button icon="Search" @click="openMaterialSelect" />
+              <el-button icon="Search" @click="openMaterialSelect()" />
             </template>
           </el-input>
         </el-form-item>
         <el-form-item label="工单">
           <el-input v-model="createForm.woNo" placeholder="可选,选择工单" readonly>
             <template #append>
-              <el-button icon="Search" @click="openWoSelect" />
+              <el-button icon="Search" @click="openWoSelect()" />
             </template>
           </el-input>
         </el-form-item>
@@ -153,7 +151,7 @@
         <el-form-item label="父SN">
           <el-input v-model="createForm.parentSnCode" placeholder="可选,选择父SN" readonly>
             <template #append>
-              <el-button icon="Search" @click="openSnSelect" />
+              <el-button icon="Search" @click="openSnSelect()" />
             </template>
           </el-input>
         </el-form-item>
@@ -278,20 +276,17 @@
 </template>
 
 <script setup lang="ts" name="MesSn">
-import { listSn, generateSnForCard, createSn, completeSn, scrapSn, shipSn } from '@/api/mes/pro/sn';
+import { listSn, getSn, generateSnForCard, createSn, completeSn, scrapSn, shipSn } from '@/api/mes/pro/sn';
 import type { ProSnVO, ProSnQuery } from '@/api/mes/pro/sn';
 import { listFlowCard } from '@/api/mes/pro/flowcardApi';
 import { listWorkOrder } from '@/api/mes/pro/workorder';
 import MaterialSelectDialog from '@/components/MaterialSelectDialog/index.vue';
+import type { FormInstance } from 'element-plus';
+import { useCrud } from '@/composables/useCrud';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
-const { mes_sn_status, prd_wo_status } = toRefs<any>(proxy?.useDict('mes_sn_status', 'prd_wo_status'));
+const { mes_sn_status, prd_wo_status } = toRefs<any>(proxy.useDict('mes_sn_status', 'prd_wo_status'));
 const router = useRouter();
-
-const dataList = ref<ProSnVO[]>([]);
-const loading = ref(true);
-const showSearch = ref(true);
-const total = ref(0);
 
 const queryParams = ref<ProSnQuery>({
   pageNum: 1,
@@ -356,47 +351,56 @@ const snDialog = reactive({
   query: { pageNum: 1, pageSize: 10, snCode: '' as string }
 });
 
-const getList = async () => {
-  loading.value = true;
-  try {
-    const res = await listSn(queryParams.value);
-    dataList.value = res.rows;
-    total.value = res.total;
-  } finally {
-    loading.value = false;
-  }
-};
+// SN 通过批量生成/手动建/工单自动生成，页面无标准新增/修改/删除弹窗（业务操作走本地方法），
+// add/update/del 占位仅为满足 useCrud 的 API 签名
+const readonlyApi = () => Promise.resolve({ data: {} as any });
 
-const handleQuery = () => {
-  queryParams.value.pageNum = 1;
-  getList();
-};
+// 列表骨架（追溯为路由页面，保留本地 router.push 跳转逻辑）
+const {
+  loading,
+  list: dataList,
+  total,
+  showSearch,
+  getList,
+  handleQuery
+} = useCrud({
+  apis: { list: listSn, get: getSn, add: readonlyApi, update: readonlyApi, del: readonlyApi },
+  idField: 'snId',
+  entityName: 'SN',
+  formRef: ref<FormInstance>(),
+  queryParams,
+  initForm: () => ({})
+});
 
-const resetQuery = () => {
-  proxy?.resetForm('queryFormRef');
+/** 重置按钮操作 */
+function resetQuery() {
+  proxy.resetForm('queryRef');
   handleQuery();
-};
+}
 
-const handleOpenGenerate = () => {
+/** 打开批量生成对话框 */
+function handleOpenGenerate() {
   generateForm.cardId = undefined;
   generateForm.cardNo = '';
   generateForm.quantity = 1;
   generateForm.initialStatus = 'IN_PRODUCTION';
   generateDialog.visible = true;
-};
+}
 
-const submitGenerate = async () => {
+/** 提交批量生成 */
+async function submitGenerate() {
   if (!generateForm.cardId) {
-    proxy?.$modal.msgWarning('请选择流转卡');
+    proxy.$modal.msgWarning('请选择流转卡');
     return;
   }
   await generateSnForCard(generateForm.cardId, generateForm.quantity, generateForm.initialStatus);
-  proxy?.$modal.msgSuccess('生成成功');
+  proxy.$modal.msgSuccess('生成成功');
   generateDialog.visible = false;
   getList();
-};
+}
 
-const handleOpenCreate = () => {
+/** 打开手动建SN对话框 */
+function handleOpenCreate() {
   Object.assign(createForm, {
     snCode: '',
     materialId: undefined,
@@ -411,65 +415,70 @@ const handleOpenCreate = () => {
     remark: ''
   });
   createDialog.visible = true;
-};
+}
 
-const submitCreate = async () => {
+/** 提交手动创建 */
+async function submitCreate() {
   if (!createForm.snCode) {
-    proxy?.$modal.msgWarning('请输入SN编码');
+    proxy.$modal.msgWarning('请输入SN编码');
     return;
   }
   if (!createForm.materialId) {
-    proxy?.$modal.msgWarning('请选择物料');
+    proxy.$modal.msgWarning('请选择物料');
     return;
   }
   await createSn(createForm.mesWoId, createForm.cardId, createForm.materialId, createForm.snCode, createForm.parentSnId, createForm.remark);
-  proxy?.$modal.msgSuccess('创建成功');
+  proxy.$modal.msgSuccess('创建成功');
   createDialog.visible = false;
   getList();
-};
+}
 
-const handleTrace = (row: ProSnVO) => {
+/** 追溯按钮操作 */
+function handleTrace(row: ProSnVO) {
   router.push(`/mes/pro/sn/trace/${row.snId}`);
-};
+}
 
-const handleComplete = async (row: ProSnVO) => {
-  await proxy?.$modal.confirm('确认完工SN"' + row.snCode + '"？');
+/** SN完工 */
+async function handleComplete(row: ProSnVO) {
+  await proxy.$modal.confirm('确认完工SN"' + row.snCode + '"？');
   await completeSn(row.snId);
-  proxy?.$modal.msgSuccess('完工成功');
+  proxy.$modal.msgSuccess('完工成功');
   getList();
-};
+}
 
-const handleScrap = async (row: ProSnVO) => {
-  const { value: remark } = await proxy?.$modal.prompt('请输入报废原因(可选):', '报废 - ' + row.snCode);
+/** SN报废 */
+async function handleScrap(row: ProSnVO) {
+  const { value: remark } = await proxy.$modal.prompt('请输入报废原因(可选):', '报废 - ' + row.snCode);
   await scrapSn(row.snId, remark || undefined);
-  proxy?.$modal.msgSuccess('报废成功');
+  proxy.$modal.msgSuccess('报废成功');
   getList();
-};
+}
 
-const handleShip = async (row: ProSnVO) => {
-  await proxy?.$modal.confirm('确认发货SN"' + row.snCode + '"？');
+/** SN发货 */
+async function handleShip(row: ProSnVO) {
+  await proxy.$modal.confirm('确认发货SN"' + row.snCode + '"？');
   await shipSn(row.snId);
-  proxy?.$modal.msgSuccess('发货成功');
+  proxy.$modal.msgSuccess('发货成功');
   getList();
-};
+}
 
 // ============ 流转卡选择 ============
-const openFlowCardSelect = (target: 'generate' | 'create') => {
+function openFlowCardSelect(target: 'generate' | 'create') {
   flowCardSelectTarget.value = target;
   flowCardDialog.visible = true;
   queryFlowCards();
-};
-const queryFlowCards = () => {
+}
+function queryFlowCards() {
   listFlowCard(flowCardDialog.query as any).then((res: any) => {
     flowCardDialog.list = res.rows || [];
     flowCardDialog.total = res.total || 0;
   });
-};
-const resetFlowCardQuery = () => {
+}
+function resetFlowCardQuery() {
   flowCardDialog.query = { pageNum: 1, pageSize: 10, cardNo: '' };
   queryFlowCards();
-};
-const selectFlowCard = (row: any) => {
+}
+function selectFlowCard(row: any) {
   if (flowCardSelectTarget.value === 'generate') {
     generateForm.cardId = row.cardId;
     generateForm.cardNo = row.cardNo;
@@ -488,24 +497,24 @@ const selectFlowCard = (row: any) => {
     }
   }
   flowCardDialog.visible = false;
-};
+}
 
 // ============ 工单选择 ============
-const openWoSelect = () => {
+function openWoSelect() {
   woDialog.visible = true;
   queryWorkOrders();
-};
-const queryWorkOrders = () => {
+}
+function queryWorkOrders() {
   listWorkOrder(woDialog.query as any).then((res: any) => {
     woDialog.list = res.rows || [];
     woDialog.total = res.total || 0;
   });
-};
-const resetWoQuery = () => {
+}
+function resetWoQuery() {
   woDialog.query = { pageNum: 1, pageSize: 10, woNo: '' };
   queryWorkOrders();
-};
-const selectWorkOrder = (row: any) => {
+}
+function selectWorkOrder(row: any) {
   createForm.mesWoId = row.mesWoId;
   createForm.woNo = row.woNo;
   // 顺带带出物料(若空)
@@ -515,38 +524,38 @@ const selectWorkOrder = (row: any) => {
     createForm.materialName = row.materialName;
   }
   woDialog.visible = false;
-};
+}
 
 // ============ 父SN选择 ============
-const openSnSelect = () => {
+function openSnSelect() {
   snDialog.visible = true;
   querySns();
-};
-const querySns = () => {
+}
+function querySns() {
   listSn(snDialog.query as any).then((res: any) => {
     snDialog.list = res.rows || [];
     snDialog.total = res.total || 0;
   });
-};
-const resetSnQuery = () => {
+}
+function resetSnQuery() {
   snDialog.query = { pageNum: 1, pageSize: 10, snCode: '' };
   querySns();
-};
-const selectSn = (row: any) => {
+}
+function selectSn(row: any) {
   createForm.parentSnId = row.snId;
   createForm.parentSnCode = row.snCode;
   snDialog.visible = false;
-};
+}
 
 // ============ 物料选择 ============
-const openMaterialSelect = () => {
+function openMaterialSelect() {
   materialSelectRef.value?.open();
-};
-const handleMaterialSelect = (row: any) => {
+}
+function handleMaterialSelect(row: any) {
   createForm.materialId = row.materialId;
   createForm.materialCode = row.materialCode;
   createForm.materialName = row.materialName;
-};
+}
 
 onMounted(() => {
   getList();

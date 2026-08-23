@@ -52,7 +52,3 @@ export const updateStepCheckRule = (data: ProStepCheckRuleForm) => request({ url
 
 /** 批量删除工序校验规则 */
 export const delStepCheckRule = (ruleIds: number | number[]) => request({ url: `/mes/pro/step-check-rule/${ruleIds}`, method: 'delete' });
-
-/** 导出工序校验规则 */
-export const exportStepCheckRule = (query?: ProStepCheckRuleQuery): Promise<Blob> =>
-  request({ url: '/mes/pro/step-check-rule/export', method: 'post', params: query, responseType: 'blob' }) as unknown as Promise<Blob>;

@@ -1,55 +1,53 @@
 <template>
-  <div class="p-2">
-    <el-card>
-      <el-form :model="queryParams" ref="queryFormRef" v-show="showSearch" label-width="100px" class="list-search">
-        <el-row :gutter="16">
-          <el-col :span="6">
-            <el-form-item label="来源" prop="source">
-              <el-select v-model="queryParams.source" placeholder="请选择来源" clearable style="width: 100%">
-                <el-option v-for="dict in mes_data_source" :key="dict.value" :label="dict.label" :value="dict.value" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="6" :offset="12" class="search-actions">
-            <el-form-item>
-              <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-              <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-            </el-form-item>
-          </el-col>
-        </el-row>
-      </el-form>
-
-      <el-row :gutter="10" class="mb8">
-        <el-col :span="1.5">
-          <el-button type="success" plain icon="Plus" @click="handleOpenAdd" v-hasPermi="['mes:dc:record:add']">录入数据</el-button>
+  <div class="app-container">
+    <el-form :model="queryParams" ref="queryRef" v-show="showSearch" label-width="100px" class="list-search">
+      <el-row :gutter="16">
+        <el-col :span="6">
+          <el-form-item label="来源" prop="source">
+            <el-select v-model="queryParams.source" placeholder="请选择来源" clearable style="width: 100%">
+              <el-option v-for="dict in mes_data_source" :key="dict.value" :label="dict.label" :value="dict.value" />
+            </el-select>
+          </el-form-item>
         </el-col>
-        <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
+        <el-col :span="6" :offset="12" class="search-actions">
+          <el-form-item>
+            <el-button type="primary" icon="Search" @click="handleQuery()">搜索</el-button>
+            <el-button icon="Refresh" @click="resetQuery()">重置</el-button>
+          </el-form-item>
+        </el-col>
       </el-row>
+    </el-form>
 
-      <el-table v-loading="loading" :data="dataList" show-overflow-tooltip>
-        <el-table-column label="采集点编码" prop="pointCode" />
-        <el-table-column label="数值" prop="numericValue" align="right" />
-        <el-table-column label="文本值" prop="textValue" min-width="120" show-overflow-tooltip>
-          <template #default="scope">{{ scope.row.textValue || '-' }}</template>
-        </el-table-column>
-        <el-table-column label="采集时间" prop="collectTime" />
-        <el-table-column label="来源" prop="source" align="center">
-          <template #default="scope">
-            <dict-tag :options="mes_data_source" :value="scope.row.source" />
-          </template>
-        </el-table-column>
-      </el-table>
+    <el-row :gutter="10" class="mb8">
+      <el-col :span="1.5">
+        <el-button type="success" plain icon="Plus" @click="handleOpenAdd()" v-hasPermi="['mes:dc:record:add']">录入数据</el-button>
+      </el-col>
+      <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
+    </el-row>
 
-      <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
-    </el-card>
+    <el-table v-loading="loading" :data="list" show-overflow-tooltip>
+      <el-table-column label="采集点编码" prop="pointCode" />
+      <el-table-column label="数值" prop="numericValue" align="right" />
+      <el-table-column label="文本值" prop="textValue" min-width="120" show-overflow-tooltip>
+        <template #default="scope">{{ scope.row.textValue || '-' }}</template>
+      </el-table-column>
+      <el-table-column label="采集时间" prop="collectTime" />
+      <el-table-column label="来源" prop="source" align="center">
+        <template #default="scope">
+          <dict-tag :options="mes_data_source" :value="scope.row.source" />
+        </template>
+      </el-table-column>
+    </el-table>
 
-    <!-- 录入数据对话框 -->
+    <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
+
+    <!-- 录入数据对话框(采集点/工单/流转卡三级选择, 特殊功能本地保留) -->
     <el-dialog v-model="addDialog.visible" title="录入采集数据" width="500px" append-to-body>
       <el-form :model="addForm" label-width="100px">
         <el-form-item label="采集点" required>
           <el-input v-model="addPointCode" placeholder="请选择采集点" readonly>
             <template #append>
-              <el-button icon="Search" @click="openPointSelect" />
+              <el-button icon="Search" @click="openPointSelect()" />
             </template>
           </el-input>
         </el-form-item>
@@ -62,14 +60,14 @@
         <el-form-item label="关联工单">
           <el-input v-model="addWoNo" placeholder="可选, 选择工单" readonly clearable @clear="addForm.mesWoId = undefined">
             <template #append>
-              <el-button icon="Search" @click="openWoSelect" />
+              <el-button icon="Search" @click="openWoSelect()" />
             </template>
           </el-input>
         </el-form-item>
         <el-form-item label="关联流转卡">
           <el-input v-model="addCardNo" placeholder="可选, 选择流转卡" readonly clearable @clear="addForm.cardId = undefined">
             <template #append>
-              <el-button icon="Search" @click="openCardSelect" />
+              <el-button icon="Search" @click="openCardSelect()" />
             </template>
           </el-input>
         </el-form-item>
@@ -88,7 +86,7 @@
       </el-form>
       <template #footer>
         <el-button @click="addDialog.visible = false">取消</el-button>
-        <el-button type="primary" @click="submitAdd">确认录入</el-button>
+        <el-button type="primary" @click="submitAdd()">确认录入</el-button>
       </template>
     </el-dialog>
 
@@ -96,11 +94,11 @@
     <el-dialog v-model="pointDialog.visible" title="选择采集点" width="800px" append-to-body>
       <el-form :model="pointDialog.query" :inline="true">
         <el-form-item label="采集点编码">
-          <el-input v-model="pointDialog.query.pointCode" clearable @keyup.enter="queryPoints" />
+          <el-input v-model="pointDialog.query.pointCode" clearable @keyup.enter="queryPoints()" />
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" icon="Search" @click="queryPoints">搜索</el-button>
-          <el-button icon="Refresh" @click="resetPointQuery">重置</el-button>
+          <el-button type="primary" icon="Search" @click="queryPoints()">搜索</el-button>
+          <el-button icon="Refresh" @click="resetPointQuery()">重置</el-button>
         </el-form-item>
       </el-form>
       <el-table :data="pointDialog.list" height="400" @row-dblclick="selectPoint">
@@ -130,11 +128,11 @@
     <el-dialog v-model="woDialog.visible" title="选择工单" width="960px" append-to-body>
       <el-form :model="woDialog.query" :inline="true">
         <el-form-item label="工单编号">
-          <el-input v-model="woDialog.query.woNo" clearable @keyup.enter="queryWorkOrders" />
+          <el-input v-model="woDialog.query.woNo" clearable @keyup.enter="queryWorkOrders()" />
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" icon="Search" @click="queryWorkOrders">搜索</el-button>
-          <el-button icon="Refresh" @click="resetWoQuery">重置</el-button>
+          <el-button type="primary" icon="Search" @click="queryWorkOrders()">搜索</el-button>
+          <el-button icon="Refresh" @click="resetWoQuery()">重置</el-button>
         </el-form-item>
       </el-form>
       <el-table :data="woDialog.list" height="400" @row-dblclick="selectWorkOrder">
@@ -166,11 +164,11 @@
     <el-dialog v-model="cardDialog.visible" title="选择流转卡" width="960px" append-to-body>
       <el-form :model="cardDialog.query" :inline="true">
         <el-form-item label="流转卡号">
-          <el-input v-model="cardDialog.query.cardNo" clearable @keyup.enter="queryFlowCards" />
+          <el-input v-model="cardDialog.query.cardNo" clearable @keyup.enter="queryFlowCards()" />
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" icon="Search" @click="queryFlowCards">搜索</el-button>
-          <el-button icon="Refresh" @click="resetCardQuery">重置</el-button>
+          <el-button type="primary" icon="Search" @click="queryFlowCards()">搜索</el-button>
+          <el-button icon="Refresh" @click="resetCardQuery()">重置</el-button>
         </el-form-item>
       </el-form>
       <el-table :data="cardDialog.list" height="400" @row-dblclick="selectFlowCard">
@@ -202,21 +200,31 @@ import type { DcDataRecordVO, DcDataRecordQuery, DcDataRecordForm } from '@/api/
 import { listCollectionPoint } from '@/api/mes/dc/collection-point';
 import { listWorkOrder } from '@/api/mes/pro/workorder';
 import { listFlowCard } from '@/api/mes/pro/flowcardApi';
+import type { FormInstance } from 'element-plus';
+import { useCrud } from '@/composables/useCrud';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { mes_data_source, dc_collection_point_type, prd_wo_status } = toRefs<any>(
   proxy?.useDict('mes_data_source', 'dc_collection_point_type', 'prd_wo_status')
 );
 
-const dataList = ref<DcDataRecordVO[]>([]);
-const loading = ref(true);
-const showSearch = ref(true);
-const total = ref(0);
-
 const queryParams = ref<DcDataRecordQuery>({
   pageNum: 1,
   pageSize: 10,
   source: undefined
+});
+
+// 数据记录为记录类只读列表(录入数据为带三级选择器的特殊功能, 本地保留；
+// get/update/del 后端无对应标准接口，占位仅为满足 useCrud 的 API 签名，不会被调用)
+const readonlyApi = () => Promise.resolve({ data: {} as any });
+
+const { loading, list, total, showSearch, getList, handleQuery } = useCrud({
+  apis: { list: listDataRecord, get: readonlyApi, add: readonlyApi, update: readonlyApi, del: readonlyApi },
+  idField: 'recordId',
+  entityName: '采集数据记录',
+  formRef: ref<FormInstance>(),
+  queryParams,
+  initForm: () => ({})
 });
 
 const addDialog = reactive({ visible: false });
@@ -253,26 +261,10 @@ const cardDialog = reactive({
   query: { pageNum: 1, pageSize: 10, cardNo: '' as string }
 });
 
-const getList = async () => {
-  loading.value = true;
-  try {
-    const res = await listDataRecord(queryParams.value);
-    dataList.value = res.rows;
-    total.value = res.total;
-  } finally {
-    loading.value = false;
-  }
-};
-
-const handleQuery = () => {
-  queryParams.value.pageNum = 1;
-  getList();
-};
-
-const resetQuery = () => {
-  proxy?.resetForm('queryFormRef');
+function resetQuery() {
+  proxy?.resetForm('queryRef');
   handleQuery();
-};
+}
 
 const handleOpenAdd = () => {
   Object.assign(addForm, {
@@ -364,7 +356,5 @@ const selectFlowCard = (row: any) => {
   cardDialog.visible = false;
 };
 
-onMounted(() => {
-  getList();
-});
+getList();
 </script>

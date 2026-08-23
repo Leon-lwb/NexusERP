@@ -33,8 +33,8 @@
         </el-col>
         <el-col :span="6" :offset="12" class="search-actions">
           <el-form-item>
-            <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+            <el-button type="primary" icon="Search" @click="handleQuery()">搜索</el-button>
+            <el-button icon="Refresh" @click="resetQuery()">重置</el-button>
           </el-form-item>
         </el-col>
       </el-row>
@@ -42,19 +42,19 @@
 
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
-        <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['sch:team:add']">新增</el-button>
+        <el-button type="primary" plain icon="Plus" @click="handleAdd()" v-hasPermi="['sch:team:add']">新增</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['sch:team:edit']">修改</el-button>
+        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate()" v-hasPermi="['sch:team:edit']">修改</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['sch:team:remove']">删除</el-button>
+        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete()" v-hasPermi="['sch:team:remove']">删除</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="info" plain icon="View" :disabled="single" @click="handleView" v-hasPermi="['sch:team:query']">查看</el-button>
+        <el-button type="info" plain icon="View" :disabled="single" @click="handleView()" v-hasPermi="['sch:team:query']">查看</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['sch:team:export']">导出</el-button>
+        <el-button type="warning" plain icon="Download" @click="handleExport()" v-hasPermi="['sch:team:export']">导出</el-button>
       </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
@@ -144,10 +144,10 @@
         <el-divider content-position="center">班组成员信息</el-divider>
         <el-row :gutter="10" class="mb8">
           <el-col :span="1.5">
-            <el-button type="primary" icon="Plus" @click="openWorkerSelectForTeamMember" v-if="!isViewMode">添加</el-button>
+            <el-button type="primary" icon="Plus" @click="openWorkerSelectForTeamMember()" v-if="!isViewMode">添加</el-button>
           </el-col>
           <el-col :span="1.5">
-            <el-button type="danger" icon="Delete" @click="handleDeleteSchTeamMember" v-if="!isViewMode">删除</el-button>
+            <el-button type="danger" icon="Delete" @click="handleDeleteSchTeamMember()" v-if="!isViewMode">删除</el-button>
           </el-col>
         </el-row>
         <el-table
@@ -218,8 +218,8 @@
       </el-form>
       <template #footer>
         <div class="dialog-footer">
-          <el-button type="primary" @click="submitForm" v-if="!isViewMode">确 定</el-button>
-          <el-button @click="cancel">{{ isViewMode ? '关 闭' : '取 消' }}</el-button>
+          <el-button type="primary" @click="submitForm()" v-if="!isViewMode">确 定</el-button>
+          <el-button @click="cancel()">{{ isViewMode ? '关 闭' : '取 消' }}</el-button>
         </div>
       </template>
     </el-dialog>
@@ -227,10 +227,10 @@
     <el-dialog title="选择车间" v-model="workshopVisible" width="800px" append-to-body>
       <el-form :model="workshopQueryParams" ref="workshopQueryRef" :inline="true">
         <el-form-item label="车间编码" prop="workshopCode">
-          <el-input v-model="workshopQueryParams.workshopCode" placeholder="请输入车间编码" clearable @keyup.enter="getWorkshopList" />
+          <el-input v-model="workshopQueryParams.workshopCode" placeholder="请输入车间编码" clearable @keyup.enter="getWorkshopList()" />
         </el-form-item>
         <el-form-item label="车间名称" prop="workshopName">
-          <el-input v-model="workshopQueryParams.workshopName" placeholder="请输入车间名称" clearable @keyup.enter="getWorkshopList" />
+          <el-input v-model="workshopQueryParams.workshopName" placeholder="请输入车间名称" clearable @keyup.enter="getWorkshopList()" />
         </el-form-item>
         <el-form-item label="状态" prop="status">
           <el-select v-model="workshopQueryParams.status" placeholder="请选择状态" clearable>
@@ -238,8 +238,8 @@
           </el-select>
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" icon="Search" @click="getWorkshopList">搜索</el-button>
-          <el-button icon="Refresh" @click="resetWorkshopQuery">重置</el-button>
+          <el-button type="primary" icon="Search" @click="getWorkshopList()">搜索</el-button>
+          <el-button icon="Refresh" @click="resetWorkshopQuery()">重置</el-button>
         </el-form-item>
       </el-form>
       <el-table v-loading="workshopLoading" :data="workshopList" @row-dblclick="selectWorkshop" show-overflow-tooltip>
@@ -276,14 +276,14 @@
     <el-dialog title="选择班组成员" v-model="workerVisible" width="1200px" append-to-body>
       <el-form :model="workerQueryParams" ref="workerQueryRef" :inline="true">
         <el-form-item label="员工工号" prop="employeeId">
-          <el-input v-model="workerQueryParams.employeeId" placeholder="请输入员工工号" clearable @keyup.enter="getWorkerList" />
+          <el-input v-model="workerQueryParams.employeeId" placeholder="请输入员工工号" clearable @keyup.enter="getWorkerList()" />
         </el-form-item>
         <el-form-item label="姓名" prop="userName">
-          <el-input v-model="workerQueryParams.userName" placeholder="请输入姓名" clearable @keyup.enter="getWorkerList" />
+          <el-input v-model="workerQueryParams.userName" placeholder="请输入姓名" clearable @keyup.enter="getWorkerList()" />
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" icon="Search" @click="getWorkerList">搜索</el-button>
-          <el-button icon="Refresh" @click="resetWorkerQuery">重置</el-button>
+          <el-button type="primary" icon="Search" @click="getWorkerList()">搜索</el-button>
+          <el-button icon="Refresh" @click="resetWorkerQuery()">重置</el-button>
         </el-form-item>
       </el-form>
       <el-table
@@ -327,7 +327,7 @@
       />
       <template #footer>
         <div class="dialog-footer">
-          <el-button type="primary" @click="confirmSelectWorkers">确 定</el-button>
+          <el-button type="primary" @click="confirmSelectWorkers()">确 定</el-button>
           <el-button @click="workerVisible = false">取 消</el-button>
         </div>
       </template>
@@ -337,31 +337,22 @@
 
 <script setup lang="ts" name="Team">
 import { listTeam, getTeam, delTeam, addTeam, updateTeam } from '@/api/erp/sch/team';
-import type { TeamVO, TeamForm, TeamQuery, TeamMemberVO } from '@/api/erp/sch/team/types';
+import type { TeamVO, TeamQuery, TeamMemberVO } from '@/api/erp/sch/team/types';
 import { listWorkshop } from '@/api/erp/bd/workshop';
 import type { WorkshopQuery, WorkshopVO } from '@/api/erp/bd/workshop/types';
 import { listWorker } from '@/api/erp/sch/worker';
 import type { WorkerVO } from '@/api/erp/sch/worker/types';
 import type { FormInstance } from 'element-plus';
+import { useCrud } from '@/composables/useCrud';
 
-const { proxy } = getCurrentInstance();
-const { sys_core_status, sch_worker_role, sch_team_category, sch_work_status, sch_work_category, sys_user_sex, sch_skill_level } = toRefs(
-  proxy.useDict('sys_core_status', 'sch_worker_role', 'sch_team_category', 'sch_work_status', 'sch_work_category', 'sys_user_sex', 'sch_skill_level')
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
+const { sys_core_status, sch_worker_role, sch_team_category, sch_work_category, sys_user_sex, sch_skill_level } = toRefs(
+  proxy.useDict('sys_core_status', 'sch_worker_role', 'sch_team_category', 'sch_work_category', 'sys_user_sex', 'sch_skill_level')
 );
 
 const teamRef = ref<FormInstance>();
-const teamList = ref<TeamVO[]>([]);
 const schTeamMemberList = ref<TeamMemberVO[]>([]);
-const open = ref(false);
-const loading = ref(true);
-const showSearch = ref(true);
-const ids = ref([]);
 const checkedSchTeamMember = ref<number[]>([]);
-const single = ref(true);
-const multiple = ref(true);
-const total = ref(0);
-const title = ref('');
-const isViewMode = ref(false);
 
 const workshopList = ref<WorkshopVO[]>([]);
 const workshopLoading = ref(false);
@@ -390,55 +381,50 @@ const workerQueryParams = reactive({
 const currentSelectType = ref('member');
 const selectedWorkers = ref<TeamMemberVO[]>([]);
 
-const data = reactive<PageData<TeamForm, TeamQuery>>({
-  form: {},
-  queryParams: {
-    pageNum: 1,
-    pageSize: 10,
-    teamCode: null,
-    teamName: null,
-    teamCategory: null,
-    workshopId: null,
-    workshopName: null,
-    memberCount: null,
-    status: null
-  },
-  rules: {
-    teamCode: [{ required: true, message: '班组编码不能为空', trigger: 'blur' }],
-    teamName: [{ required: true, message: '班组名称不能为空', trigger: 'blur' }],
-    memberCount: [{ pattern: /^\d+$/, message: '成员数量必须为正整数', trigger: 'blur' }]
-  }
+const queryParams = ref<TeamQuery>({
+  pageNum: 1,
+  pageSize: 10,
+  teamCode: null,
+  teamName: null,
+  teamCategory: null,
+  workshopName: null,
+  status: null
 });
 
-const { queryParams, form, rules } = toRefs(data);
+const rules = {
+  teamCode: [{ required: true, message: '班组编码不能为空', trigger: 'blur' }],
+  teamName: [{ required: true, message: '班组名称不能为空', trigger: 'blur' }],
+  memberCount: [{ pattern: /^\d+$/, message: '成员数量必须为正整数', trigger: 'blur' }]
+};
 
-function getList() {
-  loading.value = true;
-  listTeam(queryParams.value).then((response) => {
-    teamList.value = response.rows;
-    total.value = response.total;
-    loading.value = false;
-  });
-}
-
-function handleMemberCountInput(value) {
-  const newValue = value.replace(/[^\d]/g, '');
-  if (newValue !== value) {
-    form.value.memberCount = newValue;
-  }
-}
-
-function handleStatusChange() {
-  updateMemberCount();
-}
-
-function cancel() {
-  open.value = false;
-  reset();
-}
-
-function reset() {
-  form.value = {
+const {
+  loading,
+  list: teamList,
+  total,
+  open,
+  isViewMode,
+  title,
+  single,
+  multiple,
+  showSearch,
+  form,
+  getList,
+  handleQuery,
+  handleDelete,
+  handleExport,
+  handleSelectionChange,
+  submitForm,
+  cancel,
+  handleAdd: rawHandleAdd,
+  handleUpdate: rawHandleUpdate,
+  handleView: rawHandleView
+} = useCrud({
+  apis: { list: listTeam, get: getTeam, add: addTeam, update: updateTeam, del: delTeam },
+  idField: 'teamId',
+  entityName: '班组设置',
+  formRef: teamRef,
+  queryParams,
+  initForm: () => ({
     teamId: null,
     teamCode: null,
     teamName: null,
@@ -454,123 +440,60 @@ function reset() {
     createTime: null,
     updateBy: null,
     updateTime: null
-  };
-  schTeamMemberList.value = [];
-  proxy.resetForm('teamRef');
-}
+  }),
+  exportUrl: 'erp/sch/team/export',
+  exportFileName: 'team',
+  onReset: () => {
+    schTeamMemberList.value = [];
+  },
+  beforeSubmit: () => {
+    form.value.schTeamMemberList = schTeamMemberList.value;
+  },
+  afterLoad: (data: TeamVO) => {
+    schTeamMemberList.value = data.schTeamMemberList
+      ? data.schTeamMemberList.map((member) => ({
+          ...member,
+          status: String(member.status)
+        }))
+      : [];
+  }
+});
 
-function handleQuery() {
-  queryParams.value.pageNum = 1;
-  getList();
-}
-
+/** 重置按钮操作 */
 function resetQuery() {
   proxy.resetForm('queryRef');
   handleQuery();
 }
 
-function handleSelectionChange(selection) {
-  ids.value = selection.map((item) => item.teamId);
-  single.value = selection.length != 1;
-  multiple.value = !selection.length;
-}
-
+/** 新增按钮操作 */
 function handleAdd() {
-  reset();
-  isViewMode.value = false;
-  open.value = true;
-  title.value = '添加班组设置';
+  rawHandleAdd();
 }
 
-function handleUpdate(row) {
-  reset();
-  isViewMode.value = false;
-  const _teamId = row.teamId || ids.value;
-  getTeam(_teamId).then((response) => {
-    form.value = response.data;
-    if (response.data.schTeamMemberList) {
-      schTeamMemberList.value = response.data.schTeamMemberList.map((member) => ({
-        ...member,
-        status: String(member.status)
-      }));
-    } else {
-      schTeamMemberList.value = [];
-    }
-    open.value = true;
-    title.value = '修改班组设置';
-  });
+/** 修改按钮操作 */
+function handleUpdate(row?: any) {
+  return rawHandleUpdate(row);
 }
 
-function handleView(row) {
-  reset();
-  isViewMode.value = true;
-  const _teamId = row.teamId || ids.value;
-  getTeam(_teamId).then((response) => {
-    form.value = response.data;
-    if (response.data.schTeamMemberList) {
-      schTeamMemberList.value = response.data.schTeamMemberList.map((member) => ({
-        ...member,
-        status: String(member.status)
-      }));
-    } else {
-      schTeamMemberList.value = [];
-    }
-    open.value = true;
-    title.value = '查看班组设置';
-  });
+/** 查看按钮操作 */
+function handleView(row?: any) {
+  return rawHandleView(row);
 }
 
-function submitForm() {
-  teamRef.value?.validate((valid) => {
-    if (valid) {
-      form.value.schTeamMemberList = schTeamMemberList.value;
-      if (form.value.teamId != null) {
-        updateTeam(form.value).then((response) => {
-          proxy.$modal.msgSuccess('修改成功');
-          open.value = false;
-          getList();
-        });
-      } else {
-        addTeam(form.value).then((response) => {
-          proxy.$modal.msgSuccess('新增成功');
-          open.value = false;
-          getList();
-        });
-      }
-    }
-  });
+function handleMemberCountInput(value: string) {
+  const newValue = value.replace(/[^\d]/g, '');
+  if (newValue !== value) {
+    form.value.memberCount = newValue as unknown as number;
+  }
 }
 
-function handleDelete(row) {
-  const _teamIds = row.teamId || ids.value;
-  proxy.$modal
-    .confirm('是否确认删除班组设置编号为"' + _teamIds + '"的数据项？')
-    .then(function () {
-      return delTeam(_teamIds);
-    })
-    .then(() => {
-      getList();
-      proxy.$modal.msgSuccess('删除成功');
-    })
-    .catch(() => {});
+function handleStatusChange() {
+  updateMemberCount();
 }
 
 function rowSchTeamMemberIndex({ row, rowIndex }: { row: TeamMemberVO; rowIndex: number }): string {
   row.index = rowIndex + 1;
   return '';
-}
-
-function handleAddSchTeamMember() {
-  const obj: TeamMemberVO = {
-    workerId: '',
-    workerName: '',
-    workerCode: '',
-    role: '',
-    effectiveDate: '',
-    expireDate: '',
-    status: '0'
-  };
-  schTeamMemberList.value.push(obj);
 }
 
 function handleDeleteSchTeamMember() {
@@ -585,28 +508,13 @@ function handleDeleteSchTeamMember() {
   }
 }
 
-function handleSchTeamMemberSelectionChange(selection) {
+function handleSchTeamMemberSelectionChange(selection: TeamMemberVO[]) {
   checkedSchTeamMember.value = selection.map((item) => item.index);
 }
 
 function updateMemberCount() {
   const activeMembers = schTeamMemberList.value.filter((member) => member.status === '1' || member.status === 1);
   form.value.memberCount = activeMembers.length;
-}
-
-function getDictLabel(dictOptions, value) {
-  const dict = dictOptions.find((item) => item.value === value);
-  return dict ? dict.label : value;
-}
-
-function handleExport() {
-  proxy.download(
-    'erp/sch/team/export',
-    {
-      ...queryParams.value
-    },
-    `team_${new Date().getTime()}.xlsx`
-  );
 }
 
 function getWorkshopList() {
@@ -624,7 +532,7 @@ function openWorkshopSelect() {
   getWorkshopList();
 }
 
-function selectWorkshop(row) {
+function selectWorkshop(row: WorkshopVO) {
   form.value.workshopId = row.workshopId;
   form.value.workshopName = row.workshopName;
   workshopVisible.value = false;
@@ -660,7 +568,7 @@ function openWorkerSelectForTeamMember() {
   getWorkerList();
 }
 
-function selectWorker(row) {
+function selectWorker(row: WorkerVO) {
   if (currentSelectType.value === 'leader') {
     form.value.leaderId = row.workerId;
     form.value.leaderName = row.userName;
@@ -694,7 +602,7 @@ function selectWorker(row) {
   }
 }
 
-function handleWorkerSelectionChange(selection) {
+function handleWorkerSelectionChange(selection: WorkerVO[]) {
   selectedWorkers.value = [];
   selection.forEach((row) => {
     const exists = selectedWorkers.value.some((worker) => worker.workerId === row.workerId);

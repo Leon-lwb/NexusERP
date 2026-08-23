@@ -35,9 +35,7 @@ export interface MesContentFileForm {
   remark?: string;
 }
 
-export interface MesContentFileQuery {
-  pageNum: number;
-  pageSize: number;
+export interface MesContentFileQuery extends PageQuery {
   contentName?: string;
   materialId?: number | string;
   status?: string;

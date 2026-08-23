@@ -1,98 +1,94 @@
 <template>
-  <div class="p-2">
-    <el-card>
-      <el-form :model="queryParams" ref="queryFormRef" v-show="showSearch" label-width="100px" class="list-search">
-        <el-row :gutter="16">
-          <el-col :span="6">
-            <el-form-item label="控制图名称" prop="chartName">
-              <el-input v-model="queryParams.chartName" placeholder="请输入控制图名称" clearable @keyup.enter="handleQuery" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="6">
-            <el-form-item label="类型" prop="chartType">
-              <el-select v-model="queryParams.chartType" placeholder="请选择类型" clearable style="width: 100%">
-                <el-option v-for="dict in spc_chart_type" :key="dict.value" :label="dict.label" :value="dict.value" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="6">
-            <el-form-item label="状态" prop="status">
-              <el-select v-model="queryParams.status" placeholder="请选择状态" clearable style="width: 100%">
-                <el-option v-for="dict in mes_enable_status" :key="dict.value" :label="dict.label" :value="dict.value" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="6" class="search-actions">
-            <el-form-item>
-              <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-              <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-            </el-form-item>
-          </el-col>
-        </el-row>
-      </el-form>
-
-      <el-row :gutter="10" class="mb8">
-        <el-col :span="1.5">
-          <el-button type="success" plain icon="Plus" @click="handleOpenAdd" v-hasPermi="['mes:spc:chart:add']">新增控制图</el-button>
+  <div class="app-container">
+    <el-form :model="queryParams" ref="queryRef" v-show="showSearch" label-width="100px" class="list-search">
+      <el-row :gutter="16">
+        <el-col :span="6">
+          <el-form-item label="控制图名称" prop="chartName">
+            <el-input v-model="queryParams.chartName" placeholder="请输入控制图名称" clearable @keyup.enter="handleQuery()" />
+          </el-form-item>
         </el-col>
-        <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
+        <el-col :span="6">
+          <el-form-item label="类型" prop="chartType">
+            <el-select v-model="queryParams.chartType" placeholder="请选择类型" clearable style="width: 100%">
+              <el-option v-for="dict in spc_chart_type" :key="dict.value" :label="dict.label" :value="dict.value" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="状态" prop="status">
+            <el-select v-model="queryParams.status" placeholder="请选择状态" clearable style="width: 100%">
+              <el-option v-for="dict in mes_enable_status" :key="dict.value" :label="dict.label" :value="dict.value" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :span="6" class="search-actions">
+          <el-form-item>
+            <el-button type="primary" icon="Search" @click="handleQuery()">搜索</el-button>
+            <el-button icon="Refresh" @click="resetQuery()">重置</el-button>
+          </el-form-item>
+        </el-col>
       </el-row>
+    </el-form>
 
-      <el-table v-loading="loading" :data="dataList" show-overflow-tooltip>
-        <el-table-column label="控制图名称" prop="chartName" min-width="120" show-overflow-tooltip />
-        <el-table-column label="类型" prop="chartType" align="center">
-          <template #default="scope">
-            <dict-tag :options="spc_chart_type" :value="scope.row.chartType" />
-          </template>
-        </el-table-column>
-        <el-table-column label="样本大小" prop="sampleSize" align="right" />
-        <el-table-column label="UCL" prop="ucl" align="right">
-          <template #default="scope">{{ scope.row.ucl ?? '-' }}</template>
-        </el-table-column>
-        <el-table-column label="CL" prop="cl" align="right">
-          <template #default="scope">{{ scope.row.cl ?? '-' }}</template>
-        </el-table-column>
-        <el-table-column label="LCL" prop="lcl" align="right">
-          <template #default="scope">{{ scope.row.lcl ?? '-' }}</template>
-        </el-table-column>
-        <el-table-column label="状态" prop="status" align="center">
-          <template #default="scope">
-            <dict-tag :options="mes_enable_status" :value="scope.row.status" />
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
-          <template #default="scope">
-            <el-button link type="warning" icon="DataAnalysis" @click="handleAnalyze(scope.row)" v-hasPermi="['mes:spc:chart:analyze']"
-              >分析</el-button
-            >
-            <el-button link type="primary" icon="Edit" @click="handleOpenEdit(scope.row)" v-hasPermi="['mes:spc:chart:edit']">编辑</el-button>
-            <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['mes:spc:chart:remove']">删除</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
+    <el-row :gutter="10" class="mb8">
+      <el-col :span="1.5">
+        <el-button type="success" plain icon="Plus" @click="handleAdd()" v-hasPermi="['mes:spc:chart:add']">新增控制图</el-button>
+      </el-col>
+      <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
+    </el-row>
 
-      <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
-    </el-card>
+    <el-table v-loading="loading" :data="list" show-overflow-tooltip>
+      <el-table-column label="控制图名称" prop="chartName" min-width="120" show-overflow-tooltip />
+      <el-table-column label="类型" prop="chartType" align="center">
+        <template #default="scope">
+          <dict-tag :options="spc_chart_type" :value="scope.row.chartType" />
+        </template>
+      </el-table-column>
+      <el-table-column label="样本大小" prop="sampleSize" align="right" />
+      <el-table-column label="UCL" prop="ucl" align="right">
+        <template #default="scope">{{ scope.row.ucl ?? '-' }}</template>
+      </el-table-column>
+      <el-table-column label="CL" prop="cl" align="right">
+        <template #default="scope">{{ scope.row.cl ?? '-' }}</template>
+      </el-table-column>
+      <el-table-column label="LCL" prop="lcl" align="right">
+        <template #default="scope">{{ scope.row.lcl ?? '-' }}</template>
+      </el-table-column>
+      <el-table-column label="状态" prop="status" align="center">
+        <template #default="scope">
+          <dict-tag :options="mes_enable_status" :value="scope.row.status" />
+        </template>
+      </el-table-column>
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
+        <template #default="scope">
+          <el-button link type="warning" icon="DataAnalysis" @click="handleAnalyze(scope.row)" v-hasPermi="['mes:spc:chart:analyze']">分析</el-button>
+          <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['mes:spc:chart:edit']">编辑</el-button>
+          <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['mes:spc:chart:remove']">删除</el-button>
+        </template>
+      </el-table-column>
+    </el-table>
 
-    <!-- 新增/编辑控制图对话框 -->
-    <el-dialog v-model="dialog.visible" :title="form.chartId ? '编辑控制图' : '新增控制图'" width="500px" append-to-body>
-      <el-form :model="form" label-width="100px">
-        <el-form-item label="控制图名称" required>
+    <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
+
+    <!-- 添加或修改控制图对话框 -->
+    <el-dialog :title="title" v-model="open" width="500px" append-to-body>
+      <el-form ref="controlChartRef" :model="form" :rules="rules" label-width="100px">
+        <el-form-item label="控制图名称" prop="chartName">
           <el-input v-model="form.chartName" placeholder="控制图名称" clearable />
         </el-form-item>
-        <el-form-item label="图表类型" required>
+        <el-form-item label="图表类型" prop="chartType">
           <el-select v-model="form.chartType" placeholder="请选择类型" style="width: 100%">
             <el-option v-for="dict in spc_chart_type" :key="dict.value" :label="dict.label" :value="dict.value" />
           </el-select>
         </el-form-item>
-        <el-form-item label="关联采集点" required>
+        <el-form-item label="关联采集点" prop="pointId">
           <el-input v-model="pointCodeDisplay" placeholder="请选择采集点(SPC数据来源)" readonly>
             <template #append>
-              <el-button icon="Search" @click="openPointSelect" />
+              <el-button icon="Search" @click="openPointSelect()" />
             </template>
           </el-input>
         </el-form-item>
-        <el-form-item label="样本大小">
+        <el-form-item label="样本大小" prop="sampleSize">
           <el-input-number
             v-model="form.sampleSize"
             :min="2"
@@ -103,32 +99,32 @@
             placeholder="X̄-R/S每组样本数(2~10), 计数型为检验数/单位数"
           />
         </el-form-item>
-        <el-form-item label="关联物料">
+        <el-form-item label="关联物料" prop="materialId">
           <el-input v-model="materialCodeDisplay" placeholder="可选, 选择物料" readonly clearable @clear="form.materialId = undefined">
             <template #append>
-              <el-button icon="Search" @click="openMaterialSelect" />
+              <el-button icon="Search" @click="openMaterialSelect()" />
             </template>
           </el-input>
         </el-form-item>
-        <el-form-item label="关联工序">
+        <el-form-item label="关联工序" prop="processId">
           <el-input v-model="processCodeDisplay" placeholder="可选, 选择工序" readonly clearable @clear="form.processId = undefined">
             <template #append>
-              <el-button icon="Search" @click="openProcessSelect" />
+              <el-button icon="Search" @click="openProcessSelect()" />
             </template>
           </el-input>
         </el-form-item>
-        <el-form-item label="状态">
+        <el-form-item label="状态" prop="status">
           <el-select v-model="form.status" placeholder="状态" style="width: 100%">
             <el-option v-for="dict in mes_enable_status" :key="dict.value" :label="dict.label" :value="dict.value" />
           </el-select>
         </el-form-item>
-        <el-form-item label="备注">
+        <el-form-item label="备注" prop="remark">
           <el-input v-model="form.remark" type="textarea" :rows="2" placeholder="备注" />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="dialog.visible = false">取消</el-button>
-        <el-button type="primary" @click="submitForm">确认</el-button>
+        <el-button type="primary" @click="submitForm()">确 定</el-button>
+        <el-button @click="cancel()">取 消</el-button>
       </template>
     </el-dialog>
 
@@ -165,11 +161,11 @@
     <el-dialog v-model="pointDialog.visible" title="选择采集点" width="800px" append-to-body>
       <el-form :model="pointDialog.query" :inline="true">
         <el-form-item label="采集点编码">
-          <el-input v-model="pointDialog.query.pointCode" clearable @keyup.enter="queryPoints" />
+          <el-input v-model="pointDialog.query.pointCode" clearable @keyup.enter="queryPoints()" />
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" icon="Search" @click="queryPoints">搜索</el-button>
-          <el-button icon="Refresh" @click="resetPointQuery">重置</el-button>
+          <el-button type="primary" icon="Search" @click="queryPoints()">搜索</el-button>
+          <el-button icon="Refresh" @click="resetPointQuery()">重置</el-button>
         </el-form-item>
       </el-form>
       <el-table :data="pointDialog.list" height="400" @row-dblclick="selectPoint">
@@ -199,14 +195,14 @@
     <el-dialog v-model="processDialog.visible" title="选择工序" width="800px" append-to-body>
       <el-form :model="processDialog.query" :inline="true">
         <el-form-item label="工序编码">
-          <el-input v-model="processDialog.query.processCode" clearable @keyup.enter="queryProcesses" />
+          <el-input v-model="processDialog.query.processCode" clearable @keyup.enter="queryProcesses()" />
         </el-form-item>
         <el-form-item label="工序名称">
-          <el-input v-model="processDialog.query.processName" clearable @keyup.enter="queryProcesses" />
+          <el-input v-model="processDialog.query.processName" clearable @keyup.enter="queryProcesses()" />
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" icon="Search" @click="queryProcesses">搜索</el-button>
-          <el-button icon="Refresh" @click="resetProcessQuery">重置</el-button>
+          <el-button type="primary" icon="Search" @click="queryProcesses()">搜索</el-button>
+          <el-button icon="Refresh" @click="resetProcessQuery()">重置</el-button>
         </el-form-item>
       </el-form>
       <el-table :data="processDialog.list" height="400" @row-dblclick="selectProcess">
@@ -242,32 +238,20 @@ import {
   delControlChart,
   analyzeControlChart
 } from '@/api/mes/spc/control-chart';
-import type { SpcControlChartVO, SpcControlChartQuery, SpcControlChartForm, SpcAnalyzeResult, SpcDataPointVO } from '@/api/mes/spc/control-chart';
+import type { SpcControlChartVO, SpcControlChartQuery, SpcAnalyzeResult, SpcDataPointVO } from '@/api/mes/spc/control-chart';
 import { listCollectionPoint, getCollectionPoint } from '@/api/mes/dc/collection-point';
 import { listProcess, getProcess } from '@/api/erp/bd/process';
 import { getMaterial } from '@/api/erp/bd/material';
 import MaterialSelectDialog from '@/components/MaterialSelectDialog/index.vue';
+import type { FormInstance } from 'element-plus';
+import { useCrud } from '@/composables/useCrud';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { spc_chart_type, mes_enable_status, dc_collection_point_type } = toRefs<any>(
   proxy?.useDict('spc_chart_type', 'mes_enable_status', 'dc_collection_point_type')
 );
 
-const dataList = ref<SpcControlChartVO[]>([]);
-const loading = ref(true);
-const showSearch = ref(true);
-const total = ref(0);
-
-const queryParams = ref<SpcControlChartQuery>({
-  pageNum: 1,
-  pageSize: 10,
-  chartName: undefined,
-  chartType: undefined,
-  status: undefined
-});
-
-const dialog = reactive({ visible: false });
-const form = ref<SpcControlChartForm>({} as SpcControlChartForm);
+const controlChartRef = ref<FormInstance>();
 // 选择器展示字段(后端 BO 忽略)
 const pointCodeDisplay = ref('');
 const materialCodeDisplay = ref('');
@@ -287,92 +271,68 @@ const processDialog = reactive({
   query: { pageNum: 1, pageSize: 10, processCode: '' as string, processName: '' as string }
 });
 
+const queryParams = ref<SpcControlChartQuery>({
+  pageNum: 1,
+  pageSize: 10,
+  chartName: undefined,
+  chartType: undefined,
+  status: undefined
+});
+
+const rules = {
+  chartName: [{ required: true, message: '控制图名称不能为空', trigger: 'blur' }],
+  chartType: [{ required: true, message: '图表类型不能为空', trigger: 'change' }],
+  pointId: [{ required: true, message: '关联采集点不能为空', trigger: 'change' }]
+};
+
+const { loading, list, total, open, title, showSearch, form, getList, handleQuery, handleDelete, submitForm, cancel, handleAdd, handleUpdate } =
+  useCrud<SpcControlChartVO, SpcControlChartQuery>({
+    apis: { list: listControlChart, get: getControlChart, add: addControlChart, update: updateControlChart, del: delControlChart },
+    idField: 'chartId',
+    entityName: '控制图',
+    formRef: controlChartRef,
+    queryParams,
+    initForm: () => ({
+      chartId: undefined,
+      chartName: '',
+      chartType: 'X_BAR_R',
+      pointId: undefined,
+      materialId: undefined,
+      processId: undefined,
+      sampleSize: 5,
+      status: 'ACTIVE',
+      remark: ''
+    }),
+    onReset: () => {
+      pointCodeDisplay.value = '';
+      materialCodeDisplay.value = '';
+      processCodeDisplay.value = '';
+    },
+    afterLoad: (data: SpcControlChartVO) => {
+      // 回填展示字段(VO 不带 pointCode/materialCode/processCode, 按 ID 反查)
+      Promise.all([
+        data.pointId ? getCollectionPoint(data.pointId).catch(() => null) : Promise.resolve(null),
+        data.materialId ? getMaterial(data.materialId).catch(() => null) : Promise.resolve(null),
+        data.processId ? getProcess(data.processId).catch(() => null) : Promise.resolve(null)
+      ]).then(([pointRes, materialRes, processRes]) => {
+        pointCodeDisplay.value = (pointRes as any)?.data?.pointCode || '';
+        materialCodeDisplay.value = (materialRes as any)?.data?.materialCode || '';
+        processCodeDisplay.value = (processRes as any)?.data?.processCode || '';
+      });
+    }
+  });
+
+function resetQuery() {
+  proxy?.resetForm('queryRef');
+  handleQuery();
+}
+
+// ============ 分析(ECharts 控制图绘制) ============
 const analyzeDialog = reactive({ visible: false });
 const analyzeLoading = ref(false);
 const analyzeResult = ref<SpcAnalyzeResult>({} as SpcAnalyzeResult);
 const chartRef = ref<HTMLElement>();
 let chartInstance: echarts.ECharts | null = null;
-
-const getList = async () => {
-  loading.value = true;
-  try {
-    const res = await listControlChart(queryParams.value);
-    dataList.value = res.rows;
-    total.value = res.total;
-  } finally {
-    loading.value = false;
-  }
-};
-
-const handleQuery = () => {
-  queryParams.value.pageNum = 1;
-  getList();
-};
-
-const resetQuery = () => {
-  proxy?.resetForm('queryFormRef');
-  handleQuery();
-};
-
-const resetForm = () => {
-  form.value = {
-    chartId: undefined,
-    chartName: '',
-    chartType: 'X_BAR_R',
-    pointId: undefined,
-    materialId: undefined,
-    processId: undefined,
-    sampleSize: 5,
-    status: 'ACTIVE',
-    remark: ''
-  };
-  pointCodeDisplay.value = '';
-  materialCodeDisplay.value = '';
-  processCodeDisplay.value = '';
-};
-
-const handleOpenAdd = () => {
-  resetForm();
-  dialog.visible = true;
-};
-
-const handleOpenEdit = async (row: SpcControlChartVO) => {
-  const res = await getControlChart(row.chartId);
-  form.value = { ...res.data };
-  // 回填展示字段(VO 不带 pointCode/materialCode/processCode, 按 ID 反查)
-  const [pointRes, materialRes, processRes] = await Promise.all([
-    form.value.pointId ? getCollectionPoint(form.value.pointId).catch(() => null) : Promise.resolve(null),
-    form.value.materialId ? getMaterial(form.value.materialId).catch(() => null) : Promise.resolve(null),
-    form.value.processId ? getProcess(form.value.processId).catch(() => null) : Promise.resolve(null)
-  ]);
-  pointCodeDisplay.value = (pointRes as any)?.data?.pointCode || '';
-  materialCodeDisplay.value = (materialRes as any)?.data?.materialCode || '';
-  processCodeDisplay.value = (processRes as any)?.data?.processCode || '';
-  dialog.visible = true;
-};
-
-const submitForm = async () => {
-  if (!form.value.chartName || !form.value.chartType || !form.value.pointId) {
-    proxy?.$modal.msgWarning('控制图名称/类型/采集点不能为空');
-    return;
-  }
-  if (form.value.chartId) {
-    await updateControlChart(form.value);
-    proxy?.$modal.msgSuccess('编辑成功');
-  } else {
-    await addControlChart(form.value);
-    proxy?.$modal.msgSuccess('新增成功');
-  }
-  dialog.visible = false;
-  getList();
-};
-
-const handleDelete = async (row: SpcControlChartVO) => {
-  await proxy?.$modal.confirm('确认删除控制图"' + row.chartName + '"？关联数据点将一并删除。');
-  await delControlChart([row.chartId]);
-  proxy?.$modal.msgSuccess('删除成功');
-  getList();
-};
 
 const handleAnalyze = async (row: SpcControlChartVO) => {
   analyzeLoading.value = true;
@@ -510,7 +470,6 @@ const handleMaterialSelect = (row: any) => {
 };
 
 onMounted(() => {
-  getList();
   window.addEventListener('resize', handleResize);
 });
 
@@ -518,4 +477,6 @@ onUnmounted(() => {
   window.removeEventListener('resize', handleResize);
   chartInstance?.dispose();
 });
+
+getList();
 </script>

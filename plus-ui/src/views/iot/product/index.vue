@@ -35,8 +35,8 @@
         </el-col>
         <el-col :span="6" :offset="12" class="search-actions">
           <el-form-item>
-            <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+            <el-button type="primary" icon="Search" @click="handleQuery()">搜索</el-button>
+            <el-button icon="Refresh" @click="resetQuery()">重置</el-button>
           </el-form-item>
         </el-col>
       </el-row>
@@ -44,19 +44,19 @@
 
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
-        <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['iot:product:add']">新增</el-button>
+        <el-button type="primary" plain icon="Plus" @click="handleAdd()" v-hasPermi="['iot:product:add']">新增</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['iot:product:edit']">修改</el-button>
+        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate()" v-hasPermi="['iot:product:edit']">修改</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['iot:product:remove']">删除</el-button>
+        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete()" v-hasPermi="['iot:product:remove']">删除</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="info" plain icon="View" :disabled="single" @click="handleView" v-hasPermi="['iot:product:query']">查看</el-button>
+        <el-button type="info" plain icon="View" :disabled="single" @click="handleView()" v-hasPermi="['iot:product:query']">查看</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['iot:product:export']">导出</el-button>
+        <el-button type="warning" plain icon="Download" @click="handleExport()" v-hasPermi="['iot:product:export']">导出</el-button>
       </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
@@ -126,8 +126,8 @@
       </el-form>
       <template #footer>
         <div class="dialog-footer">
-          <el-button type="primary" @click="submitForm" v-if="!isViewMode">确 定</el-button>
-          <el-button @click="cancel">{{ isViewMode ? '关 闭' : '取 消' }}</el-button>
+          <el-button type="primary" @click="submitForm()" v-if="!isViewMode">确 定</el-button>
+          <el-button @click="cancel()">{{ isViewMode ? '关 闭' : '取 消' }}</el-button>
         </div>
       </template>
     </el-dialog>
@@ -136,64 +136,58 @@
 
 <script setup lang="ts" name="IotProduct">
 import { listProduct, getProduct, delProduct, addProduct, updateProduct } from '@/api/iot/product';
-import type { ProductVO, ProductQuery, ProductForm } from '@/api/iot/product/types';
+import type { ProductVO, ProductQuery } from '@/api/iot/product/types';
+import type { FormInstance } from 'element-plus';
+import { useCrud } from '@/composables/useCrud';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { product_type, iot_protocol_type, iot_device_status } = toRefs<any>(proxy.useDict('product_type', 'iot_protocol_type', 'iot_device_status'));
 
-const productList = ref<ProductVO[]>([]);
-const open = ref(false);
-const loading = ref(true);
-const showSearch = ref(true);
-const ids = ref([]);
-const single = ref(true);
-const multiple = ref(true);
-const total = ref(0);
-const title = ref('');
-const isViewMode = ref(false);
+const productRef = ref<FormInstance>();
 
-const data = reactive<{
-  form: ProductForm;
-  queryParams: ProductQuery;
-  rules: ElFormRules;
-}>({
-  form: {} as ProductForm,
-  queryParams: {
-    pageNum: 1,
-    pageSize: 10,
-    productCode: null,
-    productName: null,
-    productType: null,
-    protocolType: null,
-    status: null
-  },
-  rules: {
-    productCode: [{ required: true, message: '产品编码不能为空', trigger: 'blur' }],
-    productName: [{ required: true, message: '产品名称不能为空', trigger: 'blur' }]
-  }
+const queryParams = ref<ProductQuery>({
+  pageNum: 1,
+  pageSize: 10,
+  productCode: null,
+  productName: null,
+  productType: null,
+  protocolType: null,
+  status: null
 });
 
-const { queryParams, form, rules } = toRefs(data);
+const rules = {
+  productCode: [{ required: true, message: '产品编码不能为空', trigger: 'blur' }],
+  productName: [{ required: true, message: '产品名称不能为空', trigger: 'blur' }]
+};
 
-/** 查询产品列表 */
-function getList() {
-  loading.value = true;
-  listProduct(queryParams.value).then((response) => {
-    productList.value = response.rows;
-    total.value = response.total;
-    loading.value = false;
-  });
-}
-
-// 取消按钮
-function cancel() {
-  open.value = false;
-  reset();
-}
-
-// 表单重置
-function reset() {
-  form.value = {
+const {
+  loading,
+  list: productList,
+  total,
+  open,
+  isViewMode,
+  title,
+  single,
+  multiple,
+  showSearch,
+  form,
+  getList,
+  handleQuery,
+  handleDelete,
+  handleExport,
+  handleSelectionChange,
+  submitForm,
+  cancel,
+  handleAdd: rawHandleAdd,
+  handleUpdate: rawHandleUpdate,
+  handleView: rawHandleView
+} = useCrud({
+  apis: { list: listProduct, get: getProduct, add: addProduct, update: updateProduct, del: delProduct },
+  idField: 'productId',
+  entityName: '产品',
+  formRef: productRef,
+  queryParams,
+  initForm: () => ({
     productId: null,
     productCode: null,
     productName: null,
@@ -202,15 +196,10 @@ function reset() {
     description: null,
     status: 'ACTIVE',
     remark: null
-  };
-  proxy.resetForm('productRef');
-}
-
-/** 搜索按钮操作 */
-function handleQuery() {
-  queryParams.value.pageNum = 1;
-  getList();
-}
+  }),
+  exportUrl: 'iot/product/export',
+  exportFileName: 'iot_product'
+});
 
 /** 重置按钮操作 */
 function resetQuery() {
@@ -218,90 +207,19 @@ function resetQuery() {
   handleQuery();
 }
 
-// 多选框选中数据
-function handleSelectionChange(selection) {
-  ids.value = selection.map((item) => item.productId);
-  single.value = selection.length != 1;
-  multiple.value = !selection.length;
-}
-
 /** 新增按钮操作 */
 function handleAdd() {
-  reset();
-  isViewMode.value = false;
-  open.value = true;
-  title.value = '添加产品';
+  rawHandleAdd();
 }
 
 /** 修改按钮操作 */
-function handleUpdate(row) {
-  reset();
-  isViewMode.value = false;
-  const _productId = row.productId || ids.value;
-  getProduct(_productId).then((response) => {
-    form.value = response.data;
-    open.value = true;
-    title.value = '修改产品';
-  });
+function handleUpdate(row?: ProductVO) {
+  return rawHandleUpdate(row);
 }
 
 /** 查看按钮操作 */
-function handleView(row) {
-  reset();
-  isViewMode.value = true;
-  const _productId = row.productId || ids.value;
-  getProduct(_productId).then((response) => {
-    form.value = response.data;
-    open.value = true;
-    title.value = '查看产品';
-  });
-}
-
-/** 提交按钮 */
-function submitForm() {
-  (proxy.$refs['productRef'] as ElFormInstance).validate((valid) => {
-    if (valid) {
-      if (form.value.productId != null) {
-        updateProduct(form.value).then((response) => {
-          proxy.$modal.msgSuccess('修改成功');
-          open.value = false;
-          getList();
-        });
-      } else {
-        addProduct(form.value).then((response) => {
-          proxy.$modal.msgSuccess('新增成功');
-          open.value = false;
-          getList();
-        });
-      }
-    }
-  });
-}
-
-/** 删除按钮操作 */
-function handleDelete(row) {
-  const _productIds = row.productId || ids.value;
-  proxy.$modal
-    .confirm('是否确认删除产品编号为"' + _productIds + '"的数据项？')
-    .then(function () {
-      return delProduct(_productIds);
-    })
-    .then(() => {
-      getList();
-      proxy.$modal.msgSuccess('删除成功');
-    })
-    .catch(() => {});
-}
-
-/** 导出按钮操作 */
-function handleExport() {
-  proxy.download(
-    'iot/product/export',
-    {
-      ...queryParams.value
-    },
-    `iot_product_${new Date().getTime()}.xlsx`
-  );
+function handleView(row?: ProductVO) {
+  return rawHandleView(row);
 }
 
 getList();

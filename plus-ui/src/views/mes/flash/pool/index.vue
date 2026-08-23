@@ -1,40 +1,53 @@
 <template>
   <div class="app-container">
-    <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="90px">
-      <el-form-item label="资源池名称" prop="poolName">
-        <el-input v-model="queryParams.poolName" placeholder="请输入" clearable style="width: 180px" @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item label="资源类型" prop="resourceType">
-        <el-select v-model="queryParams.resourceType" placeholder="全部" clearable style="width: 140px">
-          <el-option v-for="dict in resourceTypeOptions" :key="dict.value" :label="dict.label" :value="dict.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="状态" prop="status">
-        <el-select v-model="queryParams.status" placeholder="全部" clearable style="width: 120px">
-          <el-option label="启用" value="ENABLED" />
-          <el-option label="停用" value="DISABLED" />
-        </el-select>
-      </el-form-item>
-      <el-form-item>
-        <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-        <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-      </el-form-item>
+    <el-form :model="queryParams" ref="queryRef" v-show="showSearch" label-width="90px" class="list-search">
+      <el-row :gutter="16">
+        <el-col :span="6">
+          <el-form-item label="资源池名称" prop="poolName">
+            <el-input v-model="queryParams.poolName" placeholder="请输入" clearable @keyup.enter="handleQuery()" />
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="资源类型" prop="resourceType">
+            <el-select v-model="queryParams.resourceType" placeholder="全部" clearable style="width: 100%">
+              <el-option v-for="dict in resourceTypeOptions" :key="dict.value" :label="dict.label" :value="dict.value" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="状态" prop="status">
+            <el-select v-model="queryParams.status" placeholder="全部" clearable style="width: 100%">
+              <el-option label="启用" value="ENABLED" />
+              <el-option label="停用" value="DISABLED" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :span="6" class="search-actions">
+          <el-form-item>
+            <el-button type="primary" icon="Search" @click="handleQuery()">搜索</el-button>
+            <el-button icon="Refresh" @click="resetQuery()">重置</el-button>
+          </el-form-item>
+        </el-col>
+      </el-row>
     </el-form>
 
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
-        <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['mes:flash:pool:add']">新增</el-button>
+        <el-button type="primary" plain icon="Plus" @click="handleAdd()" v-hasPermi="['mes:flash:pool:add']">新增</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="danger" plain icon="Delete" :disabled="!ids.length" @click="handleDelete()" v-hasPermi="['mes:flash:pool:remove']"
+        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate()" v-hasPermi="['mes:flash:pool:edit']">修改</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete()" v-hasPermi="['mes:flash:pool:remove']"
           >删除</el-button
         >
       </el-col>
-      <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" />
+      <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="list" @selection-change="handleSelectionChange">
-      <el-table-column type="selection" width="50" align="center" />
+    <el-table v-loading="loading" :data="list" @selection-change="handleSelectionChange" show-overflow-tooltip>
+      <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="资源池编码" align="center" prop="poolCode" min-width="150" />
       <el-table-column label="名称" align="center" prop="poolName" min-width="140" />
       <el-table-column label="资源类型" align="center" prop="resourceType" width="100">
@@ -59,9 +72,9 @@
           <el-tag :type="scope.row.status === 'ENABLED' ? 'success' : 'info'">{{ scope.row.status === 'ENABLED' ? '启用' : '停用' }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" width="220" class-name="small-padding fixed-width">
+      <el-table-column label="操作" align="center" width="220" class-name="small-padding fixed-width" :show-overflow-tooltip="false">
         <template #default="scope">
-          <el-button link type="primary" icon="Edit" @click="handleEdit(scope.row)" v-hasPermi="['mes:flash:pool:edit']">编辑</el-button>
+          <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['mes:flash:pool:edit']">编辑</el-button>
           <el-button link type="success" icon="Upload" @click="handleImport(scope.row)" v-hasPermi="['mes:flash:pool:import']">导入资源</el-button>
           <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['mes:flash:pool:remove']">删除</el-button>
         </template>
@@ -70,9 +83,9 @@
 
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
-    <!-- 新增/编辑弹窗 -->
+    <!-- 添加/修改资源池对话框 -->
     <el-dialog :title="title" v-model="open" width="500px" append-to-body>
-      <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
+      <el-form ref="poolRef" :model="form" :rules="rules" label-width="100px">
         <el-form-item label="资源池名称" prop="poolName">
           <el-input v-model="form.poolName" placeholder="请输入" />
         </el-form-item>
@@ -106,7 +119,7 @@
       </template>
     </el-dialog>
 
-    <!-- 导入资源弹窗 -->
+    <!-- 导入资源弹窗(批量导入资源项, 特殊功能本地保留) -->
     <el-dialog :title="'导入资源 - ' + (importPool.poolName || '')" v-model="importOpen" width="500px" append-to-body>
       <el-alert
         type="info"
@@ -117,7 +130,7 @@
       />
       <el-input v-model="importText" type="textarea" :rows="10" placeholder="00:1A:2B:3C:4D:5E&#10;00:1A:2B:3C:4D:5F&#10;..." />
       <template #footer>
-        <el-button type="primary" @click="submitImport">导 入</el-button>
+        <el-button type="primary" @click="submitImport()">导 入</el-button>
         <el-button @click="importOpen = false">取 消</el-button>
       </template>
     </el-dialog>
@@ -125,101 +138,84 @@
 </template>
 
 <script setup lang="ts" name="MesFlashPool">
-import {
-  listPool,
-  addPool,
-  updatePool,
-  delPool,
-  importPoolItems,
-  type MesResourcePoolVO,
-  type MesResourcePoolForm,
-  type MesResourcePoolQuery
-} from '@/api/mes/flash/pool';
+import { listPool, getPool, addPool, updatePool, delPool, importPoolItems } from '@/api/mes/flash/pool';
+import type { MesResourcePoolVO, MesResourcePoolForm, MesResourcePoolQuery } from '@/api/mes/flash/pool';
+import type { FormInstance } from 'element-plus';
+import { useCrud } from '@/composables/useCrud';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { mes_resource_type } = toRefs<any>(proxy?.useDict('mes_resource_type'));
 const resourceTypeOptions = computed(() => mes_resource_type.value || []);
 
-const list = ref<MesResourcePoolVO[]>([]);
-const loading = ref(true);
-const showSearch = ref(true);
-const ids = ref<Array<number | string>>([]);
-const total = ref(0);
-const open = ref(false);
-const title = ref('');
-const importOpen = ref(false);
-const importText = ref('');
-const importPool = ref<any>({});
-const form = ref<MesResourcePoolForm>({ poolName: '', resourceType: 'MAC', source: 'INTERNAL', status: 'ENABLED' });
-const queryParams = ref<MesResourcePoolQuery>({ pageNum: 1, pageSize: 10 });
-const rules = {
+const poolRef = ref<FormInstance>();
+
+const queryParams = ref<MesResourcePoolQuery>({
+  pageNum: 1,
+  pageSize: 10,
+  poolName: undefined,
+  resourceType: undefined,
+  status: undefined
+});
+
+const rules: ElFormRules = {
   poolName: [{ required: true, message: '资源池名称不能为空', trigger: 'blur' }],
   resourceType: [{ required: true, message: '资源类型不能为空', trigger: 'change' }]
 };
 
-const getList = async () => {
-  loading.value = true;
-  try {
-    const res = await listPool(queryParams.value);
-    list.value = res.rows;
-    total.value = res.total;
-  } finally {
-    loading.value = false;
-  }
-};
-const handleQuery = () => {
-  queryParams.value.pageNum = 1;
-  getList();
-};
-const resetQuery = () => {
+const {
+  loading,
+  list,
+  total,
+  open,
+  title,
+  ids,
+  single,
+  multiple,
+  showSearch,
+  form,
+  getList,
+  handleQuery,
+  handleDelete,
+  handleSelectionChange,
+  submitForm,
+  cancel,
+  handleAdd: rawHandleAdd,
+  handleUpdate: rawHandleUpdate
+} = useCrud({
+  apis: { list: listPool, get: getPool, add: addPool, update: updatePool, del: delPool },
+  idField: 'poolId',
+  entityName: '资源池',
+  formRef: poolRef,
+  queryParams,
+  initForm: () =>
+    ({
+      poolId: undefined,
+      poolName: '',
+      resourceType: 'MAC',
+      source: 'INTERNAL',
+      externalConfig: undefined,
+      status: 'ENABLED',
+      remark: undefined
+    }) as MesResourcePoolForm
+});
+
+function handleAdd() {
+  rawHandleAdd();
+}
+function handleUpdate(row?: any) {
+  return rawHandleUpdate(row);
+}
+
+function resetQuery() {
   proxy?.resetForm('queryRef');
   handleQuery();
-};
-const handleSelectionChange = (selection: any[]) => {
-  ids.value = selection.map((i) => i.poolId);
-};
-const handleAdd = () => {
-  form.value = { poolName: '', resourceType: 'MAC', source: 'INTERNAL', status: 'ENABLED' };
-  title.value = '新增资源池';
-  open.value = true;
-};
-const handleEdit = (row: MesResourcePoolVO) => {
-  form.value = {
-    poolId: row.poolId,
-    poolName: row.poolName,
-    resourceType: row.resourceType,
-    source: row.source,
-    externalConfig: row.externalConfig,
-    status: row.status,
-    remark: row.remark
-  };
-  title.value = '编辑资源池';
-  open.value = true;
-};
-const submitForm = () => {
-  (proxy?.$refs.formRef as any).validate(async (valid: boolean) => {
-    if (!valid) return;
-    if (form.value.poolId) {
-      await updatePool(form.value);
-      proxy?.$modal.msgSuccess('修改成功');
-    } else {
-      await addPool(form.value);
-      proxy?.$modal.msgSuccess('新增成功');
-    }
-    open.value = false;
-    getList();
-  });
-};
-const cancel = () => {
-  open.value = false;
-};
-const handleDelete = async (row?: MesResourcePoolVO) => {
-  const delIds = row ? [row.poolId] : ids.value;
-  await proxy?.$modal.confirm(row ? `确认删除「${row.poolName}」?` : `确认删除选中的 ${ids.value.length} 项?`);
-  await delPool(delIds);
-  proxy?.$modal.msgSuccess('删除成功');
-  getList();
-};
+}
+
+// ============ 导入资源(批量导入资源项) ============
+const importOpen = ref(false);
+const importText = ref('');
+const importPool = ref<any>({});
+
 const handleImport = (row: MesResourcePoolVO) => {
   importPool.value = row;
   importText.value = '';

@@ -1,51 +1,69 @@
 <template>
   <div class="app-container">
-    <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="90px">
-      <el-form-item label="刷写记录号" prop="flashNo">
-        <el-input v-model="queryParams.flashNo" placeholder="请输入刷写记录号" clearable style="width: 180px" @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item label="SN编码" prop="snCode">
-        <el-input v-model="queryParams.snCode" placeholder="请输入SN编码" clearable style="width: 180px" @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item label="工单号" prop="woNo">
-        <el-input v-model="queryParams.woNo" placeholder="请输入工单号" clearable style="width: 160px" @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item label="设备编码" prop="equipmentCode">
-        <el-input v-model="queryParams.equipmentCode" placeholder="请输入设备编码" clearable style="width: 160px" @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item label="刷写结果" prop="result">
-        <el-select v-model="queryParams.result" placeholder="全部" clearable style="width: 120px">
-          <el-option v-for="dict in flashResultOptions" :key="dict.value" :label="dict.label" :value="dict.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="刷写模式" prop="flashMode">
-        <el-select v-model="queryParams.flashMode" placeholder="全部" clearable style="width: 120px">
-          <el-option v-for="dict in flashModeOptions" :key="dict.value" :label="dict.label" :value="dict.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="刷写时间">
-        <el-date-picker
-          v-model="dateRange"
-          value-format="YYYY-MM-DD"
-          type="daterange"
-          range-separator="-"
-          start-placeholder="开始日期"
-          end-placeholder="结束日期"
-          style="width: 240px"
-        />
-      </el-form-item>
-      <el-form-item>
-        <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-        <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-      </el-form-item>
+    <el-form :model="queryParams" ref="queryRef" v-show="showSearch" label-width="90px" class="list-search">
+      <el-row :gutter="16">
+        <el-col :span="6">
+          <el-form-item label="刷写记录号" prop="flashNo">
+            <el-input v-model="queryParams.flashNo" placeholder="请输入刷写记录号" clearable @keyup.enter="handleQuery()" />
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="SN编码" prop="snCode">
+            <el-input v-model="queryParams.snCode" placeholder="请输入SN编码" clearable @keyup.enter="handleQuery()" />
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="工单号" prop="woNo">
+            <el-input v-model="queryParams.woNo" placeholder="请输入工单号" clearable @keyup.enter="handleQuery()" />
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="设备编码" prop="equipmentCode">
+            <el-input v-model="queryParams.equipmentCode" placeholder="请输入设备编码" clearable @keyup.enter="handleQuery()" />
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="刷写结果" prop="result">
+            <el-select v-model="queryParams.result" placeholder="全部" clearable style="width: 100%">
+              <el-option v-for="dict in flashResultOptions" :key="dict.value" :label="dict.label" :value="dict.value" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="刷写模式" prop="flashMode">
+            <el-select v-model="queryParams.flashMode" placeholder="全部" clearable style="width: 100%">
+              <el-option v-for="dict in flashModeOptions" :key="dict.value" :label="dict.label" :value="dict.value" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="刷写时间">
+            <el-date-picker
+              v-model="dateRange"
+              value-format="YYYY-MM-DD"
+              type="daterange"
+              range-separator="-"
+              start-placeholder="开始日期"
+              end-placeholder="结束日期"
+              style="width: 100%"
+            />
+          </el-form-item>
+        </el-col>
+        <el-col :span="6" class="search-actions">
+          <el-form-item>
+            <el-button type="primary" icon="Search" @click="handleQuery()">搜索</el-button>
+            <el-button icon="Refresh" @click="resetQuery()">重置</el-button>
+          </el-form-item>
+        </el-col>
+      </el-row>
     </el-form>
 
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
-        <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['mes:flash:flash:add']">补录</el-button>
+        <el-button type="primary" plain icon="Plus" @click="handleAdd()" v-hasPermi="['mes:flash:flash:add']">补录</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="success" plain icon="EditPen" @click="handleConfirm" v-hasPermi="['mes:flash:flash:confirm']">刷写作业确认</el-button>
+        <el-button type="success" plain icon="EditPen" @click="handleConfirm()" v-hasPermi="['mes:flash:flash:confirm']">刷写作业确认</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button type="warning" plain icon="Search" @click="pendingPanel = !pendingPanel">待刷写任务</el-button>
@@ -55,7 +73,7 @@
           >删除</el-button
         >
       </el-col>
-      <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" />
+      <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
     <!-- 待刷写任务面板(按工单/流转卡拉取在制SN待刷清单) -->
@@ -75,11 +93,11 @@
             placeholder="输入工单号(如 SCGD202608180001)"
             clearable
             style="width: 220px"
-            @keyup.enter="loadPending"
+            @keyup.enter="loadPending()"
           />
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" icon="Search" :loading="pendingLoading" @click="loadPending">查询待刷</el-button>
+          <el-button type="primary" icon="Search" :loading="pendingLoading" @click="loadPending()">查询待刷</el-button>
           <el-button
             icon="Refresh"
             @click="
@@ -163,7 +181,7 @@
 
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
-    <!-- 补录/纠错弹窗 -->
+    <!-- 补录/纠错/作业确认弹窗(SN 刷写特殊功能, 三态共用本地管理) -->
     <el-dialog :title="dialog.title" v-model="dialog.visible" width="640px" append-to-body>
       <el-form ref="formRef" :model="form" :rules="rules" label-width="110px">
         <el-row :gutter="20">
@@ -340,18 +358,14 @@ import type { FwFlashRecordVO, FwFlashRecordQuery, FwFlashRecordForm, PendingFla
 import { listFirmware } from '@/api/mes/flash/firmware';
 import { listContent } from '@/api/mes/flash/content';
 import { listEquipment } from '@/api/mes/eq/equipment';
+import type { FormInstance } from 'element-plus';
+import { useCrud } from '@/composables/useCrud';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 
-const flashList = ref<FwFlashRecordVO[]>([]);
-const loading = ref(true);
-const showSearch = ref(true);
-const ids = ref<number[]>([]);
-const multiple = ref(true);
-const total = ref(0);
 const dateRange = ref<string[]>([]);
 
-const queryParams = reactive<FwFlashRecordQuery>({
+const queryParams = ref<FwFlashRecordQuery>({
   pageNum: 1,
   pageSize: 10,
   flashNo: undefined,
@@ -360,7 +374,7 @@ const queryParams = reactive<FwFlashRecordQuery>({
   equipmentCode: undefined,
   result: undefined,
   flashMode: undefined
-} as any);
+});
 
 const flashResultOptions = [
   { value: 'PASS', label: '通过' },
@@ -371,7 +385,38 @@ const flashModeOptions = [
   { value: 'MANUAL', label: '手动' }
 ];
 
-/** 弹窗表单 */
+// 列表骨架（补录/纠错/刷写作业确认为三态共用弹窗 + 待刷任务面板，均为本地管理；
+// formRef/initForm 仅占位满足 useCrud 签名）
+const {
+  loading,
+  list: flashList,
+  total,
+  ids,
+  multiple,
+  showSearch,
+  getList,
+  handleQuery,
+  handleSelectionChange
+} = useCrud({
+  apis: { list: listFlash, get: getFlash, add: addFlash, update: updateFlash, del: delFlash },
+  idField: 'flashRecordId',
+  entityName: '刷写记录',
+  formRef: ref<FormInstance>(),
+  queryParams,
+  initForm: () => ({}),
+  beforeList: (query: any) => {
+    proxy?.addDateRange(query, dateRange.value);
+  }
+});
+
+function resetQuery() {
+  proxy?.resetForm('queryRef');
+  dateRange.value = [];
+  handleQuery();
+}
+
+// ==================== 补录/纠错/刷写作业确认弹窗 ====================
+/** 弹窗表单(isConfirm 区分作业确认与补录/纠错) */
 const dialog = reactive<{ visible: boolean; title: string; isConfirm: boolean }>({ visible: false, title: '', isConfirm: false });
 const formRef = ref<ElFormInstance>();
 const form = ref<FwFlashRecordForm>({ result: 'PASS', retryCount: 0, flashMode: 'AUTO' } as any);
@@ -460,38 +505,7 @@ function resetFormData() {
     flashMode: 'AUTO',
     remark: undefined
   } as any;
-  proxy?.resetForm('formRef');
-}
-
-/** 查询列表 */
-function getList() {
-  loading.value = true;
-  const params = { ...queryParams };
-  proxy?.addDateRange(params, dateRange.value);
-  listFlash(params)
-    .then((res: any) => {
-      flashList.value = res.rows;
-      total.value = res.total;
-    })
-    .finally(() => {
-      loading.value = false;
-    });
-}
-
-function handleQuery() {
-  queryParams.pageNum = 1;
-  getList();
-}
-
-function resetQuery() {
-  proxy?.resetForm('queryRef');
-  dateRange.value = [];
-  handleQuery();
-}
-
-function handleSelectionChange(selection: any[]) {
-  ids.value = selection.map((item) => item.flashRecordId);
-  multiple.value = !selection.length;
+  formRef.value?.clearValidate();
 }
 
 /** 补录 */
@@ -541,7 +555,7 @@ function handleEdit(row: FwFlashRecordVO) {
   snOptions.value = [{ snId: r.snId, snCode: r.snCode, woNo: r.woNo, snStatus: '' }];
 }
 
-/** 提交 */
+/** 提交(作业确认/纠错/补录三分支) */
 function submitForm() {
   formRef.value?.validate((valid: boolean) => {
     if (!valid) return;
@@ -582,7 +596,7 @@ function handleDetail(row: FwFlashRecordVO) {
 }
 const detail = reactive<{ visible: boolean; data: any }>({ visible: false, data: {} });
 
-/** 删除 */
+/** 删除(仅 MANUAL 可删, AUTO 作业记录后端拒绝删除) */
 function handleDelete(row?: FwFlashRecordVO) {
   const delIds = row ? [row.flashRecordId] : ids.value;
   proxy?.$modal
@@ -598,10 +612,6 @@ function handleDelete(row?: FwFlashRecordVO) {
     })
     .catch(() => {});
 }
-
-onMounted(() => {
-  getList();
-});
 
 // ==================== 待刷写任务面板(按工单/流转卡拉取在制SN待刷清单) ====================
 const pendingPanel = ref(false);
@@ -667,4 +677,6 @@ function handlePendingFlash(row: PendingFlashTaskVO) {
     dialog.visible = true;
   });
 }
+
+getList();
 </script>

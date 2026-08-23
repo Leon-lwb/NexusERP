@@ -1,81 +1,80 @@
 <template>
-  <div class="p-2">
-    <el-card>
-      <el-form :model="queryParams" ref="queryFormRef" v-show="showSearch" label-width="90px" class="list-search">
-        <el-row :gutter="16">
-          <el-col :span="6">
-            <el-form-item label="状态" prop="status">
-              <el-select v-model="queryParams.status" placeholder="请选择" clearable style="width: 100%">
-                <el-option v-for="dict in tg_usage_status" :key="dict.value" :label="dict.label" :value="dict.value" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="6" class="search-actions">
-            <el-form-item>
-              <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-              <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-            </el-form-item>
-          </el-col>
-        </el-row>
-      </el-form>
-
-      <el-row :gutter="10" class="mb8">
-        <el-col :span="1.5"
-          ><el-button type="success" plain icon="Plus" @click="handleAdd" v-hasPermi="['mes:tg:usage:add']">新增记录</el-button></el-col
-        >
-        <el-col :span="1.5"
-          ><el-button type="danger" plain icon="Delete" :disabled="!ids.length" @click="() => handleDelete()" v-hasPermi="['mes:tg:usage:remove']"
-            >删除</el-button
-          ></el-col
-        >
-        <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
+  <div class="app-container">
+    <el-form :model="queryParams" ref="queryRef" v-show="showSearch" label-width="90px" class="list-search">
+      <el-row :gutter="16">
+        <el-col :span="6">
+          <el-form-item label="状态" prop="status">
+            <el-select v-model="queryParams.status" placeholder="请选择" clearable style="width: 100%">
+              <el-option v-for="dict in tg_usage_status" :key="dict.value" :label="dict.label" :value="dict.value" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :span="6" class="search-actions">
+          <el-form-item>
+            <el-button type="primary" icon="Search" @click="handleQuery()">搜索</el-button>
+            <el-button icon="Refresh" @click="resetQuery()">重置</el-button>
+          </el-form-item>
+        </el-col>
       </el-row>
+    </el-form>
 
-      <el-table v-loading="loading" :data="dataList" show-overflow-tooltip @selection-change="handleSelectionChange">
-        <el-table-column type="selection" width="55" align="center" />
-        <el-table-column label="工装编码" prop="toolingCode" min-width="140">
-          <template #default="scope">{{ scope.row.toolingCode || scope.row.toolingId }}</template>
-        </el-table-column>
-        <el-table-column label="工单编号" prop="woNo" width="140" />
-        <el-table-column label="工位" prop="workstationName" width="120" />
-        <el-table-column label="操作员" prop="operatorName" width="100" />
-        <el-table-column label="领用时间" prop="checkoutTime" width="160" />
-        <el-table-column label="归还时间" prop="returnTime" width="160" />
-        <el-table-column label="使用次数" prop="usageCount" align="right" width="90" />
-        <el-table-column label="使用时长" prop="usageHours" align="right" width="90" />
-        <el-table-column label="状态" prop="status" align="center" width="90">
-          <template #default="scope"><dict-tag :options="tg_usage_status" :value="scope.row.status" /></template>
-        </el-table-column>
-        <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="160" :show-overflow-tooltip="false">
-          <template #default="scope">
-            <el-button link type="primary" icon="Edit" @click="handleEdit(scope.row)" v-hasPermi="['mes:tg:usage:edit']">编辑</el-button>
-            <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['mes:tg:usage:remove']">删除</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
-      <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
-    </el-card>
+    <el-row :gutter="10" class="mb8">
+      <el-col :span="1.5">
+        <el-button type="success" plain icon="Plus" @click="handleAdd()" v-hasPermi="['mes:tg:usage:add']">新增记录</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete()" v-hasPermi="['mes:tg:usage:remove']"
+          >删除</el-button
+        >
+      </el-col>
+      <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
+    </el-row>
 
-    <el-dialog :title="dialog.title" v-model="dialog.visible" width="500px" append-to-body>
-      <el-form ref="usageFormRef" :model="form" :rules="rules" label-width="90px">
+    <el-table v-loading="loading" :data="list" show-overflow-tooltip @selection-change="handleSelectionChange">
+      <el-table-column type="selection" width="55" align="center" />
+      <el-table-column label="工装编码" prop="toolingCode" min-width="140">
+        <template #default="scope">{{ scope.row.toolingCode || scope.row.toolingId }}</template>
+      </el-table-column>
+      <el-table-column label="工单编号" prop="woNo" width="140" />
+      <el-table-column label="工位" prop="workstationName" width="120" />
+      <el-table-column label="操作员" prop="operatorName" width="100" />
+      <el-table-column label="领用时间" prop="checkoutTime" width="160" />
+      <el-table-column label="归还时间" prop="returnTime" width="160" />
+      <el-table-column label="使用次数" prop="usageCount" align="right" width="90" />
+      <el-table-column label="使用时长" prop="usageHours" align="right" width="90" />
+      <el-table-column label="状态" prop="status" align="center" width="90">
+        <template #default="scope"><dict-tag :options="tg_usage_status" :value="scope.row.status" /></template>
+      </el-table-column>
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="160" :show-overflow-tooltip="false">
+        <template #default="scope">
+          <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['mes:tg:usage:edit']">编辑</el-button>
+          <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['mes:tg:usage:remove']">删除</el-button>
+        </template>
+      </el-table-column>
+    </el-table>
+    <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
+
+    <!-- 添加或修改使用记录对话框 -->
+    <el-dialog :title="title" v-model="open" width="500px" append-to-body>
+      <el-form ref="usageRef" :model="form" :rules="rules" label-width="90px">
         <el-form-item label="工装" prop="toolingId">
           <el-input v-model="form.toolingName" placeholder="请选择工装" readonly>
-            <template #append><el-button icon="Search" @click="openToolingDialog" /></template>
+            <template #append><el-button icon="Search" @click="openToolingDialog()" /></template>
           </el-input>
         </el-form-item>
         <el-form-item label="工单">
           <el-input v-model="form.woNo" placeholder="可选,选择工单" readonly>
-            <template #append><el-button icon="Search" @click="openWoDialog" /></template>
+            <template #append><el-button icon="Search" @click="openWoDialog()" /></template>
           </el-input>
         </el-form-item>
         <el-form-item label="工位">
           <el-input v-model="form.workstationName" placeholder="可选,选择工位" readonly>
-            <template #append><el-button icon="Search" @click="openWorkstationDialog" /></template>
+            <template #append><el-button icon="Search" @click="openWorkstationDialog()" /></template>
           </el-input>
         </el-form-item>
         <el-form-item label="操作员">
           <el-input v-model="form.operatorName" placeholder="请选择操作员" readonly>
-            <template #append><el-button icon="Search" @click="openUserDialog" /></template>
+            <template #append><el-button icon="Search" @click="openUserDialog()" /></template>
           </el-input>
         </el-form-item>
         <el-row :gutter="20">
@@ -98,16 +97,17 @@
         <el-form-item label="备注"><el-input v-model="form.remark" type="textarea" :rows="2" /></el-form-item>
       </el-form>
       <template #footer>
-        <el-button type="primary" @click="submitForm">确 定</el-button>
-        <el-button @click="dialog.visible = false">取 消</el-button>
+        <el-button type="primary" @click="submitForm()">确 定</el-button>
+        <el-button @click="cancel()">取 消</el-button>
       </template>
     </el-dialog>
 
+    <!-- 工装选择对话框 -->
     <el-dialog v-model="toolingDialog.visible" title="选择工装" width="800px" append-to-body>
       <el-form :model="toolingDialog.query" :inline="true">
-        <el-form-item label="编码"><el-input v-model="toolingDialog.query.toolingCode" clearable @keyup.enter="queryToolings" /></el-form-item>
-        <el-form-item label="名称"><el-input v-model="toolingDialog.query.toolingName" clearable @keyup.enter="queryToolings" /></el-form-item>
-        <el-form-item><el-button type="primary" icon="Search" @click="queryToolings">搜索</el-button></el-form-item>
+        <el-form-item label="编码"><el-input v-model="toolingDialog.query.toolingCode" clearable @keyup.enter="queryToolings()" /></el-form-item>
+        <el-form-item label="名称"><el-input v-model="toolingDialog.query.toolingName" clearable @keyup.enter="queryToolings()" /></el-form-item>
+        <el-form-item><el-button type="primary" icon="Search" @click="queryToolings()">搜索</el-button></el-form-item>
       </el-form>
       <el-table :data="toolingDialog.list" height="380" @row-dblclick="selectTooling">
         <el-table-column label="工装编码" prop="toolingCode" width="150" />
@@ -128,11 +128,12 @@
       />
     </el-dialog>
 
+    <!-- 操作员选择对话框 -->
     <el-dialog v-model="userDialog.visible" title="选择操作员" width="640px" append-to-body>
       <el-form :model="userDialog.query" :inline="true">
-        <el-form-item label="账号"><el-input v-model="userDialog.query.userName" clearable @keyup.enter="queryUsers" /></el-form-item>
-        <el-form-item label="昵称"><el-input v-model="userDialog.query.nickName" clearable @keyup.enter="queryUsers" /></el-form-item>
-        <el-form-item><el-button type="primary" icon="Search" @click="queryUsers">搜索</el-button></el-form-item>
+        <el-form-item label="账号"><el-input v-model="userDialog.query.userName" clearable @keyup.enter="queryUsers()" /></el-form-item>
+        <el-form-item label="昵称"><el-input v-model="userDialog.query.nickName" clearable @keyup.enter="queryUsers()" /></el-form-item>
+        <el-form-item><el-button type="primary" icon="Search" @click="queryUsers()">搜索</el-button></el-form-item>
       </el-form>
       <el-table :data="userDialog.list" height="380" @row-dblclick="selectUser">
         <el-table-column label="账号" prop="userName" width="140" />
@@ -150,10 +151,11 @@
       />
     </el-dialog>
 
+    <!-- 工单选择对话框 -->
     <el-dialog v-model="woDialog.visible" title="选择工单" width="800px" append-to-body>
       <el-form :model="woDialog.query" :inline="true">
-        <el-form-item label="工单编号"><el-input v-model="woDialog.query.woNo" clearable @keyup.enter="queryWos" /></el-form-item>
-        <el-form-item><el-button type="primary" icon="Search" @click="queryWos">搜索</el-button></el-form-item>
+        <el-form-item label="工单编号"><el-input v-model="woDialog.query.woNo" clearable @keyup.enter="queryWos()" /></el-form-item>
+        <el-form-item><el-button type="primary" icon="Search" @click="queryWos()">搜索</el-button></el-form-item>
       </el-form>
       <el-table :data="woDialog.list" height="380" @row-dblclick="selectWo">
         <el-table-column label="工单编号" prop="woNo" width="160" />
@@ -173,15 +175,16 @@
       />
     </el-dialog>
 
+    <!-- 工位选择对话框 -->
     <el-dialog v-model="workstationDialog.visible" title="选择工位" width="800px" append-to-body>
       <el-form :model="workstationDialog.query" :inline="true">
         <el-form-item label="编码"
-          ><el-input v-model="workstationDialog.query.workstationCode" clearable @keyup.enter="queryWorkstations"
+          ><el-input v-model="workstationDialog.query.workstationCode" clearable @keyup.enter="queryWorkstations()"
         /></el-form-item>
         <el-form-item label="名称"
-          ><el-input v-model="workstationDialog.query.workstationName" clearable @keyup.enter="queryWorkstations"
+          ><el-input v-model="workstationDialog.query.workstationName" clearable @keyup.enter="queryWorkstations()"
         /></el-form-item>
-        <el-form-item><el-button type="primary" icon="Search" @click="queryWorkstations">搜索</el-button></el-form-item>
+        <el-form-item><el-button type="primary" icon="Search" @click="queryWorkstations()">搜索</el-button></el-form-item>
       </el-form>
       <el-table :data="workstationDialog.list" height="380" @row-dblclick="selectWorkstation">
         <el-table-column label="工位编码" prop="workstationCode" width="160" />
@@ -203,24 +206,18 @@
 
 <script setup lang="ts" name="TgUsageRecord">
 import { listUsageRecord, getUsageRecord, addUsageRecord, updateUsageRecord, delUsageRecord } from '@/api/mes/tg/usage-record';
-import type { TgUsageRecordVO, TgUsageRecordForm, TgUsageRecordQuery } from '@/api/mes/tg/usage-record';
+import type { TgUsageRecordVO, TgUsageRecordQuery } from '@/api/mes/tg/usage-record';
 import { listTooling } from '@/api/mes/tg/tooling';
 import { listUser } from '@/api/system/user';
 import { listWorkOrder } from '@/api/mes/pro/workorder';
 import { listWorkstation } from '@/api/erp/bd/workstation';
+import type { FormInstance } from 'element-plus';
+import { useCrud } from '@/composables/useCrud';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { tg_usage_status, mes_tooling_status, prd_wo_status } = toRefs<any>(proxy?.useDict('tg_usage_status', 'mes_tooling_status', 'prd_wo_status'));
-const dataList = ref<TgUsageRecordVO[]>([]);
-const total = ref(0);
-const loading = ref(true);
-const ids = ref<number[]>([]);
-const queryParams = reactive<TgUsageRecordQuery>({ pageNum: 1, pageSize: 10 } as any);
-const showSearch = ref(true);
-const queryFormRef = ref<ElFormInstance>();
-const usageFormRef = ref<ElFormInstance>();
-const dialog = reactive({ visible: false, title: '' });
-const form = reactive<TgUsageRecordForm & { toolingName?: string }>({ toolingId: 0, status: 'OUT' } as any);
+
+const usageRef = ref<FormInstance>();
 const toolingDialog = reactive({
   visible: false,
   list: [] as any[],
@@ -235,35 +232,43 @@ const workstationDialog = reactive({
   total: 0,
   query: { pageNum: 1, pageSize: 10, workstationCode: '', workstationName: '' }
 });
-const rules: ElFormRules = {
+
+const queryParams = ref<TgUsageRecordQuery>({
+  pageNum: 1,
+  pageSize: 10,
+  status: undefined
+});
+
+const rules = {
   toolingId: [{ required: true, message: '工装不能为空', trigger: 'change' }]
 };
 
-const getList = async () => {
-  loading.value = true;
-  try {
-    const res = await listUsageRecord(queryParams);
-    dataList.value = res.rows;
-    total.value = res.total;
-  } finally {
-    loading.value = false;
-  }
-};
-const handleQuery = () => {
-  queryParams.pageNum = 1;
-  getList();
-};
-const resetQuery = () => {
-  proxy!.resetForm('queryFormRef');
-  handleQuery();
-};
-const handleSelectionChange = (selection: TgUsageRecordVO[]) => {
-  ids.value = selection.map((i) => i.usageId);
-};
-const resetForm = () => {
-  Object.assign(form, {
+const {
+  loading,
+  list,
+  total,
+  open,
+  title,
+  multiple,
+  showSearch,
+  form,
+  getList,
+  handleQuery,
+  handleDelete,
+  handleSelectionChange,
+  submitForm,
+  cancel,
+  handleAdd,
+  handleUpdate
+} = useCrud<TgUsageRecordVO & { toolingName?: string }, TgUsageRecordQuery>({
+  apis: { list: listUsageRecord, get: getUsageRecord, add: addUsageRecord, update: updateUsageRecord, del: delUsageRecord },
+  idField: 'usageId',
+  entityName: '使用记录',
+  formRef: usageRef,
+  queryParams,
+  initForm: () => ({
     usageId: undefined,
-    toolingId: 0,
+    toolingId: undefined,
     toolingName: '',
     woId: undefined,
     woNo: '',
@@ -275,42 +280,14 @@ const resetForm = () => {
     usageHours: 0,
     status: 'OUT',
     remark: ''
-  });
-  usageFormRef.value?.resetFields();
-};
-const handleAdd = () => {
-  resetForm();
-  dialog.title = '新增使用记录';
-  dialog.visible = true;
-};
-const handleEdit = async (row: TgUsageRecordVO) => {
-  resetForm();
-  const res = await getUsageRecord(row.usageId);
-  Object.assign(form, res.data);
-  dialog.title = '编辑使用记录';
-  dialog.visible = true;
-};
-const submitForm = () => {
-  usageFormRef.value?.validate(async (valid) => {
-    if (!valid) return;
-    if (form.usageId) {
-      await updateUsageRecord(form);
-      proxy!.$modal.msgSuccess('修改成功');
-    } else {
-      await addUsageRecord(form);
-      proxy!.$modal.msgSuccess('新增成功');
-    }
-    dialog.visible = false;
-    getList();
-  });
-};
-const handleDelete = async (row?: TgUsageRecordVO) => {
-  const targetIds = row ? [row.usageId] : ids.value;
-  await proxy!.$modal.confirm('确认删除选中使用记录?');
-  await delUsageRecord(targetIds);
-  proxy!.$modal.msgSuccess('删除成功');
-  getList();
-};
+  })
+});
+
+function resetQuery() {
+  proxy?.resetForm('queryRef');
+  handleQuery();
+}
+
 const openToolingDialog = () => {
   toolingDialog.visible = true;
   queryToolings();
@@ -322,8 +299,8 @@ const queryToolings = () => {
   });
 };
 const selectTooling = (row: any) => {
-  form.toolingId = row.toolingId;
-  form.toolingName = row.toolingName;
+  form.value.toolingId = row.toolingId;
+  form.value.toolingName = row.toolingName;
   toolingDialog.visible = false;
 };
 const openUserDialog = () => {
@@ -337,8 +314,8 @@ const queryUsers = () => {
   });
 };
 const selectUser = (row: any) => {
-  form.operatorId = row.userId;
-  form.operatorName = row.nickName;
+  form.value.operatorId = row.userId;
+  form.value.operatorName = row.nickName;
   userDialog.visible = false;
 };
 const openWoDialog = () => {
@@ -352,8 +329,8 @@ const queryWos = () => {
   });
 };
 const selectWo = (row: any) => {
-  form.woId = row.mesWoId;
-  form.woNo = row.woNo;
+  form.value.woId = row.mesWoId;
+  form.value.woNo = row.woNo;
   woDialog.visible = false;
 };
 const openWorkstationDialog = () => {
@@ -367,9 +344,10 @@ const queryWorkstations = () => {
   });
 };
 const selectWorkstation = (row: any) => {
-  form.workstationId = row.workstationId;
-  form.workstationName = row.workstationName;
+  form.value.workstationId = row.workstationId;
+  form.value.workstationName = row.workstationName;
   workstationDialog.visible = false;
 };
-onMounted(() => getList());
+
+getList();
 </script>

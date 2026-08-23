@@ -1,110 +1,102 @@
 <template>
-  <div class="p-2">
-    <el-card>
-      <el-form :model="queryParams" ref="queryFormRef" v-show="showSearch" label-width="100px" class="list-search">
-        <el-row :gutter="16">
-          <el-col :span="6">
-            <el-form-item label="设备编码" prop="equipmentCode">
-              <el-input v-model="queryParams.equipmentCode" placeholder="请输入设备编码" clearable @keyup.enter="handleQuery" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="6">
-            <el-form-item label="设备名称" prop="equipmentName">
-              <el-input v-model="queryParams.equipmentName" placeholder="请输入设备名称" clearable @keyup.enter="handleQuery" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="6">
-            <el-form-item label="设备类型" prop="equipmentType">
-              <el-select v-model="queryParams.equipmentType" placeholder="请选择类型" clearable style="width: 100%">
-                <el-option v-for="d in mes_equipment_type" :key="d.value" :label="d.label" :value="d.value" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="6">
-            <el-form-item label="状态" prop="status">
-              <el-select v-model="queryParams.status" placeholder="请选择状态" clearable style="width: 100%">
-                <el-option v-for="d in mes_equipment_status" :key="d.value" :label="d.label" :value="d.value" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row>
-          <el-col :span="24" class="search-actions" style="text-align: right">
-            <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-          </el-col>
-        </el-row>
-      </el-form>
-
-      <el-row :gutter="10" class="mb8">
-        <el-col :span="1.5">
-          <el-button type="success" plain icon="Plus" @click="handleOpenAdd" v-hasPermi="['mes:eq:equipment:add']">新增设备</el-button>
+  <div class="app-container">
+    <el-form :model="queryParams" ref="queryRef" v-show="showSearch" label-width="100px" class="list-search">
+      <el-row :gutter="16">
+        <el-col :span="6">
+          <el-form-item label="设备编码" prop="equipmentCode">
+            <el-input v-model="queryParams.equipmentCode" placeholder="请输入设备编码" clearable @keyup.enter="handleQuery()" />
+          </el-form-item>
         </el-col>
-        <el-col :span="1.5">
-          <el-button
-            type="danger"
-            plain
-            icon="Delete"
-            :disabled="selectedIds.length === 0"
-            @click="handleBatchDelete"
-            v-hasPermi="['mes:eq:equipment:remove']"
-            >批量删除</el-button
-          >
+        <el-col :span="6">
+          <el-form-item label="设备名称" prop="equipmentName">
+            <el-input v-model="queryParams.equipmentName" placeholder="请输入设备名称" clearable @keyup.enter="handleQuery()" />
+          </el-form-item>
         </el-col>
-        <el-col :span="1.5">
-          <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['mes:eq:equipment:export']">导出</el-button>
+        <el-col :span="6">
+          <el-form-item label="设备类型" prop="equipmentType">
+            <el-select v-model="queryParams.equipmentType" placeholder="请选择类型" clearable style="width: 100%">
+              <el-option v-for="d in mes_equipment_type" :key="d.value" :label="d.label" :value="d.value" />
+            </el-select>
+          </el-form-item>
         </el-col>
-        <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
+        <el-col :span="6">
+          <el-form-item label="状态" prop="status">
+            <el-select v-model="queryParams.status" placeholder="请选择状态" clearable style="width: 100%">
+              <el-option v-for="d in mes_equipment_status" :key="d.value" :label="d.label" :value="d.value" />
+            </el-select>
+          </el-form-item>
+        </el-col>
       </el-row>
+      <el-row>
+        <el-col :span="24" class="search-actions" style="text-align: right">
+          <el-button type="primary" icon="Search" @click="handleQuery()">搜索</el-button>
+          <el-button icon="Refresh" @click="resetQuery()">重置</el-button>
+        </el-col>
+      </el-row>
+    </el-form>
 
-      <el-table v-loading="loading" :data="dataList" show-overflow-tooltip @selection-change="handleSelectionChange">
-        <el-table-column type="selection" width="55" align="center" />
-        <el-table-column label="设备编码" prop="equipmentCode" />
-        <el-table-column label="设备名称" prop="equipmentName" min-width="120" show-overflow-tooltip />
-        <el-table-column label="类型" prop="equipmentType" align="center">
-          <template #default="scope">
-            <dict-tag v-if="scope.row.equipmentType" :options="mes_equipment_type" :value="scope.row.equipmentType" />
-            <span v-else>-</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="型号" prop="model">
-          <template #default="scope">{{ scope.row.model || '-' }}</template>
-        </el-table-column>
-        <el-table-column label="工作中心" prop="workcenterCode">
-          <template #default="scope">{{ scope.row.workcenterCode || '-' }}</template>
-        </el-table-column>
-        <el-table-column label="安装位置" prop="location" min-width="120" show-overflow-tooltip>
-          <template #default="scope">{{ scope.row.location || '-' }}</template>
-        </el-table-column>
-        <el-table-column label="状态" prop="status" align="center">
-          <template #default="scope">
-            <dict-tag :options="mes_equipment_status" :value="scope.row.status" />
-          </template>
-        </el-table-column>
-        <el-table-column label="IoT 在线" align="center">
-          <template #default="scope">
-            <el-tag v-if="scope.row.iotStatus === 'ONLINE'" type="success" size="small">在线</el-tag>
-            <el-tag v-else-if="scope.row.iotStatus === 'OFFLINE'" type="info" size="small">离线</el-tag>
-            <el-tag v-else-if="scope.row.iotStatus === 'UNBOUND'" type="warning" size="small">未关联</el-tag>
-            <el-tag v-else type="danger" size="small">未知</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="300" :show-overflow-tooltip="false">
-          <template #default="scope">
-            <el-button link type="primary" icon="View" @click="handleOpenDetail(scope.row)">详情</el-button>
-            <el-button link type="primary" icon="Edit" @click="handleOpenEdit(scope.row)" v-hasPermi="['mes:eq:equipment:edit']">编辑</el-button>
-            <el-button v-if="scope.row.iotDeviceId" link type="primary" icon="View" @click="handleViewIotLatest(scope.row)">IoT数据</el-button>
-            <el-button link type="primary" icon="Link" @click="handleBindIot(scope.row)" v-hasPermi="['mes:eq:equipment:edit']">关联IoT</el-button>
-            <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['mes:eq:equipment:remove']">删除</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
+    <el-row :gutter="10" class="mb8">
+      <el-col :span="1.5">
+        <el-button type="success" plain icon="Plus" @click="handleAdd()" v-hasPermi="['mes:eq:equipment:add']">新增设备</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete()" v-hasPermi="['mes:eq:equipment:remove']"
+          >批量删除</el-button
+        >
+      </el-col>
+      <el-col :span="1.5">
+        <el-button type="warning" plain icon="Download" @click="handleExport()" v-hasPermi="['mes:eq:equipment:export']">导出</el-button>
+      </el-col>
+      <right-toolbar v-model:showSearch="showSearch" @queryTable="getList()"></right-toolbar>
+    </el-row>
 
-      <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
-    </el-card>
+    <el-table v-loading="loading" :data="dataList" show-overflow-tooltip @selection-change="handleSelectionChange">
+      <el-table-column type="selection" width="55" align="center" />
+      <el-table-column label="设备编码" prop="equipmentCode" />
+      <el-table-column label="设备名称" prop="equipmentName" min-width="120" show-overflow-tooltip />
+      <el-table-column label="类型" prop="equipmentType" align="center">
+        <template #default="scope">
+          <dict-tag v-if="scope.row.equipmentType" :options="mes_equipment_type" :value="scope.row.equipmentType" />
+          <span v-else>-</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="型号" prop="model">
+        <template #default="scope">{{ scope.row.model || '-' }}</template>
+      </el-table-column>
+      <el-table-column label="工作中心" prop="workcenterCode">
+        <template #default="scope">{{ scope.row.workcenterCode || '-' }}</template>
+      </el-table-column>
+      <el-table-column label="安装位置" prop="location" min-width="120" show-overflow-tooltip>
+        <template #default="scope">{{ scope.row.location || '-' }}</template>
+      </el-table-column>
+      <el-table-column label="状态" prop="status" align="center">
+        <template #default="scope">
+          <dict-tag :options="mes_equipment_status" :value="scope.row.status" />
+        </template>
+      </el-table-column>
+      <el-table-column label="IoT 在线" align="center">
+        <template #default="scope">
+          <el-tag v-if="scope.row.iotStatus === 'ONLINE'" type="success" size="small">在线</el-tag>
+          <el-tag v-else-if="scope.row.iotStatus === 'OFFLINE'" type="info" size="small">离线</el-tag>
+          <el-tag v-else-if="scope.row.iotStatus === 'UNBOUND'" type="warning" size="small">未关联</el-tag>
+          <el-tag v-else type="danger" size="small">未知</el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="300" :show-overflow-tooltip="false">
+        <template #default="scope">
+          <el-button link type="primary" icon="View" @click="handleOpenDetail(scope.row)">详情</el-button>
+          <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['mes:eq:equipment:edit']">编辑</el-button>
+          <el-button v-if="scope.row.iotDeviceId" link type="primary" icon="View" @click="handleViewIotLatest(scope.row)">IoT数据</el-button>
+          <el-button link type="primary" icon="Link" @click="handleBindIot(scope.row)" v-hasPermi="['mes:eq:equipment:edit']">关联IoT</el-button>
+          <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['mes:eq:equipment:remove']">删除</el-button>
+        </template>
+      </el-table-column>
+    </el-table>
 
-    <!-- 新增/编辑设备对话框 -->
-    <el-dialog v-model="dialog.visible" :title="form.equipmentId ? '编辑设备' : '新增设备'" width="640px" append-to-body>
+    <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
+
+    <!-- 添加或修改设备对话框 -->
+    <el-dialog :title="title" v-model="open" width="640px" append-to-body>
       <el-form :model="form" label-width="100px" ref="formRef" :rules="formRules">
         <el-row :gutter="12">
           <el-col :span="12">
@@ -200,7 +192,7 @@
         </el-row>
       </el-form>
       <template #footer>
-        <el-button @click="dialog.visible = false">取消</el-button>
+        <el-button @click="cancel">取消</el-button>
         <el-button type="primary" @click="submitForm">确认</el-button>
       </template>
     </el-dialog>
@@ -229,7 +221,7 @@
       </el-form>
       <template #footer>
         <el-button @click="iotBindDialog.visible = false">取消</el-button>
-        <el-button type="primary" @click="submitIotBind">确定</el-button>
+        <el-button type="primary" @click="submitIotBind()">确定</el-button>
       </template>
     </el-dialog>
 
@@ -259,7 +251,7 @@
         </el-tab-pane>
 
         <el-tab-pane label="IoT 实时" name="iot">
-          <el-button type="primary" plain icon="Refresh" :loading="detailIotLoading" @click="loadDetailIot">刷新最新数据</el-button>
+          <el-button type="primary" plain icon="Refresh" :loading="detailIotLoading" @click="loadDetailIot()">刷新最新数据</el-button>
           <el-descriptions v-if="Object.keys(detailIotData).length > 0" :column="2" border style="margin-top: 12px">
             <el-descriptions-item v-for="(val, key) in detailIotData" :key="key" :label="String(key)">{{ val }}</el-descriptions-item>
           </el-descriptions>
@@ -371,11 +363,10 @@ import {
   delEquipment,
   getIotLatest,
   updateIotDeviceLink,
-  batchIotStatus,
-  exportEquipment
+  batchIotStatus
 } from '@/api/mes/eq/equipment';
+import type { EqEquipmentVO, EqEquipmentQuery } from '@/api/mes/eq/equipment';
 import { listIotDeviceForBind } from '@/api/iot/device';
-import type { EqEquipmentVO, EqEquipmentQuery, EqEquipmentForm } from '@/api/mes/eq/equipment';
 import WorkcenterSelect from '@/components/WorkcenterSelect/index.vue';
 import { listRepair } from '@/api/mes/eq/repair';
 import type { EqRepairVO } from '@/api/mes/eq/repair';
@@ -384,6 +375,8 @@ import type { EqMaintenanceRecordVO } from '@/api/mes/eq/maintenance-record';
 import { stationDevicesByWorkcenter } from '@/api/mes/station/device';
 import type { StationDeviceVO, ProcessInfo } from '@/api/mes/station/device';
 import { checkPermi } from '@/utils/permission';
+import type { FormInstance } from 'element-plus';
+import { useCrud } from '@/composables/useCrud';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const route = useRoute();
@@ -398,26 +391,14 @@ const { mes_equipment_status, mes_equipment_type, mes_fault_type, mes_repair_sta
   )
 );
 
-const dataList = ref<EqEquipmentVO[]>([]);
-const loading = ref(true);
-const showSearch = ref(true);
-const total = ref(0);
-const selectedIds = ref<(string | number)[]>([]);
+const formRef = ref<FormInstance>();
+const formRules = {
+  equipmentCode: [{ required: true, message: '请输入设备编码', trigger: 'blur' }],
+  equipmentName: [{ required: true, message: '请输入设备名称', trigger: 'blur' }]
+};
 
-/** 设备详情抽屉(R5) */
-const detailDrawer = ref(false);
-const detailActiveTab = ref('basic');
-const detailData = ref<EqEquipmentVO>({} as EqEquipmentVO);
-const detailIotData = ref<Record<string, string>>({});
-const detailIotLoading = ref(false);
-const detailInspectionItems = ref<{ item: string; standard: string }[]>([]);
-const detailRepairs = ref<EqRepairVO[]>([]);
-const detailMaintenance = ref<EqMaintenanceRecordVO[]>([]);
-/** 工位终端联动(M3): 该设备所属工作中心下的工位机(反向视图) */
-const hasStationPerm = checkPermi(['mes:station:device:list']);
-const detailStationDevices = ref<StationDeviceVO[]>([]);
-const detailStationProcesses = ref<ProcessInfo[]>([]);
-const detailStationMessage = ref('');
+/** 点检项结构化编辑(替代 textarea JSON) */
+const inspectionItemRows = ref<{ item: string; standard: string }[]>([]);
 
 const queryParams = ref<EqEquipmentQuery>({
   pageNum: 1,
@@ -428,29 +409,84 @@ const queryParams = ref<EqEquipmentQuery>({
   status: undefined
 });
 
-const dialog = reactive({ visible: false });
-const formRef = ref();
-const formRules = {
-  equipmentCode: [{ required: true, message: '请输入设备编码', trigger: 'blur' }],
-  equipmentName: [{ required: true, message: '请输入设备名称', trigger: 'blur' }]
-};
-const form = ref<EqEquipmentForm>({} as EqEquipmentForm);
-
-/** 点检项结构化编辑(替代 textarea JSON) */
-const inspectionItemRows = ref<{ item: string; standard: string }[]>([]);
-
-const getList = async () => {
-  loading.value = true;
-  try {
-    const res = await listEquipment(queryParams.value);
-    dataList.value = res.rows;
-    total.value = res.total;
-    // 批量查 IoT 在线状态(单次请求, 消除 N+1)
-    await loadIotStatus(dataList.value);
-  } finally {
-    loading.value = false;
+const {
+  loading,
+  list: dataList,
+  total,
+  open,
+  title,
+  multiple,
+  showSearch,
+  form,
+  getList: baseGetList,
+  handleAdd,
+  handleUpdate,
+  handleDelete,
+  handleExport,
+  handleSelectionChange,
+  submitForm,
+  cancel
+} = useCrud<EqEquipmentVO, EqEquipmentQuery>({
+  apis: {
+    list: listEquipment,
+    get: getEquipment,
+    add: addEquipment,
+    update: updateEquipment,
+    del: (ids: any) => delEquipment(Array.isArray(ids) ? ids : [ids])
+  },
+  idField: 'equipmentId',
+  entityName: '设备',
+  formRef,
+  queryParams,
+  initForm: () => ({
+    equipmentId: undefined,
+    equipmentCode: '',
+    equipmentName: '',
+    equipmentType: '',
+    model: '',
+    manufacturer: '',
+    serialNo: '',
+    workcenterId: undefined,
+    workcenterCode: '',
+    location: '',
+    purchaseDate: undefined,
+    warrantyDate: undefined,
+    status: 'NORMAL',
+    inspectionItems: '',
+    iotDeviceId: undefined,
+    remark: ''
+  }),
+  exportUrl: '/mes/eq/equipment/export',
+  exportFileName: 'equipment',
+  onReset: () => {
+    inspectionItemRows.value = [];
+  },
+  beforeSubmit: (formData: any) => {
+    // 序列化点检项为 JSON
+    formData.inspectionItems = inspectionItemRows.value.length > 0 ? JSON.stringify(inspectionItemRows.value) : '';
+  },
+  afterLoad: (data: EqEquipmentVO) => {
+    // 解析点检项 JSON 为结构化行
+    inspectionItemRows.value = [];
+    if (data.inspectionItems) {
+      try {
+        inspectionItemRows.value = JSON.parse(data.inspectionItems);
+      } catch {
+        inspectionItemRows.value = [];
+      }
+    }
   }
-};
+});
+
+/** 列表加载后批量刷新 IoT 在线状态(本地包装, 消除 N+1) */
+function getList() {
+  return baseGetList().then(() => loadIotStatus(dataList.value));
+}
+
+function handleQuery() {
+  queryParams.value.pageNum = 1;
+  return getList();
+}
 
 /** 批量查询当前页设备的 IoT 在线状态 */
 async function loadIotStatus(rows: EqEquipmentVO[]) {
@@ -539,92 +575,20 @@ async function submitIotBind() {
   }
 }
 
-const handleQuery = () => {
-  queryParams.value.pageNum = 1;
-  getList();
-};
-
-const resetQuery = () => {
-  proxy?.resetForm('queryFormRef');
-  handleQuery();
-};
-
-const resetForm = () => {
-  form.value = {
-    equipmentId: undefined,
-    equipmentCode: '',
-    equipmentName: '',
-    equipmentType: '',
-    model: '',
-    manufacturer: '',
-    serialNo: '',
-    workcenterId: undefined,
-    workcenterCode: '',
-    location: '',
-    purchaseDate: undefined,
-    warrantyDate: undefined,
-    status: 'NORMAL',
-    inspectionItems: '',
-    iotDeviceId: undefined,
-    remark: ''
-  };
-  inspectionItemRows.value = [];
-};
-
-const handleOpenAdd = () => {
-  resetForm();
-  dialog.visible = true;
-};
-
-const handleOpenEdit = async (row: EqEquipmentVO) => {
-  const res = await getEquipment(row.equipmentId);
-  form.value = { ...res.data };
-  // 解析点检项 JSON 为结构化行
-  inspectionItemRows.value = [];
-  if (form.value.inspectionItems) {
-    try {
-      inspectionItemRows.value = JSON.parse(form.value.inspectionItems);
-    } catch {
-      inspectionItemRows.value = [];
-    }
-  }
-  dialog.visible = true;
-};
-
-const submitForm = async () => {
-  await formRef.value?.validate();
-  // 序列化点检项为 JSON
-  form.value.inspectionItems = inspectionItemRows.value.length > 0 ? JSON.stringify(inspectionItemRows.value) : '';
-  if (form.value.equipmentId) {
-    await updateEquipment(form.value);
-    proxy?.$modal.msgSuccess('编辑成功');
-  } else {
-    await addEquipment(form.value);
-    proxy?.$modal.msgSuccess('新增成功');
-  }
-  dialog.visible = false;
-  getList();
-};
-
-const handleDelete = async (row: EqEquipmentVO) => {
-  await proxy?.$modal.confirm('确认删除设备"' + row.equipmentName + '"？');
-  await delEquipment([row.equipmentId]);
-  proxy?.$modal.msgSuccess('删除成功');
-  getList();
-};
-
-const handleSelectionChange = (selection: EqEquipmentVO[]) => {
-  selectedIds.value = selection.map((item) => item.equipmentId);
-};
-
-const handleBatchDelete = async () => {
-  if (selectedIds.value.length === 0) return;
-  await proxy?.$modal.confirm('确认删除选中的 ' + selectedIds.value.length + ' 台设备？');
-  await delEquipment(selectedIds.value);
-  proxy?.$modal.msgSuccess('删除成功');
-  selectedIds.value = [];
-  getList();
-};
+/** 设备详情抽屉(R5) */
+const detailDrawer = ref(false);
+const detailActiveTab = ref('basic');
+const detailData = ref<EqEquipmentVO>({} as EqEquipmentVO);
+const detailIotData = ref<Record<string, string>>({});
+const detailIotLoading = ref(false);
+const detailInspectionItems = ref<{ item: string; standard: string }[]>([]);
+const detailRepairs = ref<EqRepairVO[]>([]);
+const detailMaintenance = ref<EqMaintenanceRecordVO[]>([]);
+/** 工位终端联动(M3): 该设备所属工作中心下的工位机(反向视图) */
+const hasStationPerm = checkPermi(['mes:station:device:list']);
+const detailStationDevices = ref<StationDeviceVO[]>([]);
+const detailStationProcesses = ref<ProcessInfo[]>([]);
+const detailStationMessage = ref('');
 
 /** 打开设备详情抽屉: 加载基本信息 + 并行加载维修/保养历史 */
 const handleOpenDetail = async (row: EqEquipmentVO) => {
@@ -703,19 +667,18 @@ const parseInspectTime = (json?: string): string => {
   }
 };
 
-const handleExport = () => {
-  exportEquipment(queryParams.value);
-};
+function resetQuery() {
+  proxy?.resetForm('queryRef');
+  handleQuery();
+}
 
-onMounted(() => {
-  getList();
-  // IoT「查看MES设备」带 equipmentId 跳转时, 自动弹出该设备编辑框
-  // 注意: route.query 取得的是字符串, 雪花ID 18-19 位超出 JS 安全整数, 严禁 Number() 截断
-  const eqId = route.query.equipmentId;
-  if (eqId) {
-    handleOpenEdit({ equipmentId: eqId } as EqEquipmentVO);
-  }
-});
+getList();
+// IoT「查看MES设备」带 equipmentId 跳转时, 自动弹出该设备编辑框
+// 注意: route.query 取得的是字符串, 雪花ID 18-19 位超出 JS 安全整数, 严禁 Number() 截断
+const eqId = route.query.equipmentId;
+if (eqId) {
+  handleUpdate({ equipmentId: eqId } as EqEquipmentVO);
+}
 </script>
 
 <style scoped lang="scss">

@@ -55,7 +55,3 @@ export const updateStepGuide = (data: ProStepGuideForm) => request({ url: '/mes/
 
 /** 批量删除工序流程指引 */
 export const delStepGuide = (guideIds: number | number[]) => request({ url: `/mes/pro/step-guide/${guideIds}`, method: 'delete' });
-
-/** 导出工序流程指引 */
-export const exportStepGuide = (query?: ProStepGuideQuery): Promise<Blob> =>
-  request({ url: '/mes/pro/step-guide/export', method: 'post', params: query, responseType: 'blob' }) as unknown as Promise<Blob>;

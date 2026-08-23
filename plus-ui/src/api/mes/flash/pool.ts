@@ -27,9 +27,7 @@ export interface MesResourcePoolForm {
   remark?: string;
 }
 
-export interface MesResourcePoolQuery {
-  pageNum: number;
-  pageSize: number;
+export interface MesResourcePoolQuery extends PageQuery {
   poolName?: string;
   resourceType?: string;
   status?: string;

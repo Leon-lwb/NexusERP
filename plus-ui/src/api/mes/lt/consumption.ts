@@ -11,6 +11,7 @@ export interface LtWoConsumptionVO {
   lotCode?: string;
   materialId: number;
   materialCode?: string;
+  materialName?: string;
   consumedQty: number;
   consumedTime: string;
   operatorId?: number;

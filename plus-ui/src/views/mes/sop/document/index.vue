@@ -1,147 +1,139 @@
 <template>
-  <div class="p-2">
-    <el-card>
-      <el-form :model="queryParams" ref="queryFormRef" v-show="showSearch" label-width="90px" class="list-search">
-        <el-row :gutter="16">
-          <el-col :span="6">
-            <el-form-item label="SOP编码" prop="sopCode">
-              <el-input v-model="queryParams.sopCode" placeholder="请输入SOP编码" clearable @keyup.enter="handleQuery" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="6">
-            <el-form-item label="SOP名称" prop="sopName">
-              <el-input v-model="queryParams.sopName" placeholder="请输入SOP名称" clearable @keyup.enter="handleQuery" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="6">
-            <el-form-item label="类型" prop="sopType">
-              <el-select v-model="queryParams.sopType" placeholder="请选择类型" clearable style="width: 100%">
-                <el-option v-for="dict in mes_sop_type" :key="dict.value" :label="dict.label" :value="dict.value" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="6">
-            <el-form-item label="状态" prop="status">
-              <el-select v-model="queryParams.status" placeholder="请选择状态" clearable style="width: 100%">
-                <el-option v-for="dict in mes_sop_status" :key="dict.value" :label="dict.label" :value="dict.value" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="6" class="search-actions">
-            <el-form-item>
-              <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-              <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-            </el-form-item>
-          </el-col>
-        </el-row>
-      </el-form>
-
-      <el-row :gutter="10" class="mb8">
-        <el-col :span="1.5">
-          <el-button type="success" plain icon="Plus" @click="handleAdd" v-hasPermi="['mes:sop:document:add']">新增SOP</el-button>
+  <div class="app-container">
+    <el-form :model="queryParams" ref="queryRef" v-show="showSearch" label-width="90px" class="list-search">
+      <el-row :gutter="16">
+        <el-col :span="6">
+          <el-form-item label="SOP编码" prop="sopCode">
+            <el-input v-model="queryParams.sopCode" placeholder="请输入SOP编码" clearable @keyup.enter="handleQuery" />
+          </el-form-item>
         </el-col>
-        <el-col :span="1.5">
-          <el-button type="danger" plain icon="Delete" :disabled="!ids.length" @click="handleDelete" v-hasPermi="['mes:sop:document:remove']"
-            >删除</el-button
-          >
+        <el-col :span="6">
+          <el-form-item label="SOP名称" prop="sopName">
+            <el-input v-model="queryParams.sopName" placeholder="请输入SOP名称" clearable @keyup.enter="handleQuery" />
+          </el-form-item>
         </el-col>
-        <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
+        <el-col :span="6">
+          <el-form-item label="类型" prop="sopType">
+            <el-select v-model="queryParams.sopType" placeholder="请选择类型" clearable style="width: 100%">
+              <el-option v-for="dict in mes_sop_type" :key="dict.value" :label="dict.label" :value="dict.value" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="状态" prop="status">
+            <el-select v-model="queryParams.status" placeholder="请选择状态" clearable style="width: 100%">
+              <el-option v-for="dict in mes_sop_status" :key="dict.value" :label="dict.label" :value="dict.value" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :span="6" class="search-actions">
+          <el-form-item>
+            <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+          </el-form-item>
+        </el-col>
       </el-row>
+    </el-form>
 
-      <el-table v-loading="loading" :data="dataList" show-overflow-tooltip @selection-change="handleSelectionChange">
-        <el-table-column type="selection" width="55" align="center" />
-        <el-table-column label="SOP编码" prop="sopCode" min-width="150" />
-        <el-table-column label="SOP名称" prop="sopName" min-width="150" />
-        <el-table-column label="类型" prop="sopType" align="center" width="100">
-          <template #default="scope"><dict-tag :options="mes_sop_type" :value="scope.row.sopType" /></template>
-        </el-table-column>
-        <el-table-column label="当前版本" prop="currentVersion" align="center" width="90" />
-        <el-table-column label="文件" prop="fileType" align="center" width="80">
-          <template #default="scope">
-            <dict-tag :options="mes_sop_file_type" :value="scope.row.fileType" v-if="scope.row.fileType" />
-            <span v-else>-</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="状态" prop="status" align="center" width="90">
-          <template #default="scope"><dict-tag :options="mes_sop_status" :value="scope.row.status" /></template>
-        </el-table-column>
-        <el-table-column label="创建人" prop="createByName" width="100" />
-        <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="380" :show-overflow-tooltip="false">
-          <template #default="scope">
-            <el-button
-              link
-              type="primary"
-              icon="View"
-              @click="handlePreview(scope.row)"
-              v-if="scope.row.fileUrl"
-              v-hasPermi="['mes:sop:document:list']"
-              >预览</el-button
-            >
-            <el-button link type="primary" icon="Files" @click="handleVersions(scope.row)" v-hasPermi="['mes:sop:document:list']">版本</el-button>
-            <el-button
-              link
-              type="primary"
-              icon="Edit"
-              @click="handleEdit(scope.row)"
-              v-if="['DRAFT', 'ARCHIVED'].includes(scope.row.status)"
-              v-hasPermi="['mes:sop:document:edit']"
-              >编辑</el-button
-            >
-            <el-button
-              link
-              type="success"
-              icon="Upload"
-              @click="handleAddVersion(scope.row)"
-              v-if="['DRAFT', 'PUBLISHED'].includes(scope.row.status)"
-              v-hasPermi="['mes:sop:document:add']"
-              >新增版本</el-button
-            >
-            <el-button
-              link
-              type="warning"
-              icon="Promotion"
-              @click="handleSubmit(scope.row)"
-              v-if="scope.row.status === 'DRAFT'"
-              v-hasPermi="['mes:sop:document:submit']"
-              >提交审批</el-button
-            >
-            <el-button
-              link
-              type="success"
-              icon="Check"
-              @click="handleApprove(scope.row)"
-              v-if="scope.row.status === 'IN_REVIEW'"
-              v-hasPermi="['mes:sop:document:approve']"
-              >通过</el-button
-            >
-            <el-button
-              link
-              type="danger"
-              icon="Close"
-              @click="handleReject(scope.row)"
-              v-if="scope.row.status === 'IN_REVIEW'"
-              v-hasPermi="['mes:sop:document:reject']"
-              >驳回</el-button
-            >
-            <el-button
-              link
-              type="warning"
-              icon="FolderOpened"
-              @click="handleArchive(scope.row)"
-              v-if="scope.row.status === 'PUBLISHED'"
-              v-hasPermi="['mes:sop:document:edit']"
-              >归档</el-button
-            >
-          </template>
-        </el-table-column>
-      </el-table>
+    <el-row :gutter="10" class="mb8">
+      <el-col :span="1.5">
+        <el-button type="success" plain icon="Plus" @click="handleAdd" v-hasPermi="['mes:sop:document:add']">新增SOP</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete()" v-hasPermi="['mes:sop:document:remove']"
+          >删除</el-button
+        >
+      </el-col>
+      <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
+    </el-row>
 
-      <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
-    </el-card>
+    <el-table v-loading="loading" :data="list" show-overflow-tooltip @selection-change="handleSelectionChange">
+      <el-table-column type="selection" width="55" align="center" />
+      <el-table-column label="SOP编码" prop="sopCode" min-width="150" />
+      <el-table-column label="SOP名称" prop="sopName" min-width="150" />
+      <el-table-column label="类型" prop="sopType" align="center" width="100">
+        <template #default="scope"><dict-tag :options="mes_sop_type" :value="scope.row.sopType" /></template>
+      </el-table-column>
+      <el-table-column label="当前版本" prop="currentVersion" align="center" width="90" />
+      <el-table-column label="文件" prop="fileType" align="center" width="80">
+        <template #default="scope">
+          <dict-tag :options="mes_sop_file_type" :value="scope.row.fileType" v-if="scope.row.fileType" />
+          <span v-else>-</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="状态" prop="status" align="center" width="90">
+        <template #default="scope"><dict-tag :options="mes_sop_status" :value="scope.row.status" /></template>
+      </el-table-column>
+      <el-table-column label="创建人" prop="createByName" width="100" />
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="380" :show-overflow-tooltip="false">
+        <template #default="scope">
+          <el-button link type="primary" icon="View" @click="handlePreview(scope.row)" v-if="scope.row.fileUrl" v-hasPermi="['mes:sop:document:list']"
+            >预览</el-button
+          >
+          <el-button link type="primary" icon="Files" @click="handleVersions(scope.row)" v-hasPermi="['mes:sop:document:list']">版本</el-button>
+          <el-button
+            link
+            type="primary"
+            icon="Edit"
+            @click="handleUpdate(scope.row)"
+            v-if="['DRAFT', 'ARCHIVED'].includes(scope.row.status)"
+            v-hasPermi="['mes:sop:document:edit']"
+            >编辑</el-button
+          >
+          <el-button
+            link
+            type="success"
+            icon="Upload"
+            @click="handleAddVersion(scope.row)"
+            v-if="['DRAFT', 'PUBLISHED'].includes(scope.row.status)"
+            v-hasPermi="['mes:sop:document:add']"
+            >新增版本</el-button
+          >
+          <el-button
+            link
+            type="warning"
+            icon="Promotion"
+            @click="handleSubmit(scope.row)"
+            v-if="scope.row.status === 'DRAFT'"
+            v-hasPermi="['mes:sop:document:submit']"
+            >提交审批</el-button
+          >
+          <el-button
+            link
+            type="success"
+            icon="Check"
+            @click="handleApprove(scope.row)"
+            v-if="scope.row.status === 'IN_REVIEW'"
+            v-hasPermi="['mes:sop:document:approve']"
+            >通过</el-button
+          >
+          <el-button
+            link
+            type="danger"
+            icon="Close"
+            @click="handleReject(scope.row)"
+            v-if="scope.row.status === 'IN_REVIEW'"
+            v-hasPermi="['mes:sop:document:reject']"
+            >驳回</el-button
+          >
+          <el-button
+            link
+            type="warning"
+            icon="FolderOpened"
+            @click="handleArchive(scope.row)"
+            v-if="scope.row.status === 'PUBLISHED'"
+            v-hasPermi="['mes:sop:document:edit']"
+            >归档</el-button
+          >
+        </template>
+      </el-table-column>
+    </el-table>
+
+    <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
     <!-- 新增/编辑对话框 -->
-    <el-dialog :title="dialog.title" v-model="dialog.visible" width="640px" append-to-body>
-      <el-form ref="docFormRef" :model="form" :rules="rules" label-width="100px">
+    <el-dialog :title="title" v-model="open" width="640px" append-to-body>
+      <el-form ref="docRef" :model="form" :rules="rules" label-width="100px">
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="SOP编码" prop="sopCode">
@@ -179,7 +171,7 @@
       </el-form>
       <template #footer>
         <el-button type="primary" @click="submitForm">确 定</el-button>
-        <el-button @click="dialog.visible = false">取 消</el-button>
+        <el-button @click="cancel">取 消</el-button>
       </template>
     </el-dialog>
 
@@ -262,33 +254,30 @@ import {
   rejectDocument,
   archiveDocument
 } from '@/api/mes/sop/document';
-import type { SopDocumentVO, SopDocumentForm, SopDocumentQuery, SopVersionAddBo } from '@/api/mes/sop/document';
-import { listVersionBySop, delVersion } from '@/api/mes/sop/version';
+import type { SopDocumentVO, SopDocumentQuery, SopVersionAddBo } from '@/api/mes/sop/document';
+import { listVersionBySop } from '@/api/mes/sop/version';
 import type { SopVersionVO } from '@/api/mes/sop/version';
 import { previewCode } from '@/api/system/autocode/rule';
 import { Download } from '@element-plus/icons-vue';
+import { useCrud } from '@/composables/useCrud';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { mes_sop_status, mes_sop_type, mes_sop_file_type, sop_version_status } = toRefs<any>(
   proxy?.useDict('mes_sop_status', 'mes_sop_type', 'mes_sop_file_type', 'sop_version_status')
 );
-const dataList = ref<SopDocumentVO[]>([]);
-const total = ref(0);
-const loading = ref(true);
-const ids = ref<number[]>([]);
-const queryParams = reactive<SopDocumentQuery>({ pageNum: 1, pageSize: 10 } as any);
-const showSearch = ref(true);
-const queryFormRef = ref<ElFormInstance>();
-const docFormRef = ref<ElFormInstance>();
+
+const docRef = ref<ElFormInstance>();
 const versionFormRef = ref<ElFormInstance>();
-const dialog = reactive({ visible: false, title: '' });
-const form = reactive<SopDocumentForm>({ sopName: '', sopType: '' } as SopDocumentForm);
 const autoGenFlag = ref(false);
 
-const versionDialog = reactive({ visible: false, sopId: 0, sopName: '' });
-const versionForm = reactive<SopVersionAddBo>({ sopId: 0, fileOssId: '' });
-const historyDialog = reactive({ visible: false, list: [] as SopVersionVO[] });
-const previewDialog = reactive({ visible: false, title: '', fileUrl: '', fileType: '' });
+const queryParams = ref<SopDocumentQuery>({
+  pageNum: 1,
+  pageSize: 10,
+  sopCode: undefined,
+  sopName: undefined,
+  sopType: undefined,
+  status: undefined
+});
 
 const rules: ElFormRules = {
   sopName: [{ required: true, message: 'SOP名称不能为空', trigger: 'blur' }],
@@ -301,31 +290,30 @@ const versionRules: ElFormRules = {
   fileOssId: [{ required: true, message: '文件不能为空', trigger: 'change' }]
 };
 
-const getList = async () => {
-  loading.value = true;
-  try {
-    const res = await listDocument(queryParams);
-    dataList.value = res.rows;
-    total.value = res.total;
-  } finally {
-    loading.value = false;
-  }
-};
-const handleQuery = () => {
-  queryParams.pageNum = 1;
-  getList();
-};
-const resetQuery = () => {
-  proxy!.resetForm('queryFormRef');
-  handleQuery();
-};
-const handleSelectionChange = (selection: SopDocumentVO[]) => {
-  ids.value = selection.map((i) => i.sopId);
-};
-
-const resetForm = () => {
-  autoGenFlag.value = false;
-  Object.assign(form, {
+const {
+  loading,
+  list,
+  total,
+  open,
+  title,
+  multiple,
+  showSearch,
+  form,
+  getList,
+  handleQuery,
+  handleDelete,
+  handleSelectionChange,
+  submitForm,
+  cancel,
+  handleAdd: rawHandleAdd,
+  handleUpdate: rawHandleUpdate
+} = useCrud<SopDocumentVO, SopDocumentQuery>({
+  apis: { list: listDocument, get: getDocument, add: addDocument, update: updateDocument, del: delDocument },
+  idField: 'sopId',
+  entityName: 'SOP',
+  formRef: docRef,
+  queryParams,
+  initForm: () => ({
     sopId: undefined,
     sopCode: '',
     sopName: '',
@@ -334,44 +322,35 @@ const resetForm = () => {
     fileOssId: '',
     description: '',
     remark: ''
-  });
-  docFormRef.value?.resetFields();
-};
-const handleAdd = () => {
-  resetForm();
-  dialog.title = '新增SOP';
-  dialog.visible = true;
-};
-const handleEdit = async (row: SopDocumentVO) => {
-  resetForm();
-  const res = await getDocument(row.sopId);
-  Object.assign(form, res.data);
-  dialog.title = '编辑SOP';
-  dialog.visible = true;
-};
-const submitForm = () => {
-  docFormRef.value?.validate(async (valid) => {
-    if (!valid) return;
-    if (!form.sopId && autoGenFlag.value) {
-      form.sopCode = undefined;
+  }),
+  onReset: () => {
+    autoGenFlag.value = false;
+  },
+  beforeSubmit: () => {
+    if (!form.value.sopId && autoGenFlag.value) {
+      form.value.sopCode = undefined;
     }
-    if (form.sopId) {
-      await updateDocument(form);
-      proxy!.$modal.msgSuccess('修改成功');
-    } else {
-      await addDocument(form);
-      proxy!.$modal.msgSuccess('新增成功');
-    }
-    dialog.visible = false;
-    getList();
-  });
-};
-const handleDelete = async () => {
-  await proxy!.$modal.confirm('确认删除选中SOP?已发布/存在绑定/查阅记录的不可删除');
-  await delDocument(ids.value);
-  proxy!.$modal.msgSuccess('删除成功');
-  getList();
-};
+  }
+});
+
+/** 新增（包装避免 @click 事件对象被误传为 extraInit） */
+function handleAdd() {
+  rawHandleAdd();
+}
+
+function handleUpdate(row: SopDocumentVO) {
+  return rawHandleUpdate(row);
+}
+
+function resetQuery() {
+  proxy?.resetForm('queryRef');
+  handleQuery();
+}
+
+const versionDialog = reactive({ visible: false, sopId: 0, sopName: '' });
+const versionForm = reactive<SopVersionAddBo>({ sopId: 0, fileOssId: '' });
+const historyDialog = reactive({ visible: false, list: [] as SopVersionVO[] });
+const previewDialog = reactive({ visible: false, title: '', fileUrl: '', fileType: '' });
 
 // ===== 版本管理 =====
 const handleAddVersion = (row: SopDocumentVO) => {
@@ -439,14 +418,14 @@ const handleArchive = async (row: SopDocumentVO) => {
 const handleAutoGenChange = (val: boolean) => {
   if (val) {
     previewCode('MES_SOP_CODE').then((response) => {
-      form.sopCode = response as unknown as string;
+      form.value.sopCode = response as unknown as string;
     });
   } else {
-    form.sopCode = '';
+    form.value.sopCode = '';
   }
 };
 
-onMounted(() => getList());
+getList();
 </script>
 
 <style scoped>

@@ -33,8 +33,8 @@
         </el-col>
         <el-col :span="6" :offset="18" class="search-actions">
           <el-form-item>
-            <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+            <el-button type="primary" icon="Search" @click="handleQuery()">搜索</el-button>
+            <el-button icon="Refresh" @click="resetQuery()">重置</el-button>
           </el-form-item>
         </el-col>
       </el-row>
@@ -42,24 +42,24 @@
 
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
-        <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['prd:requirement:add']">新增</el-button>
+        <el-button type="primary" plain icon="Plus" @click="handleAdd()" v-hasPermi="['prd:requirement:add']">新增</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['prd:requirement:edit']">修改</el-button>
+        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate()" v-hasPermi="['prd:requirement:edit']">修改</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['prd:requirement:remove']"
+        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete()" v-hasPermi="['prd:requirement:remove']"
           >删除</el-button
         >
       </el-col>
       <el-col :span="1.5">
-        <el-button type="info" plain icon="View" :disabled="single" @click="handleView" v-hasPermi="['prd:requirement:query']">查看</el-button>
+        <el-button type="info" plain icon="View" :disabled="single" @click="handleView()" v-hasPermi="['prd:requirement:query']">查看</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['prd:requirement:export']">导出</el-button>
+        <el-button type="warning" plain icon="Download" @click="handleExport()" v-hasPermi="['prd:requirement:export']">导出</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="primary" plain icon="Plus" :disabled="multiple" @click="handleGenerateWorkOrders" v-hasPermi="['prd:plan:edit']"
+        <el-button type="primary" plain icon="Plus" :disabled="multiple" @click="handleGenerateWorkOrders()" v-hasPermi="['prd:plan:edit']"
           >生成工单</el-button
         >
       </el-col>
@@ -103,88 +103,77 @@
 </template>
 
 <script setup lang="ts" name="PrdRequirement">
-import { listRequirement, delRequirement } from '@/api/erp/prd/requirement';
+import { listRequirement, getRequirement, addRequirement, updateRequirement, delRequirement } from '@/api/erp/prd/requirement';
 import { generateWorkOrders } from '@/api/erp/prd/plan';
 import { useRouter } from 'vue-router';
+import type { FormInstance } from 'element-plus';
+import { useCrud } from '@/composables/useCrud';
 
 const router = useRouter();
-const { proxy } = getCurrentInstance();
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { prd_requirement_status, prd_material_source_type } = toRefs<any>(proxy.useDict('prd_requirement_status', 'prd_material_source_type'));
 
-const requirementList = ref([]);
-const loading = ref(true);
-const showSearch = ref(true);
-const ids = ref([]);
-const single = ref(true);
-const multiple = ref(true);
-const total = ref(0);
-
-const data = reactive({
-  queryParams: {
-    pageNum: 1,
-    pageSize: 10,
-    requirementNo: null,
-    bomId: null,
-    requirementDate: null,
-    totalMaterialTypes: null,
-    totalRequiredQuantity: null,
-    status: null,
-    materialId: null,
-    materialName: null,
-    materialSpec: null
-  }
+const queryParams = ref({
+  pageNum: 1,
+  pageSize: 10,
+  requirementNo: null,
+  requirementDate: null,
+  status: null,
+  materialName: null
 });
 
-const { queryParams } = toRefs(data);
+// 列表骨架（新增/修改/查看为路由表单页，保留本地 router.push 跳转逻辑）
+const {
+  loading,
+  list: requirementList,
+  total,
+  ids,
+  single,
+  multiple,
+  showSearch,
+  getList,
+  handleQuery,
+  handleDelete,
+  handleExport,
+  handleSelectionChange
+} = useCrud({
+  apis: { list: listRequirement, get: getRequirement, add: addRequirement, update: updateRequirement, del: delRequirement },
+  idField: 'requirementId',
+  entityName: '物料需求单',
+  formRef: ref<FormInstance>(),
+  queryParams,
+  initForm: () => ({}),
+  exportUrl: 'erp/prd/requirement/export',
+  exportFileName: 'requirement'
+});
 
-function getList() {
-  loading.value = true;
-  listRequirement(queryParams.value).then((response) => {
-    requirementList.value = response.rows;
-    total.value = response.total;
-    loading.value = false;
-  });
-}
-
-function handleQuery() {
-  queryParams.value.pageNum = 1;
-  getList();
-}
-
+/** 重置按钮操作 */
 function resetQuery() {
   proxy.resetForm('queryRef');
   handleQuery();
 }
 
-function handleSelectionChange(selection) {
-  ids.value = selection.map((item) => item.requirementId);
-  single.value = selection.length != 1;
-  multiple.value = !selection.length;
-}
-
-function handleUpdate(row) {
-  if (row && row.type && row instanceof Event) {
-    row = null;
-  }
+/** 修改按钮操作 */
+function handleUpdate(row?: any) {
   if (!row) {
     if (ids.value.length !== 1) {
       proxy.$modal.msgWarning('请选择一条数据进行修改');
       return;
     }
-    const selectedRow = requirementList.value.find((item) => item.requirementId == ids.value[0]);
-    if (!selectedRow) {
+    const selected = requirementList.value.find((item: any) => item.requirementId == ids.value[0]);
+    if (!selected) {
       proxy.$modal.msgWarning('未找到选中的数据');
       return;
     }
-    row = selectedRow;
+    row = selected;
   }
-  const requirementId = row.requirementId;
   router.push({
     path: '/erp/prd/requirement/form',
-    query: { id: requirementId, action: 'edit' }
+    query: { id: row.requirementId, action: 'edit' }
   });
 }
 
+/** 新增按钮操作 */
 function handleAdd() {
   router.push({
     path: '/erp/prd/requirement/form',
@@ -192,60 +181,34 @@ function handleAdd() {
   });
 }
 
-function handleView(row) {
-  if (row && row.type && row instanceof Event) {
-    row = null;
-  }
+/** 查看按钮操作 */
+function handleView(row?: any) {
   if (!row) {
     if (ids.value.length !== 1) {
       proxy.$modal.msgWarning('请选择一条数据进行查看');
       return;
     }
-    const selectedRow = requirementList.value.find((item) => item.requirementId == ids.value[0]);
-    if (!selectedRow) {
+    const selected = requirementList.value.find((item: any) => item.requirementId == ids.value[0]);
+    if (!selected) {
       proxy.$modal.msgWarning('未找到选中的数据');
       return;
     }
-    row = selectedRow;
+    row = selected;
   }
-  const requirementId = row.requirementId;
   router.push({
     path: '/erp/prd/requirement/form',
-    query: { id: requirementId, action: 'view' }
+    query: { id: row.requirementId, action: 'view' }
   });
 }
 
-function handleDelete(row) {
-  const _requirementIds = row.requirementId || ids.value;
-  proxy.$modal
-    .confirm('是否确认删除物料清单编号为"' + _requirementIds + '"的数据项？')
-    .then(function () {
-      return delRequirement(_requirementIds);
-    })
-    .then(() => {
-      getList();
-      proxy.$modal.msgSuccess('删除成功');
-    })
-    .catch(() => {});
-}
-
-function handleExport() {
-  proxy.download(
-    'erp/prd/requirement/export',
-    {
-      ...queryParams.value
-    },
-    `requirement_${new Date().getTime()}.xlsx`
-  );
-}
-
+/** 生成生产工单（限同一生产计划下的物料需求单） */
 function handleGenerateWorkOrders() {
   if (ids.value.length === 0) {
     proxy.$modal.msgWarning('请选择至少一个物料需求单');
     return;
   }
-  const selected = requirementList.value.filter((item) => ids.value.includes(item.requirementId));
-  const planIds = [...new Set(selected.map((item) => item.planId))];
+  const selected = requirementList.value.filter((item: any) => ids.value.includes(item.requirementId));
+  const planIds = [...new Set(selected.map((item: any) => item.planId))];
   if (planIds.length !== 1) {
     proxy.$modal.msgWarning('请选择同一生产计划下的物料需求单');
     return;
@@ -256,7 +219,7 @@ function handleGenerateWorkOrders() {
     .then(function () {
       return generateWorkOrders(planId, ids.value);
     })
-    .then((res) => {
+    .then((res: any) => {
       proxy.$modal.msgSuccess(res.msg || '工单生成成功');
       getList();
     })

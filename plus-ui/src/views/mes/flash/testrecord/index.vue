@@ -26,47 +26,61 @@
       </div>
     </el-card>
 
-    <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="90px" style="margin-top: 12px">
-      <el-form-item label="测试单号" prop="testNo">
-        <el-input v-model="queryParams.testNo" placeholder="请输入测试单号" clearable style="width: 180px" @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item label="SN编码" prop="snCode">
-        <el-input v-model="queryParams.snCode" placeholder="请输入SN编码" clearable style="width: 160px" @keyup.enter="handleQuery" />
-      </el-form-item>
-      <el-form-item label="结果" prop="result">
-        <el-select v-model="queryParams.result" placeholder="全部" clearable style="width: 110px">
-          <el-option label="通过" value="PASS" />
-          <el-option label="失败" value="FAIL" />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="测试模式" prop="testMode">
-        <el-select v-model="queryParams.testMode" placeholder="全部" clearable style="width: 110px">
-          <el-option label="自动" value="AUTO" />
-          <el-option label="手动" value="MANUAL" />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="测试时间">
-        <el-date-picker
-          v-model="dateRange"
-          value-format="YYYY-MM-DD"
-          type="daterange"
-          range-separator="-"
-          start-placeholder="开始日期"
-          end-placeholder="结束日期"
-          style="width: 240px"
-        />
-      </el-form-item>
-      <el-form-item>
-        <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-        <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-      </el-form-item>
+    <el-form :model="queryParams" ref="queryRef" v-show="showSearch" label-width="90px" class="list-search" style="margin-top: 12px">
+      <el-row :gutter="16">
+        <el-col :span="6">
+          <el-form-item label="测试单号" prop="testNo">
+            <el-input v-model="queryParams.testNo" placeholder="请输入测试单号" clearable @keyup.enter="handleQuery()" />
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="SN编码" prop="snCode">
+            <el-input v-model="queryParams.snCode" placeholder="请输入SN编码" clearable @keyup.enter="handleQuery()" />
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="结果" prop="result">
+            <el-select v-model="queryParams.result" placeholder="全部" clearable style="width: 100%">
+              <el-option label="通过" value="PASS" />
+              <el-option label="失败" value="FAIL" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="测试模式" prop="testMode">
+            <el-select v-model="queryParams.testMode" placeholder="全部" clearable style="width: 100%">
+              <el-option label="自动" value="AUTO" />
+              <el-option label="手动" value="MANUAL" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="测试时间">
+            <el-date-picker
+              v-model="dateRange"
+              value-format="YYYY-MM-DD"
+              type="daterange"
+              range-separator="-"
+              start-placeholder="开始日期"
+              end-placeholder="结束日期"
+              style="width: 100%"
+            />
+          </el-form-item>
+        </el-col>
+        <el-col :span="6" :offset="12" class="search-actions">
+          <el-form-item>
+            <el-button type="primary" icon="Search" @click="handleQuery()">搜索</el-button>
+            <el-button icon="Refresh" @click="resetQuery()">重置</el-button>
+          </el-form-item>
+        </el-col>
+      </el-row>
     </el-form>
 
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
-        <el-button type="primary" plain icon="DocumentAdd" @click="openBegin" v-hasPermi="['mes:flash:testrecord:add']">开始测试</el-button>
+        <el-button type="primary" plain icon="DocumentAdd" @click="openBegin()" v-hasPermi="['mes:flash:testrecord:add']">开始测试</el-button>
       </el-col>
-      <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" />
+      <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
     <el-table v-loading="loading" :data="recordList" :row-class-name="rowClassName">
@@ -128,7 +142,7 @@
 
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
-    <!-- 开始测试: 开单弹窗 -->
+    <!-- 开始测试: 开单弹窗(特殊功能本地保留) -->
     <el-dialog title="开始测试 - 选择测试对象" v-model="begin.visible" width="640px" append-to-body>
       <el-form :model="begin.form" :rules="beginRules" ref="beginRef" label-width="110px">
         <el-form-item label="SN" prop="snCode">
@@ -187,7 +201,7 @@
       </el-form>
       <template #footer>
         <div class="dialog-footer">
-          <el-button type="primary" @click="doBegin">开单</el-button>
+          <el-button type="primary" @click="doBegin()">开单</el-button>
           <el-button @click="begin.visible = false">取 消</el-button>
         </div>
       </template>
@@ -250,7 +264,7 @@
       </el-table>
       <template #footer>
         <div class="dialog-footer">
-          <el-button type="primary" @click="doReport">提交并判定</el-button>
+          <el-button type="primary" @click="doReport()">提交并判定</el-button>
           <el-button @click="report.visible = false">暂存关闭</el-button>
         </div>
       </template>
@@ -339,47 +353,60 @@ import type { FwTestRecordVO, FwTestRecordQuery, FwTestRecordForm } from '@/api/
 import { listSnOptions } from '@/api/mes/flash/flash';
 import { listFirmware } from '@/api/mes/flash/firmware';
 import { listEquipment } from '@/api/mes/eq/equipment';
+import type { FormInstance } from 'element-plus';
+import { useCrud } from '@/composables/useCrud';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 
-const recordList = ref<FwTestRecordVO[]>([]);
-const loading = ref(true);
-const showSearch = ref(true);
-const total = ref(0);
 const dateRange = ref<string[]>([]);
 const summary = ref<Record<string, number>>({});
 
-const queryParams = reactive<FwTestRecordQuery>({ pageNum: 1, pageSize: 10, result: undefined, testMode: undefined } as any);
+const queryParams = ref<FwTestRecordQuery>({
+  pageNum: 1,
+  pageSize: 10,
+  testNo: undefined,
+  snCode: undefined,
+  result: undefined,
+  testMode: undefined
+});
 
 const dataTypeShort = (v: string) => (v === 'NUMERIC' ? '数值' : v === 'TEXT' ? '文本' : '枚举');
 const rowClassName = ({ row }: any) => (row.result === 'FAIL' ? 'fail-row' : '');
 
 function getSummary() {
-  getTestSummary({ snCode: queryParams.snCode, testNo: queryParams.testNo } as any)
+  getTestSummary({ snCode: queryParams.value.snCode, testNo: queryParams.value.testNo } as any)
     .then((res: any) => {
       summary.value = res.data || {};
     })
     .catch(() => {});
 }
 
-function getList() {
-  loading.value = true;
-  const params = { ...queryParams };
-  proxy?.addDateRange(params, dateRange.value);
-  listTestRecord(params)
-    .then((res: any) => {
-      recordList.value = res.rows;
-      total.value = res.total;
-      getSummary();
-    })
-    .finally(() => {
-      loading.value = false;
-    });
-}
+// 测试记录为记录类列表（开单/填报/详情/整单追溯为本地特殊功能，详情走本地弹窗；
+// get/add/update/del 占位仅为满足 useCrud 的 API 签名，不会被调用）
+const readonlyApi = () => Promise.resolve({ data: {} as any });
 
+const {
+  loading,
+  list: recordList,
+  total,
+  showSearch,
+  getList
+} = useCrud({
+  apis: { list: listTestRecord, get: readonlyApi, add: readonlyApi, update: readonlyApi, del: readonlyApi },
+  idField: 'testRecordId',
+  entityName: '测试记录',
+  formRef: ref<FormInstance>(),
+  queryParams,
+  initForm: () => ({}),
+  beforeList: (query: any) => {
+    proxy?.addDateRange(query, dateRange.value);
+  }
+});
+
+/** 搜索(统计概览随查询条件联动刷新) */
 function handleQuery() {
-  queryParams.pageNum = 1;
-  getList();
+  queryParams.value.pageNum = 1;
+  getList().then(() => getSummary());
 }
 
 function resetQuery() {
@@ -388,7 +415,7 @@ function resetQuery() {
   handleQuery();
 }
 
-/** 开单弹窗 */
+// ==================== 开始测试: 开单弹窗 ====================
 const begin = reactive({ visible: false, form: {} as FwTestRecordForm });
 const beginRef = ref<ElFormInstance>();
 const beginRules = { snCode: [{ required: true, message: '请选择SN', trigger: 'change' }] };
@@ -459,7 +486,7 @@ function doBegin() {
   });
 }
 
-/** 填报弹窗 */
+// ==================== 填报弹窗 ====================
 const report = reactive<{ visible: boolean; testNo: string; rows: any[] }>({ visible: false, testNo: '', rows: [] });
 
 const enumOptions = (passEnum?: string) => {
@@ -497,7 +524,7 @@ function doReport() {
     .catch(() => {});
 }
 
-/** 详情 */
+/** 单行详情 */
 const detail = reactive<{ visible: boolean; data: any }>({ visible: false, data: {} });
 function handleDetail(row: FwTestRecordVO) {
   getTestRecord(row.testRecordId).then((res: any) => {
@@ -516,7 +543,7 @@ function openTestNoDetail(testNo: string) {
   });
 }
 
-/** 删除草稿行 */
+/** 删除草稿行(已判定行禁止删除) */
 function handleDelete(row: FwTestRecordVO) {
   proxy?.$modal
     .confirm(`确认删除该未判定测试行？已判定行禁止删除。`)
@@ -528,9 +555,8 @@ function handleDelete(row: FwTestRecordVO) {
     .catch(() => {});
 }
 
-onMounted(() => {
-  getList();
-});
+getList();
+getSummary();
 </script>
 
 <style scoped>

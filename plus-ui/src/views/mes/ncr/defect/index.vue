@@ -1,52 +1,44 @@
 <template>
-  <div class="p-2">
-    <el-card>
-      <el-form :model="queryParams" ref="queryFormRef" v-show="showSearch" label-width="100px" class="list-search">
-        <el-row :gutter="16">
-          <el-col :span="8">
-            <el-form-item label="NCR编号" prop="ncrId">
-              <el-input v-model="queryParams.ncrId" placeholder="请输入NCR编号" clearable @keyup.enter="handleQuery" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="8" class="search-actions">
-            <el-form-item>
-              <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-              <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-            </el-form-item>
-          </el-col>
-        </el-row>
-      </el-form>
-
-      <el-row :gutter="10" class="mb8">
-        <el-col :span="1.5">
-          <el-button type="success" plain icon="Plus" @click="handleAdd" v-hasPermi="['mes:ncr:defect:add']">补录缺陷</el-button>
+  <div class="app-container">
+    <el-form :model="queryParams" ref="queryRef" v-show="showSearch" label-width="100px" class="list-search">
+      <el-row :gutter="16">
+        <el-col :span="8">
+          <el-form-item label="NCR编号" prop="ncrId">
+            <el-input v-model="queryParams.ncrId" placeholder="请输入NCR编号" clearable @keyup.enter="handleQuery" />
+          </el-form-item>
         </el-col>
-        <right-toolbar v-model:showSearch="showSearch" @queryTable="handleQuery"></right-toolbar>
+        <el-col :span="8" class="search-actions">
+          <el-form-item>
+            <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+          </el-form-item>
+        </el-col>
       </el-row>
+    </el-form>
 
-      <el-table v-loading="loading" :data="dataList" show-overflow-tooltip>
-        <el-table-column label="缺陷代码" prop="defectCode" width="120" />
-        <el-table-column label="缺陷名称" prop="defectName" min-width="140" />
-        <el-table-column label="数量" prop="defectQty" align="right" width="80" />
-        <el-table-column label="原因分类" prop="defectCause" width="120">
-          <template #default="scope"><dict-tag :options="mes_defect_cause" :value="scope.row.defectCause" /></template>
-        </el-table-column>
-        <el-table-column label="根因描述" prop="rootCauseDesc" min-width="200" show-overflow-tooltip />
-        <el-table-column label="备注" prop="remark" min-width="140" show-overflow-tooltip />
-      </el-table>
+    <el-row :gutter="10" class="mb8">
+      <el-col :span="1.5">
+        <el-button type="success" plain icon="Plus" @click="handleAdd" v-hasPermi="['mes:ncr:defect:add']">补录缺陷</el-button>
+      </el-col>
+      <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
+    </el-row>
 
-      <pagination
-        v-show="total > 0"
-        :total="total"
-        v-model:page="queryParams.pageNum"
-        v-model:limit="queryParams.pageSize"
-        @pagination="handleQuery"
-      />
-    </el-card>
+    <el-table v-loading="loading" :data="list" show-overflow-tooltip>
+      <el-table-column label="缺陷代码" prop="defectCode" width="120" />
+      <el-table-column label="缺陷名称" prop="defectName" min-width="140" />
+      <el-table-column label="数量" prop="defectQty" align="right" width="80" />
+      <el-table-column label="原因分类" prop="defectCause" width="120">
+        <template #default="scope"><dict-tag :options="mes_defect_cause" :value="scope.row.defectCause" /></template>
+      </el-table-column>
+      <el-table-column label="根因描述" prop="rootCauseDesc" min-width="200" show-overflow-tooltip />
+      <el-table-column label="备注" prop="remark" min-width="140" show-overflow-tooltip />
+    </el-table>
+
+    <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
     <!-- 补录缺陷对话框 -->
-    <el-dialog title="补录缺陷" v-model="dialog.visible" width="500px" append-to-body>
-      <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
+    <el-dialog :title="title" v-model="open" width="500px" append-to-body>
+      <el-form ref="defectRef" :model="form" :rules="rules" label-width="100px">
         <el-form-item label="NCR编号" prop="ncrId" required>
           <!-- 雪花ID为19位长整型，不能 v-model.number 截断，保持字符串透传 -->
           <el-input v-model="form.ncrId" placeholder="请输入NCR编号" />
@@ -77,7 +69,7 @@
       </el-form>
       <template #footer>
         <el-button type="primary" @click="submitForm">确 定</el-button>
-        <el-button @click="dialog.visible = false">取 消</el-button>
+        <el-button @click="cancel">取 消</el-button>
       </template>
     </el-dialog>
   </div>
@@ -87,19 +79,24 @@
 import { listDefect, addDefect } from '@/api/mes/ncr/defect';
 import type { NcrDefectVO, NcrDefectForm } from '@/api/mes/ncr/defect';
 import { listDefectCode } from '@/api/mes/ncr/defect-code';
+import { useCrud } from '@/composables/useCrud';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { mes_defect_cause } = toRefs<any>(proxy?.useDict('mes_defect_cause'));
-const dataList = ref<NcrDefectVO[]>([]);
-const total = ref(0);
-const loading = ref(false);
-const queryParams = reactive({ pageNum: 1, pageSize: 10, ncrId: undefined as string | undefined } as any);
-const showSearch = ref(true);
-const queryFormRef = ref<ElFormInstance>();
-const formRef = ref<ElFormInstance>();
-const dialog = reactive({ visible: false, title: '' });
-const form = reactive<NcrDefectForm>({ ncrId: '', defectQty: 1 } as NcrDefectForm);
-const defectCodeList = ref<any[]>([]);
+
+const defectRef = ref<ElFormInstance>();
+/** 缺陷明细接口按 ncrId 返回全量列表(非分页)，包装为 useCrud 标准形状 */
+const readonlyApi = () => Promise.resolve({ data: {} as any });
+
+interface NcrDefectPageQuery extends PageQuery {
+  ncrId?: string;
+}
+
+const queryParams = ref<NcrDefectPageQuery>({
+  pageNum: 1,
+  pageSize: 10,
+  ncrId: undefined
+});
 
 const rules = {
   ncrId: [{ required: true, message: 'NCR编号不能为空', trigger: 'blur' }],
@@ -107,47 +104,65 @@ const rules = {
   defectQty: [{ required: true, message: '请输入缺陷数量', trigger: 'blur' }]
 };
 
-const handleQuery = async () => {
-  if (!queryParams.ncrId) {
-    dataList.value = [];
-    total.value = 0;
-    return;
-  }
-  loading.value = true;
-  try {
-    const res = await listDefect(queryParams.ncrId);
-    dataList.value = res.data || [];
-    total.value = res.data?.length || 0;
-  } finally {
-    loading.value = false;
-  }
-};
-const resetQuery = () => {
-  proxy!.resetForm('queryFormRef');
-  handleQuery();
-};
+const {
+  loading,
+  list,
+  total,
+  open,
+  title,
+  showSearch,
+  form,
+  getList,
+  handleQuery,
+  submitForm,
+  cancel,
+  handleAdd: rawHandleAdd
+} = useCrud<NcrDefectVO, NcrDefectPageQuery>({
+  apis: {
+    list: (query) => {
+      if (!query.ncrId) {
+        return Promise.resolve({ rows: [], total: 0 });
+      }
+      return listDefect(query.ncrId).then((res: any) => {
+        const rows = (res.data || []) as NcrDefectVO[];
+        return { rows, total: rows.length };
+      });
+    },
+    get: readonlyApi,
+    add: (data) => addDefect(data as NcrDefectForm),
+    update: readonlyApi,
+    del: readonlyApi
+  },
+  idField: 'defectId',
+  entityName: '缺陷明细',
+  formRef: defectRef,
+  queryParams,
+  initForm: () => ({
+    defectId: undefined,
+    // NCR编号为雪花ID文本输入(字符串透传)，与 VO 的 number 声明存在历史偏差，保持原表单行为
+    ncrId: '' as unknown as number,
+    defectCodeId: undefined,
+    defectQty: 1,
+    defectCause: '',
+    rootCauseDesc: '',
+    remark: ''
+  })
+});
 
-const handleAdd = async () => {
-  form.ncrId = '';
-  form.defectCodeId = undefined;
-  form.defectQty = 1;
-  form.defectCause = '';
-  form.rootCauseDesc = '';
-  form.remark = '';
-  dialog.visible = true;
-  const res = await listDefectCode({ pageNum: 1, pageSize: 9999 });
-  defectCodeList.value = res.data || [];
-};
+const defectCodeList = ref<any[]>([]);
 
-const submitForm = () => {
-  formRef.value?.validate(async (valid) => {
-    if (!valid) return;
-    await addDefect(form);
-    proxy!.$modal.msgSuccess('补录成功');
-    dialog.visible = false;
-    handleQuery();
+/** 补录缺陷（打开对话框时加载缺陷代码选项） */
+function handleAdd() {
+  rawHandleAdd(async () => {
+    const res = await listDefectCode({ pageNum: 1, pageSize: 9999 });
+    defectCodeList.value = res.data || [];
   });
-};
+}
 
-onMounted(() => handleQuery());
+function resetQuery() {
+  proxy?.resetForm('queryRef');
+  handleQuery();
+}
+
+getList();
 </script>

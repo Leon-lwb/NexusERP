@@ -38,8 +38,8 @@
         </el-col>
         <el-col :span="6" :offset="12" class="search-actions">
           <el-form-item>
-            <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+            <el-button type="primary" icon="Search" @click="handleQuery()">搜索</el-button>
+            <el-button icon="Refresh" @click="resetQuery()">重置</el-button>
           </el-form-item>
         </el-col>
       </el-row>
@@ -47,31 +47,31 @@
 
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
-        <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['prd:work:add']">新增</el-button>
+        <el-button type="primary" plain icon="Plus" @click="handleAdd()" v-hasPermi="['prd:work:add']">新增</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['prd:work:edit']">修改</el-button>
+        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate()" v-hasPermi="['prd:work:edit']">修改</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['prd:work:remove']">删除</el-button>
+        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete()" v-hasPermi="['prd:work:remove']">删除</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="info" plain icon="View" :disabled="single" @click="handleView" v-hasPermi="['prd:work:query']">查看</el-button>
+        <el-button type="info" plain icon="View" :disabled="single" @click="handleView()" v-hasPermi="['prd:work:query']">查看</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['prd:work:export']">导出</el-button>
+        <el-button type="warning" plain icon="Download" @click="handleExport()" v-hasPermi="['prd:work:export']">导出</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="success" plain icon="Check" :disabled="single" @click="handleRelease" v-hasPermi="['prd:work:edit']">下达</el-button>
+        <el-button type="success" plain icon="Check" :disabled="single" @click="handleRelease()" v-hasPermi="['prd:work:edit']">下达</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="primary" plain icon="VideoPlay" :disabled="single" @click="handleStart" v-hasPermi="['prd:work:edit']">开始</el-button>
+        <el-button type="primary" plain icon="VideoPlay" :disabled="single" @click="handleStart()" v-hasPermi="['prd:work:edit']">开始</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="success" plain icon="Finished" :disabled="single" @click="handleComplete" v-hasPermi="['prd:work:edit']">完成</el-button>
+        <el-button type="success" plain icon="Finished" :disabled="single" @click="handleComplete()" v-hasPermi="['prd:work:edit']">完成</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="danger" plain icon="Close" :disabled="single" @click="handleClose" v-hasPermi="['prd:work:edit']">关闭</el-button>
+        <el-button type="danger" plain icon="Close" :disabled="single" @click="handleClose()" v-hasPermi="['prd:work:edit']">关闭</el-button>
       </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
@@ -193,61 +193,63 @@
 </template>
 
 <script setup lang="ts" name="PrdWork">
-import { listWork, delWork, releaseWork, startWork, completeWork, closeWork, submitWorkFlow, getWorkProcId } from '@/api/erp/prd/work';
+import {
+  listWork,
+  getWork,
+  addWork,
+  updateWork,
+  delWork,
+  releaseWork,
+  startWork,
+  completeWork,
+  closeWork,
+  submitWorkFlow,
+  getWorkProcId
+} from '@/api/erp/prd/work';
 import { useRouter } from 'vue-router';
+import type { FormInstance } from 'element-plus';
+import { useCrud } from '@/composables/useCrud';
 
 const router = useRouter();
-const { proxy } = getCurrentInstance();
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { prd_source_type, so_order_priority, prd_wo_status, prd_backflush_flag, bd_quality_status } = toRefs<any>(
   proxy.useDict('prd_source_type', 'so_order_priority', 'prd_wo_status', 'prd_backflush_flag', 'bd_quality_status')
 );
 
-const workList = ref([]);
-const loading = ref(true);
-const showSearch = ref(true);
-const ids = ref([]);
-const single = ref(true);
-const multiple = ref(true);
-const total = ref(0);
-
-const data = reactive({
-  queryParams: {
-    pageNum: 1,
-    pageSize: 10,
-    woNo: null,
-    planName: null,
-    materialName: null,
-    planStartDate: null,
-    actualStartDate: null,
-    actualEndDate: null,
-    woStatus: null,
-    workstationName: null,
-    teamName: null
-  }
+const queryParams = ref({
+  pageNum: 1,
+  pageSize: 10,
+  woNo: null,
+  planName: null,
+  materialName: null,
+  planStartDate: null,
+  woStatus: null
 });
 
-const { queryParams } = toRefs(data);
-
-/** 查询生产工单列表 */
-function getList() {
-  loading.value = true;
-  listWork(queryParams.value)
-    .then((response) => {
-      workList.value = response.rows || response.data || [];
-      total.value = response.total || (response.data ? response.data.length : 0);
-      loading.value = false;
-    })
-    .catch((error) => {
-      console.error('获取列表失败:', error);
-      loading.value = false;
-    });
-}
-
-/** 搜索按钮操作 */
-function handleQuery() {
-  queryParams.value.pageNum = 1;
-  getList();
-}
+// 列表骨架（新增/修改/查看为路由表单页，保留本地 router.push 跳转逻辑）
+const {
+  loading,
+  list: workList,
+  total,
+  ids,
+  single,
+  multiple,
+  showSearch,
+  getList,
+  handleQuery,
+  handleDelete,
+  handleExport,
+  handleSelectionChange
+} = useCrud({
+  apis: { list: listWork, get: getWork, add: addWork, update: updateWork, del: delWork },
+  idField: 'woId',
+  entityName: '生产工单',
+  formRef: ref<FormInstance>(),
+  queryParams,
+  initForm: () => ({}),
+  exportUrl: 'erp/prd/work/export',
+  exportFileName: 'work'
+});
 
 /** 重置按钮操作 */
 function resetQuery() {
@@ -255,34 +257,23 @@ function resetQuery() {
   handleQuery();
 }
 
-// 多选框选中数据
-function handleSelectionChange(selection) {
-  ids.value = selection.map((item) => item.woId);
-  single.value = selection.length != 1;
-  multiple.value = !selection.length;
-}
-
 /** 修改按钮操作 */
-function handleUpdate(row) {
-  if (row && row.type && row instanceof Event) {
-    row = null;
-  }
+function handleUpdate(row?: any) {
   if (!row) {
     if (ids.value.length !== 1) {
       proxy.$modal.msgWarning('请选择一条数据进行修改');
       return;
     }
-    const selectedRow = workList.value.find((item) => item.woId == ids.value[0]);
-    if (!selectedRow) {
+    const selected = workList.value.find((item: any) => item.woId == ids.value[0]);
+    if (!selected) {
       proxy.$modal.msgWarning('未找到选中的数据');
       return;
     }
-    row = selectedRow;
+    row = selected;
   }
-  const woId = row.woId;
   router.push({
     path: '/erp/prd/prdwork/form',
-    query: { id: woId, action: 'edit' }
+    query: { id: row.woId, action: 'edit' }
   });
 }
 
@@ -295,62 +286,39 @@ function handleAdd() {
 }
 
 /** 查看按钮操作 */
-function handleView(row) {
-  if (row && row.type && row instanceof Event) {
-    row = null;
-  }
+function handleView(row?: any) {
   if (!row) {
     if (ids.value.length !== 1) {
       proxy.$modal.msgWarning('请选择一条数据进行查看');
       return;
     }
-    const selectedRow = workList.value.find((item) => item.woId == ids.value[0]);
-    if (!selectedRow) {
+    const selected = workList.value.find((item: any) => item.woId == ids.value[0]);
+    if (!selected) {
       proxy.$modal.msgWarning('未找到选中的数据');
       return;
     }
-    row = selectedRow;
+    row = selected;
   }
-  const woId = row.woId;
   router.push({
     path: '/erp/prd/prdwork/form',
-    query: { id: woId, action: 'view' }
+    query: { id: row.woId, action: 'view' }
   });
 }
 
-/** 删除按钮操作 */
-function handleDelete(row) {
-  const _woIds = row.woId || ids.value;
-  proxy.$modal
-    .confirm('是否确认删除生产工单编号为"' + _woIds + '"的数据项？')
-    .then(function () {
-      return delWork(_woIds);
-    })
-    .then(() => {
-      getList();
-      proxy.$modal.msgSuccess('删除成功');
-    })
-    .catch(() => {});
-}
-
-/** 导出按钮操作 */
-function handleExport() {
-  proxy.download(
-    'erp/prd/work/export',
-    {
-      ...queryParams.value
-    },
-    `work_${new Date().getTime()}.xlsx`
-  );
+/** 解析目标工单：优先取行参数，其次取当前选中行 */
+function resolveTargetWoId(row?: any): any {
+  const woId = row?.woId || ids.value[0];
+  if (!woId) {
+    proxy.$modal.msgWarning('请选择一条工单');
+    return null;
+  }
+  return woId;
 }
 
 /** 提交审批 */
-function handleSubmit(row: any) {
-  const woId = row.woId || ids.value[0];
-  if (!woId) {
-    proxy.$modal.msgWarning('请选择一条工单');
-    return;
-  }
+function handleSubmit(row?: any) {
+  const woId = resolveTargetWoId(row);
+  if (!woId) return;
   proxy.$modal
     .confirm('确认提交审批工单编号为"' + woId + '"的工单？')
     .then(() => {
@@ -364,12 +332,9 @@ function handleSubmit(row: any) {
 }
 
 /** 查看流程 */
-function handleViewFlow(row: any) {
-  const woId = row.woId || ids.value[0];
-  if (!woId) {
-    proxy.$modal.msgWarning('请选择一条工单');
-    return;
-  }
+function handleViewFlow(row?: any) {
+  const woId = resolveTargetWoId(row);
+  if (!woId) return;
   getWorkProcId(woId)
     .then((res: any) => {
       if (res.code === 200 && res.data) {
@@ -383,13 +348,10 @@ function handleViewFlow(row: any) {
     });
 }
 
-/** 工单状态下拉按钮 */
-function handleRelease(row: any) {
-  const woId = row.woId || ids.value[0];
-  if (!woId) {
-    proxy.$modal.msgWarning('请选择一条工单');
-    return;
-  }
+/** 工单下达 */
+function handleRelease(row?: any) {
+  const woId = resolveTargetWoId(row);
+  if (!woId) return;
   proxy.$modal
     .confirm('确认下达工单编号为"' + woId + '"的工单？')
     .then(() => {
@@ -401,12 +363,10 @@ function handleRelease(row: any) {
     .catch(() => {});
 }
 
-function handleStart(row: any) {
-  const woId = row.woId || ids.value[0];
-  if (!woId) {
-    proxy.$modal.msgWarning('请选择一条工单');
-    return;
-  }
+/** 工单开始 */
+function handleStart(row?: any) {
+  const woId = resolveTargetWoId(row);
+  if (!woId) return;
   proxy.$modal
     .confirm('确认开始工单编号为"' + woId + '"的生产？')
     .then(() => {
@@ -418,12 +378,10 @@ function handleStart(row: any) {
     .catch(() => {});
 }
 
-function handleComplete(row: any) {
-  const woId = row.woId || ids.value[0];
-  if (!woId) {
-    proxy.$modal.msgWarning('请选择一条工单');
-    return;
-  }
+/** 工单完成 */
+function handleComplete(row?: any) {
+  const woId = resolveTargetWoId(row);
+  if (!woId) return;
   proxy.$modal
     .confirm('确认完成工单编号为"' + woId + '"的生产？')
     .then(() => {
@@ -435,12 +393,10 @@ function handleComplete(row: any) {
     .catch(() => {});
 }
 
-function handleClose(row: any) {
-  const woId = row.woId || ids.value[0];
-  if (!woId) {
-    proxy.$modal.msgWarning('请选择一条工单');
-    return;
-  }
+/** 工单关闭 */
+function handleClose(row?: any) {
+  const woId = resolveTargetWoId(row);
+  if (!woId) return;
   proxy.$modal
     .confirm('确认关闭工单编号为"' + woId + '"？')
     .then(() => {

@@ -2,9 +2,9 @@
   <div class="p-2">
     <!-- 筛选区 -->
     <el-card class="mb-2">
-      <el-form :model="queryParams" ref="queryFormRef" label-width="90px" class="list-search">
+      <el-form :model="queryParams" ref="queryRef" label-width="90px" class="list-search">
         <el-row :gutter="16">
-          <el-col :span="8">
+          <el-col :span="6">
             <el-form-item label="统计区间" prop="dateRange">
               <el-date-picker
                 v-model="dateRange"
@@ -14,30 +14,30 @@
                 start-placeholder="开始日期"
                 end-placeholder="结束日期"
                 style="width: 100%"
-                @change="handleQuery"
+                @change="handleQuery()"
               />
             </el-form-item>
           </el-col>
-          <el-col :span="5">
+          <el-col :span="6">
             <el-form-item label="设备">
-              <equipment-select v-model="queryParams.equipmentId" @change="handleQuery" />
+              <equipment-select v-model="queryParams.equipmentId" @change="handleQuery()" />
             </el-form-item>
           </el-col>
-          <el-col :span="5">
+          <el-col :span="6">
             <el-form-item label="设备类型">
-              <el-select v-model="queryParams.equipmentType" placeholder="全部" clearable style="width: 100%" @change="handleQuery">
+              <el-select v-model="queryParams.equipmentType" placeholder="全部" clearable style="width: 100%" @change="handleQuery()">
                 <el-option v-for="d in mes_equipment_type" :key="d.value" :label="d.label" :value="d.value" />
               </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="6" class="search-actions">
             <el-form-item>
-              <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-              <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-              <el-button type="warning" plain icon="RefreshRight" @click="handleOpenAggregate" v-hasPermi="['mes:eq:oee:aggregate']"
+              <el-button type="primary" icon="Search" @click="handleQuery()">搜索</el-button>
+              <el-button icon="Refresh" @click="resetQuery()">重置</el-button>
+              <el-button type="warning" plain icon="RefreshRight" @click="handleOpenAggregate()" v-hasPermi="['mes:eq:oee:aggregate']"
                 >手动聚合</el-button
               >
-              <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['mes:eq:oee:export']">导出</el-button>
+              <el-button type="warning" plain icon="Download" @click="handleExport()" v-hasPermi="['mes:eq:oee:export']">导出</el-button>
             </el-form-item>
           </el-col>
         </el-row>

@@ -1,107 +1,105 @@
 <template>
-  <div class="p-2">
-    <el-card>
-      <el-form :model="queryParams" ref="queryFormRef" v-show="showSearch" label-width="100px" class="list-search">
-        <el-row :gutter="16">
-          <el-col :span="6">
-            <el-form-item label="NCR编号" prop="ncrCode">
-              <el-input v-model="queryParams.ncrCode" placeholder="请输入NCR编号" clearable @keyup.enter="handleQuery" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="6">
-            <el-form-item label="来源" prop="sourceType">
-              <el-select v-model="queryParams.sourceType" placeholder="请选择来源" clearable style="width: 100%">
-                <el-option v-for="dict in mes_ncr_source_type" :key="dict.value" :label="dict.label" :value="dict.value" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="6">
-            <el-form-item label="状态" prop="status">
-              <el-select v-model="queryParams.status" placeholder="请选择状态" clearable style="width: 100%">
-                <el-option v-for="dict in mes_ncr_status" :key="dict.value" :label="dict.label" :value="dict.value" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="6">
-            <el-form-item label="工单编号" prop="woNo">
-              <el-input v-model="queryParams.woNo" placeholder="请输入工单编号" clearable @keyup.enter="handleQuery" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="6" class="search-actions">
-            <el-form-item>
-              <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-              <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-            </el-form-item>
-          </el-col>
-        </el-row>
-      </el-form>
-
-      <el-row :gutter="10" class="mb8">
-        <el-col :span="1.5">
-          <el-button type="success" plain icon="Plus" @click="handleAdd" v-hasPermi="['mes:ncr:order:add']">新增NCR</el-button>
+  <div class="app-container">
+    <el-form :model="queryParams" ref="queryRef" v-show="showSearch" label-width="100px" class="list-search">
+      <el-row :gutter="16">
+        <el-col :span="6">
+          <el-form-item label="NCR编号" prop="ncrCode">
+            <el-input v-model="queryParams.ncrCode" placeholder="请输入NCR编号" clearable @keyup.enter="handleQuery" />
+          </el-form-item>
         </el-col>
-        <el-col :span="1.5">
-          <el-button type="danger" plain icon="Delete" :disabled="!ids.length" @click="() => handleDelete()" v-hasPermi="['mes:ncr:order:remove']"
+        <el-col :span="6">
+          <el-form-item label="来源" prop="sourceType">
+            <el-select v-model="queryParams.sourceType" placeholder="请选择来源" clearable style="width: 100%">
+              <el-option v-for="dict in mes_ncr_source_type" :key="dict.value" :label="dict.label" :value="dict.value" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="状态" prop="status">
+            <el-select v-model="queryParams.status" placeholder="请选择状态" clearable style="width: 100%">
+              <el-option v-for="dict in mes_ncr_status" :key="dict.value" :label="dict.label" :value="dict.value" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="工单编号" prop="woNo">
+            <el-input v-model="queryParams.woNo" placeholder="请输入工单编号" clearable @keyup.enter="handleQuery" />
+          </el-form-item>
+        </el-col>
+        <el-col :span="6" class="search-actions">
+          <el-form-item>
+            <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+          </el-form-item>
+        </el-col>
+      </el-row>
+    </el-form>
+
+    <el-row :gutter="10" class="mb8">
+      <el-col :span="1.5">
+        <el-button type="success" plain icon="Plus" @click="handleAdd" v-hasPermi="['mes:ncr:order:add']">新增NCR</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete()" v-hasPermi="['mes:ncr:order:remove']"
+          >删除</el-button
+        >
+      </el-col>
+      <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
+    </el-row>
+
+    <el-table v-loading="loading" :data="list" show-overflow-tooltip @selection-change="handleSelectionChange">
+      <el-table-column type="selection" width="55" align="center" />
+      <el-table-column label="NCR编号" prop="ncrCode" min-width="150" />
+      <el-table-column label="来源" prop="sourceType" align="center" width="100">
+        <template #default="scope"><dict-tag :options="mes_ncr_source_type" :value="scope.row.sourceType" /></template>
+      </el-table-column>
+      <el-table-column label="物料" prop="materialName" min-width="140" show-overflow-tooltip>
+        <template #default="scope">{{ scope.row.materialCode }} {{ scope.row.materialName }}</template>
+      </el-table-column>
+      <el-table-column label="工单编号" prop="woNo" width="140" />
+      <el-table-column label="缺陷数量" prop="defectQty" align="right" width="100" />
+      <el-table-column label="状态" prop="status" align="center" width="100">
+        <template #default="scope"><dict-tag :options="mes_ncr_status" :value="scope.row.status" /></template>
+      </el-table-column>
+      <el-table-column label="创建时间" prop="createTime" width="170" />
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="280" :show-overflow-tooltip="false">
+        <template #default="scope">
+          <el-button link type="primary" icon="View" @click="handleDetail(scope.row)">详情</el-button>
+          <el-button
+            link
+            type="success"
+            icon="Check"
+            @click="handleReview(scope.row)"
+            v-if="scope.row.status === 'OPEN'"
+            v-hasPermi="['mes:ncr:order:review']"
+            >评审</el-button
+          >
+          <el-button
+            link
+            type="warning"
+            icon="Tools"
+            @click="handleDispose(scope.row)"
+            v-if="scope.row.status === 'OPEN' || scope.row.status === 'REVIEW'"
+            v-hasPermi="['mes:ncr:order:dispose']"
+            >处置</el-button
+          >
+          <el-button
+            link
+            type="danger"
+            icon="Delete"
+            @click="handleDelete(scope.row)"
+            v-if="scope.row.status === 'CLOSED'"
+            v-hasPermi="['mes:ncr:order:remove']"
             >删除</el-button
           >
-        </el-col>
-        <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
-      </el-row>
+        </template>
+      </el-table-column>
+    </el-table>
 
-      <el-table v-loading="loading" :data="dataList" show-overflow-tooltip @selection-change="handleSelectionChange">
-        <el-table-column type="selection" width="55" align="center" />
-        <el-table-column label="NCR编号" prop="ncrCode" min-width="150" />
-        <el-table-column label="来源" prop="sourceType" align="center" width="100">
-          <template #default="scope"><dict-tag :options="mes_ncr_source_type" :value="scope.row.sourceType" /></template>
-        </el-table-column>
-        <el-table-column label="物料" prop="materialName" min-width="140" show-overflow-tooltip>
-          <template #default="scope">{{ scope.row.materialCode }} {{ scope.row.materialName }}</template>
-        </el-table-column>
-        <el-table-column label="工单编号" prop="woNo" width="140" />
-        <el-table-column label="缺陷数量" prop="defectQty" align="right" width="100" />
-        <el-table-column label="状态" prop="status" align="center" width="100">
-          <template #default="scope"><dict-tag :options="mes_ncr_status" :value="scope.row.status" /></template>
-        </el-table-column>
-        <el-table-column label="创建时间" prop="createTime" width="170" />
-        <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="280" :show-overflow-tooltip="false">
-          <template #default="scope">
-            <el-button link type="primary" icon="View" @click="handleDetail(scope.row)">详情</el-button>
-            <el-button
-              link
-              type="success"
-              icon="Check"
-              @click="handleReview(scope.row)"
-              v-if="scope.row.status === 'OPEN'"
-              v-hasPermi="['mes:ncr:order:review']"
-              >评审</el-button
-            >
-            <el-button
-              link
-              type="warning"
-              icon="Tools"
-              @click="handleDispose(scope.row)"
-              v-if="scope.row.status === 'OPEN' || scope.row.status === 'REVIEW'"
-              v-hasPermi="['mes:ncr:order:dispose']"
-              >处置</el-button
-            >
-            <el-button
-              link
-              type="danger"
-              icon="Delete"
-              @click="handleDelete(scope.row)"
-              v-if="scope.row.status === 'CLOSED'"
-              v-hasPermi="['mes:ncr:order:remove']"
-              >删除</el-button
-            >
-          </template>
-        </el-table-column>
-      </el-table>
-
-      <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
-    </el-card>
+    <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
     <!-- 新增对话框 -->
-    <el-dialog :title="dialog.title" v-model="dialog.visible" width="640px" append-to-body>
+    <el-dialog :title="title" v-model="open" width="640px" append-to-body>
       <el-form ref="orderFormRef" :model="form" :rules="rules" label-width="100px">
         <el-row :gutter="20">
           <el-col :span="12">
@@ -156,7 +154,7 @@
       </el-form>
       <template #footer>
         <el-button type="primary" @click="submitForm">确 定</el-button>
-        <el-button @click="dialog.visible = false">取 消</el-button>
+        <el-button @click="cancel">取 消</el-button>
       </template>
     </el-dialog>
 
@@ -355,7 +353,7 @@
 
 <script setup lang="ts" name="NcrOrder">
 import { listOrder, getOrder, addOrder, updateOrder, delOrder, reviewOrder, disposeOrder } from '@/api/mes/ncr/order';
-import type { NcrOrderVO, NcrOrderForm, NcrOrderQuery } from '@/api/mes/ncr/order';
+import type { NcrOrderVO, NcrOrderQuery } from '@/api/mes/ncr/order';
 import { listDefect, addDefect } from '@/api/mes/ncr/defect';
 import type { NcrDefectVO, NcrDefectForm } from '@/api/mes/ncr/defect';
 import { listDefectCode } from '@/api/mes/ncr/defect-code';
@@ -366,32 +364,85 @@ import type { Ncr8dReportVO, Ncr8dReportForm } from '@/api/mes/ncr/8d-report';
 import { previewCode } from '@/api/system/autocode/rule';
 import { listWorkOrder } from '@/api/mes/pro/workorder';
 import MaterialSelectDialog from '@/components/MaterialSelectDialog/index.vue';
+import { useCrud } from '@/composables/useCrud';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
-const { mes_ncr_status, mes_ncr_source_type, mes_ncr_disposition, mes_defect_cause, mes_rework_status, mes_8d_status, mes_wo_source_type } =
-  toRefs<any>(
-    proxy?.useDict(
-      'mes_ncr_status',
-      'mes_ncr_source_type',
-      'mes_ncr_disposition',
-      'mes_defect_cause',
-      'mes_rework_status',
-      'mes_8d_status',
-      'mes_wo_source_type'
-    )
-  );
-const dataList = ref<NcrOrderVO[]>([]);
-const total = ref(0);
-const loading = ref(true);
-const ids = ref<number[]>([]);
-const queryParams = reactive<NcrOrderQuery>({ pageNum: 1, pageSize: 10 } as any);
-const showSearch = ref(true);
-const queryFormRef = ref<ElFormInstance>();
+const { mes_ncr_status, mes_ncr_source_type, mes_ncr_disposition, mes_defect_cause, mes_rework_status, mes_8d_status } = toRefs<any>(
+  proxy?.useDict('mes_ncr_status', 'mes_ncr_source_type', 'mes_ncr_disposition', 'mes_defect_cause', 'mes_rework_status', 'mes_8d_status')
+);
+
 const orderFormRef = ref<ElFormInstance>();
-const dialog = reactive({ visible: false, title: '' });
-const form = reactive<NcrOrderForm>({ sourceType: 'CUSTOMER', defectQty: 1 } as NcrOrderForm);
 const autoGenFlag = ref(false);
 const materialSelectRef = ref<InstanceType<typeof MaterialSelectDialog>>();
+
+const queryParams = ref<NcrOrderQuery>({
+  pageNum: 1,
+  pageSize: 10,
+  ncrCode: undefined,
+  sourceType: undefined,
+  status: undefined,
+  woNo: undefined
+});
+
+const rules: ElFormRules = {
+  sourceType: [{ required: true, message: '来源不能为空', trigger: 'change' }],
+  materialId: [{ required: true, message: '物料不能为空', trigger: 'blur' }],
+  defectQty: [{ required: true, message: '缺陷数量不能为空', trigger: 'blur' }]
+};
+
+const {
+  loading,
+  list,
+  total,
+  open,
+  title,
+  multiple,
+  showSearch,
+  form,
+  getList,
+  handleQuery,
+  handleDelete,
+  handleSelectionChange,
+  submitForm,
+  cancel,
+  handleAdd: rawHandleAdd
+} = useCrud({
+  apis: { list: listOrder, get: getOrder, add: addOrder, update: updateOrder, del: delOrder },
+  idField: 'ncrId',
+  entityName: 'NCR',
+  formRef: orderFormRef,
+  queryParams,
+  initForm: () => ({
+    ncrId: undefined,
+    ncrCode: '',
+    sourceType: 'CUSTOMER',
+    woId: undefined,
+    woNo: '',
+    materialId: undefined,
+    materialCode: '',
+    materialName: '',
+    defectQty: 1,
+    remark: ''
+  }),
+  onReset: () => {
+    autoGenFlag.value = false;
+  },
+  beforeSubmit: () => {
+    if (!form.value.ncrId && autoGenFlag.value) {
+      form.value.ncrCode = undefined;
+    }
+  }
+});
+
+/** 新增（包装避免 @click 事件对象被误传为 extraInit） */
+function handleAdd() {
+  rawHandleAdd();
+}
+
+function resetQuery() {
+  proxy?.resetForm('queryRef');
+  handleQuery();
+}
 
 // 处置
 const disposeDialog = reactive({ visible: false, ncrId: 0 as number });
@@ -433,93 +484,6 @@ const woDialog = reactive({
   total: 0,
   query: { pageNum: 1, pageSize: 10, woNo: '' }
 });
-
-const rules: ElFormRules = {
-  sourceType: [{ required: true, message: '来源不能为空', trigger: 'change' }],
-  materialId: [{ required: true, message: '物料不能为空', trigger: 'blur' }],
-  defectQty: [{ required: true, message: '缺陷数量不能为空', trigger: 'blur' }]
-};
-
-const getList = async () => {
-  loading.value = true;
-  try {
-    const res = await listOrder(queryParams);
-    dataList.value = res.rows;
-    total.value = res.total;
-  } finally {
-    loading.value = false;
-  }
-};
-
-const handleQuery = () => {
-  queryParams.pageNum = 1;
-  getList();
-};
-const resetQuery = () => {
-  proxy!.resetForm('queryFormRef');
-  handleQuery();
-};
-const handleSelectionChange = (selection: NcrOrderVO[]) => {
-  ids.value = selection.map((i) => i.ncrId);
-};
-
-const resetForm = () => {
-  autoGenFlag.value = false;
-  Object.assign(form, {
-    ncrId: undefined,
-    ncrCode: '',
-    sourceType: 'CUSTOMER',
-    woId: undefined,
-    woNo: '',
-    materialId: 0,
-    materialCode: '',
-    materialName: '',
-    defectQty: 1,
-    remark: ''
-  });
-  orderFormRef.value?.resetFields();
-};
-
-const handleAdd = () => {
-  resetForm();
-  dialog.title = '新增NCR';
-  dialog.visible = true;
-};
-
-const submitForm = () => {
-  orderFormRef.value?.validate(async (valid) => {
-    if (!valid) return;
-    if (!form.ncrId && autoGenFlag.value) {
-      form.ncrCode = undefined;
-    }
-    if (form.ncrId) {
-      await updateOrder(form);
-      proxy!.$modal.msgSuccess('修改成功');
-    } else {
-      await addOrder(form);
-      proxy!.$modal.msgSuccess('新增成功');
-    }
-    dialog.visible = false;
-    getList();
-  });
-};
-
-const handleDelete = async (row?: NcrOrderVO) => {
-  let delIds: number[];
-  if (row) {
-    delIds = [row.ncrId];
-  } else {
-    if (!ids.value.length) {
-      proxy!.$modal.msgWarning('请选择要删除的NCR');
-      return;
-    }
-    delIds = ids.value;
-  }
-  await proxy!.$modal.confirm('确认删除选中的NCR?');
-  await delOrder(delIds);
-  proxy!.$modal.msgSuccess('删除成功');
-  getList();
-};
 
 // 评审
 const handleReview = async (row: NcrOrderVO) => {
@@ -665,10 +629,10 @@ const viewReworkDetail = (row: NcrReworkOrderVO) => {
 const handleAutoGenChange = (val: boolean) => {
   if (val) {
     previewCode('MES_NCR_CODE').then((response) => {
-      form.ncrCode = response as unknown as string;
+      form.value.ncrCode = response as unknown as string;
     });
   } else {
-    form.ncrCode = '';
+    form.value.ncrCode = '';
   }
 };
 
@@ -677,9 +641,9 @@ const openMaterialSelect = () => {
   materialSelectRef.value?.open();
 };
 const handleMaterialSelect = (row: any) => {
-  form.materialId = row.materialId;
-  form.materialCode = row.materialCode;
-  form.materialName = row.materialName;
+  form.value.materialId = row.materialId;
+  form.value.materialCode = row.materialCode;
+  form.value.materialName = row.materialName;
   orderFormRef.value?.validateField('materialId');
 };
 
@@ -695,12 +659,12 @@ const queryWos = () => {
   });
 };
 const selectWo = (row: any) => {
-  form.woId = row.mesWoId;
-  form.woNo = row.woNo;
+  form.value.woId = row.mesWoId;
+  form.value.woNo = row.woNo;
   woDialog.visible = false;
 };
 
-onMounted(() => getList());
+getList();
 </script>
 
 <style scoped>

@@ -1,81 +1,79 @@
 <template>
-  <div class="p-2">
-    <el-card>
-      <el-form :model="queryParams" ref="queryFormRef" v-show="showSearch" label-width="100px" class="list-search">
-        <el-row :gutter="16">
-          <el-col :span="6">
-            <el-form-item label="IQC编号" prop="iqcNo">
-              <el-input v-model="queryParams.iqcNo" placeholder="请输入IQC编号" clearable @keyup.enter="handleQuery" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="6">
-            <el-form-item label="状态" prop="status">
-              <el-select v-model="queryParams.status" placeholder="请选择状态" clearable style="width: 100%">
-                <el-option v-for="dict in mes_qc_status" :key="dict.value" :label="dict.label" :value="dict.value" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="6" :offset="6" class="search-actions">
-            <el-form-item>
-              <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-              <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-            </el-form-item>
-          </el-col>
-        </el-row>
-      </el-form>
-
-      <el-row :gutter="10" class="mb8">
-        <el-col :span="1.5">
-          <el-button type="success" plain icon="Plus" @click="handleOpenAdd" v-hasPermi="['mes:qc:iqc:add']">新增IQC</el-button>
+  <div class="app-container">
+    <el-form :model="queryParams" ref="queryRef" v-show="showSearch" label-width="100px" class="list-search">
+      <el-row :gutter="16">
+        <el-col :span="6">
+          <el-form-item label="IQC编号" prop="iqcNo">
+            <el-input v-model="queryParams.iqcNo" placeholder="请输入IQC编号" clearable @keyup.enter="handleQuery" />
+          </el-form-item>
         </el-col>
-        <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
+        <el-col :span="6">
+          <el-form-item label="状态" prop="status">
+            <el-select v-model="queryParams.status" placeholder="请选择状态" clearable style="width: 100%">
+              <el-option v-for="dict in mes_qc_status" :key="dict.value" :label="dict.label" :value="dict.value" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :span="6" :offset="6" class="search-actions">
+          <el-form-item>
+            <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+          </el-form-item>
+        </el-col>
       </el-row>
+    </el-form>
 
-      <el-table v-loading="loading" :data="dataList" show-overflow-tooltip>
-        <el-table-column label="IQC编号" prop="iqcNo" />
-        <el-table-column label="物料编码" prop="materialCode">
-          <template #default="scope">{{ scope.row.materialCode || '-' }}</template>
-        </el-table-column>
-        <el-table-column label="物料名称" prop="materialName" min-width="120" show-overflow-tooltip>
-          <template #default="scope">{{ scope.row.materialName || '-' }}</template>
-        </el-table-column>
-        <el-table-column label="供应商" prop="vendorName" min-width="120" show-overflow-tooltip>
-          <template #default="scope">{{ scope.row.vendorName || '-' }}</template>
-        </el-table-column>
-        <el-table-column label="检验数量" prop="quantity" align="right" />
-        <el-table-column label="状态" prop="status" align="center">
-          <template #default="scope">
-            <dict-tag :options="mes_qc_status" :value="scope.row.status" />
-          </template>
-        </el-table-column>
-        <el-table-column label="检验结果" prop="inspectResult" align="center">
-          <template #default="scope">
-            <dict-tag :options="mes_qc_result" :value="scope.row.inspectResult" />
-          </template>
-        </el-table-column>
-        <el-table-column label="检验员" prop="inspectorName">
-          <template #default="scope">{{ scope.row.inspectorName || '-' }}</template>
-        </el-table-column>
-        <el-table-column label="检验时间" prop="inspectTime">
-          <template #default="scope">{{ scope.row.inspectTime || '-' }}</template>
-        </el-table-column>
-        <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
-          <template #default="scope">
-            <el-button
-              link
-              type="primary"
-              icon="Check"
-              @click="handleOpenInspect(scope.row)"
-              v-if="scope.row.status !== 'COMPLETED'"
-              v-hasPermi="['mes:qc:iqc:inspect']"
-              >检验</el-button
-            >
-          </template>
-        </el-table-column>
-      </el-table>
+    <el-row :gutter="10" class="mb8">
+      <el-col :span="1.5">
+        <el-button type="success" plain icon="Plus" @click="handleOpenAdd" v-hasPermi="['mes:qc:iqc:add']">新增IQC</el-button>
+      </el-col>
+      <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
+    </el-row>
 
-      <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
-    </el-card>
+    <el-table v-loading="loading" :data="list" show-overflow-tooltip>
+      <el-table-column label="IQC编号" prop="iqcNo" />
+      <el-table-column label="物料编码" prop="materialCode">
+        <template #default="scope">{{ scope.row.materialCode || '-' }}</template>
+      </el-table-column>
+      <el-table-column label="物料名称" prop="materialName" min-width="120" show-overflow-tooltip>
+        <template #default="scope">{{ scope.row.materialName || '-' }}</template>
+      </el-table-column>
+      <el-table-column label="供应商" prop="vendorName" min-width="120" show-overflow-tooltip>
+        <template #default="scope">{{ scope.row.vendorName || '-' }}</template>
+      </el-table-column>
+      <el-table-column label="检验数量" prop="quantity" align="right" />
+      <el-table-column label="状态" prop="status" align="center">
+        <template #default="scope">
+          <dict-tag :options="mes_qc_status" :value="scope.row.status" />
+        </template>
+      </el-table-column>
+      <el-table-column label="检验结果" prop="inspectResult" align="center">
+        <template #default="scope">
+          <dict-tag :options="mes_qc_result" :value="scope.row.inspectResult" />
+        </template>
+      </el-table-column>
+      <el-table-column label="检验员" prop="inspectorName">
+        <template #default="scope">{{ scope.row.inspectorName || '-' }}</template>
+      </el-table-column>
+      <el-table-column label="检验时间" prop="inspectTime">
+        <template #default="scope">{{ scope.row.inspectTime || '-' }}</template>
+      </el-table-column>
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
+        <template #default="scope">
+          <el-button
+            link
+            type="primary"
+            icon="Check"
+            @click="handleOpenInspect(scope.row)"
+            v-if="scope.row.status !== 'COMPLETED'"
+            v-hasPermi="['mes:qc:iqc:inspect']"
+            >检验</el-button
+          >
+        </template>
+      </el-table-column>
+    </el-table>
+
+    <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
     <!-- 新增IQC对话框 -->
     <el-dialog v-model="addDialog.visible" title="新增IQC检验单" width="500px" append-to-body>
@@ -175,22 +173,31 @@ import { listIqc, addIqc, inspectIqc } from '@/api/mes/qc/iqc';
 import type { QcIqcVO, QcIqcQuery, QcIqcForm } from '@/api/mes/qc/iqc';
 import { listReceive } from '@/api/erp/wm/receive';
 import MaterialSelectDialog from '@/components/MaterialSelectDialog/index.vue';
+import { useCrud } from '@/composables/useCrud';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { mes_qc_status, mes_qc_result } = toRefs<any>(proxy?.useDict('mes_qc_status', 'mes_qc_result'));
 // 检验结果可选项(排除 PENDING)
 const inspectResultOptions = computed(() => (mes_qc_result.value as any[]).filter((d) => d.value !== 'PENDING'));
 
-const dataList = ref<QcIqcVO[]>([]);
-const loading = ref(true);
-const showSearch = ref(true);
-const total = ref(0);
+// 检验单的新增/检验为独立业务弹窗(非标准 CRUD 表单)，列表骨架走 useCrud，以下占位 API 不会被调用
+const iqcFormRef = ref<ElFormInstance>();
+const readonlyApi = () => Promise.resolve({ data: {} as any });
 
 const queryParams = ref<QcIqcQuery>({
   pageNum: 1,
   pageSize: 10,
   iqcNo: undefined,
   status: undefined
+});
+
+const { loading, list, total, showSearch, getList, handleQuery } = useCrud<QcIqcVO, QcIqcQuery>({
+  apis: { list: listIqc, get: readonlyApi, add: readonlyApi, update: readonlyApi, del: readonlyApi },
+  idField: 'iqcId',
+  entityName: 'IQC检验单',
+  formRef: iqcFormRef,
+  queryParams,
+  initForm: () => ({})
 });
 
 const addDialog = reactive({ visible: false });
@@ -224,26 +231,10 @@ const inspectForm = reactive<{ iqcId: number; iqcNo: string; inspectResult: stri
   remark: ''
 });
 
-const getList = async () => {
-  loading.value = true;
-  try {
-    const res = await listIqc(queryParams.value);
-    dataList.value = res.rows;
-    total.value = res.total;
-  } finally {
-    loading.value = false;
-  }
-};
-
-const handleQuery = () => {
-  queryParams.value.pageNum = 1;
-  getList();
-};
-
-const resetQuery = () => {
-  proxy?.resetForm('queryFormRef');
+function resetQuery() {
+  proxy?.resetForm('queryRef');
   handleQuery();
-};
+}
 
 const handleOpenAdd = () => {
   Object.assign(addForm, {
@@ -319,7 +310,5 @@ const handleMaterialSelect = (row: any) => {
   addForm.materialName = row.materialName;
 };
 
-onMounted(() => {
-  getList();
-});
+getList();
 </script>

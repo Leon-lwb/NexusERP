@@ -26,8 +26,8 @@
         </el-col>
         <el-col :span="6" :offset="18" class="search-actions">
           <el-form-item>
-            <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+            <el-button type="primary" icon="Search" @click="handleQuery()">搜索</el-button>
+            <el-button icon="Refresh" @click="resetQuery()">重置</el-button>
           </el-form-item>
         </el-col>
       </el-row>
@@ -35,13 +35,13 @@
 
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
-        <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['prd:rework:add']">新增</el-button>
+        <el-button type="primary" plain icon="Plus" @click="handleAdd()" v-hasPermi="['prd:rework:add']">新增</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete()" v-hasPermi="['prd:rework:remove']">删除</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['prd:rework:export']">导出</el-button>
+        <el-button type="warning" plain icon="Download" @click="handleExport()" v-hasPermi="['prd:rework:export']">导出</el-button>
       </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" />
     </el-row>
@@ -148,8 +148,8 @@
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button type="primary" @click="submitForm">确 定</el-button>
-        <el-button @click="cancel">取 消</el-button>
+        <el-button type="primary" @click="submitForm()">确 定</el-button>
+        <el-button @click="cancel()">取 消</el-button>
       </template>
     </el-dialog>
   </div>
@@ -167,38 +167,85 @@ import {
   issueReworkMaterial,
   receiveReworkMaterial
 } from '@/api/erp/prd/rework';
-import { PrdReworkOrderVO, PrdReworkOrderQuery, PrdReworkOrderForm } from '@/api/erp/prd/rework/types';
+import type { PrdReworkOrderVO, PrdReworkOrderQuery } from '@/api/erp/prd/rework/types';
 import { listWork } from '@/api/erp/prd/work';
+import type { FormInstance } from 'element-plus';
+import { useCrud } from '@/composables/useCrud';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
-const { prd_rework_status, prd_rework_reason } = toRefs<any>(proxy?.useDict('prd_rework_status', 'prd_rework_reason'));
+const { prd_rework_status, prd_rework_reason } = toRefs<any>(proxy.useDict('prd_rework_status', 'prd_rework_reason'));
 
-const reworkList = ref<PrdReworkOrderVO[]>([]);
-const loading = ref(true);
-const showSearch = ref(true);
-const ids = ref<Array<number | string>>([]);
-const single = ref(true);
-const multiple = ref(true);
-const total = ref(0);
-const title = ref('');
-const open = ref(false);
-
-const queryRef = ref<ElFormInstance>();
-const reworkRef = ref<ElFormInstance>();
-const queryParams = ref<PrdReworkOrderQuery>({ pageNum: 1, pageSize: 10 });
-const form = ref<PrdReworkOrderForm>({});
-
+const reworkRef = ref<FormInstance>();
 const woOptions = ref<any[]>([]);
 
-const searchWorkOrder = async (query: string) => {
+const queryParams = ref<PrdReworkOrderQuery>({ pageNum: 1, pageSize: 10 });
+
+const rules = {
+  reworkNo: [{ required: true, message: '返工单号不能为空', trigger: 'blur' }],
+  sourceWoId: [{ required: true, message: '来源工单ID不能为空', trigger: 'blur' }],
+  reworkQty: [{ required: true, message: '返工数量不能为空', trigger: 'blur' }]
+};
+
+const {
+  loading,
+  list: reworkList,
+  total,
+  open,
+  title,
+  multiple,
+  showSearch,
+  form,
+  getList,
+  handleQuery,
+  handleDelete,
+  handleExport,
+  handleSelectionChange,
+  submitForm,
+  cancel,
+  handleAdd: rawHandleAdd,
+  handleUpdate: rawHandleUpdate
+} = useCrud({
+  apis: { list: listReworkOrder, get: getReworkOrder, add: addReworkOrder, update: updateReworkOrder, del: delReworkOrder },
+  idField: 'reworkId',
+  entityName: '返工订单',
+  formRef: reworkRef,
+  queryParams,
+  initForm: () => ({}),
+  exportUrl: 'erp/prd/rework/export',
+  exportFileName: '返工订单'
+});
+
+/** 重置按钮操作 */
+function resetQuery() {
+  proxy.resetForm('queryRef');
+  handleQuery();
+}
+
+/** 新增按钮操作（预载来源工单选项） */
+function handleAdd() {
+  rawHandleAdd(() => {
+    searchWorkOrder('');
+  });
+}
+
+/** 修改按钮操作（预载来源工单选项） */
+function handleUpdate(row?: PrdReworkOrderVO) {
+  return rawHandleUpdate(row, () => {
+    searchWorkOrder('');
+  });
+}
+
+/** 远程搜索来源工单 */
+async function searchWorkOrder(query: string) {
   try {
     const res = await listWork({ woNo: query || undefined, pageNum: 1, pageSize: 20 });
     woOptions.value = res.rows || [];
   } catch {
     woOptions.value = [];
   }
-};
+}
 
+/** 选中来源工单后回填物料信息 */
 const onSourceWoChange = (woId: number) => {
   const wo = woOptions.value.find((i: any) => i.woId === woId);
   if (wo) {
@@ -211,115 +258,53 @@ const onSourceWoChange = (woId: number) => {
   }
 };
 
-const rules = {
-  reworkNo: [{ required: true, message: '返工单号不能为空', trigger: 'blur' }],
-  sourceWoId: [{ required: true, message: '来源工单ID不能为空', trigger: 'blur' }],
-  reworkQty: [{ required: true, message: '返工数量不能为空', trigger: 'blur' }]
-};
-
-const getList = async () => {
-  loading.value = true;
-  const res = await listReworkOrder(queryParams.value);
-  reworkList.value = res.rows;
-  total.value = res.total;
-  loading.value = false;
-};
-
-const handleQuery = () => {
-  queryParams.value.pageNum = 1;
-  getList();
-};
-const resetQuery = () => {
-  queryRef.value?.resetFields();
-  handleQuery();
-};
-const handleSelectionChange = (selection: PrdReworkOrderVO[]) => {
-  ids.value = selection.map((item) => item.reworkId);
-  single.value = selection.length !== 1;
-  multiple.value = !selection.length;
-};
-
-const reset = () => {
-  form.value = {};
-  reworkRef.value?.resetFields();
-};
-
-const handleAdd = () => {
-  reset();
-  open.value = true;
-  title.value = '添加返工订单';
-};
-
-const handleUpdate = async (row: PrdReworkOrderVO) => {
-  reset();
-  const res = await getReworkOrder(row.reworkId);
-  form.value = res.data;
-  open.value = true;
-  title.value = '修改返工订单';
-};
-
-const submitForm = () => {
-  reworkRef.value?.validate(async (valid: boolean) => {
-    if (valid) {
-      if (form.value.reworkId) {
-        await updateReworkOrder(form.value);
-        proxy?.$modal.msgSuccess('修改成功');
-      } else {
-        await addReworkOrder(form.value);
-        proxy?.$modal.msgSuccess('新增成功');
-      }
-      open.value = false;
+/** 开始返工 */
+function handleStart(row: PrdReworkOrderVO) {
+  proxy.$modal
+    .confirm('是否确认开始返工订单"' + row.reworkNo + '"？')
+    .then(() => startReworkOrder(row.reworkId))
+    .then(() => {
+      proxy.$modal.msgSuccess('开始成功');
       getList();
-    }
-  });
-};
+    })
+    .catch(() => {});
+}
 
-const handleDelete = async (row?: PrdReworkOrderVO) => {
-  const reworkIds = row?.reworkId || ids.value;
-  await proxy?.$modal.confirm('是否确认删除编号为"' + reworkIds + '"的数据项？');
-  await delReworkOrder(reworkIds);
-  proxy?.$modal.msgSuccess('删除成功');
-  getList();
-};
+/** 完工返工 */
+function handleComplete(row: PrdReworkOrderVO) {
+  proxy.$modal
+    .confirm('是否确认完工返工订单"' + row.reworkNo + '"？')
+    .then(() => completeReworkOrder(row.reworkId))
+    .then(() => {
+      proxy.$modal.msgSuccess('完工成功');
+      getList();
+    })
+    .catch(() => {});
+}
 
-const handleStart = async (row: PrdReworkOrderVO) => {
-  await proxy?.$modal.confirm('是否确认开始返工订单"' + row.reworkNo + '"？');
-  await startReworkOrder(row.reworkId);
-  proxy?.$modal.msgSuccess('开始成功');
-  getList();
-};
+/** 返工出库 */
+function handleIssue(row: PrdReworkOrderVO) {
+  proxy.$modal
+    .confirm('是否确认对返工订单"' + row.reworkNo + '"执行出库？')
+    .then(() => issueReworkMaterial(row.reworkId))
+    .then(() => {
+      proxy.$modal.msgSuccess('出库成功');
+      getList();
+    })
+    .catch(() => {});
+}
 
-const handleComplete = async (row: PrdReworkOrderVO) => {
-  await proxy?.$modal.confirm('是否确认完工返工订单"' + row.reworkNo + '"？');
-  await completeReworkOrder(row.reworkId);
-  proxy?.$modal.msgSuccess('完工成功');
-  getList();
-};
+/** 返工入库 */
+function handleReceive(row: PrdReworkOrderVO) {
+  proxy.$modal
+    .confirm('是否确认对返工订单"' + row.reworkNo + '"执行入库？')
+    .then(() => receiveReworkMaterial(row.reworkId))
+    .then(() => {
+      proxy.$modal.msgSuccess('入库成功');
+      getList();
+    })
+    .catch(() => {});
+}
 
-const handleIssue = async (row: PrdReworkOrderVO) => {
-  await proxy?.$modal.confirm('是否确认对返工订单"' + row.reworkNo + '"执行出库？');
-  await issueReworkMaterial(row.reworkId);
-  proxy?.$modal.msgSuccess('出库成功');
-  getList();
-};
-
-const handleReceive = async (row: PrdReworkOrderVO) => {
-  await proxy?.$modal.confirm('是否确认对返工订单"' + row.reworkNo + '"执行入库？');
-  await receiveReworkMaterial(row.reworkId);
-  proxy?.$modal.msgSuccess('入库成功');
-  getList();
-};
-
-const cancel = () => {
-  open.value = false;
-  reset();
-};
-
-const handleExport = () => {
-  proxy?.download('erp/prd/rework/export', { ...queryParams.value }, `返工订单_${new Date().getTime()}.xlsx`);
-};
-
-onMounted(() => {
-  getList();
-});
+getList();
 </script>

@@ -1,63 +1,62 @@
 <template>
-  <div class="p-2">
-    <el-card>
-      <el-form :model="queryParams" ref="queryFormRef" v-show="showSearch" label-width="100px" class="list-search">
-        <el-row :gutter="16">
-          <el-col :span="6">
-            <el-form-item label="SN编码" prop="snId">
-              <el-input v-model="querySnCode" placeholder="请选择SN" readonly>
-                <template #append>
-                  <el-button icon="Search" @click="openSnDialog('query')" />
-                </template>
-              </el-input>
-            </el-form-item>
-          </el-col>
-          <el-col :span="6">
-            <el-form-item label="批次编码" prop="lotId">
-              <el-input v-model="queryLotCode" placeholder="请选择批次" readonly>
-                <template #append>
-                  <el-button icon="Search" @click="openLotDialog('query')" />
-                </template>
-              </el-input>
-            </el-form-item>
-          </el-col>
-          <el-col :span="6" :offset="6" class="search-actions">
-            <el-form-item>
-              <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-              <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-            </el-form-item>
-          </el-col>
-        </el-row>
-      </el-form>
-
-      <el-row :gutter="10" class="mb8">
-        <el-col :span="1.5">
-          <el-button type="success" plain icon="Plus" @click="handleAdd" v-hasPermi="['mes:lt:binding:add']">新增绑定</el-button>
+  <div class="app-container">
+    <el-form :model="queryParams" ref="queryRef" v-show="showSearch" label-width="100px" class="list-search">
+      <el-row :gutter="16">
+        <el-col :span="6">
+          <el-form-item label="SN编码" prop="snId">
+            <el-input v-model="querySnCode" placeholder="请选择SN" readonly>
+              <template #append>
+                <el-button icon="Search" @click="openSnDialog('query')" />
+              </template>
+            </el-input>
+          </el-form-item>
         </el-col>
-        <el-col :span="1.5">
-          <el-button type="danger" plain icon="Delete" :disabled="!ids.length" @click="handleDelete" v-hasPermi="['mes:lt:binding:remove']"
-            >删除</el-button
-          >
+        <el-col :span="6">
+          <el-form-item label="批次编码" prop="lotId">
+            <el-input v-model="queryLotCode" placeholder="请选择批次" readonly>
+              <template #append>
+                <el-button icon="Search" @click="openLotDialog('query')" />
+              </template>
+            </el-input>
+          </el-form-item>
         </el-col>
-        <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
+        <el-col :span="6" :offset="6" class="search-actions">
+          <el-form-item>
+            <el-button type="primary" icon="Search" @click="handleQuery()">搜索</el-button>
+            <el-button icon="Refresh" @click="resetQuery()">重置</el-button>
+          </el-form-item>
+        </el-col>
       </el-row>
+    </el-form>
 
-      <el-table v-loading="loading" :data="dataList" show-overflow-tooltip @selection-change="handleSelectionChange">
-        <el-table-column type="selection" width="55" align="center" />
-        <el-table-column label="SN编码" prop="snCode" min-width="160" />
-        <el-table-column label="批次编码" prop="lotCode" min-width="160" />
-        <el-table-column label="物料" min-width="160" show-overflow-tooltip>
-          <template #default="scope">{{ scope.row.materialCode }} {{ scope.row.materialName }}</template>
-        </el-table-column>
-        <el-table-column label="绑定时间" prop="boundTime" width="160" />
-        <el-table-column label="绑定人" prop="boundByName" width="120" />
-      </el-table>
+    <el-row :gutter="10" class="mb8">
+      <el-col :span="1.5">
+        <el-button type="primary" plain icon="Plus" @click="handleAdd()" v-hasPermi="['mes:lt:binding:add']">新增</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete()" v-hasPermi="['mes:lt:binding:remove']"
+          >删除</el-button
+        >
+      </el-col>
+      <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
+    </el-row>
 
-      <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
-    </el-card>
+    <el-table v-loading="loading" :data="list" show-overflow-tooltip @selection-change="handleSelectionChange">
+      <el-table-column type="selection" width="55" align="center" />
+      <el-table-column label="SN编码" prop="snCode" min-width="160" />
+      <el-table-column label="批次编码" prop="lotCode" min-width="160" />
+      <el-table-column label="物料" min-width="160" show-overflow-tooltip>
+        <template #default="scope">{{ scope.row.materialCode }} {{ scope.row.materialName }}</template>
+      </el-table-column>
+      <el-table-column label="绑定时间" prop="boundTime" width="160" />
+      <el-table-column label="绑定人" prop="boundByName" width="120" />
+    </el-table>
 
-    <el-dialog :title="dialog.title" v-model="dialog.visible" width="500px" append-to-body>
-      <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
+    <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
+
+    <!-- 添加绑定对话框(SN/批次/物料三级选择) -->
+    <el-dialog :title="title" v-model="open" width="500px" append-to-body>
+      <el-form ref="bindingRef" :model="form" :rules="rules" label-width="100px">
         <el-form-item label="SN" prop="snId">
           <el-input v-model="form.snCode" placeholder="请选择SN" readonly>
             <template #append>
@@ -75,7 +74,7 @@
         <el-form-item label="物料" prop="materialId">
           <el-input v-model="form.materialCode" placeholder="请选择物料" readonly>
             <template #append>
-              <el-button icon="Search" @click="openMaterialSelect" />
+              <el-button icon="Search" @click="openMaterialSelect()" />
             </template>
           </el-input>
         </el-form-item>
@@ -85,7 +84,7 @@
       </el-form>
       <template #footer>
         <el-button type="primary" @click="submitForm">确 定</el-button>
-        <el-button @click="dialog.visible = false">取 消</el-button>
+        <el-button @click="cancel">取 消</el-button>
       </template>
     </el-dialog>
 
@@ -93,11 +92,11 @@
     <el-dialog v-model="snDialog.visible" title="选择SN" width="960px" append-to-body>
       <el-form :model="snDialog.query" :inline="true">
         <el-form-item label="SN编码">
-          <el-input v-model="snDialog.query.snCode" clearable @keyup.enter="querySns" />
+          <el-input v-model="snDialog.query.snCode" clearable @keyup.enter="querySns()" />
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" icon="Search" @click="querySns">搜索</el-button>
-          <el-button icon="Refresh" @click="resetSnQuery">重置</el-button>
+          <el-button type="primary" icon="Search" @click="querySns()">搜索</el-button>
+          <el-button icon="Refresh" @click="resetSnQuery()">重置</el-button>
         </el-form-item>
       </el-form>
       <el-table :data="snDialog.list" height="400" @row-dblclick="selectSn">
@@ -129,11 +128,11 @@
     <el-dialog v-model="lotDialog.visible" title="选择批次" width="960px" append-to-body>
       <el-form :model="lotDialog.query" :inline="true">
         <el-form-item label="批次编码">
-          <el-input v-model="lotDialog.query.lotCode" clearable @keyup.enter="queryLots" />
+          <el-input v-model="lotDialog.query.lotCode" clearable @keyup.enter="queryLots()" />
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" icon="Search" @click="queryLots">搜索</el-button>
-          <el-button icon="Refresh" @click="resetLotQuery">重置</el-button>
+          <el-button type="primary" icon="Search" @click="queryLots()">搜索</el-button>
+          <el-button icon="Refresh" @click="resetLotQuery()">重置</el-button>
         </el-form-item>
       </el-form>
       <el-table :data="lotDialog.list" height="400" @row-dblclick="selectLot">
@@ -169,109 +168,97 @@
 </template>
 
 <script setup lang="ts" name="LtSnBinding">
-import { listBinding, delBinding, addBinding } from '@/api/mes/lt/binding';
+import { listBinding, getBinding, addBinding, delBinding } from '@/api/mes/lt/binding';
 import type { LtSnBindingVO, LtSnBindingForm, LtSnBindingQuery } from '@/api/mes/lt/binding';
 import { listLot } from '@/api/mes/lt/lot';
 import type { LtLotVO } from '@/api/mes/lt/lot';
 import { listSn } from '@/api/mes/pro/sn';
 import MaterialSelectDialog from '@/components/MaterialSelectDialog/index.vue';
+import type { FormInstance } from 'element-plus';
+import { useCrud } from '@/composables/useCrud';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { mes_lot_status, mes_sn_status } = toRefs<any>(proxy?.useDict('mes_lot_status', 'mes_sn_status'));
-const dataList = ref<LtSnBindingVO[]>([]);
-const total = ref(0);
-const loading = ref(true);
-const ids = ref<number[]>([]);
-const queryParams = reactive<LtSnBindingQuery>({ pageNum: 1, pageSize: 10 } as any);
+
+const bindingRef = ref<FormInstance>();
+const materialSelectRef = ref<InstanceType<typeof MaterialSelectDialog>>();
+// 查询条件展示字段(按 SN/批次选择器回填)
 const querySnCode = ref('');
 const queryLotCode = ref('');
-const showSearch = ref(true);
-const queryFormRef = ref<ElFormInstance>();
-const formRef = ref<ElFormInstance>();
-const dialog = reactive({ visible: false, title: '' });
-const form = reactive<LtSnBindingForm>({ snId: 0, lotId: 0, materialId: 0 } as LtSnBindingForm);
+
+const queryParams = ref<LtSnBindingQuery>({
+  pageNum: 1,
+  pageSize: 10,
+  snId: undefined,
+  lotId: undefined
+});
+
 const rules: ElFormRules = {
   snId: [{ required: true, message: '请选择SN', trigger: 'change' }],
   lotId: [{ required: true, message: '请选择批次', trigger: 'change' }],
   materialId: [{ required: true, message: '请选择物料', trigger: 'change' }]
 };
 
-const materialSelectRef = ref<InstanceType<typeof MaterialSelectDialog>>();
+// 绑定关系仅新增/删除(无修改接口)，update 占位仅为满足 useCrud 的 API 签名，不会被调用
+const readonlyApi = () => Promise.resolve();
+
+const {
+  loading,
+  list,
+  total,
+  open,
+  title,
+  ids,
+  single,
+  multiple,
+  showSearch,
+  form,
+  getList,
+  handleQuery,
+  handleDelete,
+  handleSelectionChange,
+  submitForm,
+  cancel,
+  handleAdd: rawHandleAdd
+} = useCrud({
+  apis: { list: listBinding, get: getBinding, add: addBinding, update: readonlyApi, del: delBinding },
+  idField: 'bindingId',
+  entityName: 'SN-批次绑定',
+  formRef: bindingRef,
+  queryParams,
+  initForm: () =>
+    ({
+      bindingId: undefined,
+      snId: undefined,
+      snCode: '',
+      lotId: undefined,
+      lotCode: '',
+      materialId: undefined,
+      materialCode: '',
+      materialName: ''
+    }) as LtSnBindingForm
+});
+
+function handleAdd() {
+  rawHandleAdd();
+}
+
+function resetQuery() {
+  querySnCode.value = '';
+  queryLotCode.value = '';
+  queryParams.value.snId = undefined;
+  queryParams.value.lotId = undefined;
+  handleQuery();
+}
+
+// ============ SN 选择 ============
 const snSelectTarget = ref<'query' | 'form'>('form');
-const lotSelectTarget = ref<'query' | 'form'>('form');
 const snDialog = reactive({
   visible: false,
   list: [] as any[],
   total: 0,
   query: { pageNum: 1, pageSize: 10, snCode: '' as string }
 });
-const lotDialog = reactive({
-  visible: false,
-  list: [] as LtLotVO[],
-  total: 0,
-  query: { pageNum: 1, pageSize: 10, lotCode: '' as string }
-});
-
-const getList = async () => {
-  loading.value = true;
-  try {
-    const res = await listBinding(queryParams);
-    dataList.value = res.rows;
-    total.value = res.total;
-  } finally {
-    loading.value = false;
-  }
-};
-
-const handleQuery = () => {
-  queryParams.pageNum = 1;
-  getList();
-};
-const resetQuery = () => {
-  querySnCode.value = '';
-  queryLotCode.value = '';
-  queryParams.snId = undefined;
-  queryParams.lotId = undefined;
-  handleQuery();
-};
-const handleSelectionChange = (selection: LtSnBindingVO[]) => {
-  ids.value = selection.map((i) => i.bindingId);
-};
-
-const handleAdd = () => {
-  Object.assign(form, {
-    bindingId: undefined,
-    snId: 0,
-    snCode: '',
-    lotId: 0,
-    lotCode: '',
-    materialId: 0,
-    materialCode: '',
-    materialName: ''
-  });
-  formRef.value?.resetFields();
-  dialog.title = '新增SN-批次绑定';
-  dialog.visible = true;
-};
-
-const submitForm = () => {
-  formRef.value?.validate(async (valid) => {
-    if (!valid) return;
-    await addBinding(form);
-    proxy!.$modal.msgSuccess('绑定成功');
-    dialog.visible = false;
-    getList();
-  });
-};
-
-const handleDelete = async () => {
-  await proxy!.$modal.confirm('确认删除选中绑定关系?');
-  await delBinding(ids.value);
-  proxy!.$modal.msgSuccess('删除成功');
-  getList();
-};
-
-// ============ SN 选择 ============
 const openSnDialog = (target: 'query' | 'form') => {
   snSelectTarget.value = target;
   snDialog.visible = true;
@@ -289,24 +276,31 @@ const resetSnQuery = () => {
 };
 const selectSn = (row: any) => {
   if (snSelectTarget.value === 'query') {
-    queryParams.snId = row.snId;
+    queryParams.value.snId = row.snId;
     querySnCode.value = row.snCode;
   } else {
-    form.snId = row.snId;
-    form.snCode = row.snCode;
+    form.value.snId = row.snId;
+    form.value.snCode = row.snCode;
     // SN 自带物料, 顺带带出
     if (row.materialId) {
-      form.materialId = row.materialId;
-      form.materialCode = row.materialCode;
-      form.materialName = row.materialName;
-      formRef.value?.validateField('materialId');
+      form.value.materialId = row.materialId;
+      form.value.materialCode = row.materialCode;
+      form.value.materialName = row.materialName;
+      bindingRef.value?.validateField('materialId');
     }
-    formRef.value?.validateField('snId');
+    bindingRef.value?.validateField('snId');
   }
   snDialog.visible = false;
 };
 
 // ============ 批次选择 ============
+const lotSelectTarget = ref<'query' | 'form'>('form');
+const lotDialog = reactive({
+  visible: false,
+  list: [] as LtLotVO[],
+  total: 0,
+  query: { pageNum: 1, pageSize: 10, lotCode: '' as string }
+});
 const openLotDialog = (target: 'query' | 'form') => {
   lotSelectTarget.value = target;
   lotDialog.visible = true;
@@ -324,19 +318,19 @@ const resetLotQuery = () => {
 };
 const selectLot = (row: LtLotVO) => {
   if (lotSelectTarget.value === 'query') {
-    queryParams.lotId = row.lotId;
+    queryParams.value.lotId = row.lotId;
     queryLotCode.value = row.lotCode;
   } else {
-    form.lotId = row.lotId;
-    form.lotCode = row.lotCode;
+    form.value.lotId = row.lotId;
+    form.value.lotCode = row.lotCode;
     // 批次自带物料, 顺带带出
     if (row.materialId) {
-      form.materialId = row.materialId;
-      form.materialCode = row.materialCode;
-      form.materialName = row.materialName;
-      formRef.value?.validateField('materialId');
+      form.value.materialId = row.materialId;
+      form.value.materialCode = row.materialCode;
+      form.value.materialName = row.materialName;
+      bindingRef.value?.validateField('materialId');
     }
-    formRef.value?.validateField('lotId');
+    bindingRef.value?.validateField('lotId');
   }
   lotDialog.visible = false;
 };
@@ -346,11 +340,11 @@ const openMaterialSelect = () => {
   materialSelectRef.value?.open();
 };
 const handleMaterialSelect = (row: any) => {
-  form.materialId = row.materialId;
-  form.materialCode = row.materialCode;
-  form.materialName = row.materialName;
-  formRef.value?.validateField('materialId');
+  form.value.materialId = row.materialId;
+  form.value.materialCode = row.materialCode;
+  form.value.materialName = row.materialName;
+  bindingRef.value?.validateField('materialId');
 };
 
-onMounted(() => getList());
+getList();
 </script>

@@ -76,8 +76,9 @@ export const addControlChart = (data: SpcControlChartForm): AxiosPromise<SpcCont
 export const updateControlChart = (data: SpcControlChartForm): AxiosPromise<SpcControlChartVO> =>
   request({ url: '/mes/spc/control-chart', method: 'put', data });
 
-/** 批量删除控制图 */
-export const delControlChart = (ids: (string | number)[]) => request({ url: `/mes/spc/control-chart/${ids.join(',')}`, method: 'delete' });
+/** 删除控制图(支持单个 id 或批量) */
+export const delControlChart = (chartIds: Array<string | number> | string | number): AxiosPromise<void> =>
+  request({ url: `/mes/spc/control-chart/${chartIds}`, method: 'delete' });
 
 /** 分析控制图(计算控制限 + OOC判定) */
 export const analyzeControlChart = (chartId: string | number): AxiosPromise<SpcAnalyzeResult> =>

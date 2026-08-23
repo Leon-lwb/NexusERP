@@ -26,8 +26,8 @@
         </el-col>
         <el-col :span="6" :offset="18" class="search-actions">
           <el-form-item>
-            <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+            <el-button type="primary" icon="Search" @click="handleQuery()">搜索</el-button>
+            <el-button icon="Refresh" @click="resetQuery()">重置</el-button>
           </el-form-item>
         </el-col>
       </el-row>
@@ -35,7 +35,7 @@
 
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
-        <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['prd:subcontract:add']">新增</el-button>
+        <el-button type="primary" plain icon="Plus" @click="handleAdd()" v-hasPermi="['prd:subcontract:add']">新增</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete()" v-hasPermi="['prd:subcontract:remove']"
@@ -43,7 +43,7 @@
         >
       </el-col>
       <el-col :span="1.5">
-        <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['prd:subcontract:export']">导出</el-button>
+        <el-button type="warning" plain icon="Download" @click="handleExport()" v-hasPermi="['prd:subcontract:export']">导出</el-button>
       </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" />
     </el-row>
@@ -180,8 +180,8 @@
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button type="primary" @click="submitForm">确 定</el-button>
-        <el-button @click="cancel">取 消</el-button>
+        <el-button type="primary" @click="submitForm()">确 定</el-button>
+        <el-button @click="cancel()">取 消</el-button>
       </template>
     </el-dialog>
 
@@ -250,7 +250,7 @@
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button type="primary" @click="submitIssue">确 定</el-button>
+        <el-button type="primary" @click="submitIssue()">确 定</el-button>
         <el-button @click="issueOpen = false">取 消</el-button>
       </template>
     </el-dialog>
@@ -281,7 +281,7 @@
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button type="primary" @click="submitReceive">确 定</el-button>
+        <el-button type="primary" @click="submitReceive()">确 定</el-button>
         <el-button @click="receiveOpen = false">取 消</el-button>
       </template>
     </el-dialog>
@@ -302,28 +302,21 @@ import {
   submitApproval,
   getOperationLogs
 } from '@/api/erp/prd/subcontract';
-import { PrdSubcontractVO, PrdSubcontractQuery, PrdSubcontractForm } from '@/api/erp/prd/subcontract/types';
+import type { PrdSubcontractVO, PrdSubcontractQuery } from '@/api/erp/prd/subcontract/types';
 import { listVendor } from '@/api/erp/bd/vendor';
 import { listMaterial } from '@/api/erp/bd/material';
 import { listWork } from '@/api/erp/prd/work';
+import type { FormInstance } from 'element-plus';
+import { useCrud } from '@/composables/useCrud';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
-const { prd_subcontract_status } = toRefs<any>(proxy?.useDict('prd_subcontract_status'));
+const { prd_subcontract_status } = toRefs<any>(proxy.useDict('prd_subcontract_status'));
 
-const subcontractList = ref<PrdSubcontractVO[]>([]);
-const loading = ref(true);
-const showSearch = ref(true);
-const ids = ref<Array<number | string>>([]);
-const single = ref(true);
-const multiple = ref(true);
-const total = ref(0);
-const title = ref('');
-const open = ref(false);
+const subcontractRef = ref<FormInstance>();
+const issueRef = ref<FormInstance>();
+const receiveRef = ref<FormInstance>();
 
-const queryRef = ref<ElFormInstance>();
-const subcontractRef = ref<ElFormInstance>();
 const queryParams = ref<PrdSubcontractQuery>({ pageNum: 1, pageSize: 10 });
-const form = ref<PrdSubcontractForm>({});
 
 const vendorOptions = ref<any[]>([]);
 const materialOptions = ref<any[]>([]);
@@ -336,7 +329,6 @@ const operationLogs = ref<any[]>([]);
 const logsLoading = ref(false);
 
 const issueOpen = ref(false);
-const issueRef = ref<ElFormInstance>();
 const issueForm = ref<{ subcontractId: number; subcontractNo: string; materialName: string; plannedQty: number; quantity: number; remark: string }>(
   {} as any
 );
@@ -345,7 +337,6 @@ const issueRules = {
 };
 
 const receiveOpen = ref(false);
-const receiveRef = ref<ElFormInstance>();
 const receiveForm = ref<{ subcontractId: number; subcontractNo: string; materialName: string; plannedQty: number; quantity: number; remark: string }>(
   {} as any
 );
@@ -353,6 +344,66 @@ const receiveRules = {
   quantity: [{ required: true, message: '收货数量不能为空', trigger: 'blur' }]
 };
 
+const rules = {
+  subcontractNo: [{ required: true, message: '委外单号不能为空', trigger: 'blur' }],
+  vendorId: [{ required: true, message: '供应商ID不能为空', trigger: 'blur' }],
+  materialId: [{ required: true, message: '物料ID不能为空', trigger: 'blur' }],
+  plannedQty: [{ required: true, message: '计划数量不能为空', trigger: 'blur' }]
+};
+
+const {
+  loading,
+  list: subcontractList,
+  total,
+  open,
+  title,
+  multiple,
+  showSearch,
+  form,
+  getList,
+  handleQuery,
+  handleDelete,
+  handleExport,
+  handleSelectionChange,
+  submitForm,
+  cancel,
+  handleAdd: rawHandleAdd,
+  handleUpdate: rawHandleUpdate
+} = useCrud({
+  apis: { list: listSubcontract, get: getSubcontract, add: addSubcontract, update: updateSubcontract, del: delSubcontract },
+  idField: 'subcontractId',
+  entityName: '委外订单',
+  formRef: subcontractRef,
+  queryParams,
+  initForm: () => ({}),
+  exportUrl: 'erp/prd/subcontract/export',
+  exportFileName: '委外订单'
+});
+
+/** 重置按钮操作 */
+function resetQuery() {
+  proxy.resetForm('queryRef');
+  handleQuery();
+}
+
+/** 预载表单下拉选项（供应商/物料/工单） */
+function loadFormOptions() {
+  searchVendor('');
+  searchMaterial('');
+  searchWorkOrder('');
+}
+
+/** 新增按钮操作 */
+function handleAdd() {
+  rawHandleAdd(loadFormOptions);
+}
+
+/** 修改按钮操作 */
+function handleUpdate(row?: PrdSubcontractVO) {
+  return rawHandleUpdate(row, loadFormOptions);
+}
+
+/** 远程搜索供应商 */
 const searchVendor = async (query: string) => {
   if (!query && query !== '') return;
   try {
@@ -363,6 +414,7 @@ const searchVendor = async (query: string) => {
   }
 };
 
+/** 远程搜索物料 */
 const searchMaterial = async (query: string) => {
   if (!query && query !== '') return;
   try {
@@ -373,6 +425,7 @@ const searchMaterial = async (query: string) => {
   }
 };
 
+/** 远程搜索关联工单 */
 const searchWorkOrder = async (query: string) => {
   try {
     const res = await listWork({ woNo: query || undefined, pageNum: 1, pageSize: 20 });
@@ -382,6 +435,7 @@ const searchWorkOrder = async (query: string) => {
   }
 };
 
+/** 选中供应商后回填编码/名称 */
 const onVendorChange = (vendorId: number) => {
   const v = vendorOptions.value.find((i: any) => i.vendorId === vendorId);
   if (v) {
@@ -390,6 +444,7 @@ const onVendorChange = (vendorId: number) => {
   }
 };
 
+/** 选中物料后回填物料信息 */
 const onMaterialChange = (materialId: number) => {
   const m = materialOptions.value.find((i: any) => i.materialId === materialId);
   if (m) {
@@ -400,143 +455,7 @@ const onMaterialChange = (materialId: number) => {
   }
 };
 
-const rules = {
-  subcontractNo: [{ required: true, message: '委外单号不能为空', trigger: 'blur' }],
-  vendorId: [{ required: true, message: '供应商ID不能为空', trigger: 'blur' }],
-  materialId: [{ required: true, message: '物料ID不能为空', trigger: 'blur' }],
-  plannedQty: [{ required: true, message: '计划数量不能为空', trigger: 'blur' }]
-};
-
-const getList = async () => {
-  loading.value = true;
-  const res = await listSubcontract(queryParams.value);
-  subcontractList.value = res.rows;
-  total.value = res.total;
-  loading.value = false;
-};
-
-const handleQuery = () => {
-  queryParams.value.pageNum = 1;
-  getList();
-};
-const resetQuery = () => {
-  queryRef.value?.resetFields();
-  handleQuery();
-};
-const handleSelectionChange = (selection: PrdSubcontractVO[]) => {
-  ids.value = selection.map((item) => item.subcontractId);
-  single.value = selection.length !== 1;
-  multiple.value = !selection.length;
-};
-
-const reset = () => {
-  form.value = {};
-  subcontractRef.value?.resetFields();
-};
-
-const handleAdd = () => {
-  reset();
-  open.value = true;
-  title.value = '添加委外订单';
-};
-
-const handleUpdate = async (row: PrdSubcontractVO) => {
-  reset();
-  const res = await getSubcontract(row.subcontractId);
-  form.value = res.data;
-  open.value = true;
-  title.value = '修改委外订单';
-};
-
-const submitForm = () => {
-  subcontractRef.value?.validate(async (valid: boolean) => {
-    if (valid) {
-      if (form.value.subcontractId) {
-        await updateSubcontract(form.value);
-        proxy?.$modal.msgSuccess('修改成功');
-      } else {
-        await addSubcontract(form.value);
-        proxy?.$modal.msgSuccess('新增成功');
-      }
-      open.value = false;
-      getList();
-    }
-  });
-};
-
-const handleDelete = async (row?: PrdSubcontractVO) => {
-  const subcontractIds = row?.subcontractId || ids.value;
-  await proxy?.$modal.confirm('是否确认删除编号为"' + subcontractIds + '"的数据项？');
-  await delSubcontract(subcontractIds);
-  proxy?.$modal.msgSuccess('删除成功');
-  getList();
-};
-
-const handleRelease = async (row: PrdSubcontractVO) => {
-  await proxy?.$modal.confirm('是否确认下达委外订单"' + row.subcontractNo + '"？');
-  await releaseSubcontract(row.subcontractId);
-  proxy?.$modal.msgSuccess('下达成功');
-  getList();
-};
-
-const handleComplete = async (row: PrdSubcontractVO) => {
-  await proxy?.$modal.confirm('是否确认完工委外订单"' + row.subcontractNo + '"？');
-  await completeSubcontract(row.subcontractId);
-  proxy?.$modal.msgSuccess('完工成功');
-  getList();
-};
-
-const handleSubcontractIssue = (row: PrdSubcontractVO) => {
-  issueForm.value = {
-    subcontractId: row.subcontractId,
-    subcontractNo: row.subcontractNo,
-    materialName: row.materialName,
-    plannedQty: row.plannedQty,
-    quantity: row.plannedQty,
-    remark: ''
-  };
-  issueOpen.value = true;
-};
-
-const submitIssue = () => {
-  issueRef.value?.validate(async (valid: boolean) => {
-    if (valid) {
-      await issueSubcontractMaterial(issueForm.value.subcontractId);
-      proxy?.$modal.msgSuccess('发料成功');
-      issueOpen.value = false;
-      getList();
-    }
-  });
-};
-
-const handleSubcontractReceive = (row: PrdSubcontractVO) => {
-  receiveForm.value = {
-    subcontractId: row.subcontractId,
-    subcontractNo: row.subcontractNo,
-    materialName: row.materialName,
-    plannedQty: row.plannedQty,
-    quantity: row.plannedQty,
-    remark: ''
-  };
-  receiveOpen.value = true;
-};
-
-const submitReceive = () => {
-  receiveRef.value?.validate(async (valid: boolean) => {
-    if (valid) {
-      await receiveSubcontractMaterial(receiveForm.value.subcontractId);
-      proxy?.$modal.msgSuccess('收货成功');
-      receiveOpen.value = false;
-      getList();
-    }
-  });
-};
-
-const cancel = () => {
-  open.value = false;
-  reset();
-};
-
+/** 查看委外订单详情（含操作日志） */
 const handleView = async (row: PrdSubcontractVO) => {
   const res = await getSubcontract(row.subcontractId);
   detailData.value = res.data;
@@ -563,18 +482,95 @@ watch(detailActiveTab, (val) => {
   }
 });
 
-const handleSubmitApproval = async (row: PrdSubcontractVO) => {
-  await proxy?.$modal.confirm('是否确认提交审批委外订单"' + row.subcontractNo + '"？');
-  await submitApproval(row.subcontractId);
-  proxy?.$modal.msgSuccess('提交审批成功');
-  getList();
-};
+/** 提交审批 */
+function handleSubmitApproval(row: PrdSubcontractVO) {
+  proxy.$modal
+    .confirm('是否确认提交审批委外订单"' + row.subcontractNo + '"？')
+    .then(() => submitApproval(row.subcontractId))
+    .then(() => {
+      proxy.$modal.msgSuccess('提交审批成功');
+      getList();
+    })
+    .catch(() => {});
+}
 
-const handleExport = () => {
-  proxy?.download('erp/prd/subcontract/export', { ...queryParams.value }, `委外订单_${new Date().getTime()}.xlsx`);
-};
+/** 下达 */
+function handleRelease(row: PrdSubcontractVO) {
+  proxy.$modal
+    .confirm('是否确认下达委外订单"' + row.subcontractNo + '"？')
+    .then(() => releaseSubcontract(row.subcontractId))
+    .then(() => {
+      proxy.$modal.msgSuccess('下达成功');
+      getList();
+    })
+    .catch(() => {});
+}
 
-onMounted(() => {
-  getList();
-});
+/** 完工 */
+function handleComplete(row: PrdSubcontractVO) {
+  proxy.$modal
+    .confirm('是否确认完工委外订单"' + row.subcontractNo + '"？')
+    .then(() => completeSubcontract(row.subcontractId))
+    .then(() => {
+      proxy.$modal.msgSuccess('完工成功');
+      getList();
+    })
+    .catch(() => {});
+}
+
+/** 委外发料 */
+function handleSubcontractIssue(row: PrdSubcontractVO) {
+  issueForm.value = {
+    subcontractId: row.subcontractId,
+    subcontractNo: row.subcontractNo,
+    materialName: row.materialName,
+    plannedQty: row.plannedQty,
+    quantity: row.plannedQty,
+    remark: ''
+  };
+  issueOpen.value = true;
+}
+
+/** 提交委外发料 */
+function submitIssue() {
+  issueRef.value?.validate((valid: boolean) => {
+    if (!valid) return;
+    issueSubcontractMaterial(issueForm.value.subcontractId)
+      .then(() => {
+        proxy.$modal.msgSuccess('发料成功');
+        issueOpen.value = false;
+        getList();
+      })
+      .catch(() => {});
+  });
+}
+
+/** 委外收货 */
+function handleSubcontractReceive(row: PrdSubcontractVO) {
+  receiveForm.value = {
+    subcontractId: row.subcontractId,
+    subcontractNo: row.subcontractNo,
+    materialName: row.materialName,
+    plannedQty: row.plannedQty,
+    quantity: row.plannedQty,
+    remark: ''
+  };
+  receiveOpen.value = true;
+}
+
+/** 提交委外收货 */
+function submitReceive() {
+  receiveRef.value?.validate((valid: boolean) => {
+    if (!valid) return;
+    receiveSubcontractMaterial(receiveForm.value.subcontractId)
+      .then(() => {
+        proxy.$modal.msgSuccess('收货成功');
+        receiveOpen.value = false;
+        getList();
+      })
+      .catch(() => {});
+  });
+}
+
+getList();
 </script>
