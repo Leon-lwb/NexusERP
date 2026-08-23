@@ -37,7 +37,7 @@ export interface EqEquipmentQuery extends PageQuery {
 
 /** 设备台账表单 */
 export interface EqEquipmentForm {
-  equipmentId?: number;
+  equipmentId?: number | string;
   equipmentCode: string;
   equipmentName: string;
   equipmentType?: string;

@@ -1,6 +1,6 @@
 <template>
   <div class="app-container">
-    <el-tabs tab-position="top" v-model="activeName" :model-value="processed === true ? 'approval' : 'form'" @tab-click="changeTab">
+    <el-tabs tab-position="top" v-model="activeName" @tab-click="changeTab">
       <el-tab-pane label="任务办理" name="approval" v-if="processed === true">
         <!-- 自定义路由业务表单在「表单信息」展示；任务办理仅保留审批操作 -->
         <el-card class="box-card" shadow="hover" v-if="taskFormVisible && !taskFormCustom.visible">
@@ -287,7 +287,7 @@
       <template #footer>
         <span class="dialog-footer">
           <el-button type="primary" @click="addSignOpen = false">取 消</el-button>
-          <el-button type="primary" @click="addSignComplete(true)">确 定</el-button>
+          <el-button type="primary" @click="addSignComplete()">确 定</el-button>
         </span>
       </template>
     </el-dialog>
@@ -312,7 +312,7 @@
       <template #footer>
         <span class="dialog-footer">
           <a-button type="primary" @click="jumpOpen = false">取 消</a-button>
-          <a-button type="primary" @click="jumpComplete(true)">确 定</a-button>
+          <a-button type="primary" @click="jumpComplete()">确 定</a-button>
         </span>
       </template>
     </el-dialog>
@@ -497,7 +497,8 @@ const addSignForm = ref({
   taskId: '', // 流程任务编号
   vars: '',
   targetKey: '',
-  addSignUsers: '' //委托加签人员
+  addSignUsers: '', //委托加签人员
+  addSignType: 0 //加签类型 0前加签 1后加签 2多实例加签
 });
 const jumpOpen = ref(false); //跳转
 const jumpTitle = ref(''); //跳转标题
@@ -833,7 +834,7 @@ const onSelectCopyUsers = () => {
   onSelectUsers('添加抄送人', 'copy');
 };
 const onSelectNextUsers = () => {
-  userMultipleSelection.value = nextUser;
+  userMultipleSelection.value = nextUser.value;
   onSelectUsers('指定审批人', 'next');
 };
 const onSelectUsers = (title: string, type: string) => {

@@ -1,3 +1,5 @@
+/* eslint-disable no-console */
+// 控制台美化日志工具类，整个模块即用于输出 console，故禁用 no-console 规则
 function Log() {}
 
 Log.prototype.type = ['primary', 'success', 'warn', 'error', 'info'];

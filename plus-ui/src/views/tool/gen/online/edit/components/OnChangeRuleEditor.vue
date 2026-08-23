@@ -298,8 +298,9 @@ const safeParseObject = (input: any): AnyObj => {
   }
 };
 
-const removeAt = <T,>(arr: { value: T[] }, idx: number) => {
-  arr.value.splice(idx, 1);
+// 模板中传入的是 ref 解包后的数组本身（并非 ref 对象），此处直接原地 splice 以保持响应式
+const removeAt = <T,>(arr: T[], idx: number) => {
+  arr.splice(idx, 1);
 };
 
 const normalizeArr = <T,>(v: any): T[] => (Array.isArray(v) ? v.filter(Boolean) : []);
@@ -380,7 +381,9 @@ const resetAll = () => {
 
 const validationErrors = computed(() => {
   const vr = validateOnChange(raw.value);
-  return vr.ok ? [] : vr.errors || [];
+  // ValidateResult 为可辨识联合，需用字面量相等判断才能收窄类型
+  if (vr.ok === false) return vr.errors || [];
+  return [];
 });
 
 let syncing = false;

@@ -17,6 +17,7 @@ export interface ProStepCheckRuleVO {
 /** 工序校验规则查询条件 */
 export interface ProStepCheckRuleQuery extends PageQuery {
   processId?: number;
+  processName?: string;
   checkType?: string;
   checkStage?: string;
   enabled?: string;
@@ -26,6 +27,8 @@ export interface ProStepCheckRuleQuery extends PageQuery {
 export interface ProStepCheckRuleForm {
   ruleId?: number;
   processId: number;
+  processCode?: string;
+  processName?: string;
   checkType: string;
   checkStage: string;
   enabled?: string;
@@ -51,5 +54,5 @@ export const updateStepCheckRule = (data: ProStepCheckRuleForm) => request({ url
 export const delStepCheckRule = (ruleIds: number | number[]) => request({ url: `/mes/pro/step-check-rule/${ruleIds}`, method: 'delete' });
 
 /** 导出工序校验规则 */
-export const exportStepCheckRule = (query?: ProStepCheckRuleQuery) =>
-  request({ url: '/mes/pro/step-check-rule/export', method: 'post', params: query, responseType: 'blob' });
+export const exportStepCheckRule = (query?: ProStepCheckRuleQuery): Promise<Blob> =>
+  request({ url: '/mes/pro/step-check-rule/export', method: 'post', params: query, responseType: 'blob' }) as unknown as Promise<Blob>;

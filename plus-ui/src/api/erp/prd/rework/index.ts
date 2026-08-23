@@ -18,7 +18,7 @@ export function updateReworkOrder(data: PrdReworkOrderForm) {
   return request({ url: '/erp/prd/rework', method: 'put', data });
 }
 
-export function delReworkOrder(reworkIds: number | number[]) {
+export function delReworkOrder(reworkIds: number | string | Array<number | string>) {
   return request({ url: '/erp/prd/rework/' + reworkIds, method: 'delete' });
 }
 

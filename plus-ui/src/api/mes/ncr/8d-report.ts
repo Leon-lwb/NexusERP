@@ -17,6 +17,7 @@ export interface Ncr8dReportVO {
   completedBy?: number;
   completedByName?: string;
   completedTime?: string;
+  remark?: string;
 }
 
 /** 8D报告表单 */
@@ -31,6 +32,7 @@ export interface Ncr8dReportForm {
   d6Implement?: string;
   d7Prevent?: string;
   d8Recognize?: string;
+  remark?: string;
 }
 
 /** 根据NCR ID获取8D报告 */

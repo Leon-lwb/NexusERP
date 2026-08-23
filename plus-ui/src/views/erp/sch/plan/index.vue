@@ -391,7 +391,7 @@ function resetQuery() {
 }
 
 function handlePublish() {
-  const currentUser = useUserStore().name || 'admin';
+  const currentUser = useUserStore().nickname || 'admin';
   form.value.publishedBy = currentUser;
   form.value.publishedTime = formatDateTime(new Date());
   form.value.status = 'published';

@@ -29,7 +29,8 @@ const summary = computed(() => store.nodeSummaryMap[props.id] ?? '');
 
 /** merge 节点输入端口数（按实际入边数，至少 1） */
 const mergeInputCount = computed(() => {
-  const count = store.edges.filter((e) => e.target === props.id).length;
+  // Edge 泛型层级较深，经 any 中转避免 TS2589
+  const count = (store.edges as any[]).filter((e: { target: string }) => e.target === props.id).length;
   return Math.max(1, count);
 });
 

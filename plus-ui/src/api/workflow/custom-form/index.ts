@@ -47,7 +47,7 @@ export function updateCustom(data: CustomFormVO) {
 }
 
 // 删除流程业务单
-export function delCustomForm(id: string | number) {
+export function delCustomForm(id: string | number | Array<string | number>) {
   return request({
     url: '/workflow/customForm/' + id,
     method: 'delete'

@@ -1,3 +1,5 @@
+import type { ComponentPublicInstance } from 'vue';
+
 // 日期格式化
 export function parseTime(time: any, pattern?: string) {
   if (arguments.length === 0 || !time) {
@@ -210,9 +212,11 @@ export const getNormalPath = (p: string): string => {
 };
 
 // 重置表单
-export function resetForm(refName: string) {
-  if ((this as any).$refs[refName]) {
-    (this as any).$refs[refName].resetFields();
+// 该函数注册为全局属性(app.config.globalProperties.resetForm)，通过组件实例调用，this 为组件代理
+export function resetForm(this: ComponentPublicInstance, refName: string) {
+  const formRef = this.$refs[refName] as { resetFields?: () => void } | undefined;
+  if (formRef) {
+    formRef.resetFields?.();
   }
 }
 

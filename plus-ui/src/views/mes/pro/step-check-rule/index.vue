@@ -161,6 +161,7 @@ import {
   exportStepCheckRule
 } from '@/api/mes/pro/stepCheckRule';
 import type { ProStepCheckRuleVO, ProStepCheckRuleForm, ProStepCheckRuleQuery } from '@/api/mes/pro/stepCheckRule';
+import FileSaver from 'file-saver';
 import { listProcess } from '@/api/erp/bd/process';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
@@ -285,7 +286,7 @@ const handleDeleteRow = async (row: ProStepCheckRuleVO) => {
 const handleExport = async () => {
   await proxy!.$modal.confirm('确认导出校验规则数据?');
   const res = await exportStepCheckRule(queryParams);
-  proxy!.downloadBlob(res, '工序校验规则.xlsx');
+  FileSaver.saveAs(new Blob([res]), '工序校验规则.xlsx');
 };
 
 // ===== 工序选择器 =====

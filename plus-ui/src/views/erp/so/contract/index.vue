@@ -45,10 +45,10 @@
         <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['so:contract:add']">新增</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['so:contract:edit']">修改</el-button>
+        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate()" v-hasPermi="['so:contract:edit']">修改</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['so:contract:remove']">删除</el-button>
+        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete()" v-hasPermi="['so:contract:remove']">删除</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['so:contract:export']">导出</el-button>
@@ -290,8 +290,10 @@ import { listContract, getContract, delContract, addContract, updateContract } f
 import { ContractVO, ContractForm, ContractLineForm } from '@/api/erp/so/contract/types';
 import ClientSelectDialog from '@/views/erp/so/components/ClientSelectDialog.vue';
 import MaterialSelectDialog from '@/components/MaterialSelectDialog/index.vue';
+import type { FormInstance } from 'element-plus';
 
-const { proxy } = getCurrentInstance();
+const { proxy } = getCurrentInstance() as any;
+const formRef = ref<FormInstance>();
 
 // 客户选择弹窗引用
 const clientSelectDialogRef = ref();
@@ -334,8 +336,8 @@ const data = reactive({
 const { queryParams, form, rules } = toRefs(data);
 
 /** 获取状态标签类型 */
-function getStatusType(status: string) {
-  const map: Record<string, string> = {
+function getStatusType(status: string): 'primary' | 'success' | 'info' | 'warning' | 'danger' {
+  const map: Record<string, 'primary' | 'success' | 'info' | 'warning' | 'danger'> = {
     DRAFT: 'info',
     APPROVING: 'warning',
     EFFECTIVE: 'success',
@@ -454,7 +456,7 @@ function handleView(row: ContractVO) {
 
 /** 提交表单 */
 function submitForm() {
-  proxy.$refs['formRef'].validate((valid: boolean) => {
+  formRef.value?.validate((valid: boolean) => {
     if (valid) {
       form.value.soContractLineList = lineList.value;
       if (form.value.contractId != null) {

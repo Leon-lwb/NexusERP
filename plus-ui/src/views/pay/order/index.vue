@@ -129,11 +129,12 @@
 
 <script setup lang="ts" name="PayOrder">
 import { listPayOrder, getPayOrder, delPayOrder, addPayOrder, updatePayOrder } from '@/api/pay/order';
+import { PayOrderForm, PayOrderQuery, PayOrderVO } from '@/api/pay/order/types';
 
 const { proxy } = getCurrentInstance();
 const { pay_order_status, pay_pay_type } = toRefs<any>(proxy.useDict('pay_order_status', 'pay_pay_type'));
 
-const orderList = ref([]);
+const orderList = ref<PayOrderVO[]>([]);
 const open = ref(false);
 const loading = ref(true);
 const showSearch = ref(true);
@@ -143,9 +144,10 @@ const multiple = ref(true);
 const total = ref(0);
 const title = ref('');
 const isViewMode = ref(false);
+const orderRef = ref<ElFormInstance>();
 
 const data = reactive({
-  form: {},
+  form: {} as PayOrderForm,
   queryParams: {
     pageNum: 1,
     pageSize: 10,
@@ -153,7 +155,7 @@ const data = reactive({
     orderStatus: null,
     payType: null,
     orderContent: null
-  },
+  } as PayOrderQuery,
   rules: {
     orderContent: [{ required: true, message: '订单内容不能为空', trigger: 'blur' }]
   }
@@ -246,7 +248,7 @@ function handleView(row) {
 
 /** 提交按钮 */
 function submitForm() {
-  proxy.$refs['orderRef'].validate((valid) => {
+  orderRef.value?.validate((valid) => {
     if (valid) {
       if (form.value.orderId != null) {
         updatePayOrder(form.value).then((response) => {

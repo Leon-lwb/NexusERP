@@ -86,7 +86,7 @@ function getList() {
 
 function getSummaries(param: { columns: any[]; data: TrialBalanceVO[] }) {
   const { columns, data } = param;
-  const sums: (string | number)[] = [];
+  const sums: string[] = [];
   columns.forEach((column, index) => {
     if (index === 0) {
       sums[index] = '合计';

@@ -48,26 +48,34 @@ export interface DetailVO {
 }
 
 export interface DetailForm {
-  detailId?: number;
-  lineId?: number;
-  receiveId?: number;
-  materialId?: number;
+  detailId?: number | string;
+  lineId?: number | string;
+  receiveId?: number | string;
+  materialId?: number | string;
   materialCode?: string;
   materialName?: string;
   materialSpec?: string;
   baseUomId?: string;
   baseUomName?: string;
-  quantity?: number;
-  batchId?: number;
+  quantity?: number | string;
+  batchId?: number | string;
   batchCode?: string;
-  warehouseId?: number;
+  warehouseId?: number | string;
   warehouseCode?: string;
   warehouseName?: string;
-  areaId?: number;
+  areaId?: number | string;
   areaCode?: string;
   areaName?: string;
-  locationId?: number;
+  locationId?: number | string;
   locationCode?: string;
   locationName?: string;
   remark?: string;
+  attr1?: string;
+  attr2?: string;
+  attr3?: string;
+  attr4?: string;
+  createBy?: number;
+  createTime?: string;
+  updateBy?: number;
+  updateTime?: string;
 }

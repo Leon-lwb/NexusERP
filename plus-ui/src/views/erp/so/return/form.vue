@@ -408,7 +408,7 @@ watch(
   { deep: true, immediate: true }
 );
 
-const statusMap: Record<string, { label: string; type: string }> = {
+const statusMap: Record<string, { label: string; type: 'primary' | 'success' | 'info' | 'warning' | 'danger' }> = {
   DRAFT: { label: '草稿', type: 'info' },
   APPROVING: { label: '审批中', type: 'warning' },
   CONFIRMED: { label: '已确认', type: 'success' },
@@ -416,7 +416,7 @@ const statusMap: Record<string, { label: string; type: string }> = {
   CLOSED: { label: '已关闭', type: 'danger' }
 };
 
-function getStatusType(status: string): string {
+function getStatusType(status: string): 'primary' | 'success' | 'info' | 'warning' | 'danger' {
   return statusMap[status]?.type || 'info';
 }
 
@@ -501,8 +501,9 @@ function cancel() {
   proxy.$tab.closeOpenPage({ path: '/erp/soBiz/return' });
 }
 
-function rowLineIndex({ row, rowIndex }: any) {
+function rowLineIndex({ row, rowIndex }: any): string {
   row.index = rowIndex + 1;
+  return '';
 }
 
 function handleAddLine() {

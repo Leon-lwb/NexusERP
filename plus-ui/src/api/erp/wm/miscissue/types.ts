@@ -1,4 +1,3 @@
-
 export interface MiscIssueQuery extends PageQuery {
   issueCode?: string;
   warehouseId?: number;

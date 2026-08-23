@@ -50,12 +50,12 @@
             <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['prd:capacityCalendar:add']">新增</el-button>
           </el-col>
           <el-col :span="1.5">
-            <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['prd:capacityCalendar:edit']"
+            <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate()" v-hasPermi="['prd:capacityCalendar:edit']"
               >修改</el-button
             >
           </el-col>
           <el-col :span="1.5">
-            <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['prd:capacityCalendar:remove']"
+            <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete()" v-hasPermi="['prd:capacityCalendar:remove']"
               >删除</el-button
             >
           </el-col>
@@ -433,7 +433,7 @@ const getCalendarItems = (day: string): any[] => {
   });
 };
 
-const getCapacityTagType = (item: any): string => {
+const getCapacityTagType = (item: any): 'success' | 'primary' | 'warning' | 'danger' | 'info' => {
   if (!item.availableHours || item.availableHours === 0) return 'info';
   const ratio = (item.remainingHours || 0) / item.availableHours;
   if (ratio >= 0.8) return 'success';

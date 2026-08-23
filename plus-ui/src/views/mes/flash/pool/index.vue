@@ -26,7 +26,7 @@
         <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['mes:flash:pool:add']">新增</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="danger" plain icon="Delete" :disabled="!ids.length" @click="handleDelete" v-hasPermi="['mes:flash:pool:remove']"
+        <el-button type="danger" plain icon="Delete" :disabled="!ids.length" @click="handleDelete()" v-hasPermi="['mes:flash:pool:remove']"
           >删除</el-button
         >
       </el-col>

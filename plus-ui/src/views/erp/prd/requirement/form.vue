@@ -218,7 +218,7 @@
 <script setup lang="ts" name="PrdRequirementForm">
 import { getRequirement, addRequirement, updateRequirement, importBomDetails } from '@/api/erp/prd/requirement';
 import { previewCode } from '@/api/system/autocode/rule';
-import type { RequirementForm } from '@/api/erp/prd/requirement/types';
+import type { RequirementForm, RequirementDetailVO } from '@/api/erp/prd/requirement/types';
 
 const { proxy } = getCurrentInstance() as any;
 const { sys_core_status, prd_requirement_status, prd_material_source_type } = toRefs<any>(
@@ -229,10 +229,11 @@ const router = useRouter();
 const autoGenFlag = ref(false);
 
 const form = ref<RequirementForm>({});
+const rules = {};
 const isViewMode = ref(false);
 const title = ref('');
-const detailList = ref([]);
-const checkedDetail = ref([]);
+const detailList = ref<RequirementDetailVO[]>([]);
+const checkedDetail = ref<number[]>([]);
 
 onMounted(() => {
   const id = route.query.id;
@@ -336,8 +337,9 @@ function cancel() {
   proxy.$tab.closeOpenPage(obj);
 }
 
-function rowDetailIndex({ row, rowIndex }) {
+function rowDetailIndex({ row, rowIndex }: { row: RequirementDetailVO; rowIndex: number }): string {
   row.index = rowIndex + 1;
+  return '';
 }
 
 function handleAddDetail() {
@@ -441,7 +443,7 @@ function getDictLabel(dictOptions, value) {
 
 function handleAutoGenChange(autoGenFlag) {
   if (autoGenFlag) {
-    previewCode('PRD_MATERIAL_MBOM').then((response) => {
+    previewCode('PRD_MATERIAL_MBOM').then((response: any) => {
       form.value.requirementNo = response;
     });
   } else {

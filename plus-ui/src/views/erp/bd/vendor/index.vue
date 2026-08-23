@@ -359,11 +359,13 @@
 
 <script setup lang="ts" name="Vendor">
 import { listVendor, getVendor, delVendor, addVendor, updateVendor } from '@/api/erp/bd/vendor';
+import type { VendorForm, VendorQuery } from '@/api/erp/bd/vendor/types';
 import { listUser } from '@/api/system/user';
 import { previewCode } from '@/api/system/autocode/rule';
 import { getProvinces, getNextLevel } from '@/api/system/area';
+import type { FormInstance } from 'element-plus';
 
-const { proxy } = getCurrentInstance();
+const { proxy } = getCurrentInstance() as any;
 const { bd_industry, bd_region, bd_vendor_status, bd_vendor_category, pu_invoice_type } = toRefs<any>(
   proxy.useDict('bd_industry', 'bd_region', 'bd_vendor_status', 'bd_vendor_category', 'pu_invoice_type')
 );
@@ -387,7 +389,8 @@ const cityOptions = ref([]);
 const districtOptions = ref([]);
 const streetOptions = ref([]);
 
-const data = reactive({
+const vendorRef = ref<FormInstance>();
+const data = reactive<PageData<VendorForm, VendorQuery>>({
   form: {},
   queryParams: {
     pageNum: 1,
@@ -581,7 +584,7 @@ function handleView(row) {
 
 /** 提交按钮 */
 function submitForm() {
-  proxy.$refs['vendorRef'].validate((valid) => {
+  vendorRef.value?.validate((valid) => {
     if (valid) {
       // 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号
       if (autoGenFlag.value) {
@@ -633,7 +636,7 @@ function handleExport() {
 //自动生成编码
 function handleAutoGenChange(autoGenFlag) {
   if (autoGenFlag) {
-    previewCode('VENDOR_CODE').then((response) => {
+    previewCode('VENDOR_CODE').then((response: any) => {
       form.value.vendorCode = response;
     });
   } else {

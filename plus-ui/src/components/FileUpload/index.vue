@@ -51,7 +51,7 @@ import { globalHeaders } from '@/utils/request';
 
 const props = defineProps({
   modelValue: {
-    type: [String, Object, Array],
+    type: [String, Number, Object, Array],
     default: () => []
   },
   // 数量限制
@@ -93,7 +93,7 @@ watch(
       if (Array.isArray(val)) {
         list = val;
       } else {
-        const res = await listByIds(val);
+        const res = await listByIds(val as string | number);
         list = res.data.map((oss) => {
           return {
             name: oss.originalName,

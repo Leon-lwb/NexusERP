@@ -126,8 +126,8 @@ const rules = {
 
 const formRef = ref();
 
-function statusTagType(status: string) {
-  return { PENDING: 'info', RUNNING: 'warning', COMPLETED: 'success' }[status] || 'info';
+function statusTagType(status: string): ElTagType {
+  return ({ PENDING: 'info', RUNNING: 'warning', COMPLETED: 'success' } as Record<string, ElTagType>)[status] || 'info';
 }
 function statusLabel(status: string) {
   return { PENDING: '待执行', RUNNING: '执行中', COMPLETED: '已完成' }[status] || status;

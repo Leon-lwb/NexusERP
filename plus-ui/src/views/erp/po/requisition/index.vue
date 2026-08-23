@@ -45,10 +45,10 @@
         <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['po:requisition:add']">新增</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['po:requisition:edit']">修改</el-button>
+        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate()" v-hasPermi="['po:requisition:edit']">修改</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['po:requisition:remove']"
+        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete()" v-hasPermi="['po:requisition:remove']"
           >删除</el-button
         >
       </el-col>
@@ -236,8 +236,11 @@ import { listRequisition, getRequisition, delRequisition, addRequisition, update
 import { listMaterial } from '@/api/erp/bd/material';
 import { listUser } from '@/api/system/user';
 import { RequisitionVO, RequisitionForm, RequisitionDetailForm } from '@/api/erp/po/requisition/types';
+import type { FormInstance } from 'element-plus';
 
 const { proxy } = getCurrentInstance();
+
+const formRef = ref<FormInstance>();
 
 // 列表数据
 const dataList = ref<RequisitionVO[]>([]);
@@ -279,8 +282,8 @@ const data = reactive({
 const { queryParams, form, rules } = toRefs(data);
 
 /** 获取状态标签类型 */
-function getStatusType(status: string) {
-  const map: Record<string, string> = {
+function getStatusType(status: string): 'success' | 'warning' | 'danger' | 'info' | 'primary' {
+  const map: Record<string, 'success' | 'warning' | 'danger' | 'info' | 'primary'> = {
     draft: 'info',
     submitted: 'warning',
     approved: 'success',
@@ -390,7 +393,7 @@ function handleView(row: RequisitionVO) {
 
 /** 提交表单 */
 function submitForm() {
-  proxy.$refs['formRef'].validate((valid: boolean) => {
+  formRef.value?.validate((valid: boolean) => {
     if (valid) {
       form.value.poRequisitionDetailList = lineList.value;
       if (form.value.requisitionId != null) {

@@ -18,7 +18,7 @@ export function updateSn(data: WmSnForm) {
   return request({ url: '/erp/wm/sn', method: 'put', data });
 }
 
-export function delSn(snIds: number | number[]) {
+export function delSn(snIds: string | number | (string | number)[]) {
   return request({ url: '/erp/wm/sn/' + snIds, method: 'delete' });
 }
 

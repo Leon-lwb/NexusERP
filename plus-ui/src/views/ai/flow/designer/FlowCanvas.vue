@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { VueFlow, useVueFlow } from '@vue-flow/core';
+import { VueFlow, useVueFlow, SelectionMode } from '@vue-flow/core';
 import { Background } from '@vue-flow/background';
 import { Controls } from '@vue-flow/controls';
 import { MiniMap } from '@vue-flow/minimap';
@@ -154,8 +154,8 @@ function onNodeDoubleClick(event: NodeMouseEvent) {
 /* ==================== 多选/框选（选择工具栏 + 分组） ==================== */
 
 /** 框选结束（@vue-flow 事件名是 selection-end，SelectionChange 参数含 nodes/edges） */
-function onSelectionEnd(e: { nodes: FlowCanvasNode[] }) {
-  emit('selection-change', e.nodes ?? []);
+function onSelectionEnd(e: { nodes: FlowCanvasNode[] } | MouseEvent) {
+  emit('selection-change', 'nodes' in e ? e.nodes : []);
 }
 
 /* ==================== 节点分组（Ctrl+G 创建 / Delete 解除选中组） ==================== */
@@ -407,7 +407,7 @@ defineExpose({ onRemoveNode });
       :nodes-connectable="!props.readonly"
       :elements-selectable="!props.readonly"
       :selection-on-drag="!props.readonly"
-      :selection-mode="'partial'"
+      :selection-mode="SelectionMode.Partial"
       @connect="onConnect"
       @pane-click="onPaneClick"
       @node-click="onNodeClick"

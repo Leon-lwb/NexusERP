@@ -46,7 +46,7 @@
               <el-tree-select
                 v-model="form.parentAreaId"
                 :data="areaOptions"
-                :props="{ value: 'areaId', label: 'areaName', children: 'children' }"
+                :props="{ value: 'areaId', label: 'areaName', children: 'children' } as any"
                 value-key="areaId"
                 placeholder="选择上级地区"
                 check-strictly
@@ -104,25 +104,25 @@
 
 <script setup lang="ts" name="Area">
 import { ref, reactive, toRefs, getCurrentInstance } from 'vue';
-import { listArea, listAreaExcludeChild, getArea, delArea, addArea, updateArea } from '@/api/system/area';
+import { listArea, listAreaExcludeChild, getArea, delArea, addArea, updateArea, AreaVO, AreaQuery, AreaForm } from '@/api/system/area';
 
 const { proxy } = getCurrentInstance();
 const { sys_area_level } = toRefs<any>(proxy.useDict('sys_area_level'));
 
-const areaList = ref([]);
+const areaList = ref<AreaVO[]>([]);
 const open = ref(false);
 const loading = ref(true);
 const title = ref('');
-const areaOptions = ref([]);
+const areaOptions = ref<AreaVO[]>([]);
 const expandedRowKeys = ref([]);
-const areaRef = ref();
+const areaRef = ref<ElFormInstance>();
 
 const data = reactive({
-  form: {},
+  form: {} as AreaForm,
   queryParams: {
     areaName: undefined,
     layered: 1
-  },
+  } as AreaQuery,
   rules: {
     parentAreaId: [{ required: true, message: '上级地区不能为空', trigger: 'blur' }],
     areaName: [{ required: true, message: '地区名称不能为空', trigger: 'blur' }],
@@ -201,7 +201,9 @@ function handleAdd(row) {
 }
 
 function handleExpand(row) {
-  const query = {
+  const query: AreaQuery = {
+    pageNum: 1,
+    pageSize: queryParams.value.pageSize,
     parentAreaId: row.areaId,
     layered: row.layered + 1
   };
@@ -257,7 +259,7 @@ function handleUpdate(row) {
   getArea(row.pkid).then((response) => {
     form.value = response.data;
     if (form.value.layered !== undefined && form.value.layered !== null) {
-      form.value.layered = parseInt(form.value.layered);
+      form.value.layered = parseInt(String(form.value.layered));
     }
     open.value = true;
     title.value = '修改行政区划';
@@ -265,7 +267,7 @@ function handleUpdate(row) {
 }
 
 function submitForm() {
-  proxy.$refs['areaRef'].validate((valid) => {
+  areaRef.value?.validate((valid) => {
     if (valid) {
       if (form.value.pkid != undefined) {
         updateArea(form.value).then(() => {

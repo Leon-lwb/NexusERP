@@ -341,11 +341,13 @@
 
 <script setup lang="ts" name="CustomerOrder">
 import { listCustomerOrder, getCustomerOrder, delCustomerOrder, addCustomerOrder, updateCustomerOrder } from '@/api/erp/so/customer-order';
+import type { CustomerOrderForm, CustomerOrderQuery } from '@/api/erp/so/customer-order/types';
 import { listBd } from '@/api/erp/bd/client';
 import { previewCode } from '@/api/system/autocode/rule';
 import { listUser } from '@/api/system/user';
+import type { FormInstance } from 'element-plus';
 
-const { proxy } = getCurrentInstance();
+const { proxy } = getCurrentInstance() as any;
 const { so_customer_order_status, so_currency_type, so_order_priority, so_source_channel, bd_client_type } = toRefs<any>(
   proxy.useDict('so_customer_order_status', 'so_currency_type', 'so_order_priority', 'so_source_channel', 'bd_client_type')
 );
@@ -381,20 +383,20 @@ const userQueryParams = reactive({
   pageNum: 1,
   pageSize: 10,
   userName: undefined,
-  phonenumber: undefined
+  phonenumber: undefined,
+  deptId: undefined as any
 });
 
-const data = reactive({
+const customerOrderRef = ref<FormInstance>();
+const data = reactive<PageData<CustomerOrderForm, CustomerOrderQuery>>({
   form: {},
   queryParams: {
     pageNum: 1,
     pageSize: 10,
     coNo: null,
     clientName: null,
-    selectUser: null,
     orderDate: null,
-    status: null,
-    autoGenFlag: false
+    status: null
   },
   rules: {
     coNo: [{ required: true, message: '客户订单号不能为空', trigger: 'blur' }],
@@ -442,7 +444,6 @@ function reset() {
     attr2: null,
     salesRepId: null,
     salesRepName: null,
-    sales_rep_name: null,
     deptId: null,
     deptName: null,
     createBy: null,
@@ -451,7 +452,6 @@ function reset() {
     updateTime: null
   };
   proxy.resetForm('customerOrderRef');
-  data.autoGenFlag = false;
 }
 
 function handleQuery() {
@@ -484,7 +484,7 @@ function handleUpdate(row) {
   getCustomerOrder(_coId).then((response) => {
     form.value = response.data;
     if (form.value.clientId) {
-      listBd({ clientId: form.value.clientId, pageSize: 1000 }).then((clientResponse) => {
+      listBd({ pageNum: 1, clientId: form.value.clientId, pageSize: 1000 }).then((clientResponse) => {
         if (clientResponse.rows && clientResponse.rows.length > 0) {
           const client = clientResponse.rows.find((item) => item.clientId == form.value.clientId);
           if (client) {
@@ -495,12 +495,11 @@ function handleUpdate(row) {
       });
     }
     if (form.value.salesRepId && !form.value.salesRepName) {
-      listUser({ userId: form.value.salesRepId, pageSize: 1 })
+      listUser({ pageNum: 1, userIds: form.value.salesRepId, pageSize: 1 })
         .then((userResponse) => {
           if (userResponse.rows && userResponse.rows.length > 0) {
             const user = userResponse.rows[0];
             form.value.salesRepName = user.userName;
-            form.value.sales_rep_name = user.userName;
           }
         })
         .catch(() => {
@@ -519,7 +518,7 @@ function handleView(row) {
   getCustomerOrder(_coId).then((response) => {
     form.value = response.data;
     if (form.value.clientId) {
-      listBd({ clientId: form.value.clientId, pageSize: 1000 }).then((clientResponse) => {
+      listBd({ pageNum: 1, clientId: form.value.clientId, pageSize: 1000 }).then((clientResponse) => {
         if (clientResponse.rows && clientResponse.rows.length > 0) {
           const client = clientResponse.rows.find((item) => item.clientId == form.value.clientId);
           if (client) {
@@ -530,12 +529,11 @@ function handleView(row) {
       });
     }
     if (form.value.salesRepId && !form.value.salesRepName) {
-      listUser({ userId: form.value.salesRepId, pageSize: 1 })
+      listUser({ pageNum: 1, userIds: form.value.salesRepId, pageSize: 1 })
         .then((userResponse) => {
           if (userResponse.rows && userResponse.rows.length > 0) {
             const user = userResponse.rows[0];
             form.value.salesRepName = user.userName;
-            form.value.sales_rep_name = user.userName;
           }
         })
         .catch(() => {
@@ -548,7 +546,7 @@ function handleView(row) {
 }
 
 function submitForm() {
-  proxy.$refs['customerOrderRef'].validate((valid) => {
+  customerOrderRef.value?.validate((valid) => {
     if (valid) {
       // 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号
       if (autoGenFlag.value) {
@@ -597,7 +595,7 @@ function handleExport() {
 
 function handleAutoGenChange(autoGenFlag) {
   if (autoGenFlag) {
-    previewCode('SO_CO_NO').then((response) => {
+    previewCode('SO_CO_NO').then((response: any) => {
       form.value.coNo = response;
     });
   } else {
@@ -681,7 +679,6 @@ function openUserSelect() {
 function selectUser(row) {
   form.value.salesRepId = row.userId;
   form.value.salesRepName = row.userName;
-  form.value.sales_rep_name = row.userName;
   userVisible.value = false;
 }
 
@@ -694,7 +691,6 @@ function handleDeptChange(dept) {
   }
   form.value.salesRepId = null;
   form.value.salesRepName = null;
-  form.value.sales_rep_name = null;
 }
 
 function resetUserQuery() {

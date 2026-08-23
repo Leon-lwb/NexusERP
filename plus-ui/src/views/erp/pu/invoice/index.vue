@@ -42,13 +42,13 @@
         <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['pu:invoice:add']">新增</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['pu:invoice:edit']">修改</el-button>
+        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate()" v-hasPermi="['pu:invoice:edit']">修改</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button type="info" plain icon="DocumentAdd" @click="handleGenFromPo" v-hasPermi="['pu:invoice:add']">从订单生成</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['pu:invoice:remove']">删除</el-button>
+        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete()" v-hasPermi="['pu:invoice:remove']">删除</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['pu:invoice:export']">导出</el-button>
@@ -534,7 +534,7 @@ import { listVendor } from '@/api/erp/bd/vendor';
 import { listMaterial } from '@/api/erp/bd/material';
 import { InvoiceVO, InvoiceForm, InvoiceLineForm, MatchResult } from '@/api/erp/pu/invoice/types';
 
-const { proxy } = getCurrentInstance();
+const { proxy } = getCurrentInstance() as any;
 const { pu_invoice_type, pu_invoice_status, pu_invoice_cert_status, invoice_issue_channel } = toRefs<any>(
   proxy.useDict('pu_invoice_type', 'pu_invoice_status', 'pu_invoice_cert_status', 'invoice_issue_channel')
 );

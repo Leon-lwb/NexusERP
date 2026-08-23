@@ -406,12 +406,14 @@
 
 <script setup lang="ts" name="Bd">
 import { listClient, getClient, addClient, updateClient, delClient } from '@/api/erp/bd/client';
+import type { ClientForm, ClientQuery } from '@/api/erp/bd/client/types';
 import { listUser } from '@/api/system/user';
 import { previewCode } from '@/api/system/autocode/rule';
 import { getProvinces, getNextLevel } from '@/api/system/area';
+import type { FormInstance } from 'element-plus';
 import ClientLogoUpload from './ClientLogoUpload.vue';
 
-const { proxy } = getCurrentInstance();
+const { proxy } = getCurrentInstance() as any;
 const { bd_client_type, so_invoice_type } = toRefs<any>(proxy.useDict('bd_client_type', 'so_invoice_type'));
 
 const bdList = ref([]);
@@ -427,7 +429,8 @@ const autoGenFlag = ref(false);
 const activeTab = ref('basic');
 const isViewMode = ref(false); // 标识是否为查看模式
 
-const data = reactive({
+const bdRef = ref<FormInstance>();
+const data = reactive<PageData<ClientForm, ClientQuery>>({
   form: {},
   queryParams: {
     pageNum: 1,
@@ -646,7 +649,7 @@ function handleView(row) {
 
 /** 提交按钮 */
 function submitForm() {
-  proxy.$refs['bdRef'].validate((valid) => {
+  bdRef.value?.validate((valid) => {
     if (valid) {
       // 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号
       if (autoGenFlag.value) {
@@ -698,7 +701,7 @@ function handleExport() {
 //自动生成编码
 function handleAutoGenChange(autoGenFlag) {
   if (autoGenFlag) {
-    previewCode('CLIENT_CODE').then((response) => {
+    previewCode('CLIENT_CODE').then((response: any) => {
       form.value.clientCode = response;
     });
   } else {

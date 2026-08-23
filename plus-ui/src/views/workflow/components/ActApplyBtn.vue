@@ -74,7 +74,7 @@ const props = defineProps({
   },
   variables: {
     type: Object,
-    default: {}
+    default: () => ({})
   },
   text: {
     type: String,
@@ -125,7 +125,7 @@ const ReStartByDataId = (isNewFlow: boolean) => {
     submitLoading.value = true;
     deleteActivityAndJoin(props.dataId, props.variables)
       .then((res) => {
-        if (res.code == 200 && res.result) {
+        if (res.code == 200 && res.data) {
           //若删除成功
           const params = Object.assign(
             {
@@ -136,10 +136,10 @@ const ReStartByDataId = (isNewFlow: boolean) => {
           startByDataId(props.dataId, selectFlowId.value, props.serviceName, params).then((res) => {
             if (res.code == 200) {
               firstInitiatorOpen.value = false;
-              proxy?.$modal.msgSuccess(res.message);
+              proxy?.$modal.msgSuccess(res.msg);
               emit('success');
             } else {
-              proxy?.$modal.msgError(res.message);
+              proxy?.$modal.msgError(res.msg);
             }
           });
         }
@@ -156,7 +156,7 @@ const ReStartByDataId = (isNewFlow: boolean) => {
         businessKey: props.dataId,
         nodeType: '',
         category: 'zdyyw',
-        finished: true
+        finished: 'true'
       }
     });
   }

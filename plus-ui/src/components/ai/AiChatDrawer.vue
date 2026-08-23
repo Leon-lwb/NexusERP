@@ -209,7 +209,7 @@ function onAiSseMessage(event: Event) {
 function renderMarkdown(content: string) {
   const renderer = createAiRenderer();
   // 净化 LLM 输出的 HTML，防止存储型 XSS（库内数据经 AI 查询回显可含恶意标签）
-  return sanitizeHtml(marked.parse(content || '', { renderer }));
+  return sanitizeHtml(marked.parse(content || '', { renderer, async: false }));
 }
 
 /** 扫描 DOM 中的 echarts-container 并挂载 ECharts 实例 */

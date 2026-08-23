@@ -33,7 +33,7 @@
         <el-button type="primary" plain icon="Refresh" @click="handleReconcile" v-hasPermi="['wm:reconciliation:edit']">执行校验</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['wm:reconciliation:remove']"
+        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete()" v-hasPermi="['wm:reconciliation:remove']"
           >删除</el-button
         >
       </el-col>

@@ -330,6 +330,7 @@
 import { listWorker, getWorker, delWorker, addWorker, updateWorker, listBuiltUserIds } from '@/api/erp/sch/worker';
 import { listUser } from '@/api/system/user';
 import { listWorkshop } from '@/api/erp/bd/workshop';
+import type { WorkshopQuery } from '@/api/erp/bd/workshop/types';
 import type { FormInstance } from 'element-plus';
 import { useCrud } from '@/composables/useCrud';
 
@@ -356,7 +357,7 @@ const workshopList = ref<any[]>([]);
 const workshopLoading = ref(false);
 const workshopVisible = ref(false);
 const workshopTotal = ref(0);
-const workshopQueryParams = reactive({ pageNum: 1, pageSize: 10, workshopCode: undefined, workshopName: undefined, status: '1' });
+const workshopQueryParams = reactive({ pageNum: 1, pageSize: 10, workshopCode: undefined, workshopName: undefined, status: '1' as string | number });
 
 const queryParams = ref({
   pageNum: 1,
@@ -485,7 +486,7 @@ function clearUserSelect() {
 // ============ 车间选择 ============
 function getWorkshopList() {
   workshopLoading.value = true;
-  listWorkshop(workshopQueryParams).then((response: any) => {
+  listWorkshop(workshopQueryParams as WorkshopQuery).then((response: any) => {
     workshopList.value = response.rows;
     workshopTotal.value = response.total;
     workshopLoading.value = false;

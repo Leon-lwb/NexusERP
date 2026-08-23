@@ -2,7 +2,7 @@
   <el-tree-select
     v-model="selectedDeptId"
     :data="deptOptions"
-    :props="{ value: 'deptId', label: 'deptName', children: 'children' }"
+    :props="deptTreeProps"
     value-key="deptId"
     :placeholder="placeholder"
     :disabled="disabled"
@@ -16,6 +16,7 @@
 </template>
 
 <script setup lang="ts" name="DeptSelect">
+import type { TreeOptionProps } from 'element-plus';
 import { listDept } from '@/api/system/dept';
 import type { DeptVO } from '@/api/system/dept/types';
 
@@ -47,6 +48,8 @@ const emit = defineEmits<{
 }>();
 
 const selectedDeptId = ref<string | number | undefined>(props.modelValue);
+// 树节点字段映射（element-plus TreeOptionProps 未收录 value 键，扩展声明）
+const deptTreeProps: TreeOptionProps & { value?: string } = { value: 'deptId', label: 'deptName', children: 'children' };
 const deptOptions = ref<any[]>([]);
 
 // 同步外部传入的 modelValue

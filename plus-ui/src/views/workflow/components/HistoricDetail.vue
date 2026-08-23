@@ -229,6 +229,10 @@ const setColor = (val) => {
     return '#b3bdbb';
   }
 };
+//点击文件列表中已上传文件进行下载
+const handleFilePreview = (file: any) => {
+  location.href = file.url;
+};
 const fillFormData = (list, formConf) => {
   // for formdesigner
   list.forEach((item, i) => {

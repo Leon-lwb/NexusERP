@@ -56,8 +56,8 @@ export interface ArrivalNoticeLineVO {
 
 export interface ArrivalnoticeForm {
   noticeId?: number;
-  noticeCode: string;
-  noticeName: string;
+  noticeCode?: string;
+  noticeName?: string;
   purOrderCode?: string;
   vendorId?: number;
   vendorCode?: string;
@@ -67,7 +67,7 @@ export interface ArrivalnoticeForm {
   contact?: string;
   phone?: string;
   status?: string;
-  selectFlowId?: number;
+  selectFlowId?: number | string;
   remark?: string;
   attr1?: string;
   attr2?: string;

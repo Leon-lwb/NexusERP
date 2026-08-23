@@ -142,7 +142,8 @@ const multiple = ref(true); // 多选状态
 const total = ref(0); // 总记录数
 
 const orderLinesMap = ref<Record<number, any[]>>({});
-const expandedRows = ref<number[]>([]);
+// el-table expand-row-keys 要求 string[]（与 row-key 字符串匹配）
+const expandedRows = ref<string[]>([]);
 
 const loadOrderLines = async (orderId: number) => {
   if (orderLinesMap.value[orderId]) return;
@@ -156,8 +157,8 @@ const handleExpandChange = (row: any, expandedRows: any[]) => {
   }
 };
 
-const getReceiveStatusType = (status: string): string => {
-  const map: Record<string, string> = {
+const getReceiveStatusType = (status: string): 'success' | 'warning' | 'danger' | 'info' | 'primary' => {
+  const map: Record<string, 'success' | 'warning' | 'danger' | 'info' | 'primary'> = {
     'NOT_RECEIVED': 'info',
     'PENDING': 'info',
     'PARTIAL_RECEIVED': 'warning',

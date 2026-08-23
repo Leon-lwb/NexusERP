@@ -242,7 +242,7 @@ const submitForm = () => {
 const handleDelete = async (row?: AiProvider) => {
   const deleteIds = row?.id || ids.value;
   await proxy?.$modal.confirm('是否确认删除厂商编号为"' + deleteIds + '"的数据项？');
-  await delProvider(deleteIds);
+  await delProvider(row?.id ? [row.id] : ids.value);
   await getList();
   proxy?.$modal.msgSuccess('删除成功');
 };

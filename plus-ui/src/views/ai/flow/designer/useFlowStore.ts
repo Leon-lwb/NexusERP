@@ -317,11 +317,18 @@ export const useFlowStore = defineStore('aiFlow', () => {
     if (!g) return;
     // 折叠态取消：恢复成员可见
     if (g.collapsed) {
-      nodes.value = nodes.value.map((n) => (g.nodeIds.includes(n.id) ? { ...n, hidden: false } : n));
-      edges.value = edges.value.map((e) => {
+      const restoredNodes: FlowCanvasNode[] = [];
+      for (const n of nodes.value) {
+        restoredNodes.push(g.nodeIds.includes(n.id) ? { ...n, hidden: false } : n);
+      }
+      nodes.value = restoredNodes;
+      // Edge 泛型层级较深，直接以 Edge[] 赋值会触发 TS2589，经 any 中转断言
+      const restoredEdges: any[] = [];
+      for (const e of edges.value) {
         const linked = g.nodeIds.includes(e.source) || g.nodeIds.includes(e.target);
-        return linked ? { ...e, hidden: false } : e;
-      });
+        restoredEdges.push(linked ? { ...e, hidden: false } : e);
+      }
+      edges.value = restoredEdges as Edge[];
     }
     groups.value = groups.value.filter((x) => x.id !== groupId);
     if (selectedGroupId.value === groupId) selectedGroupId.value = null;
@@ -335,10 +342,13 @@ export const useFlowStore = defineStore('aiFlow', () => {
     const collapsed = !g.collapsed;
     groups.value = groups.value.map((x) => (x.id === groupId ? { ...x, collapsed } : x));
     nodes.value = nodes.value.map((n) => (g.nodeIds.includes(n.id) ? { ...n, hidden: collapsed } : n));
-    edges.value = edges.value.map((e) => {
+    // Edge 泛型层级较深，经 any 中转断言避免 TS2589
+    const updatedEdges: any[] = [];
+    for (const e of edges.value) {
       const linked = g.nodeIds.includes(e.source) || g.nodeIds.includes(e.target);
-      return linked ? { ...e, hidden: collapsed } : e;
-    });
+      updatedEdges.push(linked ? { ...e, hidden: collapsed } : e);
+    }
+    edges.value = updatedEdges as Edge[];
     dirty.value = true;
   }
 
@@ -457,7 +467,8 @@ export const useFlowStore = defineStore('aiFlow', () => {
   function copySelection(selectedNodes: FlowCanvasNode[]) {
     if (!selectedNodes.length) return false;
     const ids = new Set(selectedNodes.map((n) => n.id));
-    const selEdges = edges.value.filter((e) => ids.has(e.source) && ids.has(e.target));
+    // Edge 泛型层级较深，经 any 中转避免 TS2589（结果仅用于 JSON 序列化）
+    const selEdges = (edges.value as any[]).filter((e: Edge) => ids.has(e.source) && ids.has(e.target));
     clipboard.value = {
       nodes: JSON.stringify(selectedNodes.map((n) => ({ ...n, selected: undefined }))),
       edges: JSON.stringify(selEdges)

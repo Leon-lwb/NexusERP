@@ -70,6 +70,8 @@ export interface InvoiceVO {
   createTime: string;
   /** 更新时间 */
   updateTime: string;
+  /** 发票明细行列表（详情返回） */
+  soInvoiceLineList?: InvoiceLineForm[];
 }
 
 /**

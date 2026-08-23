@@ -968,7 +968,7 @@ function onViewFlow() {
 //自动生成编号
 function handleAutoGenChange(autoGenFlag) {
   if (autoGenFlag) {
-    previewCode('SO_ORDER_CODE').then((response) => {
+    previewCode('SO_ORDER_CODE').then((response: any) => {
       form.value.soNo = response;
     });
   } else {
@@ -1017,8 +1017,9 @@ function clearCustomerOrder() {
   customerOrderDisplay.value = '';
 }
 
-function rowSoSalesOrderLineIndex({ row, rowIndex }) {
+function rowSoSalesOrderLineIndex({ row, rowIndex }: { row: any; rowIndex: number }): string {
   row.index = rowIndex + 1;
+  return '';
 }
 
 function handleAddSoSalesOrderLine() {

@@ -3,7 +3,7 @@
     <!-- 主表 -->
     <el-form :model="formData.main" label-width="120px">
       <el-row v-for="field in mainFields" :key="field.columnName">
-        <el-form-item :label="field.columnComment" :required="field.isRequired">
+        <el-form-item :label="field.columnComment" :required="field.isRequired === '1'">
           <component :is="getComponent(field)" v-model="formData.main[field.columnName]" :options="field.dictData" />
         </el-form-item>
       </el-row>
@@ -15,7 +15,7 @@
       <el-button @click="removeSub(index)">删除</el-button>
       <el-form :model="sub" label-width="120px">
         <el-row v-for="field in subFields" :key="field.columnName">
-          <el-form-item :label="field.columnComment" :required="field.isRequired">
+          <el-form-item :label="field.columnComment" :required="field.isRequired === '1'">
             <component :is="getComponent(field)" v-model="sub[field.columnName]" :options="field.dictData" />
           </el-form-item>
         </el-row>
@@ -40,7 +40,8 @@ const formData = reactive({
   subs: props.initialData?.subs?.length ? [...props.initialData.subs] : [{}]
 });
 
-const getComponent = (field: OnlFieldVo) => {
+// 动态组件注册表（getComponentType 返回 nbMade 组件集合），组件 props 各不相同，返回 any 交由运行时处理
+const getComponent = (field: OnlFieldVo): any => {
   return getComponentType(field.htmlType);
 };
 

@@ -40,14 +40,18 @@
 
 <script setup lang="ts" name="TeamScheduleManage">
 import { listTeamSchedule, getTeamSchedule, delTeamSchedule, addTeamSchedule, updateTeamSchedule } from '@/api/erp/sch/team-schedule';
+import type { TeamScheduleVO, TeamScheduleForm, TeamScheduleQuery } from '@/api/erp/sch/team-schedule/types';
 import { listTeam } from '@/api/erp/sch/team';
 import { listShift } from '@/api/erp/sch/shift';
+import type { ShiftVO } from '@/api/erp/sch/shift/types';
 import { listPlanteam } from '@/api/erp/sch/planteam';
+import type { FormInstance } from 'element-plus';
 
 const { proxy } = getCurrentInstance();
 const { sys_true_or_false } = toRefs(proxy.useDict('sys_true_or_false'));
 
-const teamScheduleList = ref([]);
+const teamScheduleRef = ref<FormInstance>();
+const teamScheduleList = ref<TeamScheduleVO[]>([]);
 const open = ref(false);
 const loading = ref(true);
 const showSearch = ref(true);
@@ -59,11 +63,11 @@ const title = ref('');
 const isViewMode = ref(false);
 
 const teamList = ref([]);
-const shiftList = ref([]);
-const allTeamList = ref([]);
-const selectedTeamIds = ref([]);
+const shiftList = ref<ShiftVO[]>([]);
+const allTeamList = ref<{ key: number; label: string; planTeamRecordId?: number }[]>([]);
+const selectedTeamIds = ref<number[]>([]);
 
-const data = reactive({
+const data = reactive<PageData<TeamScheduleForm, TeamScheduleQuery>>({
   form: {},
   queryParams: {
     pageNum: 1,
@@ -104,7 +108,7 @@ function initLists(planId) {
     });
   });
 
-  listShift({ planId: planId }).then((response) => {
+  listShift({ planId: planId, pageNum: 1, pageSize: 999 }).then((response) => {
     shiftList.value = response.rows;
   });
 }
@@ -186,11 +190,13 @@ function handleUpdate(row) {
 }
 
 function submitForm() {
-  proxy.$refs['teamScheduleRef'].validate((valid) => {
+  teamScheduleRef.value?.validate((valid) => {
     if (valid) {
       const deleteParams = {
         planId: form.value.planId,
-        shiftId: form.value.shiftId
+        shiftId: form.value.shiftId,
+        pageNum: 1,
+        pageSize: 999
       };
       if (form.value.planId && form.value.shiftId) {
         listTeamSchedule(deleteParams).then((response) => {

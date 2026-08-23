@@ -66,7 +66,6 @@
 import { listFinishedProcess } from '@/api/workflow/work/process';
 import { revokeProcess, recallProcess } from '@/api/workflow/work/task';
 import { ProcessQuery, ProcessVO } from '@/api/workflow/work/types';
-import { DateModelType } from 'element-plus';
 
 import { ComponentInternalInstance } from 'vue';
 
@@ -80,7 +79,7 @@ const ids = ref<Array<number | string>>([]);
 const single = ref(true);
 const multiple = ref(true);
 const total = ref(0);
-const dateRange = ref<[DateModelType, DateModelType]>(['', '']);
+const dateRange = ref<[string, string]>(['', '']);
 
 const queryFormRef = ref(ElForm);
 
@@ -114,7 +113,7 @@ const handleDetails = (row: any) => {
     path: '/workflow/process/detail/' + row.procInsId,
     query: {
       taskId: row.taskId,
-      processed: false
+      processed: 'false'
     }
   });
 };

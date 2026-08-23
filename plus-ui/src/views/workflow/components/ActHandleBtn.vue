@@ -39,7 +39,7 @@ const props = defineProps({
   },
   /* handleType 0通过 1驳回 2退回  */
   type: {
-    type: String | Number,
+    type: [String, Number],
     default: '0',
     required: true
   },
@@ -107,7 +107,7 @@ const returnBakcTask = () => {
   modalTaskTitle.value = '审批退回';
   modalTaskVisible.value = true;
   returnList({ dataId: props.dataId }).then((res) => {
-    returnTaskList.value = res.result || [];
+    returnTaskList.value = res.data || [];
   });
 };
 
@@ -142,7 +142,7 @@ const handelSubmit = () => {
     rejectTask(formData)
       .then((res) => {
         submitLoading.value = false;
-        if (res.success) {
+        if (res.code == 200) {
           proxy?.$modal.msgSuccess('操作成功');
           modalTaskVisible.value = false;
           emit('success');
@@ -163,7 +163,7 @@ const handelSubmit = () => {
     returnTask(formData)
       .then((res) => {
         submitLoading.value = false;
-        if (res.success) {
+        if (res.code == 200) {
           proxy?.$modal.msgSuccess('操作成功');
           modalTaskVisible.value = false;
           emit('success');

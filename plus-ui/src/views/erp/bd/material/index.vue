@@ -188,11 +188,7 @@
                     v-model="form.categoryId"
                     :data="categoryTree"
                     node-key="categoryId"
-                    :props="{
-                      children: 'children',
-                      label: 'categoryName',
-                      value: 'categoryId'
-                    }"
+                    :props="categoryTreeProps"
                     placeholder="请选择物料分类"
                     clearable
                     check-strictly
@@ -453,14 +449,16 @@
 
 <script setup lang="ts" name="Material">
 import { listMaterial, getMaterial, delMaterial, addMaterial, updateMaterial } from '@/api/erp/bd/material';
+import type { MaterialForm, MaterialQuery } from '@/api/erp/bd/material/types';
 import { getAllChildrenIds } from '@/api/erp/bd/category';
 import { listMeasureAll } from '@/api/erp/bd/measure';
 import { listMaterialVendor } from '@/api/erp/bd/material-vendor';
 import { previewCode } from '@/api/system/autocode/rule';
 import { useCategoryTree } from '@/composables/erp/useCategoryTree';
+import type { FormInstance } from 'element-plus';
 import MaterialAttrValueEditor from './MaterialAttrValueEditor.vue';
 
-const { proxy } = getCurrentInstance();
+const { proxy } = getCurrentInstance() as any;
 const { sys_true_or_false, prd_material_source_type, bd_material_type, bd_quality_status, bd_inspection_required } = toRefs<any>(
   proxy.useDict('sys_true_or_false', 'prd_material_source_type', 'bd_material_type', 'bd_quality_status', 'bd_inspection_required')
 );
@@ -485,7 +483,14 @@ const activeTab = ref('basic');
 const vendorList = ref([]);
 const vendorLoading = ref(false);
 
-const data = reactive({
+const materialRef = ref<FormInstance>();
+// 分类树节点字段映射（el-tree-select 支持 value 字段指定选项取值，element-plus 的 TreeOptionProps 类型未收录）
+const categoryTreeProps = {
+  children: 'children',
+  label: 'categoryName',
+  value: 'categoryId'
+};
+const data = reactive<PageData<MaterialForm, MaterialQuery>>({
   form: {},
   queryParams: {
     pageNum: 1,
@@ -671,7 +676,7 @@ function loadVendorList(materialId) {
 
 /** 提交按钮 */
 function submitForm() {
-  proxy.$refs['materialRef'].validate((valid) => {
+  materialRef.value?.validate((valid) => {
     if (valid) {
       // 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号
       if (autoGenFlag.value) {
@@ -723,7 +728,7 @@ function handleExport() {
 //自动生成编码
 function handleAutoGenChange(enabled) {
   if (enabled) {
-    previewCode('MATERIAL_CODE').then((response) => {
+    previewCode('MATERIAL_CODE').then((response: any) => {
       form.value.materialCode = response;
     });
   } else {

@@ -1,4 +1,3 @@
-
 export interface WmBatchVO {
   batchId: number;
   batchCode: string;
@@ -29,6 +28,7 @@ export interface WmBatchVO {
 
 export interface WmBatchQuery extends PageQuery {
   batchCode?: string;
+  materialId?: number | string;
   materialCode?: string;
   materialName?: string;
   vendorCode?: string;

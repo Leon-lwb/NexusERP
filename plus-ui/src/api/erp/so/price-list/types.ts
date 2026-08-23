@@ -1,4 +1,3 @@
-
 export interface PriceListQuery extends PageQuery {
   listName?: string;
   listType?: string;

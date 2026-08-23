@@ -91,7 +91,7 @@
           <el-tree-select
             v-model="form.materialCategoryId"
             :data="categoryOptions"
-            :props="{ value: 'categoryId', label: 'categoryName', children: 'children' }"
+            :props="categoryTreeProps"
             placeholder="请选择物料类别"
             check-strictly
             style="width: 100%"
@@ -137,6 +137,13 @@ const { wm_putaway_strategy_type, wm_rule_status } = toRefs<any>(proxy.useDict('
 const putawayRuleRef = ref<FormInstance>();
 const warehouseOptions = ref<any[]>([]);
 const { categoryTree: categoryOptions, getCategoryTree } = useCategoryTree(proxy);
+
+// 分类树节点字段映射（el-tree-select 支持 value 字段指定选项取值，element-plus 的 TreeOptionProps 类型未收录）
+const categoryTreeProps = {
+  value: 'categoryId',
+  label: 'categoryName',
+  children: 'children'
+};
 
 const queryParams = ref({ pageNum: 1, pageSize: 10, ruleCode: null, ruleName: null, strategyType: null });
 

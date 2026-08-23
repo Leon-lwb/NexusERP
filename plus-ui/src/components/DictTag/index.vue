@@ -3,7 +3,7 @@
     <template v-for="(item, index) in options">
       <template v-if="isValueMatch(item.value)">
         <span
-          v-if="(item.elTagType === 'default' || item.elTagType === '') && (item.elTagClass === '' || item.elTagClass == null)"
+          v-if="(String(item.elTagType) === 'default' || String(item.elTagType) === '') && (item.elTagClass === '' || item.elTagClass == null)"
           :key="item.value"
           :index="index"
           :class="item.elTagClass"

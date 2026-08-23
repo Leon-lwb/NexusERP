@@ -217,9 +217,11 @@ import {
 } from '@/api/erp/bd/category';
 import type { CategoryForm } from '@/api/erp/bd/category/types';
 import { useCategoryTree } from '@/composables/erp/useCategoryTree';
+import type { FormInstance } from 'element-plus';
 import CategoryAttrManager from './CategoryAttrManager.vue';
 
-const { proxy } = getCurrentInstance();
+const { proxy } = getCurrentInstance() as any;
+const categoryRef = ref<FormInstance>();
 const { sys_core_status } = toRefs<any>(proxy.useDict('sys_core_status'));
 
 const categoryOptions = ref<any[]>([]);
@@ -308,7 +310,7 @@ const cumulativeCountMap = computed<Record<string, number>>(() => {
 
 /** 查询分类下拉树结构（编辑时排除自身及子孙，防循环父级） */
 function getTreeselect(excludeId?) {
-  const req = excludeId ? listCategoryExcludeChild(excludeId) : listCategory({});
+  const req = excludeId ? listCategoryExcludeChild(excludeId) : listCategory();
   return req.then((response) => {
     const list = response.data || [];
     const treeData = { categoryId: 0, categoryName: '主类目', children: [] };
@@ -405,7 +407,7 @@ function handleView(row) {
 
 /** 提交按钮 */
 function submitForm() {
-  proxy.$refs['categoryRef'].validate((valid) => {
+  categoryRef.value?.validate((valid) => {
     if (valid) {
       if (form.value.categoryId != null) {
         updateCategory(form.value).then(() => {

@@ -55,7 +55,7 @@ const title = ref('');
 const open = ref(true);
 // 表单参数
 const form = ref<any>({});
-const formRef = ref(null);
+const formRef = ref<ElFormInstance>();
 
 // 取消按钮
 const cancel = () => {
@@ -112,7 +112,7 @@ const handleUpdate = (row) => {
 };
 /** 提交按钮 */
 const submitForm = () => {
-  formRef.validate((valid) => {
+  formRef.value?.validate((valid) => {
     if (valid) {
       buttonLoading.value = true;
       if (form.value.demoId != null) {

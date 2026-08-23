@@ -18,8 +18,8 @@ export interface CategoryAttributeVO {
 }
 
 export interface CategoryAttributeForm {
-  attrId?: number;
-  categoryId?: number;
+  attrId?: number | string;
+  categoryId?: number | string;
   attrCode: string;
   attrName: string;
   dataType: string;

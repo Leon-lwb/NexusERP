@@ -1,10 +1,12 @@
 export interface StockQuery extends PageQuery {
+  materialId?: number | string;
   materialCode?: string;
   materialName?: string;
   batchCode?: string;
+  warehouseId?: number | string;
   warehouseName?: string;
   areaName?: string;
-  locationId?: number;
+  locationId?: number | string;
   locationName?: string;
   vendorName?: string;
   woNo?: string;

@@ -19,6 +19,7 @@ export interface ProStepGuideVO {
 /** 工序流程指引查询条件 */
 export interface ProStepGuideQuery extends PageQuery {
   processId?: number;
+  processName?: string;
   guideType?: string;
   enabled?: string;
 }
@@ -27,6 +28,9 @@ export interface ProStepGuideQuery extends PageQuery {
 export interface ProStepGuideForm {
   guideId?: number;
   processId: number;
+  processCode?: string;
+  processName?: string;
+  sopName?: string;
   guideType: string;
   guideTitle?: string;
   guideContent?: string;
@@ -53,5 +57,5 @@ export const updateStepGuide = (data: ProStepGuideForm) => request({ url: '/mes/
 export const delStepGuide = (guideIds: number | number[]) => request({ url: `/mes/pro/step-guide/${guideIds}`, method: 'delete' });
 
 /** 导出工序流程指引 */
-export const exportStepGuide = (query?: ProStepGuideQuery) =>
-  request({ url: '/mes/pro/step-guide/export', method: 'post', params: query, responseType: 'blob' });
+export const exportStepGuide = (query?: ProStepGuideQuery): Promise<Blob> =>
+  request({ url: '/mes/pro/step-guide/export', method: 'post', params: query, responseType: 'blob' }) as unknown as Promise<Blob>;

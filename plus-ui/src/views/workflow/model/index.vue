@@ -23,7 +23,7 @@
             <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['workflow:model:add']">新增</el-button>
           </el-col>
           <el-col :span="1.5">
-            <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['workflow:model:remove']"
+            <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete()" v-hasPermi="['workflow:model:remove']"
               >删除</el-button
             >
           </el-col>
@@ -359,10 +359,7 @@ const handleDeploy = (row?: ModelVO) => {
     try {
       const res = await deployModel({ modelId: row?.modelId });
       proxy?.$modal.msgSuccess('操作成功');
-      router.push({
-        name: 'Deploy',
-        path: '/workflow/deploy'
-      });
+      router.push('/workflow/deploy');
     } catch (err) {}
     loading.value = false;
   });

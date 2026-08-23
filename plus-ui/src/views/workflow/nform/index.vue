@@ -634,13 +634,6 @@ const handleTableSelect = async (table: any) => {
         .map(processColumn);
 
       // 判断是否是主子表
-      console.log('判断主子表条件:', {
-        tplCategory: table.tplCategory,
-        subTableName: table.subTableName,
-        isMain: table.tplCategory === 'main',
-        hasSubTable: !!table.subTableName
-      });
-
       if (table.tplCategory === 'main' && table.subTableName) {
         const subRes = await getTableColumns(table.subTableName);
         if (subRes.data) {
@@ -701,16 +694,6 @@ const getColumnType = (columnType: string): string => {
 const enterDesigner = () => {
   if (!selectedTable.value) return;
 
-  // 打印主子表信息
-  console.log('主子表信息检查:', {
-    subTableName: selectedTable.value.subTableName,
-    subColumnsVo: selectedTable.value.subColumnsVo,
-    subColumnsVoLength: selectedTable.value.subColumnsVo?.length,
-    hasSubTableName: !!selectedTable.value.subTableName,
-    hasSubColumnsVo: !!selectedTable.value.subColumnsVo,
-    condition: selectedTable.value.subTableName && selectedTable.value.subColumnsVo
-  });
-
   // 构建表信息
   const tableInfo = {
     mainTable: {
@@ -729,7 +712,15 @@ const enterDesigner = () => {
           dictFields: col.dictFields,
           mapping: col.mapping
         }))
-    }
+    },
+    subTable: undefined as
+      | undefined
+      | {
+          tableName?: string;
+          tableComment?: string;
+          fkName?: string;
+          columns?: any[];
+        }
   };
 
   // 如果有子表信息，添加到 tableInfo 中

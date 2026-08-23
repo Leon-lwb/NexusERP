@@ -94,7 +94,7 @@
         <div class="canvas-content">
           <el-scrollbar>
             <div class="form-canvas" :class="{ 'mobile-view': deviceType === 'mobile' }" @dragover.prevent @drop="handleDrop">
-              <el-form :model="formData" :label-width="deviceType === 'pc' ? '100px' : '80px'">
+              <el-form :model="formValues" :label-width="deviceType === 'pc' ? '100px' : '80px'">
                 <div
                   v-for="(item, index) in formComponents"
                   :key="item.id || index"
@@ -105,13 +105,13 @@
                 >
                   <el-form-item :label="item.label">
                     <template v-if="item.type === 'input'">
-                      <el-input v-model="formData[item.field]" v-bind="getFilteredProps(item.props)" />
+                      <el-input v-model="formValues[item.field]" v-bind="getFilteredProps(item.props)" />
                     </template>
                     <template v-else-if="item.type === 'textarea'">
-                      <el-input type="textarea" v-model="formData[item.field]" v-bind="getFilteredProps(item.props)" />
+                      <el-input type="textarea" v-model="formValues[item.field]" v-bind="getFilteredProps(item.props)" />
                     </template>
                     <template v-else-if="item.type === 'select'">
-                      <el-select v-model="formData[item.field]" v-bind="getFilteredProps(item.props)">
+                      <el-select v-model="formValues[item.field]" v-bind="getFilteredProps(item.props)">
                         <el-option
                           v-for="option in item.props.dataSource === 'dict' ? dictOptions[item.props.dictType] || [] : item.props.options"
                           :key="option.value"
@@ -122,7 +122,7 @@
                     </template>
                     <template v-else-if="item.type === 'checkbox'">
                       <el-checkbox-group
-                        v-model="formData[item.field]"
+                        v-model="formValues[item.field]"
                         v-bind="getFilteredProps(item.props)"
                         @change="(value) => handleFieldChange(value, item)"
                       >
@@ -136,7 +136,7 @@
                       </el-checkbox-group>
                     </template>
                     <template v-else-if="item.type === 'radio'">
-                      <el-radio-group v-model="formData[item.field]" v-bind="getFilteredProps(item.props)">
+                      <el-radio-group v-model="formValues[item.field]" v-bind="getFilteredProps(item.props)">
                         <el-radio
                           v-for="option in item.props.dataSource === 'dict' ? dictOptions[item.props.dictType] || [] : item.props.options"
                           :key="option.value"
@@ -148,7 +148,7 @@
                     </template>
                     <template v-else-if="item.type === 'date'">
                       <el-date-picker
-                        v-model="formData[item.field]"
+                        v-model="formValues[item.field]"
                         type="date"
                         v-bind="getFilteredProps(item.props)"
                         :format="item.props.format || 'YYYY-MM-DD'"
@@ -157,7 +157,7 @@
                     </template>
                     <template v-else-if="item.type === 'datetime'">
                       <el-date-picker
-                        v-model="formData[item.field]"
+                        v-model="formValues[item.field]"
                         type="datetime"
                         v-bind="getFilteredProps(item.props)"
                         :format="item.props.format || 'YYYY-MM-DD HH:mm:ss'"
@@ -166,14 +166,14 @@
                     </template>
                     <template v-else-if="item.type === 'time'">
                       <el-time-picker
-                        v-model="formData[item.field]"
+                        v-model="formValues[item.field]"
                         v-bind="getFilteredProps(item.props)"
                         :format="item.props.format || 'HH:mm:ss'"
                         :value-format="item.props.valueFormat || 'HH:mm:ss'"
                       />
                     </template>
                     <template v-else-if="item.type === 'popup'">
-                      <PopupTable v-model="formData[item.field]" v-bind="getFilteredProps(item.props)" />
+                      <PopupTable v-model="formValues[item.field]" v-bind="getFilteredProps(item.props)" />
                     </template>
                     <template v-else-if="item.type === 'subtable'">
                       <div class="subtable-container" :data-component-id="item.id">
@@ -313,7 +313,7 @@
                                 <el-form-item :label="child.label">
                                   <template v-if="child.type === 'date'">
                                     <el-date-picker
-                                      v-model="formData[child.field]"
+                                      v-model="formValues[child.field]"
                                       type="date"
                                       v-bind="getFilteredProps(child.props)"
                                       :format="child.props.format || 'YYYY-MM-DD'"
@@ -322,7 +322,7 @@
                                   </template>
                                   <template v-else-if="child.type === 'datetime'">
                                     <el-date-picker
-                                      v-model="formData[child.field]"
+                                      v-model="formValues[child.field]"
                                       type="datetime"
                                       v-bind="getFilteredProps(child.props)"
                                       :format="child.props.format || 'YYYY-MM-DD HH:mm:ss'"
@@ -331,7 +331,7 @@
                                   </template>
                                   <template v-else-if="child.type === 'time'">
                                     <el-time-picker
-                                      v-model="formData[child.field]"
+                                      v-model="formValues[child.field]"
                                       v-bind="getFilteredProps(child.props)"
                                       :format="child.props.format || 'HH:mm:ss'"
                                       :value-format="child.props.valueFormat || 'HH:mm:ss'"
@@ -340,7 +340,7 @@
                                   <template v-else>
                                     <component
                                       :is="getComponentByType(child.type)"
-                                      v-model="formData[child.field]"
+                                      v-model="formValues[child.field]"
                                       v-bind="getFilteredProps(child.props)"
                                     />
                                   </template>
@@ -383,7 +383,7 @@
                                   <el-form-item :label="child.label">
                                     <template v-if="child.type === 'date'">
                                       <el-date-picker
-                                        v-model="formData[child.field]"
+                                        v-model="formValues[child.field]"
                                         type="date"
                                         v-bind="getFilteredProps(child.props)"
                                         :format="child.props.format || 'YYYY-MM-DD'"
@@ -392,7 +392,7 @@
                                     </template>
                                     <template v-else-if="child.type === 'datetime'">
                                       <el-date-picker
-                                        v-model="formData[child.field]"
+                                        v-model="formValues[child.field]"
                                         type="datetime"
                                         v-bind="getFilteredProps(child.props)"
                                         :format="child.props.format || 'YYYY-MM-DD HH:mm:ss'"
@@ -401,7 +401,7 @@
                                     </template>
                                     <template v-else-if="child.type === 'time'">
                                       <el-time-picker
-                                        v-model="formData[child.field]"
+                                        v-model="formValues[child.field]"
                                         v-bind="getFilteredProps(child.props)"
                                         :format="child.props.format || 'HH:mm:ss'"
                                         :value-format="child.props.valueFormat || 'HH:mm:ss'"
@@ -410,7 +410,7 @@
                                     <template v-else>
                                       <component
                                         :is="getComponentByType(child.type)"
-                                        v-model="formData[child.field]"
+                                        v-model="formValues[child.field]"
                                         v-bind="getFilteredProps(child.props)"
                                       />
                                     </template>
@@ -458,7 +458,7 @@
                                 <el-form-item :label="child.label">
                                   <template v-if="child.type === 'date'">
                                     <el-date-picker
-                                      v-model="formData[child.field]"
+                                      v-model="formValues[child.field]"
                                       type="date"
                                       v-bind="getFilteredProps(child.props)"
                                       :format="child.props.format || 'YYYY-MM-DD'"
@@ -467,7 +467,7 @@
                                   </template>
                                   <template v-else-if="child.type === 'datetime'">
                                     <el-date-picker
-                                      v-model="formData[child.field]"
+                                      v-model="formValues[child.field]"
                                       type="datetime"
                                       v-bind="getFilteredProps(child.props)"
                                       :format="child.props.format || 'YYYY-MM-DD HH:mm:ss'"
@@ -476,7 +476,7 @@
                                   </template>
                                   <template v-else-if="child.type === 'time'">
                                     <el-time-picker
-                                      v-model="formData[child.field]"
+                                      v-model="formValues[child.field]"
                                       v-bind="getFilteredProps(child.props)"
                                       :format="child.props.format || 'HH:mm:ss'"
                                       :value-format="child.props.valueFormat || 'HH:mm:ss'"
@@ -485,7 +485,7 @@
                                   <template v-else>
                                     <component
                                       :is="getComponentByType(child.type)"
-                                      v-model="formData[child.field]"
+                                      v-model="formValues[child.field]"
                                       v-bind="getFilteredProps(child.props)"
                                     />
                                   </template>
@@ -526,7 +526,7 @@
                               <el-form-item :label="child.label">
                                 <template v-if="child.type === 'date'">
                                   <el-date-picker
-                                    v-model="formData[child.field]"
+                                    v-model="formValues[child.field]"
                                     type="date"
                                     v-bind="getFilteredProps(child.props)"
                                     :format="child.props.format || 'YYYY-MM-DD'"
@@ -535,7 +535,7 @@
                                 </template>
                                 <template v-else-if="child.type === 'datetime'">
                                   <el-date-picker
-                                    v-model="formData[child.field]"
+                                    v-model="formValues[child.field]"
                                     type="datetime"
                                     v-bind="getFilteredProps(child.props)"
                                     :format="child.props.format || 'YYYY-MM-DD HH:mm:ss'"
@@ -544,7 +544,7 @@
                                 </template>
                                 <template v-else-if="child.type === 'time'">
                                   <el-time-picker
-                                    v-model="formData[child.field]"
+                                    v-model="formValues[child.field]"
                                     v-bind="getFilteredProps(child.props)"
                                     :format="child.props.format || 'HH:mm:ss'"
                                     :value-format="child.props.valueFormat || 'HH:mm:ss'"
@@ -553,7 +553,7 @@
                                 <template v-else>
                                   <component
                                     :is="getComponentByType(child.type)"
-                                    v-model="formData[child.field]"
+                                    v-model="formValues[child.field]"
                                     v-bind="getFilteredProps(child.props)"
                                   />
                                 </template>
@@ -573,23 +573,23 @@
                       </el-card>
                     </template>
                     <template v-else-if="item.type === 'image-upload'">
-                      <el-upload v-model:file-list="formData[item.field]" v-bind="item.props">
+                      <el-upload v-model:file-list="formValues[item.field]" v-bind="item.props">
                         <el-icon><Plus /></el-icon>
                       </el-upload>
                     </template>
                     <template v-else-if="item.type === 'file-upload'">
-                      <el-upload v-model:file-list="formData[item.field]" v-bind="item.props">
+                      <el-upload v-model:file-list="formValues[item.field]" v-bind="item.props">
                         <el-button type="primary">点击上传</el-button>
                       </el-upload>
                     </template>
                     <template v-else-if="item.type === 'rate'">
-                      <el-rate v-model="formData[item.field]" v-bind="item.props" />
+                      <el-rate v-model="formValues[item.field]" v-bind="item.props" />
                     </template>
                     <template v-else-if="item.type === 'color-picker'">
-                      <el-color-picker v-model="formData[item.field]" v-bind="item.props" />
+                      <el-color-picker v-model="formValues[item.field]" v-bind="item.props" />
                     </template>
                     <template v-else-if="item.type === 'slider'">
-                      <el-slider v-model="formData[item.field]" v-bind="item.props" />
+                      <el-slider v-model="formValues[item.field]" v-bind="item.props" />
                     </template>
                     <template v-else-if="item.type === 'button'">
                       <el-button v-bind="item.props" @click="handleButtonClick(item.field)">{{ item.props.text }}</el-button>
@@ -599,24 +599,24 @@
                     </template>
                     <template v-else-if="item.type === 'dept-select'">
                       <el-tree-select
-                        v-model="formData[item.field]"
+                        v-model="formValues[item.field]"
                         :data="deptOptions"
-                        :props="{ label: 'deptName', value: 'deptId' }"
+                        :props="deptTreeProps"
                         v-bind="item.props"
                         @change="handleDeptChange"
                       />
                     </template>
                     <template v-else-if="item.type === 'user-select'">
-                      <el-select v-model="formData[item.field]" v-bind="item.props" @change="handleUserChange">
+                      <el-select v-model="formValues[item.field]" v-bind="item.props" @change="handleUserChange">
                         <el-option v-for="user in userOptions" :key="user.userId" :label="user.nickName" :value="user.userId" />
                       </el-select>
                     </template>
                     <template v-else-if="item.type === 'switch'">
-                      <el-switch v-model="formData[item.field]" v-bind="item.props" @change="(value) => handleFieldChange(value, item)" />
+                      <el-switch v-model="formValues[item.field]" v-bind="item.props" @change="(value) => handleFieldChange(value, item)" />
                     </template>
                     <template v-else-if="item.type === 'editor'">
                       <RichEditor
-                        v-model="formData[item.field]"
+                        v-model="formValues[item.field]"
                         :placeholder="item.props.placeholder"
                         :height="item.props.height"
                         :min-height="item.props.minHeight"
@@ -962,7 +962,7 @@ import { listDept } from '@/api/system/dept';
 import { listUser } from '@/api/system/user';
 import { optionselect } from '@/api/system/dict/type';
 import type { DictTypeVO } from '@/api/system/dict/type/types';
-import type { UserVO } from '@/api/system/user/types';
+import type { UserQuery, UserVO } from '@/api/system/user/types';
 import { getDicts } from '@/api/system/dict/data';
 import { useDict } from '@/utils/dict';
 import type { DictDataVO } from '@/api/system/dict/data/types';
@@ -1056,13 +1056,24 @@ interface FormComponent {
   isMaster?: boolean;
   masterField?: string;
   subTableName?: string;
+  subTableFkName?: string;
   subTableColumns?: SubTableColumn[];
+  /** 栅格列宽（grid 布局） */
+  span?: number;
+  /** 标签页 name（tabs 布局） */
+  name?: string;
+  /** 组件运行时值（联动规则回写） */
+  value?: any;
+  dictType?: string;
+  dictFields?: string;
+  mapping?: string;
   dbInfo: {
     tableName: string;
     columnName: string;
     columnType: string;
     columnComment: string;
     isNullable: string;
+    tableComment?: string;
   };
   children?: FormComponent[]; // 添加children属性
 }
@@ -1105,15 +1116,15 @@ const form = reactive<FormState>({
 });
 
 // 定义表单值数据
-const formData = ref<Record<string, any>>({});
+const formValues = ref<Record<string, any>>({});
 
 // 初始化表单数据
 const initFormData = () => {
-  formData.value = {};
+  formValues.value = {};
   formComponents.value.forEach((component: FormComponent) => {
     switch (component.type) {
       case 'checkbox':
-        formData.value[component.field] = [];
+        formValues.value[component.field] = [];
         break;
       case 'select':
       case 'radio':
@@ -1122,34 +1133,34 @@ const initFormData = () => {
           const dictData = dictOptions.value[component.props.dictType] || [];
           // 如果有默认值，确保它在字典数据中存在
           if (component.props.defaultValue && dictData.length > 0) {
-            formData.value[component.field] = component.props.defaultValue;
+            formValues.value[component.field] = component.props.defaultValue;
           } else {
-            formData.value[component.field] = '';
+            formValues.value[component.field] = '';
           }
         } else {
-          formData.value[component.field] = '';
+          formValues.value[component.field] = '';
         }
         break;
       case 'switch':
-        formData.value[component.field] = false;
+        formValues.value[component.field] = false;
         break;
       case 'image-upload':
       case 'file-upload':
-        formData.value[component.field] = [];
+        formValues.value[component.field] = [];
         break;
       case 'rate':
       case 'slider':
-        formData.value[component.field] = 0;
+        formValues.value[component.field] = 0;
         break;
       case 'color-picker':
-        formData.value[component.field] = '#409EFF';
+        formValues.value[component.field] = '#409EFF';
         break;
       case 'dept-select':
       case 'user-select':
-        formData.value[component.field] = component.props.multiple ? [] : '';
+        formValues.value[component.field] = component.props.multiple ? [] : '';
         break;
       default:
-        formData.value[component.field] = '';
+        formValues.value[component.field] = '';
     }
   });
 };
@@ -1604,7 +1615,9 @@ const currentSubTableColumn = ref<SubTableColumn | null>(null);
 
 const listTableColumns = async (tableName: string) => {
   try {
-    const res = await getTableColumns(tableName);
+    // 该接口返回裸数组（无 R 包装），响应拦截器已解包 axios 响应，运行时 res 即为字段数组；
+    // request 的声明类型为 AxiosResponse 与运行时不符，故按 any 接收
+    const res: any = await getTableColumns(tableName);
     if (res) {
       currentTableColumns.value = res;
     } else {
@@ -1742,7 +1755,7 @@ const handleDrop = (e: DragEvent) => {
   // 选中新添加的组件
   currentComponent.value = newComponent;
   currentSubTableColumn.value = null;
-  formData.value[newComponent.field] = '';
+  formValues.value[newComponent.field] = '';
 
   // 如果是子表，初始化数据
   if (newComponent.type === 'subtable') {
@@ -1802,7 +1815,7 @@ const handleDeleteComponent = () => {
               // 删除子组件
               component.children.splice(j, 1);
               // 删除表单数据
-              delete formData.value[currentComponent.value.field];
+              delete formValues.value[currentComponent.value.field];
               // 清空当前选中的组件
               currentComponent.value = null;
               // 强制触发视图刷新
@@ -1829,7 +1842,7 @@ const handleDeleteComponent = () => {
         // 删除组件
         components.splice(i, 1);
         // 删除表单数据
-        delete formData.value[currentComponent.value.field];
+        delete formValues.value[currentComponent.value.field];
         // 清空当前选中的组件
         currentComponent.value = null;
         // 强制触发视图刷新
@@ -1860,7 +1873,7 @@ const handleCopyComponent = () => {
       field: `field_${Date.now()}`
     };
     formComponents.value.push(newComponent);
-    formData.value[newComponent.field] = '';
+    formValues.value[newComponent.field] = '';
   }
 };
 
@@ -2039,10 +2052,10 @@ const handleGenerateForm = () => {
     masterSubTableData: {}
   };
 
-  formData.value.formContent = JSON.stringify(formContent);
-  formData.value.formName = '自定义表单';
-  formData.value.formDesc = '通过表单设计器生成的自定义表单';
-  formData.value.formType = 'PC';
+  formValues.value.formContent = JSON.stringify(formContent);
+  formValues.value.formName = '自定义表单';
+  formValues.value.formDesc = '通过表单设计器生成的自定义表单';
+  formValues.value.formType = 'PC';
 
   ElMessageBox.confirm('确认生成表单？', '提示', {
     confirmButtonText: '确定',
@@ -2419,16 +2432,22 @@ const getColumnType = (columnType: string): string => {
   return 'input';
 };
 
+// 设计器用到的字段信息：OnlFieldVo 之外还会用到 columnLength / isNullable（后端 GenTableColumn 返回）
+type DesignerFieldVo = OnlFieldVo & {
+  columnLength?: string | number;
+  isNullable?: string;
+};
+
 const handleTableSelect = (table: TableVO) => {
   if (!table || !table.columnsVo) return;
 
   // 主表处理 - 只处理选中的字段，但隐藏外键字段
   const mainComponents = table.columnsVo
-    .filter((column: OnlFieldVo) => {
+    .filter((column: DesignerFieldVo) => {
       // 过滤掉外键字段
       return !column.columnName.includes(table.subTableFkName || '');
     })
-    .map((column: OnlFieldVo) => {
+    .map((column: DesignerFieldVo) => {
       let type = 'input';
       const props: any = {
         placeholder: `请输入${column.columnComment || column.columnName}`,
@@ -2442,7 +2461,7 @@ const handleTableSelect = (table: TableVO) => {
       } else if (column.columnType === 'int' || column.columnType === 'bigint') {
         type = 'input-number';
         props.min = 0;
-      } else if (column.columnType === 'varchar' && column.columnLength && parseInt(column.columnLength) > 200) {
+      } else if (column.columnType === 'varchar' && column.columnLength && parseInt(String(column.columnLength)) > 200) {
         type = 'textarea';
       }
 
@@ -2460,12 +2479,12 @@ const handleTableSelect = (table: TableVO) => {
 
 // 获取表单值
 const getFormValue = (field: string): any => {
-  return formData.value[field];
+  return formValues.value[field];
 };
 
 // 设置表单值
 const setFormValue = (field: string, value: any): void => {
-  formData.value[field] = value;
+  formValues.value[field] = value;
 };
 
 // 获取子表数据
@@ -2650,7 +2669,7 @@ const submitForm = async () => {
     }
 
     // 构建主子表数据
-    let masterSubTableData = {};
+    let masterSubTableData: Record<string, any> = {};
 
     // 查找子表组件
     const subTableComponents = formComponents.value.filter((comp) => comp.type === 'subtable');
@@ -2802,7 +2821,7 @@ const handleLayoutDrop = (e: DragEvent, target: any) => {
 
   target.children.push(newComponent);
   currentComponent.value = newComponent;
-  formData.value[newComponent.field] = '';
+  formValues.value[newComponent.field] = '';
 };
 
 // 添加按钮点击处理方法
@@ -2827,6 +2846,11 @@ const formSize = ref('default');
 // 在 script 部分添加数据和方法
 const deptOptions = ref([]);
 const userOptions = ref([]);
+// 部门树节点字段映射（el-tree-select 运行时支持 value 键，但 element-plus 的 TreeOptionProps 类型未收录，故不显式标注类型）
+const deptTreeProps = {
+  label: 'deptName',
+  value: 'deptId'
+};
 
 // 加载部门数据
 const loadDeptOptions = async () => {
@@ -2846,7 +2870,8 @@ const loadDeptOptions = async () => {
 // 加载用户数据
 const loadUserOptions = async () => {
   try {
-    const res = await listUser();
+    // 空查询条件（后端不分页返回全量用户），仅为满足 listUser 的类型签名
+    const res = await listUser({} as UserQuery);
     if (res.code === 200) {
       userOptions.value = res.rows;
     } else {
@@ -2907,7 +2932,7 @@ const handlePreviewOpen = async () => {
     }
 
     // 加载用户数据
-    const userRes = await listUser();
+    const userRes = await listUser({} as UserQuery);
     if (userRes.code === 200) {
       previewUserOptions.value = userRes.rows;
     } else {
@@ -2936,28 +2961,28 @@ const initPreviewFormData = () => {
       if (!masterSubTableData.value[component.field]) {
         masterSubTableData.value[component.field] = [];
       }
-    } else if (!formData.value[component.field]) {
+    } else if (!formValues.value[component.field]) {
       switch (component.type) {
         case 'dept-select':
         case 'user-select':
-          formData.value[component.field] = component.props.multiple ? [] : '';
+          formValues.value[component.field] = component.props.multiple ? [] : '';
           break;
         case 'image-upload':
         case 'file-upload':
-          formData.value[component.field] = [];
+          formValues.value[component.field] = [];
           break;
         case 'rate':
         case 'slider':
-          formData.value[component.field] = 0;
+          formValues.value[component.field] = 0;
           break;
         case 'color-picker':
-          formData.value[component.field] = '#409EFF';
+          formValues.value[component.field] = '#409EFF';
           break;
         case 'checkbox':
-          formData.value[component.field] = [];
+          formValues.value[component.field] = [];
           break;
         default:
-          formData.value[component.field] = '';
+          formValues.value[component.field] = '';
       }
     }
   });
@@ -2965,16 +2990,16 @@ const initPreviewFormData = () => {
 
 // 预览时的部门选择变化处理
 const handlePreviewDeptChange = (value: any, field: string) => {
-  formData.value[field] = value;
+  formValues.value[field] = value;
 };
 
 // 预览时的用户选择变化处理
 const handlePreviewUserChange = (value: any, field: string) => {
-  formData.value[field] = value;
+  formValues.value[field] = value;
 };
 
 const handleFieldChange = (value: any, item: FormComponent) => {
-  formData.value[item.field] = value;
+  formValues.value[item.field] = value;
 };
 
 // 在 script 部分添加 updateComponent 方法
@@ -3128,7 +3153,7 @@ watch(
   { immediate: true }
 );
 
-const handleComponentChange = (value: any, component: FormComponent) => {
+const handleComponentChange = (value: any, component?: FormComponent) => {
   // 更新组件值
   if (component) {
     component.value = value;

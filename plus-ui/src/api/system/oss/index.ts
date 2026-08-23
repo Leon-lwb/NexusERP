@@ -26,3 +26,14 @@ export function delOss(ossId: string | number | Array<string | number>) {
     method: 'delete'
   });
 }
+
+// 上传文件到 OSS，返回 { fileName, url, ossId }
+export function uploadOss(file: File): AxiosPromise<{ fileName: string; url: string; ossId: string | number }> {
+  const formData = new FormData();
+  formData.append('file', file);
+  return request({
+    url: '/resource/oss/upload',
+    method: 'post',
+    data: formData
+  });
+}

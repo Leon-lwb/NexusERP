@@ -337,28 +337,33 @@
 
 <script setup lang="ts" name="Team">
 import { listTeam, getTeam, delTeam, addTeam, updateTeam } from '@/api/erp/sch/team';
+import type { TeamVO, TeamForm, TeamQuery, TeamMemberVO } from '@/api/erp/sch/team/types';
 import { listWorkshop } from '@/api/erp/bd/workshop';
+import type { WorkshopQuery, WorkshopVO } from '@/api/erp/bd/workshop/types';
 import { listWorker } from '@/api/erp/sch/worker';
+import type { WorkerVO } from '@/api/erp/sch/worker/types';
+import type { FormInstance } from 'element-plus';
 
 const { proxy } = getCurrentInstance();
 const { sys_core_status, sch_worker_role, sch_team_category, sch_work_status, sch_work_category, sys_user_sex, sch_skill_level } = toRefs(
   proxy.useDict('sys_core_status', 'sch_worker_role', 'sch_team_category', 'sch_work_status', 'sch_work_category', 'sys_user_sex', 'sch_skill_level')
 );
 
-const teamList = ref([]);
-const schTeamMemberList = ref([]);
+const teamRef = ref<FormInstance>();
+const teamList = ref<TeamVO[]>([]);
+const schTeamMemberList = ref<TeamMemberVO[]>([]);
 const open = ref(false);
 const loading = ref(true);
 const showSearch = ref(true);
 const ids = ref([]);
-const checkedSchTeamMember = ref([]);
+const checkedSchTeamMember = ref<number[]>([]);
 const single = ref(true);
 const multiple = ref(true);
 const total = ref(0);
 const title = ref('');
 const isViewMode = ref(false);
 
-const workshopList = ref([]);
+const workshopList = ref<WorkshopVO[]>([]);
 const workshopLoading = ref(false);
 const workshopVisible = ref(false);
 const workshopTotal = ref(0);
@@ -367,10 +372,10 @@ const workshopQueryParams = reactive({
   pageSize: 10,
   workshopCode: undefined,
   workshopName: undefined,
-  status: '1'
+  status: '1' as string | number
 });
 
-const workerList = ref([]);
+const workerList = ref<WorkerVO[]>([]);
 const workerLoading = ref(false);
 const workerVisible = ref(false);
 const workerTotal = ref(0);
@@ -383,9 +388,9 @@ const workerQueryParams = reactive({
 });
 
 const currentSelectType = ref('member');
-const selectedWorkers = ref([]);
+const selectedWorkers = ref<TeamMemberVO[]>([]);
 
-const data = reactive({
+const data = reactive<PageData<TeamForm, TeamQuery>>({
   form: {},
   queryParams: {
     pageNum: 1,
@@ -516,7 +521,7 @@ function handleView(row) {
 }
 
 function submitForm() {
-  proxy.$refs['teamRef'].validate((valid) => {
+  teamRef.value?.validate((valid) => {
     if (valid) {
       form.value.schTeamMemberList = schTeamMemberList.value;
       if (form.value.teamId != null) {
@@ -550,19 +555,21 @@ function handleDelete(row) {
     .catch(() => {});
 }
 
-function rowSchTeamMemberIndex({ row, rowIndex }) {
+function rowSchTeamMemberIndex({ row, rowIndex }: { row: TeamMemberVO; rowIndex: number }): string {
   row.index = rowIndex + 1;
+  return '';
 }
 
 function handleAddSchTeamMember() {
-  const obj = {};
-  obj.workerId = '';
-  obj.workerName = '';
-  obj.workerCode = '';
-  obj.role = '';
-  obj.effectiveDate = '';
-  obj.expireDate = '';
-  obj.status = '0';
+  const obj: TeamMemberVO = {
+    workerId: '',
+    workerName: '',
+    workerCode: '',
+    role: '',
+    effectiveDate: '',
+    expireDate: '',
+    status: '0'
+  };
   schTeamMemberList.value.push(obj);
 }
 
@@ -604,7 +611,7 @@ function handleExport() {
 
 function getWorkshopList() {
   workshopLoading.value = true;
-  listWorkshop(workshopQueryParams).then((response) => {
+  listWorkshop(workshopQueryParams as WorkshopQuery).then((response) => {
     workshopList.value = response.rows;
     workshopTotal.value = response.total;
     workshopLoading.value = false;
@@ -708,7 +715,7 @@ function handleWorkerSelectionChange(selection) {
 function confirmSelectWorkers() {
   if (currentSelectType.value === 'leader' && selectedWorkers.value.length > 0) {
     const leader = selectedWorkers.value[0];
-    form.value.leaderId = leader.workerId;
+    form.value.leaderId = Number(leader.workerId);
     form.value.leaderName = leader.workerName;
     workerVisible.value = false;
     const exists = schTeamMemberList.value.some((member) => member.workerId === leader.workerId);

@@ -4,6 +4,32 @@ export interface RequirementQuery extends PageQuery {
   status?: string;
 }
 
+/** 物料需求明细 */
+export interface RequirementDetailVO {
+  detailId?: number | string;
+  requirementId?: number | string;
+  materialId?: number | string;
+  materialCode?: string;
+  materialName?: string;
+  materialSpec?: string;
+  unit?: string;
+  bomQuantity?: number | string;
+  lossRate?: number | string;
+  requiredQuantity?: number | string;
+  issuedQuantity?: number | string;
+  stockQuantity?: number | string;
+  shortageQuantity?: number | string;
+  operationStep?: string;
+  workstationId?: number | string;
+  workstationName?: string;
+  leadTime?: number | string;
+  requiredDate?: string;
+  status?: string;
+  remark?: string;
+  sourceType?: string;
+  index?: number;
+}
+
 export interface RequirementVO {
   requirementId: number;
   requirementNo: string;
@@ -31,6 +57,7 @@ export interface RequirementVO {
   createTime: string;
   updateBy: number;
   updateTime: string;
+  prdMaterialRequirementDetailList?: RequirementDetailVO[];
 }
 
 export interface RequirementForm {

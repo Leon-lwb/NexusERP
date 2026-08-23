@@ -58,10 +58,12 @@
         <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['bd:materialVendor:add']">新增</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['bd:materialVendor:edit']">修改</el-button>
+        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate()" v-hasPermi="['bd:materialVendor:edit']"
+          >修改</el-button
+        >
       </el-col>
       <el-col :span="1.5">
-        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['bd:materialVendor:remove']"
+        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete()" v-hasPermi="['bd:materialVendor:remove']"
           >删除</el-button
         >
       </el-col>
@@ -254,8 +256,10 @@ import { listMaterialVendor, getMaterialVendor, delMaterialVendor, addMaterialVe
 import { listMaterial } from '@/api/erp/bd/material';
 import { listVendor } from '@/api/erp/bd/vendor';
 import { MaterialVendorVO, MaterialVendorForm } from '@/api/erp/bd/material-vendor/types';
+import type { FormInstance } from 'element-plus';
 
-const { proxy } = getCurrentInstance();
+const { proxy } = getCurrentInstance() as any;
+const formRef = ref<FormInstance>();
 
 // 物料-供应商关系列表
 const dataList = ref<MaterialVendorVO[]>([]);
@@ -429,7 +433,7 @@ function handleUpdate(row?: MaterialVendorVO) {
 
 /** 提交按钮 */
 function submitForm() {
-  proxy.$refs['formRef'].validate((valid: boolean) => {
+  formRef.value?.validate((valid: boolean) => {
     if (valid) {
       if (form.value.relationId != null) {
         updateMaterialVendor(form.value).then(() => {

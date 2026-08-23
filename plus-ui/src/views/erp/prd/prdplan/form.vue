@@ -437,6 +437,7 @@ const route = useRoute();
 const router = useRouter();
 
 const form = ref<PlanForm>({});
+const rules = {};
 const isViewMode = ref(false);
 const isAddMode = ref(false);
 const autoGenFlag = ref(false);
@@ -503,7 +504,7 @@ onMounted(() => {
   }
 });
 
-function initPage(id) {
+function initPage(id?) {
   const action = route.query.action;
 
   if (action === 'view') {
@@ -593,7 +594,7 @@ function handleSelectSalesOrder() {
 function handleAutoGenChange(autoGenFlagValue) {
   if (autoGenFlagValue) {
     previewCode('PRD_PLAN_CODE')
-      .then((response) => {
+      .then((response: any) => {
         form.value.planNo = response || response.data || '';
       })
       .catch((error) => {

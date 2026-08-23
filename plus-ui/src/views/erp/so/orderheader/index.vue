@@ -168,7 +168,7 @@ import { listOrderheader, delOrderheader, confirmOrder, fulfillOrder, closeOrder
 import { useRouter } from 'vue-router';
 
 const router = useRouter();
-const { proxy } = getCurrentInstance();
+const { proxy } = getCurrentInstance() as any;
 const { so_credit_status, so_order_status, so_currency_type } = toRefs<any>(proxy.useDict('so_credit_status', 'so_order_status', 'so_currency_type'));
 
 const orderheaderList = ref([]);

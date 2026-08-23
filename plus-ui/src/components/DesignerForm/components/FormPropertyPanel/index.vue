@@ -84,23 +84,23 @@
       <el-tab-pane label="表单属性" name="form">
         <el-form label-width="100px" size="small">
           <el-form-item label="表单名称">
-            <el-input v-model="formConfig.formName" placeholder="请输入表单名称" @change="updateFormConfig" />
+            <el-input v-model="formConfigLocal.formName" placeholder="请输入表单名称" @change="updateFormConfig" />
           </el-form-item>
           <el-form-item label="表单描述">
-            <el-input v-model="formConfig.formDesc" type="textarea" placeholder="请输入表单描述" @change="updateFormConfig" />
+            <el-input v-model="formConfigLocal.formDesc" type="textarea" placeholder="请输入表单描述" @change="updateFormConfig" />
           </el-form-item>
           <el-form-item label="标签宽度">
-            <el-input v-model="formConfig.labelWidth" placeholder="请输入标签宽度" @change="updateFormConfig" />
+            <el-input v-model="formConfigLocal.labelWidth" placeholder="请输入标签宽度" @change="updateFormConfig" />
           </el-form-item>
           <el-form-item label="标签位置">
-            <el-select v-model="formConfig.labelPosition" placeholder="请选择标签位置" @change="updateFormConfig">
+            <el-select v-model="formConfigLocal.labelPosition" placeholder="请选择标签位置" @change="updateFormConfig">
               <el-option label="左对齐" value="left" />
               <el-option label="右对齐" value="right" />
               <el-option label="顶部对齐" value="top" />
             </el-select>
           </el-form-item>
           <el-form-item label="表单尺寸">
-            <el-select v-model="formConfig.size" placeholder="请选择表单尺寸" @change="updateFormConfig">
+            <el-select v-model="formConfigLocal.size" placeholder="请选择表单尺寸" @change="updateFormConfig">
               <el-option label="大" value="large" />
               <el-option label="默认" value="default" />
               <el-option label="小" value="small" />
@@ -211,7 +211,7 @@ const localComponent = ref<FormComponent>({
 });
 
 // 表单配置
-const formConfig = ref<FormConfig>({
+const formConfigLocal = ref<FormConfig>({
   formName: '',
   formDesc: '',
   labelWidth: '100px',
@@ -305,7 +305,7 @@ watch(
   () => props.formConfig,
   (newVal) => {
     if (newVal) {
-      formConfig.value = { ...newVal };
+      formConfigLocal.value = { ...newVal };
     }
   },
   { immediate: true }
@@ -319,7 +319,7 @@ const updateComponent = () => {
 
 // 更新表单配置
 const updateFormConfig = () => {
-  emit('update:formConfig', formConfig.value);
+  emit('update:formConfig', formConfigLocal.value);
 };
 
 // 处理数据表变更

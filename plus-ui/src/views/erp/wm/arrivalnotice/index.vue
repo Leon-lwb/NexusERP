@@ -156,8 +156,8 @@
         </el-row>
         <el-row :gutter="20">
           <el-col :span="8">
-            <el-form-item label="采购订单编号" prop="poCode">
-              <el-input v-model="form.poCode" placeholder="请输入采购订单编号" />
+            <el-form-item label="采购订单编号" prop="purOrderCode">
+              <el-input v-model="form.purOrderCode" placeholder="请输入采购订单编号" />
             </el-form-item>
           </el-col>
           <el-col :span="16">
@@ -274,6 +274,7 @@ import {
   submitArrivalnotice,
   getArrivalnoticeProcId
 } from '@/api/erp/wm/arrivalnotice';
+import type { ArrivalnoticeForm, ArrivalnoticeVO } from '@/api/erp/wm/arrivalnotice/types';
 import { getProcesss } from '@/api/workflow/process/index';
 import { previewCode } from '@/api/system/autocode/rule';
 import { listVendor } from '@/api/erp/bd/vendor';
@@ -283,7 +284,7 @@ const router = useRouter();
 const { proxy } = getCurrentInstance() as any;
 const { wm_notice_status } = toRefs<any>(proxy.useDict('wm_notice_status'));
 
-const arrivalnoticeList = ref([]);
+const arrivalnoticeList = ref<ArrivalnoticeVO[]>([]);
 const open = ref(false);
 const loading = ref(true);
 const showSearch = ref(true);
@@ -309,7 +310,7 @@ const vendorQueryParams = ref({
 });
 
 const data = reactive({
-  form: {},
+  form: {} as ArrivalnoticeForm,
   queryParams: {
     pageNum: 1,
     pageSize: 10,

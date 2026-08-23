@@ -414,6 +414,7 @@
 
 <script setup lang="ts" name="ReceiveForm">
 import { getReceive, addReceive, updateReceive, submitReceive, confirmShelf, getReceiveProcId } from '@/api/erp/wm/receive';
+import type { ReceiveForm, ReceiveLineVO, ReceiveDetailVO } from '@/api/erp/wm/receive/types';
 import { getArrivalnotice } from '@/api/erp/wm/arrivalnotice';
 import { listDetail } from '@/api/erp/wm/detail';
 import { createBatch } from '@/api/erp/wm/batch';
@@ -437,16 +438,18 @@ const { wm_material_receive_status } = toRefs<any>(proxy.useDict('wm_material_re
 const route = useRoute();
 const router = useRouter();
 
-const wmMaterialReceiveLineList = ref([]);
-const checkedWmMaterialReceiveLine = ref([]);
+const wmMaterialReceiveLineList = ref<ReceiveLineVO[]>([]);
+const checkedWmMaterialReceiveLine = ref<any[]>([]);
 
 // 流程相关状态
 const loadingFlow = ref(false);
-const flowOptions = ref([]);
+const flowOptions = ref<any[]>([]);
 
 // 上架弹窗相关变量
 const shelfOpen = ref(false);
-const shelfForm = ref({});
+/** 上架表单（物料入库单明细的前端可编辑形态） */
+type ShelfForm = Partial<ReceiveDetailVO> & { snCode?: string };
+const shelfForm = ref<ShelfForm>({});
 const shelfTitle = ref('');
 const isShelfViewMode = ref(false);
 const labelCaptureRef = ref<InstanceType<typeof LabelCapture> | null>(null);
@@ -494,7 +497,7 @@ const cascaderProps = computed(() => ({
   value: 'value',
   children: 'children',
   emitPath: false,
-  expandTrigger: 'hover',
+  expandTrigger: 'hover' as const,
   checkStrictly: true
 }));
 
@@ -539,7 +542,7 @@ const currentMaterialRowIndex = ref(-1);
 const arrivalNoticeDialogTitle = ref('选择到货通知单物料信息');
 
 const data = reactive({
-  form: {},
+  form: {} as ReceiveForm,
   queryParams: {
     pageNum: 1,
     pageSize: 10,
@@ -714,7 +717,7 @@ function getInfo(id: any) {
 
 // 加载明细数据
 function loadDetailList(lineId: any, index: number): Promise<any> {
-  const queryParams = { lineId: lineId };
+  const queryParams = { pageNum: 1, pageSize: 9999, lineId: lineId };
   return listDetail(queryParams)
     .then((response: any) => {
       // 将获取到的明细数据赋值给对应的行
@@ -939,8 +942,9 @@ function cancel() {
 }
 
 /** 物料入库单行序号 */
-function rowWmMaterialReceiveLineIndex({ row, rowIndex }: any) {
+function rowWmMaterialReceiveLineIndex({ row, rowIndex }: any): string {
   row.index = rowIndex + 1;
+  return '';
 }
 
 /** 物料入库单行添加按钮操作 */
@@ -1140,13 +1144,13 @@ function loadWarehouseTree() {
 function handleWarehouseChange(value: any) {
   if (!value) {
     // 清空所有相关字段
-    shelfForm.value.warehouseId = '';
+    shelfForm.value.warehouseId = null;
     shelfForm.value.warehouseCode = '';
     shelfForm.value.warehouseName = '';
-    shelfForm.value.areaId = '';
+    shelfForm.value.areaId = null;
     shelfForm.value.areaCode = '';
     shelfForm.value.areaName = '';
-    shelfForm.value.locationId = '';
+    shelfForm.value.locationId = null;
     shelfForm.value.locationCode = '';
     shelfForm.value.locationName = '';
     return;
@@ -1309,14 +1313,14 @@ function submitShelfForm() {
         // 不调用独立 updateDetail API，避免 lineId 变化导致数据不一致
         const detailIndex = detailList.findIndex((d: any) => d.detailId === shelfForm.value.detailId);
         if (detailIndex >= 0) {
-          detailList[detailIndex] = { ...shelfForm.value };
+          detailList[detailIndex] = { ...shelfForm.value } as ReceiveDetailVO;
         }
         proxy.$modal.msgSuccess('修改成功');
       } else {
         // 新增模式：生成临时 detailId（负数，避免与数据库正数 ID 冲突），添加到前端内存
         // 真正的数据库保存由主表单 save 时通过 updateByBo 一并完成
         shelfForm.value.detailId = -Date.now();
-        detailList.push({ ...shelfForm.value });
+        detailList.push({ ...shelfForm.value } as ReceiveDetailVO);
         proxy.$modal.msgSuccess('新增成功');
       }
 
@@ -1343,13 +1347,9 @@ function handleEditDetail(detailRow: any, parentRow: any) {
     }
   });
 
-  // 设置级联选择器的值
+  // 设置级联选择器的值（emitPath: false 时取最深层级节点的值）
   if (detailRow.warehouseId) {
-    const path = [];
-    path.push(detailRow.warehouseId);
-    if (detailRow.areaId) path.push(detailRow.areaId);
-    if (detailRow.locationId) path.push(detailRow.locationId);
-    selectedWarehouse.value = path;
+    selectedWarehouse.value = detailRow.locationId ?? detailRow.areaId ?? detailRow.warehouseId;
   }
 
   shelfOpen.value = true;

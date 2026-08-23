@@ -358,11 +358,12 @@
 
 <script setup lang="ts" name="Bom">
 import { listBom, delBom, activateBomVersion, verifyBom, getBomTree, getBomChildren, copyBom, compareBom, whereUsedBom } from '@/api/erp/bd/bom';
+import type { BomComparisonVo } from '@/api/erp/bd/bom/types';
 import { useRouter } from 'vue-router';
 import MaterialSelectDialog from '@/components/MaterialSelectDialog/index.vue';
 
 const router = useRouter();
-const { proxy } = getCurrentInstance();
+const { proxy } = getCurrentInstance() as any;
 const { sys_true_or_false, sys_core_status, prd_material_source_type, bd_bom_type } = toRefs<any>(
   proxy.useDict('sys_true_or_false', 'sys_core_status', 'prd_material_source_type', 'bd_bom_type')
 );
@@ -661,7 +662,7 @@ function handleCompareBom() {
     .then((response) => {
       compareData.value = response.data;
       // 动态选择第一个非空分类作为默认标签，避免默认标签指向被 v-if 隐藏的 pane
-      const data = response.data || {};
+      const data: Partial<BomComparisonVo> = response.data || {};
       compareActiveTab.value =
         (data.changed && data.changed.length > 0 && 'changed') ||
         (data.onlyInBom2 && data.onlyInBom2.length > 0 && 'added') ||

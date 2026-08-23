@@ -1,4 +1,3 @@
-
 export interface TransferQuery extends PageQuery {
   transferNo?: string;
   fromWarehouseId?: number;

@@ -3,6 +3,8 @@ export interface TeamScheduleQuery extends PageQuery {
   teamId?: number;
   shiftId?: number;
   scheduledDate?: string;
+  weekDay?: number;
+  isHoliday?: number;
 }
 
 export interface TeamScheduleVO {
@@ -29,4 +31,8 @@ export interface TeamScheduleForm {
   weekDay?: number;
   isHoliday?: number;
   remark?: string;
+  createBy?: number;
+  createTime?: string;
+  updateBy?: number;
+  updateTime?: string;
 }

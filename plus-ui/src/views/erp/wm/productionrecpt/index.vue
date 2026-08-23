@@ -33,10 +33,12 @@
         <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['wm:productionrecpt:add']">新增</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['wm:productionrecpt:edit']">修改</el-button>
+        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate()" v-hasPermi="['wm:productionrecpt:edit']"
+          >修改</el-button
+        >
       </el-col>
       <el-col :span="1.5">
-        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['wm:productionrecpt:remove']"
+        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete()" v-hasPermi="['wm:productionrecpt:remove']"
           >删除</el-button
         >
       </el-col>
@@ -366,8 +368,8 @@ const handleAdd = () => {
 /** 预览入库单号（不落库，不消耗流水号），失败时回退为手动输入 */
 const fetchPreviewCode = async () => {
   try {
-    const code = await previewCode('WM_PRODUCTION_RECPT_CODE');
-    form.value.recptCode = code as string;
+    const code = (await previewCode('WM_PRODUCTION_RECPT_CODE')) as unknown as string;
+    form.value.recptCode = code;
   } catch {
     autoGenFlag.value = false;
     form.value.recptCode = '';

@@ -63,7 +63,6 @@
 <script setup name="Todo" lang="ts">
 import { listTodoProcess } from '@/api/workflow/work/process';
 import { ProcessVO, ProcessQuery } from '@/api/workflow/work/types';
-import { DateModelType } from 'element-plus';
 
 import { ComponentInternalInstance } from 'vue';
 
@@ -77,7 +76,7 @@ const ids = ref<Array<number | string>>([]);
 const single = ref(true);
 const multiple = ref(true);
 const total = ref(0);
-const dateRange = ref<[DateModelType, DateModelType]>(['', '']);
+const dateRange = ref<[string, string]>(['', '']);
 
 const queryFormRef = ref(ElForm);
 
@@ -112,7 +111,7 @@ const handleProcess = (row: ProcessVO) => {
     query: {
       taskId: row.taskId,
       dataId: row.dataId,
-      processed: true
+      processed: 'true'
     }
   });
 };

@@ -132,12 +132,13 @@
 
 <script setup lang="ts" name="PayInvoice">
 import { listPayInvoice, getPayInvoice, delPayInvoice, addPayInvoice, updatePayInvoice } from '@/api/pay/invoice';
+import { PayInvoiceForm, PayInvoiceQuery, PayInvoiceVO } from '@/api/pay/invoice/types';
 
 const { proxy } = getCurrentInstance();
 
 const { pay_invoice_type } = toRefs<any>(proxy.useDict('pay_invoice_type'));
 
-const invoiceList = ref([]);
+const invoiceList = ref<PayInvoiceVO[]>([]);
 const open = ref(false);
 const loading = ref(true);
 const showSearch = ref(true);
@@ -147,16 +148,17 @@ const multiple = ref(true);
 const total = ref(0);
 const title = ref('');
 const isViewMode = ref(false);
+const invoiceRef = ref<ElFormInstance>();
 
 const data = reactive({
-  form: {},
+  form: {} as PayInvoiceForm,
   queryParams: {
     pageNum: 1,
     pageSize: 10,
     orderNumber: null,
     invoiceType: null,
     invoiceHeader: null
-  },
+  } as PayInvoiceQuery,
   rules: {
     orderNumber: [{ required: true, message: '订单号不能为空', trigger: 'blur' }],
     invoiceType: [{ required: true, message: '发票类型不能为空', trigger: 'change' }],
@@ -251,7 +253,7 @@ function handleView(row) {
 
 /** 提交按钮 */
 function submitForm() {
-  proxy.$refs['invoiceRef'].validate((valid) => {
+  invoiceRef.value?.validate((valid) => {
     if (valid) {
       if (form.value.invoiceId != null) {
         updatePayInvoice(form.value).then((response) => {

@@ -1,9 +1,13 @@
-import { MessageBoxData } from 'element-plus';
+import { MessageBoxData, ElMessageBoxOptions } from 'element-plus';
 import { LoadingInstance } from 'element-plus/es/components/loading/src/loading';
 let loadingInstance: LoadingInstance;
 export default {
   // 消息提示
   msg(content: any) {
+    ElMessage.info(content);
+  },
+  // 信息消息
+  msgInfo(content: any) {
     ElMessage.info(content);
   },
   // 错误消息
@@ -51,19 +55,20 @@ export default {
     ElNotification.warning(content);
   },
   // 确认窗体
-  confirm(content: any): Promise<MessageBoxData> {
-    return ElMessageBox.confirm(content, '系统提示', {
+  confirm(content: any, title?: string): Promise<MessageBoxData> {
+    return ElMessageBox.confirm(content, title || '系统提示', {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
       type: 'warning'
     });
   },
   // 提交内容
-  prompt(content: any) {
-    return ElMessageBox.prompt(content, '系统提示', {
+  prompt(content: any, title?: string, options?: ElMessageBoxOptions) {
+    return ElMessageBox.prompt(content, title || '系统提示', {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
-      type: 'warning'
+      type: 'warning',
+      ...options
     });
   },
   // 打开遮罩层

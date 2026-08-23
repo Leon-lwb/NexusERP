@@ -99,6 +99,7 @@ import {
   ScaleToOriginal
 } from '@element-plus/icons-vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
+import type { PropType } from 'vue';
 import BpmnModeler from 'bpmn-js/lib/Modeler';
 import DefaultEmptyXML from './plugins/defaultEmpty';
 // 翻译方法
@@ -129,6 +130,7 @@ const emit = defineEmits([
   'commandStack-changed',
   'update:modelValue',
   'change',
+  'save',
   'canvas-viewbox-changed',
   'element-click'
 ]);
@@ -178,12 +180,12 @@ const props = defineProps({
     default: () => ['element.click']
   },
   headerButtonSize: {
-    type: String,
+    type: String as PropType<'' | 'large' | 'default' | 'small'>,
     default: 'small',
     validator: (value: string) => ['default', 'medium', 'small', 'mini'].indexOf(value) !== -1
   },
   headerButtonType: {
-    type: String,
+    type: String as PropType<'' | 'default' | 'text' | 'warning' | 'primary' | 'success' | 'info' | 'danger'>,
     default: 'primary',
     validator: (value: string) => ['default', 'primary', 'success', 'warning', 'danger', 'info'].indexOf(value) !== -1
   }
@@ -350,7 +352,7 @@ const createNewDiagram = async (xml) => {
  * @param {string} type
  * @param {*} name
  */
-const downloadProcess = async (type, name) => {
+const downloadProcess = async (type: string, name?: string) => {
   try {
     // 按需要类型创建文件并下载
     if (type === 'xml' || type === 'bpmn') {

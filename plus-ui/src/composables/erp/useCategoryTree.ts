@@ -8,12 +8,12 @@
 import { ref, onUnmounted, type ComponentInternalInstance } from 'vue';
 import { useDebounceFn } from '@vueuse/core';
 import { listCategory } from '@/api/erp/bd/category';
-import type { CategoryVO } from '@/api/erp/bd/category/types';
+import type { CategoryVO, CategoryQuery } from '@/api/erp/bd/category/types';
 
 /** useCategoryTree 配置选项 */
 interface UseCategoryTreeOptions {
-  /** 分类查询参数，默认 { status: 1 }（仅启用分类） */
-  queryParams?: Record<string, any>;
+  /** 分类查询参数，默认 { status: 1 }（仅启用分类），允许部分字段（分页由树查询忽略） */
+  queryParams?: Partial<CategoryQuery>;
   /** 防抖延迟（毫秒），默认 300 */
   debounceMs?: number;
 }
@@ -26,7 +26,7 @@ interface UseCategoryTreeOptions {
  * @returns        分类树相关的响应式状态和方法
  */
 export function useCategoryTree(proxy: any, options: UseCategoryTreeOptions = {}) {
-  const { queryParams = { status: 1 }, debounceMs = 300 } = options;
+  const { queryParams = { status: 1 } as CategoryQuery, debounceMs = 300 } = options;
 
   /** 分类树数据 */
   const categoryTree = ref<CategoryVO[]>([]);
@@ -38,7 +38,7 @@ export function useCategoryTree(proxy: any, options: UseCategoryTreeOptions = {}
   /** 加载分类树 */
   async function getCategoryTree() {
     try {
-      const response = await listCategory(queryParams);
+      const response = await listCategory(queryParams as CategoryQuery);
       const data = response.data || [];
       categoryTree.value = proxy.handleTree(data, 'categoryId', 'parentId');
     } catch (error) {
@@ -62,9 +62,7 @@ export function useCategoryTree(proxy: any, options: UseCategoryTreeOptions = {}
 
   /** 组件卸载时取消防抖 */
   onUnmounted(() => {
-    if (debouncedFilter && typeof debouncedFilter.cancel === 'function') {
-      debouncedFilter.cancel();
-    }
+    (debouncedFilter as unknown as { cancel?: () => void }).cancel?.();
   });
 
   return {

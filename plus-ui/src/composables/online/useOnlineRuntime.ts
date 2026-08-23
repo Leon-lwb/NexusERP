@@ -510,7 +510,7 @@ export const validateBySchema = (fields: any[], ctx: AnyObj, ui: UiState): Valid
       ...(Array.isArray(cfg.onValidate) ? cfg.onValidate : []),
       ...(Array.isArray(cfg.onRowValidate) ? cfg.onRowValidate : [])
     ];
-    const rules = rawRules.length ? sortByPriority(rawRules as any) : [];
+    const rules = rawRules.length ? sortByPriority(rawRules as ValidateRule[]) : [];
     rules.forEach((r) => {
       if (!r) return;
       if (!evalWhen(r.when, ctx)) return;

@@ -119,7 +119,7 @@ import { optionselect as getDictOptionselect } from '@/api/system/dict/type';
 import { DictTypeVO } from '@/api/system/dict/type/types';
 import BasicInfoForm from './basicInfoForm.vue';
 import GenInfoForm from './genInfoForm.vue';
-import { RouteLocationNormalized } from 'vue-router';
+import { RouteLocationRaw } from 'vue-router';
 
 const route = useRoute();
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
@@ -168,15 +168,8 @@ const getFormPromise = (form: any) => {
   });
 };
 const close = () => {
-  const obj: RouteLocationNormalized = {
+  const obj: RouteLocationRaw = {
     path: '/tool/gen',
-    fullPath: '',
-    hash: '',
-    matched: [],
-    meta: undefined,
-    name: undefined,
-    params: undefined,
-    redirectedFrom: undefined,
     query: { t: Date.now().toString(), pageNum: route.query.pageNum }
   };
   proxy?.$tab.closeOpenPage(obj);

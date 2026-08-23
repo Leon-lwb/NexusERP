@@ -89,6 +89,8 @@ function typeColor(t: string): string {
   return '#909399';
 }
 
+// VueJsonPretty 需要 JSONDataType；运行时 data 由父组件传入已解析的 JSON 值
+const prettyData = computed(() => props.data as any);
 const isArray = computed(() => Array.isArray(props.data));
 const isObject = computed(() => props.data !== null && typeof props.data === 'object' && !Array.isArray(props.data));
 
@@ -185,7 +187,7 @@ onBeforeUnmount(() => {
 
     <!-- JSON 模式：树状 -->
     <div v-if="viewMode === 'json'" class="json-viewer__json">
-      <VueJsonPretty :data="data" :show-line="false" :deep="4" />
+      <VueJsonPretty :data="prettyData" :show-line="false" :deep="4" />
     </div>
 
     <!-- 表格模式 -->

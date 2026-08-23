@@ -711,20 +711,21 @@ const calendar: Calendar = {
   },
 
   solar2lunar(yPara: number, mPara: number, dPara: number): CalendarResult {
-    let y = parseInt(yPara);
-    let m = parseInt(mPara);
-    let d = parseInt(dPara);
+    let y = Number(yPara);
+    let m = Number(mPara);
+    let d = Number(dPara);
     if (y < 1900 || y > 2100) {
-      return -1;
+      // 原 JS API 以 -1 作为非法日期哨兵值，返回类型对外保持 CalendarResult 不变
+      return -1 as unknown as CalendarResult;
     }
     if (y === 1900 && m === 1 && d < 31) {
-      return -1;
+      return -1 as unknown as CalendarResult;
     }
     let objDate;
     if (!y) {
       objDate = new Date();
     } else {
-      objDate = new Date(y, parseInt(m) - 1, d);
+      objDate = new Date(y, m - 1, d);
     }
     let i,
       leap = 0,
@@ -741,13 +742,13 @@ const calendar: Calendar = {
       offset += temp;
       i--;
     }
-    let isTodayObj = new Date(),
-      isToday = false;
+    const isTodayObj = new Date();
+    let isToday = false;
     if (isTodayObj.getFullYear() === y && isTodayObj.getMonth() + 1 === m && isTodayObj.getDate() === d) {
       isToday = true;
     }
-    let nWeek = objDate.getDay(),
-      cWeek = this.nStr1[nWeek];
+    let nWeek = objDate.getDay();
+    const cWeek = this.nStr1[nWeek];
     if (nWeek === 0) {
       nWeek = 7;
     }
@@ -839,26 +840,26 @@ const calendar: Calendar = {
   },
 
   lunar2solar(y: number, m: number, d: number, isLeapMonth: boolean): CalendarResult {
-    y = parseInt(y);
-    m = parseInt(m);
-    d = parseInt(d);
+    y = Number(y);
+    m = Number(m);
+    d = Number(d);
     isLeapMonth = !!isLeapMonth;
     const leapOffset = 0;
     const leapMonth = this.leapMonth(y);
     const leapDay = this.leapDays(y);
     if (isLeapMonth && leapMonth !== m) {
-      return -1;
+      return -1 as unknown as CalendarResult;
     }
     if ((y === 2100 && m === 12 && d > 1) || (y === 1900 && m === 1 && d < 31)) {
-      return -1;
+      return -1 as unknown as CalendarResult;
     }
     const day = this.monthDays(y, m);
     let _day = day;
     if (isLeapMonth) {
-      _day = this.leapDays(y, m);
+      _day = this.leapDays(y);
     }
     if (y < 1900 || y > 2100 || d > _day) {
-      return -1;
+      return -1 as unknown as CalendarResult;
     }
     let offset = 0;
     let i;

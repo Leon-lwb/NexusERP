@@ -125,6 +125,8 @@
 <script setup lang="ts" name="Holiday">
 import { ref, reactive, onMounted, computed } from 'vue';
 import { listHoliday, getHoliday, delHoliday, addHoliday, updateHoliday } from '@/api/erp/sch/holiday';
+import type { HolidayVO, HolidayForm, HolidayQuery } from '@/api/erp/sch/holiday/types';
+import type { FormInstance } from 'element-plus';
 import calendar from '@/utils/calendar';
 
 const { proxy } = getCurrentInstance();
@@ -140,9 +142,10 @@ const dialogVisible = ref(false);
 const dialogTitle = ref('');
 const isEdit = ref(false);
 
-const holidayList = ref([]);
+const holidayFormRef = ref<FormInstance>();
+const holidayList = ref<HolidayVO[]>([]);
 
-const data = reactive({
+const data = reactive<PageData<HolidayForm, HolidayQuery>>({
   form: {},
   queryParams: {
     pageNum: 1,
@@ -320,7 +323,7 @@ function handleDeleteCurrent() {
 }
 
 function submitForm() {
-  proxy.$refs['holidayFormRef'].validate((valid) => {
+  holidayFormRef.value?.validate((valid) => {
     if (valid) {
       const formData = {
         ...form.value,

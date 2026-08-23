@@ -45,4 +45,8 @@ export interface ShiftForm {
   color?: string;
   sortOrder?: number;
   remark?: string;
+  createBy?: number;
+  createTime?: string;
+  updateBy?: number;
+  updateTime?: string;
 }

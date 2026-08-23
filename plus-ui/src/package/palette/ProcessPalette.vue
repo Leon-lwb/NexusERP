@@ -34,7 +34,7 @@ import { assign } from 'min-dash';
 defineOptions({ name: 'MyProcessPalette' });
 
 const bpmnInstances = () => (window as any)?.bpmnInstances;
-const createElement = (event, type, options = {}) => {
+const createElement = (event: any, type: string, options: { isExpanded?: boolean; [key: string]: any } = {}) => {
   const ElementFactory = bpmnInstances().elementFactory;
   const create = bpmnInstances().modeler.get('create');
   const shape = ElementFactory.createShape(assign({ type: `bpmn:${type}` }, options));

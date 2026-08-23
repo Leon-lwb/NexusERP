@@ -1,7 +1,7 @@
 <template>
   <div class="panel-tab__content">
     <!--目前只处理定时边界事件 -->
-    <el-form size="small" label-width="90px" @submit.native.prevent>
+    <el-form size="small" label-width="90px" @submit.prevent>
       <el-form-item label="事件类型">
         <el-select
           v-model="timeDefinitionType"

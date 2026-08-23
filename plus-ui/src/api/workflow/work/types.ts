@@ -11,6 +11,12 @@ export interface ProcessVO extends BaseEntity {
   suspended: boolean;
   version: number;
   procInsId?: string;
+  /** 业务数据ID */
+  dataId?: string;
+  /** 抄送记录ID */
+  copyId?: string;
+  /** 流程实例ID(抄送列表) */
+  instanceId?: string;
 }
 
 export interface ProcessQuery extends PageQuery {
@@ -18,6 +24,11 @@ export interface ProcessQuery extends PageQuery {
   processName?: string;
   category?: string;
   state?: string;
+  processId?: string;
+  categoryId?: string;
+  taskId?: string;
+  userId?: string;
+  originatorName?: string;
 }
 
 export interface TaskForm {
@@ -29,4 +40,6 @@ export interface TaskForm {
   nextUserIds: string;
   vars: string;
   targetKey: string;
+  /** 加签人员ID(逗号分隔) */
+  addSignUsers?: string;
 }

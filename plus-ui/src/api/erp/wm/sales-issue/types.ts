@@ -60,7 +60,7 @@ export interface SalesIssueLineVO {
 
 export interface SalesIssueForm {
   issueId?: number;
-  issueCode: string;
+  issueCode?: string;
   issueName?: string;
   soId?: number;
   soNo?: string;
@@ -71,11 +71,11 @@ export interface SalesIssueForm {
   warehouseCode?: string;
   warehouseName?: string;
   issueDate?: string;
-  totalQuantity?: number;
-  totalAmount?: number;
+  totalQuantity?: number | string;
+  totalAmount?: number | string;
   status?: string;
   remark?: string;
-  selectFlowId?: number;
+  selectFlowId?: number | string;
   wmSalesIssueLineList?: any[];
   createBy?: number;
   createTime?: string;

@@ -145,7 +145,7 @@
               <el-tree-select
                 v-model="form.deptId"
                 :data="deptOptions"
-                :props="{ value: 'deptId', label: 'deptName', children: 'children' }"
+                :props="deptTreeProps"
                 value-key="deptId"
                 placeholder="请选择所属部门"
                 check-strictly
@@ -246,6 +246,12 @@ const userQueryParams = reactive({
 
 // 部门树
 const deptOptions = ref([]);
+// 部门树节点字段映射（el-tree-select 支持 value 字段指定选项取值，element-plus 的 TreeOptionProps 类型未收录）
+const deptTreeProps = {
+  value: 'deptId',
+  label: 'deptName',
+  children: 'children'
+};
 
 const queryParams = ref({
   pageNum: 1,

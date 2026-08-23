@@ -42,10 +42,10 @@
         <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['so:invoice:add']">新增</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['so:invoice:edit']">修改</el-button>
+        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate()" v-hasPermi="['so:invoice:edit']">修改</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['so:invoice:remove']">删除</el-button>
+        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete()" v-hasPermi="['so:invoice:remove']">删除</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['so:invoice:export']">导出</el-button>
@@ -378,8 +378,10 @@ import { listInvoice, getInvoice, delInvoice, addInvoice, updateInvoice, verifyI
 import { InvoiceVO, InvoiceForm, InvoiceLineForm } from '@/api/erp/so/invoice/types';
 import ClientSelectDialog from '@/views/erp/so/components/ClientSelectDialog.vue';
 import MaterialSelectDialog from '@/components/MaterialSelectDialog/index.vue';
+import type { FormInstance } from 'element-plus';
 
-const { proxy } = getCurrentInstance();
+const { proxy } = getCurrentInstance() as any;
+const formRef = ref<FormInstance>();
 const { so_invoice_type, so_invoice_status, invoice_issue_channel } = toRefs<any>(
   proxy.useDict('so_invoice_type', 'so_invoice_status', 'invoice_issue_channel')
 );
@@ -526,7 +528,7 @@ function handleView(row: InvoiceVO) {
 
 /** 提交表单 */
 function submitForm() {
-  proxy.$refs['formRef'].validate((valid: boolean) => {
+  formRef.value?.validate((valid: boolean) => {
     if (valid) {
       form.value.soInvoiceLineList = lineList.value;
       if (form.value.invoiceId != null) {

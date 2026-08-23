@@ -85,7 +85,7 @@ export const releaseFlowCard = (cardId: string | number) => {
 };
 
 /** 开始工序 */
-export const startStep = (cardId: number | string, stepRecordId: number | string, operatorId?: number) => {
+export const startStep = (cardId: number | string, stepRecordId: number | string, operatorId?: number | string) => {
   return request({
     url: '/mes/pro/flow-card/start-step',
     method: 'put',

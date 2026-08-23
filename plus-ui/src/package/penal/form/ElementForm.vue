@@ -1,6 +1,6 @@
 <template>
   <div class="panel-tab__content">
-    <el-form size="small" label-width="90px" @submit.native.prevent>
+    <el-form size="small" label-width="90px" @submit.prevent>
       <el-form-item label="表单" prop="formKey">
         <el-select v-model="formKey" v-if="appType[0].id === 'OA'" placeholder="请选择表单" @change="updateElementFormKey" clearable>
           <el-option v-for="item in formOptions" :key="item.formId" :label="item.formName" :value="`key_${item.formId}`" />
@@ -23,7 +23,7 @@
     </el-form>
 
     <el-dialog v-model:visible="fieldOptionModelVisible" :title="optionModelTitle" width="600px" append-to-body destroy-on-close>
-      <el-form :model="fieldOptionForm" size="small" label-width="96px" @submit.native.prevent>
+      <el-form :model="fieldOptionForm" size="small" label-width="96px" @submit.prevent>
         <el-form-item label="编号/ID" v-if="fieldOptionType !== 'constraint'" key="option-id">
           <el-input v-model="fieldOptionForm.id" clearable />
         </el-form-item>
@@ -46,15 +46,17 @@
 </template>
 
 <script lang="ts" setup>
+import type { PropType } from 'vue';
 import { listNform } from '@/api/workflow/nform';
 import { listCustomForm } from '@/api/workflow/custom-form';
+import type { WfCustomFormQuery } from '@/api/workflow/custom-form/types';
 
 defineOptions({ name: 'ElementForm' });
 const props = defineProps({
   id: String,
   type: String,
   appType: {
-    type: Array,
+    type: Array as PropType<{ id: string; name: string }[]>,
     default: () => []
   }
 });
@@ -100,7 +102,8 @@ const getFormList = () => {
       formOptions.value = response.rows;
     });
   } else if (appType && appType[0].id === 'ZDYYW') {
-    listCustomForm().then((response) => {
+    // 原实现不传查询参数（拉取全部），此处保持不变，仅满足 listCustomForm 的参数类型
+    listCustomForm({} as WfCustomFormQuery).then((response) => {
       formOptions.value = response.rows;
     });
   }

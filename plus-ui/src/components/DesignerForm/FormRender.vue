@@ -192,7 +192,7 @@ const props = defineProps<{
   deptOptions?: any[];
   userOptions?: any[];
   labelWidth?: string;
-  labelPosition?: string;
+  labelPosition?: 'left' | 'right' | 'top';
 }>();
 
 const emit = defineEmits(['submit', 'reset', 'update:modelValue']);
@@ -211,9 +211,7 @@ const formConfig = reactive<FormConfig>({
 const formComponents = ref<FormComponent[]>([]);
 const formData = ref<Record<string, any>>({});
 const subTableData = ref<Record<string, any[]>>({});
-const dictOptions = ref<Record<string, any[]>>({});
-const deptOptions = ref<any[]>([]);
-const userOptions = ref<any[]>([]);
+const dictOptionsLocal = ref<Record<string, any[]>>({});
 const parsedContent = ref<any>({});
 const popupDictCache: Record<string, Record<string, string>> = reactive({});
 
@@ -221,7 +219,7 @@ const popupDictCache: Record<string, Record<string, string>> = reactive({});
 watch(
   () => props.dictOptions,
   (val) => {
-    dictOptions.value = val || {};
+    dictOptionsLocal.value = val || {};
   },
   { immediate: true, deep: true }
 );
@@ -435,7 +433,8 @@ const parseFormContent = () => {
     const parsed = JSON.parse(props.formContent);
     parsedContent.value = parsed;
 
-    formConfig.value = parsed.formConfig || {};
+    // formConfig 是 reactive 对象（非 ref）：此前误写成 formConfig.value 赋值，解析出的表单配置从未生效，现改为合并赋值
+    Object.assign(formConfig, parsed.formConfig || {});
     formComponents.value = parsed.formComponents || [];
 
     // 初始化表单/子表数据
@@ -582,7 +581,7 @@ const getComponentOptions = (item: any) => {
   const dictType = dictTypeFromProps || dictTypeFromTop;
   const dataSource = item?.props?.dataSource || (dictType ? 'dict' : undefined);
   if (dataSource === 'dict' && dictType) {
-    return dictOptions.value[dictType] || [];
+    return dictOptionsLocal.value[dictType] || [];
   }
   // 否则使用静态 options
   return item?.props?.options || [];
@@ -590,7 +589,7 @@ const getComponentOptions = (item: any) => {
 
 const getSubTableComponentOptions = (column: any) => {
   if (column.props?.dataSource === 'dict' && column.props?.dictType) {
-    return dictOptions.value[column.props.dictType] || [];
+    return dictOptionsLocal.value[column.props.dictType] || [];
   }
   return column.props?.options || [];
 };
@@ -873,25 +872,7 @@ watch(
 watch(
   () => props.dictOptions,
   () => {
-    Object.assign(dictOptions.value, props.dictOptions);
-  },
-  { deep: true }
-);
-
-// 监听部门选项变化
-watch(
-  () => props.deptOptions,
-  () => {
-    deptOptions.value = [...(props.deptOptions || [])];
-  },
-  { deep: true }
-);
-
-// 监听用户选项变化
-watch(
-  () => props.userOptions,
-  () => {
-    userOptions.value = [...(props.userOptions || [])];
+    Object.assign(dictOptionsLocal.value, props.dictOptions);
   },
   { deep: true }
 );

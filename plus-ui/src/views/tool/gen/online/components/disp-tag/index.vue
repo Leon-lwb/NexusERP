@@ -16,10 +16,13 @@
 <script setup lang="ts">
 import { propTypes } from '@/utils/propTypes';
 
+// 在线表单字典选项实际为 { id, name } 结构（commonDictCode），系统字典为 { label, value }，此处联合兼容两种来源
+type OnlineDictOption = DictDataOption & { id?: string | number; name?: string };
+
 const props = defineProps({
   // 数据
   options: {
-    type: Array as PropType<DictDataOption[]>,
+    type: Array as PropType<OnlineDictOption[]>,
     default: null
   },
   // 当前的值

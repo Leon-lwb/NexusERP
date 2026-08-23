@@ -30,7 +30,7 @@ export function startProcess(processDefId?: string, data?: string) {
 }
 
 // 删除流程实例
-export function delProcess(ids?: string) {
+export function delProcess(ids?: string | Array<string | number>) {
   return request({
     url: '/workflow/process/instance/' + ids,
     method: 'delete'

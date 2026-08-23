@@ -2,10 +2,10 @@
   <div class="app-container">
     <el-form :model="queryParams" ref="queryForm" :inline="true" v-show="showSearch" label-width="68px">
       <el-form-item label="流程标识" prop="processKey">
-        <el-input v-model="queryParams.processKey" placeholder="请输入流程标识" clearable size="small" @keyup.enter.native="handleQuery" />
+        <el-input v-model="queryParams.processKey" placeholder="请输入流程标识" clearable size="small" @keyup.enter="handleQuery" />
       </el-form-item>
       <el-form-item label="流程名称" prop="processName">
-        <el-input v-model="queryParams.processName" placeholder="请输入流程名称" clearable size="small" @keyup.enter.native="handleQuery" />
+        <el-input v-model="queryParams.processName" placeholder="请输入流程名称" clearable size="small" @keyup.enter="handleQuery" />
       </el-form-item>
       <el-form-item label="流程分类" prop="category">
         <el-select v-model="queryParams.category" clearable placeholder="请选择" size="small">

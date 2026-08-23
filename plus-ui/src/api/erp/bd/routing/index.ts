@@ -78,7 +78,7 @@ export const getCurrentRouting = (materialId: number): AxiosPromise<RoutingVO> =
 /**
  * 获取工艺路线的工序步骤
  */
-export const getRoutingSteps = (routingId: number): AxiosPromise<RoutingStepVO[]> => {
+export const getRoutingSteps = (routingId: string | number): AxiosPromise<RoutingStepVO[]> => {
   return request({
     url: '/erp/bd/routing/steps/' + routingId,
     method: 'get'

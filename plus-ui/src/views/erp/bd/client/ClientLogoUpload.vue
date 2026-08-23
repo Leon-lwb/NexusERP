@@ -76,7 +76,7 @@
 import 'vue-cropper/dist/index.css';
 import { VueCropper } from 'vue-cropper';
 import { UploadRawFile } from 'element-plus';
-import request from '@/utils/request';
+import { uploadOss } from '@/api/system/oss';
 
 interface Options {
   img: string | any; // 裁剪图片的地址
@@ -192,13 +192,8 @@ const uploadImg = () => {
   uploading.value = true;
   cropper.value.getCropBlob(async (data: any) => {
     try {
-      const formData = new FormData();
-      formData.append('file', data, options.fileName || 'client-logo.png');
-      const res = await request({
-        url: '/resource/oss/upload',
-        method: 'post',
-        data: formData
-      });
+      const file = new File([data], options.fileName || 'client-logo.png', { type: data.type || 'image/png' });
+      const res = await uploadOss(file);
       // 写入库的是 ossId；展示用返回的 URL 即时回填
       emit('update:modelValue', String(res.data.ossId));
       displayUrl.value = res.data.url;

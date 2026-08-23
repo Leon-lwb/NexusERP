@@ -38,7 +38,7 @@ export const updateWorkOrder = (data: ProWorkOrderForm) => {
 };
 
 /** 删除MES工单 */
-export const delWorkOrder = (mesWoIds: string | number | string[] | number[]) => {
+export const delWorkOrder = (mesWoIds: string | number | Array<string | number>) => {
   return request({
     url: `/mes/pro/work/${mesWoIds}`,
     method: 'delete'

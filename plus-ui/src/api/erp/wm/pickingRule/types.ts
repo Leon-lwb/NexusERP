@@ -17,7 +17,7 @@ export interface PickingRuleVO {
   categoryName: string;
   strategyType: string;
   priority: number;
-  status: number;
+  status: number | string;
   remark: string;
   createBy: number;
   createTime: string;
@@ -27,12 +27,12 @@ export interface PickingRuleVO {
 
 export interface PickingRuleForm {
   ruleId?: number;
-  ruleCode: string;
-  ruleName: string;
-  warehouseId: number;
+  ruleCode?: string;
+  ruleName?: string;
+  warehouseId?: number;
   materialCategoryId?: number;
-  strategyType: string;
-  priority: number;
-  status: number;
+  strategyType?: string;
+  priority?: number;
+  status?: number | string;
   remark?: string;
 }

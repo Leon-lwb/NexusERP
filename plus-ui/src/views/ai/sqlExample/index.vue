@@ -145,8 +145,8 @@ const queryFormRef = ref();
 const formRef = ref();
 
 /** 分类标签颜色 */
-function categoryTagType(category: string) {
-  const map: Record<string, string> = {
+function categoryTagType(category: string): ElTagType {
+  const map: Record<string, ElTagType> = {
     INVENTORY: 'warning',
     SALES: 'success',
     PURCHASE: 'primary',

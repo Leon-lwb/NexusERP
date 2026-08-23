@@ -5,8 +5,13 @@
         <el-card shadow="hover">
           <el-form :model="queryParams" ref="queryFormRef" :inline="true" label-width="68px">
             <!-- 循环遍历对象 -->
-            <template v-for="(itemField, indexField) in onlineField">
-              <el-form-item v-if="itemField && itemField.query" :label="itemField.columnComment" :prop="itemField.columnName">
+            <template v-for="itemField in onlineField">
+              <el-form-item
+                v-if="itemField && itemField.query"
+                :key="itemField.columnId || itemField.columnName"
+                :label="itemField.columnComment"
+                :prop="itemField.columnName"
+              >
                 <template v-if="itemField.htmlType == 'input'">
                   <el-input
                     v-model="queryParams.params[itemField.columnName]"
@@ -39,7 +44,7 @@
             <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['system:notice:add']">新增</el-button>
           </el-col>
           <el-col :span="1.5">
-            <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate(row)" v-hasPermi="['system:notice:edit']"
+            <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate()" v-hasPermi="['system:notice:edit']"
               >修改</el-button
             >
           </el-col>
@@ -248,8 +253,9 @@ const form = reactive<any>({
 
 const rules = reactive<any>({});
 
-const tableName = ref('');
-const tableId = ref(0);
+const tableNameLocal = ref('');
+// 运行时既可能来自 props/route（字符串），也可能保留数字初值
+const tableIdLocal = ref<string | number>(0);
 // 在组件中新增主键字段名变量
 const pkName = ref('');
 const formType = ref<any>('');
@@ -541,7 +547,7 @@ const fetchDictMap = async (dictType: string, dictFields: any) => {
 /** 查询online列表 */
 const getList = async () => {
   loading.value = true;
-  const res: any = await listOnlineData(tableId.value, tableName.value, queryParams);
+  const res: any = await listOnlineData(tableIdLocal.value, tableNameLocal.value, queryParams);
   formType.value = res.map.type;
 
   // 预加载 popup 字段的字典映射，确保首屏显示名称
@@ -702,7 +708,7 @@ const handleAdd = async () => {
 
   // 如果字段配置未加载，先获取字段配置
   if (!onlineField.value || onlineField.value.length === 0) {
-    const formRes = await getOnlineForm(tableId.value);
+    const formRes = await getOnlineForm(tableIdLocal.value);
 
     if (formRes.data && formRes.data.map) {
       const map = formRes.data.map;
@@ -755,7 +761,7 @@ const handleUpdate = async (row?: any) => {
 
   // 如果字段配置未加载，先获取字段配置
   if (!onlineField.value || onlineField.value.length === 0) {
-    const formRes = await getOnlineForm(tableId.value);
+    const formRes = await getOnlineForm(tableIdLocal.value);
 
     if (formRes.data && formRes.data.map) {
       const map = formRes.data.map;
@@ -780,7 +786,8 @@ const handleUpdate = async (row?: any) => {
     }
   }
 
-  const { data } = await getOnlineData(tableId.value, tableName.value, onlineId);
+  // getOnlineData 声明 tableId 为 number，但运行时 tableIdLocal 实际为路由/props 传入的字符串（与同模块其它 API 的 string|number 声明不一致），此处局部断言
+  const { data } = await getOnlineData(tableIdLocal.value as number, tableNameLocal.value, onlineId);
 
   if (formType.value === 'single') {
     Object.assign(formData.single, data);
@@ -864,15 +871,15 @@ const handleSubComponent = (data: any, index: number) => {
     formData.sub.splice(index, 1, newRow);
   } catch (e) {
     console.error('子表处理异常:', e);
-    proxy?.$modal.msgError(`字段映射失败: ${e.message}`);
+    proxy?.$modal.msgError(`字段映射失败: ${(e as Error).message}`);
   }
 };
 
 // 更新行数据的辅助函数
 const updateRowWithMappedData = (row: any, mappedItem: any, mapping: any) => {
   // 解析 mapping 配置
-  let mappingConfig = mapping;
-  let popupConfig = {};
+  let mappingConfig: Record<string, any> = mapping;
+  let popupConfig: Record<string, any> = {};
 
   if (typeof mapping === 'string') {
     try {
@@ -997,7 +1004,7 @@ const submitForm = async () => {
     };
   }
 
-  await addOrUpdateOnlineData(tableId.value, tableName.value, submitData);
+  await addOrUpdateOnlineData(tableIdLocal.value, tableNameLocal.value, submitData);
   proxy?.$modal.msgSuccess('操作成功');
   dialog.visible = false;
   await getList();
@@ -1015,8 +1022,8 @@ const handleDelete = async (row?: any) => {
   }
   try {
     await proxy?.$modal.confirm('是否确认删除选中的数据？');
-    // 调用删除API，传递表ID、表名和要删除的ID数组
-    await delOnlineData(tableId.value, tableName.value, deleteIds);
+    // 调用删除API，传递表ID、表名和要删除的ID数组（tableId 同上：声明 number，运行时为字符串）
+    await delOnlineData(tableIdLocal.value as number, tableNameLocal.value, deleteIds);
     proxy?.$modal.msgSuccess('删除成功');
     await getList(); // 刷新列表
   } catch (error) {
@@ -1215,10 +1222,11 @@ const sanitizeColumns = (cols: any[]): any[] => {
 
 onMounted(() => {
   // 优先使用 props，其次使用 route.query，最后使用 route.params
-  tableId.value = props.tableId || (route.query && (route.query.tableId as string)) || (route.params && (route.params.tableId as string));
-  tableName.value = props.tableName || (route.query && (route.query.tableName as string)) || (route.params && (route.params.tableName as string));
+  tableIdLocal.value = props.tableId || (route.query && (route.query.tableId as string)) || (route.params && (route.params.tableId as string));
+  tableNameLocal.value =
+    props.tableName || (route.query && (route.query.tableName as string)) || (route.params && (route.params.tableName as string));
 
-  if (tableId.value && tableName.value) {
+  if (tableIdLocal.value && tableNameLocal.value) {
     getList();
   } else {
     console.error('OnlineTest onMounted - 缺少必要的参数，无法初始化');
@@ -1230,8 +1238,8 @@ watch(
   () => [props.tableId, props.tableName],
   ([newTableId, newTableName]) => {
     if (newTableId && newTableName) {
-      tableId.value = newTableId;
-      tableName.value = newTableName;
+      tableIdLocal.value = newTableId;
+      tableNameLocal.value = newTableName;
       // 重置查询参数
       queryParams.pageNum = 1;
       queryParams.params = {};
@@ -1247,8 +1255,8 @@ watch(
   () => [route.query.tableId, route.query.tableName],
   ([newTableId, newTableName]) => {
     if (newTableId && newTableName && (!props.tableId || !props.tableName)) {
-      tableId.value = newTableId as string;
-      tableName.value = newTableName as string;
+      tableIdLocal.value = newTableId as string;
+      tableNameLocal.value = newTableName as string;
       // 重置查询参数
       queryParams.pageNum = 1;
       queryParams.params = {};

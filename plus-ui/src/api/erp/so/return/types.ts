@@ -1,4 +1,3 @@
-
 export interface ReturnQuery extends PageQuery {
   returnNo?: string;
   soNo?: string;

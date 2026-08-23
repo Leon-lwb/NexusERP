@@ -18,7 +18,7 @@
 
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
-        <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['fin:gl:currency:add']">新增</el-button>
+        <el-button type="primary" plain icon="Plus" @click="handleAdd()" v-hasPermi="['fin:gl:currency:add']">新增</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['fin:gl:currency:edit']">修改</el-button>
@@ -114,6 +114,8 @@ const {
   form,
   getList,
   handleQuery,
+  handleAdd,
+  handleUpdate,
   handleDelete,
   handleSelectionChange,
   submitForm,

@@ -1,4 +1,3 @@
-
 export interface MiscRecptQuery extends PageQuery {
   recptCode?: string;
   warehouseId?: number;

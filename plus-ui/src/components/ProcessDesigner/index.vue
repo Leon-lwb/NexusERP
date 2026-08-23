@@ -44,7 +44,8 @@
           </el-radio-group>
         </el-form-item>
         <el-form-item label="工具栏">
-          <el-radio-group v-model="controlForm.headerButtonSize">
+          <!-- el-radio-group 的 update:modelValue 回写类型为 string|number|boolean，与字面量联合类型不兼容，改用受控写法 -->
+          <el-radio-group :model-value="controlForm.headerButtonSize" @change="(val: any) => (controlForm.headerButtonSize = val)">
             <el-radio label="small">small</el-radio>
             <el-radio label="default">default</el-radio>
             <el-radio label="large">large</el-radio>
@@ -101,7 +102,8 @@ const controlForm = ref({
   labelEditing: false,
   labelVisible: false,
   prefix: 'flowable',
-  headerButtonSize: 'default',
+  // my-process-designer 的 headerButtonSize prop 为字面量联合类型
+  headerButtonSize: 'default' as '' | 'large' | 'default' | 'small',
   additionalModel: [CustomContentPadProvider, CustomPaletteProvider]
 });
 const addis = ref({
@@ -110,7 +112,7 @@ const addis = ref({
 });
 const reloadIndex = ref(0);
 
-const reloadProcessDesigner = (notDeep) => {
+const reloadProcessDesigner = (notDeep?: boolean) => {
   controlForm.value['additionalModel'] = [];
   for (const key in addis.value) {
     if (addis.value[key]) {
@@ -120,6 +122,10 @@ const reloadProcessDesigner = (notDeep) => {
   !notDeep && (xmlString = undefined);
   reloadIndex.value += 1;
   modeler.value = null; // 避免 panel 异常
+};
+// 明暗页签模式切换（此前模板引用了该函数但脚本中缺失定义，切换时会抛运行时错误）
+const changePageMode = (mode: boolean | string | number) => {
+  pageMode.value = !!mode;
 };
 const changeLabelEditingStatus = (status) => {
   addis.value['labelEditing'] = status ? { labelEditingProvider: ['value', ''] } : false;

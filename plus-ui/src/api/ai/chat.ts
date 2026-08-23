@@ -26,7 +26,7 @@ export interface AiMessage {
  * @returns 会话ID
  */
 export function sendAiMessage(data: {
-  sessionId?: number;
+  sessionId?: number | string;
   content: string;
   model?: string;
   mode?: string;
@@ -80,7 +80,7 @@ export function deleteSession(ids: Array<number | string>) {
  * 重命名会话
  * @param data 会话信息（含 id 和 title）
  */
-export function renameSession(data: { id: number; title: string }) {
+export function renameSession(data: { id: number | string; title: string }) {
   return request({
     url: '/ai/chat/session',
     method: 'put',
@@ -105,7 +105,7 @@ export function messageFeedback(messageId: number | string, feedback: string) {
  * 导出会话聊天记录为 Markdown 文件
  * @param sessionId 会话ID
  */
-export function exportSession(sessionId: number | string) {
+export function exportSession(sessionId: number | string): Promise<Blob> {
   return request({
     url: `/ai/chat/export/${sessionId}`,
     method: 'get',

@@ -131,8 +131,8 @@ const { form, rules } = toRefs(data);
 const formRef = ref<ElFormInstance>();
 
 /** 获取类型标签颜色 */
-const getTypeTagType = (type: string) => {
-  const map: Record<string, string> = {
+const getTypeTagType = (type: string): ElTagType => {
+  const map: Record<string, ElTagType> = {
     BUILTIN: 'primary',
     MCP: 'success',
     REMOTE: 'warning'

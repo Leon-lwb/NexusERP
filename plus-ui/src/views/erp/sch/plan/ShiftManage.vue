@@ -173,6 +173,8 @@
 
 <script setup lang="ts" name="ShiftManage">
 import { listShift, getShift, delShift, addShift, updateShift } from '@/api/erp/sch/shift';
+import type { ShiftVO, ShiftForm } from '@/api/erp/sch/shift/types';
+import type { FormInstance } from 'element-plus';
 import TeamScheduleManage from './TeamScheduleManage.vue';
 
 const { proxy } = getCurrentInstance();
@@ -191,14 +193,14 @@ const props = defineProps({
 
 const emit = defineEmits(['shift-updated']);
 
-const shiftList = ref([]);
+const shiftList = ref<ShiftVO[]>([]);
 const tableKey = ref(0);
 const shiftDialogVisible = ref(false);
 const shiftDialogTitle = ref('');
-const shiftForm = ref({});
-const shiftFormRef = ref(null);
+const shiftForm = ref<ShiftForm>({});
+const shiftFormRef = ref<FormInstance>();
 const isViewMode = ref(false);
-const teamScheduleDialogRef = ref(null);
+const teamScheduleDialogRef = ref<InstanceType<typeof TeamScheduleManage>>();
 
 const shiftRules = ref({
   shiftCode: [{ required: true, message: '班次编码不能为空', trigger: 'blur' }],
@@ -224,7 +226,7 @@ watch(
 
 function loadShifts() {
   if (props.planId) {
-    listShift({ planId: props.planId }).then((response) => {
+    listShift({ planId: props.planId, pageNum: 1, pageSize: 999 }).then((response) => {
       shiftList.value = response.rows;
     });
   }
@@ -241,7 +243,7 @@ function handleAddShift() {
 
 function handleScheduleShift(row) {
   const shiftId = row.shiftId;
-  teamScheduleDialogRef.value.openScheduleDialog(props.planId, shiftId);
+  teamScheduleDialogRef.value?.openScheduleDialog(props.planId, shiftId);
 }
 
 function handleEditShift(row) {
@@ -311,7 +313,7 @@ function getCellBackgroundStyle({ row, column, rowIndex, columnIndex }) {
 }
 
 function submitShiftForm() {
-  shiftFormRef.value.validate((valid) => {
+  shiftFormRef.value?.validate((valid) => {
     if (valid) {
       if (shiftForm.value.shiftId != null) {
         updateShift(shiftForm.value).then((response) => {

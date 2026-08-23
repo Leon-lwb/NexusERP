@@ -336,6 +336,7 @@ const iqcCurrentMaterialName = ref('');
 const iqcQueryParams = ref({
   pageNum: 1,
   pageSize: 10,
+  iqcNo: '',
   materialId: undefined,
   status: 'COMPLETED',
   inspectResult: 'QUALIFIED'
@@ -653,6 +654,7 @@ function handleIqcQuery() {
 function resetIqcQuery() {
   proxy.resetForm('iqcQueryRef');
   iqcQueryParams.value.materialId = undefined;
+  iqcQueryParams.value.iqcNo = '';
   iqcQueryParams.value.pageNum = 1;
   iqcQueryParams.value.status = 'COMPLETED';
   iqcQueryParams.value.inspectResult = 'QUALIFIED';
@@ -671,8 +673,9 @@ function selectIqc(row: any) {
 }
 
 /** 到货通知单行序号 */
-function rowWmArrivalNoticeLineIndex({ row, rowIndex }: any) {
+function rowWmArrivalNoticeLineIndex({ row, rowIndex }: any): string {
   row.index = rowIndex + 1;
+  return '';
 }
 
 /** 到货通知单行添加按钮操作 */

@@ -52,6 +52,8 @@ export interface OrderheaderVO {
   createTime: string;
   updateBy: number;
   updateTime: string;
+  /** 销售订单明细行列表（详情返回） */
+  soSalesOrderLineList?: any[];
 }
 
 export interface OrderheaderForm {
@@ -96,7 +98,7 @@ export interface OrderheaderForm {
   attr3?: number;
   attr4?: number;
   remark?: string;
-  selectFlowId?: number;
+  selectFlowId?: number | string;
   soSalesOrderLineList?: any[];
   createBy?: number;
   createTime?: string;

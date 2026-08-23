@@ -243,16 +243,15 @@
  * 3D 可视化配置抽屉组件
  * <p>
  * 供库区和库位管理页面共用，提供位置尺寸、外观样式、高级配置三个标签页。
- * 通过 v-model 控制显隐，formData 直接引用父组件表单数据。
+ * 通过 v-model 控制显隐，表单数据通过 v-model:form-data 双向绑定（对象引用共享，
+ * 抽屉内修改字段即直接作用于父组件的 form 对象）。
  *
  * @author nexus
  */
 const visible = defineModel<boolean>({ default: false });
 
-const props = defineProps<{
-  /** 表单数据引用，直接修改父组件的 form 对象 */
-  formData: Record<string, any>;
-}>();
+/** 表单数据（双向绑定），父组件使用 v-model:form-data 传入，直接修改父组件的 form 对象 */
+const formData = defineModel<Record<string, any>>('formData');
 
 const activeTab = ref('position');
 </script>

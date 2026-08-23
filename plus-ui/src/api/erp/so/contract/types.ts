@@ -56,6 +56,8 @@ export interface ContractVO {
   createTime: string;
   /** 更新时间 */
   updateTime: string;
+  /** 合同明细行列表（详情返回） */
+  soContractLineList?: ContractLineForm[];
 }
 
 /**

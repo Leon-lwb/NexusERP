@@ -1,4 +1,3 @@
-
 export interface QuotationQuery extends PageQuery {
   quotationNo?: string;
   clientId?: number;

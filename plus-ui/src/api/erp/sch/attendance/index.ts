@@ -2,6 +2,8 @@ import request from '@/utils/request';
 import { AxiosPromise } from 'axios';
 import { AttendanceQuery, AttendanceVO, AttendanceForm } from './types';
 
+export type { AttendanceQuery, AttendanceVO, AttendanceForm };
+
 export const listAttendance = (query: AttendanceQuery): AxiosPromise<AttendanceVO[]> => {
   return request({
     url: '/erp/sch/attendance/list',

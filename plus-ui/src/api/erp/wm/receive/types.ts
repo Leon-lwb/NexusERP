@@ -35,6 +35,7 @@ export interface ReceiveVO {
   status: string;
   selectFlowId: number;
   shelfBy?: number;
+  shelfByName?: string;
   shelfTime?: string;
   remark: string;
   createBy: number;
@@ -67,7 +68,9 @@ export interface ReceiveLineVO {
   locationCode: string;
   locationName: string;
   remark: string;
+  index?: number;
   detailList?: ReceiveDetailVO[];
+  wmMaterialReceiveLineDetailList?: ReceiveDetailVO[];
 }
 
 export interface ReceiveDetailVO {
@@ -93,12 +96,20 @@ export interface ReceiveDetailVO {
   locationCode: string;
   locationName: string;
   remark: string;
+  attr1?: string;
+  attr2?: string;
+  attr3?: string;
+  attr4?: string;
+  createBy?: number;
+  createTime?: string;
+  updateBy?: number;
+  updateTime?: string;
 }
 
 export interface ReceiveForm {
   receiveId?: number;
-  receiveCode: string;
-  receiveName: string;
+  receiveCode?: string;
+  receiveName?: string;
   iqcId?: number;
   iqcCode?: string;
   noticeId?: number;
@@ -120,9 +131,18 @@ export interface ReceiveForm {
   locationName?: string;
   receiveDate?: string;
   status?: string;
-  selectFlowId?: number;
+  selectFlowId?: number | string;
   shelfBy?: number;
+  shelfByName?: string;
   shelfTime?: string;
   remark?: string;
-  wmMaterialReceiveLineList?: any[];
+  attr1?: string;
+  attr2?: string;
+  attr3?: string;
+  attr4?: string;
+  createBy?: number;
+  createTime?: string;
+  updateBy?: number;
+  updateTime?: string;
+  wmMaterialReceiveLineList?: ReceiveLineVO[];
 }

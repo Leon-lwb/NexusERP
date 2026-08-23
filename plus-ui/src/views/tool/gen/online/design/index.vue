@@ -102,7 +102,7 @@
       <div v-if="previewData.type === 'single'">
         <el-form label-width="120px">
           <el-row :gutter="20">
-            <el-col v-for="field in previewData.mainFields" :key="field.columnName" :span="field.formSpan || 24" v-if="isMainVisible(field)">
+            <el-col v-for="field in filteredMainFields" :key="field.columnName" :span="field.formSpan || 24">
               <el-form-item :label="field.columnComment" :required="isMainRequired(field)">
                 <component
                   :is="getComponentType(field.htmlType)"
@@ -125,7 +125,7 @@
         <el-card header="主表信息">
           <el-form label-width="120px">
             <el-row :gutter="20">
-              <el-col v-for="field in previewData.mainFields" :key="field.columnName" :span="field.formSpan || 24" v-if="isMainVisible(field)">
+              <el-col v-for="field in filteredMainFields" :key="field.columnName" :span="field.formSpan || 24">
                 <el-form-item :label="field.columnComment" :required="isMainRequired(field)">
                   <component
                     :is="getComponentType(field.htmlType)"
@@ -211,7 +211,7 @@ import type { TableQuery, TableVO, OnlFieldVo } from '@/api/online/types';
 import importTable from './importTable.vue';
 import router from '@/router';
 import { ComponentInternalInstance } from 'vue';
-import { ElForm, DateModelType } from 'element-plus';
+import { ElForm } from 'element-plus';
 import { useOnline } from '@/views/workflow/hooks/useOnline';
 import { useOnlineRuntime, type UiState, type RuntimeLinkageState } from '@/composables/online/useOnlineRuntime';
 
@@ -242,7 +242,7 @@ const ids = ref<Array<string | number>>([]);
 const single = ref(true);
 const multiple = ref(true);
 const total = ref(0);
-const dateRange = ref<[DateModelType, DateModelType]>(['', '']);
+const dateRange = ref<[string, string]>(['', '']);
 const uniqueId = ref('');
 const dataNameList = ref<Array<string>>([]);
 
@@ -346,6 +346,8 @@ const isMainVisible = (field: any) => {
   if (!k) return true;
   return mainUiState.value?.visible?.[k] !== false;
 };
+
+const filteredMainFields = computed(() => (previewData.mainFields || []).filter((field) => isMainVisible(field)));
 
 const shouldDisableField = (field: any) => {
   try {

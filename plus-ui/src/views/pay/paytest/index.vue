@@ -140,7 +140,7 @@ async function handleCreateOrderAndPay() {
     // 自动开始轮询
     startPolling();
   } catch (error) {
-    proxy.$modal.msgError('操作失败：' + (error.message || '未知错误'));
+    proxy.$modal.msgError('操作失败：' + ((error as any).message || '未知错误'));
   }
 }
 
@@ -169,7 +169,7 @@ async function queryOrderStatus() {
       proxy.$modal.msgInfo('当前状态：' + (res.data.orderStatus || '未知'));
     }
   } catch (error) {
-    proxy.$modal.msgError('查询失败: ' + (error.message || ''));
+    proxy.$modal.msgError('查询失败: ' + ((error as any).message || ''));
   } finally {
     querying.value = false;
   }

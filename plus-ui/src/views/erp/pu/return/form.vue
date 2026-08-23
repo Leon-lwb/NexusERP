@@ -268,7 +268,7 @@ watch(
   { deep: true, immediate: true }
 );
 
-const statusMap: Record<string, { label: string; type: string }> = {
+const statusMap: Record<string, { label: string; type: 'success' | 'warning' | 'danger' | 'info' | 'primary' }> = {
   DRAFT: { label: '草稿', type: 'info' },
   APPROVING: { label: '审批中', type: 'warning' },
   CONFIRMED: { label: '已确认', type: 'success' },
@@ -276,7 +276,7 @@ const statusMap: Record<string, { label: string; type: string }> = {
   CANCELLED: { label: '已作废', type: 'danger' }
 };
 
-function getStatusType(status: string): string {
+function getStatusType(status: string): 'success' | 'warning' | 'danger' | 'info' | 'primary' {
   return statusMap[status]?.type || 'info';
 }
 

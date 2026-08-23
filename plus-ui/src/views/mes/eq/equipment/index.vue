@@ -498,7 +498,7 @@ async function handleViewIotLatest(row: EqEquipmentVO) {
 /** 关联 IoT 设备对话框 */
 const iotBindDialog = reactive<{
   visible: boolean;
-  equipmentId: number | null;
+  equipmentId: string | number | null;
   equipmentCode: string;
   equipmentName: string;
   iotDeviceId: number | null | undefined;

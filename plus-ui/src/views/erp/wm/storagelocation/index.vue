@@ -250,7 +250,7 @@
         </el-row>
 
         <!-- 3D 可视化配置抽屉 -->
-        <Wm3dConfigDrawer v-model="show3dConfig" :form-data="form" />
+        <Wm3dConfigDrawer v-model="show3dConfig" v-model:form-data="form" />
       </el-form>
       <template #footer>
         <div class="dialog-footer">
@@ -328,6 +328,7 @@ import {
   updateStoragelocation,
   batchGenerateLocation
 } from '@/api/erp/wm/storagelocation';
+import type { StoragelocationForm, StoragelocationVO } from '@/api/erp/wm/storagelocation/types';
 import { getStoragearea } from '@/api/erp/wm/storagearea';
 import { getWareHouseTree } from '@/api/erp/wm/warehouse';
 import { useRoute } from 'vue-router';
@@ -339,7 +340,7 @@ const { sys_true_or_false, wm_location_type, wm_location_status } = toRefs<any>(
   proxy.useDict('sys_true_or_false', 'wm_location_type', 'wm_location_status')
 );
 
-const storagelocationList = ref([]);
+const storagelocationList = ref<StoragelocationVO[]>([]);
 const open = ref(false);
 const loading = ref(true);
 const showSearch = ref(true);
@@ -354,7 +355,8 @@ const show3dConfig = ref(false);
 
 const currentArea = ref<any>(null);
 const warehouseTreeOptions = ref<any[]>([]);
-const selectedAreaPath = ref<string[]>([]);
+// 级联选择器为 emitPath: false，选中值为单个节点 key 字符串
+const selectedAreaPath = ref<string>('');
 const queryAreaPath = ref('');
 
 const cascaderProps = {
@@ -368,7 +370,7 @@ const cascaderProps = {
 const route = useRoute();
 
 const data = reactive({
-  form: {},
+  form: {} as StoragelocationForm,
   queryParams: {
     pageNum: 1,
     pageSize: 10,

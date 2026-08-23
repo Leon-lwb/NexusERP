@@ -1,8 +1,8 @@
 export interface StoragelocationQuery extends PageQuery {
   locationCode?: string;
   locationName?: string;
-  areaId?: number;
-  warehouseId?: number;
+  areaId?: number | string;
+  warehouseId?: number | string;
   areaName?: string;
   area?: number;
   maxLoa?: number;
@@ -72,10 +72,11 @@ export interface StoragelocationVO {
 }
 
 export interface StoragelocationForm {
-  locationId?: number;
-  locationCode: string;
-  locationName: string;
-  areaId?: number;
+  locationId?: number | string;
+  locationCode?: string;
+  locationName?: string;
+  areaId?: number | string;
+  warehouseId?: number | string;
   area?: number;
   maxLoa?: number;
   positionX?: number;
@@ -116,4 +117,12 @@ export interface StoragelocationForm {
   lastInboundTime?: string;
   lastOutboundTime?: string;
   configJson?: string;
+  attr1?: string;
+  attr2?: string;
+  attr3?: string;
+  attr4?: string;
+  createBy?: number;
+  createTime?: string;
+  updateBy?: number;
+  updateTime?: string;
 }

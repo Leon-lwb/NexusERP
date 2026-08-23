@@ -10,7 +10,7 @@ export function getReconciliation(reconId: number): AxiosPromise<WmReconciliatio
   return request({ url: '/erp/wm/reconciliation/' + reconId, method: 'get' });
 }
 
-export function delReconciliation(reconIds: number | number[]) {
+export function delReconciliation(reconIds: string | number | (string | number)[]) {
   return request({ url: '/erp/wm/reconciliation/' + reconIds, method: 'delete' });
 }
 

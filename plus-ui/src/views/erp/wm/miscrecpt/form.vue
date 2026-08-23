@@ -331,8 +331,9 @@ function cancel() {
   proxy.$tab.closeOpenPage({ path: '/erp/inbound/miscrecpt' });
 }
 
-function rowLineIndex({ row, rowIndex }: any) {
+function rowLineIndex({ row, rowIndex }: any): string {
   row.index = rowIndex + 1;
+  return '';
 }
 
 function handleAddLine() {

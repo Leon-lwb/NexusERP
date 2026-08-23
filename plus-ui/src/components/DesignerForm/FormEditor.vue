@@ -93,6 +93,7 @@ interface FormComponent {
   field: string;
   props: Record<string, any>;
   required?: boolean;
+  subTableName?: string;
   subTableColumns?: any[];
 }
 

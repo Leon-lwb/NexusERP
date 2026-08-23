@@ -101,6 +101,7 @@
   </div>
 </template>
 <script lang="ts" setup>
+import type { PropType } from 'vue';
 import ElementBaseInfo from './base/ElementBaseInfo.vue';
 import ElementOtherConfig from './other/ElementOtherConfig.vue';
 import ElementTask from './task/ElementTask.vue';
@@ -132,7 +133,7 @@ const props = defineProps({
     default: 'flowable'
   },
   appType: {
-    type: Array,
+    type: Array as PropType<{ id: string; name: string }[]>,
     default: () => []
   },
   width: {
@@ -185,13 +186,6 @@ const initFormOnChanged = (element) => {
       bpmnInstances().elementRegistry.find((el) => el.type === 'bpmn:Collaboration');
   }
   if (!activatedElement) return;
-  console.log(`
-              ----------
-     select element changed:
-                id:  ${activatedElement.id}
-              type:  ${activatedElement.businessObject.$type}
-              ----------
-              `);
   bpmnInstances().bpmnElement = activatedElement;
   bpmnElement.value = activatedElement;
   elementId.value = activatedElement.id;

@@ -341,6 +341,7 @@
 
 <script setup lang="ts" name="Receive">
 import { listReceive, getReceive, delReceive, addReceive, updateReceive, execute, confirmShelf, getReceiveProcId } from '@/api/erp/wm/receive';
+import type { ReceiveForm, ReceiveVO } from '@/api/erp/wm/receive/types';
 import { listArrivalnotice } from '@/api/erp/wm/arrivalnotice';
 import { useRouter } from 'vue-router';
 import { previewCode } from '@/api/system/autocode/rule';
@@ -349,7 +350,7 @@ const router = useRouter();
 const { proxy } = getCurrentInstance() as any;
 const { wm_material_receive_status } = toRefs<any>(proxy.useDict('wm_material_receive_status'));
 
-const receiveList = ref([]);
+const receiveList = ref<ReceiveVO[]>([]);
 const open = ref(false);
 const loading = ref(true);
 const showSearch = ref(true);
@@ -362,7 +363,7 @@ const isViewMode = ref(false);
 const autoGenFlag = ref(false);
 
 const data = reactive({
-  form: {},
+  form: {} as ReceiveForm,
   queryParams: {
     pageNum: 1,
     pageSize: 10,

@@ -123,6 +123,7 @@ const queryParams = ref<any>({
   status: undefined
 });
 
+const formRef = ref<ElFormInstance>();
 const form = ref<any>({});
 const rules = ref<any>({
   templateName: [{ required: true, message: '模板名称不能为空', trigger: 'blur' }],
@@ -191,19 +192,21 @@ const handleUpdate = (row: any) => {
 
 /** 提交 */
 const submitForm = () => {
-  proxy?.validateForm('formRef', () => {
-    if (form.value.id != null) {
-      updatePromptTemplate(form.value).then(() => {
-        proxy?.$modal.msgSuccess('修改成功');
-        dialogVisible.value = false;
-        getList();
-      });
-    } else {
-      addPromptTemplate(form.value).then(() => {
-        proxy?.$modal.msgSuccess('新增成功');
-        dialogVisible.value = false;
-        getList();
-      });
+  formRef.value?.validate((valid) => {
+    if (valid) {
+      if (form.value.id != null) {
+        updatePromptTemplate(form.value).then(() => {
+          proxy?.$modal.msgSuccess('修改成功');
+          dialogVisible.value = false;
+          getList();
+        });
+      } else {
+        addPromptTemplate(form.value).then(() => {
+          proxy?.$modal.msgSuccess('新增成功');
+          dialogVisible.value = false;
+          getList();
+        });
+      }
     }
   });
 };

@@ -11,6 +11,8 @@ export interface WorkshopVO {
   workshopDesc: string;
   managerId: number;
   managerName: string;
+  deptId?: number | string;
+  deptName?: string;
   capacity: number;
   status: number;
   sortOrder: number;
@@ -28,6 +30,8 @@ export interface WorkshopForm {
   workshopDesc?: string;
   managerId: number;
   managerName: string;
+  deptId?: number | string;
+  deptName?: string;
   capacity?: number;
   status?: number;
   sortOrder?: number;

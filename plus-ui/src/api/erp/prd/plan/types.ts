@@ -55,7 +55,7 @@ export interface PlanForm {
   endDate?: string;
   status?: string;
   priority?: number;
-  plannerId?: number;
+  plannerId?: number | string;
   plannerName?: string;
   deptId?: number;
   deptName?: string;

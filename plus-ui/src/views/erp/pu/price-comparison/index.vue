@@ -319,7 +319,7 @@ function renderTrendChart() {
       });
 
       // 获取所有月份（去重排序）
-      const allMonths = [...new Set(trendData.map((item: any) => item.month))].sort();
+      const allMonths = [...new Set<string>(trendData.map((item: any) => item.month as string))].sort();
 
       const series = Array.from(vendorMap.entries()).map(([vendorName, data]) => ({
         name: vendorName,

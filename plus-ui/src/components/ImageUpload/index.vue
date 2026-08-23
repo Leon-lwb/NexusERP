@@ -49,7 +49,7 @@ import { compressAccurately } from 'image-conversion';
 
 const props = defineProps({
   modelValue: {
-    type: [String, Object, Array],
+    type: [String, Number, Object, Array],
     default: () => []
   },
   // 图片数量限制

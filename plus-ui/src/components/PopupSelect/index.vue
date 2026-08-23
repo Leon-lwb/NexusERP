@@ -1,5 +1,5 @@
 <template>
-  <el-dialog v-model="visible" :title="title" width="70%">
+  <el-dialog v-model="visibleLocal" :title="title" width="70%">
     <el-table
       ref="tableRef"
       v-loading="loading"
@@ -35,7 +35,7 @@
     />
 
     <template #footer>
-      <el-button @click="visible = false">取消</el-button>
+      <el-button @click="visibleLocal = false">取消</el-button>
       <el-button type="primary" @click="handleConfirm">确定</el-button>
     </template>
   </el-dialog>
@@ -76,7 +76,7 @@ const props = defineProps({
 
 const emit = defineEmits(['update:visible', 'select']);
 
-const visible = ref(false);
+const visibleLocal = ref(false);
 const loading = ref(false);
 const dataList = ref<any[]>([]);
 const total = ref(0);
@@ -120,14 +120,14 @@ const queryParams = ref({
 const selectedRows = ref<any[]>([]);
 
 //同步内部状态到父组件
-watch(visible, (newVal) => {
+watch(visibleLocal, (newVal) => {
   emit('update:visible', newVal);
 });
 
 watch(
   () => props.visible,
   (val) => {
-    visible.value = val;
+    visibleLocal.value = val;
     if (val) {
       resetQuery();
       getList();
@@ -185,7 +185,7 @@ const handleConfirm = () => {
   } else {
     emit('select', mappedData[0]);
   }
-  visible.value = false;
+  visibleLocal.value = false;
 };
 
 const resetQuery = () => {

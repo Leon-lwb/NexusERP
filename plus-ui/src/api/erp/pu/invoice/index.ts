@@ -13,7 +13,7 @@ const BASE = '/erp/pu/invoice';
  * @param query 查询条件
  * @returns 发票列表及总数
  */
-export const listInvoice = (query: InvoiceQuery): AxiosPromise<{ rows: InvoiceVO[]; total: number }> =>
+export const listInvoice = (query: InvoiceQuery): AxiosPromise<InvoiceVO[]> =>
   request({
     url: BASE + '/list',
     method: 'get',

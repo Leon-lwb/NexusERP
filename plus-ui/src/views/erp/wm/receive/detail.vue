@@ -264,12 +264,13 @@
 
 <script setup lang="ts" name="Detail">
 import { listDetail, getDetail, delDetail, addDetail, updateDetail } from '@/api/erp/wm/detail';
+import type { DetailForm, DetailVO } from '@/api/erp/wm/detail/types';
 import { useRoute } from 'vue-router';
 
 const { proxy } = getCurrentInstance() as any;
 const route = useRoute();
 
-const detailList = ref([]);
+const detailList = ref<DetailVO[]>([]);
 const open = ref(false);
 const loading = ref(true);
 const showSearch = ref(true);
@@ -281,7 +282,7 @@ const title = ref('');
 const isViewMode = ref(false);
 
 const data = reactive({
-  form: {},
+  form: {} as DetailForm,
   queryParams: {
     pageNum: 1,
     pageSize: 10,
@@ -409,14 +410,15 @@ function handleAddFromReceive() {
   reset();
   isViewMode.value = false;
 
-  // 从路由参数中获取值并填入表单
-  form.value.lineId = route.query.lineId;
-  form.value.materialId = route.query.materialId;
-  form.value.materialCode = route.query.materialCode;
-  form.value.materialName = route.query.materialName;
-  form.value.baseUomId = route.query.baseUomId;
-  form.value.baseUomName = route.query.baseUomName;
-  form.value.quantity = route.query.quantity;
+  // 从路由参数中获取值并填入表单（路由参数均为字符串）
+  const query = route.query as Record<string, string>;
+  form.value.lineId = query.lineId;
+  form.value.materialId = query.materialId;
+  form.value.materialCode = query.materialCode;
+  form.value.materialName = query.materialName;
+  form.value.baseUomId = query.baseUomId;
+  form.value.baseUomName = query.baseUomName;
+  form.value.quantity = query.quantity;
 
   open.value = true;
   title.value = '添加物料入库单明细';

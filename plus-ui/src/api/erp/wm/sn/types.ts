@@ -1,4 +1,3 @@
-
 export interface WmSnVO {
   snId: number;
   snCode: string;

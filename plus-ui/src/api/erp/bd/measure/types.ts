@@ -1,10 +1,11 @@
 export interface MeasureQuery extends PageQuery {
   uomCode?: string;
   uomName?: string;
+  uomSymbol?: string;
   category?: string;
-  status?: number;
+  status?: number | string;
   isBase?: string;
-  excludeId?: number;
+  excludeId?: number | string;
 }
 
 export interface MeasureVO {
@@ -27,16 +28,20 @@ export interface MeasureVO {
 }
 
 export interface MeasureForm {
-  uomId?: number;
-  uomCode: string;
-  uomName: string;
+  uomId?: number | string;
+  uomCode?: string;
+  uomName?: string;
   uomSymbol?: string;
   category?: string;
-  isBase?: number;
-  primaryId?: number;
+  isBase?: number | string;
+  primaryId?: number | string;
   primaryName?: string;
   conversionRate?: number;
-  status?: number;
+  status?: number | string;
   sortOrder?: number;
   remark?: string;
+  createBy?: number | string;
+  createTime?: string;
+  updateBy?: number | string;
+  updateTime?: string;
 }

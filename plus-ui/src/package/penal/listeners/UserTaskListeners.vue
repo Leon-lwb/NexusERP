@@ -260,7 +260,7 @@ const removeListener = (listener, index?) => {
       elementListenersList.value.splice(index, 1);
       updateElementExtensions(bpmnElement.value, otherExtensionList.value.concat(bpmnElementListeners.value));
     })
-    .catch(() => console.info('操作取消'));
+    .catch(() => console.warn('操作取消'));
 };
 // 保存监听器
 const saveListenerConfig = async () => {
@@ -317,7 +317,7 @@ const removeListenerField = (field, index) => {
       fieldsListOfListener.value.splice(index, 1);
       listenerForm.value.fields.splice(index, 1);
     })
-    .catch(() => console.info('操作取消'));
+    .catch(() => console.warn('操作取消'));
 };
 
 watch(

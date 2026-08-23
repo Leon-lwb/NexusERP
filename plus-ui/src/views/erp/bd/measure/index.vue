@@ -277,9 +277,11 @@
 
 <script setup lang="ts" name="Measure">
 import { listMeasure, getMeasure, delMeasure, addMeasure, updateMeasure, listByPrimary, listCategories } from '@/api/erp/bd/measure';
+import type { MeasureForm, MeasureQuery } from '@/api/erp/bd/measure/types';
 import { Folder, ScaleToOriginal, Collection, Connection } from '@element-plus/icons-vue';
+import type { FormInstance } from 'element-plus';
 
-const { proxy } = getCurrentInstance();
+const { proxy } = getCurrentInstance() as any;
 const { sys_true_or_false, sys_core_status } = toRefs<any>(proxy.useDict('sys_true_or_false', 'sys_core_status'));
 
 // ==================== 级联布局数据 ====================
@@ -311,7 +313,8 @@ const baseUnitQueryParams = reactive({
   excludeId: undefined
 });
 
-const data = reactive({
+const measureRef = ref<FormInstance>();
+const data = reactive<{ form: MeasureForm; queryParams: MeasureQuery }>({
   form: {},
   queryParams: {
     pageNum: 1,
@@ -346,7 +349,7 @@ onMounted(() => {
 /** 加载类别列表 */
 function loadCategories() {
   listCategories().then((response) => {
-    categories.value = response.data || response;
+    categories.value = response.data || [];
     if (categories.value.length > 0 && !selectedCategory.value) {
       selectCategory(categories.value[0]);
     }
@@ -509,7 +512,7 @@ function loadPrimaryUnitName(primaryId: number) {
 
 /** 提交按钮 */
 function submitForm() {
-  proxy.$refs['measureRef'].validate((valid) => {
+  measureRef.value?.validate((valid) => {
     if (valid) {
       const submitForm = { ...form.value };
       if (submitForm.isBase === '1') {
@@ -517,8 +520,8 @@ function submitForm() {
         submitForm.primaryName = null;
       }
 
-      submitForm.isBase = parseInt(submitForm.isBase);
-      submitForm.status = parseInt(submitForm.status);
+      submitForm.isBase = parseInt(String(submitForm.isBase));
+      submitForm.status = parseInt(String(submitForm.status));
 
       if (submitForm.uomId != null) {
         updateMeasure(submitForm).then(() => {

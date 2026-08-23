@@ -594,7 +594,7 @@ function duplicateNode() {
   if (!result) return;
   store.snapshot();
   store.nodes = [...store.nodes, ...result.nodes];
-  store.edges = [...store.edges, ...result.edges];
+  store.edges = [...(store.edges as any[]).concat(result.edges)];
   store.selectedNodeId = result.nodes[0]?.id ?? null;
   store.markDirty();
   ElMessage.success('已复制节点');

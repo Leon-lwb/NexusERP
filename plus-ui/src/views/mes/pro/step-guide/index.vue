@@ -182,6 +182,7 @@
 <script setup lang="ts" name="ProStepGuide">
 import { listStepGuide, getStepGuide, addStepGuide, updateStepGuide, delStepGuide, exportStepGuide } from '@/api/mes/pro/stepGuide';
 import type { ProStepGuideVO, ProStepGuideForm, ProStepGuideQuery } from '@/api/mes/pro/stepGuide';
+import FileSaver from 'file-saver';
 import { listProcess } from '@/api/erp/bd/process';
 import { listDocument } from '@/api/mes/sop/document';
 
@@ -334,7 +335,7 @@ const handleDeleteRow = async (row: ProStepGuideVO) => {
 const handleExport = async () => {
   await proxy!.$modal.confirm('确认导出工序指引数据?');
   const res = await exportStepGuide(queryParams);
-  proxy!.downloadBlob(res, '工序流程指引.xlsx');
+  FileSaver.saveAs(new Blob([res]), '工序流程指引.xlsx');
 };
 
 // ===== 工序选择器 =====

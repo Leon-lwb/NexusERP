@@ -2,16 +2,16 @@
   <div class="app-container">
     <el-form v-model="queryParams" ref="queryFormRef" size="small" :inline="true" v-show="showSearch" label-width="68px">
       <el-form-item label="用户账号" prop="userName">
-        <el-input v-model="queryParams.userName" placeholder="请输入用户账号" clearable @keyup.enter.native="handleQuery" />
+        <el-input v-model="queryParams.userName" placeholder="请输入用户账号" clearable @keyup.enter="handleQuery" />
       </el-form-item>
       <el-form-item label="用户昵称" prop="nickName">
-        <el-input v-model="queryParams.nickName" placeholder="请输入用户昵称" clearable @keyup.enter.native="handleQuery" />
+        <el-input v-model="queryParams.nickName" placeholder="请输入用户昵称" clearable @keyup.enter="handleQuery" />
       </el-form-item>
       <el-form-item label="用户邮箱" prop="email">
-        <el-input v-model="queryParams.email" placeholder="请输入用户邮箱" clearable @keyup.enter.native="handleQuery" />
+        <el-input v-model="queryParams.email" placeholder="请输入用户邮箱" clearable @keyup.enter="handleQuery" />
       </el-form-item>
       <el-form-item label="头像地址" prop="avatar">
-        <el-input v-model="queryParams.avatar" placeholder="请输入头像地址" clearable @keyup.enter.native="handleQuery" />
+        <el-input v-model="queryParams.avatar" placeholder="请输入头像地址" clearable @keyup.enter="handleQuery" />
       </el-form-item>
       <el-form-item>
         <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery">搜索</el-button>

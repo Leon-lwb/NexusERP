@@ -131,16 +131,7 @@ export function revokeMessage(messageId: number | string) {
   });
 }
 
-/** 上传文件到 OSS，返回 { fileName, url, ossId } */
-export function uploadOss(file: File): AxiosPromise<{ fileName: string; url: string; ossId: string | number }> {
-  const formData = new FormData();
-  formData.append('file', file);
-  return request({
-    url: '/resource/oss/upload',
-    method: 'post',
-    data: formData
-  });
-}
+export { uploadOss } from '@/api/system/oss';
 
 /**
  * P4-8: 消息搜索（LIKE 查询，限制 7 天内）

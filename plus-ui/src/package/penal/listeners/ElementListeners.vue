@@ -254,7 +254,7 @@ const saveListenerFiled = async () => {
   });
 };
 // 移除监听器字段
-const removeListenerField = (index) => {
+const removeListenerField = (row: any, index: number) => {
   ElMessageBox.confirm('确认移除该字段吗？', '提示', {
     confirmButtonText: '确 认',
     cancelButtonText: '取 消'
@@ -263,10 +263,10 @@ const removeListenerField = (index) => {
       fieldsListOfListener.value.splice(index, 1);
       listenerForm.value.fields.splice(index, 1);
     })
-    .catch(() => console.info('操作取消'));
+    .catch(() => console.warn('操作取消'));
 };
 // 移除监听器
-const removeListener = (index) => {
+const removeListener = (row: any, index: number) => {
   ElMessageBox.confirm('确认移除该监听器吗？', '提示', {
     confirmButtonText: '确 认',
     cancelButtonText: '取 消'
@@ -276,7 +276,7 @@ const removeListener = (index) => {
       elementListenersList.value.splice(index, 1);
       updateElementExtensions(bpmnElement.value, otherExtensionList.value.concat(bpmnElementListeners.value));
     })
-    .catch(() => console.info('操作取消'));
+    .catch(() => console.warn('操作取消'));
 };
 // 保存监听器配置
 const saveListenerConfig = async () => {

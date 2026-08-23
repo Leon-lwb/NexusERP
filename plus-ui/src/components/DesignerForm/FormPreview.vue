@@ -94,7 +94,7 @@
                 <el-tree-select
                   v-model="formData[item.field]"
                   :data="deptOptions"
-                  :props="{ label: 'deptName', value: 'deptId' }"
+                  :props="deptTreeProps"
                   :placeholder="item.props.placeholder || '请选择部门'"
                   :multiple="item.props.multiple"
                   :clearable="item.props.clearable"
@@ -229,6 +229,11 @@ const formData = ref<Record<string, any>>({});
 const subTableData = ref<Record<string, any[]>>({});
 const dictOptions = ref<Record<string, any[]>>({});
 const deptOptions = ref<DeptVO[]>([]);
+// 部门树节点字段映射（el-tree-select 运行时支持 value 键，但 element-plus 的 TreeOptionProps 类型未收录，故不显式标注类型）
+const deptTreeProps = {
+  label: 'deptName',
+  value: 'deptId'
+};
 const userOptions = ref<UserVO[]>([]);
 const showPopup = ref(false);
 const currentPopupField = ref('');

@@ -136,11 +136,12 @@
 
 <script setup lang="ts" name="IotProduct">
 import { listProduct, getProduct, delProduct, addProduct, updateProduct } from '@/api/iot/product';
+import type { ProductVO, ProductQuery, ProductForm } from '@/api/iot/product/types';
 
-const { proxy } = getCurrentInstance();
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { product_type, iot_protocol_type, iot_device_status } = toRefs<any>(proxy.useDict('product_type', 'iot_protocol_type', 'iot_device_status'));
 
-const productList = ref([]);
+const productList = ref<ProductVO[]>([]);
 const open = ref(false);
 const loading = ref(true);
 const showSearch = ref(true);
@@ -151,8 +152,12 @@ const total = ref(0);
 const title = ref('');
 const isViewMode = ref(false);
 
-const data = reactive({
-  form: {},
+const data = reactive<{
+  form: ProductForm;
+  queryParams: ProductQuery;
+  rules: ElFormRules;
+}>({
+  form: {} as ProductForm,
   queryParams: {
     pageNum: 1,
     pageSize: 10,
@@ -254,7 +259,7 @@ function handleView(row) {
 
 /** 提交按钮 */
 function submitForm() {
-  proxy.$refs['productRef'].validate((valid) => {
+  (proxy.$refs['productRef'] as ElFormInstance).validate((valid) => {
     if (valid) {
       if (form.value.productId != null) {
         updateProduct(form.value).then((response) => {

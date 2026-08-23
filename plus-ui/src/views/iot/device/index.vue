@@ -187,17 +187,18 @@
 
 <script setup lang="ts" name="IotDevice">
 import { listDevice, getDevice, delDevice, addDevice, updateDevice } from '@/api/iot/device';
+import type { DeviceVO, DeviceQuery, DeviceForm } from '@/api/iot/device/types';
 import { listProduct } from '@/api/iot/product';
 import { listMesEquipmentForBind, updateMesEquipmentLink } from '@/api/mes/eq/equipment';
 import { useRouter } from 'vue-router';
 
 const router = useRouter();
-const { proxy } = getCurrentInstance();
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { iot_protocol_type, iot_connection_status, iot_device_status } = toRefs<any>(
   proxy.useDict('iot_protocol_type', 'iot_connection_status', 'iot_device_status')
 );
 
-const deviceList = ref([]);
+const deviceList = ref<DeviceVO[]>([]);
 const productOptions = ref([]);
 const open = ref(false);
 const loading = ref(true);
@@ -209,8 +210,12 @@ const total = ref(0);
 const title = ref('');
 const isViewMode = ref(false);
 
-const data = reactive({
-  form: {},
+const data = reactive<{
+  form: DeviceForm;
+  queryParams: DeviceQuery;
+  rules: ElFormRules;
+}>({
+  form: {} as DeviceForm,
   queryParams: {
     pageNum: 1,
     pageSize: 10,
@@ -327,7 +332,7 @@ function handleView(row) {
 
 /** 提交按钮 */
 function submitForm() {
-  proxy.$refs['deviceRef'].validate((valid) => {
+  (proxy.$refs['deviceRef'] as ElFormInstance).validate((valid) => {
     if (valid) {
       if (form.value.deviceId != null) {
         updateDevice(form.value).then((response) => {

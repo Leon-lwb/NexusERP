@@ -35,7 +35,7 @@
         <el-tree-select
           v-model="deptIds"
           :data="deptTreeData"
-          :props="{ value: 'id', label: 'label', children: 'children' }"
+          :props="deptTreeProps"
           show-checkbox
           default-expand-all
           multiple
@@ -111,7 +111,7 @@
           <pagination :total="userTotal" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getUserList" />
         </el-col>
       </el-row>
-      <template #footer class="dialog-footer">
+      <template #footer>
         <el-button type="primary" @click="handleTaskUserComplete">确 定</el-button>
         <el-button @click="userOpen = false">取 消</el-button>
       </template>
@@ -120,8 +120,10 @@
 </template>
 
 <script lang="ts" setup>
+import type { TreeOptionProps } from 'element-plus';
 import { listUser, deptTreeSelect } from '@/api/system/user';
 import { listRole } from '@/api/system/role';
+import type { RoleQuery } from '@/api/system/role/types';
 
 defineOptions({ name: 'UserTask' });
 const props = defineProps({
@@ -167,6 +169,8 @@ const roleOptions = ref<any[]>([]);
 const roleIds = ref<any[]>([]);
 const deptTreeData = ref<any[]>([]);
 const deptIds = ref<any[]>([]);
+// el-tree-select 运行时支持通过 props.value 指定取值字段，但 TreeOptionProps 类型未声明该键，这里显式扩展
+const deptTreeProps: TreeOptionProps & { value?: string } = { value: 'id', label: 'label', children: 'children' };
 // 查询参数
 const queryParams = ref({
   pageNum: 1,
@@ -241,7 +245,7 @@ const updateElementTask = () => {
  * 查询部门下拉树结构
  */
 const getDeptOptions = () => {
-  return new Promise((resolve, reject) => {
+  return new Promise<void>((resolve, reject) => {
     if (!deptOptions.value || deptOptions.value.length <= 0) {
       deptTreeSelect().then((response) => {
         deptTempOptions.value = response.data;
@@ -258,7 +262,7 @@ const getDeptOptions = () => {
  * 查询部门下拉树结构（含部门前缀）
  */
 const getDeptTreeData = () => {
-  return new Promise((resolve, reject) => {
+  return new Promise<void>((resolve, reject) => {
     if (!deptTreeData.value || deptTreeData.value.length <= 0) {
       getDeptOptions()
         .then(() => {
@@ -274,9 +278,16 @@ const getDeptTreeData = () => {
   });
 };
 
-const refactorTree = (data) => {
+interface DeptTreeNode {
+  id: string;
+  label: string;
+  parentId: any;
+  weight: any;
+  children?: DeptTreeNode[];
+}
+const refactorTree = (data: any[]): DeptTreeNode[] => {
   return data.map((node) => {
-    const treeData = { id: `DEPT${node.id}`, label: node.label, parentId: node.parentId, weight: node.weight };
+    const treeData: DeptTreeNode = { id: `DEPT${node.id}`, label: node.label, parentId: node.parentId, weight: node.weight };
     if (node.children && node.children.length > 0) {
       treeData.children = refactorTree(node.children);
     }
@@ -289,7 +300,8 @@ const refactorTree = (data) => {
  */
 const getRoleOptions = () => {
   if (!roleOptions.value || roleOptions.value.length <= 0) {
-    listRole().then((response) => (roleOptions.value = response.rows));
+    // 原实现不传查询参数（拉取全部角色），此处保持不变，仅满足 listRole 的参数类型
+    listRole({} as RoleQuery).then((response) => (roleOptions.value = response.rows));
   }
 };
 /** 查询用户列表 */

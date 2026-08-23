@@ -144,7 +144,7 @@
                 <el-tree-select
                   v-model="formData[item.field]"
                   :data="deptOptions"
-                  :props="{ label: 'deptName', value: 'deptId' }"
+                  :props="{ label: 'deptName', value: 'deptId' } as any"
                   :placeholder="item.props.placeholder || '请选择部门'"
                   :multiple="item.props.multiple"
                   :clearable="item.props.clearable"
@@ -688,14 +688,6 @@ const handleSubmit = async () => {
     // 检查是否有子表数据（必须同时满足：子表表名存在且有行数据）
     const subTableComponent = formComponents.value.find((c) => c.type === 'subtable');
     const subTableName = subTableComponent?.subTableName || masterSubConfig.value?.subTableName || '';
-
-    console.log('子表检查:', {
-      subTableComponent,
-      subTableName,
-      subTableData: subTableData.value,
-      masterSubConfig: masterSubConfig.value,
-      formComponents: formComponents.value
-    });
 
     if (subTableName && Array.isArray(subTableData.value) && subTableData.value.length > 0) {
       // 主子表结构 - 需要清理子表数据，只保留有效的业务字段

@@ -1418,8 +1418,8 @@ async function selectPlan(row) {
         form.value.materialCode = orderLine.materialCode;
         form.value.materialName = orderLine.materialName;
         form.value.materialSpec = orderLine.materialSpec;
-        form.value.unitId = orderLine.unitId;
-        form.value.unitName = orderLine.unitName;
+        // 订单明细仅有单位名称 unit, 无 unitId/unitName
+        form.value.unitName = orderLine.unit;
         proxy.$modal.msgSuccess('已自动填充物料信息');
       } else {
         proxy.$modal.msgWarning('未找到销售订单明细，请手动填写物料信息');

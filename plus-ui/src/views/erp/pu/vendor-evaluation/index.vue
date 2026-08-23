@@ -177,15 +177,15 @@ function handleBatchCalculate() {
     });
 }
 
-function getScoreType(score: number): string {
+function getScoreType(score: number): 'success' | 'warning' | 'danger' | 'info' | 'primary' {
   if (score >= 90) return 'success';
   if (score >= 80) return 'primary';
   if (score >= 60) return 'warning';
   return 'danger';
 }
 
-function getEvalLevelType(level: string): string {
-  const typeMap: Record<string, string> = {
+function getEvalLevelType(level: string): 'success' | 'warning' | 'danger' | 'info' | 'primary' {
+  const typeMap: Record<string, 'success' | 'warning' | 'danger' | 'info' | 'primary'> = {
     'A': 'success',
     'B': 'primary',
     'C': 'warning',

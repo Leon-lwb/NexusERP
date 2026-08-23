@@ -26,6 +26,12 @@ export interface AiModel {
   temperature?: number;
   isDefault: string;
   status: string;
+  /** 输入价格（元/百万Token） */
+  inputPricePerMillion?: number;
+  /** 输出价格（元/百万Token） */
+  outputPricePerMillion?: number;
+  /** 币种（CNY/USD） */
+  currency?: string;
 }
 
 // ==================== 厂商管理 API ====================

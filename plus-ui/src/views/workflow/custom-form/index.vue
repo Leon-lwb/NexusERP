@@ -180,7 +180,7 @@
             </el-table-column>
             <el-table-column label="流程版本" align="center">
               <template #default="scope">
-                <el-tag size="medium">v{{ scope.row.version }}</el-tag>
+                <el-tag size="default">v{{ scope.row.version }}</el-tag>
               </template>
             </el-table-column>
             <el-table-column label="状态" align="center">
@@ -249,7 +249,7 @@ const queryFlowParams = ref({
 });
 // 挂载自定义表单到流程实例
 const customParam = ref({
-  id: '',
+  id: '' as string | number,
   deployId: ''
 });
 const processView = ref({
@@ -350,8 +350,7 @@ const data = reactive<PageData<WfCustomForm, WfCustomFormQuery>>({
     deployId: undefined,
     routeName: undefined,
     component: undefined,
-    tableId: undefined,
-    params: {}
+    tableId: undefined
   },
   rules: {
     id: [{ required: true, message: '主键不能为空', trigger: 'blur' }],
@@ -379,6 +378,10 @@ const relationProcess = (row?: WfCustomFormVO) => {
 /** 查询流程分类列表 */
 const getCategoryList = () => {
   listAllCategory().then((response) => (categoryOptions.value = response.data));
+};
+/** 流程分类显示转换 */
+const categoryFormat = (row: WfCustomFormVO) => {
+  return (row as any).categoryName ?? '';
 };
 /** 查询流程部署列表 */
 const getDeployList = () => {

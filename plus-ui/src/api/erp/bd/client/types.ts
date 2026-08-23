@@ -1,7 +1,10 @@
 export interface ClientQuery extends PageQuery {
+  clientId?: number | string;
   clientCode?: string;
   clientName?: string;
+  clientEn?: string;
   clientType?: string;
+  tel?: string;
   creditCode?: string;
 }
 
@@ -36,22 +39,40 @@ export interface ClientVO {
   createTime: string;
   updateBy: number;
   updateTime: string;
+  clientLogoUrl?: string;
+  streetName?: string;
+  taxId?: string;
+  invoiceTitle?: string;
+  invoiceBankName?: string;
+  invoiceBankAccount?: string;
+  invoiceAddressPhone?: string;
+  defaultInvoiceType?: string;
+  salesRepId?: number | string;
+  salesRepName?: string;
+  deptId?: number | string;
+  deptName?: string;
+  attr1?: string;
+  attr2?: string;
+  attr3?: string;
+  attr4?: string;
 }
 
 export interface ClientForm {
-  clientId?: number;
-  clientCode: string;
-  clientName: string;
+  clientId?: number | string;
+  clientCode?: string;
+  clientName?: string;
   clientNick?: string;
   clientEn?: string;
   clientDesc?: string;
   clientType?: string;
   clientLogo?: string;
+  clientLogoUrl?: string;
   address?: string;
-  provinceAreaId?: number;
-  cityAreaId?: number;
-  districtAreaId?: number;
-  streetId?: number;
+  provinceAreaId?: number | string;
+  cityAreaId?: number | string;
+  districtAreaId?: number | string;
+  streetId?: number | string;
+  streetName?: string;
   addressLat?: string;
   addressLng?: string;
   webSite?: string;
@@ -64,5 +85,23 @@ export interface ClientForm {
   contact2Tel?: string;
   contact2Emal?: string;
   creditCode?: string;
+  taxId?: string;
+  invoiceTitle?: string;
+  invoiceBankName?: string;
+  invoiceBankAccount?: string;
+  invoiceAddressPhone?: string;
+  defaultInvoiceType?: string;
+  salesRepId?: number | string;
+  salesRepName?: string;
+  deptId?: number | string;
+  deptName?: string;
+  attr1?: string;
+  attr2?: string;
+  attr3?: string;
+  attr4?: string;
   remark?: string;
+  createBy?: number | string;
+  createTime?: string;
+  updateBy?: number | string;
+  updateTime?: string;
 }

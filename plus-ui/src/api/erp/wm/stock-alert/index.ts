@@ -14,7 +14,7 @@ export function updateStockAlert(data: WmStockAlertForm) {
   return request({ url: '/erp/wm/stock-alert', method: 'put', data });
 }
 
-export function delStockAlert(alertIds: number | number[]) {
+export function delStockAlert(alertIds: string | number | (string | number)[]) {
   return request({ url: '/erp/wm/stock-alert/' + alertIds, method: 'delete' });
 }
 

@@ -38,7 +38,7 @@
         <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['prd:subcontract:add']">新增</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['prd:subcontract:remove']"
+        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete()" v-hasPermi="['prd:subcontract:remove']"
           >删除</el-button
         >
       </el-col>

@@ -480,8 +480,9 @@ function cancel() {
   proxy.$tab.closeOpenPage({ path: '/erp/inventory/transfer' });
 }
 
-function rowLineIndex({ row, rowIndex }: any) {
+function rowLineIndex({ row, rowIndex }: any): string {
   row.index = rowIndex + 1;
+  return '';
 }
 
 function handleAddLine() {

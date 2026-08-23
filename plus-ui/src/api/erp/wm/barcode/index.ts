@@ -17,7 +17,7 @@ const BARCODE_BASE = '/erp/wm/barcode';
  * @param query 条形码配置查询条件
  * @returns 条形码配置列表及总数
  */
-export const listBarcodeConfig = (query: BarcodeConfigQuery): AxiosPromise<{ rows: BarcodeConfigVO[]; total: number }> =>
+export const listBarcodeConfig = (query: BarcodeConfigQuery): AxiosPromise<BarcodeConfigVO[]> =>
   request({ url: CONFIG_BASE + '/list', method: 'get', params: query });
 
 /**
@@ -53,8 +53,7 @@ export const delBarcodeConfig = (id: string | number | (string | number)[]) => r
  * @param query 条形码实例查询条件
  * @returns 条形码实例列表及总数
  */
-export const listBarcode = (query: BarcodeQuery): AxiosPromise<{ rows: BarcodeVO[]; total: number }> =>
-  request({ url: BARCODE_BASE + '/list', method: 'get', params: query });
+export const listBarcode = (query: BarcodeQuery): AxiosPromise<BarcodeVO[]> => request({ url: BARCODE_BASE + '/list', method: 'get', params: query });
 
 /**
  * 获取指定ID的条形码实例详情

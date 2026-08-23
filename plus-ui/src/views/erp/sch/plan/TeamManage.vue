@@ -109,6 +109,8 @@
 <script setup lang="ts" name="TeamManage">
 import { listPlanteam, getPlanteam, delPlanteam, addPlanteam, updatePlanteam } from '@/api/erp/sch/planteam';
 import { listTeam, getTeam } from '@/api/erp/sch/team';
+import type { TeamMemberVO } from '@/api/erp/sch/team/types';
+import type { FormInstance } from 'element-plus';
 
 const { proxy } = getCurrentInstance();
 
@@ -145,8 +147,9 @@ const queryParams = ref({
   status: 1
 });
 
-const memberList = ref([]);
+const memberList = ref<TeamMemberVO[]>([]);
 const selectedTeam = ref(null);
+const queryForm = ref<FormInstance>();
 
 onMounted(() => {
   loadTeams();
@@ -163,7 +166,8 @@ watch(
 
 function loadTeams() {
   if (props.planId) {
-    listPlanteam({ planId: props.planId }).then((response) => {
+    // 关联班组可能超过默认 pageSize=10, 指定足够大的分页参数避免列表被截断
+    listPlanteam({ planId: props.planId, pageNum: 1, pageSize: 999 }).then((response) => {
       teamList.value = response.rows;
       if (teamList.value && teamList.value.length > 0) {
         selectedTeam.value = teamList.value[0];
@@ -263,7 +267,7 @@ function handleQuery() {
 }
 
 function resetQuery() {
-  proxy.$refs['queryForm'].resetFields();
+  queryForm.value?.resetFields();
   queryParams.value.pageNum = 1;
   loadAvailableTeams();
 }

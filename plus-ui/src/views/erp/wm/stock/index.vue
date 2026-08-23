@@ -341,6 +341,7 @@
 
 <script setup lang="ts" name="Stock">
 import { listStock, getStock, delStock, addStock, updateStock, getCategoryStocks } from '@/api/erp/wm/stock';
+import type { StockForm, StockVO } from '@/api/erp/wm/stock/types';
 import { useCategoryTree } from '@/composables/erp/useCategoryTree';
 import { getWareHouseTree } from '@/api/erp/wm/warehouse';
 import { listVendor, getVendor } from '@/api/erp/bd/vendor';
@@ -349,7 +350,7 @@ import MaterialSelectDialog from '@/components/MaterialSelectDialog/index.vue';
 const { proxy } = getCurrentInstance() as any;
 const { sys_true_or_false } = toRefs<any>(proxy.useDict('sys_true_or_false'));
 
-const stockList = ref([]);
+const stockList = ref<StockVO[]>([]);
 const open = ref(false);
 const loading = ref(true);
 const showSearch = ref(true);
@@ -387,7 +388,7 @@ const vendorOptions = ref<any[]>([]);
 const vendorLoading = ref(false);
 
 const data = reactive({
-  form: {},
+  form: {} as StockForm,
   queryParams: {
     pageNum: 1,
     pageSize: 10,

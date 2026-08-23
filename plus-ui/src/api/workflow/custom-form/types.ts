@@ -10,6 +10,8 @@ export interface WfCustomFormVO {
   routeName: string;
   component: string;
   tableId: string | number;
+  /** 流程定义ID */
+  definitionId?: string;
 }
 
 export interface WfCustomForm {
@@ -30,6 +32,10 @@ export interface WfCustomFormQuery extends PageQuery {
   businessName?: string;
   businessService?: string;
   flowName?: string;
+  deployId?: string;
+  routeName?: string;
+  component?: string;
+  tableId?: string | number;
 }
 
 export interface WfCustomForm {

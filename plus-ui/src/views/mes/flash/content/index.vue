@@ -22,7 +22,7 @@
         <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['mes:flash:content:add']">新增</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="danger" plain icon="Delete" :disabled="!ids.length" @click="handleDelete" v-hasPermi="['mes:flash:content:remove']"
+        <el-button type="danger" plain icon="Delete" :disabled="!ids.length" @click="handleDelete()" v-hasPermi="['mes:flash:content:remove']"
           >删除</el-button
         >
       </el-col>
@@ -85,7 +85,14 @@
           <el-input v-model="form.contentName" placeholder="请输入" />
         </el-form-item>
         <el-form-item label="适用物料" prop="materialId">
-          <el-input-number v-model="form.materialId" :min="1" controls-position="right" style="width: 100%" placeholder="物料ID" />
+          <el-input-number
+            :model-value="Number(form.materialId)"
+            :min="1"
+            controls-position="right"
+            style="width: 100%"
+            placeholder="物料ID"
+            @update:model-value="(v?: number) => (form.materialId = v ?? 0)"
+          />
         </el-form-item>
         <el-form-item label="版本号" prop="version">
           <el-input v-model="form.version" placeholder="如 1.0.0" />

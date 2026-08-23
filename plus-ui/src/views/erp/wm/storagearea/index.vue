@@ -96,7 +96,7 @@
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button
-            size="mini"
+            size="small"
             type="text"
             icon="box"
             @click="handleStoragelocation(scope.row.areaId)"
@@ -205,7 +205,7 @@
         </el-row>
 
         <!-- 3D 可视化配置抽屉 -->
-        <Wm3dConfigDrawer v-model="show3dConfig" :form-data="form" />
+        <Wm3dConfigDrawer v-model="show3dConfig" v-model:form-data="form" />
       </el-form>
       <template #footer>
         <div class="dialog-footer">

@@ -17,7 +17,7 @@ export interface NcrDefectVO {
 /** 缺陷明细表单 */
 export interface NcrDefectForm {
   defectId?: number;
-  ncrId: number;
+  ncrId: number | string;
   defectCodeId?: number;
   defectQty?: number;
   defectCause?: string;

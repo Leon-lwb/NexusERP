@@ -10,11 +10,11 @@ export interface SopViewLogVO {
   viewerId: number;
   viewerName?: string;
   viewTime: string;
-  woId?: number;
+  woId?: number | string;
   woNo?: string;
-  processId?: number;
+  processId?: number | string;
   processName?: string;
-  workstationId?: number;
+  workstationId?: number | string;
   signatureId?: number;
   ipAddress?: string;
   userAgent?: string;
@@ -38,11 +38,11 @@ export const listViewLog = (query?: SopViewLogQuery): AxiosPromise<SopViewLogVO[
 export const recordViewLog = (params: {
   sopId: number;
   versionNo?: string;
-  woId?: number;
+  woId?: number | string;
   woNo?: string;
-  processId?: number;
+  processId?: number | string;
   processName?: string;
-  workstationId?: number;
+  workstationId?: number | string;
 }) => request({ url: '/mes/sop/view-log', method: 'post', params });
 
 /** 批量删除查阅记录 */

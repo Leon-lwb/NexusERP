@@ -77,7 +77,7 @@
     <pagination
       v-show="total > 0"
       :total="total"
-      v-model:page="queryParams.page"
+      v-model:page="queryParams.pageNum"
       v-model:limit="queryParams.pageSize"
       @pagination="loadFailRecords"
     />
@@ -122,7 +122,7 @@ const dataList = ref<AttendanceVO[]>([]);
 const total = ref(0);
 
 const queryParams = reactive({
-  page: 1,
+  pageNum: 1,
   pageSize: 20,
   workerName: '',
   recordDate: '',
@@ -151,7 +151,7 @@ onMounted(() => {
 function loadFailRecords() {
   loading.value = true;
   listAttendance({
-    page: queryParams.page,
+    pageNum: queryParams.pageNum,
     pageSize: queryParams.pageSize,
     workerName: queryParams.workerName || undefined,
     recordDate: queryParams.recordDate || undefined,
@@ -165,14 +165,14 @@ function loadFailRecords() {
 }
 
 function handleQuery() {
-  queryParams.page = 1;
+  queryParams.pageNum = 1;
   loadFailRecords();
 }
 
 function resetQuery() {
   queryParams.workerName = '';
   queryParams.recordDate = '';
-  queryParams.page = 1;
+  queryParams.pageNum = 1;
   loadFailRecords();
 }
 

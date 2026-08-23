@@ -72,7 +72,7 @@
           <el-tree-select
             v-model="infoForm.parentMenuId"
             :data="menuOptions"
-            :props="{ value: 'menuId', label: 'menuName', children: 'children' }"
+            :props="menuTreeProps"
             value-key="menuId"
             node-key="menuId"
             placeholder="选择上级菜单"
@@ -235,6 +235,12 @@ interface MenuOptionsType {
 
 const subColumns = ref<any>([]);
 const menuOptions = ref<Array<MenuOptionsType>>([]);
+// 菜单树节点字段映射（el-tree-select 运行时支持 value 键，但 element-plus 的 TreeOptionProps 类型未收录，故不显式标注类型）
+const menuTreeProps = {
+  value: 'menuId',
+  label: 'menuName',
+  children: 'children'
+};
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 
 const props = defineProps({

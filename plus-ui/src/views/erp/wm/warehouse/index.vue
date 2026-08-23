@@ -71,7 +71,7 @@
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button
-            size="mini"
+            size="small"
             type="text"
             icon="box"
             @click="handleStoragearea(scope.row.warehouseId)"

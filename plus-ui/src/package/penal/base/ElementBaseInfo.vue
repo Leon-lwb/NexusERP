@@ -33,6 +33,7 @@
   </div>
 </template>
 <script lang="ts" setup>
+import type { PropType } from 'vue';
 defineOptions({ name: 'ElementBaseInfo' });
 const props = defineProps({
   businessObject: {
@@ -40,7 +41,7 @@ const props = defineProps({
     default: () => {}
   },
   appType: {
-    type: Array,
+    type: Array as PropType<{ id: string; name: string }[]>,
     default: () => []
   },
   type: String,

@@ -565,7 +565,7 @@ function handleBeforeUpload(file: any) {
 /** 自定义上传 */
 function handleUpload(params: any) {
   if (!selectedKnowledge.value) return;
-  uploadDocument(selectedKnowledge.value.id, params.file)
+  return uploadDocument(selectedKnowledge.value.id, params.file)
     .then(() => {
       proxy?.$modal.msgSuccess('文档上传成功，正在后台解析中...');
       // 延迟刷新文档列表

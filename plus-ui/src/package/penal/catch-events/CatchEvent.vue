@@ -4,7 +4,7 @@
     <el-form
       size="small"
       label-width="90px"
-      @submit.native.prevent
+      @submit.prevent
       v-if="businessObject.eventDefinitions && businessObject.eventDefinitions[0].$type.indexOf('TimerEventDefinition') !== -1"
     >
       <el-form-item label="事件类型">

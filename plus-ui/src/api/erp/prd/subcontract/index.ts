@@ -18,7 +18,7 @@ export function updateSubcontract(data: PrdSubcontractForm) {
   return request({ url: '/erp/prd/subcontract', method: 'put', data });
 }
 
-export function delSubcontract(subcontractIds: number | number[]) {
+export function delSubcontract(subcontractIds: number | string | Array<number | string>) {
   return request({ url: '/erp/prd/subcontract/' + subcontractIds, method: 'delete' });
 }
 

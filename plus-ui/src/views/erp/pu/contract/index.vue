@@ -325,12 +325,12 @@ const rules = {
   contractName: [{ required: true, message: '合同名称不能为空', trigger: 'blur' }]
 };
 
-const getStatusType = (status: string) => {
-  const map: Record<string, string> = {
+const getStatusType = (status: string): 'success' | 'warning' | 'danger' | 'info' | 'primary' => {
+  const map: Record<string, 'success' | 'warning' | 'danger' | 'info' | 'primary'> = {
     DRAFT: 'info',
     APPROVING: 'warning',
     APPROVED: 'success',
-    EXECUTING: '',
+    // EXECUTING 未配置标签类型，走下方兜底 'info'（原 '' 同样会被 || 'info' 兜底）
     COMPLETED: 'success',
     TERMINATED: 'danger',
     REJECTED: 'danger'

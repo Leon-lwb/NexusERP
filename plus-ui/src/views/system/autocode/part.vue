@@ -184,12 +184,12 @@ const total = ref(0);
 const title = ref('');
 const open = ref(false);
 const recentRuleId = ref(undefined);
-const queryFormRef = ref();
-const formRef = ref();
+const queryFormRef = ref<ElFormInstance>();
+const formRef = ref<ElFormInstance>();
 
 interface PartForm {
-  partId?: number;
-  ruleId?: number;
+  partId?: string | number;
+  ruleId?: string | number;
   partCode?: string;
   partName?: string;
   partIndex?: number;
@@ -289,7 +289,7 @@ function handleUpdate(row) {
 }
 
 function submitForm() {
-  proxy.$refs['formRef'].validate((valid) => {
+  formRef.value?.validate((valid) => {
     if (valid) {
       if (form.value.partId != undefined) {
         updatePart(form.value).then((response) => {

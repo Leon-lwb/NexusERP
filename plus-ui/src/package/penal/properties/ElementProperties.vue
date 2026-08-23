@@ -95,7 +95,7 @@ const removeAttributes = (attr, index) => {
       updateElementExtensions(propertiesObject);
       resetAttributesList();
     })
-    .catch(() => console.info('操作取消'));
+    .catch(() => console.warn('操作取消'));
 };
 const saveAttribute = () => {
   const { name, value } = propertyForm.value;

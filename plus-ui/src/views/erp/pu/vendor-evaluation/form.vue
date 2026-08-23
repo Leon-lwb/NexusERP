@@ -201,8 +201,13 @@ function handleVendorChange(vendorId: number) {
   }
 }
 
-function getEvalLevelType(level: string) {
-  const map: Record<string, string> = { 'A': 'success', 'B': 'primary', 'C': 'warning', 'D': 'danger' };
+function getEvalLevelType(level: string): 'success' | 'warning' | 'danger' | 'info' | 'primary' {
+  const map: Record<string, 'success' | 'warning' | 'danger' | 'info' | 'primary'> = {
+    'A': 'success',
+    'B': 'primary',
+    'C': 'warning',
+    'D': 'danger'
+  };
   return map[level] || 'info';
 }
 

@@ -110,14 +110,14 @@ const handleSelectionChange = (selection) => {
 /** 流程详情 */
 const handleDetails = (row: ProcessVO) => {
   updateCcReaded({ id: row.copyId }).then((res) => {
-    if (res.success) {
+    if (res.code == 200) {
     }
   });
   router.push({
     path: '/workflow/process/detail/' + row.instanceId,
     query: {
       taskId: row.taskId,
-      processed: false
+      processed: 'false'
     }
   });
 };

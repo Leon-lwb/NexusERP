@@ -40,7 +40,7 @@
           </el-col>
           <el-col :xs="24" :sm="12" :md="8">
             <el-form-item label="状态">
-              <el-tag v-if="form.status" :type="statusTagType">{{ getDictLabel(mes_fw_status, form.status) || form.status }}</el-tag>
+              <el-tag v-if="form.status" :type="statusTagType()">{{ getDictLabel(mes_fw_status, form.status) || form.status }}</el-tag>
               <span v-else>-</span>
             </el-form-item>
           </el-col>

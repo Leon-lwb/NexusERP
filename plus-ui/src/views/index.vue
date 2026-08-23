@@ -557,7 +557,7 @@ function getSalesChartOption(): echarts.EChartsOption {
       axisLine: { show: false },
       axisTick: { show: false },
       splitLine: { lineStyle: { color: '#f1f5f9', type: 'dashed' } },
-      axisLabel: { color: '#64748b', fontSize: 12, formatter: (v: number) => (v >= 1000 ? v / 1000 + 'k' : v) }
+      axisLabel: { color: '#64748b', fontSize: 12, formatter: (v: number) => (v >= 1000 ? v / 1000 + 'k' : String(v)) }
     },
     series: [
       {

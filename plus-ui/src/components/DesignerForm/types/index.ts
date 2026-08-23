@@ -6,6 +6,8 @@ export interface FormComponent {
   label: string;
   field: string;
   htmlType?: 'input' | 'textarea' | 'select' | 'radio' | 'checkbox' | 'date' | 'datetime';
+  /** 动态渲染时使用的组件（设计器画布拖拽生成） */
+  component?: any;
   props: {
     [key: string]: any;
     placeholder?: string;
@@ -50,7 +52,9 @@ export interface SubTableColumn {
     clearable?: boolean;
     size?: 'default' | 'large' | 'small';
     dbField?: DbField;
+    dictType?: string;
   };
+  dictType?: string;
   required?: boolean;
   dbInfo: {
     tableName: string;
@@ -77,7 +81,7 @@ export interface FormConfig {
 export interface FormContent {
   config: FormConfig;
   components: FormComponent[];
-  masterSubTableData: Record<string, any[]>;
+  masterSubTableData?: Record<string, any[]>;
 }
 
 export interface FormState {
@@ -171,12 +175,24 @@ export interface UserVO {
   updateTime: string;
 }
 
+/**
+ * 数据库字段信息。
+ * 兼容两种运行时结构：
+ * - 设计器属性面板：{ tableId, tableName, fieldName, fieldType, fieldComment, isRequired, defaultValue }
+ * - 表单内容 JSON：{ tableName, columnName, columnType, columnComment, isNullable }
+ */
 export interface DbField {
+  tableId?: number;
   tableName: string;
-  columnName: string;
-  columnType: string;
-  columnComment: string;
-  isNullable: string;
+  fieldName?: string;
+  fieldType?: string;
+  fieldComment?: string;
+  isRequired?: boolean;
+  defaultValue?: string;
+  columnName?: string;
+  columnType?: string;
+  columnComment?: string;
+  isNullable?: string;
 }
 
 export interface DbTable {
@@ -232,5 +248,3 @@ export interface FormTableInfo {
   mainTable: TableInfo;
   subTable?: SubTableInfo;
 }
-
-export type { TableColumnInfo, TableInfo, SubTableInfo, FormTableInfo };

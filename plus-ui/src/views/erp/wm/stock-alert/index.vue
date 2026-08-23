@@ -42,7 +42,9 @@
         <el-button type="primary" plain icon="Refresh" @click="handleCheck" v-hasPermi="['wm:stockAlert:edit']">执行检查</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['wm:stockAlert:remove']">删除</el-button>
+        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete()" v-hasPermi="['wm:stockAlert:remove']"
+          >删除</el-button
+        >
       </el-col>
       <el-col :span="1.5">
         <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['wm:stockAlert:export']">导出</el-button>

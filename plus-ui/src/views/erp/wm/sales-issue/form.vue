@@ -711,10 +711,10 @@ function cancel() {
 }
 
 /** 明细行相关方法 */
-function rowLineIndex({ row, rowIndex }: any) {
+function rowLineIndex({ row, rowIndex }: any): string {
   // 给行对象写入自增 index，供删除过滤使用（否则 item.index 恒 undefined，includes 恒 true 误删全部）
   row.index = rowIndex + 1;
-  return { rowIndex: rowIndex + 1 };
+  return '';
 }
 
 function handleLineSelectionChange(selection: any[]) {
