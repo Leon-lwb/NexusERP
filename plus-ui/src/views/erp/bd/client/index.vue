@@ -57,7 +57,7 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="bdList" @selection-change="handleSelectionChange" show-overflow-tooltip>
+    <el-table v-loading="loading" :data="list" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="序号" type="index" align="center" />
       <el-table-column label="客户编码" align="center" prop="clientCode" min-width="120" show-overflow-tooltip />
@@ -406,82 +406,78 @@
 
 <script setup lang="ts" name="Bd">
 import { listClient, getClient, addClient, updateClient, delClient } from '@/api/erp/bd/client';
-import type { ClientForm, ClientQuery } from '@/api/erp/bd/client/types';
 import { listUser } from '@/api/system/user';
 import { previewCode } from '@/api/system/autocode/rule';
 import { getProvinces, getNextLevel } from '@/api/system/area';
 import type { FormInstance } from 'element-plus';
+import { useCrud } from '@/composables/useCrud';
 import ClientLogoUpload from './ClientLogoUpload.vue';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { bd_client_type, so_invoice_type } = toRefs<any>(proxy.useDict('bd_client_type', 'so_invoice_type'));
 
-const bdList = ref([]);
-const open = ref(false);
-const loading = ref(true);
-const showSearch = ref(true);
-const ids = ref([]);
-const single = ref(true);
-const multiple = ref(true);
-const total = ref(0);
-const title = ref('');
 const autoGenFlag = ref(false);
 const activeTab = ref('basic');
-const isViewMode = ref(false); // 标识是否为查看模式
 
-const bdRef = ref<FormInstance>();
-const data = reactive<PageData<ClientForm, ClientQuery>>({
-  form: {},
-  queryParams: {
-    pageNum: 1,
-    pageSize: 10,
-    clientCode: null,
-    clientName: null,
-    clientEn: null,
-    clientType: null,
-    tel: null,
-    creditCode: null
-  },
-  rules: {
-    clientCode: [{ required: true, message: '客户编码不能为空', trigger: 'blur' }],
-    clientName: [{ required: true, message: '客户名称不能为空', trigger: 'blur' }],
-    clientDesc: [{ required: true, message: '客户简介不能为空', trigger: 'blur' }],
-    clientType: [{ required: true, message: '客户类型不能为空', trigger: 'change' }],
-    address: [{ required: true, message: '客户默认送货地点不能为空', trigger: 'blur' }],
-    email: [{ required: true, message: '客户邮箱不能为空', trigger: 'blur' }],
-    tel: [{ required: true, message: '客户电话不能为空', trigger: 'blur' }],
-    contact1: [{ required: true, message: '联系人1不能为空', trigger: 'blur' }],
-    contact1Tel: [{ required: true, message: '联系人1电话不能为空', trigger: 'blur' }]
-  }
-});
-
-// 新增地址相关数据
+// 地址级联选项
 const provinceOptions = ref([]);
 const cityOptions = ref([]);
 const districtOptions = ref([]);
 const streetOptions = ref([]);
 
-const { queryParams, form, rules } = toRefs(data);
+const bdRef = ref<FormInstance>();
 
-/** 查询客户信息列表 */
-function getList() {
-  loading.value = true;
-  listClient(queryParams.value).then((response) => {
-    bdList.value = response.rows;
-    total.value = response.total;
-    loading.value = false;
-  });
-}
+const queryParams = ref({
+  pageNum: 1,
+  pageSize: 10,
+  clientCode: null,
+  clientName: null,
+  clientEn: null,
+  clientType: null,
+  tel: null,
+  creditCode: null
+});
 
-// 取消按钮
-function cancel() {
-  open.value = false;
-  reset();
-}
+const rules = {
+  clientCode: [{ required: true, message: '客户编码不能为空', trigger: 'blur' }],
+  clientName: [{ required: true, message: '客户名称不能为空', trigger: 'blur' }],
+  clientDesc: [{ required: true, message: '客户简介不能为空', trigger: 'blur' }],
+  clientType: [{ required: true, message: '客户类型不能为空', trigger: 'change' }],
+  address: [{ required: true, message: '客户默认送货地点不能为空', trigger: 'blur' }],
+  email: [{ required: true, message: '客户邮箱不能为空', trigger: 'blur' }],
+  tel: [{ required: true, message: '客户电话不能为空', trigger: 'blur' }],
+  contact1: [{ required: true, message: '联系人1不能为空', trigger: 'blur' }],
+  contact1Tel: [{ required: true, message: '联系人1电话不能为空', trigger: 'blur' }]
+};
 
-// 表单重置
-function reset() {
-  form.value = {
+const {
+  loading,
+  list,
+  total,
+  open,
+  isViewMode,
+  title,
+  single,
+  multiple,
+  showSearch,
+  form,
+  getList,
+  handleQuery,
+  handleUpdate,
+  handleView,
+  handleDelete,
+  handleExport,
+  handleSelectionChange,
+  submitForm,
+  cancel,
+  handleAdd: rawHandleAdd
+} = useCrud({
+  apis: { list: listClient, get: getClient, add: addClient, update: updateClient, del: delClient },
+  idField: 'clientId',
+  entityName: '客户信息',
+  formRef: bdRef,
+  queryParams,
+  initForm: () => ({
     clientId: null,
     clientCode: null,
     clientName: null,
@@ -509,7 +505,7 @@ function reset() {
     invoiceAddressPhone: null,
     defaultInvoiceType: null,
     remark: null,
-    // 新增地址字段
+    // 地址字段
     provinceAreaId: null,
     cityAreaId: null,
     districtAreaId: null,
@@ -528,22 +524,27 @@ function reset() {
     createTime: null,
     updateBy: null,
     updateTime: null
-  };
-  proxy.resetForm('bdRef');
-  activeTab.value = 'basic';
-  // 重置查看模式标识
-  isViewMode.value = false;
-  // 重置地址选项
-  cityOptions.value = [];
-  districtOptions.value = [];
-  streetOptions.value = [];
-}
-
-/** 搜索按钮操作 */
-function handleQuery() {
-  queryParams.value.pageNum = 1;
-  getList();
-}
+  }),
+  exportUrl: 'erp/bd/client/export',
+  exportFileName: 'bd',
+  onReset: () => {
+    activeTab.value = 'basic';
+    // 重置地址级联选项
+    cityOptions.value = [];
+    districtOptions.value = [];
+    streetOptions.value = [];
+  },
+  beforeSubmit: () => {
+    // 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号
+    if (autoGenFlag.value) {
+      form.value.clientCode = undefined;
+    }
+  },
+  afterLoad: () => {
+    // 修改/查看时按已保存的地址逐级回填级联选项
+    loadAddressCascade();
+  }
+});
 
 /** 重置按钮操作 */
 function resetQuery() {
@@ -551,154 +552,14 @@ function resetQuery() {
   handleQuery();
 }
 
-// 多选框选中数据
-function handleSelectionChange(selection) {
-  ids.value = selection.map((item) => item.clientId);
-  single.value = selection.length != 1;
-  multiple.value = !selection.length;
-}
-
-/** 新增按钮操作 */
+/** 新增按钮操作（新增时需加载省份数据） */
 function handleAdd() {
-  reset();
-  isViewMode.value = false;
-  loadProvinceOptions(); // 加载省份数据
-  open.value = true;
-  title.value = '添加客户信息';
-}
-
-/** 修改按钮操作 */
-function handleUpdate(row) {
-  reset();
-  isViewMode.value = false;
-  const _clientId = row.clientId || ids.value;
-  getClient(_clientId).then((response) => {
-    form.value = response.data;
-    // 加载地址级联数据
-    loadProvinceOptions().then(() => {
-      if (form.value.provinceAreaId) {
-        loadCityOptions(form.value.provinceAreaId).then(() => {
-          if (form.value.cityAreaId) {
-            loadDistrictOptions(form.value.cityAreaId).then(() => {
-              // 如果有街道ID，加载街道数据
-              if (form.value.streetId && form.value.districtAreaId) {
-                loadStreetOptions(form.value.districtAreaId).then(() => {
-                  // 确保街道选项中包含当前选中的街道
-                  const selectedStreet = streetOptions.value.find((option) => option.areaId === form.value.streetId);
-                  if (!selectedStreet && form.value.streetId) {
-                    // 如果街道选项中没有当前选中的街道，添加该街道到选项中
-                    // 创建一个新的街道选项对象
-                    const newStreetOption = {
-                      areaId: form.value.streetId,
-                      areaName: form.value.streetName || form.value.streetId,
-                      parentAreaId: form.value.districtAreaId
-                    };
-                    streetOptions.value.push(newStreetOption);
-                  }
-                });
-              }
-            });
-          }
-        });
-      }
-    });
-    open.value = true;
-    title.value = '修改客户信息';
+  rawHandleAdd(() => {
+    loadProvinceOptions();
   });
 }
 
-/** 查看按钮操作 */
-function handleView(row) {
-  reset();
-  isViewMode.value = true; // 设置为查看模式
-  const _clientId = row.clientId || ids.value[0];
-  getClient(_clientId).then((response) => {
-    form.value = response.data;
-    // 加载地址级联数据
-    loadProvinceOptions().then(() => {
-      if (form.value.provinceAreaId) {
-        loadCityOptions(form.value.provinceAreaId).then(() => {
-          if (form.value.cityAreaId) {
-            loadDistrictOptions(form.value.cityAreaId).then(() => {
-              // 如果有街道ID，加载街道数据
-              if (form.value.streetId && form.value.districtAreaId) {
-                loadStreetOptions(form.value.districtAreaId).then(() => {
-                  // 确保街道选项中包含当前选中的街道
-                  const selectedStreet = streetOptions.value.find((option) => option.areaId === form.value.streetId);
-                  if (!selectedStreet && form.value.streetId) {
-                    // 如果街道选项中没有当前选中的街道，添加该街道到选项中
-                    // 创建一个新的街道选项对象
-                    const newStreetOption = {
-                      areaId: form.value.streetId,
-                      areaName: form.value.streetName || form.value.streetId,
-                      parentAreaId: form.value.districtAreaId
-                    };
-                    streetOptions.value.push(newStreetOption);
-                  }
-                });
-              }
-            });
-          }
-        });
-      }
-    });
-    open.value = true;
-    title.value = '查看客户信息';
-  });
-}
-
-/** 提交按钮 */
-function submitForm() {
-  bdRef.value?.validate((valid) => {
-    if (valid) {
-      // 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号
-      if (autoGenFlag.value) {
-        form.value.clientCode = undefined;
-      }
-      if (form.value.clientId != null) {
-        updateClient(form.value).then((response) => {
-          proxy.$modal.msgSuccess('修改成功');
-          open.value = false;
-          getList();
-        });
-      } else {
-        addClient(form.value).then((response) => {
-          proxy.$modal.msgSuccess('新增成功');
-          open.value = false;
-          getList();
-        });
-      }
-    }
-  });
-}
-
-/** 删除按钮操作 */
-function handleDelete(row) {
-  const _clientIds = row.clientId || ids.value;
-  proxy.$modal
-    .confirm('是否确认删除客户信息编号为"' + _clientIds + '"的数据项？')
-    .then(function () {
-      return delClient(_clientIds);
-    })
-    .then(() => {
-      getList();
-      proxy.$modal.msgSuccess('删除成功');
-    })
-    .catch(() => {});
-}
-
-/** 导出按钮操作 */
-function handleExport() {
-  proxy.download(
-    'erp/bd/client/export',
-    {
-      ...queryParams.value
-    },
-    `bd_${new Date().getTime()}.xlsx`
-  );
-}
-
-//自动生成编码
+// 自动生成编码
 function handleAutoGenChange(autoGenFlag) {
   if (autoGenFlag) {
     previewCode('CLIENT_CODE').then((response: any) => {
@@ -707,6 +568,36 @@ function handleAutoGenChange(autoGenFlag) {
   } else {
     form.value.clientCode = null;
   }
+}
+
+/** 修改/查看时按已保存的地址逐级回填级联选项 */
+function loadAddressCascade() {
+  loadProvinceOptions().then(() => {
+    if (form.value.provinceAreaId) {
+      loadCityOptions(form.value.provinceAreaId).then(() => {
+        if (form.value.cityAreaId) {
+          loadDistrictOptions(form.value.cityAreaId).then(() => {
+            // 如果有街道ID，加载街道数据
+            if (form.value.streetId && form.value.districtAreaId) {
+              loadStreetOptions(form.value.districtAreaId).then(() => {
+                // 确保街道选项中包含当前选中的街道
+                const selectedStreet = streetOptions.value.find((option) => option.areaId === form.value.streetId);
+                if (!selectedStreet && form.value.streetId) {
+                  // 如果街道选项中没有当前选中的街道，添加该街道到选项中
+                  const newStreetOption = {
+                    areaId: form.value.streetId,
+                    areaName: form.value.streetName || form.value.streetId,
+                    parentAreaId: form.value.districtAreaId
+                  };
+                  streetOptions.value.push(newStreetOption);
+                }
+              });
+            }
+          });
+        }
+      });
+    }
+  });
 }
 
 // 加载省份数据

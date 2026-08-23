@@ -40,7 +40,7 @@
         <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['bd:routing:add']">新增</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['bd:routing:edit']">修改</el-button>
+        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate()" v-hasPermi="['bd:routing:edit']">修改</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['bd:routing:remove']">删除</el-button>
@@ -51,7 +51,7 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="routingList" @selection-change="handleSelectionChange" show-overflow-tooltip>
+    <el-table v-loading="loading" :data="list" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="路线编码" align="center" prop="routingCode" />
       <el-table-column label="路线名称" align="center" prop="routingName" min-width="120" show-overflow-tooltip />
@@ -102,22 +102,20 @@
 </template>
 
 <script setup lang="ts" name="Routing">
-import { listRouting, getRouting, delRouting, activateRoutingVersion } from '@/api/erp/bd/routing';
-import { RoutingVO } from '@/api/erp/bd/routing/types';
+import { listRouting, getRouting, addRouting, updateRouting, delRouting, activateRoutingVersion } from '@/api/erp/bd/routing';
+import type { RoutingQuery } from '@/api/erp/bd/routing/types';
+import type { FormInstance } from 'element-plus';
+import { useCrud } from '@/composables/useCrud';
 
 const router = useRouter();
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { sys_true_or_false, sys_core_status } = toRefs<any>(proxy.useDict('sys_true_or_false', 'sys_core_status'));
 
-const routingList = ref<RoutingVO[]>([]);
-const loading = ref(true);
-const showSearch = ref(true);
-const ids = ref<Array<number | string>>([]);
-const single = ref(true);
-const multiple = ref(true);
-const total = ref(0);
+// 本页新增/修改/查看跳转独立表单页（/erp/bd/routing/form，含工序步骤维护），
+// 页面本身无弹窗表单；formRef/initForm 仅为满足 useCrud 签名，运行时不会被调用
+const routingRef = ref<FormInstance>();
 
-const queryParams = ref({
+const queryParams = ref<RoutingQuery>({
   pageNum: 1,
   pageSize: 10,
   routingCode: undefined,
@@ -126,59 +124,40 @@ const queryParams = ref({
   status: undefined
 });
 
-/** 查询工艺路线列表 */
-function getList() {
-  loading.value = true;
-  listRouting(queryParams.value).then((response: any) => {
-    routingList.value = response.rows;
-    total.value = response.total;
-    loading.value = false;
-  });
-}
+const { loading, list, total, ids, single, multiple, showSearch, getList, handleQuery, handleDelete, handleExport, handleSelectionChange } = useCrud({
+  apis: { list: listRouting, get: getRouting, add: addRouting, update: updateRouting, del: delRouting },
+  idField: 'routingId',
+  entityName: '工艺路线',
+  formRef: routingRef,
+  queryParams,
+  initForm: () => ({}),
+  exportUrl: 'erp/bd/routing/export',
+  exportFileName: 'routing'
+});
 
-function handleQuery() {
-  queryParams.value.pageNum = 1;
-  getList();
-}
-
+/** 重置按钮操作 */
 function resetQuery() {
   proxy.resetForm('queryRef');
   handleQuery();
 }
 
-function handleSelectionChange(selection: any[]) {
-  ids.value = selection.map((item: any) => item.routingId);
-  single.value = selection.length !== 1;
-  multiple.value = !selection.length;
-}
-
+/** 新增按钮操作：跳转工艺路线表单页 */
 function handleAdd() {
   router.push({ path: '/erp/bd/routing/form' });
 }
 
+/** 修改按钮操作：跳转工艺路线表单页 */
 function handleUpdate(row?: any) {
   const routingId = row?.routingId || ids.value[0];
   router.push({ path: '/erp/bd/routing/form', query: { id: routingId, action: 'edit' } });
 }
 
+/** 查看按钮操作：跳转工艺路线表单页 */
 function handleView(row: any) {
   router.push({ path: '/erp/bd/routing/form', query: { id: row.routingId, action: 'view' } });
 }
 
-function handleDelete(row?: any) {
-  const routingIds = row?.routingId || ids.value;
-  proxy.$modal
-    .confirm('是否确认删除工艺路线编号为"' + routingIds + '"的数据项？')
-    .then(() => {
-      return delRouting(routingIds);
-    })
-    .then(() => {
-      getList();
-      proxy.$modal.msgSuccess('删除成功');
-    })
-    .catch(() => {});
-}
-
+/** 激活工艺路线版本 */
 function handleActivateVersion(row: any) {
   proxy.$modal
     .confirm('确认激活该工艺路线版本为当前版本？')
@@ -190,10 +169,6 @@ function handleActivateVersion(row: any) {
       getList();
     })
     .catch(() => {});
-}
-
-function handleExport() {
-  proxy.download('erp/bd/routing/export', { ...queryParams.value }, `routing_${new Date().getTime()}.xlsx`);
 }
 
 onActivated(() => {

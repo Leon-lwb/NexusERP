@@ -26,8 +26,8 @@
         </el-col>
         <el-col :span="6" :offset="18" class="search-actions">
           <el-form-item>
-            <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+            <el-button type="primary" icon="Search" @click="handleQuery()">搜索</el-button>
+            <el-button icon="Refresh" @click="resetQuery()">重置</el-button>
           </el-form-item>
         </el-col>
       </el-row>
@@ -35,19 +35,19 @@
 
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
-        <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['so:return:add']">新增</el-button>
+        <el-button type="primary" plain icon="Plus" @click="handleAdd()" v-hasPermi="['so:return:add']">新增</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['so:return:edit']">修改</el-button>
+        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate()" v-hasPermi="['so:return:edit']">修改</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['so:return:remove']">删除</el-button>
+        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete()" v-hasPermi="['so:return:remove']">删除</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="info" plain icon="View" :disabled="single" @click="handleView" v-hasPermi="['so:return:query']">查看</el-button>
+        <el-button type="info" plain icon="View" :disabled="single" @click="handleView()" v-hasPermi="['so:return:query']">查看</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['so:return:export']">导出</el-button>
+        <el-button type="warning" plain icon="Download" @click="handleExport()" v-hasPermi="['so:return:export']">导出</el-button>
       </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
@@ -117,57 +117,52 @@
 </template>
 
 <script setup lang="ts" name="Return">
-import { listReturn, delReturn, submitReturnFlow, getReturnProcId } from '@/api/erp/so/return';
+import { listReturn, getReturn, addReturn, updateReturn, delReturn, submitReturnFlow, getReturnProcId } from '@/api/erp/so/return';
 import { useRouter } from 'vue-router';
+import type { FormInstance } from 'element-plus';
+import { useCrud } from '@/composables/useCrud';
 
 const router = useRouter();
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { so_return_status } = toRefs<any>(proxy.useDict('so_return_status'));
 
-const returnList = ref([]);
-const loading = ref(true);
-const showSearch = ref(true);
-const ids = ref([]);
-const single = ref(true);
-const multiple = ref(true);
-const total = ref(0);
-
-const data = reactive({
-  queryParams: {
-    pageNum: 1,
-    pageSize: 10,
-    returnNo: null,
-    soNo: null,
-    clientName: null,
-    status: null
-  }
+const queryParams = ref({
+  pageNum: 1,
+  pageSize: 10,
+  returnNo: null,
+  soNo: null,
+  clientName: null,
+  status: null
 });
 
-const { queryParams } = toRefs(data);
-
-function getList() {
-  loading.value = true;
-  listReturn(queryParams.value).then((response: any) => {
-    returnList.value = response.rows;
-    total.value = response.total;
-    loading.value = false;
-  });
-}
-
-function handleQuery() {
-  queryParams.value.pageNum = 1;
-  getList();
-}
+// 列表骨架（新增/修改/查看为路由表单页，保留本地 router.push 跳转逻辑）
+const {
+  loading,
+  list: returnList,
+  total,
+  ids,
+  single,
+  multiple,
+  showSearch,
+  getList,
+  handleQuery,
+  handleDelete,
+  handleExport,
+  handleSelectionChange
+} = useCrud({
+  apis: { list: listReturn, get: getReturn, add: addReturn, update: updateReturn, del: delReturn },
+  idField: 'returnId',
+  entityName: '退货单',
+  formRef: ref<FormInstance>(),
+  queryParams,
+  initForm: () => ({}),
+  exportUrl: '/erp/so/return/export',
+  exportFileName: 'return'
+});
 
 function resetQuery() {
   proxy.resetForm('queryRef');
   handleQuery();
-}
-
-function handleSelectionChange(selection: any[]) {
-  ids.value = selection.map((item: any) => item.returnId);
-  single.value = selection.length != 1;
-  multiple.value = !selection.length;
 }
 
 function handleAdd() {
@@ -175,9 +170,6 @@ function handleAdd() {
 }
 
 function handleUpdate(row?: any) {
-  if (row && row.type && row instanceof Event) {
-    row = null;
-  }
   if (!row) {
     if (ids.value.length !== 1) {
       proxy.$modal.msgWarning('请选择一条数据进行修改');
@@ -194,9 +186,6 @@ function handleUpdate(row?: any) {
 }
 
 function handleView(row?: any) {
-  if (row && row.type && row instanceof Event) {
-    row = null;
-  }
   if (!row) {
     if (ids.value.length !== 1) {
       proxy.$modal.msgWarning('请选择一条数据进行查看');
@@ -210,24 +199,6 @@ function handleView(row?: any) {
     row = selected;
   }
   router.push({ path: '/erp/so/return/form', query: { id: row.returnId, action: 'view' } });
-}
-
-function handleDelete(row?: any) {
-  const _ids = row ? row.returnId : ids.value;
-  proxy.$modal
-    .confirm('是否确认删除退货单编号为"' + _ids + '"的数据项？')
-    .then(function () {
-      return delReturn(_ids);
-    })
-    .then(() => {
-      getList();
-      proxy.$modal.msgSuccess('删除成功');
-    })
-    .catch(() => {});
-}
-
-function handleExport() {
-  proxy.download('/erp/so/return/export', { ...queryParams.value }, `return_${new Date().getTime()}.xlsx`);
 }
 
 function handleSubmit(row: any) {

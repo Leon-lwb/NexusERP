@@ -55,7 +55,7 @@
     <!-- 操作按钮 -->
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
-        <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['bd:materialVendor:add']">新增</el-button>
+        <el-button type="primary" plain icon="Plus" @click="handleAdd()" v-hasPermi="['bd:materialVendor:add']">新增</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate()" v-hasPermi="['bd:materialVendor:edit']"
@@ -75,7 +75,7 @@
 
     <!-- 数据表格 -->
     <!-- 技术债：默认供应商/状态列使用硬编码 el-tag，缺对应字典，待补字典后改 dict-tag -->
-    <el-table v-loading="loading" :data="dataList" @selection-change="handleSelectionChange" show-overflow-tooltip>
+    <el-table v-loading="loading" :data="list" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="物料编码" align="center" prop="materialCode" min-width="120" show-overflow-tooltip />
       <el-table-column label="物料名称" align="center" prop="materialName" min-width="120" show-overflow-tooltip />
@@ -255,22 +255,11 @@
 import { listMaterialVendor, getMaterialVendor, delMaterialVendor, addMaterialVendor, updateMaterialVendor } from '@/api/erp/bd/material-vendor';
 import { listMaterial } from '@/api/erp/bd/material';
 import { listVendor } from '@/api/erp/bd/vendor';
-import { MaterialVendorVO, MaterialVendorForm } from '@/api/erp/bd/material-vendor/types';
 import type { FormInstance } from 'element-plus';
+import { useCrud } from '@/composables/useCrud';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const formRef = ref<FormInstance>();
-
-// 物料-供应商关系列表
-const dataList = ref<MaterialVendorVO[]>([]);
-const open = ref(false);
-const loading = ref(true);
-const showSearch = ref(true);
-const ids = ref<number[]>([]);
-const single = ref(true);
-const multiple = ref(true);
-const total = ref(0);
-const title = ref('');
 
 // 物料和供应商选项
 const materialOptions = ref<any[]>([]);
@@ -278,43 +267,46 @@ const vendorOptions = ref<any[]>([]);
 const materialLoading = ref(false);
 const vendorLoading = ref(false);
 
-const data = reactive({
-  form: {} as MaterialVendorForm,
-  queryParams: {
-    pageNum: 1,
-    pageSize: 10,
-    materialId: undefined,
-    vendorCode: undefined,
-    vendorName: undefined,
-    status: undefined
-  },
-  rules: {
-    materialId: [{ required: true, message: '物料不能为空', trigger: 'change' }],
-    vendorId: [{ required: true, message: '供应商不能为空', trigger: 'change' }]
-  }
+const queryParams = ref({
+  pageNum: 1,
+  pageSize: 10,
+  materialId: undefined,
+  vendorCode: undefined,
+  vendorName: undefined,
+  status: undefined
 });
 
-const { queryParams, form, rules } = toRefs(data);
+const rules = {
+  materialId: [{ required: true, message: '物料不能为空', trigger: 'change' }],
+  vendorId: [{ required: true, message: '供应商不能为空', trigger: 'change' }]
+};
 
-/** 查询物料-供应商关系列表 */
-function getList() {
-  loading.value = true;
-  listMaterialVendor(queryParams.value).then((response) => {
-    dataList.value = response.rows;
-    total.value = response.total;
-    loading.value = false;
-  });
-}
-
-/** 取消按钮 */
-function cancel() {
-  open.value = false;
-  reset();
-}
-
-/** 表单重置 */
-function reset() {
-  form.value = {
+const {
+  loading,
+  list,
+  total,
+  open,
+  title,
+  single,
+  multiple,
+  showSearch,
+  form,
+  getList,
+  handleQuery,
+  handleAdd,
+  handleUpdate,
+  handleDelete,
+  handleExport,
+  handleSelectionChange,
+  submitForm,
+  cancel
+} = useCrud({
+  apis: { list: listMaterialVendor, get: getMaterialVendor, add: addMaterialVendor, update: updateMaterialVendor, del: delMaterialVendor },
+  idField: 'relationId',
+  entityName: '物料-供应商关系',
+  formRef,
+  queryParams,
+  initForm: () => ({
     relationId: undefined,
     materialId: undefined,
     vendorId: undefined,
@@ -330,27 +322,37 @@ function reset() {
     expiryDate: undefined,
     status: 1,
     remark: undefined
-  };
-  proxy.resetForm('formRef');
-}
-
-/** 搜索按钮操作 */
-function handleQuery() {
-  queryParams.value.pageNum = 1;
-  getList();
-}
+  }),
+  exportUrl: 'erp/bd/materialVendor/export',
+  exportFileName: 'material_vendor',
+  afterLoad: (data) => {
+    // 用详情返回的物料/供应商信息回填下拉选项，确保修改时显示正确标签
+    // （searchMaterial/searchVendor 是按名称远程搜索，不能用 ID 当搜索词）
+    if (data.materialId) {
+      materialOptions.value = [
+        {
+          materialId: data.materialId,
+          materialCode: data.materialCode,
+          materialName: data.materialName
+        }
+      ];
+    }
+    if (data.vendorId) {
+      vendorOptions.value = [
+        {
+          vendorId: data.vendorId,
+          vendorCode: data.vendorCode,
+          vendorName: data.vendorName
+        }
+      ];
+    }
+  }
+});
 
 /** 重置按钮操作 */
 function resetQuery() {
   proxy.resetForm('queryRef');
   handleQuery();
-}
-
-/** 多选框选中数据 */
-function handleSelectionChange(selection: MaterialVendorVO[]) {
-  ids.value = selection.map((item) => item.relationId);
-  single.value = selection.length !== 1;
-  multiple.value = !selection.length;
 }
 
 /** 搜索物料 */
@@ -391,91 +393,6 @@ function handleVendorChange(val: number) {
     form.value.vendorCode = vendor.vendorCode;
     form.value.vendorName = vendor.vendorName;
   }
-}
-
-/** 新增按钮操作 */
-function handleAdd() {
-  reset();
-  open.value = true;
-  title.value = '添加物料-供应商关系';
-}
-
-/** 修改按钮操作 */
-function handleUpdate(row?: MaterialVendorVO) {
-  reset();
-  const relationId = row?.relationId || ids.value[0];
-  getMaterialVendor(relationId).then((response) => {
-    form.value = response.data;
-    // 用详情返回的物料/供应商信息回填下拉选项，确保修改时显示正确标签
-    // （searchMaterial/searchVendor 是按名称远程搜索，不能用 ID 当搜索词）
-    if (form.value.materialId) {
-      materialOptions.value = [
-        {
-          materialId: form.value.materialId,
-          materialCode: form.value.materialCode,
-          materialName: form.value.materialName
-        }
-      ];
-    }
-    if (form.value.vendorId) {
-      vendorOptions.value = [
-        {
-          vendorId: form.value.vendorId,
-          vendorCode: form.value.vendorCode,
-          vendorName: form.value.vendorName
-        }
-      ];
-    }
-    open.value = true;
-    title.value = '修改物料-供应商关系';
-  });
-}
-
-/** 提交按钮 */
-function submitForm() {
-  formRef.value?.validate((valid: boolean) => {
-    if (valid) {
-      if (form.value.relationId != null) {
-        updateMaterialVendor(form.value).then(() => {
-          proxy.$modal.msgSuccess('修改成功');
-          open.value = false;
-          getList();
-        });
-      } else {
-        addMaterialVendor(form.value).then(() => {
-          proxy.$modal.msgSuccess('新增成功');
-          open.value = false;
-          getList();
-        });
-      }
-    }
-  });
-}
-
-/** 删除按钮操作 */
-function handleDelete(row?: MaterialVendorVO) {
-  const relationIds = row?.relationId || ids.value;
-  proxy.$modal
-    .confirm('是否确认删除物料-供应商关系编号为"' + relationIds + '"的数据项？')
-    .then(function () {
-      return delMaterialVendor(relationIds);
-    })
-    .then(() => {
-      getList();
-      proxy.$modal.msgSuccess('删除成功');
-    })
-    .catch(() => {});
-}
-
-/** 导出按钮操作 */
-function handleExport() {
-  proxy.download(
-    'erp/bd/materialVendor/export',
-    {
-      ...queryParams.value
-    },
-    `material_vendor_${new Date().getTime()}.xlsx`
-  );
 }
 
 getList();

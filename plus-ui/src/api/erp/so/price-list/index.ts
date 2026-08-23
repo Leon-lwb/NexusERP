@@ -4,8 +4,7 @@ import { PriceListQuery, PriceListVO, PriceListForm } from './types';
 
 const BASE = '/erp/so/price-list';
 
-export const listPriceList = (query: PriceListQuery): AxiosPromise<{ rows: PriceListVO[]; total: number }> =>
-  request({ url: BASE + '/list', method: 'get', params: query });
+export const listPriceList = (query: PriceListQuery): AxiosPromise<PriceListVO[]> => request({ url: BASE + '/list', method: 'get', params: query });
 
 export const getPriceList = (id: string | number): AxiosPromise<PriceListVO> => request({ url: BASE + '/' + id, method: 'get' });
 

@@ -108,7 +108,7 @@
 
     <el-table
       v-loading="loading"
-      :data="bomList"
+      :data="list"
       row-key="bomId"
       :tree-props="{ children: 'children', hasChildren: 'hasChildren' }"
       lazy
@@ -357,8 +357,23 @@
 </template>
 
 <script setup lang="ts" name="Bom">
-import { listBom, delBom, activateBomVersion, verifyBom, getBomTree, getBomChildren, copyBom, compareBom, whereUsedBom } from '@/api/erp/bd/bom';
+import {
+  listBom,
+  getBom,
+  addBom,
+  updateBom,
+  delBom,
+  activateBomVersion,
+  verifyBom,
+  getBomTree,
+  getBomChildren,
+  copyBom,
+  compareBom,
+  whereUsedBom
+} from '@/api/erp/bd/bom';
 import type { BomComparisonVo } from '@/api/erp/bd/bom/types';
+import type { FormInstance } from 'element-plus';
+import { useCrud } from '@/composables/useCrud';
 import { useRouter } from 'vue-router';
 import MaterialSelectDialog from '@/components/MaterialSelectDialog/index.vue';
 
@@ -368,13 +383,10 @@ const { sys_true_or_false, sys_core_status, prd_material_source_type, bd_bom_typ
   proxy.useDict('sys_true_or_false', 'sys_core_status', 'prd_material_source_type', 'bd_bom_type')
 );
 
-const bomList = ref([]);
-const loading = ref(true);
-const showSearch = ref(true);
-const ids = ref([]);
-const single = ref(true);
-const multiple = ref(true);
-const total = ref(0);
+// 本页新增/修改/查看跳转独立表单页（/erp/bd/bom/form，主从结构+物料选择弹窗），
+// 页面本身无弹窗表单；formRef/initForm 仅为满足 useCrud 签名，运行时不会被调用
+const bomRef = ref<FormInstance>();
+
 const compareDisabled = ref(true); // BOM比较按钮是否禁用（需选中2条）
 // 树形表格懒加载缓存刷新 key：每次 getList 时递增，强制 el-table 重新渲染清除懒加载缓存
 const tableKey = ref(0);
@@ -407,29 +419,43 @@ const treeProps = {
 const materialSelectDialogRef = ref<any>(null);
 const materialDialogTitle = ref('选择物料');
 
-const data = reactive({
-  queryParams: {
-    pageNum: 1,
-    pageSize: 10,
-    bomName: null,
-    bomType: null,
-    effectiveDate: null,
-    expiryDate: null,
-    isCurrent: null,
-    status: null
-  }
+const queryParams = ref({
+  pageNum: 1,
+  pageSize: 10,
+  bomName: null,
+  bomType: null,
+  effectiveDate: null,
+  expiryDate: null,
+  isCurrent: null,
+  status: null
 });
 
-const { queryParams } = toRefs(data);
+const {
+  loading,
+  list,
+  total,
+  ids,
+  single,
+  multiple,
+  showSearch,
+  getList: crudGetList,
+  handleQuery,
+  handleExport,
+  handleSelectionChange: crudHandleSelectionChange
+} = useCrud({
+  apis: { list: listBom, get: getBom, add: addBom, update: updateBom, del: delBom },
+  idField: 'bomId',
+  entityName: '产品BOM',
+  formRef: bomRef,
+  queryParams,
+  initForm: () => ({}),
+  exportUrl: 'bd/bom/export',
+  exportFileName: 'bom'
+});
 
-/** 查询产品BOM列表 */
+/** 查询产品BOM列表（加载完成后递增 tableKey，强制 el-table 重新渲染清除懒加载缓存） */
 function getList() {
-  loading.value = true;
-  listBom(queryParams.value).then((response) => {
-    bomList.value = response.rows;
-    total.value = response.total;
-    loading.value = false;
-    // 递增 tableKey 强制 el-table 重新渲染，清除懒加载已缓存的子节点
+  return crudGetList().then(() => {
     tableKey.value++;
   });
 }
@@ -475,24 +501,16 @@ function handleMaterialSelected(row) {
   }
 }
 
-/** 搜索按钮操作 */
-function handleQuery() {
-  queryParams.value.pageNum = 1;
-  getList();
-}
-
 /** 重置按钮操作 */
 function resetQuery() {
   proxy.resetForm('queryRef');
   handleQuery();
 }
 
-// 多选框选中数据
+// 多选框选中数据（额外维护 BOM 比较按钮禁用态：需恰好选中2条）
 function handleSelectionChange(selection) {
-  ids.value = selection.map((item) => item.bomId);
-  single.value = selection.length != 1;
-  multiple.value = !selection.length;
-  compareDisabled.value = selection.length != 2; // BOM比较需要选中2条
+  crudHandleSelectionChange(selection);
+  compareDisabled.value = selection.length != 2;
 }
 
 /** 新增按钮操作 */
@@ -509,7 +527,7 @@ function getSelectedBomId(actionLabel) {
     proxy.$modal.msgWarning(`请选择一条数据进行${actionLabel}`);
     return null;
   }
-  const selectedRow = bomList.value.find((item) => item.bomId === ids.value[0]);
+  const selectedRow = list.value.find((item) => item.bomId === ids.value[0]);
   if (!selectedRow) {
     proxy.$modal.msgWarning('未找到选中的数据');
     return null;
@@ -537,7 +555,7 @@ function handleView(row?) {
   });
 }
 
-/** 删除按钮操作 */
+/** 删除按钮操作（本地实现：保留空选提示，删除后经 getList 刷新并清除树表懒加载缓存） */
 function handleDelete(row?) {
   const _bomIds = row?.bomId || ids.value;
   if (!_bomIds || (Array.isArray(_bomIds) && _bomIds.length === 0)) {
@@ -554,17 +572,6 @@ function handleDelete(row?) {
       proxy.$modal.msgSuccess('删除成功');
     })
     .catch(() => {});
-}
-
-/** 导出按钮操作 */
-function handleExport() {
-  proxy.download(
-    'bd/bom/export',
-    {
-      ...queryParams.value
-    },
-    `bom_${new Date().getTime()}.xlsx`
-  );
 }
 
 /** 激活BOM版本 */
@@ -630,7 +637,7 @@ function handleCopyBom(row?: any) {
     proxy.$modal.msgWarning('请选择一个BOM');
     return;
   }
-  const bomRow = bomList.value.find((item) => item.bomId === bomId);
+  const bomRow = list.value.find((item) => item.bomId === bomId);
   const bomName = bomRow?.bomName || '';
   const currentVersion = bomRow?.bomVersion || '1.0';
   proxy.$modal

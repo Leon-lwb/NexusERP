@@ -36,8 +36,8 @@
         </el-col>
         <el-col :span="6" :offset="18" class="search-actions">
           <el-form-item>
-            <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+            <el-button type="primary" icon="Search" @click="handleQuery()">搜索</el-button>
+            <el-button icon="Refresh" @click="resetQuery()">重置</el-button>
           </el-form-item>
         </el-col>
       </el-row>
@@ -45,16 +45,18 @@
 
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
-        <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['so:priceList:add']">新增</el-button>
+        <el-button type="primary" plain icon="Plus" @click="handleAdd()" v-hasPermi="['so:priceList:add']">新增</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['so:priceList:edit']">修改</el-button>
+        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate()" v-hasPermi="['so:priceList:edit']">修改</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['so:priceList:remove']">删除</el-button>
+        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete()" v-hasPermi="['so:priceList:remove']"
+          >删除</el-button
+        >
       </el-col>
       <el-col :span="1.5">
-        <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['so:priceList:export']">导出</el-button>
+        <el-button type="warning" plain icon="Download" @click="handleExport()" v-hasPermi="['so:priceList:export']">导出</el-button>
       </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
@@ -101,55 +103,61 @@
 </template>
 
 <script setup lang="ts" name="PriceList">
-import { listPriceList, delPriceList } from '@/api/erp/so/price-list';
+import { listPriceList, getPriceList, addPriceList, updatePriceList, delPriceList } from '@/api/erp/so/price-list';
 import { useRouter } from 'vue-router';
+import type { FormInstance } from 'element-plus';
+import { useCrud } from '@/composables/useCrud';
 
 const router = useRouter();
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { so_price_list_type, so_price_list_status } = toRefs<any>(proxy.useDict('so_price_list_type', 'so_price_list_status'));
 
-const priceListList = ref([]);
-const loading = ref(true);
-const showSearch = ref(true);
-const ids = ref([]);
-const single = ref(true);
-const multiple = ref(true);
-const total = ref(0);
 const dateRange = ref([]);
 
-const data = reactive({
-  queryParams: {
-    pageNum: 1,
-    pageSize: 10,
-    listName: null,
-    listType: null,
-    clientId: null,
-    status: null,
-    effectiveDateFrom: null,
-    effectiveDateTo: null
-  }
+const queryParams = ref({
+  pageNum: 1,
+  pageSize: 10,
+  listName: null,
+  listType: null,
+  clientId: null,
+  status: null,
+  effectiveDateFrom: null,
+  effectiveDateTo: null
 });
 
-const { queryParams } = toRefs(data);
-
-function getList() {
-  loading.value = true;
-  const params = { ...queryParams.value };
-  if (dateRange.value && dateRange.value.length === 2) {
-    params.effectiveDateFrom = dateRange.value[0];
-    params.effectiveDateTo = dateRange.value[1];
+// 列表骨架（新增/修改为路由表单页，保留本地 router.push 跳转逻辑）
+const {
+  loading,
+  list: priceListList,
+  total,
+  ids,
+  single,
+  multiple,
+  showSearch,
+  getList,
+  handleQuery,
+  handleDelete,
+  handleSelectionChange
+} = useCrud({
+  apis: { list: listPriceList, get: getPriceList, add: addPriceList, update: updatePriceList, del: delPriceList },
+  idField: 'priceListId',
+  entityName: '价格表',
+  formRef: ref<FormInstance>(),
+  queryParams,
+  initForm: () => ({}),
+  exportUrl: '/erp/so/price-list/export',
+  exportFileName: 'priceList',
+  beforeList: (query: any) => {
+    // 生效日期范围仅用于列表过滤：每次查询按当前 dateRange 重新计算，无范围时清理残留
+    if (dateRange.value && dateRange.value.length === 2) {
+      query.effectiveDateFrom = dateRange.value[0];
+      query.effectiveDateTo = dateRange.value[1];
+    } else {
+      query.effectiveDateFrom = null;
+      query.effectiveDateTo = null;
+    }
   }
-  listPriceList(params).then((response: any) => {
-    priceListList.value = response.rows;
-    total.value = response.total;
-    loading.value = false;
-  });
-}
-
-function handleQuery() {
-  queryParams.value.pageNum = 1;
-  getList();
-}
+});
 
 function resetQuery() {
   dateRange.value = [];
@@ -157,20 +165,11 @@ function resetQuery() {
   handleQuery();
 }
 
-function handleSelectionChange(selection: any[]) {
-  ids.value = selection.map((item: any) => item.priceListId);
-  single.value = selection.length != 1;
-  multiple.value = !selection.length;
-}
-
 function handleAdd() {
   router.push({ path: '/erp/so/price-list/form', query: { action: 'add' } });
 }
 
-function handleUpdate(row: any) {
-  if (row && row.type && row instanceof Event) {
-    row = null;
-  }
+function handleUpdate(row?: any) {
   if (!row) {
     if (ids.value.length !== 1) {
       proxy.$modal.msgWarning('请选择一条数据进行修改');
@@ -186,22 +185,12 @@ function handleUpdate(row: any) {
   router.push({ path: '/erp/so/price-list/form', query: { id: row.priceListId, action: 'edit' } });
 }
 
-function handleDelete(row: any) {
-  const _ids = row.priceListId || ids.value;
-  proxy.$modal
-    .confirm('是否确认删除价格表编号为"' + _ids + '"的数据项？')
-    .then(function () {
-      return delPriceList(_ids);
-    })
-    .then(() => {
-      getList();
-      proxy.$modal.msgSuccess('删除成功');
-    })
-    .catch(() => {});
-}
-
+/** 导出按钮操作（保持原有口径：不携带生效日期范围过滤条件） */
 function handleExport() {
-  proxy.download('/erp/so/price-list/export', { ...queryParams.value }, `priceList_${new Date().getTime()}.xlsx`);
+  const params = { ...queryParams.value };
+  delete params.effectiveDateFrom;
+  delete params.effectiveDateTo;
+  proxy.download('/erp/so/price-list/export', params, `priceList_${new Date().getTime()}.xlsx`);
 }
 
 onActivated(() => {

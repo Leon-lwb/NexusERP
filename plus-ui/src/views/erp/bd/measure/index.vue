@@ -280,6 +280,7 @@ import { listMeasure, getMeasure, delMeasure, addMeasure, updateMeasure, listByP
 import type { MeasureForm, MeasureQuery } from '@/api/erp/bd/measure/types';
 import { Folder, ScaleToOriginal, Collection, Connection } from '@element-plus/icons-vue';
 import type { FormInstance } from 'element-plus';
+import { useCrud } from '@/composables/useCrud';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { sys_true_or_false, sys_core_status } = toRefs<any>(proxy.useDict('sys_true_or_false', 'sys_core_status'));
@@ -294,11 +295,7 @@ const derivedUnitLoading = ref(false);
 const selectedCategory = ref('');
 const selectedBaseUnit = ref<any>(null);
 
-// ==================== 原有弹窗数据 ====================
-const open = ref(false);
-const loading = ref(false);
-const title = ref('');
-const isViewMode = ref(false);
+// ==================== 基本单位选择弹窗 ====================
 const baseUnitVisible = ref(false);
 const baseUnitListDialog = ref([]);
 const baseUnitTotal = ref(0);
@@ -314,21 +311,17 @@ const baseUnitQueryParams = reactive({
 });
 
 const measureRef = ref<FormInstance>();
-const data = reactive<{ form: MeasureForm; queryParams: MeasureQuery }>({
-  form: {},
-  queryParams: {
-    pageNum: 1,
-    pageSize: 10,
-    uomCode: null,
-    uomName: null,
-    uomSymbol: null,
-    category: null,
-    isBase: null,
-    status: null
-  }
-});
 
-const { queryParams, form } = toRefs(data);
+const queryParams = ref<MeasureQuery>({
+  pageNum: 1,
+  pageSize: 10,
+  uomCode: null,
+  uomName: null,
+  uomSymbol: null,
+  category: null,
+  isBase: null,
+  status: null
+});
 
 const rules = computed(() => ({
   uomCode: [{ required: true, message: '单位编码不能为空', trigger: 'blur' }],
@@ -339,6 +332,53 @@ const rules = computed(() => ({
   conversionRate: [{ required: form.value.isBase === '0', message: '转换率不能为空', trigger: 'blur' }],
   status: [{ required: true, message: '状态不能为空', trigger: 'change' }]
 }));
+
+// ==================== 弹窗 CRUD（useCrud） ====================
+// 本页为级联布局（类别 → 基本单位 → 衍生单位），无标准列表；
+// useCrud 仅承接弹窗表单状态（open/title/isViewMode/form/reset），
+// 提交/删除/导出因含数据转换与级联刷新逻辑，保留在页面本地实现
+const {
+  open,
+  isViewMode,
+  title,
+  form,
+  cancel,
+  handleUpdate,
+  handleAdd: rawHandleAdd
+} = useCrud<MeasureForm, MeasureQuery>({
+  apis: { list: listMeasure, get: getMeasure, add: addMeasure, update: updateMeasure, del: delMeasure },
+  idField: 'uomId',
+  entityName: '计量单位',
+  formRef: measureRef,
+  queryParams,
+  initForm: () => ({
+    uomId: null,
+    uomCode: null,
+    uomName: null,
+    uomSymbol: null,
+    category: null,
+    isBase: null,
+    primaryId: null,
+    primaryName: null,
+    conversionRate: null,
+    status: null,
+    sortOrder: null,
+    remark: null,
+    createBy: null,
+    createTime: null,
+    updateBy: null,
+    updateTime: null
+  }),
+  onReset: () => {
+    baseUnitName.value = '';
+  },
+  afterLoad: (data) => {
+    normalizeFormData(data);
+    if (data.primaryId) {
+      loadPrimaryUnitName(data.primaryId);
+    }
+  }
+});
 
 // ==================== 初始化 ====================
 onMounted(() => {
@@ -409,34 +449,6 @@ function loadDerivedUnits(primaryId: number) {
 }
 
 // ==================== 弹窗操作 ====================
-function cancel() {
-  open.value = false;
-  reset();
-}
-
-function reset() {
-  form.value = {
-    uomId: null,
-    uomCode: null,
-    uomName: null,
-    uomSymbol: null,
-    category: null,
-    isBase: null,
-    primaryId: null,
-    primaryName: null,
-    conversionRate: null,
-    status: null,
-    sortOrder: null,
-    remark: null,
-    createBy: null,
-    createTime: null,
-    updateBy: null,
-    updateTime: null
-  };
-  baseUnitName.value = '';
-  proxy.resetForm('measureRef');
-}
-
 function normalizeFormData(data: any) {
   data.isBase = String(data.isBase);
   data.status = String(data.status);
@@ -445,63 +457,26 @@ function normalizeFormData(data: any) {
 
 /** 新增基本单位 */
 function handleAddBase() {
-  reset();
-  isViewMode.value = false;
-  form.value.category = selectedCategory.value || categories.value[0] || '';
-  form.value.isBase = '1';
-  form.value.status = '1';
-  open.value = true;
-  title.value = '新增基本单位';
+  rawHandleAdd(() => {
+    form.value.category = selectedCategory.value || categories.value[0] || '';
+    form.value.isBase = '1';
+    form.value.status = '1';
+  });
 }
 
 /** 新增衍生单位 */
 function handleAddDerived() {
   if (!selectedBaseUnit.value) return;
-  reset();
-  isViewMode.value = false;
-  form.value.category = selectedBaseUnit.value.category;
-  form.value.isBase = '0';
-  form.value.status = '1';
-  form.value.primaryId = selectedBaseUnit.value.uomId;
-  form.value.primaryName = selectedBaseUnit.value.uomName;
-  open.value = true;
-  title.value = `新增「${selectedBaseUnit.value.uomName}」的衍生单位`;
-}
-
-/** 修改按钮操作 */
-function handleUpdate(row: any) {
-  reset();
-  isViewMode.value = false;
-  getMeasure(row.uomId).then((response) => {
-    const data = normalizeFormData(response.data);
-    form.value = data;
-    if (data.primaryId) {
-      loadPrimaryUnitName(data.primaryId);
-    }
-    open.value = true;
-    title.value = '修改计量单位';
+  rawHandleAdd(() => {
+    form.value.category = selectedBaseUnit.value.category;
+    form.value.isBase = '0';
+    form.value.status = '1';
+    form.value.primaryId = selectedBaseUnit.value.uomId;
+    form.value.primaryName = selectedBaseUnit.value.uomName;
   });
 }
 
-/** 查看按钮操作 */
-function handleView(row: any) {
-  reset();
-  isViewMode.value = true;
-  getMeasure(row.uomId).then((response) => {
-    const data = normalizeFormData(response.data);
-    form.value = data;
-    if (data.primaryId) {
-      loadPrimaryUnitName(data.primaryId);
-    }
-    if (data.isBase === '1') {
-      loadDerivedUnits(data.uomId);
-    }
-    open.value = true;
-    title.value = '查看计量单位';
-  });
-}
-
-function loadPrimaryUnitName(primaryId: number) {
+function loadPrimaryUnitName(primaryId: number | string) {
   if (primaryId) {
     getMeasure(primaryId).then((response) => {
       form.value.primaryName = response.data.uomName;
@@ -510,7 +485,7 @@ function loadPrimaryUnitName(primaryId: number) {
   }
 }
 
-/** 提交按钮 */
+/** 提交按钮（本地实现：基本/衍生单位数据转换 + 级联面板刷新） */
 function submitForm() {
   measureRef.value?.validate((valid) => {
     if (valid) {
@@ -540,7 +515,7 @@ function submitForm() {
   });
 }
 
-/** 删除按钮操作 */
+/** 删除按钮操作（本地实现：按单位名称确认 + 级联面板刷新） */
 function handleDelete(row: any) {
   const _uomIds = row.uomId;
   proxy.$modal
@@ -555,7 +530,7 @@ function handleDelete(row: any) {
     .catch(() => {});
 }
 
-/** 导出按钮操作 */
+/** 导出按钮操作（本地实现：按所选基本单位导出其衍生单位） */
 function handleExport() {
   if (!selectedBaseUnit.value) return;
   proxy.download(

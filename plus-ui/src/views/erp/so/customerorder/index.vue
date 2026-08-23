@@ -34,8 +34,8 @@
         </el-col>
         <el-col :span="6" :offset="18" class="search-actions">
           <el-form-item>
-            <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+            <el-button type="primary" icon="Search" @click="handleQuery()">搜索</el-button>
+            <el-button icon="Refresh" @click="resetQuery()">重置</el-button>
           </el-form-item>
         </el-col>
       </el-row>
@@ -43,21 +43,21 @@
 
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
-        <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['so:customerOrder:add']">新增</el-button>
+        <el-button type="primary" plain icon="Plus" @click="handleAdd()" v-hasPermi="['so:customerOrder:add']">新增</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['so:customerOrder:edit']">修改</el-button>
+        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate()" v-hasPermi="['so:customerOrder:edit']">修改</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['so:customerOrder:remove']"
+        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete()" v-hasPermi="['so:customerOrder:remove']"
           >删除</el-button
         >
       </el-col>
       <el-col :span="1.5">
-        <el-button type="info" plain icon="View" :disabled="single" @click="handleView" v-hasPermi="['so:customerOrder:query']">查看</el-button>
+        <el-button type="info" plain icon="View" :disabled="single" @click="handleView()" v-hasPermi="['so:customerOrder:query']">查看</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['so:customerOrder:export']">导出</el-button>
+        <el-button type="warning" plain icon="Download" @click="handleExport()" v-hasPermi="['so:customerOrder:export']">导出</el-button>
       </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
@@ -264,8 +264,8 @@
           <el-input v-model="clientQueryParams.clientCode" placeholder="请输入客户编码" clearable @keyup.enter="handleClientQuery" />
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" icon="Search" @click="handleClientQuery">搜索</el-button>
-          <el-button icon="Refresh" @click="resetClientQuery">重置</el-button>
+          <el-button type="primary" icon="Search" @click="handleClientQuery()">搜索</el-button>
+          <el-button icon="Refresh" @click="resetClientQuery()">重置</el-button>
         </el-form-item>
       </el-form>
 
@@ -304,8 +304,8 @@
           <el-input v-model="userQueryParams.phonenumber" placeholder="请输入手机号码" clearable @keyup.enter="searchUser" />
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" icon="Search" @click="searchUser">搜索</el-button>
-          <el-button icon="Refresh" @click="resetUserQuery">重置</el-button>
+          <el-button type="primary" icon="Search" @click="searchUser()">搜索</el-button>
+          <el-button icon="Refresh" @click="resetUserQuery()">重置</el-button>
         </el-form-item>
       </el-form>
 
@@ -341,11 +341,11 @@
 
 <script setup lang="ts" name="CustomerOrder">
 import { listCustomerOrder, getCustomerOrder, delCustomerOrder, addCustomerOrder, updateCustomerOrder } from '@/api/erp/so/customer-order';
-import type { CustomerOrderForm, CustomerOrderQuery } from '@/api/erp/so/customer-order/types';
 import { listBd } from '@/api/erp/bd/client';
 import { previewCode } from '@/api/system/autocode/rule';
 import { listUser } from '@/api/system/user';
 import type { FormInstance } from 'element-plus';
+import { useCrud } from '@/composables/useCrud';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { so_customer_order_status, so_currency_type, so_order_priority, so_source_channel, bd_client_type } = toRefs<any>(
@@ -364,17 +364,6 @@ const clientQueryParams = ref({
   clientCode: null
 });
 
-const customerOrderList = ref([]);
-const open = ref(false);
-const loading = ref(true);
-const showSearch = ref(true);
-const ids = ref([]);
-const single = ref(true);
-const multiple = ref(true);
-const total = ref(0);
-const title = ref('');
-const isViewMode = ref(false);
-
 const userList = ref([]);
 const userLoading = ref(false);
 const userVisible = ref(false);
@@ -388,43 +377,52 @@ const userQueryParams = reactive({
 });
 
 const customerOrderRef = ref<FormInstance>();
-const data = reactive<PageData<CustomerOrderForm, CustomerOrderQuery>>({
-  form: {},
-  queryParams: {
-    pageNum: 1,
-    pageSize: 10,
-    coNo: null,
-    clientName: null,
-    orderDate: null,
-    status: null
-  },
-  rules: {
-    coNo: [{ required: true, message: '客户订单号不能为空', trigger: 'blur' }],
-    clientId: [{ required: true, message: '客户ID不能为空', trigger: 'blur' }],
-    orderDate: [{ required: true, message: '客户下单日期不能为空', trigger: 'blur' }],
-    currency: [{ required: true, message: '货币不能为空', trigger: 'change' }]
-  }
+
+const queryParams = ref({
+  pageNum: 1,
+  pageSize: 10,
+  coNo: null,
+  clientName: null,
+  orderDate: null,
+  status: null
 });
 
-const { queryParams, form, rules } = toRefs(data);
+const rules = {
+  coNo: [{ required: true, message: '客户订单号不能为空', trigger: 'blur' }],
+  clientId: [{ required: true, message: '客户ID不能为空', trigger: 'blur' }],
+  orderDate: [{ required: true, message: '客户下单日期不能为空', trigger: 'blur' }],
+  currency: [{ required: true, message: '货币不能为空', trigger: 'change' }]
+};
 
-function getList() {
-  loading.value = true;
-  listCustomerOrder(queryParams.value).then((response) => {
-    customerOrderList.value = response.rows;
-    total.value = response.total;
-    loading.value = false;
-  });
-}
-
-function cancel() {
-  open.value = false;
-  reset();
-}
-
-function reset() {
-  autoGenFlag.value = false;
-  form.value = {
+const {
+  loading,
+  list: customerOrderList,
+  total,
+  open,
+  isViewMode,
+  title,
+  ids,
+  single,
+  multiple,
+  showSearch,
+  form,
+  getList,
+  handleQuery,
+  handleAdd,
+  handleUpdate,
+  handleView,
+  submitForm,
+  cancel,
+  handleDelete,
+  handleExport,
+  handleSelectionChange
+} = useCrud({
+  apis: { list: listCustomerOrder, get: getCustomerOrder, add: addCustomerOrder, update: updateCustomerOrder, del: delCustomerOrder },
+  idField: 'coId',
+  entityName: '客户订单',
+  formRef: customerOrderRef,
+  queryParams,
+  initForm: () => ({
     coId: null,
     coNo: null,
     clientId: null,
@@ -450,147 +448,49 @@ function reset() {
     createTime: null,
     updateBy: null,
     updateTime: null
-  };
-  proxy.resetForm('customerOrderRef');
-}
-
-function handleQuery() {
-  queryParams.value.pageNum = 1;
-  getList();
-}
+  }),
+  exportUrl: 'erp/so/customerOrder/export',
+  exportFileName: 'customerOrder',
+  onReset: () => {
+    autoGenFlag.value = false;
+  },
+  beforeSubmit: () => {
+    // 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号
+    if (autoGenFlag.value) {
+      form.value.coNo = undefined;
+    }
+  },
+  afterLoad: (data: any) => {
+    // 回填客户名称/编码
+    if (data.clientId) {
+      listBd({ pageNum: 1, clientId: data.clientId, pageSize: 1000 }).then((clientResponse) => {
+        if (clientResponse.rows && clientResponse.rows.length > 0) {
+          const client = clientResponse.rows.find((item) => item.clientId == data.clientId);
+          if (client) {
+            form.value.clientName = client.clientName;
+            form.value.clientCode = client.clientCode;
+          }
+        }
+      });
+    }
+    if (data.salesRepId && !data.salesRepName) {
+      listUser({ pageNum: 1, userIds: data.salesRepId, pageSize: 1 })
+        .then((userResponse) => {
+          if (userResponse.rows && userResponse.rows.length > 0) {
+            const user = userResponse.rows[0];
+            form.value.salesRepName = user.userName;
+          }
+        })
+        .catch(() => {
+          console.warn('获取销售代表名称失败');
+        });
+    }
+  }
+});
 
 function resetQuery() {
   proxy.resetForm('queryRef');
   handleQuery();
-}
-
-function handleSelectionChange(selection) {
-  ids.value = selection.map((item) => item.coId);
-  single.value = selection.length != 1;
-  multiple.value = !selection.length;
-}
-
-function handleAdd() {
-  reset();
-  isViewMode.value = false;
-  open.value = true;
-  title.value = '添加客户订单';
-}
-
-function handleUpdate(row) {
-  reset();
-  isViewMode.value = false;
-  const _coId = row.coId || ids.value;
-  getCustomerOrder(_coId).then((response) => {
-    form.value = response.data;
-    if (form.value.clientId) {
-      listBd({ pageNum: 1, clientId: form.value.clientId, pageSize: 1000 }).then((clientResponse) => {
-        if (clientResponse.rows && clientResponse.rows.length > 0) {
-          const client = clientResponse.rows.find((item) => item.clientId == form.value.clientId);
-          if (client) {
-            form.value.clientName = client.clientName;
-            form.value.clientCode = client.clientCode;
-          }
-        }
-      });
-    }
-    if (form.value.salesRepId && !form.value.salesRepName) {
-      listUser({ pageNum: 1, userIds: form.value.salesRepId, pageSize: 1 })
-        .then((userResponse) => {
-          if (userResponse.rows && userResponse.rows.length > 0) {
-            const user = userResponse.rows[0];
-            form.value.salesRepName = user.userName;
-          }
-        })
-        .catch(() => {
-          console.warn('获取销售代表名称失败');
-        });
-    }
-    open.value = true;
-    title.value = '修改客户订单';
-  });
-}
-
-function handleView(row) {
-  reset();
-  isViewMode.value = true;
-  const _coId = row.coId || ids.value;
-  getCustomerOrder(_coId).then((response) => {
-    form.value = response.data;
-    if (form.value.clientId) {
-      listBd({ pageNum: 1, clientId: form.value.clientId, pageSize: 1000 }).then((clientResponse) => {
-        if (clientResponse.rows && clientResponse.rows.length > 0) {
-          const client = clientResponse.rows.find((item) => item.clientId == form.value.clientId);
-          if (client) {
-            form.value.clientName = client.clientName;
-            form.value.clientCode = client.clientCode;
-          }
-        }
-      });
-    }
-    if (form.value.salesRepId && !form.value.salesRepName) {
-      listUser({ pageNum: 1, userIds: form.value.salesRepId, pageSize: 1 })
-        .then((userResponse) => {
-          if (userResponse.rows && userResponse.rows.length > 0) {
-            const user = userResponse.rows[0];
-            form.value.salesRepName = user.userName;
-          }
-        })
-        .catch(() => {
-          console.warn('获取销售代表名称失败');
-        });
-    }
-    open.value = true;
-    title.value = '查看客户订单';
-  });
-}
-
-function submitForm() {
-  customerOrderRef.value?.validate((valid) => {
-    if (valid) {
-      // 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号
-      if (autoGenFlag.value) {
-        form.value.coNo = undefined;
-      }
-      if (form.value.coId != null) {
-        updateCustomerOrder(form.value).then((response) => {
-          proxy.$modal.msgSuccess('修改成功');
-          open.value = false;
-          getList();
-        });
-      } else {
-        addCustomerOrder(form.value).then((response) => {
-          proxy.$modal.msgSuccess('新增成功');
-          open.value = false;
-          getList();
-        });
-      }
-    }
-  });
-}
-
-function handleDelete(row) {
-  const _coIds = row.coId || ids.value;
-  proxy.$modal
-    .confirm('是否确认删除客户订单编号为"' + _coIds + '"的数据项？')
-    .then(function () {
-      return delCustomerOrder(_coIds);
-    })
-    .then(() => {
-      getList();
-      proxy.$modal.msgSuccess('删除成功');
-    })
-    .catch(() => {});
-}
-
-function handleExport() {
-  proxy.download(
-    'erp/so/customerOrder/export',
-    {
-      ...queryParams.value
-    },
-    `customerOrder_${new Date().getTime()}.xlsx`
-  );
 }
 
 function handleAutoGenChange(autoGenFlag) {

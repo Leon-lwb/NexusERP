@@ -29,8 +29,8 @@
         </el-col>
         <el-col :span="6" :offset="18" class="search-actions">
           <el-form-item>
-            <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+            <el-button type="primary" icon="Search" @click="handleQuery()">搜索</el-button>
+            <el-button icon="Refresh" @click="resetQuery()">重置</el-button>
           </el-form-item>
         </el-col>
       </el-row>
@@ -39,7 +39,7 @@
     <!-- 操作按钮 -->
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
-        <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['so:invoice:add']">新增</el-button>
+        <el-button type="primary" plain icon="Plus" @click="handleAdd()" v-hasPermi="['so:invoice:add']">新增</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate()" v-hasPermi="['so:invoice:edit']">修改</el-button>
@@ -251,10 +251,10 @@
           <el-tab-pane label="发票明细" name="line">
             <el-row :gutter="10" class="mb8">
               <el-col :span="1.5">
-                <el-button type="primary" icon="Plus" @click="handleAddLine" v-if="!isViewMode">添加行</el-button>
+                <el-button type="primary" icon="Plus" @click="handleAddLine()" v-if="!isViewMode">添加行</el-button>
               </el-col>
               <el-col :span="1.5">
-                <el-button type="danger" icon="Delete" @click="handleDeleteLine" v-if="!isViewMode">删除行</el-button>
+                <el-button type="danger" icon="Delete" @click="handleDeleteLine()" v-if="!isViewMode">删除行</el-button>
               </el-col>
             </el-row>
             <el-table :data="lineList" @selection-change="handleLineSelectionChange" border size="small" show-overflow-tooltip>
@@ -361,7 +361,7 @@
       </el-form>
       <template #footer>
         <el-button @click="verifyOpen = false">取 消</el-button>
-        <el-button type="primary" @click="submitVerify">确 定</el-button>
+        <el-button type="primary" @click="submitVerify()">确 定</el-button>
       </template>
     </el-dialog>
 
@@ -375,10 +375,11 @@
 
 <script setup lang="ts" name="SoInvoice">
 import { listInvoice, getInvoice, delInvoice, addInvoice, updateInvoice, verifyInvoice, cancelInvoice, redFlushInvoice } from '@/api/erp/so/invoice';
-import { InvoiceVO, InvoiceForm, InvoiceLineForm } from '@/api/erp/so/invoice/types';
+import { InvoiceVO, InvoiceLineForm } from '@/api/erp/so/invoice/types';
 import ClientSelectDialog from '@/views/erp/so/components/ClientSelectDialog.vue';
 import MaterialSelectDialog from '@/components/MaterialSelectDialog/index.vue';
 import type { FormInstance } from 'element-plus';
+import { useCrud } from '@/composables/useCrud';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const formRef = ref<FormInstance>();
@@ -389,61 +390,55 @@ const { so_invoice_type, so_invoice_status, invoice_issue_channel } = toRefs<any
 // 客户选择弹窗引用
 const clientSelectDialogRef = ref();
 
-// 列表数据
-const dataList = ref<InvoiceVO[]>([]);
-const open = ref(false);
-const loading = ref(true);
-const showSearch = ref(true);
-const ids = ref<number[]>([]);
-const single = ref(true);
-const multiple = ref(true);
-const total = ref(0);
-const title = ref('');
-const isViewMode = ref(false);
-const activeTab = ref('basic');
-
 // 明细行数据
 const lineList = ref<InvoiceLineForm[]>([]);
 const checkedLines = ref<number[]>([]);
 const currentLineIndex = ref(-1);
 const materialSelectDialogRef = ref();
+const activeTab = ref('basic');
 
-const data = reactive({
-  form: {} as InvoiceForm,
-  queryParams: {
-    pageNum: 1,
-    pageSize: 10,
-    invoiceNo: undefined,
-    clientName: undefined,
-    invoiceType: undefined,
-    status: undefined
-  },
-  rules: {
-    invoiceNo: [{ required: true, message: '发票号不能为空', trigger: 'blur' }]
-  }
+const queryParams = ref({
+  pageNum: 1,
+  pageSize: 10,
+  invoiceNo: undefined,
+  clientName: undefined,
+  invoiceType: undefined,
+  status: undefined
 });
 
-const { queryParams, form, rules } = toRefs(data);
+const rules = {
+  invoiceNo: [{ required: true, message: '发票号不能为空', trigger: 'blur' }]
+};
 
-/** 查询列表 */
-function getList() {
-  loading.value = true;
-  listInvoice(queryParams.value).then((response) => {
-    dataList.value = response.rows;
-    total.value = response.total;
-    loading.value = false;
-  });
-}
-
-/** 取消 */
-function cancel() {
-  open.value = false;
-  reset();
-}
-
-/** 重置表单 */
-function reset() {
-  form.value = {
+const {
+  loading,
+  list: dataList,
+  total,
+  open,
+  isViewMode,
+  title,
+  ids,
+  single,
+  multiple,
+  showSearch,
+  form,
+  getList,
+  handleQuery,
+  handleAdd,
+  handleUpdate,
+  handleView,
+  submitForm,
+  cancel,
+  handleDelete,
+  handleExport,
+  handleSelectionChange
+} = useCrud({
+  apis: { list: listInvoice, get: getInvoice, add: addInvoice, update: updateInvoice, del: delInvoice },
+  idField: 'invoiceId',
+  entityName: '销售发票',
+  formRef,
+  queryParams,
+  initForm: () => ({
     invoiceId: undefined,
     invoiceNo: '',
     invoiceCode: '',
@@ -468,104 +463,25 @@ function reset() {
     issueChannel: 'MANUAL',
     remark: '',
     soInvoiceLineList: []
-  };
-  lineList.value = [];
-  activeTab.value = 'basic';
-  proxy.resetForm('formRef');
-}
-
-/** 搜索 */
-function handleQuery() {
-  queryParams.value.pageNum = 1;
-  getList();
-}
+  }),
+  exportUrl: 'erp/so/invoice/export',
+  exportFileName: 'invoice',
+  onReset: () => {
+    lineList.value = [];
+    activeTab.value = 'basic';
+  },
+  beforeSubmit: () => {
+    form.value.soInvoiceLineList = lineList.value;
+  },
+  afterLoad: (data: any) => {
+    lineList.value = data.soInvoiceLineList || [];
+  }
+});
 
 /** 重置搜索 */
 function resetQuery() {
   proxy.resetForm('queryRef');
   handleQuery();
-}
-
-/** 多选框选中数据 */
-function handleSelectionChange(selection: InvoiceVO[]) {
-  ids.value = selection.map((item) => item.invoiceId);
-  single.value = selection.length !== 1;
-  multiple.value = !selection.length;
-}
-
-/** 新增 */
-function handleAdd() {
-  reset();
-  isViewMode.value = false;
-  open.value = true;
-  title.value = '添加销售发票';
-}
-
-/** 修改 */
-function handleUpdate(row?: InvoiceVO) {
-  reset();
-  isViewMode.value = false;
-  const invoiceId = row?.invoiceId || ids.value[0];
-  getInvoice(invoiceId).then((response) => {
-    form.value = response.data;
-    lineList.value = response.data.soInvoiceLineList || [];
-    open.value = true;
-    title.value = '修改销售发票';
-  });
-}
-
-/** 查看 */
-function handleView(row: InvoiceVO) {
-  reset();
-  isViewMode.value = true;
-  getInvoice(row.invoiceId).then((response) => {
-    form.value = response.data;
-    lineList.value = response.data.soInvoiceLineList || [];
-    open.value = true;
-    title.value = '查看销售发票';
-  });
-}
-
-/** 提交表单 */
-function submitForm() {
-  formRef.value?.validate((valid: boolean) => {
-    if (valid) {
-      form.value.soInvoiceLineList = lineList.value;
-      if (form.value.invoiceId != null) {
-        updateInvoice(form.value).then(() => {
-          proxy.$modal.msgSuccess('修改成功');
-          open.value = false;
-          getList();
-        });
-      } else {
-        addInvoice(form.value).then(() => {
-          proxy.$modal.msgSuccess('新增成功');
-          open.value = false;
-          getList();
-        });
-      }
-    }
-  });
-}
-
-/** 删除 */
-function handleDelete(row?: InvoiceVO) {
-  const invoiceIds = row?.invoiceId || ids.value;
-  proxy.$modal
-    .confirm('是否确认删除销售发票编号为"' + invoiceIds + '"的数据项？')
-    .then(function () {
-      return delInvoice(invoiceIds);
-    })
-    .then(() => {
-      getList();
-      proxy.$modal.msgSuccess('删除成功');
-    })
-    .catch(() => {});
-}
-
-/** 导出 */
-function handleExport() {
-  proxy.download('erp/so/invoice/export', { ...queryParams.value }, `invoice_${new Date().getTime()}.xlsx`);
 }
 
 /** 添加明细行 */

@@ -73,7 +73,7 @@
 
         <el-row :gutter="10" class="mb8">
           <el-col :span="1.5">
-            <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['bd:material:add']">新增</el-button>
+            <el-button type="primary" plain icon="Plus" @click="handleAdd()" v-hasPermi="['bd:material:add']">新增</el-button>
           </el-col>
           <el-col :span="1.5">
             <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['bd:material:edit']">修改</el-button>
@@ -92,7 +92,7 @@
           <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
         </el-row>
 
-        <el-table v-loading="loading" :data="materialList" @selection-change="handleSelectionChange" show-overflow-tooltip>
+        <el-table v-loading="loading" :data="list" @selection-change="handleSelectionChange" show-overflow-tooltip>
           <el-table-column type="selection" width="55" align="center" />
           <el-table-column label="物料编码" align="center" prop="materialCode" />
           <el-table-column label="物料名称" align="center" prop="materialName" min-width="120" show-overflow-tooltip />
@@ -449,13 +449,14 @@
 
 <script setup lang="ts" name="Material">
 import { listMaterial, getMaterial, delMaterial, addMaterial, updateMaterial } from '@/api/erp/bd/material';
-import type { MaterialForm, MaterialQuery } from '@/api/erp/bd/material/types';
+import type { MaterialQuery } from '@/api/erp/bd/material/types';
 import { getAllChildrenIds } from '@/api/erp/bd/category';
 import { listMeasureAll } from '@/api/erp/bd/measure';
 import { listMaterialVendor } from '@/api/erp/bd/material-vendor';
 import { previewCode } from '@/api/system/autocode/rule';
 import { useCategoryTree } from '@/composables/erp/useCategoryTree';
 import type { FormInstance } from 'element-plus';
+import { useCrud } from '@/composables/useCrud';
 import MaterialAttrValueEditor from './MaterialAttrValueEditor.vue';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
@@ -463,16 +464,6 @@ const { sys_true_or_false, prd_material_source_type, bd_material_type, bd_qualit
   proxy.useDict('sys_true_or_false', 'prd_material_source_type', 'bd_material_type', 'bd_quality_status', 'bd_inspection_required')
 );
 
-const materialList = ref([]);
-const open = ref(false);
-const loading = ref(true);
-const showSearch = ref(true);
-const ids = ref([]);
-const single = ref(true);
-const multiple = ref(true);
-const total = ref(0);
-const title = ref('');
-const isViewMode = ref(false);
 // 自动生成编码开关（模板 v-model 引用，必须为顶层响应式变量）
 const autoGenFlag = ref(false);
 const uomList = ref([]);
@@ -490,61 +481,56 @@ const categoryTreeProps = {
   label: 'categoryName',
   value: 'categoryId'
 };
-const data = reactive<PageData<MaterialForm, MaterialQuery>>({
-  form: {},
-  queryParams: {
-    pageNum: 1,
-    pageSize: 10,
-    materialCode: null,
-    materialName: null,
-    materialSpec: null,
-    materialType: null,
-    sourceType: null,
-    status: null,
-    categoryId: null,
-    categoryIds: null
-  },
-  rules: {
-    materialCode: [{ required: true, message: '物料编码不能为空', trigger: 'blur' }],
-    materialName: [{ required: true, message: '物料名称不能为空', trigger: 'blur' }],
-    categoryId: [{ required: true, message: '物料分类不能为空', trigger: 'blur' }],
-    materialType: [{ required: true, message: '物料类型不能为空', trigger: 'change' }],
-    safetyStock: [{ required: true, message: '安全库存不能为空', trigger: 'blur' }]
-  }
+
+const queryParams = ref<MaterialQuery>({
+  pageNum: 1,
+  pageSize: 10,
+  materialCode: null,
+  materialName: null,
+  materialSpec: null,
+  materialType: null,
+  sourceType: null,
+  status: null,
+  categoryId: null,
+  categoryIds: null
 });
 
-const { queryParams, form, rules } = toRefs(data);
+const rules = {
+  materialCode: [{ required: true, message: '物料编码不能为空', trigger: 'blur' }],
+  materialName: [{ required: true, message: '物料名称不能为空', trigger: 'blur' }],
+  categoryId: [{ required: true, message: '物料分类不能为空', trigger: 'blur' }],
+  materialType: [{ required: true, message: '物料类型不能为空', trigger: 'change' }],
+  safetyStock: [{ required: true, message: '安全库存不能为空', trigger: 'blur' }]
+};
 
-/** 查询物料产品主列表 */
-function getList() {
-  loading.value = true;
-  listMaterial(queryParams.value)
-    .then((response) => {
-      materialList.value = response.rows;
-      total.value = response.total;
-      loading.value = false;
-    })
-    .catch((error) => {
-      loading.value = false;
-      proxy.$modal.msgError('获取物料数据失败');
-      console.error(error);
-    });
-}
-
-/** 跳转到独立的物料分类管理页 */
-function goManageCategory() {
-  proxy.$router.push('/erp/bd/materialCategory');
-}
-
-// 取消按钮
-function cancel() {
-  open.value = false;
-  reset();
-}
-
-// 表单重置
-function reset() {
-  form.value = {
+const {
+  loading,
+  list,
+  total,
+  open,
+  isViewMode,
+  title,
+  single,
+  multiple,
+  showSearch,
+  form,
+  getList,
+  handleQuery,
+  handleAdd,
+  handleUpdate,
+  handleView,
+  handleDelete,
+  handleExport,
+  handleSelectionChange,
+  submitForm,
+  cancel
+} = useCrud({
+  apis: { list: listMaterial, get: getMaterial, add: addMaterial, update: updateMaterial, del: delMaterial },
+  idField: 'materialId',
+  entityName: '物料/产品',
+  formRef: materialRef,
+  queryParams,
+  initForm: () => ({
     materialId: null,
     materialCode: null,
     materialName: null,
@@ -580,18 +566,25 @@ function reset() {
     createTime: null,
     updateBy: null,
     updateTime: null
-  };
-  proxy.resetForm('materialRef');
-  autoGenFlag.value = false;
-  activeTab.value = 'basic';
-  vendorList.value = [];
-}
-
-/** 搜索按钮操作 */
-function handleQuery() {
-  queryParams.value.pageNum = 1;
-  getList();
-}
+  }),
+  exportUrl: 'bd/material/export',
+  exportFileName: 'material',
+  onReset: () => {
+    autoGenFlag.value = false;
+    activeTab.value = 'basic';
+    vendorList.value = [];
+  },
+  beforeSubmit: () => {
+    // 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号
+    if (autoGenFlag.value) {
+      form.value.materialCode = undefined;
+    }
+  },
+  afterLoad: (data) => {
+    // 修改/查看时加载供应商Tab数据
+    loadVendorList(data.materialId);
+  }
+});
 
 /** 重置按钮操作 */
 function resetQuery() {
@@ -603,11 +596,9 @@ function resetQuery() {
   handleQuery();
 }
 
-// 多选框选中数据
-function handleSelectionChange(selection) {
-  ids.value = selection.map((item) => item.materialId);
-  single.value = selection.length != 1;
-  multiple.value = !selection.length;
+/** 跳转到独立的物料分类管理页 */
+function goManageCategory() {
+  proxy.$router.push('/erp/bd/materialCategory');
 }
 
 /** 树节点点击事件：按分类（含子孙）筛选物料 */
@@ -624,43 +615,6 @@ function handleNodeClick(data) {
     });
 }
 
-/** 新增按钮操作 */
-function handleAdd() {
-  reset();
-  isViewMode.value = false;
-  activeTab.value = 'basic';
-  open.value = true;
-  title.value = '添加物料/产品';
-}
-
-/** 修改按钮操作 */
-function handleUpdate(row) {
-  reset();
-  isViewMode.value = false;
-  activeTab.value = 'basic';
-  const _materialId = row.materialId || ids.value;
-  getMaterial(_materialId).then((response) => {
-    form.value = response.data;
-    open.value = true;
-    title.value = '修改物料/产品';
-    loadVendorList(_materialId);
-  });
-}
-
-/** 查看按钮操作 */
-function handleView(row) {
-  reset();
-  isViewMode.value = true;
-  activeTab.value = 'basic';
-  const _materialId = row.materialId || ids.value;
-  getMaterial(_materialId).then((response) => {
-    form.value = response.data;
-    open.value = true;
-    title.value = '查看物料产品主';
-    loadVendorList(_materialId);
-  });
-}
-
 /** 加载物料关联的供应商列表 */
 function loadVendorList(materialId) {
   vendorLoading.value = true;
@@ -674,58 +628,7 @@ function loadVendorList(materialId) {
     });
 }
 
-/** 提交按钮 */
-function submitForm() {
-  materialRef.value?.validate((valid) => {
-    if (valid) {
-      // 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号
-      if (autoGenFlag.value) {
-        form.value.materialCode = undefined;
-      }
-      if (form.value.materialId != null) {
-        updateMaterial(form.value).then((response) => {
-          proxy.$modal.msgSuccess('修改成功');
-          open.value = false;
-          getList();
-        });
-      } else {
-        addMaterial(form.value).then((response) => {
-          proxy.$modal.msgSuccess('新增成功');
-          open.value = false;
-          getList();
-        });
-      }
-    }
-  });
-}
-
-/** 删除按钮操作 */
-function handleDelete(row) {
-  const _materialIds = row.materialId || ids.value;
-  proxy.$modal
-    .confirm('是否确认删除物料产品主编号为"' + _materialIds + '"的数据项？')
-    .then(function () {
-      return delMaterial(_materialIds);
-    })
-    .then(() => {
-      getList();
-      proxy.$modal.msgSuccess('删除成功');
-    })
-    .catch(() => {});
-}
-
-/** 导出按钮操作 */
-function handleExport() {
-  proxy.download(
-    'bd/material/export',
-    {
-      ...queryParams.value
-    },
-    `material_${new Date().getTime()}.xlsx`
-  );
-}
-
-//自动生成编码
+// 自动生成编码
 function handleAutoGenChange(enabled) {
   if (enabled) {
     previewCode('MATERIAL_CODE').then((response: any) => {

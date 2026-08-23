@@ -4,8 +4,7 @@ import { ReturnQuery, ReturnVO, ReturnForm } from './types';
 
 const BASE = '/erp/so/return';
 
-export const listReturn = (query: ReturnQuery): AxiosPromise<{ rows: ReturnVO[]; total: number }> =>
-  request({ url: BASE + '/list', method: 'get', params: query });
+export const listReturn = (query: ReturnQuery): AxiosPromise<ReturnVO[]> => request({ url: BASE + '/list', method: 'get', params: query });
 
 export const getReturn = (id: string | number): AxiosPromise<ReturnVO> => request({ url: BASE + '/' + id, method: 'get' });
 

@@ -21,8 +21,8 @@
         </el-col>
         <el-col :span="6" class="search-actions">
           <el-form-item>
-            <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+            <el-button type="primary" icon="Search" @click="handleQuery()">搜索</el-button>
+            <el-button icon="Refresh" @click="resetQuery()">重置</el-button>
           </el-form-item>
         </el-col>
       </el-row>
@@ -30,27 +30,29 @@
 
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
-        <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['so:quotation:add']">新增</el-button>
+        <el-button type="primary" plain icon="Plus" @click="handleAdd()" v-hasPermi="['so:quotation:add']">新增</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['so:quotation:edit']">修改</el-button>
+        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate()" v-hasPermi="['so:quotation:edit']">修改</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['so:quotation:remove']">删除</el-button>
+        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete()" v-hasPermi="['so:quotation:remove']"
+          >删除</el-button
+        >
       </el-col>
       <el-col :span="1.5">
-        <el-button type="info" plain icon="View" :disabled="single" @click="handleView" v-hasPermi="['so:quotation:query']">查看</el-button>
+        <el-button type="info" plain icon="View" :disabled="single" @click="handleView()" v-hasPermi="['so:quotation:query']">查看</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="success" plain icon="Check" :disabled="single" @click="handleConfirm" v-hasPermi="['so:quotation:edit']">确认</el-button>
+        <el-button type="success" plain icon="Check" :disabled="single" @click="handleConfirm()" v-hasPermi="['so:quotation:edit']">确认</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="warning" plain icon="Right" :disabled="single" @click="handleConvert" v-hasPermi="['so:quotation:edit']"
+        <el-button type="warning" plain icon="Right" :disabled="single" @click="handleConvert()" v-hasPermi="['so:quotation:edit']"
           >转换销售订单</el-button
         >
       </el-col>
       <el-col :span="1.5">
-        <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['so:quotation:export']">导出</el-button>
+        <el-button type="warning" plain icon="Download" @click="handleExport()" v-hasPermi="['so:quotation:export']">导出</el-button>
       </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
@@ -104,66 +106,66 @@
 </template>
 
 <script setup lang="ts" name="Quotation">
-import { listQuotation, delQuotation, confirmQuotation, convertQuotationToOrder } from '@/api/erp/so/quotation';
+import {
+  listQuotation,
+  getQuotation,
+  addQuotation,
+  updateQuotation,
+  delQuotation,
+  confirmQuotation,
+  convertQuotationToOrder
+} from '@/api/erp/so/quotation';
 import { useRouter } from 'vue-router';
+import type { FormInstance } from 'element-plus';
+import { useCrud } from '@/composables/useCrud';
 
 const router = useRouter();
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { so_quotation_status } = toRefs<any>(proxy.useDict('so_quotation_status'));
 
-const quotationList = ref([]);
-const loading = ref(true);
-const showSearch = ref(true);
-const ids = ref([]);
-const single = ref(true);
-const multiple = ref(true);
-const total = ref(0);
-
-const data = reactive({
-  queryParams: {
-    pageNum: 1,
-    pageSize: 10,
-    quotationNo: null,
-    clientName: null,
-    status: null
-  }
+const queryParams = ref({
+  pageNum: 1,
+  pageSize: 10,
+  quotationNo: null,
+  clientName: null,
+  status: null
 });
 
-const { queryParams } = toRefs(data);
-
-function getList() {
-  loading.value = true;
-  listQuotation(queryParams.value).then((response: any) => {
-    quotationList.value = response.rows;
-    total.value = response.total;
-    loading.value = false;
-  });
-}
-
-function handleQuery() {
-  queryParams.value.pageNum = 1;
-  getList();
-}
+// 列表骨架（新增/修改/查看为路由表单页，保留本地 router.push 跳转逻辑）
+const {
+  loading,
+  list: quotationList,
+  total,
+  ids,
+  single,
+  multiple,
+  showSearch,
+  getList,
+  handleQuery,
+  handleDelete,
+  handleExport,
+  handleSelectionChange
+} = useCrud({
+  apis: { list: listQuotation, get: getQuotation, add: addQuotation, update: updateQuotation, del: delQuotation },
+  idField: 'quotationId',
+  entityName: '报价单',
+  formRef: ref<FormInstance>(),
+  queryParams,
+  initForm: () => ({}),
+  exportUrl: '/erp/so/quotation/export',
+  exportFileName: 'quotation'
+});
 
 function resetQuery() {
   proxy.resetForm('queryRef');
   handleQuery();
 }
 
-function handleSelectionChange(selection: any[]) {
-  ids.value = selection.map((item: any) => item.quotationId);
-  single.value = selection.length != 1;
-  multiple.value = !selection.length;
-}
-
 function handleAdd() {
   router.push({ path: '/erp/so/quotation/form', query: { action: 'add' } });
 }
 
-function handleUpdate(row: any) {
-  if (row && row.type && row instanceof Event) {
-    row = null;
-  }
+function handleUpdate(row?: any) {
   if (!row) {
     if (ids.value.length !== 1) {
       proxy.$modal.msgWarning('请选择一条数据进行修改');
@@ -179,10 +181,7 @@ function handleUpdate(row: any) {
   router.push({ path: '/erp/so/quotation/form', query: { id: row.quotationId, action: 'edit' } });
 }
 
-function handleView(row: any) {
-  if (row && row.type && row instanceof Event) {
-    row = null;
-  }
+function handleView(row?: any) {
   if (!row) {
     if (ids.value.length !== 1) {
       proxy.$modal.msgWarning('请选择一条数据进行查看');
@@ -198,27 +197,9 @@ function handleView(row: any) {
   router.push({ path: '/erp/so/quotation/form', query: { id: row.quotationId, action: 'view' } });
 }
 
-function handleDelete(row: any) {
-  const _ids = row.quotationId || ids.value;
-  proxy.$modal
-    .confirm('是否确认删除报价单编号为"' + _ids + '"的数据项？')
-    .then(function () {
-      return delQuotation(_ids);
-    })
-    .then(() => {
-      getList();
-      proxy.$modal.msgSuccess('删除成功');
-    })
-    .catch(() => {});
-}
-
-function handleExport() {
-  proxy.download('/erp/so/quotation/export', { ...queryParams.value }, `quotation_${new Date().getTime()}.xlsx`);
-}
-
-function handleConfirm(row: any) {
-  const qId = row.quotationId || ids.value[0];
-  const qNo = row.quotationNo || qId;
+function handleConfirm(row?: any) {
+  const qId = row?.quotationId || ids.value[0];
+  const qNo = row?.quotationNo || qId;
   proxy.$modal
     .confirm('是否确认报价单"' + qNo + '"？')
     .then(() => {
@@ -230,9 +211,9 @@ function handleConfirm(row: any) {
     .catch(() => {});
 }
 
-function handleConvert(row: any) {
-  const qId = row.quotationId || ids.value[0];
-  const qNo = row.quotationNo || qId;
+function handleConvert(row?: any) {
+  const qId = row?.quotationId || ids.value[0];
+  const qNo = row?.quotationNo || qId;
   proxy.$modal
     .confirm('是否将报价单"' + qNo + '"转换为销售订单？')
     .then(() => {

@@ -4,8 +4,7 @@ import { QuotationQuery, QuotationVO, QuotationForm } from './types';
 
 const BASE = '/erp/so/quotation';
 
-export const listQuotation = (query: QuotationQuery): AxiosPromise<{ rows: QuotationVO[]; total: number }> =>
-  request({ url: BASE + '/list', method: 'get', params: query });
+export const listQuotation = (query: QuotationQuery): AxiosPromise<QuotationVO[]> => request({ url: BASE + '/list', method: 'get', params: query });
 
 export const getQuotation = (id: string | number): AxiosPromise<QuotationVO> => request({ url: BASE + '/' + id, method: 'get' });
 

@@ -32,8 +32,8 @@
         </el-col>
         <el-col :span="6" :offset="18" class="search-actions">
           <el-form-item>
-            <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+            <el-button type="primary" icon="Search" @click="handleQuery()">搜索</el-button>
+            <el-button icon="Refresh" @click="resetQuery()">重置</el-button>
           </el-form-item>
         </el-col>
       </el-row>
@@ -42,7 +42,7 @@
     <!-- 操作按钮 -->
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
-        <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['so:contract:add']">新增</el-button>
+        <el-button type="primary" plain icon="Plus" @click="handleAdd()" v-hasPermi="['so:contract:add']">新增</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate()" v-hasPermi="['so:contract:edit']">修改</el-button>
@@ -195,10 +195,10 @@
           <el-tab-pane label="合同明细" name="line">
             <el-row :gutter="10" class="mb8">
               <el-col :span="1.5">
-                <el-button type="primary" icon="Plus" @click="handleAddLine" v-if="!isViewMode">添加行</el-button>
+                <el-button type="primary" icon="Plus" @click="handleAddLine()" v-if="!isViewMode">添加行</el-button>
               </el-col>
               <el-col :span="1.5">
-                <el-button type="danger" icon="Delete" @click="handleDeleteLine" v-if="!isViewMode">删除行</el-button>
+                <el-button type="danger" icon="Delete" @click="handleDeleteLine()" v-if="!isViewMode">删除行</el-button>
               </el-col>
             </el-row>
             <el-table :data="lineList" @selection-change="handleLineSelectionChange" border size="small" show-overflow-tooltip>
@@ -287,10 +287,11 @@
 
 <script setup lang="ts" name="SoContract">
 import { listContract, getContract, delContract, addContract, updateContract } from '@/api/erp/so/contract';
-import { ContractVO, ContractForm, ContractLineForm } from '@/api/erp/so/contract/types';
+import { ContractLineForm } from '@/api/erp/so/contract/types';
 import ClientSelectDialog from '@/views/erp/so/components/ClientSelectDialog.vue';
 import MaterialSelectDialog from '@/components/MaterialSelectDialog/index.vue';
 import type { FormInstance } from 'element-plus';
+import { useCrud } from '@/composables/useCrud';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const formRef = ref<FormInstance>();
@@ -298,42 +299,88 @@ const formRef = ref<FormInstance>();
 // 客户选择弹窗引用
 const clientSelectDialogRef = ref();
 
-// 列表数据
-const dataList = ref<ContractVO[]>([]);
-const open = ref(false);
-const loading = ref(true);
-const showSearch = ref(true);
-const ids = ref<number[]>([]);
-const single = ref(true);
-const multiple = ref(true);
-const total = ref(0);
-const title = ref('');
-const isViewMode = ref(false);
-const activeTab = ref('basic');
-
 // 明细行数据
 const lineList = ref<ContractLineForm[]>([]);
 const checkedLines = ref<number[]>([]);
 const currentLineIndex = ref(-1);
 const materialSelectDialogRef = ref();
+const activeTab = ref('basic');
 
-const data = reactive({
-  form: {} as ContractForm,
-  queryParams: {
-    pageNum: 1,
-    pageSize: 10,
-    contractNo: undefined,
-    contractName: undefined,
-    clientName: undefined,
-    status: undefined
-  },
-  rules: {
-    contractNo: [{ required: true, message: '合同编号不能为空', trigger: 'blur' }],
-    contractName: [{ required: true, message: '合同名称不能为空', trigger: 'blur' }]
-  }
+const queryParams = ref({
+  pageNum: 1,
+  pageSize: 10,
+  contractNo: undefined,
+  contractName: undefined,
+  clientName: undefined,
+  status: undefined
 });
 
-const { queryParams, form, rules } = toRefs(data);
+const rules = {
+  contractNo: [{ required: true, message: '合同编号不能为空', trigger: 'blur' }],
+  contractName: [{ required: true, message: '合同名称不能为空', trigger: 'blur' }]
+};
+
+const {
+  loading,
+  list: dataList,
+  total,
+  open,
+  isViewMode,
+  title,
+  ids,
+  single,
+  multiple,
+  showSearch,
+  form,
+  getList,
+  handleQuery,
+  handleAdd,
+  handleUpdate,
+  handleView,
+  submitForm,
+  cancel,
+  handleDelete,
+  handleExport,
+  handleSelectionChange
+} = useCrud({
+  apis: { list: listContract, get: getContract, add: addContract, update: updateContract, del: delContract },
+  idField: 'contractId',
+  entityName: '销售合同',
+  formRef,
+  queryParams,
+  initForm: () => ({
+    contractId: undefined,
+    contractNo: '',
+    contractName: '',
+    contractType: 'SALES',
+    clientId: undefined,
+    clientName: '',
+    signDate: undefined,
+    effectiveDate: undefined,
+    expiryDate: undefined,
+    totalAmount: 0,
+    currency: 'CNY',
+    paymentTerms: '',
+    salesRepId: undefined,
+    salesRepName: '',
+    status: 'DRAFT',
+    selectFlowId: undefined,
+    remark: '',
+    soContractLineList: []
+  }),
+  exportUrl: 'erp/so/contract/export',
+  exportFileName: 'contract',
+  onReset: () => {
+    lineList.value = [];
+    activeTab.value = 'basic';
+  },
+  beforeSubmit: () => {
+    form.value.soContractLineList = lineList.value;
+  },
+  afterLoad: (data: any) => {
+    lineList.value = data.soContractLineList || [];
+  }
+});
 
 /** 获取状态标签类型 */
 function getStatusType(status: string): 'primary' | 'success' | 'info' | 'warning' | 'danger' {
@@ -359,141 +406,10 @@ function getStatusLabel(status: string) {
   return map[status] || status;
 }
 
-/** 查询列表 */
-function getList() {
-  loading.value = true;
-  listContract(queryParams.value).then((response) => {
-    dataList.value = response.rows;
-    total.value = response.total;
-    loading.value = false;
-  });
-}
-
-/** 取消 */
-function cancel() {
-  open.value = false;
-  reset();
-}
-
-/** 重置表单 */
-function reset() {
-  form.value = {
-    contractId: undefined,
-    contractNo: '',
-    contractName: '',
-    contractType: 'SALES',
-    clientId: undefined,
-    clientName: '',
-    signDate: undefined,
-    effectiveDate: undefined,
-    expiryDate: undefined,
-    totalAmount: 0,
-    currency: 'CNY',
-    paymentTerms: '',
-    salesRepId: undefined,
-    salesRepName: '',
-    status: 'DRAFT',
-    selectFlowId: undefined,
-    remark: '',
-    soContractLineList: []
-  };
-  lineList.value = [];
-  activeTab.value = 'basic';
-  proxy.resetForm('formRef');
-}
-
-/** 搜索 */
-function handleQuery() {
-  queryParams.value.pageNum = 1;
-  getList();
-}
-
 /** 重置搜索 */
 function resetQuery() {
   proxy.resetForm('queryRef');
   handleQuery();
-}
-
-/** 多选框选中数据 */
-function handleSelectionChange(selection: ContractVO[]) {
-  ids.value = selection.map((item) => item.contractId);
-  single.value = selection.length !== 1;
-  multiple.value = !selection.length;
-}
-
-/** 新增 */
-function handleAdd() {
-  reset();
-  isViewMode.value = false;
-  open.value = true;
-  title.value = '添加销售合同';
-}
-
-/** 修改 */
-function handleUpdate(row?: ContractVO) {
-  reset();
-  isViewMode.value = false;
-  const contractId = row?.contractId || ids.value[0];
-  getContract(contractId).then((response) => {
-    form.value = response.data;
-    lineList.value = response.data.soContractLineList || [];
-    open.value = true;
-    title.value = '修改销售合同';
-  });
-}
-
-/** 查看 */
-function handleView(row: ContractVO) {
-  reset();
-  isViewMode.value = true;
-  getContract(row.contractId).then((response) => {
-    form.value = response.data;
-    lineList.value = response.data.soContractLineList || [];
-    open.value = true;
-    title.value = '查看销售合同';
-  });
-}
-
-/** 提交表单 */
-function submitForm() {
-  formRef.value?.validate((valid: boolean) => {
-    if (valid) {
-      form.value.soContractLineList = lineList.value;
-      if (form.value.contractId != null) {
-        updateContract(form.value).then(() => {
-          proxy.$modal.msgSuccess('修改成功');
-          open.value = false;
-          getList();
-        });
-      } else {
-        addContract(form.value).then(() => {
-          proxy.$modal.msgSuccess('新增成功');
-          open.value = false;
-          getList();
-        });
-      }
-    }
-  });
-}
-
-/** 删除 */
-function handleDelete(row?: ContractVO) {
-  const contractIds = row?.contractId || ids.value;
-  proxy.$modal
-    .confirm('是否确认删除销售合同编号为"' + contractIds + '"的数据项？')
-    .then(function () {
-      return delContract(contractIds);
-    })
-    .then(() => {
-      getList();
-      proxy.$modal.msgSuccess('删除成功');
-    })
-    .catch(() => {});
-}
-
-/** 导出 */
-function handleExport() {
-  proxy.download('erp/so/contract/export', { ...queryParams.value }, `contract_${new Date().getTime()}.xlsx`);
 }
 
 /** 添加明细行 */

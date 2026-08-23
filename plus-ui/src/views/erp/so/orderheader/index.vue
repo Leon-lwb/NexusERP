@@ -34,8 +34,8 @@
         </el-col>
         <el-col :span="6" :offset="18" class="search-actions">
           <el-form-item>
-            <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+            <el-button type="primary" icon="Search" @click="handleQuery()">搜索</el-button>
+            <el-button icon="Refresh" @click="resetQuery()">重置</el-button>
           </el-form-item>
         </el-col>
       </el-row>
@@ -43,39 +43,39 @@
 
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
-        <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['so:orderheader:add']">新增</el-button>
+        <el-button type="primary" plain icon="Plus" @click="handleAdd()" v-hasPermi="['so:orderheader:add']">新增</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['so:orderheader:edit']">修改</el-button>
+        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate()" v-hasPermi="['so:orderheader:edit']">修改</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['so:orderheader:remove']"
+        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete()" v-hasPermi="['so:orderheader:remove']"
           >删除</el-button
         >
       </el-col>
       <el-col :span="1.5">
-        <el-button type="info" plain icon="View" :disabled="single" @click="handleView" v-hasPermi="['so:orderheader:query']">查看</el-button>
+        <el-button type="info" plain icon="View" :disabled="single" @click="handleView()" v-hasPermi="['so:orderheader:query']">查看</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['so:orderheader:export']">导出</el-button>
+        <el-button type="warning" plain icon="Download" @click="handleExport()" v-hasPermi="['so:orderheader:export']">导出</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="success" plain icon="Check" :disabled="!canConfirm" @click="handleConfirm" v-hasPermi="['so:orderheader:edit']"
+        <el-button type="success" plain icon="Check" :disabled="!canConfirm" @click="handleConfirm()" v-hasPermi="['so:orderheader:edit']"
           >确认</el-button
         >
       </el-col>
       <el-col :span="1.5">
-        <el-button type="primary" plain icon="Finished" :disabled="!canFulfill" @click="handleFulfill" v-hasPermi="['so:orderheader:edit']"
+        <el-button type="primary" plain icon="Finished" :disabled="!canFulfill" @click="handleFulfill()" v-hasPermi="['so:orderheader:edit']"
           >履行</el-button
         >
       </el-col>
       <el-col :span="1.5">
-        <el-button type="info" plain icon="Close" :disabled="!canClose" @click="handleCloseOrder" v-hasPermi="['so:orderheader:edit']"
+        <el-button type="info" plain icon="Close" :disabled="!canClose" @click="handleCloseOrder()" v-hasPermi="['so:orderheader:edit']"
           >关闭</el-button
         >
       </el-col>
       <el-col :span="1.5">
-        <el-button type="danger" plain icon="CircleClose" :disabled="!canCancel" @click="handleCancel" v-hasPermi="['so:orderheader:edit']"
+        <el-button type="danger" plain icon="CircleClose" :disabled="!canCancel" @click="handleCancel()" v-hasPermi="['so:orderheader:edit']"
           >取消</el-button
         >
       </el-col>
@@ -164,51 +164,61 @@
 </template>
 
 <script setup lang="ts" name="Orderheader">
-import { listOrderheader, delOrderheader, confirmOrder, fulfillOrder, closeOrder, cancelOrder } from '@/api/erp/so/orderheader';
+import {
+  listOrderheader,
+  getOrderheader,
+  addOrderheader,
+  updateOrderheader,
+  delOrderheader,
+  confirmOrder,
+  fulfillOrder,
+  closeOrder,
+  cancelOrder
+} from '@/api/erp/so/orderheader';
 import { useRouter } from 'vue-router';
+import type { FormInstance } from 'element-plus';
+import { useCrud } from '@/composables/useCrud';
 
 const router = useRouter();
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { so_credit_status, so_order_status, so_currency_type } = toRefs<any>(proxy.useDict('so_credit_status', 'so_order_status', 'so_currency_type'));
 
-const orderheaderList = ref([]);
-const loading = ref(true);
-const showSearch = ref(true);
-const ids = ref([]);
-const single = ref(true);
-const multiple = ref(true);
-const total = ref(0);
 // 当前选中行（用于工具栏按审批状态控制 确认/履行/关闭/取消 是否可用）
 const selectedRow = ref<any>(null);
 
-const data = reactive({
-  queryParams: {
-    pageNum: 1,
-    pageSize: 10,
-    soNo: null,
-    clientName: null,
-    orderDate: null,
-    orderStatus: null
-  }
+const queryParams = ref({
+  pageNum: 1,
+  pageSize: 10,
+  soNo: null,
+  clientName: null,
+  orderDate: null,
+  orderStatus: null
 });
 
-const { queryParams } = toRefs(data);
-
-/** 查询销售订单列表 */
-function getList() {
-  loading.value = true;
-  listOrderheader(queryParams.value).then((response) => {
-    orderheaderList.value = response.rows;
-    total.value = response.total;
-    loading.value = false;
-  });
-}
-
-/** 搜索按钮操作 */
-function handleQuery() {
-  queryParams.value.pageNum = 1;
-  getList();
-}
+// 列表骨架（新增/修改/查看为路由表单页，保留本地 router.push 跳转逻辑）
+const {
+  loading,
+  list: orderheaderList,
+  total,
+  ids,
+  single,
+  multiple,
+  showSearch,
+  getList,
+  handleQuery,
+  handleDelete,
+  handleExport,
+  handleSelectionChange: crudSelectionChange
+} = useCrud({
+  apis: { list: listOrderheader, get: getOrderheader, add: addOrderheader, update: updateOrderheader, del: delOrderheader },
+  idField: 'soId',
+  entityName: '销售订单',
+  formRef: ref<FormInstance>(),
+  queryParams,
+  initForm: () => ({}),
+  exportUrl: 'erp/so/orderheader/export',
+  exportFileName: 'orderheader'
+});
 
 /** 重置按钮操作 */
 function resetQuery() {
@@ -216,11 +226,9 @@ function resetQuery() {
   handleQuery();
 }
 
-// 多选框选中数据
-function handleSelectionChange(selection) {
-  ids.value = selection.map((item) => item.soId);
-  single.value = selection.length != 1;
-  multiple.value = !selection.length;
+// 多选框选中数据（在通用逻辑之上记录当前选中行）
+function handleSelectionChange(selection: any[]) {
+  crudSelectionChange(selection);
   selectedRow.value = selection.length === 1 ? selection[0] : null;
 }
 
@@ -269,21 +277,18 @@ const canCancel = computed(() => {
 });
 
 /** 修改按钮操作 */
-function handleUpdate(row) {
-  if (row && row.type && row instanceof Event) {
-    row = null;
-  }
+function handleUpdate(row?: any) {
   if (!row) {
     if (ids.value.length !== 1) {
       proxy.$modal.msgWarning('请选择一条数据进行修改');
       return;
     }
-    const selectedRow = orderheaderList.value.find((item) => item.soId == ids.value[0]);
-    if (!selectedRow) {
+    const selected = orderheaderList.value.find((item: any) => item.soId == ids.value[0]);
+    if (!selected) {
       proxy.$modal.msgWarning('未找到选中的数据');
       return;
     }
-    row = selectedRow;
+    row = selected;
   }
   const soId = row.soId;
   if (soId === undefined) {
@@ -305,53 +310,24 @@ function handleAdd() {
 }
 
 /** 查看按钮操作 */
-function handleView(row) {
-  if (row && row.type && row instanceof Event) {
-    row = null;
-  }
+function handleView(row?: any) {
   if (!row) {
     if (ids.value.length !== 1) {
       proxy.$modal.msgWarning('请选择一条数据进行查看');
       return;
     }
-    const selectedRow = orderheaderList.value.find((item) => item.soId == ids.value[0]);
-    if (!selectedRow) {
+    const selected = orderheaderList.value.find((item: any) => item.soId == ids.value[0]);
+    if (!selected) {
       proxy.$modal.msgWarning('未找到选中的数据');
       return;
     }
-    row = selectedRow;
+    row = selected;
   }
   const soId = row.soId;
   router.push({
     path: '/erp/so/orderheader/form',
     query: { id: soId, action: 'view' }
   });
-}
-
-/** 删除按钮操作 */
-function handleDelete(row) {
-  const _soIds = row.soId || ids.value;
-  proxy.$modal
-    .confirm('是否确认删除销售订单编号为"' + _soIds + '"的数据项？')
-    .then(function () {
-      return delOrderheader(_soIds);
-    })
-    .then(() => {
-      getList();
-      proxy.$modal.msgSuccess('删除成功');
-    })
-    .catch(() => {});
-}
-
-/** 导出按钮操作 */
-function handleExport() {
-  proxy.download(
-    'erp/so/orderheader/export',
-    {
-      ...queryParams.value
-    },
-    `orderheader_${new Date().getTime()}.xlsx`
-  );
 }
 
 /** 解析当前操作的目标订单：优先取行参数，其次取当前选中行，都没有则提示并返回 null */
@@ -363,7 +339,7 @@ function resolveTargetSoId(row: any): any {
 }
 
 /** 确认订单 */
-function handleConfirm(row: any) {
+function handleConfirm(row?: any) {
   const soId = resolveTargetSoId(row);
   if (!soId) return;
   proxy.$modal
@@ -378,7 +354,7 @@ function handleConfirm(row: any) {
 }
 
 /** 履行订单 */
-function handleFulfill(row: any) {
+function handleFulfill(row?: any) {
   const soId = resolveTargetSoId(row);
   if (!soId) return;
   proxy.$modal
@@ -407,7 +383,7 @@ function doFulfill(soId: any, force: boolean) {
 }
 
 /** 关闭订单 */
-function handleCloseOrder(row: any) {
+function handleCloseOrder(row?: any) {
   const soId = resolveTargetSoId(row);
   if (!soId) return;
   proxy.$modal
@@ -422,7 +398,7 @@ function handleCloseOrder(row: any) {
 }
 
 /** 取消订单 */
-function handleCancel(row: any) {
+function handleCancel(row?: any) {
   const soId = resolveTargetSoId(row);
   if (!soId) return;
   proxy.$modal

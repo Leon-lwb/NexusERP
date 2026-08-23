@@ -61,7 +61,7 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="vendorList" @selection-change="handleSelectionChange" show-overflow-tooltip>
+    <el-table v-loading="loading" :data="list" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="序号" type="index" align="center" />
       <el-table-column label="供应商编码" align="center" prop="vendorCode" />
@@ -359,75 +359,71 @@
 
 <script setup lang="ts" name="Vendor">
 import { listVendor, getVendor, delVendor, addVendor, updateVendor } from '@/api/erp/bd/vendor';
-import type { VendorForm, VendorQuery } from '@/api/erp/bd/vendor/types';
 import { listUser } from '@/api/system/user';
 import { previewCode } from '@/api/system/autocode/rule';
 import { getProvinces, getNextLevel } from '@/api/system/area';
 import type { FormInstance } from 'element-plus';
+import { useCrud } from '@/composables/useCrud';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { bd_industry, bd_region, bd_vendor_status, bd_vendor_category, pu_invoice_type } = toRefs<any>(
   proxy.useDict('bd_industry', 'bd_region', 'bd_vendor_status', 'bd_vendor_category', 'pu_invoice_type')
 );
 
-const vendorList = ref([]);
-const open = ref(false);
-const loading = ref(true);
-const showSearch = ref(true);
-const ids = ref([]);
-const single = ref(true);
-const multiple = ref(true);
-const total = ref(0);
-const title = ref('');
 const activeTab = ref('basic');
-const isViewMode = ref(false); // 查看模式标识
 const autoGenFlag = ref(false); // 自动生成标识
 
-// 新增地址相关数据
+// 地址级联选项
 const provinceOptions = ref([]);
 const cityOptions = ref([]);
 const districtOptions = ref([]);
 const streetOptions = ref([]);
 
 const vendorRef = ref<FormInstance>();
-const data = reactive<PageData<VendorForm, VendorQuery>>({
-  form: {},
-  queryParams: {
-    pageNum: 1,
-    pageSize: 10,
-    vendorCode: null,
-    vendorName: null,
-    industry: null,
-    region: null,
-    status: null
-  },
-  rules: {
-    vendorCode: [{ required: true, message: '供应商编码不能为空', trigger: 'blur' }],
-    vendorName: [{ required: true, message: '供应商名称不能为空', trigger: 'blur' }]
-  }
+
+const queryParams = ref({
+  pageNum: 1,
+  pageSize: 10,
+  vendorCode: null,
+  vendorName: null,
+  industry: null,
+  region: null,
+  status: null
 });
 
-const { queryParams, form, rules } = toRefs(data);
+const rules = {
+  vendorCode: [{ required: true, message: '供应商编码不能为空', trigger: 'blur' }],
+  vendorName: [{ required: true, message: '供应商名称不能为空', trigger: 'blur' }]
+};
 
-/** 查询供应商列表 */
-function getList() {
-  loading.value = true;
-  listVendor(queryParams.value).then((response) => {
-    vendorList.value = response.rows;
-    total.value = response.total;
-    loading.value = false;
-  });
-}
-
-// 取消按钮
-function cancel() {
-  open.value = false;
-  reset();
-}
-
-// 表单重置
-function reset() {
-  form.value = {
+const {
+  loading,
+  list,
+  total,
+  open,
+  isViewMode,
+  title,
+  single,
+  multiple,
+  showSearch,
+  form,
+  getList,
+  handleQuery,
+  handleUpdate,
+  handleView,
+  handleDelete,
+  handleExport,
+  handleSelectionChange,
+  submitForm,
+  cancel,
+  handleAdd: rawHandleAdd
+} = useCrud({
+  apis: { list: listVendor, get: getVendor, add: addVendor, update: updateVendor, del: delVendor },
+  idField: 'vendorId',
+  entityName: '供应商',
+  formRef: vendorRef,
+  queryParams,
+  initForm: () => ({
     vendorId: null,
     vendorCode: null,
     vendorName: null,
@@ -453,7 +449,7 @@ function reset() {
     createTime: null,
     updateBy: null,
     updateTime: null,
-    // 新增地址字段
+    // 地址字段
     provinceAreaId: null,
     cityAreaId: null,
     districtAreaId: null,
@@ -464,21 +460,27 @@ function reset() {
     buyerName: null,
     deptId: null,
     deptName: null
-  };
-  proxy.resetForm('vendorRef');
-  activeTab.value = 'basic';
-  isViewMode.value = false; // 重置查看模式
-  // 重置地址选项
-  cityOptions.value = [];
-  districtOptions.value = [];
-  streetOptions.value = [];
-}
-
-/** 搜索按钮操作 */
-function handleQuery() {
-  queryParams.value.pageNum = 1;
-  getList();
-}
+  }),
+  exportUrl: 'core/vendor/export',
+  exportFileName: 'vendor',
+  onReset: () => {
+    activeTab.value = 'basic';
+    // 重置地址级联选项
+    cityOptions.value = [];
+    districtOptions.value = [];
+    streetOptions.value = [];
+  },
+  beforeSubmit: () => {
+    // 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号
+    if (autoGenFlag.value) {
+      form.value.vendorCode = undefined;
+    }
+  },
+  afterLoad: () => {
+    // 修改/查看时按已保存的地址逐级回填级联选项
+    loadAddressCascade();
+  }
+});
 
 /** 重置按钮操作 */
 function resetQuery() {
@@ -486,154 +488,14 @@ function resetQuery() {
   handleQuery();
 }
 
-// 多选框选中数据
-function handleSelectionChange(selection) {
-  ids.value = selection.map((item) => item.vendorId);
-  single.value = selection.length != 1;
-  multiple.value = !selection.length;
-}
-
-/** 新增按钮操作 */
+/** 新增按钮操作（新增时需加载省份数据） */
 function handleAdd() {
-  reset();
-  isViewMode.value = false;
-  loadProvinceOptions(); // 加载省份数据
-  open.value = true;
-  title.value = '添加供应商';
-}
-
-/** 修改按钮操作 */
-function handleUpdate(row) {
-  reset();
-  isViewMode.value = false;
-  const _vendorId = row.vendorId || ids.value;
-  getVendor(_vendorId).then((response) => {
-    form.value = response.data;
-    // 加载地址级联数据
-    loadProvinceOptions().then(() => {
-      if (form.value.provinceAreaId) {
-        loadCityOptions(form.value.provinceAreaId).then(() => {
-          if (form.value.cityAreaId) {
-            loadDistrictOptions(form.value.cityAreaId).then(() => {
-              // 如果有街道ID，加载街道数据
-              if (form.value.streetId && form.value.districtAreaId) {
-                loadStreetOptions(form.value.districtAreaId).then(() => {
-                  // 确保街道选项中包含当前选中的街道
-                  const selectedStreet = streetOptions.value.find((option) => option.areaId === form.value.streetId);
-                  if (!selectedStreet && form.value.streetId) {
-                    // 如果街道选项中没有当前选中的街道，添加该街道到选项中
-                    // 创建一个新的街道选项对象
-                    const newStreetOption = {
-                      areaId: form.value.streetId,
-                      areaName: form.value.streetName || form.value.streetId,
-                      parentAreaId: form.value.districtAreaId
-                    };
-                    streetOptions.value.push(newStreetOption);
-                  }
-                });
-              }
-            });
-          }
-        });
-      }
-    });
-    open.value = true;
-    title.value = '修改供应商';
+  rawHandleAdd(() => {
+    loadProvinceOptions();
   });
 }
 
-/** 查看按钮操作 */
-function handleView(row) {
-  reset();
-  isViewMode.value = true; // 设置为查看模式
-  const _vendorId = row.vendorId || ids.value[0];
-  getVendor(_vendorId).then((response) => {
-    form.value = response.data;
-    // 加载地址级联数据
-    loadProvinceOptions().then(() => {
-      if (form.value.provinceAreaId) {
-        loadCityOptions(form.value.provinceAreaId).then(() => {
-          if (form.value.cityAreaId) {
-            loadDistrictOptions(form.value.cityAreaId).then(() => {
-              // 如果有街道ID，加载街道数据
-              if (form.value.streetId && form.value.districtAreaId) {
-                loadStreetOptions(form.value.districtAreaId).then(() => {
-                  // 确保街道选项中包含当前选中的街道
-                  const selectedStreet = streetOptions.value.find((option) => option.areaId === form.value.streetId);
-                  if (!selectedStreet && form.value.streetId) {
-                    // 如果街道选项中没有当前选中的街道，添加该街道到选项中
-                    // 创建一个新的街道选项对象
-                    const newStreetOption = {
-                      areaId: form.value.streetId,
-                      areaName: form.value.streetName || form.value.streetId,
-                      parentAreaId: form.value.districtAreaId
-                    };
-                    streetOptions.value.push(newStreetOption);
-                  }
-                });
-              }
-            });
-          }
-        });
-      }
-    });
-    open.value = true;
-    title.value = '查看供应商';
-  });
-}
-
-/** 提交按钮 */
-function submitForm() {
-  vendorRef.value?.validate((valid) => {
-    if (valid) {
-      // 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号
-      if (autoGenFlag.value) {
-        form.value.vendorCode = undefined;
-      }
-      if (form.value.vendorId != null) {
-        updateVendor(form.value).then((response) => {
-          proxy.$modal.msgSuccess('修改成功');
-          open.value = false;
-          getList();
-        });
-      } else {
-        addVendor(form.value).then((response) => {
-          proxy.$modal.msgSuccess('新增成功');
-          open.value = false;
-          getList();
-        });
-      }
-    }
-  });
-}
-
-/** 删除按钮操作 */
-function handleDelete(row) {
-  const _vendorIds = row.vendorId || ids.value;
-  proxy.$modal
-    .confirm('是否确认删除供应商编号为"' + _vendorIds + '"的数据项？')
-    .then(function () {
-      return delVendor(_vendorIds);
-    })
-    .then(() => {
-      getList();
-      proxy.$modal.msgSuccess('删除成功');
-    })
-    .catch(() => {});
-}
-
-/** 导出按钮操作 */
-function handleExport() {
-  proxy.download(
-    'core/vendor/export',
-    {
-      ...queryParams.value
-    },
-    `vendor_${new Date().getTime()}.xlsx`
-  );
-}
-
-//自动生成编码
+// 自动生成编码
 function handleAutoGenChange(autoGenFlag) {
   if (autoGenFlag) {
     previewCode('VENDOR_CODE').then((response: any) => {
@@ -642,6 +504,36 @@ function handleAutoGenChange(autoGenFlag) {
   } else {
     form.value.vendorCode = null;
   }
+}
+
+/** 修改/查看时按已保存的地址逐级回填级联选项 */
+function loadAddressCascade() {
+  loadProvinceOptions().then(() => {
+    if (form.value.provinceAreaId) {
+      loadCityOptions(form.value.provinceAreaId).then(() => {
+        if (form.value.cityAreaId) {
+          loadDistrictOptions(form.value.cityAreaId).then(() => {
+            // 如果有街道ID，加载街道数据
+            if (form.value.streetId && form.value.districtAreaId) {
+              loadStreetOptions(form.value.districtAreaId).then(() => {
+                // 确保街道选项中包含当前选中的街道
+                const selectedStreet = streetOptions.value.find((option) => option.areaId === form.value.streetId);
+                if (!selectedStreet && form.value.streetId) {
+                  // 如果街道选项中没有当前选中的街道，添加该街道到选项中
+                  const newStreetOption = {
+                    areaId: form.value.streetId,
+                    areaName: form.value.streetName || form.value.streetId,
+                    parentAreaId: form.value.districtAreaId
+                  };
+                  streetOptions.value.push(newStreetOption);
+                }
+              });
+            }
+          });
+        }
+      });
+    }
+  });
 }
 
 // 加载省份数据
