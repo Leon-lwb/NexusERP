@@ -4,7 +4,7 @@
   </el-select>
 </template>
 
-<script>
+<script lang="ts">
 import { ref, watch, onMounted } from 'vue';
 
 export default {
@@ -35,16 +35,15 @@ export default {
       emit('update:value', newValue);
     });
 
-    // 处理 change 事件
-    const commonComponent = (event) => {
-      if (localValue.value) {
-        props.nm.commonDataInfo = localValue.value.id;
-        props.nm.commonLinkDownCodeChild = localValue.value.children || [];
-      } else {
-        props.nm.commonDataInfo = null;
-        props.nm.commonLinkDownCodeChild = [];
-      }
-      emit('commonComponent', { ...props.nm });
+    // 处理 change 事件：原实现直接回写 nm 的 commonDataInfo/commonLinkDownCodeChild（变更 prop），
+    // 现改为构建携带最新字段的 nm 副本随事件发出，事件负载与原实现保持一致
+    const commonComponent = () => {
+      // value 声明为 [String, Object]：运行时实际绑定的是选项对象（含 id/children），非对象时保持原行为取 undefined
+      const val = localValue.value as Record<string, any> | null | undefined;
+      const updatedNm = val
+        ? { ...props.nm, commonDataInfo: val.id, commonLinkDownCodeChild: val.children || [] }
+        : { ...props.nm, commonDataInfo: null, commonLinkDownCodeChild: [] };
+      emit('commonComponent', updatedNm);
     };
 
     // 初始化时设置 localValue

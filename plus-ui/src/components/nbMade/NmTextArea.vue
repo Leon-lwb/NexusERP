@@ -2,7 +2,7 @@
   <el-input type="textarea" :disabled="disabled" :rows="2" :placeholder="nm.tableTypeDesc" v-model="localValue" @change="commonComponent" />
 </template>
 
-<script>
+<script lang="ts">
 import { ref, watch, onMounted } from 'vue';
 
 export default {

@@ -9,7 +9,7 @@
   />
 </template>
 
-<script>
+<script lang="ts">
 import { ref, watch, onMounted } from 'vue';
 
 export default {

@@ -2,7 +2,7 @@
   <el-checkbox :disabled="disabled" v-model="localValue" :dictCode="dictcode" @change="commonmomponent" />
 </template>
 
-<script>
+<script lang="ts">
 import { ref, watch, onMounted } from 'vue';
 
 export default {

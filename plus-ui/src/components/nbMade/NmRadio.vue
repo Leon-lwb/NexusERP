@@ -6,7 +6,7 @@
   </el-radio-group>
 </template>
 
-<script>
+<script lang="ts">
 import { computed, ref, watch, onMounted } from 'vue';
 
 export default {

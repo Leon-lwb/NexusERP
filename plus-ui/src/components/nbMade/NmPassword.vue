@@ -2,7 +2,7 @@
   <el-input type="password" :placeholder="nm.tableTypeDesc" v-model="localValue" autocomplete="off" @change="commonComponent" />
 </template>
 
-<script>
+<script lang="ts">
 import { ref, watch, onMounted } from 'vue';
 
 export default {

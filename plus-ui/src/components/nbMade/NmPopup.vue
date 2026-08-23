@@ -225,9 +225,9 @@ const handleConfirm = () => {
 
 // 新增：处理行数据的通用方法
 const processRowData = (row: any) => {
-  const dictFields = safeParseJSON(props.nm.dictFields) || {};
-  let mapping = safeParseJSON(props.nm.mapping) || {};
-  let popupConfig = safeParseJSON(props.nm.popupConfig) || {};
+  const dictFields: Record<string, any> = safeParseJSON(props.nm.dictFields) || {};
+  let mapping: Record<string, any> = safeParseJSON(props.nm.mapping) || {};
+  let popupConfig: Record<string, any> = safeParseJSON(props.nm.popupConfig) || {};
 
   // 处理嵌套的 mapping 结构
   if (mapping.mapping) {
@@ -237,8 +237,8 @@ const processRowData = (row: any) => {
 
   const displayMode = popupConfig.displayMode || 'value';
 
-  // 构建返回数据
-  const returnData = {
+  // 构建返回数据（sub 模式下会追加 mappedData 字段）
+  const returnData: Record<string, any> = {
     id: row[keyField],
     display: row[displayField],
     dictFields: dictFields,

@@ -61,7 +61,7 @@ watch(
         break;
       case 'BigDecimal':
       case 'Double':
-        localValue.value = parseFloat(newVal) || 0;
+        localValue.value = parseFloat(String(newVal)) || 0;
         break;
       default:
         localValue.value = String(newVal || '');

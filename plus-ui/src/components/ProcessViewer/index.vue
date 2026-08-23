@@ -59,10 +59,21 @@
   </div>
 </template>
 
-<script>
+<script lang="ts">
 import '@/package/theme/index.scss';
 import BpmnViewer from 'bpmn-js/lib/Viewer';
 import MoveCanvasModule from 'diagram-js/lib/navigation/movecanvas';
+import type { PropType } from 'vue';
+
+/** 任务节点审批记录 */
+interface TaskComment {
+  activityId?: string;
+  assigneeName?: string;
+  createTime?: string;
+  endTime?: string;
+  candidate?: string;
+  commentList?: { fullMessage?: string }[];
+}
 
 export default {
   props: {
@@ -71,11 +82,11 @@ export default {
     },
     finishedInfo: {
       type: Object,
-      default: {}
+      default: () => ({})
     },
     // 所有节点审批记录
     allCommentList: {
-      type: Array
+      type: Array as PropType<TaskComment[]>
     }
   },
   data() {
@@ -85,13 +96,13 @@ export default {
       defaultZoom: 1,
       // 是否正在加载流程图
       isLoading: false,
-      bpmnViewer: undefined,
+      bpmnViewer: undefined as any,
       // 已完成流程元素
-      processNodeInfo: undefined,
+      processNodeInfo: undefined as any,
       // 当前任务id
-      selectTaskId: undefined,
+      selectTaskId: undefined as string | undefined,
       // 任务节点审批记录
-      taskCommentList: [],
+      taskCommentList: [] as any[],
       // 已完成任务悬浮延迟Timer
       hoverTimer: null,
       SysFlowTaskOperationType: ''
@@ -120,7 +131,7 @@ export default {
     },
     // 流程图预览清空
     clearViewer() {
-      if (this.$refs.processCanvas) this.$refs.processCanvas.innerHTML = '';
+      if (this.$refs.processCanvas) (this.$refs.processCanvas as HTMLElement).innerHTML = '';
       if (this.bpmnViewer) this.bpmnViewer.destroy();
       this.bpmnViewer = null;
     },

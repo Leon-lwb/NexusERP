@@ -188,3 +188,51 @@ const Nm020 = () => {
     callback();
   }
 };
+
+// 校验规则集合（供表单 rules 引用）
+const NmRule = {
+  NmNotNull,
+  NmPhone,
+  NmTelPhone,
+  NmEmail,
+  NmEmailCode,
+  NmEn,
+  NmNumber,
+  NmZhengShu,
+  NmMoney,
+  Nm616Num,
+  Nm616All,
+  Nm618All,
+  Nm618Val,
+  NmNaturNum,
+  NmENmh,
+  NmBankNo,
+  NmIDCard,
+  NmQQNo,
+  NmWWW,
+  Nm020
+};
+
+export {
+  NmNotNull,
+  NmPhone,
+  NmTelPhone,
+  NmEmail,
+  NmEmailCode,
+  NmEn,
+  NmNumber,
+  NmZhengShu,
+  NmMoney,
+  Nm616Num,
+  Nm616All,
+  Nm618All,
+  Nm618Val,
+  NmNaturNum,
+  NmENmh,
+  NmBankNo,
+  NmIDCard,
+  NmQQNo,
+  NmWWW,
+  Nm020,
+  NmRule
+};
