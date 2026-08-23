@@ -199,15 +199,14 @@
 
 ## 五、🟢 P3 低 - 延后项与可选重构
 
-### P3-1 ERP 3D 仓库 InstancedMesh 优化
+### P3-1 ERP 3D 仓库 InstancedMesh 优化 ✅
 - **来源**: [erp/plans/archive/2026-07-04-erp-wm-3d-warehouse-m2m3-plan.md](./erp/plans/archive/2026-07-04-erp-wm-3d-warehouse-m2m3-plan.md)
-- **待办**: [ ] 库位 > 500 时启用 InstancedMesh 渲染(当前环境无法验证)
-- **触发条件**: 真实大仓库数据
+- **完成**: [x] M4 视觉升级中统一改为 InstancedMesh 渲染（库位格/货物/托盘三个实例网格 + 合并轮廓线，104 库位仅 4 个 draw call）—— [2026-08-22 M4 计划](./erp/plans/archive/2026-08-22-erp-wm-3d-warehouse-visual-upgrade-plan.md)
 - **预估**: 2d
 
-### P3-2 ERP 3D 仓库 composable 抽取
+### P3-2 ERP 3D 仓库 composable 抽取 ✅
 - **来源**: 同上
-- **待办**: [ ] 3D 渲染逻辑抽取为 composable(纯重构，回归风险高于收益)
+- **完成**: [x] M4 中渲染逻辑模块化抽取为 instancedLocations/rackFrame/sceneLabels/floorMarkings/warehouseBuilding 组件（等效完成，未做 composable 化 Vue 状态重构）
 - **预估**: 1d
 
 ### P3-3 ERP 3D 仓库实施前确认项

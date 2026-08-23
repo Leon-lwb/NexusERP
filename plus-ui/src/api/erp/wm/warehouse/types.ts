@@ -81,6 +81,14 @@ export interface WarehouseLocation3dVO {
   layer: number;
   col: number;
   rowNum: number;
+  /** 边框: 是否显示/颜色/宽度(米, WebGL 线宽恒为1, 仅取色) */
+  showBorder: number;
+  borderColor: string;
+  borderWidth: number;
+  /** 标签: 是否显示/位置 TOP-顶部 FRONT-前面/大小(米) */
+  showLabel: number;
+  labelPosition: string;
+  labelSize: number;
   /** 库位状态: EMPTY/OCCUPIED/WARNING/LOCKED */
   status: string;
   stockQuantity: number;
@@ -107,6 +115,12 @@ export interface WarehouseArea3dVO {
   color: string;
   opacity: number;
   modelType: string;
+  modelUrl: string;
+  /** 是否显示半透明边界墙(货架区关闭, 由钢架表达体积) */
+  showWalls: number;
+  showLabel: number;
+  /** 是否显示地面色块 */
+  gridVisible: number;
   configJson: string;
   locations: WarehouseLocation3dVO[];
 }

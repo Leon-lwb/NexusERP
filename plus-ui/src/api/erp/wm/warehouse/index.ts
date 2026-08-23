@@ -1,6 +1,6 @@
 import request from '@/utils/request';
 import { AxiosPromise } from 'axios';
-import { WarehouseQuery, WarehouseVO, WarehouseForm } from './types';
+import { WarehouseQuery, WarehouseVO, WarehouseForm, Warehouse3dVO } from './types';
 
 export const listWarehouse = (query: WarehouseQuery): AxiosPromise<WarehouseVO[]> => {
   return request({

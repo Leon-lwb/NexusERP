@@ -12,46 +12,96 @@
           </span>
         </div>
         <div class="wm3d-toolbar-center">
-          <span class="wm3d-legend"><i class="wm3d-dot" style="background: #909399"></i>空置 {{ viewData.emptyLocations ?? 0 }}</span>
-          <span class="wm3d-legend"><i class="wm3d-dot" style="background: #409eff"></i>占用 {{ viewData.occupiedLocations ?? 0 }}</span>
-          <span class="wm3d-legend"><i class="wm3d-dot" style="background: #e6a23c"></i>预警 {{ viewData.warningLocations ?? 0 }}</span>
-          <span class="wm3d-legend"><i class="wm3d-dot" style="background: #f56c6c"></i>锁定 {{ viewData.lockedLocations ?? 0 }}</span>
+          <span
+            v-for="st in STATUS_KEYS"
+            :key="st"
+            class="wm3d-legend wm3d-legend-btn"
+            :class="{ 'is-active': statusFilter.includes(st) }"
+            title="点击按状态筛选库位"
+            @click="toggleStatusFilter(st)"
+          >
+            <i class="wm3d-dot" :style="{ background: LEGEND_COLORS[st] }"></i>{{ STATUS_LABELS[st] }} {{ statusCount(st) }}
+          </span>
           <el-divider direction="vertical" />
           <span class="wm3d-total">共 {{ viewData.totalLocations ?? 0 }} 个库位</span>
+          <el-tag v-if="statusFilter.length > 0" size="small" type="info" effect="plain" closable @close="clearStatusFilter">已过滤</el-tag>
         </div>
         <div class="wm3d-toolbar-right">
-          <el-checkbox v-model="buildingVisible" title="仓库外壳显隐" style="margin-right: 12px" @change="onToggleBuilding">外壳</el-checkbox>
-          <el-select v-model="colorMode" style="width: 120px" @change="recolorLocations" title="着色模式">
+          <el-checkbox v-model="buildingVisible" title="仓库外壳显隐" style="margin-right: 8px" @change="onToggleBuilding">外壳</el-checkbox>
+          <el-checkbox v-model="labelsVisible" title="标签显隐" style="margin-right: 8px" @change="onToggleLabels">标签</el-checkbox>
+          <el-checkbox v-model="shadowsEnabled" title="阴影显隐" style="margin-right: 8px" @change="onToggleShadows">阴影</el-checkbox>
+          <el-select v-model="colorMode" style="width: 110px" @change="recolorLocations" title="着色模式">
             <el-option label="按状态" value="status" />
             <el-option label="按库区" value="area" />
             <el-option label="按占用率" value="occupancy" />
           </el-select>
-          <el-button type="primary" plain icon="Refresh" @click="resetView" :disabled="!ready">重置视角</el-button>
+          <el-dropdown trigger="click" @command="applyViewPreset">
+            <el-button plain class="wm3d-ctl-btn">
+              视角<el-icon class="el-icon--right"><ArrowDown /></el-icon>
+            </el-button>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item command="overview">全景</el-dropdown-item>
+                <el-dropdown-item command="top">俯视</el-dropdown-item>
+                <el-dropdown-item command="front">正视</el-dropdown-item>
+                <el-dropdown-item command="side">侧视</el-dropdown-item>
+                <el-dropdown-item command="iso">等轴测</el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
+          <el-popover placement="bottom-end" :width="300" trigger="click">
+            <template #reference>
+              <el-button plain class="wm3d-ctl-btn">库区</el-button>
+            </template>
+            <div class="wm3d-area-pop">
+              <div class="wm3d-area-pop-head">
+                <span>库区显隐</span>
+                <span>
+                  <el-button link type="primary" size="small" @click="setAllAreasVisible(true)">全选</el-button>
+                  <el-button link type="info" size="small" @click="setAllAreasVisible(false)">全隐</el-button>
+                </span>
+              </div>
+              <div v-if="areaList.length === 0" class="wm3d-area-pop-empty">暂无库区</div>
+              <el-checkbox
+                v-for="a in areaList"
+                :key="a.areaId"
+                class="wm3d-area-pop-item"
+                :model-value="areaVisibleMap[a.areaId] !== false"
+                @change="onAreaChange(a.areaId, $event)"
+              >
+                <i class="wm3d-dot" :style="{ background: a.color || '#409eff' }"></i>
+                <span class="wm3d-area-pop-name">{{ a.areaName }}</span>
+                <span class="wm3d-area-pop-count">{{ (a.locations || []).length }} 位</span>
+              </el-checkbox>
+            </div>
+          </el-popover>
+          <el-button type="primary" plain icon="Refresh" class="wm3d-ctl-btn" @click="resetView" :disabled="!ready">重置视角</el-button>
         </div>
       </div>
     </el-card>
 
     <!-- 3D 画布 -->
     <el-card shadow="hover" v-loading="loading" element-loading-text="加载 3D 数据...">
-      <div ref="containerRef" class="wm3d-canvas" />
-      <!-- 悬停浮窗 -->
-      <div v-show="tooltip.visible" class="wm3d-tooltip" :style="{ left: tooltip.x + 'px', top: tooltip.y + 'px' }">
-        <div class="wm3d-tooltip-title">{{ tooltip.title }}</div>
-        <div class="wm3d-tooltip-row">
-          <span>状态</span>
-          <span :class="'wm3d-status wm3d-status-' + (tooltip.status || '').toLowerCase()">{{ statusLabel(tooltip.status) }}</span>
-        </div>
-        <div class="wm3d-tooltip-row">
-          <span>库区</span><span>{{ tooltip.areaName }}</span>
-        </div>
-        <div class="wm3d-tooltip-row">
-          <span>在库数量</span><span>{{ tooltip.stockQuantity }}</span>
-        </div>
-        <div class="wm3d-tooltip-row">
-          <span>已预留</span><span>{{ tooltip.reservedQuantity }}</span>
-        </div>
-        <div class="wm3d-tooltip-row">
-          <span>库存记录</span><span>{{ tooltip.stockCount }} 条</span>
+      <div ref="containerRef" class="wm3d-canvas">
+        <!-- 悬停浮窗（置于画布内，坐标即画布相对坐标） -->
+        <div v-show="tooltip.visible" class="wm3d-tooltip" :style="{ left: tooltip.x + 'px', top: tooltip.y + 'px' }">
+          <div class="wm3d-tooltip-title">{{ tooltip.title }}</div>
+          <div class="wm3d-tooltip-row">
+            <span>状态</span>
+            <span :class="'wm3d-status wm3d-status-' + (tooltip.status || '').toLowerCase()">{{ statusLabel(tooltip.status) }}</span>
+          </div>
+          <div class="wm3d-tooltip-row">
+            <span>库区</span><span>{{ tooltip.areaName }}</span>
+          </div>
+          <div class="wm3d-tooltip-row">
+            <span>在库数量</span><span>{{ tooltip.stockQuantity }}</span>
+          </div>
+          <div class="wm3d-tooltip-row">
+            <span>已预留</span><span>{{ tooltip.reservedQuantity }}</span>
+          </div>
+          <div class="wm3d-tooltip-row">
+            <span>库存记录</span><span>{{ tooltip.stockCount }} 条</span>
+          </div>
         </div>
       </div>
     </el-card>
@@ -65,10 +115,18 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { getWarehouse3d } from '@/api/erp/wm/warehouse';
-import type { Warehouse3dVO, WarehouseArea3dVO, WarehouseLocation3dVO } from '@/api/erp/wm/warehouse/types';
+import type { Warehouse3dVO, WarehouseArea3dVO } from '@/api/erp/wm/warehouse/types';
 import WmLocationStockDialog from '../components/WmLocationStockDialog.vue';
 import { autoLayoutRack } from '../components/rackLayout';
 import { buildWarehouseBuilding } from '../components/warehouseBuilding';
+import { createInstancedLocations } from '../components/instancedLocations';
+import type { InstancedLocations, LocationColorMode, LocationEntry } from '../components/instancedLocations';
+import { buildRackFrames } from '../components/rackFrame';
+import type { RackFrameBuild } from '../components/rackFrame';
+import { buildFloorMarkings } from '../components/floorMarkings';
+import type { FloorMarkingBuild } from '../components/floorMarkings';
+import { buildSceneLabels } from '../components/sceneLabels';
+import type { SceneLabels } from '../components/sceneLabels';
 
 const { proxy } = getCurrentInstance() as any;
 const route = useRoute();
@@ -93,16 +151,42 @@ const tooltip = reactive({
 });
 
 // 着色模式：status 按状态 / area 按库区 / occupancy 按占用率
-const colorMode = ref<'status' | 'area' | 'occupancy'>('status');
-const maxStockQuantity = ref(0);
-// 仓库外壳（厂房）显隐
+const colorMode = ref<LocationColorMode>('status');
+// 仓库厂房（外壳）显隐
 const buildingVisible = ref(true);
+// 标签 / 阴影显隐
+const labelsVisible = ref(true);
+const shadowsEnabled = ref(true);
+// 状态过滤（图例点击，空数组 = 不过滤显示全部）
+const statusFilter = ref<string[]>([]);
+// 库区显隐状态（缺省视为显示）
+const areaVisibleMap = reactive<Record<number, boolean>>({});
 // 库位库存明细弹窗
 const stockDialog = reactive({
   visible: false,
   locationId: undefined as number | string | undefined,
   locationName: ''
 });
+
+const STATUS_KEYS = ['EMPTY', 'OCCUPIED', 'WARNING', 'LOCKED'] as const;
+const STATUS_LABELS: Record<string, string> = { EMPTY: '空置', OCCUPIED: '占用', WARNING: '预警', LOCKED: '锁定' };
+const LEGEND_COLORS: Record<string, string> = { EMPTY: '#909399', OCCUPIED: '#409eff', WARNING: '#e6a23c', LOCKED: '#f56c6c' };
+
+const areaList = computed(() => viewData.value.areas || []);
+
+const statusCount = (st: string): number => {
+  const map: Record<string, number | undefined> = {
+    EMPTY: viewData.value.emptyLocations,
+    OCCUPIED: viewData.value.occupiedLocations,
+    WARNING: viewData.value.warningLocations,
+    LOCKED: viewData.value.lockedLocations
+  };
+  return map[st] ?? 0;
+};
+
+const statusLabel = (s?: string) => (s ? STATUS_LABELS[s] || s : '');
+
+const goBack = () => proxy.$router.back();
 
 // three.js 资源（模块级，非响应式）
 let scene: THREE.Scene | null = null;
@@ -111,39 +195,27 @@ let renderer: THREE.WebGLRenderer | null = null;
 let controls: OrbitControls | null = null;
 let raycaster: THREE.Raycaster | null = null;
 let pointer: THREE.Vector2 | null = null;
+let dirLight: THREE.DirectionalLight | null = null;
 let rafId = 0;
 let cameraAnimId = 0;
 let singleClickTimer: ReturnType<typeof setTimeout> | null = null;
 let pointerDownPos: { x: number; y: number } | null = null;
-let hoveredMesh: THREE.Mesh | null = null;
-const locationMeshes: THREE.Mesh[] = [];
+// 渲染组件
+let locationRenderer: InstancedLocations | null = null;
+let rackFrames: RackFrameBuild | null = null;
+let floorMarkings: FloorMarkingBuild | null = null;
+let labels: SceneLabels | null = null;
+// 库区主组（外壳 + 地面标线 + 货架 + 标签子组挂载其下），key: areaId
+const areaGroups = new Map<number, THREE.Group>();
 // 仓库厂房（建筑本体）资源
 let buildingGroup: THREE.Group | null = null;
-let roofMesh: THREE.Mesh | null = null;
-let buildingPickMeshes: THREE.Mesh[] = [];
+let roofMesh: THREE.Object3D | null = null;
+// 遮挡拾取网格（厂房 + 货架钢结构，"看得到才点得到"）
+let occluders: THREE.Mesh[] = [];
 let roofHidden = false;
 // 缓存初始视角用于重置
 let initialTarget: THREE.Vector3 | null = null;
 let initialPosition: THREE.Vector3 | null = null;
-
-// 默认状态色（库位未配置时兜底）
-const DEFAULT_COLORS: Record<string, number> = {
-  EMPTY: 0x909399,
-  OCCUPIED: 0x409eff,
-  WARNING: 0xe6a23c,
-  LOCKED: 0xf56c6c
-};
-
-const STATUS_LABELS: Record<string, string> = {
-  EMPTY: '空置',
-  OCCUPIED: '占用',
-  WARNING: '预警',
-  LOCKED: '锁定'
-};
-
-const statusLabel = (s?: string) => (s ? STATUS_LABELS[s] || s : '');
-
-const goBack = () => proxy.$router.back();
 
 /** 加载聚合数据并初始化场景 */
 const loadData = async () => {
@@ -160,6 +232,13 @@ const loadData = async () => {
     loading.value = false;
   }
 };
+
+const num = (v: any, dft: number) => {
+  const n = Number(v);
+  return isNaN(n) || v === null || v === undefined ? dft : n;
+};
+
+const toRad = (deg?: number) => (deg ? THREE.MathUtils.degToRad(deg) : 0);
 
 /** 初始化 three.js 场景 */
 const initScene = () => {
@@ -179,14 +258,22 @@ const initScene = () => {
   renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(width, height);
   renderer.setPixelRatio(window.devicePixelRatio);
+  // 光影：软阴影 + ACES 色调映射
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.05;
   container.appendChild(renderer.domElement);
 
-  // 灯光
-  const ambient = new THREE.AmbientLight(0xffffff, 0.7);
-  scene.add(ambient);
-  const dir = new THREE.DirectionalLight(0xffffff, 0.8);
-  dir.position.set(20, 30, 20);
-  scene.add(dir);
+  // 灯光：环境光 + 半球光补天空/地面色 + 主平行光（投影）
+  scene.add(new THREE.AmbientLight(0xffffff, 0.35));
+  scene.add(new THREE.HemisphereLight(0xdfe9f3, 0x9aa0a6, 0.45));
+  dirLight = new THREE.DirectionalLight(0xffffff, 1.15);
+  dirLight.castShadow = shadowsEnabled.value;
+  dirLight.shadow.mapSize.set(2048, 2048);
+  dirLight.shadow.bias = -0.0004;
+  scene.add(dirLight);
+  scene.add(dirLight.target);
 
   // 地面网格 + 地板
   const grid = new THREE.GridHelper(80, 80, 0xc0c4cc, 0xdcdfe6);
@@ -197,33 +284,90 @@ const initScene = () => {
   const plane = new THREE.Mesh(planeGeo, planeMat);
   plane.rotation.x = -Math.PI / 2;
   plane.position.y = -0.01;
+  plane.receiveShadow = true;
   scene.add(plane);
 
-  // 建库区 + 库位
-  const bounds = { minX: Infinity, maxX: -Infinity, minY: Infinity, maxY: -Infinity, minZ: Infinity, maxZ: -Infinity };
+  // 库区：货架自动排版（手填坐标优先）→ 主组（外壳/标线/钢架/标签）
   const areas = viewData.value.areas || [];
   for (const area of areas) {
-    // 货架自动排版：手填坐标优先，缺省才按 layer/col/row 计算（建 mesh 前补全坐标）
     autoLayoutRack(area.locations || [], area);
-    addAreaMesh(area, bounds);
-    const locs = area.locations || [];
-    for (const loc of locs) {
-      addLocationMesh(loc, area, bounds);
-    }
+    const group = new THREE.Group();
+    group.name = `area-${area.areaId}`;
+    scene.add(group);
+    areaGroups.set(area.areaId, group);
   }
 
-  // 仓库厂房：由内容包围盒自动包络（写实风），其网格参与遮挡拾取但不响应业务交互
-  const building = buildWarehouseBuilding(bounds);
+  // 地面标线（色块/边界线/通道虚线）
+  floorMarkings = buildFloorMarkings(areas);
+  for (const [areaId, g] of floorMarkings.groups) {
+    areaGroups.get(areaId)?.add(g);
+  }
+
+  // 货架钢结构（RACK 布局）
+  rackFrames = buildRackFrames(areas);
+  for (const [areaId, g] of rackFrames.groups) {
+    areaGroups.get(areaId)?.add(g);
+  }
+
+  // 库区半透明外壳（showWalls=0 的货架区由钢架表达体积，不再渲染）
+  for (const area of areas) {
+    addAreaBox(area);
+  }
+
+  // 标签（库区名 + 库位编码 Sprite）
+  labels = buildSceneLabels(areas);
+  labels.setVisible(labelsVisible.value);
+  scene.add(labels.root);
+
+  // 库位 InstancedMesh 渲染器（幽灵格/货物/托盘 + 合并轮廓线 + 高亮盒）
+  locationRenderer = createInstancedLocations(areas, colorMode.value);
+  scene.add(locationRenderer.root);
+
+  // 取景包围盒：库区占地 + 库位
+  const bounds = { minX: Infinity, maxX: -Infinity, minY: Infinity, maxY: -Infinity, minZ: Infinity, maxZ: -Infinity };
+  for (const area of areas) {
+    const w = num(area.areaWidth, 0);
+    const d = num(area.areaLength, 0);
+    const h = num(area.areaHeight, 0);
+    expandBounds(bounds, num(area.posX, 0), num(area.posY, 0) + h / 2, num(area.posZ, 0), w, h, d);
+  }
+  for (const e of locationRenderer.entries) {
+    expandBounds(bounds, e.center.x, e.center.y, e.center.z, e.size.x, e.size.y, e.size.z);
+  }
+
+  // 仓库厂房：由内容包围盒自动包络（工业写实风：勒脚彩钢墙/卷帘门/卸货平台/条窗/屋脊通风器），
+  // 其网格参与遮挡拾取但不响应业务交互；屋顶不投影避免压暗室内，仅接收投影（组件内设置）
+  const whLabel = [viewData.value.warehouseCode, viewData.value.warehouseName].filter(Boolean).join(' ');
+  const building = buildWarehouseBuilding(bounds, whLabel ? { label: whLabel } : {});
   if (building) {
     buildingGroup = building.group;
     roofMesh = building.roof;
-    buildingPickMeshes = building.pickMeshes;
+    occluders.push(...building.pickMeshes);
     scene.add(buildingGroup);
     // 取景包围盒扩展到整栋厂房（含地台外挑与屋顶起坡）
     const e = building.envelope;
     expandBounds(bounds, (e.minX + e.maxX) / 2, (e.minY + e.maxY) / 2, (e.minZ + e.maxZ) / 2, e.maxX - e.minX, e.maxY - e.minY, e.maxZ - e.minZ);
     // 数据重载后按当前开关状态恢复显隐
     buildingGroup.visible = buildingVisible.value;
+  }
+  // 货架钢架同样参与遮挡拾取
+  occluders.push(...rackFrames.pickMeshes);
+
+  // 主平行光：对准场景中心，投影相机按包围盒收紧
+  if (dirLight && isFinite(bounds.minX)) {
+    const cx = (bounds.minX + bounds.maxX) / 2;
+    const cz = (bounds.minZ + bounds.maxZ) / 2;
+    const maxDim = Math.max(bounds.maxX - bounds.minX, bounds.maxY - bounds.minY, bounds.maxZ - bounds.minZ, 10);
+    dirLight.position.set(cx + maxDim, maxDim * 1.4, cz + maxDim * 0.7);
+    dirLight.target.position.set(cx, 0, cz);
+    const s = maxDim * 0.9;
+    dirLight.shadow.camera.left = -s;
+    dirLight.shadow.camera.right = s;
+    dirLight.shadow.camera.top = s;
+    dirLight.shadow.camera.bottom = -s;
+    dirLight.shadow.camera.near = 1;
+    dirLight.shadow.camera.far = maxDim * 5;
+    dirLight.shadow.camera.updateProjectionMatrix();
   }
 
   // OrbitControls
@@ -249,8 +393,11 @@ const initScene = () => {
   animate();
 };
 
-/** 添加库区半透明立方体 + 描边 */
-const addAreaMesh = (area: WarehouseArea3dVO, bounds: any) => {
+/** 库区半透明外壳 + 描边（showWalls=0 时跳过，由货架钢结构表达体积） */
+const addAreaBox = (area: WarehouseArea3dVO) => {
+  if (Number(area.showWalls ?? 1) !== 1) return;
+  const group = areaGroups.get(area.areaId);
+  if (!group || !scene) return;
   const w = num(area.areaWidth, 6);
   const h = num(area.areaHeight, 3);
   const d = num(area.areaLength, 4);
@@ -270,81 +417,15 @@ const addAreaMesh = (area: WarehouseArea3dVO, bounds: any) => {
   });
   const mesh = new THREE.Mesh(geo, mat);
   mesh.position.set(x, y, z);
-  applyRotation(mesh, area.rotationX, area.rotationY, area.rotationZ);
-  mesh.userData = { type: 'area', area };
-  scene!.add(mesh);
+  mesh.rotation.set(toRad(area.rotationX), toRad(area.rotationY), toRad(area.rotationZ));
+  group.add(mesh);
 
   // 描边
   const edges = new THREE.EdgesGeometry(geo);
   const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: color }));
   line.position.copy(mesh.position);
   line.rotation.copy(mesh.rotation);
-  scene!.add(line);
-
-  expandBounds(bounds, x, y, z, w, h, d);
-};
-
-/** 添加库位立方体（按状态着色） */
-const addLocationMesh = (loc: WarehouseLocation3dVO, area: WarehouseArea3dVO, bounds: any) => {
-  const w = num(loc.width, 1);
-  const h = num(loc.height, 1);
-  const d = num(loc.locationDepth, 1);
-  const x = num(loc.posX, 0);
-  const y = num(loc.posY, 0) + h / 2;
-  const z = num(loc.posZ, 0);
-
-  const status = loc.status || 'EMPTY';
-  const colorHex = statusColor(loc, status);
-  // 库位略小于格子（保留 2% 间隙），消除相邻库位共面导致的 z-fighting（转动时闪烁/晃动）
-  const GAP = 0.98;
-  const geo = new THREE.BoxGeometry(w * GAP, h * GAP, d * GAP);
-  const mat = new THREE.MeshStandardMaterial({
-    color: colorHex,
-    transparent: true,
-    opacity: num(loc.opacity, 0.85),
-    roughness: 0.6,
-    metalness: 0.1,
-    emissive: 0x000000
-  });
-  const mesh = new THREE.Mesh(geo, mat);
-  mesh.position.set(x, y, z);
-  applyRotation(mesh, loc.rotationX, loc.rotationY, loc.rotationZ);
-  mesh.userData = { type: 'location', loc, area, areaName: area.areaName };
-  scene!.add(mesh);
-  locationMeshes.push(mesh);
-
-  expandBounds(bounds, x, y, z, w, h, d);
-};
-
-/** 取库位状态色：优先库位配置，缺省用默认色 */
-const statusColor = (loc: WarehouseLocation3dVO, status: string): number => {
-  const map: Record<string, string | undefined> = {
-    EMPTY: loc.colorEmpty,
-    OCCUPIED: loc.colorOccupied,
-    WARNING: loc.colorWarning,
-    LOCKED: loc.colorLocked
-  };
-  const c = map[status];
-  if (c) {
-    try {
-      return new THREE.Color(c).getHex();
-    } catch {
-      // 颜色解析失败兜底
-    }
-  }
-  return DEFAULT_COLORS[status] ?? 0x909399;
-};
-
-/** 应用旋转（角度值） */
-const applyRotation = (mesh: THREE.Mesh, rx?: number, ry?: number, rz?: number) => {
-  mesh.rotation.set(toRad(rx), toRad(ry), toRad(rz));
-};
-
-const toRad = (deg?: number) => (deg ? THREE.MathUtils.degToRad(deg) : 0);
-
-const num = (v: any, dft: number) => {
-  const n = Number(v);
-  return isNaN(n) || v === null || v === undefined ? dft : n;
+  group.add(line);
 };
 
 /** 扩展包围盒 */
@@ -384,6 +465,50 @@ const resetView = () => {
   controls.update();
 };
 
+/** 视角预设：全景/俯视/正视/侧视/等轴测（俯视用极小偏移避开万向锁） */
+const applyViewPreset = (cmd: string) => {
+  if (!camera || !controls || !initialTarget || !initialPosition) return;
+  if (cmd === 'overview') {
+    animateCamera(camera.position.clone(), initialPosition.clone(), initialTarget.clone());
+    return;
+  }
+  const target = initialTarget.clone();
+  const dist = Math.max(camera.position.distanceTo(controls.target), 10);
+  let pos: THREE.Vector3;
+  if (cmd === 'top') pos = target.clone().add(new THREE.Vector3(0.01, dist, 0.01));
+  else if (cmd === 'front') pos = target.clone().add(new THREE.Vector3(0, dist * 0.25, dist));
+  else if (cmd === 'side') pos = target.clone().add(new THREE.Vector3(dist, dist * 0.25, 0));
+  else pos = target.clone().add(new THREE.Vector3(dist * 0.7, dist * 0.7, dist * 0.7));
+  animateCamera(camera.position.clone(), pos, target);
+};
+
+/** 状态图例点击过滤：再点一次取消，空集 = 显示全部 */
+const toggleStatusFilter = (st: string) => {
+  const idx = statusFilter.value.indexOf(st);
+  if (idx >= 0) statusFilter.value.splice(idx, 1);
+  else statusFilter.value.push(st);
+  locationRenderer?.setStatusFilter(statusFilter.value.length > 0 ? [...statusFilter.value] : null);
+};
+
+const clearStatusFilter = () => {
+  statusFilter.value = [];
+  locationRenderer?.setStatusFilter(null);
+};
+
+/** 库区显隐：联动外壳/标线/钢架/标签子组 + 库位实例 */
+const onAreaVisible = (areaId: number, visible: boolean) => {
+  areaVisibleMap[areaId] = visible;
+  const group = areaGroups.get(areaId);
+  if (group) group.visible = visible;
+  locationRenderer?.setAreaVisible(areaId, visible);
+};
+
+const onAreaChange = (areaId: number, v: boolean | string | number) => onAreaVisible(areaId, Boolean(v));
+
+const setAllAreasVisible = (visible: boolean) => {
+  for (const area of areaList.value) onAreaVisible(area.areaId, visible);
+};
+
 /** 有效可见性：沿父链任一祖先不可见即视为不可见（用于遮挡拾取与屋顶自动隐藏） */
 const isEffVisible = (o: THREE.Object3D | null): boolean => {
   for (let p: THREE.Object3D | null = o; p; p = p.parent) {
@@ -393,19 +518,20 @@ const isEffVisible = (o: THREE.Object3D | null): boolean => {
 };
 
 /**
- * 由指针事件拾取库位：raycast 目标含建筑网格，取"最近且有效可见"的命中。
- * 命中库位返回其 mesh；命中建筑（被遮挡）或空白返回 null —— 看得到才点得到。
+ * 由指针事件拾取库位：raycast 目标含建筑与货架网格，取"最近且有效可见"的命中。
+ * 命中库位格实例返回其 entries 下标；命中建筑/货架（被遮挡）或空白返回 null —— 看得到才点得到。
  */
-const pickLocationMesh = (e: MouseEvent | PointerEvent): THREE.Mesh | null => {
-  if (!renderer || !camera || !raycaster || !pointer) return null;
+const pickEntryIndex = (e: MouseEvent | PointerEvent): number | null => {
+  if (!renderer || !camera || !raycaster || !pointer || !locationRenderer?.pickTarget) return null;
   const rect = renderer.domElement.getBoundingClientRect();
   pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
   pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
   raycaster.setFromCamera(pointer, camera);
-  const targets = buildingPickMeshes.length > 0 ? [...buildingPickMeshes, ...locationMeshes] : locationMeshes;
+  const targets: THREE.Object3D[] = [locationRenderer.pickTarget, ...occluders];
   const hits = raycaster.intersectObjects(targets, false);
   const hit = hits.find((h) => isEffVisible(h.object));
-  return hit && hit.object.userData.type === 'location' ? (hit.object as THREE.Mesh) : null;
+  if (!hit || hit.object !== locationRenderer.pickTarget || hit.instanceId == null) return null;
+  return hit.instanceId < locationRenderer.entries.length ? hit.instanceId : null;
 };
 
 // 屋顶自动隐藏阈值（相机俯仰角）：俯视开顶见内部，低角度恢复外壳
@@ -429,90 +555,47 @@ const onToggleBuilding = (val: boolean) => {
   if (buildingGroup) buildingGroup.visible = val;
 };
 
+/** 标签显隐开关 */
+const onToggleLabels = (val: boolean) => {
+  labels?.setVisible(val);
+};
+
+/** 阴影显隐开关（关主光源投影即可，无需重建材质） */
+const onToggleShadows = (val: boolean) => {
+  if (dirLight) dirLight.castShadow = val;
+};
+
 /** 悬停检测 */
 const onPointerMove = (e: PointerEvent) => {
-  if (!renderer || !camera || !raycaster || !pointer) return;
-  const mesh = pickLocationMesh(e);
-  if (mesh) {
-    if (hoveredMesh !== mesh) {
-      if (hoveredMesh) (hoveredMesh.material as THREE.MeshStandardMaterial).emissive.setHex(0x000000);
-      hoveredMesh = mesh;
-      (mesh.material as THREE.MeshStandardMaterial).emissive.setHex(0x333333);
-    }
+  if (!renderer || !locationRenderer) return;
+  const idx = pickEntryIndex(e);
+  if (idx !== null) {
+    locationRenderer.highlight(idx);
+    const entry = locationRenderer.entries[idx];
     const rect = renderer.domElement.getBoundingClientRect();
-    const ud = mesh.userData;
-    const loc = ud.loc as WarehouseLocation3dVO;
-    tooltip.title = loc.locationName || loc.locationCode;
-    tooltip.status = loc.status || '';
-    tooltip.areaName = ud.areaName || '';
-    tooltip.stockQuantity = loc.stockQuantity ?? 0;
-    tooltip.reservedQuantity = loc.reservedQuantity ?? 0;
-    tooltip.stockCount = loc.stockCount ?? 0;
+    tooltip.title = entry.loc.locationName || entry.loc.locationCode;
+    tooltip.status = entry.loc.status || '';
+    tooltip.areaName = entry.area.areaName || '';
+    tooltip.stockQuantity = entry.loc.stockQuantity ?? 0;
+    tooltip.reservedQuantity = entry.loc.reservedQuantity ?? 0;
+    tooltip.stockCount = entry.loc.stockCount ?? 0;
     tooltip.x = e.clientX - rect.left + 14;
     tooltip.y = e.clientY - rect.top + 14;
     tooltip.visible = true;
   } else {
-    clearHover();
+    locationRenderer.highlight(null);
+    tooltip.visible = false;
   }
 };
 
 const onPointerLeave = () => {
-  clearHover();
-};
-
-const clearHover = () => {
-  if (hoveredMesh) {
-    (hoveredMesh.material as THREE.MeshStandardMaterial).emissive.setHex(0x000000);
-    hoveredMesh = null;
-  }
+  locationRenderer?.highlight(null);
   tooltip.visible = false;
 };
 
-/** 计算库位在当前着色模式下的颜色 */
-const computeColor = (loc: WarehouseLocation3dVO, area: WarehouseArea3dVO | undefined): number => {
-  if (colorMode.value === 'area') return areaColorHex(area);
-  if (colorMode.value === 'occupancy') return occupancyGradient(Number(loc.stockQuantity) || 0);
-  return statusColor(loc, loc.status || 'EMPTY');
-};
-
-/** 占用率渐变色：0→绿, 0.5→黄, 1→红（按库存量归一化到仓库最大值） */
-const occupancyGradient = (qty: number): number => {
-  if (qty <= 0) return 0x909399;
-  const max = maxStockQuantity.value || qty;
-  const rate = Math.min(qty / max, 1);
-  const hue = (1 - rate) * 120; // 120(绿)→0(红)
-  return new THREE.Color().setHSL(hue / 360, 0.7, 0.5).getHex();
-};
-
-/** 库区色：优先 area.color，缺省按 areaId 哈希取色 */
-const areaColorHex = (area: WarehouseArea3dVO | undefined): number => {
-  if (area?.color) {
-    try {
-      return new THREE.Color(area.color).getHex();
-    } catch {
-      // 解析失败走哈希
-    }
-  }
-  const hue = ((area?.areaId || 0) * 47) % 360;
-  return new THREE.Color().setHSL(hue / 360, 0.6, 0.55).getHex();
-};
-
-/** 按当前着色模式重绘所有库位颜色（仅改 material.color，不重建几何体） */
+/** 按当前着色模式重绘所有货物颜色（仅改 instanceColor，不重建几何体） */
 const recolorLocations = () => {
-  if (colorMode.value === 'occupancy') {
-    let max = 0;
-    for (const area of viewData.value.areas || []) {
-      for (const loc of area.locations || []) {
-        const q = Number(loc.stockQuantity) || 0;
-        if (q > max) max = q;
-      }
-    }
-    maxStockQuantity.value = max;
-  }
-  for (const mesh of locationMeshes) {
-    const ud = mesh.userData;
-    (mesh.material as THREE.MeshStandardMaterial).color.setHex(computeColor(ud.loc, ud.area));
-  }
+  locationRenderer?.recolor(colorMode.value);
 };
 
 /** 相机位姿平滑过渡（easeOutCubic，500ms） */
@@ -532,13 +615,12 @@ const animateCamera = (fromPos: THREE.Vector3, toPos: THREE.Vector3, toTarget: T
   cameraAnimId = requestAnimationFrame(step);
 };
 
-/** 双击聚焦：相机沿当前视线方向退到距库位 6 单位处，target 移到库位中心 */
-const focusLocation = (loc: WarehouseLocation3dVO) => {
-  const mesh = locationMeshes.find((m) => m.userData.loc === loc);
-  if (!mesh || !camera || !controls) return;
-  const center = mesh.position.clone();
-  const dir = camera.position.clone().sub(controls.target);
-  dir.normalize().multiplyScalar(Math.min(dir.length() || 6, 6));
+/** 双击聚焦：相机沿当前视线方向退到距库位合适距离处，target 移到库位中心 */
+const focusEntry = (entry: LocationEntry) => {
+  if (!camera || !controls) return;
+  const center = entry.center.clone();
+  const dist = Math.max(entry.size.x, entry.size.y, entry.size.z) * 5 + 2;
+  const dir = camera.position.clone().sub(controls.target).normalize().multiplyScalar(dist);
   animateCamera(camera.position.clone(), center.clone().add(dir), center);
 };
 
@@ -549,14 +631,14 @@ const onPointerDown = (e: PointerEvent) => {
 
 /** pointerup：位移 < 5px 判定为点击（避开 OrbitControls 拖拽），延迟 250ms 触发以避让双击 */
 const onPointerUp = (e: PointerEvent) => {
-  if (!pointerDownPos || !renderer || !camera || !raycaster || !pointer) return;
+  if (!pointerDownPos) return;
   const dx = e.clientX - pointerDownPos.x;
   const dy = e.clientY - pointerDownPos.y;
   pointerDownPos = null;
   if (Math.hypot(dx, dy) >= 5) return;
-  const mesh = pickLocationMesh(e);
-  if (!mesh) return;
-  const loc = mesh.userData.loc as WarehouseLocation3dVO;
+  const idx = pickEntryIndex(e);
+  if (idx === null || !locationRenderer) return;
+  const loc = locationRenderer.entries[idx].loc;
   if (singleClickTimer) clearTimeout(singleClickTimer);
   singleClickTimer = setTimeout(() => {
     stockDialog.locationId = loc.locationId;
@@ -572,10 +654,9 @@ const onDblClick = (e: MouseEvent) => {
     clearTimeout(singleClickTimer);
     singleClickTimer = null;
   }
-  if (!renderer || !camera || !raycaster || !pointer) return;
-  const mesh = pickLocationMesh(e);
-  if (!mesh) return;
-  focusLocation(mesh.userData.loc as WarehouseLocation3dVO);
+  const idx = pickEntryIndex(e);
+  if (idx === null || !locationRenderer) return;
+  focusEntry(locationRenderer.entries[idx]);
 };
 
 /** 渲染循环 */
@@ -617,12 +698,21 @@ const disposeScene = () => {
     cancelAnimationFrame(cameraAnimId);
     cameraAnimId = 0;
   }
-  hoveredMesh = null;
-  locationMeshes.length = 0;
+  // 渲染组件资源
+  locationRenderer?.dispose();
+  locationRenderer = null;
+  rackFrames?.dispose();
+  rackFrames = null;
+  floorMarkings?.dispose();
+  floorMarkings = null;
+  labels?.dispose();
+  labels = null;
+  areaGroups.clear();
+  occluders = [];
   buildingGroup = null;
   roofMesh = null;
-  buildingPickMeshes = [];
   roofHidden = false;
+  dirLight = null;
   if (scene) {
     scene.traverse((obj) => {
       if (obj instanceof THREE.Mesh) {
@@ -630,7 +720,7 @@ const disposeScene = () => {
         const mat = obj.material;
         if (Array.isArray(mat)) mat.forEach((m) => m.dispose());
         else mat?.dispose();
-      } else if (obj instanceof THREE.LineSegments) {
+      } else if (obj instanceof THREE.LineSegments || obj instanceof THREE.LineLoop) {
         obj.geometry?.dispose();
         (obj.material as THREE.Material)?.dispose();
       }
@@ -714,9 +804,76 @@ onBeforeUnmount(() => {
     }
   }
 
+  .wm3d-legend-btn {
+    cursor: pointer;
+    user-select: none;
+    padding: 2px 8px;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+
+    &:hover {
+      background: #f0f2f5;
+    }
+
+    &.is-active {
+      background: #e6f0ff;
+      color: #1a6ee0;
+    }
+  }
+
   .wm3d-total {
     font-size: 13px;
     color: #909399;
+  }
+}
+
+.wm3d-ctl-btn {
+  margin-left: 8px;
+}
+
+.wm3d-area-pop {
+  .wm3d-area-pop-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 13px;
+    font-weight: 600;
+    color: #303133;
+    padding-bottom: 6px;
+    margin-bottom: 6px;
+    border-bottom: 1px solid #ebeef5;
+  }
+
+  .wm3d-area-pop-empty {
+    font-size: 13px;
+    color: #909399;
+    text-align: center;
+    padding: 8px 0;
+  }
+
+  .wm3d-area-pop-item {
+    display: flex;
+    width: 100%;
+    margin-bottom: 4px;
+
+    .wm3d-dot {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 2px;
+      margin-right: 6px;
+    }
+
+    .wm3d-area-pop-name {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .wm3d-area-pop-count {
+      color: #909399;
+      font-size: 12px;
+    }
   }
 }
 

@@ -471,6 +471,7 @@ flowchart LR
 | 库存事务记录查询 | WmMaterialStockTxController | — | ✅ |
 | 3D 仓库可视化 (M1 基础渲染) | WmWarehouseController.3d | wm/warehouse/3d.vue | ✅ |
 | 3D 仓库 M2 交互增强 + M3 货架排版 | — | wm/warehouse/3d.vue | ✅ |
+| 3D 仓库 M4 视觉升级（InstancedMesh 货物/货架钢架/标签/地面标线/图例过滤/库区显隐/视角预设/阴影 + 写实厂房 + 104 库位示例数据） | — | wm/warehouse/3d.vue + wm/components/{instancedLocations,rackFrame,sceneLabels,floorMarkings,warehouseBuilding}.ts | ✅ |
 
 #### 第二层：入库通道
 
