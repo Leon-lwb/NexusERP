@@ -28,35 +28,32 @@
           </el-tag>
         </template>
 
-        <vxe-table
+        <el-table
           ref="tableRef"
           height="400px"
           border
-          show-overflow
+          v-loading="loading"
           :data="roleList"
-          :loading="loading"
-          :row-config="{ keyField: 'roleId' }"
-          :checkbox-config="{ reserve: true, checkRowKeys: defaultSelectRoleIds }"
+          row-key="roleId"
           highlight-current-row
-          @checkbox-all="handleCheckboxAll"
-          @checkbox-change="handleCheckboxChange"
+          @select="handleSelect"
+          @select-all="handleSelectAll"
         >
-          <vxe-column type="checkbox" width="50" align="center" />
-          <vxe-column v-if="false" key="roleId" label="角色编号" />
-          <vxe-column field="roleName" title="角色名称" />
-          <vxe-column field="roleKey" title="权限字符" />
-          <vxe-column field="roleSort" title="显示顺序" width="100" />
-          <vxe-column title="状态" align="center" width="100">
+          <el-table-column type="selection" width="50" align="center" />
+          <el-table-column prop="roleName" label="角色名称" show-overflow-tooltip />
+          <el-table-column prop="roleKey" label="权限字符" show-overflow-tooltip />
+          <el-table-column prop="roleSort" label="显示顺序" width="100" />
+          <el-table-column label="状态" align="center" width="100">
             <template #default="scope">
               <dict-tag :options="sys_normal_disable" :value="scope.row.status"></dict-tag>
             </template>
-          </vxe-column>
-          <vxe-column field="createTime" title="创建时间" align="center">
+          </el-table-column>
+          <el-table-column prop="createTime" label="创建时间" align="center">
             <template #default="scope">
               <span>{{ proxy.parseTime(scope.row.createTime) }}</span>
             </template>
-          </vxe-column>
-        </vxe-table>
+          </el-table-column>
+        </el-table>
 
         <pagination
           v-if="total > 0"
@@ -76,7 +73,6 @@
 
 <script setup lang="ts">
 import { RoleVO, RoleQuery } from '@/api/system/role/types';
-import { VxeTableInstance } from 'vxe-table';
 import useDialog from '@/composables/useDialog';
 import api from '@/api/system/role';
 interface PropType {
@@ -107,7 +103,7 @@ const roleDialog = useDialog({
 });
 
 const queryFormRef = ref<ElFormInstance>();
-const tableRef = ref<VxeTableInstance<RoleVO>>();
+const tableRef = ref<ElTableInstance>();
 
 const queryParams = ref<RoleQuery>({
   pageNum: 1,
@@ -149,12 +145,20 @@ const getList = () => {
     loading.value = false;
   });
 };
+/** 当前页中已选中(跨页保持)的行恢复勾选态 */
+const syncRowSelection = () => {
+  nextTick(() => {
+    roleList.value?.forEach((row) => {
+      if (selectRoleList.value.some((role) => role.roleId === row.roleId)) {
+        tableRef.value?.toggleRowSelection(row, true);
+      }
+    });
+  });
+};
+
 const pageList = async () => {
   await getList();
-  const roles = roleList.value.filter((item) => {
-    return selectRoleList.value.some((role) => role.roleId === item.roleId);
-  });
-  await tableRef.value.setCheckboxRow(roles, true);
+  syncRowSelection();
 };
 /**
  * 搜索按钮操作
@@ -171,13 +175,17 @@ const resetQuery = () => {
   handleQuery();
 };
 
-const handleCheckboxChange = (checked) => {
-  if (!prop.multiple && checked.checked) {
-    tableRef.value.setCheckboxRow(selectRoleList.value, false);
-    selectRoleList.value = [];
-  }
-  const row = checked.row;
-  if (checked.checked) {
+/** 单行勾选/取消（维护跨页选中集合） */
+const handleSelect = (selection: RoleVO[], row: RoleVO) => {
+  const checked = selection.some((item) => item.roleId === row.roleId);
+  if (checked) {
+    if (!prop.multiple) {
+      // 单选模式：取消其余勾选并清空已选集合
+      roleList.value?.forEach((item) => {
+        if (item.roleId !== row.roleId) tableRef.value?.toggleRowSelection(item, false);
+      });
+      selectRoleList.value = [];
+    }
     selectRoleList.value.push(row);
   } else {
     selectRoleList.value = selectRoleList.value.filter((item) => {
@@ -185,9 +193,10 @@ const handleCheckboxChange = (checked) => {
     });
   }
 };
-const handleCheckboxAll = (checked) => {
-  const rows = roleList.value;
-  if (checked.checked) {
+/** 当前页全选/全不选 */
+const handleSelectAll = (selection: RoleVO[]) => {
+  const rows = roleList.value ?? [];
+  if (selection.length > 0) {
     rows.forEach((row) => {
       if (!selectRoleList.value.some((item) => item.roleId === row.roleId)) {
         selectRoleList.value.push(row);
@@ -204,8 +213,8 @@ const handleCloseTag = (user: RoleVO) => {
   const roleId = user.roleId;
   // 使用split删除用户
   const index = selectRoleList.value.findIndex((item) => item.roleId === roleId);
-  const rows = selectRoleList.value[index];
-  tableRef.value?.setCheckboxRow(rows, false);
+  const row = selectRoleList.value[index];
+  tableRef.value?.toggleRowSelection(row, false);
   selectRoleList.value.splice(index, 1);
 };
 /**
@@ -215,11 +224,11 @@ const initSelectRole = async () => {
   if (defaultSelectRoleIds.value.length > 0) {
     const { data } = await api.optionSelect(defaultSelectRoleIds.value);
     selectRoleList.value = data;
-    const users = roleList.value.filter((item) => {
+    const users = roleList.value?.filter((item) => {
       return defaultSelectRoleIds.value.includes(String(item.roleId));
     });
     await nextTick(() => {
-      tableRef.value.setCheckboxRow(users, true);
+      users?.forEach((row) => tableRef.value?.toggleRowSelection(row, true));
     });
   }
 };
@@ -232,8 +241,7 @@ watch(
     if (newValue) {
       initSelectRole();
     } else {
-      tableRef.value.clearCheckboxReserve();
-      tableRef.value.clearCheckboxRow();
+      tableRef.value?.clearSelection();
       resetQuery();
       selectRoleList.value = [];
     }

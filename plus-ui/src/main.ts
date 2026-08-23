@@ -30,13 +30,6 @@ import ElementIcons from '@/plugins/svgicon';
 // permission control
 import './permission';
 
-// vxeTable
-import VXETable from 'vxe-table';
-import 'vxe-table/lib/style.css';
-VXETable.setConfig({
-  zIndex: 999999
-});
-
 // 修改 el-dialog 默认点击遮照为不关闭
 import { ElDialog } from 'element-plus';
 ElDialog.props.closeOnClickModal.default = false;
@@ -47,7 +40,6 @@ app.use(HighLight);
 app.use(ElementIcons);
 app.use(router);
 app.use(store);
-app.use(VXETable);
 app.use(plugins);
 // 自定义指令
 directive(app);

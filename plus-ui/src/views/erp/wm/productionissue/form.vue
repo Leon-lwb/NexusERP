@@ -88,35 +88,24 @@
             <el-button type="danger" icon="Delete" @click="handleDeleteLine" v-if="!isViewMode && canEditLine">删除行</el-button>
           </el-col>
         </el-row>
-        <vxe-table
-          ref="lineTableRef"
-          :data="lineList"
-          border
-          stripe
-          show-overflow
-          :row-config="{ isHover: true }"
-          :checkbox-config="{ checkMethod: canCheckLine }"
-          @checkbox-change="handleLineSelectionChange"
-          @checkbox-all="handleLineSelectionChange"
-          height="420"
-        >
-          <vxe-column type="checkbox" width="45" align="center" v-if="!isViewMode && canEditLine" />
-          <vxe-column type="seq" title="序号" width="55" align="center" />
-          <vxe-column field="materialCode" title="物料编码" min-width="170">
-            <template #default="{ row, rowIndex }">
+        <el-table :data="lineList" border stripe show-overflow-tooltip height="420" @selection-change="handleLineSelectionChange">
+          <el-table-column type="selection" width="45" align="center" :selectable="canCheckLine" v-if="!isViewMode && canEditLine" />
+          <el-table-column type="index" label="序号" width="55" align="center" />
+          <el-table-column prop="materialCode" label="物料编码" min-width="170">
+            <template #default="{ row, $index }">
               <el-input v-model="row.materialCode" placeholder="选择物料" readonly>
-                <template #append><el-button icon="Search" @click="openMaterialSelect(rowIndex)" :disabled="isViewMode" /></template>
+                <template #append><el-button icon="Search" @click="openMaterialSelect($index)" :disabled="isViewMode" /></template>
               </el-input>
             </template>
-          </vxe-column>
-          <vxe-column field="materialName" title="物料名称" min-width="130" />
-          <vxe-column field="materialSpec" title="规格型号" min-width="110" />
-          <vxe-column field="baseUomName" title="单位" width="70" align="center" />
-          <vxe-column field="bomQty" title="BOM用量" width="90" align="center" />
-          <vxe-column field="lossRate" title="损耗率%" width="80" align="center" />
-          <vxe-column field="requiredQty" title="应领数量" width="90" align="center" />
-          <vxe-column field="issuedQty" title="已领数量" width="90" align="center" />
-          <vxe-column field="currentQty" title="本次领料" width="110" align="center">
+          </el-table-column>
+          <el-table-column prop="materialName" label="物料名称" min-width="130" />
+          <el-table-column prop="materialSpec" label="规格型号" min-width="110" />
+          <el-table-column prop="baseUomName" label="单位" width="70" align="center" />
+          <el-table-column prop="bomQty" label="BOM用量" width="90" align="center" />
+          <el-table-column prop="lossRate" label="损耗率%" width="80" align="center" />
+          <el-table-column prop="requiredQty" label="应领数量" width="90" align="center" />
+          <el-table-column prop="issuedQty" label="已领数量" width="90" align="center" />
+          <el-table-column prop="currentQty" label="本次领料" width="110" align="center">
             <template #default="{ row }">
               <el-input-number
                 v-if="!isViewMode && canEditLine"
@@ -129,9 +118,9 @@
               />
               <span v-else>{{ row.currentQty ?? '' }}</span>
             </template>
-          </vxe-column>
-          <vxe-column field="shortQty" title="欠领数量" width="90" align="center" />
-          <vxe-column field="availableQty" title="可用库存" width="90" align="center">
+          </el-table-column>
+          <el-table-column prop="shortQty" label="欠领数量" width="90" align="center" />
+          <el-table-column prop="availableQty" label="可用库存" width="90" align="center">
             <template #default="{ row }">
               <span
                 v-if="row.availableQty != null"
@@ -141,15 +130,15 @@
               </span>
               <span v-else>-</span>
             </template>
-          </vxe-column>
-          <vxe-column field="displayLocationBatch" title="批次/库位" min-width="190">
-            <template #default="{ row, rowIndex }">
+          </el-table-column>
+          <el-table-column prop="displayLocationBatch" label="批次/库位" min-width="190">
+            <template #default="{ row, $index }">
               <el-input v-model="row.displayLocationBatch" placeholder="选择库存" readonly>
-                <template #append><el-button icon="Search" @click="openStockSelect(rowIndex)" :disabled="isViewMode || !row.materialId" /></template>
+                <template #append><el-button icon="Search" @click="openStockSelect($index)" :disabled="isViewMode || !row.materialId" /></template>
               </el-input>
             </template>
-          </vxe-column>
-          <vxe-column field="unitPrice" title="单价" width="100" align="center">
+          </el-table-column>
+          <el-table-column prop="unitPrice" label="单价" width="100" align="center">
             <template #default="{ row }">
               <el-input-number
                 v-if="!isViewMode && canEditLine"
@@ -162,15 +151,15 @@
               />
               <span v-else>{{ row.unitPrice ?? '' }}</span>
             </template>
-          </vxe-column>
-          <vxe-column field="amount" title="金额" width="100" align="center" />
-          <vxe-column field="remark" title="备注" min-width="120">
+          </el-table-column>
+          <el-table-column prop="amount" label="金额" width="100" align="center" />
+          <el-table-column prop="remark" label="备注" min-width="120">
             <template #default="{ row }">
               <el-input v-if="!isViewMode && canEditLine" v-model="row.remark" placeholder="备注" />
               <span v-else>{{ row.remark }}</span>
             </template>
-          </vxe-column>
-        </vxe-table>
+          </el-table-column>
+        </el-table>
       </el-form>
     </el-card>
 
@@ -515,19 +504,24 @@ function handleAddLine() {
   });
 }
 
+/** 表格勾选行（el-table selection-change 同步） */
+const selectedLineRows = ref<any[]>([]);
+
+function handleLineSelectionChange(rows: any[]) {
+  selectedLineRows.value = rows;
+}
+
 function handleDeleteLine() {
-  const checked = proxy.$refs['lineTableRef'].getCheckboxRecords();
-  if (!checked.length) {
+  if (!selectedLineRows.value.length) {
     proxy.$modal.msgError('请先选择要删除的行');
     return;
   }
-  lineList.value = lineList.value.filter((row: any) => !checked.includes(row));
+  lineList.value = lineList.value.filter((row: any) => !selectedLineRows.value.includes(row));
+  selectedLineRows.value = [];
 }
 
-function handleLineSelectionChange() {}
-
 /** 行是否可勾选删除：已领料（ISSUED 或 issuedQty>0）的行禁止删除，避免库存流水孤立 */
-function canCheckLine({ row }: any) {
+function canCheckLine(row: any) {
   return row.lineStatus !== 'ISSUED' && !(Number(row.issuedQty) > 0);
 }
 
