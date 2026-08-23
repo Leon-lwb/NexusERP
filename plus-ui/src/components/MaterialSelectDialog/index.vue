@@ -160,28 +160,19 @@ async function getMaterialList() {
   }
 }
 
-/** 分类节点点击：加载子分类及其物料 */
+/** 分类节点点击：按分类（含子孙）筛选物料 */
 function handleCategoryNodeClick(data: any) {
-  const categoryId = Number(data.id || data.categoryId);
-  if (isNaN(categoryId) || categoryId <= 0) return;
+  // 雪花ID后端序列化为字符串，勿用 Number() 转换（超精度后筛选失效）
+  const categoryId = data.categoryId;
+  if (!categoryId) return;
 
   loading.value = true;
   getAllChildrenIds(categoryId)
-    .then((response) => {
-      const categories = response.data?.categories || [];
-      const materials = response.data?.materials || [];
-      queryParams.value.categoryIds = categories.map((c: any) => c.categoryId);
+    .then(async (response) => {
+      queryParams.value.categoryIds = (response.data?.categories || []).map((c: any) => c.categoryId);
       queryParams.value.pageNum = 1;
-
-      // 优先使用 getAllChildrenIds 返回的物料（已按分类筛选）
-      if (materials.length > 0) {
-        const enabled = materials.filter((m: any) => String(m.status) === '1' || m.status === 1);
-        materialList.value = enabled;
-        total.value = enabled.length;
-      } else {
-        // 回退到 listMaterial 分页查询
-        getMaterialList();
-      }
+      // 统一走分页查询，保证状态/仓库上下文过滤、搜索条件与翻页行为一致
+      await getMaterialList();
     })
     .catch((error) => {
       console.error('获取分类信息失败:', error);

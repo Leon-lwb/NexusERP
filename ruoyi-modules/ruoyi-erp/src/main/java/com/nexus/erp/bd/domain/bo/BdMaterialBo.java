@@ -56,6 +56,11 @@ public class BdMaterialBo extends BaseEntity {
     private Long categoryId;
 
     /**
+     * 分类ID集合（仅用于查询过滤：按所选分类及其子孙分类过滤物料，与 categoryId 同时传时取交集）
+     */
+    private Long[] categoryIds;
+
+    /**
      * 基本计量单位ID
      */
     private Long baseUomId;

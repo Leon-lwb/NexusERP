@@ -191,7 +191,12 @@ const { sch_attendance_status, sch_source_type } = toRefs(proxy.useDict('sch_att
 const attendanceRef = ref<FormInstance>();
 
 const queryParams = ref({
-  pageNum: 1, pageSize: 10, workerName: null, recordDate: null, attendanceStatus: null, sourceType: null
+  pageNum: 1,
+  pageSize: 10,
+  workerName: null,
+  recordDate: null,
+  attendanceStatus: null,
+  sourceType: null
 });
 
 const rules = {
@@ -200,9 +205,27 @@ const rules = {
 };
 
 const {
-  loading, list, total, open, isViewMode, title, ids, single, multiple, showSearch, form,
-  getList, handleQuery, handleDelete, handleExport, handleSelectionChange, submitForm, cancel,
-  handleAdd: rawHandleAdd, handleUpdate: rawHandleUpdate, handleView: rawHandleView
+  loading,
+  list,
+  total,
+  open,
+  isViewMode,
+  title,
+  ids,
+  single,
+  multiple,
+  showSearch,
+  form,
+  getList,
+  handleQuery,
+  handleDelete,
+  handleExport,
+  handleSelectionChange,
+  submitForm,
+  cancel,
+  handleAdd: rawHandleAdd,
+  handleUpdate: rawHandleUpdate,
+  handleView: rawHandleView
 } = useCrud({
   apis: { list: listAttendance, get: getAttendance, add: addAttendance, update: updateAttendance, del: delAttendance },
   idField: 'attendanceId',
@@ -210,9 +233,18 @@ const {
   formRef: attendanceRef,
   queryParams,
   initForm: () => ({
-    attendanceId: null, workerId: null, workerName: null, recordDate: null,
-    clockInTime: null, clockOutTime: null, lateMinutes: null, leaveEarlyMinutes: null,
-    overtimeHours: null, attendanceStatus: null, sourceType: null, remark: null
+    attendanceId: null,
+    workerId: null,
+    workerName: null,
+    recordDate: null,
+    clockInTime: null,
+    clockOutTime: null,
+    lateMinutes: null,
+    leaveEarlyMinutes: null,
+    overtimeHours: null,
+    attendanceStatus: null,
+    sourceType: null,
+    remark: null
   }),
   exportUrl: '/erp/sch/attendance/export',
   exportFileName: 'attendance'
@@ -235,4 +267,3 @@ function resetQuery() {
 
 getList();
 </script>
-

@@ -1,6 +1,7 @@
 package com.nexus.erp.bd.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.util.ArrayUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -20,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -195,6 +197,10 @@ public class BdMaterialServiceImpl implements IBdMaterialService {
             .eq(bo.getCategoryId() != null, BdMaterial::getCategoryId, bo.getCategoryId())
             .eq(bo.getStatus() != null, BdMaterial::getStatus, bo.getStatus())
             .eq(StringUtils.isNotBlank(bo.getQualityStatus()), BdMaterial::getQualityStatus, bo.getQualityStatus());
+        // 按分类集合过滤（分类树点击时传入选中分类及其全部子孙ID）
+        if (ArrayUtil.isNotEmpty(bo.getCategoryIds())) {
+            lqw.in(BdMaterial::getCategoryId, Arrays.asList(bo.getCategoryIds()));
+        }
         // 按仓库/库区/库位过滤：仅返回在 wm_material_stock 中存在库存记录的物料
         // (warehouseId/areaId/locationId 均为 Long 类型，拼接安全；wm_material_stock 同处 erp 数据源)
         if (bo.getWarehouseId() != null || bo.getAreaId() != null || bo.getLocationId() != null) {

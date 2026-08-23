@@ -475,6 +475,8 @@ const multiple = ref(true);
 const total = ref(0);
 const title = ref('');
 const isViewMode = ref(false);
+// 自动生成编码开关（模板 v-model 引用，必须为顶层响应式变量）
+const autoGenFlag = ref(false);
 const uomList = ref([]);
 // 分类树（共享 composable）
 const { categoryTree, categoryTreeRef, categoryFilterText, getCategoryTree, filterCategoryNode, debouncedFilter } = useCategoryTree(proxy);
@@ -495,8 +497,7 @@ const data = reactive({
     sourceType: null,
     status: null,
     categoryId: null,
-    categoryIds: null,
-    autoGenFlag: false
+    categoryIds: null
   },
   rules: {
     materialCode: [{ required: true, message: '物料编码不能为空', trigger: 'blur' }],
@@ -514,16 +515,8 @@ function getList() {
   loading.value = true;
   listMaterial(queryParams.value)
     .then((response) => {
-      // 检查响应格式并相应处理
-      if (response.data && response.data.materials) {
-        // 新的响应格式，直接包含物料数据
-        materialList.value = response.data.materials;
-        total.value = response.data.materials.length;
-      } else {
-        // 原有的响应格式
-        materialList.value = response.rows;
-        total.value = response.total;
-      }
+      materialList.value = response.rows;
+      total.value = response.total;
       loading.value = false;
     })
     .catch((error) => {
@@ -584,7 +577,7 @@ function reset() {
     updateTime: null
   };
   proxy.resetForm('materialRef');
-  data.autoGenFlag = false;
+  autoGenFlag.value = false;
   activeTab.value = 'basic';
   vendorList.value = [];
 }
@@ -598,9 +591,10 @@ function handleQuery() {
 /** 重置按钮操作 */
 function resetQuery() {
   proxy.resetForm('queryRef');
-  // 重置分类相关查询参数
+  // 重置分类相关查询参数并清除左侧树高亮
   queryParams.value.categoryId = null;
   queryParams.value.categoryIds = null;
+  categoryTreeRef.value?.setCurrentKey(null);
   handleQuery();
 }
 
@@ -616,15 +610,9 @@ function handleNodeClick(data) {
   getAllChildrenIds(data.categoryId)
     .then((response) => {
       const categories = response.data?.categories || [];
-      const materials = response.data?.materials || [];
       queryParams.value.categoryIds = categories.map((c) => c.categoryId);
       queryParams.value.categoryId = null;
-      if (materials.length) {
-        materialList.value = materials;
-        total.value = materials.length;
-      } else {
-        handleQuery();
-      }
+      handleQuery();
     })
     .catch(() => {
       proxy.$modal.msgError('获取分类信息失败');
@@ -686,7 +674,7 @@ function submitForm() {
   proxy.$refs['materialRef'].validate((valid) => {
     if (valid) {
       // 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号
-      if (data.autoGenFlag) {
+      if (autoGenFlag.value) {
         form.value.materialCode = undefined;
       }
       if (form.value.materialId != null) {
@@ -733,8 +721,8 @@ function handleExport() {
 }
 
 //自动生成编码
-function handleAutoGenChange(autoGenFlag) {
-  if (autoGenFlag) {
+function handleAutoGenChange(enabled) {
+  if (enabled) {
     previewCode('MATERIAL_CODE').then((response) => {
       form.value.materialCode = response;
     });

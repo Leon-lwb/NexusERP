@@ -214,7 +214,11 @@ const { sys_true_or_false } = toRefs(proxy.useDict('sys_true_or_false'));
 const punchRuleRef = ref<FormInstance>();
 
 const queryParams = ref({
-  pageNum: 1, pageSize: 10, ruleName: null, shiftName: null, isEnabled: null
+  pageNum: 1,
+  pageSize: 10,
+  ruleName: null,
+  shiftName: null,
+  isEnabled: null
 });
 
 const rules = {
@@ -244,9 +248,27 @@ function handleTimeFields(data: any) {
 }
 
 const {
-  loading, list, total, open, isViewMode, title, ids, single, multiple, showSearch, form,
-  getList: rawGetList, handleQuery, handleDelete, handleExport, handleSelectionChange, submitForm, cancel,
-  handleAdd: rawHandleAdd, handleUpdate: rawHandleUpdate, handleView: rawHandleView
+  loading,
+  list,
+  total,
+  open,
+  isViewMode,
+  title,
+  ids,
+  single,
+  multiple,
+  showSearch,
+  form,
+  getList: rawGetList,
+  handleQuery,
+  handleDelete,
+  handleExport,
+  handleSelectionChange,
+  submitForm,
+  cancel,
+  handleAdd: rawHandleAdd,
+  handleUpdate: rawHandleUpdate,
+  handleView: rawHandleView
 } = useCrud({
   apis: { list: listPunchRule, get: getPunchRule, add: addPunchRule, update: updatePunchRule, del: delPunchRule },
   idField: 'ruleId',
@@ -254,14 +276,31 @@ const {
   formRef: punchRuleRef,
   queryParams,
   initForm: () => ({
-    ruleId: null, ruleName: null, shiftId: null, shiftName: null,
-    workStartTime: null, workEndTime: null, allowClockInStart: null, allowClockInEnd: null,
-    allowClockOutStart: null, allowClockOutEnd: null,
-    locationLat: null, locationLng: null, locationRadius: null, locationAddress: null,
-    allowWifiSsids: null, allowBluetoothDevices: null,
-    allowOutdoorPunch: null, outdoorRequirePhoto: null, allowSupplement: null,
-    supplementDeadline: null, lateThreshold: null, earlyLeaveThreshold: null, absentThreshold: null,
-    isEnabled: null, remark: null
+    ruleId: null,
+    ruleName: null,
+    shiftId: null,
+    shiftName: null,
+    workStartTime: null,
+    workEndTime: null,
+    allowClockInStart: null,
+    allowClockInEnd: null,
+    allowClockOutStart: null,
+    allowClockOutEnd: null,
+    locationLat: null,
+    locationLng: null,
+    locationRadius: null,
+    locationAddress: null,
+    allowWifiSsids: null,
+    allowBluetoothDevices: null,
+    allowOutdoorPunch: null,
+    outdoorRequirePhoto: null,
+    allowSupplement: null,
+    supplementDeadline: null,
+    lateThreshold: null,
+    earlyLeaveThreshold: null,
+    absentThreshold: null,
+    isEnabled: null,
+    remark: null
   }),
   exportUrl: '/erp/sch/punchRule/export',
   exportFileName: 'punchRule',
@@ -291,4 +330,3 @@ function resetQuery() {
 
 getList();
 </script>
-
