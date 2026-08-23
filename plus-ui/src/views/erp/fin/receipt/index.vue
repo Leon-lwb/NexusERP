@@ -84,7 +84,7 @@
 
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
-    <el-dialog :title="title" v-model="open" width="520px" append-to-body>
+    <el-dialog :title="title" v-model="open" width="500px" append-to-body>
       <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
         <el-form-item label="方向" prop="direction">
           <el-select v-model="form.direction" style="width: 100%">
@@ -139,7 +139,7 @@ import type { FormInstance } from 'element-plus';
 import { useCrud } from '@/composables/useCrud';
 import { FinReceiptVO, FinReceiptForm, FinReceiptQuery } from '@/api/erp/fin/receipt/types';
 
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { fin_receipt_type, fin_receipt_direction, fin_receipt_source, fin_receipt_status } = toRefs<any>(
   proxy.useDict('fin_receipt_type', 'fin_receipt_direction', 'fin_receipt_source', 'fin_receipt_status')
 );

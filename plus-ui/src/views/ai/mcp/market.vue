@@ -1,37 +1,34 @@
 <template>
   <div class="app-container">
-    <el-card>
-      <template #header>
-        <div class="card-header">
-          <span>MCP 市场管理</span>
-          <el-button type="primary" @click="handleAdd">新增市场源</el-button>
-        </div>
-      </template>
-      <el-table v-loading="loading" :data="list">
-        <el-table-column label="市场名称" prop="name" min-width="150" />
-        <el-table-column label="市场 URL" prop="url" min-width="300" show-overflow-tooltip />
-        <el-table-column label="描述" prop="description" min-width="200" show-overflow-tooltip />
-        <el-table-column label="状态" prop="status" width="90">
-          <template #default="{ row }">
-            <el-tag :type="row.status === '1' ? 'success' : 'danger'">
-              {{ row.status === '1' ? '启用' : '停用' }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" width="280" fixed="right">
-          <template #default="{ row }">
-            <el-button link type="primary" @click="handleTools(row)">工具列表</el-button>
-            <el-button link type="success" @click="handleRefresh(row)" :loading="refreshLoading[row.id]">刷新</el-button>
-            <el-button link type="primary" @click="handleEdit(row)">编辑</el-button>
-            <el-button link type="danger" @click="handleDelete(row)">删除</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
-    </el-card>
+    <el-row :gutter="10" class="mb8">
+      <el-col :span="1.5">
+        <el-button type="primary" plain icon="Plus" @click="handleAdd">新增市场源</el-button>
+      </el-col>
+      <right-toolbar :search="false" @queryTable="getList"></right-toolbar>
+    </el-row>
+
+    <el-table v-loading="loading" :data="list">
+      <el-table-column label="市场名称" prop="name" min-width="150" />
+      <el-table-column label="市场 URL" prop="url" min-width="300" show-overflow-tooltip />
+      <el-table-column label="描述" prop="description" min-width="200" show-overflow-tooltip />
+      <el-table-column label="状态" prop="status" width="90">
+        <template #default="{ row }">
+          <dict-tag :options="AI_ENABLE_STATUS_OPTIONS" :value="row.status" />
+        </template>
+      </el-table-column>
+      <el-table-column label="操作" width="280" fixed="right">
+        <template #default="{ row }">
+          <el-button link type="primary" @click="handleTools(row)">工具列表</el-button>
+          <el-button link type="success" @click="handleRefresh(row)" :loading="refreshLoading[row.id]">刷新</el-button>
+          <el-button link type="primary" @click="handleUpdate(row)">编辑</el-button>
+          <el-button link type="danger" @click="handleDelete(row)">删除</el-button>
+        </template>
+      </el-table-column>
+    </el-table>
 
     <!-- 新增/编辑市场源弹窗 -->
-    <el-dialog v-model="dialog.visible" :title="dialog.title" width="600px" append-to-body>
-      <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
+    <el-dialog :title="title" v-model="open" width="640px" append-to-body>
+      <el-form ref="marketRef" :model="form" :rules="rules" label-width="100px" :disabled="isViewMode">
         <el-form-item label="市场名称" prop="name">
           <el-input v-model="form.name" placeholder="请输入市场名称" />
         </el-form-item>
@@ -43,14 +40,15 @@
         </el-form-item>
         <el-form-item label="状态" prop="status">
           <el-radio-group v-model="form.status">
-            <el-radio value="1">启用</el-radio>
-            <el-radio value="0">停用</el-radio>
+            <el-radio v-for="item in AI_ENABLE_STATUS_OPTIONS" :key="item.value" :value="item.value">{{ item.label }}</el-radio>
           </el-radio-group>
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button type="primary" @click="submitForm">确 定</el-button>
-        <el-button @click="cancel">取 消</el-button>
+        <div class="dialog-footer">
+          <el-button type="primary" @click="submitForm">确 定</el-button>
+          <el-button @click="cancel">取 消</el-button>
+        </div>
       </template>
     </el-dialog>
 
@@ -62,19 +60,17 @@
           <el-button type="success" @click="handleBatchLoad" :disabled="toolDrawer.selection.length === 0">
             批量加载（{{ toolDrawer.selection.length }}）
           </el-button>
-          <el-button type="primary" @click="handleRefresh(currentMarketRow)" :loading="refreshLoading[currentMarketRow?.id]"> 刷新工具 </el-button>
+          <el-button type="primary" @click="handleRefresh(currentMarketRow!)" :loading="refreshLoading[currentMarketRow?.id!]"> 刷新工具 </el-button>
         </div>
       </div>
-      <el-table v-loading="toolDrawer.loading" :data="toolDrawer.list" @selection-change="handleSelectionChange">
+      <el-table v-loading="toolDrawer.loading" :data="toolDrawer.list" @selection-change="handleToolSelectionChange">
         <el-table-column type="selection" width="45" />
         <el-table-column label="工具名称" prop="toolName" min-width="160" />
         <el-table-column label="版本" prop="toolVersion" width="100" />
         <el-table-column label="描述" prop="toolDescription" min-width="200" show-overflow-tooltip />
         <el-table-column label="已加载" prop="isLoaded" width="90">
           <template #default="{ row }">
-            <el-tag :type="row.isLoaded === '1' ? 'success' : 'info'">
-              {{ row.isLoaded === '1' ? '是' : '否' }}
-            </el-tag>
+            <dict-tag :options="AI_YES_NO_OPTIONS" :value="row.isLoaded" />
           </template>
         </el-table-column>
         <el-table-column label="操作" width="120" fixed="right">
@@ -102,38 +98,59 @@ import {
   type AiMcpMarket,
   type AiMcpMarketTool
 } from '@/api/ai/market';
+import { useCrud } from '@/composables/useCrud';
+import { AI_ENABLE_STATUS_OPTIONS, AI_YES_NO_OPTIONS } from '@/views/ai/constants';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 
-const loading = ref(false);
-const list = ref<AiMcpMarket[]>([]);
+const marketRef = ref<ElFormInstance>();
 const refreshLoading = reactive<Record<number, boolean>>({});
 const loadLoading = reactive<Record<number, boolean>>({});
 const currentMarketRow = ref<AiMcpMarket | null>(null);
 
-const dialog = reactive<DialogOption>({
-  visible: false,
-  title: ''
-});
-
-const initFormData: AiMcpMarket = {
-  id: undefined,
-  name: '',
-  url: '',
-  description: '',
-  status: '1'
+const rules = {
+  name: [{ required: true, message: '请输入市场名称', trigger: 'blur' }],
+  url: [{ required: true, message: '请输入市场 URL', trigger: 'blur' }]
 };
 
-const data = reactive<{ form: AiMcpMarket; rules: any }>({
-  form: { ...initFormData },
-  rules: {
-    name: [{ required: true, message: '请输入市场名称', trigger: 'blur' }],
-    url: [{ required: true, message: '请输入市场 URL', trigger: 'blur' }]
-  }
+const {
+  loading,
+  list,
+  open,
+  isViewMode,
+  title,
+  form,
+  getList,
+  submitForm,
+  cancel,
+  handleAdd: rawHandleAdd,
+  handleUpdate,
+  handleDelete
+} = useCrud({
+  apis: {
+    // 列表无分页展示需求，全量取回（保持原行为：不带查询参数）
+    list: async () => {
+      const res: any = await listMarket();
+      const rows: AiMcpMarket[] = res.rows || res.data || [];
+      return { rows, total: rows.length };
+    },
+    get: getMarket,
+    add: addMarket,
+    update: updateMarket,
+    del: delMarket
+  },
+  idField: 'id',
+  entityName: '市场源',
+  formRef: marketRef,
+  queryParams: ref({ pageNum: 1, pageSize: 10 }),
+  initForm: () => ({
+    id: undefined,
+    name: '',
+    url: '',
+    description: '',
+    status: '1'
+  })
 });
-
-const { form, rules } = toRefs(data);
-const formRef = ref<ElFormInstance>();
 
 /** 市场工具抽屉 */
 const toolDrawer = reactive<{
@@ -150,67 +167,13 @@ const toolDrawer = reactive<{
   selection: []
 });
 
-/** 查询市场源列表 */
-const getList = async () => {
-  loading.value = true;
-  try {
-    const res = await listMarket();
-    list.value = res.rows || res.data || [];
-  } finally {
-    loading.value = false;
-  }
-};
-
-/** 取消 */
-const cancel = () => {
-  reset();
-  dialog.visible = false;
-};
-
-/** 重置表单 */
-const reset = () => {
-  form.value = { ...initFormData };
-  formRef.value?.resetFields();
-};
-
-/** 新增 */
-const handleAdd = () => {
-  reset();
-  dialog.visible = true;
-  dialog.title = '新增市场源';
-};
-
-/** 编辑 */
-const handleEdit = async (row: AiMcpMarket) => {
-  reset();
-  const res = await getMarket(row.id!);
-  Object.assign(form.value, res.data);
-  dialog.visible = true;
-  dialog.title = '编辑市场源';
-};
-
-/** 提交 */
-const submitForm = () => {
-  formRef.value?.validate(async (valid: boolean) => {
-    if (valid) {
-      form.value.id ? await updateMarket(form.value) : await addMarket(form.value);
-      proxy?.$modal.msgSuccess('操作成功');
-      dialog.visible = false;
-      await getList();
-    }
-  });
-};
-
-/** 删除 */
-const handleDelete = async (row: AiMcpMarket) => {
-  await proxy?.$modal.confirm('是否确认删除市场源"' + row.name + '"？');
-  await delMarket([row.id!]);
-  await getList();
-  proxy?.$modal.msgSuccess('删除成功');
-};
+/** 新增（包装避免 @click 事件对象被误传为 extraInit） */
+function handleAdd() {
+  rawHandleAdd();
+}
 
 /** 刷新市场工具 */
-const handleRefresh = async (row: AiMcpMarket) => {
+async function handleRefresh(row: AiMcpMarket) {
   refreshLoading[row.id!] = true;
   try {
     const res = await refreshMarketTools(row.id!);
@@ -224,18 +187,18 @@ const handleRefresh = async (row: AiMcpMarket) => {
   } finally {
     refreshLoading[row.id!] = false;
   }
-};
+}
 
 /** 打开工具列表抽屉 */
-const handleTools = async (row: AiMcpMarket) => {
+async function handleTools(row: AiMcpMarket) {
   currentMarketRow.value = row;
   toolDrawer.marketName = row.name;
   toolDrawer.visible = true;
   await loadMarketTools(row.id!);
-};
+}
 
 /** 加载市场工具列表 */
-const loadMarketTools = async (marketId: number) => {
+async function loadMarketTools(marketId: number) {
   toolDrawer.loading = true;
   try {
     const res = await listMarketTools(marketId);
@@ -243,10 +206,10 @@ const loadMarketTools = async (marketId: number) => {
   } finally {
     toolDrawer.loading = false;
   }
-};
+}
 
 /** 一键加载单个工具 */
-const handleLoadOne = async (row: AiMcpMarketTool) => {
+async function handleLoadOne(row: AiMcpMarketTool) {
   loadLoading[row.id!] = true;
   try {
     const res = await loadToolToLocal(row.id!);
@@ -258,15 +221,15 @@ const handleLoadOne = async (row: AiMcpMarketTool) => {
   } finally {
     loadLoading[row.id!] = false;
   }
-};
+}
 
-/** 选择变化 */
-const handleSelectionChange = (selection: AiMcpMarketTool[]) => {
+/** 抽屉多选变化 */
+function handleToolSelectionChange(selection: AiMcpMarketTool[]) {
   toolDrawer.selection = selection;
-};
+}
 
 /** 批量加载 */
-const handleBatchLoad = async () => {
+async function handleBatchLoad() {
   const ids = toolDrawer.selection.filter((t) => t.isLoaded !== '1').map((t) => t.id!);
   if (ids.length === 0) {
     proxy?.$modal.msgWarning('请选择未加载的工具');
@@ -282,20 +245,12 @@ const handleBatchLoad = async () => {
   } catch (e: any) {
     proxy?.$modal.msgError('批量加载失败: ' + (e.message || '未知错误'));
   }
-};
+}
 
-onMounted(() => {
-  getList();
-});
+getList();
 </script>
 
 <style scoped>
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
 .tool-drawer-header {
   display: flex;
   justify-content: space-between;

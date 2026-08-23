@@ -101,7 +101,7 @@
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
     <!-- 查看条码详情对话框 -->
-    <el-dialog title="条码详情" v-model="viewOpen" width="520px" append-to-body>
+    <el-dialog title="条码详情" v-model="viewOpen" width="500px" append-to-body>
       <el-descriptions :column="2" border>
         <el-descriptions-item label="条码" :span="2">{{ viewForm.barcodeCode }}</el-descriptions-item>
         <el-descriptions-item label="配置编码">{{ viewForm.configCode }}</el-descriptions-item>
@@ -128,7 +128,7 @@
     </el-dialog>
 
     <!-- 编辑/新增条码对话框 -->
-    <el-dialog :title="title" v-model="open" width="700px" append-to-body>
+    <el-dialog :title="title" v-model="open" width="640px" append-to-body>
       <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
         <el-form-item label="条码" prop="barcodeCode">
           <el-input v-model="form.barcodeCode" :disabled="!!form.barcodeId" placeholder="系统自动生成或手动输入" />
@@ -177,7 +177,7 @@
     </el-dialog>
 
     <!-- 生成条码对话框 -->
-    <el-dialog title="生成条码" v-model="generateOpen" width="520px" append-to-body>
+    <el-dialog title="生成条码" v-model="generateOpen" width="500px" append-to-body>
       <el-form ref="generateRef" :model="generateForm" :rules="generateRules" label-width="100px">
         <el-form-item label="配置编码" prop="configCode">
           <el-select v-model="generateForm.configCode" filterable placeholder="请选择配置编码" style="width: 100%" @change="onGenerateConfigChange">
@@ -213,7 +213,7 @@ import type { FormInstance } from 'element-plus';
 import { useCrud } from '@/composables/useCrud';
 
 // 获取当前实例
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 
 const formRef = ref<FormInstance>();
 const generateRef = ref<FormInstance>();

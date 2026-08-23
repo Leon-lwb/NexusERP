@@ -153,7 +153,7 @@ import { WmSnVO, WmSnQuery, WmSnForm } from '@/api/erp/wm/sn/types';
 import { listWarehouse } from '@/api/erp/wm/warehouse';
 import { useRouter } from 'vue-router';
 
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { wm_sn_status } = toRefs<any>(proxy.useDict('wm_sn_status'));
 
 const router = useRouter();

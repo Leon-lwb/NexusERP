@@ -220,7 +220,7 @@ import { getRequirement, addRequirement, updateRequirement, importBomDetails } f
 import { previewCode } from '@/api/system/autocode/rule';
 import type { RequirementForm, RequirementDetailVO } from '@/api/erp/prd/requirement/types';
 
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { sys_core_status, prd_requirement_status, prd_material_source_type } = toRefs<any>(
   proxy.useDict('sys_core_status', 'prd_requirement_status', 'prd_material_source_type')
 );
@@ -305,7 +305,7 @@ function reset() {
 }
 
 function submitForm() {
-  proxy.$refs['requirementRef'].validate((valid) => {
+  (proxy.$refs['requirementRef'] as any).validate((valid) => {
     if (valid) {
       // 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号
       if (autoGenFlag.value) {

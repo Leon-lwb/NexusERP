@@ -365,7 +365,7 @@ import { previewCode } from '@/api/system/autocode/rule';
 import { getProvinces, getNextLevel } from '@/api/system/area';
 import type { FormInstance } from 'element-plus';
 
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { bd_industry, bd_region, bd_vendor_status, bd_vendor_category, pu_invoice_type } = toRefs<any>(
   proxy.useDict('bd_industry', 'bd_region', 'bd_vendor_status', 'bd_vendor_category', 'pu_invoice_type')
 );

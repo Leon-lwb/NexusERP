@@ -110,7 +110,7 @@ import { addVendorEvaluation, getVendorEvaluation, updateVendorEvaluation, calcu
 import { listVendor } from '@/api/erp/bd/vendor';
 import { useRoute, useRouter } from 'vue-router';
 
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { pu_vendor_eval_level } = toRefs<any>(proxy.useDict('pu_vendor_eval_level'));
 
 const route = useRoute();

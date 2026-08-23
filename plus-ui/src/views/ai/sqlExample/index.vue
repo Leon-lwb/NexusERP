@@ -1,42 +1,47 @@
 <template>
   <div class="app-container">
     <!-- 搜索栏 -->
-    <el-form :model="queryParams" ref="queryFormRef" :inline="true" v-show="showSearch">
-      <el-form-item label="分类" prop="category">
-        <el-select v-model="queryParams.category" placeholder="请选择分类" clearable style="width: 150px">
-          <el-option label="库存" value="INVENTORY" />
-          <el-option label="销售" value="SALES" />
-          <el-option label="采购" value="PURCHASE" />
-          <el-option label="生产" value="PRODUCTION" />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="问题" prop="question">
-        <el-input v-model="queryParams.question" placeholder="请输入问题关键词" clearable @keyup.enter="handleQuery" style="width: 200px" />
-      </el-form-item>
-      <el-form-item>
-        <el-button type="primary" :icon="Search" @click="handleQuery">搜索</el-button>
-        <el-button :icon="Refresh" @click="resetQuery">重置</el-button>
-      </el-form-item>
+    <el-form :model="queryParams" ref="queryRef" v-show="showSearch" label-width="80px" class="list-search">
+      <el-row :gutter="16">
+        <el-col :span="6">
+          <el-form-item label="分类" prop="category">
+            <el-select v-model="queryParams.category" placeholder="请选择分类" clearable>
+              <el-option v-for="item in SQL_EXAMPLE_CATEGORY_OPTIONS" :key="item.value" :label="item.label" :value="item.value" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="问题" prop="question">
+            <el-input v-model="queryParams.question" placeholder="请输入问题关键词" clearable @keyup.enter="handleQuery" />
+          </el-form-item>
+        </el-col>
+        <el-col :span="6" class="search-actions">
+          <el-form-item>
+            <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+          </el-form-item>
+        </el-col>
+      </el-row>
     </el-form>
 
     <!-- 工具栏 -->
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
-        <el-button type="primary" plain :icon="Plus" @click="handleAdd">新增</el-button>
+        <el-button type="primary" plain icon="Plus" @click="handleAdd">新增</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="danger" plain :icon="Delete" :disabled="multiple" @click="handleDelete()">删除</el-button>
+        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete()">删除</el-button>
       </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" />
     </el-row>
 
     <!-- 表格 -->
-    <el-table v-loading="loading" :data="dataList" @selection-change="handleSelectionChange">
+    <el-table v-loading="loading" :data="list" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="排序号" prop="sortOrder" width="80" align="center" />
       <el-table-column label="分类" prop="category" width="100" align="center">
         <template #default="scope">
-          <el-tag :type="categoryTagType(scope.row.category)">{{ scope.row.category }}</el-tag>
+          <el-tag :type="getAiOptionTagType(SQL_EXAMPLE_CATEGORY_OPTIONS, scope.row.category)">{{ scope.row.category }}</el-tag>
         </template>
       </el-table-column>
       <el-table-column label="问题" prop="question" min-width="200" show-overflow-tooltip />
@@ -47,15 +52,13 @@
       </el-table-column>
       <el-table-column label="状态" prop="status" width="80" align="center">
         <template #default="scope">
-          <el-tag :type="scope.row.status === '0' ? 'success' : 'info'">
-            {{ scope.row.status === '0' ? '启用' : '禁用' }}
-          </el-tag>
+          <dict-tag :options="SQL_EXAMPLE_STATUS_OPTIONS" :value="scope.row.status" />
         </template>
       </el-table-column>
       <el-table-column label="操作" width="150" align="center">
         <template #default="scope">
-          <el-button link type="primary" :icon="Edit" @click="handleUpdate(scope.row)">修改</el-button>
-          <el-button link type="danger" :icon="Delete" @click="handleDelete(scope.row)">删除</el-button>
+          <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)">修改</el-button>
+          <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)">删除</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -64,8 +67,8 @@
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
     <!-- 新增/修改对话框 -->
-    <el-dialog :title="dialogTitle" v-model="dialogVisible" width="700px" append-to-body>
-      <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
+    <el-dialog :title="title" v-model="open" width="640px" append-to-body>
+      <el-form ref="sqlExampleRef" :model="form" :rules="rules" label-width="100px" :disabled="isViewMode">
         <el-form-item label="问题" prop="question">
           <el-input v-model="form.question" placeholder="请输入用户可能问的问题" />
         </el-form-item>
@@ -74,10 +77,7 @@
         </el-form-item>
         <el-form-item label="分类" prop="category">
           <el-select v-model="form.category" placeholder="请选择分类">
-            <el-option label="库存" value="INVENTORY" />
-            <el-option label="销售" value="SALES" />
-            <el-option label="采购" value="PURCHASE" />
-            <el-option label="生产" value="PRODUCTION" />
+            <el-option v-for="item in SQL_EXAMPLE_CATEGORY_OPTIONS" :key="item.value" :label="item.label" :value="item.value" />
           </el-select>
         </el-form-item>
         <el-form-item label="排序号" prop="sortOrder">
@@ -85,8 +85,7 @@
         </el-form-item>
         <el-form-item label="状态" prop="status">
           <el-radio-group v-model="form.status">
-            <el-radio value="0">启用</el-radio>
-            <el-radio value="1">禁用</el-radio>
+            <el-radio v-for="item in SQL_EXAMPLE_STATUS_OPTIONS" :key="item.value" :value="item.value">{{ item.label }}</el-radio>
           </el-radio-group>
         </el-form-item>
         <el-form-item label="说明" prop="description">
@@ -94,45 +93,29 @@
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="dialogVisible = false">取 消</el-button>
-        <el-button type="primary" @click="submitForm">确 定</el-button>
+        <div class="dialog-footer">
+          <el-button type="primary" @click="submitForm">确 定</el-button>
+          <el-button @click="cancel">取 消</el-button>
+        </div>
       </template>
     </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts" name="AiSqlExample">
-import { ref, reactive } from 'vue';
-import { Search, Refresh, Plus, Edit, Delete } from '@element-plus/icons-vue';
-import { ElMessage, ElMessageBox } from 'element-plus';
 import { listSqlExample, getSqlExample, addSqlExample, updateSqlExample, delSqlExample } from '@/api/ai/sqlExample';
+import { useCrud } from '@/composables/useCrud';
+import { SQL_EXAMPLE_CATEGORY_OPTIONS, SQL_EXAMPLE_STATUS_OPTIONS, getAiOptionTagType } from '@/views/ai/constants';
 
-defineOptions({ name: 'AiSqlExample' });
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 
-const loading = ref(false);
-const showSearch = ref(true);
-const dataList = ref<any[]>([]);
-const total = ref(0);
-const ids = ref<number[]>([]);
-const multiple = ref(true);
-const dialogVisible = ref(false);
-const dialogTitle = ref('');
+const sqlExampleRef = ref<ElFormInstance>();
 
-const queryParams = reactive({
+const queryParams = ref({
   pageNum: 1,
   pageSize: 10,
-  category: undefined as string | undefined,
-  question: undefined as string | undefined
-});
-
-const form = reactive({
-  id: undefined as number | undefined,
-  question: '',
-  sqlTemplate: '',
-  category: 'INVENTORY',
-  sortOrder: 0,
-  status: '0',
-  description: ''
+  category: null,
+  question: null
 });
 
 const rules = {
@@ -141,108 +124,49 @@ const rules = {
   category: [{ required: true, message: '请选择分类', trigger: 'change' }]
 };
 
-const queryFormRef = ref();
-const formRef = ref();
+const {
+  loading,
+  list,
+  total,
+  open,
+  isViewMode,
+  title,
+  multiple,
+  showSearch,
+  form,
+  getList,
+  handleQuery,
+  handleDelete,
+  handleSelectionChange,
+  submitForm,
+  cancel,
+  handleAdd: rawHandleAdd,
+  handleUpdate
+} = useCrud({
+  apis: { list: listSqlExample, get: getSqlExample, add: addSqlExample, update: updateSqlExample, del: delSqlExample },
+  idField: 'id',
+  entityName: 'SQL 示例',
+  formRef: sqlExampleRef,
+  queryParams,
+  initForm: () => ({
+    id: undefined,
+    question: '',
+    sqlTemplate: '',
+    category: 'INVENTORY',
+    sortOrder: 0,
+    status: '0',
+    description: ''
+  })
+});
 
-/** 分类标签颜色 */
-function categoryTagType(category: string): ElTagType {
-  const map: Record<string, ElTagType> = {
-    INVENTORY: 'warning',
-    SALES: 'success',
-    PURCHASE: 'primary',
-    PRODUCTION: 'danger'
-  };
-  return map[category] || 'info';
-}
-
-/** 查询列表 */
-function getList() {
-  loading.value = true;
-  listSqlExample(queryParams).then((res: any) => {
-    dataList.value = res.rows;
-    total.value = res.total;
-    loading.value = false;
-  });
-}
-
-/** 搜索 */
-function handleQuery() {
-  queryParams.pageNum = 1;
-  getList();
-}
-
-/** 重置 */
 function resetQuery() {
-  queryFormRef.value?.resetFields();
+  proxy?.resetForm('queryRef');
   handleQuery();
 }
 
-/** 多选 */
-function handleSelectionChange(selection: any[]) {
-  ids.value = selection.map((item) => item.id);
-  multiple.value = !selection.length;
-}
-
-/** 重置表单 */
-function resetForm() {
-  form.id = undefined;
-  form.question = '';
-  form.sqlTemplate = '';
-  form.category = 'INVENTORY';
-  form.sortOrder = 0;
-  form.status = '0';
-  form.description = '';
-}
-
-/** 新增 */
+/** 新增（包装避免 @click 事件对象被误传为 extraInit） */
 function handleAdd() {
-  resetForm();
-  dialogTitle.value = '新增 SQL 示例';
-  dialogVisible.value = true;
-}
-
-/** 修改 */
-function handleUpdate(row: any) {
-  resetForm();
-  const exampleId = row.id || ids.value[0];
-  getSqlExample(exampleId).then((res: any) => {
-    Object.assign(form, res.data);
-    dialogTitle.value = '修改 SQL 示例';
-    dialogVisible.value = true;
-  });
-}
-
-/** 提交 */
-function submitForm() {
-  formRef.value?.validate((valid: boolean) => {
-    if (!valid) return;
-    if (form.id) {
-      updateSqlExample(form).then(() => {
-        ElMessage.success('修改成功');
-        dialogVisible.value = false;
-        getList();
-      });
-    } else {
-      addSqlExample(form).then(() => {
-        ElMessage.success('新增成功');
-        dialogVisible.value = false;
-        getList();
-      });
-    }
-  });
-}
-
-/** 删除 */
-function handleDelete(row?: any) {
-  const deleteIds = row?.id ? [row.id] : ids.value;
-  ElMessageBox.confirm('是否确认删除选中的数据？', '提示', { type: 'warning' })
-    .then(() => {
-      delSqlExample(deleteIds).then(() => {
-        ElMessage.success('删除成功');
-        getList();
-      });
-    })
-    .catch(() => {});
+  rawHandleAdd();
 }
 
 getList();

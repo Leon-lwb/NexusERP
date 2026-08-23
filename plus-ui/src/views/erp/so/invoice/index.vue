@@ -350,7 +350,7 @@
     </el-dialog>
 
     <!-- 核销对话框 -->
-    <el-dialog title="发票核销" v-model="verifyOpen" width="420px" append-to-body>
+    <el-dialog title="发票核销" v-model="verifyOpen" width="500px" append-to-body>
       <el-form label-width="100px">
         <el-form-item label="价税合计">{{ verifyForm.totalAmount }}</el-form-item>
         <el-form-item label="已核销">{{ verifyForm.verifiedAmount }}</el-form-item>
@@ -380,7 +380,7 @@ import ClientSelectDialog from '@/views/erp/so/components/ClientSelectDialog.vue
 import MaterialSelectDialog from '@/components/MaterialSelectDialog/index.vue';
 import type { FormInstance } from 'element-plus';
 
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const formRef = ref<FormInstance>();
 const { so_invoice_type, so_invoice_status, invoice_issue_channel } = toRefs<any>(
   proxy.useDict('so_invoice_type', 'so_invoice_status', 'invoice_issue_channel')

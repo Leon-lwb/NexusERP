@@ -127,7 +127,7 @@
     </el-card>
 
     <!-- 派工对话框 -->
-    <el-dialog v-model="dispatchDialogVisible" title="派工" width="480px" destroy-on-close>
+    <el-dialog v-model="dispatchDialogVisible" title="派工" width="500px" destroy-on-close>
       <el-form ref="dispatchFormRef" :model="dispatchForm" :rules="dispatchRules" label-width="90px">
         <el-form-item label="工序">
           <el-input :model-value="currentStep?.processName" disabled />
@@ -154,7 +154,7 @@
     </el-dialog>
 
     <!-- 进站操作员选择对话框 -->
-    <el-dialog v-model="entryDialogVisible" title="工序进站" width="480px" destroy-on-close>
+    <el-dialog v-model="entryDialogVisible" title="工序进站" width="500px" destroy-on-close>
       <el-form ref="entryFormRef" :model="entryForm" :rules="entryRules" label-width="90px">
         <el-form-item label="工序">
           <el-input :model-value="currentStep?.processName" disabled />
@@ -183,7 +183,7 @@
     </el-dialog>
 
     <!-- 出站完工对话框 -->
-    <el-dialog v-model="exitDialogVisible" title="工序出站完工" width="480px" destroy-on-close>
+    <el-dialog v-model="exitDialogVisible" title="工序出站完工" width="500px" destroy-on-close>
       <el-form ref="exitFormRef" :model="exitForm" :rules="exitRules" label-width="90px">
         <el-form-item label="工序">
           <el-input :model-value="currentStep?.processName" disabled />
@@ -211,7 +211,7 @@
     </el-dialog>
 
     <!-- 跳站对话框 -->
-    <el-dialog v-model="skipDialogVisible" title="工序跳站" width="480px" destroy-on-close>
+    <el-dialog v-model="skipDialogVisible" title="工序跳站" width="500px" destroy-on-close>
       <el-form ref="skipFormRef" :model="skipForm" :rules="skipRules" label-width="90px">
         <el-form-item label="工序">
           <el-input :model-value="currentStep?.processName" disabled />
@@ -227,7 +227,7 @@
     </el-dialog>
 
     <!-- 校验失败明细对话框 -->
-    <el-dialog v-model="failureDialogVisible" title="校验未通过" width="600px" append-to-body>
+    <el-dialog v-model="failureDialogVisible" title="校验未通过" width="640px" append-to-body>
       <el-alert title="工序校验未通过，请处理以下问题：" type="error" :closable="false" show-icon class="mb-2" />
       <el-table :data="failureList" border>
         <el-table-column label="校验类型" prop="checkType" width="180">

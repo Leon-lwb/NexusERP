@@ -129,7 +129,7 @@
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
     <!-- 开始测试: 开单弹窗 -->
-    <el-dialog title="开始测试 - 选择测试对象" v-model="begin.visible" width="600px" append-to-body>
+    <el-dialog title="开始测试 - 选择测试对象" v-model="begin.visible" width="640px" append-to-body>
       <el-form :model="begin.form" :rules="beginRules" ref="beginRef" label-width="110px">
         <el-form-item label="SN" prop="snCode">
           <el-select
@@ -194,7 +194,7 @@
     </el-dialog>
 
     <!-- 填报弹窗 -->
-    <el-dialog :title="'填报测试 - ' + report.testNo" v-model="report.visible" width="900px" append-to-body>
+    <el-dialog :title="'填报测试 - ' + report.testNo" v-model="report.visible" width="960px" append-to-body>
       <el-alert
         type="warning"
         :closable="false"
@@ -257,7 +257,7 @@
     </el-dialog>
 
     <!-- 单行详情 -->
-    <el-dialog title="测试行详情" v-model="detail.visible" width="660px" append-to-body>
+    <el-dialog title="测试行详情" v-model="detail.visible" width="640px" append-to-body>
       <el-descriptions :column="2" border>
         <el-descriptions-item label="测试单号">{{ detail.data.testNo || '-' }}</el-descriptions-item>
         <el-descriptions-item label="SN">{{ detail.data.snCode || '-' }}</el-descriptions-item>
@@ -287,7 +287,7 @@
     </el-dialog>
 
     <!-- 整单(按测试单号)详情 -->
-    <el-dialog :title="'测试单追溯 - ' + testNoDetail.testNo" v-model="testNoDetail.visible" width="900px" append-to-body>
+    <el-dialog :title="'测试单追溯 - ' + testNoDetail.testNo" v-model="testNoDetail.visible" width="960px" append-to-body>
       <el-table :data="testNoDetail.rows" max-height="480">
         <el-table-column label="测试项" min-width="160">
           <template #default="scope">{{ scope.row.itemCode }} {{ scope.row.itemName }}</template>

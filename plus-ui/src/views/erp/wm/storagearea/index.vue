@@ -225,7 +225,7 @@ import type { FormInstance } from 'element-plus';
 import { useCrud } from '@/composables/useCrud';
 import Wm3dConfigDrawer from '../components/Wm3dConfigDrawer.vue';
 
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { sys_true_or_false, wm_layout_type } = toRefs<any>(proxy.useDict('sys_true_or_false', 'wm_layout_type'));
 
 const route = useRoute();

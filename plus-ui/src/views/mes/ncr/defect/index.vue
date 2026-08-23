@@ -45,7 +45,7 @@
     </el-card>
 
     <!-- 补录缺陷对话框 -->
-    <el-dialog title="补录缺陷" v-model="dialog.visible" width="560px" append-to-body>
+    <el-dialog title="补录缺陷" v-model="dialog.visible" width="500px" append-to-body>
       <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
         <el-form-item label="NCR编号" prop="ncrId" required>
           <!-- 雪花ID为19位长整型，不能 v-model.number 截断，保持字符串透传 -->

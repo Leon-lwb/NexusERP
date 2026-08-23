@@ -66,7 +66,7 @@
 import { depreciationPlan, listDepreciation, runDepreciation, FaDepreciationVO } from '@/api/erp/fin/fa';
 import { listPeriod } from '@/api/erp/fin/gl/period';
 
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 
 const periodList = ref<any[]>([]);
 const periodId = ref<number>();

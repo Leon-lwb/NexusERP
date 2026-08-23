@@ -126,6 +126,7 @@ import {
   type AiKgCommunity,
   type GraphProgress
 } from '@/api/ai/knowledgeGraph';
+import { KG_GRAPH_STATUS_OPTIONS, KG_SUMMARY_STATUS_OPTIONS, getAiOptionTagType, getAiOptionTagLabel } from '../constants';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 
@@ -500,16 +501,16 @@ function handleGlobalSearch() {
 }
 
 function statusText(s?: string) {
-  return { '0': '未构建', '1': '构建中', '2': '已完成', '3': '失败' }[s || ''] || '未知';
+  return getAiOptionTagLabel(KG_GRAPH_STATUS_OPTIONS, s) || '未知';
 }
-function statusType(s?: string): any {
-  return { '0': 'info', '1': 'warning', '2': 'success', '3': 'danger' }[s || ''] || 'info';
+function statusType(s?: string) {
+  return getAiOptionTagType(KG_GRAPH_STATUS_OPTIONS, s);
 }
 function summaryStatusText(s?: string) {
-  return { '0': '待生成', '1': '生成中', '2': '已完成', '3': '失败' }[s || ''] || '未知';
+  return getAiOptionTagLabel(KG_SUMMARY_STATUS_OPTIONS, s) || '未知';
 }
-function summaryStatusType(s?: string): any {
-  return { '0': 'info', '1': 'warning', '2': 'success', '3': 'danger' }[s || ''] || 'info';
+function summaryStatusType(s?: string) {
+  return getAiOptionTagType(KG_SUMMARY_STATUS_OPTIONS, s);
 }
 </script>
 

@@ -94,7 +94,7 @@
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
     <!-- 添加或修改产品对话框 -->
-    <el-dialog :title="title" v-model="open" width="600px" append-to-body>
+    <el-dialog :title="title" v-model="open" width="640px" append-to-body>
       <el-form ref="productRef" :model="form" :rules="rules" label-width="90px" :disabled="isViewMode">
         <el-form-item label="产品编码" prop="productCode">
           <el-input v-model="form.productCode" placeholder="请输入产品编码" />

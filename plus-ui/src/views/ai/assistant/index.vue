@@ -194,7 +194,7 @@
       </div>
 
       <!-- 重命名弹窗 -->
-      <el-dialog v-model="renameDialogVisible" title="重命名会话" width="400px" append-to-body>
+      <el-dialog v-model="renameDialogVisible" title="重命名会话" width="500px" append-to-body>
         <el-input v-model="renameTitle" placeholder="请输入新标题" maxlength="50" show-word-limit />
         <template #footer>
           <el-button @click="renameDialogVisible = false">取消</el-button>
@@ -206,7 +206,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
+import { ref, computed, onMounted, onUnmounted, nextTick, getCurrentInstance, type Component } from 'vue';
 import {
   Promotion,
   Loading,
@@ -238,12 +238,14 @@ import {
 import { getAvailableMcpTools } from '@/api/ai/mcpTool';
 import { marked } from 'marked';
 import * as echarts from 'echarts';
-import { ElMessageBox } from 'element-plus';
 import { createAiRenderer, sanitizeOption, sanitizeHtml } from '@/utils/aiRenderers';
+import { AI_CHAT_MODE_OPTIONS } from '../constants';
 import DeepThinking from '@/components/ai/DeepThinking.vue';
 import WebSearchToggle from '@/components/ai/WebSearchToggle.vue';
 import ModelSelect from '@/components/ai/ModelSelect.vue';
 import 'github-markdown-css';
+
+const { proxy } = getCurrentInstance() as any;
 
 /** 工具调用状态 */
 interface ToolCallInfo {
@@ -282,13 +284,15 @@ const selectedModel = ref('');
 const enableThinking = ref(false);
 const enableWebSearch = ref(false);
 
+/** 对话模式图标映射（模式枚举值/文案统一维护在 ai/constants.ts） */
+const modeIcons: Record<string, Component> = {
+  auto: MagicStick,
+  chat: ChatDotRound,
+  agent: DataAnalysis,
+  rag: Collection
+};
 /** 对话模式选项 */
-const modeOptions = [
-  { value: 'auto', label: '自动', icon: MagicStick },
-  { value: 'chat', label: '对话', icon: ChatDotRound },
-  { value: 'agent', label: '数据查询', icon: DataAnalysis },
-  { value: 'rag', label: '知识库', icon: Collection }
-];
+const modeOptions = AI_CHAT_MODE_OPTIONS.map((m) => ({ ...m, icon: modeIcons[m.value] }));
 
 /** MCP 工具选择器状态 */
 const toolDrawerVisible = ref(false);
@@ -554,7 +558,7 @@ async function switchSession(sessionId: number | string) {
     nextTick(() => scrollToBottom());
   } catch (e: any) {
     console.error('[AI] 加载聊天历史失败', e);
-    ElMessage.error('加载聊天历史失败: ' + (e.message || e));
+    proxy?.$modal.msgError('加载聊天历史失败: ' + (e.message || e));
   } finally {
     loading.value = false;
   }
@@ -661,7 +665,7 @@ function truncateText(text: string, maxLen: number) {
 async function handleFeedback(msg: ChatMessage, feedback: string) {
   if (!msg.id) {
     // 新消息尚未保存到后端，提示用户刷新后操作
-    ElMessage.info('请等待消息保存后再反馈');
+    proxy?.$modal.msgInfo('请等待消息保存后再反馈');
     return;
   }
   // 如果点击已选中的反馈，则取消
@@ -671,7 +675,7 @@ async function handleFeedback(msg: ChatMessage, feedback: string) {
     msg.feedback = newFeedback === 'NONE' ? undefined : newFeedback;
   } catch (e: any) {
     console.error('[AI] 反馈失败', e);
-    ElMessage.error('反馈提交失败');
+    proxy?.$modal.msgError('反馈提交失败');
   }
 }
 
@@ -726,10 +730,10 @@ async function handleExport() {
     link.download = `${session.title || 'AI对话'}.md`;
     link.click();
     window.URL.revokeObjectURL(url);
-    ElMessage.success('导出成功');
+    proxy?.$modal.msgSuccess('导出成功');
   } catch (e: any) {
     console.error('[AI] 导出会话失败', e);
-    ElMessage.error('导出失败');
+    proxy?.$modal.msgError('导出失败');
   }
 }
 
@@ -739,7 +743,7 @@ async function handleDelete() {
   const session = contextMenu.value.session;
   hideContextMenu();
   try {
-    await ElMessageBox.confirm('确定删除该会话及其所有消息？', '提示', { type: 'warning' });
+    await proxy?.$modal.confirm('确定删除该会话及其所有消息？');
     await deleteSession([session.id]);
     sessions.value = sessions.value.filter((s) => s.id !== session.id);
     if (currentSessionId.value === session.id) {

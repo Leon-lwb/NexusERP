@@ -107,7 +107,7 @@
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
     <!-- 添加或修改工序对话框 -->
-    <el-dialog :title="title" v-model="open" width="700px" append-to-body>
+    <el-dialog :title="title" v-model="open" width="640px" append-to-body>
       <el-form ref="processRef" :model="form" :rules="rules" label-width="120px">
         <el-row :gutter="20">
           <el-col :span="12">
@@ -232,7 +232,7 @@ import { listWorkstation } from '@/api/erp/bd/workstation';
 import type { FormInstance } from 'element-plus';
 import { useCrud } from '@/composables/useCrud';
 
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { sys_core_status, sys_true_or_false, bd_process_category } = toRefs<any>(
   proxy.useDict('sys_core_status', 'sys_true_or_false', 'bd_process_category')
 );

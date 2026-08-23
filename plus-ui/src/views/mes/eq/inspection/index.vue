@@ -45,7 +45,7 @@
       <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
       <!-- 点检对话框 -->
-      <el-dialog v-model="inspectOpen" :title="`设备点检 - ${currentEquipment?.equipmentName}`" width="700px" append-to-body>
+      <el-dialog v-model="inspectOpen" :title="`设备点检 - ${currentEquipment?.equipmentName}`" width="640px" append-to-body>
         <el-form ref="inspectForm" :model="inspectForm" label-width="120px">
           <div v-if="inspectForm.items.length === 0" class="empty-tip">
             <el-alert title="该设备未配置点检项目(inspection_items 为空), 可直接提交空点检" type="info" :closable="false" />

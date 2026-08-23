@@ -16,7 +16,7 @@
       <el-button size="small" type="primary" :icon="Plus" @click="openAttributesForm(null, -1)">添加属性</el-button>
     </div>
 
-    <el-dialog v-model="propertyFormModelVisible" title="属性配置" width="600px" append-to-body destroy-on-close>
+    <el-dialog v-model="propertyFormModelVisible" title="属性配置" width="640px" append-to-body destroy-on-close>
       <el-form :model="propertyForm" label-width="80px" size="small" ref="attributeFormRef" @submit.prevent>
         <el-form-item label="属性名：" prop="name">
           <el-input v-model="propertyForm.name" clearable />

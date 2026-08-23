@@ -71,7 +71,7 @@
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
     <!-- 新增/编辑弹窗 -->
-    <el-dialog :title="title" v-model="open" width="520px" append-to-body>
+    <el-dialog :title="title" v-model="open" width="500px" append-to-body>
       <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
         <el-form-item label="资源池名称" prop="poolName">
           <el-input v-model="form.poolName" placeholder="请输入" />
@@ -107,7 +107,7 @@
     </el-dialog>
 
     <!-- 导入资源弹窗 -->
-    <el-dialog :title="'导入资源 - ' + (importPool.poolName || '')" v-model="importOpen" width="560px" append-to-body>
+    <el-dialog :title="'导入资源 - ' + (importPool.poolName || '')" v-model="importOpen" width="500px" append-to-body>
       <el-alert
         type="info"
         :closable="false"
@@ -136,7 +136,7 @@ import {
   type MesResourcePoolQuery
 } from '@/api/mes/flash/pool';
 
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { mes_resource_type } = toRefs<any>(proxy?.useDict('mes_resource_type'));
 const resourceTypeOptions = computed(() => mes_resource_type.value || []);
 
@@ -197,7 +197,7 @@ const handleEdit = (row: MesResourcePoolVO) => {
   open.value = true;
 };
 const submitForm = () => {
-  proxy?.$refs.formRef.validate(async (valid: boolean) => {
+  (proxy?.$refs.formRef as any).validate(async (valid: boolean) => {
     if (!valid) return;
     if (form.value.poolId) {
       await updatePool(form.value);

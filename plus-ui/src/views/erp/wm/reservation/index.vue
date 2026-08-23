@@ -76,7 +76,7 @@
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
     <!-- 手动预留弹窗 -->
-    <el-dialog :title="'手动预留'" v-model="reserveVisible" width="620px" :close-on-click-modal="false">
+    <el-dialog :title="'手动预留'" v-model="reserveVisible" width="640px" :close-on-click-modal="false">
       <el-form ref="reserveFormRef" :model="reserveForm" :rules="reserveRules" label-width="110px">
         <el-form-item label="物料" prop="materialId">
           <el-input v-model="reserveForm.materialName" placeholder="请选择物料" readonly>
@@ -116,7 +116,7 @@
     </el-dialog>
 
     <!-- 选择物料 -->
-    <el-dialog title="选择物料" v-model="materialDialogOpen" width="900px" append-to-body>
+    <el-dialog title="选择物料" v-model="materialDialogOpen" width="960px" append-to-body>
       <el-form :model="materialQuery" inline>
         <el-form-item label="物料编码">
           <el-input v-model="materialQuery.materialCode" placeholder="请输入物料编码" clearable style="width: 160px" @keyup.enter="getMaterialList" />
@@ -140,7 +140,7 @@
     </el-dialog>
 
     <!-- 选择仓库 -->
-    <el-dialog title="选择仓库" v-model="warehouseDialogOpen" width="600px" append-to-body>
+    <el-dialog title="选择仓库" v-model="warehouseDialogOpen" width="640px" append-to-body>
       <el-table :data="warehouseList" @current-change="handleWarehouseSelect" highlight-current-row max-height="420">
         <el-table-column label="仓库编码" prop="warehouseCode" width="140" />
         <el-table-column label="仓库名称" prop="warehouseName" />
@@ -155,7 +155,7 @@
     <el-dialog
       :title="'选择' + (reserveForm.sourceDocType === 'WORK_ORDER' ? '生产工单' : '销售订单')"
       v-model="sourceDocDialogOpen"
-      width="900px"
+      width="960px"
       append-to-body
     >
       <el-form :model="sourceDocQuery" inline>
@@ -190,7 +190,7 @@
     </el-dialog>
 
     <!-- 预留明细弹窗 -->
-    <el-dialog :title="'预留明细'" v-model="detailVisible" width="1100px">
+    <el-dialog :title="'预留明细'" v-model="detailVisible" width="1200px">
       <el-form :model="detailQuery" inline class="mb8">
         <el-form-item label="物料编码">
           <el-input v-model="detailQuery.materialCode" placeholder="请输入物料编码" clearable style="width: 160px" @keyup.enter="getDetailList" />

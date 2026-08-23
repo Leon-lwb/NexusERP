@@ -251,7 +251,7 @@
     </el-card>
 
     <!-- 供应商选择对话框 -->
-    <el-dialog v-model="vendorDialog.visible" title="选择供应商" width="900px" append-to-body>
+    <el-dialog v-model="vendorDialog.visible" title="选择供应商" width="960px" append-to-body>
       <el-form :model="vendorDialog.query" :inline="true">
         <el-form-item label="供应商编码">
           <el-input v-model="vendorDialog.query.vendorCode" clearable @keyup.enter="queryVendors" />
@@ -284,7 +284,7 @@
     <MaterialSelectDialog ref="materialSelectDialogRef" title="选择物料" @select="handleMaterialSelected" />
 
     <!-- 合同选择对话框 -->
-    <el-dialog v-model="contractDialog.visible" title="选择采购合同" width="900px" append-to-body>
+    <el-dialog v-model="contractDialog.visible" title="选择采购合同" width="960px" append-to-body>
       <el-form :model="contractDialog.query" :inline="true">
         <el-form-item label="合同编号">
           <el-input v-model="contractDialog.query.contractNo" clearable @keyup.enter="queryContracts" />
@@ -378,7 +378,7 @@ const props = defineProps({
 });
 
 // 获取当前实例的代理对象和字典数据
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { pu_purchase_order_status, so_currency_type } = toRefs<any>(proxy.useDict('pu_purchase_order_status', 'so_currency_type'));
 
 // 路由和导航
@@ -547,7 +547,7 @@ function tryAutoSelect() {
  * 提交审批
  */
 function handleSubmitFlow() {
-  proxy.$refs['formRef'].validate((valid: boolean) => {
+  (proxy.$refs['formRef'] as any).validate((valid: boolean) => {
     if (valid) {
       if (!form.value.selectFlowId) {
         proxy.$modal.msgWarning('请先选择审批流程');

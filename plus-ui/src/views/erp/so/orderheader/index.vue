@@ -168,7 +168,7 @@ import { listOrderheader, delOrderheader, confirmOrder, fulfillOrder, closeOrder
 import { useRouter } from 'vue-router';
 
 const router = useRouter();
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { so_credit_status, so_order_status, so_currency_type } = toRefs<any>(proxy.useDict('so_credit_status', 'so_order_status', 'so_currency_type'));
 
 const orderheaderList = ref([]);
@@ -425,8 +425,8 @@ function handleCloseOrder(row: any) {
 function handleCancel(row: any) {
   const soId = resolveTargetSoId(row);
   if (!soId) return;
-  proxy
-    .$prompt('请输入取消原因', '取消订单')
+  proxy.$modal
+    .prompt('请输入取消原因', '取消订单')
     .then(({ value }: any) => {
       cancelOrder(soId, value).then(() => {
         proxy.$modal.msgSuccess('取消成功');

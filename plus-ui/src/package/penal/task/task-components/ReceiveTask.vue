@@ -8,7 +8,7 @@
         <el-button size="small" type="primary" :icon="Plus" style="margin-left: 8px" @click="openMessageModel" />
       </div>
     </el-form-item>
-    <el-dialog v-model="messageModelVisible" :close-on-click-modal="false" title="创建新消息" width="400px" append-to-body destroy-on-close>
+    <el-dialog v-model="messageModelVisible" :close-on-click-modal="false" title="创建新消息" width="500px" append-to-body destroy-on-close>
       <el-form :model="newMessageForm" size="small" label-width="90px" @submit.prevent>
         <el-form-item label="消息ID">
           <el-input v-model="newMessageForm.id" clearable />

@@ -329,7 +329,7 @@
       </el-form>
     </el-card>
 
-    <el-dialog title="选择生产计划" v-model="planSelectOpen" width="1000px" append-to-body>
+    <el-dialog title="选择生产计划" v-model="planSelectOpen" width="960px" append-to-body>
       <el-form :model="planQueryParams" :inline="true">
         <el-form-item label="计划编号" prop="planNo">
           <el-input v-model="planQueryParams.planNo" placeholder="请输入计划编号" clearable @keyup.enter="getPlanList" />
@@ -657,7 +657,7 @@ import { getWorkOrderResourceByWoId, saveWorkOrderResourceBatch, RESOURCE_TYPE }
 import { getProcesss } from '@/api/workflow/process/index';
 import type { WorkForm } from '@/api/erp/prd/work/types';
 
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { prd_source_type, so_order_priority, prd_wo_status, prd_plan_type, prd_plan_status, prd_backflush_flag } = toRefs<any>(
   proxy.useDict('prd_source_type', 'so_order_priority', 'prd_wo_status', 'prd_plan_type', 'prd_plan_status', 'prd_backflush_flag')
 );
@@ -962,7 +962,7 @@ function reset() {
 }
 
 function submitForm() {
-  proxy.$refs['workRef'].validate((valid) => {
+  (proxy.$refs['workRef'] as any).validate((valid) => {
     if (valid) {
       // 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号
       if (autoGenFlag.value) {

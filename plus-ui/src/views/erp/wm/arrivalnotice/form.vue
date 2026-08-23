@@ -215,7 +215,7 @@
     <MaterialSelectDialog ref="materialSelectDialogRef" :title="materialDialogTitle" @select="handleMaterialSelected" />
 
     <!-- IQC选择对话框 -->
-    <el-dialog :title="'选择来料检验单'" v-model="iqcSelectOpen" width="1000px" append-to-body>
+    <el-dialog :title="'选择来料检验单'" v-model="iqcSelectOpen" width="960px" append-to-body>
       <el-form :model="iqcQueryParams" ref="iqcQueryRef" :inline="true" label-width="100px">
         <el-form-item label="物料名称" prop="materialId">
           <span style="color: #606266">{{ iqcCurrentMaterialName || '-' }}</span>
@@ -291,7 +291,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { previewCode } from '@/api/system/autocode/rule';
 import type { ArrivalnoticeForm } from '@/api/erp/wm/arrivalnotice/types';
 
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { sys_true_or_false, wm_notice_status, bd_material_type } = toRefs<any>(
   proxy.useDict('sys_true_or_false', 'wm_notice_status', 'bd_material_type')
 );
@@ -472,7 +472,7 @@ const rules = {};
 
 /** 提交按钮 */
 function submitForm() {
-  proxy.$refs['arrivalnoticeRef'].validate((valid: boolean) => {
+  (proxy.$refs['arrivalnoticeRef'] as any).validate((valid: boolean) => {
     if (valid) {
       // 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号
       if (autoGenFlag.value) {

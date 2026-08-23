@@ -88,7 +88,7 @@
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
     <!-- 新增/编辑弹窗 -->
-    <el-dialog :title="dialog.title" v-model="dialog.visible" width="720px" append-to-body>
+    <el-dialog :title="dialog.title" v-model="dialog.visible" width="640px" append-to-body>
       <el-form ref="formRef" :model="form" :rules="rules" label-width="110px">
         <el-row :gutter="20">
           <el-col :span="12">

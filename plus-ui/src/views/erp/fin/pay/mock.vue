@@ -68,7 +68,7 @@
 import { payMockCallback, listOpenInvoices } from '@/api/erp/fin/pay';
 import { listClient } from '@/api/erp/bd/client';
 
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 
 const clientOptions = ref<any[]>([]);
 const openInvoices = ref<any[]>([]);

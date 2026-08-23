@@ -196,7 +196,7 @@
       </template>
     </el-drawer>
 
-    <el-dialog v-model="forwardVisible" title="转发到" width="360px" append-to-body>
+    <el-dialog v-model="forwardVisible" title="转发到" width="500px" append-to-body>
       <el-scrollbar max-height="400px">
         <div
           v-for="c in conversations"
@@ -216,7 +216,7 @@
     </el-dialog>
 
     <!-- P1-5: @ 群成员选择对话框 -->
-    <el-dialog v-model="mentionVisible" title="选择要 @ 的群成员" width="360px" append-to-body>
+    <el-dialog v-model="mentionVisible" title="选择要 @ 的群成员" width="500px" append-to-body>
       <el-input v-model="mentionKeyword" size="small" placeholder="搜索群成员" clearable class="mention-search" />
       <el-scrollbar max-height="400px">
         <el-empty v-if="!filteredMentionCandidates.length" description="暂无可 @ 的成员" />

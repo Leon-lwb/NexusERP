@@ -102,7 +102,7 @@
 
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
-    <el-dialog :title="title" v-model="open" width="600px" append-to-body>
+    <el-dialog :title="title" v-model="open" width="640px" append-to-body>
       <el-form ref="recptRef" :model="form" :rules="rules" label-width="100px">
         <el-row :gutter="20">
           <el-col :span="12">
@@ -193,7 +193,7 @@
       </template>
     </el-dialog>
 
-    <el-dialog title="选择工单" v-model="workOrderSelectOpen" width="900px" append-to-body>
+    <el-dialog title="选择工单" v-model="workOrderSelectOpen" width="960px" append-to-body>
       <el-form :model="workOrderQueryParams" :inline="true">
         <el-form-item label="工单号"
           ><el-input v-model="workOrderQueryParams.woNo" placeholder="请输入工单号" clearable @keyup.enter="getWorkOrderList"

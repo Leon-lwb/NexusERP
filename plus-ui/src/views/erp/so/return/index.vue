@@ -121,7 +121,7 @@ import { listReturn, delReturn, submitReturnFlow, getReturnProcId } from '@/api/
 import { useRouter } from 'vue-router';
 
 const router = useRouter();
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { so_return_status } = toRefs<any>(proxy.useDict('so_return_status'));
 
 const returnList = ref([]);

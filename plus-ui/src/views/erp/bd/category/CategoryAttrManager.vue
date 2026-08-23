@@ -89,7 +89,7 @@ import { listCategoryAttr, addCategoryAttr, updateCategoryAttr, delCategoryAttr 
 import type { CategoryAttributeVO, CategoryAttributeForm } from '@/api/erp/bd/category-attribute/types';
 
 const props = defineProps<{ categoryId: number | string; readonly?: boolean }>();
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { bd_attr_data_type } = toRefs<any>(proxy.useDict('bd_attr_data_type'));
 
 const attrList = ref<CategoryAttributeVO[]>([]);

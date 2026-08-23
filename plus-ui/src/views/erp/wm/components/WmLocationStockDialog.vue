@@ -35,7 +35,7 @@
 import { listStock } from '@/api/erp/wm/stock';
 import type { StockVO } from '@/api/erp/wm/stock/types';
 
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { sys_true_or_false } = toRefs<any>(proxy.useDict('sys_true_or_false'));
 
 const props = defineProps<{

@@ -23,8 +23,8 @@ export default {
     ElMessage.warning(content);
   },
   // 弹出提示
-  alert(content: any) {
-    ElMessageBox.alert(content, '系统提示');
+  alert(content: any, title?: string, options?: ElMessageBoxOptions) {
+    return ElMessageBox.alert(content, title || '系统提示', options);
   },
   // 错误提示
   alertError(content: any) {

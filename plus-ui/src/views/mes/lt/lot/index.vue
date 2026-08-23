@@ -200,7 +200,7 @@
     </el-dialog>
 
     <!-- FEFO 推荐对话框 -->
-    <el-dialog title="FEFO 批次推荐" v-model="fefoDialog.visible" width="720px" append-to-body>
+    <el-dialog title="FEFO 批次推荐" v-model="fefoDialog.visible" width="640px" append-to-body>
       <el-form :inline="true" label-width="100px">
         <el-form-item label="物料">
           <el-input v-model="fefoDialog.materialCode" placeholder="请选择物料" readonly style="width: 200px">
@@ -233,7 +233,7 @@
     </el-dialog>
 
     <!-- 追溯对话框 -->
-    <el-dialog title="批次追溯" v-model="traceDialog.visible" width="900px" append-to-body>
+    <el-dialog title="批次追溯" v-model="traceDialog.visible" width="960px" append-to-body>
       <div v-if="traceDialog.data">
         <el-descriptions :column="3" border title="批次信息">
           <el-descriptions-item label="批次编码">{{ traceDialog.data.lot?.lotCode }}</el-descriptions-item>
@@ -274,7 +274,7 @@
     <MaterialSelectDialog ref="materialSelectRef" title="选择物料" @select="handleMaterialSelect" />
 
     <!-- 供应商选择对话框 -->
-    <el-dialog v-model="vendorDialog.visible" title="选择供应商" width="900px" append-to-body>
+    <el-dialog v-model="vendorDialog.visible" title="选择供应商" width="960px" append-to-body>
       <el-form :model="vendorDialog.query" :inline="true">
         <el-form-item label="供应商编码">
           <el-input v-model="vendorDialog.query.vendorCode" clearable @keyup.enter="queryVendors" />

@@ -34,7 +34,7 @@ import type { CategoryAttributeVO } from '@/api/erp/bd/category-attribute/types'
 import type { MaterialAttributeValueVO } from '@/api/erp/bd/material-attribute-value/types';
 
 const props = defineProps<{ materialId: number | string; categoryId: number | string; readonly?: boolean }>();
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 
 const loading = ref(false);
 const attrList = ref<CategoryAttributeVO[]>([]);

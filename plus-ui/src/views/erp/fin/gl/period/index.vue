@@ -77,7 +77,7 @@
 
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
-    <el-dialog title="生成年度期间" v-model="genOpen" width="380px" append-to-body>
+    <el-dialog title="生成年度期间" v-model="genOpen" width="500px" append-to-body>
       <el-form label-width="100px">
         <el-form-item label="会计年度">
           <el-input-number v-model="genYear" :min="2020" :max="2099" controls-position="right" style="width: 100%" />
@@ -97,7 +97,7 @@
 import { listPeriod, closePeriod, lockPeriod, reopenPeriod, generateYearPeriods } from '@/api/erp/fin/gl/period';
 import { PeriodVO, PeriodQuery } from '@/api/erp/fin/gl/period/types';
 
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { gl_period_status } = toRefs<any>(proxy.useDict('gl_period_status'));
 
 const dataList = ref<PeriodVO[]>([]);

@@ -114,7 +114,7 @@
     </el-card>
 
     <!-- 新增/修改对话框 -->
-    <el-dialog :title="dialogTitle" v-model="dialogVisible" width="1100px" append-to-body>
+    <el-dialog :title="dialogTitle" v-model="dialogVisible" width="1200px" append-to-body>
       <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
         <el-row :gutter="20">
           <el-col :span="8">

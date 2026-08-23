@@ -652,7 +652,7 @@ import CustomerOrderSelectDialog from '../components/CustomerOrderSelectDialog.v
 import type { CustomerOrderVO } from '@/api/erp/so/customer-order/types';
 import type { OrderheaderForm } from '@/api/erp/so/orderheader/types';
 
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const {
   so_credit_status,
   so_order_status,
@@ -893,7 +893,7 @@ function reset() {
 }
 
 function submitForm() {
-  proxy.$refs['orderheaderRef'].validate((valid) => {
+  (proxy.$refs['orderheaderRef'] as any).validate((valid) => {
     if (valid) {
       // 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号
       if (autoGenFlag.value) {
@@ -919,7 +919,7 @@ function submitForm() {
  * 提交审批（Flowable）
  */
 function handleSubmitFlow() {
-  proxy.$refs['orderheaderRef'].validate((valid: boolean) => {
+  (proxy.$refs['orderheaderRef'] as any).validate((valid: boolean) => {
     if (valid) {
       if (!form.value.selectFlowId) {
         proxy.$modal.msgWarning('请先选择审批流程');

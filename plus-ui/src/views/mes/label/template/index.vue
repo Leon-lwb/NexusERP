@@ -92,7 +92,7 @@
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
     <!-- 添加或修改标签模板对话框 -->
-    <el-dialog :title="title" v-model="open" width="820px" append-to-body>
+    <el-dialog :title="title" v-model="open" width="800px" append-to-body>
       <el-form ref="templateRef" :model="form" :rules="rules" label-width="110px" :disabled="isViewMode">
         <el-row :gutter="20">
           <el-col :span="12">
@@ -243,7 +243,7 @@ import type { MesLabelTemplateVO } from '@/api/mes/label/template';
 import type { FormInstance } from 'element-plus';
 import { useCrud } from '@/composables/useCrud';
 
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 
 const templateRef = ref<FormInstance>();
 

@@ -265,7 +265,7 @@
     </el-dialog>
 
     <!-- 规则组成对话框 -->
-    <el-dialog v-model="dataDialog.visible" :title="dataDialog.title" width="900px" append-to-body>
+    <el-dialog v-model="dataDialog.visible" :title="dataDialog.title" width="960px" append-to-body>
       <el-form ref="dataFormRef" :model="dataForm" :inline="true" :rules="dataRules" label-width="110px">
         <el-row>
           <el-col :span="12">
@@ -361,7 +361,7 @@ import { ref, reactive, onMounted, toRefs, computed, nextTick, getCurrentInstanc
 import { listRule, getRule, delRule, addRule, updateRule } from '@/api/system/autocode/rule';
 import { listPart, getPart, delPart, addPart, updatePart } from '@/api/system/autocode/part';
 
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { sys_yes_no, sys_autocode_parttype, sys_autocode_cyclemethod } = toRefs<any>(
   proxy.useDict('sys_yes_no', 'sys_autocode_parttype', 'sys_autocode_cyclemethod')
 );

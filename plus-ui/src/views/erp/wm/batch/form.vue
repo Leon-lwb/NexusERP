@@ -119,7 +119,7 @@ import { getBatch, addBatch, updateBatch } from '@/api/erp/wm/batch';
 import { listWarehouse } from '@/api/erp/wm/warehouse';
 import { useRoute, useRouter } from 'vue-router';
 
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { wm_batch_status } = toRefs<any>(proxy.useDict('wm_batch_status'));
 
 const route = useRoute();
@@ -230,7 +230,7 @@ function reset() {
 }
 
 function submitForm() {
-  proxy.$refs['formRef'].validate((valid: boolean) => {
+  (proxy.$refs['formRef'] as any).validate((valid: boolean) => {
     if (valid) {
       // 同步仓库信息
       const warehouse = warehouseOptions.value.find((w: any) => w.warehouseId === form.value.warehouseId);

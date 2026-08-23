@@ -1,5 +1,5 @@
 <template>
-  <el-dialog v-model="visible" :title="`选择固件版本 - ${step?.processName || ''}`" width="760px" append-to-body>
+  <el-dialog v-model="visible" :title="`选择固件版本 - ${step?.processName || ''}`" width="800px" append-to-body>
     <el-alert
       v-if="materialCode"
       :title="`当前物料: ${materialCode} ${materialName ? '/ ' + materialName : ''} (仅显示已发布固件)`"

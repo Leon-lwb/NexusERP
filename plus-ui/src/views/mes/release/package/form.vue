@@ -1,5 +1,5 @@
 <template>
-  <el-dialog :title="dialogTitle" v-model="visible" width="1150px" append-to-body :close-on-click-modal="false">
+  <el-dialog :title="dialogTitle" v-model="visible" width="1200px" append-to-body :close-on-click-modal="false">
     <el-form ref="pkgFormRef" :model="form" :rules="rules" label-width="110px" :disabled="mode === 'view'">
       <el-divider content-position="left">基本信息</el-divider>
       <el-row :gutter="20">

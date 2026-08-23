@@ -125,7 +125,7 @@
     </el-drawer>
 
     <!-- 注入西段 编辑/创建 部分 -->
-    <el-dialog title="字段配置" v-model="listenerFieldFormModelVisible" width="600px" append-to-body destroy-on-close>
+    <el-dialog title="字段配置" v-model="listenerFieldFormModelVisible" width="640px" append-to-body destroy-on-close>
       <el-form :model="listenerFieldForm" size="small" label-width="96px" ref="listenerFieldFormRef" style="height: 136px" @submit.prevent>
         <el-form-item label="字段名称：" prop="name" :rules="{ required: true, trigger: ['blur', 'change'] }">
           <el-input v-model="listenerFieldForm.name" clearable />

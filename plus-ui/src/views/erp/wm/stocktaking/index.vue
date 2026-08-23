@@ -93,7 +93,7 @@ import { listStockTakingPlan, delStockTakingPlan } from '@/api/erp/wm/stocktakin
 import { useRouter } from 'vue-router';
 
 const router = useRouter();
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { wm_stocktaking_status } = toRefs<any>(proxy.useDict('wm_stocktaking_status'));
 
 const planList = ref([]);

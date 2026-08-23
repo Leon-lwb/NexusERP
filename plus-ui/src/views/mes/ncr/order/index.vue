@@ -161,7 +161,7 @@
     </el-dialog>
 
     <!-- 处置对话框 -->
-    <el-dialog title="NCR处置" v-model="disposeDialog.visible" width="560px" append-to-body>
+    <el-dialog title="NCR处置" v-model="disposeDialog.visible" width="500px" append-to-body>
       <el-form :model="disposeForm" label-width="100px">
         <el-form-item label="处置方式" prop="disposition" required>
           <el-select v-model="disposeForm.disposition" placeholder="请选择处置方式" style="width: 100%">
@@ -268,7 +268,7 @@
     </el-drawer>
 
     <!-- 补录缺陷对话框 -->
-    <el-dialog title="补录缺陷" v-model="defectAddDialog.visible" width="560px" append-to-body>
+    <el-dialog title="补录缺陷" v-model="defectAddDialog.visible" width="500px" append-to-body>
       <el-form ref="defectFormRef" :model="defectForm" :rules="defectRules" label-width="100px">
         <el-form-item label="缺陷代码" prop="defectCodeId" required>
           <el-select v-model="defectForm.defectCodeId" placeholder="请选择缺陷代码" style="width: 100%" filterable>
@@ -301,7 +301,7 @@
     </el-dialog>
 
     <!-- 8D编辑对话框 -->
-    <el-dialog title="编辑8D报告" v-model="reportEditDialog.visible" width="720px" append-to-body>
+    <el-dialog title="编辑8D报告" v-model="reportEditDialog.visible" width="640px" append-to-body>
       <el-form ref="reportFormRef" :model="reportForm" label-width="100px">
         <el-form-item label="D1 团队组成"><el-input v-model="reportForm.d1Team" type="textarea" :rows="2" /></el-form-item>
         <el-form-item label="D2 问题描述"><el-input v-model="reportForm.d2Problem" type="textarea" :rows="2" /></el-form-item>
@@ -330,7 +330,7 @@
     <MaterialSelectDialog ref="materialSelectRef" title="选择物料" @select="handleMaterialSelect" />
 
     <!-- 工单选择对话框 -->
-    <el-dialog v-model="woDialog.visible" title="选择工单" width="820px" append-to-body>
+    <el-dialog v-model="woDialog.visible" title="选择工单" width="800px" append-to-body>
       <el-form :model="woDialog.query" :inline="true">
         <el-form-item label="工单编号"><el-input v-model="woDialog.query.woNo" clearable @keyup.enter="queryWos" /></el-form-item>
         <el-form-item><el-button type="primary" icon="Search" @click="queryWos">搜索</el-button></el-form-item>

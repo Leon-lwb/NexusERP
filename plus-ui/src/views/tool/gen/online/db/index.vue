@@ -91,7 +91,7 @@
 
 <script setup name="TableDesigner" lang="ts">
 import { ref, reactive, onMounted, getCurrentInstance, watch, nextTick } from 'vue';
-import { ElMessage, ElMessageBox } from 'element-plus';
+import { ElMessageBox } from 'element-plus';
 import { ComponentInternalInstance } from 'vue';
 import TableDesigner from './components/TableDesigner.vue';
 import PreviewPanel from './components/PreviewPanel.vue';
@@ -141,14 +141,14 @@ const createWithoutOverwrite = async () => {
   try {
     if (!createConfirm.sql) return;
     await createTable({ sql: createConfirm.sql, overwriteIfExists: false });
-    ElMessage.success('表创建成功');
+    proxy?.$modal.msgSuccess('表创建成功');
   } catch (e: any) {
     const msg = e && (e.msg || e.message) ? String(e.msg || e.message).toLowerCase() : '';
     // 更友好的提示：默认认为失败多为已存在表导致
     if (msg.includes('exists') || msg.includes('already') || msg.includes('duplicate')) {
-      ElMessage.error('表已经存在，创建失败！');
+      proxy?.$modal.msgError('表已经存在，创建失败！');
     } else {
-      ElMessage.error('表已经存在，创建失败！');
+      proxy?.$modal.msgError('表已经存在，创建失败！');
     }
   } finally {
     createConfirm.visible = false;
@@ -159,9 +159,9 @@ const createWithOverwrite = async () => {
   try {
     if (!createConfirm.sql) return;
     await createTable({ sql: createConfirm.sql, overwriteIfExists: true });
-    ElMessage.success('表创建成功');
+    proxy?.$modal.msgSuccess('表创建成功');
   } catch (e) {
-    ElMessage.error('创建表失败');
+    proxy?.$modal.msgError('创建表失败');
   } finally {
     createConfirm.visible = false;
   }
@@ -237,10 +237,10 @@ const handleSave = async () => {
       currentDesign.value.designId = newId;
       currentDesign.value.id = newId;
     }
-    ElMessage.success('保存成功');
+    proxy?.$modal.msgSuccess('保存成功');
   } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error('保存失败');
+      proxy?.$modal.msgError('保存失败');
     }
   }
 };
@@ -274,10 +274,10 @@ const handleCreateTable = async () => {
     if (!fullSql) throw new Error('SQL 生成失败');
 
     await createTable({ sql: fullSql });
-    ElMessage.success('表创建成功');
+    proxy?.$modal.msgSuccess('表创建成功');
   } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error('创建表失败');
+      proxy?.$modal.msgError('创建表失败');
     }
   }
 };
@@ -291,10 +291,10 @@ const handleImportToGenTable = async () => {
       type: 'warning'
     });
     await importToGenTable({ content: JSON.stringify(currentDesign.value), dataName: 'master', overwriteIfExists: true });
-    ElMessage.success('导入成功');
+    proxy?.$modal.msgSuccess('导入成功');
   } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error('导入失败');
+      proxy?.$modal.msgError('导入失败');
     }
   }
 };
@@ -341,7 +341,7 @@ const handleDesignSelected = async (design: any) => {
     currentDesign.value = data;
     openDialog.visible = false;
   } catch (e) {
-    ElMessage.error('打开设计失败');
+    proxy?.$modal.msgError('打开设计失败');
   }
 };
 
@@ -368,7 +368,7 @@ const loadDesignByRoute = async () => {
     if (!Array.isArray(data.relations)) data.relations = [];
     currentDesign.value = data;
   } catch (e) {
-    ElMessage.error('加载设计失败');
+    proxy?.$modal.msgError('加载设计失败');
   }
 };
 
@@ -414,7 +414,7 @@ const handleCreateTableUnified = async () => {
       await nextTick();
       const fullSql2 = sqlPreviewRef.value?.getFullSql?.() || '';
       if (!fullSql2) {
-        ElMessage.error('SQL 生成失败');
+        proxy?.$modal.msgError('SQL 生成失败');
         return;
       }
       // 弹出三按钮对话框
@@ -426,7 +426,7 @@ const handleCreateTableUnified = async () => {
     createConfirm.sql = fullSql;
     createConfirm.visible = true;
   } catch (e) {
-    ElMessage.error('创建表失败');
+    proxy?.$modal.msgError('创建表失败');
   }
 };
 </script>

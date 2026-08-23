@@ -78,7 +78,7 @@
 
 <script setup lang="ts" name="PayTest">
 import { addPayOrder } from '@/api/pay/order';
-import request from '@/utils/request';
+import { getPayUrl, queryPayStatus } from '@/api/pay/paytest';
 
 const { proxy } = getCurrentInstance();
 const { pay_pay_type, pay_order_status } = toRefs<any>(proxy.useDict('pay_pay_type', 'pay_order_status'));
@@ -119,10 +119,7 @@ async function handleCreateOrderAndPay() {
     const order = res.data;
     orderNumber.value = order.orderNumber;
 
-    const payRes = await request({
-      url: `/pay/${form.payType}/url/${order.orderNumber}`,
-      method: 'get'
-    });
+    const payRes = await getPayUrl(form.payType, order.orderNumber);
     const data = payRes.data;
 
     if (data && (data.startsWith('https://') || data.startsWith('alipay:'))) {
@@ -157,10 +154,7 @@ async function queryOrderStatus() {
   if (!orderNumber.value) return;
   try {
     querying.value = true;
-    const res = await request({
-      url: `/pay/query/${orderNumber.value}`,
-      method: 'post'
-    });
+    const res = await queryPayStatus(orderNumber.value);
     orderStatus.value = res.data.orderStatus;
     if (res.data.orderStatus === '已支付') {
       stopPolling();
@@ -203,10 +197,7 @@ function stopPolling() {
 async function queryOrderStatusSilent() {
   if (!orderNumber.value) return;
   try {
-    const res = await request({
-      url: `/pay/query/${orderNumber.value}`,
-      method: 'post'
-    });
+    const res = await queryPayStatus(orderNumber.value);
     const newStatus = res.data.orderStatus;
     if (newStatus !== orderStatus.value) {
       orderStatus.value = newStatus;

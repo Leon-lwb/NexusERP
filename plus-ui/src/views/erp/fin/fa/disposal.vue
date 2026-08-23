@@ -53,7 +53,7 @@
 
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
-    <el-dialog v-model="open" title="处置资产" width="560px" append-to-body>
+    <el-dialog v-model="open" title="处置资产" width="500px" append-to-body>
       <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
         <el-form-item label="资产" prop="assetId">
           <el-select v-model="form.assetId" filterable placeholder="请选择使用中的资产" style="width: 100%">
@@ -90,7 +90,7 @@
 <script setup lang="ts" name="FinFaDisposal">
 import { addDisposal, listAsset, listDisposal, FaDisposalVO } from '@/api/erp/fin/fa';
 
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 
 const dataList = ref<FaDisposalVO[]>([]);
 const assetOptions = ref<any[]>([]);

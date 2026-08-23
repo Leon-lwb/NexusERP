@@ -59,7 +59,7 @@
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.page" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
     <!-- 注册对话框 -->
-    <el-dialog v-model="dialog.visible" :title="dialog.title" width="480px" append-to-body>
+    <el-dialog v-model="dialog.visible" :title="dialog.title" width="500px" append-to-body>
       <el-form ref="faceFormRef" :model="dialog.form" :rules="dialog.rules" label-width="100px">
         <el-form-item label="工号" prop="subject">
           <el-input v-model="dialog.form.subject" placeholder="如 EMP-1001" clearable />
@@ -94,7 +94,7 @@
     </el-dialog>
 
     <!-- 服务状态对话框 -->
-    <el-dialog v-model="health.visible" title="视觉服务状态" width="420px" append-to-body>
+    <el-dialog v-model="health.visible" title="视觉服务状态" width="500px" append-to-body>
       <el-descriptions :column="1" border>
         <el-descriptions-item label="可用">
           <el-tag :type="health.data.available ? 'success' : 'danger'" size="small">

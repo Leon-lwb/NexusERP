@@ -50,7 +50,7 @@
       </el-table-column>
     </el-table>
 
-    <el-dialog v-model="open" :title="title" width="560px" append-to-body>
+    <el-dialog v-model="open" :title="title" width="500px" append-to-body>
       <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
         <el-form-item label="报表类型" prop="reportType">
           <el-select v-model="form.reportType" style="width: 100%">
@@ -92,7 +92,7 @@
 <script setup lang="ts" name="FinReportItemConfig">
 import { deleteItemConfig, listItemConfig, saveItemConfig, ReportItemVO } from '@/api/erp/fin/report';
 
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { fin_report_type } = toRefs<any>(proxy.useDict('fin_report_type'));
 
 const dataList = ref<ReportItemVO[]>([]);

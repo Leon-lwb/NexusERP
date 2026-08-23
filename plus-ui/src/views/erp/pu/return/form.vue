@@ -164,7 +164,7 @@ import { getProcesss } from '@/api/workflow/process/index';
 import { useRoute, useRouter } from 'vue-router';
 import { previewCode } from '@/api/system/autocode/rule';
 
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { pu_purchase_return_status } = toRefs<any>(proxy.useDict('pu_purchase_return_status'));
 
 const route = useRoute();

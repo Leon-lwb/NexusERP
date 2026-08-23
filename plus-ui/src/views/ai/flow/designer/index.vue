@@ -1133,7 +1133,7 @@ onBeforeUnmount(() => {
     </el-drawer>
 
     <!-- 快速添加节点弹窗（空画布引导 / 顶栏按钮） -->
-    <el-dialog v-model="quickAddVisible" title="添加节点" width="520px" @closed="quickAddKeyword = ''">
+    <el-dialog v-model="quickAddVisible" title="添加节点" width="500px" @closed="quickAddKeyword = ''">
       <el-input v-model="quickAddKeyword" placeholder="搜索节点类型或名称..." clearable :prefix-icon="Search" class="flow-designer__quick-search" />
       <div class="flow-designer__quick-list">
         <template v-for="g in quickAddGroups" :key="g.cat.key">
@@ -1153,7 +1153,7 @@ onBeforeUnmount(() => {
     </el-dialog>
 
     <!-- 快捷键帮助弹窗 -->
-    <el-dialog v-model="shortcutHelpVisible" title="快捷键" width="520px">
+    <el-dialog v-model="shortcutHelpVisible" title="快捷键" width="500px">
       <el-table :data="SHORTCUTS" border size="small">
         <el-table-column label="快捷键" prop="keys" width="200">
           <template #default="{ row }">

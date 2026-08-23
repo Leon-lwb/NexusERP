@@ -123,7 +123,7 @@
     </el-dialog>
 
     <!-- 工序选择对话框(ERP bd_process) -->
-    <el-dialog v-model="processDialog.visible" title="选择工序" width="860px" append-to-body>
+    <el-dialog v-model="processDialog.visible" title="选择工序" width="800px" append-to-body>
       <el-form :model="processDialog.query" :inline="true">
         <el-form-item label="工序编码"><el-input v-model="processDialog.query.processCode" clearable @keyup.enter="queryProcesses" /></el-form-item>
         <el-form-item label="工序名称"><el-input v-model="processDialog.query.processName" clearable @keyup.enter="queryProcesses" /></el-form-item>

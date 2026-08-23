@@ -272,7 +272,7 @@ import TeamManage from './TeamManage.vue';
 import type { FormInstance } from 'element-plus';
 import { useCrud } from '@/composables/useCrud';
 
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { sch_plan_period_type, sch_plan_status, sch_rotation_type } = toRefs(
   proxy.useDict('sch_plan_period_type', 'sch_plan_status', 'sch_rotation_type')
 );

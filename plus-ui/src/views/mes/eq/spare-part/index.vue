@@ -75,7 +75,7 @@
     </el-card>
 
     <!-- 新增/编辑对话框 -->
-    <el-dialog v-model="dialog.visible" :title="form.spareId ? '编辑备件' : '新增备件'" width="560px" append-to-body>
+    <el-dialog v-model="dialog.visible" :title="form.spareId ? '编辑备件' : '新增备件'" width="500px" append-to-body>
       <el-form :model="form" label-width="100px" ref="formRef" :rules="formRules">
         <el-form-item label="备件编码" prop="spareCode">
           <el-input v-model="form.spareCode" placeholder="备件编码" clearable :disabled="!!form.spareId" />
@@ -111,7 +111,7 @@
     </el-dialog>
 
     <!-- 出入库对话框 -->
-    <el-dialog v-model="stockDialog.visible" :title="stockDialog.type === 'IN' ? '入库' : '出库'" width="460px" append-to-body>
+    <el-dialog v-model="stockDialog.visible" :title="stockDialog.type === 'IN' ? '入库' : '出库'" width="500px" append-to-body>
       <el-form :model="stockForm" label-width="100px">
         <el-form-item label="备件">
           <span>{{ stockDialog.spareCode }} - {{ stockDialog.spareName }}</span>

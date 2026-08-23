@@ -52,7 +52,7 @@
 
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
-    <el-dialog v-model="open" :title="title" width="600px" append-to-body>
+    <el-dialog v-model="open" :title="title" width="640px" append-to-body>
       <el-form ref="formRef" :model="form" :rules="rules" label-width="110px">
         <el-form-item label="类别编码">
           <el-input v-model="form.categoryCode" placeholder="如 FA_CAT_MACHINE" />
@@ -110,7 +110,7 @@ import { addCategory, delCategory, listCategory, updateCategory, FaAssetCategory
 import { leafAccounts } from '@/api/erp/fin/gl/account';
 import { AccountVO } from '@/api/erp/fin/gl/account/types';
 
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { fa_depreciation_method } = toRefs<any>(proxy.useDict('fa_depreciation_method'));
 
 const dataList = ref<FaAssetCategoryVO[]>([]);

@@ -280,7 +280,7 @@ import { getProcesss } from '@/api/workflow/process/index';
 import { useRoute, useRouter } from 'vue-router';
 import MaterialSelectDialog from '@/components/MaterialSelectDialog/index.vue';
 
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { so_return_type } = toRefs<any>(proxy.useDict('so_return_type'));
 const route = useRoute();
 const router = useRouter();
@@ -425,7 +425,7 @@ function getStatusLabel(status: string): string {
 }
 
 function submitForm() {
-  proxy.$refs['returnRef'].validate((valid: boolean) => {
+  (proxy.$refs['returnRef'] as any).validate((valid: boolean) => {
     if (valid) {
       // 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号
       if (autoGenFlag.value) {

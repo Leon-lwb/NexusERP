@@ -200,7 +200,7 @@
     </el-dialog>
 
     <!-- 领用对话框 -->
-    <el-dialog title="工装领用" v-model="checkoutDialog.visible" width="560px" append-to-body>
+    <el-dialog title="工装领用" v-model="checkoutDialog.visible" width="500px" append-to-body>
       <el-form :model="checkoutForm" label-width="90px">
         <el-form-item label="操作员" required>
           <el-input v-model="checkoutForm.operatorName" placeholder="请选择操作员" readonly>
@@ -226,7 +226,7 @@
     </el-dialog>
 
     <!-- 归还对话框 -->
-    <el-dialog title="工装归还" v-model="returnDialog.visible" width="480px" append-to-body>
+    <el-dialog title="工装归还" v-model="returnDialog.visible" width="500px" append-to-body>
       <el-form :model="returnForm" label-width="90px">
         <el-form-item label="使用次数" required>
           <el-input-number v-model="returnForm.usageCount" :min="0" controls-position="right" style="width: 100%" />
@@ -243,7 +243,7 @@
     </el-dialog>
 
     <!-- 完成保养对话框 -->
-    <el-dialog title="完成保养(归零)" v-model="maintainDialog.visible" width="560px" append-to-body>
+    <el-dialog title="完成保养(归零)" v-model="maintainDialog.visible" width="500px" append-to-body>
       <el-form :model="maintainForm" label-width="90px">
         <el-form-item label="保养类型">
           <el-select v-model="maintainForm.maintainType" placeholder="请选择" style="width: 100%">
@@ -272,7 +272,7 @@
     </el-dialog>
 
     <!-- 车间选择对话框 -->
-    <el-dialog v-model="workshopDialog.visible" title="选择车间" width="780px" append-to-body>
+    <el-dialog v-model="workshopDialog.visible" title="选择车间" width="800px" append-to-body>
       <el-form :model="workshopDialog.query" :inline="true">
         <el-form-item label="车间编码"><el-input v-model="workshopDialog.query.workshopCode" clearable @keyup.enter="queryWorkshops" /></el-form-item>
         <el-form-item label="车间名称"><el-input v-model="workshopDialog.query.workshopName" clearable @keyup.enter="queryWorkshops" /></el-form-item>
@@ -295,7 +295,7 @@
     </el-dialog>
 
     <!-- 工位选择对话框 -->
-    <el-dialog v-model="workstationDialog.visible" title="选择工位" width="780px" append-to-body>
+    <el-dialog v-model="workstationDialog.visible" title="选择工位" width="800px" append-to-body>
       <el-form :model="workstationDialog.query" :inline="true">
         <el-form-item label="工位编码"
           ><el-input v-model="workstationDialog.query.workstationCode" clearable @keyup.enter="queryWorkstations"
@@ -322,7 +322,7 @@
     </el-dialog>
 
     <!-- 用户选择对话框(操作员/保养人复用) -->
-    <el-dialog v-model="userDialog.visible" title="选择人员" width="700px" append-to-body>
+    <el-dialog v-model="userDialog.visible" title="选择人员" width="640px" append-to-body>
       <el-form :model="userDialog.query" :inline="true">
         <el-form-item label="账号"><el-input v-model="userDialog.query.userName" clearable @keyup.enter="queryUsers" /></el-form-item>
         <el-form-item label="昵称"><el-input v-model="userDialog.query.nickName" clearable @keyup.enter="queryUsers" /></el-form-item>
@@ -346,7 +346,7 @@
     </el-dialog>
 
     <!-- 工单选择对话框 -->
-    <el-dialog v-model="woDialog.visible" title="选择工单" width="820px" append-to-body>
+    <el-dialog v-model="woDialog.visible" title="选择工单" width="800px" append-to-body>
       <el-form :model="woDialog.query" :inline="true">
         <el-form-item label="工单编号"><el-input v-model="woDialog.query.woNo" clearable @keyup.enter="queryWos" /></el-form-item>
         <el-form-item><el-button type="primary" icon="Search" @click="queryWos">搜索</el-button></el-form-item>
@@ -371,7 +371,7 @@
     </el-dialog>
 
     <!-- 保养到期列表 -->
-    <el-dialog title="保养到期预警" v-model="dueDialog.visible" width="780px" append-to-body>
+    <el-dialog title="保养到期预警" v-model="dueDialog.visible" width="800px" append-to-body>
       <el-table :data="dueDialog.list" show-overflow-tooltip>
         <el-table-column label="工装编码" prop="toolingCode" min-width="140" />
         <el-table-column label="工装名称" prop="toolingName" min-width="130" />

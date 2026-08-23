@@ -52,7 +52,7 @@
 
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
-    <el-dialog :title="title" v-model="open" width="480px" append-to-body>
+    <el-dialog :title="title" v-model="open" width="500px" append-to-body>
       <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
         <el-form-item label="币种" prop="currency">
           <el-input v-model="form.currency" placeholder="如 USD" />
@@ -89,7 +89,7 @@ import { listCurrencyRate, getCurrencyRate, addCurrencyRate, updateCurrencyRate,
 import type { FormInstance } from 'element-plus';
 import { useCrud } from '@/composables/useCrud';
 
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 
 const formRef = ref<FormInstance>();
 

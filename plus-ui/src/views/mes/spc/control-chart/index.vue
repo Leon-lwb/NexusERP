@@ -75,7 +75,7 @@
     </el-card>
 
     <!-- 新增/编辑控制图对话框 -->
-    <el-dialog v-model="dialog.visible" :title="form.chartId ? '编辑控制图' : '新增控制图'" width="560px" append-to-body>
+    <el-dialog v-model="dialog.visible" :title="form.chartId ? '编辑控制图' : '新增控制图'" width="500px" append-to-body>
       <el-form :model="form" label-width="100px">
         <el-form-item label="控制图名称" required>
           <el-input v-model="form.chartName" placeholder="控制图名称" clearable />
@@ -136,7 +136,7 @@
     <el-dialog
       v-model="analyzeDialog.visible"
       :title="'控制图分析 - ' + analyzeResult.chart?.chartName"
-      width="900px"
+      width="960px"
       append-to-body
       @opened="renderChart"
     >
@@ -162,7 +162,7 @@
     </el-dialog>
 
     <!-- 采集点选择对话框 -->
-    <el-dialog v-model="pointDialog.visible" title="选择采集点" width="820px" append-to-body>
+    <el-dialog v-model="pointDialog.visible" title="选择采集点" width="800px" append-to-body>
       <el-form :model="pointDialog.query" :inline="true">
         <el-form-item label="采集点编码">
           <el-input v-model="pointDialog.query.pointCode" clearable @keyup.enter="queryPoints" />
@@ -196,7 +196,7 @@
     </el-dialog>
 
     <!-- 工序选择对话框 -->
-    <el-dialog v-model="processDialog.visible" title="选择工序" width="820px" append-to-body>
+    <el-dialog v-model="processDialog.visible" title="选择工序" width="800px" append-to-body>
       <el-form :model="processDialog.query" :inline="true">
         <el-form-item label="工序编码">
           <el-input v-model="processDialog.query.processCode" clearable @keyup.enter="queryProcesses" />

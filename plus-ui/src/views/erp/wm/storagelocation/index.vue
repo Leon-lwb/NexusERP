@@ -261,7 +261,7 @@
     </el-dialog>
 
     <!-- 批量生成库位对话框 -->
-    <el-dialog title="批量生成库位" v-model="batchGenOpen" width="600px" append-to-body>
+    <el-dialog title="批量生成库位" v-model="batchGenOpen" width="640px" append-to-body>
       <el-form ref="batchGenRef" :model="batchGenForm" :rules="batchGenRules" label-width="100px">
         <el-form-item label="所属库区" prop="areaId">
           <el-cascader
@@ -335,7 +335,7 @@ import { useRoute } from 'vue-router';
 import { previewCode } from '@/api/system/autocode/rule';
 import Wm3dConfigDrawer from '../components/Wm3dConfigDrawer.vue';
 
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { sys_true_or_false, wm_location_type, wm_location_status } = toRefs<any>(
   proxy.useDict('sys_true_or_false', 'wm_location_type', 'wm_location_status')
 );
@@ -551,7 +551,7 @@ function handleView(row: any) {
 
 /** 提交按钮 */
 function submitForm() {
-  proxy.$refs['storagelocationRef'].validate((valid: boolean) => {
+  (proxy.$refs['storagelocationRef'] as any).validate((valid: boolean) => {
     if (valid) {
       // 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号
       if (autoGenFlag.value) {
@@ -754,7 +754,7 @@ function handleBatchAreaChange(value: any) {
 
 /** 提交批量生成 */
 function submitBatchGenerate() {
-  proxy.$refs['batchGenRef'].validate((valid: boolean) => {
+  (proxy.$refs['batchGenRef'] as any).validate((valid: boolean) => {
     if (valid) {
       if (batchGenEstimate.value > 500) {
         proxy.$modal

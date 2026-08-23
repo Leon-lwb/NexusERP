@@ -92,7 +92,7 @@
 
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
-    <el-dialog :title="title" v-model="open" width="750px" append-to-body>
+    <el-dialog :title="title" v-model="open" width="800px" append-to-body>
       <el-form ref="shiftRef" :model="form" :rules="rules" label-width="120px" :disabled="isViewMode">
         <el-row :gutter="10">
           <el-col :span="12">
@@ -196,7 +196,7 @@ import { listShift, getShift, delShift, addShift, updateShift } from '@/api/erp/
 import type { FormInstance } from 'element-plus';
 import { useCrud } from '@/composables/useCrud';
 
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { sys_true_or_false, sch_shift_category } = toRefs(proxy.useDict('sys_true_or_false', 'sch_shift_category'));
 
 const shiftRef = ref<FormInstance>();

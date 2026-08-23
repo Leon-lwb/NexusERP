@@ -39,7 +39,9 @@ const topMenus = computed(() => {
   return permissionStore.sidebarRouters.filter((f) => !f.hidden).slice(0, visibleNumber.value) as RouteRecordRaw[];
 });
 const moreRoutes = computed(() => {
-  return permissionStore.sidebarRouters.filter((f) => !f.hidden).slice(visibleNumber.value, sidebarRouters.value.length - visibleNumber.value) as RouteRecordRaw[];
+  return permissionStore.sidebarRouters
+    .filter((f) => !f.hidden)
+    .slice(visibleNumber.value, sidebarRouters.value.length - visibleNumber.value) as RouteRecordRaw[];
 });
 function setVisibleNumber() {
   let width = document.body.getBoundingClientRect().width;

@@ -96,7 +96,7 @@
     </el-card>
 
     <!-- 新增/编辑保养计划对话框 -->
-    <el-dialog v-model="dialog.visible" :title="form.planId ? '编辑保养计划' : '新增保养计划'" width="560px" append-to-body>
+    <el-dialog v-model="dialog.visible" :title="form.planId ? '编辑保养计划' : '新增保养计划'" width="500px" append-to-body>
       <el-form :model="form" label-width="110px" ref="formRef" :rules="formRules">
         <el-form-item label="计划名称" prop="planName">
           <el-input v-model="form.planName" placeholder="计划名称" clearable />
@@ -144,7 +144,7 @@
     </el-dialog>
 
     <!-- 执行保养对话框(P0-4 保养工单闭环) -->
-    <el-dialog v-model="completeDialog.visible" :title="`执行保养 - ${completeForm.planName}`" width="520px" append-to-body>
+    <el-dialog v-model="completeDialog.visible" :title="`执行保养 - ${completeForm.planName}`" width="500px" append-to-body>
       <el-form :model="completeForm" label-width="100px">
         <el-form-item label="保养内容">
           <el-input v-model="completeForm.content" type="textarea" :rows="4" placeholder="本次保养执行情况" />

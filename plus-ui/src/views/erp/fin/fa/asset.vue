@@ -88,7 +88,7 @@
 
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
-    <el-dialog v-model="open" :title="title" width="620px" append-to-body>
+    <el-dialog v-model="open" :title="title" width="640px" append-to-body>
       <el-form ref="formRef" :model="form" :rules="rules" label-width="110px">
         <el-form-item label="资产名称" prop="assetName">
           <el-input v-model="form.assetName" placeholder="请输入资产名称" />
@@ -150,7 +150,7 @@ import { activateAsset, addAsset, delAsset, listAsset, updateAsset, FaAssetVO } 
 import { listAllCategory } from '@/api/erp/fin/fa';
 import { FaAssetCategoryVO } from '@/api/erp/fin/fa';
 
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { fa_asset_status, fa_depreciation_method } = toRefs<any>(proxy.useDict('fa_asset_status', 'fa_depreciation_method'));
 
 const dataList = ref<FaAssetVO[]>([]);

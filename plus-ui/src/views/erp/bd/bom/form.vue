@@ -427,7 +427,7 @@
     <MaterialSelectDialog ref="materialSelectDialogRef" :title="materialDialogTitle" @select="handleMaterialSelected" />
 
     <!-- 替代料管理对话框 -->
-    <el-dialog title="替代料管理" v-model="alternativeOpen" width="1100px" append-to-body @close="handleAlternativeClose">
+    <el-dialog title="替代料管理" v-model="alternativeOpen" width="1200px" append-to-body @close="handleAlternativeClose">
       <el-alert v-if="alternativeCurrentDetail" type="info" :closable="false" show-icon style="margin-bottom: 12px">
         子项物料：{{ alternativeCurrentDetail.childMaterialName }}（用量 {{ alternativeCurrentDetail.quantityPerParent }}）
       </el-alert>
@@ -538,7 +538,7 @@ import type { BomForm } from '@/api/erp/bd/bom/types';
 
 const router = useRouter();
 const route = useRoute();
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { sys_true_or_false, sys_core_status, bd_material_type, prd_material_source_type, prd_backflush_flag, bd_bom_type, bd_substitution_type } =
   toRefs<any>(
     proxy.useDict(

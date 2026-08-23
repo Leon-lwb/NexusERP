@@ -99,7 +99,7 @@
 <script setup lang="ts" name="VendorEvaluation">
 import { listVendorEvaluation, delVendorEvaluation, calculateVendorEvaluation, batchCalculateAll } from '@/api/erp/pu/vendor-evaluation';
 
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { pu_vendor_eval_level } = toRefs<any>(proxy.useDict('pu_vendor_eval_level'));
 
 const vendorEvaluationList = ref([]);

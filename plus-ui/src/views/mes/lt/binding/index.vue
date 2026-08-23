@@ -56,7 +56,7 @@
       <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
     </el-card>
 
-    <el-dialog :title="dialog.title" v-model="dialog.visible" width="560px" append-to-body>
+    <el-dialog :title="dialog.title" v-model="dialog.visible" width="500px" append-to-body>
       <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
         <el-form-item label="SN" prop="snId">
           <el-input v-model="form.snCode" placeholder="请选择SN" readonly>
@@ -90,7 +90,7 @@
     </el-dialog>
 
     <!-- SN 选择对话框 -->
-    <el-dialog v-model="snDialog.visible" title="选择SN" width="900px" append-to-body>
+    <el-dialog v-model="snDialog.visible" title="选择SN" width="960px" append-to-body>
       <el-form :model="snDialog.query" :inline="true">
         <el-form-item label="SN编码">
           <el-input v-model="snDialog.query.snCode" clearable @keyup.enter="querySns" />
@@ -126,7 +126,7 @@
     </el-dialog>
 
     <!-- 批次选择对话框 -->
-    <el-dialog v-model="lotDialog.visible" title="选择批次" width="900px" append-to-body>
+    <el-dialog v-model="lotDialog.visible" title="选择批次" width="960px" append-to-body>
       <el-form :model="lotDialog.query" :inline="true">
         <el-form-item label="批次编码">
           <el-input v-model="lotDialog.query.lotCode" clearable @keyup.enter="queryLots" />

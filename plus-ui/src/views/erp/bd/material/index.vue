@@ -458,7 +458,7 @@ import { useCategoryTree } from '@/composables/erp/useCategoryTree';
 import type { FormInstance } from 'element-plus';
 import MaterialAttrValueEditor from './MaterialAttrValueEditor.vue';
 
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { sys_true_or_false, prd_material_source_type, bd_material_type, bd_quality_status, bd_inspection_required } = toRefs<any>(
   proxy.useDict('sys_true_or_false', 'prd_material_source_type', 'bd_material_type', 'bd_quality_status', 'bd_inspection_required')
 );

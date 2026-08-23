@@ -1,30 +1,39 @@
 <template>
-  <div class="p-4">
+  <div class="app-container">
     <!-- 筛选栏 -->
-    <el-card shadow="never" class="mb-4">
-      <el-form :inline="true" :model="queryParams">
-        <el-form-item label="时间范围">
-          <el-date-picker
-            v-model="dateRange"
-            type="daterange"
-            range-separator="-"
-            start-placeholder="开始日期"
-            end-placeholder="结束日期"
-            value-format="YYYY-MM-DD"
-            style="width: 260px"
-          />
-        </el-form-item>
-        <el-form-item label="模型">
-          <el-select v-model="queryParams.modelId" placeholder="全部模型" clearable style="width: 180px">
-            <el-option v-for="m in modelList" :key="m.id" :label="m.displayName || m.modelName" :value="m.id" />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" @click="handleQuery">查询</el-button>
-          <el-button @click="resetQuery">重置</el-button>
-        </el-form-item>
-      </el-form>
-    </el-card>
+    <el-form :model="queryParams" ref="queryRef" v-show="showSearch" label-width="80px" class="list-search">
+      <el-row :gutter="16">
+        <el-col :span="6">
+          <el-form-item label="时间范围">
+            <el-date-picker
+              v-model="dateRange"
+              type="daterange"
+              range-separator="-"
+              start-placeholder="开始日期"
+              end-placeholder="结束日期"
+              value-format="YYYY-MM-DD"
+            />
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="模型">
+            <el-select v-model="queryParams.modelId" placeholder="全部模型" clearable>
+              <el-option v-for="m in modelList" :key="m.id" :label="m.displayName || m.modelName" :value="m.id" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :span="6" :offset="6" class="search-actions">
+          <el-form-item>
+            <el-button type="primary" icon="Search" @click="handleQuery">查询</el-button>
+            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+          </el-form-item>
+        </el-col>
+      </el-row>
+    </el-form>
+
+    <el-row :gutter="10" class="mb8">
+      <right-toolbar v-model:showSearch="showSearch" @queryTable="handleQuery"></right-toolbar>
+    </el-row>
 
     <!-- 统计卡片 -->
     <el-row :gutter="16" class="mb-4">
@@ -155,15 +164,15 @@
   </div>
 </template>
 
-<script setup lang="ts">
-import { ref, reactive, onMounted, nextTick } from 'vue';
+<script setup lang="ts" name="AiTokenUsage">
 import { getTokenUsageSummary, getTokenUsageTrend, getModelRanking, getUserRanking, backfillTokenUsage } from '@/api/ai/tokenUsage';
 import { listModel } from '@/api/ai/model';
 import * as echarts from 'echarts';
 
-defineOptions({ name: 'AiTokenUsage' });
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 
 const dateRange = ref<string[]>([]);
+const showSearch = ref(true);
 const queryParams = reactive<any>({ modelId: undefined });
 const modelList = ref<any[]>([]);
 const usageList = ref<any[]>([]);
@@ -380,10 +389,10 @@ async function handleBackfill() {
   const [startDate, endDate] = dateRange.value?.length === 2 ? dateRange.value : getDefaultDateRange();
   try {
     await backfillTokenUsage({ startDate, endDate });
-    ElMessage.success('回填完成');
+    proxy?.$modal.msgSuccess('回填完成');
     handleQuery();
   } catch (e) {
-    ElMessage.error('回填失败');
+    proxy?.$modal.msgError('回填失败');
   }
 }
 

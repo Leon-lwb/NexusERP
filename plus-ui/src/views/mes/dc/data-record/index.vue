@@ -44,7 +44,7 @@
     </el-card>
 
     <!-- 录入数据对话框 -->
-    <el-dialog v-model="addDialog.visible" title="录入采集数据" width="520px" append-to-body>
+    <el-dialog v-model="addDialog.visible" title="录入采集数据" width="500px" append-to-body>
       <el-form :model="addForm" label-width="100px">
         <el-form-item label="采集点" required>
           <el-input v-model="addPointCode" placeholder="请选择采集点" readonly>
@@ -93,7 +93,7 @@
     </el-dialog>
 
     <!-- 采集点选择对话框 -->
-    <el-dialog v-model="pointDialog.visible" title="选择采集点" width="820px" append-to-body>
+    <el-dialog v-model="pointDialog.visible" title="选择采集点" width="800px" append-to-body>
       <el-form :model="pointDialog.query" :inline="true">
         <el-form-item label="采集点编码">
           <el-input v-model="pointDialog.query.pointCode" clearable @keyup.enter="queryPoints" />
@@ -127,7 +127,7 @@
     </el-dialog>
 
     <!-- 工单选择对话框 -->
-    <el-dialog v-model="woDialog.visible" title="选择工单" width="950px" append-to-body>
+    <el-dialog v-model="woDialog.visible" title="选择工单" width="960px" append-to-body>
       <el-form :model="woDialog.query" :inline="true">
         <el-form-item label="工单编号">
           <el-input v-model="woDialog.query.woNo" clearable @keyup.enter="queryWorkOrders" />
@@ -163,7 +163,7 @@
     </el-dialog>
 
     <!-- 流转卡选择对话框 -->
-    <el-dialog v-model="cardDialog.visible" title="选择流转卡" width="900px" append-to-body>
+    <el-dialog v-model="cardDialog.visible" title="选择流转卡" width="960px" append-to-body>
       <el-form :model="cardDialog.query" :inline="true">
         <el-form-item label="流转卡号">
           <el-input v-model="cardDialog.query.cardNo" clearable @keyup.enter="queryFlowCards" />

@@ -38,7 +38,7 @@
       </el-table-column>
     </el-table>
 
-    <el-dialog v-model="open" :title="title" width="600px" append-to-body>
+    <el-dialog v-model="open" :title="title" width="640px" append-to-body>
       <el-form ref="areaRef" :model="form" :rules="rules" label-width="80px">
         <el-row>
           <el-col :span="24" v-if="form.parentAreaId !== 0">

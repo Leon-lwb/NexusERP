@@ -281,7 +281,7 @@ import { listVendor } from '@/api/erp/bd/vendor';
 import { useRouter } from 'vue-router';
 
 const router = useRouter();
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { wm_notice_status } = toRefs<any>(proxy.useDict('wm_notice_status'));
 
 const arrivalnoticeList = ref<ArrivalnoticeVO[]>([]);
@@ -454,7 +454,7 @@ function handleView(row: any) {
 
 /** 提交按钮 */
 function submitForm() {
-  proxy.$refs['arrivalnoticeRef'].validate((valid: boolean) => {
+  (proxy.$refs['arrivalnoticeRef'] as any).validate((valid: boolean) => {
     if (valid) {
       // 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号
       if (autoGenFlag.value) {

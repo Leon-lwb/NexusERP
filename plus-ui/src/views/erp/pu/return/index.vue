@@ -118,7 +118,7 @@ import { listPurchaseReturn, delPurchaseReturn, submitPurchaseReturnFlow, getPur
 import { useRouter } from 'vue-router';
 
 const router = useRouter();
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { pu_purchase_return_status } = toRefs<any>(proxy.useDict('pu_purchase_return_status'));
 
 const returnList = ref([]);

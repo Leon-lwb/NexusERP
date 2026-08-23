@@ -211,7 +211,7 @@
     </el-dialog>
 
     <!-- 提交审批对话框(可选用流程) -->
-    <el-dialog title="提交审批" v-model="submitDialog.visible" width="520px" append-to-body>
+    <el-dialog title="提交审批" v-model="submitDialog.visible" width="500px" append-to-body>
       <el-form label-width="100px">
         <el-form-item label="固件">
           <el-input :model-value="submitDialog.row ? `${submitDialog.row.firmwareCode} (v${submitDialog.row.version})` : ''" disabled />
@@ -236,7 +236,7 @@
     <MaterialSelectDialog ref="materialSelectRef" title="选择物料" @select="handleMaterialSelect" />
 
     <!-- 文件下载/预览对话框 -->
-    <el-dialog :title="previewDialog.title" v-model="previewDialog.visible" width="900px" append-to-body>
+    <el-dialog :title="previewDialog.title" v-model="previewDialog.visible" width="960px" append-to-body>
       <div style="text-align: center; padding: 40px 0">
         <el-link v-if="previewDialog.fileUrl" :href="previewDialog.fileUrl" type="primary" target="_blank">
           <el-icon style="margin-right: 4px"><Download /></el-icon> 下载固件文件 (MD5: {{ previewDialog.fileMd5 || '-' }})

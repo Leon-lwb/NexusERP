@@ -129,7 +129,7 @@
 import { listPurchaseOrder, delPurchaseOrder, receivePurchaseOrder, getDiffReport, listOrderLines } from '@/api/erp/pu/order';
 
 // 获取当前实例并获取字典数据
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { pu_purchase_order_status } = toRefs<any>(proxy.useDict('pu_purchase_order_status'));
 
 // 定义响应式数据

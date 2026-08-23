@@ -1,6 +1,6 @@
 <template>
   <!-- 导入表 -->
-  <el-dialog title="导入表" v-model="visible" width="1100px" top="5vh" append-to-body>
+  <el-dialog title="导入表" v-model="visible" width="1200px" top="5vh" append-to-body>
     <el-form :model="queryParams" ref="queryFormRef" :inline="true">
       <el-form-item label="数据源" prop="dataName">
         <el-select v-model="queryParams.dataName" filterable placeholder="请选择/输入数据源名称" style="width: 200px">

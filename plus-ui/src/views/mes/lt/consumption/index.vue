@@ -59,7 +59,7 @@
       <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
     </el-card>
 
-    <el-dialog :title="dialog.title" v-model="dialog.visible" width="600px" append-to-body>
+    <el-dialog :title="dialog.title" v-model="dialog.visible" width="640px" append-to-body>
       <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
         <el-form-item label="工单" prop="woId">
           <el-input v-model="form.woNo" placeholder="请选择工单" readonly>
@@ -101,7 +101,7 @@
     </el-dialog>
 
     <!-- FEFO 领料对话框 -->
-    <el-dialog title="FEFO 批次领料" v-model="pickDialog.visible" width="860px" append-to-body>
+    <el-dialog title="FEFO 批次领料" v-model="pickDialog.visible" width="800px" append-to-body>
       <el-form :inline="true" label-width="90px" class="mb8">
         <el-form-item label="工单">
           <el-input v-model="pickDialog.woNo" placeholder="请选择工单" readonly style="width: 180px">
@@ -158,7 +158,7 @@
     </el-dialog>
 
     <!-- 工单选择对话框 -->
-    <el-dialog v-model="woDialog.visible" title="选择工单" width="950px" append-to-body>
+    <el-dialog v-model="woDialog.visible" title="选择工单" width="960px" append-to-body>
       <el-form :model="woDialog.query" :inline="true">
         <el-form-item label="工单编号">
           <el-input v-model="woDialog.query.woNo" clearable @keyup.enter="queryWorkOrders" />
@@ -194,7 +194,7 @@
     </el-dialog>
 
     <!-- 批次选择对话框 -->
-    <el-dialog v-model="lotDialog.visible" title="选择批次" width="900px" append-to-body>
+    <el-dialog v-model="lotDialog.visible" title="选择批次" width="960px" append-to-body>
       <el-form :model="lotDialog.query" :inline="true">
         <el-form-item label="批次编码">
           <el-input v-model="lotDialog.query.lotCode" clearable @keyup.enter="queryLots" />
@@ -235,7 +235,7 @@
     </el-dialog>
 
     <!-- SN 选择对话框 -->
-    <el-dialog v-model="snDialog.visible" title="选择SN" width="900px" append-to-body>
+    <el-dialog v-model="snDialog.visible" title="选择SN" width="960px" append-to-body>
       <el-form :model="snDialog.query" :inline="true">
         <el-form-item label="SN编码">
           <el-input v-model="snDialog.query.snCode" clearable @keyup.enter="querySns" />

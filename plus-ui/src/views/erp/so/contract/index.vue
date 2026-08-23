@@ -292,7 +292,7 @@ import ClientSelectDialog from '@/views/erp/so/components/ClientSelectDialog.vue
 import MaterialSelectDialog from '@/components/MaterialSelectDialog/index.vue';
 import type { FormInstance } from 'element-plus';
 
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const formRef = ref<FormInstance>();
 
 // 客户选择弹窗引用

@@ -267,7 +267,7 @@ import { listDetail, getDetail, delDetail, addDetail, updateDetail } from '@/api
 import type { DetailForm, DetailVO } from '@/api/erp/wm/detail/types';
 import { useRoute } from 'vue-router';
 
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const route = useRoute();
 
 const detailList = ref<DetailVO[]>([]);
@@ -450,7 +450,7 @@ function handleView(row: any) {
 
 /** 提交按钮 */
 function submitForm() {
-  proxy.$refs['detailRef'].validate((valid: boolean) => {
+  (proxy.$refs['detailRef'] as any).validate((valid: boolean) => {
     if (valid) {
       if (form.value.detailId != null) {
         updateDetail(form.value).then(() => {

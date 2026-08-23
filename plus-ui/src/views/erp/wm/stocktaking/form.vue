@@ -241,7 +241,7 @@ import { listStoragearea } from '@/api/erp/wm/storagearea';
 import { previewCode } from '@/api/system/autocode/rule';
 import { useRoute, useRouter } from 'vue-router';
 
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const route = useRoute();
 const router = useRouter();
 
@@ -327,7 +327,7 @@ function reset() {
 }
 
 function submitForm() {
-  proxy.$refs['stocktakingRef'].validate((valid: boolean) => {
+  (proxy.$refs['stocktakingRef'] as any).validate((valid: boolean) => {
     if (valid) {
       // 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号
       if (autoGenFlag.value) {
@@ -385,7 +385,7 @@ function tryAutoSelect() {
 
 /** 提交审批 */
 function handleSubmitFlow() {
-  proxy.$refs['stocktakingRef'].validate((valid: boolean) => {
+  (proxy.$refs['stocktakingRef'] as any).validate((valid: boolean) => {
     if (valid) {
       if (!form.value.selectFlowId) {
         proxy.$modal.msgWarning('请先选择审批流程');

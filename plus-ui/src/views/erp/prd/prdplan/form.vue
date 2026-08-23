@@ -251,7 +251,7 @@
     </el-drawer>
 
     <!-- 销售订单选择对话框 -->
-    <el-dialog title="选择销售订单" v-model="salesOrderOpen" width="1000px" append-to-body>
+    <el-dialog title="选择销售订单" v-model="salesOrderOpen" width="960px" append-to-body>
       <el-form :model="salesOrderQueryParams" ref="salesOrderQueryRef" :inline="true" label-width="90px">
         <el-form-item label="销售订单编号" prop="soNo">
           <el-input v-model="salesOrderQueryParams.soNo" placeholder="请输入销售订单编号" clearable @keyup.enter="handleSalesOrderQuery" />
@@ -419,7 +419,7 @@ import { previewCode } from '@/api/system/autocode/rule';
 import { useUserStore } from '@/store/modules/user';
 import type { PlanForm } from '@/api/erp/prd/plan/types';
 
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const userStore = useUserStore();
 const { prd_plan_type, prd_plan_status, so_order_priority, so_order_line_status, sys_true_or_false, sys_core_status, sys_normal_disable } =
   toRefs<any>(
@@ -715,7 +715,7 @@ function reset() {
 
 /** 提交按钮 */
 function submitForm() {
-  proxy.$refs['planRef'].validate((valid) => {
+  (proxy.$refs['planRef'] as any).validate((valid) => {
     if (valid) {
       // 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号
       if (autoGenFlag.value) {

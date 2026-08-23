@@ -81,7 +81,7 @@
     </el-card>
 
     <!-- 工作中心设备联动弹窗(M3): 工位工序 → bd_process 默认工作中心 → eq_equipment 反查 -->
-    <el-dialog v-model="linkageVisible" :title="`工作中心设备 - ${linkageData.deviceCode || ''}`" width="760px" append-to-body>
+    <el-dialog v-model="linkageVisible" :title="`工作中心设备 - ${linkageData.deviceCode || ''}`" width="800px" append-to-body>
       <div v-loading="linkageLoading">
         <el-descriptions :column="3" border size="small">
           <el-descriptions-item label="工序">

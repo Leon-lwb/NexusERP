@@ -3,7 +3,7 @@
     标签拍照识别组件（Web 端，测试用；最终 OCR 落地 App/PAD，本组件为同构先例）
     用法：识别成功后 emit('recognized', payload) 由调用方回填表单；识别结果可编辑/可放弃，不强制。
   -->
-  <el-dialog v-model="visible" title="扫描物料标签 (OCR)" width="480px" append-to-body>
+  <el-dialog v-model="visible" title="扫描物料标签 (OCR)" width="500px" append-to-body>
     <!-- 第一步：拍照/上传 -->
     <div v-if="!previewUrl" class="capture-upload">
       <el-upload

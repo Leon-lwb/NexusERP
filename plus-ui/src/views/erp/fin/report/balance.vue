@@ -43,7 +43,7 @@
 import { listPeriod } from '@/api/erp/fin/gl/period';
 import { balanceSheet, ReportLineVO } from '@/api/erp/fin/report';
 
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 
 const dataList = ref<ReportLineVO[]>([]);
 const periodList = ref<any[]>([]);

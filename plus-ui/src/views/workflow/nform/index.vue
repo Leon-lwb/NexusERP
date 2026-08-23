@@ -64,7 +64,7 @@
       <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
     </el-card>
     <!-- 添加或修改设计器单对话框 -->
-    <el-dialog :title="dialog.title" v-model="dialog.visible" width="1000px" append-to-body>
+    <el-dialog :title="dialog.title" v-model="dialog.visible" width="960px" append-to-body>
       <el-form ref="nformFormRef" :model="form" :rules="rules" label-width="80px">
         <el-form-item label="表单名称" prop="formName">
           <el-input v-model="form.formName" placeholder="请输入表单名称" />
@@ -219,7 +219,6 @@ import { NformVO, NformQuery, NformForm } from '@/api/workflow/nform/types';
 import { listTableData } from '@/api/online';
 import { getTableColumns } from '@/api/tool/gen';
 import { useRouter, useRoute } from 'vue-router';
-import { ElMessage } from 'element-plus';
 import FormDesigner from '@/components/DesignerForm/FormDesigner.vue';
 import FormPreview from '@/components/DesignerForm/FormPreview.vue';
 import TableSelector from '@/components/DesignerForm/TableSelector.vue';
@@ -668,7 +667,7 @@ const handleTableSelect = async (table: any) => {
     }
   } catch (error) {
     console.error('获取表字段信息失败:', error);
-    ElMessage.error('获取表字段信息失败');
+    proxy?.$modal.msgError('获取表字段信息失败');
   }
 };
 
@@ -954,7 +953,7 @@ const prevStep = () => {
 /** 下一步 */
 const nextStep = async () => {
   if (!selectedTable.value) {
-    ElMessage.warning('请先选择数据表');
+    proxy?.$modal.msgWarning('请先选择数据表');
     return;
   }
 
@@ -984,7 +983,7 @@ const nextStep = async () => {
     }
   } catch (error) {
     console.error('获取表字段失败:', error);
-    ElMessage.error('获取表字段失败');
+    proxy?.$modal.msgError('获取表字段失败');
   }
 };
 
@@ -1023,7 +1022,7 @@ const handleUpdate = async (row?: NformVO) => {
     designerVisible.value = true;
   } catch (error) {
     console.error('获取表单数据失败:', error);
-    ElMessage.error('获取表单数据失败');
+    proxy?.$modal.msgError('获取表单数据失败');
   }
 };
 
@@ -1039,7 +1038,7 @@ const handleDesignerSave = async (formData: any) => {
       // 编辑模式
       const res = await updateNform(formData);
       if (res.code === 200) {
-        ElMessage.success('修改成功');
+        proxy?.$modal.msgSuccess('修改成功');
       } else {
         throw new Error(res.msg || '更新表单失败');
       }
@@ -1047,7 +1046,7 @@ const handleDesignerSave = async (formData: any) => {
       // 新建模式
       const res = await addNform(formData);
       if (res.code === 200) {
-        ElMessage.success('新增成功');
+        proxy?.$modal.msgSuccess('新增成功');
       } else {
         throw new Error(res.msg || '新增表单失败');
       }
@@ -1056,7 +1055,7 @@ const handleDesignerSave = async (formData: any) => {
     getList();
   } catch (error) {
     console.error('保存表单失败:', error);
-    ElMessage.error('保存表单失败: ' + (error as Error).message);
+    proxy?.$modal.msgError('保存表单失败: ' + (error as Error).message);
   }
 };
 
@@ -1104,7 +1103,7 @@ const handleTest = (row: NformVO) => {
     .then(() => {})
     .catch((error) => {
       console.error('跳转到测试页面失败:', error);
-      ElMessage.error('跳转失败');
+      proxy?.$modal.msgError('跳转失败');
     });
 };
 

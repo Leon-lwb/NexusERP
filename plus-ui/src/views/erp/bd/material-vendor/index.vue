@@ -114,7 +114,7 @@
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
     <!-- 添加或修改对话框 -->
-    <el-dialog :title="title" v-model="open" width="700px" append-to-body>
+    <el-dialog :title="title" v-model="open" width="640px" append-to-body>
       <el-form ref="formRef" :model="form" :rules="rules" label-width="120px">
         <el-row :gutter="20">
           <el-col :span="12">
@@ -258,7 +258,7 @@ import { listVendor } from '@/api/erp/bd/vendor';
 import { MaterialVendorVO, MaterialVendorForm } from '@/api/erp/bd/material-vendor/types';
 import type { FormInstance } from 'element-plus';
 
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const formRef = ref<FormInstance>();
 
 // 物料-供应商关系列表

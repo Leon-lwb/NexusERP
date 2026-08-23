@@ -230,7 +230,7 @@ import { previewCode } from '@/api/system/autocode/rule';
 import type { FormInstance } from 'element-plus';
 import { useCrud } from '@/composables/useCrud';
 
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { sys_core_status } = toRefs<any>(proxy.useDict('sys_core_status'));
 
 const workstationRef = ref<FormInstance>();

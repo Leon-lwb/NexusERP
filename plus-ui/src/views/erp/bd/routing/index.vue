@@ -106,7 +106,7 @@ import { listRouting, getRouting, delRouting, activateRoutingVersion } from '@/a
 import { RoutingVO } from '@/api/erp/bd/routing/types';
 
 const router = useRouter();
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { sys_true_or_false, sys_core_status } = toRefs<any>(proxy.useDict('sys_true_or_false', 'sys_core_status'));
 
 const routingList = ref<RoutingVO[]>([]);

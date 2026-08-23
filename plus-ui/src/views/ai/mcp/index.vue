@@ -1,49 +1,46 @@
 <template>
   <div class="app-container">
-    <el-card>
-      <template #header>
-        <div class="card-header">
-          <span>MCP 工具管理</span>
-          <div>
-            <el-button type="info" @click="handleSync">同步内置工具</el-button>
-            <el-button type="primary" @click="handleAdd">新增工具</el-button>
-          </div>
-        </div>
-      </template>
-      <el-table v-loading="loading" :data="list">
-        <el-table-column label="工具名称" prop="toolName" min-width="150" />
-        <el-table-column label="显示名称" prop="displayName" min-width="120" />
-        <el-table-column label="描述" prop="description" min-width="250" show-overflow-tooltip />
-        <el-table-column label="类型" prop="toolType" width="100">
-          <template #default="{ row }">
-            <el-tag :type="getTypeTagType(row.toolType)">{{ row.toolType }}</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column label="状态" prop="status" width="100">
-          <template #default="{ row }">
-            <el-tag :type="row.status === 'ENABLED' ? 'success' : 'danger'">
-              {{ row.status === 'ENABLED' ? '启用' : '停用' }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" width="250" fixed="right">
-          <template #default="{ row }">
-            <el-button link type="primary" @click="handleEdit(row)">编辑</el-button>
-            <el-button link :type="row.status === 'ENABLED' ? 'warning' : 'success'" @click="handleToggleStatus(row)">
-              {{ row.status === 'ENABLED' ? '停用' : '启用' }}
-            </el-button>
-            <el-button link type="info" @click="handleTest(row)" :disabled="row.toolType === 'BUILTIN'" :loading="testLoading[row.id]">
-              测试
-            </el-button>
-            <el-button link type="danger" @click="handleDelete(row)" :disabled="row.toolType === 'BUILTIN'"> 删除 </el-button>
-          </template>
-        </el-table-column>
-      </el-table>
-    </el-card>
+    <el-row :gutter="10" class="mb8">
+      <el-col :span="1.5">
+        <el-button type="info" plain icon="Refresh" @click="handleSync">同步内置工具</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button type="primary" plain icon="Plus" @click="handleAdd">新增工具</el-button>
+      </el-col>
+      <right-toolbar :search="false" @queryTable="getList"></right-toolbar>
+    </el-row>
+
+    <el-table v-loading="loading" :data="list">
+      <el-table-column label="工具名称" prop="toolName" min-width="150" />
+      <el-table-column label="显示名称" prop="displayName" min-width="120" />
+      <el-table-column label="描述" prop="description" min-width="250" show-overflow-tooltip />
+      <el-table-column label="类型" prop="toolType" width="100">
+        <template #default="{ row }">
+          <el-tag :type="getAiOptionTagType(MCP_TOOL_TYPE_TAG_OPTIONS, row.toolType)">{{ row.toolType }}</el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column label="状态" prop="status" width="100">
+        <template #default="{ row }">
+          <dict-tag :options="MCP_TOOL_STATUS_OPTIONS" :value="row.status" />
+        </template>
+      </el-table-column>
+      <el-table-column label="操作" width="250" fixed="right">
+        <template #default="{ row }">
+          <el-button link type="primary" @click="handleEdit(row)">编辑</el-button>
+          <el-button link :type="row.status === 'ENABLED' ? 'warning' : 'success'" @click="handleToggleStatus(row)">
+            {{ row.status === 'ENABLED' ? '停用' : '启用' }}
+          </el-button>
+          <el-button link type="info" @click="handleTest(row)" :disabled="row.toolType === 'BUILTIN'" :loading="testLoading[row.id]">
+            测试
+          </el-button>
+          <el-button link type="danger" @click="handleDelete(row)" :disabled="row.toolType === 'BUILTIN'"> 删除 </el-button>
+        </template>
+      </el-table-column>
+    </el-table>
 
     <!-- 新增/编辑弹窗 -->
-    <el-dialog v-model="dialog.visible" :title="dialog.title" width="600px" append-to-body>
-      <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
+    <el-dialog :title="title" v-model="open" width="640px" append-to-body>
+      <el-form ref="toolRef" :model="form" :rules="rules" label-width="100px" :disabled="isViewMode">
         <el-form-item label="工具名称" prop="toolName">
           <el-input v-model="form.toolName" placeholder="请输入工具名称（snake_case）" :disabled="isEdit" />
         </el-form-item>
@@ -55,9 +52,7 @@
         </el-form-item>
         <el-form-item label="工具类型" prop="toolType">
           <el-select v-model="form.toolType" placeholder="请选择工具类型" style="width: 100%" :disabled="isEdit">
-            <el-option label="BUILTIN（内置工具）" value="BUILTIN" />
-            <el-option label="LOCAL（本地 STDIO 工具）" value="LOCAL" />
-            <el-option label="REMOTE（远程 HTTP/SSE 工具）" value="REMOTE" />
+            <el-option v-for="item in MCP_TOOL_TYPE_OPTIONS" :key="item.value" :label="item.label" :value="item.value" />
           </el-select>
         </el-form-item>
         <el-form-item v-if="form.toolType === 'LOCAL'" label="配置 JSON" prop="configJson">
@@ -73,8 +68,7 @@
         </el-form-item>
         <el-form-item label="状态" prop="status">
           <el-radio-group v-model="form.status">
-            <el-radio value="ENABLED">启用</el-radio>
-            <el-radio value="DISABLED">停用</el-radio>
+            <el-radio v-for="item in MCP_TOOL_STATUS_OPTIONS" :key="item.value" :value="item.value">{{ item.label }}</el-radio>
           </el-radio-group>
         </el-form-item>
       </el-form>
@@ -89,120 +83,96 @@
 </template>
 
 <script setup lang="ts">
-import { listTool, addTool, updateTool, delTool, toggleToolStatus, syncBuiltinTools, testTool } from '@/api/ai/mcp';
+import { listTool, getTool, addTool, updateTool, delTool, toggleToolStatus, syncBuiltinTools, testTool } from '@/api/ai/mcp';
 import type { AiTool } from '@/api/ai/mcp';
+import { useCrud } from '@/composables/useCrud';
+import { MCP_TOOL_STATUS_OPTIONS, MCP_TOOL_TYPE_OPTIONS, MCP_TOOL_TYPE_TAG_OPTIONS, getAiOptionTagType } from '@/views/ai/constants';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 
-const loading = ref(false);
-const list = ref<AiTool[]>([]);
-const isEdit = ref(false);
+const toolRef = ref<ElFormInstance>();
 const testLoading = reactive<Record<number, boolean>>({});
 
-const dialog = reactive<DialogOption>({
-  visible: false,
-  title: ''
+const rules = {
+  toolName: [
+    { required: true, message: '请输入工具名称', trigger: 'blur' },
+    { pattern: /^[a-z][a-z0-9_]*$/, message: '工具名称格式不正确（小写字母开头，仅允许小写字母、数字、下划线）', trigger: 'blur' }
+  ],
+  displayName: [{ required: true, message: '请输入显示名称', trigger: 'blur' }],
+  toolType: [{ required: true, message: '请选择工具类型', trigger: 'change' }]
+};
+
+const {
+  loading,
+  list,
+  open,
+  isViewMode,
+  title,
+  form,
+  getList,
+  reset,
+  submitForm: rawSubmitForm,
+  cancel,
+  handleAdd: rawHandleAdd
+} = useCrud({
+  apis: {
+    // 列表接口返回全量数据（无分页），适配为 useCrud 需要的 rows/total 结构
+    list: async () => {
+      const res: any = await listTool();
+      const rows: AiTool[] = res.data || res;
+      return { rows, total: rows.length };
+    },
+    get: getTool,
+    add: addTool,
+    update: updateTool,
+    del: delTool
+  },
+  idField: 'id',
+  entityName: '工具',
+  formRef: toolRef,
+  queryParams: ref({ pageNum: 1, pageSize: 10 }),
+  initForm: () => ({
+    id: undefined,
+    toolName: '',
+    displayName: '',
+    description: '',
+    toolType: 'BUILTIN',
+    configJson: '',
+    status: 'ENABLED'
+  })
 });
 
-const initFormData: AiTool = {
-  id: undefined,
-  toolName: '',
-  displayName: '',
-  description: '',
-  toolType: 'BUILTIN',
-  configJson: '',
-  status: 'ENABLED'
-};
+/** 是否编辑态（工具名称/类型不可修改） */
+const isEdit = computed(() => form.value.id != null);
 
-const data = reactive<{ form: AiTool; rules: any }>({
-  form: { ...initFormData },
-  rules: {
-    toolName: [
-      { required: true, message: '请输入工具名称', trigger: 'blur' },
-      { pattern: /^[a-z][a-z0-9_]*$/, message: '工具名称格式不正确（小写字母开头，仅允许小写字母、数字、下划线）', trigger: 'blur' }
-    ],
-    displayName: [{ required: true, message: '请输入显示名称', trigger: 'blur' }],
-    toolType: [{ required: true, message: '请选择工具类型', trigger: 'change' }]
-  }
-});
+/** 新增（包装避免 @click 事件对象被误传为 extraInit） */
+function handleAdd() {
+  rawHandleAdd();
+}
 
-const { form, rules } = toRefs(data);
-
-const formRef = ref<ElFormInstance>();
-
-/** 获取类型标签颜色 */
-const getTypeTagType = (type: string): ElTagType => {
-  const map: Record<string, ElTagType> = {
-    BUILTIN: 'primary',
-    MCP: 'success',
-    REMOTE: 'warning'
-  };
-  return map[type] || 'info';
-};
-
-/** 查询工具列表 */
-const getList = async () => {
-  loading.value = true;
-  try {
-    const res = await listTool();
-    list.value = res.data || res;
-  } finally {
-    loading.value = false;
-  }
-};
-
-/** 取消按钮 */
-const cancel = () => {
+/** 编辑（直接使用行数据回填，避免依赖 ai:mcp:query 权限） */
+function handleEdit(row: AiTool) {
   reset();
-  dialog.visible = false;
-};
+  form.value = { ...row };
+  open.value = true;
+  title.value = '编辑工具';
+}
 
-/** 表单重置 */
-const reset = () => {
-  form.value = { ...initFormData };
-  isEdit.value = false;
-  formRef.value?.resetFields();
-};
-
-/** 新增 */
-const handleAdd = () => {
-  reset();
-  dialog.visible = true;
-  dialog.title = '新增工具';
-};
-
-/** 编辑 */
-const handleEdit = (row: AiTool) => {
-  reset();
-  Object.assign(form.value, row);
-  isEdit.value = true;
-  dialog.visible = true;
-  dialog.title = '编辑工具';
-};
-
-/** 提交表单 */
-const submitForm = () => {
-  formRef.value?.validate(async (valid: boolean) => {
-    if (valid) {
-      // 验证 JSON 格式
-      if (form.value.configJson && form.value.toolType !== 'BUILTIN') {
-        try {
-          JSON.parse(form.value.configJson);
-        } catch {
-          proxy?.$modal.msgError('配置 JSON 格式不正确');
-          return;
-        }
-      }
-      form.value.id ? await updateTool(form.value) : await addTool(form.value);
-      proxy?.$modal.msgSuccess('操作成功');
-      dialog.visible = false;
-      await getList();
+/** 提交表单（先校验配置 JSON 格式） */
+function submitForm() {
+  if (form.value.configJson && form.value.toolType !== 'BUILTIN') {
+    try {
+      JSON.parse(form.value.configJson);
+    } catch {
+      proxy?.$modal.msgError('配置 JSON 格式不正确');
+      return;
     }
-  });
-};
+  }
+  return rawSubmitForm();
+}
 
-/** 删除 */
-const handleDelete = async (row: AiTool) => {
+/** 删除（内置工具不允许删除） */
+async function handleDelete(row: AiTool) {
   if (row.toolType === 'BUILTIN') {
     proxy?.$modal.msgWarning('内置工具不允许删除');
     return;
@@ -211,28 +181,28 @@ const handleDelete = async (row: AiTool) => {
   await delTool([row.id!]);
   await getList();
   proxy?.$modal.msgSuccess('删除成功');
-};
+}
 
 /** 切换状态 */
-const handleToggleStatus = async (row: AiTool) => {
+async function handleToggleStatus(row: AiTool) {
   const newStatus = row.status === 'ENABLED' ? 'DISABLED' : 'ENABLED';
   const action = newStatus === 'ENABLED' ? '启用' : '停用';
   await proxy?.$modal.confirm(`是否确认${action}工具"${row.displayName}"？`);
   await toggleToolStatus(row.id!, newStatus);
   await getList();
   proxy?.$modal.msgSuccess(`${action}成功`);
-};
+}
 
 /** 同步内置工具 */
-const handleSync = async () => {
+async function handleSync() {
   await proxy?.$modal.confirm('是否确认同步内置工具到数据库？');
   await syncBuiltinTools();
   await getList();
   proxy?.$modal.msgSuccess('同步成功');
-};
+}
 
 /** 测试工具连接 */
-const handleTest = async (row: AiTool) => {
+async function handleTest(row: AiTool) {
   if (row.toolType === 'BUILTIN') {
     proxy?.$modal.msgWarning('内置工具无需测试连接');
     return;
@@ -251,17 +221,7 @@ const handleTest = async (row: AiTool) => {
   } finally {
     testLoading[row.id!] = false;
   }
-};
-
-onMounted(() => {
-  getList();
-});
-</script>
-
-<style scoped>
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
 }
-</style>
+
+getList();
+</script>

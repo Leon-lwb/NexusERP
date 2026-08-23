@@ -84,7 +84,7 @@
     </el-card>
 
     <!-- 新增IPQC对话框 -->
-    <el-dialog v-model="addDialog.visible" title="新增IPQC检验单" width="560px" append-to-body>
+    <el-dialog v-model="addDialog.visible" title="新增IPQC检验单" width="500px" append-to-body>
       <el-form :model="addForm" label-width="100px">
         <el-form-item label="工单" required>
           <el-input v-model="addForm.woNo" placeholder="请选择工单" readonly>
@@ -127,7 +127,7 @@
     </el-dialog>
 
     <!-- 检验对话框 -->
-    <el-dialog v-model="inspectDialog.visible" :title="'IPQC检验 - ' + inspectForm.ipqcNo" width="520px" append-to-body>
+    <el-dialog v-model="inspectDialog.visible" :title="'IPQC检验 - ' + inspectForm.ipqcNo" width="500px" append-to-body>
       <el-form :model="inspectForm" label-width="100px">
         <el-form-item label="检验结果" required>
           <el-radio-group v-model="inspectForm.inspectResult">
@@ -154,7 +154,7 @@
     </el-dialog>
 
     <!-- 工单选择对话框 -->
-    <el-dialog v-model="woDialog.visible" title="选择工单" width="950px" append-to-body>
+    <el-dialog v-model="woDialog.visible" title="选择工单" width="960px" append-to-body>
       <el-form :model="woDialog.query" :inline="true">
         <el-form-item label="工单编号">
           <el-input v-model="woDialog.query.woNo" clearable @keyup.enter="queryWorkOrders" />
@@ -190,7 +190,7 @@
     </el-dialog>
 
     <!-- 流转卡选择对话框 -->
-    <el-dialog v-model="cardDialog.visible" title="选择流转卡" width="900px" append-to-body>
+    <el-dialog v-model="cardDialog.visible" title="选择流转卡" width="960px" append-to-body>
       <el-form :model="cardDialog.query" :inline="true">
         <el-form-item label="流转卡号">
           <el-input v-model="cardDialog.query.cardNo" clearable @keyup.enter="queryFlowCards" />

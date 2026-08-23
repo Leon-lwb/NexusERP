@@ -63,7 +63,7 @@
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
     <!-- 添加或修改发票对话框 -->
-    <el-dialog :title="title" v-model="open" width="700px" append-to-body>
+    <el-dialog :title="title" v-model="open" width="640px" append-to-body>
       <el-form ref="invoiceRef" :model="form" :rules="rules" label-width="120px" :disabled="isViewMode">
         <el-row>
           <el-col :span="12">

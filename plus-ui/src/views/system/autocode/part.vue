@@ -71,7 +71,7 @@
 
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
-    <el-dialog v-model="open" :title="title" width="900px" append-to-body>
+    <el-dialog v-model="open" :title="title" width="960px" append-to-body>
       <el-form ref="formRef" :model="form" :inline="true" :rules="rules" label-width="110px">
         <el-row>
           <el-col :span="12">

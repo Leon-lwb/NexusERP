@@ -97,7 +97,7 @@
 
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
-    <el-dialog :title="title" v-model="open" width="700px" append-to-body>
+    <el-dialog :title="title" v-model="open" width="640px" append-to-body>
       <el-form ref="subcontractRef" :model="form" :rules="rules" label-width="120px">
         <el-row :gutter="20">
           <el-col :span="12">

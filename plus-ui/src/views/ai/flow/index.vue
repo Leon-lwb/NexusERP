@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue';
+import { computed, getCurrentInstance, onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import type { AiFlow, FlowTemplate } from '@/api/ai/flow';
@@ -10,16 +10,30 @@ import { addFlow, deleteFlow, listFlow, listFlowTemplates, offlineFlow, publishF
  * <p>流程 CRUD + 发布/下线 + 运行 + 进入设计器/历史 + Webhook 信息 + 从模板创建</p>
  */
 
+const { proxy } = getCurrentInstance() as any;
 const router = useRouter();
 const loading = ref(false);
 const rows = ref<AiFlow[]>([]);
 const total = ref(0);
+const showSearch = ref(true);
 const query = reactive({
   pageNum: 1,
   pageSize: 10,
   flowName: '',
   status: ''
 });
+
+/** 搜索（重置页码） */
+function handleQuery() {
+  query.pageNum = 1;
+  loadList();
+}
+
+/** 重置查询 */
+function resetQuery() {
+  proxy.resetForm('queryRef');
+  handleQuery();
+}
 
 /** 模板库对话框状态 */
 const templateVisible = ref(false);
@@ -171,23 +185,40 @@ onMounted(loadList);
 
 <template>
   <div class="app-container">
-    <el-form :model="query" inline>
-      <el-form-item label="流程名称">
-        <el-input v-model="query.flowName" placeholder="输入流程名称" clearable @keyup.enter="loadList" />
-      </el-form-item>
-      <el-form-item label="状态">
-        <el-select v-model="query.status" placeholder="全部" clearable style="width: 120px">
-          <el-option label="草稿" value="DRAFT" />
-          <el-option label="已发布" value="PUBLISHED" />
-          <el-option label="已下线" value="OFFLINE" />
-        </el-select>
-      </el-form-item>
-      <el-form-item>
-        <el-button type="primary" @click="loadList">搜索</el-button>
-        <el-button type="success" @click="createFlow">新建流程</el-button>
-        <el-button plain @click="openTemplates">从模板创建</el-button>
-      </el-form-item>
+    <el-form :model="query" ref="queryRef" v-show="showSearch" label-width="90px" class="list-search">
+      <el-row :gutter="16">
+        <el-col :span="6">
+          <el-form-item label="流程名称" prop="flowName">
+            <el-input v-model="query.flowName" placeholder="请输入流程名称" clearable @keyup.enter="handleQuery" />
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="状态" prop="status">
+            <el-select v-model="query.status" placeholder="请选择状态" clearable style="width: 100%">
+              <el-option label="草稿" value="DRAFT" />
+              <el-option label="已发布" value="PUBLISHED" />
+              <el-option label="已下线" value="OFFLINE" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :span="6" :offset="6" class="search-actions">
+          <el-form-item>
+            <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+          </el-form-item>
+        </el-col>
+      </el-row>
     </el-form>
+
+    <el-row :gutter="10" class="mb8">
+      <el-col :span="1.5">
+        <el-button type="primary" plain icon="Plus" @click="createFlow">新建流程</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button type="success" plain icon="DocumentCopy" @click="openTemplates">从模板创建</el-button>
+      </el-col>
+      <right-toolbar v-model:show-search="showSearch" @query-table="loadList"></right-toolbar>
+    </el-row>
 
     <el-table v-loading="loading" :data="rows" border stripe>
       <el-table-column label="ID" prop="id" width="180" show-overflow-tooltip />
@@ -221,7 +252,7 @@ onMounted(loadList);
     </el-table>
 
     <!-- Webhook 信息对话框 -->
-    <el-dialog v-model="webhookVisible" title="Webhook 触发" width="520px">
+    <el-dialog v-model="webhookVisible" title="Webhook 触发" width="500px">
       <template v-if="webhookRow">
         <el-alert
           title="外部系统可通过 POST 此 URL 触发流程（无需登录）。流程配置了 token 时需带 x-flow-token 请求头。"
@@ -252,7 +283,7 @@ curl -X POST {{ webhookUrl }} \
     </el-dialog>
 
     <!-- 模板库对话框（从模板创建） -->
-    <el-dialog v-model="templateVisible" title="从模板创建流程" width="720px" v-loading="templateLoading">
+    <el-dialog v-model="templateVisible" title="从模板创建流程" width="640px" v-loading="templateLoading">
       <el-alert
         title="模板为纯本地节点（SQL/条件/通知），不依赖模型配置，创建后可立即测试运行。通知节点需在运行入参中提供 owner（接收用户ID）。"
         type="info"

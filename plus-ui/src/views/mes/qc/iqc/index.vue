@@ -78,7 +78,7 @@
     </el-card>
 
     <!-- 新增IQC对话框 -->
-    <el-dialog v-model="addDialog.visible" title="新增IQC检验单" width="560px" append-to-body>
+    <el-dialog v-model="addDialog.visible" title="新增IQC检验单" width="500px" append-to-body>
       <el-form :model="addForm" label-width="100px">
         <el-form-item label="收货单">
           <el-input v-model="addReceiveCode" placeholder="可选, 选择ERP收货单" readonly clearable @clear="addForm.receiveId = undefined">
@@ -114,7 +114,7 @@
     </el-dialog>
 
     <!-- 检验对话框 -->
-    <el-dialog v-model="inspectDialog.visible" :title="'IQC检验 - ' + inspectForm.iqcNo" width="520px" append-to-body>
+    <el-dialog v-model="inspectDialog.visible" :title="'IQC检验 - ' + inspectForm.iqcNo" width="500px" append-to-body>
       <el-form :model="inspectForm" label-width="100px">
         <el-form-item label="检验结果" required>
           <el-radio-group v-model="inspectForm.inspectResult">
@@ -138,7 +138,7 @@
     </el-dialog>
 
     <!-- 收货单选择对话框 -->
-    <el-dialog v-model="receiveDialog.visible" title="选择收货单" width="900px" append-to-body>
+    <el-dialog v-model="receiveDialog.visible" title="选择收货单" width="960px" append-to-body>
       <el-form :model="receiveDialog.query" :inline="true">
         <el-form-item label="收货单号">
           <el-input v-model="receiveDialog.query.receiveCode" clearable @keyup.enter="queryReceives" />

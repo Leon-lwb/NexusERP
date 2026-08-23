@@ -185,7 +185,7 @@ import { listAttendance, getAttendance, delAttendance, addAttendance, updateAtte
 import type { FormInstance } from 'element-plus';
 import { useCrud } from '@/composables/useCrud';
 
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { sch_attendance_status, sch_source_type } = toRefs(proxy.useDict('sch_attendance_status', 'sch_source_type'));
 
 const attendanceRef = ref<FormInstance>();

@@ -42,7 +42,7 @@
       </el-table>
       <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
     </el-card>
-    <el-dialog v-model="dialog.visible" :title="form.routeId ? '编辑路线' : '新增路线'" width="600px" append-to-body>
+    <el-dialog v-model="dialog.visible" :title="form.routeId ? '编辑路线' : '新增路线'" width="640px" append-to-body>
       <el-form :model="form" label-width="100px" ref="formRef" :rules="formRules">
         <el-form-item label="路线名称" prop="routeName"><el-input v-model="form.routeName" placeholder="路线名称" clearable /></el-form-item>
         <el-form-item label="描述"><el-input v-model="form.description" type="textarea" :rows="2" /></el-form-item>

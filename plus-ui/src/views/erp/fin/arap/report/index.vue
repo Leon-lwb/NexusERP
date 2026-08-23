@@ -50,7 +50,7 @@
 import { listArapOpenItems } from '@/api/erp/fin/arap-report';
 import { OpenItemVO } from '@/api/erp/fin/settlement/types';
 
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { fin_receipt_direction } = toRefs<any>(proxy.useDict('fin_receipt_direction'));
 
 const dataList = ref<OpenItemVO[]>([]);

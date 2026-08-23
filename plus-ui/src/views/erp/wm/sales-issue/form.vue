@@ -268,7 +268,7 @@
     </el-card>
 
     <!-- 销售订单选择对话框 -->
-    <el-dialog title="选择销售订单" v-model="salesOrderDialogOpen" width="1000px" append-to-body>
+    <el-dialog title="选择销售订单" v-model="salesOrderDialogOpen" width="960px" append-to-body>
       <el-form :model="salesOrderQuery" :inline="true">
         <el-form-item label="订单编号">
           <el-input v-model="salesOrderQuery.soNo" placeholder="请输入订单编号" clearable />
@@ -311,7 +311,7 @@
     </el-dialog>
 
     <!-- 物料选择对话框 -->
-    <el-dialog title="选择物料" v-model="materialDialogOpen" width="1000px" append-to-body>
+    <el-dialog title="选择物料" v-model="materialDialogOpen" width="960px" append-to-body>
       <el-form :model="materialQuery" :inline="true">
         <el-form-item label="物料编码">
           <el-input v-model="materialQuery.materialCode" placeholder="请输入物料编码" clearable />
@@ -337,7 +337,7 @@
     </el-dialog>
 
     <!-- 批次选择对话框 -->
-    <el-dialog title="选择批次" v-model="batchDialogOpen" width="900px" append-to-body>
+    <el-dialog title="选择批次" v-model="batchDialogOpen" width="960px" append-to-body>
       <el-table :data="batchList" @current-change="handleBatchSelect" highlight-current-row>
         <el-table-column label="批次号" prop="batchCode" width="150" />
         <el-table-column label="物料编码" prop="materialCode" width="120" />
@@ -388,7 +388,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { previewCode } from '@/api/system/autocode/rule';
 import type { SalesIssueForm } from '@/api/erp/wm/sales-issue/types';
 
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { wm_sales_status, so_order_status } = toRefs<any>(proxy.useDict('wm_sales_status', 'so_order_status'));
 const route = useRoute();
 const router = useRouter();
@@ -583,7 +583,7 @@ function reset() {
 
 /** 提交按钮 */
 function submitForm() {
-  proxy.$refs['salesIssueRef'].validate((valid: boolean) => {
+  (proxy.$refs['salesIssueRef'] as any).validate((valid: boolean) => {
     if (valid) {
       // 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号
       if (autoGenFlag.value) {

@@ -142,7 +142,7 @@
     </el-card>
 
     <!-- 发起呼叫对话框 -->
-    <el-dialog v-model="callDialog.visible" title="发起安灯呼叫" width="520px" append-to-body>
+    <el-dialog v-model="callDialog.visible" title="发起安灯呼叫" width="500px" append-to-body>
       <el-form :model="callForm" label-width="90px">
         <el-form-item label="呼叫类型" required>
           <el-select v-model="callForm.callType" placeholder="请选择类型" style="width: 100%">
@@ -174,7 +174,7 @@
     </el-dialog>
 
     <!-- 工单选择对话框 -->
-    <el-dialog v-model="woDialog.visible" title="选择工单" width="950px" append-to-body>
+    <el-dialog v-model="woDialog.visible" title="选择工单" width="960px" append-to-body>
       <el-form :model="woDialog.query" :inline="true">
         <el-form-item label="工单编号">
           <el-input v-model="woDialog.query.woNo" clearable @keyup.enter="queryWorkOrders" />
@@ -210,7 +210,7 @@
     </el-dialog>
 
     <!-- 流转卡选择对话框 -->
-    <el-dialog v-model="cardDialog.visible" title="选择流转卡" width="900px" append-to-body>
+    <el-dialog v-model="cardDialog.visible" title="选择流转卡" width="960px" append-to-body>
       <el-form :model="cardDialog.query" :inline="true">
         <el-form-item label="流转卡号">
           <el-input v-model="cardDialog.query.cardNo" clearable @keyup.enter="queryFlowCards" />

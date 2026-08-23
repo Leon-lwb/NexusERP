@@ -20,7 +20,7 @@ import type { TreeOptionProps } from 'element-plus';
 import { listDept } from '@/api/system/dept';
 import type { DeptVO } from '@/api/system/dept/types';
 
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 
 interface Props {
   /** 绑定值（deptId） */

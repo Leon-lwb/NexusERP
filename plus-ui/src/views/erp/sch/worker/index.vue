@@ -334,7 +334,7 @@ import type { WorkshopQuery } from '@/api/erp/bd/workshop/types';
 import type { FormInstance } from 'element-plus';
 import { useCrud } from '@/composables/useCrud';
 
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { sch_skill_level, sch_work_category, sch_work_status, sys_user_sex, sys_core_status } = toRefs(
   proxy.useDict('sch_skill_level', 'sch_work_category', 'sch_work_status', 'sys_user_sex', 'sys_core_status')
 );

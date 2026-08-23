@@ -54,7 +54,7 @@
 import { listValuation } from '@/api/erp/wm/valuation';
 import { listWarehouse } from '@/api/erp/wm/warehouse';
 
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 
 const valuationList = ref([]);
 const loading = ref(true);

@@ -85,7 +85,7 @@
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
     <!-- 编辑弹窗 -->
-    <el-dialog :title="title" v-model="open" width="720px" append-to-body>
+    <el-dialog :title="title" v-model="open" width="640px" append-to-body>
       <el-form ref="formRef" :model="form" :rules="rules" label-width="110px">
         <el-form-item label="规则编码" prop="configCode">
           <el-input v-model="form.configCode" />
@@ -136,7 +136,7 @@ import type { FormInstance } from 'element-plus';
 import { useCrud } from '@/composables/useCrud';
 
 // 获取当前实例的代理对象
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 
 const formRef = ref<FormInstance>();
 

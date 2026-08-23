@@ -1,5 +1,5 @@
 <template>
-  <el-dialog title="选择客户订单" v-model="visible" width="900px" append-to-body destroy-on-close>
+  <el-dialog title="选择客户订单" v-model="visible" width="960px" append-to-body destroy-on-close>
     <!-- 搜索表单 -->
     <el-form :inline="true" :model="queryParams" class="query-form">
       <el-form-item label="客户订单号">

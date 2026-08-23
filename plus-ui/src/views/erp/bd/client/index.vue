@@ -413,7 +413,7 @@ import { getProvinces, getNextLevel } from '@/api/system/area';
 import type { FormInstance } from 'element-plus';
 import ClientLogoUpload from './ClientLogoUpload.vue';
 
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { bd_client_type, so_invoice_type } = toRefs<any>(proxy.useDict('bd_client_type', 'so_invoice_type'));
 
 const bdList = ref([]);

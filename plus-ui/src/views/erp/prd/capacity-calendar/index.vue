@@ -119,7 +119,7 @@
       </el-tab-pane>
     </el-tabs>
 
-    <el-dialog :title="title" v-model="open" width="680px" append-to-body>
+    <el-dialog :title="title" v-model="open" width="640px" append-to-body>
       <el-form ref="calendarRef" :model="form" :rules="rules" label-width="120px">
         <el-row :gutter="20">
           <el-col :span="12">
@@ -192,7 +192,7 @@
       </template>
     </el-dialog>
 
-    <el-dialog title="生成产能日历" v-model="generateOpen" width="680px" append-to-body>
+    <el-dialog title="生成产能日历" v-model="generateOpen" width="640px" append-to-body>
       <el-form ref="generateRef" :model="generateForm" :rules="generateRules" label-width="120px">
         <el-row :gutter="20">
           <el-col :span="12">

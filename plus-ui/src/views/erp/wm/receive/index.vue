@@ -347,7 +347,7 @@ import { useRouter } from 'vue-router';
 import { previewCode } from '@/api/system/autocode/rule';
 
 const router = useRouter();
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { wm_material_receive_status } = toRefs<any>(proxy.useDict('wm_material_receive_status'));
 
 const receiveList = ref<ReceiveVO[]>([]);
@@ -549,7 +549,7 @@ function handleView(row: any) {
 
 /** 提交按钮 */
 function submitForm() {
-  proxy.$refs['receiveRef'].validate((valid: boolean) => {
+  (proxy.$refs['receiveRef'] as any).validate((valid: boolean) => {
     if (valid) {
       // 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号
       if (autoGenFlag.value) {

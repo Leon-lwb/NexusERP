@@ -83,7 +83,7 @@
     />
 
     <!-- 复查确认对话框 -->
-    <el-dialog v-model="reviewDialog.visible" :title="reviewDialog.title" width="440px" append-to-body>
+    <el-dialog v-model="reviewDialog.visible" :title="reviewDialog.title" width="500px" append-to-body>
       <el-form :model="reviewDialog" label-width="100px">
         <el-form-item label="复查结果">
           <el-tag :type="reviewDialog.action === 'pass' ? 'success' : 'danger'" size="small">
@@ -103,7 +103,7 @@
     </el-dialog>
 
     <!-- 打卡照片查看 -->
-    <el-dialog v-model="photoDialog.visible" title="打卡人脸照片" width="360px" append-to-body>
+    <el-dialog v-model="photoDialog.visible" title="打卡人脸照片" width="500px" append-to-body>
       <el-image v-if="photoDialog.src" :src="photoDialog.src" fit="contain" style="width: 100%; border-radius: 8px" />
       <el-empty v-else description="无照片(未上传/未存证)" />
       <div v-if="photoDialog.ossId" style="margin-top: 8px; color: #909399; font-size: 12px">存证 ossId: {{ photoDialog.ossId }}</div>

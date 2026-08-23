@@ -433,7 +433,7 @@ const props = defineProps({
   isNew: { type: Boolean, default: false }
 });
 
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { wm_material_receive_status } = toRefs<any>(proxy.useDict('wm_material_receive_status'));
 const route = useRoute();
 const router = useRouter();
@@ -796,7 +796,7 @@ function tryAutoSelect() {
 
 // 提交审批
 function handleSubmitFlow() {
-  proxy.$refs['receiveRef'].validate((valid: boolean) => {
+  (proxy.$refs['receiveRef'] as any).validate((valid: boolean) => {
     if (valid) {
       if (!form.value.selectFlowId) {
         proxy.$modal.msgWarning('请先选择审批流程');
@@ -891,7 +891,7 @@ function normalizeReceiveLineDetails() {
 
 /** 提交按钮 */
 function submitForm() {
-  proxy.$refs['receiveRef'].validate((valid: boolean) => {
+  (proxy.$refs['receiveRef'] as any).validate((valid: boolean) => {
     if (valid) {
       // 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号
       if (autoGenFlag.value) {
@@ -915,7 +915,7 @@ function submitForm() {
 
 // 审核按钮提交表单
 function submitApprovingForm() {
-  proxy.$refs['receiveRef'].validate((valid: boolean) => {
+  (proxy.$refs['receiveRef'] as any).validate((valid: boolean) => {
     if (valid) {
       // 设置状态为审核中
       form.value.status = 'APPROVING';
@@ -1292,7 +1292,7 @@ function cancelShelf() {
 
 /** 提交上架表单 */
 function submitShelfForm() {
-  proxy.$refs['shelfRef'].validate((valid: boolean) => {
+  (proxy.$refs['shelfRef'] as any).validate((valid: boolean) => {
     if (valid) {
       // 校验 lineId：若为空则不允许保存，防止生成孤儿明细记录
       if (!shelfForm.value.lineId) {

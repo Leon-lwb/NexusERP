@@ -80,7 +80,7 @@ import { listMiscRecpt, delMiscRecpt } from '@/api/erp/wm/miscrecpt';
 import { useRouter } from 'vue-router';
 
 const router = useRouter();
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { wm_misc_status, wm_misc_recpt_type } = toRefs<any>(proxy.useDict('wm_misc_status', 'wm_misc_recpt_type'));
 
 const recptList = ref([]);

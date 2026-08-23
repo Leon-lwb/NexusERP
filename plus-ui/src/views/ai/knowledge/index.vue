@@ -1,48 +1,47 @@
 <template>
-  <div class="p-2">
-    <!-- 搜索区域 -->
-    <transition :enter-active-class="proxy?.animate.searchAnimate.enter" :leave-active-class="proxy?.animate.searchAnimate.leave">
-      <div v-show="showSearch" class="mb-[10px]">
-        <el-card shadow="hover">
-          <el-form ref="queryFormRef" :model="queryParams" :inline="true">
-            <el-form-item label="知识库名称" prop="knowledgeName">
-              <el-input v-model="queryParams.knowledgeName" placeholder="请输入知识库名称" clearable @keyup.enter="handleQuery" />
-            </el-form-item>
-            <el-form-item label="状态" prop="status">
-              <el-select v-model="queryParams.status" placeholder="状态" clearable>
-                <el-option label="正常" value="1" />
-                <el-option label="停用" value="0" />
-              </el-select>
-            </el-form-item>
-            <el-form-item>
-              <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-              <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-            </el-form-item>
-          </el-form>
-        </el-card>
-      </div>
-    </transition>
+  <div class="app-container">
+    <!-- 查询区域 -->
+    <el-form :model="queryParams" ref="queryRef" v-show="showSearch" label-width="100px" class="list-search">
+      <el-row :gutter="16">
+        <el-col :span="6">
+          <el-form-item label="知识库名称" prop="knowledgeName">
+            <el-input v-model="queryParams.knowledgeName" placeholder="请输入知识库名称" clearable @keyup.enter="handleQuery" />
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="状态" prop="status">
+            <el-select v-model="queryParams.status" placeholder="请选择状态" clearable style="width: 100%">
+              <el-option v-for="opt in AI_STATUS_OPTIONS" :key="opt.value" :label="opt.label" :value="opt.value" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :span="6" :offset="6" class="search-actions">
+          <el-form-item>
+            <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+          </el-form-item>
+        </el-col>
+      </el-row>
+    </el-form>
 
     <el-row :gutter="10">
       <!-- 左侧：知识库列表 -->
       <el-col :span="selectedKnowledge ? 12 : 24">
         <el-card shadow="hover">
-          <template #header>
-            <el-row :gutter="10" class="mb8">
-              <el-col :span="1.5">
-                <el-button type="primary" plain icon="Plus" @click="handleAdd">新增</el-button>
-              </el-col>
-              <el-col :span="1.5">
-                <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete()">删除</el-button>
-              </el-col>
-              <right-toolbar v-model:show-search="showSearch" @query-table="getList"></right-toolbar>
-            </el-row>
-          </template>
+          <el-row :gutter="10" class="mb8">
+            <el-col :span="1.5">
+              <el-button type="primary" plain icon="Plus" @click="handleAdd">新增</el-button>
+            </el-col>
+            <el-col :span="1.5">
+              <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete()">删除</el-button>
+            </el-col>
+            <right-toolbar v-model:show-search="showSearch" @query-table="getList"></right-toolbar>
+          </el-row>
 
           <el-table
             v-loading="loading"
             border
-            :data="knowledgeList"
+            :data="list"
             @selection-change="handleSelectionChange"
             highlight-current-row
             @current-change="handleCurrentChange"
@@ -54,7 +53,7 @@
             <el-table-column label="文档数" align="center" prop="documentCount" width="80" />
             <el-table-column label="状态" align="center" prop="status" width="80">
               <template #default="scope">
-                <el-tag :type="scope.row.status === '1' ? 'success' : 'danger'">{{ scope.row.status === '1' ? '正常' : '停用' }}</el-tag>
+                <dict-tag :options="AI_STATUS_OPTIONS" :value="scope.row.status" />
               </template>
             </el-table-column>
             <el-table-column label="创建时间" align="center" prop="createTime" width="180">
@@ -193,7 +192,7 @@
     </el-row>
 
     <!-- 添加或修改知识库对话框 -->
-    <el-dialog v-model="dialog.visible" :title="dialog.title" width="600px" append-to-body>
+    <el-dialog v-model="open" :title="title" width="640px" append-to-body>
       <el-form ref="knowledgeFormRef" :model="form" :rules="rules" label-width="120px">
         <el-form-item label="知识库名称" prop="knowledgeName">
           <el-input v-model="form.knowledgeName" placeholder="请输入知识库名称" />
@@ -211,14 +210,12 @@
         </el-form-item>
         <el-form-item label="向量存储类型" prop="vectorStore">
           <el-select v-model="form.vectorStore" placeholder="向量存储类型">
-            <el-option label="Milvus" value="milvus" />
-            <el-option label="InMemory" value="inmemory" />
+            <el-option v-for="opt in KNOWLEDGE_VECTOR_STORE_OPTIONS" :key="opt.value" :label="opt.label" :value="opt.value" />
           </el-select>
         </el-form-item>
         <el-form-item label="状态" prop="status">
           <el-radio-group v-model="form.status">
-            <el-radio value="1">正常</el-radio>
-            <el-radio value="0">停用</el-radio>
+            <el-radio v-for="opt in AI_STATUS_OPTIONS" :key="opt.value" :value="opt.value">{{ opt.label }}</el-radio>
           </el-radio-group>
         </el-form-item>
 
@@ -269,7 +266,7 @@
     </el-dialog>
 
     <!-- 片段查看对话框 -->
-    <el-dialog v-model="chunkDialog.visible" title="文档片段" width="700px" append-to-body>
+    <el-dialog v-model="chunkDialog.visible" title="文档片段" width="640px" append-to-body>
       <el-table v-loading="chunkLoading" border :data="chunkList">
         <el-table-column label="序号" align="center" prop="chunkIndex" width="70" />
         <el-table-column label="片段内容" prop="content" :show-overflow-tooltip="false">
@@ -298,21 +295,23 @@ import {
   knowledgeRetrieval
 } from '@/api/ai/knowledge';
 import { listModel } from '@/api/ai/model';
-import { ComponentInternalInstance } from 'vue';
+import type { FormInstance } from 'element-plus';
+import { useCrud } from '@/composables/useCrud';
+import {
+  AI_STATUS_OPTIONS,
+  KNOWLEDGE_DOC_STATUS_OPTIONS,
+  KNOWLEDGE_VECTOR_STORE_OPTIONS,
+  getAiOptionTagType,
+  getAiOptionTagLabel
+} from '../constants';
 
-const { proxy } = getCurrentInstance() as ComponentInternalInstance;
+const { proxy } = getCurrentInstance() as any;
 
-const knowledgeList = ref<any[]>([]);
+const knowledgeFormRef = ref<FormInstance>();
 const documentList = ref<any[]>([]);
 const chunkList = ref<any[]>([]);
-const loading = ref(false);
 const docLoading = ref(false);
 const chunkLoading = ref(false);
-const showSearch = ref(true);
-const total = ref(0);
-const ids = ref<Array<number | string>>([]);
-const single = ref(true);
-const multiple = ref(true);
 const selectedKnowledge = ref<any>(null);
 const showAdvanced = ref(false);
 
@@ -340,7 +339,6 @@ const queryParams = ref<any>({
   status: undefined
 });
 
-const form = ref<any>({});
 const rules = ref({
   knowledgeName: [{ required: true, message: '知识库名称不能为空', trigger: 'blur' }],
   embeddingModel: [{ required: true, message: '请选择 Embedding 模型', trigger: 'change' }]
@@ -356,42 +354,96 @@ function loadEmbeddingModels() {
   });
 }
 
-const dialog = reactive<{ visible: boolean; title: string }>({
-  visible: false,
-  title: ''
-});
-
 const chunkDialog = reactive<{ visible: boolean }>({
   visible: false
 });
 
-/** 查询知识库列表 */
-function getList() {
-  loading.value = true;
-  listKnowledge(queryParams.value).then((res: any) => {
-    knowledgeList.value = res.rows;
-    total.value = res.total;
-    loading.value = false;
+const {
+  loading,
+  list,
+  total,
+  open,
+  title,
+  multiple,
+  showSearch,
+  form,
+  getList,
+  handleQuery,
+  handleDelete,
+  handleSelectionChange,
+  submitForm,
+  cancel,
+  handleAdd: rawHandleAdd,
+  handleUpdate: rawHandleUpdate
+} = useCrud({
+  apis: { list: listKnowledge, get: getKnowledge, add: addKnowledge, update: updateKnowledge, del: delKnowledge },
+  idField: 'id',
+  entityName: '知识库',
+  formRef: knowledgeFormRef,
+  queryParams,
+  initForm: () => ({
+    id: undefined,
+    knowledgeName: undefined,
+    description: undefined,
+    embeddingModel: undefined,
+    vectorStore: 'milvus',
+    status: '1',
+    separator: '#',
+    overlapChar: 30,
+    textBlockSize: 500,
+    retrieveLimit: 5,
+    similarityThreshold: 0.5,
+    enableRerank: 0,
+    rerankModel: undefined,
+    enableHybrid: 0,
+    hybridAlpha: 0.5,
+    systemPrompt: undefined
+  }),
+  onReset: () => {
+    showAdvanced.value = false;
+  },
+  afterLoad: () => {
+    // 确保高级配置字段有默认值
+    if (form.value.separator === undefined) form.value.separator = '#';
+    if (form.value.overlapChar === undefined) form.value.overlapChar = 30;
+    if (form.value.textBlockSize === undefined) form.value.textBlockSize = 500;
+    if (form.value.retrieveLimit === undefined) form.value.retrieveLimit = 5;
+    if (form.value.similarityThreshold === undefined) form.value.similarityThreshold = 0.5;
+    if (form.value.enableRerank === undefined) form.value.enableRerank = 0;
+    if (form.value.enableHybrid === undefined) form.value.enableHybrid = 0;
+    if (form.value.hybridAlpha === undefined) form.value.hybridAlpha = 0.5;
+    // 如果有高级配置字段则展开
+    if (
+      form.value.separator !== '#' ||
+      form.value.overlapChar !== 30 ||
+      form.value.textBlockSize !== 500 ||
+      form.value.enableRerank === 1 ||
+      form.value.enableHybrid === 1 ||
+      form.value.systemPrompt
+    ) {
+      showAdvanced.value = true;
+    }
+  }
+});
+
+/** 新增（预加载 Embedding 模型候选） */
+function handleAdd() {
+  rawHandleAdd(() => {
+    loadEmbeddingModels();
   });
 }
 
-/** 搜索 */
-function handleQuery() {
-  queryParams.value.pageNum = 1;
-  getList();
+/** 修改（预加载 Embedding 模型候选） */
+function handleUpdate(row: any) {
+  rawHandleUpdate(row, () => {
+    loadEmbeddingModels();
+  });
 }
 
-/** 重置 */
+/** 重置查询 */
 function resetQuery() {
-  proxy?.resetForm('queryFormRef');
+  proxy.resetForm('queryRef');
   handleQuery();
-}
-
-/** 多选框选中数据 */
-function handleSelectionChange(selection: any[]) {
-  ids.value = selection.map((item) => item.id);
-  single.value = selection.length !== 1;
-  multiple.value = !selection.length;
 }
 
 /** 选中知识库行 */
@@ -417,105 +469,6 @@ function loadDocuments(knowledgeId: number) {
     documentList.value = res.data;
     docLoading.value = false;
   });
-}
-
-/** 重置表单 */
-function reset() {
-  form.value = {
-    id: undefined,
-    knowledgeName: undefined,
-    description: undefined,
-    embeddingModel: undefined,
-    vectorStore: 'milvus',
-    status: '1',
-    separator: '#',
-    overlapChar: 30,
-    textBlockSize: 500,
-    retrieveLimit: 5,
-    similarityThreshold: 0.5,
-    enableRerank: 0,
-    rerankModel: undefined,
-    enableHybrid: 0,
-    hybridAlpha: 0.5,
-    systemPrompt: undefined
-  };
-  showAdvanced.value = false;
-  proxy?.resetForm('knowledgeFormRef');
-}
-
-/** 新增 */
-function handleAdd() {
-  reset();
-  loadEmbeddingModels();
-  dialog.visible = true;
-  dialog.title = '新增知识库';
-}
-
-/** 修改 */
-function handleUpdate(row: any) {
-  reset();
-  loadEmbeddingModels();
-  getKnowledge(row.id).then((res: any) => {
-    form.value = res.data;
-    // 确保高级配置字段有默认值
-    if (form.value.separator === undefined) form.value.separator = '#';
-    if (form.value.overlapChar === undefined) form.value.overlapChar = 30;
-    if (form.value.textBlockSize === undefined) form.value.textBlockSize = 500;
-    if (form.value.retrieveLimit === undefined) form.value.retrieveLimit = 5;
-    if (form.value.similarityThreshold === undefined) form.value.similarityThreshold = 0.5;
-    if (form.value.enableRerank === undefined) form.value.enableRerank = 0;
-    if (form.value.enableHybrid === undefined) form.value.enableHybrid = 0;
-    if (form.value.hybridAlpha === undefined) form.value.hybridAlpha = 0.5;
-    // 如果有高级配置字段则展开
-    if (
-      form.value.separator !== '#' ||
-      form.value.overlapChar !== 30 ||
-      form.value.textBlockSize !== 500 ||
-      form.value.enableRerank === 1 ||
-      form.value.enableHybrid === 1 ||
-      form.value.systemPrompt
-    ) {
-      showAdvanced.value = true;
-    }
-    dialog.visible = true;
-    dialog.title = '修改知识库';
-  });
-}
-
-/** 提交 */
-function submitForm() {
-  (proxy as any).$refs['knowledgeFormRef'].validate((valid: boolean) => {
-    if (valid) {
-      if (form.value.id) {
-        updateKnowledge(form.value).then(() => {
-          proxy?.$modal.msgSuccess('修改成功');
-          dialog.visible = false;
-          getList();
-        });
-      } else {
-        addKnowledge(form.value).then(() => {
-          proxy?.$modal.msgSuccess('新增成功');
-          dialog.visible = false;
-          getList();
-        });
-      }
-    }
-  });
-}
-
-/** 删除知识库 */
-function handleDelete(row?: any) {
-  const deleteIds = row?.id ? [row.id] : ids.value;
-  proxy?.$modal
-    .confirm('是否确认删除所选知识库？')
-    .then(() => {
-      return delKnowledge(deleteIds);
-    })
-    .then(() => {
-      getList();
-      proxy?.$modal.msgSuccess('删除成功');
-    })
-    .catch(() => {});
 }
 
 /** 删除文档 */
@@ -635,45 +588,15 @@ function formatFileSize(bytes: number) {
 
 /** 文档状态标签类型 */
 function docStatusType(status: string) {
-  switch (status) {
-    case '0':
-      return 'info';
-    case '1':
-      return 'warning';
-    case '2':
-      return 'success';
-    case '3':
-      return 'danger';
-    default:
-      return 'info';
-  }
+  return getAiOptionTagType(KNOWLEDGE_DOC_STATUS_OPTIONS, status);
 }
 
 /** 文档状态文本 */
 function docStatusText(status: string) {
-  switch (status) {
-    case '0':
-      return '待解析';
-    case '1':
-      return '解析中';
-    case '2':
-      return '已完成';
-    case '3':
-      return '失败';
-    default:
-      return '未知';
-  }
+  return getAiOptionTagLabel(KNOWLEDGE_DOC_STATUS_OPTIONS, status) || '未知';
 }
 
-/** 取消 */
-function cancel() {
-  dialog.visible = false;
-  reset();
-}
-
-onMounted(() => {
-  getList();
-});
+getList();
 </script>
 
 <style scoped>

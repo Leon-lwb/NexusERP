@@ -59,7 +59,7 @@
     </el-card>
 
     <!-- 编辑8D报告对话框 -->
-    <el-dialog title="编辑8D报告" v-model="editDialog.visible" width="720px" append-to-body>
+    <el-dialog title="编辑8D报告" v-model="editDialog.visible" width="640px" append-to-body>
       <el-form ref="formRef" :model="form" label-width="100px">
         <el-form-item label="D1 团队组成"><el-input v-model="form.d1Team" type="textarea" :rows="2" /></el-form-item>
         <el-form-item label="D2 问题描述"><el-input v-model="form.d2Problem" type="textarea" :rows="2" /></el-form-item>

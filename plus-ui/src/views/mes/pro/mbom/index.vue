@@ -64,7 +64,7 @@
     </el-card>
 
     <!-- MBOM编辑对话框 -->
-    <el-dialog v-model="dialogVisible" :title="dialogTitle" width="900px" append-to-body>
+    <el-dialog v-model="dialogVisible" :title="dialogTitle" width="960px" append-to-body>
       <el-form ref="formRef" :model="form" :rules="rules" label-width="110px">
         <el-row :gutter="20">
           <el-col :span="12">

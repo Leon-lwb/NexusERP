@@ -104,7 +104,7 @@
     </el-card>
 
     <!-- 新增/编辑设备对话框 -->
-    <el-dialog v-model="dialog.visible" :title="form.equipmentId ? '编辑设备' : '新增设备'" width="720px" append-to-body>
+    <el-dialog v-model="dialog.visible" :title="form.equipmentId ? '编辑设备' : '新增设备'" width="640px" append-to-body>
       <el-form :model="form" label-width="100px" ref="formRef" :rules="formRules">
         <el-row :gutter="12">
           <el-col :span="12">
@@ -206,7 +206,7 @@
     </el-dialog>
 
     <!-- IoT 最新数据对话框 -->
-    <el-dialog v-model="iotLatestDialog.visible" title="IoT 设备最新数据" width="600px" append-to-body>
+    <el-dialog v-model="iotLatestDialog.visible" title="IoT 设备最新数据" width="640px" append-to-body>
       <el-descriptions :column="2" border>
         <el-descriptions-item v-for="(val, key) in iotLatestDialog.data" :key="key" :label="String(key)">
           {{ val }}

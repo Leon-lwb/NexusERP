@@ -105,7 +105,7 @@ import { listPriceList, delPriceList } from '@/api/erp/so/price-list';
 import { useRouter } from 'vue-router';
 
 const router = useRouter();
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { so_price_list_type, so_price_list_status } = toRefs<any>(proxy.useDict('so_price_list_type', 'so_price_list_status'));
 
 const priceListList = ref([]);

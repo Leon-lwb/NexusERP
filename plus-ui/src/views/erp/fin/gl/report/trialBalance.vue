@@ -47,7 +47,7 @@
 import { listPeriod } from '@/api/erp/fin/gl/period';
 import { trialBalance, TrialBalanceVO } from '@/api/erp/fin/gl/report';
 
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { gl_account_type } = toRefs<any>(proxy.useDict('gl_account_type'));
 
 const dataList = ref<TrialBalanceVO[]>([]);

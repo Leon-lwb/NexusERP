@@ -128,7 +128,7 @@ import type { FloorMarkingBuild } from '../components/floorMarkings';
 import { buildSceneLabels } from '../components/sceneLabels';
 import type { SceneLabels } from '../components/sceneLabels';
 
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const route = useRoute();
 const warehouseId = route.params.warehouseId as string;
 

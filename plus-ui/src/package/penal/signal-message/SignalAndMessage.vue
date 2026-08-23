@@ -23,7 +23,7 @@
       <el-table-column label="信号名称" prop="name" max-width="300px" show-overflow-tooltip />
     </el-table>
 
-    <el-dialog v-model="dialogVisible" :title="modelConfig.title" :close-on-click-modal="false" width="400px" append-to-body destroy-on-close>
+    <el-dialog v-model="dialogVisible" :title="modelConfig.title" :close-on-click-modal="false" width="500px" append-to-body destroy-on-close>
       <el-form :model="modelObjectForm" size="small" label-width="90px">
         <el-form-item :label="modelConfig.idLabel">
           <el-input v-model="modelObjectForm.id" clearable />

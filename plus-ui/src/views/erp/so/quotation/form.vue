@@ -287,7 +287,7 @@ import { previewCode } from '@/api/system/autocode/rule';
 import { useRoute, useRouter } from 'vue-router';
 import MaterialSelectDialog from '@/components/MaterialSelectDialog/index.vue';
 
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { sys_currency } = toRefs<any>(proxy.useDict('sys_currency'));
 const route = useRoute();
 const router = useRouter();
@@ -369,7 +369,7 @@ function reset() {
 }
 
 function submitForm() {
-  proxy.$refs['quotationRef'].validate((valid: boolean) => {
+  (proxy.$refs['quotationRef'] as any).validate((valid: boolean) => {
     if (valid) {
       // 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号
       if (autoGenFlag.value) {

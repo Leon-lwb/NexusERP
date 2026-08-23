@@ -81,7 +81,7 @@
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
     <!-- 变更状态对话框 -->
-    <el-dialog title="变更状态" v-model="statusDialogVisible" width="400px" append-to-body>
+    <el-dialog title="变更状态" v-model="statusDialogVisible" width="500px" append-to-body>
       <el-form ref="statusFormRef" :model="statusForm" label-width="80px">
         <el-form-item label="当前状态">
           <dict-tag :options="wm_batch_status" :value="statusForm.currentStatus" />
@@ -108,7 +108,7 @@ import { WmBatchVO, WmBatchQuery } from '@/api/erp/wm/batch/types';
 import { useRouter } from 'vue-router';
 
 const router = useRouter();
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { wm_batch_status } = toRefs<any>(proxy.useDict('wm_batch_status'));
 
 const batchList = ref<WmBatchVO[]>([]);

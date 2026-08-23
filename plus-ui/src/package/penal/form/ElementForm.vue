@@ -22,7 +22,7 @@
       </el-form-item>
     </el-form>
 
-    <el-dialog v-model:visible="fieldOptionModelVisible" :title="optionModelTitle" width="600px" append-to-body destroy-on-close>
+    <el-dialog v-model:visible="fieldOptionModelVisible" :title="optionModelTitle" width="640px" append-to-body destroy-on-close>
       <el-form :model="fieldOptionForm" size="small" label-width="96px" @submit.prevent>
         <el-form-item label="编号/ID" v-if="fieldOptionType !== 'constraint'" key="option-id">
           <el-input v-model="fieldOptionForm.id" clearable />

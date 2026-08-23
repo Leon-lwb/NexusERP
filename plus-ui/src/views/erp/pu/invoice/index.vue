@@ -404,7 +404,7 @@
     </el-dialog>
 
     <!-- 核销对话框 -->
-    <el-dialog title="进项发票核销" v-model="verifyOpen" width="420px" append-to-body>
+    <el-dialog title="进项发票核销" v-model="verifyOpen" width="500px" append-to-body>
       <el-form label-width="100px">
         <el-form-item label="价税合计">{{ verifyForm.totalAmount }}</el-form-item>
         <el-form-item label="已核销">{{ verifyForm.verifiedAmount }}</el-form-item>
@@ -420,7 +420,7 @@
     </el-dialog>
 
     <!-- 三单匹配结果对话框 -->
-    <el-dialog title="三单匹配结果(PO + 收货 + 发票)" v-model="matchOpen" width="560px" append-to-body>
+    <el-dialog title="三单匹配结果(PO + 收货 + 发票)" v-model="matchOpen" width="500px" append-to-body>
       <el-result :icon="matchResult.passed ? 'success' : 'warning'" :title="matchResult.passed ? '匹配通过' : '存在差异'">
         <template #sub-title>
           <span>{{ matchResult.summary }}</span>
@@ -435,7 +435,7 @@
     </el-dialog>
 
     <!-- 从采购订单生成草稿对话框 -->
-    <el-dialog title="从采购订单生成发票草稿" v-model="genFromPoOpen" width="420px" append-to-body>
+    <el-dialog title="从采购订单生成发票草稿" v-model="genFromPoOpen" width="500px" append-to-body>
       <el-form label-width="100px">
         <el-form-item label="采购订单ID">
           <el-input v-model="genFromPoPoId" style="width: 100%" placeholder="请输入采购订单ID" />
@@ -449,7 +449,7 @@
     </el-dialog>
 
     <!-- 供应商选择对话框 -->
-    <el-dialog v-model="vendorDialog.visible" title="选择供应商" width="720px" append-to-body>
+    <el-dialog v-model="vendorDialog.visible" title="选择供应商" width="640px" append-to-body>
       <el-form :model="vendorDialog.query" :inline="true">
         <el-form-item label="编码">
           <el-input v-model="vendorDialog.query.vendorCode" clearable @keyup.enter="queryVendors" />
@@ -481,7 +481,7 @@
     </el-dialog>
 
     <!-- 物料选择对话框 -->
-    <el-dialog v-model="materialDialogVisible" title="选择物料" width="720px" append-to-body>
+    <el-dialog v-model="materialDialogVisible" title="选择物料" width="640px" append-to-body>
       <el-form :inline="true">
         <el-form-item label="编码">
           <el-input v-model="materialQuery.materialCode" clearable @keyup.enter="queryMaterials" />
@@ -534,7 +534,7 @@ import { listVendor } from '@/api/erp/bd/vendor';
 import { listMaterial } from '@/api/erp/bd/material';
 import { InvoiceVO, InvoiceForm, InvoiceLineForm, MatchResult } from '@/api/erp/pu/invoice/types';
 
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { pu_invoice_type, pu_invoice_status, pu_invoice_cert_status, invoice_issue_channel } = toRefs<any>(
   proxy.useDict('pu_invoice_type', 'pu_invoice_status', 'pu_invoice_cert_status', 'invoice_issue_channel')
 );
@@ -691,7 +691,7 @@ function handleView(row: InvoiceVO) {
 
 /** 提交表单 */
 function submitForm() {
-  proxy.$refs['formRef'].validate((valid: boolean) => {
+  (proxy.$refs['formRef'] as any).validate((valid: boolean) => {
     if (valid) {
       form.value.puInvoiceLineList = lineList.value;
       if (form.value.invoiceId != null) {

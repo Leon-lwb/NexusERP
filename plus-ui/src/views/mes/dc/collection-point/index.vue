@@ -82,7 +82,7 @@
     </el-card>
 
     <!-- 新增/编辑采集点对话框 -->
-    <el-dialog v-model="dialog.visible" :title="form.pointId ? '编辑采集点' : '新增采集点'" width="560px" append-to-body>
+    <el-dialog v-model="dialog.visible" :title="form.pointId ? '编辑采集点' : '新增采集点'" width="500px" append-to-body>
       <el-form :model="form" label-width="100px">
         <el-form-item label="采集点编码" required>
           <el-input v-model="form.pointCode" placeholder="采集点编码" clearable />
@@ -149,7 +149,7 @@
     </el-dialog>
 
     <!-- 工序选择对话框 -->
-    <el-dialog v-model="processDialog.visible" title="选择工序" width="820px" append-to-body>
+    <el-dialog v-model="processDialog.visible" title="选择工序" width="800px" append-to-body>
       <el-form :model="processDialog.query" :inline="true">
         <el-form-item label="工序编码">
           <el-input v-model="processDialog.query.processCode" clearable @keyup.enter="queryProcesses" />

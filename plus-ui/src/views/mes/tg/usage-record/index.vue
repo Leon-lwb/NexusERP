@@ -56,7 +56,7 @@
       <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
     </el-card>
 
-    <el-dialog :title="dialog.title" v-model="dialog.visible" width="560px" append-to-body>
+    <el-dialog :title="dialog.title" v-model="dialog.visible" width="500px" append-to-body>
       <el-form ref="usageFormRef" :model="form" :rules="rules" label-width="90px">
         <el-form-item label="工装" prop="toolingId">
           <el-input v-model="form.toolingName" placeholder="请选择工装" readonly>
@@ -103,7 +103,7 @@
       </template>
     </el-dialog>
 
-    <el-dialog v-model="toolingDialog.visible" title="选择工装" width="780px" append-to-body>
+    <el-dialog v-model="toolingDialog.visible" title="选择工装" width="800px" append-to-body>
       <el-form :model="toolingDialog.query" :inline="true">
         <el-form-item label="编码"><el-input v-model="toolingDialog.query.toolingCode" clearable @keyup.enter="queryToolings" /></el-form-item>
         <el-form-item label="名称"><el-input v-model="toolingDialog.query.toolingName" clearable @keyup.enter="queryToolings" /></el-form-item>
@@ -128,7 +128,7 @@
       />
     </el-dialog>
 
-    <el-dialog v-model="userDialog.visible" title="选择操作员" width="700px" append-to-body>
+    <el-dialog v-model="userDialog.visible" title="选择操作员" width="640px" append-to-body>
       <el-form :model="userDialog.query" :inline="true">
         <el-form-item label="账号"><el-input v-model="userDialog.query.userName" clearable @keyup.enter="queryUsers" /></el-form-item>
         <el-form-item label="昵称"><el-input v-model="userDialog.query.nickName" clearable @keyup.enter="queryUsers" /></el-form-item>
@@ -150,7 +150,7 @@
       />
     </el-dialog>
 
-    <el-dialog v-model="woDialog.visible" title="选择工单" width="780px" append-to-body>
+    <el-dialog v-model="woDialog.visible" title="选择工单" width="800px" append-to-body>
       <el-form :model="woDialog.query" :inline="true">
         <el-form-item label="工单编号"><el-input v-model="woDialog.query.woNo" clearable @keyup.enter="queryWos" /></el-form-item>
         <el-form-item><el-button type="primary" icon="Search" @click="queryWos">搜索</el-button></el-form-item>
@@ -173,7 +173,7 @@
       />
     </el-dialog>
 
-    <el-dialog v-model="workstationDialog.visible" title="选择工位" width="780px" append-to-body>
+    <el-dialog v-model="workstationDialog.visible" title="选择工位" width="800px" append-to-body>
       <el-form :model="workstationDialog.query" :inline="true">
         <el-form-item label="编码"
           ><el-input v-model="workstationDialog.query.workstationCode" clearable @keyup.enter="queryWorkstations"

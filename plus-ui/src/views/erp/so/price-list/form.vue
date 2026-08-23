@@ -155,7 +155,7 @@
 import { getPriceList, addPriceList, updatePriceList } from '@/api/erp/so/price-list';
 import { useRoute, useRouter } from 'vue-router';
 
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { so_price_list_type, so_price_list_status } = toRefs<any>(proxy.useDict('so_price_list_type', 'so_price_list_status'));
 const route = useRoute();
 const router = useRouter();
@@ -212,7 +212,7 @@ function reset() {
 }
 
 function submitForm() {
-  proxy.$refs['priceListRef'].validate((valid: boolean) => {
+  (proxy.$refs['priceListRef'] as any).validate((valid: boolean) => {
     if (valid) {
       form.value.soPriceListLineList = lineList.value;
       if (form.value.priceListId != null) {

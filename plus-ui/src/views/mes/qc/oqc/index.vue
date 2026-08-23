@@ -75,7 +75,7 @@
     </el-card>
 
     <!-- 新增OQC对话框 -->
-    <el-dialog v-model="addDialog.visible" title="新增OQC检验单" width="560px" append-to-body>
+    <el-dialog v-model="addDialog.visible" title="新增OQC检验单" width="500px" append-to-body>
       <el-form :model="addForm" label-width="100px">
         <el-form-item label="销售订单">
           <el-input v-model="addSoNo" placeholder="可选, 选择ERP销售订单" readonly clearable @clear="addForm.soId = undefined">
@@ -108,7 +108,7 @@
     </el-dialog>
 
     <!-- 检验对话框 -->
-    <el-dialog v-model="inspectDialog.visible" :title="'OQC检验 - ' + inspectForm.oqcNo" width="520px" append-to-body>
+    <el-dialog v-model="inspectDialog.visible" :title="'OQC检验 - ' + inspectForm.oqcNo" width="500px" append-to-body>
       <el-form :model="inspectForm" label-width="100px">
         <el-form-item label="检验结果" required>
           <el-radio-group v-model="inspectForm.inspectResult">
@@ -132,7 +132,7 @@
     </el-dialog>
 
     <!-- 销售订单选择对话框 -->
-    <el-dialog v-model="soDialog.visible" title="选择销售订单" width="900px" append-to-body>
+    <el-dialog v-model="soDialog.visible" title="选择销售订单" width="960px" append-to-body>
       <el-form :model="soDialog.query" :inline="true">
         <el-form-item label="订单编号">
           <el-input v-model="soDialog.query.soNo" clearable @keyup.enter="queryOrders" />

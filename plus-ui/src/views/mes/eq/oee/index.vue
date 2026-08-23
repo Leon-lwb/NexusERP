@@ -134,7 +134,7 @@
     </el-card>
 
     <!-- 手动聚合对话框 -->
-    <el-dialog v-model="aggregateDialog.visible" title="手动聚合 OEE 数据" width="460px" append-to-body>
+    <el-dialog v-model="aggregateDialog.visible" title="手动聚合 OEE 数据" width="500px" append-to-body>
       <el-form label-width="100px">
         <el-form-item label="聚合日期">
           <el-date-picker v-model="aggregateDialog.date" type="date" value-format="YYYY-MM-DD" placeholder="留空聚合昨天" style="width: 100%" />

@@ -79,7 +79,7 @@
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
     <!-- 新增/编辑弹窗 -->
-    <el-dialog :title="title" v-model="open" width="560px" append-to-body>
+    <el-dialog :title="title" v-model="open" width="500px" append-to-body>
       <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
         <el-form-item label="配置名称" prop="contentName">
           <el-input v-model="form.contentName" placeholder="请输入" />
@@ -125,7 +125,7 @@ import {
   type MesContentFileQuery
 } from '@/api/mes/flash/content';
 
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const list = ref<MesContentFileVO[]>([]);
 const loading = ref(true);
 const showSearch = ref(true);
@@ -188,7 +188,7 @@ const handleFileChange = (val: any) => {
   }
 };
 const submitForm = () => {
-  proxy?.$refs.formRef.validate(async (valid: boolean) => {
+  (proxy?.$refs.formRef as any).validate(async (valid: boolean) => {
     if (!valid) return;
     if (form.value.contentFileId) {
       await updateContent(form.value);

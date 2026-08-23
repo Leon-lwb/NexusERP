@@ -77,7 +77,7 @@
       <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
     </el-card>
 
-    <el-dialog :title="dialog.title" v-model="dialog.visible" width="560px" append-to-body>
+    <el-dialog :title="dialog.title" v-model="dialog.visible" width="500px" append-to-body>
       <el-form ref="planFormRef" :model="form" :rules="rules" label-width="100px">
         <el-form-item label="计划名称" prop="planName"><el-input v-model="form.planName" /></el-form-item>
         <el-form-item label="工装" prop="toolingId">
@@ -104,7 +104,7 @@
       </template>
     </el-dialog>
 
-    <el-dialog v-model="toolingDialog.visible" title="选择工装" width="780px" append-to-body>
+    <el-dialog v-model="toolingDialog.visible" title="选择工装" width="800px" append-to-body>
       <el-form :model="toolingDialog.query" :inline="true">
         <el-form-item label="编码"><el-input v-model="toolingDialog.query.toolingCode" clearable @keyup.enter="queryToolings" /></el-form-item>
         <el-form-item label="名称"><el-input v-model="toolingDialog.query.toolingName" clearable @keyup.enter="queryToolings" /></el-form-item>

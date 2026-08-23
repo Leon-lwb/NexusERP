@@ -281,7 +281,7 @@ import type { MeasureForm, MeasureQuery } from '@/api/erp/bd/measure/types';
 import { Folder, ScaleToOriginal, Collection, Connection } from '@element-plus/icons-vue';
 import type { FormInstance } from 'element-plus';
 
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { sys_true_or_false, sys_core_status } = toRefs<any>(proxy.useDict('sys_true_or_false', 'sys_core_status'));
 
 // ==================== 级联布局数据 ====================

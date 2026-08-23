@@ -218,7 +218,7 @@ import { previewCode } from '@/api/system/autocode/rule';
 import { useRoute, useRouter } from 'vue-router';
 import MaterialSelectDialog from '@/components/MaterialSelectDialog/index.vue';
 
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { wm_misc_recpt_type, wm_misc_status } = toRefs<any>(proxy.useDict('wm_misc_recpt_type', 'wm_misc_status'));
 const route = useRoute();
 const router = useRouter();
@@ -294,7 +294,7 @@ function reset() {
 }
 
 function submitForm() {
-  proxy.$refs['miscRecptRef'].validate((valid: boolean) => {
+  (proxy.$refs['miscRecptRef'] as any).validate((valid: boolean) => {
     if (valid) {
       // 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号
       if (autoGenFlag.value) {

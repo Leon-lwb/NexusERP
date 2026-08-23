@@ -96,7 +96,7 @@
 
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
-    <el-dialog :title="title" v-model="open" width="700px" append-to-body>
+    <el-dialog :title="title" v-model="open" width="640px" append-to-body>
       <el-form ref="punchRuleRef" :model="form" :rules="rules" label-width="120px" :disabled="isViewMode">
         <el-row :gutter="20">
           <el-col :span="12">
@@ -208,7 +208,7 @@ import { listPunchRule, getPunchRule, delPunchRule, addPunchRule, updatePunchRul
 import type { FormInstance } from 'element-plus';
 import { useCrud } from '@/composables/useCrud';
 
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { sys_true_or_false } = toRefs(proxy.useDict('sys_true_or_false'));
 
 const punchRuleRef = ref<FormInstance>();

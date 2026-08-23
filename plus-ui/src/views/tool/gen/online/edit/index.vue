@@ -154,7 +154,7 @@
     </el-form>
 
     <!-- JSON 配置对话框 -->
-    <el-dialog v-model="jsonEditorVisible" :title="jsonEditorTitle" width="1000px" :before-close="handleJsonEditorClose" destroy-on-close>
+    <el-dialog v-model="jsonEditorVisible" :title="jsonEditorTitle" width="960px" :before-close="handleJsonEditorClose" destroy-on-close>
       <!-- 字典字段配置 -->
       <div v-if="currentJsonType === 'dictFields'" class="json-editor-section">
         <h4>字典字段配置</h4>

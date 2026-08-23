@@ -74,7 +74,7 @@
 
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
-    <el-dialog :title="title" v-model="open" width="600px" append-to-body>
+    <el-dialog :title="title" v-model="open" width="640px" append-to-body>
       <el-form ref="pickingRuleRef" :model="form" :rules="rules" label-width="100px">
         <el-form-item label="规则编码" prop="ruleCode">
           <el-input v-model="form.ruleCode" placeholder="请输入规则编码" />
@@ -131,7 +131,7 @@ import { useCategoryTree } from '@/composables/erp/useCategoryTree';
 import type { FormInstance } from 'element-plus';
 import { useCrud } from '@/composables/useCrud';
 
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { wm_picking_strategy_type, wm_rule_status } = toRefs<any>(proxy.useDict('wm_picking_strategy_type', 'wm_rule_status'));
 
 const pickingRuleRef = ref<FormInstance>();

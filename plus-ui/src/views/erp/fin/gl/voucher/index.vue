@@ -229,7 +229,7 @@ import { VoucherVO, VoucherForm, VoucherLineForm, VoucherQuery } from '@/api/erp
 import { leafAccounts } from '@/api/erp/fin/gl/account';
 import { AccountVO } from '@/api/erp/fin/gl/account/types';
 
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { gl_voucher_word, gl_voucher_status, gl_voucher_source } = toRefs<any>(
   proxy.useDict('gl_voucher_word', 'gl_voucher_status', 'gl_voucher_source')
 );
@@ -357,7 +357,7 @@ function onAmountChange(row: VoucherLineForm, field: 'debit' | 'credit') {
 }
 
 function submitForm() {
-  proxy.$refs['formRef'].validate(async (valid: boolean) => {
+  (proxy.$refs['formRef'] as any).validate(async (valid: boolean) => {
     if (!valid) return;
     if (!form.value.voucherLineList || form.value.voucherLineList.length === 0) {
       proxy.$modal.msgError('至少一行分录');

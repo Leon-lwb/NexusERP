@@ -58,7 +58,7 @@
 import { listPeriod } from '@/api/erp/fin/gl/period';
 import { carryPnl, closingSteps, monthlyClose, revaluate, trialCheck, ClosingStepVO } from '@/api/erp/fin/closing';
 
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 
 const periodList = ref<any[]>([]);
 const periodId = ref<number>();

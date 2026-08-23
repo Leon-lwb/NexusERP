@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, reactive, ref } from 'vue';
+import { getCurrentInstance, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import type { AiFlow, AiFlowInstance } from '@/api/ai/flow';
@@ -10,11 +10,13 @@ import { listFlow, listInstance, retryInstance } from '@/api/ai/flow';
  * <p>实例分页 + 流程下拉/status/triggerType 过滤 + RUNNING 自动刷新 + 详情重放 + 续跑</p>
  */
 
+const { proxy } = getCurrentInstance() as any;
 const route = useRoute();
 const router = useRouter();
 const loading = ref(false);
 const rows = ref<AiFlowInstance[]>([]);
 const total = ref(0);
+const showSearch = ref(true);
 const query = reactive({
   pageNum: 1,
   pageSize: 10,
@@ -25,6 +27,24 @@ const query = reactive({
   beginTime: '',
   endTime: ''
 });
+
+/** 搜索（重置页码） */
+function handleQuery() {
+  query.pageNum = 1;
+  loadList();
+}
+
+/** 重置查询（清空全部筛选条件，含路由预填的流程） */
+function resetQuery() {
+  query.flowId = '';
+  query.status = '';
+  query.triggerType = '';
+  query.keyword = '';
+  dateRange.value = null;
+  query.beginTime = '';
+  query.endTime = '';
+  handleQuery();
+}
 
 /** 相对时间快捷筛选（今天/近7天/近30天） */
 function applyRelativeRange(days: number) {
@@ -161,54 +181,75 @@ onBeforeUnmount(stopRefresh);
 
 <template>
   <div class="app-container">
-    <el-form :model="query" inline>
-      <el-form-item label="流程">
-        <el-select v-model="query.flowId" placeholder="选择流程" clearable filterable style="width: 220px" @change="loadList">
-          <el-option v-for="f in flowOptions" :key="String(f.id)" :label="f.flowName" :value="String(f.id)" />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="状态">
-        <el-select v-model="query.status" placeholder="全部" clearable style="width: 120px" @change="loadList">
-          <el-option label="运行中" value="RUNNING" />
-          <el-option label="成功" value="SUCCEEDED" />
-          <el-option label="失败" value="FAILED" />
-          <el-option label="已停止" value="STOPPED" />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="触发方式">
-        <el-select v-model="query.triggerType" placeholder="全部" clearable style="width: 120px" @change="loadList">
-          <el-option label="手动" value="MANUAL" />
-          <el-option label="定时" value="SCHEDULE" />
-          <el-option label="测试" value="TEST" />
-          <el-option label="Webhook" value="WEBHOOK" />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="关键词">
-        <el-input v-model="query.keyword" placeholder="流程名称 / 实例ID" clearable style="width: 160px" @keyup.enter="loadList" @clear="loadList" />
-      </el-form-item>
-      <el-form-item label="时间范围">
-        <el-date-picker
-          v-model="dateRange"
-          type="daterange"
-          value-format="YYYY-MM-DD"
-          range-separator="至"
-          start-placeholder="开始日期"
-          end-placeholder="结束日期"
-          style="width: 240px"
-          @change="onDateRangeChange"
-        />
-        <div class="monitor-relative">
-          <el-button size="small" text @click="applyRelativeRange(1)">今天</el-button>
-          <el-button size="small" text @click="applyRelativeRange(7)">近7天</el-button>
-          <el-button size="small" text @click="applyRelativeRange(30)">近30天</el-button>
-          <el-button size="small" text @click="resetRange">全部</el-button>
-        </div>
-      </el-form-item>
-      <el-form-item>
-        <el-button type="primary" @click="loadList">搜索</el-button>
-        <el-button @click="router.push('/ai/flow/index')">返回流程列表</el-button>
-      </el-form-item>
+    <el-form :model="query" ref="queryRef" v-show="showSearch" label-width="90px" class="list-search">
+      <el-row :gutter="16">
+        <el-col :span="6">
+          <el-form-item label="流程" prop="flowId">
+            <el-select v-model="query.flowId" placeholder="请选择流程" clearable filterable style="width: 100%" @change="handleQuery">
+              <el-option v-for="f in flowOptions" :key="String(f.id)" :label="f.flowName" :value="String(f.id)" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="状态" prop="status">
+            <el-select v-model="query.status" placeholder="请选择状态" clearable style="width: 100%" @change="handleQuery">
+              <el-option label="运行中" value="RUNNING" />
+              <el-option label="成功" value="SUCCEEDED" />
+              <el-option label="失败" value="FAILED" />
+              <el-option label="已停止" value="STOPPED" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="触发方式" prop="triggerType">
+            <el-select v-model="query.triggerType" placeholder="请选择触发方式" clearable style="width: 100%" @change="handleQuery">
+              <el-option label="手动" value="MANUAL" />
+              <el-option label="定时" value="SCHEDULE" />
+              <el-option label="测试" value="TEST" />
+              <el-option label="Webhook" value="WEBHOOK" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="关键词" prop="keyword">
+            <el-input v-model="query.keyword" placeholder="流程名称 / 实例ID" clearable @keyup.enter="handleQuery" @clear="handleQuery" />
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="时间范围">
+            <el-date-picker
+              v-model="dateRange"
+              type="daterange"
+              value-format="YYYY-MM-DD"
+              range-separator="至"
+              start-placeholder="开始日期"
+              end-placeholder="结束日期"
+              style="width: 100%"
+              @change="onDateRangeChange"
+            />
+            <div class="monitor-relative">
+              <el-button size="small" text @click="applyRelativeRange(1)">今天</el-button>
+              <el-button size="small" text @click="applyRelativeRange(7)">近7天</el-button>
+              <el-button size="small" text @click="applyRelativeRange(30)">近30天</el-button>
+              <el-button size="small" text @click="resetRange">全部</el-button>
+            </div>
+          </el-form-item>
+        </el-col>
+        <el-col :span="6" :offset="12" class="search-actions">
+          <el-form-item>
+            <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+          </el-form-item>
+        </el-col>
+      </el-row>
     </el-form>
+
+    <el-row :gutter="10" class="mb8">
+      <el-col :span="1.5">
+        <el-button plain icon="Back" @click="router.push('/ai/flow/index')">返回流程列表</el-button>
+      </el-col>
+      <right-toolbar v-model:show-search="showSearch" @query-table="loadList"></right-toolbar>
+    </el-row>
 
     <el-table v-loading="loading" :data="rows" border stripe>
       <el-table-column label="实例ID" prop="id" width="190" show-overflow-tooltip />
@@ -247,9 +288,8 @@ onBeforeUnmount(stopRefresh);
 
 <style scoped>
 .monitor-relative {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 0;
-  margin-left: 8px;
+  margin-top: 4px;
 }
 </style>

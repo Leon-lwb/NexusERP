@@ -57,7 +57,7 @@
       <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
     </el-card>
     <!-- 新增/编辑 -->
-    <el-dialog v-model="dialog.visible" :title="form.taskId ? '编辑任务' : '新增任务'" width="520px" append-to-body>
+    <el-dialog v-model="dialog.visible" :title="form.taskId ? '编辑任务' : '新增任务'" width="500px" append-to-body>
       <el-form :model="form" label-width="100px" ref="formRef" :rules="formRules">
         <el-form-item label="路线" prop="routeId"
           ><el-select v-model="form.routeId" filterable placeholder="选择路线" style="width: 100%"
@@ -74,7 +74,7 @@
       >
     </el-dialog>
     <!-- 执行巡检 -->
-    <el-dialog v-model="execDialog.visible" :title="`执行巡检 - ${execDialog.routeName}`" width="700px" append-to-body>
+    <el-dialog v-model="execDialog.visible" :title="`执行巡检 - ${execDialog.routeName}`" width="640px" append-to-body>
       <el-form label-width="90px">
         <el-table :data="execRecords" border size="small">
           <el-table-column label="设备" min-width="180"

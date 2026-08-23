@@ -184,7 +184,7 @@
     </el-dialog>
 
     <!-- 新增版本对话框 -->
-    <el-dialog title="新增版本" v-model="versionDialog.visible" width="560px" append-to-body>
+    <el-dialog title="新增版本" v-model="versionDialog.visible" width="500px" append-to-body>
       <el-form ref="versionFormRef" :model="versionForm" :rules="versionRules" label-width="100px">
         <el-form-item label="SOP"><el-input :model-value="versionDialog.sopName" disabled /></el-form-item>
         <el-form-item label="版本号"><el-input v-model="versionForm.versionNo" placeholder="留空自动递增" /></el-form-item>
@@ -205,7 +205,7 @@
     </el-dialog>
 
     <!-- 版本历史对话框 -->
-    <el-dialog title="版本历史" v-model="historyDialog.visible" width="820px" append-to-body>
+    <el-dialog title="版本历史" v-model="historyDialog.visible" width="800px" append-to-body>
       <el-table :data="historyDialog.list" show-overflow-tooltip>
         <el-table-column label="版本号" prop="versionNo" width="90" align="center" />
         <el-table-column label="文件类型" prop="fileType" width="90" align="center">
@@ -227,7 +227,7 @@
     </el-dialog>
 
     <!-- 文件预览对话框(PDF/图片/视频/Word) -->
-    <el-dialog :title="previewDialog.title" v-model="previewDialog.visible" width="900px" append-to-body class="preview-dialog">
+    <el-dialog :title="previewDialog.title" v-model="previewDialog.visible" width="960px" append-to-body class="preview-dialog">
       <div class="preview-wrapper">
         <iframe v-if="previewDialog.fileType === 'PDF' && previewDialog.fileUrl" :src="previewDialog.fileUrl" class="preview-pdf" frameborder="0" />
         <el-image

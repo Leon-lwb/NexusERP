@@ -347,7 +347,7 @@ import { previewCode } from '@/api/system/autocode/rule';
 import { listUser } from '@/api/system/user';
 import type { FormInstance } from 'element-plus';
 
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { so_customer_order_status, so_currency_type, so_order_priority, so_source_channel, bd_client_type } = toRefs<any>(
   proxy.useDict('so_customer_order_status', 'so_currency_type', 'so_order_priority', 'so_source_channel', 'bd_client_type')
 );

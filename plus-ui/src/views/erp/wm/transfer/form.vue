@@ -225,7 +225,7 @@ import { getProcesss } from '@/api/workflow/process/index';
 import { useRoute, useRouter } from 'vue-router';
 import MaterialSelectDialog from '@/components/MaterialSelectDialog/index.vue';
 
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { wm_transfer_type } = toRefs<any>(proxy.useDict('wm_transfer_type'));
 const route = useRoute();
 const router = useRouter();
@@ -361,7 +361,7 @@ function reset() {
 }
 
 function submitForm() {
-  proxy.$refs['transferRef'].validate((valid: boolean) => {
+  (proxy.$refs['transferRef'] as any).validate((valid: boolean) => {
     if (valid) {
       // 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号
       if (autoGenFlag.value) {

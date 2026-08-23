@@ -196,7 +196,7 @@
     </el-dialog>
 
     <!-- 选择工单 -->
-    <el-dialog title="选择工单" v-model="workOrderSelectOpen" width="950px" append-to-body>
+    <el-dialog title="选择工单" v-model="workOrderSelectOpen" width="960px" append-to-body>
       <el-form :model="workOrderQueryParams" :inline="true">
         <el-form-item label="工单编号"
           ><el-input v-model="workOrderQueryParams.woNo" placeholder="请输入工单编号" clearable @keyup.enter="getWorkOrderList"
@@ -229,7 +229,7 @@
     <MaterialSelectDialog ref="materialSelectDialogRef" title="选择物料" :warehouse-id="form.warehouseId" @select="handleMaterialSelected" />
 
     <!-- 选择可用库存（批次/库位） -->
-    <el-dialog title="选择库存（批次/库位）" v-model="stockSelectOpen" width="950px" append-to-body>
+    <el-dialog title="选择库存（批次/库位）" v-model="stockSelectOpen" width="960px" append-to-body>
       <el-alert title="列出该物料在所有仓库的可用库存，请选择具体批次/库位" type="info" :closable="false" show-icon class="mb8" />
       <el-table v-loading="stockLoading" :data="stockList" highlight-current-row height="420">
         <el-table-column label="批次号" align="center" prop="batchCode" />
@@ -271,7 +271,7 @@ import { previewCode } from '@/api/system/autocode/rule';
 import { useUserStore } from '@/store/modules/user';
 import MaterialSelectDialog from '@/components/MaterialSelectDialog/index.vue';
 
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { parseTime } = proxy;
 const route = useRoute();
 const router = useRouter();
@@ -378,7 +378,7 @@ function reset() {
 }
 
 function submitForm() {
-  proxy.$refs['issueRef'].validate((valid: boolean) => {
+  (proxy.$refs['issueRef'] as any).validate((valid: boolean) => {
     if (!valid) return;
     // 行校验
     for (const l of lineList.value) {

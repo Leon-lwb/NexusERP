@@ -68,7 +68,7 @@
 <script setup lang="ts" name="FinCostIndex">
 import { costProvision, listStockTx, postCostTx } from '@/api/erp/fin/cost';
 
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 
 const dataList = ref<any[]>([]);
 const loading = ref(false);

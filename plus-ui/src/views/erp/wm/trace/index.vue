@@ -88,7 +88,7 @@
     <el-empty v-if="!traceResult && !loading" description="请输入查询条件进行追溯查询" />
 
     <!-- 节点详情弹窗 -->
-    <el-dialog title="追溯节点详情" v-model="detailVisible" width="600px">
+    <el-dialog title="追溯节点详情" v-model="detailVisible" width="640px">
       <el-descriptions :column="2" border v-if="detailNode">
         <el-descriptions-item label="物料编码">{{ detailNode.materialCode }}</el-descriptions-item>
         <el-descriptions-item label="物料名称">{{ detailNode.materialName }}</el-descriptions-item>

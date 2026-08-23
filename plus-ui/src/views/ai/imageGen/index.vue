@@ -31,7 +31,7 @@
         </el-form-item>
         <el-form-item label="尺寸">
           <el-select v-model="form.size" style="width: 240px">
-            <el-option v-for="opt in sizeOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
+            <el-option v-for="opt in IMAGE_SIZE_OPTIONS" :key="opt.value" :label="opt.label" :value="opt.value" />
           </el-select>
         </el-form-item>
         <el-form-item>
@@ -88,14 +88,14 @@
 </template>
 
 <script setup lang="ts" name="AiImageGen">
-import { ref, reactive, onMounted } from 'vue';
+import { ref, reactive, onMounted, getCurrentInstance } from 'vue';
 import { Picture } from '@element-plus/icons-vue';
-import { ElMessage, ElMessageBox } from 'element-plus';
 import ImageRenderer from '@/components/ai/ImageRenderer.vue';
 import ModelSelect from '@/components/ai/ModelSelect.vue';
 import { generateImage, listImage, delImage, type AiImageRecord } from '@/api/ai/image';
+import { IMAGE_SIZE_OPTIONS } from '../constants';
 
-defineOptions({ name: 'AiImageGen' });
+const { proxy } = getCurrentInstance() as any;
 
 const generating = ref(false);
 const loading = ref(false);
@@ -112,13 +112,6 @@ const form = reactive({
   modelId: undefined as number | undefined
 });
 
-const sizeOptions = [
-  { label: '1024 × 1024（方形）', value: '1024*1024' },
-  { label: '1280 × 1280（方形）', value: '1280*1280' },
-  { label: '720 × 1280（竖版）', value: '720*1280' },
-  { label: '1280 × 720（横版）', value: '1280*720' }
-];
-
 /** 模型选择变化时回显模型名（供头部 el-tag 展示） */
 const onModelChange = (model: any) => {
   if (model?.modelName) currentModelName.value = model.modelName;
@@ -126,7 +119,7 @@ const onModelChange = (model: any) => {
 
 const handleGenerate = async () => {
   if (!form.prompt.trim()) {
-    ElMessage.warning('请输入提示词');
+    proxy?.$modal.msgWarning('请输入提示词');
     return;
   }
   generating.value = true;
@@ -136,13 +129,13 @@ const handleGenerate = async () => {
       lastUrl.value = res.data.imageUrl;
       lastPrompt.value = res.data.prompt || form.prompt;
       currentModelName.value = res.data.modelName || '';
-      ElMessage.success('图片生成成功');
+      proxy?.$modal.msgSuccess('图片生成成功');
       getList();
     } else {
-      ElMessage.error(res.msg || '图片生成失败');
+      proxy?.$modal.msgError(res.msg || '图片生成失败');
     }
   } catch (e: any) {
-    ElMessage.error('图片生成失败：' + (e.message || '未知错误'));
+    proxy?.$modal.msgError('图片生成失败：' + (e.message || '未知错误'));
   } finally {
     generating.value = false;
   }
@@ -166,11 +159,9 @@ const handleView = (row: AiImageRecord) => {
 };
 
 const handleDelete = async (row: AiImageRecord) => {
-  await ElMessageBox.confirm('确认删除该生成记录？删除后不可恢复。', '提示', {
-    type: 'warning'
-  });
+  await proxy?.$modal.confirm('确认删除该生成记录？删除后不可恢复。');
   await delImage([row.id as number]);
-  ElMessage.success('删除成功');
+  proxy?.$modal.msgSuccess('删除成功');
   getList();
 };
 

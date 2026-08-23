@@ -88,7 +88,7 @@
 
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
-    <el-dialog :title="title" v-model="open" width="1000px" append-to-body>
+    <el-dialog :title="title" v-model="open" width="960px" append-to-body>
       <el-form ref="teamRef" :model="form" :rules="rules" label-width="100px" :disabled="isViewMode">
         <el-row :gutter="10">
           <el-col :span="8">
@@ -273,7 +273,7 @@
       </template>
     </el-dialog>
 
-    <el-dialog title="选择班组成员" v-model="workerVisible" width="1100px" append-to-body>
+    <el-dialog title="选择班组成员" v-model="workerVisible" width="1200px" append-to-body>
       <el-form :model="workerQueryParams" ref="workerQueryRef" :inline="true">
         <el-form-item label="员工工号" prop="employeeId">
           <el-input v-model="workerQueryParams.employeeId" placeholder="请输入员工工号" clearable @keyup.enter="getWorkerList" />

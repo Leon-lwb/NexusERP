@@ -220,7 +220,7 @@ const props = defineProps({
 });
 
 // 获取当前实例的代理对象和字典数据
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { pu_purchase_requisition_status, pu_source_type } = toRefs<any>(proxy.useDict('pu_purchase_requisition_status', 'pu_source_type'));
 // 路由和导航
 const route = useRoute();
@@ -365,7 +365,7 @@ function tryAutoSelect() {
  * 提交审批
  */
 function handleSubmitFlow() {
-  proxy.$refs['formRef'].validate((valid: boolean) => {
+  (proxy.$refs['formRef'] as any).validate((valid: boolean) => {
     if (valid) {
       if (!form.value.selectFlowId) {
         proxy.$modal.msgWarning('请先选择审批流程');

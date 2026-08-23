@@ -106,7 +106,7 @@
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
     <!-- 添加或修改序列号规则对话框 -->
-    <el-dialog :title="title" v-model="open" width="700px" append-to-body>
+    <el-dialog :title="title" v-model="open" width="640px" append-to-body>
       <el-form ref="ruleRef" :model="form" :rules="rules" label-width="110px" :disabled="isViewMode">
         <el-row :gutter="20">
           <el-col :span="12">
@@ -196,7 +196,7 @@
     </el-dialog>
 
     <!-- 生成序列号结果对话框 -->
-    <el-dialog title="生成序列号" v-model="genVisible" width="400px" append-to-body>
+    <el-dialog title="生成序列号" v-model="genVisible" width="500px" append-to-body>
       <div style="text-align: center; padding: 20px 0">
         <p style="margin-bottom: 10px; color: #909399">规则: {{ genRuleCode }}</p>
         <p style="font-size: 24px; font-weight: bold; font-family: monospace; color: #303133">{{ genResult }}</p>
@@ -222,7 +222,7 @@ import {
 import type { FormInstance } from 'element-plus';
 import { useCrud } from '@/composables/useCrud';
 
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 
 const ruleRef = ref<FormInstance>();
 

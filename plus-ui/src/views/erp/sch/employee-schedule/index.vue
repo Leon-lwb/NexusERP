@@ -257,7 +257,7 @@ import type { FormInstance } from 'element-plus';
 import { useCrud } from '@/composables/useCrud';
 import { listPlan } from '@/api/erp/sch/plan';
 
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { sys_true_or_false, sch_schedule_status } = toRefs(proxy.useDict('sys_true_or_false', 'sch_schedule_status'));
 /** 计划下拉选项(生成排班用) */
 const planOptions = ref<any[]>([]);

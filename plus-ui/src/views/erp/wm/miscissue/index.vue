@@ -80,7 +80,7 @@ import { listMiscIssue, delMiscIssue } from '@/api/erp/wm/miscissue';
 import { useRouter } from 'vue-router';
 
 const router = useRouter();
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { wm_misc_status, wm_misc_issue_type } = toRefs<any>(proxy.useDict('wm_misc_status', 'wm_misc_issue_type'));
 
 const issueList = ref([]);

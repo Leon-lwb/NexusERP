@@ -164,7 +164,7 @@
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
     <!-- 补录/纠错弹窗 -->
-    <el-dialog :title="dialog.title" v-model="dialog.visible" width="720px" append-to-body>
+    <el-dialog :title="dialog.title" v-model="dialog.visible" width="640px" append-to-body>
       <el-form ref="formRef" :model="form" :rules="rules" label-width="110px">
         <el-row :gutter="20">
           <el-col :span="12">
@@ -297,7 +297,7 @@
     </el-dialog>
 
     <!-- 详情弹窗 -->
-    <el-dialog title="刷写记录详情" v-model="detail.visible" width="760px" append-to-body>
+    <el-dialog title="刷写记录详情" v-model="detail.visible" width="800px" append-to-body>
       <el-descriptions :column="2" border>
         <el-descriptions-item label="刷写记录号">{{ detail.data.flashNo || '-' }}</el-descriptions-item>
         <el-descriptions-item label="SN编码">{{ detail.data.snCode || '-' }}</el-descriptions-item>

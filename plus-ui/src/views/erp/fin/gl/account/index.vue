@@ -169,7 +169,7 @@ import { listAccount, getAccount, addAccount, updateAccount, delAccount } from '
 import { AccountVO, AccountForm, AccountQuery } from '@/api/erp/fin/gl/account/types';
 import { handleTree } from '@/utils/ruoyi';
 
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { gl_account_type, gl_balance_dir } = toRefs<any>(proxy.useDict('gl_account_type', 'gl_balance_dir'));
 
 const accountList = ref<AccountVO[]>([]);
@@ -261,7 +261,7 @@ function handleUpdate(row: AccountVO) {
 
 /** 提交 */
 function submitForm() {
-  proxy.$refs['accountRef'].validate(async (valid: boolean) => {
+  (proxy.$refs['accountRef'] as any).validate(async (valid: boolean) => {
     if (!valid) return;
     if (form.value.accountId) {
       await updateAccount(form.value);

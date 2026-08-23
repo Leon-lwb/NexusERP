@@ -43,7 +43,7 @@
     <div v-if="newsList.length > 0" class="foot-box">共 {{ newsList.length }} 条通知 · 点击查看详情</div>
 
     <!-- 通知详情弹窗 -->
-    <el-dialog v-model="detailVisible" :title="currentDetail?.title || '通知详情'" width="520px" append-to-body>
+    <el-dialog v-model="detailVisible" :title="currentDetail?.title || '通知详情'" width="500px" append-to-body>
       <div class="notification-detail-content" v-html="currentDetail?.content"></div>
       <div v-if="!currentDetail?.content && currentDetail?.contentPreview" class="notification-detail-content">
         {{ currentDetail.contentPreview }}

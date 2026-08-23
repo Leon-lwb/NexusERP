@@ -298,7 +298,7 @@ import { getProvinces, getNextLevel } from '@/api/system/area';
 import type { FormInstance } from 'element-plus';
 import { useCrud } from '@/composables/useCrud';
 
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { wm_warehouse_status } = toRefs<any>(proxy.useDict('wm_warehouse_status'));
 
 const warehouseRef = ref<FormInstance>();

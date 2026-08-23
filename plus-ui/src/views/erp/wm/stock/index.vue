@@ -347,7 +347,7 @@ import { getWareHouseTree } from '@/api/erp/wm/warehouse';
 import { listVendor, getVendor } from '@/api/erp/bd/vendor';
 import MaterialSelectDialog from '@/components/MaterialSelectDialog/index.vue';
 
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { sys_true_or_false } = toRefs<any>(proxy.useDict('sys_true_or_false'));
 
 const stockList = ref<StockVO[]>([]);
@@ -728,7 +728,7 @@ function handleView(row: any) {
 
 /** 提交按钮 */
 function submitForm() {
-  proxy.$refs['stockRef'].validate((valid: boolean) => {
+  (proxy.$refs['stockRef'] as any).validate((valid: boolean) => {
     if (valid) {
       if (form.value.stockId != null) {
         updateStock(form.value).then(() => {

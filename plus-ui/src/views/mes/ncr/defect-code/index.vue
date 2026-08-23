@@ -79,7 +79,7 @@
     </el-card>
 
     <!-- 新增/编辑对话框 -->
-    <el-dialog :title="dialog.title" v-model="dialog.visible" width="560px" append-to-body>
+    <el-dialog :title="dialog.title" v-model="dialog.visible" width="500px" append-to-body>
       <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
         <el-row :gutter="20">
           <el-col :span="12">

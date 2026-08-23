@@ -76,7 +76,7 @@
     <!--    </el-dialog>-->
 
     <!-- 版本管理 -->
-    <el-dialog title="版本管理" v-model="publishDialog.visible" width="700px" append-to-body>
+    <el-dialog title="版本管理" v-model="publishDialog.visible" width="640px" append-to-body>
       <el-table v-loading="publishLoading" :data="publishList">
         <el-table-column label="流程标识" align="center" prop="processKey" :show-overflow-tooltip="true" />
         <el-table-column label="流程名称" align="center" :show-overflow-tooltip="true">

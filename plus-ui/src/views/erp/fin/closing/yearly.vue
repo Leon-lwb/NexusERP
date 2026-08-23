@@ -23,7 +23,7 @@
 <script setup lang="ts" name="FinClosingYearly">
 import { yearlyClose } from '@/api/erp/fin/closing';
 
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 
 const currentYear = new Date().getFullYear();
 const yearList = [currentYear - 1, currentYear, currentYear + 1];

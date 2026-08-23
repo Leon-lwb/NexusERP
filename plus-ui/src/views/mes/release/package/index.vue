@@ -151,7 +151,7 @@
     </el-card>
 
     <!-- 提交审批对话框(可选用流程) -->
-    <el-dialog title="提交审批" v-model="submitDialog.visible" width="520px" append-to-body>
+    <el-dialog title="提交审批" v-model="submitDialog.visible" width="500px" append-to-body>
       <el-form label-width="100px">
         <el-form-item label="发布包">
           <el-input :model-value="submitDialog.row ? `${submitDialog.row.packageCode} (v${submitDialog.row.version})` : ''" disabled />

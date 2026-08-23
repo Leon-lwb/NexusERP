@@ -186,7 +186,7 @@ import { RoutingForm, RoutingStepForm } from '@/api/erp/bd/routing/types';
 
 const router = useRouter();
 const route = useRoute();
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { sys_core_status } = toRefs<any>(proxy.useDict('sys_core_status'));
 
 const formRef = ref(null);

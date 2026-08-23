@@ -122,7 +122,7 @@ import { getSn, addSn, updateSn } from '@/api/erp/wm/sn';
 import { listWarehouse } from '@/api/erp/wm/warehouse';
 import { useRoute, useRouter } from 'vue-router';
 
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { wm_sn_status } = toRefs<any>(proxy.useDict('wm_sn_status'));
 
 const route = useRoute();
@@ -218,7 +218,7 @@ function reset() {
 }
 
 function submitForm() {
-  const formRef = proxy.$refs['formRef'];
+  const formRef = proxy.$refs['formRef'] as any;
   formRef.validate((valid: boolean) => {
     if (valid) {
       const isEdit = route.query.action === 'edit' || form.value.snId != null;

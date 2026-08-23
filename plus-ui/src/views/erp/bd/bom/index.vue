@@ -324,7 +324,7 @@
     </el-dialog>
 
     <!-- Where-Used 反查结果对话框 -->
-    <el-dialog :title="'Where-Used反查 - ' + whereUsedMaterialName" v-model="whereUsedOpen" width="900px" append-to-body>
+    <el-dialog :title="'Where-Used反查 - ' + whereUsedMaterialName" v-model="whereUsedOpen" width="960px" append-to-body>
       <el-table v-loading="whereUsedLoading" :data="whereUsedData" border size="small" show-overflow-tooltip>
         <el-table-column label="BOM名称" prop="bomName" min-width="150" />
         <el-table-column label="版本号" prop="bomVersion" width="100" align="center" />
@@ -363,7 +363,7 @@ import { useRouter } from 'vue-router';
 import MaterialSelectDialog from '@/components/MaterialSelectDialog/index.vue';
 
 const router = useRouter();
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { sys_true_or_false, sys_core_status, prd_material_source_type, bd_bom_type } = toRefs<any>(
   proxy.useDict('sys_true_or_false', 'sys_core_status', 'prd_material_source_type', 'bd_bom_type')
 );
@@ -633,15 +633,15 @@ function handleCopyBom(row?: any) {
   const bomRow = bomList.value.find((item) => item.bomId === bomId);
   const bomName = bomRow?.bomName || '';
   const currentVersion = bomRow?.bomVersion || '1.0';
-  proxy
-    .$prompt('请输入新版本号（当前版本: ' + currentVersion + '）', '复制BOM - ' + bomName, {
+  proxy.$modal
+    .prompt('请输入新版本号（当前版本: ' + currentVersion + '）', '复制BOM - ' + bomName, {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
       inputValue: currentVersion + '.1',
       inputPattern: /^.+$/,
       inputErrorMessage: '版本号不能为空'
     })
-    .then(({ value }) => {
+    .then(({ value }: any) => {
       copyBom(bomId, value).then((response) => {
         proxy.$modal.msgSuccess('复制成功，新BOM ID: ' + response.data);
         getList();

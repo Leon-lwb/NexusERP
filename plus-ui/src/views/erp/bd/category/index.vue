@@ -220,7 +220,7 @@ import { useCategoryTree } from '@/composables/erp/useCategoryTree';
 import type { FormInstance } from 'element-plus';
 import CategoryAttrManager from './CategoryAttrManager.vue';
 
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const categoryRef = ref<FormInstance>();
 const { sys_core_status } = toRefs<any>(proxy.useDict('sys_core_status'));
 

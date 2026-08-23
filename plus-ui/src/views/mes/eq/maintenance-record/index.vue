@@ -68,7 +68,7 @@
     </el-card>
 
     <!-- 手动保养对话框 -->
-    <el-dialog v-model="addDialog.visible" title="手动保养记录" width="520px" append-to-body>
+    <el-dialog v-model="addDialog.visible" title="手动保养记录" width="500px" append-to-body>
       <el-form :model="addForm" label-width="100px" ref="addFormRef" :rules="addRules">
         <el-form-item label="设备" prop="equipmentId">
           <equipment-select v-model="addForm.equipmentId" />

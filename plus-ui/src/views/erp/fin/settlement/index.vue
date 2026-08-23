@@ -82,7 +82,7 @@
 import { listFinSettlement, settleFinSettlement, listOpenItems } from '@/api/erp/fin/settlement';
 import { FinSettlementVO, FinSettlementForm, FinSettlementQuery, OpenItemVO } from '@/api/erp/fin/settlement/types';
 
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { fin_receipt_direction } = toRefs<any>(proxy.useDict('fin_receipt_direction'));
 
 const dataList = ref<FinSettlementVO[]>([]);
@@ -137,7 +137,7 @@ function loadOpenItems() {
   });
 }
 function submitSettle() {
-  proxy.$refs['formRef'].validate(async (valid: boolean) => {
+  (proxy.$refs['formRef'] as any).validate(async (valid: boolean) => {
     if (!valid) return;
     await settleFinSettlement(form.value);
     proxy.$modal.msgSuccess('核销成功');

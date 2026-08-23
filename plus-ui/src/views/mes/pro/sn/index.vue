@@ -99,7 +99,7 @@
     </el-card>
 
     <!-- 批量生成对话框 -->
-    <el-dialog v-model="generateDialog.visible" title="批量生成SN" width="520px" append-to-body>
+    <el-dialog v-model="generateDialog.visible" title="批量生成SN" width="500px" append-to-body>
       <el-form :model="generateForm" label-width="100px">
         <el-form-item label="流转卡" required>
           <el-input v-model="generateForm.cardNo" placeholder="请选择流转卡" readonly>
@@ -124,7 +124,7 @@
     </el-dialog>
 
     <!-- 手动建SN对话框 -->
-    <el-dialog v-model="createDialog.visible" title="手动建SN" width="600px" append-to-body>
+    <el-dialog v-model="createDialog.visible" title="手动建SN" width="640px" append-to-body>
       <el-form :model="createForm" label-width="90px">
         <el-form-item label="SN编码" required>
           <el-input v-model="createForm.snCode" placeholder="请输入SN编码" clearable />
@@ -168,7 +168,7 @@
     </el-dialog>
 
     <!-- 流转卡选择对话框 -->
-    <el-dialog v-model="flowCardDialog.visible" title="选择流转卡" width="950px" append-to-body>
+    <el-dialog v-model="flowCardDialog.visible" title="选择流转卡" width="960px" append-to-body>
       <el-form :model="flowCardDialog.query" :inline="true">
         <el-form-item label="流转卡号">
           <el-input v-model="flowCardDialog.query.cardNo" clearable @keyup.enter="queryFlowCards" />
@@ -201,7 +201,7 @@
     </el-dialog>
 
     <!-- 工单选择对话框 -->
-    <el-dialog v-model="woDialog.visible" title="选择工单" width="950px" append-to-body>
+    <el-dialog v-model="woDialog.visible" title="选择工单" width="960px" append-to-body>
       <el-form :model="woDialog.query" :inline="true">
         <el-form-item label="工单编号">
           <el-input v-model="woDialog.query.woNo" clearable @keyup.enter="queryWorkOrders" />
@@ -237,7 +237,7 @@
     </el-dialog>
 
     <!-- 父SN选择对话框 -->
-    <el-dialog v-model="snDialog.visible" title="选择父SN" width="900px" append-to-body>
+    <el-dialog v-model="snDialog.visible" title="选择父SN" width="960px" append-to-body>
       <el-form :model="snDialog.query" :inline="true">
         <el-form-item label="SN编码">
           <el-input v-model="snDialog.query.snCode" clearable @keyup.enter="querySns" />

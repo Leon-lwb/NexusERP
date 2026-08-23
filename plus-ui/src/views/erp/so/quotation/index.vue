@@ -108,7 +108,7 @@ import { listQuotation, delQuotation, confirmQuotation, convertQuotationToOrder 
 import { useRouter } from 'vue-router';
 
 const router = useRouter();
-const { proxy } = getCurrentInstance() as any;
+const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { so_quotation_status } = toRefs<any>(proxy.useDict('so_quotation_status'));
 
 const quotationList = ref([]);
