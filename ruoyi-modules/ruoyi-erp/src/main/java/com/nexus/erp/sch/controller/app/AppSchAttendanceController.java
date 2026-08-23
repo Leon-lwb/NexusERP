@@ -143,7 +143,11 @@ public class AppSchAttendanceController {
         Object faceImage = params.get("faceImage");
         byte[] faceBytes = null;
         if (faceImage instanceof String faceBase64 && !((String) faceImage).isBlank()) {
-            faceBytes = java.util.Base64.getDecoder().decode(((String) faceImage).split(",")[0]);
+            // 兼容 data URI 前缀(data:image/jpeg;base64,xxx): 取逗号后实际编码段(原 [0] 取的是前缀串必炸)
+            String faceBase64Str = ((String) faceImage).contains(",")
+                ? ((String) faceImage).split(",", 2)[1]
+                : ((String) faceImage);
+            faceBytes = java.util.Base64.getDecoder().decode(faceBase64Str);
         }
         if (data.get("attendanceId") != null) {
             schAttendanceService.asyncFaceVerify(
@@ -517,8 +521,24 @@ public class AppSchAttendanceController {
         return R.ok(data);
     }
 
+    /**
+     * 解析当前登录用户关联的工人档案(sch_worker.user_id 绑定);
+     * 未关联工人档案时回退全表(兼容历史调用方), 关联多条时取第一条。
+     * 原实现固定取全表第一条——任何登录用户的打卡/统计都落到同一工人, 考勤数据完全错乱。
+     */
     private List<SchWorker> getWorkerList() {
-        // 简化处理：获取所有工人（实际应通过SecurityUtils获取当前用户）
+        try {
+            Long userId = com.nexus.common.satoken.utils.LoginHelper.getUserId();
+            if (userId != null) {
+                List<SchWorker> mine = workerMapper.selectList(Wrappers.<SchWorker>lambdaQuery()
+                    .eq(SchWorker::getUserId, userId));
+                if (!mine.isEmpty()) {
+                    return mine;
+                }
+            }
+        } catch (Exception e) {
+            // 开放接口/无登录上下文时回退旧行为
+        }
         return workerMapper.selectList(Wrappers.lambdaQuery());
     }
 

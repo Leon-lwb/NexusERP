@@ -359,9 +359,17 @@ const workshopTotal = ref(0);
 const workshopQueryParams = reactive({ pageNum: 1, pageSize: 10, workshopCode: undefined, workshopName: undefined, status: '1' });
 
 const queryParams = ref({
-  pageNum: 1, pageSize: 10, userId: null, userName: null, phonenumber: null,
-  employeeId: null, workCategory: null, workStatus: null, workshopId: null,
-  entryDate: null, regularizationDate: null
+  pageNum: 1,
+  pageSize: 10,
+  userId: null,
+  userName: null,
+  phonenumber: null,
+  employeeId: null,
+  workCategory: null,
+  workStatus: null,
+  workshopId: null,
+  entryDate: null,
+  regularizationDate: null
 });
 
 const rules = {
@@ -370,9 +378,27 @@ const rules = {
 };
 
 const {
-  loading, list, total, open, isViewMode, title, ids, single, multiple, showSearch, form,
-  getList, handleQuery, handleDelete, handleExport, handleSelectionChange, submitForm, cancel,
-  handleAdd: rawHandleAdd, handleUpdate: rawHandleUpdate, handleView: rawHandleView
+  loading,
+  list,
+  total,
+  open,
+  isViewMode,
+  title,
+  ids,
+  single,
+  multiple,
+  showSearch,
+  form,
+  getList,
+  handleQuery,
+  handleDelete,
+  handleExport,
+  handleSelectionChange,
+  submitForm,
+  cancel,
+  handleAdd: rawHandleAdd,
+  handleUpdate: rawHandleUpdate,
+  handleView: rawHandleView
 } = useCrud({
   apis: { list: listWorker, get: getWorker, add: addWorker, update: updateWorker, del: delWorker },
   idField: 'workerId',
@@ -380,18 +406,38 @@ const {
   formRef: workerRef,
   queryParams,
   initForm: () => ({
-    workerId: null, userId: null, workshopId: null, workshopName: null,
-    employeeId: null, workCategory: null, skillLevel: null, workStatus: null,
-    entryDate: null, regularizationDate: null, userName: null, phonenumber: null,
-    sex: null, createBy: null, updateBy: null, remark: null, createTime: null, updateTime: null
+    workerId: null,
+    userId: null,
+    workshopId: null,
+    workshopName: null,
+    employeeId: null,
+    workCategory: null,
+    skillLevel: null,
+    workStatus: null,
+    entryDate: null,
+    regularizationDate: null,
+    userName: null,
+    phonenumber: null,
+    sex: null,
+    createBy: null,
+    updateBy: null,
+    remark: null,
+    createTime: null,
+    updateTime: null
   }),
-  exportUrl: '/sch/worker/export',
+  exportUrl: '/erp/sch/worker/export',
   exportFileName: 'worker'
 });
 
-function handleAdd() { rawHandleAdd(); }
-function handleUpdate(row?: any) { return rawHandleUpdate(row); }
-function handleView(row?: any) { return rawHandleView(row); }
+function handleAdd() {
+  rawHandleAdd();
+}
+function handleUpdate(row?: any) {
+  return rawHandleUpdate(row);
+}
+function handleView(row?: any) {
+  return rawHandleView(row);
+}
 
 function resetQuery() {
   proxy.resetForm('queryRef');

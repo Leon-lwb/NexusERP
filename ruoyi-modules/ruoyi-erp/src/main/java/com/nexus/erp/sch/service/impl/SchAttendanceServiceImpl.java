@@ -282,6 +282,9 @@ public class SchAttendanceServiceImpl implements ISchAttendanceService {
             }
 
             existing.setAttendanceStatus(attendanceStatus);
+            if (overtimeHours != null) {
+                existing.setOvertimeHours(java.math.BigDecimal.valueOf(overtimeHours));
+            }
             baseMapper.updateById(existing);
 
             result.put("attendanceId", existing.getAttendanceId());
@@ -321,6 +324,9 @@ public class SchAttendanceServiceImpl implements ISchAttendanceService {
 
             newAttendance.setLeaveEarlyMinutes(leaveEarlyMinutes);
             newAttendance.setAttendanceStatus(clockOutAttendanceStatus);
+            if (overtimeHours != null) {
+                newAttendance.setOvertimeHours(java.math.BigDecimal.valueOf(overtimeHours));
+            }
 
             baseMapper.insert(newAttendance);
 
@@ -409,10 +415,14 @@ public class SchAttendanceServiceImpl implements ISchAttendanceService {
     @Override
     public Map<String, Object> validatePunchLocation(double latitude, double longitude) {
         try {
-            SchPunchRuleVo punchRule = schPunchRuleService.selectById(1L);
-            if (punchRule == null) {
-                throw new ServiceException("未找到打卡规则");
+            // 取已启用的打卡规则(原硬编码 ruleId=1: 规则被删/停用后位置校验全体报错)
+            com.nexus.erp.sch.domain.bo.SchPunchRuleBo ruleQuery = new com.nexus.erp.sch.domain.bo.SchPunchRuleBo();
+            ruleQuery.setIsEnabled(1);
+            List<SchPunchRuleVo> enabledRules = schPunchRuleService.selectList(ruleQuery);
+            if (enabledRules == null || enabledRules.isEmpty()) {
+                throw new ServiceException("未找到已启用的打卡规则");
             }
+            SchPunchRuleVo punchRule = enabledRules.get(0);
 
             if (punchRule.getIsEnabled() != null && punchRule.getIsEnabled() == 0) {
                 throw new ServiceException("打卡规则已禁用");

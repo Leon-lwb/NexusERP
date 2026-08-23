@@ -7,9 +7,11 @@ import lombok.RequiredArgsConstructor;
 import com.nexus.common.core.utils.MapstructUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
+import com.nexus.erp.sch.domain.SchTeam;
 import com.nexus.erp.sch.domain.SchTeamMember;
 import com.nexus.erp.sch.domain.bo.SchTeamMemberBo;
 import com.nexus.erp.sch.domain.vo.SchTeamMemberVo;
+import com.nexus.erp.sch.mapper.SchTeamMapper;
 import com.nexus.erp.sch.mapper.SchTeamMemberMapper;
 import com.nexus.erp.sch.service.ISchTeamMemberService;
 import org.springframework.stereotype.Service;
@@ -30,6 +32,7 @@ import java.util.List;
 public class SchTeamMemberServiceImpl implements ISchTeamMemberService {
 
     private final SchTeamMemberMapper baseMapper;
+    private final SchTeamMapper schTeamMapper;
 
     /**
      * 分页查询班组成员列表
@@ -77,7 +80,11 @@ public class SchTeamMemberServiceImpl implements ISchTeamMemberService {
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(SchTeamMemberBo bo) {
         SchTeamMember entity = MapstructUtils.convert(bo, SchTeamMember.class);
-        return baseMapper.insert(entity);
+        int rows = baseMapper.insert(entity);
+        if (rows > 0 && entity.getTeamId() != null) {
+            syncMemberCount(entity.getTeamId());
+        }
+        return rows;
     }
 
     /**
@@ -90,7 +97,11 @@ public class SchTeamMemberServiceImpl implements ISchTeamMemberService {
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(SchTeamMemberBo bo) {
         SchTeamMember entity = MapstructUtils.convert(bo, SchTeamMember.class);
-        return baseMapper.updateById(entity);
+        int rows = baseMapper.updateById(entity);
+        if (rows > 0 && entity.getTeamId() != null) {
+            syncMemberCount(entity.getTeamId());
+        }
+        return rows;
     }
 
     /**
@@ -102,7 +113,23 @@ public class SchTeamMemberServiceImpl implements ISchTeamMemberService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {
-        return baseMapper.deleteBatchIds(List.of(ids));
+        // 先取所属班组(删除后无法回查), 删除后同步各班组 memberCount
+        List<SchTeamMember> members = baseMapper.selectByIds(List.of(ids));
+        int rows = baseMapper.deleteBatchIds(List.of(ids));
+        members.stream().map(SchTeamMember::getTeamId).filter(java.util.Objects::nonNull)
+            .distinct().forEach(this::syncMemberCount);
+        return rows;
+    }
+
+    /**
+     * 按成员实际行数回写班组 memberCount(与 SchTeamServiceImpl.saveTeamMembers 口径统一)
+     */
+    private void syncMemberCount(Long teamId) {
+        Long count = baseMapper.selectCount(Wrappers.<SchTeamMember>lambdaQuery()
+            .eq(SchTeamMember::getTeamId, teamId));
+        schTeamMapper.update(null, Wrappers.<SchTeam>lambdaUpdate()
+            .set(SchTeam::getMemberCount, count == null ? 0L : count)
+            .eq(SchTeam::getTeamId, teamId));
     }
 
     private LambdaQueryWrapper<SchTeamMember> buildQueryWrapper(SchTeamMemberBo bo) {

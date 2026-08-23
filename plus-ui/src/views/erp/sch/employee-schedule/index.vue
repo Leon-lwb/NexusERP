@@ -66,6 +66,16 @@
       <el-col :span="1.5">
         <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['sch:employeeSchedule:export']">导出</el-button>
       </el-col>
+      <el-col :span="1.5" v-if="planOptions.length > 0">
+        <el-select v-model="generatePlanId" placeholder="选择排班计划(空=全部)" clearable filterable style="width: 200px">
+          <el-option v-for="p in planOptions" :key="p.planId" :label="p.planCode + ' ' + p.planName" :value="p.planId" />
+        </el-select>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button type="success" plain icon="MagicStick" :loading="generating" @click="handleGenerate" v-hasPermi="['sch:employeeSchedule:add']"
+          >生成排班</el-button
+        >
+      </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
@@ -236,18 +246,62 @@
 
 <script setup lang="ts" name="EmployeeSchedule">
 import {
-  listEmployeeSchedule, getEmployeeSchedule, delEmployeeSchedule, addEmployeeSchedule, updateEmployeeSchedule
+  listEmployeeSchedule,
+  getEmployeeSchedule,
+  delEmployeeSchedule,
+  addEmployeeSchedule,
+  updateEmployeeSchedule,
+  generateEmployeeSchedule
 } from '@/api/erp/sch/employee-schedule';
 import type { FormInstance } from 'element-plus';
 import { useCrud } from '@/composables/useCrud';
+import { listPlan } from '@/api/erp/sch/plan';
 
 const { proxy } = getCurrentInstance() as any;
 const { sys_true_or_false, sch_schedule_status } = toRefs(proxy.useDict('sys_true_or_false', 'sch_schedule_status'));
+/** 计划下拉选项(生成排班用) */
+const planOptions = ref<any[]>([]);
+const generatePlanId = ref<string | number | undefined>(undefined);
+const generating = ref(false);
+
+function loadPlanOptions() {
+  listPlan({ pageNum: 1, pageSize: 100 }).then((response) => {
+    planOptions.value = response.rows || [];
+  });
+}
+
+/** 按计划生成排班(按班组排班模板展开成员; 未选计划则处理全部已发布计划) */
+function handleGenerate() {
+  proxy.$modal
+    .confirm(
+      generatePlanId.value
+        ? '确认按所选计划重新生成排班明细？该计划现有明细将被覆盖。'
+        : '未选择计划将重新生成全部已发布计划的排班明细(覆盖现有), 确认继续？'
+    )
+    .then(() => {
+      generating.value = true;
+      return generateEmployeeSchedule(generatePlanId.value);
+    })
+    .then((res: any) => {
+      proxy.$modal.msgSuccess('排班明细生成成功');
+      getList();
+    })
+    .catch(() => {})
+    .finally(() => {
+      generating.value = false;
+    });
+}
 
 const employeeScheduleRef = ref<FormInstance>();
 
 const queryParams = ref({
-  pageNum: 1, pageSize: 10, workerName: null, teamName: null, shiftName: null, scheduledDate: null, scheduleStatus: null
+  pageNum: 1,
+  pageSize: 10,
+  workerName: null,
+  teamName: null,
+  shiftName: null,
+  scheduledDate: null,
+  scheduleStatus: null
 });
 
 const rules = {
@@ -258,9 +312,27 @@ const rules = {
 };
 
 const {
-  loading, list, total, open, isViewMode, title, ids, single, multiple, showSearch, form,
-  getList, handleQuery, handleDelete, handleExport, handleSelectionChange, submitForm, cancel,
-  handleAdd: rawHandleAdd, handleUpdate: rawHandleUpdate, handleView: rawHandleView
+  loading,
+  list,
+  total,
+  open,
+  isViewMode,
+  title,
+  ids,
+  single,
+  multiple,
+  showSearch,
+  form,
+  getList,
+  handleQuery,
+  handleDelete,
+  handleExport,
+  handleSelectionChange,
+  submitForm,
+  cancel,
+  handleAdd: rawHandleAdd,
+  handleUpdate: rawHandleUpdate,
+  handleView: rawHandleView
 } = useCrud({
   apis: { list: listEmployeeSchedule, get: getEmployeeSchedule, add: addEmployeeSchedule, update: updateEmployeeSchedule, del: delEmployeeSchedule },
   idField: 'scheduleId',
@@ -268,13 +340,28 @@ const {
   formRef: employeeScheduleRef,
   queryParams,
   initForm: () => ({
-    scheduleId: null, planId: null, workerId: null, workerName: null,
-    teamId: null, teamName: null, shiftId: null, shiftName: null,
-    scheduledDate: null, startTime: null, endTime: null, actualShiftId: null,
-    scheduleStatus: null, isWorkingDay: null, remark: null
+    scheduleId: null,
+    planId: null,
+    workerId: null,
+    workerName: null,
+    teamId: null,
+    teamName: null,
+    shiftId: null,
+    shiftName: null,
+    scheduledDate: null,
+    startTime: null,
+    endTime: null,
+    actualShiftId: null,
+    scheduleStatus: null,
+    isWorkingDay: null,
+    remark: null
   }),
   exportUrl: '/erp/sch/employeeSchedule/export',
   exportFileName: 'employee-schedule'
+});
+
+onMounted(() => {
+  loadPlanOptions();
 });
 
 function handleAdd() {
@@ -294,4 +381,3 @@ function resetQuery() {
 
 getList();
 </script>
-

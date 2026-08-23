@@ -2,6 +2,7 @@ package com.nexus.erp.sch.domain.bo;
 
 import io.github.linpeilie.annotations.AutoMapper;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -30,7 +31,7 @@ public class SchHolidayBo extends BaseEntity {
     /**
      * 日期
      */
-    @NotBlank(message = "日期不能为空")
+    @NotNull(message = "日期不能为空")
     private Date holidayDate;
 
     /**

@@ -8,12 +8,16 @@ import com.nexus.common.core.utils.MapstructUtils;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
+import com.nexus.erp.sch.domain.SchEmployeeSchedule;
 import com.nexus.erp.sch.domain.SchPlan;
 import com.nexus.erp.sch.domain.SchShift;
+import com.nexus.erp.sch.domain.SchTeamSchedule;
 import com.nexus.erp.sch.domain.bo.SchShiftBo;
 import com.nexus.erp.sch.domain.vo.SchShiftVo;
+import com.nexus.erp.sch.mapper.SchEmployeeScheduleMapper;
 import com.nexus.erp.sch.mapper.SchPlanMapper;
 import com.nexus.erp.sch.mapper.SchShiftMapper;
+import com.nexus.erp.sch.mapper.SchTeamScheduleMapper;
 import com.nexus.erp.sch.service.ISchShiftService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,6 +38,8 @@ public class SchShiftServiceImpl implements ISchShiftService {
 
     private final SchShiftMapper baseMapper;
     private final SchPlanMapper schPlanMapper;
+    private final SchTeamScheduleMapper schTeamScheduleMapper;
+    private final SchEmployeeScheduleMapper schEmployeeScheduleMapper;
 
     /**
      * 分页查询班次定义列表
@@ -82,13 +88,27 @@ public class SchShiftServiceImpl implements ISchShiftService {
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(SchShiftBo bo) {
         SchShift entity = MapstructUtils.convert(bo, SchShift.class);
-        // 新增班次自动生成班次编码,规则：plan_code+"-"+1 、2、3...
+        // 计划必须存在(原实现 planId 无效时 shiftCode 为 null, 违反 NOT NULL 报 SQL 异常)
         SchPlan schPlan = schPlanMapper.selectById(entity.getPlanId());
-        if (schPlan != null) {
-            String planCode = schPlan.getPlanCode();
-            long shiftCount = baseMapper.selectCount(Wrappers.<SchShift>lambdaQuery().eq(SchShift::getPlanId, entity.getPlanId()));
-            String num = String.valueOf(shiftCount + 1);
-            entity.setShiftCode(planCode + "-" + num);
+        if (schPlan == null) {
+            throw new com.nexus.common.core.exception.ServiceException("所属排班计划不存在: planId=" + entity.getPlanId());
+        }
+        if (StringUtils.isBlank(entity.getShiftCode())) {
+            // 编码 = 计划编码-序号; 取现存最大序号+1(原 count+1 在删除过班次后必与现存编码撞 uk_shift_code)
+            long maxNo = baseMapper.selectList(Wrappers.<SchShift>lambdaQuery()
+                    .eq(SchShift::getPlanId, entity.getPlanId()))
+                .stream().map(SchShift::getShiftCode)
+                .filter(code -> code != null && code.startsWith(schPlan.getPlanCode() + "-"))
+                .mapToLong(code -> {
+                    try { return Long.parseLong(code.substring(code.lastIndexOf('-') + 1)); }
+                    catch (NumberFormatException e) { return 0L; }
+                }).max().orElse(0L);
+            entity.setShiftCode(schPlan.getPlanCode() + "-" + (maxNo + 1));
+        }
+        Long exist = baseMapper.selectCount(Wrappers.<SchShift>lambdaQuery()
+            .eq(SchShift::getShiftCode, entity.getShiftCode()));
+        if (exist != null && exist > 0) {
+            throw new com.nexus.common.core.exception.ServiceException("班次编码已存在: " + entity.getShiftCode());
         }
         return baseMapper.insert(entity);
     }
@@ -115,13 +135,26 @@ public class SchShiftServiceImpl implements ISchShiftService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {
-        return baseMapper.deleteBatchIds(List.of(ids));
+        // 被排班模板/员工排班引用的班次禁止删除(原实现直接删产生悬挂 shiftId)
+        List<Long> idList = List.of(ids);
+        Long inTeamSchedule = schTeamScheduleMapper.selectCount(Wrappers.<SchTeamSchedule>lambdaQuery()
+            .in(SchTeamSchedule::getShiftId, idList));
+        if (inTeamSchedule != null && inTeamSchedule > 0) {
+            throw new com.nexus.common.core.exception.ServiceException("班次已被班组排班模板引用, 请先删除对应排班");
+        }
+        Long inEmployee = schEmployeeScheduleMapper.selectCount(Wrappers.<SchEmployeeSchedule>lambdaQuery()
+            .in(SchEmployeeSchedule::getShiftId, idList));
+        if (inEmployee != null && inEmployee > 0) {
+            throw new com.nexus.common.core.exception.ServiceException("班次已被员工排班明细引用, 请先删除对应排班明细");
+        }
+        return baseMapper.deleteBatchIds(idList);
     }
 
     private LambdaQueryWrapper<SchShift> buildQueryWrapper(SchShiftBo bo) {
         LambdaQueryWrapper<SchShift> lqw = Wrappers.lambdaQuery();
         if (bo != null) {
             lqw.eq(bo.getPlanId() != null, SchShift::getPlanId, bo.getPlanId());
+            lqw.like(StringUtils.isNotBlank(bo.getShiftCode()), SchShift::getShiftCode, bo.getShiftCode());
             lqw.like(StringUtils.isNotBlank(bo.getShiftName()), SchShift::getShiftName, bo.getShiftName());
             lqw.eq(StringUtils.isNotBlank(bo.getShiftCategory()), SchShift::getShiftCategory, bo.getShiftCategory());
         }

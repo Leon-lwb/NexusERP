@@ -130,7 +130,7 @@ public class SchEmployeeScheduleController extends BaseController {
     @SaCheckPermission("sch:employeeSchedule:add")
     @Log(title = "员工排班明细", businessType = BusinessType.INSERT)
     @PostMapping("/generate")
-    public R<Void> generate() {
-        return toAjax(schEmployeeScheduleService.generate());
+    public R<Void> generate(@RequestParam(required = false) Long planId) {
+        return toAjax(schEmployeeScheduleService.generate(planId));
     }
 }

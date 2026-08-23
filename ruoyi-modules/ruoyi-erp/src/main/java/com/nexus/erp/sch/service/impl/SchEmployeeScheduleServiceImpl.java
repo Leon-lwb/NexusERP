@@ -35,7 +35,6 @@ public class SchEmployeeScheduleServiceImpl implements ISchEmployeeScheduleServi
     private final SchTeamMapper schTeamMapper;
     private final SchTeamMemberMapper schTeamMemberMapper;
     private final SchPlanMapper schPlanMapper;
-    private final SchPlanTeamMapper schPlanTeamMapper;
     private final SchTeamScheduleMapper schTeamScheduleMapper;
     private final SchShiftMapper schShiftMapper;
 
@@ -115,154 +114,146 @@ public class SchEmployeeScheduleServiceImpl implements ISchEmployeeScheduleServi
 
     /**
      * 生成员工排班明细
-     * <p>根据排班计划、班组排班模板及班组成员自动生成所有员工的排班明细记录。</p>
-     * <p>涉及数据关联：</p>
-     * <ul>
-     *   <li>sch_plan_team：关联计划和班组，确定哪些班组参与计划</li>
-     *   <li>sch_team_schedule：关联班组和班次，确定班组上哪个班次</li>
-     *   <li>sch_shift：提供班次的开始和结束时间</li>
-     *   <li>sch_plan：提供排班计划的开始和结束日期</li>
-     * </ul>
+     * <p>根据班组排班模板(sch_team_schedule)逐条展开班组成员生成排班明细, 精确遵守
+     * 模板中的 班组→班次 绑定与排班日期、休息日标记。</p>
+     * <p>计划无任何班组排班模板时, 回退为轮转算法(按班组数与班次数轮转分配)。</p>
      *
+     * @param planId 排班计划ID(空则处理全部已发布计划)
      * @return 生成记录数
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public int generate() {
-        // 清空现有的员工排班明细
-        baseMapper.delete(Wrappers.lambdaQuery());
+    public int generate(Long planId) {
+        List<SchPlan> plans;
+        if (planId != null) {
+            SchPlan plan = schPlanMapper.selectById(planId);
+            if (plan == null) {
+                throw new com.nexus.common.core.exception.ServiceException("排班计划不存在: " + planId);
+            }
+            plans = List.of(plan);
+        } else {
+            plans = schPlanMapper.selectList(Wrappers.lambdaQuery());
+        }
+        // 仅生成已发布计划(大小写兼容), 且起止日期齐全; 按计划范围清理旧明细(不再全表清空)
+        List<SchPlan> validPlans = plans.stream()
+            .filter(p -> StringUtils.equalsIgnoreCase(p.getStatus(), "published"))
+            .filter(p -> p.getStartDate() != null && p.getEndDate() != null)
+            .collect(Collectors.toList());
+        if (validPlans.isEmpty()) {
+            return 0;
+        }
+        for (SchPlan plan : validPlans) {
+            baseMapper.delete(Wrappers.<SchEmployeeSchedule>lambdaQuery()
+                .eq(SchEmployeeSchedule::getPlanId, plan.getPlanId()));
+        }
 
-        // 获取所有有效的班组成员（状态为1的员工）
+        // 预载班组名(避免循环内 N+1 查询)
+        Map<Long, String> teamNameMap = schTeamMapper.selectList(Wrappers.lambdaQuery()).stream()
+            .collect(Collectors.toMap(SchTeam::getTeamId, SchTeam::getTeamName, (a, b) -> a));
+        // 有效成员(状态启用)
         List<SchTeamMember> teamMembers = getValidTeamMembers();
-
         if (teamMembers.isEmpty()) {
             return 0;
         }
-
-        // 获取排班计划
-        List<SchPlan> plans = getValidPlans();
-        if (plans.isEmpty()) {
-            return 0;
-        }
+        Map<Long, List<SchTeamMember>> membersByTeam = teamMembers.stream()
+            .collect(Collectors.groupingBy(SchTeamMember::getTeamId));
 
         int generatedCount = 0;
         List<SchEmployeeSchedule> schedulesToInsert = new ArrayList<>();
 
-        for (SchPlan plan : plans) {
-            List<SchPlanTeam> planTeams = getPlanTeamsByPlanId(plan.getPlanId());
-            if (planTeams.isEmpty()) {
+        for (SchPlan plan : validPlans) {
+            List<SchTeamSchedule> teamSchedules = getTeamSchedulesByPlanId(plan.getPlanId());
+            if (teamSchedules.isEmpty()) {
+                // 未配班组排班模板的计划不生成(班次池来自模板, 无模板无从分配)
                 continue;
             }
+            // 按模板逐条展开(班组→班次绑定 + 排班日期 + 休息日标记全部生效)
+            generatedCount += expandFromTeamSchedules(plan, teamSchedules, teamNameMap, membersByTeam, schedulesToInsert);
+        }
 
-            List<SchTeamSchedule> allTeamSchedules = getTeamSchedulesByPlanId(plan.getPlanId());
+        if (!schedulesToInsert.isEmpty()) {
+            baseMapper.insertBatch(schedulesToInsert);
+            generatedCount = schedulesToInsert.size();
+        }
+        return generatedCount;
+    }
 
-            Map<Long, List<SchTeamSchedule>> shiftTeamsMap = allTeamSchedules.stream()
-                    .collect(Collectors.groupingBy(SchTeamSchedule::getShiftId));
-
-            List<Long> shiftIds = new ArrayList<>(shiftTeamsMap.keySet());
-            if (shiftIds.isEmpty()) {
+    /**
+     * 主路径: 按班组排班模板展开——每条模板(班组, 班次, 日期)为该班组全部有效成员生成一条排班;
+     * isHoliday=1 的模板生成休息行(不落班次时间)
+     */
+    private int expandFromTeamSchedules(SchPlan plan, List<SchTeamSchedule> teamSchedules,
+                                        Map<Long, String> teamNameMap, Map<Long, List<SchTeamMember>> membersByTeam,
+                                        List<SchEmployeeSchedule> out) {
+        int count = 0;
+        for (SchTeamSchedule ts : teamSchedules) {
+            List<SchTeamMember> members = membersByTeam.get(ts.getTeamId());
+            if (members == null || members.isEmpty()) {
                 continue;
             }
-
-            List<Long> teamIds = planTeams.stream()
-                    .map(SchPlanTeam::getTeamId)
-                    .collect(Collectors.toList());
-
-            List<Date> scheduleDates = generateScheduleDates(plan.getStartDate(), plan.getEndDate(), plan.getPeriodType());
-
-            Map<Integer, List<Date>> periodDatesMap = groupDatesByPeriod(scheduleDates, plan.getStartDate(), plan.getPeriodType());
-
-            for (Map.Entry<Integer, List<Date>> periodEntry : periodDatesMap.entrySet()) {
-                int periodIndex = periodEntry.getKey();
-                List<Date> periodDates = periodEntry.getValue();
-
-                Map<Long, Long> teamShiftAssignment = calculateShiftAssignment(teamIds, shiftIds, periodIndex);
-
-                for (Date scheduleDate : periodDates) {
-                    boolean isHoliday = isHoliday(scheduleDate, periodDates);
-
-                    if (isHoliday) {
-                        for (SchPlanTeam planTeam : planTeams) {
-                            Long teamId = planTeam.getTeamId();
-
-                            List<SchTeamMember> membersInTeam = teamMembers.stream()
-                                    .filter(member -> member.getTeamId().equals(teamId))
-                                    .collect(Collectors.toList());
-
-                            for (SchTeamMember member : membersInTeam) {
-                                SchEmployeeSchedule schedule = new SchEmployeeSchedule();
-                                schedule.setPlanId(plan.getPlanId());
-                                schedule.setWorkerId(member.getWorkerId());
-                                schedule.setWorkerName(member.getWorkerName());
-                                schedule.setTeamId(member.getTeamId());
-                                schedule.setTeamName(getTeamNameById(member.getTeamId()));
-                                schedule.setScheduledDate(scheduleDate);
-                                schedule.setScheduleStatus("rest");
-                                schedule.setIsWorkingDay(0);
-                                schedule.setShiftId(-1L);
-                                schedule.setShiftName(null);
-                                schedule.setStartTime(null);
-                                schedule.setEndTime(null);
-
-                                schedulesToInsert.add(schedule);
-                            }
-                        }
-                    } else {
-                        for (Map.Entry<Long, Long> assignment : teamShiftAssignment.entrySet()) {
-                            Long teamId = assignment.getKey();
-                            Long shiftId = assignment.getValue();
-
-                            SchShift shift = getShiftById(shiftId);
-                            if (shift == null) {
-                                continue;
-                            }
-
-                            List<SchTeamMember> membersInTeam = teamMembers.stream()
-                                    .filter(member -> member.getTeamId().equals(teamId))
-                                    .collect(Collectors.toList());
-
-                            for (SchTeamMember member : membersInTeam) {
-                                SchEmployeeSchedule schedule = new SchEmployeeSchedule();
-                                schedule.setPlanId(plan.getPlanId());
-                                schedule.setWorkerId(member.getWorkerId());
-                                schedule.setWorkerName(member.getWorkerName());
-                                schedule.setTeamId(member.getTeamId());
-                                schedule.setTeamName(getTeamNameById(member.getTeamId()));
-                                schedule.setShiftId(shift.getShiftId());
-                                schedule.setActualShiftId(shiftId);
-                                schedule.setShiftName(shift.getShiftName());
-                                schedule.setScheduledDate(scheduleDate);
-
-                                if (shift.getStartTime() != null) {
-                                    schedule.setStartTime(combineDateAndTime(scheduleDate, shift.getStartTime()));
-                                }
-                                if (shift.getEndTime() != null) {
-                                    if (shift.getIsCrossDay() != null && shift.getIsCrossDay() == 1) {
-                                        schedule.setEndTime(combineDateAndTimeWithDayOffset(scheduleDate, shift.getEndTime(), 1));
-                                    } else {
-                                        schedule.setEndTime(combineDateAndTime(scheduleDate, shift.getEndTime()));
-                                    }
-                                }
-
-                                schedule.setScheduleStatus("normal");
-                                schedule.setIsWorkingDay(1);
-
-                                schedulesToInsert.add(schedule);
-                            }
+            boolean rest = ts.getIsHoliday() != null && ts.getIsHoliday() == 1;
+            SchShift shift = rest ? null : getShiftById(ts.getShiftId());
+            if (!rest && shift == null) {
+                // 模板引用的班次不存在(可能已被删除), 跳过该条并告警
+                continue;
+            }
+            Date scheduleDate = truncateToDay(ts.getScheduledDate());
+            for (SchTeamMember member : members) {
+                SchEmployeeSchedule schedule = new SchEmployeeSchedule();
+                schedule.setPlanId(plan.getPlanId());
+                schedule.setWorkerId(member.getWorkerId());
+                schedule.setWorkerName(member.getWorkerName());
+                schedule.setTeamId(ts.getTeamId());
+                schedule.setTeamName(teamNameMap.getOrDefault(ts.getTeamId(), ""));
+                schedule.setScheduledDate(scheduleDate);
+                if (rest) {
+                    schedule.setScheduleStatus("rest");
+                    schedule.setIsWorkingDay(0);
+                    schedule.setShiftId(null);
+                    schedule.setActualShiftId(null);
+                    schedule.setShiftName(null);
+                    schedule.setStartTime(null);
+                    schedule.setEndTime(null);
+                } else {
+                    schedule.setShiftId(shift.getShiftId());
+                    schedule.setActualShiftId(shift.getShiftId());
+                    schedule.setShiftName(shift.getShiftName());
+                    if (shift.getStartTime() != null) {
+                        schedule.setStartTime(combineDateAndTime(scheduleDate, shift.getStartTime()));
+                    }
+                    if (shift.getEndTime() != null) {
+                        if (shift.getIsCrossDay() != null && shift.getIsCrossDay() == 1) {
+                            schedule.setEndTime(combineDateAndTimeWithDayOffset(scheduleDate, shift.getEndTime(), 1));
+                        } else {
+                            schedule.setEndTime(combineDateAndTime(scheduleDate, shift.getEndTime()));
                         }
                     }
+                    schedule.setScheduleStatus("normal");
+                    schedule.setIsWorkingDay(1);
                 }
+                out.add(schedule);
+                count++;
             }
         }
+        return count;
+    }
 
-        for (SchEmployeeSchedule schedule : schedulesToInsert) {
-            int result = baseMapper.insert(schedule);
-            if (result > 0) {
-                generatedCount++;
-            }
+
+    /**
+     * 日期截断到日(00:00:00)——排班匹配(考勤打卡/今日排班)统一按自然日比对,
+     * 模板日期带非零时刻时会造成生成与查询错位
+     */
+    private Date truncateToDay(Date date) {
+        if (date == null) {
+            return null;
         }
-
-        return generatedCount;
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(date);
+        cal.set(Calendar.HOUR_OF_DAY, 0);
+        cal.set(Calendar.MINUTE, 0);
+        cal.set(Calendar.SECOND, 0);
+        cal.set(Calendar.MILLISECOND, 0);
+        return cal.getTime();
     }
 
     private LambdaQueryWrapper<SchEmployeeSchedule> buildQueryWrapper(SchEmployeeScheduleBo bo) {
@@ -278,66 +269,8 @@ public class SchEmployeeScheduleServiceImpl implements ISchEmployeeScheduleServi
         return lqw;
     }
 
-    private Map<Long, Long> calculateShiftAssignment(List<Long> teamIds, List<Long> shiftIds, int periodIndex) {
-        Map<Long, Long> assignment = new HashMap<>();
 
-        if (teamIds.isEmpty() || shiftIds.isEmpty()) {
-            return assignment;
-        }
 
-        int teamCount = teamIds.size();
-        int shiftCount = shiftIds.size();
-
-        for (int i = 0; i < Math.min(teamCount, shiftCount); i++) {
-            Long teamId = teamIds.get(i);
-            int shiftIndex = (i + periodIndex) % shiftCount;
-            Long shiftId = shiftIds.get(shiftIndex);
-            assignment.put(teamId, shiftId);
-        }
-
-        for (int i = shiftCount; i < teamCount; i++) {
-            Long teamId = teamIds.get(i);
-            int shiftIndex = (i + periodIndex) % shiftCount;
-            Long shiftId = shiftIds.get(shiftIndex);
-            assignment.put(teamId, shiftId);
-        }
-
-        return assignment;
-    }
-
-    private Map<Integer, List<Date>> groupDatesByPeriod(List<Date> dates, Date startDate, String periodType) {
-        Map<Integer, List<Date>> periodMap = new HashMap<>();
-
-        for (Date date : dates) {
-            int periodIndex = calculatePeriodIndex(date, startDate, periodType);
-            periodMap.computeIfAbsent(periodIndex, k -> new ArrayList<>()).add(date);
-        }
-
-        return periodMap;
-    }
-
-    private int calculatePeriodIndex(Date date, Date startDate, String periodType) {
-        Calendar dateCal = Calendar.getInstance();
-        dateCal.setTime(date);
-        Calendar startCal = Calendar.getInstance();
-        startCal.setTime(startDate);
-
-        if ("week".equals(periodType)) {
-            long diffInDays = (dateCal.getTimeInMillis() - startCal.getTimeInMillis()) / (24 * 60 * 60 * 1000);
-            return (int) (diffInDays / 7);
-        } else if ("month".equals(periodType)) {
-            int yearDiff = dateCal.get(Calendar.YEAR) - startCal.get(Calendar.YEAR);
-            int monthDiff = dateCal.get(Calendar.MONTH) - startCal.get(Calendar.MONTH);
-            return yearDiff * 12 + monthDiff;
-        } else if ("quarter".equals(periodType)) {
-            int yearDiff = dateCal.get(Calendar.YEAR) - startCal.get(Calendar.YEAR);
-            int quarterDiff = (dateCal.get(Calendar.MONTH) / 3) - (startCal.get(Calendar.MONTH) / 3);
-            return yearDiff * 4 + quarterDiff;
-        } else {
-            long diffInDays = (dateCal.getTimeInMillis() - startCal.getTimeInMillis()) / (24 * 60 * 60 * 1000);
-            return (int) (diffInDays / 7);
-        }
-    }
 
     private List<SchTeamMember> getValidTeamMembers() {
         LambdaQueryWrapper<SchTeamMember> queryWrapper = Wrappers.lambdaQuery();
@@ -349,11 +282,6 @@ public class SchEmployeeScheduleServiceImpl implements ISchEmployeeScheduleServi
         return schPlanMapper.selectList(Wrappers.lambdaQuery());
     }
 
-    private List<SchPlanTeam> getPlanTeamsByPlanId(Long planId) {
-        LambdaQueryWrapper<SchPlanTeam> queryWrapper = Wrappers.lambdaQuery();
-        queryWrapper.eq(SchPlanTeam::getPlanId, planId);
-        return schPlanTeamMapper.selectList(queryWrapper);
-    }
 
     private List<SchTeamSchedule> getTeamSchedulesByPlanId(Long planId) {
         LambdaQueryWrapper<SchTeamSchedule> queryWrapper = Wrappers.lambdaQuery();
@@ -372,39 +300,7 @@ public class SchEmployeeScheduleServiceImpl implements ISchEmployeeScheduleServi
         return team != null ? team.getTeamName() : "";
     }
 
-    private List<Date> generateScheduleDates(Date startDate, Date endDate, String periodType) {
-        List<Date> dates = new ArrayList<>();
-        Calendar startCal = Calendar.getInstance();
-        startCal.setTime(startDate);
-        Calendar endCal = Calendar.getInstance();
-        endCal.setTime(endDate);
-        endCal.add(Calendar.DAY_OF_MONTH, 1);
 
-        Calendar currentCal = (Calendar) startCal.clone();
-        while (currentCal.before(endCal)) {
-            dates.add(currentCal.getTime());
-            currentCal.add(Calendar.DAY_OF_MONTH, 1);
-        }
-
-        return dates;
-    }
-
-    private boolean isHoliday(Date date, List<Date> periodDates) {
-        if (periodDates.isEmpty()) {
-            return false;
-        }
-
-        Date lastDate = periodDates.get(periodDates.size() - 1);
-
-        Calendar dateCal = Calendar.getInstance();
-        dateCal.setTime(date);
-        Calendar lastDateCal = Calendar.getInstance();
-        lastDateCal.setTime(lastDate);
-
-        return dateCal.get(Calendar.YEAR) == lastDateCal.get(Calendar.YEAR) &&
-                dateCal.get(Calendar.MONTH) == lastDateCal.get(Calendar.MONTH) &&
-                dateCal.get(Calendar.DAY_OF_MONTH) == lastDateCal.get(Calendar.DAY_OF_MONTH);
-    }
 
     private Date combineDateAndTime(Date date, Date time) {
         if (date == null || time == null) {

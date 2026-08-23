@@ -113,7 +113,7 @@
       </el-table-column>
       <el-table-column label="轮班方式" align="center" prop="rotationType">
         <template #default="scope">
-          <dict-tag :options="sch_rotation_type" :value="scope.row.rotationType" />
+          <dict-tag :options="sch_rotation_type" :value="String(scope.row.rotationType)" />
         </template>
       </el-table-column>
       <el-table-column label="状态" align="center" prop="status">
@@ -153,8 +153,8 @@
         <el-row :gutter="10">
           <el-col :span="12">
             <el-form-item label="计划编码" prop="planCode">
-              <div style="display: flex; align-items: center; gap: 10px;">
-                <el-input v-model="form.planCode" placeholder="请输入计划编码" :disabled="autoGenFlag || isViewMode" style="flex: 1;" />
+              <div style="display: flex; align-items: center; gap: 10px">
+                <el-input v-model="form.planCode" placeholder="请输入计划编码" :disabled="autoGenFlag || isViewMode" style="flex: 1" />
                 <el-switch v-model="autoGenFlag" active-color="#13ce66" active-text="自动生成" @change="handleAutoGenChange" :disabled="isViewMode">
                 </el-switch>
               </div>
@@ -207,7 +207,7 @@
           <el-col :span="12">
             <el-form-item label="轮班方式" prop="rotationType">
               <el-select v-model="form.rotationType" placeholder="请选择轮班方式" style="width: 100%">
-                <el-option v-for="dict in sch_rotation_type" :key="dict.value" :label="dict.label" :value="dict.value"></el-option>
+                <el-option v-for="dict in sch_rotation_type" :key="dict.value" :label="dict.label" :value="parseInt(dict.value)"></el-option>
               </el-select>
             </el-form-item>
           </el-col>
@@ -283,8 +283,15 @@ const activeTab = ref('shift');
 const selectedRow = ref<any>({});
 
 const queryParams = ref({
-  pageNum: 1, pageSize: 10, planCode: null, planName: null,
-  startDate: null, endDate: null, periodType: null, rotationType: null, status: null
+  pageNum: 1,
+  pageSize: 10,
+  planCode: null,
+  planName: null,
+  startDate: null,
+  endDate: null,
+  periodType: null,
+  rotationType: null,
+  status: null
 });
 
 const rules = {
@@ -296,9 +303,28 @@ const rules = {
 };
 
 const {
-  loading, list, total, open, isViewMode, title, ids, single, multiple, showSearch, form,
-  getList, handleQuery, reset, handleDelete, handleExport, handleSelectionChange: rawSelectionChange, submitForm, cancel,
-  handleAdd: rawHandleAdd, handleUpdate: rawHandleUpdate, handleView: rawHandleView
+  loading,
+  list,
+  total,
+  open,
+  isViewMode,
+  title,
+  ids,
+  single,
+  multiple,
+  showSearch,
+  form,
+  getList,
+  handleQuery,
+  reset,
+  handleDelete,
+  handleExport,
+  handleSelectionChange: rawSelectionChange,
+  submitForm,
+  cancel,
+  handleAdd: rawHandleAdd,
+  handleUpdate: rawHandleUpdate,
+  handleView: rawHandleView
 } = useCrud({
   apis: { list: listPlan, get: getPlan, add: addPlan, update: updatePlan, del: delPlan },
   idField: 'planId',
@@ -306,14 +332,27 @@ const {
   formRef: planRef,
   queryParams,
   initForm: () => ({
-    planId: null, planCode: null, planName: null, startDate: null, endDate: null,
-    periodType: null, rotationType: null, status: null,
-    publishedBy: null, publishedTime: null, remark: null,
-    createBy: null, createTime: null, updateBy: null, updateTime: null
+    planId: null,
+    planCode: null,
+    planName: null,
+    startDate: null,
+    endDate: null,
+    periodType: null,
+    rotationType: null,
+    status: null,
+    publishedBy: null,
+    publishedTime: null,
+    remark: null,
+    createBy: null,
+    createTime: null,
+    updateBy: null,
+    updateTime: null
   }),
-  exportUrl: '/sch/plan/export',
+  exportUrl: '/erp/sch/plan/export',
   exportFileName: 'plan',
-  onReset: () => { autoGenFlag.value = false; }
+  onReset: () => {
+    autoGenFlag.value = false;
+  }
 });
 
 function handleSelectionChange(selection: any[]) {
@@ -356,13 +395,15 @@ function handlePublish() {
   form.value.publishedBy = currentUser;
   form.value.publishedTime = formatDateTime(new Date());
   form.value.status = 'published';
-  updatePlan(form.value).then(() => {
-    proxy.$modal.msgSuccess('发布成功');
-    open.value = false;
-    getList();
-  }).catch(() => {
-    proxy.$modal.msgError('发布失败');
-  });
+  updatePlan(form.value)
+    .then(() => {
+      proxy.$modal.msgSuccess('发布成功');
+      open.value = false;
+      getList();
+    })
+    .catch(() => {
+      proxy.$modal.msgError('发布失败');
+    });
 }
 
 function formatDateTime(date: any) {
@@ -377,10 +418,11 @@ function formatDateTime(date: any) {
 }
 
 function handleAutoGenChange(val: boolean) {
+  // 打开开关清空编码, 由后端按 SCH_PLAN_CODE 规则(PBJH+年+流水)生成;
+  // 原实现塞 'AUTO_'+时间戳 占位串直接提交, 会把假编码写入 plan_code
+  form.value.planCode = null;
   if (val) {
-    form.value.planCode = 'AUTO_' + new Date().getTime();
-  } else {
-    form.value.planCode = null;
+    proxy.$modal.msgSuccess('已切换为自动生成, 保存时由系统按编码规则生成计划编码');
   }
 }
 
@@ -395,9 +437,9 @@ getList();
   margin-top: 10px;
 }
 
-.shift-footer, .team-footer {
+.shift-footer,
+.team-footer {
   margin-top: 10px;
   text-align: left;
 }
-
 </style>

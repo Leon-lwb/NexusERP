@@ -8,14 +8,7 @@
     <div class="team-member-container">
       <!-- 左侧班组列表 -->
       <div class="team-list">
-        <el-table
-          :data="teamList"
-          style="width: 100%;"
-          :key="'teamTable' + tableKey"
-          @row-click="handleRowClick"
-          highlight-current-row
-          height="400"
-        >
+        <el-table :data="teamList" style="width: 100%" :key="'teamTable' + tableKey" @row-click="handleRowClick" highlight-current-row height="400">
           <el-table-column label="序号" type="index" width="50" />
           <el-table-column label="班组名称" prop="teamName" />
           <el-table-column label="操作" width="150">
@@ -29,11 +22,7 @@
       <!-- 右侧成员列表 -->
       <div class="member-list">
         <h4 v-if="selectedTeam">班组成员 - {{ selectedTeam.teamName }}</h4>
-        <el-table
-          :data="memberList"
-          style="width: 100%; margin-top: 10px;"
-          height="400"
-        >
+        <el-table :data="memberList" style="width: 100%; margin-top: 10px" height="400">
           <el-table-column label="序号" type="index" width="50" />
           <el-table-column label="姓名" prop="workerName" />
           <el-table-column label="工号" prop="workerCode" />
@@ -57,44 +46,24 @@
         <el-row :gutter="20">
           <el-col :span="8">
             <el-form-item label="班组编码" prop="teamCode">
-              <el-input
-                v-model="queryParams.teamCode"
-                placeholder="请输入班组编码"
-                clearable
-                @keyup.enter="handleQuery"
-              />
+              <el-input v-model="queryParams.teamCode" placeholder="请输入班组编码" clearable @keyup.enter="handleQuery" />
             </el-form-item>
           </el-col>
           <el-col :span="8">
             <el-form-item label="班组名称" prop="teamName">
-              <el-input
-                v-model="queryParams.teamName"
-                placeholder="请输入班组名称"
-                clearable
-                @keyup.enter="handleQuery"
-              />
+              <el-input v-model="queryParams.teamName" placeholder="请输入班组名称" clearable @keyup.enter="handleQuery" />
             </el-form-item>
           </el-col>
           <el-col :span="8">
             <el-form-item label="班组类别" prop="teamCategory">
               <el-select v-model="queryParams.teamCategory" placeholder="请选择班组类别" clearable>
-                <el-option
-                  v-for="dict in sch_team_category"
-                  :key="dict.value"
-                  :label="dict.label"
-                  :value="dict.value"
-                />
+                <el-option v-for="dict in sch_team_category" :key="dict.value" :label="dict.label" :value="dict.value" />
               </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="8">
             <el-form-item label="所属车间" prop="workshopName">
-              <el-input
-                v-model="queryParams.workshopName"
-                placeholder="请输入所属车间"
-                clearable
-                @keyup.enter="handleQuery"
-              />
+              <el-input v-model="queryParams.workshopName" placeholder="请输入所属车间" clearable @keyup.enter="handleQuery" />
             </el-form-item>
           </el-col>
           <el-col :span="8">
@@ -106,12 +75,7 @@
         </el-row>
       </el-form>
 
-      <el-table
-        :data="availableTeams"
-        @selection-change="handleSelectionChange"
-        v-loading="loading"
-        height="300"
-      >
+      <el-table :data="availableTeams" @selection-change="handleSelectionChange" v-loading="loading" height="300">
         <el-table-column type="selection" width="55" />
         <el-table-column label="班组编码" prop="teamCode" />
         <el-table-column label="班组名称" prop="teamName" />
@@ -129,7 +93,7 @@
         :total="total"
         v-model:page="queryParams.pageNum"
         v-model:limit="queryParams.pageSize"
-        @pagination="handleQuery"
+        @pagination="loadAvailableTeams"
       />
 
       <template #footer>
@@ -143,13 +107,13 @@
 </template>
 
 <script setup lang="ts" name="TeamManage">
-import { listPlanteam, getPlanteam, delPlanteam, addPlanteam, updatePlanteam } from "@/api/erp/sch/planteam"
-import { listTeam, getTeam } from "@/api/erp/sch/team"
+import { listPlanteam, getPlanteam, delPlanteam, addPlanteam, updatePlanteam } from '@/api/erp/sch/planteam';
+import { listTeam, getTeam } from '@/api/erp/sch/team';
 
-const { proxy } = getCurrentInstance()
+const { proxy } = getCurrentInstance();
 
-const { sch_team_category, sch_worker_role } = toRefs(proxy.useDict('sch_team_category', 'sch_worker_role'))
-const { sys_core_status } = toRefs(proxy.useDict('sys_core_status'))
+const { sch_team_category, sch_worker_role } = toRefs(proxy.useDict('sch_team_category', 'sch_worker_role'));
+const { sys_core_status } = toRefs(proxy.useDict('sys_core_status'));
 
 const props = defineProps({
   planId: {
@@ -160,17 +124,17 @@ const props = defineProps({
     type: Boolean,
     default: false
   }
-})
+});
 
-const emit = defineEmits(['team-updated'])
+const emit = defineEmits(['team-updated']);
 
-const teamList = ref([])
-const tableKey = ref(0)
-const selectTeamDialogVisible = ref(false)
-const availableTeams = ref([])
-const selectedTeams = ref([])
-const loading = ref(false)
-const total = ref(0)
+const teamList = ref([]);
+const tableKey = ref(0);
+const selectTeamDialogVisible = ref(false);
+const availableTeams = ref([]);
+const selectedTeams = ref([]);
+const loading = ref(false);
+const total = ref(0);
 const queryParams = ref({
   pageNum: 1,
   pageSize: 10,
@@ -179,55 +143,58 @@ const queryParams = ref({
   teamCategory: null,
   workshopName: null,
   status: 1
-})
+});
 
-const memberList = ref([])
-const selectedTeam = ref(null)
+const memberList = ref([]);
+const selectedTeam = ref(null);
 
 onMounted(() => {
-  loadTeams()
-})
+  loadTeams();
+});
 
-watch(() => props.planId, (newPlanId) => {
-  if (newPlanId) {
-    loadTeams()
+watch(
+  () => props.planId,
+  (newPlanId) => {
+    if (newPlanId) {
+      loadTeams();
+    }
   }
-})
+);
 
 function loadTeams() {
   if (props.planId) {
-    listPlanteam({ planId: props.planId }).then(response => {
-      teamList.value = response.rows
+    listPlanteam({ planId: props.planId }).then((response) => {
+      teamList.value = response.rows;
       if (teamList.value && teamList.value.length > 0) {
-        selectedTeam.value = teamList.value[0]
-        loadTeamMembers(selectedTeam.value.teamId)
+        selectedTeam.value = teamList.value[0];
+        loadTeamMembers(selectedTeam.value.teamId);
       } else {
-        selectedTeam.value = null
-        memberList.value = []
+        selectedTeam.value = null;
+        memberList.value = [];
       }
-    })
+    });
   }
 }
 
 function loadTeamMembers(teamId) {
-  getTeam(teamId).then(response => {
-    const teamData = response.data
+  getTeam(teamId).then((response) => {
+    const teamData = response.data;
     if (teamData && teamData.schTeamMemberList) {
-      memberList.value = teamData.schTeamMemberList.filter(member => member.status === 1)
+      memberList.value = teamData.schTeamMemberList.filter((member) => member.status === 1);
     } else {
-      memberList.value = []
+      memberList.value = [];
     }
-  })
+  });
 }
 
 function handleRowClick(row) {
-  selectedTeam.value = row
-  loadTeamMembers(row.teamId)
+  selectedTeam.value = row;
+  loadTeamMembers(row.teamId);
 }
 
 function handleAddTeam() {
-  if (props.disabled) return
-  selectTeamDialogVisible.value = true
+  if (props.disabled) return;
+  selectTeamDialogVisible.value = true;
   queryParams.value = {
     pageNum: 1,
     pageSize: 10,
@@ -236,78 +203,84 @@ function handleAddTeam() {
     teamCategory: null,
     workshopName: null,
     status: 1
-  }
-  loadAvailableTeams()
+  };
+  loadAvailableTeams();
 }
 
 function loadAvailableTeams() {
-  loading.value = true
-  listTeam(queryParams.value).then(response => {
-    const associatedTeamIds = teamList.value.map(item => item.teamId)
-    availableTeams.value = response.rows.filter(team =>
-      !associatedTeamIds.includes(team.teamId)
-    )
-    total.value = response.total
-    loading.value = false
-  }).catch(() => {
-    loading.value = false
-  })
+  loading.value = true;
+  listTeam(queryParams.value)
+    .then((response) => {
+      const associatedTeamIds = teamList.value.map((item) => item.teamId);
+      availableTeams.value = response.rows.filter((team) => !associatedTeamIds.includes(team.teamId));
+      total.value = response.total;
+      loading.value = false;
+    })
+    .catch(() => {
+      loading.value = false;
+    });
 }
 
 function handleSelectionChange(selection) {
-  selectedTeams.value = selection
+  selectedTeams.value = selection;
 }
 
 function confirmSelectedTeams() {
   if (selectedTeams.value.length === 0) {
-    proxy.$modal.msgWarning("请至少选择一个班组")
-    return
+    proxy.$modal.msgWarning('请至少选择一个班组');
+    return;
   }
 
-  const promises = selectedTeams.value.map(team => {
+  const promises = selectedTeams.value.map((team) => {
     const submitData = {
       planId: props.planId,
       teamId: team.teamId,
       teamName: team.teamName
-    }
-    return addPlanteam(submitData)
-  })
+    };
+    return addPlanteam(submitData);
+  });
 
-  Promise.all(promises).then(() => {
-    proxy.$modal.msgSuccess("关联成功")
-    selectTeamDialogVisible.value = false
-    loadTeams()
-    emit('team-updated')
-  }).catch(() => {
-    proxy.$modal.msgError("关联失败")
-  })
+  Promise.all(promises)
+    .then(() => {
+      proxy.$modal.msgSuccess('关联成功');
+      selectTeamDialogVisible.value = false;
+      loadTeams();
+      emit('team-updated');
+    })
+    .catch(() => {
+      proxy.$modal.msgError('关联失败');
+    });
 }
 
 function cancelSelectTeam() {
-  selectTeamDialogVisible.value = false
-  selectedTeams.value = []
+  selectTeamDialogVisible.value = false;
+  selectedTeams.value = [];
 }
 
 function handleQuery() {
-  queryParams.value.pageNum = 1
-  loadAvailableTeams()
+  queryParams.value.pageNum = 1;
+  loadAvailableTeams();
 }
 
 function resetQuery() {
-  proxy.$refs['queryForm'].resetFields()
-  queryParams.value.pageNum = 1
-  loadAvailableTeams()
+  proxy.$refs['queryForm'].resetFields();
+  queryParams.value.pageNum = 1;
+  loadAvailableTeams();
 }
 
 function handleRemoveTeam(row) {
-  if (props.disabled) return
-  proxy.$modal.confirm('是否确认删除班组编号为"' + row.teamId + '"的数据项？').then(function () {
-    return delPlanteam(row.recordId)
-  }).then(() => {
-    loadTeams()
-    proxy.$modal.msgSuccess("删除成功")
-    emit('team-updated')
-  }).catch(() => { })
+  if (props.disabled) return;
+  proxy.$modal
+    .confirm('是否确认删除班组编号为"' + row.teamId + '"的数据项？')
+    .then(function () {
+      return delPlanteam(row.recordId);
+    })
+    .then(() => {
+      loadTeams();
+      proxy.$modal.msgSuccess('删除成功');
+      emit('team-updated');
+    })
+    .catch(() => {});
 }
 </script>
 

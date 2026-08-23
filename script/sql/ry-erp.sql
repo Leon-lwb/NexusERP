@@ -3409,7 +3409,7 @@ CREATE TABLE `sch_holiday`  (
   `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`holiday_id`) USING BTREE,
-  UNIQUE INDEX `uk_holiday_date`(`holiday_date`) USING BTREE,
+  UNIQUE INDEX `uk_tenant_holiday_date`(`tenant_id`, `holiday_date`) USING BTREE,
   INDEX `idx_year`(`year`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '节假日设置表' ROW_FORMAT = Dynamic;
@@ -3445,7 +3445,7 @@ CREATE TABLE `sch_plan`  (
   `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`plan_id`) USING BTREE,
-  UNIQUE INDEX `uk_plan_code`(`plan_code`) USING BTREE,
+  UNIQUE INDEX `uk_tenant_plan_code`(`tenant_id`, `plan_code`) USING BTREE,
   INDEX `idx_status`(`status`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '排班计划表' ROW_FORMAT = Dynamic;
@@ -3572,7 +3572,7 @@ CREATE TABLE `sch_shift`  (
   `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`shift_id`) USING BTREE,
-  UNIQUE INDEX `uk_shift_code`(`shift_code`) USING BTREE,
+  UNIQUE INDEX `uk_tenant_shift_code`(`tenant_id`, `shift_code`) USING BTREE,
   INDEX `idx_plan_id`(`plan_id`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '班次定义表' ROW_FORMAT = Dynamic;
@@ -3612,7 +3612,7 @@ CREATE TABLE `sch_team`  (
   `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`team_id`) USING BTREE,
-  UNIQUE INDEX `uk_team_code`(`team_code`) USING BTREE,
+  UNIQUE INDEX `uk_tenant_team_code`(`tenant_id`, `team_code`) USING BTREE,
   INDEX `idx_workshop_id`(`workshop_id`) USING BTREE,
   INDEX `idx_status`(`status`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
@@ -3657,6 +3657,7 @@ CREATE TABLE `sch_team_member`  (
   `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`member_id`) USING BTREE,
+  UNIQUE INDEX `uk_team_worker`(`team_id`, `worker_id`) USING BTREE,
   INDEX `idx_team_id`(`team_id`) USING BTREE,
   INDEX `idx_worker_id`(`worker_id`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
@@ -3767,7 +3768,7 @@ CREATE TABLE `sch_worker`  (
   `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`worker_id`) USING BTREE,
-  UNIQUE INDEX `uk_employee_id`(`employee_id`) USING BTREE,
+  UNIQUE INDEX `uk_tenant_employee_id`(`tenant_id`, `employee_id`) USING BTREE,
   INDEX `idx_user_id`(`user_id`) USING BTREE,
   INDEX `idx_work_status`(`work_status`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE,

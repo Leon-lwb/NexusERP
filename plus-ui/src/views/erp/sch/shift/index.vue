@@ -202,7 +202,11 @@ const { sys_true_or_false, sch_shift_category } = toRefs(proxy.useDict('sys_true
 const shiftRef = ref<FormInstance>();
 
 const queryParams = ref({
-  pageNum: 1, pageSize: 10, shiftCode: null, shiftName: null, shiftCategory: null
+  pageNum: 1,
+  pageSize: 10,
+  shiftCode: null,
+  shiftName: null,
+  shiftCategory: null
 });
 
 const rules = {
@@ -214,9 +218,27 @@ const rules = {
 };
 
 const {
-  loading, list, total, open, isViewMode, title, ids, single, multiple, showSearch, form,
-  getList, handleQuery, handleDelete, handleExport, handleSelectionChange, submitForm, cancel,
-  handleAdd: rawHandleAdd, handleUpdate: rawHandleUpdate, handleView: rawHandleView
+  loading,
+  list,
+  total,
+  open,
+  isViewMode,
+  title,
+  ids,
+  single,
+  multiple,
+  showSearch,
+  form,
+  getList,
+  handleQuery,
+  handleDelete,
+  handleExport,
+  handleSelectionChange,
+  submitForm,
+  cancel,
+  handleAdd: rawHandleAdd,
+  handleUpdate: rawHandleUpdate,
+  handleView: rawHandleView
 } = useCrud({
   apis: { list: listShift, get: getShift, add: addShift, update: updateShift, del: delShift },
   idField: 'shiftId',
@@ -224,10 +246,21 @@ const {
   formRef: shiftRef,
   queryParams,
   initForm: () => ({
-    shiftId: null, shiftCode: null, shiftName: null,
-    startTime: null, endTime: null, workHours: null, isCrossDay: null,
-    restStartTime: null, restEndTime: null, lateThreshold: null, earlyLeaveThreshold: null,
-    shiftCategory: null, color: null, sortOrder: null, remark: null
+    shiftId: null,
+    shiftCode: null,
+    shiftName: null,
+    startTime: null,
+    endTime: null,
+    workHours: null,
+    isCrossDay: null,
+    restStartTime: null,
+    restEndTime: null,
+    lateThreshold: null,
+    earlyLeaveThreshold: null,
+    shiftCategory: null,
+    color: null,
+    sortOrder: null,
+    remark: null
   }),
   exportUrl: '/erp/sch/shift/export',
   exportFileName: '班次数据'
@@ -250,8 +283,12 @@ function resetQuery() {
 
 function formatTime(timeStr: string) {
   if (!timeStr) return '-';
-  if (typeof timeStr === 'string' && timeStr.length >= 8) {
-    return timeStr.substring(0, 8);
+  // time(0) 列序列化为 "1970-01-01 08:00:00", 取时间段(空格后); 纯时间值("08:00:00")原样返回
+  if (typeof timeStr === 'string') {
+    if (timeStr.includes(' ')) {
+      return timeStr.split(' ')[1] || timeStr;
+    }
+    return timeStr;
   }
   return timeStr;
 }
@@ -278,5 +315,4 @@ getList();
   text-align: center;
   font-size: 12px;
 }
-
 </style>

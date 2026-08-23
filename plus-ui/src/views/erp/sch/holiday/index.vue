@@ -9,7 +9,7 @@
         <el-button type="primary" link @click="nextMonth">
           <el-icon><ArrowRight /></el-icon>
         </el-button>
-        <el-button type="primary" @click="handleAdd" style="margin-left: 20px;"> 新增节假日 </el-button>
+        <el-button type="primary" @click="handleAdd" style="margin-left: 20px"> 新增节假日 </el-button>
       </div>
 
       <div class="custom-calendar">
@@ -236,7 +236,7 @@ function getLunarDate(date) {
 function getHolidayType(date) {
   const holiday = holidayList.value.find((item) => item.holidayDate === date);
   if (holiday) {
-    if (holiday.isWorkingDay === '1') {
+    if (String(holiday.isWorkingDay) === '1') {
       return 'working';
     } else {
       return 'holiday';
@@ -263,7 +263,7 @@ function openContextMenu(date, event) {
     const dateObj = new Date(date);
     form.value.holidayName = isWeekend(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate()) ? '周末' : '自定义假日';
     form.value.holidayType = 'legal';
-    form.value.isWorkingDay = '0';
+    form.value.isWorkingDay = 0;
     dialogTitle.value = `添加节假日 - ${formatDisplayDate(date)}`;
     isEdit.value = false;
     dialogVisible.value = true;
@@ -276,14 +276,15 @@ function resetForm() {
     holidayDate: null,
     holidayName: null,
     holidayType: null,
-    isWorkingDay: '0',
+    isWorkingDay: 0,
     remark: null
   };
 }
 
 function getList() {
   queryParams.value.year = currentYear.value;
-  listHoliday(queryParams.value).then((response) => {
+  // 一年法定节假日+调休通常 30+ 条, 默认 pageSize=10 会截断日历标记
+  listHoliday({ ...queryParams.value, pageNum: 1, pageSize: 200 }).then((response) => {
     holidayList.value = response.rows;
   });
 }
@@ -400,7 +401,7 @@ onMounted(() => {
 }
 
 .calendar-day:nth-child(7n),
-.calendar-day:nth-child(7n+1) {
+.calendar-day:nth-child(7n + 1) {
   color: #f56c6c;
 }
 

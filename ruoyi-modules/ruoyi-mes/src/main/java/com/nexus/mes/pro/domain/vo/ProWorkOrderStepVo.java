@@ -63,6 +63,9 @@ public class ProWorkOrderStepVo implements Serializable {
     /** 是否关键工序 */
     private Integer isKeyProcess;
 
+    /** 工序类型: GENERAL/FLASH/TEST */
+    private String stepType;
+
     /** 内容引用类型(单类型绑定: FIRMWARE/CONFIG/MAC_POOL...) */
     private String contentRefType;
 

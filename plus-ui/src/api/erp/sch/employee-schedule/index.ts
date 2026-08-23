@@ -40,3 +40,12 @@ export const delEmployeeSchedule = (scheduleId: string | number | (string | numb
     method: 'delete'
   });
 };
+
+/** 按计划生成员工排班明细(按班组排班模板展开; planId 空则处理全部已发布计划) */
+export const generateEmployeeSchedule = (planId?: number | string) => {
+  return request({
+    url: '/erp/sch/employeeSchedule/generate',
+    method: 'post',
+    params: planId ? { planId } : {}
+  });
+};

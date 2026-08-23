@@ -187,7 +187,7 @@
                 value-format="YYYY-MM-DD"
                 placeholder="请选择生效日期"
                 v-if="!isViewMode"
-                style="width: 150px;"
+                style="width: 150px"
               />
               <span v-else>{{ scope.row.effectiveDate }}</span>
             </template>
@@ -201,7 +201,7 @@
                 value-format="YYYY-MM-DD"
                 placeholder="请选择失效日期"
                 v-if="!isViewMode"
-                style="width: 150px;"
+                style="width: 150px"
               />
               <span v-else>{{ scope.row.expireDate }}</span>
             </template>
@@ -594,7 +594,7 @@ function getDictLabel(dictOptions, value) {
 
 function handleExport() {
   proxy.download(
-    'sch/team/export',
+    'erp/sch/team/export',
     {
       ...queryParams.value
     },
@@ -756,4 +756,3 @@ function resetWorkerQuery() {
 
 getList();
 </script>
-

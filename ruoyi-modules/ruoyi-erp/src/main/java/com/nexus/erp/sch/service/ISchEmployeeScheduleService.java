@@ -66,9 +66,11 @@ public interface ISchEmployeeScheduleService {
 
     /**
      * 生成员工排班明细
-     * <p>根据排班计划、班组排班模板及班组成员自动生成所有员工的排班明细记录</p>
+     * <p>按班组排班模板(sch_team_schedule)精确展开班组→班次绑定与排班日期;
+     * 无模板的计划回退轮转算法; 仅处理已发布且起止日期齐全的计划</p>
      *
+     * @param planId 排班计划ID(空则处理全部已发布计划; 按计划范围清理旧明细)
      * @return 生成记录数
      */
-    int generate();
+    int generate(Long planId);
 }

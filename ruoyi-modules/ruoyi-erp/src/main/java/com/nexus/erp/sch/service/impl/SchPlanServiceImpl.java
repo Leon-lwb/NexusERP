@@ -8,10 +8,18 @@ import com.nexus.common.core.utils.MapstructUtils;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
+import com.nexus.erp.sch.domain.SchEmployeeSchedule;
 import com.nexus.erp.sch.domain.SchPlan;
+import com.nexus.erp.sch.domain.SchPlanTeam;
+import com.nexus.erp.sch.domain.SchShift;
+import com.nexus.erp.sch.domain.SchTeamSchedule;
 import com.nexus.erp.sch.domain.bo.SchPlanBo;
 import com.nexus.erp.sch.domain.vo.SchPlanVo;
+import com.nexus.erp.sch.mapper.SchEmployeeScheduleMapper;
 import com.nexus.erp.sch.mapper.SchPlanMapper;
+import com.nexus.erp.sch.mapper.SchPlanTeamMapper;
+import com.nexus.erp.sch.mapper.SchShiftMapper;
+import com.nexus.erp.sch.mapper.SchTeamScheduleMapper;
 import com.nexus.erp.sch.service.ISchPlanService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,6 +39,11 @@ import java.util.List;
 public class SchPlanServiceImpl implements ISchPlanService {
 
     private final SchPlanMapper baseMapper;
+    private final SchShiftMapper schShiftMapper;
+    private final SchTeamScheduleMapper schTeamScheduleMapper;
+    private final SchEmployeeScheduleMapper schEmployeeScheduleMapper;
+    private final SchPlanTeamMapper schPlanTeamMapper;
+    private final com.nexus.system.strategy.AutoCodeUtil autoCodeUtil;
 
     /**
      * 分页查询排班计划列表
@@ -78,6 +91,16 @@ public class SchPlanServiceImpl implements ISchPlanService {
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(SchPlanBo bo) {
         SchPlan entity = MapstructUtils.convert(bo, SchPlan.class);
+        // 编码留空按 SCH_PLAN_CODE 规则生成; 传入则唯一性预检(原实现撞 uk_plan_code 裸抛500)
+        if (StringUtils.isBlank(entity.getPlanCode())) {
+            entity.setPlanCode(autoCodeUtil.genSerialCode("SCH_PLAN_CODE", null));
+        }
+        Long exist = baseMapper.selectCount(Wrappers.<SchPlan>lambdaQuery()
+            .eq(SchPlan::getPlanCode, entity.getPlanCode()));
+        if (exist != null && exist > 0) {
+            throw new com.nexus.common.core.exception.ServiceException("计划编码已存在: " + entity.getPlanCode());
+        }
+        normalizeDictValues(entity);
         return baseMapper.insert(entity);
     }
 
@@ -91,7 +114,22 @@ public class SchPlanServiceImpl implements ISchPlanService {
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(SchPlanBo bo) {
         SchPlan entity = MapstructUtils.convert(bo, SchPlan.class);
+        normalizeDictValues(entity);
         return baseMapper.updateById(entity);
+    }
+
+    /**
+     * 字典字段统一小写入库: sch_plan_status(draft/published/closed)与
+     * sch_plan_period_type(week/month/quarter/year)均为小写字典值,
+     * 传入大写会造成前端字典标签与按钮状态判断失配
+     */
+    private void normalizeDictValues(SchPlan entity) {
+        if (StringUtils.isNotBlank(entity.getStatus())) {
+            entity.setStatus(entity.getStatus().toLowerCase());
+        }
+        if (StringUtils.isNotBlank(entity.getPeriodType())) {
+            entity.setPeriodType(entity.getPeriodType().toLowerCase());
+        }
     }
 
     /**
@@ -103,7 +141,13 @@ public class SchPlanServiceImpl implements ISchPlanService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {
-        return baseMapper.deleteBatchIds(List.of(ids));
+        // 级联清理关联数据(原实现只删主表, 班次/排班模板/员工排班/计划班组全部悬挂)
+        List<Long> idList = List.of(ids);
+        schShiftMapper.delete(Wrappers.<SchShift>lambdaQuery().in(SchShift::getPlanId, idList));
+        schTeamScheduleMapper.delete(Wrappers.<SchTeamSchedule>lambdaQuery().in(SchTeamSchedule::getPlanId, idList));
+        schEmployeeScheduleMapper.delete(Wrappers.<SchEmployeeSchedule>lambdaQuery().in(SchEmployeeSchedule::getPlanId, idList));
+        schPlanTeamMapper.delete(Wrappers.<SchPlanTeam>lambdaQuery().in(SchPlanTeam::getPlanId, idList));
+        return baseMapper.deleteBatchIds(idList);
     }
 
     private LambdaQueryWrapper<SchPlan> buildQueryWrapper(SchPlanBo bo) {
