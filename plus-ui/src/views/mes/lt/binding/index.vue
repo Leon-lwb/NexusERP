@@ -174,7 +174,7 @@ import type { LtSnBindingVO, LtSnBindingForm, LtSnBindingQuery } from '@/api/mes
 import { listLot } from '@/api/mes/lt/lot';
 import type { LtLotVO } from '@/api/mes/lt/lot';
 import { listSn } from '@/api/mes/pro/sn';
-import MaterialSelectDialog from '@/components/MaterialSelectDialog';
+import MaterialSelectDialog from '@/components/MaterialSelectDialog/index.vue';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { mes_lot_status, mes_sn_status } = toRefs<any>(proxy?.useDict('mes_lot_status', 'mes_sn_status'));

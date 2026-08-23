@@ -643,7 +643,7 @@ import { getOrderheader, addOrderheader, updateOrderheader, submitOrderFlow, get
 import { getMaterial } from '@/api/erp/bd/material';
 import { listMeasureAll } from '@/api/erp/bd/measure';
 import { listWarehouse } from '@/api/erp/wm/warehouse';
-import MaterialSelectDialog from '@/components/MaterialSelectDialog';
+import MaterialSelectDialog from '@/components/MaterialSelectDialog/index.vue';
 import { getProcesss } from '@/api/workflow/process/index';
 
 import { previewCode } from '@/api/system/autocode/rule';

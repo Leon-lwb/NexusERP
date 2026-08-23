@@ -246,7 +246,7 @@ import type { SpcControlChartVO, SpcControlChartQuery, SpcControlChartForm, SpcA
 import { listCollectionPoint, getCollectionPoint } from '@/api/mes/dc/collection-point';
 import { listProcess, getProcess } from '@/api/erp/bd/process';
 import { getMaterial } from '@/api/erp/bd/material';
-import MaterialSelectDialog from '@/components/MaterialSelectDialog';
+import MaterialSelectDialog from '@/components/MaterialSelectDialog/index.vue';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { spc_chart_type, mes_enable_status, dc_collection_point_type } = toRefs<any>(

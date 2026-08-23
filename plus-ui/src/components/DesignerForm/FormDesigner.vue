@@ -3142,7 +3142,7 @@ const handleComponentChange = (value: any, component: FormComponent) => {
         const { field, value: targetValue } = rules.onChange;
         if (typeof field === 'string') {
           // 找到目标组件并更新其值
-          const targetComponent = formContent.value.formComponents.find((comp) => comp.field === field);
+          const targetComponent = formComponents.value.find((comp) => comp.field === field);
           if (targetComponent) {
             targetComponent.value = targetValue;
           }
@@ -3160,7 +3160,7 @@ const handleComponentChange = (value: any, component: FormComponent) => {
       if (mapping[component.field]) {
         const targetField = mapping[component.field];
         // 找到目标组件并更新其值
-        const targetComponent = formContent.value.formComponents.find((comp) => comp.field === targetField);
+        const targetComponent = formComponents.value.find((comp) => comp.field === targetField);
         if (targetComponent) {
           targetComponent.value = value;
         }

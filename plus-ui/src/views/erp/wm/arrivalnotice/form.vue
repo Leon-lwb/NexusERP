@@ -283,7 +283,7 @@
 import { getArrivalnotice, addArrivalnotice, updateArrivalnotice, submitArrivalnotice, getArrivalnoticeProcId } from '@/api/erp/wm/arrivalnotice';
 import { getProcesss } from '@/api/workflow/process/index';
 import { getMaterial } from '@/api/erp/bd/material';
-import MaterialSelectDialog from '@/components/MaterialSelectDialog';
+import MaterialSelectDialog from '@/components/MaterialSelectDialog/index.vue';
 import { getMeasure, listMeasureAll } from '@/api/erp/bd/measure';
 import { listIqc } from '@/api/mes/qc/iqc';
 

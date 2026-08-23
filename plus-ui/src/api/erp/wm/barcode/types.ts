@@ -1,4 +1,3 @@
-import { PageQuery } from '@/api/types';
 
 /**
  * 条形码配置查询条件接口

@@ -1,4 +1,3 @@
-import { PageQuery } from '@/types/common';
 
 export interface PriceListQuery extends PageQuery {
   listName?: string;

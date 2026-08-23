@@ -377,7 +377,7 @@
 import { listInvoice, getInvoice, delInvoice, addInvoice, updateInvoice, verifyInvoice, cancelInvoice, redFlushInvoice } from '@/api/erp/so/invoice';
 import { InvoiceVO, InvoiceForm, InvoiceLineForm } from '@/api/erp/so/invoice/types';
 import ClientSelectDialog from '@/views/erp/so/components/ClientSelectDialog.vue';
-import MaterialSelectDialog from '@/components/MaterialSelectDialog';
+import MaterialSelectDialog from '@/components/MaterialSelectDialog/index.vue';
 
 const { proxy } = getCurrentInstance();
 const { so_invoice_type, so_invoice_status, invoice_issue_channel } = toRefs<any>(

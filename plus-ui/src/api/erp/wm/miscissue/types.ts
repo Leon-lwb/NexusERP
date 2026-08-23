@@ -1,4 +1,3 @@
-import { PageQuery } from '@/types/common';
 
 export interface MiscIssueQuery extends PageQuery {
   issueCode?: string;

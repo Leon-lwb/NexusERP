@@ -180,7 +180,7 @@
 <script setup lang="ts" name="RoutingForm">
 import { getRouting, addRouting, updateRouting, getRoutingSteps } from '@/api/erp/bd/routing';
 import { listProcess } from '@/api/erp/bd/process';
-import MaterialSelectDialog from '@/components/MaterialSelectDialog';
+import MaterialSelectDialog from '@/components/MaterialSelectDialog/index.vue';
 import { listWorkstation } from '@/api/erp/bd/workstation';
 import { RoutingForm, RoutingStepForm } from '@/api/erp/bd/routing/types';
 

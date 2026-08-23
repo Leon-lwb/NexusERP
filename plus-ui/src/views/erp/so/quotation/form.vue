@@ -285,7 +285,7 @@ import { getMeasure } from '@/api/erp/bd/measure';
 import { listUser } from '@/api/system/user';
 import { previewCode } from '@/api/system/autocode/rule';
 import { useRoute, useRouter } from 'vue-router';
-import MaterialSelectDialog from '@/components/MaterialSelectDialog';
+import MaterialSelectDialog from '@/components/MaterialSelectDialog/index.vue';
 
 const { proxy } = getCurrentInstance() as any;
 const { sys_currency } = toRefs<any>(proxy.useDict('sys_currency'));

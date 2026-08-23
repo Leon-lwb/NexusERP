@@ -282,7 +282,7 @@ import { listSn, generateSnForCard, createSn, completeSn, scrapSn, shipSn } from
 import type { ProSnVO, ProSnQuery } from '@/api/mes/pro/sn';
 import { listFlowCard } from '@/api/mes/pro/flowcardApi';
 import { listWorkOrder } from '@/api/mes/pro/workorder';
-import MaterialSelectDialog from '@/components/MaterialSelectDialog';
+import MaterialSelectDialog from '@/components/MaterialSelectDialog/index.vue';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { mes_sn_status, prd_wo_status } = toRefs<any>(proxy?.useDict('mes_sn_status', 'prd_wo_status'));

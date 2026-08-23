@@ -78,7 +78,7 @@
 
 <script setup lang="ts">
 import { detailProcessByDataId } from '@/api/workflow/process/index';
-import ProcessViewer from '@/components/ProcessViewer';
+import ProcessViewer from '@/components/ProcessViewer/index.vue';
 import { useFlowable } from '@/views/workflow/hooks/useFlowable';
 
 defineOptions({ name: 'HistoricDetail' });

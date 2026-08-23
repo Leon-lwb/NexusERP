@@ -165,8 +165,8 @@ import {
 import { listAllCategory, getAppType } from '@/api/workflow/category/index';
 import { ModelForm, ModelQuery, ModelVO, DesignerForm } from '@/api/workflow/model/types';
 import { CategoryVO, AppTypeVo } from '@/api/workflow/category/types';
-import ProcessDesigner from '@/components/ProcessDesigner';
-import ProcessViewer from '@/components/ProcessViewer';
+import ProcessDesigner from '@/components/ProcessDesigner/index.vue';
+import ProcessViewer from '@/components/ProcessViewer/index.vue';
 import { ComponentInternalInstance } from 'vue';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;

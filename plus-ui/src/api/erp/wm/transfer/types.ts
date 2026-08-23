@@ -1,4 +1,3 @@
-import { PageQuery } from '@/types/common';
 
 export interface TransferQuery extends PageQuery {
   transferNo?: string;

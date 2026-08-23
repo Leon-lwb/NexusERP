@@ -280,7 +280,7 @@ import { listWork } from '@/api/erp/prd/work';
 import { useRoute, useRouter } from 'vue-router';
 import { previewCode } from '@/api/system/autocode/rule';
 import { useUserStore } from '@/store/modules/user';
-import MaterialSelectDialog from '@/components/MaterialSelectDialog';
+import MaterialSelectDialog from '@/components/MaterialSelectDialog/index.vue';
 
 const { proxy } = getCurrentInstance() as any;
 const { parseTime } = proxy;

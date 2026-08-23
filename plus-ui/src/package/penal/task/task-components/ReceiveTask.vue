@@ -26,6 +26,7 @@
 
 <script lang="ts" setup>
 import { Plus } from '@element-plus/icons-vue';
+import { ElMessage } from 'element-plus';
 
 defineOptions({ name: 'ReceiveTask' });
 const props = defineProps({
@@ -54,7 +55,7 @@ const openMessageModel = () => {
 
 const createNewMessage = () => {
   if (messageMap.value[newMessageForm.value.id]) {
-    message.error('该消息已存在，请修改id后重新保存');
+    ElMessage.error('该消息已存在，请修改id后重新保存');
     return;
   }
   const newMessage = bpmnInstances().moddle.create('bpmn:Message', newMessageForm.value);

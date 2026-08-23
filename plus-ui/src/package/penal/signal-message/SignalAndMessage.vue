@@ -42,6 +42,7 @@
 
 <script lang="ts" setup>
 import { Plus } from '@element-plus/icons-vue';
+import { ElMessage } from 'element-plus';
 
 defineOptions({ name: 'SignalAndMassage' });
 
@@ -87,13 +88,13 @@ const openModel = (type) => {
 const addNewObject = () => {
   if (modelType.value === 'message') {
     if (messageIdMap.value[modelObjectForm.value.id]) {
-      message.error('该消息已存在，请修改id后重新保存');
+      ElMessage.error('该消息已存在，请修改id后重新保存');
     }
     const messageRef = bpmnInstances().moddle.create('bpmn:Message', modelObjectForm.value);
     rootElements.value.push(messageRef);
   } else {
     if (signalIdMap.value[modelObjectForm.value.id]) {
-      message.error('该信号已存在，请修改id后重新保存');
+      ElMessage.error('该信号已存在，请修改id后重新保存');
     }
     const signalRef = bpmnInstances().moddle.create('bpmn:Signal', modelObjectForm.value);
     rootElements.value.push(signalRef);

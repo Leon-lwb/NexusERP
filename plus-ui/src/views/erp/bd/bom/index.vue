@@ -359,7 +359,7 @@
 <script setup lang="ts" name="Bom">
 import { listBom, delBom, activateBomVersion, verifyBom, getBomTree, getBomChildren, copyBom, compareBom, whereUsedBom } from '@/api/erp/bd/bom';
 import { useRouter } from 'vue-router';
-import MaterialSelectDialog from '@/components/MaterialSelectDialog';
+import MaterialSelectDialog from '@/components/MaterialSelectDialog/index.vue';
 
 const router = useRouter();
 const { proxy } = getCurrentInstance();

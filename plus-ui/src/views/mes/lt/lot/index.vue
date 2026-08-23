@@ -326,7 +326,7 @@ import {
 import type { LtLotVO, LtLotForm, LtLotQuery, LtLotTraceResult } from '@/api/mes/lt/lot';
 import { previewCode } from '@/api/system/autocode/rule';
 import { listVendor } from '@/api/erp/bd/vendor';
-import MaterialSelectDialog from '@/components/MaterialSelectDialog';
+import MaterialSelectDialog from '@/components/MaterialSelectDialog/index.vue';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { mes_lot_status, mes_lot_qc_status } = toRefs<any>(proxy?.useDict('mes_lot_status', 'mes_lot_qc_status'));

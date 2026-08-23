@@ -174,7 +174,7 @@
 import { listIqc, addIqc, inspectIqc } from '@/api/mes/qc/iqc';
 import type { QcIqcVO, QcIqcQuery, QcIqcForm } from '@/api/mes/qc/iqc';
 import { listReceive } from '@/api/erp/wm/receive';
-import MaterialSelectDialog from '@/components/MaterialSelectDialog';
+import MaterialSelectDialog from '@/components/MaterialSelectDialog/index.vue';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { mes_qc_status, mes_qc_result } = toRefs<any>(proxy?.useDict('mes_qc_status', 'mes_qc_result'));

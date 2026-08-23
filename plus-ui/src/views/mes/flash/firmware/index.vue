@@ -263,7 +263,7 @@ import {
   getFirmwareFlows
 } from '@/api/mes/flash/firmware';
 import type { FwFirmwareVO, FwFirmwareForm, FwFirmwareQuery } from '@/api/mes/flash/firmware';
-import MaterialSelectDialog from '@/components/MaterialSelectDialog';
+import MaterialSelectDialog from '@/components/MaterialSelectDialog/index.vue';
 import { previewCode } from '@/api/system/autocode/rule';
 import { Download } from '@element-plus/icons-vue';
 

@@ -278,7 +278,7 @@ import {
 } from '@/api/erp/wm/productionrecpt';
 import { ProductionRecptVO, ProductionRecptQuery, ProductionRecptForm } from '@/api/erp/wm/productionrecpt/types';
 import { listWork } from '@/api/erp/prd/work';
-import MaterialSelectDialog from '@/components/MaterialSelectDialog';
+import MaterialSelectDialog from '@/components/MaterialSelectDialog/index.vue';
 import { listWarehouse } from '@/api/erp/wm/warehouse';
 import { listStoragelocation } from '@/api/erp/wm/storagelocation';
 import { previewCode } from '@/api/system/autocode/rule';

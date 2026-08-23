@@ -7,8 +7,8 @@
  *
  * @author nexus
  */
-import { ref, type Ref, type FormInstance } from 'vue';
-import { ElMessage, ElMessageBox } from 'element-plus';
+import { ref, type Ref } from 'vue';
+import { ElMessage, ElMessageBox, type FormInstance } from 'element-plus';
 import { download } from '@/utils/request';
 
 /** 分页查询参数基类 */

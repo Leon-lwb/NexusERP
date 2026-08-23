@@ -101,19 +101,19 @@
   </div>
 </template>
 <script lang="ts" setup>
-import ElementBaseInfo from './base/ElementBaseInfo';
-import ElementOtherConfig from './other/ElementOtherConfig';
-import ElementTask from './task/ElementTask';
-import ElementMultiInstance from './multi-instance/ElementMultiInstance';
-import FlowCondition from './flow-condition/FlowCondition';
-import SignalAndMassage from './signal-message/SignalAndMessage';
-import ElementListeners from './listeners/ElementListeners';
-import ElementProperties from './properties/ElementProperties';
-import ElementForm from './form/ElementForm';
-import UserTaskListeners from './listeners/UserTaskListeners';
+import ElementBaseInfo from './base/ElementBaseInfo.vue';
+import ElementOtherConfig from './other/ElementOtherConfig.vue';
+import ElementTask from './task/ElementTask.vue';
+import ElementMultiInstance from './multi-instance/ElementMultiInstance.vue';
+import FlowCondition from './flow-condition/FlowCondition.vue';
+import SignalAndMassage from './signal-message/SignalAndMessage.vue';
+import ElementListeners from './listeners/ElementListeners.vue';
+import ElementProperties from './properties/ElementProperties.vue';
+import ElementForm from './form/ElementForm.vue';
+import UserTaskListeners from './listeners/UserTaskListeners.vue';
 // add by wanghuan 2022-12-16
-import BoundaryEvent from './boundary-events/BoundaryEvent';
-import CatchEvent from './catch-events/CatchEvent';
+import BoundaryEvent from './boundary-events/BoundaryEvent.vue';
+import CatchEvent from './catch-events/CatchEvent.vue';
 /**
  * 侧边栏
  * @Author MiyueFE wanghuan

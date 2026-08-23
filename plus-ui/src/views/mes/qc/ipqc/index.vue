@@ -231,7 +231,7 @@ import { listIpqc, addIpqc, inspectIpqc } from '@/api/mes/qc/ipqc';
 import type { QcIpqcVO, QcIpqcQuery, QcIpqcForm } from '@/api/mes/qc/ipqc';
 import { listWorkOrder } from '@/api/mes/pro/workorder';
 import { listFlowCard } from '@/api/mes/pro/flowcardApi';
-import MaterialSelectDialog from '@/components/MaterialSelectDialog';
+import MaterialSelectDialog from '@/components/MaterialSelectDialog/index.vue';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { mes_qc_status, mes_qc_result, prd_wo_status } = toRefs<any>(proxy?.useDict('mes_qc_status', 'mes_qc_result', 'prd_wo_status'));

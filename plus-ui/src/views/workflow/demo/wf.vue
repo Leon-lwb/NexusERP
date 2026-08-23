@@ -47,6 +47,8 @@ const props = defineProps({
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 // 按钮loading
 const buttonLoading = ref(false);
+// 加载状态
+const loading = ref(false);
 // 弹出层标题
 const title = ref('');
 // 是否显示弹出层
@@ -118,7 +120,6 @@ const submitForm = () => {
           .then((response) => {
             proxy?.$modal.msgSuccess('修改成功');
             open.value = false;
-            getList();
           })
           .finally(() => {
             buttonLoading.value = false;
@@ -128,7 +129,6 @@ const submitForm = () => {
           .then((response) => {
             proxy?.$modal.msgSuccess('新增成功');
             open.value = false;
-            getList();
           })
           .finally(() => {
             buttonLoading.value = false;

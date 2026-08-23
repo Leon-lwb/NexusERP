@@ -529,7 +529,7 @@ import {
   costRollup
 } from '@/api/erp/bd/bom';
 import { getMaterial } from '@/api/erp/bd/material';
-import MaterialSelectDialog from '@/components/MaterialSelectDialog';
+import MaterialSelectDialog from '@/components/MaterialSelectDialog/index.vue';
 import { listRouting, getRoutingSteps } from '@/api/erp/bd/routing';
 import { listAlternativeByDetail, saveAlternativeBatch } from '@/api/erp/bd/bom/alternative';
 import { useRouter, useRoute } from 'vue-router';

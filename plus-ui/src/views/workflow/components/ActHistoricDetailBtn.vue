@@ -11,7 +11,7 @@
 </template>
 
 <script setup lang="ts">
-import HistoricDetail from './HistoricDetail';
+import HistoricDetail from './HistoricDetail.vue';
 
 defineOptions({ name: 'ActHistoricDetailBtn' });
 const props = defineProps({

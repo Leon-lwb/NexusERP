@@ -216,7 +216,7 @@ import { listStoragearea } from '@/api/erp/wm/storagearea';
 import { getMeasure } from '@/api/erp/bd/measure';
 import { previewCode } from '@/api/system/autocode/rule';
 import { useRoute, useRouter } from 'vue-router';
-import MaterialSelectDialog from '@/components/MaterialSelectDialog';
+import MaterialSelectDialog from '@/components/MaterialSelectDialog/index.vue';
 
 const { proxy } = getCurrentInstance() as any;
 const { wm_misc_recpt_type, wm_misc_status } = toRefs<any>(proxy.useDict('wm_misc_recpt_type', 'wm_misc_status'));

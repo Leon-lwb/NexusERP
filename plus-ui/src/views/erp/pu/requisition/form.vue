@@ -204,7 +204,7 @@ import {
   getRequisitionProcId
 } from '@/api/erp/pu/requisition';
 // 导入物料管理API
-import MaterialSelectDialog from '@/components/MaterialSelectDialog';
+import MaterialSelectDialog from '@/components/MaterialSelectDialog/index.vue';
 // 导入审批流API
 import { getProcesss } from '@/api/workflow/process/index';
 // 导入路由相关功能

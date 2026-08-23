@@ -365,7 +365,7 @@ import { get8dByNcr, update8d, complete8d } from '@/api/mes/ncr/8d-report';
 import type { Ncr8dReportVO, Ncr8dReportForm } from '@/api/mes/ncr/8d-report';
 import { previewCode } from '@/api/system/autocode/rule';
 import { listWorkOrder } from '@/api/mes/pro/workorder';
-import MaterialSelectDialog from '@/components/MaterialSelectDialog';
+import MaterialSelectDialog from '@/components/MaterialSelectDialog/index.vue';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { mes_ncr_status, mes_ncr_source_type, mes_ncr_disposition, mes_defect_cause, mes_rework_status, mes_8d_status, mes_wo_source_type } =

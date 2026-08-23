@@ -192,7 +192,7 @@ import {
   getReleasePackageFlows
 } from '@/api/mes/release/package';
 import type { ReleasePackageVO, ReleasePackageQuery } from '@/api/mes/release/package';
-import MaterialSelectDialog from '@/components/MaterialSelectDialog';
+import MaterialSelectDialog from '@/components/MaterialSelectDialog/index.vue';
 import ReleasePackageForm from './form.vue';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;

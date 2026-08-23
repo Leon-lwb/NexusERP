@@ -289,7 +289,7 @@
 import { listContract, getContract, delContract, addContract, updateContract } from '@/api/erp/so/contract';
 import { ContractVO, ContractForm, ContractLineForm } from '@/api/erp/so/contract/types';
 import ClientSelectDialog from '@/views/erp/so/components/ClientSelectDialog.vue';
-import MaterialSelectDialog from '@/components/MaterialSelectDialog';
+import MaterialSelectDialog from '@/components/MaterialSelectDialog/index.vue';
 
 const { proxy } = getCurrentInstance();
 

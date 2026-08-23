@@ -109,10 +109,10 @@
 <script setup name="Demo" lang="ts">
 import { listDemo, getDemo, delDemo, addDemo, updateDemo } from '@/api/workflow/demo/index';
 import type { WfDemo, WfDemoQuery } from '@/api/workflow/demo/types';
-import ActApplyBtn from '../components/ActApplyBtn';
+import ActApplyBtn from '../components/ActApplyBtn.vue';
 //import ActCancelBtn from "../components/ActCancelBtn";
 //import ActHandleBtn from "../components/ActHandleBtn";
-import ActHistoricDetailBtn from '../components/ActHistoricDetailBtn';
+import ActHistoricDetailBtn from '../components/ActHistoricDetailBtn.vue';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const queryFormRef = ref(null);

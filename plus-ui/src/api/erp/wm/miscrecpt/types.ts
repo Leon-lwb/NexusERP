@@ -1,4 +1,3 @@
-import { PageQuery } from '@/types/common';
 
 export interface MiscRecptQuery extends PageQuery {
   recptCode?: string;

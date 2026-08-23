@@ -270,7 +270,7 @@ import { listClient } from '@/api/erp/bd/client';
 import { listProcess } from '@/api/erp/bd/process';
 import { listFirmware } from '@/api/mes/flash/firmware';
 import type { FwFirmwareVO } from '@/api/mes/flash/firmware';
-import MaterialSelectDialog from '@/components/MaterialSelectDialog';
+import MaterialSelectDialog from '@/components/MaterialSelectDialog/index.vue';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { mes_release_pkg_action, mes_release_cfg_group } = toRefs<any>(proxy?.useDict('mes_release_pkg_action', 'mes_release_cfg_group'));

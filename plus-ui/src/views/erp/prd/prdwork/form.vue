@@ -652,7 +652,7 @@ import { listTeam } from '@/api/erp/sch/team';
 import { listUser } from '@/api/system/user';
 import { listMeasureAll } from '@/api/erp/bd/measure';
 import { listBom } from '@/api/erp/bd/bom';
-import MaterialSelectDialog from '@/components/MaterialSelectDialog';
+import MaterialSelectDialog from '@/components/MaterialSelectDialog/index.vue';
 import { getWorkOrderResourceByWoId, saveWorkOrderResourceBatch, RESOURCE_TYPE } from '@/api/erp/prd/work-order-resource';
 import { getProcesss } from '@/api/workflow/process/index';
 import type { WorkForm } from '@/api/erp/prd/work/types';

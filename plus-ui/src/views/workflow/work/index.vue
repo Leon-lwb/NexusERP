@@ -68,7 +68,7 @@
 <script setup name="WorkProcess" lang="ts">
 import { listProcess, getBpmnXml } from '@/api/workflow/process/index';
 import { listAllCategory } from '@/api/workflow/category/index';
-import ProcessViewer from '@/components/ProcessViewer';
+import ProcessViewer from '@/components/ProcessViewer/index.vue';
 
 const router = useRouter();
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;

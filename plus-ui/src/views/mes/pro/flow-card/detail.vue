@@ -255,15 +255,8 @@ import {
   exitFlowCard,
   skipFlowCard
 } from '@/api/mes/pro/flowcardApi';
-import type {
-  ProFlowCardVO,
-  ProFlowCardStepVO,
-  ProEntryBo,
-  ProExitBo,
-  ProSkipBo,
-  ProCheckResultVo,
-  ProCheckFailure
-} from '@/api/mes/pro/flowcardApi';
+import type { ProFlowCardVO, ProFlowCardStepVO } from '@/api/mes/pro/flowcard';
+import type { ProEntryBo, ProExitBo, ProSkipBo, ProCheckResultVo, ProCheckFailure } from '@/api/mes/pro/flowcardApi';
 import { addDispatch, listDispatchByStep } from '@/api/mes/pro/dispatch';
 import type { ProDispatchVO } from '@/api/mes/pro/dispatch';
 import { generateSnForCard } from '@/api/mes/pro/sn';

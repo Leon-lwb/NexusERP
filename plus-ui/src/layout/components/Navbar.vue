@@ -119,7 +119,7 @@ import router from '@/router';
 import { ElMessageBoxOptions } from 'element-plus/es/components/message-box/src/message-box.type';
 import { NavTypeEnum } from '@/enums/NavTypeEnum';
 import Logo from '@/layout/components/Sidebar/Logo.vue';
-import TopBar from './TopBar';
+import TopBar from './TopBar/index.vue';
 import { Brush, ChatDotRound } from '@element-plus/icons-vue';
 import AiChatDrawer from '@/components/ai/AiChatDrawer.vue';
 import { onMounted } from 'vue';

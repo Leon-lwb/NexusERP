@@ -25,8 +25,6 @@ export const getComponentType = (type: string) => {
       return NmPassword;
     case 'switch':
       return NmSwitch;
-    case 'list':
-      return NmList;
     case 'radio':
       return NmRadio;
     case 'textarea':

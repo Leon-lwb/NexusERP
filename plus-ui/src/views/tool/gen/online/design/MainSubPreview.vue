@@ -26,6 +26,7 @@
 </template>
 
 <script setup lang="ts">
+import type { OnlFieldVo } from '@/api/online/types';
 import { getComponentType } from '@/views/workflow/hooks/useOnline';
 
 const props = defineProps({

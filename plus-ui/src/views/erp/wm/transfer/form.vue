@@ -223,7 +223,7 @@ import { getMeasure } from '@/api/erp/bd/measure';
 import { previewCode } from '@/api/system/autocode/rule';
 import { getProcesss } from '@/api/workflow/process/index';
 import { useRoute, useRouter } from 'vue-router';
-import MaterialSelectDialog from '@/components/MaterialSelectDialog';
+import MaterialSelectDialog from '@/components/MaterialSelectDialog/index.vue';
 
 const { proxy } = getCurrentInstance() as any;
 const { wm_transfer_type } = toRefs<any>(proxy.useDict('wm_transfer_type'));

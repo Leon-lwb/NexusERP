@@ -17,7 +17,7 @@ import {
   Edit,
   Select,
   Switch,
-  Slider,
+  SetUp,
   Calendar,
   Timer,
   Picture,
@@ -101,7 +101,7 @@ const basicComponents = [
   {
     type: 'slider',
     label: '滑块',
-    icon: 'Slider',
+    icon: 'SetUp',
     props: {
       min: 0,
       max: 100

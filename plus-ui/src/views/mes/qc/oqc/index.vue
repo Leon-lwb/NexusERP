@@ -171,7 +171,7 @@
 import { listOqc, addOqc, inspectOqc } from '@/api/mes/qc/oqc';
 import type { QcOqcVO, QcOqcQuery, QcOqcForm } from '@/api/mes/qc/oqc';
 import { listOrderheader } from '@/api/erp/so/orderheader';
-import MaterialSelectDialog from '@/components/MaterialSelectDialog';
+import MaterialSelectDialog from '@/components/MaterialSelectDialog/index.vue';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { mes_qc_status, mes_qc_result } = toRefs<any>(proxy?.useDict('mes_qc_status', 'mes_qc_result'));

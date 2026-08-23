@@ -1,4 +1,3 @@
-import { PageQuery } from '@/api/types';
 
 export interface WmBatchVO {
   batchId: number;

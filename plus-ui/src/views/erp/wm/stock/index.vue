@@ -344,7 +344,7 @@ import { listStock, getStock, delStock, addStock, updateStock, getCategoryStocks
 import { useCategoryTree } from '@/composables/erp/useCategoryTree';
 import { getWareHouseTree } from '@/api/erp/wm/warehouse';
 import { listVendor, getVendor } from '@/api/erp/bd/vendor';
-import MaterialSelectDialog from '@/components/MaterialSelectDialog';
+import MaterialSelectDialog from '@/components/MaterialSelectDialog/index.vue';
 
 const { proxy } = getCurrentInstance() as any;
 const { sys_true_or_false } = toRefs<any>(proxy.useDict('sys_true_or_false'));

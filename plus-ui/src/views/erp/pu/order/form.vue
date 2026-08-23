@@ -367,7 +367,7 @@ import { listApprovedContract } from '@/api/erp/pu/contract';
 // 导入路由相关功能
 import { useRoute, useRouter } from 'vue-router';
 import { previewCode } from '@/api/system/autocode/rule';
-import MaterialSelectDialog from '@/components/MaterialSelectDialog';
+import MaterialSelectDialog from '@/components/MaterialSelectDialog/index.vue';
 
 /** 流程详情 / HistoricDetail 嵌入时传入 */
 const props = defineProps({
