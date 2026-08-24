@@ -1,20 +1,34 @@
 package com.nexus.erp.sch.controller.app;
 
+import cn.dev33.satoken.annotation.SaCheckPermission;
+import cn.hutool.core.util.StrUtil;
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 
-import com.nexus.common.tenant.helper.TenantHelper;
-import lombok.RequiredArgsConstructor;
 import com.nexus.common.core.domain.R;
+import com.nexus.common.core.exception.ServiceException;
+import com.nexus.common.mybatis.core.page.PageQuery;
+import com.nexus.common.mybatis.core.page.TableDataInfo;
+import com.nexus.common.tenant.helper.TenantHelper;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import com.nexus.erp.sch.domain.SchAttendance;
 import com.nexus.erp.sch.domain.SchEmployeeSchedule;
 import com.nexus.erp.sch.domain.SchWorker;
+import com.nexus.erp.sch.domain.bo.SchApplyApproveBo;
+import com.nexus.erp.sch.domain.bo.SchLeaveApplyBo;
+import com.nexus.erp.sch.domain.bo.SchOutdoorPunchBo;
 import com.nexus.erp.sch.domain.bo.SchPunchRuleBo;
+import com.nexus.erp.sch.domain.bo.SchSupplementApplyBo;
+import com.nexus.erp.sch.domain.vo.SchLeaveApplyVo;
+import com.nexus.erp.sch.domain.vo.SchOutdoorPunchVo;
 import com.nexus.erp.sch.domain.vo.SchPunchRuleVo;
+import com.nexus.erp.sch.domain.vo.SchSupplementApplyVo;
 import com.nexus.erp.sch.mapper.SchAttendanceMapper;
 import com.nexus.erp.sch.mapper.SchEmployeeScheduleMapper;
 import com.nexus.erp.sch.mapper.SchWorkerMapper;
+import com.nexus.erp.sch.service.ISchAppApplyService;
 import com.nexus.erp.sch.service.ISchAttendanceService;
 import com.nexus.erp.sch.service.ISchEmployeeScheduleService;
 import com.nexus.erp.sch.service.ISchPunchRuleService;
@@ -48,6 +62,7 @@ public class AppSchAttendanceController {
     private final SchWorkerMapper workerMapper;
     private final SchAttendanceMapper attendanceMapper;
     private final SchEmployeeScheduleMapper employeeScheduleMapper;
+    private final ISchAppApplyService schAppApplyService;
 
     /**
      * 获取今日排班
@@ -419,26 +434,26 @@ public class AppSchAttendanceController {
 
     /**
      * 提交补卡申请
-     * <p>提交考勤补卡申请，包含补卡日期、补卡类型等信息</p>
+     * <p>提交考勤补卡申请，校验打卡规则（允许补卡/截止天数/同日重复）后落库</p>
      *
-     * @param params 补卡申请参数，包含 applyDate（申请日期）、applyType（申请类型）等
-     * @return 补卡申请结果
+     * @param bo 补卡申请参数：applyDate（yyyy-MM-dd）、applyType（clock_in/clock_out/full_day）、reason
+     * @return 补卡申请结果（applyId/applyNo/applyStatus）
      */
     @PostMapping("/supplement-apply")
-    public R<?> submitSupplementApply(@RequestBody Map<String, Object> params) {
+    public R<?> submitSupplementApply(@Valid @RequestBody SchSupplementApplyBo bo) {
+        SchWorker worker = requireCurrentWorker();
+        Long applyId = schAppApplyService.submitSupplementApply(worker.getWorkerId(), worker.getUserName(), bo);
         Map<String, Object> data = new HashMap<>();
-        data.put("applyId", 3001);
-        data.put("applyNo", "BC20260107001");
-        data.put("applyDate", params.get("applyDate"));
-        data.put("applyType", params.get("applyType"));
+        data.put("applyId", applyId);
+        data.put("applyDate", bo.getApplyDate());
+        data.put("applyType", bo.getApplyType());
         data.put("applyStatus", "pending");
-        data.put("createTime", new Date());
         return R.ok(data);
     }
 
     /**
      * 获取补卡申请列表
-     * <p>查询当前登录工人的补卡申请记录</p>
+     * <p>分页查询当前登录工人的补卡申请记录</p>
      *
      * @param startDate  开始日期（可选）
      * @param endDate    结束日期（可选）
@@ -454,15 +469,61 @@ public class AppSchAttendanceController {
             @RequestParam(required = false) String applyStatus,
             @RequestParam(defaultValue = "1") Integer pageNum,
             @RequestParam(defaultValue = "10") Integer pageSize) {
+        SchWorker worker = requireCurrentWorker();
+        TableDataInfo<SchSupplementApplyVo> page = schAppApplyService.selectMySupplementApplies(
+            worker.getWorkerId(), startDate, endDate, applyStatus, buildPageQuery(pageNum, pageSize));
         Map<String, Object> data = new HashMap<>();
-        data.put("total", 0);
-        data.put("rows", java.util.Collections.emptyList());
+        data.put("total", page.getTotal());
+        data.put("rows", page.getRows());
+        return R.ok(data);
+    }
+
+    /**
+     * 待审批补卡申请列表（审批人视角，全部工人）
+     */
+    @SaCheckPermission("sch:appApply:approve")
+    @GetMapping("/supplement-apply/pending-list")
+    public R<?> getPendingSupplementApplies(
+            @RequestParam(defaultValue = "1") Integer pageNum,
+            @RequestParam(defaultValue = "10") Integer pageSize) {
+        TableDataInfo<SchSupplementApplyVo> page =
+            schAppApplyService.selectPendingSupplementApplies(buildPageQuery(pageNum, pageSize));
+        Map<String, Object> data = new HashMap<>();
+        data.put("total", page.getTotal());
+        data.put("rows", page.getRows());
+        return R.ok(data);
+    }
+
+    /**
+     * 审批补卡申请（通过时按当日排班回写考勤记录）
+     */
+    @SaCheckPermission("sch:appApply:approve")
+    @PostMapping("/supplement-approve")
+    public R<?> approveSupplementApply(@Valid @RequestBody SchApplyApproveBo bo) {
+        schAppApplyService.approveSupplementApply(bo);
+        return R.ok();
+    }
+
+    /**
+     * 提交外勤打卡
+     * <p>校验打卡规则（允许外勤/拍照要求），照片存 MinIO 后落库</p>
+     *
+     * @param bo 外勤打卡参数：latitude、longitude、address、customerName（选填）、reason、photoImage（base64，规则要求时必填）
+     * @return 外勤打卡结果（punchId）
+     */
+    @PostMapping("/outdoor-punch")
+    public R<?> submitOutdoorPunch(@Valid @RequestBody SchOutdoorPunchBo bo) {
+        SchWorker worker = requireCurrentWorker();
+        Long punchId = schAppApplyService.submitOutdoorPunch(worker.getWorkerId(), worker.getUserName(), bo);
+        Map<String, Object> data = new HashMap<>();
+        data.put("punchId", punchId);
+        data.put("punchTime", new Date());
         return R.ok(data);
     }
 
     /**
      * 获取外勤打卡记录
-     * <p>查询当前登录工人的外勤打卡记录</p>
+     * <p>分页查询当前登录工人的外勤打卡记录</p>
      *
      * @param startDate 开始日期（可选）
      * @param endDate   结束日期（可选）
@@ -476,10 +537,83 @@ public class AppSchAttendanceController {
             @RequestParam(required = false) String endDate,
             @RequestParam(defaultValue = "1") Integer pageNum,
             @RequestParam(defaultValue = "10") Integer pageSize) {
+        SchWorker worker = requireCurrentWorker();
+        TableDataInfo<SchOutdoorPunchVo> page = schAppApplyService.selectMyOutdoorPunches(
+            worker.getWorkerId(), startDate, endDate, buildPageQuery(pageNum, pageSize));
         Map<String, Object> data = new HashMap<>();
-        data.put("total", 0);
-        data.put("rows", java.util.Collections.emptyList());
+        data.put("total", page.getTotal());
+        data.put("rows", page.getRows());
         return R.ok(data);
+    }
+
+    /**
+     * 提交请假申请
+     * <p>校验起止日期并自动计算时长天数后落库</p>
+     *
+     * @param bo 请假申请参数：leaveType（字典 sch_leave_type）、startDate、endDate（yyyy-MM-dd）、reason
+     * @return 请假申请结果（leaveId/leaveNo/applyStatus）
+     */
+    @PostMapping("/leave-apply")
+    public R<?> submitLeaveApply(@Valid @RequestBody SchLeaveApplyBo bo) {
+        SchWorker worker = requireCurrentWorker();
+        Long leaveId = schAppApplyService.submitLeaveApply(worker.getWorkerId(), worker.getUserName(), bo);
+        Map<String, Object> data = new HashMap<>();
+        data.put("leaveId", leaveId);
+        data.put("applyStatus", "pending");
+        return R.ok(data);
+    }
+
+    /**
+     * 获取请假申请列表
+     * <p>分页查询当前登录工人的请假申请记录</p>
+     *
+     * @param startDate  开始日期（可选，按请假开始日期过滤）
+     * @param endDate    结束日期（可选）
+     * @param applyStatus 申请状态（可选）
+     * @param pageNum    页码，默认为1
+     * @param pageSize   每页条数，默认为10
+     * @return 请假申请列表数据
+     */
+    @GetMapping("/leave-apply/list")
+    public R<?> getLeaveApplyList(
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate,
+            @RequestParam(required = false) String applyStatus,
+            @RequestParam(defaultValue = "1") Integer pageNum,
+            @RequestParam(defaultValue = "10") Integer pageSize) {
+        SchWorker worker = requireCurrentWorker();
+        TableDataInfo<SchLeaveApplyVo> page = schAppApplyService.selectMyLeaveApplies(
+            worker.getWorkerId(), startDate, endDate, applyStatus, buildPageQuery(pageNum, pageSize));
+        Map<String, Object> data = new HashMap<>();
+        data.put("total", page.getTotal());
+        data.put("rows", page.getRows());
+        return R.ok(data);
+    }
+
+    /**
+     * 待审批请假申请列表（审批人视角，全部工人）
+     */
+    @SaCheckPermission("sch:appApply:approve")
+    @GetMapping("/leave-apply/pending-list")
+    public R<?> getPendingLeaveApplies(
+            @RequestParam(defaultValue = "1") Integer pageNum,
+            @RequestParam(defaultValue = "10") Integer pageSize) {
+        TableDataInfo<SchLeaveApplyVo> page =
+            schAppApplyService.selectPendingLeaveApplies(buildPageQuery(pageNum, pageSize));
+        Map<String, Object> data = new HashMap<>();
+        data.put("total", page.getTotal());
+        data.put("rows", page.getRows());
+        return R.ok(data);
+    }
+
+    /**
+     * 审批请假申请（通过时将请假区间考勤记录置为 leave 状态，月度统计生效）
+     */
+    @SaCheckPermission("sch:appApply:approve")
+    @PostMapping("/leave-approve")
+    public R<?> approveLeaveApply(@Valid @RequestBody SchApplyApproveBo bo) {
+        schAppApplyService.approveLeaveApply(bo);
+        return R.ok();
     }
 
     /**
@@ -540,6 +674,23 @@ public class AppSchAttendanceController {
             // 开放接口/无登录上下文时回退旧行为
         }
         return workerMapper.selectList(Wrappers.lambdaQuery());
+    }
+
+    /**
+     * 申请提交类接口：必须解析到当前登录用户的工人档案，否则拒绝
+     */
+    private SchWorker requireCurrentWorker() {
+        List<SchWorker> workerList = getWorkerList();
+        if (workerList.isEmpty()) {
+            throw new ServiceException("当前用户未关联工人档案，无法进行考勤申请");
+        }
+        return workerList.get(0);
+    }
+
+    private PageQuery buildPageQuery(Integer pageNum, Integer pageSize) {
+        int safePageNum = (pageNum != null && pageNum > 0) ? pageNum : 1;
+        int safePageSize = (pageSize != null && pageSize > 0) ? pageSize : 10;
+        return new PageQuery(safePageSize, safePageNum);
     }
 
     private Map<String, Object> buildEmptyMonthlyData(String month) {
