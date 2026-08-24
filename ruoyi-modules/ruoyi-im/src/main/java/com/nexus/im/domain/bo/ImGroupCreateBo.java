@@ -20,6 +20,9 @@ public class ImGroupCreateBo {
     /** 群头像 URL，可为空。 */
     private String avatar;
 
+    /** 群描述，可为空（Service 层存入 im_group.remark 列）。 */
+    private String description;
+
     /** 初始成员用户 ID 列表，不能为空。 */
     @NotEmpty(message = "成员不能为空")
     private List<Long> memberUserIds;

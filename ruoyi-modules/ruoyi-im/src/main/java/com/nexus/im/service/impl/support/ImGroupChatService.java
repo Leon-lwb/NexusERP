@@ -310,6 +310,8 @@ public class ImGroupChatService {
         ImGroup g = new ImGroup();
         g.setGroupName(support.normalizeGroupName(bo.getGroupName()));
         g.setAvatar(StrUtil.trimToNull(bo.getAvatar()));
+        // 群描述复用 remark 列存储
+        g.setRemark(StrUtil.trimToNull(bo.getDescription()));
         g.setOwnerUserId(ownerId);
         g.setStatus("0");
         imGroupMapper.insert(g);

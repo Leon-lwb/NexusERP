@@ -36,4 +36,7 @@ public class ImGroup extends TenantEntity {
 
     /** 群组状态：0 正常，1 已解散。 */
     private String status;
+
+    /** 群描述（复用 im_group.remark 列存储，App 端群详情展示）。 */
+    private String remark;
 }

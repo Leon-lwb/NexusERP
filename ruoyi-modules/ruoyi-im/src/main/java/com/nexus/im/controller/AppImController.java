@@ -859,8 +859,13 @@ public class AppImController extends BaseController {
         ImGroupCreateBo bo = new ImGroupCreateBo();
         bo.setGroupName((String) body.get("groupName"));
         bo.setAvatar((String) body.get("avatar"));
+        bo.setDescription((String) body.get("description"));
+        // 兼容旧客户端 memberIds 字段名
         @SuppressWarnings("unchecked")
         List<Number> memberIds = (List<Number>) body.get("memberUserIds");
+        if (memberIds == null) {
+            memberIds = (List<Number>) body.get("memberIds");
+        }
         if (memberIds != null) {
             bo.setMemberUserIds(memberIds.stream().map(Number::longValue).collect(Collectors.toList()));
         }
@@ -910,6 +915,9 @@ public class AppImController extends BaseController {
         map.put("avatar", g.getAvatar());
         map.put("ownerUserId", g.getOwnerUserId());
         map.put("status", g.getStatus());
+        map.put("description", g.getRemark());
+        map.put("memberCount", groupMemberMapper.selectCount(new LambdaQueryWrapper<ImGroupMember>()
+            .eq(ImGroupMember::getGroupId, groupId)));
         return R.ok(map);
     }
 
@@ -924,6 +932,8 @@ public class AppImController extends BaseController {
         }
         List<ImGroupMember> members = groupMemberMapper.selectList(new LambdaQueryWrapper<ImGroupMember>()
             .eq(ImGroupMember::getGroupId, groupId));
+        ImGroup group = groupMapper.selectById(groupId);
+        boolean hasOwner = group != null && group.getOwnerUserId() != null;
 
         List<Map<String, Object>> list = new ArrayList<>();
         for (ImGroupMember m : members) {
@@ -934,6 +944,7 @@ public class AppImController extends BaseController {
             map.put("nickName", u != null ? u.getNickName() : "");
             map.put("avatar", u != null ? u.getAvatar() : "");
             map.put("joinTime", m.getJoinTime());
+            map.put("role", hasOwner && group.getOwnerUserId().equals(m.getUserId()) ? "owner" : "member");
             list.add(map);
         }
         return R.ok(list);
@@ -994,6 +1005,8 @@ public class AppImController extends BaseController {
         update.setGroupId(groupId);
         if (body.containsKey("groupName")) update.setGroupName(body.get("groupName"));
         if (body.containsKey("avatar")) update.setAvatar(body.get("avatar"));
+        // 群描述复用 remark 列存储
+        if (body.containsKey("description")) update.setRemark(body.get("description"));
         groupMapper.updateById(update);
         return R.ok();
     }
