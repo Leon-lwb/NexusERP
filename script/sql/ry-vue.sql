@@ -11,7 +11,7 @@
  Target Server Version : 50714 (5.7.14)
  File Encoding         : 65001
 
- Date: 23/08/2026 20:31:44
+ Date: 24/08/2026 22:34:12
 */
 
 SET NAMES utf8mb4;
@@ -10109,6 +10109,17 @@ CREATE TABLE `sj_distributed_lock`  (
 -- ----------------------------
 -- Records of sj_distributed_lock
 -- ----------------------------
+INSERT INTO `sj_distributed_lock` VALUES ('clearLog', '2026-08-24 20:56:42.202', '2026-08-24 20:55:42.202', '2091872064754577408', '2026-08-24 20:55:42', '2026-08-24 20:55:42');
+INSERT INTO `sj_distributed_lock` VALUES ('clearOfflineNode', '2026-08-24 22:34:15.855', '2026-08-24 22:34:10.855', '2091872064754577408', '2026-08-24 20:55:42', '2026-08-24 22:34:11');
+INSERT INTO `sj_distributed_lock` VALUES ('jobClearLog', '2026-08-24 20:56:41.784', '2026-08-24 20:55:41.784', '2091872064754577408', '2026-08-24 20:55:42', '2026-08-24 20:55:42');
+INSERT INTO `sj_distributed_lock` VALUES ('jobLogMerge', '2026-08-24 22:34:41.792', '2026-08-24 22:33:41.792', '2091872064754577408', '2026-08-24 20:55:42', '2026-08-24 22:33:42');
+INSERT INTO `sj_distributed_lock` VALUES ('jobSummaryDashboard', '2026-08-24 22:34:01.792', '2026-08-24 22:33:41.792', '2091872064754577408', '2026-08-24 20:55:42', '2026-08-24 22:33:42');
+INSERT INTO `sj_distributed_lock` VALUES ('registerNode', '2026-08-24 22:34:16.398', '2026-08-24 22:34:11.398', '2091872064754577408', '2026-08-24 20:55:42', '2026-08-24 22:34:11');
+INSERT INTO `sj_distributed_lock` VALUES ('retryErrorMoreThreshold', '2026-08-24 22:26:42.343', '2026-08-24 22:25:42.343', '2091872064754577408', '2026-08-24 20:55:42', '2026-08-24 22:25:42');
+INSERT INTO `sj_distributed_lock` VALUES ('retryLogMerge', '2026-08-24 21:56:41.792', '2026-08-24 21:55:41.792', '2091872064754577408', '2026-08-24 20:55:42', '2026-08-24 21:55:42');
+INSERT INTO `sj_distributed_lock` VALUES ('retrySummaryDashboard', '2026-08-24 22:34:01.792', '2026-08-24 22:33:41.792', '2091872064754577408', '2026-08-24 20:55:42', '2026-08-24 22:33:42');
+INSERT INTO `sj_distributed_lock` VALUES ('retryTaskMoreThreshold', '2026-08-24 22:26:42.343', '2026-08-24 22:25:42.343', '2091872064754577408', '2026-08-24 20:55:42', '2026-08-24 22:25:42');
+INSERT INTO `sj_distributed_lock` VALUES ('workflowJobSummarySchedule', '2026-08-24 22:34:01.792', '2026-08-24 22:33:41.792', '2091872064754577408', '2026-08-24 20:55:42', '2026-08-24 22:33:42');
 
 -- ----------------------------
 -- Table structure for sj_group_config
@@ -10683,12 +10694,13 @@ CREATE TABLE `sj_server_node`  (
   UNIQUE INDEX `uk_host_id_host_ip`(`host_id`, `host_ip`) USING BTREE,
   INDEX `idx_namespace_id_group_name`(`namespace_id`, `group_name`) USING BTREE,
   INDEX `idx_expire_at_node_type`(`expire_at`, `node_type`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 447 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '服务器节点' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 452 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '服务器节点' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sj_server_node
 -- ----------------------------
-INSERT INTO `sj_server_node` VALUES (446, 'dev', 'ruoyi_group', '2091399422188699648', '10.152.240.20', 28080, '2026-08-23 14:19:56', 1, '{\"systemVersion\":\"1.9.0\",\"executorType\":\"1\"}', '{\"state\":\"up\"}', '2026-08-23 13:37:34', '2026-08-23 14:19:25');
+INSERT INTO `sj_server_node` VALUES (449, 'DEFAULT_SERVER_NAMESPACE_ID', 'DEFAULT_SERVER', '2091872064754577408', '10.152.240.20', 17888, '2026-08-24 22:34:32', 2, '{\"webPort\":8800,\"systemVersion\":\"1.9.0\"}', NULL, '2026-08-24 20:55:42', '2026-08-24 22:34:01');
+INSERT INTO `sj_server_node` VALUES (451, 'dev', 'ruoyi_group', '2091893381105082368', '10.152.240.20', 28080, '2026-08-24 22:34:36', 1, '{\"systemVersion\":\"1.9.0\",\"executorType\":\"1\"}', '{\"state\":\"up\"}', '2026-08-24 22:20:23', '2026-08-24 22:34:06');
 
 -- ----------------------------
 -- Table structure for sj_system_user
@@ -13573,6 +13585,13 @@ INSERT INTO `sys_dict_data` VALUES (601041, '000000', 1, '发布包', 'PACKAGE',
 INSERT INTO `sys_dict_data` VALUES (601042, '000000', 2, '工艺路线', 'ROUTING', 'mes_firmware_source', NULL, 'warning', 'N', 103, 1, '2026-08-22 23:32:53', NULL, NULL, '工艺路线步骤显式指定固件');
 INSERT INTO `sys_dict_data` VALUES (601043, '000000', 3, '物料默认', 'MATERIAL_DEFAULT', 'mes_firmware_source', NULL, 'info', 'N', 103, 1, '2026-08-22 23:32:53', NULL, NULL, '物料默认RELEASED固件兜底');
 INSERT INTO `sys_dict_data` VALUES (601044, '000000', 4, '手动指定', 'MANUAL', 'mes_firmware_source', NULL, 'success', 'N', 103, 1, '2026-08-22 23:32:53', NULL, NULL, '生产负责人在工单上手动更改');
+INSERT INTO `sys_dict_data` VALUES (601111, '000000', 1, '事假', 'personal', 'sch_leave_type', NULL, 'default', 'Y', 103, 1, '2026-08-24 22:22:17', NULL, NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (601112, '000000', 2, '病假', 'sick', 'sch_leave_type', NULL, 'warning', 'N', 103, 1, '2026-08-24 22:22:17', NULL, NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (601113, '000000', 3, '年假', 'annual', 'sch_leave_type', NULL, 'success', 'N', 103, 1, '2026-08-24 22:22:17', NULL, NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (601114, '000000', 4, '调休', 'compensate', 'sch_leave_type', NULL, 'primary', 'N', 103, 1, '2026-08-24 22:22:17', NULL, NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (601115, '000000', 5, '婚假', 'marriage', 'sch_leave_type', NULL, 'success', 'N', 103, 1, '2026-08-24 22:22:17', NULL, NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (601116, '000000', 6, '产假', 'maternity', 'sch_leave_type', NULL, 'primary', 'N', 103, 1, '2026-08-24 22:22:17', NULL, NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (601117, '000000', 7, '其他', 'other', 'sch_leave_type', NULL, 'info', 'N', 103, 1, '2026-08-24 22:22:17', NULL, NULL, NULL);
 INSERT INTO `sys_dict_data` VALUES (610110, '000000', 1, '工程BOM', 'EBOM', 'bd_bom_type', '', 'primary', 'N', 103, 1, '2026-06-16 18:04:23', NULL, NULL, '工程BOM - 设计部门维护');
 INSERT INTO `sys_dict_data` VALUES (610111, '000000', 2, '制造BOM', 'MBOM', 'bd_bom_type', '', 'success', 'N', 103, 1, '2026-06-16 18:04:23', NULL, NULL, '制造BOM - 工艺部门维护');
 INSERT INTO `sys_dict_data` VALUES (610112, '000000', 3, '服务BOM', 'SBOM', 'bd_bom_type', '', 'warning', 'N', 103, 1, '2026-06-16 18:04:23', NULL, NULL, '服务BOM - 售后部门维护');
@@ -14058,6 +14077,7 @@ INSERT INTO `sys_dict_type` VALUES (600910, '000000', '发布包状态', 'mes_re
 INSERT INTO `sys_dict_type` VALUES (600911, '000000', 'BOM选配操作', 'mes_release_pkg_action', 103, 1, '2026-08-22 23:32:53', NULL, NULL, 'MES发布包BOM选配操作类型(REPLACE/ADD/REMOVE)');
 INSERT INTO `sys_dict_type` VALUES (600912, '000000', '发布包配置分组', 'mes_release_cfg_group', 103, 1, '2026-08-22 23:32:53', NULL, NULL, 'MES发布包配置项分组(FLASH/TEST_PARAM/LABEL/PACKAGING/PROCESS)');
 INSERT INTO `sys_dict_type` VALUES (600913, '000000', '固件来源', 'mes_firmware_source', 103, 1, '2026-08-22 23:32:53', NULL, NULL, 'MES工单工序固件绑定来源(PACKAGE/ROUTING/MATERIAL_DEFAULT/MANUAL)');
+INSERT INTO `sys_dict_type` VALUES (601101, '000000', '请假类型', 'sch_leave_type', 103, 1, '2026-08-24 22:22:17', NULL, NULL, 'App考勤请假申请类型');
 INSERT INTO `sys_dict_type` VALUES (3000097, '000000', '产能日历状态', 'prd_calendar_status', 103, 1, '2026-05-29 17:57:25', NULL, NULL, '产能日历记录状态');
 INSERT INTO `sys_dict_type` VALUES (3000100, '000000', '产能对象类型', 'prd_calendar_object_type', 103, 1, '2026-05-29 17:57:25', NULL, NULL, '产能日历关联对象类型');
 INSERT INTO `sys_dict_type` VALUES (3000210, '000000', '产能对象类型', 'prd_capacity_object_type', 103, 1, '2026-05-30 00:46:49', NULL, NULL, '产能日历对象类型');
@@ -14676,6 +14696,9 @@ INSERT INTO `sys_logininfor` VALUES (2091403821027807234, '000000', 'admin', 'pc
 INSERT INTO `sys_logininfor` VALUES (2091404210036920322, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Unknown', 'Unknown', '0', '登录成功', '2026-08-23 13:56:35');
 INSERT INTO `sys_logininfor` VALUES (2091404259408072705, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Unknown', 'Unknown', '0', '登录成功', '2026-08-23 13:56:47');
 INSERT INTO `sys_logininfor` VALUES (2091406649540595714, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Unknown', 'Unknown', '0', '登录成功', '2026-08-23 14:06:16');
+INSERT INTO `sys_logininfor` VALUES (2091524641930723330, '000000', 'admin', 'pc', 'pc', '127.0.0.1', '内网IP', 'Chrome', 'Windows 10 or Windows Server 2016', '0', '登录成功', '2026-08-23 21:55:08');
+INSERT INTO `sys_logininfor` VALUES (2091872487762591745, '000000', 'admin', '', '', '0:0:0:0:0:0:0:1', '内网IP', 'Safari', 'iPhone', '1', '密码输入错误1次', '2026-08-24 20:57:21');
+INSERT INTO `sys_logininfor` VALUES (2091872526211776513, '000000', 'admin', '', '', '0:0:0:0:0:0:0:1', '内网IP', 'Safari', 'iPhone', '0', '登录成功', '2026-08-24 20:57:30');
 
 -- ----------------------------
 -- Table structure for sys_menu
@@ -15667,6 +15690,7 @@ INSERT INTO `sys_menu` VALUES (6185, '底库注册', 6183, 1, '', '', '', 1, 0, 
 INSERT INTO `sys_menu` VALUES (6186, '底库删除', 6183, 2, '', '', '', 1, 0, 'F', '0', '0', 'cv:face:remove', '#', 103, 1, '2026-08-02 15:09:49', NULL, NULL, '删除底库条目');
 INSERT INTO `sys_menu` VALUES (6187, '复查误判', 6184, 1, '', '', '', 1, 0, 'F', '0', '0', 'sch:attendance:review', '#', 103, 1, '2026-08-02 15:09:49', NULL, NULL, '标记误判(PASS)/代打卡(FAIL)');
 INSERT INTO `sys_menu` VALUES (6190, '物料检测调试', 6182, 3, 'detect', 'cv/detect/index', NULL, 1, 0, 'C', '0', '0', 'cv:detect:query', 'search', 103, 1, '2026-08-02 16:25:08', NULL, NULL, '物料标签 OCR/YOLO 检测调试(Phase 2)');
+INSERT INTO `sys_menu` VALUES (6201, 'App考勤申请审批', 2971, 99, '', '', NULL, 1, 0, 'F', '0', '0', 'sch:appApply:approve', '#', 103, 1, '2026-08-24 22:22:17', NULL, NULL, 'App端补卡/请假审批权限(按钮)');
 INSERT INTO `sys_menu` VALUES (9000, '即时通讯', 0, 20, 'im', NULL, NULL, 1, 0, 'M', '0', '0', NULL, 'message', NULL, 1, '2026-05-07 12:55:00', NULL, NULL, '即时通讯一级菜单');
 INSERT INTO `sys_menu` VALUES (9001, '聊天', 9000, 1, 'chat', 'im/chat/index', NULL, 1, 0, 'C', '0', '0', 'im:chat:list', 'chat-dot-round', NULL, 1, '2026-05-07 12:55:03', NULL, NULL, '即时通讯聊天菜单');
 INSERT INTO `sys_menu` VALUES (11638, '请假申请', 5, 1, 'leave', 'workflow/leave/index', '', 1, 0, 'C', '0', '0', 'workflow:leave:list', '#', 103, 1, '2026-04-15 10:51:44', NULL, NULL, '请假申请菜单');
@@ -18136,6 +18160,7 @@ INSERT INTO `sys_oss` VALUES (2091387394862362626, '000000', '2026/08/23/dda28cb
 INSERT INTO `sys_oss` VALUES (2091387395764137986, '000000', '2026/08/23/962599351f5046b1ac2b19a214847849.doc', 'SOP-TB100-WPTEST-V1.0.doc', '.doc', 'http://159.75.14.226:9005/ruoyi/2026/08/23/962599351f5046b1ac2b19a214847849.doc', '{\"bizType\":null,\"fileSize\":1960,\"contentType\":\"application/msword\",\"source\":null,\"uploadIp\":null,\"remark\":null,\"tags\":null,\"refId\":null,\"refType\":null,\"isTemp\":null,\"md5\":null}', 103, '2026-08-23 12:49:46', 1, '2026-08-23 12:49:46', 1, 'minio');
 INSERT INTO `sys_oss` VALUES (2091387396602998785, '000000', '2026/08/23/7cb7826a197342f29b46a1693596bd5c.doc', 'SOP-TB100-QC-V1.0.doc', '.doc', 'http://159.75.14.226:9005/ruoyi/2026/08/23/7cb7826a197342f29b46a1693596bd5c.doc', '{\"bizType\":null,\"fileSize\":1932,\"contentType\":\"application/msword\",\"source\":null,\"uploadIp\":null,\"remark\":null,\"tags\":null,\"refId\":null,\"refType\":null,\"isTemp\":null,\"md5\":null}', 103, '2026-08-23 12:49:46', 1, '2026-08-23 12:49:46', 1, 'minio');
 INSERT INTO `sys_oss` VALUES (2091387397500579841, '000000', '2026/08/23/74555f18b08e430ea32084bdf29dd425.doc', 'SOP-TB100-PKG-V1.0.doc', '.doc', 'http://159.75.14.226:9005/ruoyi/2026/08/23/74555f18b08e430ea32084bdf29dd425.doc', '{\"bizType\":null,\"fileSize\":1992,\"contentType\":\"application/msword\",\"source\":null,\"uploadIp\":null,\"remark\":null,\"tags\":null,\"refId\":null,\"refType\":null,\"isTemp\":null,\"md5\":null}', 103, '2026-08-23 12:49:46', 1, '2026-08-23 12:49:46', 1, 'minio');
+INSERT INTO `sys_oss` VALUES (2091896510231891970, '000000', '2026/08/24/d36223158d264f66b998d2770292ffce.jpg', 'face-6870937414433004176.jpg', '.jpg', 'http://159.75.14.226:9005/ruoyi/2026/08/24/d36223158d264f66b998d2770292ffce.jpg', '{\"bizType\":null,\"fileSize\":150612,\"contentType\":null,\"source\":null,\"uploadIp\":null,\"remark\":null,\"tags\":null,\"refId\":null,\"refType\":null,\"isTemp\":null,\"md5\":null}', -1, '2026-08-24 22:32:48', -1, '2026-08-24 22:32:48', -1, 'minio');
 
 -- ----------------------------
 -- Table structure for sys_oss_config
@@ -20124,7 +20149,7 @@ CREATE TABLE `sys_user`  (
 -- ----------------------------
 -- Records of sys_user
 -- ----------------------------
-INSERT INTO `sys_user` VALUES (1, '000000', 103, 'admin', '系统管理员', 'sys_user', 'NexusERP@163.com', '15888888888', '1', 2074342084062396417, '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', '2026-08-23 14:06:16', 103, 1, '2026-04-15 10:51:23', -1, '2026-08-23 14:06:16', '管理员');
+INSERT INTO `sys_user` VALUES (1, '000000', 103, 'admin', '系统管理员', 'sys_user', 'NexusERP@163.com', '15888888888', '1', 2074342084062396417, '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '0:0:0:0:0:0:0:1', '2026-08-24 20:57:30', 103, 1, '2026-04-15 10:51:23', -1, '2026-08-24 20:57:30', '管理员');
 INSERT INTO `sys_user` VALUES (3, '000000', 108, 'test', '本部门及以下 密码123456', 'sys_user', 'test@169.com', '15388888888', '0', 2074678251479801857, '$2a$10$DwOcThSVZ7TYuS3ypbzD7OBUk1Yabj2wIT9ZwY/JXMXdWEDQTYxbu', '0', '0', '0:0:0:0:0:0:0:1', '2026-07-19 21:24:29', 103, 1, '2026-04-15 10:51:23', -1, '2026-07-19 21:24:29', NULL);
 INSERT INTO `sys_user` VALUES (4, '000000', 102, 'test1', '仅本人 密码666666', 'sys_user', '', '', '0', NULL, '$2a$10$b8yUzN0C71sbz.PhNOCgJe.Tu1yWC3RNrTyjSQ8p1W0.aaUXUJ.Ne', '0', '0', '127.0.0.1', '2026-04-15 10:51:23', 103, 1, '2026-04-15 10:51:23', 4, '2026-04-15 10:51:23', NULL);
 INSERT INTO `sys_user` VALUES (101, '000000', 115, '麦得朶', '麦得朶', 'sys_user', '', '1', '0', NULL, '$2a$10$ucYt.UqfSiVrXfpIyastPeSfEa8NH//2XUJmO/tillbQ3Aiyy9tg2', '0', '0', '127.0.0.1', '2026-07-23 17:53:12', NULL, 1, '2025-10-23 17:03:16', -1, '2026-07-23 17:53:12', '耳朵聋');

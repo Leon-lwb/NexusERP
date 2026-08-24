@@ -11,7 +11,7 @@
  Target Server Version : 50714 (5.7.14)
  File Encoding         : 65001
 
- Date: 23/08/2026 20:33:23
+ Date: 24/08/2026 22:34:30
 */
 
 SET NAMES utf8mb4;
@@ -3088,6 +3088,7 @@ INSERT INTO `sch_attendance` VALUES (30005, '000000', 30005, '钱七', '2026-06-
 INSERT INTO `sch_attendance` VALUES (30006, '000000', 30006, '孙八', '2026-06-01 00:00:00', 30006, '2026-06-01 07:52:00', '2026-06-01 16:08:00', 0, 0, 0.00, 'normal', 'device', 'PUNCH-002', '2号考勤机', NULL, NULL, NULL, NULL, NULL, 100, 1, '2026-06-21 20:53:38', NULL, '2026-06-21 20:53:38', '0');
 INSERT INTO `sch_attendance` VALUES (2052577815196393473, '000000', 12, '张明', '2026-05-08 00:00:00', NULL, '2026-05-08 10:34:21', NULL, 0, 0, 0.00, 'normal', 'manual', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-05-08 10:34:21', 1, '2026-05-08 10:34:21', '0');
 INSERT INTO `sch_attendance` VALUES (2083817090405367809, '000000', 12, '张明', '2026-08-02 00:00:00', NULL, '2026-08-02 15:53:31', '2026-08-02 16:13:21', 0, 0, 0.00, 'normal', 'manual', 'E2E-PASS-TEST', 'PASS验证', 'PASS', '2026-08-02 15:53:31', 1.0000, 2083823493513863169, '[FACE-REVIEW:PASS] E2E误判验证 [FACE-REVIEW:PASS] E2E误判验证 [FACE-REVIEW:PASS] E2E误判验证 [FACE-REVIEW:PASS] E2E误判验证', 103, 1, '2026-08-02 15:28:04', 1, '2026-08-02 16:13:21', '0');
+INSERT INTO `sch_attendance` VALUES (2091896505903370242, '000000', 12, '张明', '2026-08-24 00:00:00', NULL, '2026-08-24 22:32:47', NULL, 0, 0, 0.00, 'normal', 'manual', NULL, NULL, 'NONE', '2026-08-24 22:32:48', NULL, 2091896510231891970, NULL, 103, 1, '2026-08-24 22:32:47', -1, '2026-08-24 22:32:48', '0');
 
 -- ----------------------------
 -- Table structure for sch_employee_schedule
@@ -3578,6 +3579,73 @@ INSERT INTO `sch_holiday` VALUES (3, '000000', '2026-01-02 00:00:00', '元旦', 
 INSERT INTO `sch_holiday` VALUES (5, '000000', '2026-01-03 00:00:00', '元旦', 'legal', 2026, 1, NULL, 103, 1, '2025-12-18 15:41:03', 1, '2025-12-18 15:41:02', '0');
 
 -- ----------------------------
+-- Table structure for sch_leave_apply
+-- ----------------------------
+DROP TABLE IF EXISTS `sch_leave_apply`;
+CREATE TABLE `sch_leave_apply`  (
+  `leave_id` bigint(20) NOT NULL COMMENT '请假申请ID',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000' COMMENT '租户ID',
+  `leave_no` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '申请单号',
+  `worker_id` bigint(20) NOT NULL COMMENT '申请人(工人)ID',
+  `worker_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '申请人姓名',
+  `leave_type` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '请假类型(字典 sch_leave_type)',
+  `start_date` datetime NOT NULL COMMENT '请假开始日期',
+  `end_date` datetime NOT NULL COMMENT '请假结束日期',
+  `duration_days` decimal(5, 1) NOT NULL COMMENT '请假时长(天)',
+  `reason` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '请假事由',
+  `apply_status` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pending' COMMENT '申请状态: pending待审批 / approved已通过 / rejected已驳回 / cancelled已取消',
+  `approve_user_id` bigint(20) NULL DEFAULT NULL COMMENT '审批人用户ID',
+  `approve_user_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '审批人姓名',
+  `approve_time` datetime NULL DEFAULT NULL COMMENT '审批时间',
+  `approve_remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '审批备注',
+  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
+  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志（0存在 1删除）',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
+  PRIMARY KEY (`leave_id`) USING BTREE,
+  INDEX `idx_worker_status`(`worker_id`, `apply_status`) USING BTREE,
+  INDEX `idx_worker_date`(`worker_id`, `start_date`, `end_date`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '考勤请假申请表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of sch_leave_apply
+-- ----------------------------
+
+-- ----------------------------
+-- Table structure for sch_outdoor_punch
+-- ----------------------------
+DROP TABLE IF EXISTS `sch_outdoor_punch`;
+CREATE TABLE `sch_outdoor_punch`  (
+  `punch_id` bigint(20) NOT NULL COMMENT '外勤打卡ID',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000' COMMENT '租户ID',
+  `worker_id` bigint(20) NOT NULL COMMENT '工人ID',
+  `worker_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '工人姓名',
+  `punch_time` datetime NOT NULL COMMENT '外勤打卡时间',
+  `latitude` decimal(10, 6) NULL DEFAULT NULL COMMENT '纬度',
+  `longitude` decimal(10, 6) NULL DEFAULT NULL COMMENT '经度',
+  `address` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '打卡定位地址',
+  `customer_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '拜访客户名称(选填)',
+  `reason` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '外勤事由',
+  `photo_oss_id` bigint(20) NULL DEFAULT NULL COMMENT '现场照片ossId(MinIO存证)',
+  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
+  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志（0存在 1删除）',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
+  PRIMARY KEY (`punch_id`) USING BTREE,
+  INDEX `idx_worker_time`(`worker_id`, `punch_time`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '外勤打卡记录表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of sch_outdoor_punch
+-- ----------------------------
+
+-- ----------------------------
 -- Table structure for sch_plan
 -- ----------------------------
 DROP TABLE IF EXISTS `sch_plan`;
@@ -3746,6 +3814,40 @@ INSERT INTO `sch_shift` VALUES (30002, '000000', 'TEST-SWING', '测试中班', 3
 INSERT INTO `sch_shift` VALUES (30003, '000000', 'TEST-NIGHT', '测试夜班', 30001, '00:00:00', '08:00:00', 8.00, 1, '03:00:00', '03:30:00', 10, 10, 'NIGHT_SHIFT', '#9C27B0', 3, '夜班00:00-08:00', 100, 1, '2026-06-21 20:53:38', 1, '2026-07-04 19:18:57', '1');
 INSERT INTO `sch_shift` VALUES (2091200579727568897, '000000', 'PBJH2026TB01-1', '早班', 2091200579463327746, '08:00:00', '16:00:00', 8.00, 0, NULL, NULL, NULL, NULL, 'production', '#490707', 1, NULL, 103, 1, '2026-08-23 00:27:25', 1, '2026-08-23 14:01:11', '0');
 INSERT INTO `sch_shift` VALUES (2091200580490932225, '000000', 'PBJH2026TB01-2', '晚班', 2091200579463327746, '16:00:00', '23:59:59', 8.00, 0, NULL, NULL, NULL, NULL, 'production', '#a92b2b', 2, NULL, 103, 1, '2026-08-23 00:27:26', 1, '2026-08-23 13:43:18', '0');
+
+-- ----------------------------
+-- Table structure for sch_supplement_apply
+-- ----------------------------
+DROP TABLE IF EXISTS `sch_supplement_apply`;
+CREATE TABLE `sch_supplement_apply`  (
+  `apply_id` bigint(20) NOT NULL COMMENT '补卡申请ID',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000' COMMENT '租户ID',
+  `apply_no` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '申请单号',
+  `worker_id` bigint(20) NOT NULL COMMENT '申请人(工人)ID',
+  `worker_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '申请人姓名',
+  `apply_date` datetime NOT NULL COMMENT '补卡日期',
+  `apply_type` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '补卡类型: clock_in上班缺卡 / clock_out下班缺卡 / full_day全天缺卡',
+  `reason` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '补卡原因',
+  `apply_status` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pending' COMMENT '申请状态: pending待审批 / approved已通过 / rejected已驳回 / cancelled已取消',
+  `approve_user_id` bigint(20) NULL DEFAULT NULL COMMENT '审批人用户ID',
+  `approve_user_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '审批人姓名',
+  `approve_time` datetime NULL DEFAULT NULL COMMENT '审批时间',
+  `approve_remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '审批备注',
+  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
+  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志（0存在 1删除）',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
+  PRIMARY KEY (`apply_id`) USING BTREE,
+  INDEX `idx_worker_status`(`worker_id`, `apply_status`) USING BTREE,
+  INDEX `idx_worker_date`(`worker_id`, `apply_date`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '考勤补卡申请表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of sch_supplement_apply
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for sch_team
