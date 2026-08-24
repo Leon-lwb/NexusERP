@@ -99,12 +99,32 @@ public class AiServiceFacade {
     /** OutputChannel 事件 JSON 解析复用单例（ObjectMapper 线程安全，避免每请求 new 产生 GC 压力） */
     private static final ObjectMapper DRAIN_MAPPER = new ObjectMapper();
 
-    /** 数据查询关键词（包含这些词时走 Agent 模式） */
+    /**
+     * 数据查询强意图词（包含任一即走 Agent 模式）。
+     * <p>仅收录查询/统计强意图词与 ERP 专属业务名词（BOM/工单等词日常对话几乎不出现），
+     * 避免普通知识问答误入 Agent 模式；
+     * 泛化业务词（订单/库存/采购等）移入 {@link #DATA_QUERY_COMBO_KEYWORDS} 组合规则。</p>
+     */
     private static final Set<String> DATA_QUERY_KEYWORDS = Set.of(
-        "查询", "统计", "分析", "报表", "图表", "数据", "金额", "数量",
+        // 查询/统计强意图词
+        "查询", "统计", "报表", "图表", "排行", "占比",
+        // ERP 专属名词（日常知识问答不出现，单独命中即强意图）
+        "BOM", "工单", "补货", "入库", "出库"
+    );
+
+    /**
+     * 数据查询泛化业务词（需与 {@link #DATA_QUERY_INTENT_KEYWORDS} 至少一个意图词组合命中才走 Agent 模式）。
+     * <p>"订单""库存""客户"等词单独出现时无法区分知识问答与数据查询
+     * （如"什么是安全库存"），组合命中可将误路由率显著降低。</p>
+     */
+    private static final Set<String> DATA_QUERY_COMBO_KEYWORDS = Set.of(
         "订单", "库存", "采购", "销售", "生产", "供应商", "客户", "物料",
-        "趋势", "排行", "占比", "分布", "对比", "总", "多少", "几个",
-        "BOM", "工单", "补货", "退货", "入库", "出库", "仓库"
+        "退货", "仓库", "金额"
+    );
+
+    /** 数据查询意图词（与组合业务词搭配判定，如"订单金额多少""库存数量统计"） */
+    private static final Set<String> DATA_QUERY_INTENT_KEYWORDS = Set.of(
+        "数量", "多少", "几个", "趋势", "分布", "对比", "分析", "总", "数据"
     );
 
     /** 知识库检索关键词（包含这些词时走 RAG 增强模式） */
@@ -197,11 +217,24 @@ public class AiServiceFacade {
 
         // 5a. 显式开关优先（独立于 mode，用户主动开启时覆盖路由）
         if (Boolean.TRUE.equals(request.getEnableWebSearch())) {
-            invokeWithWebSearch(modelConfig, request, userId, finalSessionId, tenantId, finalUserName, tenantIdStr);
+            // 深度思考开启时改走"先检索后流式"：Agent 路径同步一次性返回，无法流式输出与展示思考过程
+            if (Boolean.TRUE.equals(request.getEnableThinking())) {
+                invokeWithWebSearchStreaming(modelConfig, request, userId, finalSessionId, tenantId, finalUserName, tenantIdStr);
+            } else {
+                invokeWithWebSearch(modelConfig, request, userId, finalSessionId, tenantId, finalUserName, tenantIdStr);
+            }
             return sessionId;
         }
 
-        // 5b. 模式路由
+        // 5b. 深度思考开关优先：Agent 路径是同步一次性返回，无法流式输出思考过程；
+        // 用户显式开启 enableThinking 期待流式思考展示，因此强制走流式路径（显式 agent/rag 模式仍按模式路由）
+        boolean forceStreaming = Boolean.TRUE.equals(request.getEnableThinking());
+        if (forceStreaming && !("agent".equalsIgnoreCase(request.getMode()) || "rag".equalsIgnoreCase(request.getMode()))) {
+            invokeWithStreaming(modelConfig, request, userId, finalSessionId, tenantId, finalUserName, tenantIdStr);
+            return sessionId;
+        }
+
+        // 5c. 模式路由
         boolean needAgent;
         boolean needRag;
 
@@ -850,12 +883,17 @@ public class AiServiceFacade {
 
     /**
      * 判断用户输入是否包含数据查询关键词
+     * <p>强意图词（查询/统计/BOM...）单独命中即路由；泛化业务词（订单/库存...）
+     * 需与意图词（数量/多少/分析...）组合命中才路由，避免普通知识问答误入 Agent 模式。
+     * 包级静态便于单测直接验证路由规则。</p>
      *
      * @param input 用户输入
      * @return 是否需要走 Agent 模式
      */
-    private boolean containsDataQueryKeywords(String input) {
-        return containsKeywords(input, DATA_QUERY_KEYWORDS);
+    static boolean containsDataQueryKeywords(String input) {
+        return containsKeywords(input, DATA_QUERY_KEYWORDS)
+            || (containsKeywords(input, DATA_QUERY_COMBO_KEYWORDS)
+                && containsKeywords(input, DATA_QUERY_INTENT_KEYWORDS));
     }
 
     /**
@@ -875,7 +913,7 @@ public class AiServiceFacade {
      * @param keywords 关键词集合
      * @return 是否包含任一关键词
      */
-    private boolean containsKeywords(String input, Set<String> keywords) {
+    private static boolean containsKeywords(String input, Set<String> keywords) {
         if (input == null || input.isEmpty()) {
             return false;
         }
@@ -893,6 +931,62 @@ public class AiServiceFacade {
      */
     private boolean containsWebSearchKeywords(String input) {
         return containsKeywords(input, WEB_SEARCH_KEYWORDS);
+    }
+
+    /**
+     * 联网搜索 + 流式回答（enableWebSearch 与 enableThinking 同时开启时）。
+     * <p>Agent 路径（{@link #invokeWithWebSearch}）是同步一次性返回，无法流式输出与展示思考过程；
+     * 本路径改为先同步调用 {@link WebSearchTool#webSearch} 纯 HTTP 检索（无 LLM 参与），
+     * 将搜索结果注入提示词后走流式生成，检索增强与思考流式展示两者兼得。
+     * 检索来源经 SearchSourceHolder 收集后仍走来源卡片推送；检索失败不阻断对话，降级为普通流式回答。</p>
+     */
+    private void invokeWithWebSearchStreaming(AiModel modelConfig, AiChatRequest request,
+                                              Long userId, Long sessionId, Long tenantId, String userName, String tenantIdStr) {
+        AiSseMessageHelper.sendThinking(userId);
+
+        CompletableFuture.runAsync(() -> {
+            try {
+                AiRequestContext.set(tenantId, userId, userName, sessionId,
+                    modelConfig.getId(), modelConfig.getModelName());
+
+                // 1. 同步检索（纯 HTTP 调 Tavily/Bing，无 LLM；期间收集来源到 SearchSourceHolder）
+                String searchResult;
+                try {
+                    searchResult = webSearchTool.webSearch(request.getContent());
+                } catch (Exception e) {
+                    log.warn("[AI] 联网搜索检索失败，降级为普通流式回答: {}", e.getMessage());
+                    searchResult = null;
+                }
+
+                // 2. 构造增强提示词：业务上下文 + 检索结果 + 原始问题（与 buildInjectedPrompt 的结构保持一致）
+                String enhancedContent;
+                if (searchResult != null && !searchResult.contains("联网搜索未配置或未启用") && !searchResult.contains("搜索失败")) {
+                    log.info("[AI] 联网搜索完成，检索结果长度={}字符，注入增强提示词后流式生成", searchResult.length());
+                    pushWebSearchSources(userId);
+                    enhancedContent = "以下是与用户问题相关的联网搜索结果（供参考，回答时请注明信息来源链接）：\n\n"
+                        + searchResult + "\n\n【用户问题】\n" + request.getContent();
+                } else {
+                    // 未配置 Key 或检索失败时降级，提示词保持原样（模型会自行说明无法联网）
+                    log.info("[AI] 联网搜索不可用（{}），降级为普通流式回答", searchResult);
+                    enhancedContent = request.getContent();
+                }
+
+                // 3. 替换请求 content 为增强提示词（业务上下文经 invokeWithStreaming 内的
+                // injectContextIntoLastUserMessage 继续注入），走流式生成
+                AiChatRequest enhancedRequest = new AiChatRequest();
+                enhancedRequest.setContent(enhancedContent);
+                enhancedRequest.setContext(request.getContext());
+                enhancedRequest.setEnableThinking(request.getEnableThinking());
+                invokeWithStreaming(modelConfig, enhancedRequest, userId, sessionId, tenantId, userName, tenantIdStr);
+            } catch (Exception e) {
+                log.error("AI 联网搜索流式对话失败", e);
+                AiSseMessageHelper.sendError(userId, "联网搜索失败: " + e.getMessage());
+            } finally {
+                SearchSourceHolder.clear();
+                // invokeWithStreaming 异步派发后即可清理（上下文已在其闭包内重新设置）
+                AiRequestContext.clear();
+            }
+        }, aiExecutor);
     }
 
     /**

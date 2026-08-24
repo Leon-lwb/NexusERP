@@ -376,11 +376,11 @@ nexus:
     thinking:
       enabled: true
       default-on: false
-    # 联网搜索
+    # 联网搜索（Key 存于 application-secret.yml 的 secret.tavily.api-key，环境变量 WEB_SEARCH_API_KEY 优先覆盖）
     web-search:
       enabled: true
       provider: tavily
-      api-key: ${WEB_SEARCH_API_KEY:}
+      api-key: ${WEB_SEARCH_API_KEY:${secret.tavily.api-key:}}
       top-n: 5
       timeout-ms: 15000
     # 文生图
