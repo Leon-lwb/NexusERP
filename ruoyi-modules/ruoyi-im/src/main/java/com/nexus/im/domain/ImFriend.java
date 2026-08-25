@@ -30,4 +30,7 @@ public class ImFriend extends TenantEntity {
 
     /** 该用户的好友（对端）用户 ID。 */
     private Long friendUserId;
+
+    /** 我对该好友的备注（存于关系持有方一侧）。 */
+    private String remark;
 }

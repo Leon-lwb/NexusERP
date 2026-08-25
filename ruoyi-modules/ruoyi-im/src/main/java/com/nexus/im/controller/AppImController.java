@@ -20,7 +20,9 @@ import com.nexus.im.domain.bo.ImGroupCreateBo;
 import com.nexus.im.domain.bo.ImGroupMemberAddBo;
 import com.nexus.im.domain.bo.ImGroupSendBo;
 import com.nexus.im.domain.bo.ImPrivateSendBo;
+import com.nexus.im.domain.vo.ImContactDeptVo;
 import com.nexus.im.domain.vo.ImConversationVo;
+import com.nexus.im.domain.vo.ImFriendVo;
 import com.nexus.im.domain.vo.ImSyncResultVo;
 import com.nexus.im.domain.vo.ImSearchResultVo;
 import com.nexus.im.mapper.*;
@@ -28,7 +30,9 @@ import com.nexus.im.push.ImEnvelopeHelper;
 import com.nexus.im.push.ImRealtimePush;
 import com.nexus.im.service.IImChatService;
 import com.nexus.im.service.ISysUserNotificationService;
+import com.nexus.im.service.impl.support.ImContactSupport;
 import com.nexus.im.service.impl.support.ImConversationService;
+import com.nexus.im.service.impl.support.ImOnlineCache;
 import com.nexus.system.domain.SysUser;
 import com.nexus.system.domain.vo.SysUserVo;
 import com.nexus.system.mapper.SysUserMapper;
@@ -88,6 +92,10 @@ public class AppImController extends BaseController {
     private final ImConversationSettingMapper conversationSettingMapper;
     /** 消息收藏 Mapper。 */
     private final ImFavoriteMapper favoriteMapper;
+    /** 通讯录聚合辅助组件（部门树/好友列表/备注）。 */
+    private final ImContactSupport contactSupport;
+    /** 在线状态缓存（心跳维护）。 */
+    private final ImOnlineCache onlineCache;
 
     // ==================== Session ====================
 
@@ -97,6 +105,8 @@ public class AppImController extends BaseController {
     @PostMapping("/login")
     public R<Map<String, Object>> login() {
         Long userId = LoginHelper.getUserId();
+        // 登录即视为活跃，刷新在线标记
+        onlineCache.touch(userId);
         SysUserVo user = userMapper.selectVoById(userId);
         Map<String, Object> data = new HashMap<>();
         data.put("userId", userId);
@@ -107,10 +117,20 @@ public class AppImController extends BaseController {
     }
 
     /**
-     * IM 登出（无状态）
+     * IM 登出（无状态），清除在线标记
      */
     @PostMapping("/logout")
     public R<Void> logout() {
+        onlineCache.offline(LoginHelper.getUserId());
+        return R.ok();
+    }
+
+    /**
+     * 在线心跳：App 前端随 WebSocket 心跳周期调用，刷新在线状态 TTL
+     */
+    @PostMapping("/heartbeat")
+    public R<Void> heartbeat() {
+        onlineCache.touch(LoginHelper.getUserId());
         return R.ok();
     }
 
@@ -152,42 +172,50 @@ public class AppImController extends BaseController {
      */
     @GetMapping("/user/{userId}")
     public R<SysUserVo> userInfo(@PathVariable Long userId) {
+        // P0-1: 补跨租户校验，防止越租户读取用户资料
+        requireSameTenantUser(userId);
         SysUserVo user = userMapper.selectVoById(userId);
         return user != null ? R.ok(user) : R.fail("用户不存在");
+    }
+
+    // ==================== 通讯录 ====================
+
+    /**
+     * 通讯录聚合接口：部门树 + 每部门直属成员（含岗位、在线状态、人数统计）。
+     * <p>仅登录即可访问，替代原前端拼装 system:dept/list + system:user/list 的管理端接口组合。
+     */
+    @GetMapping("/contact/list")
+    public R<List<ImContactDeptVo>> contactList() {
+        return R.ok(contactSupport.buildContactTree());
     }
 
     // ==================== 好友列表 ====================
 
     /**
-     * 好友列表（从好友关系表读取）
+     * 好友列表（批量组装用户资料/头像/在线状态，附备注）
      */
     @GetMapping("/friend/list")
-    public R<List<Map<String, Object>>> friendList() {
+    public R<List<ImFriendVo>> friendList() {
         Long me = LoginHelper.getUserId();
-        String tenantId = TenantHelper.getTenantId();
-        List<ImFriend> relations;
-        if (TenantHelper.isEnable()) {
-            relations = friendMapper.selectList(new LambdaQueryWrapper<ImFriend>()
-                .eq(ImFriend::getTenantId, tenantId)
-                .eq(ImFriend::getUserId, me));
-        } else {
-            relations = friendMapper.selectList(new LambdaQueryWrapper<ImFriend>()
-                .eq(ImFriend::getUserId, me));
-        }
+        return R.ok(contactSupport.buildFriendList(me));
+    }
 
-        List<Map<String, Object>> friends = new ArrayList<>();
-        for (ImFriend rel : relations) {
-            SysUserVo u = userMapper.selectVoById(rel.getFriendUserId());
-            if (u != null) {
-                Map<String, Object> f = new HashMap<>();
-                f.put("userId", u.getUserId());
-                f.put("userName", u.getUserName());
-                f.put("nickName", u.getNickName());
-                f.put("avatar", u.getAvatar());
-                friends.add(f);
-            }
+    /**
+     * 修改好友备注（仅本人维度，只影响我看到的名称）
+     */
+    @PostMapping("/friend/remark")
+    public R<Void> updateFriendRemark(@RequestBody Map<String, Object> body) {
+        Long friendUserId = body.get("friendUserId") != null
+            ? Long.valueOf(body.get("friendUserId").toString()) : null;
+        if (friendUserId == null || friendUserId <= 0) {
+            return R.fail("好友ID无效");
         }
-        return R.ok(friends);
+        String remark = body.get("remark") != null ? body.get("remark").toString() : null;
+        if (remark != null && remark.length() > 500) {
+            return R.fail("备注最长500字符");
+        }
+        boolean updated = contactSupport.updateFriendRemark(LoginHelper.getUserId(), friendUserId, remark);
+        return updated ? R.ok() : R.fail("好友关系不存在");
     }
 
     // ==================== 好友请求 ====================
@@ -935,14 +963,41 @@ public class AppImController extends BaseController {
         ImGroup group = groupMapper.selectById(groupId);
         boolean hasOwner = group != null && group.getOwnerUserId() != null;
 
+        // 批量加载用户资料与头像 URL（消除 N+1；avatar 由 OSS ID 解析为可访问 URL）
+        Set<Long> userIds = members.stream()
+            .map(ImGroupMember::getUserId)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toSet());
+        Map<Long, SysUserVo> usersById = new HashMap<>();
+        if (!userIds.isEmpty()) {
+            for (SysUserVo u : userMapper.selectVoByIds(userIds)) {
+                if (u != null && u.getUserId() != null) {
+                    usersById.put(u.getUserId(), u);
+                }
+            }
+        }
+        // 批量解析头像 OSS URL
+        Set<Long> avatarIds = usersById.values().stream()
+            .map(SysUserVo::getAvatar)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toSet());
+        Map<Long, String> avatarUrlMap = new HashMap<>();
+        for (Long ossId : avatarIds) {
+            String url = imChatService.resolveAvatarUrl(ossId);
+            if (url != null && !url.isEmpty()) {
+                avatarUrlMap.put(ossId, url);
+            }
+        }
+
         List<Map<String, Object>> list = new ArrayList<>();
         for (ImGroupMember m : members) {
-            SysUserVo u = userMapper.selectVoById(m.getUserId());
+            SysUserVo u = usersById.get(m.getUserId());
             Map<String, Object> map = new HashMap<>();
             map.put("userId", m.getUserId());
             map.put("userName", u != null ? u.getUserName() : "");
             map.put("nickName", u != null ? u.getNickName() : "");
-            map.put("avatar", u != null ? u.getAvatar() : "");
+            Long avatarId = u != null ? u.getAvatar() : null;
+            map.put("avatar", avatarId == null ? "" : avatarUrlMap.getOrDefault(avatarId, ""));
             map.put("joinTime", m.getJoinTime());
             map.put("role", hasOwner && group.getOwnerUserId().equals(m.getUserId()) ? "owner" : "member");
             list.add(map);
