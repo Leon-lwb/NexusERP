@@ -7,7 +7,7 @@
 <script lang="ts" setup>
 import { computed, ref, watch, onMounted } from 'vue';
 
-defineOptions({ name: 'NmSelDict' });
+defineOptions({ name: 'FlowSelDict' });
 
 const props = defineProps({
   nm: {

@@ -40,7 +40,7 @@ const formData = reactive({
   subs: props.initialData?.subs?.length ? [...props.initialData.subs] : [{}]
 });
 
-// 动态组件注册表（getComponentType 返回 nbMade 组件集合），组件 props 各不相同，返回 any 交由运行时处理
+// 动态组件注册表（getComponentType 返回 Flow 组件集合），组件 props 各不相同，返回 any 交由运行时处理
 const getComponent = (field: OnlFieldVo): any => {
   return getComponentType(field.htmlType);
 };

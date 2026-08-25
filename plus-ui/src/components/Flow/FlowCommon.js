@@ -1,4 +1,4 @@
-const NmNotNull = (rule, value, callback) => {
+const FlowNotNull = (rule, value, callback) => {
   let reg = /^1(3|4|5|7|8)\d{9}$/;
   if (!reg.test(value)) {
     callback('不能为空');
@@ -7,7 +7,7 @@ const NmNotNull = (rule, value, callback) => {
   }
 };
 
-const NmPhone = (rule, value, callback) => {
+const FlowPhone = (rule, value, callback) => {
   let reg = /^1(3|4|5|7|8)\d{9}$/;
   if (!reg.test(value)) {
     callback('请输入正确手机号');
@@ -16,7 +16,7 @@ const NmPhone = (rule, value, callback) => {
   }
 };
 
-const NmTelPhone = (rule, value, callback) => {
+const FlowTelPhone = (rule, value, callback) => {
   let reg = /^\d{3}-\d{7,8}|\d{4}-\d{7,8}$/;
   if (!reg.test(value)) {
     callback('请输入正确的座机号');
@@ -25,7 +25,7 @@ const NmTelPhone = (rule, value, callback) => {
   }
 };
 
-const NmEmail = (rule, value, callback) => {
+const FlowEmail = (rule, value, callback) => {
   let reg = /^[a-zA-Z0-9_-]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+$/;
   if (!reg.test(value)) {
     callback('请输入正确的邮箱');
@@ -34,7 +34,7 @@ const NmEmail = (rule, value, callback) => {
   }
 };
 
-const NmEmailCode = (rule, value, callback) => {
+const FlowEmailCode = (rule, value, callback) => {
   let reg = /^[0-9]\d{5}$/;
   if (!reg.test(value)) {
     callback('请输入正确的邮编');
@@ -43,7 +43,7 @@ const NmEmailCode = (rule, value, callback) => {
   }
 };
 
-const NmEn = (rule, value, callback) => {
+const FlowEn = (rule, value, callback) => {
   let reg = /^[a-zA-Z]+$/;
   if (!reg.test(value)) {
     callback('请输入正确的字母');
@@ -52,7 +52,7 @@ const NmEn = (rule, value, callback) => {
   }
 };
 
-const NmNumber = (rule, value, callback) => {
+const FlowNumber = (rule, value, callback) => {
   let reg = /^[0-9]+$/;
   if (!reg.test(value)) {
     callback('请输入数字');
@@ -61,7 +61,7 @@ const NmNumber = (rule, value, callback) => {
   }
 };
 
-const NmZhengShu = (rule, value, callback) => {
+const FlowZhengShu = (rule, value, callback) => {
   let reg = /^-?[1-9]\d*$/;
   if (!reg.test(value)) {
     callback('请输入整数');
@@ -70,7 +70,7 @@ const NmZhengShu = (rule, value, callback) => {
   }
 };
 
-const NmMoney = (rule, value, callback) => {
+const FlowMoney = (rule, value, callback) => {
   let reg = /^(([1-9][0-9]*)|(([0]\.\d{1,2}|[1-9][0-9]*\.\d{1,2})))$/;
   if (!reg.test(value)) {
     callback('请输入正确金额');
@@ -79,7 +79,7 @@ const NmMoney = (rule, value, callback) => {
   }
 };
 
-const Nm616Num = (rule, value, callback) => {
+const Flow616Num = (rule, value, callback) => {
   let reg = /^[0-9]+$/;
   let reg2 = /^.{6,16}$/;
   // 长度为6到16位数字
@@ -92,7 +92,7 @@ const Nm616Num = (rule, value, callback) => {
   }
 };
 
-const Nm616All = (rule, value, callback) => {
+const Flow616All = (rule, value, callback) => {
   let reg = /^.{6,16}$/;
   // 长度为6到16位任意字符
   if (value !== '' && !reg.test(value)) {
@@ -102,7 +102,7 @@ const Nm616All = (rule, value, callback) => {
   }
 };
 
-const Nm618All = (rule, value, callback) => {
+const Flow618All = (rule, value, callback) => {
   let reg = /^.{6,18}$/;
   // 长度为6到16位任意字符
   if (value !== '' && !reg.test(value)) {
@@ -112,7 +112,7 @@ const Nm618All = (rule, value, callback) => {
   }
 };
 
-const Nm618Val = (rule, value, callback) => {
+const Flow618Val = (rule, value, callback) => {
   let reg = /^[_a-zA-Z0-9]+$/;
   let reg2 = /^.{4,18}$/;
   // 长度为6到18个字符
@@ -125,7 +125,7 @@ const Nm618Val = (rule, value, callback) => {
   }
 };
 
-const NmNaturNum = () => {
+const FlowNaturNum = () => {
   let reg = /^(([0-9]*[1-9][0-9]*)|(0+))$/;
   if (!reg.test(value)) {
     callback('请输入自然数');
@@ -134,7 +134,7 @@ const NmNaturNum = () => {
   }
 };
 
-const NmENmh = () => {
+const FlowEFlowh = () => {
   let reg = /^.[A-Za-z]+$/;
   if (!reg.test(value)) {
     callback('请输入英文字符');
@@ -143,7 +143,7 @@ const NmENmh = () => {
   }
 };
 
-const NmBankNo = () => {
+const FlowBankNo = () => {
   let reg = /^[1-9]\d{9,19}$/;
   if (!reg.test(value)) {
     callback('请输入正确的银行卡号码');
@@ -152,7 +152,7 @@ const NmBankNo = () => {
   }
 };
 
-const NmIDCard = () => {
+const FlowIDCard = () => {
   let reg =
     /(^[1-9]\d{5}(18|19|([23]\d))\d{2}((0[1-9])|(10|11|12))(([0-2][1-9])|10|20|30|31)\d{3}[0-9Xx]$)|(^[1-9]\d{7}((0[1-9])|(10|11|12))(([0-2][1-9])|10|20|30|31)\d{3}$)/;
   if (!reg.test(value)) {
@@ -162,7 +162,7 @@ const NmIDCard = () => {
   }
 };
 
-const NmQQNo = () => {
+const FlowQQNo = () => {
   let reg = /^[1-9]\d{4,11}$/;
   if (!reg.test(value)) {
     callback('请输入正确的QQ号码');
@@ -171,7 +171,7 @@ const NmQQNo = () => {
   }
 };
 
-const NmWWW = () => {
+const FlowWWW = () => {
   let reg = /^(http|https):\/\/[\w\-_]+(\.[\w\-_]+)+([\w\-.,@?^=%&:/~+#]*[\w\-@?^=%&/~+#])?$/;
   if (!reg.test(value)) {
     callback('请输入以http和https开头的网址');
@@ -180,7 +180,7 @@ const NmWWW = () => {
   }
 };
 
-const Nm020 = () => {
+const Flow020 = () => {
   let reg = /^[a-z0-9A-Z]{0,20}$/;
   if (!reg.test(value)) {
     callback('请输入20位以内的英文字符和数字');
@@ -190,49 +190,49 @@ const Nm020 = () => {
 };
 
 // 校验规则集合（供表单 rules 引用）
-const NmRule = {
-  NmNotNull,
-  NmPhone,
-  NmTelPhone,
-  NmEmail,
-  NmEmailCode,
-  NmEn,
-  NmNumber,
-  NmZhengShu,
-  NmMoney,
-  Nm616Num,
-  Nm616All,
-  Nm618All,
-  Nm618Val,
-  NmNaturNum,
-  NmENmh,
-  NmBankNo,
-  NmIDCard,
-  NmQQNo,
-  NmWWW,
-  Nm020
+const FlowRule = {
+  FlowNotNull,
+  FlowPhone,
+  FlowTelPhone,
+  FlowEmail,
+  FlowEmailCode,
+  FlowEn,
+  FlowNumber,
+  FlowZhengShu,
+  FlowMoney,
+  Flow616Num,
+  Flow616All,
+  Flow618All,
+  Flow618Val,
+  FlowNaturNum,
+  FlowEFlowh,
+  FlowBankNo,
+  FlowIDCard,
+  FlowQQNo,
+  FlowWWW,
+  Flow020
 };
 
 export {
-  NmNotNull,
-  NmPhone,
-  NmTelPhone,
-  NmEmail,
-  NmEmailCode,
-  NmEn,
-  NmNumber,
-  NmZhengShu,
-  NmMoney,
-  Nm616Num,
-  Nm616All,
-  Nm618All,
-  Nm618Val,
-  NmNaturNum,
-  NmENmh,
-  NmBankNo,
-  NmIDCard,
-  NmQQNo,
-  NmWWW,
-  Nm020,
-  NmRule
+  FlowNotNull,
+  FlowPhone,
+  FlowTelPhone,
+  FlowEmail,
+  FlowEmailCode,
+  FlowEn,
+  FlowNumber,
+  FlowZhengShu,
+  FlowMoney,
+  Flow616Num,
+  Flow616All,
+  Flow618All,
+  Flow618Val,
+  FlowNaturNum,
+  FlowEFlowh,
+  FlowBankNo,
+  FlowIDCard,
+  FlowQQNo,
+  FlowWWW,
+  Flow020,
+  FlowRule
 };

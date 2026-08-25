@@ -1,23 +1,25 @@
 <template>
-  <el-radio-group :disabled="disabled" v-model="localValue" @change="commonComponent">
-    <el-radio v-for="(item, index) in options" :key="index" :label="item.id">
-      {{ item.name }}
-    </el-radio>
-  </el-radio-group>
+  <div class="img">
+    <image-upload :disabled="disabled" v-model="localValue" @change="commonComponent"></image-upload>
+  </div>
 </template>
 
 <script lang="ts">
-import { computed, ref, watch, onMounted } from 'vue';
+import { ref, watch, onMounted } from 'vue';
+import ImageUpload from '@/components/ImageUpload/index.vue';
 
 export default {
-  name: 'NmRadio',
+  name: 'nmImage',
+  components: {
+    ImageUpload
+  },
   props: {
     nm: {
       type: Object,
       required: true
     },
     value: {
-      type: [String, Number],
+      type: [String, Array],
       required: false
     },
     disabled: {
@@ -27,11 +29,6 @@ export default {
   },
   setup(props, { emit }) {
     const localValue = ref(props.value);
-
-    const options = computed(() => {
-      const nm = props.nm || {};
-      return (Array.isArray(nm.runtimeDictCode) ? nm.runtimeDictCode : nm.commonDictCode) || [];
-    });
 
     // 监听 props.value 的变化，确保 localValue 与 props.value 保持同步
     watch(
@@ -47,7 +44,8 @@ export default {
     });
 
     // 处理 change 事件
-    const commonComponent = (event) => {
+    const commonComponent = (nmInfo) => {
+      localValue.value = nmInfo;
       emit('commonComponent', { ...props.nm, commonDataInfo: localValue.value });
     };
 
@@ -58,11 +56,14 @@ export default {
 
     return {
       localValue,
-      options,
       commonComponent
     };
   }
 };
 </script>
 
-<style scoped></style>
+<style scoped>
+.img {
+  /* 样式可以根据需要调整 */
+}
+</style>

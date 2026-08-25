@@ -28,7 +28,7 @@
 <script lang="ts" setup>
 import { ref, watch, onMounted } from 'vue';
 
-defineOptions({ name: 'NmInput' });
+defineOptions({ name: 'FlowInput' });
 
 const props = defineProps({
   nm: {

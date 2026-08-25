@@ -1,11 +1,14 @@
 <template>
-  <el-date-picker
-    v-model="localValue"
-    type="datetime"
+  <el-time-select
     :disabled="disabled"
+    v-model="localValue"
+    :picker-options="{
+      start: '00:00',
+      step: '00:01',
+      end: '23:59'
+    }"
     :placeholder="nm.tableTypeDesc"
-    value-format="YYYY-MM-DD HH:mm:ss"
-    @change="commonmomponent"
+    @change="commonComponent"
   />
 </template>
 
@@ -13,7 +16,7 @@
 import { ref, watch, onMounted } from 'vue';
 
 export default {
-  name: 'nmDateTime',
+  name: 'FlowTime',
   props: {
     nm: {
       type: Object,
@@ -45,9 +48,8 @@ export default {
     });
 
     // 处理 change 事件
-    const commonmomponent = (nmInfo) => {
-      localValue.value = nmInfo;
-      emit('commonmomponent', { ...props.nm, commonDataInfo: localValue.value });
+    const commonComponent = () => {
+      emit('commonComponent', { ...props.nm, commonDataInfo: localValue.value });
     };
 
     // 初始化时设置 localValue
@@ -57,7 +59,7 @@ export default {
 
     return {
       localValue,
-      commonmomponent
+      commonComponent
     };
   }
 };

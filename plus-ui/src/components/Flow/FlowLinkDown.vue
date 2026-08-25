@@ -8,7 +8,7 @@
 import { ref, watch, onMounted } from 'vue';
 
 export default {
-  name: 'NmLinkDown',
+  name: 'FlowLinkDown',
   props: {
     nm: {
       type: Object,
@@ -40,10 +40,10 @@ export default {
     const commonComponent = () => {
       // value 声明为 [String, Object]：运行时实际绑定的是选项对象（含 id/children），非对象时保持原行为取 undefined
       const val = localValue.value as Record<string, any> | null | undefined;
-      const updatedNm = val
+      const updatedFlow = val
         ? { ...props.nm, commonDataInfo: val.id, commonLinkDownCodeChild: val.children || [] }
         : { ...props.nm, commonDataInfo: null, commonLinkDownCodeChild: [] };
-      emit('commonComponent', updatedNm);
+      emit('commonComponent', updatedFlow);
     };
 
     // 初始化时设置 localValue

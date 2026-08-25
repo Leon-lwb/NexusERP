@@ -1,25 +1,26 @@
 <template>
-  <div class="img">
-    <image-upload :disabled="disabled" v-model="localValue" @change="commonmomponent"></image-upload>
-  </div>
+  <el-date-picker
+    v-model="localValue"
+    type="date"
+    :disabled="disabled"
+    :placeholder="nm.tableTypeDesc"
+    value-format="YYYY-MM-DD"
+    @change="commonComponent"
+  />
 </template>
 
 <script lang="ts">
 import { ref, watch, onMounted } from 'vue';
-import ImageUpload from '@/components/ImageUpload/index.vue';
 
 export default {
-  name: 'nmImage',
-  components: {
-    ImageUpload
-  },
+  name: 'nmDate',
   props: {
     nm: {
       type: Object,
       required: true
     },
     value: {
-      type: [String, Array],
+      type: String,
       required: false
     },
     disabled: {
@@ -44,9 +45,9 @@ export default {
     });
 
     // 处理 change 事件
-    const commonmomponent = (nmInfo) => {
+    const commonComponent = (nmInfo) => {
       localValue.value = nmInfo;
-      emit('commonmomponent', { ...props.nm, commonDataInfo: localValue.value });
+      emit('commonComponent', { ...props.nm, commonDataInfo: localValue.value });
     };
 
     // 初始化时设置 localValue
@@ -56,14 +57,10 @@ export default {
 
     return {
       localValue,
-      commonmomponent
+      commonComponent
     };
   }
 };
 </script>
 
-<style scoped>
-.img {
-  /* 样式可以根据需要调整 */
-}
-</style>
+<style scoped></style>

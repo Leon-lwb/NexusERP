@@ -1,22 +1,19 @@
 <template>
-  <el-checkbox :disabled="disabled" v-model="localValue" :dictCode="dictcode" @change="commonmomponent" />
+  <el-input type="textarea" :disabled="disabled" :rows="2" :placeholder="nm.tableTypeDesc" v-model="localValue" @change="commonComponent" />
 </template>
 
 <script lang="ts">
 import { ref, watch, onMounted } from 'vue';
 
 export default {
-  name: 'nmCheckbox',
-  components: {
-    ElCheckbox
-  },
+  name: 'FlowTextArea',
   props: {
     nm: {
       type: Object,
       required: true
     },
     value: {
-      type: [String, Boolean],
+      type: String,
       required: false
     },
     disabled: {
@@ -25,7 +22,6 @@ export default {
     }
   },
   setup(props, { emit }) {
-    const dictcode = ref(props.nm.dictField);
     const localValue = ref(props.value);
 
     // 监听 props.value 的变化，确保 localValue 与 props.value 保持同步
@@ -42,20 +38,18 @@ export default {
     });
 
     // 处理 change 事件
-    const commonmomponent = (event) => {
-      emit('commonmomponent', { ...props.nm, commonDataInfo: localValue.value });
+    const commonComponent = () => {
+      emit('commonComponent', { ...props.nm, commonDataInfo: localValue.value });
     };
 
-    // 初始化时设置 localValue 和 dictcode
+    // 初始化时设置 localValue
     onMounted(() => {
       localValue.value = props.value;
-      dictcode.value = props.nm.dictField;
     });
 
     return {
-      dictcode,
       localValue,
-      commonmomponent
+      commonComponent
     };
   }
 };

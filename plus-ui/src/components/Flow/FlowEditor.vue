@@ -8,7 +8,7 @@
 import Editor from '@/components/Editor/index.vue';
 
 export default {
-  name: 'NmEditor',
+  name: 'FlowEditor',
   components: {
     Editor
   },

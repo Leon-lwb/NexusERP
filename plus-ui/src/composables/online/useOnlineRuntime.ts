@@ -181,8 +181,8 @@ export const initAutoGenerateForForm = (fields: any[], form: AnyObj) => {
 
 /**
  * Merge component-emitted commonDataInfo into target form/row.
- * - NmInput emits { [columnName]: value }
- * - NmPopup emits mapped payload (may include both camelCase + snake_case keys)
+ * - FlowInput emits { [columnName]: value }
+ * - FlowPopup emits mapped payload (may include both camelCase + snake_case keys)
  */
 export const applyCommonDataInfo = (nm: any, target: AnyObj) => {
   if (!target || !nm) return;
@@ -568,7 +568,7 @@ export type RuntimeLinkageState = {
 /**
  * Compute "runtime linkage state" for a form scope:
  * - dict cascade: returns per-target filtered options list (for select/radio)
- * - popup query: returns per-target query params (for NmPopup list API)
+ * - popup query: returns per-target query params (for FlowPopup list API)
  *
  * Notes:
  * - currently designed for one scope (main OR one sub-row)

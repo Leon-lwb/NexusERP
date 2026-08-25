@@ -1,33 +1,20 @@
 <template>
-  <el-switch
-    v-model="localValue"
-    class="switch"
-    :disabled="disabled"
-    :active-value="nm.activeValue"
-    :inactive-value="nm.inactiveValue"
-    :active-text="nm.activeText"
-    :inactive-text="nm.inactiveText"
-    @change="commonComponent"
-  />
+  <el-input type="password" :placeholder="nm.tableTypeDesc" v-model="localValue" autocomplete="off" @change="commonComponent" />
 </template>
 
 <script lang="ts">
 import { ref, watch, onMounted } from 'vue';
 
 export default {
-  name: 'NmSwitch',
+  name: 'FlowPassword',
   props: {
     nm: {
       type: Object,
       required: true
     },
     value: {
-      type: [String, Number, Boolean],
+      type: String,
       required: false
-    },
-    disabled: {
-      type: Boolean,
-      default: false
     }
   },
   setup(props, { emit }) {
@@ -64,8 +51,4 @@ export default {
 };
 </script>
 
-<style scoped>
-.switch {
-  /* 样式可以根据需要调整 */
-}
-</style>
+<style scoped></style>

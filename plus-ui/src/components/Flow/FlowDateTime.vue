@@ -1,11 +1,11 @@
 <template>
   <el-date-picker
     v-model="localValue"
-    type="date"
+    type="datetime"
     :disabled="disabled"
     :placeholder="nm.tableTypeDesc"
-    value-format="YYYY-MM-DD"
-    @change="commonmomponent"
+    value-format="YYYY-MM-DD HH:mm:ss"
+    @change="commonComponent"
   />
 </template>
 
@@ -13,7 +13,7 @@
 import { ref, watch, onMounted } from 'vue';
 
 export default {
-  name: 'nmDate',
+  name: 'nmDateTime',
   props: {
     nm: {
       type: Object,
@@ -45,9 +45,9 @@ export default {
     });
 
     // 处理 change 事件
-    const commonmomponent = (nmInfo) => {
+    const commonComponent = (nmInfo) => {
       localValue.value = nmInfo;
-      emit('commonmomponent', { ...props.nm, commonDataInfo: localValue.value });
+      emit('commonComponent', { ...props.nm, commonDataInfo: localValue.value });
     };
 
     // 初始化时设置 localValue
@@ -57,7 +57,7 @@ export default {
 
     return {
       localValue,
-      commonmomponent
+      commonComponent
     };
   }
 };

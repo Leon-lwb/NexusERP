@@ -2,7 +2,7 @@
   <file-upload
     :disabled="disabled"
     v-model="localValue"
-    @change="commonmomponent"
+    @change="commonComponent"
     @remove="handleRemove"
     @preview="handlePreview"
     @exceed="handleExceed"
@@ -51,9 +51,9 @@ export default {
     });
 
     // 处理 change 事件
-    const commonmomponent = (nmInfo) => {
+    const commonComponent = (nmInfo) => {
       localValue.value = nmInfo;
-      emit('commonmomponent', { ...props.nm, commonDataInfo: localValue.value });
+      emit('commonComponent', { ...props.nm, commonDataInfo: localValue.value });
     };
 
     // 初始化时设置 localValue
@@ -63,7 +63,7 @@ export default {
 
     return {
       localValue,
-      commonmomponent
+      commonComponent
     };
   },
   methods: {

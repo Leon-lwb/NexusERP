@@ -1,52 +1,51 @@
-import { NmRule } from '@/components/nbMade/NmCommon.js';
-import NmInput from '@/components/nbMade/NmInput.vue';
-import NmPassword from '@/components/nbMade/NmPassword.vue';
-import NmSwitch from '@/components/nbMade/NmSwitch.vue';
-import NmRadio from '@/components/nbMade/NmRadio.vue';
-import NmCheckbox from '@/components/nbMade/NmCheckbox.vue';
-import NmTextArea from '@/components/nbMade/NmTextArea.vue';
-import NmDate from '@/components/nbMade/NmDate.vue';
-import NmDateTime from '@/components/nbMade/NmDateTime.vue';
-import NmTime from '@/components/nbMade/NmTime.vue';
-import NmImage from '@/components/nbMade/NmImage.vue';
-import NmFile from '@/components/nbMade/NmFile.vue';
-import NmCatTree from '@/components/nbMade/NmCatTree.vue';
-import NmLinkDown from '@/components/nbMade/NmLinkDown.vue';
-import NmEditor from '@/components/nbMade/NmEditor.vue';
-import NmSelDict from '@/components/nbMade/NmSelDict.vue';
-import NmPopup from '@/components/nbMade/NmPopup.vue';
+import FlowInput from '@/components/Flow/FlowInput.vue';
+import FlowPassword from '@/components/Flow/FlowPassword.vue';
+import FlowSwitch from '@/components/Flow/FlowSwitch.vue';
+import FlowRadio from '@/components/Flow/FlowRadio.vue';
+import FlowCheckbox from '@/components/Flow/FlowCheckbox.vue';
+import FlowTextArea from '@/components/Flow/FlowTextArea.vue';
+import FlowDate from '@/components/Flow/FlowDate.vue';
+import FlowDateTime from '@/components/Flow/FlowDateTime.vue';
+import FlowTime from '@/components/Flow/FlowTime.vue';
+import FlowImage from '@/components/Flow/FlowImage.vue';
+import FlowFile from '@/components/Flow/FlowFile.vue';
+import FlowCatTree from '@/components/Flow/FlowCatTree.vue';
+import FlowLinkDown from '@/components/Flow/FlowLinkDown.vue';
+import FlowEditor from '@/components/Flow/FlowEditor.vue';
+import FlowSelDict from '@/components/Flow/FlowSelDict.vue';
+import FlowPopup from '@/components/Flow/FlowPopup.vue';
 
 // 根据组件名称动态设置组件（导出为具名函数，方便直接使用）
 export const getComponentType = (type: string) => {
   switch (type) {
     case 'input':
-      return NmInput;
+      return FlowInput;
     case 'password':
-      return NmPassword;
+      return FlowPassword;
     case 'switch':
-      return NmSwitch;
+      return FlowSwitch;
     case 'radio':
-      return NmRadio;
+      return FlowRadio;
     case 'textarea':
-      return NmTextArea;
+      return FlowTextArea;
     case 'date':
-      return NmDate;
+      return FlowDate;
     case 'datetime':
-      return NmDateTime;
+      return FlowDateTime;
     case 'time':
-      return NmTime;
+      return FlowTime;
     case 'image':
-      return NmImage;
+      return FlowImage;
     case 'file':
-      return NmFile;
+      return FlowFile;
     case 'checkbox':
-      return NmCheckbox;
+      return FlowCheckbox;
     case 'editor':
-      return NmEditor;
+      return FlowEditor;
     case 'select':
-      return NmSelDict;
+      return FlowSelDict;
     case 'popup':
-      return NmPopup;
+      return FlowPopup;
     default:
       console.warn(`${type} is not supported`);
   }

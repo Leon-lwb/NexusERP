@@ -64,7 +64,7 @@ import { ref, watch, onMounted, computed } from 'vue';
 import { listPopupData, getPopupDetail } from '@/api/online';
 import { ElMessage } from 'element-plus';
 
-defineOptions({ name: 'NmPopup' });
+defineOptions({ name: 'FlowPopup' });
 
 const props = defineProps({
   nm: {

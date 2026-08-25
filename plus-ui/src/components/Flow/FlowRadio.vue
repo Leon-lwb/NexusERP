@@ -1,19 +1,23 @@
 <template>
-  <el-input type="textarea" :disabled="disabled" :rows="2" :placeholder="nm.tableTypeDesc" v-model="localValue" @change="commonComponent" />
+  <el-radio-group :disabled="disabled" v-model="localValue" @change="commonComponent">
+    <el-radio v-for="(item, index) in options" :key="index" :label="item.id">
+      {{ item.name }}
+    </el-radio>
+  </el-radio-group>
 </template>
 
 <script lang="ts">
-import { ref, watch, onMounted } from 'vue';
+import { computed, ref, watch, onMounted } from 'vue';
 
 export default {
-  name: 'NmTextArea',
+  name: 'FlowRadio',
   props: {
     nm: {
       type: Object,
       required: true
     },
     value: {
-      type: String,
+      type: [String, Number],
       required: false
     },
     disabled: {
@@ -23,6 +27,11 @@ export default {
   },
   setup(props, { emit }) {
     const localValue = ref(props.value);
+
+    const options = computed(() => {
+      const nm = props.nm || {};
+      return (Array.isArray(nm.runtimeDictCode) ? nm.runtimeDictCode : nm.commonDictCode) || [];
+    });
 
     // 监听 props.value 的变化，确保 localValue 与 props.value 保持同步
     watch(
@@ -38,7 +47,7 @@ export default {
     });
 
     // 处理 change 事件
-    const commonComponent = () => {
+    const commonComponent = (event) => {
       emit('commonComponent', { ...props.nm, commonDataInfo: localValue.value });
     };
 
@@ -49,6 +58,7 @@ export default {
 
     return {
       localValue,
+      options,
       commonComponent
     };
   }

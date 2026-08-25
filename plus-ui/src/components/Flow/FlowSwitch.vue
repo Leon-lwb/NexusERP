@@ -1,13 +1,12 @@
 <template>
-  <el-time-select
-    :disabled="disabled"
+  <el-switch
     v-model="localValue"
-    :picker-options="{
-      start: '00:00',
-      step: '00:01',
-      end: '23:59'
-    }"
-    :placeholder="nm.tableTypeDesc"
+    class="switch"
+    :disabled="disabled"
+    :active-value="nm.activeValue"
+    :inactive-value="nm.inactiveValue"
+    :active-text="nm.activeText"
+    :inactive-text="nm.inactiveText"
     @change="commonComponent"
   />
 </template>
@@ -16,14 +15,14 @@
 import { ref, watch, onMounted } from 'vue';
 
 export default {
-  name: 'NmTime',
+  name: 'FlowSwitch',
   props: {
     nm: {
       type: Object,
       required: true
     },
     value: {
-      type: String,
+      type: [String, Number, Boolean],
       required: false
     },
     disabled: {
@@ -65,4 +64,8 @@ export default {
 };
 </script>
 
-<style scoped></style>
+<style scoped>
+.switch {
+  /* 样式可以根据需要调整 */
+}
+</style>
