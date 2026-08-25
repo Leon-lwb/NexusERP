@@ -202,7 +202,8 @@ const detailProcesssByDataId = (dataId) => {
 };
 const changeTab = (tab, event) => {
   const tabname = toRaw(tab);
-  if (tabname.paneName.value === 'form') {
+  // Element Plus 的 tab.paneName 是字符串，不存在 .value（原写法恒为 undefined，导致表单回显永不执行）
+  if (tabname.paneName === 'form') {
     if (customForm.value.formId === '') {
       // 回填数据,这里主要是处理文件列表显示,临时解决，以后应该在formdesigner里完成
       processFormList.value.forEach((item, i) => {

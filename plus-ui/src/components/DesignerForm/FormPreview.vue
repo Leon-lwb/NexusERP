@@ -183,6 +183,7 @@ import { Close, Search } from '@element-plus/icons-vue';
 import { listDept } from '@/api/system/dept';
 import { listUser } from '@/api/system/user';
 import { getDicts } from '@/api/system/dict/data';
+import { safeArithmeticEval } from '@/utils/safeExpression';
 import type { DictDataVO } from '@/api/system/dict/data/types';
 import type { UserVO } from '@/api/system/user/types';
 import type { DeptVO } from '@/api/system/dept/types';
@@ -973,8 +974,8 @@ const calculateFormula = (formula: string, rowData: any) => {
       }
     });
 
-    // 安全计算
-    const result = eval(calculatedFormula);
+    // 安全计算（安全求值，禁止 eval —— 公式来自表单定义 JSON，存在代码注入风险）
+    const result = safeArithmeticEval(calculatedFormula);
     return result;
   } catch (error) {
     console.error('公式计算失败:', error, { formula, rowData });

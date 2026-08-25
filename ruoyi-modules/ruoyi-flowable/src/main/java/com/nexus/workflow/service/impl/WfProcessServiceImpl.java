@@ -279,7 +279,10 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
             	taskVo.setTaskId(taskList.get(0).getId());
             } else {
                 List<HistoricTaskInstance> historicTaskInstance = historyService.createHistoricTaskInstanceQuery().processInstanceId(hisIns.getId()).orderByHistoricTaskInstanceEndTime().desc().list();
-                taskVo.setTaskId(historicTaskInstance.get(0).getId());
+                // 运行中实例可能既无活动任务也无历史任务（如停在等待事件/异步作业），空列表直接取 get(0) 会越界
+                if (CollUtil.isNotEmpty(historicTaskInstance)) {
+                    taskVo.setTaskId(historicTaskInstance.get(0).getId());
+                }
             }
             taskVoList.add(taskVo);
         }
@@ -542,10 +545,9 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
     @Override
     public FormConf selectFormContent(String definitionId, String deployId, String procInsId) {
         WfDeployForm deployForm = getDeployForm(definitionId,deployId);
-        /*FormConf formConf = JsonUtils.parseObject(deployForm.getContent(), FormConf.class);
-        if (ObjectUtil.isNull(formConf)) {
-            throw new RuntimeException("获取流程表单失败！");
-        }   formdesigner*/
+        if (deployForm == null || StringUtils.isBlank(deployForm.getContent())) {
+            throw new RuntimeException("流程未配置表单，请先在流程设计中关联表单！");
+        }
         Map<String, Object> formModel = JsonUtils.parseObject(deployForm.getContent(), Map.class);
         if (null == formModel || formModel.isEmpty()) {
             throw new RuntimeException("获取流程表单失败！");
@@ -559,6 +561,9 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
                 .processInstanceId(procInsId)
                 .includeProcessVariables()
                 .singleResult();
+            if (historicProcIns == null) {
+                throw new RuntimeException("流程实例不存在: " + procInsId);
+            }
             // 填充表单信息
             //ProcessFormUtils.fillFormData(formConf, historicProcIns.getProcessVariables()); //formdesigner
             formConf.setFormData(historicProcIns.getProcessVariables());
@@ -588,6 +593,7 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
      * @return
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public R<Void> startProcessByDefId(String procDefId, Map<String, Object> variables) {
        ProcessDefinition processDefinition = repositoryService.createProcessDefinitionQuery()
             .processDefinitionId(procDefId).singleResult();
@@ -600,6 +606,7 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
      * @param variables 扩展参数
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public R<Void> startProcessByDefKey(String procDefKey, Map<String, Object> variables) {
         ProcessDefinition processDefinition = repositoryService.createProcessDefinitionQuery()
             .processDefinitionKey(procDefKey).latestVersion().singleResult();
@@ -610,14 +617,24 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
     @Transactional(rollbackFor = Exception.class)
     public void deleteProcessByIds(String[] instanceIds) {
         List<String> ids = Arrays.asList(instanceIds);
+        // 仅保留属于当前租户的历史实例，防止跨租户批量删除他人审批历史
+        List<HistoricProcessInstance> tenantInstances = historyService.createHistoricProcessInstanceQuery()
+            .processInstanceIds(new HashSet<>(ids))
+            .processInstanceTenantId(TenantHelper.getTenantId())
+            .list();
+        if (tenantInstances.isEmpty()) {
+            return;
+        }
+        List<String> tenantIds = tenantInstances.stream()
+            .map(HistoricProcessInstance::getId).collect(Collectors.toList());
         // 校验流程是否结束
         long activeInsCount = runtimeService.createProcessInstanceQuery()
-            .processInstanceIds(new HashSet<>(ids)).active().count();
+            .processInstanceIds(new HashSet<>(tenantIds)).active().count();
         if (activeInsCount > 0) {
             throw new ServiceException("不允许删除进行中的流程实例");
         }
         // 删除历史流程实例
-        historyService.bulkDeleteHistoricProcessInstances(ids);
+        historyService.bulkDeleteHistoricProcessInstances(tenantIds);
     }
 
     /**
@@ -835,10 +852,14 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
 
     /**
      * 启动流程实例
+     * <p>注意：本方法为 private，不可被 Spring 事务代理拦截（同类自调用也不生效），
+     * 事务边界在 public 入口 {@link #startProcessByDefId} / {@link #startProcessByDefKey} 上。</p>
      */
-    @Transactional(rollbackFor = Exception.class)
     private R startProcess(ProcessDefinition procDef, Map<String, Object> variables) {
-        if (ObjectUtil.isNotNull(procDef) && procDef.isSuspended()) {
+        if (procDef == null) {
+            throw new ServiceException("流程定义不存在或已被删除");
+        }
+        if (procDef.isSuspended()) {
             throw new ServiceException("流程已被挂起，请先激活流程");
         }
         // 设置流程发起人Id到流程中,包括变量
@@ -1057,6 +1078,10 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
 			List<Task> nexttasklist = taskService.createTaskQuery().processInstanceId(processInstance.getProcessInstanceId()).active().list();
 			  int i=0;
 			  for (Task nexttask : nexttasklist) {
+				   if (i >= userlist.size()) {
+					    // 活动任务数多于审批人数量（如并行分支既有任务），超出部分不再对位指派，避免越界
+					    break;
+				   }
 				   String assignee = userlist.get(i).toString();
 				   taskService.addComment(nexttask.getId(), processInstance.getProcessInstanceId(),
 							FlowComment.NORMAL.getType(), sysUser.getNickName() + "发起流程申请");
@@ -1244,10 +1269,17 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
             FlowElement targetFlowElement = outgoingFlow.getTargetFlowElement();
             //下个是节点
            if(targetFlowElement instanceof ExclusiveGateway){// 下个出口是排它网关的话,后一个用户任务又是会签的情况下需要approval的赋值处理，否则报错
-        	   usermap =  GetExclusiveGatewayUser(targetFlowElement,variables);//还是需要返回用户与是否并发，因为并发要做特殊处理
-        	   if(usermap != null) {
-        		 userlist = (ArrayList<String>) usermap.get("approval");
-        	     variablesnew.put("approval", userlist);
+        	   Map<String, Object> gatewayUserMap =  GetExclusiveGatewayUser(targetFlowElement,variables);//还是需要返回用户与是否并发，因为并发要做特殊处理
+        	   if(gatewayUserMap != null) {
+        		   // Java 按值传递：不可对 usermap/userlist 参数重新赋值（调用方不可见，原写法导致并发会签分支永远不执行），
+        		   // 必须把结果写回调用方传入的同一容器
+        		   usermap.putAll(gatewayUserMap);
+        		   Object gatewayUserList = gatewayUserMap.get("approval");
+        		   userlist.clear();
+        		   if (gatewayUserList instanceof List) {
+        		       userlist.addAll((List<String>) gatewayUserList);
+        		   }
+        	       variablesnew.put("approval", userlist);
         	   }
         	   if(FindNextNodeUtil.GetExclusiveGatewayExpression(targetFlowElement)) {//下个出口是通用拒绝同意排它网关
         		   variablesnew.put("bapprovedEG",true);
@@ -1277,9 +1309,7 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
             if (StringUtils.isNotBlank(sequenceFlow.getConditionExpression())) {
                 // 获取网关判断条件
             	String expression = sequenceFlow.getConditionExpression();
-                if (expression == null ||Boolean.parseBoolean(
-                                String.valueOf(
-                                		FindNextNodeUtil.result(variables, expression.substring(expression.lastIndexOf("{") + 1, expression.lastIndexOf("}")))))) {
+                if (FindNextNodeUtil.evalCondition(variables, expression)) {
                 	// 网关出线的下个节点是用户节点
                     if(targetFlowElement instanceof UserTask){
                         // 判断是否是会签

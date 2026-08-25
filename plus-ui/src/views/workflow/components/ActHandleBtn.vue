@@ -1,29 +1,29 @@
 <template>
   <span>
-    <a-button :type="btnType" @click="handle()">{{ text }}</a-button>
-    <a-modal :title="modalTaskTitle" v-model="modalTaskVisible" :mask-closable="false" :width="500">
+    <el-button :type="btnType" @click="handle()">{{ text }}</el-button>
+    <el-dialog :title="modalTaskTitle" v-model="modalTaskVisible" width="500px" append-to-body>
       <div v-if="modalTaskVisible">
-        <a-form ref="form" :model="form" :label-width="85">
-          <a-form-item label="处理意见" prop="reason">
-            <a-input type="textarea" v-model="form.comment" :rows="4" />
-          </a-form-item>
+        <el-form ref="formRef" :model="form" label-width="85px">
+          <el-form-item label="处理意见" prop="reason">
+            <el-input type="textarea" v-model="form.comment" :rows="4" />
+          </el-form-item>
           <div v-show="type == 2">
-            <a-form-item label="退回节点" prop="targetKey" v-if="returnTaskList.length">
-              <a-radio-group v-model="form.targetKey">
-                <a-radio-button v-for="item in returnTaskList" :key="item.id" :value="item.id">{{ item.name }}</a-radio-button>
-              </a-radio-group>
-            </a-form-item>
+            <el-form-item label="退回节点" prop="targetKey" v-if="returnTaskList.length">
+              <el-radio-group v-model="form.targetKey">
+                <el-radio-button v-for="item in returnTaskList" :key="item.id" :value="item.id">{{ item.name }}</el-radio-button>
+              </el-radio-group>
+            </el-form-item>
             <span v-else>无可退回节点！</span>
           </div>
-        </a-form>
+        </el-form>
       </div>
-      <template v-slot:footer>
+      <template #footer>
         <div>
-          <a-button type="primary" @click="modalTaskVisible = false">取消</a-button>
-          <a-button type="primary" :loading="submitLoading" @click="handelSubmit">提交</a-button>
+          <el-button @click="modalTaskVisible = false">取消</el-button>
+          <el-button type="primary" :loading="submitLoading" @click="handelSubmit">提交</el-button>
         </div>
       </template>
-    </a-modal>
+    </el-dialog>
   </span>
 </template>
 
@@ -83,13 +83,14 @@ const form = ref({
 const modalTaskTitle = ref('');
 
 const handle = () => {
-  if (props.type === handleType.value.delegate) {
+  // type 可能以字符串('0')或数字(0)传入，统一按宽松比较（与下方 handelSubmit 口径一致）
+  if (props.type == handleType.value.delegate) {
     // delegateTask();
-  } else if (props.type === handleType.value.pass) {
+  } else if (props.type == handleType.value.pass) {
     passTask();
-  } else if (props.type === handleType.value.back) {
+  } else if (props.type == handleType.value.back) {
     backTask();
-  } else if (props.type === handleType.value.return) {
+  } else if (props.type == handleType.value.return) {
     returnBakcTask();
   } else {
     proxy?.$modal.msgWarning('未知类型type，参见 handleType');

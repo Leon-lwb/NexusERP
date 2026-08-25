@@ -303,6 +303,7 @@ public class WfProcessController extends BaseController {
      * @param instanceIds 流程实例 ID 串
      * @return 操作结果，成功时返回成功状态
      */
+    @SaCheckPermission("workflow:process:remove")
     @DeleteMapping("/instance/{instanceIds}")
     public R<Void> delete(@PathVariable String[] instanceIds) {
         processService.deleteProcessByIds(instanceIds);

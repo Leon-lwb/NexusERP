@@ -62,9 +62,8 @@
           <act-handle-btn @success="getList" :data-id="scope.row.demoId" :type="1" text="驳回"></act-handle-btn>
           <act-handle-btn @success="getList" :data-id="scope.row.demoId" :type="2" text="退回"></act-handle-btn>
           <act-cancel-btn @success="getList" :data-id="scope.row.demoId"></act-cancel-btn>-->
-          <a-divider type="vertical" />
           <act-historic-detail-btn :data-id="String(scope.row.demoId)"></act-historic-detail-btn>
-          <a-divider type="vertical" />
+          <el-divider direction="vertical" />
           <el-button size="default" type="primary" icon="el-icon-edit" @click="handleUpdate(scope.row)" v-hasPermi="['workflow:demo:edit']"
             >修改</el-button
           >

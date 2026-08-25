@@ -22,6 +22,8 @@ import com.nexus.common.flowable.common.enums.FlowComment;
 import com.nexus.common.flowable.common.enums.ProcessStatus;
 import com.nexus.common.flowable.core.domain.ActStatus;
 import com.nexus.common.flowable.factory.FlowServiceFactory;
+import com.nexus.common.flowable.utils.TaskUtils;
+import com.nexus.common.satoken.utils.LoginHelper;
 import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.workflow.service.WfCallBackServiceI;
 import com.nexus.system.domain.vo.SysDeptVo;
@@ -97,6 +99,12 @@ public class WfInstanceServiceImpl extends FlowServiceFactory implements IWfInst
         if (processInstance == null) {
             throw new ServiceException("流程实例不存在或已结束");
         }
+        // 仅流程发起人（或超级管理员/租户管理员）可终止流程实例，防止任意用户终止他人流程
+        String currentUsername = TaskUtils.getUserName();
+        if (!StringUtils.equals(currentUsername, processInstance.getStartUserId())
+            && !LoginHelper.isSuperAdmin() && !LoginHelper.isTenantAdmin()) {
+            throw new ServiceException("仅流程发起人或管理员可终止该流程实例");
+        }
         BpmnModel bpmnModel = repositoryService.getBpmnModel(processInstance.getProcessDefinitionId());
         if (ObjectUtil.isNull(bpmnModel)) {
             throw new ServiceException("获取流程定义信息失败");
@@ -141,7 +149,17 @@ public class WfInstanceServiceImpl extends FlowServiceFactory implements IWfInst
      */
     @Override
     public void updateState(Integer state, String instanceId) {
-
+        if (state == null) {
+            throw new ServiceException("状态参数不能为空");
+        }
+        // 校验实例存在于当前租户，防止跨租户挂起/激活任意实例
+        ProcessInstance processInstance = runtimeService.createProcessInstanceQuery()
+            .processInstanceTenantId(TenantHelper.getTenantId())
+            .processInstanceId(instanceId)
+            .singleResult();
+        if (processInstance == null) {
+            throw new ServiceException("流程实例不存在或已结束");
+        }
         // 激活
         if (state == 1) {
             runtimeService.activateProcessInstanceById(instanceId);
@@ -164,6 +182,7 @@ public class WfInstanceServiceImpl extends FlowServiceFactory implements IWfInst
 
         // 查询历史数据
         HistoricProcessInstance historicProcessInstance = getHistoricProcessInstanceById(instanceId);
+        checkInstanceTenant(historicProcessInstance);
         if (historicProcessInstance.getEndTime() != null) {
             historyService.deleteHistoricProcessInstance(historicProcessInstance.getId());
             return;
@@ -183,12 +202,14 @@ public class WfInstanceServiceImpl extends FlowServiceFactory implements IWfInst
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void delete(String instanceId, String deleteReason, String dataId ) {
-       if( !dataId.toString().equals("null")){
+       if(StringUtils.isNotBlank(dataId)){
     	   LambdaQueryWrapper<WfMyBusiness> flowMyBusinessLambdaQueryWrapper = new LambdaQueryWrapper<>();
-           flowMyBusinessLambdaQueryWrapper.eq(WfMyBusiness::getDataId, dataId)
-           ;
+           flowMyBusinessLambdaQueryWrapper.eq(WfMyBusiness::getDataId, dataId);
            //如果保存数据前未调用必调的FlowCommonService.initActBusiness方法，就会有问题
            WfMyBusiness business = wfMyBusinessService.getOne(flowMyBusinessLambdaQueryWrapper);
+           if (business == null) {
+               throw new ServiceException("未找到流程业务关联记录，删除申请失败");
+           }
            this.deleteForDataId(business.getProcessInstanceId(),deleteReason);
        }
        else {
@@ -218,6 +239,13 @@ public class WfInstanceServiceImpl extends FlowServiceFactory implements IWfInst
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void deleteForDataId(String instanceId, String deleteReason) {
+        // 校验实例属于当前租户，防止跨租户删除
+        HistoricProcessInstance tenantCheckInstance =
+            historyService.createHistoricProcessInstanceQuery().processInstanceId(instanceId).singleResult();
+        if (tenantCheckInstance == null) {
+            throw new ServiceException("流程实例不存在");
+        }
+        checkInstanceTenant(tenantCheckInstance);
         List<Task> task = taskService.createTaskQuery().processInstanceId(instanceId).list();
         if (CollectionUtils.isEmpty(task)) {
             throw new ServiceException("流程未启动或已执行完成，删除申请失败");
@@ -238,6 +266,9 @@ public class WfInstanceServiceImpl extends FlowServiceFactory implements IWfInst
         ;
         //如果保存数据前未调用必调的FlowCommonService.initActBusiness方法，就会有问题
         WfMyBusiness business = wfMyBusinessService.getOne(flowMyBusinessLambdaQueryWrapper);
+        if (business == null) {
+            throw new ServiceException("未找到流程业务关联记录，删除申请失败");
+        }
         //设置数据
         String doneUsers = business.getDoneUsers();
         //SysUser sysUser = iFlowThirdService.getLoginUser();
@@ -279,6 +310,16 @@ public class WfInstanceServiceImpl extends FlowServiceFactory implements IWfInst
             throw new FlowableObjectNotFoundException("流程实例不存在: " + processInstanceId);
         }
         return historicProcessInstance;
+    }
+
+    /**
+     * 校验历史流程实例属于当前租户，防止跨租户删除/操作
+     */
+    private void checkInstanceTenant(HistoricProcessInstance historicProcessInstance) {
+        if (historicProcessInstance == null
+            || !StringUtils.equals(historicProcessInstance.getTenantId(), TenantHelper.getTenantId())) {
+            throw new ServiceException("无权操作该流程实例");
+        }
     }
 
 

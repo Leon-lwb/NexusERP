@@ -158,6 +158,12 @@ const initData = async () => {
 
 const submit = async () => {
   try {
+    // 必填项校验（el-form-item 绑定 prop 后 required 才会真正校验）
+    const formValid = await formRenderRef.value?.validate?.();
+    if (formValid === false) {
+      proxy?.$modal.msgError('请完善表单必填项后再提交');
+      return;
+    }
     // 通过 FormRender 获取 NForm 的主/子表数据
     const dataObj = await formRenderRef.value?.getFormData?.();
     const mainData = dataObj?.main || {};

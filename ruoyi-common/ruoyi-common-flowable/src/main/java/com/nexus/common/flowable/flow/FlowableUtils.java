@@ -560,7 +560,10 @@ public class FlowableUtils {
                 // 会签脏数据处理，节点退回会签清空
                 // 如果在会签脏数据范畴中发现 Key改变，说明会签脏数据在上个节点就结束了，可以把会签脏数据删掉
                 if (multiKey != null && !multiKey.toString().equals(stack.peek().getTaskDefinitionKey())) {
-                    deleteKeyList.set(multiIndex , deleteKeyList.get(multiIndex).replace(stack.peek().getTaskDefinitionKey() + ",", ""));
+                    // 前面可能有脏线路被 remove 导致下标左移/越界，必须先校验下标有效性
+                    if (multiIndex >= 0 && multiIndex < deleteKeyList.size()) {
+                        deleteKeyList.set(multiIndex , deleteKeyList.get(multiIndex).replace(stack.peek().getTaskDefinitionKey() + ",", ""));
+                    }
                     multiKey = null;
                     // 结束进行下校验删除
                     multiOpera = true;
@@ -577,6 +580,10 @@ public class FlowableUtils {
                     // 同时删除脏数据
                     deleteKeyList.remove(i);
                     dirtyDataLineList.remove(i);
+                    // remove 后后续元素下标整体左移，正在跟踪的会签脏数据下标需要同步修正，否则会错位操作其它线路
+                    if (multiKey != null && multiIndex > i) {
+                        multiIndex--;
+                    }
                     break;
                 }
             }

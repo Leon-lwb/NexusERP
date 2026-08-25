@@ -9,6 +9,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.SpringContextHolder;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
@@ -27,13 +28,14 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import javax.sql.DataSource;
-import java.sql.Statement;
 
 /**
  * 流程表单Service业务层处理
@@ -46,6 +48,16 @@ import java.sql.Statement;
 public class WfFormServiceImpl implements IWfFormService {
 
     private final WfFormMapper baseMapper;
+
+    /**
+     * 动态建表允许的表名/字段名：字母开头，仅含字母数字下划线，长度不超过 64（MySQL 标识符上限）
+     */
+    private static final Pattern IDENTIFIER_PATTERN = Pattern.compile("^[A-Za-z][A-Za-z0-9_]{0,63}$");
+
+    /**
+     * 数值型默认值
+     */
+    private static final Pattern NUMERIC_PATTERN = Pattern.compile("^-?\\d+(\\.\\d+)?$");
 
     /**
      * 查询流程表单
@@ -101,7 +113,7 @@ public class WfFormServiceImpl implements IWfFormService {
         wfForm.setTenantId(TenantHelper.getTenantId());
         wfForm.setDb(bo.getDb());
         wfForm.setTableName(bo.getTableName());
-        if (bo.getDb()) {
+        if (Boolean.TRUE.equals(bo.getDb())) {
 	        try {
 				saveVForm3ToDb(bo.getContent(), bo.getFormName(), bo.getTableName());
 			} catch (SQLException e) {
@@ -120,32 +132,21 @@ public class WfFormServiceImpl implements IWfFormService {
      */
     @Override
     public int updateForm(WfFormBo bo) {
-    	if (bo.getDb()) {
-    		if (StringUtils.isNotEmpty(bo.getTableName())) {
-        		int rows = baseMapper.getRows(bo.getTableName());
-        		if (rows > 0) {
-        			return 0;
-        		}
-        		else {
-        			String createTableQuery = "DROP TABLE " + bo.getTableName();
-        			DataSource dataSource = SpringContextHolder.getApplicationContext().getBean(DataSource.class);
-        			Connection connection = null;
-    				try {
-    					connection = dataSource.getConnection();
-    					Statement statement = connection.createStatement();
-        				statement.execute(createTableQuery);
-        				saveVForm3ToDb(bo.getContent(), bo.getFormName(), bo.getTableName());
-    				} catch (SQLException e) {
-    					throw new RuntimeException(e.getMessage());
-    				} finally {
-        	            try {
-    						connection.close();
-    					} catch (SQLException e) {
-    						throw new RuntimeException(e.getMessage());
-    					}
-        	        }
-        		}
-        	}
+    	if (Boolean.TRUE.equals(bo.getDb()) && StringUtils.isNotEmpty(bo.getTableName())) {
+    		// 表名白名单校验后再参与 SQL 拼接，防止 DDL 注入
+    		String tableName = validateIdentifier(bo.getTableName());
+    		int rows = baseMapper.getRows(tableName);
+    		if (rows > 0) {
+    			return 0;
+    		}
+    		else {
+    			dropTable(tableName);
+    			try {
+    				saveVForm3ToDb(bo.getContent(), bo.getFormName(), tableName);
+    			} catch (SQLException e) {
+    				throw new RuntimeException(e.getMessage());
+    			}
+    		}
     	}
 
         return baseMapper.update(new WfForm(), new LambdaUpdateWrapper<WfForm>()
@@ -168,22 +169,7 @@ public class WfFormServiceImpl implements IWfFormService {
     	    // 在这里处理每个id
     		String tableName = baseMapper.selectTableName(id);
     		if(StringUtils.isNotEmpty(tableName)) {
-    			String createTableQuery = "DROP TABLE " + tableName;
-    			DataSource dataSource = SpringContextHolder.getApplicationContext().getBean(DataSource.class);
-    			Connection connection = null;
-				try {
-					connection = dataSource.getConnection();
-					Statement statement = connection.createStatement();
-    				statement.execute(createTableQuery);
-				} catch (SQLException e) {
-					throw new RuntimeException(e.getMessage());
-				} finally {
-    	            try {
-						connection.close();
-					} catch (SQLException e) {
-						throw new RuntimeException(e.getMessage());
-					}
-    	        }
+    			dropTable(tableName);
     		}
 
     	});
@@ -201,11 +187,10 @@ public class WfFormServiceImpl implements IWfFormService {
      * 建VForm3表单表
      *
      * @param content 表单内容
-     * @return
-     * @return 结果
-     * @throws SQLException
+     * @param formName 表单名称（用作表 COMMENT）
+     * @param tableName 动态创建的物理表名
+     * @throws SQLException 建表失败
      */
-
     private void saveVForm3ToDb(String content , String formName, String tableName) throws SQLException {
     	JSONObject formObject = JSON.parseObject(content);
 		JSONArray fieldArray = formObject.getJSONArray("widgetList");
@@ -217,20 +202,53 @@ public class WfFormServiceImpl implements IWfFormService {
 				fieldSqlList.add(fieldSqlType);
 			}
 		}
-		String createTableQuery = "CREATE TABLE IF NOT EXISTS " + tableName
-				+ " (id bigint(20) NOT NULL COMMENT '编号',"
-				+ " tenant_id varchar(20) DEFAULT '000000' COMMENT '租户编号',"
-				+ String.join(", ", fieldSqlList) + ", PRIMARY KEY (id)) COMMENT='" + formName +"'";
+		// 表名/字段名/COMMENT 均来自前端提交内容，必须校验与转义后再拼接 DDL，防止 SQL 注入
+		String createTableQuery = "CREATE TABLE IF NOT EXISTS `" + validateIdentifier(tableName) + "`"
+				+ " (`id` bigint(20) NOT NULL COMMENT '编号',"
+				+ " `tenant_id` varchar(20) DEFAULT '000000' COMMENT '租户编号',"
+				+ String.join(", ", fieldSqlList) + ", PRIMARY KEY (`id`)) COMMENT='" + escapeLiteral(formName) + "'";
 		DataSource dataSource = SpringContextHolder.getApplicationContext().getBean(DataSource.class);
-		Connection connection = dataSource.getConnection();
-		try {
-			Statement statement = connection.createStatement();
+		try (Connection connection = dataSource.getConnection();
+			 Statement statement = connection.createStatement()) {
 			statement.execute(createTableQuery);
+		}
+	}
+
+    /**
+     * 删除动态表单对应的物理表
+     *
+     * @param tableName 物理表名（入库前已校验，此处再校验一次防御脏数据）
+     */
+    private void dropTable(String tableName) {
+		String dropTableQuery = "DROP TABLE IF EXISTS `" + validateIdentifier(tableName) + "`";
+		DataSource dataSource = SpringContextHolder.getApplicationContext().getBean(DataSource.class);
+		try (Connection connection = dataSource.getConnection();
+			 Statement statement = connection.createStatement()) {
+			statement.execute(dropTableQuery);
 		} catch (SQLException e) {
 			throw new RuntimeException(e.getMessage());
-		} finally {
-            connection.close();
+		}
+	}
+
+    /**
+     * 校验动态表单的表名/字段名，仅允许字母开头的字母数字下划线且长度不超过 64，
+     * 不满足则拒绝执行 DDL，防止 "name; DROP TABLE ..." 一类注入
+     */
+    private static String validateIdentifier(String identifier) {
+        if (identifier == null || !IDENTIFIER_PATTERN.matcher(identifier).matches()) {
+            throw new ServiceException("非法的表名/字段名：" + identifier);
         }
+        return identifier;
+    }
+
+    /**
+     * SQL 字符串字面量转义（COMMENT / DEFAULT 值），转义反斜杠与单引号
+     */
+    private static String escapeLiteral(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value.replace("\\", "\\\\").replace("'", "''");
     }
 
     /**
@@ -239,101 +257,85 @@ public class WfFormServiceImpl implements IWfFormService {
      * @param vformField VForm3字段
      * @return 结果
      */
-    private  String getFieldSqlType(JSONObject vformField) {
-    	String fieldSqlType = "";
+    private String getFieldSqlType(JSONObject vformField) {
     	String type = vformField.getString("type");
     	JSONObject optionsObj = vformField.getJSONObject("options");
+    	if (type == null || optionsObj == null) {
+    		return "";
+    	}
+    	String name = optionsObj.getString("name");
+    	String label = optionsObj.getString("label");
+    	Object defaultValue = optionsObj.get("defaultValue");
 
         switch (type) {
             case "input":
-            	fieldSqlType = optionsObj.getString("name") + " "  + "varchar(100)" + " "
-                               + "DEFAULT" + " '" + optionsObj.get("defaultValue") + "' "
-                               + "COMMENT" + " '" + optionsObj.getString("label") + "'";
-            	break;
+            	return buildColumnSql(name, "varchar(100)", defaultValue, true, label);
             case "textarea":
-            	fieldSqlType = optionsObj.getString("name") + " "  + "text" + " "
-                        + "COMMENT" + " '" + optionsObj.getString("label") + "'";
-            	break;
+            	return buildColumnSql(name, "text", null, false, label);
             case "number":
-            	fieldSqlType = optionsObj.getString("name") + " "  + "int" + " "
-                        + "DEFAULT" + " " + optionsObj.get("defaultValue") + " "
-                        + "COMMENT" + " '" + optionsObj.getString("label") + "'";
-            	break;
+            	return buildColumnSql(name, "int", defaultValue, false, label);
             case "date":
-            	fieldSqlType = optionsObj.getString("name") + " "  + "date" + " "
-                        + "DEFAULT" + " " + optionsObj.get("defaultValue") + " "
-                        + "COMMENT" + " '" + optionsObj.getString("label") + "'";
-            	break;
+            	return buildColumnSql(name, "date", defaultValue, true, label);
             case "date-range":
-            	fieldSqlType = optionsObj.getString("name") + " "  + "varchar(30)" + " "
-                        + "COMMENT" + " '" + optionsObj.getString("label") + "'";
-            	break;
+            	return buildColumnSql(name, "varchar(30)", null, false, label);
             case "datetime":
-            	fieldSqlType = optionsObj.getString("name") + " "  + "datetime" + " "
-                        + "DEFAULT" + " " + optionsObj.get("defaultValue") + " "
-                        + "COMMENT" + " '" + optionsObj.getString("label") + "'";
-            	break;
+            	return buildColumnSql(name, "datetime", defaultValue, true, label);
             case "time":
-            	fieldSqlType = optionsObj.getString("name") + " "  + "time" + " "
-                        + "DEFAULT" + " " + optionsObj.get("defaultValue") + " "
-                        + "COMMENT" + " '" + optionsObj.getString("label") + "'";
-            	break;
+            	return buildColumnSql(name, "time", defaultValue, true, label);
             case "time-range":
-            	fieldSqlType = optionsObj.getString("name") + " "  + "varchar(20)" + " "
-                        + "COMMENT" + " '" + optionsObj.getString("label") + "'";
-            	break;
+            	return buildColumnSql(name, "varchar(20)", null, false, label);
             case "radio":
-            	fieldSqlType = optionsObj.getString("name") + " "  + "tinyint" + " "
-                        + "DEFAULT" + " " + optionsObj.get("defaultValue") + " "
-                        + "COMMENT" + " '" + optionsObj.getString("label") + "'";
-            	break;
+            	return buildColumnSql(name, "tinyint", defaultValue, false, label);
             case "checkbox":
-            	fieldSqlType = optionsObj.getString("name") + " "  + "varchar(100)" + " "
-                        + "COMMENT" + " '" + optionsObj.getString("label") + "'";
-            	break;
+            	return buildColumnSql(name, "varchar(100)", null, false, label);
             case "select":
-            	fieldSqlType = optionsObj.getString("name") + " "  + "tinyint" + " "
-                        + "COMMENT" + " '" + optionsObj.getString("label") + "'";
-            	break;
+            	return buildColumnSql(name, "tinyint", null, false, label);
             case "switch":
-            	short defaultValue =  (short) ((boolean) optionsObj.get("defaultValue")?1:0);
-            	fieldSqlType = optionsObj.getString("name") + " "  + "tinyint" + " "
-                        + "DEFAULT" + " " + defaultValue + " "
-                        + "COMMENT" + " '" + optionsObj.getString("label") + "'";
-            	break;
+            	return buildColumnSql(name, "tinyint", Boolean.TRUE.equals(defaultValue) ? 1 : 0, false, label);
             case "rate":
-            	fieldSqlType = optionsObj.getString("name") + " "  + "tinyint" + " "
-                        + "DEFAULT" + " " + optionsObj.get("defaultValue") + " "
-                        + "COMMENT" + " '" + optionsObj.getString("label") + "'";
-            	break;
+            	return buildColumnSql(name, "tinyint", defaultValue, false, label);
             case "color":
-            	fieldSqlType = optionsObj.getString("name") + " "  + "varchar(10)" + " "
-                        + "DEFAULT" + " " + optionsObj.get("defaultValue") + " "
-                        + "COMMENT" + " '" + optionsObj.getString("label") + "'";
-            	break;
+            	return buildColumnSql(name, "varchar(10)", defaultValue, true, label);
             case "slider":
-            	fieldSqlType = optionsObj.getString("name") + " "  + "tinyint" + " "
-                        + "DEFAULT" + " " + optionsObj.get("defaultValue") + " "
-                        + "COMMENT" + " '" + optionsObj.getString("label") + "'";
-            	break;
+            	return buildColumnSql(name, "tinyint", defaultValue, false, label);
             case "picture-upload":
-            	fieldSqlType = optionsObj.getString("name") + " "  + "varchar(255)" + " "
-                        + "COMMENT" + " '" + optionsObj.getString("label") + "'";
-            	break;
+            	return buildColumnSql(name, "varchar(255)", null, false, label);
             case "file-upload":
-            	fieldSqlType = optionsObj.getString("name") + " "  + "varchar(255)" + " "
-                        + "COMMENT" + " '" + optionsObj.getString("label") + "'";
-            	break;
+            	return buildColumnSql(name, "varchar(255)", null, false, label);
             case "rich-editor":
-            	fieldSqlType = optionsObj.getString("name") + " "  + "longtext" + " "
-                        + "COMMENT" + " '" + optionsObj.getString("label") + "'";
-            	break;
+            	return buildColumnSql(name, "longtext", null, false, label);
             case "cascader":
-            	fieldSqlType = optionsObj.getString("name") + " "  + "varchar(100)" + " "
-                        + "COMMENT" + " '" + optionsObj.getString("label") + "'";
-            	break;
+            	return buildColumnSql(name, "varchar(100)", null, false, label);
+            default:
+            	return "";
         }
-        return fieldSqlType;
+	}
+
+    /**
+     * 拼接单列 DDL：字段名经白名单校验并加反引号；DEFAULT 值仅接受转义后的
+     * 字符串字面量或纯数字；COMMENT 一律转义，防止经表单 JSON 注入 SQL
+     *
+     * @param name 字段名
+     * @param sqlType 字段类型
+     * @param defaultValue 默认值（null 表示不设置）
+     * @param quotedDefault 默认值是否按字符串字面量处理
+     * @param label 字段中文名（表 COMMENT）
+     */
+    private static String buildColumnSql(String name, String sqlType, Object defaultValue, boolean quotedDefault, String label) {
+    	String column = "`" + validateIdentifier(name) + "` " + sqlType;
+    	String value = defaultValue == null ? null : String.valueOf(defaultValue);
+    	if (StringUtils.isNotEmpty(value) && !"null".equals(value)) {
+    		if (quotedDefault) {
+    			column += " DEFAULT '" + escapeLiteral(value) + "'";
+    		} else if (NUMERIC_PATTERN.matcher(value).matches()) {
+    			column += " DEFAULT " + value;
+    		}
+    		// 数值型默认值非法时放弃 DEFAULT 子句，保留建表能力
+    	}
+    	if (StringUtils.isNotEmpty(label)) {
+    		column += " COMMENT '" + escapeLiteral(label) + "'";
+    	}
+    	return column;
     }
 
 }

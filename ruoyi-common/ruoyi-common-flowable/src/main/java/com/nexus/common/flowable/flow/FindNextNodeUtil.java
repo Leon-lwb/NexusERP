@@ -6,6 +6,8 @@ import com.greenpineyu.fel.FelEngine;
 import com.greenpineyu.fel.FelEngineImpl;
 import com.greenpineyu.fel.context.FelContext;
 
+import lombok.extern.slf4j.Slf4j;
+
 import org.flowable.bpmn.model.Process;
 import org.apache.commons.lang3.StringUtils;
 import org.flowable.bpmn.model.*;
@@ -14,13 +16,16 @@ import org.flowable.engine.repository.ProcessDefinition;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * @author wanghuan
  * @date 2023-09-25
  */
+@Slf4j
 public class FindNextNodeUtil {
 
     /**
@@ -43,12 +48,26 @@ public class FindNextNodeUtil {
     }
 
     public static void next(Collection<FlowElement> flowElements, FlowElement flowElement, Map<String, Object> map, List<UserTask> nextUser) {
+        next(flowElements, flowElement, map, nextUser, new HashSet<>());
+    }
+
+    /**
+     * 沿连线向下递归查找后续用户任务。
+     *
+     * @param visited 已访问节点 ID 集合，流程图中存在非用户任务构成的环时终止递归，防止 StackOverflowError
+     */
+    private static void next(Collection<FlowElement> flowElements, FlowElement flowElement, Map<String, Object> map, List<UserTask> nextUser, Set<String> visited) {
         //如果是结束节点
         if (flowElement instanceof EndEvent) {
             //如果是子任务的结束节点
-            if (getSubProcess(flowElements, flowElement) != null) {
-                flowElement = getSubProcess(flowElements, flowElement);
+            FlowElement subProcess = getSubProcess(flowElements, flowElement);
+            if (subProcess != null) {
+                flowElement = subProcess;
             }
+        }
+        if (flowElement == null || !visited.add(flowElement.getId())) {
+            // 同一节点已访问（流程图中存在环）或节点为空，直接终止该分支
+            return;
         }
         //获取Task的出线信息--可以拥有多个
         List<SequenceFlow> outGoingFlows = null;
@@ -68,10 +87,7 @@ public class FindNextNodeUtil {
             for (SequenceFlow sequenceFlow : outGoingFlows) {
                 //1.有表达式，且为true
                 //2.无表达式
-                String expression = sequenceFlow.getConditionExpression();
-                if (expression == null ||Boolean.parseBoolean(
-                                String.valueOf(
-                                        result(map, expression.substring(expression.lastIndexOf("{") + 1, expression.lastIndexOf("}")))))) {
+                if (evalCondition(map, sequenceFlow.getConditionExpression())) {
                     //出线的下一节点
                     String nextFlowElementID = sequenceFlow.getTargetRef();
                     if (checkSubProcess(nextFlowElementID, flowElements, nextUser)) {
@@ -229,37 +245,54 @@ public class FindNextNodeUtil {
     /**
      * 校验el表达示例
      *
-     * @param map
-     * @param expression
-     * @return
+     * @param map        流程变量
+     * @param expression 条件表达式（不含 ${} 包裹）
+     * @return 求值结果，失败时返回 null
      */
     public static Object result(Map<String, Object> map, String expression) {
-    	Object result = null;
+        if (StringUtils.isBlank(expression)) {
+            return null;
+        }
     	try {
 	        FelEngine fel = new FelEngineImpl();
 	        FelContext ctx = fel.getContext();
 	        for (Map.Entry<String, Object> entry : map.entrySet()) {
 	            ctx.set(entry.getKey(), entry.getValue());
-	            System.out.print(entry.getKey() + "-"+ entry.getValue());
 	        }
-	        String exp = "";
-	        if (expression.indexOf("<") >0) {
-	        	exp = expression.substring(0, expression.indexOf("<"));
-	        }
-	        else if (expression.indexOf(">") >0) {
-	        	int index =expression.indexOf(">");
-	        	exp = expression.substring(0, index);
-	        }
-	        else if (expression.indexOf("==") >0) {
-	        	exp = expression.substring(0, expression.indexOf("=="));
-	        }
-	        exp =expression.replace(exp, ctx.get(exp).toString());
-	        result = fel.eval(exp);
-	        //result = fel.eval(expression);
+	        // 变量已全部放入 FEL 上下文，直接对原始表达式求值。
+	        // 切勿手工截取变量名再做文本替换：`${approved}`、`count > 3`（带空格）等写法会截取出空串/带空格的变量名而求值失败
+	        return fel.eval(expression);
 		} catch (Exception e) {
-			result = null;
+			log.warn("流程网关条件表达式求值失败: {}, 变量key: {}", expression, map.keySet(), e);
+			return null;
 		}
-    	 return result;
+    }
+
+    /**
+     * 求值网关连线条件表达式（自动剥离 ${}/#{} 包裹），返回是否可通过。
+     * 无条件表达式视为可通过；求值失败视为不通过。
+     *
+     * @param map            流程变量
+     * @param rawExpression  连线上的原始条件表达式（如 "${approved}"、"#{count > 3}"）
+     */
+    public static boolean evalCondition(Map<String, Object> map, String rawExpression) {
+        if (StringUtils.isBlank(rawExpression)) {
+            return true;
+        }
+        Object result = result(map, stripBraces(rawExpression.trim()));
+        return result != null && Boolean.parseBoolean(String.valueOf(result));
+    }
+
+    /**
+     * 剥离表达式最外层的 ${} / #{} 包裹；无花括号时原样返回（裸表达式）
+     */
+    private static String stripBraces(String expression) {
+        int start = expression.lastIndexOf('{');
+        int end = expression.lastIndexOf('}');
+        if (start >= 0 && end > start) {
+            return expression.substring(start + 1, end);
+        }
+        return expression;
     }
 
     /**

@@ -3,12 +3,18 @@
     <div class="form-render-container">
       <!-- 表单内容 -->
       <el-form
+        ref="formRef"
         :model="formData"
         :label-width="props.labelWidth || formConfig.labelWidth"
         :label-position="props.labelPosition || formConfig.labelPosition"
       >
         <div v-for="(item, index) in formComponents" :key="index">
-          <el-form-item :label="item.type === 'subtable' ? '' : item.label" :required="item.required">
+          <!-- prop 必须绑定字段名：否则 required 只显示星号不产生校验 -->
+          <el-form-item
+            :label="item.type === 'subtable' ? '' : item.label"
+            :prop="item.type === 'subtable' ? undefined : item.field"
+            :required="item.required"
+          >
             <template v-if="item.type === 'input'">
               <el-input
                 v-model="formData[item.field]"
@@ -179,6 +185,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, watch } from 'vue';
+import { safeArithmeticEval } from '@/utils/safeExpression';
 import PopupTable from './components/PopupTable.vue';
 import RichEditor from './components/RichEditor.vue';
 import type { FormComponent, FormConfig } from './types';
@@ -211,6 +218,7 @@ const formConfig = reactive<FormConfig>({
 const formComponents = ref<FormComponent[]>([]);
 const formData = ref<Record<string, any>>({});
 const subTableData = ref<Record<string, any[]>>({});
+const formRef = ref();
 const dictOptionsLocal = ref<Record<string, any[]>>({});
 const parsedContent = ref<any>({});
 const popupDictCache: Record<string, Record<string, string>> = reactive({});
@@ -884,7 +892,12 @@ defineExpose({
   getFormData: () => ({
     main: formData.value,
     sub: subTableData.value
-  })
+  }),
+  /** 校验必填项（el-form-item 绑定 prop 后 required 才会真正校验） */
+  validate: async () => {
+    if (!formRef.value) return true;
+    return await formRef.value.validate().catch(() => false);
+  }
 });
 
 // 字段联动入口（主表/子表）
@@ -1014,9 +1027,8 @@ const evaluateFormula = (formula: string, data: Record<string, any>) => {
         result = result.replace(match, String(value));
       });
     }
-    // 仅做基本四则运算
-
-    return eval(result) || 0;
+    // 仅做基本四则运算（安全求值，禁止 eval —— 公式来自表单定义 JSON，存在代码注入风险）
+    return safeArithmeticEval(result) || 0;
   } catch (e) {
     console.error('公式计算失败:', e);
     return 0;

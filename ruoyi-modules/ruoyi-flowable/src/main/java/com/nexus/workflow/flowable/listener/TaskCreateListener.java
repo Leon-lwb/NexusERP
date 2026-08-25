@@ -15,6 +15,8 @@ import org.flowable.engine.history.HistoricProcessInstance;
 import org.flowable.task.service.impl.persistence.entity.TaskEntity;
 import org.springframework.stereotype.Component;
 
+import java.util.Map;
+
 import com.nexus.common.core.constant.Constants;
 import com.nexus.common.core.domain.model.LoginUser;
 import com.nexus.system.service.CommonService;
@@ -58,27 +60,31 @@ public class TaskCreateListener implements FlowableEventListener {
                 HistoricProcessInstance historicProcessInstance = historyService.createHistoricProcessInstanceQuery()
                         .processInstanceId(procInsId)
                         .singleResult();
+                // 引擎命令内历史数据可能尚未可见（如 startProcessInstanceById 同命令内触发 TASK_ASSIGNED），跳过通知
+                if (historicProcessInstance == null) {
+                    return;
+                }
                 String businessKey = historicProcessInstance.getBusinessKey();
-                String startUserId = historicProcessInstance.getStartUserId();
                 //获取任务接收人
                 String receiver = taskEntity.getAssignee();
-                if (StringUtils.isNotEmpty(receiver)) {
-                    //发送提醒消息
-                    String category = "";
-                    if (taskService.getVariables(taskId).get("category") != null) {
-                        category = taskService.getVariables(taskId).get("category").toString();
-                    }
-
-                    LoginUser loginUser = commonService.getLoginUser();
-                    String bizKeyParam = StringUtils.isNotBlank(businessKey) ? "&businessKey=" + businessKey : "";
-                    String contentUrl = commonService.getBaseUrl() + procInsId + "?taskId=" + taskId
-                            + bizKeyParam + "&category=" + category + "&processed=true";
-                    String msgContent = "流程待办通知，请处理";
-                    if (!StringUtils.equals(loginUser.getUsername(), receiver)) {//发起人或登录人自己不发送
-                        log.info("流程待办通知给:{}", receiver);
-                        commonService.sendSysNotice(loginUser.getUserId().toString(), receiver, "流程待办通知", msgContent, Constants.MSG_CATEGORY_3, contentUrl);
-                    }
+                if (StringUtils.isEmpty(receiver)) {
+                    return;
                 }
+                // 非登录线程（定时/异步/MQ 触发）无登录态，跳过通知
+                LoginUser loginUser = commonService.getLoginUser();
+                if (loginUser == null || StringUtils.equals(loginUser.getUsername(), receiver)) {
+                    return;
+                }
+                //发送提醒消息
+                Map<String, Object> variables = taskService.getVariables(taskId);
+                Object categoryVar = variables == null ? null : variables.get("category");
+                String category = categoryVar == null ? "" : categoryVar.toString();
+                String bizKeyParam = StringUtils.isNotBlank(businessKey) ? "&businessKey=" + businessKey : "";
+                String contentUrl = commonService.getBaseUrl() + procInsId + "?taskId=" + taskId
+                        + bizKeyParam + "&category=" + category + "&processed=true";
+                String msgContent = "流程待办通知，请处理";
+                log.info("流程待办通知给:{}", receiver);
+                commonService.sendSysNotice(loginUser.getUserId().toString(), receiver, "流程待办通知", msgContent, Constants.MSG_CATEGORY_3, contentUrl);
             }
         }
     }

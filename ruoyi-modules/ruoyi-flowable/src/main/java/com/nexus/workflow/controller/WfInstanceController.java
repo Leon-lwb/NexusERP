@@ -1,6 +1,7 @@
 package com.nexus.workflow.controller;
 
 
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.nexus.common.core.domain.R;
 import com.nexus.workflow.domain.bo.WfTaskBo;
 import com.nexus.workflow.service.IWfInstanceService;
@@ -31,6 +32,7 @@ public class WfInstanceController {
      * @param instanceId 流程实例 ID
      * @return 操作结果，成功时返回成功状态
      */
+    @SaCheckPermission("workflow:instance:updateState")
     @PostMapping(value = "/updateState")
     public R updateState(@RequestParam Integer state, @RequestParam String instanceId) {
         instanceService.updateState(state, instanceId);
@@ -43,6 +45,7 @@ public class WfInstanceController {
      * @param bo 流程任务业务对象（含流程实例与结束意见）
      * @return 操作结果，成功时返回成功状态
      */
+    @SaCheckPermission("workflow:process:cancel")
     @PostMapping(value = "/stopProcessInstance")
     public R stopProcessInstance(@RequestBody WfTaskBo bo) {
         instanceService.stopProcessInstance(bo);
@@ -57,6 +60,7 @@ public class WfInstanceController {
      * @return 操作结果，成功时返回成功状态
      */
     @Deprecated
+    @SaCheckPermission("workflow:process:remove")
     @DeleteMapping(value = "/delete")
     public R delete(@RequestParam String instanceId, String deleteReason) {
         instanceService.delete(instanceId, deleteReason);
@@ -70,6 +74,7 @@ public class WfInstanceController {
      * @param deployId  流程部署 ID
      * @return 流程实例详情信息
      */
+    @SaCheckPermission("workflow:process:query")
     @GetMapping("/detail")
     public R detail(String procInsId, String deployId) {
         return R.ok(instanceService.queryDetailProcess(procInsId, deployId));

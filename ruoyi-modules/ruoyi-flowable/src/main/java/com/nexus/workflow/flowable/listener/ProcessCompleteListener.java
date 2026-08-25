@@ -10,9 +10,7 @@ import org.flowable.engine.RepositoryService;
 import org.flowable.engine.TaskService;
 import org.flowable.engine.delegate.event.AbstractFlowableEngineEventListener;
 import org.flowable.engine.history.HistoricProcessInstance;
-import org.flowable.engine.impl.persistence.entity.ExecutionEntityImpl;
 import org.flowable.task.api.Task;
-import org.flowable.variable.api.persistence.entity.VariableInstance;
 import org.springframework.stereotype.Component;
 
 import com.nexus.common.core.constant.Constants;
@@ -46,38 +44,55 @@ public class ProcessCompleteListener extends AbstractFlowableEngineEventListener
 
     /**
      * 流程完成时发送流程结束通知给发起人。
+     * <p>通知属于旁路逻辑：任何失败都不应阻断或回滚流程完成命令本身。</p>
      *
      * @param event 流程完成事件
      */
     @Override
     protected void processCompleted(FlowableEngineEntityEvent event) {
         log.debug("进入流程结束监听器");
+        try {
+            String procInsId = event.getProcessInstanceId();
+            if (StringUtils.isBlank(procInsId)) {
+                return;
+            }
+            HistoricProcessInstance hi = historyService.createHistoricProcessInstanceQuery()
+                    .processInstanceId(procInsId)
+                    .singleResult();
+            // 引擎命令内历史数据可能尚未可见，通知为尽力而为，查不到直接跳过
+            if (hi == null || StringUtils.isBlank(hi.getStartUserId())) {
+                return;
+            }
+            String startUserId = hi.getStartUserId();
 
-        String procInsId = event.getProcessInstanceId();
-        HistoricProcessInstance hi = historyService.createHistoricProcessInstanceQuery()
-                .processInstanceId(procInsId)
-                .singleResult();
-
-        List<Task> listtask = taskService.createTaskQuery().processInstanceId(procInsId).active().list();
-        String taskId = "";
-        if (listtask != null) {
-            taskId = listtask.get(0).getId();
-        }
-        String startUserId = hi.getStartUserId();
-        String category = "";
-
-        if (StringUtils.isNotEmpty(startUserId)) {
-            if (((ExecutionEntityImpl) event.getEntity()).getVariableInstances().get("category") != null) {
-                category = ((VariableInstance) ((ExecutionEntityImpl) event.getEntity()).getVariableInstances().get("category")).getTextValue();
+            // 流程已结束，活动任务列表通常为空（list() 不会返回 null，仅判 null 是无效防护）
+            List<Task> listtask = taskService.createTaskQuery().processInstanceId(procInsId).active().list();
+            String taskId = "";
+            if (listtask != null && !listtask.isEmpty()) {
+                taskId = listtask.get(0).getId();
             }
 
+            // 引擎线程（定时边界事件/异步/MQ 触发的完成）无登录态，getLoginUser() 为 null，跳过通知
             LoginUser loginUser = commonService.getLoginUser();
+            if (loginUser == null) {
+                log.debug("非登录线程触发的流程完成，跳过结束通知，procInsId={}", procInsId);
+                return;
+            }
             String contentUrl = commonService.getBaseUrl() + procInsId + "?taskId=" + taskId + "&processed=false";
             String msgContent = "流程任务结束通知，请点击查看";
             commonService.sendSysNotice(loginUser.getUserId().toString(), startUserId, "流程任务结束通知", msgContent, Constants.MSG_CATEGORY_1, contentUrl);
+        } catch (Exception e) {
+            // 通知失败不应阻断/回滚流程完成命令
+            log.error("流程完成通知发送失败，procInsId={}", event.getProcessInstanceId(), e);
+        } finally {
+            super.processCompleted(event);
         }
+    }
 
-        super.processCompleted(event);
+    @Override
+    public boolean isFailOnException() {
+        // 默认实现返回 true 会使监听器异常导致整个 complete/start 命令回滚（流程卡在最后一步）
+        return false;
     }
 
     /**

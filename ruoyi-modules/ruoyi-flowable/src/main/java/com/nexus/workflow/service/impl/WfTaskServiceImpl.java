@@ -873,6 +873,11 @@ public class WfTaskServiceImpl extends FlowServiceFactory implements IWfTaskServ
     @Override
     public void deleteTask(WfTaskBo bo) {
         // todo 待确认删除任务是物理删除任务 还是逻辑删除，让这个任务直接通过？
+        Task task = taskService.createTaskQuery().taskId(bo.getTaskId()).singleResult();
+        if (Objects.isNull(task)) {
+            throw new ServiceException("任务不存在");
+        }
+        checkTaskHandlePermission(task);
         taskService.deleteTask(bo.getTaskId(), bo.getComment());
     }
 
@@ -888,6 +893,8 @@ public class WfTaskServiceImpl extends FlowServiceFactory implements IWfTaskServ
         if (Objects.isNull(task)) {
             throw new ServiceException("任务不存在");
         }
+        // Flowable 的 claim 不校验候选人，必须自行校验，防止任意用户抢占任务后再办理（绕过 complete 的办理人校验）
+        checkTaskHandlePermission(task);
         taskService.claim(taskBo.getTaskId(), TaskUtils.getUserName());
     }
 
@@ -899,6 +906,17 @@ public class WfTaskServiceImpl extends FlowServiceFactory implements IWfTaskServ
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void unClaim(WfTaskBo bo) {
+        Task task = taskService.createTaskQuery().taskId(bo.getTaskId()).singleResult();
+        if (Objects.isNull(task)) {
+            throw new ServiceException("任务不存在");
+        }
+        // 仅任务办理人/拥有者（或管理员）可取消签收，防止取消他人签收
+        String username = TaskUtils.getUserName();
+        if (!StringUtils.equals(username, task.getAssignee())
+            && !StringUtils.equals(username, task.getOwner())
+            && !LoginHelper.isSuperAdmin() && !LoginHelper.isTenantAdmin()) {
+            throw new ServiceException("当前用户不是该任务的办理人，无权操作此任务");
+        }
         taskService.unclaim(bo.getTaskId());
     }
 
@@ -915,6 +933,8 @@ public class WfTaskServiceImpl extends FlowServiceFactory implements IWfTaskServ
         if (ObjectUtil.isEmpty(task)) {
             throw new ServiceException("获取任务失败！");
         }
+        // 仅任务办理人可委派，防止任意用户委派他人任务
+        checkTaskHandlePermission(task);
         StringBuilder commentBuilder = new StringBuilder(LoginHelper.getUsername())
             .append("->");
         String nickName = userService.selectUserNameById(Long.parseLong(bo.getUserId()));
@@ -955,6 +975,8 @@ public class WfTaskServiceImpl extends FlowServiceFactory implements IWfTaskServ
         if (ObjectUtil.isEmpty(task)) {
             throw new ServiceException("获取任务失败！");
         }
+        // 仅任务办理人可转办，防止任意用户把任务转给自己获得办理权
+        checkTaskHandlePermission(task);
         StringBuilder commentBuilder = new StringBuilder(LoginHelper.getUsername())
             .append("->");
         String nickName = userService.selectUserNameById(Long.parseLong(bo.getUserId()));
@@ -998,6 +1020,15 @@ public class WfTaskServiceImpl extends FlowServiceFactory implements IWfTaskServ
         ProcessInstance processInstance = runtimeService.createProcessInstanceQuery()
         	.processInstanceTenantId(TenantHelper.getTenantId())
             .processInstanceId(bo.getProcInsId()).singleResult();
+        if (processInstance == null) {
+            throw new ServiceException("流程实例不存在或已结束");
+        }
+        // 仅流程发起人（或超级管理员/租户管理员）可取消申请，防止任意用户终止他人流程
+        String currentUsername = TaskUtils.getUserName();
+        if (!StringUtils.equals(currentUsername, processInstance.getStartUserId())
+            && !LoginHelper.isSuperAdmin() && !LoginHelper.isTenantAdmin()) {
+            throw new ServiceException("仅流程发起人或管理员可取消该流程");
+        }
         BpmnModel bpmnModel = repositoryService.getBpmnModel(processInstance.getProcessDefinitionId());
         if (Objects.nonNull(bpmnModel)) {
             Process process = bpmnModel.getMainProcess();
@@ -1584,6 +1615,12 @@ public class WfTaskServiceImpl extends FlowServiceFactory implements IWfTaskServ
  	    	   StringUtils.equalsAnyIgnoreCase(actStatusType, ActStatus.revoke) ) {
             //删除自定义业务任务关联表与流程历史表，以便可以重新发起流程。
             if (business != null) {
+            	// 仅流程发起人（或管理员）可删除流程关联数据，防止任意用户删除他人流程并抹掉审批历史
+            	String currentUsername = TaskUtils.getUserName();
+            	if (!StringUtils.equals(currentUsername, business.getProposer())
+            		&& !LoginHelper.isSuperAdmin() && !LoginHelper.isTenantAdmin()) {
+            		throw new ServiceException("仅流程发起人或管理员可删除该流程");
+            	}
             	wfMyBusinessService.removeById(business);
             	// 对自定义业务，通过引擎 API 删除运行与历史流程数据（勿直连 ACT_RU_*/ACT_HI_* 表，会绕过引擎缓存导致运行库与缓存不一致）
                 ProcessInstance processInstance = runtimeService.createProcessInstanceQuery()
@@ -1607,20 +1644,36 @@ public class WfTaskServiceImpl extends FlowServiceFactory implements IWfTaskServ
             Map<String, List<ExtensionElement>> extensionElements = MapUtil.newHashMap();
 
             HistoricTaskInstance historicTaskInstance = historyService.createHistoricTaskInstanceQuery().taskId(taskId).singleResult();
-            ProcessDefinition processDefinition = repositoryService.createProcessDefinitionQuery().processDefinitionId(historicTaskInstance.getProcessDefinitionId()).active().singleResult();;
+            if (historicTaskInstance == null) {
+                return MapUtil.empty();
+            }
+            ProcessDefinition processDefinition = repositoryService.createProcessDefinitionQuery().processDefinitionId(historicTaskInstance.getProcessDefinitionId()).active().singleResult();
+            if (processDefinition == null) {
+                return MapUtil.empty();
+            }
             Execution execution = runtimeService.createExecutionQuery().executionId(historicTaskInstance.getExecutionId()).singleResult();
+            if (execution == null || StringUtils.isBlank(execution.getActivityId())) {
+                return MapUtil.empty();
+            }
 
             String activityId = execution.getActivityId();
-            while (true) {
+            // 已访问节点集合：流程图中存在环时终止遍历，防止死循环
+            Set<String> visitedActivityIds = new HashSet<>();
+            while (visitedActivityIds.add(activityId)) {
                 //根据活动节点获取当前的组件信息
                 FlowNode flowNode = getFlowNode(processDefinition.getId(), activityId);
+                if (flowNode == null) {
+                    return MapUtil.empty();
+                }
 
                 //获取该节点之后的流向
                 List<SequenceFlow> sequenceFlowListOutGoing = flowNode.getOutgoingFlows();
 
                 // 获取的下个节点不一定是userTask的任务节点，所以要判断是否是任务节点
                 if (sequenceFlowListOutGoing.size() > 1) {
+                    // 多条出线（分支判定点）：收集所有出线的扩展属性后返回
                     sequenceFlowListOutGoing.forEach(a -> extensionElements.putAll(a.getExtensionElements()));
+                    return extensionElements;
                 } else if (sequenceFlowListOutGoing.size() == 1) {
                     // 只有1条出线,直接取得下个节点
                     SequenceFlow sequenceFlow = sequenceFlowListOutGoing.get(0);
@@ -1634,13 +1687,18 @@ public class WfTaskServiceImpl extends FlowServiceFactory implements IWfTaskServ
                         List<SequenceFlow> outgoingFlows = exclusiveGateway.getOutgoingFlows();
                         outgoingFlows.forEach(a -> extensionElements.putAll(a.getExtensionElements()));
                         return extensionElements;
+                    } else if (flowElement instanceof FlowNode) {
+                        // 其它类型节点（并行网关/服务任务/事件等）：沿唯一出线继续向下推进
+                        activityId = flowElement.getId();
+                    } else {
+                        return extensionElements;
                     }
-
                 } else {
                     // 没有出线，则表明是结束节点
                     return Collections.emptyMap();
                 }
             }
+            return extensionElements;
         }
         return MapUtil.empty();
 	}
@@ -1753,6 +1811,7 @@ public class WfTaskServiceImpl extends FlowServiceFactory implements IWfTaskServ
 	}
 
 	@Override
+	@Transactional(rollbackFor = Exception.class)
 	public void addSignTask(WfTaskBo bo) {
 		//登录用户
 		String userName = LoginHelper.getUsername();
@@ -1760,6 +1819,8 @@ public class WfTaskServiceImpl extends FlowServiceFactory implements IWfTaskServ
 		String[] userids = bo.getAddSignUsers().split(",");
 		TaskEntityImpl taskEntity = (TaskEntityImpl) taskService.createTaskQuery().taskId(bo.getTaskId()).singleResult();
 		if (taskEntity != null) {
+			// 仅任务办理人可加签，防止任意用户对他人任务加签
+			checkTaskHandlePermission(taskEntity);
 			if(StringUtils.equalsIgnoreCase(bo.getAddSignType(), "0"))
 			{
 				addTasksBefore(bo, taskEntity,userName,new HashSet<String>(Arrays.asList(userids)),nickName + "在[" + taskEntity.getName() +"]节点" + "前加签原因:"+ bo.getComment());
@@ -1778,6 +1839,11 @@ public class WfTaskServiceImpl extends FlowServiceFactory implements IWfTaskServ
 	public void multiInstanceAddSign(WfTaskBo bo) {
 		//校验任务是否存在
         Task task = taskService.createTaskQuery().taskId(bo.getTaskId()).singleResult();
+        if (Objects.isNull(task)) {
+            throw new ServiceException("任务不存在");
+        }
+        // 仅任务办理人可加签，防止任意用户对他人任务加签
+        checkTaskHandlePermission(task);
         //流程定义id
         String processDefinitionId = task.getProcessDefinitionId();
         //流程实例id

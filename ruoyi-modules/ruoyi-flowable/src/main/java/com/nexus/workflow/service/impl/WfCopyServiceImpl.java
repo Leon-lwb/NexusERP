@@ -4,11 +4,9 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.nexus.common.core.utils.StringUtils;
-import com.nexus.common.core.domain.model.LoginUser;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.common.satoken.utils.LoginHelper;
-import com.nexus.system.service.CommonService;
 import com.nexus.workflow.domain.WfCopy;
 import com.nexus.workflow.domain.bo.WfCopyBo;
 import com.nexus.workflow.domain.bo.WfTaskBo;
@@ -39,8 +37,6 @@ public class WfCopyServiceImpl implements IWfCopyService {
     private final WfCopyMapper baseMapper;
 
     private final HistoryService historyService;
-
-    private final CommonService commonService;
 
     /**
      * 查询流程抄送
@@ -103,10 +99,10 @@ public class WfCopyServiceImpl implements IWfCopyService {
     }
 
     private LambdaQueryWrapper<WfCopy> buildMyQueryWrapper(WfCopyBo bo) {
-        Map<String, Object> params = bo.getParams();
-        LoginUser sysUser = commonService.getLoginUser();
         LambdaQueryWrapper<WfCopy> lqw = Wrappers.lambdaQuery();
-        lqw.eq(bo.getUserId() == sysUser.getUserId(), WfCopy::getOriginatorId, bo.getUserId());
+        // 我的抄送：按服务端登录身份过滤被抄送人，禁止依赖前端传参，
+        // 且 Long 之间用 == 比较是引用比较（雪花ID超出缓存区间恒为 false），会导致查询无任何过滤条件
+        lqw.eq(WfCopy::getUserId, LoginHelper.getUserId());
         return lqw;
     }
 

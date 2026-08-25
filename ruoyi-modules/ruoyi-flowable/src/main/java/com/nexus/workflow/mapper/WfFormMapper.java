@@ -25,7 +25,7 @@ public interface WfFormMapper extends BaseMapperPlus<WfForm, WfFormVo> {
     @Select("SELECT table_name FROM wf_form WHERE form_id = #{formId}")
     String selectTableName(@Param("formId") Long formId);
 
-    //根据表名查询记录数
-    @Select("SELECT count(*) FROM ${tableName}")
+    //根据表名查询记录数（表名无法参数化占位，调用方必须先经 WfFormServiceImpl#validateIdentifier 白名单校验）
+    @Select("SELECT count(*) FROM `${tableName}`")
     int getRows(@Param("tableName") String tableName);
 }

@@ -37,9 +37,10 @@
 
       <!-- 表单录入区域 -->
       <div v-if="currentFormContent" class="form-container">
-        <el-form :model="formData" :label-width="formConfig.labelWidth">
+        <el-form ref="mainFormRef" :model="formData" :label-width="formConfig.labelWidth">
           <div v-for="(item, index) in formComponents" :key="index">
-            <el-form-item :label="item.label" :required="item.required">
+            <!-- prop 必须绑定字段名：否则 required 只显示星号不产生校验 -->
+            <el-form-item :label="item.label" :prop="item.type === 'subtable' ? undefined : item.field" :required="item.required">
               <template v-if="item.type === 'input'">
                 <el-input
                   v-model="formData[item.field]"
@@ -203,6 +204,7 @@
 import { ref, reactive, watch, onMounted, nextTick } from 'vue';
 import { useRoute } from 'vue-router';
 import { ElMessage } from 'element-plus';
+import { safeArithmeticEval } from '@/utils/safeExpression';
 import FormDesigner from '@/components/DesignerForm/FormDesigner.vue';
 import FormPreview from '@/components/DesignerForm/FormPreview.vue';
 import RichEditor from '@/components/DesignerForm/components/RichEditor.vue';
@@ -277,6 +279,9 @@ const formComponents = ref<FormComponent[]>([]);
 
 // 表单数据
 const formData = ref<Record<string, any>>({});
+
+// 主表单实例（必填校验用）
+const mainFormRef = ref();
 
 // 子表数据（直接使用数组，与online/test保持一致）
 const subTableData = ref<any[]>([]);
@@ -656,6 +661,14 @@ const handleDesignerClose = () => {
 // 处理表单提交
 const handleSubmit = async () => {
   try {
+    // 必填项校验（el-form-item 绑定 prop 后 required 才会真正校验）
+    if (mainFormRef.value) {
+      const valid = await mainFormRef.value.validate().catch(() => false);
+      if (!valid) {
+        ElMessage.error('请完善表单必填项后再提交');
+        return;
+      }
+    }
     const formId = route.query.formId as string;
     if (!formId) {
       ElMessage.error('表单ID不存在');
@@ -1176,7 +1189,7 @@ const calculateFormula = (formula: string, rowData: any) => {
       }
     });
 
-    const result = eval(calculatedFormula);
+    const result = safeArithmeticEval(calculatedFormula);
     return result;
   } catch (error) {
     console.error('公式计算失败:', error, { formula, rowData });

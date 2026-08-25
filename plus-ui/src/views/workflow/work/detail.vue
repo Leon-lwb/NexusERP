@@ -114,7 +114,7 @@
                   :dict-options="dictOptions"
                   label-width="200px"
                   label-position="right"
-                  :ref="setFormRef"
+                  :ref="(el) => setFormRef(el, index)"
                 >
                 </FormRender>
                 <!-- 其他节点：根据 disabled 决定是否只读，否则可编辑 -->
@@ -125,7 +125,7 @@
                   :dict-options="dictOptions"
                   label-width="200px"
                   label-position="right"
-                  :ref="setFormRef"
+                  :ref="(el) => setFormRef(el, index)"
                 />
                 <FormRender
                   v-else-if="dictReady"
@@ -134,7 +134,7 @@
                   :dict-options="dictOptions"
                   label-width="200px"
                   label-position="right"
-                  :ref="setFormRef"
+                  :ref="(el) => setFormRef(el, index)"
                 />
               </div>
             </el-card>
@@ -278,7 +278,7 @@
           </el-radio-group>
         </el-form-item>
         <el-form-item label="用户选择" prop="copyUserIds" :rules="[{ required: true, message: '请选择用户', trigger: 'blur' }]">
-          <el-tag :key="index" v-for="(item, index) in addSignUser" closable :disable-transitions="false" @close="handleClose('next', item)">
+          <el-tag :key="index" v-for="(item, index) in addSignUser" closable :disable-transitions="false" @close="handleClose('addSign', item)">
             {{ item.nickName }}
           </el-tag>
           <el-button class="button-new-tag" type="primary" icon="el-icon-plus" size="small" circle @click="onSelectAddSignUsers" />
@@ -298,21 +298,22 @@
       </template>
       <el-form ref="jumpForm" :model="jumpForm" label-width="160px">
         <el-form-item label="跳转节点" prop="jumpType" :rules="[{ required: true, message: '请选择跳转节点', trigger: 'blur' }]">
-          <a-table
-            size="middle"
-            :columns="jumpNodeColumns"
-            :loading="jumpNodeLoading"
-            :pagination="false"
-            :dataSource="jumpNodeData"
-            :rowKey="(record) => record.id"
-            :rowSelection="rowSelection"
-          />
+          <el-table
+            size="small"
+            v-loading="jumpNodeLoading"
+            :data="jumpNodeData"
+            row-key="id"
+            highlight-current-row
+            @current-change="handleJumpRowChange"
+          >
+            <el-table-column label="节点名称" align="center" prop="name" />
+          </el-table>
         </el-form-item>
       </el-form>
       <template #footer>
         <span class="dialog-footer">
-          <a-button type="primary" @click="jumpOpen = false">取 消</a-button>
-          <a-button type="primary" @click="jumpComplete()">确 定</a-button>
+          <el-button @click="jumpOpen = false">取 消</el-button>
+          <el-button type="primary" @click="jumpComplete()">确 定</el-button>
         </span>
       </template>
     </el-dialog>
@@ -459,10 +460,21 @@ const nextUser = ref<any>([]);
 
 const vfRenderRef = ref(null);
 const taskFormRef = ref();
-const formRenderRefs = ref<any[]>([]);
-const setFormRef = (el: any) => {
-  if (el) formRenderRefs.value.push(el);
+// 各表单的 FormRender 实例，按 v-for 下标维护：分支切换/字典就绪导致的重挂载会覆盖旧下标实例，
+// 避免原数组"只增不减"的泄漏以及提交时读到已卸载实例的旧表单数据
+const formRenderRefMap = new Map<number, any>();
+const setFormRef = (el: any, index: number) => {
+  if (el) {
+    formRenderRefMap.set(index, el);
+  } else {
+    formRenderRefMap.delete(index);
+  }
 };
+/** 按表单顺序返回当前活跃的 FormRender 实例 */
+const getActiveFormRenderRefs = () =>
+  Array.from(formRenderRefMap.entries())
+    .sort((a, b) => a[0] - b[0])
+    .map((entry) => entry[1]);
 const taskFormRenderRef = ref<any>(null);
 const deptTreeRef = ref(null);
 const refCustomForm = ref(null);
@@ -520,15 +532,14 @@ const jumpForm = reactive({
 });
 const jumpNodeLoading = ref(false);
 const jumpNodeData = ref<any>([]);
-const jumpNodeColumns = ref([
-  {
-    title: '节点名称',
-    dataIndex: 'name'
-  }
-]);
 
 const selectedJumpRowKeys = ref<any>([]);
 const selectedJumpRows = ref<any>([]);
+/** 跳转节点表格单选（替代原 antd rowSelection） */
+const handleJumpRowChange = (row: any) => {
+  selectedJumpRowKeys.value = row ? [row.id] : [];
+  selectedJumpRows.value = row ? [row] : [];
+};
 let nbcioHeader: any;
 const dateRange = ref<[DateModelType, DateModelType]>(['', '']);
 // 查询参数
@@ -710,7 +721,8 @@ const processVariables = (taskId: string) => {
 };
 
 const changeTab = (tab, event) => {
-  if (tab.paneName.value === 'form') {
+  // Element Plus 的 tab.paneName 是字符串，不存在 .value（原写法恒为 undefined，导致表单回显永不执行）
+  if (tab.paneName === 'form') {
     if (customForm.formId === '') {
       // 回填数据,这里主要是处理文件列表显示,临时解决，以后应该在表单设计器里完成
       processFormList.value?.forEach((item) => {
@@ -852,7 +864,7 @@ const onSelectAddSignUsers = () => {
 
 /** 通过任务 */
 const handleComplete = () => {
-  const isExistTaskForm = taskFormCustom.visible || toRaw(taskFormRenderRef.value) !== null || formRenderRefs.value.length > 0;
+  const isExistTaskForm = taskFormCustom.visible || toRaw(taskFormRenderRef.value) !== null || getActiveFormRenderRefs().length > 0;
 
   // 校验表单
   taskFormRef.value?.validate(async (valid: boolean) => {
@@ -867,6 +879,12 @@ const handleComplete = () => {
           }
           // 优先检查 taskFormRenderRef（节点表单）
           else if (taskFormRenderRef.value && taskFormRenderRef.value.getFormData) {
+            // 必填项校验（el-form-item 绑定 prop 后才会真正校验）
+            const formValid = await taskFormRenderRef.value.validate?.();
+            if (formValid === false) {
+              proxy?.$modal.msgError('请完善表单必填项后再提交');
+              return;
+            }
             const dataObj = await taskFormRenderRef.value.getFormData();
 
             if (dataObj) {
@@ -878,8 +896,15 @@ const handleComplete = () => {
 
               payload.variables = variables;
             }
-          } else if (formRenderRefs.value && formRenderRefs.value.length > 0) {
-            const dataObj = await formRenderRefs.value[0]?.getFormData?.();
+          } else if (getActiveFormRenderRefs().length > 0) {
+            const activeRender = getActiveFormRenderRefs()[0];
+            // 必填项校验（el-form-item 绑定 prop 后才会真正校验）
+            const formValid = await activeRender?.validate?.();
+            if (formValid === false) {
+              proxy?.$modal.msgError('请完善表单必填项后再提交');
+              return;
+            }
+            const dataObj = await activeRender?.getFormData?.();
 
             if (dataObj) {
               const mainData = dataObj?.main || {};
@@ -966,34 +991,38 @@ const goBack = () => {
 };
 // 关闭标签
 const handleClose = (type: any, tag: any) => {
-  const userObj = userMultipleSelection.value.find((item) => item.userId === tag.id);
-  userMultipleSelection.value.splice(userMultipleSelection.value.indexOf(userObj), 1);
+  // 按用户ID移除对应选中项（用户行数据的主键是 userId；找不到时不要 splice(-1) 误删末尾元素）
+  const removeIndex = userMultipleSelection.value.findIndex((item) => item.userId === (tag.userId ?? tag.id));
+  if (removeIndex >= 0) {
+    userMultipleSelection.value.splice(removeIndex, 1);
+  }
   if (type === 'copy') {
     copyUser.value = userMultipleSelection.value;
     // 设置抄送人ID
     if (copyUser.value && copyUser.value.length > 0) {
-      const val = copyUser.value.map((item) => item.id);
+      const val = copyUser.value.map((item) => item.userId);
       taskForm.copyUserIds = val instanceof Array ? val.join(',') : val;
     } else {
       taskForm.copyUserIds = '';
     }
   } else if (type === 'next') {
     nextUser.value = userMultipleSelection.value;
-    // 设置抄送人ID
+    // 设置指定审批人ID
     if (nextUser.value && nextUser.value.length > 0) {
-      const val = nextUser.value.map((item) => item.id);
+      const val = nextUser.value.map((item) => item.userId);
       taskForm.nextUserIds = val instanceof Array ? val.join(',') : val;
     } else {
       taskForm.nextUserIds = '';
     }
   } else if (type === 'addSign') {
+    // 加签弹窗的标签关闭只影响加签人，不得误改"指定审批人"
     addSignUser.value = userMultipleSelection.value;
-    // 设置抄送人ID
-    if (nextUser.value && nextUser.value.length > 0) {
-      const val = nextUser.value.map((item) => item.id);
-      taskForm.nextUserIds = val instanceof Array ? val.join(',') : val;
+    // 设置加签人ID
+    if (addSignUser.value && addSignUser.value.length > 0) {
+      const val = addSignUser.value.map((item) => item.userId);
+      taskForm.addSignUsers = val instanceof Array ? val.join(',') : val;
     } else {
-      taskForm.nextUserIds = '';
+      taskForm.addSignUsers = '';
     }
   }
 };
@@ -1030,6 +1059,7 @@ const submitReturn = () => {
     if (valid) {
       if (!returnTaskKey.value) {
         proxy?.$modal.msgError('请选择退回节点！');
+        return;
       }
       taskForm.targetKey = returnTaskKey.value;
       const res = await returnTask(taskForm);
@@ -1191,18 +1221,8 @@ const jumpComplete = () => {
   });
 };
 /**
- * 跳转节点列表选择
+ * 跳转节点列表选择（el-table highlight-current-row 单选，见 handleJumpRowChange）
  */
-
-const rowSelection = {
-  //selectedRowKeys: selectedRowKeys, //selectedRowKeys 可设置默认被选中项（就是表格一打开就被选中的项） 指定选中项的 key 数组，需要和 onChange 进行配合 string[]
-  onChange: (selectedRowKeys: any, selectedRows: any) => {
-    // onChange 选中项发生变化时的回调
-    selectedJumpRowKeys.value = selectedRowKeys;
-    selectedJumpRows.value = selectedRows;
-  },
-  type: 'radio' // 单选
-};
 
 onBeforeMount(() => {
   const clientid = import.meta.env.VITE_APP_CLIENT_ID;

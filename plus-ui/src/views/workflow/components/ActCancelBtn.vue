@@ -1,19 +1,19 @@
 <template>
   <span>
-    <a-button :type="btnType" @click="cancel()">{{ text }}</a-button>
-    <a-modal title="确认撤回" v-model="modalCancelVisible" :mask-closable="false" :width="500">
-      <a-form ref="delForm" v-model="cancelForm" :label-width="70" v-if="modalCancelVisible">
-        <a-form-item label="撤回原因" prop="reason">
-          <a-input type="textarea" v-model="cancelForm.reason" :rows="4" />
-        </a-form-item>
-      </a-form>
-      <template v-slot:footer>
+    <el-button :type="btnType" @click="cancel()">{{ text }}</el-button>
+    <el-dialog title="确认撤回" v-model="modalCancelVisible" width="500px" append-to-body>
+      <el-form ref="delForm" :model="cancelForm" label-width="70px" v-if="modalCancelVisible">
+        <el-form-item label="撤回原因" prop="reason">
+          <el-input type="textarea" v-model="cancelForm.reason" :rows="4" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
         <div>
-          <a-button type="primary" @click="modalCancelVisible = false">取消</a-button>
-          <a-button type="primary" :disabled="submitLoading" @click="handelSubmitCancel">提交</a-button>
+          <el-button @click="modalCancelVisible = false">取消</el-button>
+          <el-button type="primary" :disabled="submitLoading" @click="handelSubmitCancel">提交</el-button>
         </div>
       </template>
-    </a-modal>
+    </el-dialog>
   </span>
 </template>
 

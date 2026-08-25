@@ -296,6 +296,7 @@ public class WfTaskController {
      * @param variables 变量集合（JSON 对象，含 actStatus、processInstanceId）
      * @return 删除结果
      */
+    @SaCheckPermission("workflow:process:remove")
     @PostMapping(value = "/deleteActivityAndJoin/{dataId}")
     public R del(@PathVariable(value = "dataId") String dataId,
             @RequestBody Map<String, Object> variables) {

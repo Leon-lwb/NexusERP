@@ -1,34 +1,23 @@
 <template>
   <span>
-    <a-button :type="btnType" @click="applySubmit()" :loading="submitLoading">{{ text }}</a-button>
-    <a-modal
-      :z-index="100"
-      :title="firstInitiatorTitle"
-      @cancel="firstInitiatorOpen = false"
-      v-model:visible="firstInitiatorOpen"
-      :width="'50%'"
-      append-to-body
-    >
-      <a-descriptions bordered layout="vertical">
-        <a-descriptions-item :span="3">
-          <a-badge status="processing" text="选择提醒" />
-        </a-descriptions-item>
-        <a-descriptions-item label="重新发起新流程按钮" labelStyle="{ color: '#fff', fontWeight: 'bold', fontSize='18px'}">
-          重新发起新流程会删除之前发起的任务,重新开始.
-        </a-descriptions-item>
-        <a-descriptions-item label="继续发起老流程按钮"> 继续发起流程就在原来流程基础上继续流转. </a-descriptions-item>
-      </a-descriptions>
-      <template v-slot:footer>
+    <el-button :type="btnType" @click="applySubmit()" :loading="submitLoading">{{ text }}</el-button>
+    <el-dialog :title="firstInitiatorTitle" v-model="firstInitiatorOpen" width="50%" append-to-body>
+      <el-alert title="选择提醒" type="info" :closable="false" style="margin-bottom: 12px" />
+      <el-descriptions :column="1" border>
+        <el-descriptions-item label="重新发起新流程按钮"> 重新发起新流程会删除之前发起的任务,重新开始. </el-descriptions-item>
+        <el-descriptions-item label="继续发起老流程按钮"> 继续发起流程就在原来流程基础上继续流转. </el-descriptions-item>
+      </el-descriptions>
+      <template #footer>
         <span class="dialog-footer">
           <el-button type="primary" @click="ReStartByDataId(true)">重新发起新流程</el-button>
           <el-button type="primary" @click="ReStartByDataId(false)">继续发起老流程</el-button>
           <el-button @click="firstInitiatorOpen = false">取 消</el-button>
         </span>
       </template>
-    </a-modal>
+    </el-dialog>
 
     <!--挂载关联多个流程-->
-    <a-modal @cancel="flowOpen = false" :title="flowTitle" v-model:visible="flowOpen" width="70%" append-to-body>
+    <el-dialog :title="flowTitle" v-model="flowOpen" width="70%" append-to-body>
       <el-row :gutter="64">
         <el-col :span="20" :xs="64" style="width: 100%">
           <el-table ref="singleTable" :data="processList" border highlight-current-row style="width: 100%">
@@ -48,7 +37,7 @@
           </el-table>
         </el-col>
       </el-row>
-    </a-modal>
+    </el-dialog>
   </span>
 </template>
 
