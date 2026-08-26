@@ -109,19 +109,34 @@ public class WfCopyServiceImpl implements IWfCopyService {
 
     @Override
     public Boolean makeCopy(WfTaskBo taskBo) {
-        if (StringUtils.isBlank(taskBo.getCopyUserIds())) {
+        if (taskBo == null || StringUtils.isBlank(taskBo.getCopyUserIds())) {
             // 若抄送用户为空，则不需要处理，返回成功
             return true;
         }
         HistoricProcessInstance historicProcessInstance = historyService.createHistoricProcessInstanceQuery()
             .processInstanceId(taskBo.getProcInsId()).singleResult();
+        // 实例可能已不存在（误传/已终结清理），无实例信息无法组装抄送标题
+        if (historicProcessInstance == null) {
+            throw new ServiceException("抄送失败，流程实例不存在：" + taskBo.getProcInsId());
+        }
         String[] ids = taskBo.getCopyUserIds().split(",");
         List<WfCopy> copyList = new ArrayList<>(ids.length);
         Long originatorId = LoginHelper.getUserId();
         String originatorName = LoginHelper.getUsername();
         String title = historicProcessInstance.getProcessDefinitionName() + "-" + taskBo.getTaskName();
         for (String id : ids) {
-            Long userId = Long.valueOf(id);
+            String trimmed = StringUtils.trim(id);
+            if (StringUtils.isEmpty(trimmed)) {
+                // 容忍尾逗号/连续逗号造成的空段
+                continue;
+            }
+            Long userId;
+            try {
+                userId = Long.valueOf(trimmed);
+            } catch (NumberFormatException e) {
+                // 非数字段直接指出原始值，避免 500 且便于前端修正
+                throw new ServiceException("抄送用户ID格式错误：" + trimmed);
+            }
             WfCopy copy = new WfCopy();
             copy.setTitle(title);
             copy.setProcessId(historicProcessInstance.getProcessDefinitionId());
@@ -134,6 +149,9 @@ public class WfCopyServiceImpl implements IWfCopyService {
             copy.setOriginatorName(originatorName);
             copy.setState("未读");
             copyList.add(copy);
+        }
+        if (copyList.isEmpty()) {
+            return true;
         }
         return baseMapper.insertBatch(copyList);
     }

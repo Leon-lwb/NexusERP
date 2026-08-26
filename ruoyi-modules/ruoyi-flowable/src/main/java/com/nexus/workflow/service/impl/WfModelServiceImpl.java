@@ -213,7 +213,10 @@ public class WfModelServiceImpl extends FlowServiceFactory implements IWfModelSe
             modelVo.setFormId(metaInfo.getFormId());
             if (FormType.PROCESS.getType().equals(metaInfo.getFormType())) {
                 WfFormVo wfFormVo = formService.queryById(metaInfo.getFormId());
-                modelVo.setContent(wfFormVo.getContent());
+                // 关联表单可能已被删除，缺失时置空而不是让整个模型详情 500
+                if (wfFormVo != null) {
+                    modelVo.setContent(wfFormVo.getContent());
+                }
             }
         }
         return modelVo;
@@ -427,11 +430,16 @@ public class WfModelServiceImpl extends FlowServiceFactory implements IWfModelSe
      * @return
      */
     private String buildMetaInfo(WfMetaInfoDto metaInfo, String description) {
+        if (metaInfo == null) {
+            // 模型尚无扩展信息（历史数据/未初始化）时新建，避免更新时 NPE
+            metaInfo = new WfMetaInfoDto();
+        }
         // 只有非空，才进行设置，避免更新时的覆盖
         if (StringUtils.isNotEmpty(description)) {
             metaInfo.setDescription(description);
         }
-        if (StringUtils.isNotEmpty(metaInfo.getCreateUser())) {
+        // 创建人为空（首次创建）才设置，已有值时保留原创建人
+        if (StringUtils.isEmpty(metaInfo.getCreateUser())) {
             metaInfo.setCreateUser(LoginHelper.getUsername());
         }
         return JsonUtils.toJsonString(metaInfo);

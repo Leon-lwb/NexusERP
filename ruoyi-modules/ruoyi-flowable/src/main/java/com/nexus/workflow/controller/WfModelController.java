@@ -201,7 +201,9 @@ public class WfModelController extends BaseController {
     @RepeatSubmit()
     @PostMapping("/config/{modelId}/{appType}")
     public R<Void> configModel(@PathVariable String modelId, @PathVariable String appType) {
-        return R.ok(modelService.configModel(modelId, appType));
+        // R.ok(String) 会把 modelId 填进 msg 而非 data（重载误用），此处只需操作结果
+        modelService.configModel(modelId, appType);
+        return R.ok("配置成功!");
     }
 
     /**

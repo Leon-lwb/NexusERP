@@ -17,7 +17,6 @@ import com.nexus.common.json.utils.JsonUtils;
 import com.nexus.common.core.utils.SpringContextHolder;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.flowable.common.constant.ProcessConstants;
-import com.nexus.common.flowable.common.constant.TaskConstants;
 import com.nexus.common.flowable.common.enums.FlowComment;
 import com.nexus.common.flowable.common.enums.ProcessStatus;
 import com.nexus.common.flowable.core.domain.ActStatus;
@@ -26,13 +25,9 @@ import com.nexus.common.flowable.utils.TaskUtils;
 import com.nexus.common.satoken.utils.LoginHelper;
 import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.workflow.handler.ProcessAccessGuard;
+import com.nexus.workflow.util.WfParticipantNameResolver;
 import com.nexus.workflow.service.WfCallBackServiceI;
-import com.nexus.system.domain.vo.SysDeptVo;
-import com.nexus.system.domain.vo.SysRoleVo;
 import com.nexus.system.service.CommonService;
-import com.nexus.system.service.ISysDeptService;
-import com.nexus.system.service.ISysRoleService;
-import com.nexus.system.service.ISysUserService;
 import com.nexus.workflow.domain.WfMyBusiness;
 import com.nexus.workflow.domain.bo.WfTaskBo;
 import com.nexus.workflow.domain.vo.WfFormVo;
@@ -74,11 +69,9 @@ public class WfInstanceServiceImpl extends FlowServiceFactory implements IWfInst
 
     private final IWfDeployFormService deployFormService;
     private final UserService userService;
-    private final ISysRoleService roleService;
-    private final ISysDeptService deptService;
-    private final ISysUserService sysUserService;
     private final  WfMyBusinessServiceImpl wfMyBusinessService;
     private final ProcessAccessGuard processAccessGuard;
+    private final WfParticipantNameResolver participantNameResolver;
     @Resource
     private CommonService commonService;
 
@@ -354,35 +347,16 @@ public class WfInstanceServiceImpl extends FlowServiceFactory implements IWfInst
                 taskVo.setFinishTime(taskInstance.getEndTime());
                 if (StringUtils.isNotBlank(taskInstance.getAssignee())) {
                     String userId = taskInstance.getAssignee();
-                    String nickName = sysUserService.selectUserByUserName(userId).getNickName();
+                    // 办理人可能已被删除，降级显示登录名
+                    String nickName = participantNameResolver.userNick(userId);
                     taskVo.setAssigneeId(userId);
                     taskVo.setAssigneeName(nickName);
                 }
-                // 展示审批人员
+                // 展示审批人员（候选人/候选组可能已删除或组ID为脏数据，逐项降级跳过）
                 List<HistoricIdentityLink> linksForTask = historyService.getHistoricIdentityLinksForTask(taskInstance.getId());
-                StringBuilder stringBuilder = new StringBuilder();
-                for (HistoricIdentityLink identityLink : linksForTask) {
-                    if ("candidate".equals(identityLink.getType())) {
-                        if (StringUtils.isNotBlank(identityLink.getUserId())) {
-                            String userId = identityLink.getUserId();
-                            String nickName = sysUserService.selectUserByUserName(userId).getNickName();
-                            stringBuilder.append(nickName).append(",");
-                        }
-                        if (StringUtils.isNotBlank(identityLink.getGroupId())) {
-                            if (identityLink.getGroupId().startsWith(TaskConstants.ROLE_GROUP_PREFIX)) {
-                                Long roleId = Long.parseLong(StringUtils.stripStart(identityLink.getGroupId(), TaskConstants.ROLE_GROUP_PREFIX));
-                                SysRoleVo role = roleService.selectRoleById(roleId);
-                                stringBuilder.append(role.getRoleName()).append(",");
-                            } else if (identityLink.getGroupId().startsWith(TaskConstants.DEPT_GROUP_PREFIX)) {
-                                Long deptId = Long.parseLong(StringUtils.stripStart(identityLink.getGroupId(), TaskConstants.DEPT_GROUP_PREFIX));
-                                SysDeptVo dept = deptService.selectDeptById(deptId);
-                                stringBuilder.append(dept.getDeptName()).append(",");
-                            }
-                        }
-                    }
-                }
-                if (StringUtils.isNotBlank(stringBuilder)) {
-                    taskVo.setCandidate(stringBuilder.substring(0, stringBuilder.length() - 1));
+                String candidate = participantNameResolver.joinCandidateNames(linksForTask);
+                if (StringUtils.isNotBlank(candidate)) {
+                    taskVo.setCandidate(candidate);
                 }
                 if (ObjectUtil.isNotNull(taskInstance.getDurationInMillis())) {
                     taskVo.setDuration(DateUtil.formatBetween(taskInstance.getDurationInMillis(), BetweenFormatter.Level.SECOND));

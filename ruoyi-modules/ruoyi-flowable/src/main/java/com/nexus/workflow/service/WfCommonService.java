@@ -7,6 +7,8 @@ import com.nexus.workflow.service.impl.WfMyBusinessServiceImpl;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.workflow.domain.WfMyBusiness;
 
+import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -16,6 +18,7 @@ import org.springframework.stereotype.Service;
  *@date 2022/11/02
  *@version 1.0
  */
+@Slf4j
 @Service
 public class WfCommonService {
 
@@ -73,12 +76,14 @@ public class WfCommonService {
         if (hasBlank) throw new ServiceException("流程关键参数未填完全！dataId");
         LambdaQueryWrapper<WfMyBusiness> flowMyBusinessQueryWrapper = new LambdaQueryWrapper<>();
         flowMyBusinessQueryWrapper.eq(WfMyBusiness::getDataId,dataId);
-        WfMyBusiness one = wfMyBusinessService.getOne(flowMyBusinessQueryWrapper);
-        if (one.getProcessInstanceId()!=null){
+        // 脏数据下同一 dataId 可能存在多行，getOne 会抛异常；无行时返回 null 需跳过实例删除
+        WfMyBusiness one = wfMyBusinessService.getOne(flowMyBusinessQueryWrapper, false);
+        if (one != null && one.getProcessInstanceId()!=null){
             try {
                 wfInstanceService.delete(one.getProcessInstanceId(),"删除流程",dataId);
             } catch (Exception e) {
-                e.printStackTrace();
+                // 实例删除失败不阻断业务关联删除，但必须留痕，便于补偿清理孤立实例
+                log.error("删除流程实例失败, dataId={}, processInstanceId={}", dataId, one.getProcessInstanceId(), e);
             }
         }
         return wfMyBusinessService.remove(flowMyBusinessQueryWrapper);

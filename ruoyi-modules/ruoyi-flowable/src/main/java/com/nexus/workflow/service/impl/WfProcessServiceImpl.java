@@ -24,7 +24,6 @@ import com.nexus.common.core.utils.DateUtils;
 import com.nexus.common.core.utils.SpringContextHolder;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.flowable.common.constant.ProcessConstants;
-import com.nexus.common.flowable.common.constant.TaskConstants;
 import com.nexus.common.flowable.common.enums.FlowComment;
 import com.nexus.common.flowable.common.enums.ProcessStatus;
 import com.nexus.common.flowable.core.FormConf;
@@ -41,13 +40,9 @@ import com.nexus.common.json.utils.JsonUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.common.tenant.helper.TenantHelper;
-import com.nexus.system.domain.vo.SysDeptVo;
-import com.nexus.system.domain.vo.SysRoleVo;
 import com.nexus.system.domain.vo.SysUserVo;
 import com.nexus.system.domain.SysRole;
 import com.nexus.system.service.CommonService;
-import com.nexus.system.service.ISysDeptService;
-import com.nexus.system.service.ISysRoleService;
 import com.nexus.system.service.ISysUserService;
 import com.nexus.workflow.domain.WfCustomForm;
 import com.nexus.workflow.domain.WfDeployForm;
@@ -59,6 +54,7 @@ import com.nexus.workflow.mapper.WfDeployFormMapper;
 import com.nexus.workflow.service.IWfCustomFormService;
 import com.nexus.workflow.service.IWfMyBusinessService;
 import com.nexus.workflow.service.IWfProcessService;
+import com.nexus.workflow.util.WfParticipantNameResolver;
 import com.nexus.workflow.handler.ProcessAccessGuard;
 import com.nexus.workflow.service.IWfTaskService;
 import com.nexus.workflow.service.WfCommonService;
@@ -120,8 +116,6 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
 
     private final IWfTaskService wfTaskService;
     private final UserService userService;
-    private final ISysRoleService roleService;
-    private final ISysDeptService deptService;
     private final WfDeployFormMapper deployFormMapper;
     private final CommonService commonService;
     private final ISysUserService sysUserService;
@@ -131,6 +125,7 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
     private final WfCategoryMapper categoryMapper;
     private final WfMyBusinessServiceImpl wfMyBusinessServiceImpl;
     private final ProcessAccessGuard processAccessGuard;
+    private final WfParticipantNameResolver participantNameResolver;
 
     /**
      * 流程定义列表
@@ -150,12 +145,8 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
             .asc();
         // 构建搜索条件
         ProcessUtils.buildProcessSearch(processDefinitionQuery, processQuery);
-        long pageTotal = processDefinitionQuery.count();
-        if (pageTotal <= 0) {
-            return TableDataInfo.build();
-        }
-        int offset = pageQuery.getPageSize() * (pageQuery.getPageNum() - 1);
-        List<ProcessDefinition> definitionList = processDefinitionQuery.listPage(offset, pageQuery.getPageSize());
+        // OA 过滤在分页后进行会导致 total 虚高且页内丢数据，先全量过滤（流程定义量级有限）再内存分页
+        List<ProcessDefinition> definitionList = processDefinitionQuery.list();
 
         List<WfDefinitionVo> definitionVoList = new ArrayList<>();
         for (ProcessDefinition processDefinition : definitionList) {
@@ -182,8 +173,14 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
             }
 
         }
-        page.setRecords(definitionVoList);
-        page.setTotal(pageTotal);
+        // 内存分页（过滤后总数与页内条数保持一致）
+        int total = definitionVoList.size();
+        int pageNum = Math.max(pageQuery.getPageNum(), 1);
+        int pageSize = Math.max(pageQuery.getPageSize(), 1);
+        int from = Math.min((pageNum - 1) * pageSize, total);
+        int to = Math.min(from + pageSize, total);
+        page.setRecords(definitionVoList.subList(from, to));
+        page.setTotal(total);
         return TableDataInfo.build(page);
     }
 
@@ -1727,44 +1724,26 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
             if (BpmnXMLConstants.ELEMENT_EVENT_START.equals(activityInstance.getActivityType())) {
                 if (ObjectUtil.isNotNull(historicProcIns)) {
                     String userName = historicProcIns.getStartUserId();
-                    String nickName = sysUserService.selectUserByUserName(userName).getNickName();
-                    if (nickName != null) {
+                    // 发起人可能已被删除，降级显示登录名
+                    String nickName = participantNameResolver.userNick(userName);
+                    if (StringUtils.isNotBlank(nickName)) {
                         elementVo.setAssigneeId(userName);
                         elementVo.setAssigneeName(nickName);
                     }
                 }
             } else if (BpmnXMLConstants.ELEMENT_TASK_USER.equals(activityInstance.getActivityType())) {
                 if (StringUtils.isNotBlank(activityInstance.getAssignee())) {
-                	String userName = activityInstance.getAssignee();
-                    String nickName = sysUserService.selectUserByUserName(userName).getNickName();
+                    String userName = activityInstance.getAssignee();
+                    // 办理人可能已被删除，降级显示登录名
+                    String nickName = participantNameResolver.userNick(userName);
                     elementVo.setAssigneeId(userName);
                     elementVo.setAssigneeName(nickName);
                 }
-                // 展示审批人员
+                // 展示审批人员（候选人/候选组可能已删除或组ID为脏数据，逐项降级跳过）
                 List<HistoricIdentityLink> linksForTask = historyService.getHistoricIdentityLinksForTask(activityInstance.getTaskId());
-                StringBuilder stringBuilder = new StringBuilder();
-                for (HistoricIdentityLink identityLink : linksForTask) {
-                    if ("candidate".equals(identityLink.getType())) {
-                        if (StringUtils.isNotBlank(identityLink.getUserId())) {
-                            String userId = identityLink.getUserId();
-                            String nickName = sysUserService.selectUserByUserName(userId).getNickName();
-                            stringBuilder.append(nickName).append(",");
-                        }
-                        if (StringUtils.isNotBlank(identityLink.getGroupId())) {
-                            if (identityLink.getGroupId().startsWith(TaskConstants.ROLE_GROUP_PREFIX)) {
-                                Long roleId = Long.parseLong(StringUtils.stripStart(identityLink.getGroupId(), TaskConstants.ROLE_GROUP_PREFIX));
-                                SysRoleVo role = roleService.selectRoleById(roleId);
-                                stringBuilder.append(role.getRoleName()).append(",");
-                            } else if (identityLink.getGroupId().startsWith(TaskConstants.DEPT_GROUP_PREFIX)) {
-                                Long deptId = Long.parseLong(StringUtils.stripStart(identityLink.getGroupId(), TaskConstants.DEPT_GROUP_PREFIX));
-                                SysDeptVo dept = deptService.selectDeptById(deptId);
-                                stringBuilder.append(dept.getDeptName()).append(",");
-                            }
-                        }
-                    }
-                }
-                if (StringUtils.isNotBlank(stringBuilder)) {
-                    elementVo.setCandidate(stringBuilder.substring(0, stringBuilder.length() - 1));
+                String candidate = participantNameResolver.joinCandidateNames(linksForTask);
+                if (StringUtils.isNotBlank(candidate)) {
+                    elementVo.setCandidate(candidate);
                 }
                 // 获取意见评论内容
                 if (CollUtil.isNotEmpty(commentList)) {

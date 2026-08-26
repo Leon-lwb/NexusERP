@@ -53,56 +53,58 @@ public class WfDeployServiceImpl implements IWfDeployService {
             .asc();
         // 构建搜索条件
         ProcessUtils.buildProcessSearch(processDefinitionQuery, processQuery);
-        long pageTotal = processDefinitionQuery.count();
-        if (pageTotal <= 0) {
-            return TableDataInfo.build();
+        boolean hasAppTypeFilter = StringUtils.isNotBlank(processQuery.getAppType());
+        // appType 过滤需查类别映射，只能在分页后内存判断：先全量取回过滤（流程定义量级有限）再内存分页，
+        // 否则 total 虚高且页内丢数据；无过滤时保持数据库分页
+        List<ProcessDefinition> definitionList;
+        if (hasAppTypeFilter) {
+            definitionList = processDefinitionQuery.list();
+        } else {
+            long pageTotal = processDefinitionQuery.count();
+            if (pageTotal <= 0) {
+                return TableDataInfo.build();
+            }
+            int offset = pageQuery.getPageSize() * (pageQuery.getPageNum() - 1);
+            definitionList = processDefinitionQuery.listPage(offset, pageQuery.getPageSize());
         }
-        int offset = pageQuery.getPageSize() * (pageQuery.getPageNum() - 1);
-        List<ProcessDefinition> definitionList = processDefinitionQuery.listPage(offset, pageQuery.getPageSize());
 
         List<WfDeployVo> deployVoList = new ArrayList<>(definitionList.size());
         for (ProcessDefinition processDefinition : definitionList) {
-        	if( StringUtils.isNotBlank(processQuery.getAppType())) {
-        		if ( processQuery.getAppType().equalsIgnoreCase(categoryMapper.selectAppTypeByCode(processDefinition.getCategory(),TenantHelper.getTenantId()))) {
-	        		String deploymentId = processDefinition.getDeploymentId();
-		            Deployment deployment = repositoryService.createDeploymentQuery().deploymentId(deploymentId).singleResult();
-		            WfDeployVo vo = new WfDeployVo();
-		            vo.setDefinitionId(processDefinition.getId());
-		            vo.setProcessKey(processDefinition.getKey());
-		            vo.setProcessName(processDefinition.getName());
-		            vo.setVersion(processDefinition.getVersion());
-		            vo.setCategory(processDefinition.getCategory());
-		            vo.setAppType(categoryMapper.selectAppTypeByCode(processDefinition.getCategory(),TenantHelper.getTenantId()));
-		            vo.setDeploymentId(processDefinition.getDeploymentId());
-		            vo.setSuspended(processDefinition.isSuspended());
-		            // 流程部署信息
-		            vo.setCategory(deployment.getCategory());
-		            vo.setDeploymentTime(deployment.getDeploymentTime());
-		            deployVoList.add(vo);
-        		}
-        	}
-        	else {
-	            String deploymentId = processDefinition.getDeploymentId();
-	            Deployment deployment = repositoryService.createDeploymentQuery().deploymentId(deploymentId).singleResult();
-	            WfDeployVo vo = new WfDeployVo();
-	            vo.setDefinitionId(processDefinition.getId());
-	            vo.setProcessKey(processDefinition.getKey());
-	            vo.setProcessName(processDefinition.getName());
-	            vo.setVersion(processDefinition.getVersion());
-	            vo.setCategory(processDefinition.getCategory());
-	            vo.setAppType(categoryMapper.selectAppTypeByCode(processDefinition.getCategory(),TenantHelper.getTenantId()));
-	            vo.setDeploymentId(processDefinition.getDeploymentId());
-	            vo.setSuspended(processDefinition.isSuspended());
-	            // 流程部署信息
-	            vo.setCategory(deployment.getCategory());
-	            vo.setDeploymentTime(deployment.getDeploymentTime());
-	            deployVoList.add(vo);
-        	}
-
+            if (hasAppTypeFilter) {
+                if (!processQuery.getAppType().equalsIgnoreCase(categoryMapper.selectAppTypeByCode(processDefinition.getCategory(), TenantHelper.getTenantId()))) {
+                    continue;
+                }
+            }
+            String deploymentId = processDefinition.getDeploymentId();
+            Deployment deployment = repositoryService.createDeploymentQuery().deploymentId(deploymentId).singleResult();
+            WfDeployVo vo = new WfDeployVo();
+            vo.setDefinitionId(processDefinition.getId());
+            vo.setProcessKey(processDefinition.getKey());
+            vo.setProcessName(processDefinition.getName());
+            vo.setVersion(processDefinition.getVersion());
+            vo.setCategory(processDefinition.getCategory());
+            vo.setAppType(categoryMapper.selectAppTypeByCode(processDefinition.getCategory(), TenantHelper.getTenantId()));
+            vo.setDeploymentId(processDefinition.getDeploymentId());
+            vo.setSuspended(processDefinition.isSuspended());
+            // 流程部署信息
+            vo.setCategory(deployment.getCategory());
+            vo.setDeploymentTime(deployment.getDeploymentTime());
+            deployVoList.add(vo);
         }
         Page<WfDeployVo> page = new Page<>();
-        page.setRecords(deployVoList);
-        page.setTotal(pageTotal);
+        if (hasAppTypeFilter) {
+            // 内存分页（过滤后总数与页内条数保持一致）
+            int total = deployVoList.size();
+            int pageNum = Math.max(pageQuery.getPageNum(), 1);
+            int pageSize = Math.max(pageQuery.getPageSize(), 1);
+            int from = Math.min((pageNum - 1) * pageSize, total);
+            int to = Math.min(from + pageSize, total);
+            page.setRecords(new ArrayList<>(deployVoList.subList(from, to)));
+            page.setTotal(total);
+        } else {
+            page.setRecords(deployVoList);
+            page.setTotal(processDefinitionQuery.count());
+        }
         return TableDataInfo.build(page);
     }
 
