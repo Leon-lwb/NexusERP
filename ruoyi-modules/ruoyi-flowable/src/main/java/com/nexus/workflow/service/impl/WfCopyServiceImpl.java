@@ -3,6 +3,7 @@ package com.nexus.workflow.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
@@ -139,6 +140,18 @@ public class WfCopyServiceImpl implements IWfCopyService {
 
 	@Override
 	public void updateStatus(String id) {
+		if (StringUtils.isBlank(id)) {
+			return;
+		}
+		WfCopy copy = baseMapper.selectById(id);
+		if (copy == null) {
+			return;
+		}
+		// 仅本人（或管理员）可将自己的抄送置为已读，防止任意用户篡改他人抄送状态
+		if (!LoginHelper.getUserId().equals(copy.getUserId())
+			&& !LoginHelper.isSuperAdmin() && !LoginHelper.isTenantAdmin()) {
+			throw new ServiceException("无权操作该抄送记录");
+		}
 		baseMapper.updateState(id);
 	}
 }

@@ -25,6 +25,7 @@ import com.nexus.common.flowable.factory.FlowServiceFactory;
 import com.nexus.common.flowable.utils.TaskUtils;
 import com.nexus.common.satoken.utils.LoginHelper;
 import com.nexus.common.tenant.helper.TenantHelper;
+import com.nexus.workflow.handler.ProcessAccessGuard;
 import com.nexus.workflow.service.WfCallBackServiceI;
 import com.nexus.system.domain.vo.SysDeptVo;
 import com.nexus.system.domain.vo.SysRoleVo;
@@ -77,6 +78,7 @@ public class WfInstanceServiceImpl extends FlowServiceFactory implements IWfInst
     private final ISysDeptService deptService;
     private final ISysUserService sysUserService;
     private final  WfMyBusinessServiceImpl wfMyBusinessService;
+    private final ProcessAccessGuard processAccessGuard;
     @Resource
     private CommonService commonService;
 
@@ -331,10 +333,13 @@ public class WfInstanceServiceImpl extends FlowServiceFactory implements IWfInst
      */
     @Override
     public Map<String, Object> queryDetailProcess(String procInsId, String deployId) {
+        // 仅流程参与人（发起人/办理人/候选人/被抄送人）或管理员可查看流转记录，防止越权读取
+        processAccessGuard.checkCanView(procInsId);
         Map<String, Object> map = new HashMap<>();
         if (StringUtils.isNotBlank(procInsId)) {
             List<HistoricTaskInstance> taskInstanceList = historyService.createHistoricTaskInstanceQuery()
                 .processInstanceId(procInsId)
+                .taskTenantId(TenantHelper.getTenantId())
                 .orderByHistoricTaskInstanceStartTime().desc()
                 .list();
             List<Comment> commentList = taskService.getProcessInstanceComments(procInsId);
@@ -387,7 +392,8 @@ public class WfInstanceServiceImpl extends FlowServiceFactory implements IWfInst
                     List<Comment> comments = new ArrayList<>();
                     // commentList.stream().filter(comment -> taskInstance.getId().equals(comment.getTaskId())).collect(Collectors.toList());
                     for (Comment comment : commentList) {
-                        if (comment.getTaskId().equals(taskInstance.getId())) {
+                        // 流程级评论 taskId 为 null，用 Objects.equals 防止 NPE
+                        if (Objects.equals(comment.getTaskId(), taskInstance.getId())) {
                             comments.add(comment);
                             // taskVo.setComment(WfCommentDto.builder().type(comment.getType()).comment(comment.getFullMessage()).build());
                         }

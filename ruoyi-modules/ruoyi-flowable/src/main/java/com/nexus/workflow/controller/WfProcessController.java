@@ -140,11 +140,12 @@ public class WfProcessController extends BaseController {
     }
 
     /**
-     * 更新抄送状态为已读。
+     * 更新抄送状态为已读（仅限本人抄送记录，归属校验在服务层）。
      *
      * @param id 抄送记录 ID
      * @return 操作结果，成功时返回成功状态
      */
+    @SaCheckPermission("workflow:process:copyList")
     @GetMapping(value = "/updateViewStatust")
     public R<Object> updateViewStatus(@RequestParam(name = "id",required = false) String id) {
     	copyService.updateStatus(id);
@@ -270,6 +271,7 @@ public class WfProcessController extends BaseController {
      * @return 操作结果，成功时返回成功状态
      */
     @SaCheckPermission("workflow:process:start")
+    @RepeatSubmit()
     @PostMapping("/start/{processDefId}")
     public R<Void> start(@PathVariable(value = "processDefId") String processDefId, @RequestBody Map<String, Object> variables) {
     	return processService.startProcessByDefId(processDefId, variables);
@@ -316,6 +318,7 @@ public class WfProcessController extends BaseController {
      * @param processDefId 流程定义 ID
      * @return 流程 BPMN XML 字符串
      */
+    @SaCheckPermission("workflow:process:query")
     @GetMapping("/bpmnXml/{processDefId}")
     public R<String> getBpmnXml(@PathVariable(value = "processDefId") String processDefId) {
         return R.ok(null, processService.queryBpmnXmlById(processDefId));
@@ -329,6 +332,7 @@ public class WfProcessController extends BaseController {
      * @param dataId    业务数据 ID
      * @return 流程详情信息
      */
+    @SaCheckPermission("workflow:process:query")
     @GetMapping("/detail")
     public R detail(String procInsId, String taskId, String dataId) {
         return R.ok(processService.queryProcessDetail(procInsId, taskId, dataId));
@@ -340,6 +344,7 @@ public class WfProcessController extends BaseController {
      * @param dataId 业务数据 ID
      * @return 流程详情信息
      */
+    @SaCheckPermission("workflow:process:query")
     @GetMapping("/detailbydataid")
     public R detail(String dataId) {
         return R.ok(processService.queryProcessDetailByDataId(dataId));
@@ -351,6 +356,7 @@ public class WfProcessController extends BaseController {
      * @param procInsId 流程实例 ID
      * @return 是否已完成的布尔结果
      */
+    @SaCheckPermission("workflow:process:query")
     @GetMapping("/iscompleted")
     public R processIscompleted(String procInsId) {
         return R.ok(processService.processIscompleted(procInsId));
@@ -362,6 +368,7 @@ public class WfProcessController extends BaseController {
      * @param ddjson 钉钉流程 JSON 字符串
      * @return 操作结果，成功时返回成功状态
      */
+    @SaCheckPermission("workflow:model:edit")
     @PostMapping("/ddtobpmn")
     public R<Void> ddToBpmn(@RequestBody String ddjson) {
     	return processService.dingdingToBpmn(ddjson);
@@ -374,6 +381,7 @@ public class WfProcessController extends BaseController {
      * @param serviceName 业务服务名称
      * @return 关联流程信息
      */
+    @SaCheckPermission("workflow:process:query")
     @GetMapping("/getProcesss")
     public R getProcesss(String serviceName) {
         return R.ok(processService.getProcesssByServiceName(serviceName));

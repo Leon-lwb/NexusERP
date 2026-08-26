@@ -310,30 +310,21 @@ public class WfTaskController {
      *
      * @param processId 流程实例 ID
      */
-    @RequestMapping("/diagram/{processId}")
+    @SaCheckPermission("workflow:process:query")
+    @GetMapping("/diagram/{processId}")
     public void genProcessDiagram(HttpServletResponse response,
                                   @PathVariable("processId") String processId) {
-        InputStream inputStream = flowTaskService.diagram(processId);
-        OutputStream os = null;
-        BufferedImage image = null;
-        try {
-            image = ImageIO.read(inputStream);
+        // 流程图高亮会泄露流转进度，仅限有查询权限的用户访问；流必须显式关闭
+        try (InputStream inputStream = flowTaskService.diagram(processId);
+             OutputStream os = response.getOutputStream()) {
+            BufferedImage image = ImageIO.read(inputStream);
             response.setContentType("image/png");
-            os = response.getOutputStream();
             if (image != null) {
                 ImageIO.write(image, "png", os);
             }
+            os.flush();
         } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            try {
-                if (os != null) {
-                    os.flush();
-                    os.close();
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            log.error("生成流程图失败, processId={}", processId, e);
         }
     }
 }

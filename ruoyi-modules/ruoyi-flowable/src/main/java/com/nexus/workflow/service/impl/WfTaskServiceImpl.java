@@ -1176,7 +1176,9 @@ public class WfTaskServiceImpl extends FlowServiceFactory implements IWfTaskServ
         // 如果流程已经结束，则得到结束节点
         if (Objects.isNull(processInstance)) {
             HistoricProcessInstance pi = historyService.createHistoricProcessInstanceQuery().processInstanceId(processId).singleResult();
-
+            if (Objects.isNull(pi)) {
+                throw new ServiceException("流程实例不存在");
+            }
             processDefinitionId = pi.getProcessDefinitionId();
         } else {// 如果流程没有结束，则取当前活动节点
             // 根据流程实例ID获得当前处于活动状态的ActivityId合集

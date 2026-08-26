@@ -59,6 +59,7 @@ import com.nexus.workflow.mapper.WfDeployFormMapper;
 import com.nexus.workflow.service.IWfCustomFormService;
 import com.nexus.workflow.service.IWfMyBusinessService;
 import com.nexus.workflow.service.IWfProcessService;
+import com.nexus.workflow.handler.ProcessAccessGuard;
 import com.nexus.workflow.service.IWfTaskService;
 import com.nexus.workflow.service.WfCommonService;
 import com.nexus.workflow.service.WfCallBackServiceI;
@@ -98,6 +99,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -128,6 +130,7 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
     private final WfCommonService wfCommonService;
     private final WfCategoryMapper categoryMapper;
     private final WfMyBusinessServiceImpl wfMyBusinessServiceImpl;
+    private final ProcessAccessGuard processAccessGuard;
 
     /**
      * 流程定义列表
@@ -608,8 +611,11 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
     @Override
     @Transactional(rollbackFor = Exception.class)
     public R<Void> startProcessByDefKey(String procDefKey, Map<String, Object> variables) {
+        // 必须限定当前租户，防止多租户同 key 时启动到其它租户的流程定义
         ProcessDefinition processDefinition = repositoryService.createProcessDefinitionQuery()
-            .processDefinitionKey(procDefKey).latestVersion().singleResult();
+            .processDefinitionKey(procDefKey)
+            .processDefinitionTenantId(TenantHelper.getTenantId())
+            .latestVersion().singleResult();
         return startProcess(processDefinition, variables);
     }
 
@@ -660,6 +666,8 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
      */
     @Override
     public WfDetailVo queryProcessDetail(String procInsId, String taskId, String dataId ) {
+        // 仅流程参与人（发起人/办理人/候选人/被抄送人）或管理员可查看详情，防止越权读取他人单据
+        processAccessGuard.checkCanView(procInsId);
         WfDetailVo detailVo = new WfDetailVo();
         List<CurNodeInfoVo> listCurNodeInfo = new ArrayList<CurNodeInfoVo>();
         // 获取流程实例
@@ -790,7 +798,12 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
         WfDetailVo detailVo = new WfDetailVo();
         List<CurNodeInfoVo> listCurNodeInfo = new ArrayList<CurNodeInfoVo>();
         WfMyBusiness business = wfMyBusinessServiceImpl.getByDataId(dataId);
+        if (business == null) {
+            throw new ServiceException("未找到该业务数据的流程关联记录");
+        }
         String procInsId = business.getProcessInstanceId();
+        // 仅流程参与人或管理员可查看详情，防止越权读取他人单据
+        processAccessGuard.checkCanView(procInsId);
         String taskId = business.getTaskId();
         // 获取流程实例
         HistoricProcessInstance historicProcIns = historyService.createHistoricProcessInstanceQuery()
@@ -1298,6 +1311,36 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
      * @param data
      * add by wanghuan
      */
+    /**
+     * 钉钉流程条件表达式允许的字符：变量名/数字/比较与逻辑运算符/括号/引号/${} 包裹。
+     * 禁止 #、;、反斜杠等 UEL/Spring EL 特征字符。
+     */
+    private static final Pattern DD_CONDITION_CHARS = Pattern.compile("^[A-Za-z0-9_$ \\t{}().,<>=!&|+\\-*%'\"]+$");
+    /**
+     * 方法调用特征：标识符后紧跟左括号（如 exec(、T(、getClass(），合法的条件表达式不会出现
+     */
+    private static final Pattern DD_CONDITION_CALL = Pattern.compile("[A-Za-z0-9_]\\s*\\(");
+
+    /**
+     * 校验钉钉流程转换的条件表达式，防止 UEL 表达式注入导致任意方法调用。
+     * 仅允许「变量 比较运算符 值」及 &&/||、括号分组的组合（可含 ${} 包裹）。
+     *
+     * @param expression 原始条件表达式，允许为空
+     * @return 原表达式（校验通过时）
+     */
+    private static String validateDdConditionExpression(String expression) {
+        if (StringUtils.isBlank(expression)) {
+            return expression;
+        }
+        if (expression.length() > 200
+            || expression.contains(";") || expression.contains("\\") || expression.contains("#")
+            || !DD_CONDITION_CHARS.matcher(expression).matches()
+            || DD_CONDITION_CALL.matcher(expression).find()) {
+            throw new ServiceException("流程条件表达式不合法（仅支持变量比较运算），已拒绝保存");
+        }
+        return expression;
+    }
+
     private Map<String, Object> GetExclusiveGatewayUser(FlowElement flowElement,Map<String, Object> variables){
     	// 获取所有网关分支
         List<SequenceFlow> targetFlows=((ExclusiveGateway)flowElement).getOutgoingFlows();
@@ -1936,6 +1979,7 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
        	       return R.fail("自定义表单也没关联流程定义表,流程没定义关联自定义表单"+wfCustomFormvo.getId());
             }
             processDefinition = repositoryService.createProcessDefinitionQuery()
+        		.processDefinitionTenantId(TenantHelper.getTenantId())
         		.parentDeploymentId(sysDeployForm.getDeployId()).latestVersion().singleResult();
         }
         else {
@@ -2151,7 +2195,9 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
             JSONObject childNode = element.getJSONObject("childNode");
             JSONObject properties = element.getJSONObject("properties");
             String nodeName = properties.getString("title");
-            String expression = properties.getString("conditions");
+            // 条件表达式来自用户提交的 JSON，写入 BPMN 前必须做白名单校验，
+            // 否则存在 UEL 表达式注入（如 ${bean.exec(...)}）导致任意方法调用
+            String expression = validateDdConditionExpression(properties.getString("conditions"));
 
             if (Objects.isNull(childNode)) {
                 incoming.add(exclusiveGatewayId);
