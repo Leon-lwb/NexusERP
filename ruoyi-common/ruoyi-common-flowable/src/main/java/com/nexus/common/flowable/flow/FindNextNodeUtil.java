@@ -108,7 +108,7 @@ public class FindNextNodeUtil {
                             userTask.setName(ca.getName());
                             nextUser.add(userTask);
                         }
-                        next(flowElements, nextFlowElement, map, nextUser);
+                        next(flowElements, nextFlowElement, map, nextUser, visited);
                     }
                     //用户任务
                     if (nextFlowElement instanceof UserTask) {
@@ -116,27 +116,27 @@ public class FindNextNodeUtil {
                     }
                     //排他网关
                     else if (nextFlowElement instanceof ExclusiveGateway) {
-                        next(flowElements, nextFlowElement, map, nextUser);
+                        next(flowElements, nextFlowElement, map, nextUser, visited);
                     }
                     //并行网关
                     else if (nextFlowElement instanceof ParallelGateway) {
-                        next(flowElements, nextFlowElement, map, nextUser);
+                        next(flowElements, nextFlowElement, map, nextUser, visited);
                     }
                     //接收任务
                     else if (nextFlowElement instanceof ReceiveTask) {
-                        next(flowElements, nextFlowElement, map, nextUser);
+                        next(flowElements, nextFlowElement, map, nextUser, visited);
                     }
                     //服务任务
                     else if (nextFlowElement instanceof ServiceTask) {
-                        next(flowElements, nextFlowElement, map, nextUser);
+                        next(flowElements, nextFlowElement, map, nextUser, visited);
                     }
                     //子任务的起点
                     else if (nextFlowElement instanceof StartEvent) {
-                        next(flowElements, nextFlowElement, map, nextUser);
+                        next(flowElements, nextFlowElement, map, nextUser, visited);
                     }
                     //结束节点
                     else if (nextFlowElement instanceof EndEvent) {
-                        next(flowElements, nextFlowElement, map, nextUser);
+                        next(flowElements, nextFlowElement, map, nextUser, visited);
                     }
                 }
             }
