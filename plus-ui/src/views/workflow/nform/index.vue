@@ -525,9 +525,9 @@ const handleMainSelect = (data: Record<string, unknown> | Record<string, unknown
               // 第一个值直接赋值
               (form.value as Record<string, unknown>)[target] = item[source];
             } else {
-              // 后续值追加到字段名后
+              // 后续值追加到带序号的字段，避免覆盖前面的选中项
               const fieldName = `${target}${index + 1}`;
-              (form.value as Record<string, unknown>)[target] = item[source];
+              (form.value as Record<string, unknown>)[fieldName] = item[source];
             }
           }
         });
@@ -1096,8 +1096,7 @@ const handleTest = (row: NformVO) => {
       path: '/workflow/nform/test',
       query: {
         formId: row.formId,
-        formName: row.formName,
-        formContent: row.formContent
+        formName: row.formName
       }
     })
     .then(() => {})

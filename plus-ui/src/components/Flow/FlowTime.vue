@@ -2,11 +2,9 @@
   <el-time-select
     :disabled="disabled"
     v-model="localValue"
-    :picker-options="{
-      start: '00:00',
-      step: '00:01',
-      end: '23:59'
-    }"
+    start="00:00"
+    step="00:01"
+    end="23:59"
     :placeholder="nm.tableTypeDesc"
     @change="commonComponent"
   />

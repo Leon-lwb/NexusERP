@@ -7,7 +7,7 @@
           <el-button-group>
             <el-button type="primary" @click="handleDesign">设计表单</el-button>
             <el-button type="success" @click="handlePreview">预览表单</el-button>
-            <el-button type="warning" @click="handleSave">保存数据</el-button>
+            <el-button type="warning" :loading="submitLoading" @click="handleSave">保存数据</el-button>
           </el-button-group>
         </div>
       </template>
@@ -189,7 +189,7 @@
 
         <!-- 表单操作按钮 -->
         <div class="form-actions">
-          <el-button type="primary" @click="handleSubmit">提交表单</el-button>
+          <el-button type="primary" :loading="submitLoading" @click="handleSubmit">提交表单</el-button>
           <el-button @click="handleReset">重置表单</el-button>
         </div>
       </div>
@@ -659,7 +659,10 @@ const handleDesignerClose = () => {
 };
 
 // 处理表单提交
+const submitLoading = ref(false);
 const handleSubmit = async () => {
+  if (submitLoading.value) return;
+  submitLoading.value = true;
   try {
     // 必填项校验（el-form-item 绑定 prop 后 required 才会真正校验）
     if (mainFormRef.value) {
@@ -771,6 +774,8 @@ const handleSubmit = async () => {
   } catch (error) {
     console.error('提交表单失败:', error);
     ElMessage.error('提交表单失败');
+  } finally {
+    submitLoading.value = false;
   }
 };
 
@@ -1239,10 +1244,9 @@ const loadFormData = async () => {
       const res = await getNform(formId);
       if (res.code === 200) {
         currentFormData.value = res.data;
+        // 赋值后由下方 watch 统一触发 parseFormContent，避免同一份内容解析两次
         currentFormContent.value = res.data.formContent;
         ElMessage.success('表单数据加载成功');
-        // 解析表单内容并加载字典数据
-        await parseFormContent();
       } else {
         ElMessage.error(res.msg || '加载表单数据失败');
       }
@@ -1259,15 +1263,15 @@ onMounted(async () => {
   await loadFormData();
 });
 
-// 监听表单内容变化
+// 监听表单内容变化（loadFormData 里已显式 await parseFormContent()，此处不再 immediate 触发，
+// 避免同一份内容解析两次：字典重复请求、formData 被二次初始化）
 watch(
   () => currentFormContent.value,
-  async (newVal) => {
-    if (newVal) {
+  async (newVal, oldVal) => {
+    if (newVal && newVal !== oldVal) {
       await parseFormContent();
     }
-  },
-  { immediate: true }
+  }
 );
 </script>
 

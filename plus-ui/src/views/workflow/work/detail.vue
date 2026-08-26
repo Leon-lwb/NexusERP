@@ -21,7 +21,7 @@
             <!-- 表单设计器 / OA 表单 -->
             <div class="form-container" v-else style="max-width: 100%">
               <FormRender
-                :form-content="JSON.stringify(getFormContentWithWiderLabels())"
+                :form-content="taskNodeFormContentJson"
                 :initial-data="getInitialMainData(taskFormData.value)"
                 :dict-options="dictOptions"
                 ref="taskFormRenderRef"
@@ -58,7 +58,7 @@
           </el-row>
           <el-row :gutter="10" type="flex" justify="center">
             <el-col :span="1.5">
-              <el-button icon="CircleCheck" type="success" @click="handleComplete">通过</el-button>
+              <el-button icon="CircleCheck" type="success" :loading="completeLoading" @click="handleComplete">通过</el-button>
             </el-col>
             <el-col :span="1.5">
               <el-button icon="ChatLineSquare" type="primary" @click="handleDelegate">委派</el-button>
@@ -109,7 +109,7 @@
                 <!-- 发起人节点 OA 且可编辑时渲染第一张表单 -->
                 <FormRender
                   v-if="dictReady && startUserForm.isStartUserNode && startUserForm.editFormType === 'OA' && processed === true && index === 0"
-                  :form-content="getEditableFormContent(item)"
+                  :form-content="editableFormContentCache.get(item)"
                   :initial-data="getInitialMainData(item)"
                   :dict-options="dictOptions"
                   label-width="200px"
@@ -120,7 +120,7 @@
                 <!-- 其他节点：根据 disabled 决定是否只读，否则可编辑 -->
                 <FormRender
                   v-else-if="dictReady && item.disabled && !startUserForm.isStartUserNode"
-                  :form-content="getReadonlyFormContent(item)"
+                  :form-content="readonlyFormContentCache.get(item)"
                   :initial-data="getInitialMainData(item)"
                   :dict-options="dictOptions"
                   label-width="200px"
@@ -129,7 +129,7 @@
                 />
                 <FormRender
                   v-else-if="dictReady"
-                  :form-content="getEditableFormContent(item)"
+                  :form-content="editableFormContentCache.get(item)"
                   :initial-data="getInitialMainData(item)"
                   :dict-options="dictOptions"
                   label-width="200px"
@@ -659,7 +659,13 @@ const filterNode = (value: string, data: any) => {
 
 //点击文件列表中已上传文件进行下载
 const handleFilePreview = (file: any) => {
-  location.href = file.url;
+  const url = String(file?.url || '');
+  // file.url 来自表单存储值，仅放行站内相对路径与 http(s) 地址，防止 javascript: 等伪协议注入
+  if (/^https?:\/\//i.test(url) || url.startsWith('/')) {
+    window.open(url, '_blank');
+  } else {
+    proxy?.$modal.msgError('不支持的文件地址');
+  }
 };
 
 // 节点单击事件
@@ -863,77 +869,89 @@ const onSelectAddSignUsers = () => {
 };
 
 /** 通过任务 */
+const completeLoading = ref(false);
 const handleComplete = () => {
+  if (completeLoading.value) {
+    return;
+  }
   const isExistTaskForm = taskFormCustom.visible || toRaw(taskFormRenderRef.value) !== null || getActiveFormRenderRefs().length > 0;
 
   // 校验表单
   taskFormRef.value?.validate(async (valid: boolean) => {
     if (valid) {
-      const payload: any = { ...toRaw(taskForm) };
+      completeLoading.value = true;
+      try {
+        const payload: any = { ...toRaw(taskForm) };
 
-      if (isExistTaskForm) {
-        try {
-          // 自定义业务表单：直接从 model 读取（v-model 双向绑定已更新）
-          if (taskFormCustom.visible) {
-            payload.variables = { formData: toRaw(taskFormCustom.model) };
-          }
-          // 优先检查 taskFormRenderRef（节点表单）
-          else if (taskFormRenderRef.value && taskFormRenderRef.value.getFormData) {
-            // 必填项校验（el-form-item 绑定 prop 后才会真正校验）
-            const formValid = await taskFormRenderRef.value.validate?.();
-            if (formValid === false) {
-              proxy?.$modal.msgError('请完善表单必填项后再提交');
-              return;
+        if (isExistTaskForm) {
+          try {
+            // 自定义业务表单：直接从 model 读取（v-model 双向绑定已更新）
+            if (taskFormCustom.visible) {
+              payload.variables = { formData: toRaw(taskFormCustom.model) };
             }
-            const dataObj = await taskFormRenderRef.value.getFormData();
+            // 优先检查 taskFormRenderRef（节点表单）
+            else if (taskFormRenderRef.value && taskFormRenderRef.value.getFormData) {
+              // 必填项校验（el-form-item 绑定 prop 后才会真正校验）
+              const formValid = await taskFormRenderRef.value.validate?.();
+              if (formValid === false) {
+                proxy?.$modal.msgError('请完善表单必填项后再提交');
+                return;
+              }
+              const dataObj = await taskFormRenderRef.value.getFormData();
 
-            if (dataObj) {
-              const mainData = dataObj?.main || {};
-              const subData = dataObj?.sub || null;
+              if (dataObj) {
+                const mainData = dataObj?.main || {};
+                const subData = dataObj?.sub || null;
 
-              const variables: any = { ...toRaw(mainData) };
-              if (subData) variables.sub = toRaw(subData);
+                const variables: any = { ...toRaw(mainData) };
+                if (subData) variables.sub = toRaw(subData);
 
-              payload.variables = variables;
-            }
-          } else if (getActiveFormRenderRefs().length > 0) {
-            const activeRender = getActiveFormRenderRefs()[0];
-            // 必填项校验（el-form-item 绑定 prop 后才会真正校验）
-            const formValid = await activeRender?.validate?.();
-            if (formValid === false) {
-              proxy?.$modal.msgError('请完善表单必填项后再提交');
-              return;
-            }
-            const dataObj = await activeRender?.getFormData?.();
+                payload.variables = variables;
+              }
+            } else if (getActiveFormRenderRefs().length > 0) {
+              const activeRender = getActiveFormRenderRefs()[0];
+              // 必填项校验（el-form-item 绑定 prop 后才会真正校验）
+              const formValid = await activeRender?.validate?.();
+              if (formValid === false) {
+                proxy?.$modal.msgError('请完善表单必填项后再提交');
+                return;
+              }
+              const dataObj = await activeRender?.getFormData?.();
 
-            if (dataObj) {
-              const mainData = dataObj?.main || {};
-              const subData = dataObj?.sub || null;
+              if (dataObj) {
+                const mainData = dataObj?.main || {};
+                const subData = dataObj?.sub || null;
 
-              const variables: any = { ...toRaw(mainData) };
-              if (subData) variables.sub = toRaw(subData);
+                const variables: any = { ...toRaw(mainData) };
+                if (subData) variables.sub = toRaw(subData);
 
-              payload.variables = variables;
+                payload.variables = variables;
+              } else {
+                console.warn('🔍 [WARN] handleComplete - 流程表单获取到的数据为空');
+              }
             } else {
-              console.warn('🔍 [WARN] handleComplete - 流程表单获取到的数据为空');
+              console.warn('🔍 [WARN] handleComplete - 没有可用的表单组件');
             }
-          } else {
-            console.warn('🔍 [WARN] handleComplete - 没有可用的表单组件');
+          } catch (error) {
+            console.error('🔍 [ERROR] handleComplete - 获取表单数据失败:', error);
           }
-        } catch (error) {
-          console.error('🔍 [ERROR] handleComplete - 获取表单数据失败:', error);
+        } else {
         }
-      } else {
-      }
 
-      // 补充 dataId（若存在）
-      if (route.query && (route.query as any).dataId) {
-        payload.dataId = (route.query as any).dataId;
-      }
+        // 补充 dataId（若存在）
+        if (route.query && (route.query as any).dataId) {
+          payload.dataId = (route.query as any).dataId;
+        }
 
-      const res = await complete(payload);
-      proxy?.$modal.msgSuccess(res.msg);
-      goBack();
+        const res = await complete(payload);
+        proxy?.$modal.msgSuccess(res.msg);
+        goBack();
+      } catch (error: any) {
+        console.error('审批提交失败:', error);
+        proxy?.$modal.msgError(error?.message || '审批提交失败');
+      } finally {
+        completeLoading.value = false;
+      }
     } else {
     }
   });
@@ -1231,6 +1249,20 @@ onBeforeMount(() => {
 });
 
 const emptyFormContent = computed(() => JSON.stringify({ formConfig: {}, formComponents: [] }));
+
+// 表单内容缓存：审批意见等高频输入引发的重渲染不应反复对整份表单定义做 JSON 序列化，
+// 统一收敛为 computed，仅在 processFormList / taskFormData 变化时重算一次
+const taskNodeFormContentJson = computed(() => JSON.stringify(getFormContentWithWiderLabels()));
+const editableFormContentCache = computed(() => {
+  const map = new Map();
+  processFormList.value?.forEach((item) => map.set(item, getEditableFormContent(item)));
+  return map;
+});
+const readonlyFormContentCache = computed(() => {
+  const map = new Map();
+  processFormList.value?.forEach((item) => map.set(item, getReadonlyFormContent(item)));
+  return map;
+});
 
 const getFormContent = (item: any) => {
   const model = item?.formModel;

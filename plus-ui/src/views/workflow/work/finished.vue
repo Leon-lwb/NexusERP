@@ -119,7 +119,8 @@ const handleDetails = (row: any) => {
 };
 
 /** 收回任务 */
-const handleRecall = (row: any) => {
+const handleRecall = async (row: any) => {
+  await proxy?.$modal.confirm('是否收回该任务？收回后任务将退回重办');
   const params = {
     procInsId: row.procInsId,
     taskId: row.taskId,
@@ -133,6 +134,7 @@ const handleRecall = (row: any) => {
 
 /** 撤回任务 */
 const handleRevoke = async (row: any) => {
+  await proxy?.$modal.confirm('是否撤回该流程？撤回后流程将终止');
   const params = {
     procInsId: row.procInsId,
     taskId: row.taskId,

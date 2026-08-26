@@ -12,10 +12,10 @@
       <!-- 搜索栏 -->
       <el-form :inline="true" class="search-form">
         <el-form-item label="关键词">
-          <el-input v-model="searchKey" placeholder="输入关键词搜索" @keyup.enter="loadData" />
+          <el-input v-model="searchKey" placeholder="输入关键词搜索" @keyup.enter="handleSearch" />
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" @click="loadData">搜索</el-button>
+          <el-button type="primary" @click="handleSearch">搜索</el-button>
         </el-form-item>
       </el-form>
 
@@ -139,16 +139,29 @@ const queryParams = reactive<any>({
   params: {}
 });
 
-// 加载数据
+// 加载数据（请求序号防止快速翻页/连续搜索时旧响应覆盖新响应）
+let loadSeq = 0;
 const loadData = async () => {
+  const seq = ++loadSeq;
   try {
+    // 关键词过滤：后端按来源表全部文本列做 LIKE 匹配
+    queryParams.params.keyword = searchKey.value?.trim() || undefined;
     const res = await listPopupData(props.nm.tableId, props.nm.dictType, queryParams);
+    if (seq !== loadSeq) return;
     tableData.value = res.rows;
     total.value = res.total;
   } catch (error) {
-    console.error('加载弹出数据失败:', error);
-    ElMessage.error('数据加载失败');
+    if (seq === loadSeq) {
+      console.error('加载弹出数据失败:', error);
+      ElMessage.error('数据加载失败');
+    }
   }
+};
+
+// 搜索时重置到第一页
+const handleSearch = () => {
+  queryParams.pageNum = 1;
+  loadData();
 };
 
 // runtime override for popup query linkage (from useOnlineRuntime.computeRuntimeLinkageState)

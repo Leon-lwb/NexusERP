@@ -77,6 +77,7 @@
 </template>
 
 <script setup lang="ts">
+import { ElMessage } from 'element-plus';
 import { detailProcessByDataId } from '@/api/workflow/process/index';
 import ProcessViewer from '@/components/ProcessViewer/index.vue';
 import { useFlowable } from '@/views/workflow/hooks/useFlowable';
@@ -232,7 +233,13 @@ const setColor = (val) => {
 };
 //点击文件列表中已上传文件进行下载
 const handleFilePreview = (file: any) => {
-  location.href = file.url;
+  const url = String(file?.url || '');
+  // file.url 来自表单存储值，仅放行站内相对路径与 http(s) 地址，防止 javascript: 等伪协议注入
+  if (/^https?:\/\//i.test(url) || url.startsWith('/')) {
+    window.open(url, '_blank');
+  } else {
+    ElMessage.error('不支持的文件地址');
+  }
 };
 const fillFormData = (list, formConf) => {
   // for formdesigner

@@ -35,20 +35,28 @@ export const useFlowable = () => {
   /* 挂载自定义业务表单列表 */
   const ListCustomForForm = async () => {
     listCustomForm(formQueryParams).then((res) => {
-      const cfList = res.rows;
-      cfList.forEach((item, index) => {
-        const cms = {
-          text: item.flowName,
-          routeName: item.routeName,
-          component: resolveFormComponent(item.routeName),
-          businessTable: 'wf_demo'
-        };
-        customformList.value.push(cms);
-      });
+      const cfList = res.rows || [];
+      // 一次性赋值，避免循环 push 多次触发响应式更新
+      customformList.value = cfList.map((item) => ({
+        text: item.flowName,
+        routeName: item.routeName,
+        component: resolveFormComponent(item.routeName),
+        businessTable: 'wf_demo'
+      }));
     });
   };
   const getFormComponent = (routeName) => {
-    return allFormComponent.value.find((item) => item.routeName === routeName) || {};
+    const found = allFormComponent.value.find((item) => item.routeName === routeName);
+    if (found) return found;
+    // 竞态兜底：流程详情接口先于自定义表单列表返回时列表尚未就绪，
+    // 直接按 routeName 解析组件（resolveFormComponent 不依赖列表），避免业务表单静默不渲染
+    if (routeName) {
+      const component = resolveFormComponent(routeName);
+      if (component) {
+        return { text: routeName, routeName, component, businessTable: 'wf_demo' };
+      }
+    }
+    return {};
   };
 
   onMounted(() => {

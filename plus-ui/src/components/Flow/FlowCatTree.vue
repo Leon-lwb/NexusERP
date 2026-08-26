@@ -85,6 +85,8 @@ export default {
 };
 </script>
 
+<!-- el-tree 渲染在 el-select 的 teleport 弹层内、不在本组件子树，
+     scoped/:deep 均无法命中，故保持全局；靠 .setstyle 自定义类名限定影响面 -->
 <style lang="scss">
 .setstyle {
   min-height: 200px;

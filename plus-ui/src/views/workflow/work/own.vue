@@ -161,6 +161,8 @@ const handleDetails = (row: ProcessVO) => {
 };
 /** 取消流程申请 */
 const handleStop = async (row: ProcessVO) => {
+  // 终止流程不可恢复，需二次确认
+  await proxy?.$modal.confirm('是否取消该流程申请？取消后流程将终止且无法恢复');
   await stopProcess({ procInsId: row.procInsId });
   proxy?.$modal.msgSuccess('操作成功');
   getList();

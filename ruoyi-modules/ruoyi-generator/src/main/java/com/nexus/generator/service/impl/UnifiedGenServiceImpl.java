@@ -855,15 +855,49 @@ public class UnifiedGenServiceImpl implements IUnifiedGenService {
             throw new ServiceException("非法表名");
         }
 
-        String sql = "SELECT * FROM " + dictTableName;
-        Page<Map<String, Object>> page = new Page<>(pageQuery.getPageNum(), pageQuery.getPageSize());
-        List<Map<String, Object>> records = jdbcTemplate.queryForList(sql + " LIMIT " + page.getSize() + " OFFSET " + ((page.getCurrent() - 1) * page.getSize()));
+        // 关键词过滤：params.keyword 对全部文本列做 LIKE（列名来自 information_schema 元数据，
+        // 关键词值参数化绑定，不拼接进 SQL）
+        JSONObject queryParams = pageQuery.getParams();
+        String keyword = queryParams == null ? null : StringUtils.trimToNull(queryParams.getString("keyword"));
 
-        Long total = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM " + dictTableName, Long.class);
+        List<Object> args = new ArrayList<>();
+        StringBuilder whereClause = new StringBuilder();
+        if (keyword != null) {
+            List<String> textColumns = getTextColumns(dictTableName);
+            if (!textColumns.isEmpty()) {
+                whereClause.append(" WHERE ");
+                for (int i = 0; i < textColumns.size(); i++) {
+                    if (i > 0) {
+                        whereClause.append(" OR ");
+                    }
+                    whereClause.append("`").append(textColumns.get(i)).append("` LIKE ?");
+                    args.add("%" + keyword + "%");
+                }
+            }
+        }
+
+        Page<Map<String, Object>> page = new Page<>(pageQuery.getPageNum(), pageQuery.getPageSize());
+        List<Map<String, Object>> records = jdbcTemplate.queryForList(
+            "SELECT * FROM `" + dictTableName + "`" + whereClause
+                + " LIMIT " + page.getSize() + " OFFSET " + ((page.getCurrent() - 1) * page.getSize()),
+            args.toArray());
+
+        Long total = jdbcTemplate.queryForObject(
+            "SELECT COUNT(*) FROM `" + dictTableName + "`" + whereClause, Long.class, args.toArray());
         page.setRecords(records);
         page.setTotal(total != null ? total : 0);
 
         return TableDataInfo.build(page);
+    }
+
+    /**
+     * 查询指定表的字符/文本类列名（用于关键词 LIKE 过滤），列名来自元数据而非用户输入。
+     */
+    private List<String> getTextColumns(String tableName) {
+        String sql = "SELECT column_name FROM information_schema.columns "
+            + "WHERE table_schema = DATABASE() AND table_name = ? "
+            + "AND data_type IN ('char','varchar','text','tinytext','mediumtext','longtext')";
+        return jdbcTemplate.queryForList(sql, String.class, tableName);
     }
 
     // ==================== 代码生成（委托给原有服务） ====================

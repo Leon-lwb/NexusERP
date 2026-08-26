@@ -139,7 +139,13 @@
         </el-table-column>
       </el-table>
 
-      <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
+      <pagination
+        v-show="historyTotal > 0"
+        :total="historyTotal"
+        v-model:page="historyQueryParams.pageNum"
+        v-model:limit="historyQueryParams.pageSize"
+        @pagination="getHistoryList"
+      />
     </el-dialog>
 
     <!-- 流程图 -->
@@ -233,9 +239,16 @@ const data = reactive<PageData<ModelForm, ModelQuery>>({
     modelName: ''
   },
   rules: {
-    modelKey: [{ required: true, message: '岗位名称不能为空', trigger: 'blur' }],
-    modelName: [{ required: true, message: '岗位编码不能为空', trigger: 'blur' }]
+    modelKey: [{ required: true, message: '请输入模型标识', trigger: 'blur' }],
+    modelName: [{ required: true, message: '请输入模型名称', trigger: 'blur' }]
   }
+});
+
+// 历史版本弹窗独立分页参数（原实现误绑主列表 total/pageNum 导致翻页错乱、污染主查询条件）
+const historyQueryParams = ref({
+  pageNum: 1,
+  pageSize: 10,
+  modelKey: ''
 });
 
 const designerForm = reactive<DesignerForm>({
@@ -330,10 +343,7 @@ const handleProcessView = async (row: ModelVO) => {
   reloadIndex.value = row.modelId;
   // 发送请求，获取xml
   const res = await getBpmnXml(row.modelId);
-  // 发送请求，获取xml
-  getBpmnXml(row.modelId).then((res) => {
-    processXml.value = res.data;
-  });
+  processXml.value = res.data;
   processDialog.visible = true;
 };
 /** 设计按钮操作 */
@@ -376,7 +386,7 @@ const handleLatest = async (row: ModelVO) => {
 /** 查询历史列表 */
 const getHistoryList = async () => {
   historyLoading.value = true;
-  const res = await historyModel(queryParams.value);
+  const res = await historyModel(historyQueryParams.value);
   historyList.value = res.rows;
   historyTotal.value = res.total;
   historyLoading.value = false;
@@ -384,7 +394,9 @@ const getHistoryList = async () => {
 const handleHistory = (row?: ModelVO) => {
   history.visible = true;
   history.title = '模型历史';
-  queryParams.value.modelKey = row?.modelKey;
+  // 使用独立的历史查询参数，不污染主列表的搜索条件
+  historyQueryParams.value.modelKey = row?.modelKey || '';
+  historyQueryParams.value.pageNum = 1;
   getHistoryList();
 };
 /** 提交表单操作 */
