@@ -1263,8 +1263,8 @@ onMounted(async () => {
   await loadFormData();
 });
 
-// 监听表单内容变化（loadFormData 里已显式 await parseFormContent()，此处不再 immediate 触发，
-// 避免同一份内容解析两次：字典重复请求、formData 被二次初始化）
+// 监听表单内容变化统一触发解析（loadFormData 只赋值不解析），
+// 去掉 immediate 并比较新旧值，避免同一份内容解析两次：字典重复请求、formData 被二次初始化
 watch(
   () => currentFormContent.value,
   async (newVal, oldVal) => {

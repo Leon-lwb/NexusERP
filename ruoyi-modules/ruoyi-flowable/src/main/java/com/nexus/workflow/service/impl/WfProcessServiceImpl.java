@@ -1312,10 +1312,10 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
      * add by wanghuan
      */
     /**
-     * 钉钉流程条件表达式允许的字符：变量名/数字/比较与逻辑运算符/括号/引号/${} 包裹。
-     * 禁止 #、;、反斜杠等 UEL/Spring EL 特征字符。
+     * 钉钉流程条件表达式允许的字符：变量名/数字/中文/比较与逻辑运算符/括号/引号/${} 包裹。
+     * 中文用于兼容中文变量名（不构成方法调用标识符，无注入面）；禁止 #、;、反斜杠等特征字符。
      */
-    private static final Pattern DD_CONDITION_CHARS = Pattern.compile("^[A-Za-z0-9_$ \\t{}().,<>=!&|+\\-*%'\"]+$");
+    private static final Pattern DD_CONDITION_CHARS = Pattern.compile("^[A-Za-z0-9_\\u4e00-\\u9fa5$ \\t{}().,<>=!&|+\\-*%'\"]+$");
     /**
      * 方法调用特征：标识符后紧跟左括号（如 exec(、T(、getClass(），合法的条件表达式不会出现
      */

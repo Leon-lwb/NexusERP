@@ -71,6 +71,18 @@ public class ProcessAccessGuard {
         if (candidateCount > 0) {
             return;
         }
+        // 候选组（ROLE{id}/DEPT{id}）：taskCandidateUser 不解析用户所属组，
+        // 本系统任务大量按候选组分配，必须单独按组查询，否则合法办理人会被误拦
+        java.util.List<String> candidateGroups = TaskUtils.getCandidateGroup();
+        if (candidateGroups != null && !candidateGroups.isEmpty()) {
+            long groupCount = historyService.createHistoricTaskInstanceQuery()
+                .processInstanceId(procInsId)
+                .taskCandidateGroupIn(candidateGroups)
+                .count();
+            if (groupCount > 0) {
+                return;
+            }
+        }
         // 被抄送人
         Long copyCount = wfCopyMapper.selectCount(new LambdaQueryWrapper<WfCopy>()
             .eq(WfCopy::getInstanceId, procInsId)
