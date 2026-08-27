@@ -75,3 +75,5 @@
 | 流程实际在跑但业务状态显示"已通过" | complete() 在办结前按节点预测判定结束，网关条件求值失败即误判 pass | 阶段 2：办结后按真实活动任务回写 |
 | 发起人收回中途失败后，该流程定义所有新实例都被导回首节点 | recallProcess 突变共享 BpmnModel 缓存无 try/finally，异常路径不恢复出线 | 阶段 2：finally 恢复 + 多活动节点重定向 |
 | 业务删除时引擎实例删除异常 → 整个外层事务 UnexpectedRollbackException | 同事务内 catch 无法对抗 rollback-only 标记 | 阶段 2：delete(3参) 改 REQUIRES_NEW 独立事务 |
+| 办结任务时偶发 "Process instance id is null" 异常 | 办结后回写业务状态用 taskBo.procInsId，依赖前端传值 | 阶段 2 复审：改用 task.getProcessInstanceId() |
+| 流程带流程级评论时详情 500 | historyProcNodeList 用 comment.getTaskId().equals()，流程级评论 taskId 为 null | 阶段 2 复审：Objects.equals |

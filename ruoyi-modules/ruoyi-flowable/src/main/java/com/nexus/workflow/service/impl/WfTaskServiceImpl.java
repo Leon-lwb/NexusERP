@@ -226,10 +226,12 @@ public class WfTaskServiceImpl extends FlowServiceFactory implements IWfTaskServ
             	//能够处理下个节点的候选人
                 List<SysUserVo> nextFlowNodeUserList = flowNextDto.getUserList();
                 if(CollUtil.isNotEmpty(nextFlowNodeUserList)) {
-    	            List<String> collect_username = nextFlowNodeUserList.stream().filter(Objects::nonNull).filter(item->item.getUserName()!=null).map(SysUserVo::getUserName).collect(Collectors.toList());
-    	            //collect_username转换成realname，转昵称后仅作展示用；流转结果以办结后的真实活动任务为准
-    	            // 流程发起人
-    	            ProcessInstance processInstance = runtimeService.createProcessInstanceQuery().processInstanceId(taskBo.getProcInsId()).singleResult();
+                    List<String> collect_username = nextFlowNodeUserList.stream().filter(Objects::nonNull).filter(item->item.getUserName()!=null).map(SysUserVo::getUserName).collect(Collectors.toList());
+                    //collect_username转换成realname，转昵称后仅作展示用；流转结果以办结后的真实活动任务为准
+                    // 流程发起人。processInstanceId 取自任务本身——taskBo.procInsId 由前端传入，
+                    // 漏传时 Flowable 会因 "Process instance id is null" 直接抛异常
+                    ProcessInstance processInstance = runtimeService.createProcessInstanceQuery()
+                        .processInstanceId(task.getProcessInstanceId()).singleResult();
     	            String startUserId = processInstance != null ? processInstance.getStartUserId() : null;
                     List<String> newusername = new ArrayList<>();
     	            if(taskBo.getVariables() !=null && taskBo.getVariables().containsKey("approval")) {//前端传回的变量值
@@ -279,18 +281,19 @@ public class WfTaskServiceImpl extends FlowServiceFactory implements IWfTaskServ
 
         // 处理下一级审批人
         if (StringUtils.isNotBlank(taskBo.getNextUserIds())) {
-            this.assignNextUsers(bpmnModel, taskBo.getProcInsId(), taskBo.getNextUserIds());
+            this.assignNextUsers(bpmnModel, task.getProcessInstanceId(), taskBo.getNextUserIds());
         }
 
         //加签处理
         addSignForComplete(taskBo,taskEntity);
 
         // 引擎流转完成后再按真实活动任务回写业务状态。
-        // 原先在办结前按节点预测判定"无下一节点=流程已结束"置为 pass：
+        // 原先在办结前按节点预测判定"无下一节点=已结束"置为 pass：
         // 网关条件求值失败或并行分支时预测与真实走向不符，会把运行中流程误标为已通过。
         if (hasDataId && business != null) {
+            // 用任务自身的实例ID查询，不依赖 taskBo.procInsId 是否传值
             List<Task> activeTasks = taskService.createTaskQuery()
-                .processInstanceId(taskBo.getProcInsId()).active()
+                .processInstanceId(task.getProcessInstanceId()).active()
                 .orderByTaskCreateTime().asc().list();
             if (CollUtil.isNotEmpty(activeTasks)) {
                 Task frontTask = activeTasks.get(0);
@@ -2042,7 +2045,7 @@ public class WfTaskServiceImpl extends FlowServiceFactory implements IWfTaskServ
             throw new FlowableException("流程未启动或已执行完成，无法收回");
         }
 
-    	if (taskService.createTaskQuery().taskId(listtask.get(0).getId()).singleResult().isSuspended()) {
+    	if (listtask.get(0).isSuspended()) {
             throw new FlowableException("任务处于挂起状态");
         }
 
@@ -2085,6 +2088,11 @@ public class WfTaskServiceImpl extends FlowServiceFactory implements IWfTaskServ
                 FlowNode node = (FlowNode) bpmnModel.getFlowElement(defKey);
                 if (node == null) {
                     throw new FlowableException("未在流程定义中找到当前节点：" + defKey);
+                }
+                //  跨容器（主流程↔子流程）连线引擎执行树无法正确流转（作用域不匹配），
+                //  明确拒绝而非让引擎在突变窗口内失败
+                if (!Objects.equals(node.getParentContainer(), startFlowNode.getParentContainer())) {
+                    throw new FlowableException("当前节点与起始节点不在同一流程容器内，无法收回：" + defKey);
                 }
                 redirectNodes.put(defKey, node);
             }

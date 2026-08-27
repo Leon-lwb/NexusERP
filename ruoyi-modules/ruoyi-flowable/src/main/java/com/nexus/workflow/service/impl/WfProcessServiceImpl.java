@@ -1755,8 +1755,8 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
                 if (CollUtil.isNotEmpty(commentList)) {
                     List<Comment> comments = new ArrayList<>();
                     for (Comment comment : commentList) {
-
-                        if (comment.getTaskId().equals(activityInstance.getTaskId())) {
+                        // 流程级评论 taskId 为 null，用 Objects.equals 防止 NPE
+                        if (Objects.equals(comment.getTaskId(), activityInstance.getTaskId())) {
                             comments.add(comment);
                         }
                     }
