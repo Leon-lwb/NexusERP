@@ -4,9 +4,6 @@
     "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.nexus.workflow.mapper.WfFormMapper">
 
-    <resultMap type="com.nexus.workflow.domain.vo.WfFormVo" id="WfFormResult">
-    </resultMap>
-
     <select id="selectFormVoList" resultType="com.nexus.workflow.domain.vo.WfFormVo">
         SELECT
             t1.form_id AS formId,

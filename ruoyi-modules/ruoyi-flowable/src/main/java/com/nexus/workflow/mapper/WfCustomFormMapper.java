@@ -20,7 +20,6 @@ import org.apache.ibatis.annotations.Select;
  */
 public interface WfCustomFormMapper extends BaseMapperPlus<WfCustomForm, WfCustomFormVo> {
 	void updateCustom(@Param("customFormVo") CustomFormVo customFormVo);
-	WfCustomForm selectSysCustomFormById(Long formId);
 	List<WfCustomForm> selectSysCustomFormByServiceName(String serviceName);
 	WfCustomFormBo selectSysCustomFormByDeployId(String deployId);
 	@Select("select business_service from wf_custom_form where deploy_id = #{deployId}")
