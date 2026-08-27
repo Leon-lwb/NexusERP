@@ -34,6 +34,7 @@ public class WfMyBusinessServiceImpl extends ServiceImpl<WfMyBusinessMapper, WfM
 
     private final WfMyBusinessMapper baseMapper;
 
+    @Override
     public WfMyBusiness getByDataId(String dataId) {
         LambdaQueryWrapper<WfMyBusiness> flowMyBusinessLambdaQueryWrapper = new LambdaQueryWrapper<>();
         flowMyBusinessLambdaQueryWrapper.eq(WfMyBusiness::getDataId,dataId)

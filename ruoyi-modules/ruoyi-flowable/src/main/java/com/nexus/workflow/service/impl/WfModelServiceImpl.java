@@ -1,5 +1,7 @@
 package com.nexus.workflow.service.impl;
 
+import com.nexus.common.core.exception.ServiceException;
+
 import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
@@ -194,7 +196,7 @@ public class WfModelServiceImpl extends FlowServiceFactory implements IWfModelSe
         // 获取流程模型
         Model model = repositoryService.getModel(modelId);
         if (ObjectUtil.isNull(model)) {
-            throw new RuntimeException("流程模型不存在！");
+            throw new ServiceException("流程模型不存在！");
         }
         // 获取流程图
         String bpmnXml = queryBpmnXmlById(modelId);
@@ -247,7 +249,7 @@ public class WfModelServiceImpl extends FlowServiceFactory implements IWfModelSe
         // 根据模型Key查询模型信息
         Model model = repositoryService.getModel(modelBo.getModelId());
         if (ObjectUtil.isNull(model)) {
-            throw new RuntimeException("流程模型不存在！");
+            throw new ServiceException("流程模型不存在！");
         }
         model.setCategory(modelBo.getCategory());
         WfMetaInfoDto metaInfoDto = JsonUtils.parseObject(model.getMetaInfo(), WfMetaInfoDto.class);
@@ -263,7 +265,7 @@ public class WfModelServiceImpl extends FlowServiceFactory implements IWfModelSe
         // 查询模型信息
         Model model = repositoryService.getModel(modelBo.getModelId());
         if (ObjectUtil.isNull(model)) {
-            throw new RuntimeException("流程模型不存在！");
+            throw new ServiceException("流程模型不存在！");
         }
         // 检查 BPMN XML 是否为空
         if (StrUtil.isBlank(modelBo.getBpmnXml())) {
@@ -343,7 +345,7 @@ public class WfModelServiceImpl extends FlowServiceFactory implements IWfModelSe
         // 获取流程模型
         Model model = repositoryService.getModel(modelId);
         if (ObjectUtil.isNull(model)) {
-            throw new RuntimeException("流程模型不存在！");
+            throw new ServiceException("流程模型不存在！");
         }
         Integer latestVersion = repositoryService.createModelQuery()
             .modelKey(model.getKey())
@@ -374,7 +376,7 @@ public class WfModelServiceImpl extends FlowServiceFactory implements IWfModelSe
         ids.forEach(id -> {
             Model model = repositoryService.getModel(id);
             if (ObjectUtil.isNull(model)) {
-                throw new RuntimeException("流程模型不存在！");
+                throw new ServiceException("流程模型不存在！");
             }
             repositoryService.deleteModel(id);
         });
@@ -386,12 +388,12 @@ public class WfModelServiceImpl extends FlowServiceFactory implements IWfModelSe
         // 获取流程模型
         Model model = repositoryService.getModel(modelId);
         if (ObjectUtil.isNull(model)) {
-            throw new RuntimeException("流程模型不存在！");
+            throw new ServiceException("流程模型不存在！");
         }
         // 获取流程图
         byte[] bpmnBytes = repositoryService.getModelEditorSource(modelId);
         if (ArrayUtil.isEmpty(bpmnBytes)) {
-            throw new RuntimeException("请先设计流程图！");
+            throw new ServiceException("请先设计流程图！");
         }
         String bpmnXml = StringUtils.toEncodedString(bpmnBytes, StandardCharsets.UTF_8);
         BpmnModel bpmnModel = ModelUtils.getBpmnModel(bpmnXml);
@@ -451,12 +453,12 @@ public class WfModelServiceImpl extends FlowServiceFactory implements IWfModelSe
 		// 获取流程模型
         Model model = repositoryService.getModel(modelId);
         if (ObjectUtil.isNull(model)) {
-            throw new RuntimeException("流程模型不存在！");
+            throw new ServiceException("流程模型不存在！");
         }
         // 获取流程图
         byte[] bpmnBytes = repositoryService.getModelEditorSource(modelId);
         if (ArrayUtil.isEmpty(bpmnBytes)) {
-            throw new RuntimeException("请先设计流程图！");
+            throw new ServiceException("请先设计流程图！");
         }
         String bpmnXml = StringUtils.toEncodedString(bpmnBytes, StandardCharsets.UTF_8);
         BpmnModel bpmnModel = ModelUtils.getBpmnModel(bpmnXml);

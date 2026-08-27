@@ -33,6 +33,7 @@ import com.nexus.workflow.domain.bo.WfTaskBo;
 import com.nexus.workflow.domain.vo.WfFormVo;
 import com.nexus.workflow.domain.vo.WfTaskVo;
 import com.nexus.workflow.service.IWfDeployFormService;
+import com.nexus.workflow.service.IWfMyBusinessService;
 import com.nexus.workflow.service.IWfInstanceService;
 
 import lombok.RequiredArgsConstructor;
@@ -70,7 +71,7 @@ public class WfInstanceServiceImpl extends FlowServiceFactory implements IWfInst
 
     private final IWfDeployFormService deployFormService;
     private final UserService userService;
-    private final  WfMyBusinessServiceImpl wfMyBusinessService;
+    private final IWfMyBusinessService wfMyBusinessService;
     private final ProcessAccessGuard processAccessGuard;
     private final WfParticipantNameResolver participantNameResolver;
     @Resource
@@ -342,6 +343,34 @@ public class WfInstanceServiceImpl extends FlowServiceFactory implements IWfInst
                 .orderByHistoricTaskInstanceStartTime().desc()
                 .list();
             List<Comment> commentList = taskService.getProcessInstanceComments(procInsId);
+
+            // ===== 批量预取，消除逐任务逐人查询的 N+1 =====
+            // 身份链接：整实例一次查询替代原先每个任务一次 getHistoricIdentityLinksForTask
+            List<HistoricIdentityLink> allLinks = historyService.getHistoricIdentityLinksForProcessInstance(procInsId);
+            Map<String, List<HistoricIdentityLink>> linksByTask = new HashMap<>();
+            Set<String> involvedUserIds = new HashSet<>();
+            Set<String> involvedGroupIds = new HashSet<>();
+            for (HistoricIdentityLink link : allLinks) {
+                if (!"candidate".equals(link.getType()) || StringUtils.isBlank(link.getTaskId())) {
+                    continue;
+                }
+                linksByTask.computeIfAbsent(link.getTaskId(), k -> new ArrayList<>()).add(link);
+                if (StringUtils.isNotBlank(link.getUserId())) {
+                    involvedUserIds.add(link.getUserId());
+                }
+                if (StringUtils.isNotBlank(link.getGroupId())) {
+                    involvedGroupIds.add(link.getGroupId());
+                }
+            }
+            for (HistoricTaskInstance taskInstance : taskInstanceList) {
+                if (StringUtils.isNotBlank(taskInstance.getAssignee())) {
+                    involvedUserIds.add(taskInstance.getAssignee());
+                }
+            }
+            // 用户昵称一次批量查询；候选组名按不同 ID 去重后各查一次
+            Map<String, String> nickMap = participantNameResolver.userNickMap(involvedUserIds);
+            Map<String, String> groupMap = participantNameResolver.groupNameMap(involvedGroupIds);
+
             List<WfTaskVo> taskVoList = new ArrayList<>(taskInstanceList.size());
             taskInstanceList.forEach(taskInstance -> {
                 WfTaskVo taskVo = new WfTaskVo();
@@ -353,16 +382,28 @@ public class WfInstanceServiceImpl extends FlowServiceFactory implements IWfInst
                 taskVo.setFinishTime(taskInstance.getEndTime());
                 if (StringUtils.isNotBlank(taskInstance.getAssignee())) {
                     String userId = taskInstance.getAssignee();
-                    // 办理人可能已被删除，降级显示登录名
-                    String nickName = participantNameResolver.userNick(userId);
+                    // 办理人可能已被删除：昵称缺失时降级显示登录名（批量解析已预置回填）
                     taskVo.setAssigneeId(userId);
-                    taskVo.setAssigneeName(nickName);
+                    taskVo.setAssigneeName(nickMap.getOrDefault(userId, userId));
                 }
-                // 展示审批人员（候选人/候选组可能已删除或组ID为脏数据，逐项降级跳过）
-                List<HistoricIdentityLink> linksForTask = historyService.getHistoricIdentityLinksForTask(taskInstance.getId());
-                String candidate = participantNameResolver.joinCandidateNames(linksForTask);
-                if (StringUtils.isNotBlank(candidate)) {
-                    taskVo.setCandidate(candidate);
+                // 展示审批人员（候选人/候选组可能已删除或组ID为脏数据，名称缺失时跳过该项）
+                List<HistoricIdentityLink> linksForTask =
+                    linksByTask.getOrDefault(taskInstance.getId(), Collections.emptyList());
+                if (!linksForTask.isEmpty()) {
+                    StringBuilder candidateBuilder = new StringBuilder();
+                    for (HistoricIdentityLink link : linksForTask) {
+                        if (StringUtils.isNotBlank(link.getUserId())) {
+                            candidateBuilder.append(nickMap.getOrDefault(link.getUserId(), link.getUserId())).append(",");
+                        } else if (StringUtils.isNotBlank(link.getGroupId())) {
+                            String groupName = groupMap.get(link.getGroupId());
+                            if (groupName != null) {
+                                candidateBuilder.append(groupName).append(",");
+                            }
+                        }
+                    }
+                    if (candidateBuilder.length() > 0) {
+                        taskVo.setCandidate(candidateBuilder.substring(0, candidateBuilder.length() - 1));
+                    }
                 }
                 if (ObjectUtil.isNotNull(taskInstance.getDurationInMillis())) {
                     taskVo.setDuration(DateUtil.formatBetween(taskInstance.getDurationInMillis(), BetweenFormatter.Level.SECOND));

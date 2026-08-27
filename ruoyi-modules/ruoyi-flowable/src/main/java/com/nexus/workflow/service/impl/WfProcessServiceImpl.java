@@ -123,7 +123,6 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
     private final IWfMyBusinessService wfMyBusinessService;
     private final WfCommonService wfCommonService;
     private final WfCategoryMapper categoryMapper;
-    private final WfMyBusinessServiceImpl wfMyBusinessServiceImpl;
     private final ProcessAccessGuard processAccessGuard;
     private final WfParticipantNameResolver participantNameResolver;
 
@@ -147,13 +146,18 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
         ProcessUtils.buildProcessSearch(processDefinitionQuery, processQuery);
         // OA 过滤在分页后进行会导致 total 虚高且页内丢数据，先全量过滤（流程定义量级有限）再内存分页
         List<ProcessDefinition> definitionList = processDefinitionQuery.list();
+        // 批量取部署信息；类别映射按 code 去重缓存（类别数远小于定义行数）
+        Map<String, Deployment> deploymentMap = queryDeploymentsByDefinitionList(definitionList);
+        Map<String, WfAppTypeVo> appTypeCache = new HashMap<>();
+        String tenantId = TenantHelper.getTenantId();
 
         List<WfDefinitionVo> definitionVoList = new ArrayList<>();
         for (ProcessDefinition processDefinition : definitionList) {
-            String deploymentId = processDefinition.getDeploymentId();
-            Deployment deployment = repositoryService.createDeploymentQuery().deploymentId(deploymentId).singleResult();
+            Deployment deployment = deploymentMap.get(processDefinition.getDeploymentId());
+            String category = deployment != null ? deployment.getCategory() : processDefinition.getCategory();
            // 检查流程是否是OA流程
-            WfAppTypeVo appTypeVo = categoryMapper.selectAppTypeVoByCode(deployment.getCategory(),TenantHelper.getTenantId());
+            WfAppTypeVo appTypeVo = appTypeCache.computeIfAbsent(category,
+                c -> categoryMapper.selectAppTypeVoByCode(c, tenantId));
             String appType = "";
             if(ObjectUtil.isNotEmpty(appTypeVo)) {
             	appType =  appTypeVo.getId();
@@ -167,8 +171,8 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
 	            vo.setDeploymentId(processDefinition.getDeploymentId());
 	            vo.setSuspended(processDefinition.isSuspended());
 	            // 流程定义时间
-	            vo.setCategory(deployment.getCategory());
-	            vo.setDeploymentTime(deployment.getDeploymentTime());
+	            vo.setCategory(category);
+	            vo.setDeploymentTime(deployment != null ? deployment.getDeploymentTime() : null);
 	            definitionVoList.add(vo);
             }
 
@@ -197,11 +201,12 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
         ProcessUtils.buildProcessSearch(processDefinitionQuery, processQuery);
 
         List<ProcessDefinition> definitionList = processDefinitionQuery.list();
+        // 批量取部署信息：一条 deploymentIds 查询替代原先逐定义一次 singleResult 的 N+1
+        Map<String, Deployment> deploymentMap = queryDeploymentsByDefinitionList(definitionList);
 
         List<WfDefinitionVo> definitionVoList = new ArrayList<>();
         for (ProcessDefinition processDefinition : definitionList) {
-            String deploymentId = processDefinition.getDeploymentId();
-            Deployment deployment = repositoryService.createDeploymentQuery().deploymentId(deploymentId).singleResult();
+            Deployment deployment = deploymentMap.get(processDefinition.getDeploymentId());
             WfDefinitionVo vo = new WfDefinitionVo();
             vo.setDefinitionId(processDefinition.getId());
             vo.setProcessKey(processDefinition.getKey());
@@ -210,11 +215,30 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
             vo.setDeploymentId(processDefinition.getDeploymentId());
             vo.setSuspended(processDefinition.isSuspended());
             // 流程定义时间
-            vo.setCategory(deployment.getCategory());
-            vo.setDeploymentTime(deployment.getDeploymentTime());
+            vo.setCategory(deployment != null ? deployment.getCategory() : processDefinition.getCategory());
+            vo.setDeploymentTime(deployment != null ? deployment.getDeploymentTime() : null);
             definitionVoList.add(vo);
         }
         return definitionVoList;
+    }
+
+    /**
+     * 按流程定义列表批量查询部署信息（deploymentIds 单条查询），返回部署ID -> 部署对象映射
+     */
+    private Map<String, Deployment> queryDeploymentsByDefinitionList(List<ProcessDefinition> definitionList) {
+        List<String> deploymentIds = definitionList.stream()
+            .map(ProcessDefinition::getDeploymentId)
+            .filter(StringUtils::isNotBlank)
+            .distinct()
+            .collect(Collectors.toList());
+        if (deploymentIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        return repositoryService.createDeploymentQuery()
+            .deploymentIds(deploymentIds)
+            .list()
+            .stream()
+            .collect(Collectors.toMap(Deployment::getId, d -> d));
     }
 
     @Override
@@ -794,7 +818,7 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
     public WfDetailVo queryProcessDetailByDataId(String dataId ) {
         WfDetailVo detailVo = new WfDetailVo();
         List<CurNodeInfoVo> listCurNodeInfo = new ArrayList<CurNodeInfoVo>();
-        WfMyBusiness business = wfMyBusinessServiceImpl.getByDataId(dataId);
+        WfMyBusiness business = wfMyBusinessService.getByDataId(dataId);
         if (business == null) {
             throw new ServiceException("未找到该业务数据的流程关联记录");
         }
@@ -891,7 +915,7 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
         }
         if(StringUtils.isNotEmpty(dataId)) {//自定义业务表单
         	//设置自定义表单dataid的数据
-            WfMyBusiness flowmybusiness = wfMyBusinessServiceImpl.getByDataId(variables.get("dataId").toString());
+            WfMyBusiness flowmybusiness = wfMyBusinessService.getByDataId(variables.get("dataId").toString());
             String serviceImplName = flowmybusiness.getServiceImplName();
             WfCallBackServiceI flowCallBackService = (WfCallBackServiceI) SpringContextHolder.getBean(serviceImplName);
             if (flowCallBackService!=null){
@@ -956,7 +980,7 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
             	 	taskid = listId.stream().map(String::valueOf).collect(Collectors.joining(","));
             	 	taskName = listName.stream().map(String::valueOf).collect(Collectors.joining(","));
 
-            	WfMyBusiness business = wfMyBusinessServiceImpl.getByDataId(dataId);
+            	WfMyBusiness business = wfMyBusinessService.getByDataId(dataId);
     	        business.setProcessDefinitionId(procDef.getId());
     	        business.setProcessInstanceId(processInstance.getProcessInstanceId());
     	        business.setActStatus(ActStatus.doing);
@@ -983,7 +1007,7 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
                 if (requireTaskOnStart) {
                     throw new ServiceException("流程启动后未生成待办审批任务，请检查流程模板是否包含审批节点并配置候选人/候选组");
                 }
-            	WfMyBusiness business = wfMyBusinessServiceImpl.getByDataId(dataId);
+            	WfMyBusiness business = wfMyBusinessService.getByDataId(dataId);
     	        business.setProcessDefinitionId(procDef.getId());
     	        business.setProcessInstanceId(processInstance.getProcessInstanceId());
     	        business.setActStatus(ActStatus.pass);
@@ -1013,7 +1037,7 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
             }
             try {
                 if (StringUtils.isNotEmpty(dataId)) {
-                    wfMyBusinessServiceImpl.remove(new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<WfMyBusiness>()
+                    wfMyBusinessService.remove(new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<WfMyBusiness>()
                         .eq(WfMyBusiness::getDataId, dataId));
                 }
             } catch (Exception ignore) {
@@ -1470,7 +1494,7 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
                 Object bizFormData = loadBusinessData(dataId);
                 if (bizFormData != null) {
                     try {
-                        WfMyBusiness business = wfMyBusinessServiceImpl.getByDataId(dataId);
+                        WfMyBusiness business = wfMyBusinessService.getByDataId(dataId);
                         if (business != null && StringUtils.isNotBlank(business.getRouteName())) {
                             FormConf formConf = new FormConf();
                             formConf.setFormBtns(false);
@@ -1490,7 +1514,7 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
             try {
                 Object bizFormData = loadBusinessData(dataId);
                 if (bizFormData != null) {
-                    WfMyBusiness business = wfMyBusinessServiceImpl.getByDataId(dataId);
+                    WfMyBusiness business = wfMyBusinessService.getByDataId(dataId);
                     if (business != null && StringUtils.isNotBlank(business.getRouteName())) {
                         FormConf formConf = new FormConf();
                         formConf.setFormBtns(false);
@@ -1512,7 +1536,7 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
             return null;
         }
         try {
-            WfMyBusiness business = wfMyBusinessServiceImpl.getByDataId(dataId);
+            WfMyBusiness business = wfMyBusinessService.getByDataId(dataId);
             if (business != null) {
                 String serviceImplName = business.getServiceImplName();
                 WfCallBackServiceI callBackService = (WfCallBackServiceI) SpringContextHolder.getBean(serviceImplName);
@@ -1534,7 +1558,7 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
         Object bizFormData = null;
         if (StringUtils.isNotEmpty(dataId)) {
             try {
-                WfMyBusiness business = wfMyBusinessServiceImpl.getByDataId(dataId);
+                WfMyBusiness business = wfMyBusinessService.getByDataId(dataId);
                 if (ObjectUtils.isNotEmpty(business)) {
                     String serviceImplName = business.getServiceImplName();
                     WfCallBackServiceI flowCallBackService = (WfCallBackServiceI) SpringContextHolder.getBean(serviceImplName);
@@ -1617,7 +1641,7 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
         }
         if(StringUtils.isNoneEmpty(dataId) && bizFormData != null) {
             try {
-                WfMyBusiness business = wfMyBusinessServiceImpl.getByDataId(dataId);
+                WfMyBusiness business = wfMyBusinessService.getByDataId(dataId);
                 if(ObjectUtils.isNotEmpty(business)) {
                     Map<String, Object> customMap = new HashMap<String, Object>();
                     FormConf formConf = new FormConf();
@@ -1626,73 +1650,14 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
                     formConf.setFormValues(customMap);
                     procFormList.add(formConf);
                 }
-            } catch (Exception ignore) {
+            } catch (Exception e) {
+                // 历史遗留：脏配置的解析失败不应阻断详情展示，但不能完全无声
+                log.warn("流程节点表单配置解析失败，已跳过该节点表单", e);
             }
         }
         return procFormList;
     }
 
-    @Deprecated
-    private void buildStartFormData(HistoricProcessInstance historicProcIns, Process process, String deployId, List<FormConf> procFormList) {
-        procFormList = procFormList == null ? new ArrayList<>() : procFormList;
-        HistoricActivityInstance startInstance = historyService.createHistoricActivityInstanceQuery()
-            .processInstanceId(historicProcIns.getId())
-            .activityId(historicProcIns.getStartActivityId())
-            .singleResult();
-        StartEvent startEvent = (StartEvent) process.getFlowElement(startInstance.getActivityId());
-        WfDeployFormVo startFormInfo = deployFormMapper.selectVoOne(new LambdaQueryWrapper<WfDeployForm>()
-            .eq(WfDeployForm::getDeployId, deployId)
-            .eq(WfDeployForm::getFormKey, startEvent.getFormKey())
-            .eq(WfDeployForm::getNodeKey, startEvent.getId()));
-        if (ObjectUtil.isNotNull(startFormInfo)) {
-            FormConf formConf = JsonUtils.parseObject(startFormInfo.getContent(), FormConf.class);
-            if (null != formConf) {
-                //formConf.setTitle(startEvent.getName());
-                //formConf.setDisabled(true);
-                //formConf.setFormBtns(false);
-                ProcessFormUtils.fillFormData(formConf, historicProcIns.getProcessVariables());
-                procFormList.add(formConf);
-            }
-        }
-    }
-
-    @Deprecated
-    private void buildUserTaskFormData(String procInsId, String deployId, Process process, List<FormConf> procFormList) {
-        procFormList = procFormList == null ? new ArrayList<>() : procFormList;
-        List<HistoricActivityInstance> activityInstanceList = historyService.createHistoricActivityInstanceQuery()
-            .processInstanceId(procInsId).finished()
-            .activityType(BpmnXMLConstants.ELEMENT_TASK_USER)
-            .orderByHistoricActivityInstanceStartTime().asc()
-            .list();
-        for (HistoricActivityInstance instanceItem : activityInstanceList) {
-            UserTask userTask = (UserTask) process.getFlowElement(instanceItem.getActivityId(), true);
-            String formKey = userTask.getFormKey();
-            if (formKey == null) {
-                continue;
-            }
-            // 查询任务节点参数，并转换成Map
-            Map<String, Object> variables = historyService.createHistoricVariableInstanceQuery()
-                .processInstanceId(procInsId)
-                .taskId(instanceItem.getTaskId())
-                .list()
-                .stream()
-                .collect(Collectors.toMap(HistoricVariableInstance::getVariableName, HistoricVariableInstance::getValue));
-            WfDeployFormVo deployFormVo = deployFormMapper.selectVoOne(new LambdaQueryWrapper<WfDeployForm>()
-                .eq(WfDeployForm::getDeployId, deployId)
-                .eq(WfDeployForm::getFormKey, formKey)
-                .eq(WfDeployForm::getNodeKey, userTask.getId()));
-            if (ObjectUtil.isNotNull(deployFormVo)) {
-                FormConf formConf = JsonUtils.parseObject(deployFormVo.getContent(), FormConf.class);
-                if (null != formConf) {
-                    //formConf.setTitle(userTask.getName());
-                    //formConf.setDisabled(true);
-                    //formConf.setFormBtns(false);
-                    ProcessFormUtils.fillFormData(formConf, variables);
-                    procFormList.add(formConf);
-                }
-            }
-        }
-    }
 
     /**
      * 获取历史任务信息列表
@@ -1707,6 +1672,36 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
             .list();
 
         List<Comment> commentList = taskService.getProcessInstanceComments(procInsId);
+
+        // ===== 批量预取，消除逐活动逐人查询的 N+1 =====
+        // 身份链接：整实例一次查询替代原先每个任务一次 getHistoricIdentityLinksForTask
+        List<HistoricIdentityLink> allLinks = historyService.getHistoricIdentityLinksForProcessInstance(procInsId);
+        Map<String, List<HistoricIdentityLink>> linksByTask = new HashMap<>();
+        Set<String> involvedUserIds = new HashSet<>();
+        Set<String> involvedGroupIds = new HashSet<>();
+        for (HistoricIdentityLink link : allLinks) {
+            if (!"candidate".equals(link.getType()) || StringUtils.isBlank(link.getTaskId())) {
+                continue;
+            }
+            linksByTask.computeIfAbsent(link.getTaskId(), k -> new ArrayList<>()).add(link);
+            if (StringUtils.isNotBlank(link.getUserId())) {
+                involvedUserIds.add(link.getUserId());
+            }
+            if (StringUtils.isNotBlank(link.getGroupId())) {
+                involvedGroupIds.add(link.getGroupId());
+            }
+        }
+        if (StringUtils.isNotBlank(historicProcIns.getStartUserId())) {
+            involvedUserIds.add(historicProcIns.getStartUserId());
+        }
+        for (HistoricActivityInstance activityItem : historicActivityInstanceList) {
+            if (StringUtils.isNotBlank(activityItem.getAssignee())) {
+                involvedUserIds.add(activityItem.getAssignee());
+            }
+        }
+        // 用户昵称一次批量查询；候选组名按不同 ID 去重后各查一次
+        Map<String, String> nickMap = participantNameResolver.userNickMap(involvedUserIds);
+        Map<String, String> groupMap = participantNameResolver.groupNameMap(involvedGroupIds);
 
         List<WfProcNodeVo> elementVoList = new ArrayList<>();
         for (HistoricActivityInstance activityInstance : historicActivityInstanceList) {
@@ -1724,8 +1719,8 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
             if (BpmnXMLConstants.ELEMENT_EVENT_START.equals(activityInstance.getActivityType())) {
                 if (ObjectUtil.isNotNull(historicProcIns)) {
                     String userName = historicProcIns.getStartUserId();
-                    // 发起人可能已被删除，降级显示登录名
-                    String nickName = participantNameResolver.userNick(userName);
+                    // 发起人可能已被删除：昵称缺失时降级显示登录名（批量解析已预置回填）
+                    String nickName = nickMap.getOrDefault(userName, userName);
                     if (StringUtils.isNotBlank(nickName)) {
                         elementVo.setAssigneeId(userName);
                         elementVo.setAssigneeName(nickName);
@@ -1734,16 +1729,27 @@ public class WfProcessServiceImpl extends FlowServiceFactory implements IWfProce
             } else if (BpmnXMLConstants.ELEMENT_TASK_USER.equals(activityInstance.getActivityType())) {
                 if (StringUtils.isNotBlank(activityInstance.getAssignee())) {
                     String userName = activityInstance.getAssignee();
-                    // 办理人可能已被删除，降级显示登录名
-                    String nickName = participantNameResolver.userNick(userName);
                     elementVo.setAssigneeId(userName);
-                    elementVo.setAssigneeName(nickName);
+                    elementVo.setAssigneeName(nickMap.getOrDefault(userName, userName));
                 }
-                // 展示审批人员（候选人/候选组可能已删除或组ID为脏数据，逐项降级跳过）
-                List<HistoricIdentityLink> linksForTask = historyService.getHistoricIdentityLinksForTask(activityInstance.getTaskId());
-                String candidate = participantNameResolver.joinCandidateNames(linksForTask);
-                if (StringUtils.isNotBlank(candidate)) {
-                    elementVo.setCandidate(candidate);
+                // 展示审批人员（候选人/候选组名称缺失时跳过该项）
+                List<HistoricIdentityLink> linksForTask =
+                    linksByTask.getOrDefault(activityInstance.getTaskId(), Collections.emptyList());
+                if (!linksForTask.isEmpty()) {
+                    StringBuilder candidateBuilder = new StringBuilder();
+                    for (HistoricIdentityLink link : linksForTask) {
+                        if (StringUtils.isNotBlank(link.getUserId())) {
+                            candidateBuilder.append(nickMap.getOrDefault(link.getUserId(), link.getUserId())).append(",");
+                        } else if (StringUtils.isNotBlank(link.getGroupId())) {
+                            String groupName = groupMap.get(link.getGroupId());
+                            if (groupName != null) {
+                                candidateBuilder.append(groupName).append(",");
+                            }
+                        }
+                    }
+                    if (candidateBuilder.length() > 0) {
+                        elementVo.setCandidate(candidateBuilder.substring(0, candidateBuilder.length() - 1));
+                    }
                 }
                 // 获取意见评论内容
                 if (CollUtil.isNotEmpty(commentList)) {

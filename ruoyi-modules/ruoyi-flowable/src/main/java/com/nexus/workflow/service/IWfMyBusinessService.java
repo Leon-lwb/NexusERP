@@ -48,4 +48,9 @@ public interface IWfMyBusinessService extends IService<WfMyBusiness> {
      */
     Boolean deleteWithValidByIds(Collection<Long> ids, Boolean isValid);
 
+    /**
+     * 按业务数据Id查询流程业务关联记录
+     */
+    WfMyBusiness getByDataId(String dataId);
+
 }

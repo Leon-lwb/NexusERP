@@ -28,7 +28,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -57,38 +60,53 @@ public class WfDeployServiceImpl implements IWfDeployService {
         // appType 过滤需查类别映射，只能在分页后内存判断：先全量取回过滤（流程定义量级有限）再内存分页，
         // 否则 total 虚高且页内丢数据；无过滤时保持数据库分页
         List<ProcessDefinition> definitionList;
+        long pageTotal = 0L;
         if (hasAppTypeFilter) {
             definitionList = processDefinitionQuery.list();
         } else {
-            long pageTotal = processDefinitionQuery.count();
+            pageTotal = processDefinitionQuery.count();
             if (pageTotal <= 0) {
                 return TableDataInfo.build();
             }
             int offset = pageQuery.getPageSize() * (pageQuery.getPageNum() - 1);
             definitionList = processDefinitionQuery.listPage(offset, pageQuery.getPageSize());
         }
+        // 批量取部署信息（deploymentIds 单条查询）；类别映射按 code 去重缓存，
+        // 替代原先每行两次 selectAppTypeByCode + 每行一次部署查询的 N+1
+        List<String> deploymentIds = definitionList.stream()
+            .map(ProcessDefinition::getDeploymentId)
+            .filter(StringUtils::isNotBlank)
+            .distinct()
+            .collect(Collectors.toList());
+        Map<String, Deployment> deploymentMap = deploymentIds.isEmpty()
+            ? Collections.emptyMap()
+            : repositoryService.createDeploymentQuery().deploymentIds(deploymentIds).list().stream()
+                .collect(Collectors.toMap(Deployment::getId, d -> d));
+        String tenantId = TenantHelper.getTenantId();
+        Map<String, String> appTypeCache = new HashMap<>();
 
         List<WfDeployVo> deployVoList = new ArrayList<>(definitionList.size());
         for (ProcessDefinition processDefinition : definitionList) {
-            if (hasAppTypeFilter) {
-                if (!processQuery.getAppType().equalsIgnoreCase(categoryMapper.selectAppTypeByCode(processDefinition.getCategory(), TenantHelper.getTenantId()))) {
-                    continue;
-                }
+            if (hasAppTypeFilter
+                && !processQuery.getAppType().equalsIgnoreCase(
+                    appTypeCache.computeIfAbsent(processDefinition.getCategory(),
+                        c -> categoryMapper.selectAppTypeByCode(c, tenantId)))) {
+                continue;
             }
-            String deploymentId = processDefinition.getDeploymentId();
-            Deployment deployment = repositoryService.createDeploymentQuery().deploymentId(deploymentId).singleResult();
+            Deployment deployment = deploymentMap.get(processDefinition.getDeploymentId());
             WfDeployVo vo = new WfDeployVo();
             vo.setDefinitionId(processDefinition.getId());
             vo.setProcessKey(processDefinition.getKey());
             vo.setProcessName(processDefinition.getName());
             vo.setVersion(processDefinition.getVersion());
             vo.setCategory(processDefinition.getCategory());
-            vo.setAppType(categoryMapper.selectAppTypeByCode(processDefinition.getCategory(), TenantHelper.getTenantId()));
+            vo.setAppType(appTypeCache.computeIfAbsent(processDefinition.getCategory(),
+                c -> categoryMapper.selectAppTypeByCode(c, tenantId)));
             vo.setDeploymentId(processDefinition.getDeploymentId());
             vo.setSuspended(processDefinition.isSuspended());
             // 流程部署信息
-            vo.setCategory(deployment.getCategory());
-            vo.setDeploymentTime(deployment.getDeploymentTime());
+            vo.setCategory(deployment != null ? deployment.getCategory() : processDefinition.getCategory());
+            vo.setDeploymentTime(deployment != null ? deployment.getDeploymentTime() : null);
             deployVoList.add(vo);
         }
         Page<WfDeployVo> page = new Page<>();
@@ -103,7 +121,7 @@ public class WfDeployServiceImpl implements IWfDeployService {
             page.setTotal(total);
         } else {
             page.setRecords(deployVoList);
-            page.setTotal(processDefinitionQuery.count());
+            page.setTotal(pageTotal);
         }
         return TableDataInfo.build(page);
     }

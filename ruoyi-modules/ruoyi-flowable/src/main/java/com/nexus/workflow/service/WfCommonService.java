@@ -2,8 +2,6 @@ package com.nexus.workflow.service;
 
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.nexus.workflow.service.impl.WfInstanceServiceImpl;
-import com.nexus.workflow.service.impl.WfMyBusinessServiceImpl;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.workflow.domain.WfMyBusiness;
 
@@ -22,11 +20,13 @@ import org.springframework.stereotype.Service;
 @Service
 public class WfCommonService {
 
+	// 统一按接口注入：getByDataId/delete 等方法均已声明在接口上，
+	// 避免业务方依赖具体实现类（原先注入 Impl 类导致实现替换/代理事务受限）
 	@Autowired
-    WfMyBusinessServiceImpl wfMyBusinessService;
+    IWfMyBusinessService wfMyBusinessService;
 
 	@Autowired
-	WfInstanceServiceImpl wfInstanceService;
+	IWfInstanceService wfInstanceService;
 
     /**
      * 初始生成或修改业务与流程的关联信息<br/>
