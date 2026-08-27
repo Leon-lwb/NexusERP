@@ -105,7 +105,7 @@
 
     <el-dialog :title="designer.title" v-model="designer.visible" append-to-body fullscreen>
       <ProcessDesigner
-        :key="`designer-${reloadIndex}`"
+        :key="`designer-${designerReloadIndex}`"
         ref="modelDesignerRef"
         v-loading="designerLoading"
         :designer-form="designerForm.form"
@@ -150,7 +150,7 @@
 
     <!-- 流程图 -->
     <el-dialog :title="processDialog.title" v-model="processDialog.visible" width="70%">
-      <process-viewer :key="`designer-${reloadIndex}`" :xml="processXml" :style="{ height: '650px' }" />
+      <process-viewer :key="`viewer-${viewerReloadIndex}`" :xml="processXml" :style="{ height: '650px' }" />
     </el-dialog>
   </div>
 </template>
@@ -187,7 +187,9 @@ const total = ref(0);
 const categoryOptions = ref<CategoryVO[]>([]);
 const designerLoading = ref(true);
 const bpmnXml = ref<string>('');
-const reloadIndex = ref(undefined);
+// 设计器/查看器各自独立的重建计数器：递增即强制重建组件，丢弃上一次残留的画布状态
+const designerReloadIndex = ref(0);
+const viewerReloadIndex = ref(0);
 const processXml = ref<any>('');
 
 const historyList = ref<ModelVO[]>([]);
@@ -340,25 +342,28 @@ const handleExport = () => {
 };
 /** 查看流程图 */
 const handleProcessView = async (row: ModelVO) => {
-  reloadIndex.value = row.modelId;
   // 发送请求，获取xml
   const res = await getBpmnXml(row.modelId);
   processXml.value = res.data;
+  // 数据就绪后再递增 key 触发重建，否则重建时读到的是上一个模型的旧图
+  viewerReloadIndex.value += 1;
   processDialog.visible = true;
 };
 /** 设计按钮操作 */
 const handleDesigner = async (row: ModelVO) => {
-  // 发送请求，获取流程App类型
+  designerLoading.value = true;
+  // 发送请求，获取流程App类型与xml
   const resApp = await getAppType(row.category);
+  const res = await getBpmnXml(row.modelId);
   designerForm.form = {
     appType: resApp.data,
     processName: row.modelName,
     processKey: row.modelKey
   };
-  reloadIndex.value = row.modelId;
   designerForm.modelId = row.modelId;
-  const res = await getBpmnXml(row.modelId);
   bpmnXml.value = res.data || '';
+  // 数据就绪后再递增 key 触发重建，否则重建时读到的是上一个模型的旧图
+  designerReloadIndex.value += 1;
   designerLoading.value = false;
   designer.title = '流程设计 - ' + row.modelName;
   designer.visible = true;

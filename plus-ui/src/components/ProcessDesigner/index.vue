@@ -1,6 +1,7 @@
 <template>
   <div class="process-design" :style="'display: flex; height:' + height">
     <my-process-designer
+      :key="reloadIndex"
       v-model="xmlString"
       v-bind="controlForm"
       keyboard
@@ -111,6 +112,18 @@ const addis = ref({
   CustomPaletteProvider
 });
 const reloadIndex = ref(0);
+
+// xmlString 为一次性拷贝，画布仅在挂载时读取一次 modelValue；
+// 外部 bpmnXml 变化（切换模型）时须同步并递增 reloadIndex 强制重建画布，否则沿用旧图。
+// 保存回写会触发与当前画布相同的 xml，相等时跳过以免丢失撤销栈。
+watch(
+  () => props.bpmnXml,
+  (xml) => {
+    if (xml === xmlString) return;
+    xmlString = xml;
+    reloadIndex.value += 1;
+  }
+);
 
 const reloadProcessDesigner = (notDeep?: boolean) => {
   controlForm.value['additionalModel'] = [];

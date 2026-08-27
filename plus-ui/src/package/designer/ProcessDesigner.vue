@@ -124,6 +124,8 @@ import convert from 'xml-js';
 defineOptions({ name: 'MyProcessDesigner' });
 
 const refFile = ref();
+// 模板 ref：多个设计器实例共存时按 ID 全局查找会拿到别人的画布，必须用自身 ref
+const bpmnCanvas = ref();
 const emit = defineEmits([
   'destroy',
   'init-finished',
@@ -287,10 +289,8 @@ const onSave = async () => {
 
 const initBpmnModeler = () => {
   if (bpmnModeler) return;
-  const container = document.getElementById('bpmnCanvas');
-
   bpmnModeler = new BpmnModeler({
-    container: container,
+    container: bpmnCanvas.value,
     keyboard: props.keyboard ? { bindTo: document } : null,
     additionalModules: additionalModules.value,
     moddleExtensions: moddleExtensions.value,

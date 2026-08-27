@@ -130,12 +130,12 @@ const resetQuery = () => {
 const handleProcessView = (row) => {
   const definitionId = row.definitionId;
   processView.value['title'] = '流程图';
-  processView.value['index'] = definitionId;
-  // 发送请求，获取xml
+  // 发送请求，获取xml；数据就绪后再更新 key 并打开弹窗，避免重建时读到上一个流程的旧图
   getBpmnXml(definitionId).then((res) => {
     processView.value['xmlData'] = res.data;
+    processView.value['index'] = definitionId;
+    processView.value['open'] = true;
   });
-  processView.value['open'] = true;
 };
 const handleStart = (row) => {
   router.push({
