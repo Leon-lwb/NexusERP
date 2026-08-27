@@ -50,6 +50,7 @@ import org.flowable.identitylink.api.history.HistoricIdentityLink;
 import org.flowable.task.api.Task;
 import org.flowable.task.api.history.HistoricTaskInstance;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
@@ -191,11 +192,16 @@ public class WfInstanceServiceImpl extends FlowServiceFactory implements IWfInst
     /**
      * 删除流程实例ID
      *
-     * @param instanceId   流程实例ID
+     * <p>使用 REQUIRES_NEW 独立事务：唯一调用方 WfCommonService.delActBusiness 在
+     * try/catch 中调用本方法以"实例删除失败不阻断业务关联删除"，若与本方法共用外层事务，
+     * 内部抛出异常会把共享事务标记为 rollback-only，外层 catch 后提交时仍会抛
+     * UnexpectedRollbackException；独立事务让失败只回滚删除本身。</p>
+     *
+     * @param instanceId   流程实例ID，涉及业务DataId
      * @param deleteReason 删除原因
      */
     @Override
-    @Transactional(rollbackFor = Exception.class)
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void delete(String instanceId, String deleteReason, String dataId ) {
        if(StringUtils.isNotBlank(dataId)){
     	   LambdaQueryWrapper<WfMyBusiness> flowMyBusinessLambdaQueryWrapper = new LambdaQueryWrapper<>();

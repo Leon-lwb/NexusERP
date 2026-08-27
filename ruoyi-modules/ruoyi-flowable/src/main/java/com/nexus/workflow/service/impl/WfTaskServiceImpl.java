@@ -159,11 +159,12 @@ public class WfTaskServiceImpl extends FlowServiceFactory implements IWfTaskServ
     public void complete(WfTaskBo taskBo) {
         // 完成任务并按需处理节点表单数据保存
 
-        Task task = taskService.createTaskQuery().taskId(taskBo.getTaskId()).singleResult();
-        TaskEntity taskEntity = (TaskEntity) taskService.createTaskQuery().taskId(taskBo.getTaskId()).singleResult();
+        // 同一任务只查一次，实体类型直接复用结果（原先重复执行两次引擎查询）
+        TaskEntity task = (TaskEntity) taskService.createTaskQuery().taskId(taskBo.getTaskId()).singleResult();
         if (Objects.isNull(task)) {
             throw new ServiceException("任务不存在");
         }
+        TaskEntity taskEntity = task;
         checkTaskHandlePermission(task);
 
          // 处理节点表单数据保存
@@ -203,29 +204,34 @@ public class WfTaskServiceImpl extends FlowServiceFactory implements IWfTaskServ
         //获取流程当前节点设置的扩展属性值,需要的时候可以使用
         //Map<String, Object> flowProperties = getFlowProperties(taskBo.getProcInsId());
 
-        //处理自定义业务表单回写状态，节点与处理人信息
-        if (StringUtils.isNotBlank(taskBo.getDataId())) {
-        	//业务数据id
-            String dataId = taskBo.getDataId();
+        // 完成前预测下一节点待办人昵称列表。getNextFlowNode 内部按运行时任务查询，
+        // 任务一旦 complete 就查不到，因此该预测必须在引擎办结前进行，仅用于业务表展示。
+        String predictedTodoUsers = "";
+        boolean hasDataId = StringUtils.isNotBlank(taskBo.getDataId());
+        WfMyBusiness business = null;
+        WfCallBackServiceI flowCallBackService = null;
+        if (hasDataId) {
             //如果保存数据前未调用必调的FlowCommonService.initActBusiness方法，就会有问题
-            WfMyBusiness business = wfMyBusinessService.getByDataId(dataId);
+        	//业务数据id
+            WfMyBusiness existBusiness = wfMyBusinessService.getByDataId(taskBo.getDataId());
+            if (existBusiness == null || StringUtils.isBlank(existBusiness.getServiceImplName())) {
+                throw new ServiceException("未找到流程业务关联记录或回调配置缺失：" + taskBo.getDataId());
+            }
+            business = existBusiness;
             //spring容器类名
-            String serviceImplName = business.getServiceImplName();
-            WfCallBackServiceI flowCallBackService = (WfCallBackServiceI) SpringContextHolder.getBean(serviceImplName);
+            flowCallBackService = (WfCallBackServiceI) SpringContextHolder.getBean(business.getServiceImplName());
 
-            FlowNextDto flowNextDto = this.getNextFlowNode(taskBo.getTaskId(), taskBo.getVariables());
+        	FlowNextDto flowNextDto = this.getNextFlowNode(taskBo.getTaskId(), taskBo.getVariables());
             if(flowNextDto != null) {
-            	//**有下一个节点
-                UserTask nextUserTask = flowNextDto.getUserTask();
-                //能够处理下个节点的候选人
+            	//能够处理下个节点的候选人
                 List<SysUserVo> nextFlowNodeUserList = flowNextDto.getUserList();
-                List<String> newusername = new ArrayList<String>();
                 if(CollUtil.isNotEmpty(nextFlowNodeUserList)) {
     	            List<String> collect_username = nextFlowNodeUserList.stream().filter(Objects::nonNull).filter(item->item.getUserName()!=null).map(SysUserVo::getUserName).collect(Collectors.toList());
-    	            //collect_username转换成realname
+    	            //collect_username转换成realname，转昵称后仅作展示用；流转结果以办结后的真实活动任务为准
     	            // 流程发起人
     	            ProcessInstance processInstance = runtimeService.createProcessInstanceQuery().processInstanceId(taskBo.getProcInsId()).singleResult();
     	            String startUserId = processInstance != null ? processInstance.getStartUserId() : null;
+                    List<String> newusername = new ArrayList<>();
     	            if(taskBo.getVariables() !=null && taskBo.getVariables().containsKey("approval")) {//前端传回的变量值
     	            	SysUserVo sysUser = commonService.getSysUserByUserName(taskBo.getVariables().get("approval").toString());
     	            	if (sysUser != null) {
@@ -246,53 +252,9 @@ public class WfTaskServiceImpl extends FlowServiceFactory implements IWfTaskServ
     	                  }
     	                }
     	            }
+                    predictedTodoUsers = JSON.toJSONString(newusername);
                 }
-
-                //下一个实例节点
-                List<Task> listtask = taskService.createTaskQuery().processInstanceId(business.getProcessInstanceId()).active().list();
-                Task nexttask = null;
-                if(listtask.size()==1) {
-                	nexttask = taskService.createTaskQuery().processInstanceId(business.getProcessInstanceId()).active().singleResult();
-                }
-                else if(listtask.size()>1) {
-                	nexttask = listtask.get(0);
-                }
-
-                if(CollUtil.isNotEmpty(nextFlowNodeUserList) && nexttask != null && nextUserTask != null) {
-                	business.setActStatus(ActStatus.doing);
-                	business.setTaskId(nexttask.getId());
-                	business.setTaskNameId(nextUserTask.getId());
-                	business.setTaskName(nextUserTask.getName());
-                	business.setPriority(nextUserTask.getPriority());
-                    business.setTodoUsers(JSON.toJSONString(newusername));
-                }
-                else {
-                	business.setActStatus(ActStatus.doing);
-                	business.setTaskId(nexttask != null ? nexttask.getId() : "");
-                	business.setTaskNameId("");
-                	business.setTaskName("");
-                	business.setPriority("");
-                    business.setTodoUsers("");
-                }
-                /*if(ObjectUtil.isNotEmpty(taskBo.getNextApproval())) {
-                	business.setActStatus(ActStatus.doing);
-                	business.setTaskId(nexttask.getId());
-                	business.setTaskNameId(nextUserTask.getId());
-                	business.setTaskName(nextUserTask.getName());
-                	business.setPriority(nextUserTask.getPriority());
-                    business.setTodoUsers(taskBo.getNextApproval());
-                }*/
             }
-            else {//**没有下一个节点，流程已经结束了
-            	business.setActStatus(ActStatus.pass);
-            	business.setTaskId("");
-            	business.setTaskNameId("");
-            	business.setTaskName("");
-                business.setTodoUsers("");
-            }
-            // 流程处理完后，进行回调业务层
-            wfMyBusinessService.updateById(business);
-            if (flowCallBackService!=null)flowCallBackService.afterFlowHandle(business);
         }
 
         // 获取 bpmn 模型
@@ -322,6 +284,34 @@ public class WfTaskServiceImpl extends FlowServiceFactory implements IWfTaskServ
 
         //加签处理
         addSignForComplete(taskBo,taskEntity);
+
+        // 引擎流转完成后再按真实活动任务回写业务状态。
+        // 原先在办结前按节点预测判定"无下一节点=流程已结束"置为 pass：
+        // 网关条件求值失败或并行分支时预测与真实走向不符，会把运行中流程误标为已通过。
+        if (hasDataId && business != null) {
+            List<Task> activeTasks = taskService.createTaskQuery()
+                .processInstanceId(taskBo.getProcInsId()).active()
+                .orderByTaskCreateTime().asc().list();
+            if (CollUtil.isNotEmpty(activeTasks)) {
+                Task frontTask = activeTasks.get(0);
+                business.setActStatus(ActStatus.doing);
+                business.setTaskId(frontTask.getId());
+                business.setTaskNameId(frontTask.getTaskDefinitionKey());
+                business.setTaskName(frontTask.getName());
+                business.setPriority(String.valueOf(frontTask.getPriority()));
+                business.setTodoUsers(predictedTodoUsers);
+            } else {
+                business.setActStatus(ActStatus.pass);
+                business.setTaskId("");
+                business.setTaskNameId("");
+                business.setTaskName("");
+                business.setPriority("");
+                business.setTodoUsers("");
+            }
+            // 流程处理完后，进行回调业务层
+            wfMyBusinessService.updateById(business);
+            if (flowCallBackService != null) flowCallBackService.afterFlowHandle(business);
+        }
 
         // 处理抄送用户
         if (!copyService.makeCopy(taskBo)) {
@@ -2074,45 +2064,73 @@ public class WfTaskServiceImpl extends FlowServiceFactory implements IWfTaskServ
         if(!StringUtils.equalsAnyIgnoreCase(LoginHelper.getUsername(), startTask.getAssignee())) {
         	throw new FlowableException("操作用户不是发起人，不能收回");
         }
-        //  当前任务
-        HistoricTaskInstance currentTask = hisTaskList.get(hisTaskList.size() - 1);
+        //  当前任务（收回后所有活动任务节点均跳回起始节点，不再需要单独取最近历史任务）
 
         BpmnModel bpmnModel = repositoryService.getBpmnModel(listtask.get(0).getProcessDefinitionId());
 
         //  获取第一个活动节点
-        FlowNode startFlowNode = (FlowNode) bpmnModel.getMainProcess().getFlowElement(startTask.getTaskDefinitionKey());
-        //  获取当前活动节点
-        FlowNode currentFlowNode = (FlowNode) bpmnModel.getMainProcess().getFlowElement(currentTask.getTaskDefinitionKey());
-
-        //  临时保存当前活动的原始方向
-        List<SequenceFlow> originalSequenceFlowList = new ArrayList<>(currentFlowNode.getOutgoingFlows());
-        //  清理活动方向
-        currentFlowNode.getOutgoingFlows().clear();
-
-        //  建立新方向
-        SequenceFlow newSequenceFlow = new SequenceFlow();
-        newSequenceFlow.setId("newSequenceFlowId");
-        newSequenceFlow.setSourceFlowElement(currentFlowNode);
-        newSequenceFlow.setTargetFlowElement(startFlowNode);
-        List<SequenceFlow> newSequenceFlowList = new ArrayList<>();
-        newSequenceFlowList.add(newSequenceFlow);
-        //  当前节点指向新的方向
-        currentFlowNode.setOutgoingFlows(newSequenceFlowList);
-
-        //  完成当前任务
-        for(Task task : listtask) {
-		    taskService.addComment(task.getId(), listtask.get(0).getProcessInstanceId(),FlowComment.RECALL.getType(), "发起人收回");
-		    taskService.setAssignee(task.getId(), startTask.getAssignee());
-		    taskService.complete(task.getId());
+        //  改用 BpmnModel 级查找：任务位于子流程内时 Process#getFlowElement 只查顶层会得到 null
+        FlowNode startFlowNode = (FlowNode) bpmnModel.getFlowElement(startTask.getTaskDefinitionKey());
+        if (startFlowNode == null) {
+            throw new FlowableException("未在流程定义中找到起始审批节点：" + startTask.getTaskDefinitionKey());
         }
 
-
-        //  重新查询当前任务
-        Task nextTask = taskService.createTaskQuery().processInstanceId(processInstanceId).singleResult();
-        if (ObjectUtil.isNotNull(nextTask)) {
-            taskService.setAssignee(nextTask.getId(), startTask.getAssignee());
-            //taskService.complete(nextTask.getId());;//跳过流程发起节点
+        //  当前活动任务涉及的全部节点做"跳回起始节点"重定向。
+        //  原实现只取最近一个历史任务的节点：并行分支多节点同时活动时，
+        //  其余分支仍按原出线向前流转，收回后流程反而前进而非回到发起节点。
+        Map<String, FlowNode> redirectNodes = new LinkedHashMap<>();
+        for (Task activeTask : listtask) {
+            String defKey = activeTask.getTaskDefinitionKey();
+            if (!redirectNodes.containsKey(defKey)) {
+                FlowNode node = (FlowNode) bpmnModel.getFlowElement(defKey);
+                if (node == null) {
+                    throw new FlowableException("未在流程定义中找到当前节点：" + defKey);
+                }
+                redirectNodes.put(defKey, node);
+            }
         }
+        //  记录各节点原始方向（副本），突变期间任何异常都必须恢复：
+        //  引擎操作的是部署缓存的共享 BpmnModel，不恢复则该流程定义的
+        //  后续实例会被永久导向起始节点（原实现缺 try/finally，属于缓存污染缺陷）
+        Map<String, List<SequenceFlow>> originalFlowsMap = new LinkedHashMap<>();
+        for (Map.Entry<String, FlowNode> entry : redirectNodes.entrySet()) {
+            originalFlowsMap.put(entry.getKey(), new ArrayList<>(entry.getValue().getOutgoingFlows()));
+        }
+        try {
+            int seq = 0;
+            for (FlowNode currentFlowNode : redirectNodes.values()) {
+                //  建立新方向：当前节点指向起始节点
+                SequenceFlow newSequenceFlow = new SequenceFlow();
+                //  每个节点独立 ID，避免并发收回时同 ID 连线互相覆盖
+                newSequenceFlow.setId("recall_" + processInstanceId + "_" + (seq++));
+                newSequenceFlow.setSourceFlowElement(currentFlowNode);
+                newSequenceFlow.setTargetFlowElement(startFlowNode);
+                List<SequenceFlow> newSequenceFlowList = new ArrayList<>();
+                newSequenceFlowList.add(newSequenceFlow);
+                currentFlowNode.setOutgoingFlows(newSequenceFlowList);
+            }
+
+            //  完成当前任务，引擎沿临时方向跳回起始节点
+            for(Task task : listtask) {
+			    taskService.addComment(task.getId(), listtask.get(0).getProcessInstanceId(),FlowComment.RECALL.getType(), "发起人收回");
+			    taskService.setAssignee(task.getId(), startTask.getAssignee());
+			    taskService.complete(task.getId());
+            }
+
+
+            //  收回后把起始节点的新任务指给发起人。可能产生多个任务（并行），
+            //  用列表遍历而非 singleResult——查出多条时后者直接抛异常令整个收回失败
+            List<Task> nextTasks = taskService.createTaskQuery().processInstanceId(processInstanceId).active().list();
+            for (Task nextTask : nextTasks) {
+                taskService.setAssignee(nextTask.getId(), startTask.getAssignee());
+            }
+        } finally {
+            //  恢复各节点原始方向（成功、异常路径都要执行）
+            for (Map.Entry<String, List<SequenceFlow>> entry : originalFlowsMap.entrySet()) {
+                redirectNodes.get(entry.getKey()).setOutgoingFlows(entry.getValue());
+            }
+        }
+
         //自定义业务处理id
         String dataId = bo.getDataId();
         if(StringUtils.isNotEmpty(dataId)) {
@@ -2129,9 +2147,6 @@ public class WfTaskServiceImpl extends FlowServiceFactory implements IWfTaskServ
             	wfMyBusinessService.updateById(business);
             }
         }
-
-        //  恢复原始方向
-        currentFlowNode.setOutgoingFlows(originalSequenceFlowList);
 
 		return R.ok("发起人收回成功");
 	}

@@ -72,3 +72,6 @@
 | 历史节点办理人已删除 → 详情 500 | `selectUserByUserName(...).getNickName()` 链式 NPE | 阶段 1 修复项 |
 | 列表过滤后分页总数错误 | 先分页后过滤 | 阶段 1 修复项 |
 | 模型保存后元数据丢失 | `buildMetaInfo` 条件反转（`isNotEmpty` 应为 `isEmpty`） | 阶段 1 修复项 |
+| 流程实际在跑但业务状态显示"已通过" | complete() 在办结前按节点预测判定结束，网关条件求值失败即误判 pass | 阶段 2：办结后按真实活动任务回写 |
+| 发起人收回中途失败后，该流程定义所有新实例都被导回首节点 | recallProcess 突变共享 BpmnModel 缓存无 try/finally，异常路径不恢复出线 | 阶段 2：finally 恢复 + 多活动节点重定向 |
+| 业务删除时引擎实例删除异常 → 整个外层事务 UnexpectedRollbackException | 同事务内 catch 无法对抗 rollback-only 标记 | 阶段 2：delete(3参) 改 REQUIRES_NEW 独立事务 |
