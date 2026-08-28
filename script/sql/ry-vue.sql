@@ -3840,6 +3840,10 @@ CREATE TABLE `ai_knowledge`  (
   `description` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '描述',
   `embedding_model` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '使用的 Embedding 模型',
   `vector_store` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'milvus' COMMENT '向量存储类型',
+  `vector_index_status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'READY' COMMENT '向量索引状态',
+  `vector_index_progress` tinyint(1) UNSIGNED NOT NULL DEFAULT 0 COMMENT '向量索引重建进度 0-100',
+  `vector_index_error` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '向量索引错误信息',
+  `vector_index_updated_time` datetime NULL DEFAULT NULL COMMENT '向量索引最近完成时间',
   `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '1' COMMENT '状态（1正常 0停用）',
   `separator` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '#' COMMENT '知识分隔符',
   `overlap_char` int(11) NULL DEFAULT 30 COMMENT '重叠字符数',
@@ -3867,7 +3871,7 @@ CREATE TABLE `ai_knowledge`  (
 -- ----------------------------
 -- Records of ai_knowledge
 -- ----------------------------
-INSERT INTO `ai_knowledge` VALUES (2065090090526457857, '000000', 'ERP知识库', '测试', 'dengcao/Qwen3-Embedding-0.6B:Q8_0', 'milvus', '1', '#', 30, 500, 5, 0.5, 0, NULL, 0, 0.5, NULL, 103, 1, '2026-06-11 23:13:40', 1, '2026-06-30 00:49:58', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_knowledge` VALUES (2065090090526457857, '000000', 'ERP知识库', '测试', 'dengcao/Qwen3-Embedding-0.6B:Q8_0', 'milvus', 'READY', 0, NULL, NULL, '0', '#', 30, 500, 5, 0.5, 0, NULL, 0, 0.5, NULL, 103, 1, '2026-06-11 23:13:40', 1, '2026-06-30 00:49:58', '0', NULL, NULL, NULL, NULL);
 
 -- ----------------------------
 -- Table structure for ai_knowledge_chunk
@@ -4170,11 +4174,16 @@ CREATE TABLE `ai_model`  (
   `provider_id` bigint(20) NOT NULL COMMENT '关联厂商ID',
   `model_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '模型名称（如 deepseek-chat）',
   `display_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '显示名称',
-  `model_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '类型: CHAT/EMBEDDING/RERANK',
+  `model_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '类型: TEXT/VISION/AUDIO/EMBEDDING/RERANK/IMAGE(字典 ai_model_type)',
+  `context_window` int(11) NULL DEFAULT NULL COMMENT '上下文窗口',
+  `input_capabilities` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'TEXT' COMMENT '输入能力，逗号分隔',
+  `output_capabilities` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'TEXT' COMMENT '输出能力，逗号分隔',
+  `api_protocol` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '调用协议',
+  `embedding_dimension` int(11) NULL DEFAULT NULL COMMENT '向量维度，仅 EMBEDDING 使用',
   `max_tokens` int(11) NULL DEFAULT 4096 COMMENT '最大输出 Token',
   `temperature` decimal(3, 2) NULL DEFAULT 0.70 COMMENT '温度参数',
-  `is_default` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '是否默认模型（1是 0否）',
-  `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '1' COMMENT '状态（1正常 0停用）',
+  `is_default` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'N' COMMENT '是否默认模型（Y是 N否）',
+  `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '状态（0正常 1停用）',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
   `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
@@ -4195,24 +4204,24 @@ CREATE TABLE `ai_model`  (
 -- ----------------------------
 -- Records of ai_model
 -- ----------------------------
-INSERT INTO `ai_model` VALUES (1, '000000', 1, 'deepseek-v4-flash', 'deepseek-v4-flash', 'CHAT', 4096, 0.70, '1', '1', NULL, NULL, NULL, 1, '2026-06-30 22:13:39', '0', NULL, NULL, NULL, NULL, NULL, NULL, 'CNY');
-INSERT INTO `ai_model` VALUES (2, '000000', 2, 'dengcao/Qwen3-Embedding-0.6B:Q8_0', 'Qwen3-Embedding-0.6B-Q8', 'EMBEDDING', 2048, 0.00, '1', '1', 103, 1, '2026-06-11 23:42:56', 1, '2026-06-11 23:42:56', '0', NULL, NULL, NULL, NULL, NULL, NULL, 'CNY');
-INSERT INTO `ai_model` VALUES (2065468422648635394, '000000', 2065468199226449922, 'ark-code-latest', '方舟codingplan', 'CHAT', 4096, 0.70, '0', '1', 103, 1, '2026-06-13 00:17:01', 1, '2026-06-30 22:13:39', '0', NULL, NULL, NULL, NULL, 1.000000, 20.000000, 'CNY');
-INSERT INTO `ai_model` VALUES (2071188923190738945, '000000', 2, 'deepseek-r1:8b', 'deepseek-r1:8b', 'CHAT', 8192, 0.70, '0', '1', 103, 1, '2026-06-28 19:08:15', 1, '2026-06-28 19:11:38', '0', NULL, NULL, NULL, NULL, NULL, NULL, 'CNY');
-INSERT INTO `ai_model` VALUES (2072986793864646658, '000000', 2072986564503326721, 'NexusAI', 'NexusAI智能助手', 'CHAT', 500, 0.70, '0', '1', 103, 1, '2026-07-03 18:12:21', 1, '2026-07-03 18:12:21', '0', NULL, NULL, NULL, NULL, NULL, NULL, 'CNY');
-INSERT INTO `ai_model` VALUES (2195199932153522944, '000000', 4207708950347927552, 'text-embedding-v3', '通义向量 v3', 'EMBEDDING', 2048, 0.00, '0', '1', 103, 1, '2026-06-30 23:59:26', NULL, NULL, '0', NULL, NULL, NULL, NULL, 0.000700, NULL, 'CNY');
-INSERT INTO `ai_model` VALUES (3484924229313549312, '000000', 8594416586304471040, 'rerank', '智谱 Rerank', 'RERANK', NULL, 0.00, '1', '1', 103, 1, '2026-06-30 23:59:26', NULL, NULL, '0', NULL, NULL, NULL, NULL, 0.000500, NULL, 'CNY');
-INSERT INTO `ai_model` VALUES (3773541947615837696, '000000', 2961532303096290816, 'MiniMax-Text-01', 'MiniMax-Text-01', 'CHAT', 8192, 0.70, '0', '1', 103, 1, '2026-06-30 23:59:26', NULL, NULL, '0', NULL, NULL, NULL, NULL, 0.001000, 0.001000, 'CNY');
-INSERT INTO `ai_model` VALUES (4047609260350101504, '000000', 2348956357081379840, 'mimo-v2.5-pro', '小米 mimo-v2.5-pro', 'CHAT', 4096, 0.70, '0', '1', 103, 1, '2026-06-30 23:59:26', 1, '2026-07-01 00:03:08', '0', NULL, NULL, NULL, NULL, NULL, NULL, 'CNY');
-INSERT INTO `ai_model` VALUES (4814184220334686208, '000000', 4207708950347927552, 'wanx2.1-t2i-turbo', '通义万相 文生图(快)', 'IMAGE', 4096, 0.70, '1', '1', 103, 1, '2026-06-30 23:59:26', NULL, NULL, '0', NULL, NULL, NULL, NULL, NULL, 0.080000, 'CNY');
-INSERT INTO `ai_model` VALUES (5919366971514528768, '000000', 4207708950347927552, 'qwen-plus', '通义千问 Plus', 'CHAT', 8192, 0.70, '0', '1', 103, 1, '2026-06-30 23:59:26', NULL, NULL, '0', NULL, NULL, NULL, NULL, 0.000800, 0.002000, 'CNY');
-INSERT INTO `ai_model` VALUES (6593348547437553664, '000000', 8594416586304471040, 'glm-4-plus', '智谱 GLM-4 Plus', 'CHAT', 4096, 0.70, '0', '1', 103, 1, '2026-06-30 23:59:26', NULL, NULL, '0', NULL, NULL, NULL, NULL, 0.050000, 0.050000, 'CNY');
-INSERT INTO `ai_model` VALUES (6760792720840119296, '000000', 4207708950347927552, 'qwen-max', '通义千问 Max', 'CHAT', 8192, 0.70, '0', '1', 103, 1, '2026-06-30 23:59:26', NULL, NULL, '0', NULL, NULL, NULL, NULL, 0.020000, 0.060000, 'CNY');
-INSERT INTO `ai_model` VALUES (7125670720940148736, '000000', 8594416586304471040, 'embedding-3', '智谱向量 Embedding-3', 'EMBEDDING', 2048, 0.00, '0', '1', 103, 1, '2026-06-30 23:59:26', NULL, NULL, '0', NULL, NULL, NULL, NULL, 0.000500, NULL, 'CNY');
-INSERT INTO `ai_model` VALUES (7127550463310955520, '000000', 4207708950347927552, 'wanx2.1-t2i-plus', '通义万相 文生图(高清)', 'IMAGE', 4096, 0.70, '0', '1', 103, 1, '2026-06-30 23:59:26', NULL, NULL, '0', NULL, NULL, NULL, NULL, NULL, 0.160000, 'CNY');
-INSERT INTO `ai_model` VALUES (7381143217330000896, '000000', 8594416586304471040, 'glm-4-flash', '智谱 GLM-4 Flash', 'CHAT', 4096, 0.70, '0', '1', 103, 1, '2026-06-30 23:59:26', NULL, NULL, '0', NULL, NULL, NULL, NULL, 0.000000, 0.000000, 'CNY');
-INSERT INTO `ai_model` VALUES (8314456971655094272, '000000', 4207708950347927552, 'qwen-turbo', '通义千问 Turbo', 'CHAT', 8192, 0.70, '0', '1', 103, 1, '2026-06-30 23:59:26', NULL, NULL, '0', NULL, NULL, NULL, NULL, 0.000300, 0.000600, 'CNY');
-INSERT INTO `ai_model` VALUES (8783273890412667904, '000000', 2961532303096290816, 'MiniMax-M2', 'MiniMax-M2', 'CHAT', 8192, 0.70, '0', '1', 103, 1, '2026-06-30 23:59:26', NULL, NULL, '0', NULL, NULL, NULL, NULL, 0.001000, 0.001000, 'CNY');
+INSERT INTO `ai_model` VALUES (1, '000000', 1, 'deepseek-v4-flash', 'deepseek-v4-flash', 'TEXT', NULL, 'TEXT', 'TEXT', 'OPENAI_CHAT_COMPLETIONS', NULL, 4096, 0.70, 'Y', '0', NULL, NULL, NULL, 1, '2026-06-30 22:13:39', '0', NULL, NULL, NULL, NULL, NULL, NULL, 'CNY');
+INSERT INTO `ai_model` VALUES (2, '000000', 2, 'dengcao/Qwen3-Embedding-0.6B:Q8_0', 'Qwen3-Embedding-0.6B-Q8', 'EMBEDDING', NULL, 'TEXT', 'VECTOR', 'OLLAMA_NATIVE', NULL, 2048, 0.00, 'Y', '0', 103, 1, '2026-06-11 23:42:56', 1, '2026-06-11 23:42:56', '0', NULL, NULL, NULL, NULL, NULL, NULL, 'CNY');
+INSERT INTO `ai_model` VALUES (2065468422648635394, '000000', 2065468199226449922, 'ark-code-latest', '方舟codingplan', 'TEXT', NULL, 'TEXT', 'TEXT', 'OPENAI_CHAT_COMPLETIONS', NULL, 4096, 0.70, 'N', '0', 103, 1, '2026-06-13 00:17:01', 1, '2026-06-30 22:13:39', '0', NULL, NULL, NULL, NULL, 1.000000, 20.000000, 'CNY');
+INSERT INTO `ai_model` VALUES (2071188923190738945, '000000', 2, 'deepseek-r1:8b', 'deepseek-r1:8b', 'TEXT', NULL, 'TEXT', 'TEXT', 'OLLAMA_NATIVE', NULL, 8192, 0.70, 'N', '0', 103, 1, '2026-06-28 19:08:15', 1, '2026-06-28 19:11:38', '0', NULL, NULL, NULL, NULL, NULL, NULL, 'CNY');
+INSERT INTO `ai_model` VALUES (2072986793864646658, '000000', 2072986564503326721, 'NexusAI', 'NexusAI智能助手', 'TEXT', NULL, 'TEXT', 'TEXT', 'OPENAI_CHAT_COMPLETIONS', NULL, 500, 0.70, 'N', '0', 103, 1, '2026-07-03 18:12:21', 1, '2026-07-03 18:12:21', '0', NULL, NULL, NULL, NULL, NULL, NULL, 'CNY');
+INSERT INTO `ai_model` VALUES (2195199932153522944, '000000', 4207708950347927552, 'text-embedding-v3', '通义向量 v3', 'EMBEDDING', NULL, 'TEXT', 'VECTOR', 'DASHSCOPE_NATIVE', NULL, 2048, 0.00, 'N', '0', 103, 1, '2026-06-30 23:59:26', NULL, NULL, '0', NULL, NULL, NULL, NULL, 0.000700, NULL, 'CNY');
+INSERT INTO `ai_model` VALUES (3484924229313549312, '000000', 8594416586304471040, 'rerank', '智谱 Rerank', 'RERANK', NULL, 'TEXT', 'RANKING', 'ZHIPU_NATIVE', NULL, NULL, 0.00, 'Y', '0', 103, 1, '2026-06-30 23:59:26', NULL, NULL, '0', NULL, NULL, NULL, NULL, 0.000500, NULL, 'CNY');
+INSERT INTO `ai_model` VALUES (3773541947615837696, '000000', 2961532303096290816, 'MiniMax-Text-01', 'MiniMax-Text-01', 'TEXT', NULL, 'TEXT', 'TEXT', 'OPENAI_CHAT_COMPLETIONS', NULL, 8192, 0.70, 'N', '0', 103, 1, '2026-06-30 23:59:26', NULL, NULL, '0', NULL, NULL, NULL, NULL, 0.001000, 0.001000, 'CNY');
+INSERT INTO `ai_model` VALUES (4047609260350101504, '000000', 2348956357081379840, 'mimo-v2.5-pro', '小米 mimo-v2.5-pro', 'TEXT', NULL, 'TEXT', 'TEXT', 'OPENAI_CHAT_COMPLETIONS', NULL, 4096, 0.70, 'N', '0', 103, 1, '2026-06-30 23:59:26', 1, '2026-07-01 00:03:08', '0', NULL, NULL, NULL, NULL, NULL, NULL, 'CNY');
+INSERT INTO `ai_model` VALUES (4814184220334686208, '000000', 4207708950347927552, 'wanx2.1-t2i-turbo', '通义万相 文生图(快)', 'IMAGE', NULL, 'TEXT', 'IMAGE', 'DASHSCOPE_NATIVE', NULL, 4096, 0.70, 'Y', '0', 103, 1, '2026-06-30 23:59:26', NULL, NULL, '0', NULL, NULL, NULL, NULL, NULL, 0.080000, 'CNY');
+INSERT INTO `ai_model` VALUES (5919366971514528768, '000000', 4207708950347927552, 'qwen-plus', '通义千问 Plus', 'TEXT', NULL, 'TEXT', 'TEXT', 'DASHSCOPE_NATIVE', NULL, 8192, 0.70, 'N', '0', 103, 1, '2026-06-30 23:59:26', NULL, NULL, '0', NULL, NULL, NULL, NULL, 0.000800, 0.002000, 'CNY');
+INSERT INTO `ai_model` VALUES (6593348547437553664, '000000', 8594416586304471040, 'glm-4-plus', '智谱 GLM-4 Plus', 'TEXT', NULL, 'TEXT', 'TEXT', 'ZHIPU_NATIVE', NULL, 4096, 0.70, 'N', '0', 103, 1, '2026-06-30 23:59:26', NULL, NULL, '0', NULL, NULL, NULL, NULL, 0.050000, 0.050000, 'CNY');
+INSERT INTO `ai_model` VALUES (6760792720840119296, '000000', 4207708950347927552, 'qwen-max', '通义千问 Max', 'TEXT', NULL, 'TEXT', 'TEXT', 'DASHSCOPE_NATIVE', NULL, 8192, 0.70, 'N', '0', 103, 1, '2026-06-30 23:59:26', NULL, NULL, '0', NULL, NULL, NULL, NULL, 0.020000, 0.060000, 'CNY');
+INSERT INTO `ai_model` VALUES (7125670720940148736, '000000', 8594416586304471040, 'embedding-3', '智谱向量 Embedding-3', 'EMBEDDING', NULL, 'TEXT', 'VECTOR', 'ZHIPU_NATIVE', NULL, 2048, 0.00, 'N', '0', 103, 1, '2026-06-30 23:59:26', NULL, NULL, '0', NULL, NULL, NULL, NULL, 0.000500, NULL, 'CNY');
+INSERT INTO `ai_model` VALUES (7127550463310955520, '000000', 4207708950347927552, 'wanx2.1-t2i-plus', '通义万相 文生图(高清)', 'IMAGE', NULL, 'TEXT', 'IMAGE', 'DASHSCOPE_NATIVE', NULL, 4096, 0.70, 'N', '0', 103, 1, '2026-06-30 23:59:26', NULL, NULL, '0', NULL, NULL, NULL, NULL, NULL, 0.160000, 'CNY');
+INSERT INTO `ai_model` VALUES (7381143217330000896, '000000', 8594416586304471040, 'glm-4-flash', '智谱 GLM-4 Flash', 'TEXT', NULL, 'TEXT', 'TEXT', 'ZHIPU_NATIVE', NULL, 4096, 0.70, 'N', '0', 103, 1, '2026-06-30 23:59:26', NULL, NULL, '0', NULL, NULL, NULL, NULL, 0.000000, 0.000000, 'CNY');
+INSERT INTO `ai_model` VALUES (8314456971655094272, '000000', 4207708950347927552, 'qwen-turbo', '通义千问 Turbo', 'TEXT', NULL, 'TEXT', 'TEXT', 'DASHSCOPE_NATIVE', NULL, 8192, 0.70, 'N', '0', 103, 1, '2026-06-30 23:59:26', NULL, NULL, '0', NULL, NULL, NULL, NULL, 0.000300, 0.000600, 'CNY');
+INSERT INTO `ai_model` VALUES (8783273890412667904, '000000', 2961532303096290816, 'MiniMax-M2', 'MiniMax-M2', 'TEXT', NULL, 'TEXT', 'TEXT', 'OPENAI_CHAT_COMPLETIONS', NULL, 8192, 0.70, 'N', '0', 103, 1, '2026-06-30 23:59:26', NULL, NULL, '0', NULL, NULL, NULL, NULL, 0.001000, 0.001000, 'CNY');
 
 -- ----------------------------
 -- Table structure for ai_prompt_template
@@ -4241,9 +4250,9 @@ CREATE TABLE `ai_prompt_template`  (
 -- ----------------------------
 -- Records of ai_prompt_template
 -- ----------------------------
-INSERT INTO `ai_prompt_template` VALUES (2065673024929239042, '000000', 'ERP 数据查询助手上下文', 'erp_query_agent', '=== ERP 数据库表结构 ===\n{{schemaSummary}}\n\n=== 当前日期 ===\n{{date}}\n\n=== 可用工具列表 ===\n{{availableTools}}\n', '为 ErpQueryAgent 提供动态 Schema 摘要和工具列表上下文', '1', 1, '1', -1, -1, '2026-06-13 13:50:02', -1, '2026-06-13 13:50:02', '0');
-INSERT INTO `ai_prompt_template` VALUES (2065673024979570690, '000000', 'ERP 报表生成助手上下文', 'erp_report_agent', '=== ERP 数据库表结构 ===\n{{schemaSummary}}\n\n=== 当前日期 ===\n{{date}}\n', '为 ErpReportAgent 提供动态 Schema 摘要上下文', '1', 1, '1', -1, -1, '2026-06-13 13:50:02', -1, '2026-06-13 13:50:02', '0');
-INSERT INTO `ai_prompt_template` VALUES (2065673024996347905, '000000', 'Supervisor 调度中心上下文', 'supervisor', '你是 NexusERP 智能助手调度中心。根据用户问题，选择最合适的子 Agent 处理：\n\n1. **数据查询助手**（ERP 数据查询助手）：适用于需要查询具体数据、执行 SQL、回答事实性问题的场景\n   - 例：\"本月采购总额是多少？\"、\"库存低于安全线的物料有哪些？\"\n\n2. **报表生成助手**（ERP 数据可视化专家）：适用于需要生成图表、可视化数据趋势的场景\n   - 例：\"展示最近6个月销售趋势图\"、\"各品类采购金额占比饼图\"\n\n路由规则：\n- 如果用户只问数据 → 分发给数据查询助手\n- 如果用户要求图表/可视化 → 分发给报表生成助手\n- 如果用户同时要数据和图表 → 先让查询助手获取数据，再让报表助手生成图表\n- 如果不确定 → 优先分发给数据查询助手\n\n当前日期：{{date}}\n', 'Supervisor Agent 的路由引导 SystemMessage', '1', 1, '1', -1, -1, '2026-06-13 13:50:02', -1, '2026-06-13 13:50:02', '0');
+INSERT INTO `ai_prompt_template` VALUES (2065673024929239042, '000000', 'ERP 数据查询助手上下文', 'erp_query_agent', '=== ERP 数据库表结构 ===\n{{schemaSummary}}\n\n=== 当前日期 ===\n{{date}}\n\n=== 可用工具列表 ===\n{{availableTools}}\n', '为 ErpQueryAgent 提供动态 Schema 摘要和工具列表上下文', 'Y', 1, '0', -1, -1, '2026-06-13 13:50:02', -1, '2026-06-13 13:50:02', '0');
+INSERT INTO `ai_prompt_template` VALUES (2065673024979570690, '000000', 'ERP 报表生成助手上下文', 'erp_report_agent', '=== ERP 数据库表结构 ===\n{{schemaSummary}}\n\n=== 当前日期 ===\n{{date}}\n', '为 ErpReportAgent 提供动态 Schema 摘要上下文', 'Y', 1, '0', -1, -1, '2026-06-13 13:50:02', -1, '2026-06-13 13:50:02', '0');
+INSERT INTO `ai_prompt_template` VALUES (2065673024996347905, '000000', 'Supervisor 调度中心上下文', 'supervisor', '你是 NexusERP 智能助手调度中心。根据用户问题，选择最合适的子 Agent 处理：\n\n1. **数据查询助手**（ERP 数据查询助手）：适用于需要查询具体数据、执行 SQL、回答事实性问题的场景\n   - 例：\"本月采购总额是多少？\"、\"库存低于安全线的物料有哪些？\"\n\n2. **报表生成助手**（ERP 数据可视化专家）：适用于需要生成图表、可视化数据趋势的场景\n   - 例：\"展示最近6个月销售趋势图\"、\"各品类采购金额占比饼图\"\n\n路由规则：\n- 如果用户只问数据 → 分发给数据查询助手\n- 如果用户要求图表/可视化 → 分发给报表生成助手\n- 如果用户同时要数据和图表 → 先让查询助手获取数据，再让报表助手生成图表\n- 如果不确定 → 优先分发给数据查询助手\n\n当前日期：{{date}}\n', 'Supervisor Agent 的路由引导 SystemMessage', 'Y', 1, '0', -1, -1, '2026-06-13 13:50:02', -1, '2026-06-13 13:50:02', '0');
 
 -- ----------------------------
 -- Table structure for ai_provider
@@ -4273,14 +4282,14 @@ CREATE TABLE `ai_provider`  (
 -- ----------------------------
 -- Records of ai_provider
 -- ----------------------------
-INSERT INTO `ai_provider` VALUES (1, '000000', 'DeepSeek', 'https://api.deepseek.com', 'Pajct04e5uhpNnlewu1irQjtDN3b/dT9pEfyXOVbRy8d2tkBc2UqnNmai2wKSxHf', 'OPENAI', '1', NULL, NULL, NULL, 1, '2026-08-09 23:14:24', '0', NULL, NULL, NULL, NULL);
-INSERT INTO `ai_provider` VALUES (2, '000000', '本地Ollama', 'http://localhost:11434', 'X6s81pOEHUoae0Q9aiMgkbAM1pl8v74GRFor/jSnKokfP+jGEHGDlqeAGBoYTzEjUhSKK2lQnFajprR74Y2xQzuHPVSEd+O+xOVjGia2tNhVIyFvwMv/YH8FMHerkgMe', 'OLLAMA', '1', 103, 1, '2026-06-11 23:42:56', 1, '2026-06-28 19:09:22', '0', NULL, NULL, NULL, NULL);
-INSERT INTO `ai_provider` VALUES (2065468199226449922, '000000', '火山方舟', 'https://ark.cn-beijing.volces.com/api/coding/v3', 'k61i88Ud8lKHZmGVuUx1ySPRrvgwHKT8QbS8lh+fwvlXFBxcVxMjNoz0nutzdAFz', 'OPENAI', '1', 103, 1, '2026-06-13 00:16:08', 1, '2026-08-09 23:14:33', '0', NULL, NULL, NULL, NULL);
-INSERT INTO `ai_provider` VALUES (2072986564503326721, '000000', 'huggingface', 'https://wangghuan-nexusai.hf.space/v1', 'ZYHcsyqaef3H+LsOsTMS+KifTQ5Uj21bcFlfuwx3FZSgKJPdIFYlyyKt6N4j95QlFYWsstmZI4bRMf7CJ+uGABaVN3JdoD9rB2ArFInOTyg=', 'OPENAI', '1', 103, 1, '2026-07-03 18:11:26', 1, '2026-07-03 18:14:43', '0', NULL, NULL, NULL, NULL);
-INSERT INTO `ai_provider` VALUES (2348956357081379840, '000000', '小米MiMo', 'https://token-plan-cn.xiaomimimo.com/v1', 'sk-PLEASE_REPLACE_MIMO_KEY', 'XIAOMI', '1', 103, 1, '2026-06-30 23:59:26', 1, '2026-07-01 00:01:30', '0', NULL, NULL, NULL, NULL);
-INSERT INTO `ai_provider` VALUES (2961532303096290816, '000000', 'MiniMax', 'https://api.minimax.io/v1', 'sk-PLEASE_REPLACE_MINIMAX_KEY', 'MINIMAX', '1', 103, 1, '2026-06-30 23:59:26', NULL, NULL, '0', NULL, NULL, NULL, NULL);
-INSERT INTO `ai_provider` VALUES (4207708950347927552, '000000', '通义千问', 'https://dashscope.aliyuncs.com', 'sk-PLEASE_REPLACE_DASHSCOPE_KEY', 'DASHSCOPE', '1', 103, 1, '2026-06-30 23:59:26', NULL, NULL, '0', NULL, NULL, NULL, NULL);
-INSERT INTO `ai_provider` VALUES (8594416586304471040, '000000', '智谱AI', 'https://open.bigmodel.cn', 'sk-PLEASE_REPLACE_ZHIPU_KEY', 'ZHIPU', '1', 103, 1, '2026-06-30 23:59:26', NULL, NULL, '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_provider` VALUES (1, '000000', 'DeepSeek', 'https://api.deepseek.com', 'Pajct04e5uhpNnlewu1irQjtDN3b/dT9pEfyXOVbRy8d2tkBc2UqnNmai2wKSxHf', 'DEEPSEEK', '0', NULL, NULL, NULL, 1, '2026-08-09 23:14:24', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_provider` VALUES (2, '000000', '本地Ollama', 'http://localhost:11434', 'X6s81pOEHUoae0Q9aiMgkbAM1pl8v74GRFor/jSnKokfP+jGEHGDlqeAGBoYTzEjUhSKK2lQnFajprR74Y2xQzuHPVSEd+O+xOVjGia2tNhVIyFvwMv/YH8FMHerkgMe', 'OLLAMA', '0', 103, 1, '2026-06-11 23:42:56', 1, '2026-06-28 19:09:22', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_provider` VALUES (2065468199226449922, '000000', '火山方舟', 'https://ark.cn-beijing.volces.com/api/coding/v3', 'k61i88Ud8lKHZmGVuUx1ySPRrvgwHKT8QbS8lh+fwvlXFBxcVxMjNoz0nutzdAFz', 'ARK', '0', 103, 1, '2026-06-13 00:16:08', 1, '2026-08-09 23:14:33', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_provider` VALUES (2072986564503326721, '000000', 'huggingface', 'https://wangghuan-nexusai.hf.space/v1', 'ZYHcsyqaef3H+LsOsTMS+KifTQ5Uj21bcFlfuwx3FZSgKJPdIFYlyyKt6N4j95QlFYWsstmZI4bRMf7CJ+uGABaVN3JdoD9rB2ArFInOTyg=', 'OPENAI', '0', 103, 1, '2026-07-03 18:11:26', 1, '2026-07-03 18:14:43', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_provider` VALUES (2348956357081379840, '000000', '小米MiMo', 'https://token-plan-cn.xiaomimimo.com/v1', 'sk-PLEASE_REPLACE_MIMO_KEY', 'XIAOMI', '0', 103, 1, '2026-06-30 23:59:26', 1, '2026-07-01 00:01:30', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_provider` VALUES (2961532303096290816, '000000', 'MiniMax', 'https://api.minimax.io/v1', 'sk-PLEASE_REPLACE_MINIMAX_KEY', 'MINIMAX', '0', 103, 1, '2026-06-30 23:59:26', NULL, NULL, '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_provider` VALUES (4207708950347927552, '000000', '通义千问', 'https://dashscope.aliyuncs.com', 'sk-PLEASE_REPLACE_DASHSCOPE_KEY', 'DASHSCOPE', '0', 103, 1, '2026-06-30 23:59:26', NULL, NULL, '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_provider` VALUES (8594416586304471040, '000000', '智谱AI', 'https://open.bigmodel.cn', 'sk-PLEASE_REPLACE_ZHIPU_KEY', 'ZHIPU', '0', 103, 1, '2026-06-30 23:59:26', NULL, NULL, '0', NULL, NULL, NULL, NULL);
 
 -- ----------------------------
 -- Table structure for ai_provider_bak_20260820
@@ -4390,14 +4399,14 @@ CREATE TABLE `ai_sql_example`  (
 -- ----------------------------
 -- Records of ai_sql_example
 -- ----------------------------
-INSERT INTO `ai_sql_example` VALUES (2065713267317297153, '000000', '查询库存低于安全库存的物料', 'SELECT m.material_code, m.material_name, s.stock_quantity, m.safety_stock FROM wm_material_stock s JOIN bd_material m ON s.material_id = m.material_id WHERE s.stock_quantity < m.safety_stock', 'INVENTORY', NULL, 1, '1', -1, -1, '2026-06-13 16:29:57', -1, '2026-06-13 16:29:57', '0');
-INSERT INTO `ai_sql_example` VALUES (2065713267355045889, '000000', '查询各仓库的库存总金额', 'SELECT w.warehouse_name, SUM(s.stock_quantity * s.unit_cost) AS total_value FROM wm_material_stock s JOIN wm_warehouse w ON s.warehouse_id = w.warehouse_id GROUP BY w.warehouse_name', 'INVENTORY', NULL, 2, '1', -1, -1, '2026-06-13 16:29:57', -1, '2026-06-13 16:29:57', '0');
-INSERT INTO `ai_sql_example` VALUES (2065713267367628802, '000000', '查询本月销售总额', 'SELECT SUM(total_amount) AS total_sales FROM so_sales_order_header WHERE DATE_FORMAT(order_date, \'%Y-%m\') = DATE_FORMAT(CURDATE(), \'%Y-%m\') AND order_status IN (\'CONFIRMED\',\'FULFILLED\')', 'SALES', NULL, 3, '1', -1, -1, '2026-06-13 16:29:57', -1, '2026-06-13 16:29:57', '0');
-INSERT INTO `ai_sql_example` VALUES (2065713267380211713, '000000', '查询客户销售排行TOP10', 'SELECT c.client_name, SUM(h.total_amount) AS total_amount FROM so_sales_order_header h JOIN bd_client c ON h.client_id = c.client_id WHERE h.order_status IN (\'CONFIRMED\',\'FULFILLED\') GROUP BY c.client_name ORDER BY total_amount DESC LIMIT 10', 'SALES', NULL, 4, '1', -1, -1, '2026-06-13 16:29:57', -1, '2026-06-13 16:29:57', '0');
-INSERT INTO `ai_sql_example` VALUES (2065713267396988930, '000000', '查询本月采购总额', 'SELECT SUM(total_amount) AS total_purchase FROM pu_purchase_order WHERE DATE_FORMAT(order_date, \'%Y-%m\') = DATE_FORMAT(CURDATE(), \'%Y-%m\') AND status IN (\'APPROVED\',\'COMPLETED\')', 'PURCHASE', NULL, 5, '1', -1, -1, '2026-06-13 16:29:57', -1, '2026-06-13 16:29:57', '0');
-INSERT INTO `ai_sql_example` VALUES (2065713267413766146, '000000', '查询供应商交货准时率', 'SELECT v.vendor_name, ROUND(e.on_time_orders * 100.0 / NULLIF(e.total_orders, 0), 1) AS on_time_rate FROM pu_vendor_evaluation e JOIN bd_vendor v ON e.vendor_id = v.vendor_id', 'PURCHASE', NULL, 6, '1', -1, -1, '2026-06-13 16:29:57', -1, '2026-06-13 16:29:57', '0');
-INSERT INTO `ai_sql_example` VALUES (2065713267422154753, '000000', '查询当前在产工单', 'SELECT wo.wo_no, m.material_name, wo.planned_qty, wo.completed_qty, wo.wo_status FROM prd_work_order wo JOIN bd_material m ON wo.material_id = m.material_id WHERE wo.wo_status IN (\'IN_PROGRESS\',\'STARTED\')', 'PRODUCTION', NULL, 7, '1', -1, -1, '2026-06-13 16:29:57', -1, '2026-06-13 16:29:57', '0');
-INSERT INTO `ai_sql_example` VALUES (2065713267438931969, '000000', '查询指定物料的详细信息', 'SELECT m.material_code, m.material_name, mc.category_name, m.material_spec, m.safety_stock, m.standard_cost FROM bd_material m LEFT JOIN bd_material_category mc ON m.category_id = mc.category_id WHERE m.material_code = ?', 'GENERAL', NULL, 8, '1', -1, -1, '2026-06-13 16:29:57', -1, '2026-06-13 16:29:57', '0');
+INSERT INTO `ai_sql_example` VALUES (2065713267317297153, '000000', '查询库存低于安全库存的物料', 'SELECT m.material_code, m.material_name, s.stock_quantity, m.safety_stock FROM wm_material_stock s JOIN bd_material m ON s.material_id = m.material_id WHERE s.stock_quantity < m.safety_stock', 'INVENTORY', NULL, 1, '0', -1, -1, '2026-06-13 16:29:57', -1, '2026-06-13 16:29:57', '0');
+INSERT INTO `ai_sql_example` VALUES (2065713267355045889, '000000', '查询各仓库的库存总金额', 'SELECT w.warehouse_name, SUM(s.stock_quantity * s.unit_cost) AS total_value FROM wm_material_stock s JOIN wm_warehouse w ON s.warehouse_id = w.warehouse_id GROUP BY w.warehouse_name', 'INVENTORY', NULL, 2, '0', -1, -1, '2026-06-13 16:29:57', -1, '2026-06-13 16:29:57', '0');
+INSERT INTO `ai_sql_example` VALUES (2065713267367628802, '000000', '查询本月销售总额', 'SELECT SUM(total_amount) AS total_sales FROM so_sales_order_header WHERE DATE_FORMAT(order_date, \'%Y-%m\') = DATE_FORMAT(CURDATE(), \'%Y-%m\') AND order_status IN (\'CONFIRMED\',\'FULFILLED\')', 'SALES', NULL, 3, '0', -1, -1, '2026-06-13 16:29:57', -1, '2026-06-13 16:29:57', '0');
+INSERT INTO `ai_sql_example` VALUES (2065713267380211713, '000000', '查询客户销售排行TOP10', 'SELECT c.client_name, SUM(h.total_amount) AS total_amount FROM so_sales_order_header h JOIN bd_client c ON h.client_id = c.client_id WHERE h.order_status IN (\'CONFIRMED\',\'FULFILLED\') GROUP BY c.client_name ORDER BY total_amount DESC LIMIT 10', 'SALES', NULL, 4, '0', -1, -1, '2026-06-13 16:29:57', -1, '2026-06-13 16:29:57', '0');
+INSERT INTO `ai_sql_example` VALUES (2065713267396988930, '000000', '查询本月采购总额', 'SELECT SUM(total_amount) AS total_purchase FROM pu_purchase_order WHERE DATE_FORMAT(order_date, \'%Y-%m\') = DATE_FORMAT(CURDATE(), \'%Y-%m\') AND status IN (\'APPROVED\',\'COMPLETED\')', 'PURCHASE', NULL, 5, '0', -1, -1, '2026-06-13 16:29:57', -1, '2026-06-13 16:29:57', '0');
+INSERT INTO `ai_sql_example` VALUES (2065713267413766146, '000000', '查询供应商交货准时率', 'SELECT v.vendor_name, ROUND(e.on_time_orders * 100.0 / NULLIF(e.total_orders, 0), 1) AS on_time_rate FROM pu_vendor_evaluation e JOIN bd_vendor v ON e.vendor_id = v.vendor_id', 'PURCHASE', NULL, 6, '0', -1, -1, '2026-06-13 16:29:57', -1, '2026-06-13 16:29:57', '0');
+INSERT INTO `ai_sql_example` VALUES (2065713267422154753, '000000', '查询当前在产工单', 'SELECT wo.wo_no, m.material_name, wo.planned_qty, wo.completed_qty, wo.wo_status FROM prd_work_order wo JOIN bd_material m ON wo.material_id = m.material_id WHERE wo.wo_status IN (\'IN_PROGRESS\',\'STARTED\')', 'PRODUCTION', NULL, 7, '0', -1, -1, '2026-06-13 16:29:57', -1, '2026-06-13 16:29:57', '0');
+INSERT INTO `ai_sql_example` VALUES (2065713267438931969, '000000', '查询指定物料的详细信息', 'SELECT m.material_code, m.material_name, mc.category_name, m.material_spec, m.safety_stock, m.standard_cost FROM bd_material m LEFT JOIN bd_material_category mc ON m.category_id = mc.category_id WHERE m.material_code = ?', 'GENERAL', NULL, 8, '0', -1, -1, '2026-06-13 16:29:57', -1, '2026-06-13 16:29:57', '0');
 
 -- ----------------------------
 -- Table structure for ai_token_usage
@@ -4469,14 +4478,14 @@ CREATE TABLE `ai_tool`  (
 -- ----------------------------
 -- Records of ai_tool
 -- ----------------------------
-INSERT INTO `ai_tool` VALUES (2065501197074419714, '000000', 'erp_purchase', '采购查询工具', '查询采购金额分布、供应商评估、在途订单、采购价格历史', 'BUILTIN', NULL, 'ENABLED', -1, -1, '2026-06-13 02:27:15', -1, '2026-06-13 02:27:15', '0', NULL, NULL, NULL, NULL);
-INSERT INTO `ai_tool` VALUES (2065501197074419715, '000000', 'erp_production', '生产查询工具', '查询在产工单、产能利用率、BOM展开、生产完成率', 'BUILTIN', NULL, 'ENABLED', -1, -1, '2026-06-13 02:27:15', -1, '2026-06-13 02:27:15', '0', NULL, NULL, NULL, NULL);
-INSERT INTO `ai_tool` VALUES (2065501197141528578, '000000', 'query_all_tables', '查询所有表', '查询数据库中所有可用的 ERP 业务表（从缓存获取）', 'BUILTIN', NULL, 'ENABLED', -1, -1, '2026-06-13 02:27:15', -1, '2026-06-13 02:27:15', '0', NULL, NULL, NULL, NULL);
-INSERT INTO `ai_tool` VALUES (2065501197141528579, '000000', 'execute_sql_query', '执行 SQL 查询', '执行 SELECT SQL 查询（必须包含 tenant_id 条件）', 'BUILTIN', NULL, 'ENABLED', -1, -1, '2026-06-13 02:27:15', -1, '2026-06-13 02:27:15', '0', NULL, NULL, NULL, NULL);
-INSERT INTO `ai_tool` VALUES (2065501197141528580, '000000', 'erp_inventory', '库存查询工具', '查询库存预警、出库趋势、库存金额分布、按仓库统计', 'BUILTIN', NULL, 'ENABLED', -1, -1, '2026-06-13 02:27:15', -1, '2026-06-13 02:27:15', '0', NULL, NULL, NULL, NULL);
-INSERT INTO `ai_tool` VALUES (2065501197204443138, '000000', 'erp_sales', '销售查询工具', '查询月度销售趋势、客户排行、退货统计、订单履行率', 'BUILTIN', NULL, 'ENABLED', -1, -1, '2026-06-13 02:27:15', -1, '2026-06-13 02:27:15', '0', NULL, NULL, NULL, NULL);
-INSERT INTO `ai_tool` VALUES (2065501197204443139, '000000', 'query_table_schema', '查询表结构', '查询指定表的 CREATE TABLE DDL（优先从缓存获取）', 'BUILTIN', NULL, 'ENABLED', -1, -1, '2026-06-13 02:27:15', -1, '2026-06-13 02:27:15', '0', NULL, NULL, NULL, NULL);
-INSERT INTO `ai_tool` VALUES (2071627193573928962, '000000', 'query_knowledge_graph', '知识图谱查询', '查询当前知识库知识图谱的实体关系（1-2跳）或执行基于社区摘要的全局检索', 'BUILTIN', NULL, 'ENABLED', -1, -1, '2026-06-30 00:09:47', -1, '2026-06-30 00:09:47', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_tool` VALUES (2065501197074419714, '000000', 'erp_purchase', '采购查询工具', '查询采购金额分布、供应商评估、在途订单、采购价格历史', 'BUILTIN', NULL, '0', -1, -1, '2026-06-13 02:27:15', -1, '2026-06-13 02:27:15', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_tool` VALUES (2065501197074419715, '000000', 'erp_production', '生产查询工具', '查询在产工单、产能利用率、BOM展开、生产完成率', 'BUILTIN', NULL, '0', -1, -1, '2026-06-13 02:27:15', -1, '2026-06-13 02:27:15', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_tool` VALUES (2065501197141528578, '000000', 'query_all_tables', '查询所有表', '查询数据库中所有可用的 ERP 业务表（从缓存获取）', 'BUILTIN', NULL, '0', -1, -1, '2026-06-13 02:27:15', -1, '2026-06-13 02:27:15', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_tool` VALUES (2065501197141528579, '000000', 'execute_sql_query', '执行 SQL 查询', '执行 SELECT SQL 查询（必须包含 tenant_id 条件）', 'BUILTIN', NULL, '0', -1, -1, '2026-06-13 02:27:15', -1, '2026-06-13 02:27:15', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_tool` VALUES (2065501197141528580, '000000', 'erp_inventory', '库存查询工具', '查询库存预警、出库趋势、库存金额分布、按仓库统计', 'BUILTIN', NULL, '0', -1, -1, '2026-06-13 02:27:15', -1, '2026-06-13 02:27:15', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_tool` VALUES (2065501197204443138, '000000', 'erp_sales', '销售查询工具', '查询月度销售趋势、客户排行、退货统计、订单履行率', 'BUILTIN', NULL, '0', -1, -1, '2026-06-13 02:27:15', -1, '2026-06-13 02:27:15', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_tool` VALUES (2065501197204443139, '000000', 'query_table_schema', '查询表结构', '查询指定表的 CREATE TABLE DDL（优先从缓存获取）', 'BUILTIN', NULL, '0', -1, -1, '2026-06-13 02:27:15', -1, '2026-06-13 02:27:15', '0', NULL, NULL, NULL, NULL);
+INSERT INTO `ai_tool` VALUES (2071627193573928962, '000000', 'query_knowledge_graph', '知识图谱查询', '查询当前知识库知识图谱的实体关系（1-2跳）或执行基于社区摘要的全局检索', 'BUILTIN', NULL, '0', -1, -1, '2026-06-30 00:09:47', -1, '2026-06-30 00:09:47', '0', NULL, NULL, NULL, NULL);
 
 -- ----------------------------
 -- Table structure for app_user_agreement
@@ -13428,11 +13437,27 @@ INSERT INTO `sys_dict_data` VALUES (600101, '000000', 2, '阿里云 DashScope', 
 INSERT INTO `sys_dict_data` VALUES (600102, '000000', 3, '智谱 AI', 'ZHIPU', 'ai_provider_type', '', 'warning', 'N', 103, 1, '2026-06-09 14:00:00', NULL, NULL, '智谱 GLM');
 INSERT INTO `sys_dict_data` VALUES (600103, '000000', 4, 'Ollama', 'OLLAMA', 'ai_provider_type', '', 'info', 'N', 103, 1, '2026-06-09 14:00:00', NULL, NULL, 'Ollama 本地模型');
 INSERT INTO `sys_dict_data` VALUES (600104, '000000', 5, 'DeepSeek', 'DEEPSEEK', 'ai_provider_type', '', 'danger', 'Y', 103, 1, '2026-06-09 14:00:00', NULL, NULL, 'DeepSeek');
+INSERT INTO `sys_dict_data` VALUES (620100, '000000', 6, '火山方舟/豆包', 'ARK', 'ai_provider_type', '', 'primary', 'N', 103, 1, sysdate(), NULL, NULL, '字节跳动火山方舟');
+INSERT INTO `sys_dict_data` VALUES (620101, '000000', 7, '月之暗面/Kimi', 'MOONSHOT', 'ai_provider_type', '', 'primary', 'N', 103, 1, sysdate(), NULL, NULL, '月之暗面 Kimi');
+INSERT INTO `sys_dict_data` VALUES (620102, '000000', 8, '腾讯混元', 'TENCENT_HUNYUAN', 'ai_provider_type', '', 'primary', 'N', 103, 1, sysdate(), NULL, NULL, '腾讯混元大模型');
+INSERT INTO `sys_dict_data` VALUES (620103, '000000', 9, 'MiniMax', 'MINIMAX', 'ai_provider_type', '', 'primary', 'N', 103, 1, sysdate(), NULL, NULL, 'MiniMax 大模型');
+INSERT INTO `sys_dict_data` VALUES (620104, '000000', 10, '小米MiMo', 'XIAOMI', 'ai_provider_type', '', 'primary', 'N', 103, 1, sysdate(), NULL, NULL, '小米 MiMo 开放平台');
+INSERT INTO `sys_dict_data` VALUES (620105, '000000', 11, '硅基流动', 'SILICONFLOW', 'ai_provider_type', '', 'primary', 'N', 103, 1, sysdate(), NULL, NULL, '硅基流动聚合平台');
+INSERT INTO `sys_dict_data` VALUES (620106, '000000', 12, 'Anthropic/Claude', 'ANTHROPIC', 'ai_provider_type', '', 'success', 'N', 103, 1, sysdate(), NULL, NULL, 'Anthropic Claude');
+INSERT INTO `sys_dict_data` VALUES (620107, '000000', 13, 'Google Gemini', 'GEMINI', 'ai_provider_type', '', 'success', 'N', 103, 1, sysdate(), NULL, NULL, 'Google Gemini');
+INSERT INTO `sys_dict_data` VALUES (620108, '000000', 14, 'Mistral AI', 'MISTRAL', 'ai_provider_type', '', 'success', 'N', 103, 1, sysdate(), NULL, NULL, 'Mistral AI');
+INSERT INTO `sys_dict_data` VALUES (620109, '000000', 15, 'xAI/Grok', 'XAI', 'ai_provider_type', '', 'success', 'N', 103, 1, sysdate(), NULL, NULL, 'xAI Grok');
+INSERT INTO `sys_dict_data` VALUES (620110, '000000', 16, 'OpenRouter', 'OPENROUTER', 'ai_provider_type', '', 'info', 'N', 103, 1, sysdate(), NULL, NULL, 'OpenRouter 聚合网关');
+INSERT INTO `sys_dict_data` VALUES (620111, '000000', 17, 'OpenCode Go', 'OPENCODE_GO', 'ai_provider_type', '', 'info', 'N', 103, 1, sysdate(), NULL, NULL, 'OpenCode Go 平台');
+INSERT INTO `sys_dict_data` VALUES (620112, '000000', 18, '自定义OpenAI兼容API', 'CUSTOM_API', 'ai_provider_type', '', 'warning', 'N', 103, 1, sysdate(), NULL, NULL, '自建/代理的 OpenAI 兼容接口');
 INSERT INTO `sys_dict_data` VALUES (600106, '000000', 1, '加工', 'PROCESSING', 'bd_process_category', '', 'primary', 'N', 103, 1, '2026-06-16 18:01:18', NULL, NULL, '加工工序');
 INSERT INTO `sys_dict_data` VALUES (600107, '000000', 2, '装配', 'ASSEMBLY', 'bd_process_category', '', 'success', 'N', 103, 1, '2026-06-16 18:01:18', NULL, NULL, '装配工序');
 INSERT INTO `sys_dict_data` VALUES (600108, '000000', 3, '检验', 'INSPECTION', 'bd_process_category', '', 'warning', 'N', 103, 1, '2026-06-16 18:01:18', NULL, NULL, '检验工序');
 INSERT INTO `sys_dict_data` VALUES (600109, '000000', 4, '包装', 'PACKAGING', 'bd_process_category', '', 'info', 'N', 103, 1, '2026-06-16 18:01:18', NULL, NULL, '包装工序');
-INSERT INTO `sys_dict_data` VALUES (600110, '000000', 1, '对话模型', 'CHAT', 'ai_model_type', '', 'primary', 'Y', 103, 1, '2026-06-09 14:00:00', NULL, NULL, 'Chat 对话模型');
+INSERT INTO `sys_dict_data` VALUES (600110, '000000', 1, '文本模型', 'TEXT', 'ai_model_type', '', 'primary', 'Y', 103, 1, sysdate(), NULL, NULL, '文本模型(对话/推理/生成, 原 CHAT)');
+INSERT INTO `sys_dict_data` VALUES (620120, '000000', 4, '视觉模型', 'VISION', 'ai_model_type', '', 'success', 'N', 103, 1, sysdate(), NULL, NULL, '多模态图像理解, 可对话');
+INSERT INTO `sys_dict_data` VALUES (620121, '000000', 5, '语音模型', 'AUDIO', 'ai_model_type', '', 'info', 'N', 103, 1, sysdate(), NULL, NULL, 'ASR/TTS, 预留');
+INSERT INTO `sys_dict_data` VALUES (620122, '000000', 6, '图像生成', 'IMAGE', 'ai_model_type', '', 'danger', 'N', 103, 1, sysdate(), NULL, NULL, '文生图');
 INSERT INTO `sys_dict_data` VALUES (600111, '000000', 2, '嵌入模型', 'EMBEDDING', 'ai_model_type', '', 'success', 'N', 103, 1, '2026-06-09 14:00:00', NULL, NULL, 'Embedding 向量模型');
 INSERT INTO `sys_dict_data` VALUES (600112, '000000', 3, '重排序模型', 'RERANK', 'ai_model_type', '', 'warning', 'N', 103, 1, '2026-06-09 14:00:00', NULL, NULL, 'Rerank 重排序模型');
 INSERT INTO `sys_dict_data` VALUES (600113, '000000', 5, '刷写', 'FLASH', 'bd_process_category', '', 'danger', 'N', NULL, 1, '2026-08-16 18:12:23', 1, '2026-08-16 18:13:53', '固件刷写工序类别(刷写门禁依据)');
@@ -13445,8 +13470,61 @@ INSERT INTO `sys_dict_data` VALUES (600132, '000000', 3, '已归档', 'ARCHIVED'
 INSERT INTO `sys_dict_data` VALUES (600140, '000000', 1, '内置工具', 'BUILTIN', 'ai_tool_type', '', 'primary', 'N', 103, 1, '2026-06-13 14:00:00', NULL, NULL, 'Java 代码实现的内置工具');
 INSERT INTO `sys_dict_data` VALUES (600141, '000000', 2, '本地工具', 'LOCAL', 'ai_tool_type', '', 'success', 'N', 103, 1, '2026-06-13 14:00:00', NULL, NULL, 'STDIO 方式的本地 MCP 工具');
 INSERT INTO `sys_dict_data` VALUES (600142, '000000', 3, '远程工具', 'REMOTE', 'ai_tool_type', '', 'warning', 'N', 103, 1, '2026-06-13 14:00:00', NULL, NULL, 'HTTP/SSE 方式的远程 MCP 工具');
-INSERT INTO `sys_dict_data` VALUES (600150, '000000', 1, '启用', 'ENABLED', 'ai_tool_status', '', 'success', 'Y', 103, 1, '2026-06-13 14:00:00', NULL, NULL, '工具已启用');
-INSERT INTO `sys_dict_data` VALUES (600151, '000000', 2, '停用', 'DISABLED', 'ai_tool_status', '', 'danger', 'N', 103, 1, '2026-06-13 14:00:00', NULL, NULL, '工具已停用');
+INSERT INTO `sys_dict_data` VALUES (620130, '000000', 1, '文本', 'TEXT', 'ai_model_capability', '', 'primary', 'Y', 103, 1, sysdate(), NULL, NULL, '文本输入/输出');
+INSERT INTO `sys_dict_data` VALUES (620131, '000000', 2, '图片', 'IMAGE', 'ai_model_capability', '', 'success', 'N', 103, 1, sysdate(), NULL, NULL, '图片理解或生成');
+INSERT INTO `sys_dict_data` VALUES (620132, '000000', 3, '视频', 'VIDEO', 'ai_model_capability', '', 'warning', 'N', 103, 1, sysdate(), NULL, NULL, '视频理解或生成');
+INSERT INTO `sys_dict_data` VALUES (620133, '000000', 4, '音频', 'AUDIO', 'ai_model_capability', '', 'info', 'N', 103, 1, sysdate(), NULL, NULL, '音频理解或生成');
+INSERT INTO `sys_dict_data` VALUES (620134, '000000', 5, '文件', 'FILE', 'ai_model_capability', '', 'default', 'N', 103, 1, sysdate(), NULL, NULL, '文件/文档输入');
+INSERT INTO `sys_dict_data` VALUES (620135, '000000', 6, '向量', 'VECTOR', 'ai_model_capability', '', 'info', 'N', 103, 1, sysdate(), NULL, NULL, '向量化(Embedding)输出');
+INSERT INTO `sys_dict_data` VALUES (620136, '000000', 7, '重排序', 'RANKING', 'ai_model_capability', '', 'danger', 'N', 103, 1, sysdate(), NULL, NULL, '重排序(Rerank)输出');
+INSERT INTO `sys_dict_data` VALUES (620140, '000000', 1, 'OpenAI Chat Completions', 'OPENAI_CHAT_COMPLETIONS', 'ai_model_api_protocol', '', 'primary', 'Y', 103, 1, sysdate(), NULL, NULL, 'OpenAI Chat Completions(业界兼容事实标准)');
+INSERT INTO `sys_dict_data` VALUES (620141, '000000', 2, 'OpenAI Responses', 'OPENAI_RESPONSES', 'ai_model_api_protocol', '', 'success', 'N', 103, 1, sysdate(), NULL, NULL, 'OpenAI Responses API');
+INSERT INTO `sys_dict_data` VALUES (620142, '000000', 3, 'Anthropic Messages', 'ANTHROPIC_MESSAGES', 'ai_model_api_protocol', '', 'warning', 'N', 103, 1, sysdate(), NULL, NULL, 'Anthropic Messages API');
+INSERT INTO `sys_dict_data` VALUES (620143, '000000', 4, 'Google Gemini GenerateContent', 'GEMINI_GENERATE_CONTENT', 'ai_model_api_protocol', '', 'info', 'N', 103, 1, sysdate(), NULL, NULL, 'Google Gemini generateContent API');
+INSERT INTO `sys_dict_data` VALUES (620144, '000000', 5, '百炼原生协议', 'DASHSCOPE_NATIVE', 'ai_model_api_protocol', '', 'default', 'N', 103, 1, sysdate(), NULL, NULL, '阿里云百炼原生协议');
+INSERT INTO `sys_dict_data` VALUES (620145, '000000', 6, '智谱原生协议', 'ZHIPU_NATIVE', 'ai_model_api_protocol', '', 'default', 'N', 103, 1, sysdate(), NULL, NULL, '智谱 AI 原生协议');
+INSERT INTO `sys_dict_data` VALUES (620146, '000000', 7, 'Ollama原生协议', 'OLLAMA_NATIVE', 'ai_model_api_protocol', '', 'default', 'N', 103, 1, sysdate(), NULL, NULL, 'Ollama 本地原生 API');
+INSERT INTO `sys_dict_data` VALUES (620150, '000000', 1, '人民币', 'CNY', 'ai_model_currency', '', 'primary', 'Y', 103, 1, sysdate(), NULL, NULL, '人民币');
+INSERT INTO `sys_dict_data` VALUES (620151, '000000', 2, '美元', 'USD', 'ai_model_currency', '', 'success', 'N', 103, 1, sysdate(), NULL, NULL, '美元');
+INSERT INTO `sys_dict_data` VALUES (620152, '000000', 3, '欧元', 'EUR', 'ai_model_currency', '', 'info', 'N', 103, 1, sysdate(), NULL, NULL, '欧元');
+INSERT INTO `sys_dict_data` VALUES (620160, '000000', 1, 'Milvus', 'milvus', 'ai_vector_store_type', '', 'primary', 'Y', 103, 1, sysdate(), NULL, NULL, 'Milvus 向量数据库');
+INSERT INTO `sys_dict_data` VALUES (620161, '000000', 2, '内存向量库', 'inmemory', 'ai_vector_store_type', '', 'info', 'N', 103, 1, sysdate(), NULL, NULL, '内存向量库(重启丢失)');
+INSERT INTO `sys_dict_data` VALUES (620170, '000000', 1, '通用', 'GENERAL', 'ai_sql_example_category', '', 'default', 'Y', 103, 1, sysdate(), NULL, NULL, '通用查询示例');
+INSERT INTO `sys_dict_data` VALUES (620171, '000000', 2, '库存', 'INVENTORY', 'ai_sql_example_category', '', 'info', 'N', 103, 1, sysdate(), NULL, NULL, '库存类查询');
+INSERT INTO `sys_dict_data` VALUES (620172, '000000', 3, '销售', 'SALES', 'ai_sql_example_category', '', 'success', 'N', 103, 1, sysdate(), NULL, NULL, '销售类查询');
+INSERT INTO `sys_dict_data` VALUES (620173, '000000', 4, '采购', 'PURCHASE', 'ai_sql_example_category', '', 'warning', 'N', 103, 1, sysdate(), NULL, NULL, '采购类查询');
+INSERT INTO `sys_dict_data` VALUES (620174, '000000', 5, '生产', 'PRODUCTION', 'ai_sql_example_category', '', 'danger', 'N', 103, 1, sysdate(), NULL, NULL, '生产类查询');
+INSERT INTO `sys_dict_data` VALUES (620180, '000000', 1, '待运行', 'PENDING', 'ai_ab_test_status', '', 'info', 'Y', 103, 1, sysdate(), NULL, NULL, '尚未执行');
+INSERT INTO `sys_dict_data` VALUES (620181, '000000', 2, '运行中', 'RUNNING', 'ai_ab_test_status', '', 'warning', 'N', 103, 1, sysdate(), NULL, NULL, '执行中');
+INSERT INTO `sys_dict_data` VALUES (620182, '000000', 3, '已完成', 'COMPLETED', 'ai_ab_test_status', '', 'success', 'N', 103, 1, sysdate(), NULL, NULL, '已出结果');
+INSERT INTO `sys_dict_data` VALUES (620190, '000000', 1, '待处理', '0', 'ai_knowledge_document_status', '', 'info', 'Y', 103, 1, sysdate(), NULL, NULL, '待解析');
+INSERT INTO `sys_dict_data` VALUES (620191, '000000', 2, '处理中', '1', 'ai_knowledge_document_status', '', 'warning', 'N', 103, 1, sysdate(), NULL, NULL, '解析中');
+INSERT INTO `sys_dict_data` VALUES (620192, '000000', 3, '已完成', '2', 'ai_knowledge_document_status', '', 'success', 'N', 103, 1, sysdate(), NULL, NULL, '解析完成');
+INSERT INTO `sys_dict_data` VALUES (620193, '000000', 4, '失败', '3', 'ai_knowledge_document_status', '', 'danger', 'N', 103, 1, sysdate(), NULL, NULL, '解析失败');
+INSERT INTO `sys_dict_data` VALUES (620200, '000000', 1, '未构建', '0', 'ai_knowledge_graph_status', '', 'info', 'Y', 103, 1, sysdate(), NULL, NULL, '未构建');
+INSERT INTO `sys_dict_data` VALUES (620201, '000000', 2, '构建中', '1', 'ai_knowledge_graph_status', '', 'warning', 'N', 103, 1, sysdate(), NULL, NULL, '构建中');
+INSERT INTO `sys_dict_data` VALUES (620202, '000000', 3, '已完成', '2', 'ai_knowledge_graph_status', '', 'success', 'N', 103, 1, sysdate(), NULL, NULL, '构建完成');
+INSERT INTO `sys_dict_data` VALUES (620203, '000000', 4, '失败', '3', 'ai_knowledge_graph_status', '', 'danger', 'N', 103, 1, sysdate(), NULL, NULL, '构建失败');
+INSERT INTO `sys_dict_data` VALUES (620210, '000000', 1, '待处理', '0', 'ai_knowledge_extraction_status', '', 'info', 'Y', 103, 1, sysdate(), NULL, NULL, '待抽取');
+INSERT INTO `sys_dict_data` VALUES (620211, '000000', 2, '处理中', '1', 'ai_knowledge_extraction_status', '', 'warning', 'N', 103, 1, sysdate(), NULL, NULL, '抽取中');
+INSERT INTO `sys_dict_data` VALUES (620212, '000000', 3, '已完成', '2', 'ai_knowledge_extraction_status', '', 'success', 'N', 103, 1, sysdate(), NULL, NULL, '抽取完成');
+INSERT INTO `sys_dict_data` VALUES (620213, '000000', 4, '失败', '3', 'ai_knowledge_extraction_status', '', 'danger', 'N', 103, 1, sysdate(), NULL, NULL, '抽取失败');
+INSERT INTO `sys_dict_data` VALUES (620220, '000000', 1, '就绪', 'READY', 'ai_knowledge_index_status', '', 'success', 'Y', 103, 1, sysdate(), NULL, NULL, '索引就绪可用');
+INSERT INTO `sys_dict_data` VALUES (620221, '000000', 2, '重建中', 'REBUILDING', 'ai_knowledge_index_status', '', 'warning', 'N', 103, 1, sysdate(), NULL, NULL, '向量索引重建中');
+INSERT INTO `sys_dict_data` VALUES (620222, '000000', 3, '失败', 'FAILED', 'ai_knowledge_index_status', '', 'danger', 'N', 103, 1, sysdate(), NULL, NULL, '重建失败');
+INSERT INTO `sys_dict_data` VALUES (620230, '000000', 1, '点赞', 'LIKE', 'ai_message_feedback', '', 'primary', 'Y', 103, 1, sysdate(), NULL, NULL, '用户点赞');
+INSERT INTO `sys_dict_data` VALUES (620231, '000000', 2, '点踩', 'DISLIKE', 'ai_message_feedback', '', 'danger', 'N', 103, 1, sysdate(), NULL, NULL, '用户点踩');
+CREATE TABLE IF NOT EXISTS `sys_migration_log`  (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `script_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '脚本名',
+  `applied_at` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '执行时间',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_script_name`(`script_name`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'SQL迁移完成标记' ROW_FORMAT = DYNAMIC;
+
+-- 2026-08-28 AI 迁移标记: 本文件装的库语义已就位, 再执行 update 脚本时免做一次性翻转
+INSERT IGNORE INTO `sys_migration_log` (`script_name`) VALUES ('2026-08-28-ai-model-dictionary-provider-protocol-status-flip');
+INSERT IGNORE INTO `sys_migration_log` (`script_name`) VALUES ('2026-08-28-ai-model-dictionary-provider-protocol-sqlexample-status-flip');
 INSERT INTO `sys_dict_data` VALUES (600200, '000000', 1, '直连设备', 'DEVICE', 'product_type', '', 'primary', 'N', 103, 1, '2026-06-18 15:46:42', NULL, NULL, '直连设备');
 INSERT INTO `sys_dict_data` VALUES (600201, '000000', 2, '网关', 'GATEWAY', 'product_type', '', 'success', 'N', 103, 1, '2026-06-18 15:46:42', NULL, NULL, '网关设备');
 INSERT INTO `sys_dict_data` VALUES (600202, '000000', 1, 'MQTT', 'MQTT', 'iot_protocol_type', '', 'primary', 'N', 103, 1, '2026-06-18 15:46:42', NULL, NULL, 'MQTT协议');
@@ -14034,7 +14112,17 @@ INSERT INTO `sys_dict_type` VALUES (600101, '000000', 'AI 模型类型', 'ai_mod
 INSERT INTO `sys_dict_type` VALUES (600102, '000000', 'AI 消息角色', 'ai_message_role', 103, 1, '2026-06-09 14:00:00', NULL, NULL, 'AI 消息角色列表');
 INSERT INTO `sys_dict_type` VALUES (600103, '000000', 'AI 会话状态', 'ai_session_status', 103, 1, '2026-06-09 14:00:00', NULL, NULL, 'AI 会话状态列表');
 INSERT INTO `sys_dict_type` VALUES (600104, '000000', 'AI 工具类型', 'ai_tool_type', 103, 1, '2026-06-13 14:00:00', NULL, NULL, 'AI 工具类型列表');
-INSERT INTO `sys_dict_type` VALUES (600105, '000000', 'AI 工具状态', 'ai_tool_status', 103, 1, '2026-06-13 14:00:00', NULL, NULL, 'AI 工具状态列表');
+INSERT INTO `sys_dict_type` VALUES (620000, '000000', 'AI模型能力', 'ai_model_capability', 103, 1, sysdate(), NULL, NULL, '模型输入/输出能力(逗号分隔存储)');
+INSERT INTO `sys_dict_type` VALUES (620001, '000000', 'AI模型调用协议', 'ai_model_api_protocol', 103, 1, sysdate(), NULL, NULL, '模型调用协议类型(OpenAI兼容/官方原生)');
+INSERT INTO `sys_dict_type` VALUES (620002, '000000', 'AI模型币种', 'ai_model_currency', 103, 1, sysdate(), NULL, NULL, '模型计价币种');
+INSERT INTO `sys_dict_type` VALUES (620003, '000000', 'AI向量存储类型', 'ai_vector_store_type', 103, 1, sysdate(), NULL, NULL, '知识库向量存储后端');
+INSERT INTO `sys_dict_type` VALUES (620004, '000000', 'AI SQL示例分类', 'ai_sql_example_category', 103, 1, sysdate(), NULL, NULL, 'SQL Few-Shot 示例业务分类');
+INSERT INTO `sys_dict_type` VALUES (620005, '000000', 'AI AB测试状态', 'ai_ab_test_status', 103, 1, sysdate(), NULL, NULL, 'A/B 测试执行状态');
+INSERT INTO `sys_dict_type` VALUES (620006, '000000', 'AI知识库文档状态', 'ai_knowledge_document_status', 103, 1, sysdate(), NULL, NULL, '知识库文档解析状态');
+INSERT INTO `sys_dict_type` VALUES (620007, '000000', 'AI知识图谱状态', 'ai_knowledge_graph_status', 103, 1, sysdate(), NULL, NULL, '知识图谱构建状态');
+INSERT INTO `sys_dict_type` VALUES (620008, '000000', 'AI知识图谱抽取状态', 'ai_knowledge_extraction_status', 103, 1, sysdate(), NULL, NULL, '文档切片图谱抽取状态');
+INSERT INTO `sys_dict_type` VALUES (620009, '000000', 'AI知识库向量索引状态', 'ai_knowledge_index_status', 103, 1, sysdate(), NULL, NULL, '知识库向量索引状态(重建调度用)');
+INSERT INTO `sys_dict_type` VALUES (620010, '000000', 'AI对话消息反馈', 'ai_message_feedback', 103, 1, sysdate(), NULL, NULL, '对话消息用户反馈');
 INSERT INTO `sys_dict_type` VALUES (600106, '000000', '工序类别', 'bd_process_category', 103, 1, '2026-06-16 18:01:18', NULL, NULL, '工序类别: 加工/装配/检验/包装');
 INSERT INTO `sys_dict_type` VALUES (600107, '000000', 'BOM类型', 'bd_bom_type', 103, 1, '2026-06-16 18:01:18', NULL, NULL, 'BOM类型: 工程BOM/制造BOM/服务BOM/配置BOM');
 INSERT INTO `sys_dict_type` VALUES (600108, '000000', '替代料类型', 'bd_substitution_type', 103, 1, '2026-06-16 18:04:28', NULL, NULL, 'BOM替代料替代类型');
@@ -14870,6 +14958,7 @@ INSERT INTO `sys_menu` VALUES (1720, '模型查询', 1702, 1, '', '', '', 1, 0, 
 INSERT INTO `sys_menu` VALUES (1721, '模型新增', 1702, 2, '', '', '', 1, 0, 'F', '0', '0', 'ai:model:add', '#', 103, 1, '2026-06-09 14:00:00', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (1722, '模型修改', 1702, 3, '', '', '', 1, 0, 'F', '0', '0', 'ai:model:edit', '#', 103, 1, '2026-06-09 14:00:00', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (1723, '模型删除', 1702, 4, '', '', '', 1, 0, 'F', '0', '0', 'ai:model:remove', '#', 103, 1, '2026-06-09 14:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (1724, '模型测试', 1702, 5, '', '', '', 1, 0, 'F', '0', '0', 'ai:model:test', '#', 103, 1, sysdate(), NULL, NULL, '模型连通性测试');
 INSERT INTO `sys_menu` VALUES (1730, '厂商查询', 1703, 1, '', '', '', 1, 0, 'F', '0', '0', 'ai:provider:query', '#', 103, 1, '2026-06-09 14:00:00', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (1731, '厂商新增', 1703, 2, '', '', '', 1, 0, 'F', '0', '0', 'ai:provider:add', '#', 103, 1, '2026-06-09 14:00:00', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (1732, '厂商修改', 1703, 3, '', '', '', 1, 0, 'F', '0', '0', 'ai:provider:edit', '#', 103, 1, '2026-06-09 14:00:00', NULL, NULL, '');
@@ -14878,6 +14967,7 @@ INSERT INTO `sys_menu` VALUES (1740, '知识库查询', 1704, 1, '', '', '', 1, 
 INSERT INTO `sys_menu` VALUES (1741, '知识库新增', 1704, 2, '', '', '', 1, 0, 'F', '0', '0', 'ai:knowledge:add', '#', 103, 1, '2026-06-09 14:00:00', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (1742, '知识库修改', 1704, 3, '', '', '', 1, 0, 'F', '0', '0', 'ai:knowledge:edit', '#', 103, 1, '2026-06-09 14:00:00', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (1743, '知识库删除', 1704, 4, '', '', '', 1, 0, 'F', '0', '0', 'ai:knowledge:remove', '#', 103, 1, '2026-06-09 14:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (1744, '重建向量索引', 1704, 5, '', '', '', 1, 0, 'F', '0', '0', 'ai:knowledge:rebuild', '#', 103, 1, sysdate(), NULL, NULL, '知识库向量索引重建');
 INSERT INTO `sys_menu` VALUES (1750, '工具查询', 1705, 1, '', '', '', 1, 0, 'F', '0', '0', 'ai:mcp:query', '#', 103, 1, '2026-06-13 14:00:00', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (1751, '工具新增', 1705, 2, '', '', '', 1, 0, 'F', '0', '0', 'ai:mcp:add', '#', 103, 1, '2026-06-13 14:00:00', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (1752, '工具修改', 1705, 3, '', '', '', 1, 0, 'F', '0', '0', 'ai:mcp:edit', '#', 103, 1, '2026-06-13 14:00:00', NULL, NULL, '');
@@ -18389,6 +18479,7 @@ INSERT INTO `sys_role_menu` VALUES (3, 1720);
 INSERT INTO `sys_role_menu` VALUES (3, 1721);
 INSERT INTO `sys_role_menu` VALUES (3, 1722);
 INSERT INTO `sys_role_menu` VALUES (3, 1723);
+INSERT INTO `sys_role_menu` VALUES (3, 1724);
 INSERT INTO `sys_role_menu` VALUES (3, 1730);
 INSERT INTO `sys_role_menu` VALUES (3, 1731);
 INSERT INTO `sys_role_menu` VALUES (3, 1732);
@@ -18397,6 +18488,7 @@ INSERT INTO `sys_role_menu` VALUES (3, 1740);
 INSERT INTO `sys_role_menu` VALUES (3, 1741);
 INSERT INTO `sys_role_menu` VALUES (3, 1742);
 INSERT INTO `sys_role_menu` VALUES (3, 1743);
+INSERT INTO `sys_role_menu` VALUES (3, 1744);
 INSERT INTO `sys_role_menu` VALUES (3, 1750);
 INSERT INTO `sys_role_menu` VALUES (3, 1751);
 INSERT INTO `sys_role_menu` VALUES (3, 1752);
