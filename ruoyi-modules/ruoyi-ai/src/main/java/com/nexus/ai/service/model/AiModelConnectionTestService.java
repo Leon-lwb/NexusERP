@@ -25,6 +25,7 @@ import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.embedding.EmbeddingModel;
 import lombok.extern.slf4j.Slf4j;
 import org.jasypt.encryption.StringEncryptor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
@@ -106,7 +107,9 @@ public class AiModelConnectionTestService {
     /**
      * Spring 装配构造器：注入协议策略注册表 Bean，用真实协议工厂装配四个默认操作实现，
      * 走连接测试专用线程池（与 aiExecutor 隔离，防止慢上游占满生产线程）
+     * <p>类中并存包级可见的测试构造器，多构造器场景需 @Autowired 显式指定装配入口。</p>
      */
+    @Autowired
     public AiModelConnectionTestService(AiProviderMapper aiProviderMapper,
                                         StringEncryptor stringEncryptor,
                                         AiProviderPolicyRegistry policyRegistry,
