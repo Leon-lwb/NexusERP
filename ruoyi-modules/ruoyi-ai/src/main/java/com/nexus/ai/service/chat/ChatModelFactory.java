@@ -15,9 +15,10 @@ import org.springframework.stereotype.Component;
 import java.util.concurrent.TimeUnit;
 
 /**
- * AI 模型工厂（带缓存 + 厂商策略路由）
+ * AI 模型工厂（带缓存 + 协议策略路由）
  * <p>根据数据库配置动态构建 ChatModel 和 StreamingChatModel，构建逻辑委托给
- * {@link ChatServiceProviderFactory}（按 providerType 路由到对应厂商策略实现）</p>
+ * {@link ChatServiceProviderFactory}（按 apiProtocol 路由到对应协议策略实现，
+ * 协议缺失的存量配置按厂商默认协议推断）</p>
  * <p>缓存职责：
  * <ul>
  *   <li>同步模型按 modelId 缓存</li>
@@ -35,7 +36,7 @@ public class ChatModelFactory {
 
     /** AI 模型业务服务，按 ID/名称加载模型配置。 */
     private final IAiModelService aiModelService;
-    /** 厂商策略工厂，按 providerType 路由到对应构建实现。 */
+    /** 协议策略工厂，按 apiProtocol（缺省按厂商默认协议）路由到对应构建实现。 */
     private final ChatServiceProviderFactory providerFactory;
 
     /** 同步模型缓存（key = modelId）。有界 + 1h 访问过期，防止模型实例（持 OkHttp 连接池/线程）无限堆积。 */
@@ -71,7 +72,7 @@ public class ChatModelFactory {
             if (config == null) {
                 throw new IllegalArgumentException("未找到模型配置，modelId=" + id);
             }
-            return providerFactory.get(config.getProviderType()).buildChatModel(config, defaultTemperature(config));
+            return providerFactory.get(config).buildChatModel(config, defaultTemperature(config));
         });
     }
 
@@ -85,13 +86,15 @@ public class ChatModelFactory {
      */
     public StreamingChatModel getStreamingChatModel(Long modelId, AiChatRequest request) {
         boolean thinking = request != null && Boolean.TRUE.equals(request.getEnableThinking());
-        String key = modelId + ":" + (thinking ? "T" : "F");
+        // maxOutputTokens 参与缓存 key：请求级输出封顶会体现在构建出的实例上，混用会串限
+        Integer maxTokens = request != null ? request.getMaxOutputTokens() : null;
+        String key = modelId + ":" + (thinking ? "T" : "F") + (maxTokens == null ? "" : ":M" + maxTokens);
         return streamingModelCache.get(key, k -> {
             AiModel config = aiModelService.selectModelById(modelId);
             if (config == null) {
                 throw new IllegalArgumentException("未找到模型配置，modelId=" + modelId);
             }
-            return providerFactory.get(config.getProviderType()).buildStreamingChatModel(config, request);
+            return providerFactory.get(config).buildStreamingChatModel(config, request);
         });
     }
 
@@ -117,7 +120,7 @@ public class ChatModelFactory {
             if (config == null) {
                 throw new IllegalArgumentException("未找到模型配置，modelId=" + id);
             }
-            return providerFactory.get(config.getProviderType()).buildChatModel(config, AGENT_TEMPERATURE);
+            return providerFactory.get(config).buildChatModel(config, AGENT_TEMPERATURE);
         });
     }
 

@@ -1,5 +1,6 @@
 package com.nexus.ai.config;
 
+import com.nexus.ai.mcp.AiToolStatusContract;
 import com.nexus.common.ai.domain.entity.AiPromptTemplate;
 import com.nexus.common.ai.mapper.AiPromptTemplateMapper;
 import com.nexus.common.core.utils.StringUtils;
@@ -103,9 +104,9 @@ public class AiPromptTemplateInitializer implements ApplicationRunner {
         template.setTemplateKey(templateKey);
         template.setContent(content);
         template.setDescription(description);
-        template.setIsDefault("1");
+        template.setIsDefault(AiToolStatusContract.DEFAULT_YES);
         template.setVersion(1);
-        template.setStatus("1");
+        template.setStatus(AiToolStatusContract.ACTIVE);
         promptTemplateMapper.insert(template);
         log.info("[PromptTemplate] 已初始化默认模板: {}", templateKey);
     }

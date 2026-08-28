@@ -1,5 +1,6 @@
 package com.nexus.ai.service.chat.provider;
 
+import com.nexus.ai.service.model.AiProviderPolicyRegistry;
 import com.nexus.common.ai.domain.entity.AiModel;
 import com.nexus.common.ai.dto.AiChatRequest;
 import dev.langchain4j.community.model.dashscope.QwenChatModel;
@@ -13,7 +14,7 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 /**
- * 阿里 DashScope（通义千问）厂商策略 —— 原生 SDK
+ * 阿里 DashScope（通义千问）协议策略（DASHSCOPE_NATIVE）—— 原生 SDK
  * <p>使用 langchain4j-community-dashscope 的 QwenStreamingChatModel / QwenChatModel</p>
  * <p>原生 SDK 不支持 returnThinking，推理模式对该厂商无效（{@link #supportsThinking()} 返回 false）</p>
  *
@@ -27,8 +28,8 @@ public class DashScopeServiceProvider implements ChatServiceProvider {
     private final List<ChatModelListener> chatModelListeners;
 
     @Override
-    public String getProviderType() {
-        return "DASHSCOPE";
+    public String getProtocol() {
+        return AiProviderPolicyRegistry.DASHSCOPE_NATIVE;
     }
 
     @Override
@@ -50,6 +51,9 @@ public class DashScopeServiceProvider implements ChatServiceProvider {
 
     @Override
     public ChatModel buildChatModel(AiModel config, double temperature) {
+        // 注意：QwenChatModelBuilder 未提供 timeout 选项（langchain4j-community-dashscope
+        // 1.18.0-beta28），超时由其内部 HTTP 客户端默认值决定；与
+        // AbstractOpenAiCompatibleProvider 的 180s 显式超时不同，此处无法配置
         return QwenChatModel.builder()
             .apiKey(config.getApiKey())
             .modelName(config.getModelName())

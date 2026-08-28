@@ -35,6 +35,6 @@ public class AiProvider extends BaseEntity {
     /** 厂商类型: OPENAI/DASHSCOPE/ZHIPU/OLLAMA */
     private String providerType;
 
-    /** 状态（1正常 0停用） */
+    /** 状态（0启用 1停用，字典 sys_normal_disable） */
     private String status;
 }

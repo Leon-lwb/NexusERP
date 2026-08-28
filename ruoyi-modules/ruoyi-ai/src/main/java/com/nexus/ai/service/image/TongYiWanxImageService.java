@@ -4,6 +4,7 @@ import cn.hutool.core.io.IoUtil;
 import com.alibaba.dashscope.aigc.imagesynthesis.ImageSynthesis;
 import com.alibaba.dashscope.aigc.imagesynthesis.ImageSynthesisParam;
 import com.alibaba.dashscope.aigc.imagesynthesis.ImageSynthesisResult;
+import com.nexus.ai.service.model.AiModelConnectionTestService;
 import com.nexus.common.ai.domain.dto.image.ImageContext;
 import com.nexus.common.ai.service.image.IImageGenerationService;
 import com.nexus.common.oss.core.OssClient;
@@ -53,6 +54,38 @@ public class TongYiWanxImageService implements IImageGenerationService {
     @Override
     public String getProviderName() {
         return "Tongyiwanx";
+    }
+
+    /**
+     * 连接测试：与生成相同的上游请求链路，校验厂商返回后立即丢弃产物
+     * <p>不下载图片、不调 persistToOss、不写历史记录（由模型连接测试服务负责计费二次确认）。</p>
+     */
+    @Override
+    public void testConnection(ImageContext ctx) {
+        try {
+            ImageSynthesisParam param = ImageSynthesisParam.builder()
+                .apiKey(ctx.getModelConfig().getApiKey())
+                .model(ctx.getModelConfig().getModelName())
+                .prompt(ctx.getPrompt() != null ? ctx.getPrompt() : "连接测试")
+                .size(ctx.getSize() != null ? ctx.getSize() : "512*512")
+                .n(1)
+                .build();
+
+            ImageSynthesisResult result = new ImageSynthesis().call(param);
+            if (result == null || result.getOutput() == null
+                || result.getOutput().getResults() == null
+                || result.getOutput().getResults().isEmpty()) {
+                throw new IllegalStateException("厂商未返回生成结果");
+            }
+            // 校验通过即成功：URL 直接丢弃（有计费但最小化，产物不落任何存储）
+            log.info("[文生图] 连接测试成功: model={}", ctx.getModelConfig().getModelName());
+        } catch (Exception e) {
+            // 日志纪律与模型连接测试服务一致：只记异常类型 + 脱敏后的错误信息，不打全量堆栈
+            log.warn("[文生图] 连接测试失败: model={}, error={}: {}",
+                ctx.getModelConfig().getModelName(), e.getClass().getSimpleName(),
+                AiModelConnectionTestService.sanitize(e.getMessage(), ctx.getModelConfig().getApiKey()));
+            throw new RuntimeException("图片生成连接测试失败: " + e.getMessage(), e);
+        }
     }
 
     /**

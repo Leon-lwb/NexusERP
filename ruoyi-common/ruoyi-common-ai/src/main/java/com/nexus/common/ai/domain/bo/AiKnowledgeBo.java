@@ -8,6 +8,8 @@ import lombok.NoArgsConstructor;
 import com.nexus.common.mybatis.core.domain.BaseEntity;
 import com.nexus.common.ai.domain.entity.AiKnowledge;
 
+import java.util.Date;
+
 /**
  * AI知识库业务对象
  * <p>用于知识库的新增/修改操作参数接收</p>
@@ -36,6 +38,21 @@ public class AiKnowledgeBo extends BaseEntity {
 
     /** 向量存储类型 */
     private String vectorStore;
+
+    /** 向量索引状态（READY 就绪 / REBUILDING 重建中 / FAILED 失败，字典 ai_knowledge_index_status；系统列，客户端写入会被剥离） */
+    private String vectorIndexStatus;
+
+    /** 向量索引构建进度（0-100） */
+    private Integer vectorIndexProgress;
+
+    /** 向量索引构建错误信息 */
+    private String vectorIndexError;
+
+    /** 向量索引更新时间 */
+    private Date vectorIndexUpdatedTime;
+
+    /** 是否重建向量索引（仅请求标记，不落库） */
+    private Boolean rebuildIndex = false;
 
     /** 状态 */
     private String status;

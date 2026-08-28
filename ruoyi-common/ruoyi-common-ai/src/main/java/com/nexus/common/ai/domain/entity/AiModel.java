@@ -38,16 +38,31 @@ public class AiModel extends BaseEntity {
     /** 类型: CHAT/EMBEDDING/RERANK */
     private String modelType;
 
+    /** 上下文窗口大小（Token 数） */
+    private Integer contextWindow;
+
+    /** 输入能力（逗号分隔，字典 ai_model_capability，如 TEXT,IMAGE） */
+    private String inputCapabilities;
+
+    /** 输出能力（逗号分隔，字典 ai_model_capability，如 TEXT,VECTOR） */
+    private String outputCapabilities;
+
+    /** API 协议（字典 ai_model_api_protocol，NULL 表示由厂商类型推断） */
+    private String apiProtocol;
+
+    /** 向量维度（仅 EMBEDDING 模型使用） */
+    private Integer embeddingDimension;
+
     /** 最大输出 Token */
     private Integer maxTokens;
 
     /** 温度参数 */
     private BigDecimal temperature;
 
-    /** 是否默认模型（1是 0否） */
+    /** 是否默认模型（Y是 N否，字典 sys_yes_no） */
     private String isDefault;
 
-    /** 状态（1正常 0停用） */
+    /** 状态（0启用 1停用，字典 sys_normal_disable） */
     private String status;
 
     /** 输入价格（元/百万Token） */

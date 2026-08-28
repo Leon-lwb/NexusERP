@@ -12,6 +12,7 @@ import com.nexus.common.ai.domain.entity.AiModel;
 import com.nexus.common.ai.mapper.AiKnowledgeChunkMapper;
 import com.nexus.common.ai.service.IAiKnowledgeService;
 import com.nexus.common.ai.service.IAiModelService;
+import com.nexus.common.core.exception.ServiceException;
 import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.store.embedding.EmbeddingMatch;
 import lombok.RequiredArgsConstructor;
@@ -69,6 +70,9 @@ public class RetrieverService {
     /**
      * 检索与查询相关的知识片段（指定知识库，支持参数覆盖）
      * <p>用于检索测试面板，允许临时覆盖知识库配置参数</p>
+     * <p>入口门：向量索引非 READY（REBUILDING/FAILED）的知识库直接拒绝检索——
+     * 该入口同时承接对话 RAG（{@code AiServiceFacade.augmentPrompt}）与
+     * 检索测试面板（{@code AiKnowledgeController.retrieval}）。</p>
      *
      * @param knowledgeId 知识库ID
      * @param query       查询文本
@@ -77,6 +81,7 @@ public class RetrieverService {
      */
     public List<String> retrieve(Long knowledgeId, String query, java.util.Map<String, Object> overrides) {
         AiKnowledge config = getKnowledgeConfig(knowledgeId);
+        assertIndexReady(config);
 
         // 应用参数覆盖
         if (overrides != null) {
@@ -342,7 +347,22 @@ public class RetrieverService {
         config.setEnableHybrid(vo.getEnableHybrid());
         config.setHybridAlpha(vo.getHybridAlpha());
         config.setEmbeddingModel(vo.getEmbeddingModel());
+        config.setVectorIndexStatus(vo.getVectorIndexStatus());
         return config;
+    }
+
+    /**
+     * 索引状态门：向量索引非 READY（REBUILDING/FAILED）的知识库拒绝检索
+     * <p>状态为 null 的存量行按 READY 放行（列默认值 READY，迁移前数据宽容处理）。</p>
+     *
+     * @param config 知识库配置（含 vectorIndexStatus）
+     * @throws ServiceException 索引正在重建或重建失败时抛出
+     */
+    private void assertIndexReady(AiKnowledge config) {
+        String indexStatus = config.getVectorIndexStatus();
+        if (indexStatus != null && !KnowledgeIndexRebuildService.STATUS_READY.equals(indexStatus)) {
+            throw new ServiceException("知识库索引正在重建或重建失败，请完成重建后再检索");
+        }
     }
 
     /**

@@ -28,7 +28,7 @@ public class AiSqlExampleBo extends BaseEntity {
     @NotBlank(message = "SQL模板不能为空")
     private String sqlTemplate;
 
-    /** 业务分类 */
+    /** 业务分类（字典 ai_sql_example_category，如 SUBMISSION/REVIEW/GENERAL） */
     @NotBlank(message = "业务分类不能为空")
     private String category;
 
@@ -38,6 +38,6 @@ public class AiSqlExampleBo extends BaseEntity {
     /** 排序号 */
     private Integer sortOrder;
 
-    /** 状态（1正常 0停用） */
+    /** 状态（0启用 1停用，字典 sys_normal_disable） */
     private String status;
 }

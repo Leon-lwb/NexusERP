@@ -73,7 +73,7 @@ public class ToolProviderFactory {
 
     /**
      * 按工具 ID 列表获取 MCP 工具 Provider
-     * <p>用于会话级工具选择，仅返回指定 ID 且状态为 ENABLED 的 MCP 外部工具</p>
+     * <p>用于会话级工具选择，仅返回指定 ID 且状态为启用（0，字典 sys_normal_disable）的 MCP 外部工具</p>
      *
      * @param toolIds 工具 ID 列表
      * @return MCP ToolProvider，无匹配时返回 null

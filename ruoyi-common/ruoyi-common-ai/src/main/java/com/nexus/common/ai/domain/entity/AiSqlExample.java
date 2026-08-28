@@ -30,7 +30,7 @@ public class AiSqlExample extends BaseEntity {
     /** SQL 模板（可含 {{variable}} 占位符） */
     private String sqlTemplate;
 
-    /** 业务分类：INVENTORY/SALES/PURCHASE/PRODUCTION/GENERAL */
+    /** 业务分类（字典 ai_sql_example_category：SUBMISSION/REVIEW/GENERAL 在用，INVENTORY/SALES/PURCHASE/PRODUCTION 为 ERP 时期历史留档） */
     private String category;
 
     /** 描述 */
@@ -39,6 +39,6 @@ public class AiSqlExample extends BaseEntity {
     /** 排序号 */
     private Integer sortOrder;
 
-    /** 状态（1正常 0停用） */
+    /** 状态（0启用 1停用，字典 sys_normal_disable） */
     private String status;
 }

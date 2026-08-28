@@ -1,6 +1,7 @@
 package com.nexus.ai.tool;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.nexus.ai.mcp.AiToolStatusContract;
 import com.nexus.common.ai.domain.entity.AiTool;
 import com.nexus.common.ai.mapper.AiToolMapper;
 import jakarta.annotation.PostConstruct;
@@ -90,7 +91,7 @@ public class BuiltinToolRegistry {
     /**
      * 获取所有已启用的内置工具对象
      * <p>
-     * 根据 ai_tool 表的 status 字段过滤，只返回 ENABLED 状态的工具 Bean 实例。
+     * 根据 ai_tool 表的 status 字段过滤，只返回启用状态（0，字典 sys_normal_disable）的工具 Bean 实例。
      * 这些对象包含 @Tool 注解的方法，可直接用于 AgenticServices.tools()。
      * </p>
      *
@@ -101,7 +102,7 @@ public class BuiltinToolRegistry {
         List<AiTool> enabledTools = aiToolMapper.selectList(
             new LambdaQueryWrapper<AiTool>()
                 .eq(AiTool::getToolType, TYPE_BUILTIN)
-                .eq(AiTool::getStatus, "ENABLED")
+                .eq(AiTool::getStatus, AiToolStatusContract.ACTIVE)
         );
 
         List<Object> toolObjects = new ArrayList<>();
@@ -138,7 +139,7 @@ public class BuiltinToolRegistry {
         List<AiTool> enabledTools = aiToolMapper.selectList(
             new LambdaQueryWrapper<AiTool>()
                 .eq(AiTool::getToolType, TYPE_BUILTIN)
-                .eq(AiTool::getStatus, "ENABLED")
+                .eq(AiTool::getStatus, AiToolStatusContract.ACTIVE)
         );
 
         List<Object> toolObjects = new ArrayList<>();

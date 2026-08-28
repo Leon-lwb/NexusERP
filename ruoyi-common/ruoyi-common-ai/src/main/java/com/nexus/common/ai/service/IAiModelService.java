@@ -33,10 +33,18 @@ public interface IAiModelService {
 
     /**
      * 查询默认模型配置（含厂商信息）
+     * <p>文本(TEXT)默认优先，无则回退视觉(VISION)默认（视觉模型可对话）</p>
      *
      * @return 默认模型配置
      */
     AiModel selectDefaultModel();
+
+    /**
+     * 查询默认视觉模型配置（含厂商信息）
+     *
+     * @return 默认视觉(VISION)模型配置，无则 null
+     */
+    AiModel selectDefaultVisionModel();
 
     /**
      * 分页查询模型列表
@@ -88,7 +96,8 @@ public interface IAiModelService {
     AiModelVo selectById(Long id);
 
     /**
-     * 设置默认模型（先取消其他默认，再设置当前为默认）
+     * 设置默认模型（先取消同类型其他默认，再设置当前为默认）
+     * <p>默认标记语义：is_default Y=默认 / N=非默认（字典 sys_yes_no）</p>
      *
      * @param id 模型ID
      * @return 影响行数

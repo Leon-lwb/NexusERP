@@ -2,6 +2,7 @@ package com.nexus.ai.mcp.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nexus.ai.mcp.AiToolStatusContract;
 import com.nexus.ai.tool.BuiltinToolRegistry;
 import com.nexus.common.ai.domain.entity.AiTool;
 import com.nexus.common.ai.mapper.AiToolMapper;
@@ -65,7 +66,7 @@ public class McpClientManager {
     public ToolProvider getAllEnabledToolProviders() {
         List<AiTool> enabledTools = aiToolMapper.selectList(
             new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<AiTool>()
-                .eq(AiTool::getStatus, "ENABLED")
+                .eq(AiTool::getStatus, AiToolStatusContract.ACTIVE)
                 .ne(AiTool::getToolType, BuiltinToolRegistry.TYPE_BUILTIN)
         );
 
@@ -109,7 +110,7 @@ public class McpClientManager {
         List<AiTool> tools = aiToolMapper.selectList(
             new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<AiTool>()
                 .in(AiTool::getToolName, toolNames)
-                .eq(AiTool::getStatus, "ENABLED")
+                .eq(AiTool::getStatus, AiToolStatusContract.ACTIVE)
                 .ne(AiTool::getToolType, BuiltinToolRegistry.TYPE_BUILTIN)
         );
 
@@ -118,7 +119,7 @@ public class McpClientManager {
 
     /**
      * 按工具 ID 列表获取 MCP 工具 Provider
-     * <p>仅返回指定 ID 且状态为 ENABLED 的 MCP 外部工具</p>
+     * <p>仅返回指定 ID 且状态为启用（0，字典 sys_normal_disable）的 MCP 外部工具</p>
      * <p>当没有可用的 MCP 客户端时返回 null</p>
      *
      * @param toolIds 工具 ID 列表
@@ -132,7 +133,7 @@ public class McpClientManager {
         List<AiTool> tools = aiToolMapper.selectList(
             new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<AiTool>()
                 .in(AiTool::getId, toolIds)
-                .eq(AiTool::getStatus, "ENABLED")
+                .eq(AiTool::getStatus, AiToolStatusContract.ACTIVE)
                 .ne(AiTool::getToolType, BuiltinToolRegistry.TYPE_BUILTIN)
         );
 
@@ -198,7 +199,7 @@ public class McpClientManager {
             }
 
             AiTool tool = aiToolMapper.selectById(toolId);
-            if (tool == null || !"ENABLED".equals(tool.getStatus())) {
+            if (tool == null || !AiToolStatusContract.ACTIVE.equals(tool.getStatus())) {
                 closeQuietly(cachedClient);
                 activeClients.remove(toolId);
                 return null;
@@ -232,7 +233,7 @@ public class McpClientManager {
      */
     public boolean checkToolHealth(Long toolId) {
         AiTool tool = aiToolMapper.selectById(toolId);
-        if (tool == null || !"ENABLED".equals(tool.getStatus())) {
+        if (tool == null || !AiToolStatusContract.ACTIVE.equals(tool.getStatus())) {
             return false;
         }
 

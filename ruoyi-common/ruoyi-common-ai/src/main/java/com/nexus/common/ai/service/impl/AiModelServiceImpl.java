@@ -9,7 +9,11 @@ import com.nexus.common.ai.domain.entity.AiProvider;
 import com.nexus.common.ai.domain.vo.AiModelVo;
 import com.nexus.common.ai.mapper.AiModelMapper;
 import com.nexus.common.ai.mapper.AiProviderMapper;
+import com.nexus.common.ai.enums.AiModelCapabilityEnum;
+import com.nexus.common.ai.enums.AiModelTypeEnum;
+import com.nexus.common.ai.service.AiApiKeyDecryptor;
 import com.nexus.common.ai.service.IAiModelService;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.MapstructUtils;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
@@ -41,7 +45,7 @@ public class AiModelServiceImpl implements IAiModelService {
         AiModel model = baseMapper.selectOne(
             new LambdaQueryWrapper<AiModel>()
                 .eq(AiModel::getModelName, modelName)
-                .eq(AiModel::getStatus, "1")
+                .eq(AiModel::getStatus, AiModelConfigurationContract.ACTIVE)
         );
         if (model != null) {
             fillProviderInfo(model);
@@ -60,25 +64,33 @@ public class AiModelServiceImpl implements IAiModelService {
 
     @Override
     public AiModel selectDefaultModel() {
-        AiModel model = baseMapper.selectOne(
-            new LambdaQueryWrapper<AiModel>()
-                .eq(AiModel::getModelType, "CHAT")
-                .eq(AiModel::getIsDefault, "1")
-                .eq(AiModel::getStatus, "1")
-        );
-        if (model != null) {
-            fillProviderInfo(model);
+        // 文本默认优先；无文本默认时回退视觉默认（视觉模型可对话，是文本能力超集）
+        AiModel model = selectDefaultByType(AiModelTypeEnum.TEXT.getCode());
+        if (model == null) {
+            model = selectDefaultByType(AiModelTypeEnum.VISION.getCode());
         }
         return model;
     }
 
     @Override
+    public AiModel selectDefaultVisionModel() {
+        return selectDefaultByType(AiModelTypeEnum.VISION.getCode());
+    }
+
+    @Override
     public AiModel selectDefaultImageModel() {
+        return selectDefaultByType(AiModelTypeEnum.IMAGE.getCode());
+    }
+
+    /**
+     * 按类型取默认启用模型（含厂商信息）
+     */
+    private AiModel selectDefaultByType(String modelType) {
         AiModel model = baseMapper.selectOne(
             new LambdaQueryWrapper<AiModel>()
-                .eq(AiModel::getModelType, "IMAGE")
-                .eq(AiModel::getIsDefault, "1")
-                .eq(AiModel::getStatus, "1")
+                .eq(AiModel::getModelType, modelType)
+                .eq(AiModel::getIsDefault, AiModelConfigurationContract.DEFAULT_YES)
+                .eq(AiModel::getStatus, AiModelConfigurationContract.ACTIVE)
         );
         if (model != null) {
             fillProviderInfo(model);
@@ -104,6 +116,7 @@ public class AiModelServiceImpl implements IAiModelService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(AiModelBo bo) {
+        normalizeAndValidate(bo);
         AiModel entity = MapstructUtils.convert(bo, AiModel.class);
         return baseMapper.insert(entity);
     }
@@ -111,6 +124,7 @@ public class AiModelServiceImpl implements IAiModelService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(AiModelBo bo) {
+        normalizeAndValidate(bo);
         AiModel entity = MapstructUtils.convert(bo, AiModel.class);
         int rows = baseMapper.updateById(entity);
         if (rows > 0 && entity.getId() != null) {
@@ -150,14 +164,14 @@ public class AiModelServiceImpl implements IAiModelService {
         }
         String modelType = target.getModelType();
         AiModel unset = new AiModel();
-        unset.setIsDefault("0");
+        unset.setIsDefault(AiModelConfigurationContract.DEFAULT_NO);
         baseMapper.update(unset, new LambdaQueryWrapper<AiModel>()
             .eq(AiModel::getModelType, modelType)
-            .eq(AiModel::getIsDefault, "1"));
+            .eq(AiModel::getIsDefault, AiModelConfigurationContract.DEFAULT_YES));
         // 设置目标模型为默认
         AiModel set = new AiModel();
         set.setId(id);
-        set.setIsDefault("1");
+        set.setIsDefault(AiModelConfigurationContract.DEFAULT_YES);
         int rows = baseMapper.updateById(set);
         if (rows > 0) {
             eventPublisher.publishEvent(new AiModelChangeEvent(this, id));
@@ -172,9 +186,9 @@ public class AiModelServiceImpl implements IAiModelService {
     public AiModel selectDefaultEmbeddingModel() {
         AiModel model = baseMapper.selectOne(
             new LambdaQueryWrapper<AiModel>()
-                .eq(AiModel::getModelType, "EMBEDDING")
-                .eq(AiModel::getIsDefault, "1")
-                .eq(AiModel::getStatus, "1")
+                .eq(AiModel::getModelType, AiModelTypeEnum.EMBEDDING.getCode())
+                .eq(AiModel::getIsDefault, AiModelConfigurationContract.DEFAULT_YES)
+                .eq(AiModel::getStatus, AiModelConfigurationContract.ACTIVE)
         );
         if (model != null) {
             fillProviderInfo(model);
@@ -191,11 +205,65 @@ public class AiModelServiceImpl implements IAiModelService {
     private LambdaQueryWrapper<AiModel> buildQueryWrapper(AiModelBo bo) {
         LambdaQueryWrapper<AiModel> lqw = Wrappers.lambdaQuery();
         lqw.like(StringUtils.isNotBlank(bo.getModelName()), AiModel::getModelName, bo.getModelName());
-        lqw.eq(StringUtils.isNotBlank(bo.getModelType()), AiModel::getModelType, bo.getModelType());
+        // modelType 支持逗号分隔多类型（如聊天选择器传 TEXT,VISION），单值仍走 eq
+        if (StringUtils.isNotBlank(bo.getModelType())) {
+            if (bo.getModelType().contains(",")) {
+                List<String> types = StringUtils.splitList(bo.getModelType(), ",");
+                lqw.in(AiModel::getModelType, types);
+            } else {
+                lqw.eq(AiModel::getModelType, bo.getModelType());
+            }
+        }
         lqw.eq(bo.getProviderId() != null, AiModel::getProviderId, bo.getProviderId());
         lqw.eq(StringUtils.isNotBlank(bo.getIsDefault()), AiModel::getIsDefault, bo.getIsDefault());
         lqw.eq(StringUtils.isNotBlank(bo.getStatus()), AiModel::getStatus, bo.getStatus());
+        // 能力列（逗号分隔 CSV）过滤：走跨方言可移植的 find_in_set 表达式。
+        // 注意用 if 守卫而非 apply(condition, expr)：apply 的表达式参数会被无条件求值，
+        // 空筛选时会白白触发一次数据库方言探测
+        if (StringUtils.isNotBlank(bo.getRequiredInputCapability())) {
+            validateCapabilityFilter(bo.getRequiredInputCapability());
+            lqw.apply(AiModelConfigurationContract.capabilityExpression(bo.getRequiredInputCapability(), "input_capabilities"));
+        }
+        if (StringUtils.isNotBlank(bo.getRequiredOutputCapability())) {
+            validateCapabilityFilter(bo.getRequiredOutputCapability());
+            lqw.apply(AiModelConfigurationContract.capabilityExpression(bo.getRequiredOutputCapability(), "output_capabilities"));
+        }
         return lqw;
+    }
+
+    /**
+     * 校验能力筛选参数
+     * <p>能力筛选仅允许单个合法能力码（字典 ai_model_capability，如 TEXT）；
+     * 未知值与逗号多值直接拒绝，防止请求参数原样拼入 find_in_set 表达式
+     * 造成 SQL 语法错误（500）。</p>
+     *
+     * @param capability 能力筛选值
+     */
+    private void validateCapabilityFilter(String capability) {
+        if (!AiModelCapabilityEnum.isKnown(capability)) {
+            throw new ServiceException("非法的模型能力参数: " + capability);
+        }
+    }
+
+    /**
+     * 落库前规范化能力串并校验参数约束
+     * <p>能力串按枚举声明顺序去重规范化（如 "image,text" → "TEXT,IMAGE"，空值原样保留），
+     * 未知能力值直接拒绝；maxTokens 不允许超过 contextWindow。</p>
+     *
+     * @param bo 模型业务对象
+     */
+    private void normalizeAndValidate(AiModelBo bo) {
+        try {
+            bo.setInputCapabilities(AiModelCapabilityEnum.canonicalize(bo.getInputCapabilities()));
+            bo.setOutputCapabilities(AiModelCapabilityEnum.canonicalize(bo.getOutputCapabilities()));
+        } catch (IllegalArgumentException e) {
+            throw new ServiceException(e.getMessage());
+        }
+        if (bo.getMaxTokens() != null && bo.getContextWindow() != null
+            && bo.getMaxTokens() > bo.getContextWindow()) {
+            throw new ServiceException("最大输出 Token（" + bo.getMaxTokens()
+                + "）不能超过上下文窗口（" + bo.getContextWindow() + "）");
+        }
     }
 
     /**
@@ -207,7 +275,7 @@ public class AiModelServiceImpl implements IAiModelService {
         AiProvider provider = aiProviderMapper.selectById(model.getProviderId());
         if (provider != null) {
             model.setApiHost(provider.getApiHost());
-            model.setApiKey(decryptApiKey(provider.getApiKey()));
+            model.setApiKey(AiApiKeyDecryptor.decrypt(stringEncryptor, provider.getApiKey()));
             model.setProviderType(provider.getProviderType());
         }
     }
@@ -259,25 +327,6 @@ public class AiModelServiceImpl implements IAiModelService {
 
         public Long getModelId() {
             return modelId;
-        }
-    }
-
-    /**
-     * 解密 API Key（Jasypt）
-     * <p>数据库中存储的是 Jasypt 加密后的密文，构建 ChatModel 时需要明文</p>
-     *
-     * @param encryptedApiKey 加密的 API Key
-     * @return 解密后的 API Key
-     */
-    private String decryptApiKey(String encryptedApiKey) {
-        if (encryptedApiKey == null || encryptedApiKey.isEmpty()) {
-            return encryptedApiKey;
-        }
-        try {
-            return stringEncryptor.decrypt(encryptedApiKey);
-        } catch (Exception e) {
-            // 如果解密失败，说明可能是明文（兼容旧数据）
-            return encryptedApiKey;
         }
     }
 }

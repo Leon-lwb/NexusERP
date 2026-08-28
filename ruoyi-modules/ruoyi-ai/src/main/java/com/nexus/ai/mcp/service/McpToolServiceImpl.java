@@ -1,11 +1,13 @@
 package com.nexus.ai.mcp.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.nexus.ai.mcp.AiToolStatusContract;
 import com.nexus.ai.tool.BuiltinToolProvider;
 import com.nexus.ai.tool.BuiltinToolRegistry;
 import com.nexus.ai.domain.dto.McpToolTestResult;
 import com.nexus.common.ai.domain.entity.AiTool;
 import com.nexus.common.ai.mapper.AiToolMapper;
+import com.nexus.common.core.exception.ServiceException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -36,7 +38,7 @@ public class McpToolServiceImpl {
      */
     public List<AiTool> getAllEnabledTools() {
         LambdaQueryWrapper<AiTool> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(AiTool::getStatus, "ENABLED");
+        wrapper.eq(AiTool::getStatus, AiToolStatusContract.ACTIVE);
         return aiToolMapper.selectList(wrapper);
     }
 
@@ -107,9 +109,20 @@ public class McpToolServiceImpl {
 
     /**
      * 启用/停用工具
+     * <p>status 白名单校验：仅接受 {@link AiToolStatusContract#ACTIVE}(0=启用) /
+     * {@link AiToolStatusContract#DISABLED}(1=停用，字典 sys_normal_disable)。
+     * 旧前端(字典化改造前)仍提交 ENABLED/DISABLED 串，迁移后的读取端只认 0/1，
+     * 放行会写入任何查询都匹配不到的脏状态值，故直接拒绝。</p>
+     *
+     * @param id     工具ID
+     * @param status 目标状态（0=启用 / 1=停用）
+     * @return 影响行数
      */
     @Transactional(rollbackFor = Exception.class)
     public int toggleToolStatus(Long id, String status) {
+        if (!AiToolStatusContract.ACTIVE.equals(status) && !AiToolStatusContract.DISABLED.equals(status)) {
+            throw new ServiceException("非法的工具状态值: " + status + "，仅支持 0=启用 / 1=停用");
+        }
         AiTool tool = new AiTool();
         tool.setId(id);
         tool.setStatus(status);
@@ -173,9 +186,9 @@ public class McpToolServiceImpl {
                     newTool.setDisplayName(provider.getDisplayName());
                     newTool.setDescription(provider.getDescription());
                     newTool.setToolType(BuiltinToolRegistry.TYPE_BUILTIN);
-                    // 安全：新内置工具默认 DISABLED，由管理员在工具管理页显式启用后再对聊天用户开放
-                    // （原默认 ENABLED：首次部署即把全库 SELECT/财务数据工具暴露给所有登录用户）
-                    newTool.setStatus("DISABLED");
+                    // 安全：新内置工具默认停用（1，字典 sys_normal_disable），由管理员在工具管理页显式启用后再对聊天用户开放
+                    // （原默认启用：首次部署即把全库 SELECT 能力暴露给所有登录用户）
+                    newTool.setStatus(AiToolStatusContract.DISABLED);
                     aiToolMapper.insert(newTool);
                     log.info("[MCP] 新增内置工具（默认禁用，需手动启用）: {} ({})", provider.getToolName(), provider.getDisplayName());
                     addedCount++;

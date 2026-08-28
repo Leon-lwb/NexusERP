@@ -1,5 +1,6 @@
 package com.nexus.ai.service.chat.provider;
 
+import com.nexus.ai.service.model.AiProviderPolicyRegistry;
 import com.nexus.common.ai.domain.entity.AiModel;
 import com.nexus.common.ai.dto.AiChatRequest;
 import dev.langchain4j.community.model.zhipu.ZhipuAiChatModel;
@@ -13,7 +14,7 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 /**
- * 智谱 AI（GLM）厂商策略 —— 原生 SDK
+ * 智谱 AI（GLM）协议策略（ZHIPU_NATIVE）—— 原生 SDK
  * <p>使用 langchain4j-community-zhipu-ai 的 ZhipuAiStreamingChatModel / ZhipuAiChatModel</p>
  * <p>注意：智谱 builder 用 {@code .model()} 而非 {@code .modelName()}（与其他厂商不同）</p>
  * <p>原生 SDK 不支持 returnThinking，推理模式对该厂商无效</p>
@@ -28,8 +29,8 @@ public class ZhiPuServiceProvider implements ChatServiceProvider {
     private final List<ChatModelListener> chatModelListeners;
 
     @Override
-    public String getProviderType() {
-        return "ZHIPU";
+    public String getProtocol() {
+        return AiProviderPolicyRegistry.ZHIPU_NATIVE;
     }
 
     @Override

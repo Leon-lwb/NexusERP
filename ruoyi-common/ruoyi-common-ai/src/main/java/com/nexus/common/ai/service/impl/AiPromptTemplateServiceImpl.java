@@ -77,14 +77,14 @@ public class AiPromptTemplateServiceImpl implements IAiPromptTemplateService {
     public AiPromptTemplate selectByTemplateKey(String templateKey) {
         LambdaQueryWrapper<AiPromptTemplate> lqw = Wrappers.lambdaQuery();
         lqw.eq(AiPromptTemplate::getTemplateKey, templateKey);
-        lqw.eq(AiPromptTemplate::getStatus, "1");
+        lqw.eq(AiPromptTemplate::getStatus, AiModelConfigurationContract.ACTIVE);
         lqw.last("LIMIT 1");
         return baseMapper.selectOne(lqw);
     }
 
     /**
      * 新增 Prompt 模板
-     * <p>自动设置默认值：version=1, status=1, isDefault=0</p>
+     * <p>自动设置默认值：version=1, status=0（启用，字典 sys_normal_disable）, isDefault=N（字典 sys_yes_no）</p>
      *
      * @param bo 模板业务对象
      * @return 影响行数
@@ -97,10 +97,10 @@ public class AiPromptTemplateServiceImpl implements IAiPromptTemplateService {
             entity.setVersion(1);
         }
         if (entity.getStatus() == null) {
-            entity.setStatus("1");
+            entity.setStatus(AiModelConfigurationContract.ACTIVE);
         }
         if (entity.getIsDefault() == null) {
-            entity.setIsDefault("0");
+            entity.setIsDefault(AiModelConfigurationContract.DEFAULT_NO);
         }
         return baseMapper.insert(entity);
     }

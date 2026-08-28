@@ -50,6 +50,26 @@ public class AiModelVo implements Serializable {
     @ExcelProperty(value = "模型类型")
     private String modelType;
 
+    /** 上下文窗口大小（Token 数） */
+    @ExcelProperty(value = "上下文窗口")
+    private Integer contextWindow;
+
+    /** 输入能力（逗号分隔，字典 ai_model_capability，如 TEXT,IMAGE） */
+    @ExcelProperty(value = "输入能力")
+    private String inputCapabilities;
+
+    /** 输出能力（逗号分隔，字典 ai_model_capability，如 TEXT,VECTOR） */
+    @ExcelProperty(value = "输出能力")
+    private String outputCapabilities;
+
+    /** API 协议（字典 ai_model_api_protocol，NULL 表示由厂商类型推断） */
+    @ExcelProperty(value = "API协议")
+    private String apiProtocol;
+
+    /** 向量维度（仅 EMBEDDING 模型使用） */
+    @ExcelProperty(value = "向量维度")
+    private Integer embeddingDimension;
+
     /** 最大输出 Token */
     @ExcelProperty(value = "最大输出Token数")
     private Integer maxTokens;
@@ -58,11 +78,11 @@ public class AiModelVo implements Serializable {
     @ExcelProperty(value = "温度参数")
     private BigDecimal temperature;
 
-    /** 是否默认模型（1是 0否） */
+    /** 是否默认模型（Y是 N否，字典 sys_yes_no） */
     @ExcelProperty(value = "是否默认")
     private String isDefault;
 
-    /** 状态（1正常 0停用） */
+    /** 状态（0启用 1停用，字典 sys_normal_disable） */
     @ExcelProperty(value = "状态")
     private String status;
 

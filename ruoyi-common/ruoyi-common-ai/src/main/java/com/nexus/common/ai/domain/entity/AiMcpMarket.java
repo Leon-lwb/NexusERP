@@ -35,6 +35,6 @@ public class AiMcpMarket extends BaseEntity {
     /** 认证配置（JSON） */
     private String authConfig;
 
-    /** 状态（1启用 0停用） */
+    /** 状态（0启用 1停用，字典 sys_normal_disable） */
     private String status;
 }

@@ -19,6 +19,7 @@ import com.nexus.common.ai.domain.vo.AiKnowledgeChunkVo;
 import com.nexus.common.ai.service.IAiKnowledgeService;
 import com.nexus.common.ai.service.IAiKnowledgeDocumentService;
 import com.nexus.common.ai.service.IAiKnowledgeChunkService;
+import com.nexus.ai.service.rag.KnowledgeIndexRebuildService;
 import com.nexus.ai.service.rag.KnowledgeProcessService;
 import com.nexus.ai.service.rag.KnowledgeImportService;
 import com.nexus.ai.service.rag.RetrieverService;
@@ -54,6 +55,8 @@ public class AiKnowledgeController extends BaseController {
     private final KnowledgeImportService knowledgeImportService;
     /** 知识检索服务，提供向量/混合检索与重排能力。 */
     private final RetrieverService retrieverService;
+    /** 向量索引安全重建服务，编辑走确认门，另提供独立的重建触发入口。 */
+    private final KnowledgeIndexRebuildService knowledgeIndexRebuildService;
 
     // ==================== 知识库管理 ====================
 
@@ -101,24 +104,44 @@ public class AiKnowledgeController extends BaseController {
     }
 
     /**
-     * 修改知识库
+     * 修改知识库（经向量索引安全门）
+     * <p>关键配置（Embedding 模型/维度/存储类型）变更且已有片段时，未携带
+     * rebuildIndex=true 确认标记的请求返回错误码 REBUILD_INDEX_REQUIRED，由前端弹确认框</p>
      * <p>权限标识：{@code ai:knowledge:edit}</p>
      */
     @SaCheckPermission("ai:knowledge:edit")
     @Log(title = "AI知识库管理", businessType = BusinessType.UPDATE)
     @PutMapping
     public R<Void> edit(@Validated @RequestBody AiKnowledgeBo bo) {
-        return toAjax(aiKnowledgeService.updateByBo(bo));
+        return toAjax(knowledgeIndexRebuildService.updateConfiguration(bo));
+    }
+
+    /**
+     * 触发知识库向量索引重建（异步执行）
+     * <p>活跃重建进行中（REBUILDING 且有存活任务）时拒绝，需等待完成；
+     * 检测到崩溃遗留的中断重建（REBUILDING 但无存活任务）时强制重启恢复（整库重嵌入幂等）</p>
+     * <p>权限标识：{@code ai:knowledge:rebuild}</p>
+     */
+    @SaCheckPermission("ai:knowledge:rebuild")
+    @Log(title = "AI知识库索引重建", businessType = BusinessType.UPDATE)
+    @PostMapping("/{id}/rebuild-index")
+    public R<Void> rebuildIndex(@PathVariable Long id) {
+        knowledgeIndexRebuildService.requestRebuild(id);
+        return R.ok();
     }
 
     /**
      * 批量删除知识库（级联删除文档和片段）
+     * <p>索引重建中（REBUILDING）拒绝：重建任务按片段快照重嵌入，删除会被复活成孤儿向量</p>
      * <p>权限标识：{@code ai:knowledge:remove}</p>
      */
     @SaCheckPermission("ai:knowledge:remove")
     @Log(title = "AI知识库管理", businessType = BusinessType.DELETE)
     @DeleteMapping("/{ids}")
     public R<Void> remove(@PathVariable Long[] ids) {
+        for (Long id : ids) {
+            knowledgeIndexRebuildService.assertNoActiveRebuild(id);
+        }
         return toAjax(aiKnowledgeService.deleteByIds(ids));
     }
 
@@ -156,12 +179,19 @@ public class AiKnowledgeController extends BaseController {
 
     /**
      * 批量删除文档（级联删除片段）
+     * <p>索引重建中（REBUILDING）拒绝：重建任务按片段快照重嵌入，删除会被复活成孤儿向量</p>
      * <p>权限标识：{@code ai:knowledge:remove}</p>
      */
     @SaCheckPermission("ai:knowledge:remove")
     @Log(title = "AI知识库文档管理", businessType = BusinessType.DELETE)
     @DeleteMapping("/document/{ids}")
     public R<Void> removeDocument(@PathVariable Long[] ids) {
+        for (Long id : ids) {
+            var document = aiKnowledgeDocumentService.selectById(id);
+            if (document != null) {
+                knowledgeIndexRebuildService.assertNoActiveRebuild(document.getKnowledgeId());
+            }
+        }
         return toAjax(aiKnowledgeDocumentService.deleteByIds(ids));
     }
 
@@ -206,6 +236,8 @@ public class AiKnowledgeController extends BaseController {
     public R<Map<String, Object>> importUrls(
         @PathVariable Long knowledgeId,
         @RequestBody List<String> urls) {
+        // 索引状态门：重建中/失败的知识库禁止导入（向量会被重建 DROP 清掉，vectorId 悬空）
+        knowledgeIndexRebuildService.assertIndexReadyForDocumentOps(knowledgeId);
         Map<String, Object> result = knowledgeImportService.importFromUrls(knowledgeId, urls);
         return R.ok(result);
     }

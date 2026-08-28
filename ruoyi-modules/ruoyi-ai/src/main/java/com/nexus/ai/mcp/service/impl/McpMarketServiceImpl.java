@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.nexus.ai.mcp.AiToolStatusContract;
 import com.nexus.ai.mcp.service.IMcpMarketService;
 import com.nexus.common.ai.domain.entity.AiMcpMarket;
 import com.nexus.common.ai.domain.entity.AiMcpMarketTool;
@@ -151,8 +152,8 @@ public class McpMarketServiceImpl implements IMcpMarketService {
                 tool.setConfigJson(buildLocalConfig(metadata));
             }
 
-            // 加载后默认 DISABLED（ai_tool.status 使用 ENABLED/DISABLED 串，管理员需手动启用+测试，安全要求）
-            tool.setStatus("DISABLED");
+            // 加载后默认停用（ai_tool.status 使用 0启用/1停用，字典 sys_normal_disable；管理员需手动启用+测试，安全要求）
+            tool.setStatus(AiToolStatusContract.DISABLED);
             toolMapper.insert(tool);
 
             // 更新市场工具状态

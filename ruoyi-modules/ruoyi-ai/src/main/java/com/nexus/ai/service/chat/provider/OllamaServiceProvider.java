@@ -1,5 +1,6 @@
 package com.nexus.ai.service.chat.provider;
 
+import com.nexus.ai.service.model.AiProviderPolicyRegistry;
 import com.nexus.common.ai.domain.entity.AiModel;
 import com.nexus.common.ai.dto.AiChatRequest;
 import dev.langchain4j.model.chat.ChatModel;
@@ -14,7 +15,7 @@ import java.time.Duration;
 import java.util.List;
 
 /**
- * Ollama 本地模型厂商策略 —— 原生 SDK
+ * Ollama 本地模型协议策略（OLLAMA_NATIVE）—— 原生 SDK
  * <p>Ollama 原生 SDK 不支持 returnThinking，推理模式对该厂商无效</p>
  *
  * @author NexusERP
@@ -30,8 +31,8 @@ public class OllamaServiceProvider implements ChatServiceProvider {
     private static final long OLLAMA_TIMEOUT_SECONDS = 300;
 
     @Override
-    public String getProviderType() {
-        return "OLLAMA";
+    public String getProtocol() {
+        return AiProviderPolicyRegistry.OLLAMA_NATIVE;
     }
 
     @Override

@@ -33,12 +33,12 @@ public class AiTool extends BaseEntity {
     /** 工具描述（AI 理解用途） */
     private String description;
 
-    /** 工具类型：BUILTIN/MCP/REMOTE */
+    /** 工具类型（BUILTIN/LOCAL/REMOTE，字典 ai_mcp_tool_type） */
     private String toolType;
 
-    /** 工具配置（JSON 格式，MCP/REMOTE 类型使用） */
+    /** 工具配置（JSON 格式，LOCAL/REMOTE 类型使用） */
     private String configJson;
 
-    /** 状态（ENABLED/DISABLED） */
+    /** 状态（0启用 1停用，字典 sys_normal_disable） */
     private String status;
 }

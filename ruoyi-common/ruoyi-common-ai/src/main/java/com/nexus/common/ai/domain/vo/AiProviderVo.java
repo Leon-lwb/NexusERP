@@ -58,7 +58,7 @@ public class AiProviderVo implements Serializable {
     private String providerType;
 
     /**
-     * 状态（1正常 0停用）
+     * 状态（0启用 1停用，字典 sys_normal_disable）
      */
     @ExcelProperty(value = "状态")
     private String status;

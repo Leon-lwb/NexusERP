@@ -57,7 +57,7 @@ public class AiSqlExampleServiceImpl implements IAiSqlExampleService {
 
     /**
      * 新增 SQL 示例
-     * <p>自动设置默认值：sortOrder=0, status=1</p>
+     * <p>自动设置默认值：sortOrder=0, status=0（启用，字典 sys_normal_disable）</p>
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -67,7 +67,7 @@ public class AiSqlExampleServiceImpl implements IAiSqlExampleService {
             entity.setSortOrder(0);
         }
         if (entity.getStatus() == null) {
-            entity.setStatus("1");
+            entity.setStatus(AiModelConfigurationContract.ACTIVE);
         }
         return baseMapper.insert(entity);
     }

@@ -113,7 +113,7 @@ public class McpMarketController extends BaseController {
     }
 
     /**
-     * 一键加载市场工具到本地 ai_tool（默认 DISABLED，需手动启用）
+     * 一键加载市场工具到本地 ai_tool（默认停用 status=1，字典 sys_normal_disable，需手动启用）
      */
     @SaCheckPermission("ai:mcp:market:edit")
     @PostMapping("/tools/{toolId}/load")

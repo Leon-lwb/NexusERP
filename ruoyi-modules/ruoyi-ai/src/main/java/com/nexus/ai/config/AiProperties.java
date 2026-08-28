@@ -72,7 +72,12 @@ public class AiProperties {
         /** 集合名称前缀 */
         private String collectionName = "AiKnowledge";
 
-        /** 向量维度（根据 Embedding 模型自动推断，此处为默认值） */
+        /**
+         * 向量维度（根据 Embedding 模型自动推断，此处为默认值）。
+         * <p>注意：此维度是 legacy 未配置 embedding_dimension 模型的全局兜底，
+         * {@code AiKnowledgeServiceImpl} 的 {@code @Value("${nexus.ai.vector-store.milvus.dimension:1024}")}
+         * 读同一配置键，两处必须保持同步。</p>
+         */
         private int dimension = 1024;
     }
 

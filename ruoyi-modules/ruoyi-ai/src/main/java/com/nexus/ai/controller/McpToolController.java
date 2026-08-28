@@ -132,7 +132,7 @@ public class McpToolController {
 
     /**
      * 获取当前可用的 MCP 工具列表（供前端工具选择器使用）
-     * <p>返回所有状态为 ENABLED 的非内置工具，含 id/toolName/displayName/description</p>
+     * <p>返回所有启用（0，字典 sys_normal_disable）的非内置工具，含 id/toolName/displayName/description</p>
      *
      * @return 可用 MCP 工具列表
      */

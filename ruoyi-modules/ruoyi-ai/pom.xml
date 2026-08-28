@@ -61,10 +61,24 @@
 
         <!-- ========== LangChain4j 核心 ========== -->
 
-        <!-- OpenAI 兼容接口（DeepSeek/通义千问/OpenAI 均走此接口） -->
+        <!-- OpenAI 兼容接口（DeepSeek/通义千问/OpenAI 均走此接口；含 Responses 协议模型类） -->
         <dependency>
             <groupId>dev.langchain4j</groupId>
             <artifactId>langchain4j-open-ai</artifactId>
+            <version>${langchain4j.version}</version>
+        </dependency>
+
+        <!-- Anthropic Messages 协议（/v1/messages，OpenCode Go 等 Anthropic 兼容端点同用） -->
+        <dependency>
+            <groupId>dev.langchain4j</groupId>
+            <artifactId>langchain4j-anthropic</artifactId>
+            <version>${langchain4j.version}</version>
+        </dependency>
+
+        <!-- Gemini generateContent 协议 -->
+        <dependency>
+            <groupId>dev.langchain4j</groupId>
+            <artifactId>langchain4j-google-ai-gemini</artifactId>
             <version>${langchain4j.version}</version>
         </dependency>
 

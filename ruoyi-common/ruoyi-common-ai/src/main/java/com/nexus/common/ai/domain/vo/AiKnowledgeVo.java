@@ -8,6 +8,7 @@ import lombok.Data;
 
 import java.io.Serial;
 import java.io.Serializable;
+import java.util.Date;
 
 /**
  * AI 知识库视图对象 ai_knowledge
@@ -46,6 +47,20 @@ public class AiKnowledgeVo implements Serializable {
     /** 向量存储类型 */
     @ExcelProperty(value = "向量存储类型")
     private String vectorStore;
+
+    /** 向量索引状态（READY 就绪 / BUILDING 构建中 / FAILED 失败） */
+    @ExcelProperty(value = "向量索引状态")
+    private String vectorIndexStatus;
+
+    /** 向量索引构建进度（0-100） */
+    @ExcelProperty(value = "向量索引进度")
+    private Integer vectorIndexProgress;
+
+    /** 向量索引构建错误信息 */
+    private String vectorIndexError;
+
+    /** 向量索引更新时间 */
+    private Date vectorIndexUpdatedTime;
 
     /** 状态 */
     @ExcelProperty(value = "状态")

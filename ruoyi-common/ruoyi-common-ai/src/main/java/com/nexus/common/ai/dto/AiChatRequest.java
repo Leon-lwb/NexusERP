@@ -69,4 +69,11 @@ public class AiChatRequest implements Serializable {
      * 仅参与 prompt 拼接，不参与关键词路由判断、不落库。</p>
      */
     private String context;
+
+    /**
+     * 单次请求最大输出 Token 覆盖（可选）
+     * <p>覆盖模型配置 max_tokens：null 时用模型配置值；
+     * 用于长输出调用场景按调用封顶输出体量（配合 prompt 体量约束双保险，防失控超长输出）。</p>
+     */
+    private Integer maxOutputTokens;
 }

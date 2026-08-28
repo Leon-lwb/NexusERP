@@ -36,12 +36,12 @@ public class AiPromptTemplate extends BaseEntity {
     /** 描述 */
     private String description;
 
-    /** 是否默认模板（1是 0否） */
+    /** 是否默认模板（Y是 N否，字典 sys_yes_no） */
     private String isDefault;
 
     /** 版本号 */
     private Integer version;
 
-    /** 状态（1正常 0停用） */
+    /** 状态（0启用 1停用，字典 sys_normal_disable） */
     private String status;
 }

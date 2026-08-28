@@ -1,5 +1,6 @@
 package com.nexus.ai.service.query;
 
+import com.nexus.ai.mcp.AiToolStatusContract;
 import com.nexus.common.ai.domain.bo.AiSqlExampleBo;
 import com.nexus.common.ai.domain.vo.AiSqlExampleVo;
 import com.nexus.common.ai.service.IAiSqlExampleService;
@@ -39,7 +40,8 @@ public class SqlExampleService {
     public List<AiSqlExampleVo> getAllEnabledExamples() {
         return exampleCache.computeIfAbsent("all", k -> {
             AiSqlExampleBo bo = new AiSqlExampleBo();
-            bo.setStatus("1");
+            // 已启用 = status 0（字典 sys_normal_disable，2026-08-28 迁移后语义）
+            bo.setStatus(AiToolStatusContract.ACTIVE);
             return sqlExampleService.selectList(bo);
         });
     }
@@ -54,7 +56,7 @@ public class SqlExampleService {
         return exampleCache.computeIfAbsent(category, k -> {
             AiSqlExampleBo bo = new AiSqlExampleBo();
             bo.setCategory(k);
-            bo.setStatus("1");
+            bo.setStatus(AiToolStatusContract.ACTIVE);
             return sqlExampleService.selectList(bo);
         });
     }

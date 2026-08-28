@@ -58,6 +58,54 @@ public class AiThreadPoolConfig {
     }
 
     /**
+     * AI 模型连接测试专用线程池（与 {@code aiExecutor} 严格隔离）
+     * <p>连接测试的超时护栏依赖 {@code CompletableFuture.get(timeout)} 等待：{@code cancel(true)}
+     * 无法中断底层 HTTP 调用，线程会一直占用到上游自身读超时（最长约 180 秒）。
+     * 若复用 {@code aiExecutor}（core4/max16，与对话/Agent/知识图谱等生产流量共享），
+     * 慢上游会长时间占满生产线程。本池 core2/max4 + queueCapacity 0（SynchronousQueue）
+     * + {@link ThreadPoolExecutor.AbortPolicy}：线程耗尽时立即拒绝，由
+     * {@code AiModelConnectionTestService} 捕获 {@link java.util.concurrent.RejectedExecutionException}
+     * 转为"连接测试繁忙"失败结果，绝不排队放大等待。</p>
+     *
+     * @return 连接测试线程池执行器
+     */
+    @Bean("aiConnectionTestExecutor")
+    public Executor aiConnectionTestExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(2);
+        executor.setMaxPoolSize(4);
+        executor.setQueueCapacity(0);
+        executor.setThreadNamePrefix("ai-conn-test-");
+        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.AbortPolicy());
+        executor.initialize();
+        return executor;
+    }
+
+    /**
+     * 知识库向量索引重建专用线程池（与 {@code aiExecutor} 严格隔离）
+     * <p>重建 = 全量 DROP + 批量重嵌入，单任务可达分钟级；若复用 {@code aiExecutor}
+     * （CallerRunsPolicy），队列满时重建任务会退回 HTTP 提交线程同步执行，长时间阻塞管理端
+     * 请求并挤占对话线程。本池 core1/max2 + queueCapacity 0（SynchronousQueue）+
+     * {@link ThreadPoolExecutor.AbortPolicy}（同 {@code aiConnectionTestExecutor} 模式）：
+     * 线程耗尽时立即拒绝，由 {@code KnowledgeIndexRebuildService} 捕获
+     * {@link java.util.concurrent.RejectedExecutionException} 将知识库标记为 FAILED，
+     * 管理员可重试，绝不退回提交线程执行。</p>
+     *
+     * @return 向量索引重建线程池执行器
+     */
+    @Bean("aiIndexRebuildExecutor")
+    public Executor aiIndexRebuildExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(1);
+        executor.setMaxPoolSize(2);
+        executor.setQueueCapacity(0);
+        executor.setThreadNamePrefix("ai-index-rebuild-");
+        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.AbortPolicy());
+        executor.initialize();
+        return executor;
+    }
+
+    /**
      * 定时清理 OutputChannel 注册表中的过期条目（每 10 分钟执行一次）
      * <p>防止 Agent 异常退出时注册表泄漏</p>
      */

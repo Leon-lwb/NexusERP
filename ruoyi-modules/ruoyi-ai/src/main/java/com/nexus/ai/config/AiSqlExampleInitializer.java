@@ -1,6 +1,7 @@
 package com.nexus.ai.config;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.nexus.ai.mcp.AiToolStatusContract;
 import com.nexus.common.ai.domain.entity.AiSqlExample;
 import com.nexus.common.ai.mapper.AiSqlExampleMapper;
 import lombok.RequiredArgsConstructor;
@@ -108,7 +109,7 @@ public class AiSqlExampleInitializer implements ApplicationRunner {
         example.setQuestion(question);
         example.setSqlTemplate(sqlTemplate);
         example.setSortOrder(sortOrder);
-        example.setStatus("1");
+        example.setStatus(AiToolStatusContract.ACTIVE);
         sqlExampleMapper.insert(example);
     }
 }

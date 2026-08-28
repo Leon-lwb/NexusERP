@@ -25,7 +25,7 @@ public interface IMcpMarketService {
     /**
      * 一键加载市场工具到本地 ai_tool
      * <p>解析 tool_metadata，判断 REMOTE（有 baseUrl）或 LOCAL（command/args），
-     * 创建一条 ai_tool 记录（默认 DISABLED），并更新 is_loaded/local_tool_id</p>
+     * 创建一条 ai_tool 记录（默认停用 status=1，字典 sys_normal_disable，需手动启用），并更新 is_loaded/local_tool_id</p>
      *
      * @param marketToolId 市场工具ID
      * @return 创建的 ai_tool.id

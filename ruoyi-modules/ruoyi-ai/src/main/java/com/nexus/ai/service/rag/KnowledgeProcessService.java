@@ -46,6 +46,8 @@ public class KnowledgeProcessService {
     private final AiKnowledgeChunkMapper chunkMapper;
     /** 知识库业务服务，用于读取知识库分段/向量化配置。 */
     private final IAiKnowledgeService aiKnowledgeService;
+    /** 向量索引安全重建服务，重建/失败期间拦截文档导入与重试，避免向量被 DROP 清掉或维度混杂。 */
+    private final KnowledgeIndexRebuildService knowledgeIndexRebuildService;
 
     /** AI 专用线程池，用于异步提交文档处理任务。 */
     @Qualifier("aiExecutor")
@@ -62,6 +64,9 @@ public class KnowledgeProcessService {
      * @return 文档ID
      */
     public Long uploadAndProcess(Long knowledgeId, MultipartFile file) {
+        // 索引状态门：重建中/失败的知识库禁止导入（导入的向量会被重建 DROP 清掉，vectorId 悬空）
+        knowledgeIndexRebuildService.assertIndexReadyForDocumentOps(knowledgeId);
+
         // 1. 校验文件类型
         String fileName = file.getOriginalFilename();
         if (!documentParserService.isSupported(fileName)) {
@@ -206,6 +211,8 @@ public class KnowledgeProcessService {
         if (document == null) {
             throw new IllegalArgumentException("文档不存在: " + documentId);
         }
+        // 索引状态门：重建中/失败的知识库禁止重试（下方会删旧片段+向量并重导入，与重建互相破坏）
+        knowledgeIndexRebuildService.assertIndexReadyForDocumentOps(document.getKnowledgeId());
         if (!"3".equals(document.getStatus()) && !"0".equals(document.getStatus())) {
             throw new IllegalStateException("只能重新处理待解析或失败的文档，当前状态: " + document.getStatus());
         }
