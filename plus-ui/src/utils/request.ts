@@ -176,7 +176,11 @@ service.interceptors.response.use(
         toReLogin();
         return Promise.reject('无效的会话，或者会话已过期，请重新登录。');
       }
-      ElMessage({ message: msg, type: 'error' });
+      // 调用方通过 headers: { ignoreErrorMsg: 'true' } 声明自行处理错误提示时，不在此处弹统一错误消息
+      // （如知识库保存返回的错误令牌 REBUILD_INDEX_REQUIRED，由页面捕获后弹确认框再重发）
+      if (res.config.headers?.ignoreErrorMsg !== 'true') {
+        ElMessage({ message: msg, type: 'error' });
+      }
       return Promise.reject(new Error(msg));
     } else if (code === HttpStatus.WARN) {
       ElMessage({ message: msg, type: 'warning' });

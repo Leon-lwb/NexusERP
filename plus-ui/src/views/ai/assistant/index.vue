@@ -93,11 +93,13 @@
               </div>
               <!-- 反馈按钮（仅 AI 消息且有内容时显示） -->
               <div v-if="msg.role === 'assistant' && msg.content && !msg.content.startsWith('[错误]')" class="message-feedback">
-                <span :class="['feedback-btn', { active: msg.feedback === 'LIKE' }]" @click="handleFeedback(msg, 'LIKE')" title="有帮助"
-                  >&#x1F44D;</span
-                >
-                <span :class="['feedback-btn', { active: msg.feedback === 'DISLIKE' }]" @click="handleFeedback(msg, 'DISLIKE')" title="需改进"
-                  >&#x1F44E;</span
+                <span
+                  v-for="d in ai_message_feedback"
+                  :key="d.value"
+                  :class="['feedback-btn', { active: msg.feedback === d.value }]"
+                  @click="handleFeedback(msg, d.value)"
+                  :title="d.label"
+                  >{{ feedbackIcon(d.value) }}</span
                 >
               </div>
             </div>
@@ -127,7 +129,7 @@
               </span>
             </div>
             <div class="toolbar-right">
-              <ModelSelect v-model="selectedModel" model-type="CHAT" placeholder="默认模型" style="width: 170px" />
+              <ModelSelect v-model="selectedModel" model-type="TEXT,VISION" placeholder="默认模型" style="width: 170px" />
               <span v-if="tokenUsage > 0" class="token-usage">{{ tokenUsage.toLocaleString() }} tokens</span>
               <DeepThinking v-model="enableThinking" />
               <WebSearchToggle v-model="enableWebSearch" />
@@ -246,6 +248,7 @@ import ModelSelect from '@/components/ai/ModelSelect.vue';
 import 'github-markdown-css';
 
 const { proxy } = getCurrentInstance() as any;
+const { ai_message_feedback } = toRefs<any>(proxy?.useDict('ai_message_feedback'));
 
 /** 工具调用状态 */
 interface ToolCallInfo {
@@ -659,6 +662,11 @@ function formatTime(time: string) {
 function truncateText(text: string, maxLen: number) {
   if (!text) return '';
   return text.length > maxLen ? text.substring(0, maxLen) + '...' : text;
+}
+
+/** 反馈按钮图标（选项集来自字典 ai_message_feedback，此处仅按值映射展示图标） */
+function feedbackIcon(value: string) {
+  return value === 'DISLIKE' ? '\u{1F44E}' : '\u{1F44D}';
 }
 
 /** 消息反馈 */

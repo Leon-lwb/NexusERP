@@ -11,7 +11,7 @@
         <el-col :span="6">
           <el-form-item label="状态" prop="status">
             <el-select v-model="queryParams.status" placeholder="请选择状态" clearable style="width: 100%">
-              <el-option v-for="opt in AI_STATUS_OPTIONS" :key="opt.value" :label="opt.label" :value="opt.value" />
+              <el-option v-for="dict in sys_normal_disable" :key="dict.value" :label="dict.label" :value="dict.value" />
             </el-select>
           </el-form-item>
         </el-col>
@@ -53,7 +53,12 @@
             <el-table-column label="文档数" align="center" prop="documentCount" width="80" />
             <el-table-column label="状态" align="center" prop="status" width="80">
               <template #default="scope">
-                <dict-tag :options="AI_STATUS_OPTIONS" :value="scope.row.status" />
+                <dict-tag :options="sys_normal_disable" :value="scope.row.status" />
+              </template>
+            </el-table-column>
+            <el-table-column label="向量索引" align="center" prop="vectorIndexStatus" width="90">
+              <template #default="scope">
+                <dict-tag :options="ai_knowledge_index_status" :value="scope.row.vectorIndexStatus" />
               </template>
             </el-table-column>
             <el-table-column label="创建时间" align="center" prop="createTime" width="180">
@@ -84,6 +89,27 @@
 
       <!-- 右侧：文档管理 + 检索测试 -->
       <el-col v-if="selectedKnowledge" :span="12">
+        <el-card shadow="hover" class="mb-[10px]">
+          <div class="vec-header">
+            <span class="font-bold">向量索引</span>
+            <dict-tag :options="ai_knowledge_index_status" :value="selectedKnowledge.vectorIndexStatus" />
+            <el-button
+              v-if="selectedKnowledge.vectorIndexStatus !== 'REBUILDING'"
+              v-hasPermi="['ai:knowledge:rebuild']"
+              size="small"
+              type="warning"
+              plain
+              icon="RefreshRight"
+              @click="handleRebuildIndex"
+            >
+              重新构建向量索引
+            </el-button>
+          </div>
+          <el-progress v-if="selectedKnowledge.vectorIndexStatus === 'REBUILDING'" :percentage="indexProgress" :stroke-width="14" />
+          <div v-if="selectedKnowledge.vectorIndexStatus === 'FAILED' && selectedKnowledge.vectorIndexError" class="vec-error">
+            {{ selectedKnowledge.vectorIndexError }}
+          </div>
+        </el-card>
         <el-tabs v-model="kgTab" class="knowledge-tabs">
           <el-tab-pane label="文档管理" name="doc">
             <el-card shadow="hover">
@@ -117,7 +143,7 @@
                 <el-table-column label="分段数" align="center" prop="chunkCount" width="80" />
                 <el-table-column label="状态" align="center" prop="status" width="100">
                   <template #default="scope">
-                    <el-tag :type="docStatusType(scope.row.status)">{{ docStatusText(scope.row.status) }}</el-tag>
+                    <dict-tag :options="ai_knowledge_document_status" :value="scope.row.status" />
                   </template>
                 </el-table-column>
                 <el-table-column label="错误信息" align="center" prop="errorMessage" :show-overflow-tooltip="true" />
@@ -192,7 +218,7 @@
     </el-row>
 
     <!-- 添加或修改知识库对话框 -->
-    <el-dialog v-model="open" :title="title" width="640px" append-to-body>
+    <el-dialog v-model="open" :title="title" width="640px" append-to-body @close="syncRebuildPolling()">
       <el-form ref="knowledgeFormRef" :model="form" :rules="rules" label-width="120px">
         <el-form-item label="知识库名称" prop="knowledgeName">
           <el-input v-model="form.knowledgeName" placeholder="请输入知识库名称" />
@@ -210,12 +236,12 @@
         </el-form-item>
         <el-form-item label="向量存储类型" prop="vectorStore">
           <el-select v-model="form.vectorStore" placeholder="向量存储类型">
-            <el-option v-for="opt in KNOWLEDGE_VECTOR_STORE_OPTIONS" :key="opt.value" :label="opt.label" :value="opt.value" />
+            <el-option v-for="dict in ai_vector_store_type" :key="dict.value" :label="dict.label" :value="dict.value" />
           </el-select>
         </el-form-item>
         <el-form-item label="状态" prop="status">
           <el-radio-group v-model="form.status">
-            <el-radio v-for="opt in AI_STATUS_OPTIONS" :key="opt.value" :value="opt.value">{{ opt.label }}</el-radio>
+            <el-radio v-for="dict in sys_normal_disable" :key="dict.value" :value="dict.value">{{ dict.label }}</el-radio>
           </el-radio-group>
         </el-form-item>
 
@@ -287,6 +313,7 @@ import {
   addKnowledge,
   updateKnowledge,
   delKnowledge,
+  rebuildKnowledgeIndex,
   listDocumentByKnowledge,
   delDocument,
   uploadDocument,
@@ -297,15 +324,11 @@ import {
 import { listModel } from '@/api/ai/model';
 import type { FormInstance } from 'element-plus';
 import { useCrud } from '@/composables/useCrud';
-import {
-  AI_STATUS_OPTIONS,
-  KNOWLEDGE_DOC_STATUS_OPTIONS,
-  KNOWLEDGE_VECTOR_STORE_OPTIONS,
-  getAiOptionTagType,
-  getAiOptionTagLabel
-} from '../constants';
 
 const { proxy } = getCurrentInstance() as any;
+const { sys_normal_disable, ai_vector_store_type, ai_knowledge_document_status, ai_knowledge_index_status } = toRefs<any>(
+  proxy?.useDict('sys_normal_disable', 'ai_vector_store_type', 'ai_knowledge_document_status', 'ai_knowledge_index_status')
+);
 
 const knowledgeFormRef = ref<FormInstance>();
 const documentList = ref<any[]>([]);
@@ -314,6 +337,8 @@ const docLoading = ref(false);
 const chunkLoading = ref(false);
 const selectedKnowledge = ref<any>(null);
 const showAdvanced = ref(false);
+/** 向量索引重建轮询定时器（仅选中行 REBUILDING 期间存在） */
+let rebuildTimer: ReturnType<typeof setInterval> | null = null;
 
 /** 知识图谱 Tab 组件（懒加载，避免首屏加载 echarts） */
 const Graph = defineAsyncComponent(() => import('./graph.vue'));
@@ -349,10 +374,14 @@ const embeddingModels = ref<any[]>([]);
 
 /** 加载 Embedding 模型列表 */
 function loadEmbeddingModels() {
-  listModel({ modelType: 'EMBEDDING', status: '1', pageNum: 1, pageSize: 100 }).then((res: any) => {
+  listModel({ modelType: 'EMBEDDING', status: '0', pageNum: 1, pageSize: 100 }).then((res: any) => {
     embeddingModels.value = res.rows || [];
   });
 }
+
+onUnmounted(() => {
+  stopRebuildPolling();
+});
 
 const chunkDialog = reactive<{ visible: boolean }>({
   visible: false
@@ -371,7 +400,7 @@ const {
   handleQuery,
   handleDelete,
   handleSelectionChange,
-  submitForm,
+  submitForm: rawSubmitForm,
   cancel,
   handleAdd: rawHandleAdd,
   handleUpdate: rawHandleUpdate
@@ -387,7 +416,7 @@ const {
     description: undefined,
     embeddingModel: undefined,
     vectorStore: 'milvus',
-    status: '1',
+    status: '0',
     separator: '#',
     overlapChar: 30,
     textBlockSize: 500,
@@ -440,6 +469,113 @@ function handleUpdate(row: any) {
   });
 }
 
+/**
+ * 提交（修改走向量索引安全门）
+ * <p>关键配置（Embedding 模型/维度/存储类型）变更且已有片段时，后端返回错误令牌
+ * REBUILD_INDEX_REQUIRED；此时弹确认框，确认后携带 rebuildIndex=true 重发保存。</p>
+ */
+function submitForm() {
+  knowledgeFormRef.value?.validate(async (valid: boolean) => {
+    if (!valid) return;
+    if (form.value.id) {
+      try {
+        await updateKnowledge(form.value as any);
+      } catch (e: any) {
+        if (e?.message !== 'REBUILD_INDEX_REQUIRED') {
+          // updateKnowledge 关闭了统一错误 toast（ignoreErrorMsg），此处需自行提示保存失败
+          proxy?.$modal.msgError(e?.message || '修改知识库失败');
+          return;
+        }
+        try {
+          await proxy?.$modal.confirm('关键配置（Embedding 模型/维度/存储类型）已变更，保存后需重建向量索引（重新嵌入全部片段）才能生效。是否继续？');
+        } catch {
+          return; // 用户取消重建，保留弹窗供调整
+        }
+        try {
+          await updateKnowledge({ ...form.value, rebuildIndex: true } as any);
+        } catch (e: any) {
+          proxy?.$modal.msgError(e?.message || '修改知识库失败');
+          return;
+        }
+      }
+      proxy?.$modal.msgSuccess('修改成功');
+    } else {
+      await addKnowledge(form.value as any);
+      proxy?.$modal.msgSuccess('新增成功');
+    }
+    open.value = false;
+    getList();
+    syncRebuildPolling();
+  });
+}
+
+/** 触发向量索引重建（异步执行，返回后进入 REBUILDING 并开始轮询） */
+async function handleRebuildIndex() {
+  const row: any = selectedKnowledge.value;
+  if (!row?.id) return;
+  try {
+    await proxy?.$modal.confirm(`将重建知识库"${row.knowledgeName}"的向量索引（对全部片段重新嵌入，期间检索结果可能不完整），是否继续？`);
+  } catch {
+    return;
+  }
+  await rebuildKnowledgeIndex(row.id);
+  proxy?.$modal.msgSuccess('已开始重建向量索引');
+  const res: any = await getKnowledge(row.id);
+  Object.assign(row, res.data);
+  syncRebuildPolling();
+}
+
+/** 向量索引重建进度（0-100，钳制边界） */
+const indexProgress = computed(() => {
+  const p = Number(selectedKnowledge.value?.vectorIndexProgress);
+  if (!Number.isFinite(p) || p < 0) return 0;
+  return Math.min(100, Math.round(p));
+});
+
+/** 停止向量索引重建轮询 */
+function stopRebuildPolling() {
+  if (rebuildTimer) {
+    clearInterval(rebuildTimer);
+    rebuildTimer = null;
+  }
+}
+
+/** 选中行处于 REBUILDING 时开启轮询（READY/FAILED 等状态自动停止） */
+function syncRebuildPolling() {
+  const status = selectedKnowledge.value?.vectorIndexStatus;
+  if (status === 'REBUILDING' && !rebuildTimer) {
+    rebuildTimer = setInterval(async () => {
+      const id = selectedKnowledge.value?.id;
+      if (!id) {
+        stopRebuildPolling();
+        return;
+      }
+      try {
+        const res: any = await getKnowledge(id);
+        const fresh = res.data;
+        if (!fresh) return;
+        // 等待响应期间选中行可能已切换，丢弃过期数据
+        if (selectedKnowledge.value?.id !== id) return;
+        if (fresh.vectorIndexStatus !== 'REBUILDING') {
+          stopRebuildPolling();
+        }
+        Object.assign(selectedKnowledge.value, fresh);
+        const row = list.value.find((item: any) => item.id === fresh.id);
+        if (row) Object.assign(row, fresh);
+        if (fresh.vectorIndexStatus === 'READY') {
+          proxy?.$modal.msgSuccess('向量索引重建完成');
+        } else if (fresh.vectorIndexStatus === 'FAILED') {
+          proxy?.$modal.msgError('向量索引重建失败');
+        }
+      } catch {
+        stopRebuildPolling();
+      }
+    }, 2000);
+  } else if (status !== 'REBUILDING') {
+    stopRebuildPolling();
+  }
+}
+
 /** 重置查询 */
 function resetQuery() {
   proxy.resetForm('queryRef');
@@ -448,6 +584,8 @@ function resetQuery() {
 
 /** 选中知识库行 */
 function handleCurrentChange(row: any) {
+  // 切换选中行时停掉旧行的索引重建轮询
+  stopRebuildPolling();
   selectedKnowledge.value = row;
   // 切换知识库时清空检索结果，重置测试参数为知识库配置
   retrievalResults.value = [];
@@ -459,6 +597,7 @@ function handleCurrentChange(row: any) {
     testParams.enableHybrid = row.enableHybrid === 1;
     testParams.enableRerank = row.enableRerank === 1;
     loadDocuments(row.id);
+    syncRebuildPolling();
   }
 }
 
@@ -586,16 +725,6 @@ function formatFileSize(bytes: number) {
   return size.toFixed(1) + ' ' + units[i];
 }
 
-/** 文档状态标签类型 */
-function docStatusType(status: string) {
-  return getAiOptionTagType(KNOWLEDGE_DOC_STATUS_OPTIONS, status);
-}
-
-/** 文档状态文本 */
-function docStatusText(status: string) {
-  return getAiOptionTagLabel(KNOWLEDGE_DOC_STATUS_OPTIONS, status) || '未知';
-}
-
 getList();
 </script>
 
@@ -631,5 +760,18 @@ getList();
   word-break: break-all;
   max-height: 120px;
   overflow-y: auto;
+}
+
+.vec-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.vec-error {
+  margin-top: 6px;
+  color: var(--el-color-danger);
+  font-size: 12px;
+  word-break: break-all;
 }
 </style>

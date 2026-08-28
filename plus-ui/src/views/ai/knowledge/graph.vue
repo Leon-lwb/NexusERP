@@ -2,7 +2,7 @@
   <div class="kg-container">
     <!-- 工具条 -->
     <div class="kg-toolbar">
-      <el-tag v-if="graph" :type="statusType(graph.graphStatus)">{{ statusText(graph.graphStatus) }}</el-tag>
+      <dict-tag v-if="graph" :options="ai_knowledge_graph_status" :value="graph.graphStatus" />
       <el-tag v-else type="info">未构建</el-tag>
       <span v-if="graph" class="kg-stats">
         实体 {{ graph.nodeCount || 0 }} · 关系 {{ graph.relationshipCount || 0 }} · 社区 {{ graph.communityCount || 0 }}
@@ -66,7 +66,7 @@
           <el-table-column label="实体数" prop="entityCount" width="80" />
           <el-table-column label="状态" prop="summaryStatus" width="90">
             <template #default="scope">
-              <el-tag size="small" :type="summaryStatusType(scope.row.summaryStatus)">{{ summaryStatusText(scope.row.summaryStatus) }}</el-tag>
+              <dict-tag :options="ai_knowledge_extraction_status" :value="scope.row.summaryStatus" />
             </template>
           </el-table-column>
           <el-table-column label="摘要" prop="summary" :show-overflow-tooltip="true" />
@@ -126,9 +126,11 @@ import {
   type AiKgCommunity,
   type GraphProgress
 } from '@/api/ai/knowledgeGraph';
-import { KG_GRAPH_STATUS_OPTIONS, KG_SUMMARY_STATUS_OPTIONS, getAiOptionTagType, getAiOptionTagLabel } from '../constants';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
+const { ai_knowledge_graph_status, ai_knowledge_extraction_status } = toRefs<any>(
+  proxy?.useDict('ai_knowledge_graph_status', 'ai_knowledge_extraction_status')
+);
 
 const props = defineProps<{ knowledgeId: number }>();
 
@@ -498,19 +500,6 @@ function handleGlobalSearch() {
     .finally(() => {
       globalLoading.value = false;
     });
-}
-
-function statusText(s?: string) {
-  return getAiOptionTagLabel(KG_GRAPH_STATUS_OPTIONS, s) || '未知';
-}
-function statusType(s?: string) {
-  return getAiOptionTagType(KG_GRAPH_STATUS_OPTIONS, s);
-}
-function summaryStatusText(s?: string) {
-  return getAiOptionTagLabel(KG_SUMMARY_STATUS_OPTIONS, s) || '未知';
-}
-function summaryStatusType(s?: string) {
-  return getAiOptionTagType(KG_SUMMARY_STATUS_OPTIONS, s);
 }
 </script>
 

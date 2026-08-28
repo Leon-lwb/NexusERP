@@ -20,9 +20,7 @@
       </el-table-column>
       <el-table-column label="状态" prop="status" width="100" align="center">
         <template #default="scope">
-          <el-tag :type="getAiOptionTagType(AB_TEST_STATUS_OPTIONS, scope.row.status)">
-            {{ getAiOptionTagLabel(AB_TEST_STATUS_OPTIONS, scope.row.status) }}
-          </el-tag>
+          <dict-tag :options="ai_ab_test_status" :value="scope.row.status" />
         </template>
       </el-table-column>
       <el-table-column label="创建时间" prop="createTime" width="170" />
@@ -96,9 +94,9 @@
 <script setup lang="ts" name="AiAbTest">
 import { listAbTest, getAbTest, addAbTest, updateAbTest, delAbTest, executeAbTest, getAbTestResults, scoreAbTestResult } from '@/api/ai/abTest';
 import { useCrud } from '@/composables/useCrud';
-import { AB_TEST_STATUS_OPTIONS, getAiOptionTagLabel, getAiOptionTagType } from '@/views/ai/constants';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
+const { ai_ab_test_status } = toRefs<any>(proxy?.useDict('ai_ab_test_status'));
 
 const abTestRef = ref<ElFormInstance>();
 const resultDialogVisible = ref(false);

@@ -16,19 +16,19 @@
       <el-table-column label="描述" prop="description" min-width="250" show-overflow-tooltip />
       <el-table-column label="类型" prop="toolType" width="100">
         <template #default="{ row }">
-          <el-tag :type="getAiOptionTagType(MCP_TOOL_TYPE_TAG_OPTIONS, row.toolType)">{{ row.toolType }}</el-tag>
+          <dict-tag :options="ai_tool_type" :value="row.toolType" />
         </template>
       </el-table-column>
       <el-table-column label="状态" prop="status" width="100">
         <template #default="{ row }">
-          <dict-tag :options="MCP_TOOL_STATUS_OPTIONS" :value="row.status" />
+          <dict-tag :options="sys_normal_disable" :value="row.status" />
         </template>
       </el-table-column>
       <el-table-column label="操作" width="250" fixed="right">
         <template #default="{ row }">
           <el-button link type="primary" @click="handleEdit(row)">编辑</el-button>
-          <el-button link :type="row.status === 'ENABLED' ? 'warning' : 'success'" @click="handleToggleStatus(row)">
-            {{ row.status === 'ENABLED' ? '停用' : '启用' }}
+          <el-button link :type="row.status === '0' ? 'warning' : 'success'" @click="handleToggleStatus(row)">
+            {{ row.status === '0' ? '停用' : '启用' }}
           </el-button>
           <el-button link type="info" @click="handleTest(row)" :disabled="row.toolType === 'BUILTIN'" :loading="testLoading[row.id]">
             测试
@@ -52,7 +52,7 @@
         </el-form-item>
         <el-form-item label="工具类型" prop="toolType">
           <el-select v-model="form.toolType" placeholder="请选择工具类型" style="width: 100%" :disabled="isEdit">
-            <el-option v-for="item in MCP_TOOL_TYPE_OPTIONS" :key="item.value" :label="item.label" :value="item.value" />
+            <el-option v-for="dict in ai_tool_type" :key="dict.value" :label="dict.label + '（' + dict.value + '）'" :value="dict.value" />
           </el-select>
         </el-form-item>
         <el-form-item v-if="form.toolType === 'LOCAL'" label="配置 JSON" prop="configJson">
@@ -68,7 +68,7 @@
         </el-form-item>
         <el-form-item label="状态" prop="status">
           <el-radio-group v-model="form.status">
-            <el-radio v-for="item in MCP_TOOL_STATUS_OPTIONS" :key="item.value" :value="item.value">{{ item.label }}</el-radio>
+            <el-radio v-for="dict in sys_normal_disable" :key="dict.value" :value="dict.value">{{ dict.label }}</el-radio>
           </el-radio-group>
         </el-form-item>
       </el-form>
@@ -86,9 +86,9 @@
 import { listTool, getTool, addTool, updateTool, delTool, toggleToolStatus, syncBuiltinTools, testTool } from '@/api/ai/mcp';
 import type { AiTool } from '@/api/ai/mcp';
 import { useCrud } from '@/composables/useCrud';
-import { MCP_TOOL_STATUS_OPTIONS, MCP_TOOL_TYPE_OPTIONS, MCP_TOOL_TYPE_TAG_OPTIONS, getAiOptionTagType } from '@/views/ai/constants';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
+const { ai_tool_type, sys_normal_disable } = toRefs<any>(proxy?.useDict('ai_tool_type', 'sys_normal_disable'));
 
 const toolRef = ref<ElFormInstance>();
 const testLoading = reactive<Record<number, boolean>>({});
@@ -138,7 +138,7 @@ const {
     description: '',
     toolType: 'BUILTIN',
     configJson: '',
-    status: 'ENABLED'
+    status: '0'
   })
 });
 
@@ -185,8 +185,8 @@ async function handleDelete(row: AiTool) {
 
 /** 切换状态 */
 async function handleToggleStatus(row: AiTool) {
-  const newStatus = row.status === 'ENABLED' ? 'DISABLED' : 'ENABLED';
-  const action = newStatus === 'ENABLED' ? '启用' : '停用';
+  const newStatus = row.status === '0' ? '1' : '0';
+  const action = newStatus === '0' ? '启用' : '停用';
   await proxy?.$modal.confirm(`是否确认${action}工具"${row.displayName}"？`);
   await toggleToolStatus(row.id!, newStatus);
   await getList();

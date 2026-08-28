@@ -16,7 +16,7 @@
         <el-col :span="6">
           <el-form-item label="状态" prop="status">
             <el-select v-model="queryParams.status" placeholder="请选择状态" clearable>
-              <el-option v-for="item in AI_STATUS_OPTIONS" :key="item.value" :label="item.label" :value="item.value" />
+              <el-option v-for="dict in sys_normal_disable" :key="dict.value" :label="dict.label" :value="dict.value" />
             </el-select>
           </el-form-item>
         </el-col>
@@ -47,13 +47,13 @@
       <el-table-column label="模板标识" align="left" prop="templateKey" min-width="150" :show-overflow-tooltip="true" />
       <el-table-column label="是否默认" align="center" prop="isDefault" width="90">
         <template #default="scope">
-          <dict-tag :options="AI_YES_NO_OPTIONS" :value="scope.row.isDefault" />
+          <dict-tag :options="sys_yes_no" :value="scope.row.isDefault" />
         </template>
       </el-table-column>
       <el-table-column label="版本" align="center" prop="version" width="70" />
       <el-table-column label="状态" align="center" prop="status" width="80">
         <template #default="scope">
-          <dict-tag :options="AI_STATUS_OPTIONS" :value="scope.row.status" />
+          <dict-tag :options="sys_normal_disable" :value="scope.row.status" />
         </template>
       </el-table-column>
       <el-table-column label="描述" align="left" prop="description" min-width="200" :show-overflow-tooltip="true" />
@@ -85,12 +85,12 @@
         </el-form-item>
         <el-form-item label="是否默认" prop="isDefault">
           <el-radio-group v-model="form.isDefault">
-            <el-radio v-for="item in AI_YES_NO_OPTIONS" :key="item.value" :value="item.value">{{ item.label }}</el-radio>
+            <el-radio v-for="dict in sys_yes_no" :key="dict.value" :value="dict.value">{{ dict.label }}</el-radio>
           </el-radio-group>
         </el-form-item>
         <el-form-item label="状态" prop="status">
           <el-radio-group v-model="form.status">
-            <el-radio v-for="item in AI_STATUS_OPTIONS" :key="item.value" :value="item.value">{{ item.label }}</el-radio>
+            <el-radio v-for="dict in sys_normal_disable" :key="dict.value" :value="dict.value">{{ dict.label }}</el-radio>
           </el-radio-group>
         </el-form-item>
       </el-form>
@@ -107,9 +107,9 @@
 <script setup name="AiPrompt" lang="ts">
 import { listPromptTemplate, getPromptTemplate, addPromptTemplate, updatePromptTemplate, delPromptTemplate } from '@/api/ai/prompt';
 import { useCrud } from '@/composables/useCrud';
-import { AI_STATUS_OPTIONS, AI_YES_NO_OPTIONS } from '@/views/ai/constants';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
+const { sys_yes_no, sys_normal_disable } = toRefs<any>(proxy?.useDict('sys_yes_no', 'sys_normal_disable'));
 
 const promptRef = ref<ElFormInstance>();
 
@@ -157,8 +157,8 @@ const {
     templateKey: undefined,
     content: undefined,
     description: undefined,
-    isDefault: '0',
-    status: '1'
+    isDefault: 'N',
+    status: '0'
   })
 });
 

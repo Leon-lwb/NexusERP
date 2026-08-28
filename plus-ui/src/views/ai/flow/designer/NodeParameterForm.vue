@@ -191,7 +191,7 @@ async function loadEntityOptions() {
   entityLoading.value = true;
   try {
     if (source === 'aiModel') {
-      const res = await listModelOptions('llm');
+      const res = await listModelOptions('TEXT');
       const list = res.data ?? res.rows ?? [];
       entityOptions.value = (Array.isArray(list) ? list : []).map((m: any) => ({
         name: `${m.modelName ?? m.name ?? m.id}（${m.providerName ?? ''}）`,

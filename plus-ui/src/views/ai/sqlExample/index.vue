@@ -6,7 +6,7 @@
         <el-col :span="6">
           <el-form-item label="分类" prop="category">
             <el-select v-model="queryParams.category" placeholder="请选择分类" clearable>
-              <el-option v-for="item in SQL_EXAMPLE_CATEGORY_OPTIONS" :key="item.value" :label="item.label" :value="item.value" />
+              <el-option v-for="dict in ai_sql_example_category" :key="dict.value" :label="dict.label" :value="dict.value" />
             </el-select>
           </el-form-item>
         </el-col>
@@ -41,7 +41,7 @@
       <el-table-column label="排序号" prop="sortOrder" width="80" align="center" />
       <el-table-column label="分类" prop="category" width="100" align="center">
         <template #default="scope">
-          <el-tag :type="getAiOptionTagType(SQL_EXAMPLE_CATEGORY_OPTIONS, scope.row.category)">{{ scope.row.category }}</el-tag>
+          <dict-tag :options="ai_sql_example_category" :value="scope.row.category" />
         </template>
       </el-table-column>
       <el-table-column label="问题" prop="question" min-width="200" show-overflow-tooltip />
@@ -52,7 +52,7 @@
       </el-table-column>
       <el-table-column label="状态" prop="status" width="80" align="center">
         <template #default="scope">
-          <dict-tag :options="SQL_EXAMPLE_STATUS_OPTIONS" :value="scope.row.status" />
+          <dict-tag :options="sys_normal_disable" :value="scope.row.status" />
         </template>
       </el-table-column>
       <el-table-column label="操作" width="150" align="center">
@@ -77,7 +77,7 @@
         </el-form-item>
         <el-form-item label="分类" prop="category">
           <el-select v-model="form.category" placeholder="请选择分类">
-            <el-option v-for="item in SQL_EXAMPLE_CATEGORY_OPTIONS" :key="item.value" :label="item.label" :value="item.value" />
+            <el-option v-for="dict in ai_sql_example_category" :key="dict.value" :label="dict.label" :value="dict.value" />
           </el-select>
         </el-form-item>
         <el-form-item label="排序号" prop="sortOrder">
@@ -85,7 +85,7 @@
         </el-form-item>
         <el-form-item label="状态" prop="status">
           <el-radio-group v-model="form.status">
-            <el-radio v-for="item in SQL_EXAMPLE_STATUS_OPTIONS" :key="item.value" :value="item.value">{{ item.label }}</el-radio>
+            <el-radio v-for="dict in sys_normal_disable" :key="dict.value" :value="dict.value">{{ dict.label }}</el-radio>
           </el-radio-group>
         </el-form-item>
         <el-form-item label="说明" prop="description">
@@ -105,9 +105,9 @@
 <script setup lang="ts" name="AiSqlExample">
 import { listSqlExample, getSqlExample, addSqlExample, updateSqlExample, delSqlExample } from '@/api/ai/sqlExample';
 import { useCrud } from '@/composables/useCrud';
-import { SQL_EXAMPLE_CATEGORY_OPTIONS, SQL_EXAMPLE_STATUS_OPTIONS, getAiOptionTagType } from '@/views/ai/constants';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
+const { ai_sql_example_category, sys_normal_disable } = toRefs<any>(proxy?.useDict('ai_sql_example_category', 'sys_normal_disable'));
 
 const sqlExampleRef = ref<ElFormInstance>();
 

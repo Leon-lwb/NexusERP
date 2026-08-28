@@ -42,7 +42,7 @@
             <el-radio-button label="agent">数据查询</el-radio-button>
             <el-radio-button label="rag">知识库</el-radio-button>
           </el-radio-group>
-          <ModelSelect v-model="selectedModel" model-type="CHAT" placeholder="默认模型" style="width: 130px" />
+          <ModelSelect v-model="selectedModel" model-type="TEXT,VISION" placeholder="默认模型" style="width: 130px" />
         </div>
         <el-input
           v-model="inputText"

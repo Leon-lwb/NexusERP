@@ -13,7 +13,7 @@
       <el-table-column label="描述" prop="description" min-width="200" show-overflow-tooltip />
       <el-table-column label="状态" prop="status" width="90">
         <template #default="{ row }">
-          <dict-tag :options="AI_ENABLE_STATUS_OPTIONS" :value="row.status" />
+          <dict-tag :options="sys_normal_disable" :value="row.status" />
         </template>
       </el-table-column>
       <el-table-column label="操作" width="280" fixed="right">
@@ -40,7 +40,7 @@
         </el-form-item>
         <el-form-item label="状态" prop="status">
           <el-radio-group v-model="form.status">
-            <el-radio v-for="item in AI_ENABLE_STATUS_OPTIONS" :key="item.value" :value="item.value">{{ item.label }}</el-radio>
+            <el-radio v-for="dict in sys_normal_disable" :key="dict.value" :value="dict.value">{{ dict.label }}</el-radio>
           </el-radio-group>
         </el-form-item>
       </el-form>
@@ -70,7 +70,7 @@
         <el-table-column label="描述" prop="toolDescription" min-width="200" show-overflow-tooltip />
         <el-table-column label="已加载" prop="isLoaded" width="90">
           <template #default="{ row }">
-            <dict-tag :options="AI_YES_NO_OPTIONS" :value="row.isLoaded" />
+            <el-tag :type="row.isLoaded === '1' ? 'success' : 'info'">{{ row.isLoaded === '1' ? '是' : '否' }}</el-tag>
           </template>
         </el-table-column>
         <el-table-column label="操作" width="120" fixed="right">
@@ -99,9 +99,9 @@ import {
   type AiMcpMarketTool
 } from '@/api/ai/market';
 import { useCrud } from '@/composables/useCrud';
-import { AI_ENABLE_STATUS_OPTIONS, AI_YES_NO_OPTIONS } from '@/views/ai/constants';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
+const { sys_normal_disable } = toRefs<any>(proxy?.useDict('sys_normal_disable'));
 
 const marketRef = ref<ElFormInstance>();
 const refreshLoading = reactive<Record<number, boolean>>({});
@@ -148,7 +148,7 @@ const {
     name: '',
     url: '',
     description: '',
-    status: '1'
+    status: '0'
   })
 });
 

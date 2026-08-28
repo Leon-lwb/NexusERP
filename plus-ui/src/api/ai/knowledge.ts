@@ -20,6 +20,16 @@ export interface AiKnowledge {
   enableHybrid?: number;
   hybridAlpha?: number;
   systemPrompt?: string;
+  /** 向量索引状态（字典 ai_knowledge_index_status：READY/REBUILDING/FAILED） */
+  vectorIndexStatus?: string;
+  /** 向量索引重建进度（0-100，仅 REBUILDING 时有意义） */
+  vectorIndexProgress?: number;
+  /** 向量索引最近一次错误信息（已脱敏，重建失败时展示） */
+  vectorIndexError?: string;
+  /** 向量索引最近一次完成/更新时间 */
+  vectorIndexUpdatedTime?: string;
+  /** 修改时确认重建向量索引的标记（关键配置变更时后端要求显式确认） */
+  rebuildIndex?: boolean;
 }
 
 /** AI 知识库文档类型 */
@@ -78,7 +88,11 @@ export function updateKnowledge(data: AiKnowledge) {
   return request({
     url: '/ai/knowledge',
     method: 'put',
-    data
+    data,
+    // 关键配置（Embedding 模型/维度/存储类型）变更时后端返回错误令牌 REBUILD_INDEX_REQUIRED，
+    // 由页面捕获后弹确认框再携带 rebuildIndex=true 重发；该令牌不弹统一错误 toast
+    // （ignoreErrorMsg 头约定见 utils/request.ts 响应拦截器）
+    headers: { ignoreErrorMsg: 'true' }
   });
 }
 
@@ -87,6 +101,18 @@ export function delKnowledge(ids: Array<number | string>) {
   return request({
     url: `/ai/knowledge/${ids}`,
     method: 'delete'
+  });
+}
+
+/**
+ * 触发知识库向量索引重建（异步执行）
+ * <p>权限标识：ai:knowledge:rebuild。活跃重建进行中时后端会拒绝。</p>
+ * @param id 知识库ID
+ */
+export function rebuildKnowledgeIndex(id: number) {
+  return request({
+    url: `/ai/knowledge/${id}/rebuild-index`,
+    method: 'post'
   });
 }
 

@@ -24,6 +24,8 @@
             v-model="form.modelId"
             model-type="IMAGE"
             value-field="id"
+            required-input-capability="TEXT"
+            required-output-capability="IMAGE"
             placeholder="默认图像模型"
             style="width: 240px"
             @change="onModelChange"
