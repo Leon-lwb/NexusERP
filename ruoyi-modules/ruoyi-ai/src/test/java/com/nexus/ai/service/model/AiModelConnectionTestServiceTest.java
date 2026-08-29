@@ -12,12 +12,20 @@ import dev.langchain4j.data.message.UserMessage;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.Base64;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.zip.CRC32;
+import java.util.zip.DataFormatException;
+import java.util.zip.Inflater;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -112,7 +120,66 @@ class AiModelConnectionTestServiceTest {
         assertTrue(contents.stream().anyMatch(TextContent.class::isInstance),
             "视觉连接测试消息应包含文本内容");
         assertTrue(contents.stream().anyMatch(ImageContent.class::isInstance),
-            "视觉连接测试应内联 1x1 PNG 图片内容");
+            "视觉连接测试应内联内置 PNG 图片内容");
+    }
+
+    @Test
+    void visionTestImageIsStructurallyValidPng() throws DataFormatException {
+        // 回归防护：内联常量曾被写坏（IDAT 块 CRC / zlib adler32 错误），
+        // 上游校验图片字节直接判 "unsupported image"，此处逐块校验兜底
+        String dataUri = AiModelConnectionTestService.VISION_TEST_IMAGE_DATA_URI;
+        byte[] png = Base64.getDecoder().decode(
+            dataUri.substring(dataUri.indexOf(',') + 1));
+        assertArrayEquals(new byte[]{(byte) 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A},
+            Arrays.copyOfRange(png, 0, 8), "应以 PNG 签名开头");
+
+        byte[] idat = null;
+        int width = 0;
+        int height = 0;
+        int bitDepth = 0;
+        int colorType = 0;
+        ByteBuffer buf = ByteBuffer.wrap(png).position(8);
+        while (buf.hasRemaining()) {
+            int length = buf.getInt();
+            byte[] type = new byte[4];
+            buf.get(type);
+            byte[] body = new byte[length];
+            buf.get(body);
+            long storedCrc = buf.getInt() & 0xFFFFFFFFL;
+            CRC32 crc32 = new CRC32();
+            crc32.update(type);
+            crc32.update(body);
+            assertEquals(storedCrc, crc32.getValue(),
+                "PNG 块 " + new String(type, StandardCharsets.US_ASCII) + " CRC 应完整");
+            if (Arrays.equals(type, "IHDR".getBytes(StandardCharsets.US_ASCII))) {
+                width = (body[0] & 0xFF) << 24 | (body[1] & 0xFF) << 16 | (body[2] & 0xFF) << 8 | (body[3] & 0xFF);
+                height = (body[4] & 0xFF) << 24 | (body[5] & 0xFF) << 16 | (body[6] & 0xFF) << 8 | (body[7] & 0xFF);
+                bitDepth = body[8] & 0xFF;
+                colorType = body[9] & 0xFF;
+            } else if (Arrays.equals(type, "IDAT".getBytes(StandardCharsets.US_ASCII))) {
+                idat = body;
+            }
+        }
+        assertNotNull(idat, "应存在 IDAT 块");
+        // zlib 完整解压（含 adler32 校验），并按 IHDR 尺寸断言像素数据齐全（字节深 8 假设）
+        Inflater inflater = new Inflater();
+        inflater.setInput(idat);
+        byte[] raw = new byte[height * (1 + width * channelsOf(colorType))];
+        assertEquals(raw.length, inflater.inflate(raw), "IDAT 应解压出完整像素数据");
+        assertTrue(inflater.finished(), "zlib 流应完整消费（adler32 校验通过）");
+        inflater.end();
+        assertEquals(8, bitDepth, "连接测试图片应使用 8 位深");
+    }
+
+    /** PNG 颜色类型 → 每像素字节数（0 灰度 / 2 RGB / 3 调色 / 4 灰度+A / 6 RGBA） */
+    private static int channelsOf(int colorType) {
+        return switch (colorType) {
+            case 0, 3 -> 1;
+            case 4 -> 2;
+            case 2 -> 3;
+            case 6 -> 4;
+            default -> throw new IllegalArgumentException("不支持的颜色类型: " + colorType);
+        };
     }
 
     @Test

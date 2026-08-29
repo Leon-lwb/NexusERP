@@ -75,10 +75,15 @@ public class AiModelConnectionTestService {
     /** 向量连接测试的固定文本 */
     static final String EMBEDDING_TEST_TEXT = "Nexus connectivity check";
 
-    /** 视觉连接测试内联的 1x1 PNG（最小计费的图片输入） */
+    /**
+     * 视觉连接测试内联的 32x32 纯色 PNG（最小计费的图片输入）。
+     * <p>上游会校验图片字节本身：base64 必须解码为结构合法的 PNG（块 CRC/zlib 完整），
+     * 否则报 "unsupported image"；单元测试 {@code visionTestImageIsStructurallyValidPng} 防回归。
+     * 不用 1x1 是为避开个别厂商的最小尺寸校验。</p>
+     */
     static final String VISION_TEST_IMAGE_DATA_URI =
-        "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJ"
-            + "AAAADUlEQVR42mP4z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
+        "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAAAJ0lEQVR42u3NsQkAAAjAsP7/tF7h"
+            + "IASyp6lTCQQCgUAgEAgEgi/BAjLD/C5w/SM9AAAAAElFTkSuQmCC";
 
     /** 厂商 Mapper（租户拦截器自动附加 tenant_id 条件） */
     private final AiProviderMapper aiProviderMapper;
@@ -404,7 +409,7 @@ public class AiModelConnectionTestService {
     public interface ChatTestOperation {
         /**
          * @param draft    模型草稿（maxTokens 已封顶，apiHost/apiKey/providerType/apiProtocol 已填充）
-         * @param messages 测试消息（VISION 含内联 1x1 PNG）
+         * @param messages 测试消息（VISION 含内联 32x32 纯色 PNG）
          */
         void chat(AiModel draft, List<ChatMessage> messages);
     }
