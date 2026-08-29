@@ -36,6 +36,8 @@ export const useNoticeStore = defineStore('notice', () => {
       const exists = state.notices.find((n) => n.id === undefined && n.message === notice.message);
       if (exists) {
         exists.read = notice.read;
+        // 刷新到达时间（如 SPA 内重新登录的欢迎语），避免显示上一次登录的旧时间
+        exists.time = notice.time;
         return;
       }
     }

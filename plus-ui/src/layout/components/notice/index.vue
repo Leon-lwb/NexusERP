@@ -111,10 +111,10 @@ const groupOf = (item: NewsRow): TabKey => {
 
 const newsList = ref<NewsRow[]>([]);
 
-/** 各 Tab 数量（角标） */
+/** 各 Tab 未读数（角标，与铃铛未读口径一致） */
 const tabCount = (key: TabKey): number => {
-  if (key === 'all') return newsList.value.length;
-  return newsList.value.filter((n) => groupOf(n) === key).length;
+  if (key === 'all') return newsList.value.filter((n) => !n.read).length;
+  return newsList.value.filter((n) => !n.read && groupOf(n) === key).length;
 };
 
 /** 当前 Tab 列表：分组 + 未读优先（未读在前，同组时间倒序） */
@@ -180,8 +180,8 @@ const loadHistory = async () => {
   state.loading = true;
   try {
     const res = await pageNotifications({ pageNum: 1, pageSize });
-    const rows = (res.data?.rows ?? []) as NotificationItem[];
-    total.value = res.data?.total ?? rows.length;
+    const rows = res.rows ?? [];
+    total.value = res.total ?? rows.length;
     pageNum.value = 1;
     const merged: NewsRow[] = rows.map(toNewsRow);
     // 合并实时推送（内存 store）
@@ -239,8 +239,8 @@ const loadMore = async () => {
   try {
     const next = pageNum.value + 1;
     const res = await pageNotifications({ pageNum: next, pageSize });
-    const rows = (res.data?.rows ?? []) as NotificationItem[];
-    total.value = res.data?.total ?? rows.length;
+    const rows = res.rows ?? [];
+    total.value = res.total ?? rows.length;
     if (rows.length > 0) {
       pageNum.value = next;
       const existing = new Set(newsList.value.map((n) => n.id).filter((id) => id !== undefined) as (string | number)[]);

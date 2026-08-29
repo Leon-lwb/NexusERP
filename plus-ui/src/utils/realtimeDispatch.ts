@@ -18,12 +18,12 @@ const stripHtml = (html: string) => html.replace(/<[^>]*>/g, '');
 export const dispatchRealtimeMessage = (raw: string) => {
   if (typeof raw !== 'string') return;
 
-  let isGreeting = false;
+  // 登录欢迎等问候消息（后端 AuthController 以纯文本推送，非 JSON，parse 必失败）
+  // 必须在 JSON.parse 之前按原文判定：命中则已读展示、不计未读（仍弹窗提醒）
+  const isGreeting = /好，欢迎登录/.test(raw);
 
   try {
     const obj = JSON.parse(raw);
-    // 登录欢迎等问候消息（纯文本 message，非业务信封）直接标记已读展示，不计入未读
-    isGreeting = typeof obj?.message === 'string' && /好，欢迎登录/.test(obj.message);
     if (obj && obj.v === 1 && obj.type && obj.payload) {
       if (obj.type === 'USER_NOTIFICATION') {
         const p = obj.payload;
@@ -104,12 +104,11 @@ export const dispatchRealtimeMessage = (raw: string) => {
     read: isGreeting,
     time: new Date().toLocaleString()
   });
-  if (!isGreeting) {
-    ElNotification({
-      title: '消息',
-      message: displayMessage,
-      type: 'success',
-      duration: 3000
-    });
-  }
+  // 欢迎消息每次登录也弹窗提醒（保持已读、不计入未读）
+  ElNotification({
+    title: isGreeting ? '欢迎' : '消息',
+    message: displayMessage,
+    type: 'success',
+    duration: isGreeting ? 4500 : 3000
+  });
 };

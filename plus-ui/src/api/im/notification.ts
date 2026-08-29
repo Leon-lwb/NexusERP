@@ -14,12 +14,20 @@ export interface NotificationItem {
   createTime?: string;
 }
 
-export function pageNotifications(params: { pageNum?: number; pageSize?: number }): AxiosPromise<{ rows: NotificationItem[]; total: number }> {
+/** 通知分页响应（后端 TableDataInfo：rows/total 在响应体顶层，无 data 包裹） */
+export interface NotificationPage {
+  code?: number;
+  msg?: string;
+  rows: NotificationItem[];
+  total: number;
+}
+
+export function pageNotifications(params: { pageNum?: number; pageSize?: number }): Promise<NotificationPage> {
   return request({
     url: '/im/notification/page',
     method: 'get',
     params
-  });
+  }) as unknown as Promise<NotificationPage>;
 }
 
 export function markNotificationRead(notificationId: number | string): AxiosPromise<void> {

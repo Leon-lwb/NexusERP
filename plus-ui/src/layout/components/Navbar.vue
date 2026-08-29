@@ -44,7 +44,7 @@
           <div>
             <el-popover placement="bottom" trigger="click" transition="el-zoom-in-top" :width="300" :persistent="false">
               <template #reference>
-                <el-badge :value="newNotice > 0 ? newNotice : ''" :max="99">
+                <el-badge :value="newNotice" :max="99" :hidden="newNotice <= 0">
                   <div class="right-menu-item hover-effect" style="display: block"><svg-icon icon-class="message" /></div>
                 </el-badge>
               </template>
@@ -54,12 +54,16 @@
             </el-popover>
           </div>
         </el-tooltip>
-        <el-tooltip content="Github" effect="dark" placement="bottom">
-          <ruo-yi-git id="ruoyi-git" class="right-menu-item hover-effect" />
+        <el-tooltip content="Gitee 仓库" effect="dark" placement="bottom">
+          <div class="right-menu-item hover-effect" @click="openGitee">
+            <svg-icon icon-class="gitee" />
+          </div>
         </el-tooltip>
 
         <el-tooltip content="项目文档" effect="dark" placement="bottom">
-          <ruo-yi-doc id="ruoyi-doc" class="right-menu-item hover-effect" />
+          <div class="right-menu-item hover-effect" @click="openManual">
+            <svg-icon icon-class="documentation" />
+          </div>
         </el-tooltip>
 
         <el-tooltip content="全屏" effect="dark" placement="bottom">
@@ -79,7 +83,7 @@
       <div class="avatar-container">
         <el-dropdown class="right-menu-item hover-effect" trigger="click" @command="handleCommand">
           <div class="avatar-wrapper">
-            <img :src="userStore.avatar" class="user-avatar" />
+            <img :src="userStore.avatar" class="user-avatar" alt="avatar" />
             <el-icon><caret-bottom /></el-icon>
           </div>
           <template #dropdown>
@@ -115,25 +119,24 @@ import { dynamicClear, dynamicTenant } from '@/api/system/tenant';
 import { unreadNotificationCount } from '@/api/im/notification';
 import { TenantVO } from '@/api/types';
 import notice from './notice/index.vue';
-import router from '@/router';
-import { ElMessageBoxOptions } from 'element-plus/es/components/message-box/src/message-box.type';
 import { NavTypeEnum } from '@/enums/NavTypeEnum';
 import Logo from '@/layout/components/Sidebar/Logo.vue';
 import TopBar from './TopBar/index.vue';
 import { Brush, ChatDotRound } from '@element-plus/icons-vue';
 import AiChatDrawer from '@/components/ai/AiChatDrawer.vue';
-import { onMounted } from 'vue';
 
 const appStore = useAppStore();
 const userStore = useUserStore();
 const settingsStore = useSettingsStore();
 const themeStore = useThemeStore();
-const noticeStore = storeToRefs(useNoticeStore());
-const newNotice = ref(<number>0);
+const noticeStore = useNoticeStore();
+// 未读角标直读 store（实时 +1 / 已读 -1 由 store 维护），无需本地镜像
+const newNotice = computed(() => noticeStore.state.unreadCount);
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 
-const userId = ref(userStore.userId);
+const router = useRouter();
+const userId = computed(() => userStore.userId);
 const navType = computed(() => themeStore.navType);
 const showLogo = computed(() => themeStore.sidebarLogo);
 
@@ -155,12 +158,22 @@ const openAiChat = () => {
   aiChatDrawerRef.value?.open();
 };
 
+/** 打开 Gitee 仓库 */
+const openGitee = () => {
+  window.open('https://gitee.com/NexusERP/nexus-erp', '_blank');
+};
+
+/** 打开项目文档（public/manual 随前端站点部署，地址需拼接部署上下文路径） */
+const openManual = () => {
+  window.open(`${import.meta.env.VITE_APP_CONTEXT_PATH || '/'}manual/index.html`, '_blank');
+};
+
 // 动态切换
 const dynamicTenantEvent = async (tenantId: string) => {
   if (companyName.value != null && companyName.value !== '') {
     await dynamicTenant(tenantId);
     dynamic.value = true;
-    await proxy?.$router.push('/');
+    await router.push('/');
     await proxy?.$tab.closeAllPage();
     await proxy?.$tab.refreshPage();
   }
@@ -169,7 +182,7 @@ const dynamicTenantEvent = async (tenantId: string) => {
 const dynamicClearEvent = async () => {
   await dynamicClear();
   dynamic.value = false;
-  await proxy?.$router.push('/');
+  await router.push('/');
   await proxy?.$tab.closeAllPage();
   await proxy?.$tab.refreshPage();
 };
@@ -192,20 +205,26 @@ const toggleSideBar = () => {
 };
 
 const logout = async () => {
-  await ElMessageBox.confirm('确定注销并退出系统吗？', '提示', {
-    confirmButtonText: '确定',
-    cancelButtonText: '取消',
-    type: 'warning'
-  } as ElMessageBoxOptions);
-  userStore.logout().then(() => {
-    router.replace({
-      path: '/login',
-      query: {
-        redirect: encodeURIComponent(router.currentRoute.value.fullPath || '/')
-      }
+  try {
+    await ElMessageBox.confirm('确定注销并退出系统吗？', '提示', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
     });
-    proxy?.$tab.closeAllPage();
+  } catch {
+    return; // 用户取消
+  }
+  await userStore.logout();
+  // 清空通知内存态：同一标签页换账号登录时不残留上一用户的通知与未读数
+  noticeStore.clearNotice();
+  noticeStore.setUnreadCount(0);
+  await router.replace({
+    path: '/login',
+    query: {
+      redirect: encodeURIComponent(router.currentRoute.value.fullPath || '/')
+    }
   });
+  await proxy?.$tab.closeAllPage();
 };
 
 const emits = defineEmits(['setLayout', 'setTheme']);
@@ -226,19 +245,11 @@ const handleCommand = (command: string) => {
     commandMap[command]();
   }
 };
-//未读角标：以后端 unread/count 为基数，实时推送 +1、已读 -1（store 内维护）
-watch(
-  () => noticeStore.state.value.unreadCount,
-  (n) => {
-    newNotice.value = n;
-  }
-);
-
-// 登录/刷新后初始化未读计数（持久化）
+// 登录/刷新后初始化未读计数（持久化基数）；实时 +1 / 已读 -1 由 notice store 维护
 onMounted(() => {
   unreadNotificationCount()
     .then((res: any) => {
-      useNoticeStore().setUnreadCount(Number(res.data ?? 0));
+      noticeStore.setUnreadCount(Number(res.data ?? 0));
     })
     .catch(() => {
       /* 接口失败不阻塞 */
@@ -278,13 +289,11 @@ onMounted(() => {
   box-shadow: none;
   display: flex;
   align-items: center;
-  // padding: 0 8px;
   box-sizing: border-box;
 
   .hamburger-container {
     line-height: 46px;
     height: 100%;
-    //float: left;
     cursor: pointer;
     transition: background 0.3s;
     -webkit-tap-highlight-color: transparent;
@@ -299,7 +308,6 @@ onMounted(() => {
   }
 
   .breadcrumb-container {
-    //float: left;
     flex-shrink: 0;
   }
 
@@ -317,13 +325,7 @@ onMounted(() => {
     margin-left: 8px;
   }
 
-  .errLog-container {
-    display: inline-block;
-    vertical-align: top;
-  }
-
   .right-menu {
-    //float: right;
     height: 100%;
     line-height: 50px;
     display: flex;
