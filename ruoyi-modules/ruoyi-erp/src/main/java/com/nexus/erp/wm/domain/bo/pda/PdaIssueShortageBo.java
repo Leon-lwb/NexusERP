@@ -1,5 +1,6 @@
 package com.nexus.erp.wm.domain.bo.pda;
 
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
@@ -16,6 +17,7 @@ public class PdaIssueShortageBo {
     private Long lineId;
 
     /** 缺货数量 (参考值, 服务端以 应领-已领 为准) */
+    @DecimalMin(value = "0.000001", message = "缺货数量必须大于0")
     private BigDecimal shortageQty;
 
     /** 缺货原因: 缺货/待补料/其他 */
