@@ -1,5 +1,6 @@
 package com.nexus.erp.wm.controller.app;
 
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.nexus.common.core.domain.R;
 import com.nexus.common.log.annotation.Log;
 import com.nexus.common.log.enums.BusinessType;
@@ -35,17 +36,20 @@ public class AppPdaTransferController {
 
     private final IPdaTransferService pdaTransferService;
 
+    @SaCheckPermission("wm:transfer:list")
     @GetMapping("/todo")
     public TableDataInfo<PdaTodoItemVo> todo(@RequestParam(required = false) String keyword, PageQuery pageQuery) {
         return pdaTransferService.todo(keyword, pageQuery);
     }
 
+    @SaCheckPermission("wm:transfer:list")
     @GetMapping("/{transferId}")
     public R<PdaTransferDetailVo> detail(@PathVariable Long transferId) {
         return R.ok(pdaTransferService.detail(transferId));
     }
 
     /** 行级下架核销 (幂等键: 单号:行号:takeoff) */
+    @SaCheckPermission("wm:transfer:edit")
     @PdaIdempotent
     @Log(title = "PDA移库下架", businessType = BusinessType.UPDATE)
     @PostMapping("/{transferId}/line/takeoff")
@@ -56,6 +60,7 @@ public class AppPdaTransferController {
     }
 
     /** 上架确认过账 (幂等键: 单号:0:shelf) */
+    @SaCheckPermission("wm:transfer:edit")
     @PdaIdempotent
     @Log(title = "PDA移库上架", businessType = BusinessType.UPDATE)
     @PutMapping("/{transferId}/shelf")
@@ -66,6 +71,7 @@ public class AppPdaTransferController {
     }
 
     /** 整单执行移库兜底直通 (幂等键: 单号:0:execute) */
+    @SaCheckPermission("wm:transfer:edit")
     @PdaIdempotent
     @Log(title = "PDA移库执行", businessType = BusinessType.UPDATE)
     @PostMapping("/{transferId}/execute")

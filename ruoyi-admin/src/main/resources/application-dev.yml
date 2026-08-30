@@ -355,3 +355,8 @@ spring.rabbitmq:
     simple:
       acknowledge-mode: manual
       prefetch: 10
+
+--- # App 认证: 开发环境开启短信验证码回显 (生产环境严禁开启)
+app:
+  auth:
+    sms-code-echo: true

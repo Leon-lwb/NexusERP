@@ -1,5 +1,6 @@
 package com.nexus.erp.wm.controller.app;
 
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.nexus.common.core.domain.R;
 import com.nexus.common.log.annotation.Log;
 import com.nexus.common.log.enums.BusinessType;
@@ -35,12 +36,14 @@ public class AppPdaStocktakingController {
 
     private final IPdaStocktakingService pdaStocktakingService;
 
+    @SaCheckPermission("wm:stocktaking:list")
     @GetMapping("/todo")
     public TableDataInfo<PdaTodoItemVo> todo(@RequestParam(required = false) String keyword, PageQuery pageQuery) {
         return pdaStocktakingService.todo(keyword, pageQuery);
     }
 
     /** 临时盘点现场建单并生成明细 (幂等键: 仓库:时间戳) */
+    @SaCheckPermission("wm:stocktaking:add")
     @PdaIdempotent
     @Log(title = "PDA临时盘点建单", businessType = BusinessType.INSERT)
     @PostMapping("/create")
@@ -48,12 +51,14 @@ public class AppPdaStocktakingController {
         return R.ok(pdaStocktakingService.create(bo));
     }
 
+    @SaCheckPermission("wm:stocktaking:list")
     @GetMapping("/{planId}")
     public R<PdaStocktakingDetailVo> detail(@PathVariable Long planId) {
         return R.ok(pdaStocktakingService.detail(planId));
     }
 
     /** 生成盘点明细行 (沿用既有库存快照逻辑) */
+    @SaCheckPermission("wm:stocktaking:edit")
     @Log(title = "PDA盘点生成明细", businessType = BusinessType.UPDATE)
     @PutMapping("/{planId}/generateLines")
     public R<PdaActionResultVo> generate(@PathVariable Long planId) {
@@ -61,6 +66,7 @@ public class AppPdaStocktakingController {
     }
 
     /** 行级实盘录入, 覆盖语义可重复改数 (幂等键: 单号:行号:count) */
+    @SaCheckPermission("wm:stocktaking:edit")
     @PdaIdempotent
     @Log(title = "PDA盘点实盘录入", businessType = BusinessType.UPDATE)
     @PostMapping("/{planId}/line/count")
@@ -69,6 +75,7 @@ public class AppPdaStocktakingController {
     }
 
     /** 差异过账 (幂等键: 单号:0:post) */
+    @SaCheckPermission("wm:stocktaking:edit")
     @PdaIdempotent
     @Log(title = "PDA盘点过账", businessType = BusinessType.UPDATE)
     @PostMapping("/{planId}/post")

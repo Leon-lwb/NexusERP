@@ -1,5 +1,6 @@
 package com.nexus.erp.wm.controller.app;
 
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.nexus.common.core.domain.R;
 import com.nexus.common.log.annotation.Log;
 import com.nexus.common.log.enums.BusinessType;
@@ -38,18 +39,21 @@ public class AppPdaReceiveController {
     private final IPdaReceiveService pdaReceiveService;
 
     /** 待收货单据列表 (扫码/单号定位) */
+    @SaCheckPermission("wm:receive:list")
     @GetMapping("/todo")
     public TableDataInfo<PdaTodoItemVo> todo(@RequestParam(required = false) String keyword, PageQuery pageQuery) {
         return pdaReceiveService.todo(keyword, pageQuery);
     }
 
     /** 收货单详情 (头+行) */
+    @SaCheckPermission("wm:receive:list")
     @GetMapping("/{receiveId}")
     public R<PdaReceiveDetailVo> detail(@PathVariable Long receiveId) {
         return R.ok(pdaReceiveService.detail(receiveId));
     }
 
     /** 行级扫码核销 (幂等键: 单号:行号:confirm) */
+    @SaCheckPermission("wm:receive:edit")
     @PdaIdempotent
     @Log(title = "PDA收货核销", businessType = BusinessType.UPDATE)
     @PostMapping("/{receiveId}/line/confirm")
@@ -58,6 +62,7 @@ public class AppPdaReceiveController {
     }
 
     /** 上架确认: 扫库位码填充明细后整单上架 (幂等键: 单号:0:shelf:库位码) */
+    @SaCheckPermission("wm:receive:edit")
     @PdaIdempotent
     @Log(title = "PDA收货上架", businessType = BusinessType.UPDATE)
     @PutMapping("/{receiveId}/shelf")
@@ -66,6 +71,7 @@ public class AppPdaReceiveController {
     }
 
     /** 执行收货过账 (幂等键: 单号:0:finish) */
+    @SaCheckPermission("wm:receive:edit")
     @PdaIdempotent
     @Log(title = "PDA收货过账", businessType = BusinessType.UPDATE)
     @PostMapping("/{receiveId}/finish")

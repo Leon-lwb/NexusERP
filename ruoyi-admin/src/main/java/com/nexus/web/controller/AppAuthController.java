@@ -30,6 +30,7 @@ import com.nexus.web.domain.vo.TenantListVo;
 import me.zhyd.oauth.cache.AuthStateCache;
 import com.nexus.web.service.IAuthStrategy;
 import com.nexus.web.service.SysLoginService;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Duration;
@@ -54,6 +55,12 @@ public class AppAuthController {
      * App 客户端ID (sys_client 表中预置)
      */
     private static final String APP_CLIENT_ID = "428a8310cd442757ae699df5d894f051";
+
+    /**
+     * 开发环境短信验证码回显开关 (默认关闭; 生产环境严禁开启, 否则任意手机号可接管账号)
+     */
+    @Value("${app.auth.sms-code-echo:false}")
+    private boolean smsCodeEcho;
     private static final String APP_GRANT_TYPE_PASSWORD = "password";
     private static final String APP_GRANT_TYPE_SMS = "sms";
 
@@ -71,6 +78,10 @@ public class AppAuthController {
     @SaIgnore
     @GetMapping("/smsCode")
     public R<Map<String, Object>> smsCode(@RequestParam String phonenumber) {
+        // 验证码明文回显仅限开发环境; 默认关闭, 防止生产环境被用于接管任意手机号账号
+        if (!smsCodeEcho) {
+            return R.fail("短信验证码回显未开启, 请使用真实短信通道");
+        }
         String key = GlobalConstants.CAPTCHA_CODE_KEY + phonenumber;
         String code = RandomUtil.randomNumbers(6);
         RedisUtils.setCacheObject(key, code, Duration.ofMinutes(Constants.CAPTCHA_EXPIRATION));

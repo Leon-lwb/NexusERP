@@ -1,5 +1,6 @@
 package com.nexus.erp.wm.controller.app;
 
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.nexus.common.core.domain.R;
 import com.nexus.common.log.annotation.Log;
 import com.nexus.common.log.enums.BusinessType;
@@ -33,17 +34,20 @@ public class AppPdaReturnController {
 
     private final IPdaReturnService pdaReturnService;
 
+    @SaCheckPermission("wm:materialReturn:list")
     @GetMapping("/todo")
     public TableDataInfo<PdaTodoItemVo> todo(@RequestParam(required = false) String keyword, PageQuery pageQuery) {
         return pdaReturnService.todo(keyword, pageQuery);
     }
 
+    @SaCheckPermission("wm:materialReturn:list")
     @GetMapping("/{returnId}")
     public R<PdaReturnDetailVo> detail(@PathVariable Long returnId) {
         return R.ok(pdaReturnService.detail(returnId));
     }
 
     /** 行级扫码核销 (幂等键: 单号:行号:confirm) */
+    @SaCheckPermission("wm:materialReturn:edit")
     @PdaIdempotent
     @Log(title = "PDA退料核销", businessType = BusinessType.UPDATE)
     @PostMapping("/{returnId}/line/confirm")
@@ -54,6 +58,7 @@ public class AppPdaReturnController {
     }
 
     /** 退料完成过账 (幂等键: 单号:0:finish) */
+    @SaCheckPermission("wm:materialReturn:edit")
     @PdaIdempotent
     @Log(title = "PDA退料完成", businessType = BusinessType.UPDATE)
     @PostMapping("/{returnId}/finish")

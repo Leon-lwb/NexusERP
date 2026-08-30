@@ -1,5 +1,6 @@
 package com.nexus.erp.wm.controller.app;
 
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.nexus.common.core.domain.R;
 import com.nexus.common.log.annotation.Log;
 import com.nexus.common.log.enums.BusinessType;
@@ -34,17 +35,20 @@ public class AppPdaIssueController {
 
     private final IPdaIssueService pdaIssueService;
 
+    @SaCheckPermission("wm:productionissue:list")
     @GetMapping("/todo")
     public TableDataInfo<PdaTodoItemVo> todo(@RequestParam(required = false) String keyword, PageQuery pageQuery) {
         return pdaIssueService.todo(keyword, pageQuery);
     }
 
+    @SaCheckPermission("wm:productionissue:list")
     @GetMapping("/{issueId}")
     public R<PdaIssueDetailVo> detail(@PathVariable Long issueId) {
         return R.ok(pdaIssueService.detail(issueId));
     }
 
     /** 行级拣货核销 (幂等键: 单号:行号:pick) */
+    @SaCheckPermission("wm:productionissue:edit")
     @PdaIdempotent
     @Log(title = "PDA发料拣货", businessType = BusinessType.UPDATE)
     @PostMapping("/{issueId}/line/pick")
@@ -53,6 +57,7 @@ public class AppPdaIssueController {
     }
 
     /** 完成发料 (幂等键: 单号:0:finish); body 可携带缺货声明行走缺货逃生通道 */
+    @SaCheckPermission("wm:productionissue:edit")
     @PdaIdempotent
     @Log(title = "PDA发料完成", businessType = BusinessType.UPDATE)
     @PostMapping("/{issueId}/finish")
