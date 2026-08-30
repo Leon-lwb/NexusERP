@@ -1,5 +1,6 @@
 -- M2 批次2: 生产退料三类(良品/不良品/报废) — PC 建单, PDA 扫码核销
 -- 落账策略: 良品/不良品经杂项入库通道回库存(库位由建单指定, 不良品建议不良库区), 报废仅留痕不回库存
+-- 执行说明: 建表部分在 erp 库执行; 末尾 sys_auto_code_rule 种子属系统库(ry-vue), 需单独在系统库执行。
 
 CREATE TABLE IF NOT EXISTS wm_material_return (
     return_id      BIGINT        NOT NULL COMMENT '退料单ID',
