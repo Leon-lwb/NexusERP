@@ -108,6 +108,11 @@ public class WmTransferLine extends TenantEntity {
     private BigDecimal quantity;
 
     /**
+     * 已下架数量(两段式移库, 整行下架时=调拨数量)
+     */
+    private BigDecimal takeoffQty;
+
+    /**
      * 备注
      */
     private String remark;

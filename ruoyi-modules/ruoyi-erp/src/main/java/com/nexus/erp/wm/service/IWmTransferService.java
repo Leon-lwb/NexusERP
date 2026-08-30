@@ -21,6 +21,8 @@ public interface IWmTransferService extends WfCallBackServiceI {
     String STATUS_APPROVING = "APPROVING";
     /** 常量：STATUSAPPROVED */
     String STATUS_APPROVED = "APPROVED";
+    /** 常量：两段式移库中间态(全部行已下架, 待上架确认) */
+    String STATUS_TAKEN_OFF = "TAKEN_OFF";
     /** 常量：STATUSEXECUTED */
     String STATUS_EXECUTED = "EXECUTED";
     /** 常量：STATUSCANCELLED */

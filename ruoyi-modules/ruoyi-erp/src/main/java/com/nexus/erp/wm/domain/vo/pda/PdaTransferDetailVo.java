@@ -32,5 +32,7 @@ public class PdaTransferDetailVo {
         private String fromLocationCode;
         private String toLocationCode;
         private BigDecimal quantity;
+        /** 已下架数量(两段式; 非空即该行已下架) */
+        private BigDecimal takeoffQty;
     }
 }
