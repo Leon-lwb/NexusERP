@@ -809,7 +809,7 @@ public class TongYiWanxImageService implements IImageGenerationService {
 | `ai_mcp_market_tool` | 市场工具 | S2-C | ✅ `doc/ai/sql/archive/ai-stage2-c.sql` |
 | `ai_message`（ALTER） | 增 `thinking_content` 列（存思考过程） | S2-B | ✅ `doc/ai/sql/archive/ai-stage2-b.sql` |
 
-> 脚本位置：`doc/ai/sql/archive/ai-stage2-a.sql`（S2-A）、`doc/ai/sql/archive/ai-stage2-b.sql`（S2-B）、`doc/ai/sql/archive/ai-stage2-c.sql`（S2-C）。
+> 脚本来源：S2-A/B/C 增量 SQL（原 `doc/ai/sql/archive/ai-stage2-*.sql`）已于 2026-08-29 确认并入 `script/sql/ry-vue.sql` 后删除，需要溯源时从 git 历史找回。
 
 ---
 

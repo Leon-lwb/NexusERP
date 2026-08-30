@@ -1,8 +1,8 @@
 # NexusERP 功能开发进度
 
-> 更新日期: 2026-08-01
+> 更新日期: 2026-08-29
 > 状态图例: ✅ 已完成 | 🚧 进行中 | ⬜ 未开发 | 🗑️ 暂时搁置
-> 最近修订: 2026-08-01 增补 MES P0 新模块(lt/tg/sop/ncr + 进站出站)与财务核心(fin)进度
+> 最近修订: 2026-08-29 按 [08-16 全项目审查报告](./system/2026-08-16-全项目审查报告.md) 勘误（库存预留前端/IM 已读未读/工作流加签转办均已实现），并登记 MES 固件模块 (fw) 与流程编排模块 (ruoyi-flow) 两个新交付模块
 
 ---
 
@@ -15,17 +15,19 @@
 | **ERP 采购管理 (pu)** | 15 | 14 | 0 | 1 | 0 |
 | **ERP 生产管理 (prd)** | 18 | 17 | 1 | 0 | 0 |
 | **ERP 排产调度 (sch)** | 15 | 13 | 0 | 2 | 0 |
-| **ERP 仓储管理 (wm)** | 39 | 36 | 2 | 1 | 0 |
+| **ERP 仓储管理 (wm)** | 39 | 37 | 1 | 1 | 0 |
 | **ERP 跨模块 (MQ/枚举)** | 14 | 13 | 0 | 1 | 0 |
 | **ERP 财务核心 (fin)** | 12 | 8 | 0 | 0 | 4 |
 | **MES 制造执行** | 51 | 51 | 0 | 0 | 0 |
+| **MES 固件管理 (fw)** | 6 | 6 | 0 | 0 | 0 |
+| **流程编排 (ruoyi-flow)** | 8 | 8 | 0 | 0 | 0 |
 | **IoT 物联网** | 18 | 16 | 0 | 2 | 0 |
 | **AI 智能助手** | 25 | 21 | 2 | 2 | 0 |
-| **IM 即时通讯** | 9 | 8 | 1 | 0 | 0 |
+| **IM 即时通讯** | 9 | 9 | 0 | 0 | 0 |
 | **Pay 支付** | 5 | 4 | 0 | 1 | 0 |
-| **Workflow 工作流** | 27 | 25 | 0 | 2 | 0 |
+| **Workflow 工作流** | 27 | 26 | 0 | 1 | 0 |
 | **Report 报表** | 3 | 2 | 0 | 1 | 0 |
-| **合计** | **285** | **261** | **7** | **13** | **4** |
+| **合计** | **299** | **278** | **5** | **12** | **4** |
 
 ---
 
@@ -525,7 +527,7 @@ flowchart LR
 | 库存预留 DDL + Entity + Mapper | WmStockReservation | — | ✅ |
 | 库存预留 Service + 事务类型 | WmStockReservationService | — | ✅ |
 | SO 确认 + 工单下达 + 出库消费集成 | 跨模块联动 | — | ✅ |
-| 库存预留前端页面 | — | wm/reservation/ | 🚧 |
+| 库存预留前端页面 | — | wm/reservation/ | ✅ |
 | 拣货策略库存预留优化 | 拣货+预留联动 | — | ✅ |
 
 #### 搁置/未开发
@@ -797,7 +799,7 @@ flowchart LR
 | 系统通知 CRUD + 标记已读 | SysUserNotificationController | 系统组件 | ✅ |
 | SSE 实时消息推送 | ImRealtimePush | — | ✅ |
 | App 端即时通讯 (好友/群组/消息) | AppImController | 移动端 | ✅ |
-| 消息已读/未读状态 | — | — | 🚧 |
+| 消息已读/未读状态 | ImPrivateChatService/ImGroupChatService markRead | 已读回执信封 | ✅ |
 
 ---
 
@@ -876,7 +878,8 @@ flowchart LR
 | 盘点计划审批 | ✅ |
 | 到货通知审批 | ✅ |
 | 自定义审批规则引擎 | ⬜ |
-| 催办/加签/转办 | ⬜ |
+| 加签/转办/委派/撤回/撤销/跳跃 | ✅ |
+| 催办 | ⬜ |
 
 ---
 
@@ -902,7 +905,6 @@ flowchart LR
 
 | 优先级 | 模块 | 功能 | 预估工时 |
 |--------|------|------|----------|
-| P1 | ERP | 库存预留前端页面 (后端已完成) | 1d |
 | P1 | AI | 知识图谱限制修复 (JSON 解析/实体合并/大图性能/并发竞态) | 2d |
 | P1 | AI | 中优先级 Bug 11 项 (缺 @Transactional/Rerank fallback/InputStream 泄漏/权限校验等) | 3d |
 | P2 | IoT | 设备 OTA 固件升级 | 3d |
@@ -918,11 +920,10 @@ flowchart LR
 | P3 | ERP | 多仓库间自动调拨建议 | 2d |
 | P3 | ERP | WiFi/蓝牙位置验证打卡 | 2d |
 | P3 | ERP | 考勤异常自动告警 | 1d |
-| P3 | IM | 消息已读/未读状态 | 1d |
 | P3 | Pay | 对账功能 | 2d |
 | P3 | Report | 自定义数据源报表 | 1d |
 | P3 | Workflow | 自定义审批规则引擎 | 3d |
-| P3 | Workflow | 催办/加签/转办 | 2d |
+| P3 | Workflow | 催办 | 1d |
 
 ---
 
@@ -930,15 +931,17 @@ flowchart LR
 
 | 文档 | 路径 |
 |------|------|
+| 全项目审查报告 (08-16) | [system/2026-08-16-全项目审查报告.md](./system/2026-08-16-全项目审查报告.md) |
+| 数据库增量变更记录 | [system/数据库增量变更记录.md](./system/数据库增量变更记录.md) |
 | ERP 业务流转分析 | [erp/NexusERP_业务流转分析.md](./erp/NexusERP_业务流转分析.md) |
 | ERP 编码生成规则 | [erp/NexusERP_编码生成规则设计方案.md](./erp/NexusERP_编码生成规则设计方案.md) |
 | ERP 主文档 | [erp/NexusERP_ERP文档.md](./erp/NexusERP_ERP文档.md) |
+| PCBA 委外方案 | [erp/pcba-subcontract-feasibility-and-plan.md](./erp/pcba-subcontract-feasibility-and-plan.md) |
 | MES 主文档 | [mes/NexusERP_MES文档.md](./mes/NexusERP_MES文档.md) |
-| MES P0 开发计划 | [mes/plans/2026-07-24-mes-p0-development-plan-v1.0.md](./mes/plans/2026-07-24-mes-p0-development-plan-v1.0.md) |
-| 财务核心开发计划 | [erp/plans/2026-07-29-erp-financial-core-dev-plan.md](./erp/plans/2026-07-29-erp-financial-core-dev-plan.md) |
+| MES 刷写全链路指南 | [mes/plans/2026-08-17-mes-flash-fullchain-guide.md](./mes/plans/2026-08-17-mes-flash-fullchain-guide.md) |
+| 硬件生产流程差异分析 | [mes/hardware-production-flow-analysis.md](./mes/hardware-production-flow-analysis.md) |
 | 前瞻开发计划 (PLANS.md) | [PLANS.md](./PLANS.md) |
 | IoT 主文档 | [iot/NexusERP_IoT文档.md](./iot/NexusERP_IoT文档.md) |
 | AI 开发计划 | [ai/plans/NexusERP_AI开发计划.md](./ai/plans/NexusERP_AI开发计划.md) |
-| 三模块升级方案 | [system/NexusERP_三模块共同升级方案.md](./system/NexusERP_三模块共同升级方案.md) |
-| 代码审计报告 | [system/NexusERP_代码审计报告与修复进度.md](./system/NexusERP_代码审计报告与修复进度.md) |
-| BOM 增强变更文档 | [erp/archive/2026-06-26-erp-bom-enhancement-requirement-change.md](./erp/archive/2026-06-26-erp-bom-enhancement-requirement-change.md) |
+| 客户端生态规划 | [system/2026-08-19-Nexus客户端生态规划.md](./system/2026-08-19-Nexus客户端生态规划.md) |
+| 工作流回归测试清单 | [system/workflow-regression-checklist.md](./system/workflow-regression-checklist.md) |

@@ -14,7 +14,7 @@
 - `<模块>` 取值：ai / erp / iot / mes / im / system
 - 日期前缀用文档首次提交日期（`git log --diff-filter=A --date=short -- <file>`）
 - 计划/报告类放各模块 `plans/`，设计规范放 `specs/`，指南放 `guides/`
-- 已完成或废弃的文档移入对应 `plans/archive/` 或 `specs/archive/`，文件名保留
+- 已完成使命的历史计划/报告移入对应 `plans/archive/` 或 `specs/archive/` 作为开发日志保留，文件名不变；归档目录只进不出，不再在其中新增活跃文档
 - `report`/`verification-report` 后缀用于区分事后报告
 
 ## 2. 文档元信息模板
@@ -56,25 +56,25 @@
 
 ## 5. SQL 脚本规范
 
-> **重要变更（2026-07-29）**：开发期增量 SQL 不再以独立文件维护。DDL/菜单/字典直接合并进权威 schema 文件；发布后的增量迁移走 `script/sql/update/`。历史开发期脚本已归档至 `doc/<模块>/sql/archive/`，仅供追溯，不再执行。
+> **重要变更（2026-08-29）**：所有数据库变更统一直接合并进权威 schema 文件（`script/sql/ry-*.sql`），不再维护 `script/sql/update/` 增量脚本目录（该目录 44 个脚本已全部核对并入后删除）。每次合并数据库变更后，在 [system/数据库增量变更记录.md](./system/数据库增量变更记录.md) 追加一行摘要（日期/变更/落库）。
 
 ### 5.1 权威 schema 位置
 | 文件 | 内容 |
 |------|------|
 | `script/sql/ry-vue.sql` | 系统库（ai_*、im_*、sys_menu、sys_dict_*、sj_job 等） |
-| `script/sql/ry-erp.sql` | ERP 业务表（bd_/so_/pu_/prd_/wm_/sch_） |
-| `script/sql/ry-mes.sql` | MES 业务表（pro_/dc_/eq_/qc_/spc_/lt_/mes_） |
+| `script/sql/ry-erp.sql` | ERP 业务表（bd_/so_/pu_/prd_/wm_/sch_/gl_/fa_/fin_ 等） |
+| `script/sql/ry-mes.sql` | MES 业务表（pro_/dc_/eq_/qc_/spc_/fw_/st_/mes_ 等） |
 | `script/sql/ry-iot.sql` | IoT 业务表（iot_*） |
 | `script/sql/app.sql` | 移动端 App 表 |
-| `script/sql/update/` | 发布后增量迁移：`YYYY-MM-DD-<模块>-<描述>.sql` |
 
-新增表/列/菜单/字典时，直接编辑对应 `ry-*.sql`；如属发布后修复或增强，另加 `script/sql/update/YYYY-MM-DD-<模块>-<描述>.sql`。
+新增表/列/菜单/字典时，直接编辑对应 `ry-*.sql`，并在变更记录文档登记。
 
 ### 5.2 幂等性
-`update/` 下脚本必须支持重复执行不报错，推荐：
+主脚本为全新初始化的全量 dump（DROP TABLE + CREATE + INSERT）。对已运行环境做一次性修补时，临时脚本应保证幂等，推荐：
 - 建表用 `CREATE TABLE IF NOT EXISTS`
-- 加列用存储过程 + `information_schema` 检查（见 [erp-production-issue.sql](./erp/sql/archive/erp-production-issue.sql) 范本）
+- 加列用存储过程 + `information_schema` 检查
 - 插入字典用 `INSERT ... WHERE NOT EXISTS`
+修补完成后将变更并入主脚本、登记变更记录，再删除临时脚本。
 
 ### 5.3 文件头注释
 `update/` 脚本必须包含：
@@ -110,38 +110,34 @@
 
 ## 7. 目录结构约定
 
-doc/
-├── README.md              # 本顶层索引
+```
+doc/
+├── README.md              # 顶层索引
 ├── CONTRIBUTING.md        # 本规范
+├── PROGRESS.md            # 功能开发进度总览
+├── PLANS.md               # 前瞻开发计划 + 审查遗留待办
 ├── ai/
-│   ├── plans/             # 活跃计划（主计划、二阶段计划）
-│   │   └── archive/       # 已归档周计划 / QuickStart / S2A-D
-│   ├── knowledge-base/    # RAG 知识源（11 主题，.txt + .annotated.txt）
-│   └── sql/archive/       # 历史增量 SQL（已并入 ry-vue.sql）
+│   ├── plans/             # 活跃计划（主计划、二阶段计划、流程编排方案）
+│   └── knowledge-base/    # RAG 知识源（11 主题，.txt + .annotated.txt）
 ├── erp/
-│   ├── *.md               # ERP 综合文档、业务流转分析、编码规则
-│   ├── plans/             # 实施计划
-│   │   └── archive/
-│   ├── specs/             # 设计规范
-│   │   └── archive/
-│   ├── archive/           # 已归档变更说明
-│   └── sql/
-│       ├── archive/       # 历史增量 SQL（18 个，已并入 ry-erp/ry-vue.sql）
-│       └── test-data/     # 演示/测试数据 SQL（3 个）
+│   ├── *.md               # ERP 综合文档、业务流转分析、编码规则、PCBA 委外方案
+│   ├── specs/             # 设计规范（财务 F0-F5、视觉接入等）
+│   ├── guides/            # 操作指南
+│   └── sql/test-data/     # 演示/测试数据 SQL
 ├── iot/
-│   ├── *.md               # IoT 文档、学习指南、验收报告
-│   ├── plans/archive/
-│   └── sql/archive/       # 历史增量 SQL（已并入 ry-iot/ry-vue.sql）
+│   └── *.md               # IoT 文档、学习指南、验收报告
 ├── mes/
-│   ├── *.md               # MES 主文档、设备管理方案
-│   ├── plans/             # 总规划、P0 开发计划 v1.0、P0-9 计划
-│   │   └── archive/       # Week17-28 报告 + P0-2/4/5/7/8/9 实施计划
-│   └── sql/archive/       # 历史增量 SQL（33 个，已并入 ry-mes/ry-vue.sql）
+│   ├── *.md               # MES 主文档、设备管理方案、硬件生产流程分析
+│   ├── plans/             # 刷写操作指南类文档
+│   └── scripts/           # E2E 测试脚本
+├── im/                    # IM 升级记录、优化清单、性能测试资产
+├── station/               # 工位机开发计划与测试报告
+├── flowcharts/            # 业务流程图（drawio + 预览 + 生成脚本）
 └── system/
+    ├── *.md               # 审查报告、变更记录、客户端规划、部署/前端/品牌方案
     ├── deployment/        # 部署文档与 docker 配置
     ├── marketing/         # 公众号文章
-    ├── plans/archive/     # 已归档计划与分析报告
-    ├── screenshots/       # 系统截图（36 张）
+    ├── screenshots/       # 系统截图
     ├── specs/             # 编码规范
     └── user-manual/       # 用户操作手册
 ```

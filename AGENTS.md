@@ -33,7 +33,8 @@ Nexus-ERP 是一套面向制造业与贸易型企业的综合管理系统，涵�
 - `ry-mes.sql` — MES 业务表
 - `ry-iot.sql` — IoT 业务表
 - `app.sql` — 移动端 App 相关表
-- `update/` — 增量升级脚本；`oracle/`、`postgres/`、`sqlserver/` — 其他数据库版本
+
+> 2026-08-29 起不再维护 `update/` 增量脚本目录（44 个历史脚本已全部核对并入上述主脚本后删除）。数据库变更直接修改对应主脚本，并在 `doc/system/数据库增量变更记录.md` 登记。
 
 ### Docker 部署 (双机)
 

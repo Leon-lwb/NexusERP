@@ -1,25 +1,29 @@
 # 系统级文档
 
-本目录包含跨模块的系统级文档：升级方案、代码审计、Docker 部署、营销文档、用户手册。
+本目录包含跨模块的系统级文档：项目审查、规划、部署、营销与用户手册。
 
 ## 文档清单
 
-### 跨模块规划与审计
+### 审查与规划
 | 文档 | 主题 | 状态 |
 |------|------|------|
-| [NexusERP_三模块共同升级方案.md](./NexusERP_三模块共同升级方案.md) | ERP/MES/IoT 协同升级路线图（三波次，约 13 周） | 待审核 |
-| [NexusERP_代码审计报告与修复进度.md](./NexusERP_代码审计报告与修复进度.md) | 全模块代码审计（42 问题） | 🚧 CRITICAL 已修复，37 个待修复 |
-| [NexusERP_plus-ui前端优化方案.md](./NexusERP_plus-ui前端优化方案.md) | plus-ui 前端优化（5 阶段已完成 + 推广批次待开始） | ✅ 阶段 0-4 已完成，⬜ 批次 1-4 待推广 |
-| [2026-07-29-system-gap-analysis-vs-mainstream.md](./2026-07-29-system-gap-analysis-vs-mainstream.md) | 与主流 MES/ERP/IoT/AI 功能差距分析（对标 SAP/西门子/AWS/Dify 等） | ✅ 已发布 |
-| [2026-07-29-erp-financial-core-dev-plan.md](../erp/plans/2026-07-29-erp-financial-core-dev-plan.md) | ERP 财务核心模块开发计划（GL/AR-AP/FA/CO/预算，差距分析的财务补齐路线，F0-F7 约 20-25 人周） | 📋 规划待评审 |
+| [2026-08-16-全项目审查报告.md](./2026-08-16-全项目审查报告.md) | 全项目审查：缺失功能 + 待修复清单（安全/并发/前端），当前权威审计基线 | ✅ 最新 |
+| [数据库增量变更记录.md](./数据库增量变更记录.md) | 2026-07~08 数据库增量变更摘要（原 `script/sql/update/` 44 个脚本的收口记录） | ✅ 最新 |
+| [2026-08-19-Nexus客户端生态规划.md](./2026-08-19-Nexus客户端生态规划.md) | 桌面工位端/手持终端/边缘网关客户端生态规划 | 📋 规划 |
+| [NexusERP_plus-ui前端优化方案.md](./NexusERP_plus-ui前端优化方案.md) | plus-ui 前端优化（阶段 0-4 已完成，推广批次待开始） | 🚧 |
+| [2026-07-29-system-gap-analysis-vs-mainstream.md](./2026-07-29-system-gap-analysis-vs-mainstream.md) | 与主流 MES/ERP/IoT/AI 功能差距分析 | ✅ 已发布 |
+| [NexusERP_品牌Logo设计方案.md](./NexusERP_品牌Logo设计方案.md) | 品牌 Logo 设计方案（已定稿） | ✅ |
+| [workflow-regression-checklist.md](./workflow-regression-checklist.md) | 工作流模块回归测试清单（发版前手工回归） | ✅ |
+| [specs/charset-encoding-standard.md](./specs/charset-encoding-standard.md) | 字符集编码规范 | ✅ |
+
+> 2026-08-29 精简：三模块共同升级方案、06-24 代码审计报告（已被 08-16 审查报告覆盖）已删除；历史计划与分析报告作为开发日志保留在 [plans/archive/](./plans/archive/)（9 篇）。
 
 ### 部署（deployment/）
 | 文档/配置 | 路径 | 说明 |
 |-----------|------|------|
-| Docker 部署文档 | [deployment/docker部署文档.md](./deployment/docker部署文档.md) | v2.1，2026-07-26（主服务器 159.75.14.226） |
-| docker-compose-main | [deployment/docker/docker-compose-main.yml](./deployment/docker/docker-compose-main.yml) | 主服务器编排（MySQL5.7/Redis/RabbitMQ/MinIO/Nginx/NexusServer） |
-| docker-compose-assist | [../../docker-compose-assist.yml](../../docker-compose-assist.yml) | 辅助服务器编排（MonitorAdmin/SnailJobServer） |
-| nginx.conf | [../../plus-ui/nginx.conf](../../plus-ui/nginx.conf) | 反向代理（实际部署用，volume 挂载） |
+| Docker 部署文档 | [deployment/docker部署文档.md](./deployment/docker部署文档.md) | v2.1，2026-07-26（主服务器） |
+| 新服务器部署指南 | [deployment/新服务器部署指南.md](./deployment/新服务器部署指南.md) | 新服务器部署步骤 |
+| docker-compose-main | [deployment/docker/docker-compose-main.yml](./deployment/docker/docker-compose-main.yml) | 主服务器编排 |
 | redis.conf | [deployment/docker/redis/conf/redis.conf](./deployment/docker/redis/conf/redis.conf) | Redis 配置 |
 
 ### 营销（marketing/）
@@ -29,32 +33,11 @@
 | [NexusERP_1.1上线公众号文章.md](./marketing/NexusERP_1.1上线公众号文章.md) | 1.1 上线宣传（MES + IoT 双引擎） |
 
 ### 资源
-- [screenshots/](./screenshots/) - 36 张系统截图（34 PNG + 2 GIF，登录页与各业务模块界面）
-- [user-manual/](./user-manual/) - 用户操作手册（docx）
-
-### 待开发计划（plans/）
-| 文档 | 主题 | 状态 |
-|------|------|------|
-| [2026-07-17-system-so-purchase-linkage-plan.md](./plans/archive/2026-07-17-system-so-purchase-linkage-plan.md) | SO 销售订单->采购联动（补全 so_sales_order_line.purchase_qty / linked_po_id，建销售->采购业务链路） | 📋 待开发 |
-
-已完成的计划与临时分析报告（品牌 Logo、SO 行状态联动、MES 完工联动、代码审查等）归档于 [plans/archive/](./plans/archive/)。
+- [screenshots/](./screenshots/) - 系统截图（PNG + GIF，登录页与各业务模块界面）
+- [user-manual/](./user-manual/) - 用户操作手册（docx + 编写大纲）
 
 ## 阅读顺序
 
-1. 系统全貌：[NexusERP_三模块共同升级方案.md](./NexusERP_三模块共同升级方案.md)
-2. 代码质量：[NexusERP_代码审计报告与修复进度.md](./NexusERP_代码审计报告与修复进度.md)
+1. 项目现状与缺口：[2026-08-16-全项目审查报告.md](./2026-08-16-全项目审查报告.md)
+2. 客户端规划：[2026-08-19-Nexus客户端生态规划.md](./2026-08-19-Nexus客户端生态规划.md)
 3. 部署运维：[deployment/docker部署文档.md](./deployment/docker部署文档.md) + 配置文件
-
-## 已知问题
-
-1. ✅ **docker-compose 双机部署已落地并对齐 159.75.14.226 实际配置**（已修复）：
-   - [docker-compose-main.yml](./deployment/docker/docker-compose-main.yml)：6 服务，MySQL 5.7、MinIO 9005、RabbitMQ、nexus-server 镜像 `nexus-erp:fix-headless`
-   - [docker-compose-assist.yml](../../docker-compose-assist.yml)：2 服务（MonitorAdmin/SnailJobServer），在辅助服务器 117.72.190.225
-   - 原 docker-compose.yml 历史全量版、database.yml、doc 下 nginx.conf 副本等散落文件已清除
-2. ✅ **公众号 1.0 文章图片路径已修复**（已修复）：`../script/image/` 已全部改为 `../screenshots/`
-3. **代码审计进度滞后**：42问题仅修复 5 个 CRITICAL，37 个待修复无时间表
-4. ✅ **顶层索引已补建**：本 README 与 doc/README.md、CONTRIBUTING.md 已建立
-
-## 待用户决策
-
-（暂无待决策项）

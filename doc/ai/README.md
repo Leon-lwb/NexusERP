@@ -7,14 +7,15 @@
 ```
 /doc/ai/
 ├── README.md
+├── AI流程编排测试流程说明.md        # 流程编排手工测试说明
 ├── plans/                          # 活跃开发计划
-│   ├── NexusERP_AI开发计划.md                       # 主计划（Phase 0-2 完成确认 + 后续排期）
-│   └── NexusERP_AI二阶段开发计划_AI平台能力深化.md   # 二阶段 S2-A/B/C/D
-├── plans/archive/                  # 已归档历史计划（QuickStart_Phase0、Week2-11 周计划、S2A/S2B_S2C 实施计划、S2-D 验证报告与 Week12 计划）
-├── knowledge-base/                 # RAG 知识源文档（11 主题：01-erp-master-data ~ 11-system-integration，每主题 .txt 原始版 + .annotated.txt 标注版）
-└── sql/                            # 已清空：开发期 SQL 全部已并入 script/sql/ry-vue.sql
-    └── archive/                    # 历史增量 SQL：ai-providers-models / ai-stage2-a / ai-stage2-b / ai-stage2-c / ai-stage2-image
+│   ├── NexusERP_AI开发计划.md                       # 主计划（Phase 0-2 完成 + Phase 3-6 远期排期）
+│   ├── NexusERP_AI二阶段开发计划_AI平台能力深化.md   # 二阶段（大部分已交付）
+│   └── NexusERP_AI流程编排系统方案.md               # 流程编排系统设计方案（已实现）
+└── knowledge-base/                 # RAG 知识源文档（11 主题：01-erp-master-data ~ 11-system-integration，每主题 .txt 原始版 + .annotated.txt 标注版）
 ```
+
+> 历史周计划/实施计划作为开发日志保留在 `plans/archive/`（13 篇）；开发期增量 SQL（已并入 `script/sql/ry-vue.sql`）已删除。数据库变更摘要见 [../system/数据库增量变更记录.md](../system/数据库增量变更记录.md)。
 
 ## 知识源文档使用方式
 
