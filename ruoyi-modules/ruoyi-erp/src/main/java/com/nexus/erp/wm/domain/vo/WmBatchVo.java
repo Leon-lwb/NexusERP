@@ -143,6 +143,11 @@ public class WmBatchVo extends BaseEntity implements Serializable {
     private String status;
 
     /**
+     * IQC质检状态(QUALIFIED/UNQUALIFIED); NULL=无质检记录
+     */
+    private String qcStatus;
+
+    /**
      * 来源单据类型
      */
     private String sourceDocType;

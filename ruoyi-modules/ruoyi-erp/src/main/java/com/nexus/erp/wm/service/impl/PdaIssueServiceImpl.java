@@ -7,6 +7,7 @@ import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
+import com.nexus.erp.wm.domain.WmBatch;
 import com.nexus.erp.wm.domain.WmProductionIssueLine;
 import com.nexus.erp.wm.domain.bo.WmProductionIssueBo;
 import com.nexus.erp.wm.domain.bo.pda.PdaIssueFinishBo;
@@ -16,9 +17,11 @@ import com.nexus.erp.wm.domain.vo.WmProductionIssueVo;
 import com.nexus.erp.wm.domain.vo.pda.PdaActionResultVo;
 import com.nexus.erp.wm.domain.vo.pda.PdaIssueDetailVo;
 import com.nexus.erp.wm.domain.vo.pda.PdaTodoItemVo;
+import com.nexus.erp.wm.mapper.WmBatchMapper;
 import com.nexus.erp.wm.mapper.WmProductionIssueLineMapper;
 import com.nexus.erp.wm.service.IPdaIssueService;
 import com.nexus.erp.wm.service.IWmProductionIssueService;
+import com.nexus.system.service.ISysConfigService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -43,8 +46,14 @@ public class PdaIssueServiceImpl implements IPdaIssueService {
     private static final String STATUS_PARTIAL = "PARTIAL";
     private static final String STATUS_COMPLETED = "COMPLETED";
 
+    /** 发料批次质检门禁开关(sys_config; true=拣货批次 IQC 不合格禁止发料, 缺省关闭) */
+    private static final String QC_GATE_CONFIG_KEY = "wm.issue.batch.qcGate";
+    private static final String QC_UNQUALIFIED = "UNQUALIFIED";
+
     private final IWmProductionIssueService issueService;
     private final WmProductionIssueLineMapper lineMapper;
+    private final WmBatchMapper batchMapper;
+    private final ISysConfigService configService;
 
     @Override
     public TableDataInfo<PdaTodoItemVo> todo(String keyword, PageQuery pageQuery) {
@@ -134,6 +143,13 @@ public class PdaIssueServiceImpl implements IPdaIssueService {
             return PdaActionResultVo.fail("库位不符，请扫 " + target.getLocationCode());
         }
 
+        // 发料批次质检门禁(M3 批次5): 开关开启时, 拣货批次 IQC 不合格禁止发料
+        if (StringUtils.isNotBlank(bo.getBatchCode())
+            && "true".equalsIgnoreCase(StringUtils.trimToEmpty(configService.selectConfigByKey(QC_GATE_CONFIG_KEY)))
+            && isBatchUnqualified(bo.getBatchCode(), target.getMaterialId())) {
+            return PdaActionResultVo.fail("批次 " + bo.getBatchCode() + " IQC检验不合格，禁止发料");
+        }
+
         // 仅目标行置本次领料数量, 其余行清零后调用既有执行过账
         for (WmProductionIssueLine line : lines) {
             boolean isTarget = line.getLineId().equals(bo.getLineId());
@@ -150,6 +166,23 @@ public class PdaIssueServiceImpl implements IPdaIssueService {
         }
         issueService.execute(issueId);
         return PdaActionResultVo.ok(PdaActionResultVo.NEXT_SCAN_MATERIAL);
+    }
+
+    /**
+     * 批次是否 IQC 不合格 (M3 批次5 门禁)
+     * <p>
+     * 按批次号+物料定位批次; qc_status 为 UNQUALIFIED 时拦截,
+     * 无批次记录或未回写质检状态(NULL=无质检要求)一律放行。
+     */
+    private boolean isBatchUnqualified(String batchCode, Long materialId) {
+        if (materialId == null) {
+            return false;
+        }
+        WmBatch batch = batchMapper.selectOne(Wrappers.<WmBatch>lambdaQuery()
+            .eq(WmBatch::getBatchCode, batchCode)
+            .eq(WmBatch::getMaterialId, materialId)
+            .last("LIMIT 1"));
+        return batch != null && QC_UNQUALIFIED.equals(batch.getQcStatus());
     }
 
     @Override

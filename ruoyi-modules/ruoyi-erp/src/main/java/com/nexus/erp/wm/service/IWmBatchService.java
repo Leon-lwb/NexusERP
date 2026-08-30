@@ -98,4 +98,17 @@ public interface IWmBatchService {
      * 查找所有ACTIVE状态且有效期小于当天的批次，更新状态为EXPIRED
      */
     void checkExpiry();
+
+    /**
+     * IQC 完成回写批次质检状态 (M3 批次 5)
+     * <p>
+     * 经收货单行上的批次号定位批次(与批次建档方式无关), 将 qcStatus 写入
+     * 同物料且批次号命中的所有批次; 无匹配批次时静默跳过(收货行未录批次)。
+     *
+     * @param receiveId 收货单ID
+     * @param materialId 物料ID
+     * @param qcStatus QUALIFIED/UNQUALIFIED
+     * @return 影响批次行数
+     */
+    int markQcStatusByReceive(Long receiveId, Long materialId, String qcStatus);
 }

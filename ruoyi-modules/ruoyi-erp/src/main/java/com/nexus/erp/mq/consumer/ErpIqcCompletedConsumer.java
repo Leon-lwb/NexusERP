@@ -5,6 +5,7 @@ import com.nexus.common.mq.consumer.BaseMessageConsumer;
 import com.nexus.common.mq.message.IqcCompletedMessage;
 import com.nexus.erp.wm.domain.WmMaterialReceive;
 import com.nexus.erp.wm.service.IWmArrivalNoticeLineService;
+import com.nexus.erp.wm.service.IWmBatchService;
 import com.nexus.erp.wm.service.IWmMaterialReceiveService;
 import com.rabbitmq.client.Channel;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +35,7 @@ public class ErpIqcCompletedConsumer extends BaseMessageConsumer<IqcCompletedMes
 
     private final IWmMaterialReceiveService materialReceiveService;
     private final IWmArrivalNoticeLineService arrivalNoticeLineService;
+    private final IWmBatchService batchService;
 
     /**
      * 获取消息类型
@@ -60,6 +62,7 @@ public class ErpIqcCompletedConsumer extends BaseMessageConsumer<IqcCompletedMes
      * <ol>
      *   <li>收货单头 iqc_id/iqc_code（展示用）</li>
      *   <li>到货通知行 iqc_id/iqc_code/iqc_status（confirmShelf 门禁依据）</li>
+     *   <li>批次 qc_status（按收货行批次号定位, 发料门禁依据）</li>
      * </ol>
      *
      * @param message IQC检验完成消息
@@ -86,6 +89,12 @@ public class ErpIqcCompletedConsumer extends BaseMessageConsumer<IqcCompletedMes
         } else {
             log.warn("IQC回写缺少 noticeId/materialId，跳过按行回写: receiveId={}, materialId={}",
                 message.getReceiveId(), message.getMaterialId());
+        }
+
+        // 3. 批次质检状态回写(按收货行批次号定位; 发料门禁依据, M3 批次 5)
+        if (message.getMaterialId() != null) {
+            batchService.markQcStatusByReceive(message.getReceiveId(), message.getMaterialId(),
+                message.getInspectResult());
         }
         log.info("IQC回写收货单完成: receiveId={}, iqcCode={}, result={}",
             message.getReceiveId(), message.getIqcCode(), message.getInspectResult());

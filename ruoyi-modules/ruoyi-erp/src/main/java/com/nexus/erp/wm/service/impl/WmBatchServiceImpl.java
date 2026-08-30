@@ -12,9 +12,11 @@ import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.erp.wm.domain.WmBatch;
+import com.nexus.erp.wm.domain.WmMaterialReceiveLine;
 import com.nexus.erp.wm.domain.bo.WmBatchBo;
 import com.nexus.erp.wm.domain.vo.WmBatchVo;
 import com.nexus.erp.wm.mapper.WmBatchMapper;
+import com.nexus.erp.wm.mapper.WmMaterialReceiveLineMapper;
 import com.nexus.erp.wm.service.IWmBatchService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,6 +25,7 @@ import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 批次管理Service业务层处理
@@ -41,6 +44,9 @@ public class WmBatchServiceImpl implements IWmBatchService {
 
     /** 按日自增序号提供器（批次号并发安全） */
     private final DailyCodeSequenceProvider dailyCodeSequenceProvider;
+
+    /** 收货单行映射器（IQC 回写按收货行批次号定位批次） */
+    private final WmMaterialReceiveLineMapper materialReceiveLineMapper;
 
     /**
      * 分页查询批次列表
@@ -314,5 +320,45 @@ public class WmBatchServiceImpl implements IWmBatchService {
         lqw.eq(StringUtils.isNotBlank(bo.getSourceDocType()), WmBatch::getSourceDocType, bo.getSourceDocType());
         lqw.orderByDesc(WmBatch::getCreateTime);
         return lqw;
+    }
+
+    /**
+     * IQC 完成回写批次质检状态
+     * <p>
+     * 批次与收货的关联以收货行上的批次号为桥(批次建档来源多样, 不依赖 source_doc_*):
+     * 取该收货单+物料下所有收货行的批次号, 回写同物料且批次号命中的批次。
+     *
+     * @param receiveId  收货单ID
+     * @param materialId 物料ID
+     * @param qcStatus   QUALIFIED/UNQUALIFIED
+     * @return 影响批次行数
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int markQcStatusByReceive(Long receiveId, Long materialId, String qcStatus) {
+        if (receiveId == null || materialId == null || StringUtils.isBlank(qcStatus)) {
+            return 0;
+        }
+        List<String> batchCodes = materialReceiveLineMapper.selectList(
+                Wrappers.<WmMaterialReceiveLine>lambdaQuery()
+                    .eq(WmMaterialReceiveLine::getReceiveId, receiveId)
+                    .eq(WmMaterialReceiveLine::getMaterialId, materialId)
+                    .isNotNull(WmMaterialReceiveLine::getBatchCode))
+            .stream()
+            .map(WmMaterialReceiveLine::getBatchCode)
+            .filter(StringUtils::isNotBlank)
+            .distinct()
+            .collect(Collectors.toList());
+        if (batchCodes.isEmpty()) {
+            log.info("IQC回写批次跳过: 收货行无批次号, receiveId={}, materialId={}", receiveId, materialId);
+            return 0;
+        }
+        int rows = baseMapper.update(null, Wrappers.<WmBatch>lambdaUpdate()
+            .set(WmBatch::getQcStatus, qcStatus)
+            .eq(WmBatch::getMaterialId, materialId)
+            .in(WmBatch::getBatchCode, batchCodes));
+        log.info("IQC回写批次状态: receiveId={}, materialId={}, qcStatus={}, batchCodes={}, 影响行数={}",
+            receiveId, materialId, qcStatus, batchCodes, rows);
+        return rows;
     }
 }

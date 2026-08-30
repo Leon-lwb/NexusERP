@@ -139,6 +139,11 @@ public class WmBatch extends TenantEntity {
     private String status;
 
     /**
+     * IQC质检状态(QUALIFIED/UNQUALIFIED), 由IQC完成消息按收货行批次号回写; NULL=无质检记录
+     */
+    private String qcStatus;
+
+    /**
      * 来源单据类型
      */
     private String sourceDocType;
