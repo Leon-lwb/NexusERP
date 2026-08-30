@@ -6,10 +6,12 @@ import com.nexus.erp.bd.domain.BdMaterial;
 import com.nexus.erp.bd.domain.BdUnitOfMeasure;
 import com.nexus.erp.bd.mapper.BdMaterialMapper;
 import com.nexus.erp.bd.mapper.BdUnitOfMeasureMapper;
+import com.nexus.erp.wm.domain.WmBarcode;
 import com.nexus.erp.wm.domain.WmStorageArea;
 import com.nexus.erp.wm.domain.WmStorageLocation;
 import com.nexus.erp.wm.domain.WmWarehouse;
 import com.nexus.erp.wm.domain.vo.pda.PdaBasedataSyncVo;
+import com.nexus.erp.wm.mapper.WmBarcodeMapper;
 import com.nexus.erp.wm.mapper.WmStorageAreaMapper;
 import com.nexus.erp.wm.mapper.WmStorageLocationMapper;
 import com.nexus.erp.wm.mapper.WmWarehouseMapper;
@@ -42,6 +44,7 @@ public class PdaBasedataServiceImpl implements IPdaBasedataService {
     private final WmStorageLocationMapper locationMapper;
     private final WmStorageAreaMapper areaMapper;
     private final WmWarehouseMapper warehouseMapper;
+    private final WmBarcodeMapper barcodeMapper;
 
     @Override
     public PdaBasedataSyncVo sync(Long lastSyncTime) {
@@ -58,13 +61,17 @@ public class PdaBasedataServiceImpl implements IPdaBasedataService {
         List<WmWarehouse> warehouses = full
             ? warehouseMapper.selectList(Wrappers.lambdaQuery())
             : warehouseMapper.selectList(Wrappers.<WmWarehouse>lambdaQuery().gt(WmWarehouse::getUpdateTime, cursorDate));
+        List<WmBarcode> barcodes = full
+            ? barcodeMapper.selectList(Wrappers.lambdaQuery())
+            : barcodeMapper.selectList(Wrappers.<WmBarcode>lambdaQuery().gt(WmBarcode::getUpdateTime, cursorDate));
 
-        int incrementalTotal = materials.size() + locations.size() + warehouses.size();
+        int incrementalTotal = materials.size() + locations.size() + warehouses.size() + barcodes.size();
         if (!full && incrementalTotal > FULL_THRESHOLD) {
             full = true;
             materials = materialMapper.selectList(Wrappers.lambdaQuery());
             locations = locationMapper.selectList(Wrappers.lambdaQuery());
             warehouses = warehouseMapper.selectList(Wrappers.lambdaQuery());
+            barcodes = barcodeMapper.selectList(Wrappers.lambdaQuery());
         }
 
         // 编码映射(仓库/库区数量小, 全量载入拼接)
@@ -115,6 +122,25 @@ public class PdaBasedataServiceImpl implements IPdaBasedataService {
             warehouseItems.add(item);
         }
         vo.setWarehouses(warehouseItems);
+
+        // 条码 -> 物料映射 (物料编码全量载入拼接, 解析不到物料的条码不下发)
+        Map<Long, String> materialCodes = new HashMap<>();
+        for (BdMaterial m : materialMapper.selectList(Wrappers.lambdaQuery())) {
+            materialCodes.put(m.getMaterialId(), m.getMaterialCode());
+        }
+        List<PdaBasedataSyncVo.BarcodeItem> barcodeItems = new ArrayList<>(barcodes.size());
+        for (WmBarcode b : barcodes) {
+            String materialCode = b.getMaterialId() != null ? materialCodes.get(b.getMaterialId()) : null;
+            if (materialCode == null) {
+                continue;
+            }
+            PdaBasedataSyncVo.BarcodeItem item = new PdaBasedataSyncVo.BarcodeItem();
+            item.setBarcodeCode(b.getBarcodeCode());
+            item.setMaterialCode(materialCode);
+            item.setBatchCode(b.getBatchCode());
+            barcodeItems.add(item);
+        }
+        vo.setBarcodes(barcodeItems);
         return vo;
     }
 }

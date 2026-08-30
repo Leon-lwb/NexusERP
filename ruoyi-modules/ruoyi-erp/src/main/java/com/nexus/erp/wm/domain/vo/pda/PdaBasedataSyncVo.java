@@ -21,6 +21,8 @@ public class PdaBasedataSyncVo {
     private List<MaterialItem> materials;
     private List<LocationItem> locations;
     private List<WarehouseItem> warehouses;
+    /** 条码 -> 物料映射 (来源 wm_barcode, M2 批次1 新增) */
+    private List<BarcodeItem> barcodes;
 
     @Data
     public static class MaterialItem {
@@ -42,5 +44,12 @@ public class PdaBasedataSyncVo {
     public static class WarehouseItem {
         private String warehouseCode;
         private String warehouseName;
+    }
+
+    @Data
+    public static class BarcodeItem {
+        private String barcodeCode;
+        private String materialCode;
+        private String batchCode;
     }
 }
