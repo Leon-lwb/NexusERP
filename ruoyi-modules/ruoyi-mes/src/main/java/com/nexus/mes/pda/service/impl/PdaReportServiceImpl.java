@@ -8,7 +8,7 @@ import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.mes.pda.domain.bo.PdaReportCompleteBo;
-import com.nexus.mes.pda.domain.vo.PdaActionResultVo;
+import com.nexus.mes.pda.domain.vo.MesActionResultVo;
 import com.nexus.mes.pda.domain.vo.PdaDispatchItemVo;
 import com.nexus.mes.pda.service.IPdaReportService;
 import com.nexus.mes.pro.domain.ProDispatch;
@@ -68,38 +68,38 @@ public class PdaReportServiceImpl implements IPdaReportService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public PdaActionResultVo start(Long dispatchId) {
+    public MesActionResultVo start(Long dispatchId) {
         ProDispatch d = dispatchMapper.selectById(dispatchId);
         if (d == null) {
             throw new ServiceException("派工单不存在");
         }
         if (IProDispatchService.STATUS_IN_PROGRESS.equals(d.getDispatchStatus())) {
-            return PdaActionResultVo.ok("已在进行中"); // 幂等
+            return MesActionResultVo.ok("已在进行中"); // 幂等
         }
         if (!IProDispatchService.STATUS_PENDING.equals(d.getDispatchStatus())) {
-            return PdaActionResultVo.fail("当前状态不允许开工: " + d.getDispatchStatus());
+            return MesActionResultVo.fail("当前状态不允许开工: " + d.getDispatchStatus());
         }
         try {
             dispatchService.startDispatch(dispatchId);
         } catch (RuntimeException e) {
             log.warn("[PDA报工] 开工失败: {}", e.getMessage());
-            return PdaActionResultVo.fail(e.getMessage());
+            return MesActionResultVo.fail(e.getMessage());
         }
-        return PdaActionResultVo.ok("已开工");
+        return MesActionResultVo.ok("已开工");
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public PdaActionResultVo complete(Long dispatchId, PdaReportCompleteBo bo) {
+    public MesActionResultVo complete(Long dispatchId, PdaReportCompleteBo bo) {
         ProDispatch d = dispatchMapper.selectById(dispatchId);
         if (d == null) {
             throw new ServiceException("派工单不存在");
         }
         if (IProDispatchService.STATUS_COMPLETED.equals(d.getDispatchStatus())) {
-            return PdaActionResultVo.ok("已完成"); // 幂等
+            return MesActionResultVo.ok("已完成"); // 幂等
         }
         if (!IProDispatchService.STATUS_IN_PROGRESS.equals(d.getDispatchStatus())) {
-            return PdaActionResultVo.fail("请先开工后再报工");
+            return MesActionResultVo.fail("请先开工后再报工");
         }
         try {
             dispatchService.completeDispatch(dispatchId,
@@ -108,9 +108,9 @@ public class PdaReportServiceImpl implements IPdaReportService {
                 bo.getScrapQty() == null ? BigDecimal.ZERO : bo.getScrapQty());
         } catch (RuntimeException e) {
             log.warn("[PDA报工] 完工失败: {}", e.getMessage());
-            return PdaActionResultVo.fail(e.getMessage());
+            return MesActionResultVo.fail(e.getMessage());
         }
-        return PdaActionResultVo.ok("报工完成");
+        return MesActionResultVo.ok("报工完成");
     }
 
     private PdaDispatchItemVo toVo(ProDispatch d) {

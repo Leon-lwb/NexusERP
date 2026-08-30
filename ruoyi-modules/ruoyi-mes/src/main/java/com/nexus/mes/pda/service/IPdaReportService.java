@@ -3,7 +3,7 @@ package com.nexus.mes.pda.service;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.mes.pda.domain.bo.PdaReportCompleteBo;
-import com.nexus.mes.pda.domain.vo.PdaActionResultVo;
+import com.nexus.mes.pda.domain.vo.MesActionResultVo;
 import com.nexus.mes.pda.domain.vo.PdaDispatchItemVo;
 
 /**
@@ -18,8 +18,8 @@ public interface IPdaReportService {
     PdaDispatchItemVo detail(Long dispatchId);
 
     /** 开工: PENDING→IN_PROGRESS (已开工幂等返回成功) */
-    PdaActionResultVo start(Long dispatchId);
+    MesActionResultVo start(Long dispatchId);
 
     /** 完工报工: 数量校验+回写工序/工单 (已完成幂等返回成功) */
-    PdaActionResultVo complete(Long dispatchId, PdaReportCompleteBo bo);
+    MesActionResultVo complete(Long dispatchId, PdaReportCompleteBo bo);
 }

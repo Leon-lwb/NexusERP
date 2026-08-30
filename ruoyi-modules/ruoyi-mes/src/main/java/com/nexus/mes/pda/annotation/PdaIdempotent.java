@@ -12,7 +12,7 @@ import java.lang.annotation.Target;
  * 与 ruoyi-erp 的 wm.annotation.PdaIdempotent 同语义(两模块互不依赖, 各自持有):
  * 按请求头 {@code X-Idempotent-Key} 幂等去重(键格式 单号/设备码:行号|0:动作)。
  * 技术债: 待 MES 流程稳定后考虑下沉到 ruoyi-common。
- * 被标注方法的返回类型必须为 {@code R<com.nexus.mes.pda.domain.vo.PdaActionResultVo>}。
+ * 被标注方法的返回类型必须为 {@code R<com.nexus.mes.pda.domain.vo.MesActionResultVo>}。
  */
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)

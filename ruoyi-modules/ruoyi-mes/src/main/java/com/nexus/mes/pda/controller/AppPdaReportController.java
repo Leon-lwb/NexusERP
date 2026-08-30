@@ -1,5 +1,6 @@
 package com.nexus.mes.pda.controller;
 
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.nexus.common.core.domain.R;
 import com.nexus.common.log.annotation.Log;
 import com.nexus.common.log.enums.BusinessType;
@@ -7,7 +8,7 @@ import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.mes.pda.annotation.PdaIdempotent;
 import com.nexus.mes.pda.domain.bo.PdaReportCompleteBo;
-import com.nexus.mes.pda.domain.vo.PdaActionResultVo;
+import com.nexus.mes.pda.domain.vo.MesActionResultVo;
 import com.nexus.mes.pda.domain.vo.PdaDispatchItemVo;
 import com.nexus.mes.pda.service.IPdaReportService;
 import jakarta.validation.constraints.NotNull;
@@ -33,30 +34,34 @@ public class AppPdaReportController {
     private final IPdaReportService pdaReportService;
 
     /** 待报工派工列表 */
+    @SaCheckPermission("mes:pro:dispatch:list")
     @GetMapping("/todo")
     public TableDataInfo<PdaDispatchItemVo> todo(@RequestParam(required = false) String keyword, PageQuery pageQuery) {
         return pdaReportService.todo(keyword, pageQuery);
     }
 
     /** 派工详情 */
+    @SaCheckPermission("mes:pro:dispatch:list")
     @GetMapping("/{dispatchId}")
     public R<PdaDispatchItemVo> detail(@PathVariable Long dispatchId) {
         return R.ok(pdaReportService.detail(dispatchId));
     }
 
     /** 开工 (幂等键: 派工单号:0:start) */
+    @SaCheckPermission("mes:pro:dispatch:start")
     @PdaIdempotent
     @Log(title = "PDA报工开工", businessType = BusinessType.UPDATE)
     @PostMapping("/{dispatchId}/start")
-    public R<PdaActionResultVo> start(@PathVariable Long dispatchId) {
+    public R<MesActionResultVo> start(@PathVariable Long dispatchId) {
         return R.ok(pdaReportService.start(dispatchId));
     }
 
     /** 完工报工 (幂等键: 派工单号:0:complete) */
+    @SaCheckPermission("mes:pro:dispatch:complete")
     @PdaIdempotent
     @Log(title = "PDA完工报工", businessType = BusinessType.UPDATE)
     @PostMapping("/{dispatchId}/complete")
-    public R<PdaActionResultVo> complete(
+    public R<MesActionResultVo> complete(
         @PathVariable Long dispatchId,
         @Validated @RequestBody @NotNull PdaReportCompleteBo bo) {
         return R.ok(pdaReportService.complete(dispatchId, bo));

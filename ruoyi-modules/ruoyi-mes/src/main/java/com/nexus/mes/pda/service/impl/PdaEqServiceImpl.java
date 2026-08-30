@@ -15,7 +15,7 @@ import com.nexus.mes.eq.domain.bo.InspectionResultBo;
 import com.nexus.mes.eq.mapper.EqEquipmentMapper;
 import com.nexus.mes.eq.mapper.EqInspectionRecordMapper;
 import com.nexus.mes.eq.service.IEqEquipmentService;
-import com.nexus.mes.pda.domain.vo.PdaActionResultVo;
+import com.nexus.mes.pda.domain.vo.MesActionResultVo;
 import com.nexus.mes.pda.domain.vo.PdaEqInspectionVo;
 import com.nexus.mes.pda.domain.vo.PdaEqItemVo;
 import com.nexus.mes.pda.service.IPdaEqService;
@@ -89,7 +89,7 @@ public class PdaEqServiceImpl implements IPdaEqService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public PdaActionResultVo submit(Long equipmentId, InspectionResultBo bo) {
+    public MesActionResultVo submit(Long equipmentId, InspectionResultBo bo) {
         EqEquipment eq = equipmentMapper.selectById(equipmentId);
         if (eq == null) {
             throw new ServiceException("设备不存在");
@@ -109,7 +109,7 @@ public class PdaEqServiceImpl implements IPdaEqService {
         record.setOverallPass(Boolean.FALSE.equals(bo.getOverallPass()) ? "N" : "Y");
         record.setRemark(bo.getRemark());
         inspectionRecordMapper.insert(record);
-        return PdaActionResultVo.ok("点检已提交");
+        return MesActionResultVo.ok("点检已提交");
     }
 
     private List<Map<String, Object>> parseItems(String json) {

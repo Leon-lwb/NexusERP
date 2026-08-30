@@ -12,7 +12,7 @@ import com.nexus.mes.lt.mapper.LtLotMapper;
 import com.nexus.mes.lt.mapper.LtSnBindingMapper;
 import com.nexus.mes.pda.domain.bo.PdaSnBindBo;
 import com.nexus.mes.pda.domain.bo.PdaSnUnbindBo;
-import com.nexus.mes.pda.domain.vo.PdaActionResultVo;
+import com.nexus.mes.pda.domain.vo.MesActionResultVo;
 import com.nexus.mes.pda.domain.vo.PdaSnBindingVo;
 import com.nexus.mes.pda.service.IPdaSnService;
 import lombok.RequiredArgsConstructor;
@@ -46,17 +46,17 @@ public class PdaSnServiceImpl implements IPdaSnService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public PdaActionResultVo bind(PdaSnBindBo bo) {
+    public MesActionResultVo bind(PdaSnBindBo bo) {
         String snCode = bo.getSnCode().trim();
         String lotCode = bo.getLotCode().trim();
 
         LtSnBinding existing = selectBySn(snCode);
         if (existing != null) {
-            return PdaActionResultVo.fail("SN 已绑定批次 " + existing.getLotCode() + "，请先解绑");
+            return MesActionResultVo.fail("SN 已绑定批次 " + existing.getLotCode() + "，请先解绑");
         }
         LtLot lot = lotMapper.selectOne(Wrappers.<LtLot>lambdaQuery().eq(LtLot::getLotCode, lotCode));
         if (lot == null) {
-            return PdaActionResultVo.fail("批次不存在: " + lotCode);
+            return MesActionResultVo.fail("批次不存在: " + lotCode);
         }
 
         LtSnBinding binding = new LtSnBinding();
@@ -67,19 +67,19 @@ public class PdaSnServiceImpl implements IPdaSnService {
         binding.setBoundTime(new Date());
         binding.setBoundBy(LoginHelper.getUserId());
         snBindingMapper.insert(binding);
-        return PdaActionResultVo.ok("绑定成功");
+        return MesActionResultVo.ok("绑定成功");
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public PdaActionResultVo unbind(PdaSnUnbindBo bo) {
+    public MesActionResultVo unbind(PdaSnUnbindBo bo) {
         String snCode = bo.getSnCode().trim();
         LtSnBinding existing = selectBySn(snCode);
         if (existing == null) {
-            return PdaActionResultVo.fail("SN 未绑定: " + snCode);
+            return MesActionResultVo.fail("SN 未绑定: " + snCode);
         }
         snBindingMapper.deleteById(existing.getBindingId());
-        return PdaActionResultVo.ok("解绑成功");
+        return MesActionResultVo.ok("解绑成功");
     }
 
     private LtSnBinding selectBySn(String snCode) {

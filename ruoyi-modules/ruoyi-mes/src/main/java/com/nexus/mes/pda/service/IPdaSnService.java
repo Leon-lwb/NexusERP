@@ -2,7 +2,7 @@ package com.nexus.mes.pda.service;
 
 import com.nexus.mes.pda.domain.bo.PdaSnBindBo;
 import com.nexus.mes.pda.domain.bo.PdaSnUnbindBo;
-import com.nexus.mes.pda.domain.vo.PdaActionResultVo;
+import com.nexus.mes.pda.domain.vo.MesActionResultVo;
 import com.nexus.mes.pda.domain.vo.PdaSnBindingVo;
 
 /**
@@ -14,8 +14,8 @@ public interface IPdaSnService {
     PdaSnBindingVo query(String snCode);
 
     /** 绑定: SN -> 批次 (物料随批次带出); 重复绑定拒绝 */
-    PdaActionResultVo bind(PdaSnBindBo bo);
+    MesActionResultVo bind(PdaSnBindBo bo);
 
     /** 解绑: 按 SN 移除绑定; 未绑定拒绝 */
-    PdaActionResultVo unbind(PdaSnUnbindBo bo);
+    MesActionResultVo unbind(PdaSnUnbindBo bo);
 }

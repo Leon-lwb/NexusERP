@@ -3,7 +3,7 @@ package com.nexus.mes.pda.service;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.mes.eq.domain.bo.InspectionResultBo;
-import com.nexus.mes.pda.domain.vo.PdaActionResultVo;
+import com.nexus.mes.pda.domain.vo.MesActionResultVo;
 import com.nexus.mes.pda.domain.vo.PdaEqInspectionVo;
 import com.nexus.mes.pda.domain.vo.PdaEqItemVo;
 
@@ -19,5 +19,5 @@ public interface IPdaEqService {
     PdaEqInspectionVo detail(Long equipmentId);
 
     /** 提交点检结果: 委托 submitInspection(不合格自动 FAULT+安灯), 并写点检历史 */
-    PdaActionResultVo submit(Long equipmentId, InspectionResultBo bo);
+    MesActionResultVo submit(Long equipmentId, InspectionResultBo bo);
 }
