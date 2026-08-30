@@ -143,9 +143,14 @@ public class WmProductionIssueLine extends TenantEntity {
     private Long requirementDetailId;
 
     /**
-     * 行状态(PENDING/PARTIAL/ISSUED)
+     * 行状态(PENDING/PARTIAL/ISSUED/SHORT_CLOSED)
      */
     private String lineStatus;
+
+    /**
+     * 缺货原因(缺货关闭时填写)
+     */
+    private String shortageReason;
 
     /**
      * 单价

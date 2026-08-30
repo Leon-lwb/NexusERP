@@ -2,6 +2,7 @@ package com.nexus.erp.wm.service;
 
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
+import com.nexus.erp.wm.domain.bo.pda.PdaIssueFinishBo;
 import com.nexus.erp.wm.domain.bo.pda.PdaPickBo;
 import com.nexus.erp.wm.domain.vo.pda.PdaActionResultVo;
 import com.nexus.erp.wm.domain.vo.pda.PdaIssueDetailVo;
@@ -19,6 +20,6 @@ public interface IPdaIssueService {
     /** 行级拣货核销: 校验库位/数量后置该行 currentQty, 调用既有 execute 过账(支持多次) */
     PdaActionResultVo pick(Long issueId, PdaPickBo bo);
 
-    /** 完成发料: 全部行领满后执行; 未领满时拒绝(缺货通道为 M2) */
-    PdaActionResultVo finish(Long issueId);
+    /** 完成发料: 全部行领满走 execute; 携带缺货声明时走缺货逃生通道(未领满行缺货关闭) */
+    PdaActionResultVo finish(Long issueId, PdaIssueFinishBo bo);
 }

@@ -9,6 +9,8 @@ import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.erp.wm.domain.WmProductionIssueLine;
 import com.nexus.erp.wm.domain.bo.WmProductionIssueBo;
+import com.nexus.erp.wm.domain.bo.pda.PdaIssueFinishBo;
+import com.nexus.erp.wm.domain.bo.pda.PdaIssueShortageBo;
 import com.nexus.erp.wm.domain.bo.pda.PdaPickBo;
 import com.nexus.erp.wm.domain.vo.WmProductionIssueVo;
 import com.nexus.erp.wm.domain.vo.pda.PdaActionResultVo;
@@ -151,7 +153,7 @@ public class PdaIssueServiceImpl implements IPdaIssueService {
     }
 
     @Override
-    public PdaActionResultVo finish(Long issueId) {
+    public PdaActionResultVo finish(Long issueId, PdaIssueFinishBo bo) {
         WmProductionIssueVo head = issueService.selectById(issueId);
         if (head == null) {
             throw new ServiceException("发料单不存在");
@@ -161,12 +163,22 @@ public class PdaIssueServiceImpl implements IPdaIssueService {
         }
         List<WmProductionIssueLine> lines = lineMapper.selectList(
             Wrappers.<WmProductionIssueLine>lambdaQuery().eq(WmProductionIssueLine::getIssueId, issueId));
+        boolean hasUnfulfilled = false;
         for (WmProductionIssueLine line : lines) {
             BigDecimal required = line.getRequiredQty() == null ? BigDecimal.ZERO : line.getRequiredQty();
             BigDecimal issued = line.getIssuedQty() == null ? BigDecimal.ZERO : line.getIssuedQty();
             if (issued.compareTo(required) < 0) {
-                return PdaActionResultVo.fail("存在未领满的行，缺货通道尚未开放");
+                hasUnfulfilled = true;
+                break;
             }
+        }
+        if (hasUnfulfilled) {
+            List<PdaIssueShortageBo> shortages = bo == null ? null : bo.getShortageLines();
+            if (shortages == null || shortages.isEmpty()) {
+                return PdaActionResultVo.fail("存在未领满的行，请继续拣货或声明缺货完成");
+            }
+            issueService.completeWithShortage(issueId, shortages);
+            return PdaActionResultVo.ok(PdaActionResultVo.NEXT_FINISHED);
         }
         issueService.execute(issueId);
         return PdaActionResultVo.ok(PdaActionResultVo.NEXT_FINISHED);

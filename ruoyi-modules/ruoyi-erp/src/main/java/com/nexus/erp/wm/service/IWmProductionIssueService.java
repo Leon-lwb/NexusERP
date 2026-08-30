@@ -4,6 +4,7 @@ import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.erp.wm.domain.WmProductionIssueLine;
 import com.nexus.erp.wm.domain.bo.WmProductionIssueBo;
+import com.nexus.erp.wm.domain.bo.pda.PdaIssueShortageBo;
 import com.nexus.erp.wm.domain.vo.WmMaterialStockVo;
 import com.nexus.erp.wm.domain.vo.WmProductionIssueVo;
 
@@ -72,6 +73,15 @@ public interface IWmProductionIssueService {
      * 执行生产领料过账（扣减库存）— 支持多次部分领料
      */
     void execute(Long issueId);
+
+    /**
+     * 缺货关闭完成（缺货逃生通道）：不再过账（实发量已在行级拣货时过账），
+     * 未领满行按声明标记为缺货关闭（SHORT_CLOSED + 缺货原因），单据置为已完成。
+     *
+     * @param issueId   领料单ID
+     * @param shortages 缺货声明行（所有未领满行必须被声明，不允许多余声明）
+     */
+    void completeWithShortage(Long issueId, List<PdaIssueShortageBo> shortages);
 
     /**
      * 查询物料可用库存（ATP），按 FEFO 排序，供前端展示与执行前校验

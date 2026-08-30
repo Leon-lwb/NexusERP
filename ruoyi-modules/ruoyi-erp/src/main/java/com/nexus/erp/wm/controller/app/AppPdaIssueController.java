@@ -6,6 +6,7 @@ import com.nexus.common.log.enums.BusinessType;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.erp.wm.annotation.PdaIdempotent;
+import com.nexus.erp.wm.domain.bo.pda.PdaIssueFinishBo;
 import com.nexus.erp.wm.domain.bo.pda.PdaPickBo;
 import com.nexus.erp.wm.domain.vo.pda.PdaActionResultVo;
 import com.nexus.erp.wm.domain.vo.pda.PdaIssueDetailVo;
@@ -51,11 +52,13 @@ public class AppPdaIssueController {
         return R.ok(pdaIssueService.pick(issueId, bo));
     }
 
-    /** 完成发料 (幂等键: 单号:0:finish) */
+    /** 完成发料 (幂等键: 单号:0:finish); body 可携带缺货声明行走缺货逃生通道 */
     @PdaIdempotent
     @Log(title = "PDA发料完成", businessType = BusinessType.UPDATE)
     @PostMapping("/{issueId}/finish")
-    public R<PdaActionResultVo> finish(@PathVariable Long issueId) {
-        return R.ok(pdaIssueService.finish(issueId));
+    public R<PdaActionResultVo> finish(
+        @PathVariable Long issueId,
+        @RequestBody(required = false) PdaIssueFinishBo bo) {
+        return R.ok(pdaIssueService.finish(issueId, bo));
     }
 }

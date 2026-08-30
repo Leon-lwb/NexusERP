@@ -21,6 +21,7 @@ import com.nexus.erp.wm.domain.WmMaterialStock;
 import com.nexus.erp.wm.domain.WmProductionIssue;
 import com.nexus.erp.wm.domain.WmProductionIssueLine;
 import com.nexus.erp.wm.domain.bo.WmProductionIssueBo;
+import com.nexus.erp.wm.domain.bo.pda.PdaIssueShortageBo;
 import com.nexus.erp.wm.domain.vo.WmMaterialStockVo;
 import com.nexus.erp.wm.domain.vo.WmProductionIssueVo;
 import com.nexus.erp.wm.mapper.WmMaterialStockMapper;
@@ -68,6 +69,9 @@ public class WmProductionIssueServiceImpl implements IWmProductionIssueService {
     private static final String LINE_PARTIAL = "PARTIAL";
     /** 常量：行ISSUED */
     private static final String LINE_ISSUED = "ISSUED";
+
+    /** 行状态: 缺货关闭 (未领满但经缺货逃生通道完成) */
+    private static final String LINE_SHORT_CLOSED = "SHORT_CLOSED";
 
     /** 基础数据访问映射器（Mapper） */
     private final WmProductionIssueMapper baseMapper;
@@ -298,6 +302,65 @@ public class WmProductionIssueServiceImpl implements IWmProductionIssueService {
         recalcHeaderTotals(issueId);
         baseMapper.updateById(issue);
         log.info("生产领料单执行完成, issueId={}, status={}", issueId, issue.getStatus());
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void completeWithShortage(Long issueId, List<PdaIssueShortageBo> shortages) {
+        WmProductionIssue issue = baseMapper.selectById(issueId);
+        if (issue == null) {
+            throw new ServiceException("生产领料单不存在");
+        }
+        String status = issue.getStatus();
+        if (STATUS_COMPLETED.equals(status) || STATUS_EXECUTED.equals(status)) {
+            return; // 幂等: 已完成直接返回
+        }
+        if (!STATUS_CREATED.equals(status) && !STATUS_PARTIAL.equals(status)) {
+            throw new ServiceException("当前状态不允许缺货完成：" + status);
+        }
+
+        List<WmProductionIssueLine> lines = lineMapper.selectList(
+            Wrappers.lambdaQuery(WmProductionIssueLine.class)
+                .eq(WmProductionIssueLine::getIssueId, issueId));
+        if (lines == null || lines.isEmpty()) {
+            throw new ServiceException("生产领料单无明细行");
+        }
+
+        Map<Long, PdaIssueShortageBo> declared = new HashMap<>();
+        if (shortages != null) {
+            for (PdaIssueShortageBo s : shortages) {
+                if (s.getLineId() != null) {
+                    declared.put(s.getLineId(), s);
+                }
+            }
+        }
+
+        for (WmProductionIssueLine line : lines) {
+            if (isLineFullyIssued(line)) {
+                continue;
+            }
+            PdaIssueShortageBo s = declared.remove(line.getLineId());
+            if (s == null) {
+                throw new ServiceException("物料【" + line.getMaterialName() + "】未领满且未声明缺货");
+            }
+            BigDecimal gap = zeroIfNull(line.getRequiredQty()).subtract(zeroIfNull(line.getIssuedQty()));
+            if (gap.compareTo(BigDecimal.ZERO) < 0) {
+                gap = BigDecimal.ZERO;
+            }
+            line.setShortQty(gap);
+            line.setShortageReason(StringUtils.isNotBlank(s.getReason()) ? s.getReason() : "缺货");
+            line.setLineStatus(LINE_SHORT_CLOSED);
+            line.setCurrentQty(null);
+            lineMapper.updateById(line);
+        }
+        if (!declared.isEmpty()) {
+            throw new ServiceException("缺货声明包含不存在或已领满的行");
+        }
+
+        issue.setStatus(STATUS_COMPLETED);
+        recalcHeaderTotals(issueId);
+        baseMapper.updateById(issue);
+        log.info("生产领料单缺货关闭完成, issueId={}", issueId);
     }
 
     /**
