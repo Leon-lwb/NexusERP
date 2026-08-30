@@ -6,7 +6,7 @@ import java.math.BigDecimal;
 import java.util.List;
 
 /**
- * PDA 盘点单详情 (M1 明盘: 展示账面数)
+ * PDA 盘点单详情 (明盘下发明细账面数; 盲盘 BLIND 时 bookQty 置空)
  */
 @Data
 public class PdaStocktakingDetailVo {
@@ -16,6 +16,8 @@ public class PdaStocktakingDetailVo {
     private String planName;
     private String status;
     private String warehouseName;
+    /** 盘点模式 OPEN明盘/BLIND盲盘 */
+    private String countMode;
 
     private List<PdaStocktakingLineVo> lines;
 

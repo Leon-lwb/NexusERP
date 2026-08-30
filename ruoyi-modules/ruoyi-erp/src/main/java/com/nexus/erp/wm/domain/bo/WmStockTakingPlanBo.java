@@ -83,6 +83,11 @@ public class WmStockTakingPlanBo extends BaseEntity {
     private String status;
 
     /**
+     * 盘点模式 OPEN明盘/BLIND盲盘
+     */
+    private String countMode;
+
+    /**
      * 审批流程ID
      */
     private Long selectFlowId;

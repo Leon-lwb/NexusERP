@@ -112,6 +112,9 @@ public class WmStockTakingPlanServiceImpl implements IWmStockTakingPlanService {
             entity.setPlanCode(wm.autoCodeUtil.genSerialCode("WM_STOCKTAKING_CODE", null));
         }
         int rows = baseMapper.insert(entity);
+        // 回写主键与单号, 供编排层(如 PDA 临时盘点)续做
+        bo.setPlanId(entity.getPlanId());
+        bo.setPlanCode(entity.getPlanCode());
         if (bo.getWmStockTakingLineList() != null) {
             for (WmStockTakingLine line : bo.getWmStockTakingLineList()) {
                 line.setLineId(null);

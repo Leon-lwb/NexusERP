@@ -87,6 +87,12 @@ public class WmStockTakingPlanVo implements Serializable {
     private String status;
 
     /**
+     * 盘点模式 OPEN明盘/BLIND盲盘
+     */
+    @ExcelProperty("盘点模式")
+    private String countMode;
+
+    /**
      * 审批流程ID
      */
     @ExcelProperty("审批流程ID")

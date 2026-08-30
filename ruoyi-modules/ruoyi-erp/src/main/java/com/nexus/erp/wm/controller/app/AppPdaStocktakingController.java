@@ -7,6 +7,7 @@ import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.erp.wm.annotation.PdaIdempotent;
 import com.nexus.erp.wm.domain.bo.pda.PdaCountBo;
+import com.nexus.erp.wm.domain.bo.pda.PdaStocktakingCreateBo;
 import com.nexus.erp.wm.domain.vo.pda.PdaActionResultVo;
 import com.nexus.erp.wm.domain.vo.pda.PdaStocktakingDetailVo;
 import com.nexus.erp.wm.domain.vo.pda.PdaTodoItemVo;
@@ -24,7 +25,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * PDA 盘点接口 (M1 明盘; 盲盘/临时盘点/动碰盘为 M2)
+ * PDA 盘点接口 (明盲盘 + 临时盘点现场建单 + 动碰盘)
  */
 @Validated
 @RequiredArgsConstructor
@@ -37,6 +38,14 @@ public class AppPdaStocktakingController {
     @GetMapping("/todo")
     public TableDataInfo<PdaTodoItemVo> todo(@RequestParam(required = false) String keyword, PageQuery pageQuery) {
         return pdaStocktakingService.todo(keyword, pageQuery);
+    }
+
+    /** 临时盘点现场建单并生成明细 (幂等键: 仓库:时间戳) */
+    @PdaIdempotent
+    @Log(title = "PDA临时盘点建单", businessType = BusinessType.INSERT)
+    @PostMapping("/create")
+    public R<PdaStocktakingDetailVo> create(@Validated @RequestBody @NotNull PdaStocktakingCreateBo bo) {
+        return R.ok(pdaStocktakingService.create(bo));
     }
 
     @GetMapping("/{planId}")
