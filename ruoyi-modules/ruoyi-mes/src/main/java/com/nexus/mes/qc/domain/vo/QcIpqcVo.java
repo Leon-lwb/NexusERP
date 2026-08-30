@@ -102,5 +102,8 @@ public class QcIpqcVo implements Serializable {
     private String status;
 
     /** 备注 */
+    /** 检验照片附件ossId串(逗号分隔) */
+    private String photoOssIds;
+
     private String remark;
 }
