@@ -3,11 +3,13 @@ package com.nexus.erp.wm.service.impl;
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.nexus.erp.wm.domain.WmMaterialHandover;
 import com.nexus.erp.wm.domain.WmMaterialReceive;
 import com.nexus.erp.wm.domain.WmProductionIssue;
 import com.nexus.erp.wm.domain.WmStockTakingPlan;
 import com.nexus.erp.wm.domain.WmTransfer;
 import com.nexus.erp.wm.domain.vo.pda.PdaTodoSummaryVo;
+import com.nexus.erp.wm.mapper.WmMaterialHandoverMapper;
 import com.nexus.erp.wm.mapper.WmMaterialReceiveMapper;
 import com.nexus.erp.wm.mapper.WmProductionIssueMapper;
 import com.nexus.erp.wm.mapper.WmStockTakingPlanMapper;
@@ -43,6 +45,7 @@ public class PdaTodoServiceImpl implements IPdaTodoService {
     private final WmProductionIssueMapper issueMapper;
     private final WmTransferMapper transferMapper;
     private final WmStockTakingPlanMapper stocktakingMapper;
+    private final WmMaterialHandoverMapper handoverMapper;
 
     @Override
     public PdaTodoSummaryVo summary() {
@@ -71,6 +74,11 @@ public class PdaTodoServiceImpl implements IPdaTodoService {
                     IWmStockTakingPlanService.STATUS_DRAFT,
                     IWmStockTakingPlanService.STATUS_GENERATED));
             items.add(item("stocktaking", "盘点", count, "/pages/wm/stocktaking/index"));
+        }
+        if (StpUtil.hasPermission("wm:materialHandover:list")) {
+            Long count = handoverMapper.selectCount(Wrappers.<WmMaterialHandover>lambdaQuery()
+                .eq(WmMaterialHandover::getStatus, WmMaterialHandover.STATUS_DRAFT));
+            items.add(item("handover", "上料交接", count, "/pages/wm/handover/index"));
         }
 
         PdaTodoSummaryVo vo = new PdaTodoSummaryVo();
