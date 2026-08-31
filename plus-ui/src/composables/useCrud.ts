@@ -22,14 +22,14 @@ export interface PageQuery {
 export interface CrudApis<T, Q> {
   /** 列表查询 */
   list: (query: Q) => Promise<{ rows: T[]; total: number }>;
-  /** 详情查询 */
-  get: (id: any) => Promise<{ data: T }>;
-  /** 新增 */
-  add: (data: Partial<T>) => Promise<unknown>;
-  /** 修改 */
-  update: (data: Partial<T>) => Promise<unknown>;
-  /** 删除（支持单个 id 或 id 数组） */
-  del: (ids: any) => Promise<unknown>;
+  /** 详情查询（无详情接口的纯列表页可缺省） */
+  get?: (id: any) => Promise<{ data: T }>;
+  /** 新增（新增走表单页时可缺省） */
+  add?: (data: Partial<T>) => Promise<unknown>;
+  /** 修改（后端无修改接口时可缺省） */
+  update?: (data: Partial<T>) => Promise<unknown>;
+  /** 删除（支持单个 id 或 id 数组；后端无删除接口时可缺省） */
+  del?: (ids: any) => Promise<unknown>;
 }
 
 /** useCrud 配置 */
@@ -149,7 +149,7 @@ export function useCrud<T extends Record<string, any>, Q extends PageQuery>(opti
     isViewMode.value = false;
     const id = row?.[idField] ?? ids.value;
     extraInit?.();
-    return apis.get(id).then((res: any) => {
+    return apis.get!(id).then((res: any) => {
       form.value = res.data;
       afterLoad?.(res.data);
       open.value = true;
@@ -167,7 +167,7 @@ export function useCrud<T extends Record<string, any>, Q extends PageQuery>(opti
     isViewMode.value = true;
     const id = row?.[idField] ?? ids.value;
     extraInit?.();
-    return apis.get(id).then((res: any) => {
+    return apis.get!(id).then((res: any) => {
       form.value = res.data;
       afterLoad?.(res.data);
       open.value = true;
@@ -181,7 +181,7 @@ export function useCrud<T extends Record<string, any>, Q extends PageQuery>(opti
       if (!valid) return;
       beforeSubmit?.(form.value);
       const isEdit = (form.value as any)[idField] != null;
-      const api = isEdit ? apis.update(form.value) : apis.add(form.value);
+      const api = isEdit ? apis.update!(form.value) : apis.add!(form.value);
       return api.then(() => {
         ElMessage.success(isEdit ? '修改成功' : '新增成功');
         open.value = false;
@@ -195,7 +195,7 @@ export function useCrud<T extends Record<string, any>, Q extends PageQuery>(opti
     const deleteIds = row?.[idField] ?? ids.value;
     const display = Array.isArray(deleteIds) ? deleteIds.join(',') : deleteIds;
     ElMessageBox.confirm(`是否确认删除${entityName}编号为"${display}"的数据项？`, '提示', { type: 'warning' })
-      .then(() => apis.del(deleteIds))
+      .then(() => apis.del!(deleteIds))
       .then(() => {
         getList();
         ElMessage.success('删除成功');

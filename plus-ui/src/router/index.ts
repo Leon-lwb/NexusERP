@@ -374,6 +374,34 @@ export const dynamicRoutes: RouteRecordRaw[] = [
     ]
   },
   {
+    path: '/erp/wm/return/form',
+    component: Layout,
+    hidden: true,
+    permissions: ['wm:materialReturn:query'],
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/erp/wm/return/form.vue'),
+        name: 'ReturnForm',
+        meta: { title: '退料单表单', activeMenu: '/erp/inventory/materialReturn' }
+      }
+    ]
+  },
+  {
+    path: '/erp/wm/handover/form',
+    component: Layout,
+    hidden: true,
+    permissions: ['wm:materialHandover:query'],
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/erp/wm/handover/form.vue'),
+        name: 'HandoverForm',
+        meta: { title: '上料交接单表单', activeMenu: '/erp/inventory/materialHandover' }
+      }
+    ]
+  },
+  {
     path: '/erp/wm/stocktaking/form',
     component: Layout,
     hidden: true,
