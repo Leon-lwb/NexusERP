@@ -1,0 +1,117 @@
+package com.nexus.workflow.service.impl;
+
+import com.nexus.common.core.utils.MapstructUtils;
+import com.nexus.common.core.utils.StringUtils;
+import com.nexus.common.mybatis.core.page.TableDataInfo;
+import com.nexus.common.mybatis.core.page.PageQuery;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import com.nexus.workflow.domain.WfNform;
+import com.nexus.workflow.domain.bo.WfNformBo;
+import com.nexus.workflow.domain.vo.WfNformVo;
+import com.nexus.workflow.mapper.WfNformMapper;
+import com.nexus.workflow.service.IWfNformService;
+
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Collection;
+
+/**
+ * 设计器单Service业务层处理
+ *
+ * @author wanghuan
+ * @date 2025-04-29
+ */
+@RequiredArgsConstructor
+@Service
+public class WfNformServiceImpl implements IWfNformService {
+
+    private final WfNformMapper baseMapper;
+
+    /**
+     * 查询设计器单
+     */
+    @Override
+    public WfNform queryById(Long formId) {
+        WfNform wfNform = baseMapper.selectById(formId);
+        return wfNform;
+    }
+
+        /**
+         * 查询设计器单列表
+         */
+        @Override
+        public TableDataInfo<WfNformVo> queryPageList(WfNformBo bo, PageQuery pageQuery) {
+            LambdaQueryWrapper<WfNform> lqw = buildQueryWrapper(bo);
+            Page<WfNformVo> result = baseMapper.selectVoPage(pageQuery.build(), lqw);
+            return TableDataInfo.build(result);
+        }
+
+    /**
+     * 查询设计器单列表
+     */
+    @Override
+    public List<WfNformVo> queryList(WfNformBo bo) {
+        LambdaQueryWrapper<WfNform> lqw = buildQueryWrapper(bo);
+        return baseMapper.selectVoList(lqw);
+    }
+
+    private LambdaQueryWrapper<WfNform> buildQueryWrapper(WfNformBo bo) {
+        Map<String, Object> params = bo.getParams();
+        LambdaQueryWrapper<WfNform> lqw = Wrappers.lambdaQuery();
+                    lqw.like(StringUtils.isNotBlank(bo.getFormName()), WfNform::getFormName, bo.getFormName());
+                    lqw.eq(StringUtils.isNotBlank(bo.getFormDesc()), WfNform::getFormDesc, bo.getFormDesc());
+                    lqw.eq(StringUtils.isNotBlank(bo.getFormContent()), WfNform::getFormContent, bo.getFormContent());
+        return lqw;
+    }
+
+    /**
+     * 新增设计器单
+     */
+    @Override
+    public Boolean insertByBo(WfNformBo bo) {
+        WfNform add = MapstructUtils.convert(bo, WfNform.class);
+        validEntityBeforeSave(add);
+        boolean flag = baseMapper.insert(add) > 0;
+        if (flag) {
+        }
+        return flag;
+    }
+
+    /**
+ * 修改设计器单
+ */
+@Override
+public Boolean updateByBo(WfNformBo bo) {
+    WfNform update = MapstructUtils.convert(bo, WfNform.class);
+    validEntityBeforeSave(update);
+
+    // 更新主表
+    boolean flag = baseMapper.updateById(update) > 0;
+
+
+    return flag;
+}
+
+    /**
+     * 保存前的数据校验
+     */
+    private void validEntityBeforeSave(WfNform entity) {
+    }
+
+    /**
+     * 批量删除设计器单
+     */
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public Boolean deleteWithValidByIds(Collection<Long> ids, Boolean isValid) {
+        return baseMapper.deleteByIds(ids) > 0;
+    }
+
+}

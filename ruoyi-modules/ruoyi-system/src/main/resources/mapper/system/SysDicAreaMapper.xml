@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nexus.system.mapper.SysDicAreaMapper">
+
+    <resultMap type="com.nexus.system.domain.SysDicArea" id="SysDicAreaResult">
+        <id property="pkid" column="pkid"/>
+        <result property="areaId" column="area_id"/>
+        <result property="parentAreaId" column="parent_area_id"/>
+        <result property="areaName" column="area_name"/>
+        <result property="lat" column="lat"/>
+        <result property="lng" column="lng"/>
+        <result property="layered" column="layered"/>
+        <result property="sort" column="sort"/>
+        <result property="address" column="address"/>
+        <result property="createTime" column="create_time"/>
+        <result property="createBy" column="create_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="updateBy" column="update_by"/>
+    </resultMap>
+
+    <select id="selectProvinces" resultMap="SysDicAreaResult">
+        select * from sys_dic_area where layered = 1 order by sort asc
+    </select>
+
+    <select id="selectNextLevel" resultMap="SysDicAreaResult">
+        select * from sys_dic_area where parent_area_id = #{parentAreaId} order by sort asc
+    </select>
+
+</mapper>

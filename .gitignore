@@ -1,0 +1,84 @@
+######################################################################
+# Build Tools
+
+.gradle
+/build/
+!gradle/wrapper/gradle-wrapper.jar
+
+target/
+!.mvn/wrapper/maven-wrapper.jar
+
+######################################################################
+# IDE
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+
+### JRebel ###
+rebel.xml
+
+### NetBeans ###
+nbproject/private/
+build/*
+nbbuild/
+nbdist/
+.nb-gradle/
+
+######################################################################
+# Claude Code
+.claude
+**/.claude
+
+######################################################################
+# OS
+.DS_Store
+.DS_Store?
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+######################################################################
+# Java
+*.class
+hs_err_pid*
+replay_pid*
+
+######################################################################
+# Others
+*.log
+*.log.gz
+*.xml.versionsBackup
+*.swp
+
+!*/build/*.java
+
+######################################################################
+# Secret Config
+**/application-secret.yml
+**/*.run.xml.local
+!*/build/*.html
+!*/build/*.xml
+
+.flattened-pom.xml
+
+application-prod.yml
+.env
+.agents/
+
+# 可视化头脑风暴会话文件
+.superpowers/
+doc/erp/scripts/__pycache__/
+
+# ZCode 会话/计划状态文件
+.zcode/

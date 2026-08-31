@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="drawio" version="31.1.5">
+  <diagram name="Page-1">
+    <mxGraphModel>
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="st1" value="① 告警检测（StreamConsumer 内）" style="swimlane;startSize=34;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#d6b656;fontColor=#7a5c00;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="140" y="40" width="960" height="440" as="geometry" />
+        </mxCell>
+        <mxCell id="a1" value="设备数据入库后&#xa;检查 propertyCode 硬编码阈值" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="st1">
+          <mxGeometry x="160" y="50" width="340" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="a2" value="告警规则表（按需引入）&#xa;iot_alert_rule / iot_alert_log" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="st1">
+          <mxGeometry x="160" y="160" width="340" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="a3" value="触发告警&#xa;（日志 + 记录）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="st1">
+          <mxGeometry x="160" y="270" width="340" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="st2" value="② 告警生命周期" style="swimlane;startSize=34;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#d6b656;fontColor=#7a5c00;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="140" y="520" width="960" height="420" as="geometry" />
+        </mxCell>
+        <mxCell id="b1" value="ACTIVE 激活" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="st2">
+          <mxGeometry x="200" y="50" width="260" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="b2" value="ACKNOWLEDGED 已确认&#xa;（处理人确认）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="st2">
+          <mxGeometry x="200" y="160" width="260" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="b3" value="RESOLVED 已解决" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="st2">
+          <mxGeometry x="200" y="270" width="260" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="st3" value="③ 通知方式" style="swimlane;startSize=34;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#d6b656;fontColor=#7a5c00;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="140" y="980" width="960" height="360" as="geometry" />
+        </mxCell>
+        <mxCell id="c1" value="SSE 推送&#xa;SseMessageUtils.publishMessage" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="st3">
+          <mxGeometry x="190" y="50" width="280" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="c2" value="邮件通知&#xa;（ruoyi-common-mail）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="st3">
+          <mxGeometry x="190" y="160" width="280" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="st4" value="④ 设备心跳检测（SnailJob）" style="swimlane;startSize=34;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#d6b656;fontColor=#7a5c00;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="140" y="1380" width="960" height="420" as="geometry" />
+        </mxCell>
+        <mxCell id="d1" value="IotDeviceHeartbeatTask&#xa;每 5 分钟检查 last_online_time" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="st4">
+          <mxGeometry x="160" y="50" width="340" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="d2" value="超时 &gt; 15 分钟&#xa;→ 标记 OFFLINE" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="st4">
+          <mxGeometry x="160" y="160" width="340" height="72" as="geometry" />
+        </mxCell>
+        <mxCell id="d3" value="更新 Redis 状态 + 数据库&#xa;connection_status" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="st4">
+          <mxGeometry x="160" y="280" width="340" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="lg" value="图例" style="swimlane;startSize=34;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#999999;fontColor=#333333;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="140" y="1840" width="560" height="174" as="geometry" />
+        </mxCell>
+        <mxCell id="lg0" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="lg">
+          <mxGeometry x="20" y="50" width="30" height="16" as="geometry" />
+        </mxCell>
+        <mxCell id="lg0t" value="单据 / 操作" style="text;html=1;align=left;verticalAlign=middle;" vertex="1" parent="lg">
+          <mxGeometry x="60" y="47" width="200" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="lg1" value="" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="lg">
+          <mxGeometry x="20" y="88" width="30" height="16" as="geometry" />
+        </mxCell>
+        <mxCell id="lg1t" value="判断" style="text;html=1;align=left;verticalAlign=middle;" vertex="1" parent="lg">
+          <mxGeometry x="60" y="85" width="200" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="lg2" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="lg">
+          <mxGeometry x="20" y="126" width="30" height="16" as="geometry" />
+        </mxCell>
+        <mxCell id="lg2t" value="系统自动" style="text;html=1;align=left;verticalAlign=middle;" vertex="1" parent="lg">
+          <mxGeometry x="60" y="123" width="200" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1.0;entryX=0.5;entryY=0.0;exitDx=0;exitDy=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="a1" target="a2">
+          <mxGeometry relative="1" as="geometry">          </mxGeometry>
+        </mxCell>
+        <mxCell id="e2" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1.0;entryX=0.5;entryY=0.0;exitDx=0;exitDy=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="a2" target="a3">
+          <mxGeometry relative="1" as="geometry">          </mxGeometry>
+        </mxCell>
+        <mxCell id="e3" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1.0;entryX=0.5;entryY=0.0;exitDx=0;exitDy=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="a3" target="b1">
+          <mxGeometry relative="1" as="geometry">          </mxGeometry>
+        </mxCell>
+        <mxCell id="e4" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1.0;entryX=0.5;entryY=0.0;exitDx=0;exitDy=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="b1" target="b2">
+          <mxGeometry relative="1" as="geometry">          </mxGeometry>
+        </mxCell>
+        <mxCell id="e5" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1.0;entryX=0.5;entryY=0.0;exitDx=0;exitDy=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="b2" target="b3">
+          <mxGeometry relative="1" as="geometry">          </mxGeometry>
+        </mxCell>
+        <mxCell id="e6" value="推送" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1.0;exitY=0.5;entryX=0.0;entryY=0.5;exitDx=0;exitDy=0;entryDx=0;entryDy=0;fontSize=11;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="b1" target="c1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="960" y="600" />
+              <mxPoint x="960" y="1070" />
+              <mxPoint x="620" y="1070" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e7" value="邮件" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1.0;exitY=0.5;entryX=0.0;entryY=0.5;exitDx=0;exitDy=0;entryDx=0;entryDy=0;fontSize=11;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="b1" target="c2">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="960" y="620" />
+              <mxPoint x="960" y="1170" />
+              <mxPoint x="620" y="1170" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e8" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1.0;entryX=0.5;entryY=0.0;exitDx=0;exitDy=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="d1" target="d2">
+          <mxGeometry relative="1" as="geometry">          </mxGeometry>
+        </mxCell>
+        <mxCell id="e9" value="超时" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1.0;exitY=0.5;entryX=0.5;entryY=0.0;exitDx=0;exitDy=0;entryDx=0;entryDy=0;fontSize=11;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="d2" target="d3">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="650" y="1576" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

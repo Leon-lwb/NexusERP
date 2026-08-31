@@ -1,0 +1,68 @@
+# 系统部署架构（人工标注版）
+
+[[ENTITY:其他|nexus-node1]] 主应用节点 [[ATTR:IP|192.168.1.10]] [[ATTR:配置|8C/16G/500G SSD]] [[ATTR:OS|CentOS 7.9]] [[ATTR:角色|主应用]] [[ATTR:运行服务|ruoyi-admin,ruoyi-system,ruoyi-erp,ruoyi-mes,ruoyi-iot,ruoyi-ai,ruoyi-im,ruoyi-flowable,ruoyi-generator,ruoyi-online]]
+[[ENTITY:其他|nexus-node2]] 备应用节点 [[ATTR:IP|192.168.1.11]] [[ATTR:配置|8C/16G/500G SSD]] [[ATTR:OS|CentOS 7.9]] [[ATTR:角色|备应用]] [[ATTR:运行服务|ruoyi-admin,ruoyi-system,ruoyi-erp,ruoyi-mes,ruoyi-iot,ruoyi-ai,ruoyi-im,ruoyi-flowable,ruoyi-generator,ruoyi-online]]
+[[ENTITY:其他|nexus-db01]] 主数据库 [[ATTR:IP|192.168.1.20]] [[ATTR:配置|8C/32G/1T SSD]] [[ATTR:OS|CentOS 7.9]] [[ATTR:角色|MySQL主库]] [[ATTR:数据库|ry-vue,ry-erp]]
+[[ENTITY:其他|nexus-db02]] 备数据库 [[ATTR:IP|192.168.1.21]] [[ATTR:配置|8C/32G/1T SSD]] [[ATTR:OS|CentOS 7.9]] [[ATTR:角色|MySQL从库]]
+[[ENTITY:其他|nexus-redis]] Redis缓存 [[ATTR:IP|192.168.1.30]] [[ATTR:配置|4C/8G/200G SSD]] [[ATTR:OS|CentOS 7.9]] [[ATTR:角色|哨兵集群]]
+[[ENTITY:其他|nexus-storage]] 对象存储 [[ATTR:IP|192.168.1.40]] [[ATTR:配置|4C/8G/2T SSD]] [[ATTR:OS|CentOS 7.9]] [[ATTR:角色|MinIO分布式]]
+[[ENTITY:其他|nexus-mq]] 消息队列 [[ATTR:IP|192.168.1.50]] [[ATTR:配置|4C/8G/200G SSD]] [[ATTR:OS|CentOS 7.9]] [[ATTR:角色|RocketMQ+MQTT Broker]]
+[[ENTITY:其他|nexus-mqtt]] MQTT处理 [[ATTR:IP|192.168.1.51]] [[ATTR:配置|4C/8G/200G SSD]] [[ATTR:OS|CentOS 7.9]] [[ATTR:角色|MQTT消息处理]]
+[[ENTITY:其他|nexus-monitor-admin]] 监控服务端 [[ATTR:IP|192.168.1.60]] [[ATTR:配置|4C/8G/200G SSD]] [[ATTR:OS|CentOS 7.9]] [[ATTR:角色|Spring Boot Admin]]
+[[ENTITY:其他|nexus-snailjob]] 任务调度 [[ATTR:IP|192.168.1.61]] [[ATTR:配置|4C/8G/200G SSD]] [[ATTR:OS|CentOS 7.9]] [[ATTR:角色|SnailJob Server]]
+
+[[ENTITY:数据库|ry-vue]] 系统管理库 [[ATTR:类型|MySQL]] [[ATTR:存储|系统表/用户/角色/菜单/租户/AI配置]]
+[[ENTITY:数据库|ry-erp]] ERP业务库 [[ATTR:类型|MySQL]] [[ATTR:存储|物料/订单/采购/生产/库存/MES/IoT数据]]
+[[ENTITY:数据库|ry-vue-iot]] IoT时序库 [[ATTR:类型|MySQL]] [[ATTR:存储|IoT设备数据历史]]
+
+[[ENTITY:服务|ruoyi-admin]] 应用入口 [[ATTR:端口|8080]] [[ATTR:容器|Undertow]] [[ATTR:运行节点|nexus-node1,nexus-node2]]
+[[ENTITY:服务|ruoyi-system]] 系统管理模块 [[ATTR:依赖|ry-vue]]
+[[ENTITY:服务|ruoyi-erp]] ERP业务模块 [[ATTR:依赖|ry-erp]]
+[[ENTITY:服务|ruoyi-mes]] MES制造模块 [[ATTR:依赖|ry-erp]]
+[[ENTITY:服务|ruoyi-iot]] IoT模块 [[ATTR:依赖|ry-erp]]
+[[ENTITY:服务|ruoyi-ai]] AI智能助手模块 [[ATTR:依赖|ry-vue,ry-erp]]
+[[ENTITY:服务|ruoyi-im]] 即时通讯模块 [[ATTR:依赖|ry-vue]]
+[[ENTITY:服务|ruoyi-flowable]] 工作流模块 [[ATTR:依赖|ry-vue]]
+[[ENTITY:服务|ruoyi-generator]] 代码生成器 [[ATTR:依赖|ry-vue]]
+[[ENTITY:服务|ruoyi-online]] 低代码表单 [[ATTR:依赖|ry-vue]]
+[[ENTITY:服务|SpringBootAdmin]] 监控服务 [[ATTR:端口|8080]] [[ATTR:节点|nexus-monitor-admin]]
+[[ENTITY:服务|SnailJob]] 分布式任务调度 [[ATTR:端口|8788]] [[ATTR:节点|nexus-snailjob]]
+
+[[ENTITY:其他|Nginx]] 反向代理 [[ATTR:IP|192.168.1.10]] [[ATTR:端口|80/443]] [[ATTR:上游|nexus-node1:8080,nexus-node2:8080]]
+
+[[ENTITY:其他|tenant-000000]] 超级租户 [[ATTR:类型|系统级]] [[ATTR:数据隔离|跨租户查询]]
+[[ENTITY:其他|tenant-001]] 深圳公司 [[ATTR:类型|业务租户]]
+[[ENTITY:其他|tenant-002]] 上海公司 [[ATTR:类型|业务租户]]
+
+[[RELATION:运行于|ruoyi-admin|nexus-node1]]
+[[RELATION:运行于|ruoyi-admin|nexus-node2]]
+[[RELATION:运行于|ruoyi-erp|nexus-node1]]
+[[RELATION:运行于|ruoyi-mes|nexus-node1]]
+[[RELATION:运行于|ruoyi-ai|nexus-node1]]
+[[RELATION:运行于|SpringBootAdmin|nexus-monitor-admin]]
+[[RELATION:运行于|SnailJob|nexus-snailjob]]
+
+[[RELATION:依赖|ruoyi-admin|ry-vue]]
+[[RELATION:依赖|ruoyi-admin|ry-erp]]
+[[RELATION:依赖|ruoyi-erp|ry-vue]]
+[[RELATION:依赖|ruoyi-mes|ry-erp]]
+[[RELATION:依赖|ruoyi-iot|ry-erp]]
+[[RELATION:依赖|ruoyi-ai|ry-vue]]
+[[RELATION:依赖|ruoyi-ai|ry-erp]]
+
+[[RELATION:调用|Nginx|ruoyi-admin]] [[ATTR:协议|HTTP/HTTPS]] [[ATTR:负载均衡|轮询]]
+
+[[RELATION:存储于|ry-vue|nexus-db01]]
+[[RELATION:存储于|ry-erp|nexus-db01]]
+[[RELATION:存储于|ry-vue-iot|nexus-db01]]
+
+[[RELATION:关联|ruoyi-admin|ry-vue]] [[ATTR:数据源|master]]
+[[RELATION:关联|ruoyi-erp|ry-erp]] [[ATTR:数据源|erp]]
+
+[[ENTITY:配置文件|application.yml]] 基础配置 [[ATTR:路径|/resources/application.yml]]
+[[ENTITY:配置文件|application-dev.yml]] 开发配置 [[ATTR:路径|/resources/application-dev.yml]]
+[[ENTITY:配置文件|application-secret.yml]] 第三方配置 [[ATTR:路径|/resources/application-secret.yml]]
+
+[[COMMUNITY:服务器与运行服务|nexus-node1,nexus-node2,nexus-db01,nexus-db02,nexus-redis,nexus-storage,nexus-mq,nexus-mqtt,nexus-monitor-admin,nexus-snailjob,ruoyi-admin,ruoyi-system,ruoyi-erp,ruoyi-mes,ruoyi-iot,ruoyi-ai,ruoyi-im,ruoyi-flowable,ruoyi-generator,ruoyi-online,SpringBootAdmin,SnailJob]]
+[[COMMUNITY:数据存储关系|ry-vue,ry-erp,ry-vue-iot,nexus-db01,nexus-db02,nexus-redis,nexus-storage,MinIO,Redis哨兵]]
+[[COMMUNITY:网络接入层|Nginx,nexus-node1,nexus-node2,ruoyi-admin,443,80,8080]]

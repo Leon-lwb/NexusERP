@@ -1,0 +1,5 @@
+{
+  "permissions": {
+    "allow": ["Bash(npm run *)", "Bash(node -e \"console.log\\(require\\('./node_modules/vite/package.json'\\).version\\)\")"]
+  }
+}

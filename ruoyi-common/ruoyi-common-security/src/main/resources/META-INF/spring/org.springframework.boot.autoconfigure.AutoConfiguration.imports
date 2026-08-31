@@ -1,0 +1,2 @@
+com.nexus.common.security.handler.AllUrlHandler
+com.nexus.common.security.config.SecurityConfig

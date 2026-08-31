@@ -1,0 +1,6 @@
+com.nexus.common.translation.config.TranslationConfig
+com.nexus.common.translation.core.impl.DeptNameTranslationImpl
+com.nexus.common.translation.core.impl.DictTypeTranslationImpl
+com.nexus.common.translation.core.impl.OssUrlTranslationImpl
+com.nexus.common.translation.core.impl.UserNameTranslationImpl
+com.nexus.common.translation.core.impl.NicknameTranslationImpl

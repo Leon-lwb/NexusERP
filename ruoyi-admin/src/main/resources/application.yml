@@ -1,0 +1,375 @@
+# 开发环境配置
+server:
+  # 服务器的HTTP端口，默认为8080
+  port: 8080
+  servlet:
+    # 应用的访问路径
+    context-path: /
+  # undertow 配置
+  undertow:
+    # HTTP post内容的最大大小。当值为-1时，默认值为大小是无限的
+    max-http-post-size: 50MB
+    # 以下的配置会影响buffer,这些buffer会用于服务器连接的IO操作,有点类似netty的池化内存管理
+    # 每块buffer的空间大小,越小的空间被利用越充分
+    buffer-size: 512
+    # 是否分配的直接内存
+    direct-buffers: true
+    threads:
+      # 设置IO线程数, 它主要执行非阻塞的任务,它们会负责多个连接, 默认设置每个CPU核心一个线程
+      io: 8
+      # 阻塞任务线程池, 当执行类似servlet请求阻塞操作, undertow会从这个线程池中取得线程,它的值设置取决于系统的负载
+      worker: 48
+
+captcha:
+  # 是否启用验证码校验
+  enable: true
+  # 验证码类型 math 数组计算 char 字符验证
+  type: math
+  # 数字验证码位数
+  numberLength: 1
+  # 字符验证码长度
+  charLength: 4
+
+# 日志配置
+logging:
+  level:
+    com.nexus: @logging.level@
+    org.springframework: warn
+    org.mybatis.spring.mapper: error
+    org.apache.fury: warn
+  config: classpath:logback-plus.xml
+
+# 用户配置
+user:
+  password:
+    # 密码最大错误次数
+    maxRetryCount: 5
+    # 密码锁定时间（默认10分钟）
+    lockTime: 10
+
+# Jasypt加密配置
+# 生产必须通过环境变量 JASYPT_PASSWORD 覆盖默认口令——默认口令随仓库公开时，库内 ENC() 密文等同明文
+jasypt:
+  encryptor:
+    password: ${JASYPT_PASSWORD:nJVt3Aj3ikA0aA27JLsG17wXl0phKpOoz88GJUNPwDw}
+    algorithm: PBEWITHHMACSHA512ANDAES_256
+
+# Spring配置
+spring:
+  application:
+    name: RuoYi-Vue-Plus
+  # 强制 CGLIB 代理
+  aop:
+    proxy-target-class: true
+  threads:
+    # 开启虚拟线程 仅jdk21可用
+    virtual:
+      enabled: false
+  task:
+    execution:
+      # 从 springboot 3.5 开始 spring自带线程池
+      # 不再需要 AsyncConfig与ThreadPoolConfig 可直接注入线程池使用
+      thread-name-prefix: async-
+      # 由spring自己初始化线程池
+      mode: force
+      # 显式约束线程池，避免 Spring 默认无界队列(max/queue=Integer.MAX_VALUE)在 @Async 高并发下内存膨胀
+      pool:
+        core-size: 8
+        max-size: 32
+        queue-capacity: 200
+        keep-alive: 60s
+  # 资源信息
+  messages:
+    # 国际化资源文件路径
+    basename: i18n/messages
+  profiles:
+    active: @profiles.active@
+  # 文件上传
+  servlet:
+    multipart:
+      # 单个文件大小
+      max-file-size: 10MB
+      # 设置总上传的文件大小
+      max-request-size: 20MB
+  mvc:
+    # 设置静态资源路径 防止所有请求都去查静态资源
+    static-path-pattern: /static/**
+    format:
+      date-time: yyyy-MM-dd HH:mm:ss
+  jackson:
+    # 日期格式化
+    date-format: yyyy-MM-dd HH:mm:ss
+    serialization:
+      # 格式化输出
+      indent_output: false
+      # 忽略无法转换的对象
+      fail_on_empty_beans: false
+    deserialization:
+      # 允许对象忽略json中不存在的属性
+      fail_on_unknown_properties: false
+
+# Sa-Token配置
+sa-token:
+  # token名称 (同时也是cookie名称)
+  token-name: Authorization
+  # 是否允许同一账号并发登录 (为true时允许一起登录, 为false时新登录挤掉旧登录)
+  is-concurrent: true
+  # 在多人登录同一账号时，是否共用一个token (为true时所有登录共用一个token, 为false时每次登录新建一个token)
+  is-share: false
+  # jwt秘钥（生产必须通过环境变量 SA_TOKEN_JWT_SECRET_KEY 覆盖；此默认值仅限本地开发，
+  # 不得使用顺序字符串等弱秘钥——弱秘钥可被伪造任意用户 token）
+  jwt-secret-key: ${SA_TOKEN_JWT_SECRET_KEY:68HYmn7pmB0KciEO5408aT4J3MhvFXsnrekdodED-ns92EGA9YuXBAukgwOUkCjS}
+
+# security配置
+security:
+  # 排除路径
+  excludes:
+    - /*.html
+    - /**/*.html
+    - /**/*.css
+    - /**/*.js
+    - /favicon.ico
+    - /error
+    - /*/api-docs
+    - /*/api-docs/**
+    - /warm-flow-ui/config
+    # 支付回调（无需登录验证）
+    - /pay/*/notify
+    - /pay/*/notify/**
+    # AI 流程 Webhook 入站触发（内部按 flowKey/token 鉴权）
+    - /ai/flow/webhook/**
+    # 积木报表（内部自行鉴权）
+    - /jmreport/**
+    - /drag/**
+    - /jmreport-designer/**
+    - /jmubi/**
+
+# 多租户配置
+tenant:
+  # 是否开启
+  enable: true
+  # 排除表
+  excludes:
+    # MQ 消息记录表（实体无 tenant_id 字段，全局共享；多租户插件注入 tenant_id 会导致 Unknown column 报错）
+    - mq_message_record
+    - mq_compensation_record
+    - mq_dead_letter_record
+    - sys_menu
+    - sys_tenant
+    - sys_tenant_package
+    - sys_role_dept
+    - sys_role_menu
+    - sys_user_post
+    - sys_user_role
+    - sys_client
+    - sys_oss_config
+    - flow_spel
+    # 积木报表表（无 tenant_id 字段）
+    - jm_report
+    - jm_report_db_param
+    - jm_report_db_source
+    - jm_report_link
+    - jm_report_map
+    - jm_report_share
+    - jm_report_tree
+    - jm_report_collect
+    - jm_report_page
+    - jm_report_datasource
+    - jm_report_template
+    - jm_report_data
+    - jm_drag_page
+    - jm_drag_component
+
+# MyBatisPlus配置
+# https://baomidou.com/config/
+mybatis-plus:
+  # 自定义配置 是否全局开启逻辑删除 关闭后 所有逻辑删除功能将失效
+  enableLogicDelete: true
+  # 多包名使用 例如 com.nexus.**.mapper,org.xxx.**.mapper
+  mapperPackage: com.nexus.**.mapper
+  # 对应的 XML 文件位置
+  mapperLocations: classpath*:mapper/**/*Mapper.xml
+  # 实体扫描，多个package用逗号或者分号分隔
+  typeAliasesPackage: com.nexus.**.domain
+  global-config:
+    dbConfig:
+      # 主键类型
+      # AUTO 自增 NONE 空 INPUT 用户输入 ASSIGN_ID 雪花 ASSIGN_UUID 唯一 UUID
+      # 如需改为自增 需要将数据库表全部设置为自增
+      idType: ASSIGN_ID
+
+# 数据加密
+mybatis-encryptor:
+  # 是否开启加密
+  enable: false
+  # 默认加密算法
+  algorithm: BASE64
+  # 编码方式 BASE64/HEX。默认BASE64
+  encode: BASE64
+  # 安全秘钥 对称算法的秘钥 如：AES，SM4
+  password:
+  # 公私钥 非对称算法的公私钥 如：SM2，RSA
+  publicKey:
+  privateKey:
+
+# api接口加密
+api-decrypt:
+  # 是否开启全局接口加密
+  enabled: true
+  # AES 加密头标识
+  headerFlag: encrypt-key
+  # 响应加密公钥 非对称算法的公私钥 如：SM2，RSA 使用者请自行更换
+  # 对应前端解密私钥 MIICdgIBADANBgkqhkiG9w0BAQEFAASCAmAwggJcAgEAAoGBAObq7yrxfvyieZtTjAYyrdvi59tYTXxjO5ajmPCRSXBY9M9wQ1tli297JN6mnY53UJMNyOFNSZVi8WSFoIXjpR87FmvChJlzeN/dZdd3SEs48Ee66XKeSePYqxa8oO5GKDsnajgpsOHKXSeeVSIysiIPS2/WsEqk0In9P4w3RsRFAgMBAAECgYBiMEWwce24SPICnRzuScBpvmsudrbEDIH7BOd0a6LZlcnLJwZNJ7mJlshPsHNQb+WgEf135+BBGEhioPtn0yuTdEuKP4kB9UdYUKiayWCoWhJpesv7sAD4RDClV7dhuV+gcd1AXD+YzyRIPbGm0VC2U+4q8/+UPRpVjqskbLVTgQJBAPRpou7g3S8n4XB527kq0D8I3+ZYwMxZhszwhrCDpJU319+ucmpLVwYIzDmZVeID2QQdUaDfIEViFHu95xDrGiUCQQDx3YOKn3yaEctk/ERVn7hDAyAXUbd8/pv2b24/M/l1ZevlsFem8U4Jk5Mu64t3z3YGJoymEjQmbucwT01iKhehAkEAxlnccsRmfFh/KkqauKE4M4++NTAd9zlInpUsmZ+cN8UEGnF2RTEzRKBrLOt1uWCqBB7PGiE6DVTVjr7FAQPrSQJAT5yeY87DcONSk9cFlzmPqV8p/QME5rvYEnHzVBKDlkUKNPyqnWToTvaoh9U4fyNmsfeWbEOprszqhFhWHG3GgQJAK8+ynmyFhaw63+Hx2KU5zR4hVuQso2IzrEurGxCxybV6mR7VBerb4502+EPx3PmOgxQL+niUFhcMWxcvBFP9+A==
+  publicKey: MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDm6u8q8X78onmbU4wGMq3b4ufbWE18YzuWo5jwkUlwWPTPcENbZYtveyTepp2Od1CTDcjhTUmVYvFkhaCF46UfOxZrwoSZc3jf3WXXd0hLOPBHuulynknj2KsWvKDuRig7J2o4KbDhyl0nnlUiMrIiD0tv1rBKpNCJ/T+MN0bERQIDAQAB
+  # 请求解密私钥 非对称算法的公私钥 如：SM2，RSA 使用者请自行更换
+  # 对应前端加密公钥 MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDvEDuRIOM3oZPWj9Ukoc5pQklR4PFH6/clnjeFqjDLIgDyQvjxhgqAZQA+E9eD6qu6FsXPmK8djcL+nh3cFHz4pX473jDvO3Sve+8yL3VRQ0n2pRgQ2a01MJsy+WwTZCBYWf0VnLRIvANUoWQgy9vz94q7Va44dg7A1/3ICf+xAwIDAQAB
+  privateKey: MIICdwIBADANBgkqhkiG9w0BAQEFAASCAmEwggJdAgEAAoGBAO8QO5Eg4zehk9aP1SShzmlCSVHg8Ufr9yWeN4WqMMsiAPJC+PGGCoBlAD4T14Pqq7oWxc+Yrx2Nwv6eHdwUfPilfjveMO87dK977zIvdVFDSfalGBDZrTUwmzL5bBNkIFhZ/RWctEi8A1ShZCDL2/P3irtVrjh2DsDX/cgJ/7EDAgMBAAECgYEAhNZAQyRDHWZq/45soS5Hw7VRiG21pIE5k22W7G7lLfp3DCaqrYoNy8pTmCruVh7PzVdaE0CEDaf38gNqFCBOT8iTFQiYV3am4W3hsEQM5wmVBeTvCM5P2jsaaBQbqmneRjiZVbs6ha205JSho1Oc85NbaZa8gFVjwZgZWJrbzgECQQD/iZWhkRPtbdeai/Xk7D/eIXKh1Gxid0rWKQq8ikxbaiergn47XzNKrpROVyka3Gn85o7jJphgxp99R3r8sH71AkEA738Dn7xs+I4Y+MLa2EcT78JG3f/VhlWS/ks3qGJ2dfqwS7ntnmf5Q+2Xw+9UcuiK/TxD8K/0inSCkIMeWBOFFwJBAIoTebq3faEJfTqQ7ekojsokIKC4+2epNdLKknaV8/RhQ9Y0yKikJD7yXkiGaDuPZeW1Xvf2XtfL+1niSd5IMBECQDCOOMbe5dzyuj9dCg+FQZZ/dey2XK0Slm22BD/ATrIWtD12IaXXAKNz/Sv9TsrJOLykxkV69wJHIt13p+RFeNsCQGn5XGRn4ZCRVCesJYXyx29MTqkl8sD/gzYcURTZYjHqX2EvtvAyC6gBm9H0EbxmHIi4Oq0tITzklCXj5SpvBEw=
+
+springdoc:
+  api-docs:
+    # 是否开启接口文档
+    enabled: true
+  info:
+    # 标题
+    title: '标题：RuoYi-Vue-Plus多租户管理系统_接口文档'
+    # 描述
+    description: '描述：用于管理集团旗下公司的人员信息,具体包括XXX,XXX模块...'
+    # 版本
+    version: '版本号: ${project.version}'
+    # 作者信息
+    contact:
+      name: wanghuan
+      email: crazylionli@163.com
+      url: https://gitee.com/dromara/RuoYi-Vue-Plus
+  #这里定义了两个分组，可定义多个，也可以不定义
+  group-configs:
+    - group: 1.演示模块
+      packages-to-scan: com.nexus.demo
+    - group: 2.通用模块
+      packages-to-scan: com.nexus.web
+    - group: 3.系统模块
+      packages-to-scan: com.nexus.system
+    - group: 4.代码生成模块
+      packages-to-scan: com.nexus.generator
+    - group: 5.工作流模块
+      packages-to-scan: com.nexus.workflow
+    - group: 6.支付模块
+      packages-to-scan: com.nexus.pay
+
+# 防止XSS攻击
+xss:
+  # 过滤开关
+  enabled: true
+  # 排除链接
+  excludeUrls:
+    - /system/notice
+    - /workflow/model/save
+
+--- # 分布式锁 lock4j 全局配置
+lock4j:
+  # 获取分布式锁超时时间，默认为 3000 毫秒
+  acquire-timeout: 3000
+  # 分布式锁的超时时间，默认为 30 秒
+  expire: 30000
+
+--- # Actuator 监控端点的配置项
+management:
+  endpoints:
+    web:
+      exposure:
+        include: '*'
+  endpoint:
+    health:
+      show-details: ALWAYS
+    logfile:
+      external-file: ./logs/sys-console.log
+
+--- # 默认/推荐使用sse推送
+sse:
+  enabled: true
+  path: /resource/sse
+
+--- # websocket
+websocket:
+  # 如果关闭 需要和前端开关一起关闭
+  enabled: true
+  # 路径
+  path: /websocket
+  # 设置访问源地址
+  allowedOrigins: '*'
+
+--- # Flowable 配置
+flowable:
+  # 关闭定时任务 job
+  async-executor-activate: false
+  # 库与数据库表结构不一致时，会自动将数据库表结构升级至新版本。
+  database-schema-update: false
+  idm:
+    # 关闭idm引擎 数据库不会创建act_id_*表，流程流转不会使用act_id_*相关的表
+    enabled: false
+  # 关闭流程定义文件自动检查
+  check-process-definitions: false
+  # 关闭历史任务定时任务job
+  async-history-executor-activate: false
+  #消息链接基地址
+  message-base-url: /workflow/process/detail/
+
+--- # mq 消息队列通用配置
+mq:
+  rabbit:
+    enabled: false
+    message-record-enabled: true
+    max-retry: 3
+    compensation-resend-threshold: 60000
+
+--- # NexusERP AI 配置
+nexus:
+  ai:
+    default-provider: deepseek
+    default-model: deepseek-chat
+    allowed-table-prefixes: []
+    sql-timeout: 5000
+    sql-max-rows: 1000
+    flow:
+      # 并行分支执行（默认关；含循环的图强制串行）
+      parallel: false
+      parallel-workers: 4
+    vector-store:
+      # 向量存储类型：milvus（持久化，重启不丢）/ inmemory（仅内存，重启清空，仅用于无 Milvus 环境的演示）
+      # ⚠️ inmemory 模式下重启服务后向量全部丢失，RAG 检索返回空；生产必须用 milvus
+      type: milvus
+      milvus:
+        url: http://localhost:19530
+        collection-name: AiKnowledge
+      inmemory:
+        enabled: true
+    # 推理模式（Thinking）
+    thinking:
+      enabled: true
+      default-on: false
+    # 联网搜索（Key 存于 application-secret.yml 的 secret.tavily.api-key，环境变量 WEB_SEARCH_API_KEY 优先覆盖）
+    web-search:
+      enabled: true
+      provider: tavily
+      api-key: ${WEB_SEARCH_API_KEY:${secret.tavily.api-key:}}
+      top-n: 5
+      timeout-ms: 15000
+    # 文生图
+    image:
+      enabled: true
+      default-provider: Tongyiwanx
+    # 知识图谱
+    knowledge-graph:
+      enabled: true
+      storage: mysql
+      batch-size: 5
+      max-entities-per-chunk: 20
+      max-relations-per-chunk: 30
+      confidence-threshold: 0.5
+      extraction-model-id: 1        # deepseek-v4-flash（DeepSeek 官方）
+      graph-weight: 0.5
+      max-neighbors: 20
+      label-propagation-max-iter: 8
+      max-communities: 50
+      max-communities-for-global: 50
+      gleaning-enabled: false

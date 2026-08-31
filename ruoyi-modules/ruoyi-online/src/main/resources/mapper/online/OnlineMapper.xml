@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nexus.online.mapper.OnlineMapper">
+
+    <update id="dynamicUpdate" parameterType="java.util.Map">
+        UPDATE ${tableName}
+        <set>
+            <foreach collection="data" item="item" index="key" open="" separator="," close="">
+                ${key} = #{item}
+            </foreach>
+        </set>
+        <where>
+            <foreach collection="condition" item="item" index="key" open="" separator=" AND " close="">
+                ${key} = #{item}
+            </foreach>
+            AND tenant_id = #{tenantId}
+        </where>
+    </update>
+
+    <insert id="insertDynamic" parameterType="map">
+        <selectKey keyProperty="data.id" resultType="java.lang.Long" order="AFTER">
+            SELECT LAST_INSERT_ID()
+        </selectKey>
+        INSERT INTO ${tableName}
+        <foreach collection="data" item="value" index="key" open="(" separator="," close=")">
+            ${key}
+        </foreach>
+        VALUES
+        <foreach collection="data" item="value" index="key" open="(" separator="," close=")">
+            #{value}
+        </foreach>
+    </insert>
+
+    <delete id="deleteDynamicTable">
+        DELETE FROM ${tableName}
+        WHERE ${pkColumn} IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        AND tenant_id = #{tenantId}
+    </delete>
+
+    <delete id="dynamicDelete">
+        DELETE FROM ${tableName}
+        <where>
+            <foreach collection="where" index="column" item="value">
+                <choose>
+                    <when test="value instanceof java.util.Collection">
+                        AND ${column} IN
+                        <foreach collection="value" item="item" open="(" close=")" separator=",">
+                            #{item}
+                        </foreach>
+                    </when>
+                    <otherwise>
+                        AND ${column} = #{value}
+                    </otherwise>
+                </choose>
+            </foreach>
+            AND tenant_id = #{tenantId}
+        </where>
+    </delete>
+
+    <select id="selectDynamicTableById" resultType="map">
+	    SELECT * FROM ${tableName}
+	    WHERE ${pkName} = #{id} AND tenant_id = #{tenantId}
+	</select>
+
+    <!-- 根据外键删除子表数据 -->
+    <delete id="deleteSubByForeignKey">
+        DELETE FROM ${subTableName}
+        WHERE ${fkName} = #{mainId} AND tenant_id = #{tenantId}
+    </delete>
+
+    <!-- 查询子表数据 -->
+    <select id="selectSubTableByFk" resultType="map">
+        SELECT * FROM ${subTableName}
+        WHERE ${fkName} = #{mainId} AND tenant_id = #{tenantId}
+    </select>
+
+</mapper>

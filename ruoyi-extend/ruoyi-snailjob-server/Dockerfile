@@ -1,0 +1,8 @@
+﻿FROM amazoncorretto:17-alpine
+LABEL maintainer="NexusERP"
+RUN mkdir -p /ruoyi/snailjob/logs
+WORKDIR /ruoyi/snailjob
+ENV LANG=C.UTF-8 LC_ALL=C.UTF-8 JAVA_OPTS=""
+EXPOSE 8800 17888
+ADD ./target/ruoyi-snailjob-server.jar ./app.jar
+ENTRYPOINT java -Djava.security.egd=file:/dev/./urandom ${JAVA_OPTS} -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/ruoyi/snailjob/logs/ -XX:+ExitOnOutOfMemoryError -jar app.jar

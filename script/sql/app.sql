@@ -1,0 +1,2 @@
+INSERT INTO `ry-vue`.`sys_client`(`id`, `client_id`, `client_key`, `client_secret`, `grant_type`, `device_type`, `active_timeout`, `timeout`, `status`, `del_flag`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `appid`, `app_secret`) VALUES 
+(3, 'a3b4c5d6e7f8g9h0i1j2k3l4m5n6o7p8', 'xcx', 'xcx_secret', 'xcx', 'xcx', 1800, 604800, '0', '0', NULL, NULL, NULL, NULL, NULL, 'wx139028129ea0d39e', '你的小程序密钥');

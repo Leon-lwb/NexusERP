@@ -1,0 +1,3 @@
+com.nexus.common.encrypt.config.EncryptorAutoConfiguration
+com.nexus.common.encrypt.config.ApiDecryptAutoConfiguration
+

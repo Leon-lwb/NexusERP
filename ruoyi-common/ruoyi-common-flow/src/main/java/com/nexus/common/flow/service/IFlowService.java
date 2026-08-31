@@ -1,0 +1,98 @@
+package com.nexus.common.flow.service;
+
+import com.nexus.common.flow.domain.bo.FlowBo;
+import com.nexus.common.flow.domain.entity.Flow;
+import com.nexus.common.flow.domain.vo.FlowVo;
+import com.nexus.common.mybatis.core.page.PageQuery;
+import com.nexus.common.mybatis.core.page.TableDataInfo;
+
+import java.util.List;
+
+/**
+ * AI 流程定义 Service 接口
+ *
+ * @author NexusERP
+ */
+public interface IFlowService {
+
+    /**
+     * 分页查询流程列表
+     *
+     * @param bo        查询参数
+     * @param pageQuery 分页参数
+     * @return 流程分页列表
+     */
+    TableDataInfo<FlowVo> selectPageList(FlowBo bo, PageQuery pageQuery);
+
+    /**
+     * 查询流程列表（不分页）
+     *
+     * @param bo 查询参数
+     * @return 流程列表
+     */
+    List<FlowVo> selectList(FlowBo bo);
+
+    /**
+     * 根据ID查询流程（实体，含 configJson）
+     *
+     * @param id 流程ID
+     * @return 流程实体
+     */
+    Flow selectById(Long id);
+
+    /**
+     * 根据ID查询流程详情（VO）
+     *
+     * @param id 流程ID
+     * @return 流程视图对象
+     */
+    FlowVo selectVoById(Long id);
+
+    /**
+     * 根据流程标识查询流程
+     *
+     * @param flowKey 流程标识
+     * @return 流程实体
+     */
+    Flow selectByFlowKey(String flowKey);
+
+    /**
+     * 新增流程（存草稿）
+     *
+     * @param bo 流程业务对象
+     * @return 新流程ID（雪花主键，供前端跳转设计器）
+     */
+    Long insertByBo(FlowBo bo);
+
+    /**
+     * 修改流程（仅 DRAFT/OFFLINE 可编辑）
+     *
+     * @param bo 流程业务对象
+     * @return 影响行数
+     */
+    int updateByBo(FlowBo bo);
+
+    /**
+     * 批量删除流程（逻辑删除，有运行中实例拒绝）
+     *
+     * @param ids 流程ID数组
+     * @return 影响行数
+     */
+    int deleteByIds(Long[] ids);
+
+    /**
+     * 发布流程（DRAFT→PUBLISHED，校验图合法性后版本+1）
+     *
+     * @param id 流程ID
+     * @return 影响行数
+     */
+    int publish(Long id);
+
+    /**
+     * 下线流程（PUBLISHED→OFFLINE）
+     *
+     * @param id 流程ID
+     * @return 影响行数
+     */
+    int offline(Long id);
+}

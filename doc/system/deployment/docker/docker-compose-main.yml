@@ -1,0 +1,142 @@
+# ===================================================================
+# 主服务器部署编排配置（159.75.14.226 - 4C4G）
+# 包含服务：MySQL 5.7、Redis、RabbitMQ、MinIO、Nginx、NexusServer
+# 使用方式：docker compose -f docker-compose-main.yml up -d
+#
+# 说明：原主服务器 81.68.78.136（2C2G, MySQL 8.0）已弃用，
+#       现由 159.75.14.226（4C4G, MySQL 5.7）承载，配置同步更新。
+#       辅助服务器 117.72.190.225（MonitorAdmin + SnailJobServer）保持不变，
+#       编排见 docker-compose-assist.yml。
+# ===================================================================
+services:
+  nexus-mysql:
+    image: mysql:5.7
+    container_name: nexus-mysql
+    environment:
+      TZ: Asia/Shanghai
+      # root 密码（从 .env 读取 MYSQL_ROOT_PASSWORD，与 application-prod.yml 保持一致）
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      # 初始化数据库(后续的初始化sql会在这个库执行)
+      MYSQL_DATABASE: ry-vue
+    ports:
+      - "3306:3306"
+    volumes:
+      # 数据挂载
+      - /docker/mysql/data/:/var/lib/mysql/
+      # 配置挂载
+      - /docker/mysql/conf/:/etc/mysql/conf.d/
+    command:
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_general_ci
+      --explicit_defaults_for_timestamp=true
+      --lower_case_table_names=1
+      --innodb-buffer-pool-size=512M
+      --max-allowed-packet=256M
+      --innodb-log-file-size=256M
+    privileged: true
+    network_mode: "host"
+
+  nexus-redis:
+    image: redis:7.2.8
+    container_name: nexus-redis
+    ports:
+      - "6379:6379"
+    environment:
+      TZ: Asia/Shanghai
+    volumes:
+      # 配置文件（redis.conf 中 requirepass，部署文档第十一节）
+      - /docker/redis/conf:/redis/config:rw
+      # 数据文件
+      - /docker/redis/data/:/redis/data/:rw
+    command: "redis-server /redis/config/redis.conf"
+    privileged: true
+    network_mode: "host"
+
+  nexus-rabbitmq:
+    image: rabbitmq:3-management
+    container_name: nexus-rabbitmq
+    ports:
+      # AMQP 通信端口
+      - "5672:5672"
+      # 管理后台端口
+      - "15672:15672"
+    environment:
+      TZ: Asia/Shanghai
+      # 默认账号密码（密码从 .env 读取 RABBITMQ_DEFAULT_PASS）
+      RABBITMQ_DEFAULT_USER: nexus
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
+    volumes:
+      # 数据持久化
+      - /docker/rabbitmq/data:/var/lib/rabbitmq
+    privileged: true
+    network_mode: "host"
+
+  nexus-minio:
+    # pgsty 开源社区 fork 重新维护的最新版 minio
+    image: pgsty/minio:RELEASE.2026-02-14T12-00-00Z
+    container_name: nexus-minio
+    ports:
+      # api 端口
+      - "9005:9005"
+      # 控制台端口
+      - "9001:9001"
+    environment:
+      TZ: Asia/Shanghai
+      # 管理后台用户名（部署文档：minio）
+      MINIO_ROOT_USER: minio
+      # 管理后台密码（从 .env 读取 MINIO_ROOT_PASSWORD）
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      # https需要指定域名
+      #MINIO_SERVER_URL: "https://nexuserp.website:9005"
+      #MINIO_BROWSER_REDIRECT_URL: "https://nexuserp.website:9001"
+      # 开启压缩 on 开启 off 关闭
+      MINIO_COMPRESS: "off"
+      # 扩展名 .pdf,.doc 为空 所有类型均压缩
+      MINIO_COMPRESS_EXTENSIONS: ""
+      # mime 类型 application/pdf 为空 所有类型均压缩
+      MINIO_COMPRESS_MIME_TYPES: ""
+    volumes:
+      # 映射当前目录下的data目录至容器内/data目录
+      - /docker/minio/data:/data
+      # 映射配置目录
+      - /docker/minio/config:/root/.minio/
+    command: server --address ':9005' --console-address ':9001' /data  # 指定容器中的目录 /data
+    privileged: true
+    network_mode: "host"
+
+  nexus-nginx:
+    image: nginx:1.23.4
+    container_name: nexus-nginx
+    environment:
+      TZ: Asia/Shanghai
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      # 证书映射
+      - /docker/nginx/cert:/etc/nginx/cert
+      # 配置文件映射
+      - /docker/nginx/conf/nginx.conf:/etc/nginx/nginx.conf
+      # 页面目录
+      - /docker/nginx/html:/usr/share/nginx/html
+      # 日志目录
+      - /docker/nginx/log:/var/log/nginx
+    privileged: true
+    network_mode: "host"
+
+  nexus-server:
+    image: nexus-erp:fix-headless
+    container_name: nexus-server
+    environment:
+      TZ: Asia/Shanghai
+      SERVER_PORT: 8080
+      SNAIL_PORT: 28080
+      # JVM 参数（4C4G：NexusServer JVM 512M；SnailJob 调度客户端禁用，调度中心在辅助服务器）
+      JAVA_OPTS: "-Xms256m -Xmx512m -XX:MaxMetaspaceSize=256m -XX:+UseZGC -Dsnail-job.enabled=false"
+    volumes:
+      # 日志目录
+      - /docker/server/logs/:/ruoyi/server/logs/
+      # skywalking 探针
+#      - /docker/skywalking/agent/:/ruoyi/skywalking/agent
+    privileged: true
+    network_mode: "host"

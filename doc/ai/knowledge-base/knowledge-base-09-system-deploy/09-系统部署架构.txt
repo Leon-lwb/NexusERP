@@ -1,0 +1,150 @@
+# 系统部署架构
+
+NexusERP 采用分布式部署架构，支持双机热备和容器化部署。本章档描述服务器清单、网络拓扑、服务架构、配置参数及数据流。
+
+## 一、服务器清单
+
+生产环境采用双机部署，共 6 台服务器：
+
+表：服务器配置清单
+
+主机名        IP 地址         角色              配置             操作系统
+nexus-node1  192.168.1.10    主应用节点        8C/16G/500G SSD   CentOS 7.9
+nexus-node2  192.168.1.11    备应用节点        8C/16G/500G SSD   CentOS 7.9
+nexus-db01   192.168.1.20    主数据库          8C/32G/1T SSD     CentOS 7.9
+nexus-db02   192.168.1.21    备数据库          8C/32G/1T SSD     CentOS 7.9
+nexus-redis  192.168.1.30    Redis 缓存        4C/8G/200G SSD    CentOS 7.9
+nexus-storage 192.168.1.40   对象存储(MinIO)    4C/8G/2T SSD      CentOS 7.9
+
+扩展服务器（可选）：
+nexus-mq     192.168.1.50    MQTT Broker       4C/8G/200G SSD    CentOS 7.9
+nexus-mqtt   192.168.1.51    MQTT 消息处理      4C/8G/200G SSD    CentOS 7.9
+
+## 二、网络拓扑
+
+网络分层：
+
+- 用户层：PC 端浏览器 / 移动端 App → HTTPS 443
+- 接入层：Nginx 反向代理，负载均衡到 nexus-node1:8080 和 nexus-node2:8080
+- 应用层：2 台 Spring Boot 应用节点（Undertow 容器）
+- 数据层：MySQL 主从（MGR 单主模式）、Redis 哨兵（3 节点）、MinIO 分布式
+- 消息层：RocketMQ 4.9（订单/工单异步）、MQTT Broker（IoT 设备接入）
+- 监控层：Spring Boot Admin（MonitorAdmin）、SnailJobServer
+
+端口规划：
+
+服务          节点         端口    用途
+Spring Boot   nexus-node1  8080    主应用 HTTP 服务
+Spring Boot   nexus-node2  8080    备应用 HTTP 服务
+Nginx         nexus-node1  80/443  HTTP/HTTPS 反向代理
+MySQL         nexus-db01   3306    主库
+MySQL         nexus-db02   3306    从库
+Redis         nexus-redis  6379    哨兵模式（3节点共享端口）
+MinIO         nexus-storage 9000  对象存储 API
+MinIO         nexus-storage 9001  控制台
+RocketMQ      nexus-mq     9876    NameServer
+RocketMQ      nexus-mq     10909   Broker（异步消息）
+MQTT Broker   nexus-mqtt   1883    MQTT 设备接入
+MQTT Broker   nexus-mqtt   8083    MQTT WebSocket
+Spring Boot Admin nexus-monitor-admin 8080 监控服务
+SnailJob      nexus-snailjob 8788  任务调度控制台
+
+## 三、服务架构
+
+应用层采用微服务架构，模块化部署：
+
+核心服务（ nexus-node1/2 共同承载）：
+
+- ruoyi-admin：Spring Boot 入口，组装所有模块，端口 8080
+- ruoyi-system：系统管理（用户、角色、菜单、租户）
+- ruoyi-erp：ERP 业务（基础数据、销售、采购、排产、仓储）
+- ruoyi-mes：MES 制造执行（工单、安灯、数据采集、设备、质量、SPC）
+- ruoyi-iot：IoT 物联网（设备管理、MQTT、实时数据）
+- ruoyi-ai：AI 智能助手（Agent 编排、RAG、知识图谱、MCP）
+- ruoyi-im：即时通讯（私聊、群聊、消息推送）
+- ruoyi-flowable：工作流 REST API
+- ruoyi-generator：代码生成器
+- ruoyi-online：在线低代码表单构建器
+
+独立服务：
+
+- ruoyi-monitor-admin：Spring Boot Admin 监控服务端
+- ruoyi-snailjob-server：SnailJob 分布式任务调度
+
+各模块通过 Spring Boot 自动配置注册，非组件扫描。模块间通过 REST API 或 RocketMQ 异步通信。
+
+## 四、数据流
+
+HTTP 请求流：
+用户请求 → Nginx 负载均衡 → 应用节点 → MyBatis-Plus（多数据源）→ MySQL
+                                      → Redisson → Redis
+                                      → OssFactory → MinIO
+                                      → Redis Pub/Sub → SSE 推送
+
+异步消息流：
+MES 工单下发 → RocketMQ → WorkOrderReleaseConsumer → MES 执行
+IoT 设备数据 → MQTT Broker → IotStreamConsumer → 数据解析 → InfluxDB/MySQL
+AI Agent 工具调用 → 内部事件总线 OutputChannel → SSE 实时推送
+
+多租户数据隔离：
+- 所有业务表含 tenant_id 字段
+- MyBatis-Plus 多租户插件自动注入 WHERE tenant_id = ?
+- 超级租户（tenant_id = 000000）可跨租户查询
+- 租户间数据完全隔离
+
+## 五、配置参数
+
+核心配置文件：
+
+application.yml：Spring Boot 基础配置（Maven 资源过滤，环境相关值通过 @property@ 注入）
+application-dev.yml：开发环境配置（含敏感凭证，不提交）
+application-prod.yml：生产环境配置（含敏感凭证，不提交）
+application-secret.yml：支付宝/微信支付等第三方配置（需自行替换）
+
+关键配置项：
+
+spring:
+  profiles:
+    active: local/dev/prod
+  datasource:
+    dynamic:
+      primary: master
+      datasource:
+        master: ry-vue 库（系统表）
+        erp: ry-erp 库（ERP 业务表）
+
+nexus:
+  ai:
+    defaultProvider: deepseek
+    defaultModel: deepseek-chat
+    vectorStore:
+      type: inmemory/milvus
+    knowledgeGraph:
+      enabled: true
+      storage: mysql
+    webSearch:
+      enabled: true
+      provider: tavily
+
+ruoyi:
+  tenant:
+    enable: true
+  api:
+    encrypt:
+      enabled: true
+
+## 六、监控与日志
+
+日志配置：logback-plus.xml，日志写入 ./logs/ 目录，按天滚动，保留 30 天。
+
+监控体系：
+- Spring Boot Admin：应用健康检查、JVM 指标、线程池状态
+- SnailJob：分布式任务调度监控、执行日志
+- 自定义指标：AI Token 消耗、RAG 检索延迟、知识图谱构建进度
+
+告警规则：
+- CPU > 80% 持续 5 分钟 → 告警
+- 内存 > 85% → 告警
+- 数据库连接池 > 80% → 告警
+- AI 接口响应时间 > 10s → 告警
+- 知识图谱构建失败 → 邮件通知管理员

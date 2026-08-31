@@ -1,0 +1,139 @@
+# P5-3 IM Prometheus 告警规则
+# 基于 P5-1/P5-2 引入的 Micrometer 指标
+#
+# 部署方式：
+#   1. 将本文件放入 Prometheus 的 rules/ 目录
+#   2. 在 prometheus.yml 中通过 rule_files 引入：
+#      rule_files:
+#        - /etc/prometheus/rules/im-alerts.yml
+#   3. 重启 Prometheus 或 POST /-/reload 触发配置重载
+#
+# 告警分级：
+#   - im-latency-p95-warn  : P95 超过目标 × 2 → WARN（业务可感知延迟）
+#   - im-latency-p95-crit  : P95 超过目标 × 5 → CRITICAL（用户体验严重劣化）
+#   - im-cache-hit-rate-low: 缓存命中率 < 50%（持续 5min）→ WARN（缓存配置失效）
+#   - im-slow-sql-spike     : 慢 SQL 计数 5min 内增量 > 100 → WARN
+#   - im-push-failure-spike : 推送失败率 > 10% → WARN
+#   - im-push-queue-rejected: 推送线程池拒绝 > 0 → WARN（线程池容量不足）
+
+groups:
+  - name: im-latency
+    interval: 30s
+    rules:
+      # listConversations P95 > 60ms（缓存命中目标 30ms × 2）
+      - alert: im_list_conversations_p95_warn
+        expr: histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{uri="/im/chat/conversations"}[5m])) by (le)) > 0.06
+        for: 2m
+        labels:
+          severity: warn
+          module: im
+        annotations:
+          summary: "IM listConversations P95 延迟超过 60ms"
+          description: "P95 = {{ $value }}s（目标 < 30ms 命中 / < 200ms 未命中）"
+
+      # listConversations P95 > 150ms（缓存命中目标 30ms × 5）→ CRITICAL
+      - alert: im_list_conversations_p95_crit
+        expr: histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{uri="/im/chat/conversations"}[5m])) by (le)) > 0.15
+        for: 2m
+        labels:
+          severity: critical
+          module: im
+        annotations:
+          summary: "IM listConversations P95 延迟严重劣化 (>150ms)"
+          description: "P95 = {{ $value }}s，可能缓存失效或 DB 慢查询"
+
+      # sendGroup P95 > 1s（目标 500ms × 2）
+      - alert: im_send_group_p95_warn
+        expr: histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{uri="/im/chat/group/send"}[5m])) by (le)) > 1.0
+        for: 2m
+        labels:
+          severity: warn
+          module: im
+        annotations:
+          summary: "IM sendGroup P95 延迟超过 1s"
+          description: "P95 = {{ $value }}s（目标 < 500ms），检查推送线程池或 DB 写入"
+
+      # sendPrivate P95 > 200ms
+      - alert: im_send_private_p95_warn
+        expr: histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{uri="/im/chat/private/send"}[5m])) by (le)) > 0.2
+        for: 2m
+        labels:
+          severity: warn
+          module: im
+        annotations:
+          summary: "IM sendPrivate P95 延迟超过 200ms"
+          description: "P95 = {{ $value }}s（目标 < 100ms）"
+
+  - name: im-cache
+    interval: 30s
+    rules:
+      # 会话缓存命中率 < 50% 持续 5min → WARN
+      # 命中率 = hit / (hit + miss)
+      - alert: im_cache_hit_rate_low
+        expr: |
+          sum(rate(im_cache_hit_total{type="conversation"}[5m])) by (type)
+          /
+          (sum(rate(im_cache_hit_total{type="conversation"}[5m])) by (type)
+           + sum(rate(im_cache_miss_total{type="conversation"}[5m])) by (type))
+          < 0.5
+        for: 5m
+        labels:
+          severity: warn
+          module: im
+        annotations:
+          summary: "IM 会话缓存命中率 < 50%"
+          description: "5min 内命中率 = {{ $value | humanizePercentage }}，可能 TTL 过短或失效过于频繁"
+
+  - name: im-db
+    interval: 30s
+    rules:
+      # 慢 SQL 5min 内增量 > 100
+      - alert: im_slow_sql_spike
+        expr: increase(im_db_slow_total[5m]) > 100
+        for: 1m
+        labels:
+          severity: warn
+          module: im
+        annotations:
+          summary: "IM 慢 SQL 5min 内增量 > 100"
+          description: "5min 增量 = {{ $value }}，Top SQL 见日志 'P5-2 慢 SQL' WARN 记录"
+
+      # DB 查询 P95 > 500ms
+      - alert: im_db_query_p95_warn
+        expr: histogram_quantile(0.95, sum(rate(im_db_query_latency_seconds_bucket[5m])) by (le)) > 0.5
+        for: 2m
+        labels:
+          severity: warn
+          module: im
+        annotations:
+          summary: "IM DB 查询 P95 延迟超过 500ms"
+          description: "P95 = {{ $value }}s，需排查慢 SQL 拦截器日志"
+
+  - name: im-push
+    interval: 30s
+    rules:
+      # 推送失败率 > 10%（5min 窗口）
+      - alert: im_push_failure_rate_high
+        expr: |
+          sum(rate(im_push_failure_total[5m]))
+          /
+          (sum(rate(im_push_success_total[5m])) + sum(rate(im_push_failure_total[5m])))
+          > 0.1
+        for: 3m
+        labels:
+          severity: warn
+          module: im
+        annotations:
+          summary: "IM 推送失败率 > 10%"
+          description: "5min 失败率 = {{ $value | humanizePercentage }}，检查 WS/SSE 后端健康"
+
+      # 推送线程池拒绝任务（CallerRunsPolicy 触发）
+      - alert: im_push_executor_rejected
+        expr: increase(im_push_executor_rejected_total[5m]) > 0
+        for: 1m
+        labels:
+          severity: warn
+          module: im
+        annotations:
+          summary: "IM 推送线程池拒绝任务（CallerRunsPolicy 触发）"
+          description: "5min 增量 = {{ $value }}，需扩容 imPushExecutor 或调优 queueCapacity"

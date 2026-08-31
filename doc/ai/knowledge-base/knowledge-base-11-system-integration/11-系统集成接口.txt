@@ -1,0 +1,172 @@
+# 系统集成接口
+
+NexusERP 系统内部各模块间通过 REST API、RocketMQ 消息队列和 MQTT 协议进行数据交互。本章档描述核心集成场景的数据流、消息 Topic、REST 端点及数据映射关系，供开发人员理解模块间协作机制。
+
+## 一、ERP ↔ MES 集成
+
+ERP 与 MES 是系统中最紧密的两个模块，数据交互最为频繁。
+
+### 数据流：ERP → MES（工单下发）
+
+1. ERP 生产计划模块生成工单，状态为"已排产"
+2. ERP 通过 RocketMQ 发送工单下发消息
+   - Topic：`MES_WORK_ORDER_RELEASE`
+   - Tag：`CREATE`（新建）/ `UPDATE`（修改）/ `CANCEL`（取消）
+   - 消息体：工单号、物料编码、计划数量、计划开工/完工时间、工序列表、BOM 版本
+3. MES 的 `WorkOrderReleaseConsumer` 消费消息
+4. MES 校验 ERP 工单数据（BOM 版本有效性、物料可用性）
+5. MES 创建对应的生产工单，生成派工单草稿
+6. MES 通过 RocketMQ 回传确认消息
+   - Topic：`ERP_WORK_ORDER_ACK`
+   - 消息体：MES 工单号、ERP 工单号、接收状态、失败原因（如有）
+
+消息可靠性保障：
+- RocketMQ 事务消息保证 ERP 发送与本地数据库更新的原子性
+- MES 消费失败自动重试（最大重试 16 次，间隔 1/5/30/60/120/180/360/720 分钟）
+- 超过 16 次仍失败，消息进入死信队列，人工介入处理
+
+### 数据流：MES → ERP（完工回写）
+
+1. MES 工单完工入库后，通过 REST API 回写 ERP
+   - 端点：`POST /erp/api/production/work-order/complete-callback`
+   - 请求头：`Authorization: Bearer {token}`（MES 服务专用 Token）
+   - 请求体：MES 工单号、ERP 工单号、完工数量、合格数量、不良数量、实际工时、成本数据
+2. ERP 更新工单状态为"已完工"，触发财务成本核算
+3. 若完工数量与计划数量偏差 > 5%，ERP 自动生成差异分析报告
+
+### 数据流：ERP → MES（BOM 同步）
+
+1. ERP BOM 审核通过后，通过 REST API 同步至 MES
+   - 端点：`POST /mes/api/erp-bridge/sync-bom`
+   - 请求体：BOM 版本号、物料编码、子件列表、用量、损耗率
+2. MES 的 `MesErpBridgeService` 接收并存储
+3. MES 工单开工前自动校验 BOM 版本，使用最新已同步版本
+
+## 二、ERP ↔ IoT 集成
+
+IoT 模块采集的设备数据回写到 MES 生产数据记录中，形成闭环。
+
+### 数据流：IoT → MES（设备数据回写）
+
+1. IoT 设备通过 MQTT 上报数据（温度、压力、电流、振动等）
+2. `IotStreamConsumer` 消费 MQTT 消息，解析 Topic 和 Payload
+3. 数据经过 `IotAlertChecker` 检测异常
+4. 若设备与 MES 工单关联，通过 RocketMQ 发送生产数据记录
+   - Topic：`MES_PRODUCTION_DATA`
+   - 消息体：设备编码、工单号、工序号、采集时间、采集值、单位、是否异常
+5. MES 的 `DcDataRecord` 接收并存储，用于 SPC 分析
+
+### 数据流：IoT → ERP（设备状态）
+
+1. IoT 设备心跳数据通过 SSE 推送至前端
+2. 运维人员可在 IoT 实时监控页面查看设备状态
+3. 设备故障时，IoT 通过 RocketMQ 发送告警通知
+   - Topic：`ERP_EQUIPMENT_ALERT`
+   - 消息体：设备编码、故障类型、故障时间、影响工单号
+4. ERP 收到告警后，自动暂停关联工单，通知生产主管
+
+## 三、AI 模块集成
+
+AI 模块作为智能助手，与多个模块深度集成。
+
+### AI ↔ ERP（SQL 查询）
+
+1. 用户在 AI 对话界面输入自然语言查询（如"上个月销售额是多少"）
+2. `AiServiceFacade` 路由到 `ErpQueryAgent`
+3. Agent 通过 `ExecuteSqlQueryTool` 执行 SQL（`@DS("erp")` 切换到 ry-erp 库）
+4. SQL 安全校验：仅允许 SELECT，表名前缀白名单（bd_/so_/pu_/prd_/wm_/sch_），自动注入 tenant_id
+5. 查询结果通过 SSE 实时推送回前端
+
+### AI ↔ 知识库（RAG）
+
+1. 用户在 AI 对话中携带 `knowledgeId` 参数
+2. `RetrieverService` 执行混合检索（向量 + 全文 + 图谱 RRF 融合）
+3. 检索结果注入提示词，调用 LLM 生成增强回答
+4. 通过 SSE 推送回答和检索来源
+
+### AI ↔ 知识图谱（GraphRAG）
+
+1. 用户发起全局搜索类问题（如"这批文档涉及哪些业务关系"）
+2. `GlobalSearchService` 执行 map-reduce 检索
+3. map：每个社区摘要生成候选答案
+4. reduce：综合所有候选答案生成最终回答
+5. 通过 SSE 推送回答和引用社区
+
+## 四、IM 即时通讯集成
+
+即时通讯模块与 AI 模块集成，支持 AI 对话结果的即时推送。
+
+### 数据流：AI → IM（消息推送）
+
+1. AI 生成回答后，`AiServiceFacade` 判断是否需要推送给用户
+2. 通过 `ImRealtimePush` 推送消息到对应用户
+3. 前端 IM 模块实时接收并展示
+4. 用户可在聊天窗口继续追问，形成上下文
+
+### 数据流：系统通知
+
+1. 系统事件触发（工单完工、到货通知、质量异常）
+2. `SysUserNotificationController` 创建通知记录
+3. 通过 `UserNotificationEventListener` 推送 SSE 消息
+4. 前端顶部通知栏实时显示未读通知
+
+## 五、Flowable 工作流集成
+
+工作流模块与 ERP/MES 业务单据深度集成。
+
+### 集成场景
+
+- 采购订单审批：PO 金额 > 1 万元时自动触发 Flowable 审批流程
+- 销售订单审批：SO 价格低于标准价 20% 时触发审批
+- 请假/调岗：员工发起流程，部门经理审批
+
+### 数据流
+
+1. 业务单据（如 PO）提交时，`FlowableDeployController` 启动流程实例
+2. Flowable 引擎根据流程定义（BPMN）推进审批节点
+3. 审批人完成任务后，Flowable 回调 ERP 更新单据状态
+4. 流程结束后，业务单据状态自动推进到下一节点
+
+API 端点：
+- 启动流程：`POST /flowable/process/start`
+- 完成任务：`POST /flowable/task/complete`
+- 查询任务：`GET /flowable/task/list`
+- 流程历史：`GET /flowable/process/history`
+
+## 六、第三方系统集成
+
+### 微信小程序
+
+NexusERP 提供微信小程序端，功能包括：
+- 移动端审批（采购/销售/请假）
+- 库存查询扫码
+- 工单报工扫码
+- IoT 设备监控
+
+集成方式：小程序通过 HTTPS 调用 NexusERP REST API（需 OAuth2 认证）。
+
+### 顺丰/京东物流 API
+
+销售出库时自动对接物流 API：
+- 顺丰：`https://open.sf-express.com`，获取电子面单、轨迹查询
+- 京东：`https://api.jd.com`，获取电子面单、轨迹查询
+
+触发时机：SO 状态变为"已发货"后，自动调用物流 API 创建运单。
+
+### 电子发票
+
+开票时对接税务系统电子发票 API：
+- 税局接口：`https://inv.inter.fjq-l-tax.gov.cn`
+- 功能：开具电子发票、发票作废、发票查询
+- 触发时机：SO 状态变为"已完成"，财务发起开票
+
+## 七、集成安全
+
+所有集成接口遵循以下安全规范：
+
+- 内部服务间调用使用专用 Token（存储在 Vault 或加密配置中）
+- 外部 API 调用使用 HTTPS + 签名验证
+- 所有 REST 端点需携带有效 JWT Token
+- RocketMQ 开启 ACL 认证，按 Topic 授权
+- MQTT 启用 TLS + 客户端证书认证（生产环境）
+- 集成日志全量记录（请求/响应/耗时），留存 180 天
