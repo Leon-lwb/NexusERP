@@ -144,6 +144,7 @@ public class PdaIssueServiceImpl implements IPdaIssueService {
         }
 
         // 发料批次质检门禁(M3 批次5): 开关开启时, 拣货批次 IQC 不合格禁止发料
+        // 注意: 未扫批次码时门禁不生效(批次未知无从判定), 开关开启场景建议配套批次码必填
         if (StringUtils.isNotBlank(bo.getBatchCode())
             && "true".equalsIgnoreCase(StringUtils.trimToEmpty(configService.selectConfigByKey(QC_GATE_CONFIG_KEY)))
             && isBatchUnqualified(bo.getBatchCode(), target.getMaterialId())) {
