@@ -20,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -59,6 +60,19 @@ public class WmMaterialReturnController {
                 .eq(StringUtils.isNotBlank(status), WmMaterialReturn::getStatus, status)
                 .orderByDesc(WmMaterialReturn::getCreateTime));
         return new TableDataInfo<>(page.getRecords(), page.getTotal());
+    }
+
+    /** 退料单详情 (头+行, PDA 核销进度在行 actualQty 上) */
+    @SaCheckPermission("wm:materialReturn:query")
+    @GetMapping("/{returnId}")
+    public R<WmMaterialReturn> detail(@PathVariable Long returnId) {
+        WmMaterialReturn head = returnMapper.selectById(returnId);
+        if (head == null) {
+            return R.fail("退料单不存在");
+        }
+        head.setLines(lineMapper.selectList(Wrappers.<WmMaterialReturnLine>lambdaQuery()
+            .eq(WmMaterialReturnLine::getReturnId, returnId)));
+        return R.ok(head);
     }
 
     /** 新建退料单 (状态 DRAFT, 待 PDA 核销) */

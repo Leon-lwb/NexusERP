@@ -23,6 +23,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -64,6 +65,19 @@ public class WmMaterialHandoverController {
                 .eq(StringUtils.isNotBlank(status), WmMaterialHandover::getStatus, status)
                 .orderByDesc(WmMaterialHandover::getCreateTime));
         return new TableDataInfo<>(page.getRecords(), page.getTotal());
+    }
+
+    /** 交接单详情 (头+行, PDA 核销进度在行 actualQty 上) */
+    @SaCheckPermission("wm:materialHandover:query")
+    @GetMapping("/{handoverId}")
+    public R<WmMaterialHandover> detail(@PathVariable Long handoverId) {
+        WmMaterialHandover head = handoverMapper.selectById(handoverId);
+        if (head == null) {
+            return R.fail("交接单不存在");
+        }
+        head.setLines(lineMapper.selectList(Wrappers.<WmMaterialHandoverLine>lambdaQuery()
+            .eq(WmMaterialHandoverLine::getHandoverId, handoverId)));
+        return R.ok(head);
     }
 
     /** 新建交接单 (状态 DRAFT, 待 PDA 核销+签收) */
