@@ -12,6 +12,11 @@ export interface SpcControlChartVO {
   ucl?: number;
   cl?: number;
   lcl?: number;
+  usl?: number;
+  lsl?: number;
+  cp?: number;
+  cpk?: number;
+  cpkGrade?: string;
   sampleSize: number;
   status: string;
   remark?: string;
@@ -33,6 +38,8 @@ export interface SpcControlChartForm {
   pointId?: number;
   materialId?: number;
   processId?: number;
+  usl?: number;
+  lsl?: number;
   sampleSize?: number;
   status?: string;
   remark?: string;
@@ -58,6 +65,9 @@ export interface SpcAnalyzeResult {
   ucl: number;
   cl: number;
   lcl: number;
+  cp?: number;
+  cpk?: number;
+  cpkGrade?: string;
 }
 
 /** 分页查询控制图 */

@@ -2844,6 +2844,11 @@ CREATE TABLE `spc_control_chart`  (
   `ucl` decimal(14, 4) NULL DEFAULT NULL COMMENT '上控制限(analyze计算回写)',
   `cl` decimal(14, 4) NULL DEFAULT NULL COMMENT '中心线',
   `lcl` decimal(14, 4) NULL DEFAULT NULL COMMENT '下控制限',
+  `usl` decimal(14, 4) NULL DEFAULT NULL COMMENT '规格上限(USL, 用户维护)',
+  `lsl` decimal(14, 4) NULL DEFAULT NULL COMMENT '规格下限(LSL, 用户维护)',
+  `cp` decimal(10, 4) NULL DEFAULT NULL COMMENT '过程能力指数Cp(analyze回写)',
+  `cpk` decimal(10, 4) NULL DEFAULT NULL COMMENT '过程能力指数Cpk(analyze回写)',
+  `cpk_grade` varchar(8) NULL DEFAULT NULL COMMENT '能力等级: A+(>=1.67)/A(>=1.33)/B(>=1.0)/C(<1.0)',
   `sample_size` int(11) NULL DEFAULT 5 COMMENT '样本大小',
   `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'ACTIVE' COMMENT 'ACTIVE/INACTIVE',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
@@ -2861,9 +2866,9 @@ CREATE TABLE `spc_control_chart`  (
 -- ----------------------------
 -- Records of spc_control_chart
 -- ----------------------------
-INSERT INTO `spc_control_chart` VALUES (1, '000000', 'CNC主轴温度控制图', 'X_BAR_R', 1, 1, 1, 85.2750, 76.6200, 67.9650, 5, 'ACTIVE', '数控车床主轴温度SPC监控', 100, 1, NULL, 1, '2026-07-26 02:00:03', '0');
-INSERT INTO `spc_control_chart` VALUES (2, '000000', '装配关键尺寸控制图', 'X_BAR_R', 3, 1001, 3, 10.0500, 10.0000, 9.9500, 5, 'ACTIVE', '装配工序关键尺寸SPC监控(目标10mm)', 100, 1, NULL, NULL, NULL, '0');
-INSERT INTO `spc_control_chart` VALUES (3, '000000', '焊接温度控制图', 'X_BAR_R', 4, 1, 2, 280.0000, 250.0000, 220.0000, 5, 'ACTIVE', '焊接温度SPC监控', 100, 1, NULL, NULL, NULL, '0');
+INSERT INTO `spc_control_chart` VALUES (1, '000000', 'CNC主轴温度控制图', 'X_BAR_R', 1, 1, 1, 85.2750, 76.6200, 67.9650, NULL, NULL, NULL, NULL, NULL, 5, 'ACTIVE', '数控车床主轴温度SPC监控', 100, 1, NULL, 1, '2026-07-26 02:00:03', '0');
+INSERT INTO `spc_control_chart` VALUES (2, '000000', '装配关键尺寸控制图', 'X_BAR_R', 3, 1001, 3, 10.0500, 10.0000, 9.9500, 10.0500, 9.9500, NULL, NULL, NULL, 5, 'ACTIVE', '装配工序关键尺寸SPC监控(目标10mm)', 100, 1, NULL, NULL, NULL, '0');
+INSERT INTO `spc_control_chart` VALUES (3, '000000', '焊接温度控制图', 'X_BAR_R', 4, 1, 2, 280.0000, 250.0000, 220.0000, NULL, NULL, NULL, NULL, NULL, 5, 'ACTIVE', '焊接温度SPC监控', 100, 1, NULL, NULL, NULL, '0');
 
 -- ----------------------------
 -- Table structure for spc_data_point

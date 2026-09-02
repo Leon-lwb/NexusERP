@@ -19,6 +19,7 @@ import com.nexus.mes.spc.domain.vo.SpcControlChartVo;
 import com.nexus.mes.spc.mapper.SpcControlChartMapper;
 import com.nexus.mes.spc.mapper.SpcDataPointMapper;
 import com.nexus.mes.spc.service.ISpcControlChartService;
+import com.nexus.mes.spc.service.SpcCapabilityCalculator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -207,6 +208,20 @@ public class SpcControlChartServiceImpl implements ISpcControlChartService {
         // 3. 计算控制限 UCL/CL/LCL
         ControlLimit limit = calcControlLimit(groups, chartType, sampleSize);
 
+        // 3.5 过程能力分析(计量型图且已维护规格限): Cp/Cpk 回写
+        SpcCapabilityCalculator.Capability capability = calcCapability(chart, groups, chartType, sampleSize);
+        if (capability != null) {
+            chart.setCp(capability.cp());
+            chart.setCpk(capability.cpk());
+            chart.setCpkGrade(capability.grade());
+            log.info("过程能力分析: chartId={}, Cp={}, Cpk={}, 等级={}, σ组内={}",
+                chartId, capability.cp(), capability.cpk(), capability.grade(), capability.sigmaWithin());
+        } else {
+            chart.setCp(null);
+            chart.setCpk(null);
+            chart.setCpkGrade(null);
+        }
+
         // 4. 回写图表控制限
         chart.setUcl(limit.ucl);
         chart.setCl(limit.cl);
@@ -258,7 +273,30 @@ public class SpcControlChartServiceImpl implements ISpcControlChartService {
         result.put("ucl", limit.ucl);
         result.put("cl", limit.cl);
         result.put("lcl", limit.lcl);
+        result.put("cp", chart.getCp());
+        result.put("cpk", chart.getCpk());
+        result.put("cpkGrade", chart.getCpkGrade());
         return result;
+    }
+
+    /**
+     * 过程能力计算: 仅计量型(X_BAR_R/X_BAR_S)且 USL/LSL 均已维护时进行;
+     * X_BAR_R 用 R̄/d2 估计组内σ, X_BAR_S 用 S̄/c4; 计数型图返回 null。
+     */
+    private SpcCapabilityCalculator.Capability calcCapability(SpcControlChart chart, List<GroupStat> groups,
+                                                              String chartType, int sampleSize) {
+        if (chart.getUsl() == null || chart.getLsl() == null) {
+            return null;
+        }
+        BigDecimal grandMean = mean(groups, g -> g.statValue);
+        BigDecimal rBarOrSBar = mean(groups, g -> g.rangeOrStd);
+        if (TYPE_X_BAR_R.equals(chartType)) {
+            return SpcCapabilityCalculator.calcByRange(grandMean, rBarOrSBar, sampleSize, chart.getUsl(), chart.getLsl());
+        }
+        if (TYPE_X_BAR_S.equals(chartType)) {
+            return SpcCapabilityCalculator.calcByStd(grandMean, rBarOrSBar, sampleSize, chart.getUsl(), chart.getLsl());
+        }
+        return null;
     }
 
     // ==================== 分组与统计 ====================

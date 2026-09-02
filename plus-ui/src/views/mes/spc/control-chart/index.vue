@@ -54,6 +54,22 @@
       <el-table-column label="LCL" prop="lcl" align="right">
         <template #default="scope">{{ scope.row.lcl ?? '-' }}</template>
       </el-table-column>
+      <el-table-column label="Cpk" prop="cpk" align="right">
+        <template #default="scope">
+          <el-tag v-if="scope.row.cpk != null" size="small" :type="cpkTagType(scope.row.cpkGrade)">
+            {{ scope.row.cpk }}
+          </el-tag>
+          <span v-else>-</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="能力等级" prop="cpkGrade" align="center">
+        <template #default="scope">
+          <el-tag v-if="scope.row.cpkGrade" size="small" :type="cpkTagType(scope.row.cpkGrade)">
+            {{ cpkGradeLabel(scope.row.cpkGrade) }}
+          </el-tag>
+          <span v-else>-</span>
+        </template>
+      </el-table-column>
       <el-table-column label="状态" prop="status" align="center">
         <template #default="scope">
           <dict-tag :options="mes_enable_status" :value="scope.row.status" />
@@ -113,6 +129,12 @@
             </template>
           </el-input>
         </el-form-item>
+        <el-form-item label="规格上限" prop="usl">
+          <el-input-number v-model="form.usl" :precision="4" :controls="false" placeholder="USL(计量型图适用)" style="width: 100%" />
+        </el-form-item>
+        <el-form-item label="规格下限" prop="lsl">
+          <el-input-number v-model="form.lsl" :precision="4" :controls="false" placeholder="LSL" style="width: 100%" />
+        </el-form-item>
         <el-form-item label="状态" prop="status">
           <el-select v-model="form.status" placeholder="状态" style="width: 100%">
             <el-option v-for="dict in mes_enable_status" :key="dict.value" :label="dict.label" :value="dict.value" />
@@ -151,6 +173,22 @@
           <el-descriptions-item label="LCL(下控制限)">{{ analyzeResult.lcl }}</el-descriptions-item>
           <el-descriptions-item label="状态">
             <dict-tag :options="mes_enable_status" :value="analyzeResult.chart?.status" />
+          </el-descriptions-item>
+          <el-descriptions-item label="Cp(过程能力)">
+            <span v-if="analyzeResult.cp != null">{{ analyzeResult.cp }}</span>
+            <span v-else>-</span>
+          </el-descriptions-item>
+          <el-descriptions-item label="Cpk(修正能力)">
+            <el-tag v-if="analyzeResult.cpk != null" :type="cpkTagType(analyzeResult.cpkGrade)">
+              {{ analyzeResult.cpk }}
+            </el-tag>
+            <span v-else>-</span>
+          </el-descriptions-item>
+          <el-descriptions-item label="能力等级">
+            <el-tag v-if="analyzeResult.cpkGrade" :type="cpkTagType(analyzeResult.cpkGrade)">
+              {{ cpkGradeLabel(analyzeResult.cpkGrade) }}
+            </el-tag>
+            <span v-else>未维护规格限</span>
           </el-descriptions-item>
         </el-descriptions>
         <div ref="chartRef" style="height: 380px" />
@@ -299,6 +337,8 @@ const { loading, list, total, open, title, showSearch, form, getList, handleQuer
       pointId: undefined,
       materialId: undefined,
       processId: undefined,
+      usl: undefined,
+      lsl: undefined,
       sampleSize: 5,
       status: 'ACTIVE',
       remark: ''
@@ -334,8 +374,12 @@ const analyzeResult = ref<SpcAnalyzeResult>({} as SpcAnalyzeResult);
 const chartRef = ref<HTMLElement>();
 let chartInstance: echarts.ECharts | null = null;
 
-const handleAnalyze = async (row: SpcControlChartVO) => {
-  analyzeLoading.value = true;
+// ============ 过程能力等级展示 ============
+const cpkGradeLabel = (grade: string) => ({ 'A+': '特优(≥1.67)', A: '充分(≥1.33)', B: '勉强(≥1.0)', C: '不足(<1.0)' }[grade] || grade);
+const cpkTagType = (grade?: string) =>
+  ({ 'A+': 'success', A: 'success', B: 'warning', C: 'danger' }[grade || ''] as 'success' | 'warning' | 'danger' || 'info');
+
+const handleAnalyze = async (row: SpcControlChartVO) => {  analyzeLoading.value = true;
   analyzeDialog.visible = true;
   try {
     const res = await analyzeControlChart(row.chartId);

@@ -56,6 +56,26 @@ public class SpcControlChartVo implements Serializable {
     @ExcelProperty("LCL")
     private BigDecimal lcl;
 
+    /** 规格上限(用户维护) */
+    @ExcelProperty("USL")
+    private BigDecimal usl;
+
+    /** 规格下限(用户维护) */
+    @ExcelProperty("LSL")
+    private BigDecimal lsl;
+
+    /** 过程能力指数Cp */
+    @ExcelProperty("Cp")
+    private BigDecimal cp;
+
+    /** 过程能力指数Cpk */
+    @ExcelProperty("Cpk")
+    private BigDecimal cpk;
+
+    /** 能力等级: A+/A/B/C */
+    @ExcelProperty("能力等级")
+    private String cpkGrade;
+
     /** 样本大小 */
     @ExcelProperty("样本大小")
     private Integer sampleSize;
