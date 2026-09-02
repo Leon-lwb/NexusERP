@@ -55,4 +55,41 @@ public class IotPipelineProperties {
      */
     private Map<String, java.math.BigDecimal> alertThresholds = new HashMap<>();
 
+    /**
+     * EWMA 统计异常检测配置（预测性维护-实时侧）
+     */
+    private Anomaly anomaly = new Anomaly();
+
+    /**
+     * EWMA 异常检测配置项
+     */
+    @Data
+    public static class Anomaly {
+
+        /**
+         * 是否启用异常检测
+         */
+        private boolean enabled = true;
+
+        /**
+         * EWMA 平滑系数 λ(0-1, 越大越敏感)
+         */
+        private double lambda = 0.3;
+
+        /**
+         * 预热样本数(达到后才开始判定, 避免开局误报)
+         */
+        private int warmup = 20;
+
+        /**
+         * 告警 z-score 阈值(MEDIUM)
+         */
+        private double zWarn = 3.0;
+
+        /**
+         * 高级告警 z-score 阈值(HIGH)
+         */
+        private double zHigh = 4.0;
+    }
+
 }

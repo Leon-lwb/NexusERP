@@ -61,6 +61,7 @@ public class IotStreamConsumer {
     private final IIotDeviceDataService deviceDataService;
     private final IotDeviceLatestCache latestCache;
     private final IotAlertChecker alertChecker;
+    private final IotAnomalyDetector anomalyDetector;
     private final IotDataValueResolver valueResolver;
 
     private RStream<Object, Object> stream;
@@ -245,6 +246,11 @@ public class IotStreamConsumer {
             alertChecker.check(data);
         } catch (Exception e) {
             log.warn("告警检查异常：device={}, property={}", data.getDeviceCode(), data.getPropertyCode(), e);
+        }
+        try {
+            anomalyDetector.detect(data);
+        } catch (Exception e) {
+            log.warn("异常检测异常：device={}, property={}", data.getDeviceCode(), data.getPropertyCode(), e);
         }
     }
 
