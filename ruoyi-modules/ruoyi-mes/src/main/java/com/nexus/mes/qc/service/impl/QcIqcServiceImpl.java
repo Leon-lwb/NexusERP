@@ -4,6 +4,7 @@ import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.nexus.common.core.utils.MapstructUtils;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
@@ -13,10 +14,15 @@ import com.nexus.mes.common.mq.MesMqSendService;
 import com.nexus.mes.lt.service.ILtLotService;
 import com.nexus.mes.ncr.service.INcrOrderService;
 import com.nexus.mes.qc.domain.QcIqc;
+import com.nexus.mes.qc.domain.QcInspectDetail;
 import com.nexus.mes.qc.domain.bo.QcIqcBo;
+import com.nexus.mes.qc.domain.bo.QcInspectEntryBo;
 import com.nexus.mes.qc.domain.vo.QcIqcVo;
+import com.nexus.mes.qc.domain.vo.QcInspectDetailVo;
 import com.nexus.mes.qc.mapper.QcIqcMapper;
 import com.nexus.mes.qc.service.IQcIqcService;
+import com.nexus.mes.qc.service.IQcInspectDetailService;
+import com.nexus.mes.qc.service.QcJudgeEngine;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -27,7 +33,9 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 /**
  * MES来料检验 Service 业务层实现
@@ -52,6 +60,8 @@ public class QcIqcServiceImpl implements IQcIqcService {
     private final ILtLotService ltLotService;
     /** NCR 不合格品服务(P0-4)：检验判定不合格时自动创建 NCR 单。 */
     private final INcrOrderService ncrOrderService;
+    /** 检验单明细服务: 建单时按模板快照生成明细, 判定后回写结果。 */
+    private final IQcInspectDetailService inspectDetailService;
 
     /**
      * 分页查询 IQC 来料检验列表。
@@ -102,6 +112,8 @@ public class QcIqcServiceImpl implements IQcIqcService {
         iqc.setRemark(bo.getRemark());
         baseMapper.insert(iqc);
         log.info("新增IQC检验单: iqcId={}, iqcNo={}", iqc.getIqcId(), iqc.getIqcNo());
+        // 按检验模板快照生成明细(带批量算 AQL 建议抽样量; 无匹配模板返回0, 保持人工判定, 不阻断)
+        inspectDetailService.generateDetails("IQC", iqc.getIqcId(), iqc.getMaterialId(), iqc.getQuantity());
         return baseMapper.selectVoById(iqc.getIqcId());
     }
 
@@ -199,6 +211,58 @@ public class QcIqcServiceImpl implements IQcIqcService {
     }
 
     // ==================== 私有辅助方法 ====================
+
+    /**
+     * 按检验明细执行检验(自动判定)。
+     * <p>录入实测值 -> QcJudgeEngine 逐项判 PASS/FAIL 落库 -> 汇总单级结果 ->
+     * PARTIAL 视为 UNQUALIFIED 走 NCR(让步接收由人工在 NCR 处置流程决策) ->
+     * 复用 {@link #inspect(Long, String, String, BigDecimal, String)} 完成 NCR/MQ 回写链路。</p>
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void inspectWithDetails(Long iqcId, List<QcInspectEntryBo> entries, String defectInfo, String remark) {
+        if (entries == null || entries.isEmpty()) {
+            throw new RuntimeException("检验明细为空, 请录入实测值后提交判定");
+        }
+        List<QcInspectDetail> details = inspectDetailService.selectByCheck("IQC", iqcId);
+        if (details.isEmpty()) {
+            throw new RuntimeException("检验单没有检验明细(无匹配模板), 请使用人工判定");
+        }
+        // 实测值录入到对应明细行并逐项判定
+        List<QcInspectDetail> judged = new ArrayList<>();
+        for (QcInspectEntryBo entry : entries) {
+            QcInspectDetail detail = details.stream()
+                .filter(d -> d.getDetailId().equals(entry.getDetailId()))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("检验明细不存在或不属于本检验单: " + entry.getDetailId()));
+            detail.setMeasuredValue(entry.getMeasuredValue());
+            detail.setSampleQty(entry.getSampleQty());
+            if (StringUtils.isNotBlank(entry.getRemark())) {
+                detail.setRemark(entry.getRemark());
+            }
+            QcJudgeEngine.judgeDetail(detail);
+            judged.add(detail);
+        }
+        inspectDetailService.updateDetails(judged);
+
+        String overall = QcJudgeEngine.judgeOverall(details);
+        if (overall == null) {
+            throw new RuntimeException("没有可判定的检验项目, 请录入实测值");
+        }
+        // PARTIAL(仅重要/次要项失败)按不合格处理, 由 NCR 处置流程决策让步接收或退货
+        String finalResult = QcJudgeEngine.RESULT_QUALIFIED.equals(overall)
+            ? QcJudgeEngine.RESULT_QUALIFIED : QcJudgeEngine.RESULT_UNQUALIFIED;
+        log.info("IQC明细自动判定: iqcId={}, overall={}, final={}", iqcId, overall, finalResult);
+        inspect(iqcId, finalResult, defectInfo, null, remark);
+    }
+
+    /**
+     * 查询 IQC 检验单明细(按检验模板快照生成)
+     */
+    @Override
+    public List<QcInspectDetailVo> selectDetails(Long iqcId) {
+        return MapstructUtils.convert(inspectDetailService.selectByCheck("IQC", iqcId), QcInspectDetailVo.class);
+    }
 
     /**
      * 生成检验编号: 前缀 + yyyyMMdd + 3位序号

@@ -61,3 +61,34 @@ export const inspectIqc = (iqcId: string | number, inspectResult: string, defect
     method: 'put',
     params: { inspectResult, defectInfo, sampleQty, remark }
   });
+
+/** 检验单明细视图对象(按检验模板快照生成) */
+export interface QcInspectDetailVO {
+  detailId: number;
+  checkId: number;
+  checkType: string;
+  templateId?: number;
+  itemId?: number;
+  itemCode: string;
+  itemName: string;
+  dataType: string;
+  standardType?: string;
+  standardDesc?: string;
+  unit?: string;
+  criticality?: string;
+  sampleQty?: number;
+  measuredValue?: string;
+  judgeResult?: string;
+  seqNum?: number;
+  remark?: string;
+}
+
+/** 查询IQC检验单明细(检验项目) */
+export const getIqcDetails = (iqcId: string | number): AxiosPromise<QcInspectDetailVO[]> =>
+  request({ url: `/mes/qc/iqc/${iqcId}/details`, method: 'get' });
+
+/** 按明细自动判定检验(实测值 + 系统比对标准) */
+export const inspectIqcWithDetails = (
+  iqcId: string | number,
+  data: { details: Array<{ detailId: number; measuredValue: string; sampleQty?: number; remark?: string }>; defectInfo?: string; remark?: string }
+) => request({ url: `/mes/qc/iqc/inspect-details/${iqcId}`, method: 'put', data });

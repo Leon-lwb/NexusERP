@@ -111,27 +111,88 @@
       </template>
     </el-dialog>
 
-    <!-- 检验对话框 -->
-    <el-dialog v-model="inspectDialog.visible" :title="'IQC检验 - ' + inspectForm.iqcNo" width="500px" append-to-body>
-      <el-form :model="inspectForm" label-width="100px">
-        <el-form-item label="检验结果" required>
-          <el-radio-group v-model="inspectForm.inspectResult">
-            <el-radio v-for="dict in inspectResultOptions" :key="dict.value" :value="dict.value">{{ dict.label }}</el-radio>
-          </el-radio-group>
-        </el-form-item>
-        <el-form-item label="抽样数量">
-          <el-input-number v-model="inspectForm.sampleQty" :min="0" :precision="4" controls-position="right" style="width: 100%" />
-        </el-form-item>
-        <el-form-item label="不良品信息">
-          <el-input v-model="inspectForm.defectInfo" type="textarea" :rows="3" placeholder='不良品信息JSON, 如: [{"type":"划痕","qty":2}]' />
-        </el-form-item>
-        <el-form-item label="备注">
-          <el-input v-model="inspectForm.remark" type="textarea" :rows="2" placeholder="备注" />
-        </el-form-item>
-      </el-form>
+    <!-- 检验对话框: 有明细走自动判定, 无明细回退人工判定 -->
+    <el-dialog v-model="inspectDialog.visible" :title="'IQC检验 - ' + inspectForm.iqcNo" width="860px" append-to-body>
+      <el-tabs v-model="inspectDialog.activeTab">
+        <!-- 检验项目(自动判定) -->
+        <el-tab-pane label="检验项目" name="details">
+          <el-alert
+            v-if="inspectEntries.length === 0"
+            title="本检验单无检验明细(未匹配到启用的检验模板)"
+            description="请在 质量管理 → 检验标准模板 中为该物料维护并启用模板后重建检验单, 或切换到'人工判定'页签直接录入结果。"
+            type="info"
+            :closable="false"
+            style="margin-bottom: 12px"
+          />
+          <el-table v-else :data="inspectEntries" border size="small">
+            <el-table-column label="项目" min-width="140">
+              <template #default="scope">
+                {{ scope.row.itemCode }} {{ scope.row.itemName }}
+              </template>
+            </el-table-column>
+            <el-table-column label="标准" prop="standardDesc" min-width="120" />
+            <el-table-column label="样本量" prop="sampleQty" width="70" align="center" />
+            <el-table-column label="关键度" width="80" align="center">
+              <template #default="scope">
+                <el-tag v-if="scope.row.criticality === 'CRITICAL'" type="danger" size="small">关键</el-tag>
+                <el-tag v-else-if="scope.row.criticality === 'MINOR'" type="info" size="small">次要</el-tag>
+                <el-tag v-else type="warning" size="small">重要</el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column label="实测值" width="200">
+              <template #default="scope">
+                <el-input
+                  v-if="scope.row.dataType !== 'QUALITATIVE'"
+                  v-model="scope.row.measuredValue"
+                  placeholder="数值, 多值逗号分隔"
+                  size="small"
+                />
+                <el-select v-else v-model="scope.row.measuredValue" placeholder="选择" size="small">
+                  <el-option label="OK" value="OK" />
+                  <el-option label="NG" value="NG" />
+                </el-select>
+              </template>
+            </el-table-column>
+            <el-table-column label="判定" width="80" align="center">
+              <template #default="scope">
+                <el-tag v-if="scope.row.judgeResult === 'PASS'" type="success" size="small">PASS</el-tag>
+                <el-tag v-else-if="scope.row.judgeResult === 'FAIL'" type="danger" size="small">FAIL</el-tag>
+                <el-tag v-else type="info" size="small">待判</el-tag>
+              </template>
+            </el-table-column>
+          </el-table>
+          <el-form label-width="100px" style="margin-top: 12px">
+            <el-form-item label="不良品信息">
+              <el-input v-model="inspectForm.defectInfo" type="textarea" :rows="2" placeholder='不合格时填写, 如: [{"type":"划痕","qty":2}]' />
+            </el-form-item>
+            <el-form-item label="备注">
+              <el-input v-model="inspectForm.remark" type="textarea" :rows="2" placeholder="备注" />
+            </el-form-item>
+          </el-form>
+        </el-tab-pane>
+        <!-- 人工判定(兼容无模板检验单) -->
+        <el-tab-pane label="人工判定" name="manual">
+          <el-form :model="inspectForm" label-width="100px">
+            <el-form-item label="检验结果" required>
+              <el-radio-group v-model="inspectForm.inspectResult">
+                <el-radio v-for="dict in inspectResultOptions" :key="dict.value" :value="dict.value">{{ dict.label }}</el-radio>
+              </el-radio-group>
+            </el-form-item>
+            <el-form-item label="抽样数量">
+              <el-input-number v-model="inspectForm.sampleQty" :min="0" :precision="4" controls-position="right" style="width: 100%" />
+            </el-form-item>
+            <el-form-item label="不良品信息">
+              <el-input v-model="inspectForm.defectInfo" type="textarea" :rows="3" placeholder='不良品信息JSON, 如: [{"type":"划痕","qty":2}]' />
+            </el-form-item>
+            <el-form-item label="备注">
+              <el-input v-model="inspectForm.remark" type="textarea" :rows="2" placeholder="备注" />
+            </el-form-item>
+          </el-form>
+        </el-tab-pane>
+      </el-tabs>
       <template #footer>
         <el-button @click="inspectDialog.visible = false">取消</el-button>
-        <el-button type="primary" @click="submitInspect">确认检验</el-button>
+        <el-button type="primary" @click="submitInspect">提交判定</el-button>
       </template>
     </el-dialog>
 
@@ -169,8 +230,8 @@
 </template>
 
 <script setup lang="ts" name="MesQcIqc">
-import { listIqc, addIqc, inspectIqc } from '@/api/mes/qc/iqc';
-import type { QcIqcVO, QcIqcQuery, QcIqcForm } from '@/api/mes/qc/iqc';
+import { listIqc, addIqc, inspectIqc, getIqcDetails, inspectIqcWithDetails } from '@/api/mes/qc/iqc';
+import type { QcIqcVO, QcIqcQuery, QcIqcForm, QcInspectDetailVO } from '@/api/mes/qc/iqc';
 import { listReceive } from '@/api/erp/wm/receive';
 import MaterialSelectDialog from '@/components/MaterialSelectDialog/index.vue';
 import { useCrud } from '@/composables/useCrud';
@@ -221,7 +282,7 @@ const receiveDialog = reactive({
   query: { pageNum: 1, pageSize: 10, receiveCode: '' as string }
 });
 
-const inspectDialog = reactive({ visible: false });
+const inspectDialog = reactive({ visible: false, activeTab: 'details' });
 const inspectForm = reactive<{ iqcId: number; iqcNo: string; inspectResult: string; defectInfo?: string; sampleQty?: number; remark?: string }>({
   iqcId: 0,
   iqcNo: '',
@@ -230,6 +291,8 @@ const inspectForm = reactive<{ iqcId: number; iqcNo: string; inspectResult: stri
   sampleQty: undefined,
   remark: ''
 });
+/** 检验单明细(编辑副本, 录入实测值后提交自动判定) */
+const inspectEntries = ref<QcInspectDetailVO[]>([]);
 
 function resetQuery() {
   proxy?.resetForm('queryRef');
@@ -262,19 +325,52 @@ const submitAdd = async () => {
   getList();
 };
 
-const handleOpenInspect = (row: QcIqcVO) => {
+const handleOpenInspect = async (row: QcIqcVO) => {
   inspectForm.iqcId = row.iqcId;
   inspectForm.iqcNo = row.iqcNo;
   inspectForm.inspectResult = 'QUALIFIED';
   inspectForm.defectInfo = '';
   inspectForm.sampleQty = row.sampleQty;
   inspectForm.remark = '';
+  inspectEntries.value = [];
+  inspectDialog.activeTab = 'details';
   inspectDialog.visible = true;
+  // 拉取检验明细(有模板匹配才有; 失败不阻断, 回退人工判定)
+  try {
+    const res = await getIqcDetails(row.iqcId);
+    inspectEntries.value = res.data || [];
+    if (inspectEntries.value.length === 0) {
+      inspectDialog.activeTab = 'manual';
+    }
+  } catch {
+    inspectDialog.activeTab = 'manual';
+  }
 };
 
 const submitInspect = async () => {
-  await inspectIqc(inspectForm.iqcId, inspectForm.inspectResult, inspectForm.defectInfo, inspectForm.sampleQty, inspectForm.remark);
-  proxy?.$modal.msgSuccess('检验成功');
+  if (inspectDialog.activeTab === 'details' && inspectEntries.value.length > 0) {
+    // 自动判定: 校验实测值全部录入
+    for (const entry of inspectEntries.value) {
+      if (!entry.measuredValue) {
+        proxy?.$modal.msgError(`项目 ${entry.itemCode} ${entry.itemName} 未录入实测值`);
+        return;
+      }
+    }
+    await inspectIqcWithDetails(inspectForm.iqcId, {
+      details: inspectEntries.value.map((e) => ({
+        detailId: e.detailId,
+        measuredValue: e.measuredValue as string,
+        sampleQty: e.sampleQty,
+        remark: e.remark
+      })),
+      defectInfo: inspectForm.defectInfo,
+      remark: inspectForm.remark
+    });
+    proxy?.$modal.msgSuccess('判定完成');
+  } else {
+    await inspectIqc(inspectForm.iqcId, inspectForm.inspectResult, inspectForm.defectInfo, inspectForm.sampleQty, inspectForm.remark);
+    proxy?.$modal.msgSuccess('检验成功');
+  }
   inspectDialog.visible = false;
   getList();
 };

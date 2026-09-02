@@ -3,7 +3,11 @@ package com.nexus.mes.qc.service;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.mes.qc.domain.bo.QcIqcBo;
+import com.nexus.mes.qc.domain.bo.QcInspectEntryBo;
 import com.nexus.mes.qc.domain.vo.QcIqcVo;
+import com.nexus.mes.qc.domain.vo.QcInspectDetailVo;
+
+import java.util.List;
 
 /**
  * MES来料检验 Service 业务层接口
@@ -77,4 +81,21 @@ public interface IQcIqcService {
      */
     void inspect(Long iqcId, String inspectResult, String defectInfo,
                  java.math.BigDecimal sampleQty, String remark);
+
+    /**
+     * 按检验明细执行检验(自动判定): 录入实测值 -> 判定引擎逐项判 PASS/FAIL ->
+     * 汇总单级结果(全 PASS=QUALIFIED, 任一 CRITICAL FAIL=UNQUALIFIED, 仅 MAJOR/MINOR FAIL=PARTIAL) ->
+     * 继续走原有 NCR/MQ 回写链路。
+     *
+     * @param iqcId     IQC ID
+     * @param entries   明细实测值列表(detailId + measuredValue)
+     * @param defectInfo 不良品信息(JSON String, 可为空)
+     * @param remark    备注(可为空)
+     */
+    void inspectWithDetails(Long iqcId, List<QcInspectEntryBo> entries, String defectInfo, String remark);
+
+    /**
+     * 查询 IQC 检验单明细(按检验模板快照生成)
+     */
+    List<QcInspectDetailVo> selectDetails(Long iqcId);
 }

@@ -3296,8 +3296,6 @@ INSERT IGNORE INTO `sys_config`(`config_id`, `tenant_id`, `config_name`, `config
 -- BPMN 流程本体在「流程设计」中创建并发布(同 SOP/工单), 此处登记业务服务名, 提交审批时按 serviceName 拉取可选流程
 INSERT IGNORE INTO `wf_custom_form`(`id`, `business_name`, `business_service`, `flow_name`, `deploy_id`, `route_name`, `component`, `table_id`, `create_by`, `create_time`, `update_by`, `update_time`, `tenant_id`, `create_dept`) VALUES
 (2091000000000005001, '固件发布审批', 'fwFirmwareService', '', '', 'mes/fw/firmware/index', '', NULL, '1', NOW(), NULL, NULL, '000000', 103);
-
-
 -- ----------------------------
 -- Table structure for eq_health_record (设备健康评分 2026-08-30)
 -- ----------------------------
@@ -3329,5 +3327,123 @@ CREATE TABLE `eq_health_record`  (
   INDEX `idx_ehr_date`(`record_date`) USING BTREE,
   INDEX `idx_ehr_tenant`(`tenant_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '设备健康评分记录表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Table structure for qc_inspect_template
+-- ----------------------------
+DROP TABLE IF EXISTS `qc_inspect_template`;
+CREATE TABLE `qc_inspect_template`  (
+  `template_id` bigint(20) NOT NULL COMMENT '检验模板ID(主键)',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '000000' COMMENT '租户ID',
+  `template_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '模板编码(唯一)',
+  `template_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '模板名称',
+  `template_type` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '模板类型: IQC/IPQC/OQC',
+  `material_id` bigint(20) NULL DEFAULT NULL COMMENT '物料ID(空=通用模板)',
+  `material_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '物料编码(冗余)',
+  `material_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '物料名称(冗余)',
+  `version_no` int(11) NOT NULL DEFAULT 1 COMMENT '版本号',
+  `status` varchar(16) NULL DEFAULT 'DRAFT' COMMENT '状态: DRAFT/ACTIVE',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
+  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
+  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
+  PRIMARY KEY (`template_id`) USING BTREE,
+  UNIQUE INDEX `uk_template_code`(`template_code`) USING BTREE,
+  INDEX `idx_template_type`(`template_type`) USING BTREE,
+  INDEX `idx_material_id`(`material_id`) USING BTREE,
+  INDEX `idx_status`(`status`) USING BTREE,
+  INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'QC检验模板' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Table structure for qc_inspect_item
+-- ----------------------------
+DROP TABLE IF EXISTS `qc_inspect_item`;
+CREATE TABLE `qc_inspect_item`  (
+  `item_id` bigint(20) NOT NULL COMMENT '检验项目ID(主键)',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '000000' COMMENT '租户ID',
+  `template_id` bigint(20) NOT NULL COMMENT '关联qc_inspect_template.template_id',
+  `item_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '项目编码',
+  `item_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '项目名称',
+  `data_type` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'QUANTITATIVE' COMMENT '数据类型: QUANTITATIVE定量/QUALITATIVE定性',
+  `unit` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '计量单位',
+  `standard_type` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '标准类型: NOMINAL名义值/LSL_ONLY/USL_ONLY/LSL_USL',
+  `nominal_value` decimal(18, 6) NULL DEFAULT NULL COMMENT '名义值(NOMINAL用)',
+  `lsl_value` decimal(18, 6) NULL DEFAULT NULL COMMENT '下规格限LSL',
+  `usl_value` decimal(18, 6) NULL DEFAULT NULL COMMENT '上规格限USL',
+  `tol_upper` decimal(18, 6) NULL DEFAULT NULL COMMENT '上公差(NOMINAL用, 名义+tolUpper)',
+  `tol_lower` decimal(18, 6) NULL DEFAULT NULL COMMENT '下公差(NOMINAL用, 名义-tolLower)',
+  `aql_level` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '检验水平(如II)',
+  `sample_plan_code` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '抽样方案(如AQL1.0)',
+  `criticality` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'MAJOR' COMMENT '关键度: CRITICAL关键(一票否决)/MAJOR/MINOR',
+  `seq_num` int(11) NULL DEFAULT 1 COMMENT '序号',
+  `enabled` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '1' COMMENT '是否启用 1是0否',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
+  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
+  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
+  PRIMARY KEY (`item_id`) USING BTREE,
+  INDEX `idx_template_id`(`template_id`) USING BTREE,
+  INDEX `idx_item_code`(`item_code`) USING BTREE,
+  INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'QC检验项目' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Table structure for qc_inspect_detail
+-- ----------------------------
+DROP TABLE IF EXISTS `qc_inspect_detail`;
+CREATE TABLE `qc_inspect_detail`  (
+  `detail_id` bigint(20) NOT NULL COMMENT '检验明细ID(主键)',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '000000' COMMENT '租户ID',
+  `check_id` bigint(20) NOT NULL COMMENT '检验单ID(qc_iqc.iqc_id/qc_ipqc.ipqc_id/qc_oqc.oqc_id)',
+  `check_type` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '检验类别: IQC/IPQC/OQC',
+  `template_id` bigint(20) NULL DEFAULT NULL COMMENT '来源模板ID(快照溯源)',
+  `item_id` bigint(20) NULL DEFAULT NULL COMMENT '来源检验项目ID',
+  `item_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '项目编码(快照)',
+  `item_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '项目名称(快照)',
+  `data_type` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'QUANTITATIVE' COMMENT '数据类型(快照): QUANTITATIVE/QUALITATIVE',
+  `standard_type` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '标准类型(快照): NOMINAL/LSL_ONLY/USL_ONLY/LSL_USL',
+  `standard_desc` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '标准快照描述(如10±0.05mm)',
+  `unit` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '单位(快照)',
+  `criticality` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'MAJOR' COMMENT '关键度(快照): CRITICAL/MAJOR/MINOR',
+  `sample_qty` decimal(14, 4) NULL DEFAULT NULL COMMENT '样本量',
+  `measured_value` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '实测值(定量:数值/多值; 定性:OK/NG等)',
+  `nominal_value` decimal(18, 6) NULL DEFAULT NULL COMMENT '名义值(快照, 判定用)',
+  `lsl_value` decimal(18, 6) NULL DEFAULT NULL COMMENT '下限(快照, 判定用)',
+  `usl_value` decimal(18, 6) NULL DEFAULT NULL COMMENT '上限(快照, 判定用)',
+  `tol_upper` decimal(18, 6) NULL DEFAULT NULL COMMENT '上公差(快照, 判定用)',
+  `tol_lower` decimal(18, 6) NULL DEFAULT NULL COMMENT '下公差(快照, 判定用)',
+  `judge_result` varchar(16) NULL DEFAULT 'PENDING' COMMENT '判定结果: PASS/FAIL/PENDING',
+  `seq_num` int(11) NULL DEFAULT 1 COMMENT '序号',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
+  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
+  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
+  PRIMARY KEY (`detail_id`) USING BTREE,
+  INDEX `idx_check`(`check_type`, `check_id`) USING BTREE,
+  INDEX `idx_check_id`(`check_id`) USING BTREE,
+  INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'QC检验单明细' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of qc_inspect_template
+-- ----------------------------
+INSERT INTO `qc_inspect_template` VALUES (947001, '000000', 'IQC-TPL-1001', '铝合金板材来料检验模板', 'IQC', 1001, 'MAT-1001', '铝合金板材', 1, 'ACTIVE', '演示: 2个定量项目(厚度LSL_USL/抗拉强度LSL_ONLY)', 103, 1, '2026-09-02 12:00:00', NULL, NULL, '0');
+
+-- ----------------------------
+-- Records of qc_inspect_item
+-- ----------------------------
+INSERT INTO `qc_inspect_item` VALUES (947011, '000000', 947001, 'THK-001', '板材厚度', 'QUANTITATIVE', 'mm', 'LSL_USL', NULL, 2.900000, 3.100000, NULL, NULL, 'II', 'AQL1.0', 'CRITICAL', 1, '1', '关键尺寸, 一票否决', 103, 1, '2026-09-02 12:00:00', NULL, NULL, '0');
+INSERT INTO `qc_inspect_item` VALUES (947012, '000000', 947001, 'TS-001', '抗拉强度', 'QUANTITATIVE', 'MPa', 'LSL_ONLY', NULL, 310.000000, NULL, NULL, NULL, 'II', 'AQL1.0', 'MAJOR', 2, '1', NULL, 103, 1, '2026-09-02 12:00:00', NULL, NULL, '0');
+
 
 SET FOREIGN_KEY_CHECKS = 1;
