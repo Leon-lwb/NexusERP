@@ -1,6 +1,6 @@
 package com.nexus.mes.pda.domain.vo;
 
-import com.nexus.mes.pda.util.AqlSampler;
+import com.nexus.mes.qc.service.AqlSampler;
 import lombok.Data;
 
 /**

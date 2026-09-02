@@ -8,8 +8,8 @@ import com.nexus.mes.qc.domain.QcInspectTemplate;
 import com.nexus.mes.qc.mapper.QcInspectDetailMapper;
 import com.nexus.mes.qc.mapper.QcInspectItemMapper;
 import com.nexus.mes.qc.mapper.QcInspectTemplateMapper;
+import com.nexus.mes.qc.service.AqlSampler;
 import com.nexus.mes.qc.service.IQcInspectDetailService;
-import com.nexus.mes.qc.service.QcAqlCalculator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -55,7 +55,7 @@ public class QcInspectDetailServiceImpl implements IQcInspectDetailService {
             return 0;
         }
         // 批量给定时按 GB/T 2828.1(检验水平II)计算建议抽样量
-        BigDecimal sampleQty = lotQty != null ? QcAqlCalculator.calcSampleQty(lotQty) : null;
+        BigDecimal sampleQty = lotQty != null ? suggestSampleQty(lotQty) : null;
         List<QcInspectItem> items = itemMapper.selectList(Wrappers.lambdaQuery(QcInspectItem.class)
             .eq(QcInspectItem::getTemplateId, template.getTemplateId())
             .eq(QcInspectItem::getEnabled, "1")
@@ -114,6 +114,21 @@ public class QcInspectDetailServiceImpl implements IQcInspectDetailService {
             update.setRemark(detail.getRemark());
             baseMapper.updateById(update);
         }
+    }
+
+    /**
+     * 建议抽样量: GB/T 2828.1 检验水平II 字码行样本量(不做 AQL 箭头修正);
+     * 批量≤0 取 0, 批量<2 按批量本身(不适用抽样表的极小批)。
+     */
+    private static BigDecimal suggestSampleQty(BigDecimal lotQty) {
+        if (lotQty.signum() <= 0) {
+            return BigDecimal.ZERO;
+        }
+        long lot = lotQty.longValue();
+        if (lot < 2) {
+            return BigDecimal.valueOf(lot);
+        }
+        return BigDecimal.valueOf(AqlSampler.letterSampleSize(lot, "II"));
     }
 
     /**

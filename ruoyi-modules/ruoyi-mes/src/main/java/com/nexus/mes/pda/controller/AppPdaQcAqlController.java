@@ -4,7 +4,7 @@ import cn.dev33.satoken.annotation.SaCheckPermission;
 import cn.dev33.satoken.annotation.SaMode;
 import com.nexus.common.core.domain.R;
 import com.nexus.mes.pda.domain.vo.PdaAqlPlanVo;
-import com.nexus.mes.pda.util.AqlSampler;
+import com.nexus.mes.qc.service.AqlSampler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;

@@ -1,10 +1,16 @@
-package com.nexus.mes.pda.util;
+package com.nexus.mes.qc.service;
 
 /**
- * GB/T 2828.1 计数抽样检验 简化版判定器(M3 批次 5)。
+ * GB/T 2828.1 计数抽样检验 简化版判定器（全系统唯一 AQL 实现）。
  * <p>
  * 覆盖:正常检验一次抽样 + 一般检验水平 I/II/III,支持 AQL 0.025~10.0(常规生产抽检区间)。
  * 严格版的全表/加严/放宽/多次抽样不在本工具范围内。
+ * <p>
+ * 消费方:
+ * <ul>
+ *   <li>PDA AQL 抽样试算 {@code AppPdaQcAqlController}（批量/水平/AQL → 完整方案+判定建议）；</li>
+ *   <li>QC 检验明细建议抽样量 {@code QcInspectDetailServiceImpl}（{@link #letterSampleSize}，无 AQL 场景）。</li>
+ * </ul>
  * <p>
  * 表结构说明(供复核):
  * <ul>
@@ -74,6 +80,22 @@ public final class AqlSampler {
         int row = lotRow(lotSize);
         int col = levelColumn(level);
         return LETTERS[LEVEL_ROWS[row][col]];
+    }
+
+    /**
+     * 字码行样本量(表 1 字码直接对应, 不做 AQL 箭头修正与整批截断)
+     * <p>
+     * 供检验单明细"建议抽样量"等无需指定 AQL 的提示场景;
+     * 需要 Ac/Re 判定的完整方案请用 {@link #plan}。
+     *
+     * @param lotSize 批量(≥2, 小批量由调用方按业务口径处理)
+     * @param level   检验水平 I/II/III
+     * @return 该档字码对应的标准样本量
+     */
+    public static int letterSampleSize(long lotSize, String level) {
+        int row = lotRow(lotSize);
+        int col = levelColumn(level);
+        return SAMPLE_SIZES[LEVEL_ROWS[row][col]];
     }
 
     /**
