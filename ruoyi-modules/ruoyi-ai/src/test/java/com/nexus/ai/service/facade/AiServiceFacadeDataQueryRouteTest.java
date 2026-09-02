@@ -27,6 +27,15 @@ class AiServiceFacadeDataQueryRouteTest {
     }
 
     @Test
+    void 排产缺料专属词单独命中应路由Agent() {
+        // 智能排产/缺料风险 Agent 场景，即使无"查询/统计"等意图词也应路由
+        assertTrue(AiServiceFacade.containsDataQueryKeywords("分析最新排产方案 APS202609010001"));
+        assertTrue(AiServiceFacade.containsDataQueryKeywords("下周哪些订单会拖期"));
+        assertTrue(AiServiceFacade.containsDataQueryKeywords("瓶颈资源是哪个"));
+        assertTrue(AiServiceFacade.containsDataQueryKeywords("有没有缺料风险"));
+    }
+
+    @Test
     void 业务词加意图词组合命中应路由Agent() {
         assertTrue(AiServiceFacade.containsDataQueryKeywords("本月订单金额多少"));
         assertTrue(AiServiceFacade.containsDataQueryKeywords("各仓库库存数量对比"));

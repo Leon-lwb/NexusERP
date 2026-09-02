@@ -280,8 +280,13 @@ function handleClose() {
   visible.value = false;
 }
 
-function open() {
+function open(prompt?: string) {
   visible.value = true;
+  if (prompt) {
+    nextTick(() => {
+      inputText.value = prompt;
+    });
+  }
 }
 
 defineExpose({ open });

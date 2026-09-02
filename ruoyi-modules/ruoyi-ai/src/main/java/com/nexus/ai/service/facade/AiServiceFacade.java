@@ -109,7 +109,9 @@ public class AiServiceFacade {
         // 查询/统计强意图词
         "查询", "统计", "报表", "图表", "排行", "占比",
         // ERP 专属名词（日常知识问答不出现，单独命中即强意图）
-        "BOM", "工单", "补货", "入库", "出库"
+        "BOM", "工单", "补货", "入库", "出库",
+        // APS 排产/缺料风险专属名词（智能排产 Agent 场景）
+        "排产", "拖期", "交期", "瓶颈", "缺料", "APS"
     );
 
     /**
@@ -249,12 +251,14 @@ public class AiServiceFacade {
             needAgent = false;
             needRag = false;
         } else {
-            // auto 模式（默认）：关键词自动检测联网搜索
-            if (containsWebSearchKeywords(request.getContent())) {
+            // auto 模式（默认）：数据查询意图优先于联网搜索判定。
+            // 联网搜索词（"最新""近期"等）常与 ERP 查询共存（如"分析最新排产方案"），
+            // 若先判联网搜索会把本应走 Agent 工具链的问题错误送入纯 webSearch 路径。
+            needAgent = containsDataQueryKeywords(request.getContent());
+            if (!needAgent && containsWebSearchKeywords(request.getContent())) {
                 invokeWithWebSearch(modelConfig, request, userId, finalSessionId, tenantId, finalUserName, tenantIdStr);
                 return sessionId;
             }
-            needAgent = containsDataQueryKeywords(request.getContent());
             needRag = request.getKnowledgeId() != null || (!needAgent && containsRagKeywords(request.getContent()));
         }
 
