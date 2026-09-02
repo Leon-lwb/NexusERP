@@ -6837,4 +6837,77 @@ INSERT INTO `wm_warehouse` VALUES (3, 'WH005', '半成品仓库', '厂区东侧B
 INSERT INTO `wm_warehouse` VALUES (9900000001, 'WH-3D-DEMO', '3D示例仓库', '厂区一号库·3D可视化示例', 800.00, 'admin', 1, '3D 仓库可视化示例数据（PLAN-2026-006）', 1, NULL, NULL, NULL, NULL, '000000', NULL, '0', 1, '2026-08-23 00:42:51', 1, '2026-08-23 00:42:51', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO `wm_warehouse` VALUES (2091200583779266562, 'WH006', '电动牙刷仓', '一号厂房二楼', NULL, 'admin', 1, '电动牙刷全链路', 1, NULL, NULL, NULL, NULL, '000000', 103, '0', 1, '2026-08-23 00:27:26', 1, '2026-08-23 00:27:26', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 
+-- ----------------------------
+-- Table structure for prd_schedule_plan (APS智能排产 2026-08-30)
+-- ----------------------------
+DROP TABLE IF EXISTS `prd_schedule_plan`;
+CREATE TABLE `prd_schedule_plan`  (
+  `plan_id` bigint(20) NOT NULL COMMENT '排程方案ID',
+  `plan_no` varchar(64) NOT NULL COMMENT '方案编号(APS+yyyyMMdd+4位流水)',
+  `plan_name` varchar(128) NULL DEFAULT NULL COMMENT '方案名称',
+  `workshop_id` bigint(20) NULL DEFAULT NULL COMMENT '车间ID(空=全部)',
+  `workshop_name` varchar(64) NULL DEFAULT NULL COMMENT '车间名称',
+  `start_date` date NOT NULL COMMENT '排产起始日',
+  `horizon_days` int(11) NOT NULL DEFAULT 14 COMMENT '排产跨度(天)',
+  `strategy` varchar(16) NOT NULL DEFAULT 'EDD' COMMENT '排序策略: EDD/CR/PRIORITY',
+  `wo_count` int(11) NULL DEFAULT 0 COMMENT '参与排产工单数',
+  `task_count` int(11) NULL DEFAULT 0 COMMENT '排产工序任务数',
+  `skipped_count` int(11) NULL DEFAULT 0 COMMENT '跳过工单数',
+  `total_hours` decimal(12,2) NULL DEFAULT 0 COMMENT '总负荷工时(小时)',
+  `delayed_count` int(11) NULL DEFAULT 0 COMMENT '拖期工单数',
+  `makespan_date` date NULL DEFAULT NULL COMMENT '总完工日期',
+  `utilization_json` text NULL COMMENT '资源利用率快照JSON',
+  `status` varchar(16) NOT NULL DEFAULT 'COMPLETED' COMMENT '状态: COMPLETED/PUBLISHED',
+  `tenant_id` varchar(20) NULL DEFAULT '000000' COMMENT '租户ID',
+  `create_dept` bigint(20) NULL DEFAULT NULL,
+  `create_by` bigint(20) NULL DEFAULT NULL,
+  `create_time` datetime NULL DEFAULT NULL,
+  `update_by` bigint(20) NULL DEFAULT NULL,
+  `update_time` datetime NULL DEFAULT NULL,
+  `remark` varchar(500) NULL DEFAULT NULL,
+  `del_flag` char(1) NULL DEFAULT '0',
+  PRIMARY KEY (`plan_id`) USING BTREE,
+  INDEX `idx_psp_tenant`(`tenant_id`) USING BTREE,
+  INDEX `idx_psp_no`(`plan_no`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'APS排程方案表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Table structure for prd_schedule_task (APS智能排产 2026-08-30)
+-- ----------------------------
+DROP TABLE IF EXISTS `prd_schedule_task`;
+CREATE TABLE `prd_schedule_task`  (
+  `task_id` bigint(20) NOT NULL COMMENT '任务ID',
+  `plan_id` bigint(20) NOT NULL COMMENT '排程方案ID',
+  `wo_id` bigint(20) NOT NULL COMMENT '生产工单ID',
+  `wo_no` varchar(64) NOT NULL COMMENT '工单编号',
+  `material_code` varchar(64) NULL DEFAULT NULL COMMENT '产品编码',
+  `material_name` varchar(128) NULL DEFAULT NULL COMMENT '产品名称',
+  `seq_num` int(11) NULL DEFAULT NULL COMMENT '工序序号',
+  `step_id` bigint(20) NULL DEFAULT NULL COMMENT '工艺路线步骤ID',
+  `process_code` varchar(64) NULL DEFAULT NULL COMMENT '工序编码',
+  `process_name` varchar(128) NULL DEFAULT NULL COMMENT '工序名称',
+  `resource_type` varchar(16) NULL DEFAULT NULL COMMENT '资源类型: WORKSTATION/WORKSHOP/OUTSOURCE',
+  `resource_id` bigint(20) NULL DEFAULT NULL COMMENT '资源ID',
+  `resource_name` varchar(128) NULL DEFAULT NULL COMMENT '资源名称',
+  `setup_hours` decimal(10,2) NULL DEFAULT 0 COMMENT '准备工时(小时)',
+  `process_hours` decimal(10,2) NULL DEFAULT 0 COMMENT '加工工时(小时)',
+  `start_time` datetime NULL DEFAULT NULL COMMENT '开始时间',
+  `end_time` datetime NULL DEFAULT NULL COMMENT '结束时间',
+  `duration_days` int(11) NULL DEFAULT 1 COMMENT '占用天数',
+  `delay_flag` tinyint(4) NULL DEFAULT 0 COMMENT '拖期标记',
+  `tenant_id` varchar(20) NULL DEFAULT '000000' COMMENT '租户ID',
+  `create_dept` bigint(20) NULL DEFAULT NULL,
+  `create_by` bigint(20) NULL DEFAULT NULL,
+  `create_time` datetime NULL DEFAULT NULL,
+  `update_by` bigint(20) NULL DEFAULT NULL,
+  `update_time` datetime NULL DEFAULT NULL,
+  `del_flag` char(1) NULL DEFAULT '0',
+  PRIMARY KEY (`task_id`) USING BTREE,
+  INDEX `idx_pst_plan`(`plan_id`) USING BTREE,
+  INDEX `idx_pst_wo`(`wo_id`) USING BTREE,
+  INDEX `idx_pst_tenant`(`tenant_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'APS排程工序任务表' ROW_FORMAT = DYNAMIC;
+
+SET FOREIGN_KEY_CHECKS = 1;
+
 SET FOREIGN_KEY_CHECKS = 1;

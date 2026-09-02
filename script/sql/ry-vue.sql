@@ -15440,6 +15440,14 @@ INSERT INTO `sys_menu` VALUES (2970, '班次管理', 2000, 17, 'schShift', NULL,
 INSERT INTO `sys_menu` VALUES (2971, '排班考勤', 2000, 18, 'schAttend', NULL, NULL, 1, 0, 'M', '0', '0', '', 'date', 103, 1, '2026-06-29 00:00:00', NULL, NULL, '排班考勤目录');
 INSERT INTO `sys_menu` VALUES (2972, '采购执行', 2000, 20, 'puExec', NULL, NULL, 1, 0, 'M', '0', '0', '', 'order', 103, 1, '2026-06-29 00:00:00', NULL, NULL, '采购执行目录');
 INSERT INTO `sys_menu` VALUES (2973, '采购商务', 2000, 21, 'puBiz', NULL, NULL, 1, 0, 'M', '0', '0', '', 'star', 103, 1, '2026-06-29 00:00:00', NULL, NULL, '采购商务目录');
+INSERT INTO `sys_menu` VALUES (2974, '智能排产', 2968, 6, 'schedule', 'erp/prd/schedule/index', NULL, 1, 0, 'C', '0', '0', 'prd:schedule:list', 'tree-table', 103, 1, '2026-08-30 00:00:00', NULL, NULL, 'APS智能排产(工单排程/甘特图/拖期分析)');
+INSERT INTO `sys_menu` VALUES (2975, '排产查询', 2974, 1, '#', '', NULL, 1, 0, 'F', '0', '0', 'prd:schedule:query', '#', 103, 1, '2026-08-30 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (2976, '执行排产', 2974, 2, '#', '', NULL, 1, 0, 'F', '0', '0', 'prd:schedule:run', '#', 103, 1, '2026-08-30 00:00:00', NULL, NULL, '按策略运行APS排程引擎');
+INSERT INTO `sys_menu` VALUES (2977, '发布排程', 2974, 3, '#', '', NULL, 1, 0, 'F', '0', '0', 'prd:schedule:publish', '#', 103, 1, '2026-08-30 00:00:00', NULL, NULL, '回写工单计划开始/结束日期');
+INSERT INTO `sys_menu` VALUES (2978, '排产删除', 2974, 4, '#', '', NULL, 1, 0, 'F', '0', '0', 'prd:schedule:remove', '#', 103, 1, '2026-08-30 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (2981, '设备健康', 4201, 6, 'health', 'mes/eq/health/index', NULL, 1, 0, 'C', '0', '0', 'mes:eq:health:list', 'monitor', 103, 1, '2026-08-30 00:00:00', NULL, NULL, '预测性维护: EWMA异常检测+设备健康评分');
+INSERT INTO `sys_menu` VALUES (2982, '健康查询', 2981, 1, '#', '', NULL, 1, 0, 'F', '0', '0', 'mes:eq:health:query', '#', 103, 1, '2026-08-30 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (2983, '重新评估', 2981, 2, '#', '', NULL, 1, 0, 'F', '0', '0', 'mes:eq:health:evaluate', '#', 103, 1, '2026-08-30 00:00:00', NULL, NULL, '手动触发设备健康评分');
 INSERT INTO `sys_menu` VALUES (3000, '支付管理', 0, 16, 'pay', NULL, '', 1, 0, 'M', '0', '0', '', 'money', 103, 1, '2026-05-02 16:13:09', 1, '2026-06-17 17:38:34', '支付管理目录');
 INSERT INTO `sys_menu` VALUES (3001, '订单管理', 3000, 1, 'order', 'pay/order/index', '', 1, 0, 'C', '0', '0', 'pay:order:list', '#', 103, 1, '2026-05-02 16:13:09', 1, '2026-05-02 16:22:14', '订单管理菜单');
 INSERT INTO `sys_menu` VALUES (3002, '订单查询', 3001, 1, '#', '', '', 1, 0, 'F', '0', '0', 'pay:order:query', '#', 103, 1, '2026-05-02 16:13:09', NULL, NULL, '');
