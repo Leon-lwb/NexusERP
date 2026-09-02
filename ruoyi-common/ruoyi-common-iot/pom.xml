@@ -13,14 +13,20 @@
 
     <description>
         ruoyi-common-iot IoT公共契约模块
-        仅存放跨模块共享的 DTO / 接口契约（IotAlert、IMesAndonService、IotDeviceDataQueryService），
-        供 ruoyi-iot 与未来 ruoyi-mes 共同依赖，两个业务模块互不依赖。纯契约，无 Spring Bean。
+        存放跨模块共享的 DTO / 接口契约（IotAlert、IMesAndonService、IotDeviceDataQueryService）
+        与无状态工具（EwmaUtil 异常检测统计，IotAnomalyDetector 在线检测与 MES 设备健康离线重放共用），
+        供 ruoyi-iot 与 ruoyi-mes 共同依赖，两个业务模块互不依赖。纯契约/工具，无 Spring Bean。
     </description>
 
     <dependencies>
         <dependency>
             <groupId>com.nexus</groupId>
             <artifactId>ruoyi-common-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 

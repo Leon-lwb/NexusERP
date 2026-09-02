@@ -17,8 +17,10 @@ import com.nexus.mes.eq.mapper.EqRepairMapper;
 import com.nexus.mes.eq.service.IEqHealthService;
 import com.nexus.mes.pro.service.IProAndonService;
 import com.nexus.common.iot.service.IotDeviceDataQueryService;
+import com.nexus.common.iot.util.EwmaUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -45,7 +47,7 @@ import java.util.Map;
  *   维修扣分  = min(90天内维修单数×5, 30) + 未闭环维修单数×10
  *   等级: HIGH>=80 / MEDIUM>=60 / LOW<60
  * </pre>
- * 异常点统计复用 EWMA 在线估计（与 IoT 管道 {@code IotAnomalyDetector} 同一算法），
+ * 异常点统计与 IoT 管道在线检测共用 common-iot 的 {@link EwmaUtil}（唯一实现），
  * 对每属性的 24h 时序离线重放：均值/方差 EWMA 收敛后逐点计算 z-score。
  * IoT 数据经 common-iot 契约 {@link IotDeviceDataQueryService#getHistoryData} 读取
  * （返回 Map，避免 MES 依赖 ruoyi-iot 实体；实现方 ruoyi-iot 自带 @DS("iot") 切库）。
@@ -63,21 +65,7 @@ public class EqHealthServiceImpl implements IEqHealthService {
     private final EqRepairMapper repairMapper;
     private final IotDeviceDataQueryService iotDeviceDataQueryService;
     private final IProAndonService andonService;
-
-    /**
-     * EWMA 平滑系数(与 IoT 管道默认一致)
-     */
-    private static final double EWMA_LAMBDA = 0.3;
-
-    /**
-     * 异常 z-score 阈值
-     */
-    private static final double Z_THRESHOLD = 3.0;
-
-    /**
-     * EWMA 预热样本数
-     */
-    private static final int EWMA_WARMUP = 20;
+    private final Environment environment;
 
     /**
      * 每个异常点扣分
@@ -253,44 +241,33 @@ public class EqHealthServiceImpl implements IEqHealthService {
     }
 
     /**
-     * EWMA 离线重放: 按时间序逐点更新均值/方差, 预热后统计 z>3 的点数
+     * EWMA 离线重放: 按时间序逐点更新均值/方差, 预热后统计超 z 阈值的点数。
+     * <p>
+     * 算法与参数均与 IoT 管道在线检测共用一处实现：数学部分为 common-iot 的
+     * {@link EwmaUtil}；λ/预热/z 阈值读取在线检测同一组配置键
+     * {@code nexus.iot.pipeline.anomaly.*}（未配置时取 EwmaUtil 默认值），
+     * 保证本页"异常点数"与实时 ANOMALY 告警口径一致。
      */
     private EwmaStats replayEwma(List<Map<String, Object>> series) {
-        BigDecimal mean = null;
-        BigDecimal variance = BigDecimal.ZERO;
-        int count = 0;
+        double lambda = environment.getProperty("nexus.iot.pipeline.anomaly.lambda", Double.class, EwmaUtil.DEFAULT_LAMBDA);
+        int warmup = environment.getProperty("nexus.iot.pipeline.anomaly.warmup", Integer.class, EwmaUtil.DEFAULT_WARMUP);
+        double zThreshold = environment.getProperty("nexus.iot.pipeline.anomaly.z-warn", Double.class, EwmaUtil.DEFAULT_Z_WARN);
+        EwmaUtil.EwmaState state = null;
         int anomalyCount = 0;
-        BigDecimal lambda = BigDecimal.valueOf(EWMA_LAMBDA);
         for (Map<String, Object> data : series) {
             BigDecimal x = toBigDecimal(data.get("numericValue"));
             if (x == null) {
                 continue;
             }
-            if (mean == null) {
-                mean = x;
-                variance = BigDecimal.ZERO;
-                count = 1;
-                continue;
+            if (EwmaUtil.warmedUp(state, warmup)
+                && EwmaUtil.zScore(state, x).compareTo(BigDecimal.valueOf(zThreshold)) > 0) {
+                anomalyCount++;
             }
-            BigDecimal std = variance.compareTo(BigDecimal.ZERO) <= 0
-                ? new BigDecimal("1e-9") : variance.sqrt(MathContext.DECIMAL64);
-            if (count >= EWMA_WARMUP) {
-                BigDecimal z = x.subtract(mean).abs().divide(std, 4, RoundingMode.HALF_UP);
-                if (z.compareTo(BigDecimal.valueOf(Z_THRESHOLD)) > 0) {
-                    anomalyCount++;
-                }
-            }
-            BigDecimal diff = x.subtract(mean);
-            mean = lambda.multiply(x, MathContext.DECIMAL64)
-                .add(BigDecimal.ONE.subtract(lambda).multiply(mean, MathContext.DECIMAL64));
-            variance = BigDecimal.ONE.subtract(lambda).multiply(
-                variance.add(lambda.multiply(diff.multiply(diff, MathContext.DECIMAL64), MathContext.DECIMAL64), MathContext.DECIMAL64),
-                MathContext.DECIMAL64);
-            count++;
+            state = EwmaUtil.update(state, x, lambda);
         }
-        BigDecimal std = variance.compareTo(BigDecimal.ZERO) <= 0
-            ? BigDecimal.ZERO : variance.sqrt(MathContext.DECIMAL64);
-        return new EwmaStats(mean == null ? BigDecimal.ZERO : mean, std, anomalyCount);
+        BigDecimal std = state == null || state.variance().compareTo(BigDecimal.ZERO) <= 0
+            ? BigDecimal.ZERO : state.variance().sqrt(MathContext.DECIMAL64);
+        return new EwmaStats(state == null ? BigDecimal.ZERO : state.mean(), std, anomalyCount);
     }
 
     /**

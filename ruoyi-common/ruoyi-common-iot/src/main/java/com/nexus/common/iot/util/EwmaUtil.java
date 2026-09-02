@@ -1,4 +1,4 @@
-package com.nexus.iot.pipeline;
+package com.nexus.common.iot.util;
 
 import java.math.BigDecimal;
 import java.math.MathContext;
@@ -7,7 +7,7 @@ import java.math.RoundingMode;
 /**
  * EWMA（指数加权移动平均）统计工具
  * <p>
- * 用于 IoT 时序数据的在线异常检测：维护均值与标准差的指数加权估计，
+ * 用于 IoT 时序数据的异常检测：维护均值与标准差的指数加权估计，
  * 新点 z = |x − mean| / s 超过阈值即判定异常。
  * 标准差采用 EWMA 方差的平方根（EWMA 控制图标准做法）：
  * <pre>
@@ -15,6 +15,14 @@ import java.math.RoundingMode;
  *   var'  = (1−λ)·(var + λ·(x − mean)²)
  * </pre>
  * 纯静态工具，无状态；状态由调用方持有（如 Redis）。
+ * <p>
+ * 唯一实现，两处消费方共用（在线/离线口径一致）：
+ * <ul>
+ *   <li>ruoyi-iot {@code IotAnomalyDetector}：实时管道在线检测（Redis 滚动状态）；</li>
+ *   <li>ruoyi-mes {@code EqHealthServiceImpl}：设备健康评分 24h 时序离线重放。</li>
+ * </ul>
+ * 默认参数（λ/预热/z 阈值）统一定义在本类，iot 侧配置键为
+ * {@code nexus.iot.pipeline.anomaly.*}，MES 离线重放读取同一组键以保持口径一致。
  *
  * @author nexus
  */
@@ -24,6 +32,21 @@ public final class EwmaUtil {
      * 默认平滑系数 λ
      */
     public static final double DEFAULT_LAMBDA = 0.3;
+
+    /**
+     * 默认预热样本数(达到后才开始判定, 避免开局误报)
+     */
+    public static final int DEFAULT_WARMUP = 20;
+
+    /**
+     * 默认告警 z-score 阈值(MEDIUM)
+     */
+    public static final double DEFAULT_Z_WARN = 3.0;
+
+    /**
+     * 默认高级告警 z-score 阈值(HIGH)
+     */
+    public static final double DEFAULT_Z_HIGH = 4.0;
 
     private EwmaUtil() {
     }

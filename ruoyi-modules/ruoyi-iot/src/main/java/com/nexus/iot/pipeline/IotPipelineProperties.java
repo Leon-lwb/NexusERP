@@ -1,5 +1,6 @@
 package com.nexus.iot.pipeline;
 
+import com.nexus.common.iot.util.EwmaUtil;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
@@ -61,7 +62,8 @@ public class IotPipelineProperties {
     private Anomaly anomaly = new Anomaly();
 
     /**
-     * EWMA 异常检测配置项
+     * EWMA 异常检测配置项(默认值统一取 {@link EwmaUtil} 共享常量,
+     * MES 设备健康离线重放读取同一组键, 保证两侧口径一致)
      */
     @Data
     public static class Anomaly {
@@ -74,22 +76,22 @@ public class IotPipelineProperties {
         /**
          * EWMA 平滑系数 λ(0-1, 越大越敏感)
          */
-        private double lambda = 0.3;
+        private double lambda = EwmaUtil.DEFAULT_LAMBDA;
 
         /**
          * 预热样本数(达到后才开始判定, 避免开局误报)
          */
-        private int warmup = 20;
+        private int warmup = EwmaUtil.DEFAULT_WARMUP;
 
         /**
          * 告警 z-score 阈值(MEDIUM)
          */
-        private double zWarn = 3.0;
+        private double zWarn = EwmaUtil.DEFAULT_Z_WARN;
 
         /**
          * 高级告警 z-score 阈值(HIGH)
          */
-        private double zHigh = 4.0;
+        private double zHigh = EwmaUtil.DEFAULT_Z_HIGH;
     }
 
 }

@@ -1,6 +1,7 @@
 package com.nexus.iot.pipeline;
 
 import com.nexus.common.iot.dto.IotAlert;
+import com.nexus.common.iot.util.EwmaUtil;
 import com.nexus.common.redis.utils.RedisUtils;
 import com.nexus.iot.device.domain.IotDeviceData;
 import lombok.RequiredArgsConstructor;
