@@ -235,6 +235,9 @@ public class IotStreamConsumer {
 
     /**
      * 落库后处理：更新最新值缓存 + 告警检查。
+     * <p>
+     * 双检测互斥：同一数据点先跑阈值检查，已触发阈值告警则 EWMA 异常检测只更新
+     * 基线状态、不再推送 ANOMALY，避免同一尖峰双告警/双安灯。
      */
     private void afterPersist(IotDeviceData data) {
         try {
@@ -242,13 +245,14 @@ public class IotStreamConsumer {
         } catch (Exception e) {
             log.warn("更新最新值缓存失败：device={}, property={}", data.getDeviceCode(), data.getPropertyCode(), e);
         }
+        boolean thresholdFired = false;
         try {
-            alertChecker.check(data);
+            thresholdFired = alertChecker.check(data);
         } catch (Exception e) {
             log.warn("告警检查异常：device={}, property={}", data.getDeviceCode(), data.getPropertyCode(), e);
         }
         try {
-            anomalyDetector.detect(data);
+            anomalyDetector.detect(data, thresholdFired);
         } catch (Exception e) {
             log.warn("异常检测异常：device={}, property={}", data.getDeviceCode(), data.getPropertyCode(), e);
         }

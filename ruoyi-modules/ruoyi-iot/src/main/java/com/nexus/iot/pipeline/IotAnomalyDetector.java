@@ -18,6 +18,11 @@ import java.time.Duration;
  * 新点偏离 mean 超过 z 倍标准差即触发 ANOMALY 告警，复用 {@link IotAlertNotifier}
  * 的限频/安灯/SSE 推送链路。
  * <p>
+ * 与阈值告警的互斥抑制：同一数据点已触发阈值告警时，由调用方
+ * {@link IotStreamConsumer#afterPersist} 传入 {@code suppressNotify=true}，
+ * 此时 EWMA 状态照常更新（保持基线连续），但不再重复推送 ANOMALY，
+ * 避免同一尖峰同时产生 阈值告警 + ANOMALY 双告警/双安灯。
+ * <p>
  * 适用于缓慢漂移类退化（温度爬升、振动增大等固定阈值难以覆盖的场景）。
  *
  * @author nexus
@@ -36,11 +41,12 @@ public class IotAnomalyDetector {
     private final IotAlertNotifier alertNotifier;
 
     /**
-     * 检测单条设备数据：更新 EWMA 状态并在 z-score 超阈值时推送异常告警。
+     * 检测单条设备数据：更新 EWMA 状态，并在 z-score 超阈值且未被抑制时推送异常告警。
      *
-     * @param data 已落库的设备数据(仅数值型参与)
+     * @param data            已落库的设备数据(仅数值型参与)
+     * @param suppressNotify  true 时仅更新 EWMA 状态、不推送告警(该数据点已由阈值检查器告警)
      */
-    public void detect(IotDeviceData data) {
+    public void detect(IotDeviceData data, boolean suppressNotify) {
         if (data == null || data.getNumericValue() == null || data.getDeviceId() == null || data.getPropertyCode() == null) {
             return;
         }
@@ -55,7 +61,8 @@ public class IotAnomalyDetector {
             EwmaUtil.EwmaState updated = EwmaUtil.update(state, data.getNumericValue(), anomaly.getLambda());
             RedisUtils.setCacheObject(key, updated, STATE_TTL);
 
-            if (EwmaUtil.warmedUp(state, anomaly.getWarmup()) && z.compareTo(BigDecimal.valueOf(anomaly.getZWarn())) > 0) {
+            if (!suppressNotify
+                && EwmaUtil.warmedUp(state, anomaly.getWarmup()) && z.compareTo(BigDecimal.valueOf(anomaly.getZWarn())) > 0) {
                 String level = z.compareTo(BigDecimal.valueOf(anomaly.getZHigh())) > 0 ? "HIGH" : "MEDIUM";
                 IotAlert alert = new IotAlert();
                 alert.setDeviceId(data.getDeviceId());

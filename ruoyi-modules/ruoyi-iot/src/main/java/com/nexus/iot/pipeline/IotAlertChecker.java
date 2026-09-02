@@ -15,6 +15,9 @@ import java.util.Map;
  * 阈值来自 {@code nexus.iot.pipeline.alert-thresholds}（propertyCode → 阈值），
  * numericValue 超过阈值即构造 {@link IotAlert} 交 {@link IotAlertNotifier} 推送。
  * 告警规则表 / 多条件组合留待阶段二规则引擎。
+ * <p>
+ * {@link #check} 返回是否触发告警，供调用方 {@link IotStreamConsumer#afterPersist}
+ * 对同一数据点的 EWMA ANOMALY 告警做互斥抑制（阈值已告警则不再发 ANOMALY）。
  *
  * @author nexus
  */
@@ -32,18 +35,19 @@ public class IotAlertChecker {
      * 检查单条设备数据是否触发告警。
      *
      * @param data 已落库的设备数据
+     * @return true 表示该数据点已触发阈值告警
      */
-    public void check(IotDeviceData data) {
+    public boolean check(IotDeviceData data) {
         if (data == null || data.getNumericValue() == null || data.getPropertyCode() == null) {
-            return;
+            return false;
         }
         Map<String, BigDecimal> thresholds = properties.getAlertThresholds();
         if (thresholds == null || thresholds.isEmpty()) {
-            return;
+            return false;
         }
         BigDecimal threshold = thresholds.get(data.getPropertyCode());
         if (threshold == null) {
-            return;
+            return false;
         }
         if (data.getNumericValue().compareTo(threshold) > 0) {
             IotAlert alert = new IotAlert();
@@ -57,7 +61,9 @@ public class IotAlertChecker {
             alert.setThreshold(threshold);
             alert.setTenantId(data.getTenantId());
             alertNotifier.notify(alert);
+            return true;
         }
+        return false;
     }
 
     /**
