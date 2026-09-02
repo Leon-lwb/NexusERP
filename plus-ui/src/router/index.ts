@@ -382,7 +382,7 @@ export const dynamicRoutes: RouteRecordRaw[] = [
       {
         path: '',
         component: () => import('@/views/erp/wm/return/form.vue'),
-        name: 'ReturnForm',
+        name: 'MaterialReturnForm',
         meta: { title: '退料单表单', activeMenu: '/erp/inventory/materialReturn' }
       }
     ]

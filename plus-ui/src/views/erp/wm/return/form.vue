@@ -177,7 +177,7 @@
   </div>
 </template>
 
-<script setup lang="ts" name="ReturnForm">
+<script setup lang="ts" name="MaterialReturnForm">
 import { getReturn, addReturn } from '@/api/erp/wm/return';
 import { listWarehouse } from '@/api/erp/wm/warehouse';
 import { getMeasure } from '@/api/erp/bd/measure';
