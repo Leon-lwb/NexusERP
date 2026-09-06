@@ -155,6 +155,17 @@ public class PayController extends BaseController {
             return R.fail("该订单尚未支付，无法退款");
         }
         PayService payService = payServiceMap.get("pay:service:" + channel);
+        if (payService == null) {
+            return R.fail("不支持的支付通道: " + channel);
+        }
+        // 退款状态机: 仅「已支付」订单可退款; 「已退款」为终态, 重复操作直接拒绝(渠道侧退款请求号幂等兜底)
+        String status = payOrder.getOrderStatus();
+        if ("已退款".equals(status)) {
+            return R.fail("该订单已退款，请勿重复操作");
+        }
+        if (!"已支付".equals(status)) {
+            return R.fail("订单状态为「" + status + "」，仅已支付订单支持退款");
+        }
         return R.ok(payService.refund(payOrder));
     }
 

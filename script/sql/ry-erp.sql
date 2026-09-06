@@ -1345,7 +1345,7 @@ CREATE TABLE `fin_receipt`  (
   UNIQUE INDEX `uk_receipt_no`(`receipt_no`, `tenant_id`) USING BTREE,
   INDEX `idx_client`(`client_id`) USING BTREE,
   INDEX `idx_vendor`(`vendor_id`) USING BTREE,
-  INDEX `idx_pay_order`(`pay_order_number`) USING BTREE,
+  UNIQUE INDEX `uk_pay_order`(`pay_order_number`, `tenant_id`) USING BTREE,
   INDEX `idx_status`(`status`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '收付款单(AR收款/AP付款合一)' ROW_FORMAT = DYNAMIC;
 

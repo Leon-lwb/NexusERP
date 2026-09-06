@@ -81,4 +81,12 @@ public interface IFinReceiptService {
      * 直接保存收付款单实体（用于内部消费者等场景，不经过 BO 转换）
      */
     boolean save(FinReceipt entity);
+
+    /**
+     * 判断该支付订单是否已存在收款单（支付回调建单幂等用，防止重复回调/MQ 重投重复建单核销）
+     *
+     * @param payOrderNumber 支付订单号
+     * @return 已存在返回 true
+     */
+    boolean existsByPayOrderNumber(String payOrderNumber);
 }

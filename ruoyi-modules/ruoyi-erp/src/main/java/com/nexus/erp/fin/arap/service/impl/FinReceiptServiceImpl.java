@@ -99,6 +99,15 @@ public class FinReceiptServiceImpl implements IFinReceiptService {
         return baseMapper.insert(entity) > 0;
     }
 
+    /**
+     * 幂等判断:该支付订单号下是否已有收款单(与 uk_pay_order 唯一索引口径一致, 含逻辑删除数据, 重建同单号会被索引拦截)
+     */
+    @Override
+    public boolean existsByPayOrderNumber(String payOrderNumber) {
+        return baseMapper.exists(Wrappers.<FinReceipt>lambdaQuery()
+            .eq(FinReceipt::getPayOrderNumber, payOrderNumber));
+    }
+
     /** 修改,仅 DRAFT 可修改,乐观锁 version 防并发 */
     @Override
     @Transactional(rollbackFor = Exception.class)

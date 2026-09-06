@@ -6,6 +6,11 @@ import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONObject;
 import lombok.extern.slf4j.Slf4j;
 import com.nexus.common.core.exception.ServiceException;
+import com.nexus.common.core.utils.StringUtils;
+import com.nexus.common.mq.constant.ExchangeConstants;
+import com.nexus.common.mq.constant.RoutingKeyConstants;
+import com.nexus.common.mq.domain.PayReceivedMessage;
+import com.nexus.common.mq.producer.ReliableMessageProducer;
 import com.nexus.pay.domain.PayOrder;
 import com.nexus.pay.service.IPayOrderService;
 import com.nexus.pay.util.MoneyUtil;
@@ -16,6 +21,7 @@ import org.springframework.util.StreamUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyFactory;
@@ -42,9 +48,13 @@ public class SQBServiceImpl implements ISqbPayService {
     /** 订单业务服务，用于回调/退款时更新订单状态。 */
     private final IPayOrderService payOrderService;
 
-    public SQBServiceImpl(SqbConfig sqbConfig, IPayOrderService payOrderService) {
+    /** 可靠消息发送器，回调成功后向 ERP 发送收款通知（建收款单+自动核销）。 */
+    private final ReliableMessageProducer messageProducer;
+
+    public SQBServiceImpl(SqbConfig sqbConfig, IPayOrderService payOrderService, ReliableMessageProducer messageProducer) {
         this.sqbConfig = sqbConfig;
         this.payOrderService = payOrderService;
+        this.messageProducer = messageProducer;
     }
 
     /**
@@ -145,7 +155,8 @@ public class SQBServiceImpl implements ISqbPayService {
             params.put("terminal_sn", sqbConfig.getTerminalSn());
             params.put("client_sn", payOrder.getOrderNumber());
             params.put("refund_amount", MoneyUtil.yuanToFen(payOrder.getTotalAmount()));
-            params.put("refund_request_no", "1");
+            // 退款请求号固定为订单号派生值: 同一订单重复发起退款时渠道侧按请求号幂等去重, 防止重复退款
+            params.put("refund_request_no", "R" + payOrder.getOrderNumber());
             params.put("operator", "kay");
 
             String sign = getSign(params + sqbConfig.getTerminalKey());
@@ -298,28 +309,122 @@ public class SQBServiceImpl implements ISqbPayService {
     }
 
     /**
-     * 处理收钱吧异步回调：验签通过后返回 "success"，否则抛出验签失败异常。
+     * 处理收钱吧异步回调：验签 -> 终态幂等 -> 状态/金额校验 -> 更新订单并发送收款通知 MQ。
+     * <p>支付成功(type=pay): 更新订单为「已支付」并向 PAY_RECEIVED_CALLBACK 发 PayReceivedMessage,
+     * 由 ERP 侧 PayReceivedConsumer 建收款单+自动核销; 退款回调(type=refund)仅记录日志(发起退款时已同步置「已退款」)。
+     * 任何处理失败均返回 "fail" 让渠道重试, 不静默吞掉。</p>
      *
      * @param request HTTP 请求，承载回调报文与签名头
      * @param response HTTP 响应
-     * @param payOrder 关联支付订单
-     * @param type 通知类型
-     * @return 处理结果，"success" 表示成功，"fail" 表示失败
+     * @param payOrder 关联支付订单（回调 URL 携带订单号时非空）
+     * @param type 通知类型 pay/refund
+     * @return "success" 表示处理成功，"fail" 表示失败
      */
     @Override
     public String notify(HttpServletRequest request, HttpServletResponse response, PayOrder payOrder, String type) {
         try {
             String requestBody = StreamUtils.copyToString(request.getInputStream(), StandardCharsets.UTF_8);
             JSONObject jsonObject = JSON.parseObject(requestBody);
+            if (jsonObject == null) {
+                log.error("SQB回调报文为空");
+                return "fail";
+            }
             String sign = request.getHeader("Authorization");
             if (!validateSign(requestBody, sign)) {
-                throw new ServiceException("收钱吧支付回调验签失败");
+                log.error("SQB回调验签失败: type={}, urlOrderNumber={}", type, payOrder == null ? null : payOrder.getOrderNumber());
+                return "fail";
             }
             log.info("SQB回调：{}", jsonObject);
+            // 退款回调仅记录(退款接口已同步更新订单状态), 不建收款单
+            if ("refund".equals(type)) {
+                return "success";
+            }
+            String orderNumber = jsonObject.getString("client_sn");
+            if (StringUtils.isBlank(orderNumber) && payOrder != null) {
+                orderNumber = payOrder.getOrderNumber();
+            }
+            if (StringUtils.isBlank(orderNumber)) {
+                log.error("SQB回调缺少 client_sn, 无法定位订单");
+                return "fail";
+            }
+            PayOrder order;
+            try {
+                order = payOrderService.selectPayOrderByOrderNumber(orderNumber);
+            } catch (ServiceException e) {
+                log.error("SQB回调订单不存在: orderNumber={}", orderNumber);
+                return "fail";
+            }
+            // 幂等：已支付/已退款/已关闭等终态订单的重复回调直接忽略
+            String curStatus = order.getOrderStatus();
+            if ("已支付".equals(curStatus) || "已退款".equals(curStatus) || "已关闭".equals(curStatus)) {
+                log.info("SQB重复回调，忽略: orderNumber={}, 状态={}", orderNumber, curStatus);
+                return "success";
+            }
+            // 仅接受支付成功状态, 其他中间态不更新订单
+            String status = jsonObject.getString("status") != null
+                ? jsonObject.getString("status") : jsonObject.getString("order_status");
+            if (status == null) {
+                log.error("SQB回调缺少 status 字段: orderNumber={}", orderNumber);
+                return "fail";
+            }
+            if ("REFUNDED".equalsIgnoreCase(status)) {
+                // 退款成功通知: 兜底同步订单状态, 不建收款单
+                payOrderService.updateStatus(orderNumber, "已退款");
+                return "success";
+            }
+            if (!"SUCCESS".equalsIgnoreCase(status)) {
+                log.warn("SQB回调非成功状态: orderNumber={}, status={}", orderNumber, status);
+                return "success";
+            }
+            // 金额校验：回调金额(分)须与订单实际支付金额(元)一致, 防止金额篡改
+            // (字段缺失/格式异常时降级跳过——来源已由验签保证, 避免解析分歧导致渠道无限重试)
+            String totalAmountFen = jsonObject.getString("total_amount");
+            if (StringUtils.isNotBlank(totalAmountFen) && order.getActualAmount() != null) {
+                try {
+                    BigDecimal callbackYuan = MoneyUtil.fenToYuan(Long.parseLong(totalAmountFen));
+                    if (callbackYuan.compareTo(order.getActualAmount()) != 0) {
+                        log.error("SQB回调金额不一致: 回调={}元, 订单={}元, orderNumber={}",
+                            callbackYuan, order.getActualAmount(), orderNumber);
+                        return "fail";
+                    }
+                } catch (NumberFormatException e) {
+                    log.warn("SQB回调金额字段格式异常, 跳过金额校验: total_amount={}", totalAmountFen);
+                }
+            }
+            order.setPayType("sqb");
+            order.setThirdNumber(jsonObject.getString("sn"));
+            order.setOrderStatus("已支付");
+            payOrderService.updatePayOrder(order);
+            sendPayReceived(order);
             return "success";
         } catch (IOException e) {
             log.error("SQB回调处理失败", e);
             return "fail";
+        } catch (Exception e) {
+            log.error("SQB回调处理异常", e);
+            return "fail";
+        }
+    }
+
+    /**
+     * 发送支付收款通知 MQ（ERP 侧 PayReceivedConsumer 建收款单 + FIFO 自动核销）。
+     */
+    private void sendPayReceived(PayOrder payOrder) {
+        try {
+            PayReceivedMessage msg = new PayReceivedMessage();
+            msg.setPayOrderNumber(payOrder.getOrderNumber());
+            msg.setAmount(payOrder.getActualAmount());
+            msg.setThirdPartyNo(payOrder.getThirdNumber());
+            msg.setBizType(payOrder.getBizType());
+            msg.setBizId(payOrder.getBizId());
+            msg.setClientId(payOrder.getClientId());
+            msg.setPayType("sqb");
+            msg.setTenantIdStr(payOrder.getTenantId());
+            msg.setSourceModule("pay");
+            messageProducer.send(ExchangeConstants.TOPIC_EXCHANGE, RoutingKeyConstants.PAY_RECEIVED_CALLBACK, msg);
+            log.info("发送支付收款通知: orderNumber={}, amount={}", payOrder.getOrderNumber(), payOrder.getActualAmount());
+        } catch (Exception e) {
+            log.error("发送支付收款通知失败: orderNumber={}", payOrder.getOrderNumber(), e);
         }
     }
 

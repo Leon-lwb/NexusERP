@@ -7,6 +7,7 @@ import com.nexus.common.mq.constant.RoutingKeyConstants;
 import com.nexus.common.mq.consumer.BaseMessageConsumer;
 import com.nexus.common.mq.domain.PayReceivedMessage;
 import com.nexus.common.mq.producer.ReliableMessageProducer;
+import com.nexus.common.core.utils.StringUtils;
 import com.nexus.erp.fin.arap.constant.ArapConstants;
 import com.nexus.erp.fin.arap.domain.FinReceipt;
 import com.nexus.erp.fin.arap.domain.bo.FinSettlementBo;
@@ -22,6 +23,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -85,6 +87,13 @@ public class PayReceivedConsumer extends BaseMessageConsumer<PayReceivedMessage>
             return;
         }
 
+        // 0. 幂等防重:同一支付订单仅建一张收款单(重复回调/MQ 重投直接跳过,防重复建单+重复核销)
+        if (StringUtils.isNotBlank(message.getPayOrderNumber())
+            && receiptService.existsByPayOrderNumber(message.getPayOrderNumber())) {
+            log.warn("该支付订单已存在收款单,跳过重复建单: payOrderNumber={}", message.getPayOrderNumber());
+            return;
+        }
+
         // 1. 建 AR 收款单(pay 回调直接 CONFIRMED)
         FinReceipt receipt = new FinReceipt();
         receipt.setReceiptNo("RC" + IdWorker.getId());
@@ -101,7 +110,13 @@ public class PayReceivedConsumer extends BaseMessageConsumer<PayReceivedMessage>
         receipt.setStatus(ArapConstants.RECEIPT_STATUS_CONFIRMED);
         receipt.setReceiptDate(new Date());
         receipt.setVersion(0);
-        receiptService.save(receipt);
+        try {
+            receiptService.save(receipt);
+        } catch (DuplicateKeyException e) {
+            // 并发重复回调被 uk_pay_order 唯一索引拦截,对方消费者已建单,本消息直接确认
+            log.warn("并发重复建单被唯一索引拦截: payOrderNumber={}", message.getPayOrderNumber());
+            return;
+        }
 
         // 2. 触发 GL 过账(ReceiptPoster 制单)
         GlPostingMessage glMsg = new GlPostingMessage();
