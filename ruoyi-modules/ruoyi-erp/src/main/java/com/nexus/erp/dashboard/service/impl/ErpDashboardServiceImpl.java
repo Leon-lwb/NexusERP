@@ -1,5 +1,6 @@
 package com.nexus.erp.dashboard.service.impl;
 
+import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.nexus.erp.bd.domain.BdClient;
@@ -29,11 +30,14 @@ import java.util.Map;
 /**
  * 首页工作台统计 Service 实现
  * <p>全部走单条聚合 SQL / 有限行查询, 数据由多租户插件自动隔离;
- * 端点仅要求登录态(无菜单权限点), 供所有已登录用户首页展示。</p>
+ * 端点仅要求登录态(无菜单权限点), 供所有已登录用户首页展示。
+ * <p>数据源: ERP 业务表(销售/主数据/库存预警)在 ry-erp 库, 类级 {@code @DS("erp")} 路由,
+ * 不标注会落到默认 master(ry-vue) 导致 Table doesn't exist。</p>
  *
  * @author Nexus
  */
 @RequiredArgsConstructor
+@DS("erp")
 @Service
 public class ErpDashboardServiceImpl implements IErpDashboardService {
 
