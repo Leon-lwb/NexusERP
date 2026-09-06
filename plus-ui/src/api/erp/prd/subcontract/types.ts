@@ -19,6 +19,12 @@ export interface PrdSubcontractVO {
   actualEndDate: string;
   woId: number;
   woNo: string;
+  bomId: number;
+  routingId: number;
+  processRequirement: string;
+  snGeneratedQty: number;
+  targetWarehouseId: number;
+  targetWarehouseName: string;
   status: string;
   remark: string;
   createTime: string;
@@ -48,5 +54,9 @@ export interface PrdSubcontractForm {
   planStartDate?: string;
   planEndDate?: string;
   woId?: number;
+  bomId?: number;
+  routingId?: number;
+  processRequirement?: string;
+  targetWarehouseId?: number;
   remark?: string;
 }

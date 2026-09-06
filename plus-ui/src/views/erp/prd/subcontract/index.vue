@@ -70,6 +70,9 @@
           <el-tooltip content="查看" placement="top">
             <el-button link type="info" icon="View" @click="handleView(scope.row)" v-hasPermi="['prd:subcontract:query']" />
           </el-tooltip>
+          <el-tooltip content="委外闭环详情" placement="top">
+            <el-button link type="primary" icon="Operation" @click="handleClosure(scope.row)" v-hasPermi="['prd:subcontract:query']" />
+          </el-tooltip>
           <el-tooltip content="提交审批" placement="top" v-if="scope.row.status === 'DRAFT'">
             <el-button link type="primary" icon="Finished" @click="handleSubmitApproval(scope.row)" v-hasPermi="['prd:subcontract:edit']" />
           </el-tooltip>
@@ -154,6 +157,20 @@
           <el-col :span="12">
             <el-form-item label="计划数量" prop="plannedQty">
               <el-input-number v-model="form.plannedQty" :precision="4" :min="0" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="关联BOM" prop="bomId">
+              <el-select v-model="form.bomId" placeholder="选择物料后带出当前生效BOM" clearable style="width: 100%" @change="onBomChange">
+                <el-option v-for="b in bomOptions" :key="b.bomId" :label="`${b.bomName || 'BOM'} V${b.bomVersion || '-'}`" :value="b.bomId" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="工艺要求" prop="processRequirement">
+              <el-input v-model="form.processRequirement" type="textarea" :rows="2" placeholder="质量标准/特殊工艺/AOI/FCT等(询价与发料资料包随附)" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -285,6 +302,9 @@
         <el-button @click="receiveOpen = false">取 消</el-button>
       </template>
     </el-dialog>
+
+    <!-- PCBA 委外闭环详情抽屉 -->
+    <SubcontractClosureDetail :row="closureRow" @close="closureRow = null" v-if="closureRow" />
   </div>
 </template>
 
@@ -300,8 +320,10 @@ import {
   issueSubcontractMaterial,
   receiveSubcontractMaterial,
   submitApproval,
-  getOperationLogs
+  getOperationLogs,
+  getMaterialInfo
 } from '@/api/erp/prd/subcontract';
+import SubcontractClosureDetail from './detail.vue';
 import type { PrdSubcontractVO, PrdSubcontractQuery } from '@/api/erp/prd/subcontract/types';
 import { listVendor } from '@/api/erp/bd/vendor';
 import { listMaterial } from '@/api/erp/bd/material';
@@ -320,6 +342,13 @@ const queryParams = ref<PrdSubcontractQuery>({ pageNum: 1, pageSize: 10 });
 
 const vendorOptions = ref<any[]>([]);
 const materialOptions = ref<any[]>([]);
+const bomOptions = ref<any[]>([]);
+const closureRow = ref<any>(null);
+
+/** 打开 PCBA 闭环详情抽屉 */
+const handleClosure = (row: PrdSubcontractVO) => {
+  closureRow.value = row;
+};
 const woOptions = ref<any[]>([]);
 
 const detailOpen = ref(false);
@@ -444,7 +473,7 @@ const onVendorChange = (vendorId: number) => {
   }
 };
 
-/** 选中物料后回填物料信息 */
+/** 选中物料后回填物料信息 + 带出当前生效 BOM(PCBA 闭环) */
 const onMaterialChange = (materialId: number) => {
   const m = materialOptions.value.find((i: any) => i.materialId === materialId);
   if (m) {
@@ -453,6 +482,27 @@ const onMaterialChange = (materialId: number) => {
     form.value.materialSpec = m.materialSpec;
     form.value.baseUomName = m.baseUomName;
   }
+  bomOptions.value = [];
+  form.value.bomId = null;
+  form.value.routingId = null;
+  if (materialId) {
+    getMaterialInfo(materialId)
+      .then((res: any) => {
+        const data = res.data || {};
+        bomOptions.value = data.bom ? [data.bom] : [];
+        if (data.bom) {
+          form.value.bomId = data.bom.bomId;
+          form.value.routingId = data.bom.routingId || null;
+        }
+      })
+      .catch(() => {});
+  }
+};
+
+/** 选中 BOM 后带出工艺路线 */
+const onBomChange = (bomId: number) => {
+  const b = bomOptions.value.find((i: any) => i.bomId === bomId);
+  form.value.routingId = b?.routingId || null;
 };
 
 /** 查看委外订单详情（含操作日志） */
