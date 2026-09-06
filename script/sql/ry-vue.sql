@@ -15104,6 +15104,7 @@ INSERT INTO `sys_menu` VALUES (2072, '发票新增', 2070, 2, '', NULL, NULL, 1,
 INSERT INTO `sys_menu` VALUES (2073, '发票修改', 2070, 3, '', NULL, NULL, 1, 0, 'F', '0', '0', 'so:invoice:edit', '#', 103, 1, '2026-06-14 23:11:29', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (2074, '发票删除', 2070, 4, '', NULL, NULL, 1, 0, 'F', '0', '0', 'so:invoice:remove', '#', 103, 1, '2026-06-14 23:11:29', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (2075, '发票导出', 2070, 5, '', NULL, NULL, 1, 0, 'F', '0', '0', 'so:invoice:export', '#', 103, 1, '2026-06-14 23:11:29', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (2076, '发票核销', 2070, 6, '', NULL, NULL, 1, 0, 'F', '0', '0', 'so:invoice:verify', '#', 103, 1, '2026-09-06 00:00:00', NULL, NULL, '核销权限独立于编辑, 收款确认需单独授权');
 INSERT INTO `sys_menu` VALUES (2080, '部门请购单', 2500, 2, 'deptRequisition', 'erp/po/requisition/index', NULL, 1, 0, 'C', '0', '0', 'po:requisition:list', 'form', 103, 1, '2026-06-15 00:08:12', NULL, NULL, '部门请购单菜单');
 INSERT INTO `sys_menu` VALUES (2081, '部门请购单查询', 2080, 1, '', NULL, NULL, 1, 0, 'F', '0', '0', 'po:requisition:query', '#', 103, 1, '2026-06-15 00:08:12', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (2082, '部门请购单新增', 2080, 2, '', NULL, NULL, 1, 0, 'F', '0', '0', 'po:requisition:add', '#', 103, 1, '2026-06-15 00:08:12', NULL, NULL, '');

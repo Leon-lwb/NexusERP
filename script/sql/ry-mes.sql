@@ -767,6 +767,7 @@ CREATE TABLE `mes_flash_record`  (
   UNIQUE INDEX `uk_tenant_flash_no`(`tenant_id`, `flash_no`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE,
   INDEX `idx_sn`(`sn_id`) USING BTREE,
+  INDEX `idx_sn_code`(`tenant_id`, `sn_code`) USING BTREE,
   INDEX `idx_wo`(`mes_wo_id`) USING BTREE,
   INDEX `idx_flash_type`(`tenant_id`, `flash_type_id`) USING BTREE,
   INDEX `idx_content_ref`(`content_ref_type`, `content_ref_id`) USING BTREE
@@ -1335,7 +1336,9 @@ CREATE TABLE `mes_sn_bind_log`  (
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0',
   PRIMARY KEY (`log_id`) USING BTREE,
   INDEX `idx_parent`(`parent_sn_id`) USING BTREE,
-  INDEX `idx_component`(`component_sn_id`) USING BTREE
+  INDEX `idx_component`(`component_sn_id`) USING BTREE,
+  INDEX `idx_parent_sn_code`(`tenant_id`, `parent_sn_code`) USING BTREE,
+  INDEX `idx_component_sn_code`(`tenant_id`, `component_sn_code`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '关键件绑定操作日志' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -1505,6 +1508,7 @@ CREATE TABLE `mes_test_record`  (
   UNIQUE INDEX `uk_tenant_test_no_item`(`tenant_id`, `test_no`, `test_item_id`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE,
   INDEX `idx_sn`(`sn_id`) USING BTREE,
+  INDEX `idx_sn_code`(`tenant_id`, `sn_code`) USING BTREE,
   INDEX `idx_wo`(`mes_wo_id`) USING BTREE,
   INDEX `idx_content_ref`(`content_ref_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '测试记录(SN级全检)' ROW_FORMAT = DYNAMIC;

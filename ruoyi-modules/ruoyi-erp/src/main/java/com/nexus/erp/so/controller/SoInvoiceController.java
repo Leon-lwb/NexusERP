@@ -108,12 +108,12 @@ public class SoInvoiceController extends BaseController {
 
     /**
      * 核销发票（累加已核销金额，达价税合计则转已核销）
-     * <p>权限标识：{@code so:invoice:edit}（TODO P3 拆分为 so:invoice:verify 独立权限）</p>
+     * <p>权限标识：{@code so:invoice:verify}（独立于编辑权限，核销涉及收款确认需单独授权）</p>
      *
      * @param id           发票ID
      * @param verifyAmount 本次核销金额
      */
-    @SaCheckPermission("so:invoice:edit")
+    @SaCheckPermission("so:invoice:verify")
     @Log(title = "销售发票", businessType = BusinessType.UPDATE)
     @PutMapping("/verify/{id}")
     public R<Void> verify(@PathVariable Long id, @RequestParam BigDecimal verifyAmount) {
