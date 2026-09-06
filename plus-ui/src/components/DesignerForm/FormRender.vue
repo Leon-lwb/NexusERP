@@ -1000,7 +1000,8 @@ const handleSubTrigger = (config: any, value: any, row: any) => {
   const subData = subTableData.value[subTableField] || [];
   let result = 0;
   subData.forEach((item: any) => {
-    result += parseFloat(evaluateFormula(config.formula, item)) || 0;
+    // evaluateFormula 返回 number, 直接累加(勿再用 parseFloat 包一层)
+    result += evaluateFormula(config.formula, item) || 0;
   });
   if (Array.isArray(config.targetFields)) {
     (config.targetFields as string[]).forEach((field: string) => {
@@ -1066,7 +1067,7 @@ const updateMainTableSummary = (subTableComponent: any) => {
       } else if (summaryRule && typeof summaryRule === 'object' && (summaryRule as any).formula) {
         // 复杂公式：对每行按公式计算后再累加
         summaryValue = currentSubTableData.reduce(
-          (sum, row) => sum + (parseFloat(evaluateFormula(String((summaryRule as any).formula), row)) || 0),
+          (sum, row) => sum + (evaluateFormula(String((summaryRule as any).formula), row) || 0),
           0
         );
       }

@@ -137,7 +137,8 @@ const initQuery = { pageNum: 1, pageSize: 10, equipmentName: undefined, grade: u
 const queryParams = ref({ ...initQuery });
 
 const gradeLabel = (grade: string) => ({ HIGH: '优', MEDIUM: '中', LOW: '差' }[grade] || grade);
-const gradeTagType = (grade: string) => ({ HIGH: 'success', MEDIUM: 'warning', LOW: 'danger' }[grade] || 'info');
+const gradeTagType = (grade: string): 'success' | 'warning' | 'danger' | 'info' =>
+  (({ HIGH: 'success', MEDIUM: 'warning', LOW: 'danger' } as const)[grade as 'HIGH' | 'MEDIUM' | 'LOW'] ?? 'info');
 const scoreColor = (score: number) => {
   if (score >= 80) return '#67c23a';
   if (score >= 60) return '#e6a23c';

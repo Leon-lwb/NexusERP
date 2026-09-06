@@ -47,7 +47,7 @@ import { startByDataId, isFirstInitiator, deleteActivityAndJoin, getProcesss } f
 defineOptions({ name: 'ActApplyBtn' });
 const props = defineProps({
   btnType: {
-    type: String,
+    type: String as PropType<'primary' | 'success' | 'warning' | 'danger' | 'info' | 'text' | 'default' | ''>,
     default: 'primary',
     required: false
   },

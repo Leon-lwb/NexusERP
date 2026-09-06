@@ -16,7 +16,7 @@ import HistoricDetail from './HistoricDetail.vue';
 defineOptions({ name: 'ActHistoricDetailBtn' });
 const props = defineProps({
   btnType: {
-    type: String,
+    type: String as PropType<'primary' | 'success' | 'warning' | 'danger' | 'info' | 'text' | 'default' | ''>,
     default: 'primary',
     required: false
   },

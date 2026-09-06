@@ -33,7 +33,7 @@ import { rejectTask, returnList, returnTask } from '@/api/workflow/work/task';
 defineOptions({ name: 'ActHandleBtn' });
 const props = defineProps({
   btnType: {
-    type: String,
+    type: String as PropType<'primary' | 'success' | 'warning' | 'danger' | 'info' | 'text' | 'default' | ''>,
     default: 'primary',
     required: false
   },
