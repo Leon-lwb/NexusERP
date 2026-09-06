@@ -15535,6 +15535,7 @@ INSERT INTO `sys_menu` VALUES (4083, 'SN生成', 4080, 2, '', '', '', 1, 0, 'F',
 INSERT INTO `sys_menu` VALUES (4084, 'SN完工', 4080, 3, '', '', '', 1, 0, 'F', '0', '0', 'mes:pro:sn:complete', '#', 103, 1, '2026-06-19 00:54:48', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (4085, 'SN报废', 4080, 4, '', '', '', 1, 0, 'F', '0', '0', 'mes:pro:sn:scrap', '#', 103, 1, '2026-06-19 00:54:48', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (4086, 'SN发货', 4080, 5, '', '', '', 1, 0, 'F', '0', '0', 'mes:pro:sn:ship', '#', 103, 1, '2026-06-19 00:54:48', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (4087, 'SN导出', 4080, 6, '', '', '', 1, 0, 'F', '0', '0', 'mes:pro:sn:export', '#', 103, 1, '2026-09-06 00:00:00', NULL, NULL, 'SN列表导出(委外SN发外协厂镭雕导入用)');
 INSERT INTO `sys_menu` VALUES (4090, 'IQC来料检验', 4002, 1, 'iqc', 'mes/qc/iqc/index', '', 1, 0, 'C', '0', '0', 'mes:qc:iqc:list', 'check', 103, 1, '2026-06-19 23:29:37', NULL, NULL, 'MES来料检验');
 INSERT INTO `sys_menu` VALUES (4091, 'IQC查询', 4090, 1, '', '', '', 1, 0, 'F', '0', '0', 'mes:qc:iqc:query', '#', 103, 1, '2026-06-19 23:29:37', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (4092, 'IQC新增', 4090, 2, '', '', '', 1, 0, 'F', '0', '0', 'mes:qc:iqc:add', '#', 103, 1, '2026-06-19 23:29:37', NULL, NULL, '');

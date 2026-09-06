@@ -1,6 +1,15 @@
 <template>
   <el-drawer v-model="visible" :title="'委外闭环详情 - ' + (info?.subcontractNo || '')" size="72%" destroy-on-close>
     <div v-loading="loading">
+      <!-- 状态流程条 -->
+      <el-steps :active="statusStep" align-center finish-status="success" class="mb12" :process-status="isAbnormal ? 'error' : 'process'">
+        <el-step title="草稿" />
+        <el-step title="提交审批" />
+        <el-step title="已批准" />
+        <el-step title="发料下达" />
+        <el-step title="进行中" />
+        <el-step title="完工" />
+      </el-steps>
       <!-- 基本信息 -->
       <el-descriptions :column="4" border size="small" class="mb12">
         <el-descriptions-item label="委外单号">{{ info?.subcontractNo }}</el-descriptions-item>
@@ -10,7 +19,9 @@
           <el-tag :type="statusTagType(info?.status)" size="small">{{ statusLabel(info?.status) }}</el-tag>
         </el-descriptions-item>
         <el-descriptions-item label="计划数量">{{ info?.plannedQty }}</el-descriptions-item>
-        <el-descriptions-item label="实际数量">{{ info?.actualQty || 0 }}</el-descriptions-item>
+        <el-descriptions-item label="实收进度">
+          <el-progress :percentage="receiveProgress" :stroke-width="10" style="width: 100%" />
+        </el-descriptions-item>
         <el-descriptions-item label="加工单价">{{ info?.unitPrice || '-' }}</el-descriptions-item>
         <el-descriptions-item label="目标仓库">{{ info?.targetWarehouseName || '默认路由' }}</el-descriptions-item>
         <el-descriptions-item label="工艺要求" :span="4">
@@ -148,8 +159,9 @@
             </el-table-column>
             <el-table-column prop="issuerName" label="发料人" width="100" />
             <el-table-column prop="issueDate" label="发料时间" width="150" />
-            <el-table-column label="操作" width="130" align="center">
+            <el-table-column label="操作" width="170" align="center">
               <template #default="scope">
+                <el-button link type="primary" icon="View" @click="openIssueLines(scope.row)">行明细</el-button>
                 <el-button
                   link
                   type="success"
@@ -227,12 +239,26 @@
 
         <!-- SN -->
         <el-tab-pane :label="'SN (' + sns.length + ')'" name="sns">
+          <div class="mb8">
+            <el-button size="small" type="primary" icon="Download" @click="exportSns" v-hasPermi="['mes:pro:sn:export']"
+              >导出Excel(外协厂镭雕)</el-button
+            >
+          </div>
           <el-table :data="sns" size="small" border max-height="380">
             <el-table-column prop="snCode" label="SN编码" min-width="220" />
             <el-table-column prop="snStatus" label="状态" width="120" align="center" />
             <el-table-column prop="productionDate" label="生成日期" width="120" />
           </el-table>
           <el-empty v-if="!sns.length" description="发料完成后由 MES 自动生成 PCBA SN" :image-size="50" />
+        </el-tab-pane>
+
+        <!-- 操作日志 -->
+        <el-tab-pane label="操作日志" name="logs">
+          <el-table v-loading="logsLoading" :data="operationLogs" size="small" border max-height="380">
+            <el-table-column prop="operation" label="操作" min-width="200" show-overflow-tooltip />
+            <el-table-column prop="time" label="时间" width="170" />
+          </el-table>
+          <el-empty v-if="!logsLoading && !operationLogs.length" description="暂无操作日志" :image-size="50" />
         </el-tab-pane>
       </el-tabs>
     </div>
@@ -289,6 +315,18 @@
       </template>
     </el-dialog>
 
+    <!-- 发料单行明细 -->
+    <el-dialog v-model="issueLinesOpen" :title="'发料单行明细 - ' + (issueLinesRow?.issueNo || '')" width="820px" append-to-body>
+      <el-table :data="issueLines" size="small" border max-height="420" v-loading="issueLinesLoading">
+        <el-table-column prop="materialCode" label="物料编码" min-width="130" />
+        <el-table-column prop="materialName" label="物料名称" min-width="120" />
+        <el-table-column prop="issueQty" label="发料量" width="100" align="right" />
+        <el-table-column prop="baseUomName" label="单位" width="70" align="center" />
+        <el-table-column prop="allocJson" label="批次分配明细" min-width="240" show-overflow-tooltip />
+      </el-table>
+      <el-empty v-if="!issueLinesLoading && !issueLines.length" description="暂无行明细" :image-size="50" />
+    </el-dialog>
+
     <!-- 收货对话框 -->
     <el-dialog v-model="receiveOpen" title="创建收货单" width="560px" append-to-body>
       <el-form :model="receiveForm" label-width="110px">
@@ -296,7 +334,9 @@
           <el-input-number v-model="receiveForm.receivedQty" :min="0.0001" :precision="4" style="width: 100%" />
         </el-form-item>
         <el-form-item label="入库仓库">
-          <span>{{ info?.targetWarehouseName || '默认半成品仓路由' }}(收货过账自动建批次)</span>
+          <el-select v-model="receiveForm.targetWarehouseId" placeholder="默认订单配置/半成品仓路由" clearable filterable style="width: 100%">
+            <el-option v-for="w in warehouseOptions" :key="w.warehouseId" :label="`${w.warehouseCode} - ${w.warehouseName}`" :value="w.warehouseId" />
+          </el-select>
         </el-form-item>
         <el-form-item label="外协批次号">
           <el-input v-model="receiveForm.vendorBatchCode" placeholder="外协厂批次号(可选)" />
@@ -338,8 +378,12 @@ import {
   createReceive,
   delReceive,
   postReceive,
-  listSubcontractSns
+  listSubcontractSns,
+  getIssue,
+  getOperationLogs
 } from '@/api/erp/prd/subcontract';
+import { listWarehouse } from '@/api/erp/wm/warehouse';
+import { download } from '@/utils/request';
 
 const proxy = getCurrentInstance()?.proxy as any;
 const { erp_subcontract_doc_type } = toRefs<any>(proxy?.useDict('erp_subcontract_doc_type'));
@@ -364,8 +408,28 @@ const docOpen = ref(false);
 const docForm = ref<any>({});
 const receiveOpen = ref(false);
 const receiveForm = ref<any>({});
+const warehouseOptions = ref<any[]>([]);
+const issueLinesOpen = ref(false);
+const issueLinesRow = ref<any>(null);
+const issueLines = ref<any[]>([]);
+const issueLinesLoading = ref(false);
+const logsLoading = ref(false);
+const operationLogs = ref<any[]>([]);
 
 const orderLocked = computed(() => ['RELEASED', 'IN_PROGRESS', 'COMPLETED', 'CLOSED'].includes(info.value?.status));
+
+// 状态流程条: CLOSED 在最后一步之后按完成色显示
+const statusStep = computed(() => {
+  const order = ['DRAFT', 'SUBMITTED', 'APPROVED', 'RELEASED', 'IN_PROGRESS', 'COMPLETED'];
+  const i = order.indexOf(info.value?.status || '');
+  return i < 0 ? 6 : i;
+});
+const isAbnormal = computed(() => info.value?.status === 'CLOSED');
+const receiveProgress = computed(() => {
+  const planned = Number(info.value?.plannedQty || 0);
+  if (planned <= 0) return 0;
+  return Math.min(100, Math.round((Number(info.value?.actualQty || 0) / planned) * 100));
+});
 const canReceive = computed(() => ['RELEASED', 'IN_PROGRESS'].includes(info.value?.status));
 
 const statusLabelMap: Record<string, string> = {
@@ -400,7 +464,7 @@ const open = async (row: any) => {
   loading.value = true;
   activeTab.value = 'bom';
   try {
-    await Promise.all([loadBomLines(), loadDocs(), loadQuotes(), loadIssues(), loadReceives(), loadSns()]);
+    await Promise.all([loadBomLines(), loadDocs(), loadQuotes(), loadIssues(), loadReceives(), loadSns(), loadOperationLogs()]);
   } finally {
     loading.value = false;
   }
@@ -535,6 +599,40 @@ const loadIssues = async () => {
   const res: any = await listIssues(info.value.subcontractId);
   issues.value = res.data || [];
 };
+/** 查看发料单行明细(含批次分配) */
+const openIssueLines = async (row: any) => {
+  issueLinesRow.value = row;
+  issueLinesOpen.value = true;
+  issueLinesLoading.value = true;
+  try {
+    const res: any = await getIssue(row.issueId);
+    issueLines.value = res.data?.lines || [];
+  } catch {
+    issueLines.value = [];
+  } finally {
+    issueLinesLoading.value = false;
+  }
+};
+
+/** 导出委外 SN(外协厂镭雕导入用) */
+const exportSns = () => {
+  download('/mes/pro/sn/export', { subcontractNo: info.value?.subcontractNo }, `委外SN_${info.value?.subcontractNo || Date.now()}.xlsx`);
+};
+
+/** 操作日志 */
+const loadOperationLogs = async () => {
+  if (!info.value?.subcontractId) return;
+  logsLoading.value = true;
+  try {
+    const res: any = await getOperationLogs(info.value.subcontractId);
+    operationLogs.value = res.data || [];
+  } catch {
+    operationLogs.value = [];
+  } finally {
+    logsLoading.value = false;
+  }
+};
+
 const handlePostIssue = async (row: any) => {
   await ElMessageBox.confirm('过账将扣减库存并写流水, 全部自供行发齐后订单自动下达并生成 SN, 确认?', '发料过账', { type: 'warning' });
   await postIssue(row.issueId);
@@ -552,8 +650,21 @@ const loadReceives = async () => {
   receives.value = res.data || [];
 };
 const openReceiveDialog = () => {
-  receiveForm.value = { subcontractId: info.value.subcontractId, receivedQty: null, vendorBatchCode: null, snScope: null };
+  receiveForm.value = {
+    subcontractId: info.value.subcontractId,
+    receivedQty: null,
+    vendorBatchCode: null,
+    snScope: null,
+    targetWarehouseId: info.value.targetWarehouseId || null
+  };
   receiveOpen.value = true;
+  listWarehouse({ pageNum: 1, pageSize: 100 })
+    .then((res: any) => {
+      warehouseOptions.value = res.rows || [];
+    })
+    .catch(() => {
+      warehouseOptions.value = [];
+    });
 };
 const submitReceive = async () => {
   await createReceive(receiveForm.value);

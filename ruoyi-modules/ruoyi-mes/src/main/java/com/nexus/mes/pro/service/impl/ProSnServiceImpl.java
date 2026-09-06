@@ -58,6 +58,16 @@ public class ProSnServiceImpl implements IProSnService {
 
     @Override
     /**
+     * 查询SN列表(不分页, 导出用)
+     * @param bo bo
+     * @return 列表
+     */
+    public List<ProSnVo> selectList(ProSnBo bo) {
+        return baseMapper.selectVoList(buildQueryWrapper(bo));
+    }
+
+    @Override
+    /**
      * 查询
      * @param bo bo
      * @param pageQuery pageQuery

@@ -59,6 +59,14 @@ public interface IProSnService {
      * @param lotId         批次ID(可空; 非空时发布 SnCreatedEvent, 由 lt 模块写 SN↔批次绑定)
      * @return 生成的SN列表
      */
+    /**
+     * 查询SN列表(不分页, 导出用)
+     *
+     * @param bo 查询参数
+     * @return SN列表
+     */
+    List<ProSnVo> selectList(ProSnBo bo);
+
     List<ProSnVo> generateSnForCard(Long cardId, Integer quantity, String initialStatus, Long lotId);
 
     /**

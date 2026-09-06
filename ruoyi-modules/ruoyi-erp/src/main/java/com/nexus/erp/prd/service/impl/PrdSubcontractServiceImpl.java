@@ -91,10 +91,24 @@ public class PrdSubcontractServiceImpl implements IPrdSubcontractService {
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(PrdSubcontractBo bo) {
         PrdSubcontract subcontract = MapstructUtils.convert(bo, PrdSubcontract.class);
+        if (StringUtils.isBlank(subcontract.getSubcontractNo())) {
+            subcontract.setSubcontractNo(generateSubcontractNo());
+        }
         if (subcontract.getPlannedQty() != null && subcontract.getUnitPrice() != null) {
             subcontract.setTotalAmount(subcontract.getPlannedQty().multiply(subcontract.getUnitPrice()));
         }
         return baseMapper.insert(subcontract);
+    }
+
+    /**
+     * 生成委外单号: SC + yyyyMMdd + 当日4位序号(uk_subcontract_no 唯一索引兜底并发)
+     */
+    private String generateSubcontractNo() {
+        String date = new java.text.SimpleDateFormat("yyyyMMdd").format(new Date());
+        Long count = baseMapper.selectCount(Wrappers.<PrdSubcontract>lambdaQuery()
+            .likeRight(PrdSubcontract::getSubcontractNo, "SC" + date));
+        int seq = (count == null ? 0 : count.intValue()) + 1;
+        return "SC" + date + String.format("%04d", seq);
     }
 
     /**

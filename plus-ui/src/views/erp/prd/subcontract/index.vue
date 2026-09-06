@@ -60,6 +60,11 @@
       <el-table-column label="计划开始" align="center" prop="planStartDate" />
       <el-table-column label="计划结束" align="center" prop="planEndDate" />
       <el-table-column label="关联工单" align="center" prop="woNo" />
+      <el-table-column label="收货进度" align="center" width="130">
+        <template #default="scope">
+          <el-progress :percentage="progressOf(scope.row)" :stroke-width="8" />
+        </template>
+      </el-table-column>
       <el-table-column label="委外状态" align="center" prop="status">
         <template #default="scope">
           <dict-tag :options="prd_subcontract_status" :value="scope.row.status" />
@@ -81,12 +86,6 @@
           </el-tooltip>
           <el-tooltip content="完工" placement="top" v-if="scope.row.status === 'IN_PROGRESS'">
             <el-button link type="primary" icon="Select" @click="handleComplete(scope.row)" v-hasPermi="['prd:subcontract:edit']" />
-          </el-tooltip>
-          <el-tooltip content="委外发料" placement="top" v-if="scope.row.status === 'IN_PROGRESS'">
-            <el-button link type="warning" icon="Van" @click="handleSubcontractIssue(scope.row)" v-hasPermi="['prd:subcontract:edit']" />
-          </el-tooltip>
-          <el-tooltip content="委外收货" placement="top" v-if="scope.row.status === 'IN_PROGRESS'">
-            <el-button link type="success" icon="Box" @click="handleSubcontractReceive(scope.row)" v-hasPermi="['prd:subcontract:edit']" />
           </el-tooltip>
           <el-tooltip content="修改" placement="top" v-if="scope.row.status === 'DRAFT'">
             <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['prd:subcontract:edit']" />
@@ -202,107 +201,6 @@
       </template>
     </el-dialog>
 
-    <el-dialog title="委外订单详情" v-model="detailOpen" width="800px" append-to-body>
-      <el-tabs v-model="detailActiveTab">
-        <el-tab-pane label="基本信息" name="info">
-          <el-descriptions :column="2" border>
-            <el-descriptions-item label="委外单号">{{ detailData.subcontractNo }}</el-descriptions-item>
-            <el-descriptions-item label="供应商">{{ detailData.vendorName }}</el-descriptions-item>
-            <el-descriptions-item label="物料编码">{{ detailData.materialCode }}</el-descriptions-item>
-            <el-descriptions-item label="物料名称">{{ detailData.materialName }}</el-descriptions-item>
-            <el-descriptions-item label="规格型号">{{ detailData.materialSpec }}</el-descriptions-item>
-            <el-descriptions-item label="单位">{{ detailData.baseUomName }}</el-descriptions-item>
-            <el-descriptions-item label="计划数量">{{ detailData.plannedQty }}</el-descriptions-item>
-            <el-descriptions-item label="实际数量">{{ detailData.actualQty }}</el-descriptions-item>
-            <el-descriptions-item label="单价">{{ detailData.unitPrice }}</el-descriptions-item>
-            <el-descriptions-item label="总金额">{{ detailData.totalAmount }}</el-descriptions-item>
-            <el-descriptions-item label="计划开始日期">{{ detailData.planStartDate }}</el-descriptions-item>
-            <el-descriptions-item label="计划结束日期">{{ detailData.planEndDate }}</el-descriptions-item>
-            <el-descriptions-item label="关联工单">{{ detailData.woNo }}</el-descriptions-item>
-            <el-descriptions-item label="委外状态">
-              <dict-tag :options="prd_subcontract_status" :value="detailData.status" />
-            </el-descriptions-item>
-            <el-descriptions-item label="备注" :span="2">{{ detailData.remark }}</el-descriptions-item>
-            <el-descriptions-item label="创建时间">{{ detailData.createTime }}</el-descriptions-item>
-          </el-descriptions>
-        </el-tab-pane>
-        <el-tab-pane label="操作日志" name="logs">
-          <el-table v-loading="logsLoading" :data="operationLogs" border style="width: 100%" show-overflow-tooltip>
-            <el-table-column label="操作类型" align="center" prop="operationType" width="120" />
-            <el-table-column label="操作描述" align="center" prop="operationDesc" min-width="200" show-overflow-tooltip />
-            <el-table-column label="操作人" align="center" prop="operatorName" width="120" />
-            <el-table-column label="操作时间" align="center" prop="operationTime" width="180" />
-          </el-table>
-          <el-empty v-if="!logsLoading && operationLogs.length === 0" description="暂无操作日志" />
-        </el-tab-pane>
-      </el-tabs>
-      <template #footer>
-        <el-button @click="detailOpen = false">关 闭</el-button>
-      </template>
-    </el-dialog>
-
-    <el-dialog title="委外发料" v-model="issueOpen" width="500px" append-to-body>
-      <el-form ref="issueRef" :model="issueForm" :rules="issueRules" label-width="100px">
-        <el-form-item label="委外单号">
-          <el-input :model-value="issueForm.subcontractNo" disabled />
-        </el-form-item>
-        <el-form-item label="物料">
-          <el-input :model-value="issueForm.materialName" disabled />
-        </el-form-item>
-        <el-form-item label="计划数量">
-          <el-input :model-value="issueForm.plannedQty" disabled />
-        </el-form-item>
-        <el-form-item label="发料数量" prop="quantity">
-          <el-input-number
-            v-model="issueForm.quantity"
-            :precision="4"
-            :min="0"
-            :max="issueForm.plannedQty"
-            style="width: 100%"
-            placeholder="请输入发料数量"
-          />
-        </el-form-item>
-        <el-form-item label="备注" prop="remark">
-          <el-input v-model="issueForm.remark" type="textarea" placeholder="请输入备注" />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button type="primary" @click="submitIssue()">确 定</el-button>
-        <el-button @click="issueOpen = false">取 消</el-button>
-      </template>
-    </el-dialog>
-
-    <el-dialog title="委外收货" v-model="receiveOpen" width="500px" append-to-body>
-      <el-form ref="receiveRef" :model="receiveForm" :rules="receiveRules" label-width="100px">
-        <el-form-item label="委外单号">
-          <el-input :model-value="receiveForm.subcontractNo" disabled />
-        </el-form-item>
-        <el-form-item label="物料">
-          <el-input :model-value="receiveForm.materialName" disabled />
-        </el-form-item>
-        <el-form-item label="计划数量">
-          <el-input :model-value="receiveForm.plannedQty" disabled />
-        </el-form-item>
-        <el-form-item label="收货数量" prop="quantity">
-          <el-input-number
-            v-model="receiveForm.quantity"
-            :precision="4"
-            :min="0"
-            :max="receiveForm.plannedQty"
-            style="width: 100%"
-            placeholder="请输入收货数量"
-          />
-        </el-form-item>
-        <el-form-item label="备注" prop="remark">
-          <el-input v-model="receiveForm.remark" type="textarea" placeholder="请输入备注" />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button type="primary" @click="submitReceive()">确 定</el-button>
-        <el-button @click="receiveOpen = false">取 消</el-button>
-      </template>
-    </el-dialog>
-
     <!-- PCBA 委外闭环详情抽屉 -->
     <SubcontractClosureDetail :row="closureRow" @close="closureRow = null" v-if="closureRow" />
   </div>
@@ -317,10 +215,7 @@ import {
   delSubcontract,
   releaseSubcontract,
   completeSubcontract,
-  issueSubcontractMaterial,
-  receiveSubcontractMaterial,
   submitApproval,
-  getOperationLogs,
   getMaterialInfo
 } from '@/api/erp/prd/subcontract';
 import SubcontractClosureDetail from './detail.vue';
@@ -335,8 +230,6 @@ const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { prd_subcontract_status } = toRefs<any>(proxy.useDict('prd_subcontract_status'));
 
 const subcontractRef = ref<FormInstance>();
-const issueRef = ref<FormInstance>();
-const receiveRef = ref<FormInstance>();
 
 const queryParams = ref<PrdSubcontractQuery>({ pageNum: 1, pageSize: 10 });
 
@@ -350,28 +243,6 @@ const handleClosure = (row: PrdSubcontractVO) => {
   closureRow.value = row;
 };
 const woOptions = ref<any[]>([]);
-
-const detailOpen = ref(false);
-const detailActiveTab = ref('info');
-const detailData = ref<PrdSubcontractVO>({} as PrdSubcontractVO);
-const operationLogs = ref<any[]>([]);
-const logsLoading = ref(false);
-
-const issueOpen = ref(false);
-const issueForm = ref<{ subcontractId: number; subcontractNo: string; materialName: string; plannedQty: number; quantity: number; remark: string }>(
-  {} as any
-);
-const issueRules = {
-  quantity: [{ required: true, message: '发料数量不能为空', trigger: 'blur' }]
-};
-
-const receiveOpen = ref(false);
-const receiveForm = ref<{ subcontractId: number; subcontractNo: string; materialName: string; plannedQty: number; quantity: number; remark: string }>(
-  {} as any
-);
-const receiveRules = {
-  quantity: [{ required: true, message: '收货数量不能为空', trigger: 'blur' }]
-};
 
 const rules = {
   subcontractNo: [{ required: true, message: '委外单号不能为空', trigger: 'blur' }],
@@ -506,31 +377,17 @@ const onBomChange = (bomId: number) => {
 };
 
 /** 查看委外订单详情（含操作日志） */
-const handleView = async (row: PrdSubcontractVO) => {
-  const res = await getSubcontract(row.subcontractId);
-  detailData.value = res.data;
-  detailActiveTab.value = 'info';
-  operationLogs.value = [];
-  detailOpen.value = true;
+/** 查看: 直接打开 PCBA 闭环详情抽屉(基本信息/日志/业务页签合一) */
+const handleView = (row: PrdSubcontractVO) => {
+  closureRow.value = row;
 };
 
-const loadOperationLogs = async (subcontractId: number) => {
-  logsLoading.value = true;
-  try {
-    const res = await getOperationLogs(subcontractId);
-    operationLogs.value = res.data || [];
-  } catch {
-    operationLogs.value = [];
-  } finally {
-    logsLoading.value = false;
-  }
+/** 收货进度百分比 */
+const progressOf = (row: PrdSubcontractVO): number => {
+  const planned = Number(row.plannedQty || 0);
+  if (planned <= 0) return 0;
+  return Math.min(100, Math.round((Number(row.actualQty || 0) / planned) * 100));
 };
-
-watch(detailActiveTab, (val) => {
-  if (val === 'logs' && detailData.value.subcontractId) {
-    loadOperationLogs(detailData.value.subcontractId);
-  }
-});
 
 /** 提交审批 */
 function handleSubmitApproval(row: PrdSubcontractVO) {
@@ -566,60 +423,6 @@ function handleComplete(row: PrdSubcontractVO) {
       getList();
     })
     .catch(() => {});
-}
-
-/** 委外发料 */
-function handleSubcontractIssue(row: PrdSubcontractVO) {
-  issueForm.value = {
-    subcontractId: row.subcontractId,
-    subcontractNo: row.subcontractNo,
-    materialName: row.materialName,
-    plannedQty: row.plannedQty,
-    quantity: row.plannedQty,
-    remark: ''
-  };
-  issueOpen.value = true;
-}
-
-/** 提交委外发料 */
-function submitIssue() {
-  issueRef.value?.validate((valid: boolean) => {
-    if (!valid) return;
-    issueSubcontractMaterial(issueForm.value.subcontractId)
-      .then(() => {
-        proxy.$modal.msgSuccess('发料成功');
-        issueOpen.value = false;
-        getList();
-      })
-      .catch(() => {});
-  });
-}
-
-/** 委外收货 */
-function handleSubcontractReceive(row: PrdSubcontractVO) {
-  receiveForm.value = {
-    subcontractId: row.subcontractId,
-    subcontractNo: row.subcontractNo,
-    materialName: row.materialName,
-    plannedQty: row.plannedQty,
-    quantity: row.plannedQty,
-    remark: ''
-  };
-  receiveOpen.value = true;
-}
-
-/** 提交委外收货 */
-function submitReceive() {
-  receiveRef.value?.validate((valid: boolean) => {
-    if (!valid) return;
-    receiveSubcontractMaterial(receiveForm.value.subcontractId)
-      .then(() => {
-        proxy.$modal.msgSuccess('收货成功');
-        receiveOpen.value = false;
-        getList();
-      })
-      .catch(() => {});
-  });
 }
 
 getList();

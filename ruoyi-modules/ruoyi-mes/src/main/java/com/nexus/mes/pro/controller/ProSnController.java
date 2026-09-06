@@ -7,7 +7,9 @@ import com.nexus.common.log.annotation.Log;
 import com.nexus.common.log.enums.BusinessType;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
+import com.nexus.common.excel.utils.ExcelUtil;
 import com.nexus.common.web.core.BaseController;
+import jakarta.servlet.http.HttpServletResponse;
 import com.nexus.mes.pro.domain.bo.ProSnBo;
 import com.nexus.mes.pro.domain.vo.ProSnVo;
 import com.nexus.mes.pro.service.IProSnService;
@@ -38,6 +40,17 @@ public class ProSnController extends BaseController {
     @GetMapping("/list")
     public TableDataInfo<ProSnVo> list(ProSnBo bo, PageQuery pageQuery) {
         return proSnService.selectPageList(bo, pageQuery);
+    }
+
+    /**
+     * 导出SN列表(委外SN发外协厂镭雕导入用, 支持按委外单号过滤)
+     */
+    @SaCheckPermission("mes:pro:sn:export")
+    @Log(title = "MES SN序列号", businessType = BusinessType.EXPORT)
+    @PostMapping("/export")
+    public void export(ProSnBo bo, HttpServletResponse response) {
+        List<ProSnVo> list = proSnService.selectList(bo);
+        ExcelUtil.exportExcel(list, "SN序列号数据", ProSnVo.class, response);
     }
 
     /**
