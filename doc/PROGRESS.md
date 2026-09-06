@@ -552,8 +552,8 @@ flowchart LR
 | 移库两段式 (takeoff/execute) | AppPdaTransferController | ✅ |
 | 盲盘 (create/count/post) | AppPdaStocktakingController | ✅ |
 | 上料交接 (confirm/sign) | AppPdaHandoverController | ✅ |
-| 主数据增量同步 + 待办聚合 | AppPdaBasedataController / AppPdaTodoController | ✅ (遗留: /sync 无权限点, 见 09-06 审查报告 N3) |
-| 幂等组件 PdaIdempotent (失败释放占位键) | erp/wm + mes/pda 各一套 | ✅ (遗留: 双套并存待合并下沉, 见 N4) |
+| 主数据增量同步 + 待办聚合 | AppPdaBasedataController / AppPdaTodoController | ✅ (basedata 已补 wm:basedata:sync 权限点+种子, 09-06 P2) |
+| 幂等组件 PdaIdempotent (失败释放占位键) | common-satoken pda 包唯一实现 | ✅ (09-06 P2: 原 ERP/MES 双套已合并下沉) |
 | 权限点强制 + 退料权限种子 | 989887e6 | ✅ |
 
 #### 搁置/未开发
@@ -582,7 +582,7 @@ flowchart LR
 | 采购订单状态枚举 (9 状态) | PurchaseOrderStatusEnum | ✅ |
 | 跨库事务补偿框架 (7 层可靠性) | WmMqSendService + mq_message_record | ✅ |
 | MQ 重试计数机制 | 修复后 | ✅ |
-| 消息死信队列处理 | DeadLetterMessageConsumer + DeadLetterRecord 落库 | ⬜ (缺查询/重投接口与人工处理页面, 见 09-06 审查报告缺失 #2) |
+| 消息死信队列处理 | DeadLetterAdminController (查询/详情/人工重投/删除) + monitor/deadletter 页面 + 菜单 | ✅ (2026-09-06 P2, 死信运维闭环) |
 
 ---
 
