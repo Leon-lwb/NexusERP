@@ -57,28 +57,23 @@
                     stroke-linejoin="round"
                   />
                 </g>
+                <!-- 预警 -->
+                <g v-if="item.icon === 'alert'">
+                  <path
+                    d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                  <line x1="12" y1="9" x2="12" y2="13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                  <line x1="12" y1="17" x2="12.01" y2="17" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                </g>
               </svg>
             </div>
             <div class="stat-info">
               <div class="stat-title">{{ item.title }}</div>
               <div class="stat-value" :style="{ color: item.color }">{{ animatedValues[index] }}</div>
-              <div v-if="item.trend" class="stat-trend" :class="item.trend > 0 ? 'up' : 'down'">
-                <svg
-                  viewBox="0 0 24 24"
-                  width="12"
-                  height="12"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2.5"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <polyline v-if="item.trend > 0" points="23 6 13.5 15.5 8.5 10.5 1 18" />
-                  <polyline v-else points="23 18 13.5 8.5 8.5 13.5 1 6" />
-                </svg>
-                <span>{{ Math.abs(item.trend) }}%</span>
-                <span class="trend-label">较上月</span>
-              </div>
             </div>
           </div>
         </el-card>
@@ -108,13 +103,6 @@
                 </div>
                 <span>销售趋势</span>
               </div>
-              <div class="header-right">
-                <el-radio-group v-model="salesPeriod" size="small" @change="updateSalesChart">
-                  <el-radio-button label="week">本周</el-radio-button>
-                  <el-radio-button label="month">本月</el-radio-button>
-                  <el-radio-button label="year">本年</el-radio-button>
-                </el-radio-group>
-              </div>
             </div>
           </template>
           <div ref="salesChartRef" class="chart-container"></div>
@@ -142,9 +130,8 @@
                     <path d="M16 10a4 4 0 01-8 0" />
                   </svg>
                 </div>
-                <span>热门商品排行</span>
+                <span>订单量趋势（近12个月）</span>
               </div>
-              <el-link type="primary" :underline="false" size="small">查看全部</el-link>
             </div>
           </template>
           <div ref="productChartRef" class="chart-container"></div>
@@ -216,9 +203,9 @@
             </el-table-column>
             <el-table-column prop="status" label="状态" min-width="80" align="center">
               <template #default="scope">
-                <span class="status-badge" :class="getOrderStatusClass(scope.row.status)">
+                <span class="status-badge" :class="getOrderStatusClass(scope.row.orderStatus)">
                   <span class="status-dot"></span>
-                  {{ scope.row.status }}
+                  {{ getSoStatusLabel(scope.row.orderStatus) }}
                 </span>
               </template>
             </el-table-column>
@@ -252,31 +239,15 @@
                     <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
                   </svg>
                 </div>
-                <span>任务进度</span>
+                <span>库存预警</span>
               </div>
-              <el-link type="primary" :underline="false" size="small">
-                查看全部
-                <svg
-                  viewBox="0 0 24 24"
-                  width="12"
-                  height="12"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2.5"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  style="margin-left: 2px; vertical-align: -1px"
-                >
-                  <polyline points="9 18 15 12 9 6" />
-                </svg>
-              </el-link>
             </div>
           </template>
           <div class="task-list">
-            <div v-for="task in tasks" :key="task.name" class="task-item">
+            <div v-for="alert in stockAlerts" :key="alert.alertId" class="task-item">
               <div class="task-main">
                 <div class="task-info">
-                  <div class="task-name">{{ task.name }}</div>
+                  <div class="task-name">{{ alert.materialCode }} {{ alert.materialName }}</div>
                   <div class="task-meta">
                     <span class="task-executor">
                       <svg
@@ -292,19 +263,23 @@
                         <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
                         <circle cx="12" cy="7" r="4" />
                       </svg>
-                      {{ task.executor }}
+                      {{ alert.warehouseName || '默认仓库' }}
                     </span>
-                    <span class="task-status" :class="getTaskStatusClass(task.status)">{{ task.status }}</span>
+                    <span class="task-status" :class="getAlertLevelClass(alert.alertLevel)">{{ getAlertLevelLabel(alert.alertLevel) }}</span>
                   </div>
                 </div>
-                <div class="task-percent">{{ task.progress }}%</div>
+                <div class="task-percent">{{ alertWaterLevel(alert) }}%</div>
               </div>
               <div class="task-progress-bar">
-                <div class="task-progress-fill" :class="getTaskProgressClass(task.progress)" :style="{ width: task.progress + '%' }"></div>
+                <div
+                  class="task-progress-fill"
+                  :class="getWaterLevelClass(alertWaterLevel(alert))"
+                  :style="{ width: alertWaterLevel(alert) + '%' }"
+                ></div>
               </div>
             </div>
           </div>
-          <el-empty v-if="!tasks.length" description="暂无任务数据" :image-size="60" />
+          <el-empty v-if="!stockAlerts.length" description="暂无库存预警" :image-size="60" />
         </el-card>
       </el-col>
     </el-row>
@@ -314,6 +289,8 @@
 <script setup lang="ts" name="Index">
 import { ref, onMounted, onUnmounted, nextTick } from 'vue';
 import * as echarts from 'echarts';
+import { getDashboardStats } from '@/api/erp/dashboard';
+import { StockAlertItemVO } from '@/api/erp/dashboard/types';
 
 // ==================== 类型定义 ====================
 interface StatCard {
@@ -331,15 +308,8 @@ interface OrderItem {
   orderNo: string;
   customer: string;
   amount: number;
-  status: string;
+  orderStatus: string;
   createTime: string;
-}
-
-interface TaskItem {
-  name: string;
-  executor: string;
-  progress: number;
-  status: string;
 }
 
 // ==================== 状态 ====================
@@ -349,119 +319,98 @@ const chartLoading = ref(false);
 // ==================== 数据 ====================
 const statCards = ref<StatCard[]>([
   {
-    title: '总销售额',
-    value: 128560,
+    title: '本月销售额',
+    value: 0,
     prefix: '¥',
     icon: 'sales',
     bgGradient: 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)',
-    color: '#2563eb',
-    trend: 12.5
+    color: '#2563eb'
   },
   {
-    title: '客户数量',
-    value: 1248,
+    title: '进行中订单',
+    value: 0,
+    suffix: ' 单',
+    icon: 'product',
+    bgGradient: 'linear-gradient(135deg, #ffedd5 0%, #fed7aa 100%)',
+    color: '#ea580c'
+  },
+  {
+    title: '客户总数',
+    value: 0,
     suffix: ' 家',
     icon: 'customer',
     bgGradient: 'linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%)',
-    color: '#16a34a',
-    trend: 8.2
+    color: '#16a34a'
   },
   {
-    title: '商品数量',
-    value: 3652,
-    suffix: ' 件',
-    icon: 'product',
-    bgGradient: 'linear-gradient(135deg, #ffedd5 0%, #fed7aa 100%)',
-    color: '#ea580c',
-    trend: -2.4
-  },
-  {
-    title: '待办任务',
-    value: 18,
-    suffix: ' 个',
-    icon: 'task',
+    title: '库存预警',
+    value: 0,
+    suffix: ' 项',
+    icon: 'alert',
     bgGradient: 'linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%)',
-    color: '#db2777',
-    trend: 5.1
+    color: '#db2777'
   }
 ]);
 
 const animatedValues = ref<string[]>(statCards.value.map(() => '0'));
 
-const latestOrders = ref<OrderItem[]>([
-  { orderNo: 'NO20230801001', customer: '阿里巴巴', amount: 12800, status: '已完成', createTime: '2023-08-01 14:30' },
-  { orderNo: 'NO20230801002', customer: '腾讯科技', amount: 8600, status: '已发货', createTime: '2023-08-01 11:20' },
-  { orderNo: 'NO20230801003', customer: '百度公司', amount: 15200, status: '待发货', createTime: '2023-08-01 09:45' },
-  { orderNo: 'NO20230801004', customer: '字节跳动', amount: 6800, status: '已付款', createTime: '2023-08-01 08:15' },
-  { orderNo: 'NO20230731001', customer: '京东商城', amount: 21500, status: '已完成', createTime: '2023-07-31 17:30' }
-]);
+const latestOrders = ref<OrderItem[]>([]);
 
-const tasks = ref<TaskItem[]>([
-  { name: '完成年度销售报告', executor: '张三', progress: 100, status: '已完成' },
-  { name: '客户回访计划', executor: '李四', progress: 80, status: '进行中' },
-  { name: '新产品上线准备', executor: '王五', progress: 60, status: '进行中' },
-  { name: '供应商资质审核', executor: '赵六', progress: 30, status: '进行中' },
-  { name: '系统安全检测', executor: '钱七', progress: 0, status: '未开始' }
-]);
+const stockAlerts = ref<StockAlertItemVO[]>([]);
 
 // ==================== 图表 ====================
 const salesChartRef = ref<HTMLDivElement | null>(null);
 const productChartRef = ref<HTMLDivElement | null>(null);
 let salesChart: echarts.ECharts | null = null;
 let productChart: echarts.ECharts | null = null;
-const salesPeriod = ref('year');
 
 // ==================== 工具函数 ====================
 function formatNumber(num: number): string {
   return num.toLocaleString('zh-CN');
 }
 
-const orderStatusMap: Record<string, any> = {
-  '已完成': 'success',
-  '已发货': 'primary',
-  '待发货': 'warning',
-  '已付款': 'info'
+// 销售订单状态枚举 → 中文标签/样式
+const soStatusMap: Record<string, { label: string; cls: string }> = {
+  DRAFT: { label: '草稿', cls: 'warning' },
+  APPROVING: { label: '审批中', cls: 'info' },
+  APPROVED: { label: '已审批', cls: 'primary' },
+  CONFIRMED: { label: '已确认', cls: 'primary' },
+  FULFILLED: { label: '已完成', cls: 'success' },
+  CLOSED: { label: '已关闭', cls: 'info' },
+  CANCELLED: { label: '已取消', cls: 'danger' }
 };
 
-const taskStatusMap: Record<string, any> = {
-  '已完成': 'success',
-  '进行中': 'warning',
-  '未开始': 'info'
-};
-
-function getOrderStatusType(status: string) {
-  return orderStatusMap[status] || 'info';
+function getSoStatusLabel(status: string) {
+  return soStatusMap[status]?.label || status || '-';
 }
 
-function getTaskStatusType(status: string) {
-  return taskStatusMap[status] || 'info';
-}
-
-// 状态样式类
 function getOrderStatusClass(status: string) {
-  const map: Record<string, string> = {
-    '已完成': 'success',
-    '已发货': 'primary',
-    '待发货': 'warning',
-    '已付款': 'info'
-  };
-  return map[status] || 'info';
+  return soStatusMap[status]?.cls || 'info';
 }
 
-function getTaskStatusClass(status: string) {
-  const map: Record<string, string> = {
-    '已完成': 'success',
-    '进行中': 'warning',
-    '未开始': 'info'
-  };
-  return map[status] || 'info';
+// 库存预警级别 → 中文标签/样式
+function getAlertLevelLabel(level: string) {
+  const map: Record<string, string> = { CRITICAL: '紧急', WARNING: '预警', INFO: '关注' };
+  return map[level] || level || '-';
 }
 
-function getTaskProgressClass(progress: number) {
-  if (progress === 100) return 'success';
-  if (progress >= 60) return 'primary';
-  if (progress >= 30) return 'warning';
-  return 'info';
+function getAlertLevelClass(level: string) {
+  const map: Record<string, string> = { CRITICAL: 'danger', WARNING: 'warning', INFO: 'info' };
+  return map[level] || 'info';
+}
+
+// 库存水位: current/safety*100, 上限 100
+function alertWaterLevel(alert: StockAlertItemVO): number {
+  const safety = Number(alert.safetyStock ?? 0);
+  if (safety <= 0) return 100;
+  const level = (Number(alert.currentQty ?? 0) / safety) * 100;
+  return Math.min(100, Math.max(0, Math.round(level)));
+}
+
+function getWaterLevelClass(level: number) {
+  if (level <= 50) return 'danger';
+  if (level <= 80) return 'warning';
+  return 'success';
 }
 
 // 数字递增动画
@@ -493,32 +442,13 @@ function initNumberAnimation() {
 }
 
 // ==================== 图表配置 ====================
-const salesDataMap: Record<string, { categories: string[]; data: number[] }> = {
-  week: {
-    categories: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'],
-    data: [3200, 4100, 3800, 5200, 4800, 6100, 5500]
-  },
-  month: {
-    categories: ['1日', '5日', '10日', '15日', '20日', '25日', '30日'],
-    data: [1200, 1900, 1500, 2500, 1800, 2200, 2800]
-  },
-  year: {
-    categories: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'],
-    data: [1200, 1900, 1500, 2500, 1800, 2200, 2800, 3500, 3100, 4200, 4800, 5600]
-  }
-};
-
-function updateSalesChart() {
-  if (!salesChart) return;
-  const periodData = salesDataMap[salesPeriod.value];
-  salesChart.setOption({
-    xAxis: { data: periodData.categories },
-    series: [{ data: periodData.data }]
-  });
-}
+// 近12月销售趋势(后端已补零, 无订单月份为0)
+const salesTrendData = ref<{ categories: string[]; data: number[] }>({ categories: [], data: [] });
+// 近12月订单量趋势
+const orderTrendData = ref<{ categories: string[]; data: number[] }>({ categories: [], data: [] });
 
 function getSalesChartOption(): echarts.EChartsOption {
-  const periodData = salesDataMap[salesPeriod.value];
+  const trendData = salesTrendData.value;
   return {
     tooltip: {
       trigger: 'axis',
@@ -547,7 +477,7 @@ function getSalesChartOption(): echarts.EChartsOption {
     xAxis: {
       type: 'category',
       boundaryGap: false,
-      data: periodData.categories,
+      data: trendData.categories,
       axisLine: { lineStyle: { color: '#e2e8f0' } },
       axisLabel: { color: '#64748b', fontSize: 12 },
       axisTick: { show: false }
@@ -561,7 +491,7 @@ function getSalesChartOption(): echarts.EChartsOption {
     },
     series: [
       {
-        data: periodData.data,
+        data: trendData.data,
         type: 'line',
         smooth: true,
         symbolSize: 10,
@@ -598,8 +528,12 @@ function getSalesChartOption(): echarts.EChartsOption {
 }
 
 function getProductChartOption(): echarts.EChartsOption {
-  const colors = ['#3b82f6', '#0ea5e9', '#06b6d4', '#14b8a6', '#10b981'];
-  const data = [220, 180, 150, 120, 100];
+  const colors = ['#3b82f6', '#0ea5e9', '#06b6d4', '#14b8a6', '#10b981', '#3b82f6', '#0ea5e9', '#06b6d4', '#14b8a6', '#10b981', '#3b82f6', '#0ea5e9'];
+  const trendData = orderTrendData.value;
+  const months = trendData.categories.length ? trendData.categories : Array.from({ length: 12 }, () => '-');
+  const counts = trendData.data.length ? trendData.data : Array.from({ length: 12 }, () => 0);
+  // 倒序渲染: 最新月份在最上方
+  const yCategories = [...months].reverse();
   return {
     tooltip: {
       trigger: 'axis',
@@ -614,7 +548,7 @@ function getProductChartOption(): echarts.EChartsOption {
         return `<div style="display:flex;align-items:center;gap:6px">
                   <span style="width:8px;height:8px;border-radius:50%;background:${p.color}"></span>
                   <span style="color:#64748b">${p.name}：</span>
-                  <span style="font-weight:700">${p.value} 件</span>
+                  <span style="font-weight:700">${p.value} 单</span>
                 </div>`;
       }
     },
@@ -627,6 +561,7 @@ function getProductChartOption(): echarts.EChartsOption {
     },
     xAxis: {
       type: 'value',
+      minInterval: 1,
       axisLine: { show: false },
       axisTick: { show: false },
       splitLine: { lineStyle: { color: '#f1f5f9', type: 'dashed' } },
@@ -634,19 +569,19 @@ function getProductChartOption(): echarts.EChartsOption {
     },
     yAxis: {
       type: 'category',
-      data: ['商品E', '商品D', '商品C', '商品B', '商品A'],
+      data: yCategories,
       axisLine: { show: false },
       axisTick: { show: false },
-      axisLabel: { color: '#475569', fontSize: 13, fontWeight: 500 }
+      axisLabel: { color: '#475569', fontSize: 12, fontWeight: 500 }
     },
     series: [
       {
-        data: data.map((val, idx) => ({
+        data: [...counts].reverse().map((val, idx) => ({
           value: val,
           itemStyle: {
             color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [
-              { offset: 0, color: colors[idx] + 'cc' },
-              { offset: 1, color: colors[idx] }
+              { offset: 0, color: colors[idx % colors.length] + 'cc' },
+              { offset: 1, color: colors[idx % colors.length] }
             ]),
             borderRadius: [0, 6, 6, 0]
           }
@@ -690,24 +625,39 @@ function handleResize() {
   productChart?.resize();
 }
 
-// 模拟数据加载（预留 API 接入结构）
+// 从 /erp/dashboard/stats 拉取真实工作台数据
 async function loadDashboardData() {
   loading.value = true;
   chartLoading.value = true;
 
   try {
-    // TODO: 替换为实际 API 调用
-    // const [statsRes, ordersRes, tasksRes] = await Promise.all([
-    //   getDashboardStats(),
-    //   getLatestOrders(),
-    //   getTaskList()
-    // ])
+    const res = await getDashboardStats();
+    const stats = res.data;
+    statCards.value[0].value = Number(stats.monthSalesAmount ?? 0);
+    statCards.value[1].value = Number(stats.openSalesOrderCount ?? 0);
+    statCards.value[2].value = Number(stats.clientCount ?? 0);
+    statCards.value[3].value = Number(stats.stockAlertCount ?? 0);
 
-    // 模拟网络延迟
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    latestOrders.value = (stats.recentOrders || []).map((o) => ({
+      orderNo: o.soNo,
+      customer: o.clientName || '-',
+      amount: Number(o.totalAmount ?? 0),
+      orderStatus: o.orderStatus,
+      createTime: o.createTime ? String(o.createTime).replace('T', ' ').slice(0, 16) : '-'
+    }));
 
-    // 数据已在响应式变量中初始化，实际项目中替换为接口返回值
-  } catch (error) {
+    stockAlerts.value = stats.stockAlerts || [];
+
+    const trend = stats.salesTrend || [];
+    salesTrendData.value = {
+      categories: trend.map((p) => p.month),
+      data: trend.map((p) => Number(p.amount ?? 0))
+    };
+    orderTrendData.value = {
+      categories: trend.map((p) => p.month),
+      data: trend.map((p) => Number(p.orderCount ?? 0))
+    };
+  } catch (error: any) {
     console.error('首页数据加载失败:', error);
   } finally {
     loading.value = false;
@@ -951,6 +901,15 @@ onUnmounted(() => {
   background: #94a3b8;
 }
 
+.status-badge.danger {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.status-badge.danger .status-dot {
+  background: #dc2626;
+}
+
 /* 任务列表 */
 .task-list {
   padding: 4px 0;
@@ -1050,6 +1009,9 @@ onUnmounted(() => {
 }
 .task-progress-fill.info {
   background: linear-gradient(90deg, #94a3b8, #cbd5e1);
+}
+.task-progress-fill.danger {
+  background: linear-gradient(90deg, #ef4444, #f87171);
 }
 
 :deep(.el-card) {
