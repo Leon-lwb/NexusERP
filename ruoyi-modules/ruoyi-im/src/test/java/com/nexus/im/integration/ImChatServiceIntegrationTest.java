@@ -8,7 +8,7 @@ import com.nexus.im.service.impl.support.ImPrivateChatService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,7 +27,9 @@ import org.springframework.transaction.annotation.Transactional;
  * <b>启用方式</b>：
  * <ol>
  *   <li>在 {@code src/test/resources/application-test.yml} 配置测试环境</li>
- *   <li>设置环境变量 {@code IM_INTEGRATION_TEST=enabled} 启用本类</li>
+ *   <li>设置环境变量 {@code IM_INTEGRATION_TEST=enabled} 启用本类
+ *       （双重门控第二道：即使 surefire 通过 {@code -Dim.excludedGroups=} 放开 integration 组，
+ *       未设该环境变量时本类仍跳过，避免骨架用例假绿）</li>
  *   <li>执行：{@code mvn test -Dim.excludedGroups= -Dim.groups=integration -Dspring.profiles.active=test}</li>
  * </ol>
  * <p>
@@ -42,7 +44,9 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Tag("integration")
 @SpringBootTest
-@DisabledIfEnvironmentVariable(named = "IM_INTEGRATION_TEST", matches = "false|disabled|0")
+// 仅当显式设置 IM_INTEGRATION_TEST=enabled 才执行(默认跳过): 用例体为待环境就绪的骨架, 无断言,
+// 若默认执行会产生无守护价值的"假绿"甚至因缺 MySQL/Redis 假红
+@EnabledIfEnvironmentVariable(named = "IM_INTEGRATION_TEST", matches = "enabled|true|1")
 @DisplayName("P3-9: IM 业务集成测试样板（需完整环境：MySQL + Redis）")
 class ImChatServiceIntegrationTest {
 
