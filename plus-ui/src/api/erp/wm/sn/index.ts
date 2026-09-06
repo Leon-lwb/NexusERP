@@ -22,9 +22,7 @@ export function delSn(snIds: string | number | (string | number)[]) {
   return request({ url: '/erp/wm/sn/' + snIds, method: 'delete' });
 }
 
-export function exportSn(query: WmSnQuery) {
-  return request({ url: '/erp/wm/sn/export', method: 'post', params: query, responseType: 'blob' });
-}
+// 导出走 useCrud handleExport → download(exportUrl, tansParams), 此处不再提供 export 函数
 
 export function batchGenerateSn(data: {
   materialId?: number;

@@ -62,7 +62,9 @@ public class ErpDashboardServiceImpl implements IErpDashboardService {
         Map<String, Object> monthly = soHeaderMapper.selectMaps(new QueryWrapper<SoSalesOrderHeader>()
             .select("IFNULL(SUM(total_amount), 0) AS stat_amount", "COUNT(*) AS stat_count")
             .ge("create_time", monthStart)
-            .ne("order_status", ISoSalesOrderHeaderService.STATUS_CANCELLED)).stream()
+            // order_status 列允许 NULL(SQL 三值逻辑 ne 会漏掉 NULL 行), 手工/历史数据可能无状态, 一并计入
+            .and(w -> w.ne("order_status", ISoSalesOrderHeaderService.STATUS_CANCELLED)
+                .or().isNull("order_status"))).stream()
             .findFirst().orElse(Map.of());
         vo.setMonthSalesAmount(asBigDecimal(monthly.get("stat_amount"), BigDecimal.ZERO));
         vo.setMonthSalesCount(asLong(monthly.get("stat_count"), 0L));
@@ -135,7 +137,8 @@ public class ErpDashboardServiceImpl implements IErpDashboardService {
             .select("DATE_FORMAT(create_time, '%Y-%m') AS stat_month",
                 "IFNULL(SUM(total_amount), 0) AS stat_amount", "COUNT(*) AS stat_count")
             .ge("create_time", startDate)
-            .ne("order_status", ISoSalesOrderHeaderService.STATUS_CANCELLED)
+            .and(w -> w.ne("order_status", ISoSalesOrderHeaderService.STATUS_CANCELLED)
+                .or().isNull("order_status"))
             .groupBy("stat_month")
             .orderByAsc("stat_month"));
         for (Map<String, Object> row : rows) {

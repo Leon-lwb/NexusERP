@@ -9,13 +9,4 @@ export const listValuation = (query: ValuationQuery): AxiosPromise<ValuationVO[]
     params: query
   });
 };
-
-export const exportValuation = (query: ValuationQuery) => {
-  // 后端 export(WmMaterialStockBo) 无 @RequestBody, 走表单/URL参数绑定, 必须传 params
-  return request({
-    url: '/erp/wm/valuation/export',
-    method: 'post',
-    params: query,
-    responseType: 'blob'
-  });
-};
+// 导出走 useCrud handleExport → download(exportUrl, tansParams), 此处不再提供 export 函数
