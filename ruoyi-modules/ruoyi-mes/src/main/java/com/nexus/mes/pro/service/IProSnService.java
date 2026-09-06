@@ -32,6 +32,8 @@ public interface IProSnService {
     String SOURCE_MANUAL = "MANUAL";
     /** 来源: 批量生成 */
     String SOURCE_BATCH = "BATCH";
+    /** 来源: 委外(PCBA) */
+    String SOURCE_SUBCONTRACT = "SUBCONTRACT";
 
     /**
      * 分页查询SN列表
@@ -58,6 +60,22 @@ public interface IProSnService {
      * @return 生成的SN列表
      */
     List<ProSnVo> generateSnForCard(Long cardId, Integer quantity, String initialStatus, Long lotId);
+
+    /**
+     * 按委外订单批量生成SN (PCBA 委外闭环, MQ 触发)
+     * <p>编码规则: SN-{委外单号}-{4位序号}; source=SUBCONTRACT, 冗余 subcontractNo 供直达追溯。
+     * 幂等: 按 subcontractNo 已生成数量续号, @Lock4j 订单维度防并发。</p>
+     *
+     * @param subcontractId 委外订单ID
+     * @param subcontractNo 委外单号
+     * @param materialId     产出物料ID
+     * @param materialCode   物料编码
+     * @param materialName   物料名称
+     * @param quantity       本次生成数量
+     * @return 本次生成的 SN 列表
+     */
+    java.util.List<com.nexus.mes.pro.domain.vo.ProSnVo> generateSnForSubcontract(Long subcontractId,
+        String subcontractNo, Long materialId, String materialCode, String materialName, int quantity);
 
     /**
      * 手动创建单个SN(可指定parentSnId用于组装追溯)

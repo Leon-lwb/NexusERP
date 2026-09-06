@@ -151,6 +151,55 @@ public class ProSnServiceImpl implements IProSnService {
     }
 
     /**
+     * 按委外订单批量生成SN (PCBA 委外闭环, ERP 发料完成经 MQ 触发)
+     * <p>编码: SN-{委外单号}-{4位序号}; 起始序号=该单已生成数+1(@Lock4j 防并发),
+     * source=SUBCONTRACT, 冗余 sourceId/subcontractNo 供 SN 直达追溯委外订单。</p>
+     */
+    @Lock4j(keys = {"#subcontractNo"})
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public List<ProSnVo> generateSnForSubcontract(Long subcontractId, String subcontractNo,
+                                                  Long materialId, String materialCode,
+                                                  String materialName, int quantity) {
+        if (quantity <= 0) {
+            throw new RuntimeException("生成数量必须大于0");
+        }
+        // 起始序号 = 该委外单已生成 SN 数 + 1 (幂等续号)
+        Long existingCount = baseMapper.selectCount(Wrappers.<ProSn>lambdaQuery()
+            .eq(ProSn::getSubcontractNo, subcontractNo));
+        int startSeq = existingCount == null ? 1 : existingCount.intValue() + 1;
+        LocalDate today = LocalDate.now();
+
+        List<ProSn> snList = new ArrayList<>(quantity);
+        for (int i = 0; i < quantity; i++) {
+            ProSn sn = new ProSn();
+            sn.setSnCode("SN-" + subcontractNo + "-" + String.format("%04d", startSeq + i));
+            sn.setMaterialId(materialId);
+            sn.setMaterialCode(materialCode);
+            sn.setMaterialName(materialName);
+            sn.setSnStatus(STATUS_IN_PRODUCTION);
+            sn.setSource(SOURCE_SUBCONTRACT);
+            sn.setSourceId(subcontractId);
+            sn.setSubcontractNo(subcontractNo);
+            sn.setProductionDate(java.sql.Date.valueOf(today));
+            snList.add(sn);
+        }
+        snList.forEach(baseMapper::insert);
+        log.info("委外SN批量生成成功: subcontractNo={}, quantity={}, startSeq={}",
+            subcontractNo, quantity, startSeq);
+
+        // 造码即发 SnCreatedEvent(与流转卡 SN 同链路: label 打印/lt 绑定)
+        for (ProSn sn : snList) {
+            applicationEventPublisher.publishEvent(
+                new SnCreatedEvent(sn.getSnId(), sn.getSnCode(), null, sn.getMaterialId()));
+        }
+        List<Long> ids = snList.stream().map(ProSn::getSnId).toList();
+        return baseMapper.selectVoList(Wrappers.<ProSn>lambdaQuery()
+            .in(ProSn::getSnId, ids)
+            .orderByAsc(ProSn::getSnCode));
+    }
+
+    /**
      * 手动创建单个SN(可指定parentSnId用于组装追溯)
      */
     @Override
@@ -331,6 +380,7 @@ public class ProSnServiceImpl implements IProSnService {
             .eq(StringUtils.isNotBlank(bo.getSnCode()), ProSn::getSnCode, bo.getSnCode())
             .eq(StringUtils.isNotBlank(bo.getSnStatus()), ProSn::getSnStatus, bo.getSnStatus())
             .eq(StringUtils.isNotBlank(bo.getSource()), ProSn::getSource, bo.getSource())
+            .eq(StringUtils.isNotBlank(bo.getSubcontractNo()), ProSn::getSubcontractNo, bo.getSubcontractNo())
             .eq(bo.getMesWoId() != null, ProSn::getMesWoId, bo.getMesWoId())
             .eq(bo.getCardId() != null, ProSn::getCardId, bo.getCardId())
             .eq(bo.getMaterialId() != null, ProSn::getMaterialId, bo.getMaterialId())

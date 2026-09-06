@@ -103,6 +103,12 @@ public class BdBomDetail extends TenantEntity {
     private String sourceType;
 
     /**
+     * 供应方: SELF_PROVIDED自备/VENDOR_PROVIDED外协厂供/CUSTOMER_PROVIDED客供(委外快照用)
+     */
+    @ExcelProperty("供应方")
+    private String supplyType;
+
+    /**
      * 预留字段1
      */
     private String attr1;

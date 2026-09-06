@@ -11,7 +11,10 @@ import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.common.web.core.BaseController;
 import com.nexus.erp.prd.domain.bo.PrdSubcontractBo;
+import com.nexus.erp.prd.domain.bo.PrdSubcontractDocBo;
+import com.nexus.erp.prd.domain.bo.PrdSubcontractQuoteBo;
 import com.nexus.erp.prd.domain.vo.PrdSubcontractVo;
+import com.nexus.erp.prd.service.IPrdSubcontractClosureService;
 import com.nexus.erp.prd.service.IPrdSubcontractService;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -27,6 +30,7 @@ import java.util.Map;
  *   <li>CRUD 操作：分页列表查询、详情查询、新增、编辑、删除</li>
  *   <li>数据导出（Excel）</li>
  *   <li>状态流转操作：下达、开始、完工、关闭</li>
+ *   <li>PCBA 闭环：资料带出、BOM快照、报价、工程文件</li>
  * </ul>
  *
  * @author nexus
@@ -38,6 +42,7 @@ import java.util.Map;
 public class PrdSubcontractController extends BaseController {
 
     private final IPrdSubcontractService subcontractService;
+    private final IPrdSubcontractClosureService closureService;
 
     /**
      * 分页查询委外订单列表
@@ -272,5 +277,147 @@ public class PrdSubcontractController extends BaseController {
     @GetMapping("/logs/{subcontractId}")
     public R<List<Map<String, Object>>> operationLogs(@PathVariable Long subcontractId) {
         return R.ok(subcontractService.getOperationLogs(subcontractId));
+    }
+
+    // ==================== PCBA 委外闭环: 资料带出 / BOM快照 / 报价 / 工程文件 ====================
+
+    /**
+     * 选择物料带出委外资料(当前生效BOM+行/委外工序/物料级工程文件库)
+     * <p>权限标识：{@code prd:subcontract:query}</p>
+     *
+     * @param materialId 物料ID
+     * @return {material, bom, bomLines, routingSteps, routingId, docs}
+     */
+    @SaCheckPermission("prd:subcontract:query")
+    @GetMapping("/material-info/{materialId}")
+    public R<Map<String, Object>> materialInfo(@PathVariable Long materialId) {
+        return R.ok(closureService.getMaterialInfo(materialId));
+    }
+
+    /**
+     * 查询订单 BOM 快照行
+     * <p>权限标识：{@code prd:subcontract:query}</p>
+     *
+     * @param subcontractId 委外订单ID
+     * @return 快照行列表
+     */
+    @SaCheckPermission("prd:subcontract:query")
+    @GetMapping("/bom-lines/{subcontractId}")
+    public R<?> bomLines(@PathVariable Long subcontractId) {
+        return R.ok(closureService.getBomLines(subcontractId));
+    }
+
+    /**
+     * 生成/重建订单 BOM 快照(仅草稿)
+     * <p>权限标识：{@code prd:subcontract:edit}</p>
+     *
+     * @param subcontractId 委外订单ID
+     * @return 快照行数
+     */
+    @SaCheckPermission("prd:subcontract:edit")
+    @Log(title = "委外订单-BOM快照", businessType = BusinessType.UPDATE)
+    @PutMapping("/generate-snapshot/{subcontractId}")
+    public R<Integer> generateSnapshot(@PathVariable Long subcontractId) {
+        return R.ok(closureService.generateBomSnapshot(subcontractId));
+    }
+
+    /**
+     * 查询订单报价记录
+     * <p>权限标识：{@code prd:subcontract:query}</p>
+     *
+     * @param subcontractId 委外订单ID
+     * @return 报价列表
+     */
+    @SaCheckPermission("prd:subcontract:query")
+    @GetMapping("/quotes/{subcontractId}")
+    public R<?> quotes(@PathVariable Long subcontractId) {
+        return R.ok(closureService.listQuotes(subcontractId));
+    }
+
+    /**
+     * 保存报价记录(新增/编辑)
+     * <p>权限标识：{@code prd:subcontract:edit}</p>
+     *
+     * @param bo 报价业务对象
+     * @return 报价ID
+     */
+    @SaCheckPermission("prd:subcontract:edit")
+    @Log(title = "委外订单-报价", businessType = BusinessType.UPDATE)
+    @PostMapping("/quote")
+    public R<Long> saveQuote(@RequestBody PrdSubcontractQuoteBo bo) {
+        return R.ok(closureService.saveQuote(bo));
+    }
+
+    /**
+     * 删除报价记录
+     * <p>权限标识：{@code prd:subcontract:edit}</p>
+     *
+     * @param quoteIds 报价ID数组
+     * @return 操作结果
+     */
+    @SaCheckPermission("prd:subcontract:edit")
+    @Log(title = "委外订单-报价删除", businessType = BusinessType.DELETE)
+    @DeleteMapping("/quote/{quoteIds}")
+    public R<Void> deleteQuotes(@PathVariable Long[] quoteIds) {
+        return toAjax(closureService.deleteQuotes(quoteIds));
+    }
+
+    /**
+     * 选定供应商(报价回写订单)
+     * <p>权限标识：{@code prd:subcontract:edit}</p>
+     *
+     * @param quoteId 选定报价ID
+     * @return 操作结果
+     */
+    @SaCheckPermission("prd:subcontract:edit")
+    @Log(title = "委外订单-选定供应商", businessType = BusinessType.UPDATE)
+    @PutMapping("/quote/select/{quoteId}")
+    public R<Void> selectQuote(@PathVariable Long quoteId) {
+        closureService.selectQuote(quoteId);
+        return R.ok();
+    }
+
+    /**
+     * 查询工程文件(materialId 或 subcontractId 二选一; subcontractId 为 0 时查物料级库)
+     * <p>权限标识：{@code prd:subcontract:query}</p>
+     *
+     * @param materialId    物料ID(可空)
+     * @param subcontractId 委外订单ID(可空, 0=物料级)
+     * @return 文件列表
+     */
+    @SaCheckPermission("prd:subcontract:query")
+    @GetMapping("/docs")
+    public R<?> docs(@RequestParam(required = false) Long materialId,
+                     @RequestParam(required = false) Long subcontractId) {
+        Long scId = subcontractId != null && subcontractId == 0L ? null : subcontractId;
+        return R.ok(closureService.listDocs(materialId, scId));
+    }
+
+    /**
+     * 保存工程文件(先经 OSS 上传取得 fileOssId)
+     * <p>权限标识：{@code prd:subcontract:edit}</p>
+     *
+     * @param bo 文件业务对象
+     * @return 文件ID
+     */
+    @SaCheckPermission("prd:subcontract:edit")
+    @Log(title = "委外订单-工程文件", businessType = BusinessType.UPDATE)
+    @PostMapping("/doc")
+    public R<Long> saveDoc(@RequestBody PrdSubcontractDocBo bo) {
+        return R.ok(closureService.saveDoc(bo));
+    }
+
+    /**
+     * 删除工程文件
+     * <p>权限标识：{@code prd:subcontract:edit}</p>
+     *
+     * @param docIds 文件ID数组
+     * @return 操作结果
+     */
+    @SaCheckPermission("prd:subcontract:edit")
+    @Log(title = "委外订单-工程文件删除", businessType = BusinessType.DELETE)
+    @DeleteMapping("/doc/{docIds}")
+    public R<Void> deleteDocs(@PathVariable Long[] docIds) {
+        return toAjax(closureService.deleteDocs(docIds));
     }
 }

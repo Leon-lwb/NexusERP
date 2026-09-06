@@ -27,6 +27,8 @@ public interface QueueConstants {
     String MES_IQC_CREATE_QUEUE = "erp.mes.iqc.create.queue";
     /** MES OQC 自动创建队列 (ERP 销售出库审批通过 -> MES 自动创建 OQC) */
     String MES_OQC_CREATE_QUEUE = "erp.mes.oqc.create.queue";
+    /** MES 委外SN生成队列 (ERP 委外发料下达 -> MES 批量生成 PCBA SN) */
+    String MES_SUBCONTRACT_SN_QUEUE = "erp.mes.subcontract.sn.queue";
     String DELAY_QUEUE = "erp.delay.queue";
     String DLX_QUEUE = "erp.dlx.queue";
     /** MES 设备状态变更队列(设备状态变更广播, 供排产/工单模块感知) */

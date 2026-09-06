@@ -13976,6 +13976,19 @@ INSERT INTO `sys_dict_data` VALUES (2068956987053356072, '000000', 2, '返工工
 INSERT INTO `sys_dict_data` VALUES (2068956987053356073, '000000', 3, '手工创建', 'MANUAL', 'mes_wo_source_type', NULL, 'info', 'N', 103, 1, '2026-07-28 22:24:17', NULL, NULL, '手工建单');
 INSERT INTO `sys_dict_data` VALUES (2068956987053356074, '000000', 5, 'IoT离线', 'OFFLINE', 'mes_equipment_status', NULL, 'primary', 'N', 103, 1, '2026-07-29 20:31:27', NULL, NULL, 'IoT设备离线(状态联动任务置,P0-8)');
 INSERT INTO `sys_dict_data` VALUES (2068956987053356075, '000000', 4, '部分完成', 'PARTIAL_COMPLETED', 'prd_wo_status', '', 'warning', 'N', 103, 1, '2026-08-18 23:00:57', NULL, NULL, '生产工单状态-部分完成(部分流转卡已完工,仍有在制流转卡)');
+INSERT INTO `sys_dict_data` VALUES (2068956987053356076, '000000', 1, '自备料', 'SELF_PROVIDED', 'erp_subcontract_supply_type', NULL, 'primary', 'N', 103, 1, '2026-09-06 00:00:00', NULL, NULL, '我方供料(委外发料出库)');
+INSERT INTO `sys_dict_data` VALUES (2068956987053356077, '000000', 2, '外协厂供', 'VENDOR_PROVIDED', 'erp_subcontract_supply_type', NULL, 'warning', 'N', 103, 1, '2026-09-06 00:00:00', NULL, NULL, '外协厂自备料(turnkey)');
+INSERT INTO `sys_dict_data` VALUES (2068956987053356078, '000000', 3, '客供料', 'CUSTOMER_PROVIDED', 'erp_subcontract_supply_type', NULL, 'info', 'N', 103, 1, '2026-09-06 00:00:00', NULL, NULL, '客户提供的客供料(CFM)');
+INSERT INTO `sys_dict_data` VALUES (2068956987053356079, '000000', 1, 'Gerber', 'GERBER', 'erp_subcontract_doc_type', NULL, 'danger', 'N', 103, 1, '2026-09-06 00:00:00', NULL, NULL, 'PCBA光绘文件');
+INSERT INTO `sys_dict_data` VALUES (2068956987053356080, '000000', 2, '坐标文件', 'PICK_PLACE', 'erp_subcontract_doc_type', NULL, 'warning', 'N', 103, 1, '2026-09-06 00:00:00', NULL, NULL, '贴片坐标文件(pick-and-place)');
+INSERT INTO `sys_dict_data` VALUES (2068956987053356081, '000000', 3, 'BOM文件', 'BOM_FILE', 'erp_subcontract_doc_type', NULL, 'primary', 'N', 103, 1, '2026-09-06 00:00:00', NULL, NULL, '贴片BOM清单文件');
+INSERT INTO `sys_dict_data` VALUES (2068956987053356082, '000000', 4, '钢网文件', 'STENCIL', 'erp_subcontract_doc_type', NULL, 'success', 'N', 103, 1, '2026-09-06 00:00:00', NULL, NULL, '锡膏钢网工程文件');
+INSERT INTO `sys_dict_data` VALUES (2068956987053356083, '000000', 5, '工艺要求', 'PROCESS_FILE', 'erp_subcontract_doc_type', NULL, 'info', 'N', 103, 1, '2026-09-06 00:00:00', NULL, NULL, '工艺要求/质量标准文件');
+INSERT INTO `sys_dict_data` VALUES (2068956987053356084, '000000', 6, '其他', 'OTHER', 'erp_subcontract_doc_type', NULL, 'info', 'N', 103, 1, '2026-09-06 00:00:00', NULL, NULL, '其他工程资料');
+INSERT INTO `sys_dict_data` VALUES (2068956987053356085, '000000', 1, '待确认', 'PENDING', 'erp_subcontract_quote_status', NULL, 'info', 'N', 103, 1, '2026-09-06 00:00:00', NULL, NULL, '报价待确认');
+INSERT INTO `sys_dict_data` VALUES (2068956987053356086, '000000', 2, '已选定', 'SELECTED', 'erp_subcontract_quote_status', NULL, 'success', 'N', 103, 1, '2026-09-06 00:00:00', NULL, NULL, '该报价已选定回写订单');
+INSERT INTO `sys_dict_data` VALUES (2068956987053356087, '000000', 3, '未选中', 'NOT_SELECTED', 'erp_subcontract_quote_status', NULL, 'danger', 'N', 103, 1, '2026-09-06 00:00:00', NULL, NULL, '比价未选中');
+INSERT INTO `sys_dict_data` VALUES (2068956987053356088, '000000', 4, '已失效', 'EXPIRED', 'erp_subcontract_quote_status', NULL, 'info', 'N', 103, 1, '2026-09-06 00:00:00', NULL, NULL, '报价已失效');
 
 -- ----------------------------
 -- Table structure for sys_dict_type
@@ -14224,6 +14237,9 @@ INSERT INTO `sys_dict_type` VALUES (2068956987053356004, '000000', 'MES缺陷原
 INSERT INTO `sys_dict_type` VALUES (2068956987053356005, '000000', 'MES返工工单状态', 'mes_rework_status', 103, 1, '2026-07-28 22:24:17', NULL, NULL, '返工工单状态(P0-4)');
 INSERT INTO `sys_dict_type` VALUES (2068956987053356006, '000000', 'MES 8D报告状态', 'mes_8d_status', 103, 1, '2026-07-28 22:24:17', NULL, NULL, '8D报告状态(P0-4)');
 INSERT INTO `sys_dict_type` VALUES (2068956987053356007, '000000', 'MES工单来源', 'mes_wo_source_type', 103, 1, '2026-07-28 22:24:17', NULL, NULL, '工单来源类型(P0-4)');
+INSERT INTO `sys_dict_type` VALUES (2068956987053356008, '000000', '委外BOM供应方', 'erp_subcontract_supply_type', 103, 1, '2026-09-06 00:00:00', NULL, NULL, '委外订单BOM行供应方标注(PCBA闭环)');
+INSERT INTO `sys_dict_type` VALUES (2068956987053356009, '000000', '委外工程文件类型', 'erp_subcontract_doc_type', 103, 1, '2026-09-06 00:00:00', NULL, NULL, '委外工程/工艺文件类型(PCBA闭环)');
+INSERT INTO `sys_dict_type` VALUES (2068956987053356013, '000000', '委外报价状态', 'erp_subcontract_quote_status', 103, 1, '2026-09-06 00:00:00', NULL, NULL, '委外订单报价记录状态(PCBA闭环)');
 
 -- ----------------------------
 -- Table structure for sys_logininfor

@@ -85,6 +85,24 @@ public class PrdSubcontract extends TenantEntity {
     @ExcelProperty("关联工单编号")
     private String woNo;
 
+    @ExcelProperty("关联BOM ID")
+    private Long bomId;
+
+    @ExcelProperty("工艺路线ID")
+    private Long routingId;
+
+    @ExcelProperty("工艺要求")
+    private String processRequirement;
+
+    @ExcelProperty("SN已生成数量")
+    private Integer snGeneratedQty;
+
+    @ExcelProperty("收货目标仓库ID")
+    private Long targetWarehouseId;
+
+    @ExcelProperty("收货目标仓库名称")
+    private String targetWarehouseName;
+
     @ExcelProperty("委外状态")
     private String status;
 

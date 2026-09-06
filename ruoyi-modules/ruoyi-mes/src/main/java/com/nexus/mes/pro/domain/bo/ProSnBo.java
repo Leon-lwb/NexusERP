@@ -47,6 +47,9 @@ public class ProSnBo extends BaseEntity {
     /** 来源 */
     private String source;
 
+    /** 委外单号(PCBA委外闭环, 按单查SN进度) */
+    private String subcontractNo;
+
     /** 备注 */
     private String remark;
 

@@ -78,6 +78,13 @@ public class ProSnVo implements Serializable {
     @ExcelProperty("来源")
     private String source;
 
+    /** 来源单据ID(委外=subcontract_id) */
+    private Long sourceId;
+
+    /** 委外单号(冗余,SN直达追溯委外订单) */
+    @ExcelProperty("委外单号")
+    private String subcontractNo;
+
     /** 生产日期 */
     @ExcelProperty("生产日期")
     private Date productionDate;

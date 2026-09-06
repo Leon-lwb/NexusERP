@@ -28,6 +28,8 @@ public interface RoutingKeyConstants {
     String ERP_IPQC_COMPLETED = "erp.ipqc.completed";
     /** ERP 收货审批通过 -> MES 自动创建 IQC */
     String MES_IQC_CREATE = "mes.iqc.create";
+    /** MES 委外SN生成 */
+    String MES_SUBCONTRACT_SN = "mes.subcontract.sn";
     /** ERP 销售出库审批通过 -> MES 自动创建 OQC */
     String MES_OQC_CREATE = "mes.oqc.create";
     String DELAY_ORDER_TIMEOUT = "delay.order.timeout";

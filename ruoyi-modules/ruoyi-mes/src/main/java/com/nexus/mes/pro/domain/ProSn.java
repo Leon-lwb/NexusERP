@@ -60,8 +60,14 @@ public class ProSn extends TenantEntity {
     /** 父SN编码(冗余) */
     private String parentSnCode;
 
-    /** 来源: MANUAL/BATCH */
+    /** 来源: MANUAL/BATCH/SUBCONTRACT */
     private String source;
+
+    /** 来源单据ID(委外=subcontract_id) */
+    private Long sourceId;
+
+    /** 委外单号(冗余,SN直达追溯委外订单) */
+    private String subcontractNo;
 
     /** 生产日期 */
     private Date productionDate;
