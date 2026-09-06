@@ -22,8 +22,8 @@ export function delSn(snIds: string | number | (string | number)[]) {
   return request({ url: '/erp/wm/sn/' + snIds, method: 'delete' });
 }
 
-export function exportSn(data: WmSnQuery) {
-  return request({ url: '/erp/wm/sn/export', method: 'post', data, responseType: 'blob' });
+export function exportSn(query: WmSnQuery) {
+  return request({ url: '/erp/wm/sn/export', method: 'post', params: query, responseType: 'blob' });
 }
 
 export function batchGenerateSn(data: {

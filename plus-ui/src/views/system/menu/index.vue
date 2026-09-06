@@ -517,7 +517,7 @@ const cancelCascade = () => {
 /** 删除提交按钮 */
 const submitDeleteForm = async () => {
   const menuIds = menuTreeRef.value?.getCheckedKeys();
-  if (menuIds.length < 0) {
+  if (!menuIds || menuIds.length === 0) {
     proxy?.$modal.msgWarning('请选择要删除的菜单');
     return;
   }

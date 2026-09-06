@@ -646,9 +646,7 @@ function fillFormFromOrderLine() {
   form.value.totalQuantity = line.orderedQty;
   form.value.referenceNo = line.soNo || form.value.referenceNo;
   form.value.planName = form.value.planName || line.materialName || '';
-  if (!form.value.planNo && line.soId) {
-    form.value.planNo = String(line.soId);
-  }
+  // planNo 不回填: 留空由后端兜底生成(PRD_PLAN_CODE)或用户手输/自动生成, 避免销售订单ID污染编号体系
   if (!form.value.plannerName && line.customerLineRef) {
     form.value.plannerName = line.customerLineRef;
   }

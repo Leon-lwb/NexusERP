@@ -100,7 +100,7 @@
             icon="Check"
             @click="handleVerify(scope.row)"
             v-if="scope.row.status === 'ISSUED'"
-            v-hasPermi="['so:invoice:edit']"
+            v-hasPermi="['so:invoice:verify']"
             >核销</el-button
           >
           <el-button

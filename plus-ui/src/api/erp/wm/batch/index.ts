@@ -22,8 +22,8 @@ export function delBatch(batchIds: number | number[]) {
   return request({ url: '/erp/wm/batch/' + batchIds, method: 'delete' });
 }
 
-export function exportBatch(data: WmBatchQuery) {
-  return request({ url: '/erp/wm/batch/export', method: 'post', data, responseType: 'blob' });
+export function exportBatch(query: WmBatchQuery) {
+  return request({ url: '/erp/wm/batch/export', method: 'post', params: query, responseType: 'blob' });
 }
 
 export function createBatch(data: any) {

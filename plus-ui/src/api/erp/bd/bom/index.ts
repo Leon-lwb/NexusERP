@@ -86,20 +86,6 @@ export const saveBomDetailsBatch = (data: BomDetailForm[]) => {
   });
 };
 
-export const getBomStructure = (parentId: number): AxiosPromise<any> => {
-  return request({
-    url: '/erp/bd/bom/structure/' + parentId,
-    method: 'get'
-  });
-};
-
-export const getCurrentBom = (parentId: number): AxiosPromise<BomVO> => {
-  return request({
-    url: '/erp/bd/bom/current/' + parentId,
-    method: 'get'
-  });
-};
-
 export const activateBomVersion = (bomId: number) => request({ url: '/erp/bd/bom/activateVersion/' + bomId, method: 'put' });
 
 export const verifyBom = (bomId: number): AxiosPromise<string> => request({ url: '/erp/bd/bom/verify/' + bomId, method: 'get' });
