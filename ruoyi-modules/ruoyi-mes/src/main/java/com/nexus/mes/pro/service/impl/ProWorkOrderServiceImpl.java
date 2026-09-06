@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.nexus.common.core.utils.MapstructUtils;
+import com.nexus.common.core.utils.SpringUtils;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.core.domain.R;
 import com.nexus.common.core.exception.ServiceException;
@@ -292,7 +293,8 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
             }
         }
         // 事务内: 幂等快照步骤/BOM -> FLASH门禁 -> CAS状态冻结
-        doReleaseAndSnapshot(mesWoId, wo, routingSteps, mbom, releasePackage);
+        // 经 AOP 代理调用以使 @Transactional 生效(同类直调绕过代理, 事务实际不生效 M2)
+        SpringUtils.getAopProxy(this).doReleaseAndSnapshot(mesWoId, wo, routingSteps, mbom, releasePackage);
     }
 
     /**
@@ -521,8 +523,8 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
             }
         }
 
-        // 3. 【事务内】创建MES工单及工序及BOM快照（仅写mes库）
-        doCreateWorkOrderAndSteps(message, unitId, unitName, workshopName, routingId, routingSteps, mbom, releasePackage);
+        // 3. 【事务内】创建MES工单及工序及BOM快照（仅写mes库; 经 AOP 代理调用以使事务生效）
+        SpringUtils.getAopProxy(this).doCreateWorkOrderAndSteps(message, unitId, unitName, workshopName, routingId, routingSteps, mbom, releasePackage);
     }
 
     /**

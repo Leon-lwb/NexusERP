@@ -1,10 +1,13 @@
 package com.nexus.mes.pro.service.impl;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
+import com.baomidou.lock.LockInfo;
+import com.baomidou.lock.LockTemplate;
 import com.baomidou.lock.annotation.Lock4j;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.nexus.common.core.utils.SpringUtils;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
@@ -46,6 +49,7 @@ public class ProDispatchServiceImpl implements IProDispatchService {
     private final ProFlowCardStepMapper stepMapper;
     private final ProFlowCardMapper flowCardMapper;
     private final IProFlowCardService proFlowCardService;
+    private final LockTemplate lockTemplate;
 
     @Override
     /**
@@ -216,10 +220,35 @@ public class ProDispatchServiceImpl implements IProDispatchService {
     /**
      * 完工派工(IN_PROGRESS -> COMPLETED), 累加数量到工序+流转卡, 自动完成工序
      */
-    @Lock4j(keys = {"#dispatchId"})
+    /**
+     * 完工派工(IN_PROGRESS -> COMPLETED), 累加数量到工序+流转卡, 自动完成工序
+     * <p>入口不加事务: 先按单加载定位工序, 再以 stepRecordId 粒度程序化加锁后执行带事务的内部方法。
+     * 锁必须覆盖整个事务——同工序两张派工单并发完工时, 若锁释放在事务提交前, 后者读不到前者未提交的
+     * 状态变更, 会导致 activeCount 判定竞态、工序永不自动完成(M1)。</p>
+     */
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public void completeDispatch(Long dispatchId, BigDecimal goodQty, BigDecimal defectQty, BigDecimal scrapQty) {
+        ProDispatch dispatch = baseMapper.selectById(dispatchId);
+        if (dispatch == null) {
+            throw new RuntimeException("派工单不存在: " + dispatchId);
+        }
+        LockInfo stepLock = lockTemplate.lock("mes:dispatch:step:" + dispatch.getStepRecordId(), 30000L, 5000L);
+        if (stepLock == null) {
+            throw new RuntimeException("该工序有完工处理进行中, 请稍后重试");
+        }
+        try {
+            // 经 AOP 代理调用以使事务生效(同类直调绕过代理)
+            SpringUtils.getAopProxy(this).doCompleteDispatch(dispatchId, goodQty, defectQty, scrapQty);
+        } finally {
+            lockTemplate.releaseLock(stepLock);
+        }
+    }
+
+    /**
+     * 完工派工执行(带事务)。仅供 {@link #completeDispatch} 经 AOP 代理调用, 步骤级锁由入口持有。
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void doCompleteDispatch(Long dispatchId, BigDecimal goodQty, BigDecimal defectQty, BigDecimal scrapQty) {
         ProDispatch dispatch = baseMapper.selectById(dispatchId);
         if (dispatch == null) {
             throw new RuntimeException("派工单不存在: " + dispatchId);
@@ -257,7 +286,7 @@ public class ProDispatchServiceImpl implements IProDispatchService {
             .setSql("scrap_qty = scrap_qty + {0}", scrapQty)
             .eq(ProFlowCard::getCardId, cardId));
 
-        // 4. 检查工序下所有派工是否均完成 -> 自动完成工序
+        // 4. 检查工序下所有派工是否均完成 -> 自动完成工序(锁内执行, 无并发判定竞态)
         Long activeCount = baseMapper.selectCount(Wrappers.<ProDispatch>lambdaQuery()
             .eq(ProDispatch::getStepRecordId, stepRecordId)
             .ne(ProDispatch::getDispatchStatus, STATUS_COMPLETED)

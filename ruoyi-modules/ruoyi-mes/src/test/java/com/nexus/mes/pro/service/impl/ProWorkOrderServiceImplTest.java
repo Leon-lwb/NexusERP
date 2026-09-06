@@ -27,16 +27,20 @@ import com.nexus.mes.release.domain.vo.ReleasePackageVo;
 import com.nexus.mes.release.domain.vo.ReleasePkgBomItemVo;
 import com.nexus.mes.release.domain.vo.ReleasePkgFirmwareVo;
 import com.nexus.mes.release.service.IReleasePackageService;
+import com.nexus.common.core.utils.SpringUtils;
 import com.nexus.mes.testsupport.SpringStaticBootstrap;
 import com.nexus.workflow.service.IWfProcessService;
 import com.nexus.workflow.service.impl.WfMyBusinessServiceImpl;
 import org.apache.ibatis.builder.MapperBuilderAssistant;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -66,6 +70,23 @@ class ProWorkOrderServiceImplTest {
         MapperBuilderAssistant assistant = new MapperBuilderAssistant(new MybatisConfiguration(), "");
         TableInfoHelper.initTableInfo(assistant, ProWorkOrder.class);
         TableInfoHelper.initTableInfo(assistant, ProWorkOrderStep.class);
+    }
+
+    private MockedStatic<SpringUtils> aopProxyMock;
+
+    @BeforeEach
+    void stubAopProxy() {
+        // M2: createFromErpMessage 经 SpringUtils.getAopProxy 调用事务方法, 纯单测无容器——
+        // lenient 桩为返回当前普通实例(仅触及代理调用的测试用例生效, 其余不受严格桩约束)
+        aopProxyMock = mockStatic(SpringUtils.class, withSettings().lenient());
+        aopProxyMock.when(() -> SpringUtils.getAopProxy(any())).thenReturn(service);
+    }
+
+    @AfterEach
+    void closeAopProxyMock() {
+        if (aopProxyMock != null) {
+            aopProxyMock.close();
+        }
     }
 
     @Mock
