@@ -41,6 +41,7 @@ public class PrdSubcontractServiceImpl implements IPrdSubcontractService {
 
     private final PrdSubcontractMapper baseMapper;
     private final PrdWorkOrderMapper workOrderMapper;
+    private final com.nexus.system.strategy.AutoCodeUtil autoCodeUtil;
 
     /**
      * 分页查询委外订单列表
@@ -101,9 +102,15 @@ public class PrdSubcontractServiceImpl implements IPrdSubcontractService {
     }
 
     /**
-     * 生成委外单号: SC + yyyyMMdd + 当日4位序号(uk_subcontract_no 唯一索引兜底并发)
+     * 生成委外单号: 优先走编码规则 PRD_SUBCONTRACT_CODE(SC+yyyyMMdd+按日流水, 与前端预览同源);
+     * 规则缺失时回退 SC + yyyyMMdd + 当日4位序号(uk_subcontract_no 唯一索引兜底并发)
      */
     private String generateSubcontractNo() {
+        try {
+            return autoCodeUtil.genSerialCode("PRD_SUBCONTRACT_CODE", null);
+        } catch (Exception e) {
+            log.warn("委外单号编码规则 PRD_SUBCONTRACT_CODE 生成失败, 回退本地生成: {}", e.getMessage());
+        }
         String date = new java.text.SimpleDateFormat("yyyyMMdd").format(new Date());
         Long count = baseMapper.selectCount(Wrappers.<PrdSubcontract>lambdaQuery()
             .likeRight(PrdSubcontract::getSubcontractNo, "SC" + date));

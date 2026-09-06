@@ -11227,6 +11227,10 @@ INSERT INTO `sys_auto_code_rule` VALUES (290, '000000', 'MES_FLASH_NO', 'MES刷�
 INSERT INTO `sys_auto_code_rule` VALUES (291, '000000', 'MES_TEST_NO', 'MES测试单号', 'FT+日期+4位日循环流水号', 14, 'N', NULL, 'L', 'Y', '', NULL, NULL, 0, 0, NULL, NULL, '2026-08-16 13:56:57', NULL, NULL, '0');
 INSERT INTO `sys_auto_code_rule` VALUES (292, '000000', 'MES_POOL_CODE', 'MES资源池编码', 'PL+日期+3位日循环流水号', 15, 'N', NULL, 'L', 'Y', '', NULL, NULL, 0, 0, NULL, NULL, '2026-08-17 21:56:41', NULL, NULL, '0');
 INSERT INTO `sys_auto_code_rule` VALUES (293, '000000', 'MES_CONFIG_CODE', 'MES配置文件编码', 'CF+日期+3位日循环流水号', 15, 'N', NULL, 'L', 'Y', '', NULL, NULL, 0, 0, NULL, NULL, '2026-08-17 21:56:41', NULL, NULL, '0');
+INSERT INTO `sys_auto_code_rule` VALUES (300, '000000', 'PRD_SUBCONTRACT_CODE', '委外订单编码', NULL, 14, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, NULL, 1, '2026-09-06 00:00:00', NULL, NULL, '0');
+INSERT INTO `sys_auto_code_part` VALUES (3001, '000000', 300, 1, 'FIXCHAR', 'PREFIX', '前缀', 2, NULL, NULL, 'SC', NULL, NULL, NULL, NULL, NULL, '', NULL, NULL, 0, 0, NULL, 1, '2026-09-06 00:00:00', NULL, NULL, '0');
+INSERT INTO `sys_auto_code_part` VALUES (3002, '000000', 300, 2, 'NOWDATE', 'DATEPART', '日期', 8, 'yyyyMMdd', NULL, NULL, NULL, NULL, NULL, NULL, NULL, '', NULL, NULL, 0, 0, NULL, 1, '2026-09-06 00:00:00', NULL, NULL, '0');
+INSERT INTO `sys_auto_code_part` VALUES (3003, '000000', 300, 3, 'SERIALNO', 'SERIAL', '流水号', 4, NULL, NULL, NULL, 1, 1, NULL, 'Y', 'DAY', '', NULL, NULL, 0, 0, NULL, 1, '2026-09-06 00:00:00', NULL, NULL, '0');
 INSERT INTO `sys_auto_code_rule` VALUES (294, '000000', 'MES_RP_CODE', 'MES发布包编码', 'RP+日期+3位日循环流水号', 15, 'N', NULL, 'L', 'Y', '', NULL, NULL, 0, 0, NULL, NULL, '2026-08-22 23:32:53', NULL, NULL, '0');
 
 -- ----------------------------
