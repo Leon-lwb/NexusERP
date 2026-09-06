@@ -106,6 +106,25 @@ public class PrdSubcontractVo extends BaseEntity implements Serializable {
     @ExcelProperty(value = "关联工单编号")
     private String woNo;
 
+    /** 关联BOM ID(快照来源) */
+    private Long bomId;
+
+    /** 工艺路线ID */
+    private Long routingId;
+
+    /** 工艺要求(质量标准/特殊工艺/AOI/FCT等) */
+    private String processRequirement;
+
+    /** SN已生成数量 */
+    private Integer snGeneratedQty;
+
+    /** 收货目标仓库ID(默认半成品仓) */
+    private Long targetWarehouseId;
+
+    /** 收货目标仓库名称 */
+    @ExcelProperty(value = "收货目标仓库")
+    private String targetWarehouseName;
+
     /** 委外状态 */
     @ExcelProperty(value = "委外状态")
     private String status;
