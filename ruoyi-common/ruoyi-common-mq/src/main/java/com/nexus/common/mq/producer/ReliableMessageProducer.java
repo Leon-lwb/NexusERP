@@ -102,6 +102,8 @@ public class ReliableMessageProducer {
             record.setExchange(exchange);
             record.setRoutingKey(routingKey);
             record.setMessageBody(objectMapper.writeValueAsString(message));
+            // 记录消息类型全限定名: 补偿任务重投时按此类型化反序列化(抽象基类无法反序列化)
+            record.setMessageType(message.getClass().getName());
             record.setStatus(status);
             record.setRetryCount(0);
             record.setMaxRetry(message.getMaxRetry() != null ? message.getMaxRetry() : 3);

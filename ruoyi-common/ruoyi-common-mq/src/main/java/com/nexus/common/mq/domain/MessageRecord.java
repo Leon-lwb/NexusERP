@@ -27,6 +27,8 @@ public class MessageRecord implements Serializable {
     private String exchange;
     private String routingKey;
     private String messageBody;
+    /** 消息类型全限定名(补偿重投时类型化反序列化用; 历史数据为空则无法补偿) */
+    private String messageType;
     private String status;
     private Integer retryCount;
     private Integer maxRetry;

@@ -27,6 +27,8 @@ public class DeadLetterRecord implements Serializable {
     private String exchange;
     private String routingKey;
     private String messageBody;
+    /** 消息类型全限定名(取自 __TypeId__ 头, 人工重投反序列化用) */
+    private String messageType;
     private String errorMessage;
     private Integer retryCount;
     private String status;

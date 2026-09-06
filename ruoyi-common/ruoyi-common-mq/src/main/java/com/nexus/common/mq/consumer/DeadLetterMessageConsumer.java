@@ -12,6 +12,8 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.util.Date;
+import java.util.List;
+import java.util.Map;
 
 /**
  * 死信队列消费者，将死信消息持久化到数据库
@@ -40,13 +42,19 @@ public class DeadLetterMessageConsumer {
             String exchange = message.getMessageProperties().getReceivedExchange();
             String routingKey = message.getMessageProperties().getReceivedRoutingKey();
             String body = new String(message.getBody());
-            log.error("收到死信消息: messageId={}, exchange={}, routingKey={}", messageId, exchange, routingKey);
+            // __TypeId__ 头由 Jackson2JsonMessageConverter 写入, 记录后供死信管理人工重投反序列化
+            String messageType = message.getMessageProperties().getHeader("__TypeId__");
+            String deathReason = extractDeathReason(message);
+            log.error("收到死信消息: messageId={}, exchange={}, routingKey={}, reason={}",
+                messageId, exchange, routingKey, deathReason);
 
             DeadLetterRecord record = new DeadLetterRecord();
             record.setMessageId(messageId);
             record.setExchange(exchange);
             record.setRoutingKey(routingKey);
             record.setMessageBody(body);
+            record.setMessageType(messageType);
+            record.setErrorMessage(deathReason);
             record.setStatus("PENDING");
             record.setCreateTime(new Date());
             deadLetterRecordMapper.insert(record);
@@ -56,5 +64,15 @@ public class DeadLetterMessageConsumer {
             log.error("死信消息处理失败: {}", e.getMessage(), e);
             channel.basicNack(deliveryTag, false, false);
         }
+    }
+
+    /** 提取 x-death 头中的死信原因(rejected/expired/maxlen), 无则返回空 */
+    private String extractDeathReason(Message message) {
+        List<Map<String, ?>> xDeath = message.getMessageProperties().getHeader("x-death");
+        if (xDeath == null || xDeath.isEmpty()) {
+            return null;
+        }
+        Object reason = xDeath.get(0).get("reason");
+        return reason == null ? null : reason.toString();
     }
 }

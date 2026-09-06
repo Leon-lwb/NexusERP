@@ -7884,6 +7884,7 @@ CREATE TABLE `mq_dead_letter_record`  (
   `exchange` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '原始交换机',
   `routing_key` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '原始路由键',
   `message_body` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '消息体JSON',
+  `message_type` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '消息类型全限定名(取自 __TypeId__ 头, 人工重投反序列化用)',
   `error_message` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '错误信息',
   `retry_count` int(11) NOT NULL DEFAULT 0 COMMENT '已重试次数',
   `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'PENDING' COMMENT '状态: PENDING/RESOLVED/RESENT',
@@ -7910,6 +7911,7 @@ CREATE TABLE `mq_message_record`  (
   `exchange` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '交换机名称',
   `routing_key` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '路由键',
   `message_body` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '消息体JSON',
+  `message_type` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '消息类型全限定名(补偿重投时类型化反序列化用)',
   `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'SENDING' COMMENT '状态: SENDING/SENT/CONSUMED/FAILED',
   `retry_count` int(11) NOT NULL DEFAULT 0 COMMENT '重试次数',
   `max_retry` int(11) NOT NULL DEFAULT 3 COMMENT '最大重试次数',
@@ -14853,6 +14855,11 @@ INSERT INTO `sys_menu` VALUES (107, '通知公告', 1, 8, 'notice', 'system/noti
 INSERT INTO `sys_menu` VALUES (108, '日志管理', 1, 9, 'log', '', '', 1, 0, 'M', '0', '0', '', 'log', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '日志管理菜单');
 INSERT INTO `sys_menu` VALUES (109, '在线用户', 2, 1, 'online', 'monitor/online/index', '', 1, 0, 'C', '0', '0', 'monitor:online:list', 'online', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '在线用户菜单');
 INSERT INTO `sys_menu` VALUES (113, '缓存监控', 2, 5, 'cache', 'monitor/cache/index', '', 1, 0, 'C', '0', '0', 'monitor:cache:list', 'redis', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '缓存监控菜单');
+INSERT INTO `sys_menu` VALUES (20700, '死信管理', 2, 8, 'deadletter', 'monitor/deadletter/index', '', 1, 0, 'C', '0', '0', 'monitor:dead-letter:list', 'email', 103, 1, '2026-09-06 00:00:00', NULL, NULL, 'MQ死信消息管理菜单');
+INSERT INTO `sys_menu` VALUES (20701, '死信查询', 20700, 1, '', '', NULL, 1, 0, 'F', '0', '0', 'monitor:dead-letter:query', '#', 103, 1, '2026-09-06 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (20702, '死信重投', 20700, 2, '', '', NULL, 1, 0, 'F', '0', '0', 'monitor:dead-letter:redeliver', '#', 103, 1, '2026-09-06 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (20703, '死信删除', 20700, 3, '', '', NULL, 1, 0, 'F', '0', '0', 'monitor:dead-letter:remove', '#', 103, 1, '2026-09-06 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (20704, 'PDA主数据同步', 2965, 10, '', NULL, NULL, 1, 0, 'F', '0', '0', 'wm:basedata:sync', '#', 103, 1, '2026-09-06 00:00:00', 'PDA 客户端主数据增量同步权限点(/app/pda/basedata/sync)');
 INSERT INTO `sys_menu` VALUES (115, '代码生成', 3, 2, 'gen', 'tool/gen/index', '', 1, 0, 'C', '0', '0', 'tool:gen:list', 'code', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '代码生成菜单');
 INSERT INTO `sys_menu` VALUES (116, '修改生成配置', 3, 2, 'gen-edit/index/:tableId', 'tool/gen/editTable', '', 1, 1, 'C', '1', '0', 'tool:gen:edit', '#', 103, 1, '2026-04-15 10:51:23', NULL, NULL, '/tool/gen');
 INSERT INTO `sys_menu` VALUES (117, 'Admin监控', 2, 5, 'Admin', 'monitor/admin/index', '', 1, 0, 'C', '0', '0', 'monitor:admin:list', 'dashboard', 103, 1, '2026-04-15 10:51:23', NULL, NULL, 'Admin监控菜单');
