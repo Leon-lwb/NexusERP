@@ -32,7 +32,7 @@ import java.util.Map;
  * MES 固件刷写/测试自动化上报接口 (AUTO 对接, 产线设备/上位机)
  * <p>
  * 免登录开放接口(security.excludes 已放行 /mes/flash/report/**), 通过请求头 X-API-KEY 鉴权
- * (密钥配置项 mes.api-key, 默认 nexus-mes-api-2026, 生产环境务必修改)。
+ * (密钥配置项 mes.api-key, 无代码内默认值——未配置时所有上报接口 fail-closed 拒绝, 生产环境通过环境变量 MES_API_KEY 注入)。
  * 上报数据按当前租户 000000 落库。宽松模式: 单条失败不中断整批, 返回失败明细。
  * </p>
  * <ul>
@@ -52,8 +52,8 @@ public class FlashReportController extends BaseController {
     private final IFlashRecordService mesFlashRecordService;
     private final ITestRecordService mesTestRecordService;
 
-    /** 设备上报密钥(application.yml 配置, 生产务必修改) */
-    @Value("${mes.api-key:nexus-mes-api-2026}")
+    /** 设备上报密钥(application.yml/环境变量 MES_API_KEY 配置, 未配置时 fail-closed 拒绝所有上报) */
+    @Value("${mes.api-key:}")
     private String apiKey;
 
     /**

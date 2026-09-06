@@ -69,7 +69,7 @@ public class StationFlashPrepareController {
     private final ISysOssService sysOssService;
 
     /** 设备上报密钥(与 FlashReportController 共用) */
-    @Value("${mes.api-key:nexus-mes-api-2026}")
+    @Value("${mes.api-key:}")
     private String apiKey;
 
     /**

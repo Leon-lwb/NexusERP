@@ -44,7 +44,7 @@ public class StationSopController {
     private final StationSopService stationSopService;
 
     /** 设备上报密钥(与 StationDeviceController/FlashReportController 共用) */
-    @Value("${mes.api-key:nexus-mes-api-2026}")
+    @Value("${mes.api-key:}")
     private String apiKey;
 
     /**

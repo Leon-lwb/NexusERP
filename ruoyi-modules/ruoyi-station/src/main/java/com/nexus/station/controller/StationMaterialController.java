@@ -39,7 +39,7 @@ public class StationMaterialController {
     private final StationMaterialService stationMaterialService;
 
     /** 设备上报密钥(与 StationDeviceController 共用) */
-    @Value("${mes.api-key:nexus-mes-api-2026}")
+    @Value("${mes.api-key:}")
     private String apiKey;
 
     /**

@@ -78,8 +78,8 @@ public class StationDeviceController {
     private final StationTraceService stationTraceService;
     private final StationInspectionService stationInspectionService;
 
-    /** 设备上报密钥(application.yml 配置, 生产务必修改) */
-    @Value("${mes.api-key:nexus-mes-api-2026}")
+    /** 设备上报密钥(application.yml/环境变量 MES_API_KEY 配置, 未配置时 fail-closed 拒绝所有请求) */
+    @Value("${mes.api-key:}")
     private String apiKey;
 
     /**

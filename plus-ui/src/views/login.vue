@@ -217,6 +217,7 @@ import { useUserStore } from '@/store/modules/user';
 import { LoginData, TenantVO } from '@/api/types';
 import { to } from 'await-to-js';
 import { HttpStatus } from '@/enums/RespEnum';
+import { decryptRemember, encryptRemember } from '@/utils/crypto';
 
 const title = import.meta.env.VITE_APP_TITLE;
 const logoTitle = import.meta.env.VITE_APP_LOGO_TITLE || 'NexusERP';
@@ -477,11 +478,11 @@ const handleLogin = () => {
   loginRef.value?.validate(async (valid: boolean) => {
     if (valid) {
       loading.value = true;
-      // 勾选了需要记住密码设置在 localStorage 中设置记住用户名和密码
+      // 勾选了需要记住密码：用户名/租户明文，密码 AES 加密后写入 localStorage（不落明文）
       if (loginForm.value.rememberMe) {
         localStorage.setItem('tenantId', String(loginForm.value.tenantId));
         localStorage.setItem('username', String(loginForm.value.username));
-        localStorage.setItem('password', String(loginForm.value.password));
+        localStorage.setItem('password', encryptRemember(String(loginForm.value.password)));
         localStorage.setItem('rememberMe', String(loginForm.value.rememberMe));
       } else {
         // 否则移除
@@ -525,12 +526,20 @@ const getCode = async () => {
 const getLoginData = () => {
   const tenantId = localStorage.getItem('tenantId');
   const username = localStorage.getItem('username');
-  const password = localStorage.getItem('password');
   const rememberMe = localStorage.getItem('rememberMe');
+  // 密码为加密存储；历史明文残留/解密失败时清空并回退默认（需重新输入一次）
+  let password = '';
+  const storedPassword = localStorage.getItem('password');
+  if (storedPassword !== null) {
+    password = decryptRemember(storedPassword);
+    if (!password) {
+      localStorage.removeItem('password');
+    }
+  }
   loginForm.value = {
     tenantId: tenantId === null ? String(loginForm.value.tenantId) : tenantId,
     username: username === null ? String(loginForm.value.username) : username,
-    password: password === null ? String(loginForm.value.password) : String(password),
+    password: password ? password : String(loginForm.value.password),
     rememberMe: rememberMe === null ? false : Boolean(rememberMe)
   } as LoginData;
 };

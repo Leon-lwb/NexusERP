@@ -126,27 +126,32 @@ public class JimuReportTokenService implements JmReportTokenServiceI {
     }
 
     /**
-     * 仪表盘（drag 模块）内部权限码
-     * <p>
-     * JimuReport 的 drag 控制器方法上标注了 @RequiresPermissions，
-     * 但这些权限码不在系统菜单表（sys_menu）中维护，故对已认证用户自动注入。
+     * 仪表盘查看类权限码
+     * <p>JimuReport 的 drag 控制器方法上标注了 @RequiresPermissions，
+     * 但这些权限码不在系统菜单表（sys_menu）中维护。查看类权限（图表取数）对已认证用户自动注入。</p>
      */
-    private static final String[] DRAG_PERMISSIONS = {
+    private static final String VIEW_PERMISSION = "drag:design:getTotalData";
+
+    /**
+     * 报表设计/数据源管理类权限码（仅管理员角色注入）
+     * <p>新建/删除数据源与 SQL 分析可直连任意数据库执行语句，属高危能力；
+     * 旧版本对全部登录用户（甚至匿名请求）无条件注入，属越权漏洞，09-06 收敛为管理员专属。</p>
+     */
+    private static final String[] DESIGNER_PERMISSIONS = {
         "drag:datasource:testConnection",
         "drag:datasource:saveOrUpate",
         "drag:datasource:delete",
         "drag:analysis:sql",
         "drag:dataset:delete",
         "drag:dataset:save",
-        "drag:design:getTotalData",
         "onl:drag:page:delete",
         "onl:drag:clear:recovery",
     };
 
     /**
      * 获取令牌对应用户的权限码数组。
-     * <p>在系统菜单权限基础上追加积木报表 drag 模块内置权限码；
-     * 无用户时仅返回内置权限码（保证报表设计器可用）。</p>
+     * <p>在系统菜单权限基础上追加积木报表内置权限码：查看类对所有已认证用户开放，
+     * 设计/数据源管理类仅管理员角色可用；匿名请求不授予任何权限。</p>
      *
      * @param token 访问令牌
      * @return 权限码数组
@@ -154,12 +159,29 @@ public class JimuReportTokenService implements JmReportTokenServiceI {
     @Override
     public String[] getPermissions(String token) {
         LoginUser loginUser = LoginHelper.getLoginUser(token);
-        if (loginUser != null && loginUser.getMenuPermission() != null) {
-            List<String> permissions = new ArrayList<>(loginUser.getMenuPermission());
-            permissions.addAll(Arrays.asList(DRAG_PERMISSIONS));
-            return permissions.toArray(new String[0]);
+        if (loginUser == null) {
+            // 匿名请求不授予任何报表权限（旧版本此处返回全部设计权限）
+            return new String[0];
         }
-        return DRAG_PERMISSIONS.clone();
+        List<String> permissions = loginUser.getMenuPermission() != null
+            ? new ArrayList<>(loginUser.getMenuPermission()) : new ArrayList<>();
+        permissions.add(VIEW_PERMISSION);
+        if (isReportAdmin(loginUser)) {
+            permissions.addAll(Arrays.asList(DESIGNER_PERMISSIONS));
+        }
+        return permissions.toArray(new String[0]);
+    }
+
+    /**
+     * 是否报表管理员：超级管理员（userId=1）或拥有 superadmin/admin 角色标识。
+     */
+    private boolean isReportAdmin(LoginUser loginUser) {
+        if (LoginHelper.isSuperAdmin(loginUser.getUserId())) {
+            return true;
+        }
+        return loginUser.getRolePermission() != null
+            && (loginUser.getRolePermission().contains("superadmin")
+                || loginUser.getRolePermission().contains("admin"));
     }
 
     /**

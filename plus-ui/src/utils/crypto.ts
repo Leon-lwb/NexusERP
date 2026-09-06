@@ -64,3 +64,29 @@ export const decryptWithAes = (message: string, aesKey: CryptoJS.lib.WordArray) 
   });
   return decrypted.toString(CryptoJS.enc.Utf8);
 };
+
+/** 记住密码本地加密口令（仅防 localStorage 明文落盘；客户端侧密钥无法抵御已获页面 JS 执行权的攻击者，不能替代服务端会话） */
+const REMEMBER_PASSPHRASE = 'NexusERP@remember-me-v1';
+
+/**
+ * 本地存储敏感字段加密（记住密码）：passphrase 模式 AES，输出 OpenSSL Salted base64
+ * @param message 明文
+ * @returns 密文
+ */
+export const encryptRemember = (message: string): string => {
+  return CryptoJS.AES.encrypt(message, REMEMBER_PASSPHRASE).toString();
+};
+
+/**
+ * 本地存储敏感字段解密（记住密码）
+ * @param cipherText 密文
+ * @returns 明文；解密失败（历史明文残留/密文损坏）返回空串
+ */
+export const decryptRemember = (cipherText: string): string => {
+  try {
+    const plain = CryptoJS.AES.decrypt(cipherText, REMEMBER_PASSPHRASE).toString(CryptoJS.enc.Utf8);
+    return plain || '';
+  } catch {
+    return '';
+  }
+};
