@@ -1,7 +1,7 @@
 package com.nexus.mes.lt.service.impl;
 
-import com.baomidou.mybatisplus.core.toolkit.LambdaUtils;
-import com.baomidou.mybatisplus.core.toolkit.support.ColumnCache;
+import com.baomidou.mybatisplus.core.MybatisConfiguration;
+import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.nexus.mes.lt.domain.LtLot;
 import com.nexus.mes.lt.domain.bo.LtLotBo;
 import com.nexus.mes.lt.domain.vo.LtLotVo;
@@ -9,7 +9,10 @@ import com.nexus.mes.lt.mapper.LtLotMapper;
 import com.nexus.mes.lt.mapper.LtSnBindingMapper;
 import com.nexus.mes.lt.mapper.LtWoConsumptionMapper;
 import com.nexus.system.strategy.AutoCodeUtil;
+import org.apache.ibatis.builder.MapperBuilderAssistant;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -17,12 +20,10 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -47,35 +48,24 @@ class LtLotServiceImplTest {
     @Captor
     private ArgumentCaptor<LtLot> insertCaptor;
 
-    private MockedStatic<LambdaUtils> lambdaUtilsMock;
+    @BeforeAll
+    static void initTableInfo() {
+        // 初始化真实 TableInfo/列缓存, 让 MyBatis-Plus lambda 在纯单测中正常解析
+        // (旧做法 mockStatic(LambdaUtils) 未 stub extract() 会返回 null meta, 服务新增 lambda 调用即 NPE)
+        TableInfoHelper.initTableInfo(new MapperBuilderAssistant(new MybatisConfiguration(), ""), LtLot.class);
+    }
+
+    @AfterAll
+    static void clearTableInfo() {
+        TableInfoHelper.remove(LtLot.class);
+    }
 
     @BeforeEach
     void setUp() {
-        lambdaUtilsMock = mockStatic(LambdaUtils.class);
-        Map<String, ColumnCache> columnMap = new HashMap<>();
-        columnMap.put("LOTID", new ColumnCache("lot_id", "lot_id"));
-        columnMap.put("LOTCODE", new ColumnCache("lot_code", "lot_code"));
-        columnMap.put("MATERIALID", new ColumnCache("material_id", "material_id"));
-        columnMap.put("MATERIALCODE", new ColumnCache("material_code", "material_code"));
-        columnMap.put("MATERIALNAME", new ColumnCache("material_name", "material_name"));
-        columnMap.put("SUPPLIERID", new ColumnCache("supplier_id", "supplier_id"));
-        columnMap.put("SUPPLIERNAME", new ColumnCache("supplier_name", "supplier_name"));
-        columnMap.put("SUPPLIERLOT", new ColumnCache("supplier_lot", "supplier_lot"));
-        columnMap.put("QUANTITY", new ColumnCache("quantity", "quantity"));
-        columnMap.put("CONSUMEDQTY", new ColumnCache("consumed_qty", "consumed_qty"));
-        columnMap.put("PRODUCEDDATE", new ColumnCache("produced_date", "produced_date"));
-        columnMap.put("EXPIRYDATE", new ColumnCache("expiry_date", "expiry_date"));
-        columnMap.put("STATUS", new ColumnCache("status", "status"));
-        columnMap.put("QCSTATUS", new ColumnCache("qc_status", "qc_status"));
-        columnMap.put("IQCID", new ColumnCache("iqc_id", "iqc_id"));
-        columnMap.put("REMARK", new ColumnCache("remark", "remark"));
-        columnMap.put("CREATETIME", new ColumnCache("create_time", "create_time"));
-        lambdaUtilsMock.when(() -> LambdaUtils.getColumnMap(any())).thenReturn(columnMap);
     }
 
     @AfterEach
     void tearDown() {
-        if (lambdaUtilsMock != null) lambdaUtilsMock.close();
     }
 
     // ==================== 状态机 5 态流转 ====================
@@ -541,6 +531,8 @@ class LtLotServiceImplTest {
         lot.setQuantity(BigDecimal.TEN);
         lot.setConsumedQty(BigDecimal.ZERO);
         when(baseMapper.selectOne(any())).thenReturn(lot);
+        // quarantine(lotId) 内部会按 ID 重新加载批次
+        when(baseMapper.selectById(1L)).thenReturn(lot);
         when(baseMapper.update(any(), any())).thenReturn(1);
 
         Boolean result = service.applyIqcResult(1L, "UNQUALIFIED");

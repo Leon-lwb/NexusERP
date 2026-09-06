@@ -1,17 +1,21 @@
 package com.nexus.mes.qc.service.impl;
 
-import com.baomidou.mybatisplus.core.toolkit.LambdaUtils;
-import com.baomidou.mybatisplus.core.toolkit.support.ColumnCache;
+import com.baomidou.mybatisplus.core.MybatisConfiguration;
+import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.nexus.common.satoken.utils.LoginHelper;
 import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.mes.common.mq.MesMqSendService;
+import com.nexus.mes.ncr.service.INcrOrderService;
 import com.nexus.mes.pro.domain.vo.ProWorkOrderVo;
 import com.nexus.mes.pro.service.IProWorkOrderService;
 import com.nexus.mes.qc.domain.QcIpqc;
 import com.nexus.mes.qc.domain.bo.QcIpqcBo;
 import com.nexus.mes.qc.domain.vo.QcIpqcVo;
 import com.nexus.mes.qc.mapper.QcIpqcMapper;
+import org.apache.ibatis.builder.MapperBuilderAssistant;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -21,10 +25,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
-import java.util.HashMap;
-import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -39,6 +42,8 @@ class QcIpqcServiceImplTest {
     private MesMqSendService mesMqSendService;
     @Mock
     private IProWorkOrderService proWorkOrderService;
+    @Mock
+    private INcrOrderService ncrOrderService;
     @InjectMocks
     private QcIpqcServiceImpl service;
 
@@ -47,49 +52,37 @@ class QcIpqcServiceImplTest {
 
     private MockedStatic<LoginHelper> loginHelperMock;
     private MockedStatic<TenantHelper> tenantHelperMock;
-    private MockedStatic<LambdaUtils> lambdaUtilsMock;
+
+    @BeforeAll
+    static void initTableInfo() {
+        // 初始化真实 TableInfo/列缓存, 让 MyBatis-Plus lambda 在纯单测中正常解析
+        // (旧做法 mockStatic(LambdaUtils) 未 stub extract() 会返回 null meta, 服务新增 lambda 调用即 NPE)
+        TableInfoHelper.initTableInfo(new MapperBuilderAssistant(new MybatisConfiguration(), ""), QcIpqc.class);
+    }
+
+    @AfterAll
+    static void clearTableInfo() {
+        TableInfoHelper.remove(QcIpqc.class);
+    }
 
     @BeforeEach
     void setUp() {
         loginHelperMock = mockStatic(LoginHelper.class);
         tenantHelperMock = mockStatic(TenantHelper.class);
-        lambdaUtilsMock = mockStatic(LambdaUtils.class);
         loginHelperMock.when(LoginHelper::getUserId).thenReturn(1L);
         loginHelperMock.when(LoginHelper::getUsername).thenReturn("tester");
         tenantHelperMock.when(TenantHelper::getTenantId).thenReturn("000000");
-        // Pre-populate column cache for QcIpqc
-        Map<String, ColumnCache> columnMap = new HashMap<>();
-        columnMap.put("IPQCID", new ColumnCache("ipqc_id", "ipqc_id"));
-        columnMap.put("IPQCNO", new ColumnCache("ipqc_no", "ipqc_no"));
-        columnMap.put("MESWOID", new ColumnCache("mes_wo_id", "mes_wo_id"));
-        columnMap.put("WONO", new ColumnCache("wo_no", "wo_no"));
-        columnMap.put("CARDID", new ColumnCache("card_id", "card_id"));
-        columnMap.put("STEPRECORDID", new ColumnCache("step_record_id", "step_record_id"));
-        columnMap.put("PROCESSID", new ColumnCache("process_id", "process_id"));
-        columnMap.put("PROCESSCODE", new ColumnCache("process_code", "process_code"));
-        columnMap.put("PROCESSNAME", new ColumnCache("process_name", "process_name"));
-        columnMap.put("MATERIALID", new ColumnCache("material_id", "material_id"));
-        columnMap.put("MATERIALCODE", new ColumnCache("material_code", "material_code"));
-        columnMap.put("MATERIALNAME", new ColumnCache("material_name", "material_name"));
-        columnMap.put("SAMPLEQTY", new ColumnCache("sample_qty", "sample_qty"));
-        columnMap.put("DEFECTQTY", new ColumnCache("defect_qty", "defect_qty"));
-        columnMap.put("DEFECTRATE", new ColumnCache("defect_rate", "defect_rate"));
-        columnMap.put("INSPECTRESULT", new ColumnCache("inspect_result", "inspect_result"));
-        columnMap.put("DEFECTINFO", new ColumnCache("defect_info", "defect_info"));
-        columnMap.put("INSPECTORID", new ColumnCache("inspector_id", "inspector_id"));
-        columnMap.put("INSPECTORNAME", new ColumnCache("inspector_name", "inspector_name"));
-        columnMap.put("INSPECTTIME", new ColumnCache("inspect_time", "inspect_time"));
-        columnMap.put("STATUS", new ColumnCache("status", "status"));
-        columnMap.put("REMARK", new ColumnCache("remark", "remark"));
-        columnMap.put("CREATETIME", new ColumnCache("create_time", "create_time"));
-        lambdaUtilsMock.when(() -> LambdaUtils.getColumnMap(any())).thenReturn(columnMap);
+        // 激活事务同步, 使 service 内 registerSynchronization 可注册 afterCommit 回调(单测无真实事务提交)
+        TransactionSynchronizationManager.initSynchronization();
     }
 
     @AfterEach
     void tearDown() {
         if (loginHelperMock != null) loginHelperMock.close();
         if (tenantHelperMock != null) tenantHelperMock.close();
-        if (lambdaUtilsMock != null) lambdaUtilsMock.close();
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.clearSynchronization();
+        }
     }
 
     @Test
@@ -118,7 +111,7 @@ class QcIpqcServiceImplTest {
         when(baseMapper.selectCount(any())).thenReturn(0L);
         QcIpqcVo insertedVo = new QcIpqcVo();
         insertedVo.setIpqcId(1L);
-        when(baseMapper.selectVoById(1L)).thenReturn(insertedVo);
+        when(baseMapper.selectVoById(any())).thenReturn(insertedVo);
 
         service.autoCreateForKeyProcess(bo);
 
@@ -236,7 +229,8 @@ class QcIpqcServiceImplTest {
         ProWorkOrderVo wo = new ProWorkOrderVo();
         wo.setErpWoId(999L);
         wo.setWoNo("WO-001");
-        when(proWorkOrderService.selectById(10L)).thenReturn(wo);
+        // selectById 仅在 afterCommit 回调中调用, 单测无事务提交, 用 lenient 避免严格模式误报
+        lenient().when(proWorkOrderService.selectById(10L)).thenReturn(wo);
 
         service.inspect(1L, "QUALIFIED", null, null, null, null);
 
@@ -256,7 +250,8 @@ class QcIpqcServiceImplTest {
 
         ProWorkOrderVo wo = new ProWorkOrderVo();
         wo.setErpWoId(null);
-        when(proWorkOrderService.selectById(10L)).thenReturn(wo);
+        // selectById 仅在 afterCommit 回调中调用, 单测无事务提交, 用 lenient 避免严格模式误报
+        lenient().when(proWorkOrderService.selectById(10L)).thenReturn(wo);
 
         service.inspect(1L, "QUALIFIED", null, null, null, null);
     }

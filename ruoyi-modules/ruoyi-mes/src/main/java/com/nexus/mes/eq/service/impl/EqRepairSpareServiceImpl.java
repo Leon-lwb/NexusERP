@@ -3,15 +3,18 @@ package com.nexus.mes.eq.service.impl;
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.nexus.common.core.exception.ServiceException;
+import com.nexus.mes.eq.domain.EqRepair;
 import com.nexus.mes.eq.domain.EqRepairSpare;
 import com.nexus.mes.eq.domain.EqSparePart;
 import com.nexus.mes.eq.domain.bo.EqRepairSpareBo;
 import com.nexus.mes.eq.domain.bo.EqSpareStockBo;
 import com.nexus.mes.eq.domain.vo.EqRepairSpareVo;
 import com.nexus.mes.eq.domain.vo.EqSparePartVo;
+import com.nexus.mes.eq.mapper.EqRepairMapper;
 import com.nexus.mes.eq.mapper.EqRepairSpareMapper;
 import com.nexus.mes.eq.mapper.EqSparePartMapper;
 import com.nexus.mes.eq.service.IEqRepairSpareService;
+import com.nexus.mes.eq.service.IEqRepairService;
 import com.nexus.mes.eq.service.IEqSparePartService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,6 +41,7 @@ public class EqRepairSpareServiceImpl implements IEqRepairSpareService {
 
     private final EqRepairSpareMapper baseMapper;
     private final EqSparePartMapper sparePartMapper;
+    private final EqRepairMapper repairMapper;
     private final IEqSparePartService sparePartService;
 
     /**
@@ -69,6 +73,17 @@ public class EqRepairSpareServiceImpl implements IEqRepairSpareService {
         }
         List<EqRepairSpareVo> result = new ArrayList<>(bos.size());
         for (EqRepairSpareBo bo : bos) {
+            // 校验先于库存变更: 数量合法性 -> 维修单存在 -> 维修单处于维修中(避免无效领用扣减备件库存)
+            if (bo.getQuantity() == null || bo.getQuantity().signum() <= 0) {
+                throw new ServiceException("领用数量必须大于0");
+            }
+            EqRepair repair = repairMapper.selectById(bo.getRepairId());
+            if (repair == null) {
+                throw new ServiceException("维修单不存在: " + bo.getRepairId());
+            }
+            if (!IEqRepairService.STATUS_REPAIRING.equals(repair.getStatus())) {
+                throw new ServiceException("维修单不在维修中状态, 无法领用备件: " + bo.getRepairId());
+            }
             EqSparePartVo spare = sparePartMapper.selectVoById(bo.getSpareId());
             if (spare == null) {
                 throw new ServiceException("备件不存在: " + bo.getSpareId());

@@ -162,7 +162,12 @@ class LtWoConsumptionServiceImplTest {
         lot.setLotId(1L);
         lot.setLotCode("LOT-001");
         lot.setMaterialCode("MAT-001");
+        LtLot lot2 = new LtLot();
+        lot2.setLotId(2L);
+        lot2.setLotCode("LOT-002");
+        lot2.setMaterialCode("MAT-001");
         when(lotMapper.selectById(1L)).thenReturn(lot);
+        when(lotMapper.selectById(2L)).thenReturn(lot2);
         when(lotService.consume(1L, BigDecimal.valueOf(5))).thenReturn(true);
         when(lotService.consume(2L, BigDecimal.valueOf(3))).thenReturn(true);
         when(baseMapper.insert(any(LtWoConsumption.class))).thenReturn(1);

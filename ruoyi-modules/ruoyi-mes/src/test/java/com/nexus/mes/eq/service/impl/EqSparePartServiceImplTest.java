@@ -1,7 +1,7 @@
 package com.nexus.mes.eq.service.impl;
 
-import com.nexus.mes.eq.domain.EqSparePart;
 import com.nexus.mes.eq.domain.bo.EqSpareStockBo;
+import com.nexus.mes.eq.domain.vo.EqSparePartVo;
 import com.nexus.mes.eq.mapper.EqSparePartMapper;
 import com.nexus.mes.eq.mapper.EqSpareStockLogMapper;
 import org.junit.jupiter.api.Test;
@@ -28,13 +28,14 @@ class EqSparePartServiceImplTest {
     private EqSparePartServiceImpl service;
 
     @Test
-    void stockTransactionUsesLockedRowAsTheBalanceSource() {
-        EqSparePart spare = new EqSparePart();
+    void stockTransactionOutDeductsFromCurrentStockWithOversellGuard() {
+        // stockTransaction 现按 selectVoById 读当前库存余额, 更新走 setSql 原子加减+防超卖守卫
+        EqSparePartVo spare = new EqSparePartVo();
         spare.setSpareId(1L);
         spare.setSpareCode("SP-001");
         spare.setSpareName("bearing");
         spare.setCurrentStock(new BigDecimal("10"));
-        when(sparePartMapper.selectOne(any())).thenReturn(spare);
+        when(sparePartMapper.selectVoById(1L)).thenReturn(spare);
         when(sparePartMapper.update(any(), any())).thenReturn(1);
 
         EqSpareStockBo bo = new EqSpareStockBo();
@@ -45,6 +46,6 @@ class EqSparePartServiceImplTest {
         BigDecimal balance = service.stockTransaction(bo);
 
         assertEquals(0, new BigDecimal("7").compareTo(balance));
-        verify(sparePartMapper).selectOne(any());
+        verify(sparePartMapper).selectVoById(1L);
     }
 }

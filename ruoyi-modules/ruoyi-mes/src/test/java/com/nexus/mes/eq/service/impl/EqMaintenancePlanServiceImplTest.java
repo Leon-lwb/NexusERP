@@ -1,7 +1,7 @@
 package com.nexus.mes.eq.service.impl;
 
-import com.baomidou.mybatisplus.core.toolkit.LambdaUtils;
-import com.baomidou.mybatisplus.core.toolkit.support.ColumnCache;
+import com.baomidou.mybatisplus.core.MybatisConfiguration;
+import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.satoken.utils.LoginHelper;
 import com.nexus.mes.eq.domain.EqMaintenancePlan;
@@ -14,7 +14,10 @@ import com.nexus.mes.eq.domain.vo.EqMaintenanceRecordVo;
 import com.nexus.mes.eq.mapper.EqMaintenancePlanMapper;
 import com.nexus.mes.eq.mapper.EqMaintenanceRecordMapper;
 import com.nexus.mes.eq.service.IEqEquipmentService;
+import org.apache.ibatis.builder.MapperBuilderAssistant;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -26,8 +29,6 @@ import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -51,35 +52,31 @@ class EqMaintenancePlanServiceImplTest {
     private ArgumentCaptor<EqMaintenanceRecord> recordCaptor;
 
     private MockedStatic<LoginHelper> loginHelperMock;
-    private MockedStatic<LambdaUtils> lambdaUtilsMock;
+
+    @BeforeAll
+    static void initTableInfo() {
+        // 初始化真实 TableInfo/列缓存, 让 MyBatis-Plus lambda 在纯单测中正常解析
+        // (旧做法 mockStatic(LambdaUtils) 未 stub extract() 会返回 null meta, 服务新增 lambda 调用即 NPE)
+        TableInfoHelper.initTableInfo(new MapperBuilderAssistant(new MybatisConfiguration(), ""), EqMaintenancePlan.class);
+        TableInfoHelper.initTableInfo(new MapperBuilderAssistant(new MybatisConfiguration(), ""), EqMaintenanceRecord.class);
+    }
+
+    @AfterAll
+    static void clearTableInfo() {
+        TableInfoHelper.remove(EqMaintenancePlan.class);
+        TableInfoHelper.remove(EqMaintenanceRecord.class);
+    }
 
     @BeforeEach
     void setUp() {
         loginHelperMock = mockStatic(LoginHelper.class);
-        lambdaUtilsMock = mockStatic(LambdaUtils.class);
         loginHelperMock.when(LoginHelper::getUserId).thenReturn(1L);
         loginHelperMock.when(LoginHelper::getUsername).thenReturn("tester");
-        // Pre-populate column cache for EqMaintenancePlan
-        Map<String, ColumnCache> columnMap = new HashMap<>();
-        columnMap.put("PLANID", new ColumnCache("plan_id", "plan_id"));
-        columnMap.put("PLANNAME", new ColumnCache("plan_name", "plan_name"));
-        columnMap.put("EQUIPMENTID", new ColumnCache("equipment_id", "equipment_id"));
-        columnMap.put("MAINTENANCETYPE", new ColumnCache("maintenance_type", "maintenance_type"));
-        columnMap.put("CYCLEDAYS", new ColumnCache("cycle_days", "cycle_days"));
-        columnMap.put("NEXTDATE", new ColumnCache("next_date", "next_date"));
-        columnMap.put("CONTENT", new ColumnCache("content", "content"));
-        columnMap.put("RESPONSIBLEID", new ColumnCache("responsible_id", "responsible_id"));
-        columnMap.put("RESPONSIBLENAME", new ColumnCache("responsible_name", "responsible_name"));
-        columnMap.put("STATUS", new ColumnCache("status", "status"));
-        columnMap.put("REMARK", new ColumnCache("remark", "remark"));
-        columnMap.put("CREATETIME", new ColumnCache("create_time", "create_time"));
-        lambdaUtilsMock.when(() -> LambdaUtils.getColumnMap(any())).thenReturn(columnMap);
     }
 
     @AfterEach
     void tearDown() {
         if (loginHelperMock != null) loginHelperMock.close();
-        if (lambdaUtilsMock != null) lambdaUtilsMock.close();
     }
 
     // ==================== 下次保养日期计算 ====================
@@ -265,7 +262,7 @@ class EqMaintenancePlanServiceImplTest {
         EqMaintenanceRecordVo recordVo = new EqMaintenanceRecordVo();
         recordVo.setRecordId(100L);
         recordVo.setEquipmentId(10L);
-        when(maintenanceRecordMapper.selectVoById(100L)).thenReturn(recordVo);
+        when(maintenanceRecordMapper.selectVoById(any())).thenReturn(recordVo);
         EqEquipmentVo equipmentVo = new EqEquipmentVo();
         equipmentVo.setEquipmentCode("EQ-001");
         equipmentVo.setEquipmentName("测试设备");
@@ -309,7 +306,7 @@ class EqMaintenancePlanServiceImplTest {
         EqMaintenanceRecordVo recordVo = new EqMaintenanceRecordVo();
         recordVo.setRecordId(100L);
         recordVo.setEquipmentId(10L);
-        when(maintenanceRecordMapper.selectVoById(100L)).thenReturn(recordVo);
+        when(maintenanceRecordMapper.selectVoById(any())).thenReturn(recordVo);
 
         EqMaintenanceRecordBo bo = new EqMaintenanceRecordBo();
 
@@ -332,7 +329,7 @@ class EqMaintenancePlanServiceImplTest {
         EqMaintenanceRecordVo recordVo = new EqMaintenanceRecordVo();
         recordVo.setRecordId(100L);
         recordVo.setEquipmentId(10L);
-        when(maintenanceRecordMapper.selectVoById(100L)).thenReturn(recordVo);
+        when(maintenanceRecordMapper.selectVoById(any())).thenReturn(recordVo);
 
         EqMaintenanceRecordBo bo = new EqMaintenanceRecordBo();
         bo.setResult("ABNORMAL");
@@ -355,7 +352,7 @@ class EqMaintenancePlanServiceImplTest {
         EqMaintenanceRecordVo recordVo = new EqMaintenanceRecordVo();
         recordVo.setRecordId(100L);
         recordVo.setEquipmentId(10L);
-        when(maintenanceRecordMapper.selectVoById(100L)).thenReturn(recordVo);
+        when(maintenanceRecordMapper.selectVoById(any())).thenReturn(recordVo);
 
         service.completePlan(1L, null);
 

@@ -1,7 +1,7 @@
 package com.nexus.mes.eq.service.impl;
 
-import com.baomidou.mybatisplus.core.toolkit.LambdaUtils;
-import com.baomidou.mybatisplus.core.toolkit.support.ColumnCache;
+import com.baomidou.mybatisplus.core.MybatisConfiguration;
+import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.iot.service.IotDeviceDataQueryService;
 import com.nexus.common.satoken.utils.LoginHelper;
@@ -13,7 +13,10 @@ import com.nexus.mes.eq.domain.vo.EqEquipmentVo;
 import com.nexus.mes.eq.mapper.EqEquipmentMapper;
 import com.nexus.mes.pro.mapper.ProWorkOrderMapper;
 import com.nexus.mes.pro.service.IProAndonService;
+import org.apache.ibatis.builder.MapperBuilderAssistant;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -23,9 +26,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.util.HashMap;
-import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -52,44 +52,32 @@ class EqEquipmentServiceImplTest {
 
     private MockedStatic<LoginHelper> loginHelperMock;
     private MockedStatic<TenantHelper> tenantHelperMock;
-    private MockedStatic<LambdaUtils> lambdaUtilsMock;
+
+    @BeforeAll
+    static void initTableInfo() {
+        // 初始化真实 TableInfo/列缓存, 让 MyBatis-Plus lambda 在纯单测中正常解析
+        // (旧做法 mockStatic(LambdaUtils) 未 stub extract() 会返回 null meta, 服务新增 lambda 调用即 NPE)
+        TableInfoHelper.initTableInfo(new MapperBuilderAssistant(new MybatisConfiguration(), ""), EqEquipment.class);
+    }
+
+    @AfterAll
+    static void clearTableInfo() {
+        TableInfoHelper.remove(EqEquipment.class);
+    }
 
     @BeforeEach
     void setUp() {
         loginHelperMock = mockStatic(LoginHelper.class);
         tenantHelperMock = mockStatic(TenantHelper.class);
-        lambdaUtilsMock = mockStatic(LambdaUtils.class);
         loginHelperMock.when(LoginHelper::getUserId).thenReturn(1L);
         loginHelperMock.when(LoginHelper::getUsername).thenReturn("tester");
         tenantHelperMock.when(TenantHelper::getTenantId).thenReturn("000000");
-        // Pre-populate column cache for EqEquipment
-        Map<String, ColumnCache> columnMap = new HashMap<>();
-        columnMap.put("EQUIPMENTID", new ColumnCache("equipment_id", "equipment_id"));
-        columnMap.put("EQUIPMENTCODE", new ColumnCache("equipment_code", "equipment_code"));
-        columnMap.put("EQUIPMENTNAME", new ColumnCache("equipment_name", "equipment_name"));
-        columnMap.put("EQUIPMENTTYPE", new ColumnCache("equipment_type", "equipment_type"));
-        columnMap.put("MODEL", new ColumnCache("model", "model"));
-        columnMap.put("MANUFACTURER", new ColumnCache("manufacturer", "manufacturer"));
-        columnMap.put("SERIALNO", new ColumnCache("serial_no", "serial_no"));
-        columnMap.put("WORKCENTERID", new ColumnCache("workcenter_id", "workcenter_id"));
-        columnMap.put("WORKCENTERCODE", new ColumnCache("workcenter_code", "workcenter_code"));
-        columnMap.put("LOCATION", new ColumnCache("location", "location"));
-        columnMap.put("PURCHASEDATE", new ColumnCache("purchase_date", "purchase_date"));
-        columnMap.put("WARRANTYDATE", new ColumnCache("warranty_date", "warranty_date"));
-        columnMap.put("STATUS", new ColumnCache("status", "status"));
-        columnMap.put("INSPECTIONITEMS", new ColumnCache("inspection_items", "inspection_items"));
-        columnMap.put("LASTINSPECTION", new ColumnCache("last_inspection", "last_inspection"));
-        columnMap.put("IOTDEVICEID", new ColumnCache("iot_device_id", "iot_device_id"));
-        columnMap.put("REMARK", new ColumnCache("remark", "remark"));
-        columnMap.put("CREATETIME", new ColumnCache("create_time", "create_time"));
-        lambdaUtilsMock.when(() -> LambdaUtils.getColumnMap(any())).thenReturn(columnMap);
     }
 
     @AfterEach
     void tearDown() {
         if (loginHelperMock != null) loginHelperMock.close();
         if (tenantHelperMock != null) tenantHelperMock.close();
-        if (lambdaUtilsMock != null) lambdaUtilsMock.close();
     }
 
     // ==================== updateStatus 联动 ====================

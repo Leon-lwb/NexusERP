@@ -346,6 +346,17 @@ public class EqPatrolServiceImpl implements IEqPatrolService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public EqPatrolRecordVo insertRecordByBo(EqPatrolRecordBo bo) {
+        // 守卫: 已结束(COMPLETED/CANCELLED)任务不允许再提交巡检记录(与 batchSubmitRecords 同口径)
+        Long taskId = bo.getTaskId();
+        if (taskId != null) {
+            EqPatrolTask task = taskMapper.selectById(taskId);
+            if (task == null) {
+                throw new com.nexus.common.core.exception.ServiceException("巡检任务不存在: " + taskId);
+            }
+            if ("COMPLETED".equals(task.getStatus()) || "CANCELLED".equals(task.getStatus())) {
+                throw new com.nexus.common.core.exception.ServiceException("巡检任务已结束, 无法提交记录: " + taskId);
+            }
+        }
         EqPatrolRecord record = buildRecord(bo);
         recordMapper.insert(record);
         return recordMapper.selectVoById(record.getRecordId());
