@@ -640,6 +640,20 @@ export const dynamicRoutes: RouteRecordRaw[] = [
     ]
   },
   {
+    path: '/erp/prdSub/subcontract/form',
+    component: Layout,
+    hidden: true,
+    permissions: ['prd:subcontract:query'],
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/erp/prd/subcontract/form.vue'),
+        name: 'PrdSubcontractForm',
+        meta: { title: '委外订单表单', activeMenu: '/erp/prdSub/subcontract', noCache: true }
+      }
+    ]
+  },
+  {
     path: '/erp/wm/batch/form',
     component: Layout,
     hidden: true,

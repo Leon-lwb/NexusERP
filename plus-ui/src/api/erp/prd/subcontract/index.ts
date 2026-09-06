@@ -6,7 +6,7 @@ export function listSubcontract(query: PrdSubcontractQuery): AxiosPromise<PrdSub
   return request({ url: '/erp/prd/subcontract/list', method: 'get', params: query });
 }
 
-export function getSubcontract(subcontractId: number): AxiosPromise<PrdSubcontractVO> {
+export function getSubcontract(subcontractId: number | string): AxiosPromise<PrdSubcontractVO> {
   return request({ url: '/erp/prd/subcontract/' + subcontractId, method: 'get' });
 }
 

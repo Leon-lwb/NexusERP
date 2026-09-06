@@ -99,108 +99,6 @@
 
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
 
-    <el-dialog :title="title" v-model="open" width="640px" append-to-body>
-      <el-form ref="subcontractRef" :model="form" :rules="rules" label-width="120px">
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="委外单号" prop="subcontractNo">
-              <el-input v-model="form.subcontractNo" placeholder="请输入委外单号" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="供应商" prop="vendorId">
-              <el-select
-                v-model="form.vendorId"
-                filterable
-                remote
-                :remote-method="searchVendor"
-                placeholder="请选择供应商"
-                @change="onVendorChange"
-                style="width: 100%"
-              >
-                <el-option v-for="v in vendorOptions" :key="v.vendorId" :label="v.vendorName" :value="v.vendorId" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="物料" prop="materialId">
-              <el-select
-                v-model="form.materialId"
-                filterable
-                remote
-                :remote-method="searchMaterial"
-                placeholder="请选择物料"
-                @change="onMaterialChange"
-                style="width: 100%"
-              >
-                <el-option v-for="m in materialOptions" :key="m.materialId" :label="`${m.materialCode} - ${m.materialName}`" :value="m.materialId" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="单价" prop="unitPrice">
-              <el-input-number v-model="form.unitPrice" :precision="4" :min="0" style="width: 100%" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="关联工单" prop="woId">
-              <el-select v-model="form.woId" filterable remote :remote-method="searchWorkOrder" placeholder="请选择关联工单" style="width: 100%">
-                <el-option v-for="wo in woOptions" :key="wo.woId" :label="`${wo.woNo} - ${wo.materialName || ''}`" :value="wo.woId" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="计划数量" prop="plannedQty">
-              <el-input-number v-model="form.plannedQty" :precision="4" :min="0" style="width: 100%" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="关联BOM" prop="bomId">
-              <el-select v-model="form.bomId" placeholder="选择物料后带出当前生效BOM" clearable style="width: 100%" @change="onBomChange">
-                <el-option v-for="b in bomOptions" :key="b.bomId" :label="`${b.bomName || 'BOM'} V${b.bomVersion || '-'}`" :value="b.bomId" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="工艺要求" prop="processRequirement">
-              <el-input v-model="form.processRequirement" type="textarea" :rows="2" placeholder="质量标准/特殊工艺/AOI/FCT等(询价与发料资料包随附)" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="计划开始日期" prop="planStartDate">
-              <el-date-picker
-                v-model="form.planStartDate"
-                type="date"
-                value-format="YYYY-MM-DD"
-                placeholder="请选择计划开始日期"
-                style="width: 100%"
-              />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="计划结束日期" prop="planEndDate">
-              <el-date-picker v-model="form.planEndDate" type="date" value-format="YYYY-MM-DD" placeholder="请选择计划结束日期" style="width: 100%" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-form-item label="备注" prop="remark">
-          <el-input v-model="form.remark" type="textarea" placeholder="请输入备注" />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button type="primary" @click="submitForm()">确 定</el-button>
-        <el-button @click="cancel()">取 消</el-button>
-      </template>
-    </el-dialog>
-
     <!-- PCBA 委外闭环详情抽屉 -->
     <SubcontractClosureDetail :row="closureRow" @close="closureRow = null" v-if="closureRow" />
   </div>
@@ -215,70 +113,51 @@ import {
   delSubcontract,
   releaseSubcontract,
   completeSubcontract,
-  submitApproval,
-  getMaterialInfo
+  submitApproval
 } from '@/api/erp/prd/subcontract';
 import SubcontractClosureDetail from './detail.vue';
+import { useRouter } from 'vue-router';
 import type { PrdSubcontractVO, PrdSubcontractQuery } from '@/api/erp/prd/subcontract/types';
-import { listVendor } from '@/api/erp/bd/vendor';
-import { listMaterial } from '@/api/erp/bd/material';
-import { listWork } from '@/api/erp/prd/work';
-import type { FormInstance } from 'element-plus';
 import { useCrud } from '@/composables/useCrud';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { prd_subcontract_status } = toRefs<any>(proxy.useDict('prd_subcontract_status'));
 
-const subcontractRef = ref<FormInstance>();
-
 const queryParams = ref<PrdSubcontractQuery>({ pageNum: 1, pageSize: 10 });
 
-const vendorOptions = ref<any[]>([]);
-const materialOptions = ref<any[]>([]);
-const bomOptions = ref<any[]>([]);
 const closureRow = ref<any>(null);
 
 /** 打开 PCBA 闭环详情抽屉 */
 const handleClosure = (row: PrdSubcontractVO) => {
   closureRow.value = row;
 };
-const woOptions = ref<any[]>([]);
-
-const rules = {
-  subcontractNo: [{ required: true, message: '委外单号不能为空', trigger: 'blur' }],
-  vendorId: [{ required: true, message: '供应商ID不能为空', trigger: 'blur' }],
-  materialId: [{ required: true, message: '物料ID不能为空', trigger: 'blur' }],
-  plannedQty: [{ required: true, message: '计划数量不能为空', trigger: 'blur' }]
-};
+const subcontractRef = ref<any>();
 
 const {
   loading,
   list: subcontractList,
   total,
-  open,
-  title,
+  ids,
   multiple,
   showSearch,
-  form,
   getList,
   handleQuery,
   handleDelete,
   handleExport,
-  handleSelectionChange,
-  submitForm,
-  cancel,
-  handleAdd: rawHandleAdd,
-  handleUpdate: rawHandleUpdate
+  handleSelectionChange
 } = useCrud({
+  // get/add/update 仅供 useCrud 签名使用; 新增/编辑为路由表单页 form.vue, 列表页不调用
   apis: { list: listSubcontract, get: getSubcontract, add: addSubcontract, update: updateSubcontract, del: delSubcontract },
   idField: 'subcontractId',
   entityName: '委外订单',
   formRef: subcontractRef,
-  queryParams,
   initForm: () => ({}),
+  queryParams,
   exportUrl: 'erp/prd/subcontract/export',
   exportFileName: '委外订单'
 });
+
+const router = useRouter();
 
 /** 重置按钮操作 */
 function resetQuery() {
@@ -286,97 +165,31 @@ function resetQuery() {
   handleQuery();
 }
 
-/** 预载表单下拉选项（供应商/物料/工单） */
-function loadFormOptions() {
-  searchVendor('');
-  searchMaterial('');
-  searchWorkOrder('');
-}
-
-/** 新增按钮操作 */
+/** 新增按钮操作（跳转路由表单页, 单号留空由后端自动生成） */
 function handleAdd() {
-  rawHandleAdd(loadFormOptions);
+  router.push({ path: '/erp/prdSub/subcontract/form', query: { action: 'add' } });
 }
 
-/** 修改按钮操作 */
+/** 修改按钮操作（跳转路由表单页） */
 function handleUpdate(row?: PrdSubcontractVO) {
-  return rawHandleUpdate(row, loadFormOptions);
+  if (!row) {
+    if (ids.value.length !== 1) {
+      proxy.$modal.msgWarning('请选择一条数据进行修改');
+      return;
+    }
+    row = subcontractList.value.find((item: any) => item.subcontractId == ids.value[0]);
+    if (!row) {
+      proxy.$modal.msgWarning('未找到选中的数据');
+      return;
+    }
+  }
+  if (row.status !== 'DRAFT') {
+    proxy.$modal.msgWarning('仅草稿状态可修改');
+    return;
+  }
+  router.push({ path: '/erp/prdSub/subcontract/form', query: { subcontractId: String(row.subcontractId) } });
 }
 
-/** 远程搜索供应商 */
-const searchVendor = async (query: string) => {
-  if (!query && query !== '') return;
-  try {
-    const res = await listVendor({ vendorName: query || undefined, pageNum: 1, pageSize: 20 });
-    vendorOptions.value = res.rows || [];
-  } catch {
-    vendorOptions.value = [];
-  }
-};
-
-/** 远程搜索物料 */
-const searchMaterial = async (query: string) => {
-  if (!query && query !== '') return;
-  try {
-    const res = await listMaterial({ materialName: query || undefined, pageNum: 1, pageSize: 20 });
-    materialOptions.value = res.rows || [];
-  } catch {
-    materialOptions.value = [];
-  }
-};
-
-/** 远程搜索关联工单 */
-const searchWorkOrder = async (query: string) => {
-  try {
-    const res = await listWork({ woNo: query || undefined, pageNum: 1, pageSize: 20 });
-    woOptions.value = res.rows || [];
-  } catch {
-    woOptions.value = [];
-  }
-};
-
-/** 选中供应商后回填编码/名称 */
-const onVendorChange = (vendorId: number) => {
-  const v = vendorOptions.value.find((i: any) => i.vendorId === vendorId);
-  if (v) {
-    form.value.vendorCode = v.vendorCode;
-    form.value.vendorName = v.vendorName;
-  }
-};
-
-/** 选中物料后回填物料信息 + 带出当前生效 BOM(PCBA 闭环) */
-const onMaterialChange = (materialId: number) => {
-  const m = materialOptions.value.find((i: any) => i.materialId === materialId);
-  if (m) {
-    form.value.materialCode = m.materialCode;
-    form.value.materialName = m.materialName;
-    form.value.materialSpec = m.materialSpec;
-    form.value.baseUomName = m.baseUomName;
-  }
-  bomOptions.value = [];
-  form.value.bomId = null;
-  form.value.routingId = null;
-  if (materialId) {
-    getMaterialInfo(materialId)
-      .then((res: any) => {
-        const data = res.data || {};
-        bomOptions.value = data.bom ? [data.bom] : [];
-        if (data.bom) {
-          form.value.bomId = data.bom.bomId;
-          form.value.routingId = data.bom.routingId || null;
-        }
-      })
-      .catch(() => {});
-  }
-};
-
-/** 选中 BOM 后带出工艺路线 */
-const onBomChange = (bomId: number) => {
-  const b = bomOptions.value.find((i: any) => i.bomId === bomId);
-  form.value.routingId = b?.routingId || null;
-};
-
-/** 查看委外订单详情（含操作日志） */
 /** 查看: 直接打开 PCBA 闭环详情抽屉(基本信息/日志/业务页签合一) */
 const handleView = (row: PrdSubcontractVO) => {
   closureRow.value = row;
