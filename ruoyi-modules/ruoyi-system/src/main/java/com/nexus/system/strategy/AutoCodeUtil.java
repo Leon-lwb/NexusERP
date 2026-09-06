@@ -11,6 +11,7 @@ import com.nexus.system.service.ISysAutoCodeResultService;
 import com.nexus.system.service.ISysAutoCodeRuleService;
 import com.nexus.common.core.utils.StringUtils;
 import com.baomidou.dynamic.datasource.annotation.DS;
+import com.baomidou.lock.annotation.Lock4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -128,14 +129,17 @@ public class AutoCodeUtil {
      * 生成编码并落库（消耗流水号）。
      * <p>在独立事务中计算编码、持久化更新 sys_auto_code_result 表后返回完整编码。
      * 由后端业务 Service 保存单据或前端提交表单前调用。</p>
+     * <p>并发控制: 原为 JVM 内 synchronized, 多实例部署下同规则流水号读-改-写会重号(C4);
+     * 现改为按规则编码的分布式锁(lock4j 切面优先于事务拦截器, 锁覆盖整个 REQUIRES_NEW 事务直至提交)。</p>
      *
      * @param ruleCode       编码规则编码
      * @param inputCharacter 传入字符（可选）
      * @return 生成的完整编码字符串
      */
+    @Lock4j(keys = {"#ruleCode"}, expire = 60000, acquireTimeout = 10000)
     @DS("master")
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
-    public synchronized String genSerialCode(String ruleCode, String inputCharacter) {
+    public String genSerialCode(String ruleCode, String inputCharacter) {
         try {
             ComputeContext ctx = computeSerialCode(ruleCode, inputCharacter);
             saveAutoCodeResult(ctx.rule, ctx.autoCode, inputCharacter, ctx.serialNo);

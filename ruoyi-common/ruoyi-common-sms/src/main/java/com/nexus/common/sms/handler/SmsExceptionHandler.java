@@ -5,15 +5,19 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import com.nexus.common.core.domain.R;
 import org.dromara.sms4j.comm.exception.SmsBlendException;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 /**
  * SMS异常处理器
+ * <p>早于 GlobalExceptionHandler 的 RuntimeException 兜底, 保证短信异常语义(C2)。</p>
  *
  * @author AprilWind
  */
 @Slf4j
+@Order(Ordered.HIGHEST_PRECEDENCE + 10)
 @RestControllerAdvice
 public class SmsExceptionHandler {
 

@@ -7,16 +7,21 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import com.nexus.common.core.domain.R;
 import org.mybatis.spring.MyBatisSystemException;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 /**
  * Mybatis异常处理器
+ * <p>必须早于 {@code GlobalExceptionHandler @Order(1)} 的通用 RuntimeException 兜底,
+ * 否则 DuplicateKey/MyBatisSystem 异常语义被吞(C2)。</p>
  *
  * @author Lion Li
  */
 @Slf4j
+@Order(Ordered.HIGHEST_PRECEDENCE + 10)
 @RestControllerAdvice
 public class MybatisExceptionHandler {
 
