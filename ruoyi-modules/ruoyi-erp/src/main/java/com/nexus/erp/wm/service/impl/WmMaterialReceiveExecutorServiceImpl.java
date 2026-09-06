@@ -460,18 +460,24 @@ public class WmMaterialReceiveExecutorServiceImpl implements IWmMaterialReceiveE
         if (virtualAfterQuantity.compareTo(BigDecimal.ZERO) < 0) {
             throw new ServiceException("虚拟库位库存不足！");
         }
-        virtualStock.setStockQuantity(virtualAfterQuantity);
-        virtualStock.setUpdateTime(now);
-        materialStockMapper.updateById(virtualStock);
+        // 原子扣减(乐观锁 version + 数量守卫), 替换读-改-写, 防并发转储超扣
+        int virtualRows = materialStockMapper.deductStock(virtualStock.getStockId(), transactionQuantity,
+            virtualStock.getVersion() == null ? 0 : virtualStock.getVersion());
+        if (virtualRows == 0) {
+            throw new ServiceException("虚拟库位库存并发变更冲突，请重试");
+        }
         recordStockTransaction(receive, stock, -1, transactionQuantity, virtualBeforeQuantity,
             virtualAfterQuantity, virtualStock.getStockId(), "VIRTUAL_OUT");
 
         if (targetStock != null) {
             BigDecimal targetBeforeQuantity = nvl(targetStock.getStockQuantity());
             BigDecimal targetAfterQuantity = targetBeforeQuantity.add(transactionQuantity);
-            targetStock.setStockQuantity(targetAfterQuantity);
-            targetStock.setUpdateTime(now);
-            materialStockMapper.updateById(targetStock);
+            // 原子累加(乐观锁 version 守卫), 替换读-改-写
+            int targetRows = materialStockMapper.addStock(targetStock.getStockId(), transactionQuantity,
+                targetStock.getVersion() == null ? 0 : targetStock.getVersion());
+            if (targetRows == 0) {
+                throw new ServiceException("目标库位库存并发变更冲突，请重试");
+            }
             recordStockTransaction(receive, stock, 1, transactionQuantity, targetBeforeQuantity,
                 targetAfterQuantity, targetStock.getStockId(), "TARGET_IN");
             return targetStock.getStockId();
@@ -481,6 +487,8 @@ public class WmMaterialReceiveExecutorServiceImpl implements IWmMaterialReceiveE
             newStock.setStockQuantity(transactionQuantity);
             // 新增库存记录默认未冻结
             newStock.setFrozenFlag(0L);
+            // 新建行显式置乐观锁版本, 否则 version 为 null 时后续乐观锁更新不生效
+            newStock.setVersion(0);
             newStock.setCreateTime(now);
             newStock.setUpdateTime(now);
             materialStockMapper.insert(newStock);
@@ -507,6 +515,8 @@ public class WmMaterialReceiveExecutorServiceImpl implements IWmMaterialReceiveE
         virtualStock.setLocationName("虚拟库位");
         virtualStock.setStockQuantity(transactionQuantity);
         virtualStock.setRecptDate(now);
+        // 显式置乐观锁版本(DB 默认 0, 但实体不回填会导致同事务内原子更新 version 不匹配)
+        virtualStock.setVersion(0);
         virtualStock.setCreateTime(now);
         virtualStock.setUpdateTime(now);
         materialStockMapper.insert(virtualStock);

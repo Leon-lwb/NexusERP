@@ -193,6 +193,15 @@ public class PuPurchaseReturnServiceImpl implements IPuPurchaseReturnService {
         if (lines == null || lines.isEmpty()) {
             throw new ServiceException("采购退货单无明细行");
         }
+        // 条件更新抢占状态 → EXECUTED, 防并发双执行(重复扣库存/重复红冲)
+        int updated = baseMapper.update(null,
+            Wrappers.<PuPurchaseReturn>lambdaUpdate()
+                .set(PuPurchaseReturn::getStatus, STATUS_EXECUTED)
+                .eq(PuPurchaseReturn::getReturnId, returnId)
+                .eq(PuPurchaseReturn::getStatus, purchaseReturn.getStatus()));
+        if (updated == 0) {
+            throw new ServiceException("采购退货单状态已被并发操作变更，请刷新后重试");
+        }
         for (PuPurchaseReturnLine line : lines) {
             postReturnOut(purchaseReturn, line, new Date());
         }
@@ -210,8 +219,6 @@ public class PuPurchaseReturnServiceImpl implements IPuPurchaseReturnService {
                 log.info("采购退货[{}]触发进项转出红冲,生成红字发票{}张", purchaseReturn.getReturnNo(), redCount);
             }
         }
-        purchaseReturn.setStatus(STATUS_EXECUTED);
-        baseMapper.updateById(purchaseReturn);
     }
 
     // ==================== Flowable 工作流集成 ====================
@@ -359,9 +366,12 @@ public class PuPurchaseReturnServiceImpl implements IPuPurchaseReturnService {
         }
         BigDecimal beforeQuantity = stock.getStockQuantity();
         BigDecimal afterQuantity = beforeQuantity.subtract(line.getReturnQuantity());
-        stock.setStockQuantity(afterQuantity);
-        stock.setRecptDate(now);
-        stockMapper.updateById(stock);
+        // 原子扣减(乐观锁 version + stock_quantity>=qty SQL 守卫), 替换读-改-写
+        // 注: 退货单头/行无仓库维度字段, 无法按单据仓库过滤, 维度补齐属后续 schema 改造
+        int rows = stockMapper.deductStock(stock.getStockId(), line.getReturnQuantity(), stock.getVersion());
+        if (rows == 0) {
+            throw new ServiceException("库存并发变更冲突，请重试: stockId=" + stock.getStockId());
+        }
 
         WmMaterialStockTx tx = new WmMaterialStockTx();
         tx.setTxType("PUR_RETURN_OUT");

@@ -5,6 +5,7 @@ import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.nexus.common.core.exception.ServiceException;
+import com.nexus.common.core.utils.SpringUtils;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.mybatis.utils.IdGeneratorUtil;
 import com.nexus.common.satoken.utils.LoginHelper;
@@ -33,6 +34,7 @@ import com.nexus.erp.fin.report.service.IFinClosingService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -252,12 +254,12 @@ public class FinClosingServiceImpl implements IFinClosingService {
                 if (diff.signum() == 0) {
                     continue;
                 }
-                // 借/贷原外币科目(补差),反方向 6603.02 汇兑损益
+                // 借/贷原外币科目(补差, 保留原币币种与原币净额),反方向 6603.02 汇兑损益
                 if (diff.signum() > 0) {
-                    lines.add(line(accountId, diff, null, "期末重估 " + currency));
+                    lines.add(line(accountId, diff, null, "期末重估 " + currency, currency, fxNet));
                     lines.add(line(getAccountId(ReportConstants.ACCT_EXCHANGE_GAIN_LOSS), null, diff, "汇兑损益 " + currency));
                 } else {
-                    lines.add(line(accountId, null, diff.negate(), "期末重估 " + currency));
+                    lines.add(line(accountId, null, diff.negate(), "期末重估 " + currency, currency, fxNet));
                     lines.add(line(getAccountId(ReportConstants.ACCT_EXCHANGE_GAIN_LOSS), diff.negate(), null, "汇兑损益 " + currency));
                 }
                 totalDiff = totalDiff.add(diff.abs());
@@ -646,6 +648,15 @@ public class FinClosingServiceImpl implements IFinClosingService {
         return l;
     }
 
+    /** 构建外币凭证行(携带币种与原币金额, 供外币重估等场景保留原币信息) */
+    private GlVoucherLine line(Long accountId, BigDecimal debit, BigDecimal credit, String summary,
+                               String currency, BigDecimal amountCurrency) {
+        GlVoucherLine l = line(accountId, debit, credit, summary);
+        l.setCurrency(currency);
+        l.setAmountCurrency(amountCurrency);
+        return l;
+    }
+
     /** 按科目编码查科目ID(仅启用末级) */
     private Long getAccountId(String code) {
         GlAccount a = accountMapper.selectOne(new LambdaQueryWrapper<GlAccount>()
@@ -692,21 +703,25 @@ public class FinClosingServiceImpl implements IFinClosingService {
 
     /** 写成功日志 */
     private void logSuccess(Long periodId, String closeType, String step, String message) {
-        log(periodId, closeType, step, ReportConstants.LOG_SUCCESS, message);
+        SpringUtils.getAopProxy(this).log(periodId, closeType, step, ReportConstants.LOG_SUCCESS, message);
     }
 
     /** 写失败日志 */
     private void logFailed(Long periodId, String closeType, String step, String message) {
-        log(periodId, closeType, step, ReportConstants.LOG_FAILED, message);
+        SpringUtils.getAopProxy(this).log(periodId, closeType, step, ReportConstants.LOG_FAILED, message);
     }
 
     /** 写信息日志(复用成功状态) */
     private void logInfo(Long periodId, String closeType, String step, String message) {
-        log(periodId, closeType, step, ReportConstants.LOG_SUCCESS, message);
+        SpringUtils.getAopProxy(this).log(periodId, closeType, step, ReportConstants.LOG_SUCCESS, message);
     }
 
-    /** 落日志(独立事务保证步骤失败也可查) */
-    private void log(Long periodId, String closeType, String step, String status, String message) {
+    /**
+     * 落日志(REQUIRES_NEW 独立事务, 步骤失败回滚不影响日志留痕)。
+     * <p>必须经 AOP 代理调用(SpringUtils.getAopProxy(this).log), 同类直调会绕过代理导致事务失效。</p>
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void log(Long periodId, String closeType, String step, String status, String message) {
         FinCloseLog l = new FinCloseLog();
         l.setLogId(IdGeneratorUtil.nextLongId());
         l.setPeriodId(periodId);

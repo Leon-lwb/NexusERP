@@ -179,9 +179,10 @@ public class WmStockOperationServiceImpl implements IWmStockOperationService {
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void postReworkIssue(Long reworkId, Long materialId, String materialCode, String materialName, BigDecimal quantity, Long warehouseId, Long locationId, Date now) {
+    public void postReworkIssue(Long reworkId, String reworkNo, Long materialId, String materialCode, String materialName, BigDecimal quantity, Long warehouseId, Long locationId, Date now) {
+        // 策略参数契约(9参): reworkId, reworkNo, materialId, materialCode, materialName, quantity, warehouseId, locationId, now
         strategyFactory.getStrategy(StockOperationTypeEnum.REWORK_ISSUE)
-            .execute(reworkId, materialId, materialCode, materialName, quantity, warehouseId, locationId, now);
+            .execute(reworkId, reworkNo, materialId, materialCode, materialName, quantity, warehouseId, locationId, now);
     }
 
     /**
@@ -200,8 +201,9 @@ public class WmStockOperationServiceImpl implements IWmStockOperationService {
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void postReworkReceive(Long reworkId, Long materialId, String materialCode, String materialName, BigDecimal quantity, Long warehouseId, Long locationId, Date now) {
+    public void postReworkReceive(Long reworkId, String reworkNo, Long materialId, String materialCode, String materialName, BigDecimal quantity, Long warehouseId, Long locationId, Date now) {
+        // 策略参数契约(9参): reworkId, reworkNo, materialId, materialCode, materialName, quantity, warehouseId, locationId, now
         strategyFactory.getStrategy(StockOperationTypeEnum.REWORK_RECEIVE)
-            .execute(reworkId, materialId, materialCode, materialName, quantity, warehouseId, locationId, now);
+            .execute(reworkId, reworkNo, materialId, materialCode, materialName, quantity, warehouseId, locationId, now);
     }
 }

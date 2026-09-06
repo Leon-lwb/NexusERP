@@ -111,6 +111,9 @@ public class BdBomServiceImpl implements IBdBomService {
     @Override
     public BdBomVo selectById(Long id) {
         BdBomVo vo = baseMapper.selectVoById(id);
+        if (vo == null) {
+            throw new ServiceException("BOM不存在或已被删除: " + id);
+        }
         enrichBomVo(List.of(vo));
         return vo;
     }

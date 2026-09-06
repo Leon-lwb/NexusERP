@@ -681,7 +681,8 @@ public class PuInvoiceServiceImpl implements IPuInvoiceService {
             if (returnQty == null || returnQty.compareTo(BigDecimal.ZERO) <= 0) {
                 continue;
             }
-            // 退货数量不超过该发票行已开票数量(防超额红冲;多发票覆盖同 PO 行的按发票拆分见 TODO)
+            // 退货数量不超过该发票行已开票数量(防超额红冲);多发票覆盖同 PO 行由
+            // redFlushForReturnByPoLines 按"先消先冲"逐发票分配后再调本方法, 此处不再重复拆分
             BigDecimal origQty = orig.getQuantity() != null ? orig.getQuantity() : BigDecimal.ZERO;
             if (returnQty.compareTo(origQty) > 0) {
                 log.warn("退货进项转出:退货数量({})超过该发票行已开票数量({}),按已开票数量红冲, poLineId={}",

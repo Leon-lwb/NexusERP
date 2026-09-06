@@ -71,4 +71,14 @@ public interface IWmMaterialStockService {
      * @return 库存清单集合
      */
     List<WmMaterialStockVo> selectByCategoryIds(List<Long> categoryIds);
+
+    /**
+     * IQC 不合格冻结:按收货单+物料定位批次,冻结对应库存行(frozen_flag=1)
+     * <p>收货行无批次号时无法精确定位,返回 0(由上架门禁 confirmShelf 兜底拦截)。</p>
+     *
+     * @param receiveId  收货单ID
+     * @param materialId 物料ID
+     * @return 冻结库存行数
+     */
+    int freezeStockByReceiveBatches(Long receiveId, Long materialId);
 }

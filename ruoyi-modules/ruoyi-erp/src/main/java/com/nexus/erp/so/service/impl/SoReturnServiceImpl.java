@@ -168,12 +168,20 @@ public class SoReturnServiceImpl implements ISoReturnService {
             throw new RuntimeException("退货单无明细行");
         }
 
+        // 条件更新抢占状态 → RECEIVED, 防并发双执行重复入库
+        int updated = baseMapper.update(null,
+            Wrappers.<SoReturn>lambdaUpdate()
+                .set(SoReturn::getStatus, STATUS_RECEIVED)
+                .eq(SoReturn::getReturnId, returnId)
+                .eq(SoReturn::getStatus, soReturn.getStatus()));
+        if (updated == 0) {
+            throw new RuntimeException("退货单状态已被并发操作变更，请刷新后重试");
+        }
+
         for (SoReturnLine line : lines) {
             postReturnStock(soReturn, line, new Date());
         }
 
-        soReturn.setStatus(STATUS_RECEIVED);
-        baseMapper.updateById(soReturn);
         log.info("退货单执行完成, returnId={}", returnId);
     }
 
@@ -304,14 +312,18 @@ public class SoReturnServiceImpl implements ISoReturnService {
             stock.setWarehouseId(soReturn.getWarehouseId());
             stock.setWarehouseCode(soReturn.getWarehouseCode());
             stock.setWarehouseName(soReturn.getWarehouseName());
-            stock.setStockQuantity(afterQuantity);
+            stock.setStockQuantity(line.getReturnQuantity());
             stock.setRecptDate(now);
             stock.setFrozenFlag(0L);
+            // 新建库存行必须显式置 0, 否则 version 为 null 时后续乐观锁更新不生效
+            stock.setVersion(0);
             stockMapper.insert(stock);
         } else {
-            stock.setStockQuantity(afterQuantity);
-            stock.setRecptDate(now);
-            stockMapper.updateById(stock);
+            // 原子累加(乐观锁 version 守卫), 替换读-改-写
+            int rows = stockMapper.addStock(stock.getStockId(), line.getReturnQuantity(), stock.getVersion());
+            if (rows == 0) {
+                throw new RuntimeException("库存并发变更冲突，请重试: stockId=" + stock.getStockId());
+            }
         }
 
         WmMaterialStockTx tx = new WmMaterialStockTx();

@@ -71,34 +71,35 @@ public class ReworkIssueStrategy extends BaseStockOperationStrategy {
 
     /**
      * 执行返工领料出库操作
-     *
-     * @param args 操作参数，args[0]为返工订单ID（Long），args[1]为物料ID（Long），
-     *             args[2]为领料数量（BigDecimal），args[3]为物料名称（String），
-     *             args[4]为返工订单编号（String）
+     * <p>参数契约与 {@code IWmStockOperationService#postReworkIssue} 一致(9参):
+     * args[0]=reworkId, args[1]=reworkNo, args[2]=materialId, args[3]=materialCode,
+     * args[4]=materialName, args[5]=quantity, args[6]=warehouseId(可空), args[7]=locationId(可空), args[8]=now。</p>
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void execute(Object... args) {
         Long reworkId = (Long) args[0];
-        Long materialId = (Long) args[1];
-        BigDecimal quantity = (BigDecimal) args[2];
-        String materialName = (String) args[3];
-        String reworkNo = (String) args[4];
+        String reworkNo = (String) args[1];
+        Long materialId = (Long) args[2];
+        String materialCode = (String) args[3];
+        String materialName = (String) args[4];
+        BigDecimal quantity = (BigDecimal) args[5];
+        Long warehouseId = (Long) args[6];
+        Date now = args[8] instanceof Date ? (Date) args[8] : new Date();
 
         if (hasPosted(SOURCE_DOC_TYPE_REWORK, reworkId)) {
             return;
         }
 
-        Date now = new Date();
-
         List<WmMaterialStock> stockList = stockMapper.selectList(
             Wrappers.lambdaQuery(WmMaterialStock.class)
                 .eq(WmMaterialStock::getMaterialId, materialId)
+                .eq(warehouseId != null, WmMaterialStock::getWarehouseId, warehouseId)
                 .eq(WmMaterialStock::getFrozenFlag, 0L)
                 .orderByAsc(WmMaterialStock::getRecptDate));
 
         if (stockList == null || stockList.isEmpty()) {
-            throw new ServiceException("物料【" + materialName + "】库存不足");
+            throw new ServiceException("物料【" + materialCode + "/" + materialName + "】库存不足");
         }
 
         BigDecimal remaining = quantity;
@@ -113,7 +114,7 @@ public class ReworkIssueStrategy extends BaseStockOperationStrategy {
 
             int affected = stockMapper.deductStock(stock.getStockId(), deductQty, stock.getVersion());
             if (affected == 0) {
-                throw new ServiceException("库存并发冲突，请重试: 物料【" + materialName + "】");
+                throw new ServiceException("库存并发冲突，请重试: 物料【" + materialCode + "/" + materialName + "】");
             }
 
             WmMaterialStockTx tx = buildBaseTxFromStock(stock, TX_TYPE_REWORK_ISSUE, TX_FLAG_OUT,
@@ -128,7 +129,7 @@ public class ReworkIssueStrategy extends BaseStockOperationStrategy {
         }
 
         if (remaining.compareTo(BigDecimal.ZERO) > 0) {
-            throw new ServiceException("物料【" + materialName + "】库存不足，缺少" + remaining);
+            throw new ServiceException("物料【" + materialCode + "/" + materialName + "】库存不足，缺少" + remaining);
         }
 
         ReworkStockMessage msg = new ReworkStockMessage();

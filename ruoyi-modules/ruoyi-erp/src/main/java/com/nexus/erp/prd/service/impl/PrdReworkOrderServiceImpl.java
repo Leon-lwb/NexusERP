@@ -209,7 +209,7 @@ public class PrdReworkOrderServiceImpl implements IPrdReworkOrderService {
         if (rework.getMaterialId() == null || rework.getReworkQty() == null) {
             throw new ServiceException("返工订单物料信息不完整");
         }
-        stockOperationService.postReworkIssue(reworkId, rework.getMaterialId(), rework.getMaterialCode(),
+        stockOperationService.postReworkIssue(reworkId, rework.getReworkNo(), rework.getMaterialId(), rework.getMaterialCode(),
             rework.getMaterialName(), rework.getReworkQty(), null, null, new Date());
         log.info("返工订单[{}]出库完成，物料[{}]，数量[{}]", rework.getReworkNo(), rework.getMaterialCode(), rework.getReworkQty());
     }
@@ -235,7 +235,7 @@ public class PrdReworkOrderServiceImpl implements IPrdReworkOrderService {
         if (rework.getMaterialId() == null || rework.getActualQty() == null) {
             throw new ServiceException("返工订单物料信息或实际数量不完整");
         }
-        stockOperationService.postReworkReceive(reworkId, rework.getMaterialId(), rework.getMaterialCode(),
+        stockOperationService.postReworkReceive(reworkId, rework.getReworkNo(), rework.getMaterialId(), rework.getMaterialCode(),
             rework.getMaterialName(), rework.getActualQty(), null, null, new Date());
         log.info("返工订单[{}]入库完成，物料[{}]，数量[{}]", rework.getReworkNo(), rework.getMaterialCode(), rework.getActualQty());
     }

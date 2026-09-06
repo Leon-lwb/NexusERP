@@ -404,6 +404,15 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
             throw new RuntimeException("该生产计划未选择BOM，请先在表单选择BOM后再计算");
         }
 
+        // 2.5 幂等防重: 该计划已生成过物料需求时直接返回既有记录, 防重复点击成倍生成
+        PrdMaterialRequirement existingProbe = new PrdMaterialRequirement();
+        existingProbe.setPlanId(planId);
+        List<PrdMaterialRequirement> existing = prdMaterialRequirementService.selectPrdMaterialRequirementList(existingProbe);
+        if (existing != null && !existing.isEmpty()) {
+            log.info("该生产计划已生成过物料需求, 直接返回既有记录: planId={}, count={}", planId, existing.size());
+            return existing;
+        }
+
         // 3. 按节点拆分生成：顶层与每个子节点BOM分别生成主表与底层物料子表
         List<PrdMaterialRequirement> createdMainRequirements = processBomNode(
                 plan.getBomId(),
@@ -411,7 +420,8 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
                 plan.getTotalQuantity(),
                 plan,
                 null,
-                null
+                // 根节点需求日期 = 计划完成日期, 子层按各物料提前期倒排
+                plan.getEndDate()
         );
 
         log.info("成功生成物料需求，共生成 {} 条主表记录", createdMainRequirements.size());
@@ -534,10 +544,11 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
 
             List<PrdMaterialRequirementDetail> detailList = new ArrayList<>();
             for (MaterialRequirementCalcDTO calcDto : mergedLeaves) {
+                // 底层物料需求日期按当前节点需求日期与物料提前期倒排(见 createMaterialRequirementDetail)
                 PrdMaterialRequirementDetail detailRecord = createMaterialRequirementDetail(
                         mainRequirement.getRequirementId(),
                         calcDto,
-                        null
+                        parentRequiredDate
                 );
                 detailList.add(detailRecord);
             }
@@ -556,13 +567,21 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
         Long nextParentRequirementId = mainRequirement != null
             ? mainRequirement.getRequirementId() : parentRequirementId;
         for (BomCalculationNode childNode : childAssemblyNodes) {
+            // 子节点需求日期倒排: 父节点需求日期 - 子项提前期(小时), 保证子项产出不晚于父项需求
+            Date childRequiredDate = parentRequiredDate;
+            if (parentRequiredDate != null && childNode.getParentDetail() != null
+                && childNode.getParentDetail().getLeadTime() != null
+                && childNode.getParentDetail().getLeadTime() > 0) {
+                childRequiredDate = Date.from(parentRequiredDate.toInstant()
+                    .minusSeconds(childNode.getParentDetail().getLeadTime() * 3600L));
+            }
             result.addAll(processBomNode(
                     childNode.getMaterialId(),
                     childNode.getBomId(),
                     childNode.getQuantity(),
                     plan,
                     nextParentRequirementId,
-                    parentRequiredDate
+                    childRequiredDate
             ));
         }
 

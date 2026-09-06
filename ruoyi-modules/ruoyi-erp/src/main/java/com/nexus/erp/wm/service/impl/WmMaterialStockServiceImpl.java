@@ -8,9 +8,11 @@ import com.nexus.common.core.utils.MapstructUtils;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
+import com.nexus.erp.wm.domain.WmMaterialReceiveLine;
 import com.nexus.erp.wm.domain.WmMaterialStock;
 import com.nexus.erp.wm.domain.bo.WmMaterialStockBo;
 import com.nexus.erp.wm.domain.vo.WmMaterialStockVo;
+import com.nexus.erp.wm.mapper.WmMaterialReceiveLineMapper;
 import com.nexus.erp.wm.mapper.WmMaterialStockMapper;
 import com.nexus.erp.wm.service.IWmMaterialStockService;
 import org.springframework.stereotype.Service;
@@ -21,6 +23,7 @@ import com.nexus.erp.bd.domain.BdMaterial;
 import com.nexus.erp.bd.mapper.BdMaterialMapper;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 库存清单Service业务层处理
@@ -35,14 +38,19 @@ public class WmMaterialStockServiceImpl extends ServiceImpl<WmMaterialStockMappe
     /** 物料库存数据访问映射器（Mapper） */
     private final BdMaterialMapper bdMaterialMapper;
 
+    /** 收货单行 Mapper（IQC 冻结时按收货单定位批次号） */
+    private final WmMaterialReceiveLineMapper materialReceiveLineMapper;
+
     /**
      * 物料库存处理（WmMaterialStockServiceImpl）
      *
-     * @param bdMaterialMapper 参数 bdMaterialMapper
-     * @return 结果
+     * @param bdMaterialMapper         参数 bdMaterialMapper
+     * @param materialReceiveLineMapper 收货单行 Mapper
      */
-    public WmMaterialStockServiceImpl(BdMaterialMapper bdMaterialMapper) {
+    public WmMaterialStockServiceImpl(BdMaterialMapper bdMaterialMapper,
+                                      WmMaterialReceiveLineMapper materialReceiveLineMapper) {
         this.bdMaterialMapper = bdMaterialMapper;
+        this.materialReceiveLineMapper = materialReceiveLineMapper;
     }
 
     /**
@@ -183,5 +191,34 @@ public class WmMaterialStockServiceImpl extends ServiceImpl<WmMaterialStockMappe
         lqw.eq(bo.getExpireDate() != null, WmMaterialStock::getExpireDate, bo.getExpireDate());
         lqw.eq(bo.getFrozenFlag() != null, WmMaterialStock::getFrozenFlag, bo.getFrozenFlag());
         return lqw;
+    }
+
+    /**
+     * IQC 不合格冻结:按收货单+物料定位批次号,冻结对应库存行(与 WmBatchServiceImpl.markQcStatusByReceive 同源定位)
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int freezeStockByReceiveBatches(Long receiveId, Long materialId) {
+        if (receiveId == null || materialId == null) {
+            return 0;
+        }
+        List<String> batchCodes = materialReceiveLineMapper.selectList(
+                Wrappers.<WmMaterialReceiveLine>lambdaQuery()
+                    .eq(WmMaterialReceiveLine::getReceiveId, receiveId)
+                    .eq(WmMaterialReceiveLine::getMaterialId, materialId)
+                    .isNotNull(WmMaterialReceiveLine::getBatchCode))
+            .stream()
+            .map(WmMaterialReceiveLine::getBatchCode)
+            .filter(StringUtils::isNotBlank)
+            .distinct()
+            .collect(Collectors.toList());
+        if (batchCodes.isEmpty()) {
+            return 0;
+        }
+        return baseMapper.update(null, Wrappers.<WmMaterialStock>lambdaUpdate()
+            .set(WmMaterialStock::getFrozenFlag, 1L)
+            .eq(WmMaterialStock::getMaterialId, materialId)
+            .in(WmMaterialStock::getBatchCode, batchCodes)
+            .eq(WmMaterialStock::getFrozenFlag, 0L));
     }
 }

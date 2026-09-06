@@ -300,9 +300,20 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
         header.setCreditStatus("PASSED");
         header.setCreditCheckTime(new Date());
 
+        // 条件更新抢占 DRAFT/APPROVED → CONFIRMED, 防并发双确认(读-改-写窗口已消除)
         header.setOrderStatus(STATUS_CONFIRMED);
         header.setConfirmedTime(new Date());
-        baseMapper.updateById(header);
+        int updated = baseMapper.update(null,
+            Wrappers.<SoSalesOrderHeader>lambdaUpdate()
+                .set(SoSalesOrderHeader::getOrderStatus, STATUS_CONFIRMED)
+                .set(SoSalesOrderHeader::getConfirmedTime, header.getConfirmedTime())
+                .set(SoSalesOrderHeader::getCreditStatus, header.getCreditStatus())
+                .set(SoSalesOrderHeader::getCreditCheckTime, header.getCreditCheckTime())
+                .eq(SoSalesOrderHeader::getSoId, soId)
+                .in(SoSalesOrderHeader::getOrderStatus, STATUS_DRAFT, STATUS_APPROVED));
+        if (updated == 0) {
+            throw new RuntimeException("订单状态已被并发操作变更，请刷新后重试");
+        }
         log.info("销售订单确认成功, soId={}, soNo={}, creditStatus=PASSED", soId, header.getSoNo());
 
         // 库存预留: 对库存物料(非自制)触发预留
@@ -400,10 +411,18 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
         // ⑤ 信用转结 FROZEN → USED（已交付形成应收，仍占用额度）
         creditCheckService.convertToUsed(soId);
 
-        // ⑥ 头状态
+        // ⑥ 头状态: 条件更新抢占 CONFIRMED → FULFILLED, 防并发双履行(重复事件/重复核销)
         header.setOrderStatus(STATUS_FULFILLED);
         header.setFulfilledTime(new Date());
-        baseMapper.updateById(header);
+        int updated = baseMapper.update(null,
+            Wrappers.<SoSalesOrderHeader>lambdaUpdate()
+                .set(SoSalesOrderHeader::getOrderStatus, STATUS_FULFILLED)
+                .set(SoSalesOrderHeader::getFulfilledTime, header.getFulfilledTime())
+                .eq(SoSalesOrderHeader::getSoId, soId)
+                .eq(SoSalesOrderHeader::getOrderStatus, STATUS_CONFIRMED));
+        if (updated == 0) {
+            throw new RuntimeException("订单状态已被并发操作变更，履行失败，请刷新后重试");
+        }
 
         // ⑦ 发布事件（为未来开票/通知预留）
         applicationEventPublisher.publishEvent(new SalesOrderFulfilledEvent(this, soId, header.getSoNo(), TenantHelper.getTenantId()));
@@ -444,9 +463,18 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
         if (STATUS_CANCELLED.equals(header.getOrderStatus())) {
             throw new RuntimeException("已取消的订单不能关闭");
         }
+        // 条件更新: 仅非取消状态可置 CLOSED, 防并发取消/关闭竞态
         header.setOrderStatus(STATUS_CLOSED);
         header.setClosedTime(new Date());
-        baseMapper.updateById(header);
+        int updated = baseMapper.update(null,
+            Wrappers.<SoSalesOrderHeader>lambdaUpdate()
+                .set(SoSalesOrderHeader::getOrderStatus, STATUS_CLOSED)
+                .set(SoSalesOrderHeader::getClosedTime, header.getClosedTime())
+                .eq(SoSalesOrderHeader::getSoId, soId)
+                .ne(SoSalesOrderHeader::getOrderStatus, STATUS_CANCELLED));
+        if (updated == 0) {
+            throw new RuntimeException("订单已被并发取消，无法关闭");
+        }
         creditCheckService.release(soId);
         // 释放库存预留, 避免预留库存泄漏(与 cancel 保持一致)
         stockReservationService.unreserve("SALES_ORDER", soId, null);

@@ -31,6 +31,8 @@ import com.nexus.erp.wm.mapper.WmMaterialStockMapper;
 import com.nexus.erp.wm.mapper.WmMaterialStockTxMapper;
 import com.nexus.erp.wm.mapper.WmSalesIssueLineMapper;
 import com.nexus.erp.wm.mapper.WmSalesIssueMapper;
+import com.nexus.erp.so.domain.SoSalesOrderLine;
+import com.nexus.erp.so.mapper.SoSalesOrderLineMapper;
 import com.nexus.erp.wm.service.IWmSalesIssueService;
 import com.nexus.erp.so.service.ISoFulfillmentWritebackService;
 import com.nexus.workflow.domain.WfMyBusiness;
@@ -78,6 +80,9 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
     private final ReliableMessageProducer messageProducer;
     /** 物料主数据 Mapper：查 inspection_required 门控 OQC 自动创建 */
     private final BdMaterialMapper bdMaterialMapper;
+
+    /** SO 行 Mapper（出库完成时同步消耗 SO 行预留数量） */
+    private final SoSalesOrderLineMapper salesOrderLineMapper;
 
     /**
      * 分页查询销售发料列表
@@ -267,6 +272,14 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
                     + totalAvailable + "，出库数量：" + issueQty);
             }
 
+            // 预留消耗: SO 行预留量随出库同步释放(与 SalesOutStrategy 口径一致)
+            SoSalesOrderLine soLine = line.getSourceDocLineId() != null
+                ? salesOrderLineMapper.selectById(line.getSourceDocLineId()) : null;
+            BigDecimal soReservedQty = soLine != null && soLine.getReservedQty() != null
+                ? soLine.getReservedQty() : BigDecimal.ZERO;
+            BigDecimal totalConsumeReserved = issueQty.min(soReservedQty);
+            BigDecimal remainingConsumeReserved = totalConsumeReserved;
+
             for (WmMaterialStock stock : stockList) {
                 if (remaining.compareTo(BigDecimal.ZERO) <= 0) {
                     break;
@@ -277,11 +290,18 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
                 }
 
                 BigDecimal consumeQty = currentQty.min(remaining);
-                // 原子扣减库存（乐观锁 + 不允许负库存）
-                int affected = wmMaterialStockMapper.deductStock(stock.getStockId(), consumeQty, stock.getVersion());
+                // 本次扣减消费的预留量: min(本次扣减, 该库存行已预留, 剩余待消费预留)
+                BigDecimal stockReserved = stock.getReservedQuantity() == null
+                    ? BigDecimal.ZERO : stock.getReservedQuantity();
+                BigDecimal batchConsumeReserved = consumeQty.min(stockReserved).min(remainingConsumeReserved);
+                // 原子扣减库存（乐观锁 + 不允许负库存; 命中预留时同步释放预留）
+                int affected = batchConsumeReserved.compareTo(BigDecimal.ZERO) > 0
+                    ? wmMaterialStockMapper.deductStockWithReserved(stock.getStockId(), consumeQty, batchConsumeReserved, stock.getVersion())
+                    : wmMaterialStockMapper.deductStock(stock.getStockId(), consumeQty, stock.getVersion());
                 if (affected == 0) {
                     throw new ServiceException("库存并发冲突，请重试: 物料【" + line.getMaterialName() + "】");
                 }
+                remainingConsumeReserved = remainingConsumeReserved.subtract(batchConsumeReserved);
 
                 // 生成库存事务记录
                 WmMaterialStockTx tx = new WmMaterialStockTx();
@@ -317,6 +337,17 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
                 stockTxMapper.insert(tx);
 
                 remaining = remaining.subtract(consumeQty);
+            }
+
+            // 原子扣减 SO 行剩余预留数量(预留已随出库消耗, setSql 原子递减 + 预留充足守卫)
+            if (totalConsumeReserved.compareTo(BigDecimal.ZERO) > 0 && soLine != null) {
+                int reservedRows = salesOrderLineMapper.update(null, Wrappers.<SoSalesOrderLine>lambdaUpdate()
+                    .eq(SoSalesOrderLine::getLineId, soLine.getLineId())
+                    .ge(SoSalesOrderLine::getReservedQty, totalConsumeReserved)
+                    .setSql("reserved_qty = reserved_qty - " + totalConsumeReserved.toPlainString()));
+                if (reservedRows == 0) {
+                    throw new ServiceException("SO行预留数量更新失败(并发冲突或预留不足), soLineId=" + soLine.getLineId());
+                }
             }
 
             // 回写 SO 行已发货/已履行数量（销售出库即对该行的履行交付）

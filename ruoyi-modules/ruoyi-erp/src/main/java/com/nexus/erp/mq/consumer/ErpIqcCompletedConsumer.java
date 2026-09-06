@@ -7,6 +7,7 @@ import com.nexus.erp.wm.domain.WmMaterialReceive;
 import com.nexus.erp.wm.service.IWmArrivalNoticeLineService;
 import com.nexus.erp.wm.service.IWmBatchService;
 import com.nexus.erp.wm.service.IWmMaterialReceiveService;
+import com.nexus.erp.wm.service.IWmMaterialStockService;
 import com.rabbitmq.client.Channel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,6 +37,7 @@ public class ErpIqcCompletedConsumer extends BaseMessageConsumer<IqcCompletedMes
     private final IWmMaterialReceiveService materialReceiveService;
     private final IWmArrivalNoticeLineService arrivalNoticeLineService;
     private final IWmBatchService batchService;
+    private final IWmMaterialStockService materialStockService;
 
     /**
      * 获取消息类型
@@ -95,6 +97,13 @@ public class ErpIqcCompletedConsumer extends BaseMessageConsumer<IqcCompletedMes
         if (message.getMaterialId() != null) {
             batchService.markQcStatusByReceive(message.getReceiveId(), message.getMaterialId(),
                 message.getInspectResult());
+        }
+
+        // 4. 不合格冻结库存: 定位该收货单对应批次并冻结库存行(无批次记录时无法精确定位, 交由上架门禁 confirmShelf 兜底)
+        if ("UNQUALIFIED".equals(message.getInspectResult()) && message.getMaterialId() != null) {
+            int frozen = materialStockService.freezeStockByReceiveBatches(message.getReceiveId(), message.getMaterialId());
+            log.info("IQC不合格冻结库存: receiveId={}, materialId={}, 冻结行数={}",
+                message.getReceiveId(), message.getMaterialId(), frozen);
         }
         log.info("IQC回写收货单完成: receiveId={}, iqcCode={}, result={}",
             message.getReceiveId(), message.getIqcCode(), message.getInspectResult());
