@@ -7,7 +7,7 @@ import com.nexus.common.log.enums.BusinessType;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.mes.eq.domain.bo.InspectionResultBo;
-import com.nexus.mes.pda.annotation.PdaIdempotent;
+import com.nexus.common.satoken.pda.PdaIdempotent;
 import com.nexus.mes.pda.domain.vo.MesActionResultVo;
 import com.nexus.mes.pda.domain.vo.PdaEqInspectionVo;
 import com.nexus.mes.pda.domain.vo.PdaEqItemVo;

@@ -1,12 +1,13 @@
 package com.nexus.mes.pda.domain.vo;
 
+import com.nexus.common.satoken.pda.PdaActionResult;
 import lombok.Data;
 
 /**
  * PDA 作业动作结果 (MES 侧, 与 erp 的 PdaActionResultVo 同构)
  */
 @Data
-public class MesActionResultVo {
+public class MesActionResultVo implements PdaActionResult {
 
     private Boolean ok = Boolean.TRUE;
 

@@ -4,7 +4,7 @@ import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.nexus.common.core.domain.R;
 import com.nexus.common.log.annotation.Log;
 import com.nexus.common.log.enums.BusinessType;
-import com.nexus.mes.pda.annotation.PdaIdempotent;
+import com.nexus.common.satoken.pda.PdaIdempotent;
 import com.nexus.mes.pda.domain.bo.PdaSnBindBo;
 import com.nexus.mes.pda.domain.bo.PdaSnUnbindBo;
 import com.nexus.mes.pda.domain.vo.MesActionResultVo;

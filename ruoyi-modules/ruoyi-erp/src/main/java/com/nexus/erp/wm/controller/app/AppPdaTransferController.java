@@ -6,7 +6,7 @@ import com.nexus.common.log.annotation.Log;
 import com.nexus.common.log.enums.BusinessType;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
-import com.nexus.erp.wm.annotation.PdaIdempotent;
+import com.nexus.common.satoken.pda.PdaIdempotent;
 import com.nexus.erp.wm.domain.bo.pda.PdaShelfBo;
 import com.nexus.erp.wm.domain.bo.pda.PdaTransferTakeoffBo;
 import com.nexus.erp.wm.domain.vo.pda.PdaActionResultVo;

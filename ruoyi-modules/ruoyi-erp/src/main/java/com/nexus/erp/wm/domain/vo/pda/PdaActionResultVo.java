@@ -1,5 +1,6 @@
 package com.nexus.erp.wm.domain.vo.pda;
 
+import com.nexus.common.satoken.pda.PdaActionResult;
 import lombok.Data;
 
 /**
@@ -8,7 +9,7 @@ import lombok.Data;
  * nextAction 取值: SCAN_NEXT_MATERIAL / SCAN_LOCATION / FINISHED, 驱动前端焦点流转
  */
 @Data
-public class PdaActionResultVo {
+public class PdaActionResultVo implements PdaActionResult {
 
     public static final String NEXT_SCAN_MATERIAL = "SCAN_NEXT_MATERIAL";
     public static final String NEXT_SCAN_LOCATION = "SCAN_LOCATION";

@@ -1,1 +1,2 @@
 com.nexus.common.satoken.config.SaTokenConfig
+com.nexus.common.satoken.config.PdaIdempotentConfiguration
