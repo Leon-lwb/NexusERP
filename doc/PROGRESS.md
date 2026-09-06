@@ -1,8 +1,9 @@
 # NexusERP 功能开发进度
 
-> 更新日期: 2026-08-29
+> 更新日期: 2026-09-06
 > 状态图例: ✅ 已完成 | 🚧 进行中 | ⬜ 未开发 | 🗑️ 暂时搁置
-> 最近修订: 2026-08-29 按 [08-16 全项目审查报告](./system/2026-08-16-全项目审查报告.md) 勘误（库存预留前端/IM 已读未读/工作流加签转办均已实现），并登记 MES 固件模块 (fw) 与流程编排模块 (ruoyi-flow) 两个新交付模块
+> 最近修订: 2026-09-06 按 [09-06 全项目审查报告](./system/2026-09-06-全项目审查报告.md) 复核回填——RAG+KG 混合检索 ✅、MES pro 单元测试 ✅、知识图谱已知问题修复 ✅；登记 08-29 后增量交付（APS 排产/缺料风险/检验标准模板/预测性维护/生产退料与上料交接/盘点扩展/移库两段式/批次质检门禁/PDA 作业接口/工位终端设备通道/AI 模型字典化）
+> 历史修订: 2026-08-29 按 [08-16 全项目审查报告](./system/2026-08-16-全项目审查报告.md) 勘误（库存预留前端/IM 已读未读/工作流加签转办均已实现），并登记 MES 固件模块 (fw) 与流程编排模块 (ruoyi-flow) 两个新交付模块
 
 ---
 
@@ -28,6 +29,8 @@
 | **Workflow 工作流** | 27 | 26 | 0 | 1 | 0 |
 | **Report 报表** | 3 | 2 | 0 | 1 | 0 |
 | **合计** | **299** | **278** | **5** | **12** | **4** |
+
+> 注: 上表为 08-29 时点计数。09-06 登记的增量交付（APS 排产、缺料风险预测、检验标准模板、预测性维护、生产退料/上料交接、盘点扩展、移库两段式、批次质检门禁、PDA 作业接口、工位终端设备通道等）已在各模块表格补行，计数未重算。
 
 ---
 
@@ -423,6 +426,8 @@ flowchart LR
 | 生产领料可用库存实时展示 | WmProductionIssueController | — | ✅ |
 | MES 工单完工回写 ERP | ErpWorkOrderCompletedConsumer | — | ✅ |
 | 倒冲模式 (完工后 MQ 异步扣减) | ProductionBackflushConsumer | — | ✅ |
+| APS 智能排产引擎 (工单工序排程/甘特图/拖期分析/方案发布回写工单计划日期) | PrdScheduleEngine + PrdScheduleServiceImpl (含 AI Agent 工具) | prd/schedule/ | ✅ (2026-09-02, 4cd0f168/f7448e0d) |
+| 供应链缺料风险预测 (MRP 毛需求+库存+在途推演+风险看板) | PrdShortageSimulator + PrdShortageRiskServiceImpl | prd/shortage/ | ✅ (2026-09-02, 1e913252) |
 
 ---
 
@@ -496,6 +501,10 @@ flowchart LR
 | 生产领料 + 执行 | WmProductionIssueController | wm/productionissue/ | ✅ |
 | 杂项出库 + 执行 | WmMiscIssueController | wm/miscissue/ | ✅ |
 | 采购退货出库 | PuPurchaseReturnController | pu/return/ | ✅ |
+| 发料缺货逃生通道 (缺货关闭 + 原因留痕) | WmProductionIssueService | — | ✅ (2026-08-30, 4d70664b) |
+| 发料批次质检门禁 (IQC 完成回写批次 qc_status + 拣货拦截开关) | WmBatchServiceImpl + PdaIssueServiceImpl | — | ✅ (2026-08-31, 47311593) |
+| 生产退料单 (良品/不良/报废三类, PDA + PC 建单/详情) | WmMaterialReturnController + AppPdaReturnController | wm/return/ | ✅ (2026-09-01, c249ba85/a018af12/e82b21ce) |
+| 上料交接单 (PDA 确认/签名 + PC 建单/查看) | WmMaterialHandoverController + AppPdaHandoverController | wm/handover/ | ✅ (2026-09-01, 94ab9a93) |
 
 #### 第四层：库内操作
 
@@ -505,6 +514,8 @@ flowchart LR
 | 盘点管理 CRUD + 生成明细 + 过账 | WmStockTakingPlanController | wm/stocktaking/ | ✅ |
 | 安全库存预警 CRUD | WmStockAlertController | wm/stock-alert/ | ✅ |
 | 库存台账校验 | WmStockReconciliationController | wm/reconciliation/ | ✅ |
+| 盘点扩展 (盲盘遮蔽账面 + 临时盘点建单 + 动碰盘裁剪) | WmStockTakingPlan 扩展 | wm/stocktaking/ | ✅ (2026-09-01, 40a858e6) |
+| 移库两段式 (行级下架核销 + 目标库位上架过账) | WmTransferService | wm/transfer/ | ✅ (2026-08-31, e96f0429) |
 
 #### 第五层：辅助功能
 
@@ -529,6 +540,21 @@ flowchart LR
 | SO 确认 + 工单下达 + 出库消费集成 | 跨模块联动 | — | ✅ |
 | 库存预留前端页面 | — | wm/reservation/ | ✅ |
 | 拣货策略库存预留优化 | 拣货+预留联动 | — | ✅ |
+
+#### 第七层：PDA 手持作业接口 (/app/pda, M1~M3)
+
+> 2026-08-29~09-05 (7e666b0f 起一批)。客户端 nexus-pda 为外部独立仓库 (见 [客户端生态规划](./system/2026-08-19-Nexus客户端生态规划.md))。
+
+| 功能 | 后端 | 状态 |
+|------|------|------|
+| 发料 (拣货/完工) + 收货确认 | AppPdaIssueController / AppPdaReceiveController | ✅ |
+| 退料 (良品/不良/报废 confirm/finish) | AppPdaReturnController | ✅ |
+| 移库两段式 (takeoff/execute) | AppPdaTransferController | ✅ |
+| 盲盘 (create/count/post) | AppPdaStocktakingController | ✅ |
+| 上料交接 (confirm/sign) | AppPdaHandoverController | ✅ |
+| 主数据增量同步 + 待办聚合 | AppPdaBasedataController / AppPdaTodoController | ✅ (遗留: /sync 无权限点, 见 09-06 审查报告 N3) |
+| 幂等组件 PdaIdempotent (失败释放占位键) | erp/wm + mes/pda 各一套 | ✅ (遗留: 双套并存待合并下沉, 见 N4) |
+| 权限点强制 + 退料权限种子 | 989887e6 | ✅ |
 
 #### 搁置/未开发
 
@@ -556,7 +582,7 @@ flowchart LR
 | 采购订单状态枚举 (9 状态) | PurchaseOrderStatusEnum | ✅ |
 | 跨库事务补偿框架 (7 层可靠性) | WmMqSendService + mq_message_record | ✅ |
 | MQ 重试计数机制 | 修复后 | ✅ |
-| 消息死信队列处理 | — | ⬜ |
+| 消息死信队列处理 | DeadLetterMessageConsumer + DeadLetterRecord 落库 | ⬜ (缺查询/重投接口与人工处理页面, 见 09-06 审查报告缺失 #2) |
 
 ---
 
@@ -582,6 +608,8 @@ flowchart LR
 | 组件级正向/反向追溯 | ProTraceabilityController | pro/sn/trace.vue | ✅ |
 | 安灯告警 CRUD + SSE 推送 | ProAndonController | pro/andon/ | ✅ |
 | MBOM (制造 BOM) 管理 | MesMbomController | pro/mbom/ | ✅ |
+| 客户定制化发布包 (方案D: 固件映射/BOM 选配/配置项 + 工单固件确认与 FLASH 下达门禁) | ReleasePackageController + FirmwareServiceImpl + UpdateStepFirmwareBo | mes/release/package/ | ✅ (2026-08-22, cd362f51) |
+| SN 标签打印 v1 | — | — | ✅ (2026-08-25, c28c2628) |
 
 #### 第三层：进站/出站校验 (P0-3)
 
@@ -599,6 +627,18 @@ flowchart LR
 | MES 主数据 - 物料查看 | 复用 ERP BdMaterialController | ✅ |
 | MES 主数据 - 工艺路线查看 | 复用 ERP BdRoutingController | ✅ |
 | MES-IoT 设备软链接 | MesErpBridgeService | ✅ |
+
+#### 第五层：PDA 手持作业接口 (mes/pda)
+
+| 功能 | 后端 | 状态 |
+|------|------|------|
+| 扫码报工 (按派工单开工/完工, 幂等) | AppPdaReportController | ✅ (aa9b37de) |
+| SN 绑定/解绑/查询 (按批次绑定+物料带出) | AppPdaSnController | ✅ (db36d127) |
+| 设备点检 / 保养维保 (到期待办/详情/执行+保养日期推进) | AppPdaEqController / AppPdaEqMaintController | ✅ (2c2627d1/42f1e26a) |
+| 质量三检 PDA (IQC/IPQC/OQC 待检/详情/提交+拍照附件) | AppPdaIqc/Ipqc/OqcController | ✅ (d2964d7c) |
+| AQL 抽样试算 (GB/T 2828.1 简化版) | AppPdaQcAqlController (AqlSampler 唯一实现) | ✅ (d63f0c64/cbcd2aab) |
+| 统一追溯查询门面 (M3 批次4) | AppPdaTraceController (ruoyi-admin) | ✅ (39c7c7b7) |
+| 待办聚合 /app/pda/todo/summary | AppPdaTodoController | ✅ (de39c650) |
 
 ---
 
@@ -625,6 +665,7 @@ flowchart LR
 | 设备点检前端页面 + API | — | eq/inspection/ | ✅ |
 | 设备 OEE 综合效率分析 | — | — | ✅ |
 | 设备备件管理 | — | — | ✅ |
+| 预测性维护 (EWMA 实时异常检测 + 设备健康评分 + 定时评估) | EqHealthServiceImpl + EquipmentHealthTask + common-iot EwmaUtil | eq/health/ | ✅ (2026-09-03, 801aceba/f0b00e10) |
 
 ---
 
@@ -638,6 +679,8 @@ flowchart LR
 | OQC 出货检验 CRUD | QcOqcController | qc/oqc/ | ✅ |
 | 不合格品处理流程 (MRB/NCR) | — | — | ✅ |
 | 质量追溯 (批次→检验记录) | — | — | ✅ |
+| 检验标准模板 + 明细自动判定引擎 | QcInspectTemplate/QcInspectItem + QcJudgeEngine | qc/template/ | ✅ (2026-09-02, dad81d73) |
+| AQL 抽样 (GB/T 2828.1, AqlSampler 唯一实现 + plan 锚点单测) | mes/qc AqlSampler | — | ✅ (2026-09-03, cbcd2aab) |
 
 ---
 
@@ -696,6 +739,20 @@ flowchart LR
 
 ---
 
+### 4.10 工位终端设备通道 (ruoyi-station) — M1/M2/M3 全量交付 ✅
+
+> 2026-08-19~09-01 (6e495e27/c3c27907/867b9a15/fcccba4f/70cbe181/66efd0af/e75c9e12 等)。工位终端本体 nexus-station 为外部独立仓库 (见 [客户端生态规划](./system/2026-08-19-Nexus客户端生态规划.md))。
+
+| 功能 | 说明 | 状态 |
+|------|------|------|
+| 过站报工 / SN 绑定追溯 / 点检 / 安灯 / 上料防错 / SOP 下发 / 刷写预备 | 8 Controller + 8 Service, 契约 API 级验通 | ✅ |
+| 设备台账页 (在线状态/工位绑定/版本运维/当前操作员/主动下线) | plus-ui views/mes/station/device | ✅ (1c265281/228849cd) |
+| 工位终端↔工作中心设备联动视图 + 工位码第6段归一化 | M3 双待办 | ✅ (ad8516a0) |
+| 上报密钥 fail-closed (X-API-KEY 空值拒绝) | 29586fd0 | ✅ (遗留: 代码内默认密钥需去除, 见 09-06 审查报告 N1) |
+| 单元测试 68 例 (7 个测试类) | ruoyi-station src/test | ✅ (fcccba4f) |
+
+---
+
 ## 五、IoT 模块功能进度
 
 ### 5.1 设备管理 (device)
@@ -720,6 +777,8 @@ flowchart LR
 | 实时告警检测 | IotAlertChecker | ✅ |
 | 告警通知推送 | IotAlertNotifier | ✅ |
 | 设备最新数据缓存 (Redis) | IotDeviceLatestCache | ✅ |
+| EWMA 实时异常检测 (在线检测/健康离线重放共用 EwmaUtil 唯一实现) | IotAnomalyDetector + EwmaUtil (common-iot) | ✅ (2026-09-04, 801aceba/f0b00e10) |
+| 阈值告警与 EWMA ANOMALY 互斥抑制 (防双告警双安灯) | IotAlertChecker | ✅ (2026-09-04, ef139ae9) |
 
 ### 5.3 定时任务
 
@@ -753,6 +812,7 @@ flowchart LR
 | SQL Few-Shot 示例管理 | AiSqlExampleController | sqlExample/ | ✅ |
 | A/B 测试 (异步执行 + 人工评分) | AiAbTestController | abTest/ | ✅ |
 | 文生图 (通义万象 + OSS 持久化) | AiImageController | imageGen/ | ✅ |
+| 模型能力校验/厂商协议路由/连接测试/向量索引安全重建 | AiModelCapabilityEnum + AiModelConnectionTestService + rebuildIndex 确认门 | model/ | ✅ (2026-09-01, d4df50bd/dcc49f95/a6408f62) |
 
 ### 6.2 知识库与检索
 
@@ -780,7 +840,7 @@ flowchart LR
 | 联网搜索 | S2-C | ✅ |
 | 异步线程租户上下文传播 | AiRequestContext | ✅ |
 | 自部署 NexusAI 集成 | 自有模型 | ✅ |
-| RAG + 知识图谱混合检索 | GraphRAG | 🚧 |
+| RAG + 知识图谱混合检索 (向量+全文 RRF 融合, enableHybrid/hybridAlpha 可配) | RetrieverService | ✅ (09-06 复核确认) |
 | Agent 自主工具调用 (多轮) | LangChain4j Agentic | 🚧 |
 | 跨系统 Agent 编排 (MES/IoT/ERP) | Phase 3 | ⬜ |
 | 工作流 Agent (审批自动化) | Phase 4 | ⬜ |
@@ -905,17 +965,14 @@ flowchart LR
 
 | 优先级 | 模块 | 功能 | 预估工时 |
 |--------|------|------|----------|
-| P1 | AI | 知识图谱限制修复 (JSON 解析/实体合并/大图性能/并发竞态) | 2d |
-| P1 | AI | 中优先级 Bug 11 项 (缺 @Transactional/Rerank fallback/InputStream 泄漏/权限校验等) | 3d |
+| P1 | AI | 中优先级 Bug 11 项 (Rerank fallback 与知识图谱并发锁已修, 余项待核实) | 2d |
 | P2 | IoT | 设备 OTA 固件升级 | 3d |
 | P2 | IoT | 设备分组/标签管理 | 1d |
-| P2 | AI | RAG + 知识图谱混合检索优化 | 2d |
 | P2 | AI | Agent 多轮自主工具调用 | 3d |
 | P2 | AI | 低优先级 Bug 12 项 | 2d |
 | P2 | AI | 知识图谱 v1.5 升级 (gleaning/embedding 匹配/Neo4j/Leiden) | 5d |
-| P2 | MQ | 消息死信队列处理 | 1d |
+| P2 | MQ | 消息死信人工处理 (查询/重投接口与页面; 后端 DeadLetterRecord 落库已有) | 1d |
 | P3 | MES | 电子签名 + DHR 批记录 (P0-6 延后, 预留点: sop_view_log.signature_id / ncr.disposition_signature_id) | 7.5d |
-| P3 | MES | pro 模块单元测试补齐 (P0-7 不做, 测试缺口留待后续) | 7.5d |
 | P3 | ERP | 部门请购→采购申请联动 | 1d |
 | P3 | ERP | 多仓库间自动调拨建议 | 2d |
 | P3 | ERP | WiFi/蓝牙位置验证打卡 | 2d |
@@ -932,6 +989,7 @@ flowchart LR
 | 文档 | 路径 |
 |------|------|
 | 全项目审查报告 (08-16) | [system/2026-08-16-全项目审查报告.md](./system/2026-08-16-全项目审查报告.md) |
+| 全项目审查报告 (09-06 复核轮) | [system/2026-09-06-全项目审查报告.md](./system/2026-09-06-全项目审查报告.md) |
 | 数据库增量变更记录 | [system/数据库增量变更记录.md](./system/数据库增量变更记录.md) |
 | ERP 业务流转分析 | [erp/NexusERP_业务流转分析.md](./erp/NexusERP_业务流转分析.md) |
 | ERP 编码生成规则 | [erp/NexusERP_编码生成规则设计方案.md](./erp/NexusERP_编码生成规则设计方案.md) |
