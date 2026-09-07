@@ -77,6 +77,17 @@ public class VectorStoreService {
     private static final int EMBEDDING_BATCH_SIZE = 32;
 
     /**
+     * 逐出全部 Milvus EmbeddingStore 客户端缓存
+     * <p>「AI 参数设置」页变更向量库连接（url/collectionName/dimension/type）后调用：
+     * milvusStores 缓存 key 仅含 knowledgeId，不感知连接参数变化，必须显式逐出，
+     * 下次访问按新配置重建客户端。InMemory 权威数据不受影响。</p>
+     */
+    public void invalidateMilvusStores() {
+        milvusStores.invalidateAll();
+        log.info("[VectorStore] 向量库连接配置变更，已逐出全部 Milvus 客户端缓存");
+    }
+
+    /**
      * 获取全局默认向量存储类型（未指定知识库时使用）
      */
     private String getDefaultStoreType() {
@@ -118,9 +129,8 @@ public class VectorStoreService {
     /**
      * 获取指定知识库的 EmbeddingStore 实例（Milvus 维度可显式指定）
      * <p>维度解析优先级：调用方显式指定（重建路径）→ 知识库所选 Embedding 模型的
-     * embedding_dimension → 全局配置兜底（legacy 模型未配置维度时）。
-     * 全局兜底与 {@code AiKnowledgeServiceImpl} 的 {@code @Value("${nexus.ai.vector-store.milvus.dimension:1024}")}
-     * 读同一配置键，两处必须保持同步（见 {@code AiProperties.MilvusConfig#dimension} 注释）。</p>
+     * embedding_dimension → 全局配置兜底（legacy 模型未配置维度时，唯一来源
+     * {@code AiProperties.MilvusConfig#dimension}，可在「AI 参数设置」页修改）。</p>
      *
      * @param knowledgeId       知识库ID
      * @param dimensionOverride 显式维度（null 表示按知识库配置解析）
@@ -161,8 +171,8 @@ public class VectorStoreService {
      * <p>仅认 EMBEDDING 类型且状态启用（0，字典 sys_normal_disable，与
      * {@code AiKnowledgeServiceImpl#validateEmbeddingModel} 同口径）的模型配置的 embedding_dimension；
      * 模型缺失/停用/类型不符/legacy 未配置维度（null/非正数）一律回退全局配置
-     * {@code nexus.ai.vector-store.milvus.dimension}（与 AiKnowledgeServiceImpl 的 @Value 同源，
-     * 两处必须保持同步；KnowledgeIndexRebuildService 亦委托本方法，不再各持一份解析）。</p>
+     * {@code nexus.ai.vector-store.milvus.dimension}（唯一来源 AiProperties，
+     * 可在「AI 参数设置」页修改；KnowledgeIndexRebuildService 亦委托本方法，不再各持一份解析）。</p>
      *
      * @param embeddingModelName 模型名称（null/空按 legacy 兜底处理）
      * @return 向量维度

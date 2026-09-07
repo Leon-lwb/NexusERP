@@ -9,7 +9,10 @@ import java.util.List;
 /**
  * AI 配置属性
  * <p>前缀 nexus.ai，避免与 Spring AI 的 spring.ai 冲突</p>
- * <p>包含默认厂商/模型、SQL 安全配置、向量存储（Milvus/InMemory）配置</p>
+ * <p>仅承载运行参数类配置（SQL 安全/向量存储/联网搜索/流程编排/知识图谱）；
+ * 默认厂商与模型由 ai_provider/ai_model 表管理（"厂商/模型管理"页面），不再走 yml</p>
+ * <p>以上配置均可在前端「AI 参数设置」页修改并即时生效（落 ai_config 表后回填本 bean，
+ * yml 值仅作首次启动兜底默认），消费方一律调用时读取 getter，勿缓存基本类型快照</p>
  *
  * @author NexusERP
  * @since 1.0.0
@@ -18,12 +21,6 @@ import java.util.List;
 @Component
 @ConfigurationProperties(prefix = "nexus.ai")
 public class AiProperties {
-
-    /** 默认厂商 */
-    private String defaultProvider = "deepseek";
-
-    /** 默认模型 */
-    private String defaultModel = "deepseek-chat";
 
     /** 允许查询的表名前缀 */
     private List<String> allowedTablePrefixes = List.of("bd_", "so_", "pu_", "prd_", "wm_", "sch_");
@@ -37,14 +34,8 @@ public class AiProperties {
     /** 向量存储配置 */
     private VectorStoreConfig vectorStore = new VectorStoreConfig();
 
-    /** 推理模式配置 */
-    private ThinkingConfig thinking = new ThinkingConfig();
-
     /** 联网搜索配置 */
     private WebSearchConfig webSearch = new WebSearchConfig();
-
-    /** 文生图配置 */
-    private ImageConfig image = new ImageConfig();
 
     /** 流程编排配置 */
     private FlowConfig flow = new FlowConfig();
@@ -59,9 +50,6 @@ public class AiProperties {
 
         /** Milvus 配置 */
         private MilvusConfig milvus = new MilvusConfig();
-
-        /** InMemory 配置 */
-        private InMemoryConfig inmemory = new InMemoryConfig();
     }
 
     @Data
@@ -72,27 +60,8 @@ public class AiProperties {
         /** 集合名称前缀 */
         private String collectionName = "AiKnowledge";
 
-        /**
-         * 向量维度（根据 Embedding 模型自动推断，此处为默认值）。
-         * <p>注意：此维度是 legacy 未配置 embedding_dimension 模型的全局兜底，
-         * {@code AiKnowledgeServiceImpl} 的 {@code @Value("${nexus.ai.vector-store.milvus.dimension:1024}")}
-         * 读同一配置键，两处必须保持同步。</p>
-         */
+        /** 向量维度（legacy 未配置 embedding_dimension 的 Embedding 模型的全局兜底默认值） */
         private int dimension = 1024;
-    }
-
-    @Data
-    public static class InMemoryConfig {
-        /** 是否启用 InMemory 模式（开发/测试用） */
-        private boolean enabled = true;
-    }
-
-    @Data
-    public static class ThinkingConfig {
-        /** 是否开启推理模式 */
-        private boolean enabled = true;
-        /** 默认是否开启（用户主动选择时覆盖） */
-        private boolean defaultOn = false;
     }
 
     @Data
@@ -109,14 +78,6 @@ public class AiProperties {
         private int timeoutMs = 15000;
     }
 
-    @Data
-    public static class ImageConfig {
-        /** 是否开启文生图 */
-        private boolean enabled = true;
-        /** 默认厂商（对应 IImageGenerationService.getProviderName()） */
-        private String defaultProvider = "Tongyiwanx";
-    }
-
     /**
      * 流程编排配置（前缀 nexus.ai.flow）
      */
@@ -124,8 +85,6 @@ public class AiProperties {
     public static class FlowConfig {
         /** 是否启用并行分支执行（默认 false 串行；含循环的图强制串行） */
         private boolean parallel = false;
-        /** 并行 worker 数（默认 4） */
-        private int parallelWorkers = 4;
     }
 
     /**
@@ -157,7 +116,5 @@ public class AiProperties {
         private int maxCommunities = 50;
         /** 全局检索参与 map 的社区上限（超出按 entity_count 取 topN） */
         private int maxCommunitiesForGlobal = 50;
-        /** v1.5 预留：实体 gleaning 二次抽取 */
-        private boolean gleaningEnabled = false;
     }
 }

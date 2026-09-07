@@ -1,9 +1,9 @@
 package com.nexus.ai.service.query;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
+import com.nexus.ai.config.AiProperties;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.sql.DataSource;
@@ -39,9 +39,9 @@ public class ErpTableSchemaManager {
     /** ERP 业务库数据源（由类级 @DS("erp") 指定） */
     private DataSource erpDataSource;
 
-    /** 允许的表名前缀 */
-    @Value("${nexus.ai.allowed-table-prefixes:bd_,so_,pu_,prd_,wm_,sch_}")
-    private List<String> allowedTablePrefixes;
+    @Autowired
+    /** AI 配置属性，动态读取允许的表名前缀（「AI 参数设置」页可改，实时生效） */
+    private AiProperties aiProperties;
 
     /** 表结构缓存 (表名 -> 表结构) */
     private final Map<String, TableStructure> schemaCache = new ConcurrentHashMap<>();
@@ -328,7 +328,7 @@ public class ErpTableSchemaManager {
      * 判断表名是否在允许的前缀列表中
      */
     private boolean isAllowedTable(String tableName) {
-        for (String prefix : allowedTablePrefixes) {
+        for (String prefix : aiProperties.getAllowedTablePrefixes()) {
             if (tableName.startsWith(prefix)) {
                 return true;
             }
@@ -380,7 +380,7 @@ public class ErpTableSchemaManager {
     public String getFullSchemaSummary() {
         ensureInitialized();
         return schemaCache.values().stream()
-            .filter(t -> allowedTablePrefixes.stream().anyMatch(t.getTableName()::startsWith))
+            .filter(t -> aiProperties.getAllowedTablePrefixes().stream().anyMatch(t.getTableName()::startsWith))
             .sorted(Comparator.comparing(TableStructure::getTableName))
             .map(this::formatEnhancedTableSummary)
             .collect(Collectors.joining("\n\n"));
@@ -476,7 +476,7 @@ public class ErpTableSchemaManager {
         ensureInitialized();
 
         List<TableStructure> allTables = schemaCache.values().stream()
-            .filter(t -> allowedTablePrefixes.stream().anyMatch(t.getTableName()::startsWith))
+            .filter(t -> aiProperties.getAllowedTablePrefixes().stream().anyMatch(t.getTableName()::startsWith))
             .sorted(Comparator.comparing(TableStructure::getTableName))
             .collect(Collectors.toList());
 

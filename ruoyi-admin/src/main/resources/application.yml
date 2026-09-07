@@ -167,6 +167,8 @@ tenant:
     - sys_user_role
     - sys_client
     - sys_oss_config
+    # AI 运行参数配置（全局共享，Redis 广播重载时订阅回调线程无租户上下文）
+    - ai_config
     - flow_spel
     # 积木报表表（无 tenant_id 字段）
     - jm_report
@@ -354,15 +356,15 @@ nexus:
       alert-thresholds:
         temperature: 80
   ai:
-    default-provider: deepseek
-    default-model: deepseek-chat
+    # ⚠️ 以下配置可在前端「AI 参数设置」页修改（落 ai_config 表，保存即生效并广播多节点），
+    #    此处仅为首次启动的兜底默认值；入库后以表为准，改 yml 不再影响已初始化的环境。
+    #    默认厂商/模型由 ai_provider/ai_model 表管理（AI 智能助手 → 模型配置页），不走 yml。
     allowed-table-prefixes: bd_,so_,pu_,prd_,wm_,sch_
     sql-timeout: 5000
     sql-max-rows: 1000
     flow:
       # 并行分支执行（默认关；含循环的图强制串行）
       parallel: false
-      parallel-workers: 4
     vector-store:
       # 向量存储类型：milvus（持久化，重启不丢）/ inmemory（仅内存，重启清空，仅用于无 Milvus 环境的演示）
       # ⚠️ inmemory 模式下重启服务后向量全部丢失，RAG 检索返回空；生产必须用 milvus
@@ -370,23 +372,13 @@ nexus:
       milvus:
         url: http://localhost:19530
         collection-name: AiKnowledge
-      inmemory:
-        enabled: true
-    # 推理模式（Thinking）
-    thinking:
-      enabled: true
-      default-on: false
-    # 联网搜索（Key 存于 application-secret.yml 的 secret.tavily.api-key，环境变量 WEB_SEARCH_API_KEY 优先覆盖）
+    # 联网搜索（api-key 为首次入库种子值；入库后由「AI 参数设置」页管理，环境变量 WEB_SEARCH_API_KEY 优先覆盖）
     web-search:
       enabled: true
       provider: tavily
       api-key: ${WEB_SEARCH_API_KEY:${secret.tavily.api-key:}}
       top-n: 5
       timeout-ms: 15000
-    # 文生图
-    image:
-      enabled: true
-      default-provider: Tongyiwanx
     # 知识图谱
     knowledge-graph:
       enabled: true
@@ -401,7 +393,6 @@ nexus:
       label-propagation-max-iter: 8
       max-communities: 50
       max-communities-for-global: 50
-      gleaning-enabled: false
 
   # 视觉识别服务 (nexus-vision-service)
   vision:

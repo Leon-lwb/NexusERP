@@ -3,7 +3,6 @@ package com.nexus.ai.service.facade;
 import com.nexus.ai.agent.ErpQueryAgent;
 import com.nexus.ai.agent.ErpReportAgent;
 import com.nexus.ai.agent.WebSearchAgent;
-import com.nexus.ai.config.AiProperties;
 import com.nexus.ai.context.AiRequestContext;
 import com.nexus.ai.context.SearchSourceHolder;
 import com.nexus.ai.mcp.service.ToolProviderFactory;
@@ -93,8 +92,6 @@ public class AiServiceFacade {
 
     /** 联网搜索工具，供 WebSearchAgent 调用 */
     private final WebSearchTool webSearchTool;
-    /** AI 配置属性 */
-    private final AiProperties aiProperties;
 
     /** OutputChannel 事件 JSON 解析复用单例（ObjectMapper 线程安全，避免每请求 new 产生 GC 压力） */
     private static final ObjectMapper DRAIN_MAPPER = new ObjectMapper();
