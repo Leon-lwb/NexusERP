@@ -5,6 +5,7 @@ import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.erp.sch.domain.bo.SchAttendanceBo;
 import com.nexus.erp.sch.domain.vo.SchAttendanceVo;
 
+import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -74,9 +75,13 @@ public interface ISchAttendanceService {
      * @param clockInTime 上班打卡时间
      * @param deviceId   打卡设备ID
      * @param deviceName 打卡设备名称
+     * @param latitude   打卡纬度（可为 null，前端未定位成功时不阻断打卡）
+     * @param longitude  打卡经度（可为 null）
+     * @param address   打卡地址/定位描述（可为 null）
      * @return 打卡结果数据
      */
-    Map<String, Object> performClockIn(Long workerId, String workerName, Date clockInTime, String deviceId, String deviceName);
+    Map<String, Object> performClockIn(Long workerId, String workerName, Date clockInTime, String deviceId, String deviceName,
+                                       BigDecimal latitude, BigDecimal longitude, String address);
 
     /**
      * 执行下班打卡
@@ -87,9 +92,13 @@ public interface ISchAttendanceService {
      * @param deviceId      打卡设备ID
      * @param deviceName    打卡设备名称
      * @param overtimeHours 加班时长（小时）
+     * @param latitude   打卡纬度（可为 null）
+     * @param longitude  打卡经度（可为 null）
+     * @param address   打卡地址/定位描述（可为 null）
      * @return 打卡结果数据
      */
-    Map<String, Object> performClockOut(Long workerId, String workerName, Date clockOutTime, String deviceId, String deviceName, Double overtimeHours);
+    Map<String, Object> performClockOut(Long workerId, String workerName, Date clockOutTime, String deviceId, String deviceName,
+                                        Double overtimeHours, BigDecimal latitude, BigDecimal longitude, String address);
 
     /**
      * 获取今日打卡状态

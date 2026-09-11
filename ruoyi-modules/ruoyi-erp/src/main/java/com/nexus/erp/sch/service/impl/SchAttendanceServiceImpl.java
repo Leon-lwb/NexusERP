@@ -147,10 +147,14 @@ public class SchAttendanceServiceImpl implements ISchAttendanceService {
      * @param clockInTime 上班打卡时间
      * @param deviceId   打卡设备ID
      * @param deviceName 打卡设备名称
+     * @param latitude   打卡纬度（可为 null）
+     * @param longitude  打卡经度（可为 null）
+     * @param address   打卡地址/定位描述（可为 null）
      * @return 打卡结果数据，包含考勤ID、打卡时间、是否迟到、迟到分钟数等
      */
     @Override
-    public Map<String, Object> performClockIn(Long workerId, String workerName, Date clockInTime, String deviceId, String deviceName) {
+    public Map<String, Object> performClockIn(Long workerId, String workerName, Date clockInTime, String deviceId, String deviceName,
+                                              BigDecimal latitude, BigDecimal longitude, String address) {
         LocalDate todayLd = LocalDate.now();
         Date today = Date.from(todayLd.atStartOfDay(ZoneId.systemDefault()).toInstant());
 
@@ -162,6 +166,9 @@ public class SchAttendanceServiceImpl implements ISchAttendanceService {
         attendance.setSourceType("manual");
         attendance.setDeviceId(deviceId);
         attendance.setDeviceName(deviceName);
+        attendance.setClockInLatitude(latitude);
+        attendance.setClockInLongitude(longitude);
+        attendance.setClockInAddress(address);
 
         String attendanceStatus = determineAttendanceStatus(clockInTime, workerId, today, true);
         attendance.setAttendanceStatus(attendanceStatus);
@@ -199,6 +206,9 @@ public class SchAttendanceServiceImpl implements ISchAttendanceService {
             existing.setWorkerName(workerName);
             existing.setDeviceId(deviceId);
             existing.setDeviceName(deviceName);
+            existing.setClockInLatitude(latitude);
+            existing.setClockInLongitude(longitude);
+            existing.setClockInAddress(address);
             existing.setAttendanceStatus(attendanceStatus);
             existing.setLateMinutes(lateMinutes);
             baseMapper.updateById(existing);
@@ -227,10 +237,14 @@ public class SchAttendanceServiceImpl implements ISchAttendanceService {
      * @param deviceId      打卡设备ID
      * @param deviceName    打卡设备名称
      * @param overtimeHours 加班时长（小时）
+     * @param latitude   打卡纬度（可为 null）
+     * @param longitude  打卡经度（可为 null）
+     * @param address   打卡地址/定位描述（可为 null）
      * @return 打卡结果数据，包含考勤ID、打卡时间、是否早退、早退分钟数、考勤状态等
      */
     @Override
-    public Map<String, Object> performClockOut(Long workerId, String workerName, Date clockOutTime, String deviceId, String deviceName, Double overtimeHours) {
+    public Map<String, Object> performClockOut(Long workerId, String workerName, Date clockOutTime, String deviceId, String deviceName,
+                                               Double overtimeHours, BigDecimal latitude, BigDecimal longitude, String address) {
         LocalDate todayLd = LocalDate.now();
         Date today = Date.from(todayLd.atStartOfDay(ZoneId.systemDefault()).toInstant());
 
@@ -247,6 +261,9 @@ public class SchAttendanceServiceImpl implements ISchAttendanceService {
             existing.setWorkerName(workerName);
             existing.setDeviceId(deviceId);
             existing.setDeviceName(deviceName);
+            existing.setClockOutLatitude(latitude);
+            existing.setClockOutLongitude(longitude);
+            existing.setClockOutAddress(address);
 
             String clockOutAttendanceStatus = determineAttendanceStatus(clockOutTime, workerId, today, false);
 
@@ -304,6 +321,9 @@ public class SchAttendanceServiceImpl implements ISchAttendanceService {
             newAttendance.setSourceType("manual");
             newAttendance.setDeviceId(deviceId);
             newAttendance.setDeviceName(deviceName);
+            newAttendance.setClockOutLatitude(latitude);
+            newAttendance.setClockOutLongitude(longitude);
+            newAttendance.setClockOutAddress(address);
 
             String clockOutAttendanceStatus = determineAttendanceStatus(clockOutTime, workerId, today, false);
 

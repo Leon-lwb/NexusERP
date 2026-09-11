@@ -23,6 +23,11 @@ public final class ImPayloadConstants {
      * 发送方客户端据此把对应消息标为已读。
      */
     public static final String TYPE_IM_MESSAGE_READ = "IM_MESSAGE_READ";
+    /**
+     * 「正在输入」信封类型（IM_TYPING）。瞬时状态提示，不落库、不产生消息记录，
+     * 由 {@code POST /im/app/message/typing} 触发后向对端（私聊）或群内其他成员（群聊）转发。
+     */
+    public static final String TYPE_IM_TYPING = "IM_TYPING";
 
     /** 业务分类：工作流待办。 */
     public static final String CATEGORY_WORKFLOW_TODO = "workflow_todo";

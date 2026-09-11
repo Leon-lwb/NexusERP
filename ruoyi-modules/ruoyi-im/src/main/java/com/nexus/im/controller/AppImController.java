@@ -20,6 +20,7 @@ import com.nexus.im.domain.bo.ImGroupCreateBo;
 import com.nexus.im.domain.bo.ImGroupMemberAddBo;
 import com.nexus.im.domain.bo.ImGroupSendBo;
 import com.nexus.im.domain.bo.ImPrivateSendBo;
+import com.nexus.im.domain.bo.ImTypingBo;
 import com.nexus.im.domain.vo.ImContactDeptVo;
 import com.nexus.im.domain.vo.ImConversationVo;
 import com.nexus.im.domain.vo.ImFriendVo;
@@ -43,6 +44,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.*;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
@@ -67,6 +69,17 @@ public class AppImController extends BaseController {
     private static final String FRIEND_REQUEST_ACCEPTED = "accepted";
     /** 好友请求状态：已被对方拒绝。 */
     private static final String FRIEND_REQUEST_REJECTED = "rejected";
+
+    // ============ 「正在输入」节流 ============
+    /** 节流窗口（毫秒）：同一会话同一用户在该窗口内仅转发一次，防止刷屏与推送风暴。 */
+    private static final long TYPING_THROTTLE_MS = 2000L;
+    /** 节流表容量上限，超过则整体清理，避免无界增长。 */
+    private static final int TYPING_THROTTLE_MAX = 10_000;
+    /**
+     * 「正在输入」单机节流表：key = 会话维度标识，value = 上次放行时间戳。
+     * <p>仅做单实例内存节流（多实例部署下为每实例粒度），对瞬时输入提示足够。
+     */
+    private final Map<String, Long> typingThrottle = new ConcurrentHashMap<>();
 
     /** 聊天业务服务，提供私聊/群聊发送、历史、已读等能力。 */
     private final IImChatService imChatService;
@@ -580,6 +593,100 @@ public class AppImController extends BaseController {
     @PostMapping("/message/send-group")
     public R<Long> sendGroup(@Validated @RequestBody ImGroupSendBo bo) {
         return imChatService.sendGroup(bo);
+    }
+
+    /**
+     * 「正在输入」上报（瞬时状态，不落库）
+     * <p>私聊传 {@code toUserId}，群聊传 {@code groupId}（两者同时传时以群聊为准）。
+     * 服务端按会话做 2 秒节流后转发 {@code IM_TYPING} 信封：私聊转发给对端，
+     * 群聊转发给群内其他成员；客户端据此展示「对方正在输入…」并在超时后自动消失。
+     *
+     * @param bo 上报参数（会话对象 + 是否正在输入）
+     * @return 统一结果（节流命中时同样返回成功，避免客户端重试）
+     */
+    @PostMapping("/message/typing")
+    public R<Void> typing(@RequestBody ImTypingBo bo) {
+        Long me = LoginHelper.getUserId();
+        boolean typing = bo.getTyping() == null || bo.getTyping();
+
+        // 群聊：校验成员身份后广播给群内其他成员
+        if (bo.getGroupId() != null) {
+            Long memberCount = groupMemberMapper.selectCount(new LambdaQueryWrapper<ImGroupMember>()
+                .eq(ImGroupMember::getGroupId, bo.getGroupId())
+                .eq(ImGroupMember::getUserId, me));
+            if (memberCount == null || memberCount == 0) {
+                return R.fail("你不在该群聊中");
+            }
+            if (!allowTyping("g:" + bo.getGroupId() + ":" + me)) {
+                return R.ok();
+            }
+            List<Long> receivers = groupMemberMapper.selectList(new LambdaQueryWrapper<ImGroupMember>()
+                    .eq(ImGroupMember::getGroupId, bo.getGroupId()))
+                .stream()
+                .map(ImGroupMember::getUserId)
+                .filter(userId -> userId != null && !userId.equals(me))
+                .distinct()
+                .toList();
+            if (receivers.isEmpty()) {
+                return R.ok();
+            }
+            imRealtimePush.publishToUsers(receivers,
+                ImEnvelopeHelper.imTyping(buildTypingPayload(me, null, bo.getGroupId(), typing)), "group");
+            return R.ok();
+        }
+
+        // 私聊：转发给对端
+        if (bo.getToUserId() == null) {
+            return R.fail("接收者不能为空");
+        }
+        if (me.equals(bo.getToUserId())) {
+            return R.ok();
+        }
+        requireSameTenantUser(bo.getToUserId());
+        if (!allowTyping("p:" + me + ":" + bo.getToUserId())) {
+            return R.ok();
+        }
+        imRealtimePush.publishToUser(bo.getToUserId(),
+            ImEnvelopeHelper.imTyping(buildTypingPayload(me, bo.getToUserId(), null, typing)), "private");
+        return R.ok();
+    }
+
+    /**
+     * 「正在输入」单机节流：返回 true 表示本次允许转发。
+     *
+     * @param key 会话维度标识（私聊 p:发送方:接收方，群聊 g:群ID:发送方）
+     */
+    private boolean allowTyping(String key) {
+        long now = System.currentTimeMillis();
+        if (typingThrottle.size() > TYPING_THROTTLE_MAX) {
+            typingThrottle.clear();
+        }
+        Long last = typingThrottle.put(key, now);
+        return last == null || now - last >= TYPING_THROTTLE_MS;
+    }
+
+    /**
+     * 构造 {@code IM_TYPING} 载荷。ID 统一转字符串，避免 JS 端雪花 ID 精度丢失。
+     *
+     * @param fromUserId 输入方用户 ID
+     * @param peerUserId 私聊接收方（群聊传 null）
+     * @param groupId    群 ID（私聊传 null）
+     * @param typing     是否正在输入
+     */
+    private Map<String, Object> buildTypingPayload(Long fromUserId, Long peerUserId, Long groupId, boolean typing) {
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("chatType", groupId != null ? "GROUP" : "PRIVATE");
+        payload.put("fromUserId", String.valueOf(fromUserId));
+        SysUserVo from = userMapper.selectVoById(fromUserId);
+        payload.put("fromUserName", from == null ? "" : StrUtil.blankToDefault(from.getNickName(), from.getUserName()));
+        if (peerUserId != null) {
+            payload.put("peerUserId", String.valueOf(peerUserId));
+        }
+        if (groupId != null) {
+            payload.put("groupId", String.valueOf(groupId));
+        }
+        payload.put("typing", typing);
+        return payload;
     }
 
     /**

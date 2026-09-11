@@ -152,7 +152,10 @@ public class AppSchAttendanceController {
                 currentWorker.getUserName(),
                 now,
                 (String) params.get("deviceId"),
-                (String) params.get("deviceName")
+                (String) params.get("deviceName"),
+                toBigDecimal(params.get("latitude")),
+                toBigDecimal(params.get("longitude")),
+                toText(params.get("address"))
         );
         // 人脸验证(异步,不阻断打卡):照片随打卡请求上传(base64),存储 + 校验
         Object faceImage = params.get("faceImage");
@@ -200,7 +203,10 @@ public class AppSchAttendanceController {
                 now,
                 (String) params.get("deviceId"),
                 (String) params.get("deviceName"),
-                overtimeHours
+                overtimeHours,
+                toBigDecimal(params.get("latitude")),
+                toBigDecimal(params.get("longitude")),
+                toText(params.get("address"))
         );
         return R.ok(data);
     }
@@ -685,6 +691,38 @@ public class AppSchAttendanceController {
             throw new ServiceException("当前用户未关联工人档案，无法进行考勤申请");
         }
         return workerList.get(0);
+    }
+
+    /**
+     * 位置参数容错解析：JSON 数字可能是 Double/Integer/String，非法值一律返回 null（不阻断打卡）。
+     */
+    private BigDecimal toBigDecimal(Object value) {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof BigDecimal decimal) {
+            return decimal;
+        }
+        String text = value.toString().trim();
+        if (text.isEmpty()) {
+            return null;
+        }
+        try {
+            return new BigDecimal(text);
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    /**
+     * 文本参数容错解析：非字符串（如前端误传对象）时不落地，返回 null。
+     */
+    private String toText(Object value) {
+        if (value == null) {
+            return null;
+        }
+        String text = value.toString().trim();
+        return text.isEmpty() ? null : text;
     }
 
     private PageQuery buildPageQuery(Integer pageNum, Integer pageSize) {

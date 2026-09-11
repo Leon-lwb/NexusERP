@@ -72,6 +72,22 @@ public final class ImEnvelopeHelper {
         return envelope(ImPayloadConstants.TYPE_IM_MESSAGE_READ, payload);
     }
 
+    /**
+     * 「正在输入」信封。瞬时状态提示，客户端收到后展示「对方正在输入…」并在超时后自动消失。
+     * <p>payload 字段：
+     * <ul>
+     *   <li>chatType: PRIVATE / GROUP</li>
+     *   <li>fromUserId: 输入方用户 ID（字符串，避免 JS 精度丢失）</li>
+     *   <li>fromUserName: 输入方昵称（群聊展示用）</li>
+     *   <li>peerUserId: 私聊时的接收方用户 ID；群聊不输出</li>
+     *   <li>groupId: 群聊时的群 ID；私聊不输出</li>
+     *   <li>typing: true 表示正在输入，false 表示停止输入</li>
+     * </ul>
+     */
+    public static String imTyping(Map<String, Object> payload) {
+        return envelope(ImPayloadConstants.TYPE_IM_TYPING, payload);
+    }
+
     private static String envelope(String type, Map<String, Object> payload) {
         Map<String, Object> root = MapUtil.<String, Object>builder()
             .put("v", ImPayloadConstants.ENVELOPE_VERSION)

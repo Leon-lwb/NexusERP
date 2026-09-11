@@ -96,6 +96,36 @@ public class SchAttendance extends TenantEntity {
     private String deviceName;
 
     /**
+     * 上班打卡纬度
+     */
+    private BigDecimal clockInLatitude;
+
+    /**
+     * 上班打卡经度
+     */
+    private BigDecimal clockInLongitude;
+
+    /**
+     * 上班打卡地址/定位描述
+     */
+    private String clockInAddress;
+
+    /**
+     * 下班打卡纬度
+     */
+    private BigDecimal clockOutLatitude;
+
+    /**
+     * 下班打卡经度
+     */
+    private BigDecimal clockOutLongitude;
+
+    /**
+     * 下班打卡地址/定位描述
+     */
+    private String clockOutAddress;
+
+    /**
      * 人脸验证状态: NONE未验证, PASS通过, FAIL失败
      */
     @ExcelProperty("人脸验证状态")
