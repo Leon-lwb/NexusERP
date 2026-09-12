@@ -192,4 +192,12 @@ public class WmMaterialReceiveBo extends BaseEntity {
      * 批量操作ID集合
      */
     private Long[] ids;
+
+    /**
+     * 移动端单输入框模糊搜索关键字。
+     * <p>
+     * OR 匹配 入库单号 / 入库单名称 / 采购订单号 / 供应商名称。
+     * 纯新增可选参数，不影响 Web 端既有等值筛选调用。
+     */
+    private String keyword;
 }

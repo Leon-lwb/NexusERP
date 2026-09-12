@@ -599,7 +599,13 @@ public class WmMaterialReceiveCrudServiceImpl implements IWmMaterialReceiveCrudS
             .eq(StringUtils.isNotBlank(bo.getLocationCode()), WmMaterialReceive::getLocationCode, bo.getLocationCode())
             .like(StringUtils.isNotBlank(bo.getLocationName()), WmMaterialReceive::getLocationName, bo.getLocationName())
             .eq(bo.getReceiveDate() != null, WmMaterialReceive::getReceiveDate, bo.getReceiveDate())
-            .eq(StringUtils.isNotBlank(bo.getStatus()), WmMaterialReceive::getStatus, bo.getStatus());
+            .eq(StringUtils.isNotBlank(bo.getStatus()), WmMaterialReceive::getStatus, bo.getStatus())
+            // 移动端单输入框搜索：OR 模糊匹配 单号 / 名称 / 采购单号 / 供应商
+            .and(StringUtils.isNotBlank(bo.getKeyword()), w -> w
+                .like(WmMaterialReceive::getReceiveCode, bo.getKeyword())
+                .or().like(WmMaterialReceive::getReceiveName, bo.getKeyword())
+                .or().like(WmMaterialReceive::getPurCode, bo.getKeyword())
+                .or().like(WmMaterialReceive::getVendorName, bo.getKeyword()));
         return lqw;
     }
 
