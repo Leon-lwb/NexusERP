@@ -62,6 +62,13 @@ public class SoCustomerOrderBo extends BaseEntity {
     /** 备注 */
     private String remark;
 
+    /**
+     * 模糊搜索关键字（订单号 / 客户名称任一匹配）
+     * <p>供移动端单输入框搜索使用；与 coNo（精确）、clientName（模糊）为「与」关系，
+     * 三者可独立组合。为空时不参与查询，不影响既有调用方。
+     */
+    private String keyword;
+
     /** ID数组（用于批量操作） */
     private Long[] ids;
 }

@@ -250,6 +250,11 @@ public class SoQuotationServiceImpl implements ISoQuotationService {
         lqw.eq(bo.getClientId() != null, SoQuotation::getClientId, bo.getClientId());
         lqw.like(StringUtils.isNotBlank(bo.getClientName()), SoQuotation::getClientName, bo.getClientName());
         lqw.eq(StringUtils.isNotBlank(bo.getStatus()), SoQuotation::getStatus, bo.getStatus());
+        // 关键字模糊搜索：报价单号 或 客户名称 任一匹配（移动端单输入框搜索）
+        lqw.and(StringUtils.isNotBlank(bo.getKeyword()),
+            w -> w.like(SoQuotation::getQuotationNo, bo.getKeyword())
+                .or()
+                .like(SoQuotation::getClientName, bo.getKeyword()));
         lqw.orderByDesc(SoQuotation::getCreateTime);
         return lqw;
     }

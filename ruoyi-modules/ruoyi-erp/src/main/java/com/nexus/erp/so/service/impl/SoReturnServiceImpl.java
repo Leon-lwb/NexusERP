@@ -398,6 +398,13 @@ public class SoReturnServiceImpl implements ISoReturnService {
         lqw.eq(bo.getClientId() != null, SoReturn::getClientId, bo.getClientId());
         lqw.like(StringUtils.isNotBlank(bo.getClientName()), SoReturn::getClientName, bo.getClientName());
         lqw.eq(StringUtils.isNotBlank(bo.getStatus()), SoReturn::getStatus, bo.getStatus());
+        // 关键字模糊搜索：退货单号 / 来源销售订单号 / 客户名称 任一匹配（移动端单输入框搜索）
+        lqw.and(StringUtils.isNotBlank(bo.getKeyword()),
+            w -> w.like(SoReturn::getReturnNo, bo.getKeyword())
+                .or()
+                .like(SoReturn::getSoNo, bo.getKeyword())
+                .or()
+                .like(SoReturn::getClientName, bo.getKeyword()));
         lqw.orderByDesc(SoReturn::getCreateTime);
         return lqw;
     }

@@ -271,6 +271,13 @@ public class SoContractServiceImpl implements ISoContractService {
         lqw.like(StringUtils.isNotBlank(bo.getClientName()), SoContract::getClientName, bo.getClientName());
         lqw.eq(StringUtils.isNotBlank(bo.getStatus()), SoContract::getStatus, bo.getStatus());
         lqw.eq(StringUtils.isNotBlank(bo.getContractType()), SoContract::getContractType, bo.getContractType());
+        // 关键字模糊搜索：合同号 / 合同名称 / 客户名称 任一匹配（移动端单输入框搜索）
+        lqw.and(StringUtils.isNotBlank(bo.getKeyword()),
+            w -> w.like(SoContract::getContractNo, bo.getKeyword())
+                .or()
+                .like(SoContract::getContractName, bo.getKeyword())
+                .or()
+                .like(SoContract::getClientName, bo.getKeyword()));
         lqw.orderByDesc(SoContract::getCreateTime);
         return lqw;
     }

@@ -78,6 +78,13 @@ public class SoReturnBo extends BaseEntity {
     /** 扩展字段4 */
     private Long attr4;
 
+    /**
+     * 模糊搜索关键字（退货单号 / 来源销售订单号 / 客户名称任一匹配）
+     * <p>供移动端单输入框搜索使用；与 returnNo、soNo（均为精确）为「与」关系，
+     * 为空时不参与查询，不影响既有调用方。
+     */
+    private String keyword;
+
     /** 退货明细行列表 */
     private List<SoReturnLine> soReturnLineList;
 }

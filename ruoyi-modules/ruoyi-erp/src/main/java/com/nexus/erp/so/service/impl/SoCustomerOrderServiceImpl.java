@@ -104,6 +104,11 @@ public class SoCustomerOrderServiceImpl implements ISoCustomerOrderService {
         lqw.eq(bo.getPriority() != null, SoCustomerOrder::getPriority, bo.getPriority());
         lqw.eq(StringUtils.isNotBlank(bo.getCustomerPoNo()), SoCustomerOrder::getCustomerPoNo, bo.getCustomerPoNo());
         lqw.eq(StringUtils.isNotBlank(bo.getSourceChannel()), SoCustomerOrder::getSourceChannel, bo.getSourceChannel());
+        // 关键字模糊搜索：订单号 或 客户名称 任一匹配（移动端单输入框搜索）
+        lqw.and(StringUtils.isNotBlank(bo.getKeyword()),
+            w -> w.like(SoCustomerOrder::getCoNo, bo.getKeyword())
+                .or()
+                .like(SoCustomerOrder::getClientName, bo.getKeyword()));
         return lqw;
     }
 }

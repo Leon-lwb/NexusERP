@@ -133,6 +133,13 @@ public class SoContractBo extends BaseEntity {
     private Long attr4;
 
     /**
+     * 模糊搜索关键字（合同号 / 合同名称 / 客户名称任一匹配）
+     * <p>供移动端单输入框搜索使用；与 contractNo、contractName、clientName（均为模糊）为「与」关系，
+     * 为空时不参与查询，不影响既有调用方。
+     */
+    private String keyword;
+
+    /**
      * 合同明细行列表
      */
     private List<SoContractLine> soContractLineList;

@@ -76,6 +76,13 @@ public class SoQuotationBo extends BaseEntity {
     /** 扩展字段4 */
     private Long attr4;
 
+    /**
+     * 模糊搜索关键字（报价单号 / 客户名称任一匹配）
+     * <p>供移动端单输入框搜索使用；与 quotationNo（精确）、clientName（模糊）为「与」关系，
+     * 为空时不参与查询，不影响既有调用方。
+     */
+    private String keyword;
+
     /** 报价明细行列表 */
     private List<SoQuotationLine> soQuotationLineList;
 }
