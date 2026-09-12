@@ -414,7 +414,8 @@ public class SchAttendanceServiceImpl implements ISchAttendanceService {
             data.put("clockOutTime", null);
             data.put("clockInStatus", "pending");
             data.put("clockOutStatus", "pending");
-            data.put("attendanceStatus", "normal");
+            // 今日无考勤记录：不得返回 normal，否则调用方（App 首页“我的数据”/打卡页）会把“未打卡”显示成“已打卡”。
+            data.put("attendanceStatus", null);
             data.put("lateMinutes", 0);
             data.put("leaveEarlyMinutes", 0);
             data.put("overtimeHours", BigDecimal.ZERO);
