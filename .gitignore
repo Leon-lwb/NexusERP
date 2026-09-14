@@ -82,3 +82,8 @@ doc/erp/scripts/__pycache__/
 
 # ZCode 会话/计划状态文件
 .zcode/
+
+# 数据重建/清理的一次性备份与临时产物（体积大，不入库）
+backup-2026*/
+.dsh-tmp/
+__pycache__/

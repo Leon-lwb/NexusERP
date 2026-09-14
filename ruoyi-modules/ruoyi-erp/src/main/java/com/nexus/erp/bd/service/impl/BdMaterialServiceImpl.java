@@ -11,8 +11,10 @@ import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.erp.bd.domain.BdMaterial;
+import com.nexus.erp.bd.domain.BdMaterialCategory;
 import com.nexus.erp.bd.domain.bo.BdMaterialBo;
 import com.nexus.erp.bd.domain.vo.BdMaterialVo;
+import com.nexus.erp.bd.mapper.BdMaterialCategoryMapper;
 import com.nexus.erp.bd.mapper.BdMaterialMapper;
 import com.nexus.erp.bd.mapper.BdUnitOfMeasureMapper;
 import com.nexus.erp.bd.service.IBdMaterialService;
@@ -41,6 +43,7 @@ public class BdMaterialServiceImpl implements IBdMaterialService {
 
     private final BdMaterialMapper baseMapper;
     private final BdUnitOfMeasureMapper uomMapper;
+    private final BdMaterialCategoryMapper categoryMapper;
     private final BdServiceHelper bd;
 
     /**
@@ -54,7 +57,7 @@ public class BdMaterialServiceImpl implements IBdMaterialService {
     public TableDataInfo<BdMaterialVo> selectPageList(BdMaterialBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<BdMaterial> lqw = buildQueryWrapper(bo);
         Page<BdMaterialVo> page = baseMapper.selectVoPage(pageQuery.build(), lqw);
-        fillBaseUomName(page.getRecords());
+        fillRefNames(page.getRecords());
         return TableDataInfo.build(page);
     }
 
@@ -67,7 +70,7 @@ public class BdMaterialServiceImpl implements IBdMaterialService {
     @Override
     public List<BdMaterialVo> selectList(BdMaterialBo bo) {
         List<BdMaterialVo> list = baseMapper.selectVoList(buildQueryWrapper(bo));
-        fillBaseUomName(list);
+        fillRefNames(list);
         return list;
     }
 
@@ -81,7 +84,7 @@ public class BdMaterialServiceImpl implements IBdMaterialService {
     public BdMaterialVo selectById(Long id) {
         BdMaterialVo vo = baseMapper.selectVoById(id);
         if (vo != null) {
-            fillBaseUomName(List.of(vo));
+            fillRefNames(List.of(vo));
         }
         return vo;
     }
@@ -142,7 +145,7 @@ public class BdMaterialServiceImpl implements IBdMaterialService {
             Wrappers.lambdaQuery(BdMaterial.class)
                 .in(BdMaterial::getCategoryId, categoryIds)
         );
-        fillBaseUomName(list);
+        fillRefNames(list);
         return list;
     }
 
@@ -218,6 +221,51 @@ public class BdMaterialServiceImpl implements IBdMaterialService {
             lqw.inSql(BdMaterial::getMaterialId, sub.toString());
         }
         return lqw;
+    }
+
+    /**
+     * 批量回填展示用的关联名称（基本计量单位名称、物料分类名称）。
+     * <p>
+     * bd_material 只存外键 ID，不含名称列；此前仅回填了计量单位名称，导致
+     * {@code categoryName} 恒为空 —— 前端「物料分类」列、Excel 导出的「分类名称」列
+     * 都是空的，和「物料分类」菜单里的树看起来对不上。此处统一补齐。
+     *
+     * @param list 物料VO列表
+     */
+    private void fillRefNames(List<BdMaterialVo> list) {
+        fillBaseUomName(list);
+        fillCategoryName(list);
+    }
+
+    /**
+     * 批量填充物料分类名称
+     *
+     * @param list 物料VO列表
+     */
+    private void fillCategoryName(List<BdMaterialVo> list) {
+        if (CollUtil.isEmpty(list)) {
+            return;
+        }
+        List<Long> categoryIds = list.stream()
+            .map(BdMaterialVo::getCategoryId)
+            .filter(Objects::nonNull)
+            .distinct()
+            .collect(Collectors.toList());
+        if (CollUtil.isEmpty(categoryIds)) {
+            return;
+        }
+        Map<Long, String> categoryNameMap = categoryMapper.selectBatchIds(categoryIds).stream()
+            .filter(c -> c.getCategoryName() != null)
+            .collect(Collectors.toMap(
+                BdMaterialCategory::getCategoryId,
+                BdMaterialCategory::getCategoryName,
+                (v1, v2) -> v1
+            ));
+        for (BdMaterialVo vo : list) {
+            if (vo.getCategoryId() != null) {
+                vo.setCategoryName(categoryNameMap.get(vo.getCategoryId()));
+            }
+        }
     }
 
     /**

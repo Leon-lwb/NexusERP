@@ -6,7 +6,6 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
-import com.nexus.common.core.constant.CacheNames;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.MapstructUtils;
 import com.nexus.common.core.utils.StringUtils;
@@ -20,8 +19,6 @@ import com.nexus.erp.bd.domain.vo.BdMaterialCategoryVo;
 import com.nexus.erp.bd.mapper.BdMaterialCategoryMapper;
 import com.nexus.erp.bd.service.IBdMaterialCategoryService;
 import com.nexus.erp.bd.service.IBdMaterialService;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -60,17 +57,19 @@ public class BdMaterialCategoryServiceImpl implements IBdMaterialCategoryService
     }
 
     /**
-     * 仅在无筛选条件时缓存全量分类列表（读多写少，租户自动隔离）。
-     */
-    @Override
-    @Cacheable(cacheNames = CacheNames.BD_CATEGORY_TREE, key = "'list_all'",
-        condition = "#bo.categoryCode == null and #bo.categoryName == null and #bo.status == null")
-    /**
      * 查询物料类别列表
+     * <p>
+     * 不再缓存整表：分类树是「物料管理」左树、「物料分类」管理页、库存/上架/拣货规则
+     * 等多处共用的基础数据，而各调用方传参不同（有的带 status=1，有的不带）。
+     * 原先只对「无筛选条件」的调用做 {@code @Cacheable}，导致带 status 的调用直读库、
+     * 不带参数的调用读 30 天 TTL 的缓存 —— 只要分类被应用之外的方式改动过
+     * （数据迁移、导入、脚本），两个菜单就会长期显示不同的分类树。
+     * 该表仅百余行，直接查库，消除这类不一致。
      *
      * @param bo 业务对象，包含筛选条件或待保存字段
      * @return 结果列表
      */
+    @Override
     public List<BdMaterialCategoryVo> selectList(BdMaterialCategoryBo bo) {
         return baseMapper.selectVoList(buildQueryWrapper(bo));
     }
@@ -111,7 +110,6 @@ public class BdMaterialCategoryServiceImpl implements IBdMaterialCategoryService
      */
 
     @Override
-    @CacheEvict(cacheNames = CacheNames.BD_CATEGORY_TREE, allEntries = true)
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(BdMaterialCategoryBo bo) {
         BdMaterialCategory entity = MapstructUtils.convert(bo, BdMaterialCategory.class);
@@ -129,7 +127,6 @@ public class BdMaterialCategoryServiceImpl implements IBdMaterialCategoryService
      */
 
     @Override
-    @CacheEvict(cacheNames = CacheNames.BD_CATEGORY_TREE, allEntries = true)
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(BdMaterialCategoryBo bo) {
         BdMaterialCategory entity = MapstructUtils.convert(bo, BdMaterialCategory.class);
@@ -155,7 +152,6 @@ public class BdMaterialCategoryServiceImpl implements IBdMaterialCategoryService
      */
 
     @Override
-    @CacheEvict(cacheNames = CacheNames.BD_CATEGORY_TREE, allEntries = true)
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {
         return baseMapper.deleteBatchIds(Arrays.asList(ids));
@@ -217,8 +213,7 @@ public class BdMaterialCategoryServiceImpl implements IBdMaterialCategoryService
     }
 
     /**
-     * 实时填充直系物料数量。物料增删不触发分类缓存失效，故此处每次实时查询，
-     * 不进分类缓存，避免物料数陈旧。
+     * 实时填充直系物料数量。物料数不在分类表上，每次实时统计，始终与物料列表同源。
      */
     @Override
     public void fillMaterialCount(List<BdMaterialCategoryVo> list) {
@@ -236,7 +231,6 @@ public class BdMaterialCategoryServiceImpl implements IBdMaterialCategoryService
      * <p>停用(1->0)时级联停用所有子孙；启用(0->1)仅自身（不级联启用祖先链，避免误启用）。
      */
     @Override
-    @CacheEvict(cacheNames = CacheNames.BD_CATEGORY_TREE, allEntries = true)
     @Transactional(rollbackFor = Exception.class)
     public int updateStatus(Long categoryId, Long status) {
         if (baseMapper.selectById(categoryId) == null) {
@@ -271,7 +265,6 @@ public class BdMaterialCategoryServiceImpl implements IBdMaterialCategoryService
      * sortOrder 自动追加到新父级现有子级末尾。
      */
     @Override
-    @CacheEvict(cacheNames = CacheNames.BD_CATEGORY_TREE, allEntries = true)
     @Transactional(rollbackFor = Exception.class)
     public int moveCategory(Long categoryId, Long newParentId) {
         BdMaterialCategory old = baseMapper.selectById(categoryId);

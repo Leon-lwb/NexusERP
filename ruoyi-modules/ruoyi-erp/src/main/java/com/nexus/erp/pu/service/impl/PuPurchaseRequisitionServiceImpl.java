@@ -537,7 +537,10 @@ public class PuPurchaseRequisitionServiceImpl implements IPuPurchaseRequisitionS
             return new ArrayList<>();
         }
 
-        String reqCode = autoCodeUtil.genSerialCode("pu_purchase_requisition", "LOW");
+        // 修复：原为 "pu_purchase_requisition"（小写），库中不存在该规则编码，
+        // 会抛「未获取到指定类型:[pu_purchase_requisition]的业务编码生成规则」。
+        // 与 L147 保持一致，复用 PU_REQUISITION_CODE 规则。
+        String reqCode = autoCodeUtil.genSerialCode("PU_REQUISITION_CODE", null);
         PuPurchaseRequisition requisition = new PuPurchaseRequisition();
         requisition.setRequisitionNo(reqCode);
         requisition.setSourceType("LOW_STOCK");

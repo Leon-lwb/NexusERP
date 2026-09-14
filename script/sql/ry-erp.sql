@@ -402,7 +402,7 @@ CREATE TABLE `bd_material`  (
   `quality_status` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '质量状态',
   `shelf_life` int(11) NULL DEFAULT 0 COMMENT '保质期(天)',
   `weight` decimal(12, 4) NULL DEFAULT 0.0000 COMMENT '重量(kg)',
-  `volume` decimal(12, 4) NULL DEFAULT 0.0000 COMMENT '体积(m³)',
+  `volume` decimal(18, 9) NULL DEFAULT 0.000000000 COMMENT '体积(m³)',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   `attr1` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段1',
   `attr2` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段2',
