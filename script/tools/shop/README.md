@@ -29,7 +29,20 @@ java -jar ruoyi-admin\target\ruoyi-admin.jar \
 | `fix_and_verify_store_info.py` | 回填商品简介，并回归验证 `store_info` 清空缺陷已修 |
 | `verify_t2.py` | 全量验收，退出码 0/1（可接 CI） |
 
+改端口 / 改库时的运维三件套：
+
+| 脚本 | 作用 |
+|---|---|
+| `audit_config_urls.py` | 审计 `eb_system_config` 里内嵌本机端口（8080/8090/9090/20400）的行——**任何端口变更后先跑这个** |
+| `apply_migration.py <sql>` | 执行 `crmeb_upgrade/*.sql` 并逐条打印影响行数；重放时行数应为 0（验证幂等） |
+| `clear_mall_cache.py [--dry-run]` | 选择性清商城 Redis 业务缓存：**保留**登录令牌、`online_tokens`、`global:sys_oss*`、redisson 内部键 |
+
 执行顺序见报告 §6。
+
+> ⚠️ **不要直接 `FLUSHDB`**。商城 DB3 里的 `global:sys_oss:default_config` 是承重的：
+> `NexusFrontImagePathFilterConfig:85` 会走 `getCdnUrl()` → `OssFactory.instance()`，
+> 该指针缺失时直接抛异常，**所有 C 端商品图会挂到下次重启为止**。
+> 另外 DB3 里还有登录令牌，清了会把正在用的后台踢下线。
 
 ## 两个必须知道的坑
 
