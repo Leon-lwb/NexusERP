@@ -21,6 +21,8 @@ import com.nexus.erp.bd.mapper.BdBomMapper;
 import com.nexus.erp.bd.mapper.BdRoutingMapper;
 import com.nexus.erp.bd.mapper.BdRoutingStepMapper;
 import com.nexus.erp.bd.service.IBdRoutingService;
+import com.nexus.system.strategy.AutoCodeUtil;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,9 +40,16 @@ import java.util.List;
 @Service
 public class BdRoutingServiceImpl implements IBdRoutingService {
 
+    /** 工艺路线编码的自动生成规则码（sys_auto_code_rule.rule_code）。 */
+    private static final String ROUTING_CODE_RULE = "ROUTING_CODE";
+
+    /** 版本号缺省值，与 bd_routing.routing_version 的 DDL 默认值保持一致。 */
+    private static final String DEFAULT_ROUTING_VERSION = "1.0";
+
     private final BdRoutingMapper baseMapper;
     private final BdRoutingStepMapper stepMapper;
     private final BdBomMapper bomMapper;
+    private final AutoCodeUtil autoCodeUtil;
     /**
      * 分页查询工艺路线列表
      *
@@ -79,35 +88,95 @@ public class BdRoutingServiceImpl implements IBdRoutingService {
     }
     /**
      * 新增工艺路线
+     * <p>编码留空时按 ROUTING_CODE 规则生成（RT+yyyyMMdd+3 位日循环流水号，如 RT20260914001）。
+     * 前端「自动生成」开关在提交前会清空编码，由这里兜底生成，预览不会消耗流水号、不跳号。</p>
      *
      * @param bo 业务对象，包含筛选条件或待保存字段
      * @return 操作结果/影响行数
      */
-
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(BdRoutingBo bo) {
         BdRouting entity = MapstructUtils.convert(bo, BdRouting.class);
+        if (StringUtils.isBlank(entity.getRoutingCode())) {
+            entity.setRoutingCode(autoCodeUtil.genSerialCode(ROUTING_CODE_RULE, null));
+        }
+        if (StringUtils.isBlank(entity.getRoutingVersion())) {
+            entity.setRoutingVersion(DEFAULT_ROUTING_VERSION);
+        }
+        assertCodeVersionUnique(entity.getRoutingCode(), entity.getRoutingVersion(), null);
         computeTotals(entity, bo.getSteps());
-        int rows = baseMapper.insert(entity);
+        int rows;
+        try {
+            rows = baseMapper.insert(entity);
+        } catch (DuplicateKeyException e) {
+            // 兜底：编码+版本已被逻辑删除的历史记录占用时查询看不到，唯一索引仍会拦下
+            throw duplicateCodeException(entity.getRoutingCode(), entity.getRoutingVersion());
+        }
         saveSteps(entity.getRoutingId(), bo.getSteps());
         return rows;
     }
+
     /**
      * 修改工艺路线
+     * <p>编码留空时同样兜底生成：MyBatis-Plus updateById 会忽略 null 字段，
+     * 若不在进入 UPDATE 前补齐，就会出现「打开自动生成开关却静默保留旧编码」的语义不一致。</p>
      *
      * @param bo 业务对象，包含筛选条件或待保存字段
      * @return 操作结果/影响行数
      */
-
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(BdRoutingBo bo) {
         BdRouting entity = MapstructUtils.convert(bo, BdRouting.class);
+        BdRouting existing = entity.getRoutingId() == null ? null : baseMapper.selectById(entity.getRoutingId());
+        if (existing == null) {
+            throw new ServiceException("工艺路线不存在");
+        }
+        if (StringUtils.isBlank(entity.getRoutingCode())) {
+            entity.setRoutingCode(autoCodeUtil.genSerialCode(ROUTING_CODE_RULE, null));
+        }
+        if (StringUtils.isBlank(entity.getRoutingVersion())) {
+            // 沿用库中现值而非常量，避免把 2.0 之类的版本回退成 1.0
+            entity.setRoutingVersion(StringUtils.defaultIfBlank(existing.getRoutingVersion(), DEFAULT_ROUTING_VERSION));
+        }
+        assertCodeVersionUnique(entity.getRoutingCode(), entity.getRoutingVersion(), entity.getRoutingId());
         computeTotals(entity, bo.getSteps());
-        int rows = baseMapper.updateById(entity);
+        int rows;
+        try {
+            rows = baseMapper.updateById(entity);
+        } catch (DuplicateKeyException e) {
+            throw duplicateCodeException(entity.getRoutingCode(), entity.getRoutingVersion());
+        }
         saveSteps(entity.getRoutingId(), bo.getSteps());
         return rows;
+    }
+
+    /**
+     * 校验（工艺路线编码 + 版本号）在同一租户下唯一。
+     * <p>对应 DB 唯一索引 uk_routing_code_version(routing_code, routing_version, tenant_id)。
+     * 提前拦截是为了给出可读的中文提示，而不是把 SQL 约束冲突暴露成 500。</p>
+     *
+     * @param routingCode    工艺路线编码
+     * @param routingVersion 版本号
+     * @param excludeId      需排除的自身主键（新增传 null）
+     */
+    private void assertCodeVersionUnique(String routingCode, String routingVersion, Long excludeId) {
+        Long count = baseMapper.selectCount(
+            Wrappers.lambdaQuery(BdRouting.class)
+                .eq(BdRouting::getRoutingCode, routingCode)
+                .eq(BdRouting::getRoutingVersion, routingVersion)
+                .ne(excludeId != null, BdRouting::getRoutingId, excludeId));
+        if (count != null && count > 0) {
+            throw duplicateCodeException(routingCode, routingVersion);
+        }
+    }
+
+    /**
+     * 构造编码+版本重复的业务异常（预校验与唯一索引兜底共用同一提示）。
+     */
+    private ServiceException duplicateCodeException(String routingCode, String routingVersion) {
+        return new ServiceException("工艺路线编码[" + routingCode + "] + 版本号[" + routingVersion + "] 已存在，请更换编码或版本号");
     }
 
     /**

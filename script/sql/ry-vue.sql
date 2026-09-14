@@ -68654,6 +68654,9 @@ INSERT INTO `sys_auto_code_part` VALUES (2058014518088437815, '000000', 293, 3, 
 INSERT INTO `sys_auto_code_part` VALUES (2058014518088437816, '000000', 294, 1, 'FIXCHAR', 'PREFIX', '前缀', 2, NULL, NULL, 'RP', NULL, NULL, NULL, NULL, NULL, '', NULL, NULL, 0, 0, NULL, NULL, '2026-08-22 23:32:53', NULL, NULL, '0');
 INSERT INTO `sys_auto_code_part` VALUES (2058014518088437817, '000000', 294, 2, 'NOWDATE', 'DATE', '日期', 8, 'yyyyMMdd', NULL, NULL, NULL, NULL, NULL, NULL, NULL, '', NULL, NULL, 0, 0, NULL, NULL, '2026-08-22 23:32:53', NULL, NULL, '0');
 INSERT INTO `sys_auto_code_part` VALUES (2058014518088437818, '000000', 294, 3, 'SERIALNO', 'SERIAL', '流水号', 3, NULL, NULL, NULL, 1, 1, NULL, 'Y', 'DAY', '', NULL, NULL, 0, 0, NULL, NULL, '2026-08-22 23:32:53', NULL, NULL, '0');
+INSERT INTO `sys_auto_code_part` VALUES (3004, '000000', 301, 1, 'FIXCHAR', 'PREFIX', '前缀', 2, NULL, NULL, 'RT', NULL, NULL, NULL, NULL, NULL, '', NULL, NULL, 0, 0, NULL, 1, '2026-09-14 00:00:00', NULL, NULL, '0');
+INSERT INTO `sys_auto_code_part` VALUES (3005, '000000', 301, 2, 'NOWDATE', 'DATE', '日期', 8, 'yyyyMMdd', NULL, NULL, NULL, NULL, NULL, NULL, NULL, '', NULL, NULL, 0, 0, NULL, 1, '2026-09-14 00:00:00', NULL, NULL, '0');
+INSERT INTO `sys_auto_code_part` VALUES (3006, '000000', 301, 3, 'SERIALNO', 'SERIAL', '流水号', 3, NULL, NULL, NULL, 1, 1, NULL, 'Y', 'DAY', '', NULL, NULL, 0, 0, NULL, 1, '2026-09-14 00:00:00', NULL, NULL, '0');
 
 -- ----------------------------
 -- Table structure for sys_auto_code_result
@@ -68874,6 +68877,7 @@ INSERT INTO `sys_auto_code_rule` VALUES (294, '000000', 'MES_RP_CODE', 'MES发�
 INSERT INTO `sys_auto_code_rule` VALUES (295, '000000', 'WM_RETURN_CODE', 'é€€æ–™å•ç¼–å·', NULL, 14, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, NULL, 1, '2026-08-30 00:00:00', NULL, NULL, '0');
 INSERT INTO `sys_auto_code_rule` VALUES (296, '000000', 'WM_HANDOVER_CODE', '上料交接单编号', NULL, 14, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, NULL, 1, '2026-08-30 00:00:00', NULL, NULL, '0');
 INSERT INTO `sys_auto_code_rule` VALUES (300, '000000', 'PRD_SUBCONTRACT_CODE', '委外订单编码', NULL, 14, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, NULL, 1, '2026-09-06 00:00:00', NULL, NULL, '0');
+INSERT INTO `sys_auto_code_rule` VALUES (301, '000000', 'ROUTING_CODE', '工艺路线编码', 'RT+日期+3位日循环流水号', 13, 'N', NULL, 'L', 'Y', NULL, NULL, NULL, 0, 0, NULL, 1, '2026-09-14 00:00:00', NULL, NULL, '0');
 
 -- ----------------------------
 -- Table structure for sys_client
@@ -73591,6 +73595,8 @@ INSERT INTO `sys_menu` VALUES (20033, '行政区划新增', 20031, 2, '', NULL, 
 INSERT INTO `sys_menu` VALUES (20034, '行政区划修改', 20031, 3, '', NULL, NULL, 1, 0, 'F', '0', '0', 'system:area:edit', '#', 103, 1, '2026-04-30 13:26:48', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (20035, '行政区划删除', 20031, 4, '', NULL, NULL, 1, 0, 'F', '0', '0', 'system:area:remove', '#', 103, 1, '2026-04-30 13:26:48', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (20036, '行政区划导出', 20031, 5, '', NULL, NULL, 1, 0, 'F', '0', '0', 'system:area:export', '#', 103, 1, '2026-04-30 13:26:48', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (20037, '编码生成', 20026, 5, '', NULL, NULL, 1, 0, 'F', '0', '0', 'system:autocode:get', '#', 103, 1, '2026-09-14 00:00:00', NULL, NULL, '自动编码生成(消耗流水号)');
+INSERT INTO `sys_menu` VALUES (20038, '编码预览', 20026, 6, '', NULL, NULL, 1, 0, 'F', '0', '0', 'system:autocode:preview', '#', 103, 1, '2026-09-14 00:00:00', NULL, NULL, '自动编码预览(不消耗流水号)');
 INSERT INTO `sys_menu` VALUES (20200, '流程案例', 0, 10, 'flowdemo', NULL, '', 1, 0, 'M', '0', '0', '', 'list', 103, 1, '2026-04-17 15:59:07', 1, '2026-04-28 13:20:29', NULL);
 INSERT INTO `sys_menu` VALUES (20201, '单表流程', 20200, 1, 'demo', 'workflow/demo/index', '', 1, 0, 'C', '0', '0', 'workflow:demo:list', 'tree', 103, 1, '2026-04-17 15:59:07', 1, '2026-04-17 15:59:07', NULL);
 INSERT INTO `sys_menu` VALUES (20210, '生产退料', 2965, 9, 'materialReturn', 'erp/wm/return/index', NULL, 1, 0, 'C', '0', '0', 'wm:materialReturn:list', 'form', 103, 1, '2026-08-31 20:57:17', NULL, NULL, 'PC建单页已接入');
@@ -76259,6 +76265,8 @@ INSERT INTO `sys_role_menu` VALUES (1, 1750);
 INSERT INTO `sys_role_menu` VALUES (1, 1751);
 INSERT INTO `sys_role_menu` VALUES (1, 1752);
 INSERT INTO `sys_role_menu` VALUES (1, 1753);
+INSERT INTO `sys_role_menu` VALUES (1, 20037);
+INSERT INTO `sys_role_menu` VALUES (1, 20038);
 INSERT INTO `sys_role_menu` VALUES (3, 1);
 INSERT INTO `sys_role_menu` VALUES (3, 100);
 INSERT INTO `sys_role_menu` VALUES (3, 101);
@@ -77009,6 +77017,8 @@ INSERT INTO `sys_role_menu` VALUES (3, 2045078110832984065);
 INSERT INTO `sys_role_menu` VALUES (3, 2045078330752925697);
 INSERT INTO `sys_role_menu` VALUES (3, 2045078556964323330);
 INSERT INTO `sys_role_menu` VALUES (3, 2045078769934303233);
+INSERT INTO `sys_role_menu` VALUES (3, 20037);
+INSERT INTO `sys_role_menu` VALUES (3, 20038);
 INSERT INTO `sys_role_menu` VALUES (2054472456595238913, 1);
 INSERT INTO `sys_role_menu` VALUES (2054472456595238913, 100);
 INSERT INTO `sys_role_menu` VALUES (2054472456595238913, 101);
@@ -77177,6 +77187,8 @@ INSERT INTO `sys_role_menu` VALUES (2054472456595238913, 20033);
 INSERT INTO `sys_role_menu` VALUES (2054472456595238913, 20034);
 INSERT INTO `sys_role_menu` VALUES (2054472456595238913, 20035);
 INSERT INTO `sys_role_menu` VALUES (2054472456595238913, 20036);
+INSERT INTO `sys_role_menu` VALUES (2054472456595238913, 20037);
+INSERT INTO `sys_role_menu` VALUES (2054472456595238913, 20038);
 
 -- ----------------------------
 -- Table structure for sys_role_menu_bak_20260629

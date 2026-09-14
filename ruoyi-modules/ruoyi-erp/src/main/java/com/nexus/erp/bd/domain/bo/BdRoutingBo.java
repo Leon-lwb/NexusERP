@@ -23,7 +23,12 @@ public class BdRoutingBo extends BaseEntity {
 
     private Long routingId;
 
-    @NotBlank(message = "工艺路线编码不能为空")
+    /**
+     * 工艺路线编码。
+     * <p>留空时由后端按 ROUTING_CODE 规则自动生成（RT+yyyyMMdd+3 位日循环流水号），
+     * 与 BdWorkstationBo.workstationCode 等基础数据保持一致，因此此处不加 @NotBlank，
+     * 否则校验会在进入 Service 兜底逻辑前就返回 400。</p>
+     */
     private String routingCode;
 
     @NotBlank(message = "工艺路线名称不能为空")

@@ -26,7 +26,8 @@ export interface RoutingVO {
 
 export interface RoutingForm {
   routingId?: number;
-  routingCode: string;
+  /** 留空时由后端按 ROUTING_CODE 规则自动生成（RT+yyyyMMdd+3 位日循环流水号） */
+  routingCode?: string;
   routingName: string;
   routingDesc?: string;
   materialId?: number;
