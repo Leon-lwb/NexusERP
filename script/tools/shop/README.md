@@ -48,6 +48,22 @@ java -jar ruoyi-admin\target\ruoyi-admin.jar \
 | `verify_categories.py` | 验收：顺序 / 名称 / `extra` 绝对化 / 子类顺序 / 46 张图可下载，退出码 0/1 |
 | `emit_category_sql.py` | 由 `category_result.json` 生成商城侧 `crmeb_upgrade/08_category_rework.sql` |
 
+ERP 备份表清理（详见 `doc/system/2026-09-14-备份表清理记录.md`）：
+
+| 脚本 | 作用 |
+|---|---|
+| `recon_backup_tables.py` | 枚举 `bak_` 前缀备份表 + 体积，并检查逻辑备份文件是否还在 |
+| `scan_backup_patterns.py` | **9 种命名约定**全库重扫。第一遍只按 `bak_` 前缀扫，漏了 `<表>_bak_<日期>` 这种后缀式 |
+| `drop_backup_tables.py [--dry-run]` | 删 `bak\_%`（下划线转义，不误伤 `bakery...`）；选中集合里出现非 `bak_` 开头的名字就拒绝执行 |
+| `drop_suffix_backup_tables.py` | 删后缀式的几张，用**显式白名单**而不是放宽模式 |
+| `measure_script_bloat.py` | 统计 `script/sql/*.sql` 里有多少行是备份数据 |
+| `check_script_vs_db.py` | 脚本表集合 vs 活库表集合比对（missing / extra 都应为 0） |
+| `strip_backup_blocks.py [--dry-run]` | 按 Navicat 块结构剔除脚本里的备份表块，按**字节**拼接保证保留内容不变 |
+| `verify_backup_cleanup.py` | 复核：全库 `bak_` 为 0 + 各库表数 + 3D 演示数据硬指标 |
+
+> ⚠️ 这几把脚本**动的是真数据**，都支持 `--dry-run` 且只删白名单/强模式命中的表。
+> 清理后**没有任何回滚路径**（逻辑备份文件当时已丢失）。
+
 执行顺序见报告 §6。
 
 > ⚠️ **不要直接 `FLUSHDB`**。商城 DB3 里的 `global:sys_oss:default_config` 是承重的：
