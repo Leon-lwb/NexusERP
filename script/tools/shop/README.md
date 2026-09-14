@@ -37,6 +37,17 @@ java -jar ruoyi-admin\target\ruoyi-admin.jar \
 | `apply_migration.py <sql>` | 执行 `crmeb_upgrade/*.sql` 并逐条打印影响行数；重放时行数应为 0（验证幂等） |
 | `clear_mall_cache.py [--dry-run]` | 选择性清商城 Redis 业务缓存：**保留**登录令牌、`online_tokens`、`global:sys_oss*`、redisson 内部键 |
 
+分类重构（顺序 / 名称 / 图标）：
+
+| 脚本 | 作用 |
+|---|---|
+| `diag_category_order.py` | 诊断分类顺序：打印索引、后端谓词的原始顺序、`sort ASC` 对照与 EXPLAIN |
+| `build_category_manifest.py` | 生成 `category_manifest.json`：短名 + 显示顺序（按 `sort DESC` 反推）+ 46 条图标提示词 |
+| `collect_category_icons.py [--report-only]` | 按**精确 prompt** 回捞生成结果 → 去水印 → 缩到 200×200 → `doc/assets/category-icons-2026-09-14/`；`--report-only` 只报缺口 |
+| `apply_category_rework.py [--dry-run]` | 图标传 MinIO + 更新 `eb_category` 的 name/sort/extra |
+| `verify_categories.py` | 验收：顺序 / 名称 / `extra` 绝对化 / 子类顺序 / 46 张图可下载，退出码 0/1 |
+| `emit_category_sql.py` | 由 `category_result.json` 生成商城侧 `crmeb_upgrade/08_category_rework.sql` |
+
 执行顺序见报告 §6。
 
 > ⚠️ **不要直接 `FLUSHDB`**。商城 DB3 里的 `global:sys_oss:default_config` 是承重的：
