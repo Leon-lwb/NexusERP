@@ -1,0 +1,298 @@
+{
+ "IF20260914001": {
+  "material_id": 1,
+  "code": "IF20260914001",
+  "key": "nexusimage/public/product/2026/09/14/afimuzvxbnu4q2jgi0thcrx7su3i8ezy17bv75b30efgob.png",
+  "bytes": 1072262,
+  "http": 200,
+  "local": "01_IF20260914001_高强度螺栓组套 M12.png"
+ },
+ "IF20260914002": {
+  "material_id": 2,
+  "code": "IF20260914002",
+  "key": "nexusimage/public/product/2026/09/14/iv5wwj20h0x3o46jbe0jzbv4zf77b66bpznqqxbnn04akr.png",
+  "bytes": 1156942,
+  "http": 200,
+  "local": "02_IF20260914002_精密齿轮箱总成.png"
+ },
+ "IF20260914003": {
+  "material_id": 3,
+  "code": "IF20260914003",
+  "key": "nexusimage/public/product/2026/09/14/m2ssh3mg33m0etlpvrfm4ww3qfxjtfjlixzm5xfvrsogw4.png",
+  "bytes": 1174398,
+  "http": 200,
+  "local": "03_IF20260914003_压缩弹簧组.png"
+ },
+ "IF20260914004": {
+  "material_id": 4,
+  "code": "IF20260914004",
+  "key": "nexusimage/public/product/2026/09/14/sqr99madxvu2eq7errdv58uj71x6yuq2gdtw2bv371lao3.png",
+  "bytes": 1043650,
+  "http": 200,
+  "local": "04_IF20260914004_设备钣金机箱.png"
+ },
+ "IF20260914005": {
+  "material_id": 5,
+  "code": "IF20260914005",
+  "key": "nexusimage/public/product/2026/09/14/4krgfdqgjw8cuylnfx41zoik5xl4ie566w53knxjun6bwe.png",
+  "bytes": 1083661,
+  "http": 200,
+  "local": "05_IF20260914005_钢结构支架总成.png"
+ },
+ "IF20260914006": {
+  "material_id": 6,
+  "code": "IF20260914006",
+  "key": "nexusimage/public/product/2026/09/14/pu514kca5u9ktlg4o0ifq1f7tht4o58a1899xejr8wzwhw.png",
+  "bytes": 1168650,
+  "http": 200,
+  "local": "06_IF20260914006_注塑模具.png"
+ },
+ "IF20260914007": {
+  "material_id": 7,
+  "code": "IF20260914007",
+  "key": "nexusimage/public/product/2026/09/14/sz14z90asia34wn2o5mv87z2hli448p16lyxot4t8kcwzr.png",
+  "bytes": 1106908,
+  "http": 200,
+  "local": "07_IF20260914007_棘轮扳手组套.png"
+ },
+ "IF20260914008": {
+  "material_id": 8,
+  "code": "IF20260914008",
+  "key": "nexusimage/public/product/2026/09/14/7j3x8l4pycw1pbc98honawiivqb2d02fb3eeymb23zrmon.png",
+  "bytes": 1187569,
+  "http": 200,
+  "local": "08_IF20260914008_齿轮减速机 JZQ-350.png"
+ },
+ "IF20260914009": {
+  "material_id": 9,
+  "code": "IF20260914009",
+  "key": "nexusimage/public/product/2026/09/14/8qc420uty399yp3uasz23ginodruopt6ikf3g3dui6dufr.png",
+  "bytes": 1106783,
+  "http": 200,
+  "local": "09_IF20260914009_单级离心泵.png"
+ },
+ "IF20260914010": {
+  "material_id": 10,
+  "code": "IF20260914010",
+  "key": "nexusimage/public/product/2026/09/14/4b2grr9zd0er9nrn8vp61i6n9fsxg32md31ett2b3e3r9s.png",
+  "bytes": 1037728,
+  "http": 200,
+  "local": "10_IF20260914010_数控铣床 XK714.png"
+ },
+ "IF20260914011": {
+  "material_id": 11,
+  "code": "IF20260914011",
+  "key": "nexusimage/public/product/2026/09/14/tpldve7gbk0lfr7p35jcb165fzs84g7tea0khzvtwhn3v8.png",
+  "bytes": 994114,
+  "http": 200,
+  "local": "11_IF20260914011_皮带输送线.png"
+ },
+ "IF20260914012": {
+  "material_id": 12,
+  "code": "IF20260914012",
+  "key": "nexusimage/public/product/2026/09/14/tmmzxq8e7fqndc2xd8i6xd3xgf6o6rc1p9eaoqyhvr8csg.png",
+  "bytes": 959839,
+  "http": 200,
+  "local": "12_IF20260914012_螺杆式空压机.png"
+ },
+ "IF20260914013": {
+  "material_id": 13,
+  "code": "IF20260914013",
+  "key": "nexusimage/public/product/2026/09/14/ftgsu8x6sgttt8yuzfhzob36uwrdw519myo2hf5vcgpz8u.png",
+  "bytes": 1334524,
+  "http": 200,
+  "local": "13_IF20260914013_双层 PCB 板.png"
+ },
+ "IF20260914014": {
+  "material_id": 14,
+  "code": "IF20260914014",
+  "key": "nexusimage/public/product/2026/09/14/tm8lwsbvexeuor0puf9i5nm15vf33f069h7b6psyq00310.png",
+  "bytes": 866773,
+  "http": 200,
+  "local": "14_IF20260914014_智能路由器 WR-1200.png"
+ },
+ "IF20260914015": {
+  "material_id": 15,
+  "code": "IF20260914015",
+  "key": "nexusimage/public/product/2026/09/14/l0kt7wj6fhqraipmv6bwg7cdv2hbt5n6zpkou3z1k20ncn.png",
+  "bytes": 973450,
+  "http": 200,
+  "local": "15_IF20260914015_变频电风扇.png"
+ },
+ "IF20260914016": {
+  "material_id": 16,
+  "code": "IF20260914016",
+  "key": "nexusimage/public/product/2026/09/14/9cmn2hmyx1h3wappzxbsf4vgqnd6gvi0f71h48gi5s4m72.png",
+  "bytes": 1146449,
+  "http": 200,
+  "local": "16_IF20260914016_开关电源模组 SMPS-60.png"
+ },
+ "IF20260914017": {
+  "material_id": 17,
+  "code": "IF20260914017",
+  "key": "nexusimage/public/product/2026/09/14/r2aw5nszdc2t3z41j558052zrirrtt9g2phkyvmep5m1g6.png",
+  "bytes": 1011513,
+  "http": 200,
+  "local": "17_IF20260914017_无刷直流电机 BLDC-45.png"
+ },
+ "IF20260914018": {
+  "material_id": 18,
+  "code": "IF20260914018",
+  "key": "nexusimage/public/product/2026/09/14/jafhqckj9hymf431d622s3kcmyn9uu87utpcdualwv7416.png",
+  "bytes": 961789,
+  "http": 200,
+  "local": "18_IF20260914018_温度传感器模组 TS-100.png"
+ },
+ "IF20260914019": {
+  "material_id": 19,
+  "code": "IF20260914019",
+  "key": "nexusimage/public/product/2026/09/14/yse5tmcrzq8ecjey6pck0srnp64wk6u1a5cm49o3p55ot9.png",
+  "bytes": 1089114,
+  "http": 200,
+  "local": "19_IF20260914019_数字万用表 DM-800.png"
+ },
+ "IF20260914020": {
+  "material_id": 20,
+  "code": "IF20260914020",
+  "key": "nexusimage/public/product/2026/09/14/mwqqnu68abxq3r4ffvldzqbg1pm1q94b9ycnt1y2mj7dgt.png",
+  "bytes": 1126180,
+  "http": 200,
+  "local": "20_IF20260914020_汽车门锁总成.png"
+ },
+ "IF20260914021": {
+  "material_id": 21,
+  "code": "IF20260914021",
+  "key": "nexusimage/public/product/2026/09/14/objb9dkhk4fqstzaw0qlmd7odmc2u0lqp726q5gyi8b9ju.png",
+  "bytes": 1094408,
+  "http": 200,
+  "local": "21_IF20260914021_城市通勤自行车.png"
+ },
+ "IF20260914022": {
+  "material_id": 22,
+  "code": "IF20260914022",
+  "key": "nexusimage/public/product/2026/09/14/r8xmuit7on22cm1tilr1vficr3n6uggupb2u0eel5bgbmu.png",
+  "bytes": 1183469,
+  "http": 200,
+  "local": "22_IF20260914022_四轴无人机机架.png"
+ },
+ "IF20260914023": {
+  "material_id": 23,
+  "code": "IF20260914023",
+  "key": "nexusimage/public/product/2026/09/14/1shym262wrfeto7xcaum27scquidifd4ipywbxicvcv4i5.png",
+  "bytes": 991554,
+  "http": 200,
+  "local": "23_IF20260914023_不锈钢手术剪.png"
+ },
+ "IF20260914024": {
+  "material_id": 24,
+  "code": "IF20260914024",
+  "key": "nexusimage/public/product/2026/09/14/tedgombrtgmcxd2ztuhqzqkvn14hshgbrh80siegdsd41y.png",
+  "bytes": 1188143,
+  "http": 200,
+  "local": "24_IF20260914024_手动轮椅.png"
+ },
+ "IF20260914025": {
+  "material_id": 25,
+  "code": "IF20260914025",
+  "key": "nexusimage/public/product/2026/09/14/q720tr6fk09c8i4jw18oueunzj6m3xtqer8izxaavldnge.png",
+  "bytes": 905847,
+  "http": 200,
+  "local": "25_IF20260914025_简易金属工具架 RACK-001.png"
+ },
+ "IF20260914026": {
+  "material_id": 26,
+  "code": "IF20260914026",
+  "key": "nexusimage/public/product/2026/09/14/6cpqmljd01ycdov00ir81uuq6io7peph9n3usn5usq9eqw.png",
+  "bytes": 807009,
+  "http": 200,
+  "local": "26_IF20260914026_LED 护眼台灯.png"
+ },
+ "IF20260914027": {
+  "material_id": 27,
+  "code": "IF20260914027",
+  "key": "nexusimage/public/product/2026/09/14/n2i6bta9bz0tofz3zrokflj08z7g7pdiiczdlidtcmy8nq.png",
+  "bytes": 894114,
+  "http": 200,
+  "local": "27_IF20260914027_智能网关 GW-1000.png"
+ },
+ "IF20260914028": {
+  "material_id": 28,
+  "code": "IF20260914028",
+  "key": "nexusimage/public/product/2026/09/14/81j74y5aephjpzpk7fff9uc76puf51057y6yasvpp2ct8m.png",
+  "bytes": 962777,
+  "http": 200,
+  "local": "28_IF20260914028_精密塑料外壳 PC-200.png"
+ },
+ "IF20260914029": {
+  "material_id": 29,
+  "code": "IF20260914029",
+  "key": "nexusimage/public/product/2026/09/14/wby6kps14x0o40dqp4f6sfuqp742uxnejxjni8d5za4k0w.png",
+  "bytes": 1098233,
+  "http": 200,
+  "local": "29_IF20260914029_硅胶密封圈组.png"
+ },
+ "IF20260914030": {
+  "material_id": 30,
+  "code": "IF20260914030",
+  "key": "nexusimage/public/product/2026/09/14/0cxuabqv6x65lsyzyxoyx6buepny98mkg0xg1utqvvx5ux.png",
+  "bytes": 931428,
+  "http": 200,
+  "local": "30_IF20260914030_锂电池包 48V20Ah.png"
+ },
+ "IF20260914031": {
+  "material_id": 31,
+  "code": "IF20260914031",
+  "key": "nexusimage/public/product/2026/09/14/tp4avrnvf6rdc8o1wv91c9chi5ncwlqdmcdilq9l8s25wp.png",
+  "bytes": 936467,
+  "http": 200,
+  "local": "31_IF20260914031_交流充电桩 AC-7kW.png"
+ },
+ "IF20260914032": {
+  "material_id": 32,
+  "code": "IF20260914032",
+  "key": "nexusimage/public/product/2026/09/14/9ru8hvmw69fneewb08h9oktnl6q97kn4r4x9duaziixb04.png",
+  "bytes": 1366716,
+  "http": 200,
+  "local": "32_IF20260914032_光伏组件 450W.png"
+ },
+ "IF20260914033": {
+  "material_id": 33,
+  "code": "IF20260914033",
+  "key": "nexusimage/public/product/2026/09/14/4zrkidwmdk0gi99rnkgmiwqngrxo1edk1wayalmrp41fw6.png",
+  "bytes": 984295,
+  "http": 200,
+  "local": "33_IF20260914033_六轴机械臂 RB-6.png"
+ },
+ "IF20260914034": {
+  "material_id": 34,
+  "code": "IF20260914034",
+  "key": "nexusimage/public/product/2026/09/14/gtnpl7sn23fcyplykbjkez097tacb23rn4hczbwc97xfdc.png",
+  "bytes": 975939,
+  "http": 200,
+  "local": "34_IF20260914034_智能手环 BAND-3.png"
+ },
+ "IF20260914035": {
+  "material_id": 35,
+  "code": "IF20260914035",
+  "key": "nexusimage/public/product/2026/09/14/90miaoxqosqsemzlu2uvbz1b9pq86hgs4qrfrfs7k6gmtm.png",
+  "bytes": 1071173,
+  "http": 200,
+  "local": "35_IF20260914035_手持 POS 机 POS-8.png"
+ },
+ "IF20260914036": {
+  "material_id": 36,
+  "code": "IF20260914036",
+  "key": "nexusimage/public/product/2026/09/14/xs6xqrgqkcv5jszh7sd27nr8qxn38p44pq01mj7n54dm9k.png",
+  "bytes": 1009580,
+  "http": 200,
+  "local": "36_IF20260914036_网络摄像机 IPC-300.png"
+ },
+ "IF20260914037": {
+  "material_id": 37,
+  "code": "IF20260914037",
+  "key": "nexusimage/public/product/2026/09/14/qo5hc56nhthwm7njxfrs43895pumgl0e4j2n0i4hiazat3.png",
+  "bytes": 1148230,
+  "http": 200,
+  "local": "37_IF20260914037_无线蓝牙音箱 SPK-20.png"
+ }
+}
