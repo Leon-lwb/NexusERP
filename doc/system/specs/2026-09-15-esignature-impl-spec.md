@@ -148,7 +148,71 @@ Nexus-ERP 为 MIT 商业系统，代码级融合将使整个 ERP 受 AGPL 约束
 | Documenso | 15,026 | TypeScript | AGPL-3.0 | 同上 |
 | OpenSign | 6,992 | JavaScript | 非标准（NOASSERTION） | 同上 |
 | kaifangqian-base（开放签） | 501 | Vue | AGPL-3.0 | 见 2.1-2.4 |
+| Contract.Pro / mini-contract（何方签） | 314 / 76 | uni-app x（UTS/uvue） | **无 LICENSE 文件** | 见 2.7 |
 | 其余「电子签章/电子印章」检索 | — | — | — | **无任何可用项目**（命中均为无关仓库） |
+
+### 2.7 Contract.Pro / mini-contract（何方签）评估结论 —— 已排除
+
+> 由用户 2026-09-15 提议评估：<https://gitee.com/leepm/mini-contract>（GitHub 镜像 `freeleepm/mini-contract`）。以下为实测证据，结论：**不可用于本项目，且不可作为引擎替代方案。**
+
+**① 它不是一个签章系统，而是一个 uni-app 客户端外壳**
+
+| 证据 | 内容 |
+|------|------|
+| `ARCHITECTURE.md` 标题 | 「Mini-Contract **前端**业务架构文档」 |
+| 根目录结构 | `App.uvue` / `main.uts` / `pages.json` / `uni_modules/` —— 典型 uni-app x 工程 |
+| `package.json` | name=`何方签`，依赖仅 `@dcloudio/uni-ui` + `uqrcodejs`；构建走 `@dcloudio/uniapp-cli` |
+| `ARCHITECTURE.md` 分层图 | 第 5 层「☁️ 后端服务 Backend Services」为**外部**依赖，不在本仓库 |
+| `config/app.config.uts` | `production: '/app-api'`、dev `http://localhost:48080/app-api`、`TENANT_ID='1'` —— 指向一个**未开源的 yudao 系后端** |
+
+**② 真正的签章能力是作者托管的闭源服务（Seal Core）**
+
+`config/app.config.uts` 原文：
+
+```js
+export const SEAL_CORE_H5_URLS = {
+    'development': 'http://localhost:3100',
+    'testing': 'https://test-seal.example.com',
+    'production': 'https://h5-sign.leepm.com'   // ← 签章引擎在此，闭源
+};
+```
+
+`config/seal.config.uts` 原文注释：
+
+> 移动端通过 `<web-view>` 组件加载 **seal-core 的 H5 页面**，本质上是移动端的一部分
+
+并配套 `utils/sealTokenManager.uts`（11.7KB）做 **Seal Token 兑换**。即：开源仓库通过 token 换取对作者托管页面的访问权，**PDF 签章 / 印章管理 / CA 全部在闭源侧**。
+
+**③ 许可证状况：无有效许可证**
+
+README 徽章声称 `Apache License 2.0` 并链接到 `LICENSE`，但实测：
+
+| 检查项 | 结果 |
+|--------|------|
+| GitHub `contents/LICENSE` | **404** |
+| GitHub `license` API（SPDX） | **404**（无许可证被识别） |
+| Gitee `contents/LICENSE` | **HTTP 200，body 为 `[]`**（路径不存在） |
+| Gitee `raw|blob/master/LICENSE` | **404** |
+| Gitee 仓库 `license` / `license_url` 字段 | 均为空 |
+
+**无许可证 = 默认保留所有权利**（著作权法默认原则）。描述中的「永久免费开源」是宣传文案，**不构成授权**。徽章不是法律文件。
+
+**④ 「双模式引擎兼容腾讯电子签/法大大/君子签/e签宝CA标准」是 README 营销文案，非开源实现**
+
+实测关键词命中：`ARCHITECTURE.md` **零命中**；`README.md` 中「法大大 / 君子签 / e签宝」**各仅 1 次**（出现在宣传段落）；代码中不存在任何厂商适配层。适配层在闭源 Seal Core 内。
+
+**⑤ 与本项目定位冲突**
+
+引入它会把已确认的「内部留痕、零采购、零外部依赖」**反转为依赖第三方 SaaS**：签署页面在 `h5-sign.leepm.com`，会话靠 `Seal Token` 兑换。且它是 C 端 App，**不提供 ERP 集成路径**（即便要用其 SaaS，也是对 `s.leepm.com` 的 API 直连，与 fork 此仓库无关）。
+
+**⑥ 技术栈不匹配**：uni-app x（uvue/UTS）移动端 ≠ plus-ui（Vue 3 + Vite + Element Plus）。
+
+**可借鉴之处（仅思路，不可复制代码——无许可证）**：
+
+- **跨端签署会话**：它用 Seal Token 解决「uni-app 原生页 ↔ H5 WebView」的跨域签署会话传递。本项目 Web 同源，无需此机制；**但若未来把签署下沉到 PDA/App 端，需要类似方案**（见第八章 P3）。
+- **签署 token 分端设有效期**（移动端 30 天 / PC iframe 2 小时）——
+  ⚠️ **本项目不应采纳此模式**：GMP 类内控要求**每次签名独立认证**，长效会话 token 会削弱「只有本人能签」的保证。此处是**反面参考**。
+- **个人 KYC / 企业 KYC 交互分离**（`KycModal` / `EnterpriseKycModal`）：与本文档「个人章 / 公司章」分离一致，可作为 P3「对外签署 + 实名认证」阶段的交互参考。
 
 **结论**：中文开源电子签章生态基本空白；可用的成熟项目全为西方场景 + AGPL，在「中国合规」路径上增益为 0，且与本项目已有的 Flowable 审批流**功能重叠**。
 
@@ -525,6 +589,9 @@ plus-ui  ActHandleBtn.vue
 - 人脸认证（复用 `ruoyi-common-cv`）
 - DHR 批记录导出（P0-6 另一半）
 - 手写签名板 `HandwritePad.vue`
+- **跨端签署会话**：本期签名入口仅在 Web（plus-ui），同源、无跨域问题。若未来把签署下沉到 PDA / App 端
+  （如检验员在 PDA 上做 NCR 处置签名），需解决原生页与会话的传递问题——参考 2.7 的 Seal Token 模式。
+  ⚠️ 届时**不得**采用其长效 token 策略，仍须逐次二级认证。
 
 > **架构约定**：`ESignatureService` 的信任根通过 SPI 预留，未来接入外部信任根时**不重构核心**。
 
@@ -582,3 +649,4 @@ plus-ui  ActHandleBtn.vue
 | 日期 | 变更 |
 |------|------|
 | 2026-09-15 | 初版。选型结论：纯自建（内部留痕级），排除开源代码融合与商业 API |
+| 2026-09-15 | 补 §2.7：评估 Contract.Pro / mini-contract（何方签）并记录排除依据（前端外壳 + 引擎闭源托管 + 无 LICENSE 文件）；P3 增加「跨端签署会话」待办 |
