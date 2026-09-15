@@ -28,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * 印章服务实现。
@@ -81,6 +82,11 @@ public class EsSealServiceImpl extends ServiceImpl<EsSealMapper, EsSeal> impleme
         }
         if (SealStatus.DESTROYED.equals(existing.getStatus())) {
             throw new ServiceException("印章已销毁，不可修改");
+        }
+        // 印章类型不可变更：updateById 跳过 null，若允许 PERSONAL ↔ COMPANY 互转会残留
+        // ownerUserId（公司章带归属人），故类型在设计上不可变，后端强制校验（前端已禁用该字段）
+        if (!Objects.equals(existing.getSealType(), bo.getSealType())) {
+            throw new ServiceException("印章类型不可变更，请新建印章");
         }
         validateSealBo(bo, existing);
         EsSeal entity = MapstructUtils.convert(bo, EsSeal.class);
