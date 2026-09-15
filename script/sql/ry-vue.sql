@@ -96638,8 +96638,8 @@ CREATE TABLE `es_signature`  (
 -- 本仓库该目录为 1，新增前先执行 SELECT menu_id, menu_name FROM sys_menu WHERE parent_id = 0; 核对）
 -- ID 说明：本方案原定 4290-4304，导入前盘点发现该区间已被 MES 刷写/固件管理菜单占用（4290-4307 均已存在），
 -- 故改用未被占用的连续区间 4348-4362。核对：SELECT menu_id FROM sys_menu WHERE menu_id BETWEEN 4348 AND 4362;
-INSERT INTO `sys_menu` VALUES (4348, '电子签章', 1, 10, 'sign', NULL, '', 1, 0, 'M', '0', '0', '', 'stamp', 103, 1, SYSDATE(), NULL, NULL, '电子签章目录');
-INSERT INTO `sys_menu` VALUES (4349, '印章管理', 4348, 1, 'seal', 'system/sign/seal/index', '', 1, 0, 'C', '0', '0', 'system:sign:seal:list', 'stamp', 103, 1, SYSDATE(), NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (4348, '电子签章', 1, 10, 'sign', NULL, '', 1, 0, 'M', '0', '0', '', 'company', 103, 1, SYSDATE(), NULL, NULL, '电子签章目录');
+INSERT INTO `sys_menu` VALUES (4349, '印章管理', 4348, 1, 'seal', 'system/sign/seal/index', '', 1, 0, 'C', '0', '0', 'system:sign:seal:list', 'company', 103, 1, SYSDATE(), NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (4350, '用章授权', 4348, 2, 'grant', 'system/sign/grant/index', '', 1, 0, 'C', '0', '0', 'system:sign:grant:list', 'peoples', 103, 1, SYSDATE(), NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (4351, '签名记录', 4348, 3, 'record', 'system/sign/record/index', '', 1, 0, 'C', '0', '0', 'system:sign:record:list', 'form', 103, 1, SYSDATE(), NULL, NULL, '');
 

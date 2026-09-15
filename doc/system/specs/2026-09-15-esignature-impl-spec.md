@@ -333,7 +333,6 @@ CREATE TABLE `es_signature` (
   `prev_hash`         varchar(64)  NULL DEFAULT NULL     COMMENT '前一条链哈希(链首为NULL)',
   `chain_hash`        varchar(64)  NOT NULL              COMMENT '本条链哈希(SM3)',
   `remark`            varchar(255) NULL DEFAULT NULL,
-  `create_time`       datetime     NULL, `create_by` bigint NULL,
   PRIMARY KEY (`signature_id`),
   KEY `idx_es_sig_biz` (`tenant_id`, `biz_type`, `biz_id`),
   KEY `idx_es_sig_signer` (`signer_user_id`, `signed_at`),
@@ -342,8 +341,12 @@ CREATE TABLE `es_signature` (
 ```
 
 **append-only 约束**（应用层保证，非数据库强制）：
-- 实体仍继承 `TenantEntity` 以获得多租户自动处理，但 **Service 层不暴露任何 UPDATE / DELETE 方法**
+- Service 层**不暴露任何 UPDATE / DELETE 方法** —— 不可变性由接口层面保证
 - 表结构**不含 `update_by` / `update_time` / `del_flag`**；实体类对应字段声明为 `@TableField(exist = false)` 或直接不声明 —— 使"改写"在代码层面无从表达
+- 表结构**亦不含 `create_by` / `create_time`**：本表一行即一次签名，`signer_user_id` / `signer_dept_id` / `signed_at`
+  已完整承载"谁在何时签署"的语义，再加一对通用审计字段属冗余，且会与 MyBatis-Plus 的
+  `MetaObjectHandler` 自动填充交互。实体类**不继承** `BaseEntity`/`TenantEntity`，声明为普通 POJO
+  （`tenant_id` 由 MyBatis-Plus 多租户插件在 SQL 层注入，不依赖实体继承）
 - 无逻辑删除：签名记录一经写入永久保留
 - 数据库账号权限不设限，不可变性由应用层与哈希链共同保证（哈希链提供**事后可检测**能力）
 
