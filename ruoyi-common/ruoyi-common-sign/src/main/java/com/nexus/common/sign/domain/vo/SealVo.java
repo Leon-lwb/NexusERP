@@ -1,6 +1,8 @@
 package com.nexus.common.sign.domain.vo;
 
 import com.nexus.common.sign.domain.EsSeal;
+import com.nexus.common.translation.annotation.Translation;
+import com.nexus.common.translation.constant.TransConstant;
 import io.github.linpeilie.annotations.AutoMapper;
 import lombok.Data;
 
@@ -35,6 +37,14 @@ public class SealVo implements Serializable {
 
     /** 预览图OSS ID（低清+水印；前端经 /system/sign/seal/{id}/preview 获取） */
     private Long previewOssId;
+
+    /**
+     * 预览图访问地址（序列化时由 previewOssId 翻译为 OSS 可访问地址）。
+     * <p>前端列表可直接渲染，无需再调 {@code /resource/oss/**}（那需要额外的 OSS 权限）；
+     * {@code previewOssId} 为空时本字段为 null。</p>
+     */
+    @Translation(type = TransConstant.OSS_ID_TO_URL, mapper = "previewOssId")
+    private String previewUrl;
 
     /** 印章原图宽(px) */
     private Integer imgWidth;

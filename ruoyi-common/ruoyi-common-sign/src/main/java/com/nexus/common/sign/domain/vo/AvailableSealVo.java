@@ -1,5 +1,7 @@
 package com.nexus.common.sign.domain.vo;
 
+import com.nexus.common.translation.annotation.Translation;
+import com.nexus.common.translation.constant.TransConstant;
 import lombok.Data;
 
 import java.io.Serial;
@@ -27,6 +29,10 @@ public class AvailableSealVo implements Serializable {
 
     /** 预览图OSS ID（低清+水印；前端经 /system/sign/seal/{id}/preview 获取） */
     private Long previewOssId;
+
+    /** 预览图访问地址（序列化时由 previewOssId 翻译为 OSS 可访问地址；previewOssId 为空时为 null） */
+    @Translation(type = TransConstant.OSS_ID_TO_URL, mapper = "previewOssId")
+    private String previewUrl;
 
     /** 印章原图宽(px) */
     private Integer imgWidth;
