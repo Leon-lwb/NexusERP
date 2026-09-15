@@ -96505,3 +96505,157 @@ CREATE TABLE `wf_operate_rule`  (
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '流程操作规则' ROW_FORMAT = Dynamic;
 
 SET FOREIGN_KEY_CHECKS = 1;
+-- ----------------------------
+-- 电子签章：印章 / 用章授权 / 待签正文 / 签名记录
+-- 2026-09-15 新增（方案见 doc/system/specs/2026-09-15-esignature-impl-spec.md）
+-- ----------------------------
+
+-- ----------------------------
+-- Table structure for es_seal
+-- ----------------------------
+DROP TABLE IF EXISTS `es_seal`;
+CREATE TABLE `es_seal`  (
+  `seal_id` bigint(20) NOT NULL COMMENT '印章ID',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '租户ID',
+  `seal_type` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '印章类型(1个人章 2公司章)',
+  `seal_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '印章名称',
+  `owner_user_id` bigint(20) NULL DEFAULT NULL COMMENT '个人章归属用户ID(公司章为NULL)',
+  `seal_oss_id` bigint(20) NOT NULL COMMENT '印章原图OSS ID(私有桶,仅服务端使用)',
+  `preview_oss_id` bigint(20) NULL DEFAULT NULL COMMENT '预览图OSS ID(低清+水印,前端可见)',
+  `img_width` int(11) NOT NULL COMMENT '印章原图宽(px)',
+  `img_height` int(11) NOT NULL COMMENT '印章原图高(px)',
+  `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '0' COMMENT '状态(0草稿 1启用 2停用 3销毁)',
+  `seal_version` int(11) NOT NULL DEFAULT 1 COMMENT '印章版本(更换章面自增)',
+  `valid_from` date NULL DEFAULT NULL COMMENT '生效日期',
+  `valid_to` date NULL DEFAULT NULL COMMENT '失效日期',
+  `remark` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
+  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
+  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '0' COMMENT '删除标志(0存在 1删除)',
+  PRIMARY KEY (`seal_id`) USING BTREE,
+  KEY `idx_es_seal_tenant_type` (`tenant_id`, `seal_type`) USING BTREE,
+  KEY `idx_es_seal_owner` (`owner_user_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '电子印章' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for es_seal_grant
+-- ----------------------------
+DROP TABLE IF EXISTS `es_seal_grant`;
+CREATE TABLE `es_seal_grant`  (
+  `grant_id` bigint(20) NOT NULL COMMENT '授权ID',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '租户ID',
+  `seal_id` bigint(20) NOT NULL COMMENT '印章ID',
+  `grantee_user_id` bigint(20) NULL DEFAULT NULL COMMENT '被授权用户ID(用户级授权)',
+  `grantee_dept_id` bigint(20) NULL DEFAULT NULL COMMENT '被授权部门ID(部门级授权)',
+  `biz_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '限定业务场景(NULL=不限)',
+  `can_sign_alone` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '0' COMMENT '可否单独用章(0否 1是)',
+  `valid_from` datetime(0) NULL DEFAULT NULL COMMENT '授权生效时间',
+  `valid_to` datetime(0) NULL DEFAULT NULL COMMENT '授权失效时间',
+  `status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '1' COMMENT '状态(0停用 1启用)',
+  `grant_by` bigint(20) NULL DEFAULT NULL COMMENT '授权人用户ID',
+  `remark` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
+  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
+  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '0' COMMENT '删除标志(0存在 1删除)',
+  PRIMARY KEY (`grant_id`) USING BTREE,
+  KEY `idx_es_grant_seal` (`seal_id`, `status`) USING BTREE,
+  KEY `idx_es_grant_user` (`grantee_user_id`, `status`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '印章使用授权' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for es_sign_document
+-- ----------------------------
+DROP TABLE IF EXISTS `es_sign_document`;
+CREATE TABLE `es_sign_document`  (
+  `doc_id` bigint(20) NOT NULL COMMENT '文档ID',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '租户ID',
+  `biz_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '业务类型',
+  `biz_id` bigint(20) NOT NULL COMMENT '业务单据ID',
+  `file_oss_id` bigint(20) NOT NULL COMMENT '正文文件OSS ID(仅PDF)',
+  `file_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '原始文件名',
+  `file_size` bigint(20) NULL DEFAULT NULL COMMENT '文件大小(字节)',
+  `file_hash` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '上传时SM3值(验签比对基准)',
+  `page_count` int(11) NULL DEFAULT NULL COMMENT 'PDF页数',
+  `doc_version` int(11) NOT NULL DEFAULT 1 COMMENT '正文版本',
+  `is_current` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '1' COMMENT '是否当前生效版本(1是 0否)',
+  `signed_oss_id` bigint(20) NULL DEFAULT NULL COMMENT '签章后文件OSS ID',
+  `sign_status` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '0' COMMENT '签署状态(0未签 1部分签 2已签)',
+  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
+  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '0' COMMENT '删除标志(0存在 1删除)',
+  PRIMARY KEY (`doc_id`) USING BTREE,
+  KEY `idx_es_doc_biz` (`tenant_id`, `biz_type`, `biz_id`, `is_current`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '待签文档正文' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for es_signature
+-- ----------------------------
+-- 注意：本表有意不含 update_by / update_time / del_flag —— 使"改写"在表结构层面无从表达（append-only）
+DROP TABLE IF EXISTS `es_signature`;
+CREATE TABLE `es_signature`  (
+  `signature_id` bigint(20) NOT NULL COMMENT '签名ID',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '租户ID',
+  `biz_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '业务类型',
+  `biz_id` bigint(20) NULL DEFAULT NULL COMMENT '业务单据ID',
+  `biz_no` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '业务单据编号(冗余快照)',
+  `signer_user_id` bigint(20) NOT NULL COMMENT '签署人用户ID',
+  `signer_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '签署人姓名(冗余快照)',
+  `signer_dept_id` bigint(20) NULL DEFAULT NULL COMMENT '签署人部门ID(快照)',
+  `seal_id` bigint(20) NULL DEFAULT NULL COMMENT '所用印章ID(逻辑签名可空)',
+  `seal_type` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '印章类型快照(1个人 2公司)',
+  `signature_meaning` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '签署含义',
+  `auth_method` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '认证方式(PASSWORD/SMS/FACE/LOGIN_ONLY)',
+  `src_doc_oss_id` bigint(20) NULL DEFAULT NULL COMMENT '签署前文档OSS ID',
+  `src_doc_hash` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '签署前文档SM3',
+  `doc_oss_id` bigint(20) NULL DEFAULT NULL COMMENT '签署后文档OSS ID',
+  `doc_hash` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '签署后文档SM3',
+  `doc_id` bigint(20) NULL DEFAULT NULL COMMENT '关联 es_sign_document.doc_id',
+  `signed_at` datetime(0) NOT NULL COMMENT '签署时间(服务端时间)',
+  `sign_ip` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '签署IP',
+  `sign_ua` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '签署User-Agent',
+  `prev_hash` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '前一条链哈希(链首为NULL)',
+  `chain_hash` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '本条链哈希(SM3)',
+  `remark` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
+  PRIMARY KEY (`signature_id`) USING BTREE,
+  KEY `idx_es_sig_biz` (`tenant_id`, `biz_type`, `biz_id`) USING BTREE,
+  KEY `idx_es_sig_signer` (`signer_user_id`, `signed_at`) USING BTREE,
+  KEY `idx_es_sig_chain` (`tenant_id`, `signature_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '电子签名记录(append-only,无更新/删除字段)' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of sys_menu（电子签章）
+-- ----------------------------
+-- 电子签章菜单（挂在「系统管理」下；parent_id 以实际库中「系统管理」目录ID为准，
+-- 本仓库该目录为 1，新增前先执行 SELECT menu_id, menu_name FROM sys_menu WHERE parent_id = 0; 核对）
+-- ID 说明：本方案原定 4290-4304，导入前盘点发现该区间已被 MES 刷写/固件管理菜单占用（4290-4307 均已存在），
+-- 故改用未被占用的连续区间 4348-4362。核对：SELECT menu_id FROM sys_menu WHERE menu_id BETWEEN 4348 AND 4362;
+INSERT INTO `sys_menu` VALUES (4348, '电子签章', 1, 10, 'sign', NULL, '', 1, 0, 'M', '0', '0', '', 'stamp', 103, 1, SYSDATE(), NULL, NULL, '电子签章目录');
+INSERT INTO `sys_menu` VALUES (4349, '印章管理', 4348, 1, 'seal', 'system/sign/seal/index', '', 1, 0, 'C', '0', '0', 'system:sign:seal:list', 'stamp', 103, 1, SYSDATE(), NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (4350, '用章授权', 4348, 2, 'grant', 'system/sign/grant/index', '', 1, 0, 'C', '0', '0', 'system:sign:grant:list', 'peoples', 103, 1, SYSDATE(), NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (4351, '签名记录', 4348, 3, 'record', 'system/sign/record/index', '', 1, 0, 'C', '0', '0', 'system:sign:record:list', 'form', 103, 1, SYSDATE(), NULL, NULL, '');
+
+-- 印章管理按钮
+INSERT INTO `sys_menu` VALUES (4352, '印章查询', 4349, 1, '', '', '', 1, 0, 'F', '0', '0', 'system:sign:seal:query', '#', 103, 1, SYSDATE(), NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (4353, '印章新增', 4349, 2, '', '', '', 1, 0, 'F', '0', '0', 'system:sign:seal:add', '#', 103, 1, SYSDATE(), NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (4354, '印章修改', 4349, 3, '', '', '', 1, 0, 'F', '0', '0', 'system:sign:seal:edit', '#', 103, 1, SYSDATE(), NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (4355, '印章删除', 4349, 4, '', '', '', 1, 0, 'F', '0', '0', 'system:sign:seal:remove', '#', 103, 1, SYSDATE(), NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (4356, '印章启停', 4349, 5, '', '', '', 1, 0, 'F', '0', '0', 'system:sign:seal:status', '#', 103, 1, SYSDATE(), NULL, NULL, '');
+
+-- 用章授权按钮
+INSERT INTO `sys_menu` VALUES (4357, '授权查询', 4350, 1, '', '', '', 1, 0, 'F', '0', '0', 'system:sign:grant:query', '#', 103, 1, SYSDATE(), NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (4358, '授权新增', 4350, 2, '', '', '', 1, 0, 'F', '0', '0', 'system:sign:grant:add', '#', 103, 1, SYSDATE(), NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (4359, '授权修改', 4350, 3, '', '', '', 1, 0, 'F', '0', '0', 'system:sign:grant:edit', '#', 103, 1, SYSDATE(), NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (4360, '授权删除', 4350, 4, '', '', '', 1, 0, 'F', '0', '0', 'system:sign:grant:remove', '#', 103, 1, SYSDATE(), NULL, NULL, '');
+
+-- 签名记录按钮
+INSERT INTO `sys_menu` VALUES (4361, '记录查询', 4351, 1, '', '', '', 1, 0, 'F', '0', '0', 'system:sign:record:query', '#', 103, 1, SYSDATE(), NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (4362, '记录验签', 4351, 2, '', '', '', 1, 0, 'F', '0', '0', 'system:sign:record:verify', '#', 103, 1, SYSDATE(), NULL, NULL, '');
