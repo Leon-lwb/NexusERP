@@ -12,6 +12,25 @@
 
 ---
 
+## ⚠️ 执行前必读：测试命令必须追加 `-Dprofiles.active=`
+
+根 `pom.xml:515` 配置了 `<groups>${profiles.active}</groups>`（按打包环境执行对应 `@Tag` 测试）。
+**不带 profile 时 `${profiles.active}` 无法解析，surefire 的 groups 过滤会匹配不到任何测试**，
+命令会输出 `Tests run: 0` 并 **BUILD SUCCESS** —— 这是**假绿**，不是通过。
+
+| 命令 | 实际结果 |
+|------|---------|
+| `mvn test -DskipTests=false` | ❌ `Tests run: 0` + BUILD SUCCESS（假绿） |
+| `mvn test -DskipTests=false -Dprofiles.active=` | ✅ 真正执行全部测试 |
+
+**本计划所有 Task 的测试命令一律追加 `-Dprofiles.active=`**（PowerShell 中该参数需加引号：
+`'-Dprofiles.active='`）。仓库内仅 33/88 个测试类带 `@Tag`，未打标签的测试在默认命令下**不会执行**。
+
+> 该问题由 Task 5 实施时发现并复核（2026-09-15）。仓库既有的 `AGENTS.md` 也写作
+> `mvn test -DskipTests=false`，同样存在此陷阱 —— 属仓库层面的既有问题，不在本方案范围内修复。
+
+---
+
 ## 范围界定
 
 | 包含（P1） | 不包含（P2/P3） |
