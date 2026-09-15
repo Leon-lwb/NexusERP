@@ -30,6 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * 电子签名核心实现。
@@ -101,20 +102,119 @@ public class ESignatureServiceImpl implements ESignatureService {
 
     @Override
     public VerifyResultVo verify(Long signatureId) {
-        // Task 10 实现
-        throw new UnsupportedOperationException("Task 10");
+        EsSignature cur = signatureMapper.selectById(signatureId);
+        if (cur == null) {
+            throw new ServiceException("签名记录不存在");
+        }
+        VerifyResultVo result = new VerifyResultVo();
+        result.setCheckedCount(1);
+        String broken = checkRecord(cur);
+        if (broken != null) {
+            result.setPassed(false);
+            result.setChainPassed(false);
+            result.setBrokenAt(signatureId);
+            result.getMessages().add(broken);
+            return result;
+        }
+        result.setPassed(true);
+        result.setChainPassed(true);
+        result.getMessages().add("签名记录完整，链哈希校验通过");
+        return result;
     }
 
     @Override
     public VerifyResultVo verifyChain(String bizType, Long bizId) {
-        // Task 10 实现
-        throw new UnsupportedOperationException("Task 10");
+        List<EsSignature> records = signatureMapper.selectList(Wrappers.<EsSignature>lambdaQuery()
+            .eq(EsSignature::getBizType, bizType)
+            .eq(bizId != null, EsSignature::getBizId, bizId)
+            .orderByAsc(EsSignature::getSignatureId));
+
+        VerifyResultVo result = new VerifyResultVo();
+        if (records == null || records.isEmpty()) {
+            result.setPassed(true);
+            result.setChainPassed(true);
+            result.setCheckedCount(0);
+            result.getMessages().add("该业务暂无签名记录，无需校验");
+            return result;
+        }
+        // 逐条独立校验：自身哈希可复现 + 与本条在「租户全局链」上的真实前驱衔接。
+        // 绝不能拿「同业务范围内上一条」当预期前驱 —— 见 checkRecord 的说明。
+        int checked = 0;
+        for (EsSignature cur : records) {
+            checked++;
+            String broken = checkRecord(cur);
+            if (broken != null) {
+                result.setPassed(false);
+                result.setChainPassed(false);
+                result.setBrokenAt(cur.getSignatureId());
+                result.setCheckedCount(checked);
+                result.getMessages().add("链校验在 signatureId=" + cur.getSignatureId() + " 处断裂");
+                result.getMessages().add(broken);
+                return result;
+            }
+        }
+        result.setPassed(true);
+        result.setChainPassed(true);
+        result.setCheckedCount(records.size());
+        result.getMessages().add("共校验 " + records.size() + " 条签名记录，链完整");
+        return result;
     }
 
     @Override
     public List<SignatureVo> listByBiz(String bizType, Long bizId) {
-        // Task 10 实现
-        throw new UnsupportedOperationException("Task 10");
+        return signatureMapper.selectVoList(Wrappers.<EsSignature>lambdaQuery()
+            .eq(EsSignature::getBizType, bizType)
+            .eq(bizId != null, EsSignature::getBizId, bizId)
+            .orderByAsc(EsSignature::getSignedAt));
+    }
+
+    /**
+     * 单条记录的完整校验（{@link #verify} 与 {@link #verifyChain} 共用，避免两处逻辑漂移）：
+     * <ol>
+     *   <li>自身校验：用记录字段重算 chain_hash，与库中值比对（检出字段篡改）；</li>
+     *   <li>链接校验：取本条在租户全局链上的<b>真实前驱</b>，其 chain_hash 必须等于本条的 prev_hash。</li>
+     * </ol>
+     *
+     * <p><b>为什么必须取真实前驱：</b>链是<b>租户全局</b>的 —— {@code appendSignature} 取链尾时
+     * 只按 signed_at/signature_id 排序，<b>不过滤 biz_type</b>，一条链横跨该租户的全部业务。
+     * 若在业务范围内把「过滤后的相邻记录」当作前后驱关系，当多个业务的签名穿插时
+     * （A1→B1→A2→B2→A3），A2 的 prev_hash 指向 B1 而非 A1，就会误报断链。</p>
+     *
+     * @param cur 待校验记录
+     * @return 通过返回 null，否则返回失败原因
+     */
+    private String checkRecord(EsSignature cur) {
+        long signedAtMs = cur.getSignedAt() == null ? 0L : cur.getSignedAt().getTime();
+        String recomputed = SignatureChainCalculator.compute(
+            cur.getPrevHash(), cur.getSignatureId(), cur.getBizType(), cur.getBizId(),
+            cur.getSignerUserId(), cur.getSealId(), cur.getSignatureMeaning(),
+            cur.getDocHash(), signedAtMs);
+        if (!Objects.equals(recomputed, cur.getChainHash())) {
+            return "签名记录内容与链哈希不一致，疑似被篡改";
+        }
+        EsSignature prev = selectTruePredecessor(cur.getSignatureId());
+        String expectedPrevHash = prev == null ? null : prev.getChainHash();
+        if (!Objects.equals(expectedPrevHash, cur.getPrevHash())) {
+            return "与上一条签名的链哈希不衔接，链已断裂";
+        }
+        return null;
+    }
+
+    /**
+     * 取同租户、全局顺序下紧邻本条的记录（tenant_id 条件由多租户插件注入 SQL）。
+     *
+     * <p>按 signature_id 倒序取：雪花 ID 时间有序，且签名链尾读取 + 写入在同一把
+     * 租户锁的临界区内完成，因此该顺序与 {@code appendSignature} 的
+     * {@code orderByDesc(signedAt)} 一致。</p>
+     *
+     * @param signatureId 本条签名ID
+     * @return 前驱记录；本条即链首时返回 null
+     */
+    private EsSignature selectTruePredecessor(Long signatureId) {
+        return signatureMapper.selectOne(Wrappers.<EsSignature>lambdaQuery()
+            .lt(EsSignature::getSignatureId, signatureId)
+            .orderByDesc(EsSignature::getSignatureId)
+            .last("LIMIT 1"));
     }
 
     /**
