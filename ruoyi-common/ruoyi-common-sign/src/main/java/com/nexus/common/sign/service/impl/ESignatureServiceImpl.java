@@ -203,9 +203,11 @@ public class ESignatureServiceImpl implements ESignatureService {
     /**
      * 取同租户、全局顺序下紧邻本条的记录（tenant_id 条件由多租户插件注入 SQL）。
      *
-     * <p>按 signature_id 倒序取：雪花 ID 时间有序，且签名链尾读取 + 写入在同一把
-     * 租户锁的临界区内完成，因此该顺序与 {@code appendSignature} 的
-     * {@code orderByDesc(signedAt)} 一致。</p>
+     * <p>排序必须与 {@code appendSignature} 取链尾的排序<b>完全一致</b>
+     * （{@code signed_at DESC, signature_id DESC}）：链尾即「按该顺序的最大者」，
+     * 则本条的前驱就是「按同一顺序排在它前面的最近一条」。两处排序一旦漂移
+     * （例如这里只用 signature_id 倒序），在签署时间与雪花 ID 顺序不一致时
+     * 就会算出不同于 append 时的前驱，从而误报断链。</p>
      *
      * @param signatureId 本条签名ID
      * @return 前驱记录；本条即链首时返回 null
@@ -213,6 +215,7 @@ public class ESignatureServiceImpl implements ESignatureService {
     private EsSignature selectTruePredecessor(Long signatureId) {
         return signatureMapper.selectOne(Wrappers.<EsSignature>lambdaQuery()
             .lt(EsSignature::getSignatureId, signatureId)
+            .orderByDesc(EsSignature::getSignedAt)
             .orderByDesc(EsSignature::getSignatureId)
             .last("LIMIT 1"));
     }

@@ -12,8 +12,11 @@ import java.time.Duration;
 
 /**
  * 短信验证码签署凭证校验器。
- * <p>验证码由 {@code EsSignatureController.sendSmsCode()} 发送并写入 Redis；
- * 校验成功后立即删除（防重放）。</p>
+ * <p>验证码写入 {@code CODE_KEY_PREFIX + userId}，校验成功后立即删除（防重放）。</p>
+ * <p><b>P1 未启用</b>：本模块取不到当前登录用户的手机号（{@code LoginUser} 无手机号字段，
+ * {@code sys_user} 属 ruoyi-system），因此没有「下发签署验证码」的接口，
+ * {@link SignAuthMethod#isSupported(String)} 也不含 {@code SMS}。
+ * 校验器与测试保留，待具备手机号来源的模块提供下发能力后启用。</p>
  *
  * @author nexus
  */

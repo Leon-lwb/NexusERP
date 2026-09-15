@@ -45,6 +45,24 @@
             <artifactId>ruoyi-common-security</artifactId>
         </dependency>
 
+        <!-- Web 层: BaseController(toAjax) 与响应包装 -->
+        <dependency>
+            <groupId>com.nexus</groupId>
+            <artifactId>ruoyi-common-web</artifactId>
+        </dependency>
+
+        <!-- 操作日志 @Log / BusinessType -->
+        <dependency>
+            <groupId>com.nexus</groupId>
+            <artifactId>ruoyi-common-log</artifactId>
+        </dependency>
+
+        <!-- 防重复提交 @RepeatSubmit -->
+        <dependency>
+            <groupId>com.nexus</groupId>
+            <artifactId>ruoyi-common-idempotent</artifactId>
+        </dependency>
+
         <!-- 印章图片/正文文件存储 -->
         <dependency>
             <groupId>com.nexus</groupId>
