@@ -221,6 +221,13 @@
                 <version>${revision}</version>
             </dependency>
 
+            <!-- 电子签章公共模块 -->
+            <dependency>
+                <groupId>com.nexus</groupId>
+                <artifactId>ruoyi-common-sign</artifactId>
+                <version>${revision}</version>
+            </dependency>
+
         </dependencies>
     </dependencyManagement>
 
