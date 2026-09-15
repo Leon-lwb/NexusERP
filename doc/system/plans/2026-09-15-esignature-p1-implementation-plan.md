@@ -209,19 +209,23 @@
 
 `ruoyi-common-sign/src/main/java/com/nexus/common/sign/config/SignAutoConfiguration.java`：
 
+> **注**：本项目 common 模块的自动配置类统一使用 `@AutoConfiguration`（`ruoyi-common/` 下 7/8 个为
+> 此注解，含 `CvAutoConfiguration`），**不是** `@Configuration`。初版计划此处有误，已于 2026-09-15 更正。
+
 ```java
 package com.nexus.common.sign.config;
 
-import org.springframework.context.annotation.Configuration;
+import org.springframework.boot.autoconfigure.AutoConfiguration;
 
 /**
- * 电子签章模块自动装配。
- * <p>本模块的 Service 通过 {@code @Service} 声明，由各业务模块扫描加载；
- * 此类作为 {@code AutoConfiguration.imports} 的注册入口，保持与项目其它 common 模块一致。</p>
+ * 电子签章模块自动配置。
+ * <p>本模块的 Service 通过 {@code @Service} 声明，由依赖本模块的业务方组件扫描加载；
+ * 此类作为 {@code AutoConfiguration.imports} 的注册入口，与项目其它 common 模块保持一致。</p>
  *
  * @author nexus
+ * @since 1.0.0
  */
-@Configuration
+@AutoConfiguration
 public class SignAutoConfiguration {
 }
 ```
