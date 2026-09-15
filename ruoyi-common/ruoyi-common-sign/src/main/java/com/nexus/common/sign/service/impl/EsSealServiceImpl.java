@@ -170,7 +170,7 @@ public class EsSealServiceImpl extends ServiceImpl<EsSealMapper, EsSeal> impleme
     }
 
     /**
-     * 印章自身约束校验（类型 / 名称唯一 / 日期窗口）。
+     * 印章自身约束校验（类型 / 图片尺寸配对 / 日期窗口 / 名称唯一）。
      *
      * @param bo       印章入参
      * @param existing 已存在的印章（新增时为 null）
@@ -187,6 +187,11 @@ public class EsSealServiceImpl extends ServiceImpl<EsSealMapper, EsSeal> impleme
             }
         } else {
             throw new ServiceException("印章类型非法：" + sealType);
+        }
+        // 「提供了印章图片 ⇒ 必须同时给出宽高」：图片三字段的 @NotNull 只在新增分组(AddGroup)生效，
+        // 修改时留空表示沿用原章面（合法），但一旦带图就必须带尺寸，否则会覆盖出尺寸为空/与图不符的脏数据。
+        if (bo.getSealOssId() != null && (bo.getImgWidth() == null || bo.getImgHeight() == null)) {
+            throw new ServiceException("更换印章图片时必须同时提供印章图片宽度和高度");
         }
         if (bo.getValidFrom() != null && bo.getValidTo() != null
             && bo.getValidFrom().after(bo.getValidTo())) {

@@ -2,6 +2,8 @@ package com.nexus.common.sign.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.nexus.common.core.domain.R;
+import com.nexus.common.core.validate.AddGroup;
+import com.nexus.common.core.validate.EditGroup;
 import com.nexus.common.idempotent.annotation.RepeatSubmit;
 import com.nexus.common.log.annotation.Log;
 import com.nexus.common.log.enums.BusinessType;
@@ -82,6 +84,8 @@ public class EsSealController extends BaseController {
      * 新增印章
      * <p>权限标识：{@code system:sign:seal:add}</p>
      * <p>日志记录：title="电子印章"，businessType=INSERT</p>
+     * <p>校验分组：{@code AddGroup} —— 印章图片相关字段（{@code sealOssId}/{@code imgWidth}/
+     * {@code imgHeight}）在此分组下必填。</p>
      *
      * @param bo 印章业务对象
      * @return 操作结果
@@ -90,7 +94,7 @@ public class EsSealController extends BaseController {
     @Log(title = "电子印章", businessType = BusinessType.INSERT)
     @RepeatSubmit()
     @PostMapping
-    public R<Void> add(@Validated @RequestBody SealBo bo) {
+    public R<Void> add(@Validated(AddGroup.class) @RequestBody SealBo bo) {
         sealService.insertByBo(bo);
         return R.ok();
     }
@@ -99,6 +103,8 @@ public class EsSealController extends BaseController {
      * 修改印章
      * <p>权限标识：{@code system:sign:seal:edit}</p>
      * <p>日志记录：title="电子印章"，businessType=UPDATE</p>
+     * <p>校验分组：{@code EditGroup} —— 不要求回传印章图片；图片字段留空表示「沿用原章面」。
+     * 若传了 {@code sealOssId} 则必须同时给出宽高，由服务层 {@code updateByBo} 兜底校验。</p>
      *
      * @param bo 印章业务对象
      * @return 操作结果
@@ -107,7 +113,7 @@ public class EsSealController extends BaseController {
     @Log(title = "电子印章", businessType = BusinessType.UPDATE)
     @RepeatSubmit()
     @PutMapping
-    public R<Void> edit(@Validated @RequestBody SealBo bo) {
+    public R<Void> edit(@Validated(EditGroup.class) @RequestBody SealBo bo) {
         return toAjax(sealService.updateByBo(bo));
     }
 
