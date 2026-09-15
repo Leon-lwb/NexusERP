@@ -16,6 +16,7 @@
 | [workflow-regression-checklist.md](./workflow-regression-checklist.md) | 工作流模块回归测试清单（发版前手工回归） | ✅ |
 | [specs/charset-encoding-standard.md](./specs/charset-encoding-standard.md) | 字符集编码规范 | ✅ |
 | [specs/2026-09-15-esignature-impl-spec.md](./specs/2026-09-15-esignature-impl-spec.md) | 电子签章能力建设方案（内部留痕级，纯自建；含选型论证与 P0-6 接入路径） | 📋 待评审 |
+| [plans/2026-09-15-esignature-p1-implementation-plan.md](./plans/2026-09-15-esignature-p1-implementation-plan.md) | 电子签章 P1 实施计划（签名核心 + 印章管理 + 审批挂载，17 个 Task，TDD） | 📋 待执行 |
 
 > 2026-08-29 精简：三模块共同升级方案、06-24 代码审计报告（已被 08-16 审查报告覆盖）已删除；历史计划与分析报告作为开发日志保留在 [plans/archive/](./plans/archive/)（9 篇）。
 
