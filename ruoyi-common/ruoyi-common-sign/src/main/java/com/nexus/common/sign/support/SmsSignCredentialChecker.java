@@ -50,7 +50,11 @@ public class SmsSignCredentialChecker implements SignCredentialChecker {
             throw new ServiceException("验证码已失效，请重新获取");
         }
         if (!code.equals(credential)) {
-            long failCount = RedisUtils.incrAtomicValue(CNT_KEY_PREFIX + userId);
+            String cntKey = CNT_KEY_PREFIX + userId;
+            long failCount = RedisUtils.incrAtomicValue(cntKey);
+            // 计数器与锁定同寿命：仅在成功校验时清零的话，锁定到期后残留的旧计数
+            // （>= MAX_FAIL）会让用户下一次输错就被立刻重新锁定
+            RedisUtils.setCacheObject(cntKey, failCount, LOCK_TTL);
             if (failCount >= MAX_FAIL) {
                 RedisUtils.setCacheObject(LOCK_KEY_PREFIX + userId, "1", LOCK_TTL);
                 log.warn("签署短信验证码连续错误达上限，用户 {} 锁定 {} 分钟", userId, LOCK_TTL.toMinutes());
