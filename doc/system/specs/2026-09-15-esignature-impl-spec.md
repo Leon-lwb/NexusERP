@@ -438,9 +438,17 @@ chain_hash = SM3( prev_hash ‖ signature_id ‖ biz_type ‖ biz_id ‖
                   doc_hash ‖ signed_at_epoch_ms )
 ```
 
-- **链作用域**：按 `tenant_id` 分别成链（多租户隔离），链首 `prev_hash = NULL`
+- **链作用域**：按 `tenant_id` 分别成链（多租户隔离），链首 `prev_hash = NULL`。
+  即**同一租户下所有签名共用一条链**，与业务类型无关；`prev_hash` 指向该租户全局顺序上的前一条记录
 - **串行化**：写入时用 Lock4j 按 `tenant_id` 加分布式锁，保证链不分支
-- **篡改检测**：任一条记录被改动 → 其 `chain_hash` 重算不一致 → 其后全链断裂 → 可精确定位断点
+- **全局链的幂等语义**：任一记录被删除或改动 → 其 `chain_hash` 重算不一致、或后继记录的 `prev_hash`
+  对不上 → 可精确断点定位
+- **验签语义（重要）**：
+  - `verify(signatureId)` —— 校验该记录自身字段与 `chain_hash` 自洽，且其 `prev_hash` 与
+    **该租户全局顺序上的真实前驱**的 `chain_hash` 一致
+  - `verifyChain(bizType, bizId)` —— 对**业务范围内**的每条记录**逐条独立执行上述校验**。
+    ⚠️ **绝不能**简单比较"过滤后列表里相邻两条"的 `prev_hash`/`chain_hash`：由于链是租户全局串的，
+    同一业务的两条记录之间可能穿插其它业务的记录，那样会产生**误报"链断裂"**
 - **SM3 实现**：Bouncy Castle `SM3Digest`（已在依赖树）
 
 ### 4.4 PDF 盖章技术路线（P2）
