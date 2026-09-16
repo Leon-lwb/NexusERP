@@ -573,13 +573,14 @@ plus-ui  work/detail.vue（**真实待办审批入口**）
 - MES P0-6 回填：SOP 查阅 + NCR 处置
 - 菜单/权限/字典 SQL
 
-**验收标准**
-- [ ] 审批节点配置 `needSign` 后，未签章无法提交（后端强制，非前端校验）
-- [ ] 签名记录含签署含义 / 认证方式 / IP / UA
-- [ ] `verify(signatureId)` 能检出人为篡改单条记录
-- [ ] 个人章只能被本人使用；公司章无授权时不可选
-- [ ] 未配置 `needSign` 的存量流程行为完全不变（回归验证）
-- [ ] `mvn compile` + `npm run lint:eslint` 通过
+**验收标准**（全部已通过 —— 证据见 §10.4）
+- [x] 审批节点配置 `needSign` 后，未签章无法提交（后端强制，非前端校验）
+- [x] 签名记录含签署含义 / 认证方式 / IP / UA
+- [x] `verify(signatureId)` 能检出人为篡改单条记录
+- [x] 个人章只能被本人使用；公司章无授权时不可选
+      （实测：`admin` 可见「管理员个人章 + Nexus合同章」；`test` 可见 **[]** —— 既看不到他人个人章，也看不到只授权给 admin 的公司章）
+- [x] 未配置 `needSign` 的存量流程行为完全不变（回归验证）
+- [x] `mvn compile` 通过（全仓 `clean package` exit 0，48 jar）；`npm run lint:eslint` 新增文件 0 问题、仓库既有基线不变
 
 ### P2 —— 文档盖章（合同）
 
