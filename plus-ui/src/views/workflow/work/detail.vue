@@ -53,6 +53,19 @@
                   </el-tag>
                   <el-button class="button-new-tag" type="primary" icon="el-icon-plus" circle @click="onSelectNextUsers" />
                 </el-form-item>
+                <!--
+                  签章入口：仅当该任务的流程变量 needSign 为真时渲染（「不签章不生效」由后端 complete 关卡强制）。
+                  未配置 needSign 的存量流程既不渲染这两个表单项，也不发生布局变化。
+                  印章列表由后端按当前用户在该业务场景下的可用性实时判定，前端只负责选择。
+                -->
+                <template v-if="signRequired">
+                  <el-form-item label="签署印章">
+                    <SealPicker v-model="signSealId" biz-type="APPROVAL" />
+                  </el-form-item>
+                  <el-form-item label="签署含义">
+                    <el-input v-model="signMeaning" maxlength="128" show-word-limit placeholder="请输入签署含义" />
+                  </el-form-item>
+                </template>
               </el-form>
             </el-col>
           </el-row>
@@ -317,6 +330,11 @@
         </span>
       </template>
     </el-dialog>
+    <!--
+      签署二级认证：签署前二次确认身份。仅签章节点挂载，未配置 needSign 的流程零额外节点。
+      凭证只经 confirmed 事件进入本组件内存，不写 Pinia / localStorage / URL，请求结束即丢弃。
+    -->
+    <SignAuthDialog v-if="signRequired" ref="signAuthRef" v-model="signAuthVisible" @confirmed="handleSignConfirmed" />
   </div>
 </template>
 
@@ -346,6 +364,8 @@ import { useRoute, useRouter } from 'vue-router';
 import { getToken } from '@/utils/auth';
 import { useFlowable } from '@/views/workflow/hooks/useFlowable';
 import FormRender from '@/components/DesignerForm/FormRender.vue';
+import SealPicker from '@/components/sign/SealPicker.vue';
+import SignAuthDialog from '@/components/sign/SignAuthDialog.vue';
 import { getDicts } from '@/api/system/dict/data';
 
 const route = useRoute();
@@ -569,6 +589,13 @@ const rules = ref({
   comment: [{ required: true, message: '请输入审批意见', trigger: 'blur' }]
 });
 
+/**
+ * 当前任务的流程变量。
+ * 待办跳转只带 taskId / dataId，任务详情接口也不返回流程变量，本页唯一的变量来源是
+ * getProcessVariables(taskId)（见 processVariables）：节点的签章要求 needSign 与业务ID dataId 都在其中。
+ */
+const taskVariables = ref<Record<string, any>>({});
+
 const tagType = (val: any) => {
   if (val) {
     return 'success';
@@ -693,10 +720,13 @@ const processVariables = (taskId: string) => {
   if (taskId) {
     getProcessVariables(taskId).then((res) => {
       if (res.code == 200) {
-        if (res.data.hasOwnProperty('dataId') && res.data.dataId) {
-          customForm.formId = res.data.dataId;
+        const variables = res.data ?? {};
+        // 留存整份流程变量：「通过」时据此判断节点是否要求签章（needSign），无需二次请求
+        taskVariables.value = variables;
+        if (variables.hasOwnProperty('dataId') && variables.dataId) {
+          customForm.formId = variables.dataId;
           // 流程任务重获取变量表单
-          getProcessDetails(taskForm.procInsId, taskForm.taskId, res.data.dataId);
+          getProcessDetails(taskForm.procInsId, taskForm.taskId, variables.dataId);
           loadIndex.value = taskForm.procInsId;
           if (processed.value) {
             activeName.value = 'approval';
@@ -868,93 +898,193 @@ const onSelectAddSignUsers = () => {
   onSelectUsers('指定加签人', 'addSign');
 };
 
-/** 通过任务 */
+/** 通过按钮提交中状态（普通办结与签章认证后的提交共用） */
 const completeLoading = ref(false);
+
+/* ==================== 电子签章（节点 needSign） ==================== */
+/**
+ * 节点是否要求签章：流程变量 needSign 为布尔 true 或字符串 "true"（忽略大小写与首尾空白）。
+ * 判定口径与后端 ApprovalSignGate.isSignRequired 一致；为假时不渲染任何签章字段、不发起额外请求。
+ */
+const signRequired = computed(() => {
+  const value = taskVariables.value?.needSign;
+  return (
+    value === true ||
+    String(value ?? '')
+      .trim()
+      .toLowerCase() === 'true'
+  );
+});
+/** 所选印章ID（雪花ID经 Jackson 序列化为字符串；空 = 仅逻辑签名不盖章） */
+const signSealId = ref<string | undefined>(undefined);
+/** 签署含义（后端缺省「审批签批」，最长 128） */
+const signMeaning = ref('审批签批');
+const signAuthVisible = ref(false);
+const signAuthRef = ref<InstanceType<typeof SignAuthDialog>>();
+/**
+ * 等待二级认证的办结载荷。
+ * 其中不含凭证：signCredential 只在 handleSignConfirmed 的局部变量里短暂存在，
+ * 不写入 Pinia / localStorage / URL，也不会回填进本变量。
+ */
+const pendingSignPayload = ref<any>(null);
+
+/**
+ * 组装办结载荷：业务表单变量 + dataId。
+ * 任务表单必填项未通过时返回 null（调用方直接放弃本次提交）。
+ */
+const buildCompletePayload = async (): Promise<any | null> => {
+  const isExistTaskForm = taskFormCustom.visible || toRaw(taskFormRenderRef.value) !== null || getActiveFormRenderRefs().length > 0;
+  const payload: any = { ...toRaw(taskForm) };
+
+  if (isExistTaskForm) {
+    try {
+      // 自定义业务表单：直接从 model 读取（v-model 双向绑定已更新）
+      if (taskFormCustom.visible) {
+        payload.variables = { formData: toRaw(taskFormCustom.model) };
+      }
+      // 优先检查 taskFormRenderRef（节点表单）
+      else if (taskFormRenderRef.value && taskFormRenderRef.value.getFormData) {
+        // 必填项校验（el-form-item 绑定 prop 后才会真正校验）
+        const formValid = await taskFormRenderRef.value.validate?.();
+        if (formValid === false) {
+          proxy?.$modal.msgError('请完善表单必填项后再提交');
+          return null;
+        }
+        const dataObj = await taskFormRenderRef.value.getFormData();
+
+        if (dataObj) {
+          const mainData = dataObj?.main || {};
+          const subData = dataObj?.sub || null;
+
+          const variables: any = { ...toRaw(mainData) };
+          if (subData) variables.sub = toRaw(subData);
+
+          payload.variables = variables;
+        }
+      } else if (getActiveFormRenderRefs().length > 0) {
+        const activeRender = getActiveFormRenderRefs()[0];
+        // 必填项校验（el-form-item 绑定 prop 后才会真正校验）
+        const formValid = await activeRender?.validate?.();
+        if (formValid === false) {
+          proxy?.$modal.msgError('请完善表单必填项后再提交');
+          return null;
+        }
+        const dataObj = await activeRender?.getFormData?.();
+
+        if (dataObj) {
+          const mainData = dataObj?.main || {};
+          const subData = dataObj?.sub || null;
+
+          const variables: any = { ...toRaw(mainData) };
+          if (subData) variables.sub = toRaw(subData);
+
+          payload.variables = variables;
+        } else {
+          console.warn('🔍 [WARN] handleComplete - 流程表单获取到的数据为空');
+        }
+      } else {
+        console.warn('🔍 [WARN] handleComplete - 没有可用的表单组件');
+      }
+    } catch (error) {
+      console.error('🔍 [ERROR] handleComplete - 获取表单数据失败:', error);
+    }
+  } else {
+  }
+
+  // 补充 dataId（若存在）：后端签章关卡要求 dataId 存在，业务回写同样依赖它
+  if (route.query && (route.query as any).dataId) {
+    payload.dataId = (route.query as any).dataId;
+  }
+
+  return payload;
+};
+
+/** 提交办结（未签章节点与签章认证通过后共用同一提交逻辑） */
+const submitComplete = async (payload: any) => {
+  completeLoading.value = true;
+  try {
+    const res = await complete(payload);
+    proxy?.$modal.msgSuccess(res.msg);
+    goBack();
+  } catch (error: any) {
+    console.error('审批提交失败:', error);
+    proxy?.$modal.msgError(error?.message || '审批提交失败');
+  } finally {
+    completeLoading.value = false;
+  }
+};
+
+/** 通过任务 */
 const handleComplete = () => {
   if (completeLoading.value) {
     return;
   }
-  const isExistTaskForm = taskFormCustom.visible || toRaw(taskFormRenderRef.value) !== null || getActiveFormRenderRefs().length > 0;
-
   // 校验表单
   taskFormRef.value?.validate(async (valid: boolean) => {
-    if (valid) {
-      completeLoading.value = true;
-      try {
-        const payload: any = { ...toRaw(taskForm) };
-
-        if (isExistTaskForm) {
-          try {
-            // 自定义业务表单：直接从 model 读取（v-model 双向绑定已更新）
-            if (taskFormCustom.visible) {
-              payload.variables = { formData: toRaw(taskFormCustom.model) };
-            }
-            // 优先检查 taskFormRenderRef（节点表单）
-            else if (taskFormRenderRef.value && taskFormRenderRef.value.getFormData) {
-              // 必填项校验（el-form-item 绑定 prop 后才会真正校验）
-              const formValid = await taskFormRenderRef.value.validate?.();
-              if (formValid === false) {
-                proxy?.$modal.msgError('请完善表单必填项后再提交');
-                return;
-              }
-              const dataObj = await taskFormRenderRef.value.getFormData();
-
-              if (dataObj) {
-                const mainData = dataObj?.main || {};
-                const subData = dataObj?.sub || null;
-
-                const variables: any = { ...toRaw(mainData) };
-                if (subData) variables.sub = toRaw(subData);
-
-                payload.variables = variables;
-              }
-            } else if (getActiveFormRenderRefs().length > 0) {
-              const activeRender = getActiveFormRenderRefs()[0];
-              // 必填项校验（el-form-item 绑定 prop 后才会真正校验）
-              const formValid = await activeRender?.validate?.();
-              if (formValid === false) {
-                proxy?.$modal.msgError('请完善表单必填项后再提交');
-                return;
-              }
-              const dataObj = await activeRender?.getFormData?.();
-
-              if (dataObj) {
-                const mainData = dataObj?.main || {};
-                const subData = dataObj?.sub || null;
-
-                const variables: any = { ...toRaw(mainData) };
-                if (subData) variables.sub = toRaw(subData);
-
-                payload.variables = variables;
-              } else {
-                console.warn('🔍 [WARN] handleComplete - 流程表单获取到的数据为空');
-              }
-            } else {
-              console.warn('🔍 [WARN] handleComplete - 没有可用的表单组件');
-            }
-          } catch (error) {
-            console.error('🔍 [ERROR] handleComplete - 获取表单数据失败:', error);
-          }
-        } else {
-        }
-
-        // 补充 dataId（若存在）
-        if (route.query && (route.query as any).dataId) {
-          payload.dataId = (route.query as any).dataId;
-        }
-
-        const res = await complete(payload);
-        proxy?.$modal.msgSuccess(res.msg);
-        goBack();
-      } catch (error: any) {
-        console.error('审批提交失败:', error);
-        proxy?.$modal.msgError(error?.message || '审批提交失败');
-      } finally {
-        completeLoading.value = false;
-      }
-    } else {
+    if (!valid) {
+      return;
     }
+    // 表单取值是异步的，先置提交中，避免期间重复点击
+    completeLoading.value = true;
+    const payload = await buildCompletePayload();
+    if (!payload) {
+      completeLoading.value = false;
+      return;
+    }
+    // 节点要求签章：不直接提交，先校验签署含义，再走二级认证；认证通过后由 handleSignConfirmed 提交
+    if (signRequired.value) {
+      if (!signMeaning.value?.trim()) {
+        proxy?.$modal.msgError('请输入签署含义！');
+        completeLoading.value = false;
+        return;
+      }
+      pendingSignPayload.value = payload;
+      completeLoading.value = false;
+      signAuthVisible.value = true;
+      return;
+    }
+    await submitComplete(payload);
   });
+};
+
+/**
+ * 二级认证通过后提交审批。
+ * 签章变量并入既有业务变量：payload.variables 只在「有任务表单」的节点上存在，
+ * 无表单节点的流程必须新建该对象，不能直接扩展。
+ * 后端拒签（密码错误 / 无授权 / 印章不可用）抛 ServiceException，axios 拦截器把它包成 Error
+ * 并把 msg 原样带出，这里保持认证弹窗打开以便用户改正后重试，同时把原因提示给用户。
+ */
+const handleSignConfirmed = async (auth: { authMethod: string; credential: string }) => {
+  const payload = pendingSignPayload.value;
+  if (!payload) {
+    return;
+  }
+  const variables: any = {
+    ...(payload.variables || {}),
+    needSign: true,
+    signSealId: signSealId.value ?? '',
+    signMeaning: signMeaning.value,
+    signAuthMethod: auth.authMethod,
+    signCredential: auth.credential
+  };
+  payload.variables = variables;
+  signAuthRef.value?.setLoading(true);
+  completeLoading.value = true;
+  try {
+    const res = await complete(payload);
+    signAuthVisible.value = false;
+    pendingSignPayload.value = null;
+    proxy?.$modal.msgSuccess(res.msg);
+    goBack();
+  } catch (error: any) {
+    console.error('签署失败:', error);
+    signAuthRef.value?.setLoading(false);
+    proxy?.$modal.msgError(error?.message || '签署失败');
+  } finally {
+    // 凭证用完即弃：请求结束即从载荷上移除（弹窗关闭时组件内部也会清空输入框）
+    delete variables.signCredential;
+    completeLoading.value = false;
+  }
 };
 /** 委派任务 */
 const handleDelegate = () => {
