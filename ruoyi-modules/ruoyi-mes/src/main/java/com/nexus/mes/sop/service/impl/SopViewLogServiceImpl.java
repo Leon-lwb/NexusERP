@@ -9,6 +9,10 @@ import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.common.satoken.utils.LoginHelper;
+import com.nexus.common.sign.constants.SignAuthMethod;
+import com.nexus.common.sign.constants.SignBizType;
+import com.nexus.common.sign.domain.dto.SignCommand;
+import com.nexus.common.sign.service.ESignatureService;
 import com.nexus.mes.sop.domain.SopViewLog;
 import com.nexus.mes.sop.domain.bo.SopViewLogBo;
 import com.nexus.mes.sop.domain.vo.SopViewLogVo;
@@ -26,7 +30,7 @@ import java.util.List;
 
 /**
  * SOP查阅记录 Service 业务层实现
- * <p>signature_id 预留 (P0-6 ESignatureService 接入后回填, 本周仅记录查阅)</p>
+ * <p>signature_id 由 P0-6 电子签名回填(SOP_VIEW 已阅确认, best-effort 失败留空)</p>
  *
  * @author Nexus
  */
@@ -37,6 +41,7 @@ import java.util.List;
 public class SopViewLogServiceImpl implements ISopViewLogService {
 
     private final SopViewLogMapper baseMapper;
+    private final ESignatureService eSignatureService;
 
     /**
      * 分页查询查阅记录列表
@@ -53,7 +58,7 @@ public class SopViewLogServiceImpl implements ISopViewLogService {
     }
 
     /**
-     * 登记查阅(查看器打开时调): viewer/time/wo/process/IP/UA, signature_id=null(预留P0-6)
+     * 登记查阅(查看器打开时调): viewer/time/wo/process/IP/UA, signature_id=P0-6 签名ID
      * <p>IP/UA 从请求上下文获取; 非请求上下文(如 MQ/定时任务)时留空。</p>
      *
      * @param sopId         SOP ID
@@ -79,8 +84,9 @@ public class SopViewLogServiceImpl implements ISopViewLogService {
         log.setProcessId(processId);
         log.setProcessName(processName);
         log.setWorkstationId(workstationId);
-        // signature_id = null (预留 P0-6 接入)
-        log.setSignatureId(null);
+        // P0-6: 回填电子签名ID。查阅是「已阅确认」记录而非授权, 故用 LOGIN_ONLY(不触发二级认证),
+        // 且签署失败只告警不阻断(见 signSopView), 查阅登记必须照常落库。
+        log.setSignatureId(signSopView(sopId, versionNo));
         // IP / User-Agent (防御: 无请求上下文时留空, 如 MQ/定时任务触发)
         try {
             HttpServletRequest req = ServletUtils.getRequest();
@@ -97,6 +103,31 @@ public class SopViewLogServiceImpl implements ISopViewLogService {
         }
         int rows = baseMapper.insert(log);
         return rows > 0;
+    }
+
+    /**
+     * 签署「SOP 已阅确认」事件(best-effort, P0-6)。
+     * <p>
+     * SOP 查阅是<b>记录</b>而非授权, 故: ① 认证方式用 {@link SignAuthMethod#LOGIN_ONLY}
+     * —— 打开查看器不得触发二级认证; ② 不盖章(sealId=null); ③ 签署失败只告警并返回 null,
+     * 绝不阻断查阅登记(与 Vision 等辅助服务同一约定, 查阅不会被签名通道故障卡死)。
+     * </p>
+     *
+     * @param sopId     SOP ID
+     * @param versionNo 查阅的版本号(可空)
+     * @return 签名ID; 签署失败返回 null
+     */
+    private Long signSopView(Long sopId, String versionNo) {
+        try {
+            String meaning = StringUtils.isBlank(versionNo)
+                ? "SOP 已阅确认" : "SOP 已阅确认（版本 " + versionNo + "）";
+            // bizNo 取查阅版本号: 本方法上下文内唯一可得的 SOP 单据标识(无额外查库, 保持非阻塞)
+            return eSignatureService.sign(new SignCommand(
+                SignBizType.SOP_VIEW, sopId, versionNo, meaning, null, SignAuthMethod.LOGIN_ONLY, null));
+        } catch (Exception e) {
+            log.warn("SOP查阅签名失败(不阻断查阅登记): sopId={}, versionNo={}", sopId, versionNo, e);
+            return null;
+        }
     }
 
     /**

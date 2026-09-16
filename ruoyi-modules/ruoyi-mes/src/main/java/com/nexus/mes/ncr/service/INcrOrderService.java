@@ -127,6 +127,17 @@ public interface INcrOrderService {
     void bindDispositionSignature(Long ncrId, Long signatureId);
 
     /**
+     * NCR 处置签署：先签署再绑定，返回签名ID。
+     *
+     * @param ncrId      NCR 单ID
+     * @param disposition 处置结论（并入签署含义）
+     * @param authMethod  认证方式（不得为 LOGIN_ONLY）
+     * @param credential  认证凭证
+     * @return 签名ID
+     */
+    Long signDisposition(Long ncrId, String disposition, String authMethod, String credential);
+
+    /**
      * IQC判定不合格时自动创建NCR单
      *
      * @param iqcId      IQC检验单ID

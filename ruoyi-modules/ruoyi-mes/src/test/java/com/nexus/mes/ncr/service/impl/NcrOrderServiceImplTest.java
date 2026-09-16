@@ -1,7 +1,14 @@
 package com.nexus.mes.ncr.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.Wrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.LambdaUtils;
 import com.baomidou.mybatisplus.core.toolkit.support.ColumnCache;
+import com.nexus.common.core.exception.ServiceException;
+import com.nexus.common.sign.constants.SignAuthMethod;
+import com.nexus.common.sign.constants.SignBizType;
+import com.nexus.common.sign.domain.dto.SignCommand;
+import com.nexus.common.sign.service.ESignatureService;
 import com.nexus.mes.lt.service.ILtLotService;
 import com.nexus.mes.ncr.domain.NcrOrder;
 import com.nexus.mes.ncr.domain.vo.NcrOrderVo;
@@ -29,9 +36,10 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 /**
- * NCR不合格品单 Service 单元测试 (15 tests)
+ * NCR不合格品单 Service 单元测试 (18 tests)
  * <p>mockStatic(LambdaUtils,CALLS_REAL_METHODS) 解决 lambda 缓存;
- * autoCreate 传空 defectInfo 绕过 JsonUtils(需Spring上下文,回归由 E2E 覆盖)。</p>
+ * autoCreate 传空 defectInfo 绕过 JsonUtils(需Spring上下文,回归由 E2E 覆盖)。
+ * P0-6 处置签署(signDisposition)的用例见文末。</p>
  */
 @ExtendWith(MockitoExtension.class)
 @TestMethodOrder(org.junit.jupiter.api.MethodOrderer.MethodName.class)
@@ -44,6 +52,7 @@ class NcrOrderServiceImplTest {
     @Mock private IProAndonService proAndonService;
     @Mock private INcrReworkOrderService ncrReworkOrderService;
     @Mock private INcrDefectService defectService;
+    @Mock private ESignatureService eSignatureService;
     @InjectMocks private NcrOrderServiceImpl service;
 
     @Captor private ArgumentCaptor<NcrOrder> orderCaptor;
@@ -195,5 +204,69 @@ class NcrOrderServiceImplTest {
         NcrOrder o = new NcrOrder(); o.setNcrId(1L); o.setStatus("CLOSED");
         when(baseMapper.selectById(1L)).thenReturn(o);
         assertDoesNotThrow(() -> service.deleteByIds(new Long[]{1L}));
+    }
+
+    // ==================== P0-6 处置签署 ====================
+
+    @Test
+    void signDisposition_rejectsLoginOnly_beforeTouchingMapper() {
+        // 处置是授权: LOGIN_ONLY 必须拒绝, 且不得读库/签署
+        ServiceException ex = assertThrows(ServiceException.class,
+            () -> service.signDisposition(1L, "SCRAP", SignAuthMethod.LOGIN_ONLY, "cred"));
+        assertEquals("NCR 处置签署必须进行二级认证", ex.getMessage());
+        verifyNoInteractions(baseMapper);
+        verifyNoInteractions(eSignatureService);
+    }
+
+    @Test
+    void signDisposition_throwsWhenOrderNotFound_neverSigns() {
+        when(baseMapper.selectById(99L)).thenReturn(null);
+        assertTrue(assertThrows(ServiceException.class,
+            () -> service.signDisposition(99L, "SCRAP", SignAuthMethod.PASSWORD, "cred"))
+            .getMessage().contains("NCR 单不存在"));
+        verifyNoInteractions(eSignatureService);
+    }
+
+    @Test
+    @SuppressWarnings("rawtypes")
+    void signDisposition_signsThenBindsReturnedId() {
+        NcrOrder o = new NcrOrder(); o.setNcrId(7L); o.setNcrCode("NCR-007");
+        when(baseMapper.selectById(7L)).thenReturn(o);
+        when(eSignatureService.sign(any(SignCommand.class))).thenReturn(12345L);
+
+        Long signatureId = service.signDisposition(7L, "SCRAP", SignAuthMethod.PASSWORD, "cred");
+
+        assertEquals(12345L, signatureId);
+        ArgumentCaptor<SignCommand> cmdCaptor = ArgumentCaptor.forClass(SignCommand.class);
+        verify(eSignatureService).sign(cmdCaptor.capture());
+        SignCommand cmd = cmdCaptor.getValue();
+        assertEquals(SignBizType.NCR_DISPOSITION, cmd.bizType());
+        assertEquals(7L, cmd.bizId());
+        assertEquals("NCR-007", cmd.bizNo(), "bizNo 取实体 getNcrCode()");
+        assertEquals("不合格品处置批准：SCRAP", cmd.signatureMeaning());
+        assertNull(cmd.sealId(), "处置签名不盖章");
+        assertEquals(SignAuthMethod.PASSWORD, cmd.authMethod());
+        assertEquals("cred", cmd.credential());
+        // 绑定的是签署返回的ID(而非传入值)
+        ArgumentCaptor<Wrapper> wrapperCaptor = ArgumentCaptor.forClass(Wrapper.class);
+        verify(baseMapper).update(isNull(), wrapperCaptor.capture());
+        LambdaUpdateWrapper<?> wrapper = (LambdaUpdateWrapper<?>) wrapperCaptor.getValue();
+        assertTrue(String.valueOf(wrapper.getSqlSet()).contains("disposition_signature_id"));
+        assertTrue(wrapper.getParamNameValuePairs().containsValue(12345L), "应将签名ID写入 update set");
+    }
+
+    @Test
+    void signDisposition_nullDisposition_meaningHasNoNullLiteral() {
+        NcrOrder o = new NcrOrder(); o.setNcrId(8L); o.setNcrCode("NCR-008");
+        when(baseMapper.selectById(8L)).thenReturn(o);
+        when(eSignatureService.sign(any(SignCommand.class))).thenReturn(1L);
+
+        service.signDisposition(8L, null, SignAuthMethod.PASSWORD, "cred");
+
+        ArgumentCaptor<SignCommand> cmdCaptor = ArgumentCaptor.forClass(SignCommand.class);
+        verify(eSignatureService).sign(cmdCaptor.capture());
+        String meaning = cmdCaptor.getValue().signatureMeaning();
+        assertFalse(meaning.contains("null"), "处置结论为 null 时不得拼出字面量 null");
+        assertEquals("不合格品处置批准", meaning);
     }
 }

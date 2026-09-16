@@ -5,11 +5,16 @@ import com.baomidou.lock.annotation.Lock4j;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.json.utils.JsonUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.common.satoken.utils.LoginHelper;
+import com.nexus.common.sign.constants.SignAuthMethod;
+import com.nexus.common.sign.constants.SignBizType;
+import com.nexus.common.sign.domain.dto.SignCommand;
+import com.nexus.common.sign.service.ESignatureService;
 import com.nexus.mes.ncr.domain.NcrDefect;
 import com.nexus.mes.ncr.domain.NcrOrder;
 import com.nexus.mes.ncr.domain.bo.NcrOrderBo;
@@ -57,6 +62,7 @@ public class NcrOrderServiceImpl implements INcrOrderService {
     private final IProAndonService proAndonService;
     private final INcrReworkOrderService ncrReworkOrderService;
     private final INcrDefectService defectService;
+    private final ESignatureService eSignatureService;
 
     /**
      * 分页查询NCR单列表
@@ -330,6 +336,40 @@ public class NcrOrderServiceImpl implements INcrOrderService {
             .set(NcrOrder::getDispositionSignatureId, signatureId)
             .eq(NcrOrder::getNcrId, ncrId));
         log.info("NCR签名绑定: ncrId={}, signatureId={}", ncrId, signatureId);
+    }
+
+    /**
+     * NCR 处置签署：先签署再绑定，返回签名ID。
+     * <p>
+     * 与 SOP 查阅(记录, 失败可降级)不同, 处置是<b>授权</b>: 认证方式为 LOGIN_ONLY 时直接拒绝,
+     * 签署失败也不吞异常 —— 授权不可降级, 必须让调用方感知。
+     * </p>
+     *
+     * @param ncrId      NCR 单ID
+     * @param disposition 处置结论（并入签署含义）
+     * @param authMethod  认证方式（不得为 LOGIN_ONLY）
+     * @param credential  认证凭证
+     * @return 签名ID
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Long signDisposition(Long ncrId, String disposition, String authMethod, String credential) {
+        // 认证等级先于落库校验(失败即拒, 不碰数据库)
+        if (SignAuthMethod.LOGIN_ONLY.equals(authMethod)) {
+            throw new ServiceException("NCR 处置签署必须进行二级认证");
+        }
+        NcrOrder order = baseMapper.selectById(ncrId);
+        if (order == null) {
+            throw new ServiceException("NCR 单不存在");
+        }
+        // disposition 可空: 不允许拼接出字面量 "null"
+        String meaning = StringUtils.isBlank(disposition)
+            ? "不合格品处置批准" : "不合格品处置批准：" + disposition;
+        Long signatureId = eSignatureService.sign(new SignCommand(
+            SignBizType.NCR_DISPOSITION, ncrId, order.getNcrCode(), meaning, null, authMethod, credential));
+        bindDispositionSignature(ncrId, signatureId);
+        log.info("NCR处置签署: ncrId={}, signatureId={}, authMethod={}", ncrId, signatureId, authMethod);
+        return signatureId;
     }
 
     // ==================== 私有方法 ====================

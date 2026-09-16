@@ -72,6 +72,12 @@
             <artifactId>ruoyi-common-sensitive</artifactId>
         </dependency>
 
+        <!-- 电子签章公共域（P0-6: SOP查阅确认 + NCR处置签名），仅依赖 ruoyi-common-*，无循环 -->
+        <dependency>
+            <groupId>com.nexus</groupId>
+            <artifactId>ruoyi-common-sign</artifactId>
+        </dependency>
+
         <!-- 定时任务支持 -->
         <dependency>
             <groupId>com.nexus</groupId>
