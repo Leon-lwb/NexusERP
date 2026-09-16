@@ -1,8 +1,8 @@
 # Nexus-ERP 电子签章能力建设方案（内部留痕级）
 
-> 状态：**P1 已实施完成，待人工端到端验收** —— 选型结论已定：**纯自建，不融合开源代码、不接 CA/TSA/商业 API**
-> 实施分支：`feat/esignature-p1`（未合并）。全仓构建通过；`ruoyi-common-sign` 88 个单测全绿；静态一致性审计通过。
-> **尚需人工验证**：见 §10.4 清单（需浏览器 + 真实 MySQL/Redis/后端）。
+> 状态：**P1 已实施并完成端到端验收（核心路径）** —— 选型结论已定：**纯自建，不融合开源代码、不接 CA/TSA/商业 API**
+> 实施分支：`feat/esignature-p1`（未合并）。全仓构建通过；`ruoyi-common-sign` **92 个单测全绿**；静态一致性审计通过；
+> **端到端实测通过（含修复 1 个致命缺陷）** —— 见 §10.4。
 > 日期：2026-09-15
 > 关联规划：MES P0-6「电子签名 + DHR 批记录」（`doc/PROGRESS.md:975`、`doc/system/2026-07-29-system-gap-analysis-vs-mainstream.md:69`）
 > 关联文档：[2026-09-06-全项目审查报告.md](../2026-09-06-全项目审查报告.md) 缺失项 #6
@@ -712,9 +712,59 @@ plus-ui  work/detail.vue（**真实待办审批入口**）
 - **SMS 移出 P1**：短信 API 存在（sms4j），但**手机号取不到** —— `LoginUser` 无 phone 字段，`sys_user` 属 `ruoyi-system`，common 层不能反向依赖。已删除 `/sms-code`，并从 `SignAuthMethod.SUPPORTED` 移除 `SMS`。**P1 实际支持 `LOGIN_ONLY` + `PASSWORD`。** `SmsSignCredentialChecker` 及测试保留待 P2。恢复路径：把发码端点放 `ruoyi-system`，或给 `LoginUser` 加 phone。
 - **`needSign` 只能是流程变量**：Flowable 扩展属性在服务端从 BPMN 模型读取、**不会变成流程变量**，无 API 暴露。故「按节点配置扩展属性」不可行。当前为**流程级**粒度 —— 同一流程的后续审批人也会看到签章面板。要按节点粒度控制需后端改造（在任务详情 API 暴露扩展属性）。
 
-### 10.4 人工验收清单（P1 收尾必做）
+### 10.4 端到端验收（2026-09-16 已执行，**发现并修复 1 个致命缺陷**）
 
-自动化检查**无法证明**以下各项，需真实 MySQL + Redis + 后端 + 浏览器：
+环境：本机 MySQL 5.7（`ry-vue`/`ry-erp`/`ry-mes`/`ry-iot` 均存在）+ Redis（密码 `ruoyi123`）+ RabbitMQ，后端以
+`java -jar ruoyi-admin.jar --spring.profiles.active=dev --api-decrypt.enabled=false` 启动（**关闭 API 加密仅为 API 级测试的传输层开关，未改任何代码**）。
+
+> **⚠️ 执行前发现：开发库 `ry-vue` 没有签章 schema**，已把 4 张 `es_*` 表与 15 条菜单（4348–4362）应用到开发库（纯新增、可回滚）。
+> 另外修正了 **1 条**失效的 `wf_my_business.service_impl_name`（见下"顺带发现的既有缺陷"）。
+
+| # | 验收项 | 结果 | 证据 |
+|---|--------|------|------|
+| 1 | 后端强制：未签章不可提交 | ✅ | needSign + 错误密码 → `{"code":500,"msg":"签署密码错误"}`，任务**仍在待办**，`es_signature` 无新行 |
+| 2 | 签名记录完整 | ✅ | `biz_type=APPROVAL, biz_id=<dataId>, signer_user_id=1, signer_name=系统管理员, signature_meaning=E2E…, auth_method=PASSWORD, signed_at` 均正确 |
+| 3 | 篡改可检出 | ✅ | 改 `signature_meaning` → 单条 `passed:false, brokenAt=<该行>`；全链 `链校验在 signatureId=… 处断裂` |
+| 4 | 还原后恢复通过 | ✅ | 还原 → `passed:true`，`chain_hash` 未被改动 |
+| 5 | 全链验签 | ✅ | `{"passed":true,"chainPassed":true,"checkedCount":1,"messages":["共校验 1 条签名记录，链完整"]}` |
+| 6 | 存量流程零影响（无 needSign） | ✅ | 普通审批 `code:200` 正常完成并离开待办，`es_signature` **2 → 2 行未变**，无签章 UI/变量 |
+| 7 | 凭证不落库 | ✅ | `act_ru_variable` / `act_hi_varinst` 中 `sign*` key 计数 **0**（失败与成功两条路径均验） |
+| 8 | 签章入口可达 | ✅ | 真实入口 `work/detail.vue`（`ActHandleBtn.vue` 为死代码） |
+| 9 | 印章原图不外泄 | ⚠️ 静态 | 仅静态审计（无任何接口返回 `sealOssId`）；未做运行时验证 |
+| 10 | MES SOP 查阅回填 | ⬜ 未验 | 需构造 SOP 文档；已由 4 个单测覆盖 |
+| 11 | MES NCR 拒绝 LOGIN_ONLY | ⬜ 未验 | `signDisposition` **未暴露 REST 端点**，仅服务层，已由 4 个单测覆盖 |
+| 12 | 前端构建 | ⬜ 未验 | 需 `npm run build:prod` |
+
+#### 🔴 本轮发现的致命缺陷（已修复）
+
+**`signed_at` 为 MySQL `datetime`（秒精度），毫秒在落库时被静默截断，而 `sign()` 是按毫秒计算链哈希的
+→ 验签必然失败。** 实测：一条**刚创建、未被任何人改动**的签名，`verify` 直接返回
+`passed:false，"签名记录内容与链哈希不一致，疑似被篡改"`。
+
+即：**修复前，系统产出的每一条签名都无法通过自己的校验**（只有约 1/1000 恰好落在整秒的记录能通过）。
+88 个单测**全部漏掉**此缺陷 —— 它们从不经数据库往返，只在内存里拿同一个值自比。
+
+修复：`ESignatureServiceImpl.appendSignature` 中把 `signedAt` 归零毫秒后再同时用于**哈希**与**落库**，
+保证秒级精度的值可无损往返。提交 `4275ff05`，新增 4 个测试（其中 1 个专门模拟 `datetime(0)` 截断，
+已用反向实验证明它在修复前必然失败），单测总数 88 → **92**。
+
+修复后重跑实测：新建签名 → 全链验签 `passed:true` ✅。
+
+#### 顺带发现的既有缺陷（**非本特性引入**）
+
+`wf_my_business.service_impl_name` 存在**失效的 bean 名**，导致对应审批**永久卡死**：
+
+- `wmMaterialReceiveService`（3 条运行中实例）—— 该 bean 已被重命名为 `wmMaterialReceiveCrudService`
+- `fwFirmwareService`（1 条运行中实例）—— 该 bean 已不存在
+
+`WfTaskServiceImpl` 在 `SpringContextHolder.getBean(...)` 处直接抛
+`NoSuchBeanDefinitionException: No bean named 'wmMaterialReceiveService' available`，
+审批既无法通过也无法驳回。**建议**：为流程回调 bean 名加改名兼容（别名 bean 或启动期校验），
+并排查线上是否也有同类卡死实例。本轮仅修正了 1 条用于测试。
+
+#### 仍需人工确认的剩余项
+
+以下为自动化与本轮 API 测试**均未能覆盖**的项：
 
 1. **建库导入**：空库按序导入 5 个主脚本，确认 4 张 `es_*` 表、菜单 4348–4362、`sop_view_log.signature_id`、`ncr_order.disposition_signature_id` 均存在且无报错。
 2. **审批签章**：配 `needSign=true` 流程变量 → 无权用户见「无可用印章」→ 授权后出现 → **密码错误时审批不推进、任务仍在待办、`es_signature` 无新行**；密码正确则推进且 `verify-chain` 通过。
