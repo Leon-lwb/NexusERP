@@ -1,8 +1,8 @@
 # Nexus-ERP 电子签章能力建设方案（内部留痕级）
 
 > 状态：**P1 已实施并完成端到端验收（核心路径）** —— 选型结论已定：**纯自建，不融合开源代码、不接 CA/TSA/商业 API**
-> 实施分支：`feat/esignature-p1`（未合并）。全仓构建通过；`ruoyi-common-sign` **96 个单测全绿**；静态一致性审计通过；
-> **端到端实测通过（11/12 项，含发现并修复 2 个致命缺陷）** —— 见 §10.4。
+> 实施分支：`feat/esignature-p1`（未合并）。全仓构建通过；`ruoyi-common-sign` **96 个单测全绿**、`ruoyi-mes` **261 个**；静态一致性审计通过；
+> **端到端验收 12/12 全部通过**（真实 MySQL + Redis + 后端），过程中发现并修复 **2 个致命缺陷** —— 见 §10.4。
 > 日期：2026-09-15
 > 关联规划：MES P0-6「电子签名 + DHR 批记录」（`doc/PROGRESS.md:975`、`doc/system/2026-07-29-system-gap-analysis-vs-mainstream.md:69`）
 > 关联文档：[2026-09-06-全项目审查报告.md](../2026-09-06-全项目审查报告.md) 缺失项 #6
@@ -731,8 +731,7 @@ plus-ui  work/detail.vue（**真实待办审批入口**）
 | 7 | 凭证不落库 | ✅ | `act_ru_variable` / `act_hi_varinst` 中 `sign*` key 计数 **0**（失败与成功两条路径均验） |
 | 8 | 签章入口可达 | ✅ | 真实入口 `work/detail.vue`（`ActHandleBtn.vue` 为死代码） |
 | 9 | 印章原图不外泄 | ⚠️ 静态 | 仅静态审计（无任何接口返回 `sealOssId`）；未做运行时验证 |
-| 10 | MES SOP 查阅回填 | ✅ | 登记查阅 → `sop_view_log.signature_id` **非空**；`es_signature` 落 `SOP_VIEW / LOGIN_ONLY / seal_id=NULL` 行（**修复下述数据源缺陷后通过**） |
-| 11 | MES NCR 拒绝 LOGIN_ONLY | ⬜ 未验 | `signDisposition` **未暴露 REST 端点**（仅服务层），且开发库 `ncr_order` 为 0 行；已由 4 个单测覆盖 |
+| 10 | MES SOP 查阅回填 | ✅ | 登记查阅 → `sop_view_log.signature_id` **非空**；`es_signature` 落 `SOP_VIEW / LOGIN_ONLY / seal_id=NULL` 行（**修复下述数据源缺陷后通过**） || 11 | MES NCR 处置签署 | ✅ | **负向**：`authMethod=LOGIN_ONLY` → `{"code":500,"msg":"NCR 处置签署必须进行二级认证"}`，NCR 仍为 `OPEN`、`disposition_signature_id=NULL`、`NCR_DISPOSITION` 签名数 0。**正向**：`PASSWORD` → `{"code":200}`，`disposition_signature_id` 绑定成功，`es_signature` 落 `NCR_DISPOSITION / '不合格品处置批准：SCRAP' / PASSWORD` 行。**未签署的 `/dispose` 仍可用**（`disposition_signature_id=NULL`，签名数不变） |
 | 12 | 前端构建 | ⬜ 未验 | 需 `npm run build:prod` |
 
 #### 🔴 本轮发现的致命缺陷（已修复）
@@ -775,6 +774,20 @@ java.sql.SQLSyntaxErrorException: Table 'ry-mes.es_signature' doesn't exist
 > **残留风险（已记录在实现类 Javadoc）**：`sign()` 是 `REQUIRED` 传播。若将来有调用方在**已绑定 ry-mes/ry-erp 的事务内**调用它，
 > 任何 `@DS` 都切不过去（连接已绑定）。届时需改用 `signInNewTransaction()`（`REQUIRES_NEW`，它先切数据源再开事务）。
 > 当前唯一调用方 `WfTaskServiceImpl` 无类级 `@DS`，即主数据源，不受影响。
+
+#### 第三个结构性问题：NCR 签署是"死代码"（已修复，提交 `25701fa5`）
+
+Task 16 交付了 `signDisposition`，但**全仓零调用方**（只有接口声明）——与 `ActHandleBtn.vue` 完全同一类缺陷：
+功能实现了，但**没有任何入口能触发它**，因此也无法端到端验证。
+
+修复：新增 `PUT /mes/ncr/order/dispose/{ncrId}/sign`，并加服务层 `disposeWithSignature`
+（`@Transactional` + `@Lock4j`）：**先签署（内含二级认证校验）再处置**，两者同事务提交/回滚，
+杜绝"已处置但未绑定签名"。原未签署的 `/dispose` 端点**保持不变**（P1 决策：签章尚非强制）。
+
+> **⚠️ 跨库原子性限制（已写入实现类 Javadoc）**：签名台账在 `ry-vue`(master)，NCR 数据在 `ry-mes`，
+> **不引入 XA 就无法真正跨库原子**。故 `signDisposition` 改用 `signInNewTransaction`（`REQUIRES_NEW`）先提交签名，
+> 再由 MES 事务处置。残余窗口：签名已提交而 MES 回滚 ⇒ 留下一条"孤儿授权记录"（方向安全，不会出现"处置了却没签名"）。
+> 若将来要求强一致，需引入 XA 或把签名台账落到 `ry-mes`。
 
 #### 顺带发现的既有缺陷（**非本特性引入**）
 
