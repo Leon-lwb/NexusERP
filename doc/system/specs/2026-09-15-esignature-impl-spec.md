@@ -1,8 +1,8 @@
 # Nexus-ERP 电子签章能力建设方案（内部留痕级）
 
 > 状态：**P1 已实施并完成端到端验收（核心路径）** —— 选型结论已定：**纯自建，不融合开源代码、不接 CA/TSA/商业 API**
-> 实施分支：`feat/esignature-p1`（未合并）。全仓构建通过；`ruoyi-common-sign` **92 个单测全绿**；静态一致性审计通过；
-> **端到端实测通过（含修复 1 个致命缺陷）** —— 见 §10.4。
+> 实施分支：`feat/esignature-p1`（未合并）。全仓构建通过；`ruoyi-common-sign` **96 个单测全绿**；静态一致性审计通过；
+> **端到端实测通过（11/12 项，含发现并修复 2 个致命缺陷）** —— 见 §10.4。
 > 日期：2026-09-15
 > 关联规划：MES P0-6「电子签名 + DHR 批记录」（`doc/PROGRESS.md:975`、`doc/system/2026-07-29-system-gap-analysis-vs-mainstream.md:69`）
 > 关联文档：[2026-09-06-全项目审查报告.md](../2026-09-06-全项目审查报告.md) 缺失项 #6
@@ -731,8 +731,8 @@ plus-ui  work/detail.vue（**真实待办审批入口**）
 | 7 | 凭证不落库 | ✅ | `act_ru_variable` / `act_hi_varinst` 中 `sign*` key 计数 **0**（失败与成功两条路径均验） |
 | 8 | 签章入口可达 | ✅ | 真实入口 `work/detail.vue`（`ActHandleBtn.vue` 为死代码） |
 | 9 | 印章原图不外泄 | ⚠️ 静态 | 仅静态审计（无任何接口返回 `sealOssId`）；未做运行时验证 |
-| 10 | MES SOP 查阅回填 | ⬜ 未验 | 需构造 SOP 文档；已由 4 个单测覆盖 |
-| 11 | MES NCR 拒绝 LOGIN_ONLY | ⬜ 未验 | `signDisposition` **未暴露 REST 端点**，仅服务层，已由 4 个单测覆盖 |
+| 10 | MES SOP 查阅回填 | ✅ | 登记查阅 → `sop_view_log.signature_id` **非空**；`es_signature` 落 `SOP_VIEW / LOGIN_ONLY / seal_id=NULL` 行（**修复下述数据源缺陷后通过**） |
+| 11 | MES NCR 拒绝 LOGIN_ONLY | ⬜ 未验 | `signDisposition` **未暴露 REST 端点**（仅服务层），且开发库 `ncr_order` 为 0 行；已由 4 个单测覆盖 |
 | 12 | 前端构建 | ⬜ 未验 | 需 `npm run build:prod` |
 
 #### 🔴 本轮发现的致命缺陷（已修复）
@@ -749,6 +749,32 @@ plus-ui  work/detail.vue（**真实待办审批入口**）
 已用反向实验证明它在修复前必然失败），单测总数 88 → **92**。
 
 修复后重跑实测：新建签名 → 全链验签 `passed:true` ✅。
+
+#### 🔴 第二个致命缺陷：签章库访问未固定数据源（已修复，提交 `32e27b89`）
+
+签章 4 张表在 **`ry-vue`（主数据源 `master`）**，但签章模块的 DB 访问**没有固定数据源**，于是继承调用方上下文：
+
+```
+java.sql.SQLSyntaxErrorException: Table 'ry-mes.es_signature' doesn't exist
+    at ESignatureServiceImpl.appendSignature(...)
+    at SopViewLogServiceImpl.signSopView(...)   ← MES 模块 @DS("mes")
+```
+
+**为什么一直没被发现（两个原因，都值得记）：**
+1. 审批路径恰好跑在主数据源上下文里，所以"能跑"——纯属运气；
+2. 更糟的是：SOP 路径**按设计是"失败降级不阻断"**，`catch` + `log.warn` 把异常**静默吞掉** —— 接口返回 `{"code":200}`，
+   `sop_view_log` 行也写了，但 `signature_id` 是 NULL、`es_signature` 没有行。**功能完全失效却看起来正常。**
+
+修复：三个签章 ServiceImpl 加**类级** `@DS("master")`（dynamic-datasource 4.3.1 支持类级；仓库内约 200 处同类用法，
+`WfProcessServiceImpl` 即先例）。新增 `SignDataSourceMasterTest`（4 个测试），
+**用 dynamic-datasource 自己的 `DataSourceClassResolver` 校验 19 个接口方法的"生效数据源"**，
+并用真实 CGLIB 代理 + 预压 `"mes"` 上下文验证压栈与还原。反向实验证实：移除注解后 4 个测试全部失败。
+
+修复后重跑实测：`sop_view_log.signature_id` 非空，`es_signature` 落 `SOP_VIEW` 行 ✅。
+
+> **残留风险（已记录在实现类 Javadoc）**：`sign()` 是 `REQUIRED` 传播。若将来有调用方在**已绑定 ry-mes/ry-erp 的事务内**调用它，
+> 任何 `@DS` 都切不过去（连接已绑定）。届时需改用 `signInNewTransaction()`（`REQUIRES_NEW`，它先切数据源再开事务）。
+> 当前唯一调用方 `WfTaskServiceImpl` 无类级 `@DS`，即主数据源，不受影响。
 
 #### 顺带发现的既有缺陷（**非本特性引入**）
 
