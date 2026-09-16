@@ -65,6 +65,8 @@ import com.nexus.common.flowable.utils.ModelUtils;
 import com.nexus.common.flowable.utils.TaskUtils;
 import com.nexus.common.redis.utils.RedisUtils;
 import com.nexus.common.satoken.utils.LoginHelper;
+import com.nexus.common.sign.domain.dto.SignCommand;
+import com.nexus.common.sign.service.ESignatureService;
 import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.system.domain.vo.SysUserVo;
 import com.nexus.system.service.CommonService;
@@ -118,6 +120,9 @@ public class WfTaskServiceImpl extends FlowServiceFactory implements IWfTaskServ
     private final WfDeployFormMapper wfDeployFormMapper;
 
     private final FlowTaskMapper flowTaskMapper;
+
+    /** 电子签章：审批办结时的签章关卡（不签章不生效） */
+    private final ESignatureService signatureService;
 
     /**
      * 校验当前登录用户是否有权办理该任务（assignee 本人、候选人、候选组 或 流程发起人的待办）。
@@ -256,6 +261,26 @@ public class WfTaskServiceImpl extends FlowServiceFactory implements IWfTaskServ
     	            }
                     predictedTodoUsers = JSON.toJSONString(newusername);
                 }
+            }
+        }
+
+        // ==================== 电子签章关卡（单点插桩） ====================
+        // 约 20 个业务单据（销售/采购/生产/仓储…）都经由本方法办结，故「审批节点要求签章」
+        // 只在此处实现一次，无需逐个改造业务 service。
+        // 位置：必须在下方的 taskService.complete(...) 之前——signatureService.sign(...) 抛出的
+        // ServiceException 会向上传播，配合本方法的 @Transactional(rollbackFor = Exception.class)
+        // 回滚整个事务，引擎不推进流程，即「不签章不生效」。
+        // 兼容性：未携带 needSign 的历史流程不会进入本分支，行为与插桩前完全一致。
+        if (hasDataId) {
+            Map<String, Object> signVariables = taskBo.getVariables();
+            SignCommand signCommand = ApprovalSignGate.buildCommand(taskBo.getDataId(), signVariables);
+            if (signCommand != null) {
+                // 故意不捕获 ServiceException：签章失败必须中止审批，不得 log-and-continue
+                signatureService.sign(signCommand);
+                // 明文凭证用完即弃。下方 taskService.complete(taskBo.getTaskId(), taskBo.getVariables(),
+                // localScope) 传入的就是 taskBo.getVariables() 这一个 map 实例（不是副本），
+                // 因此只能从它移除，才能确保凭证不落入 Flowable 的 act_ru_variable 表。
+                signVariables.remove(ApprovalSignGate.CREDENTIAL_KEY);
             }
         }
 
