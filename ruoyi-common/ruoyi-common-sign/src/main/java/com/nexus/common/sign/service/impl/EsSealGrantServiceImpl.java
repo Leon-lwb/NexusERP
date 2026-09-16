@@ -1,6 +1,7 @@
 package com.nexus.common.sign.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.nexus.common.core.exception.ServiceException;
@@ -88,7 +89,15 @@ public class EsSealGrantServiceImpl implements IESSealGrantService {
         }
         validate(bo, existing);
         EsSealGrant entity = MapstructUtils.convert(bo, EsSealGrant.class);
-        return baseMapper.updateById(entity);
+        // 被授权用户 / 被授权部门二选一。updateById 会跳过 null 字段：把「按部门」的授权改成「按用户」时，
+        // 行里旧的 grantee_dept_id 会原样留下，得到一条「既匹配该用户、又匹配整个部门」的授权 ——
+        // 实际能用章的人比管理员预期更多。故缺席的那一列改由 wrapper 显式 SET 为 NULL，
+        // 不再依赖 updateById 的 null 跳过（其余字段仍走 entity 的 NOT_NULL 语义与自动填充）。
+        LambdaUpdateWrapper<EsSealGrant> luw = Wrappers.<EsSealGrant>lambdaUpdate()
+            .eq(EsSealGrant::getGrantId, entity.getGrantId())
+            .set(entity.getGranteeUserId() == null, EsSealGrant::getGranteeUserId, null)
+            .set(entity.getGranteeDeptId() == null, EsSealGrant::getGranteeDeptId, null);
+        return baseMapper.update(entity, luw);
     }
 
     @Override
