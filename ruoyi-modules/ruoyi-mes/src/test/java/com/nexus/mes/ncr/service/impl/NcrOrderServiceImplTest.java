@@ -1,5 +1,6 @@
 package com.nexus.mes.ncr.service.impl;
 
+import com.baomidou.lock.annotation.Lock4j;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.LambdaUtils;
@@ -22,11 +23,14 @@ import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
+import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
@@ -36,10 +40,10 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 /**
- * NCR不合格品单 Service 单元测试 (18 tests)
+ * NCR不合格品单 Service 单元测试 (23 tests)
  * <p>mockStatic(LambdaUtils,CALLS_REAL_METHODS) 解决 lambda 缓存;
  * autoCreate 传空 defectInfo 绕过 JsonUtils(需Spring上下文,回归由 E2E 覆盖)。
- * P0-6 处置签署(signDisposition)的用例见文末。</p>
+ * P0-6 处置签署(signDisposition + disposeWithSignature)的用例见文末。</p>
  */
 @ExtendWith(MockitoExtension.class)
 @TestMethodOrder(org.junit.jupiter.api.MethodOrderer.MethodName.class)
@@ -232,13 +236,16 @@ class NcrOrderServiceImplTest {
     void signDisposition_signsThenBindsReturnedId() {
         NcrOrder o = new NcrOrder(); o.setNcrId(7L); o.setNcrCode("NCR-007");
         when(baseMapper.selectById(7L)).thenReturn(o);
-        when(eSignatureService.sign(any(SignCommand.class))).thenReturn(12345L);
+        when(eSignatureService.signInNewTransaction(any(SignCommand.class))).thenReturn(12345L);
 
         Long signatureId = service.signDisposition(7L, "SCRAP", SignAuthMethod.PASSWORD, "cred");
 
         assertEquals(12345L, signatureId);
         ArgumentCaptor<SignCommand> cmdCaptor = ArgumentCaptor.forClass(SignCommand.class);
-        verify(eSignatureService).sign(cmdCaptor.capture());
+        verify(eSignatureService).signInNewTransaction(cmdCaptor.capture());
+        // 签名库只在 master(ry-vue): 走 REQUIRED 的 sign 会在「调用方已开着 MES 事务」时
+        // 加入该事务而写到 ry-mes, 故必须走独立事务入口 —— 这条断言锁死该数据源边界。
+        verify(eSignatureService, never()).sign(any(SignCommand.class));
         SignCommand cmd = cmdCaptor.getValue();
         assertEquals(SignBizType.NCR_DISPOSITION, cmd.bizType());
         assertEquals(7L, cmd.bizId());
@@ -259,14 +266,87 @@ class NcrOrderServiceImplTest {
     void signDisposition_nullDisposition_meaningHasNoNullLiteral() {
         NcrOrder o = new NcrOrder(); o.setNcrId(8L); o.setNcrCode("NCR-008");
         when(baseMapper.selectById(8L)).thenReturn(o);
-        when(eSignatureService.sign(any(SignCommand.class))).thenReturn(1L);
+        when(eSignatureService.signInNewTransaction(any(SignCommand.class))).thenReturn(1L);
 
         service.signDisposition(8L, null, SignAuthMethod.PASSWORD, "cred");
 
         ArgumentCaptor<SignCommand> cmdCaptor = ArgumentCaptor.forClass(SignCommand.class);
-        verify(eSignatureService).sign(cmdCaptor.capture());
+        verify(eSignatureService).signInNewTransaction(cmdCaptor.capture());
         String meaning = cmdCaptor.getValue().signatureMeaning();
         assertFalse(meaning.contains("null"), "处置结论为 null 时不得拼出字面量 null");
         assertEquals("不合格品处置批准", meaning);
+    }
+
+    // ==================== P0-6 处置签署: REST 端点接入的合并入口 ====================
+
+    @Test
+    void disposeWithSignature_loginOnly_rejectedBeforeAnyWrite() {
+        // 未被授权时业务库一行不得动: 拒绝发生在处置(状态 CAS/分支副作用)之前
+        ServiceException ex = assertThrows(ServiceException.class,
+            () -> service.disposeWithSignature(1L, "SCRAP", "备注", SignAuthMethod.LOGIN_ONLY, "cred"));
+        assertEquals("NCR 处置签署必须进行二级认证", ex.getMessage());
+        verifyNoInteractions(baseMapper);
+        verifyNoInteractions(eSignatureService);
+    }
+
+    @Test
+    @SuppressWarnings("rawtypes")
+    void disposeWithSignature_signsBeforeDisposing_neverSignsViaSharedTx() {
+        NcrOrder o = new NcrOrder(); o.setNcrId(7L); o.setNcrCode("NCR-007");
+        when(baseMapper.selectById(7L)).thenReturn(o);
+        when(eSignatureService.signInNewTransaction(any(SignCommand.class))).thenReturn(42L);
+        when(baseMapper.update(isNull(), any())).thenReturn(1);
+
+        assertTrue(service.disposeWithSignature(7L, "RETURN", "退货", SignAuthMethod.PASSWORD, "admin123"));
+
+        // 顺序: 先签署 -> 再绑定(update#1) -> 再处置 CAS(update#2) -> 分支流转(update#3)
+        InOrder inOrder = inOrder(eSignatureService, baseMapper);
+        inOrder.verify(eSignatureService).signInNewTransaction(any(SignCommand.class));
+        inOrder.verify(baseMapper).update(isNull(), any());
+        verify(baseMapper, times(3)).update(isNull(), any());
+        verify(eSignatureService, never()).sign(any(SignCommand.class));
+
+        ArgumentCaptor<Wrapper> wrappers = ArgumentCaptor.forClass(Wrapper.class);
+        verify(baseMapper, times(3)).update(isNull(), wrappers.capture());
+        LambdaUpdateWrapper<?> bind = (LambdaUpdateWrapper<?>) wrappers.getAllValues().get(0);
+        assertTrue(String.valueOf(bind.getSqlSet()).contains("disposition_signature_id"), "首次写入应为签名绑定");
+        assertTrue(bind.getParamNameValuePairs().containsValue(42L), "绑定的应是签署返回的签名ID");
+        LambdaUpdateWrapper<?> cas = (LambdaUpdateWrapper<?>) wrappers.getAllValues().get(1);
+        assertTrue(String.valueOf(cas.getSqlSet()).contains("status"), "第二次写入应为处置状态 CAS(DISPOSITION)");
+    }
+
+    @Test
+    void disposeWithSignature_signFailure_propagatesAndNeverDisposes() {
+        NcrOrder o = new NcrOrder(); o.setNcrId(7L); o.setNcrCode("NCR-007");
+        when(baseMapper.selectById(7L)).thenReturn(o);
+        when(eSignatureService.signInNewTransaction(any(SignCommand.class)))
+            .thenThrow(new ServiceException("认证失败"));
+
+        assertThrows(ServiceException.class,
+            () -> service.disposeWithSignature(7L, "SCRAP", null, SignAuthMethod.PASSWORD, "wrong"));
+
+        // 处置(含分支副作用)一次都不得发生: 授权未成立
+        verify(baseMapper, never()).update(any(), any());
+    }
+
+    @Test
+    void disposeWithSignature_statusConflict_throwsSoCallerSeesFailure() {
+        NcrOrder o = new NcrOrder(); o.setNcrId(7L); o.setNcrCode("NCR-007");
+        when(baseMapper.selectById(7L)).thenReturn(o);
+        when(eSignatureService.signInNewTransaction(any(SignCommand.class))).thenReturn(9L);
+        when(baseMapper.update(any(), any())).thenReturn(0);   // 状态已被他人变更
+
+        assertTrue(assertThrows(RuntimeException.class,
+            () -> service.disposeWithSignature(7L, "RETURN", null, SignAuthMethod.PASSWORD, "cred"))
+            .getMessage().contains("处置失败"));
+    }
+
+    @Test
+    void disposeWithSignature_transactionAndLockGuards() throws NoSuchMethodException {
+        // 反射守卫: 丢掉 @Transactional 就会退回「签署与处置各自提交」的可发散状态
+        Method m = NcrOrderServiceImpl.class.getMethod("disposeWithSignature",
+            Long.class, String.class, String.class, String.class, String.class);
+        assertNotNull(m.getAnnotation(Transactional.class), "disposeWithSignature 必须声明 @Transactional");
+        assertNotNull(m.getAnnotation(Lock4j.class), "disposeWithSignature 必须持有与 dispose 相同的 NCR 锁");
     }
 }

@@ -111,6 +111,21 @@ public interface INcrOrderService {
     Boolean dispose(Long ncrId, String disposition, String remark);
 
     /**
+     * 签署并处置NCR单(先落电子签名, 再执行处置, 同属一个事务)
+     * <p>签署与处置必须同生共死：「已签署未处置」与「已处置未绑定签名」都是坏状态，
+     * 故事务边界落在服务层，Controller 只做一次转发。</p>
+     *
+     * @param ncrId       NCR单ID
+     * @param disposition 处置方式(REWORK/SCRAP/ACCEPT_AS_IS/RETURN)
+     * @param remark      处置备注(可空)
+     * @param authMethod  认证方式(LOGIN_ONLY 将被拒绝, 处置签署必须二级认证)
+     * @param credential  认证凭证
+     * @return 处置成功返回 true
+     */
+    Boolean disposeWithSignature(Long ncrId, String disposition, String remark,
+                                 String authMethod, String credential);
+
+    /**
      * 返工完成回调(IN_REWORK -> CLOSED)
      *
      * @param ncrId NCR单ID
