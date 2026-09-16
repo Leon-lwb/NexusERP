@@ -269,7 +269,12 @@ public class ESignatureServiceImpl implements ESignatureService {
             .last("LIMIT 1"));
         String prevHash = last == null ? null : last.getChainHash();
 
-        Date signedAt = new Date();
+        // 秒级精度：es_signature.signed_at 为 MySQL datetime（无小数秒），
+        // 毫秒会被静默截断，导致链哈希无法复现。此处先归零毫秒，保证落库往返后哈希一致。
+        // 切勿改回 new Date() —— 毫秒级时间戳入哈希后，落库被截断，验签重算必然不一致
+        // （线上实测：未篡改的新签名被判为「疑似被篡改」）。signedAt 必须同一实例同时用于
+        // setSignedAt(...) 与 compute(...)，不得另取一次当前时间。
+        Date signedAt = new Date((System.currentTimeMillis() / 1000L) * 1000L);
         Long signatureId = IdWorker.getId();
 
         EsSignature entity = new EsSignature();
