@@ -85,7 +85,9 @@ public class SopViewLogServiceImpl implements ISopViewLogService {
         log.setProcessName(processName);
         log.setWorkstationId(workstationId);
         // P0-6: 回填电子签名ID。查阅是「已阅确认」记录而非授权, 故用 LOGIN_ONLY(不触发二级认证),
-        // 且签署失败只告警不阻断(见 signSopView), 查阅登记必须照常落库。
+        // 且签署失败只告警不阻断(见 signSopView —— 那里用独立事务 REQUIRES_NEW 调用签名服务,
+        // 光有 try/catch 不足以降级: 签署若加入本事务并标记 rollback-only, 本方法末尾的 insert 会在提交时被回滚),
+        // 查阅登记必须照常落库。
         log.setSignatureId(signSopView(sopId, versionNo));
         // IP / User-Agent (防御: 无请求上下文时留空, 如 MQ/定时任务触发)
         try {
@@ -112,6 +114,15 @@ public class SopViewLogServiceImpl implements ISopViewLogService {
      * —— 打开查看器不得触发二级认证; ② 不盖章(sealId=null); ③ 签署失败只告警并返回 null,
      * 绝不阻断查阅登记(与 Vision 等辅助服务同一约定, 查阅不会被签名通道故障卡死)。
      * </p>
+     * <p>
+     * <b>必须走 {@code signInNewTransaction}(REQUIRES_NEW), 不能走 {@code sign}:</b>
+     * {@code sign} 的传播行为是 REQUIRED, 会加入本方法调用方的事务。签名一旦抛
+     * RuntimeException(如取不到链锁抛「签名通道繁忙」), Spring 会先把<b>共享</b>事务
+     * 标记为 rollback-only —— 下面的 catch 只吞得掉异常、吞不掉该标记, 后续查阅记录
+     * insert 看似成功, 提交时却抛 UnexpectedRollbackException, 把查阅记录一起回滚,
+     * 即"降级"落空。改用独立事务后, 签名失败只回滚它自己的事务, 这里的 try/catch
+     * 才真正具备降级语义。
+     * </p>
      *
      * @param sopId     SOP ID
      * @param versionNo 查阅的版本号(可空)
@@ -122,7 +133,8 @@ public class SopViewLogServiceImpl implements ISopViewLogService {
             String meaning = StringUtils.isBlank(versionNo)
                 ? "SOP 已阅确认" : "SOP 已阅确认（版本 " + versionNo + "）";
             // bizNo 取查阅版本号: 本方法上下文内唯一可得的 SOP 单据标识(无额外查库, 保持非阻塞)
-            return eSignatureService.sign(new SignCommand(
+            // 独立事务: 签署失败不得污染查阅记录所在的调用方事务(见方法注释)
+            return eSignatureService.signInNewTransaction(new SignCommand(
                 SignBizType.SOP_VIEW, sopId, versionNo, meaning, null, SignAuthMethod.LOGIN_ONLY, null));
         } catch (Exception e) {
             log.warn("SOP查阅签名失败(不阻断查阅登记): sopId={}, versionNo={}", sopId, versionNo, e);

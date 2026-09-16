@@ -26,6 +26,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Date;
@@ -41,6 +42,10 @@ import java.util.Objects;
  *
  * <p>哈希链并发控制：链尾读取 + 写入必须在同一临界区内完成，否则并发签名会
  * 读到同一个前驱从而分叉。临界区按租户加锁，且锁内只做「读链尾 + 写一条」。</p>
+ *
+ * <p>事务边界：{@link #sign} 加入调用方事务（REQUIRED），{@link #signInNewTransaction}
+ * 自开新事务（REQUIRES_NEW）—— 后者供「签署失败可降级、不得拖垮调用方事务」的场景使用。
+ * 两者共用 {@link #doSign}，签名逻辑只有一份。</p>
  *
  * @author nexus
  */
@@ -67,6 +72,34 @@ public class ESignatureServiceImpl implements ESignatureService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Long sign(SignCommand cmd) {
+        return doSign(cmd);
+    }
+
+    /**
+     * 独立事务签名（REQUIRES_NEW）。
+     *
+     * <p>与 {@link #sign} 共用 {@link #doSign}，签名逻辑只有一份、不会漂移；
+     * 唯一差别是事务边界：本方法挂起调用方事务、自开一个新事务，因此失败只回滚自身，
+     * 不会把调用方事务污染成 rollback-only。供"签署失败可降级"的场景使用（如 SOP 查阅确认）。</p>
+     *
+     * @param cmd 签名入参
+     * @return 签名ID
+     */
+    @Override
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public Long signInNewTransaction(SignCommand cmd) {
+        return doSign(cmd);
+    }
+
+    /**
+     * 签名主体（两个入口共用，保证事务边界之外的行为完全一致）。
+     *
+     * <p>不做任何事务声明：事务语义完全由公开入口决定。</p>
+     *
+     * @param cmd 签名入参
+     * @return 签名ID
+     */
+    private Long doSign(SignCommand cmd) {
         validate(cmd);
         Long userId = LoginHelper.getUserId();
         String tenantId = LoginHelper.getTenantId();

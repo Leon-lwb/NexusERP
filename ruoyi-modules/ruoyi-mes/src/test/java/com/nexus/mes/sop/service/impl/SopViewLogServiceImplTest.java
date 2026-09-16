@@ -24,8 +24,19 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 /**
- * SOP查阅记录 Service 单元测试 — P0-6 电子签名回填 (4 tests)
+ * SOP查阅记录 Service 单元测试 — P0-6 电子签名回填 (5 tests)
  * <p>查阅是「记录」而非授权: 签署失败必须降级(signature_id 留空), 查阅登记照常落库。</p>
+ *
+ * <p><b>降级的前提是签名走独立事务(REQUIRES_NEW)：</b>必须调用
+ * {@code eSignatureService.signInNewTransaction(...)} 而非 {@code sign(...)}。
+ * {@code sign} 的传播行为是 REQUIRED, 会加入 recordView 的事务; 它一旦抛 RuntimeException,
+ * Spring 先把<b>共享</b>事务标记为 rollback-only, 本测试里的 try/catch 只吞得掉异常、
+ * 吞不掉该标记 —— 线上表现为 insert 看似成功、提交时抛 UnexpectedRollbackException,
+ * 查阅记录被一起回滚。</p>
+ *
+ * <p><b>本测试的边界：</b>纯 Mock 单元测试没有事务管理器, 上面的 rollback-only 污染在此
+ * <b>无法复现</b>(所以它原先才会漏掉这个 bug)；这里只能断言"调用的是独立事务入口"。
+ * 真实事务语义必须由集成测试覆盖: Task 17 的 E2E 需确认「签署失败时查阅记录仍然落库」。</p>
  */
 @ExtendWith(MockitoExtension.class)
 class SopViewLogServiceImplTest {
@@ -51,7 +62,7 @@ class SopViewLogServiceImplTest {
 
     @Test
     void recordView_signSucceeds_setsSignatureIdOnLogRow() {
-        when(eSignatureService.sign(any(SignCommand.class))).thenReturn(7788L);
+        when(eSignatureService.signInNewTransaction(any(SignCommand.class))).thenReturn(7788L);
         when(baseMapper.insert(any(SopViewLog.class))).thenReturn(1);
 
         assertTrue(service.recordView(2L, "V2", 10L, "WO-1", 20L, "工序A", 30L));
@@ -64,7 +75,7 @@ class SopViewLogServiceImplTest {
 
         // 查阅用 LOGIN_ONLY(不触发二级认证) 且不盖章
         ArgumentCaptor<SignCommand> cmdCaptor = ArgumentCaptor.forClass(SignCommand.class);
-        verify(eSignatureService).sign(cmdCaptor.capture());
+        verify(eSignatureService).signInNewTransaction(cmdCaptor.capture());
         SignCommand cmd = cmdCaptor.getValue();
         assertEquals(SignBizType.SOP_VIEW, cmd.bizType());
         assertEquals(2L, cmd.bizId());
@@ -74,9 +85,26 @@ class SopViewLogServiceImplTest {
         assertTrue(cmd.signatureMeaning().startsWith("SOP 已阅确认"));
     }
 
+    /**
+     * 回归守卫: 查阅签署必须走独立事务入口。
+     * <p>若有人把调用点改回 {@code sign(...)}, 后者的 REQUIRED 会加入 recordView 事务,
+     * 签署失败时把共享事务标记为 rollback-only —— 本测试的 mock 无法复现该污染,
+     * 但能钉死"调用的是独立事务入口"这一前提。</p>
+     */
+    @Test
+    void recordView_usesIndependentTransactionSignature_neverJoinsCallerTransaction() {
+        when(eSignatureService.signInNewTransaction(any(SignCommand.class))).thenReturn(1L);
+        when(baseMapper.insert(any(SopViewLog.class))).thenReturn(1);
+
+        service.recordView(5L, "V5", null, null, null, null, null);
+
+        verify(eSignatureService).signInNewTransaction(any(SignCommand.class));
+        verify(eSignatureService, never()).sign(any(SignCommand.class));
+    }
+
     @Test
     void recordView_signFails_logStillWritten_signatureIdNull() {
-        when(eSignatureService.sign(any(SignCommand.class)))
+        when(eSignatureService.signInNewTransaction(any(SignCommand.class)))
             .thenThrow(new ServiceException("签名通道繁忙，请稍后重试"));
         when(baseMapper.insert(any(SopViewLog.class))).thenReturn(1);
 
@@ -91,7 +119,7 @@ class SopViewLogServiceImplTest {
     @Test
     void recordView_signReturnsNull_signatureIdNull() {
         // 签名服务未返回ID(非异常路径)时同样留空
-        when(eSignatureService.sign(any(SignCommand.class))).thenReturn(null);
+        when(eSignatureService.signInNewTransaction(any(SignCommand.class))).thenReturn(null);
         when(baseMapper.insert(any(SopViewLog.class))).thenReturn(1);
 
         service.recordView(3L, "V3", null, null, null, null, null);
@@ -102,13 +130,13 @@ class SopViewLogServiceImplTest {
 
     @Test
     void recordView_signMeaningSkipsBlankVersionNo() {
-        when(eSignatureService.sign(any(SignCommand.class))).thenReturn(9L);
+        when(eSignatureService.signInNewTransaction(any(SignCommand.class))).thenReturn(9L);
         when(baseMapper.insert(any(SopViewLog.class))).thenReturn(1);
 
         service.recordView(4L, "  ", null, null, null, null, null);
 
         ArgumentCaptor<SignCommand> cmdCaptor = ArgumentCaptor.forClass(SignCommand.class);
-        verify(eSignatureService).sign(cmdCaptor.capture());
+        verify(eSignatureService).signInNewTransaction(cmdCaptor.capture());
         assertEquals("SOP 已阅确认", cmdCaptor.getValue().signatureMeaning(), "空版本号不拼进签署含义");
     }
 }
