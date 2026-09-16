@@ -1,5 +1,6 @@
 package com.nexus.common.sign.service.impl;
 
+import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
@@ -36,10 +37,19 @@ import java.util.Set;
  * 故本类在新增/修改时强制校验「印章存在 + 类型为公司章 + 未销毁」，
  * 授权范围（人/部门/业务场景/时间窗）的有效性判定仍由 {@code SealAvailabilityResolver} 在用时完成。</p>
  *
+ * <p><b>数据源（类级 {@code @DS("master")}，勿删）：</b>es_seal_grant / es_seal 只存在于
+ * ry-vue 库（主数据源 master）。本模块不继承调用方的数据源上下文，否则 MES/ERP 上下文下
+ * 会打到 ry-mes / ry-erp 库报「表不存在」。理由与注解层级选择详见
+ * {@link ESignatureServiceImpl} 的类注释。</p>
+ *
+ * <p><b>同类自调用不触发 AOP：</b>{@code validate} / {@code buildWrapper} / {@code fillSealName}
+ * 均为 private 辅助方法，由公开方法内部调用；数据源键由公开方法的类级注解压栈。</p>
+ *
  * @author nexus
  */
 @Service
 @RequiredArgsConstructor
+@DS("master")
 public class EsSealGrantServiceImpl implements IESSealGrantService {
 
     /** 授权记录默认状态：启用 */

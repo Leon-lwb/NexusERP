@@ -137,7 +137,16 @@ public class SopViewLogServiceImpl implements ISopViewLogService {
             return eSignatureService.signInNewTransaction(new SignCommand(
                 SignBizType.SOP_VIEW, sopId, versionNo, meaning, null, SignAuthMethod.LOGIN_ONLY, null));
         } catch (Exception e) {
-            log.warn("SOP查阅签名失败(不阻断查阅登记): sopId={}, versionNo={}", sopId, versionNo, e);
+            // 降级语义不变(查阅是「记录」而非「授权」, 签名失败绝不阻断查阅登记), 但日志必须可诊断。
+            // 反面教训: 这里曾是唯一失败信号, 却只打一条无上下文的 WARN —— 当签章库被路由到
+            // 非 master 数据源时, 接口照常返回 200、sop_view_log 照常落库, 只有 signature_id
+            // 静默留空, 该 WARN 被彻底淹没, 功能性全损长期无人发现(E2E 实测)。
+            // 故: ① 消息体内联异常类名+消息与 bizType/凭据方式, 单条日志即可定位;
+            //     ② 末位参数传异常对象, 打印完整堆栈(含 MyBatis 的 "### Cause: ..." SQL 错误);
+            //     ③ 级别保持 WARN —— 请求本身已成功, 提到 ERROR 会让监控把「已降级」误报为「请求失败」。
+            log.warn("SOP查阅签名失败已降级(sop_view_log 照常落库, signature_id 留空): "
+                    + "bizType={}, sopId={}, versionNo={}, authMethod={}, cause={}",
+                SignBizType.SOP_VIEW, sopId, versionNo, SignAuthMethod.LOGIN_ONLY, e, e);
             return null;
         }
     }

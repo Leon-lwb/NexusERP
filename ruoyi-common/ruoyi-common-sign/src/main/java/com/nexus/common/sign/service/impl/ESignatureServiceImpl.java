@@ -1,5 +1,6 @@
 package com.nexus.common.sign.service.impl;
 
+import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.lock.LockInfo;
 import com.baomidou.lock.LockTemplate;
 import com.baomidou.mybatisplus.core.toolkit.IdWorker;
@@ -47,11 +48,46 @@ import java.util.Objects;
  * 自开新事务（REQUIRES_NEW）—— 后者供「签署失败可降级、不得拖垮调用方事务」的场景使用。
  * 两者共用 {@link #doSign}，签名逻辑只有一份。</p>
  *
+ * <p><b>数据源（类级 {@code @DS("master")}，勿删）：</b>es_seal / es_seal_grant /
+ * es_sign_document / es_signature 四张表<b>只存在于 ry-vue 库</b>，即本项目的
+ * <b>主数据源 master</b>（{@code dynamic.datasource.primary: master}）。若不固定，
+ * 本服务的查询会继承调用方的数据源上下文：MES 模块类级 {@code @DS("mes")} 会让
+ * {@code appendSignature} 打到 ry-mes 库，报
+ * {@code Table 'ry-mes.es_signature' doesn't exist}（线上实测：SOP 查阅登记
+ * 因此静默降级、signature_id 长留 NULL）。签名库与业务库<b>不共库</b>，
+ * 故此处必须与调用方解耦。</p>
+ *
+ * <p><b>为什么是类级而不是逐方法：</b>dynamic-datasource 4.3.1 的
+ * {@code DataSourceClassResolver#computeDatasource} 在「实现类方法」之后即回落到
+ * 「实现类本身」的注解，且 {@code DynamicDataSourceAnnotationAdvisor} 的切点
+ * 由 {@code AnnotationMatchingPointcut(DS.class, true)} 构建（类级注解匹配整类全部方法），
+ * 故类级注解对每一个<b>外部经代理调用</b>的公开方法都生效 —— 后续新增方法不会漏挂。
+ * 本仓库大量既有先例（如 {@code WfProcessServiceImpl}/IotProductServiceImpl 等的类级 @DS）
+ * 也印证该版本支持类级。切面 order 为 {@code Ordered.HIGHEST_PRECEDENCE}
+ * （{@code DynamicDatasourceAopProperties.order}），即 @DS 比 @Transactional
+ * <b>更外层</b>：数据源键在事务开启、取连接之前就已入栈，因此
+ * {@link #signInNewTransaction} 的 REQUIRES_NEW 新事务会真正落到 master。</p>
+ *
+ * <p><b>同类自调用不触发 AOP：</b>{@link #doSign} 是 private、由两个公开入口内部调用，
+ * 它本身不需要注解 —— 数据源键由<b>最外层公开方法</b>（{@code sign} /
+ * {@code signInNewTransaction} / {@code verify} / {@code verifyChain} / {@code listByBiz}）
+ * 的类级注解压栈，贯穿整段调用链。切勿把这些公开入口改成内部调用而绕过代理。</p>
+ *
+ * <p><b>已知边界（REQUIRED 的固有性质）：</b>{@link #sign} 传播行为是 REQUIRED，
+ * 若调用方已在<b>另一个数据源</b>上开着事务（连接已绑定，@DS 切换在事务内不生效），
+ * {@code sign} 仍会加入该事务而打到业务库。当前唯一调用方
+ * {@code WfTaskServiceImpl#completeTask} 无类级 @DS（默认即 master），不受影响。
+ * 若将来出现「MES/ERP 事务内调用 sign」的场景，必须改用
+ * {@link #signInNewTransaction}（独立事务）或参照
+ * {@code MessageRecordService} 的 {@code @DS("master") + REQUIRES_NEW} 模式，
+ * 不能指望类级注解穿透一个已在异库绑定连接的事务。</p>
+ *
  * @author nexus
  */
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@DS("master")
 public class ESignatureServiceImpl implements ESignatureService {
 
     /** 哈希链串行化锁 key 前缀（按租户隔离） */
