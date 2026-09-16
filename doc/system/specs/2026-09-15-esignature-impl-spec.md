@@ -1,6 +1,8 @@
 # Nexus-ERP 电子签章能力建设方案（内部留痕级）
 
-> 状态：**方案待评审** —— 选型结论已定：**纯自建，不融合开源代码、不接 CA/TSA/商业 API**
+> 状态：**P1 已实施完成，待人工端到端验收** —— 选型结论已定：**纯自建，不融合开源代码、不接 CA/TSA/商业 API**
+> 实施分支：`feat/esignature-p1`（未合并）。全仓构建通过；`ruoyi-common-sign` 88 个单测全绿；静态一致性审计通过。
+> **尚需人工验证**：见 §10.4 清单（需浏览器 + 真实 MySQL/Redis/后端）。
 > 日期：2026-09-15
 > 关联规划：MES P0-6「电子签名 + DHR 批记录」（`doc/PROGRESS.md:975`、`doc/system/2026-07-29-system-gap-analysis-vs-mainstream.md:69`）
 > 关联文档：[2026-09-06-全项目审查报告.md](../2026-09-06-全项目审查报告.md) 缺失项 #6
@@ -478,8 +480,8 @@ chain_hash = SM3( prev_hash ‖ signature_id ‖ biz_type ‖ biz_id ‖
 **策略：在前端收集签名意图 → 在 `WfTaskServiceImpl.complete()` 单点插桩**，避免逐个改 20 个业务模块。
 
 ```
-plus-ui  ActHandleBtn.vue
-   │  用户点"通过/驳回" → 若该节点已配置需签章，弹出签章框
+plus-ui  work/detail.vue（**真实待办审批入口**）
+   │  用户点"通过" → 若该流程配置了 needSign，弹出签章框
    │  选择印章 + 填写签署含义 + 二级认证
    ▼
 后端  WfTaskServiceImpl.complete(TaskBo)
@@ -492,7 +494,9 @@ plus-ui  ActHandleBtn.vue
    各业务 afterFlowHandle(WfMyBusiness)  ← 逻辑不变
 ```
 
-- **节点是否需签章**：用流程变量 `needSign`（由 BPMN 节点扩展属性配置）
+- **是否需签章**：用**流程变量** `needSign`。⚠️ 实测修正：Flowable 的 BPMN 节点扩展属性在服务端从模型读取、
+  **不会变成流程变量**，且无任何 API 暴露 —— 故"由 BPMN 节点扩展属性配置"**不可行**（详见 §10.3）。
+  当前粒度是**流程级**：同一流程的后续审批人也会看到签章面板
 - **`ruoyi-flowable` 新增依赖** `ruoyi-common-sign`（公共层，不反向依赖业务模块，架构方向正确）
 - **兼容性**：未配置 `needSign` 的流程节点行为完全不变，**存量流程零影响**
 
@@ -565,7 +569,7 @@ plus-ui  ActHandleBtn.vue
 - 印章管理页（CRUD + 启停 + 预览）、用章授权页、签名记录查询页
 - 二级认证（密码 / 短信）
 - 哈希链（SM3 + Lock4j 串行化）+ 验签接口
-- 审批挂载：`ActHandleBtn.vue` 签章入口 + `WfTaskServiceImpl.complete()` 插桩
+- 审批挂载：`work/detail.vue` 签章入口 + `WfTaskServiceImpl.complete()` 插桩
 - MES P0-6 回填：SOP 查阅 + NCR 处置
 - 菜单/权限/字典 SQL
 
@@ -631,7 +635,7 @@ plus-ui  ActHandleBtn.vue
 | Bouncy Castle 1.83 已在依赖树 | `pom.xml:39,308-311`、`ruoyi-common/ruoyi-common-encrypt/pom.xml:26-28` |
 | 审批回调统一接口 | `ruoyi-modules/ruoyi-flowable/src/main/java/com/nexus/workflow/service/WfCallBackServiceI.java` |
 | 审批提交插桩点 | `ruoyi-modules/ruoyi-flowable/src/main/java/com/nexus/workflow/service/impl/WfTaskServiceImpl.java:204-222` |
-| 审批操作 UI 插入点 | `plus-ui/src/views/workflow/components/ActHandleBtn.vue:4-26` |
+| 审批操作 UI 插入点 | `plus-ui/src/views/workflow/work/detail.vue:873-958`（**注意**：`components/ActHandleBtn.vue` 是**死代码**，全仓唯一引用是 `demo/index.vue:113` 的注释。初版方案误指此文件） |
 | 合同无正文字段 | `ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/so/domain/SoContract.java` |
 | MES SOP 签名预留 | `ruoyi-modules/ruoyi-mes/src/main/java/com/nexus/mes/sop/domain/SopViewLog.java:58-59` |
 | MES NCR 签名预留 | `ruoyi-modules/ruoyi-mes/src/main/java/com/nexus/mes/ncr/service/impl/NcrOrderServiceImpl.java:324-332` |
@@ -661,3 +665,73 @@ plus-ui  ActHandleBtn.vue
 |------|------|
 | 2026-09-15 | 初版。选型结论：纯自建（内部留痕级），排除开源代码融合与商业 API |
 | 2026-09-15 | 补 §2.7：评估 Contract.Pro / mini-contract（何方签）并记录排除依据（前端外壳 + 引擎闭源托管 + 无 LICENSE 文件）；P3 增加「跨端签署会话」待办 |
+| 2026-09-15 | §4.3 明确链作用域与验签语义 —— 修正 `verifyChain` 比较「过滤后相邻记录」会**误报断链**的缺陷（Task 10 反向实验证实） |
+| 2026-09-15 | §5.1/§9 修正：真实审批入口是 `work/detail.vue`，`ActHandleBtn.vue` 为死代码；`needSign` 只能是流程变量 |
+| 2026-09-15 | **P1 实施完成**，补 §10：14 处计划偏差、SMS 移出 P1、水印预览图的 P1/P2 边界与架构阻塞、待决事项、人工验收清单 |
+
+---
+
+## 十、P1 实施结果（2026-09-15）
+
+### 10.1 交付与验证
+
+| 项 | 结果 |
+|---|---|
+| 模块 | 新建 `ruoyi-common/ruoyi-common-sign`（`@AutoConfiguration` 注册） |
+| 数据表 | `es_seal` / `es_seal_grant` / `es_sign_document` / `es_signature`，落 `ry-vue.sql`；菜单 ID 实为 **4348–4362** |
+| 单测 | **88 个全绿**（SM3 / 哈希链 / 印章可用性 / 认证 / 签名 / 验签 / 事务隔离） |
+| 全量测试 | 822 run / 4 failures / 9 errors —— 13 项**全部**在 `ruoyi-admin` 的 RuoYi 官方 demo 脚手架（`AssertUnitTest` 故意失败；`DemoUnitTest`/`TagUnitTest` 需真实数据源）。经 `git log 32a83708..HEAD -- ruoyi-admin/src/test/` 为空证实与本特性无关 |
+| 构建 | `mvn clean package -DskipTests` 全仓 48 jar，exit 0，无告警 |
+| 静态审计 | 前端 16 调用 ↔ 后端 16 端点全匹配；3 菜单路径 ↔ 3 view 文件全匹配；13 权限串全部已种；9 个 `v-hasPermi` 全一致；无循环依赖 |
+| 端到端 | ❌ **未做** —— 见 §10.4 |
+
+### 10.2 P1/P2 边界修正：水印预览图
+
+**原方案自相矛盾**：§7 的 P1 验收要求「印章原图不外泄」，但「`preview_oss_id` 水印预览」被排在 P2。而 P1 **没有任何写入 `preview_oss_id` 的代码**（全仓 `setPreviewOssId` 零调用），预览接口只能走服务端回退 —— **返回的是印章原图的 ossId**。
+
+**P1 的真实保证应表述为**：
+> 印章原图**不经由任何 OSS 直链或 VO 字段下发**（`SealVo` / `AvailableSealVo` 均无 `sealOssId`），只能经**带权限校验的接口**取得。
+
+这**不等于**「原图永不离开服务端」，后者要等 P2 的降采样 + 水印落地。
+
+**⚠️ 架构阻塞（P2 动工前必读）**：`ruoyi-common-sign` **无法读写 OSS** —— `ISysOssService` / `SysOssVo` / `OssFactory` 都在 `ruoyi-modules/ruoyi-system`，而 `ruoyi-system` 已依赖 `ruoyi-common-sign`，common→system 会成环。故水印图生成**不能放在 sign 模块内**。两条可行路径：
+
+- **(a) 前端生成**：上传时用 canvas 降采样 + 水印，作为 `previewOssId` 一并提交（上传者本就持有原图，无新增泄露面）
+- **(b) 事件 / SPI**：在 OSS 可达的模块（如 `ruoyi-system`）监听印章创建后生成回写
+
+### 10.3 实施中对本方案的修正
+
+完整表格见计划文档末尾「实施偏差汇总」。其中会导致**真实故障**的 3 处：
+
+1. **`verifyChain` 会误报「链被篡改」** —— 链是租户全局串的（`appendSignature` 取前驱不带 `bizType` 过滤），比较「过滤后相邻两条」在业务穿插时必然误判。已改为逐条校验自身哈希 + **真实前驱**（§4.3）。
+2. **印章根本改不了** —— `SealBo.sealOssId` 的 `@NotNull` 未分校验组，PUT 不重传图片被 400 拒。已改 `AddGroup` / `EditGroup`。
+3. **所有 TDD 任务的测试命令是假绿** —— 根 `pom.xml:515` 的 `<groups>${profiles.active}</groups>` 在无 active profile 时匹配不到任何测试，`Tests run: 0` 却 BUILD SUCCESS。**测试命令必须追加 `-Dprofiles.active=`。**
+
+两处**功能性范围收缩**，需知悉：
+
+- **SMS 移出 P1**：短信 API 存在（sms4j），但**手机号取不到** —— `LoginUser` 无 phone 字段，`sys_user` 属 `ruoyi-system`，common 层不能反向依赖。已删除 `/sms-code`，并从 `SignAuthMethod.SUPPORTED` 移除 `SMS`。**P1 实际支持 `LOGIN_ONLY` + `PASSWORD`。** `SmsSignCredentialChecker` 及测试保留待 P2。恢复路径：把发码端点放 `ruoyi-system`，或给 `LoginUser` 加 phone。
+- **`needSign` 只能是流程变量**：Flowable 扩展属性在服务端从 BPMN 模型读取、**不会变成流程变量**，无 API 暴露。故「按节点配置扩展属性」不可行。当前为**流程级**粒度 —— 同一流程的后续审批人也会看到签章面板。要按节点粒度控制需后端改造（在任务详情 API 暴露扩展属性）。
+
+### 10.4 人工验收清单（P1 收尾必做）
+
+自动化检查**无法证明**以下各项，需真实 MySQL + Redis + 后端 + 浏览器：
+
+1. **建库导入**：空库按序导入 5 个主脚本，确认 4 张 `es_*` 表、菜单 4348–4362、`sop_view_log.signature_id`、`ncr_order.disposition_signature_id` 均存在且无报错。
+2. **审批签章**：配 `needSign=true` 流程变量 → 无权用户见「无可用印章」→ 授权后出现 → **密码错误时审批不推进、任务仍在待办、`es_signature` 无新行**；密码正确则推进且 `verify-chain` 通过。
+3. **存量流程零影响**：不配 `needSign` 的流程，无签章 UI、无 `/system/sign/**` 请求、无 `es_signature` 行。
+4. **凭证不落库**：`act_ru_variable` / `act_hi_varinst` 中 `NAME_ LIKE 'sign%'` **不含 `signCredential`**。
+5. **防篡改**：手工 `UPDATE es_signature SET signature_meaning = CONCAT(...)` → 单条验签 `passed=false`、全链 `brokenAt` 指向该行；还原后恢复 `passed=true`。
+6. **印章权限**：无授权不可见 / 授权可见 / 过期不可见（用户级与部门级各验一次）。
+7. **MES**：SOP 查看器写入非空 `signature_id`；`signDisposition(LOGIN_ONLY)` 被拒。
+8. **⚠️ 事务隔离（最需人工验证）**：让 `signInNewTransaction` 失败，确认 **`sop_view_log` 仍成功落库**、请求不报错、不抛 `UnexpectedRollbackException`。单元测试只能证明「调用了 REQUIRES_NEW 方法」，证明不了外层事务存活。
+9. **前端构建**：`plus-ui` 执行 `npm run build:prod`（自动化审计只覆盖后端）。
+
+### 10.5 待决事项（需业务/管理确认，非技术缺陷）
+
+| # | 事项 | 说明 |
+|---|------|------|
+| 1 | **菜单未授任何角色** | 只种 `sys_menu`，无 `sys_role_menu`。除超管外看不到「电子签章」。本质是「**谁能用公司章**」的治理决策，宜由业务方确认后授权，不由开发猜角色 ID |
+| 2 | 死权限 `system:sign:record:query`（菜单 4361） | 已种但全仓零引用。或接线或删除 |
+| 3 | 授权页跨权限耦合 | `grant/index.vue` 挂载时调 `listSeal`（需 `system:sign:seal:list`），无守卫、无 catch。仅有授权权限的角色会拿到 403 + 空印章下拉框 |
+| 4 | `GET /system/sign/grant/by-seal/{sealId}` | 有 API 封装但无调用方 |
+| 5 | 仓库级：全量 `mvn test` 常红 | `ruoyi-admin` demo 脚手架使全量测试无法作为回归信号。**不要把它当作本分支的回归** |
