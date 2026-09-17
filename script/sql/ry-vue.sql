@@ -96659,3 +96659,13 @@ INSERT INTO `sys_menu` VALUES (4360, '授权删除', 4350, 4, '', '', '', 1, 0, 
 -- 签名记录按钮
 INSERT INTO `sys_menu` VALUES (4361, '记录查询', 4351, 1, '', '', '', 1, 0, 'F', '0', '0', 'system:sign:record:query', '#', 103, 1, SYSDATE(), NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (4362, '记录验签', 4351, 2, '', '', '', 1, 0, 'F', '0', '0', 'system:sign:record:verify', '#', 103, 1, SYSDATE(), NULL, NULL, '');
+
+-- 待签文档按钮（P2a-3：合同正文上传链路 + 文档签章/验签端点实际引用的全部权限标识）
+-- 这四个标识是 EsSignDocumentController 上 @SaCheckPermission 的取值，一个不落；代码与库必须一一对应，
+-- 否则会出现「接口被引用、权限却无从授权」把用户锁死（本项目已发生过同类缺陷）。
+-- ID 说明：接续 4362 使用 4363-4366。导入前盘点确认该区间在本仓库全部 sql 脚本中均未被占用，
+-- 且开发库（真值来源）中 SELECT menu_id FROM sys_menu WHERE menu_id BETWEEN 4348 AND 4400 的最大值为 4362。
+INSERT INTO `sys_menu` VALUES (4363, '文档查询', 4348, 4, '', '', '', 1, 0, 'F', '0', '0', 'system:sign:document:list', '#', 103, 1, SYSDATE(), NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (4364, '文档上传', 4348, 5, '', '', '', 1, 0, 'F', '0', '0', 'system:sign:document:upload', '#', 103, 1, SYSDATE(), NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (4365, '文档签章', 4348, 6, '', '', '', 1, 0, 'F', '0', '0', 'system:sign:document:sign', '#', 103, 1, SYSDATE(), NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (4366, '文档验签', 4348, 7, '', '', '', 1, 0, 'F', '0', '0', 'system:sign:document:verify', '#', 103, 1, SYSDATE(), NULL, NULL, '');

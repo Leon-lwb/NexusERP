@@ -6,6 +6,7 @@ import com.baomidou.dynamic.datasource.processor.DsProcessor;
 import com.baomidou.dynamic.datasource.support.DataSourceClassResolver;
 import com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder;
 import com.nexus.common.sign.service.ESignatureService;
+import com.nexus.common.sign.service.IESSignDocumentService;
 import com.nexus.common.sign.service.IESSealGrantService;
 import com.nexus.common.sign.service.IESSealService;
 import org.aopalliance.intercept.MethodInvocation;
@@ -73,7 +74,10 @@ class SignDataSourceMasterTest {
     private static final List<Entry> ENTRIES = List.of(
         new Entry(ESignatureServiceImpl.class, ESignatureService.class),
         new Entry(EsSealServiceImpl.class, IESSealService.class),
-        new Entry(EsSealGrantServiceImpl.class, IESSealGrantService.class)
+        new Entry(EsSealGrantServiceImpl.class, IESSealGrantService.class),
+        // P2a-3 新增：待签文档登记同样只落 ry-vue 库的 es_sign_document，
+        // 由上传接口所在的 Web 线程调用，一旦漏挂类级 @DS 就会继承调用方上下文
+        new Entry(EsSignDocumentServiceImpl.class, IESSignDocumentService.class)
     );
 
     private record Entry(Class<?> implClass, Class<?> apiInterface) {
