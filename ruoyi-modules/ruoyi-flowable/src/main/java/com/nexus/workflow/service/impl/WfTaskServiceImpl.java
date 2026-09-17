@@ -264,28 +264,37 @@ public class WfTaskServiceImpl extends FlowServiceFactory implements IWfTaskServ
             }
         }
 
+        // 获取 bpmn 模型。原先在下方的 localScope 判定处才获取，签章关卡需要读取节点上的
+        // flowable:needSign 扩展属性（节点级签章要求），故上移到关卡之前；后续 localScope 判定与
+        // assignNextUsers(bpmnModel, ...) 复用同一实例，行为不变。
+        BpmnModel bpmnModel = repositoryService.getBpmnModel(task.getProcessDefinitionId());
+
         // ==================== 电子签章关卡（单点插桩） ====================
         // 约 20 个业务单据（销售/采购/生产/仓储…）都经由本方法办结，故「审批节点要求签章」
         // 只在此处实现一次，无需逐个改造业务 service。
         // 位置：必须在下方的 taskService.complete(...) 之前——signatureService.sign(...) 抛出的
         // ServiceException 会向上传播，配合本方法的 @Transactional(rollbackFor = Exception.class)
         // 回滚整个事务，引擎不推进流程，即「不签章不生效」。
-        // 兼容性：未携带 needSign 的历史流程不会进入本分支，行为与插桩前完全一致。
+        // 签章要求由服务端解析（节点属性 flowable:needSign > 引擎流程变量 needSign），请求体里的
+        // needSign 只是历史兼容的第三优先级，客户端提交 needSign=false 无法绕过。
+        // 兼容性：三级都没有配置的历史流程不会进入本分支，行为与插桩前完全一致。
         if (hasDataId) {
             Map<String, Object> signVariables = taskBo.getVariables();
-            SignCommand signCommand = ApprovalSignGate.buildCommand(taskBo.getDataId(), signVariables);
+            SignCommand signCommand = ApprovalSignGate.buildCommand(taskBo.getDataId(), signVariables,
+                resolveServerNeedSign(task, bpmnModel));
             if (signCommand != null) {
                 // 故意不捕获 ServiceException：签章失败必须中止审批，不得 log-and-continue
                 signatureService.sign(signCommand);
                 // 明文凭证用完即弃。下方 taskService.complete(taskBo.getTaskId(), taskBo.getVariables(),
                 // localScope) 传入的就是 taskBo.getVariables() 这一个 map 实例（不是副本），
                 // 因此只能从它移除，才能确保凭证不落入 Flowable 的 act_ru_variable 表。
-                signVariables.remove(ApprovalSignGate.CREDENTIAL_KEY);
+                // 节点属性驱动签章时请求体可能根本没有 variables，故判空。
+                if (signVariables != null) {
+                    signVariables.remove(ApprovalSignGate.CREDENTIAL_KEY);
+                }
             }
         }
 
-        // 获取 bpmn 模型
-        BpmnModel bpmnModel = repositoryService.getBpmnModel(task.getProcessDefinitionId());
         if (DelegationState.PENDING.equals(task.getDelegationState())) {
             taskService.addComment(taskBo.getTaskId(), taskBo.getProcInsId(), FlowComment.DELEGATE.getType(), taskBo.getComment());
             taskService.resolveTask(taskBo.getTaskId());
@@ -345,6 +354,45 @@ public class WfTaskServiceImpl extends FlowServiceFactory implements IWfTaskServ
         if (!copyService.makeCopy(taskBo)) {
             throw new RuntimeException("抄送任务失败");
         }
+    }
+
+    /**
+     * 服务端解析「本节点是否需要签章」：BPMN 用户任务扩展属性 {@code flowable:needSign}（节点级，
+     * 随流程定义发布，客户端无法篡改）优先；属性未设置时回退到引擎中的流程变量 {@code needSign}
+     * （实例级）；两者都没有时返回 null，由请求体按历史行为决定。
+     *
+     * <p>只读引擎：任务正在办结，其执行实例必然存活，属性未设置时多出的这一次变量读取不会抛异常，
+     * 历史流程（三级都未配置）因此保持与改造前一致的判定结果。</p>
+     *
+     * @param task      正在办结的任务（必须存活，本方法在其 execution 上读变量）
+     * @param bpmnModel 该任务所属流程定义的 BPMN 模型
+     * @return 服务端结论；{@code null} 表示服务端未配置
+     */
+    private Boolean resolveServerNeedSign(Task task, BpmnModel bpmnModel) {
+        String nodeAttributeValue = getNodeNeedSignAttribute(bpmnModel, task.getTaskDefinitionKey());
+        if (nodeAttributeValue != null) {
+            // 属性存在即权威（含 "false"），此时无需再读流程变量，顺带省掉一次引擎调用
+            return ApprovalSignGate.resolveServerNeedSign(nodeAttributeValue, null);
+        }
+        // 走 RuntimeService 的 execution 变量接口：TaskService 的同名方法第一个参数是 taskId
+        // （传 executionId 语义不同），且该接口按 fetchAllVariables 语义沿父作用域回溯到流程实例级，
+        // 与「实例级 needSign」的历史口径一致；execution 此刻必然存活，未配置时返回 null 而非抛异常
+        Object processVariableValue = runtimeService.getVariable(task.getExecutionId(), ApprovalSignGate.NEED_SIGN_KEY);
+        return ApprovalSignGate.resolveServerNeedSign(null, processVariableValue);
+    }
+
+    /**
+     * 读取节点上的 {@code flowable:needSign} 扩展属性值（与 {@code localScope} 同族的自定义属性）。
+     *
+     * @param bpmnModel         BPMN 模型，可为 null
+     * @param taskDefinitionKey 节点 Key
+     * @return 属性值；属性未设置（或模型/节点缺失）时返回 {@code null}，表示「本节点未配置」
+     */
+    private String getNodeNeedSignAttribute(BpmnModel bpmnModel, String taskDefinitionKey) {
+        if (bpmnModel == null || StringUtils.isBlank(taskDefinitionKey)) {
+            return null;
+        }
+        return ModelUtils.getUserTaskAttributeValue(bpmnModel, taskDefinitionKey, ApprovalSignGate.NEED_SIGN_ATTRIBUTE);
     }
 
     /**
@@ -1234,6 +1282,11 @@ public class WfTaskServiceImpl extends FlowServiceFactory implements IWfTaskServ
     /**
      * 获取流程变量
      *
+     * <p>在办任务：若当前节点配置了 {@code flowable:needSign} 扩展属性，把该属性解析出的布尔值注入回显
+     * （覆盖同名实例级变量），使前端 {@code detail.vue} 的「是否渲染签章表单」与后端签章关卡同源，
+     * 前端无需改动；属性未设置时原样返回引擎结果，存量流程回显不变。</p>
+     * <p>已办任务：任务已不在运行时，节点属性无从读取，保持历史返回契约不做任何改动。</p>
+     *
      * @param taskId 任务ID
      * @return 流程变量
      */
@@ -1247,7 +1300,14 @@ public class WfTaskServiceImpl extends FlowServiceFactory implements IWfTaskServ
         if (Objects.nonNull(historicTaskInstance)) {
             return historicTaskInstance.getProcessVariables();
         }
-        return taskService.getVariables(taskId);
+        Map<String, Object> variables = taskService.getVariables(taskId);
+        Task task = taskService.createTaskQuery().taskId(taskId).singleResult();
+        if (task == null) {
+            return variables;
+        }
+        String nodeNeedSignAttribute = getNodeNeedSignAttribute(
+            repositoryService.getBpmnModel(task.getProcessDefinitionId()), task.getTaskDefinitionKey());
+        return ApprovalSignGate.applyNodeNeedSign(variables, nodeNeedSignAttribute);
     }
 
     /**

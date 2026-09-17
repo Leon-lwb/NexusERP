@@ -178,6 +178,18 @@
       ]
     },
     {
+      "name": "SignSupported",
+      "isAbstract": true,
+      "extends": ["bpmn:UserTask"],
+      "properties": [
+        {
+          "name": "needSign",
+          "isAttr": true,
+          "type": "Boolean"
+        }
+      ]
+    },
+    {
       "name": "TemplateSupported",
       "isAbstract": true,
       "extends": ["bpmn:Process", "bpmn:FlowElement"],
