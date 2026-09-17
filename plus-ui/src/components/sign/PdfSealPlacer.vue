@@ -586,7 +586,12 @@ const handleSignConfirmed = async (auth: { authMethod: string; credential: strin
   } catch (error: any) {
     console.error('文档签章失败:', error);
     authRef.value?.setLoading(false);
-    proxy?.$modal.msgError(error?.message || '签署失败');
+    // 「签署密码错误」这类后端业务拒绝（code=500）由 signDocument 的 ignoreErrorMsg 交给本弹窗提示，
+    // 拦截器不再重复弹一次（原先两边都弹，用户会看到两条一模一样的提示）。
+    // 只有 Error（含请求拦截器的「请勿重复提交」）才由本弹窗兜底；401/403 等由拦截器负责，此处不再重复。
+    if (error instanceof Error && error.message) {
+      proxy?.$modal.msgError(error.message);
+    }
     emit('error', error instanceof Error ? error : new Error(String(error?.message || error)));
   } finally {
     submitting.value = false;

@@ -28,6 +28,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.async.AsyncRequestTimeoutException;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 
 import java.io.IOException;
@@ -72,6 +73,25 @@ public class GlobalExceptionHandler {
         String requestURI = request.getRequestURI();
         log.debug("请求地址'{}',认证失败'{}',无法访问系统资源", requestURI, e.getMessage());
         return R.fail(HttpStatus.HTTP_UNAUTHORIZED, "认证失败，无法访问系统资源");
+    }
+
+    /**
+     * 上传文件超过大小限制
+     * <p>由 multipart 解析器在进入 Controller <b>之前</b>抛出（如 Undertow 的
+     * {@code FileTooLargeException}，Spring 的 {@code StandardMultipartHttpServletRequest}
+     * 会按消息里的 size/exceeded 关键字统一成 {@link MaxUploadSizeExceededException}）。
+     * 若不在此拦截，它会落到下面的 {@code Exception} 兜底处理器，变成「发生系统异常，请联系管理员」——
+     * 业务层那条带具体字节数的友好提示（如文档签章的 {@code PDF 文件不能超过 10MB（当前 N 字节）}）
+     * 也就永远执行不到。</p>
+     */
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public R<Void> handleMaxUploadSizeExceededException(MaxUploadSizeExceededException e, HttpServletRequest request) {
+        log.error("请求地址'{}',上传文件超过大小限制", request.getRequestURI());
+        // 具体上限由容器/解析器给出：拿得到就报出来，拿不到（Spring 统一转换时可能是 -1）只给可操作建议
+        long maxUploadSize = e.getMaxUploadSize();
+        return R.fail(maxUploadSize > 0
+            ? String.format("上传文件超过大小限制（单文件最大 %dMB），请压缩后重试", maxUploadSize / 1024 / 1024)
+            : "上传文件超过大小限制，请压缩或拆分后重试");
     }
 
     /**

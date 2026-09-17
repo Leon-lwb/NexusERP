@@ -86,7 +86,9 @@
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="300" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
-          <el-button link type="primary" icon="Document" @click="handleDetail(scope.row)">详情</el-button>
+          <!-- 详情是独立路由（router/index.ts 的 /erp/so/contract/detail 声明 permissions: ['so:contract:query']），
+               缺该权限时路由不会注册，点进去只会落到 404，故按钮与路由同一个权限码 -->
+          <el-button link type="primary" icon="Document" @click="handleDetail(scope.row)" v-hasPermi="['so:contract:query']">详情</el-button>
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['so:contract:edit']">修改</el-button>
           <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['so:contract:remove']">删除</el-button>
         </template>

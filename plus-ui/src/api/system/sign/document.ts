@@ -1,5 +1,14 @@
 import request from '@/utils/request';
+import { HttpStatus } from '@/enums/RespEnum';
 import type { AxiosPromise } from 'axios';
+
+/**
+ * 读取 / 下载正文额外需要的权限码。
+ * <p>签章模块的 {@code system:sign:document:*} 权限<b>不含</b>这一条：正文取流走的是系统 OSS 的
+ * {@code /resource/oss/download/{ossId}}（由 `SysOssController` 的 `@SaCheckPermission` 把关），
+ * 缺它时后端会以 HTTP 200 + code=403 拒绝，前端若不预检，用户只会看到「不是有效的 PDF」这种误导文案。</p>
+ */
+export const OSS_DOWNLOAD_PERMI = 'system:oss:download';
 
 /**
  * 印章落位（对应后端 `SealPlacement`，即 `DocSignBo.placements` 的元素）。
@@ -200,7 +209,10 @@ export function signDocument(docId: string | number, data: DocSignForm): AxiosPr
   return request({
     url: `/system/sign/document/${docId}/sign`,
     method: 'post',
-    data
+    data,
+    // 错误提示由签署弹窗自己负责（它知道上下文，且被后端拒签时要保持弹窗打开供改正重试）：
+    // 关闭拦截器的统一 toast，避免「签署密码错误」被弹两次（拦截器一次 + 弹窗一次）
+    headers: { ignoreErrorMsg: 'true' }
   });
 }
 
@@ -228,15 +240,25 @@ export function ossDownloadUrl(ossId: string | number): string {
 /**
  * 取 OSS 对象的二进制内容（同源 + 带鉴权，浏览器端无跨域问题）。
  * <p>用于把 PDF 正文交给 pdfjs 预览：先拿 ossId，再取字节。</p>
+ * <p>后端拒绝（无权限 / 会话过期 / 文件不存在）时是 HTTP 200 + JSON 信封，
+ * 拦截器会把它识别出来并以 {@code Error(msg)} 抛出（见 `utils/request.ts#readJsonErrorEnvelope`），
+ * 故调用方拿到的一定是「真实原因」，而不是一段被当成 PDF 的 JSON 字节。</p>
  */
 export async function fetchOssBytes(ossId: string | number): Promise<ArrayBuffer> {
-  // axios 拦截器对 responseType=arraybuffer 的响应直接返回 res.data，故这里按实际类型断言
-  const data = (await request({
-    url: '/resource/oss/download/' + ossId,
-    method: 'get',
-    responseType: 'arraybuffer'
-  })) as unknown as ArrayBuffer;
-  return data;
+  try {
+    // axios 拦截器对 responseType=arraybuffer 的响应直接返回 res.data，故这里按实际类型断言
+    return (await request({
+      url: '/resource/oss/download/' + ossId,
+      method: 'get',
+      responseType: 'arraybuffer'
+    })) as unknown as ArrayBuffer;
+  } catch (error: any) {
+    // 权限不足是「有效 PDF 被误报为损坏」最常见的成因：把缺失的权限码补进提示，让用户知道该找谁开权限
+    if (error?.code === HttpStatus.FORBIDDEN) {
+      throw Object.assign(new Error(`${error.message}（读取正文需要「${OSS_DOWNLOAD_PERMI}」权限）`), { code: error.code });
+    }
+    throw error;
+  }
 }
 
 /**
