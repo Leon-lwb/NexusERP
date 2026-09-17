@@ -83,16 +83,23 @@ public interface IESSealService {
     List<AvailableSealVo> listAvailableSeals(String bizType);
 
     /**
-     * 解析印章预览图（低清+水印，缺失时回退原图）的 OSS ID —— 前端唯一可获取的图像入口。
+     * 解析印章预览图（低清 + 水印）的 OSS ID —— 前端唯一可获取的图像入口。
+     *
+     * <p><b>契约（P2a-1 起）</b>：只返回<b>预览图</b> ossId，
+     * <b>绝不回退原始章面</b>（{@code sealOssId}）。历史数据（P2a-1 之前落库、
+     * 或上次生成失败导致 {@code previewOssId} 为空）会在本方法内<b>惰性补生成</b>：
+     * 读原图 → 渲染低清水印图 → 写入对象存储 → 回写 {@code preview_oss_id}。
+     * 补生成失败时抛 {@code ServiceException}（宁可报错，也不把高精度原图下发给前端 ——
+     * 那正是「印章防滥用」要防的事）。</p>
      *
      * <p><b>返回值说明</b>：本模块为 common 模块，无法依赖 {@code ruoyi-modules/ruoyi-system}
-     * 的 {@code ISysOssService}（唯一提供 ossId → 字节/流的服务），故本方法只做「印章校验 + 预览图选择」，
-     * 返回 ossId 交由调用方（Controller）用 {@code ISysOssService}
+     * 的 {@code ISysOssService}（唯一提供 ossId → 字节/流的服务），故本方法只做
+     * 「印章校验 + 预览图准备」，返回 ossId 交由调用方（Controller）用 {@code ISysOssService}
      * （{@code download(ossId, response)}，或 {@code getById} + {@code OssFactory}
      * 自行取流以正确设置 Content-Type）完成流式输出。</p>
      *
      * @param sealId 印章ID
-     * @return 预览图 OSS ID（previewOssId 为空时返回原图 sealOssId）
+     * @return 预览图 OSS ID（保证不是原图）
      */
     Long loadPreviewImage(Long sealId);
 }

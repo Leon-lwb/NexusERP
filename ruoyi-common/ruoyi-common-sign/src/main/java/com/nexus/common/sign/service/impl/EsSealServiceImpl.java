@@ -22,8 +22,12 @@ import com.nexus.common.sign.domain.vo.SealVo;
 import com.nexus.common.sign.mapper.EsSealGrantMapper;
 import com.nexus.common.sign.mapper.EsSealMapper;
 import com.nexus.common.sign.service.IESSealService;
+import com.nexus.common.sign.support.OssContentAccessor;
 import com.nexus.common.sign.support.SealAvailabilityResolver;
+import com.nexus.common.sign.support.SealPreviewRenderer;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -46,14 +50,35 @@ import java.util.Objects;
  * {@code toAvailableSealVo} / {@code validateSealBo} 均为 private 辅助方法，由公开方法
  * 内部调用；数据源键由公开方法的类级注解压栈，故无需也不应在这些辅助方法上重复标注。</p>
  *
+ * <p><b>印章预览图（P2a-1）：</b>印章原图只进不出，唯一的对外出口是「低清 + 水印」预览图
+ * （{@code preview_oss_id}）。本类负责在该字段该被写时写它：
+ * 新增、更换章面时<b>尽力生成</b>（失败只记 WARN，绝不让印章保存失败），
+ * 读取时若历史数据为空则<b>惰性补生成</b>，且<b>永不回退原图</b>——
+ * 回退等于把高精度印章原图直接交给前端，与「印章防滥用」的设计目标相悖。</p>
+ *
  * @author nexus
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @DS("master")
 public class EsSealServiceImpl extends ServiceImpl<EsSealMapper, EsSeal> implements IESSealService {
 
     private final EsSealGrantMapper sealGrantMapper;
+
+    /**
+     * 对象存储内容访问 SPI。
+     *
+     * <p><b>为何用 {@link ObjectProvider} 而不是直接注入：</b>本模块是 common 模块，
+     * {@link OssContentAccessor} 的实现由 {@code ruoyi-modules/ruoyi-system} 装配，
+     * <b>不保证一定在类路径上</b>（例如只引 {@code ruoyi-common-sign} 的轻量进程）。
+     * 直接字段注入会在缺实现时抛 {@code NoSuchBeanDefinitionException}，把「没装对象存储」放大成
+     * 「整个印章模块不可用」；而本模块对预览图的要求本就是「缺了就降级」（见上方类注释），
+     * 与 {@code SignAuthVerifier} 容忍空 {@code List<SignCredentialChecker>} 的处理保持一致。
+     * 拿不到实现时返回 null 并记 WARN，调用方按「预览图不可用」处理。</p>
+     */
+    private final ObjectProvider<OssContentAccessor> ossContentAccessor;
+
 
     @Override
     public TableDataInfo<SealVo> selectPageList(SealQueryBo bo, PageQuery pageQuery) {
@@ -80,6 +105,8 @@ public class EsSealServiceImpl extends ServiceImpl<EsSealMapper, EsSeal> impleme
         // 新建印章一律为草稿态；启用/停用由 changeStatus 控制
         entity.setStatus(SealStatus.DRAFT);
         entity.setSealVersion(1);
+        // 预览图（低清+水印）尽力生成：失败留空，由 loadPreviewImage 惰性补生成
+        entity.setPreviewOssId(generatePreviewImageQuietly(bo.getSealOssId()));
         baseMapper.insert(entity);
         return entity.getSealId();
     }
@@ -105,6 +132,18 @@ public class EsSealServiceImpl extends ServiceImpl<EsSealMapper, EsSeal> impleme
         if (bo.getSealOssId() != null && !bo.getSealOssId().equals(existing.getSealOssId())) {
             int current = existing.getSealVersion() == null ? 0 : existing.getSealVersion();
             entity.setSealVersion(current + 1);
+            // 章面换了，预览图必须同步重建；否则前端仍会拿到上一版章面的预览图（错章远比缺图危险）
+            Long previewOssId = generatePreviewImageQuietly(bo.getSealOssId());
+            entity.setPreviewOssId(previewOssId);
+            int rows = baseMapper.updateById(entity);
+            if (previewOssId == null) {
+                // updateById 跳过 null 字段，故必须补一条显式清空语句：
+                // 残留旧预览会让审批人看到与当前章面不符的印章
+                baseMapper.update(null, Wrappers.<EsSeal>lambdaUpdate()
+                    .set(EsSeal::getPreviewOssId, null)
+                    .eq(EsSeal::getSealId, bo.getSealId()));
+            }
+            return rows;
         }
         return baseMapper.updateById(entity);
     }
@@ -171,13 +210,62 @@ public class EsSealServiceImpl extends ServiceImpl<EsSealMapper, EsSeal> impleme
         if (seal == null) {
             throw new ServiceException("印章不存在");
         }
-        // P1 直接返回 OSS ID 由调用方流式输出；previewOssId 由上传流程生成（低清+水印）。
-        // 若 previewOssId 为空则回退原图，生产环境上传流程必须生成预览图。
-        Long ossId = seal.getPreviewOssId() != null ? seal.getPreviewOssId() : seal.getSealOssId();
-        if (ossId == null) {
+        if (seal.getPreviewOssId() != null) {
+            return seal.getPreviewOssId();
+        }
+        // 历史数据（P2a-1 之前落库的印章，或上次生成失败）没有预览图：
+        // 这里惰性补生成并回写，而不是回退原图 —— 回退等于把高精度印章原图交给前端，
+        // 正是「印章防滥用」要防的事。补生成失败时明确报错，让运维介入，不做沉默降级。
+        if (seal.getSealOssId() == null) {
             throw new ServiceException("印章图片不存在");
         }
-        return ossId;
+        Long previewOssId = generatePreviewImageQuietly(seal.getSealOssId());
+        if (previewOssId == null) {
+            throw new ServiceException("印章预览图生成失败，请联系管理员检查对象存储");
+        }
+        EsSeal patch = new EsSeal();
+        patch.setSealId(sealId);
+        patch.setPreviewOssId(previewOssId);
+        baseMapper.updateById(patch);
+        return previewOssId;
+    }
+
+    /**
+     * 生成印章水印预览图（低清 + 水印）并写入对象存储。
+     *
+     * <p><b>永不抛异常</b>：返回 {@code null} 表示「本次没生成出预览图」，调用方按场景决定
+     * 是降级（保存流程）还是报错（预览读取流程）。印章保存失败远比缺一张缩略图严重。</p>
+     *
+     * @param sealOssId 印章原图 ossId
+     * @return 新预览图的 ossId；未生成/生成失败返回 {@code null}
+     */
+    private Long generatePreviewImageQuietly(Long sealOssId) {
+        if (sealOssId == null) {
+            return null;
+        }
+        OssContentAccessor accessor = ossContentAccessor == null ? null : ossContentAccessor.getIfAvailable();
+        if (accessor == null) {
+            log.warn("[sign] 未装配 OssContentAccessor 实现（ruoyi-system 是否在类路径？），跳过印章预览图生成, sealOssId={}",
+                sealOssId);
+            return null;
+        }
+        try {
+            byte[] original = accessor.read(sealOssId);
+            if (original == null) {
+                log.warn("[sign] 印章原图读取失败（对象不存在或对象存储不可用），跳过预览图生成, sealOssId={}", sealOssId);
+                return null;
+            }
+            byte[] preview = SealPreviewRenderer.renderPreview(original);
+            Long previewOssId = accessor.store(preview, "seal-preview-" + sealOssId + ".png", "image/png");
+            if (previewOssId == null) {
+                log.warn("[sign] 预览图写入对象存储未返回 ossId, sealOssId={}", sealOssId);
+            }
+            return previewOssId;
+        } catch (Exception e) {
+            // 预览图只是附加物：解析失败/存储不可用都不允许影响印章本身
+            log.warn("[sign] 印章预览图生成失败（印章保存不受影响）, sealOssId={}: {}", sealOssId, e.getMessage());
+            return null;
+        }
     }
 
     /**

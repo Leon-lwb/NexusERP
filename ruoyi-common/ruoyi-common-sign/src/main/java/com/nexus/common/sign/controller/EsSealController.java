@@ -155,7 +155,8 @@ public class EsSealController extends BaseController {
      * <p>权限标识：{@code system:sign:seal:query}</p>
      * <p><b>安全边界</b>：本接口只下发<b>低清 + 水印</b>预览图（{@code previewOssId}）；
      * 印章原图（{@code sealOssId}）<b>没有任何对外接口</b>，绝不经本接口或其它接口下发。
-     * 生产上传流程必须生成预览图，仅在历史数据缺失预览图时服务层才按其契约回退原图。</p>
+     * 预览图在印章新增/更换章面时服务端生成；历史数据缺失时服务层惰性补生成，
+     * <b>不会</b>回退原图（补生成失败会报错，见 {@code IESSealService#loadPreviewImage}）。</p>
      * <p><b>为何返回 ossId 而不是直接流式输出</b>：本模块为 common 模块，
      * 唯一能把 ossId 解析成字节流的 {@code ISysOssService} 位于 {@code ruoyi-modules/ruoyi-system}，
      * 而该系统模块<b>反向依赖本模块</b>，common → system 会构成 Maven 循环依赖，
