@@ -95,6 +95,12 @@
             <artifactId>ruoyi-common-cv</artifactId>
         </dependency>
 
+        <!-- 电子签章：销售/采购合同列表补充「正文签署状态」需读 es_sign_document(master 库) -->
+        <dependency>
+            <groupId>com.nexus</groupId>
+            <artifactId>ruoyi-common-sign</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>com.nexus</groupId>
             <artifactId>ruoyi-system</artifactId>

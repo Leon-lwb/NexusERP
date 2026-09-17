@@ -13,6 +13,7 @@ import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.flowable.core.domain.ActStatus;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
+import com.nexus.common.sign.constants.SignBizType;
 import com.nexus.erp.so.domain.SoContract;
 import com.nexus.erp.so.domain.SoContractLine;
 import com.nexus.erp.so.domain.bo.SoContractBo;
@@ -49,6 +50,8 @@ public class SoContractServiceImpl implements ISoContractService {
     private final IWfProcessService processService;
     private final WfMyBusinessServiceImpl wfMyBusinessServiceImpl;
     private final FlowableProcInsIdHelper procInsIdHelper;
+    /** 正文签署状态补充器（es_sign_document 在主数据源，见该类注释） */
+    private final SoContractSignStatusFiller signStatusFiller;
 
     /**
      * 分页查询销售合同列表
@@ -57,6 +60,8 @@ public class SoContractServiceImpl implements ISoContractService {
     public TableDataInfo<SoContractVo> selectPageList(SoContractBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<SoContract> lqw = buildQueryWrapper(bo);
         Page<SoContractVo> page = baseMapper.selectVoPage(pageQuery.build(), lqw);
+        // 签署状态不在 so_contract 表里（在 es_sign_document），由补充器一次 IN 查询批量回填，无 N+1
+        signStatusFiller.fillDocSignStatus(page.getRecords(), SignBizType.SO_CONTRACT);
         return TableDataInfo.build(page);
     }
 

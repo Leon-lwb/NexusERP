@@ -74,9 +74,19 @@
           <el-tag :type="getStatusType(scope.row.status)">{{ getStatusLabel(scope.row.status) }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
+      <!-- 正文签署状态：后端批量补充自 es_sign_document；无正文时为空，显示占位符 -->
+      <el-table-column label="签署状态" align="center" prop="docSignStatus" width="110">
+        <template #default="scope">
+          <el-tag v-if="scope.row.docSignStatus === '2'" type="success">已签</el-tag>
+          <el-tag v-else-if="scope.row.docSignStatus === '1'" type="warning">部分签</el-tag>
+          <el-tag v-else-if="scope.row.docSignStatus === '0'" type="info">有正文未签</el-tag>
+          <span v-else>-</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="300" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
+          <el-button link type="primary" icon="Document" @click="handleDetail(scope.row)">详情</el-button>
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['so:contract:edit']">修改</el-button>
           <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['so:contract:remove']">删除</el-button>
         </template>
@@ -292,9 +302,11 @@ import ClientSelectDialog from '@/views/erp/so/components/ClientSelectDialog.vue
 import MaterialSelectDialog from '@/components/MaterialSelectDialog/index.vue';
 import type { FormInstance } from 'element-plus';
 import { useCrud } from '@/composables/useCrud';
+import { useRouter } from 'vue-router';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const formRef = ref<FormInstance>();
+const router = useRouter();
 
 // 客户选择弹窗引用
 const clientSelectDialogRef = ref();
@@ -410,6 +422,11 @@ function getStatusLabel(status: string) {
 function resetQuery() {
   proxy.resetForm('queryRef');
   handleQuery();
+}
+
+/** 详情：跳转合同详情页（合同基本信息 + 正文上传/签署/验签），与委外订单表单同一套 query 传参方式 */
+function handleDetail(row: any) {
+  router.push({ path: '/erp/so/contract/detail', query: { contractId: String(row.contractId) } });
 }
 
 /** 添加明细行 */
