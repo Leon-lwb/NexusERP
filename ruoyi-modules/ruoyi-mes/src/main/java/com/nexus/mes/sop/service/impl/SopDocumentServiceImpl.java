@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.nexus.common.core.domain.R;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.flowable.core.domain.ActStatus;
 import com.nexus.common.mybatis.core.page.PageQuery;
@@ -180,19 +181,20 @@ public class SopDocumentServiceImpl implements ISopDocumentService, WfCallBackSe
             .in(SopDocument::getSopId, idList)
             .eq(SopDocument::getStatus, STATUS_PUBLISHED));
         if (publishedCount != null && publishedCount > 0) {
-            throw new RuntimeException("已发布SOP不可删除,请先归档");
+            throw new ServiceException("已发布SOP不可删除，请先归档");
         }
         // 孤儿守卫2: 存在工序绑定不可删(追溯完整性)
         Long bindingCount = bindingMapper.selectCount(Wrappers.<SopProcessBinding>lambdaQuery()
             .in(SopProcessBinding::getSopId, idList));
         if (bindingCount != null && bindingCount > 0) {
-            throw new RuntimeException("存在工序绑定,不可删除(追溯完整性)");
+            throw new ServiceException("该SOP仍被工序绑定，不可删除（追溯完整性），请先解除工序绑定");
         }
         // 孤儿守卫3: 存在查阅记录不可删
         Long viewCount = viewLogMapper.selectCount(Wrappers.<SopViewLog>lambdaQuery()
             .in(SopViewLog::getSopId, idList));
         if (viewCount != null && viewCount > 0) {
-            throw new RuntimeException("存在查阅记录,不可删除(追溯完整性)");
+            throw new ServiceException("该SOP已产生查阅记录，不可删除：查阅记录与其电子签名（biz_type=SOP_VIEW）"
+                + "共同构成追溯链，删掉文档会使这些签名失去对应正文、无法复核。如需停用请改用「归档」。");
         }
         // 级联删除版本
         versionMapper.delete(Wrappers.<SopVersion>lambdaQuery().in(SopVersion::getSopId, idList));
