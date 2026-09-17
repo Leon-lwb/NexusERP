@@ -792,6 +792,76 @@ P2b 完成后**尚无浏览器环境可交互验证**，故改用**前端↔后�
 
 ---
 
+## 十三、三个「后端已就绪、最后一公里未接」缺口（2026-09-17）
+
+上线前逐条核对「签章到底在哪里被用起来」时发现：**P1/P2 交付的能力，有三处无法从界面真正触达**。均非缺陷，是集成断点。
+
+### 13.1 缺口一：`needSign` 无处可设 + 可被客户端绕过
+
+**原状**：`needSign` 只能是**流程变量**，即发起流程时注入，粒度是**整个流程实例**；且关卡 `WfTaskServiceImpl:275` 读的是 `taskBo.getVariables()` —— **请求体**。客户端提交 `needSign=false` 即可绕过，「不签章不生效」实际上只防误操作、不防篡改。
+
+**现已改为三级优先级解析**（命中即止，前两级均为服务端来源，与请求体无关）：
+
+| 优先级 | 来源 | 语义 |
+|--------|------|------|
+| 1 | BPMN 用户任务扩展属性 `flowable:needSign` | **节点级**，随流程定义发布；**属性存在即权威**（`"false"` 也覆盖请求体） |
+| 2 | 引擎流程变量 `needSign` | 实例级，由 `runtimeService.getVariable` 读取，同样优先于请求体 |
+| 3 | 请求体 `variables["needSign"]` | 历史兼容，仅当服务端两级都未配置时生效 |
+
+**在哪里设置**：流程设计器 → 选中**用户任务**节点 → 「用户任务」属性面板 → **电子签章 / 要求签章** 开关。
+
+实现方式刻意复用仓库既有的 `localScope`（节点表单）同族机制：descriptor 声明 `isAttr` 属性 → 设计器开关经 `modeling.updateModdleProperties` 写入 `businessObject` → 序列化为 `flowable:needSign="true"` → 后端用 `ModelUtils.getUserTaskAttributeValue(bpmnModel, taskDefinitionKey, "needSign")` 读取（与 `localScope` 同一个 API、同一套读写路径）。
+
+**`getProcessVariables` 同步注入**：活动任务会把节点属性值并入返回的变量表，故前端 `work/detail.vue:910` **无需改动**即可正确渲染签章表单（节点级配置也能弹出印章/密码框，不会出现「后端要求签、前端不给签」的僵局）。
+
+> ⚠️ **为什么 descriptor 里刻意不给 `needSign` 声明 `default`**（改动前务必先读这段）
+> bpmn-moddle 会**省略等于默认值的属性**。若像 `localScope` 那样写 `"default": false`，把开关从「是」拨回「否」时属性会被**整个删掉**，后端只能读到「未配置」而继续回退到实例变量 —— 即「本节点不签章」这个**明确意图会丢失**（「全流程都要签、只豁免某节点」将无法表达）。
+> 不声明 `default` 时：从未设置过的节点读到 `undefined`、序列化**照样不写**（不污染存量流程 XML），而显式关闭会写出 `="false"` 并被后端视为权威结论。
+> 该行为已用仓库自带的 bpmn-moddle 实测：16 项断言中「未触碰节点不写属性」「显式关闭写 `="false"`」「`="true"` 往返一致」全部通过。
+
+**已知限制**：`ModelUtils.getUserTaskByKey` 走 `getMainProcess().getFlowElement(key)`，**对子流程（subProcess）内部的任务返回 null** → 子流程内的节点目前读不到该属性，只能用实例级变量（优先级 2/3）。
+
+### 13.2 缺口二：SOP 查阅器打不开
+
+**原状**：`plus-ui/src/views/mes/sop/viewer/index.vue` 页面与签名留痕逻辑**都是完好的**（`onMounted` → `recordViewLog` → 触发 `SOP_VIEW` 签名），但：菜单 4275 为 `visible='1'`（**隐藏**），且**全前端零处跳转到 `/mes/sop/viewer`**。它只接受 `processId`/`stepRecordId`（设计上从 MES 工位上下文跳入），那个入口从未实现 → 页面只能手敲 URL 打开，**等于查阅留痕功能从未真正生效**。
+
+**现改为**：
+- 查看器新增按 **`sopId`** 加载（`getDocument`），取值优先级 `stepRecordId → processId → sopId`；刷新按钮、`watch`、空状态文案同步适配；雪花 ID 仍只做字符串透传。
+- 文档管理列表新增 **「查阅」** 按钮 → `/mes/sop/viewer?sopId=`，并加 `el-tooltip` 明确区分：**「预览」直接开文件、不产生留痕；「查阅」走查看器、登记查阅记录并触发电子签名**。
+- 权限码用 **`mes:sop:document:query`** 而非 `list`：按 sopId 加载走的是 `GET /mes/sop/document/{sopId}`，该端点由 `@SaCheckPermission("mes:sop:document:query")` 把关，而 by-process/by-step 只需 `list`（`SopDocumentController:63` vs `:187/:199`）。用 `list` 会让「只授 list」的角色被 403 挡住 —— 与 §12.2 的 D2 属同一类错误。
+- 菜单 4275 保持隐藏（入口改为列表按钮，不在侧边栏刷屏）。
+
+**遗留（非阻塞）**：`getInfo` 不过滤状态，故按 `sopId` 可打开 DRAFT/ARCHIVED 的 SOP，而 `by-process` 只推 PUBLISHED。
+
+### 13.3 缺口三：NCR 处置签名无前端
+
+**原状**：`NcrOrderServiceImpl.disposeWithSignature` 与 `PUT /mes/ncr/order/dispose/{ncrId}/sign` 早已实现并测过，但 `api/mes/ncr/order.ts` 只包了**不带签名**的 `dispose`，**全前端零处调用 `/sign`** → 页面上无论怎么操作都走不签名的那条，签名永远不会产生。（与当初 `signDisposition` 零调用同类，这次断在前端。）
+
+**现改为**：NCR 处置弹窗新增 **「签署并处置」** 按钮 → 复用 `SignAuthDialog`（登录密码二级认证）→ 调 `disposeOrderWithSign`。失败时**保持认证弹窗打开**供改正重试；错误提示由 `utils/request.ts` 拦截器统一给出，**本地不再重复 toast**（否则「签署密码错误」会弹两条，即 §12.2 的 D4）。原「确认处置」不带签名路径**完全保留**。
+
+注：NCR 签名为**纯逻辑签名，无印章参数**（后端签名里没有 `sealId`），故未加印章选择器；`authMethod=LOGIN_ONLY` 会被后端拒绝，固定用 `PASSWORD`。
+
+### 13.4 验证结果（2026-09-17）
+
+| 项 | 结果 |
+|----|------|
+| 后端单测 | flowable **48/48**（基线 33，新增 15）、sign **209/209**、erp **78/78** |
+| `eslint`（全部改动文件） | 0 errors |
+| `vue-tsc --noEmit` | 仅 3 个**存量**错误（`vite/plugins/compression.ts`），**0 新增** |
+| `npm run build:prod` | exit 0 |
+| descriptor | `JSON.parse` 通过（格式错误会导致整个设计器崩，故单列） |
+| BPMN 往返 | 用仓库自带 bpmn-js/bpmn-moddle 实跑 16 项断言（见 13.1） |
+| **浏览器交互验证** | ❌ **仍未做**（无浏览器）—— 拖拽、开关落盘、签章弹窗均需人工点一遍 |
+| 引擎路径 E2E | ❌ 未跑；优先级逻辑仅经单元测试断言 |
+
+### 13.5 顺带发现的既有缺陷（**未修**，另立）
+
+`plus-ui/src/package/penal/form/ElementForm.vue:148` 调用 `modeling.updateModdleProperties(element, { localScope: v })` **只传了 2 个参数**，而 bpmn-js 8.10 的签名是 `(element, moddleElement, properties)` —— 参数错位后 handler 对 `undefined` 取键（`keys(undefined)` / `forEach(undefined)`）**静默无操作**，所以「节点表单」那个开关**几乎从来没生效过**。DB 里现存的 `flowable:localScope="true"`（2 处）来自同文件 `:141-144` 的 `updateProperties` 强制赋值，与该开关无关。
+
+影响面仅限 `localScope`（节点表单作用域）这一非签章特性；因它可能被后端逻辑依赖，且属另一特性的行为变更，**本次未动**，建议单独开单处理。
+
+---
+
 ## 附：变更记录
 
 | 日期 | 变更 |
@@ -803,6 +873,7 @@ P2b 完成后**尚无浏览器环境可交互验证**，故改用**前端↔后�
 | 2026-09-15 | **P1 实施完成**，补 §10：14 处计划偏差、SMS 移出 P1、水印预览图的 P1/P2 边界与架构阻塞、待决事项、人工验收清单 |
 | 2026-09-16 | **P2a 实施完成**，补 §11：PDFBox 3.0.8 + 自签 X.509 CMS 盖章链路、4/4 端到端实测、字体/个人签名/Acrobat 三项决策（均"不做"） |
 | 2026-09-17 | **P2b 实施完成**，补 §12：合同详情页与签章 UI；新增**静态一致性审计**手段，发现并修复 5 处缺陷（含"有效 PDF 被误报为损坏"这一用户可见致命文案）；记录 nginx `.mjs` MIME 的部署前置条件 |
+| 2026-09-17 | **补 §13：三处集成断点**（`needSign` 无处可设且可被客户端绕过 / SOP 查阅器无入口 / NCR 签名无前端）。`needSign` 改为**节点级 BPMN 扩展属性**三级优先级解析，封闭绕过；记录 descriptor **刻意不声明 default** 的原因与子流程限制；另记录 `ElementForm.vue` 参数错位的既有缺陷（未修，另立） |
 
 ---
 
