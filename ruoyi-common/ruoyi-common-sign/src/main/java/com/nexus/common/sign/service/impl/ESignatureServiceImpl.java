@@ -10,28 +10,47 @@ import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.ServletUtils;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.satoken.utils.LoginHelper;
+import com.nexus.common.sign.constants.DocVerifyVerdict;
 import com.nexus.common.sign.domain.EsSeal;
 import com.nexus.common.sign.domain.EsSealGrant;
+import com.nexus.common.sign.domain.EsSignDocument;
 import com.nexus.common.sign.domain.EsSignature;
+import com.nexus.common.sign.domain.dto.DocSignCommand;
+import com.nexus.common.sign.domain.dto.SealPlacement;
 import com.nexus.common.sign.domain.dto.SignCommand;
+import com.nexus.common.sign.domain.vo.DocumentVerifyVo;
 import com.nexus.common.sign.domain.vo.SignatureVo;
 import com.nexus.common.sign.domain.vo.VerifyResultVo;
 import com.nexus.common.sign.mapper.EsSealGrantMapper;
 import com.nexus.common.sign.mapper.EsSealMapper;
+import com.nexus.common.sign.mapper.EsSignDocumentMapper;
 import com.nexus.common.sign.mapper.EsSignatureMapper;
 import com.nexus.common.sign.service.ESignatureService;
+import com.nexus.common.sign.support.OssContentAccessor;
 import com.nexus.common.sign.support.SealAvailabilityResolver;
 import com.nexus.common.sign.support.SignAuthVerifier;
 import com.nexus.common.sign.support.SignatureChainCalculator;
+import com.nexus.common.sign.support.pdf.PdfCmsSigner;
+import com.nexus.common.sign.support.pdf.PdfContentStamper;
+import com.nexus.common.sign.support.pdf.PdfDocumentVerifier;
+import com.nexus.common.sign.support.pdf.PdfStampGeometry;
+import com.nexus.common.sign.support.pdf.PdfVerifyOutcome;
+import com.nexus.common.sign.support.pdf.SelfSignedCertificateFactory;
+import com.nexus.common.sign.util.Sm3Utils;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -98,12 +117,23 @@ public class ESignatureServiceImpl implements ESignatureService {
     private static final long LOCK_ACQUIRE_TIMEOUT = 10_000L;
     /** 签署含义最大长度 */
     private static final int MEANING_MAX_LEN = 128;
+    /** {@code es_sign_document.sign_status}：已签 */
+    private static final String SIGN_STATUS_SIGNED = "2";
+    /** 自签证书主题的组织单元 */
+    private static final String CERT_ORG_UNIT = "Nexus-ERP 电子签章";
 
     private final EsSignatureMapper signatureMapper;
     private final EsSealMapper sealMapper;
     private final EsSealGrantMapper grantMapper;
     private final SignAuthVerifier authVerifier;
     private final LockTemplate lockTemplate;
+    private final EsSignDocumentMapper documentMapper;
+    /**
+     * 对象存储读写 SPI。
+     * <p>按 SPI 契约用 {@link ObjectProvider} 注入：实现方在 {@code ruoyi-system}，
+     * 缺失时给出明确异常而不是启动期炸弹/NPE。P1 的逻辑签名不需要它，所以允许为 null。</p>
+     */
+    private final ObjectProvider<OssContentAccessor> ossAccessorProvider;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -143,15 +173,7 @@ public class ESignatureServiceImpl implements ESignatureService {
 
         EsSeal seal = null;
         if (cmd.sealId() != null) {
-            seal = sealMapper.selectById(cmd.sealId());
-            if (seal == null) {
-                throw new ServiceException("印章不存在");
-            }
-            List<EsSealGrant> grants = grantMapper.selectList(Wrappers.<EsSealGrant>lambdaQuery()
-                .eq(EsSealGrant::getSealId, seal.getSealId()));
-            if (!SealAvailabilityResolver.isUsable(seal, grants, userId, deptId, cmd.bizType())) {
-                throw new ServiceException("当前用户无权使用印章【{}】", seal.getSealName());
-            }
+            seal = authorizeSeal(cmd.sealId(), userId, deptId, cmd.bizType());
         }
 
         // 认证失败即拒绝，不允许降级为「无凭证签名」
@@ -167,6 +189,32 @@ public class ESignatureServiceImpl implements ESignatureService {
         } finally {
             lockTemplate.releaseLock(lock);
         }
+    }
+
+    /**
+     * 用章授权校验（<b>{@link #sign} 与 {@link #signDocument} 共用，防止两处规则漂移</b>）。
+     *
+     * <p>规则本身仍只有一份：{@link SealAvailabilityResolver#isUsable}（个人章仅归属人可用；
+     * 公司章必须有该用户/其部门在有效期内的启用授权）。本方法只负责「取印章 + 取授权 + 判定 +
+     * 抛业务异常」这段样板，任何新增的盖章入口都必须走这里，不得自己再写一遍。</p>
+     *
+     * @param sealId  印章ID
+     * @param userId  当前用户ID
+     * @param deptId  当前用户部门ID
+     * @param bizType 本次业务类型
+     * @return 校验通过的印章实体
+     */
+    private EsSeal authorizeSeal(Long sealId, Long userId, Long deptId, String bizType) {
+        EsSeal seal = sealMapper.selectById(sealId);
+        if (seal == null) {
+            throw new ServiceException("印章不存在");
+        }
+        List<EsSealGrant> grants = grantMapper.selectList(Wrappers.<EsSealGrant>lambdaQuery()
+            .eq(EsSealGrant::getSealId, seal.getSealId()));
+        if (!SealAvailabilityResolver.isUsable(seal, grants, userId, deptId, bizType)) {
+            throw new ServiceException("当前用户无权使用印章【{}】", seal.getSealName());
+        }
+        return seal;
     }
 
     @Override
@@ -238,6 +286,245 @@ public class ESignatureServiceImpl implements ESignatureService {
     }
 
     /**
+     * 文档签章：盖章 + 自签证书数字签名（详见接口 javadoc）。
+     *
+     * <p><b>顺序是刻意设计的：</b>校验与授权 → 认证 → 读源正文并核对摘要 → 盖章/签名
+     * （纯内存，不产生任何副作用）→ 写对象存储 → 加链锁写台账 + 回填文档表。
+     * 所有可能失败的<b>判定</b>都排在第一次写入之前，因此「被拒绝」的操作天然什么都不写。</p>
+     *
+     * @param cmd 文档签章入参
+     * @return 签名ID
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Long signDocument(DocSignCommand cmd) {
+        validateDocCommand(cmd);
+        Long userId = LoginHelper.getUserId();
+        String tenantId = LoginHelper.getTenantId();
+        Long deptId = LoginHelper.getDeptId();
+
+        EsSignDocument doc = documentMapper.selectById(cmd.docId());
+        if (doc == null) {
+            throw new ServiceException("待签文档不存在");
+        }
+        if (StringUtils.isNotBlank(cmd.bizType()) && !cmd.bizType().equals(doc.getBizType())) {
+            throw new ServiceException("文档与业务类型不匹配");
+        }
+        if (cmd.bizId() != null && !cmd.bizId().equals(doc.getBizId())) {
+            throw new ServiceException("文档与业务单据不匹配");
+        }
+
+        // 用章授权：按印章去重（同一次签章可能多处盖同一个章），规则与 sign 完全同一段代码
+        Map<Long, EsSeal> seals = new LinkedHashMap<>();
+        for (SealPlacement placement : cmd.placements()) {
+            seals.computeIfAbsent(placement.sealId(),
+                id -> authorizeSeal(id, userId, deptId, cmd.bizType()));
+        }
+
+        // 认证失败即拒绝，不允许降级为「无凭证签名」
+        authVerifier.verify(userId, cmd.authMethod(), cmd.credential());
+
+        // 源正文服务端准入：先验魔数（不信任前端/后缀名），再核对摘要（换过文件就拒绝签署）
+        byte[] srcPdf = readRequired(doc.getFileOssId(), "待签文档正文");
+        if (!PdfContentStamper.isPdf(srcPdf)) {
+            throw new ServiceException("仅支持 PDF 文件");
+        }
+        String srcHash = Sm3Utils.hashHexBytes(srcPdf);
+        if (StringUtils.isNotBlank(doc.getFileHash()) && !doc.getFileHash().equalsIgnoreCase(srcHash)) {
+            throw new ServiceException("文档正文与上传时的摘要不一致，疑似已被替换，拒绝签署");
+        }
+
+        List<PdfContentStamper.StampSpec> specs = new ArrayList<>();
+        for (SealPlacement placement : cmd.placements()) {
+            EsSeal seal = seals.get(placement.sealId());
+            byte[] sealImage = readRequired(seal.getSealOssId(), "印章原图【" + seal.getSealName() + "】");
+            specs.add(new PdfContentStamper.StampSpec(placement.pageIndex(), placement.xRatio(),
+                placement.yRatio(), placement.wRatio(), placement.hRatio(),
+                placement.rotation(), sealImage));
+        }
+
+        // 盖章 → （先全量 save 拿到字节）→ 自签证书 → detached CMS 增量签名。全程内存，无临时文件
+        String signerName = resolveSignerName(userId);
+        byte[] stamped = PdfContentStamper.stamp(srcPdf, specs);
+        SelfSignedCertificateFactory.SigningIdentity identity =
+            SelfSignedCertificateFactory.generate(signerName, CERT_ORG_UNIT, 0);
+        byte[] signedPdf = PdfCmsSigner.sign(stamped, identity.privateKey(), identity.certificate(),
+            signerName, cmd.signatureMeaning());
+
+        // 先写对象存储拿到 ossId，再在同一事务里写台账：
+        // 反之会出现「台账指向一个不存在的文件」。对象存储的写入无法随事务回滚，
+        // 极端情况下会留下一个无台账引用的孤儿对象 —— 可接受，绝不接受有台账没文件。
+        Long signedOssId = ossAccessor().store(signedPdf, signedFileName(doc.getFileName()), "application/pdf");
+        String signedHash = Sm3Utils.hashHexBytes(signedPdf);
+
+        LockInfo lock = lockTemplate.lock(CHAIN_LOCK_PREFIX + (tenantId == null ? "" : tenantId),
+            LOCK_EXPIRE, LOCK_ACQUIRE_TIMEOUT);
+        if (lock == null) {
+            throw new ServiceException("签名通道繁忙，请稍后重试");
+        }
+        try {
+            // 台账只有一列 seal_id：多章场景登记「第一个落位所用印章」，落位顺序即业务主次
+            EsSeal primarySeal = seals.get(cmd.placements().get(0).sealId());
+            Long signatureId = appendLedger(cmd.bizType(), cmd.bizId(), null, cmd.signatureMeaning(),
+                cmd.authMethod(), primarySeal, userId, deptId,
+                new DocLink(doc.getFileOssId(), srcHash, signedOssId, signedHash, doc.getDocId()));
+            markDocumentSigned(doc.getDocId(), signedOssId);
+            log.info("文档签章完成: signatureId={}, docId={}, placements={}, signedOssId={}, signedSize={}",
+                signatureId, doc.getDocId(), cmd.placements().size(), signedOssId, signedPdf.length);
+            return signatureId;
+        } finally {
+            lockTemplate.releaseLock(lock);
+        }
+    }
+
+    /**
+     * 文档级验签：CMS 验签 + ByteRange 覆盖/修订检查 + 台账摘要复核（详见接口 javadoc）。
+     *
+     * @param signatureId 签名记录ID
+     * @return 验签结果
+     */
+    @Override
+    public DocumentVerifyVo verifyDocument(Long signatureId) {
+        EsSignature record = signatureMapper.selectById(signatureId);
+        if (record == null) {
+            throw new ServiceException("签名记录不存在");
+        }
+        if (record.getDocOssId() == null) {
+            throw new ServiceException("该签名记录不含签署后文档，无法进行文档级验签（请使用 verify）");
+        }
+        byte[] pdf = readRequired(record.getDocOssId(), "签署后文档");
+        PdfVerifyOutcome outcome = PdfDocumentVerifier.verify(pdf);
+
+        String actualHash = Sm3Utils.hashHexBytes(pdf);
+        boolean hashPassed = StringUtils.isBlank(record.getDocHash())
+            || record.getDocHash().equalsIgnoreCase(actualHash);
+
+        DocumentVerifyVo vo = new DocumentVerifyVo();
+        BeanUtils.copyProperties(outcome, vo);
+        vo.setSignatureId(signatureId);
+        vo.setDocId(record.getDocId());
+        vo.setDocHash(record.getDocHash());
+        vo.setActualDocHash(actualHash);
+        vo.setHashPassed(hashPassed);
+        if (!hashPassed) {
+            // 台账摘要对不上是独立于 CMS 的旁证：即便签名本身完整，文件也不是台账登记的那一份
+            if (outcome.getVerdict() == DocVerifyVerdict.OK) {
+                vo.setVerdict(DocVerifyVerdict.MODIFIED_IN_PLACE);
+            }
+            vo.getMessages().add("签署后文件的 SM3 与台账登记值不一致（台账 " + record.getDocHash()
+                + "，实际 " + actualHash + "），文件已被替换");
+        }
+        vo.setPassed(hashPassed && outcome.getVerdict() == DocVerifyVerdict.OK);
+        return vo;
+    }
+
+    /**
+     * 取对象存储字节，缺失即拒绝（不做「跳过」兜底：签一份没盖全章的合同比失败更糟）。
+     *
+     * @param ossId 对象ID
+     * @param label 用于报错的业务名（如「印章原图【公章】」）
+     * @return 字节内容
+     */
+    private byte[] readRequired(Long ossId, String label) {
+        if (ossId == null) {
+            throw new ServiceException("{} 缺失，无法继续", label);
+        }
+        byte[] content = ossAccessor().read(ossId);
+        if (content == null || content.length == 0) {
+            throw new ServiceException("{} 内容不存在或为空", label);
+        }
+        return content;
+    }
+
+    /**
+     * 取对象存储 SPI 实现。
+     *
+     * <p>实现方在 {@code ruoyi-system}（避免 Maven 循环依赖，见 {@link OssContentAccessor} 的说明），
+     * 缺失时给出明确业务异常而不是 NPE；P1 的逻辑签名路径不会走到这里。</p>
+     *
+     * @return SPI 实现
+     */
+    private OssContentAccessor ossAccessor() {
+        OssContentAccessor accessor =
+            ossAccessorProvider == null ? null : ossAccessorProvider.getIfAvailable();
+        if (accessor == null) {
+            throw new ServiceException("对象存储内容访问实现缺失，无法读写文档正文");
+        }
+        return accessor;
+    }
+
+    /**
+     * 回填 {@code es_sign_document} 的签署后文件与签署状态。
+     *
+     * @param docId        文档ID
+     * @param signedOssId  签署后文件OSS ID
+     */
+    private void markDocumentSigned(Long docId, Long signedOssId) {
+        EsSignDocument update = new EsSignDocument();
+        update.setDocId(docId);
+        update.setSignedOssId(signedOssId);
+        update.setSignStatus(SIGN_STATUS_SIGNED);
+        documentMapper.updateById(update);
+    }
+
+    /**
+     * 签署后文件的落库文件名（保留原名基名，后缀统一为 {@code .pdf}）。
+     *
+     * @param original 原文件名（可空，可含目录）
+     * @return 形如 {@code 采购合同-signed.pdf}
+     */
+    private static String signedFileName(String original) {
+        String base = StringUtils.isBlank(original) ? "document" : original.trim();
+        int slash = Math.max(base.lastIndexOf('/'), base.lastIndexOf('\\'));
+        if (slash >= 0) {
+            base = base.substring(slash + 1);
+        }
+        int dot = base.lastIndexOf('.');
+        if (dot > 0) {
+            base = base.substring(0, dot);
+        }
+        if (base.isBlank()) {
+            base = "document";
+        }
+        return base + "-signed.pdf";
+    }
+
+    /**
+     * 文档签章入参校验（服务端准入，不依赖前端；失败即拒绝，不做默认值兜底）。
+     *
+     * @param cmd 文档签章入参
+     */
+    private void validateDocCommand(DocSignCommand cmd) {
+        if (cmd == null) {
+            throw new ServiceException("签章入参不能为空");
+        }
+        if (StringUtils.isBlank(cmd.bizType())) {
+            throw new ServiceException("业务类型不能为空");
+        }
+        if (cmd.docId() == null) {
+            throw new ServiceException("待签文档ID不能为空");
+        }
+        if (StringUtils.isBlank(cmd.signatureMeaning())) {
+            throw new ServiceException("签署含义不能为空");
+        }
+        if (cmd.signatureMeaning().length() > MEANING_MAX_LEN) {
+            throw new ServiceException("签署含义长度不能超过 128 字符");
+        }
+        if (StringUtils.isBlank(cmd.authMethod())) {
+            throw new ServiceException("签署认证方式不能为空");
+        }
+        if (cmd.placements() == null || cmd.placements().isEmpty()) {
+            throw new ServiceException("盖章位置不能为空");
+        }
+        for (SealPlacement placement : cmd.placements()) {
+            String reason = PdfStampGeometry.validatePlacement(placement);
+            if (reason != null) {
+                throw new ServiceException(reason);
+            }
+        }
+    }
+
+    /**
      * 单条记录的完整校验（{@link #verify} 与 {@link #verifyChain} 共用，避免两处逻辑漂移）：
      * <ol>
      *   <li>自身校验：用记录字段重算 chain_hash，与库中值比对（检出字段篡改）；</li>
@@ -290,7 +577,7 @@ public class ESignatureServiceImpl implements ESignatureService {
     }
 
     /**
-     * 追加一条签名记录（临界区内调用）。
+     * 追加一条逻辑签名记录（临界区内调用）。
      *
      * @param cmd    签名入参
      * @param seal   已校验可用的印章（无章为 null）
@@ -299,6 +586,29 @@ public class ESignatureServiceImpl implements ESignatureService {
      * @return 签名ID
      */
     private Long appendSignature(SignCommand cmd, EsSeal seal, Long userId, Long deptId) {
+        return appendLedger(cmd.bizType(), cmd.bizId(), cmd.bizNo(), cmd.signatureMeaning(),
+            cmd.authMethod(), seal, userId, deptId, DocLink.NONE);
+    }
+
+    /**
+     * 写 {@code es_signature} 台账（临界区内调用，逻辑签名与文档签章共用同一段链式计算）。
+     *
+     * <p>链哈希输入必须包含 {@code docHash}：文档签章把「签署后文件的 SM3」编进链，
+     * 因此链上任何一个文件被换掉都会导致验链失败。</p>
+     *
+     * @param bizType          业务类型
+     * @param bizId            业务单据ID
+     * @param bizNo            业务单据编号
+     * @param signatureMeaning 签署含义
+     * @param authMethod       认证方式
+     * @param seal             已校验可用的印章（无章为 null）
+     * @param userId           签署人用户ID
+     * @param deptId           签署人部门ID
+     * @param docLink          文档关联字段（逻辑签名传 {@link DocLink#NONE}）
+     * @return 签名ID
+     */
+    private Long appendLedger(String bizType, Long bizId, String bizNo, String signatureMeaning,
+                              String authMethod, EsSeal seal, Long userId, Long deptId, DocLink docLink) {
         EsSignature last = signatureMapper.selectOne(Wrappers.<EsSignature>lambdaQuery()
             .orderByDesc(EsSignature::getSignedAt)
             .orderByDesc(EsSignature::getSignatureId)
@@ -315,9 +625,9 @@ public class ESignatureServiceImpl implements ESignatureService {
 
         EsSignature entity = new EsSignature();
         entity.setSignatureId(signatureId);
-        entity.setBizType(cmd.bizType());
-        entity.setBizId(cmd.bizId());
-        entity.setBizNo(cmd.bizNo());
+        entity.setBizType(bizType);
+        entity.setBizId(bizId);
+        entity.setBizNo(bizNo);
         entity.setSignerUserId(userId);
         entity.setSignerName(resolveSignerName(userId));
         entity.setSignerDeptId(deptId);
@@ -325,20 +635,39 @@ public class ESignatureServiceImpl implements ESignatureService {
             entity.setSealId(seal.getSealId());
             entity.setSealType(seal.getSealType());
         }
-        entity.setSignatureMeaning(cmd.signatureMeaning());
-        entity.setAuthMethod(cmd.authMethod());
+        entity.setSignatureMeaning(signatureMeaning);
+        entity.setAuthMethod(authMethod);
+        entity.setSrcDocOssId(docLink.srcDocOssId());
+        entity.setSrcDocHash(docLink.srcDocHash());
+        entity.setDocOssId(docLink.docOssId());
+        entity.setDocHash(docLink.docHash());
+        entity.setDocId(docLink.docId());
         entity.setSignedAt(signedAt);
         entity.setSignIp(currentClientIp());
         entity.setSignUa(currentUserAgent());
         entity.setPrevHash(prevHash);
         entity.setChainHash(SignatureChainCalculator.compute(
-            prevHash, signatureId, cmd.bizType(), cmd.bizId(), userId, entity.getSealId(),
-            cmd.signatureMeaning(), entity.getDocHash(), signedAt.getTime()));
+            prevHash, signatureId, bizType, bizId, userId, entity.getSealId(),
+            signatureMeaning, entity.getDocHash(), signedAt.getTime()));
 
         signatureMapper.insert(entity);
-        log.info("电子签名入库: signatureId={}, bizType={}, bizId={}, signerUserId={}, sealId={}",
-            signatureId, cmd.bizType(), cmd.bizId(), userId, entity.getSealId());
+        log.info("电子签名入库: signatureId={}, bizType={}, bizId={}, signerUserId={}, sealId={}, docId={}",
+            signatureId, bizType, bizId, userId, entity.getSealId(), entity.getDocId());
         return signatureId;
+    }
+
+    /**
+     * 台账上的文档关联字段（逻辑签名全为 null）。
+     *
+     * @param srcDocOssId 签署前文档OSS ID
+     * @param srcDocHash  签署前文档SM3
+     * @param docOssId    签署后文档OSS ID
+     * @param docHash     签署后文档SM3
+     * @param docId       关联 {@code es_sign_document.doc_id}
+     */
+    private record DocLink(Long srcDocOssId, String srcDocHash, Long docOssId, String docHash, Long docId) {
+        /** 逻辑签名：不关联任何文档 */
+        static final DocLink NONE = new DocLink(null, null, null, null, null);
     }
 
     /**

@@ -11,7 +11,9 @@ import com.nexus.common.sign.domain.dto.SignCommand;
 import com.nexus.common.sign.domain.vo.VerifyResultVo;
 import com.nexus.common.sign.mapper.EsSealGrantMapper;
 import com.nexus.common.sign.mapper.EsSealMapper;
+import com.nexus.common.sign.mapper.EsSignDocumentMapper;
 import com.nexus.common.sign.mapper.EsSignatureMapper;
+import com.nexus.common.sign.support.OssContentAccessor;
 import com.nexus.common.sign.support.SignAuthVerifier;
 import com.nexus.common.sign.support.SignatureChainCalculator;
 import org.junit.jupiter.api.*;
@@ -23,6 +25,7 @@ import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.springframework.beans.factory.ObjectProvider;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -66,6 +69,8 @@ class SignatureTimestampPrecisionTest {
     @Mock private EsSealGrantMapper grantMapper;
     @Mock private SignAuthVerifier authVerifier;
     @Mock private LockTemplate lockTemplate;
+    @Mock private EsSignDocumentMapper documentMapper;
+    @Mock private ObjectProvider<OssContentAccessor> ossAccessorProvider;
     @Captor private ArgumentCaptor<EsSignature> sigCaptor;
 
     private ESignatureServiceImpl service;
@@ -80,7 +85,8 @@ class SignatureTimestampPrecisionTest {
 
     @BeforeEach
     void setUp() {
-        service = new ESignatureServiceImpl(signatureMapper, sealMapper, grantMapper, authVerifier, lockTemplate);
+        service = new ESignatureServiceImpl(signatureMapper, sealMapper, grantMapper, authVerifier,
+            lockTemplate, documentMapper, ossAccessorProvider);
 
         lambdaUtilsMock = mockStatic(LambdaUtils.class, CALLS_REAL_METHODS);
         Map<String, ColumnCache> cols = new HashMap<>();
