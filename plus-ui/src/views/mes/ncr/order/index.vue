@@ -171,8 +171,8 @@
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button type="primary" @click="submitDispose">确认处置</el-button>
-        <el-button type="primary" plain @click="openSignDispose" v-hasPermi="['mes:ncr:order:dispose']">签署并处置</el-button>
+        <!-- 处置是授权行为，一律走二级认证（后端也拒绝 LOGIN_ONLY），故此处不再提供不签名的处置入口 -->
+        <el-button type="primary" @click="openSignDispose" v-hasPermi="['mes:ncr:order:dispose']">签署并处置</el-button>
         <el-button @click="disposeDialog.visible = false">取 消</el-button>
       </template>
     </el-dialog>
@@ -356,7 +356,7 @@
 </template>
 
 <script setup lang="ts" name="NcrOrder">
-import { listOrder, getOrder, addOrder, updateOrder, delOrder, reviewOrder, disposeOrder, disposeOrderWithSign } from '@/api/mes/ncr/order';
+import { listOrder, getOrder, addOrder, updateOrder, delOrder, reviewOrder, disposeOrderWithSign } from '@/api/mes/ncr/order';
 import type { NcrOrderVO, NcrOrderQuery } from '@/api/mes/ncr/order';
 import { listDefect, addDefect } from '@/api/mes/ncr/defect';
 import type { NcrDefectVO, NcrDefectForm } from '@/api/mes/ncr/defect';
@@ -498,29 +498,18 @@ const handleReview = async (row: NcrOrderVO) => {
   getList();
 };
 
-// 处置
+// 处置：弹出处置方式对话框，确认时走带签名的接口（处置属于授权行为，不提供免签名路径）
 const handleDispose = (row: NcrOrderVO) => {
   disposeDialog.ncrId = row.ncrId;
   disposeForm.disposition = '';
   disposeForm.remark = '';
   disposeDialog.visible = true;
 };
-const submitDispose = async () => {
-  if (!disposeForm.disposition) {
-    proxy!.$modal.msgWarning('请选择处置方式');
-    return;
-  }
-  await disposeOrder(disposeDialog.ncrId, disposeForm.disposition, disposeForm.remark);
-  proxy!.$modal.msgSuccess('处置成功');
-  disposeDialog.visible = false;
-  getList();
-};
 
-// 签署并处置：处置是授权行为，后端拒绝 LOGIN_ONLY，必须走登录密码二级认证
 const signAuthRef = ref<InstanceType<typeof SignAuthDialog>>();
 const signAuthVisible = ref(false);
 
-/** 打开二级认证弹窗前先校验处置方式（与 submitDispose 同一句提示） */
+/** 打开二级认证弹窗前先校验处置方式 */
 const openSignDispose = () => {
   if (!disposeForm.disposition) {
     proxy!.$modal.msgWarning('请选择处置方式');

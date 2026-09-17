@@ -74,7 +74,10 @@
     <el-row>
       <el-divider />
       <h4><b>电子签章</b></h4>
-      <el-row>
+      <!-- width:100% 是必须的：el-row 是 flex 容器，不撑满宽度时这个内层 el-row 会与上面的
+           <h4>电子签章</h4> 变成同一行的两个 flex item（标题被挤到左下、与开关错位）。
+           本文件既有写法（如第 14 行的 <div style="width:100%">）就是用 100% 让它独占一行。 -->
+      <el-row style="width: 100%">
         <el-tooltip
           content="开启后，本节点审批办结时必须进行电子签章（二级认证），否则无法通过。签章失败会中止审批并回滚。"
           placement="top-start"
