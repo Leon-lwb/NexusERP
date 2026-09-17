@@ -10,17 +10,18 @@
             <el-tag v-if="sop?.currentVersion" type="success" size="small">v{{ sop.currentVersion }}</el-tag>
           </div>
           <div class="header-right">
-            <el-button icon="Refresh" @click="loadSop" :disabled="!processId && !stepRecordId">刷新</el-button>
+            <el-button icon="Refresh" @click="loadSop" :disabled="!processId && !stepRecordId && !sopId">刷新</el-button>
           </div>
         </div>
       </template>
 
-      <el-empty v-if="!loading && !sop" description="该工序未绑定已发布SOP">
+      <el-empty v-if="!loading && !sop" :description="emptyDescription">
         <template #image
           ><el-icon size="60"><Document /></el-icon
         ></template>
         <div v-if="processId" class="empty-tip">工序ID: {{ processId }}</div>
         <div v-if="stepRecordId" class="empty-tip">工序记录ID: {{ stepRecordId }}</div>
+        <div v-if="sopId" class="empty-tip">SOP ID: {{ sopId }}</div>
       </el-empty>
 
       <div v-if="sop" class="sop-content">
@@ -61,7 +62,7 @@
 </template>
 
 <script setup lang="ts" name="SopViewer">
-import { getSopByProcess, getSopByStep } from '@/api/mes/sop/document';
+import { getSopByProcess, getSopByStep, getDocument } from '@/api/mes/sop/document';
 import type { SopDocumentVO } from '@/api/mes/sop/document';
 import { recordViewLog } from '@/api/mes/sop/view-log';
 import { Document, Download } from '@element-plus/icons-vue';
@@ -77,6 +78,8 @@ const loading = ref(true);
 // 雪花ID为19位长整型，route.query 传字符串，不能 Number() 截断，保持字符串透传
 const processId = computed(() => (route.query.processId ? String(route.query.processId) : ''));
 const stepRecordId = computed(() => (route.query.stepRecordId ? String(route.query.stepRecordId) : ''));
+// 按 SOP 直接查阅(列表页「查阅」入口)也保持字符串透传
+const sopId = computed(() => (route.query.sopId ? String(route.query.sopId) : ''));
 const woId = computed(() => (route.query.woId ? String(route.query.woId) : undefined));
 const woNo = computed(() => (route.query.woNo as string) || '');
 const workstationId = computed(() => (route.query.workstationId ? String(route.query.workstationId) : undefined));
@@ -85,6 +88,14 @@ const typeLabel = (v: string) => {
   const dict = mes_sop_type.value?.find((d: any) => d.value === v);
   return dict ? dict.label : v;
 };
+
+// 空状态文案按实际传入的参数来源给出，避免按 sopId 查阅时误报「工序未绑定SOP」
+const emptyDescription = computed(() => {
+  if (stepRecordId.value) return '该工序记录未绑定已发布SOP';
+  if (processId.value) return '该工序未绑定已发布SOP';
+  if (sopId.value) return '未找到该SOP(可能已被删除)';
+  return '缺少 processId 或 stepRecordId 或 sopId 参数';
+});
 
 const loadSop = async () => {
   loading.value = true;
@@ -95,8 +106,11 @@ const loadSop = async () => {
       res = await getSopByStep(stepRecordId.value);
     } else if (processId.value) {
       res = await getSopByProcess(processId.value);
+    } else if (sopId.value) {
+      // 列表页「查阅」入口：直接按 SOP ID 打开(走查 document/{sopId})
+      res = await getDocument(sopId.value);
     } else {
-      proxy!.$modal.msgWarning('缺少 processId 或 stepRecordId 参数');
+      proxy!.$modal.msgWarning('缺少 processId 或 stepRecordId 或 sopId 参数');
       return;
     }
     sop.value = res.data;
@@ -124,11 +138,11 @@ const goBack = () => {
   router.back();
 };
 
-// 路由参数变化时重新加载(如工位切换工序)
+// 路由参数变化时重新加载(如工位切换工序、列表连续查阅不同SOP)
 watch(
   () => route.query,
   () => {
-    if (route.query.processId || route.query.stepRecordId) {
+    if (route.query.processId || route.query.stepRecordId || route.query.sopId) {
       loadSop();
     }
   }
