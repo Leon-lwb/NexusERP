@@ -722,7 +722,7 @@ plus-ui  work/detail.vue（**真实待办审批入口**）
 | 3 | **Acrobat 实测** | 🔒 **已决策（2026-09-16）：暂时放过**。本机无 Acrobat，P2 验收项 1 是以**编程方式**验签 + 验覆盖达成的（`verdict:OK`），"Acrobat 面板文案 / 对不可见签名域的看法"仍属推断。spike 报告里保留了可直接抽查的样例路径，将来有 Acrobat 环境时再抽查 |
 | 4 | **跨库原子性** | 签名台账在 `ry-vue`、合同数据在 `ry-erp`，无 XA 则无法真正跨库原子（详见 §10.4 第三处说明） |
 | 5 | **P1 存量行不可验签** | 见 11.5 |
-| 6 | **P2b 未开始** | 合同详情页 + 路由、`PdfSealPlacer.vue`（需新增 `pdfjs-dist`）、列表「签署状态」列 —— 已与你确认走"新建详情页"方案 |
+| 6 | ~~**P2b 未开始**~~ | ✅ **已完成（2026-09-17），见 §12**。合同详情页 + 路由、`PdfSealPlacer.vue`（`pdfjs-dist@4.10.38`）、列表「签署状态」列 —— 按确认的"新建详情页"方案落地 |
 
 ### 11.5 一条 P1 存量数据的说明（非缺陷）
 
@@ -735,6 +735,63 @@ plus-ui  work/detail.vue（**真实待办审批入口**）
 
 ---
 
+## 十二、P2b 实施与验收结果（2026-09-17）
+
+### 12.1 交付范围
+
+| 交付物 | 说明 |
+|--------|------|
+| `plus-ui/src/views/erp/so/contract/detail.vue` | 新建合同详情页：正文上传/换版、签章入口、验签、下载、签署记录 |
+| `plus-ui/src/router/index.ts` | `/erp/so/contract/detail`（`permissions: ['so:contract:query']`，`activeMenu: '/erp/soBiz/contract'`） |
+| `plus-ui/src/components/sign/PdfSealPlacer.vue` | pdfjs 预览 + 拖拽放置印章（归一化坐标）+ 提交签署 |
+| `plus-ui/src/api/system/sign/{seal,grant,record,document}.ts` | 签章 API 层 |
+| `plus-ui/src/views/erp/so/contract/index.vue` | 列表新增「签署状态」列 + 「详情」入口 |
+| `ruoyi-modules/ruoyi-erp/.../SoContractSignStatusFiller.java` | 签署状态回填（+ 单测） |
+
+### 12.2 静态一致性审计（本次新增的验证手段）
+
+P2b 完成后**尚无浏览器环境可交互验证**，故改用**前端↔后端静态交叉审计**（逐条追调用链：`api/` → 后端 `@SaCheckPermission` / 异常处理 → 拦截器 → 组件展示），共发现 **5 处真实缺陷**，均已修复（提交 `71e4c0ed`）：
+
+| # | 缺陷 | 成因（调用链证据） | 后果 |
+|---|------|-------------------|------|
+| **D1** | **有效 PDF 被报成「不是有效的 PDF（或损坏）」** | 取正文走 `GET /resource/oss/download/{ossId}`，该端点需 `system:oss:download`；`SaTokenExceptionHandler` 以 **HTTP 200 + `R{code:403}`** 应答；而 `utils/request.ts` 对 `arraybuffer` 响应**不看 `code`**，直接把 JSON 字节当文件内容返回 → pdfjs 抛 `InvalidPDFException` | 用户看到误导文案；同时**吞掉 401/会话过期**（不会触发重新登录）与后端 `ServiceException`（如「文件数据不存在!」） |
+| **D2** | 「下载」按钮的权限守卫**不覆盖它实际调用的端点** | 按钮守 `system:sign:document:list`，但处理函数还调 `/resource/oss/download/{ossId}`（需 `system:oss:download`）。⚠️ `v-hasPermi` 对数组是**「或」**，把权限码追加进数组是**错的** | 半有权限的用户点了必然失败 |
+| **D3** | 「详情」按钮无守卫，但路由需要 `so:contract:query` | 该权限缺失时 `filterDynamicRoutes` 不注册路由 → 点进去落 404 | 死链 |
+| **D4** | 拒签时**弹两条一模一样**的提示 | 拦截器已弹一次，弹窗兜底再弹一次 | 观感缺陷 |
+| **D5** | >10MB 文件**永远走不到**服务端的友好提示 | `spring.servlet.multipart.max-file-size: 10MB` 在进 Controller 前就拒绝，`EsSignDocumentServiceImpl` 里那句「PDF 文件不能超过 10MB（当前 N 字节）」是**死代码**；无 `MaxUploadSizeExceededException` 处理器 → 用户只看到「发生系统异常，请联系管理员」 | 服务端精心写的提示白费 |
+
+**修复要点**
+- **D1**：在 `utils/request.ts` 新增 `readJsonErrorEnvelope()`，对 `arraybuffer` 响应识别「伪装成文件流的 JSON 错误信封」——同时满足①响应头 `Content-Type` 含 json **或**②首个非空白字节为 `{`(0x7B)，**且**③解析结果带**数字** `code` 字段（只有 `R<T>` 信封有，故真正的 JSON 文件下载不会被误判），命中则按真实原因 `reject`，401 触发 `toReLogin()`。另在 `document.ts` 把 403 改写为带权限码的可操作提示。
+- **D2/D3**：改用**显式判断**（`auth.hasPermi(OSS_DOWNLOAD_PERMI)` + 说明缺哪一条），不动 `v-hasPermi` 数组以避开「或」语义陷阱；详情按钮补 `v-hasPermi="['so:contract:query']"`。
+- **D4**：`signDocument` 传 `ignoreErrorMsg: 'true'`，提示交由签署弹窗自己负责（它需要保持弹窗打开供改正重试）。
+- **D5**：`GlobalExceptionHandler` 新增 `MaxUploadSizeExceededException` 处理器（同时前端加 10MB 预检，服务端仍把关）。
+- **R6**：详情页只靠 query 传参，补 `watch(contractId)` 重载并清空上一份的签署/验签/落位状态。
+
+**审计同时确认无问题**：雪花 ID 字符串处理、空值守卫、`@RepeatSubmit` 交互、`el-upload` 清理、`clearFiles()` 置于 `finally`。
+
+### 12.3 验证结果
+
+| 项 | 结果 |
+|----|------|
+| `eslint`（改动文件） | 0 problems |
+| `vue-tsc --noEmit` | 仅 3 个**存量**错误（`vite/plugins/compression.ts`，未改动文件） |
+| `npm run build:prod` | exit 0 |
+| 后端单测 | `ruoyi-common-sign` **209/209**、`ruoyi-erp` **78/78**，均 BUILD SUCCESS |
+| 浏览器交互验证 | ❌ **未做**（无浏览器环境）—— 见 12.4 |
+
+### 12.4 遗留（**上线前须知**）
+
+| # | 事项 | 说明 |
+|---|------|------|
+| 1 | **⚠️ 部署时必须同步 nginx 配置** | pdfjs 的 worker 由 Vite 产出为 `.mjs`，而 **nginx 自带的 `conf/mime.types` 不映射 `mjs`**（已实测：连 nginx **1.31.5** 都只有 `application/javascript js;`），`.mjs` 会落到 `default_type application/octet-stream`；浏览器**不允许非 JS MIME 的 module worker** → PDF 预览整段不可用。已在 `plus-ui/nginx.conf` 增加 `mjs → application/javascript` 映射（正则 location 显式排除 `/prod-api/`、`/admin/`、`/snail-job/`，避免抢走反代前缀）。<br>**但** `docker-compose-main.yml` 把宿主 `/docker/nginx/conf/nginx.conf` 挂进容器，故**必须把本仓库这份 `nginx.conf` 同步到宿主机**，否则改动不生效 |
+| 2 | **仅 `admin` 能签署（开发数据前置条件，非缺陷）** | 开发库 `es_seal` 只有 1 枚个人章、无授权记录。要给其他账号签署能力，需为其建个人章或配 `es_seal_grant` |
+| 3 | **R2 首帧宽度** | 签署对话框入场时若量到 0 宽度，`measure()` + `ResizeObserver` 会自愈；未做处理 |
+| 4 | **浏览器交互验证缺失** | 静态审计补的是**调用链一致性**，不能替代真机点击（拖拽手感、pdfjs 渲染、坐标落位观感）。**上线前必须人工走一遍** |
+| 5 | `PuContract`（采购合同）接入 | 本期只接了 `SoContract`；采购合同为**快速跟进项**，复用同一套组件与 `bizType` 模式 |
+| 6 | 个人签名 / 字体 / Acrobat 实测 | 维持 §11.4 的既有决策，本期未动 |
+
+---
+
 ## 附：变更记录
 
 | 日期 | 变更 |
@@ -744,6 +801,8 @@ plus-ui  work/detail.vue（**真实待办审批入口**）
 | 2026-09-15 | §4.3 明确链作用域与验签语义 —— 修正 `verifyChain` 比较「过滤后相邻记录」会**误报断链**的缺陷（Task 10 反向实验证实） |
 | 2026-09-15 | §5.1/§9 修正：真实审批入口是 `work/detail.vue`，`ActHandleBtn.vue` 为死代码；`needSign` 只能是流程变量 |
 | 2026-09-15 | **P1 实施完成**，补 §10：14 处计划偏差、SMS 移出 P1、水印预览图的 P1/P2 边界与架构阻塞、待决事项、人工验收清单 |
+| 2026-09-16 | **P2a 实施完成**，补 §11：PDFBox 3.0.8 + 自签 X.509 CMS 盖章链路、4/4 端到端实测、字体/个人签名/Acrobat 三项决策（均"不做"） |
+| 2026-09-17 | **P2b 实施完成**，补 §12：合同详情页与签章 UI；新增**静态一致性审计**手段，发现并修复 5 处缺陷（含"有效 PDF 被误报为损坏"这一用户可见致命文案）；记录 nginx `.mjs` MIME 的部署前置条件 |
 
 ---
 
