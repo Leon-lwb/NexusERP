@@ -458,7 +458,22 @@ chain_hash = SM3( prev_hash ‖ signature_id ‖ biz_type ‖ biz_id ‖
 **两段式**，同时产出**视觉印章**与**数字签名**：
 
 1. **视觉盖章**：PDFBox `PDPageContentStream.drawImage()` 将印章图按归一化坐标绘制到指定页
-2. **数字签名**：PDFBox `PDSignature` + `ExternalSigningSupport.saveIncremental()`，用**自签 X.509 证书**做 CMS/PKCS#7 增量签名
+2. **数字签名**：PDFBox `PDSignature` + `PDDocument.saveIncremental(out)`，用**自签 X.509 证书**做 CMS/PKCS#7 增量签名
+
+> **⚠️ P2 spike 修正（2026-09-16，完整报告见 `2026-09-16-pdfbox-spike-report.md`）** —— 以下几处已被实测推翻，实施以 spike 为准：
+> - spec 原文的 `ExternalSigningSupport.saveIncremental()` **API 名是错的**：外部签名流是
+>   `PDDocument.saveIncrementalForExternalSigning(out)` → `ExternalSigningSupport`；普通路径是 `PDDocument.saveIncremental(out)`
+> - **`saveIncremental` 有硬前置**：全新内存文档直接调会抛 `IllegalStateException: document was not loaded from a file or a stream`。
+>   必须先 `save(ByteArrayOutputStream)` 落一次字节、再 `Loader.loadPDF(...)` 重新打开才能增量签名
+> - **PDFBox 核心包没有任何验签 API**（无 `SignatureUtils`）→「CMS 验签 + ByteRange 覆盖检查」**必须自己实现**
+> - **只做 CMS 验签会漏报篡改**：签名后追加字节或产生增量修订时 `verify()` 仍为 `true`；必须叠加覆盖/修订检查。
+>   反向亦然：纯覆盖检查会对尾部裸字节误报。**两步缺一不可**
+> - **中文字体是硬依赖**：不嵌字体画中文直接抛 `U+7B7E ('.notdef') is not available in the font Helvetica`；
+>   且仅支持 **TrueType(TTF)** —— OTF(CFF) 报 `CFF outlines are not supported`、TTC 报 `'head' table is mandatory`。
+>   仓库 `src/main/resources` 下**无任何 CJK 字体**。**P2a 决定不绘制任何文字**（印章是图片、签名域不可见，均不需要字体），
+>   字体打包另立项决策 —— 不为一个水印文字往仓库塞 8MB 二进制
+> - 已实测可行的组合：`org.apache.pdfbox:pdfbox:3.0.8` + `bcpkix-jdk18on:1.83`（BC 在 PDFBox 的 pom 里是
+>   `<optional>true</optional>` 不传递，**仓库现有 BC 声明是必需的**）
 
 **算法选择（重要）**：
 
