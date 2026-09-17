@@ -172,9 +172,13 @@
       </el-form>
       <template #footer>
         <el-button type="primary" @click="submitDispose">确认处置</el-button>
+        <el-button type="primary" plain @click="openSignDispose" v-hasPermi="['mes:ncr:order:dispose']">签署并处置</el-button>
         <el-button @click="disposeDialog.visible = false">取 消</el-button>
       </template>
     </el-dialog>
+
+    <!-- 处置二级认证弹窗（签署并处置专用）：凭证只存弹窗内存，后端拒签时保持打开供改正重试 -->
+    <SignAuthDialog ref="signAuthRef" v-model="signAuthVisible" @confirmed="handleSignConfirmed" />
 
     <!-- 详情抽屉 -->
     <el-drawer v-model="detailDrawer.visible" title="NCR详情" size="800px" append-to-body>
@@ -352,7 +356,7 @@
 </template>
 
 <script setup lang="ts" name="NcrOrder">
-import { listOrder, getOrder, addOrder, updateOrder, delOrder, reviewOrder, disposeOrder } from '@/api/mes/ncr/order';
+import { listOrder, getOrder, addOrder, updateOrder, delOrder, reviewOrder, disposeOrder, disposeOrderWithSign } from '@/api/mes/ncr/order';
 import type { NcrOrderVO, NcrOrderQuery } from '@/api/mes/ncr/order';
 import { listDefect, addDefect } from '@/api/mes/ncr/defect';
 import type { NcrDefectVO, NcrDefectForm } from '@/api/mes/ncr/defect';
@@ -364,6 +368,7 @@ import type { Ncr8dReportVO, Ncr8dReportForm } from '@/api/mes/ncr/8d-report';
 import { previewCode } from '@/api/system/autocode/rule';
 import { listWorkOrder } from '@/api/mes/pro/workorder';
 import MaterialSelectDialog from '@/components/MaterialSelectDialog/index.vue';
+import SignAuthDialog from '@/components/sign/SignAuthDialog.vue';
 import { useCrud } from '@/composables/useCrud';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
@@ -507,6 +512,40 @@ const submitDispose = async () => {
   }
   await disposeOrder(disposeDialog.ncrId, disposeForm.disposition, disposeForm.remark);
   proxy!.$modal.msgSuccess('处置成功');
+  disposeDialog.visible = false;
+  getList();
+};
+
+// 签署并处置：处置是授权行为，后端拒绝 LOGIN_ONLY，必须走登录密码二级认证
+const signAuthRef = ref<InstanceType<typeof SignAuthDialog>>();
+const signAuthVisible = ref(false);
+
+/** 打开二级认证弹窗前先校验处置方式（与 submitDispose 同一句提示） */
+const openSignDispose = () => {
+  if (!disposeForm.disposition) {
+    proxy!.$modal.msgWarning('请选择处置方式');
+    return;
+  }
+  signAuthVisible.value = true;
+};
+
+/**
+ * 二级认证通过后调带签名的处置接口。
+ * 失败（如「签署密码错误」）时保持认证弹窗打开，只复位按钮提交中状态让用户改正重试；
+ * 此处不再本地 toast —— 后端拒签是 code=500，错误提示由 utils/request.ts 的拦截器统一
+ * ElMessage 负责，两边都弹用户会看到两条一模一样的提示（对齐 PdfSealPlacer 的做法）。
+ */
+const handleSignConfirmed = async (auth: { authMethod: string; credential: string }) => {
+  signAuthRef.value?.setLoading(true);
+  try {
+    await disposeOrderWithSign(disposeDialog.ncrId, disposeForm.disposition, disposeForm.remark, auth.authMethod, auth.credential);
+  } catch (error) {
+    console.error('签署并处置失败:', error);
+    signAuthRef.value?.setLoading(false);
+    return;
+  }
+  proxy!.$modal.msgSuccess('签署并处置成功');
+  signAuthVisible.value = false;
   disposeDialog.visible = false;
   getList();
 };

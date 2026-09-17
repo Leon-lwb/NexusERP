@@ -70,3 +70,30 @@ export const reviewOrder = (ncrId: number | string) => request({ url: `/mes/ncr/
 /** NCR处置 */
 export const disposeOrder = (ncrId: number | string, disposition: string, remark?: string) =>
   request({ url: `/mes/ncr/order/dispose/${ncrId}`, method: 'put', params: { disposition, remark } });
+
+/**
+ * NCR处置（带电子签名）
+ *
+ * <p>与 {@link disposeOrder} 的区别只有二级认证：处置是授权行为，后端 {@code SignAuthMethod}
+ * <b>不接受 LOGIN_ONLY</b>（会直接拒绝），故 {@code authMethod} 固定传 {@code PASSWORD}，
+ * {@code credential} 为当前登录密码 —— 只随本次请求发送，不写 Pinia / localStorage / URL。</p>
+ *
+ * <p>本接口是纯逻辑签名（只记签署人 / 时间 / IP / 哈希链），<b>没有印章参数</b>，不要加 sealId。</p>
+ *
+ * <p>后端拒签（如「签署密码错误」）返回 code=500，由 {@code utils/request.ts} 的拦截器统一
+ * ElMessage 提示后以 {@code Error(msg)} 拒绝；调用方据此保持认证弹窗打开供改正重试，
+ * <b>不要</b>再加 {@code ignoreErrorMsg} 头或本地 toast，否则用户会看到两条相同提示。</p>
+ *
+ * @param ncrId       不合格品报告ID
+ * @param disposition 处置方式（REWORK / SCRAP / ACCEPT_AS_IS / RETURN）
+ * @param remark      处置备注（可选）
+ * @param authMethod  二级认证方式，固定 PASSWORD
+ * @param credential  登录密码（二级认证凭证）
+ */
+export const disposeOrderWithSign = (
+  ncrId: number | string,
+  disposition: string,
+  remark: string | undefined,
+  authMethod: string,
+  credential: string
+) => request({ url: `/mes/ncr/order/dispose/${ncrId}/sign`, method: 'put', params: { disposition, remark, authMethod, credential } });
