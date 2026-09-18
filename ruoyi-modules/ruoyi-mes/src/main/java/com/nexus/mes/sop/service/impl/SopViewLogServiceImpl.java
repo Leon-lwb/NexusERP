@@ -4,6 +4,7 @@ import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.ServletUtils;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
@@ -16,6 +17,7 @@ import com.nexus.common.sign.service.ESignatureService;
 import com.nexus.mes.sop.domain.SopViewLog;
 import com.nexus.mes.sop.domain.bo.SopViewLogBo;
 import com.nexus.mes.sop.domain.vo.SopViewLogVo;
+import com.nexus.mes.sop.mapper.SopDocumentMapper;
 import com.nexus.mes.sop.mapper.SopViewLogMapper;
 import com.nexus.mes.sop.service.ISopViewLogService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -42,6 +44,7 @@ public class SopViewLogServiceImpl implements ISopViewLogService {
 
     private final SopViewLogMapper baseMapper;
     private final ESignatureService eSignatureService;
+    private final SopDocumentMapper sopDocumentMapper;
 
     /**
      * 分页查询查阅记录列表
@@ -74,6 +77,12 @@ public class SopViewLogServiceImpl implements ISopViewLogService {
     @Transactional(rollbackFor = Exception.class)
     public Boolean recordView(Long sopId, String versionNo, Long woId, String woNo,
                               Long processId, String processName, Long workstationId) {
+        // 服务端准入：sopId 必须指向真实存在的 SOP。本方法先签名后落登记（签名走独立事务、
+        // 不可回滚），若不校验，直接调接口即可对不存在的 sopId 无限制造 append-only 的
+        // SOP_VIEW 签名，污染台账并放大哈希链的写入压力
+        if (sopId == null || sopDocumentMapper.selectById(sopId) == null) {
+            throw new ServiceException("SOP 不存在，无法登记查阅");
+        }
         SopViewLog log = new SopViewLog();
         log.setSopId(sopId);
         log.setVersionNo(versionNo);

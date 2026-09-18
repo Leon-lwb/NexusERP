@@ -7,6 +7,8 @@ import com.nexus.common.sign.constants.SignBizType;
 import com.nexus.common.sign.domain.dto.SignCommand;
 import com.nexus.common.sign.service.ESignatureService;
 import com.nexus.mes.sop.domain.SopViewLog;
+import com.nexus.mes.sop.domain.SopDocument;
+import com.nexus.mes.sop.mapper.SopDocumentMapper;
 import com.nexus.mes.sop.mapper.SopViewLogMapper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -43,6 +45,7 @@ class SopViewLogServiceImplTest {
 
     @Mock private SopViewLogMapper baseMapper;
     @Mock private ESignatureService eSignatureService;
+    @Mock private SopDocumentMapper sopDocumentMapper;
     @InjectMocks private SopViewLogServiceImpl service;
 
     @Captor private ArgumentCaptor<SopViewLog> logCaptor;
@@ -53,6 +56,8 @@ class SopViewLogServiceImplTest {
     void setUp() {
         loginHelperMock = mockStatic(LoginHelper.class);
         loginHelperMock.when(LoginHelper::getUserId).thenReturn(66L);
+        // 服务端准入：sopId 必须指向真实存在的 SOP（否则可直接调接口对不存在的 SOP 无限刷签名台账）
+        when(sopDocumentMapper.selectById(any())).thenReturn(new SopDocument());
     }
 
     @AfterEach

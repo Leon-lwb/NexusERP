@@ -76,7 +76,10 @@ export const disposeOrder = (ncrId: number | string, disposition: string, remark
  *
  * <p>与 {@link disposeOrder} 的区别只有二级认证：处置是授权行为，后端 {@code SignAuthMethod}
  * <b>不接受 LOGIN_ONLY</b>（会直接拒绝），故 {@code authMethod} 固定传 {@code PASSWORD}，
- * {@code credential} 为当前登录密码 —— 只随本次请求发送，不写 Pinia / localStorage / URL。</p>
+ * {@code credential} 为当前登录密码 —— 只随本次请求体发送，不写 Pinia / localStorage / URL。</p>
+ *
+ * <p><b>凭证走请求体而非 URL query：</b>后端为 {@code @RequestBody NcrDisposeSignBo}。
+ * 密码出现在 query 上会留痕浏览器历史/访问日志/代理日志，且会被操作日志切面明文落库。</p>
  *
  * <p>本接口是纯逻辑签名（只记签署人 / 时间 / IP / 哈希链），<b>没有印章参数</b>，不要加 sealId。</p>
  *
@@ -96,4 +99,9 @@ export const disposeOrderWithSign = (
   remark: string | undefined,
   authMethod: string,
   credential: string
-) => request({ url: `/mes/ncr/order/dispose/${ncrId}/sign`, method: 'put', params: { disposition, remark, authMethod, credential } });
+) =>
+  request({
+    url: `/mes/ncr/order/dispose/${ncrId}/sign`,
+    method: 'put',
+    data: { disposition, remark, authMethod, credential }
+  });
