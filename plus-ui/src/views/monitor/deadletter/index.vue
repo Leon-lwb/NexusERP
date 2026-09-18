@@ -57,7 +57,8 @@
               icon="RefreshRight"
               @click="handleRedeliver(scope.row)"
               v-hasPermi="['monitor:dead-letter:redeliver']"
-            >重投</el-button>
+              >重投</el-button
+            >
             <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['monitor:dead-letter:remove']">删除</el-button>
           </template>
         </el-table-column>

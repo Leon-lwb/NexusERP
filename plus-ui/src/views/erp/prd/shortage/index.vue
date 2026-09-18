@@ -2,7 +2,8 @@
   <div class="app-container">
     <el-alert type="info" :closable="false" style="margin-bottom: 12px">
       <template #title>
-        推演口径: 余额 = 当前可用库存(已扣预留) + 累计在途到货 − 累计毛需求(MRP未发料) − 安全库存; 首次余额 &lt; 0 的日期即最早缺料日。结果缓存 30 分钟, 可点"重新推演"强制刷新。
+        推演口径: 余额 = 当前可用库存(已扣预留) + 累计在途到货 − 累计毛需求(MRP未发料) − 安全库存; 首次余额 &lt; 0 的日期即最早缺料日。结果缓存 30
+        分钟, 可点"重新推演"强制刷新。
       </template>
     </el-alert>
 
@@ -61,13 +62,7 @@
       </el-table-column>
       <el-table-column label="操作" align="center" width="190" :show-overflow-tooltip="false">
         <template #default="scope">
-          <el-button
-            link
-            type="primary"
-            icon="Promotion"
-            @click="handleUrge(scope.row)"
-            v-if="scope.row.hasRisk"
-            v-hasPermi="['prd:shortage:query']"
+          <el-button link type="primary" icon="Promotion" @click="handleUrge(scope.row)" v-if="scope.row.hasRisk" v-hasPermi="['prd:shortage:query']"
             >去催货</el-button
           >
           <el-button link type="primary" icon="MagicStick" @click="handleAiAnalyze" v-hasPermi="['prd:shortage:query']">AI 分析</el-button>

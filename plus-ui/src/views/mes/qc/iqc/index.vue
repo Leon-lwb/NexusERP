@@ -126,9 +126,7 @@
           />
           <el-table v-else :data="inspectEntries" border size="small">
             <el-table-column label="项目" min-width="140">
-              <template #default="scope">
-                {{ scope.row.itemCode }} {{ scope.row.itemName }}
-              </template>
+              <template #default="scope"> {{ scope.row.itemCode }} {{ scope.row.itemName }} </template>
             </el-table-column>
             <el-table-column label="标准" prop="standardDesc" min-width="120" />
             <el-table-column label="样本量" prop="sampleQty" width="70" align="center" />

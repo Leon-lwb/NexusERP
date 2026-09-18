@@ -119,8 +119,20 @@
         <el-row :gutter="16">
           <el-col :span="8">
             <el-form-item label="适用物料" prop="materialId">
-              <el-select v-model="form.materialId" placeholder="不选=通用模板" filterable clearable style="width: 100%" @change="handleMaterialChange">
-                <el-option v-for="m in materialOptions" :key="m.materialId" :label="(m.materialCode || '') + ' - ' + (m.materialName || '')" :value="m.materialId" />
+              <el-select
+                v-model="form.materialId"
+                placeholder="不选=通用模板"
+                filterable
+                clearable
+                style="width: 100%"
+                @change="handleMaterialChange"
+              >
+                <el-option
+                  v-for="m in materialOptions"
+                  :key="m.materialId"
+                  :label="(m.materialCode || '') + ' - ' + (m.materialName || '')"
+                  :value="m.materialId"
+                />
               </el-select>
             </el-form-item>
           </el-col>

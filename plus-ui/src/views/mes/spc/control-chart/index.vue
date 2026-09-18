@@ -375,11 +375,12 @@ const chartRef = ref<HTMLElement>();
 let chartInstance: echarts.ECharts | null = null;
 
 // ============ 过程能力等级展示 ============
-const cpkGradeLabel = (grade: string) => ({ 'A+': '特优(≥1.67)', A: '充分(≥1.33)', B: '勉强(≥1.0)', C: '不足(<1.0)' }[grade] || grade);
+const cpkGradeLabel = (grade: string) => ({ 'A+': '特优(≥1.67)', A: '充分(≥1.33)', B: '勉强(≥1.0)', C: '不足(<1.0)' })[grade] || grade;
 const cpkTagType = (grade?: string) =>
-  ({ 'A+': 'success', A: 'success', B: 'warning', C: 'danger' }[grade || ''] as 'success' | 'warning' | 'danger' || 'info');
+  (({ 'A+': 'success', A: 'success', B: 'warning', C: 'danger' })[grade || ''] as 'success' | 'warning' | 'danger') || 'info';
 
-const handleAnalyze = async (row: SpcControlChartVO) => {  analyzeLoading.value = true;
+const handleAnalyze = async (row: SpcControlChartVO) => {
+  analyzeLoading.value = true;
   analyzeDialog.visible = true;
   try {
     const res = await analyzeControlChart(row.chartId);

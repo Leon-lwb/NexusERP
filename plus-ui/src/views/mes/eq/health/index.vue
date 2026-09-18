@@ -39,13 +39,7 @@
       <el-table-column label="设备名称" align="center" prop="equipmentName" min-width="140" />
       <el-table-column label="健康评分" align="center" width="180">
         <template #default="scope">
-          <el-progress
-            type="dashboard"
-            :percentage="scope.row.score"
-            :color="scoreColor(scope.row.score)"
-            :width="70"
-            :stroke-width="8"
-          />
+          <el-progress type="dashboard" :percentage="scope.row.score" :color="scoreColor(scope.row.score)" :width="70" :stroke-width="8" />
         </template>
       </el-table-column>
       <el-table-column label="等级" align="center" prop="grade" width="90">
@@ -136,9 +130,9 @@ let trendChart: echarts.ECharts | null = null;
 const initQuery = { pageNum: 1, pageSize: 10, equipmentName: undefined, grade: undefined };
 const queryParams = ref({ ...initQuery });
 
-const gradeLabel = (grade: string) => ({ HIGH: '优', MEDIUM: '中', LOW: '差' }[grade] || grade);
+const gradeLabel = (grade: string) => ({ HIGH: '优', MEDIUM: '中', LOW: '差' })[grade] || grade;
 const gradeTagType = (grade: string): 'success' | 'warning' | 'danger' | 'info' =>
-  (({ HIGH: 'success', MEDIUM: 'warning', LOW: 'danger' } as const)[grade as 'HIGH' | 'MEDIUM' | 'LOW'] ?? 'info');
+  (({ HIGH: 'success', MEDIUM: 'warning', LOW: 'danger' }) as const)[grade as 'HIGH' | 'MEDIUM' | 'LOW'] ?? 'info';
 const scoreColor = (score: number) => {
   if (score >= 80) return '#67c23a';
   if (score >= 60) return '#e6a23c';

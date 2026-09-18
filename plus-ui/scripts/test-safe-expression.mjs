@@ -23,10 +23,7 @@ function test(name, fn) {
 
 const eq = (actual, expected, msg) => {
   if (typeof expected === 'number') {
-    assert.ok(
-      Math.abs(actual - expected) < 1e-9,
-      `${msg || ''} 实际=${actual} 期望=${expected}`
-    );
+    assert.ok(Math.abs(actual - expected) < 1e-9, `${msg || ''} 实际=${actual} 期望=${expected}`);
   } else {
     assert.strictEqual(actual, expected, msg);
   }

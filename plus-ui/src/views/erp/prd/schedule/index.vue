@@ -41,13 +41,7 @@
         <el-button type="success" plain icon="View" :disabled="!selectedPlanId" @click="showGanttDrawer = true">甘特图</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button
-          type="warning"
-          plain
-          icon="Promotion"
-          :disabled="!canPublish"
-          @click="handlePublish"
-          v-hasPermi="['prd:schedule:publish']"
+        <el-button type="warning" plain icon="Promotion" :disabled="!canPublish" @click="handlePublish" v-hasPermi="['prd:schedule:publish']"
           >发布</el-button
         >
       </el-col>
@@ -155,19 +149,42 @@
       <div v-loading="ganttLoading" class="gantt-body">
         <template v-if="gantt">
           <el-row :gutter="12" class="gantt-summary">
-            <el-col :span="4"><div class="stat-card"><div class="stat-num">{{ gantt.woCount }}</div><div class="stat-label">工单数</div></div></el-col>
-            <el-col :span="4"><div class="stat-card"><div class="stat-num">{{ gantt.totalHours }}</div><div class="stat-label">总工时(h)</div></div></el-col>
+            <el-col :span="4"
+              ><div class="stat-card">
+                <div class="stat-num">{{ gantt.woCount }}</div>
+                <div class="stat-label">工单数</div>
+              </div></el-col
+            >
+            <el-col :span="4"
+              ><div class="stat-card">
+                <div class="stat-num">{{ gantt.totalHours }}</div>
+                <div class="stat-label">总工时(h)</div>
+              </div></el-col
+            >
             <el-col :span="4"
               ><div class="stat-card" :class="{ 'stat-danger': gantt.delayedCount > 0 }">
                 <div class="stat-num">{{ gantt.delayedCount }}</div>
                 <div class="stat-label">拖期工单</div>
               </div></el-col
             >
-            <el-col :span="4"><div class="stat-card"><div class="stat-num">{{ gantt.skippedCount }}</div><div class="stat-label">跳过工单</div></div></el-col>
             <el-col :span="4"
-              ><div class="stat-card"><div class="stat-num">{{ strategyLabel(gantt.strategy) }}</div><div class="stat-label">策略</div></div></el-col
+              ><div class="stat-card">
+                <div class="stat-num">{{ gantt.skippedCount }}</div>
+                <div class="stat-label">跳过工单</div>
+              </div></el-col
             >
-            <el-col :span="4"><div class="stat-card"><div class="stat-num">{{ gantt.horizonDays }}</div><div class="stat-label">跨度(天)</div></div></el-col>
+            <el-col :span="4"
+              ><div class="stat-card">
+                <div class="stat-num">{{ strategyLabel(gantt.strategy) }}</div>
+                <div class="stat-label">策略</div>
+              </div></el-col
+            >
+            <el-col :span="4"
+              ><div class="stat-card">
+                <div class="stat-num">{{ gantt.horizonDays }}</div>
+                <div class="stat-label">跨度(天)</div>
+              </div></el-col
+            >
           </el-row>
 
           <div ref="ganttChartRef" class="gantt-chart"></div>
@@ -323,13 +340,15 @@ const handleDelete = async () => {
 /** AI 解读: 唤起全局 AI 助手并预填分析指令(Agent 调排产工具作答) */
 const handleAiInterpret = () => {
   if (!gantt.value) return;
-  const prompt = `请基于智能排产工具(aps_schedule)分析最新排产方案 ${gantt.value.planNo}：` +
+  const prompt =
+    `请基于智能排产工具(aps_schedule)分析最新排产方案 ${gantt.value.planNo}：` +
     `1) 哪些工单预计拖期、拖期多少天；2) 瓶颈资源是哪个、利用率多少；` +
     `3) 结合拖期工单交期与瓶颈资源，给出缓解建议（如调整优先级、加班、委外）。`;
   aiChatRef.value?.open(prompt);
 };
 
-const handleViewGantt = async (row: SchedulePlanVO) => {  selectedPlanId.value = row.planId;
+const handleViewGantt = async (row: SchedulePlanVO) => {
+  selectedPlanId.value = row.planId;
   selectedPlan.value = row;
   showGanttDrawer.value = true;
   ganttLoading.value = true;

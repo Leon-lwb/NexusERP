@@ -1066,10 +1066,7 @@ const updateMainTableSummary = (subTableComponent: any) => {
         summaryValue = currentSubTableData.reduce((sum, row) => sum + (parseFloat(row[String((summaryRule as any).field)]) || 0), 0);
       } else if (summaryRule && typeof summaryRule === 'object' && (summaryRule as any).formula) {
         // 复杂公式：对每行按公式计算后再累加
-        summaryValue = currentSubTableData.reduce(
-          (sum, row) => sum + (evaluateFormula(String((summaryRule as any).formula), row) || 0),
-          0
-        );
+        summaryValue = currentSubTableData.reduce((sum, row) => sum + (evaluateFormula(String((summaryRule as any).formula), row) || 0), 0);
       }
       formData.value[String(targetField)] = Number.isFinite(summaryValue) ? Number(summaryValue.toFixed(2)) : 0;
     });
