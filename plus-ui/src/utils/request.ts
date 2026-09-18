@@ -199,10 +199,15 @@ service.interceptors.response.use(
     const jsonEnvelope = res.request.responseType === 'arraybuffer' ? readJsonErrorEnvelope(res) : null;
     if (jsonEnvelope) {
       const envelopeCode = jsonEnvelope.code || HttpStatus.SUCCESS;
+      // 成功信封按普通二进制响应放行：理论上文件流端点不会包成功信封，但真出现时
+      // 不该被当错误拒绝（L2：code=200 的信封此前也走 reject）
+      if (envelopeCode === HttpStatus.SUCCESS) {
+        return res.data;
+      }
       const envelopeMsg = errorCode[envelopeCode] || jsonEnvelope.msg || errorCode['default'];
       if (envelopeCode === HttpStatus.UNAUTHORIZED || isAuthExpiredError(envelopeMsg)) {
         toReLogin();
-      } else if (envelopeCode !== HttpStatus.SUCCESS && res.config.headers?.ignoreErrorMsg !== 'true') {
+      } else if (res.config.headers?.ignoreErrorMsg !== 'true') {
         ElMessage({ message: envelopeMsg, type: 'error' });
       }
       // 拒绝值统一用 Error 承载真实原因（普通 JSON 分支各 code 会拒绝字符串，

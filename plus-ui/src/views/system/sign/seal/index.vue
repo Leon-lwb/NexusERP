@@ -221,7 +221,7 @@ const {
   getList,
   handleAdd: rawHandleAdd,
   handleUpdate: rawHandleUpdate,
-  submitForm,
+  submitForm: rawSubmitForm,
   cancel
 } = useCrud<SealVO & SealForm, SealQuery>({
   apis: { list: listSeal, get: getSeal, add: addSeal, update: updateSeal, del: delSeal },
@@ -307,6 +307,18 @@ const fillPreviewUrl = async (row: SealVO) => {
 const loadList = async () => {
   await getList();
   await Promise.all(list.value.map((row) => fillPreviewUrl(row)));
+};
+
+/**
+ * 提交后补齐预览图：useCrud 的 submitForm 成功后只刷原始列表（getList），
+ * 不会走 loadList 的预览回填 —— 新增/修改的行会显示 '-' 直到手动刷新，这里在提交后补一次。
+ */
+const submitForm = async () => {
+  await rawSubmitForm();
+  if (!open.value) {
+    // 弹窗已关 = 提交成功（校验失败/接口报错时弹窗保持打开，此时无需回填）
+    await Promise.all(list.value.map((row) => fillPreviewUrl(row)));
+  }
 };
 
 const handleQuery = () => {

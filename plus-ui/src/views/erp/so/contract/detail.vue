@@ -285,24 +285,33 @@ const formatAmount = (amount?: number, currency?: string) => `${amount ?? '-'} $
 
 const goBack = () => router.push({ path: '/erp/soBiz/contract' });
 
-const loadContract = async () => {
+/** 加载轮次令牌：A 合同的响应在途时快速切到 B，迟到的 A 响应不得覆盖 B 的数据（否则会在 B 页面上签 A 的文档） */
+let loadSeq = 0;
+
+const loadContract = async (token: number) => {
   loading.value = true;
   try {
     const { data } = await getContract(contractId.value);
+    if (token !== loadSeq) return;
     contract.value = data ?? {};
   } finally {
-    loading.value = false;
+    if (token === loadSeq) {
+      loading.value = false;
+    }
   }
 };
 
-const loadDocument = async () => {
+const loadDocument = async (token: number) => {
   docLoading.value = true;
   try {
     // 尚无正文时后端 data 为 null（不是空对象）
     const { data } = await getCurrentDocument(BIZ_TYPE, contractId.value);
+    if (token !== loadSeq) return;
     doc.value = data ?? null;
   } finally {
-    docLoading.value = false;
+    if (token === loadSeq) {
+      docLoading.value = false;
+    }
   }
 };
 
@@ -343,7 +352,7 @@ const doUpload = async (file: File) => {
     signatureId.value = undefined;
     verifyResult.value = null;
     proxy?.$modal.msgSuccess('正文上传成功');
-    await loadDocument();
+    await loadDocument(loadSeq);
   } catch (error: any) {
     // 服务端准入（扩展名/魔数/大小/摘要）的原文原样呈现，前端不预判文件类型
     uploadError.value = error?.message || '正文上传失败';
@@ -386,8 +395,8 @@ const openSignDialog = async () => {
   if (doc.value.signStatus === '2') {
     try {
       await ElMessageBox.confirm(
-        '该正文已签署。重新签署会以「原始正文」重新盖章并新增一条签名记录，当前生效的签署后文件将被新文件替换。是否继续？',
-        '重新签署',
+        '该正文已签署。继续签署将在当前签署后文件上追加盖章（先前签署人的印章与数字签名会保留），并新增一条签名记录。是否继续？',
+        '追加签署',
         { type: 'warning' }
       );
     } catch {
@@ -404,7 +413,7 @@ const handleSignSuccess = async (newSignatureId: string | number) => {
   verifyResult.value = null;
   placements.value = [];
   proxy?.$modal.msgSuccess('签署成功，已生成签署后正文');
-  await loadDocument();
+  await loadDocument(loadSeq);
 };
 
 /**
@@ -450,7 +459,8 @@ const loadAll = async () => {
     proxy?.$modal.msgError('缺少合同ID，无法打开详情页');
     return;
   }
-  await Promise.all([loadContract(), loadDocument()]);
+  const token = ++loadSeq;
+  await Promise.all([loadContract(token), loadDocument(token)]);
 };
 
 /**

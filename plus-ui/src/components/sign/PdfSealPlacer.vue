@@ -312,7 +312,11 @@ const measure = async (force = false) => {
   await renderAll();
 };
 
+/** 加载轮次令牌：docId/ossId 快速连续变化时，旧一轮在任何 await 之后发现令牌过期即自行退出 */
+let loadToken = 0;
+
 const loadPdf = async () => {
+  const token = ++loadToken;
   await destroyPdf();
   pdfError.value = '';
   pages.value = [];
@@ -324,25 +328,44 @@ const loadPdf = async () => {
   try {
     // 正文取流走同源鉴权端点（先取 ossId 再取字节），避免直接把跨域 OSS 地址丢给 pdfjs worker
     const bytes = props.ossId ? await fetchOssBytes(props.ossId) : await fetchDocumentBytes(props.docId);
+    if (token !== loadToken) return;
     const task = getDocument({ data: new Uint8Array(bytes) });
     loadingTask = task;
     const doc = await task.promise;
+    if (token !== loadToken) {
+      // 已被新一轮取代：本轮产物自行销毁，不碰新一轮的 loadingTask/pdfDoc（否则就是泄漏/串台）
+      doc.destroy();
+      return;
+    }
     pdfDoc = doc;
     const metas: PageMeta[] = [];
     for (let pageNo = 1; pageNo <= doc.numPages; pageNo++) {
       // pdfjs 页码 1 基，后端 pageIndex 0 基 —— 这里就换算好，落位里只出现 0 基序号
       const page = await doc.getPage(pageNo);
+      // 旋转页守卫：pdfjs 的 getViewport 默认应用页面 /Rotate，归一化坐标相对「旋转后的可视盒」，
+      // 而服务端按未旋转的 MediaBox 落位 —— 90°/270° 扫描件上章会整体转置错位且无任何告警。
+      // 在放章之前拦下，明确告知用户先转正页面（短期方案；后端按 CropBox+旋转矩阵换算列入后续）
+      if (((page.rotate % 360) + 360) % 360 !== 0) {
+        pdfError.value = `第 ${pageNo} 页是旋转页面（${page.rotate}°）：当前版本在旋转页上盖章会位置错乱，请先用 PDF 工具把页面转正并重新上传后再签署`;
+        pages.value = [];
+        return;
+      }
       const viewport = page.getViewport({ scale: 1 });
       metas.push({ pageIndex: pageNo - 1, width: viewport.width, height: viewport.height });
     }
+    if (token !== loadToken) return;
     pages.value = metas;
     await nextTick();
     await measure(true);
   } catch (error: any) {
+    if (token !== loadToken) return;
     console.error('PDF 正文加载失败:', error);
     pdfError.value = describePdfError(error);
   } finally {
-    pdfLoading.value = false;
+    // 只有最新一轮有权收起 loading：旧一轮提前收掉会让新一轮「转圈中却可点击」
+    if (token === loadToken) {
+      pdfLoading.value = false;
+    }
   }
 };
 
