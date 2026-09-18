@@ -194,10 +194,10 @@ class SignatureTimestampPrecisionTest {
      */
     private static String recomputeLikeVerify(EsSignature cur) {
         long signedAtMs = cur.getSignedAt() == null ? 0L : cur.getSignedAt().getTime();
-        return SignatureChainCalculator.compute(
+        return SignatureChainCalculator.computeV2(
             cur.getPrevHash(), cur.getSignatureId(), cur.getBizType(), cur.getBizId(),
             cur.getSignerUserId(), cur.getSealId(), cur.getSignatureMeaning(),
-            cur.getDocHash(), signedAtMs);
+            cur.getDocHash(), signedAtMs, cur.getAuthMethod(), cur.getBizNo());
     }
 
     @Test

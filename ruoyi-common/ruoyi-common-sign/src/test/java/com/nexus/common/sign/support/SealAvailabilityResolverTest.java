@@ -191,4 +191,44 @@ class SealAvailabilityResolverTest {
         assertFalse(SealAvailabilityResolver.isUsable(
             company(SealStatus.ENABLED), null, ME, MY_DEPT, BIZ));
     }
+
+    // ===== 印章自身有效期（此前只在入库时校验日期排序，使用时不判，过期章可被无限期使用） =====
+
+    @Test
+    @DisplayName("个人章：印章自身 validTo 已过 -> 不可用（即使状态仍为启用、归属人正确）")
+    void personal_sealExpired_unavailable() {
+        EsSeal seal = personal(ME, SealStatus.ENABLED);
+        seal.setValidFrom(daysFromNow(-10));
+        seal.setValidTo(daysFromNow(-1));
+        assertFalse(SealAvailabilityResolver.isUsable(seal, List.of(), ME, MY_DEPT, BIZ),
+            "启用状态挡不住时间流逝越过 valid_to，使用时必须实时判定");
+    }
+
+    @Test
+    @DisplayName("个人章：印章自身 validFrom 未到 -> 不可用")
+    void personal_sealNotYetEffective_unavailable() {
+        EsSeal seal = personal(ME, SealStatus.ENABLED);
+        seal.setValidFrom(daysFromNow(1));
+        seal.setValidTo(daysFromNow(10));
+        assertFalse(SealAvailabilityResolver.isUsable(seal, List.of(), ME, MY_DEPT, BIZ));
+    }
+
+    @Test
+    @DisplayName("个人章：当前时间落在印章有效窗口内 -> 可用")
+    void personal_sealWithinWindow_available() {
+        EsSeal seal = personal(ME, SealStatus.ENABLED);
+        seal.setValidFrom(daysFromNow(-1));
+        seal.setValidTo(daysFromNow(1));
+        assertTrue(SealAvailabilityResolver.isUsable(seal, List.of(), ME, MY_DEPT, BIZ));
+    }
+
+    @Test
+    @DisplayName("公司章：授权有效但印章自身已过期 -> 不可用（授权窗口不能复活过期印章）")
+    void company_sealExpiredGrantValid_unavailable() {
+        EsSeal seal = company(SealStatus.ENABLED);
+        seal.setValidTo(daysFromNow(-1));
+        List<EsSealGrant> grants = List.of(
+            grant(ME, null, null, "1", daysFromNow(-1), daysFromNow(1)));
+        assertFalse(SealAvailabilityResolver.isUsable(seal, grants, ME, MY_DEPT, BIZ));
+    }
 }

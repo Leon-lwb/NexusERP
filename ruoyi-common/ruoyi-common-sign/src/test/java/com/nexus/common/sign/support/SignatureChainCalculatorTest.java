@@ -80,4 +80,36 @@ class SignatureChainCalculatorTest {
         String b = SignatureChainCalculator.compute(null, 1L, "APPROVAL", 100L, 7L, 9L, "审批", null, T);
         assertNotEquals(a, b);
     }
+
+    @Test
+    @DisplayName("computeV2: 认证方式变化改变结果（auth_method 编入哈希，DB 直改可被验签检出）")
+    void computeV2_authMethodChange_altersHash() {
+        String a = SignatureChainCalculator.computeV2(null, 1L, "APPROVAL", 100L, 7L, null, "审批", null, T, "PASSWORD", null);
+        String b = SignatureChainCalculator.computeV2(null, 1L, "APPROVAL", 100L, 7L, null, "审批", null, T, "LOGIN_ONLY", null);
+        assertNotEquals(a, b, "PASSWORD↔LOGIN_ONLY 改写直接影响证据效力，必须可检出");
+    }
+
+    @Test
+    @DisplayName("computeV2: 单据编号变化改变结果")
+    void computeV2_bizNoChange_altersHash() {
+        String a = SignatureChainCalculator.computeV2(null, 1L, "APPROVAL", 100L, 7L, null, "审批", null, T, "PASSWORD", "proc-1");
+        String b = SignatureChainCalculator.computeV2(null, 1L, "APPROVAL", 100L, 7L, null, "审批", null, T, "PASSWORD", "proc-2");
+        assertNotEquals(a, b);
+    }
+
+    @Test
+    @DisplayName("computeV2 与 v1 同输入结果不同（公式升级，新旧哈希不冲突）")
+    void computeV2_differsFromV1() {
+        String v1 = SignatureChainCalculator.compute(null, 1L, "APPROVAL", 100L, 7L, null, "审批", null, T);
+        String v2 = SignatureChainCalculator.computeV2(null, 1L, "APPROVAL", 100L, 7L, null, "审批", null, T, "PASSWORD", "proc-1");
+        assertNotEquals(v1, v2);
+    }
+
+    @Test
+    @DisplayName("computeV2: 确定性（同输入同输出）")
+    void computeV2_deterministic() {
+        String a = SignatureChainCalculator.computeV2("a".repeat(64), 2L, "SO_CONTRACT", 200L, 8L, 9L, "合同签署", "c".repeat(64), T + 1, "PASSWORD", "HT-2026");
+        String b = SignatureChainCalculator.computeV2("a".repeat(64), 2L, "SO_CONTRACT", 200L, 8L, 9L, "合同签署", "c".repeat(64), T + 1, "PASSWORD", "HT-2026");
+        assertEquals(a, b);
+    }
 }

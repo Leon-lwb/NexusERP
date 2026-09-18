@@ -236,19 +236,21 @@ class ESignatureSignDocumentTest {
             "signed_at 必须在写入前就截断到秒，否则落库后无法复现链哈希（P1 回归点）");
 
         EsSignature readBack = readBackFromDbAsMysqlDatetime(written);
-        String recomputed = SignatureChainCalculator.compute(
+        String recomputed = SignatureChainCalculator.computeV2(
             readBack.getPrevHash(), readBack.getSignatureId(), readBack.getBizType(),
             readBack.getBizId(), readBack.getSignerUserId(), readBack.getSealId(),
-            readBack.getSignatureMeaning(), readBack.getDocHash(), readBack.getSignedAt().getTime());
+            readBack.getSignatureMeaning(), readBack.getDocHash(), readBack.getSignedAt().getTime(),
+            readBack.getAuthMethod(), readBack.getBizNo());
         assertEquals(readBack.getChainHash(), recomputed,
             "落库往返后重算的链哈希必须与库中值一致");
 
         // 反向证明「签署后文件摘要被编进了链」：换掉 docHash，链哈希必须随之改变
         assertNotNull(written.getDocHash(), "文档签章必须把签署后文件 SM3 写进 doc_hash");
-        String tampered = SignatureChainCalculator.compute(
+        String tampered = SignatureChainCalculator.computeV2(
             written.getPrevHash(), written.getSignatureId(), written.getBizType(),
             written.getBizId(), written.getSignerUserId(), written.getSealId(),
-            written.getSignatureMeaning(), "0".repeat(64), written.getSignedAt().getTime());
+            written.getSignatureMeaning(), "0".repeat(64), written.getSignedAt().getTime(),
+            written.getAuthMethod(), written.getBizNo());
         assertNotEquals(written.getChainHash(), tampered,
             "doc_hash 若不参与链式计算，文件被换掉验链就发现不了");
     }
@@ -663,6 +665,7 @@ class ESignatureSignDocumentTest {
         doc.setFileHash(Sm3Utils.hashHexBytes(srcPdf));
         doc.setPageCount(2);
         doc.setSignStatus("0");
+        doc.setIsCurrent("1");
         return doc;
     }
 
@@ -703,6 +706,8 @@ class ESignatureSignDocumentTest {
         db.setSignatureId(saved.getSignatureId());
         db.setBizType(saved.getBizType());
         db.setBizId(saved.getBizId());
+        db.setBizNo(saved.getBizNo());
+        db.setAuthMethod(saved.getAuthMethod());
         db.setSignerUserId(saved.getSignerUserId());
         db.setSealId(saved.getSealId());
         db.setSignatureMeaning(saved.getSignatureMeaning());
@@ -741,5 +746,61 @@ class ESignatureSignDocumentTest {
         verify(signatureMapper, never()).insert(any(EsSignature.class));
         verify(documentMapper, never()).updateById(any(EsSignDocument.class));
         verify(ossContentAccessor, never()).store(any(byte[].class), anyString(), anyString());
+    }
+
+    // ------------------------------------------- 多方签署基准 / 版本守卫（2026-09-18 安全审查修复）
+
+    /** 既有「签署后文件」的 OSS ID（第二签署人的基准文件） */
+    private static final Long SIGNED_OSS_ID = 6100L;
+
+    @Test
+    @DisplayName("追加签署：基准必须是当前签署后文件（保留先签者的章与CMS），而不是原始上传件")
+    void signDocument_reSigningBasedOnSignedArtifact() {
+        EsSignDocument doc = document();
+        doc.setSignedOssId(SIGNED_OSS_ID);
+        when(documentMapper.selectById(DOC_ID)).thenReturn(doc);
+        when(ossContentAccessor.read(SIGNED_OSS_ID)).thenReturn(signedFixture);
+        // 台账里「产生当前签署后文件的那条记录」——同时充当链尾（lenient mock 下同一个桩）
+        EsSignature producer = recordWith(SIGNED_OSS_ID, signedFixtureHash);
+        when(signatureMapper.selectOne(any())).thenReturn(producer);
+
+        service.signDocument(cmd(placement(0, SEAL_ID)));
+
+        verify(signatureMapper).insert(sigCaptor.capture());
+        EsSignature saved = sigCaptor.getValue();
+        assertEquals(SIGNED_OSS_ID, saved.getSrcDocOssId(), "追加签署的「签署前文件」应是上一签署产物");
+        assertEquals(signedFixtureHash, saved.getSrcDocHash(), "签署前摘要应与台账登记的签署后文件一致");
+        verify(ossContentAccessor, never()).read(FILE_OSS_ID);
+    }
+
+    @Test
+    @DisplayName("追加签署：签署后文件被替换（与台账 doc_hash 不一致）-> 拒绝且什么都没写")
+    void signDocument_reSigningArtifactReplacedRejected() {
+        EsSignDocument doc = document();
+        doc.setSignedOssId(SIGNED_OSS_ID);
+        when(documentMapper.selectById(DOC_ID)).thenReturn(doc);
+        when(ossContentAccessor.read(SIGNED_OSS_ID)).thenReturn(signedFixture);
+        EsSignature producer = recordWith(SIGNED_OSS_ID, "0".repeat(64)); // 台账登记的是另一份文件
+        when(signatureMapper.selectOne(any())).thenReturn(producer);
+
+        ServiceException e = assertThrows(ServiceException.class,
+            () -> service.signDocument(cmd(placement(0, SEAL_ID))));
+
+        assertTrue(e.getMessage().contains("摘要不一致"), "实际：" + e.getMessage());
+        assertNothingWritten();
+    }
+
+    @Test
+    @DisplayName("版本守卫：签署已被新版本取代的正文（is_current=0）-> 拒绝且什么都没写")
+    void signDocument_nonCurrentVersionRejected() {
+        EsSignDocument doc = document();
+        doc.setIsCurrent("0");
+        when(documentMapper.selectById(DOC_ID)).thenReturn(doc);
+
+        ServiceException e = assertThrows(ServiceException.class,
+            () -> service.signDocument(cmd(placement(0, SEAL_ID))));
+
+        assertTrue(e.getMessage().contains("新版本取代"), "实际：" + e.getMessage());
+        assertNothingWritten();
     }
 }

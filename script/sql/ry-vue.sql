@@ -96628,7 +96628,9 @@ CREATE TABLE `es_signature`  (
   PRIMARY KEY (`signature_id`) USING BTREE,
   KEY `idx_es_sig_biz` (`tenant_id`, `biz_type`, `biz_id`) USING BTREE,
   KEY `idx_es_sig_signer` (`signer_user_id`, `signed_at`) USING BTREE,
-  KEY `idx_es_sig_chain` (`tenant_id`, `signature_id`) USING BTREE
+  KEY `idx_es_sig_chain` (`tenant_id`, `signature_id`) USING BTREE,
+  KEY `idx_es_sig_chain_tail` (`tenant_id`, `signed_at`, `signature_id`) USING BTREE,
+  UNIQUE KEY `uk_es_sig_prev_hash` (`tenant_id`, `prev_hash`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '电子签名记录(append-only,无更新/删除字段)' ROW_FORMAT = Dynamic;
 
 -- ----------------------------

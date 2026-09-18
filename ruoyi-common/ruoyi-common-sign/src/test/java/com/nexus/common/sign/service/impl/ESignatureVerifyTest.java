@@ -134,6 +134,59 @@ class ESignatureVerifyTest {
         assertFalse(service.verify(1L).getPassed());
     }
 
+    /** 构造一条按 v2 公式（含 authMethod/bizNo）自洽的记录 —— 2026-09-18 起新签名一律 v2 */
+    private EsSignature consistentV2(Long id, String prevHash, String meaning) {
+        EsSignature s = consistent(id, prevHash, meaning);
+        s.setBizNo("proc-ins-" + id);
+        s.setChainHash(SignatureChainCalculator.computeV2(
+            prevHash, id, s.getBizType(), s.getBizId(), s.getSignerUserId(),
+            s.getSealId(), meaning, s.getDocHash(), s.getSignedAt().getTime(),
+            s.getAuthMethod(), s.getBizNo()));
+        return s;
+    }
+
+    @Test
+    @DisplayName("verify: v2 记录未被篡改 -> 通过")
+    void verify_v2Intact_passes() {
+        EsSignature s = consistentV2(1L, null, "审批通过");
+        when(signatureMapper.selectById(1L)).thenReturn(s);
+        when(signatureMapper.selectOne(any())).thenReturn(null);
+
+        assertTrue(service.verify(1L).getPassed());
+    }
+
+    @Test
+    @DisplayName("verify: v2 记录 authMethod 被改写（LOGIN_ONLY→PASSWORD）-> 检出（v1 时代该篡改不可见）")
+    void verify_v2TamperedAuthMethod_detected() {
+        EsSignature s = consistentV2(1L, null, "审批通过");
+        // 攻击模型：把「免密签署」的历史记录改成「密码认证」，抬高证据效力
+        s.setAuthMethod(SignAuthMethod.PASSWORD);
+        when(signatureMapper.selectById(1L)).thenReturn(s);
+
+        assertFalse(service.verify(1L).getPassed(), "auth_method 已编入 v2 链哈希，改写必须被检出");
+    }
+
+    @Test
+    @DisplayName("verify: v2 记录 bizNo 被改写 -> 检出")
+    void verify_v2TamperedBizNo_detected() {
+        EsSignature s = consistentV2(1L, null, "审批通过");
+        s.setBizNo("other-instance");
+        when(signatureMapper.selectById(1L)).thenReturn(s);
+
+        assertFalse(service.verify(1L).getPassed());
+    }
+
+    @Test
+    @DisplayName("verify: v1 公式的存量记录（公式升级前落库）-> 仍通过，不因公式升级误报篡改")
+    void verify_legacyV1Record_stillPasses() {
+        // consistent() 构造的就是 v1 口径的哈希
+        EsSignature s = consistent(1L, null, "审批通过");
+        when(signatureMapper.selectById(1L)).thenReturn(s);
+        when(signatureMapper.selectOne(any())).thenReturn(null);
+
+        assertTrue(service.verify(1L).getPassed(), "存量链记录按 v1 重算命中，必须放行");
+    }
+
     @Test
     @DisplayName("verify: prevHash 与真实前驱 chainHash 不匹配 -> 检出断链")
     void verify_brokenLink_detected() {

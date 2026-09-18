@@ -147,10 +147,10 @@ class ESignatureServiceImplTransactionTest {
 
     /** 用记录自身字段重算链哈希（与验签口径一致）。 */
     private static String recomputeChainHash(EsSignature s) {
-        return SignatureChainCalculator.compute(
+        return SignatureChainCalculator.computeV2(
             s.getPrevHash(), s.getSignatureId(), s.getBizType(), s.getBizId(),
             s.getSignerUserId(), s.getSealId(), s.getSignatureMeaning(),
-            s.getDocHash(), s.getSignedAt().getTime());
+            s.getDocHash(), s.getSignedAt().getTime(), s.getAuthMethod(), s.getBizNo());
     }
 
     @Test

@@ -135,10 +135,10 @@ class ESignatureServiceImplTest {
         service.sign(cmd(null));
         verify(signatureMapper).insert(sigCaptor.capture());
         EsSignature saved = sigCaptor.getValue();
-        String expected = SignatureChainCalculator.compute(
+        String expected = SignatureChainCalculator.computeV2(
             saved.getPrevHash(), saved.getSignatureId(), saved.getBizType(), saved.getBizId(),
             saved.getSignerUserId(), saved.getSealId(), saved.getSignatureMeaning(),
-            saved.getDocHash(), saved.getSignedAt().getTime());
+            saved.getDocHash(), saved.getSignedAt().getTime(), saved.getAuthMethod(), saved.getBizNo());
         assertEquals(expected, saved.getChainHash());
     }
 

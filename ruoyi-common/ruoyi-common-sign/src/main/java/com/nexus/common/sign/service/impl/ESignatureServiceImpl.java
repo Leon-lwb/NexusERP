@@ -45,6 +45,8 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -119,6 +121,10 @@ public class ESignatureServiceImpl implements ESignatureService {
     private static final int MEANING_MAX_LEN = 128;
     /** {@code es_sign_document.sign_status}：已签 */
     private static final String SIGN_STATUS_SIGNED = "2";
+    /** {@code es_sign_document.is_current}：当前生效版本（非当前版本禁止签署） */
+    private static final String IS_CURRENT_YES = "1";
+    /** {@code es_signature.sign_ua} 列宽（varchar(512)）：超长 UA 会因严格模式 insert 失败卡死签署 */
+    private static final int SIGN_UA_MAX_LEN = 512;
     /** 自签证书主题的组织单元 */
     private static final String CERT_ORG_UNIT = "Nexus-ERP 电子签章";
 
@@ -170,6 +176,7 @@ public class ESignatureServiceImpl implements ESignatureService {
         Long userId = LoginHelper.getUserId();
         String tenantId = LoginHelper.getTenantId();
         Long deptId = LoginHelper.getDeptId();
+        assertSigningContext(tenantId, userId);
 
         EsSeal seal = null;
         if (cmd.sealId() != null) {
@@ -184,11 +191,64 @@ public class ESignatureServiceImpl implements ESignatureService {
         if (lock == null) {
             throw new ServiceException("签名通道繁忙，请稍后重试");
         }
+        boolean releaseDeferred = false;
         try {
-            return appendSignature(cmd, seal, userId, deptId);
+            Long signatureId = appendSignature(cmd, seal, userId, deptId);
+            releaseDeferred = releaseLockAfterTransaction(lock);
+            return signatureId;
         } finally {
-            lockTemplate.releaseLock(lock);
+            if (!releaseDeferred) {
+                lockTemplate.releaseLock(lock);
+            }
         }
+    }
+
+    /**
+     * 签署上下文守卫：租户/用户缺失时<b>快速失败</b>，而不是静默写出脏数据。
+     *
+     * <p>es_signature 的 {@code tenant_id}/{@code signer_user_id} 均为 NOT NULL，
+     * 而非请求线程（MQ 消费者、@Async 等）调用签名时 Sa-Token 的 ThreadLocal 不会传播：
+     * 不守卫的表现是锁 key 退化为公共前缀、多租户插件失去租户过滤、insert 直接报错 ——
+     * 调用方（如 SOP 查阅登记）捕获异常降级后 {@code signature_id} 长留 NULL，
+     * 与本模块曾实测的「数据源漂移」是同型故障。这里把失败点前移到入口并给出可定位的报错。</p>
+     *
+     * @param tenantId 当前租户ID
+     * @param userId   当前用户ID
+     */
+    private void assertSigningContext(String tenantId, Long userId) {
+        if (StringUtils.isBlank(tenantId) || userId == null) {
+            throw new ServiceException("签署上下文缺失（租户或用户未识别）：异步线程调用签名前必须显式传播租户与用户上下文");
+        }
+    }
+
+    /**
+     * 把链锁的释放推迟到当前事务结束（提交或回滚）之后。
+     *
+     * <p><b>为什么不能直接在 finally 里放锁：</b>finally 在<b>提交之前</b>执行，锁一放，
+     * 排队的下一个签名者立刻进来，但 MySQL 默认 REPEATABLE READ 下它读到的仍是
+     * 「上一条链记录尚未提交」的快照 —— 两条记录取到同一个 {@code prev_hash}，链就此分叉，
+     * 且 {@code prev_hash} 无唯一约束拦截，此后 verifyChain 对分叉后代永远报断链。
+     * 对 {@link #sign}（REQUIRED 加入调用方事务）窗口尤其大：返回后调用方还要做完
+     * 整段 Flowable 办结才提交。与 {@code EsSignDocumentServiceImpl#uploadDocument}
+     * 的换版锁同一处理方式（该处注释详述了原理）。</p>
+     *
+     * <p>无事务上下文时（直连调用、单元测试）同步机制不可用，返回 {@code false}
+     * 由调用方在 {@code finally} 里立即释放。</p>
+     *
+     * @param lock 待释放的锁
+     * @return true 表示已注册延迟释放（调用方不得再释放一次）
+     */
+    private boolean releaseLockAfterTransaction(LockInfo lock) {
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            return false;
+        }
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCompletion(int status) {
+                lockTemplate.releaseLock(lock);
+            }
+        });
+        return true;
     }
 
     /**
@@ -302,10 +362,14 @@ public class ESignatureServiceImpl implements ESignatureService {
         Long userId = LoginHelper.getUserId();
         String tenantId = LoginHelper.getTenantId();
         Long deptId = LoginHelper.getDeptId();
+        assertSigningContext(tenantId, userId);
 
         EsSignDocument doc = documentMapper.selectById(cmd.docId());
         if (doc == null) {
             throw new ServiceException("待签文档不存在");
+        }
+        if (!IS_CURRENT_YES.equals(doc.getIsCurrent())) {
+            throw new ServiceException("该正文版本已被新版本取代，不能签署（当前生效版本请在详情页重新打开）");
         }
         if (StringUtils.isNotBlank(cmd.bizType()) && !cmd.bizType().equals(doc.getBizType())) {
             throw new ServiceException("文档与业务类型不匹配");
@@ -324,14 +388,22 @@ public class ESignatureServiceImpl implements ESignatureService {
         // 认证失败即拒绝，不允许降级为「无凭证签名」
         authVerifier.verify(userId, cmd.authMethod(), cmd.credential());
 
-        // 源正文服务端准入：先验魔数（不信任前端/后缀名），再核对摘要（换过文件就拒绝签署）
-        byte[] srcPdf = readRequired(doc.getFileOssId(), "待签文档正文");
+        // 多方签署基准：已产生签署后文件时在其上<b>增量</b>盖章（保留先前签署人的章与 CMS 签名），
+        // 首次签署才以原始上传件为基准。若始终基于原始件重盖，后签者的产物会静默丢弃先签者的全部签章。
+        Long baseOssId = doc.getSignedOssId() != null ? doc.getSignedOssId() : doc.getFileOssId();
+        boolean reSigning = doc.getSignedOssId() != null;
+
+        // 服务端准入：先验魔数（不信任前端/后缀名），再核对摘要（换过文件就拒绝签署）。
+        // 摘要口径随基准走：首次签署对 doc.file_hash（原始件）；追加签署对「产生当前签署后文件的那条
+        // 签名记录」的 doc_hash —— 台账按 doc_oss_id 可回查，查不到时跳过比对（不做无据拒绝）。
+        byte[] srcPdf = readRequired(baseOssId, "待签文档正文");
         if (!PdfContentStamper.isPdf(srcPdf)) {
             throw new ServiceException("仅支持 PDF 文件");
         }
         String srcHash = Sm3Utils.hashHexBytes(srcPdf);
-        if (StringUtils.isNotBlank(doc.getFileHash()) && !doc.getFileHash().equalsIgnoreCase(srcHash)) {
-            throw new ServiceException("文档正文与上传时的摘要不一致，疑似已被替换，拒绝签署");
+        String expectedSrcHash = reSigning ? signedArtifactHash(doc) : doc.getFileHash();
+        if (StringUtils.isNotBlank(expectedSrcHash) && !expectedSrcHash.equalsIgnoreCase(srcHash)) {
+            throw new ServiceException("文档正文与登记时的摘要不一致，疑似已被替换，拒绝签署");
         }
 
         List<PdfContentStamper.StampSpec> specs = new ArrayList<>();
@@ -362,19 +434,41 @@ public class ESignatureServiceImpl implements ESignatureService {
         if (lock == null) {
             throw new ServiceException("签名通道繁忙，请稍后重试");
         }
+        boolean releaseDeferred = false;
         try {
             // 台账只有一列 seal_id：多章场景登记「第一个落位所用印章」，落位顺序即业务主次
             EsSeal primarySeal = seals.get(cmd.placements().get(0).sealId());
             Long signatureId = appendLedger(cmd.bizType(), cmd.bizId(), null, cmd.signatureMeaning(),
                 cmd.authMethod(), primarySeal, userId, deptId,
-                new DocLink(doc.getFileOssId(), srcHash, signedOssId, signedHash, doc.getDocId()));
+                new DocLink(baseOssId, srcHash, signedOssId, signedHash, doc.getDocId()));
             markDocumentSigned(doc.getDocId(), signedOssId);
-            log.info("文档签章完成: signatureId={}, docId={}, placements={}, signedOssId={}, signedSize={}",
-                signatureId, doc.getDocId(), cmd.placements().size(), signedOssId, signedPdf.length);
+            releaseDeferred = releaseLockAfterTransaction(lock);
+            log.info("文档签章完成: signatureId={}, docId={}, placements={}, base={}, reSigning={}, signedOssId={}, signedSize={}",
+                signatureId, doc.getDocId(), cmd.placements().size(), baseOssId, reSigning, signedOssId, signedPdf.length);
             return signatureId;
         } finally {
-            lockTemplate.releaseLock(lock);
+            if (!releaseDeferred) {
+                lockTemplate.releaseLock(lock);
+            }
         }
+    }
+
+    /**
+     * 追加签署时取「当前签署后文件」在台账登记的 SM3，用于核对基准文件未被替换。
+     *
+     * <p>按 {@code doc_oss_id} 回查产生该文件的签名记录（取 signatureId 最大的一条），
+     * 查不到返回 null（调用方跳过比对 —— 无登记依据时不做无据拒绝）。</p>
+     *
+     * @param doc 待签文档
+     * @return 台账登记的签署后文件 SM3；无记录时 null
+     */
+    private String signedArtifactHash(EsSignDocument doc) {
+        EsSignature producer = signatureMapper.selectOne(Wrappers.<EsSignature>lambdaQuery()
+            .eq(EsSignature::getDocId, doc.getDocId())
+            .eq(EsSignature::getDocOssId, doc.getSignedOssId())
+            .orderByDesc(EsSignature::getSignatureId)
+            .last("LIMIT 1"));
+        return producer == null ? null : producer.getDocHash();
     }
 
     /**
@@ -541,11 +635,7 @@ public class ESignatureServiceImpl implements ESignatureService {
      */
     private String checkRecord(EsSignature cur) {
         long signedAtMs = cur.getSignedAt() == null ? 0L : cur.getSignedAt().getTime();
-        String recomputed = SignatureChainCalculator.compute(
-            cur.getPrevHash(), cur.getSignatureId(), cur.getBizType(), cur.getBizId(),
-            cur.getSignerUserId(), cur.getSealId(), cur.getSignatureMeaning(),
-            cur.getDocHash(), signedAtMs);
-        if (!Objects.equals(recomputed, cur.getChainHash())) {
+        if (!matchesStoredChainHash(cur, signedAtMs)) {
             return "签名记录内容与链哈希不一致，疑似被篡改";
         }
         EsSignature prev = selectTruePredecessor(cur.getSignatureId());
@@ -554,6 +644,34 @@ public class ESignatureServiceImpl implements ESignatureService {
             return "与上一条签名的链哈希不衔接，链已断裂";
         }
         return null;
+    }
+
+    /**
+     * 双公式自哈希验证：新记录按 v2（含 auth_method/biz_no）重算；对不上再按 v1（历史公式）重算，
+     * 两个都命中不了才判篡改。
+     *
+     * <p>v2 把「认证方式」编进链哈希 —— 此前 auth_method 被 DB 直改无法检出，
+     * 而它恰是决定证据效力（是否经过二级认证）的字段。v1 兼容保证公式升级前落库的
+     * 存量链记录不因重算口径变化而被误报为篡改。</p>
+     *
+     * @param cur        待校验记录
+     * @param signedAtMs 签署时间戳（毫秒）
+     * @return 任一公式命中存储的 chain_hash 即 true
+     */
+    private boolean matchesStoredChainHash(EsSignature cur, long signedAtMs) {
+        String stored = cur.getChainHash();
+        String recomputedV2 = SignatureChainCalculator.computeV2(
+            cur.getPrevHash(), cur.getSignatureId(), cur.getBizType(), cur.getBizId(),
+            cur.getSignerUserId(), cur.getSealId(), cur.getSignatureMeaning(),
+            cur.getDocHash(), signedAtMs, cur.getAuthMethod(), cur.getBizNo());
+        if (Objects.equals(recomputedV2, stored)) {
+            return true;
+        }
+        String recomputedV1 = SignatureChainCalculator.compute(
+            cur.getPrevHash(), cur.getSignatureId(), cur.getBizType(), cur.getBizId(),
+            cur.getSignerUserId(), cur.getSealId(), cur.getSignatureMeaning(),
+            cur.getDocHash(), signedAtMs);
+        return Objects.equals(recomputedV1, stored);
     }
 
     /**
@@ -644,11 +762,11 @@ public class ESignatureServiceImpl implements ESignatureService {
         entity.setDocId(docLink.docId());
         entity.setSignedAt(signedAt);
         entity.setSignIp(currentClientIp());
-        entity.setSignUa(currentUserAgent());
+        entity.setSignUa(truncateUa(currentUserAgent()));
         entity.setPrevHash(prevHash);
-        entity.setChainHash(SignatureChainCalculator.compute(
+        entity.setChainHash(SignatureChainCalculator.computeV2(
             prevHash, signatureId, bizType, bizId, userId, entity.getSealId(),
-            signatureMeaning, entity.getDocHash(), signedAt.getTime()));
+            signatureMeaning, entity.getDocHash(), signedAt.getTime(), authMethod, bizNo));
 
         signatureMapper.insert(entity);
         log.info("电子签名入库: signatureId={}, bizType={}, bizId={}, signerUserId={}, sealId={}, docId={}",
@@ -733,5 +851,20 @@ public class ESignatureServiceImpl implements ESignatureService {
         } catch (Exception e) {
             return null;
         }
+    }
+
+    /**
+     * UA 落库前截断到列宽：带大量浏览器扩展的 UA 可超过 {@code varchar(512)}，
+     * MySQL 严格模式下超长 insert 直接报错 —— 签名失败会连带卡死「不签章不生效」的审批。
+     * 截断只影响审计展示，不参与链哈希，无完整性损失。
+     *
+     * @param ua 原始 User-Agent
+     * @return 截断到 512 字符的 UA
+     */
+    private static String truncateUa(String ua) {
+        if (ua == null || ua.length() <= SIGN_UA_MAX_LEN) {
+            return ua;
+        }
+        return ua.substring(0, SIGN_UA_MAX_LEN);
     }
 }
