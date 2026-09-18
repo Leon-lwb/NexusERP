@@ -53,7 +53,36 @@ final class ApprovalSignGate {
     /** 签署含义缺省值 */
     static final String DEFAULT_MEANING = "审批签批";
 
+    /** 审批路径固定的二级认证方式（服务端决定，不采纳请求体，杜绝 LOGIN_ONLY 免密降级） */
+    private static final String FORCED_AUTH_METHOD = SignAuthMethod.PASSWORD;
+
     private ApprovalSignGate() {
+    }
+
+    /**
+     * 把签章相关的五个变量从请求体变量中<b>提取到独立快照并从原 Map 剥离</b>。
+     *
+     * <p>必须在 {@code complete} 内一切消费 {@code taskBo.getVariables()} 的逻辑之前调用：
+     * 在线表单保存会对同一 Map 做白名单原地过滤（删掉这五个键 → 关卡锁死），
+     * {@code taskService.complete(..., variables, false)} 会把残留在 Map 里的键持久化为
+     * 流程实例变量（needSign 冻结实例级判定、signCredential 明文落 act_ru_variable）。
+     * 提前剥离后这两个消费方看到的都只是普通表单变量。</p>
+     *
+     * @param variables 请求体变量（会被原地修改；可为 null）
+     * @return 仅含签章键的快照（无任何签章键时为空 Map，不返回 null）
+     */
+    static Map<String, Object> takeSignVariables(Map<String, Object> variables) {
+        Map<String, Object> snapshot = new HashMap<>();
+        if (variables == null) {
+            return snapshot;
+        }
+        for (String key : new String[]{NEED_SIGN_KEY, SEAL_ID_KEY, MEANING_KEY, AUTH_METHOD_KEY, CREDENTIAL_KEY}) {
+            Object value = variables.remove(key);
+            if (value != null) {
+                snapshot.put(key, value);
+            }
+        }
+        return snapshot;
     }
 
     /**
@@ -158,33 +187,48 @@ final class ApprovalSignGate {
      * 构造签名入参；<b>不需要签章时返回 null</b>，调用方据此完全跳过签名逻辑，
      * 未配置签章的历史流程因此零感知、行为不变。
      *
-     * <p>签章要求可由服务端（属性/流程变量）给定，但印章、含义、认证方式与凭证仍来自本次请求：
+     * <p>签章要求可由服务端（属性/流程变量）给定，但印章、含义与凭证仍来自本次请求；
      * 属性驱动签章时请求体可能完全没有 variables，此处按缺省值构造，凭证缺失会由签名服务在
      * PASSWORD 认证下校验失败并阻断审批（fail closed，即「不签章不生效」）。</p>
      *
+     * <p><b>服务端权威判定与 dataId 解耦：</b>「不带 dataId 就跳过签章」曾是整体绕过点 ——
+     * dataId 是纯客户端字段。现在只要服务端两级配置任一判定需签章，即便 dataId 缺失也照常签署
+     * （bizId 允许为 null，台账本就支持）；请求体驱动的第三优先级仍维持历史行为（无 dataId 不签）。</p>
+     *
+     * <p><b>认证方式服务端固定为 PASSWORD：</b>不采纳请求体的 signAuthMethod。否则客户端把
+     * LOGIN_ONLY 塞进请求体即可免密完成「已签名」的审批，二级认证形同虚设（NCR 处置路径同理，
+     * 见 NcrOrderServiceImpl 的显式拒绝）。sealId 仍由请求体给定 —— 空章逻辑签名本身是
+     * 受审计的既有能力，用章授权由签名服务校验。</p>
+     *
      * @param dataId       业务数据ID（可空；可能是 UUID 等非数字串）
-     * @param variables    请求体中的流程变量，可为 null
+     * @param variables    签章变量快照（由 {@link #takeSignVariables} 提取），可为空 Map
      * @param nodeNeedSign 服务端结论，见 {@link #resolveServerNeedSign}；{@code null} = 服务端未配置
+     * @param procInsId    流程实例ID，写入 biz_no 作审计绑定（同一单据多次送审可区分实例）
      * @return 签名入参；无需签章时为 null
      */
-    static SignCommand buildCommand(String dataId, Map<String, Object> variables, Boolean nodeNeedSign) {
-        if (StringUtils.isBlank(dataId) || !isSignRequired(variables, nodeNeedSign)) {
+    static SignCommand buildCommand(String dataId, Map<String, Object> variables, Boolean nodeNeedSign, String procInsId) {
+        boolean serverDecided = nodeNeedSign != null;
+        if (!isSignRequired(variables, nodeNeedSign)) {
+            return null;
+        }
+        // 服务端权威判定必须签署（dataId 缺失也签）；请求体驱动的第三优先级维持历史行为：无 dataId 不签
+        if (!serverDecided && StringUtils.isBlank(dataId)) {
             return null;
         }
         Map<String, Object> vars = variables == null ? Map.of() : variables;
-        // bizId 允许为 null：dataId 可能是 UUID，而 es_signature.biz_id 列可空，
+        // bizId 允许为 null：dataId 可能是 UUID 或缺失，而 es_signature.biz_id 列可空，
         // 解析失败不能让审批无法签署
         Long bizId = parseLongQuietly(dataId);
         Long sealId = parseSealId(vars.get(SEAL_ID_KEY));
         String meaning = defaultIfBlank(vars.get(MEANING_KEY), DEFAULT_MEANING);
-        String authMethod = defaultIfBlank(vars.get(AUTH_METHOD_KEY), SignAuthMethod.PASSWORD);
+        // 认证方式不采纳请求体：见方法 javadoc（防 LOGIN_ONLY 免密降级）
+        String authMethod = FORCED_AUTH_METHOD;
         // 凭证不做 trim：密码的首尾空白是有效字符，改写会导致校验失败
         Object credentialValue = vars.get(CREDENTIAL_KEY);
         String credential = credentialValue == null ? null : String.valueOf(credentialValue);
         // 严格按 SignCommand 的固定分量顺序构造：
         // bizType, bizId, bizNo, signatureMeaning, sealId, authMethod, credential
-        // 审批场景没有单据编号，bizNo 置 null
-        return new SignCommand(SignBizType.APPROVAL, bizId, null, meaning, sealId, authMethod, credential);
+        return new SignCommand(SignBizType.APPROVAL, bizId, procInsId, meaning, sealId, authMethod, credential);
     }
 
     /**

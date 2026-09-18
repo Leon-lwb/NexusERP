@@ -172,6 +172,18 @@ public class WfTaskServiceImpl extends FlowServiceFactory implements IWfTaskServ
         TaskEntity taskEntity = task;
         checkTaskHandlePermission(task);
 
+        // ==================== 电子签章变量快照与剥离（必须在一切消费 variables 的逻辑之前） ====================
+        // 三个理由要求在这里一次性做掉：
+        // 1) 下方「节点表单保存」会把 taskBo.getVariables() 传给在线表单服务，后者对同一 Map 实例做
+        //    白名单原地过滤（keySet().removeIf），签章四键若不先取出，进入签章关卡前就已被删掉 ——
+        //    「需签章 + 在线表单」的节点将永远无法办结（凭证缺失 fail-closed 锁死）；
+        // 2) taskService.complete(..., variables, localScope=false) 会把请求体变量持久化为流程实例变量：
+        //    不剥离的话，本次的 needSign 值会「冻结」到实例作用域，成为后续所有节点第二优先级的判定输入
+        //    （任一前序办理人提交 needSign=false 即可永久解除后续节点的签章要求），signCredential 更会
+        //    以明文落入 act_ru_variable/act_hi_varinst；
+        // 3) 关卡需要一份不受后续逻辑（表单过滤/引擎写入）影响的快照。
+        Map<String, Object> signVariables = ApprovalSignGate.takeSignVariables(taskBo.getVariables());
+
          // 处理节点表单数据保存
          if (ObjectUtil.isNotEmpty(taskBo.getVariables())) {
              try {
@@ -277,21 +289,15 @@ public class WfTaskServiceImpl extends FlowServiceFactory implements IWfTaskServ
         // 回滚整个事务，引擎不推进流程，即「不签章不生效」。
         // 签章要求由服务端解析（节点属性 flowable:needSign > 引擎流程变量 needSign），请求体里的
         // needSign 只是历史兼容的第三优先级，客户端提交 needSign=false 无法绕过。
+        // 关卡不依赖 hasDataId：服务端已权威判定需签章时，即使请求体没带 dataId（恶意省略或纯引擎流程）
+        // 也照常签署（bizId 允许为 null），「不带 dataId 就跳过签章」不再成立。
         // 兼容性：三级都没有配置的历史流程不会进入本分支，行为与插桩前完全一致。
-        if (hasDataId) {
-            Map<String, Object> signVariables = taskBo.getVariables();
+        {
             SignCommand signCommand = ApprovalSignGate.buildCommand(taskBo.getDataId(), signVariables,
-                resolveServerNeedSign(task, bpmnModel));
+                resolveServerNeedSign(task, bpmnModel), task.getProcessInstanceId());
             if (signCommand != null) {
                 // 故意不捕获 ServiceException：签章失败必须中止审批，不得 log-and-continue
                 signatureService.sign(signCommand);
-                // 明文凭证用完即弃。下方 taskService.complete(taskBo.getTaskId(), taskBo.getVariables(),
-                // localScope) 传入的就是 taskBo.getVariables() 这一个 map 实例（不是副本），
-                // 因此只能从它移除，才能确保凭证不落入 Flowable 的 act_ru_variable 表。
-                // 节点属性驱动签章时请求体可能根本没有 variables，故判空。
-                if (signVariables != null) {
-                    signVariables.remove(ApprovalSignGate.CREDENTIAL_KEY);
-                }
             }
         }
 

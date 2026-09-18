@@ -1007,8 +1007,8 @@ const submitComplete = async (payload: any) => {
     proxy?.$modal.msgSuccess(res.msg);
     goBack();
   } catch (error: any) {
+    // 错误提示由 axios 拦截器统一弹出（与 handleSignConfirmed 同口径，避免双 toast）
     console.error('审批提交失败:', error);
-    proxy?.$modal.msgError(error?.message || '审批提交失败');
   } finally {
     completeLoading.value = false;
   }
@@ -1051,8 +1051,12 @@ const handleComplete = () => {
  * 二级认证通过后提交审批。
  * 签章变量并入既有业务变量：payload.variables 只在「有任务表单」的节点上存在，
  * 无表单节点的流程必须新建该对象，不能直接扩展。
- * 后端拒签（密码错误 / 无授权 / 印章不可用）抛 ServiceException，axios 拦截器把它包成 Error
- * 并把 msg 原样带出，这里保持认证弹窗打开以便用户改正后重试，同时把原因提示给用户。
+ * <p><b>不写回 needSign：</b>签章要求由服务端解析（BPMN 节点属性 / 引擎流程变量），
+ * 前端重复提交 needSign=true 会被后端在办结前剥离（防止它被持久化为流程实例变量、
+ * 「冻结」后续节点的判定），这里不发送反而最干净 —— 后端仍会按服务端配置强制签章。</p>
+ * 后端拒签（密码错误 / 无授权 / 印章不可用）抛 ServiceException，axios 拦截器统一 ElMessage
+ * 并把 msg 包进 Error 带出，这里保持认证弹窗打开以便用户改正后重试，<b>不要</b>再本地
+ * toast 一次（否则「签署密码错误」会弹两条 —— 与 signDocument/NCR 同类的 D4 缺陷）。
  */
 const handleSignConfirmed = async (auth: { authMethod: string; credential: string }) => {
   const payload = pendingSignPayload.value;
@@ -1061,7 +1065,6 @@ const handleSignConfirmed = async (auth: { authMethod: string; credential: strin
   }
   const variables: any = {
     ...(payload.variables || {}),
-    needSign: true,
     signSealId: signSealId.value ?? '',
     signMeaning: signMeaning.value,
     signAuthMethod: auth.authMethod,
@@ -1077,9 +1080,9 @@ const handleSignConfirmed = async (auth: { authMethod: string; credential: strin
     proxy?.$modal.msgSuccess(res.msg);
     goBack();
   } catch (error: any) {
+    // 错误提示由 axios 拦截器统一弹出；这里只负责让弹窗停留在可重试状态
     console.error('签署失败:', error);
     signAuthRef.value?.setLoading(false);
-    proxy?.$modal.msgError(error?.message || '签署失败');
   } finally {
     // 凭证用完即弃：请求结束即从载荷上移除（弹窗关闭时组件内部也会清空输入框）
     delete variables.signCredential;
