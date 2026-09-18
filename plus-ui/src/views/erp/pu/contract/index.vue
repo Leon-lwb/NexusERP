@@ -82,9 +82,21 @@
           <el-tag :type="getStatusType(scope.row.status)">{{ getStatusLabel(scope.row.status) }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
+      <!-- 正文签署状态：后端批量补充自 es_sign_document；无正文时为空，显示占位符 -->
+      <el-table-column label="签署状态" align="center" prop="docSignStatus" width="110">
+        <template #default="scope">
+          <el-tag v-if="scope.row.docSignStatus === '2'" type="success">已签</el-tag>
+          <el-tag v-else-if="scope.row.docSignStatus === '1'" type="warning">部分签</el-tag>
+          <el-tag v-else-if="scope.row.docSignStatus === '0'" type="info">有正文未签</el-tag>
+          <span v-else>-</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="300" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
+          <!-- 详情是独立路由（router/index.ts 的 /erp/pu/contract/detail 声明 permissions: ['pu:contract:query']），
+               缺该权限时路由不会注册，点进去只会落到 404，故按钮与路由同一个权限码 -->
+          <el-button link type="primary" icon="Document" @click="handleDetail(scope.row)" v-hasPermi="['pu:contract:query']">详情</el-button>
           <el-button
             link
             type="primary"
@@ -268,9 +280,11 @@
 import { listContract, getContract, addContract, updateContract, delContract } from '@/api/erp/pu/contract';
 import type { FormInstance } from 'element-plus';
 import { useCrud } from '@/composables/useCrud';
+import { useRouter } from 'vue-router';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const formRef = ref<FormInstance>();
+const router = useRouter();
 
 // 合同状态选项（暂无对应字典，硬编码）
 const statusOptions = [
@@ -382,6 +396,11 @@ const getStatusLabel = (status: string) => {
 function resetQuery() {
   proxy.resetForm('queryRef');
   handleQuery();
+}
+
+/** 详情：跳转合同详情页（合同基本信息 + 正文上传/签署/验签），与销售合同详情同一套 query 传参方式 */
+function handleDetail(row: any) {
+  router.push({ path: '/erp/pu/contract/detail', query: { contractId: String(row.contractId) } });
 }
 
 /** 添加明细行 */
