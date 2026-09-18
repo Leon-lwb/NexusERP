@@ -862,6 +862,96 @@ P2b 完成后**尚无浏览器环境可交互验证**，故改用**前端↔后�
 
 ---
 
+## 十四、P2c 安全审查修复 + 采购合同接入（2026-09-18）
+
+### 14.1 审查方法
+
+三个并行审查分别覆盖 **后端核心**（`ruoyi-common-sign` 全部服务/PDF 支撑/控制器）、**集成点**（审批关卡/ERP 回填/NCR/SOP/SQL DDL）、**前端**（组件/页面/API 层/拦截器），交叉核对调用链与测试。合并去重后共 **20 项有实际后果的缺陷**，其中高危 7 项。以下全部修复（除 14.4 所列明确挂起项）。
+
+### 14.2 修复清单（按严重度）
+
+**审批关卡（`WfTaskServiceImpl` + `ApprovalSignGate`）—— 一次重构修四类问题**
+
+| # | 缺陷 | 修复 |
+|---|------|------|
+| 1 | **锁死**：节点同时配置在线表单与 `needSign` 时，表单保存对 variables 的**白名单原地过滤**会先于关卡删掉 `signCredential` 等四键 → 永远无法办结 | `complete()` 入口先 `takeSignVariables()` 把五个签章键**提取到独立快照并从原 Map 剥离**，关卡只读快照 |
+| 2 | **整体绕过**：关卡包在 `if (hasDataId)` 内，而 `dataId` 是纯客户端字段 —— 恶意省略即零签名办结 | 关卡移出 `hasDataId`；服务端两级判定 TRUE 时**无 dataId 也签署**（bizId 允许 null，台账本就支持） |
+| 3 | **认证降级**：`signAuthMethod` 取自请求体，塞 `LOGIN_ONLY` 即免密完成「已签名」审批 | 服务端固定 `PASSWORD`，不采纳请求体（与 NCR 路径同一口径） |
+| 4 | **实例变量投毒 + 密码落库**：`complete(variables, localScope=false)` 会把请求体变量持久化到流程实例 —— 前序办理人提交 `needSign=false` 可永久解除后续节点签章；`signCredential` 无 dataId 时明文落入 `act_ru_variable` | 上述剥离发生在一切消费方之前：needSign 不再冻结实例判定，凭证不再触达引擎变量表；前端 `work/detail.vue` 同步停止回写 `needSign` |
+
+另：审批签名 `bizNo` 落 **procInsId**（此前为 null，同一单据二次送审的签名无法区分实例）。
+
+**签名核心（`ESignatureServiceImpl` / `SignatureChainCalculator`）**
+
+| # | 缺陷 | 修复 |
+|---|------|------|
+| 5 | **链分叉**：链锁在 `finally` 释放时事务尚未提交（`sign` 加入调用方事务，窗口覆盖整段 Flowable 办结），并发者取同一 `prev_hash` 且无 DB 约束拦截 → 永久断链假警报 | `doSign`/`signDocument` 改用 `releaseLockAfterTransaction`（复用 `uploadDocument` 的既有范式）；DDL 加 `UNIQUE (tenant_id, prev_hash)` 把分叉升级为 DB 层拦截 |
+| 6 | **防篡改盲区**：`auth_method`/`biz_no` 不参与链哈希，DB 直改 `PASSWORD↔LOGIN_ONLY` 验签不可见 —— 恰是最影响证据效力的字段 | 链哈希升级 **v2 公式**（追加 auth_method、biz_no）；验签双公式兼容（先 v2 后 v1），公式升级前的存量记录不误报 |
+| 7 | **多方签署覆盖**：后签者恒以原始上传件为基准重盖，产物**静默丢弃先签者全部签章** | 基准改为「当前签署后文件」（`signedOssId` 优先），追加式增量签署；摘要核对随之取台账登记的签署后文件 SM3 |
+| 8 | 可对 `is_current='0'` 的**被取代版本**签署留痕 | 版本守卫：非当前生效版本拒绝 |
+| 9 | `sign_ua varchar(512)` 超长在严格模式下 insert 失败 → 需签章审批被卡死 | 落库前截断（不参与哈希，无完整性损失） |
+| 10 | MQ/异步线程调用签名时租户/用户缺失**静默写脏**（锁 key 退化、租户过滤失效、insert 报错被降级吞掉） | 入口 `assertSigningContext` 快速失败并给出可定位报错 |
+| 11 | 链尾/前驱查询无支撑索引：每次签名全表 filesort 且发生在租户级 Redis 锁临界区内（SOP 查阅签名高频写） | DDL 加 `idx_es_sig_chain_tail(tenant_id, signed_at, signature_id)` |
+
+**印章与认证**
+
+| # | 缺陷 | 修复 |
+|---|------|------|
+| 12 | 印章 `valid_from/valid_to` **用章时从不校验**（入库只查日期排序，挡不住时间越过 valid_to）→ 过期/未生效印章可被无限期使用 | `SealAvailabilityResolver.isUsable` 增加印章自身窗口判定（+4 单测） |
+| 13 | 密码签署凭证**无失败限速**：会话劫持后可无限次在线爆破登录密码 | `PasswordSignCredentialChecker` 增加与 SMS 校验器同构的 Redis 计数 + 5 次锁 10 分钟（+7 单测） |
+| 14 | 印章状态变更不校验取值（任意串可入库卡死印章）也不校验流转 | 白名单 + 流转矩阵（与印章页按钮一致：草稿可启用/销毁、启用↔停用、停用可销毁、无回草稿路径） |
+| 15 | 预览图解码上限 20000×20000 ≈ **1.6GB 堆**（10MB 内合法 PNG 即可 OOM 全站） | 解码前加像素面积上限（16M 像素 ≈ 4000×4000） |
+
+**传输与接口**
+
+| # | 缺陷 | 修复 |
+|---|------|------|
+| 16 | NCR 处置签署凭证走 **URL query**（浏览器历史/访问日志留痕）且被操作日志切面**明文落 `sys_oper_log.oper_param`**；文档签章 `DocSignBo.credential` 同样落日志 | 控制器改 `@RequestBody NcrDisposeSignBo`；`credential` 加入全局 `EXCLUDE_PROPERTIES`（query/对象两条日志路径全覆盖）+ `@Log(excludeParamNames)` 双保险 |
+| 17 | SOP 查阅登记不校验 `sopId`：直接调接口可对**不存在的 SOP** 无限制造 append-only 签名（台账污染 + 放大 #11） | `recordView` 服务端准入：sopId 必须指向真实 SOP |
+
+**前端**
+
+| # | 缺陷 | 修复 |
+|---|------|------|
+| 18 | **旋转页面（/Rotate 90/270）盖章坐标整体错位**且无告警（pdfjs 按旋转后视口归一化，后端按未旋转 MediaBox 落位） | `PdfSealPlacer` 放章前检测 `page.rotate`，非 0 明确拒绝并提示转正页面（后端按 CropBox+旋转矩阵换算列入 14.4）；顺带修 `loadPdf` 并发竞态（加载令牌：旧一轮产物自行销毁、陈旧错误不呈现、loading 只由最新一轮收起） |
+| 19 | 合同详情页快速切换合同时，**迟到的旧响应覆盖新数据**（URL 是 B、页面是 A，可能把章盖到另一份合同上） | so/pu 两个详情页加载加轮次令牌，过期响应丢弃 |
+| 20 | 杂项：work/detail 签署失败**双 toast**；`readJsonErrorEnvelope` 把 code=200 成功信封也当错误拒绝；印章页新增/修改后预览图不回填 | 全部修复（对齐 signDocument/NCR 的单提示口径） |
+
+### 14.3 采购合同（PuContract）接入 —— 兑现 §12.4 第 5 项快速跟进
+
+复用 SoContract 的全部模式与组件（`PU_CONTRACT` bizType 在 P1 即已预留）：
+
+| 交付物 | 说明 |
+|--------|------|
+| `PuContractVo.docSignStatus` + `PuContractSignStatusFiller` + `selectPageList` 回填 | 与 `SoContractSignStatusFiller` 同构：类级 `@DS("master")` 收敛跨库查询、整页一次 `biz_id IN`、只取 `is_current='1'`（+6 单测） |
+| `views/erp/pu/contract/detail.vue` | 新建采购合同详情页：基本信息/明细只读 + 正文上传（换版确认/10MB 预检）/追加签署/下载/验签（含 14.2-#19 的竞态守卫） |
+| `views/erp/pu/contract/index.vue` | 列表加「签署状态」列 + 「详情」按钮（权限码 `pu:contract:query` 与路由一致，规避 §12.2-D3 类错配） |
+| `router/index.ts` | `/erp/pu/contract/detail`（hidden，`activeMenu: '/erp/puBiz/contract'`） |
+| `api/erp/pu/contract` | `getContract` 参数放宽为 `string \| number`（对齐 so 侧；雪花 ID 运行时本就是字符串） |
+
+### 14.4 遗留（明确挂起，非缺陷修复）
+
+| # | 事项 | 理由 / 建议路径 |
+|---|------|----------------|
+| 1 | 旋转 PDF 的**服务端**正确落位（CropBox + 原点 + 旋转矩阵换算） | 前端已短期拦截（明确报错而非错位盖章）；后端换算 + 40 项几何测试对齐列入下期 |
+| 2 | 印章原图可经**通用 OSS 管理接口**（`system:oss:list/download`）枚举/取出 | 跨模块产品决策：印章对象需独立命名空间或私有标记并在 `SysOssController` 拦截；本期在文档明示边界（签章模块内部不泄露，平台通用接口除外） |
+| 3 | 多应用节点**时钟偏移 >1s** 时链尾/前驱排序可能与追加序不一致 | 根治需每租户单调序列号（Redis INCR）作链序键，涉及台账结构变更；当前单节点部署不受影响，P3 立项 |
+| 4 | `ElementForm.vue` 参数错位（§13.5 既有缺陷） | 维持挂起，另立处理 |
+| 5 | 存量库执行 `uk_es_sig_prev_hash` 建索引前需人工核查是否已有分叉数据 | 见《数据库增量变更记录》09-18 条目 |
+| 6 | 浏览器交互验证 | 本期所有改动仍未经真机点击（同 §13.4）；上线前人工走一遍采购合同详情页 + 追加签署 + 需签章审批 |
+
+### 14.5 验证结果
+
+| 项 | 结果 |
+|----|------|
+| 后端单测 | sign **224/224**（基线 209，+15：v2 哈希/有效期窗口/追加签署/版本守卫等）、flowable **51/51**（+3：快照剥离/无 dataId 签署/强制 PASSWORD）、erp **84/84**（+6：PuContractSignStatusFiller）、mes **268/268**（NCR 控制器请求体化 + SOP 准入适配）、system **18/18**（+7：密码限速） |
+| `eslint`（全部改动文件） | 0 problems |
+| `vue-tsc --noEmit` | 仅 3 个存量错误（`vite/plugins/compression.ts`），0 新增 |
+| `npm run build:prod` | exit 0 |
+| 浏览器交互验证 | ❌ 未做（同 §13.4，上线前必做） |
+
+---
+
 ## 附：变更记录
 
 | 日期 | 变更 |
@@ -874,6 +964,7 @@ P2b 完成后**尚无浏览器环境可交互验证**，故改用**前端↔后�
 | 2026-09-16 | **P2a 实施完成**，补 §11：PDFBox 3.0.8 + 自签 X.509 CMS 盖章链路、4/4 端到端实测、字体/个人签名/Acrobat 三项决策（均"不做"） |
 | 2026-09-17 | **P2b 实施完成**，补 §12：合同详情页与签章 UI；新增**静态一致性审计**手段，发现并修复 5 处缺陷（含"有效 PDF 被误报为损坏"这一用户可见致命文案）；记录 nginx `.mjs` MIME 的部署前置条件 |
 | 2026-09-17 | **补 §13：三处集成断点**（`needSign` 无处可设且可被客户端绕过 / SOP 查阅器无入口 / NCR 签名无前端）。`needSign` 改为**节点级 BPMN 扩展属性**三级优先级解析，封闭绕过；记录 descriptor **刻意不声明 default** 的原因与子流程限制；另记录 `ElementForm.vue` 参数错位的既有缺陷（未修，另立） |
+| 2026-09-18 | **P2c：三路安全审查修复 20 项缺陷**（§14.2：审批关卡锁死/整体绕过/认证降级/变量投毒、链锁提交前释放致分叉、v2 链哈希补 auth_method、多方签署覆盖、印章有效期失效、密码爆破限速、NCR 凭证 URL 明文、旋转页坐标错位等），链哈希升级 v2 并双公式兼容存量；**采购合同接入电子签章**（§14.3，兑现 §12.4 快速跟进项）；补链尾索引 + `uk_es_sig_prev_hash` 唯一约束（存量库升级语句见《数据库增量变更记录》09-18） |
 
 ---
 
