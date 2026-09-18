@@ -166,12 +166,29 @@ public class EsSealServiceImpl extends ServiceImpl<EsSealMapper, EsSeal> impleme
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int changeStatus(Long sealId, String status) {
+        // 状态白名单：status 来自请求体，不校验会把 "9" 之类任意串写进库
+        if (!SealStatus.isValid(status)) {
+            throw new ServiceException("非法的印章状态：{}", status);
+        }
         EsSeal existing = baseMapper.selectById(sealId);
         if (existing == null) {
             throw new ServiceException("印章不存在");
         }
         if (SealStatus.DESTROYED.equals(existing.getStatus())) {
             throw new ServiceException("印章已销毁，状态不可再变更");
+        }
+        // 流转矩阵（与印章治理页按钮一致：草稿可启用/销毁，启用↔停用，停用可销毁；无任何回到草稿的路径）
+        String current = existing.getStatus();
+        if (SealStatus.DRAFT.equals(status)) {
+            throw new ServiceException("印章状态不能变更为草稿");
+        }
+        if (SealStatus.ENABLED.equals(status)
+            && !SealStatus.DRAFT.equals(current) && !SealStatus.DISABLED.equals(current)) {
+            throw new ServiceException("印章当前状态【{}】不允许启用，仅草稿/停用状态可启用", current);
+        }
+        if (SealStatus.DESTROYED.equals(status)
+            && !SealStatus.DRAFT.equals(current) && !SealStatus.DISABLED.equals(current)) {
+            throw new ServiceException("印章当前状态【{}】不允许销毁，请先停用", current);
         }
         EsSeal entity = new EsSeal();
         entity.setSealId(sealId);

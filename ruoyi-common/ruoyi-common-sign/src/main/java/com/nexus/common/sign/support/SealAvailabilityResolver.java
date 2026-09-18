@@ -14,14 +14,13 @@ import java.util.Objects;
  *
  * <p>规则：</p>
  * <ul>
- *   <li>印章必须为「启用」状态</li>
+ *   <li>印章必须为「启用」状态，且当前时间落在印章自身的 validFrom/validTo 窗口内
+ *       （入库/启停时只校验了两个日期的先后顺序，挡不住「时间流逝越过 validTo」——
+ *       过期或未生效的印章必须在使用时实时判定，否则有效期形同虚设）</li>
  *   <li>个人章：仅归属人本人可用</li>
  *   <li>公司章：必须存在一条有效授权（用户级或部门级匹配、状态启用、
  *       当前时间落在有效期内、bizType 为空或与本次业务类型一致）</li>
  * </ul>
- *
- * <p><b>注意</b>：本类只做授权判定，<b>不校验</b>印章自身的 validFrom/validTo
- * 日期窗口 —— 该窗口由 {@code EsSealServiceImpl} 在入库/启停时校验，避免同一规则两处实现。</p>
  *
  * @author nexus
  */
@@ -48,6 +47,14 @@ public final class SealAvailabilityResolver {
         if (seal == null || !SealStatus.ENABLED.equals(seal.getStatus())) {
             return false;
         }
+        // 印章自身有效期实时判定（与授权窗口同一时刻取 now，判定口径一致）
+        Date now = new Date();
+        if (seal.getValidFrom() != null && now.before(seal.getValidFrom())) {
+            return false;
+        }
+        if (seal.getValidTo() != null && now.after(seal.getValidTo())) {
+            return false;
+        }
         if (SealType.PERSONAL.equals(seal.getSealType())) {
             return Objects.equals(seal.getOwnerUserId(), userId);
         }
@@ -57,7 +64,6 @@ public final class SealAvailabilityResolver {
         if (grants == null || grants.isEmpty()) {
             return false;
         }
-        Date now = new Date();
         for (EsSealGrant g : grants) {
             if (!GRANT_ENABLED.equals(g.getStatus())) {
                 continue;

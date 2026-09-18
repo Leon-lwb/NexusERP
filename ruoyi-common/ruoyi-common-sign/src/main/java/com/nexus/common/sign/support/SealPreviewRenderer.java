@@ -62,6 +62,13 @@ public final class SealPreviewRenderer {
     /** 输入图片单边像素上限：在<b>解码前</b>用 {@link ImageReader} 读取头部尺寸校验。 */
     private static final int MAX_INPUT_SIDE_PX = 20000;
 
+    /**
+     * 输入图片<b>像素面积</b>上限（4000×4000）：单边校验挡不住「细长/方形巨图」——
+     * 20000×20000 的合法 PNG 约 10MB，但全分辨率解码要分配约 1.6GB ARGB 堆，
+     * 共享 JVM 直接 OOM。面积上限把解码内存钉死在 ~64MB 量级。
+     */
+    private static final long MAX_INPUT_PIXELS = 16_000_000L;
+
     /** 水印文案（中文）。 */
     private static final String CJK_WATERMARK = "仅供查看";
 
@@ -245,6 +252,10 @@ public final class SealPreviewRenderer {
                 }
                 if (width > MAX_INPUT_SIDE_PX || height > MAX_INPUT_SIDE_PX) {
                     throw new ServiceException("印章图片尺寸过大：{}x{}，拒绝生成预览图", width, height);
+                }
+                if ((long) width * height > MAX_INPUT_PIXELS) {
+                    throw new ServiceException("印章图片像素总量过大：{}x{}（上限 {} 百万像素），请缩放后再上传",
+                        width, height, MAX_INPUT_PIXELS / 1_000_000);
                 }
                 BufferedImage image = reader.read(0);
                 if (image == null) {
