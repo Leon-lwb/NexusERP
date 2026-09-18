@@ -5,11 +5,16 @@ import com.baomidou.lock.annotation.Lock4j;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.json.utils.JsonUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.common.satoken.utils.LoginHelper;
+import com.nexus.common.sign.constants.SignAuthMethod;
+import com.nexus.common.sign.constants.SignBizType;
+import com.nexus.common.sign.domain.dto.SignCommand;
+import com.nexus.common.sign.service.ESignatureService;
 import com.nexus.mes.ncr.domain.NcrDefect;
 import com.nexus.mes.ncr.domain.NcrOrder;
 import com.nexus.mes.ncr.domain.bo.NcrOrderBo;
@@ -57,6 +62,7 @@ public class NcrOrderServiceImpl implements INcrOrderService {
     private final IProAndonService proAndonService;
     private final INcrReworkOrderService ncrReworkOrderService;
     private final INcrDefectService defectService;
+    private final ESignatureService eSignatureService;
 
     /**
      * 分页查询NCR单列表
@@ -330,6 +336,93 @@ public class NcrOrderServiceImpl implements INcrOrderService {
             .set(NcrOrder::getDispositionSignatureId, signatureId)
             .eq(NcrOrder::getNcrId, ncrId));
         log.info("NCR签名绑定: ncrId={}, signatureId={}", ncrId, signatureId);
+    }
+
+    /**
+     * NCR 处置签署：先签署再绑定，返回签名ID。
+     * <p>
+     * 与 SOP 查阅(记录, 失败可降级)不同, 处置是<b>授权</b>: 认证方式为 LOGIN_ONLY 时直接拒绝,
+     * 签署失败也不吞异常 —— 授权不可降级, 必须让调用方感知。
+     * </p>
+     * <p>
+     * <b>必须走 {@code signInNewTransaction}(REQUIRES_NEW), 不能走 {@code sign}:</b>
+     * es_signature 只存在于 master(ry-vue)，而本服务类级 {@code @DS("mes")} 会把数据源路由到
+     * ry-mes（写入即报 {@code Table 'ry-mes.es_signature' doesn't exist}）。{@code sign} 的传播行为
+     * 是 REQUIRED：一旦本方法被「已在 MES 数据源上开着事务」的调用方调用（如
+     * {@link #disposeWithSignature}），它会加入那个事务 —— 而事务内 @DS 切换不生效，连接已绑定
+     * 在 ry-mes，签名照样写到错误的库。改用独立事务后，@DS 切面(order 最先)在开事务、取连接之前
+     * 就把 master 压栈（见 {@code ESignatureServiceImpl} 类注释），签署真正落到 ry-vue，
+     * 且不会被调用方事务的回滚牵连。
+     * </p>
+     *
+     * @param ncrId      NCR 单ID
+     * @param disposition 处置结论（并入签署含义）
+     * @param authMethod  认证方式（不得为 LOGIN_ONLY）
+     * @param credential  认证凭证
+     * @return 签名ID
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Long signDisposition(Long ncrId, String disposition, String authMethod, String credential) {
+        // 认证等级先于落库校验(失败即拒, 不碰数据库)
+        if (SignAuthMethod.LOGIN_ONLY.equals(authMethod)) {
+            throw new ServiceException("NCR 处置签署必须进行二级认证");
+        }
+        NcrOrder order = baseMapper.selectById(ncrId);
+        if (order == null) {
+            throw new ServiceException("NCR 单不存在");
+        }
+        // disposition 可空: 不允许拼接出字面量 "null"
+        String meaning = StringUtils.isBlank(disposition)
+            ? "不合格品处置批准" : "不合格品处置批准：" + disposition;
+        Long signatureId = eSignatureService.signInNewTransaction(new SignCommand(
+            SignBizType.NCR_DISPOSITION, ncrId, order.getNcrCode(), meaning, null, authMethod, credential));
+        bindDispositionSignature(ncrId, signatureId);
+        log.info("NCR处置签署: ncrId={}, signatureId={}, authMethod={}", ncrId, signatureId, authMethod);
+        return signatureId;
+    }
+
+    /**
+     * 签署并处置NCR单(先签署, 再处置)。
+     * <p>
+     * <b>为什么事务边界在服务层、而不是让 Controller 连调两次：</b>签署与处置必须同生共死。
+     * 让 Controller 依次调用「签署服务」和「处置服务」，两次调用之间任何一次失败都会留下
+     * 「签了但没处置」或「处置了却没有绑定签名」的坏状态；把两件事收进一个有事务边界的方法，
+     * Controller 保持一行转发（仓库既有风格）。
+     * </p>
+     * <p>
+     * <b>顺序：先签署（含授权校验），后处置。</b>认证不通过（LOGIN_ONLY / 凭证错误）时业务库一行未动，
+     * 不会出现「先改了状态、再发现授权失败」的中间态，也不会提前触发批隔离/安灯等分支副作用。
+     * </p>
+     * <p>
+     * <b>事务组成（签名库与业务库不共库，物理上无法并成一个事务）：</b>
+     * <ul>
+     *   <li>签署记录：{@link ESignatureService#signInNewTransaction} 独立事务，先落到 master(ry-vue)；
+     *       append-only 台账，见 {@link #signDisposition} 的说明。</li>
+     *   <li>处置状态 CAS、分支流转与 {@code disposition_signature_id} 绑定：本方法的事务，
+     *       全部落在 ry-mes，<b>同库同事务</b>提交或回滚。</li>
+     * </ul>
+     * 故「已处置但未绑定签名」在本设计下不可能出现（绑定与处置要么一起提交、要么一起回滚）；
+     * 残余窗口只有反方向的一种：签名已提交、本事务随后回滚 —— 结果是「有授权记录、无处置动作」，
+     * 业务状态未被污染、可重新发起，属于安全的失败方向。
+     * </p>
+     *
+     * @param ncrId       NCR单ID
+     * @param disposition 处置方式(REWORK/SCRAP/ACCEPT_AS_IS/RETURN)
+     * @param remark      处置备注(可空)
+     * @param authMethod  认证方式(LOGIN_ONLY 将被拒绝)
+     * @param credential  认证凭证
+     * @return 处置成功返回 true
+     */
+    @Lock4j(keys = {"#ncrId"})
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Boolean disposeWithSignature(Long ncrId, String disposition, String remark,
+                                        String authMethod, String credential) {
+        // 1. 签署(含授权校验与 disposition_signature_id 绑定): 失败直接抛出, 业务库尚未被触碰
+        signDisposition(ncrId, disposition, authMethod, credential);
+        // 2. 处置: 与本方法同一事务, 与步骤1 的绑定同生共死
+        return dispose(ncrId, disposition, remark);
     }
 
     // ==================== 私有方法 ====================

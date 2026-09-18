@@ -50,6 +50,7 @@
     "jsencrypt": "3.5.4",
     "marked": "^18.0.5",
     "nprogress": "0.2.0",
+    "pdfjs-dist": "4.10.38",
     "pinia": "3.0.4",
     "three": "^0.185.0",
     "vue": "3.5.30",

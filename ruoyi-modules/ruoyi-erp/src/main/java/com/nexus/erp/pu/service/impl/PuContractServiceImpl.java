@@ -14,6 +14,7 @@ import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.flowable.core.domain.ActStatus;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
+import com.nexus.common.sign.constants.SignBizType;
 import com.nexus.erp.pu.domain.PuContract;
 import com.nexus.erp.pu.domain.PuContractLine;
 import com.nexus.erp.pu.domain.PuPurchaseOrder;
@@ -60,6 +61,8 @@ public class PuContractServiceImpl implements IPuContractService {
     private final IWfProcessService processService;
     private final WfMyBusinessServiceImpl wfMyBusinessServiceImpl;
     private final FlowableProcInsIdHelper procInsIdHelper;
+    /** 正文签署状态补充器（es_sign_document 在主数据源，见该类注释） */
+    private final PuContractSignStatusFiller signStatusFiller;
 
     /**
      * 分页查询采购合同列表。
@@ -72,6 +75,8 @@ public class PuContractServiceImpl implements IPuContractService {
     public TableDataInfo<PuContractVo> selectPageList(PuContractBo bo, PageQuery pageQuery) {
         LambdaQueryWrapper<PuContract> lqw = buildQueryWrapper(bo);
         Page<PuContractVo> page = baseMapper.selectVoPage(pageQuery.build(), lqw);
+        // 签署状态不在 pu_contract 表里（在 es_sign_document），由补充器一次 IN 查询批量回填，无 N+1
+        signStatusFiller.fillDocSignStatus(page.getRecords(), SignBizType.PU_CONTRACT);
         return TableDataInfo.build(page);
     }
 

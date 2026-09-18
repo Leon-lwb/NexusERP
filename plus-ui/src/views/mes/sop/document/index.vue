@@ -65,11 +65,22 @@
         <template #default="scope"><dict-tag :options="mes_sop_status" :value="scope.row.status" /></template>
       </el-table-column>
       <el-table-column label="创建人" prop="createByName" width="100" />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="380" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="440" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handlePreview(scope.row)" v-if="scope.row.fileUrl" v-hasPermi="['mes:sop:document:list']"
             >预览</el-button
           >
+          <el-tooltip
+            content="查阅：打开SOP查看器阅读并登记查阅记录(触发电子签名留痕)；「预览」仅直接打开文件、不产生留痕"
+            placement="top"
+            :show-after="200"
+          >
+            <!-- 权限码必须是 query 而不是 list：查看器按 sopId 加载走的是 GET /mes/sop/document/{sopId}，
+                 该端点由 @SaCheckPermission("mes:sop:document:query") 把关（SopDocumentController:63），
+                 而 by-process / by-step 两个入口只要 list（同文件 :187/:199）。
+                 若这里沿用 list，只授 list 未授 query 的角色点进来会被 403 挡住。 -->
+            <el-button link type="primary" icon="Reading" @click="handleView(scope.row)" v-hasPermi="['mes:sop:document:query']">查阅</el-button>
+          </el-tooltip>
           <el-button link type="primary" icon="Files" @click="handleVersions(scope.row)" v-hasPermi="['mes:sop:document:list']">版本</el-button>
           <el-button
             link
@@ -262,6 +273,7 @@ import { Download } from '@element-plus/icons-vue';
 import { useCrud } from '@/composables/useCrud';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
+const router = useRouter();
 const { mes_sop_status, mes_sop_type, mes_sop_file_type, sop_version_status } = toRefs<any>(
   proxy?.useDict('mes_sop_status', 'mes_sop_type', 'mes_sop_file_type', 'sop_version_status')
 );
@@ -372,6 +384,12 @@ const handleVersions = async (row: SopDocumentVO) => {
   const res = await listVersionBySop(row.sopId);
   historyDialog.list = res.data;
   historyDialog.visible = true;
+};
+
+// ===== 查阅(SOP查看器) =====
+// 与「预览」区别: 查阅跳转查看器页面 -> 登记查阅记录(mes_sop_view_log) -> 触发电子签名留痕
+const handleView = (row: SopDocumentVO) => {
+  router.push({ path: '/mes/sop/viewer', query: { sopId: String(row.sopId) } });
 };
 
 // ===== 文件预览 =====

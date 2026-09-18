@@ -4,6 +4,7 @@ import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
@@ -92,7 +93,7 @@ public class SopVersionServiceImpl implements ISopVersionService {
             .in(SopVersion::getVersionId, idList)
             .eq(SopVersion::getStatus, ISopDocumentService.VERSION_CURRENT));
         if (currentCount != null && currentCount > 0) {
-            throw new RuntimeException("当前发布版本不可删除,请先发布新版本或归档SOP");
+            throw new ServiceException("当前发布版本不可删除，请先发布新版本或归档SOP");
         }
         int rows = baseMapper.deleteByIds(idList);
         log.info("批量删除SOP版本: count={}", ids.length);

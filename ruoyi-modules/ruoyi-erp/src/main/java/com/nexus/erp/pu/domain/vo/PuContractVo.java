@@ -89,6 +89,13 @@ public class PuContractVo implements Serializable {
     @ExcelProperty("更新时间")
     private Date updateTime;
 
+    /**
+     * 正文签署状态（{@code es_sign_document.sign_status}：0未签 1部分签 2已签）
+     * <p>pu_contract 表中没有这一列，由列表查询批量补充（来源库为主数据源）；
+     * 该合同尚无正文时为 null，前端显示占位符。</p>
+     */
+    private String docSignStatus;
+
     /** 合同明细行列表 */
     private List<PuContractLine> puContractLineList;
 }

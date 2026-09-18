@@ -72,6 +72,12 @@
             <artifactId>ruoyi-common-flowable</artifactId>
         </dependency>
 
+        <!-- 审批签章关卡：ESignatureService 单点插桩于 WfTaskServiceImpl.complete -->
+        <dependency>
+            <groupId>com.nexus</groupId>
+            <artifactId>ruoyi-common-sign</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>com.nexus</groupId>
             <artifactId>ruoyi-system</artifactId>

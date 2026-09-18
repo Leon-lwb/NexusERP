@@ -62,6 +62,35 @@ const toReLogin = () => {
     });
 };
 
+/**
+ * 从 `responseType: 'arraybuffer'` 的响应里解析「伪装成文件流的 JSON 错误信封」。
+ *
+ * <p>鉴权失败、无权限、业务异常都被 `@RestControllerAdvice` 以 **HTTP 200 + R{code,msg}** 应答，
+ * 而 axios 对二进制响应直接交出 `res.data`：字节流没有 `code` 字段，拦截器会把业务码当成 200，
+ * 把这段 JSON 当成「文件内容」交给上层 —— pdfjs 随即报 `InvalidPDFException`，
+ * 用户看到的是「该文件不是有效的 PDF（或损坏）」，真实原因（无权限 / 会话过期 / 文件不存在）被吞掉。</p>
+ *
+ * <p>判定：先看响应头 `Content-Type` 是否声明 JSON，再看首个非空白字节是否为 `{`（0x7B；
+ * PDF 以 `%PDF-` 开头，不会命中）；最后要求解析出的对象带**数字** `code` 字段（只有 R&lt;T&gt; 信封才有）。
+ * 双重把关，避免把真正的 JSON 文件下载误判成错误。</p>
+ */
+const readJsonErrorEnvelope = (res: AxiosResponse): { code: number; msg?: string } | null => {
+  const data = res.data;
+  if (!(data instanceof ArrayBuffer) || data.byteLength === 0) return null;
+  const bytes = new Uint8Array(data);
+  let head = 0;
+  while (head < bytes.length && (bytes[head] === 0x20 || bytes[head] === 0x09 || bytes[head] === 0x0a || bytes[head] === 0x0d)) head++;
+  const contentType = String(res.headers?.['content-type'] ?? '');
+  if (!/json/i.test(contentType) && bytes[head] !== 0x7b) return null;
+  try {
+    const body = JSON.parse(new TextDecoder().decode(bytes));
+    return body && typeof body === 'object' && typeof body.code === 'number' ? { code: body.code, msg: body.msg } : null;
+  } catch {
+    // 首字节恰好是 `{` 的二进制文件：解析失败即按正常文件流返回
+    return null;
+  }
+};
+
 axios.defaults.headers['Content-Type'] = 'application/json;charset=utf-8';
 axios.defaults.headers['clientid'] = import.meta.env.VITE_APP_CLIENT_ID;
 // 创建 axios 实例
@@ -163,6 +192,28 @@ service.interceptors.response.use(
     const code = res.data.code || HttpStatus.SUCCESS;
     // 获取错误信息
     const msg = errorCode[code] || res.data.msg || errorCode['default'];
+    // 二进制响应里可能装着 JSON 错误信封（见 readJsonErrorEnvelope 注释）。
+    // 命中时用信封里的 code/msg 走下面同一套错误分支 —— 否则「没有访问权限」会被当成文件内容，
+    // 由 pdfjs 报成「不是有效的 PDF（或损坏）」，401 也不会触发重新登录。
+    // 仅对 arraybuffer 生效：blob 响应的调用方（$download.oss / download()）本就按 blobValidate 自行识别 JSON。
+    const jsonEnvelope = res.request.responseType === 'arraybuffer' ? readJsonErrorEnvelope(res) : null;
+    if (jsonEnvelope) {
+      const envelopeCode = jsonEnvelope.code || HttpStatus.SUCCESS;
+      // 成功信封按普通二进制响应放行：理论上文件流端点不会包成功信封，但真出现时
+      // 不该被当错误拒绝（L2：code=200 的信封此前也走 reject）
+      if (envelopeCode === HttpStatus.SUCCESS) {
+        return res.data;
+      }
+      const envelopeMsg = errorCode[envelopeCode] || jsonEnvelope.msg || errorCode['default'];
+      if (envelopeCode === HttpStatus.UNAUTHORIZED || isAuthExpiredError(envelopeMsg)) {
+        toReLogin();
+      } else if (res.config.headers?.ignoreErrorMsg !== 'true') {
+        ElMessage({ message: envelopeMsg, type: 'error' });
+      }
+      // 拒绝值统一用 Error 承载真实原因（普通 JSON 分支各 code 会拒绝字符串，
+      // 上层只能拿到「加载失败」这类无信息量的兜底文案，例如 PdfSealPlacer 的错误提示区）
+      return Promise.reject(Object.assign(new Error(envelopeMsg), { code: envelopeCode }));
+    }
     // 二进制数据则直接返回
     if (res.request.responseType === 'blob' || res.request.responseType === 'arraybuffer') {
       return res.data;

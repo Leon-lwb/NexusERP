@@ -13,6 +13,11 @@ export interface PuContractVo {
   currency: string;
   paymentTerms: string;
   status: string;
+  /**
+   * 正文签署状态（来自 es_sign_document.sign_status：0未签 1部分签 2已签）
+   * <p>pu_contract 表没有这一列，由后端列表查询批量补充；该合同尚无正文时为 null。</p>
+   */
+  docSignStatus?: string;
   selectFlowId: number;
   remark: string;
   createTime: string;

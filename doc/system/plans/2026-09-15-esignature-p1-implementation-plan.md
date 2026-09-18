@@ -12,6 +12,25 @@
 
 ---
 
+## ⚠️ 执行前必读：测试命令必须追加 `-Dprofiles.active=`
+
+根 `pom.xml:515` 配置了 `<groups>${profiles.active}</groups>`（按打包环境执行对应 `@Tag` 测试）。
+**不带 profile 时 `${profiles.active}` 无法解析，surefire 的 groups 过滤会匹配不到任何测试**，
+命令会输出 `Tests run: 0` 并 **BUILD SUCCESS** —— 这是**假绿**，不是通过。
+
+| 命令 | 实际结果 |
+|------|---------|
+| `mvn test -DskipTests=false` | ❌ `Tests run: 0` + BUILD SUCCESS（假绿） |
+| `mvn test -DskipTests=false -Dprofiles.active=` | ✅ 真正执行全部测试 |
+
+**本计划所有 Task 的测试命令一律追加 `-Dprofiles.active=`**（PowerShell 中该参数需加引号：
+`'-Dprofiles.active='`）。仓库内仅 33/88 个测试类带 `@Tag`，未打标签的测试在默认命令下**不会执行**。
+
+> 该问题由 Task 5 实施时发现并复核（2026-09-15）。仓库既有的 `AGENTS.md` 也写作
+> `mvn test -DskipTests=false`，同样存在此陷阱 —— 属仓库层面的既有问题，不在本方案范围内修复。
+
+---
+
 ## 范围界定
 
 | 包含（P1） | 不包含（P2/P3） |
@@ -209,19 +228,23 @@
 
 `ruoyi-common-sign/src/main/java/com/nexus/common/sign/config/SignAutoConfiguration.java`：
 
+> **注**：本项目 common 模块的自动配置类统一使用 `@AutoConfiguration`（`ruoyi-common/` 下 7/8 个为
+> 此注解，含 `CvAutoConfiguration`），**不是** `@Configuration`。初版计划此处有误，已于 2026-09-15 更正。
+
 ```java
 package com.nexus.common.sign.config;
 
-import org.springframework.context.annotation.Configuration;
+import org.springframework.boot.autoconfigure.AutoConfiguration;
 
 /**
- * 电子签章模块自动装配。
- * <p>本模块的 Service 通过 {@code @Service} 声明，由各业务模块扫描加载；
- * 此类作为 {@code AutoConfiguration.imports} 的注册入口，保持与项目其它 common 模块一致。</p>
+ * 电子签章模块自动配置。
+ * <p>本模块的 Service 通过 {@code @Service} 声明，由依赖本模块的业务方组件扫描加载；
+ * 此类作为 {@code AutoConfiguration.imports} 的注册入口，与项目其它 common 模块保持一致。</p>
  *
  * @author nexus
+ * @since 1.0.0
  */
-@Configuration
+@AutoConfiguration
 public class SignAutoConfiguration {
 }
 ```
@@ -5503,13 +5526,45 @@ git commit -m "docs(sign): P1 验收完成，更新方案状态"
 
 ---
 
-## Execution Handoff
+## 实施偏差汇总（2026-09-15 执行后补记）
 
-计划已完成并保存至 `doc/system/plans/2026-09-15-esignature-p1-implementation-plan.md`。
+本计划 Task 1–16 已执行完毕（Task 17 的端到端验收待人工）。执行中逐项复核，发现并修正了以下 **14 处计划缺陷**。
+**后续若有人重读本计划，请以本表为准，不要照抄上文对应段落。**
 
-两种执行方式：
+| # | 计划原文 | 实际正确做法 | 发现于 |
+|---|---|---|---|
+| 1 | `@Configuration` | **`@AutoConfiguration`**（`ruoyi-common/` 下 7/8 个如此） | Task 1 |
+| 2 | 菜单 ID 4290–4304 | **已被 MES 固件管理占用**（4290–4307）→ 实际用 **4348–4362** | Task 2 |
+| 3 | 菜单图标 `stamp` | 该 svg 不存在 → 改用 **`company`** | Task 2 |
+| 4 | Mapper `extends BaseMapper<T>` | **`extends BaseMapperPlus<T,V>`**，否则 `selectVoPage/selectVoList` 编译不过 | Task 4 |
+| 5 | 仅 `SealVo` 加 `@AutoMapper` | `SealVo`/`SignatureVo`/`SealGrantVo` **+ 两个 BO** 都要（BO 用 `reverseConvertGenerate = false`） | Task 4 |
+| 6 | `hashHex("abc")` 应等于国密标准向量 | **错**。`hashHex` 追加 `0x1F` 分隔符；标准向量断言须走 **`hashHexBytes`** | Task 5 |
+| 7 | `loadPreviewImage` 返回 `byte[]`、调 `SysOssServiceSupport` | **该类不存在**。现返回 **`Long`（ossId）**（common 层读不到 OSS 对象） | Task 6 |
+| 8 | `updateByBo` 未校验印章类型 | 已加 **印章类型不可变**（`updateById` 跳过 null，改类型会留脏数据） | Task 7 |
+| 9 | `new LockInfo()` | Lock4j 2.2.7 的 `LockInfo` **只有 7 参构造** | Task 9 |
+| 10 | `verifyChain` 比较「过滤后相邻两条」 | **会误报断链**（链是租户全局串的）。改为逐条校验自身哈希 + **真实前驱** | Task 10 |
+| 11 | `StringUtils.toAjax` | 不存在 → 用 **`BaseController#toAjax`** | Task 11 |
+| 12 | 控制器依赖 | `ruoyi-common-sign/pom.xml` 需补 **`ruoyi-common-web`/`-log`/`-idempotent`** | Task 11 |
+| 13 | 审批 UI 改 `ActHandleBtn.vue` | **该组件是死代码**（唯一引用是注释）→ 真实入口是 **`work/detail.vue`** | Task 15 |
+| 14 | `SealBo` 的 `@NotNull` 无分组 | PUT 不重传图片被 400 拒 → 改用**校验分组**（`AddGroup`/`EditGroup`） | Task 12 修正 |
 
-1. **Subagent-Driven（推荐）** —— 每个 Task 派发一个全新 subagent，Task 间由我审查，迭代快、上下文干净
-2. **Inline Execution** —— 在当前会话内用 executing-plans 批量执行，带检查点
+### 两处功能性范围收缩（非缺陷，但改变了 P1 能力边界）
 
-请选择执行方式。
+- **SMS 移出 P1**：`/sms-code` 已删，`SMS` 从 `SignAuthMethod.SUPPORTED` 移除。P1 实际支持 `LOGIN_ONLY` + `PASSWORD`。
+  原因：短信 API 有（sms4j），但**手机号取不到** —— `LoginUser` 无 phone 字段，`sys_user` 属 `ruoyi-system`，common 层不能反向依赖。
+- **`needSign` 只能是流程变量**：Flowable 的 BPMN 节点扩展属性在服务端从模型读取、不会变成流程变量，也无 API 暴露。
+  故「按节点配置扩展属性」不可行，当前是**流程级**粒度。
+
+### 执行环境注意事项
+
+- **测试命令必须追加 `'-Dprofiles.active='`**（见本文档顶部说明），否则 `Tests run: 0` 假绿。
+- `mvn -pl <module> test`（不带 `-am`）在 `ruoyi-common-sign` 未 `install` 时会失败 —— 先 `mvn install -DskipTests -pl ruoyi-common/ruoyi-common-sign -am`，或统一加 `-am`。
+- 全量 `mvn test` 会因 `ruoyi-admin` 的 RuoYi 官方 demo 脚手架（`AssertUnitTest` 故意失败等）保持红色，**与本特性无关**。
+
+---
+
+## 交付状态
+
+- **已完成**：Task 1–16（含 5 个修正提交）。`ruoyi-common-sign` 88 单测全绿；全仓构建 exit 0；静态一致性审计全通过。
+- **待人工**：Task 17 的端到端验收 —— 清单见 `doc/system/specs/2026-09-15-esignature-impl-spec.md` §10.4。
+- **分支**：`feat/esignature-p1`，**未合并**。合并前建议先补齐 §10.4 的第 2、4、5、8 项。

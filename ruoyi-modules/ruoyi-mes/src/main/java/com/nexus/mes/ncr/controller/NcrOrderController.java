@@ -7,6 +7,7 @@ import com.nexus.common.log.enums.BusinessType;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.common.web.core.BaseController;
+import com.nexus.mes.ncr.domain.bo.NcrDisposeSignBo;
 import com.nexus.mes.ncr.domain.bo.NcrOrderBo;
 import com.nexus.mes.ncr.domain.vo.NcrOrderVo;
 import com.nexus.mes.ncr.service.INcrOrderService;
@@ -120,5 +121,27 @@ public class NcrOrderController extends BaseController {
                            @RequestParam String disposition,
                            @RequestParam(required = false) String remark) {
         return toAjax(ncrOrderService.dispose(ncrId, disposition, remark));
+    }
+
+    /**
+     * 签署并处置NCR单(OPEN/REVIEW -> DISPOSITION, 并按处置方式分支流转)
+     * <p>与 {@link #dispose(Long, String, String)} 的区别：本接口在同一请求内先落电子签名
+     * (biz_type=NCR_DISPOSITION), 再执行处置, 二者由服务层一个事务方法收口, 不会出现
+     * 「签了没处置」或「处置了没绑定签名」；{@code authMethod=LOGIN_ONLY} 会被拒绝
+     * (处置是授权, 必须二级认证)。未签署的 dispose 接口保持可用(P1 决策: 签署尚未强制)。</p>
+     * <p>入参走请求体（{@link NcrDisposeSignBo}）：二级认证凭证不得经 URL query 传输
+     * （会留痕访问日志/浏览器历史，且会被操作日志切面按 query 参数明文落库）。</p>
+     *
+     * @param ncrId NCR单ID
+     * @param bo    签署处置入参（处置方式/备注/认证方式/凭证）
+     * @return 操作结果
+     */
+    @SaCheckPermission("mes:ncr:order:dispose")
+    @Log(title = "NCR处置签署", businessType = BusinessType.UPDATE, excludeParamNames = {"credential"})
+    @PutMapping("/dispose/{ncrId}/sign")
+    public R<Void> disposeWithSignature(@PathVariable Long ncrId,
+                                        @Validated @RequestBody NcrDisposeSignBo bo) {
+        return toAjax(ncrOrderService.disposeWithSignature(ncrId, bo.getDisposition(), bo.getRemark(),
+            bo.getAuthMethod(), bo.getCredential()));
     }
 }

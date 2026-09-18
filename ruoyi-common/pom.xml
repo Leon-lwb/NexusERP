@@ -40,6 +40,7 @@
         <module>ruoyi-common-flow</module>
         <module>ruoyi-common-iot</module>
         <module>ruoyi-common-cv</module>
+        <module>ruoyi-common-sign</module>
     </modules>
 
     <artifactId>ruoyi-common</artifactId>

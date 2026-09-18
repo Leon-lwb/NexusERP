@@ -528,6 +528,36 @@ export const dynamicRoutes: RouteRecordRaw[] = [
     ]
   },
   {
+    // 销售合同详情（含正文上传/签署/验签）：不出现在侧边栏，从合同列表「详情」进入；activeMenu 保持列表菜单高亮
+    path: '/erp/so/contract/detail',
+    component: Layout,
+    hidden: true,
+    permissions: ['so:contract:query'],
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/erp/so/contract/detail.vue'),
+        name: 'SoContractDetail',
+        meta: { title: '销售合同详情', activeMenu: '/erp/soBiz/contract', noCache: true }
+      }
+    ]
+  },
+  {
+    // 采购合同详情（含正文上传/签署/验签）：不出现在侧边栏，从合同列表「详情」进入；activeMenu 保持列表菜单高亮
+    path: '/erp/pu/contract/detail',
+    component: Layout,
+    hidden: true,
+    permissions: ['pu:contract:query'],
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/erp/pu/contract/detail.vue'),
+        name: 'PuContractDetail',
+        meta: { title: '采购合同详情', activeMenu: '/erp/puBiz/contract', noCache: true }
+      }
+    ]
+  },
+  {
     path: '/erp/pu/requisition/form',
     component: Layout,
     hidden: true,

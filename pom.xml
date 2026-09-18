@@ -37,6 +37,8 @@
         <mapstruct-plus.lombok.version>0.2.0</mapstruct-plus.lombok.version>
         <lombok.version>1.18.42</lombok.version>
         <bouncycastle.version>1.83</bouncycastle.version>
+        <!-- PDF 盖章/数字签名(电子签章 P2) -->
+        <pdfbox.version>3.0.8</pdfbox.version>
         <justauth.version>1.16.7</justauth.version>
         <!-- 离线IP地址定位库 -->
         <ip2region.version>3.3.4</ip2region.version>
@@ -308,6 +310,15 @@
                 <groupId>org.bouncycastle</groupId>
                 <artifactId>bcpkix-jdk18on</artifactId>
                 <version>${bouncycastle.version}</version>
+            </dependency>
+
+            <!-- PDF 解析/盖章/增量签名(仅 ruoyi-common-sign 使用)
+                 注意: PDFBox 的 bcprov/bcpkix 依赖声明为 <optional>true</optional>，不会传递进来，
+                 因此上面那条 bcpkix-jdk18on 声明是承载性依赖，不能删。 -->
+            <dependency>
+                <groupId>org.apache.pdfbox</groupId>
+                <artifactId>pdfbox</artifactId>
+                <version>${pdfbox.version}</version>
             </dependency>
 
             <dependency>

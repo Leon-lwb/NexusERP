@@ -11,8 +11,8 @@ export function listContract(query: PuContractQuery): AxiosPromise<any> {
   });
 }
 
-// 查询采购合同详细
-export function getContract(id: number): AxiosPromise<PuContractVo> {
+// 查询采购合同详细（ID 为雪花ID，后端序列化为字符串，故同时接受 string | number）
+export function getContract(id: string | number): AxiosPromise<PuContractVo> {
   return request({
     url: '/erp/pu/contract/' + id,
     method: 'get'

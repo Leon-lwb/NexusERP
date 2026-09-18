@@ -83,10 +83,13 @@ public interface SystemConstants {
     Long DEFAULT_DEPT_ID = 100L;
 
     /**
-     * 排除敏感属性字段（操作日志/参数序列化全局脱敏：密码类 + 密钥类）
+     * 排除敏感属性字段（操作日志/参数序列化全局脱敏：密码类 + 密钥类 + 二级认证凭证）
+     * <p>{@code credential}：电子签章二级认证凭证（签署人登录密码），随 NCR 处置签署/文档签章等
+     * 请求体提交，若不排除会被操作日志切面明文写入 {@code sys_oper_log.oper_param}。</p>
      */
     String[] EXCLUDE_PROPERTIES = { "password", "oldPassword", "newPassword", "confirmPassword",
-        "apiKey", "apiSecret", "secretKey", "secret", "token", "accessToken", "clientSecret", "privateKey" };
+        "apiKey", "apiSecret", "secretKey", "secret", "token", "accessToken", "clientSecret", "privateKey",
+        "credential" };
 
 
 }

@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <groupId>com.nexus</groupId>
+        <artifactId>ruoyi-common</artifactId>
+        <version>${revision}</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>ruoyi-common-sign</artifactId>
+
+    <description>
+        ruoyi-common-sign 电子签章公共模块
+        提供统一签名域(ESignatureService): 印章管理/用章授权/SM3哈希链签名与验签
+        供流程审批、MES P0-6 等场景跨模块复用
+    </description>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.nexus</groupId>
+            <artifactId>ruoyi-common-core</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.nexus</groupId>
+            <artifactId>ruoyi-common-mybatis</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.nexus</groupId>
+            <artifactId>ruoyi-common-tenant</artifactId>
+        </dependency>
+
+        <!-- Lock4j(Redisson) 哈希链串行化 -->
+        <dependency>
+            <groupId>com.nexus</groupId>
+            <artifactId>ruoyi-common-redis</artifactId>
+        </dependency>
+
+        <!-- Sa-Token 登录态/权限校验 -->
+        <dependency>
+            <groupId>com.nexus</groupId>
+            <artifactId>ruoyi-common-security</artifactId>
+        </dependency>
+
+        <!-- Web 层: BaseController(toAjax) 与响应包装 -->
+        <dependency>
+            <groupId>com.nexus</groupId>
+            <artifactId>ruoyi-common-web</artifactId>
+        </dependency>
+
+        <!-- 操作日志 @Log / BusinessType -->
+        <dependency>
+            <groupId>com.nexus</groupId>
+            <artifactId>ruoyi-common-log</artifactId>
+        </dependency>
+
+        <!-- 防重复提交 @RepeatSubmit -->
+        <dependency>
+            <groupId>com.nexus</groupId>
+            <artifactId>ruoyi-common-idempotent</artifactId>
+        </dependency>
+
+        <!-- 印章图片/正文文件存储 -->
+        <dependency>
+            <groupId>com.nexus</groupId>
+            <artifactId>ruoyi-common-oss</artifactId>
+        </dependency>
+
+        <!-- @Translation(OSS_ID_TO_URL) -->
+        <dependency>
+            <groupId>com.nexus</groupId>
+            <artifactId>ruoyi-common-translation</artifactId>
+        </dependency>
+
+        <!-- 短信二级认证 -->
+        <dependency>
+            <groupId>com.nexus</groupId>
+            <artifactId>ruoyi-common-sms</artifactId>
+        </dependency>
+
+        <!-- 国密 SM3: bcpkix 传递引入 bcprov-jdk18on(SM3Digest) -->
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcpkix-jdk18on</artifactId>
+        </dependency>
+
+        <!-- PDF 盖章 + CMS/PKCS#7 数字签名(P2)
+             选型见 doc/system/specs/2026-09-16-pdfbox-spike-report.md：
+             3.0.8 与 bcpkix-jdk18on 1.83 共存实测无冲突（PDFBox 的 BC 依赖是 optional，不传递） -->
+        <dependency>
+            <groupId>org.apache.pdfbox</groupId>
+            <artifactId>pdfbox</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+</project>

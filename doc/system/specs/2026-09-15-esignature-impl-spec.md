@@ -1,6 +1,8 @@
 # Nexus-ERP 电子签章能力建设方案（内部留痕级）
 
-> 状态：**方案待评审** —— 选型结论已定：**纯自建，不融合开源代码、不接 CA/TSA/商业 API**
+> 状态：**P1 已实施并完成端到端验收（核心路径）** —— 选型结论已定：**纯自建，不融合开源代码、不接 CA/TSA/商业 API**
+> 实施分支：`feat/esignature-p1`（未合并）。全仓构建通过；`ruoyi-common-sign` **96 个单测全绿**、`ruoyi-mes` **261 个**；静态一致性审计通过；
+> **端到端验收 12/12 全部通过**（真实 MySQL + Redis + 后端），过程中发现并修复 **2 个致命缺陷** —— 见 §10.4。
 > 日期：2026-09-15
 > 关联规划：MES P0-6「电子签名 + DHR 批记录」（`doc/PROGRESS.md:975`、`doc/system/2026-07-29-system-gap-analysis-vs-mainstream.md:69`）
 > 关联文档：[2026-09-06-全项目审查报告.md](../2026-09-06-全项目审查报告.md) 缺失项 #6
@@ -333,7 +335,6 @@ CREATE TABLE `es_signature` (
   `prev_hash`         varchar(64)  NULL DEFAULT NULL     COMMENT '前一条链哈希(链首为NULL)',
   `chain_hash`        varchar(64)  NOT NULL              COMMENT '本条链哈希(SM3)',
   `remark`            varchar(255) NULL DEFAULT NULL,
-  `create_time`       datetime     NULL, `create_by` bigint NULL,
   PRIMARY KEY (`signature_id`),
   KEY `idx_es_sig_biz` (`tenant_id`, `biz_type`, `biz_id`),
   KEY `idx_es_sig_signer` (`signer_user_id`, `signed_at`),
@@ -342,8 +343,12 @@ CREATE TABLE `es_signature` (
 ```
 
 **append-only 约束**（应用层保证，非数据库强制）：
-- 实体仍继承 `TenantEntity` 以获得多租户自动处理，但 **Service 层不暴露任何 UPDATE / DELETE 方法**
+- Service 层**不暴露任何 UPDATE / DELETE 方法** —— 不可变性由接口层面保证
 - 表结构**不含 `update_by` / `update_time` / `del_flag`**；实体类对应字段声明为 `@TableField(exist = false)` 或直接不声明 —— 使"改写"在代码层面无从表达
+- 表结构**亦不含 `create_by` / `create_time`**：本表一行即一次签名，`signer_user_id` / `signer_dept_id` / `signed_at`
+  已完整承载"谁在何时签署"的语义，再加一对通用审计字段属冗余，且会与 MyBatis-Plus 的
+  `MetaObjectHandler` 自动填充交互。实体类**不继承** `BaseEntity`/`TenantEntity`，声明为普通 POJO
+  （`tenant_id` 由 MyBatis-Plus 多租户插件在 SQL 层注入，不依赖实体继承）
 - 无逻辑删除：签名记录一经写入永久保留
 - 数据库账号权限不设限，不可变性由应用层与哈希链共同保证（哈希链提供**事后可检测**能力）
 
@@ -435,9 +440,17 @@ chain_hash = SM3( prev_hash ‖ signature_id ‖ biz_type ‖ biz_id ‖
                   doc_hash ‖ signed_at_epoch_ms )
 ```
 
-- **链作用域**：按 `tenant_id` 分别成链（多租户隔离），链首 `prev_hash = NULL`
+- **链作用域**：按 `tenant_id` 分别成链（多租户隔离），链首 `prev_hash = NULL`。
+  即**同一租户下所有签名共用一条链**，与业务类型无关；`prev_hash` 指向该租户全局顺序上的前一条记录
 - **串行化**：写入时用 Lock4j 按 `tenant_id` 加分布式锁，保证链不分支
-- **篡改检测**：任一条记录被改动 → 其 `chain_hash` 重算不一致 → 其后全链断裂 → 可精确定位断点
+- **全局链的幂等语义**：任一记录被删除或改动 → 其 `chain_hash` 重算不一致、或后继记录的 `prev_hash`
+  对不上 → 可精确断点定位
+- **验签语义（重要）**：
+  - `verify(signatureId)` —— 校验该记录自身字段与 `chain_hash` 自洽，且其 `prev_hash` 与
+    **该租户全局顺序上的真实前驱**的 `chain_hash` 一致
+  - `verifyChain(bizType, bizId)` —— 对**业务范围内**的每条记录**逐条独立执行上述校验**。
+    ⚠️ **绝不能**简单比较"过滤后列表里相邻两条"的 `prev_hash`/`chain_hash`：由于链是租户全局串的，
+    同一业务的两条记录之间可能穿插其它业务的记录，那样会产生**误报"链断裂"**
 - **SM3 实现**：Bouncy Castle `SM3Digest`（已在依赖树）
 
 ### 4.4 PDF 盖章技术路线（P2）
@@ -445,7 +458,22 @@ chain_hash = SM3( prev_hash ‖ signature_id ‖ biz_type ‖ biz_id ‖
 **两段式**，同时产出**视觉印章**与**数字签名**：
 
 1. **视觉盖章**：PDFBox `PDPageContentStream.drawImage()` 将印章图按归一化坐标绘制到指定页
-2. **数字签名**：PDFBox `PDSignature` + `ExternalSigningSupport.saveIncremental()`，用**自签 X.509 证书**做 CMS/PKCS#7 增量签名
+2. **数字签名**：PDFBox `PDSignature` + `PDDocument.saveIncremental(out)`，用**自签 X.509 证书**做 CMS/PKCS#7 增量签名
+
+> **⚠️ P2 spike 修正（2026-09-16，完整报告见 `2026-09-16-pdfbox-spike-report.md`）** —— 以下几处已被实测推翻，实施以 spike 为准：
+> - spec 原文的 `ExternalSigningSupport.saveIncremental()` **API 名是错的**：外部签名流是
+>   `PDDocument.saveIncrementalForExternalSigning(out)` → `ExternalSigningSupport`；普通路径是 `PDDocument.saveIncremental(out)`
+> - **`saveIncremental` 有硬前置**：全新内存文档直接调会抛 `IllegalStateException: document was not loaded from a file or a stream`。
+>   必须先 `save(ByteArrayOutputStream)` 落一次字节、再 `Loader.loadPDF(...)` 重新打开才能增量签名
+> - **PDFBox 核心包没有任何验签 API**（无 `SignatureUtils`）→「CMS 验签 + ByteRange 覆盖检查」**必须自己实现**
+> - **只做 CMS 验签会漏报篡改**：签名后追加字节或产生增量修订时 `verify()` 仍为 `true`；必须叠加覆盖/修订检查。
+>   反向亦然：纯覆盖检查会对尾部裸字节误报。**两步缺一不可**
+> - **中文字体是硬依赖**：不嵌字体画中文直接抛 `U+7B7E ('.notdef') is not available in the font Helvetica`；
+>   且仅支持 **TrueType(TTF)** —— OTF(CFF) 报 `CFF outlines are not supported`、TTC 报 `'head' table is mandatory`。
+>   仓库 `src/main/resources` 下**无任何 CJK 字体**。**P2a 决定不绘制任何文字**（印章是图片、签名域不可见，均不需要字体），
+>   字体打包另立项决策 —— 不为一个水印文字往仓库塞 8MB 二进制
+> - 已实测可行的组合：`org.apache.pdfbox:pdfbox:3.0.8` + `bcpkix-jdk18on:1.83`（BC 在 PDFBox 的 pom 里是
+>   `<optional>true</optional>` 不传递，**仓库现有 BC 声明是必需的**）
 
 **算法选择（重要）**：
 
@@ -467,8 +495,8 @@ chain_hash = SM3( prev_hash ‖ signature_id ‖ biz_type ‖ biz_id ‖
 **策略：在前端收集签名意图 → 在 `WfTaskServiceImpl.complete()` 单点插桩**，避免逐个改 20 个业务模块。
 
 ```
-plus-ui  ActHandleBtn.vue
-   │  用户点"通过/驳回" → 若该节点已配置需签章，弹出签章框
+plus-ui  work/detail.vue（**真实待办审批入口**）
+   │  用户点"通过" → 若该流程配置了 needSign，弹出签章框
    │  选择印章 + 填写签署含义 + 二级认证
    ▼
 后端  WfTaskServiceImpl.complete(TaskBo)
@@ -481,7 +509,9 @@ plus-ui  ActHandleBtn.vue
    各业务 afterFlowHandle(WfMyBusiness)  ← 逻辑不变
 ```
 
-- **节点是否需签章**：用流程变量 `needSign`（由 BPMN 节点扩展属性配置）
+- **是否需签章**：用**流程变量** `needSign`。⚠️ 实测修正：Flowable 的 BPMN 节点扩展属性在服务端从模型读取、
+  **不会变成流程变量**，且无任何 API 暴露 —— 故"由 BPMN 节点扩展属性配置"**不可行**（详见 §10.3）。
+  当前粒度是**流程级**：同一流程的后续审批人也会看到签章面板
 - **`ruoyi-flowable` 新增依赖** `ruoyi-common-sign`（公共层，不反向依赖业务模块，架构方向正确）
 - **兼容性**：未配置 `needSign` 的流程节点行为完全不变，**存量流程零影响**
 
@@ -554,17 +584,18 @@ plus-ui  ActHandleBtn.vue
 - 印章管理页（CRUD + 启停 + 预览）、用章授权页、签名记录查询页
 - 二级认证（密码 / 短信）
 - 哈希链（SM3 + Lock4j 串行化）+ 验签接口
-- 审批挂载：`ActHandleBtn.vue` 签章入口 + `WfTaskServiceImpl.complete()` 插桩
+- 审批挂载：`work/detail.vue` 签章入口 + `WfTaskServiceImpl.complete()` 插桩
 - MES P0-6 回填：SOP 查阅 + NCR 处置
 - 菜单/权限/字典 SQL
 
-**验收标准**
-- [ ] 审批节点配置 `needSign` 后，未签章无法提交（后端强制，非前端校验）
-- [ ] 签名记录含签署含义 / 认证方式 / IP / UA
-- [ ] `verify(signatureId)` 能检出人为篡改单条记录
-- [ ] 个人章只能被本人使用；公司章无授权时不可选
-- [ ] 未配置 `needSign` 的存量流程行为完全不变（回归验证）
-- [ ] `mvn compile` + `npm run lint:eslint` 通过
+**验收标准**（全部已通过 —— 证据见 §10.4）
+- [x] 审批节点配置 `needSign` 后，未签章无法提交（后端强制，非前端校验）
+- [x] 签名记录含签署含义 / 认证方式 / IP / UA
+- [x] `verify(signatureId)` 能检出人为篡改单条记录
+- [x] 个人章只能被本人使用；公司章无授权时不可选
+      （实测：`admin` 可见「管理员个人章 + Nexus合同章」；`test` 可见 **[]** —— 既看不到他人个人章，也看不到只授权给 admin 的公司章）
+- [x] 未配置 `needSign` 的存量流程行为完全不变（回归验证）
+- [x] `mvn compile` 通过（全仓 `clean package` exit 0，48 jar）；`npm run lint:eslint` 新增文件 0 问题、仓库既有基线不变
 
 ### P2 —— 文档盖章（合同）
 
@@ -620,7 +651,7 @@ plus-ui  ActHandleBtn.vue
 | Bouncy Castle 1.83 已在依赖树 | `pom.xml:39,308-311`、`ruoyi-common/ruoyi-common-encrypt/pom.xml:26-28` |
 | 审批回调统一接口 | `ruoyi-modules/ruoyi-flowable/src/main/java/com/nexus/workflow/service/WfCallBackServiceI.java` |
 | 审批提交插桩点 | `ruoyi-modules/ruoyi-flowable/src/main/java/com/nexus/workflow/service/impl/WfTaskServiceImpl.java:204-222` |
-| 审批操作 UI 插入点 | `plus-ui/src/views/workflow/components/ActHandleBtn.vue:4-26` |
+| 审批操作 UI 插入点 | `plus-ui/src/views/workflow/work/detail.vue:873-958`（**注意**：`components/ActHandleBtn.vue` 是**死代码**，全仓唯一引用是 `demo/index.vue:113` 的注释。初版方案误指此文件） |
 | 合同无正文字段 | `ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/so/domain/SoContract.java` |
 | MES SOP 签名预留 | `ruoyi-modules/ruoyi-mes/src/main/java/com/nexus/mes/sop/domain/SopViewLog.java:58-59` |
 | MES NCR 签名预留 | `ruoyi-modules/ruoyi-mes/src/main/java/com/nexus/mes/ncr/service/impl/NcrOrderServiceImpl.java:324-332` |
@@ -644,9 +675,449 @@ plus-ui  ActHandleBtn.vue
 
 ---
 
+## 十一、P2a 实施与验收结果（2026-09-16）
+
+### 11.1 交付范围
+
+| 批次 | 内容 | 提交 |
+|------|------|------|
+| P2a-1 | **OSS 内容访问 SPI**（`OssContentAccessor`，接口在 common-sign、实现在 ruoyi-system，与 `SignCredentialChecker` 同模式）**+ 印章水印预览图服务端生成** —— 闭环 §10.2 遗留缺口 | `57b422fc` |
+| P2a-2 | **PDF 文档盖章 + 自签证书数字签名 + 双步验签器** | `9f54c565` |
+| P2a-3 | **合同正文上传链路 + 6 个 REST 端点**（让 P2a-2 真正可达） | `eecab7d6` |
+
+单测：`ruoyi-common-sign` **209 个全绿**（P1 末 96 → 209）；`ruoyi-system` 11 个。
+**spike 报告**：`2026-09-16-pdfbox-spike-report.md`（PDFBox 3.0.8 × BC 1.83 实测，含最小可用配方与 5 条设计级结论）。
+
+### 11.2 端到端实测（真实 MySQL + Redis + MinIO + 运行中的后端）
+
+| P2 验收项 | 结果 | 证据 |
+|-----------|------|------|
+| 盖章后 PDF 可验证签名完整性 | ✅ | `GET /signature/{id}/verify` → **`verdict:"OK"`**，`cmsPassed=true, coveragePassed=true`，`byteRange` 覆盖至文件末尾 |
+| 盖章坐标在不同页面尺寸下位置正确 | ✅ | 单测覆盖 A4 与自定义尺寸（含"忘记翻转 y"的证伪对照）；实测下载的已签 PDF 含 1 个 AcroForm 签名字段 + 页 0 嵌入 240×240 印章图（未盖章原件 **0 张图**） |
+| 前端无论如何拿不到印章原图 URL | ✅ | `es_seal.preview_oss_id` 已生成；`GET /seal/{id}/preview` 返回的预览图 **sha256 ≠ 原图**（`C245C1C6…` vs `2B8DA878…`），240×240 PNG。**这是 §10.2 缺口的实测闭环** |
+| 非 PDF 文件被服务端拒绝 | ✅ | 文本改名 `.pdf`（魔数校验）与真 `.docx` 均 `code:500` 拒绝；业务键下 **0 行落库、无孤儿 OSS 对象** |
+| 改动后提示"文档已被修改" | ✅ | 覆盖区间内等长改 1 字节 → **`MODIFIED_IN_PLACE`**（`CMSSignerDigestMismatchException`）；签名后增量修订 → **`REVISION_APPENDED`**，且该文件 **`cmsPassed=true`** —— 实证"只做 CMS 验签会漏报"这一 spike 结论 |
+
+实测端到端还确认：`es_sign_document.signed_oss_id` / `sign_status=2` 正确回写；`es_signature` 的
+`src_doc_oss_id`/`src_doc_hash`/`doc_oss_id`/`doc_hash`/`doc_id` 全部落库；上传的 PDF 与戳记均真实进入对象存储。
+
+### 11.3 关键设计决策
+
+1. **OSS 阻塞用 SPI 解决**，而不是把签章代码搬出 common-sign —— 与 Task 8 的认证 SPI 完全同构，同一个成因。
+   该 SPI 一并解决了 P1 遗留的水印预览图（§10.2 曾列出"前端 canvas vs 系统模块 SPI"两条路，最终走 SPI，服务端生成）。
+2. **上传只收 multipart 直传，不接客户端 ossId**：ossId 全局自增且任意登录用户可得，凭 ossId 登记等于允许把别人的对象挂成自己的合同。
+   服务端在**第一次写入之前**完成：文件名/后缀 → Content-Type → 大小 → `%PDF-` 魔数 → PDFBox 解析取页数（顺带拒掉损坏/加密）。
+3. **`bizType`/`bizId` 以文档行为准，不信客户端**（签章端点不接受客户端传入的业务键）。
+4. **`is_current` 不变量由一条条件 UPDATE 保证**，且 Lock4j 锁**延迟到事务提交后释放**（`afterCompletion`），否则第二个上传者会在前一个事务提交前读到同一版本号。
+5. **证书**：每次签名现生成自签 RSA-2048 X.509 并内嵌进 CMS —— 自包含、不改 schema、无需证书表。
+   信任链校验**明确不在范围内**（自签证书在 Acrobat 显示"有效性未知"，但**完整性校验有效**）。
+6. **不绘制任何文字、不打包字体**：印章是图片、签名域不可见，都不需要字体。见 11.4。
+
+### 11.4 遗留与待决
+
+| # | 事项 | 说明 |
+|---|------|------|
+| 1 | **中文字体** | 🔒 **已决策（2026-09-16）：不向仓库打包字体**。因此 P2 及以后**不在 PDF 上绘制任何文字**——印章是图片、签名域不可见，均不需要字体。<br>**后果（需知悉）**：签署后的 PDF 上**没有"签署人 / 签署日期"等可读文字**，人眼打开只看到印章图；"谁在何时签的"在**数字签名面板**（Acrobat）与系统台账（`es_signature`）里，但**不会打印在纸面上**。<br>若未来需要纸面可读的姓名/日期，必须先引入 TrueType(OFL) 中文字体（子集化后每份 PDF 仅增约 4 KB）——这是唯一前置 |
+| 2 | **个人签名（手写签名）** | 🔒 **已决策（2026-09-16）：本期不做，待后续业务需求**。<br>技术评估结论（供将来复用）：个人签名在本架构里**就是另一种"个人章"**——`es_seal`(`seal_type='1'` + `owner_user_id`) 已表达"本人专属"，`SealAvailabilityResolver` 已实现"只归本人可用"，`SealPlacement`/`signDocument`/`OssContentAccessor` 已跑通"把图画到 PDF 上"。**方案可零 schema 改动落地**（画板导出 PNG → 存 `es_seal`）。<br>但"点击签署自动带出姓名 + 签署时间"需要在 PDF 上**渲染中文**，故与上一条的字体决策强绑定 |
+| 3 | **Acrobat 实测** | 🔒 **已决策（2026-09-16）：暂时放过**。本机无 Acrobat，P2 验收项 1 是以**编程方式**验签 + 验覆盖达成的（`verdict:OK`），"Acrobat 面板文案 / 对不可见签名域的看法"仍属推断。spike 报告里保留了可直接抽查的样例路径，将来有 Acrobat 环境时再抽查 |
+| 4 | **跨库原子性** | 签名台账在 `ry-vue`、合同数据在 `ry-erp`，无 XA 则无法真正跨库原子（详见 §10.4 第三处说明） |
+| 5 | **P1 存量行不可验签** | 见 11.5 |
+| 6 | ~~**P2b 未开始**~~ | ✅ **已完成（2026-09-17），见 §12**。合同详情页 + 路由、`PdfSealPlacer.vue`（`pdfjs-dist@4.10.38`）、列表「签署状态」列 —— 按确认的"新建详情页"方案落地 |
+
+### 11.5 一条 P1 存量数据的说明（非缺陷）
+
+实测发现 P1 的第 1 条签名（`signature_id=2100052668384714753`）**永久无法通过验签**：
+它的 `signed_at=2026-09-16 10:42:28`，**早于**修复提交 `4275ff05`（10:48:39，链哈希取秒级时间戳）。
+即该行是用有缺陷的代码写下的、毫秒被截断的历史数据 —— 属**预期的陈旧数据**，不是回归。
+第 2–4 条（10:54 / 11:14 / 11:31 写入）单条验签均 `passed=true`。
+`SignatureChainCalculator` 自 `fa4b34d9` 起未改动；`diff 4275ff05..HEAD` 在 `ESignatureServiceImpl` 中只有变量重命名。
+**无需处理**：它是纯粹的测试期残留；生产环境不存在这类数据（P1 从未上线）。
+
+---
+
+## 十二、P2b 实施与验收结果（2026-09-17）
+
+### 12.1 交付范围
+
+| 交付物 | 说明 |
+|--------|------|
+| `plus-ui/src/views/erp/so/contract/detail.vue` | 新建合同详情页：正文上传/换版、签章入口、验签、下载、签署记录 |
+| `plus-ui/src/router/index.ts` | `/erp/so/contract/detail`（`permissions: ['so:contract:query']`，`activeMenu: '/erp/soBiz/contract'`） |
+| `plus-ui/src/components/sign/PdfSealPlacer.vue` | pdfjs 预览 + 拖拽放置印章（归一化坐标）+ 提交签署 |
+| `plus-ui/src/api/system/sign/{seal,grant,record,document}.ts` | 签章 API 层 |
+| `plus-ui/src/views/erp/so/contract/index.vue` | 列表新增「签署状态」列 + 「详情」入口 |
+| `ruoyi-modules/ruoyi-erp/.../SoContractSignStatusFiller.java` | 签署状态回填（+ 单测） |
+
+### 12.2 静态一致性审计（本次新增的验证手段）
+
+P2b 完成后**尚无浏览器环境可交互验证**，故改用**前端↔后端静态交叉审计**（逐条追调用链：`api/` → 后端 `@SaCheckPermission` / 异常处理 → 拦截器 → 组件展示），共发现 **5 处真实缺陷**，均已修复（提交 `71e4c0ed`）：
+
+| # | 缺陷 | 成因（调用链证据） | 后果 |
+|---|------|-------------------|------|
+| **D1** | **有效 PDF 被报成「不是有效的 PDF（或损坏）」** | 取正文走 `GET /resource/oss/download/{ossId}`，该端点需 `system:oss:download`；`SaTokenExceptionHandler` 以 **HTTP 200 + `R{code:403}`** 应答；而 `utils/request.ts` 对 `arraybuffer` 响应**不看 `code`**，直接把 JSON 字节当文件内容返回 → pdfjs 抛 `InvalidPDFException` | 用户看到误导文案；同时**吞掉 401/会话过期**（不会触发重新登录）与后端 `ServiceException`（如「文件数据不存在!」） |
+| **D2** | 「下载」按钮的权限守卫**不覆盖它实际调用的端点** | 按钮守 `system:sign:document:list`，但处理函数还调 `/resource/oss/download/{ossId}`（需 `system:oss:download`）。⚠️ `v-hasPermi` 对数组是**「或」**，把权限码追加进数组是**错的** | 半有权限的用户点了必然失败 |
+| **D3** | 「详情」按钮无守卫，但路由需要 `so:contract:query` | 该权限缺失时 `filterDynamicRoutes` 不注册路由 → 点进去落 404 | 死链 |
+| **D4** | 拒签时**弹两条一模一样**的提示 | 拦截器已弹一次，弹窗兜底再弹一次 | 观感缺陷 |
+| **D5** | >10MB 文件**永远走不到**服务端的友好提示 | `spring.servlet.multipart.max-file-size: 10MB` 在进 Controller 前就拒绝，`EsSignDocumentServiceImpl` 里那句「PDF 文件不能超过 10MB（当前 N 字节）」是**死代码**；无 `MaxUploadSizeExceededException` 处理器 → 用户只看到「发生系统异常，请联系管理员」 | 服务端精心写的提示白费 |
+
+**修复要点**
+- **D1**：在 `utils/request.ts` 新增 `readJsonErrorEnvelope()`，对 `arraybuffer` 响应识别「伪装成文件流的 JSON 错误信封」——同时满足①响应头 `Content-Type` 含 json **或**②首个非空白字节为 `{`(0x7B)，**且**③解析结果带**数字** `code` 字段（只有 `R<T>` 信封有，故真正的 JSON 文件下载不会被误判），命中则按真实原因 `reject`，401 触发 `toReLogin()`。另在 `document.ts` 把 403 改写为带权限码的可操作提示。
+- **D2/D3**：改用**显式判断**（`auth.hasPermi(OSS_DOWNLOAD_PERMI)` + 说明缺哪一条），不动 `v-hasPermi` 数组以避开「或」语义陷阱；详情按钮补 `v-hasPermi="['so:contract:query']"`。
+- **D4**：`signDocument` 传 `ignoreErrorMsg: 'true'`，提示交由签署弹窗自己负责（它需要保持弹窗打开供改正重试）。
+- **D5**：`GlobalExceptionHandler` 新增 `MaxUploadSizeExceededException` 处理器（同时前端加 10MB 预检，服务端仍把关）。
+- **R6**：详情页只靠 query 传参，补 `watch(contractId)` 重载并清空上一份的签署/验签/落位状态。
+
+**审计同时确认无问题**：雪花 ID 字符串处理、空值守卫、`@RepeatSubmit` 交互、`el-upload` 清理、`clearFiles()` 置于 `finally`。
+
+### 12.3 验证结果
+
+| 项 | 结果 |
+|----|------|
+| `eslint`（改动文件） | 0 problems |
+| `vue-tsc --noEmit` | 仅 3 个**存量**错误（`vite/plugins/compression.ts`，未改动文件） |
+| `npm run build:prod` | exit 0 |
+| 后端单测 | `ruoyi-common-sign` **209/209**、`ruoyi-erp` **78/78**，均 BUILD SUCCESS |
+| 浏览器交互验证 | ❌ **未做**（无浏览器环境）—— 见 12.4 |
+
+### 12.4 遗留（**上线前须知**）
+
+| # | 事项 | 说明 |
+|---|------|------|
+| 1 | **⚠️ 部署时必须同步 nginx 配置** | pdfjs 的 worker 由 Vite 产出为 `.mjs`，而 **nginx 自带的 `conf/mime.types` 不映射 `mjs`**（已实测：连 nginx **1.31.5** 都只有 `application/javascript js;`），`.mjs` 会落到 `default_type application/octet-stream`；浏览器**不允许非 JS MIME 的 module worker** → PDF 预览整段不可用。已在 `plus-ui/nginx.conf` 增加 `mjs → application/javascript` 映射（正则 location 显式排除 `/prod-api/`、`/admin/`、`/snail-job/`，避免抢走反代前缀）。<br>**但** `docker-compose-main.yml` 把宿主 `/docker/nginx/conf/nginx.conf` 挂进容器，故**必须把本仓库这份 `nginx.conf` 同步到宿主机**，否则改动不生效 |
+| 2 | **仅 `admin` 能签署（开发数据前置条件，非缺陷）** | 开发库 `es_seal` 只有 1 枚个人章、无授权记录。要给其他账号签署能力，需为其建个人章或配 `es_seal_grant` |
+| 3 | **R2 首帧宽度** | 签署对话框入场时若量到 0 宽度，`measure()` + `ResizeObserver` 会自愈；未做处理 |
+| 4 | **浏览器交互验证缺失** | 静态审计补的是**调用链一致性**，不能替代真机点击（拖拽手感、pdfjs 渲染、坐标落位观感）。**上线前必须人工走一遍** |
+| 5 | `PuContract`（采购合同）接入 | 本期只接了 `SoContract`；采购合同为**快速跟进项**，复用同一套组件与 `bizType` 模式 |
+| 6 | 个人签名 / 字体 / Acrobat 实测 | 维持 §11.4 的既有决策，本期未动 |
+
+---
+
+## 十三、三个「后端已就绪、最后一公里未接」缺口（2026-09-17）
+
+上线前逐条核对「签章到底在哪里被用起来」时发现：**P1/P2 交付的能力，有三处无法从界面真正触达**。均非缺陷，是集成断点。
+
+### 13.1 缺口一：`needSign` 无处可设 + 可被客户端绕过
+
+**原状**：`needSign` 只能是**流程变量**，即发起流程时注入，粒度是**整个流程实例**；且关卡 `WfTaskServiceImpl:275` 读的是 `taskBo.getVariables()` —— **请求体**。客户端提交 `needSign=false` 即可绕过，「不签章不生效」实际上只防误操作、不防篡改。
+
+**现已改为三级优先级解析**（命中即止，前两级均为服务端来源，与请求体无关）：
+
+| 优先级 | 来源 | 语义 |
+|--------|------|------|
+| 1 | BPMN 用户任务扩展属性 `flowable:needSign` | **节点级**，随流程定义发布；**属性存在即权威**（`"false"` 也覆盖请求体） |
+| 2 | 引擎流程变量 `needSign` | 实例级，由 `runtimeService.getVariable` 读取，同样优先于请求体 |
+| 3 | 请求体 `variables["needSign"]` | 历史兼容，仅当服务端两级都未配置时生效 |
+
+**在哪里设置**：流程设计器 → 选中**用户任务**节点 → 「用户任务」属性面板 → **电子签章 / 要求签章** 开关。
+
+实现方式刻意复用仓库既有的 `localScope`（节点表单）同族机制：descriptor 声明 `isAttr` 属性 → 设计器开关经 `modeling.updateModdleProperties` 写入 `businessObject` → 序列化为 `flowable:needSign="true"` → 后端用 `ModelUtils.getUserTaskAttributeValue(bpmnModel, taskDefinitionKey, "needSign")` 读取（与 `localScope` 同一个 API、同一套读写路径）。
+
+**`getProcessVariables` 同步注入**：活动任务会把节点属性值并入返回的变量表，故前端 `work/detail.vue:910` **无需改动**即可正确渲染签章表单（节点级配置也能弹出印章/密码框，不会出现「后端要求签、前端不给签」的僵局）。
+
+> ⚠️ **为什么 descriptor 里刻意不给 `needSign` 声明 `default`**（改动前务必先读这段）
+> bpmn-moddle 会**省略等于默认值的属性**。若像 `localScope` 那样写 `"default": false`，把开关从「是」拨回「否」时属性会被**整个删掉**，后端只能读到「未配置」而继续回退到实例变量 —— 即「本节点不签章」这个**明确意图会丢失**（「全流程都要签、只豁免某节点」将无法表达）。
+> 不声明 `default` 时：从未设置过的节点读到 `undefined`、序列化**照样不写**（不污染存量流程 XML），而显式关闭会写出 `="false"` 并被后端视为权威结论。
+> 该行为已用仓库自带的 bpmn-moddle 实测：16 项断言中「未触碰节点不写属性」「显式关闭写 `="false"`」「`="true"` 往返一致」全部通过。
+
+**已知限制**：`ModelUtils.getUserTaskByKey` 走 `getMainProcess().getFlowElement(key)`，**对子流程（subProcess）内部的任务返回 null** → 子流程内的节点目前读不到该属性，只能用实例级变量（优先级 2/3）。
+
+### 13.2 缺口二：SOP 查阅器打不开
+
+**原状**：`plus-ui/src/views/mes/sop/viewer/index.vue` 页面与签名留痕逻辑**都是完好的**（`onMounted` → `recordViewLog` → 触发 `SOP_VIEW` 签名），但：菜单 4275 为 `visible='1'`（**隐藏**），且**全前端零处跳转到 `/mes/sop/viewer`**。它只接受 `processId`/`stepRecordId`（设计上从 MES 工位上下文跳入），那个入口从未实现 → 页面只能手敲 URL 打开，**等于查阅留痕功能从未真正生效**。
+
+**现改为**：
+- 查看器新增按 **`sopId`** 加载（`getDocument`），取值优先级 `stepRecordId → processId → sopId`；刷新按钮、`watch`、空状态文案同步适配；雪花 ID 仍只做字符串透传。
+- 文档管理列表新增 **「查阅」** 按钮 → `/mes/sop/viewer?sopId=`，并加 `el-tooltip` 明确区分：**「预览」直接开文件、不产生留痕；「查阅」走查看器、登记查阅记录并触发电子签名**。
+- 权限码用 **`mes:sop:document:query`** 而非 `list`：按 sopId 加载走的是 `GET /mes/sop/document/{sopId}`，该端点由 `@SaCheckPermission("mes:sop:document:query")` 把关，而 by-process/by-step 只需 `list`（`SopDocumentController:63` vs `:187/:199`）。用 `list` 会让「只授 list」的角色被 403 挡住 —— 与 §12.2 的 D2 属同一类错误。
+- 菜单 4275 保持隐藏（入口改为列表按钮，不在侧边栏刷屏）。
+
+**遗留（非阻塞）**：`getInfo` 不过滤状态，故按 `sopId` 可打开 DRAFT/ARCHIVED 的 SOP，而 `by-process` 只推 PUBLISHED。
+
+### 13.3 缺口三：NCR 处置签名无前端
+
+**原状**：`NcrOrderServiceImpl.disposeWithSignature` 与 `PUT /mes/ncr/order/dispose/{ncrId}/sign` 早已实现并测过，但 `api/mes/ncr/order.ts` 只包了**不带签名**的 `dispose`，**全前端零处调用 `/sign`** → 页面上无论怎么操作都走不签名的那条，签名永远不会产生。（与当初 `signDisposition` 零调用同类，这次断在前端。）
+
+**现改为**：NCR 处置弹窗新增 **「签署并处置」** 按钮 → 复用 `SignAuthDialog`（登录密码二级认证）→ 调 `disposeOrderWithSign`。失败时**保持认证弹窗打开**供改正重试；错误提示由 `utils/request.ts` 拦截器统一给出，**本地不再重复 toast**（否则「签署密码错误」会弹两条，即 §12.2 的 D4）。原「确认处置」不带签名路径**完全保留**。
+
+注：NCR 签名为**纯逻辑签名，无印章参数**（后端签名里没有 `sealId`），故未加印章选择器；`authMethod=LOGIN_ONLY` 会被后端拒绝，固定用 `PASSWORD`。
+
+### 13.4 验证结果（2026-09-17）
+
+| 项 | 结果 |
+|----|------|
+| 后端单测 | flowable **48/48**（基线 33，新增 15）、sign **209/209**、erp **78/78** |
+| `eslint`（全部改动文件） | 0 errors |
+| `vue-tsc --noEmit` | 仅 3 个**存量**错误（`vite/plugins/compression.ts`），**0 新增** |
+| `npm run build:prod` | exit 0 |
+| descriptor | `JSON.parse` 通过（格式错误会导致整个设计器崩，故单列） |
+| BPMN 往返 | 用仓库自带 bpmn-js/bpmn-moddle 实跑 16 项断言（见 13.1） |
+| **浏览器交互验证** | ❌ **仍未做**（无浏览器）—— 拖拽、开关落盘、签章弹窗均需人工点一遍 |
+| 引擎路径 E2E | ❌ 未跑；优先级逻辑仅经单元测试断言 |
+
+### 13.5 顺带发现的既有缺陷（**未修**，另立）
+
+`plus-ui/src/package/penal/form/ElementForm.vue:148` 调用 `modeling.updateModdleProperties(element, { localScope: v })` **只传了 2 个参数**，而 bpmn-js 8.10 的签名是 `(element, moddleElement, properties)` —— 参数错位后 handler 对 `undefined` 取键（`keys(undefined)` / `forEach(undefined)`）**静默无操作**，所以「节点表单」那个开关**几乎从来没生效过**。DB 里现存的 `flowable:localScope="true"`（2 处）来自同文件 `:141-144` 的 `updateProperties` 强制赋值，与该开关无关。
+
+影响面仅限 `localScope`（节点表单作用域）这一非签章特性；因它可能被后端逻辑依赖，且属另一特性的行为变更，**本次未动**，建议单独开单处理。
+
+---
+
+## 十四、P2c 安全审查修复 + 采购合同接入（2026-09-18）
+
+### 14.1 审查方法
+
+三个并行审查分别覆盖 **后端核心**（`ruoyi-common-sign` 全部服务/PDF 支撑/控制器）、**集成点**（审批关卡/ERP 回填/NCR/SOP/SQL DDL）、**前端**（组件/页面/API 层/拦截器），交叉核对调用链与测试。合并去重后共 **20 项有实际后果的缺陷**，其中高危 7 项。以下全部修复（除 14.4 所列明确挂起项）。
+
+### 14.2 修复清单（按严重度）
+
+**审批关卡（`WfTaskServiceImpl` + `ApprovalSignGate`）—— 一次重构修四类问题**
+
+| # | 缺陷 | 修复 |
+|---|------|------|
+| 1 | **锁死**：节点同时配置在线表单与 `needSign` 时，表单保存对 variables 的**白名单原地过滤**会先于关卡删掉 `signCredential` 等四键 → 永远无法办结 | `complete()` 入口先 `takeSignVariables()` 把五个签章键**提取到独立快照并从原 Map 剥离**，关卡只读快照 |
+| 2 | **整体绕过**：关卡包在 `if (hasDataId)` 内，而 `dataId` 是纯客户端字段 —— 恶意省略即零签名办结 | 关卡移出 `hasDataId`；服务端两级判定 TRUE 时**无 dataId 也签署**（bizId 允许 null，台账本就支持） |
+| 3 | **认证降级**：`signAuthMethod` 取自请求体，塞 `LOGIN_ONLY` 即免密完成「已签名」审批 | 服务端固定 `PASSWORD`，不采纳请求体（与 NCR 路径同一口径） |
+| 4 | **实例变量投毒 + 密码落库**：`complete(variables, localScope=false)` 会把请求体变量持久化到流程实例 —— 前序办理人提交 `needSign=false` 可永久解除后续节点签章；`signCredential` 无 dataId 时明文落入 `act_ru_variable` | 上述剥离发生在一切消费方之前：needSign 不再冻结实例判定，凭证不再触达引擎变量表；前端 `work/detail.vue` 同步停止回写 `needSign` |
+
+另：审批签名 `bizNo` 落 **procInsId**（此前为 null，同一单据二次送审的签名无法区分实例）。
+
+**签名核心（`ESignatureServiceImpl` / `SignatureChainCalculator`）**
+
+| # | 缺陷 | 修复 |
+|---|------|------|
+| 5 | **链分叉**：链锁在 `finally` 释放时事务尚未提交（`sign` 加入调用方事务，窗口覆盖整段 Flowable 办结），并发者取同一 `prev_hash` 且无 DB 约束拦截 → 永久断链假警报 | `doSign`/`signDocument` 改用 `releaseLockAfterTransaction`（复用 `uploadDocument` 的既有范式）；DDL 加 `UNIQUE (tenant_id, prev_hash)` 把分叉升级为 DB 层拦截 |
+| 6 | **防篡改盲区**：`auth_method`/`biz_no` 不参与链哈希，DB 直改 `PASSWORD↔LOGIN_ONLY` 验签不可见 —— 恰是最影响证据效力的字段 | 链哈希升级 **v2 公式**（追加 auth_method、biz_no）；验签双公式兼容（先 v2 后 v1），公式升级前的存量记录不误报 |
+| 7 | **多方签署覆盖**：后签者恒以原始上传件为基准重盖，产物**静默丢弃先签者全部签章** | 基准改为「当前签署后文件」（`signedOssId` 优先），追加式增量签署；摘要核对随之取台账登记的签署后文件 SM3 |
+| 8 | 可对 `is_current='0'` 的**被取代版本**签署留痕 | 版本守卫：非当前生效版本拒绝 |
+| 9 | `sign_ua varchar(512)` 超长在严格模式下 insert 失败 → 需签章审批被卡死 | 落库前截断（不参与哈希，无完整性损失） |
+| 10 | MQ/异步线程调用签名时租户/用户缺失**静默写脏**（锁 key 退化、租户过滤失效、insert 报错被降级吞掉） | 入口 `assertSigningContext` 快速失败并给出可定位报错 |
+| 11 | 链尾/前驱查询无支撑索引：每次签名全表 filesort 且发生在租户级 Redis 锁临界区内（SOP 查阅签名高频写） | DDL 加 `idx_es_sig_chain_tail(tenant_id, signed_at, signature_id)` |
+
+**印章与认证**
+
+| # | 缺陷 | 修复 |
+|---|------|------|
+| 12 | 印章 `valid_from/valid_to` **用章时从不校验**（入库只查日期排序，挡不住时间越过 valid_to）→ 过期/未生效印章可被无限期使用 | `SealAvailabilityResolver.isUsable` 增加印章自身窗口判定（+4 单测） |
+| 13 | 密码签署凭证**无失败限速**：会话劫持后可无限次在线爆破登录密码 | `PasswordSignCredentialChecker` 增加与 SMS 校验器同构的 Redis 计数 + 5 次锁 10 分钟（+7 单测） |
+| 14 | 印章状态变更不校验取值（任意串可入库卡死印章）也不校验流转 | 白名单 + 流转矩阵（与印章页按钮一致：草稿可启用/销毁、启用↔停用、停用可销毁、无回草稿路径） |
+| 15 | 预览图解码上限 20000×20000 ≈ **1.6GB 堆**（10MB 内合法 PNG 即可 OOM 全站） | 解码前加像素面积上限（16M 像素 ≈ 4000×4000） |
+
+**传输与接口**
+
+| # | 缺陷 | 修复 |
+|---|------|------|
+| 16 | NCR 处置签署凭证走 **URL query**（浏览器历史/访问日志留痕）且被操作日志切面**明文落 `sys_oper_log.oper_param`**；文档签章 `DocSignBo.credential` 同样落日志 | 控制器改 `@RequestBody NcrDisposeSignBo`；`credential` 加入全局 `EXCLUDE_PROPERTIES`（query/对象两条日志路径全覆盖）+ `@Log(excludeParamNames)` 双保险 |
+| 17 | SOP 查阅登记不校验 `sopId`：直接调接口可对**不存在的 SOP** 无限制造 append-only 签名（台账污染 + 放大 #11） | `recordView` 服务端准入：sopId 必须指向真实 SOP |
+
+**前端**
+
+| # | 缺陷 | 修复 |
+|---|------|------|
+| 18 | **旋转页面（/Rotate 90/270）盖章坐标整体错位**且无告警（pdfjs 按旋转后视口归一化，后端按未旋转 MediaBox 落位） | `PdfSealPlacer` 放章前检测 `page.rotate`，非 0 明确拒绝并提示转正页面（后端按 CropBox+旋转矩阵换算列入 14.4）；顺带修 `loadPdf` 并发竞态（加载令牌：旧一轮产物自行销毁、陈旧错误不呈现、loading 只由最新一轮收起） |
+| 19 | 合同详情页快速切换合同时，**迟到的旧响应覆盖新数据**（URL 是 B、页面是 A，可能把章盖到另一份合同上） | so/pu 两个详情页加载加轮次令牌，过期响应丢弃 |
+| 20 | 杂项：work/detail 签署失败**双 toast**；`readJsonErrorEnvelope` 把 code=200 成功信封也当错误拒绝；印章页新增/修改后预览图不回填 | 全部修复（对齐 signDocument/NCR 的单提示口径） |
+
+### 14.3 采购合同（PuContract）接入 —— 兑现 §12.4 第 5 项快速跟进
+
+复用 SoContract 的全部模式与组件（`PU_CONTRACT` bizType 在 P1 即已预留）：
+
+| 交付物 | 说明 |
+|--------|------|
+| `PuContractVo.docSignStatus` + `PuContractSignStatusFiller` + `selectPageList` 回填 | 与 `SoContractSignStatusFiller` 同构：类级 `@DS("master")` 收敛跨库查询、整页一次 `biz_id IN`、只取 `is_current='1'`（+6 单测） |
+| `views/erp/pu/contract/detail.vue` | 新建采购合同详情页：基本信息/明细只读 + 正文上传（换版确认/10MB 预检）/追加签署/下载/验签（含 14.2-#19 的竞态守卫） |
+| `views/erp/pu/contract/index.vue` | 列表加「签署状态」列 + 「详情」按钮（权限码 `pu:contract:query` 与路由一致，规避 §12.2-D3 类错配） |
+| `router/index.ts` | `/erp/pu/contract/detail`（hidden，`activeMenu: '/erp/puBiz/contract'`） |
+| `api/erp/pu/contract` | `getContract` 参数放宽为 `string \| number`（对齐 so 侧；雪花 ID 运行时本就是字符串） |
+
+### 14.4 遗留（明确挂起，非缺陷修复）
+
+| # | 事项 | 理由 / 建议路径 |
+|---|------|----------------|
+| 1 | 旋转 PDF 的**服务端**正确落位（CropBox + 原点 + 旋转矩阵换算） | 前端已短期拦截（明确报错而非错位盖章）；后端换算 + 40 项几何测试对齐列入下期 |
+| 2 | 印章原图可经**通用 OSS 管理接口**（`system:oss:list/download`）枚举/取出 | 跨模块产品决策：印章对象需独立命名空间或私有标记并在 `SysOssController` 拦截；本期在文档明示边界（签章模块内部不泄露，平台通用接口除外） |
+| 3 | 多应用节点**时钟偏移 >1s** 时链尾/前驱排序可能与追加序不一致 | 根治需每租户单调序列号（Redis INCR）作链序键，涉及台账结构变更；当前单节点部署不受影响，P3 立项 |
+| 4 | `ElementForm.vue` 参数错位（§13.5 既有缺陷） | 维持挂起，另立处理 |
+| 5 | 存量库执行 `uk_es_sig_prev_hash` 建索引前需人工核查是否已有分叉数据 | 见《数据库增量变更记录》09-18 条目 |
+| 6 | 浏览器交互验证 | 本期所有改动仍未经真机点击（同 §13.4）；上线前人工走一遍采购合同详情页 + 追加签署 + 需签章审批 |
+
+### 14.5 验证结果
+
+| 项 | 结果 |
+|----|------|
+| 后端单测 | sign **224/224**（基线 209，+15：v2 哈希/有效期窗口/追加签署/版本守卫等）、flowable **51/51**（+3：快照剥离/无 dataId 签署/强制 PASSWORD）、erp **84/84**（+6：PuContractSignStatusFiller）、mes **268/268**（NCR 控制器请求体化 + SOP 准入适配）、system **18/18**（+7：密码限速） |
+| `eslint`（全部改动文件） | 0 problems |
+| `vue-tsc --noEmit` | 仅 3 个存量错误（`vite/plugins/compression.ts`），0 新增 |
+| `npm run build:prod` | exit 0 |
+| 浏览器交互验证 | ❌ 未做（同 §13.4，上线前必做） |
+
+---
+
 ## 附：变更记录
 
 | 日期 | 变更 |
 |------|------|
 | 2026-09-15 | 初版。选型结论：纯自建（内部留痕级），排除开源代码融合与商业 API |
 | 2026-09-15 | 补 §2.7：评估 Contract.Pro / mini-contract（何方签）并记录排除依据（前端外壳 + 引擎闭源托管 + 无 LICENSE 文件）；P3 增加「跨端签署会话」待办 |
+| 2026-09-15 | §4.3 明确链作用域与验签语义 —— 修正 `verifyChain` 比较「过滤后相邻记录」会**误报断链**的缺陷（Task 10 反向实验证实） |
+| 2026-09-15 | §5.1/§9 修正：真实审批入口是 `work/detail.vue`，`ActHandleBtn.vue` 为死代码；`needSign` 只能是流程变量 |
+| 2026-09-15 | **P1 实施完成**，补 §10：14 处计划偏差、SMS 移出 P1、水印预览图的 P1/P2 边界与架构阻塞、待决事项、人工验收清单 |
+| 2026-09-16 | **P2a 实施完成**，补 §11：PDFBox 3.0.8 + 自签 X.509 CMS 盖章链路、4/4 端到端实测、字体/个人签名/Acrobat 三项决策（均"不做"） |
+| 2026-09-17 | **P2b 实施完成**，补 §12：合同详情页与签章 UI；新增**静态一致性审计**手段，发现并修复 5 处缺陷（含"有效 PDF 被误报为损坏"这一用户可见致命文案）；记录 nginx `.mjs` MIME 的部署前置条件 |
+| 2026-09-17 | **补 §13：三处集成断点**（`needSign` 无处可设且可被客户端绕过 / SOP 查阅器无入口 / NCR 签名无前端）。`needSign` 改为**节点级 BPMN 扩展属性**三级优先级解析，封闭绕过；记录 descriptor **刻意不声明 default** 的原因与子流程限制；另记录 `ElementForm.vue` 参数错位的既有缺陷（未修，另立） |
+| 2026-09-18 | **P2c：三路安全审查修复 20 项缺陷**（§14.2：审批关卡锁死/整体绕过/认证降级/变量投毒、链锁提交前释放致分叉、v2 链哈希补 auth_method、多方签署覆盖、印章有效期失效、密码爆破限速、NCR 凭证 URL 明文、旋转页坐标错位等），链哈希升级 v2 并双公式兼容存量；**采购合同接入电子签章**（§14.3，兑现 §12.4 快速跟进项）；补链尾索引 + `uk_es_sig_prev_hash` 唯一约束（存量库升级语句见《数据库增量变更记录》09-18） |
+
+---
+
+## 十、P1 实施结果（2026-09-15）
+
+### 10.1 交付与验证
+
+| 项 | 结果 |
+|---|---|
+| 模块 | 新建 `ruoyi-common/ruoyi-common-sign`（`@AutoConfiguration` 注册） |
+| 数据表 | `es_seal` / `es_seal_grant` / `es_sign_document` / `es_signature`，落 `ry-vue.sql`；菜单 ID 实为 **4348–4362** |
+| 单测 | **88 个全绿**（SM3 / 哈希链 / 印章可用性 / 认证 / 签名 / 验签 / 事务隔离） |
+| 全量测试 | 822 run / 4 failures / 9 errors —— 13 项**全部**在 `ruoyi-admin` 的 RuoYi 官方 demo 脚手架（`AssertUnitTest` 故意失败；`DemoUnitTest`/`TagUnitTest` 需真实数据源）。经 `git log 32a83708..HEAD -- ruoyi-admin/src/test/` 为空证实与本特性无关 |
+| 构建 | `mvn clean package -DskipTests` 全仓 48 jar，exit 0，无告警 |
+| 静态审计 | 前端 16 调用 ↔ 后端 16 端点全匹配；3 菜单路径 ↔ 3 view 文件全匹配；13 权限串全部已种；9 个 `v-hasPermi` 全一致；无循环依赖 |
+| 端到端 | ❌ **未做** —— 见 §10.4 |
+
+### 10.2 P1/P2 边界修正：水印预览图
+
+**原方案自相矛盾**：§7 的 P1 验收要求「印章原图不外泄」，但「`preview_oss_id` 水印预览」被排在 P2。而 P1 **没有任何写入 `preview_oss_id` 的代码**（全仓 `setPreviewOssId` 零调用），预览接口只能走服务端回退 —— **返回的是印章原图的 ossId**。
+
+**P1 的真实保证应表述为**：
+> 印章原图**不经由任何 OSS 直链或 VO 字段下发**（`SealVo` / `AvailableSealVo` 均无 `sealOssId`），只能经**带权限校验的接口**取得。
+
+这**不等于**「原图永不离开服务端」，后者要等 P2 的降采样 + 水印落地。
+
+**⚠️ 架构阻塞（P2 动工前必读）**：`ruoyi-common-sign` **无法读写 OSS** —— `ISysOssService` / `SysOssVo` / `OssFactory` 都在 `ruoyi-modules/ruoyi-system`，而 `ruoyi-system` 已依赖 `ruoyi-common-sign`，common→system 会成环。故水印图生成**不能放在 sign 模块内**。两条可行路径：
+
+- **(a) 前端生成**：上传时用 canvas 降采样 + 水印，作为 `previewOssId` 一并提交（上传者本就持有原图，无新增泄露面）
+- **(b) 事件 / SPI**：在 OSS 可达的模块（如 `ruoyi-system`）监听印章创建后生成回写
+
+### 10.3 实施中对本方案的修正
+
+完整表格见计划文档末尾「实施偏差汇总」。其中会导致**真实故障**的 3 处：
+
+1. **`verifyChain` 会误报「链被篡改」** —— 链是租户全局串的（`appendSignature` 取前驱不带 `bizType` 过滤），比较「过滤后相邻两条」在业务穿插时必然误判。已改为逐条校验自身哈希 + **真实前驱**（§4.3）。
+2. **印章根本改不了** —— `SealBo.sealOssId` 的 `@NotNull` 未分校验组，PUT 不重传图片被 400 拒。已改 `AddGroup` / `EditGroup`。
+3. **所有 TDD 任务的测试命令是假绿** —— 根 `pom.xml:515` 的 `<groups>${profiles.active}</groups>` 在无 active profile 时匹配不到任何测试，`Tests run: 0` 却 BUILD SUCCESS。**测试命令必须追加 `-Dprofiles.active=`。**
+
+两处**功能性范围收缩**，需知悉：
+
+- **SMS 移出 P1**：短信 API 存在（sms4j），但**手机号取不到** —— `LoginUser` 无 phone 字段，`sys_user` 属 `ruoyi-system`，common 层不能反向依赖。已删除 `/sms-code`，并从 `SignAuthMethod.SUPPORTED` 移除 `SMS`。**P1 实际支持 `LOGIN_ONLY` + `PASSWORD`。** `SmsSignCredentialChecker` 及测试保留待 P2。恢复路径：把发码端点放 `ruoyi-system`，或给 `LoginUser` 加 phone。
+- **`needSign` 只能是流程变量**：Flowable 扩展属性在服务端从 BPMN 模型读取、**不会变成流程变量**，无 API 暴露。故「按节点配置扩展属性」不可行。当前为**流程级**粒度 —— 同一流程的后续审批人也会看到签章面板。要按节点粒度控制需后端改造（在任务详情 API 暴露扩展属性）。
+
+### 10.4 端到端验收（2026-09-16 已执行，**发现并修复 1 个致命缺陷**）
+
+环境：本机 MySQL 5.7（`ry-vue`/`ry-erp`/`ry-mes`/`ry-iot` 均存在）+ Redis（密码 `ruoyi123`）+ RabbitMQ，后端以
+`java -jar ruoyi-admin.jar --spring.profiles.active=dev --api-decrypt.enabled=false` 启动（**关闭 API 加密仅为 API 级测试的传输层开关，未改任何代码**）。
+
+> **⚠️ 执行前发现：开发库 `ry-vue` 没有签章 schema**，已把 4 张 `es_*` 表与 15 条菜单（4348–4362）应用到开发库（纯新增、可回滚）。
+> 另外修正了 **1 条**失效的 `wf_my_business.service_impl_name`（见下"顺带发现的既有缺陷"）。
+
+| # | 验收项 | 结果 | 证据 |
+|---|--------|------|------|
+| 1 | 后端强制：未签章不可提交 | ✅ | needSign + 错误密码 → `{"code":500,"msg":"签署密码错误"}`，任务**仍在待办**，`es_signature` 无新行 |
+| 2 | 签名记录完整 | ✅ | `biz_type=APPROVAL, biz_id=<dataId>, signer_user_id=1, signer_name=系统管理员, signature_meaning=E2E…, auth_method=PASSWORD, signed_at` 均正确 |
+| 3 | 篡改可检出 | ✅ | 改 `signature_meaning` → 单条 `passed:false, brokenAt=<该行>`；全链 `链校验在 signatureId=… 处断裂` |
+| 4 | 还原后恢复通过 | ✅ | 还原 → `passed:true`，`chain_hash` 未被改动 |
+| 5 | 全链验签 | ✅ | `{"passed":true,"chainPassed":true,"checkedCount":1,"messages":["共校验 1 条签名记录，链完整"]}` |
+| 6 | 存量流程零影响（无 needSign） | ✅ | 普通审批 `code:200` 正常完成并离开待办，`es_signature` **2 → 2 行未变**，无签章 UI/变量 |
+| 7 | 凭证不落库 | ✅ | `act_ru_variable` / `act_hi_varinst` 中 `sign*` key 计数 **0**（失败与成功两条路径均验） |
+| 8 | 签章入口可达 | ✅ | 真实入口 `work/detail.vue`（`ActHandleBtn.vue` 为死代码） |
+| 9 | 印章原图不外泄 | ⚠️ 静态 | 仅静态审计（无任何接口返回 `sealOssId`）；未做运行时验证 |
+| 10 | MES SOP 查阅回填 | ✅ | 登记查阅 → `sop_view_log.signature_id` **非空**；`es_signature` 落 `SOP_VIEW / LOGIN_ONLY / seal_id=NULL` 行（**修复下述数据源缺陷后通过**） || 11 | MES NCR 处置签署 | ✅ | **负向**：`authMethod=LOGIN_ONLY` → `{"code":500,"msg":"NCR 处置签署必须进行二级认证"}`，NCR 仍为 `OPEN`、`disposition_signature_id=NULL`、`NCR_DISPOSITION` 签名数 0。**正向**：`PASSWORD` → `{"code":200}`，`disposition_signature_id` 绑定成功，`es_signature` 落 `NCR_DISPOSITION / '不合格品处置批准：SCRAP' / PASSWORD` 行。**未签署的 `/dispose` 仍可用**（`disposition_signature_id=NULL`，签名数不变） |
+| 12 | 前端构建 | ⬜ 未验 | 需 `npm run build:prod` |
+
+#### 🔴 本轮发现的致命缺陷（已修复）
+
+**`signed_at` 为 MySQL `datetime`（秒精度），毫秒在落库时被静默截断，而 `sign()` 是按毫秒计算链哈希的
+→ 验签必然失败。** 实测：一条**刚创建、未被任何人改动**的签名，`verify` 直接返回
+`passed:false，"签名记录内容与链哈希不一致，疑似被篡改"`。
+
+即：**修复前，系统产出的每一条签名都无法通过自己的校验**（只有约 1/1000 恰好落在整秒的记录能通过）。
+88 个单测**全部漏掉**此缺陷 —— 它们从不经数据库往返，只在内存里拿同一个值自比。
+
+修复：`ESignatureServiceImpl.appendSignature` 中把 `signedAt` 归零毫秒后再同时用于**哈希**与**落库**，
+保证秒级精度的值可无损往返。提交 `4275ff05`，新增 4 个测试（其中 1 个专门模拟 `datetime(0)` 截断，
+已用反向实验证明它在修复前必然失败），单测总数 88 → **92**。
+
+修复后重跑实测：新建签名 → 全链验签 `passed:true` ✅。
+
+#### 🔴 第二个致命缺陷：签章库访问未固定数据源（已修复，提交 `32e27b89`）
+
+签章 4 张表在 **`ry-vue`（主数据源 `master`）**，但签章模块的 DB 访问**没有固定数据源**，于是继承调用方上下文：
+
+```
+java.sql.SQLSyntaxErrorException: Table 'ry-mes.es_signature' doesn't exist
+    at ESignatureServiceImpl.appendSignature(...)
+    at SopViewLogServiceImpl.signSopView(...)   ← MES 模块 @DS("mes")
+```
+
+**为什么一直没被发现（两个原因，都值得记）：**
+1. 审批路径恰好跑在主数据源上下文里，所以"能跑"——纯属运气；
+2. 更糟的是：SOP 路径**按设计是"失败降级不阻断"**，`catch` + `log.warn` 把异常**静默吞掉** —— 接口返回 `{"code":200}`，
+   `sop_view_log` 行也写了，但 `signature_id` 是 NULL、`es_signature` 没有行。**功能完全失效却看起来正常。**
+
+修复：三个签章 ServiceImpl 加**类级** `@DS("master")`（dynamic-datasource 4.3.1 支持类级；仓库内约 200 处同类用法，
+`WfProcessServiceImpl` 即先例）。新增 `SignDataSourceMasterTest`（4 个测试），
+**用 dynamic-datasource 自己的 `DataSourceClassResolver` 校验 19 个接口方法的"生效数据源"**，
+并用真实 CGLIB 代理 + 预压 `"mes"` 上下文验证压栈与还原。反向实验证实：移除注解后 4 个测试全部失败。
+
+修复后重跑实测：`sop_view_log.signature_id` 非空，`es_signature` 落 `SOP_VIEW` 行 ✅。
+
+> **残留风险（已记录在实现类 Javadoc）**：`sign()` 是 `REQUIRED` 传播。若将来有调用方在**已绑定 ry-mes/ry-erp 的事务内**调用它，
+> 任何 `@DS` 都切不过去（连接已绑定）。届时需改用 `signInNewTransaction()`（`REQUIRES_NEW`，它先切数据源再开事务）。
+> 当前唯一调用方 `WfTaskServiceImpl` 无类级 `@DS`，即主数据源，不受影响。
+
+#### 第三个结构性问题：NCR 签署是"死代码"（已修复，提交 `25701fa5`）
+
+Task 16 交付了 `signDisposition`，但**全仓零调用方**（只有接口声明）——与 `ActHandleBtn.vue` 完全同一类缺陷：
+功能实现了，但**没有任何入口能触发它**，因此也无法端到端验证。
+
+修复：新增 `PUT /mes/ncr/order/dispose/{ncrId}/sign`，并加服务层 `disposeWithSignature`
+（`@Transactional` + `@Lock4j`）：**先签署（内含二级认证校验）再处置**，两者同事务提交/回滚，
+杜绝"已处置但未绑定签名"。原未签署的 `/dispose` 端点**保持不变**（P1 决策：签章尚非强制）。
+
+> **⚠️ 跨库原子性限制（已写入实现类 Javadoc）**：签名台账在 `ry-vue`(master)，NCR 数据在 `ry-mes`，
+> **不引入 XA 就无法真正跨库原子**。故 `signDisposition` 改用 `signInNewTransaction`（`REQUIRES_NEW`）先提交签名，
+> 再由 MES 事务处置。残余窗口：签名已提交而 MES 回滚 ⇒ 留下一条"孤儿授权记录"（方向安全，不会出现"处置了却没签名"）。
+> 若将来要求强一致，需引入 XA 或把签名台账落到 `ry-mes`。
+
+#### 顺带发现的既有缺陷（**非本特性引入**）
+
+`wf_my_business.service_impl_name` 存在**失效的 bean 名**，导致对应审批**永久卡死**：
+
+- `wmMaterialReceiveService`（3 条运行中实例）—— 该 bean 已被重命名为 `wmMaterialReceiveCrudService`
+- `fwFirmwareService`（1 条运行中实例）—— 该 bean 已不存在
+
+`WfTaskServiceImpl` 在 `SpringContextHolder.getBean(...)` 处直接抛
+`NoSuchBeanDefinitionException: No bean named 'wmMaterialReceiveService' available`，
+审批既无法通过也无法驳回。**建议**：为流程回调 bean 名加改名兼容（别名 bean 或启动期校验），
+并排查线上是否也有同类卡死实例。本轮仅修正了 1 条用于测试。
+
+#### 仍需人工确认的剩余项
+
+以下为自动化与本轮 API 测试**均未能覆盖**的项：
+
+1. **建库导入**：空库按序导入 5 个主脚本，确认 4 张 `es_*` 表、菜单 4348–4362、`sop_view_log.signature_id`、`ncr_order.disposition_signature_id` 均存在且无报错。
+2. **审批签章**：配 `needSign=true` 流程变量 → 无权用户见「无可用印章」→ 授权后出现 → **密码错误时审批不推进、任务仍在待办、`es_signature` 无新行**；密码正确则推进且 `verify-chain` 通过。
+3. **存量流程零影响**：不配 `needSign` 的流程，无签章 UI、无 `/system/sign/**` 请求、无 `es_signature` 行。
+4. **凭证不落库**：`act_ru_variable` / `act_hi_varinst` 中 `NAME_ LIKE 'sign%'` **不含 `signCredential`**。
+5. **防篡改**：手工 `UPDATE es_signature SET signature_meaning = CONCAT(...)` → 单条验签 `passed=false`、全链 `brokenAt` 指向该行；还原后恢复 `passed=true`。
+6. **印章权限**：无授权不可见 / 授权可见 / 过期不可见（用户级与部门级各验一次）。
+7. **MES**：SOP 查看器写入非空 `signature_id`；`signDisposition(LOGIN_ONLY)` 被拒。
+8. **⚠️ 事务隔离（最需人工验证）**：让 `signInNewTransaction` 失败，确认 **`sop_view_log` 仍成功落库**、请求不报错、不抛 `UnexpectedRollbackException`。单元测试只能证明「调用了 REQUIRES_NEW 方法」，证明不了外层事务存活。
+9. **前端构建**：`plus-ui` 执行 `npm run build:prod`（自动化审计只覆盖后端）。
+
+### 10.5 待决事项（需业务/管理确认，非技术缺陷）
+
+| # | 事项 | 说明 |
+|---|------|------|
+| 1 | **菜单未授任何角色** | 只种 `sys_menu`，无 `sys_role_menu`。除超管外看不到「电子签章」。本质是「**谁能用公司章**」的治理决策，宜由业务方确认后授权，不由开发猜角色 ID |
+| 2 | 死权限 `system:sign:record:query`（菜单 4361） | 已种但全仓零引用。或接线或删除 |
+| 3 | 授权页跨权限耦合 | `grant/index.vue` 挂载时调 `listSeal`（需 `system:sign:seal:list`），无守卫、无 catch。仅有授权权限的角色会拿到 403 + 空印章下拉框 |
+| 4 | `GET /system/sign/grant/by-seal/{sealId}` | 有 API 封装但无调用方 |
+| 5 | 仓库级：全量 `mvn test` 常红 | `ruoyi-admin` demo 脚手架使全量测试无法作为回归信号。**不要把它当作本分支的回归** |

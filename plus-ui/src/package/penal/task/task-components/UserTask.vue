@@ -71,6 +71,24 @@
         </el-row>
       </div>
     </el-row>
+    <el-row>
+      <el-divider />
+      <h4><b>电子签章</b></h4>
+      <!-- width:100% 是必须的：el-row 是 flex 容器，不撑满宽度时这个内层 el-row 会与上面的
+           <h4>电子签章</h4> 变成同一行的两个 flex item（标题被挤到左下、与开关错位）。
+           本文件既有写法（如第 14 行的 <div style="width:100%">）就是用 100% 让它独占一行。 -->
+      <el-row style="width: 100%">
+        <el-tooltip
+          content="开启后，本节点审批办结时必须进行电子签章（二级认证），否则无法通过。签章失败会中止审批并回滚。"
+          placement="top-start"
+          @click.stop.prevent
+        >
+          <i class="header-icon el-icon-info"></i>
+        </el-tooltip>
+        <span class="custom-label">要求签章：</span>
+        <el-switch v-model="needSign" active-text="是" inactive-text="否" @change="updateElementNeedSign()" />
+      </el-row>
+    </el-row>
 
     <!-- 候选用户弹窗 -->
     <el-dialog title="候选用户" v-model="userOpen" width="60%" append-to-body>
@@ -181,6 +199,8 @@ const showMultiFlog = ref(false);
 const isSequential = ref(false);
 const multiLoopType = ref('Null');
 const CustomCompletionCondition = ref('${nrOfCompletedInstances/nrOfInstances>=1}');
+// 节点级扩展属性：该用户任务审批办结时是否强制电子签章（随 BPMN XML 持久化）
+const needSign = ref(false);
 
 const multipleTable = ref(null);
 const tree = ref(null);
@@ -192,6 +212,10 @@ const resetTaskForm = () => {
     return;
   }
   clearOptionsData();
+  // 存量流程未设置该属性时读到 undefined（descriptor 刻意不声明 default），按「未配置」处理即 false。
+  // 判空必须走字符串比较：undefined === true 为 false，String(undefined) 也不等于 'true'，不会报错。
+  const needSignValue = bpmnElementObj['needSign'];
+  needSign.value = needSignValue === true || String(needSignValue).toLowerCase() === 'true';
   dataType.value = bpmnElementObj['dataType'];
   if (dataType.value === 'USERS') {
     const userIdData = bpmnElementObj['candidateUsers'] || bpmnElementObj['assignee'];
@@ -240,6 +264,20 @@ const updateElementTask = () => {
     taskAttr[key] = userTaskForm.value[key] || null;
   }
   bpmnInstances().modeling.updateProperties(toRaw(bpmnElement.value), taskAttr);
+};
+/**
+ * 更新节点的签章要求：写入 businessObject 的 needSign 扩展属性，保存时序列化为
+ * flowable:needSign="true"（开启）或 flowable:needSign="false"（关闭）。
+ *
+ * <p><b>注意：descriptor 里刻意不给 needSign 声明 default。</b>bpmn-moddle 会省略「等于默认值」的属性，
+ * 若声明 default: false，把开关从「是」拨回「否」时属性会被整个删掉，后端只能看到「未配置」，
+ * 于是继续回退到流程实例变量——即「本节点不签章」这个明确意图会丢失。不声明 default 时：
+ * 从未设置过的节点读到 undefined、序列化时照样不写（不会污染存量流程 XML），
+ * 而显式关闭会写出 ="false" 并被后端视为权威结论。改动前请先看后端 ApprovalSignGate 的三级优先级。</p>
+ */
+const updateElementNeedSign = () => {
+  const element = toRaw(bpmnElement.value);
+  bpmnInstances().modeling.updateModdleProperties(element, toRaw(element.businessObject), { needSign: needSign.value });
 };
 /**
  * 查询部门下拉树结构

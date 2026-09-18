@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.nexus.common.core.domain.R;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.flowable.core.domain.ActStatus;
 import com.nexus.common.mybatis.core.page.PageQuery;
@@ -180,19 +181,20 @@ public class SopDocumentServiceImpl implements ISopDocumentService, WfCallBackSe
             .in(SopDocument::getSopId, idList)
             .eq(SopDocument::getStatus, STATUS_PUBLISHED));
         if (publishedCount != null && publishedCount > 0) {
-            throw new RuntimeException("已发布SOP不可删除,请先归档");
+            throw new ServiceException("已发布SOP不可删除，请先归档");
         }
         // 孤儿守卫2: 存在工序绑定不可删(追溯完整性)
         Long bindingCount = bindingMapper.selectCount(Wrappers.<SopProcessBinding>lambdaQuery()
             .in(SopProcessBinding::getSopId, idList));
         if (bindingCount != null && bindingCount > 0) {
-            throw new RuntimeException("存在工序绑定,不可删除(追溯完整性)");
+            throw new ServiceException("该SOP仍被工序绑定，不可删除（追溯完整性），请先解除工序绑定");
         }
         // 孤儿守卫3: 存在查阅记录不可删
         Long viewCount = viewLogMapper.selectCount(Wrappers.<SopViewLog>lambdaQuery()
             .in(SopViewLog::getSopId, idList));
         if (viewCount != null && viewCount > 0) {
-            throw new RuntimeException("存在查阅记录,不可删除(追溯完整性)");
+            throw new ServiceException("该SOP已产生查阅记录，不可删除：查阅记录与其电子签名（biz_type=SOP_VIEW）"
+                + "共同构成追溯链，删掉文档会使这些签名失去对应正文、无法复核。如需停用请改用「归档」。");
         }
         // 级联删除版本
         versionMapper.delete(Wrappers.<SopVersion>lambdaQuery().in(SopVersion::getSopId, idList));
@@ -419,6 +421,9 @@ public class SopDocumentServiceImpl implements ISopDocumentService, WfCallBackSe
     /**
      * 归档(废止): PUBLISHED -> ARCHIVED (CAS 状态守卫)
      * <p>仅已发布状态可归档, CAS 更新(sopId + PUBLISHED) 确保并发安全。</p>
+     * <p><b>绑定守卫</b>: 仍被工序绑定的 SOP 不可归档。推送路径(getSopByProcess)只服务 PUBLISHED，
+     * 若带着绑定归档，绑定行还挂着、工位却再也推不到该 SOP —— 作业指导书会无声消失。
+     * 与 deleteByIds 的守卫同款处理：阻止并指路，不做静默级联解绑(那是更危险的"无声变更")。</p>
      *
      * @param sopId  SOP文档ID
      * @param reason 归档原因(可空)
@@ -429,10 +434,17 @@ public class SopDocumentServiceImpl implements ISopDocumentService, WfCallBackSe
     public Boolean archive(Long sopId, String reason) {
         SopDocument doc = baseMapper.selectById(sopId);
         if (doc == null) {
-            throw new RuntimeException("SOP不存在: " + sopId);
+            throw new ServiceException("SOP不存在: " + sopId);
         }
         if (!STATUS_PUBLISHED.equals(doc.getStatus())) {
-            throw new RuntimeException("仅已发布状态可归档,当前: " + doc.getStatus());
+            throw new ServiceException("仅已发布状态可归档,当前: " + doc.getStatus());
+        }
+        // 绑定守卫：先解绑再归档，避免工位侧 SOP 无声消失
+        Long bindingCount = bindingMapper.selectCount(Wrappers.<SopProcessBinding>lambdaQuery()
+            .eq(SopProcessBinding::getSopId, sopId));
+        if (bindingCount != null && bindingCount > 0) {
+            throw new ServiceException("该SOP仍被 " + bindingCount + " 条工序绑定，不可归档：归档后推送路径会立即停用，"
+                + "工位将看不到本该有的作业指导书。请先到「工序绑定」解除绑定再归档。");
         }
         int rows = baseMapper.update(null, Wrappers.<SopDocument>lambdaUpdate()
             .set(SopDocument::getStatus, STATUS_ARCHIVED)
@@ -440,7 +452,7 @@ public class SopDocumentServiceImpl implements ISopDocumentService, WfCallBackSe
             .eq(SopDocument::getSopId, sopId)
             .eq(SopDocument::getStatus, STATUS_PUBLISHED));
         if (rows == 0) {
-            throw new RuntimeException("SOP状态已变更,归档失败");
+            throw new ServiceException("SOP状态已变更,归档失败");
         }
         log.info("SOP归档: sopId={}, reason={}", sopId, reason);
         return true;
@@ -507,12 +519,21 @@ public class SopDocumentServiceImpl implements ISopDocumentService, WfCallBackSe
     /**
      * 构建查询条件: sopCode精确/sopName模糊/sopType精确/status精确, 按创建时间倒序
      */
-    private LambdaQueryWrapper<SopDocument> buildQueryWrapper(SopDocumentBo bo) {
+    /**
+     * 构造列表查询条件。包级可见以便单测直接断言 SQL 片段。
+     * <p><b>默认排除已归档</b>：调用方未指定状态时 {@code ne(status, ARCHIVED)}。
+     * 归档是终态、不进日常列表；但状态显式给到 ARCHIVED 时按 {@code eq} 精确筛出——
+     * 那是追溯入口（已归档 SOP 恰恰是带查阅记录与 SOP_VIEW 签名的那批，必须能被找到）。
+     * 既有消费方不受影响：工序绑定/工序指引两个选择器都显式传 PUBLISHED，走 eq 分支。</p>
+     */
+    LambdaQueryWrapper<SopDocument> buildQueryWrapper(SopDocumentBo bo) {
+        boolean statusGiven = StringUtils.isNotBlank(bo.getStatus());
         return Wrappers.<SopDocument>lambdaQuery()
             .eq(StringUtils.isNotBlank(bo.getSopCode()), SopDocument::getSopCode, bo.getSopCode())
             .like(StringUtils.isNotBlank(bo.getSopName()), SopDocument::getSopName, bo.getSopName())
             .eq(StringUtils.isNotBlank(bo.getSopType()), SopDocument::getSopType, bo.getSopType())
-            .eq(StringUtils.isNotBlank(bo.getStatus()), SopDocument::getStatus, bo.getStatus())
+            .eq(statusGiven, SopDocument::getStatus, bo.getStatus())
+            .ne(!statusGiven, SopDocument::getStatus, STATUS_ARCHIVED)
             .orderByDesc(SopDocument::getCreateTime);
     }
 }
