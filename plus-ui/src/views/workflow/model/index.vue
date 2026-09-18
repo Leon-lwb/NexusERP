@@ -374,7 +374,7 @@ const handleDeploy = (row?: ModelVO) => {
     try {
       const res = await deployModel({ modelId: row?.modelId });
       proxy?.$modal.msgSuccess('操作成功');
-      router.push('/workflow/deploy');
+      router.push('/process/deploy');
     } catch (err) {}
     loading.value = false;
   });
