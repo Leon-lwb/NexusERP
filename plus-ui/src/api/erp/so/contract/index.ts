@@ -69,3 +69,31 @@ export const delContract = (contractId: string | number | (string | number)[]) =
     method: 'delete'
   });
 };
+
+/**
+ * 提交审批流程
+ *
+ * @param contractIdStr 合同ID字符串（雪花ID序列化为字符串）
+ * @param selectFlowId  流程定义ID
+ * @returns 是否启动成功
+ */
+export const submitContract = (contractIdStr: string, selectFlowId: string) => {
+  return request({
+    url: '/erp/so/contract/submit',
+    method: 'post',
+    params: { contractIdStr, selectFlowId }
+  });
+};
+
+/**
+ * 获取流程实例ID
+ *
+ * @param contractIdStr 合同ID字符串
+ * @returns 流程实例ID，无则返回 null
+ */
+export const getProcInsId = (contractIdStr: string): AxiosPromise<string> => {
+  return request({
+    url: '/erp/so/contract/procInsId/' + contractIdStr,
+    method: 'get'
+  });
+};

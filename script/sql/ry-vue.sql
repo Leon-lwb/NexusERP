@@ -90300,6 +90300,15 @@ INSERT INTO `sys_dict_data` VALUES (600314, '000000', 4, '执行中', 'EXECUTING
 INSERT INTO `sys_dict_data` VALUES (600315, '000000', 5, '已完成', 'COMPLETED', 'pu_contract_status', '', 'success', 'N', 103, 1, '2026-06-27 00:23:08', NULL, NULL, '');
 INSERT INTO `sys_dict_data` VALUES (600316, '000000', 6, '已终止', 'TERMINATED', 'pu_contract_status', '', 'danger', 'N', 103, 1, '2026-06-27 00:23:08', NULL, NULL, '');
 INSERT INTO `sys_dict_data` VALUES (600317, '000000', 7, '已驳回', 'REJECTED', 'pu_contract_status', '', 'danger', 'N', 103, 1, '2026-06-27 00:23:08', NULL, NULL, '');
+INSERT INTO `sys_dict_data` VALUES (600321, '000000', 1, '销售合同', 'SALES', 'so_contract_type', '', 'primary', 'Y', 103, 1, '2026-09-18 00:00:00', NULL, NULL, '单次销售合同');
+INSERT INTO `sys_dict_data` VALUES (600322, '000000', 2, '框架协议', 'FRAMEWORK', 'so_contract_type', '', 'warning', 'N', 103, 1, '2026-09-18 00:00:00', NULL, NULL, '长期框架协议');
+INSERT INTO `sys_dict_data` VALUES (600323, '000000', 3, '服务合同', 'SERVICE', 'so_contract_type', '', 'info', 'N', 103, 1, '2026-09-18 00:00:00', NULL, NULL, '服务类合同');
+INSERT INTO `sys_dict_data` VALUES (600324, '000000', 1, '草稿', 'DRAFT', 'so_contract_status', '', 'info', 'Y', 103, 1, '2026-09-18 00:00:00', NULL, NULL, '草稿');
+INSERT INTO `sys_dict_data` VALUES (600325, '000000', 2, '审批中', 'APPROVING', 'so_contract_status', '', 'warning', 'N', 103, 1, '2026-09-18 00:00:00', NULL, NULL, '审批中');
+INSERT INTO `sys_dict_data` VALUES (600326, '000000', 3, '已生效', 'EFFECTIVE', 'so_contract_status', '', 'success', 'N', 103, 1, '2026-09-18 00:00:00', NULL, NULL, '审批通过后生效');
+INSERT INTO `sys_dict_data` VALUES (600327, '000000', 4, '已驳回', 'REJECTED', 'so_contract_status', '', 'danger', 'N', 103, 1, '2026-09-18 00:00:00', NULL, NULL, '审批驳回,可修改后重新提交');
+INSERT INTO `sys_dict_data` VALUES (600328, '000000', 5, '已到期', 'EXPIRED', 'so_contract_status', '', 'danger', 'N', 103, 1, '2026-09-18 00:00:00', NULL, NULL, '失效日期已过');
+INSERT INTO `sys_dict_data` VALUES (600329, '000000', 6, '已终止', 'TERMINATED', 'so_contract_status', '', 'danger', 'N', 103, 1, '2026-09-18 00:00:00', NULL, NULL, '合同终止');
 INSERT INTO `sys_dict_data` VALUES (600411, '000000', 1, '增值税专用发票', 'VAT_SPECIAL', 'so_invoice_type', '', 'primary', 'N', 103, 1, '2026-07-16 11:38:40', NULL, NULL, '');
 INSERT INTO `sys_dict_data` VALUES (600412, '000000', 2, '增值税普通发票', 'VAT_NORMAL', 'so_invoice_type', '', 'success', 'Y', 103, 1, '2026-07-16 11:38:40', NULL, NULL, '');
 INSERT INTO `sys_dict_data` VALUES (600413, '000000', 3, '其他', 'OTHER', 'so_invoice_type', '', 'info', 'N', 103, 1, '2026-07-16 11:38:40', NULL, NULL, '');
@@ -90949,6 +90958,8 @@ INSERT INTO `sys_dict_type` VALUES (600202, '000000', 'IoT连接状态', 'iot_co
 INSERT INTO `sys_dict_type` VALUES (600203, '000000', 'IoT设备状态', 'iot_device_status', 103, 1, '2026-06-18 15:46:42', NULL, NULL, 'IoT设备启用状态: 启用/停用');
 INSERT INTO `sys_dict_type` VALUES (600301, '000000', '合同类型', 'contract_type', 103, 1, '2026-06-27 00:23:08', NULL, NULL, '采购合同类型');
 INSERT INTO `sys_dict_type` VALUES (600302, '000000', '采购合同状态', 'pu_contract_status', 103, 1, '2026-06-27 00:23:08', NULL, NULL, '采购合同状态');
+INSERT INTO `sys_dict_type` VALUES (600318, '000000', '销售合同类型', 'so_contract_type', 103, 1, '2026-09-18 00:00:00', NULL, NULL, '销售合同类型');
+INSERT INTO `sys_dict_type` VALUES (600319, '000000', '销售合同状态', 'so_contract_status', 103, 1, '2026-09-18 00:00:00', NULL, NULL, '销售合同状态');
 INSERT INTO `sys_dict_type` VALUES (600401, '000000', '销售发票类型', 'so_invoice_type', 103, 1, '2026-07-16 11:38:40', NULL, NULL, '销售发票类型');
 INSERT INTO `sys_dict_type` VALUES (600402, '000000', '销售发票状态', 'so_invoice_status', 103, 1, '2026-07-16 11:38:40', NULL, NULL, '销售发票状态');
 INSERT INTO `sys_dict_type` VALUES (600403, '000000', '采购进项发票类型', 'pu_invoice_type', 103, 1, '2026-07-16 11:38:40', NULL, NULL, '采购进项发票类型');

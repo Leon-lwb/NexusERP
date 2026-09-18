@@ -62,12 +62,11 @@ export function getProcInsId(contractIdStr: string) {
   });
 }
 
-// 查询已批准的合同列表（供采购订单选择）
+// 查询已批准的合同列表（供采购订单选择）；用展开避免污染调用方传入的 query 对象
 export function listApprovedContract(query: PuContractQuery): AxiosPromise<any> {
-  query.status = 'APPROVED';
   return request({
     url: '/erp/pu/contract/list',
     method: 'get',
-    params: query
+    params: { ...query, status: 'APPROVED' }
   });
 }

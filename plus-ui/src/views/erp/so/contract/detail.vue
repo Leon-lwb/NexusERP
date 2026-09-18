@@ -11,11 +11,13 @@
       <el-descriptions :column="3" border size="small">
         <el-descriptions-item label="合同编号">{{ contract.contractNo || '-' }}</el-descriptions-item>
         <el-descriptions-item label="合同名称">{{ contract.contractName || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="合同类型">{{ CONTRACT_TYPE[contract.contractType || ''] || contract.contractType || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="合同类型">
+          <dict-tag :options="so_contract_type" :value="contract.contractType" />
+        </el-descriptions-item>
         <el-descriptions-item label="客户名称">{{ contract.clientName || '-' }}</el-descriptions-item>
         <el-descriptions-item label="销售代表">{{ contract.salesRepName || '-' }}</el-descriptions-item>
         <el-descriptions-item label="合同状态">
-          <el-tag :type="statusTagType(contract.status)" size="small">{{ statusText(contract.status) }}</el-tag>
+          <dict-tag :options="so_contract_status" :value="contract.status" />
         </el-descriptions-item>
         <el-descriptions-item label="合同金额">{{ formatAmount(contract.totalAmount, contract.currency) }}</el-descriptions-item>
         <el-descriptions-item label="签订日期">{{ contract.signDate || '-' }}</el-descriptions-item>
@@ -39,7 +41,9 @@
         <el-table-column label="数量" prop="quantity" width="100" align="right" />
         <el-table-column label="单位" prop="unit" width="80" align="center" />
         <el-table-column label="单价" prop="unitPrice" width="110" align="right" />
-        <el-table-column label="行金额" prop="lineAmount" width="120" align="right" />
+        <el-table-column label="税率%" prop="taxRate" width="80" align="right" />
+        <el-table-column label="行金额(含税)" prop="lineAmount" width="120" align="right" />
+        <el-table-column label="税额" prop="taxAmount" width="100" align="right" />
         <el-table-column label="交货日期" prop="deliveryDate" width="120" align="center" />
         <el-table-column label="备注" prop="remark" min-width="120" show-overflow-tooltip />
       </el-table>
@@ -219,26 +223,8 @@ const signatureId = ref<string | number | undefined>();
 const verifying = ref(false);
 const verifyResult = ref<DocumentVerifyVO | null>(null);
 
-/** 合同类型 / 状态文案（与列表页口径一致，状态额外覆盖后端存在的 REJECTED） */
-const CONTRACT_TYPE: Record<string, string> = { SALES: '销售合同', FRAMEWORK: '框架协议', SERVICE: '服务合同' };
-const STATUS_TEXT: Record<string, string> = {
-  DRAFT: '草稿',
-  APPROVING: '审批中',
-  EFFECTIVE: '已生效',
-  EXPIRED: '已到期',
-  TERMINATED: '已终止',
-  REJECTED: '已驳回'
-};
-const STATUS_TAG: Record<string, 'primary' | 'success' | 'info' | 'warning' | 'danger'> = {
-  DRAFT: 'info',
-  APPROVING: 'warning',
-  EFFECTIVE: 'success',
-  EXPIRED: 'danger',
-  TERMINATED: 'danger',
-  REJECTED: 'danger'
-};
-const statusText = (status?: string) => STATUS_TEXT[status || ''] || status || '-';
-const statusTagType = (status?: string) => STATUS_TAG[status || ''] || 'info';
+/** 合同类型/状态走字典（与列表页同一套，so_contract_status 含 REJECTED） */
+const { so_contract_type, so_contract_status } = toRefs<any>(proxy.useDict('so_contract_type', 'so_contract_status'));
 
 /**
  * 验签结论文案（对应后端 DocVerifyVerdict）。

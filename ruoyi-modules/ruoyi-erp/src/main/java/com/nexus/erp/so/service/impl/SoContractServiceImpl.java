@@ -29,6 +29,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -89,18 +92,19 @@ public class SoContractServiceImpl implements ISoContractService {
     }
 
     /**
-     * 新增销售合同（含明细行），默认状态为草稿
+     * 新增销售合同（服务端强制草稿态）并插入明细行。
+     * <p>状态一律由服务端置 {@link #STATUS_DRAFT}，忽略客户端传入值，防止绕过审批直接造出已生效合同。</p>
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(SoContractBo bo) {
         SoContract entity = MapstructUtils.convert(bo, SoContract.class);
-        if (StringUtils.isBlank(entity.getStatus())) {
-            entity.setStatus(STATUS_DRAFT);
-        }
+        entity.setStatus(STATUS_DRAFT);
+        List<SoContractLine> lines = normalizeLines(bo.getSoContractLineList());
+        applyTotalAmount(entity, lines);
         int rows = baseMapper.insert(entity);
-        if (bo.getSoContractLineList() != null && !bo.getSoContractLineList().isEmpty()) {
-            for (SoContractLine line : bo.getSoContractLineList()) {
+        if (lines != null) {
+            for (SoContractLine line : lines) {
                 line.setContractId(entity.getContractId());
                 lineMapper.insert(line);
             }
@@ -109,21 +113,29 @@ public class SoContractServiceImpl implements ISoContractService {
     }
 
     /**
-     * 修改销售合同（含明细行），仅草稿和已驳回状态可编辑
+     * 修改销售合同（仅草稿/驳回可改），差量更新明细行。
+     * <p>状态沿用库中现值，忽略客户端传入值——状态只能经审批回调（{@link #afterFlowHandle}）流转。
+     * 明细行为差量重建，已发货/已开票数量等执行进度字段以本次提交为准重置。</p>
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(SoContractBo bo) {
         SoContract existing = baseMapper.selectById(bo.getContractId());
-        if (existing != null && !STATUS_DRAFT.equals(existing.getStatus()) && !STATUS_REJECTED.equals(existing.getStatus())) {
+        if (existing == null) {
+            throw new ServiceException("销售合同不存在");
+        }
+        if (!STATUS_DRAFT.equals(existing.getStatus()) && !STATUS_REJECTED.equals(existing.getStatus())) {
             throw new ServiceException("当前状态【{}】不允许修改合同", existing.getStatus());
         }
         SoContract entity = MapstructUtils.convert(bo, SoContract.class);
+        entity.setStatus(existing.getStatus());
+        List<SoContractLine> lines = normalizeLines(bo.getSoContractLineList());
+        applyTotalAmount(entity, lines);
         int rows = baseMapper.updateById(entity);
         if (bo.getSoContractLineList() != null) {
             lineMapper.delete(Wrappers.lambdaQuery(SoContractLine.class)
                 .eq(SoContractLine::getContractId, entity.getContractId()));
-            for (SoContractLine line : bo.getSoContractLineList()) {
+            for (SoContractLine line : lines) {
                 line.setContractId(entity.getContractId());
                 lineMapper.insert(line);
             }
@@ -132,26 +144,39 @@ public class SoContractServiceImpl implements ISoContractService {
     }
 
     /**
-     * 批量删除销售合同（含明细行），仅草稿状态可删除
+     * 批量删除销售合同（仅草稿可删）。
+     * <p>删除条件带上 {@code status = DRAFT} 做条件更新（CAS）：先查后删的间隙里状态被并发流转时，
+     * 影响行数为 0 即抛异常回滚，避免删掉一份已进入审批/生效的合同。</p>
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {
+        int rows = 0;
         for (Long id : ids) {
             SoContract existing = baseMapper.selectById(id);
-            if (existing != null && !STATUS_DRAFT.equals(existing.getStatus())) {
+            if (existing == null) {
+                continue;
+            }
+            if (!STATUS_DRAFT.equals(existing.getStatus())) {
                 throw new ServiceException("合同【{}】当前状态不允许删除", existing.getContractNo());
+            }
+            int deleted = baseMapper.delete(Wrappers.lambdaQuery(SoContract.class)
+                .eq(SoContract::getContractId, id)
+                .eq(SoContract::getStatus, STATUS_DRAFT));
+            if (deleted == 0) {
+                throw new ServiceException("合同【{}】状态已变更，请刷新后重试", existing.getContractNo());
             }
             lineMapper.delete(Wrappers.lambdaQuery(SoContractLine.class)
                 .eq(SoContractLine::getContractId, id));
+            rows += deleted;
         }
-        return baseMapper.deleteBatchIds(List.of(ids));
+        return rows;
     }
 
     // ==================== Flowable 工作流集成 ====================
 
     /**
-     * 发起审批流程（Flowable 工作流回调）：校验合同存在并启动对应审批流，注入流程变量。
+     * 发起审批流程（Flowable 工作流回调）：校验合同存在且处于可提交状态（草稿/驳回），启动审批流并注入流程变量。
      *
      * @param contractIdStr 合同ID（字符串）
      * @param selectFlowId  流程定义ID
@@ -160,10 +185,13 @@ public class SoContractServiceImpl implements ISoContractService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean submit(String contractIdStr, String selectFlowId) {
-        Long contractId = Long.parseLong(contractIdStr);
+        Long contractId = parseContractId(contractIdStr);
         SoContract contract = baseMapper.selectById(contractId);
         if (contract == null) {
             throw new ServiceException("销售合同不存在");
+        }
+        if (!STATUS_DRAFT.equals(contract.getStatus()) && !STATUS_REJECTED.equals(contract.getStatus())) {
+            throw new ServiceException("当前状态【{}】不允许提交审批", contract.getStatus());
         }
 
         if (StringUtils.isBlank(selectFlowId)) {
@@ -285,5 +313,99 @@ public class SoContractServiceImpl implements ISoContractService {
                 .like(SoContract::getClientName, bo.getKeyword()));
         lqw.orderByDesc(SoContract::getCreateTime);
         return lqw;
+    }
+
+    /**
+     * 把客户端提交的明细行重建为只含业务字段的干净列表。
+     * <p>BO 的明细直接复用了实体类型，若原样入库，请求体里的 lineId/tenantId/del_flag/审计字段、
+     * 以及已发货/已开票数量等执行进度字段都会被一并写库（批量赋值）。这里逐字段白名单拷贝，
+     * 并做数值校验与金额重算：行金额 = 单价×数量、税额 = 行金额×税率÷100（均 2 位小数，
+     * 与库表精度一致），以服务端计算为准，不信任客户端金额。</p>
+     *
+     * @param lines 客户端明细行（可为 null）
+     * @return 净化后的明细行列表（入参 null 时返回 null）
+     */
+    private List<SoContractLine> normalizeLines(List<SoContractLine> lines) {
+        if (lines == null) {
+            return null;
+        }
+        List<SoContractLine> normalized = new ArrayList<>(lines.size());
+        int seq = 1;
+        for (SoContractLine line : lines) {
+            if (line == null) {
+                continue;
+            }
+            if (line.getQuantity() != null && line.getQuantity().signum() < 0) {
+                throw new ServiceException("合同明细数量不能为负数");
+            }
+            if (line.getUnitPrice() != null && line.getUnitPrice().signum() < 0) {
+                throw new ServiceException("合同明细单价不能为负数");
+            }
+            if (line.getTaxRate() != null && (line.getTaxRate().signum() < 0 || line.getTaxRate().compareTo(BigDecimal.valueOf(100)) > 0)) {
+                throw new ServiceException("合同明细税率必须在 0~100 之间");
+            }
+            SoContractLine clean = new SoContractLine();
+            clean.setLineNo(line.getLineNo());
+            clean.setMaterialId(line.getMaterialId());
+            clean.setMaterialCode(line.getMaterialCode());
+            clean.setMaterialName(line.getMaterialName());
+            clean.setMaterialSpec(line.getMaterialSpec());
+            clean.setQuantity(line.getQuantity());
+            clean.setUnit(line.getUnit());
+            clean.setUnitPrice(line.getUnitPrice());
+            clean.setTaxRate(line.getTaxRate());
+            clean.setDeliveryDate(line.getDeliveryDate());
+            clean.setSortOrder(line.getSortOrder() != null ? line.getSortOrder() : seq);
+            clean.setRemark(line.getRemark());
+            clean.setAttr1(line.getAttr1());
+            clean.setAttr2(line.getAttr2());
+            clean.setAttr3(line.getAttr3());
+            clean.setAttr4(line.getAttr4());
+            if (clean.getUnitPrice() != null && clean.getQuantity() != null) {
+                BigDecimal lineAmount = clean.getUnitPrice().multiply(clean.getQuantity()).setScale(2, RoundingMode.HALF_UP);
+                clean.setLineAmount(lineAmount);
+                if (clean.getTaxRate() != null) {
+                    clean.setTaxAmount(lineAmount.multiply(clean.getTaxRate())
+                        .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP));
+                }
+            } else {
+                clean.setLineAmount(line.getLineAmount());
+                clean.setTaxAmount(line.getTaxAmount());
+            }
+            normalized.add(clean);
+            seq++;
+        }
+        return normalized;
+    }
+
+    /**
+     * 明细行非空时以行金额合计覆盖合同总金额。
+     *
+     * @param entity 合同实体（原地覆盖 totalAmount）
+     * @param lines  净化后的明细行（null 表示本次未提交明细，保持原值不动）
+     */
+    private void applyTotalAmount(SoContract entity, List<SoContractLine> lines) {
+        if (lines == null || lines.isEmpty()) {
+            return;
+        }
+        BigDecimal total = BigDecimal.ZERO;
+        for (SoContractLine line : lines) {
+            if (line.getLineAmount() != null) {
+                total = total.add(line.getLineAmount());
+            }
+        }
+        entity.setTotalAmount(total.setScale(2, RoundingMode.HALF_UP));
+    }
+
+    /** 解析合同ID字符串，非数字时给出业务异常而非 500 */
+    private Long parseContractId(String contractIdStr) {
+        if (StringUtils.isBlank(contractIdStr)) {
+            throw new ServiceException("合同ID不能为空");
+        }
+        try {
+            return Long.parseLong(contractIdStr.trim());
+        } catch (NumberFormatException e) {
+            throw new ServiceException("合同ID格式错误: {}", contractIdStr);
+        }
     }
 }

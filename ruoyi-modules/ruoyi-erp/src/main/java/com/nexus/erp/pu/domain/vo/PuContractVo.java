@@ -1,7 +1,9 @@
 package com.nexus.erp.pu.domain.vo;
 
 import cn.idev.excel.annotation.ExcelProperty;
+import io.github.linpeilie.annotations.AutoMapper;
 import lombok.Data;
+import com.nexus.erp.pu.domain.PuContract;
 import com.nexus.erp.pu.domain.PuContractLine;
 
 import java.io.Serial;
@@ -17,51 +19,72 @@ import java.util.List;
  * @date 2026-06-15
  */
 @Data
+@AutoMapper(target = PuContract.class)
 public class PuContractVo implements Serializable {
 
     @Serial
     private static final long serialVersionUID = 1L;
 
     /** 合同ID */
+    @ExcelProperty(value = "合同ID")
     private Long contractId;
 
     /** 合同编号 */
+    @ExcelProperty(value = "合同编号")
     private String contractNo;
 
     /** 合同名称 */
+    @ExcelProperty(value = "合同名称")
     private String contractName;
 
     /** 供应商ID */
     private Long vendorId;
 
     /** 供应商编码 */
+    @ExcelProperty(value = "供应商编码")
     private String vendorCode;
 
     /** 供应商名称 */
+    @ExcelProperty(value = "供应商名称")
     private String vendorName;
 
     /** 合同类型 */
+    @ExcelProperty(value = "合同类型")
     private String contractType;
 
     /** 签订日期 */
+    @ExcelProperty(value = "签订日期")
     private Date signDate;
 
     /** 生效日期 */
+    @ExcelProperty(value = "生效日期")
     private Date effectiveDate;
 
     /** 失效日期 */
+    @ExcelProperty(value = "失效日期")
     private Date expiryDate;
 
-    /** 合同总金额 */
+    /** 合同总金额（含税） */
+    @ExcelProperty(value = "合同总金额")
     private BigDecimal totalAmount;
 
+    /** 税额合计 */
+    @ExcelProperty(value = "税额合计")
+    private BigDecimal taxAmount;
+
+    /** 不含税总金额 */
+    @ExcelProperty(value = "不含税总金额")
+    private BigDecimal amountExcludingTax;
+
     /** 币种 */
+    @ExcelProperty(value = "币种")
     private String currency;
 
     /** 付款条款 */
     private String paymentTerms;
 
     /** 合同状态 */
+    @ExcelProperty(value = "合同状态")
     private String status;
 
     /** 审批流程ID */
@@ -83,10 +106,11 @@ public class PuContractVo implements Serializable {
     private Long attr4;
 
     /** 创建时间 */
+    @ExcelProperty(value = "创建时间")
     private Date createTime;
 
     /** 更新时间 */
-    @ExcelProperty("更新时间")
+    @ExcelProperty(value = "更新时间")
     private Date updateTime;
 
     /**

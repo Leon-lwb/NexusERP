@@ -19,14 +19,9 @@
           </el-form-item>
         </el-col>
         <el-col :span="6">
-          <!-- 技术债:合同状态暂用硬编码 el-option,待补字典后改为 useDict + dict-tag -->
           <el-form-item label="合同状态" prop="status">
             <el-select v-model="queryParams.status" placeholder="请选择状态" clearable style="width: 100%">
-              <el-option label="草稿" value="DRAFT" />
-              <el-option label="审批中" value="APPROVING" />
-              <el-option label="已生效" value="EFFECTIVE" />
-              <el-option label="已到期" value="EXPIRED" />
-              <el-option label="已终止" value="TERMINATED" />
+              <el-option v-for="dict in so_contract_status" :key="dict.value" :label="dict.label" :value="dict.value" />
             </el-select>
           </el-form-item>
         </el-col>
@@ -42,10 +37,18 @@
     <!-- 操作按钮 -->
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
-        <el-button type="primary" plain icon="Plus" @click="handleAdd()" v-hasPermi="['so:contract:add']">新增</el-button>
+        <el-button type="primary" plain icon="Plus" @click="handleAdd(loadFlowOptions)" v-hasPermi="['so:contract:add']">新增</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate()" v-hasPermi="['so:contract:edit']">修改</el-button>
+        <el-button
+          type="success"
+          plain
+          icon="Edit"
+          :disabled="single"
+          @click="handleUpdate(undefined, loadFlowOptions)"
+          v-hasPermi="['so:contract:edit']"
+          >修改</el-button
+        >
       </el-col>
       <el-col :span="1.5">
         <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete()" v-hasPermi="['so:contract:remove']">删除</el-button>
@@ -62,16 +65,19 @@
       <el-table-column label="合同编号" align="center" prop="contractNo" />
       <el-table-column label="合同名称" align="center" prop="contractName" min-width="120" show-overflow-tooltip />
       <el-table-column label="客户名称" align="center" prop="clientName" min-width="120" show-overflow-tooltip />
-      <el-table-column label="合同类型" align="center" prop="contractType" />
+      <el-table-column label="合同类型" align="center" prop="contractType">
+        <template #default="scope">
+          <dict-tag :options="so_contract_type" :value="scope.row.contractType" />
+        </template>
+      </el-table-column>
       <el-table-column label="合同金额" align="center" prop="totalAmount" />
       <el-table-column label="币种" align="center" prop="currency" />
       <el-table-column label="签订日期" align="center" prop="signDate" />
       <el-table-column label="生效日期" align="center" prop="effectiveDate" />
       <el-table-column label="失效日期" align="center" prop="expiryDate" />
-      <!-- 技术债:状态暂用硬编码 el-tag+map,待补字典后改为 dict-tag -->
       <el-table-column label="状态" align="center" prop="status">
         <template #default="scope">
-          <el-tag :type="getStatusType(scope.row.status)">{{ getStatusLabel(scope.row.status) }}</el-tag>
+          <dict-tag :options="so_contract_status" :value="scope.row.status" />
         </template>
       </el-table-column>
       <!-- 正文签署状态：后端批量补充自 es_sign_document；无正文时为空，显示占位符 -->
@@ -85,11 +91,15 @@
       </el-table-column>
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="300" :show-overflow-tooltip="false">
         <template #default="scope">
-          <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
+          <el-button link type="primary" icon="View" @click="handleView(scope.row, loadFlowOptions)" v-hasPermi="['so:contract:query']"
+            >查看</el-button
+          >
           <!-- 详情是独立路由（router/index.ts 的 /erp/so/contract/detail 声明 permissions: ['so:contract:query']），
                缺该权限时路由不会注册，点进去只会落到 404，故按钮与路由同一个权限码 -->
           <el-button link type="primary" icon="Document" @click="handleDetail(scope.row)" v-hasPermi="['so:contract:query']">详情</el-button>
-          <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['so:contract:edit']">修改</el-button>
+          <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row, loadFlowOptions)" v-hasPermi="['so:contract:edit']"
+            >修改</el-button
+          >
           <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['so:contract:remove']">删除</el-button>
         </template>
       </el-table-column>
@@ -117,9 +127,7 @@
               <el-col :span="8">
                 <el-form-item label="合同类型" prop="contractType">
                   <el-select v-model="form.contractType" placeholder="请选择合同类型" style="width: 100%">
-                    <el-option label="销售合同" value="SALES" />
-                    <el-option label="框架协议" value="FRAMEWORK" />
-                    <el-option label="服务合同" value="SERVICE" />
+                    <el-option v-for="dict in so_contract_type" :key="dict.value" :label="dict.label" :value="dict.value" />
                   </el-select>
                 </el-form-item>
               </el-col>
@@ -174,24 +182,31 @@
             </el-row>
             <el-row :gutter="20">
               <el-col :span="8">
-                <el-form-item label="合同金额" prop="totalAmount">
-                  <el-input-number v-model="form.totalAmount" :precision="2" :min="0" controls-position="right" style="width: 100%" />
+                <!-- 状态由服务端控制（新增即草稿、审批流转），表单不再提供状态选择 -->
+                <el-form-item label="合同金额">
+                  <el-input :model-value="totalAmountSummary" disabled>
+                    <template #append>{{ form.currency || 'CNY' }}</template>
+                  </el-input>
+                </el-form-item>
+              </el-col>
+              <el-col :span="8">
+                <el-form-item label="审批流程" prop="selectFlowId">
+                  <el-select
+                    v-model="form.selectFlowId"
+                    clearable
+                    filterable
+                    :loading="loadingFlow"
+                    :disabled="isViewMode"
+                    placeholder="请选择审批流程"
+                    style="width: 100%"
+                  >
+                    <el-option v-for="f in flowOptions" :key="f.id" :label="f.flowName || f.businessName || '流程#' + f.id" :value="f.id" />
+                  </el-select>
                 </el-form-item>
               </el-col>
               <el-col :span="8">
                 <el-form-item label="付款条款" prop="paymentTerms">
                   <el-input v-model="form.paymentTerms" placeholder="请输入付款条款" />
-                </el-form-item>
-              </el-col>
-              <el-col :span="8">
-                <el-form-item label="状态" prop="status">
-                  <el-select v-model="form.status" placeholder="请选择状态" style="width: 100%">
-                    <el-option label="草稿" value="DRAFT" />
-                    <el-option label="审批中" value="APPROVING" />
-                    <el-option label="已生效" value="EFFECTIVE" />
-                    <el-option label="已到期" value="EXPIRED" />
-                    <el-option label="已终止" value="TERMINATED" />
-                  </el-select>
                 </el-form-item>
               </el-col>
             </el-row>
@@ -257,7 +272,21 @@
                   />
                 </template>
               </el-table-column>
-              <el-table-column label="行金额" width="120">
+              <el-table-column label="税率%" width="90">
+                <template #default="scope">
+                  <el-input-number
+                    v-model="scope.row.taxRate"
+                    size="small"
+                    controls-position="right"
+                    :min="0"
+                    :max="100"
+                    :precision="2"
+                    @change="calcLineAmount(scope.row)"
+                    style="width: 100%"
+                  />
+                </template>
+              </el-table-column>
+              <el-table-column label="行金额(含税)" width="120">
                 <template #default="scope">
                   <el-input-number
                     v-model="scope.row.lineAmount"
@@ -267,6 +296,11 @@
                     readonly
                     style="width: 100%"
                   />
+                </template>
+              </el-table-column>
+              <el-table-column label="税额" width="100">
+                <template #default="scope">
+                  <span>{{ scope.row.taxAmount }}</span>
                 </template>
               </el-table-column>
               <el-table-column label="交货日期" width="160">
@@ -300,6 +334,7 @@
 <script setup lang="ts" name="SoContract">
 import { listContract, getContract, delContract, addContract, updateContract } from '@/api/erp/so/contract';
 import { ContractLineForm } from '@/api/erp/so/contract/types';
+import { getProcesss } from '@/api/workflow/process/index';
 import ClientSelectDialog from '@/views/erp/so/components/ClientSelectDialog.vue';
 import MaterialSelectDialog from '@/components/MaterialSelectDialog/index.vue';
 import type { FormInstance } from 'element-plus';
@@ -309,6 +344,9 @@ import { useRouter } from 'vue-router';
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const formRef = ref<FormInstance>();
 const router = useRouter();
+
+// 合同类型/状态字典（2026-09-18 新增，见 script/sql/update/2026-09-18-contract-dict.sql）
+const { so_contract_type, so_contract_status } = toRefs<any>(proxy.useDict('so_contract_type', 'so_contract_status'));
 
 // 客户选择弹窗引用
 const clientSelectDialogRef = ref();
@@ -320,6 +358,25 @@ const currentLineIndex = ref(-1);
 const materialSelectDialogRef = ref();
 const activeTab = ref('basic');
 
+// 审批流程选项（workflow 模块按 serviceName 绑定，与后端 submit 的 bean 名一致）
+const flowOptions = ref<any[]>([]);
+const loadingFlow = ref(false);
+
+/** 加载绑定到 soContractService 的审批流程，仅有一个时自动选中 */
+function loadFlowOptions() {
+  loadingFlow.value = true;
+  getProcesss({ serviceName: 'soContractService' })
+    .then((response: any) => {
+      flowOptions.value = response?.data || [];
+      if (!form.value.selectFlowId && flowOptions.value.length === 1) {
+        form.value.selectFlowId = flowOptions.value[0].id;
+      }
+    })
+    .finally(() => {
+      loadingFlow.value = false;
+    });
+}
+
 const queryParams = ref({
   pageNum: 1,
   pageSize: 10,
@@ -329,9 +386,11 @@ const queryParams = ref({
   status: undefined
 });
 
+// 表单校验规则（与后端 BO 必填校验一致：合同编号/名称/客户）
 const rules = {
   contractNo: [{ required: true, message: '合同编号不能为空', trigger: 'blur' }],
-  contractName: [{ required: true, message: '合同名称不能为空', trigger: 'blur' }]
+  contractName: [{ required: true, message: '合同名称不能为空', trigger: 'blur' }],
+  clientId: [{ required: true, message: '客户不能为空', trigger: 'change' }]
 };
 
 const {
@@ -390,35 +449,19 @@ const {
   },
   beforeSubmit: () => {
     form.value.soContractLineList = lineList.value;
+    // 合同金额随明细行汇总提交（后端还会按行金额重算，以服务端为准）
+    form.value.totalAmount = totalAmountSummary.value;
   },
   afterLoad: (data: any) => {
     lineList.value = data.soContractLineList || [];
   }
 });
 
-/** 获取状态标签类型 */
-function getStatusType(status: string): 'primary' | 'success' | 'info' | 'warning' | 'danger' {
-  const map: Record<string, 'primary' | 'success' | 'info' | 'warning' | 'danger'> = {
-    DRAFT: 'info',
-    APPROVING: 'warning',
-    EFFECTIVE: 'success',
-    EXPIRED: 'danger',
-    TERMINATED: 'danger'
-  };
-  return map[status] || 'info';
-}
-
-/** 获取状态标签文本 */
-function getStatusLabel(status: string) {
-  const map: Record<string, string> = {
-    DRAFT: '草稿',
-    APPROVING: '审批中',
-    EFFECTIVE: '已生效',
-    EXPIRED: '已到期',
-    TERMINATED: '已终止'
-  };
-  return map[status] || status;
-}
+/** 合同金额 = Σ 行金额（2 位小数，与库表精度一致） */
+const totalAmountSummary = computed(() => {
+  const sum = lineList.value.reduce((acc: number, row: any) => acc + (Number(row.lineAmount) || 0), 0);
+  return Number(sum.toFixed(2));
+});
 
 /** 重置搜索 */
 function resetQuery() {
@@ -431,7 +474,7 @@ function handleDetail(row: any) {
   router.push({ path: '/erp/so/contract/detail', query: { contractId: String(row.contractId) } });
 }
 
-/** 添加明细行 */
+/** 添加明细行（税率默认 13%，与发票页口径一致） */
 function handleAddLine() {
   lineList.value.push({
     lineNo: String(lineList.value.length + 1),
@@ -442,7 +485,9 @@ function handleAddLine() {
     quantity: 0,
     unit: '',
     unitPrice: 0,
+    taxRate: 13,
     lineAmount: 0,
+    taxAmount: 0,
     deliveryDate: undefined,
     remark: ''
   });
@@ -458,9 +503,13 @@ function handleLineSelectionChange(rows: ContractLineForm[]) {
   checkedLines.value = rows.map((r: ContractLineForm) => lineList.value.indexOf(r));
 }
 
-/** 计算行金额 */
+/**
+ * 计算行金额/税额（toFixed 截断浮点尾差，精度与库表及后端重算一致）：
+ * 行金额(含税) = 单价×数量(2位)、税额 = 行金额×税率÷100(2位)
+ */
 function calcLineAmount(row: ContractLineForm) {
-  row.lineAmount = (row.quantity || 0) * (row.unitPrice || 0);
+  row.lineAmount = Number(((Number(row.quantity) || 0) * (Number(row.unitPrice) || 0)).toFixed(2));
+  row.taxAmount = row.taxRate == null ? undefined : Number(((row.lineAmount * (Number(row.taxRate) || 0)) / 100).toFixed(2));
 }
 
 /** 打开物料选择对话框 */
@@ -490,6 +539,7 @@ function openClientDialog() {
 function handleClientConfirm(client: any) {
   form.value.clientId = client.clientId;
   form.value.clientName = client.clientName;
+  formRef.value?.validateField('clientId').catch(() => {});
 }
 
 getList();

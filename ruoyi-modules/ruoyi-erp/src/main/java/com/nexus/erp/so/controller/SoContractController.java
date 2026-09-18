@@ -5,6 +5,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import com.nexus.common.core.domain.R;
 import com.nexus.common.excel.utils.ExcelUtil;
+import com.nexus.common.idempotent.annotation.RepeatSubmit;
 import com.nexus.common.log.annotation.Log;
 import com.nexus.common.log.enums.BusinessType;
 import com.nexus.common.mybatis.core.page.PageQuery;
@@ -117,5 +118,35 @@ public class SoContractController extends BaseController {
     @DeleteMapping("/{ids}")
     public R<Void> remove(@PathVariable Long[] ids) {
         return toAjax(soContractService.deleteByIds(ids));
+    }
+
+    /**
+     * 提交审批流程（与采购合同同一套提交方式；此前 Service 已实现但未暴露 REST 端点）
+     * <p>权限标识：{@code so:contract:edit}</p>
+     *
+     * @param contractIdStr 合同ID字符串
+     * @param selectFlowId  流程定义ID
+     * @return 是否启动成功
+     */
+    @SaCheckPermission("so:contract:edit")
+    @Log(title = "销售合同", businessType = BusinessType.UPDATE)
+    @RepeatSubmit
+    @PostMapping("/submit")
+    public R<Boolean> submit(@RequestParam String contractIdStr, @RequestParam String selectFlowId) {
+        return R.ok(soContractService.submit(contractIdStr, selectFlowId));
+    }
+
+    /**
+     * 获取流程实例ID（运行时优先，其次历史）
+     * <p>权限标识：{@code so:contract:query}</p>
+     *
+     * @param contractIdStr 合同ID字符串
+     * @return 流程实例ID，无则返回 null
+     */
+    @SaCheckPermission("so:contract:query")
+    @GetMapping("/procInsId/{contractIdStr}")
+    public R<String> getProcInsId(@PathVariable String contractIdStr) {
+        // 使用 R.ok(String msg, T data) 重载，避免 R.ok(String) 把实例ID误塞进 msg
+        return R.ok("查询成功", soContractService.getProcInsId(contractIdStr));
     }
 }

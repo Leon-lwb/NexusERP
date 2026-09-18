@@ -1,6 +1,8 @@
 package com.nexus.erp.pu.domain.bo;
 
 import io.github.linpeilie.annotations.AutoMapper;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import com.nexus.erp.pu.domain.PuContract;
@@ -18,18 +20,22 @@ import java.util.List;
  */
 @Data
 @NoArgsConstructor
+@AutoMapper(target = PuContract.class, reverseConvertGenerate = false)
 public class PuContractBo {
 
     /** 合同ID */
     private Long contractId;
 
-    /** 合同编号 */
+    /** 合同编号（库表 NOT NULL，手工录入） */
+    @NotBlank(message = "合同编号不能为空")
     private String contractNo;
 
     /** 合同名称 */
+    @NotBlank(message = "合同名称不能为空")
     private String contractName;
 
     /** 供应商ID */
+    @NotNull(message = "供应商不能为空")
     private Long vendorId;
 
     /** 供应商编码 */
@@ -50,8 +56,14 @@ public class PuContractBo {
     /** 失效日期 */
     private Date expiryDate;
 
-    /** 合同总金额 */
+    /** 合同总金额（含税，服务端按行金额汇总重算） */
     private BigDecimal totalAmount;
+
+    /** 税额合计（服务端按行税额汇总重算） */
+    private BigDecimal taxAmount;
+
+    /** 不含税总金额（服务端按行不含税金额汇总重算） */
+    private BigDecimal amountExcludingTax;
 
     /** 币种 */
     private String currency;

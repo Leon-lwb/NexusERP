@@ -1,8 +1,9 @@
+// 雪花 ID（64 位 Long）后端经 BigNumberSerializer 一律序列化为字符串，前端类型按 string 声明，避免精度截断
 export interface PuContractVo {
-  contractId: number;
+  contractId: string;
   contractNo: string;
   contractName: string;
-  vendorId: number;
+  vendorId: string;
   vendorCode: string;
   vendorName: string;
   contractType: string;
@@ -10,6 +11,10 @@ export interface PuContractVo {
   effectiveDate: string;
   expiryDate: string;
   totalAmount: number;
+  /** 税额合计（服务端按行税额汇总） */
+  taxAmount: number;
+  /** 不含税总金额（服务端按行不含税金额汇总） */
+  amountExcludingTax: number;
   currency: string;
   paymentTerms: string;
   status: string;
@@ -18,33 +23,39 @@ export interface PuContractVo {
    * <p>pu_contract 表没有这一列，由后端列表查询批量补充；该合同尚无正文时为 null。</p>
    */
   docSignStatus?: string;
-  selectFlowId: number;
+  selectFlowId: string;
   remark: string;
   createTime: string;
   puContractLineList: PuContractLineVo[];
 }
 
 export interface PuContractLineVo {
-  lineId: number;
-  contractId: number;
-  materialId: number;
+  lineId: string;
+  contractId: string;
+  materialId: string;
   materialCode: string;
   materialName: string;
   materialSpec: string;
   unit: string;
   unitPrice: number;
+  /** 税率(%) */
+  taxRate?: number;
   quantity: number;
   lineAmount: number;
+  /** 税额（服务端按 行金额×税率÷100 重算） */
+  taxAmount?: number;
+  /** 不含税行金额（= 行金额 − 税额） */
+  lineAmountExcludingTax?: number;
   deliveryDate: string;
   sortOrder: number;
   remark: string;
 }
 
 export interface PuContractBo {
-  contractId?: number;
+  contractId?: string;
   contractNo?: string;
   contractName?: string;
-  vendorId?: number;
+  vendorId?: string;
   vendorCode?: string;
   vendorName?: string;
   contractType?: string;
@@ -52,10 +63,12 @@ export interface PuContractBo {
   effectiveDate?: string;
   expiryDate?: string;
   totalAmount?: number;
+  taxAmount?: number;
+  amountExcludingTax?: number;
   currency?: string;
   paymentTerms?: string;
   status?: string;
-  selectFlowId?: number;
+  selectFlowId?: string;
   remark?: string;
   puContractLineList?: PuContractLineVo[];
 }
@@ -63,7 +76,7 @@ export interface PuContractBo {
 export interface PuContractQuery {
   contractNo?: string;
   contractName?: string;
-  vendorId?: number;
+  vendorId?: string;
   vendorName?: string;
   status?: string;
   contractType?: string;

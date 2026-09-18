@@ -4,6 +4,7 @@ import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.nexus.common.web.core.BaseController;
 import com.nexus.common.core.domain.R;
 import com.nexus.common.excel.utils.ExcelUtil;
+import com.nexus.common.idempotent.annotation.RepeatSubmit;
 import com.nexus.common.log.annotation.Log;
 import com.nexus.common.log.enums.BusinessType;
 import com.nexus.common.mybatis.core.page.PageQuery;
@@ -96,6 +97,7 @@ public class PuContractController extends BaseController {
      */
     @SaCheckPermission("pu:contract:edit")
     @Log(title = "采购合同", businessType = BusinessType.UPDATE)
+    @RepeatSubmit
     @PostMapping("/submit")
     public R<Boolean> submit(@RequestParam String contractIdStr, @RequestParam String selectFlowId) {
         return R.ok(puContractService.submit(contractIdStr, selectFlowId));
@@ -116,6 +118,7 @@ public class PuContractController extends BaseController {
      */
     @SaCheckPermission("pu:contract:edit")
     @Log(title = "合同生成采购订单", businessType = BusinessType.INSERT)
+    @RepeatSubmit
     @PostMapping("/createOrder/{contractId}")
     public R<Long> createOrder(@PathVariable Long contractId) {
         return R.ok(puContractService.createPurchaseOrderFromContract(contractId));
