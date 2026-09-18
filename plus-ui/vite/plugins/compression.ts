@@ -1,4 +1,5 @@
 import { promises as fs } from 'fs';
+import type { Dirent } from 'fs';
 import path from 'path';
 import zlib from 'zlib';
 import { promisify } from 'util';
@@ -29,7 +30,12 @@ const compressionHandlers: Record<CompressionKind, { ext: string; compress: (con
 };
 
 async function collectFiles(rootDir: string): Promise<string[]> {
-  const entries = await fs.readdir(rootDir, { withFileTypes: true });
+  // 这里的断言是绕过 @types/node@25.6.0 的声明缺陷，不是代码问题：
+  // 该版本 fs/promises 的 `readdir(path, { withFileTypes: true })` 重载（Promise<Dirent[]>）
+  // 实际不可达 —— 无论内联字面量、as const、显式标注 ObjectEncodingOptions，还是
+  // 具名导入 / node: 前缀导入，甚至开启 --strict，TS 都选中第一个重载并推断为 string[]。
+  // 运行时行为是正确的（Node 确实返回 Dirent[]），故只桥接类型，不改动运行时代码。
+  const entries = (await fs.readdir(rootDir, { withFileTypes: true })) as unknown as Dirent[];
   const files = await Promise.all(
     entries.map(async (entry) => {
       const fullPath = path.join(rootDir, entry.name);

@@ -1,3 +1,4 @@
+import DOMPurify from 'dompurify';
 import { Renderer } from 'marked';
 
 /**
@@ -9,27 +10,40 @@ import { Renderer } from 'marked';
 const ECHARTS_KEY_FIELDS = ['xAxis', 'yAxis', 'series', 'title', 'legend', 'gauge', 'pie', 'radar', 'geo'];
 
 /**
- * HTML 净化：移除危险的 HTML 标签和属性，防止 XSS 攻击
+ * DOMPurify 净化配置。
+ *
+ * <p>其余标签/属性交给 DOMPurify 默认白名单（已排除 script / iframe / object / embed、
+ * 所有 <code>on*</code> 事件属性与 <code>javascript:</code> URL），这里只显式收紧默认放行
+ * 但对我们有风险的部分：</p>
+ *
+ * <ul>
+ *   <li>禁止 <code>style</code>：可全局覆盖站点样式，并借 <code>url()</code> 外带信标；</li>
+ *   <li>禁止 <code>base</code>/<code>meta</code>/<code>link</code>：可改写相对 URL 基址或注入跳转；</li>
+ *   <li>禁止 <code>srcdoc</code> 属性：srcdoc iframe 继承父页源，等同同源脚本执行。</li>
+ * </ul>
+ *
+ * <p>保留 <code>data-option</code>：AI 渲染器输出的 ECharts 容器靠它携带图表配置。</p>
+ */
+const SANITIZE_CONFIG = {
+  ADD_ATTR: ['data-option', 'data-mounted'],
+  FORBID_TAGS: ['style', 'base', 'meta', 'link', 'iframe', 'object', 'embed', 'script', 'form'],
+  FORBID_ATTR: ['srcdoc']
+};
+
+/**
+ * HTML 净化：移除危险的 HTML 标签和属性，防止存储型 XSS。
+ *
+ * <p>历史实现是一串正则黑名单，已实测可被绕过（未闭合的 <code>&lt;script&gt;</code>/<code>&lt;iframe&gt;</code>、
+ * 未加引号的 <code>href=javascript:</code>、HTML 实体编码的 <code>java&amp;#115;cript:</code>、
+ * 以及未被列入黑名单的 <code>&lt;style&gt;</code>/<code>&lt;base&gt;</code> 等），
+ * 故改为 DOMPurify —— 基于浏览器真实解析树的标签/属性白名单净化，不再依赖正则匹配。</p>
+ *
  * @param html 原始 HTML 字符串
  * @returns 净化后的 HTML
  */
 export function sanitizeHtml(html: string): string {
   if (!html) return '';
-  return (
-    html
-      // 移除 script 标签及内容
-      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-      // 移除 iframe 标签
-      .replace(/<iframe\b[^>]*>.*?<\/iframe>/gi, '')
-      // 移除 object/embed 标签
-      .replace(/<(object|embed|applet|form|input|textarea|select|button)\b[^>]*>.*?<\/\1>/gi, '')
-      // 移除所有 on* 事件属性
-      .replace(/\s+on\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, '')
-      // 移除 javascript: 协议
-      .replace(/href\s*=\s*(?:"javascript:[^"]*"|'javascript:[^']*')/gi, 'href="#"')
-      // 移除 style 中的 expression/url
-      .replace(/style\s*=\s*(?:"[^"]*expression\([^"]*"|'[^']*expression\([^']*')/gi, '')
-  );
+  return DOMPurify.sanitize(html, SANITIZE_CONFIG) as string;
 }
 
 /**

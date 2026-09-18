@@ -26,6 +26,32 @@ export const usePermissionStore = defineStore('permission', () => {
   const topbarRouters = ref<RouteRecordRaw[]>([]);
   const sidebarRouters = ref<RouteRecordRaw[]>([]);
 
+  /**
+   * router.addRoute 返回的移除句柄。
+   * 必须保存：vue-router 的动态路由只增不减，登出时不 removeRoute，
+   * 上一用户注册的路由会残留在路由器中，换账号后可直接用 URL 访问（前端越权）。
+   */
+  const removeRouteHandles: Array<() => void> = [];
+
+  /** 移除已注册的动态路由（不重置 store 状态） */
+  const clearDynamicRoutes = (): void => {
+    removeRouteHandles.forEach((remove) => remove());
+    removeRouteHandles.length = 0;
+  };
+
+  /**
+   * 注销时复位权限路由状态。
+   * <p>Pinia 状态清空并不会让已注册的动态路由消失，必须显式 removeRoute。</p>
+   */
+  const resetRoutes = (): void => {
+    clearDynamicRoutes();
+    routes.value = [];
+    addRoutes.value = [];
+    defaultRoutes.value = [];
+    topbarRouters.value = [];
+    sidebarRouters.value = [];
+  };
+
   const getRoutes = (): RouteRecordRaw[] => {
     return routes.value as RouteRecordRaw[];
   };
@@ -62,8 +88,10 @@ export const usePermissionStore = defineStore('permission', () => {
     const rewriteRoutes = filterAsyncRouter(rdata, undefined, true);
     const defaultRoutes = filterAsyncRouter(defaultData);
     const asyncRoutes = filterDynamicRoutes(dynamicRoutes);
+    // 先移除上一轮注册的动态路由，避免重复 addRoute 造成覆盖与句柄泄漏
+    clearDynamicRoutes();
     asyncRoutes.forEach((route) => {
-      router.addRoute(route);
+      removeRouteHandles.push(router.addRoute(route));
     });
     setRoutes(rewriteRoutes);
     setSidebarRouters(constantRoutes.concat(sidebarRoutes));
@@ -129,7 +157,8 @@ export const usePermissionStore = defineStore('permission', () => {
 
     setRoutes,
     generateRoutes,
-    setSidebarRouters
+    setSidebarRouters,
+    resetRoutes
   };
 });
 
@@ -192,7 +221,9 @@ function duplicateRouteChecker(localRoutes: Route[], routes: Route[]) {
 
   const nameList: string[] = [];
   allRoutes.forEach((route) => {
-    const name = route.name.toString();
+    // name 可能为 undefined（后端菜单未配 name），直接 .toString() 会抛 TypeError，
+    // 而本函数在 generateRoutes 的 return 之前执行 —— 会直接打断整个登录流程。
+    const name = route.name?.toString() ?? '';
     if (name && nameList.includes(name)) {
       const message = `路由名称: [${name}] 重复, 会造成 404`;
       console.error(message);
@@ -203,6 +234,8 @@ function duplicateRouteChecker(localRoutes: Route[], routes: Route[]) {
       });
       return;
     }
-    nameList.push(route.name.toString());
+    if (name) {
+      nameList.push(name);
+    }
   });
 }

@@ -206,6 +206,17 @@ export const useTagsViewStore = defineStore('tagsView', () => {
     return view.matched.some((m) => m.path.includes(':'));
   };
 
+  /**
+   * 注销时复位标签页状态。
+   * <p>delAllViews 会保留 affix 标签且不处理 iframeViews；换账号时须整体清空，
+   * 否则上一用户的标签页与 keep-alive 缓存（含组件实例）会残留。</p>
+   */
+  const resetViews = (): void => {
+    visitedViews.value = [];
+    cachedViews.value = [];
+    iframeViews.value = [];
+  };
+
   return {
     visitedViews,
     cachedViews,
@@ -229,6 +240,7 @@ export const useTagsViewStore = defineStore('tagsView', () => {
     delRightTags,
     delLeftTags,
     addIframeView,
-    delIframeView
+    delIframeView,
+    resetViews
   };
 });

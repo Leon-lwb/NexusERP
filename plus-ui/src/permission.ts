@@ -38,15 +38,26 @@ router.beforeEach(async (to, from, next) => {
           next({ path: '/' });
         } else {
           isRelogin.show = false;
-          const accessRoutes = await usePermissionStore().generateRoutes();
-          // 根据roles权限生成可访问的路由表
-          accessRoutes.forEach((route) => {
-            if (!isHttp(route.path)) {
-              router.addRoute(route); // 动态添加可访问路由表
-            }
-          });
-          // @ts-expect-error hack方法 确保addRoutes已完成
-          next({ path: to.path, replace: true, params: to.params, query: to.query, hash: to.hash, name: to.name as string }); // hack方法 确保addRoutes已完成
+          try {
+            // 根据roles权限生成可访问的路由表
+            const accessRoutes = await usePermissionStore().generateRoutes();
+            accessRoutes.forEach((route) => {
+              if (!isHttp(route.path)) {
+                router.addRoute(route); // 动态添加可访问路由表
+              }
+            });
+            // @ts-expect-error hack方法 确保addRoutes已完成
+            next({ path: to.path, replace: true, params: to.params, query: to.query, hash: to.hash, name: to.name as string }); // hack方法 确保addRoutes已完成
+          } catch (e: any) {
+            // 生成路由失败（网络抖动 / 后端 500 / 网关超时）时必须收尾：
+            // NProgress.start() 已执行，而 done() 只在 afterEach 调用，不处理会让进度条永久卡住、
+            // 用户停在旧页面且没有任何提示。这里中止本次导航（不跳登录页 —— 有 token 时
+            // /login 会重定向回 /，与守卫形成死循环），用户刷新即可重试。
+            NProgress.done();
+            console.error('generateRoutes failed', e);
+            ElMessage.error(e?.message || '菜单加载失败，请刷新页面重试');
+            next(false);
+          }
         }
       } else {
         next();

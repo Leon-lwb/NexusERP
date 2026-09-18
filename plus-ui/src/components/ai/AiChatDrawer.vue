@@ -68,12 +68,22 @@ import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
 import { Promotion, Loading, ChatDotRound, RefreshRight } from '@element-plus/icons-vue';
 import { sendAiMessage } from '@/api/ai/chat';
 import { marked } from 'marked';
-import { createAiRenderer, sanitizeHtml } from '@/utils/aiRenderers';
+import { createAiRenderer, sanitizeHtml, sanitizeOption } from '@/utils/aiRenderers';
 import DeepThinking from '@/components/ai/DeepThinking.vue';
 import WebSearchToggle from '@/components/ai/WebSearchToggle.vue';
 import ModelSelect from '@/components/ai/ModelSelect.vue';
-import * as echarts from 'echarts';
 import 'github-markdown-css';
+
+/**
+ * echarts 体积约 1MB。本组件被 layout/Navbar 静态引入，若在此静态 import，
+ * echarts 会进入首屏主 chunk —— 每个用户每次打开页面都要下载它，哪怕从不看图。
+ * 改为首次真正需要渲染图表时再动态加载。
+ */
+let echartsModulePromise: Promise<typeof import('echarts')> | null = null;
+const loadEcharts = () => (echartsModulePromise ??= import('echarts'));
+
+/** 已挂载的图表实例与尺寸观察者，供组件卸载时统一释放（本组件全局常驻） */
+const mountedCharts: Array<{ chart: { resize: () => void; dispose: () => void }; ro: ResizeObserver }> = [];
 
 interface ChatMessage {
   role: 'user' | 'assistant';
@@ -145,7 +155,9 @@ function onAiSseMessage(event: Event) {
       thinking.value = false;
       loading.value = false;
       // 扫描并挂载 ECharts 容器
-      nextTick(() => mountEchartsContainers());
+      nextTick(() => {
+        void mountEchartsContainers();
+      });
       break;
     case 'AI_ERROR':
       thinking.value = false;
@@ -212,20 +224,25 @@ function renderMarkdown(content: string) {
   return sanitizeHtml(marked.parse(content || '', { renderer, async: false }));
 }
 
-/** 扫描 DOM 中的 echarts-container 并挂载 ECharts 实例 */
-function mountEchartsContainers() {
+/** 扫描 DOM 中的 echarts-container 并挂载 ECharts 实例（首次调用时才拉取 echarts） */
+async function mountEchartsContainers() {
   if (!messageListRef.value) return;
   const containers = messageListRef.value.querySelectorAll('.echarts-container:not([data-mounted])');
+  if (!containers.length) return;
+  const echarts = await loadEcharts();
   containers.forEach((el) => {
     const optionStr = (el as HTMLElement).dataset.option;
     if (!optionStr) return;
     try {
       const option = JSON.parse(decodeURIComponent(optionStr));
+      // 与 EchartsRenderer / AI 助手页保持一致：剥离 formatter 等可执行字段
+      sanitizeOption(option);
       el.setAttribute('data-mounted', 'true');
       const chart = echarts.init(el as HTMLElement);
       chart.setOption(option, true);
       const ro = new ResizeObserver(() => chart.resize());
       ro.observe(el as HTMLElement);
+      mountedCharts.push({ chart, ro });
     } catch (e) {
       console.error('ECharts 容器挂载失败:', e);
     }
@@ -297,6 +314,12 @@ onMounted(() => {
 
 onUnmounted(() => {
   window.removeEventListener('ai-sse-message', onAiSseMessage);
+  // 释放图表与尺寸观察者：本组件全局常驻，多轮对话会持续累积实例
+  mountedCharts.forEach(({ chart, ro }) => {
+    ro.disconnect();
+    chart.dispose();
+  });
+  mountedCharts.length = 0;
 });
 </script>
 

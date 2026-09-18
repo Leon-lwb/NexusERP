@@ -241,6 +241,35 @@ export const useImStore = defineStore('im', () => {
   }
 
   /**
+   * 注销 / 切换账号时复位 IM 内存态。
+   *
+   * <p>仅靠 initialized 守卫无法防止跨用户残留：同一标签页换账号后
+   * conversations / messagesMap 仍是上一用户的数据，而 init() 因 initialized === true
+   * 直接 return，不会再重新拉取。这里同时摘掉监听器、清掉兜底定时器与标题闪烁定时器，
+   * 避免登出后监听器/定时器持续累积。</p>
+   */
+  function reset() {
+    window.removeEventListener('im-realtime', handleRealtime as EventListener);
+    window.removeEventListener('focus', onWindowFocus);
+    document.removeEventListener('visibilitychange', onVisibilityChange);
+    window.removeEventListener('im-ws-connected', handleWsReconnect as EventListener);
+    window.removeEventListener('pagehide', onPageHide);
+    if (fallbackTimer != null) {
+      clearInterval(fallbackTimer);
+      fallbackTimer = null;
+    }
+    stopFlash();
+    conversations.value = [];
+    messagesMap.value = {};
+    pageInfoMap.value = {};
+    draftMap.value = {};
+    groupMembers.value = {};
+    active.value = null;
+    focusedConvKey.value = null;
+    initialized.value = false;
+  }
+
+  /**
    * P4-6 W2: 从 IndexedDB 加载本地缓存的会话列表 + 各会话消息。
    * <p>不阻塞 init 流程，加载完成后立即反映到 messagesMap，实现秒开。
    */
@@ -833,6 +862,7 @@ export const useImStore = defineStore('im', () => {
     myAvatar,
     myName,
     init,
+    reset,
     loadConversations,
     loadMessages,
     loadMore,

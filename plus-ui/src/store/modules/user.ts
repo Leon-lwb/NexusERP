@@ -72,6 +72,28 @@ export const useUserStore = defineStore('user', () => {
     } catch (e) {
       console.error('clear im cache failed', e);
     }
+    // 复位其它 store 的内存态：动态路由、标签页/keep-alive 缓存、字典、通知、IM 会话。
+    // 用动态 import 打破 store 之间的静态循环依赖（im → user，permission → plugins/auth → user），
+    // 这些模块此时都已加载，动态 import 不会产生额外网络请求。
+    try {
+      const [{ usePermissionStore }, { useTagsViewStore }, { useDictStore }, { useNoticeStore }, { useImStore }] = await Promise.all([
+        import('@/store/modules/permission'),
+        import('@/store/modules/tagsView'),
+        import('@/store/modules/dict'),
+        import('@/store/modules/notice'),
+        import('@/store/modules/im')
+      ]);
+      // vue-router 的动态路由不会随 Pinia 状态清空而消失，必须显式 removeRoute，
+      // 否则同一标签页换账号后，上一用户的路由仍可通过 URL 直接访问。
+      usePermissionStore().resetRoutes();
+      useTagsViewStore().resetViews();
+      useDictStore().cleanDict();
+      useNoticeStore().clearNotice();
+      useNoticeStore().setUnreadCount(0);
+      useImStore().reset();
+    } catch (e) {
+      console.error('reset stores on logout failed', e);
+    }
     token.value = '';
     name.value = '';
     nickname.value = '';

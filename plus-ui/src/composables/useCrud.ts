@@ -92,19 +92,35 @@ export function useCrud<T extends Record<string, any>, Q extends PageQuery>(opti
   const showSearch = ref(true);
   /** 表单数据 */
   const form = ref<Partial<T>>(initForm()) as Ref<Partial<T>>;
+  /** 列表请求序号，用于丢弃过期响应（见 getList） */
+  let listRequestSeq = 0;
 
   /** 查询列表数据 */
   function getList() {
+    // 竞态保护：连续搜索 / 快速翻页时，先发出的慢请求可能后返回并覆盖新结果
+    // （表现为「筛选条件与列表不匹配」）。用自增序号只允许最后一次请求写入。
+    const seq = ++listRequestSeq;
     loading.value = true;
     beforeList?.(queryParams.value);
     return apis
       .list(queryParams.value)
       .then((res: any) => {
-        list.value = res.rows;
-        total.value = res.total;
+        if (seq !== listRequestSeq) return;
+        list.value = res.rows ?? [];
+        total.value = res.total ?? 0;
+      })
+      .catch((e: any) => {
+        if (seq !== listRequestSeq) return;
+        // 拦截器已弹过统一错误提示，这里兜底避免未处理的 Promise 拒绝
+        console.error('列表加载失败', e);
+        list.value = [];
+        total.value = 0;
       })
       .finally(() => {
-        loading.value = false;
+        // 只有最后一次请求才能结束 loading，否则过期响应会提前关掉新请求的加载态
+        if (seq === listRequestSeq) {
+          loading.value = false;
+        }
       });
   }
 
@@ -177,7 +193,14 @@ export function useCrud<T extends Record<string, any>, Q extends PageQuery>(opti
 
   /** 提交表单（校验通过后新增或修改） */
   function submitForm() {
-    return formRef.value?.validate((valid: boolean) => {
+    const instance = formRef.value;
+    if (!instance) {
+      // 原先用 `formRef.value?.validate(...)`：ref 未绑定时整段逻辑静默跳过，
+      // 表现为「点保存没反应」，排查困难。这里显式报错。
+      console.error(`[useCrud] 表单 ref 未绑定，${entityName} 提交被忽略`);
+      return Promise.resolve();
+    }
+    return instance.validate((valid: boolean) => {
       if (!valid) return;
       beforeSubmit?.(form.value);
       const isEdit = (form.value as any)[idField] != null;
@@ -200,7 +223,13 @@ export function useCrud<T extends Record<string, any>, Q extends PageQuery>(opti
         getList();
         ElMessage.success('删除成功');
       })
-      .catch(() => {});
+      .catch((e: any) => {
+        // 用户取消（ElMessageBox 以 'cancel'/'close' 拒绝）静默处理；
+        // 接口失败必须显式反馈 —— 原先一律 `.catch(() => {})`，删除被拒（403/校验失败）时
+        // 既不提示也不刷新，用户会以为已经删除成功。
+        if (e === 'cancel' || e === 'close') return;
+        ElMessage.error(e?.message || '删除失败');
+      });
   }
 
   /** 导出操作 */
