@@ -505,7 +505,12 @@ function handleLineSelectionChange(rows: ContractLineForm[]) {
 
 /**
  * 计算行金额/税额（toFixed 截断浮点尾差，精度与库表及后端重算一致）：
- * 行金额(含税) = 单价×数量(2位)、税额 = 行金额×税率÷100(2位)
+ * 行金额（**不含税**）= 单价×数量(2位)、税额 = 行金额×税率÷100(2位)
+ *
+ * 注：原注释误写为「行金额(含税)」—— 若真为含税，再加税额就是重复计税。
+ * 实际口径与订单侧 orderheader/form.vue 的 calcLine 一致：行金额不含税，
+ * 税额在行金额（订单侧还需再扣行折扣）基础上按税率计取。
+ * 决策 Q3：税率为**百分数**，`13` 表示 13%。
  */
 function calcLineAmount(row: ContractLineForm) {
   row.lineAmount = Number(((Number(row.quantity) || 0) * (Number(row.unitPrice) || 0)).toFixed(2));

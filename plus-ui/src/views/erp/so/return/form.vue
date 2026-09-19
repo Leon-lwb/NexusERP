@@ -182,9 +182,22 @@
               ><span>{{ scope.row.amount }}</span></template
             >
           </el-table-column>
-          <el-table-column label="税率(%)" prop="taxRate" width="80">
+          <el-table-column label="税率(%)" prop="taxRate" width="110">
             <template #default="scope">
-              <el-input v-model="scope.row.taxRate" placeholder="税率" v-if="!isViewMode && !props.disabled" />
+              <!-- 决策 Q3：税率为百分数（13 表示 13%）。原先用纯文本 el-input，
+                   无任何区间约束，非法值只能靠后端反序列化/校验报错；改为与
+                   订单/报价/合同/发票一致的数值输入。 -->
+              <el-input-number
+                v-if="!isViewMode && !props.disabled"
+                v-model="scope.row.taxRate"
+                size="small"
+                controls-position="right"
+                :min="0"
+                :max="100"
+                :precision="2"
+                placeholder="税率"
+                style="width: 100%"
+              />
               <span v-else>{{ scope.row.taxRate }}</span>
             </template>
           </el-table-column>

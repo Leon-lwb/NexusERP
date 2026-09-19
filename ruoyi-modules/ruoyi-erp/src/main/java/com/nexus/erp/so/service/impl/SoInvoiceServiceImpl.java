@@ -156,6 +156,7 @@ public class SoInvoiceServiceImpl implements ISoInvoiceService {
                 if (line.getQuantity() != null && line.getQuantity().signum() < 0) {
                     throw new ServiceException("发票明细数量不能为负数，红字发票请通过红冲生成");
                 }
+                assertLineTaxRate(line);
                 line.setInvoiceId(entity.getInvoiceId());
                 lineMapper.insert(line);
                 // 手工建票同样占用可开票量，否则可绕过防超开门禁重复开票
@@ -340,6 +341,7 @@ public class SoInvoiceServiceImpl implements ISoInvoiceService {
         }
         Set<Long> keepIds = new HashSet<>();
         for (SoInvoiceLine line : newLines) {
+            assertLineTaxRate(line);
             line.setInvoiceId(invoiceId);
             if (line.getLineId() == null) {
                 lineMapper.insert(line);
@@ -589,6 +591,22 @@ public class SoInvoiceServiceImpl implements ISoInvoiceService {
         applicationEventPublisher.publishEvent(
             new SoInvoiceIssuedEvent(this, red.getInvoiceId(), TenantHelper.getTenantId()));
         return red.getInvoiceId();
+    }
+
+    /**
+     * 校验明细税率区间（决策 Q3：税率为**百分数**，`13` 表示 13%）。
+     *
+     * <p>与合同（{@code SoContractServiceImpl} 的 0~100 校验）、报价
+     * （{@code SoQuotationServiceImpl}）、订单（{@code SoSalesOrderLineBo} 的
+     * {@code @DecimalMin/@DecimalMax}）口径保持一致 —— 发票此前是唯一没有区间校验的单据，
+     * 可落库 `0.13`（被当成 0.13%）或 `1300` 这类值，导致行税额算错而无人察觉。</p>
+     */
+    private void assertLineTaxRate(SoInvoiceLine line) {
+        BigDecimal taxRate = line.getTaxRate();
+        if (taxRate != null
+            && (taxRate.signum() < 0 || taxRate.compareTo(BigDecimal.valueOf(100)) > 0)) {
+            throw new ServiceException("发票明细税率必须在 0~100 之间（百分数：13 表示 13%）");
+        }
     }
 
     /**

@@ -532,6 +532,78 @@ class SoInvoiceServiceImplTest {
         verify(soSalesOrderLineMapper, never()).update(any(), any());
     }
 
+    // ==================== 税率区间校验（Q3 百分数口径）====================
+
+    /** 税率超过 100 拒绝（百分数语义下 0~100 才是合法区间） */
+    @Test
+    void insertByBo_rejectsTaxRateAbove100() {
+        when(baseMapper.insert(any(SoInvoice.class))).thenAnswer(inv -> {
+            inv.getArgument(0, SoInvoice.class).setInvoiceId(1L);
+            return 1;
+        });
+
+        SoInvoiceBo bo = new SoInvoiceBo();
+        SoInvoiceLine line = invoiceLine(null, null, "6");
+        line.setTaxRate(new BigDecimal("1300"));   // 疑似把 13% 写成了 1300
+        bo.setSoInvoiceLineList(List.of(line));
+
+        ServiceException ex = assertThrows(ServiceException.class, () -> invoiceService.insertByBo(bo));
+        assertTrue(ex.getMessage().contains("0~100"), "实际: " + ex.getMessage());
+        verify(lineMapper, never()).insert(any(SoInvoiceLine.class));
+    }
+
+    /** 税率为负拒绝 */
+    @Test
+    void insertByBo_rejectsNegativeTaxRate() {
+        when(baseMapper.insert(any(SoInvoice.class))).thenAnswer(inv -> {
+            inv.getArgument(0, SoInvoice.class).setInvoiceId(1L);
+            return 1;
+        });
+
+        SoInvoiceBo bo = new SoInvoiceBo();
+        SoInvoiceLine line = invoiceLine(null, null, "6");
+        line.setTaxRate(new BigDecimal("-1"));
+        bo.setSoInvoiceLineList(List.of(line));
+
+        assertThrows(ServiceException.class, () -> invoiceService.insertByBo(bo));
+    }
+
+    /** 0 与 100 是合法边界值 */
+    @Test
+    void insertByBo_acceptsTaxRateBoundaries() {
+        when(baseMapper.insert(any(SoInvoice.class))).thenAnswer(inv -> {
+            inv.getArgument(0, SoInvoice.class).setInvoiceId(1L);
+            return 1;
+        });
+        when(lineMapper.insert(any(SoInvoiceLine.class))).thenReturn(1);
+
+        SoInvoiceBo bo = new SoInvoiceBo();
+        SoInvoiceLine zero = invoiceLine(null, null, "1");
+        zero.setTaxRate(BigDecimal.ZERO);
+        SoInvoiceLine hundred = invoiceLine(null, null, "1");
+        hundred.setTaxRate(new BigDecimal("100"));
+        bo.setSoInvoiceLineList(List.of(zero, hundred));
+
+        assertDoesNotThrow(() -> invoiceService.insertByBo(bo));
+        verify(lineMapper, times(2)).insert(any(SoInvoiceLine.class));
+    }
+
+    /** 改票同样校验税率区间 */
+    @Test
+    void updateByBo_rejectsTaxRateAbove100() {
+        when(baseMapper.selectById(1L)).thenReturn(invoice(1L, ISoInvoiceService.STATUS_DRAFT, "678.00", "0"));
+        when(baseMapper.updateById(any(SoInvoice.class))).thenReturn(1);
+        when(lineMapper.selectList(any())).thenReturn(List.of());
+
+        SoInvoiceBo bo = new SoInvoiceBo();
+        bo.setInvoiceId(1L);
+        SoInvoiceLine line = invoiceLine(null, null, "6");
+        line.setTaxRate(new BigDecimal("1300"));
+        bo.setSoInvoiceLineList(List.of(line));
+
+        assertThrows(ServiceException.class, () -> invoiceService.updateByBo(bo));
+    }
+
     // ==================== 流程回调守卫（加固轮）====================
 
     /**
