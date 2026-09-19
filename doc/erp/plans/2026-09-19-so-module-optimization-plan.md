@@ -375,9 +375,22 @@ insertOrUpdateLines(entity.getSoId(), ...);          // 且强制 line.setLineId
 | └ 异常口径统一为 `ServiceException` | ✅ 完成 | 见本批次 commit | so 模块 `throw new RuntimeException` 已清零 |
 | └ 明细「未提交」语义加固（null vs 空集合） | ✅ 完成 | 见本批次 commit | 新增 6 用例；`Tests run: 138, Failures: 0` |
 | └ DDL ↔ Java 实体一致性静态校验 | ✅ 通过 | — | 14 张 so_ 表列与实体字段完全一致 |
+| └ 服务端权威字段加固（状态/时间戳/信用/红冲标记） | ✅ 完成 | 见本批次 commit | 新增 5 用例；`Tests run: 143, Failures: 0` |
 | └ 13 个死字段清理（待 Q4） | ⬜ 待办 | | |
 
 **加固轮要点**：
+- **「客户端可伪造服务端权威字段」是系统性问题**，逐个服务排查后修复：
+  | 位置 | 可伪造字段 | 后果 |
+  |---|---|---|
+  | `SoInvoiceServiceImpl.insertByBo` | `status` | 直建 ISSUED 发票，而 insertByBo 不发布 `SoInvoiceIssuedEvent`（只有 afterFlowHandle / redFlush 发布）→ 发票标记「已开」却从未过账总账 |
+  | 同上 | `verifiedAmount` | `verifyInvoice` 以「已核销额 + 本次」判断是否置为已核销，预置大值即可用很小金额把发票置为已核销 |
+  | 同上 | 明细负数量 | 走 `occupyInvoicedQty` 的**释放**分支 → 绕过红冲流程释放已开票量，重新打开超开缺口 |
+  | `SoReturnServiceImpl.insertByBo` | `status` | 直建 RECEIVED 退货单 → 界面显示「已收货」但库存从未加回；且 T1.3 后 execute 要求 CONFIRMED，这张单永远无法真正执行 |
+  | `SoSalesOrderHeaderServiceImpl.insertByBo` | 4 个生命周期时间戳、`creditStatus`/`creditCheckTime`/`creditBlockedBy` | 草稿单上出现假的「确认时间/履行时间」或「已检查」 |
+  | `SoSalesOrderHeaderServiceImpl.updateByBo` | 同上 | 改单可改写信用检查结果 |
+  已全部改为服务端权威：新增时复位为初值（订单 `creditStatus=NOT_CHECKED`），改单时从库中还原。
+  另 `insertByBo` 对留空发票号做兜底生成（`invoice_no` 为 NOT NULL + 唯一键，空串会让第二张手工票撞唯一键；
+  前端有必填校验所以 UI 不受影响，这是给 API 客户端的兜底）。
 - **`updateByBo` 传 null 明细会删光所有行**（真实数据丢失风险）：`diffUpdateLines` 把「请求中未出现的
   已有行」一律逻辑删除，而 `lineBoList == null` 时该分支整体被跳过 → 所有已有行都成了「未出现」→ 全删；
   同时 `recalcAmounts` 按空明细把表头金额算成 0。即 API 客户端做部分更新（例如只改备注）会

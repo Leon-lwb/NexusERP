@@ -110,20 +110,32 @@ public class SoInvoiceServiceImpl implements ISoInvoiceService {
     }
 
     /**
-     * 新增销售发票（含明细行），默认状态为草稿
+     * 新增销售发票（含明细行）。
+     * <p>状态与红冲相关字段一律服务端权威：</p>
+     * <ul>
+     *   <li><b>status 强制 DRAFT</b>：发票状态只能经审批流（{@code afterFlowHandle}）/ 核销 / 作废流转。
+     *       原实现仅在为空时兜底，客户端可直接建出 ISSUED 发票 —— 而 {@code insertByBo} 不发布
+     *       {@code SoInvoiceIssuedEvent}（只有 {@code afterFlowHandle} 与 {@code redFlush} 发布），
+     *       于是发票标记「已开」却从未过账到总账。</li>
+     *   <li><b>redFlag/originalInvoiceId/verifiedAmount 强制复位</b>：红字发票只能由 {@code redFlush} 生成。
+     *       否则客户端可伪造 {@code redFlag=1} 建「红票」，配合负数量明细走
+     *       {@code occupyInvoicedQty} 的释放分支，绕过红冲流程释放已开票量（重新打开超开缺口）。</li>
+     * </ul>
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(SoInvoiceBo bo) {
         SoInvoice entity = MapstructUtils.convert(bo, SoInvoice.class);
-        if (StringUtils.isBlank(entity.getStatus())) {
-            entity.setStatus(STATUS_DRAFT);
+        entity.setStatus(STATUS_DRAFT);
+        entity.setRedFlag("0");
+        entity.setOriginalInvoiceId(null);
+        entity.setVerifiedAmount(BigDecimal.ZERO);
+        if (StringUtils.isBlank(entity.getInvoiceNo())) {
+            // 手工建票未填号时兜底生成，与 generateDraftFromOrder 口径一致
+            entity.setInvoiceNo("FP" + IdWorker.getId());
         }
         if (StringUtils.isBlank(entity.getIssueChannel())) {
             entity.setIssueChannel("MANUAL");
-        }
-        if (StringUtils.isBlank(entity.getRedFlag())) {
-            entity.setRedFlag("0");
         }
         if (entity.getVersion() == null) {
             entity.setVersion(0);
@@ -131,6 +143,11 @@ public class SoInvoiceServiceImpl implements ISoInvoiceService {
         int rows = baseMapper.insert(entity);
         if (bo.getSoInvoiceLineList() != null && !bo.getSoInvoiceLineList().isEmpty()) {
             for (SoInvoiceLine line : bo.getSoInvoiceLineList()) {
+                // 负数量明细只应来自红冲（redFlush 复制原行取负）；手工建票传负数会走
+                // occupyInvoicedQty 的释放分支，等于绕过红冲释放已开票量
+                if (line.getQuantity() != null && line.getQuantity().signum() < 0) {
+                    throw new ServiceException("发票明细数量不能为负数，红字发票请通过红冲生成");
+                }
                 line.setInvoiceId(entity.getInvoiceId());
                 lineMapper.insert(line);
                 // 手工建票同样占用可开票量，否则可绕过防超开门禁重复开票

@@ -94,12 +94,17 @@ public class SoReturnServiceImpl implements ISoReturnService {
     }
 
     /**
-     * 新增销售退货（自动生成退货单号并保存明细行）
+     * 新增销售退货（状态强制草稿 + 自动生成退货单号 + 保存明细行）。
+     * <p>原实现不校验状态，客户端可直接建出 {@code status=RECEIVED} 的退货单 ——
+     * 界面显示「已收货」但库存从未加回（{@code execute()} 才会入库），
+     * 且 T1.3 之后 {@code execute()} 要求 CONFIRMED，这张单永远无法真正执行，
+     * 形成「看起来已完成、实际什么都没发生」的假数据。</p>
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(SoReturnBo bo) {
         SoReturn entity = MapstructUtils.convert(bo, SoReturn.class);
+        entity.setStatus(STATUS_DRAFT);
         if (StringUtils.isBlank(entity.getReturnNo())) {
             entity.setReturnNo(autoCodeUtil.genSerialCode("SO_RETURN_CODE", null));
         }

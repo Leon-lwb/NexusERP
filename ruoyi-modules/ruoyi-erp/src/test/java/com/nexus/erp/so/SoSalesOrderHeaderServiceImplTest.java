@@ -45,6 +45,7 @@ import org.springframework.context.ApplicationEventPublisher;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.util.Date;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -733,6 +734,56 @@ class SoSalesOrderHeaderServiceImplTest {
         verify(baseMapper).updateById(captor.capture());
         // 行金额 100.00，税额 10.00，价税合计 110.00，整单折扣 0 -> 含税总金额 110.00
         assertEquals(0, new BigDecimal("110.00").compareTo(captor.getValue().getTotalAmount()));
+    }
+
+    // ==================== 服务端权威字段（加固轮）====================
+
+    /** 新增：生命周期时间戳与信用检查结果一律复位，不接受客户端伪造 */
+    @Test
+    void insertByBo_resetsLifecycleAndCreditFields() {
+        SoSalesOrderHeaderBo bo = new SoSalesOrderHeaderBo();
+        bo.setSoNo("SO-T-3");
+        bo.setClientId(1L);
+        bo.setConfirmedTime(new Date());        // 伪造
+        bo.setFulfilledTime(new Date());        // 伪造
+        bo.setCreditStatus("CHECKED_OK");       // 伪造
+        bo.setCreditBlockedBy(99L);             // 伪造
+        when(baseMapper.insert(any(SoSalesOrderHeader.class))).thenReturn(1);
+
+        headerService.insertByBo(bo);
+
+        ArgumentCaptor<SoSalesOrderHeader> captor = ArgumentCaptor.forClass(SoSalesOrderHeader.class);
+        verify(baseMapper).insert(captor.capture());
+        SoSalesOrderHeader saved = captor.getValue();
+        assertNull(saved.getConfirmedTime());
+        assertNull(saved.getFulfilledTime());
+        assertNull(saved.getClosedTime());
+        assertNull(saved.getCancelledTime());
+        assertNull(saved.getCreditCheckTime());
+        assertNull(saved.getCreditBlockedBy());
+        assertEquals("NOT_CHECKED", saved.getCreditStatus());
+    }
+
+    /** 改单：生命周期时间戳与信用检查结果从库中还原，不得改写（与单号/状态同理） */
+    @Test
+    void updateByBo_restoresLifecycleAndCreditFieldsFromDb() {
+        SoSalesOrderHeader existing = header(1L, ISoSalesOrderHeaderService.STATUS_DRAFT);
+        existing.setCreditStatus("CHECKED_BLOCKED");
+        existing.setCreditBlockedBy(7L);
+        when(baseMapper.selectById(1L)).thenReturn(existing);
+        when(baseMapper.updateById(any(SoSalesOrderHeader.class))).thenReturn(1);
+
+        SoSalesOrderHeaderBo bo = updateBo();
+        bo.setCreditStatus("CHECKED_OK");   // 伪造
+        bo.setCreditBlockedBy(99L);         // 伪造
+        bo.setSoSalesOrderLineList(null);
+
+        headerService.updateByBo(bo);
+
+        ArgumentCaptor<SoSalesOrderHeader> captor = ArgumentCaptor.forClass(SoSalesOrderHeader.class);
+        verify(baseMapper).updateById(captor.capture());
+        assertEquals("CHECKED_BLOCKED", captor.getValue().getCreditStatus());
+        assertEquals(7L, captor.getValue().getCreditBlockedBy());
     }
 
     // ==================== 明细「未提交」语义（null vs 空集合）====================

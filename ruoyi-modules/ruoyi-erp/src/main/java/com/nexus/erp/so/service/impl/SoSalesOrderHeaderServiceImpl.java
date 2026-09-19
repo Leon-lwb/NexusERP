@@ -80,6 +80,9 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
     /** 信用状态：检查通过（与字典 so_credit_status 的 CHECKED_OK 对齐） */
     private static final String CREDIT_STATUS_CHECKED_OK = "CHECKED_OK";
 
+    /** 信用状态：待检查（与字典 so_credit_status 的 NOT_CHECKED 对齐，新增单据的初始值） */
+    private static final String CREDIT_STATUS_NOT_CHECKED = "NOT_CHECKED";
+
     private final SoSalesOrderHeaderMapper baseMapper;
     private final SoSalesOrderLineMapper soSalesOrderLineMapper;
     private final SoCustomerOrderMapper soCustomerOrderMapper;
@@ -252,6 +255,16 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
         // 原实现允许客户端直写终态（sys_oper_log 中已有 orderStatus=CONFIRMED 直接建单的记录），
         // 那样会绕过信用额度检查、库存预留与生产计划生成。
         entity.setOrderStatus(STATUS_DRAFT);
+        // 生命周期时间戳由对应动作写入（confirm/fulfill/close/cancel），
+        // 信用检查结果由信用检查服务在 confirm 时写入 —— 新增时一律复位，
+        // 不接受客户端伪造（否则草稿单上会出现假的「确认时间/履行时间」或「已检查」）
+        entity.setConfirmedTime(null);
+        entity.setFulfilledTime(null);
+        entity.setClosedTime(null);
+        entity.setCancelledTime(null);
+        entity.setCreditStatus(CREDIT_STATUS_NOT_CHECKED);
+        entity.setCreditCheckTime(null);
+        entity.setCreditBlockedBy(null);
         if (StringUtils.isBlank(entity.getSoNo())) {
             entity.setSoNo(autoCodeUtil.genSerialCode("SO_ORDER_CODE", null));
         }
@@ -291,6 +304,14 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
         // 单号与状态服务端权威：客户端传了也还原，防止改单顺带改单号/绕过状态机
         entity.setSoNo(existing.getSoNo());
         entity.setOrderStatus(existing.getOrderStatus());
+        // 生命周期时间戳与信用检查结果同样服务端权威：改单不得改写（与单号/状态同理）
+        entity.setConfirmedTime(existing.getConfirmedTime());
+        entity.setFulfilledTime(existing.getFulfilledTime());
+        entity.setClosedTime(existing.getClosedTime());
+        entity.setCancelledTime(existing.getCancelledTime());
+        entity.setCreditStatus(existing.getCreditStatus());
+        entity.setCreditCheckTime(existing.getCreditCheckTime());
+        entity.setCreditBlockedBy(existing.getCreditBlockedBy());
         // 明细为 null 表示「本次不提交明细」——保持原样、不动表头金额；
         // 只有显式传空数组才是「清空全部明细」。口径与合同模块（SoContractServiceImpl.updateByBo
         // 的 `if (bo.getSoContractLineList() != null)`）一致。

@@ -524,6 +524,58 @@ class SoInvoiceServiceImplTest {
         verify(soSalesOrderLineMapper, never()).update(any(), any());
     }
 
+    // ==================== insertByBo 服务端权威字段（加固轮）====================
+
+    /**
+     * 手工建票：status 强制 DRAFT、verifiedAmount 强制清零、发票号留空自动生成。
+     * <p>伪造 status=ISSUED 的后果：insertByBo 不发布 SoInvoiceIssuedEvent（只有 afterFlowHandle
+     * 与 redFlush 发布），发票会标记「已开」却从未过账到总账。
+     * 伪造 verifiedAmount 的后果：verifyInvoice 以「已核销额 + 本次」判断是否置为已核销，
+     * 预置一个大值即可用很小金额把发票置为已核销。</p>
+     */
+    @Test
+    void insertByBo_forcesDraftAndZeroesVerifiedAmount() {
+        when(baseMapper.insert(any(SoInvoice.class))).thenAnswer(inv -> {
+            inv.getArgument(0, SoInvoice.class).setInvoiceId(1L);
+            return 1;
+        });
+
+        SoInvoiceBo bo = new SoInvoiceBo();
+        bo.setStatus(ISoInvoiceService.STATUS_ISSUED);            // 伪造
+        bo.setVerifiedAmount(new BigDecimal("678.00"));           // 伪造
+        bo.setSoInvoiceLineList(List.of());
+
+        invoiceService.insertByBo(bo);
+
+        ArgumentCaptor<SoInvoice> captor = ArgumentCaptor.forClass(SoInvoice.class);
+        verify(baseMapper).insert(captor.capture());
+        SoInvoice saved = captor.getValue();
+        assertEquals(ISoInvoiceService.STATUS_DRAFT, saved.getStatus());
+        assertEquals(0, BigDecimal.ZERO.compareTo(saved.getVerifiedAmount()));
+        assertEquals("0", saved.getRedFlag());
+        // 发票号留空时兜底生成（invoice_no 为 NOT NULL 且带唯一键，空串会让第二张手工票撞唯一键）
+        assertNotNull(saved.getInvoiceNo());
+    }
+
+    /** 手工建票传负数量明细直接拒绝（负数量只应来自红冲，否则会走释放分支绕过红冲） */
+    @Test
+    void insertByBo_rejectsNegativeLineQuantity() {
+        when(baseMapper.insert(any(SoInvoice.class))).thenAnswer(inv -> {
+            inv.getArgument(0, SoInvoice.class).setInvoiceId(1L);
+            return 1;
+        });
+
+        SoInvoiceBo bo = new SoInvoiceBo();
+        SoInvoiceLine line = new SoInvoiceLine();
+        line.setSoLineId(100L);
+        line.setQuantity(new BigDecimal("-6")); // 伪造红冲
+        bo.setSoInvoiceLineList(List.of(line));
+
+        ServiceException ex = assertThrows(ServiceException.class, () -> invoiceService.insertByBo(bo));
+        assertTrue(ex.getMessage().contains("不能为负数"), "实际: " + ex.getMessage());
+        verify(soSalesOrderLineMapper, never()).update(any(), any());
+    }
+
     /** 改票：数量增加只占用差额 */
     @Test
     void updateByBo_occupiesDeltaOnQtyIncrease() {

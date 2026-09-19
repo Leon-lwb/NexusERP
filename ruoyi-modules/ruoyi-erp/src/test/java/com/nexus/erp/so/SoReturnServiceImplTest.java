@@ -339,6 +339,21 @@ class SoReturnServiceImplTest {
         assertEquals("SR-AUTO-0001", captor.getValue().getReturnNo());
     }
 
+    /** 新增：客户端伪造 status=RECEIVED 仍落 DRAFT（否则会出现「已收货」但库存从未加回的假数据） */
+    @Test
+    void insertByBo_forcesDraft() {
+        SoReturnBo bo = new SoReturnBo();
+        bo.setReturnNo("SR-MANUAL-1");
+        bo.setStatus(ISoReturnService.STATUS_RECEIVED);
+        when(baseMapper.insert(any(SoReturn.class))).thenReturn(1);
+
+        returnService.insertByBo(bo);
+
+        ArgumentCaptor<SoReturn> captor = ArgumentCaptor.forClass(SoReturn.class);
+        verify(baseMapper).insert(captor.capture());
+        assertEquals(ISoReturnService.STATUS_DRAFT, captor.getValue().getStatus());
+    }
+
     // ==================== 明细「未提交」语义（null vs 空集合）====================
 
     /** 明细为 null = 不提交明细：明细与金额保持库中原值，不接受客户端改写 */
