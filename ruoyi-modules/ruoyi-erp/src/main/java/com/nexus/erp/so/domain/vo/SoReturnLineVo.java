@@ -1,5 +1,6 @@
 package com.nexus.erp.so.domain.vo;
 
+import cn.idev.excel.annotation.ExcelIgnoreUnannotated;
 import cn.idev.excel.annotation.ExcelProperty;
 import io.github.linpeilie.annotations.AutoMapper;
 import lombok.Data;
@@ -14,6 +15,7 @@ import java.math.BigDecimal;
  * @author nexus
  */
 @Data
+@ExcelIgnoreUnannotated
 @AutoMapper(target = SoReturnLine.class)
 public class SoReturnLineVo implements Serializable {
 

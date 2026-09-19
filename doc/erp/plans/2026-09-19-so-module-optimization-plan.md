@@ -370,6 +370,7 @@ insertOrUpdateLines(entity.getSoId(), ...);          // 且强制 line.setLineId
 | └ 列表页选中项残留修复 | ✅ 完成 | 见本批次 commit | 同上 |
 | └ 退货/发票工具栏状态门禁对齐行内 | ✅ 完成 | 见本批次 commit | 前端 `eslint` + `build:prod` 通过 |
 | └ 报价/退货明细行改 VO 直出（去掉 `@JSONField` 无效注解） | ✅ 完成 | 见本批次 commit | 新增 2 用例；`Tests run: 130, Failures: 0` |
+| └ 补齐 `@ExcelIgnoreUnannotated`（4 个 VO） | ✅ 完成 | 见本批次 commit | 复核 so 模块全部带 `@ExcelProperty` 的 VO 均已覆盖 |
 | └ 13 个死字段清理（待 Q4） | ⬜ 待办 | | |
 | └ 发票/合同明细行改 VO（需新建 LineVo） | ⬜ 待办 | | |
 | └ 异常口径统一为 `ServiceException` | ✅ 完成 | | so 模块 `throw new RuntimeException` 已清零 |

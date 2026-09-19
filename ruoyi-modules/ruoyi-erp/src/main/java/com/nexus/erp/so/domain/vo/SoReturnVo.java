@@ -1,5 +1,6 @@
 package com.nexus.erp.so.domain.vo;
 
+import cn.idev.excel.annotation.ExcelIgnoreUnannotated;
 import cn.idev.excel.annotation.ExcelProperty;
 import io.github.linpeilie.annotations.AutoMapper;
 import lombok.Data;
@@ -16,6 +17,7 @@ import java.util.List;
  * @author nexus
  */
 @Data
+@ExcelIgnoreUnannotated
 @AutoMapper(target = SoReturn.class)
 public class SoReturnVo implements Serializable {
 
