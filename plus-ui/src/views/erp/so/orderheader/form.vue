@@ -515,6 +515,12 @@
                     <span>{{ scope.row.deliveredQty ?? 0 }}</span>
                   </template>
                 </el-table-column>
+                <!-- 退货闭环（T3.3）：已退货量由退货单执行入库时回写，可退数量 = 已发货 − 已退货 -->
+                <el-table-column label="已退货数量" prop="returnedQty" width="110" align="right">
+                  <template #default="scope">
+                    <span>{{ scope.row.returnedQty ?? 0 }}</span>
+                  </template>
+                </el-table-column>
                 <el-table-column label="已投产数量" prop="productionQty" width="110" align="right">
                   <template #default="scope">
                     <span>{{ scope.row.productionQty ?? 0 }}</span>

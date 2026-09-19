@@ -931,6 +931,7 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
     private void resetServerOwnedLineFields(SoSalesOrderLine line) {
         line.setDeliveredQty(BigDecimal.ZERO);
         line.setInvoicedQty(BigDecimal.ZERO);
+        line.setReturnedQty(BigDecimal.ZERO);
         line.setFulfilledQty(BigDecimal.ZERO);
         line.setProductionQty(BigDecimal.ZERO);
         line.setPurchaseQty(BigDecimal.ZERO);

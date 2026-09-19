@@ -15,11 +15,13 @@ import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.erp.so.domain.SoReturn;
 import com.nexus.erp.so.domain.SoReturnLine;
+import com.nexus.erp.so.domain.SoSalesOrderLine;
 import com.nexus.erp.so.domain.bo.SoReturnBo;
 import com.nexus.erp.so.domain.vo.SoReturnLineVo;
 import com.nexus.erp.so.domain.vo.SoReturnVo;
 import com.nexus.erp.so.mapper.SoReturnLineMapper;
 import com.nexus.erp.so.mapper.SoReturnMapper;
+import com.nexus.erp.so.mapper.SoSalesOrderLineMapper;
 import com.nexus.erp.so.service.ISoReturnService;
 import com.nexus.erp.wm.domain.WmMaterialStock;
 import com.nexus.erp.wm.domain.WmMaterialStockTx;
@@ -34,6 +36,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -52,6 +55,8 @@ public class SoReturnServiceImpl implements ISoReturnService {
 
     private final SoReturnMapper baseMapper;
     private final SoReturnLineMapper lineMapper;
+    /** 退货闭环：执行入库时回写订单行已退货数量 */
+    private final SoSalesOrderLineMapper soSalesOrderLineMapper;
     private final WmMaterialStockMapper stockMapper;
     private final WmMaterialStockTxMapper stockTxMapper;
     private final AutoCodeUtil autoCodeUtil;
@@ -228,9 +233,51 @@ public class SoReturnServiceImpl implements ISoReturnService {
 
         for (SoReturnLine line : lines) {
             postReturnStock(soReturn, line, new Date());
+            // 退货闭环：把本次退货量累加回订单行（含超退守卫）
+            writebackReturnedQty(line);
         }
 
         log.info("退货单执行完成, returnId={}", returnId);
+    }
+
+    /**
+     * 回写订单行「已退货数量」——退货闭环的核心。
+     *
+     * <p><b>超退守卫</b>：条件更新要求 {@code COALESCE(returned_qty,0) + 本次 <= COALESCE(delivered_qty,0)}，
+     * 即只能退「已发货 − 已退货」以内的数量。影响 0 行即判定为超退，抛异常回滚整个 execute
+     * （状态抢占与库存入库一并回滚），不会留下"状态已 RECEIVED 但数量没回写"的半成品。</p>
+     *
+     * <p>修复前：退货与订单行**零数量关联** —— 既无 {@code returned_qty} 列也不做任何校验，
+     * 同一订单行可以无限次退货，每次都照常入库加库存。</p>
+     *
+     * <p>并发安全：条件更新由数据库保证原子性，同一订单行的两张退货单并发执行时，
+     * 后者会因超限而失败，不会双双通过校验。</p>
+     *
+     * @param line 退货明细行（未关联订单行时跳过 —— 无源退货不参与闭环）
+     */
+    private void writebackReturnedQty(SoReturnLine line) {
+        Long soLineId = line.getSoLineId();
+        BigDecimal qty = line.getReturnQuantity();
+        if (soLineId == null || qty == null || qty.signum() <= 0) {
+            return;
+        }
+        int rows = soSalesOrderLineMapper.update(null,
+            Wrappers.<SoSalesOrderLine>lambdaUpdate()
+                .setSql("returned_qty = COALESCE(returned_qty, 0) + " + qty.toPlainString())
+                .eq(SoSalesOrderLine::getLineId, soLineId)
+                .apply("COALESCE(returned_qty, 0) + {0} <= COALESCE(delivered_qty, 0)", qty));
+        if (rows == 0) {
+            SoSalesOrderLine soLine = soSalesOrderLineMapper.selectById(soLineId);
+            if (soLine == null) {
+                throw new ServiceException("退货明细关联的销售订单行不存在（lineId=" + soLineId + "）");
+            }
+            BigDecimal delivered = soLine.getDeliveredQty() == null ? BigDecimal.ZERO : soLine.getDeliveredQty();
+            BigDecimal returned = soLine.getReturnedQty() == null ? BigDecimal.ZERO : soLine.getReturnedQty();
+            throw new ServiceException("退货数量超过可退数量：订单行【" + soLine.getLineNo()
+                + "】已发货 " + delivered.toPlainString() + "、已退 " + returned.toPlainString()
+                + "，本次退 " + qty.toPlainString()
+                + "，可退 " + delivered.subtract(returned).toPlainString());
+        }
     }
 
     // ==================== Flowable 工作流集成 ====================

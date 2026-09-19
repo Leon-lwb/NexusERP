@@ -5644,6 +5644,7 @@ CREATE TABLE `so_sales_order_line`  (
   `ordered_qty` decimal(18, 4) NULL DEFAULT 0.0000 COMMENT '订单数量',
   `delivered_qty` decimal(18, 4) NULL DEFAULT 0.0000 COMMENT '已发货数量',
   `invoiced_qty` decimal(18, 4) NULL DEFAULT 0.0000 COMMENT '已开票数量',
+  `returned_qty` decimal(18, 4) NULL DEFAULT 0.0000 COMMENT '已退货数量（退货单执行入库时累加；超退守卫：returned_qty + 本次 <= delivered_qty）',
   `unit` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '单位',
   `unit_price` decimal(18, 6) NULL DEFAULT NULL COMMENT '单价',
   `line_amount` decimal(18, 2) NULL DEFAULT NULL COMMENT '行金额（不含税）= 数量 × 单价',

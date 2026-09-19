@@ -44,6 +44,8 @@ public class SoSalesOrderLine extends TenantEntity {
     private BigDecimal deliveredQty;
     /** 已开票数量(防重复开票) */
     private BigDecimal invoicedQty;
+    /** 已退货数量（退货单执行入库时累加；服务端权威，超退守卫：已退 + 本次 <= 已发货） */
+    private BigDecimal returnedQty;
     /** 单位 */
     private String unit;
     /** 单价 */

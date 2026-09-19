@@ -10,11 +10,13 @@ import com.nexus.common.flowable.core.domain.ActStatus;
 import com.nexus.common.flowable.helper.FlowableProcInsIdHelper;
 import com.nexus.erp.so.domain.SoReturn;
 import com.nexus.erp.so.domain.SoReturnLine;
+import com.nexus.erp.so.domain.SoSalesOrderLine;
 import com.nexus.erp.so.domain.bo.SoReturnBo;
 import com.nexus.erp.so.domain.vo.SoReturnLineVo;
 import com.nexus.erp.so.domain.vo.SoReturnVo;
 import com.nexus.erp.so.mapper.SoReturnLineMapper;
 import com.nexus.erp.so.mapper.SoReturnMapper;
+import com.nexus.erp.so.mapper.SoSalesOrderLineMapper;
 import com.nexus.erp.so.service.ISoReturnService;
 import com.nexus.erp.so.service.impl.SoReturnServiceImpl;
 import com.nexus.erp.wm.domain.WmMaterialStock;
@@ -81,6 +83,9 @@ class SoReturnServiceImplTest {
     private WfMyBusinessServiceImpl wfMyBusinessServiceImpl;
     @Mock
     private FlowableProcInsIdHelper procInsIdHelper;
+    /** 退货闭环（T3.3）：执行入库时回写订单行已退货数量 */
+    @Mock
+    private SoSalesOrderLineMapper soSalesOrderLineMapper;
 
     @InjectMocks
     private SoReturnServiceImpl returnService;
@@ -103,6 +108,9 @@ class SoReturnServiceImplTest {
         TableInfoHelper.initTableInfo(assistant, SoReturn.class);
         TableInfoHelper.initTableInfo(assistant, SoReturnLine.class);
         TableInfoHelper.initTableInfo(assistant, WmMaterialStock.class);
+        // 退货闭环（T3.3）：回写订单行时用到 SoSalesOrderLine 的 Lambda 列缓存，
+        // 未预热会抛 "can not find lambda cache for this entity"
+        TableInfoHelper.initTableInfo(assistant, SoSalesOrderLine.class);
     }
 
     @AfterAll
@@ -356,6 +364,75 @@ class SoReturnServiceImplTest {
         ArgumentCaptor<SoReturn> captor = ArgumentCaptor.forClass(SoReturn.class);
         verify(baseMapper).insert(captor.capture());
         assertEquals(ISoReturnService.STATUS_DRAFT, captor.getValue().getStatus());
+    }
+
+    // ==================== 退货闭环：回写订单行 + 超退守卫（T3.3）====================
+
+    /** 执行入库时把退货量累加回订单行（条件更新，带超退守卫） */
+    @Test
+    void execute_writesBackReturnedQtyToOrderLine() {
+        SoReturnLine line = returnLine("3");
+        line.setSoLineId(100L);
+        when(baseMapper.selectById(1L)).thenReturn(soReturn(1L, ISoReturnService.STATUS_CONFIRMED));
+        when(baseMapper.update(any(), any())).thenReturn(1);
+        when(lineMapper.selectList(any())).thenReturn(List.of(line));
+        when(stockMapper.selectOne(any())).thenReturn(null);
+        when(stockMapper.insert(any(WmMaterialStock.class))).thenReturn(1);
+        when(stockTxMapper.insert(any(WmMaterialStockTx.class))).thenReturn(1);
+        when(soSalesOrderLineMapper.update(any(), any())).thenReturn(1);
+
+        returnService.execute(1L);
+
+        ArgumentCaptor<Wrapper<SoSalesOrderLine>> captor = ArgumentCaptor.forClass(Wrapper.class);
+        verify(soSalesOrderLineMapper).update(any(), captor.capture());
+        String set = captor.getValue().getSqlSet();
+        String where = captor.getValue().getSqlSegment();
+        assertTrue(set.contains("returned_qty"), "应累加 returned_qty: " + set);
+        assertTrue(set.contains("+ 3"), "应累加本次退货量 3: " + set);
+        // 超退守卫必须在 WHERE 里（COALESCE 兜底历史 NULL 行）
+        assertTrue(where.contains("returned_qty") && where.contains("delivered_qty"),
+            "WHERE 应含超退守卫: " + where);
+    }
+
+    /** 超退（条件更新影响 0 行）-> 抛异常，整个 execute 回滚 */
+    @Test
+    void execute_rejectsOverReturn() {
+        SoReturnLine line = returnLine("999");
+        line.setSoLineId(100L);
+        when(baseMapper.selectById(1L)).thenReturn(soReturn(1L, ISoReturnService.STATUS_CONFIRMED));
+        when(baseMapper.update(any(), any())).thenReturn(1);
+        when(lineMapper.selectList(any())).thenReturn(List.of(line));
+        when(stockMapper.selectOne(any())).thenReturn(null);
+        when(stockMapper.insert(any(WmMaterialStock.class))).thenReturn(1);
+        when(stockTxMapper.insert(any(WmMaterialStockTx.class))).thenReturn(1);
+        when(soSalesOrderLineMapper.update(any(), any())).thenReturn(0); // 守卫未通过
+        SoSalesOrderLine soLine = new SoSalesOrderLine();
+        soLine.setLineId(100L);
+        soLine.setLineNo("0010");
+        soLine.setDeliveredQty(new BigDecimal("10"));
+        soLine.setReturnedQty(new BigDecimal("2"));
+        when(soSalesOrderLineMapper.selectById(100L)).thenReturn(soLine);
+
+        ServiceException ex = assertThrows(ServiceException.class, () -> returnService.execute(1L));
+        assertTrue(ex.getMessage().contains("超过可退数量"), "实际: " + ex.getMessage());
+        assertTrue(ex.getMessage().contains("可退 8"), "应给出可退数量: " + ex.getMessage());
+    }
+
+    /** 未关联订单行的退货（无源退货）不参与闭环，不写回 */
+    @Test
+    void execute_skipsWritebackWhenNoOrderLineLinked() {
+        SoReturnLine line = returnLine("3");
+        line.setSoLineId(null);
+        when(baseMapper.selectById(1L)).thenReturn(soReturn(1L, ISoReturnService.STATUS_CONFIRMED));
+        when(baseMapper.update(any(), any())).thenReturn(1);
+        when(lineMapper.selectList(any())).thenReturn(List.of(line));
+        when(stockMapper.selectOne(any())).thenReturn(null);
+        when(stockMapper.insert(any(WmMaterialStock.class))).thenReturn(1);
+        when(stockTxMapper.insert(any(WmMaterialStockTx.class))).thenReturn(1);
+
+        returnService.execute(1L);
+
+        verify(soSalesOrderLineMapper, never()).update(any(), any());
     }
 
     // ==================== 流程回调守卫（加固轮）====================

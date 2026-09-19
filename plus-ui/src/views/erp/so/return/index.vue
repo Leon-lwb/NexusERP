@@ -79,9 +79,29 @@
         </template>
       </el-table-column>
       <el-table-column label="备注" align="center" prop="remark" min-width="120" show-overflow-tooltip />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="290" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
+          <!-- 退货闭环（T3.3）：确认与入库两个动作后端早已实现，但前端此前没有接线，
+               界面上完全不可达 —— 退货单永远停在草稿，库存不会加回。 -->
+          <el-button
+            link
+            type="success"
+            icon="Select"
+            @click="handleConfirm(scope.row)"
+            v-if="scope.row.status === 'DRAFT'"
+            v-hasPermi="['so:return:edit']"
+            >确认</el-button
+          >
+          <el-button
+            link
+            type="warning"
+            icon="Download"
+            @click="handleExecute(scope.row)"
+            v-if="scope.row.status === 'CONFIRMED'"
+            v-hasPermi="['so:return:edit']"
+            >入库</el-button
+          >
           <el-button
             link
             type="primary"
@@ -127,7 +147,17 @@
 </template>
 
 <script setup lang="ts" name="Return">
-import { listReturn, getReturn, addReturn, updateReturn, delReturn, submitReturnFlow, getReturnProcId } from '@/api/erp/so/return';
+import {
+  listReturn,
+  getReturn,
+  addReturn,
+  updateReturn,
+  delReturn,
+  submitReturnFlow,
+  getReturnProcId,
+  confirmReturn,
+  executeReturn
+} from '@/api/erp/so/return';
 import { useRouter } from 'vue-router';
 import type { FormInstance } from 'element-plus';
 import { useCrud } from '@/composables/useCrud';
@@ -254,6 +284,33 @@ function handleSubmit(row: any) {
     .then(() => {
       getList();
       proxy.$modal.msgSuccess('提交审批成功');
+    })
+    .catch(() => {});
+}
+
+/** 确认退货单（DRAFT → CONFIRMED）：确认后才允许执行入库 */
+function handleConfirm(row: any) {
+  proxy.$modal
+    .confirm('确认退货单【' + row.returnNo + '】吗？确认后可执行退货入库。')
+    .then(() => confirmReturn(row.returnId))
+    .then(() => {
+      getList();
+      proxy.$modal.msgSuccess('确认成功');
+    })
+    .catch(() => {});
+}
+
+/**
+ * 执行退货入库（CONFIRMED → RECEIVED）：加库存 + 生成库存流水 + 回写订单行已退货数量。
+ * <p>超退会被后端拒绝（已退货 + 本次 > 已发货），因此明确提示"不可撤销"。</p>
+ */
+function handleExecute(row: any) {
+  proxy.$modal
+    .confirm('确认对退货单【' + row.returnNo + '】执行入库吗？将增加库存、回写订单行已退货数量，且不可撤销。')
+    .then(() => executeReturn(row.returnId))
+    .then(() => {
+      getList();
+      proxy.$modal.msgSuccess('入库成功');
     })
     .catch(() => {});
 }
