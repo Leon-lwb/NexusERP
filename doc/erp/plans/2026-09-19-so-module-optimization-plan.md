@@ -379,16 +379,17 @@ insertOrUpdateLines(entity.getSoId(), ...);          // 且强制 line.setLineId
 | 批次/任务 | 状态 | commit | 验证 |
 |---|---|---|---|
 | 批次 0 回归基线 | ✅ 完成 | `4dddf2e9` | 新增 43 用例；`Tests run: 68, Failures: 0` |
+| **批次 1：数据正确性（P0）** | ✅ 完成（T1.1~T1.8 全部完成；**T1.7 经实测为误判，无需修复**） | 见各任务行 | 末次 `Tests run: 261, Failures: 0`；前端 `eslint` + `build:prod` 通过 |
 | T1.1 改单差量更新 | ✅ 完成 | `336dd856` | 新增 11 用例；`Tests run: 79, Failures: 0`；前端 `eslint` + `build:prod` 通过 |
 | T1.2 删除止血 | ✅ 完成 | 见本批次 commit | 新增 3 用例；`Tests run: 33`（本类） |
 | T1.3 退货门禁 | ✅ 完成 | 见本批次 commit | 新增 5 用例；`Tests run: 87, Failures: 0` |
 | T1.4 开票收口 | ✅ 完成 | `8f5ab354` | 新增 8 用例 |
 | T1.5 红冲/核销 | ✅ 完成 | `8f5ab354` | 新增 3 用例 |
-| T1.6 报表修复 | ✅ 完成（SQL/租户/权限） | 见本批次 commit | 新增 6 用例；`Tests run: 106, Failures: 0`。菜单与前端属 T3.4，待 Q1 |
+| T1.6 报表修复 | ✅ 完成（SQL/租户/权限） | 见本批次 commit | 新增 6 用例；`Tests run: 106, Failures: 0`。菜单与前端已由 T3.4 完成（Q1 决策为保留并修完） |
 | T1.7 跨库事务（**已实测：可用，原判为误判**） | ✅ 完成（无需修复） | — | 见 §三 P0-5 的更正说明：被调用方是 `REQUIRES_NEW`，`@DS("master")` 实际生效；且 4 个 `submit()` 在工作流调用后无 erp 写入，跨库非原子性无暴露面 |
 | T1.8 金额服务端重算 | ✅ 完成 | 见本批次 commit | 新增 2 用例；`Tests run: 100, Failures: 0` |
-| 批次 2：契约与校验 | ✅ 完成（除 Q3 相关项） | 见本批次 commit | 新增 14 用例；`Tests run: 119, Failures: 0`；前端 `eslint` + `build:prod` 通过 |
-| 批次 3：功能补齐 | 🚧 进行中 | | |
+| 批次 2：契约与校验 | ✅ 完成 | 见本批次 commit | 新增 14 用例；`Tests run: 119, Failures: 0`；前端 `eslint` + `build:prod` 通过。**Q3 税率口径已于后续轮次补齐**（见批次 5 的 Q3 行） |
+| 批次 3：功能补齐 | ✅ 完成（T3.1a~T3.5 全部完成） | 见本批次 commit | 末次 `Tests run: 261, Failures: 0`；前端 `eslint` + `build:prod` 通过 |
 | └ T3.1a 价目表引擎修复（D2 公式 + NULL 边界 + selectList + 优先级） | ✅ 完成 | 见本批次 commit | 新增 4 用例；`Tests run: 123, Failures: 0` |
 | └ T3.1b `resolvePrice` 接口 + 前端取价接线 | ✅ 完成 | 见本批次 commit | 后端编译通过；前端 `eslint` + `build:prod` 通过 |
 | └ T3.1c 价目表前端（物料选择器/菜单/权限码/字典） | ✅ 完成 | 见本批次 commit | 新增 5 用例；`Tests run: 128, Failures: 0`；前端 `eslint` + `build:prod` 通过 |
@@ -397,8 +398,8 @@ insertOrUpdateLines(entity.getSoId(), ...);          // 且强制 line.setLineId
 | └ T3.4 报表菜单 + 前端（Q1 保留并修完） | ✅ 完成 | 见本批次 commit | 菜单 2237 + 角色授权 + 报表页 4 个前端缺陷修复；前端 `eslint` + `build:prod` 通过 |
 | └ T3.5 死事件/死 VO 清理 | ✅ 完成 | 见本批次 commit | 删 `SoLineProducedEvent`（全仓无监听者）+ `SoCreditUsageVo` 两个永不填充字段 |
 | └ §8.6 T1.1 验收规格落为可执行测试 | ✅ 完成 | 见本批次 commit | 新增 2 个 acceptance 用例（3 行改单保 ID / 改交期不动生产计划）；`Tests run: 261, Failures: 0` |
-| 批次 4：DDL 收敛 | ✅ 完成（§五 第 1~7 项） | 见本批次 commit | 主脚本 14 张 so_ 表括号平衡校验通过；存量库脚本 `2026-09-19-so-ddl-hardening.sql`；`Tests run: 128, Failures: 0`；前端 `eslint` + `build:prod` 通过 |
-| 批次 5：清理与一致性 | 🚧 进行中（仅剩 Q4 相关项） | | |
+| 批次 4：DDL 收敛 | ✅ 完成（§五 必做 9 项全部落实） | 见本批次 commit | 主脚本 14 张 so_ 表括号平衡校验通过；存量库脚本 `2026-09-19-so-ddl-hardening.sql`；第 8 项 `returned_qty`（T3.3）与第 9 项 D2 折扣率已随后续轮次完成；前端 `eslint` + `build:prod` 通过 |
+| 批次 5：清理与一致性 | ✅ 完成 | 见本批次 commit | 含 Q4 死字段清理（复核后实际删 5 个）、Q3 税率口径、异常口径统一等；末次 `Tests run: 261, Failures: 0` |
 | └ 客户订单幻影字段清理 | ✅ 完成 | 见本批次 commit | 前端 `eslint` + `build:prod` 通过 |
 | └ 列表页选中项残留修复 | ✅ 完成 | 见本批次 commit | 同上 |
 | └ 退货/发票工具栏状态门禁对齐行内 | ✅ 完成 | 见本批次 commit | 前端 `eslint` + `build:prod` 通过 |
