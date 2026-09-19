@@ -46,7 +46,9 @@ import org.springframework.context.ApplicationEventPublisher;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -58,6 +60,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -734,6 +737,69 @@ class SoSalesOrderHeaderServiceImplTest {
         verify(baseMapper).updateById(captor.capture());
         // 行金额 100.00，税额 10.00，价税合计 110.00，整单折扣 0 -> 含税总金额 110.00
         assertEquals(0, new BigDecimal("110.00").compareTo(captor.getValue().getTotalAmount()));
+    }
+
+    // ==================== 差量更新的真实场景（复审用）====================
+
+    /**
+     * 同一订单两行是**同一物料**时，改其中一行的数量不得影响另一行。
+     * <p>差量更新按 {@code lineId} 匹配（而非按物料），这是与「先删后插」最本质的区别；
+     * 若哪天有人把匹配改成按物料聚合，本用例会失败。</p>
+     */
+    @Test
+    void updateByBo_sameMaterialTwoLines_onlyTouchesTargetLine() {
+        when(baseMapper.selectById(1L)).thenReturn(header(1L, ISoSalesOrderHeaderService.STATUS_DRAFT));
+        when(soSalesOrderLineMapper.selectList(any())).thenReturn(List.of(
+            existingLine(100L, "100", "10", "0", "0", "0"),
+            existingLine(101L, "100", "5", "0", "0", "0"))); // 同物料 100
+        when(soSalesOrderLineMapper.updateById(any(SoSalesOrderLine.class))).thenReturn(1);
+        when(baseMapper.updateById(any(SoSalesOrderHeader.class))).thenReturn(1);
+
+        SoSalesOrderHeaderBo bo = updateBo();
+        bo.setSoSalesOrderLineList(List.of(
+            lineBo(100L, "100", "12"),   // 只改第一行数量 10 -> 12
+            lineBo(101L, "100", "5")));  // 第二行原样回传
+
+        headerService.updateByBo(bo);
+
+        // 两行都保留、各更新一次，且各自数量互不串改
+        ArgumentCaptor<SoSalesOrderLine> captor = ArgumentCaptor.forClass(SoSalesOrderLine.class);
+        verify(soSalesOrderLineMapper, times(2)).updateById(captor.capture());
+        Map<Long, BigDecimal> qtyById = new HashMap<>();
+        for (SoSalesOrderLine line : captor.getAllValues()) {
+            qtyById.put(line.getLineId(), line.getOrderedQty());
+        }
+        assertEquals(0, new BigDecimal("12").compareTo(qtyById.get(100L)));
+        assertEquals(0, new BigDecimal("5").compareTo(qtyById.get(101L)));
+        verify(soSalesOrderLineMapper, never()).deleteById(any(Serializable.class));
+        verify(soSalesOrderLineMapper, never()).insertBatch(anyList());
+    }
+
+    /**
+     * 只新增一行的场景：不应产生任何删除，已有行原样保留。
+     * <p>覆盖"改单只加一行"这一最常见操作，确认它不会误删或误改已有行。</p>
+     */
+    @Test
+    void updateByBo_onlyAppendsNewLine_noDeleteOrUpdate() {
+        when(baseMapper.selectById(1L)).thenReturn(header(1L, ISoSalesOrderHeaderService.STATUS_DRAFT));
+        when(soSalesOrderLineMapper.selectList(any()))
+            .thenReturn(List.of(existingLine(100L, "100", "10", "0", "0", "0")));
+        when(soSalesOrderLineMapper.insertBatch(anyList())).thenReturn(true);
+        when(baseMapper.updateById(any(SoSalesOrderHeader.class))).thenReturn(1);
+
+        SoSalesOrderHeaderBo bo = updateBo();
+        bo.setSoSalesOrderLineList(List.of(
+            lineBo(100L, "100", "10"),  // 已有行原样
+            lineBo(null, "200", "3"))); // 新增行
+
+        headerService.updateByBo(bo);
+
+        verify(soSalesOrderLineMapper, never()).deleteById(any(Serializable.class));
+        verify(soSalesOrderLineMapper).insertBatch(anyList());
+        // 已有行即使内容未变也会走一次白名单更新（幂等写入），但 lineId 必须保持
+        ArgumentCaptor<SoSalesOrderLine> captor = ArgumentCaptor.forClass(SoSalesOrderLine.class);
+        verify(soSalesOrderLineMapper).updateById(captor.capture());
+        assertEquals(100L, captor.getValue().getLineId());
     }
 
     // ==================== 服务端权威字段（加固轮）====================

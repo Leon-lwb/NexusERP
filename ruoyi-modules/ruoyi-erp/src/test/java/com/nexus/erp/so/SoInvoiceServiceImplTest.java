@@ -221,8 +221,9 @@ class SoInvoiceServiceImplTest {
         assertEquals(0, new BigDecimal("78.00").compareTo(onlyLine.getTaxAmount()));
         assertEquals(0, new BigDecimal("678.00").compareTo(onlyLine.getTotalAmount()));
 
-        // 原子累加已开票数量，且带「invoiced_qty + ? <= delivered_qty」门禁
-        verify(soSalesOrderLineMapper).update(any(), any());
+        // 占用的是「可开票量」(已发货 − 已开票 = 10 − 4 = 6)，既不是已发货 10 也不是已开票 4，
+        // 且带「invoiced_qty + ? <= delivered_qty」门禁
+        assertTrue(capturedLineUpdateSqlSet().contains("+ 6"), "应只占用可开票量 6");
     }
 
     /** 并发已开票（门禁 affected=0）-> 抛异常并回滚本次草稿 */
@@ -446,6 +447,9 @@ class SoInvoiceServiceImplTest {
         verify(lineMapper).insert(redLineCaptor.capture());
         assertEquals(0, new BigDecimal("-6").compareTo(redLineCaptor.getValue().getQuantity()));
         assertNotNull(redLineCaptor.getValue().getSoLineId());
+
+        // 红冲必须把订单行已开票量按原行数量冲减回去（-6），否则红冲后无法重新开票
+        assertTrue(capturedLineUpdateSqlSet().contains("+ -6"), "红冲应释放原行数量 6");
     }
 
     // ==================== 可开票量占用/释放收口（T1.4）====================
