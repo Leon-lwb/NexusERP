@@ -172,19 +172,39 @@
   - 金额精度不统一（`(18,2)`/`(18,4)`/`(14,4)` 混用）、`tenant_id` 允许 NULL
   - 合同行 `deliveredQty`/`invoicedQty`/`lineStatus` 三个履约字段全仓无读写（合同履约跟踪未实现）
   - `SoSalesOrderLineServiceImpl.updateOqcStatus` 按 `materialId` 更新（同订单同物料多行会被一起改写）
+- **履约链路的物料来源类型分支不完整**（`confirm()` 只处理 2 类，属功能缺口、需决策）：
+  `prd_material_source_type` 字典共 **6 种**来源类型（`PROCESS` 加工 / `PROCUREMENT` 采购 /
+  `SUBCONTRACT` 委外 / `PHANTOM` 虚拟件 / `CFM` 客户供料 / `TRANSFER` 调拨），而
+  `reserveStockForSalesOrder` 只排除 `PROCESS`、`createProductionPlansFromSalesOrder` 只处理 `PROCESS`。
+  于是 `SUBCONTRACT`/`TRANSFER` 的行**既不会生成生产计划、也大概率预留不到库存**，
+  且只有一条 `库存预留不足` 的 warn —— 没有明确的「该走委外/调拨单」履约链路。
+  这属于业务语义决策（是否接入委外/调拨），本次**未擅自改动**，仅记录待定。
+  附带观察：`reserved_qty` 是展示用的冗余字段，`fulfill()`/`cancel()` 只调 `unreserve()` 释放
+  库存预留记录、不回写行上的 `reserved_qty`，强制履行（部分出库）后该字段可能残留非 0 值。
 
 ---
 
 ## 7. 如何验证
 
 ```bash
-# 后端：编译 + so 模块全部单测（143 个）
+# 后端：整个 erp 模块的全部单测（241 个，含 bd/prd/pu/sch/wm/so）
+# 只跑 so 的用 -Dtest='So*Test,PricingEngineServiceImplTest'
 mvn -pl ruoyi-modules/ruoyi-erp -am test -DskipTests=false \
-    -Dtest='So*Test,PricingEngineServiceImplTest' -Dsurefire.failIfNoSpecifiedTests=false
+    -Dsurefire.failIfNoSpecifiedTests=false
 
 # 前端：lint（prettier 门禁）+ 生产构建
 cd plus-ui && npx eslint --fix && npm run build:prod
 ```
+
+**已验证的回归基线（2026-09-19 实测）**：整个 erp 模块 **241 个用例全绿**
+（so 160 + bd 5 + prd 16 + pu 17 + sch 18 + wm 25 等），说明本次改动**未波及其它模块**。
+
+**跨模块影响面核查**：本次改了 4 个 VO 的明细行类型（`SoQuotationVo`/`SoReturnVo`/`SoInvoiceVo`/
+`SoContractVo` 的 `soXxxLineList` 由实体列表改为 VO 列表）。已全仓检索确认：
+`getSoXxxLineList()` 的调用点**全部是 BO 的 getter**（`bo.getSoXxxLineList()`，BO 仍用实体列表、
+刻意未改）且全部位于 `so` 模块内 —— 即 **VO 类型改动没有跨模块影响**。
+（fin 模块的 `FinSettlementServiceImpl`/`PayReceivedConsumer` 只调用 `selectById`/`selectList`
+的表头字段，不读明细行列表。）
 
 **端到端必测（需真实环境 + 数据库）**：
 1. 建单 → 确认 → 出库回写 `delivered_qty` → 履行 → 自动生成发票草稿
