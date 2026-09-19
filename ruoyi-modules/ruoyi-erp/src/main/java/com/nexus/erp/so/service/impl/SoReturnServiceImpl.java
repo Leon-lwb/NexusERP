@@ -281,25 +281,44 @@ public class SoReturnServiceImpl implements ISoReturnService {
     }
 
     /**
-     * 流程审批后处理（更新退货单状态）
+     * 流程审批后处理（更新退货单状态）。
+     *
+     * <p><b>条件更新</b>：只在退货单仍处于「流程在途」状态（DRAFT/APPROVING/REJECTED）时才改写。
+     * 原实现是无条件 {@code updateById}，会把已确认（CONFIRMED）甚至已入库（RECEIVED）的退货单
+     * 改回 DRAFT —— 前者会让 T1.3 的「入库要求 CONFIRMED」门禁把已通过审批的单据卡死，
+     * 后者更严重：库存已经加回，单据却显示为草稿，账实不符。</p>
      */
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void afterFlowHandle(WfMyBusiness business) {
         Long returnId = Long.parseLong(business.getDataId());
         SoReturn entity = baseMapper.selectById(returnId);
-        if (entity == null) return;
-        String actStatus = business.getActStatus();
-        if (ActStatus.doing.equals(actStatus)) {
-            entity.setStatus(STATUS_APPROVING);
-        } else if (ActStatus.pass.equals(actStatus)) {
-            entity.setStatus(STATUS_CONFIRMED);
-        } else if (ActStatus.reject.equals(actStatus) || ActStatus.retrun.equals(actStatus)) {
-            entity.setStatus(STATUS_DRAFT);
-        } else if (ActStatus.revoke.equals(actStatus) || ActStatus.stop.equals(actStatus) || ActStatus.recall.equals(actStatus)) {
-            entity.setStatus(STATUS_DRAFT);
+        if (entity == null) {
+            return;
         }
-        baseMapper.updateById(entity);
+        String actStatus = business.getActStatus();
+        String newStatus;
+        if (ActStatus.doing.equals(actStatus)) {
+            newStatus = STATUS_APPROVING;
+        } else if (ActStatus.pass.equals(actStatus)) {
+            newStatus = STATUS_CONFIRMED;
+        } else if (ActStatus.reject.equals(actStatus) || ActStatus.retrun.equals(actStatus)) {
+            newStatus = STATUS_DRAFT;
+        } else if (ActStatus.revoke.equals(actStatus) || ActStatus.stop.equals(actStatus) || ActStatus.recall.equals(actStatus)) {
+            newStatus = STATUS_DRAFT;
+        } else {
+            return;
+        }
+        int updated = baseMapper.update(null,
+            Wrappers.<SoReturn>lambdaUpdate()
+                .set(SoReturn::getStatus, newStatus)
+                .eq(SoReturn::getReturnId, returnId)
+                // 退货无 REJECTED 状态（驳回即置 DRAFT），故在途集合只有 DRAFT/APPROVING
+                .in(SoReturn::getStatus, STATUS_DRAFT, STATUS_APPROVING));
+        if (updated == 0) {
+            log.warn("退货单[{}]当前状态[{}]不允许流程回调改写为[{}]，忽略本次变更",
+                returnId, entity.getStatus(), newStatus);
+        }
     }
 
     /**

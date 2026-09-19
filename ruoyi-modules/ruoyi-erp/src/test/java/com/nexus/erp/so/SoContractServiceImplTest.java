@@ -3,9 +3,11 @@ package com.nexus.erp.so;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.extra.spring.SpringUtil;
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
+import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.nexus.common.core.domain.R;
 import com.nexus.common.core.exception.ServiceException;
+import com.nexus.common.flowable.core.domain.ActStatus;
 import com.nexus.common.flowable.helper.FlowableProcInsIdHelper;
 import com.nexus.erp.so.domain.SoContract;
 import com.nexus.erp.so.domain.SoContractLine;
@@ -17,6 +19,7 @@ import com.nexus.erp.so.mapper.SoContractMapper;
 import com.nexus.erp.so.service.ISoContractService;
 import com.nexus.erp.so.service.impl.SoContractServiceImpl;
 import com.nexus.erp.so.service.impl.SoContractSignStatusFiller;
+import com.nexus.workflow.domain.WfMyBusiness;
 import com.nexus.workflow.service.IWfProcessService;
 import com.nexus.workflow.service.impl.WfMyBusinessServiceImpl;
 import io.github.linpeilie.Converter;
@@ -36,6 +39,7 @@ import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -339,5 +343,61 @@ class SoContractServiceImplTest {
         assertEquals(0, new BigDecimal("26.00").compareTo(lineVo.getTaxAmount()));
         assertNotNull(lineVo.getDeliveryDate());
         assertEquals(1, lineVo.getSortOrder());
+    }
+
+    // ==================== 流程回调守卫（加固轮）====================
+
+    /** 流程回调改为条件更新（不再无条件 updateById） */
+    @Test
+    void afterFlowHandle_usesConditionalUpdate() {
+        SoContract contract = new SoContract();
+        contract.setContractId(1L);
+        contract.setStatus(ISoContractService.STATUS_APPROVING);
+        when(baseMapper.selectById(1L)).thenReturn(contract);
+        when(baseMapper.update(any(), any())).thenReturn(1);
+
+        contractService.afterFlowHandle(flowBusiness(ActStatus.pass));
+
+        ArgumentCaptor<Wrapper<SoContract>> captor = ArgumentCaptor.forClass(Wrapper.class);
+        verify(baseMapper).update(any(), captor.capture());
+        verify(baseMapper, never()).updateById(any(SoContract.class));
+        assertTrue(captor.getValue().getSqlSegment().contains("status"), "应为带状态条件的更新");
+    }
+
+    /**
+     * 已生效（EFFECTIVE）的合同不会被流程撤销回调改回 DRAFT ——
+     * 否则已生效合同会重新变成可编辑/可删除状态。
+     */
+    @Test
+    void afterFlowHandle_doesNotRevertEffectiveContract() {
+        SoContract contract = new SoContract();
+        contract.setContractId(1L);
+        contract.setStatus(ISoContractService.STATUS_EFFECTIVE);
+        when(baseMapper.selectById(1L)).thenReturn(contract);
+        when(baseMapper.update(any(), any())).thenReturn(0);
+
+        assertDoesNotThrow(() -> contractService.afterFlowHandle(flowBusiness(ActStatus.revoke)));
+
+        verify(baseMapper, never()).updateById(any(SoContract.class));
+    }
+
+    /** 未知流程动作不产生任何更新 */
+    @Test
+    void afterFlowHandle_unknownAction_doesNothing() {
+        SoContract contract = new SoContract();
+        contract.setContractId(1L);
+        contract.setStatus(ISoContractService.STATUS_DRAFT);
+        when(baseMapper.selectById(1L)).thenReturn(contract);
+
+        contractService.afterFlowHandle(flowBusiness("未知动作"));
+
+        verify(baseMapper, never()).update(any(), any());
+    }
+
+    private WfMyBusiness flowBusiness(String actStatus) {
+        WfMyBusiness business = new WfMyBusiness();
+        business.setDataId("1");
+        business.setActStatus(actStatus);
+        return business;
     }
 }

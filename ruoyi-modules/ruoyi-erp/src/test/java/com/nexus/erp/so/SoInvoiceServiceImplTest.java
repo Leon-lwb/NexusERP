@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.nexus.common.core.exception.ServiceException;
+import com.nexus.common.flowable.core.domain.ActStatus;
 import com.nexus.common.flowable.helper.FlowableProcInsIdHelper;
 import com.nexus.erp.bd.service.IBdClientService;
 import com.nexus.erp.so.domain.bo.SoInvoiceBo;
@@ -17,12 +18,14 @@ import com.nexus.erp.so.domain.vo.SoInvoiceLineVo;
 import com.nexus.erp.so.domain.vo.SoInvoiceVo;
 import com.nexus.erp.so.domain.vo.SoSalesOrderHeaderVo;
 import com.nexus.erp.so.domain.vo.SoSalesOrderLineVo;
+import com.nexus.erp.so.event.SoInvoiceIssuedEvent;
 import com.nexus.erp.so.mapper.SoInvoiceLineMapper;
 import com.nexus.erp.so.mapper.SoInvoiceMapper;
 import com.nexus.erp.so.mapper.SoSalesOrderLineMapper;
 import com.nexus.erp.so.service.ISoInvoiceService;
 import com.nexus.erp.so.service.ISoSalesOrderHeaderService;
 import com.nexus.erp.so.service.impl.SoInvoiceServiceImpl;
+import com.nexus.workflow.domain.WfMyBusiness;
 import com.nexus.workflow.service.IWfProcessService;
 import com.nexus.workflow.service.impl.WfMyBusinessServiceImpl;
 import io.github.linpeilie.Converter;
@@ -44,6 +47,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -526,6 +530,69 @@ class SoInvoiceServiceImplTest {
         invoiceService.insertByBo(bo);
 
         verify(soSalesOrderLineMapper, never()).update(any(), any());
+    }
+
+    // ==================== 流程回调守卫（加固轮）====================
+
+    /**
+     * 审批通过且状态确实流转到 ISSUED 时才发布过账事件。
+     */
+    @Test
+    void afterFlowHandle_pass_publishesIssuedEventWhenTransitionHappens() {
+        when(baseMapper.selectById(1L)).thenReturn(invoice(1L, ISoInvoiceService.STATUS_APPROVING, "678.00", "0"));
+        when(baseMapper.update(any(), any())).thenReturn(1);
+
+        invoiceService.afterFlowHandle(flowBusiness(ActStatus.pass));
+
+        ArgumentCaptor<Wrapper<SoInvoice>> captor = ArgumentCaptor.forClass(Wrapper.class);
+        verify(baseMapper).update(any(), captor.capture());
+        verify(baseMapper, never()).updateById(any(SoInvoice.class));
+        assertTrue(captor.getValue().getSqlSegment().contains("status"), "应为带状态条件的更新");
+        verify(applicationEventPublisher).publishEvent(any(SoInvoiceIssuedEvent.class));
+    }
+
+    /**
+     * 发票已是 ISSUED 时再次收到 pass 回调：条件更新影响 0 行，
+     * **不得再发布过账事件** —— 否则总账会多出一张重复凭证。
+     * <p>这是本守卫最关键的断言：原实现只要 actStatus=pass 就无条件发事件。</p>
+     */
+    @Test
+    void afterFlowHandle_pass_onAlreadyIssued_doesNotPublishEventAgain() {
+        when(baseMapper.selectById(1L)).thenReturn(invoice(1L, ISoInvoiceService.STATUS_ISSUED, "678.00", "0"));
+        when(baseMapper.update(any(), any())).thenReturn(0);
+
+        assertDoesNotThrow(() -> invoiceService.afterFlowHandle(flowBusiness(ActStatus.pass)));
+
+        verify(applicationEventPublisher, never()).publishEvent(any(SoInvoiceIssuedEvent.class));
+    }
+
+    /** 已核销（VERIFIED）的发票不会被流程撤销回调改回 DRAFT */
+    @Test
+    void afterFlowHandle_doesNotRevertVerifiedInvoice() {
+        when(baseMapper.selectById(1L)).thenReturn(invoice(1L, ISoInvoiceService.STATUS_VERIFIED, "678.00", "678.00"));
+        when(baseMapper.update(any(), any())).thenReturn(0);
+
+        assertDoesNotThrow(() -> invoiceService.afterFlowHandle(flowBusiness(ActStatus.revoke)));
+
+        verify(baseMapper, never()).updateById(any(SoInvoice.class));
+        verify(applicationEventPublisher, never()).publishEvent(any(SoInvoiceIssuedEvent.class));
+    }
+
+    /** 未知流程动作不产生任何更新 */
+    @Test
+    void afterFlowHandle_unknownAction_doesNothing() {
+        when(baseMapper.selectById(1L)).thenReturn(invoice(1L, ISoInvoiceService.STATUS_DRAFT, "678.00", "0"));
+
+        invoiceService.afterFlowHandle(flowBusiness("未知动作"));
+
+        verify(baseMapper, never()).update(any(), any());
+    }
+
+    private WfMyBusiness flowBusiness(String actStatus) {
+        WfMyBusiness business = new WfMyBusiness();
+        business.setDataId("1");
+        business.setActStatus(actStatus);
+        return business;
     }
 
     // ==================== 表头金额服务端汇总（加固轮）====================

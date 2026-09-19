@@ -3,8 +3,10 @@ package com.nexus.erp.so;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.extra.spring.SpringUtil;
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
+import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.nexus.common.core.exception.ServiceException;
+import com.nexus.common.flowable.core.domain.ActStatus;
 import com.nexus.common.flowable.helper.FlowableProcInsIdHelper;
 import com.nexus.erp.so.domain.SoReturn;
 import com.nexus.erp.so.domain.SoReturnLine;
@@ -20,6 +22,7 @@ import com.nexus.erp.wm.domain.WmMaterialStockTx;
 import com.nexus.erp.wm.mapper.WmMaterialStockMapper;
 import com.nexus.erp.wm.mapper.WmMaterialStockTxMapper;
 import com.nexus.system.strategy.AutoCodeUtil;
+import com.nexus.workflow.domain.WfMyBusiness;
 import com.nexus.workflow.service.IWfProcessService;
 import com.nexus.workflow.service.impl.WfMyBusinessServiceImpl;
 import io.github.linpeilie.Converter;
@@ -38,6 +41,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.math.BigDecimal;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -352,6 +356,64 @@ class SoReturnServiceImplTest {
         ArgumentCaptor<SoReturn> captor = ArgumentCaptor.forClass(SoReturn.class);
         verify(baseMapper).insert(captor.capture());
         assertEquals(ISoReturnService.STATUS_DRAFT, captor.getValue().getStatus());
+    }
+
+    // ==================== 流程回调守卫（加固轮）====================
+
+    /** 流程回调改为条件更新（不再无条件 updateById，避免把已确认/已入库的退货单改回草稿） */
+    @Test
+    void afterFlowHandle_usesConditionalUpdate() {
+        when(baseMapper.selectById(1L)).thenReturn(soReturn(1L, ISoReturnService.STATUS_APPROVING));
+        when(baseMapper.update(any(), any())).thenReturn(1);
+
+        returnService.afterFlowHandle(flowBusiness(ActStatus.pass));
+
+        ArgumentCaptor<Wrapper<SoReturn>> captor = ArgumentCaptor.forClass(Wrapper.class);
+        verify(baseMapper).update(any(), captor.capture());
+        verify(baseMapper, never()).updateById(any(SoReturn.class));
+        assertTrue(captor.getValue().getSqlSegment().contains("status"), "应为带状态条件的更新");
+    }
+
+    /**
+     * 已入库（RECEIVED）的退货单不会被流程撤销回调改回 DRAFT。
+     * <p>原实现无条件更新：库存已加回、单据却显示为草稿，账实不符。</p>
+     */
+    @Test
+    void afterFlowHandle_doesNotRevertReceivedReturn() {
+        when(baseMapper.selectById(1L)).thenReturn(soReturn(1L, ISoReturnService.STATUS_RECEIVED));
+        when(baseMapper.update(any(), any())).thenReturn(0);
+
+        assertDoesNotThrow(() -> returnService.afterFlowHandle(flowBusiness(ActStatus.revoke)));
+
+        verify(baseMapper, never()).updateById(any(SoReturn.class));
+    }
+
+    /** 已确认（CONFIRMED）的退货单同样不会被改回草稿（否则 T1.3 的入库门禁会把它卡死） */
+    @Test
+    void afterFlowHandle_doesNotRevertConfirmedReturn() {
+        when(baseMapper.selectById(1L)).thenReturn(soReturn(1L, ISoReturnService.STATUS_CONFIRMED));
+        when(baseMapper.update(any(), any())).thenReturn(0);
+
+        assertDoesNotThrow(() -> returnService.afterFlowHandle(flowBusiness(ActStatus.recall)));
+
+        verify(baseMapper, never()).updateById(any(SoReturn.class));
+    }
+
+    /** 未知流程动作不产生任何更新 */
+    @Test
+    void afterFlowHandle_unknownAction_doesNothing() {
+        when(baseMapper.selectById(1L)).thenReturn(soReturn(1L, ISoReturnService.STATUS_DRAFT));
+
+        returnService.afterFlowHandle(flowBusiness("未知动作"));
+
+        verify(baseMapper, never()).update(any(), any());
+    }
+
+    private WfMyBusiness flowBusiness(String actStatus) {
+        WfMyBusiness business = new WfMyBusiness();
+        business.setDataId("1");
+        business.setActStatus(actStatus);
+        return business;
     }
 
     // ==================== 明细「未提交」语义（null vs 空集合）====================

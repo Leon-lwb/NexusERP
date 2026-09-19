@@ -247,16 +247,29 @@ public class SoContractServiceImpl implements ISoContractService {
             return;
         }
         String actStatus = business.getActStatus();
+        String newStatus;
         if (ActStatus.doing.equals(actStatus)) {
-            contract.setStatus(STATUS_APPROVING);
+            newStatus = STATUS_APPROVING;
         } else if (ActStatus.pass.equals(actStatus)) {
-            contract.setStatus(STATUS_EFFECTIVE);
+            newStatus = STATUS_EFFECTIVE;
         } else if (ActStatus.reject.equals(actStatus) || ActStatus.retrun.equals(actStatus)) {
-            contract.setStatus(STATUS_REJECTED);
+            newStatus = STATUS_REJECTED;
         } else if (ActStatus.revoke.equals(actStatus) || ActStatus.stop.equals(actStatus) || ActStatus.recall.equals(actStatus)) {
-            contract.setStatus(STATUS_DRAFT);
+            newStatus = STATUS_DRAFT;
+        } else {
+            return;
         }
-        baseMapper.updateById(contract);
+        // 条件更新：只在合同仍处于「流程在途」状态时才改写，不把已生效（EFFECTIVE）的合同改回 DRAFT
+        // （与销售订单/发票/退货的 afterFlowHandle 口径一致）
+        int updated = baseMapper.update(null,
+            Wrappers.<SoContract>lambdaUpdate()
+                .set(SoContract::getStatus, newStatus)
+                .eq(SoContract::getContractId, contractId)
+                .in(SoContract::getStatus, STATUS_DRAFT, STATUS_APPROVING, STATUS_REJECTED));
+        if (updated == 0) {
+            log.warn("销售合同[{}]当前状态[{}]不允许流程回调改写为[{}]，忽略本次变更",
+                contractId, contract.getStatus(), newStatus);
+        }
     }
 
     /**

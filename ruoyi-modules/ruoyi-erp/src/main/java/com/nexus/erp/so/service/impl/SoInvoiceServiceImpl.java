@@ -756,6 +756,17 @@ public class SoInvoiceServiceImpl implements ISoInvoiceService {
     /**
      * 审批流节点处理完成后的回调：根据审批动作更新发票状态。
      *
+     * <p><b>条件更新 + 事件与状态变更绑定</b>：只在发票仍处于「流程在途」状态
+     * （DRAFT/APPROVING/REJECTED）时才改写，且**仅当状态真的变为 ISSUED 时才发布
+     * {@link SoInvoiceIssuedEvent}**。原实现是无条件 {@code updateById} 且只要
+     * {@code actStatus=pass} 就发事件，存在重复过账风险：</p>
+     * <ul>
+     *   <li>发票已 ISSUED（已过账总账），随后流程被撤销/撤回 → 回调把状态改回 DRAFT，
+     *       界面显示未开具而总账凭证仍在；用户再次提交审批 → 再次 ISSUED →
+     *       <b>再次发布 SoInvoiceIssuedEvent，产生重复总账凭证</b>；</li>
+     *   <li>已核销（VERIFIED）或已作废（CANCELLED）的发票同样会被回调覆盖。</li>
+     * </ul>
+     *
      * @param business 工作流业务对象（含审批状态与数据ID）
      */
     @Override
@@ -767,17 +778,30 @@ public class SoInvoiceServiceImpl implements ISoInvoiceService {
             return;
         }
         String actStatus = business.getActStatus();
+        String newStatus;
         if (ActStatus.doing.equals(actStatus)) {
-            invoice.setStatus(STATUS_APPROVING);
+            newStatus = STATUS_APPROVING;
         } else if (ActStatus.pass.equals(actStatus)) {
-            invoice.setStatus(STATUS_ISSUED);
+            newStatus = STATUS_ISSUED;
         } else if (ActStatus.reject.equals(actStatus) || ActStatus.retrun.equals(actStatus)) {
-            invoice.setStatus(STATUS_REJECTED);
+            newStatus = STATUS_REJECTED;
         } else if (ActStatus.revoke.equals(actStatus) || ActStatus.stop.equals(actStatus) || ActStatus.recall.equals(actStatus)) {
-            invoice.setStatus(STATUS_DRAFT);
+            newStatus = STATUS_DRAFT;
+        } else {
+            return;
         }
-        baseMapper.updateById(invoice);
-        if (ActStatus.pass.equals(actStatus)) {
+        int updated = baseMapper.update(null,
+            Wrappers.<SoInvoice>lambdaUpdate()
+                .set(SoInvoice::getStatus, newStatus)
+                .eq(SoInvoice::getInvoiceId, invoiceId)
+                .in(SoInvoice::getStatus, STATUS_DRAFT, STATUS_APPROVING, STATUS_REJECTED));
+        if (updated == 0) {
+            log.warn("发票[{}]当前状态[{}]不允许流程回调改写为[{}]，忽略本次变更（不发布过账事件）",
+                invoiceId, invoice.getStatus(), newStatus);
+            return;
+        }
+        // 只有本次真的流转到 ISSUED 才过账，避免重复回调导致重复凭证
+        if (STATUS_ISSUED.equals(newStatus)) {
             applicationEventPublisher.publishEvent(
                 new SoInvoiceIssuedEvent(this, invoiceId, TenantHelper.getTenantId()));
         }

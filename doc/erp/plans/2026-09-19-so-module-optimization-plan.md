@@ -270,6 +270,11 @@ insertOrUpdateLines(entity.getSoId(), ...);          // 且强制 line.setLineId
 
 ### 7.1 已决策（2026-09-19）
 
+> **编号约定**：本节用 `D*` 编号已决策项；`Q*` 编号待决策项（见 §7.2）。
+> 用户在推进过程中可能用 `Q*` 指代已决策项 —— 例如**本节的 D4（改单状态门禁仅 DRAFT）
+> 即用户所述的 Q6**；`D2`（折扣率语义）、`D3`（差量更新）与用户清单中的同名编号一致。
+> 源码注释统一引用 `D*` 编号。
+
 #### D1 价目表 → **修**（不删）
 按 T3.1 全量接线：引擎公式修正 + `maxQty` NULL 兜底 + `selectOne`→有序 `selectList` + 前端物料选择器（`MaterialSelectDialog`）+ 补菜单/`so:priceList:*` 权限码/`so_price_list_status` 字典 + `resolvePrice` 接入订单行取价。
 
@@ -391,6 +396,7 @@ insertOrUpdateLines(entity.getSoId(), ...);          // 且强制 line.setLineId
 | └ 高风险改动补真实场景用例 + 强化断言强度 | ✅ 完成 | 见本批次 commit | 新增 2 用例 + 强化 2 处断言 |
 | └ 发票表头金额服务端汇总（修 `totalAmount` 伪造绕过核销上限） | ✅ 完成 | 见本批次 commit | 新增 3 用例；`Tests run: 148, Failures: 0` |
 | └ 流程回调状态改写守卫（防"复活"已取消/已确认订单） | ✅ 完成 | 见本批次 commit | 新增 5 用例；`Tests run: 153, Failures: 0` |
+| └ 同类守卫补全到发票/退货/合同（含防重复过账） | ✅ 完成 | 见本批次 commit | 新增 11 用例；so 171 / 全模块 252 全绿 |
 | └ 客户订单引用守卫（被销售订单引用时禁止删除）+ 新建测试类 | ✅ 完成 | 见本批次 commit | 新增 7 用例（测试类 9→10）；`Tests run: 160, Failures: 0` |
 | └ 13 个死字段清理（待 Q4） | ⬜ 待办 | | |
 

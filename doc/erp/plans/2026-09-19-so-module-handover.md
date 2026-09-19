@@ -15,7 +15,7 @@
 | **计划执行**（批次 0~5） | 测试基线 → P0 数据正确性 → 契约与校验 → 功能补齐 → DDL 收敛 → 清理 | 批次 0/2/4 完成；1 除 T1.7 完成；3 除 T3.3/T3.4 完成；5 除死字段清理完成 |
 | **加固**（3 轮） | 在已改动范围内做同类模式排查 | 又发现并修复 3 类系统性缺陷（见 §3.2） |
 
-**测试基线**：so 模块从 **25 个用例（3 个测试类）** 增长到 **160 个用例（10 个测试类）**，全绿。
+**测试基线**：so 模块从 **25 个用例（3 个测试类）** 增长到 **171 个用例（10 个测试类）**，全绿。
 
 **最高价值的三个修复**（按业务影响排序）：
 1. **改单不再重建行 ID**（T1.1）—— 原实现每次改单都把 `so_sales_order_line.line_id` 全部换新，
@@ -60,8 +60,9 @@
 | `eeb9d10d` | 加固：客户订单引用守卫 + 新建 SoCustomerOrderServiceImplTest | **160/160** |
 | `fd973b78` | 交接报告同步（流程回调守卫 / 测试基线） | — |
 | `79de49f2` | 记录全模块回归基线（241 用例）与跨模块影响面核查结论 | 全模块 241/241 |
+| 见本文件所在批次的 commit | 加固：同类流程回调守卫补全到发票/退货/合同（含防重复过账） | **so 171 / 全模块 252** |
 
-> **测试基线的可复用性**：`SoSalesOrderHeaderServiceImplTest`（49 个）与 `SoInvoiceServiceImplTest`（32 个）
+> **测试基线的可复用性**：`SoSalesOrderHeaderServiceImplTest`（49 个）与 `SoInvoiceServiceImplTest`（36 个）
 > 覆盖了两个最高风险改动（改单差量更新、开票量占用/释放）。其中关键断言是**增量数值级**的，
 > 例如断言占用的是「可开票量 6」而非「已发货 10」、红冲释放的是「-6」而非仅校验红票行数量。
 > 修改这两处逻辑后，这两个测试类是最先应该跑、也最可能拦住回归的。
@@ -113,6 +114,20 @@
   → 回调把 `CONFIRMED` 改回 `DRAFT`，用户可再次确认 → **重复冻结额度、重复预留库存、重复生成生产计划**。
 
 已改为条件更新（仅 DRAFT/APPROVING/APPROVED/REJECTED 可被回调改写），影响 0 行时记 warn 静默返回。
+
+**(3b) 同一缺陷存在于全部 4 个服务的 `afterFlowHandle`，且发票侧的后果最严重**
+`SoContractServiceImpl` / `SoInvoiceServiceImpl` / `SoReturnServiceImpl` 的 `afterFlowHandle`
+同样是无条件 `updateById`（我只先修了销售订单，本轮补齐）。其中**发票侧会导致重复过账**：
+
+> 发票已 ISSUED（已过账总账）→ 流程被撤销/撤回 → 回调把状态改回 DRAFT（界面显示未开具而凭证仍在）
+> → 用户再次提交审批 → 再次 ISSUED → **再次发布 `SoInvoiceIssuedEvent`，总账多出一张重复凭证**。
+
+因为原实现是「只要 `actStatus=pass` 就无条件发事件」，与状态是否真的流转到 ISSUED 无关。
+修复要点：① 改为条件更新（在途状态集合：发票/合同为 DRAFT/APPROVING/REJECTED，
+退货为 DRAFT/APPROVING —— 退货无 REJECTED 状态，驳回即置 DRAFT）；
+② **事件发布与状态变更绑定**，仅当本次真的流转到 ISSUED 才过账。
+其余后果：退货单会把已确认（CONFIRMED）甚至已入库（RECEIVED）的单据改回 DRAFT（库存已加回却显示草稿），
+合同会把已生效（EFFECTIVE）改回 DRAFT（重新可编辑/可删除）。
 
 **(4) 客户订单被引用时仍可删除，留下悬空引用**
 `so_sales_order_header.co_id` 指向客户订单（库内**无外键约束**），而 `SoCustomerOrderServiceImpl.deleteByIds`
@@ -203,8 +218,8 @@ mvn -pl ruoyi-modules/ruoyi-erp -am test -DskipTests=false \
 cd plus-ui && npx eslint --fix && npm run build:prod
 ```
 
-**已验证的回归基线（2026-09-19 实测）**：整个 erp 模块 **241 个用例全绿**
-（so 160 + bd 5 + prd 16 + pu 17 + sch 18 + wm 25 等），说明本次改动**未波及其它模块**。
+**已验证的回归基线（2026-09-19 实测）**：整个 erp 模块 **252 个用例全绿**
+（so 171 + bd 5 + prd 16 + pu 17 + sch 18 + wm 25 等），说明本次改动**未波及其它模块**。
 
 **跨模块影响面核查**：本次改了 4 个 VO 的明细行类型（`SoQuotationVo`/`SoReturnVo`/`SoInvoiceVo`/
 `SoContractVo` 的 `soXxxLineList` 由实体列表改为 VO 列表）。已全仓检索确认：
