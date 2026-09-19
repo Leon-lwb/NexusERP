@@ -83,8 +83,8 @@ class PricingEngineServiceImplTest {
         line.setMaxQty(new BigDecimal("9999"));
         line.setDiscountRate(null);
 
-        when(soPriceListLineMapper.selectOne(any(LambdaQueryWrapper.class)))
-            .thenReturn(line);
+        when(soPriceListLineMapper.selectList(any(LambdaQueryWrapper.class)))
+            .thenReturn(List.of(line));
 
         BigDecimal result = pricingEngineService.resolvePrice(clientId, materialId, qty, orderDate);
 
@@ -116,8 +116,8 @@ class PricingEngineServiceImplTest {
         line.setMaxQty(new BigDecimal("9999"));
         line.setDiscountRate(null);
 
-        when(soPriceListLineMapper.selectOne(any(LambdaQueryWrapper.class)))
-            .thenReturn(line);
+        when(soPriceListLineMapper.selectList(any(LambdaQueryWrapper.class)))
+            .thenReturn(List.of(line));
 
         BigDecimal result = pricingEngineService.resolvePrice(clientId, materialId, qty, orderDate);
 
@@ -152,8 +152,8 @@ class PricingEngineServiceImplTest {
         line.setMaxQty(new BigDecimal("9999"));
         line.setDiscountRate(null);
 
-        when(soPriceListLineMapper.selectOne(any(LambdaQueryWrapper.class)))
-            .thenReturn(line);
+        when(soPriceListLineMapper.selectList(any(LambdaQueryWrapper.class)))
+            .thenReturn(List.of(line));
 
         BigDecimal result = pricingEngineService.resolvePrice(nullClientId, materialId, qty, orderDate);
 
@@ -185,8 +185,8 @@ class PricingEngineServiceImplTest {
         line.setMaxQty(new BigDecimal("20"));
         line.setDiscountRate(null);
 
-        when(soPriceListLineMapper.selectOne(any(LambdaQueryWrapper.class)))
-            .thenReturn(line);
+        when(soPriceListLineMapper.selectList(any(LambdaQueryWrapper.class)))
+            .thenReturn(List.of(line));
 
         BigDecimal result = pricingEngineService.resolvePrice(clientId, materialId, qty, orderDate);
 
@@ -209,22 +209,156 @@ class PricingEngineServiceImplTest {
             .thenReturn(Collections.emptyList())   // 促销价
             .thenReturn(List.of(basePriceList));    // 标准基价
 
-        // 单价100，折扣率90（即90%），结果 = 100 * 90 / 100 = 90
+        // 决策 D2：折扣率是「折扣百分比」—— 让利 10%，成交价 = 100 × (1 − 10/100) = 90
         SoPriceListLine line = new SoPriceListLine();
         line.setPriceListId(1L);
         line.setMaterialId(materialId);
         line.setUnitPrice(new BigDecimal("100.00"));
         line.setMinQty(BigDecimal.ONE);
         line.setMaxQty(new BigDecimal("9999"));
-        line.setDiscountRate(new BigDecimal("90"));
+        line.setDiscountRate(new BigDecimal("10"));
 
-        when(soPriceListLineMapper.selectOne(any(LambdaQueryWrapper.class)))
-            .thenReturn(line);
+        when(soPriceListLineMapper.selectList(any(LambdaQueryWrapper.class)))
+            .thenReturn(List.of(line));
 
         BigDecimal result = pricingEngineService.resolvePrice(clientId, materialId, qty, orderDate);
 
         assertNotNull(result);
         assertEquals(0, new BigDecimal("90.0000").compareTo(result));
+    }
+
+    /**
+     * 折扣率 0 或为空表示不让利，成交价 = 原价。
+     * <p>这是与 DDL 默认值配套的语义：折扣率默认必须是 0（不让利），
+     * 原 DDL 默认 100 在新语义下等于「免费」。</p>
+     */
+    @Test
+    void testResolvePrice_ZeroDiscountKeepsUnitPrice() {
+        SoPriceList basePriceList = new SoPriceList();
+        basePriceList.setPriceListId(1L);
+        basePriceList.setListType("BASE");
+        basePriceList.setStatus("ACTIVE");
+
+        when(soPriceListMapper.selectList(any(LambdaQueryWrapper.class)))
+            .thenReturn(Collections.emptyList())
+            .thenReturn(Collections.emptyList())
+            .thenReturn(List.of(basePriceList));
+
+        SoPriceListLine zero = new SoPriceListLine();
+        zero.setPriceListId(1L);
+        zero.setMaterialId(materialId);
+        zero.setUnitPrice(new BigDecimal("100.00"));
+        zero.setDiscountRate(BigDecimal.ZERO);
+        when(soPriceListLineMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of(zero));
+
+        assertEquals(0, new BigDecimal("100.0000")
+            .compareTo(pricingEngineService.resolvePrice(clientId, materialId, qty, orderDate)));
+
+        // 折扣率为空同样视为不让利
+        SoPriceListLine nullRate = new SoPriceListLine();
+        nullRate.setPriceListId(1L);
+        nullRate.setMaterialId(materialId);
+        nullRate.setUnitPrice(new BigDecimal("100.00"));
+        nullRate.setDiscountRate(null);
+        when(soPriceListLineMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of(nullRate));
+
+        assertEquals(0, new BigDecimal("100.0000")
+            .compareTo(pricingEngineService.resolvePrice(clientId, materialId, qty, orderDate)));
+    }
+
+    /** 折扣率越界按边界裁剪，不产生负价 */
+    @Test
+    void testResolvePrice_OutOfRangeDiscountClamped() {
+        SoPriceList basePriceList = new SoPriceList();
+        basePriceList.setPriceListId(1L);
+        basePriceList.setListType("BASE");
+        basePriceList.setStatus("ACTIVE");
+
+        when(soPriceListMapper.selectList(any(LambdaQueryWrapper.class)))
+            .thenReturn(Collections.emptyList())
+            .thenReturn(Collections.emptyList())
+            .thenReturn(List.of(basePriceList));
+
+        SoPriceListLine line = new SoPriceListLine();
+        line.setPriceListId(1L);
+        line.setMaterialId(materialId);
+        line.setUnitPrice(new BigDecimal("100.00"));
+        line.setDiscountRate(new BigDecimal("150")); // 越界
+        when(soPriceListLineMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of(line));
+
+        BigDecimal result = pricingEngineService.resolvePrice(clientId, materialId, qty, orderDate);
+
+        // 裁剪到 100% 让利 -> 0，而不是负数
+        assertEquals(0, BigDecimal.ZERO.compareTo(result));
+    }
+
+    /**
+     * maxQty 为 NULL（DDL 默认值）表示「无上限」，应能命中。
+     * <p>原实现用 {@code ge(max_qty, qty)}，NULL 参与比较恒为 NULL，导致未填上限的行永不命中。</p>
+     */
+    @Test
+    void testResolvePrice_NullMaxQtyMatches() {
+        SoPriceList basePriceList = new SoPriceList();
+        basePriceList.setPriceListId(1L);
+        basePriceList.setListType("BASE");
+        basePriceList.setStatus("ACTIVE");
+
+        when(soPriceListMapper.selectList(any(LambdaQueryWrapper.class)))
+            .thenReturn(Collections.emptyList())
+            .thenReturn(Collections.emptyList())
+            .thenReturn(List.of(basePriceList));
+
+        SoPriceListLine line = new SoPriceListLine();
+        line.setPriceListId(1L);
+        line.setMaterialId(materialId);
+        line.setUnitPrice(new BigDecimal("100.00"));
+        line.setMinQty(BigDecimal.ONE);
+        line.setMaxQty(null);
+        line.setDiscountRate(BigDecimal.ZERO);
+        when(soPriceListLineMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of(line));
+
+        assertEquals(0, new BigDecimal("100.0000")
+            .compareTo(pricingEngineService.resolvePrice(clientId, materialId, qty, orderDate)));
+    }
+
+    /**
+     * 同一物料同一价格表多行命中时取数量区间最窄的一条，而不是抛 TooManyResultsException。
+     * <p>原实现用 {@code selectOne}，无唯一约束下多行命中直接抛异常。</p>
+     */
+    @Test
+    void testResolvePrice_MultipleCandidatesPicksNarrowestRange() {
+        SoPriceList basePriceList = new SoPriceList();
+        basePriceList.setPriceListId(1L);
+        basePriceList.setListType("BASE");
+        basePriceList.setStatus("ACTIVE");
+
+        when(soPriceListMapper.selectList(any(LambdaQueryWrapper.class)))
+            .thenReturn(Collections.emptyList())
+            .thenReturn(Collections.emptyList())
+            .thenReturn(List.of(basePriceList));
+
+        // 引擎按 minQty 倒序取首条：minQty 100 的区间比 minQty 1 更窄
+        SoPriceListLine narrow = new SoPriceListLine();
+        narrow.setPriceListId(1L);
+        narrow.setMaterialId(materialId);
+        narrow.setUnitPrice(new BigDecimal("80.00"));
+        narrow.setMinQty(new BigDecimal("100"));
+        narrow.setDiscountRate(BigDecimal.ZERO);
+
+        SoPriceListLine wide = new SoPriceListLine();
+        wide.setPriceListId(1L);
+        wide.setMaterialId(materialId);
+        wide.setUnitPrice(new BigDecimal("100.00"));
+        wide.setMinQty(BigDecimal.ONE);
+        wide.setDiscountRate(BigDecimal.ZERO);
+
+        when(soPriceListLineMapper.selectList(any(LambdaQueryWrapper.class)))
+            .thenReturn(List.of(narrow, wide));
+
+        BigDecimal result = pricingEngineService.resolvePrice(clientId, materialId, qty, orderDate);
+
+        assertNotNull(result);
+        assertEquals(0, new BigDecimal("80.0000").compareTo(result));
     }
 
     /**
@@ -285,8 +419,8 @@ class PricingEngineServiceImplTest {
         customerLine.setMaxQty(new BigDecimal("9999"));
         customerLine.setDiscountRate(null);
 
-        when(soPriceListLineMapper.selectOne(any(LambdaQueryWrapper.class)))
-            .thenReturn(customerLine);
+        when(soPriceListLineMapper.selectList(any(LambdaQueryWrapper.class)))
+            .thenReturn(List.of(customerLine));
 
         BigDecimal result = pricingEngineService.resolvePrice(clientId, materialId, qty, orderDate);
 
@@ -330,8 +464,8 @@ class PricingEngineServiceImplTest {
         baseLine.setMaxQty(new BigDecimal("9999"));
         baseLine.setDiscountRate(null);
 
-        when(soPriceListLineMapper.selectOne(any(LambdaQueryWrapper.class)))
-            .thenReturn(baseLine);
+        when(soPriceListLineMapper.selectList(any(LambdaQueryWrapper.class)))
+            .thenReturn(List.of(baseLine));
 
         BigDecimal result = pricingEngineService.resolvePrice(nullClientId, materialId, qty, orderDate);
 

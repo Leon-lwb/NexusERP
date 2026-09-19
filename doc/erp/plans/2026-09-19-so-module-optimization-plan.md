@@ -357,7 +357,15 @@ insertOrUpdateLines(entity.getSoId(), ...);          // 且强制 line.setLineId
 | T1.7 跨库事务（待 Q5 实测） | ⬜ 待办 | | |
 | T1.8 金额服务端重算 | ✅ 完成 | 见本批次 commit | 新增 2 用例；`Tests run: 100, Failures: 0` |
 | 批次 2：契约与校验 | ✅ 完成（除 Q3 相关项） | 见本批次 commit | 新增 14 用例；`Tests run: 119, Failures: 0`；前端 `eslint` + `build:prod` 通过 |
-| 批次 3 ~ 批次 5 | ⬜ 待办 | | |
+| 批次 3：功能补齐 | 🚧 进行中 | | |
+| └ T3.1a 价目表引擎修复（D2 公式 + NULL 边界 + selectList + 优先级） | ✅ 完成 | 见本批次 commit | 新增 4 用例；`Tests run: 123, Failures: 0` |
+| └ T3.1b `resolvePrice` 接口 + 前端取价接线 | ⬜ 待办 | | |
+| └ T3.1c 价目表前端（物料选择器/菜单/权限码/字典） | ⬜ 待办 | | |
+| └ T3.2 报价转单前端接线 | ⬜ 待办 | | |
+| └ T3.3 退货闭环 + 退货 UI 接线（待 Q2） | ⬜ 待办 | | |
+| └ T3.4 报表菜单 + 前端（待 Q1） | ⬜ 待办 | | |
+| 批次 4：DDL 收敛 | ⬜ 待办 | | |
+| 批次 5：清理与一致性 | ⬜ 待办 | | |
 
 **T1.1 实施要点**（`SoSalesOrderHeaderServiceImpl`）：- `updateByBo` 仅允许 `DRAFT`；单号与状态强制还原为库中值，客户端改写无效
 - `diffUpdateLines`：按 `lineId` 区分「更新 / 新增 / 删除」，保留已有行 `line_id`
