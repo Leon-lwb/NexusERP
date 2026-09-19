@@ -617,7 +617,7 @@
 </template>
 
 <script setup lang="ts" name="OrderForm">
-import { getOrderheader, addOrderheader, updateOrderheader, submitOrderFlow, getOrderProcId } from '@/api/erp/so/orderheader';
+import { getOrderheader, addOrderheader, updateOrderheader, submitOrderFlow, getOrderProcId, resolveOrderPrice } from '@/api/erp/so/orderheader';
 import { listMeasureAll } from '@/api/erp/bd/measure';
 import { listWarehouse } from '@/api/erp/wm/warehouse';
 import { getClient } from '@/api/erp/bd/client';
@@ -1279,7 +1279,7 @@ function openMaterialSelect(row: any) {
   materialSelectDialogRef.value?.open();
 }
 
-function handleMaterialSelected(material: any) {
+async function handleMaterialSelected(material: any) {
   const line = currentMaterialRow.value;
   currentMaterialRow.value = null;
   if (!line) return;
@@ -1287,9 +1287,25 @@ function handleMaterialSelected(material: any) {
   line.materialCode = material.materialCode;
   line.materialName = material.materialName;
   line.materialSpec = material.materialSpec;
-  // 单价仅在用户未填写时用物料参考价预填，避免覆盖手工议价
+  // 单价仅在用户未填写时预填，避免覆盖手工议价
   if (!(num(line.unitPrice) > 0)) {
+    // 先落物料参考价兜底，再尝试走价目表取价（客户专属价 > 促销价 > 标准基价 > 参考价）
     line.unitPrice = num(material.referencePrice);
+    if (form.value.clientId) {
+      try {
+        const res: any = await resolveOrderPrice({
+          clientId: form.value.clientId,
+          materialId: material.materialId,
+          qty: num(line.orderedQty) > 0 ? num(line.orderedQty) : undefined,
+          orderDate: form.value.orderDate || undefined
+        });
+        if (res?.data != null) {
+          line.unitPrice = num(res.data);
+        }
+      } catch {
+        // 取价失败静默回退到物料参考价，不阻断选料
+      }
+    }
   }
   // 单位仅在未选择时用物料基本单位预填
   if (!line.unit) {

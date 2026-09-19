@@ -4,6 +4,7 @@ import cn.dev33.satoken.annotation.SaCheckPermission;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import com.nexus.common.core.domain.R;
+import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.excel.utils.ExcelUtil;
 import com.nexus.common.log.annotation.Log;
 import com.nexus.common.log.enums.BusinessType;
@@ -13,11 +14,14 @@ import com.nexus.common.web.core.BaseController;
 import com.nexus.erp.so.domain.bo.SoSalesOrderHeaderBo;
 import com.nexus.erp.so.domain.vo.SoSalesOrderHeaderVo;
 import com.nexus.erp.so.domain.vo.SoSalesOrderLineVo;
+import com.nexus.erp.so.service.IPricingEngineService;
 import com.nexus.erp.so.service.ISoSalesOrderHeaderService;
 import com.nexus.erp.so.service.ISoSalesOrderLineService;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 
 /**
@@ -42,6 +46,7 @@ public class SoSalesOrderHeaderController extends BaseController {
 
     private final ISoSalesOrderHeaderService soSalesOrderHeaderService;
     private final ISoSalesOrderLineService soSalesOrderLineService;
+    private final IPricingEngineService pricingEngineService;
 
     /**
      * 分页查询销售订单列表
@@ -252,6 +257,27 @@ public class SoSalesOrderHeaderController extends BaseController {
     public R<Void> cancel(@PathVariable Long soId, String reason) {
         soSalesOrderHeaderService.cancel(soId, reason);
         return R.ok();
+    }
+
+    /**
+     * 解析销售单价（客户专属价 &gt; 期间促销价 &gt; 标准基价 &gt; 物料参考价）。
+     * <p>供订单录入时按客户与数量自动带出单价，销售代表仍可在表单中覆盖。</p>
+     * <p>权限标识：{@code so:orderheader:list}</p>
+     *
+     * @param clientId   客户ID
+     * @param materialId 物料ID
+     * @param qty        数量（可空，为空时不参与数量区间匹配）
+     * @param orderDate  订单日期 yyyy-MM-dd（可空，默认取当天）
+     * @return 解析出的单价
+     */
+    @SaCheckPermission("so:orderheader:list")
+    @GetMapping("/resolvePrice")
+    public R<BigDecimal> resolvePrice(@RequestParam Long clientId,
+                                      @RequestParam Long materialId,
+                                      @RequestParam(required = false) BigDecimal qty,
+                                      @RequestParam(required = false) String orderDate) {
+        LocalDate date = StringUtils.isNotBlank(orderDate) ? LocalDate.parse(orderDate) : LocalDate.now();
+        return R.ok(pricingEngineService.resolvePrice(clientId, materialId, qty, date));
     }
 
     /**

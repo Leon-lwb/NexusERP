@@ -80,3 +80,22 @@ export const getOrderProcId = (id: string | number) => {
     method: 'get'
   });
 };
+
+// ==================== 取价 ====================
+
+/**
+ * 解析销售单价（客户专属价 > 期间促销价 > 标准基价 > 物料参考价）
+ * @param params clientId 客户ID；materialId 物料ID；qty 数量（可空）；orderDate 订单日期 yyyy-MM-dd（可空）
+ */
+export const resolveOrderPrice = (params: {
+  clientId: string | number;
+  materialId: string | number;
+  qty?: number;
+  orderDate?: string;
+}): AxiosPromise<number> => {
+  return request({
+    url: '/erp/so/orderheader/resolvePrice',
+    method: 'get',
+    params
+  });
+};
