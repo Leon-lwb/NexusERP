@@ -3,10 +3,13 @@ package com.nexus.erp.so;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.extra.spring.SpringUtil;
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
+import com.baomidou.mybatisplus.core.conditions.Wrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.flowable.helper.FlowableProcInsIdHelper;
 import com.nexus.erp.bd.service.IBdClientService;
+import com.nexus.erp.so.domain.bo.SoInvoiceBo;
 import com.nexus.erp.so.domain.SoInvoice;
 import com.nexus.erp.so.domain.SoInvoiceLine;
 import com.nexus.erp.so.domain.SoSalesOrderLine;
@@ -34,6 +37,7 @@ import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
@@ -48,6 +52,7 @@ import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -300,6 +305,29 @@ class SoInvoiceServiceImplTest {
         verify(baseMapper).update(any(), any());
     }
 
+    /** 核销上限：累计核销额不得超过价税合计（原实现无上限） */
+    @Test
+    void verifyInvoice_rejectsOverVerify() {
+        when(baseMapper.selectById(1L)).thenReturn(invoice(1L, ISoInvoiceService.STATUS_ISSUED, "678.00", "600.00"));
+
+        ServiceException ex = assertThrows(ServiceException.class,
+            () -> invoiceService.verifyInvoice(1L, new BigDecimal("100.00"), 5L));
+        assertTrue(ex.getMessage().contains("超过发票价税合计"), "实际: " + ex.getMessage());
+        verify(baseMapper, never()).update(any(), any());
+    }
+
+    /** verifiedAmount 为 null 的历史行不应 NPE */
+    @Test
+    void verifyInvoice_toleratesNullVerifiedAmount() {
+        SoInvoice legacy = invoice(1L, ISoInvoiceService.STATUS_ISSUED, "678.00", null);
+        when(baseMapper.selectById(1L)).thenReturn(legacy);
+        when(baseMapper.update(any(), any())).thenReturn(1);
+
+        invoiceService.verifyInvoice(1L, new BigDecimal("100.00"), null);
+
+        verify(baseMapper).update(any(), any());
+    }
+
     // ==================== cancelInvoice / redFlush ====================
 
     /** 已核销发票不可作废 */
@@ -354,6 +382,20 @@ class SoInvoiceServiceImplTest {
         assertTrue(ex.getMessage().contains("仅已开票/已核销"), "实际: " + ex.getMessage());
     }
 
+    /** 防重复红冲：同一张蓝票只能红冲一次（原实现可无限红冲） */
+    @Test
+    void redFlush_rejectsAlreadyRedFlushedInvoice() {
+        SoInvoice blue = invoice(1L, ISoInvoiceService.STATUS_ISSUED, "678.00", "0");
+        blue.setRedFlag("0");
+        when(baseMapper.selectById(1L)).thenReturn(blue);
+        // 已存在指向该蓝票的红字发票
+        when(baseMapper.selectCount(any())).thenReturn(1L);
+
+        ServiceException ex = assertThrows(ServiceException.class, () -> invoiceService.redFlush(1L, "红冲"));
+        assertTrue(ex.getMessage().contains("已红冲"), "实际: " + ex.getMessage());
+        verify(baseMapper, never()).insert(any(SoInvoice.class));
+    }
+
     /** 红冲：复制原行取负，并冲减订单行已开票数量 */
     @Test
     void redFlush_copiesLinesAsNegativeAndOffsetsInvoicedQty() {
@@ -364,6 +406,7 @@ class SoInvoiceServiceImplTest {
         blue.setCurrency("CNY");
         blue.setExchangeRate(BigDecimal.ONE);
         when(baseMapper.selectById(1L)).thenReturn(blue);
+        when(baseMapper.selectCount(any())).thenReturn(0L);
 
         SoInvoiceLine orig = new SoInvoiceLine();
         orig.setLineId(10L);
@@ -401,5 +444,152 @@ class SoInvoiceServiceImplTest {
         verify(lineMapper).insert(redLineCaptor.capture());
         assertEquals(0, new BigDecimal("-6").compareTo(redLineCaptor.getValue().getQuantity()));
         assertNotNull(redLineCaptor.getValue().getSoLineId());
+    }
+
+    // ==================== 可开票量占用/释放收口（T1.4）====================
+
+    /** 抓取发给订单行 mapper 的 SET 子句，用于断言占用/释放的数量与方向 */
+    @SuppressWarnings("unchecked")
+    private String capturedLineUpdateSqlSet() {
+        ArgumentCaptor<Wrapper<SoSalesOrderLine>> captor = ArgumentCaptor.forClass(Wrapper.class);
+        verify(soSalesOrderLineMapper).update(any(), captor.capture());
+        return ((LambdaUpdateWrapper<SoSalesOrderLine>) captor.getValue()).getSqlSet();
+    }
+
+    private SoInvoiceLine invoiceLine(Long lineId, Long soLineId, String quantity) {
+        SoInvoiceLine l = new SoInvoiceLine();
+        l.setLineId(lineId);
+        l.setInvoiceId(1L);
+        l.setSoLineId(soLineId);
+        l.setQuantity(new BigDecimal(quantity));
+        return l;
+    }
+
+    private SoInvoiceBo invoiceBo(List<SoInvoiceLine> lines) {
+        SoInvoiceBo bo = new SoInvoiceBo();
+        bo.setInvoiceId(1L);
+        bo.setSoInvoiceLineList(lines);
+        return bo;
+    }
+
+    /** 手工建票：明细关联订单行时同样占用可开票量 */
+    @Test
+    void insertByBo_occupiesInvoicedQtyForLinkedLine() {
+        when(baseMapper.insert(any(SoInvoice.class))).thenAnswer(inv -> {
+            inv.getArgument(0, SoInvoice.class).setInvoiceId(1L);
+            return 1;
+        });
+        when(lineMapper.insert(any(SoInvoiceLine.class))).thenReturn(1);
+        when(soSalesOrderLineMapper.update(any(), any())).thenReturn(1);
+
+        SoInvoiceBo bo = new SoInvoiceBo();
+        bo.setSoInvoiceLineList(List.of(invoiceLine(null, 100L, "6")));
+        assertEquals(1, invoiceService.insertByBo(bo));
+
+        assertTrue(capturedLineUpdateSqlSet().contains("+ 6"), "应占用 6");
+    }
+
+    /** 手工建票超开：占用门禁失败即拒绝建票（原实现完全绕过） */
+    @Test
+    void insertByBo_rejectsOverInvoiceOnLinkedLine() {
+        when(baseMapper.insert(any(SoInvoice.class))).thenAnswer(inv -> {
+            inv.getArgument(0, SoInvoice.class).setInvoiceId(1L);
+            return 1;
+        });
+        when(lineMapper.insert(any(SoInvoiceLine.class))).thenReturn(1);
+        when(soSalesOrderLineMapper.update(any(), any())).thenReturn(0);
+
+        SoInvoiceBo bo = new SoInvoiceBo();
+        bo.setSoInvoiceLineList(List.of(invoiceLine(null, 100L, "6")));
+
+        ServiceException ex = assertThrows(ServiceException.class, () -> invoiceService.insertByBo(bo));
+        assertTrue(ex.getMessage().contains("已开票数量变化"), "实际: " + ex.getMessage());
+    }
+
+    /** 未关联订单行的纯手工票不占用可开票量 */
+    @Test
+    void insertByBo_skipsOccupationForUnlinkedLine() {
+        when(baseMapper.insert(any(SoInvoice.class))).thenAnswer(inv -> {
+            inv.getArgument(0, SoInvoice.class).setInvoiceId(1L);
+            return 1;
+        });
+        when(lineMapper.insert(any(SoInvoiceLine.class))).thenReturn(1);
+
+        SoInvoiceBo bo = new SoInvoiceBo();
+        bo.setSoInvoiceLineList(List.of(invoiceLine(null, null, "6")));
+        invoiceService.insertByBo(bo);
+
+        verify(soSalesOrderLineMapper, never()).update(any(), any());
+    }
+
+    /** 改票：数量增加只占用差额 */
+    @Test
+    void updateByBo_occupiesDeltaOnQtyIncrease() {
+        when(baseMapper.selectById(1L)).thenReturn(invoice(1L, ISoInvoiceService.STATUS_DRAFT, "600.00", "0"));
+        when(baseMapper.updateById(any(SoInvoice.class))).thenReturn(1);
+        when(lineMapper.selectList(any())).thenReturn(List.of(invoiceLine(10L, 100L, "6")));
+        when(lineMapper.updateById(any(SoInvoiceLine.class))).thenReturn(1);
+        when(soSalesOrderLineMapper.update(any(), any())).thenReturn(1);
+
+        invoiceService.updateByBo(invoiceBo(List.of(invoiceLine(10L, 100L, "8"))));
+
+        assertTrue(capturedLineUpdateSqlSet().contains("+ 2"), "应只占用差额 2");
+    }
+
+    /** 改票：数量减少只释放差额 */
+    @Test
+    void updateByBo_releasesDeltaOnQtyDecrease() {
+        when(baseMapper.selectById(1L)).thenReturn(invoice(1L, ISoInvoiceService.STATUS_DRAFT, "600.00", "0"));
+        when(baseMapper.updateById(any(SoInvoice.class))).thenReturn(1);
+        when(lineMapper.selectList(any())).thenReturn(List.of(invoiceLine(10L, 100L, "6")));
+        when(lineMapper.updateById(any(SoInvoiceLine.class))).thenReturn(1);
+        when(soSalesOrderLineMapper.update(any(), any())).thenReturn(1);
+
+        invoiceService.updateByBo(invoiceBo(List.of(invoiceLine(10L, 100L, "4"))));
+
+        assertTrue(capturedLineUpdateSqlSet().contains("+ -2"), "应释放差额 2（以负数形式冲减）");
+    }
+
+    /** 改票：删除明细释放其全部占用 */
+    @Test
+    void updateByBo_releasesOccupationOnLineDeletion() {
+        when(baseMapper.selectById(1L)).thenReturn(invoice(1L, ISoInvoiceService.STATUS_DRAFT, "600.00", "0"));
+        when(baseMapper.updateById(any(SoInvoice.class))).thenReturn(1);
+        when(lineMapper.selectList(any())).thenReturn(List.of(invoiceLine(10L, 100L, "6")));
+        when(lineMapper.deleteById(any(Serializable.class))).thenReturn(1);
+        when(soSalesOrderLineMapper.update(any(), any())).thenReturn(1);
+
+        invoiceService.updateByBo(invoiceBo(List.of()));
+
+        verify(lineMapper).deleteById(10L);
+        assertTrue(capturedLineUpdateSqlSet().contains("+ -6"), "应释放全部 6");
+    }
+
+    /** 改票：换绑订单行时先释放旧行再占用新行（两次调整） */
+    @Test
+    void updateByBo_rebindsToAnotherOrderLine() {
+        when(baseMapper.selectById(1L)).thenReturn(invoice(1L, ISoInvoiceService.STATUS_DRAFT, "600.00", "0"));
+        when(baseMapper.updateById(any(SoInvoice.class))).thenReturn(1);
+        when(lineMapper.selectList(any())).thenReturn(List.of(invoiceLine(10L, 100L, "6")));
+        when(lineMapper.updateById(any(SoInvoiceLine.class))).thenReturn(1);
+        when(soSalesOrderLineMapper.update(any(), any())).thenReturn(1);
+
+        invoiceService.updateByBo(invoiceBo(List.of(invoiceLine(10L, 200L, "6"))));
+
+        verify(soSalesOrderLineMapper, times(2)).update(any(), any());
+    }
+
+    /** 作废历史票（从未占用过 invoiced_qty）不应因下界守卫而失败 */
+    @Test
+    void cancelInvoice_toleratesNothingToRelease() {
+        when(baseMapper.selectById(1L)).thenReturn(invoice(1L, ISoInvoiceService.STATUS_ISSUED, "678.00", "0"));
+        when(lineMapper.selectList(any())).thenReturn(List.of(invoiceLine(10L, 100L, "6")));
+        // 释放命中下界守卫（未占用过）-> 影响 0 行
+        when(soSalesOrderLineMapper.update(any(), any())).thenReturn(0);
+        when(baseMapper.update(any(), any())).thenReturn(1);
+
+        invoiceService.cancelInvoice(1L, "作废历史票");
+
+        verify(baseMapper).update(any(), any());
     }
 }

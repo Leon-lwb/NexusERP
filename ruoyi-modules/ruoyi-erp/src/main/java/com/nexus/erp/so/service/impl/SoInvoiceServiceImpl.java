@@ -2,6 +2,7 @@ package com.nexus.erp.so.service.impl;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -48,6 +49,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -129,6 +131,8 @@ public class SoInvoiceServiceImpl implements ISoInvoiceService {
             for (SoInvoiceLine line : bo.getSoInvoiceLineList()) {
                 line.setInvoiceId(entity.getInvoiceId());
                 lineMapper.insert(line);
+                // 手工建票同样占用可开票量，否则可绕过防超开门禁重复开票
+                occupyInvoicedQty(line.getSoLineId(), line.getQuantity());
             }
         }
         return rows;
@@ -230,16 +234,8 @@ public class SoInvoiceServiceImpl implements ISoInvoiceService {
         for (SoInvoiceLine line : invoiceLines) {
             line.setInvoiceId(invoice.getInvoiceId());
             lineMapper.insert(line);
-            // 原子累加已开票数量(防重复开票);数量内部计算,非用户输入,无注入风险
-            // 条件更新门禁: invoiced_qty + ? <= delivered_qty, 影响行数为 0 说明并发已开票,回滚本次草稿
-            int affected = soSalesOrderLineMapper.update(null,
-                Wrappers.<SoSalesOrderLine>lambdaUpdate()
-                    .eq(SoSalesOrderLine::getLineId, line.getSoLineId())
-                    .apply("invoiced_qty + {0} <= delivered_qty", line.getQuantity())
-                    .setSql("invoiced_qty = invoiced_qty + " + line.getQuantity().toPlainString()));
-            if (affected == 0) {
-                throw new ServiceException("销售订单行已开票数量变化,请刷新后重试: lineId=" + line.getSoLineId());
-            }
+            // 占用可开票量（统一门禁入口，影响行数为 0 说明并发已开票，抛异常回滚本次草稿）
+            occupyInvoicedQty(line.getSoLineId(), line.getQuantity());
         }
         log.info("销售订单自动生成发票草稿, soId={}, invoiceId={}, invoiceNo={}, lineCount={}",
             soId, invoice.getInvoiceId(), invoice.getInvoiceNo(), invoiceLines.size());
@@ -314,20 +310,50 @@ public class SoInvoiceServiceImpl implements ISoInvoiceService {
         }
         Set<Long> keepIds = new HashSet<>();
         for (SoInvoiceLine line : newLines) {
+            line.setInvoiceId(invoiceId);
             if (line.getLineId() == null) {
-                line.setInvoiceId(invoiceId);
                 lineMapper.insert(line);
+                // 新增明细：占用可开票量
+                occupyInvoicedQty(line.getSoLineId(), line.getQuantity());
             } else {
-                line.setInvoiceId(invoiceId);
+                SoInvoiceLine before = existingMap.get(line.getLineId());
                 lineMapper.updateById(line);
                 keepIds.add(line.getLineId());
+                // 已有明细：按「订单行归属 + 数量」的变化量调整占用
+                adjustInvoicedQtyOnEdit(before, line);
             }
         }
         // 删除:现有行中不在保留集合内的
         for (SoInvoiceLine l : existingLines) {
             if (l.getLineId() != null && !keepIds.contains(l.getLineId())) {
                 lineMapper.deleteById(l.getLineId());
+                // 删除明细：释放其占用
+                releaseInvoicedQty(l.getSoLineId(), l.getQuantity());
             }
+        }
+    }
+
+    /**
+     * 编辑发票明细时调整订单行已开票数量。
+     * <p>换绑订单行则先释放旧行再占用新行；同一行只调差额（增加走占用门禁，减少走释放下界守卫）。</p>
+     */
+    private void adjustInvoicedQtyOnEdit(SoInvoiceLine before, SoInvoiceLine after) {
+        if (before == null) {
+            occupyInvoicedQty(after.getSoLineId(), after.getQuantity());
+            return;
+        }
+        if (!Objects.equals(before.getSoLineId(), after.getSoLineId())) {
+            releaseInvoicedQty(before.getSoLineId(), before.getQuantity());
+            occupyInvoicedQty(after.getSoLineId(), after.getQuantity());
+            return;
+        }
+        BigDecimal oldQty = before.getQuantity() == null ? BigDecimal.ZERO : before.getQuantity();
+        BigDecimal newQty = after.getQuantity() == null ? BigDecimal.ZERO : after.getQuantity();
+        BigDecimal delta = newQty.subtract(oldQty);
+        if (delta.compareTo(BigDecimal.ZERO) > 0) {
+            occupyInvoicedQty(after.getSoLineId(), delta);
+        } else if (delta.compareTo(BigDecimal.ZERO) < 0) {
+            releaseInvoicedQty(after.getSoLineId(), delta.negate());
         }
     }
 
@@ -370,8 +396,15 @@ public class SoInvoiceServiceImpl implements ISoInvoiceService {
         if (!STATUS_ISSUED.equals(invoice.getStatus())) {
             throw new ServiceException("当前状态【{}】不允许核销,仅已开票发票可核销", invoice.getStatus());
         }
-        BigDecimal newVerified = invoice.getVerifiedAmount().add(verifyAmount);
-        String newStatus = newVerified.compareTo(invoice.getTotalAmount()) >= 0 ? STATUS_VERIFIED : STATUS_ISSUED;
+        BigDecimal alreadyVerified = invoice.getVerifiedAmount() == null ? BigDecimal.ZERO : invoice.getVerifiedAmount();
+        BigDecimal totalAmount = invoice.getTotalAmount() == null ? BigDecimal.ZERO : invoice.getTotalAmount();
+        BigDecimal newVerified = alreadyVerified.add(verifyAmount);
+        // 核销上限：累计核销额不得超过价税合计（原实现无上限，可超额核销后仍置 VERIFIED）
+        if (newVerified.compareTo(totalAmount) > 0) {
+            throw new ServiceException("核销金额超过发票价税合计，剩余可核销："
+                + totalAmount.subtract(alreadyVerified).toPlainString());
+        }
+        String newStatus = newVerified.compareTo(totalAmount) >= 0 ? STATUS_VERIFIED : STATUS_ISSUED;
         int rows = baseMapper.update(null,
             Wrappers.<SoInvoice>lambdaUpdate()
                 .eq(SoInvoice::getInvoiceId, invoiceId)
@@ -429,6 +462,14 @@ public class SoInvoiceServiceImpl implements ISoInvoiceService {
         }
         if ("1".equals(original.getRedFlag())) {
             throw new ServiceException("红字发票不允许再次红冲");
+        }
+        // 防重复红冲：同一张蓝字发票只能红冲一次。
+        // 原实现只校验原票 redFlag（原票状态与标记在红冲后都不变），因此同一张蓝票可被无限红冲，
+        // 每次都冲减 invoiced_qty 与原票 verified_amount。这里按 original_invoice_id 判重，无需新增 DDL。
+        Long redCount = baseMapper.selectCount(Wrappers.<SoInvoice>lambdaQuery()
+            .eq(SoInvoice::getOriginalInvoiceId, originalInvoiceId));
+        if (redCount != null && redCount > 0) {
+            throw new ServiceException("该发票已红冲，不允许重复红冲");
         }
         List<SoInvoiceLine> origLines = lineMapper.selectList(
             Wrappers.<SoInvoiceLine>lambdaQuery().eq(SoInvoiceLine::getInvoiceId, originalInvoiceId));
@@ -492,13 +533,8 @@ public class SoInvoiceServiceImpl implements ISoInvoiceService {
         for (SoInvoiceLine rl : redLines) {
             rl.setInvoiceId(red.getInvoiceId());
             lineMapper.insert(rl);
-            // 红字数量为负,原子加即冲减订单行已开票数量
-            if (rl.getSoLineId() != null && rl.getQuantity() != null) {
-                soSalesOrderLineMapper.update(null,
-                    Wrappers.<SoSalesOrderLine>lambdaUpdate()
-                        .eq(SoSalesOrderLine::getLineId, rl.getSoLineId())
-                        .setSql("invoiced_qty = invoiced_qty + " + rl.getQuantity().toPlainString()));
-            }
+            // 红字数量为负 -> 冲减订单行已开票数量（宽容模式：历史票未占用过时不阻断红冲）
+            releaseInvoicedQty(rl.getSoLineId(), rl.getQuantity() == null ? null : rl.getQuantity().negate());
         }
 
         // 冲减原发票已核销金额(取红字总额绝对值);若归零且原为 VERIFIED 则回退至 ISSUED
@@ -526,20 +562,80 @@ public class SoInvoiceServiceImpl implements ISoInvoiceService {
     }
 
     /**
-     * 回退发票对应订单行的已开票数量(作废/删除草稿时调用)。
+     * 回退发票对应订单行的已开票数量(作废/删除草稿/红冲时调用)。
+     * <p>宽容模式：历史手工票或本次改造前生成的草稿可能从未占用过 invoiced_qty，
+     * 此时回退会命中下界守卫 —— 静默跳过而不是阻断作废/删除，避免旧数据无法清理。</p>
      */
     private void rollbackInvoicedQty(SoInvoice invoice) {
         List<SoInvoiceLine> lines = lineMapper.selectList(
             Wrappers.<SoInvoiceLine>lambdaQuery().eq(SoInvoiceLine::getInvoiceId, invoice.getInvoiceId()));
         for (SoInvoiceLine line : lines) {
-            if (line.getSoLineId() == null || line.getQuantity() == null) {
-                continue;
-            }
-            soSalesOrderLineMapper.update(null,
-                Wrappers.<SoSalesOrderLine>lambdaUpdate()
-                    .eq(SoSalesOrderLine::getLineId, line.getSoLineId())
-                    .setSql("invoiced_qty = invoiced_qty - " + line.getQuantity().toPlainString()));
+            releaseInvoicedQty(line.getSoLineId(), line.getQuantity());
         }
+    }
+
+    // ==================== 可开票量占用/释放（统一入口）====================
+
+    /**
+     * 占用订单行可开票量（严格模式）：<b>所有</b>发票明细写入口都必须经过这里，
+     * 否则手工建票/改票可以绕过「invoiced_qty + 本次 <= delivered_qty」的防超开门禁。
+     *
+     * @param soLineId 销售订单行ID，为空表示该明细未关联订单行（纯手工票），直接跳过
+     * @param qty      本次占用数量（正数）
+     */
+    private void occupyInvoicedQty(Long soLineId, BigDecimal qty) {
+        adjustInvoicedQty(soLineId, qty, true);
+    }
+
+    /**
+     * 释放订单行可开票量（宽容模式）：下界守卫失败时静默跳过，不阻断作废/删除/红冲。
+     *
+     * @param soLineId 销售订单行ID，为空则跳过
+     * @param qty      本次释放数量（正数）
+     */
+    private void releaseInvoicedQty(Long soLineId, BigDecimal qty) {
+        if (qty == null) {
+            return;
+        }
+        adjustInvoicedQty(soLineId, qty.negate(), false);
+    }
+
+    /**
+     * 调整订单行已开票数量（原子 setSql，正数占用、负数释放）。
+     * <p>两侧守卫：</p>
+     * <ul>
+     *   <li>占用：{@code COALESCE(invoiced_qty,0) + delta <= COALESCE(delivered_qty,0)}，防超开；</li>
+     *   <li>释放：{@code COALESCE(invoiced_qty,0) + delta >= 0}，防已开票数量变负
+     *       （变负会反向放大可开票量，进而导致重复开票）。</li>
+     * </ul>
+     * <p>用 COALESCE 兜住历史行的 NULL 值 —— 否则 {@code NULL + x} 恒为 NULL，条件恒假。</p>
+     *
+     * @param soLineId 销售订单行ID
+     * @param delta    变化量（正=占用，负=释放）
+     * @param strict   true=守卫失败抛异常；false=守卫失败静默跳过
+     * @return 影响行数
+     */
+    private int adjustInvoicedQty(Long soLineId, BigDecimal delta, boolean strict) {
+        if (soLineId == null || delta == null || delta.compareTo(BigDecimal.ZERO) == 0) {
+            return 0;
+        }
+        // delta 为 BigDecimal，拼接无注入风险
+        LambdaUpdateWrapper<SoSalesOrderLine> wrapper = Wrappers.<SoSalesOrderLine>lambdaUpdate()
+            .eq(SoSalesOrderLine::getLineId, soLineId)
+            .setSql("invoiced_qty = COALESCE(invoiced_qty, 0) + " + delta.toPlainString());
+        if (delta.compareTo(BigDecimal.ZERO) > 0) {
+            wrapper.apply("COALESCE(invoiced_qty, 0) + {0} <= COALESCE(delivered_qty, 0)", delta);
+        } else {
+            wrapper.apply("COALESCE(invoiced_qty, 0) + {0} >= 0", delta);
+        }
+        int affected = soSalesOrderLineMapper.update(null, wrapper);
+        if (affected == 0) {
+            if (strict) {
+                throw new ServiceException("销售订单行已开票数量变化（可能已超开或已被回退），请刷新后重试: lineId=" + soLineId);
+            }
+            log.warn("回退已开票数量未命中（可能未占用过或已为0），跳过: soLineId={}, delta={}", soLineId, delta.toPlainString());
+        }
+        return affected;
     }
 
     // ==================== Flowable 工作流集成 ====================
