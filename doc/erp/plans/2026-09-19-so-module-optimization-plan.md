@@ -395,6 +395,8 @@ insertOrUpdateLines(entity.getSoId(), ...);          // 且强制 line.setLineId
 | └ T3.2 报价转单前端接线 | ✅ 完成（勘误：本就已接线） | 见本批次 commit | **审计勘误**：`convertQuotationToOrder` 在 `quotation/index.vue:220` 早已被调用，原结论「前端零调用」是 grep 模式（`convertToOrder`）匹配不到函数名 `convertQuotationToOrder` 造成的误报。本次实际只补了工具栏按钮的状态门禁 |
 | └ T3.3 退货闭环 + 退货 UI 接线（Q2 尽量全闭环） | ✅ 完成 | 见本批次 commit | 新增 `returned_qty` + 回写与超退守卫 + 前端 confirm/execute 接线；新增 3 用例；`Tests run: 259, Failures: 0` |
 | └ T3.4 报表菜单 + 前端（Q1 保留并修完） | ✅ 完成 | 见本批次 commit | 菜单 2237 + 角色授权 + 报表页 4 个前端缺陷修复；前端 `eslint` + `build:prod` 通过 |
+| └ T3.5 死事件/死 VO 清理 | ✅ 完成 | 见本批次 commit | 删 `SoLineProducedEvent`（全仓无监听者）+ `SoCreditUsageVo` 两个永不填充字段 |
+| └ §8.6 T1.1 验收规格落为可执行测试 | ✅ 完成 | 见本批次 commit | 新增 2 个 acceptance 用例（3 行改单保 ID / 改交期不动生产计划）；`Tests run: 261, Failures: 0` |
 | 批次 4：DDL 收敛 | ✅ 完成（§五 第 1~7 项） | 见本批次 commit | 主脚本 14 张 so_ 表括号平衡校验通过；存量库脚本 `2026-09-19-so-ddl-hardening.sql`；`Tests run: 128, Failures: 0`；前端 `eslint` + `build:prod` 通过 |
 | 批次 5：清理与一致性 | 🚧 进行中（仅剩 Q4 相关项） | | |
 | └ 客户订单幻影字段清理 | ✅ 完成 | 见本批次 commit | 前端 `eslint` + `build:prod` 通过 |

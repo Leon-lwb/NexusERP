@@ -5,12 +5,10 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.nexus.erp.so.domain.SoSalesOrderLine;
-import com.nexus.erp.so.event.SoLineProducedEvent;
 import com.nexus.erp.so.mapper.SoSalesOrderLineMapper;
 import com.nexus.erp.so.service.ISoFulfillmentWritebackService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,7 +26,16 @@ import java.math.BigDecimal;
  *   <li>0 &lt; delivered_qty &lt; ordered_qty -> PARTIALLY_FULFILLED（部分履行）</li>
  *   <li>delivered_qty >= ordered_qty -> FULFILLED（已履行，行已发齐；与 fulfill() 按钮幂等）</li>
  * </ul>
- * 达 SCHEDULED 时发布 {@link SoLineProducedEvent}，供下游订阅（如自动创建销售出库单）。
+ * 达 SCHEDULED 时仅记录日志推进状态。
+ *
+ * <p><b>T3.5 清理（2026-09-19）</b>：原先此处发布 {@code SoLineProducedEvent}，注释称
+ * 「供下游订阅（如自动创建销售出库单）」，但**全仓没有任何监听者**（仓库内 19 个
+ * {@code @EventListener}/{@code @TransactionalEventListener} 均不订阅该事件）——
+ * 是一个承诺了功能却从未实现的空发布。已连同事件类一并删除。</p>
+ *
+ * <p>之所以选择删除而非补实现：销售出库单应由仓储按实际发货决策创建
+ * （现由 {@code WmSalesIssueServiceImpl} 驱动并回写 {@code delivered_qty}），
+ * 若在「投产完工」时自动建出库单，等于**绕过仓储的发货决策**，属错误行为而非缺失功能。</p>
  *
  * @author nexus
  */
@@ -46,7 +53,6 @@ public class SoFulfillmentWritebackServiceImpl implements ISoFulfillmentWritebac
     private static final String LINE_STATUS_FULFILLED = "FULFILLED";
 
     private final SoSalesOrderLineMapper soSalesOrderLineMapper;
-    private final ApplicationEventPublisher applicationEventPublisher;
 
     /**
      * 回写销售出库的已发货数量（原子累加 delivered_qty 与 fulfilled_qty）。
@@ -129,9 +135,6 @@ public class SoFulfillmentWritebackServiceImpl implements ISoFulfillmentWritebac
                         LINE_STATUS_SCHEDULED, LINE_STATUS_PARTIALLY_FULFILLED, LINE_STATUS_FULFILLED))
                 .set(SoSalesOrderLine::getLineStatus, LINE_STATUS_SCHEDULED));
         if (rows > 0) {
-            applicationEventPublisher.publishEvent(
-                new SoLineProducedEvent(this, line.getSoId(), soLineId,
-                    line.getMaterialCode(), line.getProductionQty()));
             log.info("SO行已投产完工, soLineId={}, soId={}, productionQty={}",
                 soLineId, line.getSoId(), line.getProductionQty());
         }

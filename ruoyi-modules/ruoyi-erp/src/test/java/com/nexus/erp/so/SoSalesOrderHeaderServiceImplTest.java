@@ -55,6 +55,7 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -741,6 +742,82 @@ class SoSalesOrderHeaderServiceImplTest {
         verify(baseMapper).updateById(captor.capture());
         // 行金额 100.00，税额 10.00，价税合计 110.00，整单折扣 0 -> 含税总金额 110.00
         assertEquals(0, new BigDecimal("110.00").compareTo(captor.getValue().getTotalAmount()));
+    }
+
+    // ==================== §8.6 验收规格（T1.1）—— 把计划里的验收清单变成可执行断言 ====================
+
+    /**
+     * §8.6 验收项 1：建单 3 行 → 改单（改第 1 行数量、删第 3 行、加第 4 行）
+     * → 断言第 1、2 行 line_id **不变**，第 3 行被删除，第 4 行为新增。
+     * <p>这是 D3 决策（差量更新保留行 ID）最直接的验收。</p>
+     */
+    @Test
+    void acceptance_threeLinesEdit_keepsIdsDeletesRemovedAndInsertsNew() {
+        when(baseMapper.selectById(1L)).thenReturn(header(1L, ISoSalesOrderHeaderService.STATUS_DRAFT));
+        when(soSalesOrderLineMapper.selectList(any())).thenReturn(List.of(
+            existingLine(100L, "100", "10", "0", "0", "0"),
+            existingLine(101L, "200", "5", "0", "0", "0"),
+            existingLine(102L, "300", "2", "0", "0", "0")));
+        when(soSalesOrderLineMapper.updateById(any(SoSalesOrderLine.class))).thenReturn(1);
+        when(soSalesOrderLineMapper.deleteById(any(Serializable.class))).thenReturn(1);
+        when(soSalesOrderLineMapper.insertBatch(anyList())).thenReturn(true);
+        when(prdProductionPlanMapper.selectCount(any())).thenReturn(0L);
+        when(baseMapper.updateById(any(SoSalesOrderHeader.class))).thenReturn(1);
+
+        SoSalesOrderHeaderBo bo = updateBo();
+        bo.setSoSalesOrderLineList(List.of(
+            lineBo(100L, "100", "12"),  // 改第 1 行数量
+            lineBo(101L, "200", "5"),   // 第 2 行原样
+            lineBo(null, "400", "7"))); // 加第 4 行（无 lineId）
+
+        headerService.updateByBo(bo);
+
+        // 第 1、2 行按原 line_id 更新（ID 不变），第 3 行不在保留集合内被删除
+        ArgumentCaptor<SoSalesOrderLine> upd = ArgumentCaptor.forClass(SoSalesOrderLine.class);
+        verify(soSalesOrderLineMapper, times(2)).updateById(upd.capture());
+        List<Long> updatedIds = upd.getAllValues().stream().map(SoSalesOrderLine::getLineId).toList();
+        assertTrue(updatedIds.contains(100L) && updatedIds.contains(101L),
+            "第 1、2 行必须按原 lineId 更新: " + updatedIds);
+        verify(soSalesOrderLineMapper).deleteById(102L);
+
+        // 新行为全新插入，lineId 必须被重置为 null（不能沿用客户端传入的 ID）
+        ArgumentCaptor<List<SoSalesOrderLine>> ins = ArgumentCaptor.forClass(List.class);
+        verify(soSalesOrderLineMapper).insertBatch(ins.capture());
+        assertEquals(1, ins.getValue().size());
+        assertNull(ins.getValue().get(0).getLineId(), "新增行必须重置 lineId");
+        assertEquals(0, new BigDecimal("7").compareTo(ins.getValue().get(0).getOrderedQty()));
+    }
+
+    /**
+     * §8.6 验收项 2：确认订单已生成生产计划 → 改单改交期
+     * → 断言关联的生产计划**不被改动**，且该行仍按原 line_id 更新
+     * （即 {@code prd_production_plan.order_line_id} 仍可解析 —— 计划链不断）。
+     */
+    @Test
+    void acceptance_changeDeliveryDate_keepsLineIdAndDoesNotTouchProductionPlan() {
+        when(baseMapper.selectById(1L)).thenReturn(header(1L, ISoSalesOrderHeaderService.STATUS_DRAFT));
+        when(soSalesOrderLineMapper.selectList(any()))
+            .thenReturn(List.of(existingLine(100L, "100", "10", "0", "0", "0")));
+        when(soSalesOrderLineMapper.updateById(any(SoSalesOrderLine.class))).thenReturn(1);
+        when(baseMapper.updateById(any(SoSalesOrderHeader.class))).thenReturn(1);
+
+        SoSalesOrderLineBo line = lineBo(100L, "100", "10");
+        line.setRequestedDate(new Date());   // 只改交期
+        SoSalesOrderHeaderBo bo = updateBo();
+        bo.setSoSalesOrderLineList(List.of(line));
+
+        headerService.updateByBo(bo);
+
+        ArgumentCaptor<SoSalesOrderLine> captor = ArgumentCaptor.forClass(SoSalesOrderLine.class);
+        verify(soSalesOrderLineMapper).updateById(captor.capture());
+        // 关键：按原 line_id 原地更新，而不是「删掉重插」——否则生产计划的 order_line_id 会指向已删除行
+        assertEquals(100L, captor.getValue().getLineId());
+        assertNotNull(captor.getValue().getRequestedDate());
+        verify(soSalesOrderLineMapper, never()).deleteById(any(Serializable.class));
+        verify(soSalesOrderLineMapper, never()).insertBatch(anyList());
+        // 改单不得触碰生产计划
+        verify(prdProductionPlanMapper, never()).updateById(any(PrdProductionPlan.class));
+        verify(prdProductionPlanMapper, never()).deleteById(any(Serializable.class));
     }
 
     // ==================== 差量更新的真实场景（复审用）====================

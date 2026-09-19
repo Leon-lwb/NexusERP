@@ -41,10 +41,4 @@ public class SoCreditUsageVo implements Serializable {
 
     /** 释放时间 */
     private Date releaseTime;
-
-    /** 客户名称 */
-    private String clientName;
-
-    /** 销售订单编号 */
-    private String soCode;
 }
