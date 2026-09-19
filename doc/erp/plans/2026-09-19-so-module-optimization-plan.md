@@ -109,13 +109,27 @@ insertOrUpdateLines(entity.getSoId(), ...);          // 且强制 line.setLineId
 - `rollbackInvoicedQty:531-543` 无条件减（被 `:347`、`:402` 调用）→ 手工票未累加却被减，`invoiced_qty` 变负 → 反向放大可开票量
 - 另：`redFlush:430-432` 只校验原票 `redFlag`，原票状态不变 → **同一蓝票可无限红冲**；`verifyInvoice:373-374` 核销额可超价税合计
 
-#### P0-5 ⚠️ 提交审批在事务内跨库（4 类单据同形）
+#### P0-5 ✅ **经实测为误判**（原判"提交审批在事务内跨库会失败"不成立）
+> **结论（2026-09-19 实测复核 + 用户确认"可用"）**：提交审批**功能正常**，不是缺陷。原判断只看了
+> `@DS("erp")` + `@Transactional` 的表象，**漏看了被调用方的事务传播行为**。
+
 `SoSalesOrderHeaderServiceImpl.java:66(@DS("erp")) + :526(@Transactional)`，方法体先 `baseMapper.selectById()` 把连接钉在 erp，随后 `:551` 调 `WfProcessServiceImpl`（`WfProcessServiceImpl.java:105` `@DS("master")`）。
-- 已核实 `master`→`ry-vue`、`erp`→`ry-erp` 是**两个库**（`application-dev.yml:65/75`），且 `ry-erp` 中**不存在** `wf_*` 表
-- 本仓库自载该约束：`doc/system/specs/2026-09-15-esignature-impl-spec.md:1072`「任何 `@DS` 都切不过去（连接已绑定）」
-- 同形：`SoQuotationServiceImpl:186-213`、`SoContractServiceImpl:186-213`、`SoInvoiceServiceImpl:555-583`、`SoReturnServiceImpl:194-222`
-- **验证命令**：`POST /erp/so/orderheader/{id}/submit` —— 预期 `Table 'ry-erp.wf_my_business' doesn't exist`
-- **修复**：改用 `REQUIRES_NEW` 入口（先切数据源再开事务），或把流程启动移出事务
+
+**为什么实际可用**：`WfProcessServiceImpl.startProcessByDataId` 标了
+`@Transactional(propagation = Propagation.REQUIRES_NEW)`（`WfProcessServiceImpl.java:1947`）。
+`REQUIRES_NEW` 会**挂起外层事务并重新获取连接**，此时 `@DS("master")` 才真正生效 ——
+拿到 master 连接去查 `ry-vue`，而 `wf_*` 表（13 张）正在 `ry-vue`（`ry-erp.sql` 中为 0 张）。
+仓库规范里那句「任何 `@DS` 都切不过去（连接已绑定）」描述的是**同一事务内**的情形，
+`REQUIRES_NEW` 恰好是它的例外。
+
+**原子性复核（也不构成问题）**：4 个 `submit()`（订单/报价/合同/发票/退货）在调用
+`startProcessByDataId` **之后都没有任何 erp 写操作** —— 只读校验 + 返回结果，
+状态流转全部由流程回调 `afterFlowHandle`（`REQUIRES_NEW`）完成。
+即外层 erp 事务里本就没有需要回滚的写入，跨库非原子性无实际暴露面。
+
+**保留的注意事项（供后续维护）**：若今后在 `submit()` 中于工作流调用**之后**追加 erp 写操作，
+就会真正引入跨库非原子风险（流程实例已提交、业务写入回滚）；届时应把流程启动移到事务外，
+或用 `@DSTransactional`。
 
 #### P0-6 ✅ 价目表整体不可用（5 重故障叠加）
 1. 定价引擎生产代码零调用（见 2.2）
@@ -371,7 +385,7 @@ insertOrUpdateLines(entity.getSoId(), ...);          // 且强制 line.setLineId
 | T1.4 开票收口 | ✅ 完成 | `8f5ab354` | 新增 8 用例 |
 | T1.5 红冲/核销 | ✅ 完成 | `8f5ab354` | 新增 3 用例 |
 | T1.6 报表修复 | ✅ 完成（SQL/租户/权限） | 见本批次 commit | 新增 6 用例；`Tests run: 106, Failures: 0`。菜单与前端属 T3.4，待 Q1 |
-| T1.7 跨库事务（待 Q5 实测） | ⬜ 待办 | | |
+| T1.7 跨库事务（**已实测：可用，原判为误判**） | ✅ 完成（无需修复） | — | 见 §三 P0-5 的更正说明：被调用方是 `REQUIRES_NEW`，`@DS("master")` 实际生效；且 4 个 `submit()` 在工作流调用后无 erp 写入，跨库非原子性无暴露面 |
 | T1.8 金额服务端重算 | ✅ 完成 | 见本批次 commit | 新增 2 用例；`Tests run: 100, Failures: 0` |
 | 批次 2：契约与校验 | ✅ 完成（除 Q3 相关项） | 见本批次 commit | 新增 14 用例；`Tests run: 119, Failures: 0`；前端 `eslint` + `build:prod` 通过 |
 | 批次 3：功能补齐 | 🚧 进行中 | | |
