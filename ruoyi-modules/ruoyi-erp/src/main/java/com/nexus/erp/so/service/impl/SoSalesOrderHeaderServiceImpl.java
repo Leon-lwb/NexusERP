@@ -51,6 +51,7 @@ import com.baomidou.dynamic.datasource.annotation.DS;
 import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -72,6 +73,9 @@ import java.util.stream.Collectors;
 @DS("erp")
 @Service("soSalesOrderHeaderService")
 public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService {
+
+    /** 百分数换算基数（税率/折扣率均以「百分数」存储：13 表示 13%） */
+    private static final BigDecimal HUNDRED = new BigDecimal("100");
 
     private final SoSalesOrderHeaderMapper baseMapper;
     private final SoSalesOrderLineMapper soSalesOrderLineMapper;
@@ -247,6 +251,8 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
         if (StringUtils.isBlank(entity.getSoNo())) {
             entity.setSoNo(autoCodeUtil.genSerialCode("SO_ORDER_CODE", null));
         }
+        // 金额一律服务端重算，不信任客户端传入的 totalAmount/taxAmount/discountAmount
+        recalcAmounts(entity, bo.getSoSalesOrderLineList());
         int rows = baseMapper.insert(entity);
         insertLines(entity.getSoId(), bo.getSoSalesOrderLineList());
         return rows;
@@ -280,6 +286,8 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
         // 单号与状态服务端权威：客户端传了也还原，防止改单顺带改单号/绕过状态机
         entity.setSoNo(existing.getSoNo());
         entity.setOrderStatus(existing.getOrderStatus());
+        // 金额一律服务端重算，不信任客户端传入的 totalAmount/taxAmount/discountAmount
+        recalcAmounts(entity, bo.getSoSalesOrderLineList());
         diffUpdateLines(entity.getSoId(), bo.getSoSalesOrderLineList());
         return baseMapper.updateById(entity);
     }
@@ -679,6 +687,59 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
     @Override
     public List<String> flowCandidateUsernamesOfTask(String taskNameId, Map<String, Object> values) {
         return null;
+    }
+
+    /**
+     * 服务端重算订单金额，不信任客户端传入的 {@code totalAmount/taxAmount/discountAmount}。
+     * <p>口径与前端 {@code orderheader/form.vue} 的 calcLine/calcHeader 完全一致（折扣税前扣，Model A）：</p>
+     * <pre>
+     *   行金额     = 数量 × 单价
+     *   行折扣额   = 行金额 × 行折扣率% / 100
+     *   行税额     = (行金额 − 行折扣额) × 税率% / 100
+     *   净额       = Σ(行金额 − 行折扣额)
+     *   税款       = Σ 行税额
+     *   价税合计   = 净额 + 税款
+     *   整单折扣额 = 价税合计 × 整单折扣率% / 100
+     *   含税总金额 = 价税合计 − 整单折扣额
+     * </pre>
+     * <p><b>为什么必须服务端算</b>：{@code confirm()} 用 {@code totalAmount} 做信用额度校验，
+     * 客户端传 0 或负数即可绕过信用控制；行金额同理会被下游开票/报表直接引用。</p>
+     * <p>副作用：会把重算结果写回传入的 lineBo（供后续白名单落库使用）。</p>
+     *
+     * @param header     订单头（重算结果写回 totalAmount/taxAmount/discountAmount）
+     * @param lineBoList 订单行（重算结果写回 lineAmount/discountAmount/taxAmount）
+     */
+    private void recalcAmounts(SoSalesOrderHeader header, List<SoSalesOrderLineBo> lineBoList) {
+        BigDecimal net = BigDecimal.ZERO;
+        BigDecimal tax = BigDecimal.ZERO;
+        if (lineBoList != null) {
+            for (SoSalesOrderLineBo line : lineBoList) {
+                BigDecimal lineAmount = round2(nullToZero(line.getOrderedQty()).multiply(nullToZero(line.getUnitPrice())));
+                BigDecimal lineDiscount = round2(lineAmount.multiply(nullToZero(line.getDiscountPercent()))
+                    .divide(HUNDRED, 2, RoundingMode.HALF_UP));
+                BigDecimal lineTax = round2(lineAmount.subtract(lineDiscount)
+                    .multiply(nullToZero(line.getTaxRate())).divide(HUNDRED, 2, RoundingMode.HALF_UP));
+                line.setLineAmount(lineAmount);
+                line.setDiscountAmount(lineDiscount);
+                line.setTaxAmount(lineTax);
+                net = net.add(lineAmount).subtract(lineDiscount);
+                tax = tax.add(lineTax);
+            }
+        }
+        BigDecimal gross = round2(net.add(tax));
+        BigDecimal headerDiscount = round2(gross.multiply(nullToZero(header.getDiscountRate()))
+            .divide(HUNDRED, 2, RoundingMode.HALF_UP));
+        header.setTaxAmount(round2(tax));
+        header.setDiscountAmount(headerDiscount);
+        header.setTotalAmount(round2(gross.subtract(headerDiscount)));
+    }
+
+    private BigDecimal nullToZero(BigDecimal value) {
+        return value == null ? BigDecimal.ZERO : value;
+    }
+
+    private BigDecimal round2(BigDecimal value) {
+        return value.setScale(2, RoundingMode.HALF_UP);
     }
 
     /**

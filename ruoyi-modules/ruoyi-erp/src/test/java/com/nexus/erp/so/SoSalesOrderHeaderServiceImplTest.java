@@ -640,6 +640,76 @@ class SoSalesOrderHeaderServiceImplTest {
         verify(soSalesOrderLineMapper, never()).updateById(any(SoSalesOrderLine.class));
     }
 
+    // ==================== 金额服务端重算（T1.8）====================
+
+    private SoSalesOrderLineBo amountLine(String qty, String price, String discountPercent, String taxRate) {
+        SoSalesOrderLineBo b = new SoSalesOrderLineBo();
+        b.setMaterialId(100L);
+        b.setOrderedQty(new BigDecimal(qty));
+        b.setUnitPrice(new BigDecimal(price));
+        b.setDiscountPercent(new BigDecimal(discountPercent));
+        b.setTaxRate(new BigDecimal(taxRate));
+        return b;
+    }
+
+    /**
+     * 新增：金额由服务端重算，客户端伪造的 0 会被覆盖。
+     * 这条同时堵住「传 totalAmount=0 绕过 confirm() 信用额度校验」。
+     */
+    @Test
+    void insertByBo_recomputesAmountsIgnoringClientValues() {
+        SoSalesOrderHeaderBo bo = new SoSalesOrderHeaderBo();
+        bo.setSoNo("SO-T-1");
+        bo.setClientId(1L);
+        bo.setTotalAmount(BigDecimal.ZERO);      // 客户端伪造
+        bo.setTaxAmount(BigDecimal.ZERO);
+        bo.setDiscountAmount(BigDecimal.ZERO);
+        bo.setDiscountRate(new BigDecimal("5"));
+        bo.setSoSalesOrderLineList(List.of(amountLine("10", "100", "5", "13")));
+
+        when(baseMapper.insert(any(SoSalesOrderHeader.class))).thenReturn(1);
+        when(soSalesOrderLineMapper.insertBatch(anyList())).thenReturn(true);
+
+        headerService.insertByBo(bo);
+
+        ArgumentCaptor<SoSalesOrderHeader> headerCaptor = ArgumentCaptor.forClass(SoSalesOrderHeader.class);
+        verify(baseMapper).insert(headerCaptor.capture());
+        SoSalesOrderHeader saved = headerCaptor.getValue();
+        // 行金额 1000.00 / 行折扣 50.00 / 行税额 (1000-50)*13% = 123.50
+        // 价税合计 = 950.00 + 123.50 = 1073.50；整单折扣 5% = 53.68；含税总金额 = 1019.82
+        assertEquals(0, new BigDecimal("123.50").compareTo(saved.getTaxAmount()));
+        assertEquals(0, new BigDecimal("53.68").compareTo(saved.getDiscountAmount()));
+        assertEquals(0, new BigDecimal("1019.82").compareTo(saved.getTotalAmount()));
+
+        ArgumentCaptor<List<SoSalesOrderLine>> lineCaptor = ArgumentCaptor.forClass(List.class);
+        verify(soSalesOrderLineMapper).insertBatch(lineCaptor.capture());
+        SoSalesOrderLine savedLine = lineCaptor.getValue().get(0);
+        assertEquals(0, new BigDecimal("1000.00").compareTo(savedLine.getLineAmount()));
+        assertEquals(0, new BigDecimal("50.00").compareTo(savedLine.getDiscountAmount()));
+        assertEquals(0, new BigDecimal("123.50").compareTo(savedLine.getTaxAmount()));
+    }
+
+    /** 改单同样服务端重算金额 */
+    @Test
+    void updateByBo_recomputesAmounts() {
+        when(baseMapper.selectById(1L)).thenReturn(header(1L, ISoSalesOrderHeaderService.STATUS_DRAFT));
+        when(soSalesOrderLineMapper.selectList(any())).thenReturn(List.of());
+        when(soSalesOrderLineMapper.insertBatch(anyList())).thenReturn(true);
+        when(baseMapper.updateById(any(SoSalesOrderHeader.class))).thenReturn(1);
+
+        SoSalesOrderHeaderBo bo = updateBo();
+        bo.setTotalAmount(BigDecimal.ONE);   // 客户端伪造
+        bo.setDiscountRate(BigDecimal.ZERO);
+        bo.setSoSalesOrderLineList(List.of(amountLine("2", "50", "0", "10")));
+
+        headerService.updateByBo(bo);
+
+        ArgumentCaptor<SoSalesOrderHeader> captor = ArgumentCaptor.forClass(SoSalesOrderHeader.class);
+        verify(baseMapper).updateById(captor.capture());
+        // 行金额 100.00，税额 10.00，价税合计 110.00，整单折扣 0 -> 含税总金额 110.00
+        assertEquals(0, new BigDecimal("110.00").compareTo(captor.getValue().getTotalAmount()));
+    }
+
     // ==================== deleteByIds 状态门禁与收尾（T1.2）====================
 
     /** 空入参直接返回 0，不做任何查询 */

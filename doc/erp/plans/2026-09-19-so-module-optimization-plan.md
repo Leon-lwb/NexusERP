@@ -351,21 +351,35 @@ insertOrUpdateLines(entity.getSoId(), ...);          // 且强制 line.setLineId
 | T1.1 改单差量更新 | ✅ 完成 | `336dd856` | 新增 11 用例；`Tests run: 79, Failures: 0`；前端 `eslint` + `build:prod` 通过 |
 | T1.2 删除止血 | ✅ 完成 | 见本批次 commit | 新增 3 用例；`Tests run: 33`（本类） |
 | T1.3 退货门禁 | ✅ 完成 | 见本批次 commit | 新增 5 用例；`Tests run: 87, Failures: 0` |
-| T1.4 开票收口 | ⬜ 待办 | | |
-| T1.5 红冲/核销 | ⬜ 待办 | | |
-| T1.6 报表修复 | ⬜ 待办 | | |
+| T1.4 开票收口 | ✅ 完成 | `8f5ab354` | 新增 8 用例 |
+| T1.5 红冲/核销 | ✅ 完成 | `8f5ab354` | 新增 3 用例 |
+| T1.6 报表修复 | ⬜ 待办（部分受 Q1 影响） | | |
 | T1.7 跨库事务（待 Q5 实测） | ⬜ 待办 | | |
-| T1.8 金额服务端重算 | ⬜ 待办 | | |
+| T1.8 金额服务端重算 | ✅ 完成 | 见本批次 commit | 新增 2 用例；`Tests run: 100, Failures: 0` |
 | 批次 2 ~ 批次 5 | ⬜ 待办 | | |
 
-**T1.1 实施要点**（`SoSalesOrderHeaderServiceImpl`）：
-- `updateByBo` 仅允许 `DRAFT`；单号与状态强制还原为库中值，客户端改写无效
+**T1.1 实施要点**（`SoSalesOrderHeaderServiceImpl`）：- `updateByBo` 仅允许 `DRAFT`；单号与状态强制还原为库中值，客户端改写无效
 - `diffUpdateLines`：按 `lineId` 区分「更新 / 新增 / 删除」，保留已有行 `line_id`
 - 只在本单已有行中匹配 `lineId`，他单/伪造的 `lineId` 按新增处理（重置为 null），防越权改写
 - `applyEditableLineFields`：白名单更新，`deliveredQty/productionQty/invoicedQty/lineStatus/linked*/oqc*/reserved*` 一律保持库中原值（顺带修掉"表单快照覆盖并发已发货量"的丢失更新）
 - `assertLineDeletable`：已履约行、已关联生产计划的行禁止删除；先全量校验再执行，避免删一半失败
 - 新增行 `resetServerOwnedLineFields` 强制初始化履约/关联字段
 - 前端 `orderheader/index.vue` 工具栏与行内「修改/删除」按状态门禁，`handleUpdate` 二次守卫
+
+**T1.4/T1.5 实施要点**（`SoInvoiceServiceImpl`）：
+- 统一原语 `adjustInvoicedQty(soLineId, delta, strict)`：占用严格（超开即抛）、释放宽容（历史票未占用过则跳过，不阻断作废/删除/红冲）
+- 四个写入口全部收口：`insertByBo`、`diffUpdateLines`（新增/改量/换绑/删除）、`generateDraftFromOrder`、`redFlush`
+- 红冲防重复按 `original_invoice_id` 判重，**无需新增 DDL**（原实现只校验原票 `redFlag`，而红冲后原票状态与标记都不变）
+- 核销上限 = 价税合计；顺带修 `verifiedAmount` 为 null 的 NPE
+
+**T1.8 实施要点**（`SoSalesOrderHeaderServiceImpl.recalcAmounts`）：
+- 口径与前端 `calcLine`/`calcHeader` 逐字一致（折扣税前扣，Model A），税率/折扣率均按**百分数**（13 = 13%）
+- `insertByBo`/`updateByBo` 一律重算，客户端传 `totalAmount=0` 会被覆盖 —— 堵住「传 0 绕过 `confirm()` 信用额度校验」
+- 重算结果同时写回 lineBo，供后续白名单落库使用
+
+**批次 1 剩余**：
+- T1.6 报表修复（列名/租户/权限）—— SQL 与租户部分与 Q1 无关可直接修；菜单与前端属 T3.4 待 Q1
+- T1.7 跨库事务 —— 待 Q5 实测结果
 
 ---
 
