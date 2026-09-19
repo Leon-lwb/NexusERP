@@ -1,6 +1,9 @@
 package com.nexus.erp.so.domain.bo;
 
 import io.github.linpeilie.annotations.AutoMapper;
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -31,6 +34,7 @@ public class SoSalesOrderHeaderBo extends BaseEntity {
     /** 客户订单ID */
     private Long coId;
     /** 客户ID */
+    @NotNull(message = "来源客户不能为空")
     private Long clientId;
     /** 客户名称 */
     private String clientName;
@@ -39,6 +43,7 @@ public class SoSalesOrderHeaderBo extends BaseEntity {
     /** 销售代表名称 */
     private String salesRepName;
     /** 订单日期 */
+    @NotNull(message = "订单生成日期不能为空")
     private Date orderDate;
     /** 承诺交货日期 */
     private Date promiseDate;
@@ -57,6 +62,7 @@ public class SoSalesOrderHeaderBo extends BaseEntity {
     /** 币种 */
     private String currency;
     /** 汇率 */
+    @DecimalMin(value = "0", message = "汇率不能为负数")
     private BigDecimal exchangeRate;
     /** 总金额 */
     private BigDecimal totalAmount;
@@ -64,7 +70,9 @@ public class SoSalesOrderHeaderBo extends BaseEntity {
     private BigDecimal taxAmount;
     /** 折扣金额 */
     private BigDecimal discountAmount;
-    /** 折扣率 */
+    /** 折扣率（百分数：5 表示让利 5%） */
+    @DecimalMin(value = "0", message = "整单折扣率不能为负数")
+    @DecimalMax(value = "100", message = "整单折扣率不能超过 100")
     private BigDecimal discountRate;
     /** 信用状态 */
     private String creditStatus;

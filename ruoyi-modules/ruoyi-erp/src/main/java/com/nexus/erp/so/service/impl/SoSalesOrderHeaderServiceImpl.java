@@ -77,6 +77,9 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
     /** 百分数换算基数（税率/折扣率均以「百分数」存储：13 表示 13%） */
     private static final BigDecimal HUNDRED = new BigDecimal("100");
 
+    /** 信用状态：检查通过（与字典 so_credit_status 的 CHECKED_OK 对齐） */
+    private static final String CREDIT_STATUS_CHECKED_OK = "CHECKED_OK";
+
     private final SoSalesOrderHeaderMapper baseMapper;
     private final SoSalesOrderLineMapper soSalesOrderLineMapper;
     private final SoCustomerOrderMapper soCustomerOrderMapper;
@@ -245,9 +248,10 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(SoSalesOrderHeaderBo bo) {
         SoSalesOrderHeader entity = MapstructUtils.convert(bo, SoSalesOrderHeader.class);
-        if (StringUtils.isBlank(entity.getOrderStatus())) {
-            entity.setOrderStatus(STATUS_DRAFT);
-        }
+        // 状态强制 DRAFT：订单状态只能经 confirm / 审批流 / close / cancel 流转。
+        // 原实现允许客户端直写终态（sys_oper_log 中已有 orderStatus=CONFIRMED 直接建单的记录），
+        // 那样会绕过信用额度检查、库存预留与生产计划生成。
+        entity.setOrderStatus(STATUS_DRAFT);
         if (StringUtils.isBlank(entity.getSoNo())) {
             entity.setSoNo(autoCodeUtil.genSerialCode("SO_ORDER_CODE", null));
         }
@@ -367,11 +371,18 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
         if (!STATUS_DRAFT.equals(header.getOrderStatus()) && !STATUS_APPROVED.equals(header.getOrderStatus())) {
             throw new RuntimeException("当前状态不允许确认");
         }
+        // 未关联客户则无从做信用检查（checkAndFreeze 对 clientId=null 会静默跳过，
+        // 等于绕过信用额度控制），因此直接拒绝并要求补全客户
+        if (header.getClientId() == null) {
+            throw new ServiceException("订单未关联来源客户，无法执行信用检查，请先补全客户后重试");
+        }
 
         // 信用检查与冻结
         creditCheckService.checkAndFreeze(header.getClientId(), soId,
             header.getTotalAmount() != null ? header.getTotalAmount() : BigDecimal.ZERO);
-        header.setCreditStatus("PASSED");
+        // 与字典 so_credit_status 对齐（NOT_CHECKED/CHECKED_OK/CHECKED_BLOCKED）。
+        // 原实现写 "PASSED"，字典中不存在该值，前端 dict-tag 只能显示原始码。
+        header.setCreditStatus(CREDIT_STATUS_CHECKED_OK);
         header.setCreditCheckTime(new Date());
 
         // 条件更新抢占 DRAFT/APPROVED → CONFIRMED, 防并发双确认(读-改-写窗口已消除)

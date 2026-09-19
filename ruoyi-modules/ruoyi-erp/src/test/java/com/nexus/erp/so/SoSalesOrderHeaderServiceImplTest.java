@@ -357,9 +357,9 @@ class SoSalesOrderHeaderServiceImplTest {
         assertEquals(ISoSalesOrderHeaderService.STATUS_DRAFT, captor.getValue().getOrderStatus());
     }
 
-    /** 新增：客户端已给单号/状态时不覆盖 */
+    /** 新增：客户端给的单号保留，但状态一律强制 DRAFT（防直写终态绕过信用/库存/生产计划） */
     @Test
-    void insertByBo_keepsClientProvidedSoNoAndStatus() {
+    void insertByBo_keepsClientSoNoButForcesDraft() {
         SoSalesOrderHeaderBo bo = new SoSalesOrderHeaderBo();
         bo.setSoNo("SO-MANUAL-9");
         bo.setOrderStatus(ISoSalesOrderHeaderService.STATUS_APPROVED);
@@ -370,8 +370,33 @@ class SoSalesOrderHeaderServiceImplTest {
         ArgumentCaptor<SoSalesOrderHeader> captor = ArgumentCaptor.forClass(SoSalesOrderHeader.class);
         verify(baseMapper).insert(captor.capture());
         assertEquals("SO-MANUAL-9", captor.getValue().getSoNo());
-        assertEquals(ISoSalesOrderHeaderService.STATUS_APPROVED, captor.getValue().getOrderStatus());
+        assertEquals(ISoSalesOrderHeaderService.STATUS_DRAFT, captor.getValue().getOrderStatus());
         verify(autoCodeUtil, never()).genSerialCode(any(), any());
+    }
+
+    /** 确认：未关联客户直接拒绝（否则信用检查静默跳过 = 绕过额度控制） */
+    @Test
+    void confirm_rejectsOrderWithoutClient() {
+        SoSalesOrderHeader h = header(1L, ISoSalesOrderHeaderService.STATUS_DRAFT);
+        h.setClientId(null);
+        when(baseMapper.selectById(1L)).thenReturn(h);
+
+        ServiceException ex = assertThrows(ServiceException.class, () -> headerService.confirm(1L));
+        assertTrue(ex.getMessage().contains("未关联来源客户"), "实际: " + ex.getMessage());
+        verify(creditCheckService, never()).checkAndFreeze(any(), any(), any());
+    }
+
+    /** 确认成功：信用状态写字典合法值 CHECKED_OK（原实现写 PASSED，字典中不存在该值） */
+    @Test
+    void confirm_success_writesCheckedOkCreditStatus() {
+        SoSalesOrderHeader h = header(1L, ISoSalesOrderHeaderService.STATUS_DRAFT);
+        when(baseMapper.selectById(1L)).thenReturn(h);
+        when(baseMapper.update(any(), any())).thenReturn(1);
+        when(soSalesOrderLineMapper.selectList(any())).thenReturn(List.of());
+
+        headerService.confirm(1L);
+
+        assertEquals("CHECKED_OK", h.getCreditStatus());
     }
 
     /** 详情：按 coId 回填客户订单号（修正前端用客户参考号冒充的问题） */

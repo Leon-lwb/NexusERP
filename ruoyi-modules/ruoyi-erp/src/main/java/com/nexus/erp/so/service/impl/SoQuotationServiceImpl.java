@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.MapstructUtils;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
@@ -27,6 +28,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -41,6 +43,9 @@ import java.util.List;
 @DS("erp")
 @Service
 public class SoQuotationServiceImpl implements ISoQuotationService {
+
+    /** 百分数换算基数（税率以「百分数」存储：13 表示 13%） */
+    private static final BigDecimal HUNDRED = new BigDecimal("100");
 
     private final SoQuotationMapper baseMapper;
     private final SoQuotationLineMapper lineMapper;
@@ -82,38 +87,70 @@ public class SoQuotationServiceImpl implements ISoQuotationService {
     }
 
     /**
-     * 新增销售报价（自动生成报价单号并保存明细行）
+     * 新增销售报价（强制草稿 + 自动生成报价单号 + 白名单落库明细行）。
+     * <p>状态由服务端强制为 {@code DRAFT}：报价状态只能经 confirm / convertToSalesOrder 流转，
+     * 不接受客户端直写（原实现直接落客户端传入的 status）。</p>
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(SoQuotationBo bo) {
         SoQuotation entity = MapstructUtils.convert(bo, SoQuotation.class);
+        entity.setStatus(STATUS_DRAFT);
         if (StringUtils.isBlank(entity.getQuotationNo())) {
             entity.setQuotationNo(autoCodeUtil.genSerialCode("SO_QUOTATION_CODE", null));
         }
+        List<SoQuotationLine> lines = normalizeLines(bo.getSoQuotationLineList());
+        applyTotals(entity, lines);
         int rows = baseMapper.insert(entity);
-        insertOrUpdateLines(entity.getQuotationId(), bo.getSoQuotationLineList());
+        insertLines(entity.getQuotationId(), lines);
         return rows;
     }
 
     /**
-     * 修改销售报价（先删除原明细行再重新插入）
+     * 修改销售报价（仅草稿可改；单号与状态服务端权威；明细行白名单重建）。
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(SoQuotationBo bo) {
+        if (bo.getQuotationId() == null) {
+            throw new ServiceException("报价单ID不能为空");
+        }
+        SoQuotation existing = baseMapper.selectById(bo.getQuotationId());
+        if (existing == null) {
+            throw new ServiceException("报价单不存在");
+        }
+        if (!STATUS_DRAFT.equals(existing.getStatus())) {
+            throw new ServiceException("只有草稿状态的报价单才能修改，当前状态：" + existing.getStatus());
+        }
         SoQuotation entity = MapstructUtils.convert(bo, SoQuotation.class);
+        entity.setQuotationNo(existing.getQuotationNo());
+        entity.setStatus(existing.getStatus());
+        List<SoQuotationLine> lines = normalizeLines(bo.getSoQuotationLineList());
+        applyTotals(entity, lines);
         deleteLinesByQuotationId(entity.getQuotationId());
-        insertOrUpdateLines(entity.getQuotationId(), bo.getSoQuotationLineList());
+        insertLines(entity.getQuotationId(), lines);
         return baseMapper.updateById(entity);
     }
 
     /**
-     * 批量删除销售报价（同时删除明细行）
+     * 批量删除销售报价（仅草稿可删除，同时删除明细行）。
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {
+        if (ids == null || ids.length == 0) {
+            return 0;
+        }
+        for (Long id : ids) {
+            SoQuotation existing = baseMapper.selectById(id);
+            if (existing == null) {
+                continue;
+            }
+            if (!STATUS_DRAFT.equals(existing.getStatus())) {
+                throw new ServiceException("只有草稿状态的报价单才能删除，单号 "
+                    + existing.getQuotationNo() + " 当前状态：" + existing.getStatus());
+            }
+        }
         for (Long id : ids) {
             deleteLinesByQuotationId(id);
         }
@@ -128,27 +165,31 @@ public class SoQuotationServiceImpl implements ISoQuotationService {
     public void confirm(Long quotationId) {
         SoQuotation quotation = baseMapper.selectById(quotationId);
         if (quotation == null) {
-            throw new RuntimeException("报价单不存在");
+            throw new ServiceException("报价单不存在");
         }
         if (!STATUS_DRAFT.equals(quotation.getStatus())) {
-            throw new RuntimeException("只有草稿状态的报价单才能确认");
+            throw new ServiceException("只有草稿状态的报价单才能确认，当前状态：" + quotation.getStatus());
         }
         quotation.setStatus(STATUS_CONFIRMED);
         baseMapper.updateById(quotation);
     }
 
     /**
-     * 将销售报价转换为销售订单
+     * 将销售报价转换为销售订单（仅「已确认」可转，且不可重复转换）。
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Long convertToSalesOrder(Long quotationId) {
         SoQuotation quotation = baseMapper.selectById(quotationId);
         if (quotation == null) {
-            throw new RuntimeException("报价单不存在");
+            throw new ServiceException("报价单不存在");
         }
         if (STATUS_CONVERTED.equals(quotation.getStatus())) {
-            throw new RuntimeException("报价单已转换，不能重复转换");
+            throw new ServiceException("报价单已转换，不能重复转换");
+        }
+        // 原实现只拦 CONVERTED，草稿可跳过 confirm 直接转单，绕过报价确认环节
+        if (!STATUS_CONFIRMED.equals(quotation.getStatus())) {
+            throw new ServiceException("只有已确认状态的报价单才能转换为销售订单，当前状态：" + quotation.getStatus());
         }
 
         List<SoQuotationLine> lines = lineMapper.selectList(
@@ -156,7 +197,7 @@ public class SoQuotationServiceImpl implements ISoQuotationService {
                 .eq(SoQuotationLine::getQuotationId, quotationId));
 
         if (lines == null || lines.isEmpty()) {
-            throw new RuntimeException("报价单无明细行");
+            throw new ServiceException("报价单无明细行");
         }
 
         // 创建销售订单
@@ -210,18 +251,109 @@ public class SoQuotationServiceImpl implements ISoQuotationService {
     }
 
     /**
-     * 批量新增报价单明细行：清空行ID后按报价单ID归属并逐条插入。
+     * 明细行白名单重建：逐字段拷贝可编辑字段，丢弃客户端传入的 {@code lineId / tenantId / delFlag /
+     * createBy / createTime / updateBy / updateTime}，并校验数量与单价非负、税率在 0~100，
+     * 最后按「金额 = 数量 × 单价、税额 = 金额 × 税率% / 100」服务端重算。
+     *
+     * <p><b>为什么必须白名单</b>：{@code SoQuotationBo.soQuotationLineList} 直接复用实体类型
+     * {@code List<SoQuotationLine>}，若原样落库，客户端可注入 {@code tenantId} 把明细写进其它租户
+     * —— 多租户插件不会覆盖 insert 语句中已显式出现的 {@code tenant_id} 列。
+     * 合同侧（{@code SoContractServiceImpl.normalizeLines}）已是该写法，此处对齐。</p>
+     *
+     * @param lines 客户端提交的明细行（可为 null，表示不处理）
+     * @return 净化后的明细行列表（入参 null 时返回 null）
+     */
+    private List<SoQuotationLine> normalizeLines(List<SoQuotationLine> lines) {
+        if (lines == null) {
+            return null;
+        }
+        List<SoQuotationLine> normalized = new ArrayList<>(lines.size());
+        int seq = 1;
+        for (SoQuotationLine line : lines) {
+            if (line == null) {
+                continue;
+            }
+            if (line.getQuantity() != null && line.getQuantity().signum() < 0) {
+                throw new ServiceException("报价明细数量不能为负数");
+            }
+            if (line.getUnitPrice() != null && line.getUnitPrice().signum() < 0) {
+                throw new ServiceException("报价明细单价不能为负数");
+            }
+            if (line.getTaxRate() != null
+                && (line.getTaxRate().signum() < 0 || line.getTaxRate().compareTo(HUNDRED) > 0)) {
+                throw new ServiceException("报价明细税率必须在 0~100 之间");
+            }
+            SoQuotationLine clean = new SoQuotationLine();
+            clean.setMaterialId(line.getMaterialId());
+            clean.setMaterialCode(line.getMaterialCode());
+            clean.setMaterialName(line.getMaterialName());
+            clean.setMaterialSpec(line.getMaterialSpec());
+            clean.setBaseUomId(line.getBaseUomId());
+            clean.setBaseUomName(line.getBaseUomName());
+            clean.setQuantity(line.getQuantity());
+            clean.setUnitPrice(line.getUnitPrice());
+            clean.setTaxRate(line.getTaxRate());
+            clean.setDeliveryDate(line.getDeliveryDate());
+            clean.setSortOrder(line.getSortOrder() != null ? line.getSortOrder() : seq);
+            clean.setRemark(line.getRemark());
+            clean.setAttr1(line.getAttr1());
+            clean.setAttr2(line.getAttr2());
+            clean.setAttr3(line.getAttr3());
+            clean.setAttr4(line.getAttr4());
+            if (clean.getQuantity() != null && clean.getUnitPrice() != null) {
+                BigDecimal amount = clean.getUnitPrice().multiply(clean.getQuantity())
+                    .setScale(2, RoundingMode.HALF_UP);
+                clean.setAmount(amount);
+                clean.setTaxAmount(clean.getTaxRate() == null ? BigDecimal.ZERO
+                    : amount.multiply(clean.getTaxRate()).divide(HUNDRED, 2, RoundingMode.HALF_UP));
+            } else {
+                clean.setAmount(BigDecimal.ZERO);
+                clean.setTaxAmount(BigDecimal.ZERO);
+            }
+            normalized.add(clean);
+            seq++;
+        }
+        return normalized;
+    }
+
+    /**
+     * 明细非空时以行合计覆盖表头金额（总金额 = Σ行金额，税额 = Σ行税额），
+     * 避免客户端伪造表头金额导致报价与明细不一致。
+     *
+     * @param entity 报价单实体（原地覆盖 totalAmount / taxAmount）
+     * @param lines  净化后的明细行（null 或空表示本次未提交明细，保持原值不动）
+     */
+    private void applyTotals(SoQuotation entity, List<SoQuotationLine> lines) {
+        if (lines == null || lines.isEmpty()) {
+            return;
+        }
+        BigDecimal amount = BigDecimal.ZERO;
+        BigDecimal tax = BigDecimal.ZERO;
+        for (SoQuotationLine line : lines) {
+            if (line.getAmount() != null) {
+                amount = amount.add(line.getAmount());
+            }
+            if (line.getTaxAmount() != null) {
+                tax = tax.add(line.getTaxAmount());
+            }
+        }
+        entity.setTotalAmount(amount);
+        entity.setTaxAmount(tax);
+    }
+
+    /**
+     * 落库净化后的明细行：归属到报价单并逐条插入。
      *
      * @param quotationId 报价单ID
-     * @param lineList    明细行列表
+     * @param lines       已净化的明细行
      */
-    private void insertOrUpdateLines(Long quotationId, List<SoQuotationLine> lineList) {
-        if (lineList != null && !lineList.isEmpty()) {
-            for (SoQuotationLine line : lineList) {
-                line.setLineId(null);
-                line.setQuotationId(quotationId);
-                lineMapper.insert(line);
-            }
+    private void insertLines(Long quotationId, List<SoQuotationLine> lines) {
+        if (lines == null || lines.isEmpty()) {
+            return;
+        }
+        for (SoQuotationLine line : lines) {
+            line.setQuotationId(quotationId);
+            lineMapper.insert(line);
         }
     }
 

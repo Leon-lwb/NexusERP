@@ -356,7 +356,8 @@ insertOrUpdateLines(entity.getSoId(), ...);          // 且强制 line.setLineId
 | T1.6 报表修复 | ✅ 完成（SQL/租户/权限） | 见本批次 commit | 新增 6 用例；`Tests run: 106, Failures: 0`。菜单与前端属 T3.4，待 Q1 |
 | T1.7 跨库事务（待 Q5 实测） | ⬜ 待办 | | |
 | T1.8 金额服务端重算 | ✅ 完成 | 见本批次 commit | 新增 2 用例；`Tests run: 100, Failures: 0` |
-| 批次 2 ~ 批次 5 | ⬜ 待办 | | |
+| 批次 2：契约与校验 | ✅ 完成（除 Q3 相关项） | 见本批次 commit | 新增 14 用例；`Tests run: 119, Failures: 0`；前端 `eslint` + `build:prod` 通过 |
+| 批次 3 ~ 批次 5 | ⬜ 待办 | | |
 
 **T1.1 实施要点**（`SoSalesOrderHeaderServiceImpl`）：- `updateByBo` 仅允许 `DRAFT`；单号与状态强制还原为库中值，客户端改写无效
 - `diffUpdateLines`：按 `lineId` 区分「更新 / 新增 / 删除」，保留已有行 `line_id`
@@ -380,6 +381,22 @@ insertOrUpdateLines(entity.getSoId(), ...);          // 且强制 line.setLineId
 **批次 1 剩余**：
 - T1.6 报表修复（列名/租户/权限）—— SQL 与租户部分与 Q1 无关可直接修；菜单与前端属 T3.4 待 Q1
 - T1.7 跨库事务 —— 待 Q5 实测结果
+
+**批次 2 实施要点**：
+- **BO 补 Jakarta Validation**（此前两个 BO 零注解，Controller 的 `@Validated` 是空转）：
+  Header `clientId`/`orderDate` `@NotNull`，`exchangeRate`/`discountRate` 范围；
+  Line `materialId` `@NotNull`、`orderedQty` `@DecimalMin("0.0001")`、`unitPrice`/`taxRate`/`discountPercent` 范围。
+  采用**空值安全**的范围注解（Hibernate 忽略 null），避免误伤历史可空字段；写法对齐 `SoContractBo`。
+- **状态由服务端强制**：`SoSalesOrderHeaderServiceImpl.insertByBo` 无条件置 DRAFT（原实现只在为空时兜底，
+  允许客户端直写终态 —— `sys_oper_log` 中确有 `orderStatus=CONFIRMED` 直接建单记录，会绕过信用检查、
+  库存预留与生产计划生成）；前端表单状态框改为只读 `dict-tag`。
+- **`creditStatus` 写 `CHECKED_OK`** 而非 `PASSED`（字典 `so_credit_status` 只有
+  NOT_CHECKED/CHECKED_OK/CHECKED_BLOCKED，原值前端只能显示原始码）。
+- **`confirm()` 要求 `clientId` 非空**：`checkAndFreeze` 对 `clientId=null` 会静默跳过，等于绕过额度控制。
+- **报价单**（`SoQuotationServiceImpl`）：`insertByBo` 强制 DRAFT；`updateByBo`/`deleteByIds` 限 DRAFT；
+  `convertToSalesOrder` 要求 CONFIRMED（原实现只拦 CONVERTED，草稿可跳过确认直接转单）+ Controller 加 `@RepeatSubmit`；
+  明细行改**白名单重建**（丢弃 lineId/tenantId/delFlag/审计字段，防跨租户写入）+ 行金额与表头金额服务端重算；
+  异常口径由 `RuntimeException` 改 `ServiceException`。
 
 ---
 

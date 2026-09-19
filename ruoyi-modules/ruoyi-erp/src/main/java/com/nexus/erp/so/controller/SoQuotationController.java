@@ -4,6 +4,7 @@ import cn.dev33.satoken.annotation.SaCheckPermission;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import com.nexus.common.core.domain.R;
+import com.nexus.common.idempotent.annotation.RepeatSubmit;
 import com.nexus.common.excel.utils.ExcelUtil;
 import com.nexus.common.log.annotation.Log;
 import com.nexus.common.log.enums.BusinessType;
@@ -137,13 +138,14 @@ public class SoQuotationController extends BaseController {
     }
 
     /**
-     * 将销售报价转换为销售订单
+     * 将销售报价转换为销售订单（仅「已确认」可转；加防重复提交）
      * <p>权限标识：{@code so:quotation:edit}</p>
      * <p>日志记录：title="销售报价"，businessType=UPDATE</p>
      *
      * @param quotationId 销售报价ID
      * @return 生成的销售订单ID
      */
+    @RepeatSubmit
     @SaCheckPermission("so:quotation:edit")
     @Log(title = "销售报价", businessType = BusinessType.UPDATE)
     @PostMapping("/convertToOrder/{quotationId}")

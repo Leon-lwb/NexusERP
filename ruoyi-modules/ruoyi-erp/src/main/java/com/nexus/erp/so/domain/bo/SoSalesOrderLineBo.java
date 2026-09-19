@@ -1,6 +1,9 @@
 package com.nexus.erp.so.domain.bo;
 
 import io.github.linpeilie.annotations.AutoMapper;
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -29,6 +32,7 @@ public class SoSalesOrderLineBo extends BaseEntity {
     /** 行号 */
     private String lineNo;
     /** 物料ID */
+    @NotNull(message = "订单行物料不能为空")
     private Long materialId;
     /** 物料编码 */
     private String materialCode;
@@ -37,20 +41,27 @@ public class SoSalesOrderLineBo extends BaseEntity {
     /** 物料规格 */
     private String materialSpec;
     /** 订单数量 */
+    @NotNull(message = "订单数量不能为空")
+    @DecimalMin(value = "0.0001", message = "订单数量必须大于 0")
     private BigDecimal orderedQty;
     /** 已发货数量 */
     private BigDecimal deliveredQty;
     /** 单位 */
     private String unit;
     /** 单价 */
+    @DecimalMin(value = "0", message = "单价不能为负数")
     private BigDecimal unitPrice;
     /** 行金额 */
     private BigDecimal lineAmount;
-    /** 税率 */
+    /** 税率（百分数：13 表示 13%） */
+    @DecimalMin(value = "0", message = "税率不能为负数")
+    @DecimalMax(value = "100", message = "税率不能超过 100")
     private BigDecimal taxRate;
     /** 税额 */
     private BigDecimal taxAmount;
-    /** 折扣百分比 */
+    /** 折扣百分比（百分数：5 表示让利 5%） */
+    @DecimalMin(value = "0", message = "行折扣率不能为负数")
+    @DecimalMax(value = "100", message = "行折扣率不能超过 100")
     private BigDecimal discountPercent;
     /** 折扣金额 */
     private BigDecimal discountAmount;

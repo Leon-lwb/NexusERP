@@ -102,11 +102,8 @@
                 </el-col>
                 <el-col :xs="24" :sm="12" :md="8" :lg="6">
                   <el-form-item label="订单状态" prop="orderStatus">
-                    <!-- 已有单据状态由审批流/列表页动作流转，表单内只读 -->
-                    <el-select v-if="form.soId == null" v-model="form.orderStatus" placeholder="请选择订单状态" style="width: 100%">
-                      <el-option v-for="dict in so_order_status" :key="dict.value" :label="dict.label" :value="dict.value" />
-                    </el-select>
-                    <dict-tag v-else-if="form.orderStatus" :options="so_order_status" :value="form.orderStatus" />
+                    <!-- 状态由服务端强制为草稿，之后只能经审批流 / 列表页动作流转，表单内始终只读 -->
+                    <dict-tag v-if="form.orderStatus" :options="so_order_status" :value="form.orderStatus" />
                     <span v-else>-</span>
                   </el-form-item>
                 </el-col>
