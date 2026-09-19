@@ -162,6 +162,7 @@
 |---|---|---|
 | `script/sql/update/2026-09-19-so-price-list-discount-rate.sql` | D2 折扣率默认值 `100→0` + 存量数据 `100→0` + 税率/折扣率列注释 | 执行 UPDATE 前确认无「真实让利 100%」的行：`SELECT * FROM so_price_list_line WHERE discount_rate = 100;` |
 | `script/sql/update/2026-09-19-so-price-list-menu.sql` | 价目表菜单 2225 + 按钮 2226~2229/2236 + 字典 `so_price_list_status` + 角色授权 | 幂等（INSERT IGNORE），可直接执行 |
+| `script/sql/update/2026-09-19-so-drop-dead-columns.sql` | Q4 死字段清理：删 `so_sales_order_header.delivery_address_id`/`invoice_address_id`、`so_sales_order_line.linked_po_id`/`reserved_serials`/`pa_group_id` 共 5 列 | **一次性脚本**（DROP COLUMN 无幂等写法）；脚本内附前置检查，**须先确认这 5 列全为 NULL** 再删 |
 | `script/sql/update/2026-09-19-so-ddl-hardening.sql` | 唯一键补 `tenant_id`（2 个）+ 补单号唯一约束（2 个）+ 阶梯唯一约束（1 个）、补 14 个查询索引、`min_qty` 去 NULL、重建 `so_invoice` 乱码注释 | 脚本内每节都以注释给出前置检查 SQL；加唯一约束前须确认无重复数据 |
 
 **执行后注意**：应用若在运行，菜单与字典走 Redis 缓存，需在「菜单管理/字典管理」保存任意一项触发刷新，
@@ -178,7 +179,7 @@
 | # | 决策 | 对工作的影响 |
 |---|---|---|
 | **Q5** | **可用**（提交审批功能正常） | ✅ **结案，无需修复**。原判「事务内跨库会失败」是**误判**：被调用方 `WfProcessServiceImpl.startProcessByDataId` 标了 `@Transactional(REQUIRES_NEW)`（`:1947`），会挂起外层事务并重新获取连接，`@DS("master")` 因此**真正生效**（`wf_*` 表 13 张在 `ry-vue`，`ry-erp` 为 0 张）。且 4 个 `submit()` 在工作流调用后**无 erp 写操作**（状态流转由 `afterFlowHandle` 完成），跨库非原子性无暴露面。已更正计划 §三 P0-5 |
-| **Q4** | **死字段删** | 删除 13 个死字段（实体/BO/VO + DDL + 存量库脚本 + 增量变更记录） |
+| **Q4** | **死字段删** | ✅ **已完成**。复核后**实际只删 5 个**：原清单 13 个里 **8 个是前端真实在用的 UI 字段**（`projectId`/`isPaEnabled`/`distributionChannel`/`customerRefNo` 表头 `v-model`；`discountPercent` 参与行金额计算；`deliveryPriority`/`customerLineRef`/`reservedBatchNo` 行级绑定或展示）。原判定「Java getter/setter 零命中」有缺陷 —— Jackson 反射序列化，源码里 grep 不到 getter 不等于字段已死。详见计划附录 A |
 | **Q3** | **百分数**（`13` = 13%） | 统一税率口径为百分数；补单位注释；核对历史混存数据与前端公式 |
 | **Q1** | **修**（报表保留） | T3.4：补菜单/权限码 + 修前端 echarts 重复 init、resize 泄漏、未消费 `completionRate` |
 | **Q2** | **尽量全闭环** | T3.3：退货数量回写订单（`returned_qty`）+ 超退校验 + 前端 `confirm`/`execute` 接线 |
