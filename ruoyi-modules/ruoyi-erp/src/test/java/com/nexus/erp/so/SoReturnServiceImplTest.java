@@ -9,6 +9,8 @@ import com.nexus.common.flowable.helper.FlowableProcInsIdHelper;
 import com.nexus.erp.so.domain.SoReturn;
 import com.nexus.erp.so.domain.SoReturnLine;
 import com.nexus.erp.so.domain.bo.SoReturnBo;
+import com.nexus.erp.so.domain.vo.SoReturnLineVo;
+import com.nexus.erp.so.domain.vo.SoReturnVo;
 import com.nexus.erp.so.mapper.SoReturnLineMapper;
 import com.nexus.erp.so.mapper.SoReturnMapper;
 import com.nexus.erp.so.service.ISoReturnService;
@@ -335,5 +337,48 @@ class SoReturnServiceImplTest {
         ArgumentCaptor<SoReturn> captor = ArgumentCaptor.forClass(SoReturn.class);
         verify(baseMapper).insert(captor.capture());
         assertEquals("SR-AUTO-0001", captor.getValue().getReturnNo());
+    }
+
+    // ==================== selectById 明细行转 VO（批次 5）====================
+
+    /**
+     * 详情返回明细行 VO 而非实体：不暴露 tenantId/delFlag 等审计字段，
+     * 同时**必须保留**退货表单实际使用的 baseUomId / taxRate 等字段
+     * —— 这些字段此前不在 SoReturnLineVo 里，若直接换类型会让表单加载丢字段、保存回写 null。
+     */
+    @Test
+    void selectById_returnsLineVoKeepingFormFields() {
+        SoReturnVo header = new SoReturnVo();
+        header.setReturnId(1L);
+        when(baseMapper.selectVoById(1L)).thenReturn(header);
+
+        SoReturnLine line = new SoReturnLine();
+        line.setLineId(10L);
+        line.setReturnId(1L);
+        line.setMaterialId(100L);
+        line.setMaterialCode("M-001");
+        line.setBaseUomId("77");
+        line.setBaseUomName("件");
+        line.setReturnQuantity(new BigDecimal("3"));
+        line.setUnitPrice(new BigDecimal("100"));
+        line.setTaxRate(new BigDecimal("13"));
+        line.setTaxAmount(new BigDecimal("39"));
+        line.setSortOrder(1);
+        line.setTenantId("888888");
+        line.setDelFlag("1");
+        when(lineMapper.selectList(any())).thenReturn(List.of(line));
+
+        SoReturnVo result = returnService.selectById(1L);
+
+        assertEquals(1, result.getSoReturnLineList().size());
+        SoReturnLineVo lineVo = result.getSoReturnLineList().get(0);
+        // 退货表单实际绑定的字段一个都不能少
+        assertEquals("M-001", lineVo.getMaterialCode());
+        assertEquals("77", lineVo.getBaseUomId());
+        assertEquals("件", lineVo.getBaseUomName());
+        assertEquals(0, new BigDecimal("3").compareTo(lineVo.getReturnQuantity()));
+        assertEquals(0, new BigDecimal("13").compareTo(lineVo.getTaxRate()));
+        assertEquals(0, new BigDecimal("39").compareTo(lineVo.getTaxAmount()));
+        assertEquals(1, lineVo.getSortOrder());
     }
 }

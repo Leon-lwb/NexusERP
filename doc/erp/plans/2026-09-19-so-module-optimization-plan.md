@@ -368,9 +368,22 @@ insertOrUpdateLines(entity.getSoId(), ...);          // 且强制 line.setLineId
 | 批次 5：清理与一致性 | 🚧 进行中（不依赖 Q4 的前端项已完成） | | |
 | └ 客户订单幻影字段清理 | ✅ 完成 | 见本批次 commit | 前端 `eslint` + `build:prod` 通过 |
 | └ 列表页选中项残留修复 | ✅ 完成 | 见本批次 commit | 同上 |
-| └ 退货/发票工具栏状态门禁对齐行内 | ⬜ 待办 | | |
+| └ 退货/发票工具栏状态门禁对齐行内 | ✅ 完成 | 见本批次 commit | 前端 `eslint` + `build:prod` 通过 |
+| └ 报价/退货明细行改 VO 直出（去掉 `@JSONField` 无效注解） | ✅ 完成 | 见本批次 commit | 新增 2 用例；`Tests run: 130, Failures: 0` |
 | └ 13 个死字段清理（待 Q4） | ⬜ 待办 | | |
-| └ 实体直出改 VO / `@JSONField` 无效注解 / 异常口径统一 | ⬜ 待办 | | |
+| └ 发票/合同明细行改 VO（需新建 LineVo） | ⬜ 待办 | | |
+| └ 异常口径统一为 `ServiceException` | ✅ 完成 | | so 模块 `throw new RuntimeException` 已清零 |
+
+**批次 5 第二轮已完成项要点**：
+- **明细行改 VO 直出**（报价 / 退货）：原实现返回实体，会把 `tenantId`/`delFlag`/`createBy`
+  暴露给前端；且原先的 `@JSONField(serialize = false)` 是 fastjson2 注解，本项目 HTTP 走 Jackson，
+  **完全不生效**（即便生效也会让表单读不到明细行 —— 注解意图本身也是错的）。
+  **踩坑提醒**：`SoReturnLineVo` 比实体少了 `baseUomId`/`baseUomName`/`taxRate`/`taxAmount`/`sortOrder`，
+  而退货表单实际绑定 `baseUomId` 与 `taxRate` —— 直接换类型会让表单加载丢字段、保存回写 null。
+  已先补齐 VO 字段再换类型，并加了「字段不丢」的断言测试锁定。
+- **工具栏状态门禁对齐**：退货（改/删仅 DRAFT）、发票（改限 DRAFT/REJECTED、删仅 DRAFT）的工具栏按钮
+  此前只按 `single`/`multiple` 禁用，与行内按钮及后端状态机分叉。统一改为按选中行状态门禁，
+  并加 `watch(list)` 清空勾选防旧选中残留。
 
 **批次 5 已完成项要点**：
 - **客户订单「销售部门」幻影字段**：`so_customer_order` 表 / 实体 / BO / VO **都没有** `deptId`/`deptName`，

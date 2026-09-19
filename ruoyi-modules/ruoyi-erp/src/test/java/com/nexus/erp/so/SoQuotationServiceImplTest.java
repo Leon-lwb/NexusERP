@@ -9,6 +9,8 @@ import com.nexus.erp.so.domain.SoQuotation;
 import com.nexus.erp.so.domain.SoQuotationLine;
 import com.nexus.erp.so.domain.SoSalesOrderHeader;
 import com.nexus.erp.so.domain.bo.SoQuotationBo;
+import com.nexus.erp.so.domain.vo.SoQuotationLineVo;
+import com.nexus.erp.so.domain.vo.SoQuotationVo;
 import com.nexus.erp.so.mapper.SoQuotationLineMapper;
 import com.nexus.erp.so.mapper.SoQuotationMapper;
 import com.nexus.erp.so.mapper.SoSalesOrderHeaderMapper;
@@ -294,5 +296,46 @@ class SoQuotationServiceImplTest {
         // 报价单状态回写为已转换
         assertEquals(ISoQuotationService.STATUS_CONVERTED, q.getStatus());
         verify(baseMapper).updateById(q);
+    }
+
+    // ==================== selectById 明细行转 VO（批次 5）====================
+
+    /**
+     * 详情返回明细行 VO 而非实体：不暴露 tenantId/delFlag 等审计字段，
+     * 同时保留报价表单实际绑定的字段（数量/单价/税率/金额/交货日期等）。
+     */
+    @Test
+    void selectById_returnsLineVoKeepingFormFields() {
+        SoQuotationVo header = new SoQuotationVo();
+        header.setQuotationId(1L);
+        when(baseMapper.selectVoById(1L)).thenReturn(header);
+
+        SoQuotationLine line = new SoQuotationLine();
+        line.setLineId(10L);
+        line.setQuotationId(1L);
+        line.setMaterialId(100L);
+        line.setMaterialCode("M-001");
+        line.setMaterialName("测试物料");
+        line.setQuantity(new BigDecimal("2"));
+        line.setUnitPrice(new BigDecimal("100"));
+        line.setAmount(new BigDecimal("200.00"));
+        line.setTaxRate(new BigDecimal("13"));
+        line.setTaxAmount(new BigDecimal("26.00"));
+        line.setSortOrder(1);
+        line.setTenantId("888888");
+        line.setDelFlag("1");
+        when(lineMapper.selectList(any())).thenReturn(List.of(line));
+
+        SoQuotationVo result = quotationService.selectById(1L);
+
+        assertEquals(1, result.getSoQuotationLineList().size());
+        SoQuotationLineVo lineVo = result.getSoQuotationLineList().get(0);
+        assertEquals("M-001", lineVo.getMaterialCode());
+        assertEquals("测试物料", lineVo.getMaterialName());
+        assertEquals(0, new BigDecimal("2").compareTo(lineVo.getQuantity()));
+        assertEquals(0, new BigDecimal("100").compareTo(lineVo.getUnitPrice()));
+        assertEquals(0, new BigDecimal("200.00").compareTo(lineVo.getAmount()));
+        assertEquals(0, new BigDecimal("13").compareTo(lineVo.getTaxRate()));
+        assertEquals(1, lineVo.getSortOrder());
     }
 }

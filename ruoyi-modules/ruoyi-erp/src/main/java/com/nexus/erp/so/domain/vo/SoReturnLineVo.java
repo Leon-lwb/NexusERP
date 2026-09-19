@@ -38,6 +38,12 @@ public class SoReturnLineVo implements Serializable {
     @ExcelProperty("物料规格")
     private String materialSpec;
 
+    /** 基本计量单位ID（退货表单按它解析单位名称，缺失会导致表单回写 null） */
+    private String baseUomId;
+
+    /** 基本计量单位名称 */
+    private String baseUomName;
+
     /** 退货数量 */
     @ExcelProperty("退货数量")
     private BigDecimal returnQuantity;
@@ -50,9 +56,20 @@ public class SoReturnLineVo implements Serializable {
     @ExcelProperty("金额")
     private BigDecimal amount;
 
+    /** 税率（百分数：13 表示 13%） */
+    @ExcelProperty("税率")
+    private BigDecimal taxRate;
+
+    /** 税额 */
+    @ExcelProperty("税额")
+    private BigDecimal taxAmount;
+
     /** 退货原因 */
     @ExcelProperty("退货原因")
     private String returnReason;
+
+    /** 排序号 */
+    private Integer sortOrder;
 
     /** 备注 */
     private String remark;

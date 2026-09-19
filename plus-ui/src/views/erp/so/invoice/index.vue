@@ -42,10 +42,20 @@
         <el-button type="primary" plain icon="Plus" @click="handleAdd()" v-hasPermi="['so:invoice:add']">新增</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate()" v-hasPermi="['so:invoice:edit']">修改</el-button>
+        <el-button type="success" plain icon="Edit" :disabled="single || !canEditSelected" @click="handleUpdate()" v-hasPermi="['so:invoice:edit']"
+          >修改</el-button
+        >
       </el-col>
       <el-col :span="1.5">
-        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete()" v-hasPermi="['so:invoice:remove']">删除</el-button>
+        <el-button
+          type="danger"
+          plain
+          icon="Delete"
+          :disabled="multiple || !canDeleteSelected"
+          @click="handleDelete()"
+          v-hasPermi="['so:invoice:remove']"
+          >删除</el-button
+        >
       </el-col>
       <el-col :span="1.5">
         <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['so:invoice:export']">导出</el-button>
@@ -54,7 +64,7 @@
     </el-row>
 
     <!-- 数据表格 -->
-    <el-table v-loading="loading" :data="dataList" @selection-change="handleSelectionChange" show-overflow-tooltip>
+    <el-table ref="invoiceTableRef" v-loading="loading" :data="dataList" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="发票号" align="center" prop="invoiceNo" />
       <el-table-column label="客户名称" align="center" prop="clientName" min-width="120" show-overflow-tooltip />
@@ -431,7 +441,7 @@ const {
   cancel,
   handleDelete,
   handleExport,
-  handleSelectionChange
+  handleSelectionChange: crudSelectionChange
 } = useCrud({
   apis: { list: listInvoice, get: getInvoice, add: addInvoice, update: updateInvoice, del: delInvoice },
   idField: 'invoiceId',
@@ -476,6 +486,42 @@ const {
   afterLoad: (data: any) => {
     lineList.value = data.soInvoiceLineList || [];
   }
+});
+
+/**
+ * 当前选中行 + 可改/可删判定。
+ * 与后端 SoInvoiceServiceImpl 的状态门禁保持一致：
+ * updateByBo 允许 DRAFT/REJECTED，deleteByIds 仅 DRAFT。
+ * 原工具栏只按 single/multiple 禁用，与行内按钮分叉 —— 选中已开票的发票仍可点「修改」。
+ */
+const selectedRow = ref<any>(null);
+const selectedRows = ref<any[]>([]);
+const invoiceTableRef = ref<any>(null);
+
+function handleSelectionChange(selection: any[]) {
+  crudSelectionChange(selection);
+  selectedRows.value = selection;
+  selectedRow.value = selection.length === 1 ? selection[0] : null;
+}
+
+/** 可修改：草稿或已驳回（与后端 updateByBo 一致） */
+function canEditRow(row: any) {
+  return !!row && (row.status === 'DRAFT' || row.status === 'REJECTED');
+}
+
+/** 可删除：仅草稿（与后端 deleteByIds 一致） */
+function canDeleteRow(row: any) {
+  return !!row && row.status === 'DRAFT';
+}
+
+const canEditSelected = computed(() => selectedRows.value.length === 1 && canEditRow(selectedRows.value[0]));
+const canDeleteSelected = computed(() => selectedRows.value.length > 0 && selectedRows.value.every((row: any) => canDeleteRow(row)));
+
+// 列表数据被整体替换（搜索/重置/翻页/删除刷新）时清空勾选，避免旧选中行驱动按钮可用态
+watch(dataList, () => {
+  selectedRows.value = [];
+  selectedRow.value = null;
+  invoiceTableRef.value?.clearSelection();
 });
 
 /** 重置搜索 */

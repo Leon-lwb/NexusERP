@@ -38,10 +38,20 @@
         <el-button type="primary" plain icon="Plus" @click="handleAdd()" v-hasPermi="['so:return:add']">新增</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate()" v-hasPermi="['so:return:edit']">修改</el-button>
+        <el-button type="success" plain icon="Edit" :disabled="single || !canEditSelected" @click="handleUpdate()" v-hasPermi="['so:return:edit']"
+          >修改</el-button
+        >
       </el-col>
       <el-col :span="1.5">
-        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete()" v-hasPermi="['so:return:remove']">删除</el-button>
+        <el-button
+          type="danger"
+          plain
+          icon="Delete"
+          :disabled="multiple || !canDeleteSelected"
+          @click="handleDelete()"
+          v-hasPermi="['so:return:remove']"
+          >删除</el-button
+        >
       </el-col>
       <el-col :span="1.5">
         <el-button type="info" plain icon="View" :disabled="single" @click="handleView()" v-hasPermi="['so:return:query']">查看</el-button>
@@ -52,7 +62,7 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="returnList" @selection-change="handleSelectionChange" show-overflow-tooltip>
+    <el-table ref="returnTableRef" v-loading="loading" :data="returnList" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="退货单编号" align="center" prop="returnNo" />
       <el-table-column label="销售订单号" align="center" prop="soNo" />
@@ -148,7 +158,7 @@ const {
   handleQuery,
   handleDelete,
   handleExport,
-  handleSelectionChange
+  handleSelectionChange: crudSelectionChange
 } = useCrud({
   apis: { list: listReturn, get: getReturn, add: addReturn, update: updateReturn, del: delReturn },
   idField: 'returnId',
@@ -158,6 +168,35 @@ const {
   initForm: () => ({}),
   exportUrl: '/erp/so/return/export',
   exportFileName: 'return'
+});
+
+/**
+ * 当前选中行 + 可改判定。
+ * 与后端 SoReturnServiceImpl 的状态门禁保持一致（T1.3）：改单与删除都仅限草稿，
+ * 已确认/已收货的单据须走作废流程 —— 原工具栏只按 single/multiple 禁用，与行内按钮分叉。
+ */
+const selectedRow = ref<any>(null);
+const selectedRows = ref<any[]>([]);
+const returnTableRef = ref<any>(null);
+
+function handleSelectionChange(selection: any[]) {
+  crudSelectionChange(selection);
+  selectedRows.value = selection;
+  selectedRow.value = selection.length === 1 ? selection[0] : null;
+}
+
+function canEditRow(row: any) {
+  return !!row && row.status === 'DRAFT';
+}
+
+const canEditSelected = computed(() => selectedRows.value.length === 1 && canEditRow(selectedRows.value[0]));
+const canDeleteSelected = computed(() => selectedRows.value.length > 0 && selectedRows.value.every((row: any) => canEditRow(row)));
+
+// 列表数据被整体替换（搜索/重置/翻页/删除刷新）时清空勾选，避免旧选中行驱动按钮可用态
+watch(returnList, () => {
+  selectedRows.value = [];
+  selectedRow.value = null;
+  returnTableRef.value?.clearSelection();
 });
 
 function resetQuery() {

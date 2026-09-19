@@ -16,6 +16,7 @@ import com.nexus.erp.so.domain.SoQuotationLine;
 import com.nexus.erp.so.domain.SoSalesOrderHeader;
 import com.nexus.erp.so.domain.SoSalesOrderLine;
 import com.nexus.erp.so.domain.bo.SoQuotationBo;
+import com.nexus.erp.so.domain.vo.SoQuotationLineVo;
 import com.nexus.erp.so.domain.vo.SoQuotationVo;
 import com.nexus.erp.so.mapper.SoQuotationLineMapper;
 import com.nexus.erp.so.mapper.SoQuotationMapper;
@@ -81,7 +82,8 @@ public class SoQuotationServiceImpl implements ISoQuotationService {
             LambdaQueryWrapper<SoQuotationLine> lineLqw = Wrappers.lambdaQuery();
             lineLqw.eq(SoQuotationLine::getQuotationId, vo.getQuotationId());
             lineLqw.orderByAsc(SoQuotationLine::getSortOrder);
-            vo.setSoQuotationLineList(lineMapper.selectList(lineLqw));
+            // 转 VO 返回，避免把 tenantId/delFlag/createBy 等审计字段暴露给前端
+            vo.setSoQuotationLineList(MapstructUtils.convert(lineMapper.selectList(lineLqw), SoQuotationLineVo.class));
         }
         return vo;
     }

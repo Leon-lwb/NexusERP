@@ -16,6 +16,7 @@ import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.erp.so.domain.SoReturn;
 import com.nexus.erp.so.domain.SoReturnLine;
 import com.nexus.erp.so.domain.bo.SoReturnBo;
+import com.nexus.erp.so.domain.vo.SoReturnLineVo;
 import com.nexus.erp.so.domain.vo.SoReturnVo;
 import com.nexus.erp.so.mapper.SoReturnLineMapper;
 import com.nexus.erp.so.mapper.SoReturnMapper;
@@ -86,7 +87,8 @@ public class SoReturnServiceImpl implements ISoReturnService {
             LambdaQueryWrapper<SoReturnLine> lineLqw = Wrappers.lambdaQuery();
             lineLqw.eq(SoReturnLine::getReturnId, vo.getReturnId());
             lineLqw.orderByAsc(SoReturnLine::getSortOrder);
-            vo.setSoReturnLineList(lineMapper.selectList(lineLqw));
+            // 转 VO 返回，避免把 tenantId/delFlag/createBy 等审计字段暴露给前端
+            vo.setSoReturnLineList(MapstructUtils.convert(lineMapper.selectList(lineLqw), SoReturnLineVo.class));
         }
         return vo;
     }

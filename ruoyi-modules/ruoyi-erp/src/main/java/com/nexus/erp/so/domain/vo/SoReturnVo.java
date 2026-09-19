@@ -1,11 +1,9 @@
 package com.nexus.erp.so.domain.vo;
 
 import cn.idev.excel.annotation.ExcelProperty;
-import com.alibaba.fastjson2.annotation.JSONField;
 import io.github.linpeilie.annotations.AutoMapper;
 import lombok.Data;
 import com.nexus.erp.so.domain.SoReturn;
-import com.nexus.erp.so.domain.SoReturnLine;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
@@ -68,7 +66,12 @@ public class SoReturnVo implements Serializable {
     @ExcelProperty("备注")
     private String remark;
 
-    /** 退货明细行列表（不参与序列化） */
-    @JSONField(serialize = false)
-    private List<SoReturnLine> soReturnLineList;
+    /**
+     * 退货明细行列表。
+     * <p>用 {@link SoReturnLineVo} 而非实体：原实现直接返回实体，会把 {@code tenantId}/
+     * {@code delFlag}/{@code createBy} 等审计字段一并暴露给前端；且原来的
+     * {@code @JSONField(serialize = false)} 是 fastjson2 注解，本项目 HTTP 走 Jackson，
+     * 该注解完全不生效（即便生效也会让退货表单读不到明细行）。</p>
+     */
+    private List<SoReturnLineVo> soReturnLineList;
 }
