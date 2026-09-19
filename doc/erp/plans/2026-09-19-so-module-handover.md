@@ -162,6 +162,7 @@
 |---|---|---|
 | `script/sql/update/2026-09-19-so-price-list-discount-rate.sql` | D2 折扣率默认值 `100→0` + 存量数据 `100→0` + 税率/折扣率列注释 | 执行 UPDATE 前确认无「真实让利 100%」的行：`SELECT * FROM so_price_list_line WHERE discount_rate = 100;` |
 | `script/sql/update/2026-09-19-so-price-list-menu.sql` | 价目表菜单 2225 + 按钮 2226~2229/2236 + 字典 `so_price_list_status` + 角色授权 | 幂等（INSERT IGNORE），可直接执行 |
+| `script/sql/update/2026-09-19-so-sales-report-menu.sql` | Q1 销售报表菜单 2237 + 角色授权（权限码沿用 `so:orderheader:list`） | 幂等（INSERT IGNORE），可直接执行 |
 | `script/sql/update/2026-09-19-so-tax-rate-unit-comments.sql` | Q3 税率/折扣率「百分数」单位注释统一（3 列）+ **只读**存量数据核对查询 | 幂等；核对查询检出 `0 < tax_rate < 1`（疑似小数写法）与 `> 100`（非法值）—— 因 `0.5` 在百分数语义下也可能是合法的 0.5%，脚本**不做自动迁移**，只给清单 |
 | `script/sql/update/2026-09-19-so-drop-dead-columns.sql` | Q4 死字段清理：删 `so_sales_order_header.delivery_address_id`/`invoice_address_id`、`so_sales_order_line.linked_po_id`/`reserved_serials`/`pa_group_id` 共 5 列 | **一次性脚本**（DROP COLUMN 无幂等写法）；脚本内附前置检查，**须先确认这 5 列全为 NULL** 再删 |
 | `script/sql/update/2026-09-19-so-ddl-hardening.sql` | 唯一键补 `tenant_id`（2 个）+ 补单号唯一约束（2 个）+ 阶梯唯一约束（1 个）、补 14 个查询索引、`min_qty` 去 NULL、重建 `so_invoice` 乱码注释 | 脚本内每节都以注释给出前置检查 SQL；加唯一约束前须确认无重复数据 |
@@ -182,7 +183,7 @@
 | **Q5** | **可用**（提交审批功能正常） | ✅ **结案，无需修复**。原判「事务内跨库会失败」是**误判**：被调用方 `WfProcessServiceImpl.startProcessByDataId` 标了 `@Transactional(REQUIRES_NEW)`（`:1947`），会挂起外层事务并重新获取连接，`@DS("master")` 因此**真正生效**（`wf_*` 表 13 张在 `ry-vue`，`ry-erp` 为 0 张）。且 4 个 `submit()` 在工作流调用后**无 erp 写操作**（状态流转由 `afterFlowHandle` 完成），跨库非原子性无暴露面。已更正计划 §三 P0-5 |
 | **Q4** | **死字段删** | ✅ **已完成**。复核后**实际只删 5 个**：原清单 13 个里 **8 个是前端真实在用的 UI 字段**（`projectId`/`isPaEnabled`/`distributionChannel`/`customerRefNo` 表头 `v-model`；`discountPercent` 参与行金额计算；`deliveryPriority`/`customerLineRef`/`reservedBatchNo` 行级绑定或展示）。原判定「Java getter/setter 零命中」有缺陷 —— Jackson 反射序列化，源码里 grep 不到 getter 不等于字段已死。详见计划附录 A |
 | **Q3** | **百分数**（`13` = 13%） | ✅ **已完成**。核查发现**代码侧本就已统一**（前后端全部 `× 税率 ÷ 100`），本次补齐三处缺口：① DDL 单位注释；② **发票税率区间校验（原先缺失）** —— 新增 `assertLineTaxRate` 校验 0~100，此前发票可落库 `0.13`/`1300` 而无人察觉；③ 退货表单税率由纯文本 `el-input` 改为数值输入。另更正一条审计误判：所谓「发票/合同按含税金额计税」**系误读注释**（合同表单注释误写「行金额(含税)」，代码实为不含税），公式本就一致 |
-| **Q1** | **修**（报表保留） | T3.4：补菜单/权限码 + 修前端 echarts 重复 init、resize 泄漏、未消费 `completionRate` |
+| **Q1** | **修**（报表保留） | ✅ **已完成**。菜单 2237「销售报表」+ 角色授权（**权限码沿用 `so:orderheader:list`**，与控制器一致，避免「有菜单但 403」）；报表页 4 个前端缺陷已修：① 每次查询重复 `echarts.init`（同一 DOM 反复建实例、旧实例泄漏）→ 改用 `getInstanceByDom` 复用；② `resize` 匿名监听只加不减（查询 N 次即有 N 个监听 → 内存泄漏 + 一次 resize 触发 N 次重绘）→ 改为单例防抖监听并在卸载时解绑；③ 卸载不 `dispose` → 已补；④ 后端返回的 `completionRate`/`completedCount` **完全没被消费** → 已作为独立百分数轴（0~100）绘制，并在 tooltip 展示完成数与完工率 |
 | **Q2** | **尽量全闭环** | T3.3：退货数量回写订单（`returned_qty`）+ 超退校验 + 前端 `confirm`/`execute` 接线 |
 
 ### 5.2 原待决项说明（存档）
