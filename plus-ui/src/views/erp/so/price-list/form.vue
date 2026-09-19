@@ -254,10 +254,16 @@ function reset() {
 function submitForm() {
   (proxy.$refs['priceListRef'] as any).validate((valid: boolean) => {
     if (!valid) return;
-    // 明细校验：每行必须选择物料，否则 materialId 为空、取价引擎按 materialId 匹配永远不命中
+    // 明细校验：每行必须选择物料且有单价 —— 否则 materialId 为空时取价引擎按 materialId 匹配永远不命中，
+    // 后端 SoPriceListLineBo 的 @NotNull 也会拒绝（批次 4 已给行列表补 @Valid 使其真正生效）
     for (let i = 0; i < lineList.value.length; i++) {
-      if (!lineList.value[i].materialId) {
+      const row = lineList.value[i];
+      if (!row.materialId) {
         proxy.$modal.msgError(`第 ${i + 1} 行未选择物料`);
+        return;
+      }
+      if (row.unitPrice == null || row.unitPrice === '') {
+        proxy.$modal.msgError(`第 ${i + 1} 行未填写单价`);
         return;
       }
     }

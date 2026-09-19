@@ -1,6 +1,7 @@
 package com.nexus.erp.so.domain.bo;
 
 import io.github.linpeilie.annotations.AutoMapper;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
@@ -118,7 +119,8 @@ public class SoSalesOrderHeaderBo extends BaseEntity {
     /** 审批流程ID */
     private Long selectFlowId;
 
-    /** 销售订单行列表 */
+    /** 销售订单行列表（@Valid 才能让行级约束真正生效，否则 SoSalesOrderLineBo 上的注解是死代码） */
+    @Valid
     private List<SoSalesOrderLineBo> soSalesOrderLineList;
 
     /** ID数组（用于批量操作） */

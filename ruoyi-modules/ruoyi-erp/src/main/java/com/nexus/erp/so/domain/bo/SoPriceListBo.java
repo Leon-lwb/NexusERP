@@ -1,6 +1,7 @@
 package com.nexus.erp.so.domain.bo;
 
 import io.github.linpeilie.annotations.AutoMapper;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -46,7 +47,8 @@ public class SoPriceListBo extends BaseEntity {
     /** 状态 */
     private String status;
 
-    /** 价格表行列表 */
+    /** 价格表行列表（@Valid 才能让行级约束真正生效） */
+    @Valid
     private List<SoPriceListLineBo> soPriceListLineList;
 
     /** ID数组（用于批量操作） */

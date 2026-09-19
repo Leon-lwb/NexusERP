@@ -5097,7 +5097,8 @@ CREATE TABLE `so_contract`  (
   PRIMARY KEY (`contract_id`) USING BTREE,
   UNIQUE INDEX `uk_contract_no`(`contract_no`, `tenant_id`) USING BTREE,
   INDEX `idx_client_id`(`client_id`) USING BTREE,
-  INDEX `idx_status`(`status`) USING BTREE
+  INDEX `idx_status`(`status`) USING BTREE,
+  INDEX `idx_contract_type`(`contract_type`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售合同表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
@@ -5117,7 +5118,7 @@ CREATE TABLE `so_contract_line`  (
   `unit` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '单位',
   `unit_price` decimal(18, 4) NULL DEFAULT 0.0000 COMMENT '单价',
   `line_amount` decimal(18, 2) NULL DEFAULT 0.00 COMMENT '行金额',
-  `tax_rate` decimal(5, 2) NULL DEFAULT 0.00 COMMENT '税率',
+  `tax_rate` decimal(5, 2) NULL DEFAULT 0.00 COMMENT '税率（百分数：13 表示 13%）',
   `tax_amount` decimal(18, 2) NULL DEFAULT 0.00 COMMENT '税额',
   `delivery_date` date NULL DEFAULT NULL COMMENT '交货日期',
   `delivered_qty` decimal(18, 4) NULL DEFAULT 0.0000 COMMENT '已发货数量',
@@ -5161,7 +5162,9 @@ CREATE TABLE `so_credit_usage`  (
   `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
   PRIMARY KEY (`usage_id`) USING BTREE,
   INDEX `idx_client`(`client_id`) USING BTREE,
-  INDEX `idx_so`(`so_id`) USING BTREE
+  INDEX `idx_so`(`so_id`) USING BTREE,
+  INDEX `idx_cu_client_status`(`client_id`, `status`) USING BTREE,
+  INDEX `idx_cu_so_status`(`so_id`, `status`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '信用占用记录' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
@@ -5196,10 +5199,13 @@ CREATE TABLE `so_customer_order`  (
   `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`co_id`) USING BTREE,
-  UNIQUE INDEX `uk_co_no`(`co_no`) USING BTREE,
+  UNIQUE INDEX `uk_co_no`(`co_no`, `tenant_id`) USING BTREE,
   INDEX `idx_client_id`(`client_id`) USING BTREE,
   INDEX `idx_status`(`status`) USING BTREE,
   INDEX `idx_order_date`(`order_date`) USING BTREE,
+  INDEX `idx_co_priority`(`priority`) USING BTREE,
+  INDEX `idx_co_customer_po_no`(`customer_po_no`) USING BTREE,
+  INDEX `idx_co_source_channel`(`source_channel`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '客户订单表' ROW_FORMAT = Dynamic;
 
@@ -5211,19 +5217,19 @@ CREATE TABLE `so_invoice`  (
   `invoice_id` bigint(20) NOT NULL COMMENT '发票ID',
   `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000' COMMENT '租户ID',
   `invoice_no` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '发票号',
-  `invoice_code` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '鍙戠エ浠ｇ爜(鏁扮數绁ㄦ椂浠ｅ彲涓庡彿鐮佸悎骞?',
+  `invoice_code` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '发票代码（数电票时代可与号码合并）',
   `invoice_type` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'VAT_NORMAL' COMMENT '发票类型 VAT_SPECIAL-增值税专用发票 VAT_NORMAL-增值税普通发票 OTHER-其他',
   `client_id` bigint(20) NULL DEFAULT NULL COMMENT '客户ID',
   `client_name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '客户名称',
-  `buyer_tax_id` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '璐?拱鏂圭撼绋庝汉璇嗗埆鍙',
-  `buyer_title` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '璐?拱鏂瑰彂绁ㄦ姮澶',
-  `buyer_bank_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '璐?拱鏂瑰紑鎴疯?',
-  `buyer_bank_account` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '璐?拱鏂归摱琛岃处鍙',
-  `buyer_address_phone` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '璐?拱鏂瑰湴鍧??鐢佃瘽',
+  `buyer_tax_id` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '购买方纳税人识别号',
+  `buyer_title` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '购买方发票抬头',
+  `buyer_bank_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '购买方开户行',
+  `buyer_bank_account` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '购买方银行账号',
+  `buyer_address_phone` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '购买方地址、电话',
   `so_id` bigint(20) NULL DEFAULT NULL COMMENT '销售订单ID',
   `contract_id` bigint(20) NULL DEFAULT NULL COMMENT '合同ID',
-  `original_invoice_id` bigint(20) NULL DEFAULT NULL COMMENT '绾㈠啿鍘熷彂绁↖D(NULL=钃濆瓧姝ｆ暟)',
-  `red_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '鏄?惁绾㈠瓧鍙戠エ 0-鍚?1-鏄',
+  `original_invoice_id` bigint(20) NULL DEFAULT NULL COMMENT '红冲原发票ID（NULL=蓝字正数）',
+  `red_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '是否红字发票 0-否 1-是',
   `invoice_date` date NULL DEFAULT NULL COMMENT '开票日期',
   `currency` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'CNY' COMMENT '币种',
   `exchange_rate` decimal(10, 4) NULL DEFAULT 1.0000 COMMENT '汇率',
@@ -5231,13 +5237,13 @@ CREATE TABLE `so_invoice`  (
   `tax_amount` decimal(18, 2) NULL DEFAULT 0.00 COMMENT '税额',
   `total_amount` decimal(18, 2) NULL DEFAULT 0.00 COMMENT '价税合计',
   `verified_amount` decimal(18, 2) NULL DEFAULT 0.00 COMMENT '已核销金额',
-  `status` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'DRAFT' COMMENT '发票状态 DRAFT-草稿 ISSUED-已开 VERIFIED-已核销 CANCELLED-已作废',
-  `select_flow_id` bigint(20) NULL DEFAULT NULL COMMENT '瀹℃壒娴佺▼ID',
-  `issue_channel` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'MANUAL' COMMENT '寮?エ娓犻亾 MANUAL-鎵嬪伐 ELECTRONIC-鐢靛瓙鍙戠エ骞冲彴',
-  `e_invoice_no` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '鏁扮數绁ㄥ彿鐮?骞冲彴杩斿洖)',
-  `pdf_oss_id` bigint(20) NULL DEFAULT NULL COMMENT '鍙戠エPDF鐨凮SS瀵硅薄ID(绉佹湁妗跺瓨ossId)',
-  `ofd_oss_id` bigint(20) NULL DEFAULT NULL COMMENT '鍙戠エOFD鐨凮SS瀵硅薄ID',
-  `version` int(11) NULL DEFAULT 0 COMMENT '涔愯?閿佺増鏈?彿',
+  `status` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'DRAFT' COMMENT '发票状态 DRAFT-草稿 APPROVING-审批中 ISSUED-已开 REJECTED-已驳回 VERIFIED-已核销 CANCELLED-已作废',
+  `select_flow_id` bigint(20) NULL DEFAULT NULL COMMENT '审批流程ID',
+  `issue_channel` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'MANUAL' COMMENT '开票渠道 MANUAL-手工 ELECTRONIC-电子发票平台',
+  `e_invoice_no` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '数电票号码（平台返回）',
+  `pdf_oss_id` bigint(20) NULL DEFAULT NULL COMMENT '发票PDF的OSS对象ID（私有桶存ossId）',
+  `ofd_oss_id` bigint(20) NULL DEFAULT NULL COMMENT '发票OFD的OSS对象ID',
+  `version` int(11) NULL DEFAULT 0 COMMENT '乐观锁版本号',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   `attr1` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段1',
   `attr2` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预留字段2',
@@ -5276,7 +5282,7 @@ CREATE TABLE `so_invoice_line`  (
   `unit` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '单位',
   `unit_price` decimal(18, 4) NULL DEFAULT 0.0000 COMMENT '单价',
   `line_amount` decimal(18, 2) NULL DEFAULT 0.00 COMMENT '行金额（不含税）',
-  `tax_rate` decimal(5, 2) NULL DEFAULT 0.00 COMMENT '税率',
+  `tax_rate` decimal(5, 2) NULL DEFAULT 0.00 COMMENT '税率（百分数：13 表示 13%）',
   `tax_amount` decimal(18, 2) NULL DEFAULT 0.00 COMMENT '税额',
   `total_amount` decimal(18, 2) NULL DEFAULT 0.00 COMMENT '价税合计',
   `so_line_id` bigint(20) NULL DEFAULT NULL COMMENT '销售订单行ID',
@@ -5295,7 +5301,9 @@ CREATE TABLE `so_invoice_line`  (
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`line_id`) USING BTREE,
   INDEX `idx_invoice_id`(`invoice_id`) USING BTREE,
-  INDEX `idx_material_id`(`material_id`) USING BTREE
+  INDEX `idx_material_id`(`material_id`) USING BTREE,
+  INDEX `idx_so_line_id`(`so_line_id`) USING BTREE,
+  INDEX `idx_contract_line_id`(`contract_line_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售发票明细行表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
@@ -5320,7 +5328,10 @@ CREATE TABLE `so_price_list`  (
   `update_by` bigint(20) NULL DEFAULT NULL,
   `update_time` datetime(0) NULL DEFAULT NULL,
   PRIMARY KEY (`price_list_id`) USING BTREE,
-  UNIQUE INDEX `uk_code_tenant`(`list_code`, `tenant_id`) USING BTREE
+  UNIQUE INDEX `uk_code_tenant`(`list_code`, `tenant_id`) USING BTREE,
+  INDEX `idx_pl_client`(`client_id`) USING BTREE,
+  INDEX `idx_pl_status`(`status`) USING BTREE,
+  INDEX `idx_pl_list_type`(`list_type`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售价格表头' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
@@ -5338,8 +5349,8 @@ CREATE TABLE `so_price_list_line`  (
   `price_list_id` bigint(20) NOT NULL,
   `material_id` bigint(20) NOT NULL,
   `unit_price` decimal(14, 4) NOT NULL,
-  `min_qty` decimal(14, 4) NULL DEFAULT 0.0000,
-  `max_qty` decimal(14, 4) NULL DEFAULT NULL,
+  `min_qty` decimal(14, 4) NOT NULL DEFAULT 0.0000 COMMENT '最小数量（含）',
+  `max_qty` decimal(14, 4) NULL DEFAULT NULL COMMENT '最大数量（含）；NULL 表示不设上限',
   `discount_rate` decimal(5, 2) NULL DEFAULT 0.00 COMMENT '折扣率（百分数：5 表示让利 5%，0 表示不让利）',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
@@ -5347,6 +5358,7 @@ CREATE TABLE `so_price_list_line`  (
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
   `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
   PRIMARY KEY (`line_id`) USING BTREE,
+  UNIQUE INDEX `uk_pl_line_tier`(`price_list_id`, `material_id`, `min_qty`) USING BTREE,
   INDEX `idx_list_material`(`price_list_id`, `material_id`) USING BTREE,
   INDEX `idx_material`(`material_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售价格表行' ROW_FORMAT = Dynamic;
@@ -5410,7 +5422,7 @@ CREATE TABLE `so_quotation`  (
   `total_amount` decimal(18, 4) NULL DEFAULT NULL COMMENT '总金额',
   `tax_amount` decimal(18, 4) NULL DEFAULT NULL COMMENT '税额',
   `discount_amount` decimal(18, 4) NULL DEFAULT NULL COMMENT '折扣额',
-  `discount_rate` decimal(10, 4) NULL DEFAULT NULL COMMENT '折扣率',
+  `discount_rate` decimal(10, 4) NULL DEFAULT NULL COMMENT '折扣率（百分数：5 表示让利 5%）',
   `payment_terms` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '付款条件',
   `delivery_terms` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '交货条件',
   `status` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'DRAFT' COMMENT '状态',
@@ -5428,6 +5440,7 @@ CREATE TABLE `so_quotation`  (
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
   `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`quotation_id`) USING BTREE,
+  UNIQUE INDEX `uk_quotation_no`(`quotation_no`, `tenant_id`) USING BTREE,
   INDEX `idx_quotation_status`(`status`) USING BTREE,
   INDEX `idx_quotation_client`(`client_id`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
@@ -5449,7 +5462,7 @@ CREATE TABLE `so_quotation_line`  (
   `quantity` decimal(18, 4) NULL DEFAULT NULL COMMENT '数量',
   `unit_price` decimal(18, 4) NULL DEFAULT NULL COMMENT '单价',
   `amount` decimal(18, 4) NULL DEFAULT NULL COMMENT '金额',
-  `tax_rate` decimal(10, 4) NULL DEFAULT NULL COMMENT '税率',
+  `tax_rate` decimal(10, 4) NULL DEFAULT NULL COMMENT '税率（百分数：13 表示 13%）',
   `tax_amount` decimal(18, 4) NULL DEFAULT NULL COMMENT '税额',
   `delivery_date` datetime(0) NULL DEFAULT NULL COMMENT '交货日期',
   `sort_order` int(11) NULL DEFAULT 0 COMMENT '排序',
@@ -5507,7 +5520,10 @@ CREATE TABLE `so_return`  (
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
   `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`return_id`) USING BTREE,
+  UNIQUE INDEX `uk_return_no`(`return_no`, `tenant_id`) USING BTREE,
   INDEX `idx_return_so`(`so_id`) USING BTREE,
+  INDEX `idx_return_so_no`(`so_no`) USING BTREE,
+  INDEX `idx_return_client`(`client_id`) USING BTREE,
   INDEX `idx_return_status`(`status`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售退货单表' ROW_FORMAT = Dynamic;
@@ -5529,7 +5545,7 @@ CREATE TABLE `so_return_line`  (
   `return_quantity` decimal(18, 4) NULL DEFAULT NULL COMMENT '退货数量',
   `unit_price` decimal(18, 4) NULL DEFAULT NULL COMMENT '单价',
   `amount` decimal(18, 4) NULL DEFAULT NULL COMMENT '金额',
-  `tax_rate` decimal(10, 4) NULL DEFAULT NULL COMMENT '税率',
+  `tax_rate` decimal(10, 4) NULL DEFAULT NULL COMMENT '税率（百分数：13 表示 13%）',
   `tax_amount` decimal(18, 4) NULL DEFAULT NULL COMMENT '税额',
   `return_reason` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '退货原因',
   `sort_order` int(11) NULL DEFAULT 0 COMMENT '排序',
@@ -5547,6 +5563,7 @@ CREATE TABLE `so_return_line`  (
   `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`line_id`) USING BTREE,
   INDEX `idx_return_line_mid`(`return_id`) USING BTREE,
+  INDEX `idx_return_line_so_line`(`so_line_id`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售退货行表' ROW_FORMAT = Dynamic;
 
@@ -5605,7 +5622,7 @@ CREATE TABLE `so_sales_order_header`  (
   `select_flow_id` bigint(20) NULL DEFAULT NULL COMMENT '审批流程ID',
   `dept_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '销售部门名称',
   PRIMARY KEY (`so_id`) USING BTREE,
-  UNIQUE INDEX `uk_so_no`(`so_no`) USING BTREE,
+  UNIQUE INDEX `uk_so_no`(`so_no`, `tenant_id`) USING BTREE,
   INDEX `idx_co_id`(`co_id`) USING BTREE,
   INDEX `idx_client_id`(`client_id`) USING BTREE,
   INDEX `idx_order_status`(`order_status`) USING BTREE,

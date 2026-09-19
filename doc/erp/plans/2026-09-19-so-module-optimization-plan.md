@@ -364,8 +364,18 @@ insertOrUpdateLines(entity.getSoId(), ...);          // 且强制 line.setLineId
 | └ T3.2 报价转单前端接线 | ✅ 完成（勘误：本就已接线） | 见本批次 commit | **审计勘误**：`convertQuotationToOrder` 在 `quotation/index.vue:220` 早已被调用，原结论「前端零调用」是 grep 模式（`convertToOrder`）匹配不到函数名 `convertQuotationToOrder` 造成的误报。本次实际只补了工具栏按钮的状态门禁 |
 | └ T3.3 退货闭环 + 退货 UI 接线（待 Q2） | ⬜ 待办 | | |
 | └ T3.4 报表菜单 + 前端（待 Q1） | ⬜ 待办 | | |
-| 批次 4：DDL 收敛 | ⬜ 待办 | | |
-| 批次 5：清理与一致性 | ⬜ 待办 | | |
+| 批次 4：DDL 收敛 | ✅ 完成（§五 第 1~7 项） | 见本批次 commit | 主脚本 14 张 so_ 表括号平衡校验通过；存量库脚本 `2026-09-19-so-ddl-hardening.sql`；`Tests run: 128, Failures: 0`；前端 `eslint` + `build:prod` 通过 |
+| 批次 5：清理与一致性 | ⬜ 待办（待 Q4） | | |
+
+**批次 4 实施要点**：
+- 唯一键补租户维度：`uk_so_no` / `uk_co_no` 改为 `(单号, tenant_id)`（同模块 contract/invoice/price_list 早已带 tenant_id）
+- 补单号唯一约束：`uk_quotation_no` / `uk_return_no` = `(单号, tenant_id)`
+- `so_price_list_line`：`min_qty` 去 NULL 并补 `uk_pl_line_tier(price_list_id, material_id, min_qty)`
+  —— MySQL 唯一索引允许多个 NULL，不去 NULL 则约束对重复行不生效
+- 补索引 13 个；重建 `so_invoice` 14 处乱码列注释；`tax_rate`/`discount_rate` 补「百分数」单位说明
+- **顺带修掉批次 2 的遗漏**：`so` 模块的 BO 行列表字段此前都没有 `@Valid`，
+  行级 `@NotNull` 其实是死代码（只有 wm 模块 3 个 BO 用了嵌套校验）。
+  已给 `SoSalesOrderHeaderBo` / `SoPriceListBo` 的行列表补 `@Valid`，并同步补前端单价必填校验。
 
 **T1.1 实施要点**（`SoSalesOrderHeaderServiceImpl`）：- `updateByBo` 仅允许 `DRAFT`；单号与状态强制还原为库中值，客户端改写无效
 - `diffUpdateLines`：按 `lineId` 区分「更新 / 新增 / 删除」，保留已有行 `line_id`
