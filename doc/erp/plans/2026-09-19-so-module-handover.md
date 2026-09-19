@@ -2,7 +2,7 @@
 
 > 创建: 2026-09-19 | 配套计划: [2026-09-19-so-module-optimization-plan.md](./2026-09-19-so-module-optimization-plan.md)
 > 范围: 后端 `ruoyi-modules/ruoyi-erp/.../so`（审计时 85 文件 / 9541 行；改造后 87 文件 / 10716 行）+ 14 张 `so_` 表 + 前端 `plus-ui` 销售页面
-> 状态: **不依赖待决项的工作已全部完成**；剩余 6 项待用户决策（见 §5）
+> 状态: **计划内 6 批次全部完成**；Q1~Q5 决策已落地实施完毕，剩余 Q7/Q8/Q9 待决策（见 §5）
 
 ---
 
@@ -15,7 +15,7 @@
 | **计划执行**（批次 0~5） | 测试基线 → P0 数据正确性 → 契约与校验 → 功能补齐 → DDL 收敛 → 清理 | 批次 0/2/4 完成；1 除 T1.7 完成；3 除 T3.3/T3.4 完成；5 除死字段清理完成 |
 | **加固**（3 轮） | 在已改动范围内做同类模式排查 | 又发现并修复 3 类系统性缺陷（见 §3.2） |
 
-**测试基线**：so 模块从 **25 个用例（3 个测试类）** 增长到 **175 个用例（10 个测试类）**，全绿。
+**测试基线**：so 模块从 **25 个用例（3 个测试类）** 增长到 **178 个用例（10 个测试类）**，全绿。
 
 **最高价值的三个修复**（按业务影响排序）：
 1. **改单不再重建行 ID**（T1.1）—— 原实现每次改单都把 `so_sales_order_line.line_id` 全部换新，
@@ -162,6 +162,7 @@
 |---|---|---|
 | `script/sql/update/2026-09-19-so-price-list-discount-rate.sql` | D2 折扣率默认值 `100→0` + 存量数据 `100→0` + 税率/折扣率列注释 | 执行 UPDATE 前确认无「真实让利 100%」的行：`SELECT * FROM so_price_list_line WHERE discount_rate = 100;` |
 | `script/sql/update/2026-09-19-so-price-list-menu.sql` | 价目表菜单 2225 + 按钮 2226~2229/2236 + 字典 `so_price_list_status` + 角色授权 | 幂等（INSERT IGNORE），可直接执行 |
+| `script/sql/update/2026-09-19-so-returned-qty.sql` | Q2 退货闭环：新增 `so_sales_order_line.returned_qty` + **存量回填**（按 `status='RECEIVED'` 的退货单聚合补齐历史已退数量） | **不可重复执行**（列已存在会报错）；执行前先跑脚本内前置检查确认列不存在。回填使超退守卫对历史数据同样生效 |
 | `script/sql/update/2026-09-19-so-sales-report-menu.sql` | Q1 销售报表菜单 2237 + 角色授权（权限码沿用 `so:orderheader:list`） | 幂等（INSERT IGNORE），可直接执行 |
 | `script/sql/update/2026-09-19-so-tax-rate-unit-comments.sql` | Q3 税率/折扣率「百分数」单位注释统一（3 列）+ **只读**存量数据核对查询 | 幂等；核对查询检出 `0 < tax_rate < 1`（疑似小数写法）与 `> 100`（非法值）—— 因 `0.5` 在百分数语义下也可能是合法的 0.5%，脚本**不做自动迁移**，只给清单 |
 | `script/sql/update/2026-09-19-so-drop-dead-columns.sql` | Q4 死字段清理：删 `so_sales_order_header.delivery_address_id`/`invoice_address_id`、`so_sales_order_line.linked_po_id`/`reserved_serials`/`pa_group_id` 共 5 列 | **一次性脚本**（DROP COLUMN 无幂等写法）；脚本内附前置检查，**须先确认这 5 列全为 NULL** 再删 |
@@ -184,7 +185,7 @@
 | **Q4** | **死字段删** | ✅ **已完成**。复核后**实际只删 5 个**：原清单 13 个里 **8 个是前端真实在用的 UI 字段**（`projectId`/`isPaEnabled`/`distributionChannel`/`customerRefNo` 表头 `v-model`；`discountPercent` 参与行金额计算；`deliveryPriority`/`customerLineRef`/`reservedBatchNo` 行级绑定或展示）。原判定「Java getter/setter 零命中」有缺陷 —— Jackson 反射序列化，源码里 grep 不到 getter 不等于字段已死。详见计划附录 A |
 | **Q3** | **百分数**（`13` = 13%） | ✅ **已完成**。核查发现**代码侧本就已统一**（前后端全部 `× 税率 ÷ 100`），本次补齐三处缺口：① DDL 单位注释；② **发票税率区间校验（原先缺失）** —— 新增 `assertLineTaxRate` 校验 0~100，此前发票可落库 `0.13`/`1300` 而无人察觉；③ 退货表单税率由纯文本 `el-input` 改为数值输入。另更正一条审计误判：所谓「发票/合同按含税金额计税」**系误读注释**（合同表单注释误写「行金额(含税)」，代码实为不含税），公式本就一致 |
 | **Q1** | **修**（报表保留） | ✅ **已完成**。菜单 2237「销售报表」+ 角色授权（**权限码沿用 `so:orderheader:list`**，与控制器一致，避免「有菜单但 403」）；报表页 4 个前端缺陷已修：① 每次查询重复 `echarts.init`（同一 DOM 反复建实例、旧实例泄漏）→ 改用 `getInstanceByDom` 复用；② `resize` 匿名监听只加不减（查询 N 次即有 N 个监听 → 内存泄漏 + 一次 resize 触发 N 次重绘）→ 改为单例防抖监听并在卸载时解绑；③ 卸载不 `dispose` → 已补；④ 后端返回的 `completionRate`/`completedCount` **完全没被消费** → 已作为独立百分数轴（0~100）绘制，并在 tooltip 展示完成数与完工率 |
-| **Q2** | **尽量全闭环** | T3.3：退货数量回写订单（`returned_qty`）+ 超退校验 + 前端 `confirm`/`execute` 接线 |
+| **Q2** | **尽量全闭环** | ✅ **已完成**。① `so_sales_order_line` 新增 `returned_qty`（实体+VO，**BO 不加** —— 与 `delivered_qty`/`invoiced_qty` 同属服务端权威字段）；② `execute()` 入库后按**条件更新**累加，并强制 `已退 + 本次 <= 已发货`（超退抛异常并回滚整个 execute，含状态抢占与库存入库，不留半成品；并发由数据库条件更新保证原子性）；③ 前端补 `confirm`/`execute` 两个 API 函数 + 「确认」「入库」按钮 —— **后端端点早已存在但前端 API 层没有，退货入库在 UI 上完全不可达**；④ 订单表单行加只读「已退货数量」列让闭环可见 |
 
 ### 5.2 原待决项说明（存档）
 
@@ -236,8 +237,8 @@ mvn -pl ruoyi-modules/ruoyi-erp -am test -DskipTests=false \
 cd plus-ui && npx eslint --fix && npm run build:prod
 ```
 
-**已验证的回归基线（2026-09-19 实测）**：整个 erp 模块 **256 个用例全绿**
-（so 175 + bd 5 + prd 16 + pu 17 + sch 18 + wm 25 等），说明本次改动**未波及其它模块**。
+**已验证的回归基线（2026-09-19 实测）**：整个 erp 模块 **259 个用例全绿**
+（so 178 + bd 5 + prd 16 + pu 17 + sch 18 + wm 25 等），说明本次改动**未波及其它模块**。
 
 **跨模块影响面核查**：本次改了 4 个 VO 的明细行类型（`SoQuotationVo`/`SoReturnVo`/`SoInvoiceVo`/
 `SoContractVo` 的 `soXxxLineList` 由实体列表改为 VO 列表）。已全仓检索确认：
