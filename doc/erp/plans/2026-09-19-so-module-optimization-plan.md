@@ -365,7 +365,22 @@ insertOrUpdateLines(entity.getSoId(), ...);          // 且强制 line.setLineId
 | └ T3.3 退货闭环 + 退货 UI 接线（待 Q2） | ⬜ 待办 | | |
 | └ T3.4 报表菜单 + 前端（待 Q1） | ⬜ 待办 | | |
 | 批次 4：DDL 收敛 | ✅ 完成（§五 第 1~7 项） | 见本批次 commit | 主脚本 14 张 so_ 表括号平衡校验通过；存量库脚本 `2026-09-19-so-ddl-hardening.sql`；`Tests run: 128, Failures: 0`；前端 `eslint` + `build:prod` 通过 |
-| 批次 5：清理与一致性 | ⬜ 待办（待 Q4） | | |
+| 批次 5：清理与一致性 | 🚧 进行中（不依赖 Q4 的前端项已完成） | | |
+| └ 客户订单幻影字段清理 | ✅ 完成 | 见本批次 commit | 前端 `eslint` + `build:prod` 通过 |
+| └ 列表页选中项残留修复 | ✅ 完成 | 见本批次 commit | 同上 |
+| └ 退货/发票工具栏状态门禁对齐行内 | ⬜ 待办 | | |
+| └ 13 个死字段清理（待 Q4） | ⬜ 待办 | | |
+| └ 实体直出改 VO / `@JSONField` 无效注解 / 异常口径统一 | ⬜ 待办 | | |
+
+**批次 5 已完成项要点**：
+- **客户订单「销售部门」幻影字段**：`so_customer_order` 表 / 实体 / BO / VO **都没有** `deptId`/`deptName`，
+  而前端有列表列（恒空）+ 表单 `dept-select`（选择被静默丢弃）。改为**本地筛选项**（不落库），
+  仅用于筛选销售代表候选，并改名为「部门筛选」+ 补注释说明；移除列表列与隐藏的 `deptName` 输入；
+  新增/修改时通过 `useCrud` 的 `extraInit` 回调清空该筛选项。
+  （部门归属本就存在客户档案 `bd_client.dept_id`，不需要在客户订单上冗余一份。）
+- **列表页选中项残留**：`orderheader/index.vue` 搜索/重置/翻页/删除刷新后，`ids`/`selectedRow`
+  仍指向旧行，工具栏「确认/履行/关闭/取消/修改/删除」按一张已不在列表里的单据判断可用态。
+  改为 `watch(orderheaderList)` 统一清空本地选中态并调用 `clearSelection()`，一处覆盖所有刷新路径。
 
 **批次 4 实施要点**：
 - 唯一键补租户维度：`uk_so_no` / `uk_co_no` 改为 `(单号, tenant_id)`（同模块 contract/invoice/price_list 早已带 tenant_id）

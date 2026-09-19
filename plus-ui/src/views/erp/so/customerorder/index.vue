@@ -43,10 +43,12 @@
 
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
-        <el-button type="primary" plain icon="Plus" @click="handleAdd()" v-hasPermi="['so:customerOrder:add']">新增</el-button>
+        <el-button type="primary" plain icon="Plus" @click="handleAddCustomerOrder()" v-hasPermi="['so:customerOrder:add']">新增</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate()" v-hasPermi="['so:customerOrder:edit']">修改</el-button>
+        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdateCustomerOrder()" v-hasPermi="['so:customerOrder:edit']"
+          >修改</el-button
+        >
       </el-col>
       <el-col :span="1.5">
         <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete()" v-hasPermi="['so:customerOrder:remove']"
@@ -66,7 +68,6 @@
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="客户订单号" align="center" prop="coNo" />
       <el-table-column label="客户名称" align="center" prop="clientName" min-width="120" show-overflow-tooltip />
-      <el-table-column label="销售部门" align="center" prop="deptName" min-width="100" show-overflow-tooltip />
       <el-table-column label="客户下单日期" align="center" prop="orderDate">
         <template #default="scope">
           <span>{{ parseTime(scope.row.orderDate, '{y}-{m}-{d}') }}</span>
@@ -92,7 +93,9 @@
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
-          <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['so:customerOrder:edit']">修改</el-button>
+          <el-button link type="primary" icon="Edit" @click="handleUpdateCustomerOrder(scope.row)" v-hasPermi="['so:customerOrder:edit']"
+            >修改</el-button
+          >
           <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['so:customerOrder:remove']">删除</el-button>
         </template>
       </el-table-column>
@@ -222,9 +225,15 @@
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="销售部门" prop="deptId">
-              <dept-select v-model="form.deptId" category="SALES" placeholder="请选择销售部门" :disabled="isViewMode" @change="handleDeptChange" />
-              <el-input v-model="form.deptName" style="display: none" />
+            <el-form-item label="部门筛选">
+              <!-- 仅用于筛选销售代表候选，不落库（so_customer_order 无部门字段） -->
+              <dept-select
+                v-model="salesRepDeptId"
+                category="SALES"
+                placeholder="不选则展示全部用户"
+                :disabled="isViewMode"
+                @change="handleDeptFilterChange"
+              />
             </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -376,6 +385,15 @@ const userQueryParams = reactive({
   deptId: undefined as any
 });
 
+/**
+ * 销售代表候选的部门筛选。
+ * <p>注意：{@code so_customer_order} 表没有部门字段（部门归属在客户档案 {@code bd_client.dept_id}），
+ * 因此这里是一个**不落库**的本地筛选项，只用于缩小下方销售代表候选范围。
+ * 原实现把它绑定到 {@code form.deptId}，而 VO/BO/实体都没有该字段 —— 选择被静默丢弃、
+ * 列表「销售部门」列恒空。</p>
+ */
+const salesRepDeptId = ref<string | number | undefined>(undefined);
+
 const customerOrderRef = ref<FormInstance>();
 
 const queryParams = ref({
@@ -442,8 +460,6 @@ const {
     attr2: null,
     salesRepId: null,
     salesRepName: null,
-    deptId: null,
-    deptName: null,
     createBy: null,
     createTime: null,
     updateBy: null,
@@ -491,6 +507,23 @@ const {
 function resetQuery() {
   proxy.resetForm('queryRef');
   handleQuery();
+}
+
+/**
+ * 新增客户订单：额外清空「部门筛选」。
+ * 它是本地筛选项（不属于表单数据），若不清空会从上一次操作残留下来。
+ */
+function handleAddCustomerOrder() {
+  handleAdd(() => {
+    salesRepDeptId.value = undefined;
+  });
+}
+
+/** 修改客户订单：同样清空部门筛选 */
+function handleUpdateCustomerOrder(row?: any) {
+  handleUpdate(row, () => {
+    salesRepDeptId.value = undefined;
+  });
 }
 
 function handleAutoGenChange(autoGenFlag) {
@@ -558,11 +591,7 @@ function handleClientPagination(pagination) {
 
 function getUserList() {
   userLoading.value = true;
-  const params = { ...userQueryParams };
-  if (params.deptId === undefined && form.value.salesRepId) {
-    delete params.deptId;
-  }
-  listUser(params).then((response) => {
+  listUser({ ...userQueryParams }).then((response) => {
     userList.value = response.rows;
     userTotal.value = response.total;
     userLoading.value = false;
@@ -571,8 +600,8 @@ function getUserList() {
 
 function openUserSelect() {
   userVisible.value = true;
-  // 按所选销售部门过滤销售代表；未选部门则展示全部用户
-  userQueryParams.deptId = form.value.deptId || undefined;
+  // 按所选部门筛选销售代表；未选部门则展示全部用户
+  userQueryParams.deptId = salesRepDeptId.value || undefined;
   getUserList();
 }
 
@@ -582,13 +611,8 @@ function selectUser(row) {
   userVisible.value = false;
 }
 
-/** 销售部门变更时回填部门名称，并清空已选销售代表（避免代表与部门不匹配） */
-function handleDeptChange(dept) {
-  if (dept) {
-    form.value.deptName = dept.deptName;
-  } else {
-    form.value.deptName = null;
-  }
+/** 部门筛选变更时清空已选销售代表（避免代表与筛选部门不匹配） */
+function handleDeptFilterChange() {
   form.value.salesRepId = null;
   form.value.salesRepName = null;
 }
@@ -596,7 +620,7 @@ function handleDeptChange(dept) {
 function resetUserQuery() {
   userQueryParams.userName = undefined;
   userQueryParams.phonenumber = undefined;
-  userQueryParams.deptId = form.value.deptId || undefined;
+  userQueryParams.deptId = salesRepDeptId.value || undefined;
   userQueryParams.pageNum = 1;
   getUserList();
 }

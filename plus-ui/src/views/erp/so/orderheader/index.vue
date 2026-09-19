@@ -96,7 +96,7 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="orderheaderList" show-overflow-tooltip @selection-change="handleSelectionChange">
+    <el-table ref="orderTableRef" v-loading="loading" :data="orderheaderList" show-overflow-tooltip @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="序号" type="index" align="center" />
       <el-table-column label="销售订单编号" align="center" prop="soNo" />
@@ -217,6 +217,8 @@ const { so_credit_status, so_order_status, so_currency_type } = toRefs<any>(prox
 const selectedRow = ref<any>(null);
 // 当前选中的全部行（删除需校验每一行都可改）
 const selectedRows = ref<any[]>([]);
+// 表格实例：列表数据被替换后需要同步清空勾选，否则「旧选中行仍驱动按钮可用态」
+const orderTableRef = ref<any>(null);
 
 const queryParams = ref({
   pageNum: 1,
@@ -264,6 +266,17 @@ function handleSelectionChange(selection: any[]) {
   selectedRows.value = selection;
   selectedRow.value = selection.length === 1 ? selection[0] : null;
 }
+
+/**
+ * 列表数据被整体替换（搜索 / 重置 / 翻页 / 删除后刷新）时清空勾选。
+ * 原实现只在 selection-change 里记录，搜索或重置后 ids/selectedRow 仍指向旧行，
+ * 导致工具栏「确认/履行/关闭/取消/修改/删除」按一张已不在列表里的单据判断可用态。
+ */
+watch(orderheaderList, () => {
+  selectedRows.value = [];
+  selectedRow.value = null;
+  orderTableRef.value?.clearSelection();
+});
 
 // 订单状态常量
 const STATUS_DRAFT = 'DRAFT';
