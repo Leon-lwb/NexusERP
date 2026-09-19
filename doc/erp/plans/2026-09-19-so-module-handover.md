@@ -147,7 +147,7 @@
 |---|---|---|
 | `script/sql/update/2026-09-19-so-price-list-discount-rate.sql` | D2 折扣率默认值 `100→0` + 存量数据 `100→0` + 税率/折扣率列注释 | 执行 UPDATE 前确认无「真实让利 100%」的行：`SELECT * FROM so_price_list_line WHERE discount_rate = 100;` |
 | `script/sql/update/2026-09-19-so-price-list-menu.sql` | 价目表菜单 2225 + 按钮 2226~2229/2236 + 字典 `so_price_list_status` + 角色授权 | 幂等（INSERT IGNORE），可直接执行 |
-| `script/sql/update/2026-09-19-so-ddl-hardening.sql` | 唯一键补 `tenant_id`、补 13 个索引、`min_qty` 去 NULL + 阶梯唯一约束、重建 `so_invoice` 乱码注释 | 脚本内每节都附了前置检查 SQL；加唯一约束前须确认无重复数据 |
+| `script/sql/update/2026-09-19-so-ddl-hardening.sql` | 唯一键补 `tenant_id`（2 个）+ 补单号唯一约束（2 个）+ 阶梯唯一约束（1 个）、补 14 个查询索引、`min_qty` 去 NULL、重建 `so_invoice` 乱码注释 | 脚本内每节都以注释给出前置检查 SQL；加唯一约束前须确认无重复数据 |
 
 **执行后注意**：应用若在运行，菜单与字典走 Redis 缓存，需在「菜单管理/字典管理」保存任意一项触发刷新，
 或重启应用。**必须先执行 DDL 脚本再部署对应后端版本**（实体与列需一致）。

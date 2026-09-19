@@ -66,18 +66,26 @@ ERP 模块 15 个测试类，`so` 仅 3 个：`PricingEngineServiceImplTest`、`
 
 ## 三、问题清单
 
+> **行号时效性提示（2026-09-19 复核补充）**：本章是**审计当时（commit `cd882df9`）的状态记录**，
+> 其中的 `文件:行号` 引用对应那时的代码。本次改造后行号已大幅变动，且经抽查复核发现
+> **部分行号本身就不准确**：抽查 12 处，8 处准确、4 处有偏差 —— `SoSalesOrderHeaderServiceImpl.java`
+> 的 `:246-252` 实为 `:256-262`、`:625` 实为 `:635`、`:696` 实为 `:706`，
+> `insertByBo:228-239` 实为 `:238`（已就地修正；`confirm:298` 等经核验准确，未改）。
+> **请以方法名与描述为准**；需要看原状用 `git show cd882df9:<file>`。
+> 各问题的**修复状态**见 §九 执行进度。
+
 ### 🔴 P0 阻断级
 
 #### P0-1 ✅ 改单重建行 ID，击穿全部下游关联
-`SoSalesOrderHeaderServiceImpl.java:246-252`：
+`SoSalesOrderHeaderServiceImpl.java:256-262`（`updateByBo`；审计原文误写为 `:246-252`）：
 ```java
 soSalesOrderLineMapper.delete(... eq(so_id, ...));   // 逻辑删除（@TableLogic，SoSalesOrderLine.java:118）
-insertOrUpdateLines(entity.getSoId(), ...);          // 且强制 line.setLineId(null) → 全新 ID（:625）
+insertOrUpdateLines(entity.getSoId(), ...);          // 且强制 line.setLineId(null) → 全新 ID（:635）
 ```
 `updateByBo` **无任何状态门禁**，前端 `orderheader/index.vue:120` 的修改按钮对所有状态可见。
 
 后果链（均为按 `line_id` 关联）：
-- `prd_production_plan.order_line_id`（`SoSalesOrderHeaderServiceImpl.java:696` 写入）→ 关联计划/工单在详情页消失，`closeLinkedProductionPlans()` 失效
+- `prd_production_plan.order_line_id`（`SoSalesOrderHeaderServiceImpl.java:706` 写入；审计原文误写为 `:696`）→ 关联计划/工单在详情页消失，`closeLinkedProductionPlans()` 失效
 - 出库回写 `addShippedQty(soLineId)`（`WmSalesIssueServiceImpl.java:355`）打到已逻辑删除的行 → **新行 `delivered_qty` 永远为 0，订单永远无法履行**
 - `so_invoice_line.so_line_id` → 已删除行
 - 表单快照回写还会把并发的 `delivered_qty` 覆盖成旧值（丢失更新）
@@ -123,7 +131,7 @@ insertOrUpdateLines(entity.getSoId(), ...);          // 且强制 line.setLineId
 | # | 问题 | 证据 |
 |---|------|------|
 | P1-1 | **后端入参校验空转**：两个 BO 无任何 Jakarta Validation 注解，而 Controller 有 `@Validated` | `SoSalesOrderHeaderBo.java` 全文、`SoSalesOrderLineBo.java` 全文、`SoSalesOrderHeaderController.java:37,138,154` |
-| P1-2 | **客户端信任金额**：`totalAmount/taxAmount/discountAmount/discountRate` 全量取自请求体，后端从不重算；而 `confirm()` 用 `totalAmount` 做信用检查 → 传 0 即可绕过额度 | `insertByBo:228-239`、`updateByBo:246-252`、`confirm:298-299` |
+| P1-2 | **客户端信任金额**：`totalAmount/taxAmount/discountAmount/discountRate` 全量取自请求体，后端从不重算；而 `confirm()` 用 `totalAmount` 做信用检查 → 传 0 即可绕过额度 | `insertByBo:238`、`updateByBo:256`、`confirm:298`（原文档误写为 `insertByBo:228-239`、`updateByBo:246-252`） |
 | P1-3 | `creditStatus` 写 `"PASSED"`，字典 `so_credit_status` 只有 `NOT_CHECKED/CHECKED_OK/CHECKED_BLOCKED` → dict-tag 显示原始码 | `SoSalesOrderHeaderServiceImpl.java:300,310` |
 | P1-4 | 订单删除无状态门禁且不释放副作用：`deleteByIds:259-263` 删行+删头，**不释放信用额度、不释放库存预留、不关闭生产计划**（`close`/`cancel` 都做了） | `SoSalesOrderHeaderServiceImpl.java:256-263` |
 | P1-5 | 报价行可跨租户写入：`SoQuotationBo:87` 直接复用实体 `List<SoQuotationLine>`，服务只清 `lineId/quotationId`，未清 `tenantId/delFlag/createBy` | `SoQuotationServiceImpl.java:220-223`（合同侧已用白名单拷贝规避：`SoContractServiceImpl.java:319-323,347-374`） |
@@ -451,7 +459,8 @@ insertOrUpdateLines(entity.getSoId(), ...);          // 且强制 line.setLineId
 - 补单号唯一约束：`uk_quotation_no` / `uk_return_no` = `(单号, tenant_id)`
 - `so_price_list_line`：`min_qty` 去 NULL 并补 `uk_pl_line_tier(price_list_id, material_id, min_qty)`
   —— MySQL 唯一索引允许多个 NULL，不去 NULL 则约束对重复行不生效
-- 补索引 13 个；重建 `so_invoice` 14 处乱码列注释；`tax_rate`/`discount_rate` 补「百分数」单位说明
+- 补索引 14 个（另加 5 个唯一键，见上）；重建 `so_invoice` 14 处乱码列注释；`tax_rate`/`discount_rate` 补「百分数」单位说明
+  （原文档写「13 个」系计数笔误：提交信息里列了 14 项却写成 13，已按脚本实际 `ADD INDEX` 语句逐条复核修正）
 - **顺带修掉批次 2 的遗漏**：`so` 模块的 BO 行列表字段此前都没有 `@Valid`，
   行级 `@NotNull` 其实是死代码（只有 wm 模块 3 个 BO 用了嵌套校验）。
   已给 `SoSalesOrderHeaderBo` / `SoPriceListBo` 的行列表补 `@Valid`，并同步补前端单价必填校验。
