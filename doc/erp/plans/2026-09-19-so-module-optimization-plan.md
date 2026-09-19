@@ -353,7 +353,7 @@ insertOrUpdateLines(entity.getSoId(), ...);          // 且强制 line.setLineId
 | T1.3 退货门禁 | ✅ 完成 | 见本批次 commit | 新增 5 用例；`Tests run: 87, Failures: 0` |
 | T1.4 开票收口 | ✅ 完成 | `8f5ab354` | 新增 8 用例 |
 | T1.5 红冲/核销 | ✅ 完成 | `8f5ab354` | 新增 3 用例 |
-| T1.6 报表修复 | ⬜ 待办（部分受 Q1 影响） | | |
+| T1.6 报表修复 | ✅ 完成（SQL/租户/权限） | 见本批次 commit | 新增 6 用例；`Tests run: 106, Failures: 0`。菜单与前端属 T3.4，待 Q1 |
 | T1.7 跨库事务（待 Q5 实测） | ⬜ 待办 | | |
 | T1.8 金额服务端重算 | ✅ 完成 | 见本批次 commit | 新增 2 用例；`Tests run: 100, Failures: 0` |
 | 批次 2 ~ 批次 5 | ⬜ 待办 | | |

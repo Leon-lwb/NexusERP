@@ -19,14 +19,14 @@ public class SoSalesReportController {
 
     private final SoSalesReportServiceImpl reportService;
 
-    @SaCheckPermission("so:salesOrder:list")
+    @SaCheckPermission("so:orderheader:list")
     @GetMapping("/execution")
     public R<List<Map<String, Object>>> salesExecution(
         @RequestParam(required = false) Integer months) {
         return R.ok(reportService.getSalesExecution(months));
     }
 
-    @SaCheckPermission("so:salesOrder:list")
+    @SaCheckPermission("so:orderheader:list")
     @GetMapping("/customerRanking")
     public R<List<Map<String, Object>>> customerRanking(
         @RequestParam(required = false) Integer months,
