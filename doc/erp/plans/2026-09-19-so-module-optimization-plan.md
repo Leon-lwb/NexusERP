@@ -348,8 +348,8 @@ insertOrUpdateLines(entity.getSoId(), ...);          // 且强制 line.setLineId
 | 批次/任务 | 状态 | commit | 验证 |
 |---|---|---|---|
 | 批次 0 回归基线 | ✅ 完成 | `4dddf2e9` | 新增 43 用例；`Tests run: 68, Failures: 0` |
-| T1.1 改单差量更新 | ✅ 完成 | 见本批次 commit | 新增 11 用例；`Tests run: 79, Failures: 0`；前端 `eslint` + `build:prod` 通过 |
-| T1.2 删除止血 | ⬜ 待办 | | |
+| T1.1 改单差量更新 | ✅ 完成 | `336dd856` | 新增 11 用例；`Tests run: 79, Failures: 0`；前端 `eslint` + `build:prod` 通过 |
+| T1.2 删除止血 | ✅ 完成 | 见本批次 commit | 新增 3 用例；`Tests run: 33`（本类） |
 | T1.3 退货门禁 | ⬜ 待办 | | |
 | T1.4 开票收口 | ⬜ 待办 | | |
 | T1.5 红冲/核销 | ⬜ 待办 | | |

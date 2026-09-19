@@ -8,6 +8,7 @@ import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.flowable.helper.FlowableProcInsIdHelper;
 import com.nexus.erp.bd.mapper.BdBomMapper;
 import com.nexus.erp.bd.mapper.BdMaterialMapper;
+import com.nexus.erp.prd.domain.PrdProductionPlan;
 import com.nexus.erp.prd.mapper.PrdProductionPlanMapper;
 import com.nexus.erp.prd.mapper.PrdWorkOrderMapper;
 import com.nexus.erp.so.domain.SoCustomerOrder;
@@ -637,5 +638,55 @@ class SoSalesOrderHeaderServiceImplTest {
         verify(soSalesOrderLineMapper).insertBatch(inserted.capture());
         assertNull(inserted.getValue().get(0).getLineId());
         verify(soSalesOrderLineMapper, never()).updateById(any(SoSalesOrderLine.class));
+    }
+
+    // ==================== deleteByIds 状态门禁与收尾（T1.2）====================
+
+    /** 空入参直接返回 0，不做任何查询 */
+    @Test
+    void deleteByIds_emptyIds_returnsZero() {
+        assertEquals(0, headerService.deleteByIds(new Long[0]));
+        verify(baseMapper, never()).selectBatchIds(anyList());
+    }
+
+    /** 非草稿订单禁止删除（须走 cancel/close 收尾） */
+    @Test
+    void deleteByIds_rejectsNonDraft() {
+        SoSalesOrderHeader confirmed = header(1L, ISoSalesOrderHeaderService.STATUS_CONFIRMED);
+        when(baseMapper.selectBatchIds(anyList())).thenReturn(List.of(confirmed));
+
+        ServiceException ex = assertThrows(ServiceException.class, () -> headerService.deleteByIds(new Long[]{1L}));
+        assertTrue(ex.getMessage().contains("只有草稿状态"), "实际: " + ex.getMessage());
+        verify(creditCheckService, never()).release(any());
+        verify(stockReservationService, never()).unreserve(any(), any(), any());
+        verify(baseMapper, never()).deleteBatchIds(anyList());
+    }
+
+    /** 草稿删除：释放信用与预留、关闭残留生产计划、删行删头 */
+    @Test
+    void deleteByIds_draft_releasesCreditReservationAndClosesPlans() {
+        when(baseMapper.selectBatchIds(anyList()))
+            .thenReturn(List.of(header(1L, ISoSalesOrderHeaderService.STATUS_DRAFT)));
+        when(soSalesOrderLineMapper.selectList(any()))
+            .thenReturn(List.of(existingLine(100L, "100", "10", "0", "0", "0")));
+
+        PrdProductionPlan plan = new PrdProductionPlan();
+        plan.setPlanId(900L);
+        plan.setStatus("DRAFT");
+        when(prdProductionPlanMapper.selectList(any())).thenReturn(List.of(plan));
+        when(prdProductionPlanMapper.updateById(any(PrdProductionPlan.class))).thenReturn(1);
+        when(soSalesOrderLineMapper.delete(any())).thenReturn(1);
+        when(baseMapper.deleteBatchIds(anyList())).thenReturn(1);
+
+        assertEquals(1, headerService.deleteByIds(new Long[]{1L}));
+
+        verify(creditCheckService).release(1L);
+        verify(stockReservationService).unreserve("SALES_ORDER", 1L, null);
+        // 关联生产计划被置为 CLOSED，不留在已删除的订单行上
+        ArgumentCaptor<PrdProductionPlan> planCaptor = ArgumentCaptor.forClass(PrdProductionPlan.class);
+        verify(prdProductionPlanMapper).updateById(planCaptor.capture());
+        assertEquals("CLOSED", planCaptor.getValue().getStatus());
+        verify(soSalesOrderLineMapper).delete(any());
+        verify(baseMapper).deleteBatchIds(anyList());
     }
 }

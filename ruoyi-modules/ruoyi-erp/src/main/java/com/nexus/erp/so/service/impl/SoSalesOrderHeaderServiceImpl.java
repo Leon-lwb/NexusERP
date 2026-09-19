@@ -52,6 +52,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -284,14 +285,47 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
     }
 
     /**
-     * 批量删除销售订单（同时删除行明细）
+     * 批量删除销售订单（同时删除行明细）。
+     * <p>仅草稿可删除：非草稿订单已产生信用占用、库存预留、生产计划等副作用，
+     * 必须走 {@code cancel}/{@code close} 才能完整收尾（释放信用、释放预留、关闭计划），
+     * 直接删除会把这些副作用变成孤儿数据。</p>
+     * <p>即便如此，仍对草稿单做一次防御性收尾，兜住历史脏数据（例如曾被旧版无门禁的改单/删除逻辑破坏的单据）。</p>
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {
+        if (ids == null || ids.length == 0) {
+            return 0;
+        }
+        List<Long> idList = Arrays.stream(ids).filter(Objects::nonNull).distinct().collect(Collectors.toList());
+        if (idList.isEmpty()) {
+            return 0;
+        }
+        List<SoSalesOrderHeader> orders = baseMapper.selectBatchIds(idList);
+        for (SoSalesOrderHeader order : orders) {
+            if (!STATUS_DRAFT.equals(order.getOrderStatus())) {
+                throw new ServiceException("只有草稿状态的销售订单才能删除，单号 "
+                    + order.getSoNo() + " 当前状态：" + order.getOrderStatus());
+            }
+        }
+        // 防御性收尾：释放信用额度与库存预留（草稿正常无这些副作用）
+        for (SoSalesOrderHeader order : orders) {
+            creditCheckService.release(order.getSoId());
+            stockReservationService.unreserve("SALES_ORDER", order.getSoId(), null);
+        }
+        // 关闭可能残留的关联生产计划，避免计划挂在一张已删除的订单行上
+        List<Long> lineIds = soSalesOrderLineMapper.selectList(
+                new LambdaQueryWrapper<SoSalesOrderLine>().in(SoSalesOrderLine::getSoId, idList))
+            .stream()
+            .map(SoSalesOrderLine::getLineId)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toList());
+        if (!lineIds.isEmpty()) {
+            closeLinkedProductionPlans(lineIds);
+        }
         soSalesOrderLineMapper.delete(new LambdaQueryWrapper<SoSalesOrderLine>()
-            .in(SoSalesOrderLine::getSoId, List.of(ids)));
-        return baseMapper.deleteBatchIds(List.of(ids));
+            .in(SoSalesOrderLine::getSoId, idList));
+        return baseMapper.deleteBatchIds(idList);
     }
 
     /**
