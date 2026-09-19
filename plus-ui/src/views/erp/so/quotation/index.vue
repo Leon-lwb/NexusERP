@@ -44,10 +44,24 @@
         <el-button type="info" plain icon="View" :disabled="single" @click="handleView()" v-hasPermi="['so:quotation:query']">查看</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="success" plain icon="Check" :disabled="single" @click="handleConfirm()" v-hasPermi="['so:quotation:edit']">确认</el-button>
+        <el-button
+          type="success"
+          plain
+          icon="Check"
+          :disabled="single || !canConfirmSelected"
+          @click="handleConfirm()"
+          v-hasPermi="['so:quotation:edit']"
+          >确认</el-button
+        >
       </el-col>
       <el-col :span="1.5">
-        <el-button type="warning" plain icon="Right" :disabled="single" @click="handleConvert()" v-hasPermi="['so:quotation:edit']"
+        <el-button
+          type="warning"
+          plain
+          icon="Right"
+          :disabled="single || !canConvertSelected"
+          @click="handleConvert()"
+          v-hasPermi="['so:quotation:edit']"
           >转换销售订单</el-button
         >
       </el-col>
@@ -144,7 +158,7 @@ const {
   handleQuery,
   handleDelete,
   handleExport,
-  handleSelectionChange
+  handleSelectionChange: crudSelectionChange
 } = useCrud({
   apis: { list: listQuotation, get: getQuotation, add: addQuotation, update: updateQuotation, del: delQuotation },
   idField: 'quotationId',
@@ -155,6 +169,19 @@ const {
   exportUrl: '/erp/so/quotation/export',
   exportFileName: 'quotation'
 });
+
+/** 当前选中行（工具栏按钮按状态门禁，与行内按钮保持一致） */
+const selectedRow = ref<any>(null);
+
+/** 多选框选中数据（在通用逻辑之上记录当前选中行） */
+function handleSelectionChange(selection: any[]) {
+  crudSelectionChange(selection);
+  selectedRow.value = selection.length === 1 ? selection[0] : null;
+}
+
+// 与后端状态机保持一致：仅草稿可确认、仅已确认可转单（后端会拒绝，前端提前置灰避免误操作）
+const canConfirmSelected = computed(() => selectedRow.value?.status === 'DRAFT');
+const canConvertSelected = computed(() => selectedRow.value?.status === 'CONFIRMED');
 
 function resetQuery() {
   proxy.resetForm('queryRef');
@@ -200,6 +227,10 @@ function handleView(row?: any) {
 function handleConfirm(row?: any) {
   const qId = row?.quotationId || ids.value[0];
   const qNo = row?.quotationNo || qId;
+  if (!canConfirmSelected.value && !row) {
+    proxy.$modal.msgWarning('只有草稿状态的报价单才能确认');
+    return;
+  }
   proxy.$modal
     .confirm('是否确认报价单"' + qNo + '"？')
     .then(() => {
@@ -214,6 +245,10 @@ function handleConfirm(row?: any) {
 function handleConvert(row?: any) {
   const qId = row?.quotationId || ids.value[0];
   const qNo = row?.quotationNo || qId;
+  if (!canConvertSelected.value && !row) {
+    proxy.$modal.msgWarning('只有已确认状态的报价单才能转换为销售订单');
+    return;
+  }
   proxy.$modal
     .confirm('是否将报价单"' + qNo + '"转换为销售订单？')
     .then(() => {
