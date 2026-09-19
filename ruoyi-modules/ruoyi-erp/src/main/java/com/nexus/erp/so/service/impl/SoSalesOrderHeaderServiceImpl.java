@@ -22,11 +22,13 @@ import com.nexus.erp.prd.mapper.PrdProductionPlanMapper;
 import com.nexus.erp.prd.mapper.PrdWorkOrderMapper;
 import com.nexus.erp.so.domain.SoSalesOrderHeader;
 import com.nexus.erp.so.domain.SoSalesOrderLine;
+import com.nexus.erp.so.domain.SoCustomerOrder;
 import com.nexus.erp.so.domain.bo.SoSalesOrderHeaderBo;
 import com.nexus.erp.so.domain.bo.SoSalesOrderLineBo;
 import com.nexus.erp.so.domain.vo.SoSalesOrderHeaderVo;
 import com.nexus.erp.so.domain.vo.SoSalesOrderLineVo;
 import com.nexus.erp.so.event.SalesOrderFulfilledEvent;
+import com.nexus.erp.so.mapper.SoCustomerOrderMapper;
 import com.nexus.erp.so.mapper.SoSalesOrderHeaderMapper;
 import com.nexus.erp.so.mapper.SoSalesOrderLineMapper;
 import com.nexus.erp.so.service.ICreditCheckService;
@@ -69,6 +71,7 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
 
     private final SoSalesOrderHeaderMapper baseMapper;
     private final SoSalesOrderLineMapper soSalesOrderLineMapper;
+    private final SoCustomerOrderMapper soCustomerOrderMapper;
     private final BdMaterialMapper bdMaterialMapper;
     private final BdBomMapper bdBomMapper;
     private final PrdProductionPlanMapper prdProductionPlanMapper;
@@ -107,6 +110,13 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
     public SoSalesOrderHeaderVo selectById(Long id) {
         SoSalesOrderHeaderVo vo = baseMapper.selectVoById(id);
         if (vo != null) {
+            // 回填客户订单号（展示用，避免前端用客户参考号冒充客户订单号）
+            if (vo.getCoId() != null) {
+                SoCustomerOrder customerOrder = soCustomerOrderMapper.selectById(vo.getCoId());
+                if (customerOrder != null) {
+                    vo.setCoNo(customerOrder.getCoNo());
+                }
+            }
             List<SoSalesOrderLine> lineList = soSalesOrderLineMapper.selectList(
                 new LambdaQueryWrapper<SoSalesOrderLine>()
                     .eq(SoSalesOrderLine::getSoId, id));

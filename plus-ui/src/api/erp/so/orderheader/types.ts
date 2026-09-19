@@ -10,6 +10,8 @@ export interface OrderheaderVO {
   soId: number;
   soNo: string;
   coId: number;
+  /** 客户订单号（后端 selectById 经 coId 回填，展示用） */
+  coNo: string;
   clientId: number;
   clientName: string;
   salesRepId: number;
@@ -60,6 +62,8 @@ export interface OrderheaderForm {
   soId?: number;
   soNo?: string;
   coId?: number;
+  /** 客户订单号（展示用，后端回填，提交时忽略） */
+  coNo?: string;
   clientId?: number;
   clientName?: string;
   salesRepId?: number;

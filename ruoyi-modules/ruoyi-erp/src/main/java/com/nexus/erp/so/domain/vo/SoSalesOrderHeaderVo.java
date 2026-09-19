@@ -34,6 +34,10 @@ public class SoSalesOrderHeaderVo implements Serializable {
 
     /** 客户订单ID */
     private Long coId;
+
+    /** 客户订单号（展示用，selectById 经 coId 回填，不落库） */
+    private String coNo;
+
     /** 客户ID */
     private Long clientId;
 
