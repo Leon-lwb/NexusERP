@@ -25,8 +25,7 @@ public class SoPriceListBo extends BaseEntity {
     /** 价格表ID */
     private Long priceListId;
 
-    /** 价格表编码 */
-    @NotBlank(message = "价格表编码不能为空")
+    /** 价格表编码（为空时由后端按 PRICE_LIST_CODE 规则自动生成，故不强制必填） */
     private String listCode;
     /** 价格表名称 */
     @NotBlank(message = "价格表名称不能为空")

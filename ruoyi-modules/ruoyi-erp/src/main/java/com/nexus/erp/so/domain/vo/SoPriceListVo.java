@@ -42,6 +42,9 @@ public class SoPriceListVo implements Serializable {
     /** 客户ID */
     private Long clientId;
 
+    /** 客户名称（展示用，selectPageList/selectById 经 clientId 回填，不落库） */
+    private String clientName;
+
     /** 币种 */
     @ExcelProperty(value = "币种")
     private String currency;

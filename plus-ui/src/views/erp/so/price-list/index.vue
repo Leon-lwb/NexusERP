@@ -15,6 +15,18 @@
           </el-form-item>
         </el-col>
         <el-col :span="6">
+          <el-form-item label="客户" prop="clientId">
+            <el-input v-model="clientDisplay" placeholder="请选择客户" readonly>
+              <template #append>
+                <el-button icon="Search" @click="clientSelectRef?.open()" />
+              </template>
+              <template #suffix v-if="queryParams.clientId">
+                <el-icon class="cell-clear" title="清除" @click="clearClient"><CircleClose /></el-icon>
+              </template>
+            </el-input>
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
           <el-form-item label="状态" prop="status">
             <el-select v-model="queryParams.status" placeholder="请选择状态" clearable style="width: 100%">
               <el-option v-for="dict in so_price_list_status" :key="dict.value" :label="dict.label" :value="dict.value" />
@@ -22,19 +34,19 @@
           </el-form-item>
         </el-col>
         <el-col :span="6">
-          <el-form-item label="生效日期">
+          <el-form-item label="有效期">
             <el-date-picker
               v-model="dateRange"
               type="daterange"
               range-separator="-"
-              start-placeholder="开始日期"
-              end-placeholder="结束日期"
+              start-placeholder="生效日期"
+              end-placeholder="失效日期"
               value-format="YYYY-MM-DD"
               style="width: 100%"
             />
           </el-form-item>
         </el-col>
-        <el-col :span="6" :offset="18" class="search-actions">
+        <el-col :span="6" :offset="12" class="search-actions">
           <el-form-item>
             <el-button type="primary" icon="Search" @click="handleQuery()">搜索</el-button>
             <el-button icon="Refresh" @click="resetQuery()">重置</el-button>
@@ -63,34 +75,42 @@
 
     <el-table v-loading="loading" :data="priceListList" @selection-change="handleSelectionChange" show-overflow-tooltip>
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="价格表名称" align="center" prop="listName" min-width="120" show-overflow-tooltip />
-      <el-table-column label="价格表类型" align="center" prop="listType">
+      <el-table-column label="价格表编码" align="center" prop="listCode" width="140" />
+      <el-table-column label="价格表名称" align="center" prop="listName" min-width="140" show-overflow-tooltip />
+      <el-table-column label="价格表类型" align="center" prop="listType" width="110">
         <template #default="scope">
           <dict-tag :options="so_price_list_type" :value="scope.row.listType" />
         </template>
       </el-table-column>
-      <el-table-column label="客户名称" align="center" prop="clientName" min-width="120" show-overflow-tooltip />
-      <el-table-column label="生效日期" align="center" prop="effectiveDateFrom">
+      <el-table-column label="客户" align="center" prop="clientName" min-width="140" show-overflow-tooltip>
         <template #default="scope">
-          <span>{{ parseTime(scope.row.effectiveDateFrom, '{y}-{m}-{d}') }}</span>
+          <span>{{ scope.row.clientName || '通用（不限客户）' }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="失效日期" align="center" prop="effectiveDateTo">
+      <el-table-column label="币种" align="center" prop="currency" width="80" />
+      <el-table-column label="优先级" align="center" prop="priority" width="80" />
+      <el-table-column label="生效日期" align="center" prop="validFrom" width="110">
         <template #default="scope">
-          <span>{{ parseTime(scope.row.effectiveDateTo, '{y}-{m}-{d}') }}</span>
+          <span>{{ scope.row.validFrom || '-' }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="状态" align="center" prop="status">
+      <el-table-column label="失效日期" align="center" prop="validTo" width="110">
         <template #default="scope">
-          <dict-tag :options="so_price_list_status" :value="scope.row.status" />
+          <span>{{ scope.row.validTo || '长期有效' }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="创建时间" align="center" prop="createTime">
+      <el-table-column label="状态" align="center" prop="status" width="90">
+        <template #default="scope">
+          <dict-tag v-if="scope.row.status" :options="so_price_list_status" :value="scope.row.status" />
+          <span v-else>-</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="创建时间" align="center" prop="createTime" width="160">
         <template #default="scope">
           <span>{{ parseTime(scope.row.createTime) }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="160" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['so:priceList:edit']">修改</el-button>
           <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['so:priceList:remove']">删除</el-button>
@@ -99,6 +119,9 @@
     </el-table>
 
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
+
+    <!-- 客户选择对话框 -->
+    <ClientSelectDialog ref="clientSelectRef" @confirm="handleClientSelect" />
   </div>
 </template>
 
@@ -107,12 +130,16 @@ import { listPriceList, getPriceList, addPriceList, updatePriceList, delPriceLis
 import { useRouter } from 'vue-router';
 import type { FormInstance } from 'element-plus';
 import { useCrud } from '@/composables/useCrud';
+import ClientSelectDialog from '../components/ClientSelectDialog.vue';
+import type { ClientVO } from '@/api/erp/bd/client/types';
 
 const router = useRouter();
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { so_price_list_type, so_price_list_status } = toRefs<any>(proxy.useDict('so_price_list_type', 'so_price_list_status'));
 
 const dateRange = ref([]);
+const clientSelectRef = ref<InstanceType<typeof ClientSelectDialog> | null>(null);
+const clientDisplay = ref('');
 
 const queryParams = ref({
   pageNum: 1,
@@ -121,8 +148,9 @@ const queryParams = ref({
   listType: null,
   clientId: null,
   status: null,
-  effectiveDateFrom: null,
-  effectiveDateTo: null
+  // 有效期区间：validFrom 为生效日期下界、validTo 为失效日期上界（与后端 buildQueryWrapper 一致）
+  validFrom: null,
+  validTo: null
 });
 
 // 列表骨架（新增/修改为路由表单页，保留本地 router.push 跳转逻辑）
@@ -148,19 +176,34 @@ const {
   exportUrl: '/erp/so/price-list/export',
   exportFileName: 'priceList',
   beforeList: (query: any) => {
-    // 生效日期范围仅用于列表过滤：每次查询按当前 dateRange 重新计算，无范围时清理残留
+    // 有效期范围仅用于列表过滤：每次查询按当前 dateRange 重新计算，无范围时清理残留
     if (dateRange.value && dateRange.value.length === 2) {
-      query.effectiveDateFrom = dateRange.value[0];
-      query.effectiveDateTo = dateRange.value[1];
+      query.validFrom = dateRange.value[0];
+      query.validTo = dateRange.value[1];
     } else {
-      query.effectiveDateFrom = null;
-      query.effectiveDateTo = null;
+      query.validFrom = null;
+      query.validTo = null;
     }
   }
 });
 
+/** 选中客户作为过滤条件 */
+function handleClientSelect(client: ClientVO) {
+  queryParams.value.clientId = client.clientId as any;
+  clientDisplay.value = client.clientName;
+  handleQuery();
+}
+
+/** 清除客户过滤条件 */
+function clearClient() {
+  queryParams.value.clientId = null;
+  clientDisplay.value = '';
+  handleQuery();
+}
+
 function resetQuery() {
   dateRange.value = [];
+  clientDisplay.value = '';
   proxy.resetForm('queryRef');
   handleQuery();
 }
@@ -185,11 +228,11 @@ function handleUpdate(row?: any) {
   router.push({ path: '/erp/so/price-list/form', query: { id: row.priceListId, action: 'edit' } });
 }
 
-/** 导出按钮操作（保持原有口径：不携带生效日期范围过滤条件） */
+/** 导出按钮操作（保持原有口径：不携带有效期范围过滤条件） */
 function handleExport() {
   const params = { ...queryParams.value };
-  delete params.effectiveDateFrom;
-  delete params.effectiveDateTo;
+  delete params.validFrom;
+  delete params.validTo;
   proxy.download('/erp/so/price-list/export', params, `priceList_${new Date().getTime()}.xlsx`);
 }
 
@@ -197,3 +240,13 @@ onActivated(() => {
   getList();
 });
 </script>
+
+<style scoped>
+.cell-clear {
+  cursor: pointer;
+  color: var(--el-text-color-placeholder);
+}
+.cell-clear:hover {
+  color: var(--el-color-danger);
+}
+</style>

@@ -360,7 +360,7 @@ insertOrUpdateLines(entity.getSoId(), ...);          // 且强制 line.setLineId
 | 批次 3：功能补齐 | 🚧 进行中 | | |
 | └ T3.1a 价目表引擎修复（D2 公式 + NULL 边界 + selectList + 优先级） | ✅ 完成 | 见本批次 commit | 新增 4 用例；`Tests run: 123, Failures: 0` |
 | └ T3.1b `resolvePrice` 接口 + 前端取价接线 | ✅ 完成 | 见本批次 commit | 后端编译通过；前端 `eslint` + `build:prod` 通过 |
-| └ T3.1c 价目表前端（物料选择器/菜单/权限码/字典） | ⬜ 待办 | | |
+| └ T3.1c 价目表前端（物料选择器/菜单/权限码/字典） | ✅ 完成 | 见本批次 commit | 新增 5 用例；`Tests run: 128, Failures: 0`；前端 `eslint` + `build:prod` 通过 |
 | └ T3.2 报价转单前端接线 | ⬜ 待办 | | |
 | └ T3.3 退货闭环 + 退货 UI 接线（待 Q2） | ⬜ 待办 | | |
 | └ T3.4 报表菜单 + 前端（待 Q1） | ⬜ 待办 | | |
