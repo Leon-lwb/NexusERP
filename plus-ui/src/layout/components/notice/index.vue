@@ -26,7 +26,7 @@
             <div v-if="v.contentPreview" class="content-box-msg">{{ v.contentPreview }}</div>
             <!-- 跳转流程详情（refType 白名单映射 / contentUrl） -->
             <div v-if="detailLink(v)" class="content-box-link">
-              <a href="#" @click.stop.prevent="goDetail(v)">{{ detailLinkLabel(v) }}</a>
+              <a href="#" @click.stop.prevent="openDetail(v)">{{ detailLinkLabel(v) }}</a>
             </div>
             <div class="content-box-time">{{ v.time }}</div>
           </div>
@@ -42,10 +42,10 @@
     </div>
     <div v-if="newsList.length > 0" class="foot-box">共 {{ newsList.length }} 条通知 · 点击查看详情</div>
 
-    <!-- 通知详情弹窗 -->
+    <!-- 通知详情弹窗（仅无跳转目标的通知使用；正文经 DOMPurify 净化后渲染） -->
     <el-dialog v-model="detailVisible" :title="currentDetail?.title || '通知详情'" width="500px" append-to-body>
-      <div class="notification-detail-content" v-html="currentDetail?.content"></div>
-      <div v-if="!currentDetail?.content && currentDetail?.contentPreview" class="notification-detail-content">
+      <div v-if="detailHtml" class="notification-detail-content" v-html="detailHtml"></div>
+      <div v-else-if="currentDetail?.contentPreview" class="notification-detail-content">
         {{ currentDetail.contentPreview }}
       </div>
     </el-dialog>
@@ -57,10 +57,14 @@ import { computed, nextTick, onMounted, reactive, ref } from 'vue';
 import { ElMessage } from 'element-plus';
 import { useRouter } from 'vue-router';
 import { useNoticeStore } from '@/store/modules/notice';
+import { sanitizeHtml } from '@/utils/aiRenderers';
 import { markAllNotificationRead, markNotificationRead, pageNotifications, type NotificationItem } from '@/api/im/notification';
 
 const noticeStore = useNoticeStore();
 const router = useRouter();
+
+/** 跳转到业务详情页后通知父组件收起消息盒子（Navbar 的 el-popover） */
+const emit = defineEmits<{ (e: 'navigate'): void }>();
 
 // 定义变量内容
 const state = reactive({
@@ -166,6 +170,7 @@ const toNewsRow = (r: NotificationItem): NewsRow => ({
   time: formatTime(r.createTime),
   content: r.content,
   contentPreview: stripHtml(r.content || '').slice(0, 80),
+  contentUrl: r.contentUrl,
   refType: r.refType,
   refId: r.refId,
   category: r.category
@@ -259,22 +264,48 @@ const loadMore = async () => {
 const detailVisible = ref(false);
 const currentDetail = ref<NewsRow | null>(null);
 
-/** 点击行：展示正文详情 + 标记已读（后端成功后才更新角标） */
+/**
+ * 详情正文：持久化 content 是后端存储的 HTML（历史流程待办通知内嵌 <a>），
+ * 而 IM 通知的 content 直接取自用户消息，故 v-html 前必须经 DOMPurify 净化，避免存储型 XSS
+ */
+const detailHtml = computed(() => sanitizeHtml(currentDetail.value?.content || ''));
+
+/** 标记已读（后端成功后才更新列表与角标，避免失败后前后端状态不一致） */
+const syncReadState = (item: NewsRow) => {
+  if (item.read || item.id === undefined || item.id === null) return;
+  markNotificationRead(item.id)
+    .then(() => {
+      // 按 id 在当前列表中查找并更新已读状态，避免闭包 item 引用在列表刷新后失效
+      const target = newsList.value.find((n) => n.id === item.id);
+      if (target) target.read = true;
+      noticeStore.markRead(item.id as number | string);
+    })
+    .catch(() => {
+      ElMessage.warning('标记已读失败');
+    });
+};
+
+/**
+ * 点击通知：有跳转目标的（流程待办/结束通知、AI 流程实例）直接进入业务详情页，
+ * 无跳转目标的（系统消息、IM 消息提醒）才弹窗展示正文；两种情况都同步已读。
+ */
 const openDetail = (item: NewsRow) => {
+  syncReadState(item);
+  const link = detailLink(item);
+  if (link) {
+    detailVisible.value = false;
+    // 收起消息盒子，避免遮挡跳转后的页面
+    emit('navigate');
+    // 兼容 flowable.message-base-url 配成绝对地址的部署：外链走新窗口，站内路径走路由
+    if (/^https?:\/\//i.test(link)) {
+      window.open(link, '_blank');
+    } else {
+      router.push(link);
+    }
+    return;
+  }
   currentDetail.value = item;
   detailVisible.value = true;
-  if (!item.read && item.id !== undefined && item.id !== null) {
-    markNotificationRead(item.id)
-      .then(() => {
-        // 按 id 在当列表中查找并更新已读状态，避免闭包 item 引用在列表刷新后失效
-        const target = newsList.value.find((n) => n.id === item.id);
-        if (target) target.read = true;
-        noticeStore.markRead(item.id as number | string);
-      })
-      .catch(() => {
-        ElMessage.warning('标记已读失败');
-      });
-  }
 };
 
 /** 全部已读 */
@@ -290,26 +321,32 @@ const readAll = async () => {
 
 /* ==================== 跳转流程详情 ==================== */
 
-/** 跳转链接（refType 白名单映射；contentUrl 兜底） */
+/**
+ * 跳转链接：
+ * 1. contentUrl —— 后端生成的精确地址（流程待办/结束通知带 procInsId + taskId），优先使用；
+ * 2. refType 白名单映射 —— ai_flow 实例详情 / workflow 流程详情（历史数据只有 refType + refId）；
+ * 3. 无跳转目标返回 null，点击走详情弹窗。
+ */
 const detailLink = (item: NewsRow): string | null => {
+  if (item.contentUrl) {
+    return item.contentUrl;
+  }
   if (item.refType === 'ai_flow' && item.refId) {
     return `/ai/flow/monitor/detail?instanceId=${item.refId}`;
   }
   if (typeof item.refType === 'string' && item.refType.startsWith('workflow') && item.refId) {
     return `/workflow/process/detail/${item.refId}`;
   }
-  return item.contentUrl ?? null;
+  return null;
 };
 
 const detailLinkLabel = (item: NewsRow): string => {
   if (item.refType === 'ai_flow') return '查看流程详情';
-  if (typeof item.refType === 'string' && item.refType.startsWith('workflow')) return '去处理';
+  if (typeof item.refType === 'string' && item.refType.startsWith('workflow')) {
+    // 结束通知没有待办任务可办理，只做查看
+    return item.category === 'workflow_notice' ? '查看流程详情' : '去处理';
+  }
   return '查看详情';
-};
-
-const goDetail = (item: NewsRow) => {
-  const link = detailLink(item);
-  if (link) router.push(link);
 };
 
 onMounted(() => {

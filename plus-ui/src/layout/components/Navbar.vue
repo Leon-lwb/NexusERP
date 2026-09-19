@@ -42,14 +42,22 @@
         <!-- 消息 -->
         <el-tooltip content="消息" effect="dark" placement="bottom">
           <div>
-            <el-popover placement="bottom" trigger="click" transition="el-zoom-in-top" :width="300" :persistent="false">
+            <el-popover
+              v-model:visible="noticeVisible"
+              placement="bottom"
+              trigger="click"
+              transition="el-zoom-in-top"
+              :width="300"
+              :persistent="false"
+            >
               <template #reference>
                 <el-badge :value="newNotice" :max="99" :hidden="newNotice <= 0">
                   <div class="right-menu-item hover-effect" style="display: block"><svg-icon icon-class="message" /></div>
                 </el-badge>
               </template>
               <template #default>
-                <notice></notice>
+                <!-- 通知带跳转目标时（流程待办/结束通知）点击会直接跳转，需收起消息盒子避免遮挡目标页面 -->
+                <notice @navigate="noticeVisible = false"></notice>
               </template>
             </el-popover>
           </div>
@@ -149,6 +157,8 @@ const tenantEnabled = ref(true);
 // 搜索菜单
 const searchMenuRef = ref<InstanceType<typeof SearchMenu>>();
 const aiChatDrawerRef = ref<InstanceType<typeof AiChatDrawer>>();
+// 消息盒子（el-popover）显隐：通知跳转业务详情页时由子组件事件收起
+const noticeVisible = ref(false);
 
 const openSearchMenu = () => {
   searchMenuRef.value?.openSearch();

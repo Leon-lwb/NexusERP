@@ -10,6 +10,8 @@ export interface NotificationItem {
   refId?: string;
   title?: string;
   content?: string;
+  /** 跳转链接（流程待办/结束通知为 /workflow/process/detail/{procInsId}?taskId=...，无跳转目标时为 null） */
+  contentUrl?: string;
   readFlag?: string;
   createTime?: string;
 }

@@ -44,6 +44,9 @@ public class SysUserNotification extends TenantEntity {
     /** 通知正文内容。 */
     private String content;
 
+    /** 跳转链接（如流程详情页地址，含 procInsId/taskId 参数）；无跳转目标时为 null。 */
+    private String contentUrl;
+
     /** 是否已读：0 未读，1 已读。 */
     private String readFlag;
 

@@ -124,6 +124,9 @@ public class SysUserNotificationServiceImpl implements ISysUserNotificationServi
         row.setRefId(event.getRefId());
         row.setTitle(StrUtil.blankToDefault(event.getTitle(), "通知"));
         row.setContent(event.getContent());
+        // 跳转链接必须落库：只随实时信封下发的话，刷新后从 /page 读回的通知就丢了跳转目标，
+        // 消息盒子点击只能弹详情窗（流程待办/结束通知无法跳转到审批详情）
+        row.setContentUrl(event.getContentUrl());
         row.setReadFlag("0");
         row.setExtJson(event.getExtJson());
         if (StrUtil.isNotBlank(event.getTenantId())) {

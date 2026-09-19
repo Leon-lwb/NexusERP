@@ -95777,6 +95777,7 @@ CREATE TABLE `sys_user_notification`  (
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
   `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
+  `content_url` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '跳转链接（如流程详情页地址，含 procInsId/taskId）',
   PRIMARY KEY (`notification_id`) USING BTREE,
   INDEX `idx_sun_user_read`(`tenant_id`, `user_id`, `read_flag`, `create_time`) USING BTREE,
   INDEX `idx_sun_category`(`tenant_id`, `user_id`, `category`) USING BTREE
@@ -95785,20 +95786,20 @@ CREATE TABLE `sys_user_notification`  (
 -- ----------------------------
 -- Records of sys_user_notification
 -- ----------------------------
-INSERT INTO `sys_user_notification` VALUES (2068890023689781250, '000000', 101, 'workflow_todo', 'workflow', NULL, '流程待办通知', '流程待办通知<a href=8352dc6f-6de5-11f1-8004-00ff6700037c?taskId=835f1187-6de5-11f1-8004-00ff6700037c&businessKey=2068889177493143553&category=&processed=true>点击这个进行处理</a>', '0', NULL, 103, 1, '2026-06-22 10:53:14', 1, '2026-06-22 10:53:14', NULL);
-INSERT INTO `sys_user_notification` VALUES (2068918656345104386, '000000', 101, 'workflow_todo', 'workflow', NULL, '流程待办通知', '流程待办通知<a href=6832550e-6df5-11f1-b34c-00ff6700037c?taskId=684fef46-6df5-11f1-b34c-00ff6700037c&businessKey=2068918578570125314&category=&processed=true>点击这个进行处理</a>', '0', NULL, 103, 1, '2026-06-22 12:47:01', 1, '2026-06-22 12:47:01', NULL);
-INSERT INTO `sys_user_notification` VALUES (2071824851994071041, '000000', 101, 'workflow_todo', 'workflow', NULL, '流程待办通知', '流程待办通知，请处理', '0', NULL, 103, 1, '2026-06-30 13:15:12', 1, '2026-06-30 13:15:12', NULL);
-INSERT INTO `sys_user_notification` VALUES (2074392778932928514, '000000', 101, 'workflow_todo', 'workflow', NULL, '流程待办通知', '流程待办通知，请处理', '0', NULL, 103, 1, '2026-07-07 15:19:14', 1, '2026-07-07 15:19:14', NULL);
-INSERT INTO `sys_user_notification` VALUES (2074765446098096130, '000000', 101, 'workflow_todo', 'workflow', NULL, '流程待办通知', '流程待办通知，请处理', '0', NULL, 103, 1, '2026-07-08 16:00:04', 1, '2026-07-08 16:00:04', NULL);
-INSERT INTO `sys_user_notification` VALUES (2074785093392437249, '000000', 101, 'workflow_todo', 'workflow', NULL, '流程待办通知', '流程待办通知，请处理', '0', NULL, 103, 1, '2026-07-08 17:18:09', 1, '2026-07-08 17:18:09', NULL);
-INSERT INTO `sys_user_notification` VALUES (2075391867623510018, '000000', 101, 'workflow_todo', 'workflow', NULL, '流程待办通知', '流程待办通知，请处理', '0', NULL, 103, 1, '2026-07-10 09:29:15', 1, '2026-07-10 09:29:15', NULL);
-INSERT INTO `sys_user_notification` VALUES (2078833256534536193, '000000', 4, 'im_group', 'im_message', '2078833256412901377', '群聊 · 222', '系统管理员：@本部门及以下 密码123456 我单独@你了', '0', NULL, 103, 1, '2026-07-19 21:24:06', 1, '2026-07-19 21:24:06', NULL);
-INSERT INTO `sys_user_notification` VALUES (2078841596828340227, '000000', 4, 'im_group', 'im_message', '2078841596664762369', '群聊 · 222', '本部门及以下 密码123456：@admin 收到', '0', NULL, 108, 3, '2026-07-19 21:57:14', 3, '2026-07-19 21:57:14', NULL);
-INSERT INTO `sys_user_notification` VALUES (2080229432973262850, '000000', 101, 'workflow_todo', 'workflow', NULL, '流程待办通知', '流程待办通知，请处理', '0', NULL, 103, 1, '2026-07-23 17:52:00', 1, '2026-07-23 17:52:00', NULL);
-INSERT INTO `sys_user_notification` VALUES (2088890075231289345, '000000', 1, 'workflow_notice', 'workflow', NULL, '流程任务结束通知', '流程任务结束通知，请点击查看', '1', NULL, 103, 1, '2026-08-16 15:26:18', 1, '2026-08-29 14:33:51', NULL);
-INSERT INTO `sys_user_notification` VALUES (2089704730375766018, '000000', 1, 'workflow_notice', 'workflow', NULL, '流程任务结束通知', '流程任务结束通知，请点击查看', '1', NULL, 103, 1, '2026-08-18 21:23:27', 1, '2026-08-29 14:33:51', NULL);
-INSERT INTO `sys_user_notification` VALUES (2091905856923783171, '000000', 3, 'im_private', 'im_message', '2091905856923783170', '私聊 · 系统管理员', 'http://159.75.14.226:9005/ruoyi/2026/08/24/57903b8e894343859255f9805d654a2d.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20260824T150956Z&X-Amz-SignedHeaders=host&X-Amz-Credential=minio%2F20260824%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Expires=120&X-Amz-Signature=e860d0daefffe3ce9ecf04abf17943aa914e3684bb71d305ace4921c99c17720', '0', NULL, 103, 1, '2026-08-24 23:09:57', 1, '2026-08-24 23:09:57', NULL);
-INSERT INTO `sys_user_notification` VALUES (2091905987337277442, '000000', 3, 'im_friend_request', 'friend_request', '1', '系统管理员 请求添加您为好友', '请求添加您为好友', '0', '{\"status\":\"sent\",\"fromUserId\":1}', 103, 1, '2026-08-24 23:10:28', 1, '2026-08-24 23:10:28', NULL);
+INSERT INTO `sys_user_notification` VALUES (2068890023689781250, '000000', 101, 'workflow_todo', 'workflow', NULL, '流程待办通知', '流程待办通知<a href=8352dc6f-6de5-11f1-8004-00ff6700037c?taskId=835f1187-6de5-11f1-8004-00ff6700037c&businessKey=2068889177493143553&category=&processed=true>点击这个进行处理</a>', '0', NULL, 103, 1, '2026-06-22 10:53:14', 1, '2026-06-22 10:53:14', NULL), NULL);
+INSERT INTO `sys_user_notification` VALUES (2068918656345104386, '000000', 101, 'workflow_todo', 'workflow', NULL, '流程待办通知', '流程待办通知<a href=6832550e-6df5-11f1-b34c-00ff6700037c?taskId=684fef46-6df5-11f1-b34c-00ff6700037c&businessKey=2068918578570125314&category=&processed=true>点击这个进行处理</a>', '0', NULL, 103, 1, '2026-06-22 12:47:01', 1, '2026-06-22 12:47:01', NULL), NULL);
+INSERT INTO `sys_user_notification` VALUES (2071824851994071041, '000000', 101, 'workflow_todo', 'workflow', NULL, '流程待办通知', '流程待办通知，请处理', '0', NULL, 103, 1, '2026-06-30 13:15:12', 1, '2026-06-30 13:15:12', NULL), NULL);
+INSERT INTO `sys_user_notification` VALUES (2074392778932928514, '000000', 101, 'workflow_todo', 'workflow', NULL, '流程待办通知', '流程待办通知，请处理', '0', NULL, 103, 1, '2026-07-07 15:19:14', 1, '2026-07-07 15:19:14', NULL), NULL);
+INSERT INTO `sys_user_notification` VALUES (2074765446098096130, '000000', 101, 'workflow_todo', 'workflow', NULL, '流程待办通知', '流程待办通知，请处理', '0', NULL, 103, 1, '2026-07-08 16:00:04', 1, '2026-07-08 16:00:04', NULL), NULL);
+INSERT INTO `sys_user_notification` VALUES (2074785093392437249, '000000', 101, 'workflow_todo', 'workflow', NULL, '流程待办通知', '流程待办通知，请处理', '0', NULL, 103, 1, '2026-07-08 17:18:09', 1, '2026-07-08 17:18:09', NULL), NULL);
+INSERT INTO `sys_user_notification` VALUES (2075391867623510018, '000000', 101, 'workflow_todo', 'workflow', NULL, '流程待办通知', '流程待办通知，请处理', '0', NULL, 103, 1, '2026-07-10 09:29:15', 1, '2026-07-10 09:29:15', NULL), NULL);
+INSERT INTO `sys_user_notification` VALUES (2078833256534536193, '000000', 4, 'im_group', 'im_message', '2078833256412901377', '群聊 · 222', '系统管理员：@本部门及以下 密码123456 我单独@你了', '0', NULL, 103, 1, '2026-07-19 21:24:06', 1, '2026-07-19 21:24:06', NULL), NULL);
+INSERT INTO `sys_user_notification` VALUES (2078841596828340227, '000000', 4, 'im_group', 'im_message', '2078841596664762369', '群聊 · 222', '本部门及以下 密码123456：@admin 收到', '0', NULL, 108, 3, '2026-07-19 21:57:14', 3, '2026-07-19 21:57:14', NULL), NULL);
+INSERT INTO `sys_user_notification` VALUES (2080229432973262850, '000000', 101, 'workflow_todo', 'workflow', NULL, '流程待办通知', '流程待办通知，请处理', '0', NULL, 103, 1, '2026-07-23 17:52:00', 1, '2026-07-23 17:52:00', NULL), NULL);
+INSERT INTO `sys_user_notification` VALUES (2088890075231289345, '000000', 1, 'workflow_notice', 'workflow', NULL, '流程任务结束通知', '流程任务结束通知，请点击查看', '1', NULL, 103, 1, '2026-08-16 15:26:18', 1, '2026-08-29 14:33:51', NULL), NULL);
+INSERT INTO `sys_user_notification` VALUES (2089704730375766018, '000000', 1, 'workflow_notice', 'workflow', NULL, '流程任务结束通知', '流程任务结束通知，请点击查看', '1', NULL, 103, 1, '2026-08-18 21:23:27', 1, '2026-08-29 14:33:51', NULL), NULL);
+INSERT INTO `sys_user_notification` VALUES (2091905856923783171, '000000', 3, 'im_private', 'im_message', '2091905856923783170', '私聊 · 系统管理员', 'http://159.75.14.226:9005/ruoyi/2026/08/24/57903b8e894343859255f9805d654a2d.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20260824T150956Z&X-Amz-SignedHeaders=host&X-Amz-Credential=minio%2F20260824%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Expires=120&X-Amz-Signature=e860d0daefffe3ce9ecf04abf17943aa914e3684bb71d305ace4921c99c17720', '0', NULL, 103, 1, '2026-08-24 23:09:57', 1, '2026-08-24 23:09:57', NULL), NULL);
+INSERT INTO `sys_user_notification` VALUES (2091905987337277442, '000000', 3, 'im_friend_request', 'friend_request', '1', '系统管理员 请求添加您为好友', '请求添加您为好友', '0', '{\"status\":\"sent\",\"fromUserId\":1}', 103, 1, '2026-08-24 23:10:28', 1, '2026-08-24 23:10:28', NULL), NULL);
 
 -- ----------------------------
 -- Table structure for sys_user_post
