@@ -687,7 +687,17 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
     }
 
     /**
-     * 流程审批后处理（更新销售订单状态）
+     * 流程审批后处理（更新销售订单状态）。
+     *
+     * <p><b>条件更新</b>：只在订单仍处于「流程在途」状态（DRAFT/APPROVING/APPROVED/REJECTED）时才改写，
+     * 不覆盖业务终态与已确认状态。原实现是无条件 {@code updateById}，存在两条可复现的覆盖路径：</p>
+     * <ul>
+     *   <li>订单在 APPROVING 时被 {@code cancel()} 取消（cancel 允许取消 APPROVING），
+     *       随后审批人撤销流程 → 回调把 CANCELLED 改回 DRAFT，<b>已取消的订单被"复活"</b>；</li>
+     *   <li>订单 APPROVED 后被 {@code confirm()} 确认（已做信用冻结、库存预留、生成生产计划），
+     *       随后审批人撤销流程 → 回调把 CONFIRMED 改回 DRAFT，用户可再次确认
+     *       → <b>重复冻结额度、重复预留库存、重复生成生产计划</b>。</li>
+     * </ul>
      */
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
@@ -698,16 +708,28 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
             return;
         }
         String actStatus = business.getActStatus();
+        String newStatus;
         if (ActStatus.doing.equals(actStatus)) {
-            order.setOrderStatus(STATUS_APPROVING);
+            newStatus = STATUS_APPROVING;
         } else if (ActStatus.pass.equals(actStatus)) {
-            order.setOrderStatus(STATUS_APPROVED);
+            newStatus = STATUS_APPROVED;
         } else if (ActStatus.reject.equals(actStatus) || ActStatus.retrun.equals(actStatus)) {
-            order.setOrderStatus(STATUS_REJECTED);
+            newStatus = STATUS_REJECTED;
         } else if (ActStatus.revoke.equals(actStatus) || ActStatus.stop.equals(actStatus) || ActStatus.recall.equals(actStatus)) {
-            order.setOrderStatus(STATUS_DRAFT);
+            newStatus = STATUS_DRAFT;
+        } else {
+            return;
         }
-        baseMapper.updateById(order);
+        int updated = baseMapper.update(null,
+            Wrappers.<SoSalesOrderHeader>lambdaUpdate()
+                .set(SoSalesOrderHeader::getOrderStatus, newStatus)
+                .eq(SoSalesOrderHeader::getSoId, soId)
+                .in(SoSalesOrderHeader::getOrderStatus,
+                    STATUS_DRAFT, STATUS_APPROVING, STATUS_APPROVED, STATUS_REJECTED));
+        if (updated == 0) {
+            log.warn("销售订单[{}]当前状态[{}]不允许流程回调改写为[{}]，忽略本次变更",
+                soId, order.getOrderStatus(), newStatus);
+        }
     }
 
     /**

@@ -3,8 +3,10 @@ package com.nexus.erp.so;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.extra.spring.SpringUtil;
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
+import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.nexus.common.core.exception.ServiceException;
+import com.nexus.common.flowable.core.domain.ActStatus;
 import com.nexus.common.flowable.helper.FlowableProcInsIdHelper;
 import com.nexus.erp.bd.mapper.BdBomMapper;
 import com.nexus.erp.bd.mapper.BdMaterialMapper;
@@ -26,6 +28,7 @@ import com.nexus.erp.so.service.impl.SoSalesOrderHeaderServiceImpl;
 import com.nexus.erp.wm.mapper.WmWarehouseMapper;
 import com.nexus.erp.wm.service.IWmStockReservationService;
 import com.nexus.system.strategy.AutoCodeUtil;
+import com.nexus.workflow.domain.WfMyBusiness;
 import com.nexus.workflow.service.IWfProcessService;
 import com.nexus.workflow.service.impl.WfMyBusinessServiceImpl;
 import io.github.linpeilie.Converter;
@@ -50,6 +53,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -800,6 +804,81 @@ class SoSalesOrderHeaderServiceImplTest {
         ArgumentCaptor<SoSalesOrderLine> captor = ArgumentCaptor.forClass(SoSalesOrderLine.class);
         verify(soSalesOrderLineMapper).updateById(captor.capture());
         assertEquals(100L, captor.getValue().getLineId());
+    }
+
+    // ==================== 流程回调状态改写守卫（加固轮）====================
+
+    /** 流程回调改为条件更新，不再用无条件 updateById（否则会覆盖已取消/已确认的订单） */
+    @Test
+    void afterFlowHandle_usesConditionalUpdate() {
+        when(baseMapper.selectById(1L)).thenReturn(header(1L, ISoSalesOrderHeaderService.STATUS_APPROVING));
+        when(baseMapper.update(any(), any())).thenReturn(1);
+
+        headerService.afterFlowHandle(flowBusiness(ActStatus.pass));
+
+        ArgumentCaptor<Wrapper<SoSalesOrderHeader>> captor = ArgumentCaptor.forClass(Wrapper.class);
+        verify(baseMapper).update(any(), captor.capture());
+        verify(baseMapper, never()).updateById(any(SoSalesOrderHeader.class));
+        String segment = captor.getValue().getSqlSegment();
+        assertTrue(segment.contains("order_status"), "应为带状态条件的更新: " + segment);
+    }
+
+    /**
+     * 订单在 APPROVING 时被取消，随后审批人撤销流程 —— 回调不得把 CANCELLED 改回 DRAFT。
+     * <p>条件更新影响 0 行，回调应静默忽略而不是抛异常（流程侧不需要感知）。</p>
+     */
+    @Test
+    void afterFlowHandle_doesNotResurrectCancelledOrder() {
+        when(baseMapper.selectById(1L)).thenReturn(header(1L, ISoSalesOrderHeaderService.STATUS_CANCELLED));
+        when(baseMapper.update(any(), any())).thenReturn(0);
+
+        assertDoesNotThrow(() -> headerService.afterFlowHandle(flowBusiness(ActStatus.revoke)));
+
+        verify(baseMapper).update(any(), any());
+        verify(baseMapper, never()).updateById(any(SoSalesOrderHeader.class));
+    }
+
+    /**
+     * 订单 APPROVED 后被 confirm（已冻结额度/预留库存/生成生产计划），随后审批人撤销流程 ——
+     * 回调不得把它改回 DRAFT（否则用户可再次确认，导致重复冻结/预留/建计划）。
+     */
+    @Test
+    void afterFlowHandle_doesNotRevertConfirmedOrder() {
+        when(baseMapper.selectById(1L)).thenReturn(header(1L, ISoSalesOrderHeaderService.STATUS_CONFIRMED));
+        when(baseMapper.update(any(), any())).thenReturn(0);
+
+        assertDoesNotThrow(() -> headerService.afterFlowHandle(flowBusiness(ActStatus.revoke)));
+
+        verify(baseMapper).update(any(), any());
+        verify(baseMapper, never()).updateById(any(SoSalesOrderHeader.class));
+    }
+
+    /** 未知的流程动作不产生任何更新 */
+    @Test
+    void afterFlowHandle_unknownAction_doesNothing() {
+        when(baseMapper.selectById(1L)).thenReturn(header(1L, ISoSalesOrderHeaderService.STATUS_DRAFT));
+
+        headerService.afterFlowHandle(flowBusiness("未知动作"));
+
+        verify(baseMapper, never()).update(any(), any());
+        verify(baseMapper, never()).updateById(any(SoSalesOrderHeader.class));
+    }
+
+    /** 订单不存在时直接返回 */
+    @Test
+    void afterFlowHandle_missingOrder_returnsQuietly() {
+        when(baseMapper.selectById(1L)).thenReturn(null);
+
+        assertDoesNotThrow(() -> headerService.afterFlowHandle(flowBusiness(ActStatus.pass)));
+
+        verify(baseMapper, never()).update(any(), any());
+    }
+
+    private WfMyBusiness flowBusiness(String actStatus) {
+        WfMyBusiness business = new WfMyBusiness();
+        business.setDataId("1");
+        business.setActStatus(actStatus);
+        return business;
     }
 
     // ==================== 服务端权威字段（加固轮）====================
