@@ -129,14 +129,8 @@ public class SoSalesOrderLineVo implements Serializable {
     private String linkedWoNo;
     /** 关联生产工单ID（首张，展示跳转用，selectById 经计划链回填，不落库） */
     private Long linkedWoId;
-    /** 关联采购订单ID */
-    private Long linkedPoId;
     /** 预留批次号 */
     private String reservedBatchNo;
-    /** 预留序列号 */
-    private String reservedSerials;
-    /** 配套组ID */
-    private Long paGroupId;
     /** 仓库ID */
     private Long warehouseId;
     /** 仓库名称（展示用，selectById 经 warehouseId 回填） */

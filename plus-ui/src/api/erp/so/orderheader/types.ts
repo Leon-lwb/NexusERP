@@ -19,8 +19,6 @@ export interface OrderheaderVO {
   orderDate: string;
   promiseDate: string;
   requestedDate: string;
-  deliveryAddressId: number;
-  invoiceAddressId: number;
   deliveryAddress: string;
   invoiceAddress: string;
   paymentTerms: string;
@@ -71,8 +69,6 @@ export interface OrderheaderForm {
   orderDate?: string;
   promiseDate?: string;
   requestedDate?: string;
-  deliveryAddressId?: number;
-  invoiceAddressId?: number;
   deliveryAddress?: string;
   invoiceAddress?: string;
   paymentTerms?: string;
@@ -136,10 +132,7 @@ export interface OrderLineVO {
   reservedQty: number;
   lineStatus: string;
   linkedMoId: number;
-  linkedPoId: number;
   reservedBatchNo: string;
-  reservedSerials: string;
-  paGroupId: number;
   warehouseId: number;
   deliveryPriority: number;
   customerLineRef: string;

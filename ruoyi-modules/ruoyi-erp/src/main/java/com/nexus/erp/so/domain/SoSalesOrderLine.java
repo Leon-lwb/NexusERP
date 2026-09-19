@@ -74,14 +74,8 @@ public class SoSalesOrderLine extends TenantEntity {
     private String lineStatus;
     /** 关联生产订单ID */
     private Long linkedMoId;
-    /** 关联采购订单ID */
-    private Long linkedPoId;
     /** 预留批次号 */
     private String reservedBatchNo;
-    /** 预留序列号 */
-    private String reservedSerials;
-    /** 配套组ID */
-    private Long paGroupId;
     /** 仓库ID */
     private Long warehouseId;
     /** 交货优先级 */

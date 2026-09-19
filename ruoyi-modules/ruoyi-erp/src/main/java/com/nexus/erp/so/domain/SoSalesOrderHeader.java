@@ -46,10 +46,6 @@ public class SoSalesOrderHeader extends TenantEntity {
     private Date promiseDate;
     /** 客户要求交货日期 */
     private Date requestedDate;
-    /** 送货地址ID */
-    private Long deliveryAddressId;
-    /** 发票地址ID */
-    private Long invoiceAddressId;
     /** 送货地址 */
     private String deliveryAddress;
     /** 发票地址 */

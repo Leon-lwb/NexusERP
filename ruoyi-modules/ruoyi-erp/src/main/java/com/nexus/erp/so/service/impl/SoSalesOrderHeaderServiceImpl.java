@@ -937,10 +937,7 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
         line.setReservedQty(BigDecimal.ZERO);
         line.setLineStatus("PENDING");
         line.setLinkedMoId(null);
-        line.setLinkedPoId(null);
         line.setReservedBatchNo(null);
-        line.setReservedSerials(null);
-        line.setPaGroupId(null);
         line.setOqcStatus(null);
         line.setOqcId(null);
         line.setOqcCode(null);

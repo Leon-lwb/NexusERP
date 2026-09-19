@@ -155,7 +155,7 @@ insertOrUpdateLines(entity.getSoId(), ...);          // 且强制 line.setLineId
 | P1-9 | `uk_so_no(5608)` / `uk_co_no(5199)` 不含 `tenant_id`，而同模块 `uk_contract_no(5098)`/`uk_invoice_no(5253)` 含 → **跨租户互相阻塞**；且软删除后单号仍被占用 | DDL |
 | P1-10 | 退货 `return_no`、报价 `quotation_no` NOT NULL 但**无 UNIQUE**，且服务端仅空值时生成 → 重复单号可入库 | `ry-erp.sql:5479,5401`；`SoReturnServiceImpl.java:100-102` |
 | P1-11 | 税率/折扣率口径分叉且未标单位：DB 注释无单位；`orderheader/form.vue` 的 `calcLine` 按「净额×税率÷100」，而 `contract/index.vue:512`、`invoice/index.vue:524` 按「含税额×税率」；历史数据混用 `3` 与 `0.03` | `plus-ui/src/views/erp/so/orderheader/form.vue`(calcLine)、`sys_oper_log` 实测数据、DDL 注释 |
-| P1-12 | 13 个死字段：`project_id`/`is_pa_enabled`/`pa_group_id`/`distribution_channel`/`customer_ref_no`/`delivery_address_id`/`invoice_address_id`/`delivery_priority`/`customer_line_ref`/`reserved_batch_no`/`reserved_serials`/`linked_po_id`/`discount_percent` —— 全仓 getter/setter 零命中 | 见附录 A |
+| P1-12 | 死字段：原列 13 个（`project_id`/`is_pa_enabled`/`pa_group_id`/…），**2026-09-19 复核修正为仅 5 个真死** | 见附录 A |
 
 ### 🟡 P2 中（摘要）
 
@@ -412,7 +412,7 @@ insertOrUpdateLines(entity.getSoId(), ...);          // 且强制 line.setLineId
 | └ 流程回调状态改写守卫（防"复活"已取消/已确认订单） | ✅ 完成 | 见本批次 commit | 新增 5 用例；`Tests run: 153, Failures: 0` |
 | └ 同类守卫补全到发票/退货/合同（含防重复过账） | ✅ 完成 | 见本批次 commit | 新增 11 用例；so 171 / 全模块 252 全绿 |
 | └ 客户订单引用守卫（被销售订单引用时禁止删除）+ 新建测试类 | ✅ 完成 | 见本批次 commit | 新增 7 用例（测试类 9→10）；`Tests run: 160, Failures: 0` |
-| └ 13 个死字段清理（待 Q4） | ⬜ 待办 | | |
+| └ 13 个死字段清理（待 Q4） | ✅ 完成（**复核后实际只删 5 个**） | 见本批次 commit | 原清单 13 个里 8 个是前端在用的 UI 字段；`Tests run: 252, Failures: 0`；前端 `eslint` + `build:prod` 通过 |
 
 **加固轮要点**：
 - **「客户端可伪造服务端权威字段」是系统性问题**，逐个服务排查后修复：
@@ -526,12 +526,44 @@ insertOrUpdateLines(entity.getSoId(), ...);          // 且强制 line.setLineId
 
 ---
 
-## 附录 A：死字段判定依据
+## 附录 A：死字段判定依据（**2026-09-19 已修正 —— 原判定有缺陷**）
 
-全仓 `getProjectId|setProjectId|isPaEnabled|getIsPaEnabled` 等 getter/setter 零命中（`ruoyi-modules` 全量 grep）：
-`project_id`(5584)、`is_pa_enabled`(5585)、`pa_group_id`(5650)、`distribution_channel`(5592)、`customer_ref_no`(5593)、`delivery_address_id`(5569)、`invoice_address_id`(5570)、`delivery_priority`(5652)、`customer_line_ref`(5653)、`reserved_batch_no`(5648)、`reserved_serials`(5649)、`linked_po_id`(5647)、`discount_percent`(5637)。
+> ⚠️ **修正说明**：原判定为「全仓 `getProjectId|setProjectId|...` 等 getter/setter 零命中」，
+> 并据此列出 13 个死字段。**该口径有缺陷**：Jackson 是**反射**序列化/反序列化，
+> 且字段可能**只被前端 JSON 使用** —— 在 Java 源码里 grep 不到 getter 并不等于字段是死的。
+> 用户决策「死字段删」后按新口径（**Java 双向 + 前端 `plus-ui` 全量**）复核，
+> 结论是 **13 个里只有 5 个真死**，另 8 个是前端真实在用的 UI 字段。
 
-> 注：`dept_id`/`dept_name` **不是**死字段——前端表单会写入并经 MapStruct 落库，只是列表页从不作为查询条件（`buildQueryWrapper:735` 分支不可达）。
+**真死（已删除，5 个）**：只有字段声明 + 前端 `types.ts` 类型声明 + 表单 `initForm` 默认值，
+无任何界面绑定、不参与计算、不参与查询。
+
+| 列 | 表 | 说明 |
+|---|---|---|
+| `delivery_address_id` | `so_sales_order_header` | 同表 `delivery_address`（文本详情）在用，仅 ID 无人用 |
+| `invoice_address_id` | `so_sales_order_header` | 同上 |
+| `linked_po_id` | `so_sales_order_line` | 同表 `linked_mo_id` 在用 |
+| `reserved_serials` | `so_sales_order_line` | 同表 `reserved_batch_no` 在用（前端有展示列） |
+| `pa_group_id` | `so_sales_order_line` | — |
+
+**并非死字段（保留，8 个）** —— 前端均有 `v-model` 绑定或参与计算：
+
+| 字段 | 位置 | 前端用途 |
+|---|---|---|
+| `project_id` | 表头 | 表单项「项目ID」`v-model` |
+| `is_pa_enabled` | 表头 | 表单项「是否启用项目配套发料」`v-model` |
+| `distribution_channel` | 表头 | 表单项「分销渠道」`v-model`；并从客户订单 `sourceChannel` 带入 |
+| `customer_ref_no` | 表头 | 表单项「客户参考号」`v-model`；并从客户订单 `customerPoNo` 带入 |
+| `discount_percent` | 行 | 行折扣率 `v-model`，**参与 `calcLine` 行金额计算**（`form.vue:1235/1269`） |
+| `delivery_priority` | 行 | 行「交付优先级」下拉 `v-model` |
+| `customer_line_ref` | 行 | 行「客户行参考号」输入框 `v-model`；生产计划表单也读取它 |
+| `reserved_batch_no` | 行 | 行「预留批次号」展示列 |
+
+> 附注：`dept_id`/`dept_name` 也不是死字段 —— 前端表单会写入并经 MapStruct 落库，
+> 只是列表页从不作为查询条件（`buildQueryWrapper` 分支不可达）。
+
+> **方法论教训**：判定"死代码/死字段"时，**不能只 grep 后端**。本项目 HTTP 走 Jackson，
+> 字段可以通过反射被前端使用而完全不出现在 Java 调用点上；
+> 正确做法是 Java 与前端**双向**检索，并优先看 `v-model` 绑定与计算表达式。
 
 ## 附录 B：已核实**不是**问题的项（避免重复排查）
 
