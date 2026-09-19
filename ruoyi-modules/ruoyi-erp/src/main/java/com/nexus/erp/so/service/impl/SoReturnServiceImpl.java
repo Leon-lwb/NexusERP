@@ -128,8 +128,17 @@ public class SoReturnServiceImpl implements ISoReturnService {
         SoReturn entity = MapstructUtils.convert(bo, SoReturn.class);
         entity.setReturnNo(existing.getReturnNo());
         entity.setStatus(existing.getStatus());
-        deleteLinesByReturnId(entity.getReturnId());
-        insertOrUpdateLines(entity.getReturnId(), bo.getSoReturnLineList());
+        // 明细为 null 表示「本次不提交明细」：明细与金额都保持库中原值；
+        // 显式传空数组才是「清空全部明细」。原实现无条件「删行 + 重插」，
+        // 传 null 会把所有明细删光且金额清零（与销售订单 T1.1 加固同源问题）。
+        if (bo.getSoReturnLineList() != null) {
+            deleteLinesByReturnId(entity.getReturnId());
+            insertOrUpdateLines(entity.getReturnId(), bo.getSoReturnLineList());
+        } else {
+            entity.setTotalAmount(existing.getTotalAmount());
+            entity.setTaxAmount(existing.getTaxAmount());
+            entity.setRefundAmount(existing.getRefundAmount());
+        }
         return baseMapper.updateById(entity);
     }
 

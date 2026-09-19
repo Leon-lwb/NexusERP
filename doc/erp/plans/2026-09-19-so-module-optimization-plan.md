@@ -373,7 +373,7 @@ insertOrUpdateLines(entity.getSoId(), ...);          // 且强制 line.setLineId
 | └ 补齐 `@ExcelIgnoreUnannotated`（4 个 VO） | ✅ 完成 | 见本批次 commit | 复核全部带 `@ExcelProperty` 的 VO 均已覆盖 |
 | └ 发票/合同明细行改 VO（新建 LineVo） | ✅ 完成 | 见本批次 commit | 新增 2 用例；`Tests run: 132, Failures: 0` |
 | └ 异常口径统一为 `ServiceException` | ✅ 完成 | 见本批次 commit | so 模块 `throw new RuntimeException` 已清零 |
-| └ 明细「未提交」语义加固（null vs 空集合） | ✅ 完成 | 见本批次 commit | 新增 3 用例；`Tests run: 135, Failures: 0` |
+| └ 明细「未提交」语义加固（null vs 空集合） | ✅ 完成 | 见本批次 commit | 新增 6 用例；`Tests run: 138, Failures: 0` |
 | └ DDL ↔ Java 实体一致性静态校验 | ✅ 通过 | — | 14 张 so_ 表列与实体字段完全一致 |
 | └ 13 个死字段清理（待 Q4） | ⬜ 待办 | | |
 
@@ -386,9 +386,13 @@ insertOrUpdateLines(entity.getSoId(), ...);          // 且强制 line.setLineId
 - 修复过程中一度只做了「null 时跳过重算」，那会让客户端的 `totalAmount` 直接落库 ——
   等于重新打开 T1.8 堵掉的伪造口子。已补「从库中还原金额」分支并加断言锁定。
 - 新增时 null 明细视作空明细、金额归零（不能因为没传明细就留下客户端伪造的金额）。
-- **DDL ↔ Java 实体一致性静态校验**：提取 14 张 so_ 表的列名与对应实体字段（camelCase→snake_case）
+- **同类问题在另外三个服务里也存在**（同一轮一并修复）：`SoQuotationServiceImpl` / `SoReturnServiceImpl` /
+  `SoPriceListServiceImpl` 的 `updateByBo` 都是无条件「删行 + 重插」，传 null 明细同样会删光明细、
+  并把报价/退货的金额清零。四处（含销售订单）已统一为「null = 不提交明细，空数组 = 显式清空」。
+- **DDL ↔ Java 实体一致性静态校验通过**：提取 14 张 so_ 表的列名与对应实体字段（camelCase→snake_case）
   做双向 diff，结果**完全一致**（审计基础列 tenant_id/create_dept/create_by/create_time/
-  update_by/update_time/del_flag 按继承处理）。检查器本身用「喂一个不存在的列」做了负向测试自证有效。
+  update_by/update_time/del_flag 按继承处理）。检查器本身用「喂一个不存在的列」做了负向测试自证有效
+  —— 避免重蹈上一轮 PowerShell 按 GBK 解码 UTF-8 导致括号计数失真的覆辙。
 
 **批次 5 第三轮要点**：
 - 新建 `SoInvoiceLineVo` / `SoContractLineVo`（字段集 = 实体减审计字段），

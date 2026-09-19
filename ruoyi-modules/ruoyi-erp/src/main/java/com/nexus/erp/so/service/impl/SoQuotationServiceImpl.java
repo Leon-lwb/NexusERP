@@ -127,10 +127,18 @@ public class SoQuotationServiceImpl implements ISoQuotationService {
         SoQuotation entity = MapstructUtils.convert(bo, SoQuotation.class);
         entity.setQuotationNo(existing.getQuotationNo());
         entity.setStatus(existing.getStatus());
-        List<SoQuotationLine> lines = normalizeLines(bo.getSoQuotationLineList());
-        applyTotals(entity, lines);
-        deleteLinesByQuotationId(entity.getQuotationId());
-        insertLines(entity.getQuotationId(), lines);
+        // 明细为 null 表示「本次不提交明细」：明细与金额都保持库中原值；
+        // 显式传空数组才是「清空全部明细」。原实现无条件「删行 + 重插」，
+        // 传 null 会把所有明细删光且金额清零（与销售订单 T1.1 加固同源问题）。
+        if (bo.getSoQuotationLineList() != null) {
+            List<SoQuotationLine> lines = normalizeLines(bo.getSoQuotationLineList());
+            applyTotals(entity, lines);
+            deleteLinesByQuotationId(entity.getQuotationId());
+            insertLines(entity.getQuotationId(), lines);
+        } else {
+            entity.setTotalAmount(existing.getTotalAmount());
+            entity.setTaxAmount(existing.getTaxAmount());
+        }
         return baseMapper.updateById(entity);
     }
 

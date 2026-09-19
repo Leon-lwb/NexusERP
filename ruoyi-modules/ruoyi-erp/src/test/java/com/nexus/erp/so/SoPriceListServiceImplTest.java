@@ -35,9 +35,11 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -160,8 +162,7 @@ class SoPriceListServiceImplTest {
 
     /** 详情同样回填客户名称 */
     @Test
-    void selectById_backfillsClientName() {
-        SoPriceListVo vo = new SoPriceListVo();
+    void selectById_backfillsClientName() {        SoPriceListVo vo = new SoPriceListVo();
         vo.setPriceListId(1L);
         vo.setClientId(9L);
         when(baseMapper.selectVoById(1L)).thenReturn(vo);
@@ -173,5 +174,24 @@ class SoPriceListServiceImplTest {
         when(bdClientMapper.selectList(any())).thenReturn(List.of(client));
 
         assertEquals("测试客户", priceListService.selectById(1L).getClientName());
+    }
+
+    // ==================== 明细「未提交」语义（null vs 空集合）====================
+
+    /** 明细为 null = 不提交明细：保持库中原有明细不动（原实现会无条件删光） */
+    @Test
+    void updateByBo_nullLineList_keepsExistingLines() {
+        when(baseMapper.updateById(any(SoPriceList.class))).thenReturn(1);
+
+        SoPriceListBo bo = new SoPriceListBo();
+        bo.setPriceListId(1L);
+        bo.setListName("仅改名");
+        bo.setSoPriceListLineList(null);
+
+        priceListService.updateByBo(bo);
+
+        verify(soPriceListLineMapper, never()).delete(any());
+        verify(soPriceListLineMapper, never()).insertBatch(anyList());
+        verify(baseMapper).updateById(any(SoPriceList.class));
     }
 }

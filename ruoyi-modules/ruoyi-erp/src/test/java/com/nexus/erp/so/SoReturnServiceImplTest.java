@@ -339,6 +339,36 @@ class SoReturnServiceImplTest {
         assertEquals("SR-AUTO-0001", captor.getValue().getReturnNo());
     }
 
+    // ==================== 明细「未提交」语义（null vs 空集合）====================
+
+    /** 明细为 null = 不提交明细：明细与金额保持库中原值，不接受客户端改写 */
+    @Test
+    void updateByBo_nullLineList_keepsLinesAndAmounts() {
+        SoReturn existing = soReturn(1L, ISoReturnService.STATUS_DRAFT);
+        existing.setTotalAmount(new BigDecimal("300.00"));
+        existing.setTaxAmount(new BigDecimal("39.00"));
+        existing.setRefundAmount(new BigDecimal("300.00"));
+        when(baseMapper.selectById(1L)).thenReturn(existing);
+        when(baseMapper.updateById(any(SoReturn.class))).thenReturn(1);
+
+        SoReturnBo bo = new SoReturnBo();
+        bo.setReturnId(1L);
+        bo.setTotalAmount(BigDecimal.ZERO);   // 客户端伪造
+        bo.setRefundAmount(BigDecimal.ZERO);
+        bo.setSoReturnLineList(null);
+
+        returnService.updateByBo(bo);
+
+        verify(lineMapper, never()).delete(any());
+        verify(lineMapper, never()).insert(any(SoReturnLine.class));
+
+        ArgumentCaptor<SoReturn> captor = ArgumentCaptor.forClass(SoReturn.class);
+        verify(baseMapper).updateById(captor.capture());
+        assertEquals(0, new BigDecimal("300.00").compareTo(captor.getValue().getTotalAmount()));
+        assertEquals(0, new BigDecimal("39.00").compareTo(captor.getValue().getTaxAmount()));
+        assertEquals(0, new BigDecimal("300.00").compareTo(captor.getValue().getRefundAmount()));
+    }
+
     // ==================== selectById 明细行转 VO（批次 5）====================
 
     /**

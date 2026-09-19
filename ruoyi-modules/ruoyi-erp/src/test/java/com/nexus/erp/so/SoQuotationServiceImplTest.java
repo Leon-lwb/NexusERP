@@ -298,6 +298,35 @@ class SoQuotationServiceImplTest {
         verify(baseMapper).updateById(q);
     }
 
+    // ==================== 明细「未提交」语义（null vs 空集合）====================
+
+    /** 明细为 null = 不提交明细：明细与金额保持库中原值，不接受客户端改写 */
+    @Test
+    void updateByBo_nullLineList_keepsLinesAndAmounts() {
+        SoQuotation existing = quotation(1L, ISoQuotationService.STATUS_DRAFT);
+        existing.setTotalAmount(new BigDecimal("500.00"));
+        existing.setTaxAmount(new BigDecimal("65.00"));
+        when(baseMapper.selectById(1L)).thenReturn(existing);
+        when(baseMapper.updateById(any(SoQuotation.class))).thenReturn(1);
+
+        SoQuotationBo bo = new SoQuotationBo();
+        bo.setQuotationId(1L);
+        bo.setTotalAmount(BigDecimal.ZERO);   // 客户端伪造
+        bo.setTaxAmount(BigDecimal.ZERO);
+        bo.setSoQuotationLineList(null);
+
+        quotationService.updateByBo(bo);
+
+        // 不应触碰明细表
+        verify(lineMapper, never()).delete(any());
+        verify(lineMapper, never()).insert(any(SoQuotationLine.class));
+
+        ArgumentCaptor<SoQuotation> captor = ArgumentCaptor.forClass(SoQuotation.class);
+        verify(baseMapper).updateById(captor.capture());
+        assertEquals(0, new BigDecimal("500.00").compareTo(captor.getValue().getTotalAmount()));
+        assertEquals(0, new BigDecimal("65.00").compareTo(captor.getValue().getTaxAmount()));
+    }
+
     // ==================== selectById 明细行转 VO（批次 5）====================
 
     /**

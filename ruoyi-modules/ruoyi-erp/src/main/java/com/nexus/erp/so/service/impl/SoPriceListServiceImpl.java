@@ -158,9 +158,14 @@ public class SoPriceListServiceImpl implements ISoPriceListService {
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(SoPriceListBo bo) {
         SoPriceList entity = MapstructUtils.convert(bo, SoPriceList.class);
-        soPriceListLineMapper.delete(new LambdaQueryWrapper<SoPriceListLine>()
-            .eq(SoPriceListLine::getPriceListId, entity.getPriceListId()));
-        insertOrUpdateLines(entity.getPriceListId(), bo.getSoPriceListLineList());
+        // 明细为 null 表示「本次不提交明细」：保持库中原有明细不动；
+        // 显式传空数组才是「清空全部明细」。原实现无条件「删行 + 重插」，
+        // 传 null 会把该价格表的所有明细删光（与销售订单 T1.1 加固同源问题）。
+        if (bo.getSoPriceListLineList() != null) {
+            soPriceListLineMapper.delete(new LambdaQueryWrapper<SoPriceListLine>()
+                .eq(SoPriceListLine::getPriceListId, entity.getPriceListId()));
+            insertOrUpdateLines(entity.getPriceListId(), bo.getSoPriceListLineList());
+        }
         return baseMapper.updateById(entity);
     }
 
