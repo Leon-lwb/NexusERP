@@ -165,7 +165,8 @@ public class SoInvoiceVo implements Serializable {
     private Date updateTime;
 
     /**
-     * 发票明细行列表
+     * 发票明细行列表。
+     * <p>用 {@link SoInvoiceLineVo} 而非实体，避免把 tenantId/delFlag/createBy 等审计字段暴露给前端。</p>
      */
-    private List<SoInvoiceLine> soInvoiceLineList;
+    private List<SoInvoiceLineVo> soInvoiceLineList;
 }

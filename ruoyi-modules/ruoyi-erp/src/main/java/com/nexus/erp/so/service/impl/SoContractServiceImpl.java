@@ -17,6 +17,7 @@ import com.nexus.common.sign.constants.SignBizType;
 import com.nexus.erp.so.domain.SoContract;
 import com.nexus.erp.so.domain.SoContractLine;
 import com.nexus.erp.so.domain.bo.SoContractBo;
+import com.nexus.erp.so.domain.vo.SoContractLineVo;
 import com.nexus.erp.so.domain.vo.SoContractVo;
 import com.nexus.erp.so.mapper.SoContractLineMapper;
 import com.nexus.erp.so.mapper.SoContractMapper;
@@ -86,7 +87,8 @@ public class SoContractServiceImpl implements ISoContractService {
             LambdaQueryWrapper<SoContractLine> lqw = Wrappers.lambdaQuery();
             lqw.eq(SoContractLine::getContractId, vo.getContractId());
             lqw.orderByAsc(SoContractLine::getSortOrder);
-            vo.setSoContractLineList(lineMapper.selectList(lqw));
+            // 转 VO 返回，避免把 tenantId/delFlag/createBy 等审计字段暴露给前端
+            vo.setSoContractLineList(MapstructUtils.convert(lineMapper.selectList(lqw), SoContractLineVo.class));
         }
         return vo;
     }

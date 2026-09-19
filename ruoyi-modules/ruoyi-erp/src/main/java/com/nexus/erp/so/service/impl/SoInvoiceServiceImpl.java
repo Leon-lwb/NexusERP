@@ -21,6 +21,7 @@ import com.nexus.erp.so.domain.SoInvoice;
 import com.nexus.erp.so.domain.SoInvoiceLine;
 import com.nexus.erp.so.domain.SoSalesOrderLine;
 import com.nexus.erp.so.domain.bo.SoInvoiceBo;
+import com.nexus.erp.so.domain.vo.SoInvoiceLineVo;
 import com.nexus.erp.so.domain.vo.SoInvoiceVo;
 import com.nexus.erp.so.domain.vo.SoSalesOrderHeaderVo;
 import com.nexus.erp.so.domain.vo.SoSalesOrderLineVo;
@@ -102,7 +103,8 @@ public class SoInvoiceServiceImpl implements ISoInvoiceService {
             LambdaQueryWrapper<SoInvoiceLine> lqw = Wrappers.lambdaQuery();
             lqw.eq(SoInvoiceLine::getInvoiceId, vo.getInvoiceId());
             lqw.orderByAsc(SoInvoiceLine::getSortOrder);
-            vo.setSoInvoiceLineList(lineMapper.selectList(lqw));
+            // 转 VO 返回，避免把 tenantId/delFlag/createBy 等审计字段暴露给前端
+            vo.setSoInvoiceLineList(MapstructUtils.convert(lineMapper.selectList(lqw), SoInvoiceLineVo.class));
         }
         return vo;
     }

@@ -372,7 +372,18 @@ insertOrUpdateLines(entity.getSoId(), ...);          // 且强制 line.setLineId
 | └ 报价/退货明细行改 VO 直出（去掉 `@JSONField` 无效注解） | ✅ 完成 | 见本批次 commit | 新增 2 用例；`Tests run: 130, Failures: 0` |
 | └ 补齐 `@ExcelIgnoreUnannotated`（4 个 VO） | ✅ 完成 | 见本批次 commit | 复核 so 模块全部带 `@ExcelProperty` 的 VO 均已覆盖 |
 | └ 13 个死字段清理（待 Q4） | ⬜ 待办 | | |
-| └ 发票/合同明细行改 VO（需新建 LineVo） | ⬜ 待办 | | |
+| └ 发票/合同明细行改 VO（新建 LineVo） | ✅ 完成 | 见本批次 commit | 新增 2 用例；`Tests run: 132, Failures: 0`；本轮无前端文件改动 |
+| └ 13 个死字段清理（待 Q4） | ⬜ 待办 | | |
+
+**批次 5 第三轮已完成项要点**：
+- 新建 `SoInvoiceLineVo` / `SoContractLineVo`（字段集 = 实体减审计字段），
+  `SoInvoiceVo` / `SoContractVo` 的明细行列表改 VO 类型，Service 里用 `MapstructUtils` 转换。
+- **关键点：`SoInvoiceLineVo` 必须保留 `soLineId`**。前端不直接用它，但后端
+  `adjustInvoicedQtyOnEdit` 靠它判断明细是否换绑订单行 —— VO 若丢掉，编辑自动生成的草稿发票
+  会被误判为「换绑」，先释放旧订单行占用、再按 null 不占用，导致 `invoiced_qty` 归零而发票仍在，
+  重新打开超开缺口（即 T1.4 刚堵上的洞会被这个 VO 改动重新捅开）。已加断言测试锁定。
+- 两个前端类型（`InvoiceLineForm` / `ContractLineForm`）本就声明了全部业务字段（含 `soLineId`/
+  `sortOrder`），说明是后端 VO 少字段，本次改动方向与前端契约一致，无需改前端。
 | └ 异常口径统一为 `ServiceException` | ✅ 完成 | | so 模块 `throw new RuntimeException` 已清零 |
 
 **批次 5 第二轮已完成项要点**：

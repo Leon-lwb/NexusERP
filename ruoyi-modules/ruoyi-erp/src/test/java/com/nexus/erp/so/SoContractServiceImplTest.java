@@ -10,6 +10,8 @@ import com.nexus.common.flowable.helper.FlowableProcInsIdHelper;
 import com.nexus.erp.so.domain.SoContract;
 import com.nexus.erp.so.domain.SoContractLine;
 import com.nexus.erp.so.domain.bo.SoContractBo;
+import com.nexus.erp.so.domain.vo.SoContractLineVo;
+import com.nexus.erp.so.domain.vo.SoContractVo;
 import com.nexus.erp.so.mapper.SoContractLineMapper;
 import com.nexus.erp.so.mapper.SoContractMapper;
 import com.nexus.erp.so.service.ISoContractService;
@@ -31,9 +33,11 @@ import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.util.Date;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -290,5 +294,50 @@ class SoContractServiceImplTest {
 
         assertTrue(contractService.submit("12", ""));
         verify(processService).startProcessByDataId(eq("12"), eq("55"), eq("soContractService"), any());
+    }
+
+    // ==================== selectById 明细行转 VO（批次 5）====================
+
+    /**
+     * 详情返回明细行 VO 而非实体：不暴露 tenantId/delFlag 等审计字段，
+     * 同时保留合同表单实际绑定的字段（数量/单价/税率/税额/交货日期等）。
+     */
+    @Test
+    void selectById_returnsLineVoKeepingFormFields() {
+        SoContractVo header = new SoContractVo();
+        header.setContractId(1L);
+        when(baseMapper.selectVoById(1L)).thenReturn(header);
+
+        SoContractLine line = new SoContractLine();
+        line.setLineId(10L);
+        line.setContractId(1L);
+        line.setMaterialId(100L);
+        line.setMaterialCode("M-001");
+        line.setMaterialName("测试物料");
+        line.setQuantity(new BigDecimal("2"));
+        line.setUnit("台");
+        line.setUnitPrice(new BigDecimal("100"));
+        line.setLineAmount(new BigDecimal("200.00"));
+        line.setTaxRate(new BigDecimal("13"));
+        line.setTaxAmount(new BigDecimal("26.00"));
+        line.setDeliveryDate(new Date());
+        line.setSortOrder(1);
+        line.setTenantId("888888");
+        line.setDelFlag("1");
+        when(lineMapper.selectList(any())).thenReturn(List.of(line));
+
+        SoContractVo result = contractService.selectById(1L);
+
+        assertEquals(1, result.getSoContractLineList().size());
+        SoContractLineVo lineVo = result.getSoContractLineList().get(0);
+        assertEquals("M-001", lineVo.getMaterialCode());
+        assertEquals("测试物料", lineVo.getMaterialName());
+        assertEquals(0, new BigDecimal("2").compareTo(lineVo.getQuantity()));
+        assertEquals("台", lineVo.getUnit());
+        assertEquals(0, new BigDecimal("200.00").compareTo(lineVo.getLineAmount()));
+        assertEquals(0, new BigDecimal("13").compareTo(lineVo.getTaxRate()));
+        assertEquals(0, new BigDecimal("26.00").compareTo(lineVo.getTaxAmount()));
+        assertNotNull(lineVo.getDeliveryDate());
+        assertEquals(1, lineVo.getSortOrder());
     }
 }

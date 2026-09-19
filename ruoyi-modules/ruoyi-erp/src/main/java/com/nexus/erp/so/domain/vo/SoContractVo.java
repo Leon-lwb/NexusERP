@@ -137,7 +137,8 @@ public class SoContractVo implements Serializable {
     private String docSignStatus;
 
     /**
-     * 合同明细行列表
+     * 合同明细行列表。
+     * <p>用 {@link SoContractLineVo} 而非实体，避免把 tenantId/delFlag/createBy 等审计字段暴露给前端。</p>
      */
-    private List<SoContractLine> soContractLineList;
+    private List<SoContractLineVo> soContractLineList;
 }

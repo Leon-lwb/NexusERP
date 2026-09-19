@@ -13,6 +13,8 @@ import com.nexus.erp.so.domain.bo.SoInvoiceBo;
 import com.nexus.erp.so.domain.SoInvoice;
 import com.nexus.erp.so.domain.SoInvoiceLine;
 import com.nexus.erp.so.domain.SoSalesOrderLine;
+import com.nexus.erp.so.domain.vo.SoInvoiceLineVo;
+import com.nexus.erp.so.domain.vo.SoInvoiceVo;
 import com.nexus.erp.so.domain.vo.SoSalesOrderHeaderVo;
 import com.nexus.erp.so.domain.vo.SoSalesOrderLineVo;
 import com.nexus.erp.so.mapper.SoInvoiceLineMapper;
@@ -591,5 +593,56 @@ class SoInvoiceServiceImplTest {
         invoiceService.cancelInvoice(1L, "作废历史票");
 
         verify(baseMapper).update(any(), any());
+    }
+
+    // ==================== selectById 明细行转 VO（批次 5）====================
+
+    /**
+     * 详情返回明细行 VO 而非实体：不暴露 tenantId/delFlag 等审计字段，
+     * 且**必须保留 soLineId** —— 它是回写 invoiced_qty 的关联键，
+     * adjustInvoicedQtyOnEdit 靠它判断是否换绑订单行；VO 丢掉它会让编辑自动生成的
+     * 草稿发票时被误判为换绑，先释放旧占用、再按 null 不占用，导致已开票量归零。
+     */
+    @Test
+    void selectById_returnsLineVoKeepingSoLineId() {
+        SoInvoiceVo header = new SoInvoiceVo();
+        header.setInvoiceId(1L);
+        when(baseMapper.selectVoById(1L)).thenReturn(header);
+
+        SoInvoiceLine line = new SoInvoiceLine();
+        line.setLineId(10L);
+        line.setInvoiceId(1L);
+        line.setLineNo("0010");
+        line.setMaterialId(100L);
+        line.setMaterialCode("M-001");
+        line.setMaterialName("测试物料");
+        line.setQuantity(new BigDecimal("6"));
+        line.setUnit("件");
+        line.setUnitPrice(new BigDecimal("100"));
+        line.setLineAmount(new BigDecimal("600.00"));
+        line.setTaxRate(new BigDecimal("13"));
+        line.setTaxAmount(new BigDecimal("78.00"));
+        line.setTotalAmount(new BigDecimal("678.00"));
+        line.setSoLineId(100L);
+        line.setContractLineId(200L);
+        line.setSortOrder(1);
+        line.setTenantId("888888");
+        line.setDelFlag("1");
+        when(lineMapper.selectList(any())).thenReturn(List.of(line));
+
+        SoInvoiceVo result = invoiceService.selectById(1L);
+
+        assertEquals(1, result.getSoInvoiceLineList().size());
+        SoInvoiceLineVo lineVo = result.getSoInvoiceLineList().get(0);
+        // 关联键与业务字段一个都不能少
+        assertEquals(100L, lineVo.getSoLineId());
+        assertEquals(200L, lineVo.getContractLineId());
+        assertEquals("M-001", lineVo.getMaterialCode());
+        assertEquals("测试物料", lineVo.getMaterialName());
+        assertEquals(0, new BigDecimal("6").compareTo(lineVo.getQuantity()));
+        assertEquals("件", lineVo.getUnit());
+        assertEquals(0, new BigDecimal("13").compareTo(lineVo.getTaxRate()));
+        assertEquals(0, new BigDecimal("678.00").compareTo(lineVo.getTotalAmount()));
+        assertEquals(1, lineVo.getSortOrder());
     }
 }
