@@ -60,10 +60,10 @@
           type="success"
           plain
           icon="Edit"
-          :disabled="single"
+          :disabled="single || !isDraftOrRejected"
+          :title="single ? '请先勾选一条单据' : isDraftOrRejected ? undefined : '仅「草稿」或「已驳回」状态可修改'"
           @click="handleUpdate"
           v-hasPermi="['wm:receive:edit']"
-          v-if="selectedRow && (selectedRow.status === 'DRAFT' || selectedRow.status === 'REJECTED')"
           >修改</el-button
         >
       </el-col>
@@ -72,10 +72,10 @@
           type="danger"
           plain
           icon="Delete"
-          :disabled="multiple"
+          :disabled="single || !isDraft"
+          :title="single ? '请先勾选一条单据' : isDraft ? undefined : '仅「草稿」状态可删除'"
           @click="handleDelete"
           v-hasPermi="['wm:receive:remove']"
-          v-if="selectedRow && selectedRow.status === 'DRAFT'"
           >删除</el-button
         >
       </el-col>
@@ -84,10 +84,10 @@
           type="success"
           plain
           icon="Upload"
-          :disabled="single"
+          :disabled="single || !isApproved"
+          :title="single ? '请先勾选一条单据' : isApproved ? undefined : '仅「待上架」状态可上架'"
           @click="handleShelf"
           v-hasPermi="['wm:receive:edit']"
-          v-if="selectedRow && selectedRow.status === 'APPROVED'"
           >上架</el-button
         >
       </el-col>
@@ -96,10 +96,10 @@
           type="warning"
           plain
           icon="Check"
-          :disabled="single"
+          :disabled="single || !isApproved"
+          :title="single ? '请先勾选一条单据' : isApproved ? undefined : '仅「待上架」状态可确认上架'"
           @click="handleConfirmShelf"
           v-hasPermi="['wm:receive:shelf']"
-          v-if="selectedRow && selectedRow.status === 'APPROVED'"
           >确认上架</el-button
         >
       </el-col>
@@ -108,15 +108,24 @@
           type="success"
           plain
           icon="Finished"
-          :disabled="single"
+          :disabled="single || !isShelved"
+          :title="single ? '请先勾选一条单据' : isShelved ? undefined : '仅「待入库」状态可入库'"
           @click="handleExecute"
           v-hasPermi="['wm:receive:execute']"
-          v-if="selectedRow && selectedRow.status === 'SHELVED'"
           >入库</el-button
         >
       </el-col>
       <el-col :span="1.5">
-        <el-button type="info" plain icon="View" :disabled="single" @click="handleView" v-hasPermi="['wm:receive:query']">查看</el-button>
+        <el-button
+          type="info"
+          plain
+          icon="View"
+          :disabled="single"
+          :title="single ? '请先勾选一条单据' : undefined"
+          @click="handleView"
+          v-hasPermi="['wm:receive:query']"
+          >查看</el-button
+        >
       </el-col>
       <el-col :span="1.5">
         <el-button type="warning" plain icon="Download" @click="handleExport" v-hasPermi="['wm:receive:export']">导出</el-button>
@@ -156,62 +165,30 @@
           <span v-else>-</span>
         </template>
       </el-table-column> -->
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="140" fixed="right">
         <template #default="scope">
-          <el-button
-            link
-            type="primary"
-            icon="Edit"
-            @click="handleUpdate(scope.row)"
-            v-hasPermi="['wm:receive:edit']"
-            v-if="scope.row.status === 'DRAFT' || scope.row.status === 'REJECTED'"
-            >修改</el-button
+          <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['wm:receive:query']">查看</el-button>
+          <el-dropdown
+            v-if="rowMoreActions(scope.row).some((action) => hasPermi(action.perm))"
+            trigger="click"
+            @command="(command) => handleRowMoreCommand(command, scope.row)"
           >
-          <el-button
-            link
-            type="primary"
-            icon="Upload"
-            @click="handleShelf(scope.row)"
-            v-hasPermi="['wm:receive:edit']"
-            v-if="scope.row.status === 'APPROVED'"
-            >上架</el-button
-          >
-          <el-button
-            link
-            type="warning"
-            icon="Check"
-            @click="handleConfirmShelfRow(scope.row)"
-            v-hasPermi="['wm:receive:shelf']"
-            v-if="scope.row.status === 'APPROVED'"
-            >确认上架</el-button
-          >
-          <el-button
-            link
-            type="primary"
-            icon="Finished"
-            @click="handleExecuteRow(scope.row)"
-            v-hasPermi="['wm:receive:execute']"
-            v-if="scope.row.status === 'SHELVED'"
-            >入库</el-button
-          >
-          <el-button
-            link
-            type="primary"
-            icon="View"
-            @click="handleViewFlow(scope.row)"
-            v-hasPermi="['wm:receive:query']"
-            v-if="scope.row.status === 'APPROVING' || scope.row.status === 'APPROVED'"
-            >查看流程</el-button
-          >
-          <el-button
-            link
-            type="primary"
-            icon="Delete"
-            @click="handleDelete(scope.row)"
-            v-hasPermi="['wm:receive:remove']"
-            v-if="scope.row.status === 'DRAFT'"
-            >删除</el-button
-          >
+            <el-button link type="primary"
+              >更多<el-icon class="el-icon--right"><ArrowDown /></el-icon
+            ></el-button>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item
+                  v-for="action in rowMoreActions(scope.row)"
+                  v-show="hasPermi(action.perm)"
+                  :key="action.key"
+                  :command="action.key"
+                  :icon="action.icon"
+                  >{{ action.label }}</el-dropdown-item
+                >
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
         </template>
       </el-table-column>
     </el-table>
@@ -356,7 +333,6 @@ const loading = ref(true);
 const showSearch = ref(true);
 const ids = ref([]);
 const single = ref(true);
-const multiple = ref(true);
 const total = ref(0);
 const title = ref('');
 const isViewMode = ref(false);
@@ -404,11 +380,57 @@ const selectedRow = computed(() => {
   return null;
 });
 
+/** 选中行可修改（草稿 / 已驳回） */
+const isDraftOrRejected = computed(() => selectedRow.value?.status === 'DRAFT' || selectedRow.value?.status === 'REJECTED');
+/** 选中行可删除（仅草稿） */
+const isDraft = computed(() => selectedRow.value?.status === 'DRAFT');
+/** 选中行可上架 / 确认上架（待上架） */
+const isApproved = computed(() => selectedRow.value?.status === 'APPROVED');
+/** 选中行可入库（待入库） */
+const isShelved = computed(() => selectedRow.value?.status === 'SHELVED');
+
+/** 行内「更多」下拉的操作项定义 */
+interface RowAction {
+  key: string;
+  label: string;
+  icon: string;
+  perm: string;
+}
+
+/** 单据状态 → 行内「更多」下拉操作（行内按钮的唯一真相来源；FINISHED / CANCELED 无可用操作） */
+const ROW_MORE_ACTIONS: Record<string, RowAction[]> = {
+  DRAFT: [
+    { key: 'edit', label: '修改', icon: 'Edit', perm: 'wm:receive:edit' },
+    { key: 'delete', label: '删除', icon: 'Delete', perm: 'wm:receive:remove' }
+  ],
+  REJECTED: [{ key: 'edit', label: '修改', icon: 'Edit', perm: 'wm:receive:edit' }],
+  APPROVING: [{ key: 'flow', label: '查看流程', icon: 'View', perm: 'wm:receive:query' }],
+  APPROVED: [
+    { key: 'shelf', label: '上架', icon: 'Upload', perm: 'wm:receive:edit' },
+    { key: 'confirmShelf', label: '确认上架', icon: 'Check', perm: 'wm:receive:shelf' },
+    { key: 'flow', label: '查看流程', icon: 'View', perm: 'wm:receive:query' }
+  ],
+  SHELVED: [{ key: 'execute', label: '入库', icon: 'Finished', perm: 'wm:receive:execute' }]
+};
+
+/** 获取某行「更多」下拉的操作列表 */
+function rowMoreActions(row: any): RowAction[] {
+  return ROW_MORE_ACTIONS[row?.status] ?? [];
+}
+
+/** 当前用户是否具备指定权限（用于下拉项过滤，避免对 el-dropdown-item 使用 v-hasPermi 指令） */
+function hasPermi(permission: string) {
+  return proxy.$auth.hasPermi(permission);
+}
+
 const { queryParams, form, rules } = toRefs(data);
 
 /** 查询物料入库单列表 */
 function getList() {
   loading.value = true;
+  // 表格无 row-key，数据替换后勾选会被清空，同步重置选中态避免工具栏按钮停留在旧的可用状态
+  ids.value = [];
+  single.value = true;
   listReceive(queryParams.value).then((response: any) => {
     receiveList.value = response.rows;
     total.value = response.total;
@@ -478,7 +500,6 @@ function resetQuery() {
 function handleSelectionChange(selection: any[]) {
   ids.value = selection.map((item: any) => item.receiveId);
   single.value = selection.length != 1;
-  multiple.value = !selection.length;
 }
 
 /** 新增按钮操作 */
@@ -741,6 +762,30 @@ function handleViewFlow(row: any) {
     .catch(() => {
       proxy.$modal.msgWarning('获取流程信息失败');
     });
+}
+
+/** 行内「更多」下拉命令分发 */
+function handleRowMoreCommand(command: string, row: any) {
+  switch (command) {
+    case 'edit':
+      handleUpdate(row);
+      break;
+    case 'delete':
+      handleDelete(row);
+      break;
+    case 'shelf':
+      handleShelf(row);
+      break;
+    case 'confirmShelf':
+      handleConfirmShelfRow(row);
+      break;
+    case 'execute':
+      handleExecuteRow(row);
+      break;
+    case 'flow':
+      handleViewFlow(row);
+      break;
+  }
 }
 
 // 自动生成编码
