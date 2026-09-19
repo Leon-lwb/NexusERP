@@ -4,6 +4,7 @@ import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.extra.spring.SpringUtil;
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.flowable.helper.FlowableProcInsIdHelper;
 import com.nexus.erp.bd.mapper.BdBomMapper;
 import com.nexus.erp.bd.mapper.BdMaterialMapper;
@@ -13,6 +14,7 @@ import com.nexus.erp.so.domain.SoCustomerOrder;
 import com.nexus.erp.so.domain.SoSalesOrderHeader;
 import com.nexus.erp.so.domain.SoSalesOrderLine;
 import com.nexus.erp.so.domain.bo.SoSalesOrderHeaderBo;
+import com.nexus.erp.so.domain.bo.SoSalesOrderLineBo;
 import com.nexus.erp.so.domain.vo.SoSalesOrderHeaderVo;
 import com.nexus.erp.so.mapper.SoCustomerOrderMapper;
 import com.nexus.erp.so.mapper.SoSalesOrderHeaderMapper;
@@ -40,13 +42,16 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationEventPublisher;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mockStatic;
@@ -399,5 +404,238 @@ class SoSalesOrderHeaderServiceImplTest {
         headerService.selectById(1L);
 
         verify(soCustomerOrderMapper, never()).selectById(any());
+    }
+
+    // ==================== updateByBo 差量更新（T1.1 / D3 / D4）====================
+
+    private SoSalesOrderHeaderBo updateBo() {
+        SoSalesOrderHeaderBo b = new SoSalesOrderHeaderBo();
+        b.setSoId(1L);
+        return b;
+    }
+
+    private SoSalesOrderLine existingLine(Long lineId, String materialId, String ordered,
+                                          String delivered, String production, String invoiced) {
+        SoSalesOrderLine l = new SoSalesOrderLine();
+        l.setLineId(lineId);
+        l.setSoId(1L);
+        l.setLineNo(String.format("%04d", lineId.intValue()));
+        l.setMaterialId(Long.valueOf(materialId));
+        l.setMaterialCode("M-" + materialId);
+        l.setMaterialName("物料" + materialId);
+        l.setOrderedQty(new BigDecimal(ordered));
+        l.setDeliveredQty(new BigDecimal(delivered));
+        l.setProductionQty(new BigDecimal(production));
+        l.setInvoicedQty(new BigDecimal(invoiced));
+        l.setUnitPrice(new BigDecimal("100"));
+        l.setLineStatus("PENDING");
+        return l;
+    }
+
+    private SoSalesOrderLineBo lineBo(Long lineId, String materialId, String ordered) {
+        SoSalesOrderLineBo b = new SoSalesOrderLineBo();
+        b.setLineId(lineId);
+        b.setMaterialId(Long.valueOf(materialId));
+        b.setOrderedQty(new BigDecimal(ordered));
+        b.setUnitPrice(new BigDecimal("100"));
+        b.setLineNo(lineId == null ? "0090" : String.format("%04d", lineId.intValue()));
+        return b;
+    }
+
+    /** D4：非草稿状态禁止改单 */
+    @Test
+    void updateByBo_rejectsNonDraft() {
+        when(baseMapper.selectById(1L)).thenReturn(header(1L, ISoSalesOrderHeaderService.STATUS_CONFIRMED));
+
+        ServiceException ex = assertThrows(ServiceException.class, () -> headerService.updateByBo(updateBo()));
+        assertTrue(ex.getMessage().contains("只有草稿状态"), "实际: " + ex.getMessage());
+        verify(soSalesOrderLineMapper, never()).deleteById(any(Serializable.class));
+        verify(soSalesOrderLineMapper, never()).insertBatch(anyList());
+    }
+
+    /** 订单不存在 */
+    @Test
+    void updateByBo_rejectsMissingOrder() {
+        when(baseMapper.selectById(1L)).thenReturn(null);
+        assertThrows(ServiceException.class, () -> headerService.updateByBo(updateBo()));
+    }
+
+    /** soId 为空直接拒绝，避免误删 so_id IS NULL 的行 */
+    @Test
+    void updateByBo_rejectsNullSoId() {
+        ServiceException ex = assertThrows(ServiceException.class,
+            () -> headerService.updateByBo(new SoSalesOrderHeaderBo()));
+        assertTrue(ex.getMessage().contains("不能为空"), "实际: " + ex.getMessage());
+    }
+
+    /** 单号与状态由服务端权威维护，客户端传了也还原 */
+    @Test
+    void updateByBo_forcesSoNoAndStatusFromDb() {
+        when(baseMapper.selectById(1L)).thenReturn(header(1L, ISoSalesOrderHeaderService.STATUS_DRAFT));
+        when(soSalesOrderLineMapper.selectList(any())).thenReturn(List.of());
+        when(baseMapper.updateById(any(SoSalesOrderHeader.class))).thenReturn(1);
+
+        SoSalesOrderHeaderBo bo = updateBo();
+        bo.setSoNo("SO-HACKED");
+        bo.setOrderStatus(ISoSalesOrderHeaderService.STATUS_FULFILLED);
+
+        headerService.updateByBo(bo);
+
+        ArgumentCaptor<SoSalesOrderHeader> captor = ArgumentCaptor.forClass(SoSalesOrderHeader.class);
+        verify(baseMapper).updateById(captor.capture());
+        assertEquals("SO-TEST-001", captor.getValue().getSoNo());
+        assertEquals(ISoSalesOrderHeaderService.STATUS_DRAFT, captor.getValue().getOrderStatus());
+    }
+
+    /** 已有行保留 line_id（不重建），新增行无 line_id 走插入 */
+    @Test
+    void updateByBo_keepsExistingLineIdsAndInsertsNewLine() {
+        when(baseMapper.selectById(1L)).thenReturn(header(1L, ISoSalesOrderHeaderService.STATUS_DRAFT));
+        when(soSalesOrderLineMapper.selectList(any()))
+            .thenReturn(List.of(existingLine(100L, "100", "10", "0", "0", "0")));
+        when(soSalesOrderLineMapper.updateById(any(SoSalesOrderLine.class))).thenReturn(1);
+        when(soSalesOrderLineMapper.insertBatch(anyList())).thenReturn(true);
+        when(baseMapper.updateById(any(SoSalesOrderHeader.class))).thenReturn(1);
+
+        SoSalesOrderHeaderBo bo = updateBo();
+        bo.setSoSalesOrderLineList(List.of(
+            lineBo(100L, "100", "12"),   // 已有行 -> 更新，保留 line_id
+            lineBo(null, "200", "5")));  // 新增行 -> 插入
+
+        headerService.updateByBo(bo);
+
+        ArgumentCaptor<SoSalesOrderLine> updated = ArgumentCaptor.forClass(SoSalesOrderLine.class);
+        verify(soSalesOrderLineMapper).updateById(updated.capture());
+        assertEquals(100L, updated.getValue().getLineId());
+        assertEquals(0, new BigDecimal("12").compareTo(updated.getValue().getOrderedQty()));
+
+        ArgumentCaptor<List<SoSalesOrderLine>> inserted = ArgumentCaptor.forClass(List.class);
+        verify(soSalesOrderLineMapper).insertBatch(inserted.capture());
+        assertEquals(1, inserted.getValue().size());
+        assertNull(inserted.getValue().get(0).getLineId());
+        assertEquals(1L, inserted.getValue().get(0).getSoId());
+        // 新增行的履约字段由服务端初始化，不接受客户端传入
+        assertEquals(0, BigDecimal.ZERO.compareTo(inserted.getValue().get(0).getDeliveredQty()));
+        assertEquals("PENDING", inserted.getValue().get(0).getLineStatus());
+
+        verify(soSalesOrderLineMapper, never()).deleteById(any(Serializable.class));
+    }
+
+    /** 请求中未出现的已有行被逻辑删除（保留其它行） */
+    @Test
+    void updateByBo_deletesLineMissingFromPayload() {
+        when(baseMapper.selectById(1L)).thenReturn(header(1L, ISoSalesOrderHeaderService.STATUS_DRAFT));
+        when(soSalesOrderLineMapper.selectList(any())).thenReturn(List.of(
+            existingLine(100L, "100", "10", "0", "0", "0"),
+            existingLine(101L, "200", "5", "0", "0", "0")));
+        when(soSalesOrderLineMapper.updateById(any(SoSalesOrderLine.class))).thenReturn(1);
+        when(soSalesOrderLineMapper.deleteById(any(Serializable.class))).thenReturn(1);
+        when(prdProductionPlanMapper.selectCount(any())).thenReturn(0L);
+        when(baseMapper.updateById(any(SoSalesOrderHeader.class))).thenReturn(1);
+
+        SoSalesOrderHeaderBo bo = updateBo();
+        bo.setSoSalesOrderLineList(List.of(lineBo(100L, "100", "10")));
+
+        headerService.updateByBo(bo);
+
+        verify(soSalesOrderLineMapper).deleteById(101L);
+        verify(soSalesOrderLineMapper, never()).insertBatch(anyList());
+    }
+
+    /** 已发货的行禁止删除 */
+    @Test
+    void updateByBo_rejectsDeletingFulfilledLine() {
+        when(baseMapper.selectById(1L)).thenReturn(header(1L, ISoSalesOrderHeaderService.STATUS_DRAFT));
+        when(soSalesOrderLineMapper.selectList(any())).thenReturn(List.of(
+            existingLine(100L, "100", "10", "0", "0", "0"),
+            existingLine(101L, "200", "5", "3", "0", "0"))); // 已发货 3
+        when(soSalesOrderLineMapper.updateById(any(SoSalesOrderLine.class))).thenReturn(1);
+
+        SoSalesOrderHeaderBo bo = updateBo();
+        bo.setSoSalesOrderLineList(List.of(lineBo(100L, "100", "10")));
+
+        ServiceException ex = assertThrows(ServiceException.class, () -> headerService.updateByBo(bo));
+        assertTrue(ex.getMessage().contains("不允许删除"), "实际: " + ex.getMessage());
+        verify(soSalesOrderLineMapper, never()).deleteById(any(Serializable.class));
+    }
+
+    /** 已关联生产计划的行禁止删除 */
+    @Test
+    void updateByBo_rejectsDeletingLineWithProductionPlan() {
+        when(baseMapper.selectById(1L)).thenReturn(header(1L, ISoSalesOrderHeaderService.STATUS_DRAFT));
+        when(soSalesOrderLineMapper.selectList(any())).thenReturn(List.of(
+            existingLine(100L, "100", "10", "0", "0", "0"),
+            existingLine(101L, "200", "5", "0", "0", "0")));
+        when(soSalesOrderLineMapper.updateById(any(SoSalesOrderLine.class))).thenReturn(1);
+        when(prdProductionPlanMapper.selectCount(any())).thenReturn(1L);
+
+        SoSalesOrderHeaderBo bo = updateBo();
+        bo.setSoSalesOrderLineList(List.of(lineBo(100L, "100", "10")));
+
+        ServiceException ex = assertThrows(ServiceException.class, () -> headerService.updateByBo(bo));
+        assertTrue(ex.getMessage().contains("已关联生产计划"), "实际: " + ex.getMessage());
+        verify(soSalesOrderLineMapper, never()).deleteById(any(Serializable.class));
+    }
+
+    /** 履约进度字段不被表单快照覆盖（防丢失更新） */
+    @Test
+    void updateByBo_preservesFulfillmentFields() {
+        SoSalesOrderLine fulfilled = existingLine(100L, "100", "10", "7", "3", "0");
+        fulfilled.setLineStatus("SCHEDULED");
+        when(baseMapper.selectById(1L)).thenReturn(header(1L, ISoSalesOrderHeaderService.STATUS_DRAFT));
+        when(soSalesOrderLineMapper.selectList(any())).thenReturn(List.of(fulfilled));
+        when(soSalesOrderLineMapper.updateById(any(SoSalesOrderLine.class))).thenReturn(1);
+        when(baseMapper.updateById(any(SoSalesOrderHeader.class))).thenReturn(1);
+
+        SoSalesOrderLineBo tampered = lineBo(100L, "100", "10");
+        tampered.setDeliveredQty(new BigDecimal("999"));
+        tampered.setProductionQty(new BigDecimal("999"));
+        // 注：SoSalesOrderLineBo 本身没有 invoicedQty 字段，客户端无法从 API 传入，天然免疫篡改
+        tampered.setLineStatus("FULFILLED");
+        SoSalesOrderHeaderBo bo = updateBo();
+        bo.setSoSalesOrderLineList(List.of(tampered));
+
+        headerService.updateByBo(bo);
+
+        ArgumentCaptor<SoSalesOrderLine> captor = ArgumentCaptor.forClass(SoSalesOrderLine.class);
+        verify(soSalesOrderLineMapper).updateById(captor.capture());
+        SoSalesOrderLine saved = captor.getValue();
+        assertEquals(0, new BigDecimal("7").compareTo(saved.getDeliveredQty()));
+        assertEquals(0, new BigDecimal("3").compareTo(saved.getProductionQty()));
+        assertEquals("SCHEDULED", saved.getLineStatus());
+    }
+
+    /** 已履约行禁止改物料/数量 */
+    @Test
+    void updateByBo_rejectsMaterialChangeOnFulfilledLine() {
+        when(baseMapper.selectById(1L)).thenReturn(header(1L, ISoSalesOrderHeaderService.STATUS_DRAFT));
+        when(soSalesOrderLineMapper.selectList(any()))
+            .thenReturn(List.of(existingLine(100L, "100", "10", "5", "0", "0")));
+
+        SoSalesOrderHeaderBo bo = updateBo();
+        bo.setSoSalesOrderLineList(List.of(lineBo(100L, "200", "10"))); // 换物料
+
+        ServiceException ex = assertThrows(ServiceException.class, () -> headerService.updateByBo(bo));
+        assertTrue(ex.getMessage().contains("不允许修改物料或订单数量"), "实际: " + ex.getMessage());
+        verify(soSalesOrderLineMapper, never()).updateById(any(SoSalesOrderLine.class));
+    }
+
+    /** 他单的 lineId 不会被误改：按新增处理并重置 lineId */
+    @Test
+    void updateByBo_treatsForeignLineIdAsNewLine() {
+        when(baseMapper.selectById(1L)).thenReturn(header(1L, ISoSalesOrderHeaderService.STATUS_DRAFT));
+        when(soSalesOrderLineMapper.selectList(any())).thenReturn(List.of());
+        when(soSalesOrderLineMapper.insertBatch(anyList())).thenReturn(true);
+        when(baseMapper.updateById(any(SoSalesOrderHeader.class))).thenReturn(1);
+
+        SoSalesOrderHeaderBo bo = updateBo();
+        bo.setSoSalesOrderLineList(List.of(lineBo(88888L, "100", "1"))); // 不属于本单
+
+        headerService.updateByBo(bo);
+
+        ArgumentCaptor<List<SoSalesOrderLine>> inserted = ArgumentCaptor.forClass(List.class);
+        verify(soSalesOrderLineMapper).insertBatch(inserted.capture());
+        assertNull(inserted.getValue().get(0).getLineId());
+        verify(soSalesOrderLineMapper, never()).updateById(any(SoSalesOrderLine.class));
     }
 }

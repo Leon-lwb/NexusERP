@@ -46,10 +46,24 @@
         <el-button type="primary" plain icon="Plus" @click="handleAdd()" v-hasPermi="['so:orderheader:add']">新增</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate()" v-hasPermi="['so:orderheader:edit']">修改</el-button>
+        <el-button
+          type="success"
+          plain
+          icon="Edit"
+          :disabled="single || !canEditSelected"
+          @click="handleUpdate()"
+          v-hasPermi="['so:orderheader:edit']"
+          >修改</el-button
+        >
       </el-col>
       <el-col :span="1.5">
-        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete()" v-hasPermi="['so:orderheader:remove']"
+        <el-button
+          type="danger"
+          plain
+          icon="Delete"
+          :disabled="multiple || !canDeleteSelected"
+          @click="handleDelete()"
+          v-hasPermi="['so:orderheader:remove']"
           >删除</el-button
         >
       </el-col>
@@ -117,8 +131,24 @@
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
-          <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['so:orderheader:edit']">修改</el-button>
-          <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['so:orderheader:remove']">删除</el-button>
+          <el-button
+            link
+            type="primary"
+            icon="Edit"
+            @click="handleUpdate(scope.row)"
+            v-if="canEditRow(scope.row)"
+            v-hasPermi="['so:orderheader:edit']"
+            >修改</el-button
+          >
+          <el-button
+            link
+            type="danger"
+            icon="Delete"
+            @click="handleDelete(scope.row)"
+            v-if="canEditRow(scope.row)"
+            v-hasPermi="['so:orderheader:remove']"
+            >删除</el-button
+          >
           <el-button
             link
             type="success"
@@ -185,6 +215,8 @@ const { so_credit_status, so_order_status, so_currency_type } = toRefs<any>(prox
 
 // 当前选中行（用于工具栏按审批状态控制 确认/履行/关闭/取消 是否可用）
 const selectedRow = ref<any>(null);
+// 当前选中的全部行（删除需校验每一行都可改）
+const selectedRows = ref<any[]>([]);
 
 const queryParams = ref({
   pageNum: 1,
@@ -229,10 +261,12 @@ function resetQuery() {
 // 多选框选中数据（在通用逻辑之上记录当前选中行）
 function handleSelectionChange(selection: any[]) {
   crudSelectionChange(selection);
+  selectedRows.value = selection;
   selectedRow.value = selection.length === 1 ? selection[0] : null;
 }
 
 // 订单状态常量
+const STATUS_DRAFT = 'DRAFT';
 const STATUS_APPROVED = 'APPROVED';
 const STATUS_CONFIRMED = 'CONFIRMED';
 const STATUS_CLOSED = 'CLOSED';
@@ -276,6 +310,18 @@ const canCancel = computed(() => {
   return canCancelRow(selectedRow.value);
 });
 
+/**
+ * 改单/删除门禁：仅草稿（DRAFT）可修改与删除。
+ * 与后端 SoSalesOrderHeaderServiceImpl.updateByBo / deleteByIds 的状态门禁保持一致：
+ * 已确认/已履行/已关闭/已取消的单据须走 取消 / 关闭 等状态流转，不能直接改单或删除，
+ * 否则会绕过信用额度释放、库存预留释放与生产计划收尾。
+ */
+function canEditRow(row: any) {
+  return !!row && row.orderStatus === STATUS_DRAFT;
+}
+const canEditSelected = computed(() => selectedRows.value.length === 1 && canEditRow(selectedRows.value[0]));
+const canDeleteSelected = computed(() => selectedRows.value.length > 0 && selectedRows.value.every((row: any) => canEditRow(row)));
+
 /** 修改按钮操作 */
 function handleUpdate(row?: any) {
   if (!row) {
@@ -289,6 +335,10 @@ function handleUpdate(row?: any) {
       return;
     }
     row = selected;
+  }
+  if (!canEditRow(row)) {
+    proxy.$modal.msgWarning('只有草稿状态的销售订单才能修改');
+    return;
   }
   const soId = row.soId;
   if (soId === undefined) {

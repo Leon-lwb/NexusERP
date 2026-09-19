@@ -343,6 +343,32 @@ insertOrUpdateLines(entity.getSoId(), ...);          // 且强制 line.setLineId
 
 ---
 
+## 九、执行进度
+
+| 批次/任务 | 状态 | commit | 验证 |
+|---|---|---|---|
+| 批次 0 回归基线 | ✅ 完成 | `4dddf2e9` | 新增 43 用例；`Tests run: 68, Failures: 0` |
+| T1.1 改单差量更新 | ✅ 完成 | 见本批次 commit | 新增 11 用例；`Tests run: 79, Failures: 0`；前端 `eslint` + `build:prod` 通过 |
+| T1.2 删除止血 | ⬜ 待办 | | |
+| T1.3 退货门禁 | ⬜ 待办 | | |
+| T1.4 开票收口 | ⬜ 待办 | | |
+| T1.5 红冲/核销 | ⬜ 待办 | | |
+| T1.6 报表修复 | ⬜ 待办 | | |
+| T1.7 跨库事务（待 Q5 实测） | ⬜ 待办 | | |
+| T1.8 金额服务端重算 | ⬜ 待办 | | |
+| 批次 2 ~ 批次 5 | ⬜ 待办 | | |
+
+**T1.1 实施要点**（`SoSalesOrderHeaderServiceImpl`）：
+- `updateByBo` 仅允许 `DRAFT`；单号与状态强制还原为库中值，客户端改写无效
+- `diffUpdateLines`：按 `lineId` 区分「更新 / 新增 / 删除」，保留已有行 `line_id`
+- 只在本单已有行中匹配 `lineId`，他单/伪造的 `lineId` 按新增处理（重置为 null），防越权改写
+- `applyEditableLineFields`：白名单更新，`deliveredQty/productionQty/invoicedQty/lineStatus/linked*/oqc*/reserved*` 一律保持库中原值（顺带修掉"表单快照覆盖并发已发货量"的丢失更新）
+- `assertLineDeletable`：已履约行、已关联生产计划的行禁止删除；先全量校验再执行，避免删一半失败
+- 新增行 `resetServerOwnedLineFields` 强制初始化履约/关联字段
+- 前端 `orderheader/index.vue` 工具栏与行内「修改/删除」按状态门禁，`handleUpdate` 二次守卫
+
+---
+
 ## 附录 A：死字段判定依据
 
 全仓 `getProjectId|setProjectId|isPaEnabled|getIsPaEnabled` 等 getter/setter 零命中（`ruoyi-modules` 全量 grep）：

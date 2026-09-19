@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
 import com.nexus.common.core.domain.R;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.MapstructUtils;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.tenant.helper.TenantHelper;
@@ -53,9 +54,11 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -244,20 +247,39 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
             entity.setSoNo(autoCodeUtil.genSerialCode("SO_ORDER_CODE", null));
         }
         int rows = baseMapper.insert(entity);
-        insertOrUpdateLines(entity.getSoId(), bo.getSoSalesOrderLineList());
+        insertLines(entity.getSoId(), bo.getSoSalesOrderLineList());
         return rows;
     }
 
     /**
-     * 修改销售订单（先删除原行明细再重新插入）
+     * 修改销售订单。
+     * <p>两条硬约束：</p>
+     * <ol>
+     *   <li><b>仅草稿可改</b>（决策 D4）：单号与状态由服务端权威维护，不接受客户端改写；</li>
+     *   <li><b>行明细按 lineId 差量更新</b>（决策 D3）：不再「逻辑删除全部行 + 重新插入新行」，
+     *       因为下游全部按 {@code line_id} 关联 —— 生产计划 {@code order_line_id}、出库回写
+     *       {@code addShippedQty(soLineId)}、发票行 {@code so_line_id}。整体重建会让这些关联
+     *       指向已删除的行，导致生产计划失联、发货数量回写到已删行使订单永远无法履行。</li>
+     * </ol>
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(SoSalesOrderHeaderBo bo) {
+        if (bo.getSoId() == null) {
+            throw new ServiceException("销售订单ID不能为空");
+        }
+        SoSalesOrderHeader existing = baseMapper.selectById(bo.getSoId());
+        if (existing == null) {
+            throw new ServiceException("销售订单不存在");
+        }
+        if (!STATUS_DRAFT.equals(existing.getOrderStatus())) {
+            throw new ServiceException("只有草稿状态的销售订单才能修改，当前状态：" + existing.getOrderStatus());
+        }
         SoSalesOrderHeader entity = MapstructUtils.convert(bo, SoSalesOrderHeader.class);
-        soSalesOrderLineMapper.delete(new LambdaQueryWrapper<SoSalesOrderLine>()
-            .eq(SoSalesOrderLine::getSoId, entity.getSoId()));
-        insertOrUpdateLines(entity.getSoId(), bo.getSoSalesOrderLineList());
+        // 单号与状态服务端权威：客户端传了也还原，防止改单顺带改单号/绕过状态机
+        entity.setSoNo(existing.getSoNo());
+        entity.setOrderStatus(existing.getOrderStatus());
+        diffUpdateLines(entity.getSoId(), bo.getSoSalesOrderLineList());
         return baseMapper.updateById(entity);
     }
 
@@ -626,17 +648,170 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
     }
 
     /**
-     * Batch insert or update sales order lines
+     * 批量新增销售订单行（仅新增场景）：清空行ID、归属到订单，并初始化履约/关联字段。
      */
-    private void insertOrUpdateLines(Long soId, List<SoSalesOrderLineBo> lineBoList) {
-        if (lineBoList != null && !lineBoList.isEmpty()) {
-            List<SoSalesOrderLine> lineList = MapstructUtils.convert(lineBoList, SoSalesOrderLine.class);
-            for (SoSalesOrderLine line : lineList) {
-                line.setLineId(null);
-                line.setSoId(soId);
-            }
-            soSalesOrderLineMapper.insertBatch(lineList);
+    private void insertLines(Long soId, List<SoSalesOrderLineBo> lineBoList) {
+        if (lineBoList == null || lineBoList.isEmpty()) {
+            return;
         }
+        List<SoSalesOrderLine> lineList = new ArrayList<>(lineBoList.size());
+        for (SoSalesOrderLineBo lineBo : lineBoList) {
+            SoSalesOrderLine line = MapstructUtils.convert(lineBo, SoSalesOrderLine.class);
+            line.setLineId(null);
+            line.setSoId(soId);
+            resetServerOwnedLineFields(line);
+            lineList.add(line);
+        }
+        soSalesOrderLineMapper.insertBatch(lineList);
+    }
+
+    /**
+     * 行明细差量更新：按 {@code lineId} 区分「更新 / 新增 / 删除」，保留已有行的 {@code line_id}。
+     * <p>安全要点：</p>
+     * <ul>
+     *   <li>只在本单已有行里按 lineId 匹配，外部/他单的 lineId 一律按新增处理（lineId 重置为 null），
+     *       避免越权改写他单明细；</li>
+     *   <li>删除前先对<b>全部</b>待删行做守卫校验再执行，避免删一半失败留下半成品；</li>
+     *   <li>新增行与删除守卫都不接受客户端传入的履约/关联字段。</li>
+     * </ul>
+     */
+    private void diffUpdateLines(Long soId, List<SoSalesOrderLineBo> lineBoList) {
+        List<SoSalesOrderLine> existingLines = soSalesOrderLineMapper.selectList(
+            new LambdaQueryWrapper<SoSalesOrderLine>().eq(SoSalesOrderLine::getSoId, soId));
+        Map<Long, SoSalesOrderLine> existingById = new HashMap<>();
+        for (SoSalesOrderLine line : existingLines) {
+            if (line.getLineId() != null) {
+                existingById.put(line.getLineId(), line);
+            }
+        }
+
+        List<SoSalesOrderLine> toInsert = new ArrayList<>();
+        Set<Long> keptLineIds = new HashSet<>();
+        if (lineBoList != null) {
+            for (SoSalesOrderLineBo lineBo : lineBoList) {
+                SoSalesOrderLine existing = lineBo.getLineId() == null ? null : existingById.get(lineBo.getLineId());
+                if (existing == null) {
+                    SoSalesOrderLine created = MapstructUtils.convert(lineBo, SoSalesOrderLine.class);
+                    created.setLineId(null);
+                    created.setSoId(soId);
+                    resetServerOwnedLineFields(created);
+                    toInsert.add(created);
+                    continue;
+                }
+                applyEditableLineFields(existing, lineBo);
+                soSalesOrderLineMapper.updateById(existing);
+                keptLineIds.add(existing.getLineId());
+            }
+        }
+
+        List<SoSalesOrderLine> toDelete = new ArrayList<>();
+        for (SoSalesOrderLine line : existingLines) {
+            if (line.getLineId() != null && !keptLineIds.contains(line.getLineId())) {
+                assertLineDeletable(line);
+                toDelete.add(line);
+            }
+        }
+        for (SoSalesOrderLine line : toDelete) {
+            soSalesOrderLineMapper.deleteById(line.getLineId());
+        }
+        if (!toInsert.isEmpty()) {
+            soSalesOrderLineMapper.insertBatch(toInsert);
+        }
+    }
+
+    /**
+     * 已有行仅允许更新白名单字段；履约进度与关联字段保持数据库原值（防表单快照覆盖并发已发货量）。
+     * <p>已进入履约的行（有发货/投产/开票）额外禁止修改物料与订单数量 —— 改小会与已发数量矛盾。</p>
+     */
+    private void applyEditableLineFields(SoSalesOrderLine target, SoSalesOrderLineBo source) {
+        if (isFulfillmentLocked(target)) {
+            if (!Objects.equals(target.getMaterialId(), source.getMaterialId())
+                || !sameDecimal(target.getOrderedQty(), source.getOrderedQty())) {
+                throw new ServiceException("第 " + target.getLineNo() + " 行已发生发货/投产/开票，不允许修改物料或订单数量");
+            }
+        } else {
+            target.setMaterialId(source.getMaterialId());
+            target.setMaterialCode(source.getMaterialCode());
+            target.setMaterialName(source.getMaterialName());
+            target.setMaterialSpec(source.getMaterialSpec());
+            target.setOrderedQty(source.getOrderedQty());
+            target.setUnitPrice(source.getUnitPrice());
+            target.setUnit(source.getUnit());
+        }
+        target.setLineNo(source.getLineNo());
+        target.setLineAmount(source.getLineAmount());
+        target.setTaxRate(source.getTaxRate());
+        target.setTaxAmount(source.getTaxAmount());
+        target.setDiscountPercent(source.getDiscountPercent());
+        target.setDiscountAmount(source.getDiscountAmount());
+        target.setRequestedDate(source.getRequestedDate());
+        target.setPromiseDate(source.getPromiseDate());
+        target.setWarehouseId(source.getWarehouseId());
+        target.setDeliveryPriority(source.getDeliveryPriority());
+        target.setCustomerLineRef(source.getCustomerLineRef());
+        target.setCustomerProductCode(source.getCustomerProductCode());
+        target.setCustomerProductName(source.getCustomerProductName());
+        target.setSortOrder(source.getSortOrder());
+        target.setRemark(source.getRemark());
+        target.setAttr1(source.getAttr1());
+        target.setAttr2(source.getAttr2());
+        target.setAttr3(source.getAttr3());
+        target.setAttr4(source.getAttr4());
+    }
+
+    /**
+     * 履约/关联类字段：服务端权威，任何情况下都不接受客户端传入（新增行强制初始化）。
+     */
+    private void resetServerOwnedLineFields(SoSalesOrderLine line) {
+        line.setDeliveredQty(BigDecimal.ZERO);
+        line.setInvoicedQty(BigDecimal.ZERO);
+        line.setFulfilledQty(BigDecimal.ZERO);
+        line.setProductionQty(BigDecimal.ZERO);
+        line.setPurchaseQty(BigDecimal.ZERO);
+        line.setReservedQty(BigDecimal.ZERO);
+        line.setLineStatus("PENDING");
+        line.setLinkedMoId(null);
+        line.setLinkedPoId(null);
+        line.setReservedBatchNo(null);
+        line.setReservedSerials(null);
+        line.setPaGroupId(null);
+        line.setOqcStatus(null);
+        line.setOqcId(null);
+        line.setOqcCode(null);
+        line.setOqcTime(null);
+    }
+
+    /**
+     * 删除守卫：已进入履约的行、已关联生产计划的行禁止删除。
+     */
+    private void assertLineDeletable(SoSalesOrderLine line) {
+        if (isFulfillmentLocked(line)) {
+            throw new ServiceException("第 " + line.getLineNo() + " 行已发生发货/投产/开票，不允许删除");
+        }
+        Long planCount = prdProductionPlanMapper.selectCount(
+            new LambdaQueryWrapper<PrdProductionPlan>()
+                .eq(PrdProductionPlan::getOrderLineId, line.getLineId()));
+        if (planCount != null && planCount > 0) {
+            throw new ServiceException("第 " + line.getLineNo() + " 行已关联生产计划，不允许删除");
+        }
+    }
+
+    /** 行是否已进入履约（已发货 / 已投产 / 已开票任一为正） */
+    private boolean isFulfillmentLocked(SoSalesOrderLine line) {
+        return isPositive(line.getDeliveredQty())
+            || isPositive(line.getProductionQty())
+            || isPositive(line.getInvoicedQty());
+    }
+
+    private boolean isPositive(BigDecimal value) {
+        return value != null && value.compareTo(BigDecimal.ZERO) > 0;
+    }
+
+    private boolean sameDecimal(BigDecimal a, BigDecimal b) {
+        if (a == null || b == null) {
+            return a == b;
+        }
+        return a.compareTo(b) == 0;
     }
 
     /**
