@@ -380,6 +380,7 @@ insertOrUpdateLines(entity.getSoId(), ...);          // 且强制 line.setLineId
 | └ 高风险改动补真实场景用例 + 强化断言强度 | ✅ 完成 | 见本批次 commit | 新增 2 用例 + 强化 2 处断言 |
 | └ 发票表头金额服务端汇总（修 `totalAmount` 伪造绕过核销上限） | ✅ 完成 | 见本批次 commit | 新增 3 用例；`Tests run: 148, Failures: 0` |
 | └ 流程回调状态改写守卫（防"复活"已取消/已确认订单） | ✅ 完成 | 见本批次 commit | 新增 5 用例；`Tests run: 153, Failures: 0` |
+| └ 客户订单引用守卫（被销售订单引用时禁止删除）+ 新建测试类 | ✅ 完成 | 见本批次 commit | 新增 7 用例（测试类 9→10）；`Tests run: 160, Failures: 0` |
 | └ 13 个死字段清理（待 Q4） | ⬜ 待办 | | |
 
 **加固轮要点**：

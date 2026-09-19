@@ -4,21 +4,27 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.MapstructUtils;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.erp.so.domain.SoCustomerOrder;
+import com.nexus.erp.so.domain.SoSalesOrderHeader;
 import com.nexus.erp.so.domain.bo.SoCustomerOrderBo;
 import com.nexus.erp.so.domain.vo.SoCustomerOrderVo;
 import com.nexus.erp.so.mapper.SoCustomerOrderMapper;
+import com.nexus.erp.so.mapper.SoSalesOrderHeaderMapper;
 import com.nexus.erp.so.service.ISoCustomerOrderService;
 import com.nexus.system.strategy.AutoCodeUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * 客户订单Service业务层处理
@@ -31,6 +37,7 @@ import java.util.List;
 public class SoCustomerOrderServiceImpl implements ISoCustomerOrderService {
 
     private final SoCustomerOrderMapper baseMapper;
+    private final SoSalesOrderHeaderMapper soSalesOrderHeaderMapper;
     private final AutoCodeUtil autoCodeUtil;
 
     /**
@@ -83,12 +90,33 @@ public class SoCustomerOrderServiceImpl implements ISoCustomerOrderService {
     }
 
     /**
-     * 批量删除客户订单
+     * 批量删除客户订单。
+     *
+     * <p><b>引用守卫</b>：{@code so_sales_order_header.co_id} 指向客户订单（库内无外键约束），
+     * 若客户订单已被销售订单引用，删除会让这些销售订单的「客户订单」关联悬空
+     * （详情页回填不到 coNo，只能退化显示 {@code 客户订单#<id>}）。
+     * 与合同/订单等单据「被引用即不可删」的口径一致，这里直接拒绝并提示。</p>
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {
-        return baseMapper.deleteBatchIds(List.of(ids));
+        if (ids == null || ids.length == 0) {
+            return 0;
+        }
+        List<Long> idList = Arrays.stream(ids).filter(Objects::nonNull).distinct().collect(Collectors.toList());
+        if (idList.isEmpty()) {
+            return 0;
+        }
+        for (Long id : idList) {
+            Long refCount = soSalesOrderHeaderMapper.selectCount(
+                Wrappers.<SoSalesOrderHeader>lambdaQuery().eq(SoSalesOrderHeader::getCoId, id));
+            if (refCount != null && refCount > 0) {
+                SoCustomerOrder existing = baseMapper.selectById(id);
+                throw new ServiceException("客户订单【" + (existing == null ? id : existing.getCoNo())
+                    + "】已被 " + refCount + " 张销售订单引用，不允许删除");
+            }
+        }
+        return baseMapper.deleteBatchIds(idList);
     }
 
     /**
