@@ -365,17 +365,32 @@ insertOrUpdateLines(entity.getSoId(), ...);          // 且强制 line.setLineId
 | └ T3.3 退货闭环 + 退货 UI 接线（待 Q2） | ⬜ 待办 | | |
 | └ T3.4 报表菜单 + 前端（待 Q1） | ⬜ 待办 | | |
 | 批次 4：DDL 收敛 | ✅ 完成（§五 第 1~7 项） | 见本批次 commit | 主脚本 14 张 so_ 表括号平衡校验通过；存量库脚本 `2026-09-19-so-ddl-hardening.sql`；`Tests run: 128, Failures: 0`；前端 `eslint` + `build:prod` 通过 |
-| 批次 5：清理与一致性 | 🚧 进行中（不依赖 Q4 的前端项已完成） | | |
+| 批次 5：清理与一致性 | 🚧 进行中（仅剩 Q4 相关项） | | |
 | └ 客户订单幻影字段清理 | ✅ 完成 | 见本批次 commit | 前端 `eslint` + `build:prod` 通过 |
 | └ 列表页选中项残留修复 | ✅ 完成 | 见本批次 commit | 同上 |
 | └ 退货/发票工具栏状态门禁对齐行内 | ✅ 完成 | 见本批次 commit | 前端 `eslint` + `build:prod` 通过 |
-| └ 报价/退货明细行改 VO 直出（去掉 `@JSONField` 无效注解） | ✅ 完成 | 见本批次 commit | 新增 2 用例；`Tests run: 130, Failures: 0` |
-| └ 补齐 `@ExcelIgnoreUnannotated`（4 个 VO） | ✅ 完成 | 见本批次 commit | 复核 so 模块全部带 `@ExcelProperty` 的 VO 均已覆盖 |
-| └ 13 个死字段清理（待 Q4） | ⬜ 待办 | | |
-| └ 发票/合同明细行改 VO（新建 LineVo） | ✅ 完成 | 见本批次 commit | 新增 2 用例；`Tests run: 132, Failures: 0`；本轮无前端文件改动 |
+| └ 报价/退货明细行改 VO 直出（去掉 `@JSONField` 无效注解） | ✅ 完成 | 见本批次 commit | 新增 2 用例 |
+| └ 补齐 `@ExcelIgnoreUnannotated`（4 个 VO） | ✅ 完成 | 见本批次 commit | 复核全部带 `@ExcelProperty` 的 VO 均已覆盖 |
+| └ 发票/合同明细行改 VO（新建 LineVo） | ✅ 完成 | 见本批次 commit | 新增 2 用例；`Tests run: 132, Failures: 0` |
+| └ 异常口径统一为 `ServiceException` | ✅ 完成 | 见本批次 commit | so 模块 `throw new RuntimeException` 已清零 |
+| └ 明细「未提交」语义加固（null vs 空集合） | ✅ 完成 | 见本批次 commit | 新增 3 用例；`Tests run: 135, Failures: 0` |
+| └ DDL ↔ Java 实体一致性静态校验 | ✅ 通过 | — | 14 张 so_ 表列与实体字段完全一致 |
 | └ 13 个死字段清理（待 Q4） | ⬜ 待办 | | |
 
-**批次 5 第三轮已完成项要点**：
+**加固轮要点**：
+- **`updateByBo` 传 null 明细会删光所有行**（真实数据丢失风险）：`diffUpdateLines` 把「请求中未出现的
+  已有行」一律逻辑删除，而 `lineBoList == null` 时该分支整体被跳过 → 所有已有行都成了「未出现」→ 全删；
+  同时 `recalcAmounts` 按空明细把表头金额算成 0。即 API 客户端做部分更新（例如只改备注）会
+  **静默清空整单明细与金额**。已改为与合同模块一致的口径：**null = 本次不提交明细（明细与金额都保持
+  库中原值）；空数组 = 显式清空**。
+- 修复过程中一度只做了「null 时跳过重算」，那会让客户端的 `totalAmount` 直接落库 ——
+  等于重新打开 T1.8 堵掉的伪造口子。已补「从库中还原金额」分支并加断言锁定。
+- 新增时 null 明细视作空明细、金额归零（不能因为没传明细就留下客户端伪造的金额）。
+- **DDL ↔ Java 实体一致性静态校验**：提取 14 张 so_ 表的列名与对应实体字段（camelCase→snake_case）
+  做双向 diff，结果**完全一致**（审计基础列 tenant_id/create_dept/create_by/create_time/
+  update_by/update_time/del_flag 按继承处理）。检查器本身用「喂一个不存在的列」做了负向测试自证有效。
+
+**批次 5 第三轮要点**：
 - 新建 `SoInvoiceLineVo` / `SoContractLineVo`（字段集 = 实体减审计字段），
   `SoInvoiceVo` / `SoContractVo` 的明细行列表改 VO 类型，Service 里用 `MapstructUtils` 转换。
 - **关键点：`SoInvoiceLineVo` 必须保留 `soLineId`**。前端不直接用它，但后端
@@ -384,7 +399,6 @@ insertOrUpdateLines(entity.getSoId(), ...);          // 且强制 line.setLineId
   重新打开超开缺口（即 T1.4 刚堵上的洞会被这个 VO 改动重新捅开）。已加断言测试锁定。
 - 两个前端类型（`InvoiceLineForm` / `ContractLineForm`）本就声明了全部业务字段（含 `soLineId`/
   `sortOrder`），说明是后端 VO 少字段，本次改动方向与前端契约一致，无需改前端。
-| └ 异常口径统一为 `ServiceException` | ✅ 完成 | | so 模块 `throw new RuntimeException` 已清零 |
 
 **批次 5 第二轮已完成项要点**：
 - **明细行改 VO 直出**（报价 / 退货）：原实现返回实体，会把 `tenantId`/`delFlag`/`createBy`

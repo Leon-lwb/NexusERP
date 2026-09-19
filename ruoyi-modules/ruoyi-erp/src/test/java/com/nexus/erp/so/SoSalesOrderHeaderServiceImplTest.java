@@ -498,7 +498,7 @@ class SoSalesOrderHeaderServiceImplTest {
     @Test
     void updateByBo_forcesSoNoAndStatusFromDb() {
         when(baseMapper.selectById(1L)).thenReturn(header(1L, ISoSalesOrderHeaderService.STATUS_DRAFT));
-        when(soSalesOrderLineMapper.selectList(any())).thenReturn(List.of());
+        // 注：本用例不提交明细（lineList 为 null），按新语义不会触达明细表，故不 stub selectList
         when(baseMapper.updateById(any(SoSalesOrderHeader.class))).thenReturn(1);
 
         SoSalesOrderHeaderBo bo = updateBo();
@@ -733,6 +733,88 @@ class SoSalesOrderHeaderServiceImplTest {
         verify(baseMapper).updateById(captor.capture());
         // 行金额 100.00，税额 10.00，价税合计 110.00，整单折扣 0 -> 含税总金额 110.00
         assertEquals(0, new BigDecimal("110.00").compareTo(captor.getValue().getTotalAmount()));
+    }
+
+    // ==================== 明细「未提交」语义（null vs 空集合）====================
+
+    /**
+     * 明细为 null 表示「本次不提交明细」：不动明细、不动金额。
+     * <p>修复前 null 会让 diffUpdateLines 把所有已有行当「请求中未出现」而逻辑删除，
+     * 且 recalcAmounts 把表头金额算成 0 —— API 客户端做部分更新（例如只改备注）
+     * 会静默清空整单明细与金额。</p>
+     */
+    @Test
+    void updateByBo_nullLineList_keepsLinesAndAmountsFromDb() {
+        SoSalesOrderHeader existing = header(1L, ISoSalesOrderHeaderService.STATUS_DRAFT);
+        existing.setTotalAmount(new BigDecimal("1000.00"));
+        existing.setTaxAmount(new BigDecimal("130.00"));
+        existing.setDiscountAmount(new BigDecimal("50.00"));
+        existing.setDiscountRate(new BigDecimal("5"));
+        when(baseMapper.selectById(1L)).thenReturn(existing);
+        when(baseMapper.updateById(any(SoSalesOrderHeader.class))).thenReturn(1);
+
+        SoSalesOrderHeaderBo bo = updateBo();
+        bo.setRemark("只改备注");
+        // 客户端伪造金额
+        bo.setTotalAmount(BigDecimal.ZERO);
+        bo.setTaxAmount(BigDecimal.ZERO);
+        bo.setDiscountAmount(BigDecimal.ZERO);
+        bo.setSoSalesOrderLineList(null);
+
+        headerService.updateByBo(bo);
+
+        // 不应触碰明细
+        verify(soSalesOrderLineMapper, never()).selectList(any());
+        verify(soSalesOrderLineMapper, never()).deleteById(any(Serializable.class));
+        verify(soSalesOrderLineMapper, never()).updateById(any(SoSalesOrderLine.class));
+
+        ArgumentCaptor<SoSalesOrderHeader> captor = ArgumentCaptor.forClass(SoSalesOrderHeader.class);
+        verify(baseMapper).updateById(captor.capture());
+        SoSalesOrderHeader saved = captor.getValue();
+        // 金额一律还原为库中原值，客户端伪造无效
+        assertEquals(0, new BigDecimal("1000.00").compareTo(saved.getTotalAmount()));
+        assertEquals(0, new BigDecimal("130.00").compareTo(saved.getTaxAmount()));
+        assertEquals(0, new BigDecimal("50.00").compareTo(saved.getDiscountAmount()));
+        assertEquals("只改备注", saved.getRemark());
+    }
+
+    /** 显式传空数组才是「清空全部明细」，且金额归零 */
+    @Test
+    void updateByBo_emptyLineList_clearsAllLinesAndZeroesAmounts() {
+        when(baseMapper.selectById(1L)).thenReturn(header(1L, ISoSalesOrderHeaderService.STATUS_DRAFT));
+        when(soSalesOrderLineMapper.selectList(any()))
+            .thenReturn(List.of(existingLine(100L, "100", "10", "0", "0", "0")));
+        when(soSalesOrderLineMapper.deleteById(any(Serializable.class))).thenReturn(1);
+        when(prdProductionPlanMapper.selectCount(any())).thenReturn(0L);
+        when(baseMapper.updateById(any(SoSalesOrderHeader.class))).thenReturn(1);
+
+        SoSalesOrderHeaderBo bo = updateBo();
+        bo.setSoSalesOrderLineList(List.of());
+
+        headerService.updateByBo(bo);
+
+        verify(soSalesOrderLineMapper).deleteById(100L);
+        ArgumentCaptor<SoSalesOrderHeader> captor = ArgumentCaptor.forClass(SoSalesOrderHeader.class);
+        verify(baseMapper).updateById(captor.capture());
+        assertEquals(0, BigDecimal.ZERO.compareTo(captor.getValue().getTotalAmount()));
+    }
+
+    /** 新增时明细为 null 视作空明细：金额归零，客户端伪造金额无效 */
+    @Test
+    void insertByBo_nullLineList_zeroesAmounts() {
+        SoSalesOrderHeaderBo bo = new SoSalesOrderHeaderBo();
+        bo.setSoNo("SO-T-2");
+        bo.setClientId(1L);
+        bo.setTotalAmount(new BigDecimal("999999")); // 伪造
+        bo.setSoSalesOrderLineList(null);
+        when(baseMapper.insert(any(SoSalesOrderHeader.class))).thenReturn(1);
+
+        headerService.insertByBo(bo);
+
+        ArgumentCaptor<SoSalesOrderHeader> captor = ArgumentCaptor.forClass(SoSalesOrderHeader.class);
+        verify(baseMapper).insert(captor.capture());
+        assertEquals(0, BigDecimal.ZERO.compareTo(captor.getValue().getTotalAmount()));
+        assertEquals(0, BigDecimal.ZERO.compareTo(captor.getValue().getTaxAmount()));
     }
 
     // ==================== deleteByIds 状态门禁与收尾（T1.2）====================

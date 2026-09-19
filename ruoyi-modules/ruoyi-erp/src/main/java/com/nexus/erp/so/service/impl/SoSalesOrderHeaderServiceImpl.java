@@ -255,8 +255,9 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
         if (StringUtils.isBlank(entity.getSoNo())) {
             entity.setSoNo(autoCodeUtil.genSerialCode("SO_ORDER_CODE", null));
         }
-        // 金额一律服务端重算，不信任客户端传入的 totalAmount/taxAmount/discountAmount
-        recalcAmounts(entity, bo.getSoSalesOrderLineList());
+        // 金额一律服务端重算，不信任客户端传入的 totalAmount/taxAmount/discountAmount。
+        // 新增时明细为 null 视作「空明细」，金额归零（不能因为没传明细就把客户端的伪造金额留下）
+        recalcAmounts(entity, bo.getSoSalesOrderLineList() == null ? List.of() : bo.getSoSalesOrderLineList());
         int rows = baseMapper.insert(entity);
         insertLines(entity.getSoId(), bo.getSoSalesOrderLineList());
         return rows;
@@ -290,9 +291,22 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
         // 单号与状态服务端权威：客户端传了也还原，防止改单顺带改单号/绕过状态机
         entity.setSoNo(existing.getSoNo());
         entity.setOrderStatus(existing.getOrderStatus());
-        // 金额一律服务端重算，不信任客户端传入的 totalAmount/taxAmount/discountAmount
-        recalcAmounts(entity, bo.getSoSalesOrderLineList());
-        diffUpdateLines(entity.getSoId(), bo.getSoSalesOrderLineList());
+        // 明细为 null 表示「本次不提交明细」——保持原样、不动表头金额；
+        // 只有显式传空数组才是「清空全部明细」。口径与合同模块（SoContractServiceImpl.updateByBo
+        // 的 `if (bo.getSoContractLineList() != null)`）一致。
+        // 修复前：null 会让 diffUpdateLines 把所有已有行都当「请求中未出现」而逻辑删除，
+        // 且 recalcAmounts 把表头金额算成 0 —— API 客户端做部分更新（例如只改备注）会静默清空整单明细与金额。
+        if (bo.getSoSalesOrderLineList() != null) {
+            recalcAmounts(entity, bo.getSoSalesOrderLineList());
+            diffUpdateLines(entity.getSoId(), bo.getSoSalesOrderLineList());
+        } else {
+            // 明细未提交 -> 金额保持库中原值，同样不接受客户端改写
+            // （否则跳过重算会让客户端的 totalAmount 直接落库，等于重新打开 T1.8 堵掉的伪造口子）
+            entity.setTotalAmount(existing.getTotalAmount());
+            entity.setTaxAmount(existing.getTaxAmount());
+            entity.setDiscountAmount(existing.getDiscountAmount());
+            entity.setDiscountRate(existing.getDiscountRate());
+        }
         return baseMapper.updateById(entity);
     }
 
@@ -716,26 +730,29 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
      * <p><b>为什么必须服务端算</b>：{@code confirm()} 用 {@code totalAmount} 做信用额度校验，
      * 客户端传 0 或负数即可绕过信用控制；行金额同理会被下游开票/报表直接引用。</p>
      * <p>副作用：会把重算结果写回传入的 lineBo（供后续白名单落库使用）。</p>
+     * <p><b>约定</b>：{@code lineBoList == null} 表示「本次未提交明细」，此时<b>不动</b>表头金额
+     * （部分更新场景）；要表达「无明细」请传空集合，金额会归零。</p>
      *
      * @param header     订单头（重算结果写回 totalAmount/taxAmount/discountAmount）
-     * @param lineBoList 订单行（重算结果写回 lineAmount/discountAmount/taxAmount）
+     * @param lineBoList 订单行（重算结果写回 lineAmount/discountAmount/taxAmount）；null 表示不提交明细
      */
     private void recalcAmounts(SoSalesOrderHeader header, List<SoSalesOrderLineBo> lineBoList) {
+        if (lineBoList == null) {
+            return;
+        }
         BigDecimal net = BigDecimal.ZERO;
         BigDecimal tax = BigDecimal.ZERO;
-        if (lineBoList != null) {
-            for (SoSalesOrderLineBo line : lineBoList) {
-                BigDecimal lineAmount = round2(nullToZero(line.getOrderedQty()).multiply(nullToZero(line.getUnitPrice())));
-                BigDecimal lineDiscount = round2(lineAmount.multiply(nullToZero(line.getDiscountPercent()))
-                    .divide(HUNDRED, 2, RoundingMode.HALF_UP));
-                BigDecimal lineTax = round2(lineAmount.subtract(lineDiscount)
-                    .multiply(nullToZero(line.getTaxRate())).divide(HUNDRED, 2, RoundingMode.HALF_UP));
-                line.setLineAmount(lineAmount);
-                line.setDiscountAmount(lineDiscount);
-                line.setTaxAmount(lineTax);
-                net = net.add(lineAmount).subtract(lineDiscount);
-                tax = tax.add(lineTax);
-            }
+        for (SoSalesOrderLineBo line : lineBoList) {
+            BigDecimal lineAmount = round2(nullToZero(line.getOrderedQty()).multiply(nullToZero(line.getUnitPrice())));
+            BigDecimal lineDiscount = round2(lineAmount.multiply(nullToZero(line.getDiscountPercent()))
+                .divide(HUNDRED, 2, RoundingMode.HALF_UP));
+            BigDecimal lineTax = round2(lineAmount.subtract(lineDiscount)
+                .multiply(nullToZero(line.getTaxRate())).divide(HUNDRED, 2, RoundingMode.HALF_UP));
+            line.setLineAmount(lineAmount);
+            line.setDiscountAmount(lineDiscount);
+            line.setTaxAmount(lineTax);
+            net = net.add(lineAmount).subtract(lineDiscount);
+            tax = tax.add(lineTax);
         }
         BigDecimal gross = round2(net.add(tax));
         BigDecimal headerDiscount = round2(gross.multiply(nullToZero(header.getDiscountRate()))
