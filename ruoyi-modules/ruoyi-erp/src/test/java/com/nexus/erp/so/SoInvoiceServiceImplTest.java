@@ -528,6 +528,84 @@ class SoInvoiceServiceImplTest {
         verify(soSalesOrderLineMapper, never()).update(any(), any());
     }
 
+    // ==================== 表头金额服务端汇总（加固轮）====================
+
+    /**
+     * 手工建票：表头金额按明细汇总，客户端伪造的大额无效。
+     * <p>为什么必须汇总：{@code verifyInvoice} 的核销上限就是 {@code totalAmount} ——
+     * 把 totalAmount 改大，就能用一个远小于真实金额的收款把发票置为「已核销」。</p>
+     */
+    @Test
+    void insertByBo_recomputesHeaderAmountsFromLines() {
+        when(baseMapper.insert(any(SoInvoice.class))).thenAnswer(inv -> {
+            inv.getArgument(0, SoInvoice.class).setInvoiceId(1L);
+            return 1;
+        });
+        when(lineMapper.insert(any(SoInvoiceLine.class))).thenReturn(1);
+
+        SoInvoiceBo bo = new SoInvoiceBo();
+        bo.setTotalAmount(new BigDecimal("999999"));   // 伪造
+        SoInvoiceLine line = invoiceLine(null, null, "6");
+        line.setLineAmount(new BigDecimal("600.00"));
+        line.setTaxAmount(new BigDecimal("78.00"));
+        bo.setSoInvoiceLineList(List.of(line));
+
+        invoiceService.insertByBo(bo);
+
+        ArgumentCaptor<SoInvoice> captor = ArgumentCaptor.forClass(SoInvoice.class);
+        verify(baseMapper).insert(captor.capture());
+        SoInvoice saved = captor.getValue();
+        assertEquals(0, new BigDecimal("600.00").compareTo(saved.getAmount()));
+        assertEquals(0, new BigDecimal("78.00").compareTo(saved.getTaxAmount()));
+        assertEquals(0, new BigDecimal("678.00").compareTo(saved.getTotalAmount()));
+    }
+
+    /** 改票同样按明细汇总表头金额 */
+    @Test
+    void updateByBo_recomputesHeaderAmountsFromLines() {
+        when(baseMapper.selectById(1L)).thenReturn(invoice(1L, ISoInvoiceService.STATUS_DRAFT, "678.00", "0"));
+        when(baseMapper.updateById(any(SoInvoice.class))).thenReturn(1);
+        when(lineMapper.selectList(any())).thenReturn(List.of());
+        when(lineMapper.insert(any(SoInvoiceLine.class))).thenReturn(1);
+        when(soSalesOrderLineMapper.update(any(), any())).thenReturn(1);
+
+        SoInvoiceBo bo = new SoInvoiceBo();
+        bo.setInvoiceId(1L);
+        bo.setTotalAmount(new BigDecimal("999999"));   // 伪造
+        SoInvoiceLine line = invoiceLine(null, 100L, "6");
+        line.setLineAmount(new BigDecimal("600.00"));
+        line.setTaxAmount(new BigDecimal("78.00"));
+        bo.setSoInvoiceLineList(List.of(line));
+
+        invoiceService.updateByBo(bo);
+
+        ArgumentCaptor<SoInvoice> captor = ArgumentCaptor.forClass(SoInvoice.class);
+        verify(baseMapper).updateById(captor.capture());
+        assertEquals(0, new BigDecimal("678.00").compareTo(captor.getValue().getTotalAmount()));
+    }
+
+    /** 明细未提交时表头金额保持库中原值，客户端伪造无效 */
+    @Test
+    void updateByBo_nullLineList_keepsHeaderAmountsFromDb() {
+        SoInvoice existing = invoice(1L, ISoInvoiceService.STATUS_DRAFT, "678.00", "0");
+        existing.setAmount(new BigDecimal("600.00"));
+        existing.setTaxAmount(new BigDecimal("78.00"));
+        when(baseMapper.selectById(1L)).thenReturn(existing);
+        when(baseMapper.updateById(any(SoInvoice.class))).thenReturn(1);
+
+        SoInvoiceBo bo = new SoInvoiceBo();
+        bo.setInvoiceId(1L);
+        bo.setTotalAmount(BigDecimal.ZERO);   // 伪造
+        bo.setSoInvoiceLineList(null);
+
+        invoiceService.updateByBo(bo);
+
+        ArgumentCaptor<SoInvoice> captor = ArgumentCaptor.forClass(SoInvoice.class);
+        verify(baseMapper).updateById(captor.capture());
+        assertEquals(0, new BigDecimal("678.00").compareTo(captor.getValue().getTotalAmount()));
+        assertEquals(0, new BigDecimal("600.00").compareTo(captor.getValue().getAmount()));
+    }
+
     // ==================== insertByBo 服务端权威字段（加固轮）====================
 
     /**

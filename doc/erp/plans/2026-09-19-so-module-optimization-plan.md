@@ -377,7 +377,8 @@ insertOrUpdateLines(entity.getSoId(), ...);          // 且强制 line.setLineId
 | └ 明细「未提交」语义加固（null vs 空集合） | ✅ 完成 | 见本批次 commit | 新增 6 用例；`Tests run: 138, Failures: 0` |
 | └ DDL ↔ Java 实体一致性静态校验 | ✅ 通过 | — | 14 张 so_ 表列与实体字段完全一致 |
 | └ 服务端权威字段加固（状态/时间戳/信用/红冲标记） | ✅ 完成 | 见本批次 commit | 新增 5 用例；`Tests run: 143, Failures: 0` |
-| └ 高风险改动补真实场景用例 + 强化断言强度 | ✅ 完成 | 见本批次 commit | 新增 2 用例 + 强化 2 处断言；`Tests run: 145, Failures: 0` |
+| └ 高风险改动补真实场景用例 + 强化断言强度 | ✅ 完成 | 见本批次 commit | 新增 2 用例 + 强化 2 处断言 |
+| └ 发票表头金额服务端汇总（修 `totalAmount` 伪造绕过核销上限） | ✅ 完成 | 见本批次 commit | 新增 3 用例；`Tests run: 148, Failures: 0` |
 | └ 13 个死字段清理（待 Q4） | ⬜ 待办 | | |
 
 **加固轮要点**：

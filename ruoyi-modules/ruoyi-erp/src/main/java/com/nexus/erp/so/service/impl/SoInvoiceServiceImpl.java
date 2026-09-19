@@ -140,6 +140,14 @@ public class SoInvoiceServiceImpl implements ISoInvoiceService {
         if (entity.getVersion() == null) {
             entity.setVersion(0);
         }
+        // 手工建票：表头金额按明细汇总，不采信客户端（与 generateDraftFromOrder 口径一致）
+        if (bo.getSoInvoiceLineList() != null) {
+            recalcHeaderAmounts(entity, bo.getSoInvoiceLineList());
+        } else {
+            entity.setAmount(BigDecimal.ZERO);
+            entity.setTaxAmount(BigDecimal.ZERO);
+            entity.setTotalAmount(BigDecimal.ZERO);
+        }
         int rows = baseMapper.insert(entity);
         if (bo.getSoInvoiceLineList() != null && !bo.getSoInvoiceLineList().isEmpty()) {
             for (SoInvoiceLine line : bo.getSoInvoiceLineList()) {
@@ -292,9 +300,12 @@ public class SoInvoiceServiceImpl implements ISoInvoiceService {
         existing.setInvoiceDate(bo.getInvoiceDate());
         existing.setCurrency(bo.getCurrency());
         existing.setExchangeRate(bo.getExchangeRate());
-        existing.setAmount(bo.getAmount());
-        existing.setTaxAmount(bo.getTaxAmount());
-        existing.setTotalAmount(bo.getTotalAmount());
+        // 表头金额不直接采信客户端：提交了明细就按明细汇总，未提交则保持库中原值（existing 即库中值，不赋值）。
+        // 原因：verifyInvoice 的核销上限就是 totalAmount —— 客户端把 totalAmount 改大，
+        // 就能用一个远小于真实金额的收款把发票置为「已核销」。
+        if (bo.getSoInvoiceLineList() != null) {
+            recalcHeaderAmounts(existing, bo.getSoInvoiceLineList());
+        }
         if (StringUtils.isNotBlank(bo.getIssueChannel())) {
             existing.setIssueChannel(bo.getIssueChannel());
         }
@@ -578,6 +589,37 @@ public class SoInvoiceServiceImpl implements ISoInvoiceService {
         applicationEventPublisher.publishEvent(
             new SoInvoiceIssuedEvent(this, red.getInvoiceId(), TenantHelper.getTenantId()));
         return red.getInvoiceId();
+    }
+
+    /**
+     * 由明细行汇总发票表头金额（金额 = Σ行金额，税额 = Σ行税额，价税合计 = 金额 + 税额）。
+     *
+     * <p>与 {@code generateDraftFromOrder} 的汇总口径一致。**只汇总表头，不改写行金额** ——
+     * 行金额的税额口径在前端存在分叉（发票页按「含税金额 × 税率」，订单页按「净额 × 税率」），
+     * 统一口径属待决事项，不在本次范围内擅自改动。</p>
+     *
+     * @param invoice 发票头（原地覆盖 amount/taxAmount/totalAmount）
+     * @param lines   客户端提交的明细行
+     */
+    private void recalcHeaderAmounts(SoInvoice invoice, List<SoInvoiceLine> lines) {
+        BigDecimal amount = BigDecimal.ZERO;
+        BigDecimal tax = BigDecimal.ZERO;
+        for (SoInvoiceLine line : lines) {
+            if (line == null) {
+                continue;
+            }
+            if (line.getLineAmount() != null) {
+                amount = amount.add(line.getLineAmount());
+            }
+            if (line.getTaxAmount() != null) {
+                tax = tax.add(line.getTaxAmount());
+            }
+        }
+        amount = amount.setScale(2, RoundingMode.HALF_UP);
+        tax = tax.setScale(2, RoundingMode.HALF_UP);
+        invoice.setAmount(amount);
+        invoice.setTaxAmount(tax);
+        invoice.setTotalAmount(amount.add(tax));
     }
 
     /**
