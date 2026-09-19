@@ -288,7 +288,7 @@ insertOrUpdateLines(entity.getSoId(), ...);          // 且强制 line.setLineId
 | # | 问题 | 影响批次 |
 |---|---|---|
 | Q1 | **销售报表是否保留？** 保留需修列名+权限+菜单+多租户（约 1d）；不需要则删除（当前 100% 报错且无入口） | 批次 3 / T3.4 |
-| Q2 | **退货闭环是否做完整？** 需 DDL（`returned_qty`）+ 红冲联动，属独立需求（约 2d） | 批次 3 / T3.3 |
+| Q2 | **退货闭环是否做完整？** 需 DDL（`returned_qty`）+ 红冲联动，属独立需求（约 2d）。<br>**补充发现（T1.3 时）**：后端已有 `PUT /erp/so/return/confirm/{id}` 与 `/execute/{id}`，但前端 `api/erp/so/return/index.ts` **只有 list/get/add/update/del/submitFlow/proc 六个函数，没有 confirm/execute** → 退货入库功能在 UI 上完全不可达，后端能力闲置 | 批次 3 / T3.3 |
 | Q3 | **税率口径**：统一为百分数（`13`）还是小数（`0.13`）？历史数据两种并存（`sys_oper_log` 实测 `"taxRate":"0.03"` 与 `"3"`） | 批次 2 |
 | Q4 | **13 个死字段**：删除（清理实体/BO/VO/DDL）还是保留待用？其中 `project_id`/`is_pa_enabled`/`pa_group_id` 属从未实现的"项目配套发料" | 批次 5 |
 | Q5 | **跨库事务**（P0-5）是否已有人实测？若线上"提交审批"一直可用，说明判断有误需重新定位 | 批次 1 / T1.7 |
@@ -350,7 +350,7 @@ insertOrUpdateLines(entity.getSoId(), ...);          // 且强制 line.setLineId
 | 批次 0 回归基线 | ✅ 完成 | `4dddf2e9` | 新增 43 用例；`Tests run: 68, Failures: 0` |
 | T1.1 改单差量更新 | ✅ 完成 | `336dd856` | 新增 11 用例；`Tests run: 79, Failures: 0`；前端 `eslint` + `build:prod` 通过 |
 | T1.2 删除止血 | ✅ 完成 | 见本批次 commit | 新增 3 用例；`Tests run: 33`（本类） |
-| T1.3 退货门禁 | ⬜ 待办 | | |
+| T1.3 退货门禁 | ✅ 完成 | 见本批次 commit | 新增 5 用例；`Tests run: 87, Failures: 0` |
 | T1.4 开票收口 | ⬜ 待办 | | |
 | T1.5 红冲/核销 | ⬜ 待办 | | |
 | T1.6 报表修复 | ⬜ 待办 | | |

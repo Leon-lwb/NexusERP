@@ -4,6 +4,7 @@ import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.extra.spring.SpringUtil;
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.flowable.helper.FlowableProcInsIdHelper;
 import com.nexus.erp.so.domain.SoReturn;
 import com.nexus.erp.so.domain.SoReturnLine;
@@ -39,6 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mockStatic;
@@ -139,13 +141,15 @@ class SoReturnServiceImplTest {
         assertThrows(RuntimeException.class, () -> returnService.execute(1L));
     }
 
-    /** 已收货不可重复执行 */
+    /** 仅「已确认」可执行入库：已收货/DRAFT/审批中/已关闭一律拒绝（T1.3） */
     @Test
-    void execute_rejectsAlreadyReceived() {
-        when(baseMapper.selectById(1L)).thenReturn(soReturn(1L, ISoReturnService.STATUS_RECEIVED));
-
-        RuntimeException ex = assertThrows(RuntimeException.class, () -> returnService.execute(1L));
-        assertTrue(ex.getMessage().contains("已收货"), "实际: " + ex.getMessage());
+    void execute_rejectsNonConfirmedStatus() {
+        for (String status : List.of(ISoReturnService.STATUS_RECEIVED, ISoReturnService.STATUS_DRAFT,
+            ISoReturnService.STATUS_APPROVING, ISoReturnService.STATUS_CLOSED)) {
+            when(baseMapper.selectById(1L)).thenReturn(soReturn(1L, status));
+            ServiceException ex = assertThrows(ServiceException.class, () -> returnService.execute(1L));
+            assertTrue(ex.getMessage().contains("只有已确认状态"), status + " 应被拒绝，实际: " + ex.getMessage());
+        }
         verify(stockMapper, never()).insert(any(WmMaterialStock.class));
     }
 
@@ -262,6 +266,58 @@ class SoReturnServiceImplTest {
         RuntimeException ex = assertThrows(RuntimeException.class, () -> returnService.execute(1L));
         assertTrue(ex.getMessage().contains("并发变更冲突"), "实际: " + ex.getMessage());
         verify(stockTxMapper, never()).insert(any(WmMaterialStockTx.class));
+    }
+
+    // ==================== 删除 / 修改门禁（T1.3）====================
+
+    /** 空入参删除返回 0 */
+    @Test
+    void deleteByIds_emptyIds_returnsZero() {
+        assertEquals(0, returnService.deleteByIds(new Long[0]));
+        verify(baseMapper, never()).deleteBatchIds(anyList());
+    }
+
+    /** 已收货的退货单不可删除（原实现无门禁，库存已加回仍能删掉凭证） */
+    @Test
+    void deleteByIds_rejectsNonDraft() {
+        when(baseMapper.selectById(1L)).thenReturn(soReturn(1L, ISoReturnService.STATUS_RECEIVED));
+
+        ServiceException ex = assertThrows(ServiceException.class, () -> returnService.deleteByIds(new Long[]{1L}));
+        assertTrue(ex.getMessage().contains("只有草稿状态"), "实际: " + ex.getMessage());
+        verify(lineMapper, never()).delete(any());
+        verify(baseMapper, never()).deleteBatchIds(anyList());
+    }
+
+    /** 草稿删除：删行 + 删头 */
+    @Test
+    void deleteByIds_draft_deletesLinesAndHeader() {
+        when(baseMapper.selectById(1L)).thenReturn(soReturn(1L, ISoReturnService.STATUS_DRAFT));
+        when(lineMapper.delete(any())).thenReturn(1);
+        when(baseMapper.deleteBatchIds(anyList())).thenReturn(1);
+
+        assertEquals(1, returnService.deleteByIds(new Long[]{1L}));
+
+        verify(lineMapper).delete(any());
+        verify(baseMapper).deleteBatchIds(anyList());
+    }
+
+    /** 非草稿不可修改 */
+    @Test
+    void updateByBo_rejectsNonDraft() {
+        when(baseMapper.selectById(1L)).thenReturn(soReturn(1L, ISoReturnService.STATUS_CONFIRMED));
+
+        SoReturnBo bo = new SoReturnBo();
+        bo.setReturnId(1L);
+        ServiceException ex = assertThrows(ServiceException.class, () -> returnService.updateByBo(bo));
+        assertTrue(ex.getMessage().contains("只有草稿状态"), "实际: " + ex.getMessage());
+        verify(baseMapper, never()).updateById(any(SoReturn.class));
+    }
+
+    /** returnId 为空直接拒绝 */
+    @Test
+    void updateByBo_rejectsNullReturnId() {
+        ServiceException ex = assertThrows(ServiceException.class, () -> returnService.updateByBo(new SoReturnBo()));
+        assertTrue(ex.getMessage().contains("不能为空"), "实际: " + ex.getMessage());
     }
 
     // ==================== insertByBo ====================

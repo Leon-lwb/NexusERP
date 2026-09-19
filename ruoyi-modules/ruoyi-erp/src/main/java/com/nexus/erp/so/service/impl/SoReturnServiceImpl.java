@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import com.nexus.common.core.domain.R;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.MapstructUtils;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.flowable.core.domain.ActStatus;
@@ -106,23 +107,52 @@ public class SoReturnServiceImpl implements ISoReturnService {
     }
 
     /**
-     * 修改销售退货（先删除原明细行再重新插入）
+     * 修改销售退货（仅草稿可改；先删除原明细行再重新插入）。
+     * <p>单号与状态由服务端权威维护，不接受客户端改写。</p>
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(SoReturnBo bo) {
+        if (bo.getReturnId() == null) {
+            throw new ServiceException("退货单ID不能为空");
+        }
+        SoReturn existing = baseMapper.selectById(bo.getReturnId());
+        if (existing == null) {
+            throw new ServiceException("退货单不存在");
+        }
+        if (!STATUS_DRAFT.equals(existing.getStatus())) {
+            throw new ServiceException("只有草稿状态的退货单才能修改，当前状态：" + existing.getStatus());
+        }
         SoReturn entity = MapstructUtils.convert(bo, SoReturn.class);
+        entity.setReturnNo(existing.getReturnNo());
+        entity.setStatus(existing.getStatus());
         deleteLinesByReturnId(entity.getReturnId());
         insertOrUpdateLines(entity.getReturnId(), bo.getSoReturnLineList());
         return baseMapper.updateById(entity);
     }
 
     /**
-     * 批量删除销售退货（同时删除明细行）
+     * 批量删除销售退货（仅草稿可删除，同时删除明细行）。
+     * <p>已确认/已收货的退货单意味着库存已加回或即将加回，删除会让库存回补失去凭证，
+     * 因此一律拒绝；如确需撤销，应先走作废/红冲流程。</p>
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {
+        if (ids == null || ids.length == 0) {
+            return 0;
+        }
+        // 先全量校验再执行，避免删一半失败留下半成品
+        for (Long id : ids) {
+            SoReturn existing = baseMapper.selectById(id);
+            if (existing == null) {
+                continue;
+            }
+            if (!STATUS_DRAFT.equals(existing.getStatus())) {
+                throw new ServiceException("只有草稿状态的退货单才能删除，单号 "
+                    + existing.getReturnNo() + " 当前状态：" + existing.getStatus());
+            }
+        }
         for (Long id : ids) {
             deleteLinesByReturnId(id);
         }
@@ -147,17 +177,19 @@ public class SoReturnServiceImpl implements ISoReturnService {
     }
 
     /**
-     * 执行退货入库（扣减库存并生成库存交易记录）
+     * 执行退货入库（扣减库存并生成库存交易记录）。
+     * <p>仅「已确认」（CONFIRMED）可执行：原实现只拦 RECEIVED，导致 DRAFT/APPROVING/CLOSED
+     * 状态都能直接入库，既绕过确认审批，也能对已关闭单据重复入库。</p>
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void execute(Long returnId) {
         SoReturn soReturn = baseMapper.selectById(returnId);
         if (soReturn == null) {
-            throw new RuntimeException("退货单不存在");
+            throw new ServiceException("退货单不存在");
         }
-        if (STATUS_RECEIVED.equals(soReturn.getStatus())) {
-            throw new RuntimeException("退货单已收货");
+        if (!STATUS_CONFIRMED.equals(soReturn.getStatus())) {
+            throw new ServiceException("只有已确认状态的退货单才能执行入库，当前状态：" + soReturn.getStatus());
         }
 
         List<SoReturnLine> lines = lineMapper.selectList(
