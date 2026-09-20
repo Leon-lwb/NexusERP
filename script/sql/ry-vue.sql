@@ -90792,6 +90792,15 @@ INSERT INTO `sys_dict_data` VALUES (2068956987053351044, '000000', 2, '使用中
 INSERT INTO `sys_dict_data` VALUES (2068956987053351045, '000000', 3, '保养中', 'MAINTENANCE', 'mes_tooling_status', NULL, 'warning', 'N', 103, 1, '2026-07-26 14:23:17', NULL, NULL, '工装状态-保养中');
 INSERT INTO `sys_dict_data` VALUES (2068956987053351046, '000000', 4, '已报废', 'SCRAPPED', 'mes_tooling_status', NULL, 'danger', 'N', 103, 1, '2026-07-26 14:23:17', NULL, NULL, '工装状态-已报废(终态)');
 INSERT INTO `sys_dict_data` VALUES (2075000000000000002, '000000', 5, '校准中', 'CALIBRATING', 'mes_tooling_status', NULL, 'warning', 'N', 103, 1, NOW(), NULL, NULL, 'MES-TG-01 工装校准中(校准期间不可领用/进站)');
+
+-- ===== 2026-09-20 FE-3 批次字典：工装校准结果（MES-TG-01）=====
+INSERT IGNORE INTO `sys_dict_type` (`dict_id`, `tenant_id`, `dict_name`, `dict_type`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`)
+VALUES (2075000000000000010, '000000', '工装校准结果', 'mes_tooling_calibration_result', 103, 1, NOW(), NULL, NULL, 'MES-TG-01 工装校准结论(PASS/FAIL/ADJUSTED)');
+INSERT IGNORE INTO `sys_dict_data` (`dict_code`, `tenant_id`, `dict_sort`, `dict_label`, `dict_value`, `dict_type`, `css_class`, `list_class`, `is_default`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`)
+VALUES (2075000000000000011, '000000', 1, '合格', 'PASS', 'mes_tooling_calibration_result', NULL, 'success', 'Y', 103, 1, NOW(), NULL, NULL, 'MES-TG-01 校准通过(默认)'),
+       (2075000000000000012, '000000', 2, '不合格', 'FAIL', 'mes_tooling_calibration_result', NULL, 'danger', 'N', 103, 1, NOW(), NULL, NULL, 'MES-TG-01 校准未通过: 下次校准日置为本次日期, 立即超期不可用'),
+       (2075000000000000013, '000000', 3, '调整后合格', 'ADJUSTED', 'mes_tooling_calibration_result', NULL, 'warning', 'N', 103, 1, NOW(), NULL, NULL, 'MES-TG-01 调整后合格');
+-- ===== 字典结束 =====
 INSERT INTO `sys_dict_data` VALUES (2068956987053351047, '000000', 1, '模具', 'MOLD', 'mes_tooling_type', NULL, 'primary', 'N', 103, 1, '2026-07-26 14:23:17', NULL, NULL, '工装类型-模具');
 INSERT INTO `sys_dict_data` VALUES (2068956987053351048, '000000', 2, '夹具', 'FIXTURE', 'mes_tooling_type', NULL, 'success', 'N', 103, 1, '2026-07-26 14:23:17', NULL, NULL, '工装类型-夹具');
 INSERT INTO `sys_dict_data` VALUES (2068956987053351049, '000000', 3, '刀具', 'CUTTER', 'mes_tooling_type', NULL, 'warning', 'N', 103, 1, '2026-07-26 14:23:17', NULL, NULL, '工装类型-刀具');
@@ -92757,6 +92766,33 @@ INSERT INTO `sys_menu` VALUES (6042, '规则新增', 6040, 2, '', '', '', 1, 0, 
 INSERT INTO `sys_menu` VALUES (6043, '规则修改', 6040, 3, '', '', '', 1, 0, 'F', '0', '0', 'iot:alertRule:edit', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (6044, '规则删除', 6040, 4, '', '', '', 1, 0, 'F', '0', '0', 'iot:alertRule:remove', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (6045, '规则启停', 6040, 5, '', '', '', 1, 0, 'F', '0', '0', 'iot:alertRule:changeStatus', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, '启用/停用规则(1/0)');
+INSERT INTO `sys_menu` VALUES (6075, '设备状态变更', 6020, 7, '', '', '', 1, 0, 'F', '0', '0', 'iot:device:changeStatus', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, '激活/禁用/注销(CAS, 禁用后 MQTT 认证被拒)');
+INSERT INTO `sys_menu` VALUES (6050, '设备分组', 6000, 5, 'deviceGroup', 'iot/deviceGroup/index', '', 1, 0, 'C', '0', '0', 'iot:deviceGroup:list', 'tree', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'IoT设备分组(树形)');
+INSERT INTO `sys_menu` VALUES (6051, '分组查询', 6050, 1, '', '', '', 1, 0, 'F', '0', '0', 'iot:deviceGroup:query', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (6052, '分组新增', 6050, 2, '', '', '', 1, 0, 'F', '0', '0', 'iot:deviceGroup:add', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (6053, '分组修改', 6050, 3, '', '', '', 1, 0, 'F', '0', '0', 'iot:deviceGroup:edit', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (6054, '分组删除', 6050, 4, '', '', '', 1, 0, 'F', '0', '0', 'iot:deviceGroup:remove', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (6090, '设备挂分组', 6050, 6, '', '', '', 1, 0, 'F', '0', '0', 'iot:deviceGroup:assign', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, '批量挂载/移出分组');
+INSERT INTO `sys_menu` VALUES (6055, '设备标签', 6000, 6, 'deviceTag', 'iot/deviceTag/index', '', 1, 0, 'C', '0', '0', 'iot:deviceTag:list', 'tag', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'IoT设备标签');
+INSERT INTO `sys_menu` VALUES (6056, '标签查询', 6055, 1, '', '', '', 1, 0, 'F', '0', '0', 'iot:deviceTag:query', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (6057, '标签新增', 6055, 2, '', '', '', 1, 0, 'F', '0', '0', 'iot:deviceTag:add', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (6058, '标签修改', 6055, 3, '', '', '', 1, 0, 'F', '0', '0', 'iot:deviceTag:edit', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (6059, '标签删除', 6055, 4, '', '', '', 1, 0, 'F', '0', '0', 'iot:deviceTag:remove', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (6091, '设备打标签', 6055, 6, '', '', '', 1, 0, 'F', '0', '0', 'iot:deviceTag:bind', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, '批量打标签/解绑标签');
+INSERT INTO `sys_menu` VALUES (6060, '设备事件', 6000, 7, 'event', 'iot/event/index', '', 1, 0, 'C', '0', '0', 'iot:event:list', 'documentation', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'IoT设备事件上报(event/post)');
+INSERT INTO `sys_menu` VALUES (6061, '事件查询', 6060, 1, '', '', '', 1, 0, 'F', '0', '0', 'iot:event:query', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (6062, '事件处理', 6060, 2, '', '', '', 1, 0, 'F', '0', '0', 'iot:event:process', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, '标记已处理/忽略');
+INSERT INTO `sys_menu` VALUES (6063, '事件导出', 6060, 3, '', '', '', 1, 0, 'F', '0', '0', 'iot:event:export', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (6070, '设备指令', 6000, 8, 'command', 'iot/command/index', '', 1, 0, 'C', '0', '0', 'iot:command:list', 'guide', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'IoT下行指令(属性设置/服务调用)与回执');
+INSERT INTO `sys_menu` VALUES (6071, '指令查询', 6070, 1, '', '', '', 1, 0, 'F', '0', '0', 'iot:command:query', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (6072, '指令下发', 6070, 2, '', '', '', 1, 0, 'F', '0', '0', 'iot:command:send', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, '下发属性设置/服务调用');
+INSERT INTO `sys_menu` VALUES (6073, '指令重发', 6070, 3, '', '', '', 1, 0, 'F', '0', '0', 'iot:command:resend', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (6080, '数据转发', 6000, 9, 'forwardRule', 'iot/forwardRule/index', '', 1, 0, 'C', '0', '0', 'iot:forwardRule:list', 'shuffle', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'IoT数据转发规则(HTTP Webhook)');
+INSERT INTO `sys_menu` VALUES (6081, '转发查询', 6080, 1, '', '', '', 1, 0, 'F', '0', '0', 'iot:forwardRule:query', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (6082, '转发新增', 6080, 2, '', '', '', 1, 0, 'F', '0', '0', 'iot:forwardRule:add', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (6083, '转发修改', 6080, 3, '', '', '', 1, 0, 'F', '0', '0', 'iot:forwardRule:edit', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (6084, '转发删除', 6080, 4, '', '', '', 1, 0, 'F', '0', '0', 'iot:forwardRule:remove', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (6085, '转发日志', 6080, 5, '', '', '', 1, 0, 'F', '0', '0', 'iot:forwardRule:log', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, '投递留痕与重试记录');
 INSERT INTO `sys_menu` VALUES (6100, '财务管理', 2000, 22, 'fin', NULL, NULL, 1, 0, 'M', '0', '0', NULL, 'money', 103, 1, '2026-07-30 21:32:30', NULL, NULL, '财务核心模块');
 INSERT INTO `sys_menu` VALUES (6101, '总账', 6100, 1, 'gl', NULL, NULL, 1, 0, 'M', '0', '0', NULL, 'ledger', 103, 1, '2026-07-30 21:32:30', NULL, NULL, 'GL 总账');
 INSERT INTO `sys_menu` VALUES (6102, '科目表', 6101, 1, 'account', 'erp/fin/gl/account/index', NULL, 1, 0, 'C', '0', '0', 'fin:gl:account:list', 'tree-table', 103, 1, '2026-07-30 21:32:30', NULL, NULL, '会计科目树');
@@ -96859,6 +96895,12 @@ INSERT INTO `sys_menu` VALUES (20837, '缺陷列表', 4242, 9, '', '', NULL, 1, 
 -- MES 批次主档（追溯域页面，承载 mes:pro:trace:query）
 INSERT INTO `sys_menu` VALUES (20838, '追溯查询', 4170, 11, '', '', NULL, 1, 0, 'F', '0', '0', 'mes:pro:trace:query', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'ProTraceabilityController 追溯查询');
 INSERT INTO `sys_menu` VALUES (20850, '反核销', 6122, 3, '', '', NULL, 1, 0, 'F', '0', '0', 'fin:arap:settlement:unsettle', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'FinSettlementController.unsettle');
+INSERT INTO `sys_menu` VALUES (20950, '首页统计', 0, 99, '', '', NULL, 1, 0, 'F', '0', '0', 'erp:dashboard:stats', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'ErpDashboardController.getStats');
+INSERT INTO `sys_menu` VALUES (20951, '退货确认', 2209, 20, '', '', NULL, 1, 0, 'F', '0', '0', 'so:return:confirm', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'ERP-SO-07 独立权限码');
+INSERT INTO `sys_menu` VALUES (20952, '退货入库', 2209, 21, '', '', NULL, 1, 0, 'F', '0', '0', 'so:return:execute', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'ERP-SO-07 独立权限码');
+INSERT INTO `sys_menu` VALUES (20953, '报价确认', 2203, 20, '', '', NULL, 1, 0, 'F', '0', '0', 'so:quotation:confirm', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'ERP-SO-07 独立权限码');
+INSERT INTO `sys_menu` VALUES (20954, '报价转单', 2203, 21, '', '', NULL, 1, 0, 'F', '0', '0', 'so:quotation:convert', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'ERP-SO-07 独立权限码');
+INSERT INTO `sys_menu` VALUES (20955, '合同终止', 2060, 20, '', '', NULL, 1, 0, 'F', '0', '0', 'so:contract:terminate', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'ERP-SO-07 独立权限码');
 
 -- 授权：把上述按钮授权给"当前已持有其父菜单"的角色（幂等）
 INSERT IGNORE INTO `sys_role_menu` (`role_id`, `menu_id`)
@@ -96878,3 +96920,14 @@ INSERT IGNORE INTO `sys_role_menu` (`role_id`, `menu_id`) SELECT DISTINCT rm.`ro
 INSERT IGNORE INTO `sys_role_menu` (`role_id`, `menu_id`) SELECT DISTINCT rm.`role_id`, 4196 FROM `sys_role_menu` rm WHERE rm.`menu_id` = 4172;
 INSERT IGNORE INTO `sys_role_menu` (`role_id`, `menu_id`) SELECT DISTINCT rm.`role_id`, 4276 FROM `sys_role_menu` rm WHERE rm.`menu_id` = 4273;
 INSERT IGNORE INTO `sys_role_menu` (`role_id`, `menu_id`) SELECT DISTINCT rm.`role_id`, 4277 FROM `sys_role_menu` rm WHERE rm.`menu_id` = 4273;
+
+-- 2026-09-20 兼容授权（ERP-SO-07 独立权限码 + 首页统计）
+INSERT IGNORE INTO `sys_role_menu` (`role_id`, `menu_id`) SELECT DISTINCT rm.`role_id`, 20951 FROM `sys_role_menu` rm WHERE rm.`menu_id` = 2209;
+INSERT IGNORE INTO `sys_role_menu` (`role_id`, `menu_id`) SELECT DISTINCT rm.`role_id`, 20952 FROM `sys_role_menu` rm WHERE rm.`menu_id` = 2209;
+INSERT IGNORE INTO `sys_role_menu` (`role_id`, `menu_id`) SELECT DISTINCT rm.`role_id`, 20953 FROM `sys_role_menu` rm WHERE rm.`menu_id` = 2203;
+INSERT IGNORE INTO `sys_role_menu` (`role_id`, `menu_id`) SELECT DISTINCT rm.`role_id`, 20954 FROM `sys_role_menu` rm WHERE rm.`menu_id` = 2203;
+INSERT IGNORE INTO `sys_role_menu` (`role_id`, `menu_id`) SELECT DISTINCT rm.`role_id`, 20955 FROM `sys_role_menu` rm WHERE rm.`menu_id` = 2060;
+INSERT IGNORE INTO `sys_role_menu` (`role_id`, `menu_id`) SELECT DISTINCT rm.`role_id`, 20950 FROM `sys_role_menu` rm JOIN `sys_menu` m ON m.`menu_id` = rm.`menu_id` WHERE m.`perms` LIKE 'erp:%';
+
+-- 2026-09-20 兼容授权：IoT 设备运维菜单授予"已持有 IoT 设备管理(6000)"的角色（幂等）
+INSERT IGNORE INTO `sys_role_menu` (`role_id`, `menu_id`) SELECT DISTINCT rm.`role_id`, m.`menu_id` FROM `sys_role_menu` rm JOIN `sys_menu` m ON m.`parent_id` IN (6000,6050,6055,6060,6070,6080) WHERE rm.`menu_id` = 6000;

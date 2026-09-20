@@ -4410,9 +4410,11 @@ CREATE TABLE `sch_attendance`  (
   `clock_in_latitude` decimal(10, 7) NULL DEFAULT NULL COMMENT '上班打卡纬度',
   `clock_in_longitude` decimal(10, 7) NULL DEFAULT NULL COMMENT '上班打卡经度',
   `clock_in_address` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '上班打卡地址/定位描述',
+  `clock_in_accuracy` decimal(10, 2) DEFAULT NULL COMMENT '上班打卡定位精度(米, 客户端上报; ERP-CV-05)',
   `clock_out_latitude` decimal(10, 7) NULL DEFAULT NULL COMMENT '下班打卡纬度',
   `clock_out_longitude` decimal(10, 7) NULL DEFAULT NULL COMMENT '下班打卡经度',
   `clock_out_address` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '下班打卡地址/定位描述',
+  `clock_out_accuracy` decimal(10, 2) DEFAULT NULL COMMENT '下班打卡定位精度(米, 客户端上报; ERP-CV-05)',
   PRIMARY KEY (`attendance_id`) USING BTREE,
   UNIQUE INDEX `uk_worker_date`(`tenant_id`, `worker_id`, `record_date`) USING BTREE,
   INDEX `idx_worker_id`(`worker_id`) USING BTREE,
@@ -4520,6 +4522,7 @@ CREATE TABLE `sch_leave_apply`  (
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志（0存在 1删除）',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`leave_id`) USING BTREE,
+  UNIQUE KEY `uk_tenant_leave_no` (`tenant_id`, `leave_no`),
   INDEX `idx_worker_status`(`worker_id`, `apply_status`) USING BTREE,
   INDEX `idx_worker_date`(`worker_id`, `start_date`, `end_date`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '考勤请假申请表' ROW_FORMAT = Dynamic;
@@ -4706,6 +4709,7 @@ CREATE TABLE `sch_supplement_apply`  (
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志（0存在 1删除）',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`apply_id`) USING BTREE,
+  UNIQUE KEY `uk_tenant_apply_no` (`tenant_id`, `apply_no`),
   INDEX `idx_worker_status`(`worker_id`, `apply_status`) USING BTREE,
   INDEX `idx_worker_date`(`worker_id`, `apply_date`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '考勤补卡申请表' ROW_FORMAT = Dynamic;
@@ -5330,6 +5334,7 @@ CREATE TABLE `so_price_list`  (
   `valid_from` date NULL DEFAULT NULL,
   `valid_to` date NULL DEFAULT NULL,
   `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'ACTIVE',
+  `del_flag` char(1) NOT NULL DEFAULT '0' COMMENT '删除标志(0存在 2删除; ERP-SO-05 逻辑删除)',
   `create_by` bigint(20) NULL DEFAULT NULL,
   `create_dept` bigint(20) NULL DEFAULT NULL,
   `create_time` datetime(0) NULL DEFAULT NULL,
@@ -5360,6 +5365,7 @@ CREATE TABLE `so_price_list_line`  (
   `min_qty` decimal(14, 4) NOT NULL DEFAULT 0.0000 COMMENT '最小数量（含）',
   `max_qty` decimal(14, 4) NULL DEFAULT NULL COMMENT '最大数量（含）；NULL 表示不设上限',
   `discount_rate` decimal(5, 2) NULL DEFAULT 0.00 COMMENT '折扣率（百分数：5 表示让利 5%，0 表示不让利）',
+  `del_flag` char(1) NOT NULL DEFAULT '0' COMMENT '删除标志(0存在 2删除; ERP-SO-05 逻辑删除)',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
   `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
@@ -5628,6 +5634,7 @@ CREATE TABLE `so_sales_order_header`  (
   `select_flow_id` bigint(20) NULL DEFAULT NULL COMMENT '审批流程ID',
   `dept_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '销售部门名称',
   PRIMARY KEY (`so_id`) USING BTREE,
+  KEY `idx_tenant_create_time` (`tenant_id`, `create_time`),
   UNIQUE INDEX `uk_so_no`(`so_no`, `tenant_id`) USING BTREE,
   INDEX `idx_co_id`(`co_id`) USING BTREE,
   INDEX `idx_client_id`(`client_id`) USING BTREE,
@@ -6835,6 +6842,7 @@ CREATE TABLE `wm_stock_alert`  (
   `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`alert_id`) USING BTREE,
+  KEY `idx_tenant_handled` (`tenant_id`, `handled_flag`),
   INDEX `idx_alert_material`(`material_id`, `alert_type`, `handled_flag`) USING BTREE,
   INDEX `idx_alert_tenant`(`tenant_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '安全库存预警表' ROW_FORMAT = Dynamic;
