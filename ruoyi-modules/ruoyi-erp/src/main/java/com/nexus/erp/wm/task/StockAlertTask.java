@@ -11,6 +11,7 @@ import com.nexus.erp.wm.service.IWmStockAlertService;
 import com.nexus.system.domain.SysTenant;
 import com.nexus.system.mapper.SysTenantMapper;
 import org.springframework.stereotype.Component;
+import com.baomidou.dynamic.datasource.annotation.DS;
 
 import java.util.List;
 
@@ -24,6 +25,7 @@ import java.util.List;
 @Component
 @RequiredArgsConstructor
 @JobExecutor(name = "stockAlertTask")
+@DS("erp")
 public class StockAlertTask {
 
     /**

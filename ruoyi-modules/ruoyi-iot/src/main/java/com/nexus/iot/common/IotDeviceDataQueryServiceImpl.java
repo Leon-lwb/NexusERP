@@ -13,6 +13,7 @@ import com.nexus.iot.pipeline.IotDeviceLatestCache;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import com.baomidou.dynamic.datasource.annotation.DS;
 
 import java.util.Date;
 import java.util.LinkedHashMap;
@@ -30,6 +31,7 @@ import java.util.Map;
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@DS("iot")
 public class IotDeviceDataQueryServiceImpl implements IotDeviceDataQueryService {
 
     /** 设备最新属性值 Redis 缓存。 */

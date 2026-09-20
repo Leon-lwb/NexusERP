@@ -18,6 +18,7 @@ import com.nexus.iot.forward.mapper.IotForwardLogMapper;
 import com.nexus.iot.forward.mapper.IotForwardRuleMapper;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import com.baomidou.dynamic.datasource.annotation.DS;
 
 import java.util.Date;
 import java.util.LinkedHashMap;
@@ -43,6 +44,7 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 @Component
 @RequiredArgsConstructor
+@DS("iot")
 public class IotForwardDispatcher {
 
     /** 投递状态：待投递 */

@@ -11,6 +11,7 @@ import com.nexus.iot.device.group.mapper.IotDeviceGroupMapper;
 import com.nexus.iot.device.group.mapper.IotDeviceGroupRelMapper;
 import com.nexus.iot.device.group.mapper.IotDeviceTagRelMapper;
 import org.springframework.stereotype.Component;
+import com.baomidou.dynamic.datasource.annotation.DS;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -31,6 +32,7 @@ import java.util.Set;
 @Slf4j
 @Component
 @RequiredArgsConstructor
+@DS("iot")
 public class IotDeviceFilterResolver {
 
     private final IotDeviceGroupMapper groupMapper;

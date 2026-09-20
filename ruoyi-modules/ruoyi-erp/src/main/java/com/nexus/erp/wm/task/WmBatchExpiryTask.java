@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import com.baomidou.dynamic.datasource.annotation.DS;
 
 import java.util.List;
 
@@ -30,6 +31,7 @@ import java.util.List;
 @Component
 @RequiredArgsConstructor
 @JobExecutor(name = "wmBatchExpiryTask")
+@DS("erp")
 public class WmBatchExpiryTask {
 
     /**

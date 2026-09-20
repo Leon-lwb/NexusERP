@@ -17,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import com.baomidou.dynamic.datasource.annotation.DS;
 
 import java.io.InputStream;
 import java.util.Date;
@@ -37,6 +38,7 @@ import java.util.List;
 @Slf4j
 @Component
 @RequiredArgsConstructor
+@DS("erp")
 public class FaceVerifyBackfillTask {
 
     private final SchAttendanceMapper attendanceMapper;

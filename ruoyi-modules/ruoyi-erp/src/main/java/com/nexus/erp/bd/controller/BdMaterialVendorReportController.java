@@ -11,6 +11,7 @@ import com.nexus.erp.bd.mapper.BdMaterialMapper;
 import com.nexus.erp.bd.mapper.BdMaterialVendorMapper;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import com.baomidou.dynamic.datasource.annotation.DS;
 
 import java.util.List;
 import java.util.Map;
@@ -29,6 +30,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/erp/bd/materialVendor/report")
+@DS("erp")
 public class BdMaterialVendorReportController extends BaseController {
 
     private final BdMaterialVendorMapper materialVendorMapper;

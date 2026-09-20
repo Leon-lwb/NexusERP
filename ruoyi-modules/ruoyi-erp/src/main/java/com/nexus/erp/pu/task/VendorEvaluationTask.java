@@ -11,6 +11,7 @@ import com.nexus.erp.pu.service.IPuVendorEvaluationService;
 import com.nexus.system.domain.SysTenant;
 import com.nexus.system.mapper.SysTenantMapper;
 import org.springframework.stereotype.Component;
+import com.baomidou.dynamic.datasource.annotation.DS;
 
 import java.util.List;
 
@@ -29,6 +30,7 @@ import java.util.List;
 @Component
 @RequiredArgsConstructor
 @JobExecutor(name = "vendorEvaluationTask")
+@DS("erp")
 public class VendorEvaluationTask {
 
     /**
