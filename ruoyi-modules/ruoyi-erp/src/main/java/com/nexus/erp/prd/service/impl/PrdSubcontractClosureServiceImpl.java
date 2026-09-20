@@ -9,6 +9,7 @@ import com.nexus.common.mq.constant.ExchangeConstants;
 import com.nexus.common.mq.constant.RoutingKeyConstants;
 import com.nexus.common.mq.message.SubcontractSnGenerateMessage;
 import com.nexus.common.mq.producer.ReliableMessageProducer;
+import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.erp.bd.domain.BdBom;
 import com.nexus.erp.bd.domain.BdBomDetail;
 import com.nexus.erp.bd.domain.BdMaterial;
@@ -364,6 +365,17 @@ public class PrdSubcontractClosureServiceImpl implements IPrdSubcontractClosureS
             msg.setMaterialName(subcontract.getMaterialName());
             msg.setQuantity(BigDecimal.valueOf(toGenerate));
             msg.setSourceModule("erp");
+            // 显式携带租户(消费端 fail-closed: 缺 tenantId 会重试/死信, 绝不静默落到 000000):
+            // 拿不到可靠租户即显式失败并回滚本次下达推进, 不投递必然死信的消息
+            String tenantIdStr = TenantHelper.getTenantId();
+            if (tenantIdStr == null || tenantIdStr.isBlank()) {
+                throw new ServiceException("委外 SN 生成 MQ 消息缺少租户上下文, 拒绝投递: subcontractId=" + subcontractId);
+            }
+            try {
+                msg.setTenantId(Long.parseLong(tenantIdStr));
+            } catch (NumberFormatException e) {
+                throw new ServiceException("委外 SN 生成 MQ 消息租户ID非法, 拒绝投递: tenantId=" + tenantIdStr);
+            }
             messageProducer.send(ExchangeConstants.TOPIC_EXCHANGE, RoutingKeyConstants.MES_SUBCONTRACT_SN, msg);
         }
         log.info("委外订单[{}]发料完成推进: RELEASED, 工单[{}], SN待生成={}",

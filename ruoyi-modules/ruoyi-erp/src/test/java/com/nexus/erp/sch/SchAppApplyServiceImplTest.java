@@ -2,6 +2,7 @@ package com.nexus.erp.sch;
 
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.erp.sch.domain.SchAttendance;
+import com.nexus.erp.sch.domain.SchEmployeeSchedule;
 import com.nexus.erp.sch.domain.SchLeaveApply;
 import com.nexus.erp.sch.domain.SchSupplementApply;
 import com.nexus.erp.sch.domain.bo.SchApplyApproveBo;
@@ -39,6 +40,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -322,6 +324,72 @@ class SchAppApplyServiceImplTest {
         ArgumentCaptor<SchAttendance> attendanceCaptor = ArgumentCaptor.forClass(SchAttendance.class);
         verify(attendanceMapper, Mockito.times(3)).insert(attendanceCaptor.capture());
         attendanceCaptor.getAllValues().forEach(a -> assertEquals("leave", a.getAttendanceStatus()));
+    }
+
+    // ==================== 补卡回写不覆盖已判定状态(ERP-SCH-02) ====================
+
+    @Test
+    void approveSupplement_clockOut_keepsExistingLateStatus() {
+        SchSupplementApply apply = new SchSupplementApply();
+        apply.setApplyId(1L);
+        apply.setApplyNo("BC20260920000001");
+        apply.setWorkerId(WORKER_ID);
+        apply.setWorkerName(WORKER_NAME);
+        apply.setApplyDate(Date.from(LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant()));
+        apply.setApplyType("clock_out");
+        apply.setApplyStatus("pending");
+        when(supplementApplyMapper.selectById(1L)).thenReturn(apply);
+
+        SchEmployeeSchedule schedule = new SchEmployeeSchedule();
+        schedule.setWorkerId(WORKER_ID);
+        schedule.setStartTime(Date.from(LocalDate.now().atTime(9, 0).atZone(ZoneId.systemDefault()).toInstant()));
+        schedule.setEndTime(Date.from(LocalDate.now().atTime(18, 0).atZone(ZoneId.systemDefault()).toInstant()));
+        when(employeeScheduleMapper.selectList(any())).thenReturn(List.of(schedule));
+
+        // 当天已判定迟到: 9:30 上班打卡 → late / late_minutes=30, 下班卡缺失
+        SchAttendance existing = new SchAttendance();
+        existing.setAttendanceId(900L);
+        existing.setWorkerId(WORKER_ID);
+        existing.setClockInTime(Date.from(LocalDate.now().atTime(9, 30).atZone(ZoneId.systemDefault()).toInstant()));
+        existing.setAttendanceStatus("late");
+        existing.setLateMinutes(30L);
+        when(attendanceMapper.selectOne(any())).thenReturn(existing);
+
+        service.approveSupplementApply(approveBo(1L, true));
+
+        ArgumentCaptor<SchAttendance> captor = ArgumentCaptor.forClass(SchAttendance.class);
+        verify(attendanceMapper).updateById(captor.capture());
+        SchAttendance updated = captor.getValue();
+        // 补齐缺的下班卡
+        assertNotNull(updated.getClockOutTime());
+        // 关键回归: 不得把已判定的迟到抹成 normal(修复前恒为 normal)
+        assertEquals("late", updated.getAttendanceStatus());
+        // 未触碰迟到分钟数(MP updateById 忽略 null 字段 → 库中仍为 30)
+        assertNull(updated.getLateMinutes());
+        verify(attendanceMapper, never()).insert(any(SchAttendance.class));
+    }
+
+    @Test
+    void approveSupplement_clockIn_onEmptyRecord_setsNormal() {
+        SchSupplementApply apply = new SchSupplementApply();
+        apply.setApplyId(2L);
+        apply.setApplyNo("BC20260920000002");
+        apply.setWorkerId(WORKER_ID);
+        apply.setWorkerName(WORKER_NAME);
+        apply.setApplyDate(Date.from(LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant()));
+        apply.setApplyType("clock_in");
+        apply.setApplyStatus("pending");
+        when(supplementApplyMapper.selectById(2L)).thenReturn(apply);
+        when(employeeScheduleMapper.selectList(any())).thenReturn(List.of());
+        // 当天完全没有考勤记录 → 新建, 状态 normal
+        when(attendanceMapper.selectOne(any())).thenReturn(null);
+
+        service.approveSupplementApply(approveBo(2L, true));
+
+        ArgumentCaptor<SchAttendance> captor = ArgumentCaptor.forClass(SchAttendance.class);
+        verify(attendanceMapper).insert(captor.capture());
+        assertEquals("normal", captor.getValue().getAttendanceStatus());
+        assertEquals(WORKER_ID, captor.getValue().getWorkerId());
     }
 
     private SchLeaveApply pendingLeave(Long id, String start, String end) {

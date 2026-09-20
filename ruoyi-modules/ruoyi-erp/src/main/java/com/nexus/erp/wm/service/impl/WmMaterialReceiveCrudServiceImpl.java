@@ -357,7 +357,9 @@ public class WmMaterialReceiveCrudServiceImpl implements IWmMaterialReceiveCrudS
         }
 
         // IQC 门禁：需检物料(iqc_check=1)必须IQC合格才允许上架(待上架->待入库)
-        // 按到货通知行校验 iqc_status；无到货通知或无需检料则跳过(无到货通知的收货单由 MES 端手动建 IQC)
+        // 有到货通知: 按到货通知行 iqc_status 校验;
+        // 无到货通知: 按收货单头 iqc_status 校验(iqc_id 已回写但结论未回写/结论非合格同样拦截)——
+        // 不再因为"没有到货通知行"就整体跳过校验(审计 MES-X-01: 无到货通知/收货行无批次号时不得放行)。
         if (receive.getNoticeId() != null) {
             List<WmArrivalNoticeLine> noticeLines = arrivalNoticeLineMapper.selectList(
                 new LambdaQueryWrapper<WmArrivalNoticeLine>()
@@ -387,13 +389,31 @@ public class WmMaterialReceiveCrudServiceImpl implements IWmMaterialReceiveCrudS
                     throw new ServiceException("以下物料来料检验(IQC)不合格，禁止上架确认：" + unqualified);
                 }
             }
+        } else if (receive.getIqcId() != null
+            || (receive.getIqcStatus() != null && !receive.getIqcStatus().isEmpty())) {
+            // 无到货通知但已产生/回写 IQC: 单据级门禁, 非 QUALIFIED(含未回写)一律拦截
+            if (!"QUALIFIED".equals(receive.getIqcStatus())) {
+                String status = (receive.getIqcStatus() == null || receive.getIqcStatus().isEmpty())
+                    ? "尚未完成来料检验(IQC)" : receive.getIqcStatus();
+                throw new ServiceException("该收货单需检物料" + status + "，禁止上架确认："
+                    + receive.getReceiveCode());
+            }
         }
 
-        receive.setStatus(STATUS_SHELVED);
-        receive.setShelfBy(LoginHelper.getUserId());
-        receive.setShelfTime(new Date());
-        receive.setUpdateTime(new Date());
-        return baseMapper.updateById(receive) > 0;
+        // ERP-WM-17: 改条件更新 CAS（APPROVED → SHELVED）。
+        // 修复前是"读校验 + updateById"的读-改-写，PDA 与 PC 并发双击/网络重试时两次都能通过状态校验，
+        // shelf_by/shelf_time 被后写覆盖；与 executeReceive 的 SHELVED→EXECUTING CAS 交错时状态判断会不一致。
+        int rows = baseMapper.update(null, Wrappers.<WmMaterialReceive>lambdaUpdate()
+            .set(WmMaterialReceive::getStatus, STATUS_SHELVED)
+            .set(WmMaterialReceive::getShelfBy, LoginHelper.getUserId())
+            .set(WmMaterialReceive::getShelfTime, new Date())
+            .set(WmMaterialReceive::getUpdateTime, new Date())
+            .eq(WmMaterialReceive::getReceiveId, receiveId)
+            .eq(WmMaterialReceive::getStatus, STATUS_APPROVED));
+        if (rows == 0) {
+            throw new ServiceException("入库单状态已变更（可能已被并发上架确认），请刷新后重试");
+        }
+        return true;
     }
 
     /**
@@ -671,15 +691,21 @@ public class WmMaterialReceiveCrudServiceImpl implements IWmMaterialReceiveCrudS
                 return;
             }
 
-            // 显式设置 tenantId，避免消费端退化为 000000
-            long tenantIdVal = 0L;
-            String tenantIdStr = TenantHelper.getTenantId();
-            if (tenantIdStr != null) {
-                try {
-                    tenantIdVal = Long.parseLong(tenantIdStr);
-                } catch (NumberFormatException ignore) {
-                    tenantIdVal = 0L;
-                }
+            // 显式设置 tenantId，避免消费端退化为 000000(消费端已 fail-closed, 缺失即重试/死信)
+            // 优先取单据自身 tenant_id(权威值), 回退当前线程租户上下文; 均缺失时不投递(避免产生必然死信)
+            String receiveTenantId = StringUtils.isNotBlank(receive.getTenantId())
+                ? receive.getTenantId() : TenantHelper.getTenantId();
+            if (StringUtils.isBlank(receiveTenantId)) {
+                log.error("收货单租户信息缺失，跳过 IQC 自动创建 MQ 投递: receiveId={}", receive.getReceiveId());
+                return;
+            }
+            long tenantIdVal;
+            try {
+                tenantIdVal = Long.parseLong(receiveTenantId);
+            } catch (NumberFormatException e) {
+                log.error("收货单租户ID非法，跳过 IQC 自动创建 MQ 投递: receiveId={}, tenantId={}",
+                    receive.getReceiveId(), receiveTenantId);
+                return;
             }
             final Long tenantId = tenantIdVal;
 

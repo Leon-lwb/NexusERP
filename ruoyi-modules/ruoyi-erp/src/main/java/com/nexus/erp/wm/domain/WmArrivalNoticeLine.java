@@ -43,6 +43,12 @@ public class WmArrivalNoticeLine extends TenantEntity {
     private BigDecimal quantityArrival;
     /** 合格数量 */
     private BigDecimal quantityQuanlified;
+    /**
+     * 已收数量（ERP-WM-12）
+     * <p>收货执行（{@code WmMaterialReceiveExecutorServiceImpl.executeReceive}）时按物料原子累加回写；
+     * 通知单状态由"全部行收满才 FINISHED"驱动。需 DDL：{@code wm_arrival_notice_line.received_qty}。</p>
+     */
+    private BigDecimal receivedQty;
     /** 质检标志 */
     private String iqcCheck;
     /** 质检单ID */

@@ -47,6 +47,15 @@ public class FinSettlementController extends BaseController {
         return toAjax(1);
     }
 
+    /** 反核销(撤销一次核销:回退发票已核销额/收付款单已结算额与状态/未清项清账标志) */
+    @SaCheckPermission("fin:arap:settlement:unsettle")
+    @Log(title = "应收应付反核销", businessType = BusinessType.UPDATE)
+    @PostMapping("/unsettle/{settlementId}")
+    public R<Void> unsettle(@PathVariable Long settlementId) {
+        finSettlementService.unsettle(settlementId);
+        return toAjax(1);
+    }
+
     /** 未清项查询(核销页选未清发票/收付款单) */
     @SaCheckPermission("fin:arap:settlement:query")
     @GetMapping("/openItems")

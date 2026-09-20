@@ -50,6 +50,8 @@ public class WmSubcontractReceiveServiceImpl implements IWmSubcontractReceiveSer
     private final StockOperationStrategyFactory strategyFactory;
     private final IPrdSubcontractClosureService closureService;
     private final LockTemplate lockTemplate;
+    /** WM 公共依赖（ERP-WM-13: 单号改分布式生成，替代并发必重号的 selectCount+1） */
+    private final WmServiceHelper wm;
 
     @Override
     public List<WmSubcontractReceiveVo> listBySubcontract(Long subcontractId) {
@@ -93,9 +95,8 @@ public class WmSubcontractReceiveServiceImpl implements IWmSubcontractReceiveSer
 
         WmSubcontractReceive receive = MapstructUtils.convert(bo, WmSubcontractReceive.class);
         receive.setReceiveId(null);
-        receive.setReceiveNo("WSCR-" + subcontract.getSubcontractNo() + "-"
-            + (receiveMapper.selectCount(Wrappers.<WmSubcontractReceive>lambdaQuery()
-                .eq(WmSubcontractReceive::getSubcontractId, bo.getSubcontractId())).intValue() + 1));
+        // ERP-WM-13: 单号改分布式序列生成（原 selectCount+1 并发必重号）
+        receive.setReceiveNo(wm.autoCodeUtil.genSerialCode("WM_SC_RECEIVE_NO", null));
         receive.setStatus("DRAFT");
         receive.setSubcontractNo(subcontract.getSubcontractNo());
         // 冗余物料/供应商维度(以订单为准, 防前端少传)

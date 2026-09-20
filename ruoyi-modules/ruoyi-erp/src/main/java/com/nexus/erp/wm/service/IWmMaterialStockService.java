@@ -74,11 +74,35 @@ public interface IWmMaterialStockService {
 
     /**
      * IQC 不合格冻结:按收货单+物料定位批次,冻结对应库存行(frozen_flag=1)
-     * <p>收货行无批次号时无法精确定位,返回 0(由上架门禁 confirmShelf 兜底拦截)。</p>
+     * <p>优先按收货行批次号定位; 无批次号时回退按批次ID定位; 两者都没有则记 warn 返回 0,
+     * 由 {@code WmMaterialReceiveCrudServiceImpl.confirmShelf} 的单据级 iqc_status 门禁兜底拦截
+     * (不再"定位不到批次就放行", 审计 MES-X-01)。</p>
      *
      * @param receiveId  收货单ID
      * @param materialId 物料ID
      * @return 冻结库存行数
      */
     int freezeStockByReceiveBatches(Long receiveId, Long materialId);
+
+    /**
+     * 解冻库存(按物料+批次号): 条件更新 frozen_flag 1 -&gt; 0(仅解冻当前冻结行, 幂等)。
+     * <p>由 IQC 复检/让步后合格回写、批次放行等真实业务动作调用 —— 冻结必须可解,
+     * 否则被 IQC 冻结的库存永久无法发料/出库(审计 MES-X-01)。</p>
+     *
+     * @param materialId 物料ID
+     * @param batchCode  批次号
+     * @param reason     解冻原因(记日志, 供审计追溯)
+     * @return 解冻库存行数
+     */
+    int unfreezeByBatch(Long materialId, String batchCode, String reason);
+
+    /**
+     * 解冻库存(按收货单+物料): 定位该收货单该物料的批次号(无批次号时回退批次ID)后解冻对应库存行。
+     *
+     * @param receiveId  收货单ID
+     * @param materialId 物料ID
+     * @param reason     解冻原因
+     * @return 解冻库存行数
+     */
+    int unfreezeByReceive(Long receiveId, Long materialId, String reason);
 }

@@ -738,11 +738,38 @@ public boolean submit(String woIdStr, String selectFlowId) {
             message.setClientId(entity.getClientId());
             message.setClientName(entity.getClientName());
             message.setCustomerProductCode(entity.getCustomerProductCode());
+            // 租户必须随消息传递(MES-MQ-01): 消费端 BaseMessageConsumer 缺失 tenantId 时 fail-closed,
+            // 修复前不携带 tenantId 会使 MES 工单落到系统租户 000000, 且桥接查 ERP 主数据(bd_material/
+            // bd_workshop/bd_routing)全空 -> 工单无单位、不创建任何工序
+            message.setTenantId(resolveMessageTenantId(entity.getTenantId()));
             messageProducer.send(ExchangeConstants.TOPIC_EXCHANGE, RoutingKeyConstants.MES_WORKORDER_RELEASE, message);
-            log.info("工单下达消息已发送: woId={}, woNo={}", entity.getWoId(), entity.getWoNo());
+            log.info("工单下达消息已发送: woId={}, woNo={}, tenantId={}",
+                entity.getWoId(), entity.getWoNo(), message.getTenantId());
         } catch (Exception e) {
             log.error("工单下达消息发送失败: woId={}", entity.getWoId(), e);
             // 消息发送失败不影响审批状态更新，补偿任务会重新投递
+        }
+    }
+
+    /**
+     * 解析工单所属租户 ID(供 MQ 消息携带)
+     * <p>优先取工单自身 tenant_id(权威值), 回退当前线程租户上下文；均无法解析时返回 {@code null}，
+     * 由消费端 fail-closed 显式失败进入重试/死信，绝不静默落到系统租户 000000。</p>
+     *
+     * @param woTenantId 工单行上的 tenant_id
+     * @return 租户 ID，无法解析时返回 {@code null}
+     */
+    private Long resolveMessageTenantId(String woTenantId) {
+        String tenantId = StringUtils.isNotBlank(woTenantId) ? woTenantId : TenantHelper.getTenantId();
+        if (StringUtils.isBlank(tenantId)) {
+            log.error("工单租户信息缺失, MQ 消息将不带 tenantId(消费端将显式失败): tenantId={}", woTenantId);
+            return null;
+        }
+        try {
+            return Long.parseLong(tenantId);
+        } catch (NumberFormatException e) {
+            log.error("工单租户ID非法, MQ 消息将不带 tenantId: tenantId={}", tenantId);
+            return null;
         }
     }
 

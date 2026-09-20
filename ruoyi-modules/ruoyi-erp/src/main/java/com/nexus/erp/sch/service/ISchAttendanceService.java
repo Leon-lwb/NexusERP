@@ -142,6 +142,19 @@ public interface ISchAttendanceService {
     void asyncFaceVerify(Long attendanceId, Long workerId, String tenantId, byte[] imageBytes, boolean storeImage);
 
     /**
+     * 降级补跑触发人脸验证
+     * <p>与 {@link #asyncFaceVerify} 的差别:<b>补跑场景下若校验结果仍为 NONE,不刷新
+     * {@code face_verify_time}</b>——该字段是补跑任务的 24h 选取窗口,每轮无条件刷新会让
+     * 无照片/取图失败的记录永久占据配额,把真正待补跑的新记录饿死(ERP-SCH-07)。</p>
+     *
+     * @param attendanceId 考勤记录ID
+     * @param workerId     工人ID
+     * @param tenantId     租户ID(异步线程需手动恢复)
+     * @param imageBytes   存证照片字节(复用已有 ossId,不重复存证)
+     */
+    void backfillFaceVerify(Long attendanceId, Long workerId, String tenantId, byte[] imageBytes);
+
+    /**
      * FAIL 复查人工标记(改 PASS 或确认 FAIL)
      * <p>考勤管理员复查 FAIL 记录:误判→PASS;确认代打卡→保持 FAIL(审计备注记录)。
      * 操作在 remark 追加 {@code [FACE-REVIEW:status] 备注} 前缀供审计。</p>

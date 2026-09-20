@@ -94,8 +94,10 @@ public class WmSalesIssueBo extends BaseEntity {
     private BigDecimal totalAmount;
 
     /**
-     * 单据状态
+     * 单据状态（ERP-WM-09: 服务端权威字段，忽略客户端直传）
+     * <p>新增时 Service 强制 DRAFT、修改时沿用库内现值，状态流转一律走 CAS 端点，BO 不再可写。</p>
      */
+    @com.fasterxml.jackson.annotation.JsonIgnore
     private String status;
 
     /**

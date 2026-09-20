@@ -102,8 +102,15 @@ public class MovingAverageValuationServiceImpl implements IInventoryValuationSer
 
     /**
      * 出库成本结转:按当前移动平均单位成本扣减 totalCost。
-     * <p>移动平均下出库不改变 unitCost,仅按出库数量×unitCost 扣减 totalCost;
-     * 出库数量不得超过可用库存。</p>
+     * <p><b>ERP-WM-01 修复</b>：原实现先 {@code selectById} 再用「扣减后」的余量校验
+     * {@code outQty > qty}，而调用方（4 处出库策略）都是「先 deductStock 再结转成本」，
+     * 于是单批次扣减量一旦超过扣减后余量（整批出库必然命中）就抛
+     * 「出库数量超过库存数量」并整单回滚 —— 出库功能整体不可用。</p>
+     * <p>现改为<b>原子相对扣减</b>：数量充足性由 {@code WmMaterialStockMapper.deductStock*}
+     * 的 {@code stock_quantity >= deductQty} 守卫唯一负责，本方法不再自行校验余量，
+     * 只按行内当前 {@code unit_cost} 相对扣减 {@code total_cost}（{@code GREATEST(...,0)} 防负）。</p>
+     * <p>注意：这里<b>不</b>递增 {@code version} —— 相对扣减本身幂等安全，若递增会让并发中的
+     * 收货 {@code updateById} 乐观锁产生假冲突。</p>
      *
      * @param stockId 库存 ID
      * @param outQty  出库数量
@@ -123,17 +130,7 @@ public class MovingAverageValuationServiceImpl implements IInventoryValuationSer
             throw new ServiceException("库存记录不存在(ID={})", stockId);
         }
         BigDecimal unitCost = stock.getUnitCost() != null ? stock.getUnitCost() : BigDecimal.ZERO;
-        BigDecimal qty = stock.getStockQuantity() != null ? stock.getStockQuantity() : BigDecimal.ZERO;
-        if (outQty.compareTo(qty) > 0) {
-            throw new ServiceException("出库数量超过库存数量");
-        }
-        BigDecimal costAmount = unitCost.multiply(outQty);
-        BigDecimal newTotalCost = (stock.getTotalCost() != null ? stock.getTotalCost() : BigDecimal.ZERO).subtract(costAmount);
-        if (newTotalCost.signum() < 0) {
-            newTotalCost = BigDecimal.ZERO;
-        }
-        stock.setTotalCost(newTotalCost);
-        baseMapper.updateById(stock);
+        baseMapper.issueStockCost(stockId, outQty);
         return unitCost;
     }
 }

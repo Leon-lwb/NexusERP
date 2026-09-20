@@ -21,7 +21,8 @@ import java.util.List;
  * <p>
  * 消费MES发出的OQC检验完成消息，回写ERP销售订单行(so_sales_order_line)OQC状态：
  * QUALIFIED -> oqcStatus=QUALIFIED; UNQUALIFIED -> oqcStatus=UNQUALIFIED。
- * 按 soId + materialId 定位行(排除已取消行)。
+ * 按 soId + materialId 定位行(排除已取消行), 且仅回写其中<b>一行</b>(未取消行中 line_id 最小者,
+ * ERP-SO-02: 同订单同物料多行时不再一起改写), 多行命中会告警留痕。
  * <p>
  * 边界: 仅回写 OQC 状态字段，不实现发货拦截；发货硬门禁由 SoSalesOrderHeaderServiceImpl.fulfill() 负责。
  *

@@ -217,6 +217,15 @@ public class WmProductionIssueServiceImpl implements IWmProductionIssueService {
         if (!STATUS_CREATED.equals(status) && !STATUS_PARTIAL.equals(status)) {
             throw new RuntimeException("当前状态不允许执行领料：" + status);
         }
+        // ERP-WM-05: 单据级 CAS 抢占（CREATED/PARTIAL → EXECUTING）。
+        // 修复前只做读判断，双击或 PC+PDA 并发时两次请求都读到 CREATED，各自按同一 current_qty 扣一次库存。
+        int claimed = baseMapper.update(null, Wrappers.<WmProductionIssue>lambdaUpdate()
+            .set(WmProductionIssue::getStatus, "EXECUTING")
+            .eq(WmProductionIssue::getIssueId, issueId)
+            .in(WmProductionIssue::getStatus, STATUS_CREATED, STATUS_PARTIAL));
+        if (claimed == 0) {
+            throw new ServiceException("生产领料单状态已变更（可能已被并发执行），请刷新后重试");
+        }
 
         List<WmProductionIssueLine> lines = lineMapper.selectList(
             Wrappers.lambdaQuery(WmProductionIssueLine.class)
@@ -249,11 +258,15 @@ public class WmProductionIssueServiceImpl implements IWmProductionIssueService {
                 shortQty = line.getShortQty();
             }
 
-            // 校验不超过欠领数量（有应领定额的行）
-            if (shortQty != null && shortQty.compareTo(BigDecimal.ZERO) > 0
-                && currentQty.compareTo(shortQty) > 0) {
-                throw new RuntimeException("物料【" + line.getMaterialName() + "】本次领料数量(" + currentQty
-                    + ")超过欠领数量(" + shortQty + ")");
+            // ERP-WM-04: 超领守卫。修复前写成 `shortQty > 0 && currentQty > shortQty`，
+            // 该行已领满时 shortQty == 0 → 整个校验被短路，仍可继续领料（只受可用库存限制）。
+            // 改为上限 = max(shortQty, 0)：已领满时任何正数本次领料量都必须拒绝。
+            if (shortQty != null) {
+                BigDecimal allowed = shortQty.max(BigDecimal.ZERO);
+                if (currentQty.compareTo(allowed) > 0) {
+                    throw new RuntimeException("物料【" + line.getMaterialName() + "】本次领料数量(" + currentQty
+                        + ")超过欠领数量(" + allowed + ")");
+                }
             }
 
             // 可用量(ATP)校验：按行指定的批次/库位（为空则不限）汇总。
@@ -602,20 +615,20 @@ public class WmProductionIssueServiceImpl implements IWmProductionIssueService {
         return sum;
     }
 
-    /** 回写工单物料需求明细的已发量/欠料量 */
+    /**
+     * 回写工单物料需求明细的已发量/欠料量。
+     * <p>ERP-WM-05: 改为原子累加 + 同语句重算欠料量，替换原先的读-改-写。
+     * 并发执行两张领料单时，后写会覆盖先写，导致 {@code issued_quantity} 少计、{@code shortage_quantity} 虚高，
+     * 物料需求侧看不到真实欠料。MySQL 的 SET 子句从左到右求值，故第二条 setSql 直接读已更新的 issued_quantity。</p>
+     */
     private void updateRequirementDetail(Long detailId, BigDecimal issuedDelta) {
-        if (detailId == null) {
+        if (detailId == null || issuedDelta == null || issuedDelta.compareTo(BigDecimal.ZERO) <= 0) {
             return;
         }
-        PrdMaterialRequirementDetail detail = detailMapper.selectById(detailId);
-        if (detail == null) {
-            return;
-        }
-        BigDecimal issued = zeroIfNull(detail.getIssuedQuantity()).add(issuedDelta);
-        detail.setIssuedQuantity(issued);
-        BigDecimal required = zeroIfNull(detail.getRequiredQuantity());
-        detail.setShortageQuantity(required.subtract(issued));
-        detailMapper.updateById(detail);
+        detailMapper.update(null, Wrappers.<PrdMaterialRequirementDetail>lambdaUpdate()
+            .setSql("issued_quantity = IFNULL(issued_quantity, 0) + " + issuedDelta.toPlainString())
+            .setSql("shortage_quantity = GREATEST(IFNULL(required_quantity, 0) - IFNULL(issued_quantity, 0), 0)")
+            .eq(PrdMaterialRequirementDetail::getDetailId, detailId));
     }
 
     private BigDecimal zeroIfNull(BigDecimal v) {

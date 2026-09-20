@@ -111,6 +111,8 @@ public class WmStockTakingPlanServiceImpl implements IWmStockTakingPlanService {
         if (StringUtils.isBlank(entity.getPlanCode())) {
             entity.setPlanCode(wm.autoCodeUtil.genSerialCode("WM_STOCKTAKING_CODE", null));
         }
+        // ERP-WM-10: status 不由 BO 直传，服务端强制草稿，防止伪造 GENERATED/POSTED 单据
+        entity.setStatus(STATUS_DRAFT);
         int rows = baseMapper.insert(entity);
         // 回写主键与单号, 供编排层(如 PDA 临时盘点)续做
         bo.setPlanId(entity.getPlanId());
@@ -135,6 +137,16 @@ public class WmStockTakingPlanServiceImpl implements IWmStockTakingPlanService {
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(WmStockTakingPlanBo bo) {
         WmStockTakingPlan entity = MapstructUtils.convert(bo, WmStockTakingPlan.class);
+        // ERP-WM-10: 仅草稿/已驳回可改。已生成/已过账的盘点结果会被"全删全插"抹掉，
+        // 差异记录消失后再次过账即按新行重复调整库存。
+        WmStockTakingPlan existing = baseMapper.selectById(entity.getPlanId());
+        if (existing == null) {
+            throw new com.nexus.common.core.exception.ServiceException("盘点计划不存在");
+        }
+        if (!STATUS_DRAFT.equals(existing.getStatus()) && !STATUS_REJECTED.equals(existing.getStatus())) {
+            throw new com.nexus.common.core.exception.ServiceException("当前状态不允许修改，只有草稿和已驳回状态才能修改！");
+        }
+        entity.setStatus(existing.getStatus());
         deleteLinesByPlanId(entity.getPlanId());
         if (bo.getWmStockTakingLineList() != null) {
             for (WmStockTakingLine line : bo.getWmStockTakingLineList()) {
@@ -156,6 +168,11 @@ public class WmStockTakingPlanServiceImpl implements IWmStockTakingPlanService {
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {
         for (Long id : ids) {
+            // ERP-WM-10: 仅草稿可删；删除已生成/已过账单据会让盘点结果与库存调整失去凭据
+            WmStockTakingPlan existing = baseMapper.selectById(id);
+            if (existing != null && !STATUS_DRAFT.equals(existing.getStatus())) {
+                throw new com.nexus.common.core.exception.ServiceException("当前状态不允许删除，只有草稿状态才能删除！");
+            }
             deleteLinesByPlanId(id);
         }
         return baseMapper.deleteBatchIds(List.of(ids));
@@ -173,6 +190,13 @@ public class WmStockTakingPlanServiceImpl implements IWmStockTakingPlanService {
         WmStockTakingPlan plan = baseMapper.selectById(planId);
         if (plan == null) {
             throw new RuntimeException("盘点计划不存在");
+        }
+        // ERP-WM-10: 仅草稿/已驳回可重建盘点行。
+        // 修复前无守卫：对 POSTED 计划再点一次"生成盘点明细"会把已过账行删掉重建为 PENDING，
+        // 差异记录消失后再次过账即按新行重复调整库存。
+        if (!STATUS_DRAFT.equals(plan.getStatus()) && !STATUS_REJECTED.equals(plan.getStatus())) {
+            throw new com.nexus.common.core.exception.ServiceException(
+                "当前状态不允许生成盘点明细，只有草稿和已驳回状态才能生成！");
         }
         // 先清除已有盘点行
         deleteLinesByPlanId(planId);
@@ -205,7 +229,10 @@ public class WmStockTakingPlanServiceImpl implements IWmStockTakingPlanService {
             line.setLocationName(stock.getLocationName());
             line.setStockId(stock.getStockId());
             line.setBookQuantity(stock.getStockQuantity());
-            line.setActualQuantity(BigDecimal.ZERO);
+            // ERP-WM-02: 实盘数不得默认写 0 —— 否则"未盘点"与"盘到 0"无法区分，
+            // 未录入实盘数直接过账时 diff = 0 - 账面量，一次点击把整仓库存调成 0。
+            // 置 NULL 表示"未录入"（wm_stock_taking_line.actual_quantity 本就是 NULL DEFAULT NULL）。
+            line.setActualQuantity(null);
             line.setDifferenceQuantity(BigDecimal.ZERO);
             line.setStatus("PENDING");
             lineMapper.insert(line);
@@ -247,6 +274,11 @@ public class WmStockTakingPlanServiceImpl implements IWmStockTakingPlanService {
         if (lines == null || lines.isEmpty()) {
             throw new RuntimeException("盘点行不存在，请先生成盘点行");
         }
+
+        // ERP-WM-02: 手工过账通道同样必须校验实盘数已录入。
+        // 此前只有审批自动过账通道调用了 assertAllLinesCounted，手工 postAdjustment 漏掉，
+        // 未盘点的行 actualQuantity 为 null 时会被当作 0，逐行把库存调整为 0（一次点击清零整仓）。
+        assertAllLinesCounted(lines);
 
         for (WmStockTakingLine line : lines) {
             // 已过账/已平衡的行跳过，避免重复调整
@@ -414,6 +446,10 @@ public class WmStockTakingPlanServiceImpl implements IWmStockTakingPlanService {
             return;
         }
 
+        // ERP-WM-02: 审批通过后的自动过账同样必须校验实盘数已录入
+        // （否则"审批通过"本身就等于一次点击把整仓库存调成 0）
+        assertAllLinesCounted(lines);
+
         for (WmStockTakingLine line : lines) {
             // 已过账/已平衡的行跳过，避免重复调整
             if ("POSTED".equals(line.getStatus()) || "BALANCED".equals(line.getStatus())) {
@@ -441,6 +477,34 @@ public class WmStockTakingPlanServiceImpl implements IWmStockTakingPlanService {
             LambdaQueryWrapper<WmStockTakingLine> lqw = Wrappers.lambdaQuery();
             lqw.eq(WmStockTakingLine::getPlanId, planId);
             lineMapper.delete(lqw);
+        }
+    }
+
+    /**
+     * ERP-WM-02: 断言盘点计划下所有未过账行均已录入实盘数。
+     * <p>实盘数为 NULL 即"未盘点"。此时若放行过账，diff 会按 {@code 0 - 账面量} 计算，
+     * CountAdjustStrategy 逐行把库存调整为 0 —— 一次点击（甚至审批通过）即可清零整仓，
+     * 且单据状态变为 POSTED，从界面看是"已正常过账"，账实核对无法发现是误操作。</p>
+     *
+     * @param lines 同一计划下的盘点行
+     */
+    private void assertAllLinesCounted(List<WmStockTakingLine> lines) {
+        List<String> missing = new java.util.ArrayList<>();
+        for (WmStockTakingLine line : lines) {
+            if ("POSTED".equals(line.getStatus()) || "BALANCED".equals(line.getStatus())) {
+                continue;
+            }
+            if (line.getActualQuantity() == null) {
+                missing.add(StringUtils.isNotBlank(line.getMaterialCode())
+                    ? line.getMaterialCode() : String.valueOf(line.getLineId()));
+            }
+        }
+        if (!missing.isEmpty()) {
+            int shown = Math.min(missing.size(), 5);
+            String detail = String.join("、", missing.subList(0, shown));
+            throw new com.nexus.common.core.exception.ServiceException(
+                "存在 " + missing.size() + " 行未录入实盘数，禁止过账：" + detail
+                    + (missing.size() > shown ? " 等" : ""));
         }
     }
 

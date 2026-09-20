@@ -98,9 +98,13 @@ public class GlVoucherServiceImpl implements IGlVoucherService {
         if (entity.getVoucherWord() == null) {
             entity.setVoucherWord("J");
         }
-        if (entity.getVoucherSource() == null) {
-            entity.setVoucherSource(GlConstants.SOURCE_MANUAL);
-        }
+        // FIN-GL-03: 手工录入入口强制 voucherSource=MANUAL, 忽略入参 —— 否则客户端可自带
+        // voucherSource=SO_INVOICE/PU_INVOICE + sourceId=发票ID 的"手工"凭证, 既可绕开自动过账的
+        // 幂等判定(同来源+同 sourceId 已过账即抑制)顶替真实自动凭证, 又会在按来源归集报表时污染口径。
+        // 自动过账走 createAndPost(VoucherBuildRequest), 不受此处影响。
+        entity.setVoucherSource(GlConstants.SOURCE_MANUAL);
+        entity.setSourceId(null);
+        entity.setSourceNo(null);
         if (entity.getCurrency() == null) {
             entity.setCurrency("CNY");
         }
@@ -194,7 +198,13 @@ public class GlVoucherServiceImpl implements IGlVoucherService {
         balanceService.applyPosting(period.getPeriodId(), lines);
     }
 
-    /** 反过账:POSTED->DRAFT;LOCKED 期间不可操作;回滚科目余额;乐观锁防并发 */
+    /**
+     * 反过账:POSTED-&gt;DRAFT;回滚科目余额;乐观锁防并发。
+     * <p><b>期间口径与 {@link #post(Long)} 对称（FIN-GL-02）</b>：只有 OPEN 期间可反过账。
+     * 原实现仅拒绝 LOCKED，导致已关账(CLOSED)期间的凭证可被反过账：余额被回冲、凭证置 DRAFT，
+     * 而 {@code post()} 又要求期间 OPEN，凭证永久卡在 DRAFT 且关账后报表数字被静默改变。
+     * 需要调整已关账期间的凭证时，请先反结账重开期间，形成「反过账 -&gt; 再过账」的闭环。</p>
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void unpost(Long voucherId) {
@@ -206,8 +216,9 @@ public class GlVoucherServiceImpl implements IGlVoucherService {
             throw new ServiceException("仅已过账凭证可反过账,当前【{}】", v.getStatus());
         }
         GlPeriod period = periodMapper.selectById(v.getPeriodId());
-        if (period != null && GlConstants.PERIOD_LOCKED.equals(period.getStatus())) {
-            throw new ServiceException("期间【{}】已锁定,不可反过账", period.getPeriodName());
+        if (period != null && !GlConstants.PERIOD_OPEN.equals(period.getStatus())) {
+            throw new ServiceException("期间【{}】状态【{}】,不可反过账;请先反结账重开期间",
+                period.getPeriodName(), period.getStatus());
         }
         List<GlVoucherLine> lines = lineMapper.selectList(new LambdaQueryWrapper<GlVoucherLine>()
             .eq(GlVoucherLine::getVoucherId, voucherId));
@@ -224,7 +235,10 @@ public class GlVoucherServiceImpl implements IGlVoucherService {
         }
     }
 
-    /** 作废:DRAFT/POSTED->CANCELLED;POSTED 时先回滚余额+LOCKED 期间不可操作;乐观锁防并发 */
+    /**
+     * 作废:DRAFT/POSTED-&gt;CANCELLED;POSTED 时先回滚余额;乐观锁防并发。
+     * <p>已过账凭证的作废同样会回冲科目余额，因此与反过账一致，仅 OPEN 期间可执行（FIN-GL-02 同型缺陷）。</p>
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void cancel(Long voucherId) {
@@ -234,8 +248,9 @@ public class GlVoucherServiceImpl implements IGlVoucherService {
         }
         if (GlConstants.VOUCHER_STATUS_POSTED.equals(v.getStatus())) {
             GlPeriod period = periodMapper.selectById(v.getPeriodId());
-            if (period != null && GlConstants.PERIOD_LOCKED.equals(period.getStatus())) {
-                throw new ServiceException("期间【{}】已锁定,不可作废", period.getPeriodName());
+            if (period != null && !GlConstants.PERIOD_OPEN.equals(period.getStatus())) {
+                throw new ServiceException("期间【{}】状态【{}】,不可作废已过账凭证;请先反结账重开期间",
+                    period.getPeriodName(), period.getStatus());
             }
             List<GlVoucherLine> lines = lineMapper.selectList(new LambdaQueryWrapper<GlVoucherLine>()
                 .eq(GlVoucherLine::getVoucherId, voucherId));

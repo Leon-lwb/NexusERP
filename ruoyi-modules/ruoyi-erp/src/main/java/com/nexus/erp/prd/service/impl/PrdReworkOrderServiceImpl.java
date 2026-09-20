@@ -152,8 +152,14 @@ public class PrdReworkOrderServiceImpl implements IPrdReworkOrderService {
         if (!STATUS_DRAFT.equals(rework.getStatus())) {
             throw new ServiceException("仅草稿状态可开始，当前状态：" + rework.getStatus());
         }
-        rework.setStatus(STATUS_IN_PROGRESS);
-        baseMapper.updateById(rework);
+        // ★ 条件更新(ERP-PRD-05)：并发双点不会双执行
+        int rows = baseMapper.update(null, Wrappers.<PrdReworkOrder>lambdaUpdate()
+            .set(PrdReworkOrder::getStatus, STATUS_IN_PROGRESS)
+            .eq(PrdReworkOrder::getReworkId, reworkId)
+            .eq(PrdReworkOrder::getStatus, STATUS_DRAFT));
+        if (rows == 0) {
+            throw new ServiceException("返工订单状态已被并发操作变更，请刷新后重试");
+        }
     }
 
     /**
@@ -174,16 +180,77 @@ public class PrdReworkOrderServiceImpl implements IPrdReworkOrderService {
         if (!STATUS_IN_PROGRESS.equals(rework.getStatus())) {
             throw new ServiceException("仅进行中状态可完工，当前状态：" + rework.getStatus());
         }
-        rework.setStatus(STATUS_COMPLETED);
-        baseMapper.updateById(rework);
+        // ★ 条件更新(ERP-PRD-05)：只有抢到 IN_PROGRESS → COMPLETED 的那一次才回写来源工单报废量
+        int rows = baseMapper.update(null, Wrappers.<PrdReworkOrder>lambdaUpdate()
+            .set(PrdReworkOrder::getStatus, STATUS_COMPLETED)
+            .eq(PrdReworkOrder::getReworkId, reworkId)
+            .eq(PrdReworkOrder::getStatus, STATUS_IN_PROGRESS));
+        if (rows == 0) {
+            throw new ServiceException("返工订单状态已被并发操作变更，请刷新后重试");
+        }
 
         if (rework.getSourceWoId() != null && rework.getScrapQty() != null
             && rework.getScrapQty().compareTo(BigDecimal.ZERO) > 0) {
-            PrdWorkOrder sourceWo = workOrderMapper.selectById(rework.getSourceWoId());
-            if (sourceWo != null) {
-                BigDecimal currentScrap = sourceWo.getScrapQty() != null ? sourceWo.getScrapQty() : BigDecimal.ZERO;
-                sourceWo.setScrapQty(currentScrap.add(rework.getScrapQty()));
-                workOrderMapper.updateById(sourceWo);
+            // ★ 原子累加来源工单报废量，替换「读-改-写」(ERP-PRD-05)
+            int woRows = workOrderMapper.update(null, Wrappers.<PrdWorkOrder>lambdaUpdate()
+                .eq(PrdWorkOrder::getWoId, rework.getSourceWoId())
+                .setSql("scrap_qty = IFNULL(scrap_qty, 0) + " + rework.getScrapQty().toPlainString()));
+            if (woRows == 0) {
+                log.warn("返工订单[{}]回写来源工单报废量失败, sourceWoId={}", rework.getReworkNo(), rework.getSourceWoId());
+            }
+        }
+    }
+
+    /**
+     * 根据返工出入库过账结果推进返工订单状态（ERP-PRD-04）。
+     * <p>由 MQ 消费者 {@code ReworkStockConsumer} 调用；全部为条件更新，重复投递幂等。</p>
+     *
+     * @param reworkId      返工订单 ID
+     * @param operationType 操作类型：ISSUE / RECEIVE
+     * @param quantity      本次过账数量，可为 null
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void advanceByStockOperation(Long reworkId, String operationType, BigDecimal quantity) {
+        if (reworkId == null || StringUtils.isBlank(operationType)) {
+            log.warn("返工库存消息缺少必要参数，跳过状态推进: reworkId={}, operationType={}", reworkId, operationType);
+            return;
+        }
+        PrdReworkOrder rework = baseMapper.selectById(reworkId);
+        if (rework == null) {
+            log.warn("返工订单不存在: reworkId={}", reworkId);
+            return;
+        }
+        if ("ISSUE".equals(operationType)) {
+            // 发料(出库)完成 → DRAFT 推进到 IN_PROGRESS；已是进行中/已完成视为重复投递，幂等返回
+            if (STATUS_IN_PROGRESS.equals(rework.getStatus()) || STATUS_COMPLETED.equals(rework.getStatus())) {
+                log.info("返工订单[{}]已处于{}，出库消息重复投递，跳过", rework.getReworkNo(), rework.getStatus());
+                return;
+            }
+            int rows = baseMapper.update(null, Wrappers.<PrdReworkOrder>lambdaUpdate()
+                .set(PrdReworkOrder::getStatus, STATUS_IN_PROGRESS)
+                .eq(PrdReworkOrder::getReworkId, reworkId)
+                .eq(PrdReworkOrder::getStatus, STATUS_DRAFT));
+            if (rows == 0) {
+                log.warn("返工订单[{}]出库状态推进未生效(状态已被并发变更)", rework.getReworkNo());
+            }
+            return;
+        }
+        if ("RECEIVE".equals(operationType)) {
+            BigDecimal reworkQty = rework.getReworkQty();
+            BigDecimal receivedQty = quantity != null ? quantity : rework.getActualQty();
+            // 达量判定：实收 >= 返工数量才自动完工，避免部分收货被消息消费置为 COMPLETED(ERP-PRD-05 口径冲突)
+            if (reworkQty != null && receivedQty != null && receivedQty.compareTo(reworkQty) < 0) {
+                log.info("返工订单[{}]入库数量[{}]未达返工数量[{}]，保持进行中",
+                    rework.getReworkNo(), receivedQty.toPlainString(), reworkQty.toPlainString());
+                return;
+            }
+            int rows = baseMapper.update(null, Wrappers.<PrdReworkOrder>lambdaUpdate()
+                .set(PrdReworkOrder::getStatus, STATUS_COMPLETED)
+                .eq(PrdReworkOrder::getReworkId, reworkId)
+                .eq(PrdReworkOrder::getStatus, STATUS_IN_PROGRESS));
+            if (rows == 0) {
+                log.info("返工订单[{}]入库状态推进未生效(已完成或状态已变更)，按重复投递处理", rework.getReworkNo());
             }
         }
     }

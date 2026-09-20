@@ -515,21 +515,29 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
                 + "\n如需强制履行，请确认后重试。");
         }
 
-        // ①' OQC硬门禁：任一行 OQC 不合格则禁止履行(质量门禁，force 不可绕过)
-        List<String> oqcFailedLines = new ArrayList<>();
+        // ①' OQC硬门禁：白名单放行 —— 仅 oqc_status=QUALIFIED 的行可履行(force 不可绕过)。
+        // 非 QUALIFIED(NULL/PENDING/UNQUALIFIED)一律拦截: 回写丢失时 oqc_status 为 NULL 与"尚未检验"
+        // 无法区分, 若沿用"仅阻断 UNQUALIFIED"的口径, 已判定不合格的行会在回写丢失后被静默放行出库
+        // (审计 MES-QC-01)。放行未检验行必须走显式的质量让步审批, 不能靠门禁静默通过。
+        List<String> oqcBlockedLines = new ArrayList<>();
         for (SoSalesOrderLine line : lines) {
-            if ("UNQUALIFIED".equals(line.getOqcStatus())) {
-                oqcFailedLines.add("行" + line.getLineNo() + "(" + line.getMaterialName() + "):"
-                    + line.getOqcCode());
+            if (!"QUALIFIED".equals(line.getOqcStatus())) {
+                String status = line.getOqcStatus() == null ? "未检验/回写缺失" : line.getOqcStatus();
+                oqcBlockedLines.add("行" + line.getLineNo() + "(" + line.getMaterialName() + "):"
+                    + status + (line.getOqcCode() == null ? "" : "/" + line.getOqcCode()));
             }
         }
-        if (!oqcFailedLines.isEmpty()) {
-            throw new RuntimeException("存在OQC检验不合格的销售订单行，禁止履行：\n"
-                + String.join("\n", oqcFailedLines) + "\n请先处理不合格品后再履行。");
+        if (!oqcBlockedLines.isEmpty()) {
+            throw new RuntimeException("存在未通过OQC检验的销售订单行(仅 QUALIFIED 允许履行)，禁止履行：\n"
+                + String.join("\n", oqcBlockedLines)
+                + "\n请先完成或处理出货检验(OQC)后再履行；确需放行未检验行时，须走质量让步审批并留痕。");
         }
 
         // ② 残余预留清理（兜底：正常出库已把 reserved_qty 消耗至 0）
         stockReservationService.unreserve("SALES_ORDER", soId, null);
+        // ERP-SO-01: 库存侧预留已释放, 必须同步清零行字段 reserved_qty, 否则后续出库会按
+        // min(issueQty, reservedQty) 走"消费预留"分支, 扣减一个已不对应任何有效预留的数(行字段单向失真)。
+        clearLineReservedQty(soId);
 
         // ③ 行状态固化 + fulfilled_qty 兜齐 ordered_qty（消除浮点尾差）
         List<Long> lineIds = new ArrayList<>();
@@ -615,6 +623,9 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
         creditCheckService.release(soId);
         // 释放库存预留, 避免预留库存泄漏(与 cancel 保持一致)
         stockReservationService.unreserve("SALES_ORDER", soId, null);
+        // ERP-SO-01: 库存侧预留已释放, 必须同步清零行字段 reserved_qty, 否则后续出库会按
+        // min(issueQty, reservedQty) 走"消费预留"分支, 扣减一个已不对应任何有效预留的数(行字段单向失真)。
+        clearLineReservedQty(soId);
     }
 
     /**
@@ -640,6 +651,9 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
         creditCheckService.release(soId);
         // 释放库存预留, 避免预留库存泄漏
         stockReservationService.unreserve("SALES_ORDER", soId, null);
+        // ERP-SO-01: 库存侧预留已释放, 必须同步清零行字段 reserved_qty, 否则后续出库会按
+        // min(issueQty, reservedQty) 走"消费预留"分支, 扣减一个已不对应任何有效预留的数(行字段单向失真)。
+        clearLineReservedQty(soId);
 
         // 行状态 -> CANCELLED（头尾一致），并关闭关联生产计划（与 fulfill 对称，防取消后计划仍待执行）
         List<SoSalesOrderLine> lines = soSalesOrderLineMapper.selectList(
@@ -1309,6 +1323,18 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
         prdProductionPlanMapper.insert(plan);
         log.info("销售订单确认后自动创建生产计划, soNo={}, materialCode={}, planNo={}",
             soNo, material.getMaterialCode(), plan.getPlanNo());
+    }
+
+    /**
+     * 清零销售订单行的 reserved_qty 展示字段(ERP-SO-01)。
+     * <p>预留的权威口径在库存侧(wm_material_stock.reserved_quantity / wm_stock_reservation),
+     * 行字段仅用于展示; 取消/关闭/履行释放库存侧预留后必须一并清零, 否则行字段残留非 0,
+     * 后续出库会按该残留值走"消费预留"分支并条件扣减(.ge(reservedQty, ...)), 造成并发第二个请求报错。
+     */
+    private void clearLineReservedQty(Long soId) {
+        soSalesOrderLineMapper.update(null, Wrappers.<SoSalesOrderLine>lambdaUpdate()
+            .eq(SoSalesOrderLine::getSoId, soId)
+            .set(SoSalesOrderLine::getReservedQty, BigDecimal.ZERO));
     }
 
     /**

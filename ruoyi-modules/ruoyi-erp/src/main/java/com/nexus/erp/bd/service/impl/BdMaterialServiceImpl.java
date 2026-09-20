@@ -141,9 +141,12 @@ public class BdMaterialServiceImpl implements IBdMaterialService {
         if (categoryIds == null || categoryIds.isEmpty()) {
             return new ArrayList<>();
         }
+        // ★ ERP-BD-10: 这是「选择器」语义（分类树点选物料），必须只返回启用物料；
+        // 物料列表页仍可查停用物料（由列表查询条件控制）。
         List<BdMaterialVo> list = baseMapper.selectVoList(
             Wrappers.lambdaQuery(BdMaterial.class)
                 .in(BdMaterial::getCategoryId, categoryIds)
+                .eq(BdMaterial::getStatus, 1L)
         );
         fillRefNames(list);
         return list;

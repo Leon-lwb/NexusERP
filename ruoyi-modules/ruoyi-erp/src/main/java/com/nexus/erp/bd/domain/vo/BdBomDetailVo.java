@@ -91,6 +91,10 @@ public class BdBomDetailVo implements Serializable {
     @ExcelProperty("来源类型")
     private String sourceType;
 
+    /** 供应方：SELF_PROVIDED-自备，VENDOR_PROVIDED-外协厂供，CUSTOMER_PROVIDED-客供（ERP-BD-01） */
+    @ExcelProperty("供应方")
+    private String supplyType;
+
     @ExcelProperty("创建人")
     private Long createBy;
 

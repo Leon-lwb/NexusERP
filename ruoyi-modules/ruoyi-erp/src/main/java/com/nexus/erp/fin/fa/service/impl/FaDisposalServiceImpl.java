@@ -111,7 +111,9 @@ public class FaDisposalServiceImpl implements IFaDisposalService {
         String summary = (FaConstants.DISPOSAL_SALE.equals(bo.getDisposalType()) ? "固定资产出售 " : "固定资产报废 ")
             + asset.getAssetNo() + " " + asset.getAssetName();
         lines.add(voucherLine(creditAccountId(), accumulated, null, summary));
-        if (FaConstants.DISPOSAL_SALE.equals(bo.getDisposalType()) && price.signum() > 0) {
+        // FIN-FA-02: 只要存在处置价款就必须记银行存款借方 —— 报废(SCRAP)带残值收入时
+        // gainLoss 已把 price 计入差额, 原实现只在 SALE 类型下加银行行, 导致凭证借贷不平衡而抛异常。
+        if (price.signum() > 0) {
             lines.add(voucherLine(bankAccountId(), price, null, summary));
         }
         lines.add(voucherLine(originalAccountId(), null, original, summary));
@@ -127,8 +129,11 @@ public class FaDisposalServiceImpl implements IFaDisposalService {
         VoucherBuildRequest req = new VoucherBuildRequest();
         req.setVoucherDate(bo.getDisposalDate());
         req.setVoucherWord("J");
-        req.setVoucherSource(GlConstants.SOURCE_DEPRECIATION);
-        // 幂等键:同资产仅处置一次(上方已校验),sourceId 用雪花ID避免 periodId*100 溢出与折旧批次键冲突
+        // FIN-FA-03: 处置凭证来源必须标 FA_DISPOSAL —— 原先误标 DEPRECIATION, 会被
+        // "同来源+同 sourceId 已过账"的自动过账抑制逻辑误判, 且按来源归集报表时把处置混入折旧。
+        req.setVoucherSource(GlConstants.SOURCE_FA_DISPOSAL);
+        // 幂等键: sourceId 用处置记录自身ID(与 fa_disposal.disposal_id 一致), 使幂等键稳定可复算;
+        // 原先用随机雪花ID 会导致"同来源+同sourceId"幂等判定永不命中。
         Long disposalId = IdGeneratorUtil.nextLongId();
         req.setSourceId(disposalId);
         req.setSourceNo(FaConstants.SOURCE_NO_DISPOSAL + asset.getAssetNo() + "-" + disposalId);

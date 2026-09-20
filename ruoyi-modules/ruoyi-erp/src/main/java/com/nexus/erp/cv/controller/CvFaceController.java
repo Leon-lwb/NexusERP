@@ -9,7 +9,9 @@ import com.nexus.common.cv.domain.FaceDtos.SubjectItem;
 import com.nexus.common.cv.domain.FaceDtos.SubjectList;
 import com.nexus.common.cv.domain.FaceDtos.VerifyResult;
 import com.nexus.common.cv.exception.VisionException;
+import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.erp.cv.service.CvFaceBatchRegisterService;
+import com.nexus.erp.cv.service.CvSubjectHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
@@ -24,6 +26,9 @@ import java.util.Map;
  * 视觉识别底库管理控制器
  * <p>三端统一经 ERP 后端代理访问 nexus-vision-service,不直连视觉服务。
  * 端点与方案文档 3.3 对应:注册/1:1/1:N/底库列表/详情/删除/重新注册。</p>
+ * <p><b>租户隔离</b>:底库 subject 统一由后端按当前租户归一化为
+ * {@code T{tenantId}-EMP-{工号}}(见 {@link CvSubjectHelper}),前端传入的 subject 只作为工号载体,
+ * 无法通过传参访问/删除他租户底库。</p>
  *
  * @author nexus
  * @since 2026-08-02
@@ -51,7 +56,7 @@ public class CvFaceController {
     }
 
     /**
-     * 注册人脸到底库(subject = EMP-工号,重复注册=追加样本取均值)
+     * 注册人脸到底库(subject = T{tenantId}-EMP-工号,重复注册=追加样本取均值)
      */
     @SaCheckPermission("cv:face:register")
     @PostMapping("/register")
@@ -60,7 +65,7 @@ public class CvFaceController {
                                       @RequestParam(value = "displayName", required = false) String displayName,
                                       @RequestParam(value = "remark", required = false) String remark) {
         try {
-            return R.ok(visionClient.registerFace(file.getBytes(), subject, displayName, remark));
+            return R.ok(visionClient.registerFace(file.getBytes(), scopedSubject(subject), displayName, remark));
         } catch (IOException e) {
             return R.fail("读取照片失败: " + e.getMessage());
         } catch (VisionException e) {
@@ -70,12 +75,14 @@ public class CvFaceController {
 
     /**
      * 1:1 人脸验证
+     * <p>底库含全租户人脸,识别类端点必须鉴权(否则任意登录账号可拿工号/刷底库)。</p>
      */
+    @SaCheckPermission("cv:face:verify")
     @PostMapping("/verify")
     public R<VerifyResult> verify(@RequestParam("file") MultipartFile file,
                                   @RequestParam("subject") String subject) {
         try {
-            return R.ok(visionClient.verifyFace(file.getBytes(), subject));
+            return R.ok(visionClient.verifyFace(file.getBytes(), scopedSubject(subject)));
         } catch (IOException e) {
             return R.fail("读取照片失败: " + e.getMessage());
         } catch (VisionException e) {
@@ -86,6 +93,7 @@ public class CvFaceController {
     /**
      * 1:N 人脸识别(返回 top-N 候选,不直接签发身份,供前端二次确认)
      */
+    @SaCheckPermission("cv:face:recognize")
     @PostMapping("/recognize")
     public R<RecognizeResult> recognize(@RequestParam("file") MultipartFile file,
                                         @RequestParam(value = "limit", defaultValue = "3") int limit) {
@@ -119,7 +127,7 @@ public class CvFaceController {
     @GetMapping("/{subject}")
     public R<SubjectItem> get(@PathVariable("subject") String subject) {
         try {
-            return R.ok(visionClient.getFace(subject));
+            return R.ok(visionClient.getFace(scopedSubject(subject)));
         } catch (VisionException e) {
             return R.fail(e.getMessage());
         }
@@ -132,7 +140,7 @@ public class CvFaceController {
     @DeleteMapping("/{subject}")
     public R<Boolean> delete(@PathVariable("subject") String subject) {
         try {
-            return R.ok(visionClient.deleteFace(subject));
+            return R.ok(visionClient.deleteFace(scopedSubject(subject)));
         } catch (VisionException e) {
             return R.fail(e.getMessage());
         }
@@ -149,8 +157,9 @@ public class CvFaceController {
                                         @RequestParam(value = "remark", required = false) String remark) {
         try {
             // 重新注册 = 先删旧再注册新样本(避免旧样本残留拉低精度)
-            visionClient.deleteFace(subject);
-            return R.ok(visionClient.registerFace(file.getBytes(), subject, displayName, remark));
+            String scoped = scopedSubject(subject);
+            visionClient.deleteFace(scoped);
+            return R.ok(visionClient.registerFace(file.getBytes(), scoped, displayName, remark));
         } catch (IOException e) {
             return R.fail("读取照片失败: " + e.getMessage());
         } catch (VisionException e) {
@@ -161,6 +170,7 @@ public class CvFaceController {
     /**
      * 视觉服务探活(管理端状态展示)
      */
+    @SaCheckPermission("cv:face:list")
     @GetMapping("/health")
     public R<Map<String, Object>> health() {
         Map<String, Object> data = new HashMap<>();
@@ -174,5 +184,12 @@ public class CvFaceController {
             data.put("error", e.getMessage());
         }
         return R.ok(data);
+    }
+
+    /**
+     * 把前端传入的 subject 归一到当前登录租户(T{tenantId}-EMP-工号),防止跨租户读写底库。
+     */
+    private String scopedSubject(String subject) {
+        return CvSubjectHelper.normalize(TenantHelper.getTenantId(), subject);
     }
 }

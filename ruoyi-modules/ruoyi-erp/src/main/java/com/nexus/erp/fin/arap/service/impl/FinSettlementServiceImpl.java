@@ -26,11 +26,15 @@ import com.nexus.erp.fin.gl.domain.GlVoucherLine;
 import com.nexus.erp.fin.gl.mapper.GlAccountMapper;
 import com.nexus.erp.fin.gl.mapper.GlVoucherLineMapper;
 import com.nexus.erp.fin.gl.mapper.GlVoucherMapper;
+import com.nexus.erp.pu.invoice.domain.PuInvoice;
 import com.nexus.erp.pu.invoice.domain.bo.PuInvoiceBo;
 import com.nexus.erp.pu.invoice.domain.vo.PuInvoiceVo;
+import com.nexus.erp.pu.invoice.mapper.PuInvoiceMapper;
 import com.nexus.erp.pu.invoice.service.IPuInvoiceService;
+import com.nexus.erp.so.domain.SoInvoice;
 import com.nexus.erp.so.domain.bo.SoInvoiceBo;
 import com.nexus.erp.so.domain.vo.SoInvoiceVo;
+import com.nexus.erp.so.mapper.SoInvoiceMapper;
 import com.nexus.erp.so.service.ISoInvoiceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -46,6 +50,9 @@ import java.util.List;
  * 应收应付核销 Service 实现
  * <p>复用 so/pu 的 verifyInvoice 原语(原子累加+乐观锁+状态翻转);全额核销时清账 gl_voucher_line。
  * 不改 F0 凭证引擎与余额服务(凭证由 Poster 经 createAndPost 生成,清账只更新未清项标志位)。</p>
+ * <p>反核销({@link #unsettle(Long)}) 是 settle 的逆原语:因 so/pu 侧未暴露「反核销」方法且该包不在本次改动范围，
+ * 这里直接经 {@code SoInvoiceMapper}/{@code PuInvoiceMapper} 做等价的条件更新(同一张表、同样的
+ * {@code version} 乐观锁与 {@code >=} 金额守卫口径)。</p>
  *
  * @author nexus
  * @date 2026-07-30
@@ -60,6 +67,8 @@ public class FinSettlementServiceImpl implements IFinSettlementService {
     private final FinReceiptMapper receiptMapper;
     private final ISoInvoiceService soInvoiceService;
     private final IPuInvoiceService puInvoiceService;
+    private final SoInvoiceMapper soInvoiceMapper;
+    private final PuInvoiceMapper puInvoiceMapper;
     private final GlVoucherMapper voucherMapper;
     private final GlVoucherLineMapper voucherLineMapper;
     private final GlAccountMapper accountMapper;
@@ -175,6 +184,119 @@ public class FinSettlementServiceImpl implements IFinSettlementService {
         }
         log.info("核销完成: direction={}, invoiceId={}, receiptId={}, settleAmount={}, settlementId={}",
             direction, invoiceId, receiptId, settleAmount, s.getSettlementId());
+    }
+
+    /**
+     * 反核销（FIN-ARAP-02）:{@link #settle(FinSettlementBo)} 的逆原语。
+     * <p>全部走条件更新 + 乐观锁 + 金额守卫，任一步影响 0 行即抛异常由事务整体回滚：</p>
+     * <ol>
+     *   <li>发票 {@code verified_amount -= settle_amount}，状态回退（不再满额则回 ISSUED）；</li>
+     *   <li>{@code fin_receipt.settled_amount -= settle_amount}，状态回退（不再满额则回 CONFIRMED）；</li>
+     *   <li>{@code gl_voucher_line} 中 {@code cleared_by = settlementId} 的未清项复位（cleared=0, cleared_by=NULL）；</li>
+     *   <li>逻辑删除 {@code fin_settlement}（重复调用查不到记录即拒绝，不会二次回滚金额）。</li>
+     * </ol>
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void unsettle(Long settlementId) {
+        FinSettlement s = baseMapper.selectById(settlementId);
+        if (s == null) {
+            throw new ServiceException("核销记录不存在或已反核销");
+        }
+        BigDecimal settleAmount = nz(s.getSettleAmount());
+        if (settleAmount.signum() <= 0) {
+            throw new ServiceException("核销金额异常,无法反核销");
+        }
+        // 1. 回退发票已核销额与状态
+        reverseInvoiceVerify(s, settleAmount);
+
+        // 2. 回退收付款单已结算额与状态(>= 守卫 + 乐观锁)
+        FinReceipt receipt = receiptMapper.selectById(s.getReceiptId());
+        if (receipt == null) {
+            throw new ServiceException("收付款单不存在,无法反核销");
+        }
+        BigDecimal newSettled = nz(receipt.getSettledAmount()).subtract(settleAmount);
+        if (newSettled.signum() < 0) {
+            throw new ServiceException("收付款单已核销金额【{}】不足回退【{}】", receipt.getSettledAmount(), settleAmount);
+        }
+        String newStatus = newSettled.compareTo(nz(receipt.getAmount())) >= 0
+            ? ArapConstants.RECEIPT_STATUS_SETTLED : ArapConstants.RECEIPT_STATUS_CONFIRMED;
+        int rows = receiptMapper.update(null, Wrappers.<FinReceipt>lambdaUpdate()
+            .eq(FinReceipt::getReceiptId, receipt.getReceiptId())
+            .eq(FinReceipt::getVersion, receipt.getVersion())
+            .ge(FinReceipt::getSettledAmount, settleAmount)
+            .setSql("settled_amount = settled_amount - " + settleAmount.toPlainString())
+            .set(FinReceipt::getStatus, newStatus)
+            .set(FinReceipt::getVersion, receipt.getVersion() + 1));
+        if (rows == 0) {
+            throw new ServiceException("收付款单数据已变更,反核销失败,请重试");
+        }
+
+        // 3. 复位本次核销清掉的未清项(gl_voucher_line)
+        int clearedRows = voucherLineMapper.update(null, Wrappers.<GlVoucherLine>lambdaUpdate()
+            .eq(GlVoucherLine::getClearedBy, settlementId)
+            .set(GlVoucherLine::getCleared, GlConstants.NO)
+            .setSql("cleared_by = NULL"));
+
+        // 4. 逻辑删除核销记录
+        baseMapper.deleteById(settlementId);
+        log.info("反核销完成: settlementId={}, direction={}, invoiceId={}, receiptId={}, settleAmount={}, 复位未清项={}行",
+            settlementId, s.getDirection(), s.getInvoiceId(), s.getReceiptId(), settleAmount, clearedRows);
+    }
+
+    /** 反向冲减发票已核销额(与 so/pu 的 verifyInvoice 对称:条件更新 + >= 守卫 + version 乐观锁 + 状态回退) */
+    private void reverseInvoiceVerify(FinSettlement s, BigDecimal settleAmount) {
+        if (ArapConstants.DIRECTION_AR.equals(s.getDirection())) {
+            SoInvoice inv = soInvoiceMapper.selectById(s.getInvoiceId());
+            if (inv == null) {
+                throw new ServiceException("销售发票不存在,无法反核销");
+            }
+            if (!ISoInvoiceService.STATUS_ISSUED.equals(inv.getStatus())
+                && !ISoInvoiceService.STATUS_VERIFIED.equals(inv.getStatus())) {
+                throw new ServiceException("销售发票状态【{}】不允许反核销", inv.getStatus());
+            }
+            BigDecimal newVerified = nz(inv.getVerifiedAmount()).subtract(settleAmount);
+            if (newVerified.signum() < 0) {
+                throw new ServiceException("销售发票已核销金额【{}】不足回退【{}】", inv.getVerifiedAmount(), settleAmount);
+            }
+            String newStatus = newVerified.compareTo(nz(inv.getTotalAmount())) >= 0
+                ? ISoInvoiceService.STATUS_VERIFIED : ISoInvoiceService.STATUS_ISSUED;
+            int rows = soInvoiceMapper.update(null, Wrappers.<SoInvoice>lambdaUpdate()
+                .eq(SoInvoice::getInvoiceId, inv.getInvoiceId())
+                .eq(SoInvoice::getVersion, inv.getVersion())
+                .ge(SoInvoice::getVerifiedAmount, settleAmount)
+                .setSql("verified_amount = verified_amount - " + settleAmount.toPlainString())
+                .set(SoInvoice::getStatus, newStatus)
+                .set(SoInvoice::getVersion, inv.getVersion() + 1));
+            if (rows == 0) {
+                throw new ServiceException("销售发票数据已变更,反核销失败,请重试");
+            }
+            return;
+        }
+        PuInvoice inv = puInvoiceMapper.selectById(s.getInvoiceId());
+        if (inv == null) {
+            throw new ServiceException("采购发票不存在,无法反核销");
+        }
+        if (!IPuInvoiceService.STATUS_ISSUED.equals(inv.getStatus())
+            && !IPuInvoiceService.STATUS_VERIFIED.equals(inv.getStatus())) {
+            throw new ServiceException("采购发票状态【{}】不允许反核销", inv.getStatus());
+        }
+        BigDecimal newVerified = nz(inv.getVerifiedAmount()).subtract(settleAmount);
+        if (newVerified.signum() < 0) {
+            throw new ServiceException("采购发票已核销金额【{}】不足回退【{}】", inv.getVerifiedAmount(), settleAmount);
+        }
+        String newStatus = newVerified.compareTo(nz(inv.getTotalAmount())) >= 0
+            ? IPuInvoiceService.STATUS_VERIFIED : IPuInvoiceService.STATUS_ISSUED;
+        int rows = puInvoiceMapper.update(null, Wrappers.<PuInvoice>lambdaUpdate()
+            .eq(PuInvoice::getInvoiceId, inv.getInvoiceId())
+            .eq(PuInvoice::getVersion, inv.getVersion())
+            .ge(PuInvoice::getVerifiedAmount, settleAmount)
+            .setSql("verified_amount = verified_amount - " + settleAmount.toPlainString())
+            .set(PuInvoice::getStatus, newStatus)
+            .set(PuInvoice::getVersion, inv.getVersion() + 1));
+        if (rows == 0) {
+            throw new ServiceException("采购发票数据已变更,反核销失败,请重试");
+        }
     }
 
     /** 分页查询核销记录 */

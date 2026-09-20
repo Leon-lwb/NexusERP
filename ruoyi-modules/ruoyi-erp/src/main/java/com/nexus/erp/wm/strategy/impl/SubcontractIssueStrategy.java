@@ -111,6 +111,8 @@ public class SubcontractIssueStrategy extends BaseStockOperationStrategy {
         lqw.eq(WmMaterialStock::getMaterialId, line.getMaterialId());
         lqw.eq(WmMaterialStock::getFrozenFlag, 0L);
         lqw.apply("(stock_quantity - IFNULL(reserved_quantity, 0)) > 0");
+        // ERP-WM-06: 效期拦截 —— 已过期批次不得参与委外发料
+        lqw.apply(NOT_EXPIRED_SQL);
         lqw.orderByAsc(WmMaterialStock::getExpireDate, WmMaterialStock::getRecptDate, WmMaterialStock::getStockId);
         List<WmMaterialStock> stocks = stockMapper.selectList(lqw);
 
@@ -153,14 +155,18 @@ public class SubcontractIssueStrategy extends BaseStockOperationStrategy {
             throw new ServiceException("库存记录不存在: " + a.getStockId());
         }
         BigDecimal beforeQty = stock.getStockQuantity() == null ? BigDecimal.ZERO : stock.getStockQuantity();
-        if (beforeQty.compareTo(a.getDeductQty()) < 0) {
-            throw new ServiceException("物料【" + stock.getMaterialName() + "】库存不足, 现有"
-                + beforeQty.stripTrailingZeros().toPlainString() + ", 需要"
+        // ERP-WM-02: 显式分配明细同样按可用量校验(不得越过他人预留)
+        BigDecimal available = availableOf(stock);
+        if (available.compareTo(a.getDeductQty()) < 0) {
+            throw new ServiceException("物料【" + stock.getMaterialName() + "】可用库存不足, 现有"
+                + beforeQty.stripTrailingZeros().toPlainString() + ", 可用"
+                + available.stripTrailingZeros().toPlainString() + ", 需要"
                 + a.getDeductQty().stripTrailingZeros().toPlainString());
         }
-        int affected = stockMapper.deductStock(stock.getStockId(), a.getDeductQty(), stock.getVersion());
+        // ERP-WM-02/WM-09: 原子扣减按可用量守卫(且 frozen_flag=0)
+        int affected = stockMapper.deductStockAvailable(stock.getStockId(), a.getDeductQty(), stock.getVersion());
         if (affected == 0) {
-            throw new ServiceException("库存并发冲突, 请重试: 物料【" + stock.getMaterialName() + "】");
+            throw new ServiceException("可用库存不足或已被并发占用, 请重试: 物料【" + stock.getMaterialName() + "】");
         }
         BigDecimal outUnitCost = valuationService.issueStockCost(stock.getStockId(), a.getDeductQty());
         WmMaterialStockTx tx = buildBaseTxFromStock(stock, TX_TYPE_SUBCONTRACT_ISSUE, TX_FLAG_OUT,

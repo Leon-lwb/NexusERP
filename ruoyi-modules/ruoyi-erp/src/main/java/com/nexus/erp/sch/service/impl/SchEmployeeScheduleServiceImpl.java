@@ -13,6 +13,7 @@ import com.nexus.erp.sch.domain.bo.SchEmployeeScheduleBo;
 import com.nexus.erp.sch.domain.vo.SchEmployeeScheduleVo;
 import com.nexus.erp.sch.mapper.*;
 import com.nexus.erp.sch.service.ISchEmployeeScheduleService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,6 +29,7 @@ import java.util.stream.Collectors;
  */
 @RequiredArgsConstructor
 @DS("erp")
+@Slf4j
 @Service
 public class SchEmployeeScheduleServiceImpl implements ISchEmployeeScheduleService {
 
@@ -160,6 +162,9 @@ public class SchEmployeeScheduleServiceImpl implements ISchEmployeeScheduleServi
 
         int generatedCount = 0;
         List<SchEmployeeSchedule> schedulesToInsert = new ArrayList<>();
+        // 同一人同一天只生成一条排班(ERP-SCH-06): 跨计划/多班组/同班组多模板叠加会让考勤判定
+        // 随机取到某一条,迟到早退算在错误班次上;DB 侧另有 uk_worker_date_active 唯一索引兜底
+        Set<String> generatedKeys = new HashSet<>();
 
         for (SchPlan plan : validPlans) {
             List<SchTeamSchedule> teamSchedules = getTeamSchedulesByPlanId(plan.getPlanId());
@@ -168,7 +173,8 @@ public class SchEmployeeScheduleServiceImpl implements ISchEmployeeScheduleServi
                 continue;
             }
             // 按模板逐条展开(班组→班次绑定 + 排班日期 + 休息日标记全部生效)
-            generatedCount += expandFromTeamSchedules(plan, teamSchedules, teamNameMap, membersByTeam, schedulesToInsert);
+            generatedCount += expandFromTeamSchedules(plan, teamSchedules, teamNameMap, membersByTeam,
+                schedulesToInsert, generatedKeys);
         }
 
         if (!schedulesToInsert.isEmpty()) {
@@ -180,11 +186,13 @@ public class SchEmployeeScheduleServiceImpl implements ISchEmployeeScheduleServi
 
     /**
      * 主路径: 按班组排班模板展开——每条模板(班组, 班次, 日期)为该班组全部有效成员生成一条排班;
-     * isHoliday=1 的模板生成休息行(不落班次时间)
+     * isHoliday=1 的模板生成休息行(不落班次时间)。
+     * <p>同一 (workerId, scheduledDate) 只允许出现一条: 重复模板/跨班组/跨计划叠加时跳过并告警
+     * (ERP-SCH-06,与 DDL 唯一索引 {@code uk_worker_date_active} 一致)。</p>
      */
     private int expandFromTeamSchedules(SchPlan plan, List<SchTeamSchedule> teamSchedules,
                                         Map<Long, String> teamNameMap, Map<Long, List<SchTeamMember>> membersByTeam,
-                                        List<SchEmployeeSchedule> out) {
+                                        List<SchEmployeeSchedule> out, Set<String> generatedKeys) {
         int count = 0;
         for (SchTeamSchedule ts : teamSchedules) {
             List<SchTeamMember> members = membersByTeam.get(ts.getTeamId());
@@ -199,6 +207,13 @@ public class SchEmployeeScheduleServiceImpl implements ISchEmployeeScheduleServi
             }
             Date scheduleDate = truncateToDay(ts.getScheduledDate());
             for (SchTeamMember member : members) {
+                String dedupeKey = member.getWorkerId() + "#"
+                    + (scheduleDate == null ? "" : scheduleDate.getTime());
+                if (!generatedKeys.add(dedupeKey)) {
+                    log.warn("[sch] 排班生成冲突已跳过(同一人同日多班次): workerId={}, scheduledDate={}, planId={}, teamId={}",
+                        member.getWorkerId(), scheduleDate, plan.getPlanId(), ts.getTeamId());
+                    continue;
+                }
                 SchEmployeeSchedule schedule = new SchEmployeeSchedule();
                 schedule.setPlanId(plan.getPlanId());
                 schedule.setWorkerId(member.getWorkerId());

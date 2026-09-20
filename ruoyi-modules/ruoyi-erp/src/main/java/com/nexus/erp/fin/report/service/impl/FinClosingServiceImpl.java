@@ -229,8 +229,13 @@ public class FinClosingServiceImpl implements IFinClosingService {
                 }
                 BigDecimal[] dc = fxAgg.computeIfAbsent(l.getAccountId() + "|" + l.getCurrency(),
                     k -> new BigDecimal[]{BigDecimal.ZERO, BigDecimal.ZERO});
+                // 本币与原币净额都必须按借贷方向取符号(借 + / 贷 -)，否则贷方余额的外币科目(外币应付/预收)
+                // 原币净额会算成正数，重估差额方向与金额双错(约 2 倍) —— FIN-GL-01。
+                // amount_currency 约定为原币绝对额，方向由 debit/credit 列决定：
+                // 既不能直接累加(贷方会变成正数)，也不能用本币 debit/credit 代替原币金额(会再乘一次汇率)。
                 dc[0] = dc[0].add(nz(l.getDebit())).subtract(nz(l.getCredit()));
-                dc[1] = dc[1].add(nz(l.getAmountCurrency()));
+                BigDecimal fxAmount = nz(l.getAmountCurrency()).abs();
+                dc[1] = dc[1].add(nz(l.getCredit()).signum() != 0 ? fxAmount.negate() : fxAmount);
             }
             List<GlVoucherLine> lines = new ArrayList<>();
             BigDecimal fxDiff = BigDecimal.ZERO;

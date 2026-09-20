@@ -29,6 +29,13 @@ import java.util.List;
 @RequiredArgsConstructor
 public class WmStockReservationServiceImpl implements IWmStockReservationService {
 
+    /** 流水类型：预留 */
+    public static final String TX_TYPE_RESERVE = "RESERVE";
+    /** 流水类型：预留消耗（出库时核销预留，ERP-WM-03） */
+    public static final String TX_TYPE_CONSUME_RESERVE = "CONSUME_RESERVE";
+    /** 流水类型：预留释放 */
+    public static final String TX_TYPE_UNRESERVE = "UNRESERVE";
+
     /** 库存数据访问映射器（Mapper） */
     private final WmMaterialStockMapper stockMapper;
     /** 流水数据访问映射器（Mapper） */
@@ -67,7 +74,7 @@ public class WmStockReservationServiceImpl implements IWmStockReservationService
             if (rows > 0) {
                 reserved = reserved.add(toReserve);
                 remaining = remaining.subtract(toReserve);
-                recordStockTx(stock, toReserve, "RESERVE", sourceDocType, sourceDocId, sourceDocLineId);
+                recordStockTx(stock, toReserve, TX_TYPE_RESERVE, sourceDocType, sourceDocId, sourceDocLineId);
                 log.info("预留库存: stockId={}, qty={}, source={}/{}", stock.getStockId(), toReserve, sourceDocType, sourceDocId);
             }
         }
@@ -87,19 +94,53 @@ public class WmStockReservationServiceImpl implements IWmStockReservationService
      * @param sourceDocLineId sourceDoc行 ID
      * @return 结果
      */
+    /**
+     * 释放预留（按来源单据，ERP-WM-03 修复）
+     * <p>原实现按历史 {@code RESERVE} 流水<b>全额</b>释放，而出库消耗预留时只减
+     * {@code reserved_quantity} 不写流水，于是「已出库的订单再取消/关闭」会把同一库存行上
+     * <b>其他单据</b>的预留释放掉（可用量虚增/超卖），或在预留不足时抛异常阻断订单取消/关闭。</p>
+     * <p>现改为按<b>净额</b>释放：对每个库存行按
+     * {@code SUM(RESERVE) - SUM(CONSUME_RESERVE) - SUM(UNRESERVE)} 计算仍未消耗的预留量，
+     * 净额 &le; 0 直接跳过（幂等，可重复调用），净额 &gt; 0 才释放。
+     * 出库消耗预留的写入点见 {@code SalesOutStrategy} / {@code WmSalesIssueServiceImpl}
+     * 写入的 {@code CONSUME_RESERVE} 流水。</p>
+     *
+     * @param sourceDocType 来源单据类型
+     * @param sourceDocId 来源单据ID
+     * @param sourceDocLineId 来源单据行ID（可为 null，表示该单据全部行）
+     * @return 本次实际释放数量
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public BigDecimal unreserve(String sourceDocType, Long sourceDocId, Long sourceDocLineId) {
-        // 查询该来源单据的所有预留流水
+        // 查询该来源单据的预留 / 预留消耗 / 已释放流水，按库存行计算净额
         LambdaQueryWrapper<WmMaterialStockTx> wrapper = Wrappers.<WmMaterialStockTx>lambdaQuery()
-            .eq(WmMaterialStockTx::getTxType, "RESERVE")
+            .in(WmMaterialStockTx::getTxType, TX_TYPE_RESERVE, TX_TYPE_CONSUME_RESERVE, TX_TYPE_UNRESERVE)
             .eq(WmMaterialStockTx::getSourceDocType, sourceDocType)
             .eq(WmMaterialStockTx::getSourceDocId, sourceDocId)
             .eq(sourceDocLineId != null, WmMaterialStockTx::getSourceDocLineId, sourceDocLineId);
-        List<WmMaterialStockTx> reserveTxs = txMapper.selectList(wrapper);
+        List<WmMaterialStockTx> txs = txMapper.selectList(wrapper);
+
+        // 按库存行聚合净预留额：RESERVE 为正，CONSUME_RESERVE / UNRESERVE 为负
+        java.util.Map<Long, BigDecimal> netByStock = new java.util.LinkedHashMap<>();
+        for (WmMaterialStockTx tx : txs) {
+            if (tx.getMaterialStockId() == null || tx.getTxQuantity() == null) {
+                continue;
+            }
+            boolean isReserve = TX_TYPE_RESERVE.equals(tx.getTxType());
+            BigDecimal signed = isReserve ? tx.getTxQuantity() : tx.getTxQuantity().negate();
+            netByStock.merge(tx.getMaterialStockId(), signed, BigDecimal::add);
+        }
+
         BigDecimal released = BigDecimal.ZERO;
-        for (WmMaterialStockTx tx : reserveTxs) {
-            WmMaterialStock stock = stockMapper.selectById(tx.getMaterialStockId());
+        for (java.util.Map.Entry<Long, BigDecimal> entry : netByStock.entrySet()) {
+            Long stockId = entry.getKey();
+            BigDecimal netQty = entry.getValue();
+            if (netQty == null || netQty.compareTo(BigDecimal.ZERO) <= 0) {
+                // 已全部被出库消耗或已释放过 —— 无剩余预留，跳过（不再全额释放他人预留）
+                continue;
+            }
+            WmMaterialStock stock = stockMapper.selectById(stockId);
             if (stock == null) {
                 continue;
             }
@@ -107,20 +148,20 @@ public class WmStockReservationServiceImpl implements IWmStockReservationService
             int rows = 0;
             for (int attempt = 0; attempt < 3 && rows == 0; attempt++) {
                 if (attempt > 0) {
-                    stock = stockMapper.selectById(tx.getMaterialStockId());
+                    stock = stockMapper.selectById(stockId);
                     if (stock == null) {
                         break;
                     }
                 }
-                rows = stockMapper.releaseReserved(stock.getStockId(), tx.getTxQuantity(), stock.getVersion());
+                rows = stockMapper.releaseReserved(stock.getStockId(), netQty, stock.getVersion());
             }
             if (rows == 0) {
                 // 重试仍失败：库存行被并发操作修改或预留不足，抛异常回滚，禁止静默跳过
                 throw new com.nexus.common.core.exception.ServiceException(
-                    "释放预留失败(并发冲突或预留不足): stockId=" + tx.getMaterialStockId() + ", qty=" + tx.getTxQuantity());
+                    "释放预留失败(并发冲突或预留不足): stockId=" + stockId + ", qty=" + netQty);
             }
-            released = released.add(tx.getTxQuantity());
-            recordStockTx(stock, tx.getTxQuantity(), "UNRESERVE", sourceDocType, sourceDocId, sourceDocLineId);
+            released = released.add(netQty);
+            recordStockTx(stock, netQty, TX_TYPE_UNRESERVE, sourceDocType, sourceDocId, sourceDocLineId);
         }
         log.info("释放预留: source={}/{}, 释放量={}", sourceDocType, sourceDocId, released);
         return released;

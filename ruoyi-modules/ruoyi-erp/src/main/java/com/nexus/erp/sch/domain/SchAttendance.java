@@ -149,6 +149,16 @@ public class SchAttendance extends TenantEntity {
     private Long faceImageOssId;
 
     /**
+     * 人脸验证尝试次数(降级补跑计数,达上限后不再占用每轮补跑配额)
+     */
+    private Integer faceVerifyAttempts;
+
+    /**
+     * 人脸验证最近一次尝试时间
+     */
+    private Date faceVerifyLastAttemptTime;
+
+    /**
      * 删除标志
      */
     @TableLogic

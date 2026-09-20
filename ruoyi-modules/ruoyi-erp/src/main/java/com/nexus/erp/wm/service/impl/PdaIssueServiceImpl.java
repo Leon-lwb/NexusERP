@@ -46,9 +46,10 @@ public class PdaIssueServiceImpl implements IPdaIssueService {
     private static final String STATUS_PARTIAL = "PARTIAL";
     private static final String STATUS_COMPLETED = "COMPLETED";
 
-    /** 发料批次质检门禁开关(sys_config; true=拣货批次 IQC 不合格禁止发料, 缺省关闭) */
+    /** 发料批次质检门禁开关(sys_config; true=拣货批次必须 IQC 合格才可发料, 缺省关闭) */
     private static final String QC_GATE_CONFIG_KEY = "wm.issue.batch.qcGate";
-    private static final String QC_UNQUALIFIED = "UNQUALIFIED";
+    /** 批次质检白名单值: 仅该值允许发料 */
+    private static final String QC_QUALIFIED = "QUALIFIED";
 
     private final IWmProductionIssueService issueService;
     private final WmProductionIssueLineMapper lineMapper;
@@ -143,12 +144,17 @@ public class PdaIssueServiceImpl implements IPdaIssueService {
             return PdaActionResultVo.fail("库位不符，请扫 " + target.getLocationCode());
         }
 
-        // 发料批次质检门禁(M3 批次5): 开关开启时, 拣货批次 IQC 不合格禁止发料
-        // 注意: 未扫批次码时门禁不生效(批次未知无从判定), 开关开启场景建议配套批次码必填
+        // 发料批次质检门禁(M3 批次5; 口径对齐 MES-QC-01/MES-X-01 的**白名单**):
+        // 开关开启时拣货批次必须 qc_status=QUALIFIED 才允许发料 ——
+        // UNQUALIFIED / PENDING / NULL(回写丢失或批次未登记) 一律拦截。
+        // 仅"阻断 UNQUALIFIED"会让回写丢失(PENDING/NULL)与"已判定不合格"不可区分而被静默放行。
+        // 注意: 未扫批次码时门禁不生效(批次未知无从判定), 开关开启场景建议配套批次码必填。
         if (StringUtils.isNotBlank(bo.getBatchCode())
-            && "true".equalsIgnoreCase(StringUtils.trimToEmpty(configService.selectConfigByKey(QC_GATE_CONFIG_KEY)))
-            && isBatchUnqualified(bo.getBatchCode(), target.getMaterialId())) {
-            return PdaActionResultVo.fail("批次 " + bo.getBatchCode() + " IQC检验不合格，禁止发料");
+            && "true".equalsIgnoreCase(StringUtils.trimToEmpty(configService.selectConfigByKey(QC_GATE_CONFIG_KEY)))) {
+            String blockReason = batchQcBlockReason(bo.getBatchCode(), target.getMaterialId());
+            if (blockReason != null) {
+                return PdaActionResultVo.fail("批次 " + bo.getBatchCode() + " " + blockReason + "，禁止发料");
+            }
         }
 
         // 仅目标行置本次领料数量, 其余行清零后调用既有执行过账
@@ -170,20 +176,31 @@ public class PdaIssueServiceImpl implements IPdaIssueService {
     }
 
     /**
-     * 批次是否 IQC 不合格 (M3 批次5 门禁)
+     * 批次是否不允许发料 (M3 批次5 门禁, 白名单口径)
      * <p>
-     * 按批次号+物料定位批次; qc_status 为 UNQUALIFIED 时拦截,
-     * 无批次记录或未回写质检状态(NULL=无质检要求)一律放行。
+     * 仅 {@code qc_status=QUALIFIED} 放行; UNQUALIFIED / PENDING / NULL(含批次记录缺失) 一律拦截。
+     * 与 MES-QC-01 的 OQC 硬门禁口径一致(fail-closed): 质检状态未知不等于合格。
+     *
+     * @param batchCode  批次号
+     * @param materialId 物料ID
+     * @return null 表示允许发料; 否则返回拦截原因(供前端展示)
      */
-    private boolean isBatchUnqualified(String batchCode, Long materialId) {
+    private String batchQcBlockReason(String batchCode, Long materialId) {
         if (materialId == null) {
-            return false;
+            return "物料未知，无法确认质检状态";
         }
         WmBatch batch = batchMapper.selectOne(Wrappers.<WmBatch>lambdaQuery()
             .eq(WmBatch::getBatchCode, batchCode)
             .eq(WmBatch::getMaterialId, materialId)
             .last("LIMIT 1"));
-        return batch != null && QC_UNQUALIFIED.equals(batch.getQcStatus());
+        if (batch == null) {
+            return "无质检记录(批次未登记)";
+        }
+        if (!QC_QUALIFIED.equals(batch.getQcStatus())) {
+            String qc = StringUtils.isBlank(batch.getQcStatus()) ? "待检/未回写" : batch.getQcStatus();
+            return "IQC质检状态为 " + qc;
+        }
+        return null;
     }
 
     @Override

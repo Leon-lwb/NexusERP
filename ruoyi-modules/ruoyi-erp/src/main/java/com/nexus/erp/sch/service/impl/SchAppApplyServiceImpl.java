@@ -179,8 +179,11 @@ public class SchAppApplyServiceImpl implements ISchAppApplyService {
     }
 
     /**
-     * 补卡通过后回写考勤记录：按当日排班的上下班时间补齐缺卡侧打卡，
-     * 状态置 normal（补卡视为正常出勤），来源 manual。
+     * 补卡通过后回写考勤记录：按当日排班的上下班时间补齐缺卡侧打卡，来源 manual。
+     * <p><b>不覆盖已判定的迟到/早退</b>（ERP-SCH-02）：原实现无条件把 {@code attendance_status}
+     * 置 normal，会把当天已经判定的 late/early_leave 抹平，与仍然保留的 {@code late_minutes}
+     * 自相矛盾、月度考勤口径失真。现在只在"新建记录"或"原状态为空"时才置 normal，
+     * 已有判定结果原样保留，仅补缺卡侧时间。</p>
      */
     private void writeBackSupplement(SchSupplementApply apply) {
         LocalDate date = apply.getApplyDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
@@ -230,7 +233,9 @@ public class SchAppApplyServiceImpl implements ISchAppApplyService {
             if (fixClockOut && attendance.getClockOutTime() == null) {
                 update.setClockOutTime(scheduledEnd != null ? scheduledEnd : dayStart);
             }
-            update.setAttendanceStatus("normal");
+            // 仅当原记录尚无考勤判定结果时才置 normal；迟到/早退等已判定状态必须保留(ERP-SCH-02)
+            update.setAttendanceStatus(StrUtil.isBlank(attendance.getAttendanceStatus())
+                ? "normal" : attendance.getAttendanceStatus());
             update.setSourceType("manual");
             update.setRemark("补卡通过：" + apply.getApplyNo());
             attendanceMapper.updateById(update);

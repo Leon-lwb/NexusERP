@@ -252,9 +252,17 @@ public class SoQuotationServiceImpl implements ISoQuotationService {
         }
         salesOrderLineMapper.insertBatch(orderLines);
 
-        // 更新报价单状态
+        // 更新报价单状态(ERP-SO-04: 改为条件更新 CAS, 防并发/重复转单生成多张销售订单)
+        // 同一报价单被并发转单时只有一个事务能把 CONFIRMED → CONVERTED, 其余影响 0 行并回滚
+        // (连同已插入的销售订单一起回滚), 从而无需新增唯一键即可实现转单幂等。
+        int statusRows = baseMapper.update(null, Wrappers.<SoQuotation>lambdaUpdate()
+            .set(SoQuotation::getStatus, STATUS_CONVERTED)
+            .eq(SoQuotation::getQuotationId, quotationId)
+            .eq(SoQuotation::getStatus, STATUS_CONFIRMED));
+        if (statusRows == 0) {
+            throw new ServiceException("报价单已被并发转换为销售订单，请刷新后重试");
+        }
         quotation.setStatus(STATUS_CONVERTED);
-        baseMapper.updateById(quotation);
 
         log.info("报价单 {} 已转换为销售订单 {}", quotationId, order.getSoId());
         return order.getSoId();

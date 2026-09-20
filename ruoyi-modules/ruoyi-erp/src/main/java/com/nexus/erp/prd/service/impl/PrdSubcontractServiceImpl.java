@@ -167,8 +167,15 @@ public class PrdSubcontractServiceImpl implements IPrdSubcontractService {
         if (!STATUS_DRAFT.equals(subcontract.getStatus()) && !STATUS_APPROVED.equals(subcontract.getStatus())) {
             throw new ServiceException("仅草稿或已批准状态可下达，当前状态：" + subcontract.getStatus());
         }
-        subcontract.setStatus(STATUS_RELEASED);
-        baseMapper.updateById(subcontract);
+        // ★ 条件更新(ERP-PRD-05)：CAS 抢占下达，防并发双下达生成两张工单
+        String expectedStatus = subcontract.getStatus();
+        int released = baseMapper.update(null, Wrappers.<PrdSubcontract>lambdaUpdate()
+            .set(PrdSubcontract::getStatus, STATUS_RELEASED)
+            .eq(PrdSubcontract::getSubcontractId, subcontractId)
+            .eq(PrdSubcontract::getStatus, expectedStatus));
+        if (released == 0) {
+            throw new ServiceException("委外订单状态已被并发操作变更，请刷新后重试");
+        }
 
         PrdWorkOrder wo = new PrdWorkOrder();
         wo.setWoNo("WO-SC-" + subcontract.getSubcontractNo());
@@ -207,9 +214,15 @@ public class PrdSubcontractServiceImpl implements IPrdSubcontractService {
         if (!STATUS_RELEASED.equals(subcontract.getStatus()) && !STATUS_APPROVED.equals(subcontract.getStatus())) {
             throw new ServiceException("仅已下达或已批准状态可开始，当前状态：" + subcontract.getStatus());
         }
-        subcontract.setStatus(STATUS_IN_PROGRESS);
-        subcontract.setActualStartDate(new Date());
-        baseMapper.updateById(subcontract);
+        // ★ 条件更新(ERP-PRD-05)
+        int rows = baseMapper.update(null, Wrappers.<PrdSubcontract>lambdaUpdate()
+            .set(PrdSubcontract::getStatus, STATUS_IN_PROGRESS)
+            .set(PrdSubcontract::getActualStartDate, new Date())
+            .eq(PrdSubcontract::getSubcontractId, subcontractId)
+            .eq(PrdSubcontract::getStatus, subcontract.getStatus()));
+        if (rows == 0) {
+            throw new ServiceException("委外订单状态已被并发操作变更，请刷新后重试");
+        }
     }
 
     /**
@@ -229,9 +242,15 @@ public class PrdSubcontractServiceImpl implements IPrdSubcontractService {
         if (!STATUS_IN_PROGRESS.equals(subcontract.getStatus())) {
             throw new ServiceException("仅进行中状态可完工，当前状态：" + subcontract.getStatus());
         }
-        subcontract.setStatus(STATUS_COMPLETED);
-        subcontract.setActualEndDate(new Date());
-        baseMapper.updateById(subcontract);
+        // ★ 条件更新(ERP-PRD-05)：防止并发双完工
+        int rows = baseMapper.update(null, Wrappers.<PrdSubcontract>lambdaUpdate()
+            .set(PrdSubcontract::getStatus, STATUS_COMPLETED)
+            .set(PrdSubcontract::getActualEndDate, new Date())
+            .eq(PrdSubcontract::getSubcontractId, subcontractId)
+            .eq(PrdSubcontract::getStatus, STATUS_IN_PROGRESS));
+        if (rows == 0) {
+            throw new ServiceException("委外订单状态已被并发操作变更，请刷新后重试");
+        }
     }
 
     /**
@@ -251,8 +270,14 @@ public class PrdSubcontractServiceImpl implements IPrdSubcontractService {
         if (STATUS_CLOSED.equals(subcontract.getStatus())) {
             return;
         }
-        subcontract.setStatus(STATUS_CLOSED);
-        baseMapper.updateById(subcontract);
+        // ★ 条件更新(ERP-PRD-05)
+        int rows = baseMapper.update(null, Wrappers.<PrdSubcontract>lambdaUpdate()
+            .set(PrdSubcontract::getStatus, STATUS_CLOSED)
+            .eq(PrdSubcontract::getSubcontractId, subcontractId)
+            .ne(PrdSubcontract::getStatus, STATUS_CLOSED));
+        if (rows == 0) {
+            log.info("委外订单[{}]关闭未生效(状态已变更)", subcontract.getSubcontractNo());
+        }
     }
 
     /**

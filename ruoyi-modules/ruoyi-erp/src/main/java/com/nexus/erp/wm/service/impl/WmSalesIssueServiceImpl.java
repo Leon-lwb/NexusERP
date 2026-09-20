@@ -84,6 +84,9 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
     /** SO 行 Mapper（出库完成时同步消耗 SO 行预留数量） */
     private final SoSalesOrderLineMapper salesOrderLineMapper;
 
+    /** 库存计价服务（ERP-WM-01: 出库成本结转，与 SalesOutStrategy 完全同口径） */
+    private final com.nexus.erp.wm.service.IInventoryValuationService valuationService;
+
     /**
      * 分页查询销售发料列表
      *
@@ -140,6 +143,9 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
         if (StringUtils.isBlank(entity.getIssueCode())) {
             entity.setIssueCode(wm.autoCodeUtil.genSerialCode("WM_SALES_ISSUE_CODE", null));
         }
+        // ERP-WM-09: status 不由 BO 直传，服务端强制草稿
+        // （修复前可直造 COMPLETED：从未扣库存却显示"已完成"，completeSalesIssue 也不会再执行）
+        entity.setStatus(STATUS_DRAFT);
         int rows = baseMapper.insert(entity);
         insertLines(entity.getIssueId(), bo.getWmSalesIssueLineList());
         return rows;
@@ -155,6 +161,16 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(WmSalesIssueBo bo) {
         WmSalesIssue entity = MapstructUtils.convert(bo, WmSalesIssue.class);
+        // ERP-WM-09: 仅草稿/已驳回可改；已确认/已完成出库单明细被"全删全插"后
+        // 与已生成的 wm_material_stock_tx 不再对应，对账找不到差异来源
+        WmSalesIssue existing = baseMapper.selectById(entity.getIssueId());
+        if (existing == null) {
+            throw new ServiceException("销售出库单不存在");
+        }
+        if (!STATUS_DRAFT.equals(existing.getStatus()) && !STATUS_REJECTED.equals(existing.getStatus())) {
+            throw new ServiceException("当前状态不允许修改，只有草稿和已驳回状态才能修改！");
+        }
+        entity.setStatus(existing.getStatus());
         lineMapper.delete(new LambdaQueryWrapper<WmSalesIssueLine>()
             .eq(WmSalesIssueLine::getIssueId, entity.getIssueId()));
         insertLines(entity.getIssueId(), bo.getWmSalesIssueLineList());
@@ -170,6 +186,13 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {
+        for (Long id : ids) {
+            // ERP-WM-09: 仅草稿可删；已扣减库存的单据删除后流水成为孤儿、库存调整无凭据
+            WmSalesIssue existing = baseMapper.selectById(id);
+            if (existing != null && !STATUS_DRAFT.equals(existing.getStatus())) {
+                throw new ServiceException("当前状态不允许删除，只有草稿状态才能删除！");
+            }
+        }
         lineMapper.delete(new LambdaQueryWrapper<WmSalesIssueLine>()
             .in(WmSalesIssueLine::getIssueId, List.of(ids)));
         return baseMapper.deleteBatchIds(List.of(ids));
@@ -186,13 +209,18 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
     public int confirmSalesIssue(Long issueId) {
         WmSalesIssue salesIssue = baseMapper.selectById(issueId);
         if (salesIssue == null) {
-            throw new RuntimeException("销售出库单不存在");
+            throw new ServiceException("销售出库单不存在");
         }
-        if (!STATUS_DRAFT.equals(salesIssue.getStatus()) && !STATUS_APPROVED.equals(salesIssue.getStatus())) {
-            throw new RuntimeException("只有草稿或已批准的出库单才能确认");
+        // ERP-WM-16: 只允许 APPROVED → CONFIRMED（DRAFT 不得绕过审批直接确认，而 CONFIRMED 是
+        // completeSalesIssue 的唯一前置状态），并改为条件更新 CAS，防并发双击同时通过
+        int rows = baseMapper.update(null, Wrappers.<WmSalesIssue>lambdaUpdate()
+            .set(WmSalesIssue::getStatus, STATUS_CONFIRMED)
+            .eq(WmSalesIssue::getIssueId, issueId)
+            .eq(WmSalesIssue::getStatus, STATUS_APPROVED));
+        if (rows == 0) {
+            throw new ServiceException("只有已批准(APPROVED)的出库单才能确认，或状态已被并发变更");
         }
-        salesIssue.setStatus(STATUS_CONFIRMED);
-        return baseMapper.updateById(salesIssue);
+        return rows;
     }
 
     /**
@@ -253,6 +281,8 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
             stockLqw.eq(line.getBatchId() != null, WmMaterialStock::getBatchId, line.getBatchId());
             stockLqw.eq(WmMaterialStock::getFrozenFlag, 0L);
             stockLqw.gt(WmMaterialStock::getStockQuantity, BigDecimal.ZERO);
+            // ERP-WM-06: 效期拦截 —— 已过期批次不得参与销售出库
+            stockLqw.apply("(expire_date IS NULL OR expire_date >= CURDATE())");
             stockLqw.orderByAsc(WmMaterialStock::getExpireDate);
             stockLqw.orderByAsc(WmMaterialStock::getRecptDate);
             stockLqw.orderByAsc(WmMaterialStock::getStockId);
@@ -289,19 +319,68 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
                     continue;
                 }
 
-                BigDecimal consumeQty = currentQty.min(remaining);
-                // 本次扣减消费的预留量: min(本次扣减, 该库存行已预留, 剩余待消费预留)
                 BigDecimal stockReserved = stock.getReservedQuantity() == null
                     ? BigDecimal.ZERO : stock.getReservedQuantity();
+                // ERP-WM-02: 可动用上限 = 未预留可用量 + 本单尚可消耗的预留量（无 SO 行时严格不越过可用量）
+                BigDecimal consumableReserved = stockReserved.min(remainingConsumeReserved);
+                BigDecimal maxDeduct = currentQty.subtract(stockReserved).add(consumableReserved);
+                if (maxDeduct.compareTo(BigDecimal.ZERO) <= 0) {
+                    continue;
+                }
+                BigDecimal consumeQty = maxDeduct.min(remaining);
+                // 本次扣减消费的预留量: min(本次扣减, 该库存行已预留, 剩余待消费预留)
                 BigDecimal batchConsumeReserved = consumeQty.min(stockReserved).min(remainingConsumeReserved);
-                // 原子扣减库存（乐观锁 + 不允许负库存; 命中预留时同步释放预留）
+                // 原子扣减库存（乐观锁 + 不允许负库存; 命中预留时同步释放预留, 未命中时按可用量守卫）
                 int affected = batchConsumeReserved.compareTo(BigDecimal.ZERO) > 0
                     ? wmMaterialStockMapper.deductStockWithReserved(stock.getStockId(), consumeQty, batchConsumeReserved, stock.getVersion())
-                    : wmMaterialStockMapper.deductStock(stock.getStockId(), consumeQty, stock.getVersion());
+                    : wmMaterialStockMapper.deductStockAvailable(stock.getStockId(), consumeQty, stock.getVersion());
                 if (affected == 0) {
                     throw new ServiceException("库存并发冲突，请重试: 物料【" + line.getMaterialName() + "】");
                 }
                 remainingConsumeReserved = remainingConsumeReserved.subtract(batchConsumeReserved);
+
+                // ERP-WM-01: 出库成本结转 —— 按当前移动平均单位成本扣减 wm_material_stock.total_cost。
+                // completeSalesIssue 是销售出库的唯一活路径，修复前从不调用它（带结转的
+                // postSalesIssue / SalesOutStrategy 全仓无调用方），导致库存数量减了而金额没减、
+                // 出库成本恒为 0、库存金额虚高，下一次入库的移动平均价被高估，误差逐笔累积。
+                // 与 SalesOutStrategy 完全同口径（内核批次已把该实现改为原子 SQL 相对扣减，无数量前置校验）。
+                BigDecimal outUnitCost = valuationService.issueStockCost(stock.getStockId(), consumeQty);
+
+                // ERP-WM-03: 预留消耗必须记账（与 SalesOutStrategy 口径一致），
+                // 否则订单取消/关闭时 unreserve 会按历史 RESERVE 流水全额释放他人预留
+                if (batchConsumeReserved.compareTo(BigDecimal.ZERO) > 0 && salesIssue.getSoId() != null) {
+                    WmMaterialStockTx consumeTx = new WmMaterialStockTx();
+                    consumeTx.setTxType("CONSUME_RESERVE");
+                    consumeTx.setMaterialId(stock.getMaterialId());
+                    consumeTx.setMaterialCode(stock.getMaterialCode());
+                    consumeTx.setMaterialName(stock.getMaterialName());
+                    consumeTx.setMaterialSpec(stock.getMaterialSpec());
+                    consumeTx.setBaseUomId(stock.getBaseUomId());
+                    consumeTx.setBaseUomName(stock.getBaseUomName());
+                    consumeTx.setBatchId(stock.getBatchId());
+                    consumeTx.setBatchCode(stock.getBatchCode());
+                    consumeTx.setWarehouseId(stock.getWarehouseId());
+                    consumeTx.setWarehouseCode(stock.getWarehouseCode());
+                    consumeTx.setWarehouseName(stock.getWarehouseName());
+                    consumeTx.setAreaId(stock.getAreaId());
+                    consumeTx.setAreaCode(stock.getAreaCode());
+                    consumeTx.setAreaName(stock.getAreaName());
+                    consumeTx.setLocationId(stock.getLocationId());
+                    consumeTx.setLocationCode(stock.getLocationCode());
+                    consumeTx.setLocationName(stock.getLocationName());
+                    consumeTx.setMaterialStockId(stock.getStockId());
+                    consumeTx.setTxFlag(0);
+                    consumeTx.setTxQuantity(batchConsumeReserved);
+                    consumeTx.setBeforeQuantity(currentQty);
+                    consumeTx.setAfterQuantity(currentQty);
+                    consumeTx.setTxDate(now);
+                    consumeTx.setSourceDocType("SALES_ORDER");
+                    consumeTx.setSourceDocId(salesIssue.getSoId());
+                    consumeTx.setSourceDocCode(salesIssue.getSoNo());
+                    consumeTx.setSourceDocLineId(line.getSourceDocLineId());
+                    consumeTx.setRemark("销售出库消耗预留，出库单号：" + salesIssue.getIssueCode());
+                    stockTxMapper.insert(consumeTx);
+                }
 
                 // 生成库存事务记录
                 WmMaterialStockTx tx = new WmMaterialStockTx();
@@ -326,6 +405,9 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
                 tx.setMaterialStockId(stock.getStockId());
                 tx.setTxFlag(-1);
                 tx.setTxQuantity(consumeQty);
+                // ERP-WM-01: 出库成本随流水落账（修复前 unit_cost / tx_amount 恒为 null/0，无法核对出库成本）
+                tx.setUnitCost(outUnitCost);
+                tx.setTxAmount(outUnitCost.multiply(consumeQty));
                 tx.setBeforeQuantity(currentQty);
                 tx.setAfterQuantity(currentQty.subtract(consumeQty));
                 tx.setTxDate(now);
@@ -339,12 +421,27 @@ public class WmSalesIssueServiceImpl implements IWmSalesIssueService {
                 remaining = remaining.subtract(consumeQty);
             }
 
+            // ERP-WM-02: 扣减已按可用量守卫，若仍有缺口必须显式报错，
+            // 不能像修复前那样静默按部分量出库（剩余量被无声丢弃，单据却标记 COMPLETED）
+            if (remaining.compareTo(BigDecimal.ZERO) > 0) {
+                throw new ServiceException("物料【" + line.getMaterialName() + "】可用库存不足，尚缺："
+                    + remaining.stripTrailingZeros().toPlainString());
+            }
+
+            // ERP-WM-15: SO 行预留递减量必须等于库存行"实际释放量"。
+            // 修复前 SO 行按 totalConsumeReserved 递减、库存行按各行 batchConsumeReserved 之和释放，
+            // 两者不等时差额永久残留为库存行 reserved_quantity 假占用（可用量虚减、ATP 与拣货都取不到该批次）。
+            BigDecimal actualConsumeReserved = totalConsumeReserved.subtract(remainingConsumeReserved);
+            if (remainingConsumeReserved.compareTo(BigDecimal.ZERO) > 0) {
+                log.warn("销售出库单[{}] 物料[{}] 预留释放口径不一致: SO行预留={}, 库存行实际释放={}, 按实际释放量递减 SO 行",
+                    salesIssue.getIssueCode(), line.getMaterialName(), totalConsumeReserved, actualConsumeReserved);
+            }
             // 原子扣减 SO 行剩余预留数量(预留已随出库消耗, setSql 原子递减 + 预留充足守卫)
-            if (totalConsumeReserved.compareTo(BigDecimal.ZERO) > 0 && soLine != null) {
+            if (actualConsumeReserved.compareTo(BigDecimal.ZERO) > 0 && soLine != null) {
                 int reservedRows = salesOrderLineMapper.update(null, Wrappers.<SoSalesOrderLine>lambdaUpdate()
                     .eq(SoSalesOrderLine::getLineId, soLine.getLineId())
-                    .ge(SoSalesOrderLine::getReservedQty, totalConsumeReserved)
-                    .setSql("reserved_qty = reserved_qty - " + totalConsumeReserved.toPlainString()));
+                    .ge(SoSalesOrderLine::getReservedQty, actualConsumeReserved)
+                    .setSql("reserved_qty = reserved_qty - " + actualConsumeReserved.toPlainString()));
                 if (reservedRows == 0) {
                     throw new ServiceException("SO行预留数量更新失败(并发冲突或预留不足), soLineId=" + soLine.getLineId());
                 }
