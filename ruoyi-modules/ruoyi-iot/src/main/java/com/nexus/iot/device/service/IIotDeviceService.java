@@ -4,6 +4,7 @@ import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.iot.device.domain.IotDevice;
 import com.nexus.iot.device.domain.bo.IotDeviceBo;
+import com.nexus.iot.device.domain.vo.IotDeviceSecretVo;
 import com.nexus.iot.device.domain.vo.IotDeviceVo;
 
 import java.util.Date;
@@ -45,6 +46,14 @@ public interface IIotDeviceService {
      * 批量删除设备
      */
     int deleteByIds(Long[] ids);
+
+    /**
+     * 重置设备密钥（轮换 device_secret），返回新密钥明文（仅此一次返回）。
+     *
+     * @param deviceId 设备ID
+     * @return 含新密钥的结果对象；设备不存在返回 null
+     */
+    IotDeviceSecretVo resetSecret(Long deviceId);
 
     /**
      * 根据设备编码查询设备实体（含 device_secret，供 MQTT 认证使用）

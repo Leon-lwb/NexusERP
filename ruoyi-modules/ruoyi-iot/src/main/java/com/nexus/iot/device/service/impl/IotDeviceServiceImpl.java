@@ -14,10 +14,12 @@ import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.iot.device.domain.IotDevice;
 import com.nexus.iot.device.domain.IotProduct;
 import com.nexus.iot.device.domain.bo.IotDeviceBo;
+import com.nexus.iot.device.domain.vo.IotDeviceSecretVo;
 import com.nexus.iot.device.domain.vo.IotDeviceVo;
 import com.nexus.iot.device.mapper.IotDeviceMapper;
 import com.nexus.iot.device.mapper.IotProductMapper;
 import com.nexus.iot.device.service.IIotDeviceService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,6 +32,7 @@ import java.util.UUID;
  *
  * @author nexus
  */
+@Slf4j
 @RequiredArgsConstructor
 @DS("iot")
 @Service
@@ -132,6 +135,43 @@ public class IotDeviceServiceImpl implements IIotDeviceService {
         // 密钥不在此处更新（避免被前端覆盖），如需重置走专用接口
         entity.setDeviceSecret(null);
         return baseMapper.updateById(entity);
+    }
+
+    /**
+     * 重置设备密钥（轮换 device_secret）。
+     * <p>
+     * 旧密钥立即失效：MQTT 认证按库内 device_secret 常量时间比对，写入新值后旧密码即无法通过认证。
+     * 仅返回新密钥，不返回旧值；不影响设备其他字段。
+     *
+     * @param deviceId 设备ID
+     * @return 含新密钥的结果对象；设备不存在返回 null
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public IotDeviceSecretVo resetSecret(Long deviceId) {
+        if (deviceId == null) {
+            return null;
+        }
+        IotDevice device = baseMapper.selectById(deviceId);
+        if (device == null) {
+            log.warn("重置设备密钥失败：设备不存在，deviceId={}", deviceId);
+            return null;
+        }
+        String newSecret = UUID.randomUUID().toString().replace("-", "");
+        // 条件更新：仅当设备仍存在时写入，影响 0 行视为并发删除，不返回密钥
+        int rows = baseMapper.update(null, Wrappers.<IotDevice>lambdaUpdate()
+            .set(IotDevice::getDeviceSecret, newSecret)
+            .eq(IotDevice::getDeviceId, deviceId));
+        if (rows == 0) {
+            log.warn("重置设备密钥失败：设备已被删除，deviceId={}", deviceId);
+            return null;
+        }
+        log.info("设备密钥已重置：deviceId={}, deviceCode={}", deviceId, device.getDeviceCode());
+        IotDeviceSecretVo vo = new IotDeviceSecretVo();
+        vo.setDeviceId(device.getDeviceId());
+        vo.setDeviceCode(device.getDeviceCode());
+        vo.setDeviceSecret(newSecret);
+        return vo;
     }
 
     /**

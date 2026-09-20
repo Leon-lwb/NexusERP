@@ -37,6 +37,10 @@ public class QcInspectTemplateBo extends BaseEntity {
     private String materialCode;
     /** 物料名称(冗余) */
     private String materialName;
+    /** 工序ID(IPQC 维度, 空=不限工序) */
+    private Long processId;
+    /** 客户ID(客户专属模板维度, 空=不限客户) */
+    private Long customerId;
     /** 版本号 */
     private Integer versionNo;
     /** 状态: DRAFT/ACTIVE */

@@ -41,6 +41,27 @@ import java.util.Map;
 @JobExecutor(name = "iotDataArchiveTask")
 public class IotDataArchiveTask {
 
+    /**
+     * 本地兜底调度开关：SnailJob 客户端启用（{@code snail-job.enabled=true}）时本地兜底让位，
+     * 避免同一任务被 SnailJob 与 {@code @Scheduled} 双重调度。
+     */
+    @org.springframework.beans.factory.annotation.Value("${snail-job.enabled:false}")
+    private boolean snailJobEnabled;
+
+    /**
+     * 本地 {@code @Scheduled} 兜底入口（IOT-MES-01）。
+     * <p>生产环境 {@code snail-job.enabled=false} 时 SnailJob 客户端不启动、不会回调
+     * {@link #jobExecute}，IoT→MES 的 {@code dc_data_record} 归档链路因此完全断开
+     * （MES 的 SPC/采集点/健康趋势全部拿不到 IoT 数据）。cron 与 {@code sj_job} 种子一致
+     * （每 5 分钟，拉取 {@link #PULL_WINDOW_MINUTES} 分钟窗口，靠 {@code uk_point_collect_time} 去重）。
+     * Lock4j 按任务名加分布式锁，多实例下仅一个节点执行，抢锁失败静默跳过。</p>
+     */
+    @org.springframework.scheduling.annotation.Scheduled(cron = "0 */5 * * * ?")
+    public void scheduledExecute() {
+        com.nexus.common.redis.utils.SchedulerFallbackUtils.runIfFallbackEnabled(
+            snailJobEnabled, "iotDataArchiveTask", 300000L, () -> jobExecute(null));
+    }
+
     private static final String POINT_TYPE_AUTO = "AUTO";
     private static final String SOURCE_IOT = "IoT";
     private static final String STATUS_ACTIVE = "ACTIVE";

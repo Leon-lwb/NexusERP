@@ -24,6 +24,8 @@ import com.nexus.mes.ncr.mapper.NcrOrderMapper;
 import com.nexus.mes.ncr.service.INcrDefectService;
 import com.nexus.mes.ncr.service.INcrOrderService;
 import com.nexus.mes.ncr.service.INcrReworkOrderService;
+import com.nexus.mes.lt.domain.LtLot;
+import com.nexus.mes.lt.mapper.LtLotMapper;
 import com.nexus.mes.lt.service.ILtLotService;
 import com.nexus.mes.pro.service.IProAndonService;
 import com.nexus.system.strategy.AutoCodeUtil;
@@ -44,7 +46,9 @@ import java.util.Map;
  * 状态机: OPEN -> REVIEW -> DISPOSITION -> CLOSED
  *                         └-> IN_REWORK -> CLOSED
  * 自动创建流程: 各质检模块或工序出口发现不合格时,通过 defectInfo JSON 传入缺陷明细,
- * 同时触发批次隔离和安灯质量告警(均为 best-effort,不阻断主流程)。
+ * 解析并落真实批次(定位不到时显式 warn "未关联批次", 不伪造 null 走旁路), 同时触发批次隔离与
+ * 安灯质量告警(建单期的隔离/安灯为 best-effort,不阻断主流程)。
+ * 处置期相反: 报废/让步的批次动作失败必须抛异常回滚 —— 处置结果与批次动作同事务一致(审计 MES-NCR-02)。
  * </p>
  *
  * @author Nexus
@@ -59,6 +63,10 @@ public class NcrOrderServiceImpl implements INcrOrderService {
     private final NcrDefectMapper defectMapper;
     private final AutoCodeUtil autoCodeUtil;
     private final ILtLotService ltLotService;
+    /** 批次主档 Mapper: 解析 NCR 关联的真实批次(MES-NCR-01) */
+    private final LtLotMapper ltLotMapper;
+    /** IPQC 检验单 Mapper: 工序过程检验来源无物料入参, 经检验单取物料以定位批次 */
+    private final com.nexus.mes.qc.mapper.QcIpqcMapper qcIpqcMapper;
     private final IProAndonService proAndonService;
     private final INcrReworkOrderService ncrReworkOrderService;
     private final INcrDefectService defectService;
@@ -200,8 +208,10 @@ public class NcrOrderServiceImpl implements INcrOrderService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public NcrOrderVo autoCreateFromIqc(Long iqcId, Long receiveId, Long materialId, String defectInfo) {
+        // 解析真实批次: 使批次隔离/解隔离/报废动作真正执行(MES-NCR-01)
+        LtLot lot = resolveLot(iqcId, materialId, SOURCE_IQC, iqcId);
         return createNcr(SOURCE_IQC, iqcId, null, materialId, null, defectInfo,
-            null, null, null, null, null, null, null, null);
+            lot == null ? null : lot.getLotId(), null, null, null, null, null, null, null);
     }
 
     /**
@@ -211,8 +221,10 @@ public class NcrOrderServiceImpl implements INcrOrderService {
     @Transactional(rollbackFor = Exception.class)
     public NcrOrderVo autoCreateFromIpqc(Long ipqcId, Long mesWoId, Long cardId, Long stepRecordId,
                                           Long processId, BigDecimal defectQty, String defectInfo) {
-        return createNcr(SOURCE_IPQC, ipqcId, mesWoId, null, defectQty, defectInfo,
-            null, cardId, stepRecordId, processId, null, null, null, null);
+        Long materialId = materialIdOfIpqc(ipqcId);
+        LtLot lot = resolveLot(null, materialId, SOURCE_IPQC, ipqcId);
+        return createNcr(SOURCE_IPQC, ipqcId, mesWoId, materialId, defectQty, defectInfo,
+            lot == null ? null : lot.getLotId(), cardId, stepRecordId, processId, null, null, null, null);
     }
 
     /**
@@ -221,8 +233,9 @@ public class NcrOrderServiceImpl implements INcrOrderService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public NcrOrderVo autoCreateFromOqc(Long oqcId, Long soId, Long materialId, String defectInfo) {
+        LtLot lot = resolveLot(null, materialId, SOURCE_OQC, oqcId);
         return createNcr(SOURCE_OQC, oqcId, null, materialId, null, defectInfo,
-            null, null, null, null, null, null, null, null);
+            lot == null ? null : lot.getLotId(), null, null, null, null, null, null, null);
     }
 
     /**
@@ -232,6 +245,9 @@ public class NcrOrderServiceImpl implements INcrOrderService {
     @Transactional(rollbackFor = Exception.class)
     public NcrOrderVo autoCreateFromExit(Long cardId, Long stepRecordId, Long mesWoId,
                                           BigDecimal defectQty, String defectInfo) {
+        // 工序出口来源没有物料/批次键: 无法定位批次时显式记录"未关联批次", 不伪造 null 走旁路
+        log.warn("NCR(工序出口)未关联批次, 批次隔离/报废/放行动作不会执行: cardId={}, stepRecordId={}, mesWoId={}",
+            cardId, stepRecordId, mesWoId);
         return createNcr(SOURCE_PROCESS, null, mesWoId, null, defectQty, defectInfo,
             null, cardId, stepRecordId, null, null, null, null, null);
     }
@@ -485,7 +501,8 @@ public class NcrOrderServiceImpl implements INcrOrderService {
         order.setMaterialCode(materialCode);
         order.setMaterialName(materialName);
         order.setLotId(lotId);
-        order.setLotCode(null);
+        // 批次编码随批次一并落库(便于界面/追溯显示); lotId 为空时保持 null, 由 resolveLot 的 warn 显式记录
+        order.setLotCode(lotCodeOf(lotId));
         order.setDefectQty(defectQty != null ? defectQty : BigDecimal.ZERO);
         order.setStatus(STATUS_OPEN);
         order.setCreatedTime(new Date());
@@ -594,14 +611,16 @@ public class NcrOrderServiceImpl implements INcrOrderService {
 
     /**
      * 处置: 报废分支 -> 批次报废,状态 CLOSED
+     * <p>批次报废失败必须抛出回滚(不得 catch 后仍 CAS 到 CLOSED): 处置结果与批次动作同事务一致,
+     * 失败时 NCR 停在 DISPOSITION, 用户可重试(审计 MES-NCR-02)。</p>
      */
     private Boolean handleScrapDisposition(NcrOrder order) {
-        // 批次报废(best-effort)
         if (order.getLotId() != null) {
             try {
                 ltLotService.scrap(order.getLotId(), "NCR(" + order.getNcrCode() + ")报废处置");
             } catch (Exception e) {
-                log.warn("NCR批次报废失败(不阻断): lotId={}", order.getLotId(), e);
+                log.error("NCR批次报废失败, 处置事务回滚: ncrId={}, lotId={}", order.getNcrId(), order.getLotId(), e);
+                throw new ServiceException("批次报废失败, 处置已回滚(请处理后重试): " + e.getMessage());
             }
         }
         int rows = baseMapper.update(null, Wrappers.<NcrOrder>lambdaUpdate()
@@ -618,14 +637,16 @@ public class NcrOrderServiceImpl implements INcrOrderService {
 
     /**
      * 处置: 让步接收分支 -> 批次放行,状态 CLOSED
+     * <p>批次放行失败必须抛出回滚(不得 catch 后仍 CAS 到 CLOSED): 处置结果与批次动作同事务一致
+     * (审计 MES-NCR-02)。</p>
      */
     private Boolean handleAcceptDisposition(NcrOrder order) {
-        // 批次放行(best-effort)
         if (order.getLotId() != null) {
             try {
                 ltLotService.release(order.getLotId());
             } catch (Exception e) {
-                log.warn("NCR批次放行失败(不阻断): lotId={}", order.getLotId(), e);
+                log.error("NCR批次放行失败, 处置事务回滚: ncrId={}, lotId={}", order.getNcrId(), order.getLotId(), e);
+                throw new ServiceException("批次放行失败, 处置已回滚(请处理后重试): " + e.getMessage());
             }
         }
         int rows = baseMapper.update(null, Wrappers.<NcrOrder>lambdaUpdate()
@@ -654,6 +675,70 @@ public class NcrOrderServiceImpl implements INcrOrderService {
         }
         log.info("NCR处置退货关闭: ncrId={}", order.getNcrId());
         return true;
+    }
+
+    /**
+     * 解析 NCR 关联的真实批次(审计 MES-NCR-01)。
+     * <p>优先复用已建立的"批次↔IQC 检验单"关联; 否则仅当"该物料下唯一一个待检且尚未关联 IQC 的批次"
+     * 时才建立关联(多候选视为不确定, 不做猜测, 避免把报废/放行作用到错误批次)。无法确定时记 warn
+     * 显式声明"未关联批次", 不伪造 null 走旁路。</p>
+     *
+     * @param iqcId      IQC 检验单 ID(可空)
+     * @param materialId 物料 ID(可空)
+     * @param sourceType NCR 来源类型(仅用于日志)
+     * @param sourceId   来源单据 ID(仅用于日志)
+     * @return 解析到的批次, 无法确定时返回 null
+     */
+    private LtLot resolveLot(Long iqcId, Long materialId, String sourceType, Long sourceId) {
+        if (iqcId != null) {
+            List<LtLot> linked = ltLotMapper.selectList(Wrappers.<LtLot>lambdaQuery()
+                .eq(LtLot::getIqcId, iqcId));
+            if (linked != null && !linked.isEmpty()) {
+                return linked.get(0);
+            }
+        }
+        if (materialId != null) {
+            List<LtLot> candidates = ltLotMapper.selectList(Wrappers.<LtLot>lambdaQuery()
+                .eq(LtLot::getMaterialId, materialId)
+                .eq(LtLot::getQcStatus, "PENDING")
+                .isNull(LtLot::getIqcId));
+            if (candidates != null && candidates.size() == 1) {
+                LtLot lot = candidates.get(0);
+                if (iqcId != null) {
+                    // 建立批次↔IQC 关联: 使 IQC 结果回写(applyIqcResult)与 NCR 处置定位到同一批次
+                    ltLotMapper.update(null, Wrappers.<LtLot>lambdaUpdate()
+                        .set(LtLot::getIqcId, iqcId)
+                        .eq(LtLot::getLotId, lot.getLotId()));
+                    log.info("NCR建立批次↔IQC关联: iqcId={}, lotId={}", iqcId, lot.getLotId());
+                }
+                return lot;
+            }
+        }
+        log.warn("NCR未关联批次(批次隔离/报废/放行动作不会执行): sourceType={}, sourceId={}, iqcId={}, materialId={}",
+            sourceType, sourceId, iqcId, materialId);
+        return null;
+    }
+
+    /**
+     * 批次编码查询(仅用于冗余落库, 查不到返回 null)
+     */
+    private String lotCodeOf(Long lotId) {
+        if (lotId == null) {
+            return null;
+        }
+        LtLot lot = ltLotMapper.selectById(lotId);
+        return lot == null ? null : lot.getLotCode();
+    }
+
+    /**
+     * 取 IPQC 检验单的物料 ID(工序过程检验来源无物料入参)
+     */
+    private Long materialIdOfIpqc(Long ipqcId) {
+        if (ipqcId == null) {
+            return null;
+        }
+        com.nexus.mes.qc.domain.QcIpqc ipqc = qcIpqcMapper.selectById(ipqcId);
+        return ipqc == null ? null : ipqc.getMaterialId();
     }
 
     /**

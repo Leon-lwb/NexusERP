@@ -15,6 +15,7 @@ import org.redisson.api.stream.StreamCreateGroupArgs;
 import org.redisson.api.stream.StreamReadGroupArgs;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Component;
 
 import jakarta.annotation.PostConstruct;
@@ -42,6 +43,8 @@ import java.util.concurrent.atomic.AtomicReference;
  *   <li>每轮先回收本消费者 pending（{@code >} 用 {@code StreamMessageId.MIN} 读已投递未 ACK），
  *       再拉取新消息（{@code StreamMessageId.NEWEST}），保证异常重启后不丢；</li>
  *   <li>批量落 {@code iot_device_data} → 更新 {@code iot:latest} 缓存 → 告警检查 → 批量 XACK；</li>
+ *   <li>幂等去重：{@code source_msg_id}（Stream entry id）唯一键，重投消息命中唯一键即视为已处理并 ACK；</li>
+ *   <li>租户交叉校验：Topic 声称租户与设备记录租户不一致时 ACK + 拒绝入库，防止跨租户数据注入；</li>
  *   <li>批量失败回退逐条插入以隔离毒消息；连续 {@code maxRetry} 次失败单条 ACK 跳过并记 ERROR；</li>
  *   <li>{@code @PreDestroy} 优雅停止消费线程。</li>
  * </ol>
@@ -162,8 +165,9 @@ public class IotStreamConsumer {
 
     /**
      * 处理一批消息。
+     * <p>包级可见：便于单元测试在不启动 Redis 的前提下直接校验租户拒绝/幂等分支。
      */
-    private void processBatch(Map<StreamMessageId, Map<Object, Object>> messages) {
+    void processBatch(Map<StreamMessageId, Map<Object, Object>> messages) {
         // 1. 按设备编码批量解析设备（每个 deviceCode 一次 DB 查询）
         Set<String> deviceCodes = new java.util.HashSet<>();
         for (Map<Object, Object> entry : messages.values()) {
@@ -196,15 +200,23 @@ public class IotStreamConsumer {
                 ack(e.getKey());
                 continue;
             }
-            IotDeviceData data = buildData(entry, device);
-            entities.add(data);
+            // 租户交叉校验（IOT-MQTT-01）：Topic 声称的租户与设备记录不一致 → 拒绝入库并 ACK，防止跨租户注入
+            String topicTenant = str(entry.get("topic_tenant_id"));
+            if (StringUtils.isNotBlank(topicTenant) && !topicTenant.equals(device.getTenantId())) {
+                log.warn("Topic tenantId 与设备记录不一致，拒绝入库并 ACK：streamId={}, deviceCode={}, "
+                        + "topicTenant={}, deviceTenant={}",
+                    e.getKey(), device.getDeviceCode(), topicTenant, device.getTenantId());
+                ack(e.getKey());
+                continue;
+            }
+            entities.add(buildData(entry, device, e.getKey()));
             ids.add(e.getKey());
         }
         if (entities.isEmpty()) {
             return;
         }
 
-        // 3. 批量落库；失败则回退逐条插入以隔离毒消息
+        // 3. 批量落库；失败则回退逐条插入以隔离毒消息（含唯一键冲突的重复消息）
         boolean batchOk = false;
         try {
             deviceDataService.batchInsert(entities);
@@ -227,10 +239,42 @@ public class IotStreamConsumer {
                     ack(id);
                     retryCount.remove(id);
                 } catch (Exception ex) {
+                    if (isDuplicateKey(ex)) {
+                        // 唯一键冲突 = 该 Stream 消息此前已入库（XACK 丢失导致重投），视为已处理成功
+                        log.info("消息重复（唯一键冲突），按已处理成功跳过：streamId={}, device={}, property={}",
+                            id, data.getDeviceCode(), data.getPropertyCode());
+                        retryCount.remove(id);
+                        ack(id);
+                        continue;
+                    }
                     handlePoison(id, data, ex);
                 }
             }
         }
+    }
+
+    /**
+     * 判断异常是否为唯一键冲突（Stream 重投导致的重复入库）。
+     * <p>
+     * 兼容 Spring 的 {@link DuplicateKeyException}、JDBC 的完整性约束异常，以及驱动原始报错信息。
+     *
+     * @param ex 待判定异常
+     * @return 属唯一键冲突返回 true
+     */
+    private boolean isDuplicateKey(Throwable ex) {
+        Throwable t = ex;
+        while (t != null) {
+            if (t instanceof DuplicateKeyException
+                || t instanceof java.sql.SQLIntegrityConstraintViolationException) {
+                return true;
+            }
+            String msg = t.getMessage();
+            if (msg != null && msg.contains("Duplicate entry")) {
+                return true;
+            }
+            t = t.getCause();
+        }
+        return false;
     }
 
     /**
@@ -290,30 +334,35 @@ public class IotStreamConsumer {
 
     /**
      * 从 Stream entry 与设备记录组装 {@link IotDeviceData}。
-     * 权威 tenantId / deviceId 取自设备记录；Topic 中的 tenantId 仅作交叉校验（决策 G）。
+     * 权威 tenantId / deviceId 取自设备记录；Topic 中的 tenantId 已由 {@link #processBatch} 交叉校验。
+     * <p>
+     * {@code data_type} 与值列一致性（IOT-PIPE-03）：声明类型为空时不硬写 NUMERIC，
+     * 而是交由 {@link IotDataValueResolver} 按值内容推断，并把实际生效类型回写 {@code data_type}。
+     *
+     * @param entry  Stream entry
+     * @param device 设备记录（权威身份）
+     * @param id     Stream 消息 ID（作为幂等去重键 source_msg_id）
      */
-    private IotDeviceData buildData(Map<Object, Object> entry, IotDevice device) {
+    IotDeviceData buildData(Map<Object, Object> entry, IotDevice device, StreamMessageId id) {
         IotDeviceData d = new IotDeviceData();
         d.setTenantId(device.getTenantId());
         d.setDeviceId(device.getDeviceId());
         d.setDeviceCode(device.getDeviceCode());
         d.setPropertyCode(str(entry.get("property_code")));
         String dataType = str(entry.get("data_type"));
-        d.setDataType(StringUtils.isBlank(dataType) ? "NUMERIC" : dataType);
+        d.setDataType(StringUtils.isBlank(dataType) ? null : dataType);
         d.setQuality(strOrEmpty(entry.get("quality")));
         d.setSource(strOrEmpty(entry.get("source")));
+        d.setSourceMsgId(id == null ? null : id.toString());
         d.setCollectTime(toDate(entry.get("collect_time")));
         d.setReceiveTime(toDate(entry.get("receive_time")));
         d.setCreateTime(new Date());
 
-        // tenantId 交叉校验：Topic 声称的租户与设备记录不一致时以设备为准并告警
-        String topicTenant = str(entry.get("topic_tenant_id"));
-        if (StringUtils.isNotBlank(topicTenant) && !topicTenant.equals(device.getTenantId())) {
-            log.warn("Topic tenantId 与设备记录不一致，以设备为准：deviceCode={}, topicTenant={}, deviceTenant={}",
-                device.getDeviceCode(), topicTenant, device.getTenantId());
+        // 按声明类型（缺省时按值内容推断）落值列，并把实际生效类型回写 data_type，保证列语义与实际值列一致
+        String effectiveType = valueResolver.applyValue(d, entry.get("value"), d.getDataType());
+        if (StringUtils.isNotBlank(effectiveType)) {
+            d.setDataType(effectiveType);
         }
-
-        valueResolver.applyValue(d, entry.get("value"), d.getDataType());
         return d;
     }
 

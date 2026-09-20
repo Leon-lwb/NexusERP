@@ -10052,9 +10052,33 @@ INSERT INTO `sj_job` VALUES (2, 'dev', 'biz_2', 'ruoyi_group', '应商绩效批�
 INSERT INTO `sj_job` VALUES (3, 'dev', 'biz_3', 'ruoyi_group', '安全库存预警定时任务', '', 1, 1789405200000, 1, 1, 4, 1, 'stockAlertTask', 3, '0 0 1 * * ?', 1, 60, 3, 1, 1, 120, 0, '', 1, '{}', '', '', 0, '2026-05-28 17:20:03', '2026-09-14 13:18:12');
 -- 销售合同到期扫描（Q9）：EXPIRED 状态此前无任何代码写入，本任务补齐（到期日当天仍算有效）
 INSERT INTO `sj_job` VALUES (200, 'dev', 'biz_200', 'ruoyi_group', '销售合同到期扫描任务', '', 1, 1789405200000, 1, 1, 4, 1, 'soContractExpiryTask', 3, '0 30 1 * * ?', 1, 60, 3, 1, 1, 90, 0, '', 1, '{}', '', '', 0, '2026-09-19 20:00:00', '2026-09-19 20:00:00');
+
+INSERT INTO `sj_job`
+(`namespace_id`, `biz_id`, `group_name`, `job_name`, `args_str`, `args_type`, `next_trigger_at`,
+ `job_status`, `task_type`, `route_key`, `executor_type`, `executor_info`, `trigger_type`, `trigger_interval`,
+ `block_strategy`, `executor_timeout`, `max_retry_times`, `parallel_num`, `retry_interval`, `bucket_index`,
+ `resident`, `notify_ids`, `owner_id`, `labels`, `description`, `ext_attrs`, `deleted`)
+VALUES
+('dev', 'biz_201', 'ruoyi_group', '设备OEE日聚合任务', NULL, 1, UNIX_TIMESTAMP(NOW()) * 1000,
+ 1, 1, 4, 1, 'oeeAggregateTask', 3, '0 0 1 * * ?',
+ 1, 300, 3, 1, 60, 116,
+ 0, '', 1, '{}',
+ 'MES-EQ-02 补种: 每日01:00聚合前一天设备OEE写入 eq_oee_record(租户+设备+stat_date 唯一, 幂等可重跑)', '', 0);
+
+INSERT INTO `sj_job`
+(`namespace_id`, `biz_id`, `group_name`, `job_name`, `args_str`, `args_type`, `next_trigger_at`,
+ `job_status`, `task_type`, `route_key`, `executor_type`, `executor_info`, `trigger_type`, `trigger_interval`,
+ `block_strategy`, `executor_timeout`, `max_retry_times`, `parallel_num`, `retry_interval`, `bucket_index`,
+ `resident`, `notify_ids`, `owner_id`, `labels`, `description`, `ext_attrs`, `deleted`)
+VALUES
+('dev', 'biz_202', 'ruoyi_group', '设备健康度日评任务', NULL, 1, UNIX_TIMESTAMP(NOW()) * 1000,
+ 1, 1, 4, 1, 'equipmentHealthTask', 3, '0 0 7 * * ?',
+ 1, 300, 3, 1, 60, 116,
+ 0, '', 1, '{}',
+ 'MES-EQ-02 补种: 每日07:00评估全部关联IoT设备健康度, LOW级触发EQUIPMENT安灯', '', 0);
 INSERT INTO `sj_job` VALUES (4, 'dev', 'biz_4', 'ruoyi_group', 'IoT设备数据清理任务', '', 1, 1781715600000, 1, 1, 4, 1, 'iotDataCleanupTask', 3, '0 0 2 * * ?', 1, 60, 3, 1, 1, 50, 0, '', 1, '{}', '', '', 1, '2026-06-18 17:32:23', '2026-09-14 13:18:12');
-INSERT INTO `sj_job` VALUES (5, 'dev', 'biz_5', 'ruoyi_group', 'IoT设备心跳检测任务', '', 1, 1781715600000, 1, 1, 4, 1, 'iotDeviceHeartbeatTask', 3, '0 0 2 * * ?', 1, 60, 3, 1, 1, 51, 0, '', 1, '{}', '', '', 1, '2026-06-18 17:32:23', '2026-09-14 13:18:12');
-INSERT INTO `sj_job` VALUES (6, 'dev', 'biz_6', 'ruoyi_group', 'IoT Stream修剪任务', '', 1, 1781715600000, 1, 1, 4, 1, 'iotStreamTrimTask', 3, '0 0 2 * * ?', 1, 60, 3, 1, 1, 52, 0, '', 1, '{}', '', '', 1, '2026-06-18 17:32:23', '2026-09-14 13:18:12');
+INSERT INTO `sj_job` VALUES (5, 'dev', 'biz_5', 'ruoyi_group', 'IoT设备心跳检测任务', '', 1, 1781715600000, 1, 1, 4, 1, 'iotDeviceHeartbeatTask', 3, '0 */5 * * * ?', 1, 60, 3, 1, 1, 51, 0, '', 1, '{}', '', '', 1, '2026-06-18 17:32:23', '2026-09-14 13:18:12');
+INSERT INTO `sj_job` VALUES (6, 'dev', 'biz_6', 'ruoyi_group', 'IoT Stream修剪任务', '', 1, 1781715600000, 1, 1, 4, 1, 'iotStreamTrimTask', 3, '0 0 * * * ?', 1, 60, 3, 1, 1, 52, 0, '', 1, '{}', '', '', 1, '2026-06-18 17:32:23', '2026-09-14 13:18:12');
 INSERT INTO `sj_job` VALUES (7, 'dev', 'biz_7', 'ruoyi_group', 'IoT数据自动归档任务', NULL, 1, 1789380600000, 1, 1, 4, 1, 'iotDataArchiveTask', 3, '0 */5 * * * ?', 1, 300, 3, 1, 60, 121, 0, '', 1, '{}', 'IoT自动采集数据归档到 dc_data_record，每5分钟执行一次（拉取6分钟窗口，uk_point_collect_time 去重）', '', 0, '2026-06-26 21:56:01', '2026-09-14 18:04:52');
 INSERT INTO `sj_job` VALUES (8, 'dev', 'biz_8', 'ruoyi_group', '设备保养到期提醒任务', NULL, 1, 1789430400000, 1, 1, 4, 1, 'maintenanceDueTask', 3, '0 0 8 * * ?', 1, 300, 3, 1, 60, 122, 0, '', 1, '{}', '扫描 eq_maintenance_plan 中 next_date<=today 的到期计划, 触发 SSE 推送+EQUIPMENT 安灯(每计划24h限频)', '', 0, '2026-06-27 00:23:54', '2026-09-14 13:18:12');
 INSERT INTO `sj_job` VALUES (9, 'dev', 'biz_9', 'ruoyi_group', '设备状态联动任务', NULL, 1, 1785331620000, 2, 1, 4, 1, 'equipmentStatusSyncTask', 3, '7 */1 * * * ?', 1, 300, 3, 1, 60, 122, 0, '', 1, '{}', 'F8-5: 每60s扫描 iot_device_id 非空且 status IN(NORMAL,OFFLINE) 设备, 调 getOnlineStatus 回写 eq_equipment.status; CAS WHERE status IN(NORMAL,OFFLINE) 保护 FAULT/MAINTENANCE/SCRAPPED 不覆盖', '', 0, '2026-07-29 21:26:00', '2026-09-14 13:18:12');
@@ -92678,6 +92702,7 @@ INSERT INTO `sys_menu` VALUES (6022, '设备新增', 6020, 2, '', '', '', 1, 0, 
 INSERT INTO `sys_menu` VALUES (6023, '设备修改', 6020, 3, '', '', '', 1, 0, 'F', '0', '0', 'iot:device:edit', '#', 103, 1, '2026-06-17 17:35:58', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (6024, '设备删除', 6020, 4, '', '', '', 1, 0, 'F', '0', '0', 'iot:device:remove', '#', 103, 1, '2026-06-17 17:35:58', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (6025, '设备导出', 6020, 5, '', '', '', 1, 0, 'F', '0', '0', 'iot:device:export', '#', 103, 1, '2026-06-17 17:35:58', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (6026, '设备密钥重置', 6020, 6, '', '', '', 1, 0, 'F', '0', '0', 'iot:device:resetSecret', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, '重置设备密钥(轮换 device_secret, 仅返回一次)');
 INSERT INTO `sys_menu` VALUES (6100, '财务管理', 2000, 22, 'fin', NULL, NULL, 1, 0, 'M', '0', '0', NULL, 'money', 103, 1, '2026-07-30 21:32:30', NULL, NULL, '财务核心模块');
 INSERT INTO `sys_menu` VALUES (6101, '总账', 6100, 1, 'gl', NULL, NULL, 1, 0, 'M', '0', '0', NULL, 'ledger', 103, 1, '2026-07-30 21:32:30', NULL, NULL, 'GL 总账');
 INSERT INTO `sys_menu` VALUES (6102, '科目表', 6101, 1, 'account', 'erp/fin/gl/account/index', NULL, 1, 0, 'C', '0', '0', 'fin:gl:account:list', 'tree-table', 103, 1, '2026-07-30 21:32:30', NULL, NULL, '会计科目树');

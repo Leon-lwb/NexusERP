@@ -13,6 +13,7 @@ import static org.junit.jupiter.api.Assertions.*;
  *
  * @author nexus
  */
+@Tag("local")
 @Tag("dev")
 class IotDataValueResolverTest {
 
@@ -77,6 +78,67 @@ class IotDataValueResolverTest {
         assertNull(data.getNumericValue());
         assertNull(data.getTextValue());
         assertNull(data.getBoolValue());
+    }
+
+    // ---------------- IOT-PIPE-03：data_type 与实际值列一致性 ----------------
+
+    /** 空 dataType 时按字符串内容推断（Stream 链路 value 已被字符串化，不能再依赖 instanceof Number）。 */
+    @Test
+    void applyValue_blankType_infersNumericFromString() {
+        IotDeviceData data = new IotDeviceData();
+        String type = resolver.applyValue(data, "25.5", "");
+        assertEquals("NUMERIC", type);
+        assertEquals("NUMERIC", data.getDataType());
+        assertEquals(new BigDecimal("25.5"), data.getNumericValue());
+    }
+
+    @Test
+    void applyValue_blankType_infersBoolFromString() {
+        IotDeviceData data = new IotDeviceData();
+        String type = resolver.applyValue(data, "true", null);
+        assertEquals("BOOL", type);
+        assertEquals("BOOL", data.getDataType());
+        assertTrue(data.getBoolValue());
+        assertNull(data.getNumericValue());
+    }
+
+    @Test
+    void applyValue_blankType_infersText() {
+        IotDeviceData data = new IotDeviceData();
+        String type = resolver.applyValue(data, "SN001", "");
+        assertEquals("TEXT", type);
+        assertEquals("TEXT", data.getDataType());
+        assertEquals("SN001", data.getTextValue());
+        assertNull(data.getNumericValue());
+    }
+
+    /** 声明 NUMERIC 但非数值 → 落 text_value，data_type 必须纠正为 TEXT（修复前恒记 NUMERIC）。 */
+    @Test
+    void applyValue_numericDeclaredButTextValue_correctsTypeToText() {
+        IotDeviceData data = new IotDeviceData();
+        String type = resolver.applyValue(data, "abc", "NUMERIC");
+        assertEquals("TEXT", type);
+        assertEquals("TEXT", data.getDataType());
+        assertNull(data.getNumericValue());
+        assertEquals("abc", data.getTextValue());
+    }
+
+    @Test
+    void applyValue_stringTypeAlias_landsText() {
+        IotDeviceData data = new IotDeviceData();
+        String type = resolver.applyValue(data, "running", "STRING");
+        assertEquals("TEXT", type);
+        assertEquals("TEXT", data.getDataType());
+        assertEquals("running", data.getTextValue());
+    }
+
+    @Test
+    void applyValue_boolDeclaredFromString_keepsBool() {
+        IotDeviceData data = new IotDeviceData();
+        String type = resolver.applyValue(data, "false", "BOOL");
+        assertEquals("BOOL", type);
+        assertEquals("BOOL", data.getDataType());
+        assertFalse(data.getBoolValue());
     }
 
 }

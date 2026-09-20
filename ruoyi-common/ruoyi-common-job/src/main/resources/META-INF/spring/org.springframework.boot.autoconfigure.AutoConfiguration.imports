@@ -1,1 +1,2 @@
+com.nexus.common.job.config.LocalSchedulingConfig
 com.nexus.common.job.config.SnailJobConfig

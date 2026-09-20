@@ -53,6 +53,25 @@ import java.util.Set;
 @JobExecutor(name = "maintenanceDueTask")
 public class MaintenanceDueTask {
 
+    /**
+     * 本地兜底调度开关：SnailJob 客户端启用（{@code snail-job.enabled=true}）时本地兜底让位，
+     * 避免同一任务被 SnailJob 与 {@code @Scheduled} 双重调度。
+     */
+    @org.springframework.beans.factory.annotation.Value("${snail-job.enabled:false}")
+    private boolean snailJobEnabled;
+
+    /**
+     * 本地 {@code @Scheduled} 兜底入口（MES-EQ-01）。
+     * <p>生产环境 {@code snail-job.enabled=false} 时 SnailJob 客户端不启动、不会回调
+     * {@link #jobExecute}，保养到期提醒静默不执行。cron 与 {@code sj_job} 种子一致（每天 08:00）。
+     * 任务体已按“每计划 24h 限频”幂等，另由 Lock4j 按任务名加分布式锁，多实例下仅一个节点执行。</p>
+     */
+    @org.springframework.scheduling.annotation.Scheduled(cron = "0 0 8 * * ?")
+    public void scheduledExecute() {
+        com.nexus.common.redis.utils.SchedulerFallbackUtils.runIfFallbackEnabled(
+            snailJobEnabled, "maintenanceDueTask", 900000L, () -> jobExecute(null));
+    }
+
     private static final String PLAN_STATUS_ACTIVE = "ACTIVE";
     private static final String SSE_TYPE = "MAINTENANCE_DUE";
     private static final String THROTTLE_PREFIX = "mes:maintenance:due:rl:";

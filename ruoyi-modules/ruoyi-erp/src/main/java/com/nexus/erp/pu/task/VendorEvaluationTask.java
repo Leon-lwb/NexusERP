@@ -31,6 +31,25 @@ import java.util.List;
 @JobExecutor(name = "vendorEvaluationTask")
 public class VendorEvaluationTask {
 
+    /**
+     * 本地兜底调度开关：SnailJob 客户端启用（{@code snail-job.enabled=true}）时本地兜底让位，
+     * 避免同一任务被 SnailJob 与 {@code @Scheduled} 双重调度。
+     */
+    @org.springframework.beans.factory.annotation.Value("${snail-job.enabled:false}")
+    private boolean snailJobEnabled;
+
+    /**
+     * 本地 {@code @Scheduled} 兜底入口。
+     * <p>生产环境 {@code snail-job.enabled=false} 时 SnailJob 客户端不启动、不会回调
+     * {@link #jobExecute}，供应商绩效长期不刷新。cron 与 {@code sj_job} 种子一致（每天 01:00）。
+     * Lock4j 按任务名加分布式锁，多实例下仅一个节点执行，抢锁失败静默跳过。</p>
+     */
+    @org.springframework.scheduling.annotation.Scheduled(cron = "0 0 1 * * ?")
+    public void scheduledExecute() {
+        com.nexus.common.redis.utils.SchedulerFallbackUtils.runIfFallbackEnabled(
+            snailJobEnabled, "vendorEvaluationTask", 900000L, () -> jobExecute(null));
+    }
+
     private final IPuVendorEvaluationService vendorEvaluationService;
     private final SysTenantMapper sysTenantMapper;
 

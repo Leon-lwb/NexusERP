@@ -40,6 +40,8 @@ class QcOqcServiceImplTest {
     private MesMqSendService mesMqSendService;
     @Mock
     private INcrOrderService ncrOrderService;
+    @Mock
+    private com.nexus.mes.qc.service.IQcInspectDetailService inspectDetailService;
     @InjectMocks
     private QcOqcServiceImpl service;
 
@@ -113,6 +115,8 @@ class QcOqcServiceImplTest {
         assertNotNull(captured.getOqcNo());
         assertTrue(captured.getOqcNo().startsWith("OQC-"));
         assertEquals(insertedVo, result);
+        // MES-QC-02: OQC 建单必须按 物料 维度匹配模板并生成检验明细
+        verify(inspectDetailService).generateDetails(eq("OQC"), any(), eq(200L), eq(BigDecimal.TEN), isNull(), isNull());
     }
 
     @Test

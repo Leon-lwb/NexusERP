@@ -19,9 +19,15 @@ import java.math.BigDecimal;
 /**
  * MES模块MQ消息发送服务
  * <p>
- * 使用 @Async 在独立线程中发送MQ消息，脱离 @DS("mes") 的数据源上下文。
+ * 质检回写(IQC/OQC/IPQC)为<b>同步投递</b>: 由调用点(Qc*ServiceImpl.inspect 的 afterCommit)在
+ * 事务提交线程内同步发送, 不再 {@code @Async} fire-and-forget —— 投递失败在同一线程内可见/可观测。
+ * 可靠性由 {@link ReliableMessageProducer} 兜底: 发送前先落 mq_message_record(状态 SENDING),
+ * 投递异常时记录保持 SENDING, 由 MessageCompensationTask / ReconciliationTask 按重试上限补偿重投,
+ * 因此"检验单已 COMPLETED 但 ERP 未回写"不会再静默丢失。
+ * 工单完工/设备状态回写仍为 @Async(非质检关键链路)。
+ * <p>
  * 因为 mq_message_record 表位于 ry-vue(master) 库而非 ry-mes 业务库，
- * 异步线程中手动 push("master") 确保消息记录写入正确库。
+ * 发送前手动 push("master") 确保消息记录写入正确库。
  * <p>
  * 注意: 消息发往 TOPIC_EXCHANGE，与 {@code RabbitMqInitializer} 中
  * {@code erp.workorder.completed.#} / {@code erp.iqc.completed.#} 队列绑定一致。
@@ -85,7 +91,6 @@ public class MesMqSendService {
      * @param quantity      检验数量
      * @param tenantId      租户ID
      */
-    @Async
     public void sendIqcCompleted(Long iqcId, String iqcCode, Long receiveId, Long materialId,
                                  String inspectResult, BigDecimal quantity, String tenantId) {
         log.info("异步发送IQC检验完成消息: iqcId={}, iqcCode={}, receiveId={}, materialId={}, result={}",
@@ -125,7 +130,6 @@ public class MesMqSendService {
      * @param quantity      检验数量
      * @param tenantId      租户ID
      */
-    @Async
     public void sendOqcCompleted(Long oqcId, String oqcCode, Long soId, Long materialId,
                                  String materialCode, String inspectResult,
                                  BigDecimal quantity, String tenantId) {
@@ -170,7 +174,6 @@ public class MesMqSendService {
      * @param inspectorName 检验员姓名
      * @param tenantId      租户ID
      */
-    @Async
     public void sendIpqcCompleted(Long ipqcId, String ipqcNo, Long mesWoId, Long erpWoId, String woNo,
                                   String inspectResult, BigDecimal defectQty, BigDecimal defectRate,
                                   Long inspectorId, String inspectorName, String tenantId) {

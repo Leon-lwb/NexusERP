@@ -98,8 +98,10 @@ CREATE TABLE `iot_device_data`  (
   `receive_time` datetime(0) NOT NULL COMMENT '接收时间(服务端)',
   `quality` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'GOOD' COMMENT '数据质量: GOOD/BAD/UNCERTAIN',
   `source` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'MQTT' COMMENT '数据来源: MQTT/OPC_UA/MODBUS/HTTP',
+  `source_msg_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '来源消息ID(Redis Stream entry id,幂等去重键)',
   `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`data_id`) USING BTREE,
+  UNIQUE INDEX `uk_source_msg_id`(`source_msg_id`) USING BTREE,
   INDEX `idx_device_time`(`device_id`, `collect_time`) USING BTREE,
   INDEX `idx_property`(`device_id`, `property_code`, `collect_time`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE

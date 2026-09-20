@@ -11,6 +11,7 @@ import com.nexus.iot.device.service.IIotDeviceDataService;
 import com.nexus.iot.mqtt.IotDeviceStatusCache;
 import com.nexus.iot.pipeline.IotDeviceLatestCache;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
@@ -26,6 +27,7 @@ import java.util.Map;
  *
  * @author nexus
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class IotDeviceDataQueryServiceImpl implements IotDeviceDataQueryService {
@@ -100,6 +102,12 @@ public class IotDeviceDataQueryServiceImpl implements IotDeviceDataQueryService 
 
     /**
      * 查询设备历史数据（MySQL iot 数据源），转换为 Map 列表供 MES 读取。
+     * <p>
+     * IOT-DATA-01：LIMIT 下推到 DB，单次最多 {@link IIotDeviceDataService#ABSOLUTE_MAX_QUERY_LIMIT} 条，
+     * 达到上限时记 WARN 提示截断（MES 侧 {@code IotDataArchiveTask} 应按分块窗口拉取）。
+     * <p>
+     * 说明：调用方显式传入分块上限需变更 {@code ruoyi-common-iot} 的
+     * {@code IotDeviceDataQueryService} 契约（不在本批次文件所有权内），此处先用统一上限兜底。
      *
      * @param deviceId 设备 ID
      * @param start    起始采集时间
@@ -108,7 +116,12 @@ public class IotDeviceDataQueryServiceImpl implements IotDeviceDataQueryService 
      */
     @Override
     public List<Map<String, Object>> getHistoryData(Long deviceId, Date start, Date end) {
-        List<IotDeviceData> list = deviceDataService.selectHistory(deviceId, start, end);
+        int limit = IIotDeviceDataService.ABSOLUTE_MAX_QUERY_LIMIT;
+        List<IotDeviceData> list = deviceDataService.selectHistory(deviceId, start, end, limit);
+        if (list.size() >= limit) {
+            log.warn("IoT 历史归档查询达到单次上限 {}，结果可能被截断：deviceId={}, start={}, end={}",
+                limit, deviceId, start, end);
+        }
         return list.stream().map(this::toMap).toList();
     }
 

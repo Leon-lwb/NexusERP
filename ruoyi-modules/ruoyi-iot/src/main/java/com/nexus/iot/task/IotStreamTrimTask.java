@@ -26,6 +26,26 @@ import org.springframework.stereotype.Component;
 @JobExecutor(name = "iotStreamTrimTask")
 public class IotStreamTrimTask {
 
+    /**
+     * 本地兜底调度开关：SnailJob 客户端启用（{@code snail-job.enabled=true}）时本地兜底让位，
+     * 避免同一任务被 SnailJob 与 {@code @Scheduled} 双重调度。
+     */
+    @org.springframework.beans.factory.annotation.Value("${snail-job.enabled:false}")
+    private boolean snailJobEnabled;
+
+    /**
+     * 本地 {@code @Scheduled} 兜底入口（IOT-TASK-01）。
+     * <p>生产环境 {@code snail-job.enabled=false} 时 SnailJob 客户端不启动、不会回调
+     * {@link #jobExecute}，由本方法兜底；cron 与 IOT-TASK-02 修正后的 {@code sj_job} 种子一致
+     * （每小时；Stream 不裁剪会先把 Redis 撑爆，属“不做就宕机”项）。
+     * Lock4j 按任务名加分布式锁，多实例下仅一个节点执行，抢锁失败静默跳过。</p>
+     */
+    @org.springframework.scheduling.annotation.Scheduled(cron = "0 0 * * * ?")
+    public void scheduledExecute() {
+        com.nexus.common.redis.utils.SchedulerFallbackUtils.runIfFallbackEnabled(
+            snailJobEnabled, "iotStreamTrimTask", 300000L, () -> jobExecute(null));
+    }
+
     /** 管道配置属性，提供 Stream Key。 */
     private final IotPipelineProperties properties;
 

@@ -52,6 +52,18 @@ public class IotPipelineProperties {
     private boolean consumerEnabled = true;
 
     /**
+     * collect_time 合理性校验：允许设备时间戳超前服务端时间的上限（毫秒），超出则改用服务端时间。
+     * <p>默认 5 分钟，容忍设备与服务端的轻微时钟漂移与网络延迟。
+     */
+    private long collectTimeFutureToleranceMs = 5 * 60 * 1000L;
+
+    /**
+     * collect_time 合理性校验：允许设备时间戳滞后服务端时间的下限（毫秒），超出则改用服务端时间。
+     * <p>默认 7 天：与 90 天保留策略配合，避免历史时间戳被清理任务立刻删除造成静默丢数。
+     */
+    private long collectTimePastToleranceMs = 7L * 24 * 60 * 60 * 1000;
+
+    /**
      * 硬编码告警阈值：propertyCode → 阈值（numericValue 超过即告警）
      */
     private Map<String, java.math.BigDecimal> alertThresholds = new HashMap<>();

@@ -91,4 +91,45 @@ public class QcIpqcController extends BaseController {
         qcIpqcService.inspect(ipqcId, inspectResult, defectInfo, sampleQty, defectQty, remark);
         return R.ok();
     }
+
+    /**
+     * 查询 IPQC 检验单明细(按检验模板快照生成的检验项目)。
+     *
+     * @param ipqcId IPQC 检验单 ID
+     * @return 检验明细列表
+     */
+    @SaCheckPermission("mes:qc:ipqc:query")
+    @GetMapping("/{ipqcId}/details")
+    public R<java.util.List<com.nexus.mes.qc.domain.vo.QcInspectDetailVo>> getDetails(@PathVariable Long ipqcId) {
+        return R.ok(qcIpqcService.selectDetails(ipqcId));
+    }
+
+    /**
+     * 按检验明细执行检验(自动判定): 录入各项目实测值, 系统比对标准自动判定
+     * 合格(QUALIFIED)/不合格(UNQUALIFIED), 判定结果走原有 NCR/MQ 回写链路。
+     *
+     * @param ipqcId IPQC 检验单 ID
+     * @param body   请求体: { details: [{detailId, measuredValue, sampleQty, remark}], defectInfo, remark }
+     */
+    @SaCheckPermission("mes:qc:ipqc:inspect")
+    @Log(title = "IPQC检验(自动判定)", businessType = BusinessType.UPDATE)
+    @PutMapping("/inspect-details/{ipqcId}")
+    public R<Void> inspectWithDetails(@PathVariable Long ipqcId,
+                                      @RequestBody InspectDetailsRequest body) {
+        qcIpqcService.inspectWithDetails(ipqcId, body.getDetails(), body.getDefectInfo(), body.getRemark());
+        return R.ok();
+    }
+
+    /**
+     * 明细检验请求体
+     */
+    @lombok.Data
+    public static class InspectDetailsRequest {
+        /** 明细实测值列表 */
+        private java.util.List<com.nexus.mes.qc.domain.bo.QcInspectEntryBo> details;
+        /** 不良品信息(JSON, 可为空) */
+        private String defectInfo;
+        /** 备注(可为空) */
+        private String remark;
+    }
 }

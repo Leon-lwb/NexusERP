@@ -22,13 +22,15 @@ import java.util.List;
  * 过期合同仍可被引用、仍出现在「有效合同」统计里。本任务每天扫描并把
  * {@code expiry_date < 今天} 的 EFFECTIVE 合同置为 EXPIRED（到期日当天仍算有效）。</p>
  *
- * <p><b>为什么用 {@code @JobExecutor} 而不是 {@code @Scheduled}</b>：本项目的
- * {@code @EnableScheduling} 是条件装配的（{@code SnailJobConfig} 上标了
- * {@code @ConditionalOnProperty(snail-job.enabled=true)}），而生产环境
- * {@code snail-job.enabled: false} —— 用 {@code @Scheduled} 写的任务在生产不会执行。
- * 项目既有的定时任务（{@code StockAlertTask}、{@code VendorEvaluationTask}）统一走
- * SnailJob 执行器，本任务与之一致，并在 {@code script/sql/ry-vue.sql} 的
- * {@code sj_job} / {@code sj_job_executor} 中登记。</p>
+ * <p><b>调度机制（2026-09-20 修复）</b>：本任务提供两条调度入口 ——
+ * ①{@code @JobExecutor}，由 SnailJob 调度（{@code snail-job.enabled=true} 时生效）；
+ * ②{@link #scheduledExecute()} 的 {@code @Scheduled} 本地兜底，由
+ * {@code com.nexus.common.job.config.LocalSchedulingConfig} 在
+ * {@code snail-job.enabled=false} 时开启 {@code @EnableScheduling} 才会真正生效，
+ * 并用 Lock4j 分布式锁保证多实例不重复执行。
+ * 此前生产环境 {@code snail-job.enabled: false} 且全仓唯一的 {@code @EnableScheduling}
+ * 挂在条件装配的 {@code SnailJobConfig} 上，导致 {@code @Scheduled} 注解处理根本没开启 ——
+ * 单靠 {@code @Scheduled} 写的任务在生产不会执行，这正是本次修复的根因之一。</p>
  *
  * <p>多租户：任务线程无登录态，需遍历所有租户并在 {@link TenantHelper#dynamic} 下执行，
  * 否则只有默认租户的合同会被扫描。{@code sys_tenant} 在 ry-vue(master) 库，
@@ -43,6 +45,26 @@ import java.util.List;
 @RequiredArgsConstructor
 @JobExecutor(name = "soContractExpiryTask")
 public class SoContractExpiryTask {
+
+    /**
+     * 本地兜底调度开关：SnailJob 客户端启用（{@code snail-job.enabled=true}）时本地兜底让位，
+     * 避免同一任务被 SnailJob 与 {@code @Scheduled} 双重调度。
+     */
+    @org.springframework.beans.factory.annotation.Value("${snail-job.enabled:false}")
+    private boolean snailJobEnabled;
+
+    /**
+     * 本地 {@code @Scheduled} 兜底入口。
+     * <p>生产环境 {@code snail-job.enabled=false} 时 SnailJob 客户端不启动、不会回调
+     * {@link #jobExecute}，过期合同永远停在 EFFECTIVE。cron 与 {@code sj_job} 种子一致
+     * （每天 01:30）。执行体是状态条件更新（EFFECTIVE → EXPIRED）本身幂等，另由 Lock4j
+     * 按任务名加分布式锁，多实例下仅一个节点执行，抢锁失败静默跳过。</p>
+     */
+    @org.springframework.scheduling.annotation.Scheduled(cron = "0 30 1 * * ?")
+    public void scheduledExecute() {
+        com.nexus.common.redis.utils.SchedulerFallbackUtils.runIfFallbackEnabled(
+            snailJobEnabled, "soContractExpiryTask", 900000L, () -> jobExecute(null));
+    }
 
     private final ISoContractService soContractService;
     private final SysTenantMapper sysTenantMapper;
