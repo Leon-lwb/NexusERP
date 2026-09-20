@@ -18,7 +18,9 @@ import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.common.satoken.utils.LoginHelper;
 import com.nexus.common.web.core.BaseController;
 import com.nexus.iot.device.domain.IotDeviceData;
+import com.nexus.iot.device.domain.bo.IotDeviceStatusBo;
 import com.nexus.iot.device.domain.bo.IotDeviceBo;
+import com.nexus.iot.device.domain.vo.IotDeviceOpsVo;
 import com.nexus.iot.device.domain.vo.IotDeviceSecretVo;
 import com.nexus.iot.device.domain.vo.IotDeviceVo;
 import com.nexus.iot.device.service.IIotDeviceDataService;
@@ -198,6 +200,33 @@ public class IotDeviceController extends BaseController {
             return R.fail("设备不存在或无权限访问");
         }
         return R.ok(vo);
+    }
+
+    /**
+     * 查询设备运维详情（在线状态 / 最后上报时间 / 固件版本 / 分组与标签）
+     */
+    @SaCheckPermission("iot:device:query")
+    @GetMapping("/{deviceId}/ops")
+    public R<IotDeviceOpsVo> ops(@PathVariable Long deviceId) {
+        IotDeviceOpsVo vo = iotDeviceService.selectOps(deviceId);
+        if (vo == null) {
+            return R.fail("设备不存在或无权限访问");
+        }
+        return R.ok(vo);
+    }
+
+    /**
+     * 变更设备生命周期状态：激活(ACTIVE) / 禁用(INACTIVE) / 注销(DECOMMISSIONED)。
+     * <p>
+     * 条件更新（CAS），影响 0 行视为状态已被并发变更；禁用/注销后 MQTT 认证立即被拒
+     * （{@code IotMqttAuthenticator} 仅放行 ACTIVE），并把连接状态置 OFFLINE。
+     */
+    @SaCheckPermission("iot:device:changeStatus")
+    @Log(title = "IoT设备状态变更", businessType = BusinessType.UPDATE)
+    @PutMapping("/{deviceId}/lifecycle")
+    public R<Void> changeLifecycle(@PathVariable Long deviceId,
+                                   @Validated @RequestBody IotDeviceStatusBo bo) {
+        return toAjax(iotDeviceService.changeStatus(deviceId, bo.getStatus(), bo.getRemark()));
     }
 
     /**

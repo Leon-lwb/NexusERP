@@ -6,6 +6,7 @@ import com.nexus.iot.device.domain.IotDevice;
 import com.nexus.iot.device.domain.IotDeviceData;
 import com.nexus.iot.device.service.IIotDeviceDataService;
 import com.nexus.iot.device.service.IIotDeviceService;
+import com.nexus.iot.forward.IotForwardDispatcher;
 import com.nexus.iot.pipeline.payload.IotDataValueResolver;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -66,6 +67,20 @@ public class IotStreamConsumer {
     private final IotAlertChecker alertChecker;
     private final IotAnomalyDetector anomalyDetector;
     private final IotDataValueResolver valueResolver;
+
+    /**
+     * 数据转发调度器（§4#6）。用字段注入（非 final）而非构造器注入，
+     * 以保持既有构造器签名不变（已有单测按 7 参构造，避免无谓的测试改动）；
+     * 允许为空（转发功能未启用/未装配时跳过）。
+     */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private IotForwardDispatcher forwardDispatcher;
+
+    /**
+     * 最后上报时间缓存（运维字段）。同上：允许为空，为空时跳过写入。
+     */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private IotDeviceReportTimeCache reportTimeCache;
 
     private RStream<Object, Object> stream;
     private ExecutorService executor;
@@ -288,6 +303,23 @@ public class IotStreamConsumer {
             latestCache.update(data);
         } catch (Exception e) {
             log.warn("更新最新值缓存失败：device={}, property={}", data.getDeviceCode(), data.getPropertyCode(), e);
+        }
+        // 运维字段：最后上报时间（按设备节流写 Redis，供 /iot/device/{id}/ops 聚合返回）
+        if (reportTimeCache != null) {
+            try {
+                reportTimeCache.touch(data.getDeviceId(),
+                    data.getReceiveTime() != null ? data.getReceiveTime() : new Date());
+            } catch (Exception e) {
+                log.warn("更新最后上报时间失败：device={}", data.getDeviceCode(), e);
+            }
+        }
+        // 数据转发（§4#6）：命中规则的设备数据异步投递到 HTTP Webhook，失败可重试并留痕
+        if (forwardDispatcher != null && properties.isForwardEnabled()) {
+            try {
+                forwardDispatcher.dispatch(data);
+            } catch (Exception e) {
+                log.warn("数据转发调度异常：device={}, property={}", data.getDeviceCode(), data.getPropertyCode(), e);
+            }
         }
         boolean thresholdFired = false;
         try {

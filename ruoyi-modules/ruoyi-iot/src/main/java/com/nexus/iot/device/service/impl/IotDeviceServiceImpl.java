@@ -7,10 +7,12 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
 import com.nexus.common.core.exception.ServiceException;
-import com.nexus.common.core.utils.MapstructUtils;
+import io.github.linpeilie.Converter;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
+import com.nexus.common.satoken.utils.LoginHelper;
+import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.iot.device.domain.IotDevice;
 import com.nexus.iot.device.domain.IotProduct;
 import com.nexus.iot.device.domain.bo.IotDeviceBo;
@@ -18,7 +20,13 @@ import com.nexus.iot.device.domain.vo.IotDeviceSecretVo;
 import com.nexus.iot.device.domain.vo.IotDeviceVo;
 import com.nexus.iot.device.mapper.IotDeviceMapper;
 import com.nexus.iot.device.mapper.IotProductMapper;
+import com.nexus.iot.device.domain.IotDeviceStatus;
+import com.nexus.iot.device.domain.vo.IotDeviceOpsVo;
+import com.nexus.iot.device.group.mapper.IotDeviceGroupRelMapper;
+import com.nexus.iot.device.group.mapper.IotDeviceTagRelMapper;
+import com.nexus.iot.device.group.service.IotDeviceFilterResolver;
 import com.nexus.iot.device.service.IIotDeviceService;
+import com.nexus.iot.pipeline.IotDeviceReportTimeCache;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,6 +48,14 @@ public class IotDeviceServiceImpl implements IIotDeviceService {
 
     private final IotDeviceMapper baseMapper;
     private final IotProductMapper productMapper;
+    private final IotDeviceGroupRelMapper groupRelMapper;
+    private final IotDeviceTagRelMapper tagRelMapper;
+    private final IotDeviceFilterResolver deviceFilterResolver;
+    private final IotDeviceReportTimeCache reportTimeCache;
+    /**
+     * mapstruct-plus 转换器（注入而非静态 {@code MapstructUtils}：后者静态初始化依赖 Spring 容器，单测无法打桩）。
+     */
+    private final Converter converter;
 
     /**
      * 分页查询设备列表，按条件构建查询并转换为 VO 分页结果。
@@ -87,7 +103,7 @@ public class IotDeviceServiceImpl implements IIotDeviceService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(IotDeviceBo bo) {
-        IotDevice entity = MapstructUtils.convert(bo, IotDevice.class);
+        IotDevice entity = converter.convert(bo, IotDevice.class);
         // 自动生成设备密钥（UUID 去横线）
         entity.setDeviceSecret(UUID.randomUUID().toString().replace("-", ""));
         // 协议类型默认取产品的协议类型
@@ -105,10 +121,10 @@ public class IotDeviceServiceImpl implements IIotDeviceService {
                 entity.setProductName(product.getProductName());
             }
         }
-        // 新设备默认离线
-        if (StringUtils.isBlank(entity.getConnectionStatus())) {
-            entity.setConnectionStatus("OFFLINE");
-        }
+        // 连接状态由 MQTT Broker 独占维护，客户端传值一律忽略
+        entity.setConnectionStatus("OFFLINE");
+        // 生命周期状态：新增固定 ACTIVE，禁用/注销必须走专用端点（CAS），避免前端直改状态绕过校验
+        entity.setStatus(IotDeviceStatus.ACTIVE);
         return baseMapper.insert(entity);
     }
 
@@ -121,7 +137,7 @@ public class IotDeviceServiceImpl implements IIotDeviceService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(IotDeviceBo bo) {
-        IotDevice entity = MapstructUtils.convert(bo, IotDevice.class);
+        IotDevice entity = converter.convert(bo, IotDevice.class);
         // 编辑时若切换了产品，回填产品名称与协议
         if (bo.getProductId() != null) {
             IotProduct product = productMapper.selectById(bo.getProductId());
@@ -132,8 +148,11 @@ public class IotDeviceServiceImpl implements IIotDeviceService {
                 }
             }
         }
-        // 密钥不在此处更新（避免被前端覆盖），如需重置走专用接口
+        // 服务端权威字段白名单（规范 §2.1：BO 与服务端两侧同时堵）：
+        // 密钥 → 专用重置接口；连接状态 → MQTT Broker 独占维护；生命周期状态 → 专用状态变更端点(CAS)。
         entity.setDeviceSecret(null);
+        entity.setConnectionStatus(null);
+        entity.setStatus(null);
         return baseMapper.updateById(entity);
     }
 
@@ -257,6 +276,93 @@ public class IotDeviceServiceImpl implements IIotDeviceService {
         return rows > 0;
     }
 
+    /**
+     * 变更设备生命周期状态（激活/禁用/注销），条件更新（CAS）。
+     *
+     * @param deviceId     设备ID
+     * @param targetStatus 目标状态
+     * @param remark       变更原因
+     * @return 更新影响行数
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int changeStatus(Long deviceId, String targetStatus, String remark) {
+        if (deviceId == null) {
+            throw new ServiceException("设备ID不能为空");
+        }
+        if (!IotDeviceStatus.isKnown(targetStatus)) {
+            throw new ServiceException("非法的目标状态：" + targetStatus);
+        }
+        IotDevice device = baseMapper.selectById(deviceId);
+        if (device == null) {
+            throw new ServiceException("设备不存在：" + deviceId);
+        }
+        if (!IotDeviceStatus.canTransition(device.getStatus(), targetStatus)) {
+            throw new ServiceException("设备状态非法流转：" + device.getStatus() + " -> " + targetStatus
+                + "（注销为终态不可复活；目标状态需与当前不同）");
+        }
+        Long userId = LoginHelper.getUserId();
+        Date now = new Date();
+        LambdaUpdateWrapper<IotDevice> wrapper = Wrappers.<IotDevice>lambdaUpdate()
+            .set(IotDevice::getStatus, targetStatus)
+            .set(StringUtils.isNotBlank(remark), IotDevice::getRemark, remark)
+            .set(IotDevice::getUpdateBy, userId)
+            .set(IotDevice::getUpdateTime, now);
+        // CAS：仅当状态仍为读取时的值才更新（并发下另一次变更会使其影响 0 行）
+        if (device.getStatus() == null) {
+            wrapper.isNull(IotDevice::getStatus);
+        } else {
+            wrapper.eq(IotDevice::getStatus, device.getStatus());
+        }
+        if (!IotDeviceStatus.canConnect(targetStatus)) {
+            // 禁用/注销：立即置离线，避免列表仍显示 ONLINE（真实连接由 Broker 断开或心跳任务收敛）
+            wrapper.set(IotDevice::getConnectionStatus, "OFFLINE");
+        }
+        int rows = baseMapper.update(null, wrapper);
+        if (rows == 0) {
+            throw new ServiceException("设备状态变更失败：状态已被其他操作变更，请刷新后重试");
+        }
+        log.warn("设备生命周期状态变更：deviceId={}, deviceCode={}, {} -> {}, operator={}, remark={}",
+            deviceId, device.getDeviceCode(), device.getStatus(), targetStatus, userId, remark);
+        return rows;
+    }
+
+    /**
+     * 查询设备运维详情。
+     *
+     * @param deviceId 设备ID
+     * @return 运维详情VO，设备不存在返回 null
+     */
+    @Override
+    public IotDeviceOpsVo selectOps(Long deviceId) {
+        if (deviceId == null) {
+            return null;
+        }
+        IotDevice device = baseMapper.selectById(deviceId);
+        if (device == null) {
+            return null;
+        }
+        IotDeviceOpsVo vo = new IotDeviceOpsVo();
+        vo.setDeviceId(device.getDeviceId());
+        vo.setDeviceCode(device.getDeviceCode());
+        vo.setDeviceName(device.getDeviceName());
+        vo.setProductId(device.getProductId());
+        vo.setProductName(device.getProductName());
+        vo.setProtocolType(device.getProtocolType());
+        vo.setStatus(device.getStatus());
+        vo.setConnectionStatus(device.getConnectionStatus());
+        vo.setLastOnlineTime(device.getLastOnlineTime());
+        vo.setFirmwareVersion(device.getFirmwareVersion());
+        vo.setIpAddress(device.getIpAddress());
+        vo.setLocation(device.getLocation());
+        vo.setMesEquipmentId(device.getMesEquipmentId());
+        vo.setLastReportTime(reportTimeCache.get(deviceId));
+        String tenantId = TenantHelper.getTenantId();
+        vo.setGroupIds(groupRelMapper.selectGroupIdsByDevice(tenantId, deviceId));
+        vo.setTagIds(tagRelMapper.selectTagIdsByDevice(tenantId, deviceId));
+        return vo;
+    }
+
     private LambdaQueryWrapper<IotDevice> buildQueryWrapper(IotDeviceBo bo) {
         LambdaQueryWrapper<IotDevice> lqw = Wrappers.lambdaQuery();
         lqw.eq(StringUtils.isNotBlank(bo.getDeviceCode()), IotDevice::getDeviceCode, bo.getDeviceCode());
@@ -265,6 +371,17 @@ public class IotDeviceServiceImpl implements IIotDeviceService {
         lqw.eq(StringUtils.isNotBlank(bo.getProtocolType()), IotDevice::getProtocolType, bo.getProtocolType());
         lqw.eq(StringUtils.isNotBlank(bo.getConnectionStatus()), IotDevice::getConnectionStatus, bo.getConnectionStatus());
         lqw.eq(StringUtils.isNotBlank(bo.getStatus()), IotDevice::getStatus, bo.getStatus());
+        // 分组 / 标签筛选（§4#2）：解析为设备ID集合后下推 IN，避免内存全表过滤
+        List<Long> filteredIds = deviceFilterResolver.resolveDeviceIds(
+            bo.getGroupId(), bo.getIncludeSubGroup(), bo.getTagIds());
+        if (filteredIds != null) {
+            if (filteredIds.isEmpty()) {
+                // 筛选条件命中空集 → 必须"查不到"，而不是忽略条件返回全量
+                lqw.apply("1 = 0");
+            } else {
+                lqw.in(IotDevice::getDeviceId, filteredIds);
+            }
+        }
         return lqw;
     }
 }

@@ -13,6 +13,8 @@ public final class IotAlertConstants {
     public static final String SOURCE_DEFAULT = "DEFAULT";
     /** 来源：EWMA 统计异常检测 */
     public static final String SOURCE_ANOMALY = "ANOMALY";
+    /** 来源：设备事件上报（event/post）中的告警类事件（IOT-PIPE-02 事件→告警联动） */
+    public static final String SOURCE_EVENT = "EVENT";
 
     /** 渠道：SSE 实时推送 */
     public static final String CHANNEL_SSE = "SSE";

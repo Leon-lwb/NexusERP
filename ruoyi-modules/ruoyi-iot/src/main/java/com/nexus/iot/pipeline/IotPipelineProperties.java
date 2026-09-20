@@ -32,6 +32,33 @@ public class IotPipelineProperties {
     private String consumerName = "iot-consumer-1";
 
     /**
+     * 事件流 Redis Stream key（{@code event/post} 设备事件 + {@code property/set_reply} 指令回执，IOT-PIPE-02）。
+     * <p>与属性数据分流：事件量级远低于属性数据，且处理逻辑（告警联动/指令回执）不同，
+     * 分流后互不拖累，也避免改动既有数据消费链路。
+     */
+    private String eventStreamKey = "iot:event:stream";
+
+    /**
+     * 事件流消费者组名
+     */
+    private String eventConsumerGroup = "iot-event-consumers";
+
+    /**
+     * 事件流消费者名
+     */
+    private String eventConsumerName = "iot-event-consumer-1";
+
+    /**
+     * 是否启用事件流消费线程（false 时仅生产 XADD）
+     */
+    private boolean eventConsumerEnabled = true;
+
+    /**
+     * 是否启用数据转发（把设备数据异步投递到 HTTP Webhook，§4#6）
+     */
+    private boolean forwardEnabled = true;
+
+    /**
      * 单批拉取消息数
      */
     private int batchSize = 100;

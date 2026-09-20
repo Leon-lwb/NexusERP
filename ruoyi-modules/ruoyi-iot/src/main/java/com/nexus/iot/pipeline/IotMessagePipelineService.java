@@ -58,6 +58,48 @@ public class IotMessagePipelineService {
     private final AtomicLong collectTimeCorrectedCount = new AtomicLong();
 
     /**
+     * 因 Topic 类型暂不支持而被跳过的消息计数（不再静默丢弃，便于运维发现设备端使用了新 Topic）。
+     */
+    private final AtomicLong unsupportedTopicCount = new AtomicLong();
+
+    /**
+     * 已路由到事件流的设备事件计数（event/post）。
+     */
+    private final AtomicLong eventRoutedCount = new AtomicLong();
+
+    /**
+     * 已路由到事件流的指令回执计数（property/set_reply）。
+     */
+    private final AtomicLong replyRoutedCount = new AtomicLong();
+
+    /**
+     * 被跳过的 Topic 计数（暂不支持的 bizType/action 组合）。
+     *
+     * @return 累计跳过条数
+     */
+    public long getUnsupportedTopicCount() {
+        return unsupportedTopicCount.get();
+    }
+
+    /**
+     * 已路由的设备事件计数。
+     *
+     * @return 累计事件条数
+     */
+    public long getEventRoutedCount() {
+        return eventRoutedCount.get();
+    }
+
+    /**
+     * 已路由的指令回执计数。
+     *
+     * @return 累计回执条数
+     */
+    public long getReplyRoutedCount() {
+        return replyRoutedCount.get();
+    }
+
+    /**
      * 被丢弃消息计数（Topic deviceCode ≠ clientId）。
      *
      * @return 累计丢弃条数
@@ -96,16 +138,36 @@ public class IotMessagePipelineService {
                 clientId, topicInfo.getDeviceCode(), topic, dropped);
             return;
         }
-        // 仅处理属性上报；事件上报本周仅日志
-        if (!"property".equals(topicInfo.getBizType()) || !"post".equals(topicInfo.getAction())) {
-            log.debug("暂不处理的 Topic 类型：clientId={}, topic={}", clientId, topic);
+        String bizType = topicInfo.getBizType();
+        String action = topicInfo.getAction();
+        // IOT-PIPE-02：事件上报（event/post）与指令回执（property/set_reply）不再静默丢弃
+        boolean isData = "property".equals(bizType) && IotMqttTopicParser.ACTION_POST.equals(action);
+        boolean isEvent = "event".equals(bizType) && IotMqttTopicParser.ACTION_POST.equals(action);
+        boolean isReply = "property".equals(bizType) && IotMqttTopicParser.ACTION_SET_REPLY.equals(action);
+        if (!isData && !isEvent && !isReply) {
+            long unsupported = unsupportedTopicCount.incrementAndGet();
+            log.info("MQTT Topic 暂不处理（已计数，不再静默丢弃）：clientId={}, topic={}, bizType={}, action={}, 累计={}",
+                clientId, topic, bizType, action, unsupported);
             return;
         }
+        if (isData) {
+            publishData(clientId, topicInfo, payload);
+        } else if (isEvent) {
+            publishEvent(clientId, topicInfo, payload);
+        } else {
+            publishCommandReply(clientId, topicInfo, payload);
+        }
+    }
+
+    /**
+     * 属性上报（{@code property/post}）→ 数据流（原有链路，逻辑保持不变）。
+     */
+    private void publishData(String clientId, IotMqttTopicParser.IotTopicInfo topicInfo, String payload) {
         IotPropertyPayload pl;
         try {
             pl = JsonUtils.parseObject(payload, IotPropertyPayload.class);
         } catch (Exception e) {
-            log.warn("MQTT 负载解析失败，已丢弃：clientId={}, topic={}, payload={}", clientId, topic, payload, e);
+            log.warn("MQTT 负载解析失败，已丢弃：clientId={}, payload={}", clientId, payload, e);
             return;
         }
         if (pl == null || StringUtils.isBlank(pl.getProperty()) || pl.getValue() == null) {
@@ -128,14 +190,148 @@ public class IotMessagePipelineService {
         entries.put("receive_time", String.valueOf(now.getTime()));
         entries.put("quality", quality);
         entries.put("source", "MQTT");
+        xadd(properties.getStreamKey(), entries);
+        if (log.isDebugEnabled()) {
+            log.debug("XADD 设备数据：deviceCode={}, property={}, value={}", clientId, pl.getProperty(), pl.getValue());
+        }
+    }
+
+    /**
+     * 设备事件上报（{@code event/post}）→ 事件流，由 {@code IotEventStreamConsumer} 落 {@code iot_device_event}。
+     * <p>
+     * 事件编码取值优先级：{@code eventCode} &gt; {@code event} &gt; {@code code} &gt; {@code property}，
+     * 兼容主流设备固件的事件报文命名；事件时间戳复用 {@link #resolveCollectTime} 的合理性校验。
+     */
+    private void publishEvent(String clientId, IotMqttTopicParser.IotTopicInfo topicInfo, String payload) {
+        Map<String, Object> map = parseMap(clientId, payload, "设备事件");
+        if (map == null) {
+            return;
+        }
+        String eventCode = firstNonBlank(str(map.get("eventCode")), str(map.get("event")),
+            str(map.get("code")), str(map.get("property")));
+        if (StringUtils.isBlank(eventCode)) {
+            log.warn("设备事件缺少事件编码(eventCode/event/code)，已丢弃：clientId={}, payload={}", clientId, payload);
+            return;
+        }
+        Date now = new Date();
+        Date eventTime = resolveCollectTime(longOf(map.get("timestamp")), now.getTime(), clientId);
+        Map<Object, Object> entries = new HashMap<>();
+        entries.put("entry_type", "EVENT");
+        entries.put("device_code", clientId);
+        entries.put("topic_tenant_id", topicInfo.getTenantId());
+        entries.put("event_code", eventCode);
+        entries.put("event_name", firstNonBlank(str(map.get("eventName")), str(map.get("name"))));
+        entries.put("event_level", firstNonBlank(str(map.get("eventLevel")), str(map.get("level"))));
+        entries.put("event_time", String.valueOf(eventTime.getTime()));
+        entries.put("receive_time", String.valueOf(now.getTime()));
+        entries.put("payload", payload == null ? "" : payload);
+        entries.put("quality", firstNonBlank(str(map.get("quality")), "GOOD"));
+        entries.put("source", "MQTT");
+        xadd(properties.getEventStreamKey(), entries);
+        long routed = eventRoutedCount.incrementAndGet();
+        log.info("XADD 设备事件：deviceCode={}, eventCode={}, level={}, 累计={}",
+            clientId, eventCode, map.get("eventLevel"), routed);
+    }
+
+    /**
+     * 指令回执（{@code property/set_reply}）→ 事件流（entry_type=COMMAND_REPLY），
+     * 由消费端更新 {@code iot_device_command} 状态与回执载荷。
+     */
+    private void publishCommandReply(String clientId, IotMqttTopicParser.IotTopicInfo topicInfo, String payload) {
+        Map<String, Object> map = parseMap(clientId, payload, "指令回执");
+        if (map == null) {
+            return;
+        }
+        Map<Object, Object> entries = new HashMap<>();
+        entries.put("entry_type", "COMMAND_REPLY");
+        entries.put("device_code", clientId);
+        entries.put("topic_tenant_id", topicInfo.getTenantId());
+        entries.put("command_id", firstNonBlank(str(map.get("commandId")), str(map.get("msgId")), str(map.get("id"))));
+        entries.put("success", String.valueOf(isSuccess(map)));
+        entries.put("message", firstNonBlank(str(map.get("message")), str(map.get("msg"))));
+        entries.put("receive_time", String.valueOf(System.currentTimeMillis()));
+        entries.put("payload", payload == null ? "" : payload);
+        entries.put("source", "MQTT");
+        xadd(properties.getEventStreamKey(), entries);
+        long routed = replyRoutedCount.incrementAndGet();
+        log.info("XADD 指令回执：deviceCode={}, commandId={}, success={}, 累计={}",
+            clientId, entries.get("command_id"), entries.get("success"), routed);
+    }
+
+    /**
+     * 解析 JSON 负载为 Map，失败返回 null（已记日志）。
+     */
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> parseMap(String clientId, String payload, String label) {
         try {
-            RStream<Object, Object> stream = RedisUtils.getClient().getStream(properties.getStreamKey());
-            stream.add(StreamAddArgs.entries(entries));
-            if (log.isDebugEnabled()) {
-                log.debug("XADD 设备数据：deviceCode={}, property={}, value={}", clientId, pl.getProperty(), pl.getValue());
+            Map<String, Object> map = JsonUtils.parseObject(payload, Map.class);
+            if (map == null) {
+                log.warn("{}负载为空，已丢弃：clientId={}", label, clientId);
             }
+            return map;
         } catch (Exception e) {
-            log.error("XADD Redis Stream 失败：clientId={}, topic={}, payload={}", clientId, topic, payload, e);
+            log.warn("{}负载解析失败，已丢弃：clientId={}, payload={}", label, clientId, payload, e);
+            return null;
+        }
+    }
+
+    /**
+     * 判断回执是否表示执行成功：优先 {@code success}，其次 {@code code}（0/200 视为成功）。
+     */
+    private boolean isSuccess(Map<String, Object> map) {
+        Object success = map.get("success");
+        if (success instanceof Boolean b) {
+            return b;
+        }
+        if (success != null) {
+            String s = String.valueOf(success);
+            return "true".equalsIgnoreCase(s) || "1".equals(s);
+        }
+        Object code = map.get("code");
+        if (code != null) {
+            String s = String.valueOf(code);
+            return "0".equals(s) || "200".equals(s);
+        }
+        // 未携带成功标志时按"已回执即成功"处理（失败原因见 message 字段）
+        return true;
+    }
+
+    /**
+     * 写入 Redis Stream，异常仅记日志（不向 Broker 会话线程抛出）。
+     */
+    private void xadd(String streamKey, Map<Object, Object> entries) {
+        try {
+            RStream<Object, Object> stream = RedisUtils.getClient().getStream(streamKey);
+            stream.add(StreamAddArgs.entries(entries));
+        } catch (Exception e) {
+            log.error("XADD Redis Stream 失败：stream={}, entries={}", streamKey, entries, e);
+        }
+    }
+
+    private String str(Object o) {
+        return o == null ? null : String.valueOf(o);
+    }
+
+    private String firstNonBlank(String... values) {
+        for (String v : values) {
+            if (StringUtils.isNotBlank(v)) {
+                return v;
+            }
+        }
+        return null;
+    }
+
+    private Long longOf(Object o) {
+        if (o == null) {
+            return null;
+        }
+        if (o instanceof Number n) {
+            return n.longValue();
+        }
+        try {
+            return Long.parseLong(String.valueOf(o));
+        } catch (NumberFormatException e) {
+            return null;
         }
     }
 

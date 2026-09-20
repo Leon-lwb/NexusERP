@@ -9,6 +9,8 @@ import lombok.NoArgsConstructor;
 import com.nexus.common.mybatis.core.domain.BaseEntity;
 import com.nexus.iot.device.domain.IotDevice;
 
+import java.util.List;
+
 /**
  * IoT设备业务对象 iot_device
  *
@@ -82,6 +84,21 @@ public class IotDeviceBo extends BaseEntity {
      * 备注
      */
     private String remark;
+
+    /**
+     * 查询用：分组ID（配合 includeSubGroup 支持子树筛选；仅查询条件，不参与写入）
+     */
+    private Long groupId;
+
+    /**
+     * 查询用：是否包含子分组（仅 groupId 非空时生效）
+     */
+    private Boolean includeSubGroup;
+
+    /**
+     * 查询用：标签ID集合（多个标签取交集，即"同时具备这些标签"）
+     */
+    private List<Long> tagIds;
 
     /**
      * 批量删除ID集合
