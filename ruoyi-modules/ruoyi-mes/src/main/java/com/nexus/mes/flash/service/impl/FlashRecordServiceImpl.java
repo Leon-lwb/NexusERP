@@ -561,7 +561,7 @@ public class FlashRecordServiceImpl implements IFlashRecordService {
         record.setContentRefId(expected.getContentRefId());
         record.setContentVersion(verify.getContentVersion() != null ? verify.getContentVersion() : expected.getContentVersion());
         record.setContentChecksum(verify.getContentChecksum() != null ? verify.getContentChecksum() : expected.getContentChecksum());
-        record.setContentPayload(verify.getContentPayload());
+        record.setContentPayload(verify.getContentPayload() != null ? verify.getContentPayload() : expected.getContentPayload());
         record.setEquipmentId(bo.getEquipmentId());
         record.setResult(bo.getResult());
         record.setFailReason(bo.getFailReason());
@@ -609,8 +609,9 @@ public class FlashRecordServiceImpl implements IFlashRecordService {
     }
 
     /**
-     * 操作人赋值: 登录态优先(PC 端), 免登录设备通道回退 BO 携带的 operatorId/operatorName,
-     * 均缺失时以 operatorCode 工号留痕到 operatorName(设备通道旧版客户端仅传工号)。
+     * 操作人赋值: 登录态优先(PC 端); 免登录设备通道**不信任**客户端传入的 operatorId/operatorName
+     * (MES-FLASH-09: 该通道仅共享 API-Key, 可被冒名), 仅把上报工号/姓名以"未验证"来源标注落 operator_name 供展示,
+     * operator_id 一律留空(不落客户端用户ID)。
      */
     private void applyOperator(FlashRecord record, FlashRecordBo bo) {
         if (LoginHelper.isLogin()) {
@@ -618,14 +619,17 @@ public class FlashRecordServiceImpl implements IFlashRecordService {
             record.setOperatorName(LoginHelper.getUsername());
             return;
         }
-        if (bo.getOperatorId() != null) {
-            record.setOperatorId(bo.getOperatorId());
+        String reported = StringUtils.isNotBlank(bo.getOperatorCode()) ? bo.getOperatorCode().trim()
+            : (StringUtils.isNotBlank(bo.getOperatorName()) ? bo.getOperatorName().trim() : null);
+        if (reported != null) {
+            record.setOperatorName(markDeviceReported(reported));
         }
-        if (StringUtils.isNotBlank(bo.getOperatorName())) {
-            record.setOperatorName(bo.getOperatorName());
-        } else if (StringUtils.isNotBlank(bo.getOperatorCode())) {
-            record.setOperatorName(bo.getOperatorCode());
-        }
+    }
+
+    /** 设备通道上报的操作人标识: 明确标注来源与"未验证", 与登录态可信身份区分 */
+    private String markDeviceReported(String reported) {
+        String text = "设备上报:" + reported + "(未验证)";
+        return text.length() > 64 ? text.substring(0, 64) : text;
     }
 
     private void enrichRedundant(FlashRecord record) {

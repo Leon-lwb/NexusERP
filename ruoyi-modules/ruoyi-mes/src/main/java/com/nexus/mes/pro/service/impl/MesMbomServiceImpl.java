@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.MapstructUtils;
+import com.nexus.common.core.utils.SpringUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.mes.common.bridge.IMesErpBridgeService;
@@ -114,8 +115,8 @@ public class MesMbomServiceImpl implements IMesMbomService {
     public int insertByBo(MesMbomBo bo) {
         // 事务外桥接校验: 明细行引用的ERP工序步骤/物料
         validateLinesAgainstErp(bo.getRoutingId(), bo.getLines());
-        // 事务内写入(仅mes库)
-        return doInsertByBo(bo);
+        // 事务内写入(仅mes库): 经 AOP 代理调用以使 @Transactional 生效(同类直调绕过代理, M2/MES-PRO-05)
+        return SpringUtils.getAopProxy(this).doInsertByBo(bo);
     }
 
     /**
@@ -148,8 +149,8 @@ public class MesMbomServiceImpl implements IMesMbomService {
     public int updateByBo(MesMbomBo bo) {
         // 事务外桥接校验: 明细行引用的ERP工序步骤/物料
         validateLinesAgainstErp(bo.getRoutingId(), bo.getLines());
-        // 事务内写入(仅mes库)
-        return doUpdateByBo(bo);
+        // 事务内写入(仅mes库): 经 AOP 代理调用以使 @Transactional 生效(同类直调绕过代理, MES-PRO-05)
+        return SpringUtils.getAopProxy(this).doUpdateByBo(bo);
     }
 
     /**

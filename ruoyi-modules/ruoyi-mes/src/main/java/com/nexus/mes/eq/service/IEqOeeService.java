@@ -16,18 +16,22 @@ import java.util.List;
 /**
  * MES设备 OEE & 稼动率看板 Service 业务层接口
  * <p>
- * 首版策略(稼动率优先):
+ * 口径(MES-EQ-03):
  * <ul>
- *   <li>停机时长来自 eq_repair.downtime_hours 当日求和;</li>
- *   <li>表现率/质量率占位 1.0, OEE = availability;</li>
- *   <li>聚合粒度: 日(stat_date)。</li>
+ *   <li>planned_minutes: 设备级 eq_equipment.planned_minutes_per_day, 为空取配置
+ *       {@code nexus.mes.eq.oee.planned-minutes-per-day}(默认 480 = 8h 单班);</li>
+ *   <li>downtime_minutes: eq_repair.downtime_hours 当日求和;</li>
+ *   <li>maintenance_minutes: eq_maintenance_record.duration_minutes 当日真实汇总;</li>
+ *   <li>quality_rate: 同工作中心当日工序报工良品率, 无数据为 null(占位);</li>
+ *   <li>performance_rate: 暂无理论节拍数据源, 恒为 null(占位);</li>
+ *   <li>oee = availability × (performance ?? 1) × (quality ?? 1)。</li>
  * </ul>
  *
  * @author Nexus
  */
 public interface IEqOeeService {
 
-    /** 首版默认计划生产时长(分钟): 8h 单班 */
+    /** 计划生产时长兜底默认值(分钟): 8h 单班; 设备级配置与 nexus.mes.eq.oee.planned-minutes-per-day 均未生效时使用 */
     BigDecimal DEFAULT_PLANNED_MINUTES = new BigDecimal("480.00");
 
     /**

@@ -146,7 +146,8 @@ public class ProFlowCardController extends BaseController {
     @Log(title = "流转卡完工", businessType = BusinessType.UPDATE)
     @PutMapping("/complete/{cardId}")
     public R<Void> complete(@PathVariable Long cardId) {
-        proFlowCardService.completeCard(cardId);
+        // 手工完工走强校验入口(MES-PRO-01): 存在未完成工序时拒绝并返回未完成工序明细
+        proFlowCardService.manualCompleteCard(cardId);
         return R.ok();
     }
 

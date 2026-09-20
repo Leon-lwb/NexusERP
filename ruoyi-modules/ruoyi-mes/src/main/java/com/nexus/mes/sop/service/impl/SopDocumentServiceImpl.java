@@ -136,8 +136,11 @@ public class SopDocumentServiceImpl implements ISopDocumentService, WfCallBackSe
     }
 
     /**
-     * 修改SOP(仅 DRAFT/ARCHIVED 可编辑; PUBLISHED 需先新增版本修订)
-     * <p>状态守卫: 非 DRAFT/ARCHIVED 时抛异常。</p>
+     * 修改SOP(仅 DRAFT 可编辑; PUBLISHED 需先新增版本修订; ARCHIVED 终态不可编辑)
+     * <p>状态守卫: 非 DRAFT 时抛异常。<b>MES-SOP-09</b>: 归档是废止终态，其
+     * {@code sopName/sopType/description/remark} 此前仍可被改写 —— 而该文档的
+     * {@code SOP_VIEW} 签名正指向它，改了就等于改动已签署文件的元数据。归档后如需
+     * 补充说明请走归档原因字段。</p>
      *
      * @param bo SOP业务对象
      * @return 修改成功返回 true
@@ -149,9 +152,13 @@ public class SopDocumentServiceImpl implements ISopDocumentService, WfCallBackSe
         if (doc == null) {
             throw new RuntimeException("SOP不存在: " + bo.getSopId());
         }
-        // 仅 DRAFT/ARCHIVED 可编辑基础信息;PUBLISHED 需先新增版本修订
-        if (!STATUS_DRAFT.equals(doc.getStatus()) && !STATUS_ARCHIVED.equals(doc.getStatus())) {
-            throw new RuntimeException("仅草稿/归档状态可编辑,当前: " + doc.getStatus() + "(已发布请新增版本修订)");
+        if (STATUS_ARCHIVED.equals(doc.getStatus())) {
+            throw new ServiceException("已归档SOP为废止终态，不可编辑基础信息（其 SOP_VIEW 签名指向该文档，"
+                + "改动会使已签署内容与元数据不一致）。如需补充说明请在归档原因中记录，或新建SOP。");
+        }
+        // 仅 DRAFT 可编辑基础信息;PUBLISHED/IN_REVIEW 需先新增版本修订
+        if (!STATUS_DRAFT.equals(doc.getStatus())) {
+            throw new RuntimeException("仅草稿状态可编辑,当前: " + doc.getStatus() + "(已发布请新增版本修订)");
         }
         doc.setSopName(bo.getSopName());
         doc.setSopType(bo.getSopType());
@@ -226,12 +233,12 @@ public class SopDocumentServiceImpl implements ISopDocumentService, WfCallBackSe
             doc.setStatus(STATUS_DRAFT);
             baseMapper.updateById(doc);
         }
-        // 版本号: 留空则自动递增 (现有版本数 = 下一个 minor, 1.0->1.1->1.2)
+        // 版本号: 留空则自动递增。MES-SOP-07: 此前用 selectCount 拼 "1."+count（TOCTOU，
+        // 并发两次新增得到同一版本号；删掉 1.1 后再建仍是 1.1 造成重号，使 SOP_VIEW 签名的
+        // bizNo 歧义）。改为取「现有最大 minor + 1」，并由 uk_sop_version_no 唯一索引兜底。
         String versionNo = bo.getVersionNo();
         if (StringUtils.isBlank(versionNo)) {
-            Long existCount = versionMapper.selectCount(Wrappers.<SopVersion>lambdaQuery()
-                .eq(SopVersion::getSopId, bo.getSopId()));
-            versionNo = "1." + (existCount == null ? 0 : existCount);
+            versionNo = "1." + (nextMinorVersion(bo.getSopId()));
         }
         SopVersion v = new SopVersion();
         v.setSopId(bo.getSopId());
@@ -514,6 +521,42 @@ public class SopDocumentServiceImpl implements ISopDocumentService, WfCallBackSe
      */
     private String generateSopCode() {
         return autoCodeUtil.genSerialCode("MES_SOP_CODE", null);
+    }
+
+    /**
+     * 下一个 minor 版本号（MES-SOP-07）。
+     * <p>取该 SOP 现有版本号 {@code 1.x} 中最大的 x 再 +1；非 {@code 1.x} 形态的历史版本号
+     * （如种子数据里的 {@code V1.0}）解析失败时忽略。相比原来的 {@code selectCount}，
+     * 删版本后不会重号（1.1 被删后再建得到 1.2 而不是复用 1.1），
+     * 并发写入由 {@code uk_sop_version_no(sop_id, version_no, tenant_id)} 唯一索引拒绝。</p>
+     *
+     * @param sopId SOP ID
+     * @return 下一个 minor 序号
+     */
+    private int nextMinorVersion(Long sopId) {
+        List<SopVersion> versions = versionMapper.selectList(Wrappers.<SopVersion>lambdaQuery()
+            .eq(SopVersion::getSopId, sopId));
+        int maxMinor = -1;
+        for (SopVersion v : versions) {
+            String no = v.getVersionNo();
+            if (StringUtils.isBlank(no)) {
+                continue;
+            }
+            String trimmed = no.startsWith("V") || no.startsWith("v") ? no.substring(1) : no;
+            int dot = trimmed.indexOf('.');
+            if (dot <= 0) {
+                continue;
+            }
+            try {
+                if (Integer.parseInt(trimmed.substring(0, dot)) != 1) {
+                    continue;
+                }
+                maxMinor = Math.max(maxMinor, Integer.parseInt(trimmed.substring(dot + 1)));
+            } catch (NumberFormatException ignore) {
+                // 历史版本号形态不一(如 V1.0), 解析失败跳过
+            }
+        }
+        return maxMinor + 1;
     }
 
     /**

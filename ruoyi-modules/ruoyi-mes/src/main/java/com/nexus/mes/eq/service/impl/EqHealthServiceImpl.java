@@ -15,6 +15,7 @@ import com.nexus.mes.eq.mapper.EqEquipmentMapper;
 import com.nexus.mes.eq.mapper.EqHealthRecordMapper;
 import com.nexus.mes.eq.mapper.EqRepairMapper;
 import com.nexus.mes.eq.service.IEqHealthService;
+import com.nexus.mes.eq.service.IEqRepairService;
 import com.nexus.mes.pro.service.IProAndonService;
 import com.nexus.common.iot.service.IotDeviceDataQueryService;
 import com.nexus.common.iot.util.EwmaUtil;
@@ -183,7 +184,7 @@ public class EqHealthServiceImpl implements IEqHealthService {
             .ge(EqRepair::getRepairStart, since90d));
         Long openRepairs = repairMapper.selectCount(Wrappers.lambdaQuery(EqRepair.class)
             .eq(EqRepair::getEquipmentId, equipment.getEquipmentId())
-            .notIn(EqRepair::getStatus, "COMPLETED", "CANCELLED"));
+            .notIn(EqRepair::getStatus, IEqRepairService.STATUS_COMPLETED, IEqRepairService.STATUS_CANCELLED));
 
         // 4. 评分
         int repairDeduct = Math.min((int) (repairCount90d * DEDUCT_PER_REPAIR), REPAIR_DEDUCT_CAP)

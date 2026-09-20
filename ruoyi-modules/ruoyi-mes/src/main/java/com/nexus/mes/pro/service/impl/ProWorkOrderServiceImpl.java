@@ -222,9 +222,9 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
      */
     public int insertByBo(ProWorkOrderBo bo) {
         ProWorkOrder entity = MapstructUtils.convert(bo, ProWorkOrder.class);
-        if (StringUtils.isBlank(entity.getWoStatus())) {
-            entity.setWoStatus(STATUS_CREATED);
-        }
+        // 状态由服务端强制: 忽略入参 woStatus, 新建工单一律 CREATED。
+        // 否则可"新建即 COMPLETED", 绕过下达/派工/报工/IPQC 门禁与 ERP 完工通知(MES-PRO-04)。
+        entity.setWoStatus(STATUS_CREATED);
         int rows = baseMapper.insert(entity);
         // 回写雪花ID到BO，供Controller返回查询
         bo.setMesWoId(entity.getMesWoId());
@@ -240,6 +240,9 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
      */
     public int updateByBo(ProWorkOrderBo bo) {
         ProWorkOrder entity = MapstructUtils.convert(bo, ProWorkOrder.class);
+        // 状态只能经 release/submit/completeWo 等专有方法(CAS)变更: 置空使 updateById 跳过 wo_status 列。
+        // 否则编辑接口可把 COMPLETED 改回 CREATED/RELEASED, 绕过完工门禁并重复下达与重复通知 ERP(MES-PRO-04)。
+        entity.setWoStatus(null);
         return baseMapper.updateById(entity);
     }
 

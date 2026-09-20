@@ -76,7 +76,11 @@ public class SopVersionServiceImpl implements ISopVersionService {
     }
 
     /**
-     * 批量删除版本(守卫: CURRENT 版本不可删, 先发布新版本或归档SOP)
+     * 批量删除版本(守卫: <b>仅 PENDING(待发布) 可删</b>, 其余一律不可删)
+     * <p><b>MES-SOP-04</b>: 原守卫只拦 {@code status='CURRENT'}，而存量种子行的状态是值域外的
+     * 非法值 {@code 'PUBLISHED'}（合法值域 PENDING/CURRENT/HISTORICAL）—— 守卫查不到、版本照删，
+     * {@code sop_document.file_oss_id/current_version} 变成悬空引用。改为保守策略：
+     * 只放行 PENDING，任何未知/非法状态都被拦住，值域漂移不再能绕过守卫。</p>
      *
      * @param ids 版本ID数组
      * @return 删除成功返回 true
@@ -88,12 +92,14 @@ public class SopVersionServiceImpl implements ISopVersionService {
             return false;
         }
         List<Long> idList = Arrays.asList(ids);
-        // 守卫: CURRENT 版本不可删(先发布新版本或归档SOP)
-        Long currentCount = baseMapper.selectCount(Wrappers.<SopVersion>lambdaQuery()
+        // 守卫: 非 PENDING 一律不可删(含 CURRENT/HISTORICAL 与任何值域外状态)
+        Long notPending = baseMapper.selectCount(Wrappers.<SopVersion>lambdaQuery()
             .in(SopVersion::getVersionId, idList)
-            .eq(SopVersion::getStatus, ISopDocumentService.VERSION_CURRENT));
-        if (currentCount != null && currentCount > 0) {
-            throw new ServiceException("当前发布版本不可删除，请先发布新版本或归档SOP");
+            .ne(SopVersion::getStatus, ISopDocumentService.VERSION_PENDING));
+        if (notPending != null && notPending > 0) {
+            throw new ServiceException("仅「待发布(PENDING)」版本可删除，当前发布/历史版本不可删除"
+                + "（请先发布新版本或归档SOP；若列表状态显示为 PUBLISHED 等值域外值，"
+                + "请执行 2026-09-20-tg-sop.sql 的状态订正）");
         }
         int rows = baseMapper.deleteByIds(idList);
         log.info("批量删除SOP版本: count={}", ids.length);

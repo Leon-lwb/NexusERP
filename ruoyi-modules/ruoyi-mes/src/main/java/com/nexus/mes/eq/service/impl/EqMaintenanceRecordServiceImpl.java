@@ -121,6 +121,7 @@ public class EqMaintenanceRecordServiceImpl implements IEqMaintenanceRecordServi
         record.setExecuteTime(bo.getExecuteTime() != null ? bo.getExecuteTime() : new Date());
         record.setContent(bo.getContent());
         record.setResult(StringUtils.isNotBlank(bo.getResult()) ? bo.getResult() : RESULT_NORMAL);
+        record.setDurationMinutes(bo.getDurationMinutes());
         record.setRemark(bo.getRemark());
         baseMapper.insert(record);
         log.info("新增保养执行记录: recordId={}, equipmentId={}", record.getRecordId(), record.getEquipmentId());

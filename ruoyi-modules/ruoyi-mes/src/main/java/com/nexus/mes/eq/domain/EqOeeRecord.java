@@ -14,14 +14,17 @@ import java.util.Date;
  * MES设备 OEE 聚合记录对象 eq_oee_record
  * <p>
  * 日粒度聚合: 按 (租户, 设备, 统计日期) 唯一。
- * 首版策略(稼动率优先):
+ * 口径(MES-EQ-03):
  * <ul>
- *   <li>planned_minutes: 计划生产时长, 首版默认 480(8h 单班), 待 P1-6 工单联动后从工单推导;</li>
+ *   <li>planned_minutes: 取 eq_equipment.planned_minutes_per_day, 为空时取配置默认值(480 = 8h 单班);</li>
  *   <li>downtime_minutes: 停机时长, 来自 eq_repair.downtime_hours 当日求和 * 60;</li>
- *   <li>run_minutes = planned - downtime - maintenance;</li>
+ *   <li>maintenance_minutes: 保养占用时长, 来自 eq_maintenance_record.duration_minutes 当日求和;</li>
+ *   <li>run_minutes = planned - downtime - maintenance (下限 0);</li>
  *   <li>availability = run / planned (即稼动率);</li>
- *   <li>performance_rate / quality_rate: 首版占位 1.0, 待工单报工/质量数据补全;</li>
- *   <li>oee = availability * performance * quality (首版 = availability)。</li>
+ *   <li>performance_rate: 无"理论节拍"数据源时为 null(占位), 计算时按 1 参与;</li>
+ *   <li>quality_rate: 取同工作中心当日工序报工良品率, 无数据时为 null(占位), 计算时按 1 参与;</li>
+ *   <li>oee = availability * (performance ?? 1) * (quality ?? 1);</li>
+ *   <li>remark: 显式标注占位因子与未采集时长的保养记录数。</li>
  * </ul>
  *
  * @author Nexus
@@ -59,22 +62,22 @@ public class EqOeeRecord extends TenantEntity {
     /** 停机时长(分钟, 来自 eq_repair.downtime_hours 求和) */
     private BigDecimal downtimeMinutes;
 
-    /** 保养占用时长(分钟, 预留, 首版0) */
+    /** 保养占用时长(分钟, 来自 eq_maintenance_record.duration_minutes 求和) */
     private BigDecimal maintenanceMinutes;
 
     /** 运行时长(分钟) */
     private BigDecimal runMinutes;
 
-    /** 故障次数(eq_repair 当日报修数) */
+    /** 故障次数(eq_repair 当日报修数, 不含已作废) */
     private Integer faultCount;
 
     /** 可用率/稼动率(0~1) */
     private BigDecimal availability;
 
-    /** 表现率(首版占位1.0) */
+    /** 表现率(无理论节拍数据源时为 null 占位) */
     private BigDecimal performanceRate;
 
-    /** 质量率(首版占位1.0) */
+    /** 质量率(无报工数据时为 null 占位) */
     private BigDecimal qualityRate;
 
     /** OEE = availability * performance * quality */

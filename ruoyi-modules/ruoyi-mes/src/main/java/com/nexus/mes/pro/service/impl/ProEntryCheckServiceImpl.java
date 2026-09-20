@@ -20,6 +20,7 @@ import com.nexus.mes.qc.domain.QcIpqc;
 import com.nexus.mes.qc.mapper.QcIpqcMapper;
 import com.nexus.mes.sop.domain.vo.SopDocumentVo;
 import com.nexus.mes.sop.service.ISopProcessBindingService;
+import com.nexus.mes.sop.service.ISopViewLogService;
 import com.nexus.mes.tg.service.ITgToolingService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,9 +35,14 @@ import java.util.Map;
  * <p>按 {@code pro_step_check_rule} 配置执行 ENTRY/EXIT 校验。
  * 规则按 sort_order 顺序执行,任一 FAIL 即计入 failures;passed = failures 为空。</p>
  *
- * <p>v1.0 实现的校验类型：SERIAL_GATE/SOP_VERSION/TOOLING_AVAILABLE/LOT_AVAILABLE/EQUIPMENT_STATUS
- * /QUANTITY_REACHED/INSPECTION_REQUIRED/EXCEPTION_CLOSED。
+ * <p>v1.0 实现的校验类型：SERIAL_GATE/SOP_VERSION/SOP_ACKNOWLEDGED/TOOLING_AVAILABLE/LOT_AVAILABLE
+ * /EQUIPMENT_STATUS/QUANTITY_REACHED/INSPECTION_REQUIRED/EXCEPTION_CLOSED。
  * 存根类型(MATERIAL_KITTING/OPERATOR_SKILL/PARAMETER_OK)默认禁用,启用时返回 PASS 并告警。</p>
+ *
+ * <p><b>MES-TG-02</b>: TOOLING_AVAILABLE 规则要求工装但上下文未带 toolingId 时<b>拒绝</b>进站
+ * （此前静默 return，等于门禁可被「不传参数」绕过）。</p>
+ * <p><b>MES-SOP-02</b>: 新增 SOP_ACKNOWLEDGED 规则 —— 校验操作员对当前发布版本产生过
+ * SOP_VIEW 电子签名，把「作业指导书已阅」变成真正的操作前门禁。</p>
  *
  * @author Nexus
  */
@@ -63,6 +69,7 @@ public class ProEntryCheckServiceImpl implements IProEntryCheckService {
     private final QcIpqcMapper qcIpqcMapper;
     private final EqEquipmentMapper eqEquipmentMapper;
     private final ISopProcessBindingService sopBindingService;
+    private final ISopViewLogService sopViewLogService;
     private final ITgToolingService tgToolingService;
     private final ILtLotService ltLotService;
 
@@ -108,6 +115,9 @@ public class ProEntryCheckServiceImpl implements IProEntryCheckService {
         switch (rule.getCheckType()) {
             case TYPE_SOP_VERSION:
                 checkSopVersion(rule, step, result);
+                break;
+            case TYPE_SOP_ACKNOWLEDGED:
+                checkSopAcknowledged(rule, step, context, result);
                 break;
             case TYPE_TOOLING_AVAILABLE:
                 checkToolingAvailable(rule, context, result);
@@ -163,10 +173,41 @@ public class ProEntryCheckServiceImpl implements IProEntryCheckService {
     }
 
     /**
-     * 工装可用性校验: 上下文 toolingId 非空时校验工装可用;为空则跳过(无上下文不阻断)
+     * SOP 已阅确认校验(MES-SOP-02): 操作员必须对当前发布版本产生过 SOP_VIEW 电子签名。
+     * <p>此前进站只校验「工序绑了已发布 SOP」，完全不看操作人是否打开/确认过 ——
+     * 不打开查看器也能开工，「操作前已阅」在合规上不可证明。现在按
+     * {@code (operatorId, sopId, currentVersion)} 查 {@code sop_view_log} 且
+     * {@code signature_id} 非空，缺失即拦截。</p>
+     */
+    private void checkSopAcknowledged(ProStepCheckRule rule, ProFlowCardStep step,
+                                      ProEntryBo context, ProCheckResultVo result) {
+        if (context == null || context.getOperatorId() == null) {
+            addFailure(result, TYPE_SOP_ACKNOWLEDGED, resolveMsg(rule, "未提供操作员,无法确认作业指导书已阅"));
+            return;
+        }
+        SopDocumentVo sop = sopBindingService.getSopForStep(step.getStepRecordId());
+        if (sop == null || !SOP_PUBLISHED.equals(sop.getStatus())) {
+            addFailure(result, TYPE_SOP_ACKNOWLEDGED,
+                resolveMsg(rule, "工序未绑定已发布的SOP文档,无法确认已阅"));
+            return;
+        }
+        String versionNo = sop.getCurrentVersion();
+        if (!sopViewLogService.hasAcknowledged(sop.getSopId(), versionNo, context.getOperatorId())) {
+            addFailure(result, TYPE_SOP_ACKNOWLEDGED, resolveMsg(rule,
+                "未确认作业指导书" + (versionNo == null ? "" : " V" + versionNo)
+                    + ", 请先打开SOP查看器并完成「已阅确认」"));
+        }
+    }
+
+    /**
+     * 工装可用性校验: 上下文 toolingId 非空时校验工装可用; <b>为空时拒绝</b>(MES-TG-02)。
+     * <p>规则既然配了 TOOLING_AVAILABLE，就说明该工序要求工装受控。此前为空直接
+     * {@code return}（静默放行），门禁可被「不传 toolingId」整体绕过。</p>
      */
     private void checkToolingAvailable(ProStepCheckRule rule, ProEntryBo context, ProCheckResultVo result) {
         if (context == null || context.getToolingId() == null) {
+            addFailure(result, TYPE_TOOLING_AVAILABLE, resolveMsg(rule,
+                "未提供工装信息(该工序要求校验工装可用性), 请扫码/选择工装后重试"));
             return;
         }
         Map<String, Object> ret = tgToolingService.checkToolingAvailable(context.getToolingId());

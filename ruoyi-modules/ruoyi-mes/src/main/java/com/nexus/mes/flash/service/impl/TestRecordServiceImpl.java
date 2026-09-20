@@ -199,6 +199,11 @@ public class TestRecordServiceImpl implements ITestRecordService {
             if (record == null) {
                 throw new ServiceException("测试行不存在: " + row.getTestRecordId());
             }
+            // MES-TEST-03: 已判定行不可反复覆盖改写(FAIL→PASS 会抹掉不合格证据), 重测须重新开单保留历史行
+            if (StringUtils.isNotBlank(record.getResult())) {
+                throw new ServiceException("该测试行已判定(" + record.getResult() + "), 不可重复覆盖; 如需重测请重新开单: "
+                    + record.getTestNo() + "/" + record.getItemCode());
+            }
             String dataType = record.getDataType();
             boolean byNumeric = ITestItemService.DATA_TYPE_NUMERIC.equals(dataType);
             boolean byText = ITestItemService.DATA_TYPE_TEXT.equals(dataType);
@@ -212,12 +217,23 @@ public class TestRecordServiceImpl implements ITestRecordService {
             if ((byText || byEnum) && StringUtils.isBlank(row.getTextValue())) {
                 throw new ServiceException("请填写实测值: " + record.getItemName());
             }
-            record.setNumericValue(byNumeric ? row.getNumericValue() : null);
-            record.setTextValue(byText || byEnum ? row.getTextValue() : null);
-            record.setResult(judged);
-            record.setTestTime(now);
-            record.setRemark(StringUtils.isBlank(row.getRemark()) ? record.getRemark() : row.getRemark());
-            baseMapper.updateById(record);
+            // MES-TEST-03: 条件更新(CAS) —— 仅当该行仍未判定(result 为空/NULL)时才写入, 并发重复提交只有一次生效
+            TestRecord update = new TestRecord();
+            update.setTestRecordId(record.getTestRecordId());
+            update.setNumericValue(byNumeric ? row.getNumericValue() : null);
+            update.setTextValue(byText || byEnum ? row.getTextValue() : null);
+            update.setResult(judged);
+            update.setTestTime(now);
+            if (StringUtils.isNotBlank(row.getRemark())) {
+                update.setRemark(row.getRemark());
+            }
+            int updated = baseMapper.update(update, Wrappers.<TestRecord>lambdaUpdate()
+                .eq(TestRecord::getTestRecordId, record.getTestRecordId())
+                .and(w -> w.eq(TestRecord::getResult, "").or().isNull(TestRecord::getResult)));
+            if (updated == 0) {
+                throw new ServiceException("该测试行已被判定(并发重复提交), 本次判定未生效; 如需重测请重新开单: "
+                    + record.getTestNo() + "/" + record.getItemCode());
+            }
             result.add(baseMapper.selectVoById(record.getTestRecordId()));
         }
         log.info("测试填报: 行数={}", result.size());
@@ -356,6 +372,18 @@ public class TestRecordServiceImpl implements ITestRecordService {
         for (TestReportBo.TestItemValueBo item : bo.getItems()) {
             dedupItems.put(item.getItemCode(), item);
         }
+        // MES-TEST-01: 必测项全覆盖校验 —— 该物料配置的测试项须全部上报, 缺项不得判 PASS
+        // (否则设备"少报项"即可规避测试, 且未测项在数据上不存在, 事后无法区分"没测"与"测了通过")
+        if (standards != null && !standards.isEmpty()) {
+            List<String> missing = standards.stream()
+                .map(TestItemVo::getItemCode)
+                .filter(code -> !dedupItems.containsKey(code))
+                .toList();
+            if (!missing.isEmpty()) {
+                throw new ServiceException("测试上报缺少必测项, 拒绝判定: " + String.join(",", missing)
+                    + "(该SN物料配置的测试项须全部上报)");
+            }
+        }
         // 逐测试项匹配+判定
         String testNo = autoCodeUtil.genSerialCode("MES_TEST_NO", null);
         Date now = new Date();
@@ -391,14 +419,13 @@ public class TestRecordServiceImpl implements ITestRecordService {
             r.setEquipmentCode(equipmentCode);
             r.setTestTime(now);
             r.setTestMode(MODE_AUTO);
-            // 设备通道操作员: BO 携带值优先, 免登录时以工号留痕; 旧版客户端不传则为空(容忍)
-            if (bo.getOperatorId() != null) {
-                r.setTesterId(bo.getOperatorId());
-            }
-            if (StringUtils.isNotBlank(bo.getOperatorName())) {
-                r.setTesterName(bo.getOperatorName());
-            } else if (StringUtils.isNotBlank(bo.getOperatorCode())) {
-                r.setTesterName(bo.getOperatorCode());
+            // MES-FLASH-09: 免登录设备通道不信任客户端传入的 testerId/姓名(可冒名), tester_id 一律留空,
+            // 仅把上报工号/姓名以"未验证"来源标注落 tester_name 供展示
+            String reportedOperator = StringUtils.isNotBlank(bo.getOperatorCode()) ? bo.getOperatorCode().trim()
+                : (StringUtils.isNotBlank(bo.getOperatorName()) ? bo.getOperatorName().trim() : null);
+            if (reportedOperator != null) {
+                String marked = "设备上报:" + reportedOperator + "(未验证)";
+                r.setTesterName(marked.length() > 64 ? marked.substring(0, 64) : marked);
             }
             r.setResult(""); // 先落空, 判定后更新(与 manual 待测行一致)
             baseMapper.insert(r);
@@ -467,7 +494,9 @@ public class TestRecordServiceImpl implements ITestRecordService {
                 return RESULT_FAIL;
             }
             if (StringUtils.isBlank(passEnum)) {
-                return RESULT_PASS; // 未配置合格值集合, 宽松通过
+                // MES-TEST-02: fail-closed —— 未配置合格值集合无法判定是否合格, 判 FAIL(仅历史数据/直接改库会命中)
+                log.error("ENUM 测试项未配置合格值集合(pass_enum), 判定 FAIL(fail-closed)");
+                return RESULT_FAIL;
             }
             try {
                 JSONArray arr = JSONUtil.parseArray(passEnum);
@@ -477,8 +506,9 @@ public class TestRecordServiceImpl implements ITestRecordService {
                     }
                 }
             } catch (Exception e) {
-                log.warn("ENUM 合格值解析失败, 按宽松通过: passEnum={}", passEnum);
-                return RESULT_PASS;
+                // MES-TEST-02: fail-closed —— 合格值集合为非法 JSON 时无法判定, 判 FAIL 并留日志, 不得宽松通过
+                log.error("ENUM 合格值解析失败, 判定 FAIL(fail-closed): passEnum={}", passEnum, e);
+                return RESULT_FAIL;
             }
             return RESULT_FAIL;
         }

@@ -44,10 +44,11 @@ import java.util.stream.Collectors;
 /**
  * MES设备维修记录 Service 业务层实现
  * <p>
- * 状态机: REPORTED -> REPAIRING -> COMPLETED
+ * 状态机: REPORTED -> REPAIRING -> COMPLETED, 以及 REPORTED/REPAIRING -> CANCELLED(作废/撤销)。
  * 设备状态联动:
  *   报修(INSERT) -> 设备 status=FAULT(SCRAPPED 终态不联动)
  *   完成(COMPLETE) -> 该设备无其他活跃报修(REPORTED/REPAIRING)则恢复 NORMAL
+ *   作废(CANCEL)   -> 同上, 消除误报修导致的"永久 FAULT"(MES-EQ-06)
  *
  * @author Nexus
  */
@@ -211,6 +212,39 @@ public class EqRepairServiceImpl implements IEqRepairService {
         }
     }
 
+    /**
+     * 作废/撤销(REPORTED|REPAIRING -> CANCELLED), 联动: 该设备无其他活跃报修则恢复 NORMAL(MES-EQ-06)
+     *
+     * @param repairId 维修记录ID
+     * @param reason 作废原因
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void cancelRepair(Long repairId, String reason) {
+        EqRepair repair = baseMapper.selectById(repairId);
+        if (repair == null) {
+            throw new ServiceException("维修单不存在: " + repairId);
+        }
+        // CAS: 仅未完工状态可作废, 避免并发下把已完工单改写为作废(影响 0 行即状态已变更)
+        int rows = baseMapper.update(null, Wrappers.<EqRepair>lambdaUpdate()
+            .set(EqRepair::getStatus, STATUS_CANCELLED)
+            .set(StringUtils.isNotBlank(reason), EqRepair::getRemark, reason)
+            .eq(EqRepair::getRepairId, repairId)
+            .in(EqRepair::getStatus, STATUS_REPORTED, STATUS_REPAIRING));
+        if (rows == 0) {
+            throw new ServiceException("维修单状态已变更, 仅已报修/维修中可作废");
+        }
+        log.info("维修单作废: repairId={}, equipmentId={}, reason={}", repairId, repair.getEquipmentId(), reason);
+
+        // 联动: 作废单不再是活跃报修, 若该设备无其他活跃报修且非 SCRAPPED 则释放回 NORMAL
+        boolean restored = equipmentService.resetToNormalIfNoActiveRepair(repair.getEquipmentId());
+        if (restored) {
+            log.info("维修单作废后设备无其他活跃报修, 恢复正常: equipmentId={}", repair.getEquipmentId());
+        } else {
+            log.info("维修单作废后设备仍有活跃报修或已终态, 维持当前状态: equipmentId={}", repair.getEquipmentId());
+        }
+    }
+
     // ==================== 私有辅助方法 ====================
 
     /**
@@ -291,7 +325,9 @@ public class EqRepairServiceImpl implements IEqRepairService {
         EqRepairStatisticsVo vo = new EqRepairStatisticsVo();
 
         // ===== KPI 汇总 =====
-        vo.setTotalFault(filtered.size());
+        // 作废单(误报修)不计入故障次数与 MTBF 分母, 但仍保留在趋势/Pareto 明细中可追溯
+        long effectiveFaultCount = filtered.stream().filter(r -> !STATUS_CANCELLED.equals(r.getStatus())).count();
+        vo.setTotalFault((int) effectiveFaultCount);
         vo.setCompletedCount((int) filtered.stream().filter(r -> STATUS_COMPLETED.equals(r.getStatus())).count());
         vo.setRepairingCount((int) filtered.stream().filter(r -> STATUS_REPORTED.equals(r.getStatus()) || STATUS_REPAIRING.equals(r.getStatus())).count());
         vo.setTotalDowntimeHours(filtered.stream().map(EqRepairVo::getDowntimeHours)
@@ -315,8 +351,8 @@ public class EqRepairServiceImpl implements IEqRepairService {
 
         // MTBF 近似: 区间总时长(小时) / 故障次数
         long spanHours = (endDate.getTime() - startDate.getTime()) / 3600000L;
-        vo.setMtbfHours(!filtered.isEmpty() && spanHours > 0
-            ? new BigDecimal(spanHours).divide(new BigDecimal(filtered.size()), 2, java.math.RoundingMode.HALF_UP) : BigDecimal.ZERO);
+        vo.setMtbfHours(effectiveFaultCount > 0 && spanHours > 0
+            ? new BigDecimal(spanHours).divide(new BigDecimal(effectiveFaultCount), 2, java.math.RoundingMode.HALF_UP) : BigDecimal.ZERO);
 
         // ===== 趋势(按日) =====
         Map<LocalDate, List<EqRepairVo>> byDate = filtered.stream()
@@ -373,12 +409,15 @@ public class EqRepairServiceImpl implements IEqRepairService {
         long reported = countByStatus(STATUS_REPORTED);
         long repairing = countByStatus(STATUS_REPAIRING);
         long completed = countByStatus(STATUS_COMPLETED);
+        long cancelled = countByStatus(STATUS_CANCELLED);
         Map<String, Object> map = new LinkedHashMap<>(8);
         map.put("reported", reported);
         map.put("repairing", repairing);
         map.put("completed", completed);
+        map.put("cancelled", cancelled);
+        // 活跃报修 = 会阻止设备恢复 NORMAL 的单据(与 EqEquipmentMapper 的 NOT EXISTS 口径一致)
         map.put("active", reported + repairing);
-        map.put("total", reported + repairing + completed);
+        map.put("total", reported + repairing + completed + cancelled);
         return map;
     }
 

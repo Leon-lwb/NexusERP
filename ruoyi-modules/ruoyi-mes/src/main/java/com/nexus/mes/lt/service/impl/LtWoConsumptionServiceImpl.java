@@ -4,6 +4,7 @@ import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
@@ -21,6 +22,8 @@ import com.nexus.mes.lt.mapper.LtWoConsumptionMapper;
 import com.nexus.mes.lt.service.ILtLotService;
 import com.nexus.mes.lt.service.ILtSnBindingService;
 import com.nexus.mes.lt.service.ILtWoConsumptionService;
+import com.nexus.mes.pro.domain.ProWorkOrderBomLine;
+import com.nexus.mes.pro.mapper.ProWorkOrderBomLineMapper;
 import com.nexus.common.satoken.utils.LoginHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,6 +33,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 /**
  * MES工单批次消耗 Service 业务层实现
@@ -48,6 +52,8 @@ public class LtWoConsumptionServiceImpl implements ILtWoConsumptionService {
     private final ILtLotService lotService;
     private final LtSnBindingMapper snBindingMapper;
     private final ILtSnBindingService snBindingService;
+    /** 工单BOM快照(超领校验上界: total_quantity 需求量) */
+    private final ProWorkOrderBomLineMapper woBomLineMapper;
 
     /**
      * 分页查询工单批次消耗列表
@@ -85,14 +91,23 @@ public class LtWoConsumptionServiceImpl implements ILtWoConsumptionService {
         if (lot == null) {
             throw new RuntimeException("批次不存在: " + bo.getLotId());
         }
-        // 2. 联动扣减批次数量(走 LtLotService.consume 带 Lock4j)
+        // 2. 批次可用性校验(物料一致性/QC/效期/剩余量; 复用既有 checkLotUsable, MES-LT-02/03/06)
+        Map<String, Object> usable = lotService.checkLotUsable(bo.getMaterialId(), bo.getLotId());
+        if (usable == null || !Boolean.TRUE.equals(usable.get("usable"))) {
+            throw new ServiceException("批次不可领用: "
+                + (usable == null ? "批次可用性校验无返回" : usable.get("reason")));
+        }
+        // 3. 超领校验(按工单BOM快照需求量; 无快照时跳过并记 warn, MES-LT-02)
+        Long lotMaterialId = lot.getMaterialId() != null ? lot.getMaterialId() : bo.getMaterialId();
+        assertNotOverPick(bo.getWoId(), lotMaterialId, bo.getConsumedQty());
+        // 4. 联动扣减批次数量(consume 内部为原子 SQL + 守卫)
         lotService.consume(bo.getLotId(), bo.getConsumedQty());
-        // 3. 写消耗记录(冗余字段)
+        // 5. 写消耗记录(冗余字段; materialId 以批次为准, 不信客户端)
         LtWoConsumption record = new LtWoConsumption();
         record.setWoId(bo.getWoId());
         record.setLotId(bo.getLotId());
         record.setLotCode(lot.getLotCode());
-        record.setMaterialId(bo.getMaterialId());
+        record.setMaterialId(lotMaterialId);
         record.setMaterialCode(lot.getMaterialCode());
         record.setConsumedQty(bo.getConsumedQty());
         record.setConsumedTime(new Date());
@@ -196,6 +211,43 @@ public class LtWoConsumptionServiceImpl implements ILtWoConsumptionService {
     }
 
     // ==================== 私有辅助方法 ====================
+
+    /**
+     * 超领校验: 同工单同物料累计领料量 + 本次 <= 工单BOM快照需求量(pro_work_order_bom_line.total_quantity)。
+     * <p>MES-LT-02: 旧实现无任何上限校验, 同一工单可反复领料直到批次耗尽。
+     * 无 BOM 快照(手工工单/非 BOM 物料)时跳过并记 warn, 不阻断领料。</p>
+     */
+    private void assertNotOverPick(Long woId, Long materialId, BigDecimal qty) {
+        if (woId == null || materialId == null || qty == null) {
+            return;
+        }
+        ProWorkOrderBomLine bomLine = woBomLineMapper.selectOne(Wrappers.<ProWorkOrderBomLine>lambdaQuery()
+            .eq(ProWorkOrderBomLine::getMesWoId, woId)
+            .eq(ProWorkOrderBomLine::getChildMaterialId, materialId)
+            .orderByDesc(ProWorkOrderBomLine::getWoBomLineId)
+            .last("LIMIT 1"));
+        if (bomLine == null || bomLine.getTotalQuantity() == null) {
+            log.warn("工单无对应BOM快照, 跳过超领校验: woId={}, materialId={}", woId, materialId);
+            return;
+        }
+        List<LtWoConsumption> exists = baseMapper.selectList(Wrappers.<LtWoConsumption>lambdaQuery()
+            .eq(LtWoConsumption::getWoId, woId)
+            .eq(LtWoConsumption::getMaterialId, materialId));
+        BigDecimal consumed = BigDecimal.ZERO;
+        if (exists != null) {
+            for (LtWoConsumption c : exists) {
+                if (c.getConsumedQty() != null) {
+                    consumed = consumed.add(c.getConsumedQty());
+                }
+            }
+        }
+        if (consumed.add(qty).compareTo(bomLine.getTotalQuantity()) > 0) {
+            throw new ServiceException(String.format("超领: 工单需求量 %s, 已领 %s, 本次 %s",
+                bomLine.getTotalQuantity().stripTrailingZeros().toPlainString(),
+                consumed.stripTrailingZeros().toPlainString(),
+                qty.stripTrailingZeros().toPlainString()));
+        }
+    }
 
     /**
      * 构建工单批次消耗查询条件包装器(按 woId/lotId/materialId/operatorId 筛选)。

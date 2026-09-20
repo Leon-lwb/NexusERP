@@ -11,6 +11,7 @@ import com.nexus.mes.flash.domain.bo.FlashRecordBo;
 import com.nexus.mes.flash.domain.bo.TestReportBo;
 import com.nexus.mes.flash.service.IFlashRecordService;
 import com.nexus.mes.flash.service.ITestRecordService;
+import com.nexus.mes.flash.service.impl.MesReportTenantResolver;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -33,7 +34,8 @@ import java.util.Map;
  * <p>
  * 免登录开放接口(security.excludes 已放行 /mes/flash/report/**), 通过请求头 X-API-KEY 鉴权
  * (密钥配置项 mes.api-key, 无代码内默认值——未配置时所有上报接口 fail-closed 拒绝, 生产环境通过环境变量 MES_API_KEY 注入)。
- * 上报数据按当前租户 000000 落库。宽松模式: 单条失败不中断整批, 返回失败明细。
+ * 上报数据按解析出的<b>设备所属租户</b>落库(MES-FLASH-10: 按 equipmentCode/SN 反查, 不再硬编码 000000)。
+ * 宽松模式: 单条失败不中断整批, 返回失败明细。
  * </p>
  * <ul>
  *   <li>POST /mes/flash/report/flash/auto — 批量刷写结果上报: [{snCode, contentRefId, equipmentId?, result: PASS/FAIL, contentChecksum?, retryCount?, processCode?, processName?, remark?}]</li>
@@ -51,6 +53,8 @@ public class FlashReportController extends BaseController {
 
     private final IFlashRecordService mesFlashRecordService;
     private final ITestRecordService mesTestRecordService;
+    /** MES-FLASH-10: 设备上报租户解析(按设备/SN 记录, 替代硬编码 000000) */
+    private final MesReportTenantResolver mesReportTenantResolver;
 
     /** 设备上报密钥(application.yml/环境变量 MES_API_KEY 配置, 未配置时 fail-closed 拒绝所有上报) */
     @Value("${mes.api-key:}")
@@ -65,7 +69,8 @@ public class FlashReportController extends BaseController {
                                               @RequestBody @Valid List<FlashRecordBo> list,
                                               HttpServletRequest request) {
         checkApiKey(apiKey, request);
-        Map<String, Object> map = TenantHelper.dynamic("000000",
+        String tenantId = mesReportTenantResolver.resolveFlashTenant(list);
+        Map<String, Object> map = TenantHelper.dynamic(tenantId,
             () -> mesFlashRecordService.reportFlashBatch(list));
         return R.ok(map);
     }
@@ -79,7 +84,8 @@ public class FlashReportController extends BaseController {
                                              @RequestBody @Valid List<TestReportBo> list,
                                              HttpServletRequest request) {
         checkApiKey(apiKey, request);
-        Map<String, Object> map = TenantHelper.dynamic("000000",
+        String tenantId = mesReportTenantResolver.resolveTestTenant(list);
+        Map<String, Object> map = TenantHelper.dynamic(tenantId,
             () -> mesTestRecordService.reportTestAutoBatch(list));
         return R.ok(map);
     }

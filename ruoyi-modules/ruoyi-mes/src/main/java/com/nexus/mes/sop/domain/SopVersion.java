@@ -37,6 +37,9 @@ public class SopVersion extends TenantEntity {
     /** 文件类型: PDF/IMAGE/VIDEO/WORD */
     private String fileType;
 
+    /** 该版本正文的 SM3(签名绑定正文用, MES-SOP-05; 空表示尚未计算) */
+    private String fileHash;
+
     /** 变更说明 */
     private String changeLog;
 

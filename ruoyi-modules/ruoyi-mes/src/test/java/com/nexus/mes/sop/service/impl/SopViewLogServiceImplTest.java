@@ -6,11 +6,15 @@ import com.nexus.common.sign.constants.SignAuthMethod;
 import com.nexus.common.sign.constants.SignBizType;
 import com.nexus.common.sign.domain.dto.SignCommand;
 import com.nexus.common.sign.service.ESignatureService;
+import com.nexus.common.sign.support.OssContentAccessor;
 import com.nexus.mes.sop.domain.SopViewLog;
 import com.nexus.mes.sop.domain.SopDocument;
+import com.nexus.mes.sop.domain.SopVersion;
 import com.nexus.mes.sop.mapper.SopDocumentMapper;
+import com.nexus.mes.sop.mapper.SopVersionMapper;
 import com.nexus.mes.sop.mapper.SopViewLogMapper;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -20,6 +24,11 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.ObjectProvider;
+
+import com.baomidou.mybatisplus.core.MybatisConfiguration;
+import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
+import org.apache.ibatis.builder.MapperBuilderAssistant;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -46,18 +55,33 @@ class SopViewLogServiceImplTest {
     @Mock private SopViewLogMapper baseMapper;
     @Mock private ESignatureService eSignatureService;
     @Mock private SopDocumentMapper sopDocumentMapper;
+    @Mock private SopVersionMapper sopVersionMapper;
+    @Mock private ObjectProvider<OssContentAccessor> ossAccessorProvider;
     @InjectMocks private SopViewLogServiceImpl service;
 
     @Captor private ArgumentCaptor<SopViewLog> logCaptor;
 
     private MockedStatic<LoginHelper> loginHelperMock;
 
+    /**
+     * 真实列缓存: LambdaQueryWrapper/LambdaUpdateWrapper 需要实体 TableInfo,
+     * 纯 Mock 单测下缺失会抛 "can not find lambda cache for this entity"。
+     */
+    @BeforeAll
+    static void initTableInfo() {
+        MapperBuilderAssistant assistant = new MapperBuilderAssistant(new MybatisConfiguration(), "");
+        TableInfoHelper.initTableInfo(assistant, SopViewLog.class);
+        TableInfoHelper.initTableInfo(assistant, SopVersion.class);
+        TableInfoHelper.initTableInfo(assistant, SopDocument.class);
+    }
+
     @BeforeEach
     void setUp() {
         loginHelperMock = mockStatic(LoginHelper.class);
         loginHelperMock.when(LoginHelper::getUserId).thenReturn(66L);
         // 服务端准入：sopId 必须指向真实存在的 SOP（否则可直接调接口对不存在的 SOP 无限刷签名台账）
-        when(sopDocumentMapper.selectById(any())).thenReturn(new SopDocument());
+        // lenient: 删除/已阅判定类用例不走 recordView, 该桩用不到
+        lenient().when(sopDocumentMapper.selectById(any())).thenReturn(new SopDocument());
     }
 
     @AfterEach
@@ -143,5 +167,118 @@ class SopViewLogServiceImplTest {
         ArgumentCaptor<SignCommand> cmdCaptor = ArgumentCaptor.forClass(SignCommand.class);
         verify(eSignatureService).signInNewTransaction(cmdCaptor.capture());
         assertEquals("SOP 已阅确认", cmdCaptor.getValue().signatureMeaning(), "空版本号不拼进签署含义");
+    }
+
+    // ==================== MES-SOP-05: 签名绑定正文哈希 ====================
+
+    @Test
+    void recordView_bindsDocHashFromVersionFileHash() {
+        SopVersion version = new SopVersion();
+        version.setVersionId(11L);
+        version.setSopId(2L);
+        version.setVersionNo("V2");
+        version.setFileOssId("12345");
+        version.setFileHash("SM3-ABCDEF");
+        when(sopVersionMapper.selectOne(any())).thenReturn(version);
+        when(eSignatureService.signInNewTransaction(any(SignCommand.class))).thenReturn(999L);
+        when(baseMapper.insert(any(SopViewLog.class))).thenReturn(1);
+
+        service.recordView(2L, "V2", null, null, null, null, null);
+
+        ArgumentCaptor<SignCommand> cmdCaptor = ArgumentCaptor.forClass(SignCommand.class);
+        verify(eSignatureService).signInNewTransaction(cmdCaptor.capture());
+        SignCommand cmd = cmdCaptor.getValue();
+        assertEquals("SM3-ABCDEF", cmd.docHash(),
+            "SOP_VIEW 逻辑签名必须绑定正文 SM3（修复前 doc_hash 恒为 null）");
+        assertEquals(12345L, cmd.docOssId());
+    }
+
+    @Test
+    void recordView_computesDocHashFromOssWhenVersionHashBlank() {
+        SopVersion version = new SopVersion();
+        version.setVersionId(12L);
+        version.setSopId(2L);
+        version.setVersionNo("V2");
+        version.setFileOssId("12345");
+        version.setFileHash(null);
+        when(sopVersionMapper.selectOne(any())).thenReturn(version);
+        OssContentAccessor accessor = mock(OssContentAccessor.class);
+        when(accessor.read(12345L)).thenReturn("SOP-BODY".getBytes());
+        when(ossAccessorProvider.getIfAvailable()).thenReturn(accessor);
+        when(eSignatureService.signInNewTransaction(any(SignCommand.class))).thenReturn(1000L);
+        when(baseMapper.insert(any(SopViewLog.class))).thenReturn(1);
+
+        service.recordView(2L, "V2", null, null, null, null, null);
+
+        ArgumentCaptor<SignCommand> cmdCaptor = ArgumentCaptor.forClass(SignCommand.class);
+        verify(eSignatureService).signInNewTransaction(cmdCaptor.capture());
+        String expected = com.nexus.common.sign.util.Sm3Utils.hashHexBytes("SOP-BODY".getBytes());
+        assertEquals(expected, cmdCaptor.getValue().docHash(), "哈希为空时须按正文现算 SM3");
+        // 现算结果回写 sop_version.file_hash 作为缓存
+        verify(sopVersionMapper).update(any(), any());
+    }
+
+    @Test
+    void recordView_degradesWithoutDocHashButStillWritesLog() {
+        // 版本行查不到 -> 不绑定正文哈希, 但查阅登记照常落库(可观测, 不静默失败)
+        when(sopVersionMapper.selectOne(any())).thenReturn(null);
+        when(eSignatureService.signInNewTransaction(any(SignCommand.class))).thenReturn(1001L);
+        when(baseMapper.insert(any(SopViewLog.class))).thenReturn(1);
+
+        assertTrue(service.recordView(2L, "V9", null, null, null, null, null));
+
+        ArgumentCaptor<SignCommand> cmdCaptor = ArgumentCaptor.forClass(SignCommand.class);
+        verify(eSignatureService).signInNewTransaction(cmdCaptor.capture());
+        assertNull(cmdCaptor.getValue().docHash());
+    }
+
+    // ==================== MES-SOP-03: 已签名记录不可删 ====================
+
+    @Test
+    void deleteByIds_rejectsSignedRecord() {
+        SopViewLog signed = new SopViewLog();
+        signed.setLogId(1L);
+        signed.setSignatureId(7788L);
+        when(baseMapper.selectList(any())).thenReturn(java.util.List.of(signed));
+
+        assertThrows(ServiceException.class, () -> service.deleteByIds(new Long[]{1L}));
+        verify(baseMapper, never()).deleteByIds(any());
+    }
+
+    @Test
+    void deleteByIds_allowsUnsignedRecord() {
+        SopViewLog unsigned = new SopViewLog();
+        unsigned.setLogId(2L);
+        when(baseMapper.selectList(any())).thenReturn(java.util.List.of(unsigned));
+        when(baseMapper.deleteByIds(any())).thenReturn(1);
+
+        assertTrue(service.deleteByIds(new Long[]{2L}));
+        verify(baseMapper).deleteByIds(any());
+    }
+
+    @Test
+    void deleteByIds_returnsFalseWhenNothingFound() {
+        when(baseMapper.selectList(any())).thenReturn(java.util.List.of());
+
+        assertFalse(service.deleteByIds(new Long[]{3L}));
+        verify(baseMapper, never()).deleteByIds(any());
+    }
+
+    // ==================== MES-SOP-02: 已阅确认判定 ====================
+
+    @Test
+    void hasAcknowledged_requiresSignatureId() {
+        when(baseMapper.selectCount(any())).thenReturn(1L);
+
+        assertTrue(service.hasAcknowledged(2L, "1.0", 5L));
+    }
+
+    @Test
+    void hasAcknowledged_falseWhenNoSignedRow() {
+        when(baseMapper.selectCount(any())).thenReturn(0L);
+
+        assertFalse(service.hasAcknowledged(2L, "1.0", 5L));
+        assertFalse(service.hasAcknowledged(null, "1.0", 5L));
+        assertFalse(service.hasAcknowledged(2L, "1.0", null));
     }
 }

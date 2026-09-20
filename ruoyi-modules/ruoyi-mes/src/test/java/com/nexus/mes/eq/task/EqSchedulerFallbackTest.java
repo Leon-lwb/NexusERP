@@ -5,6 +5,7 @@ import com.baomidou.lock.LockInfo;
 import com.baomidou.lock.LockTemplate;
 import com.nexus.mes.dc.task.IotDataArchiveTask;
 import com.nexus.mes.eq.service.IEqOeeService;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -35,6 +36,8 @@ import static org.mockito.Mockito.when;
  *
  * @author nexus
  */
+@Tag("local")
+@Tag("dev")
 class EqSchedulerFallbackTest {
 
     private static void setSnailJobEnabled(Object target, boolean value) throws Exception {

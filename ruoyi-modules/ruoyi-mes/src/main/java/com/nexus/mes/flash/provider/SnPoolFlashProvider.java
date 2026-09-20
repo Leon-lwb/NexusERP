@@ -2,6 +2,7 @@ package com.nexus.mes.flash.provider;
 
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.nexus.common.core.exception.ServiceException;
+import com.nexus.common.core.utils.StringUtils;
 import com.nexus.mes.flash.domain.MesResourceItem;
 import com.nexus.mes.flash.domain.MesResourcePool;
 import com.nexus.mes.flash.domain.bo.FlashRecordBo;
@@ -44,19 +45,38 @@ public class SnPoolFlashProvider implements FlashTypeProvider {
         MesResourceItem item = resourcePoolService.allocate(poolId, ctx.getSnId(), ctx.getSnCode());
         return FlashContent.builder()
             .contentRefType("SN_POOL")
-            .contentRefId(item.getItemId())
-            .contentPayload("{\"sn\":\"" + item.getResourceValue() + "\"}")
+            // MES-FLASH-03: 同 MacPoolFlashProvider, content_ref_id 落"工序配置的内容源ID"(门禁比对口径)
+            .contentRefId(ctx.getContentRefId() != null ? ctx.getContentRefId() : item.getItemId())
+            .contentPayload(PoolFlashPayload.of("sn", item.getResourceValue()))
             .build();
     }
 
     @Override
     public FlashVerifyResult verify(FlashContext ctx, FlashContent expected, FlashRecordBo actual) {
-        // POOL类: 资源已分配; SN在制由 confirmFlash(buildValidatedRecord) 前置统一校验; 实际结果以上报 result 为准
-        return FlashVerifyResult.builder()
+        // POOL类: 资源已分配; SN在制由 confirmFlash(buildValidatedRecord) 前置统一校验
+        String expectedValue = PoolFlashPayload.extract(expected.getContentPayload(), "sn");
+        String actualPayload = actual == null ? null : actual.getContentPayload();
+        String actualValue = PoolFlashPayload.extract(actualPayload, "sn");
+        FlashVerifyResult.FlashVerifyResultBuilder builder = FlashVerifyResult.builder()
             .pass(true)
-            .contentRefType(expected.getContentRefType())
-            .contentPayload(expected.getContentPayload())
-            .build();
+            .contentRefType(expected.getContentRefType());
+        if (StringUtils.isNotBlank(actualPayload)) {
+            if (StringUtils.isBlank(actualValue)) {
+                builder.pass(false)
+                    .failReason("设备上报实刷内容缺少 sn 字段: " + actualPayload)
+                    .contentPayload(expected.getContentPayload());
+            } else {
+                // MES-FLASH-02: 落库实际烧录值
+                builder.contentPayload(PoolFlashPayload.of("sn", actualValue));
+                if (expectedValue != null && !expectedValue.equalsIgnoreCase(actualValue)) {
+                    builder.pass(false)
+                        .failReason("SN实刷值与池分配值不一致: 应刷=" + expectedValue + " 实际=" + actualValue);
+                }
+            }
+        } else {
+            builder.contentPayload(expected.getContentPayload());
+        }
+        return builder.build();
     }
 
     private Long resolvePoolId(String resourceType) {

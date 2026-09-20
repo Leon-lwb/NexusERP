@@ -7,6 +7,7 @@ import com.nexus.common.tenant.core.TenantEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
+import java.math.BigDecimal;
 import java.util.Date;
 
 /**
@@ -69,6 +70,13 @@ public class EqEquipment extends TenantEntity {
 
     /** 关联IoT设备ID(预留,无外键) */
     private Long iotDeviceId;
+
+    /**
+     * 计划生产时长(分钟/天), 供 OEE 聚合使用(MES-EQ-03)。
+     * <p>为空时按 OEE 配置项 {@code nexus.mes.eq.oee.planned-minutes-per-day} 取默认值(默认 480 = 8h 单班);
+     * 两班/三班制车间应显式配置本列, 否则可用率会被系统性高估。</p>
+     */
+    private BigDecimal plannedMinutesPerDay;
 
     /** 备注 */
     private String remark;

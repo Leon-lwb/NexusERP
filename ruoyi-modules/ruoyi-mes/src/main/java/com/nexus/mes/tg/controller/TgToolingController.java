@@ -8,6 +8,7 @@ import com.nexus.common.log.enums.BusinessType;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.common.web.core.BaseController;
+import com.nexus.mes.tg.domain.bo.TgCalibrationBo;
 import com.nexus.mes.tg.domain.bo.TgCheckoutBo;
 import com.nexus.mes.tg.domain.bo.TgMaintenanceRecordBo;
 import com.nexus.mes.tg.domain.bo.TgToolingBo;
@@ -50,6 +51,26 @@ public class TgToolingController extends BaseController {
     @GetMapping("/due")
     public R<List<TgToolingVo>> due() {
         return R.ok(tgToolingService.listMaintenanceDue());
+    }
+
+    /**
+     * 校准到期/超期预警查询(今天 ~ 今天+7 天, 含已超期) (MES-TG-01/TG-05)
+     */
+    @SaCheckPermission("mes:tg:tooling:list")
+    @GetMapping("/calibration/due")
+    public R<List<TgToolingVo>> calibrationDue() {
+        return R.ok(tgToolingService.listCalibrationDue());
+    }
+
+    /**
+     * 登记校准(IDLE -> CALIBRATING -> IDLE, 服务端计算下次校准日) (MES-TG-01)
+     */
+    @SaCheckPermission("mes:tg:tooling:calibrate")
+    @Log(title = "工装校准登记", businessType = BusinessType.UPDATE)
+    @PutMapping("/calibration/{toolingId}")
+    public R<Void> registerCalibration(@PathVariable Long toolingId,
+                                       @RequestBody(required = false) TgCalibrationBo bo) {
+        return toAjax(tgToolingService.registerCalibration(toolingId, bo));
     }
 
     /**

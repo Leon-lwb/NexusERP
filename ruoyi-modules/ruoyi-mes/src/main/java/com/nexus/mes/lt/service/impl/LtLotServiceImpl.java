@@ -5,6 +5,7 @@ import com.baomidou.lock.annotation.Lock4j;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
@@ -24,6 +25,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -300,6 +303,11 @@ public class LtLotServiceImpl implements ILtLotService {
         if (!STATUS_QUARANTINED.equals(lot.getStatus())) {
             throw new RuntimeException("仅 QUARANTINED 状态可放行,当前: " + lot.getStatus());
         }
+        // MES-LT-06: QC 不合格(FAIL)批次不得经"放行"绕过 QC 门禁(需走特采/让步接收审批流程)
+        if (QC_STATUS_FAIL.equals(lot.getQcStatus())) {
+            throw new ServiceException("批次QC不合格(FAIL), 不得放行; 如需特采请走让步接收审批流程: lotCode="
+                + lot.getLotCode());
+        }
         // 放行: 按剩余/已消耗恢复状态(保留 IN_USE 语义: 部分消耗=使用中)
         BigDecimal remaining = lot.getQuantity().subtract(lot.getConsumedQty());
         String newStatus;
@@ -436,6 +444,11 @@ public class LtLotServiceImpl implements ILtLotService {
             result.put("reason", "批次QC未通过: " + lot.getQcStatus());
             return result;
         }
+        // MES-LT-03: 效期拦截 — 过期批次不可用
+        if (isExpired(lot.getExpiryDate())) {
+            result.put("reason", "批次已过期: " + lot.getExpiryDate());
+            return result;
+        }
         BigDecimal consumed = lot.getConsumedQty() == null ? BigDecimal.ZERO : lot.getConsumedQty();
         BigDecimal remaining = lot.getQuantity().subtract(consumed);
         result.put("remainingQty", remaining);
@@ -461,6 +474,8 @@ public class LtLotServiceImpl implements ILtLotService {
             .eq(LtLot::getMaterialId, materialId)
             .eq(LtLot::getStatus, STATUS_IN_STOCK)
             .eq(LtLot::getQcStatus, QC_STATUS_PASS)
+            // MES-LT-03: 过期批次不得进入 FEFO 推荐(否则"先到期先出"会优先推荐已过期批次)
+            .and(w -> w.isNull(LtLot::getExpiryDate).or().ge(LtLot::getExpiryDate, startOfToday()))
             .orderByAsc(LtLot::getExpiryDate)
             .orderByAsc(LtLot::getProducedDate)
             .orderByAsc(LtLot::getLotId));
@@ -490,7 +505,13 @@ public class LtLotServiceImpl implements ILtLotService {
     }
 
     /**
-     * 批次消耗(扣减数量,状态机流转)
+     * 批次消耗(原子扣减 + 状态机流转)
+     * <p>MES-LT-01: 扣减改为原子 SQL({@code consumed_qty = consumed_qty + qty})并带
+     * {@code consumed_qty + qty <= quantity} 守卫, 影响 0 行即抛异常 —— 不再依赖
+     * 「Java 先算后写绝对值 + 内存守卫」, 后者在 @Lock4j 锁释放早于事务提交时会被并发覆盖而超发。
+     * 本方法保留 {@code @Lock4j(#lotId)} 仅作为单批次串行化优化(减少冲突重试),
+     * <b>正确性由 SQL 守卫与状态 CAS 保证, 与锁切面/事务切面的先后顺序无关</b>。</p>
+     * <p>MES-LT-03/06: 过期批次与 QC 非 PASS(含 FAIL/PENDING) 批次一律拒绝领用。</p>
      */
     @Lock4j(keys = {"#lotId"})
     @Override
@@ -506,30 +527,61 @@ public class LtLotServiceImpl implements ILtLotService {
         if (!STATUS_IN_STOCK.equals(lot.getStatus()) && !STATUS_IN_USE.equals(lot.getStatus())) {
             throw new RuntimeException("批次状态不可消耗: " + lot.getStatus());
         }
-        BigDecimal newConsumed = lot.getConsumedQty().add(consumedQty);
-        BigDecimal remaining = lot.getQuantity().subtract(newConsumed);
-        if (remaining.compareTo(BigDecimal.ZERO) < 0) {
-            throw new RuntimeException("消耗数量超过剩余数量,剩余: "
-                + lot.getQuantity().subtract(lot.getConsumedQty()));
+        // MES-LT-06: QC 门禁 — 不合格(FAIL)/未判定(PENDING)批次不得领用
+        if (!QC_STATUS_PASS.equals(lot.getQcStatus())) {
+            throw new ServiceException("批次QC未通过, 不可领用: lotCode=" + lot.getLotCode()
+                + ", qcStatus=" + lot.getQcStatus());
         }
-        // 状态机流转
-        String newStatus;
-        if (remaining.compareTo(BigDecimal.ZERO) == 0) {
-            newStatus = STATUS_CONSUMED;
-        } else {
-            newStatus = STATUS_IN_USE;
+        // MES-LT-03: 效期门禁 — 过期批次不得领用
+        if (isExpired(lot.getExpiryDate())) {
+            throw new ServiceException("批次已过期, 不可领用: lotCode=" + lot.getLotCode()
+                + ", expiryDate=" + lot.getExpiryDate());
         }
+        BigDecimal consumed = lot.getConsumedQty() == null ? BigDecimal.ZERO : lot.getConsumedQty();
+        BigDecimal remaining = lot.getQuantity().subtract(consumed);
+        if (remaining.compareTo(consumedQty) < 0) {
+            throw new RuntimeException("消耗数量超过剩余数量,剩余: " + remaining);
+        }
+        // 原子扣减 + 守卫: 并发下由数据库行锁与条件共同保证不超发(影响 0 行 = 剩余不足或状态已变更)
         int rows = baseMapper.update(null, Wrappers.<LtLot>lambdaUpdate()
-            .set(LtLot::getConsumedQty, newConsumed)
-            .set(LtLot::getStatus, newStatus)
+            .setSql("consumed_qty = consumed_qty + {0}", consumedQty)
+            .eq(LtLot::getLotId, lotId)
+            .in(LtLot::getStatus, STATUS_IN_STOCK, STATUS_IN_USE)
+            .eq(LtLot::getQcStatus, QC_STATUS_PASS)
+            .apply("consumed_qty + {0} <= quantity", consumedQty));
+        if (rows == 0) {
+            throw new RuntimeException("批次剩余数量不足或状态已变更,消耗失败");
+        }
+        // 状态流转: 依据扣减后的实际值判定(独立语句, 避免 MySQL 单条 UPDATE 内 SET 求值顺序歧义)
+        int statusRows = baseMapper.update(null, Wrappers.<LtLot>lambdaUpdate()
+            .setSql("status = CASE WHEN consumed_qty >= quantity THEN '" + STATUS_CONSUMED
+                + "' ELSE '" + STATUS_IN_USE + "' END")
             .eq(LtLot::getLotId, lotId)
             .in(LtLot::getStatus, STATUS_IN_STOCK, STATUS_IN_USE));
-        if (rows == 0) {
-            throw new RuntimeException("批次状态已变更,消耗失败");
+        if (statusRows == 0) {
+            log.warn("批次消耗状态流转未命中(状态已变更, 数量已原子扣减): lotId={}", lotId);
         }
-        log.info("批次消耗: lotId={}, consumed={}, remaining={}, newStatus={}",
-            lotId, consumedQty, remaining, newStatus);
+        log.info("批次消耗: lotId={}, consumed={}, 扣减后剩余={}, statusRows={}",
+            lotId, consumedQty, remaining.subtract(consumedQty), statusRows);
         return true;
+    }
+
+    /**
+     * 批次是否已过期(expiry_date < 今天; 空值=不失效)
+     */
+    private boolean isExpired(Date expiryDate) {
+        if (expiryDate == null) {
+            return false;
+        }
+        LocalDate expiry = expiryDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+        return expiry.isBefore(LocalDate.now());
+    }
+
+    /**
+     * 今天零点(效期过滤下界, 与 {@link #isExpired} 口径一致)
+     */
+    private Date startOfToday() {
+        return Date.from(LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant());
     }
 
     /**

@@ -4,12 +4,16 @@ import com.aizuda.snailjob.client.job.core.annotation.JobExecutor;
 import com.aizuda.snailjob.client.job.core.dto.JobArgs;
 import com.aizuda.snailjob.common.log.SnailJobLog;
 import com.aizuda.snailjob.model.dto.ExecuteResult;
+import cn.dev33.satoken.stp.StpUtil;
+import cn.hutool.core.collection.CollUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder;
+import com.nexus.common.core.domain.model.LoginUser;
 import com.nexus.common.json.utils.JsonUtils;
 import com.nexus.common.redis.utils.RedisUtils;
+import com.nexus.common.satoken.utils.LoginHelper;
 import com.nexus.common.sse.dto.SseMessageDto;
 import com.nexus.common.sse.utils.SseMessageUtils;
 import com.nexus.common.tenant.helper.TenantHelper;
@@ -24,9 +28,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -36,12 +40,18 @@ import java.util.Set;
  * <p>
  * 周期性扫描 eq_maintenance_plan 中 next_date &lt;= today 且 status=ACTIVE 的计划:
  * <ol>
- *   <li>Redis 限频: 每计划每 24 小时仅推送一次 (key=mes:maintenance:due:rl:{planId}, TTL=24h);</li>
- *   <li>SSE 推送 MAINTENANCE_DUE 消息给租户内在线用户(SnailJob 线程无 Sa-Token 上下文, 当前简化为空集,
- *       实际靠安灯看板刷新触发);</li>
- *   <li>触发 EQUIPMENT 类型安灯呼叫({@link IProAndonService#callAndon});</li>
+ *   <li>Redis 限频: 按超期级别限频(见 {@link #throttleTtl(long)}), key=mes:maintenance:due:rl:{planId};</li>
+ *   <li>SSE 推送 MAINTENANCE_DUE 消息给同租户在线用户(按 Sa-Token 在线 Token 过滤租户, MES-EQ-12);</li>
+ *   <li>触发 EQUIPMENT 类型安灯({@link IProAndonService#callAndon}), reason 前缀带超期级别;</li>
  *   <li>不自动完成计划(需人工确认保养完成后调 IEqMaintenancePlanService.completePlan)。</li>
  * </ol>
+ * <p>
+ * 超期升级策略(MES-EQ-12, 此前"1 天/30 天提醒完全一致"):
+ * <ul>
+ *   <li>超期 ≤7 天: P3, 每 24h 提醒一次;</li>
+ *   <li>超期 8~30 天: P2, 每 12h 提醒一次;</li>
+ *   <li>超期 &gt;30 天: P1, 每 6h 提醒一次(需班组长介入)。</li>
+ * </ul>
  * 建议频率: 每天 8:00 一次 (cron: 0 0 8 * * ?)
  *
  * @author nexus
@@ -75,7 +85,9 @@ public class MaintenanceDueTask {
     private static final String PLAN_STATUS_ACTIVE = "ACTIVE";
     private static final String SSE_TYPE = "MAINTENANCE_DUE";
     private static final String THROTTLE_PREFIX = "mes:maintenance:due:rl:";
-    private static final Duration THROTTLE_TTL = Duration.ofHours(24);
+    /** 超期升级阈值(天): >P1 为最高级, >P2 为中级 */
+    private static final long ESCALATE_P1_DAYS = 30L;
+    private static final long ESCALATE_P2_DAYS = 7L;
     /** 默认租户(多租户环境需扩展为遍历租户列表) */
     private static final String DEFAULT_TENANT_ID = "000000";
 
@@ -83,6 +95,42 @@ public class MaintenanceDueTask {
     private final EqEquipmentMapper equipmentMapper;
     private final IProAndonService andonService;
     private final MesSysTenantMapper mesSysTenantMapper;
+
+    /**
+     * 超期级别: 超期越久级别越高(P1 > P2 > P3), 用于安灯文案与提醒频率(MES-EQ-12)。
+     */
+    static String overdueLevel(long overdueDays) {
+        if (overdueDays > ESCALATE_P1_DAYS) {
+            return "P1";
+        }
+        if (overdueDays > ESCALATE_P2_DAYS) {
+            return "P2";
+        }
+        return "P3";
+    }
+
+    /**
+     * 按超期级别决定限频窗口: P3=24h, P2=12h, P1=6h。
+     */
+    static Duration throttleTtl(long overdueDays) {
+        String level = overdueLevel(overdueDays);
+        return switch (level) {
+            case "P1" -> Duration.ofHours(6);
+            case "P2" -> Duration.ofHours(12);
+            default -> Duration.ofHours(24);
+        };
+    }
+
+    /**
+     * 超期天数(计划应完成日期到今天的整天数, 未超期返回 0)。
+     */
+    static long overdueDays(Date nextDate) {
+        if (nextDate == null) {
+            return 0L;
+        }
+        long diff = System.currentTimeMillis() - nextDate.getTime();
+        return diff <= 0 ? 0L : diff / 86400000L;
+    }
 
     /**
      * 定时任务执行入口，由调度框架回调。
@@ -139,49 +187,57 @@ public class MaintenanceDueTask {
     }
 
     private void notifyOne(EqMaintenancePlan plan) {
-        // 1. Redis 限频: 每计划每 24 小时仅推送一次
+        // 1. 超期天数与升级级别(MES-EQ-12): 越期越久, 提醒越频繁、级别越高
+        long overdueDays = overdueDays(plan.getNextDate());
+        String level = overdueLevel(overdueDays);
+
+        // 2. Redis 限频: 按级别限频(P3 24h / P2 12h / P1 6h)
         String throttleKey = THROTTLE_PREFIX + plan.getPlanId();
-        if (!RedisUtils.setObjectIfAbsent(throttleKey, "1", THROTTLE_TTL)) {
+        if (!RedisUtils.setObjectIfAbsent(throttleKey, level, throttleTtl(overdueDays))) {
             log.debug("[保养到期任务] 计划 {} 限频中, 跳过", plan.getPlanId());
             return;
         }
 
-        // 2. 查设备信息
+        // 3. 查设备信息
         EqEquipment equipment = plan.getEquipmentId() == null ? null :
             equipmentMapper.selectById(plan.getEquipmentId());
         String equipName = equipment == null ? "未知设备" : equipment.getEquipmentName();
         String equipCode = equipment == null ? "N/A" : equipment.getEquipmentCode();
 
-        String reason = String.format("保养到期: 计划[%s] 设备[%s(%s)] 类型[%s] 应完成日期[%s]",
-            plan.getPlanName(), equipName, equipCode, plan.getMaintenanceType(),
+        String reason = String.format("[%s] 保养超期 %d 天: 计划[%s] 设备[%s(%s)] 类型[%s] 应完成日期[%s]",
+            level, overdueDays, plan.getPlanName(), equipName, equipCode, plan.getMaintenanceType(),
             plan.getNextDate());
 
-        // 3. SSE 推送给租户内在线用户
-        publishMaintenanceSse(plan, equipment, reason);
+        // 4. SSE 推送给同租户在线用户(真实在线用户集合, 不再恒为空集)
+        publishMaintenanceSse(plan, equipment, reason, level, overdueDays);
 
-        // 4. 触发 EQUIPMENT 类型安灯
+        // 5. 触发 EQUIPMENT 类型安灯
         try {
             andonService.callAndon(null, null, null, IProAndonService.TYPE_EQUIPMENT, reason);
-            log.info("[保养到期任务] 计划 {} 已触发 EQUIPMENT 安灯", plan.getPlanId());
+            log.info("[保养到期任务] 计划 {} 超期 {} 天({}), 已触发 EQUIPMENT 安灯",
+                plan.getPlanId(), overdueDays, level);
         } catch (Exception e) {
             log.warn("[保养到期任务] 计划 {} 触发安灯失败: {}", plan.getPlanId(), e.getMessage());
         }
     }
 
-    private void publishMaintenanceSse(EqMaintenancePlan plan, EqEquipment equipment, String reason) {
+    private void publishMaintenanceSse(EqMaintenancePlan plan, EqEquipment equipment, String reason,
+                                       String level, long overdueDays) {
         if (!SseMessageUtils.isEnable()) {
             return;
         }
-        // 简化: SnailJob 线程无 Sa-Token token, 此处返回空集, SSE 实际靠安灯看板刷新触发
-        // 若需真实推送, 参考 ProAndonServiceImpl.collectOnlineUsersByTenant 用 StpUtil.searchTokenValue
-        Set<Long> userIds = collectOnlineUsers();
+        // SnailJob/定时线程无 Sa-Token 请求上下文, 但 StpUtil.searchTokenValue 直接读 Redis 会话索引,
+        // 因此可按租户拿到真实在线用户(与 ProAndonServiceImpl.collectOnlineUsersByTenant 同口径)
+        Set<Long> userIds = collectOnlineUsers(TenantHelper.getTenantId());
         if (userIds.isEmpty()) {
-            log.debug("[保养到期任务] 无在线用户, 跳过 SSE: planId={}", plan.getPlanId());
+            log.debug("[保养到期任务] 无同租户在线用户, 跳过 SSE: planId={}", plan.getPlanId());
             return;
         }
         Map<String, Object> payload = new HashMap<>();
         payload.put("type", SSE_TYPE);
         payload.put("action", "DUE");
+        payload.put("level", level);
+        payload.put("overdueDays", overdueDays);
         payload.put("planId", plan.getPlanId());
         payload.put("planName", plan.getPlanName());
         payload.put("equipmentId", plan.getEquipmentId());
@@ -193,15 +249,41 @@ public class MaintenanceDueTask {
         dto.setUserIds(List.copyOf(userIds));
         dto.setMessage(JsonUtils.toJsonString(payload));
         SseMessageUtils.publishMessage(dto);
+        log.info("[保养到期任务] 计划 {} SSE 已推送 {} 个在线用户", plan.getPlanId(), userIds.size());
     }
 
     /**
-     * 扫描在线用户。
-     * <p>
-     * SnailJob 线程无 Sa-Token 上下文, {@code StpUtil.searchTokenValue} 在无 Web 请求上下文时不可靠,
-     * 此处简化为空集, SSE 实际推送由前端安灯看板轮询/刷新触发。
+     * 扫描 Sa-Token 在线 Token, 过滤指定租户的在线用户ID集合(MES-EQ-12)。
+     * <p>与 {@code ProAndonServiceImpl.collectOnlineUsersByTenant} / ruoyi-iot
+     * {@code IotAlertNotifier} 同名方法逻辑一致, 消除此前"恒返回空集"的死代码。</p>
      */
-    private Set<Long> collectOnlineUsers() {
-        return Collections.emptySet();
+    Set<Long> collectOnlineUsers(String tenantId) {
+        Set<Long> userIds = new LinkedHashSet<>();
+        List<String> keys;
+        try {
+            keys = StpUtil.searchTokenValue("", 0, -1, false);
+        } catch (Exception e) {
+            log.warn("[保养到期任务] 查询在线 Token 失败, 跳过 SSE 推送: {}", e.getMessage());
+            return userIds;
+        }
+        if (CollUtil.isEmpty(keys)) {
+            return userIds;
+        }
+        for (String key : keys) {
+            int idx = key.lastIndexOf(':');
+            String token = idx >= 0 ? key.substring(idx + 1) : key;
+            try {
+                LoginUser loginUser = LoginHelper.getLoginUser(token);
+                if (loginUser == null || loginUser.getUserId() == null) {
+                    continue;
+                }
+                if (tenantId == null || tenantId.equals(loginUser.getTenantId())) {
+                    userIds.add(loginUser.getUserId());
+                }
+            } catch (Exception ignore) {
+                // 单个 token 解析失败不影响整体
+            }
+        }
+        return userIds;
     }
 }

@@ -44,6 +44,10 @@ public class RabbitMqInitializer {
     /** 声明所有业务队列及绑定关系 */
     private void declareQueuesAndBindings() {
         // 使用TopicExchange绑定带通配符(#)的路由键，DirectExchange只支持精确匹配不支持通配符
+        // 通道定性(MQ-01, 见 doc/audit/2026-09-20-fix-leftover.md): STOCK_OUT_QUEUE / VENDOR_EVALUATION_QUEUE /
+        // STOCK_ALERT_QUEUE / SUBCONTRACT_STOCK_QUEUE / DELAY_QUEUE / EINVOICE_ISSUE_RESULT_QUEUE 均为
+        // 「预留/未启用」通道 —— 全仓无生产者(convertAndSend/ReliableMessageProducer)、无 @RabbitListener 消费者,
+        // 此处声明仅为保持既有 broker 拓扑稳定并便于后续接入, 不承载任何业务链路。
         declareQueueWithDLX(QueueConstants.STOCK_IN_QUEUE, ExchangeConstants.TOPIC_EXCHANGE, "stock.in.#");
         declareQueueWithDLX(QueueConstants.STOCK_OUT_QUEUE, ExchangeConstants.TOPIC_EXCHANGE, "stock.out.#");
         declareQueueWithDLX(QueueConstants.PURCHASE_RECEIVE_QUEUE, ExchangeConstants.TOPIC_EXCHANGE, "purchase.receive.#");

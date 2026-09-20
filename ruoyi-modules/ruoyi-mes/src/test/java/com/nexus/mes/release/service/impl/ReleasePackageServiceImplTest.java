@@ -264,4 +264,43 @@ class ReleasePackageServiceImplTest {
         ServiceException ex = assertThrows(ServiceException.class, () -> service.setDefault(1L));
         assertTrue(ex.getMessage().contains("仅已发布"));
     }
+
+    // ==================== approve -> doPublish 影响行数校验(MES-REL-01) ====================
+
+    @org.junit.jupiter.api.Tag("local")
+    @org.junit.jupiter.api.Tag("dev")
+    @Test
+    void approveThrowsWhenPublishCasAffectsZeroRows() {
+        ReleasePackage pkg = releasedPackage(1L, "RP-001", null);
+        pkg.setStatus("IN_REVIEW");
+        when(baseMapper.selectById(1L)).thenReturn(pkg);
+        // CAS 影响 0 行(状态已被并发变更: 双审批 / 与归档竞态)
+        when(baseMapper.update(any(), any())).thenReturn(0);
+
+        try (org.mockito.MockedStatic<com.nexus.common.satoken.utils.LoginHelper> login =
+                 org.mockito.Mockito.mockStatic(com.nexus.common.satoken.utils.LoginHelper.class)) {
+            login.when(com.nexus.common.satoken.utils.LoginHelper::getUserId).thenReturn(9L);
+
+            ServiceException ex = assertThrows(ServiceException.class, () -> service.approve(1L, "同意"));
+            assertTrue(ex.getMessage().contains("状态已变更"), ex.getMessage());
+        }
+    }
+
+    @org.junit.jupiter.api.Tag("local")
+    @org.junit.jupiter.api.Tag("dev")
+    @Test
+    void approvePublishesWhenPublishCasAffectsOneRow() {
+        ReleasePackage pkg = releasedPackage(1L, "RP-001", null);
+        pkg.setStatus("IN_REVIEW");
+        when(baseMapper.selectById(1L)).thenReturn(pkg);
+        when(baseMapper.update(any(), any())).thenReturn(1);
+
+        try (org.mockito.MockedStatic<com.nexus.common.satoken.utils.LoginHelper> login =
+                 org.mockito.Mockito.mockStatic(com.nexus.common.satoken.utils.LoginHelper.class)) {
+            login.when(com.nexus.common.satoken.utils.LoginHelper::getUserId).thenReturn(9L);
+
+            assertTrue(service.approve(1L, "同意"));
+            verify(baseMapper, times(1)).update(any(), any());
+        }
+    }
 }

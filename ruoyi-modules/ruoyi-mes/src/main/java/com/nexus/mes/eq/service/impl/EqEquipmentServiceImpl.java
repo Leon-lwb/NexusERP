@@ -15,10 +15,12 @@ import com.nexus.common.satoken.utils.LoginHelper;
 import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.mes.common.mq.MesMqSendService;
 import com.nexus.mes.eq.domain.EqEquipment;
+import com.nexus.mes.eq.domain.EqInspectionRecord;
 import com.nexus.mes.eq.domain.bo.EqEquipmentBo;
 import com.nexus.mes.eq.domain.bo.InspectionResultBo;
 import com.nexus.mes.eq.domain.vo.EqEquipmentVo;
 import com.nexus.mes.eq.mapper.EqEquipmentMapper;
+import com.nexus.mes.eq.mapper.EqInspectionRecordMapper;
 import com.nexus.mes.eq.service.IEqEquipmentService;
 import com.nexus.mes.pro.domain.ProWorkOrder;
 import com.nexus.mes.pro.domain.vo.ProWorkOrderVo;
@@ -55,6 +57,7 @@ import java.util.Map;
 public class EqEquipmentServiceImpl implements IEqEquipmentService {
 
     private final EqEquipmentMapper baseMapper;
+    private final EqInspectionRecordMapper inspectionRecordMapper;
     private final IotDeviceDataQueryService iotDeviceDataQueryService;
     private final IProAndonService proAndonService;
     private final MesMqSendService mesMqSendService;
@@ -166,6 +169,7 @@ public class EqEquipmentServiceImpl implements IEqEquipmentService {
         equipment.setInspectionItems(bo.getInspectionItems());
         equipment.setLastInspection(bo.getLastInspection());
         equipment.setIotDeviceId(bo.getIotDeviceId());
+        equipment.setPlannedMinutesPerDay(bo.getPlannedMinutesPerDay());
         equipment.setRemark(bo.getRemark());
         baseMapper.insert(equipment);
         log.info("新增设备台账: equipmentId={}, code={}", equipment.getEquipmentId(), equipment.getEquipmentCode());
@@ -215,6 +219,7 @@ public class EqEquipmentServiceImpl implements IEqEquipmentService {
         equipment.setInspectionItems(bo.getInspectionItems());
         equipment.setLastInspection(bo.getLastInspection());
         equipment.setIotDeviceId(bo.getIotDeviceId());
+        equipment.setPlannedMinutesPerDay(bo.getPlannedMinutesPerDay());
         equipment.setRemark(bo.getRemark());
         baseMapper.updateById(equipment);
         log.info("编辑设备台账: equipmentId={}", equipment.getEquipmentId());
@@ -326,6 +331,46 @@ public class EqEquipmentServiceImpl implements IEqEquipmentService {
             return true;
         }
         return false;
+    }
+
+    /**
+     * 结束保养: MAINTENANCE -> NORMAL(仍有活跃报修则 FAULT), CAS 限定当前状态(MES-EQ-05)
+     *
+     * @param equipmentId 设备ID
+     * @param reason 结束原因
+     * @return 是否实际结束了保养
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean finishMaintenance(Long equipmentId, String reason) {
+        if (equipmentId == null) {
+            return false;
+        }
+        EqEquipment equipment = baseMapper.selectById(equipmentId);
+        if (equipment == null) {
+            log.warn("设备不存在, 跳过结束保养: equipmentId={}", equipmentId);
+            return false;
+        }
+        String oldStatus = equipment.getStatus();
+        // 仅"保养中"需要收口; 其他状态一律不碰(避免误改 FAULT/SCRAPPED)
+        if (!STATUS_MAINTENANCE.equals(oldStatus)) {
+            return false;
+        }
+        int rows = baseMapper.finishMaintenance(equipmentId);
+        if (rows == 0) {
+            log.info("设备结束保养未命中(CAS 未命中或状态已变更): equipmentId={}", equipmentId);
+            return false;
+        }
+        // 回读实际落库状态, 使 MQ 事件的 newStatus 与库内一致(有活跃报修时为 FAULT)
+        String newStatus = STATUS_NORMAL;
+        EqEquipment after = baseMapper.selectById(equipmentId);
+        if (after != null && StringUtils.isNotBlank(after.getStatus())) {
+            newStatus = after.getStatus();
+        }
+        log.info("设备结束保养: equipmentId={}, {}->{}", equipmentId, oldStatus, newStatus);
+        publishStatusEvent(equipmentId, equipment.getEquipmentCode(), equipment.getEquipmentName(),
+            oldStatus, newStatus, StringUtils.isNotBlank(reason) ? reason : "保养结束");
+        return true;
     }
 
     /**
@@ -511,7 +556,21 @@ public class EqEquipmentServiceImpl implements IEqEquipmentService {
             .eq(EqEquipment::getEquipmentId, equipmentId);
         int rows = baseMapper.update(null, wrapper);
 
-        // 3. 点检不合格: 设备状态置为 FAULT + 触发 EQUIPMENT 安灯
+        // 3. 历史留痕: 与 PDA/工位入口同口径写入 eq_inspection_record(MES-EQ-09),
+        //    last_inspection 仅作为"最近一次"快照保留
+        EqInspectionRecord history = new EqInspectionRecord();
+        history.setEquipmentId(equipmentId);
+        history.setStationCode(equipment.getWorkcenterCode());
+        history.setInspectorId(userId);
+        history.setInspectorName(LoginHelper.getUsername());
+        history.setOperatorCode(LoginHelper.getUsername());
+        history.setInspectTime(new Date());
+        history.setResults(JsonUtils.toJsonString(bo.getResults()));
+        history.setOverallPass(Boolean.FALSE.equals(bo.getOverallPass()) ? "N" : "Y");
+        history.setRemark(bo.getRemark());
+        inspectionRecordMapper.insert(history);
+
+        // 4. 点检不合格: 设备状态置为 FAULT + 触发 EQUIPMENT 安灯
         if (Boolean.FALSE.equals(bo.getOverallPass())) {
             updateStatus(equipmentId, STATUS_FAULT, "点检不合格");
             String reason = String.format("点检不合格: 设备[%s(%s)] 不合格项[%d]项",
@@ -524,6 +583,9 @@ public class EqEquipmentServiceImpl implements IEqEquipmentService {
             } catch (Exception e) {
                 log.warn("设备 {} 点检不合格触发安灯失败: {}", equipmentId, e.getMessage());
             }
+        } else {
+            // 5. 点检合格: 若设备因保养异常处于 MAINTENANCE, 视为保养异常已闭环, 释放回 NORMAL/FAULT(MES-EQ-05)
+            finishMaintenance(equipmentId, "点检合格, 结束保养");
         }
 
         return rows > 0;

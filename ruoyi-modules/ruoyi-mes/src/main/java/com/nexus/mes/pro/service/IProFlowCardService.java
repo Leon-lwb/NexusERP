@@ -112,6 +112,13 @@ public interface IProFlowCardService {
     void completeCard(Long cardId);
 
     /**
+     * 手工完工流转卡(UI 一键完工入口)
+     * <p>MES-PRO-01: 存在未完成工序时**直接拒绝**并列出未完成工序(不得绕过工序完工)。
+     * 完工数量取工序实际报工数; 工序已全完成而卡未入账时允许再次聚合(幂等/自愈)。</p>
+     */
+    void manualCompleteCard(Long cardId);
+
+    /**
      * 关闭流转卡(COMPLETED -> CLOSED)
      */
     void closeCard(Long cardId);
@@ -121,6 +128,14 @@ public interface IProFlowCardService {
 
     /** 检查并完成工序(派工完工聚合后调用) — CAS工序→COMPLETED + 检查所有工序完成→completeCard */
     void checkAndCompleteStep(Long cardId, Long stepRecordId);
+
+    /**
+     * 检查并完成工序(不取锁, 带事务)
+     * <p><b>调用方必须已持有 {@code mes:flowcard:{cardId}} 程序化锁且锁覆盖自身事务提交</b>
+     * (如 ProDispatchServiceImpl.completeDispatch), 否则"工序是否全完成"的判定存在
+     * MES-PRO-02 竞态(读不到并发事务未提交的完工)。</p>
+     */
+    void checkAndCompleteStepUnderLock(Long cardId, Long stepRecordId);
 
     /**
      * 进站(P0-3): 执行 ENTRY 校验 -> 通过则 startStep + 推送SOP + 记录进站校验结果

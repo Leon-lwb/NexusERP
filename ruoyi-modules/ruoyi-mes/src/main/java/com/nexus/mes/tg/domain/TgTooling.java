@@ -47,7 +47,7 @@ public class TgTooling extends TenantEntity {
     /** 车间名称(冗余) */
     private String workshopName;
 
-    /** 状态: IDLE/IN_USE/MAINTENANCE/SCRAPPED */
+    /** 状态: IDLE/IN_USE/CALIBRATING/MAINTENANCE/SCRAPPED */
     private String status;
 
     /** 总寿命(次数) */
@@ -64,6 +64,24 @@ public class TgTooling extends TenantEntity {
 
     /** 上次保养时间 */
     private Date lastMaintainTime;
+
+    /** 校准周期(天), 空=未纳入校准管理 (MES-TG-01) */
+    private Integer calibrationCycleDays;
+
+    /** 上次校准日期 (MES-TG-01) */
+    private Date lastCalibrationDate;
+
+    /** 下次校准日期, 到期/超期即拦截领用与进站 (MES-TG-01) */
+    private Date nextCalibrationDate;
+
+    /** 校准人ID (MES-TG-01) */
+    private Long calibratedBy;
+
+    /** 校准结果: PASS/FAIL/ADJUSTED (MES-TG-01) */
+    private String calibrationResult;
+
+    /** 校准备注 (MES-TG-01) */
+    private String calibrationRemark;
 
     /** 采购日期 */
     private Date purchaseDate;

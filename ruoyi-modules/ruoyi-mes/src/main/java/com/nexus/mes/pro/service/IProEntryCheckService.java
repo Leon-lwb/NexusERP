@@ -11,8 +11,8 @@ import com.nexus.mes.pro.domain.vo.ProCheckResultVo;
  *
  * <p>校验类型(check_type)：</p>
  * <ul>
- *   <li>ENTRY 阶段：SERIAL_GATE(内置,always-on)/SOP_VERSION/TOOLING_AVAILABLE/LOT_AVAILABLE/EQUIPMENT_STATUS
- *       /MATERIAL_KITTING(存根)/OPERATOR_SKILL(存根)</li>
+ *   <li>ENTRY 阶段：SERIAL_GATE(内置,always-on)/SOP_VERSION/SOP_ACKNOWLEDGED/TOOLING_AVAILABLE
+ *       /LOT_AVAILABLE/EQUIPMENT_STATUS/MATERIAL_KITTING(存根)/OPERATOR_SKILL(存根)</li>
  *   <li>EXIT 阶段：QUANTITY_REACHED/INSPECTION_REQUIRED/EXCEPTION_CLOSED/PARAMETER_OK(存根)</li>
  * </ul>
  *
@@ -29,6 +29,8 @@ public interface IProEntryCheckService {
     String TYPE_SERIAL_GATE = "SERIAL_GATE";
     /** 校验类型: SOP版本(须已发布) */
     String TYPE_SOP_VERSION = "SOP_VERSION";
+    /** 校验类型: SOP已阅确认(操作员对该版本产生过 SOP_VIEW 电子签名) — MES-SOP-02 */
+    String TYPE_SOP_ACKNOWLEDGED = "SOP_ACKNOWLEDGED";
     /** 校验类型: 工装可用性 */
     String TYPE_TOOLING_AVAILABLE = "TOOLING_AVAILABLE";
     /** 校验类型: 批次可用性 */

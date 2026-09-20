@@ -49,6 +49,15 @@ public class TgMaintenancePlanServiceImpl implements ITgMaintenancePlanService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean insertByBo(TgMaintenancePlanBo bo) {
+        // MES-TG-07: 同一工装同一触发类型只允许一条计划(与 uk_tooling_trigger 唯一约束同口径),
+        // 避免 listMaintenanceDue 逐条判断导致到期列表重复行
+        Long dup = baseMapper.selectCount(Wrappers.<TgMaintenancePlan>lambdaQuery()
+            .eq(TgMaintenancePlan::getToolingId, bo.getToolingId())
+            .eq(TgMaintenancePlan::getTriggerType, bo.getTriggerType()));
+        if (dup != null && dup > 0) {
+            throw new RuntimeException("该工装已存在同类触发方式的保养计划(" + bo.getTriggerType()
+                + "),请直接修改原计划");
+        }
         TgMaintenancePlan plan = new TgMaintenancePlan();
         plan.setToolingId(bo.getToolingId());
         plan.setPlanName(bo.getPlanName());
@@ -76,9 +85,10 @@ public class TgMaintenancePlanServiceImpl implements ITgMaintenancePlanService {
         plan.setTriggerValue(bo.getTriggerValue());
         plan.setEnabled(bo.getEnabled());
         plan.setRemark(bo.getRemark());
-        plan.setNextMaintainCount(bo.getNextMaintainCount());
-        plan.setNextMaintainHours(bo.getNextMaintainHours());
-        plan.setNextMaintainTime(bo.getNextMaintainTime());
+        // MES-TG-06: next_maintain_count/hours/time 是「寿命双轨」的到期阈值, 只能由
+        // TgToolingServiceImpl.updatePlanAfterMaintain(保养完成) 维护。
+        // 此前无条件采信入参, 有权限者可把 next_maintain_time 改到明年从而绕过到期拦截。
+        // 本端点刻意不写这三列(客户端传值一律忽略); 新建时由 calcNextDueOnCreate 计算。
         int rows = baseMapper.updateById(plan);
         return rows > 0;
     }
