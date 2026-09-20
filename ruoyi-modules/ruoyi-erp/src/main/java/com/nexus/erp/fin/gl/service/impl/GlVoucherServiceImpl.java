@@ -171,7 +171,9 @@ public class GlVoucherServiceImpl implements IGlVoucherService {
         List<GlVoucherLine> lines = lineMapper.selectList(new LambdaQueryWrapper<GlVoucherLine>()
             .eq(GlVoucherLine::getVoucherId, voucherId)
             .orderByAsc(GlVoucherLine::getLineNo));
-        BigDecimal[] totals = validateBalanced(lines);
+        // 按凭证来源判定是否允许负数分录：业务自动制单的红字凭证（借贷方向不变、金额取负）
+        // 反过账后再过账时必须放行，否则红字凭证一旦 unpost 就再也无法 post
+        BigDecimal[] totals = validateBalanced(lines, isBusinessSource(v.getVoucherSource()));
         GlPeriod period = periodService.getOrDerivePeriod(v.getVoucherDate());
         if (!GlConstants.PERIOD_OPEN.equals(period.getStatus())) {
             throw new ServiceException("期间【{}】非开放状态,不可过账", period.getPeriodName());
@@ -275,7 +277,9 @@ public class GlVoucherServiceImpl implements IGlVoucherService {
                 }
             }
         }
-        BigDecimal[] totals = validateBalanced(lines);
+        // 业务来源（非 MANUAL）允许负数分录：红字/红冲凭证按「借贷方向不变、金额取负」记账；
+        // 手工来源仍拒绝负数，保持防呆。
+        BigDecimal[] totals = validateBalanced(lines, isBusinessSource(req.getVoucherSource()));
         GlVoucher v = new GlVoucher();
         v.setVoucherDate(req.getVoucherDate());
         v.setVoucherWord(req.getVoucherWord() == null ? "J" : req.getVoucherWord());
@@ -304,8 +308,29 @@ public class GlVoucherServiceImpl implements IGlVoucherService {
 
     // ---------- helpers ----------
 
-    /** 校验借贷平衡 + 末级科目 + 回填科目编码/名称;返回 [借方合计, 贷方合计] */
+    /**
+     * 校验借贷平衡 + 末级科目 + 回填科目编码/名称;返回 [借方合计, 贷方合计]（手工来源，拒绝负数分录）。
+     */
     private BigDecimal[] validateBalanced(List<GlVoucherLine> lines) {
+        return validateBalanced(lines, false);
+    }
+
+    /**
+     * 是否为业务自动制单来源（非手工）。
+     * <p>业务来源允许负数分录：红字/红冲凭证按「借贷方向不变、金额取负」记账
+     * （如 {@code SoInvoicePoster} 处理红字发票时三行金额全为负）。手工来源仍拒绝负数，保持防呆。</p>
+     */
+    private boolean isBusinessSource(String voucherSource) {
+        return StringUtils.isNotBlank(voucherSource) && !GlConstants.SOURCE_MANUAL.equals(voucherSource);
+    }
+
+    /**
+     * 校验借贷平衡 + 末级科目 + 回填科目编码/名称;返回 [借方合计, 贷方合计]。
+     *
+     * @param lines          分录行
+     * @param allowNegative  true=允许负数分录（业务自动制单），false=拒绝负数分录（手工录入，防呆）
+     */
+    private BigDecimal[] validateBalanced(List<GlVoucherLine> lines, boolean allowNegative) {
         if (CollUtil.isEmpty(lines)) {
             throw new ServiceException("凭证至少一行分录");
         }
@@ -314,11 +339,16 @@ public class GlVoucherServiceImpl implements IGlVoucherService {
         for (GlVoucherLine l : lines) {
             BigDecimal d = nz(l.getDebit());
             BigDecimal c = nz(l.getCredit());
-            // 负数金额拒绝（红字仅允许业务 poster 生成，手工凭证不允许负数分录）
-            if (d.signum() < 0 || c.signum() < 0) {
+            // 负数金额：手工凭证拒绝（防呆），业务 poster 允许 —— 红字/红冲凭证按「借贷方向不变、金额取负」记账，
+            // 例如 SoInvoicePoster 处理红字发票时三行金额全为负。
+            // 原实现对**所有**路径一律拒绝负数，导致红字发票的过账消息必然抛异常 →
+            // 重试 3 次后进死信，红冲的账务冲销实际从未生效（注释声称「金额取负」但代码不允许）。
+            if (!allowNegative && (d.signum() < 0 || c.signum() < 0)) {
                 throw new ServiceException("分录行金额不能为负数，红字业务请通过业务过账生成");
             }
-            if (d.signum() > 0 && c.signum() > 0) {
+            // 借贷不可同时有值：用 signum() != 0 而非 > 0 —— 允许负数分录后，
+            // 借方 -100 且贷方 -100 的行在 > 0 口径下会被漏过（两侧都是负数）
+            if (d.signum() != 0 && c.signum() != 0) {
                 throw new ServiceException("分录行借贷不可同时有值");
             }
             if (d.signum() == 0 && c.signum() == 0) {
