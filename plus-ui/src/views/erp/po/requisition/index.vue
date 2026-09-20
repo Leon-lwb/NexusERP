@@ -18,15 +18,10 @@
             <el-input v-model="queryParams.applicantName" placeholder="请输入申请人" clearable @keyup.enter="handleQuery()" />
           </el-form-item>
         </el-col>
-        <!-- 技术债:状态为硬编码 el-option,暂无对应字典,待补字典后改 useDict -->
         <el-col :span="6">
           <el-form-item label="状态" prop="status">
             <el-select v-model="queryParams.status" placeholder="请选择状态" clearable style="width: 100%">
-              <el-option label="草稿" value="draft" />
-              <el-option label="已提交" value="submitted" />
-              <el-option label="已批准" value="approved" />
-              <el-option label="已拒绝" value="rejected" />
-              <el-option label="已关闭" value="closed" />
+              <el-option v-for="d in pu_purchase_requisition_status" :key="d.value" :label="d.label" :value="d.value" />
             </el-select>
           </el-form-item>
         </el-col>
@@ -120,11 +115,7 @@
           <el-col :span="8">
             <el-form-item label="状态" prop="status">
               <el-select v-model="form.status" placeholder="请选择状态" style="width: 100%">
-                <el-option label="草稿" value="draft" />
-                <el-option label="已提交" value="submitted" />
-                <el-option label="已批准" value="approved" />
-                <el-option label="已拒绝" value="rejected" />
-                <el-option label="已关闭" value="closed" />
+                <el-option v-for="d in pu_purchase_requisition_status" :key="d.value" :label="d.label" :value="d.value" />
               </el-select>
             </el-form-item>
           </el-col>
@@ -267,6 +258,10 @@ import { useCrud } from '@/composables/useCrud';
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const formRef = ref<FormInstance>();
 
+// 状态字典：后端状态值为大写（DRAFT/SUBMITTED/APPROVING/APPROVED/ORDERED/CLOSED/CANCELLED/REJECTED），
+// 此前页面硬编码小写 draft/submitted/... 导致「筛选查不到数据、列表状态显示原始码、新建单据落非法状态」
+const { pu_purchase_requisition_status } = toRefs<any>(proxy.useDict('pu_purchase_requisition_status'));
+
 // 明细行数据
 const lineList = ref<RequisitionDetailForm[]>([]);
 const checkedLines = ref<number[]>([]);
@@ -323,7 +318,7 @@ const {
   initForm: () => ({
     requisitionId: undefined,
     requisitionNo: '',
-    status: 'draft',
+    status: 'DRAFT',
     deptId: undefined,
     deptName: '',
     applicantId: undefined,
@@ -345,26 +340,36 @@ const {
   }
 });
 
-/** 获取状态标签类型 */
+/** 获取状态标签类型（键必须与后端大写状态值一致；未命中时回退字典） */
 function getStatusType(status: string): 'success' | 'warning' | 'danger' | 'info' | 'primary' {
   const map: Record<string, 'success' | 'warning' | 'danger' | 'info' | 'primary'> = {
-    draft: 'info',
-    submitted: 'warning',
-    approved: 'success',
-    rejected: 'danger',
-    closed: 'info'
+    DRAFT: 'info',
+    SUBMITTED: 'primary',
+    APPROVING: 'warning',
+    APPROVED: 'success',
+    ORDERED: 'success',
+    CLOSED: 'warning',
+    CANCELLED: 'danger',
+    REJECTED: 'danger'
   };
   return map[status] || 'info';
 }
 
-/** 获取状态标签文本 */
+/** 获取状态标签文本（键必须与后端大写状态值一致；未命中时回退字典标签） */
 function getStatusLabel(status: string) {
+  const hit = (pu_purchase_requisition_status.value || []).find((d: any) => d.value === status);
+  if (hit) {
+    return hit.label;
+  }
   const map: Record<string, string> = {
-    draft: '草稿',
-    submitted: '已提交',
-    approved: '已批准',
-    rejected: '已拒绝',
-    closed: '已关闭'
+    DRAFT: '草稿',
+    SUBMITTED: '已提交',
+    APPROVING: '审批中',
+    APPROVED: '已批准',
+    ORDERED: '已转单',
+    CLOSED: '已关闭',
+    CANCELLED: '已取消',
+    REJECTED: '已驳回'
   };
   return map[status] || status;
 }
