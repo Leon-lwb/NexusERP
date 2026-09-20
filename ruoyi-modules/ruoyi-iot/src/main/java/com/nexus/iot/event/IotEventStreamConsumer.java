@@ -57,6 +57,12 @@ public class IotEventStreamConsumer {
     private final IIotDeviceService deviceService;
     private final IIotDeviceEventService deviceEventService;
     private final IIotDeviceCommandService deviceCommandService;
+    /**
+     * OTA 升级任务服务（旁路联动）：{@code OTA_*} 事件同步更新 {@code iot_ota_task} 的进度/结果。
+     * <p>仅对事件码以 {@code OTA_} 开头的事件生效，其余事件直接返回；实现内部吞异常，
+     * 不影响事件落库与消费循环。
+     */
+    private final com.nexus.iot.ota.service.IIotOtaTaskService deviceOtaTaskService;
 
     private RStream<Object, Object> stream;
     private ExecutorService executor;
@@ -197,6 +203,9 @@ public class IotEventStreamConsumer {
                     deviceCommandService.handleReply(device, entry, id.toString());
                 } else {
                     deviceEventService.persistEvent(device, entry, id.toString());
+                    // OTA 旁路（OTA MVP）：设备经 event/post 上报 OTA_PROGRESS/OTA_RESULT，
+                    // 事件落库后同步推进升级任务状态机；内部吞异常，不阻断事件消费。
+                    deviceOtaTaskService.handleOtaEvent(device, entry, id.toString());
                 }
                 retryCount.remove(id);
                 ack(id);
