@@ -1213,30 +1213,24 @@ class SoSalesOrderHeaderServiceImplTest {
     }
 
     /**
-     * 委外（SUBCONTRACT）行确认订单后自动建委外单，且**不**占用本仓现货。
-     * <p>修复前：委外行既不建单也不预留（只有一条 warn），履约链路断在这里。</p>
+     * 委外（SUBCONTRACT）行在**无可用供应商**时不自动建委外单（ERP-SO-09①）。
+     * <p>原实现"供应商留空也建单"，但委外单下达时必然因供应商校验卡在 DRAFT ——
+     * 改为跳过并告警（"物料未配置可用供应商，跳过自动创建委外单"），交由人工处理。</p>
+     * <p>无论是否建单，委外行都**不**占用本仓现货、也不生成生产计划。</p>
      */
     @Test
-    void confirm_subcontractLine_createsSubcontractAndSkipsReservation() {
+    void confirm_subcontractLineWithoutVendor_skipsSubcontractCreation() {
         SoSalesOrderLine subcontractLine = line(100L, "10", "0", null);
         when(baseMapper.selectById(1L)).thenReturn(header(1L, ISoSalesOrderHeaderService.STATUS_DRAFT));
         when(baseMapper.update(any(), any())).thenReturn(1);
         when(soSalesOrderLineMapper.selectList(any())).thenReturn(List.of(subcontractLine));
         when(bdMaterialMapper.selectById(100L)).thenReturn(material(100L, "SUBCONTRACT"));
-        when(autoCodeUtil.genSerialCode(eq("PRD_SUBCONTRACT_CODE"), any())).thenReturn("SC-0001");
-        when(prdSubcontractMapper.insert(any(PrdSubcontract.class))).thenReturn(1);
-        // 无默认供应商 -> 供应商留空但仍建单
+        // 无可用供应商 -> 不建委外单（只 warn）
         when(bdMaterialVendorMapper.selectList(any())).thenReturn(List.of());
 
         headerService.confirm(1L);
 
-        ArgumentCaptor<PrdSubcontract> captor = ArgumentCaptor.forClass(PrdSubcontract.class);
-        verify(prdSubcontractMapper).insert(captor.capture());
-        PrdSubcontract saved = captor.getValue();
-        assertEquals("SC-0001", saved.getSubcontractNo());
-        assertEquals(100L, saved.getMaterialId());
-        assertEquals(0, new BigDecimal("10").compareTo(saved.getPlannedQty()));
-        assertEquals("DRAFT", saved.getStatus());
+        verify(prdSubcontractMapper, never()).insert(any(PrdSubcontract.class));
         // 委外不走库存预留（货源不是本仓现货）
         verify(stockReservationService, never()).reserve(any(), any(), any(), anyString(), any(), any());
         // 也不生成生产计划
