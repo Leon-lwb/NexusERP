@@ -2,7 +2,7 @@
 
 > 创建: 2026-09-19 | 配套计划: [2026-09-19-so-module-optimization-plan.md](./2026-09-19-so-module-optimization-plan.md)
 > 范围: 后端 `ruoyi-modules/ruoyi-erp/.../so`（审计时 85 文件 / 9541 行；改造后 87 文件 / 10716 行）+ 14 张 `so_` 表 + 前端 `plus-ui` 销售页面
-> 状态: **计划内 6 批次全部完成**；Q1~Q5 决策已落地实施完毕，剩余 Q7/Q8/Q9 待决策（见 §5）
+> 状态: **计划内 6 批次全部完成**；Q1~Q5 决策已落地实施完毕；**Q7/Q8/Q9 已于后续轮次按用户决策全部实施完毕**（见 §5.2）
 
 ---
 
@@ -66,6 +66,12 @@
 | `9fd20555` | **Q1/T3.4** 报表保留并修完（菜单 2237 + 报表页 4 个前端缺陷） | 前端 eslint+build |
 | `91ab90ab` | **Q2/T3.3** 退货全闭环（`returned_qty` 回写 + 超退守卫 + 前端 confirm/execute 接线） | 259/259 |
 | `dfb4d3e4` | **收尾核验**：补完 T3.5 死事件/死 VO + §8.6 验收规格落为可执行测试 | **261/261** |
+| `323c0224` | 计划进度表状态标记同步（批次 1~5 全部 ✅） | — |
+| （本轮） | **Q7a** GL 引擎按来源放开负数分录（修好红冲过账）+ 借贷校验改 signum 口径 | 新增 `GlVoucherServiceImplTest` 8/8 |
+| （本轮） | **Q7b** 发票作废仅限 DRAFT（ISSUED/VERIFIED 引导走红冲）+ 前端按钮同步 | 改写 2 用例 + 新增 1 |
+| （本轮） | **Q8** `confirm()` 按 `source_type` 三路分流：委外→委外单、调拨→调拨单 | 新增 8 用例 |
+| （本轮） | **Q9** 合同 `terminate` 端点 + `SoContractExpiryTask`（SnailJob）+ 前端终止按钮 | 新增 8 用例 |
+| （本轮） | 全量回归 | **285/285**；前端 eslint + build:prod 通过 |
 
 > **测试基线的可复用性**：`SoSalesOrderHeaderServiceImplTest`（49 个）与 `SoInvoiceServiceImplTest`（40 个）
 > 覆盖了两个最高风险改动（改单差量更新、开票量占用/释放）。其中关键断言是**增量数值级**的，
@@ -172,6 +178,13 @@
 | `script/sql/update/2026-09-19-so-tax-rate-unit-comments.sql` | Q3 税率/折扣率「百分数」单位注释统一（3 列）+ **只读**存量数据核对查询 | 幂等；核对查询检出 `0 < tax_rate < 1`（疑似小数写法）与 `> 100`（非法值）—— 因 `0.5` 在百分数语义下也可能是合法的 0.5%，脚本**不做自动迁移**，只给清单 |
 | `script/sql/update/2026-09-19-so-drop-dead-columns.sql` | Q4 死字段清理：删 `so_sales_order_header.delivery_address_id`/`invoice_address_id`、`so_sales_order_line.linked_po_id`/`reserved_serials`/`pa_group_id` 共 5 列 | **一次性脚本**（DROP COLUMN 无幂等写法）；脚本内附前置检查，**须先确认这 5 列全为 NULL** 再删 |
 | `script/sql/update/2026-09-19-so-ddl-hardening.sql` | 唯一键补 `tenant_id`（2 个）+ 补单号唯一约束（2 个）+ 阶梯唯一约束（1 个）、补 14 个查询索引、`min_qty` 去 NULL、重建 `so_invoice` 乱码注释 | 脚本内每节都以注释给出前置检查 SQL；加唯一约束前须确认无重复数据 |
+| `script/sql/update/2026-09-19-so-contract-expiry-task.sql` | **Q9** 登记 SnailJob 到期扫描任务（`sj_job` id=200 + `sj_job_executor` id=200）；**无 DDL 变更** | 幂等（`sj_job` 唯一键 `uk_sj_job_01(namespace_id,biz_id)` + `INSERT IGNORE`），可直接执行。执行后需在 SnailJob 控制台确认任务已出现或重启应用 |
+
+> **本轮（Q7/Q8/Q9）除 `so-contract-expiry-task.sql` 外无新增 DDL**：
+> Q7 是代码口径修正（无列变更）、Q8 复用既有 `prd_subcontract`/`wm_transfer` 表、
+> Q9 复用 `so_contract.expiry_date` 与 `remark`（终止原因写入备注）。
+> 上面 7 个 09-19 脚本 + 本轮的 1 个 = **8 个**，已全部在本地库执行并复核通过
+> （本地库实测：MySQL **5.7.14**，注意不是 8.0）。
 
 **执行后注意**：应用若在运行，菜单与字典走 Redis 缓存，需在「菜单管理/字典管理」保存任意一项触发刷新，
 或重启应用。**必须先执行 DDL 脚本再部署对应后端版本**（实体与列需一致）。
@@ -200,9 +213,10 @@
 | **Q1** | 销售报表是否保留 | SQL/租户/权限已修好（不再 500）；菜单与前端 `completionRate` 消费未做 | ✅ 保留并修完 |
 | **Q2** | 退货闭环范围 | 退货与订单**零数量关联**（无 `returned_qty`、无超退校验）；且后端有 `/return/confirm`、`/return/execute` 但**前端 API 层没有这两个函数** → 退货入库在 UI 上不可达 | ✅ 做全闭环 |
 | **Q4** | 13 个死字段（`project_id`/`is_pa_enabled`/`pa_group_id` 等，全仓 getter/setter 零命中） | 仅占位，无功能影响 | ✅ 删除 |
-| **Q7**（加固轮新发现） | **作废已开票（ISSUED）的发票不冲销总账**：`cancelInvoice` 不发布任何 GL 事件，而总账过账只由 `SoInvoiceIssuedEvent` 触发 → 已开票发票被作废后，**其总账凭证仍留在账上** | 账实不符（财务报表含已作废发票的收入/应收） | ⏳ **仍待决策**：**(a)** 作废仅限 DRAFT，ISSUED 必须走红冲（改动小、符合会计惯例，前端「作废」按钮需同步限为 DRAFT）；**(b)** 为 fin 模块实现冲销凭证（改动大） |
-| **Q8**（加固轮新发现） | **履约链路的物料来源类型分支不完整**：`confirm()` 只处理 `PROCESS`（生产计划）与「非 PROCESS」（库存预留）两类，而 `prd_material_source_type` 字典有 6 种来源类型 | `SUBCONTRACT`（委外）/`TRANSFER`（调拨）的销售订单行**既不生成生产计划、也预留不到库存**，只有一条 warn。详见 §6 | ⏳ **仍待决策**：委外/调拨行是否应自动生成对应单据（属功能开发），还是由人工另建 |
-| **Q9**（加固轮新发现） | 合同状态常量 `EXPIRED`/`TERMINATED` 全仓无任何代码设置 | 合同永不过期、无法终止 | ⏳ **仍待决策**：补过期/终止功能，还是删除这两个死状态 |
+| **Q7**（加固轮新发现） | **作废已开票（ISSUED）的发票不冲销总账**：`cancelInvoice` 不发布任何 GL 事件，而总账过账只由 `SoInvoiceIssuedEvent` 触发 → 已开票发票被作废后，**其总账凭证仍留在账上** | 账实不符（财务报表含已作废发票的收入/应收） | ✅ **已实施（决策 A）**：作废仅限 DRAFT，ISSUED/VERIFIED 必须走红冲；前端「作废」按钮同步限 DRAFT |
+| **Q7-附**（实施中新发现） | **红冲过账本身也是坏的**：`GlVoucherServiceImpl.validateBalanced` 对**所有**路径一律拒绝负数分录，而 `SoInvoicePoster` 处理红字发票时借贷金额全为负 → 红冲的过账消息必然抛异常、重试 3 次后进死信，**账务冲销从未生效**（注释声称「金额取负」但代码不允许）。若只做「作废限 DRAFT」，用户会被推向一个同样坏掉的路径 | 红冲完全无效，比原记录更严重 | ✅ **已实施（决策 A）**：`createAndPost`/`post` 按**凭证来源**判定（非 MANUAL 即业务自动制单，允许负数），手工来源仍拒绝；借贷「不可同时有值」校验由 `signum() > 0` 改为 `!= 0`（否则借 -100/贷 -100 会被漏过） |
+| **Q8**（加固轮新发现） | **履约链路的物料来源类型分支不完整**：`confirm()` 只处理 `PROCESS`（生产计划）与「非 PROCESS」（库存预留）两类，而 `prd_material_source_type` 字典有 6 种来源类型 | `SUBCONTRACT`（委外）/`TRANSFER`（调拨）的销售订单行**既不生成生产计划、也预留不到库存**，只有一条 warn。详见 §6 | ✅ **已实施（决策 A）**：`confirm()` 按来源三路分流 —— PROCESS→生产计划、SUBCONTRACT→自动建委外单（供应商取 `bd_material_vendor` 默认→priority 最小→留空）、TRANSFER→自动建调拨单（目的仓=行默认仓，来源仓=该物料可用库存最多的其他仓；无来源仓则不建单）；三者均**不再占用本仓现货** |
+| **Q9**（加固轮新发现） | 合同状态常量 `EXPIRED`/`TERMINATED` 全仓无任何代码设置 | 合同永不过期、无法终止 | ✅ **已实施（决策 A）**：新增 `SoContractExpiryTask`（SnailJob `@JobExecutor`，每天 01:30，`expiry_date < 今天` 的 EFFECTIVE→EXPIRED，当天仍算有效）+ `POST /erp/so/contract/terminate`（限 EFFECTIVE，CAS 条件更新）+ 前端「终止」按钮 |
 
 ---
 
@@ -230,14 +244,12 @@
 - 死配置：`orderheader/index.vue` 传入未绑定的 `ref<FormInstance>()`；若干 BO 的 `ids` 无读取
 - 注释与语义不符若干处（`so_customer_order.client_code`/`total_amount`、`so_invoice.status` 枚举不全）
 - 列表页不可达过滤分支（`buildQueryWrapper` 的 `projectId`/`deptId` 条件前端从不传）
-- **履约链路的物料来源类型分支不完整**（= 待决项 **Q8**，见 §5.2）：
-  `prd_material_source_type` 字典共 **6 种**来源类型（`PROCESS` 加工 / `PROCUREMENT` 采购 /
-  `SUBCONTRACT` 委外 / `PHANTOM` 虚拟件 / `CFM` 客户供料 / `TRANSFER` 调拨），而
-  `reserveStockForSalesOrder` 只排除 `PROCESS`、`createProductionPlansFromSalesOrder` 只处理 `PROCESS`。
-  于是 `SUBCONTRACT`/`TRANSFER` 的行**既不会生成生产计划、也大概率预留不到库存**，
-  且只有一条 `库存预留不足` 的 warn —— 没有明确的「该走委外/调拨单」履约链路。
-  附带观察：`reserved_qty` 是展示用冗余字段，`fulfill()`/`cancel()` 只调 `unreserve()` 释放
-  库存预留记录、不回写行上的 `reserved_qty`，强制履行（部分出库）后该字段可能残留非 0 值。
+- **履约链路的物料来源类型分支不完整**（= **Q8**，见 §5.2）—— ✅ **本轮已修复**：
+  `confirm()` 现按 6 种来源类型分流（PROCESS→生产计划、SUBCONTRACT→委外单、TRANSFER→调拨单、
+  其余 PROCUREMENT/CFM/PHANTOM→库存预留），且自制/委外/调拨三类不再占用本仓现货。
+  **遗留观察**：`reserved_qty` 仍是展示用冗余字段，`fulfill()`/`cancel()` 只调 `unreserve()`
+  释放库存预留记录、不回写行上的 `reserved_qty`，强制履行（部分出库）后该字段可能残留非 0 值
+  —— 未纳入本轮范围。
 
 ---
 
@@ -253,8 +265,9 @@ mvn -pl ruoyi-modules/ruoyi-erp -am test -DskipTests=false \
 cd plus-ui && npx eslint --fix && npm run build:prod
 ```
 
-**已验证的回归基线（2026-09-19 实测）**：整个 erp 模块 **261 个用例全绿**
-（so 180 + bd 5 + prd 16 + pu 17 + sch 18 + wm 25 等），说明本次改动**未波及其它模块**。
+**已验证的回归基线（2026-09-19 本轮实测）**：整个 erp 模块 **285 个用例全绿**
+（so 204 + bd 5 + prd 16 + pu 17 + sch 18 + wm 25 + fin 8 等），说明本次改动**未波及其它模块**。
+（上一轮为 261；本轮 +24：GL 凭证 8 + 合同终止/到期 7 + 订单履约分流 9。）
 
 **跨模块影响面核查**：本次改了 4 个 VO 的明细行类型（`SoQuotationVo`/`SoReturnVo`/`SoInvoiceVo`/
 `SoContractVo` 的 `soXxxLineList` 由实体列表改为 VO 列表）。已全仓检索确认：
@@ -272,6 +285,11 @@ cd plus-ui && npx eslint --fix && npm run build:prod
 6. 选物料自动带价（价目表命中）→ 改价不被覆盖
 7. 报表接口 200 且只含本租户数据
 8. `POST /erp/so/orderheader/{id}/submit` —— 确认跨库事务实际行为（Q5）
+9. **红冲已开票发票 → 总账出现红字凭证**（Q7：验证 `so_invoice` 红票落库 + `gl_voucher` 新增负额凭证
+   且原蓝票凭证未被重复生成；修复前这一步会进 MQ 死信）
+10. **作废已开票发票应被拒**，提示引导到红冲（Q7）
+11. **确认含委外行的订单 → `prd_subcontract` 出现草稿单**（Q8）；含调拨行 → `wm_transfer` 出现草稿单（Q8）
+12. **合同过期后次日应自动变 EXPIRED**（Q9，需 SnailJob 已登记 `soContractExpiryTask`）；已生效合同可「终止」变 TERMINATED（Q9）
 
 ---
 
@@ -279,9 +297,12 @@ cd plus-ui && npx eslint --fix && npm run build:prod
 
 | 优先级 | 复审对象 | 为什么 |
 |---|---|---|
+| 高 | `GlVoucherServiceImpl.validateBalanced`（负数分录口径） | **会计核心**：本轮放开了业务来源的负数分录（修好红冲过账），改错会让红字凭证金额符号出错。已用 8 个用例固化「业务来源允许 / 手工来源拒绝 / 借贷两侧不可同时有值 / 不平衡仍拒绝」 |
 | 高 | `SoSalesOrderHeaderServiceImpl.updateByBo` / `diffUpdateLines` | 改动最大、逻辑最复杂，直接影响生产计划/出库/发票的行关联；建议重点回归"改单后各下游仍可解析"。已有场景用例：同物料两行互不串改、只加一行不误删 |
+| 高 | `SoSalesOrderHeaderServiceImpl.confirm()` 的履约分流（Q8） | 会**实际创建委外单/调拨单**。重点确认：来源仓取值（可用库存最多者）与业务预期一致；委外单无供应商时留空是否符合流程 |
 | 高 | `SoInvoiceServiceImpl` 的 `adjustInvoicedQty` 系列 | 资金相关；建议用真实数据验证"占用/释放/换绑/红冲/作废"五种路径后 `invoiced_qty` 始终等于"已开票合计"。已有增量数值级断言（`+ 6` / `+ 2` / `+ -2` / `+ -6`） |
 | 高 | 三个 DDL 存量库脚本 | 唯一约束可能因存量重复数据而执行失败（脚本内已附前置检查 SQL） |
+| 中 | `SoContractExpiryTask` 的到期判据（Q9） | `expiry_date < 今天` 表示**到期日当天仍算有效**。若业务上「失效日期当天即失效」，需改为 `<=`（改 `SoContractServiceImpl.startOfToday()` 的调用处即可） |
 | 中 | `SoReturnServiceImpl` / `SoQuotationServiceImpl` 的 `normalizeLines` + 状态门禁 | 白名单重建会丢弃客户端传入的审计字段，需确认前端没有依赖这些字段回显 |
 | 中 | 价目表取价链路（`resolvePrice` → 前端选料） | 折扣率语义反转（D2）会改变实际成交价，**上线前需确认存量 `discount_rate` 已按脚本迁移** |
 | 低 | 4 个 VO 的 `@ExcelIgnoreUnannotated` + 明细行 VO 化 | 影响导出列与响应字段集，建议跑一次实际导出 |

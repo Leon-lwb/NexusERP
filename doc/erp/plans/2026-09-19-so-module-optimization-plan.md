@@ -418,6 +418,18 @@ insertOrUpdateLines(entity.getSoId(), ...);          // 且强制 line.setLineId
 | └ 13 个死字段清理（待 Q4） | ✅ 完成（**复核后实际只删 5 个**） | 见本批次 commit | 原清单 13 个里 8 个是前端在用的 UI 字段；`Tests run: 252, Failures: 0`；前端 `eslint` + `build:prod` 通过 |
 | └ Q3 税率口径统一为百分数 | ✅ 完成 | 见本批次 commit | DDL 单位注释 + 发票区间校验补齐 + 退货表单改数值输入 + 更正「含税」误判；新增 4 用例；`Tests run: 256, Failures: 0` |
 
+### 九之二、待决项 Q7/Q8/Q9 收尾（2026-09-19 后续轮次）
+
+> 这三项在加固轮被发现并记录为「待决策」，本轮按用户决策全部实施完毕。
+
+| 事项 | 状态 | 决策 | 验证 |
+|---|---|---|---|
+| **Q7a：GL 引擎拒绝负数分录，红冲过账必然失败** | ✅ 完成 | 用户选 A：放开业务 Poster 路径的负数分录 | 新增 `GlVoucherServiceImplTest`（8 用例）；**红字凭证（全负数）现在可过账**；手工凭证仍拒绝负数 |
+| **Q7b：作废 ISSUED 发票不冲销总账** | ✅ 完成 | 用户选 A：作废仅限 DRAFT，ISSUED 必须走红冲 | `cancelInvoice` 限 DRAFT 并引导到红冲；前端「作废」按钮同步限 DRAFT；改写 2 个旧用例 + 新增 1 个 |
+| **Q8：委外/调拨行履约链路缺失** | ✅ 完成 | 用户选 A：委外→自动建委外单；调拨→自动建调拨单 | `confirm()` 按 `source_type` 三路分流；新增 8 用例 |
+| **Q9：合同 EXPIRED/TERMINATED 无代码设置** | ✅ 完成 | 用户选 A：定时任务置 EXPIRED + 终止接口置 TERMINATED | 新增 `SoContractExpiryTask`（SnailJob）+ `terminate` 端点 + 前端按钮；新增 8 用例 |
+| 全量回归 | ✅ | — | `Tests run: 285, Failures: 0, Errors: 0`（较上轮 261 增 24）；前端 `eslint` exit 0 + `build:prod` 成功 |
+
 **加固轮要点**：
 - **「客户端可伪造服务端权威字段」是系统性问题**，逐个服务排查后修复：
   | 位置 | 可伪造字段 | 后果 |
