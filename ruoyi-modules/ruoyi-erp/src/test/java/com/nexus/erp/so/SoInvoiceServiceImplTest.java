@@ -347,10 +347,27 @@ class SoInvoiceServiceImplTest {
         assertTrue(ex.getMessage().contains("不允许作废"), "实际: " + ex.getMessage());
     }
 
-    /** 作废：回退已开票数量并置 CANCELLED */
+    /**
+     * 已开票（ISSUED）不允许作废（Q7 决策 A）。
+     * <p>作废不发布任何 GL 事件，已过账的凭证会留在账上 → 账实不符。
+     * 已开票必须走红冲（红字发票的 ISSUED 事件会过账出红字凭证抵销）。</p>
+     */
     @Test
-    void cancelInvoice_issued_rollsBackAndCancels() {
+    void cancelInvoice_rejectsIssuedAndGuidesToRedFlush() {
         when(baseMapper.selectById(1L)).thenReturn(invoice(1L, ISoInvoiceService.STATUS_ISSUED, "678.00", "0"));
+
+        ServiceException ex = assertThrows(ServiceException.class,
+            () -> invoiceService.cancelInvoice(1L, "客户要求作废"));
+        assertTrue(ex.getMessage().contains("红冲"), "应引导到红冲，实际: " + ex.getMessage());
+        // 不得回退已开票数量、不得改状态
+        verify(soSalesOrderLineMapper, never()).update(any(), any());
+        verify(baseMapper, never()).update(any(), any());
+    }
+
+    /** 草稿发票可作废：回退已开票数量并置 CANCELLED */
+    @Test
+    void cancelInvoice_draft_rollsBackAndCancels() {
+        when(baseMapper.selectById(1L)).thenReturn(invoice(1L, ISoInvoiceService.STATUS_DRAFT, "678.00", "0"));
 
         SoInvoiceLine line = new SoInvoiceLine();
         line.setLineId(10L);
@@ -854,10 +871,10 @@ class SoInvoiceServiceImplTest {
         verify(soSalesOrderLineMapper, times(2)).update(any(), any());
     }
 
-    /** 作废历史票（从未占用过 invoiced_qty）不应因下界守卫而失败 */
+    /** 作废草稿历史票（从未占用过 invoiced_qty）不应因下界守卫而失败 */
     @Test
     void cancelInvoice_toleratesNothingToRelease() {
-        when(baseMapper.selectById(1L)).thenReturn(invoice(1L, ISoInvoiceService.STATUS_ISSUED, "678.00", "0"));
+        when(baseMapper.selectById(1L)).thenReturn(invoice(1L, ISoInvoiceService.STATUS_DRAFT, "678.00", "0"));
         when(lineMapper.selectList(any())).thenReturn(List.of(invoiceLine(10L, 100L, "6")));
         // 释放命中下界守卫（未占用过）-> 影响 0 行
         when(soSalesOrderLineMapper.update(any(), any())).thenReturn(0);

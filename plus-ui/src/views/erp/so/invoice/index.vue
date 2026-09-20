@@ -127,7 +127,7 @@
             type="danger"
             icon="CircleClose"
             @click="handleCancel(scope.row)"
-            v-if="scope.row.status === 'ISSUED' || scope.row.status === 'DRAFT'"
+            v-if="scope.row.status === 'DRAFT'"
             v-hasPermi="['so:invoice:edit']"
             >作废</el-button
           >
@@ -635,10 +635,10 @@ function submitVerify() {
   });
 }
 
-/** 作废发票 */
+/** 作废发票（仅草稿） */
 function handleCancel(row: InvoiceVO) {
   proxy.$modal
-    .confirm('确认作废发票【' + row.invoiceNo + '】?作废将回退订单行已开票数量。')
+    .confirm('确认作废发票【' + row.invoiceNo + '】?作废将回退订单行已开票数量。已开票的发票请改用「红冲」。')
     .then(() => cancelInvoice(row.invoiceId))
     .then(() => {
       proxy.$modal.msgSuccess('作废成功');

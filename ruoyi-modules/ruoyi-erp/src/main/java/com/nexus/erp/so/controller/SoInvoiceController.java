@@ -122,7 +122,8 @@ public class SoInvoiceController extends BaseController {
     }
 
     /**
-     * 作废发票（回退订单行已开票数量）
+     * 作废发票（仅草稿可作废；回退订单行已开票数量）
+     * <p>已开票/已核销的发票不允许作废（作废不冲销总账），请改走 {@code /redFlush/{id}} 红冲。</p>
      * <p>权限标识：{@code so:invoice:edit}</p>
      *
      * @param id     发票ID

@@ -451,7 +451,16 @@ public class SoInvoiceServiceImpl implements ISoInvoiceService {
     }
 
     /**
-     * 作废发票(仅 ISSUED/DRAFT 可作废);回退 so_sales_order_line.invoiced_qty 以释放可开票量。
+     * 作废发票（<b>仅 DRAFT 可作废</b>）；回退 so_sales_order_line.invoiced_qty 以释放可开票量。
+     *
+     * <p><b>为什么已开票（ISSUED）不允许作废</b>：作废只是把单据置为 CANCELLED，
+     * 而总账过账只由 {@link SoInvoiceIssuedEvent} 触发 —— 作废不发布任何 GL 事件，
+     * 因此已过账的凭证会**原样留在账上**，财务报表仍包含这张「已作废」发票的收入与应收，账实不符。
+     * 已开票发票的正确冲销路径是**红冲**（{@link #redFlush}）：生成红字负数发票，
+     * 由红票的 ISSUED 事件过账出红字凭证，借贷方向不变、金额取负，账务自然抵销。</p>
+     *
+     * <p>这与会计惯例一致：发票一经开具即产生纳税与账务义务，只能开具红字发票冲销，不能直接作废。
+     * 若确需纠正未过账的发票，请先确认其处于草稿态。</p>
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -460,8 +469,13 @@ public class SoInvoiceServiceImpl implements ISoInvoiceService {
         if (invoice == null) {
             throw new ServiceException("发票不存在");
         }
-        if (!STATUS_ISSUED.equals(invoice.getStatus()) && !STATUS_DRAFT.equals(invoice.getStatus())) {
-            throw new ServiceException("当前状态【{}】不允许作废", invoice.getStatus());
+        if (STATUS_ISSUED.equals(invoice.getStatus()) || STATUS_VERIFIED.equals(invoice.getStatus())) {
+            // 明确引导到红冲，而不是笼统的「状态不允许作废」
+            throw new ServiceException("已开票/已核销的发票不允许作废，请使用【红冲】生成红字发票冲销（当前状态：{}）",
+                invoice.getStatus());
+        }
+        if (!STATUS_DRAFT.equals(invoice.getStatus())) {
+            throw new ServiceException("当前状态【{}】不允许作废，仅草稿可作废", invoice.getStatus());
         }
         // 回退订单行已开票数量
         rollbackInvoicedQty(invoice);

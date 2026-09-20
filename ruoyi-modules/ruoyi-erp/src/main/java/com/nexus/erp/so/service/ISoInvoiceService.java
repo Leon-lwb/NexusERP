@@ -82,7 +82,10 @@ public interface ISoInvoiceService extends WfCallBackServiceI {
     void verifyInvoice(Long invoiceId, BigDecimal verifyAmount, Long receiptId);
 
     /**
-     * 作废发票（仅 ISSUED 可作废；回退 so_sales_order_line.invoiced_qty）。
+     * 作废发票（<b>仅 DRAFT 可作废</b>；回退 so_sales_order_line.invoiced_qty）。
+     *
+     * <p>已开票（ISSUED）/已核销（VERIFIED）不允许作废：作废不冲销总账，会让已过账凭证留在账上。
+     * 这类发票必须走 {@link #redFlush} 红冲，由红字发票的过账冲销原凭证。</p>
      *
      * @param invoiceId 发票ID
      * @param reason    作废原因
