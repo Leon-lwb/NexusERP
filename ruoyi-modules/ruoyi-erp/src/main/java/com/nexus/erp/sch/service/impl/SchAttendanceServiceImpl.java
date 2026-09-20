@@ -37,6 +37,7 @@ import com.nexus.erp.sch.domain.SchWorker;
 import com.nexus.system.service.ISysOssService;
 import com.nexus.system.domain.vo.SysOssVo;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.scheduling.annotation.Async;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -155,7 +156,7 @@ public class SchAttendanceServiceImpl implements ISchAttendanceService {
      */
     @Override
     public Map<String, Object> performClockIn(Long workerId, String workerName, Date clockInTime, String deviceId, String deviceName,
-                                              BigDecimal latitude, BigDecimal longitude, String address) {
+                                              BigDecimal latitude, BigDecimal longitude, String address, BigDecimal accuracy) {
         LocalDate todayLd = LocalDate.now();
         // 打卡围栏校验(ERP-SCH-03): 必须在落库主流程内计算,不能只依赖前端主动调 /validate-location,
         // 否则绕过该端点即可异地打卡(原实现硬编码 locationValid=true)。
@@ -176,6 +177,8 @@ public class SchAttendanceServiceImpl implements ISchAttendanceService {
         attendance.setClockInLatitude(latitude);
         attendance.setClockInLongitude(longitude);
         attendance.setClockInAddress(address);
+        // ERP-CV-05: 前端已上报定位精度, 原后端无列/无字段直接丢弃, 现落 clock_in_accuracy 供证据强度评估
+        attendance.setClockInAccuracy(accuracy);
 
         String attendanceStatus = determineAttendanceStatus(clockInTime, workerId, recordDate, true);
         attendance.setAttendanceStatus(attendanceStatus);
@@ -194,21 +197,28 @@ public class SchAttendanceServiceImpl implements ISchAttendanceService {
         List<SchAttendance> attendanceList = baseMapper.selectList(existLqw);
 
         if (attendanceList.isEmpty()) {
-            baseMapper.insert(attendance);
+            try {
+                baseMapper.insert(attendance);
+            } catch (DuplicateKeyException e) {
+                // ERP-SCH-09: "先查后写"下并发连点会撞 uk_worker_date(tenant_id, worker_id, record_date),
+                // 原实现直接冒泡成 500。捕获后按"记录已存在"合并覆盖(与下面更新分支同语义),
+                // 让用户看到正常打卡结果而不是服务器错误。
+                log.warn("打卡并发写入冲突, 按已存在记录合并: workerId={}, recordDate={}", workerId, recordDate);
+                SchAttendance concurrent = baseMapper.selectList(existLqw).stream().findFirst().orElse(null);
+                if (concurrent == null) {
+                    throw new ServiceException("打卡记录写入冲突，请重试");
+                }
+                concurrent.setClockInAccuracy(accuracy);
+                applyClockInFields(concurrent, workerName, clockInTime, deviceId, deviceName,
+                    latitude, longitude, address, attendanceStatus, lateMinutes, matched);
+                baseMapper.updateById(concurrent);
+                attendance = concurrent;
+            }
         } else {
             SchAttendance existing = attendanceList.get(0);
-            existing.setClockInTime(clockInTime);
-            existing.setWorkerName(workerName);
-            existing.setDeviceId(deviceId);
-            existing.setDeviceName(deviceName);
-            existing.setClockInLatitude(latitude);
-            existing.setClockInLongitude(longitude);
-            existing.setClockInAddress(address);
-            existing.setAttendanceStatus(attendanceStatus);
-            existing.setLateMinutes(lateMinutes);
-            if (matched != null) {
-                existing.setScheduleId(matched.getScheduleId());
-            }
+            existing.setClockInAccuracy(accuracy);
+            applyClockInFields(existing, workerName, clockInTime, deviceId, deviceName,
+                latitude, longitude, address, attendanceStatus, lateMinutes, matched);
             baseMapper.updateById(existing);
             attendance = existing;
         }
@@ -245,7 +255,8 @@ public class SchAttendanceServiceImpl implements ISchAttendanceService {
      */
     @Override
     public Map<String, Object> performClockOut(Long workerId, String workerName, Date clockOutTime, String deviceId, String deviceName,
-                                               Double overtimeHours, BigDecimal latitude, BigDecimal longitude, String address) {
+                                               Double overtimeHours, BigDecimal latitude, BigDecimal longitude, String address,
+                                               BigDecimal clockOutAccuracy) {
         LocalDate todayLd = LocalDate.now();
         // 打卡围栏校验(ERP-SCH-03)
         Long distance = requireLocationWithinFence(latitude, longitude);
@@ -271,6 +282,7 @@ public class SchAttendanceServiceImpl implements ISchAttendanceService {
             existing.setClockOutLatitude(latitude);
             existing.setClockOutLongitude(longitude);
             existing.setClockOutAddress(address);
+            existing.setClockOutAccuracy(clockOutAccuracy);
             if (matched != null) {
                 existing.setScheduleId(matched.getScheduleId());
             }
@@ -318,6 +330,7 @@ public class SchAttendanceServiceImpl implements ISchAttendanceService {
             newAttendance.setClockOutLatitude(latitude);
             newAttendance.setClockOutLongitude(longitude);
             newAttendance.setClockOutAddress(address);
+            newAttendance.setClockOutAccuracy(clockOutAccuracy);
 
             String clockOutAttendanceStatus = determineAttendanceStatus(clockOutTime, workerId, recordDate, false);
 
@@ -343,6 +356,26 @@ public class SchAttendanceServiceImpl implements ISchAttendanceService {
         result.put("distance", distance != null ? distance : 0);
 
         return result;
+    }
+
+    /**
+     * 上班打卡字段合并（"新建"与"已存在/并发冲突合并"三条路径共用，保证语义一致）
+     */
+    private void applyClockInFields(SchAttendance target, String workerName, Date clockInTime, String deviceId,
+                                    String deviceName, BigDecimal latitude, BigDecimal longitude, String address,
+                                    String attendanceStatus, long lateMinutes, SchEmployeeSchedule matched) {
+        target.setClockInTime(clockInTime);
+        target.setWorkerName(workerName);
+        target.setDeviceId(deviceId);
+        target.setDeviceName(deviceName);
+        target.setClockInLatitude(latitude);
+        target.setClockInLongitude(longitude);
+        target.setClockInAddress(address);
+        target.setAttendanceStatus(attendanceStatus);
+        target.setLateMinutes(lateMinutes);
+        if (matched != null) {
+            target.setScheduleId(matched.getScheduleId());
+        }
     }
 
     /**

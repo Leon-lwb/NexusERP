@@ -3,6 +3,7 @@ package com.nexus.erp.so.domain;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
 import io.github.linpeilie.annotations.AutoMapper;
 import lombok.Data;
@@ -52,4 +53,10 @@ public class SoPriceList extends TenantEntity {
     /** 价格表行列表（非数据库字段） */
     @TableField(exist = false)
     private List<SoPriceListLine> soPriceListLineList;
+
+    /**
+     * 删除标志（ERP-SO-05：由物理删除改为逻辑删除，历史报价/订单可追溯当时的价目表行）
+     */
+    @TableLogic
+    private String delFlag;
 }

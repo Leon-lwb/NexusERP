@@ -10,6 +10,7 @@ import com.nexus.common.cv.domain.FaceDtos.SubjectList;
 import com.nexus.common.cv.domain.FaceDtos.VerifyResult;
 import com.nexus.common.cv.exception.VisionException;
 import com.nexus.common.tenant.helper.TenantHelper;
+import com.nexus.erp.cv.domain.vo.CvBatchRegisterResultVo;
 import com.nexus.erp.cv.service.CvFaceBatchRegisterService;
 import com.nexus.erp.cv.service.CvSubjectHelper;
 import lombok.RequiredArgsConstructor;
@@ -50,6 +51,22 @@ public class CvFaceController {
     public R<List<RegisterResult>> batchRegister(@RequestParam(value = "limit", defaultValue = "100") int limit) {
         try {
             return R.ok(batchRegisterService.registerFromAvatars(limit));
+        } catch (VisionException e) {
+            return R.fail(e.getMessage());
+        }
+    }
+
+    /**
+     * 批量注册(含失败明细, ERP-CV-04)
+     * <p>原批量注册端点只返回成功项, 被跳过/失败的人（无工人档案、头像读取失败、vision 报错）
+     * 没有任何返回信息, 管理员无法对账与重试。本端点返回 {success[], failed[]} 摘要,
+     * 失败项含 subject/工号/原因。</p>
+     */
+    @SaCheckPermission("cv:face:register")
+    @PostMapping("/batch-register/detail")
+    public R<CvBatchRegisterResultVo> batchRegisterDetail(@RequestParam(value = "limit", defaultValue = "100") int limit) {
+        try {
+            return R.ok(batchRegisterService.registerFromAvatarsDetailed(limit));
         } catch (VisionException e) {
             return R.fail(e.getMessage());
         }

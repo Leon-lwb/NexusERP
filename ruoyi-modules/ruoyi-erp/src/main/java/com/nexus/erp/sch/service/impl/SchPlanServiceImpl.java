@@ -6,8 +6,10 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
 import com.nexus.common.core.utils.MapstructUtils;
 import com.nexus.common.core.utils.StringUtils;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
+import com.nexus.erp.sch.domain.SchAttendance;
 import com.nexus.erp.sch.domain.SchEmployeeSchedule;
 import com.nexus.erp.sch.domain.SchPlan;
 import com.nexus.erp.sch.domain.SchPlanTeam;
@@ -15,6 +17,7 @@ import com.nexus.erp.sch.domain.SchShift;
 import com.nexus.erp.sch.domain.SchTeamSchedule;
 import com.nexus.erp.sch.domain.bo.SchPlanBo;
 import com.nexus.erp.sch.domain.vo.SchPlanVo;
+import com.nexus.erp.sch.mapper.SchAttendanceMapper;
 import com.nexus.erp.sch.mapper.SchEmployeeScheduleMapper;
 import com.nexus.erp.sch.mapper.SchPlanMapper;
 import com.nexus.erp.sch.mapper.SchPlanTeamMapper;
@@ -43,7 +46,15 @@ public class SchPlanServiceImpl implements ISchPlanService {
     private final SchTeamScheduleMapper schTeamScheduleMapper;
     private final SchEmployeeScheduleMapper schEmployeeScheduleMapper;
     private final SchPlanTeamMapper schPlanTeamMapper;
+    private final SchAttendanceMapper schAttendanceMapper;
     private final com.nexus.system.strategy.AutoCodeUtil autoCodeUtil;
+
+    /** 排班计划状态机(ERP-SCH-12): draft 草稿 → published 已发布 → closed 已关闭 */
+    private static final java.util.Set<String> ALLOWED_STATUS = java.util.Set.of("draft", "published", "closed");
+
+    /** 周期类型字典 sch_plan_period_type */
+    private static final java.util.Set<String> ALLOWED_PERIOD_TYPES =
+        java.util.Set.of("week", "month", "quarter", "year");
 
     /**
      * 分页查询排班计划列表
@@ -119,16 +130,25 @@ public class SchPlanServiceImpl implements ISchPlanService {
     }
 
     /**
-     * 字典字段统一小写入库: sch_plan_status(draft/published/closed)与
-     * sch_plan_period_type(week/month/quarter/year)均为小写字典值,
-     * 传入大写会造成前端字典标签与按钮状态判断失配
+     * 字典字段统一小写入库并做枚举校验(ERP-SCH-12):
+     * sch_plan_status(draft/published/closed)与 sch_plan_period_type(week/month/quarter/year)
+     * 均为小写字典值。原实现只做小写归一化、不校验，任意字符串都能落库，导致前端字典标签失配、
+     * {@code generate()} 的 published 过滤失效。现在非法值直接抛业务异常。
      */
     private void normalizeDictValues(SchPlan entity) {
         if (StringUtils.isNotBlank(entity.getStatus())) {
             entity.setStatus(entity.getStatus().toLowerCase());
+            if (!ALLOWED_STATUS.contains(entity.getStatus())) {
+                throw new ServiceException("排班计划状态非法：" + entity.getStatus()
+                    + "（仅支持 draft/published/closed）");
+            }
         }
         if (StringUtils.isNotBlank(entity.getPeriodType())) {
             entity.setPeriodType(entity.getPeriodType().toLowerCase());
+            if (!ALLOWED_PERIOD_TYPES.contains(entity.getPeriodType())) {
+                throw new ServiceException("排班周期类型非法：" + entity.getPeriodType()
+                    + "（仅支持 week/month/quarter/year）");
+            }
         }
     }
 
@@ -143,6 +163,19 @@ public class SchPlanServiceImpl implements ISchPlanService {
     public int deleteByIds(Long[] ids) {
         // 级联清理关联数据(原实现只删主表, 班次/排班模板/员工排班/计划班组全部悬挂)
         List<Long> idList = List.of(ids);
+        // ERP-SCH-13: 排班明细一旦被考勤引用, 级联删除会让考勤 schedule_id 悬空、历史班次不可复现。
+        // 删除前先拦截"已有考勤引用"的计划, 交由人工先处理考勤(或改为 closed 关闭而非删除)。
+        List<Long> scheduleIds = schEmployeeScheduleMapper.selectList(
+                Wrappers.<SchEmployeeSchedule>lambdaQuery().in(SchEmployeeSchedule::getPlanId, idList))
+            .stream().map(SchEmployeeSchedule::getScheduleId).filter(java.util.Objects::nonNull).toList();
+        if (!scheduleIds.isEmpty()) {
+            Long referenced = schAttendanceMapper.selectCount(
+                Wrappers.<SchAttendance>lambdaQuery().in(SchAttendance::getScheduleId, scheduleIds));
+            if (referenced != null && referenced > 0) {
+                throw new ServiceException("排班计划下已有 " + referenced
+                    + " 条考勤记录引用了排班明细，不能删除（请先处理考勤，或改为关闭计划）");
+            }
+        }
         schShiftMapper.delete(Wrappers.<SchShift>lambdaQuery().in(SchShift::getPlanId, idList));
         schTeamScheduleMapper.delete(Wrappers.<SchTeamSchedule>lambdaQuery().in(SchTeamSchedule::getPlanId, idList));
         schEmployeeScheduleMapper.delete(Wrappers.<SchEmployeeSchedule>lambdaQuery().in(SchEmployeeSchedule::getPlanId, idList));

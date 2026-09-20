@@ -8,6 +8,7 @@ import com.nexus.common.cv.domain.FaceDtos.RegisterResult;
 import com.nexus.common.cv.exception.VisionException;
 import com.nexus.common.oss.factory.OssFactory;
 import com.nexus.common.tenant.helper.TenantHelper;
+import com.nexus.erp.cv.domain.vo.CvBatchRegisterResultVo;
 import com.nexus.erp.sch.domain.SchWorker;
 import com.nexus.erp.sch.mapper.SchWorkerMapper;
 import com.nexus.system.domain.SysUser;
@@ -49,10 +50,22 @@ public class CvFaceBatchRegisterService {
      * 批量注册:遍历已绑定头像的 SysUser,若其对应 SchWorker 存在则用头像照片注册底库
      *
      * @param limit 单批最大处理数(防御)
-     * @return 注册结果摘要
+     * @return 注册成功明细(保持既有契约;失败明细见 {@link #registerFromAvatarsDetailed(int)})
      */
     public List<RegisterResult> registerFromAvatars(int limit) {
-        List<RegisterResult> results = new ArrayList<>();
+        return registerFromAvatarsDetailed(limit).getSuccess();
+    }
+
+    /**
+     * 批量注册(含失败明细, ERP-CV-04)
+     * <p>原实现逐条 catch 后只 log、结果列表只含成功项, 管理员无法知道哪些人没注册进去、也无法重试。
+     * 本方法返回 {@link CvBatchRegisterResultVo}, 除成功明细外还给出失败项(subject/工号/原因)。</p>
+     *
+     * @param limit 单批最大处理数(防御)
+     * @return 注册结果摘要(成功 + 失败)
+     */
+    public CvBatchRegisterResultVo registerFromAvatarsDetailed(int limit) {
+        CvBatchRegisterResultVo summary = new CvBatchRegisterResultVo();
         // 查有头像的用户: sys_user 在 master 库(ry-vue),类级 @DS("erp") 会误落 erp 库,显式切主数据源
         List<SysUser> users;
         DynamicDataSourceContextHolder.push("master");
@@ -67,6 +80,10 @@ public class CvFaceBatchRegisterService {
         }
         // 底库 subject 带租户维度: 不同租户同工号不得互相覆盖/串库
         String tenantId = TenantHelper.getTenantId();
+        summary.setTotal(users == null ? 0 : users.size());
+        if (users == null) {
+            return summary;
+        }
         for (SysUser user : users) {
             // 按 userId 找对应工人,取工号
             SchWorker worker = workerMapper.selectOne(
@@ -76,25 +93,34 @@ public class CvFaceBatchRegisterService {
             );
             if (worker == null || worker.getEmployeeId() == null) {
                 log.warn("[cv] 批量注册跳过: userId={} 无对应工人或未填工号", user.getUserId());
-                continue;
-            }
-            byte[] avatarBytes = loadAvatar(user.getAvatar());
-            if (avatarBytes == null) {
-                log.warn("[cv] 批量注册跳过: userId={} 头像读取失败", user.getUserId());
+                summary.getFailed().add(CvBatchRegisterResultVo.FailedItem.of(
+                    null, user.getUserId(), worker == null ? null : worker.getEmployeeId(),
+                    "无对应工人档案或未填工号"));
                 continue;
             }
             String subject = CvSubjectHelper.build(tenantId, worker.getEmployeeId());
+            byte[] avatarBytes = loadAvatar(user.getAvatar());
+            if (avatarBytes == null) {
+                log.warn("[cv] 批量注册跳过: userId={} 头像读取失败", user.getUserId());
+                summary.getFailed().add(CvBatchRegisterResultVo.FailedItem.of(
+                    subject, user.getUserId(), worker.getEmployeeId(), "头像读取失败"));
+                continue;
+            }
             try {
                 RegisterResult result = visionClient.registerFace(avatarBytes, subject,
                     user.getUserName() != null ? user.getUserName() : worker.getUserName(),
                     "批量注册(测试期头像)");
-                results.add(result);
+                summary.getSuccess().add(result);
                 log.info("[cv] 批量注册成功, subject={}", subject);
             } catch (VisionException e) {
                 log.warn("[cv] 批量注册失败, subject={}: {}", subject, e.getMessage());
+                summary.getFailed().add(CvBatchRegisterResultVo.FailedItem.of(
+                    subject, user.getUserId(), worker.getEmployeeId(), e.getMessage()));
             }
         }
-        return results;
+        summary.setSuccessCount(summary.getSuccess().size());
+        summary.setFailedCount(summary.getFailed().size());
+        return summary;
     }
 
     /**

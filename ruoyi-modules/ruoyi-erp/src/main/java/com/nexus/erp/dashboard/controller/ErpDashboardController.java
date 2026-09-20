@@ -1,5 +1,6 @@
 package com.nexus.erp.dashboard.controller;
 
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.nexus.common.core.domain.R;
 import com.nexus.common.web.core.BaseController;
 import com.nexus.erp.dashboard.domain.vo.ErpDashboardStatsVo;
@@ -11,8 +12,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * 首页工作台统计 Controller
- * <p>只读聚合, 不设菜单权限点: 任何已登录用户(租户内)可查看,
- * 数据按租户自动隔离, 不含明细级敏感数据。</p>
+ * <p>只读聚合。含全租户销售额/订单额, 属经营数据, <b>必须带权限码</b>(ERP-DASH-01):
+ * 原实现无 {@code @SaCheckPermission}, 任意登录用户即可看到全租户本月销售额。
+ * 权限码 {@code erp:dashboard:stats} 的 {@code sys_menu} 种子由增量脚本
+ * {@code script/sql/update/2026-09-20-erp-p2.sql} §3 提供(非超管需角色授权后方可见)。</p>
  *
  * @author Nexus
  */
@@ -28,6 +31,7 @@ public class ErpDashboardController extends BaseController {
      *
      * @return 统计数据
      */
+    @SaCheckPermission("erp:dashboard:stats")
     @GetMapping("/stats")
     public R<ErpDashboardStatsVo> getStats() {
         return R.ok(dashboardService.getStats());

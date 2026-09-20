@@ -152,13 +152,13 @@ public class SoContractController extends BaseController {
 
     /**
      * 终止合同（仅已生效的合同可终止；终止后不可再提交审批/修改）
-     * <p>权限标识：{@code so:contract:edit}</p>
+     * <p>权限标识：{@code so:contract:terminate}（ERP-SO-07：原复用 {@code so:contract:edit}）</p>
      *
      * @param contractId 合同ID
      * @param reason     终止原因
      * @return 操作结果
      */
-    @SaCheckPermission("so:contract:edit")
+    @SaCheckPermission("so:contract:terminate")
     @Log(title = "销售合同", businessType = BusinessType.UPDATE)
     @RepeatSubmit
     @PostMapping("/terminate")

@@ -128,7 +128,7 @@ public class SoReturnController extends BaseController {
      * @param returnId 销售退货ID
      * @return 操作结果
      */
-    @SaCheckPermission("so:return:edit")
+    @SaCheckPermission("so:return:confirm")
     @Log(title = "销售退货", businessType = BusinessType.UPDATE)
     @PutMapping("/confirm/{returnId}")
     public R<Void> confirm(@PathVariable Long returnId) {
@@ -144,7 +144,7 @@ public class SoReturnController extends BaseController {
      * @param returnId 销售退货ID
      * @return 操作结果
      */
-    @SaCheckPermission("so:return:edit")
+    @SaCheckPermission("so:return:execute")
     @Log(title = "销售退货", businessType = BusinessType.UPDATE)
     @PutMapping("/execute/{returnId}")
     public R<Void> execute(@PathVariable Long returnId) {

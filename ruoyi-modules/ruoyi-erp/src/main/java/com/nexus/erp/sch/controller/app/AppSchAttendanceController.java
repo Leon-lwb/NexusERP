@@ -160,7 +160,8 @@ public class AppSchAttendanceController {
                 (String) params.get("deviceName"),
                 toBigDecimal(params.get("latitude")),
                 toBigDecimal(params.get("longitude")),
-                toText(params.get("address"))
+                toText(params.get("address")),
+                toBigDecimal(params.get("accuracy"))
         );
         // 人脸验证(异步,不阻断打卡):照片随打卡请求上传(base64),存储 + 校验
         Object faceImage = params.get("faceImage");
@@ -212,7 +213,8 @@ public class AppSchAttendanceController {
                 overtimeHours,
                 toBigDecimal(params.get("latitude")),
                 toBigDecimal(params.get("longitude")),
-                toText(params.get("address"))
+                toText(params.get("address")),
+                toBigDecimal(params.get("accuracy"))
         );
         return R.ok(data);
     }

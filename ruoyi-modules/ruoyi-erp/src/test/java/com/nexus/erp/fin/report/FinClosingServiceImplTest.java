@@ -135,8 +135,8 @@ class FinClosingServiceImplTest {
         period.setStatus(GlConstants.PERIOD_OPEN);
         period.setEndDate(end);
         when(periodMapper.selectById(9L)).thenReturn(period);
-        // 本期尚未重估
-        when(voucherMapper.selectOne(any())).thenReturn(null);
+        // 本期尚未重估：gl_period.revaluation_voucher_id 为空 → findRevaluationVoucher 返回 null
+        // （FIN-GL-04 后不再按 periodId*100+... 的算术键查凭证）
 
         GlVoucher posted = new GlVoucher();
         posted.setVoucherId(100L);

@@ -200,8 +200,11 @@ public class FinClosingServiceImpl implements IFinClosingService {
     public Long revaluate(Long periodId) {
         try {
             GlPeriod period = getPeriod(periodId);
-            Long sourceId = periodId * 100 + ReportConstants.IDEMPOTENT_REVALUATION;
-            GlVoucher existing = findVoucher(ReportConstants.VOUCHER_SOURCE, sourceId);
+            // FIN-GL-04: 原幂等键 periodId*100+IDEMPOTENT_REVALUATION 对雪花 period_id(≈1.9e18)溢出 long,
+            // 键值不可预测且不同期间可能碰撞 → 误判"外币已重估"而跳过重估。
+            // 改为雪花 sourceId 制单, 幂等改由"同期间 + 同来源是否已有凭证"查询保证(与折旧/处置口径一致)。
+            Long sourceId = IdGeneratorUtil.nextLongId();
+            GlVoucher existing = findRevaluationVoucher(period);
             if (existing != null) {
                 logInfo(periodId, ReportConstants.CLOSE_MONTHLY, ReportConstants.STEP_REVALUATION,
                     "外币已重估,复用凭证 " + existing.getVoucherNo());
@@ -641,6 +644,20 @@ public class FinClosingServiceImpl implements IFinClosingService {
             .eq(GlVoucher::getVoucherSource, source)
             .eq(GlVoucher::getSourceId, sourceId)
             .last("limit 1"));
+    }
+
+    /**
+     * 外币重估幂等判定(FIN-GL-04): 期间上已记录的重估凭证即为"已重估"。
+     * <p>不再依赖 {@code periodId*100+IDEMPOTENT_REVALUATION} 这种会溢出的算术键——
+     * 雪花 period_id 乘 100 后溢出 long, 键值不可预测且不同期间可能碰撞(会误判"已重估"而跳过)。
+     * 复用 {@code gl_period.revaluation_voucher_id}(重估成功后由 {@code updatePeriodClosing} 写入),
+     * 与 ADJUSTMENT 来源的损益结转/期末结转凭证天然区分, 无需按摘要模糊匹配。</p>
+     */
+    private GlVoucher findRevaluationVoucher(GlPeriod period) {
+        if (period == null || period.getRevaluationVoucherId() == null) {
+            return null;
+        }
+        return voucherMapper.selectById(period.getRevaluationVoucherId());
     }
 
     /** 构建凭证行 */
