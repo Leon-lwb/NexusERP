@@ -53,6 +53,14 @@
         </el-row>
         <el-row :gutter="20">
           <el-col :span="8">
+            <el-form-item label="盘点方式" prop="countMode">
+              <!-- 后端 WmStockTakingPlanBo.countMode（OPEN 明盘 / BLIND 盲盘），PDA 端已按该值分支（FE-ERP-04） -->
+              <el-select v-model="form.countMode" placeholder="请选择盘点方式" style="width: 100%">
+                <el-option v-for="dict in erp_stocktaking_count_mode" :key="dict.value" :label="dict.label" :value="dict.value" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
             <el-form-item label="仓库" prop="warehouseName">
               <el-input v-model="form.warehouseName" placeholder="请选择仓库" readonly>
                 <template #append>
@@ -242,6 +250,7 @@ import { previewCode } from '@/api/system/autocode/rule';
 import { useRoute, useRouter } from 'vue-router';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
+const { erp_stocktaking_count_mode } = toRefs<any>(proxy.useDict('erp_stocktaking_count_mode'));
 const route = useRoute();
 const router = useRouter();
 
@@ -320,6 +329,8 @@ function reset() {
     areaName: null,
     plannedDate: null,
     status: null,
+    // 默认明盘（与后端 PdaStocktakingServiceImpl 的默认值 OPEN 一致）
+    countMode: 'OPEN',
     remark: null
   };
   lineList.value = [];

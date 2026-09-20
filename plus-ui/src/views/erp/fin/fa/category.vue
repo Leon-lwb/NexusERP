@@ -37,6 +37,8 @@
       </el-table-column>
       <el-table-column label="费用科目" align="center" prop="debitAccountName" min-width="120" />
       <el-table-column label="累计折旧科目" align="center" prop="creditAccountName" min-width="120" />
+      <!-- FE-ERP-11：后端 FaAssetCategoryVo.disposalLossAccountName 已返回，此前前端只存 ID 不显示名称 -->
+      <el-table-column label="处置损失科目" align="center" prop="disposalLossAccountName" min-width="120" />
       <el-table-column label="状态" align="center" width="80">
         <template #default="scope">
           <el-tag :type="scope.row.status === '0' ? 'success' : 'info'" size="small">{{ scope.row.status === '0' ? '正常' : '停用' }}</el-tag>

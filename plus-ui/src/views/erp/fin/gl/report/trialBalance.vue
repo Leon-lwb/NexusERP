@@ -24,6 +24,9 @@
           <dict-tag :options="gl_account_type" :value="scope.row.accountType" />
         </template>
       </el-table-column>
+      <!-- FE-ERP-05：年初借贷方余额（后端 GlAccountBalanceVo.yearOpeningDebit/Credit），此前前端全仓零命中 -->
+      <el-table-column label="年初借方" align="right" prop="yearOpeningDebit" width="120" />
+      <el-table-column label="年初贷方" align="right" prop="yearOpeningCredit" width="120" />
       <el-table-column label="期初借方" align="right" prop="openingDebit" width="120" />
       <el-table-column label="期初贷方" align="right" prop="openingCredit" width="120" />
       <el-table-column label="本期借方" align="right" prop="periodDebit" width="120" />

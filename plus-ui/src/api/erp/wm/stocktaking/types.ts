@@ -3,6 +3,8 @@ export interface StockTakingPlanQuery extends PageQuery {
   planName?: string;
   warehouseId?: number;
   status?: string;
+  /** 盘点方式（OPEN 明盘 / BLIND 盲盘） */
+  countMode?: string;
 }
 
 export interface StockTakingLineVO {
@@ -39,6 +41,8 @@ export interface StockTakingPlanVO {
   areaName?: string;
   plannedDate?: string;
   status?: string;
+  /** 盘点方式（后端 WmStockTakingPlanBo/Vo/实体 countMode；PDA 端已按 OPEN/BLIND 分支） */
+  countMode?: string;
   selectFlowId?: number;
   actProcessId?: string;
   remark?: string;
@@ -61,6 +65,8 @@ export interface StockTakingPlanForm {
   areaName?: string;
   plannedDate?: string;
   status?: string;
+  /** 盘点方式（OPEN 明盘 / BLIND 盲盘） */
+  countMode?: string;
   selectFlowId?: number;
   remark?: string;
   wmStockTakingLineList?: StockTakingLineVO[];

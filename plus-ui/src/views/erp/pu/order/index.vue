@@ -84,6 +84,13 @@
             <el-table-column label="规格型号" prop="materialSpec" width="120" />
             <el-table-column label="订单数量" prop="orderQuantity" width="100" />
             <el-table-column label="已收数量" prop="receivedQuantity" width="100" />
+            <!-- ERP-PU-05：后端 returnedQuantity 此前前端全仓 0 命中，退货后订单行口径失真 -->
+            <el-table-column label="已退货数量" prop="returnedQuantity" width="110">
+              <template #default="scope">{{ scope.row.returnedQuantity ?? 0 }}</template>
+            </el-table-column>
+            <el-table-column label="净采购量" width="110">
+              <template #default="scope">{{ netOrderQuantity(scope.row) }}</template>
+            </el-table-column>
             <el-table-column label="收货状态" prop="receiveStatus" width="120">
               <template #default="scope">
                 <el-tag :type="getReceiveStatusType(scope.row.receiveStatus)" size="small">
@@ -110,6 +117,16 @@
         <template #default="scope">
           <span>{{ parseTime(scope.row.expectedArrivalDate, '{y}-{m}-{d}') }}</span>
         </template>
+      </el-table-column>
+      <el-table-column label="含税金额" align="right" prop="totalAmount">
+        <template #default="scope">{{ fmtAmount(scope.row.totalAmount) }}</template>
+      </el-table-column>
+      <!-- 运费：后端 PuPurchaseOrderVo.freightAmount 已返回，此前前端未展示（FE-ERP-03） -->
+      <el-table-column label="运费" align="right" prop="freightAmount">
+        <template #default="scope">{{ fmtAmount(scope.row.freightAmount) }}</template>
+      </el-table-column>
+      <el-table-column label="税额" align="right" prop="taxAmount">
+        <template #default="scope">{{ fmtAmount(scope.row.taxAmount) }}</template>
       </el-table-column>
       <el-table-column label="状态" prop="status">
         <template #default="scope">
@@ -241,6 +258,10 @@ const handleExpandChange = (row: any, expandedRows: any[]) => {
   }
 };
 
+/** 金额千分位展示（金额列统一右对齐 + 两位小数，见 FE-ERP-03/FE-ERP-09） */
+const fmtAmount = (v: number | undefined | null): string =>
+  Number(v || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
 const getReceiveStatusType = (status: string): 'success' | 'warning' | 'danger' | 'info' | 'primary' => {
   const map: Record<string, 'success' | 'warning' | 'danger' | 'info' | 'primary'> = {
     NOT_RECEIVED: 'info',
@@ -267,6 +288,13 @@ const calcReceiveProgress = (row: any): number => {
   if (!row.orderQuantity || row.orderQuantity === 0) return 0;
   const received = row.receivedQuantity || 0;
   return Math.min(Math.round((received / row.orderQuantity) * 100), 100);
+};
+
+/** 净采购量 = 订单数量 - 已退货数量（ERP-PU-05；已退货数量由后端 returnedQuantity 返回） */
+const netOrderQuantity = (row: any) => {
+  const ordered = Number(row.orderQuantity || 0);
+  const returned = Number(row.returnedQuantity || 0);
+  return Math.max(ordered - returned, 0);
 };
 
 const getProgressColor = (row: any): string => {

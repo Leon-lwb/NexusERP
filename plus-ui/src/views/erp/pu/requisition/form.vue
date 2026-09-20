@@ -78,8 +78,9 @@
             </el-form-item>
           </el-col>
           <el-col :span="8">
+            <!-- ERP-PU-04：服务端新增时强制 DRAFT 并忽略客户端 status，改为只读展示 -->
             <el-form-item label="状态" prop="status">
-              <el-select v-model="form.status" placeholder="请选择状态">
+              <el-select v-model="form.status" disabled placeholder="状态由服务端管理" style="width: 100%">
                 <el-option v-for="dict in pu_purchase_requisition_status" :key="dict.value" :label="dict.label" :value="dict.value" />
               </el-select>
             </el-form-item>

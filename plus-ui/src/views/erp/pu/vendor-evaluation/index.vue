@@ -92,9 +92,10 @@
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="评估日期" prop="evalDate">
+      <!-- 评估周期为后端唯一日期语义字段（PuVendorEvaluationBo.evalPeriod，YYYY-MM），原绑定的 evalDate 后端不存在 -->
+      <el-table-column label="评估周期" prop="evalPeriod" align="center">
         <template #default="scope">
-          <span>{{ parseTime(scope.row.evalDate, '{y}-{m}-{d}') }}</span>
+          <span>{{ parseTime(scope.row.evalPeriod, '{y}-{m}') }}</span>
         </template>
       </el-table-column>
     </el-table>

@@ -12,6 +12,11 @@ export const settleFinSettlement = (data: FinSettlementForm) => {
   return request({ url: '/erp/fin/arap/settlement/settle', method: 'post', data });
 };
 
+/** 反核销:回退发票/收付款单金额与状态,逻辑删除核销记录(FIN-ARAP-02,权限码 fin:arap:settlement:unsettle) */
+export const unsettleFinSettlement = (settlementId: string | number) => {
+  return request({ url: '/erp/fin/arap/settlement/unsettle/' + settlementId, method: 'post' });
+};
+
 /** 查询未清项(核销选单:未清发票 + 未清收付款单) */
 export const listOpenItems = (direction: string, partnerId?: string | number): AxiosPromise<OpenItemVO[]> => {
   return request({ url: '/erp/fin/arap/settlement/openItems', method: 'get', params: { direction, partnerId } });

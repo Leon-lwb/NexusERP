@@ -88,6 +88,23 @@
       </el-col>
     </el-row>
 
+    <!-- 占位提示：表现率/质量率无真实数据源时后端返回 *Available=false，此时不得展示 100% -->
+    <el-alert
+      v-if="overview.performanceRateAvailable === false || overview.qualityRateAvailable === false"
+      class="mb-2"
+      type="warning"
+      :closable="false"
+      show-icon
+      title="表现率 / 质量率当前为占位值"
+    >
+      <template #default>
+        <span v-if="overview.performanceRateAvailable === false"
+          >表现率暂无真实数据源（缺少节拍/标准工时口径），明细中显示为「占位」，未按 100% 参与误导性展示。
+        </span>
+        <span v-if="overview.qualityRateAvailable === false">质量率暂无真实数据源（区间内无质量数据），明细中显示为「占位」。</span>
+      </template>
+    </el-alert>
+
     <!-- 图表区 -->
     <el-row :gutter="12" class="mb-2">
       <el-col :span="14">
@@ -128,6 +145,23 @@
         </el-table-column>
         <el-table-column label="OEE" prop="oee" align="center" width="90">
           <template #default="scope">{{ pct(scope.row.oee) }}</template>
+        </el-table-column>
+        <!-- 表现率/质量率：后端无真实数据源时返回 null，必须显示「占位」而不是 100%（MES-EQ-03 / R3） -->
+        <el-table-column label="表现率" prop="performanceRate" align="center">
+          <template #default="scope">
+            <el-tooltip v-if="scope.row.performanceRate == null" content="后端暂无表现率数据源（缺节拍/标准工时），当前为占位值" placement="top">
+              <el-tag type="info" size="small">占位</el-tag>
+            </el-tooltip>
+            <span v-else>{{ pct(scope.row.performanceRate) }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="质量率" prop="qualityRate" align="center">
+          <template #default="scope">
+            <el-tooltip v-if="scope.row.qualityRate == null" content="该记录无质量率数据源，当前为占位值" placement="top">
+              <el-tag type="info" size="small">占位</el-tag>
+            </el-tooltip>
+            <span v-else>{{ pct(scope.row.qualityRate) }}</span>
+          </template>
         </el-table-column>
       </el-table>
       <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />

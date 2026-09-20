@@ -16,7 +16,8 @@
         <el-descriptions-item label="产出物料">{{ info?.materialCode }} {{ info?.materialName }}</el-descriptions-item>
         <el-descriptions-item label="供应商">{{ info?.vendorName || '未选定' }}</el-descriptions-item>
         <el-descriptions-item label="状态">
-          <el-tag :type="statusTagType(info?.status)" size="small">{{ statusLabel(info?.status) }}</el-tag>
+          <!-- FE-ERP-08：改由 prd_subcontract_status 字典渲染（与列表页 index.vue 同源），原硬编码映射已删除 -->
+          <dict-tag :options="prd_subcontract_status" :value="info?.status" />
         </el-descriptions-item>
         <el-descriptions-item label="计划数量">{{ info?.plannedQty }}</el-descriptions-item>
         <el-descriptions-item label="实收进度">
@@ -202,7 +203,13 @@
           <el-table :data="receives" size="small" border max-height="340">
             <el-table-column prop="receiveNo" label="收货单号" min-width="180" />
             <el-table-column prop="receivedQty" label="收货量" width="100" align="right" />
-            <el-table-column prop="targetWarehouseName" label="入库仓库" width="140" />
+            <!-- FE-ERP-05：补展示后端 WmSubcontractReceiveVo.targetWarehouseCode / receiverName（此前前端零命中） -->
+            <el-table-column label="入库仓库" width="180">
+              <template #default="scope">
+                {{ scope.row.targetWarehouseCode ? scope.row.targetWarehouseCode + ' - ' : '' }}{{ scope.row.targetWarehouseName || '-' }}
+              </template>
+            </el-table-column>
+            <el-table-column prop="receiverName" label="收货人" width="100" />
             <el-table-column prop="vendorBatchCode" label="外协批次" width="120" show-overflow-tooltip />
             <el-table-column prop="snScope" label="SN范围" min-width="160" show-overflow-tooltip />
             <el-table-column label="状态" width="90" align="center">
@@ -386,7 +393,7 @@ import { listWarehouse } from '@/api/erp/wm/warehouse';
 import { download } from '@/utils/request';
 
 const proxy = getCurrentInstance()?.proxy as any;
-const { erp_subcontract_doc_type } = toRefs<any>(proxy?.useDict('erp_subcontract_doc_type'));
+const { erp_subcontract_doc_type, prd_subcontract_status } = toRefs<any>(proxy?.useDict('erp_subcontract_doc_type', 'prd_subcontract_status'));
 
 const visible = ref(false);
 const loading = ref(false);
@@ -432,21 +439,8 @@ const receiveProgress = computed(() => {
 });
 const canReceive = computed(() => ['RELEASED', 'IN_PROGRESS'].includes(info.value?.status));
 
-const statusLabelMap: Record<string, string> = {
-  DRAFT: '草稿',
-  SUBMITTED: '已提交',
-  APPROVED: '已批准',
-  RELEASED: '已发料下达',
-  IN_PROGRESS: '进行中',
-  COMPLETED: '已完成',
-  CLOSED: '已关闭'
-};
-const statusLabel = (s?: string) => statusLabelMap[s || ''] || s || '-';
+// FE-ERP-08：状态标签改由 prd_subcontract_status 字典渲染，原 statusLabelMap/statusLabel/statusTagType 硬编码映射已删除
 type TagType = 'primary' | 'success' | 'warning' | 'info' | 'danger';
-const statusTagType = (s?: string): TagType =>
-  (({ DRAFT: 'info', SUBMITTED: 'warning', APPROVED: 'primary', RELEASED: 'primary', IN_PROGRESS: 'warning', COMPLETED: 'success', CLOSED: 'info' })[
-    s || ''
-  ] || 'info') as TagType;
 
 const supplyLabelMap: Record<string, string> = { SELF_PROVIDED: '自备料', VENDOR_PROVIDED: '外协厂供', CUSTOMER_PROVIDED: '客供' };
 const supplyLabel = (s?: string) => supplyLabelMap[s || ''] || s || '-';

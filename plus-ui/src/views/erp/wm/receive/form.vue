@@ -78,6 +78,29 @@
               <el-input v-model="form.vendorNick" placeholder="请输入供应商简称" />
             </el-form-item>
           </el-col>
+        </el-row>
+        <el-row :gutter="20">
+          <el-col :span="8">
+            <!-- ERP-PU-06：自动生成的收货草稿 warehouseId 为空，此处强制选择入库仓库 -->
+            <el-form-item label="仓库" prop="warehouseId">
+              <el-select
+                v-model="form.warehouseId"
+                placeholder="请选择入库仓库"
+                filterable
+                clearable
+                :disabled="formDisabled"
+                style="width: 100%"
+                @change="handleReceiveWarehouseChange"
+              >
+                <el-option
+                  v-for="w in warehouseOptions"
+                  :key="w.warehouseId"
+                  :label="`${w.warehouseCode} - ${w.warehouseName}`"
+                  :value="w.warehouseId"
+                />
+              </el-select>
+            </el-form-item>
+          </el-col>
           <el-col :span="8">
             <el-form-item label="入库日期" prop="receiveDate">
               <el-date-picker
@@ -418,7 +441,7 @@ import type { ReceiveForm, ReceiveLineVO, ReceiveDetailVO } from '@/api/erp/wm/r
 import { getArrivalnotice } from '@/api/erp/wm/arrivalnotice';
 import { listDetail } from '@/api/erp/wm/detail';
 import { createBatch } from '@/api/erp/wm/batch';
-import { getWareHouseTree } from '@/api/erp/wm/warehouse';
+import { getWareHouseTree, listWarehouse } from '@/api/erp/wm/warehouse';
 import { getProcesss } from '@/api/workflow/process/index';
 import { useRoute, useRouter } from 'vue-router';
 import { previewCode } from '@/api/system/autocode/rule';
@@ -587,8 +610,33 @@ const data = reactive({
 
 const { queryParams, form, shelfRules } = toRefs(data);
 const autoGenFlag = ref(false);
-// rules placeholder for template reference
-const rules = {};
+// 仓库必选：ERP-PU-06 —— 采购收货联动自动生成的收货草稿 warehouseId 为空，
+// 若不强制指定仓库，后续上架/库存归集会落到空仓库。故主表单加必填校验。
+const warehouseOptions = ref<any[]>([]);
+const rules = {
+  warehouseId: [{ required: true, message: '请选择入库仓库', trigger: 'change' }]
+};
+
+/** 加载仓库下拉（供收货单指定入库仓库） */
+function loadWarehouseOptions() {
+  listWarehouse({ pageNum: 1, pageSize: 500 })
+    .then((res: any) => {
+      warehouseOptions.value = res.rows || [];
+    })
+    .catch((e: any) => {
+      console.error('加载仓库列表失败', e);
+      warehouseOptions.value = [];
+    });
+}
+
+/** 收货单主表仓库变更时同步编码/名称，避免只落 ID 导致列表列空白（与上架表单的 handleWarehouseChange 区分） */
+function handleReceiveWarehouseChange(warehouseId: any) {
+  const w = warehouseOptions.value.find((i: any) => i.warehouseId === warehouseId);
+  form.value.warehouseCode = w?.warehouseCode ?? null;
+  form.value.warehouseName = w?.warehouseName ?? null;
+}
+
+loadWarehouseOptions();
 
 const isViewMode = ref(false);
 const title = ref('');

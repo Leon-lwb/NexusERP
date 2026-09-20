@@ -88,13 +88,12 @@
           </el-col>
         </el-row>
 
+        <!--
+          原「评估日期 evalDate」控件已删除：后端 PuVendorEvaluationBo/Vo/表均无该字段
+          （日期语义字段只有 evalPeriod，见 FE-ERP-01），填写后会被静默丢弃。
+        -->
         <el-row :gutter="20">
-          <el-col :span="8">
-            <el-form-item label="评估日期" prop="evalDate">
-              <el-date-picker v-model="form.evalDate" type="date" value-format="YYYY-MM-DD" placeholder="请选择评估日期" style="width: 100%" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="16">
+          <el-col :span="24">
             <el-form-item label="备注" prop="remark">
               <el-input v-model="form.remark" type="textarea" placeholder="请输入备注" />
             </el-form-item>
@@ -106,12 +105,11 @@
 </template>
 
 <script setup lang="ts" name="VendorEvaluationForm">
-import { addVendorEvaluation, getVendorEvaluation, updateVendorEvaluation, calculateVendorEvaluation } from '@/api/erp/pu/vendor-evaluation';
+import { addVendorEvaluation, getVendorEvaluation, updateVendorEvaluation } from '@/api/erp/pu/vendor-evaluation';
 import { listVendor } from '@/api/erp/bd/vendor';
 import { useRoute, useRouter } from 'vue-router';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
-const { pu_vendor_eval_level } = toRefs<any>(proxy.useDict('pu_vendor_eval_level'));
 
 const route = useRoute();
 const router = useRouter();
@@ -120,24 +118,28 @@ const title = ref('');
 const isViewMode = ref(false);
 const vendorList = ref<any[]>([]);
 
-const form = ref<any>({
-  evaluationId: null,
-  vendorId: null,
-  vendorCode: null,
-  vendorName: null,
-  evalPeriod: null,
-  deliveryRate: null,
-  qualityRate: null,
-  priceScore: null,
-  totalScore: null,
-  evalLevel: null,
-  totalOrders: 0,
-  onTimeOrders: 0,
-  totalReceivedQty: 0,
-  returnQty: 0,
-  evalDate: null,
-  remark: null
-});
+/** 表单字段与后端 PuVendorEvaluationBo 一一对应（不再包含不存在的 evalDate） */
+function emptyForm() {
+  return {
+    evaluationId: null,
+    vendorId: null,
+    vendorCode: null,
+    vendorName: null,
+    evalPeriod: null,
+    deliveryRate: null,
+    qualityRate: null,
+    priceScore: null,
+    totalScore: null,
+    evalLevel: null,
+    totalOrders: 0,
+    onTimeOrders: 0,
+    totalReceivedQty: 0,
+    returnQty: 0,
+    remark: null
+  };
+}
+
+const form = ref<any>(emptyForm());
 
 const rules = {
   vendorId: [{ required: true, message: '请选择供应商', trigger: 'change' }],
@@ -173,24 +175,7 @@ function getInfo(id: any) {
 }
 
 function reset() {
-  form.value = {
-    evaluationId: null,
-    vendorId: null,
-    vendorCode: null,
-    vendorName: null,
-    evalPeriod: null,
-    deliveryRate: null,
-    qualityRate: null,
-    priceScore: null,
-    totalScore: null,
-    evalLevel: null,
-    totalOrders: 0,
-    onTimeOrders: 0,
-    totalReceivedQty: 0,
-    returnQty: 0,
-    evalDate: null,
-    remark: null
-  };
+  form.value = emptyForm();
 }
 
 function handleVendorChange(vendorId: number) {
@@ -203,10 +188,10 @@ function handleVendorChange(vendorId: number) {
 
 function getEvalLevelType(level: string): 'success' | 'warning' | 'danger' | 'info' | 'primary' {
   const map: Record<string, 'success' | 'warning' | 'danger' | 'info' | 'primary'> = {
-    'A': 'success',
-    'B': 'primary',
-    'C': 'warning',
-    'D': 'danger'
+    A: 'success',
+    B: 'primary',
+    C: 'warning',
+    D: 'danger'
   };
   return map[level] || 'info';
 }

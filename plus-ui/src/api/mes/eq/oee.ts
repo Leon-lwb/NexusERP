@@ -41,6 +41,13 @@ export interface EqOeeOverviewVO {
   equipmentCount?: number;
   totalPlannedMinutes?: number;
   totalRunMinutes?: number;
+  /**
+   * 表现率是否已有真实数据源（MES-EQ-03）。
+   * false 表示表现率仍为占位（后端恒置 false），前端必须展示「占位」而不是 100%。
+   */
+  performanceRateAvailable?: boolean;
+  /** 质量率是否已有真实数据源（区间内至少一条记录有质量率） */
+  qualityRateAvailable?: boolean;
 }
 
 /** OEE 趋势点 */

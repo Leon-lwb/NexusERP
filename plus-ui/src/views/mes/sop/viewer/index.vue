@@ -10,6 +10,9 @@
             <el-tag v-if="sop?.currentVersion" type="success" size="small">v{{ sop.currentVersion }}</el-tag>
           </div>
           <div class="header-right">
+            <!-- MES-SOP-01：查阅登记失败不再静默，给出可见状态与补登入口 -->
+            <el-tag v-if="viewLogFailed" type="warning" size="small" class="mr-2">查阅登记未成功</el-tag>
+            <el-button v-if="viewLogFailed" type="warning" plain icon="RefreshRight" @click="retryViewLog">重试登记</el-button>
             <el-button icon="Refresh" @click="loadSop" :disabled="!processId && !stepRecordId && !sopId">刷新</el-button>
           </div>
         </div>
@@ -77,6 +80,8 @@ const { mes_sop_type } = toRefs<any>(proxy?.useDict('mes_sop_type'));
 
 const sop = ref<SopDocumentVO | null>(null);
 const loading = ref(true);
+/** MES-SOP-01：查阅登记最终失败标记（403 权限码错配时原先被空 catch 静默吞掉） */
+const viewLogFailed = ref(false);
 
 // 雪花ID为19位长整型，route.query 传字符串，不能 Number() 截断，保持字符串透传
 const processId = computed(() => (route.query.processId ? String(route.query.processId) : ''));
@@ -129,17 +134,19 @@ const loadSop = async () => {
     }
     sop.value = res.data;
     // 登记查阅(signature_id=null, 预留 P0-6)
+    // MES-SOP-01：原先空 catch 会把 403（权限码错配 mes:sop:viewlog:list）等失败彻底吞掉，
+    // 表现为「页面正常但 sop_view_log 无行、es_signature 无 SOP_VIEW」。
+    // 现改为：失败打 warn 日志 + 自动重试一次 + 页面可见提示，避免此类静默失败复发。
     if (sop.value?.sopId) {
-      recordViewLog({
+      const payload = {
         sopId: sop.value.sopId,
         versionNo: sop.value.currentVersion,
         woId: woId.value,
         woNo: woNo.value,
         processId: processId.value || undefined,
         workstationId: workstationId.value
-      }).catch(() => {
-        /* 查阅登记失败不阻断查看 */
-      });
+      };
+      submitViewLog(payload);
     }
   } catch (e) {
     proxy!.$modal.msgError('SOP加载失败');
@@ -147,6 +154,46 @@ const loadSop = async () => {
     loading.value = false;
   }
 };
+
+/**
+ * 提交查阅登记：失败自动重试一次，仍失败则记录状态并在页面给出可读提示。
+ * <p>MES-SOP-01：原实现为空 catch，403（查阅登记端点权限码与查看器菜单权限码错配）
+ * 会被彻底吞掉 —— 页面看起来正常，但 sop_view_log 无行、es_signature 无 SOP_VIEW。</p>
+ */
+function submitViewLog(payload: any) {
+  recordViewLog(payload)
+    .then(() => {
+      viewLogFailed.value = false;
+    })
+    .catch((err: any) => {
+      console.warn('[SOP查阅登记] 首次提交失败，准备重试一次', err);
+      recordViewLog(payload)
+        .then(() => {
+          viewLogFailed.value = false;
+        })
+        .catch((retryErr: any) => {
+          console.error('[SOP查阅登记] 重试后仍失败，本次查阅未记录', retryErr);
+          viewLogFailed.value = true;
+          proxy!.$modal.msgWarning('SOP 查阅登记失败，本次查阅未记录（可点「重试登记」补登）');
+        });
+    });
+}
+
+/** 手动补登查阅记录（首次+重试均失败后使用） */
+function retryViewLog() {
+  if (!sop.value?.sopId) {
+    proxy!.$modal.msgWarning('当前没有可登记的SOP');
+    return;
+  }
+  submitViewLog({
+    sopId: sop.value.sopId,
+    versionNo: sop.value.currentVersion,
+    woId: woId.value,
+    woNo: woNo.value,
+    processId: processId.value || undefined,
+    workstationId: workstationId.value
+  });
+}
 
 const goBack = () => {
   router.back();

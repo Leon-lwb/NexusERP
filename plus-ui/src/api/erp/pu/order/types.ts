@@ -35,8 +35,12 @@ export interface PurchaseOrderVO {
   currency?: string;
   /** 汇率 */
   exchangeRate?: number;
-  /** 总金额 */
+  /** 总金额（价税合计，含运费） */
   totalAmount?: number;
+  /** 税额合计 */
+  taxAmount?: number;
+  /** 运费（后端 PuPurchaseOrderBo/Vo/实体三层齐备，此前前端零命中） */
+  freightAmount?: number;
   /** 备注 */
   remark?: string;
   /** 订单行列表 */
@@ -80,9 +84,21 @@ export interface PurchaseOrderLineVO {
   unitName?: string;
   orderQuantity?: number;
   receivedQuantity?: number;
+  /**
+   * 已退货数量（ERP-PU-05，后端 PuPurchaseOrderLine.returnedQuantity 已随
+   * PuPurchaseOrderVo.lineList 返回）。净采购量 = orderQuantity - returnedQuantity。
+   */
+  returnedQuantity?: number;
   receiveStatus?: string;
   unitPrice?: number;
+  /** 不含税单价 */
+  unitPriceExcludingTax?: number;
   taxRate?: number;
+  /** 行金额（含税） */
   lineAmount?: number;
+  /** 行税额 */
+  lineTaxAmount?: number;
+  /** 不含税行金额 */
+  lineAmountExcludingTax?: number;
   sortOrder?: number;
 }

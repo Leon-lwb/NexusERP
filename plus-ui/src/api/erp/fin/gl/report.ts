@@ -8,6 +8,10 @@ export interface TrialBalanceVO {
   accountName: string;
   accountType: string;
   balanceDir: string;
+  /** 年初借方余额（后端 GlAccountBalanceVo.yearOpeningDebit） */
+  yearOpeningDebit: number;
+  /** 年初贷方余额（后端 GlAccountBalanceVo.yearOpeningCredit） */
+  yearOpeningCredit: number;
   openingDebit: number;
   openingCredit: number;
   periodDebit: number;

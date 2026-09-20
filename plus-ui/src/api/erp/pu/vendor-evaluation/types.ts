@@ -14,7 +14,6 @@ export interface VendorEvaluationVO {
   totalReceivedQty?: number;
   qualifiedQty?: number;
   returnQty?: number;
-  evalDate?: string;
   remark?: string;
 }
 

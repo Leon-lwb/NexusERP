@@ -63,6 +63,8 @@
       <el-table-column label="前缀" prop="prefix" align="center" />
       <el-table-column label="日期格式" prop="datePattern" align="center" />
       <el-table-column label="流水长度" prop="sequenceLength" align="center" />
+      <!-- FE-ERP-05：当前流水号（后端 WmBarcodeConfigVo.currentSequence），此前前端全仓零命中 -->
+      <el-table-column label="当前流水号" prop="currentSequence" align="center" />
       <el-table-column label="业务类型" prop="bizType" align="center" />
       <!-- 技术债：启用状态暂无对应字典，使用本地 el-tag 渲染，待补字典后改为 dict-tag -->
       <el-table-column label="启用状态" prop="enableFlag" align="center">

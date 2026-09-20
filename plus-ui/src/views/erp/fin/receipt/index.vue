@@ -193,7 +193,9 @@ const {
     payerName: '',
     remark: ''
   }),
-  exportUrl: '/erp/fin/receipt/export',
+  // FinReceiptController 实际映射为 /erp/fin/arap/receipt（含 export），
+  // 原 '/erp/fin/receipt/export' 无对应端点 → 导出 404（FIN-ARAP 导出修复）
+  exportUrl: '/erp/fin/arap/receipt/export',
   exportFileName: 'receipt'
 });
 
