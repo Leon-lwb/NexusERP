@@ -15,11 +15,15 @@ import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.erp.bd.domain.BdMaterial;
 import com.nexus.erp.bd.domain.BdBom;
+import com.nexus.erp.bd.domain.BdMaterialVendor;
 import com.nexus.erp.bd.mapper.BdMaterialMapper;
 import com.nexus.erp.bd.mapper.BdBomMapper;
+import com.nexus.erp.bd.mapper.BdMaterialVendorMapper;
 import com.nexus.erp.prd.domain.PrdProductionPlan;
+import com.nexus.erp.prd.domain.PrdSubcontract;
 import com.nexus.erp.prd.domain.PrdWorkOrder;
 import com.nexus.erp.prd.mapper.PrdProductionPlanMapper;
+import com.nexus.erp.prd.mapper.PrdSubcontractMapper;
 import com.nexus.erp.prd.mapper.PrdWorkOrderMapper;
 import com.nexus.erp.so.domain.SoSalesOrderHeader;
 import com.nexus.erp.so.domain.SoSalesOrderLine;
@@ -34,7 +38,13 @@ import com.nexus.erp.so.mapper.SoSalesOrderHeaderMapper;
 import com.nexus.erp.so.mapper.SoSalesOrderLineMapper;
 import com.nexus.erp.so.service.ICreditCheckService;
 import com.nexus.erp.so.service.ISoSalesOrderHeaderService;
+import com.nexus.erp.wm.domain.WmMaterialStock;
+import com.nexus.erp.wm.domain.WmTransfer;
+import com.nexus.erp.wm.domain.WmTransferLine;
 import com.nexus.erp.wm.domain.WmWarehouse;
+import com.nexus.erp.wm.mapper.WmMaterialStockMapper;
+import com.nexus.erp.wm.mapper.WmTransferLineMapper;
+import com.nexus.erp.wm.mapper.WmTransferMapper;
 import com.nexus.erp.wm.mapper.WmWarehouseMapper;
 import com.nexus.erp.wm.service.IWmStockReservationService;
 import com.nexus.system.strategy.AutoCodeUtil;
@@ -88,9 +98,14 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
     private final SoCustomerOrderMapper soCustomerOrderMapper;
     private final BdMaterialMapper bdMaterialMapper;
     private final BdBomMapper bdBomMapper;
+    private final BdMaterialVendorMapper bdMaterialVendorMapper;
     private final PrdProductionPlanMapper prdProductionPlanMapper;
+    private final PrdSubcontractMapper prdSubcontractMapper;
     private final PrdWorkOrderMapper prdWorkOrderMapper;
     private final WmWarehouseMapper wmWarehouseMapper;
+    private final WmMaterialStockMapper wmMaterialStockMapper;
+    private final WmTransferMapper wmTransferMapper;
+    private final WmTransferLineMapper wmTransferLineMapper;
     private final AutoCodeUtil autoCodeUtil;
     private final IWfProcessService processService;
     private final WfMyBusinessServiceImpl wfMyBusinessServiceImpl;
@@ -439,8 +454,10 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
         // 库存预留: 对库存物料(非自制)触发预留
         reserveStockForSalesOrder(soId);
 
-        // 自动创建生产计划（针对自制物料）
+        // 履约链路分流（按物料来源类型）
         createProductionPlansFromSalesOrder(soId, header.getSoNo());
+        createSubcontractsFromSalesOrder(soId, header.getSoNo());
+        createTransfersFromSalesOrder(soId, header.getSoNo());
     }
 
     /**
@@ -979,7 +996,20 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
     }
 
     /**
-     * 销售订单确认后，对库存物料(非自制)触发库存预留
+     * 销售订单确认后，对库存物料触发库存预留。
+     *
+     * <p><b>按物料来源类型分流</b>（{@code bd_material.source_type}，字典 {@code prd_material_source_type}
+     * 共 6 种）：</p>
+     * <ul>
+     *   <li>{@code PROCESS} 加工 —— 走生产计划（{@link #createProductionPlansFromSalesOrder}），不预留库存；</li>
+     *   <li>{@code SUBCONTRACT} 委外 —— 走委外单（{@link #createSubcontractsFromSalesOrder}），不预留成品库存；</li>
+     *   <li>{@code TRANSFER} 调拨 —— 走调拨单（{@link #createTransfersFromSalesOrder}），不预留库存；</li>
+     *   <li>{@code PROCUREMENT} 采购 / {@code CFM} 客户供料 / {@code PHANTOM} 虚拟件 —— 预留库存。</li>
+     * </ul>
+     *
+     * <p>原实现只排除 {@code PROCESS}，于是委外/调拨行也会尝试预留库存：
+     * 这两类行的货源本就不是本仓现货，预留要么失败（只有 warn）要么错误占用现货，
+     * 与它们各自的自动建单链路叠加后还会重复占用。</p>
      */
     private void reserveStockForSalesOrder(Long soId) {
         List<SoSalesOrderLine> lines = soSalesOrderLineMapper.selectList(
@@ -990,8 +1020,10 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
                 continue;
             }
             BdMaterial material = bdMaterialMapper.selectById(line.getMaterialId());
-            if (material != null && "PROCESS".equals(material.getSourceType())) {
-                continue; // 自制物料走生产计划，不库存预留
+            String sourceType = material == null ? null : material.getSourceType();
+            if (isProductionSourced(sourceType) || isSubcontractSourced(sourceType) || isTransferSourced(sourceType)) {
+                // 自制走生产计划、委外走委外单、调拨走调拨单，均不占用本仓现货
+                continue;
             }
             BigDecimal reserved = stockReservationService.reserve(
                 line.getMaterialId(), line.getWarehouseId(), line.getOrderedQty(),
@@ -1008,6 +1040,21 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
         }
     }
 
+    /** 物料来源类型是否为「加工」（走生产计划） */
+    private boolean isProductionSourced(String sourceType) {
+        return "PROCESS".equals(sourceType);
+    }
+
+    /** 物料来源类型是否为「委外」（走委外单） */
+    private boolean isSubcontractSourced(String sourceType) {
+        return "SUBCONTRACT".equals(sourceType);
+    }
+
+    /** 物料来源类型是否为「调拨」（走调拨单） */
+    private boolean isTransferSourced(String sourceType) {
+        return "TRANSFER".equals(sourceType);
+    }
+
     /**
      * 销售订单确认后，对自制物料自动创建生产计划
      */
@@ -1020,10 +1067,208 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
                 continue;
             }
             BdMaterial material = bdMaterialMapper.selectById(line.getMaterialId());
-            if (material != null && "PROCESS".equals(material.getSourceType())) {
+            if (material != null && isProductionSourced(material.getSourceType())) {
                 createProductionPlan(line, soNo, material);
             }
         }
+    }
+
+    /**
+     * 销售订单确认后，对委外物料自动创建委外订单（草稿）。
+     *
+     * <p><b>供应商取值</b>（决策 Q8-A）：优先 {@code bd_material_vendor} 中
+     * {@code status=1 且 is_default=1} 的记录；无默认则按 {@code priority} 升序取第一条；
+     * 都没有则供应商留空并 warn —— 单据仍生成，便于后续人工补全（委外单的
+     * {@code release()} 不校验供应商，不会因此卡住）。</p>
+     *
+     * <p>数量取订单行订购量，单价取物料-供应商关系的协议价（无则 0），
+     * 收货目标仓取订单行上的默认仓库。</p>
+     */
+    private void createSubcontractsFromSalesOrder(Long soId, String soNo) {
+        List<SoSalesOrderLine> lines = soSalesOrderLineMapper.selectList(
+            new LambdaQueryWrapper<SoSalesOrderLine>()
+                .eq(SoSalesOrderLine::getSoId, soId));
+        for (SoSalesOrderLine line : lines) {
+            if (line.getMaterialId() == null) {
+                continue;
+            }
+            BdMaterial material = bdMaterialMapper.selectById(line.getMaterialId());
+            if (material == null || !isSubcontractSourced(material.getSourceType())) {
+                continue;
+            }
+            createSubcontract(line, soNo, material);
+        }
+    }
+
+    /**
+     * 为委外型物料的销售订单行自动创建委外订单（草稿态）。
+     *
+     * @param line     销售订单行，提供行号、订购数量与收货目标仓
+     * @param soNo     销售订单单号，作为委外单备注来源
+     * @param material 物料信息，用于取默认供应商与协议价
+     */
+    private void createSubcontract(SoSalesOrderLine line, String soNo, BdMaterial material) {
+        BdMaterialVendor vendor = resolveDefaultVendor(material.getMaterialId());
+        if (vendor == null) {
+            log.warn("物料未配置可用供应商，委外单将不关联供应商（可在委外单中补全）, materialId={}, materialCode={}",
+                material.getMaterialId(), material.getMaterialCode());
+        }
+
+        PrdSubcontract subcontract = new PrdSubcontract();
+        subcontract.setSubcontractNo(autoCodeUtil.genSerialCode("PRD_SUBCONTRACT_CODE", null));
+        if (vendor != null) {
+            subcontract.setVendorId(vendor.getVendorId());
+            subcontract.setVendorCode(vendor.getVendorCode());
+            subcontract.setVendorName(vendor.getVendorName());
+            subcontract.setUnitPrice(vendor.getPrice());
+        }
+        subcontract.setMaterialId(material.getMaterialId());
+        subcontract.setMaterialCode(material.getMaterialCode());
+        subcontract.setMaterialName(material.getMaterialName());
+        subcontract.setMaterialSpec(material.getMaterialSpec());
+        subcontract.setBaseUomName(line.getUnit());
+        subcontract.setPlannedQty(line.getOrderedQty());
+        subcontract.setStatus("DRAFT");
+        subcontract.setPlanStartDate(line.getRequestedDate());
+        subcontract.setPlanEndDate(line.getPromiseDate());
+        subcontract.setTargetWarehouseId(line.getWarehouseId());
+        if (line.getWarehouseId() != null) {
+            WmWarehouse warehouse = wmWarehouseMapper.selectById(line.getWarehouseId());
+            if (warehouse != null) {
+                subcontract.setTargetWarehouseName(warehouse.getWarehouseName());
+            }
+        }
+        if (subcontract.getPlannedQty() != null && subcontract.getUnitPrice() != null) {
+            subcontract.setTotalAmount(subcontract.getPlannedQty().multiply(subcontract.getUnitPrice()));
+        }
+        subcontract.setRemark("销售订单 " + soNo + " 行 " + line.getLineNo() + " 确认后自动生成");
+        prdSubcontractMapper.insert(subcontract);
+        log.info("销售订单确认后自动创建委外单, soNo={}, materialCode={}, subcontractNo={}, vendorId={}",
+            soNo, material.getMaterialCode(), subcontract.getSubcontractNo(), subcontract.getVendorId());
+    }
+
+    /**
+     * 解析物料的默认供应商（决策 Q8-A）：{@code status=1 且 is_default=1} 优先，
+     * 其次按 {@code priority} 升序取第一条启用记录；都没有返回 null。
+     */
+    private BdMaterialVendor resolveDefaultVendor(Long materialId) {
+        List<BdMaterialVendor> candidates = bdMaterialVendorMapper.selectList(
+            Wrappers.<BdMaterialVendor>lambdaQuery()
+                .eq(BdMaterialVendor::getMaterialId, materialId)
+                .eq(BdMaterialVendor::getStatus, 1L)
+                .orderByDesc(BdMaterialVendor::getIsDefault)
+                .orderByAsc(BdMaterialVendor::getPriority));
+        return candidates == null || candidates.isEmpty() ? null : candidates.get(0);
+    }
+
+    /**
+     * 销售订单确认后，对调拨物料自动创建调拨单（草稿）。
+     *
+     * <p><b>仓库取值</b>（决策 Q8-A）：目的仓取订单行上的默认仓库（{@code warehouseId}，
+     * 即销售出货的目标仓）；来源仓取该物料**可用库存最多的仓**（真有货可调）。
+     * 两者相同、或找不到任何有货的其他仓时**不建单**，只记 warn 交由人工处理 ——
+     * 避免生成「同仓调拨」这类无意义的单据。</p>
+     */
+    private void createTransfersFromSalesOrder(Long soId, String soNo) {
+        List<SoSalesOrderLine> lines = soSalesOrderLineMapper.selectList(
+            new LambdaQueryWrapper<SoSalesOrderLine>()
+                .eq(SoSalesOrderLine::getSoId, soId));
+        for (SoSalesOrderLine line : lines) {
+            if (line.getMaterialId() == null) {
+                continue;
+            }
+            BdMaterial material = bdMaterialMapper.selectById(line.getMaterialId());
+            if (material == null || !isTransferSourced(material.getSourceType())) {
+                continue;
+            }
+            createTransfer(line, soNo, material);
+        }
+    }
+
+    /**
+     * 为调拨型物料的销售订单行自动创建调拨单（草稿态）。
+     *
+     * @param line     销售订单行，提供订购数量与目的仓
+     * @param soNo     销售订单单号，作为调拨单备注来源
+     * @param material 物料信息
+     */
+    private void createTransfer(SoSalesOrderLine line, String soNo, BdMaterial material) {
+        Long toWarehouseId = line.getWarehouseId();
+        if (toWarehouseId == null) {
+            log.warn("调拨型物料未指定默认仓库，无法自动建调拨单，请人工处理: soNo={}, materialCode={}",
+                soNo, material.getMaterialCode());
+            return;
+        }
+        // 来源仓：该物料可用库存（在库 - 已预留）最多、且不是目的仓的仓
+        WmMaterialStock source = resolveSourceStock(material.getMaterialId(), toWarehouseId);
+        if (source == null) {
+            log.warn("调拨型物料在目的仓之外无可用库存，无法自动建调拨单，请人工处理: soNo={}, materialCode={}, toWarehouseId={}",
+                soNo, material.getMaterialCode(), toWarehouseId);
+            return;
+        }
+
+        WmTransfer transfer = new WmTransfer();
+        transfer.setTransferNo(autoCodeUtil.genSerialCode("WM_TRANSFER_CODE", null));
+        transfer.setFromWarehouseId(source.getWarehouseId());
+        transfer.setFromWarehouseCode(source.getWarehouseCode());
+        transfer.setFromWarehouseName(source.getWarehouseName());
+        transfer.setToWarehouseId(toWarehouseId);
+        WmWarehouse toWarehouse = wmWarehouseMapper.selectById(toWarehouseId);
+        if (toWarehouse != null) {
+            transfer.setToWarehouseCode(toWarehouse.getWarehouseCode());
+            transfer.setToWarehouseName(toWarehouse.getWarehouseName());
+        }
+        transfer.setTransferType("WAREHOUSE");
+        transfer.setTotalQuantity(line.getOrderedQty());
+        transfer.setStatus("DRAFT");
+        transfer.setTransferDate(new Date());
+        transfer.setRemark("销售订单 " + soNo + " 行 " + line.getLineNo() + " 确认后自动生成");
+        wmTransferMapper.insert(transfer);
+
+        WmTransferLine transferLine = new WmTransferLine();
+        transferLine.setTransferId(transfer.getTransferId());
+        transferLine.setMaterialId(material.getMaterialId());
+        transferLine.setMaterialCode(material.getMaterialCode());
+        transferLine.setMaterialName(material.getMaterialName());
+        transferLine.setMaterialSpec(material.getMaterialSpec());
+        transferLine.setBaseUomName(line.getUnit());
+        transferLine.setQuantity(line.getOrderedQty());
+        transferLine.setRemark("销售订单 " + soNo + " 行 " + line.getLineNo());
+        wmTransferLineMapper.insert(transferLine);
+        log.info("销售订单确认后自动创建调拨单, soNo={}, materialCode={}, transferNo={}, from={}, to={}",
+            soNo, material.getMaterialCode(), transfer.getTransferNo(),
+            source.getWarehouseId(), toWarehouseId);
+    }
+
+    /**
+     * 解析调拨来源仓：该物料可用库存（在库 − 已预留）为正、且不是目的仓的仓中取可用量最大者。
+     *
+     * @param materialId    物料ID
+     * @param excludeWarehouseId 需排除的仓库（目的仓）
+     * @return 可用库存最多的库存行；无可选仓时返回 null
+     */
+    private WmMaterialStock resolveSourceStock(Long materialId, Long excludeWarehouseId) {
+        List<WmMaterialStock> stocks = wmMaterialStockMapper.selectList(
+            Wrappers.<WmMaterialStock>lambdaQuery()
+                .eq(WmMaterialStock::getMaterialId, materialId));
+        WmMaterialStock best = null;
+        BigDecimal bestAvailable = BigDecimal.ZERO;
+        for (WmMaterialStock stock : stocks) {
+            if (stock.getWarehouseId() == null || stock.getWarehouseId().equals(excludeWarehouseId)) {
+                continue;
+            }
+            BigDecimal available = nz(stock.getStockQuantity()).subtract(nz(stock.getReservedQuantity()));
+            if (available.compareTo(BigDecimal.ZERO) > 0 && available.compareTo(bestAvailable) > 0) {
+                best = stock;
+                bestAvailable = available;
+            }
+        }
+        return best;
+    }
+
+    /** null-safe BigDecimal 取零值 */
+    private BigDecimal nz(BigDecimal value) {
+        return value == null ? BigDecimal.ZERO : value;
     }
 
     /**

@@ -8,10 +8,15 @@ import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.flowable.core.domain.ActStatus;
 import com.nexus.common.flowable.helper.FlowableProcInsIdHelper;
+import com.nexus.erp.bd.domain.BdMaterial;
+import com.nexus.erp.bd.domain.BdMaterialVendor;
 import com.nexus.erp.bd.mapper.BdBomMapper;
 import com.nexus.erp.bd.mapper.BdMaterialMapper;
+import com.nexus.erp.bd.mapper.BdMaterialVendorMapper;
 import com.nexus.erp.prd.domain.PrdProductionPlan;
+import com.nexus.erp.prd.domain.PrdSubcontract;
 import com.nexus.erp.prd.mapper.PrdProductionPlanMapper;
+import com.nexus.erp.prd.mapper.PrdSubcontractMapper;
 import com.nexus.erp.prd.mapper.PrdWorkOrderMapper;
 import com.nexus.erp.so.domain.SoCustomerOrder;
 import com.nexus.erp.so.domain.SoSalesOrderHeader;
@@ -25,6 +30,12 @@ import com.nexus.erp.so.mapper.SoSalesOrderLineMapper;
 import com.nexus.erp.so.service.ICreditCheckService;
 import com.nexus.erp.so.service.ISoSalesOrderHeaderService;
 import com.nexus.erp.so.service.impl.SoSalesOrderHeaderServiceImpl;
+import com.nexus.erp.wm.domain.WmMaterialStock;
+import com.nexus.erp.wm.domain.WmTransfer;
+import com.nexus.erp.wm.domain.WmTransferLine;
+import com.nexus.erp.wm.mapper.WmMaterialStockMapper;
+import com.nexus.erp.wm.mapper.WmTransferLineMapper;
+import com.nexus.erp.wm.mapper.WmTransferMapper;
 import com.nexus.erp.wm.mapper.WmWarehouseMapper;
 import com.nexus.erp.wm.service.IWmStockReservationService;
 import com.nexus.system.strategy.AutoCodeUtil;
@@ -61,6 +72,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mockStatic;
@@ -92,11 +104,21 @@ class SoSalesOrderHeaderServiceImplTest {
     @Mock
     private BdBomMapper bdBomMapper;
     @Mock
+    private BdMaterialVendorMapper bdMaterialVendorMapper;
+    @Mock
     private PrdProductionPlanMapper prdProductionPlanMapper;
+    @Mock
+    private PrdSubcontractMapper prdSubcontractMapper;
     @Mock
     private PrdWorkOrderMapper prdWorkOrderMapper;
     @Mock
     private WmWarehouseMapper wmWarehouseMapper;
+    @Mock
+    private WmMaterialStockMapper wmMaterialStockMapper;
+    @Mock
+    private WmTransferMapper wmTransferMapper;
+    @Mock
+    private WmTransferLineMapper wmTransferLineMapper;
     @Mock
     private AutoCodeUtil autoCodeUtil;
     @Mock
@@ -1138,5 +1160,231 @@ class SoSalesOrderHeaderServiceImplTest {
         assertEquals("CLOSED", planCaptor.getValue().getStatus());
         verify(soSalesOrderLineMapper).delete(any());
         verify(baseMapper).deleteBatchIds(anyList());
+    }
+
+    // ==================== 履约链路分流（Q8）====================
+
+    /** 构造带来源类型的物料 */
+    private BdMaterial material(Long id, String sourceType) {
+        BdMaterial m = new BdMaterial();
+        m.setMaterialId(id);
+        m.setMaterialCode("M-" + id);
+        m.setMaterialName("物料" + id);
+        m.setSourceType(sourceType);
+        return m;
+    }
+
+    /**
+     * 委外（SUBCONTRACT）行确认订单后自动建委外单，且**不**占用本仓现货。
+     * <p>修复前：委外行既不建单也不预留（只有一条 warn），履约链路断在这里。</p>
+     */
+    @Test
+    void confirm_subcontractLine_createsSubcontractAndSkipsReservation() {
+        SoSalesOrderLine subcontractLine = line(100L, "10", "0", null);
+        when(baseMapper.selectById(1L)).thenReturn(header(1L, ISoSalesOrderHeaderService.STATUS_DRAFT));
+        when(baseMapper.update(any(), any())).thenReturn(1);
+        when(soSalesOrderLineMapper.selectList(any())).thenReturn(List.of(subcontractLine));
+        when(bdMaterialMapper.selectById(100L)).thenReturn(material(100L, "SUBCONTRACT"));
+        when(autoCodeUtil.genSerialCode(eq("PRD_SUBCONTRACT_CODE"), any())).thenReturn("SC-0001");
+        when(prdSubcontractMapper.insert(any(PrdSubcontract.class))).thenReturn(1);
+        // 无默认供应商 -> 供应商留空但仍建单
+        when(bdMaterialVendorMapper.selectList(any())).thenReturn(List.of());
+
+        headerService.confirm(1L);
+
+        ArgumentCaptor<PrdSubcontract> captor = ArgumentCaptor.forClass(PrdSubcontract.class);
+        verify(prdSubcontractMapper).insert(captor.capture());
+        PrdSubcontract saved = captor.getValue();
+        assertEquals("SC-0001", saved.getSubcontractNo());
+        assertEquals(100L, saved.getMaterialId());
+        assertEquals(0, new BigDecimal("10").compareTo(saved.getPlannedQty()));
+        assertEquals("DRAFT", saved.getStatus());
+        // 委外不走库存预留（货源不是本仓现货）
+        verify(stockReservationService, never()).reserve(any(), any(), any(), anyString(), any(), any());
+        // 也不生成生产计划
+        verify(prdProductionPlanMapper, never()).insert(any(PrdProductionPlan.class));
+    }
+
+    /** 委外行优先取默认供应商（is_default=1） */
+    @Test
+    void confirm_subcontractLine_picksDefaultVendor() {
+        when(baseMapper.selectById(1L)).thenReturn(header(1L, ISoSalesOrderHeaderService.STATUS_DRAFT));
+        when(baseMapper.update(any(), any())).thenReturn(1);
+        when(soSalesOrderLineMapper.selectList(any()))
+            .thenReturn(List.of(line(100L, "10", "0", null)));
+        when(bdMaterialMapper.selectById(100L)).thenReturn(material(100L, "SUBCONTRACT"));
+        when(autoCodeUtil.genSerialCode(eq("PRD_SUBCONTRACT_CODE"), any())).thenReturn("SC-0002");
+        when(prdSubcontractMapper.insert(any(PrdSubcontract.class))).thenReturn(1);
+
+        BdMaterialVendor vendor = new BdMaterialVendor();
+        vendor.setVendorId(55L);
+        vendor.setVendorCode("V-55");
+        vendor.setVendorName("委外供应商");
+        vendor.setPrice(new BigDecimal("8.50"));
+        // mapper 已按 is_default desc, priority asc 排序，取第一条即默认供应商
+        when(bdMaterialVendorMapper.selectList(any())).thenReturn(List.of(vendor));
+
+        headerService.confirm(1L);
+
+        ArgumentCaptor<PrdSubcontract> captor = ArgumentCaptor.forClass(PrdSubcontract.class);
+        verify(prdSubcontractMapper).insert(captor.capture());
+        assertEquals(55L, captor.getValue().getVendorId());
+        assertEquals("委外供应商", captor.getValue().getVendorName());
+        // 总金额 = 计划数量 × 协议价 = 10 × 8.50
+        assertEquals(0, new BigDecimal("85.00").compareTo(captor.getValue().getTotalAmount()));
+    }
+
+    /**
+     * 调拨（TRANSFER）行确认订单后自动建调拨单：
+     * 目的仓 = 行上的默认仓，来源仓 = 该物料可用库存最多的其他仓。
+     */
+    @Test
+    void confirm_transferLine_createsTransferWithStockSource() {
+        SoSalesOrderLine transferLine = line(100L, "10", "0", null);
+        transferLine.setWarehouseId(3L);   // 目的仓：成品仓
+        when(baseMapper.selectById(1L)).thenReturn(header(1L, ISoSalesOrderHeaderService.STATUS_DRAFT));
+        when(baseMapper.update(any(), any())).thenReturn(1);
+        when(soSalesOrderLineMapper.selectList(any())).thenReturn(List.of(transferLine));
+        when(bdMaterialMapper.selectById(100L)).thenReturn(material(100L, "TRANSFER"));
+        when(autoCodeUtil.genSerialCode(eq("WM_TRANSFER_CODE"), any())).thenReturn("DB-0001");
+        when(wmTransferMapper.insert(any(WmTransfer.class))).thenReturn(1);
+        when(wmTransferLineMapper.insert(any(WmTransferLine.class))).thenReturn(1);
+        when(wmWarehouseMapper.selectById(3L)).thenReturn(warehouse(3L, "成品仓库", "WH03"));
+
+        // 仓1 可用 5（在库10-预留5），仓2 可用 20（在库20-预留0），目的仓3 可用 100 应被排除
+        when(wmMaterialStockMapper.selectList(any())).thenReturn(List.of(
+            stock(1L, "10", "5"),
+            stock(2L, "20", "0"),
+            stock(3L, "100", "0")));
+
+        headerService.confirm(1L);
+
+        ArgumentCaptor<WmTransfer> captor = ArgumentCaptor.forClass(WmTransfer.class);
+        verify(wmTransferMapper).insert(captor.capture());
+        WmTransfer saved = captor.getValue();
+        assertEquals("DB-0001", saved.getTransferNo());
+        assertEquals(2L, saved.getFromWarehouseId(), "来源仓应为可用库存最多的仓（仓2）");
+        assertEquals(3L, saved.getToWarehouseId(), "目的仓应为行上的默认仓");
+        assertEquals("WAREHOUSE", saved.getTransferType());
+        assertEquals(0, new BigDecimal("10").compareTo(saved.getTotalQuantity()));
+        assertEquals("DRAFT", saved.getStatus());
+
+        ArgumentCaptor<WmTransferLine> lineCaptor = ArgumentCaptor.forClass(WmTransferLine.class);
+        verify(wmTransferLineMapper).insert(lineCaptor.capture());
+        assertEquals(100L, lineCaptor.getValue().getMaterialId());
+        assertEquals(0, new BigDecimal("10").compareTo(lineCaptor.getValue().getQuantity()));
+
+        // 调拨不走库存预留
+        verify(stockReservationService, never()).reserve(any(), any(), any(), anyString(), any(), any());
+    }
+
+    /** 调拨行：目的仓之外无可用库存时不建单（避免同仓调拨这类无意义单据） */
+    @Test
+    void confirm_transferLine_skipsWhenNoSourceStock() {
+        SoSalesOrderLine transferLine = line(100L, "10", "0", null);
+        transferLine.setWarehouseId(3L);
+        when(baseMapper.selectById(1L)).thenReturn(header(1L, ISoSalesOrderHeaderService.STATUS_DRAFT));
+        when(baseMapper.update(any(), any())).thenReturn(1);
+        when(soSalesOrderLineMapper.selectList(any())).thenReturn(List.of(transferLine));
+        when(bdMaterialMapper.selectById(100L)).thenReturn(material(100L, "TRANSFER"));
+        // 只有目的仓自己有货 -> 无可调来源
+        when(wmMaterialStockMapper.selectList(any())).thenReturn(List.of(stock(3L, "100", "0")));
+
+        headerService.confirm(1L);
+
+        verify(wmTransferMapper, never()).insert(any(WmTransfer.class));
+    }
+
+    /** 调拨行：行上未指定默认仓时不建单 */
+    @Test
+    void confirm_transferLine_skipsWhenNoTargetWarehouse() {
+        SoSalesOrderLine transferLine = line(100L, "10", "0", null);
+        transferLine.setWarehouseId(null);
+        when(baseMapper.selectById(1L)).thenReturn(header(1L, ISoSalesOrderHeaderService.STATUS_DRAFT));
+        when(baseMapper.update(any(), any())).thenReturn(1);
+        when(soSalesOrderLineMapper.selectList(any())).thenReturn(List.of(transferLine));
+        when(bdMaterialMapper.selectById(100L)).thenReturn(material(100L, "TRANSFER"));
+
+        headerService.confirm(1L);
+
+        verify(wmTransferMapper, never()).insert(any(WmTransfer.class));
+    }
+
+    /** 采购（PROCUREMENT）行仍走库存预留，且不建委外/调拨单 */
+    @Test
+    void confirm_procurementLine_reservesStockOnly() {
+        when(baseMapper.selectById(1L)).thenReturn(header(1L, ISoSalesOrderHeaderService.STATUS_DRAFT));
+        when(baseMapper.update(any(), any())).thenReturn(1);
+        when(soSalesOrderLineMapper.selectList(any()))
+            .thenReturn(List.of(line(100L, "10", "0", null)));
+        when(bdMaterialMapper.selectById(100L)).thenReturn(material(100L, "PROCUREMENT"));
+        when(stockReservationService.reserve(any(), any(), any(), anyString(), any(), any()))
+            .thenReturn(new BigDecimal("10"));
+
+        headerService.confirm(1L);
+
+        verify(stockReservationService).reserve(eq(100L), any(), any(), eq("SALES_ORDER"), eq(1L), eq(100L));
+        verify(prdSubcontractMapper, never()).insert(any(PrdSubcontract.class));
+        verify(wmTransferMapper, never()).insert(any(WmTransfer.class));
+        verify(prdProductionPlanMapper, never()).insert(any(PrdProductionPlan.class));
+    }
+
+    /** 加工（PROCESS）行生成生产计划，且不预留库存、不建委外/调拨单 */
+    @Test
+    void confirm_processLine_createsProductionPlanOnly() {
+        when(baseMapper.selectById(1L)).thenReturn(header(1L, ISoSalesOrderHeaderService.STATUS_DRAFT));
+        when(baseMapper.update(any(), any())).thenReturn(1);
+        when(soSalesOrderLineMapper.selectList(any()))
+            .thenReturn(List.of(line(100L, "10", "0", null)));
+        when(bdMaterialMapper.selectById(100L)).thenReturn(material(100L, "PROCESS"));
+        when(autoCodeUtil.genSerialCode(eq("PRD_PLAN_CODE"), any())).thenReturn("MPS-0001");
+        when(prdProductionPlanMapper.insert(any(PrdProductionPlan.class))).thenReturn(1);
+        when(bdBomMapper.selectOne(any())).thenReturn(null);
+
+        headerService.confirm(1L);
+
+        verify(prdProductionPlanMapper).insert(any(PrdProductionPlan.class));
+        verify(stockReservationService, never()).reserve(any(), any(), any(), anyString(), any(), any());
+        verify(prdSubcontractMapper, never()).insert(any(PrdSubcontract.class));
+        verify(wmTransferMapper, never()).insert(any(WmTransfer.class));
+    }
+
+    /** 物料不存在时三条件分支都不触发，不抛异常 */
+    @Test
+    void confirm_missingMaterial_doesNotBreak() {
+        when(baseMapper.selectById(1L)).thenReturn(header(1L, ISoSalesOrderHeaderService.STATUS_DRAFT));
+        when(baseMapper.update(any(), any())).thenReturn(1);
+        when(soSalesOrderLineMapper.selectList(any()))
+            .thenReturn(List.of(line(100L, "10", "0", null)));
+        when(bdMaterialMapper.selectById(100L)).thenReturn(null);
+        // 物料为空 -> sourceType 为 null -> 走预留分支
+        when(stockReservationService.reserve(any(), any(), any(), anyString(), any(), any()))
+            .thenReturn(BigDecimal.ZERO);
+
+        assertDoesNotThrow(() -> headerService.confirm(1L));
+
+        verify(prdSubcontractMapper, never()).insert(any(PrdSubcontract.class));
+        verify(wmTransferMapper, never()).insert(any(WmTransfer.class));
+    }
+
+    /** 构造仓库 */
+    private com.nexus.erp.wm.domain.WmWarehouse warehouse(Long id, String name, String code) {
+        com.nexus.erp.wm.domain.WmWarehouse w = new com.nexus.erp.wm.domain.WmWarehouse();
+        w.setWarehouseId(id);
+        w.setWarehouseName(name);
+        w.setWarehouseCode(code);
+        return w;
+    }
+
+    /** 构造库存行（在库/已预留） */
+    private WmMaterialStock stock(Long warehouseId, String onHand, String reserved) {
+        WmMaterialStock s = new WmMaterialStock();
+        s.setMaterialId(100L);
+        s.setWarehouseId(warehouseId);
+        s.setWarehouseCode("WH0" + warehouseId);
+        s.setWarehouseName("仓" + warehouseId);
+        s.setStockQuantity(new BigDecimal(onHand));
+        s.setReservedQuantity(new BigDecimal(reserved));
+        return s;
     }
 }
