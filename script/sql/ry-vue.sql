@@ -90245,25 +90245,25 @@ INSERT INTO `sys_dict_data` VALUES (347, '000000', 2, '已执行', 'EXECUTED', '
 INSERT INTO `sys_dict_data` VALUES (348, '000000', 1, '草稿', 'DRAFT', 'wm_stocktaking_status', '', 'info', 'N', 103, 1, '2026-05-22 00:00:00', NULL, NULL, NULL);
 
 -- ===== 2026-09-20 ERP 前端修复批次所需字典（FE-ERP-02/04）=====
-INSERT IGNORE INTO sys_dict_type (dict_name, dict_type, status, create_by, create_time, remark)
-VALUES ('盘点方式', 'erp_stocktaking_count_mode', '0', 1, NOW(), '盘点计划明盘/盲盘（FE-ERP-04）');
-INSERT IGNORE INTO sys_dict_data (dict_sort, dict_label, dict_value, dict_type, css_class, list_class, is_default, status, create_by, create_time, remark)
-VALUES (1, '明盘', 'OPEN', 'erp_stocktaking_count_mode', '', 'primary', 'Y', '0', 1, NOW(), '账面数量对盘点人可见'),
-       (2, '盲盘', 'BLIND', 'erp_stocktaking_count_mode', '', 'warning', 'N', '0', 1, NOW(), '账面数量对盘点人隐藏');
-INSERT IGNORE INTO sys_dict_type (dict_name, dict_type, status, create_by, create_time, remark)
-VALUES ('生产报工状态', 'prd_work_report_status', '0', 1, NOW(), '工单报工单据状态（FE-ERP-02）');
-INSERT IGNORE INTO sys_dict_data (dict_sort, dict_label, dict_value, dict_type, css_class, list_class, is_default, status, create_by, create_time, remark)
-VALUES (1, '草稿', 'DRAFT', 'prd_work_report_status', '', 'info', 'Y', '0', 1, NOW(), ''),
-       (2, '已提交', 'SUBMITTED', 'prd_work_report_status', '', 'warning', 'N', '0', 1, NOW(), ''),
-       (3, '已审核', 'APPROVED', 'prd_work_report_status', '', 'success', 'N', '0', 1, NOW(), '审核通过时后端会回写工单累计产量'),
-       (4, '已驳回', 'REJECTED', 'prd_work_report_status', '', 'danger', 'N', '0', 1, NOW(), '');
-INSERT IGNORE INTO sys_dict_type (dict_name, dict_type, status, create_by, create_time, remark)
-VALUES ('报工途径', 'prd_work_report_channel', '0', 1, NOW(), '报工数据来源渠道（FE-ERP-02）');
-INSERT IGNORE INTO sys_dict_data (dict_sort, dict_label, dict_value, dict_type, css_class, list_class, is_default, status, create_by, create_time, remark)
-VALUES (1, 'PC 端', 'PC', 'prd_work_report_channel', '', 'primary', 'Y', '0', 1, NOW(), ''),
-       (2, 'PDA 手持端', 'PDA', 'prd_work_report_channel', '', 'success', 'N', '0', 1, NOW(), ''),
-       (3, 'MES 制造执行', 'MES', 'prd_work_report_channel', '', 'warning', 'N', '0', 1, NOW(), '');
--- ===== 2026-09-20 字典结束 =====
+INSERT IGNORE INTO `sys_dict_type` (`dict_id`, `tenant_id`, `dict_name`, `dict_type`, `create_dept`, `create_by`, `create_time`, `remark`)
+VALUES (600240, '000000', '盘点方式', 'erp_stocktaking_count_mode', 103, 1, NOW(), '盘点计划明盘/盲盘（FE-ERP-04）');
+INSERT IGNORE INTO `sys_dict_data` (`dict_code`, `tenant_id`, `dict_sort`, `dict_label`, `dict_value`, `dict_type`, `css_class`, `list_class`, `is_default`, `create_dept`, `create_by`, `create_time`, `remark`)
+VALUES (600243, '000000', 1, '明盘', 'OPEN', 'erp_stocktaking_count_mode', '', 'primary', 'Y', 103, 1, NOW(), '账面数量对盘点人可见'),
+       (600244, '000000', 2, '盲盘', 'BLIND', 'erp_stocktaking_count_mode', '', 'warning', 'N', 103, 1, NOW(), '账面数量对盘点人隐藏');
+INSERT IGNORE INTO `sys_dict_type` (`dict_id`, `tenant_id`, `dict_name`, `dict_type`, `create_dept`, `create_by`, `create_time`, `remark`)
+VALUES (600241, '000000', '生产报工状态', 'prd_work_report_status', 103, 1, NOW(), '工单报工单据状态（FE-ERP-02）');
+INSERT IGNORE INTO `sys_dict_data` (`dict_code`, `tenant_id`, `dict_sort`, `dict_label`, `dict_value`, `dict_type`, `css_class`, `list_class`, `is_default`, `create_dept`, `create_by`, `create_time`, `remark`)
+VALUES (600245, '000000', 1, '草稿', 'DRAFT', 'prd_work_report_status', '', 'info', 'Y', 103, 1, NOW(), ''),
+       (600246, '000000', 2, '已提交', 'SUBMITTED', 'prd_work_report_status', '', 'warning', 'N', 103, 1, NOW(), ''),
+       (600247, '000000', 3, '已审核', 'APPROVED', 'prd_work_report_status', '', 'success', 'N', 103, 1, NOW(), '审核通过时后端会回写工单累计产量'),
+       (600248, '000000', 4, '已驳回', 'REJECTED', 'prd_work_report_status', '', 'danger', 'N', 103, 1, NOW(), '');
+INSERT IGNORE INTO `sys_dict_type` (`dict_id`, `tenant_id`, `dict_name`, `dict_type`, `create_dept`, `create_by`, `create_time`, `remark`)
+VALUES (600242, '000000', '报工途径', 'prd_work_report_channel', 103, 1, NOW(), '报工数据来源渠道（FE-ERP-02）');
+INSERT IGNORE INTO `sys_dict_data` (`dict_code`, `tenant_id`, `dict_sort`, `dict_label`, `dict_value`, `dict_type`, `css_class`, `list_class`, `is_default`, `create_dept`, `create_by`, `create_time`, `remark`)
+VALUES (600249, '000000', 1, 'PC 端', 'PC', 'prd_work_report_channel', '', 'primary', 'Y', 103, 1, NOW(), ''),
+       (600250, '000000', 2, 'PDA 手持端', 'PDA', 'prd_work_report_channel', '', 'success', 'N', 103, 1, NOW(), ''),
+       (600251, '000000', 3, 'MES 制造执行', 'MES', 'prd_work_report_channel', '', 'warning', 'N', 103, 1, NOW(), '');
+-- ===== 字典结束 =====
 INSERT INTO `sys_dict_data` VALUES (349, '000000', 2, '已生成', 'GENERATED', 'wm_stocktaking_status', '', 'primary', 'N', 103, 1, '2026-05-22 00:00:00', NULL, NULL, NULL);
 INSERT INTO `sys_dict_data` VALUES (350, '000000', 3, '已过账', 'POSTED', 'wm_stocktaking_status', '', 'success', 'N', 103, 1, '2026-05-22 00:00:00', NULL, NULL, NULL);
 INSERT INTO `sys_dict_data` VALUES (351, '000000', 1, '草稿', 'DRAFT', 'wm_misc_status', '', 'info', 'N', 103, 1, '2026-05-22 00:00:00', NULL, NULL, NULL);
@@ -90797,7 +90797,7 @@ INSERT INTO `sys_dict_data` VALUES (2068956987053351019, '000000', 3, '枚举', 
 INSERT INTO `sys_dict_data` VALUES (2068956987053351020, '000000', 1, '手动', 'MANUAL', 'mes_data_source', NULL, 'info', 'Y', 103, 1, '2026-07-26 01:45:22', NULL, NULL, '数据来源-手动');
 INSERT INTO `sys_dict_data` VALUES (2068956987053351021, '000000', 2, 'IoT', 'IoT', 'mes_data_source', NULL, 'primary', 'N', 103, 1, '2026-07-26 01:45:22', NULL, NULL, '数据来源-IoT设备上报');
 INSERT INTO `sys_dict_data` VALUES (2068956987053351022, '000000', 1, '均值-极差图', 'X_BAR_R', 'spc_chart_type', NULL, 'primary', 'Y', 103, 1, '2026-07-26 01:45:22', NULL, NULL, 'SPC-Xbar-R图');
-INSERT INTO `sys_dict_data` VALUES (2068956987053351027, '000000', 6, '单值-移动极差图(X-MR)', 'X_MR', 'spc_chart_type', NULL, 'primary', 'N', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'SPC-X-MR图(MES-SPC-01)');
+INSERT INTO `sys_dict_data` VALUES (600252, '000000', 6, '单值-移动极差图(X-MR)', 'X_MR', 'spc_chart_type', NULL, 'primary', 'N', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'SPC-X-MR图(MES-SPC-01)');
 INSERT INTO `sys_dict_data` VALUES (2068956987053351023, '000000', 2, '均值-标准差图', 'X_BAR_S', 'spc_chart_type', NULL, 'primary', 'N', 103, 1, '2026-07-26 01:45:22', NULL, NULL, 'SPC-Xbar-S图');
 INSERT INTO `sys_dict_data` VALUES (2068956987053351024, '000000', 3, '不合格品率图(P)', 'P', 'spc_chart_type', NULL, 'warning', 'N', 103, 1, '2026-07-26 01:45:22', NULL, NULL, 'SPC-P图');
 INSERT INTO `sys_dict_data` VALUES (2068956987053351025, '000000', 4, '不合格数图(C)', 'C', 'spc_chart_type', NULL, 'warning', 'N', 103, 1, '2026-07-26 01:45:22', NULL, NULL, 'SPC-C图');

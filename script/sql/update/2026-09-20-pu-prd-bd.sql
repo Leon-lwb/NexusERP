@@ -73,3 +73,19 @@ DEALLOCATE PREPARE stmt;
 --   * sys_dict_data 新增字典类型 bd_supply_type（SELF_PROVIDED/VENDOR_PROVIDED/CUSTOMER_PROVIDED）
 --     → 目标文件 script/sql/ry-vue.sql（菜单/字典主脚本），属前端批次职责
 -- =====================================================================
+
+-- =============================================================================
+-- 4) ry-vue：字典 bd_supply_type（BOM 明细「供应方」：自备/外协厂供/客供）—— ERP-BD-01
+--    说明：后端 BdBomDetailBo/Vo.supplyType 已打通，前端下拉依赖本字典；
+--          早期版本本脚本仅在注释中提及、未实际插入，2026-09-20 补齐。
+--    幂等：INSERT IGNORE（按主键去重）
+-- =============================================================================
+INSERT IGNORE INTO `ry-vue`.`sys_dict_type`
+  (`dict_id`, `tenant_id`, `dict_name`, `dict_type`, `create_dept`, `create_by`, `create_time`, `remark`)
+VALUES (600260, '000000', 'BOM供应方', 'bd_supply_type', 103, 1, NOW(), 'BOM明细供应方（自备/外协厂供/客供）');
+
+INSERT IGNORE INTO `ry-vue`.`sys_dict_data`
+  (`dict_code`, `tenant_id`, `dict_sort`, `dict_label`, `dict_value`, `dict_type`, `css_class`, `list_class`, `is_default`, `create_dept`, `create_by`, `create_time`, `remark`)
+VALUES (600261, '000000', 1, '自备', 'SELF_PROVIDED', 'bd_supply_type', '', 'primary', 'Y', 103, 1, NOW(), '我方提供'),
+       (600262, '000000', 2, '外协厂供', 'VENDOR_PROVIDED', 'bd_supply_type', '', 'warning', 'N', 103, 1, NOW(), '外协厂提供'),
+       (600263, '000000', 3, '客供', 'CUSTOMER_PROVIDED', 'bd_supply_type', '', 'info', 'N', 103, 1, NOW(), '客户提供');

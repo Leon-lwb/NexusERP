@@ -143,12 +143,19 @@ CREATE PROCEDURE `_nexus_add_uk`(
 )
 BEGIN
     DECLARE v_exists INT DEFAULT 0;
+    DECLARE v_tbl    INT DEFAULT 0;
+
+    SELECT COUNT(*) INTO v_tbl
+      FROM information_schema.TABLES
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = p_table;
 
     SELECT COUNT(*) INTO v_exists
       FROM information_schema.STATISTICS
      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = p_table AND INDEX_NAME = p_index;
 
-    IF v_exists > 0 THEN
+    IF v_tbl = 0 THEN
+        SELECT CONCAT('[SKIP] ', p_table, ' 不在当前库(', DATABASE(), ')，请在对应库重跑本脚本') AS result;
+    ELSEIF v_exists > 0 THEN
         SELECT CONCAT('[SKIP] ', p_table, '.', p_index, ' 已存在') AS result;
     ELSE
         SET @ddl = CONCAT('ALTER TABLE `', p_table, '` ADD UNIQUE INDEX `', p_index, '` (', p_cols, ') USING BTREE');

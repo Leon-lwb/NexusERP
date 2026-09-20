@@ -96,19 +96,19 @@ CREATE TABLE IF NOT EXISTS `iot_ota_task`  (
 --    父菜单：6157 固件管理 / 6158 升级任务 挂在 6000（IoT平台，排序 10/11，
 --            接在既有 6050(分组) 6060(事件) 6070(指令) 6080(转发) 之后）。
 -- -----------------------------------------------------------------------------
-INSERT IGNORE INTO `sys_menu` VALUES (6157, '固件管理', 6000, 10, 'firmware', 'iot/firmware/index', '', 1, 0, 'C', '0', '0', 'iot:firmware:list', 'upload', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'IoT固件登记(版本/固件包/校验值/发布状态)');
-INSERT IGNORE INTO `sys_menu` VALUES (6158, '升级任务', 6000, 11, 'ota', 'iot/ota/index', '', 1, 0, 'C', '0', '0', 'iot:ota:list', 'guide', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'IoT OTA固件升级任务(单设备/按分组批量)');
-INSERT IGNORE INTO `sys_menu` VALUES (6137, '固件查询', 6157, 1, '', '', '', 1, 0, 'F', '0', '0', 'iot:firmware:query', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, '');
-INSERT IGNORE INTO `sys_menu` VALUES (6138, '固件新增', 6157, 2, '', '', '', 1, 0, 'F', '0', '0', 'iot:firmware:add', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, '');
-INSERT IGNORE INTO `sys_menu` VALUES (6139, '固件修改', 6157, 3, '', '', '', 1, 0, 'F', '0', '0', 'iot:firmware:edit', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, '');
-INSERT IGNORE INTO `sys_menu` VALUES (6147, '固件删除', 6157, 4, '', '', '', 1, 0, 'F', '0', '0', 'iot:firmware:remove', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, '');
-INSERT IGNORE INTO `sys_menu` VALUES (6148, '固件发布停用', 6157, 5, '', '', '', 1, 0, 'F', '0', '0', 'iot:firmware:release', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, '发布/停用固件(DRAFT→RELEASED→DISABLED)');
-INSERT IGNORE INTO `sys_menu` VALUES (6150, '升级任务查询', 6158, 1, '', '', '', 1, 0, 'F', '0', '0', 'iot:ota:query', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, '');
-INSERT IGNORE INTO `sys_menu` VALUES (6151, '升级任务创建', 6158, 2, '', '', '', 1, 0, 'F', '0', '0', 'iot:ota:create', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, '单设备下发/按分组批量下发升级任务');
-INSERT IGNORE INTO `sys_menu` VALUES (6152, '升级任务重试', 6158, 3, '', '', '', 1, 0, 'F', '0', '0', 'iot:ota:retry', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, '仅 FAILED/TIMEOUT 可重试');
-INSERT IGNORE INTO `sys_menu` VALUES (6153, '升级任务取消', 6158, 4, '', '', '', 1, 0, 'F', '0', '0', 'iot:ota:cancel', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, '仅 PENDING/SENT/UPGRADING 可取消');
-INSERT IGNORE INTO `sys_menu` VALUES (6154, '升级回执上报', 6158, 5, '', '', '', 1, 0, 'F', '0', '0', 'iot:ota:report', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, '设备侧/网关回传升级进度与结果');
-INSERT IGNORE INTO `sys_menu` VALUES (6155, '版本一致性核对', 6158, 6, '', '', '', 1, 0, 'F', '0', '0', 'iot:ota:versionCheck', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, '查询设备当前版本 vs 目标版本不一致/落后清单');
+INSERT IGNORE INTO `ry-vue`.`sys_menu` VALUES (6157, '固件管理', 6000, 10, 'firmware', 'iot/firmware/index', '', 1, 0, 'C', '0', '0', 'iot:firmware:list', 'upload', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'IoT固件登记(版本/固件包/校验值/发布状态)');
+INSERT IGNORE INTO `ry-vue`.`sys_menu` VALUES (6158, '升级任务', 6000, 11, 'ota', 'iot/ota/index', '', 1, 0, 'C', '0', '0', 'iot:ota:list', 'guide', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'IoT OTA固件升级任务(单设备/按分组批量)');
+INSERT IGNORE INTO `ry-vue`.`sys_menu` VALUES (6137, '固件查询', 6157, 1, '', '', '', 1, 0, 'F', '0', '0', 'iot:firmware:query', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, '');
+INSERT IGNORE INTO `ry-vue`.`sys_menu` VALUES (6138, '固件新增', 6157, 2, '', '', '', 1, 0, 'F', '0', '0', 'iot:firmware:add', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, '');
+INSERT IGNORE INTO `ry-vue`.`sys_menu` VALUES (6139, '固件修改', 6157, 3, '', '', '', 1, 0, 'F', '0', '0', 'iot:firmware:edit', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, '');
+INSERT IGNORE INTO `ry-vue`.`sys_menu` VALUES (6147, '固件删除', 6157, 4, '', '', '', 1, 0, 'F', '0', '0', 'iot:firmware:remove', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, '');
+INSERT IGNORE INTO `ry-vue`.`sys_menu` VALUES (6148, '固件发布停用', 6157, 5, '', '', '', 1, 0, 'F', '0', '0', 'iot:firmware:release', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, '发布/停用固件(DRAFT→RELEASED→DISABLED)');
+INSERT IGNORE INTO `ry-vue`.`sys_menu` VALUES (6150, '升级任务查询', 6158, 1, '', '', '', 1, 0, 'F', '0', '0', 'iot:ota:query', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, '');
+INSERT IGNORE INTO `ry-vue`.`sys_menu` VALUES (6151, '升级任务创建', 6158, 2, '', '', '', 1, 0, 'F', '0', '0', 'iot:ota:create', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, '单设备下发/按分组批量下发升级任务');
+INSERT IGNORE INTO `ry-vue`.`sys_menu` VALUES (6152, '升级任务重试', 6158, 3, '', '', '', 1, 0, 'F', '0', '0', 'iot:ota:retry', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, '仅 FAILED/TIMEOUT 可重试');
+INSERT IGNORE INTO `ry-vue`.`sys_menu` VALUES (6153, '升级任务取消', 6158, 4, '', '', '', 1, 0, 'F', '0', '0', 'iot:ota:cancel', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, '仅 PENDING/SENT/UPGRADING 可取消');
+INSERT IGNORE INTO `ry-vue`.`sys_menu` VALUES (6154, '升级回执上报', 6158, 5, '', '', '', 1, 0, 'F', '0', '0', 'iot:ota:report', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, '设备侧/网关回传升级进度与结果');
+INSERT IGNORE INTO `ry-vue`.`sys_menu` VALUES (6155, '版本一致性核对', 6158, 6, '', '', '', 1, 0, 'F', '0', '0', 'iot:ota:versionCheck', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, '查询设备当前版本 vs 目标版本不一致/落后清单');
 
 -- -----------------------------------------------------------------------------
 -- 4. ry-vue：sj_job / sj_job_executor 种子（OTA 升级超时兜底任务）
@@ -117,5 +117,5 @@ INSERT IGNORE INTO `sys_menu` VALUES (6155, '版本一致性核对', 6158, 6, ''
 --    sj_job 现有 id：1-28,100-103,200 → 本批次用 29；sj_job_executor 现有 1-44,200 → 用 45。
 --    若 id 已被占用，INSERT IGNORE 会静默跳过，请在 SnailJob 后台核对后手工补。
 -- -----------------------------------------------------------------------------
-INSERT IGNORE INTO `sj_job` VALUES (29, 'dev', 'biz_29', 'ruoyi_group', 'IoT OTA升级超时检测任务', '', 1, 1789405200000, 1, 1, 4, 1, 'iotOtaTimeoutTask', 3, '0 */5 * * * ?', 1, 60, 3, 1, 1, 51, 0, '', 1, '{}', '', '', 1, '2026-09-20 00:00:00', '2026-09-20 00:00:00');
-INSERT IGNORE INTO `sj_job_executor` VALUES (45, 'dev', 'ruoyi_group', 'iotOtaTimeoutTask', '1', '2026-09-20 00:00:00', '2026-09-20 00:00:00');
+INSERT IGNORE INTO `ry-vue`.`sj_job` VALUES (29, 'dev', 'biz_29', 'ruoyi_group', 'IoT OTA升级超时检测任务', '', 1, 1789405200000, 1, 1, 4, 1, 'iotOtaTimeoutTask', 3, '0 */5 * * * ?', 1, 60, 3, 1, 1, 51, 0, '', 1, '{}', '', '', 1, '2026-09-20 00:00:00', '2026-09-20 00:00:00');
+INSERT IGNORE INTO `ry-vue`.`sj_job_executor` VALUES (45, 'dev', 'ruoyi_group', 'iotOtaTimeoutTask', '1', '2026-09-20 00:00:00', '2026-09-20 00:00:00');

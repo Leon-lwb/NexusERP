@@ -183,37 +183,37 @@ PREPARE stmt_uk_tp FROM @ddl_uk_tp; EXECUTE stmt_uk_tp; DEALLOCATE PREPARE stmt_
 -- ============================================================================
 
 -- 6.1 mes_tooling_status 字典补「校准中 / CALIBRATING」（MES-TG-01）
-INSERT IGNORE INTO `sys_dict_data` VALUES
+INSERT IGNORE INTO `ry-vue`.`sys_dict_data` VALUES
 (2075000000000000002, '000000', 5, '校准中', 'CALIBRATING', 'mes_tooling_status', NULL, 'warning', 'N', 103, 1, NOW(), NULL, NULL, 'MES-TG-01 工装校准中(校准期间不可领用/进站)');
 
 -- 6.2 按钮权限种子
 --     mes:tg:tooling:calibrate —— 工装校准登记端点 PUT /mes/tg/tooling/calibration/{toolingId}
 --     mes:sop:viewlog:add      —— 工位终端查阅登记 POST /mes/sop/view-log（MES-SOP-01 核心修复）
 --     mes:sop:viewlog:remove   —— 查阅记录删除 DELETE /mes/sop/view-log/{ids}（MES-SOP-03）
-INSERT IGNORE INTO `sys_menu` VALUES
+INSERT IGNORE INTO `ry-vue`.`sys_menu` VALUES
 (4196, '工装校准登记', 4172, 8, '', '', '', 1, 0, 'F', '0', '0', 'mes:tg:tooling:calibrate', '#', 103, 1, NOW(), NULL, NULL, 'MES-TG-01 登记校准(IDLE->CALIBRATING->IDLE, 服务端算下次校准日)');
 
-INSERT IGNORE INTO `sys_menu` VALUES
+INSERT IGNORE INTO `ry-vue`.`sys_menu` VALUES
 (4276, '查阅登记', 4273, 2, '', '', '', 1, 0, 'F', '0', '0', 'mes:sop:viewlog:add', '#', 103, 1, NOW(), NULL, NULL, 'MES-SOP-01 工位/终端侧查阅登记(产生 SOP_VIEW 电子签名)');
 
-INSERT IGNORE INTO `sys_menu` VALUES
+INSERT IGNORE INTO `ry-vue`.`sys_menu` VALUES
 (4277, '查阅记录删除', 4273, 3, '', '', '', 1, 0, 'F', '0', '0', 'mes:sop:viewlog:remove', '#', 103, 1, NOW(), NULL, NULL, 'MES-SOP-03 查阅记录删除(已签名记录服务端一律拒绝)');
 
 -- 6.3 把新按钮派生授予「已拥有对应上级菜单」的角色：
 --     工位终端账号通常只授了 SOP 查看器(4275)/SOP文档(4261)，它们与查阅记录页同属 SOP 主菜单；
 --     这里按「已有 4172 工装台账 / 4261 SOP文档 / 4275 SOP查看器」的角色集合派生，
 --     避免默认只超管可用而工位侧继续 403（MES-SOP-01 的根因）。
-INSERT IGNORE INTO `sys_role_menu` (`role_id`, `menu_id`)
-SELECT DISTINCT `role_id`, 4196 FROM `sys_role_menu` WHERE `menu_id` = 4172;
+INSERT IGNORE INTO `ry-vue`.`sys_role_menu` (`role_id`, `menu_id`)
+SELECT DISTINCT `role_id`, 4196 FROM `ry-vue`.`sys_role_menu` WHERE `menu_id` = 4172;
 
-INSERT IGNORE INTO `sys_role_menu` (`role_id`, `menu_id`)
-SELECT DISTINCT `role_id`, 4276 FROM `sys_role_menu` WHERE `menu_id` IN (4261, 4275, 4273);
+INSERT IGNORE INTO `ry-vue`.`sys_role_menu` (`role_id`, `menu_id`)
+SELECT DISTINCT `role_id`, 4276 FROM `ry-vue`.`sys_role_menu` WHERE `menu_id` IN (4261, 4275, 4273);
 
-INSERT IGNORE INTO `sys_role_menu` (`role_id`, `menu_id`)
-SELECT DISTINCT `role_id`, 4277 FROM `sys_role_menu` WHERE `menu_id` IN (4261, 4273);
+INSERT IGNORE INTO `ry-vue`.`sys_role_menu` (`role_id`, `menu_id`)
+SELECT DISTINCT `role_id`, 4277 FROM `ry-vue`.`sys_role_menu` WHERE `menu_id` IN (4261, 4273);
 
 -- 6.4 工装到期提醒定时任务定义（MES-TG-05）
-INSERT INTO `sj_job`
+INSERT INTO `ry-vue`.`sj_job`
 (`namespace_id`, `biz_id`, `group_name`, `job_name`, `args_str`, `args_type`, `next_trigger_at`,
  `job_status`, `task_type`, `route_key`, `executor_type`, `executor_info`, `trigger_type`, `trigger_interval`,
  `block_strategy`, `executor_timeout`, `max_retry_times`, `parallel_num`, `retry_interval`, `bucket_index`,
@@ -224,7 +224,7 @@ SELECT 'dev', 'biz_203', 'ruoyi_group', '工装校准/保养到期扫描任务',
   0, '', 1, '{}',
   'MES-TG-05 补种: 每日08:30扫描工装校准(next_calibration_date)/保养(计划阈值)到期, 分级+限频后SSE提醒', '', 0
 FROM DUAL WHERE NOT EXISTS (
-  SELECT 1 FROM `sj_job` WHERE `namespace_id` = 'dev' AND `biz_id` = 'biz_203'
+  SELECT 1 FROM `ry-vue`.`sj_job` WHERE `namespace_id` = 'dev' AND `biz_id` = 'biz_203'
 );
 
 -- ----------------------------------------------------------------------------
@@ -238,10 +238,10 @@ FROM DUAL WHERE NOT EXISTS (
 -- ----------------------------------------------------------------------------
 -- 8) 回滚（如需）
 -- ----------------------------------------------------------------------------
--- DELETE FROM `sj_job` WHERE `namespace_id` = 'dev' AND `biz_id` = 'biz_203';
--- DELETE FROM `sys_role_menu` WHERE `menu_id` IN (4196, 4276, 4277);
--- DELETE FROM `sys_menu` WHERE `menu_id` IN (4196, 4276, 4277);
--- DELETE FROM `sys_dict_data` WHERE `dict_code` = 2075000000000000002;
+-- DELETE FROM `ry-vue`.`sj_job` WHERE `namespace_id` = 'dev' AND `biz_id` = 'biz_203';
+-- DELETE FROM `ry-vue`.`sys_role_menu` WHERE `menu_id` IN (4196, 4276, 4277);
+-- DELETE FROM `ry-vue`.`sys_menu` WHERE `menu_id` IN (4196, 4276, 4277);
+-- DELETE FROM `ry-vue`.`sys_dict_data` WHERE `dict_code` = 2075000000000000002;
 -- DELETE FROM `pro_step_check_rule` WHERE `check_type` IN ('TOOLING_AVAILABLE', 'SOP_ACKNOWLEDGED')
 --   AND `rule_id` = `process_id` * 100 + 90 OR `rule_id` = `process_id` * 100 + 91;
 -- ALTER TABLE `sop_version` DROP INDEX `uk_sop_version_no`;

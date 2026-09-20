@@ -23,17 +23,17 @@
 --    MySQL 8 允许 INSERT ... SELECT 自引用目标表(内部物化临时表);
 --    若上游 MySQL 版本报 1093, 请改用下面注释掉的固定行 INSERT IGNORE 写法。
 -- -----------------------------------------------------------------------------
-INSERT IGNORE INTO `sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`,
+INSERT IGNORE INTO `ry-vue`.`sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`,
                                `query_param`, `is_frame`, `is_cache`, `menu_type`, `visible`, `status`,
                                `perms`, `icon`, `create_dept`, `create_by`, `create_time`,
                                `update_by`, `update_time`, `remark`)
 SELECT 20850, '反核销', 6122, 3, '', '', NULL, 1, 0, 'F', '0', '0',
        'fin:arap:settlement:unsettle', '#', 103, 1, NOW(), NULL, NULL, 'FinSettlementController.unsettle'
 FROM DUAL
-WHERE NOT EXISTS (SELECT 1 FROM `sys_menu` x WHERE x.`perms` = 'fin:arap:settlement:unsettle');
+WHERE NOT EXISTS (SELECT 1 FROM `ry-vue`.`sys_menu` x WHERE x.`perms` = 'fin:arap:settlement:unsettle');
 
 -- 备选写法(上面语句被 1093 拒绝时使用, 同样是幂等的):
--- INSERT IGNORE INTO `sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`,
+-- INSERT IGNORE INTO `ry-vue`.`sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`,
 --                                `query_param`, `is_frame`, `is_cache`, `menu_type`, `visible`, `status`,
 --                                `perms`, `icon`, `create_dept`, `create_by`, `create_time`,
 --                                `update_by`, `update_time`, `remark`)

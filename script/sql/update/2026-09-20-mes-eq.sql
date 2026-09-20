@@ -66,14 +66,14 @@ DEALLOCATE PREPARE stmt_mr;
 -- 3) ry-vue: mes_repair_status 字典补“已作废 / CANCELLED”（MES-EQ-06）
 --    列顺序与 ry-vue.sql 既有 sys_dict_data 种子完全一致（位置化 VALUES）。
 -- ----------------------------------------------------------------------------
-INSERT IGNORE INTO `sys_dict_data` VALUES
+INSERT IGNORE INTO `ry-vue`.`sys_dict_data` VALUES
 (2075000000000000001, '000000', 4, '已作废', 'CANCELLED', 'mes_repair_status', NULL, 'info', 'N', 103, 1, NOW(), NULL, NULL, 'MES-EQ-06 误报修/重复报修作废, 不再计为活跃报修');
 
 -- ----------------------------------------------------------------------------
 -- 4) ry-vue: 补 mes:eq:repair:cancel 按钮权限（挂到“维修记录”菜单 4120 下）
 --    列顺序与 ry-vue.sql 既有 sys_menu 种子完全一致（位置化 VALUES）。
 -- ----------------------------------------------------------------------------
-INSERT IGNORE INTO `sys_menu` VALUES
+INSERT IGNORE INTO `ry-vue`.`sys_menu` VALUES
 (4127, '维修作废', 4120, 5, '', '', '', 1, 0, 'F', '0', '0', 'mes:eq:repair:cancel', '#', 103, 1, NOW(), NULL, NULL, 'MES-EQ-06 维修单作废/撤销');
 
 -- ----------------------------------------------------------------------------
@@ -81,5 +81,5 @@ INSERT IGNORE INTO `sys_menu` VALUES
 -- ----------------------------------------------------------------------------
 -- ALTER TABLE `eq_equipment` DROP COLUMN `planned_minutes_per_day`;
 -- ALTER TABLE `eq_maintenance_record` DROP COLUMN `duration_minutes`;
--- DELETE FROM `sys_dict_data` WHERE `dict_code` = 2075000000000000001;
--- DELETE FROM `sys_menu` WHERE `menu_id` = 4127 AND `perms` = 'mes:eq:repair:cancel';
+-- DELETE FROM `ry-vue`.`sys_dict_data` WHERE `dict_code` = 2075000000000000001;
+-- DELETE FROM `ry-vue`.`sys_menu` WHERE `menu_id` = 4127 AND `perms` = 'mes:eq:repair:cancel';

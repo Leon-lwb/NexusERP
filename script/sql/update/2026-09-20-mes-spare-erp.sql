@@ -124,16 +124,16 @@ UPDATE `ry-mes`.`eq_spare_part` sp
 -- =============================================================================
 -- 父菜单取同页既有按钮 mes:eq:spare:stock 的 parent_id, 避免硬编码菜单ID;
 -- menu_id 若已被占用请先改号(本脚本用 4128)。
-INSERT IGNORE INTO `sys_menu`
+INSERT IGNORE INTO `ry-vue`.`sys_menu`
   (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `query_param`,
    `is_frame`, `is_cache`, `menu_type`, `visible`, `status`, `perms`, `icon`,
    `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`)
 SELECT 4128, '备件采购申请', parent_id, 9, '', '', '', 1, 0, 'F', '0', '0',
        'mes:eq:spare:purchase', '#', 103, 1, NOW(), NULL, NULL,
        'MES-EQ-04 低库存一键生成 ERP 采购申请'
-  FROM `sys_menu` WHERE perms = 'mes:eq:spare:stock' LIMIT 1;
+  FROM `ry-vue`.`sys_menu` WHERE perms = 'mes:eq:spare:stock' LIMIT 1;
 
--- 核对: SELECT menu_id, menu_name, perms FROM `sys_menu` WHERE perms = 'mes:eq:spare:purchase';
+-- 核对: SELECT menu_id, menu_name, perms FROM `ry-vue`.`sys_menu` WHERE perms = 'mes:eq:spare:purchase';
 
 -- =============================================================================
 -- 5. 建议(默认注释, 需人工确认后执行): MES 备件过账流水唯一索引（库: ry-erp）
@@ -154,4 +154,4 @@ SELECT 4128, '备件采购申请', parent_id, 9, '', '', '', 1, 0, 'F', '0', '0'
 -- DROP TABLE IF EXISTS `eq_spare_erp_sync`;
 -- ALTER TABLE `eq_spare_part` DROP INDEX `idx_material_id`;
 -- ALTER TABLE `eq_spare_part` DROP COLUMN `warehouse_id`, DROP COLUMN `material_id`;
--- DELETE FROM `sys_menu` WHERE `menu_id` = 4128 AND `perms` = 'mes:eq:spare:purchase';
+-- DELETE FROM `ry-vue`.`sys_menu` WHERE `menu_id` = 4128 AND `perms` = 'mes:eq:spare:purchase';

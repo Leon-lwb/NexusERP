@@ -65,54 +65,54 @@ PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
 -- 父菜单按 perms 反查, 找不到父级则该条不插入(不产生悬挂按钮), 需人工确认父菜单后再执行。
 -- menu_id 取 20950~20955 段(避开其他批次已占用的 20828~20850)。
 -- -------------------------------------------------------------------------------------
-INSERT IGNORE INTO `sys_menu`
+INSERT IGNORE INTO `ry-vue`.`sys_menu`
   (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `query_param`,
    `is_frame`, `is_cache`, `menu_type`, `visible`, `status`, `perms`, `icon`,
    `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`)
 SELECT 20950, '首页统计', 0, 20, '', '', NULL, 1, 0, 'F', '0', '0', 'erp:dashboard:stats', '#',
        103, 1, NOW(), NULL, NULL, 'ErpDashboardController.getStats (ERP-DASH-01)'
 WHERE NOT EXISTS (SELECT 1 FROM (SELECT 1) t WHERE EXISTS (
-  SELECT 1 FROM `sys_menu` WHERE `perms` = 'erp:dashboard:stats'));
+  SELECT 1 FROM `ry-vue`.`sys_menu` WHERE `perms` = 'erp:dashboard:stats'));
 
-INSERT IGNORE INTO `sys_menu`
+INSERT IGNORE INTO `ry-vue`.`sys_menu`
   (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `query_param`,
    `is_frame`, `is_cache`, `menu_type`, `visible`, `status`, `perms`, `icon`,
    `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`)
 SELECT 20951, '退货确认', m.`menu_id`, 10, '', '', NULL, 1, 0, 'F', '0', '0', 'so:return:confirm', '#',
        103, 1, NOW(), NULL, NULL, 'SoReturnController.confirm (ERP-SO-07)'
-FROM `sys_menu` m WHERE m.`perms` = 'so:return:list' LIMIT 1;
+FROM `ry-vue`.`sys_menu` m WHERE m.`perms` = 'so:return:list' LIMIT 1;
 
-INSERT IGNORE INTO `sys_menu`
+INSERT IGNORE INTO `ry-vue`.`sys_menu`
   (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `query_param`,
    `is_frame`, `is_cache`, `menu_type`, `visible`, `status`, `perms`, `icon`,
    `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`)
 SELECT 20952, '退货执行', m.`menu_id`, 11, '', '', NULL, 1, 0, 'F', '0', '0', 'so:return:execute', '#',
        103, 1, NOW(), NULL, NULL, 'SoReturnController.execute (ERP-SO-07)'
-FROM `sys_menu` m WHERE m.`perms` = 'so:return:list' LIMIT 1;
+FROM `ry-vue`.`sys_menu` m WHERE m.`perms` = 'so:return:list' LIMIT 1;
 
-INSERT IGNORE INTO `sys_menu`
+INSERT IGNORE INTO `ry-vue`.`sys_menu`
   (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `query_param`,
    `is_frame`, `is_cache`, `menu_type`, `visible`, `status`, `perms`, `icon`,
    `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`)
 SELECT 20953, '报价确认', m.`menu_id`, 10, '', '', NULL, 1, 0, 'F', '0', '0', 'so:quotation:confirm', '#',
        103, 1, NOW(), NULL, NULL, 'SoQuotationController.confirm (ERP-SO-07)'
-FROM `sys_menu` m WHERE m.`perms` = 'so:quotation:list' LIMIT 1;
+FROM `ry-vue`.`sys_menu` m WHERE m.`perms` = 'so:quotation:list' LIMIT 1;
 
-INSERT IGNORE INTO `sys_menu`
+INSERT IGNORE INTO `ry-vue`.`sys_menu`
   (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `query_param`,
    `is_frame`, `is_cache`, `menu_type`, `visible`, `status`, `perms`, `icon`,
    `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`)
 SELECT 20954, '报价转单', m.`menu_id`, 11, '', '', NULL, 1, 0, 'F', '0', '0', 'so:quotation:convert', '#',
        103, 1, NOW(), NULL, NULL, 'SoQuotationController.convertToOrder (ERP-SO-07)'
-FROM `sys_menu` m WHERE m.`perms` = 'so:quotation:list' LIMIT 1;
+FROM `ry-vue`.`sys_menu` m WHERE m.`perms` = 'so:quotation:list' LIMIT 1;
 
-INSERT IGNORE INTO `sys_menu`
+INSERT IGNORE INTO `ry-vue`.`sys_menu`
   (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `query_param`,
    `is_frame`, `is_cache`, `menu_type`, `visible`, `status`, `perms`, `icon`,
    `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`)
 SELECT 20955, '合同终止', m.`menu_id`, 12, '', '', NULL, 1, 0, 'F', '0', '0', 'so:contract:terminate', '#',
        103, 1, NOW(), NULL, NULL, 'SoContractController.terminate (ERP-SO-07)'
-FROM `sys_menu` m WHERE m.`perms` = 'so:contract:list' LIMIT 1;
+FROM `ry-vue`.`sys_menu` m WHERE m.`perms` = 'so:contract:list' LIMIT 1;
 
 -- -------------------------------------------------------------------------------------
 -- §4 ERP-DASH-01: 首页聚合查询索引(收敛全表扫描)
@@ -160,5 +160,5 @@ PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
 -- ALTER TABLE `so_sales_order_header` DROP INDEX `idx_tenant_create_time`;
 -- ALTER TABLE `so_price_list` DROP COLUMN `del_flag`;
 -- ALTER TABLE `so_price_list_line` DROP COLUMN `del_flag`;
--- DELETE FROM `sys_menu` WHERE `menu_id` IN (20950, 20951, 20952, 20953, 20954, 20955);
+-- DELETE FROM `ry-vue`.`sys_menu` WHERE `menu_id` IN (20950, 20951, 20952, 20953, 20954, 20955);
 -- 回滚注意: 执行 §5 后若已有逻辑删除数据(del_flag='2'), 回滚会使其重新可见, 需人工确认。

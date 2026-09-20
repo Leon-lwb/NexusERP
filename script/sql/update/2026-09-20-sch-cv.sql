@@ -13,18 +13,18 @@
 -- -----------------------------------------------------------------------------
 -- 1) ERP-SCH-07: 人脸降级补跑尝试计数(防无照片记录永久占用每轮 200 条配额)
 -- -----------------------------------------------------------------------------
-SET @ddl := (SELECT IF(COUNT(*) = 0,
+SET @ddl := (SELECT IF((SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'sch_attendance' AND COLUMN_NAME = 'face_verify_attempts') = 0,
   'ALTER TABLE `sch_attendance` ADD COLUMN `face_verify_attempts` int NULL DEFAULT 0 COMMENT ''人脸验证尝试次数(降级补跑计数,达上限后不再进入补跑候选集)'' AFTER `face_image_oss_id`',
   'SELECT 1'));
 PREPARE stmt FROM @ddl; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
-SET @ddl := (SELECT IF(COUNT(*) = 0,
+SET @ddl := (SELECT IF((SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'sch_attendance' AND COLUMN_NAME = 'face_verify_last_attempt_time') = 0,
   'ALTER TABLE `sch_attendance` ADD COLUMN `face_verify_last_attempt_time` datetime NULL DEFAULT NULL COMMENT ''人脸验证最近一次尝试时间'' AFTER `face_verify_attempts`',
   'SELECT 1'));
 PREPARE stmt FROM @ddl; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
 -- 补跑候选集查询索引: face_verify_status=NONE AND face_verify_time >= ? ORDER BY face_verify_time
-SET @ddl := (SELECT IF(COUNT(*) = 0,
+SET @ddl := (SELECT IF((SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'sch_attendance' AND INDEX_NAME = 'idx_face_verify_backfill') = 0,
   'ALTER TABLE `sch_attendance` ADD INDEX `idx_face_verify_backfill`(`face_verify_status`, `face_verify_time`) USING BTREE',
   'SELECT 1'));
 PREPARE stmt FROM @ddl; EXECUTE stmt; DEALLOCATE PREPARE stmt;
@@ -46,12 +46,12 @@ PREPARE stmt FROM @ddl; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 --     ON s1.tenant_id = s2.tenant_id AND s1.worker_id = s2.worker_id
 --    AND DATE(s1.scheduled_date) = DATE(s2.scheduled_date)
 --    AND s1.del_flag = '0' AND s2.del_flag = '0' AND s1.schedule_id < s2.schedule_id;
-SET @ddl := (SELECT IF(COUNT(*) = 0,
+SET @ddl := (SELECT IF((SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'sch_employee_schedule' AND COLUMN_NAME = 'active_worker_date_key') = 0,
   'ALTER TABLE `sch_employee_schedule` ADD COLUMN `active_worker_date_key` varchar(64) GENERATED ALWAYS AS (IF(`del_flag` = ''0'', CONCAT(`worker_id`, ''#'', DATE(`scheduled_date`)), NULL)) VIRTUAL COMMENT ''同一人同日活跃排班唯一键(逻辑删除行为 NULL,不参与唯一性)''',
   'SELECT 1'));
 PREPARE stmt FROM @ddl; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
-SET @ddl := (SELECT IF(COUNT(*) = 0,
+SET @ddl := (SELECT IF((SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'sch_employee_schedule' AND INDEX_NAME = 'uk_worker_date_active') = 0,
   'ALTER TABLE `sch_employee_schedule` ADD UNIQUE INDEX `uk_worker_date_active`(`tenant_id`, `active_worker_date_key`) USING BTREE',
   'SELECT 1'));
 PREPARE stmt FROM @ddl; EXECUTE stmt; DEALLOCATE PREPARE stmt;
@@ -70,10 +70,10 @@ ALTER TABLE `sch_punch_rule`
 --    菜单 ID 6191~6194 为本次新增(6181~6190 已被占用),父级沿用既有菜单:
 --      6183 = 人脸底库(C 类页面) / 2405 = 考勤记录(C 类页面)
 -- -----------------------------------------------------------------------------
-INSERT IGNORE INTO `sys_menu` VALUES (6191, '人脸1:1验证', 6183, 3, '', '', '', 1, 0, 'F', '0', '0', 'cv:face:verify', '#', 103, 1, NOW(), NULL, NULL, '1:1 人脸验证(ERP-CV-03)');
-INSERT IGNORE INTO `sys_menu` VALUES (6192, '人脸1:N识别', 6183, 4, '', '', '', 1, 0, 'F', '0', '0', 'cv:face:recognize', '#', 103, 1, NOW(), NULL, NULL, '1:N 人脸识别/底库候选(ERP-CV-03)');
-INSERT IGNORE INTO `sys_menu` VALUES (6193, '操作台刷脸识别', 6183, 5, '', '', '', 1, 0, 'F', '0', '0', 'cv:ops:identify', '#', 103, 1, NOW(), NULL, NULL, '操作台 1:N top-3 候选(ERP-CV-03)');
-INSERT IGNORE INTO `sys_menu` VALUES (6194, 'App考勤打卡', 2405, 3, '', '', '', 1, 0, 'F', '0', '0', 'sch:attendance:clock', '#', 103, 1, NOW(), NULL, NULL, 'App 上下班打卡(ERP-SCH-01)');
+INSERT IGNORE INTO `ry-vue`.`sys_menu` VALUES (6191, '人脸1:1验证', 6183, 3, '', '', '', 1, 0, 'F', '0', '0', 'cv:face:verify', '#', 103, 1, NOW(), NULL, NULL, '1:1 人脸验证(ERP-CV-03)');
+INSERT IGNORE INTO `ry-vue`.`sys_menu` VALUES (6192, '人脸1:N识别', 6183, 4, '', '', '', 1, 0, 'F', '0', '0', 'cv:face:recognize', '#', 103, 1, NOW(), NULL, NULL, '1:N 人脸识别/底库候选(ERP-CV-03)');
+INSERT IGNORE INTO `ry-vue`.`sys_menu` VALUES (6193, '操作台刷脸识别', 6183, 5, '', '', '', 1, 0, 'F', '0', '0', 'cv:ops:identify', '#', 103, 1, NOW(), NULL, NULL, '操作台 1:N top-3 候选(ERP-CV-03)');
+INSERT IGNORE INTO `ry-vue`.`sys_menu` VALUES (6194, 'App考勤打卡', 2405, 3, '', '', '', 1, 0, 'F', '0', '0', 'sch:attendance:clock', '#', 103, 1, NOW(), NULL, NULL, 'App 上下班打卡(ERP-SCH-01)');
 
 -- -----------------------------------------------------------------------------
 -- 5) 兼容授权: 新增权限码后,既有角色若未授权会立刻 403(App 打卡直接不可用)。
@@ -83,19 +83,19 @@ INSERT IGNORE INTO `sys_menu` VALUES (6194, 'App考勤打卡', 2405, 3, '', '', 
 --      c) cv:detect:query(6190 既有菜单) → 已拥有任意 wm:*(仓储,标签拍照入口) 或 cv:* 权限的角色
 --    管理员可在「角色管理」中按需回收;不需要兼容授权时删除本节即可。
 -- -----------------------------------------------------------------------------
-INSERT IGNORE INTO `sys_role_menu` (`role_id`, `menu_id`)
-SELECT DISTINCT rm.`role_id`, 6194 FROM `sys_role_menu` rm WHERE rm.`menu_id` = 2405;
+INSERT IGNORE INTO `ry-vue`.`sys_role_menu` (`role_id`, `menu_id`)
+SELECT DISTINCT rm.`role_id`, 6194 FROM `ry-vue`.`sys_role_menu` rm WHERE rm.`menu_id` = 2405;
 
-INSERT IGNORE INTO `sys_role_menu` (`role_id`, `menu_id`)
+INSERT IGNORE INTO `ry-vue`.`sys_role_menu` (`role_id`, `menu_id`)
 SELECT DISTINCT rm.`role_id`, m.`menu_id`
-  FROM `sys_role_menu` rm
-  JOIN `sys_menu` m ON m.`menu_id` IN (6191, 6192, 6193)
+  FROM `ry-vue`.`sys_role_menu` rm
+  JOIN `ry-vue`.`sys_menu` m ON m.`menu_id` IN (6191, 6192, 6193)
  WHERE rm.`menu_id` = 6183;
 
-INSERT IGNORE INTO `sys_role_menu` (`role_id`, `menu_id`)
+INSERT IGNORE INTO `ry-vue`.`sys_role_menu` (`role_id`, `menu_id`)
 SELECT DISTINCT rm.`role_id`, 6190
-  FROM `sys_role_menu` rm
-  JOIN `sys_menu` m ON m.`menu_id` = rm.`menu_id`
+  FROM `ry-vue`.`sys_role_menu` rm
+  JOIN `ry-vue`.`sys_menu` m ON m.`menu_id` = rm.`menu_id`
  WHERE m.`perms` LIKE 'wm:%' OR m.`perms` LIKE 'cv:%';
 
 -- -----------------------------------------------------------------------------

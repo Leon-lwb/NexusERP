@@ -168,46 +168,46 @@ CREATE TABLE IF NOT EXISTS `mes_label_print_log` (
 -- =====================================================================================
 
 -- B1/B2. 菜单按钮权限（幂等：按 perms 判存）
-INSERT INTO `sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `query_param`,
+INSERT INTO `ry-vue`.`sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `query_param`,
                         `is_frame`, `is_cache`, `menu_type`, `visible`, `status`, `perms`, `icon`,
                         `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`)
 SELECT 4025, 'MES工单取消', 4010, 15, '', NULL, NULL, 1, 0, 'F', '0', '0', 'mes:pro:work:cancel', '#',
        103, 1, NOW(), NULL, NULL, 'MES工单取消按钮(MES-PRO-11)'
-  FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM `sys_menu` WHERE `perms` = 'mes:pro:work:cancel');
+  FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM `ry-vue`.`sys_menu` WHERE `perms` = 'mes:pro:work:cancel');
 
-INSERT INTO `sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `query_param`,
+INSERT INTO `ry-vue`.`sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `query_param`,
                         `is_frame`, `is_cache`, `menu_type`, `visible`, `status`, `perms`, `icon`,
                         `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`)
 SELECT 4026, 'MES工单关闭', 4010, 16, '', NULL, NULL, 1, 0, 'F', '0', '0', 'mes:pro:work:close', '#',
        103, 1, NOW(), NULL, NULL, 'MES工单关闭按钮(MES-PRO-11)'
-  FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM `sys_menu` WHERE `perms` = 'mes:pro:work:close');
+  FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM `ry-vue`.`sys_menu` WHERE `perms` = 'mes:pro:work:close');
 
-INSERT INTO `sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `query_param`,
+INSERT INTO `ry-vue`.`sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `query_param`,
                         `is_frame`, `is_cache`, `menu_type`, `visible`, `status`, `perms`, `icon`,
                         `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`)
 SELECT 4308, 'NCR处置(无签名)', 4242, 8, '', NULL, NULL, 1, 0, 'F', '0', '0', 'mes:ncr:order:dispose-nosign', '#',
        103, 1, NOW(), NULL, NULL, '无签名入口仅允许可逆处置(REWORK)(MES-NCR-06)'
-  FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM `sys_menu` WHERE `perms` = 'mes:ncr:order:dispose-nosign');
+  FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM `ry-vue`.`sys_menu` WHERE `perms` = 'mes:ncr:order:dispose-nosign');
 
 -- B3. 把新按钮补授给「已拥有同前缀权限」的角色（幂等；避免存量角色升级后 403）
-INSERT INTO `sys_role_menu` (`role_id`, `menu_id`)
-SELECT DISTINCT rm.role_id, 4025 FROM `sys_role_menu` rm JOIN `sys_menu` m ON m.menu_id = rm.menu_id
+INSERT INTO `ry-vue`.`sys_role_menu` (`role_id`, `menu_id`)
+SELECT DISTINCT rm.role_id, 4025 FROM `ry-vue`.`sys_role_menu` rm JOIN `ry-vue`.`sys_menu` m ON m.menu_id = rm.menu_id
  WHERE m.perms LIKE 'mes:pro:work:%'
-   AND NOT EXISTS (SELECT 1 FROM `sys_role_menu` x WHERE x.role_id = rm.role_id AND x.menu_id = 4025);
+   AND NOT EXISTS (SELECT 1 FROM `ry-vue`.`sys_role_menu` x WHERE x.role_id = rm.role_id AND x.menu_id = 4025);
 
-INSERT INTO `sys_role_menu` (`role_id`, `menu_id`)
-SELECT DISTINCT rm.role_id, 4026 FROM `sys_role_menu` rm JOIN `sys_menu` m ON m.menu_id = rm.menu_id
+INSERT INTO `ry-vue`.`sys_role_menu` (`role_id`, `menu_id`)
+SELECT DISTINCT rm.role_id, 4026 FROM `ry-vue`.`sys_role_menu` rm JOIN `ry-vue`.`sys_menu` m ON m.menu_id = rm.menu_id
  WHERE m.perms LIKE 'mes:pro:work:%'
-   AND NOT EXISTS (SELECT 1 FROM `sys_role_menu` x WHERE x.role_id = rm.role_id AND x.menu_id = 4026);
+   AND NOT EXISTS (SELECT 1 FROM `ry-vue`.`sys_role_menu` x WHERE x.role_id = rm.role_id AND x.menu_id = 4026);
 
-INSERT INTO `sys_role_menu` (`role_id`, `menu_id`)
-SELECT DISTINCT rm.role_id, 4308 FROM `sys_role_menu` rm JOIN `sys_menu` m ON m.menu_id = rm.menu_id
+INSERT INTO `ry-vue`.`sys_role_menu` (`role_id`, `menu_id`)
+SELECT DISTINCT rm.role_id, 4308 FROM `ry-vue`.`sys_role_menu` rm JOIN `ry-vue`.`sys_menu` m ON m.menu_id = rm.menu_id
  WHERE m.perms LIKE 'mes:ncr:order:dispose%'
-   AND NOT EXISTS (SELECT 1 FROM `sys_role_menu` x WHERE x.role_id = rm.role_id AND x.menu_id = 4308);
+   AND NOT EXISTS (SELECT 1 FROM `ry-vue`.`sys_role_menu` x WHERE x.role_id = rm.role_id AND x.menu_id = 4308);
 
 -- B4. SPC 图类型字典补 X_MR（单值-移动极差图）
-INSERT INTO `sys_dict_data` (`dict_code`, `tenant_id`, `dict_sort`, `dict_label`, `dict_value`, `dict_type`,
+INSERT INTO `ry-vue`.`sys_dict_data` (`dict_code`, `tenant_id`, `dict_sort`, `dict_label`, `dict_value`, `dict_type`,
                              `css_class`, `list_class`, `is_default`, `create_dept`, `create_by`, `create_time`, `remark`)
-SELECT 2068956987053351027, '000000', 6, '单值-移动极差图(X-MR)', 'X_MR', 'spc_chart_type',
+SELECT 600252, '000000', 6, '单值-移动极差图(X-MR)', 'X_MR', 'spc_chart_type',
        NULL, 'primary', 'N', 103, 1, NOW(), 'SPC-X-MR图(MES-SPC-01)'
-  FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM `sys_dict_data` WHERE `dict_type` = 'spc_chart_type' AND `dict_value` = 'X_MR');
+  FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM `ry-vue`.`sys_dict_data` WHERE `dict_type` = 'spc_chart_type' AND `dict_value` = 'X_MR');

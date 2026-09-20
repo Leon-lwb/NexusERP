@@ -45,9 +45,14 @@ SET @idx_exists := (
      AND TABLE_NAME = 'wm_material_stock'
      AND INDEX_NAME = 'uk_stock_dim'
 );
-SET @ddl := IF(@idx_exists = 0,
-  'ALTER TABLE wm_material_stock ADD UNIQUE KEY uk_stock_dim (tenant_id, material_id, (IFNULL(batch_id,0)), (IFNULL(warehouse_id,0)), (IFNULL(location_id,0)), (IFNULL(vendor_id,0)), (IFNULL(sn_id,0)), del_flag)',
-  'SELECT ''uk_stock_dim already exists, skip'' AS msg');
+-- MySQL 5.7 不支持"表达式索引"(8.0.13+ 才有)，因此仅 8.0+ 才建该索引；
+-- 5.7 请改用"生成列 + 普通唯一键"方案（见 doc/audit/2026-09-20-fix-wm-core.md 的待办）。
+SET @ver := SUBSTRING_INDEX(VERSION(), '.', 2);
+SET @ddl := IF(@idx_exists > 0,
+  'SELECT ''uk_stock_dim already exists, skip'' AS msg',
+  IF(@ver >= '8.0',
+     'ALTER TABLE wm_material_stock ADD UNIQUE KEY uk_stock_dim (tenant_id, material_id, (IFNULL(batch_id,0)), (IFNULL(warehouse_id,0)), (IFNULL(location_id,0)), (IFNULL(vendor_id,0)), (IFNULL(sn_id,0)), del_flag)',
+     'SELECT ''[SKIP] uk_stock_dim: 当前 MySQL 5.7 不支持表达式索引, 需改用生成列方案后再建(详见 fix-wm-core.md)'' AS msg'));
 PREPARE wm_core_stmt FROM @ddl;
 EXECUTE wm_core_stmt;
 DEALLOCATE PREPARE wm_core_stmt;
