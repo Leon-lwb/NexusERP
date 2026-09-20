@@ -10059,6 +10059,18 @@ INSERT INTO `sj_job`
  `block_strategy`, `executor_timeout`, `max_retry_times`, `parallel_num`, `retry_interval`, `bucket_index`,
  `resident`, `notify_ids`, `owner_id`, `labels`, `description`, `ext_attrs`, `deleted`)
 VALUES
+('dev', 'biz_203', 'ruoyi_group', '工装校准/保养到期扫描任务', NULL, 1, UNIX_TIMESTAMP(NOW()) * 1000,
+ 1, 1, 4, 1, 'tgMaintenanceDueTask', 3, '0 30 8 * * ?',
+ 1, 300, 3, 1, 60, 116,
+ 0, '', 1, '{}',
+ 'MES-TG-05 补种: 每日08:30扫描工装校准(next_calibration_date)/保养(计划阈值)到期, 分级+限频后SSE提醒', '', 0);
+
+INSERT INTO `sj_job`
+(`namespace_id`, `biz_id`, `group_name`, `job_name`, `args_str`, `args_type`, `next_trigger_at`,
+ `job_status`, `task_type`, `route_key`, `executor_type`, `executor_info`, `trigger_type`, `trigger_interval`,
+ `block_strategy`, `executor_timeout`, `max_retry_times`, `parallel_num`, `retry_interval`, `bucket_index`,
+ `resident`, `notify_ids`, `owner_id`, `labels`, `description`, `ext_attrs`, `deleted`)
+VALUES
 ('dev', 'biz_201', 'ruoyi_group', '设备OEE日聚合任务', NULL, 1, UNIX_TIMESTAMP(NOW()) * 1000,
  1, 1, 4, 1, 'oeeAggregateTask', 3, '0 0 1 * * ?',
  1, 300, 3, 1, 60, 116,
@@ -90229,6 +90241,27 @@ INSERT INTO `sys_dict_data` VALUES (345, '000000', 3, '已收货', 'RECEIVED', '
 INSERT INTO `sys_dict_data` VALUES (346, '000000', 1, '草稿', 'DRAFT', 'wm_transfer_status', '', 'info', 'N', 103, 1, '2026-05-22 00:00:00', NULL, NULL, NULL);
 INSERT INTO `sys_dict_data` VALUES (347, '000000', 2, '已执行', 'EXECUTED', 'wm_transfer_status', '', 'success', 'N', 103, 1, '2026-05-22 00:00:00', NULL, NULL, NULL);
 INSERT INTO `sys_dict_data` VALUES (348, '000000', 1, '草稿', 'DRAFT', 'wm_stocktaking_status', '', 'info', 'N', 103, 1, '2026-05-22 00:00:00', NULL, NULL, NULL);
+
+-- ===== 2026-09-20 ERP 前端修复批次所需字典（FE-ERP-02/04）=====
+INSERT IGNORE INTO sys_dict_type (dict_name, dict_type, status, create_by, create_time, remark)
+VALUES ('盘点方式', 'erp_stocktaking_count_mode', '0', 1, NOW(), '盘点计划明盘/盲盘（FE-ERP-04）');
+INSERT IGNORE INTO sys_dict_data (dict_sort, dict_label, dict_value, dict_type, css_class, list_class, is_default, status, create_by, create_time, remark)
+VALUES (1, '明盘', 'OPEN', 'erp_stocktaking_count_mode', '', 'primary', 'Y', '0', 1, NOW(), '账面数量对盘点人可见'),
+       (2, '盲盘', 'BLIND', 'erp_stocktaking_count_mode', '', 'warning', 'N', '0', 1, NOW(), '账面数量对盘点人隐藏');
+INSERT IGNORE INTO sys_dict_type (dict_name, dict_type, status, create_by, create_time, remark)
+VALUES ('生产报工状态', 'prd_work_report_status', '0', 1, NOW(), '工单报工单据状态（FE-ERP-02）');
+INSERT IGNORE INTO sys_dict_data (dict_sort, dict_label, dict_value, dict_type, css_class, list_class, is_default, status, create_by, create_time, remark)
+VALUES (1, '草稿', 'DRAFT', 'prd_work_report_status', '', 'info', 'Y', '0', 1, NOW(), ''),
+       (2, '已提交', 'SUBMITTED', 'prd_work_report_status', '', 'warning', 'N', '0', 1, NOW(), ''),
+       (3, '已审核', 'APPROVED', 'prd_work_report_status', '', 'success', 'N', '0', 1, NOW(), '审核通过时后端会回写工单累计产量'),
+       (4, '已驳回', 'REJECTED', 'prd_work_report_status', '', 'danger', 'N', '0', 1, NOW(), '');
+INSERT IGNORE INTO sys_dict_type (dict_name, dict_type, status, create_by, create_time, remark)
+VALUES ('报工途径', 'prd_work_report_channel', '0', 1, NOW(), '报工数据来源渠道（FE-ERP-02）');
+INSERT IGNORE INTO sys_dict_data (dict_sort, dict_label, dict_value, dict_type, css_class, list_class, is_default, status, create_by, create_time, remark)
+VALUES (1, 'PC 端', 'PC', 'prd_work_report_channel', '', 'primary', 'Y', '0', 1, NOW(), ''),
+       (2, 'PDA 手持端', 'PDA', 'prd_work_report_channel', '', 'success', 'N', '0', 1, NOW(), ''),
+       (3, 'MES 制造执行', 'MES', 'prd_work_report_channel', '', 'warning', 'N', '0', 1, NOW(), '');
+-- ===== 2026-09-20 字典结束 =====
 INSERT INTO `sys_dict_data` VALUES (349, '000000', 2, '已生成', 'GENERATED', 'wm_stocktaking_status', '', 'primary', 'N', 103, 1, '2026-05-22 00:00:00', NULL, NULL, NULL);
 INSERT INTO `sys_dict_data` VALUES (350, '000000', 3, '已过账', 'POSTED', 'wm_stocktaking_status', '', 'success', 'N', 103, 1, '2026-05-22 00:00:00', NULL, NULL, NULL);
 INSERT INTO `sys_dict_data` VALUES (351, '000000', 1, '草稿', 'DRAFT', 'wm_misc_status', '', 'info', 'N', 103, 1, '2026-05-22 00:00:00', NULL, NULL, NULL);
@@ -90651,6 +90684,7 @@ INSERT INTO `sys_dict_data` VALUES (2068956987053350937, '000000', 5, '年保', 
 INSERT INTO `sys_dict_data` VALUES (2068956987053350938, '000000', 1, '已报修', 'REPORTED', 'mes_repair_status', NULL, 'danger', 'N', 103, 1, '2026-07-13 17:36:54', NULL, NULL, NULL);
 INSERT INTO `sys_dict_data` VALUES (2068956987053350939, '000000', 2, '维修中', 'REPAIRING', 'mes_repair_status', NULL, 'warning', 'N', 103, 1, '2026-07-13 17:36:54', NULL, NULL, NULL);
 INSERT INTO `sys_dict_data` VALUES (2068956987053350940, '000000', 3, '已完成', 'COMPLETED', 'mes_repair_status', NULL, 'success', 'N', 103, 1, '2026-07-13 17:36:54', NULL, NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (2075000000000000001, '000000', 4, '已作废', 'CANCELLED', 'mes_repair_status', NULL, 'info', 'N', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'MES-EQ-06 误报修/重复报修作废, 不再计为活跃报修');
 INSERT INTO `sys_dict_data` VALUES (2068956987053350941, '000000', 1, '温度过高', 'TEMP_OVERHEAT', 'mes_fault_type', NULL, 'danger', 'N', 103, 1, '2026-07-13 17:36:54', NULL, NULL, NULL);
 INSERT INTO `sys_dict_data` VALUES (2068956987053350942, '000000', 2, '电流异常', 'CURRENT_ABNORMAL', 'mes_fault_type', NULL, 'danger', 'N', 103, 1, '2026-07-13 17:36:54', NULL, NULL, NULL);
 INSERT INTO `sys_dict_data` VALUES (2068956987053350943, '000000', 3, '振动异常', 'VIBRATION_ABNORMAL', 'mes_fault_type', NULL, 'warning', 'N', 103, 1, '2026-07-13 17:36:54', NULL, NULL, NULL);
@@ -90757,6 +90791,7 @@ INSERT INTO `sys_dict_data` VALUES (2068956987053351043, '000000', 1, '闲置', 
 INSERT INTO `sys_dict_data` VALUES (2068956987053351044, '000000', 2, '使用中', 'IN_USE', 'mes_tooling_status', NULL, 'primary', 'N', 103, 1, '2026-07-26 14:23:17', NULL, NULL, '工装状态-使用中');
 INSERT INTO `sys_dict_data` VALUES (2068956987053351045, '000000', 3, '保养中', 'MAINTENANCE', 'mes_tooling_status', NULL, 'warning', 'N', 103, 1, '2026-07-26 14:23:17', NULL, NULL, '工装状态-保养中');
 INSERT INTO `sys_dict_data` VALUES (2068956987053351046, '000000', 4, '已报废', 'SCRAPPED', 'mes_tooling_status', NULL, 'danger', 'N', 103, 1, '2026-07-26 14:23:17', NULL, NULL, '工装状态-已报废(终态)');
+INSERT INTO `sys_dict_data` VALUES (2075000000000000002, '000000', 5, '校准中', 'CALIBRATING', 'mes_tooling_status', NULL, 'warning', 'N', 103, 1, NOW(), NULL, NULL, 'MES-TG-01 工装校准中(校准期间不可领用/进站)');
 INSERT INTO `sys_dict_data` VALUES (2068956987053351047, '000000', 1, '模具', 'MOLD', 'mes_tooling_type', NULL, 'primary', 'N', 103, 1, '2026-07-26 14:23:17', NULL, NULL, '工装类型-模具');
 INSERT INTO `sys_dict_data` VALUES (2068956987053351048, '000000', 2, '夹具', 'FIXTURE', 'mes_tooling_type', NULL, 'success', 'N', 103, 1, '2026-07-26 14:23:17', NULL, NULL, '工装类型-夹具');
 INSERT INTO `sys_dict_data` VALUES (2068956987053351049, '000000', 3, '刀具', 'CUTTER', 'mes_tooling_type', NULL, 'warning', 'N', 103, 1, '2026-07-26 14:23:17', NULL, NULL, '工装类型-刀具');
@@ -90889,6 +90924,10 @@ INSERT INTO `sys_dict_type` VALUES (100, '000000', '行政区划层级', 'sys_ar
 INSERT INTO `sys_dict_type` VALUES (101, '000000', '编码生成规则', 'sys_autocode_parttype', 103, 1, '2025-09-18 16:40:52', NULL, NULL, '编码生成规则');
 INSERT INTO `sys_dict_type` VALUES (102, '000000', '编码规则组成循环方式', 'sys_autocode_cyclemethod', 103, 1, '2025-09-18 16:42:34', NULL, NULL, '编码规则组成循环方式');
 INSERT INTO `sys_dict_type` VALUES (103, '000000', '客户等级', 'bd_client_level', 103, 1, '2025-09-22 10:59:46', NULL, '2025-09-22 10:59:53', '客户等级');
+INSERT INTO `sys_dict_type` VALUES (600330, '000000', 'BOM供应方', 'bd_supply_type', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'BOM明细供应方(自备/外协厂供/客供) ERP-BD-01');
+INSERT INTO `sys_dict_data` VALUES (600331, '000000', 1, '自备', 'SELF_PROVIDED', 'bd_supply_type', NULL, 'primary', 'Y', 103, 1, '2026-09-20 00:00:00', NULL, NULL, '我方提供'),
+       (600332, '000000', 2, '外协厂供', 'VENDOR_PROVIDED', 'bd_supply_type', NULL, 'warning', 'N', 103, 1, '2026-09-20 00:00:00', NULL, NULL, '外协厂提供'),
+       (600333, '000000', 3, '客供', 'CUSTOMER_PROVIDED', 'bd_supply_type', NULL, 'info', 'N', 103, 1, '2026-09-20 00:00:00', NULL, NULL, '客户提供');
 INSERT INTO `sys_dict_type` VALUES (104, '000000', '所属行业', 'bd_industry', 103, 1, '2025-09-22 15:17:23', NULL, NULL, '行业信息');
 INSERT INTO `sys_dict_type` VALUES (105, '000000', '地区', 'bd_region', 103, 1, '2025-09-22 15:36:46', NULL, NULL, '地区');
 INSERT INTO `sys_dict_type` VALUES (106, '000000', '供应商分类', 'bd_vendor_category', 103, 1, '2025-09-22 15:42:00', NULL, NULL, '供应商分类');
@@ -92497,6 +92536,7 @@ INSERT INTO `sys_menu` VALUES (4121, '维修查询', 4120, 1, '', '', '', 1, 0, 
 INSERT INTO `sys_menu` VALUES (4122, '维修报修', 4120, 2, '', '', '', 1, 0, 'F', '0', '0', 'mes:eq:repair:add', '#', 103, 1, '2026-06-20 00:21:04', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (4123, '维修开工', 4120, 3, '', '', '', 1, 0, 'F', '0', '0', 'mes:eq:repair:start', '#', 103, 1, '2026-06-20 00:21:04', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (4124, '维修完成', 4120, 4, '', '', '', 1, 0, 'F', '0', '0', 'mes:eq:repair:complete', '#', 103, 1, '2026-06-20 00:21:04', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (4127, '维修作废', 4120, 5, '', '', '', 1, 0, 'F', '0', '0', 'mes:eq:repair:cancel', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'MES-EQ-06 维修单作废/撤销');
 INSERT INTO `sys_menu` VALUES (4125, '设备点检', 4202, 1, 'inspection', 'mes/eq/inspection/index', NULL, 1, 0, 'C', '0', '0', 'mes:eq:inspection:list', 'check', 103, 1, '2026-06-27 00:24:07', NULL, NULL, 'MES设备点检执行菜单');
 INSERT INTO `sys_menu` VALUES (4126, '点检执行', 4125, 1, '', '', '', 1, 0, 'F', '0', '0', 'mes:eq:equipment:inspect', '#', 103, 1, '2026-06-27 00:24:07', NULL, NULL, '提交点检结果');
 INSERT INTO `sys_menu` VALUES (4130, '数据采集点', 4004, 1, 'collection-point', 'mes/dc/collection-point/index', '', 1, 0, 'C', '0', '0', 'mes:dc:point:list', 'monitor', 103, 1, '2026-06-20 00:53:54', NULL, NULL, 'MES数据采集点');
@@ -92544,6 +92584,7 @@ INSERT INTO `sys_menu` VALUES (4176, '工装删除', 4172, 4, '', '', '', 1, 0, 
 INSERT INTO `sys_menu` VALUES (4177, '工装领用', 4172, 5, '', '', '', 1, 0, 'F', '0', '0', 'mes:tg:tooling:checkout', '#', 103, 1, '2026-07-26 14:22:38', NULL, NULL, 'IDLE -> IN_USE');
 INSERT INTO `sys_menu` VALUES (4178, '工装归还', 4172, 6, '', '', '', 1, 0, 'F', '0', '0', 'mes:tg:tooling:return', '#', 103, 1, '2026-07-26 14:22:38', NULL, NULL, 'IN_USE -> IDLE (累加 used_count/hours)');
 INSERT INTO `sys_menu` VALUES (4179, '工装保养', 4172, 7, '', '', '', 1, 0, 'F', '0', '0', 'mes:tg:tooling:maintain', '#', 103, 1, '2026-07-26 14:22:38', NULL, NULL, '开始/完成保养(MAINTENANCE->IDLE,归零计数)');
+INSERT INTO `sys_menu` VALUES (4196, '工装校准登记', 4172, 8, '', '', '', 1, 0, 'F', '0', '0', 'mes:tg:tooling:calibrate', '#', 103, 1, NOW(), NULL, NULL, 'MES-TG-01 登记校准(IDLE->CALIBRATING->IDLE, 服务端算下次校准日)');
 INSERT INTO `sys_menu` VALUES (4180, '工装报废', 4172, 8, '', '', '', 1, 0, 'F', '0', '0', 'mes:tg:tooling:scrap', '#', 103, 1, '2026-07-26 14:22:38', NULL, NULL, '-> SCRAPPED (终态,IN_USE需先归还)');
 INSERT INTO `sys_menu` VALUES (4181, '工装保养计划', 4205, 2, 'maintenance-plan', 'mes/tg/maintenance-plan/index', '', 1, 0, 'C', '0', '0', 'mes:tg:plan:list', 'time', 103, 1, '2026-07-26 14:22:38', NULL, NULL, 'MES工装保养计划(按次数/时长/周期触发)');
 INSERT INTO `sys_menu` VALUES (4182, '计划查询', 4181, 1, '', '', '', 1, 0, 'F', '0', '0', 'mes:tg:plan:query', '#', 103, 1, '2026-07-26 14:22:38', NULL, NULL, '');
@@ -92620,6 +92661,8 @@ INSERT INTO `sys_menu` VALUES (4271, '绑定新增', 4269, 2, '', '', '', 1, 0, 
 INSERT INTO `sys_menu` VALUES (4272, '绑定删除', 4269, 3, '', '', '', 1, 0, 'F', '0', '0', 'mes:sop:binding:remove', '#', 103, 1, '2026-07-26 20:13:47', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (4273, '查阅记录', 4206, 3, 'view-log', 'mes/sop/view-log/index', '', 1, 0, 'C', '0', '0', 'mes:sop:viewlog:list', 'eye-open', 103, 1, '2026-07-26 20:13:47', NULL, NULL, 'SOP查阅记录(signature_id预留P0-6)');
 INSERT INTO `sys_menu` VALUES (4274, '记录查询', 4273, 1, '', '', '', 1, 0, 'F', '0', '0', 'mes:sop:viewlog:query', '#', 103, 1, '2026-07-26 20:13:47', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (4276, '查阅登记', 4273, 2, '', '', '', 1, 0, 'F', '0', '0', 'mes:sop:viewlog:add', '#', 103, 1, NOW(), NULL, NULL, 'MES-SOP-01 工位/终端侧查阅登记(产生 SOP_VIEW 电子签名)');
+INSERT INTO `sys_menu` VALUES (4277, '查阅记录删除', 4273, 3, '', '', '', 1, 0, 'F', '0', '0', 'mes:sop:viewlog:remove', '#', 103, 1, NOW(), NULL, NULL, 'MES-SOP-03 查阅记录删除(已签名记录服务端一律拒绝)');
 INSERT INTO `sys_menu` VALUES (4275, 'SOP查看器', 4206, 4, 'viewer', 'mes/sop/viewer/index', '', 1, 0, 'C', '1', '0', 'mes:sop:document:list', '#', 103, 1, '2026-07-26 20:13:47', NULL, NULL, '工位终端SOP查看器(隐藏页, by-process/by-step 拉取)');
 INSERT INTO `sys_menu` VALUES (4280, '刷写管理', 4000, 13, 'flash', NULL, NULL, 1, 0, 'M', '0', '0', NULL, 'cpu', 103, 1, '2026-08-16 13:56:57', NULL, NULL, 'MES固件管理(档案/刷写/测试)');
 INSERT INTO `sys_menu` VALUES (4281, '固件档案', 4280, 1, 'firmware', 'mes/flash/firmware/index', NULL, 1, 0, 'C', '0', '0', 'mes:flash:firmware:list', 'cpu', 103, 1, '2026-08-16 13:56:57', NULL, NULL, '固件档案主档(上传/审批/版本/归档)');
@@ -92703,6 +92746,17 @@ INSERT INTO `sys_menu` VALUES (6023, '设备修改', 6020, 3, '', '', '', 1, 0, 
 INSERT INTO `sys_menu` VALUES (6024, '设备删除', 6020, 4, '', '', '', 1, 0, 'F', '0', '0', 'iot:device:remove', '#', 103, 1, '2026-06-17 17:35:58', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (6025, '设备导出', 6020, 5, '', '', '', 1, 0, 'F', '0', '0', 'iot:device:export', '#', 103, 1, '2026-06-17 17:35:58', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (6026, '设备密钥重置', 6020, 6, '', '', '', 1, 0, 'F', '0', '0', 'iot:device:resetSecret', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, '重置设备密钥(轮换 device_secret, 仅返回一次)');
+INSERT INTO `sys_menu` VALUES (6030, '告警记录', 6000, 3, 'alert', 'iot/alert/index', '', 1, 0, 'C', '0', '0', 'iot:alert:list', 'warning', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'IoT告警记录(查询/确认/恢复)');
+INSERT INTO `sys_menu` VALUES (6031, '告警查询', 6030, 1, '', '', '', 1, 0, 'F', '0', '0', 'iot:alert:query', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (6032, '告警确认', 6030, 2, '', '', '', 1, 0, 'F', '0', '0', 'iot:alert:ack', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'ACTIVE -> ACKNOWLEDGED');
+INSERT INTO `sys_menu` VALUES (6033, '告警恢复', 6030, 3, '', '', '', 1, 0, 'F', '0', '0', 'iot:alert:recover', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'ACTIVE/ACKNOWLEDGED -> RESOLVED');
+INSERT INTO `sys_menu` VALUES (6034, '告警导出', 6030, 4, '', '', '', 1, 0, 'F', '0', '0', 'iot:alert:export', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (6040, '告警规则', 6000, 4, 'alertRule', 'iot/alertRule/index', '', 1, 0, 'C', '0', '0', 'iot:alertRule:list', 'set', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'IoT告警规则(阈值/持续时长/去抖/级别)');
+INSERT INTO `sys_menu` VALUES (6041, '规则查询', 6040, 1, '', '', '', 1, 0, 'F', '0', '0', 'iot:alertRule:query', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (6042, '规则新增', 6040, 2, '', '', '', 1, 0, 'F', '0', '0', 'iot:alertRule:add', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (6043, '规则修改', 6040, 3, '', '', '', 1, 0, 'F', '0', '0', 'iot:alertRule:edit', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (6044, '规则删除', 6040, 4, '', '', '', 1, 0, 'F', '0', '0', 'iot:alertRule:remove', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (6045, '规则启停', 6040, 5, '', '', '', 1, 0, 'F', '0', '0', 'iot:alertRule:changeStatus', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, '启用/停用规则(1/0)');
 INSERT INTO `sys_menu` VALUES (6100, '财务管理', 2000, 22, 'fin', NULL, NULL, 1, 0, 'M', '0', '0', NULL, 'money', 103, 1, '2026-07-30 21:32:30', NULL, NULL, '财务核心模块');
 INSERT INTO `sys_menu` VALUES (6101, '总账', 6100, 1, 'gl', NULL, NULL, 1, 0, 'M', '0', '0', NULL, 'ledger', 103, 1, '2026-07-30 21:32:30', NULL, NULL, 'GL 总账');
 INSERT INTO `sys_menu` VALUES (6102, '科目表', 6101, 1, 'account', 'erp/fin/gl/account/index', NULL, 1, 0, 'C', '0', '0', 'fin:gl:account:list', 'tree-table', 103, 1, '2026-07-30 21:32:30', NULL, NULL, '会计科目树');
@@ -92771,6 +92825,10 @@ INSERT INTO `sys_menu` VALUES (6185, '底库注册', 6183, 1, '', '', '', 1, 0, 
 INSERT INTO `sys_menu` VALUES (6186, '底库删除', 6183, 2, '', '', '', 1, 0, 'F', '0', '0', 'cv:face:remove', '#', 103, 1, '2026-08-02 15:09:49', NULL, NULL, '删除底库条目');
 INSERT INTO `sys_menu` VALUES (6187, '复查误判', 6184, 1, '', '', '', 1, 0, 'F', '0', '0', 'sch:attendance:review', '#', 103, 1, '2026-08-02 15:09:49', NULL, NULL, '标记误判(PASS)/代打卡(FAIL)');
 INSERT INTO `sys_menu` VALUES (6190, '物料检测调试', 6182, 3, 'detect', 'cv/detect/index', NULL, 1, 0, 'C', '0', '0', 'cv:detect:query', 'search', 103, 1, '2026-08-02 16:25:08', NULL, NULL, '物料标签 OCR/YOLO 检测调试(Phase 2)');
+INSERT INTO `sys_menu` VALUES (6191, '人脸1:1验证', 6183, 3, '', '', '', 1, 0, 'F', '0', '0', 'cv:face:verify', '#', 103, 1, '2026-09-20 10:00:00', NULL, NULL, '1:1 人脸验证(ERP-CV-03)');
+INSERT INTO `sys_menu` VALUES (6192, '人脸1:N识别', 6183, 4, '', '', '', 1, 0, 'F', '0', '0', 'cv:face:recognize', '#', 103, 1, '2026-09-20 10:00:00', NULL, NULL, '1:N 人脸识别/底库候选(ERP-CV-03)');
+INSERT INTO `sys_menu` VALUES (6193, '操作台刷脸识别', 6183, 5, '', '', '', 1, 0, 'F', '0', '0', 'cv:ops:identify', '#', 103, 1, '2026-09-20 10:00:00', NULL, NULL, '操作台 1:N top-3 候选(ERP-CV-03)');
+INSERT INTO `sys_menu` VALUES (6194, 'App考勤打卡', 2405, 3, '', '', '', 1, 0, 'F', '0', '0', 'sch:attendance:clock', '#', 103, 1, '2026-09-20 10:00:00', NULL, NULL, 'App 上下班打卡(ERP-SCH-01)');
 INSERT INTO `sys_menu` VALUES (6201, 'App考勤申请审批', 2971, 99, '', '', NULL, 1, 0, 'F', '0', '0', 'sch:appApply:approve', '#', 103, 1, '2026-08-24 22:22:17', NULL, NULL, 'App端补卡/请假审批权限(按钮)');
 INSERT INTO `sys_menu` VALUES (9000, '即时通讯', 0, 20, 'im', NULL, NULL, 1, 0, 'M', '0', '0', NULL, 'message', NULL, 1, '2026-05-07 12:55:00', NULL, NULL, '即时通讯一级菜单');
 INSERT INTO `sys_menu` VALUES (9001, '聊天', 9000, 1, 'chat', 'im/chat/index', NULL, 1, 0, 'C', '0', '0', 'im:chat:list', 'chat-dot-round', NULL, 1, '2026-05-07 12:55:03', NULL, NULL, '即时通讯聊天菜单');
@@ -96800,6 +96858,7 @@ INSERT INTO `sys_menu` VALUES (20836, '8D查询', 4245, 3, '', '', NULL, 1, 0, '
 INSERT INTO `sys_menu` VALUES (20837, '缺陷列表', 4242, 9, '', '', NULL, 1, 0, 'F', '0', '0', 'mes:ncr:defect:list', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'NCR 缺陷明细列表');
 -- MES 批次主档（追溯域页面，承载 mes:pro:trace:query）
 INSERT INTO `sys_menu` VALUES (20838, '追溯查询', 4170, 11, '', '', NULL, 1, 0, 'F', '0', '0', 'mes:pro:trace:query', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'ProTraceabilityController 追溯查询');
+INSERT INTO `sys_menu` VALUES (20850, '反核销', 6122, 3, '', '', NULL, 1, 0, 'F', '0', '0', 'fin:arap:settlement:unsettle', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'FinSettlementController.unsettle');
 
 -- 授权：把上述按钮授权给"当前已持有其父菜单"的角色（幂等）
 INSERT IGNORE INTO `sys_role_menu` (`role_id`, `menu_id`)
@@ -96807,3 +96866,15 @@ SELECT DISTINCT rm.`role_id`, m.`menu_id`
 FROM `sys_menu` m
 JOIN `sys_role_menu` rm ON rm.`menu_id` = m.`parent_id`
 WHERE m.`menu_id` BETWEEN 20800 AND 20838;
+
+-- 2026-09-20 兼容授权：新增按钮权限授予"已持有其父菜单"的角色（幂等）
+INSERT IGNORE INTO `sys_role_menu` (`role_id`, `menu_id`) SELECT DISTINCT rm.`role_id`, 6194 FROM `sys_role_menu` rm WHERE rm.`menu_id` = 2405;
+INSERT IGNORE INTO `sys_role_menu` (`role_id`, `menu_id`) SELECT DISTINCT rm.`role_id`, m.`menu_id` FROM `sys_role_menu` rm JOIN `sys_menu` m ON m.`menu_id` IN (6191, 6192, 6193) WHERE rm.`menu_id` = 6183;
+INSERT IGNORE INTO `sys_role_menu` (`role_id`, `menu_id`) SELECT DISTINCT rm.`role_id`, 6190 FROM `sys_role_menu` rm JOIN `sys_menu` m ON m.`menu_id` = rm.`menu_id` WHERE m.`perms` LIKE 'wm:%' OR m.`perms` LIKE 'cv:%';
+INSERT IGNORE INTO `sys_role_menu` (`role_id`, `menu_id`) SELECT DISTINCT rm.`role_id`, m.`menu_id` FROM `sys_role_menu` rm JOIN `sys_menu` m ON m.`parent_id` IN (6000) WHERE rm.`menu_id` = 6000;
+INSERT IGNORE INTO `sys_role_menu` (`role_id`, `menu_id`) SELECT DISTINCT rm.`role_id`, m.`menu_id` FROM `sys_role_menu` rm JOIN `sys_menu` m ON m.`parent_id` = 6122 WHERE rm.`menu_id` = 6122;
+
+-- 2026-09-20 兼容授权：工装校准 / SOP 查阅登记与删除 按钮授予"已持有其父菜单"的角色（幂等）
+INSERT IGNORE INTO `sys_role_menu` (`role_id`, `menu_id`) SELECT DISTINCT rm.`role_id`, 4196 FROM `sys_role_menu` rm WHERE rm.`menu_id` = 4172;
+INSERT IGNORE INTO `sys_role_menu` (`role_id`, `menu_id`) SELECT DISTINCT rm.`role_id`, 4276 FROM `sys_role_menu` rm WHERE rm.`menu_id` = 4273;
+INSERT IGNORE INTO `sys_role_menu` (`role_id`, `menu_id`) SELECT DISTINCT rm.`role_id`, 4277 FROM `sys_role_menu` rm WHERE rm.`menu_id` = 4273;

@@ -98,10 +98,11 @@ CREATE TABLE `eq_equipment`  (
   `location` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '安装位置',
   `purchase_date` date NULL DEFAULT NULL COMMENT '购置日期',
   `warranty_date` date NULL DEFAULT NULL COMMENT '保修到期',
-  `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'NORMAL' COMMENT 'NORMAL/MAINTENANCE/FAULT/SCRAPPED',
+  `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'NORMAL' COMMENT 'NORMAL/MAINTENANCE/FAULT/SCRAPPED/OFFLINE',
   `inspection_items` json NULL COMMENT '点检项目及标准(JSON)',
   `last_inspection` json NULL COMMENT '最近一次点检结果(JSON)',
   `iot_device_id` bigint(20) NULL DEFAULT NULL COMMENT '关联IoT设备ID(预留,无外键)',
+  `planned_minutes_per_day` decimal(10,2) NULL DEFAULT NULL COMMENT '计划生产时长(分钟/天), 供OEE聚合; 空则取 nexus.mes.eq.oee.planned-minutes-per-day(默认480)',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
@@ -280,6 +281,7 @@ CREATE TABLE `eq_maintenance_record`  (
   `execute_time` datetime(0) NULL DEFAULT NULL COMMENT '执行时间',
   `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '保养内容/执行情况',
   `result` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'NORMAL' COMMENT 'NORMAL/ABNORMAL',
+  `duration_minutes` decimal(10,2) NULL DEFAULT NULL COMMENT '保养占用时长(分钟), 供OEE的maintenance_minutes真实汇总',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
   `create_dept` bigint(20) NULL DEFAULT NULL,
   `create_by` bigint(20) NULL DEFAULT NULL,
@@ -308,12 +310,12 @@ CREATE TABLE `eq_oee_record`  (
   `stat_date` date NOT NULL COMMENT '统计日期(日粒度)',
   `planned_minutes` decimal(10, 2) NULL DEFAULT 480.00 COMMENT '计划生产时长(分钟, 首版默认480=8h单班)',
   `downtime_minutes` decimal(10, 2) NULL DEFAULT 0.00 COMMENT '停机时长(分钟, 来自 eq_repair.downtime_hours 求和)',
-  `maintenance_minutes` decimal(10, 2) NULL DEFAULT 0.00 COMMENT '保养占用时长(分钟, 预留, 首版0)',
+  `maintenance_minutes` decimal(10, 2) NULL DEFAULT 0.00 COMMENT '保养占用时长(分钟, 来自 eq_maintenance_record.duration_minutes 求和)',
   `run_minutes` decimal(10, 2) NULL DEFAULT 0.00 COMMENT '运行时长(分钟, = planned - downtime - maintenance)',
   `fault_count` int(11) NULL DEFAULT 0 COMMENT '故障次数(eq_repair 当日报修数)',
   `availability` decimal(6, 4) NULL DEFAULT 0.0000 COMMENT '可用率/稼动率(0~1), = run/planned',
-  `performance_rate` decimal(6, 4) NULL DEFAULT 1.0000 COMMENT '表现率(首版占位1.0, 待工单报工数据补全)',
-  `quality_rate` decimal(6, 4) NULL DEFAULT 1.0000 COMMENT '质量率(首版占位1.0, 待质量数据补全)',
+  `performance_rate` decimal(6, 4) NULL DEFAULT NULL COMMENT '表现率(无理论节拍数据源时为 NULL 占位)',
+  `quality_rate` decimal(6, 4) NULL DEFAULT NULL COMMENT '质量率(无报工数据时为 NULL 占位)',
   `oee` decimal(6, 4) NULL DEFAULT 0.0000 COMMENT 'OEE = availability * performance * quality',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
   `create_dept` bigint(20) NULL DEFAULT NULL,
@@ -1789,6 +1791,7 @@ CREATE TABLE `pro_flow_card`  (
   `planned_qty` decimal(18, 4) NULL DEFAULT 0.0000 COMMENT '计划数量',
   `completed_qty` decimal(18, 4) NULL DEFAULT 0.0000 COMMENT '已完成数量',
   `scrap_qty` decimal(18, 4) NULL DEFAULT 0.0000 COMMENT '报废数量',
+  `aggregated_flag` tinyint NOT NULL DEFAULT 0 COMMENT '完工数量是否已一次性入账到工单(0=未入账 1=已入账)',
   `current_step_id` bigint(20) NULL DEFAULT NULL COMMENT '当前工序步骤记录ID',
   `current_step_seq` int(4) NULL DEFAULT NULL COMMENT '当前工序序号',
   `card_status` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'CREATED' COMMENT '流转卡状态: CREATED/RELEASED/IN_PROGRESS/COMPLETED/CLOSED',
@@ -2758,6 +2761,7 @@ CREATE TABLE `sop_version`  (
   `version_no` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '版本号(如1.0/1.1)',
   `file_oss_id` bigint(20) NOT NULL COMMENT '该版本文件OSS ID',
   `file_type` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '文件类型: PDF/IMAGE/VIDEO/WORD',
+  `file_hash` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '该版本正文的 SM3(签名绑定正文用), 空表示尚未计算',
   `change_log` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '变更说明',
   `published_time` datetime(0) NULL DEFAULT NULL COMMENT '发布时间',
   `published_by` bigint(20) NULL DEFAULT NULL COMMENT '发布人ID',
@@ -2771,69 +2775,70 @@ CREATE TABLE `sop_version`  (
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`version_id`) USING BTREE,
   INDEX `idx_sop_id`(`sop_id`) USING BTREE,
-  INDEX `idx_status`(`status`) USING BTREE
+  INDEX `idx_status`(`status`) USING BTREE,
+  UNIQUE INDEX `uk_sop_version_no`(`sop_id`, `version_no`, `tenant_id`, `del_flag`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = 'SOP版本历史' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sop_version
 -- ----------------------------
-INSERT INTO `sop_version` VALUES (1, '000000', 1, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (2, '000000', 2, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (3, '000000', 3, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (4, '000000', 4, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (5, '000000', 5, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (6, '000000', 6, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (7, '000000', 7, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (8, '000000', 8, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (9, '000000', 9, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (10, '000000', 10, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (11, '000000', 11, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (12, '000000', 12, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (13, '000000', 13, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (14, '000000', 14, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (15, '000000', 15, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (16, '000000', 16, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (17, '000000', 17, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (18, '000000', 18, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (19, '000000', 19, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (20, '000000', 20, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (21, '000000', 21, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (22, '000000', 22, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (23, '000000', 23, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (24, '000000', 24, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (25, '000000', 25, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (26, '000000', 26, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (27, '000000', 27, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (28, '000000', 28, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (29, '000000', 29, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (30, '000000', 30, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (31, '000000', 31, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (32, '000000', 32, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (33, '000000', 33, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (34, '000000', 34, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (35, '000000', 35, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (36, '000000', 36, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (37, '000000', 37, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (38, '000000', 38, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (39, '000000', 39, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (40, '000000', 40, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (41, '000000', 41, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (42, '000000', 42, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (43, '000000', 43, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (44, '000000', 44, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (45, '000000', 45, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (46, '000000', 46, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (47, '000000', 47, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (48, '000000', 48, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (49, '000000', 49, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (50, '000000', 50, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (51, '000000', 51, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (52, '000000', 52, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (53, '000000', 53, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (54, '000000', 54, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (55, '000000', 55, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (56, '000000', 56, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (57, '000000', 57, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (1, '000000', 1, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (2, '000000', 2, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (3, '000000', 3, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (4, '000000', 4, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (5, '000000', 5, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (6, '000000', 6, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (7, '000000', 7, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (8, '000000', 8, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (9, '000000', 9, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (10, '000000', 10, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (11, '000000', 11, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (12, '000000', 12, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (13, '000000', 13, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (14, '000000', 14, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (15, '000000', 15, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (16, '000000', 16, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (17, '000000', 17, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (18, '000000', 18, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (19, '000000', 19, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (20, '000000', 20, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (21, '000000', 21, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (22, '000000', 22, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (23, '000000', 23, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (24, '000000', 24, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (25, '000000', 25, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (26, '000000', 26, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (27, '000000', 27, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (28, '000000', 28, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (29, '000000', 29, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (30, '000000', 30, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (31, '000000', 31, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (32, '000000', 32, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (33, '000000', 33, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (34, '000000', 34, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (35, '000000', 35, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (36, '000000', 36, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (37, '000000', 37, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (38, '000000', 38, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (39, '000000', 39, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (40, '000000', 40, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (41, '000000', 41, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (42, '000000', 42, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (43, '000000', 43, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (44, '000000', 44, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (45, '000000', 45, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (46, '000000', 46, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (47, '000000', 47, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (48, '000000', 48, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (49, '000000', 49, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (50, '000000', 50, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (51, '000000', 51, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (52, '000000', 52, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (53, '000000', 53, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (54, '000000', 54, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (55, '000000', 55, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (56, '000000', 56, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (57, '000000', 57, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
 
 -- ----------------------------
 -- Table structure for sop_view_log
@@ -2951,7 +2956,8 @@ CREATE TABLE `tg_maintenance_plan`  (
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`plan_id`) USING BTREE,
   INDEX `idx_tooling_id`(`tooling_id`) USING BTREE,
-  INDEX `idx_enabled`(`enabled`) USING BTREE
+  INDEX `idx_enabled`(`enabled`) USING BTREE,
+  UNIQUE INDEX `uk_tooling_trigger`(`tooling_id`, `trigger_type`, `tenant_id`, `del_flag`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = 'MES工装保养计划' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
@@ -2998,12 +3004,18 @@ CREATE TABLE `tg_tooling`  (
   `spec` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '规格',
   `workshop_id` bigint(20) NULL DEFAULT NULL COMMENT '所属车间ID',
   `workshop_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '车间名称(冗余)',
-  `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'IDLE' COMMENT '状态: IDLE/IN_USE/MAINTENANCE/SCRAPPED',
+  `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'IDLE' COMMENT '状态: IDLE/IN_USE/CALIBRATING/MAINTENANCE/SCRAPPED',
   `total_life_count` int(11) NULL DEFAULT NULL COMMENT '总寿命(次数)',
   `total_life_hours` decimal(14, 2) NULL DEFAULT NULL COMMENT '总寿命(小时)',
   `used_count` int(11) NULL DEFAULT 0 COMMENT '已使用次数',
   `used_hours` decimal(14, 2) NULL DEFAULT 0.00 COMMENT '已使用时长',
   `last_maintain_time` datetime(0) NULL DEFAULT NULL COMMENT '上次保养时间',
+  `calibration_cycle_days` int(11) NULL DEFAULT NULL COMMENT '校准周期(天), 空=未纳入校准管理',
+  `last_calibration_date` date NULL DEFAULT NULL COMMENT '上次校准日期',
+  `next_calibration_date` date NULL DEFAULT NULL COMMENT '下次校准日期, 到期/超期即拦截领用与进站',
+  `calibrated_by` bigint(20) NULL DEFAULT NULL COMMENT '校准人ID',
+  `calibration_result` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '校准结果: PASS/FAIL/ADJUSTED',
+  `calibration_remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '校准备注',
   `purchase_date` date NULL DEFAULT NULL COMMENT '采购日期',
   `purchase_cost` decimal(14, 2) NULL DEFAULT NULL COMMENT '采购成本',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
