@@ -438,4 +438,73 @@ CREATE TABLE `iot_forward_log`  (
   INDEX `idx_device`(`tenant_id`, `device_id`, `create_time`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'IoT数据转发投递留痕(失败可重试)' ROW_FORMAT = Dynamic;
 
+-- ----------------------------
+-- Table structure for iot_firmware (固件登记 / OTA)
+-- ----------------------------
+DROP TABLE IF EXISTS `iot_firmware`;
+CREATE TABLE `iot_firmware`  (
+  `firmware_id` bigint(20) NOT NULL COMMENT '固件ID(主键)',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '000000' COMMENT '租户ID',
+  `firmware_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT '固件名称',
+  `product_key` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT '适用产品型号(iot_product.product_code,空=不限)',
+  `hardware_model` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT '适用硬件型号(空=不限,仅登记不参与匹配)',
+  `version` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT '版本号',
+  `file_oss_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '固件包OSS文件ID',
+  `file_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '固件包文件名',
+  `file_size` bigint(20) NOT NULL DEFAULT 0 COMMENT '固件包大小(字节)',
+  `checksum_type` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'MD5' COMMENT '校验算法: MD5/SHA256',
+  `checksum` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT '校验值(小写十六进制)',
+  `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'DRAFT' COMMENT '发布状态: DRAFT/RELEASED/DISABLED',
+  `release_time` datetime(0) NULL DEFAULT NULL COMMENT '发布时间',
+  `change_log` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '变更说明',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
+  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
+  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
+  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
+  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志(0正常 1删除)',
+  PRIMARY KEY (`firmware_id`) USING BTREE,
+  UNIQUE INDEX `uk_version`(`tenant_id`, `product_key`, `version`) USING BTREE,
+  INDEX `idx_status`(`tenant_id`, `status`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'IoT固件登记(版本/包/校验值/发布状态)' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for iot_ota_task (OTA 升级任务)
+-- ----------------------------
+DROP TABLE IF EXISTS `iot_ota_task`;
+CREATE TABLE `iot_ota_task`  (
+  `task_id` bigint(20) NOT NULL COMMENT '升级任务ID(主键)',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '000000' COMMENT '租户ID',
+  `firmware_id` bigint(20) NOT NULL COMMENT '固件ID(iot_firmware)',
+  `target_version` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT '目标版本(冗余,固件删除后仍可追溯)',
+  `current_version` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '下发时设备当前版本',
+  `device_id` bigint(20) NOT NULL COMMENT '目标设备ID',
+  `device_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT '设备编码(冗余)',
+  `group_id` bigint(20) NULL DEFAULT NULL COMMENT '来源分组ID(按分组批量下发时记录)',
+  `batch_no` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '批量下发批次号',
+  `command_id` bigint(20) NULL DEFAULT NULL COMMENT '关联下行指令ID(iot_device_command,下发留痕)',
+  `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'PENDING' COMMENT '状态: PENDING/SENT/UPGRADING/SUCCESS/FAILED/TIMEOUT/CANCELLED',
+  `progress` int(11) NOT NULL DEFAULT 0 COMMENT '升级进度(0-100)',
+  `retry_count` int(11) NOT NULL DEFAULT 0 COMMENT '人工重试次数',
+  `sent_time` datetime(0) NULL DEFAULT NULL COMMENT '指令下发时间',
+  `start_time` datetime(0) NULL DEFAULT NULL COMMENT '设备开始升级时间',
+  `finish_time` datetime(0) NULL DEFAULT NULL COMMENT '结束时间',
+  `fail_reason` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '失败/取消原因',
+  `report_msg_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '最近一次回执的消息ID(Stream entry id,便于取证)',
+  `operator_id` bigint(20) NULL DEFAULT NULL COMMENT '下发人',
+  `operator_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '下发人名称',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
+  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
+  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
+  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
+  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  PRIMARY KEY (`task_id`) USING BTREE,
+  INDEX `idx_device`(`tenant_id`, `device_id`, `create_time`) USING BTREE,
+  INDEX `idx_status`(`tenant_id`, `status`, `sent_time`) USING BTREE,
+  INDEX `idx_firmware`(`tenant_id`, `firmware_id`) USING BTREE,
+  INDEX `idx_batch`(`batch_no`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'IoT OTA固件升级任务(单设备/按分组批量)' ROW_FORMAT = Dynamic;
+
 SET FOREIGN_KEY_CHECKS = 1;

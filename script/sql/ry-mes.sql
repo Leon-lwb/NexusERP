@@ -488,7 +488,9 @@ CREATE TABLE `eq_spare_part`  (
   `unit` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '单位',
   `category` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '分类(字典 mes_spare_category)',
   `safety_stock` decimal(14, 4) NULL DEFAULT 0.0000 COMMENT '安全库存',
-  `current_stock` decimal(14, 4) NULL DEFAULT 0.0000 COMMENT '当前库存(冗余, 出入库流水维护)',
+  `current_stock` decimal(14, 4) NULL DEFAULT 0.0000 COMMENT '当前库存(ERP库存的派生冗余缓存; 权威账本在 wm_material_stock, 可用量=在库-已预留且frozen_flag=0)',
+  `material_id` bigint(20) NULL DEFAULT NULL COMMENT 'ERP物料ID(bd_material.material_id)',
+  `warehouse_id` bigint(20) NULL DEFAULT NULL COMMENT 'ERP仓库ID(wm_warehouse.warehouse_id)',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
   `create_dept` bigint(20) NULL DEFAULT NULL,
   `create_by` bigint(20) NULL DEFAULT NULL,
@@ -497,6 +499,7 @@ CREATE TABLE `eq_spare_part`  (
   `update_time` datetime(0) NULL DEFAULT NULL,
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0',
   PRIMARY KEY (`spare_id`) USING BTREE,
+  INDEX `idx_material_id`(`material_id`) USING BTREE,
   UNIQUE INDEX `uk_tenant_code`(`tenant_id`, `spare_code`) USING BTREE,
   INDEX `idx_category`(`category`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'MES备件主数据' ROW_FORMAT = Dynamic;
@@ -3107,3 +3110,38 @@ CREATE TABLE `mes_label_print_log`  (
   INDEX `idx_label_print_sn_tpl`(`tenant_id`, `sn_id`, `template_id`, `result`) USING BTREE,
   INDEX `idx_label_print_time`(`print_time`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '标签打印留痕' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for eq_spare_erp_sync (MES备件→ERP过账同步台账; MES-EQ-04)
+-- ----------------------------
+DROP TABLE IF EXISTS `eq_spare_erp_sync`;
+CREATE TABLE IF NOT EXISTS `eq_spare_erp_sync` (
+  `sync_id` bigint(20) NOT NULL COMMENT '同步台账ID(主键)',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '000000',
+  `biz_key` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '业务幂等键 EQSP:<tenantId>:<logId>',
+  `spare_id` bigint(20) NOT NULL COMMENT '备件ID',
+  `spare_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备件编码(冗余)',
+  `material_id` bigint(20) NULL DEFAULT NULL COMMENT 'ERP物料ID',
+  `warehouse_id` bigint(20) NULL DEFAULT NULL COMMENT 'ERP仓库ID',
+  `transaction_type` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'IN/OUT/REPAIR_USE/RETURN',
+  `quantity` decimal(14, 4) NOT NULL COMMENT '变动数量(正数)',
+  `ref_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '关联单据类型',
+  `ref_id` bigint(20) NULL DEFAULT NULL COMMENT '关联单据ID',
+  `log_id` bigint(20) NULL DEFAULT NULL COMMENT 'MES库存流水ID(eq_spare_stock_log.log_id)',
+  `sync_status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'PENDING' COMMENT 'PENDING/SENT/SYNCED/FAILED',
+  `retry_count` int(11) NULL DEFAULT 0 COMMENT '重投次数',
+  `last_error` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '最近一次失败原因',
+  `last_publish_time` datetime(0) NULL DEFAULT NULL COMMENT '最近一次投递时间',
+  `erp_available_after` decimal(14, 4) NULL DEFAULT NULL COMMENT 'ERP过账后可用量快照',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
+  `create_dept` bigint(20) NULL DEFAULT NULL,
+  `create_by` bigint(20) NULL DEFAULT NULL,
+  `create_time` datetime(0) NULL DEFAULT NULL,
+  `update_by` bigint(20) NULL DEFAULT NULL,
+  `update_time` datetime(0) NULL DEFAULT NULL,
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0',
+  PRIMARY KEY (`sync_id`) USING BTREE,
+  UNIQUE INDEX `uk_tenant_biz_key`(`tenant_id`, `biz_key`) USING BTREE,
+  INDEX `idx_spare_id`(`spare_id`) USING BTREE,
+  INDEX `idx_sync_status`(`sync_status`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'MES备件→ERP过账同步台账' ROW_FORMAT = Dynamic;
