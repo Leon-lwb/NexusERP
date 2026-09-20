@@ -64,7 +64,12 @@ public class IotPipelineProperties {
     private long collectTimePastToleranceMs = 7L * 24 * 60 * 60 * 1000;
 
     /**
-     * 硬编码告警阈值：propertyCode → 阈值（numericValue 超过即告警）
+     * YAML 兜底告警阈值：propertyCode → 阈值（numericValue 超过即告警）。
+     * <p>
+     * IOT-ALERT-02 起，告警规则以数据库表 {@code iot_alert_rule} 为准（支持租户隔离、产品/设备范围、
+     * 比较符、持续时长、去抖与级别）；本属性**仅在库内无匹配规则时兜底**，
+     * 优先级：设备规则 &gt; 产品规则 &gt; 全局规则 &gt; 本 YAML 默认值。
+     * 键匹配大小写不敏感（修正原实现"首字母大写属性永不触发"的问题）。
      */
     private Map<String, java.math.BigDecimal> alertThresholds = new HashMap<>();
 

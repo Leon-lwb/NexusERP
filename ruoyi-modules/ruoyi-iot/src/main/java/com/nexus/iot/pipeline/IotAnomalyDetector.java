@@ -3,6 +3,8 @@ package com.nexus.iot.pipeline;
 import com.nexus.common.iot.dto.IotAlert;
 import com.nexus.common.iot.util.EwmaUtil;
 import com.nexus.common.redis.utils.RedisUtils;
+import com.nexus.iot.alert.domain.IotAlertConstants;
+import com.nexus.iot.alert.service.IIotAlertRecordService;
 import com.nexus.iot.device.domain.IotDeviceData;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,8 +18,8 @@ import java.time.Duration;
  * <p>
  * 与 {@link IotAlertChecker}(固定阈值) 并列：无需预设阈值，为每个 设备×属性 维护
  * EWMA 均值/方差在线估计（Redis 滚动状态，TTL 7 天），
- * 新点偏离 mean 超过 z 倍标准差即触发 ANOMALY 告警，复用 {@link IotAlertNotifier}
- * 的限频/安灯/SSE 推送链路。
+ * 新点偏离 mean 超过 z 倍标准差即触发 ANOMALY 告警，经 {@link IIotAlertRecordService}
+ * 落库 + 去抖 + 安灯/SSE 推送（IOT-ALERT-01：异常告警同样不再"仅落日志"）。
  * <p>
  * 与阈值告警的互斥抑制：同一数据点已触发阈值告警时，由调用方
  * {@link IotStreamConsumer#afterPersist} 传入 {@code suppressNotify=true}，
@@ -38,8 +40,8 @@ public class IotAnomalyDetector {
 
     /** 管道配置属性。 */
     private final IotPipelineProperties properties;
-    /** 告警通知器(限频+安灯+SSE)。 */
-    private final IotAlertNotifier alertNotifier;
+    /** 告警记录服务(落库 + 去抖通知 + 投递留痕)。 */
+    private final IIotAlertRecordService alertRecordService;
 
     /**
      * 检测单条设备数据：更新 EWMA 状态，并在 z-score 超阈值且未被抑制时推送异常告警。
@@ -76,7 +78,7 @@ public class IotAnomalyDetector {
                 alert.setValue(data.getNumericValue());
                 alert.setThreshold(state.mean());
                 alert.setTenantId(data.getTenantId());
-                alertNotifier.notify(alert);
+                alertRecordService.trigger(null, data, alert, IotAlertConstants.SOURCE_ANOMALY);
             }
         } catch (Exception e) {
             // 异常检测失败不阻断数据管道
