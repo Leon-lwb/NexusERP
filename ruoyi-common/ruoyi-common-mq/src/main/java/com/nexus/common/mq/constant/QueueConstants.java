@@ -51,4 +51,12 @@ public interface QueueConstants {
     String PAY_RECEIVED_QUEUE = "erp.pay.received.queue";
     /** 【预留·未启用】电票开具结果队列 (电子发票平台回调, F7 用)。MQ-01 定性: 无生产者/无消费者, 回调消费者 EInvoiceResultConsumer 尚未实现。 */
     String EINVOICE_ISSUE_RESULT_QUEUE = "erp.einvoice.issue.result.queue";
+    /**
+     * MES 备件 → ERP 仓储过账队列 (MES-EQ-04 备件与 ERP 共用一本账)。
+     * <p>生产者: {@code com.nexus.mes.eq.mq.EqSpareErpMqPublisher}（发往默认交换机, routingKey=队列名）；
+     * 消费者: {@code com.nexus.erp.wm.service.mq.MesSpareErpConsumer}（{@code queuesToDeclare} 声明队列，
+     * 故未登记在 {@code RabbitMqInitializer}）。消息体 {@code bizType}：
+     * {@code SPARE_STOCK}（出入库过账）/ {@code SPARE_PURCHASE}（低库存一键生成采购申请）。</p>
+     */
+    String MES_SPARE_ERP_QUEUE = "erp.mes.spare.erp.queue";
 }
