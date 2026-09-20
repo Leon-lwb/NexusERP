@@ -368,7 +368,8 @@ public class LtLotServiceImpl implements ILtLotService {
 
     /**
      * 应用IQC检验结果到关联批次(按 iqc_id 查 lot; 回写 qc_status; FAIL 自动隔离)
-     * <p>最佳努力: IQC结果已落库后由 QcIqcServiceImpl.inspect() afterCommit 调用;
+     * <p>MES-QC-10②: 同一 iqcId 关联的全部批次都要回写(不再只处理第一条)。
+     * 由 QcIqcServiceImpl.inspect() 在检验事务内调用(失败即回滚检验, 不再静默);
      * 未关联批次(iqc_id 无对应 lot)返回 false 不报错。</p>
      */
     @Override
@@ -385,26 +386,29 @@ public class LtLotServiceImpl implements ILtLotService {
         } else {
             throw new RuntimeException("IQC检验结果必须为 QUALIFIED/UNQUALIFIED: " + inspectResult);
         }
-        LtLot lot = baseMapper.selectOne(Wrappers.<LtLot>lambdaQuery().eq(LtLot::getIqcId, iqcId));
-        if (lot == null) {
+        // MES-QC-10②: 同一 iqcId 可能关联多个批次(ERP 侧一批来料拆多 lot), 必须全部回写, 不得只处理第一条
+        List<LtLot> lots = baseMapper.selectList(Wrappers.<LtLot>lambdaQuery().eq(LtLot::getIqcId, iqcId));
+        if (lots == null || lots.isEmpty()) {
             // IQC 未关联批次, 跳过(全量自动待收货->lot 联动)
             return false;
         }
-        // 回写 qc_status + 关联 iqc_id(幂等)
-        baseMapper.update(null, Wrappers.<LtLot>lambdaUpdate()
-            .set(LtLot::getQcStatus, qcStatus)
-            .set(LtLot::getIqcId, iqcId)
-            .eq(LtLot::getLotId, lot.getLotId()));
-        // FAIL 自动隔离(仅 IN_STOCK/IN_USE 可隔离; 终态则仅置 FAIL, 记录无法隔离)
-        if (QC_STATUS_FAIL.equals(qcStatus)) {
-            if (STATUS_IN_STOCK.equals(lot.getStatus()) || STATUS_IN_USE.equals(lot.getStatus())) {
-                quarantine(lot.getLotId(), "IQC(" + iqcId + ")不合格自动隔离");
-            } else {
-                log.warn("IQC不合格但批次已终态,仅置FAIL未隔离: lotId={}, status={}",
-                    lot.getLotId(), lot.getStatus());
+        for (LtLot lot : lots) {
+            // 回写 qc_status + 关联 iqc_id(幂等)
+            baseMapper.update(null, Wrappers.<LtLot>lambdaUpdate()
+                .set(LtLot::getQcStatus, qcStatus)
+                .set(LtLot::getIqcId, iqcId)
+                .eq(LtLot::getLotId, lot.getLotId()));
+            // FAIL 自动隔离(仅 IN_STOCK/IN_USE 可隔离; 终态则仅置 FAIL, 必须留 error 级告警供人工处理)
+            if (QC_STATUS_FAIL.equals(qcStatus)) {
+                if (STATUS_IN_STOCK.equals(lot.getStatus()) || STATUS_IN_USE.equals(lot.getStatus())) {
+                    quarantine(lot.getLotId(), "IQC(" + iqcId + ")不合格自动隔离");
+                } else {
+                    log.error("IQC不合格但批次已终态, 仅置FAIL未隔离, 需人工处理: iqcId={}, lotId={}, status={}",
+                        iqcId, lot.getLotId(), lot.getStatus());
+                }
             }
+            log.info("IQC回写批次QC状态: iqcId={}, lotId={}, qcStatus={}", iqcId, lot.getLotId(), qcStatus);
         }
-        log.info("IQC回写批次QC状态: iqcId={}, lotId={}, qcStatus={}", iqcId, lot.getLotId(), qcStatus);
         return true;
     }
 

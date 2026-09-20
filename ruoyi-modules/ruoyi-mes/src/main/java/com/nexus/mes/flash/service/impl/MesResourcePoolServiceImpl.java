@@ -42,6 +42,10 @@ public class MesResourcePoolServiceImpl implements IMesResourcePoolService {
 
     private static final String STATUS_AVAILABLE = "AVAILABLE";
     private static final String STATUS_ALLOCATED = "ALLOCATED";
+    /** 已消耗: 刷写 PASS 后资源被烧录使用, 不可再分配/不再回收 */
+    private static final String STATUS_USED = "USED";
+    /** 备注最大长度(与 mes_resource_item.remark 列对齐) */
+    private static final int REMARK_MAX_LEN = 200;
 
     @Override
     public TableDataInfo<MesResourcePool> selectPageList(MesResourcePoolBo bo, PageQuery pageQuery) {
@@ -188,5 +192,90 @@ public class MesResourcePoolServiceImpl implements IMesResourcePoolService {
             // 并发被抢, 重试
         }
         throw new ServiceException("资源分配并发冲突, 重试失败: poolId=" + poolId);
+    }
+
+    /**
+     * 回收资源项(MES-FLASH-06): CAS ALLOCATED -> AVAILABLE + 清绑定 + 池 used_count-1。
+     * <p>幂等: 不存在/已非 ALLOCATED 时仅告警返回 false(不抛异常, 补偿动作可重复执行)。</p>
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean release(Long itemId, String reason) {
+        if (itemId == null) {
+            return false;
+        }
+        MesResourceItem item = resourceItemMapper.selectById(itemId);
+        if (item == null) {
+            log.warn("资源回收跳过(资源项不存在, 幂等): itemId={}, reason={}", itemId, reason);
+            return false;
+        }
+        // CAS: 仅 ALLOCATED 可回收; USED(已消耗/已烧录)不回流池中, 防止"烧过的MAC再发给下一台"
+        int rows = resourceItemMapper.update(null, Wrappers.<MesResourceItem>lambdaUpdate()
+            .set(MesResourceItem::getStatus, STATUS_AVAILABLE)
+            .set(MesResourceItem::getBoundSnId, null)
+            .set(MesResourceItem::getBoundTime, null)
+            .set(StringUtils.isNotBlank(reason), MesResourceItem::getRemark, mergeRemark(item.getRemark(), reason))
+            .eq(MesResourceItem::getItemId, itemId)
+            .eq(MesResourceItem::getStatus, STATUS_ALLOCATED));
+        if (rows == 0) {
+            log.warn("资源回收跳过(非 ALLOCATED 状态, 幂等): itemId={}, status={}, reason={}", itemId, item.getStatus(), reason);
+            return false;
+        }
+        if (item.getPoolId() != null) {
+            // used_count 递减(下限 0, 防止历史脏数据出现负数)
+            baseMapper.update(null, Wrappers.<MesResourcePool>lambdaUpdate()
+                .setSql("used_count = CASE WHEN used_count > 0 THEN used_count - 1 ELSE 0 END")
+                .eq(MesResourcePool::getPoolId, item.getPoolId()));
+        }
+        log.info("资源回收: itemId={}, poolId={}, value={}, reason={}", itemId, item.getPoolId(), item.getResourceValue(), reason);
+        return true;
+    }
+
+    /**
+     * 按 SN 回写刷写结果对资源项状态(MES-FLASH-06): PASS 置 USED(消耗) / FAIL 回收 AVAILABLE。
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int applyFlashResult(Long snId, String resourceType, boolean pass, String reason) {
+        if (snId == null || StringUtils.isBlank(resourceType)) {
+            return 0;
+        }
+        List<Long> poolIds = baseMapper.selectList(Wrappers.<MesResourcePool>lambdaQuery()
+                .eq(MesResourcePool::getResourceType, resourceType))
+            .stream().map(MesResourcePool::getPoolId).filter(java.util.Objects::nonNull).toList();
+        if (poolIds.isEmpty()) {
+            log.warn("刷写结果回写资源项跳过(无该类型资源池): snId={}, resourceType={}", snId, resourceType);
+            return 0;
+        }
+        List<MesResourceItem> bound = resourceItemMapper.selectList(Wrappers.<MesResourceItem>lambdaQuery()
+            .in(MesResourceItem::getPoolId, poolIds)
+            .eq(MesResourceItem::getBoundSnId, snId)
+            .eq(MesResourceItem::getStatus, STATUS_ALLOCATED));
+        if (bound.isEmpty()) {
+            log.warn("刷写结果回写资源项跳过(该SN无已分配资源, 幂等): snId={}, resourceType={}", snId, resourceType);
+            return 0;
+        }
+        int affected = 0;
+        for (MesResourceItem item : bound) {
+            if (pass) {
+                // PASS: 资源已烧录使用, 置 USED(使 USED 成为可达状态, 同时保留 allocate 的 in(ALLOCATED,USED) 幂等守卫)
+                int rows = resourceItemMapper.update(null, Wrappers.<MesResourceItem>lambdaUpdate()
+                    .set(MesResourceItem::getStatus, STATUS_USED)
+                    .eq(MesResourceItem::getItemId, item.getItemId())
+                    .eq(MesResourceItem::getStatus, STATUS_ALLOCATED));
+                affected += Math.max(rows, 0);
+            } else if (release(item.getItemId(), reason)) {
+                affected++;
+            }
+        }
+        log.info("刷写结果回写资源项: snId={}, resourceType={}, pass={}, 影响={}", snId, resourceType, pass, affected);
+        return affected;
+    }
+
+    /** 回收原因并入资源项备注(保留原备注, 截断到列长) */
+    private String mergeRemark(String origin, String reason) {
+        String suffix = "回收:" + reason;
+        String merged = StringUtils.isBlank(origin) ? suffix : origin + " | " + suffix;
+        return merged.length() > REMARK_MAX_LEN ? merged.substring(0, REMARK_MAX_LEN) : merged;
     }
 }

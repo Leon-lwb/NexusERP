@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Arrays;
@@ -109,5 +110,20 @@ public class MesLabelTemplateController extends BaseController {
             return R.ok("测试打印已发送", null);
         }
         return R.fail("打印发送失败(打印机不在线或地址未配置), 详情见服务端日志");
+    }
+
+    /**
+     * 人工补打(MES-LABEL-02): 按 SN + 模板重新打印并留痕(print_source=REPRINT)。
+     * <p>造码联动的自动打印带幂等键(同 SN 同模板已成功打印则跳过), 重打必须走本入口。</p>
+     */
+    @SaCheckPermission("mes:label:template:print")
+    @Log(title = "标签补打", businessType = BusinessType.OTHER)
+    @PostMapping("/reprint")
+    public R<Void> reprint(@NotNull @RequestParam Long snId, @NotNull @RequestParam Long templateId) {
+        boolean success = labelTemplateService.reprint(snId, templateId);
+        if (success) {
+            return R.ok("补打已发送", null);
+        }
+        return R.fail("补打发送失败(打印机不在线或地址未配置), 详情见服务端日志与打印留痕");
     }
 }

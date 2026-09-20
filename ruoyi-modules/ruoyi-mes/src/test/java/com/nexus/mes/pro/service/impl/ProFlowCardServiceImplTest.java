@@ -9,11 +9,15 @@ import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.SpringUtils;
+import com.nexus.mes.flash.domain.MesFlashType;
 import com.nexus.mes.flash.mapper.FlashRecordMapper;
+import com.nexus.mes.flash.mapper.MesFlashTypeMapper;
 import com.nexus.mes.ncr.service.INcrOrderService;
 import com.nexus.mes.pro.domain.ProFlowCard;
 import com.nexus.mes.pro.domain.ProFlowCardStep;
+import com.nexus.mes.pro.domain.ProSn;
 import com.nexus.mes.pro.domain.ProWorkOrder;
+import com.nexus.mes.pro.domain.ProWorkOrderStep;
 import com.nexus.mes.pro.mapper.ProFlowCardMapper;
 import com.nexus.mes.pro.mapper.ProFlowCardStepMapper;
 import com.nexus.mes.pro.mapper.ProSnMapper;
@@ -35,6 +39,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -79,6 +84,8 @@ class ProFlowCardServiceImplTest {
     @Mock
     private FlashRecordMapper flashRecordMapper;
     @Mock
+    private MesFlashTypeMapper mesFlashTypeMapper;
+    @Mock
     private ObjectMapper objectMapper;
 
     @InjectMocks
@@ -93,6 +100,8 @@ class ProFlowCardServiceImplTest {
         TableInfoHelper.initTableInfo(assistant, ProFlowCard.class);
         TableInfoHelper.initTableInfo(assistant, ProFlowCardStep.class);
         TableInfoHelper.initTableInfo(assistant, ProWorkOrder.class);
+        TableInfoHelper.initTableInfo(assistant, ProSn.class);
+        TableInfoHelper.initTableInfo(assistant, MesFlashType.class);
     }
 
     @BeforeEach
@@ -101,6 +110,8 @@ class ProFlowCardServiceImplTest {
         aopProxyMock = mockStatic(SpringUtils.class, withSettings().lenient());
         aopProxyMock.when(() -> SpringUtils.getAopProxy(any())).thenReturn(service);
         lenient().when(lockTemplate.lock(anyString(), anyLong(), anyLong())).thenReturn(mock(LockInfo.class));
+        // @Value 字段纯单测不注入, 手动置为 FORCE 以便覆盖刷写门禁分支
+        ReflectionTestUtils.setField(service, "flashGateMode", "FORCE");
     }
 
     @AfterEach
@@ -215,7 +226,74 @@ class ProFlowCardServiceImplTest {
         assertTrue(qtyWrapper.getParamNameValuePairs().containsValue(new BigDecimal("10")));
     }
 
+    // ==================== 刷写门禁 gate_enabled 过滤 ====================
+
+    /**
+     * 刷写类型 gate_enabled='0'(不参与完工门禁)时, 门禁不得拦截: 绑定项被过滤后
+     * 不再查询刷写记录, 工序完工继续执行(CAS 0 行则提前返回)。
+     */
+    @Test
+    void checkFlashStepGate_skipsGateDisabledType() {
+        when(stepMapper.selectById(1L)).thenReturn(flashStep(1L, 1L, "OP10"));
+        when(workOrderStepMapper.selectById(1L)).thenReturn(woStepWithFlashContent(1L, 9L));
+        when(mesFlashTypeMapper.selectList(any())).thenReturn(List.of(flashType("firmware_file", "0")));
+        when(stepMapper.update(any(), any())).thenReturn(0);
+
+        assertDoesNotThrow(() -> service.checkAndCompleteStepUnderLock(1L, 1L));
+
+        // 修复前: 无 gate_enabled 过滤 → 该类型无 PASS 记录会抛"刷写门禁未通过"
+        verify(flashRecordMapper, never()).selectOne(any());
+    }
+
+    /** 反向对照: gate_enabled='1' 时同场景必须拦截(证明上面的放行来自过滤而非门禁失效)。 */
+    @Test
+    void checkFlashStepGate_blocksWhenGateEnabledTypeHasNoPassRecord() {
+        when(stepMapper.selectById(1L)).thenReturn(flashStep(1L, 1L, "OP10"));
+        when(workOrderStepMapper.selectById(1L)).thenReturn(woStepWithFlashContent(1L, 9L));
+        when(mesFlashTypeMapper.selectList(any())).thenReturn(List.of(flashType("firmware_file", "1")));
+        when(proSnMapper.selectList(any())).thenReturn(List.of(sn(7L, "SN-1", 1L)));
+        when(flashRecordMapper.selectOne(any())).thenReturn(null);
+
+        ServiceException ex = assertThrows(ServiceException.class, () -> service.checkAndCompleteStepUnderLock(1L, 1L));
+
+        assertTrue(ex.getMessage().contains("刷写门禁未通过"), "应拦截未刷写工序: " + ex.getMessage());
+        assertTrue(ex.getMessage().contains("SN-1"), "应列出未通过 SN: " + ex.getMessage());
+    }
+
     // ==================== 测试辅助 ====================
+
+    private ProFlowCardStep flashStep(Long stepRecordId, Long woStepId, String processName) {
+        ProFlowCardStep s = new ProFlowCardStep();
+        s.setStepRecordId(stepRecordId);
+        s.setCardId(1L);
+        s.setWoStepId(woStepId);
+        s.setProcessName(processName);
+        s.setStepStatus("IN_PROGRESS");
+        return s;
+    }
+
+    /** 单类型刷写绑定(content_ref_id 路径, 免 JSON 解析): flashTypeCode 固定 firmware_file */
+    private ProWorkOrderStep woStepWithFlashContent(Long stepId, Long contentRefId) {
+        ProWorkOrderStep ws = new ProWorkOrderStep();
+        ws.setStepId(stepId);
+        ws.setContentRefId(contentRefId);
+        return ws;
+    }
+
+    private MesFlashType flashType(String typeCode, String gateEnabled) {
+        MesFlashType t = new MesFlashType();
+        t.setTypeCode(typeCode);
+        t.setGateEnabled(gateEnabled);
+        return t;
+    }
+
+    private ProSn sn(Long snId, String snCode, Long cardId) {
+        ProSn s = new ProSn();
+        s.setSnId(snId);
+        s.setSnCode(snCode);
+        s.setCardId(cardId);
+        return s;
+    }
 
     /** 取"卡数量重算"那一次 update(区别于状态 CAS 与入账 CAS) */
     @SuppressWarnings("unchecked")

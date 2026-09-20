@@ -72,6 +72,10 @@ public class NcrOrderServiceImpl implements INcrOrderService {
     private final INcrDefectService defectService;
     private final ESignatureService eSignatureService;
 
+    /** MES-NCR-06: 处置方式白名单(不可逆处置必须走电子签名入口 {@link #disposeWithSignature}) */
+    private static final java.util.Set<String> SUPPORTED_DISPOSITIONS =
+        java.util.Set.of(DISPOSITION_REWORK, DISPOSITION_SCRAP, DISPOSITION_ACCEPT, DISPOSITION_RETURN);
+
     /**
      * 分页查询NCR单列表
      *
@@ -137,6 +141,8 @@ public class NcrOrderServiceImpl implements INcrOrderService {
 
     /**
      * 修改NCR单(仅 OPEN/REVIEW 状态可编辑)
+     * <p>MES-NCR-03: 条件更新(CAS) + 白名单字段 —— 绝不整实体 updateById,
+     * 否则并发处置后的 CLOSED/DISPOSITION 状态会被本次编辑回滚。</p>
      *
      * @param bo NCR单业务对象
      * @return 修改成功返回 true
@@ -148,27 +154,39 @@ public class NcrOrderServiceImpl implements INcrOrderService {
         if (order == null) {
             throw new RuntimeException("NCR单不存在: " + bo.getNcrId());
         }
-        // 状态校验: 仅 OPEN/REVIEW 可编辑
+        // 状态校验: 仅 OPEN/REVIEW 可编辑(与 CAS 条件一致, 先给出可读错误)
         if (!STATUS_OPEN.equals(order.getStatus()) && !STATUS_REVIEW.equals(order.getStatus())) {
             throw new RuntimeException("当前状态不可编辑: " + order.getStatus());
         }
-        // 更新可编辑字段
-        order.setWoId(bo.getWoId());
-        order.setWoNo(bo.getWoNo());
-        order.setCardId(bo.getCardId());
-        order.setStepRecordId(bo.getStepRecordId());
-        order.setProcessId(bo.getProcessId());
-        order.setProcessName(bo.getProcessName());
-        order.setMaterialId(bo.getMaterialId());
-        order.setMaterialCode(bo.getMaterialCode());
-        order.setMaterialName(bo.getMaterialName());
-        order.setLotId(bo.getLotId());
-        order.setLotCode(bo.getLotCode());
-        order.setDefectQty(bo.getDefectQty());
-        order.setRemark(bo.getRemark());
-        int rows = baseMapper.updateById(order);
+        // 白名单业务字段 + 状态 CAS: rows==0 说明状态已被并发变更(如已处置/已关闭)
+        com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<NcrOrder> update =
+            Wrappers.<NcrOrder>lambdaUpdate()
+            .set(bo.getWoId() != null, NcrOrder::getWoId, bo.getWoId())
+            .set(bo.getWoNo() != null, NcrOrder::getWoNo, bo.getWoNo())
+            .set(bo.getCardId() != null, NcrOrder::getCardId, bo.getCardId())
+            .set(bo.getStepRecordId() != null, NcrOrder::getStepRecordId, bo.getStepRecordId())
+            .set(bo.getProcessId() != null, NcrOrder::getProcessId, bo.getProcessId())
+            .set(bo.getProcessName() != null, NcrOrder::getProcessName, bo.getProcessName())
+            .set(bo.getMaterialId() != null, NcrOrder::getMaterialId, bo.getMaterialId())
+            .set(bo.getMaterialCode() != null, NcrOrder::getMaterialCode, bo.getMaterialCode())
+            .set(bo.getMaterialName() != null, NcrOrder::getMaterialName, bo.getMaterialName())
+            .set(bo.getLotId() != null, NcrOrder::getLotId, bo.getLotId())
+            .set(bo.getLotCode() != null, NcrOrder::getLotCode, bo.getLotCode())
+            .set(bo.getDefectQty() != null, NcrOrder::getDefectQty, bo.getDefectQty())
+            .set(bo.getRemark() != null, NcrOrder::getRemark, bo.getRemark())
+            .eq(NcrOrder::getNcrId, bo.getNcrId())
+            .in(NcrOrder::getStatus, STATUS_OPEN, STATUS_REVIEW);
+        if (update.getSqlSet() == null || update.getSqlSet().isBlank()) {
+            // 无任何白名单字段可写: 视为无变更(空 SET 会生成非法 SQL)
+            log.info("NCR单无字段变更, 跳过更新: ncrId={}", bo.getNcrId());
+            return true;
+        }
+        int rows = baseMapper.update(null, update);
+        if (rows == 0) {
+            throw new ServiceException("NCR单状态已变更，请刷新后重试");
+        }
         log.info("修改NCR单: ncrId={}", bo.getNcrId());
-        return rows > 0;
+        return true;
     }
 
     /**
@@ -248,7 +266,9 @@ public class NcrOrderServiceImpl implements INcrOrderService {
         // 工序出口来源没有物料/批次键: 无法定位批次时显式记录"未关联批次", 不伪造 null 走旁路
         log.warn("NCR(工序出口)未关联批次, 批次隔离/报废/放行动作不会执行: cardId={}, stepRecordId={}, mesWoId={}",
             cardId, stepRecordId, mesWoId);
-        return createNcr(SOURCE_PROCESS, null, mesWoId, null, defectQty, defectInfo,
+        // MES-NCR-05: sourceId 用 stepRecordId(唯一定位一次出站), 使"同一次出站"的重复上报命中幂等检查;
+        // 原实现传 null 会绕过 sourceType+sourceId 查重, 每次上报都新建 NCR 单
+        return createNcr(SOURCE_PROCESS, stepRecordId, mesWoId, null, defectQty, defectInfo,
             null, cardId, stepRecordId, null, null, null, null, null);
     }
 
@@ -435,6 +455,10 @@ public class NcrOrderServiceImpl implements INcrOrderService {
     @Transactional(rollbackFor = Exception.class)
     public Boolean disposeWithSignature(Long ncrId, String disposition, String remark,
                                         String authMethod, String credential) {
+        // MES-NCR-06: 处置方式白名单 —— 先于任何落库动作校验, 未知处置不得先改状态再报错
+        if (!SUPPORTED_DISPOSITIONS.contains(disposition)) {
+            throw new ServiceException("不支持的处置方式: " + disposition);
+        }
         // 1. 签署(含授权校验与 disposition_signature_id 绑定): 失败直接抛出, 业务库尚未被触碰
         signDisposition(ncrId, disposition, authMethod, credential);
         // 2. 处置: 与本方法同一事务, 与步骤1 的绑定同生共死

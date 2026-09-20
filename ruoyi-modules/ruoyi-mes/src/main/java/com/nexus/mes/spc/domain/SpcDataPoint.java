@@ -36,6 +36,9 @@ public class SpcDataPoint extends TenantEntity {
     /** 值(组均值/不良率/缺陷数等) */
     private BigDecimal value;
 
+    /** 组内离散度: 极差R(极差图)/标准差S(标准差图)/移动极差MR(单值-移动极差图) */
+    private BigDecimal subValue;
+
     /** 是否超控制限(0/1) */
     private String isOoc;
 

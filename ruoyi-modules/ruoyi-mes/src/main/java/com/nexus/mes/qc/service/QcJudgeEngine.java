@@ -89,10 +89,14 @@ public final class QcJudgeEngine {
                 return le(value, detail.getUslValue());
             }
             case "NOMINAL" -> {
+                // MES-QC-06: null 安全 —— 名义值/上公差/下公差任一缺失即无法判定, 返回 false 走 FAIL, 不抛 NPE
                 BigDecimal nominal = detail.getNominalValue();
-                BigDecimal lower = nominal.subtract(detail.getTolLower());
-                BigDecimal upper = nominal.add(detail.getTolUpper());
-                return ge(value, lower) && le(value, upper);
+                BigDecimal tolUpper = detail.getTolUpper();
+                BigDecimal tolLower = detail.getTolLower();
+                if (nominal == null || tolUpper == null || tolLower == null) {
+                    return false;
+                }
+                return ge(value, nominal.subtract(tolLower)) && le(value, nominal.add(tolUpper));
             }
             default -> {
                 return false;

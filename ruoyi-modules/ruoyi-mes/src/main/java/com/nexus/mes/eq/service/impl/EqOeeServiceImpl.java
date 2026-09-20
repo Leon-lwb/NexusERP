@@ -335,16 +335,18 @@ public class EqOeeServiceImpl implements IEqOeeService {
         maintenance = maintenance.setScale(2, RoundingMode.HALF_UP);
 
         // 质量率: 同工作中心当日工序报工的良品率; 无报工数据时为 null(占位, 不伪装 100%)
-        BigDecimal qualityRate = resolveQualityRate(eq, dayRange);
+        BigDecimal qualityRate = clamp01(resolveQualityRate(eq, dayRange));
         // 表现率: 缺少"理论节拍/标准工时"数据源, 恒为占位 null
         BigDecimal performanceRate = null;
 
         BigDecimal run = planned.subtract(downtimeMinutes).subtract(maintenance).max(BigDecimal.ZERO);
-        BigDecimal availability = planned.compareTo(BigDecimal.ZERO) > 0
-            ? run.divide(planned, 4, RoundingMode.HALF_UP) : BigDecimal.ZERO;
-        BigDecimal oee = availability
+        // MES-EQ-13: 四个比率统一钳制到 [0,1]。原来只有 max(ZERO) 下限, 负停机时长/负保养时长
+        // 或历史脏数据会让 run > planned, 落库 availability/oee > 1, 看板出现"超产"假象。
+        BigDecimal availability = clamp01(planned.compareTo(BigDecimal.ZERO) > 0
+            ? run.divide(planned, 4, RoundingMode.HALF_UP) : BigDecimal.ZERO);
+        BigDecimal oee = clamp01(availability
             .multiply(performanceRate == null ? BigDecimal.ONE : performanceRate)
-            .multiply(qualityRate == null ? BigDecimal.ONE : qualityRate)
+            .multiply(qualityRate == null ? BigDecimal.ONE : qualityRate))
             .setScale(4, RoundingMode.HALF_UP);
         int fault = faultCount == null ? 0 : faultCount.intValue();
         String remark = buildOeeRemark(performanceRate, qualityRate, maintRecords.size(), maintMissingDuration);
@@ -392,6 +394,23 @@ public class EqOeeServiceImpl implements IEqOeeService {
         rec.setRemark(remark);
         baseMapper.insert(rec);
         return 1;
+    }
+
+    /**
+     * 比率钳制到 [0,1](MES-EQ-13)。
+     * <p>
+     * planned(分母)与 run(分子)都依赖人工填报数据, 负停机/负成本或历史脏数据会让
+     * availability/oee 突破 1 的物理上界; 此处统一做上限钳制。
+     * null 原样返回, 保留"表现率/质量率无数据源 = 占位"的语义。
+     *
+     * @param rate 原始比率(可空)
+     * @return 落在 [0,1] 的比率; 入参为 null 时返回 null
+     */
+    static BigDecimal clamp01(BigDecimal rate) {
+        if (rate == null) {
+            return null;
+        }
+        return rate.max(BigDecimal.ZERO).min(BigDecimal.ONE);
     }
 
     /**

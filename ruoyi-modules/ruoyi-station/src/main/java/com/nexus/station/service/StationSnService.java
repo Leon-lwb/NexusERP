@@ -82,11 +82,16 @@ public class StationSnService {
             // 防环: 父链祖先命中任一待绑组件即拒绝
             checkCycle(parent, componentCodes, code);
 
-            proSnMapper.update(null, Wrappers.<ProSn>lambdaUpdate()
+            int rows = proSnMapper.update(null, Wrappers.<ProSn>lambdaUpdate()
                 .set(ProSn::getParentSnId, parent.getSnId())
                 .set(ProSn::getParentSnCode, parent.getSnCode())
                 .eq(ProSn::getSnId, component.getSnId())
                 .isNull(ProSn::getParentSnId));
+            // MES-STATION-01: CAS 影响 0 行 = 组件已被并发绑定到其它父SN。
+            // 必须先确认 rows == 1 再留痕/累加, 否则 BIND 日志与 pro_sn.parent_sn_id 不一致(且 boundQty 虚增)。
+            if (rows == 0) {
+                throw new ServiceException(String.format("组件 SN %s 已被并发绑定, 请刷新重试", code));
+            }
             insertLog("BIND", parent, component, null, null, dto.getOperatorCode());
             bound++;
             log.info("关键件绑定: parent={}, component={}", parentCode, code);
@@ -138,11 +143,15 @@ public class StationSnService {
             if (parent == null) {
                 throw new ServiceException("原父SN 不存在: " + parentCodeBefore);
             }
-            proSnMapper.update(null, Wrappers.<ProSn>lambdaUpdate()
+            int rebindRows = proSnMapper.update(null, Wrappers.<ProSn>lambdaUpdate()
                 .set(ProSn::getParentSnId, parent.getSnId())
                 .set(ProSn::getParentSnCode, parent.getSnCode())
                 .eq(ProSn::getSnId, newComponent.getSnId())
                 .isNull(ProSn::getParentSnId));
+            // 同 bind: 换板重绑的 CAS 影响 0 行 = 新组件已被并发绑定, 不得留痕(否则 REBIND 日志与父子关系不一致)
+            if (rebindRows == 0) {
+                throw new ServiceException(String.format("新组件 SN %s 已被并发绑定, 请刷新重试", newCode));
+            }
             insertLog("REBIND", parent, newComponent, componentCode, reason, dto.getOperatorCode());
             log.info("关键件换板重绑: parent={}, old={}, new={}", parent.getSnCode(), componentCode, newCode);
         }

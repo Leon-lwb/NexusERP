@@ -41,8 +41,13 @@ public class MacPoolFlashProvider implements FlashTypeProvider {
     }
 
     @Override
+    public String getPoolResourceType() {
+        return "MAC";
+    }
+
+    @Override
     public FlashContent resolveContent(FlashContext ctx) {
-        Long poolId = resolvePoolId("MAC");
+        Long poolId = resolvePoolId("MAC", ctx.getContentRefId());
         MesResourceItem item = resourcePoolService.allocate(poolId, ctx.getSnId(), ctx.getSnCode());
         return FlashContent.builder()
             .contentRefType("MAC_POOL")
@@ -83,10 +88,26 @@ public class MacPoolFlashProvider implements FlashTypeProvider {
         return builder.build();
     }
 
-    private Long resolvePoolId(String resourceType) {
+    /**
+     * 池选择(MES-FLASH-06):
+     * <ol>
+     *   <li>优先用工序配置的 contentRefId 作为池ID(其确实指向该类型的启用池时), 让"工单绑定哪个池"可控;</li>
+     *   <li>否则退化取该类型首个启用池 —— 必须带 ORDER BY(create_time, pool_id), 消除无排序 LIMIT 1 的随机选择。</li>
+     * </ol>
+     */
+    private Long resolvePoolId(String resourceType, Long preferredPoolId) {
+        if (preferredPoolId != null) {
+            MesResourcePool preferred = resourcePoolMapper.selectById(preferredPoolId);
+            if (preferred != null && resourceType.equals(preferred.getResourceType())
+                && "ENABLED".equals(preferred.getStatus())) {
+                return preferred.getPoolId();
+            }
+        }
         MesResourcePool pool = resourcePoolMapper.selectOne(Wrappers.<MesResourcePool>lambdaQuery()
             .eq(MesResourcePool::getResourceType, resourceType)
             .eq(MesResourcePool::getStatus, "ENABLED")
+            .orderByAsc(MesResourcePool::getCreateTime)
+            .orderByAsc(MesResourcePool::getPoolId)
             .last("LIMIT 1"));
         if (pool == null) {
             throw new ServiceException("无启用的" + resourceType + "资源池, 请先创建并导入资源");

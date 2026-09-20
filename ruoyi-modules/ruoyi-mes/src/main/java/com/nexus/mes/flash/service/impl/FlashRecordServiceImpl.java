@@ -27,6 +27,7 @@ import com.nexus.mes.flash.provider.FlashTypeProvider;
 import com.nexus.mes.flash.provider.FlashTypeRegistry;
 import com.nexus.mes.flash.provider.FlashVerifyResult;
 import com.nexus.mes.flash.service.IFlashRecordService;
+import com.nexus.mes.flash.service.IMesResourcePoolService;
 import com.nexus.mes.pro.domain.ProFlowCardStep;
 import com.nexus.mes.pro.domain.ProSn;
 import com.nexus.mes.pro.domain.ProWorkOrderStep;
@@ -39,6 +40,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexus.system.strategy.AutoCodeUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -76,6 +78,18 @@ public class FlashRecordServiceImpl implements IFlashRecordService {
     private final ProWorkOrderStepMapper workOrderStepMapper;
     private final ProFlowCardStepMapper flowCardStepMapper;
     private final ObjectMapper objectMapper;
+    private final IMesResourcePoolService resourcePoolService;
+
+    /**
+     * MES-FLASH-04: 同一 (SN, 刷写类型, 内容源) 的最大刷写次数(含历史), 达到即拒绝再次刷写。
+     * <p>配置项 {@code mes.flash.max-retry}, 默认 3。</p>
+     */
+    @Value("${mes.flash.max-retry:3}")
+    private int maxRetry = 3;
+
+    /** 结果常量 */
+    private static final String RESULT_PASS = "PASS";
+    private static final String RESULT_FAIL = "FAIL";
 
     /** SN状态-报废(禁止刷写) */
     private static final String SN_STATUS_SCRAPPED = "SCRAPPED";
@@ -272,7 +286,7 @@ public class FlashRecordServiceImpl implements IFlashRecordService {
                 .or().isNotNull(ProWorkOrderStep::getStepFlashConfig)));
         List<Map<String, Object>> pending = new ArrayList<>();
         for (ProWorkOrderStep step : steps) {
-            for (Map<String, Object> b : parseStationBindings(step)) {
+            for (Map<String, Object> b : filterGateEnabledBindings(parseStationBindings(step))) {
                 Long refId = (Long) b.get("contentRefId");
                 String typeCode = (String) b.get("flashTypeCode");
                 FlashRecord latest = baseMapper.selectOne(Wrappers.<FlashRecord>lambdaQuery()
@@ -374,7 +388,7 @@ public class FlashRecordServiceImpl implements IFlashRecordService {
                 continue;
             }
             for (ProWorkOrderStep step : woSteps) {
-                List<Map<String, Object>> bindings = parseStationBindings(step);
+                List<Map<String, Object>> bindings = filterGateEnabledBindings(parseStationBindings(step));
                 if (bindings.isEmpty()) {
                     continue;
                 }
@@ -520,10 +534,37 @@ public class FlashRecordServiceImpl implements IFlashRecordService {
         }
         // 刷写类型路由: flashTypeCode 缺省 firmware_file(向后兼容固件刷写)
         String typeCode = StringUtils.isBlank(bo.getFlashTypeCode()) ? "firmware_file" : bo.getFlashTypeCode();
+        // MES-FLASH-05: 停用(DISABLED)类型必须不生效 —— 只有 ENABLED 类型可刷写, 查不到一律拒绝
         MesFlashType flashType = mesFlashTypeMapper.selectOne(Wrappers.<MesFlashType>lambdaQuery()
-            .eq(MesFlashType::getTypeCode, typeCode));
+            .eq(MesFlashType::getTypeCode, typeCode)
+            .eq(MesFlashType::getStatus, "ENABLED"));
         if (flashType == null) {
-            throw new ServiceException("刷写类型未配置: " + typeCode);
+            throw new ServiceException("刷写类型已停用或不存在: " + typeCode);
+        }
+        // MES-FLASH-04: 重试次数服务端按历史条数计算(不信任客户端自报), 且超过阈值直接拒绝, 须走 NCR/返工
+        int historyCount = countHistory(sn.getSnCode(), typeCode, bo.getContentRefId());
+        if (historyCount >= maxRetry) {
+            throw new ServiceException("刷写重试次数已达上限(" + maxRetry + "次), 拒绝再次刷写, 请走 NCR/返工流程: snCode="
+                + sn.getSnCode() + ", flashType=" + typeCode + ", 历史记录=" + historyCount);
+        }
+        // MES-FLASH-04: 已存在 PASS 的记录再报 FAIL 必须给出失败原因并留审计日志,
+        // 不允许一条无原因的 FAIL 静默把完工门禁打回"待刷"(判定仍取最新一条, 语义不变)
+        if (RESULT_FAIL.equals(bo.getResult())) {
+            FlashRecord lastRecord = baseMapper.selectOne(Wrappers.<FlashRecord>lambdaQuery()
+                .eq(FlashRecord::getSnCode, sn.getSnCode())
+                .eq(FlashRecord::getFlashTypeCode, typeCode)
+                .eq(bo.getContentRefId() != null, FlashRecord::getContentRefId, bo.getContentRefId())
+                .orderByDesc(FlashRecord::getFlashTime)
+                .orderByDesc(FlashRecord::getFlashRecordId)
+                .last("LIMIT 1"));
+            if (lastRecord != null && RESULT_PASS.equals(lastRecord.getResult())) {
+                if (StringUtils.isBlank(bo.getFailReason())) {
+                    throw new ServiceException("该SN该刷写内容已存在PASS记录, 再报FAIL必须填写失败原因(failReason): snCode="
+                        + sn.getSnCode() + ", flashType=" + typeCode);
+                }
+                log.warn("刷写结果由PASS被打回FAIL(审计留痕): snCode={}, flashType={}, 上一条flashNo={}, 失败原因={}",
+                    sn.getSnCode(), typeCode, lastRecord.getFlashNo(), bo.getFailReason());
+            }
         }
         // C: 工序绑定一致校验 — SN当前工序须为刷写工序, 且刷写内容须在该工序绑定清单内
         validateFlashStepBinding(sn, typeCode, bo.getContentRefId());
@@ -565,7 +606,8 @@ public class FlashRecordServiceImpl implements IFlashRecordService {
         record.setEquipmentId(bo.getEquipmentId());
         record.setResult(bo.getResult());
         record.setFailReason(bo.getFailReason());
-        record.setRetryCount(bo.getRetryCount() == null ? 0 : bo.getRetryCount());
+        // MES-FLASH-04: retry_count 服务端计算(历史条数), 客户端传入值一律忽略
+        record.setRetryCount(historyCount);
         record.setFlashMode(StringUtils.isBlank(bo.getFlashMode()) ? MODE_AUTO : bo.getFlashMode());
         record.setProcessId(bo.getProcessId());
         record.setProcessCode(bo.getProcessCode());
@@ -575,12 +617,62 @@ public class FlashRecordServiceImpl implements IFlashRecordService {
         record.setFlashTime(bo.getFlashTime() == null ? new Date() : bo.getFlashTime());
         applyOperator(record, bo);
         enrichRedundant(record);
+        // MES-FLASH-06: 池类刷写结果回写资源项 —— PASS 置 USED(已消耗) / FAIL 回收 AVAILABLE, 解决"只分配不回收"
+        // (与记录落库同事务: 记录插入失败会一并回滚, 不会出现"资源已回收但记录未落库")
+        String poolResourceType = provider.getPoolResourceType();
+        if (StringUtils.isNotBlank(poolResourceType)) {
+            resourcePoolService.applyFlashResult(sn.getSnId(), poolResourceType, RESULT_PASS.equals(record.getResult()),
+                "刷写" + record.getResult() + ": flashNo=" + record.getFlashNo()
+                    + (StringUtils.isNotBlank(record.getFailReason()) ? ", 原因=" + record.getFailReason() : ""));
+        }
         return record;
+    }
+
+    /**
+     * MES-FLASH-04: 统计同一 (snCode, flashTypeCode, contentRefId) 的历史刷写条数, 作为服务端 retry_count。
+     * <p>contentRefId 为空时按 (snCode, flashTypeCode) 统计, 与门禁/待刷清单的"最新一条"守卫口径一致
+     * (无条件拼 content_ref_id = NULL 会永不匹配)。</p>
+     */
+    private int countHistory(String snCode, String typeCode, Long contentRefId) {
+        Long count = baseMapper.selectCount(Wrappers.<FlashRecord>lambdaQuery()
+            .eq(FlashRecord::getSnCode, snCode)
+            .eq(FlashRecord::getFlashTypeCode, typeCode)
+            .eq(contentRefId != null, FlashRecord::getContentRefId, contentRefId));
+        return count == null ? 0 : count.intValue();
     }
 
     /**
      * 冗余字段回填: SN(pro_sn)、固件版本(mes_firmware)、设备编码(eq_equipment)
      */
+    /**
+     * MES-FLASH-05: 按刷写类型的 {@code gate_enabled} 过滤工序绑定项, 让该列真正生效。
+     * <p>列定义为 {@code NOT NULL DEFAULT '1'}, 故显式 {@code '0'}(不参与完工门禁)才排除;
+     * 类型行缺失时按"参与门禁"处理(待刷/门禁清单是只读视图, 保持向后兼容, 不因主数据缺失而少列任务)。</p>
+     * <p><b>已对齐(2026-09-20)</b>: 权威门禁 {@code ProFlowCardServiceImpl.checkFlashStepGate}
+     * 已通过同类过滤逻辑对齐 {@code gate_enabled}(见其 {@code filterGateEnabledBindings} 调用)，两处口径一致。</p>
+     */
+    private List<Map<String, Object>> filterGateEnabledBindings(List<Map<String, Object>> bindings) {
+        if (bindings == null || bindings.isEmpty()) {
+            return bindings == null ? new ArrayList<>() : bindings;
+        }
+        List<String> typeCodes = bindings.stream()
+            .map(b -> (String) b.get("flashTypeCode"))
+            .filter(StringUtils::isNotBlank)
+            .distinct()
+            .toList();
+        if (typeCodes.isEmpty()) {
+            return bindings;
+        }
+        Map<String, String> gateByType = mesFlashTypeMapper.selectList(Wrappers.<MesFlashType>lambdaQuery()
+                .in(MesFlashType::getTypeCode, typeCodes))
+            .stream()
+            .collect(java.util.stream.Collectors.toMap(MesFlashType::getTypeCode,
+                t -> t.getGateEnabled() == null ? "" : t.getGateEnabled(), (a, b) -> a));
+        return bindings.stream()
+            .filter(b -> !"0".equals(gateByType.get((String) b.get("flashTypeCode"))))
+            .toList();
+    }
+
     /**
      * 解析工序刷写绑定(工位编排用): step_flash_config 多类型优先, 否则单类型 content_ref_id(固件类)
      */

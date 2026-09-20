@@ -67,4 +67,14 @@ public interface ITestRecordService {
      * 返回 {success, failed:[{snCode,reason}], details:[{snCode,testNo,judged}]}
      */
     Map<String, Object> reportTestAutoBatch(List<com.nexus.mes.flash.domain.bo.TestReportBo> list);
+
+    /**
+     * 该 SN 是否存在未处置的 FAIL 测试行(MES-TEST-04, 供工序/完工门禁查询)。
+     * <p>判定 FAIL 时会自动创建 NCR; 已判定行不可覆盖改写, 故存在 FAIL 行即视为未处置
+     * (精确到 NCR 关闭状态需 NCR 侧按 SN 查询接口支持)。</p>
+     *
+     * @param snId SN ID
+     * @return true 存在未处置 FAIL 行
+     */
+    boolean hasUnhandledFail(Long snId);
 }

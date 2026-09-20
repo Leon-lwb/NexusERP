@@ -37,9 +37,9 @@ public class QcInspectItem extends TenantEntity {
     private BigDecimal tolUpper;
     /** 下公差(NOMINAL用, 名义-tolLower) */
     private BigDecimal tolLower;
-    /** 检验水平(如II) */
+    /** 检验水平(如II/III; 当前仅用于抽样量计算, Ac/Re 判定未接入) */
     private String aqlLevel;
-    /** 抽样方案(如AQL1.0) */
+    /** 抽样方案(如AQL1.0; 当前仅用于抽样量计算, Ac/Re 判定未接入) */
     private String samplePlanCode;
     /** 关键度: CRITICAL/MAJOR/MINOR */
     private String criticality;

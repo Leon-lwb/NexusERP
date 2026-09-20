@@ -49,6 +49,7 @@ public class DcDataRecordBo extends BaseEntity {
     private String textValue;
 
     /** 采集时间 */
+    @NotNull(message = "采集时间不能为空")
     private Date collectTime;
 
     /** 来源 */

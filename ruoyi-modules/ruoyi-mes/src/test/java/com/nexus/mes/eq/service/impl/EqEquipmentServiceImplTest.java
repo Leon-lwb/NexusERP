@@ -353,4 +353,81 @@ class EqEquipmentServiceImplTest {
         assertEquals(2L, summary.get("fault"));
         assertEquals(1L, summary.get("scrapped"));
     }
+
+    // ==================== MES-EQ-21: 维修完工只清 FAULT ====================
+
+    @Test
+    void resetToNormalIfNoActiveRepairSkipsMaintenanceEquipment() {
+        EqEquipment equipment = new EqEquipment();
+        equipment.setEquipmentId(1L);
+        equipment.setStatus("MAINTENANCE");
+        when(baseMapper.selectById(1L)).thenReturn(equipment);
+
+        // 修复前: 只跳过 NORMAL/SCRAPPED, MAINTENANCE 会被静默改成 NORMAL, 抹掉保养标记
+        assertFalse(service.resetToNormalIfNoActiveRepair(1L));
+        verify(baseMapper, never()).resetToNormalIfNoActiveRepair(any());
+    }
+
+    @Test
+    void resetToNormalIfNoActiveRepairSkipsOfflineEquipment() {
+        EqEquipment equipment = new EqEquipment();
+        equipment.setEquipmentId(1L);
+        equipment.setStatus("OFFLINE");
+        when(baseMapper.selectById(1L)).thenReturn(equipment);
+
+        assertFalse(service.resetToNormalIfNoActiveRepair(1L));
+        verify(baseMapper, never()).resetToNormalIfNoActiveRepair(any());
+    }
+
+    // ==================== MES-EQ-22: 报修不覆盖 MAINTENANCE ====================
+
+    @Test
+    void updateStatusKeepsMaintenanceWhenRepairReportsFault() {
+        EqEquipment equipment = new EqEquipment();
+        equipment.setEquipmentId(1L);
+        equipment.setStatus("MAINTENANCE");
+        when(baseMapper.selectById(1L)).thenReturn(equipment);
+
+        // 修复前: MAINTENANCE 不在保护名单(仅保护 SCRAPPED), 报修会把保养标记抹成 FAULT
+        Boolean result = service.updateStatus(1L, "FAULT", "故障报修");
+
+        assertFalse(result);
+        verify(baseMapper, never()).update(any(), any());
+    }
+
+    @Test
+    void updateStatusStillAllowsNormalToFault() {
+        EqEquipment equipment = new EqEquipment();
+        equipment.setEquipmentId(1L);
+        equipment.setEquipmentCode("EQ-001");
+        equipment.setEquipmentName("测试设备");
+        equipment.setStatus("NORMAL");
+        when(baseMapper.selectById(1L)).thenReturn(equipment);
+        when(baseMapper.update(any(), any())).thenReturn(1);
+
+        // NORMAL -> FAULT 是合法报修联动, 不得被 MAINTENANCE 保护误伤
+        assertTrue(service.updateStatus(1L, "FAULT", "故障报修"));
+    }
+
+    // ==================== MES-EQ-19: IoT 设备占用校验 ====================
+
+    @Test
+    void updateIotDeviceLinkRejectsDeviceAlreadyBoundToAnother() {
+        when(baseMapper.selectCount(any())).thenReturn(1L);
+
+        ServiceException exception = assertThrows(ServiceException.class,
+            () -> service.updateIotDeviceLink(1L, 100L));
+
+        assertTrue(exception.getMessage().contains("已被其他设备绑定"));
+        verify(baseMapper, never()).update(any(), any());
+    }
+
+    @Test
+    void updateIotDeviceLinkAllowsUnbindWithoutOccupancyCheck() {
+        when(baseMapper.update(any(), any())).thenReturn(1);
+
+        assertTrue(service.updateIotDeviceLink(1L, null));
+
+        verify(baseMapper, never()).selectCount(any());
+    }
 }

@@ -1,5 +1,6 @@
 package com.nexus.mes.eq.domain.bo;
 
+import jakarta.validation.constraints.DecimalMin;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -16,10 +17,18 @@ import java.util.List;
 @Data
 public class EqRepairCompleteBo {
 
-    /** 停机时长(小时) */
+    /**
+     * 停机时长(小时)
+     * <p>负值会使 OEE 分子大于分母(availability/oee &gt; 1), 故限定非负; 允许 null(未填报)。
+     */
+    @DecimalMin(value = "0", message = "停机时长不能为负")
     private BigDecimal downtimeHours;
 
-    /** 维修成本(元) */
+    /**
+     * 维修成本(元)
+     * <p>限定非负, 允许 null(未填报)。
+     */
+    @DecimalMin(value = "0", message = "维修成本不能为负")
     private BigDecimal repairCost;
 
     /** 维修说明/备注 */

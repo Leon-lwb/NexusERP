@@ -153,6 +153,8 @@ public class EqEquipmentServiceImpl implements IEqEquipmentService {
         if (existCount != null && existCount > 0) {
             throw new ServiceException("设备编码已存在: " + bo.getEquipmentCode());
         }
+        // IoT 关联占用校验(MES-EQ-19)
+        assertIotDeviceNotBound(bo.getEquipmentId(), bo.getIotDeviceId());
         EqEquipment equipment = new EqEquipment();
         equipment.setEquipmentCode(bo.getEquipmentCode());
         equipment.setEquipmentName(bo.getEquipmentName());
@@ -218,6 +220,8 @@ public class EqEquipmentServiceImpl implements IEqEquipmentService {
         }
         equipment.setInspectionItems(bo.getInspectionItems());
         equipment.setLastInspection(bo.getLastInspection());
+        // IoT 关联变更同样需要占用校验(MES-EQ-19)
+        assertIotDeviceNotBound(bo.getEquipmentId(), bo.getIotDeviceId());
         equipment.setIotDeviceId(bo.getIotDeviceId());
         equipment.setPlannedMinutesPerDay(bo.getPlannedMinutesPerDay());
         equipment.setRemark(bo.getRemark());
@@ -279,6 +283,12 @@ public class EqEquipmentServiceImpl implements IEqEquipmentService {
             log.info("设备已报废, 跳过状态联动: equipmentId={}, target={}", equipmentId, status);
             return false;
         }
+        // 保养中不接受"故障"覆盖(MES-EQ-22): 报修/点检不合格不得抹掉保养标记(MAINTENANCE)。
+        // 故障本身已记录在 eq_repair; 保养结束时 finishMaintenance 会按活跃报修重新裁决为 FAULT。
+        if (STATUS_FAULT.equals(status) && STATUS_MAINTENANCE.equals(equipment.getStatus())) {
+            log.warn("设备保养中, 跳过故障状态覆盖(保留 MAINTENANCE): equipmentId={}, reason={}", equipmentId, reason);
+            return false;
+        }
         String oldStatus = equipment.getStatus();
         // 状态未变化则不重复发事件
         if (status.equals(oldStatus)) {
@@ -318,8 +328,11 @@ public class EqEquipmentServiceImpl implements IEqEquipmentService {
             return false;
         }
         String oldStatus = equipment.getStatus();
-        // 已是 NORMAL 或 SCRAPPED 终态, 无需联动
-        if (STATUS_NORMAL.equals(oldStatus) || STATUS_SCRAPPED.equals(oldStatus)) {
+        // 仅 FAULT 需要收口(MES-EQ-21): 维修完工恢复 NORMAL 只允许清 FAULT。
+        // 原判据只跳过 NORMAL/SCRAPPED, 会把 MAINTENANCE(保养中)/OFFLINE 静默改成 NORMAL, 抹掉保养标记;
+        // 保养中的设备由 finishMaintenance 在保养结束时按活跃报修自行裁决。
+        if (!STATUS_FAULT.equals(oldStatus)) {
+            log.debug("设备当前状态非 FAULT, 跳过维修完成恢复: equipmentId={}, status={}", equipmentId, oldStatus);
             return false;
         }
         // 原子 CAS: 仅当无其他活跃报修且非 SCRAPPED 时置 NORMAL
@@ -511,6 +524,9 @@ public class EqEquipmentServiceImpl implements IEqEquipmentService {
         if (equipmentId == null) {
             return false;
         }
+        // 占用校验(MES-EQ-19): 同一 IoT 设备不允许同时绑定多台 MES 设备(排除自身);
+        // 并发窗口由 eq_equipment.iot_device_id 唯一索引兜底(DDL 见汇报)。
+        assertIotDeviceNotBound(equipmentId, iotDeviceId);
         LambdaUpdateWrapper<EqEquipment> wrapper = Wrappers.<EqEquipment>lambdaUpdate()
             .set(EqEquipment::getIotDeviceId, iotDeviceId)
             .eq(EqEquipment::getEquipmentId, equipmentId);
@@ -518,6 +534,25 @@ public class EqEquipmentServiceImpl implements IEqEquipmentService {
         log.info("更新设备 IoT 关联: equipmentId={}, iotDeviceId={}, rows={}",
             equipmentId, iotDeviceId, rows);
         return rows > 0;
+    }
+
+    /**
+     * IoT 设备占用校验(MES-EQ-19): 同一 {@code iot_device_id} 只允许绑定一台 MES 设备。
+     *
+     * @param equipmentId 当前设备ID(排除自身, 新建设备时为 null 表示不排除)
+     * @param iotDeviceId 待绑定的 IoT 设备ID(为 null 表示解绑, 直接放行)
+     * @throws ServiceException 该 IoT 设备已被其他设备占用
+     */
+    private void assertIotDeviceNotBound(Long equipmentId, Long iotDeviceId) {
+        if (iotDeviceId == null) {
+            return;
+        }
+        Long occupied = baseMapper.selectCount(Wrappers.<EqEquipment>lambdaQuery()
+            .eq(EqEquipment::getIotDeviceId, iotDeviceId)
+            .ne(equipmentId != null, EqEquipment::getEquipmentId, equipmentId));
+        if (occupied != null && occupied > 0) {
+            throw new ServiceException("该IoT设备已被其他设备绑定, 不可重复关联: iotDeviceId=" + iotDeviceId);
+        }
     }
 
     /**

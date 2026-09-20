@@ -47,6 +47,21 @@ public class SpcControlChartBo extends BaseEntity {
     /** 下控制限 */
     private java.math.BigDecimal lcl;
 
+    /** 次级图(R/S/MR)上控制限 */
+    private java.math.BigDecimal rUcl;
+
+    /** 次级图中心线 */
+    private java.math.BigDecimal rCl;
+
+    /** 次级图下控制限 */
+    private java.math.BigDecimal rLcl;
+
+    /** 过程性能指数Pp */
+    private java.math.BigDecimal pp;
+
+    /** 过程性能指数Ppk */
+    private java.math.BigDecimal ppk;
+
     /** 规格上限(计量型图适用, 用户维护) */
     private java.math.BigDecimal usl;
 

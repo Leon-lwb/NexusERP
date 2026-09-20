@@ -62,8 +62,7 @@ public class QcInspectDetailServiceImpl implements IQcInspectDetailService {
                 checkType, checkId, materialId, processId, customerId);
             return 0;
         }
-        // 批量给定时按 GB/T 2828.1(检验水平II)计算建议抽样量
-        BigDecimal sampleQty = lotQty != null ? suggestSampleQty(lotQty) : null;
+        // MES-QC-07: 批量给定时按项目抽样配置(检验水平 + AQL)逐项计算建议抽样量; 未配置时退回检验水平 II
         List<QcInspectItem> items = itemMapper.selectList(Wrappers.lambdaQuery(QcInspectItem.class)
             .eq(QcInspectItem::getTemplateId, template.getTemplateId())
             .eq(QcInspectItem::getEnabled, "1")
@@ -81,7 +80,7 @@ public class QcInspectDetailServiceImpl implements IQcInspectDetailService {
             detail.setStandardDesc(buildStandardDesc(item));
             detail.setUnit(item.getUnit());
             detail.setCriticality(item.getCriticality());
-            detail.setSampleQty(sampleQty);
+            detail.setSampleQty(lotQty == null ? null : suggestSampleQty(lotQty, item.getAqlLevel(), item.getSamplePlanCode()));
             detail.setNominalValue(item.getNominalValue());
             detail.setLslValue(item.getLslValue());
             detail.setUslValue(item.getUslValue());
@@ -125,10 +124,12 @@ public class QcInspectDetailServiceImpl implements IQcInspectDetailService {
     }
 
     /**
-     * 建议抽样量: GB/T 2828.1 检验水平II 字码行样本量(不做 AQL 箭头修正);
-     * 批量≤0 取 0, 批量<2 按批量本身(不适用抽样表的极小批)。
+     * 建议抽样量: 按项目的检验水平与 AQL 调 {@link AqlSampler} 得出样本量(GB/T 2828.1 正常检验一次抽样)。
+     * <p>MES-QC-07: 项目级 {@code aqlLevel}/{@code samplePlanCode} 接入抽样量; 两项均未配置时保持原有口径
+     * (检验水平 II 的字码样本量)。批量≤0 取 0, 批量&lt;2 按批量本身(不适用抽样表的极小批)。
+     * 注: 只取样本量, Ac/Re 判定未接入。</p>
      */
-    private static BigDecimal suggestSampleQty(BigDecimal lotQty) {
+    private static BigDecimal suggestSampleQty(BigDecimal lotQty, String aqlLevel, String samplePlanCode) {
         if (lotQty.signum() <= 0) {
             return BigDecimal.ZERO;
         }
@@ -136,7 +137,54 @@ public class QcInspectDetailServiceImpl implements IQcInspectDetailService {
         if (lot < 2) {
             return BigDecimal.valueOf(lot);
         }
-        return BigDecimal.valueOf(AqlSampler.letterSampleSize(lot, "II"));
+        String level = parseLevel(aqlLevel, samplePlanCode);
+        Double aql = parseAql(aqlLevel, samplePlanCode);
+        if (aql == null) {
+            return BigDecimal.valueOf(AqlSampler.letterSampleSize(lot, level));
+        }
+        return BigDecimal.valueOf(AqlSampler.plan(lot, level, aql).getSampleSize());
+    }
+
+    /** 解析检验水平: 兼容 "II" / "LEVEL II" / "水平II"; 两字段均无法解析时默认 II */
+    private static String parseLevel(String aqlLevel, String samplePlanCode) {
+        String level = levelToken(aqlLevel);
+        if (level == null) {
+            level = levelToken(samplePlanCode);
+        }
+        return level == null ? "II" : level;
+    }
+
+    private static String levelToken(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return null;
+        }
+        String s = raw.trim().toUpperCase().replace("LEVEL", "").replace("水平", "").trim();
+        if ("I".equals(s) || "II".equals(s) || "III".equals(s)) {
+            return s;
+        }
+        return null;
+    }
+
+    /** 解析 AQL 数值: 兼容 "AQL1.0" / "1.0"; 超出简化表范围或无法解析返回 null */
+    private static Double parseAql(String aqlLevel, String samplePlanCode) {
+        Double aql = aqlToken(aqlLevel);
+        if (aql == null) {
+            aql = aqlToken(samplePlanCode);
+        }
+        return aql;
+    }
+
+    private static Double aqlToken(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return null;
+        }
+        String s = raw.trim().toUpperCase().replace("AQL", "").trim();
+        try {
+            double value = Double.parseDouble(s);
+            return AqlSampler.isSupportedAql(value) ? value : null;
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 
     /**

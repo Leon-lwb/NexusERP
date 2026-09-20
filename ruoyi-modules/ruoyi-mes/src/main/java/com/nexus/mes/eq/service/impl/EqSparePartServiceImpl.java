@@ -187,16 +187,16 @@ public class EqSparePartServiceImpl implements IEqSparePartService {
         if (qty == null || qty.signum() <= 0) {
             throw new ServiceException("备件出入库数量必须大于0");
         }
-        BigDecimal after;
+        BigDecimal computedAfter;
         int rows;
         if (TXN_IN.equals(type)) {
-            after = before.add(qty);
+            computedAfter = before.add(qty);
             rows = baseMapper.update(null, Wrappers.<EqSparePart>lambdaUpdate()
                 .setSql("current_stock = current_stock + {0}", qty.toPlainString())
                 .eq(EqSparePart::getSpareId, bo.getSpareId()));
         } else {
             // OUT / REPAIR_USE: 防超卖
-            after = before.subtract(qty);
+            computedAfter = before.subtract(qty);
             rows = baseMapper.update(null, Wrappers.<EqSparePart>lambdaUpdate()
                 .setSql("current_stock = current_stock - {0}", qty.toPlainString())
                 .eq(EqSparePart::getSpareId, bo.getSpareId())
@@ -205,6 +205,12 @@ public class EqSparePartServiceImpl implements IEqSparePartService {
         if (rows == 0) {
             throw new ServiceException("库存不足, 当前库存: " + before + ", 需扣减: " + qty);
         }
+        // 回读落库后的实际库存作为流水基准(MES-EQ-14): 原子 SQL 只保证"增量"正确,
+        // 而 before/after 由 Java 先算, 在并发出入库下会与实际 current_stock 漂移。
+        // after 取回读值, before 由 after ∓ qty 反推, 使"after - before == ±qty"与流水自洽。
+        BigDecimal actualAfter = readCurrentStock(bo.getSpareId());
+        BigDecimal after = actualAfter == null ? computedAfter : actualAfter;
+        BigDecimal beforeQty = TXN_IN.equals(type) ? after.subtract(qty) : after.add(qty);
         // 写流水
         EqSpareStockLog logEntry = new EqSpareStockLog();
         logEntry.setSpareId(bo.getSpareId());
@@ -212,7 +218,7 @@ public class EqSparePartServiceImpl implements IEqSparePartService {
         logEntry.setSpareName(spare.getSpareName());
         logEntry.setTransactionType(type);
         logEntry.setQuantity(qty);
-        logEntry.setBeforeQty(before);
+        logEntry.setBeforeQty(beforeQty);
         logEntry.setAfterQty(after);
         logEntry.setRefType(StringUtils.isNotBlank(bo.getRefType()) ? bo.getRefType() : "MANUAL");
         logEntry.setRefId(bo.getRefId());
@@ -221,8 +227,22 @@ public class EqSparePartServiceImpl implements IEqSparePartService {
         logEntry.setOperateTime(new Date());
         logEntry.setRemark(bo.getRemark());
         stockLogMapper.insert(logEntry);
-        log.info("备件出入库: spareId={}, type={}, qty={}, before={}, after={}", bo.getSpareId(), type, qty, before, after);
+        log.info("备件出入库: spareId={}, type={}, qty={}, before={}, after={}", bo.getSpareId(), type, qty, beforeQty, after);
         return after;
+    }
+
+    /**
+     * 回读备件落库后的实际库存(MES-EQ-14)。
+     *
+     * @param spareId 备件ID
+     * @return 实际 current_stock; 读不到(记录被删/异常)时返回 null, 由调用方回退到 Java 计算值
+     */
+    private BigDecimal readCurrentStock(Long spareId) {
+        EqSparePart current = baseMapper.selectById(spareId);
+        if (current == null) {
+            return null;
+        }
+        return current.getCurrentStock() == null ? BigDecimal.ZERO : current.getCurrentStock();
     }
 
     /**

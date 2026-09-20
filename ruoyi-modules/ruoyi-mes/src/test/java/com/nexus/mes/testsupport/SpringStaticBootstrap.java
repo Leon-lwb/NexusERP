@@ -74,6 +74,11 @@ public final class SpringStaticBootstrap {
             Class.forName(className, true, SpringStaticBootstrap.class.getClassLoader());
         } catch (ClassNotFoundException ignored) {
             // 该工具类不在本模块测试类路径上, 无需预热
+        } catch (Throwable t) {
+            // 该工具类的 <clinit> 已在本 JVM 内失败过(NoClassDefFoundError / ExceptionInInitializerError),
+            // 此处不能再向外抛: 否则一个坏掉的工具类会连锁打断本类之后的所有测试类。
+            // 真正需要该工具类的用例会在首次使用时以更精确的断言失败。
+            System.err.println("[SpringStaticBootstrap] 跳过无法初始化的工具类: " + className + " -> " + t);
         }
     }
 }

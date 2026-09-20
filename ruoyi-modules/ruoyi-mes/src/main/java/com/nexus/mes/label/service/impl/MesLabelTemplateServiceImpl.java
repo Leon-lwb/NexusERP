@@ -9,6 +9,7 @@ import com.nexus.common.core.utils.MapstructUtils;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
+import com.nexus.mes.label.domain.MesLabelPrintLog;
 import com.nexus.mes.label.domain.MesLabelTemplate;
 import com.nexus.mes.label.domain.bo.MesLabelTemplateBo;
 import com.nexus.mes.label.domain.vo.MesLabelTemplateVo;
@@ -16,6 +17,8 @@ import com.nexus.mes.label.mapper.MesLabelTemplateMapper;
 import com.nexus.mes.label.service.IMesLabelTemplateService;
 import com.nexus.mes.label.service.LabelPrintService;
 import com.nexus.mes.label.service.LabelRenderService;
+import com.nexus.mes.pro.domain.ProSn;
+import com.nexus.mes.pro.mapper.ProSnMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -43,6 +46,7 @@ public class MesLabelTemplateServiceImpl implements IMesLabelTemplateService {
     private final MesLabelTemplateMapper baseMapper;
     private final LabelRenderService renderService;
     private final LabelPrintService printService;
+    private final ProSnMapper proSnMapper;
 
     @Override
     public TableDataInfo<MesLabelTemplateVo> selectPageList(MesLabelTemplateBo bo, PageQuery pageQuery) {
@@ -104,9 +108,25 @@ public class MesLabelTemplateServiceImpl implements IMesLabelTemplateService {
     public boolean testPrint(Long templateId) {
         MesLabelTemplate template = requireTemplate(templateId);
         String payload = renderService.render(template, sampleFields());
-        return printService.send(template.getTemplateCode(), template.getPrinterHost(),
-            template.getPrinterPort() == null ? DEFAULT_PORT : template.getPrinterPort(),
-            payload, renderService.charsetOf(template));
+        // MES-LABEL-02: 测试打印同样留痕(print_source=TEST), 便于排查"打印了但没出纸"
+        MesLabelPrintLog printLog = printService.newLog(null, null, template, MesLabelPrintLog.SOURCE_TEST);
+        return printService.send(printLog, payload, renderService.charsetOf(template));
+    }
+
+    /**
+     * 人工补打(MES-LABEL-02): SN + 模板重新渲染直发, 留痕 print_source=REPRINT(重打计数可查)
+     */
+    @Override
+    public boolean reprint(Long snId, Long templateId) {
+        ProSn sn = proSnMapper.selectById(snId);
+        if (sn == null) {
+            throw new ServiceException("SN不存在: " + snId);
+        }
+        MesLabelTemplate template = requireTemplate(templateId);
+        String payload = renderService.render(template, renderService.snFields(sn));
+        MesLabelPrintLog printLog = printService.newLog(sn.getSnId(), sn.getSnCode(), template,
+            MesLabelPrintLog.SOURCE_REPRINT);
+        return printService.send(printLog, payload, renderService.charsetOf(template));
     }
 
     // ==================== 辅助 ====================

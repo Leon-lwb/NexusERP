@@ -22,6 +22,8 @@ public interface ISpcControlChartService {
     String TYPE_X_BAR_R = "X_BAR_R";
     /** 图表类型: 均值-标准差 */
     String TYPE_X_BAR_S = "X_BAR_S";
+    /** 图表类型: 单值-移动极差(X-MR, 每个单值一组, 次级图为移动极差MR) */
+    String TYPE_X_MR = "X_MR";
     /** 图表类型: 不良率 */
     String TYPE_P = "P";
     /** 图表类型: 缺陷数 */
@@ -42,6 +44,13 @@ public interface ISpcControlChartService {
     String OOC_RULE_3 = "RULE3";
     /** OOC 规则：连续 14 点交替上下 */
     String OOC_RULE_4 = "RULE4";
+    /** 次级图(组内离散度 R/S/MR) OOC 规则后缀：同一数据点主图/次级图分别标记为 RULE1 与 RULE1-SUB */
+    String OOC_RULE_SUB_SUFFIX = "-SUB";
+
+    /** 过程能力最小子组数(不足则不回写 cp/cpk, 避免小样本算出 A+ 等级) */
+    int MIN_CAPABILITY_SUBGROUPS = 25;
+    /** 过程能力最小总样本数 */
+    int MIN_CAPABILITY_SAMPLES = 50;
 
     /**
      * 分页查询 SPC 控制图列表。

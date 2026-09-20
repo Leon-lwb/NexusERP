@@ -8,6 +8,8 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.nexus.common.core.domain.model.LoginUser;
+import com.nexus.common.core.event.UserNotificationEvent;
+import com.nexus.common.core.utils.SpringUtils;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.json.utils.JsonUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
@@ -26,8 +28,12 @@ import com.nexus.mes.pro.mapper.ProWorkOrderMapper;
 import com.nexus.mes.pro.service.IProAndonService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.Date;
 import java.util.HashMap;
@@ -40,7 +46,8 @@ import java.util.Set;
  * MES安灯 Service 业务层实现
  * <p>
  * 状态机: CALLED -> RESPONDED -> RESOLVED / CANCELLED
- * 每次状态变更通过 SSE(type=ANDON) 实时推送到同租户在线用户的安灯看板。
+ * 每次状态变更: ① 站内通知落库(sys_user_notification, 经 UserNotificationEvent 由 ruoyi-im 监听)
+ * ② SSE(type=ANDON) 实时推送到同租户在线用户的安灯看板(MES-PRO-08: 离线不再丢事件)。
  *
  * @author Nexus
  */
@@ -53,6 +60,8 @@ public class ProAndonServiceImpl implements IProAndonService {
     private final ProAndonMapper baseMapper;
     private final ProFlowCardMapper flowCardMapper;
     private final ProWorkOrderMapper workOrderMapper;
+    /** 站内通知事件发布器: 复用既有通知渠道落库(ruoyi-im 的 UserNotificationEventListener -> sys_user_notification) */
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     /**
@@ -186,8 +195,8 @@ public class ProAndonServiceImpl implements IProAndonService {
         ProAndonVo vo = baseMapper.selectVoById(andon.getAndonId());
         log.info("安灯呼叫成功: andonNo={}, callType={}, callerId={}", andon.getAndonNo(), callType, callerId);
 
-        // 4. SSE 实时推送
-        publishAndonSse(vo, STATUS_CALLED);
+        // 4. 通知: 站内通知落库 + SSE 实时推送
+        notifyAndon(vo, STATUS_CALLED);
         return vo;
     }
 
@@ -209,7 +218,7 @@ public class ProAndonServiceImpl implements IProAndonService {
             throw new RuntimeException("安灯状态已变更, 仅已呼叫可响应");
         }
         log.info("安灯响应成功: andonId={}", andonId);
-        publishAndonSse(baseMapper.selectVoById(andonId), STATUS_RESPONDED);
+        notifyAndon(baseMapper.selectVoById(andonId), STATUS_RESPONDED);
     }
 
     /**
@@ -239,7 +248,7 @@ public class ProAndonServiceImpl implements IProAndonService {
             throw new RuntimeException("安灯状态已变更, 仅已响应可解决");
         }
         log.info("安灯解决成功: andonId={}, durationMinutes={}", andonId, durationMinutes);
-        publishAndonSse(baseMapper.selectVoById(andonId), STATUS_RESOLVED);
+        notifyAndon(baseMapper.selectVoById(andonId), STATUS_RESOLVED);
     }
 
     /**
@@ -256,7 +265,7 @@ public class ProAndonServiceImpl implements IProAndonService {
             throw new RuntimeException("安灯状态已变更, 仅已呼叫可取消");
         }
         log.info("安灯取消成功: andonId={}", andonId);
-        publishAndonSse(baseMapper.selectVoById(andonId), STATUS_CANCELLED);
+        notifyAndon(baseMapper.selectVoById(andonId), STATUS_CANCELLED);
     }
 
     // ==================== 私有辅助方法 ====================
@@ -276,16 +285,160 @@ public class ProAndonServiceImpl implements IProAndonService {
     }
 
     /**
-     * SSE 实时推送安灯状态变更到同租户在线用户。
-     * 镜像 IotAlertNotifier.collectOnlineUsersByTenant + AiSseMessageHelper 编码方式。
+     * 安灯状态变更统一通知(MES-PRO-08): ① 站内通知落库 ② SSE 实时推送。
+     * <p>
+     * 原实现仅 SSE: 无同租户在线用户时只 log.debug 后 return, 离线期间的安灯事件彻底丢失(不落库、无通知)。
+     * 现统一复用既有站内通知渠道({@link UserNotificationEvent}, 由 ruoyi-im 的 UserNotificationEventListener
+     * 落 sys_user_notification 并实时推送, 与工作流待办/流程编排通知同渠道), 离线用户上线后可在通知中心补看;
+     * 呼叫通知以 notify_time 做 CAS 幂等(同一 andonId 的呼叫只通知一次)。
+     * </p>
      */
-    private void publishAndonSse(ProAndonVo vo, String action) {
-        if (vo == null || !SseMessageUtils.isEnable()) {
+    private void notifyAndon(ProAndonVo vo, String action) {
+        if (vo == null) {
             return;
         }
-        Set<Long> userIds = collectOnlineUsersByTenant(LoginHelper.getTenantId());
-        if (CollUtil.isEmpty(userIds)) {
-            log.debug("无同租户在线用户, 安灯推送仅落日志: andonId={}", vo.getAndonId());
+        String tenantId = LoginHelper.getTenantId();
+        Set<Long> onlineUsers = collectOnlineUsersByTenant(tenantId);
+        if (CollUtil.isEmpty(onlineUsers)) {
+            // 离线不再"静默": 明确告警 + 仍走站内通知落库
+            log.warn("安灯通知无同租户在线用户, SSE 不可达, 已转为站内通知落库: andonId={}, tenantId={}, action={}",
+                vo.getAndonId(), tenantId, action);
+        }
+        // 被通知人: 同租户在线用户; 全员离线时兜底通知呼叫人, 保证至少有一条可追溯的站内通知
+        Set<Long> targets = new LinkedHashSet<>(onlineUsers);
+        if (targets.isEmpty() && vo.getCallerId() != null) {
+            targets.add(vo.getCallerId());
+        }
+        // 呼叫通知幂等: 仅首次(notify_time 为空)通知; 响应/解决/取消由状态 CAS 保证仅一次
+        if (STATUS_CALLED.equals(action) && !markCallNotified(vo, targets)) {
+            log.info("安灯呼叫通知已发出过, 跳过重复通知: andonId={}", vo.getAndonId());
+            return;
+        }
+        if (!targets.isEmpty()) {
+            publishNotificationsAfterCommit(vo, action, targets, tenantId);
+        }
+        pushAndonSse(vo, action, onlineUsers);
+    }
+
+    /**
+     * 呼叫通知落库 + 幂等(CAS: notify_time 为空才写入)
+     *
+     * @return true 表示本次为首次通知
+     */
+    private boolean markCallNotified(ProAndonVo vo, Set<Long> targets) {
+        int rows = baseMapper.update(null, Wrappers.<ProAndon>lambdaUpdate()
+            .set(ProAndon::getNotifyUserIds, targets.isEmpty() ? null : CollUtil.join(targets, ","))
+            .set(ProAndon::getNotifyTime, new Date())
+            .eq(ProAndon::getAndonId, vo.getAndonId())
+            .isNull(ProAndon::getNotifyTime));
+        return rows > 0;
+    }
+
+    /**
+     * 事务提交后发布站内通知(回滚不产生"幽灵通知")
+     */
+    private void publishNotificationsAfterCommit(ProAndonVo vo, String action, Set<Long> targets, String tenantId) {
+        Runnable task = () -> {
+            try {
+                SpringUtils.getAopProxy(this).publishAndonNotifications(vo, action, targets, tenantId);
+            } catch (Exception e) {
+                log.error("安灯站内通知落库失败(不影响安灯主流程): andonId={}, action={}", vo.getAndonId(), action, e);
+            }
+        };
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    task.run();
+                }
+            });
+        } else {
+            task.run();
+        }
+    }
+
+    /**
+     * 站内通知落库 + 实时推送(MES-PRO-08)
+     * <p>
+     * sys_user_notification 在 ry-vue(master)库, 而本类事务已绑定 mes 连接(类级 @DS("mes") 无法切换);
+     * 故显式 @DS("master") + REQUIRES_NEW: 挂起 mes 业务事务后在 master 库新事务写入
+     * (同 {@code MessageRecordService} 的跨库写入模式)。监听器异常仅告警, 不影响安灯状态流转。
+     * </p>
+     */
+    @DS("master")
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void publishAndonNotifications(ProAndonVo vo, String action, Set<Long> targets, String tenantId) {
+        String title = "安灯" + actionLabel(action) + ": " + vo.getAndonNo();
+        String content = buildNotifyContent(vo, action);
+        Map<String, Object> ext = new HashMap<>();
+        ext.put("andonId", vo.getAndonId());
+        ext.put("andonNo", vo.getAndonNo());
+        ext.put("action", action);
+        ext.put("andonStatus", vo.getAndonStatus());
+        ext.put("callType", vo.getCallType());
+        ext.put("mesWoId", vo.getMesWoId());
+        ext.put("woNo", vo.getWoNo());
+        ext.put("cardNo", vo.getCardNo());
+        ext.put("stationCode", vo.getStationCode());
+        String extJson = JsonUtils.toJsonString(ext);
+        for (Long userId : targets) {
+            UserNotificationEvent event = new UserNotificationEvent();
+            event.setTenantId(tenantId);
+            event.setTargetUserId(userId);
+            event.setCategory("mes_andon");
+            event.setRefType("pro_andon");
+            event.setRefId(String.valueOf(vo.getAndonId()));
+            event.setTitle(title);
+            event.setContent(content);
+            event.setExtJson(extJson);
+            eventPublisher.publishEvent(event);
+        }
+        log.info("安灯站内通知已发布: andonId={}, action={}, targets={}", vo.getAndonId(), action, targets.size());
+    }
+
+    private String actionLabel(String action) {
+        if (STATUS_CALLED.equals(action)) {
+            return "呼叫";
+        }
+        if (STATUS_RESPONDED.equals(action)) {
+            return "响应";
+        }
+        if (STATUS_RESOLVED.equals(action)) {
+            return "解决";
+        }
+        if (STATUS_CANCELLED.equals(action)) {
+            return "取消";
+        }
+        return action;
+    }
+
+    private String buildNotifyContent(ProAndonVo vo, String action) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("安灯 ").append(vo.getAndonNo()).append(" 已").append(actionLabel(action));
+        if (StringUtils.isNotBlank(vo.getWoNo())) {
+            sb.append(", 工单 ").append(vo.getWoNo());
+        }
+        if (StringUtils.isNotBlank(vo.getStationCode())) {
+            sb.append(", 工位 ").append(vo.getStationCode());
+        }
+        sb.append(", 类型 ").append(vo.getCallType());
+        if (StringUtils.isNotBlank(vo.getCallReason())) {
+            sb.append(", 原因: ").append(vo.getCallReason());
+        }
+        if (STATUS_RESOLVED.equals(action) && vo.getDurationMinutes() != null) {
+            sb.append(", 持续 ").append(vo.getDurationMinutes()).append(" 分钟");
+        }
+        return sb.toString();
+    }
+
+    /**
+     * SSE 实时推送安灯状态变更到同租户在线用户。
+     * 镜像 IotAlertNotifier.collectOnlineUsersByTenant + AiSseMessageHelper 编码方式。
+     * 无在线用户时 SSE 不可达, 由 {@link #notifyAndon} 的站内通知落库兜底(不丢事件)。
+     */
+    private void pushAndonSse(ProAndonVo vo, String action, Set<Long> onlineUsers) {
+        // 先判空在线用户: 无人在线时无需触碰 SSE 组件(离线场景由 notifyAndon 的站内通知落库兜底)
+        if (CollUtil.isEmpty(onlineUsers) || !SseMessageUtils.isEnable()) {
             return;
         }
         Map<String, Object> payload = new HashMap<>();
@@ -293,10 +446,10 @@ public class ProAndonServiceImpl implements IProAndonService {
         payload.put("action", action);
         payload.put("data", vo);
         SseMessageDto dto = new SseMessageDto();
-        dto.setUserIds(List.copyOf(userIds));
+        dto.setUserIds(List.copyOf(onlineUsers));
         dto.setMessage(JsonUtils.toJsonString(payload));
         SseMessageUtils.publishMessage(dto);
-        log.info("安灯已推送: andonId={}, action={}, targetUsers={}", vo.getAndonId(), action, userIds.size());
+        log.info("安灯已推送: andonId={}, action={}, targetUsers={}", vo.getAndonId(), action, onlineUsers.size());
     }
 
     /**

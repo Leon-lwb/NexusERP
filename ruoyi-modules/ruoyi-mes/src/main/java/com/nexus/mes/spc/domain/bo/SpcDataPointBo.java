@@ -35,6 +35,9 @@ public class SpcDataPointBo extends BaseEntity {
     /** 值 */
     private BigDecimal value;
 
+    /** 组内离散度: 极差R/标准差S/移动极差MR */
+    private BigDecimal subValue;
+
     /** 是否超控制限 */
     private String isOoc;
 

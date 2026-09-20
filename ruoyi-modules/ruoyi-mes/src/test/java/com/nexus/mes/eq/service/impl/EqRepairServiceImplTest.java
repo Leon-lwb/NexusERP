@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.mes.eq.domain.EqEquipment;
 import com.nexus.mes.eq.domain.EqRepair;
+import com.nexus.mes.eq.domain.bo.EqRepairCompleteBo;
 import com.nexus.mes.eq.mapper.EqEquipmentMapper;
 import com.nexus.mes.eq.mapper.EqRepairMapper;
 import com.nexus.mes.eq.service.IEqEquipmentService;
@@ -18,6 +19,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.math.BigDecimal;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -126,5 +129,61 @@ class EqRepairServiceImplTest {
         // 活跃报修 = 会阻止设备恢复 NORMAL 的单据，不含已作废
         assertEquals(5L, summary.get("active"));
         assertEquals(14L, summary.get("total"));
+    }
+
+    // ==================== MES-EQ-13: 负停机/负成本必须在服务端被拒 ====================
+
+    @Test
+    void completeRepairRejectsNegativeDowntimeHours() {
+        when(baseMapper.selectById(1L)).thenReturn(repairingRepair());
+
+        EqRepairCompleteBo bo = new EqRepairCompleteBo();
+        bo.setDowntimeHours(new BigDecimal("-1"));
+
+        ServiceException exception = assertThrows(ServiceException.class,
+            () -> service.completeRepair(1L, bo));
+
+        // 修复前：无校验，负停机直接落库 → OEE 的 run > planned → availability/oee > 1
+        assertTrue(exception.getMessage().contains("停机时长不能为负"));
+        verify(baseMapper, never()).update(isNull(), any());
+        verifyNoInteractions(equipmentService);
+    }
+
+    @Test
+    void completeRepairRejectsNegativeRepairCost() {
+        when(baseMapper.selectById(1L)).thenReturn(repairingRepair());
+
+        EqRepairCompleteBo bo = new EqRepairCompleteBo();
+        bo.setRepairCost(new BigDecimal("-0.01"));
+
+        ServiceException exception = assertThrows(ServiceException.class,
+            () -> service.completeRepair(1L, bo));
+
+        assertTrue(exception.getMessage().contains("维修成本不能为负"));
+        verify(baseMapper, never()).update(isNull(), any());
+    }
+
+    @Test
+    void completeRepairAllowsZeroDowntimeAndCost() {
+        when(baseMapper.selectById(1L)).thenReturn(repairingRepair());
+        when(baseMapper.update(isNull(), any())).thenReturn(1);
+        when(equipmentService.resetToNormalIfNoActiveRepair(10L)).thenReturn(true);
+
+        EqRepairCompleteBo bo = new EqRepairCompleteBo();
+        bo.setDowntimeHours(BigDecimal.ZERO);
+        bo.setRepairCost(BigDecimal.ZERO);
+
+        service.completeRepair(1L, bo);
+
+        // 0 合法(非负)，不得被误拒
+        verify(baseMapper).update(isNull(), any());
+    }
+
+    private EqRepair repairingRepair() {
+        EqRepair repair = new EqRepair();
+        repair.setRepairId(1L);
+        repair.setEquipmentId(10L);
+        repair.setStatus("REPAIRING");
+        return repair;
     }
 }

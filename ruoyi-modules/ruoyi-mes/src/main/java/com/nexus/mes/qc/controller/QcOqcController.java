@@ -65,7 +65,7 @@ public class QcOqcController extends BaseController {
     @SaCheckPermission("mes:qc:oqc:add")
     @Log(title = "OQC新增", businessType = BusinessType.INSERT)
     @PostMapping
-    public R<QcOqcVo> add(@RequestBody QcOqcBo bo) {
+    public R<QcOqcVo> add(@RequestBody @Validated QcOqcBo bo) {
         return R.ok(qcOqcService.insertByBo(bo));
     }
 

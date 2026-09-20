@@ -512,7 +512,7 @@ class LtLotServiceImplTest {
 
     @Test
     void applyIqcResultReturnsFalseWhenNoLotLinked() {
-        when(baseMapper.selectOne(any())).thenReturn(null);
+        when(baseMapper.selectList(any())).thenReturn(List.of());
 
         Boolean result = service.applyIqcResult(1L, "QUALIFIED");
 
@@ -524,7 +524,7 @@ class LtLotServiceImplTest {
         LtLot lot = new LtLot();
         lot.setLotId(1L);
         lot.setStatus("IN_STOCK");
-        when(baseMapper.selectOne(any())).thenReturn(lot);
+        when(baseMapper.selectList(any())).thenReturn(List.of(lot));
 
         Boolean result = service.applyIqcResult(1L, "QUALIFIED");
 
@@ -539,7 +539,7 @@ class LtLotServiceImplTest {
         lot.setStatus("IN_STOCK");
         lot.setQuantity(BigDecimal.TEN);
         lot.setConsumedQty(BigDecimal.ZERO);
-        when(baseMapper.selectOne(any())).thenReturn(lot);
+        when(baseMapper.selectList(any())).thenReturn(List.of(lot));
         // quarantine(lotId) 内部会按 ID 重新加载批次
         when(baseMapper.selectById(1L)).thenReturn(lot);
         when(baseMapper.update(any(), any())).thenReturn(1);
@@ -549,6 +549,49 @@ class LtLotServiceImplTest {
         assertTrue(result);
         // quarantine should have been called (2nd update)
         verify(baseMapper, times(2)).update(any(), any());
+    }
+
+    // ==================== MES-QC-10②: 同 iqcId 多批次必须全部回写 ====================
+
+    @Test
+    void applyIqcResultFailUpdatesAllLotsLinkedToSameIqc() {
+        LtLot lot1 = new LtLot();
+        lot1.setLotId(1L);
+        lot1.setStatus("IN_STOCK");
+        lot1.setQuantity(BigDecimal.TEN);
+        lot1.setConsumedQty(BigDecimal.ZERO);
+        LtLot lot2 = new LtLot();
+        lot2.setLotId(2L);
+        lot2.setStatus("IN_STOCK");
+        lot2.setQuantity(BigDecimal.TEN);
+        lot2.setConsumedQty(BigDecimal.ZERO);
+        when(baseMapper.selectList(any())).thenReturn(List.of(lot1, lot2));
+        when(baseMapper.selectById(1L)).thenReturn(lot1);
+        when(baseMapper.selectById(2L)).thenReturn(lot2);
+        when(baseMapper.update(any(), any())).thenReturn(1);
+
+        Boolean result = service.applyIqcResult(7L, "UNQUALIFIED");
+
+        assertTrue(result);
+        // 每个批次: 1 次 qc_status 回写 + 1 次隔离 CAS, 两个批次都要被处理
+        verify(baseMapper, times(4)).update(isNull(), any());
+        verify(baseMapper, times(2)).selectById(any());
+    }
+
+    @Test
+    void applyIqcResultFailOnTerminalLotKeepsFailWithoutQuarantine() {
+        LtLot lot = new LtLot();
+        lot.setLotId(5L);
+        lot.setStatus("SCRAPPED");
+        when(baseMapper.selectList(any())).thenReturn(List.of(lot));
+        when(baseMapper.update(any(), any())).thenReturn(1);
+
+        Boolean result = service.applyIqcResult(7L, "UNQUALIFIED");
+
+        assertTrue(result);
+        // 终态批次只回写 FAIL, 不隔离(但仍必须留 error 级告警, 由日志断言覆盖)
+        verify(baseMapper, times(1)).update(isNull(), any());
+        verify(baseMapper, never()).selectById(any());
     }
 
     @Test

@@ -84,6 +84,12 @@ public class ProAndon extends TenantEntity {
     /** 备注 */
     private String remark;
 
+    /** 呼叫通知被通知人ID(逗号分隔, MES-PRO-08: 离线也可追溯通知对象) */
+    private String notifyUserIds;
+
+    /** 呼叫通知落库时间(MES-PRO-08: 非空表示该安灯的呼叫通知已发出, 作为幂等依据) */
+    private Date notifyTime;
+
     /** 删除标志 */
     @TableLogic
     private String delFlag;

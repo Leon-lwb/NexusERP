@@ -6,11 +6,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.mes.label.domain.MesLabelTemplate;
+import com.nexus.mes.pro.domain.ProSn;
 import lombok.Data;
 import org.springframework.stereotype.Service;
 
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -66,6 +68,25 @@ public class LabelRenderService {
     public Charset charsetOf(MesLabelTemplate template) {
         return LANG_ZPL.equalsIgnoreCase(template.getLabelLang())
             ? StandardCharsets.UTF_8 : Charset.forName("GBK");
+    }
+
+    /**
+     * SN 六字段值域(与模板字段绑定一一对应): 造码联动打印与人工补打共用, 避免两处字段映射漂移
+     *
+     * @param sn SN(可空, 空则全部渲染为空串)
+     */
+    public Map<String, String> snFields(ProSn sn) {
+        Map<String, String> fields = new LinkedHashMap<>(8);
+        if (sn == null) {
+            return fields;
+        }
+        fields.put("snCode", sn.getSnCode());
+        fields.put("materialCode", sn.getMaterialCode());
+        fields.put("materialName", sn.getMaterialName());
+        fields.put("woNo", sn.getWoNo());
+        fields.put("cardNo", sn.getCardNo());
+        fields.put("productionDate", sn.getProductionDate() == null ? "" : String.format("%tF", sn.getProductionDate()));
+        return fields;
     }
 
     // ==================== TSPL ====================

@@ -97,7 +97,6 @@ class QcOqcServiceImplTest {
         QcOqcVo insertedVo = new QcOqcVo();
         insertedVo.setOqcId(1L);
         when(baseMapper.selectVoById(any())).thenReturn(insertedVo);
-        when(baseMapper.selectCount(any())).thenReturn(0L);
 
         QcOqcVo result = service.insertByBo(bo);
 

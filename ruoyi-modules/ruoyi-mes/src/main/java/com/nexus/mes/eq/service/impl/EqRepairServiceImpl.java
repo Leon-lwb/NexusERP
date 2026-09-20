@@ -172,6 +172,15 @@ public class EqRepairServiceImpl implements IEqRepairService {
         if (!STATUS_REPAIRING.equals(repair.getStatus())) {
             throw new ServiceException("维修单状态已变更, 仅维修中可完成");
         }
+        // 服务端双保险(MES-EQ-13): 负停机时长会让 OEE 的 run > planned, 使 availability/oee 突破 1;
+        // 负成本则污染维修成本统计。BO 上的 @DecimalMin 只在 Controller 校验链路生效,
+        // MQ/任务等内部调用会绕过, 故此处再兜一次。
+        if (bo.getDowntimeHours() != null && bo.getDowntimeHours().signum() < 0) {
+            throw new ServiceException("停机时长不能为负: " + bo.getDowntimeHours());
+        }
+        if (bo.getRepairCost() != null && bo.getRepairCost().signum() < 0) {
+            throw new ServiceException("维修成本不能为负: " + bo.getRepairCost());
+        }
         BigDecimal downtimeHours = bo.getDowntimeHours();
         BigDecimal repairCost = bo.getRepairCost();
         String remark = bo.getRemark();

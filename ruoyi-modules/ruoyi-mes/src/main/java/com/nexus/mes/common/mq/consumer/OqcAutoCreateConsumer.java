@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Component;
 
 /**
@@ -69,6 +70,10 @@ public class OqcAutoCreateConsumer extends BaseMessageConsumer<OqcAutoCreateMess
             // oqcNo / status / inspectResult 由 QcOqcServiceImpl.insertByBo 内部生成
             oqcService.insertByBo(bo);
             log.info("[OqcAutoCreate] 销售订单 {} 物料 {} 已自动创建 OQC",
+                message.getSoId(), message.getMaterialId());
+        } catch (DuplicateKeyException e) {
+            // MES-QC-04: uk_oqc_so_material 冲突 = 并发下已被其他线程建单, 视为幂等成功, 不重投消息
+            log.info("[OqcAutoCreate] 销售订单 {} 物料 {} 唯一键冲突, 视为已创建(幂等跳过)",
                 message.getSoId(), message.getMaterialId());
         } catch (Exception e) {
             log.error("[OqcAutoCreate] 销售订单 {} 物料 {} 自动创建 OQC 失败: {}",

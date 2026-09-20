@@ -9,6 +9,7 @@ import com.nexus.mes.flash.domain.bo.TestReportBo;
 import com.nexus.mes.flash.domain.vo.TestItemVo;
 import com.nexus.mes.flash.mapper.TestRecordMapper;
 import com.nexus.mes.flash.service.ITestItemService;
+import com.nexus.mes.ncr.service.INcrOrderService;
 import com.nexus.mes.pro.domain.ProSn;
 import com.nexus.mes.pro.mapper.ProSnMapper;
 import com.nexus.system.strategy.AutoCodeUtil;
@@ -29,18 +30,22 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
  * TestRecordServiceImpl 单元测试 — MES 测试域 P0 修复回归
  * <p>覆盖: MES-TEST-01 必测项全覆盖(缺项不判 PASS)、MES-TEST-02 ENUM 判定 fail-closed、
- * MES-TEST-03 已判定行不可重复覆盖(CAS 条件更新)。</p>
+ * MES-TEST-03 已判定行不可重复覆盖(CAS 条件更新)、MES-TEST-04 FAIL 触发 NCR(同一 testNo 幂等)
+ * 与"该 SN 存在未处置 FAIL 行"查询。</p>
  *
  * @author Nexus
  */
@@ -57,6 +62,8 @@ class TestRecordServiceImplTest {
     private ITestItemService testItemService;
     @Mock
     private AutoCodeUtil autoCodeUtil;
+    @Mock
+    private INcrOrderService ncrOrderService;
 
     @InjectMocks
     private TestRecordServiceImpl service;
@@ -268,5 +275,107 @@ class TestRecordServiceImplTest {
         ServiceException ex = assertThrows(ServiceException.class,
             () -> service.reportTestAutoBatch(java.util.Collections.emptyList()));
         assertTrue(ex.getMessage().contains("不能为空"));
+    }
+
+    // ==================== MES-TEST-04 FAIL 触发 NCR ====================
+
+    private TestItemVo numericItem(long id, String code, String upperLimit) {
+        TestItemVo vo = item(id, code, "NUMERIC", null);
+        vo.setUpperLimit(new BigDecimal(upperLimit));
+        return vo;
+    }
+
+    private TestRecord draft(long id, String testNo, String itemCode) {
+        TestRecord draft = new TestRecord();
+        draft.setTestRecordId(id);
+        draft.setTestNo(testNo);
+        draft.setItemCode(itemCode);
+        draft.setDataType("NUMERIC");
+        draft.setResult("");
+        draft.setUpperLimit(new BigDecimal("5.5"));
+        draft.setLowerLimit(new BigDecimal("4.5"));
+        return draft;
+    }
+
+    private TestRecordBo draftRow(long id, String value) {
+        TestRecordBo row = new TestRecordBo();
+        row.setTestRecordId(id);
+        row.setNumericValue(new BigDecimal(value));
+        return row;
+    }
+
+    @Test
+    void autoReport_multipleFailItemsCreateSingleNcr() {
+        when(proSnMapper.selectOne(any())).thenReturn(sn());
+        // AUTO 路径的 testNo 由 AutoCodeUtil 生成: 纯单测必须桩出非空单号,
+        // 否则 autoCreateNcrForFail 会因 testNo 为空而跳过建单(该跳过是生产上的正确防御)
+        when(autoCodeUtil.genSerialCode(anyString(), any())).thenReturn("T-AUTO-1");
+        when(testItemService.selectByMaterial(any(), any())).thenReturn(List.of(
+            numericItem(11L, "VOLT", "5"),
+            numericItem(12L, "RF-TXPWR", "10")));
+
+        Map<String, Object> result = service.reportTestAutoBatch(List.of(report("VOLT", "9.9", "RF-TXPWR", "99")));
+
+        assertEquals(1, result.get("success"));
+        // 同一 testNo 两项 FAIL -> 只建一单 NCR(幂等)
+        verify(ncrOrderService, times(1)).autoCreateFromExit(any(), any(), any(), any(), anyString());
+    }
+
+    @Test
+    void autoReport_passDoesNotCreateNcr() {
+        when(proSnMapper.selectOne(any())).thenReturn(sn());
+        // 同样桩出 testNo: 保证该用例是在"确实产生了测试单"的前提下断言不建 NCR(而非因 testNo 为空而跳过)
+        when(autoCodeUtil.genSerialCode(anyString(), any())).thenReturn("T-AUTO-2");
+        when(testItemService.selectByMaterial(any(), any())).thenReturn(List.of(numericItem(11L, "VOLT", "5")));
+
+        service.reportTestAutoBatch(List.of(report("VOLT", "5.0")));
+
+        verify(ncrOrderService, never()).autoCreateFromExit(any(), any(), any(), any(), anyString());
+    }
+
+    @Test
+    void reportRows_multipleFailRowsOfSameTestNoCreateSingleNcr() {
+        when(baseMapper.selectById(7L)).thenReturn(draft(7L, "T-3", "VOLT"));
+        when(baseMapper.selectById(8L)).thenReturn(draft(8L, "T-3", "RF-TXPWR"));
+        when(baseMapper.update(any(), any())).thenReturn(1);
+        // 判定前该测试单无 FAIL 行 -> 允许建单
+        when(baseMapper.selectCount(any())).thenReturn(0L);
+
+        service.reportTestRows(List.of(draftRow(7L, "9.9"), draftRow(8L, "9.9")));
+
+        verify(ncrOrderService, times(1)).autoCreateFromExit(any(), any(), any(), any(), anyString());
+        // 同一 testNo 的 FAIL 快照只查一次(避免把本次刚判 FAIL 的行当历史单)
+        verify(baseMapper, times(1)).selectCount(any());
+    }
+
+    @Test
+    void reportRows_skipsNcrWhenTestNoAlreadyHasFailRow() {
+        when(baseMapper.selectById(9L)).thenReturn(draft(9L, "T-9", "VOLT"));
+        when(baseMapper.update(any(), any())).thenReturn(1);
+        when(baseMapper.selectCount(any())).thenReturn(1L);
+
+        service.reportTestRows(List.of(draftRow(9L, "9.9")));
+
+        verify(ncrOrderService, never()).autoCreateFromExit(any(), any(), any(), any(), anyString());
+    }
+
+    @Test
+    void reportRows_passDoesNotCreateNcr() {
+        when(baseMapper.selectById(11L)).thenReturn(draft(11L, "T-11", "VOLT"));
+        when(baseMapper.update(any(), any())).thenReturn(1);
+
+        service.reportTestRows(List.of(draftRow(11L, "5.0")));
+
+        verify(ncrOrderService, never()).autoCreateFromExit(any(), any(), any(), any(), anyString());
+    }
+
+    @Test
+    void hasUnhandledFail_reflectsFailRows() {
+        when(baseMapper.selectCount(any())).thenReturn(1L);
+        assertTrue(service.hasUnhandledFail(1L));
+
+        when(baseMapper.selectCount(any())).thenReturn(0L);
+        assertFalse(service.hasUnhandledFail(1L));
+        assertFalse(service.hasUnhandledFail(null));
     }
 }

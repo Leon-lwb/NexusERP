@@ -33,6 +33,8 @@ public interface IProWorkOrderService extends WfCallBackServiceI {
     String STATUS_COMPLETED = "COMPLETED";
     /** 工单状态: 已取消 */
     String STATUS_CANCELLED = "CANCELLED";
+    /** 工单状态: 已关闭(完工后归档终态) */
+    String STATUS_CLOSED = "CLOSED";
 
     /** 工序状态: 待开始 */
     String STEP_PENDING = "PENDING";
@@ -135,4 +137,20 @@ public interface IProWorkOrderService extends WfCallBackServiceI {
      * @param mesWoId MES工单ID
      */
     void completeWo(Long mesWoId);
+
+    /**
+     * 取消工单(CREATED/RELEASED/APPROVING -> CANCELLED, CAS)
+     * <p>工单下存在在制流转卡(RELEASED/IN_PROGRESS)时拒绝取消。</p>
+     *
+     * @param mesWoId MES工单ID
+     * @param reason  取消原因(写入工单备注)
+     */
+    void cancel(Long mesWoId, String reason);
+
+    /**
+     * 关闭工单(COMPLETED/PARTIAL_COMPLETED -> CLOSED, CAS)
+     *
+     * @param mesWoId MES工单ID
+     */
+    void close(Long mesWoId);
 }

@@ -30,6 +30,7 @@ import com.nexus.mes.ncr.domain.NcrOrder;
 import com.nexus.mes.ncr.domain.NcrReworkOrder;
 import com.nexus.mes.ncr.mapper.NcrOrderMapper;
 import com.nexus.mes.ncr.mapper.NcrReworkOrderMapper;
+import com.nexus.mes.pro.domain.ProFlowCard;
 import com.nexus.mes.pro.domain.ProWorkOrder;
 import com.nexus.mes.pro.domain.ProWorkOrderBomLine;
 import com.nexus.mes.pro.domain.ProWorkOrderStep;
@@ -38,15 +39,18 @@ import com.nexus.mes.pro.domain.bo.UpdateStepFirmwareBo;
 import com.nexus.mes.pro.domain.vo.ProWorkOrderBomLineVo;
 import com.nexus.mes.pro.domain.vo.ProWorkOrderStepVo;
 import com.nexus.mes.pro.domain.vo.ProWorkOrderVo;
+import com.nexus.mes.pro.mapper.ProFlowCardMapper;
 import com.nexus.mes.pro.mapper.ProWorkOrderBomLineMapper;
 import com.nexus.mes.pro.mapper.ProWorkOrderMapper;
 import com.nexus.mes.pro.mapper.ProWorkOrderStepMapper;
 import com.nexus.mes.pro.service.IMesMbomService;
+import com.nexus.mes.pro.service.IProFlowCardService;
 import com.nexus.mes.pro.domain.vo.MesMbomVo;
 import com.nexus.mes.pro.domain.vo.MesMbomLineVo;
 import com.nexus.mes.pro.service.IProWorkOrderService;
 import com.nexus.mes.qc.domain.QcIpqc;
 import com.nexus.mes.qc.mapper.QcIpqcMapper;
+import com.nexus.mes.qc.service.IQcIpqcService;
 import com.nexus.mes.release.domain.vo.ReleasePackageVo;
 import com.nexus.mes.release.domain.vo.ReleasePkgBomItemVo;
 import com.nexus.mes.release.domain.vo.ReleasePkgConfigVo;
@@ -59,6 +63,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
@@ -104,6 +109,11 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
      */
     private final NcrReworkOrderMapper ncrReworkOrderMapper;
     private final NcrOrderMapper ncrOrderMapper;
+    /**
+     * 流转卡 Mapper(MES-PRO-11): 取消工单前校验工单下无在制流转卡。
+     * 直调 Mapper 而非 IProFlowCardService，避免与 ProFlowCardServiceImpl(依赖 IProWorkOrderService)形成循环依赖。
+     */
+    private final ProFlowCardMapper flowCardMapper;
     /** 刷写配置: 工序打标关键字(nexus.mes.flash) */
     private final FwProperties fwProperties;
     /** 固件 Mapper: FLASH 工序自动带出物料默认 RELEASED 固件 */
@@ -310,6 +320,24 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
     public void doReleaseAndSnapshot(Long mesWoId, ProWorkOrder wo,
                                      List<Map<String, Object>> routingSteps, MesMbomVo mbom,
                                      ReleasePackageVo releasePackage) {
+        // release() 直达路径: 仅 CREATED 可下达
+        doReleaseAndSnapshot(mesWoId, wo, routingSteps, mbom, releasePackage,
+            new String[]{STATUS_CREATED});
+    }
+
+    /**
+     * 事务内下达 + 幂等快照(可指定前置状态)
+     * <p>MES-PRO-03: 审批通过回调复用本方法, 前置状态为 CREATED/APPROVING
+     * (流程启动即通过时无 doing 回调, 状态仍为 CREATED; 有审批节点时为 APPROVING)。</p>
+     *
+     * @param fromStatuses 允许下达的前置状态集合(CAS 条件)
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void doReleaseAndSnapshot(Long mesWoId, ProWorkOrder wo,
+                                     List<Map<String, Object>> routingSteps, MesMbomVo mbom,
+                                     ReleasePackageVo releasePackage, String[] fromStatuses) {
+        String[] allowed = (fromStatuses == null || fromStatuses.length == 0)
+            ? new String[]{STATUS_CREATED} : fromStatuses;
         // 幂等快照步骤(若尚未生成)
         Long stepCount = stepMapper.selectCount(Wrappers.lambdaQuery(ProWorkOrderStep.class)
             .eq(ProWorkOrderStep::getMesWoId, mesWoId));
@@ -322,15 +350,15 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
         if ((bomLineCount == null || bomLineCount == 0) && mbom != null && mbom.getLines() != null && !mbom.getLines().isEmpty()) {
             snapshotBomLines(wo, mbom, releasePackage);
         }
-        // FLASH门禁: 每个刷写工序必须已绑定刷写内容(固件/配置/池), 未绑定的下达拦截
-        assertFlashStepsBound(mesWoId);
+        // 下达门禁: 无工序(手工/返工来源)拒绝下达 + FLASH工序须已绑定刷写内容
+        assertFlashStepsBound(mesWoId, wo != null ? wo.getSourceType() : null);
         // CAS更新状态(冻结固件/BOM绑定, 下达后不可再改)
         int rows = baseMapper.update(null, Wrappers.<ProWorkOrder>lambdaUpdate()
             .set(ProWorkOrder::getWoStatus, STATUS_RELEASED)
             .eq(ProWorkOrder::getMesWoId, mesWoId)
-            .eq(ProWorkOrder::getWoStatus, STATUS_CREATED));
+            .in(ProWorkOrder::getWoStatus, List.of(allowed)));
         if (rows == 0) {
-            throw new RuntimeException("工单状态已变更或不存在，仅新建状态工单可下达");
+            throw new RuntimeException("工单状态已变更或不存在，仅新建/审批中状态工单可下达");
         }
         // 手动来源工单绑定发布包: 回填发布包快照字段(编码/版本/配置项, ERP来源工单创建时已落)
         if (releasePackage != null && wo.getReleasePackageId() != null) {
@@ -345,11 +373,21 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
     }
 
     /**
-     * FLASH门禁: 校验工单下所有刷写工序均已绑定刷写内容(单类型 contentRefId 或多类型 stepFlashConfig)
-     * <p>挂在 release() 直达路径与 submit() 审批提交前双入口;
-     * 审批通过回调(afterFlowHandle)直接置 RELEASED 不再重复校验, 由提交时点校验兜底。</p>
+     * 下达门禁: ① 无工序步骤且来源为手工/返工 -> 拒绝下达; ② 刷写工序必须已绑定刷写内容
+     * <p><b>MES-PRO-03</b>: 原实现对"工序数为 0"直接 return, 手工来源工单可在无工序的情况下下达,
+     * 之后生成的流转卡无工序记录(派工/报工/关键工序 IPQC 门禁全部落空)。
+     * ERP 来源工单工序由 MQ 建单时快照, 工艺路线缺失由桥接服务报错, 故仅对手工/返工来源设防。</p>
+     * <p>挂在 release() 直达路径、审批提交前(submit)与审批通过回调(doReleaseAndSnapshot)三个入口。</p>
      */
-    private void assertFlashStepsBound(Long mesWoId) {
+    private void assertFlashStepsBound(Long mesWoId, String sourceType) {
+        Long stepCount = stepMapper.selectCount(Wrappers.lambdaQuery(ProWorkOrderStep.class)
+            .eq(ProWorkOrderStep::getMesWoId, mesWoId));
+        if ((stepCount == null || stepCount == 0)
+            && (StringUtils.isBlank(sourceType) || "MANUAL".equals(sourceType) || "REWORK".equals(sourceType))) {
+            throw new ServiceException("工单无工序步骤, 禁止下达(来源: "
+                + (StringUtils.isBlank(sourceType) ? "MANUAL(未标注)" : sourceType)
+                + "): 请先确认工艺路线或补录工序, mesWoId=" + mesWoId);
+        }
         List<ProWorkOrderStep> flashSteps = stepMapper.selectList(Wrappers.<ProWorkOrderStep>lambdaQuery()
             .eq(ProWorkOrderStep::getMesWoId, mesWoId)
             .eq(ProWorkOrderStep::getStepType, "FLASH"));
@@ -974,9 +1012,9 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
         if (!STATUS_CREATED.equals(entity.getWoStatus())) {
             throw new RuntimeException("只有新建状态的工单才能提交审批");
         }
-        // FLASH门禁前置校验: 审批通过回调(afterFlowHandle)将直接置 RELEASED 不再走 doReleaseAndSnapshot,
-        // 提交时点拦截未绑定刷写内容的工序, 覆盖审批下达路径(与 release() 直达路径双入口)
-        assertFlashStepsBound(mesWoId);
+        // 下达门禁前置校验: 审批通过回调(afterFlowHandle)将经 doReleaseAndSnapshot 再校验一次,
+        // 提交时点拦截无工序(手工/返工来源)与未绑定刷写内容的工序, 让生产负责人尽早修正
+        assertFlashStepsBound(mesWoId, entity.getSourceType());
         // 解析selectFlowId
         if (StringUtils.isBlank(selectFlowId)) {
             if (entity.getSelectFlowId() != null) {
@@ -1020,10 +1058,14 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
      * <p>
      * 显式声明 @DS("mes") 确保写入 mes 库，不依赖类级注解的 AOP 顺序。
      * REQUIRES_NEW 隔离事务，避免 Flowable master 事务回滚影响 mes 写入。
+     * <p>
+     * <b>MES-PRO-03</b>: 审批通过分支不再直接 {@code setWoStatus(RELEASED) + updateById}——
+     * 那会让审批通过的工单工序数为 0、无 MBOM 快照, 下游派工/报工/关键工序 IPQC 门禁全部落空。
+     * 现经 AOP 复用 {@link #doReleaseAndSnapshot} 与 release() 同路径(工序/MBOM 快照 + 门禁 + CAS)。
      */
     @Override
     @DS("mes")
-    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void afterFlowHandle(WfMyBusiness business) {
         Long mesWoId = Long.parseLong(business.getDataId());
         ProWorkOrder entity = baseMapper.selectById(mesWoId);
@@ -1031,12 +1073,14 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
             return;
         }
         String actStatus = business.getActStatus();
+        if (ActStatus.pass.equals(actStatus)) {
+            // 审批通过: 与 release() 同路径下达(生成工序与 MBOM 快照), 不再是"只改状态"
+            releaseOnApprovalPass(mesWoId, entity);
+            return;
+        }
         boolean changed = false;
         if (ActStatus.doing.equals(actStatus)) {
             entity.setWoStatus(STATUS_APPROVING);
-            changed = true;
-        } else if (ActStatus.pass.equals(actStatus)) {
-            entity.setWoStatus(STATUS_RELEASED);
             changed = true;
         } else if (ActStatus.reject.equals(actStatus) || ActStatus.retrun.equals(actStatus)
             || ActStatus.revoke.equals(actStatus) || ActStatus.stop.equals(actStatus)
@@ -1049,6 +1093,42 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
             baseMapper.updateById(entity);
             log.info("MES工单审批回调: mesWoId={}, actStatus={}, newWoStatus={}", mesWoId, actStatus, entity.getWoStatus());
         }
+    }
+
+    /**
+     * 审批通过下达(MES-PRO-03): ERP 路由在独立事务内读取 -> 事务内快照/门禁/CAS 置 RELEASED。
+     * <p>MBOM/发布包读取走 mes 库, 与调用方 mes 事务同源, 保持在本事务内即可。</p>
+     */
+    private void releaseOnApprovalPass(Long mesWoId, ProWorkOrder entity) {
+        List<Map<String, Object>> routingSteps = entity.getRoutingId() != null
+            ? SpringUtils.getAopProxy(this).loadRoutingStepsForApproval(entity.getRoutingId())
+            : null;
+        MesMbomVo mbom = entity.getBomId() != null ? mesMbomService.selectByBomId(entity.getBomId()) : null;
+        ReleasePackageVo releasePackage = null;
+        if (entity.getReleasePackageId() != null) {
+            releasePackage = releasePackageService.selectDetailById(entity.getReleasePackageId());
+            if (releasePackage == null) {
+                throw new ServiceException("工单关联的发布包不存在: releasePackageId=" + entity.getReleasePackageId());
+            }
+        }
+        // 经 AOP 代理调用使 @Transactional 生效(同类直调绕过代理); 前置状态 CREATED/APPROVING
+        SpringUtils.getAopProxy(this).doReleaseAndSnapshot(mesWoId, entity, routingSteps, mbom, releasePackage,
+            new String[]{STATUS_CREATED, STATUS_APPROVING});
+    }
+
+    /**
+     * 审批通过前的 ERP 工艺路线读取(MES-PRO-03)
+     * <p>
+     * 独立事务(REQUIRES_NEW) + 显式 @DS("erp"): 调用方(afterFlowHandle)事务已绑定 mes 连接,
+     * 桥接服务的程序式 {@code push("erp")} 在事务内不生效(复用已绑定连接会落到 ry-mes 库, 报表不存在);
+     * 挂起调用方事务后另起事务, 事务开启时数据源键即为 erp, 连接绑定正确。
+     * 路由步骤为空(未维护工艺路线)时不抛错, 由 doReleaseAndSnapshot 的无工序门禁决定是否拦截。
+     * </p>
+     */
+    @DS("erp")
+    @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
+    public List<Map<String, Object>> loadRoutingStepsForApproval(Long routingId) {
+        return mesErpBridgeService.getRoutingSteps(routingId);
     }
 
     @Override
@@ -1115,43 +1195,49 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
             return;
         }
 
-        // IPQC 门禁：关键工序(isKeyProcess=1)必须有 QUALIFIED 的 IPQC 才允许工单完工
+        // IPQC 门禁(QC-03)：关键工序(isKeyProcess=1)必须有 QUALIFIED 的 IPQC 才允许工单完工。
+        // 报工侧 autoCreateForKeyProcess 失败仅告警(不阻断报工), 此门禁是"关键工序未经检验即完工"的唯一兜底。
         List<ProWorkOrderStep> keySteps = stepMapper.selectList(Wrappers.<ProWorkOrderStep>lambdaQuery()
             .eq(ProWorkOrderStep::getMesWoId, mesWoId)
             .eq(ProWorkOrderStep::getIsKeyProcess, 1));
         if (keySteps != null && !keySteps.isEmpty()) {
-            List<QcIpqc> ipqcList = qcIpqcMapper.selectList(Wrappers.<QcIpqc>lambdaQuery()
-                .eq(QcIpqc::getMesWoId, mesWoId));
-            Map<Long, String> resultByProcess = new HashMap<>();
+            List<QcIpqc> ipqcList = loadIpqcForCompleteGate(mesWoId);
+            Map<Long, QcIpqc> ipqcByProcess = new HashMap<>();
             if (ipqcList != null) {
                 for (QcIpqc ipqc : ipqcList) {
-                    resultByProcess.putIfAbsent(ipqc.getProcessId(), ipqc.getInspectResult());
+                    // 同工序多条 IPQC(重检)时以"存在合格单"为准, 避免先读到不合格单而误拦
+                    QcIpqc exists = ipqcByProcess.get(ipqc.getProcessId());
+                    if (exists == null || (!"QUALIFIED".equals(exists.getInspectResult())
+                        && "QUALIFIED".equals(ipqc.getInspectResult()))) {
+                        ipqcByProcess.put(ipqc.getProcessId(), ipqc);
+                    }
                 }
             }
             StringBuilder pending = new StringBuilder();
             StringBuilder unqualified = new StringBuilder();
             for (ProWorkOrderStep ks : keySteps) {
-                String result = resultByProcess.get(ks.getProcessId());
+                QcIpqc ipqc = ipqcByProcess.get(ks.getProcessId());
+                String result = ipqc != null ? ipqc.getInspectResult() : null;
                 if ("QUALIFIED".equals(result)) {
                     continue;
                 }
-                if ("UNQUALIFIED".equals(result)) {
-                    if (unqualified.length() > 0) {
-                        unqualified.append("、");
-                    }
-                    unqualified.append(ks.getProcessName());
+                boolean bad = "UNQUALIFIED".equals(result);
+                StringBuilder target = bad ? unqualified : pending;
+                if (target.length() > 0) {
+                    target.append("、");
+                }
+                target.append(ks.getProcessName());
+                if (ipqc != null && StringUtils.isNotBlank(ipqc.getIpqcNo())) {
+                    target.append("(IPQC单号:").append(ipqc.getIpqcNo()).append(bad ? ", 检验不合格)" : ", 尚未检验完成)");
                 } else {
-                    if (pending.length() > 0) {
-                        pending.append("、");
-                    }
-                    pending.append(ks.getProcessName());
+                    target.append("(尚无IPQC单, 需先完成该关键工序的IPQC过程检验)");
                 }
             }
             if (pending.length() > 0) {
-                throw new RuntimeException("以下关键工序尚未完成IPQC过程检验，禁止工单完工：" + pending);
+                throw new ServiceException("以下关键工序尚未完成IPQC过程检验，禁止工单完工：" + pending);
             }
             if (unqualified.length() > 0) {
-                throw new RuntimeException("以下关键工序IPQC检验不合格，禁止工单完工：" + unqualified);
+                throw new ServiceException("以下关键工序IPQC检验不合格，禁止工单完工：" + unqualified);
             }
         }
 
@@ -1212,7 +1298,88 @@ public class ProWorkOrderServiceImpl implements IProWorkOrderService {
             });
     }
 
+    /**
+     * 取消工单(MES-PRO-11): CREATED/RELEASED/APPROVING -> CANCELLED(CAS)
+     * <p>
+     * 死状态入口补齐: CANCELLED 原先无任何流转入口。CAS 更新保证并发下只有一个调用生效;
+     * 工单下存在在制流转卡(已下达/生产中)时拒绝——卡已下发车间, 取消工单会让在制卡失去工单归属、
+     * 完工聚合(completeWo)永久无法收敛。
+     * </p>
+     *
+     * @param mesWoId MES工单ID
+     * @param reason  取消原因(写入工单备注)
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void cancel(Long mesWoId, String reason) {
+        ProWorkOrder wo = baseMapper.selectById(mesWoId);
+        if (wo == null) {
+            throw new ServiceException("工单不存在: mesWoId=" + mesWoId);
+        }
+        // 在制流转卡: 已下达(RELEASED)/生产中(IN_PROGRESS); 仅 CREATED 的卡尚未下发车间, 不阻塞取消
+        Long activeCards = flowCardMapper.selectCount(Wrappers.<ProFlowCard>lambdaQuery()
+            .eq(ProFlowCard::getMesWoId, mesWoId)
+            .in(ProFlowCard::getCardStatus,
+                IProFlowCardService.STATUS_RELEASED, IProFlowCardService.STATUS_IN_PROGRESS));
+        if (activeCards != null && activeCards > 0) {
+            throw new ServiceException("工单下存在在制流转卡(" + activeCards + "张), 不可取消, 请先完工或关闭流转卡: mesWoId=" + mesWoId);
+        }
+        int rows = baseMapper.update(null, Wrappers.<ProWorkOrder>lambdaUpdate()
+            .set(ProWorkOrder::getWoStatus, STATUS_CANCELLED)
+            .set(StringUtils.isNotBlank(reason), ProWorkOrder::getRemark, reason)
+            .eq(ProWorkOrder::getMesWoId, mesWoId)
+            .in(ProWorkOrder::getWoStatus, STATUS_CREATED, STATUS_RELEASED, STATUS_APPROVING));
+        if (rows == 0) {
+            throw new ServiceException("工单状态已变更, 仅新建/已下达/审批中状态可取消: mesWoId=" + mesWoId
+                + ", 当前状态=" + wo.getWoStatus());
+        }
+        log.info("MES工单取消: mesWoId={}, woNo={}, reason={}", mesWoId, wo.getWoNo(), reason);
+    }
+
+    /**
+     * 关闭工单(MES-PRO-11): COMPLETED/PARTIAL_COMPLETED -> CLOSED(CAS)
+     * <p>完工后的归档终态入口(原先 CLOSED 无流转入口); 部分完工仍留在 PARTIAL_COMPLETED 由完工流程收敛。</p>
+     *
+     * @param mesWoId MES工单ID
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void close(Long mesWoId) {
+        ProWorkOrder wo = baseMapper.selectById(mesWoId);
+        if (wo == null) {
+            throw new ServiceException("工单不存在: mesWoId=" + mesWoId);
+        }
+        int rows = baseMapper.update(null, Wrappers.<ProWorkOrder>lambdaUpdate()
+            .set(ProWorkOrder::getWoStatus, STATUS_CLOSED)
+            .eq(ProWorkOrder::getMesWoId, mesWoId)
+            .in(ProWorkOrder::getWoStatus, STATUS_COMPLETED, STATUS_PARTIAL_COMPLETED));
+        if (rows == 0) {
+            throw new ServiceException("工单状态已变更, 仅已完工/部分完工状态可关闭: mesWoId=" + mesWoId
+                + ", 当前状态=" + wo.getWoStatus());
+        }
+        log.info("MES工单关闭: mesWoId={}, woNo={}", mesWoId, wo.getWoNo());
+    }
+
     // ==================== 私有辅助方法 ====================
+
+    /**
+     * 关键工序 IPQC 门禁取数(QC-03)
+     * <p>优先复用 qc 模块只读接口 {@link IQcIpqcService#selectByMesWoId}(此前实现存在但全仓无调用者),
+     * 经 {@code SpringUtils.getBean} 惰性获取以规避 QcIpqcServiceImpl -> IProWorkOrderService 的构造循环依赖;
+     * 容器中无该 Bean(如裁剪部署)时回退直调 {@link QcIpqcMapper}。</p>
+     */
+    private List<QcIpqc> loadIpqcForCompleteGate(Long mesWoId) {
+        try {
+            IQcIpqcService ipqcService = SpringUtils.getBean(IQcIpqcService.class);
+            if (ipqcService != null) {
+                return ipqcService.selectByMesWoId(mesWoId);
+            }
+        } catch (Exception e) {
+            log.warn("IPQC门禁经 IQcIpqcService 取数不可用, 回退 Mapper 直查: mesWoId={}, cause={}", mesWoId, e.getMessage());
+        }
+        return qcIpqcMapper.selectList(Wrappers.<QcIpqc>lambdaQuery()
+            .eq(QcIpqc::getMesWoId, mesWoId));
+    }
 
     private LambdaQueryWrapper<ProWorkOrder> buildQueryWrapper(ProWorkOrderBo bo) {
         LambdaQueryWrapper<ProWorkOrder> lqw = Wrappers.<ProWorkOrder>lambdaQuery()

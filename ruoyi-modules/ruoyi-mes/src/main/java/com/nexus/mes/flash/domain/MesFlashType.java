@@ -31,13 +31,20 @@ public class MesFlashType extends TenantEntity {
     /** 内容来源: FILE/POOL/EXTERNAL/INLINE */
     private String sourceType;
 
-    /** SPI Provider bean名(如 firmwareFileFlashProvider) */
+    /**
+     * SPI Provider bean名(如 firmwareFileFlashProvider)
+     * <p><b>当前未消费(保留列)</b>: 刷写类型路由按 {@link #typeCode} 走
+     * {@code FlashTypeRegistry}(按 typeCode 注册), 尚未按 bean 名解析 Provider。</p>
+     */
     private String sourceProvider;
 
     /** 来源配置JSON */
     private String sourceConfig;
 
-    /** 校验策略: MD5_MATCH/RESOURCE_BOUND/CUSTOM */
+    /**
+     * 校验策略: MD5_MATCH/RESOURCE_BOUND/CUSTOM
+     * <p><b>当前未消费(保留列)</b>: 校验由各 {@code FlashTypeProvider.verify} 内置实现, 尚未按该列驱动策略。</p>
+     */
     private String verifyStrategy;
 
     /** 是否参与完工门禁(0否/1是) */

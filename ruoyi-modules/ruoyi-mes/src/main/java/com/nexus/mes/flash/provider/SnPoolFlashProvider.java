@@ -40,8 +40,13 @@ public class SnPoolFlashProvider implements FlashTypeProvider {
     }
 
     @Override
+    public String getPoolResourceType() {
+        return "SN";
+    }
+
+    @Override
     public FlashContent resolveContent(FlashContext ctx) {
-        Long poolId = resolvePoolId("SN");
+        Long poolId = resolvePoolId("SN", ctx.getContentRefId());
         MesResourceItem item = resourcePoolService.allocate(poolId, ctx.getSnId(), ctx.getSnCode());
         return FlashContent.builder()
             .contentRefType("SN_POOL")
@@ -79,10 +84,22 @@ public class SnPoolFlashProvider implements FlashTypeProvider {
         return builder.build();
     }
 
-    private Long resolvePoolId(String resourceType) {
+    /**
+     * 池选择(MES-FLASH-06): 优先 contentRefId 指向的启用池, 退化取首个启用池并强制 ORDER BY(create_time, pool_id)。
+     */
+    private Long resolvePoolId(String resourceType, Long preferredPoolId) {
+        if (preferredPoolId != null) {
+            MesResourcePool preferred = resourcePoolMapper.selectById(preferredPoolId);
+            if (preferred != null && resourceType.equals(preferred.getResourceType())
+                && "ENABLED".equals(preferred.getStatus())) {
+                return preferred.getPoolId();
+            }
+        }
         MesResourcePool pool = resourcePoolMapper.selectOne(Wrappers.<MesResourcePool>lambdaQuery()
             .eq(MesResourcePool::getResourceType, resourceType)
             .eq(MesResourcePool::getStatus, "ENABLED")
+            .orderByAsc(MesResourcePool::getCreateTime)
+            .orderByAsc(MesResourcePool::getPoolId)
             .last("LIMIT 1"));
         if (pool == null) {
             throw new ServiceException("无启用的" + resourceType + "资源池, 请先创建并导入资源");

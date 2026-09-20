@@ -14,7 +14,9 @@ import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.mes.flash.domain.FlashRecord;
+import com.nexus.mes.flash.domain.MesFlashType;
 import com.nexus.mes.flash.mapper.FlashRecordMapper;
+import com.nexus.mes.flash.mapper.MesFlashTypeMapper;
 import com.nexus.mes.ncr.service.INcrOrderService;
 import com.nexus.mes.pro.domain.ProFlowCard;
 import com.nexus.mes.pro.domain.ProFlowCardStep;
@@ -50,6 +52,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * MES流转卡 Service 业务层实现
@@ -95,6 +98,8 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
     private final ProSnMapper proSnMapper;
     /** 刷写记录：(刷写门禁) 校验固件刷写 PASS 记录 */
     private final FlashRecordMapper flashRecordMapper;
+    /** 刷写类型：(刷写门禁) 按 gate_enabled 过滤绑定项, 未启用的门禁不拦截 */
+    private final MesFlashTypeMapper mesFlashTypeMapper;
     /** JSON 解析(step_flash_config 多类型绑定) */
     private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
     /** 刷写门禁模式: FORCE=FAIL拦截 / WARN=告警放行 / 其他=关闭 */
@@ -327,7 +332,7 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
             throw new RuntimeException("工序状态已变更或不存在，仅进行中状态可完工");
         }
 
-        // 关键工序报工完成 -> 自动建 IPQC(幂等，失败不阻断报工，由 completeWo 门禁兜底)
+        // 关键工序报工完成 -> 自动建 IPQC(幂等，失败不阻断报工；completeWo 完工门禁校验关键工序 IPQC 必须合格)
         triggerIpqcIfKeyProcess(stepRecordId);
 
         // 2. 更新流转卡数量: completed_qty 用当前工序goodQty覆写（串行流程，每道工序处理同一批工件）
@@ -382,6 +387,8 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
      * 刷写工序门禁(固件刷写纳入工序步骤: 门禁强制)
      * <p>工单步骤指定 firmware_id 的工序视为刷写工序: 完工前须该流转卡上全部在制 SN
      * 均已存在对应固件的 PASS 刷写记录, 否则拒绝完工(未刷写不能过站)。</p>
+     * <p>绑定项按刷写类型的 {@code gate_enabled} 过滤: 显式 {@code '0'} 的类型不参与门禁,
+     * 不拦截完工(与 flash 侧 {@code selectPendingTasks} 的语义一致)。</p>
      */
     private void checkFlashStepGate(Long stepRecordId, Long cardId) {
         // 门禁模式: FORCE=拦截 / WARN=告警放行 / 其他=关闭
@@ -397,7 +404,7 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
             return;
         }
         // 解析刷写绑定: step_flash_config 多类型优先, 否则单类型 content_ref_id(固件类)
-        List<FlashBinding> bindings = parseFlashBindings(woStep);
+        List<FlashBinding> bindings = filterGateEnabledBindings(parseFlashBindings(woStep));
         if (bindings.isEmpty()) {
             return;
         }
@@ -442,6 +449,33 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
             }
             throw new ServiceException(msg);
         }
+    }
+
+    /**
+     * 按刷写类型的 {@code gate_enabled} 过滤门禁绑定项(对齐 MES-FLASH-05 的语义)。
+     * <p>列定义 {@code NOT NULL DEFAULT '1'}, 故只有显式 {@code '0'} 才排除;
+     * 类型行缺失时按"参与门禁"处理(保持向后兼容, 不因主数据缺失而漏拦)。</p>
+     */
+    private List<FlashBinding> filterGateEnabledBindings(List<FlashBinding> bindings) {
+        if (bindings.isEmpty()) {
+            return bindings;
+        }
+        List<String> typeCodes = bindings.stream()
+            .map(FlashBinding::flashTypeCode)
+            .filter(StringUtils::isNotBlank)
+            .distinct()
+            .collect(Collectors.toList());
+        if (typeCodes.isEmpty()) {
+            return bindings;
+        }
+        Map<String, String> gateByType = mesFlashTypeMapper.selectList(Wrappers.<MesFlashType>lambdaQuery()
+                .in(MesFlashType::getTypeCode, typeCodes))
+            .stream()
+            .collect(Collectors.toMap(MesFlashType::getTypeCode,
+                t -> t.getGateEnabled() == null ? "" : t.getGateEnabled(), (a, b) -> a));
+        return bindings.stream()
+            .filter(b -> !"0".equals(gateByType.get(b.flashTypeCode())))
+            .collect(Collectors.toList());
     }
 
     /**
@@ -707,7 +741,7 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
         if (rows == 0) {
             return;
         }
-        // 关键工序报工完成 -> 自动建 IPQC(幂等，失败不阻断报工，由 completeWo 门禁兜底)
+        // 关键工序报工完成 -> 自动建 IPQC(幂等，失败不阻断报工；completeWo 完工门禁校验关键工序 IPQC 必须合格)
         triggerIpqcIfKeyProcess(stepRecordId);
         // 检查所有工序完成 -> completeCard(直接调用聚合实现, 锁由入口/本方法事务持有)
         Long pendingCount = stepMapper.selectCount(Wrappers.<ProFlowCardStep>lambdaQuery()
@@ -903,13 +937,15 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
      * 关键工序报工完成时自动建 IPQC。
      * <p>
      * 仅 isKeyProcess=1 的工序触发；按 (mesWoId, processId) 幂等（同工单同工序仅一条 IPQC）。
-     * IPQC 创建走独立事务(REQUIRES_NEW)，失败仅告警不阻断报工，由 completeWo 门禁兜底。
+     * IPQC 创建走独立事务(REQUIRES_NEW)，失败仅告警不阻断报工；
+     * completeWo 完工门禁会逐关键工序校验"存在且 inspect_result=QUALIFIED 的 IPQC"，缺失/未合格即拒绝完工。
      *
      * @param stepRecordId 流转卡工序记录 ID
      */
     private void triggerIpqcIfKeyProcess(Long stepRecordId) {
+        ProFlowCardStep step = null;
         try {
-            ProFlowCardStep step = stepMapper.selectById(stepRecordId);
+            step = stepMapper.selectById(stepRecordId);
             if (step == null || !Integer.valueOf(1).equals(step.getIsKeyProcess())) {
                 return;
             }
@@ -931,7 +967,13 @@ public class ProFlowCardServiceImpl implements IProFlowCardService {
             bo.setMaterialName(wo.getMaterialName());
             iqcIpqcService.autoCreateForKeyProcess(bo);
         } catch (Exception e) {
-            log.error("[IPQC自动建单] 关键工序报工自动建 IPQC 失败(不影响报工，由 completeWo 门禁兜底): stepRecordId={}", stepRecordId, e);
+            // QC-03: 显式告警(不再声称"有门禁兜底"即万事大吉)——该关键工序将没有 IPQC 单,
+            // 工单完工时会被 completeWo 的 IPQC 门禁拦截, 需人工补建/补检
+            log.error("[IPQC自动建单] 关键工序报工自动建 IPQC 失败, 该关键工序将缺少 IPQC 单, "
+                    + "工单完工时会被 completeWo IPQC 门禁拦截: stepRecordId={}, mesWoId={}, processId={}, processName={}",
+                stepRecordId, step != null ? step.getMesWoId() : null,
+                step != null ? step.getProcessId() : null,
+                step != null ? step.getProcessName() : null, e);
         }
     }
 

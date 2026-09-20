@@ -1,6 +1,7 @@
 package com.nexus.mes.flash.provider;
 
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
+import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.nexus.mes.flash.domain.MesResourceItem;
 import com.nexus.mes.flash.domain.MesResourcePool;
@@ -14,6 +15,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -23,6 +26,9 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * MacPoolFlashProvider 单元测试 — 池类刷写 P0 修复回归
@@ -48,6 +54,9 @@ class MacPoolFlashProviderTest {
 
     @InjectMocks
     private MacPoolFlashProvider provider;
+
+    @Captor
+    private ArgumentCaptor<Wrapper<MesResourcePool>> poolQueryCaptor;
 
     @BeforeAll
     static void initTableInfo() {
@@ -151,5 +160,55 @@ class MacPoolFlashProviderTest {
         assertTrue(result.isPass());
         assertEquals("{\"mac\":\"" + ALLOCATED_MAC + "\"}", result.getContentPayload(),
             "旧客户端未上报实刷值时退回池分配值");
+    }
+
+    // ==================== MES-FLASH-06 池选择 ====================
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void resolveContent_fallbackPoolSelectionIsOrdered() {
+        provider.resolveContent(ctx());
+
+        verify(resourcePoolMapper).selectOne(poolQueryCaptor.capture());
+        String sqlSegment = poolQueryCaptor.getValue().getSqlSegment().toUpperCase();
+        assertTrue(sqlSegment.contains("ORDER BY"), "池选择必须带排序(修复前是无排序 LIMIT 1): " + sqlSegment);
+        assertTrue(sqlSegment.contains("CREATE_TIME"), "应按 create_time ASC 稳定取首个启用池: " + sqlSegment);
+    }
+
+    @Test
+    void resolveContent_prefersContentRefIdAsPoolWhenItPointsToEnabledPool() {
+        MesResourcePool preferred = new MesResourcePool();
+        preferred.setPoolId(STEP_CONTENT_REF_ID);
+        preferred.setResourceType("MAC");
+        preferred.setStatus("ENABLED");
+        when(resourcePoolMapper.selectById(STEP_CONTENT_REF_ID)).thenReturn(preferred);
+        MesResourceItem item = new MesResourceItem();
+        item.setItemId(ITEM_ID);
+        item.setResourceValue(ALLOCATED_MAC);
+        item.setStatus("ALLOCATED");
+        lenient().when(resourcePoolService.allocate(STEP_CONTENT_REF_ID, 1L, "SN-1")).thenReturn(item);
+
+        FlashContent content = provider.resolveContent(FlashContext.builder()
+            .snId(1L).snCode("SN-1").flashTypeCode("mac").contentRefId(STEP_CONTENT_REF_ID).build());
+
+        verify(resourcePoolService).allocate(STEP_CONTENT_REF_ID, 1L, "SN-1");
+        verify(resourcePoolMapper, never()).selectOne(any());
+        assertEquals(STEP_CONTENT_REF_ID, content.getContentRefId());
+    }
+
+    @Test
+    void resolveContent_ignoresContentRefIdThatIsNotAnEnabledPoolOfSameType() {
+        // contentRefId 指向固件(非资源池)时必须退化到首个启用池, 不得拿固件ID当池ID
+        when(resourcePoolMapper.selectById(STEP_CONTENT_REF_ID)).thenReturn(null);
+
+        provider.resolveContent(FlashContext.builder()
+            .snId(1L).snCode("SN-1").flashTypeCode("mac").contentRefId(STEP_CONTENT_REF_ID).build());
+
+        verify(resourcePoolService).allocate(POOL_ID, 1L, "SN-1");
+    }
+
+    @Test
+    void getPoolResourceType_isMac() {
+        assertEquals("MAC", provider.getPoolResourceType());
     }
 }

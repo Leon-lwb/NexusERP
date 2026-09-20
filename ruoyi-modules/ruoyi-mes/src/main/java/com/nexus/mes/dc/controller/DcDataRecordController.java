@@ -63,7 +63,7 @@ public class DcDataRecordController extends BaseController {
     @SaCheckPermission("mes:dc:record:add")
     @Log(title = "采集数据录入", businessType = BusinessType.INSERT)
     @PostMapping
-    public R<DcDataRecordVo> add(@RequestBody DcDataRecordBo bo) {
+    public R<DcDataRecordVo> add(@Validated @RequestBody DcDataRecordBo bo) {
         return R.ok(dcDataRecordService.insertByBo(bo));
     }
 }
