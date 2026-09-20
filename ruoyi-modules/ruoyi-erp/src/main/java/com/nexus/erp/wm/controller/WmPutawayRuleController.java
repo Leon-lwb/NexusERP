@@ -40,7 +40,7 @@ public class WmPutawayRuleController extends BaseController {
      * @param pageQuery 分页查询参数，包含页码、每页大小及排序条件
      * @return 结果对象
      */
-    @SaCheckPermission("wm:putawayrule:list")
+    @SaCheckPermission("wm:putawayRule:list")
     @GetMapping("/list")
     public TableDataInfo<WmPutawayRuleVo> list(WmPutawayRuleBo bo, PageQuery pageQuery) {
         return putawayRuleService.selectPageList(bo, pageQuery);
@@ -53,7 +53,7 @@ public class WmPutawayRuleController extends BaseController {
      * @param response 参数 response
      * @return 结果
      */
-    @SaCheckPermission("wm:putawayrule:export")
+    @SaCheckPermission("wm:putawayRule:export")
     @Log(title = "上架策略", businessType = BusinessType.EXPORT)
     @PostMapping("/export")
     public void export(WmPutawayRuleBo bo, HttpServletResponse response) {
@@ -67,7 +67,7 @@ public class WmPutawayRuleController extends BaseController {
      * @param id 主键 ID
      * @return 结果对象
      */
-    @SaCheckPermission("wm:putawayrule:query")
+    @SaCheckPermission("wm:putawayRule:query")
     @GetMapping("/{id}")
     public R<WmPutawayRuleVo> getInfo(@PathVariable Long id) {
         return R.ok(putawayRuleService.selectById(id));
@@ -79,7 +79,7 @@ public class WmPutawayRuleController extends BaseController {
      * @param bo 上架规则业务对象（BO）
      * @return 结果对象
      */
-    @SaCheckPermission("wm:putawayrule:add")
+    @SaCheckPermission("wm:putawayRule:add")
     @Log(title = "上架策略", businessType = BusinessType.INSERT)
     @PostMapping
     public R<Void> add(@Validated @RequestBody WmPutawayRuleBo bo) {
@@ -92,7 +92,7 @@ public class WmPutawayRuleController extends BaseController {
      * @param bo 上架规则业务对象（BO）
      * @return 结果对象
      */
-    @SaCheckPermission("wm:putawayrule:edit")
+    @SaCheckPermission("wm:putawayRule:edit")
     @Log(title = "上架策略", businessType = BusinessType.UPDATE)
     @PutMapping
     public R<Void> edit(@Validated @RequestBody WmPutawayRuleBo bo) {
@@ -105,7 +105,7 @@ public class WmPutawayRuleController extends BaseController {
      * @param ids 主键 ID 数组（支持批量操作）
      * @return 结果对象
      */
-    @SaCheckPermission("wm:putawayrule:remove")
+    @SaCheckPermission("wm:putawayRule:remove")
     @Log(title = "上架策略", businessType = BusinessType.DELETE)
     @DeleteMapping("/{ids}")
     public R<Void> remove(@PathVariable Long[] ids) {

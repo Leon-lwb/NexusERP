@@ -1,0 +1,29 @@
+常量数: 22  引用QueueConstants的文件数: 19
+常量	值	生产文件	消费文件	结论
+STOCK_IN_QUEUE	erp.stock.in.queue	1	1	OK
+STOCK_OUT_QUEUE	erp.stock.out.queue	1	0	无消费者(只发不收)
+      P: ruoyi-common\ruoyi-common-mq\src\main\java\com\nexus\common\mq\config\RabbitMqInitializer.java
+PURCHASE_RECEIVE_QUEUE	erp.purchase.receive.queue	1	1	OK
+PRODUCTION_COMPLETE_QUEUE	erp.production.complete.queue	1	1	OK
+VENDOR_EVALUATION_QUEUE	erp.vendor.evaluation.queue	1	0	无消费者(只发不收)
+      P: ruoyi-common\ruoyi-common-mq\src\main\java\com\nexus\common\mq\config\RabbitMqInitializer.java
+STOCK_ALERT_QUEUE	erp.stock.alert.queue	1	0	无消费者(只发不收)
+      P: ruoyi-common\ruoyi-common-mq\src\main\java\com\nexus\common\mq\config\RabbitMqInitializer.java
+SUBCONTRACT_STOCK_QUEUE	erp.subcontract.stock.queue	1	1	OK
+REWORK_STOCK_QUEUE	erp.rework.stock.queue	1	1	OK
+MES_WORKORDER_QUEUE	erp.mes.workorder.queue	1	2	OK
+ERP_WORKORDER_COMPLETED_QUEUE	erp.workorder.completed.queue	1	1	OK
+ERP_IQC_COMPLETED_QUEUE	erp.iqc.completed.queue	1	1	OK
+ERP_OQC_COMPLETED_QUEUE	erp.oqc.completed.queue	1	1	OK
+ERP_IPQC_COMPLETED_QUEUE	erp.ipqc.completed.queue	1	1	OK
+MES_IQC_CREATE_QUEUE	erp.mes.iqc.create.queue	1	1	OK
+MES_OQC_CREATE_QUEUE	erp.mes.oqc.create.queue	1	1	OK
+MES_SUBCONTRACT_SN_QUEUE	erp.mes.subcontract.sn.queue	1	1	OK
+DELAY_QUEUE	erp.delay.queue	1	0	无消费者(只发不收)
+      P: ruoyi-common\ruoyi-common-mq\src\main\java\com\nexus\common\mq\config\RabbitMqInitializer.java
+DLX_QUEUE	erp.dlx.queue	1	1	OK
+MES_EQUIPMENT_STATUS_QUEUE	erp.mes.equipment.status.queue	1	1	OK
+GL_POSTING_QUEUE	erp.gl.posting.queue	1	1	OK
+PAY_RECEIVED_QUEUE	erp.pay.received.queue	1	1	OK
+EINVOICE_ISSUE_RESULT_QUEUE	erp.einvoice.issue.result.queue	1	0	无消费者(只发不收)
+      P: ruoyi-common\ruoyi-common-mq\src\main\java\com\nexus\common\mq\config\RabbitMqInitializer.java

@@ -92247,26 +92247,26 @@ INSERT INTO `sys_menu` VALUES (2503, '采购申请新增', 2501, 2, '', NULL, NU
 INSERT INTO `sys_menu` VALUES (2504, '采购申请修改', 2501, 3, '', NULL, NULL, 1, 0, 'F', '0', '0', 'pu:requisition:edit', '#', 103, 1, '2026-05-23 14:00:17', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (2505, '采购申请删除', 2501, 4, '', NULL, NULL, 1, 0, 'F', '0', '0', 'pu:requisition:remove', '#', 103, 1, '2026-05-23 14:00:17', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (2506, '采购申请导出', 2501, 5, '', NULL, NULL, 1, 0, 'F', '0', '0', 'pu:requisition:export', '#', 103, 1, '2026-05-23 14:00:17', NULL, NULL, '');
-INSERT INTO `sys_menu` VALUES (2507, '采购申请提交', 2501, 6, '', NULL, NULL, 1, 0, 'F', '0', '0', 'pu:requisition:edit', '#', 103, 1, '2026-05-23 14:00:17', NULL, NULL, '');
-INSERT INTO `sys_menu` VALUES (2508, '采购申请审批', 2501, 7, '', NULL, NULL, 1, 0, 'F', '0', '0', 'pu:requisition:edit', '#', 103, 1, '2026-05-23 14:00:17', NULL, NULL, '');
-INSERT INTO `sys_menu` VALUES (2509, '采购申请转单', 2501, 8, '', NULL, NULL, 1, 0, 'F', '0', '0', 'pu:requisition:edit', '#', 103, 1, '2026-05-23 14:00:17', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (2507, '采购申请提交', 2501, 6, '', NULL, NULL, 1, 0, 'F', '0', '0', 'pu:requisition:submit', '#', 103, 1, '2026-05-23 14:00:17', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (2508, '采购申请审批', 2501, 7, '', NULL, NULL, 1, 0, 'F', '0', '0', 'pu:requisition:approve', '#', 103, 1, '2026-05-23 14:00:17', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (2509, '采购申请转单', 2501, 8, '', NULL, NULL, 1, 0, 'F', '0', '0', 'pu:requisition:convert', '#', 103, 1, '2026-05-23 14:00:17', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (2510, '采购订单', 2972, 1, 'order', 'erp/pu/order/index', NULL, 1, 0, 'C', '0', '0', 'pu:order:list', 'order', 103, 1, '2026-05-23 14:00:17', NULL, NULL, '采购订单菜单');
 INSERT INTO `sys_menu` VALUES (2511, '采购订单查询', 2510, 1, '', NULL, NULL, 1, 0, 'F', '0', '0', 'pu:order:query', '#', 103, 1, '2026-05-23 14:00:17', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (2512, '采购订单新增', 2510, 2, '', NULL, NULL, 1, 0, 'F', '0', '0', 'pu:order:add', '#', 103, 1, '2026-05-23 14:00:17', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (2513, '采购订单修改', 2510, 3, '', NULL, NULL, 1, 0, 'F', '0', '0', 'pu:order:edit', '#', 103, 1, '2026-05-23 14:00:17', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (2514, '采购订单删除', 2510, 4, '', NULL, NULL, 1, 0, 'F', '0', '0', 'pu:order:remove', '#', 103, 1, '2026-05-23 14:00:17', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (2515, '采购订单导出', 2510, 5, '', NULL, NULL, 1, 0, 'F', '0', '0', 'pu:order:export', '#', 103, 1, '2026-05-23 14:00:17', NULL, NULL, '');
-INSERT INTO `sys_menu` VALUES (2516, '采购订单提交', 2510, 6, '', NULL, NULL, 1, 0, 'F', '0', '0', 'pu:order:edit', '#', 103, 1, '2026-05-23 14:00:17', NULL, NULL, '');
-INSERT INTO `sys_menu` VALUES (2517, '采购订单审批', 2510, 7, '', NULL, NULL, 1, 0, 'F', '0', '0', 'pu:order:edit', '#', 103, 1, '2026-05-23 14:00:17', NULL, NULL, '');
-INSERT INTO `sys_menu` VALUES (2518, '采购订单收货联动', 2510, 8, '', NULL, NULL, 1, 0, 'F', '0', '0', 'pu:order:edit', '#', 103, 1, '2026-05-23 14:00:17', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (2516, '采购订单提交', 2510, 6, '', NULL, NULL, 1, 0, 'F', '0', '0', 'pu:order:submit', '#', 103, 1, '2026-05-23 14:00:17', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (2517, '采购订单审批', 2510, 7, '', NULL, NULL, 1, 0, 'F', '0', '0', 'pu:order:approve', '#', 103, 1, '2026-05-23 14:00:17', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (2518, '采购订单收货联动', 2510, 8, '', NULL, NULL, 1, 0, 'F', '0', '0', 'pu:order:receive', '#', 103, 1, '2026-05-23 14:00:17', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (2520, '采购退货', 2972, 2, 'return', 'erp/pu/return/index', NULL, 1, 0, 'C', '0', '0', 'pu:return:list', 'back', 103, 1, '2026-05-23 14:00:17', NULL, NULL, '采购退货菜单');
 INSERT INTO `sys_menu` VALUES (2521, '采购退货查询', 2520, 1, '', NULL, NULL, 1, 0, 'F', '0', '0', 'pu:return:query', '#', 103, 1, '2026-05-23 14:00:17', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (2522, '采购退货新增', 2520, 2, '', NULL, NULL, 1, 0, 'F', '0', '0', 'pu:return:add', '#', 103, 1, '2026-05-23 14:00:17', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (2523, '采购退货修改', 2520, 3, '', NULL, NULL, 1, 0, 'F', '0', '0', 'pu:return:edit', '#', 103, 1, '2026-05-23 14:00:17', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (2524, '采购退货删除', 2520, 4, '', NULL, NULL, 1, 0, 'F', '0', '0', 'pu:return:remove', '#', 103, 1, '2026-05-23 14:00:17', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (2525, '采购退货导出', 2520, 5, '', NULL, NULL, 1, 0, 'F', '0', '0', 'pu:return:export', '#', 103, 1, '2026-05-23 14:00:17', NULL, NULL, '');
-INSERT INTO `sys_menu` VALUES (2526, '采购退货确认', 2520, 6, '', NULL, NULL, 1, 0, 'F', '0', '0', 'pu:return:edit', '#', 103, 1, '2026-05-23 14:00:17', NULL, NULL, '');
-INSERT INTO `sys_menu` VALUES (2527, '采购退货执行', 2520, 7, '', NULL, NULL, 1, 0, 'F', '0', '0', 'pu:return:edit', '#', 103, 1, '2026-05-23 14:00:17', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (2526, '采购退货确认', 2520, 6, '', NULL, NULL, 1, 0, 'F', '0', '0', 'pu:return:confirm', '#', 103, 1, '2026-05-23 14:00:17', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (2527, '采购退货执行', 2520, 7, '', NULL, NULL, 1, 0, 'F', '0', '0', 'pu:return:execute', '#', 103, 1, '2026-05-23 14:00:17', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (2530, '供应商评估', 2973, 2, 'vendorEvaluation', 'erp/pu/vendor-evaluation/index', NULL, 1, 0, 'C', '0', '0', 'pu:vendorEvaluation:list', 'star', 103, 1, '2026-05-27 23:48:41', NULL, NULL, '供应商评估菜单');
 INSERT INTO `sys_menu` VALUES (2531, '供应商评估查询', 2530, 1, '', NULL, NULL, 1, 0, 'F', '0', '0', 'pu:vendorEvaluation:query', '#', 103, 1, '2026-05-27 23:47:21', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (2532, '供应商评估新增', 2530, 2, '', NULL, NULL, 1, 0, 'F', '0', '0', 'pu:vendorEvaluation:add', '#', 103, 1, '2026-05-27 23:47:21', NULL, NULL, '');
@@ -96711,3 +96711,74 @@ INSERT INTO `sys_menu` VALUES (4363, '文档查询', 4348, 4, '', '', '', 1, 0, 
 INSERT INTO `sys_menu` VALUES (4364, '文档上传', 4348, 5, '', '', '', 1, 0, 'F', '0', '0', 'system:sign:document:upload', '#', 103, 1, SYSDATE(), NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (4365, '文档签章', 4348, 6, '', '', '', 1, 0, 'F', '0', '0', 'system:sign:document:sign', '#', 103, 1, SYSDATE(), NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (4366, '文档验签', 4348, 7, '', '', '', 1, 0, 'F', '0', '0', 'system:sign:document:verify', '#', 103, 1, SYSDATE(), NULL, NULL, '');
+
+-- ----------------------------
+-- 2026-09-20 权限种子对齐（P0 / PERM-01~04）：补 B/C 类未播种权限码的按钮菜单 + 授权
+-- 背景：@SaCheckPermission 的码必须在某个已授权菜单的 perms 中存在，否则除超管(userId=1)外一律 403。
+-- 授权规则：把新按钮授权给"当前已持有其父菜单"的角色（INSERT IGNORE ... SELECT，幂等）。
+-- 等价增量脚本：script/sql/update/2026-09-20-perm-seed-alignment.sql（存量库执行）
+-- ID 段：20800-20838（导入前已盘点：本仓库全部 sql 脚本中该区间未被占用）
+-- 另：本节之前的 2507/2508/2509/2516/2517/2518/2526/2527 八行按钮的 perms
+--     已由 *:edit 就地重指向真实动作码（pu:requisition:submit/approve/convert、
+--     pu:order:submit/approve/receive、pu:return:confirm/execute）。
+-- ----------------------------
+-- 物料入库 2105：单据动作 + 入库明细子页
+INSERT INTO `sys_menu` VALUES (20800, '入库查询', 2105, 6, '', '', NULL, 1, 0, 'F', '0', '0', 'wm:receive:query', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'WmMaterialReceiveController.getInfo');
+INSERT INTO `sys_menu` VALUES (20801, '入库新增', 2105, 7, '', '', NULL, 1, 0, 'F', '0', '0', 'wm:receive:add', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'WmMaterialReceiveController.add');
+INSERT INTO `sys_menu` VALUES (20802, '入库修改', 2105, 8, '', '', NULL, 1, 0, 'F', '0', '0', 'wm:receive:edit', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'WmMaterialReceiveController.edit');
+INSERT INTO `sys_menu` VALUES (20803, '入库删除', 2105, 9, '', '', NULL, 1, 0, 'F', '0', '0', 'wm:receive:remove', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'WmMaterialReceiveController.remove');
+INSERT INTO `sys_menu` VALUES (20804, '入库导出', 2105, 10, '', '', NULL, 1, 0, 'F', '0', '0', 'wm:receive:export', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'WmMaterialReceiveController.export');
+INSERT INTO `sys_menu` VALUES (20805, '入库执行', 2105, 11, '', '', NULL, 1, 0, 'F', '0', '0', 'wm:receive:execute', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'WmMaterialReceiveController 入库执行/上架动作');
+INSERT INTO `sys_menu` VALUES (20806, '入库提交', 2105, 12, '', '', NULL, 1, 0, 'F', '0', '0', 'wm:receive:submit', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'WmMaterialReceiveController 提交走流程');
+INSERT INTO `sys_menu` VALUES (20807, '入库明细列表', 2105, 13, '', '', NULL, 1, 0, 'F', '0', '0', 'wm:detail:list', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, '前端 erp/wm/receive/detail.vue 使用');
+INSERT INTO `sys_menu` VALUES (20808, '入库明细查询', 2105, 14, '', '', NULL, 1, 0, 'F', '0', '0', 'wm:detail:query', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, '前端 erp/wm/receive/detail.vue 使用');
+INSERT INTO `sys_menu` VALUES (20809, '入库明细新增', 2105, 15, '', '', NULL, 1, 0, 'F', '0', '0', 'wm:detail:add', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, '前端 erp/wm/receive/detail.vue 使用');
+INSERT INTO `sys_menu` VALUES (20810, '入库明细修改', 2105, 16, '', '', NULL, 1, 0, 'F', '0', '0', 'wm:detail:edit', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, '前端 erp/wm/receive/detail.vue 使用');
+INSERT INTO `sys_menu` VALUES (20811, '入库明细删除', 2105, 17, '', '', NULL, 1, 0, 'F', '0', '0', 'wm:detail:remove', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, '前端 erp/wm/receive/detail.vue 使用');
+INSERT INTO `sys_menu` VALUES (20812, '入库明细导出', 2105, 18, '', '', NULL, 1, 0, 'F', '0', '0', 'wm:detail:export', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, '前端 erp/wm/receive/detail.vue 使用');
+-- 到货通知 2104
+INSERT INTO `sys_menu` VALUES (20813, '到货通知提交', 2104, 6, '', '', NULL, 1, 0, 'F', '0', '0', 'wm:arrivalnotice:submit', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, '前端 erp/wm/arrivalnotice/index.vue 使用');
+-- 出库管理 2107
+INSERT INTO `sys_menu` VALUES (20814, '出库确认', 2107, 6, '', '', NULL, 1, 0, 'F', '0', '0', 'wm:salesIssue:confirm', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'WmSalesIssueController.confirm');
+INSERT INTO `sys_menu` VALUES (20815, '出库完成', 2107, 7, '', '', NULL, 1, 0, 'F', '0', '0', 'wm:salesIssue:complete', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'WmSalesIssueController.complete');
+-- 成本结转 6176（该页调用 /erp/wm/stocktx/list）
+INSERT INTO `sys_menu` VALUES (20816, '库存流水分页', 6176, 3, '', '', NULL, 1, 0, 'F', '0', '0', 'wm:stocktx:list', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, '前端 api/erp/fin/cost/index.ts 调用 /erp/wm/stocktx/list');
+-- 采购订单 2510
+INSERT INTO `sys_menu` VALUES (20817, '采购订单取消', 2510, 9, '', '', NULL, 1, 0, 'F', '0', '0', 'pu:order:cancel', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'PuOrderController.cancel');
+INSERT INTO `sys_menu` VALUES (20818, '采购订单关闭', 2510, 10, '', '', NULL, 1, 0, 'F', '0', '0', 'pu:order:close', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'PuOrderController.close');
+-- 采购申请 2501
+INSERT INTO `sys_menu` VALUES (20819, '采购申请关闭', 2501, 9, '', '', NULL, 1, 0, 'F', '0', '0', 'pu:requisition:close', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'PuRequisitionController.close');
+INSERT INTO `sys_menu` VALUES (20820, '采购申请取消', 2501, 10, '', '', NULL, 1, 0, 'F', '0', '0', 'pu:requisition:cancel', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'PuRequisitionController.cancel');
+-- 采购合同 2540
+INSERT INTO `sys_menu` VALUES (20821, '合同导出', 2540, 6, '', '', NULL, 1, 0, 'F', '0', '0', 'pu:contract:export', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'PuContractController.export');
+-- 计划管理 2404（班组/班组排班内嵌页，仅缺 list/edit/export）
+INSERT INTO `sys_menu` VALUES (20822, '计划班组列表', 2404, 17, '', '', NULL, 1, 0, 'F', '0', '0', 'sch:planteam:list', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'SchPlanTeamController.list');
+INSERT INTO `sys_menu` VALUES (20823, '计划班组修改', 2404, 18, '', '', NULL, 1, 0, 'F', '0', '0', 'sch:planteam:edit', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'SchPlanTeamController.edit');
+INSERT INTO `sys_menu` VALUES (20824, '计划班组导出', 2404, 19, '', '', NULL, 1, 0, 'F', '0', '0', 'sch:planteam:export', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'SchPlanTeamController.export');
+INSERT INTO `sys_menu` VALUES (20825, '班组排班列表', 2404, 20, '', '', NULL, 1, 0, 'F', '0', '0', 'sch:teamSchedule:list', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'SchTeamScheduleController.list');
+INSERT INTO `sys_menu` VALUES (20826, '班组排班修改', 2404, 21, '', '', NULL, 1, 0, 'F', '0', '0', 'sch:teamSchedule:edit', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'SchTeamScheduleController.edit');
+INSERT INTO `sys_menu` VALUES (20827, '班组排班导出', 2404, 22, '', '', NULL, 1, 0, 'F', '0', '0', 'sch:teamSchedule:export', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'SchTeamScheduleController.export');
+-- 收付款单 6121
+INSERT INTO `sys_menu` VALUES (20828, '收付款单修改', 6121, 5, '', '', NULL, 1, 0, 'F', '0', '0', 'fin:arap:receipt:edit', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'FinReceiptController.edit');
+INSERT INTO `sys_menu` VALUES (20829, '收付款单删除', 6121, 6, '', '', NULL, 1, 0, 'F', '0', '0', 'fin:arap:receipt:remove', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'FinReceiptController.remove');
+INSERT INTO `sys_menu` VALUES (20830, '收付款单导出', 6121, 7, '', '', NULL, 1, 0, 'F', '0', '0', 'fin:arap:receipt:export', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'FinReceiptController.export');
+-- 币种汇率 6105
+INSERT INTO `sys_menu` VALUES (20831, '汇率新增', 6105, 9, '', '', NULL, 1, 0, 'F', '0', '0', 'fin:gl:currency:add', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'FinCurrencyController.add');
+INSERT INTO `sys_menu` VALUES (20832, '汇率修改', 6105, 10, '', '', NULL, 1, 0, 'F', '0', '0', 'fin:gl:currency:edit', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'FinCurrencyController.edit');
+INSERT INTO `sys_menu` VALUES (20833, '汇率删除', 6105, 11, '', '', NULL, 1, 0, 'F', '0', '0', 'fin:gl:currency:remove', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'FinCurrencyController.remove');
+-- 记账凭证 6103
+INSERT INTO `sys_menu` VALUES (20834, '凭证导出', 6103, 7, '', '', NULL, 1, 0, 'F', '0', '0', 'fin:gl:voucher:export', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'FinVoucherController.export');
+-- MES 巡检任务
+INSERT INTO `sys_menu` VALUES (20835, '任务编辑', 2053846181246812187, 5, '', '', NULL, 1, 0, 'F', '0', '0', 'mes:eq:patrol:task:edit', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, '巡检任务编辑（原仅 query/add/execute/remove）');
+-- MES NCR
+INSERT INTO `sys_menu` VALUES (20836, '8D查询', 4245, 3, '', '', NULL, 1, 0, 'F', '0', '0', 'mes:ncr:8d:query', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, '8D 详情查询');
+INSERT INTO `sys_menu` VALUES (20837, '缺陷列表', 4242, 9, '', '', NULL, 1, 0, 'F', '0', '0', 'mes:ncr:defect:list', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'NCR 缺陷明细列表');
+-- MES 批次主档（追溯域页面，承载 mes:pro:trace:query）
+INSERT INTO `sys_menu` VALUES (20838, '追溯查询', 4170, 11, '', '', NULL, 1, 0, 'F', '0', '0', 'mes:pro:trace:query', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'ProTraceabilityController 追溯查询');
+
+-- 授权：把上述按钮授权给"当前已持有其父菜单"的角色（幂等）
+INSERT IGNORE INTO `sys_role_menu` (`role_id`, `menu_id`)
+SELECT DISTINCT rm.`role_id`, m.`menu_id`
+FROM `sys_menu` m
+JOIN `sys_role_menu` rm ON rm.`menu_id` = m.`parent_id`
+WHERE m.`menu_id` BETWEEN 20800 AND 20838;

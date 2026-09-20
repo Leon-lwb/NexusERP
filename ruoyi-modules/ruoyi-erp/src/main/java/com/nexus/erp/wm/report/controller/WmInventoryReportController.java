@@ -33,7 +33,7 @@ public class WmInventoryReportController {
      * @param categoryCode 物料分类编码，为空时统计全部分类
      * @return 各分类维度的库存汇总数据列表
      */
-    @SaCheckPermission("wm:materialStock:list")
+    @SaCheckPermission("wm:stock:list")
     @GetMapping("/summary")
     public R<List<Map<String, Object>>> inventorySummary(
         @RequestParam(required = false) Long warehouseId,
@@ -49,7 +49,7 @@ public class WmInventoryReportController {
      * @param daysThreshold 库龄阈值（天），为空时默认 90 天
      * @return 各库龄区间的库存分析数据列表
      */
-    @SaCheckPermission("wm:materialStock:list")
+    @SaCheckPermission("wm:stock:list")
     @GetMapping("/aging")
     public R<List<Map<String, Object>>> inventoryAging(
         @RequestParam(required = false) Long warehouseId,
@@ -65,7 +65,7 @@ public class WmInventoryReportController {
      * @param months 统计月份数，为空时默认 6 个月
      * @return 各月份与分类维度的周转率数据列表
      */
-    @SaCheckPermission("wm:materialStock:list")
+    @SaCheckPermission("wm:stock:list")
     @GetMapping("/turnover")
     public R<List<Map<String, Object>>> inventoryTurnover(
         @RequestParam(required = false) String categoryCode,
