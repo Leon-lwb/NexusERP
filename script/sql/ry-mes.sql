@@ -111,6 +111,7 @@ CREATE TABLE `eq_equipment`  (
   `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`equipment_id`) USING BTREE,
+  UNIQUE INDEX `uk_tenant_iot_device`(`tenant_id`, `iot_device_id`) USING BTREE,
   UNIQUE INDEX `uk_equipment_code`(`tenant_id`, `equipment_code`) USING BTREE,
   INDEX `idx_status`(`status`) USING BTREE,
   INDEX `idx_workcenter_id`(`workcenter_id`) USING BTREE
@@ -205,6 +206,7 @@ CREATE TABLE `eq_health_record`  (
   `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`record_id`) USING BTREE,
+  UNIQUE INDEX `uk_tenant_eq_date`(`tenant_id`, `equipment_id`, `record_date`) USING BTREE,
   INDEX `idx_ehr_equipment`(`equipment_id`) USING BTREE,
   INDEX `idx_ehr_date`(`record_date`) USING BTREE,
   INDEX `idx_ehr_tenant`(`tenant_id`) USING BTREE
@@ -1713,6 +1715,8 @@ CREATE TABLE `pro_andon`  (
   `duration_minutes` int(11) NULL DEFAULT NULL COMMENT '持续时长(分钟, 解决时计算)',
   `source` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'MANUAL' COMMENT 'MANUAL/IoT(来源)',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
+  `notify_user_ids` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '呼叫通知被通知人ID(逗号分隔)',
+  `notify_time` datetime(0) NULL DEFAULT NULL COMMENT '呼叫通知落库时间(非空=呼叫通知已发出,幂等依据)',
   `create_dept` bigint(20) NULL DEFAULT NULL,
   `create_by` bigint(20) NULL DEFAULT NULL,
   `create_time` datetime(0) NULL DEFAULT NULL,
@@ -2887,11 +2891,16 @@ CREATE TABLE `spc_control_chart`  (
   `ucl` decimal(14, 4) NULL DEFAULT NULL COMMENT '上控制限(analyze计算回写)',
   `cl` decimal(14, 4) NULL DEFAULT NULL COMMENT '中心线',
   `lcl` decimal(14, 4) NULL DEFAULT NULL COMMENT '下控制限',
+  `r_ucl` decimal(14,4) NULL DEFAULT NULL COMMENT '次级图(R/S/MR)上控制限',
+  `r_cl` decimal(14,4) NULL DEFAULT NULL COMMENT '次级图(R/S/MR)中心线',
+  `r_lcl` decimal(14,4) NULL DEFAULT NULL COMMENT '次级图(R/S/MR)下控制限',
   `usl` decimal(14, 4) NULL DEFAULT NULL COMMENT '规格上限(USL, 用户维护)',
   `lsl` decimal(14, 4) NULL DEFAULT NULL COMMENT '规格下限(LSL, 用户维护)',
   `cp` decimal(10, 4) NULL DEFAULT NULL COMMENT '过程能力指数Cp(analyze回写)',
   `cpk` decimal(10, 4) NULL DEFAULT NULL COMMENT '过程能力指数Cpk(analyze回写)',
   `cpk_grade` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '能力等级: A+(>=1.67)/A(>=1.33)/B(>=1.0)/C(<1.0)',
+  `pp` decimal(10,4) NULL DEFAULT NULL COMMENT '过程性能指数Pp',
+  `ppk` decimal(10,4) NULL DEFAULT NULL COMMENT '过程性能指数Ppk',
   `sample_size` int(11) NULL DEFAULT 5 COMMENT '样本大小',
   `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'ACTIVE' COMMENT 'ACTIVE/INACTIVE',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
@@ -2917,6 +2926,7 @@ CREATE TABLE `spc_data_point`  (
   `sample_group` int(11) NOT NULL COMMENT '样本组号',
   `sample_index` int(11) NULL DEFAULT NULL COMMENT '组内序号',
   `value` decimal(14, 4) NOT NULL COMMENT '值(组均值/不良率/缺陷数等)',
+  `sub_value` decimal(14,4) NULL DEFAULT NULL COMMENT '组内离散度(R极差/S标准差/MR移动极差)',
   `is_ooc` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '是否超控制限(0/1)',
   `ooc_rule` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '违规规则(RULE1/2/3/4, 多规则逗号拼接)',
   `collect_time` datetime(0) NULL DEFAULT NULL COMMENT '采集时间',
@@ -2927,6 +2937,7 @@ CREATE TABLE `spc_data_point`  (
   `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`data_id`) USING BTREE,
+  UNIQUE INDEX `uk_chart_group`(`tenant_id`, `chart_id`, `sample_group`) USING BTREE,
   INDEX `idx_chart_id`(`chart_id`) USING BTREE,
   INDEX `idx_group`(`chart_id`, `sample_group`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'MES SPC数据点' ROW_FORMAT = Dynamic;
@@ -3065,3 +3076,34 @@ CREATE TABLE `tg_usage_record`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = 'MES工装使用领用记录' ROW_FORMAT = Dynamic;
 
 SET FOREIGN_KEY_CHECKS = 1;
+
+-- ----------------------------
+-- Table structure for mes_label_print_log
+-- ----------------------------
+DROP TABLE IF EXISTS `mes_label_print_log`;
+CREATE TABLE `mes_label_print_log`  (
+  `log_id` bigint(20) NOT NULL COMMENT '打印日志ID',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000' COMMENT '租户ID',
+  `sn_id` bigint(20) NULL DEFAULT NULL COMMENT 'SN ID',
+  `sn_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT 'SN编码',
+  `template_id` bigint(20) NULL DEFAULT NULL COMMENT '模板ID',
+  `template_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '模板编码(快照)',
+  `printer_host` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '打印机地址(快照)',
+  `printer_port` int(11) NULL DEFAULT 9100 COMMENT '打印机端口',
+  `print_time` datetime(0) NULL DEFAULT NULL COMMENT '打印时间',
+  `result` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '结果: SUCCESS/FAIL',
+  `fail_reason` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '失败原因',
+  `retry_count` int(11) NULL DEFAULT 0 COMMENT '重打计数(同SN同模板历史打印次数, 首次0)',
+  `print_source` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '来源: AUTO/REPRINT/TEST',
+  `operator_id` bigint(20) NULL DEFAULT NULL COMMENT '操作人ID',
+  `operator_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '操作人姓名',
+  `remark` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
+  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
+  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  PRIMARY KEY (`log_id`) USING BTREE,
+  INDEX `idx_label_print_sn_tpl`(`tenant_id`, `sn_id`, `template_id`, `result`) USING BTREE,
+  INDEX `idx_label_print_time`(`print_time`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '标签打印留痕' ROW_FORMAT = Dynamic;

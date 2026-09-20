@@ -90767,6 +90767,7 @@ INSERT INTO `sys_dict_data` VALUES (2068956987053351019, '000000', 3, '枚举', 
 INSERT INTO `sys_dict_data` VALUES (2068956987053351020, '000000', 1, '手动', 'MANUAL', 'mes_data_source', NULL, 'info', 'Y', 103, 1, '2026-07-26 01:45:22', NULL, NULL, '数据来源-手动');
 INSERT INTO `sys_dict_data` VALUES (2068956987053351021, '000000', 2, 'IoT', 'IoT', 'mes_data_source', NULL, 'primary', 'N', 103, 1, '2026-07-26 01:45:22', NULL, NULL, '数据来源-IoT设备上报');
 INSERT INTO `sys_dict_data` VALUES (2068956987053351022, '000000', 1, '均值-极差图', 'X_BAR_R', 'spc_chart_type', NULL, 'primary', 'Y', 103, 1, '2026-07-26 01:45:22', NULL, NULL, 'SPC-Xbar-R图');
+INSERT INTO `sys_dict_data` VALUES (2068956987053351027, '000000', 6, '单值-移动极差图(X-MR)', 'X_MR', 'spc_chart_type', NULL, 'primary', 'N', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'SPC-X-MR图(MES-SPC-01)');
 INSERT INTO `sys_dict_data` VALUES (2068956987053351023, '000000', 2, '均值-标准差图', 'X_BAR_S', 'spc_chart_type', NULL, 'primary', 'N', 103, 1, '2026-07-26 01:45:22', NULL, NULL, 'SPC-Xbar-S图');
 INSERT INTO `sys_dict_data` VALUES (2068956987053351024, '000000', 3, '不合格品率图(P)', 'P', 'spc_chart_type', NULL, 'warning', 'N', 103, 1, '2026-07-26 01:45:22', NULL, NULL, 'SPC-P图');
 INSERT INTO `sys_dict_data` VALUES (2068956987053351025, '000000', 4, '不合格数图(C)', 'C', 'spc_chart_type', NULL, 'warning', 'N', 103, 1, '2026-07-26 01:45:22', NULL, NULL, 'SPC-C图');
@@ -92767,6 +92768,9 @@ INSERT INTO `sys_menu` VALUES (6043, '规则修改', 6040, 3, '', '', '', 1, 0, 
 INSERT INTO `sys_menu` VALUES (6044, '规则删除', 6040, 4, '', '', '', 1, 0, 'F', '0', '0', 'iot:alertRule:remove', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (6045, '规则启停', 6040, 5, '', '', '', 1, 0, 'F', '0', '0', 'iot:alertRule:changeStatus', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, '启用/停用规则(1/0)');
 INSERT INTO `sys_menu` VALUES (6075, '设备状态变更', 6020, 7, '', '', '', 1, 0, 'F', '0', '0', 'iot:device:changeStatus', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, '激活/禁用/注销(CAS, 禁用后 MQTT 认证被拒)');
+INSERT INTO `sys_menu` VALUES (4025, 'MES工单取消', 4010, 15, '', '', NULL, 1, 0, 'F', '0', '0', 'mes:pro:work:cancel', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'MES工单取消按钮(MES-PRO-11)');
+INSERT INTO `sys_menu` VALUES (4026, 'MES工单关闭', 4010, 16, '', '', NULL, 1, 0, 'F', '0', '0', 'mes:pro:work:close', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'MES工单关闭按钮(MES-PRO-11)');
+INSERT INTO `sys_menu` VALUES (4308, 'NCR处置(无签名)', 4242, 9, '', '', NULL, 1, 0, 'F', '0', '0', 'mes:ncr:order:dispose-nosign', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, '无签名入口仅允许可逆处置(REWORK)(MES-NCR-06; 原拟 4253 已被缺陷明细补录占用)');
 INSERT INTO `sys_menu` VALUES (6050, '设备分组', 6000, 5, 'deviceGroup', 'iot/deviceGroup/index', '', 1, 0, 'C', '0', '0', 'iot:deviceGroup:list', 'tree', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'IoT设备分组(树形)');
 INSERT INTO `sys_menu` VALUES (6051, '分组查询', 6050, 1, '', '', '', 1, 0, 'F', '0', '0', 'iot:deviceGroup:query', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (6052, '分组新增', 6050, 2, '', '', '', 1, 0, 'F', '0', '0', 'iot:deviceGroup:add', '#', 103, 1, '2026-09-20 00:00:00', NULL, NULL, '');
@@ -96931,3 +96935,7 @@ INSERT IGNORE INTO `sys_role_menu` (`role_id`, `menu_id`) SELECT DISTINCT rm.`ro
 
 -- 2026-09-20 兼容授权：IoT 设备运维菜单授予"已持有 IoT 设备管理(6000)"的角色（幂等）
 INSERT IGNORE INTO `sys_role_menu` (`role_id`, `menu_id`) SELECT DISTINCT rm.`role_id`, m.`menu_id` FROM `sys_role_menu` rm JOIN `sys_menu` m ON m.`parent_id` IN (6000,6050,6055,6060,6070,6080) WHERE rm.`menu_id` = 6000;
+
+-- 2026-09-20 兼容授权：MES 工单取消/关闭 + NCR 无签名处置 按钮（幂等）
+INSERT IGNORE INTO `sys_role_menu` (`role_id`, `menu_id`) SELECT DISTINCT rm.`role_id`, m.`menu_id` FROM `sys_role_menu` rm JOIN `sys_menu` m ON m.`menu_id` IN (4025,4026) WHERE rm.`menu_id` = 4010;
+INSERT IGNORE INTO `sys_role_menu` (`role_id`, `menu_id`) SELECT DISTINCT rm.`role_id`, 4308 FROM `sys_role_menu` rm WHERE rm.`menu_id` = 4242;

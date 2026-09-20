@@ -185,7 +185,7 @@ SELECT 4026, 'MES工单关闭', 4010, 16, '', NULL, NULL, 1, 0, 'F', '0', '0', '
 INSERT INTO `sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `query_param`,
                         `is_frame`, `is_cache`, `menu_type`, `visible`, `status`, `perms`, `icon`,
                         `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`)
-SELECT 4253, 'NCR处置(无签名)', 4242, 8, '', NULL, NULL, 1, 0, 'F', '0', '0', 'mes:ncr:order:dispose-nosign', '#',
+SELECT 4308, 'NCR处置(无签名)', 4242, 8, '', NULL, NULL, 1, 0, 'F', '0', '0', 'mes:ncr:order:dispose-nosign', '#',
        103, 1, NOW(), NULL, NULL, '无签名入口仅允许可逆处置(REWORK)(MES-NCR-06)'
   FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM `sys_menu` WHERE `perms` = 'mes:ncr:order:dispose-nosign');
 
@@ -201,9 +201,9 @@ SELECT DISTINCT rm.role_id, 4026 FROM `sys_role_menu` rm JOIN `sys_menu` m ON m.
    AND NOT EXISTS (SELECT 1 FROM `sys_role_menu` x WHERE x.role_id = rm.role_id AND x.menu_id = 4026);
 
 INSERT INTO `sys_role_menu` (`role_id`, `menu_id`)
-SELECT DISTINCT rm.role_id, 4253 FROM `sys_role_menu` rm JOIN `sys_menu` m ON m.menu_id = rm.menu_id
+SELECT DISTINCT rm.role_id, 4308 FROM `sys_role_menu` rm JOIN `sys_menu` m ON m.menu_id = rm.menu_id
  WHERE m.perms LIKE 'mes:ncr:order:dispose%'
-   AND NOT EXISTS (SELECT 1 FROM `sys_role_menu` x WHERE x.role_id = rm.role_id AND x.menu_id = 4253);
+   AND NOT EXISTS (SELECT 1 FROM `sys_role_menu` x WHERE x.role_id = rm.role_id AND x.menu_id = 4308);
 
 -- B4. SPC 图类型字典补 X_MR（单值-移动极差图）
 INSERT INTO `sys_dict_data` (`dict_code`, `tenant_id`, `dict_sort`, `dict_label`, `dict_value`, `dict_type`,
