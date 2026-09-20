@@ -54,11 +54,25 @@
       <el-table-column label="LCL" prop="lcl" align="right">
         <template #default="scope">{{ scope.row.lcl ?? '-' }}</template>
       </el-table-column>
+      <el-table-column label="次级图限(RUCL/RCL/RLCL)" align="center" min-width="180">
+        <template #default="scope">
+          <span v-if="scope.row.rUcl != null || scope.row.rCl != null || scope.row.rLcl != null">
+            {{ scope.row.rUcl ?? '-' }} / {{ scope.row.rCl ?? '-' }} / {{ scope.row.rLcl ?? '-' }}
+          </span>
+          <span v-else>-</span>
+        </template>
+      </el-table-column>
       <el-table-column label="Cpk" prop="cpk" align="right">
         <template #default="scope">
           <el-tag v-if="scope.row.cpk != null" size="small" :type="cpkTagType(scope.row.cpkGrade)">
             {{ scope.row.cpk }}
           </el-tag>
+          <span v-else>-</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="Pp/Ppk" align="center" min-width="120">
+        <template #default="scope">
+          <span v-if="scope.row.pp != null || scope.row.ppk != null">{{ scope.row.pp ?? '-' }} / {{ scope.row.ppk ?? '-' }}</span>
           <span v-else>-</span>
         </template>
       </el-table-column>
@@ -159,6 +173,15 @@
       @opened="renderChart"
     >
       <div v-loading="analyzeLoading">
+        <el-alert
+          v-if="analyzeResult.capabilityInsufficient"
+          type="warning"
+          :closable="false"
+          show-icon
+          class="mb-2"
+          title="过程能力样本量不足, 本次不判定 Cp/Cpk/Pp/Ppk"
+          :description="analyzeResult.capabilityInsufficientReason || '子组数 < 25 或总样本数 < 50(或未维护规格限), 请补充数据后重新分析'"
+        />
         <el-descriptions :column="4" border size="small" class="mb-2">
           <el-descriptions-item label="类型">
             <dict-tag :options="spc_chart_type" :value="analyzeResult.chart?.chartType" />
@@ -174,6 +197,10 @@
           <el-descriptions-item label="状态">
             <dict-tag :options="mes_enable_status" :value="analyzeResult.chart?.status" />
           </el-descriptions-item>
+          <el-descriptions-item label="次级图UCL(R/S/MR)">{{ analyzeResult.rUcl ?? '-' }}</el-descriptions-item>
+          <el-descriptions-item label="次级图CL(R̄/S̄/MR̄)">{{ analyzeResult.rCl ?? '-' }}</el-descriptions-item>
+          <el-descriptions-item label="次级图LCL">{{ analyzeResult.rLcl ?? '-' }}</el-descriptions-item>
+          <el-descriptions-item label="次级图点数">{{ secondaryPoints.length }}</el-descriptions-item>
           <el-descriptions-item label="Cp(过程能力)">
             <span v-if="analyzeResult.cp != null">{{ analyzeResult.cp }}</span>
             <span v-else>-</span>
@@ -184,6 +211,14 @@
             </el-tag>
             <span v-else>-</span>
           </el-descriptions-item>
+          <el-descriptions-item label="Pp(过程性能)">
+            <span v-if="analyzeResult.pp != null">{{ analyzeResult.pp }}</span>
+            <span v-else>-</span>
+          </el-descriptions-item>
+          <el-descriptions-item label="Ppk(修正性能)">
+            <span v-if="analyzeResult.ppk != null">{{ analyzeResult.ppk }}</span>
+            <span v-else>-</span>
+          </el-descriptions-item>
           <el-descriptions-item label="能力等级">
             <el-tag v-if="analyzeResult.cpkGrade" :type="cpkTagType(analyzeResult.cpkGrade)">
               {{ cpkGradeLabel(analyzeResult.cpkGrade) }}
@@ -192,6 +227,10 @@
           </el-descriptions-item>
         </el-descriptions>
         <div ref="chartRef" style="height: 380px" />
+        <template v-if="secondaryPoints.length > 0">
+          <el-divider content-position="left">次级图(组内离散度 R/S/MR)</el-divider>
+          <div ref="secondaryChartRef" style="height: 260px" />
+        </template>
       </div>
     </el-dialog>
 
@@ -372,7 +411,12 @@ const analyzeDialog = reactive({ visible: false });
 const analyzeLoading = ref(false);
 const analyzeResult = ref<SpcAnalyzeResult>({} as SpcAnalyzeResult);
 const chartRef = ref<HTMLElement>();
+const secondaryChartRef = ref<HTMLElement>();
 let chartInstance: echarts.ECharts | null = null;
+let secondaryChartInstance: echarts.ECharts | null = null;
+
+/** 次级图(R/S/MR)数据点: 有组内离散度的组 */
+const secondaryPoints = computed(() => (analyzeResult.value.points || []).filter((p) => p.subValue != null));
 
 // ============ 过程能力等级展示 ============
 const cpkGradeLabel = (grade: string) => ({ 'A+': '特优(≥1.67)', A: '充分(≥1.33)', B: '勉强(≥1.0)', C: '不足(<1.0)' })[grade] || grade;
@@ -385,6 +429,8 @@ const handleAnalyze = async (row: SpcControlChartVO) => {
   try {
     const res = await analyzeControlChart(row.chartId);
     analyzeResult.value = res.data as SpcAnalyzeResult;
+    // 数据到达后重绘(次级图 div 由 v-if 控制, 依赖结果数据)
+    nextTick(renderChart);
   } catch (e) {
     proxy?.$modal.msgError('分析失败: ' + (e as Error).message);
   } finally {
@@ -458,10 +504,62 @@ const renderChart = () => {
       ]
     };
     chartInstance.setOption(option);
+    renderSecondaryChart(points);
   });
 };
 
-const handleResize = () => chartInstance?.resize();
+/** 次级图(组内离散度 R/S/MR): 使用 subValue 序列 + 次级图控制限(独立 OOC 规则 RULE*-SUB) */
+const renderSecondaryChart = (points: SpcDataPointVO[]) => {
+  const subPoints = points.filter((p) => p.subValue != null);
+  if (secondaryChartInstance) {
+    secondaryChartInstance.dispose();
+    secondaryChartInstance = null;
+  }
+  if (subPoints.length === 0 || !secondaryChartRef.value) {
+    return;
+  }
+  secondaryChartInstance = echarts.init(secondaryChartRef.value);
+  const rUcl = Number(analyzeResult.value.rUcl);
+  const rCl = Number(analyzeResult.value.rCl);
+  const rLcl = Number(analyzeResult.value.rLcl);
+  const subOption: echarts.EChartsOption = {
+    tooltip: {
+      trigger: 'axis',
+      formatter: (params: any) => {
+        const p = subPoints[params[0].dataIndex];
+        return `组${p.sampleGroup}<br/>离散度: ${p.subValue}<br/>OOC: ${p.isOoc === '1' ? '是(' + (p.oocRule || '') + ')' : '否'}`;
+      }
+    },
+    grid: { left: 60, right: 30, top: 30, bottom: 40 },
+    xAxis: { type: 'category', data: subPoints.map((p) => `组${p.sampleGroup}`) },
+    yAxis: { type: 'value', name: 'R/S/MR' },
+    series: [
+      {
+        name: '组内离散度',
+        type: 'line',
+        data: subPoints.map((p) => Number(p.subValue)),
+        symbol: 'circle',
+        symbolSize: 6,
+        itemStyle: { color: '#E6A23C' },
+        lineStyle: { color: '#E6A23C' },
+        markLine: {
+          symbol: 'none',
+          data: [
+            { yAxis: rUcl, name: 'RUCL', lineStyle: { color: '#F56C6C', type: 'dashed' }, label: { formatter: 'RUCL=' + rUcl, position: 'end' } },
+            { yAxis: rCl, name: 'RCL', lineStyle: { color: '#67C23A' }, label: { formatter: 'RCL=' + rCl, position: 'end' } },
+            { yAxis: rLcl, name: 'RLCL', lineStyle: { color: '#F56C6C', type: 'dashed' }, label: { formatter: 'RLCL=' + rLcl, position: 'end' } }
+          ]
+        }
+      }
+    ]
+  };
+  secondaryChartInstance.setOption(subOption);
+};
+
+const handleResize = () => {
+  chartInstance?.resize();
+  secondaryChartInstance?.resize();
+};
 
 // ============ 采集点选择 ============
 const openPointSelect = () => {
@@ -521,6 +619,7 @@ onMounted(() => {
 onUnmounted(() => {
   window.removeEventListener('resize', handleResize);
   chartInstance?.dispose();
+  secondaryChartInstance?.dispose();
 });
 
 getList();
