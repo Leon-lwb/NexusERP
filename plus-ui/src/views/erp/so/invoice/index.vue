@@ -74,10 +74,11 @@
         </template>
       </el-table-column>
       <el-table-column label="开票日期" align="center" prop="invoiceDate" />
-      <el-table-column label="金额" align="center" prop="amount" />
-      <el-table-column label="税额" align="center" prop="taxAmount" />
-      <el-table-column label="价税合计" align="center" prop="totalAmount" />
-      <el-table-column label="已核销" align="center" prop="verifiedAmount" />
+      <!-- FE-ERP-09：金额类列右对齐，便于按位比较（与 fin/fa/asset.vue 口径一致） -->
+      <el-table-column label="金额" align="right" prop="amount" />
+      <el-table-column label="税额" align="right" prop="taxAmount" />
+      <el-table-column label="价税合计" align="right" prop="totalAmount" />
+      <el-table-column label="已核销" align="right" prop="verifiedAmount" />
       <el-table-column label="状态" align="center" prop="status">
         <template #default="scope">
           <dict-tag :options="so_invoice_status" :value="scope.row.status" />

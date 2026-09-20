@@ -45,6 +45,8 @@ export interface ProWorkOrderVO {
   releasePackageVer?: string;
   /** 发布包配置项快照(JSON数组) */
   releaseConfig?: string;
+  /** 工单来源: ERP(ERP下发)/REWORK(返工工单)/MANUAL(手工创建)，字典 mes_wo_source_type (FE-MES-02) */
+  sourceType?: string;
 }
 
 export interface ProWorkOrderStepVO {

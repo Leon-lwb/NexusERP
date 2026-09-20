@@ -163,6 +163,49 @@
           <el-empty v-if="!workOrder.bomLines || workOrder.bomLines.length === 0" description="暂无MBOM快照数据" />
         </el-tab-pane>
 
+        <el-tab-pane label="组件追溯" name="trace">
+          <!-- FE-MES-03：后端 ProTraceabilityController(/mes/pro/trace) 此前在 plus-ui 零调用方 -->
+          <div class="mb-2">
+            <el-button type="primary" icon="Search" :loading="traceLoading" @click="loadTraceBackward()" v-hasPermi="['mes:pro:trace:query']"
+              >反向追溯（成品 → 组件）</el-button
+            >
+            <span class="text-gray-400 text-xs" style="margin-left: 8px">按本工单 MBOM 快照列出应装组件与实际装配的组件 SN</span>
+          </div>
+          <el-table :data="backwardTrace?.assembledComponentSns || []" border show-overflow-tooltip>
+            <el-table-column label="组件SN" prop="snCode" min-width="180" />
+            <el-table-column label="物料编码" prop="materialCode" min-width="140" />
+            <el-table-column label="物料名称" prop="materialName" min-width="150" />
+            <el-table-column label="父SN" prop="parentSnCode" min-width="160" />
+            <el-table-column label="SN状态" prop="snStatus" align="center" width="110" />
+          </el-table>
+          <el-empty v-if="backwardTrace && (backwardTrace.assembledComponentSns || []).length === 0" description="暂无已装配组件SN记录" />
+          <el-divider content-position="left">MBOM 快照要求组件（{{ (backwardTrace?.requiredComponents || []).length }}）</el-divider>
+          <el-table :data="backwardTrace?.requiredComponents || []" border show-overflow-tooltip max-height="260">
+            <el-table-column label="物料编码" prop="childMaterialCode" min-width="140" />
+            <el-table-column label="物料名称" prop="childMaterialName" min-width="150" />
+            <el-table-column label="含损耗用量" prop="totalQuantity" align="right" width="110" />
+            <el-table-column label="工序" prop="processName" width="110" />
+          </el-table>
+
+          <el-divider content-position="left">正向追溯（组件 → 成品）</el-divider>
+          <el-form :inline="true">
+            <el-form-item label="组件SN">
+              <el-input v-model="forwardSnCode" placeholder="扫码/输入组件SN" clearable style="width: 220px" @keyup.enter="loadTraceForward()" />
+            </el-form-item>
+            <el-form-item>
+              <el-button type="primary" icon="Search" :loading="traceLoading" @click="loadTraceForward()" v-hasPermi="['mes:pro:trace:query']"
+                >查询</el-button
+              >
+            </el-form-item>
+          </el-form>
+          <el-table :data="forwardTrace" border show-overflow-tooltip>
+            <el-table-column label="成品工单号" prop="woNo" min-width="160" />
+            <el-table-column label="物料编码" prop="materialCode" min-width="140" />
+            <el-table-column label="物料名称" prop="materialName" min-width="150" />
+            <el-table-column label="工单状态" prop="woStatus" align="center" width="110" />
+          </el-table>
+        </el-tab-pane>
+
         <el-tab-pane label="审批流程" name="approval">
           <el-form :inline="true">
             <el-form-item label="审批流程" v-if="workOrder.woStatus === 'CREATED' && !props.disabled">
@@ -198,6 +241,8 @@ import { addFlowCard, listFlowCardByWoId } from '@/api/mes/pro/flowcardApi';
 import type { ProFlowCardVO } from '@/api/mes/pro/flowcard';
 import type { ProWorkOrderVO, ProWorkOrderStepVO } from '@/api/mes/pro/types';
 import FirmwareSelectDialog from './components/FirmwareSelectDialog.vue';
+import { traceBackward, traceForward } from '@/api/mes/pro/trace';
+import type { TraceabilityResult } from '@/api/mes/pro/trace';
 import { checkPermi } from '@/utils/permission';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
@@ -278,6 +323,55 @@ const handleFirmwareSelected = async (fw: any) => {
   proxy?.$modal.msgSuccess(`工序固件已更新为 ${fw.firmwareCode} (v${fw.version}), 下达后冻结`);
   loadDetail();
 };
+
+// ===== 组件追溯（FE-MES-03：后端 /mes/pro/trace 此前无调用方） =====
+const backwardTrace = ref<TraceabilityResult | null>(null);
+const forwardTrace = ref<TraceabilityResult[]>([]);
+const forwardSnCode = ref('');
+const traceLoading = ref(false);
+
+/** 反向追溯：成品工单 → MBOM 要求组件 + 实际装配组件 SN */
+const loadTraceBackward = async () => {
+  if (!workOrder.value.mesWoId) return;
+  traceLoading.value = true;
+  try {
+    const res = await traceBackward(workOrder.value.mesWoId);
+    backwardTrace.value = res.data;
+  } catch (e) {
+    // 追溯失败不静默：权限码 mes:pro:trace:query 缺失时此前表现为「空白表格」
+    console.error('[组件追溯] 反向追溯失败', e);
+    backwardTrace.value = null;
+    proxy?.$modal.msgError('反向追溯查询失败（需 mes:pro:trace:query 权限）');
+  } finally {
+    traceLoading.value = false;
+  }
+};
+
+/** 正向追溯：组件 SN → 消费该组件的成品工单 */
+const loadTraceForward = async () => {
+  if (!forwardSnCode.value) {
+    proxy?.$modal.msgWarning('请输入组件SN');
+    return;
+  }
+  traceLoading.value = true;
+  try {
+    const res = await traceForward({ componentSnCode: forwardSnCode.value });
+    forwardTrace.value = res.data || [];
+  } catch (e) {
+    console.error('[组件追溯] 正向追溯失败', e);
+    forwardTrace.value = [];
+    proxy?.$modal.msgError('正向追溯查询失败（需 mes:pro:trace:query 权限）');
+  } finally {
+    traceLoading.value = false;
+  }
+};
+
+// 首次切到「组件追溯」页签时自动加载反向追溯
+watch(activeTab, (v) => {
+  if (v === 'trace' && !backwardTrace.value) {
+    loadTraceBackward();
+  }
+});
 
 const loadDetail = async (mesWoIdParam?: string) => {
   const mesWoId = mesWoIdParam || (route.params.mesWoId as string);

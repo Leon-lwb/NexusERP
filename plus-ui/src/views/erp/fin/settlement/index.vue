@@ -37,7 +37,8 @@
       </el-table-column>
       <el-table-column label="发票号" align="center" prop="invoiceNo" width="180" />
       <el-table-column label="收付款单号" align="center" prop="receiptNo" width="180" />
-      <el-table-column label="核销金额" align="center" prop="settleAmount" width="120" />
+      <!-- FE-ERP-09：核销金额右对齐，便于按位比较 -->
+      <el-table-column label="核销金额" align="right" prop="settleAmount" width="120" />
       <el-table-column label="核销日期" align="center" prop="settleDate" width="120" />
       <el-table-column label="操作人" align="center" prop="operator" width="120" />
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">

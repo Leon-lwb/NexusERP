@@ -150,10 +150,12 @@
           <el-input v-model="form.location" placeholder="如 一号车间" />
         </el-form-item>
         <el-form-item label="状态">
+          <!-- FE-ERP-14：状态选项改字典驱动（fa_asset_status）；「已处置」不在可选项内 ——
+               处置必须走资产处置流程（后端状态机），手工改成 DISPOSED 会绕过处置单据 -->
           <el-radio-group v-model="form.status">
-            <el-radio value="IN_USE">使用中</el-radio>
-            <el-radio value="CWIP">在建</el-radio>
+            <el-radio v-for="d in editableStatusOptions" :key="d.value" :value="d.value">{{ d.label }}</el-radio>
           </el-radio-group>
+          <span class="el-form-item__content-hint">已处置需走资产处置流程，不在此手工选择</span>
         </el-form-item>
       </el-form>
       <template #footer>
@@ -176,6 +178,13 @@ const { fa_asset_status, fa_depreciation_method } = toRefs<any>(proxy.useDict('f
 
 const formRef = ref<FormInstance>();
 const categoryOptions = ref<FaAssetCategoryVO[]>([]);
+
+/**
+ * FE-ERP-14：弹窗内「状态」选项改字典驱动（fa_asset_status）。
+ * 排除 DISPOSED —— 资产处置必须走处置流程（后端状态机 + 处置单据），
+ * 允许手工选会让卡片绕过处置单据直接进入终态。
+ */
+const editableStatusOptions = computed(() => (fa_asset_status.value || []).filter((d: any) => d.value !== 'DISPOSED'));
 
 const queryParams = ref({ pageNum: 1, pageSize: 10, keyword: '', categoryId: undefined, status: undefined });
 
