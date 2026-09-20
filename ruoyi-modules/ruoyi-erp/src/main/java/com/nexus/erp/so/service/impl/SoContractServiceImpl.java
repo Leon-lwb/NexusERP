@@ -33,6 +33,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -270,6 +272,72 @@ public class SoContractServiceImpl implements ISoContractService {
             log.warn("销售合同[{}]当前状态[{}]不允许流程回调改写为[{}]，忽略本次变更",
                 contractId, contract.getStatus(), newStatus);
         }
+    }
+
+    /**
+     * 终止合同（仅 EFFECTIVE 可终止）。
+     *
+     * <p>状态由 {@code EFFECTIVE -> TERMINATED}，条件更新做 CAS 防并发。
+     * 终止原因写入 {@code remark}（{@code so_contract} 无独立的终止原因列，复用备注并保留原备注）。</p>
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void terminate(Long contractId, String reason) {
+        SoContract contract = baseMapper.selectById(contractId);
+        if (contract == null) {
+            throw new ServiceException("销售合同不存在");
+        }
+        if (STATUS_TERMINATED.equals(contract.getStatus())) {
+            throw new ServiceException("合同【{}】已终止，请勿重复操作", contract.getContractNo());
+        }
+        if (!STATUS_EFFECTIVE.equals(contract.getStatus())) {
+            throw new ServiceException("当前状态【{}】不允许终止，仅已生效的合同可终止", contract.getStatus());
+        }
+        String suffix = "【终止】" + (StringUtils.isBlank(reason) ? "未填写原因" : reason);
+        String newRemark = StringUtils.isBlank(contract.getRemark()) ? suffix : contract.getRemark() + "；" + suffix;
+        int updated = baseMapper.update(null,
+            Wrappers.<SoContract>lambdaUpdate()
+                .set(SoContract::getStatus, STATUS_TERMINATED)
+                .set(SoContract::getRemark, newRemark)
+                .eq(SoContract::getContractId, contractId)
+                .eq(SoContract::getStatus, STATUS_EFFECTIVE));
+        if (updated == 0) {
+            throw new ServiceException("合同【{}】状态已变更，请刷新后重试", contract.getContractNo());
+        }
+        log.info("销售合同终止, contractId={}, contractNo={}, reason={}", contractId, contract.getContractNo(), reason);
+    }
+
+    /**
+     * 把已到期（{@code expiry_date < 今天}）的已生效合同批量置为 EXPIRED。
+     *
+     * <p>条件更新一次完成，避免逐行读改写；已终止/草稿等状态不受影响。
+     * 到期日**当天仍算有效**（{@code expiry_date} 为「有效期至」的含端语义），
+     * 因此判据是严格小于今天。</p>
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int expireOverdueContracts() {
+        Date startOfToday = startOfToday();
+        int updated = baseMapper.update(null,
+            Wrappers.<SoContract>lambdaUpdate()
+                .set(SoContract::getStatus, STATUS_EXPIRED)
+                .eq(SoContract::getStatus, STATUS_EFFECTIVE)
+                .isNotNull(SoContract::getExpiryDate)
+                .lt(SoContract::getExpiryDate, startOfToday));
+        if (updated > 0) {
+            log.info("销售合同到期扫描：{} 份合同已置为 EXPIRED", updated);
+        }
+        return updated;
+    }
+
+    /** 取「今天 00:00:00」，用于到期判定（当天仍算有效） */
+    private Date startOfToday() {
+        Calendar calendar = Calendar.getInstance();
+        calendar.set(Calendar.HOUR_OF_DAY, 0);
+        calendar.set(Calendar.MINUTE, 0);
+        calendar.set(Calendar.SECOND, 0);
+        calendar.set(Calendar.MILLISECOND, 0);
+        return calendar.getTime();
     }
 
     /**

@@ -97,3 +97,18 @@ export const getProcInsId = (contractIdStr: string): AxiosPromise<string> => {
     method: 'get'
   });
 };
+
+/**
+ * 终止销售合同（仅已生效的合同可终止）
+ *
+ * @param contractId 合同ID
+ * @param reason     终止原因
+ * @returns 操作结果
+ */
+export const terminateContract = (contractId: string | number, reason?: string) => {
+  return request({
+    url: '/erp/so/contract/terminate',
+    method: 'post',
+    params: { contractId, reason }
+  });
+};

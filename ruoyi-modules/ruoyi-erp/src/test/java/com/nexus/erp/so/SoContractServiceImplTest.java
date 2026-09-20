@@ -400,4 +400,97 @@ class SoContractServiceImplTest {
         business.setActStatus(actStatus);
         return business;
     }
+
+    // ==================== 合同终止（Q9）====================
+
+    private SoContract contract(Long id, String status, String contractNo) {
+        SoContract c = new SoContract();
+        c.setContractId(id);
+        c.setContractNo(contractNo);
+        c.setStatus(status);
+        return c;
+    }
+
+    /** 仅已生效的合同可终止；草稿直接拒绝 */
+    @Test
+    void terminate_rejectsNonEffective() {
+        when(baseMapper.selectById(1L))
+            .thenReturn(contract(1L, ISoContractService.STATUS_DRAFT, "HT-001"));
+
+        ServiceException ex = assertThrows(ServiceException.class,
+            () -> contractService.terminate(1L, "双方协商解除"));
+        assertTrue(ex.getMessage().contains("仅已生效"), "实际: " + ex.getMessage());
+        verify(baseMapper, never()).update(any(), any());
+    }
+
+    /** 重复终止给出明确提示而不是静默成功 */
+    @Test
+    void terminate_rejectsAlreadyTerminated() {
+        when(baseMapper.selectById(1L))
+            .thenReturn(contract(1L, ISoContractService.STATUS_TERMINATED, "HT-001"));
+
+        ServiceException ex = assertThrows(ServiceException.class,
+            () -> contractService.terminate(1L, "再次终止"));
+        assertTrue(ex.getMessage().contains("已终止"), "实际: " + ex.getMessage());
+    }
+
+    /** 合同不存在 */
+    @Test
+    void terminate_rejectsMissingContract() {
+        when(baseMapper.selectById(1L)).thenReturn(null);
+        assertThrows(ServiceException.class, () -> contractService.terminate(1L, "原因"));
+    }
+
+    /** 终止成功：状态置 TERMINATED，原因写入备注，且用条件更新做 CAS */
+    @Test
+    void terminate_success_setsTerminatedAndAppendsReason() {
+        SoContract existing = contract(1L, ISoContractService.STATUS_EFFECTIVE, "HT-001");
+        existing.setRemark("原备注");
+        when(baseMapper.selectById(1L)).thenReturn(existing);
+        when(baseMapper.update(any(), any())).thenReturn(1);
+
+        contractService.terminate(1L, "双方协商解除");
+
+        ArgumentCaptor<Wrapper<SoContract>> captor = ArgumentCaptor.forClass(Wrapper.class);
+        verify(baseMapper).update(any(), captor.capture());
+        verify(baseMapper, never()).updateById(any(SoContract.class));
+        // 条件更新必须带 status 条件（CAS），防并发把非 EFFECTIVE 的合同也改掉
+        assertTrue(captor.getValue().getSqlSegment().contains("status"), "应带状态条件: " + captor.getValue().getSqlSegment());
+    }
+
+    /** 并发已被他人终止（条件更新 0 行）时抛异常，不静默成功 */
+    @Test
+    void terminate_concurrentChangeThrows() {
+        when(baseMapper.selectById(1L))
+            .thenReturn(contract(1L, ISoContractService.STATUS_EFFECTIVE, "HT-001"));
+        when(baseMapper.update(any(), any())).thenReturn(0);
+
+        ServiceException ex = assertThrows(ServiceException.class,
+            () -> contractService.terminate(1L, "原因"));
+        assertTrue(ex.getMessage().contains("状态已变更"), "实际: " + ex.getMessage());
+    }
+
+    /** 到期扫描：条件更新一次性把过期 EFFECTIVE 合同置 EXPIRED */
+    @Test
+    void expireOverdueContracts_updatesOnlyEffectiveWithExpiryDate() {
+        when(baseMapper.update(any(), any())).thenReturn(3);
+
+        int updated = contractService.expireOverdueContracts();
+
+        assertEquals(3, updated);
+        ArgumentCaptor<Wrapper<SoContract>> captor = ArgumentCaptor.forClass(Wrapper.class);
+        verify(baseMapper).update(any(), captor.capture());
+        String segment = captor.getValue().getSqlSegment();
+        // 只动 EFFECTIVE、且必须有失效日期、且严格小于今天
+        assertTrue(segment.contains("status"), "应限定状态: " + segment);
+        assertTrue(segment.contains("expiry_date"), "应限定失效日期: " + segment);
+        assertTrue(segment.contains("<"), "应为严格小于（当天仍有效）: " + segment);
+    }
+
+    /** 到期扫描无命中时不报错 */
+    @Test
+    void expireOverdueContracts_noMatchReturnsZero() {
+        when(baseMapper.update(any(), any())).thenReturn(0);
+        assertEquals(0, contractService.expireOverdueContracts());
+    }
 }

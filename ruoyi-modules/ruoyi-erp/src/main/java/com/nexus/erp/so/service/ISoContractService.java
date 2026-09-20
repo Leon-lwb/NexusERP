@@ -75,4 +75,23 @@ public interface ISoContractService extends WfCallBackServiceI {
      * @return 流程实例ID
      */
     String getProcInsId(String contractIdStr);
+
+    /**
+     * 终止合同（仅已生效可终止）。
+     *
+     * <p>终止后合同不再履约，且不可再提交审批/修改。用于「双方协商解除」这类业务场景。</p>
+     *
+     * @param contractId 合同ID
+     * @param reason     终止原因
+     */
+    void terminate(Long contractId, String reason);
+
+    /**
+     * 扫描并把已到期（{@code expiry_date < 今天}）的已生效合同置为 {@link #STATUS_EXPIRED}。
+     *
+     * <p>供定时任务调用，返回本次置为到期的合同数。</p>
+     *
+     * @return 本次更新的合同数
+     */
+    int expireOverdueContracts();
 }

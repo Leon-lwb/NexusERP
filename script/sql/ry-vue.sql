@@ -10050,6 +10050,8 @@ CREATE TABLE `sj_job`  (
 INSERT INTO `sj_job` VALUES (1, 'dev', 'biz_1', 'ruoyi_group', 'demo-job', NULL, 1, 1789381092456, 1, 1, 4, 1, 'testJobExecutor', 2, '600', 1, 60, 3, 1, 1, 116, 0, '', 1, '{}', '', '', 0, '2026-04-15 10:51:35', '2026-09-14 18:08:12');
 INSERT INTO `sj_job` VALUES (2, 'dev', 'biz_2', 'ruoyi_group', '应商绩效批量评估任务', '', 1, 1789405200000, 1, 1, 4, 1, 'vendorEvaluationTask', 3, '0 0 1 * * ?', 1, 60, 3, 1, 1, 69, 0, '', 1, '{}', '', '', 0, '2026-05-28 10:57:55', '2026-09-14 13:18:12');
 INSERT INTO `sj_job` VALUES (3, 'dev', 'biz_3', 'ruoyi_group', '安全库存预警定时任务', '', 1, 1789405200000, 1, 1, 4, 1, 'stockAlertTask', 3, '0 0 1 * * ?', 1, 60, 3, 1, 1, 120, 0, '', 1, '{}', '', '', 0, '2026-05-28 17:20:03', '2026-09-14 13:18:12');
+-- 销售合同到期扫描（Q9）：EXPIRED 状态此前无任何代码写入，本任务补齐（到期日当天仍算有效）
+INSERT INTO `sj_job` VALUES (200, 'dev', 'biz_200', 'ruoyi_group', '销售合同到期扫描任务', '', 1, 1789405200000, 1, 1, 4, 1, 'soContractExpiryTask', 3, '0 30 1 * * ?', 1, 60, 3, 1, 1, 90, 0, '', 1, '{}', '', '', 0, '2026-09-19 20:00:00', '2026-09-19 20:00:00');
 INSERT INTO `sj_job` VALUES (4, 'dev', 'biz_4', 'ruoyi_group', 'IoT设备数据清理任务', '', 1, 1781715600000, 1, 1, 4, 1, 'iotDataCleanupTask', 3, '0 0 2 * * ?', 1, 60, 3, 1, 1, 50, 0, '', 1, '{}', '', '', 1, '2026-06-18 17:32:23', '2026-09-14 13:18:12');
 INSERT INTO `sj_job` VALUES (5, 'dev', 'biz_5', 'ruoyi_group', 'IoT设备心跳检测任务', '', 1, 1781715600000, 1, 1, 4, 1, 'iotDeviceHeartbeatTask', 3, '0 0 2 * * ?', 1, 60, 3, 1, 1, 51, 0, '', 1, '{}', '', '', 1, '2026-06-18 17:32:23', '2026-09-14 13:18:12');
 INSERT INTO `sj_job` VALUES (6, 'dev', 'biz_6', 'ruoyi_group', 'IoT Stream修剪任务', '', 1, 1781715600000, 1, 1, 4, 1, 'iotStreamTrimTask', 3, '0 0 2 * * ?', 1, 60, 3, 1, 1, 52, 0, '', 1, '{}', '', '', 1, '2026-06-18 17:32:23', '2026-09-14 13:18:12');
@@ -10144,6 +10146,8 @@ INSERT INTO `sj_job_executor` VALUES (41, 'dev', 'ruoyi_group', 'asyncWeChatPubl
 INSERT INTO `sj_job_executor` VALUES (42, 'dev', 'ruoyi_group', 'wechatShippingRechargeTask', '1', '2026-09-01 23:55:22', '2026-09-01 23:55:21');
 INSERT INTO `sj_job_executor` VALUES (43, 'dev', 'ruoyi_group', 'equipmentHealthTask', '1', '2026-09-02 19:49:15', '2026-09-02 19:49:14');
 INSERT INTO `sj_job_executor` VALUES (44, 'dev', 'ruoyi_group', 'mqSmokeSendTask', '1', '2026-09-06 11:10:24', '2026-09-06 11:10:24');
+-- 销售合同到期扫描（Q9）：每天 01:30 把 expiry_date < 今天 的 EFFECTIVE 合同置为 EXPIRED
+INSERT INTO `sj_job_executor` VALUES (200, 'dev', 'ruoyi_group', 'soContractExpiryTask', '1', '2026-09-19 20:00:00', '2026-09-19 20:00:00');
 
 -- ----------------------------
 -- Table structure for sj_job_log_message

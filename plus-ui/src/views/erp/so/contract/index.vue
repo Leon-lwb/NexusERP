@@ -101,6 +101,16 @@
             >修改</el-button
           >
           <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['so:contract:remove']">删除</el-button>
+          <!-- 终止：仅已生效的合同可终止（与后端 SoContractServiceImpl.terminate 的状态门禁一致） -->
+          <el-button
+            link
+            type="danger"
+            icon="CircleClose"
+            @click="handleTerminate(scope.row)"
+            v-if="scope.row.status === 'EFFECTIVE'"
+            v-hasPermi="['so:contract:edit']"
+            >终止</el-button
+          >
         </template>
       </el-table-column>
     </el-table>
@@ -332,7 +342,7 @@
 </template>
 
 <script setup lang="ts" name="SoContract">
-import { listContract, getContract, delContract, addContract, updateContract } from '@/api/erp/so/contract';
+import { listContract, getContract, delContract, addContract, updateContract, terminateContract } from '@/api/erp/so/contract';
 import { ContractLineForm } from '@/api/erp/so/contract/types';
 import { getProcesss } from '@/api/workflow/process/index';
 import ClientSelectDialog from '@/views/erp/so/components/ClientSelectDialog.vue';
@@ -472,6 +482,23 @@ function resetQuery() {
 /** 详情：跳转合同详情页（合同基本信息 + 正文上传/签署/验签），与委外订单表单同一套 query 传参方式 */
 function handleDetail(row: any) {
   router.push({ path: '/erp/so/contract/detail', query: { contractId: String(row.contractId) } });
+}
+
+/** 终止合同（仅已生效可终止；后端用条件更新做 CAS，并发变更会返回业务异常） */
+function handleTerminate(row: any) {
+  proxy.$modal
+    .prompt('确认终止合同【' + row.contractNo + '】？终止后不可再提交审批或修改。请填写终止原因：', '终止合同', {
+      confirmButtonText: '确定终止',
+      cancelButtonText: '取消',
+      inputPlaceholder: '请输入终止原因',
+      inputValidator: (value: string) => (value && value.trim() ? true : '终止原因不能为空')
+    })
+    .then(({ value }: { value: string }) => terminateContract(row.contractId, value))
+    .then(() => {
+      proxy.$modal.msgSuccess('终止成功');
+      getList();
+    })
+    .catch(() => {});
 }
 
 /** 添加明细行（税率默认 13%，与发票页口径一致） */

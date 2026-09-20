@@ -149,4 +149,21 @@ public class SoContractController extends BaseController {
         // 使用 R.ok(String msg, T data) 重载，避免 R.ok(String) 把实例ID误塞进 msg
         return R.ok("查询成功", soContractService.getProcInsId(contractIdStr));
     }
+
+    /**
+     * 终止合同（仅已生效的合同可终止；终止后不可再提交审批/修改）
+     * <p>权限标识：{@code so:contract:edit}</p>
+     *
+     * @param contractId 合同ID
+     * @param reason     终止原因
+     * @return 操作结果
+     */
+    @SaCheckPermission("so:contract:edit")
+    @Log(title = "销售合同", businessType = BusinessType.UPDATE)
+    @RepeatSubmit
+    @PostMapping("/terminate")
+    public R<Void> terminate(@RequestParam Long contractId, @RequestParam(required = false) String reason) {
+        soContractService.terminate(contractId, reason);
+        return R.ok();
+    }
 }
