@@ -15,6 +15,7 @@ import com.nexus.common.sign.service.ESignatureService;
 import com.nexus.common.sign.service.IESSignDocumentService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -67,6 +68,8 @@ import static org.mockito.Mockito.*;
  */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
+@Tag("local")
+@Tag("dev")
 class EsSignDocumentControllerTest {
 
     private static final Long DOC_ID = 88001L;

@@ -1,6 +1,7 @@
 package com.nexus.common.sign.support;
 
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -10,6 +11,8 @@ import static org.junit.jupiter.api.Assertions.*;
  *
  * @author nexus
  */
+@Tag("local")
+@Tag("dev")
 class SignatureChainCalculatorTest {
 
     private static final long T = 1_755_000_000_000L;
