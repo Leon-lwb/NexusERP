@@ -263,7 +263,7 @@ function submitProcess() {
 
 /** 跳转告警记录页（告警页支持按 alertId 定位） */
 function goToAlert(row: DeviceEventVO) {
-  router.push({ path: '/iot/alert', query: { alertId: String(row.alertId) } });
+  router.push({ path: '/iot/alertCenter/alert', query: { alertId: String(row.alertId) } });
 }
 
 /** 载荷 JSON 美化（解析失败时原样展示，避免把非法 JSON 直接抛错） */

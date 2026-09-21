@@ -436,7 +436,7 @@ function canCancel(row: OtaTaskVO) {
 /** 跳转设备指令页（携带 commandId 便于人工核对；指令页当前未按该参数过滤，见报告 §2） */
 function goToCommand(row: Partial<OtaTaskVO>) {
   if (!row?.commandId) return;
-  router.push({ path: '/iot/command', query: { commandId: String(row.commandId) } });
+  router.push({ path: '/iot/message/command', query: { commandId: String(row.commandId) } });
 }
 
 /** 设备下拉（含非启用设备，供筛选） */
