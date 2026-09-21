@@ -27,6 +27,63 @@ SET NAMES utf8mb4;
 UPDATE `iot_product` SET `status` = 'ACTIVE' WHERE `status` = '1';
 
 -- =============================================================================
+-- 0.1 本脚本历史版本写错的值域订正（幂等；INSERT IGNORE 不会更新已存在的行，故必须显式 UPDATE）
+-- -----------------------------------------------------------------------------
+-- 缺陷① 告警级别用了 iot_event_level 字典的 CRITICAL：
+--        iot_alert_rule.alert_level / iot_alert_record.alert_level 的合法域是
+--        HIGH/MEDIUM/LOW（IotAlertRuleBo:94 的 @Pattern、前端告警页 ALERT_LEVEL_OPTIONS 一致），
+--        **不含 CRITICAL**（CRITICAL 属「设备事件级别」iot_event_level 的值域，两者不可混用）。
+--        影响: 规则 8704、告警记录 8802（DEV0013 熔炼炉超温）。
+--        处置: CRITICAL → HIGH（该规则本就是最高优先级，映射到告警域的最高级别）。
+-- 缺陷② 告警类型误填 'THRESHOLD'（把「触发机制」当成字段语义）：
+--        alert_type 的合法域是 TEMPERATURE/VIBRATION/PRESSURE/OTHER（被测物理量类别），
+--        影响全部 6 条规则与 10 条告警记录。处置: 按 property_code 映射
+--        temperature→TEMPERATURE、vibration→VIBRATION、power/speed/fail_rate→OTHER。
+-- 注意: 这两条订正只针对本脚本产生的行（rule_id 8701-8706 / alert_id 8801-8810），
+--       不会触碰既有 7001/7002 与业务真实产生的告警。
+-- =============================================================================
+UPDATE `iot_alert_rule` SET `alert_level` = 'HIGH'
+ WHERE `rule_id` = 8704 AND `alert_level` = 'CRITICAL';
+UPDATE `iot_alert_record` SET `alert_level` = 'HIGH'
+ WHERE `alert_id` = 8802 AND `alert_level` = 'CRITICAL';
+
+UPDATE `iot_alert_rule` SET `alert_type` = CASE `property_code`
+         WHEN 'temperature' THEN 'TEMPERATURE'
+         WHEN 'vibration'   THEN 'VIBRATION'
+         ELSE 'OTHER' END
+ WHERE `rule_id` BETWEEN 8701 AND 8706 AND `alert_type` NOT IN ('TEMPERATURE','VIBRATION','PRESSURE','OTHER');
+UPDATE `iot_alert_record` SET `alert_type` = CASE `property_code`
+         WHEN 'temperature' THEN 'TEMPERATURE'
+         WHEN 'vibration'   THEN 'VIBRATION'
+         ELSE 'OTHER' END
+ WHERE `alert_id` BETWEEN 8801 AND 8810 AND `alert_type` NOT IN ('TEMPERATURE','VIBRATION','PRESSURE','OTHER');
+
+-- 兜底自检（执行后应返回 0 行；非 0 说明仍有值域外的行）
+-- SELECT 'bad_alert_level' AS chk, rule_id AS id FROM iot_alert_rule   WHERE alert_level NOT IN ('HIGH','MEDIUM','LOW')
+-- UNION ALL SELECT 'bad_alert_level', alert_id FROM iot_alert_record WHERE alert_level NOT IN ('HIGH','MEDIUM','LOW')
+-- UNION ALL SELECT 'bad_alert_type',  rule_id FROM iot_alert_rule    WHERE alert_type  NOT IN ('TEMPERATURE','VIBRATION','PRESSURE','OTHER')
+-- UNION ALL SELECT 'bad_alert_type',  alert_id FROM iot_alert_record WHERE alert_type  NOT IN ('TEMPERATURE','VIBRATION','PRESSURE','OTHER');
+
+-- 缺陷③ 通知渠道用了不存在的 EMAIL：
+--        IotAlertNotifier 只实现了 **SSE 与 MES_ANDON 两个渠道**（IotAlertConstants.CHANNEL_*、
+--        ChannelOutcome javadoc「渠道: SSE/MES_ANDON」、notify() 只调 notifySse/notifyAndon），
+--        投递结果也只有 SUCCESS/FAILED/SKIPPED 三态。
+--        影响: 规则 8702/8705 的 notify_channels 含 EMAIL；留痕 8908/8910 的 channel='EMAIL'。
+--        处置: 渠道收敛为 SSE/MES_ANDON；原「邮件失败」示例改用 MES 安灯失败（真实可发生的失败路径），
+--              并补 SKIPPED 态示例（无同租户在线用户 / MES 未接入），使三态齐备。
+--        另注: notify_channels 字段目前在服务端**仅被默认赋值、未被消费**
+--              （IotAlertRuleServiceImpl:250 仅在为空时置 'SSE,MES_ANDON'，通知器始终走 SSE+MES_ANDON），
+--              属"声明未实现"字段，已在报告中登记，本次不改生产行为。
+-- =============================================================================
+UPDATE `iot_alert_rule` SET `notify_channels` = 'SSE,MES_ANDON'
+ WHERE `rule_id` IN (8702, 8705) AND `notify_channels` <> 'SSE,MES_ANDON';
+UPDATE `iot_alert_notify_log` SET `channel` = 'MES_ANDON', `target` = NULL,
+       `message` = '联动失败：MES 安灯服务不可达'
+ WHERE `log_id` IN (8908, 8910) AND `channel` = 'EMAIL';
+UPDATE `iot_alert_notify_log` SET `message` = '已生成安灯呼叫(最高级别)'
+ WHERE `log_id` = 8904 AND `message` LIKE '%CRITICAL%';
+
+-- =============================================================================
 -- 1. product_type 字典扩展（库 ry-vue）
 -- -----------------------------------------------------------------------------
 -- 问题: iot_product.product_type 既有数据是 SENSOR/METER/CAMERA，而 product_type
@@ -171,12 +228,12 @@ UPDATE `iot_device` SET `firmware_version` = 'V2.0.0' WHERE `device_id` = 6;
 -- =============================================================================
 INSERT IGNORE INTO `iot_alert_rule`
   (`rule_id`,`tenant_id`,`rule_name`,`product_id`,`device_id`,`property_code`,`compare_operator`,`threshold`,`duration_sec`,`debounce_sec`,`alert_type`,`alert_level`,`notify_channels`,`enabled`,`remark`,`create_dept`,`create_by`,`create_time`) VALUES
- (8701,'000000','注塑机料筒温度超上限',1,0,'temperature','GT',220.0000,30,60,'THRESHOLD','HIGH','SSE,MES_ANDON',1,'温度模组作用于注塑车间',103,1,NOW()),
- (8702,'000000','电能表功率超载',3,0,'power','GT',95.0000,60,120,'THRESHOLD','HIGH','SSE,MES_ANDON,EMAIL',1,'持续 60s 才触发，避免瞬时冲击误报',103,1,NOW()),
- (8703,'000000','转速传感器转速过低',4,0,'speed','LT',500.0000,120,300,'THRESHOLD','MEDIUM','SSE',1,'疑似停机或传动打滑',103,1,NOW()),
- (8704,'000000','熔炼炉温度超限',1,13,'temperature','GT',1500.0000,10,30,'THRESHOLD','CRITICAL','SSE,MES_ANDON',1,'设备级规则，优先级高于全局规则',103,1,NOW()),
- (8705,'000000','视觉相机识别失败率超限',5,0,'fail_rate','GT',5.0000,300,300,'THRESHOLD','MEDIUM','SSE,EMAIL',1,'按 5 分钟窗口统计',103,1,NOW()),
- (8706,'000000','机加车间振动烈度预警',2,0,'vibration','GT',3.5000,60,120,'THRESHOLD','LOW','SSE',1,'低于全局阈值 4.5，用于提前预警',103,1,NOW());
+ (8701,'000000','注塑机料筒温度超上限',1,0,'temperature','GT',220.0000,30,60,'TEMPERATURE','HIGH','SSE,MES_ANDON',1,'温度模组作用于注塑车间',103,1,NOW()),
+ (8702,'000000','电能表功率超载',3,0,'power','GT',95.0000,60,120,'OTHER','HIGH','SSE,MES_ANDON',1,'持续 60s 才触发，避免瞬时冲击误报',103,1,NOW()),
+ (8703,'000000','转速传感器转速过低',4,0,'speed','LT',500.0000,120,300,'OTHER','MEDIUM','SSE',1,'疑似停机或传动打滑',103,1,NOW()),
+ (8704,'000000','熔炼炉温度超限',1,13,'temperature','GT',1500.0000,10,30,'TEMPERATURE','HIGH','SSE,MES_ANDON',1,'设备级规则，优先级高于全局规则',103,1,NOW()),
+ (8705,'000000','视觉相机识别失败率超限',5,0,'fail_rate','GT',5.0000,300,300,'OTHER','MEDIUM','SSE,MES_ANDON',1,'按 5 分钟窗口统计',103,1,NOW()),
+ (8706,'000000','机加车间振动烈度预警',2,0,'vibration','GT',3.5000,60,120,'VIBRATION','LOW','SSE',1,'低于全局阈值 4.5，用于提前预警',103,1,NOW());
 
 -- =============================================================================
 -- 10. 告警记录（遵守 uk_active_alert(tenant_id,device_id,property_code,active_flag)：
@@ -184,16 +241,16 @@ INSERT IGNORE INTO `iot_alert_rule`
 -- =============================================================================
 INSERT IGNORE INTO `iot_alert_record`
   (`alert_id`,`tenant_id`,`rule_id`,`source`,`device_id`,`device_code`,`product_id`,`property_code`,`alert_type`,`alert_level`,`compare_operator`,`threshold`,`trigger_value`,`alert_message`,`status`,`active_flag`,`trigger_time`,`last_trigger_time`,`ack_time`,`ack_by`,`ack_remark`,`resolve_time`,`resolve_by`,`resolve_value`,`resolve_remark`,`create_dept`,`create_by`,`create_time`) VALUES
- (8801,'000000',8701,'RULE', 6,'DEV0006',1,'temperature','THRESHOLD','HIGH','GT',220.0000,235.0000,'氩弧焊工位温度 235℃ 超过阈值 220℃','ACTIVE',1,NOW() - INTERVAL 35 MINUTE,NOW() - INTERVAL 5 MINUTE,NULL,NULL,NULL,NULL,NULL,NULL,NULL,103,1,NOW() - INTERVAL 35 MINUTE),
- (8802,'000000',8704,'RULE',13,'DEV0013',1,'temperature','THRESHOLD','CRITICAL','GT',1500.0000,1582.0000,'熔炼炉温度 1582℃ 超过阈值 1500℃','ACTIVE',1,NOW() - INTERVAL 18 MINUTE,NOW() - INTERVAL 2 MINUTE,NULL,NULL,NULL,NULL,NULL,NULL,NULL,103,1,NOW() - INTERVAL 18 MINUTE),
- (8803,'000000',8706,'RULE', 9,'DEV0009',2,'vibration','THRESHOLD','LOW','GT',3.5000,4.1000,'打磨工位振动烈度 4.1 超过预警阈值 3.5','ACKNOWLEDGED',1,NOW() - INTERVAL 150 MINUTE,NOW() - INTERVAL 140 MINUTE,NOW() - INTERVAL 130 MINUTE,1,'已通知设备科现场确认，轴承待更换',NULL,NULL,NULL,NULL,103,1,NOW() - INTERVAL 150 MINUTE),
- (8804,'000000',7002,'RULE', 5,'DEV0005',2,'vibration','THRESHOLD','MEDIUM','GT',4.5000,5.2000,'磨床振动烈度 5.2 超过阈值 4.5','RESOLVED',NULL,NOW() - INTERVAL 26 HOUR,NOW() - INTERVAL 25 HOUR,NOW() - INTERVAL 24 HOUR,1,'已停机检查',NOW() - INTERVAL 23 HOUR,1,2.8000,'更换主轴轴承后恢复',103,1,NOW() - INTERVAL 26 HOUR),
- (8805,'000000',8702,'RULE',17,'DEV0017',3,'power','THRESHOLD','HIGH','GT',95.0000,102.5000,'SMT贴片线功率 102.5kW 超过阈值 95kW','RESOLVED',NULL,NOW() - INTERVAL 30 HOUR,NOW() - INTERVAL 29 HOUR,NOW() - INTERVAL 28 HOUR,1,'调整产线负载',NOW() - INTERVAL 27 HOUR,1,88.0000,'分流部分设备后恢复',103,1,NOW() - INTERVAL 30 HOUR),
- (8806,'000000',8702,'RULE',20,'DEV0020',3,'power','THRESHOLD','HIGH','GT',95.0000,99.8000,'功能测试工位功率 99.8kW 超过阈值 95kW','ACTIVE',1,NOW() - INTERVAL 8 MINUTE,NOW() - INTERVAL 3 MINUTE,NULL,NULL,NULL,NULL,NULL,NULL,NULL,103,1,NOW() - INTERVAL 8 MINUTE),
- (8807,'000000',8705,'RULE',18,'DEV0018',5,'fail_rate','THRESHOLD','MEDIUM','GT',5.0000,7.3000,'装配线A 相机识别失败率 7.3% 超过阈值 5%','RESOLVED',NULL,NOW() - INTERVAL 50 HOUR,NOW() - INTERVAL 49 HOUR,NOW() - INTERVAL 48 HOUR,1,'清洁镜头并重标定',NOW() - INTERVAL 47 HOUR,1,1.2000,'重新标定后失败率下降',103,1,NOW() - INTERVAL 50 HOUR),
- (8808,'000000',7001,'RULE',14,'DEV0014',1,'temperature','THRESHOLD','HIGH','GT',80.0000,96.4000,'淬火炉温度 96.4℃ 超过阈值 80℃','RESOLVED',NULL,NOW() - INTERVAL 60 HOUR,NOW() - INTERVAL 59 HOUR,NOW() - INTERVAL 58 HOUR,1,'确认工艺设定',NOW() - INTERVAL 57 HOUR,1,72.0000,'属工艺正常波动，已调整阈值',103,1,NOW() - INTERVAL 60 HOUR),
- (8809,'000000',8703,'RULE', 1,'DEV0001',4,'speed','THRESHOLD','MEDIUM','LT',500.0000,320.0000,'数控车床A 转速 320rpm 低于阈值 500rpm','RESOLVED',NULL,NOW() - INTERVAL 70 HOUR,NOW() - INTERVAL 69 HOUR,NOW() - INTERVAL 68 HOUR,1,'确认为计划停机',NOW() - INTERVAL 67 HOUR,1,1450.0000,'换刀结束已恢复',103,1,NOW() - INTERVAL 70 HOUR),
- (8810,'000000',8702,'RULE',21,'DEV0021',3,'power','THRESHOLD','HIGH','GT',95.0000,97.2000,'气密测试台功率 97.2kW 超过阈值 95kW','ACKNOWLEDGED',1,NOW() - INTERVAL 45 MINUTE,NOW() - INTERVAL 40 MINUTE,NOW() - INTERVAL 38 MINUTE,1,'已确认，等待批次结束再处理',NULL,NULL,NULL,NULL,103,1,NOW() - INTERVAL 45 MINUTE);
+ (8801,'000000',8701,'RULE', 6,'DEV0006',1,'temperature','TEMPERATURE','HIGH','GT',220.0000,235.0000,'氩弧焊工位温度 235℃ 超过阈值 220℃','ACTIVE',1,NOW() - INTERVAL 35 MINUTE,NOW() - INTERVAL 5 MINUTE,NULL,NULL,NULL,NULL,NULL,NULL,NULL,103,1,NOW() - INTERVAL 35 MINUTE),
+ (8802,'000000',8704,'RULE',13,'DEV0013',1,'temperature','TEMPERATURE','HIGH','GT',1500.0000,1582.0000,'熔炼炉温度 1582℃ 超过阈值 1500℃','ACTIVE',1,NOW() - INTERVAL 18 MINUTE,NOW() - INTERVAL 2 MINUTE,NULL,NULL,NULL,NULL,NULL,NULL,NULL,103,1,NOW() - INTERVAL 18 MINUTE),
+ (8803,'000000',8706,'RULE', 9,'DEV0009',2,'vibration','VIBRATION','LOW','GT',3.5000,4.1000,'打磨工位振动烈度 4.1 超过预警阈值 3.5','ACKNOWLEDGED',1,NOW() - INTERVAL 150 MINUTE,NOW() - INTERVAL 140 MINUTE,NOW() - INTERVAL 130 MINUTE,1,'已通知设备科现场确认，轴承待更换',NULL,NULL,NULL,NULL,103,1,NOW() - INTERVAL 150 MINUTE),
+ (8804,'000000',7002,'RULE', 5,'DEV0005',2,'vibration','VIBRATION','MEDIUM','GT',4.5000,5.2000,'磨床振动烈度 5.2 超过阈值 4.5','RESOLVED',NULL,NOW() - INTERVAL 26 HOUR,NOW() - INTERVAL 25 HOUR,NOW() - INTERVAL 24 HOUR,1,'已停机检查',NOW() - INTERVAL 23 HOUR,1,2.8000,'更换主轴轴承后恢复',103,1,NOW() - INTERVAL 26 HOUR),
+ (8805,'000000',8702,'RULE',17,'DEV0017',3,'power','OTHER','HIGH','GT',95.0000,102.5000,'SMT贴片线功率 102.5kW 超过阈值 95kW','RESOLVED',NULL,NOW() - INTERVAL 30 HOUR,NOW() - INTERVAL 29 HOUR,NOW() - INTERVAL 28 HOUR,1,'调整产线负载',NOW() - INTERVAL 27 HOUR,1,88.0000,'分流部分设备后恢复',103,1,NOW() - INTERVAL 30 HOUR),
+ (8806,'000000',8702,'RULE',20,'DEV0020',3,'power','OTHER','HIGH','GT',95.0000,99.8000,'功能测试工位功率 99.8kW 超过阈值 95kW','ACTIVE',1,NOW() - INTERVAL 8 MINUTE,NOW() - INTERVAL 3 MINUTE,NULL,NULL,NULL,NULL,NULL,NULL,NULL,103,1,NOW() - INTERVAL 8 MINUTE),
+ (8807,'000000',8705,'RULE',18,'DEV0018',5,'fail_rate','OTHER','MEDIUM','GT',5.0000,7.3000,'装配线A 相机识别失败率 7.3% 超过阈值 5%','RESOLVED',NULL,NOW() - INTERVAL 50 HOUR,NOW() - INTERVAL 49 HOUR,NOW() - INTERVAL 48 HOUR,1,'清洁镜头并重标定',NOW() - INTERVAL 47 HOUR,1,1.2000,'重新标定后失败率下降',103,1,NOW() - INTERVAL 50 HOUR),
+ (8808,'000000',7001,'RULE',14,'DEV0014',1,'temperature','TEMPERATURE','HIGH','GT',80.0000,96.4000,'淬火炉温度 96.4℃ 超过阈值 80℃','RESOLVED',NULL,NOW() - INTERVAL 60 HOUR,NOW() - INTERVAL 59 HOUR,NOW() - INTERVAL 58 HOUR,1,'确认工艺设定',NOW() - INTERVAL 57 HOUR,1,72.0000,'属工艺正常波动，已调整阈值',103,1,NOW() - INTERVAL 60 HOUR),
+ (8809,'000000',8703,'RULE', 1,'DEV0001',4,'speed','OTHER','MEDIUM','LT',500.0000,320.0000,'数控车床A 转速 320rpm 低于阈值 500rpm','RESOLVED',NULL,NOW() - INTERVAL 70 HOUR,NOW() - INTERVAL 69 HOUR,NOW() - INTERVAL 68 HOUR,1,'确认为计划停机',NOW() - INTERVAL 67 HOUR,1,1450.0000,'换刀结束已恢复',103,1,NOW() - INTERVAL 70 HOUR),
+ (8810,'000000',8702,'RULE',21,'DEV0021',3,'power','OTHER','HIGH','GT',95.0000,97.2000,'气密测试台功率 97.2kW 超过阈值 95kW','ACKNOWLEDGED',1,NOW() - INTERVAL 45 MINUTE,NOW() - INTERVAL 40 MINUTE,NOW() - INTERVAL 38 MINUTE,1,'已确认，等待批次结束再处理',NULL,NULL,NULL,NULL,103,1,NOW() - INTERVAL 45 MINUTE);
 
 -- =============================================================================
 -- 11. 告警通知留痕
@@ -203,17 +260,20 @@ INSERT IGNORE INTO `iot_alert_notify_log`
  (8901,'000000',8801,'SSE','在线用户','SUCCESS','已推送至在线运维看板',103,1,NOW() - INTERVAL 35 MINUTE),
  (8902,'000000',8801,'MES_ANDON','焊接车间看板','SUCCESS','已生成安灯呼叫',103,1,NOW() - INTERVAL 35 MINUTE),
  (8903,'000000',8802,'SSE','在线用户','SUCCESS','已推送至在线运维看板',103,1,NOW() - INTERVAL 18 MINUTE),
- (8904,'000000',8802,'MES_ANDON','铸造车间看板','SUCCESS','已生成安灯呼叫(CRITICAL)',103,1,NOW() - INTERVAL 18 MINUTE),
+ (8904,'000000',8802,'MES_ANDON','铸造车间看板','SUCCESS','已生成安灯呼叫(最高级别)',103,1,NOW() - INTERVAL 18 MINUTE),
  (8905,'000000',8803,'SSE','在线用户','SUCCESS','已推送至在线运维看板',103,1,NOW() - INTERVAL 150 MINUTE),
  (8906,'000000',8804,'SSE','在线用户','SUCCESS','已推送至在线运维看板',103,1,NOW() - INTERVAL 26 HOUR),
  (8907,'000000',8805,'SSE','在线用户','SUCCESS','已推送至在线运维看板',103,1,NOW() - INTERVAL 30 HOUR),
- (8908,'000000',8805,'EMAIL','device-team@example.com','FAILED','邮件网关连接超时，未送达',103,1,NOW() - INTERVAL 30 HOUR),
+ (8908,'000000',8805,'MES_ANDON',NULL,'FAILED','联动失败：MES 安灯服务不可达',103,1,NOW() - INTERVAL 30 HOUR),
  (8909,'000000',8806,'SSE','在线用户','SUCCESS','已推送至在线运维看板',103,1,NOW() - INTERVAL 8 MINUTE),
- (8910,'000000',8806,'EMAIL','device-team@example.com','FAILED','邮件网关连接超时，未送达',103,1,NOW() - INTERVAL 8 MINUTE),
+ (8910,'000000',8806,'MES_ANDON',NULL,'FAILED','联动失败：MES 安灯服务不可达',103,1,NOW() - INTERVAL 8 MINUTE),
  (8911,'000000',8807,'SSE','在线用户','SUCCESS','已推送至在线运维看板',103,1,NOW() - INTERVAL 50 HOUR),
  (8912,'000000',8808,'SSE','在线用户','SUCCESS','已推送至在线运维看板',103,1,NOW() - INTERVAL 60 HOUR),
  (8913,'000000',8809,'SSE','在线用户','SUCCESS','已推送至在线运维看板',103,1,NOW() - INTERVAL 70 HOUR),
- (8914,'000000',8810,'SSE','在线用户','SUCCESS','已推送至在线运维看板',103,1,NOW() - INTERVAL 45 MINUTE);
+ (8914,'000000',8810,'SSE','在线用户','SUCCESS','已推送至在线运维看板',103,1,NOW() - INTERVAL 45 MINUTE),
+ -- SKIPPED 态（无同租户在线用户时告警仍已落库，留痕说明"待查"，不是丢失）
+ (8915,'000000',8810,'SSE',NULL,'SKIPPED','无同租户在线用户，告警已落库待查',103,1,NOW() - INTERVAL 44 MINUTE),
+ (8916,'000000',8803,'MES_ANDON',NULL,'SKIPPED','MES 未接入或无安灯实现',103,1,NOW() - INTERVAL 150 MINUTE);
 
 -- =============================================================================
 -- 12. 设备事件（覆盖 PENDING/PROCESSED/IGNORED/FAILED；uk_source_msg_id 唯一）
@@ -350,7 +410,7 @@ UPDATE `iot_device` SET `connection_status` = 'ONLINE', `last_online_time` = NOW
 -- DELETE FROM `iot_forward_log`       WHERE `log_id`    BETWEEN 9301 AND 9310;
 -- DELETE FROM `iot_forward_rule`      WHERE `rule_id`   BETWEEN 9201 AND 9203;
 -- DELETE FROM `iot_device_event`      WHERE `event_id`  BETWEEN 9001 AND 9012;
--- DELETE FROM `iot_alert_notify_log`  WHERE `log_id`    BETWEEN 8901 AND 8914;
+-- DELETE FROM `iot_alert_notify_log`  WHERE `log_id`    BETWEEN 8901 AND 8916;
 -- DELETE FROM `iot_alert_record`      WHERE `alert_id`  BETWEEN 8801 AND 8810;
 -- DELETE FROM `iot_alert_rule`        WHERE `rule_id`   BETWEEN 8701 AND 8706;
 -- DELETE FROM `iot_ota_task`          WHERE `task_id`   BETWEEN 8601 AND 8613;
