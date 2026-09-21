@@ -11,7 +11,6 @@ import com.nexus.erp.wm.service.IWmStockAlertService;
 import com.nexus.system.domain.SysTenant;
 import com.nexus.system.mapper.SysTenantMapper;
 import org.springframework.stereotype.Component;
-import com.baomidou.dynamic.datasource.annotation.DS;
 
 import java.util.List;
 
@@ -20,12 +19,17 @@ import java.util.List;
  * 定期扫描物料库存，当库存低于安全库存或最低库存时自动生成预警记录
  * <p>任务线程无登录态，需遍历所有租户并在 TenantHelper.dynamic 下执行，否则仅默认租户物料生成预警。</p>
  *
+ * <p><b>切勿在本类上加 {@code @DS("erp")}（2026-09-21 回归修复）</b>：{@code sys_tenant} 只建在
+ * ry-vue(master) 库，类级 {@code @DS("erp")} 会让下面的 {@code sysTenantMapper} 查询打到 ry-erp，
+ * 抛 {@code Table 'ry-erp.sys_tenant' doesn't exist} 并被下方 catch 吞成 failure —— 租户循环
+ * 永不执行，任务静默失效。erp 侧读写由 {@link IWmStockAlertService} 实现类自身的
+ * {@code @DS("erp")} 提供，本类必须走默认(master)数据源。</p>
+ *
  * @author nexus
  */
 @Component
 @RequiredArgsConstructor
 @JobExecutor(name = "stockAlertTask")
-@DS("erp")
 public class StockAlertTask {
 
     /**

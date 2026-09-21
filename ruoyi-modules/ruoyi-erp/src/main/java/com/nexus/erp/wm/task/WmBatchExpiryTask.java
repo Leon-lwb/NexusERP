@@ -14,7 +14,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import com.baomidou.dynamic.datasource.annotation.DS;
 
 import java.util.List;
 
@@ -26,12 +25,16 @@ import java.util.List;
  * <p>任务线程无登录态，需遍历所有租户并在 {@code TenantHelper.dynamic} 下执行，
  * 否则仅默认租户批次被标记（与 {@code StockAlertTask} 同款写法）。</p>
  *
+ * <p><b>切勿在本类上加 {@code @DS("erp")}（2026-09-21 回归修复）</b>：{@code sys_tenant} 只建在
+ * ry-vue(master) 库，类级 {@code @DS("erp")} 会让 {@code sysTenantMapper} 查询打到 ry-erp 报
+ * {@code Table 'ry-erp.sys_tenant' doesn't exist}，被 catch 吞成 failure、租户循环永不执行。
+ * erp 侧读写由 {@link IWmBatchService} 实现类自身的 {@code @DS("erp")} 提供。</p>
+ *
  * @author nexus
  */
 @Component
 @RequiredArgsConstructor
 @JobExecutor(name = "wmBatchExpiryTask")
-@DS("erp")
 public class WmBatchExpiryTask {
 
     /**
