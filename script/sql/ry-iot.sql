@@ -116,7 +116,7 @@ CREATE TABLE `iot_product`  (
   `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '000000' COMMENT '租户ID',
   `product_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT '产品编码',
   `product_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT '产品名称',
-  `product_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'DEVICE' COMMENT '产品类型: DEVICE/GATEWAY',
+  `product_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'DEVICE' COMMENT '产品类型: DEVICE/GATEWAY/SENSOR/METER/CAMERA(与 product_type 字典一致)',
   `protocol_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'MQTT' COMMENT '协议类型: MQTT/OPC_UA/MODBUS/HTTP',
   `description` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '描述',
   `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'ACTIVE' COMMENT '状态: ACTIVE/INACTIVE',
@@ -135,11 +135,11 @@ CREATE TABLE `iot_product`  (
 -- ----------------------------
 -- Records of iot_product
 -- ----------------------------
-INSERT INTO `iot_product` VALUES (1, '000000', 'TEMP-SENSOR', '温度传感器模组', 'SENSOR', 'MQTT', '温度传感器模组 数据采集模板', '1', NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `iot_product` VALUES (2, '000000', 'VIB-SENSOR', '振动传感器模组', 'SENSOR', 'MQTT', '振动传感器模组 数据采集模板', '1', NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `iot_product` VALUES (3, '000000', 'POWER-METER', '电能表模组', 'METER', 'MQTT', '电能表模组 数据采集模板', '1', NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `iot_product` VALUES (4, '000000', 'SPEED-SENSOR', '转速传感器模组', 'SENSOR', 'MQTT', '转速传感器模组 数据采集模板', '1', NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
-INSERT INTO `iot_product` VALUES (5, '000000', 'VISION-CAM', '工业视觉相机', 'CAMERA', 'HTTP', '工业视觉相机 数据采集模板', '1', NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `iot_product` VALUES (1, '000000', 'TEMP-SENSOR', '温度传感器模组', 'SENSOR', 'MQTT', '温度传感器模组 数据采集模板', 'ACTIVE', NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `iot_product` VALUES (2, '000000', 'VIB-SENSOR', '振动传感器模组', 'SENSOR', 'MQTT', '振动传感器模组 数据采集模板', 'ACTIVE', NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `iot_product` VALUES (3, '000000', 'POWER-METER', '电能表模组', 'METER', 'MQTT', '电能表模组 数据采集模板', 'ACTIVE', NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `iot_product` VALUES (4, '000000', 'SPEED-SENSOR', '转速传感器模组', 'SENSOR', 'MQTT', '转速传感器模组 数据采集模板', 'ACTIVE', NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
+INSERT INTO `iot_product` VALUES (5, '000000', 'VISION-CAM', '工业视觉相机', 'CAMERA', 'HTTP', '工业视觉相机 数据采集模板', 'ACTIVE', NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
 
 -- ----------------------------
 -- Table structure for iot_alert_rule

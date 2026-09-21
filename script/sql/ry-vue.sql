@@ -90352,6 +90352,9 @@ INSERT INTO `sys_dict_data` VALUES (600141, '000000', 2, '本地工具', 'LOCAL'
 INSERT INTO `sys_dict_data` VALUES (600142, '000000', 3, '远程工具', 'REMOTE', 'ai_tool_type', '', 'warning', 'N', 103, 1, '2026-06-13 14:00:00', NULL, NULL, 'HTTP/SSE 方式的远程 MCP 工具');
 INSERT INTO `sys_dict_data` VALUES (600200, '000000', 1, '直连设备', 'DEVICE', 'product_type', '', 'primary', 'N', 103, 1, '2026-06-18 15:46:42', NULL, NULL, '直连设备');
 INSERT INTO `sys_dict_data` VALUES (600201, '000000', 2, '网关', 'GATEWAY', 'product_type', '', 'success', 'N', 103, 1, '2026-06-18 15:46:42', NULL, NULL, '网关设备');
+INSERT INTO `sys_dict_data` VALUES (600280, '000000', 3, '传感器', 'SENSOR', 'product_type', '', 'primary', 'N', 103, 1, '2026-09-21 00:00:00', NULL, NULL, 'IoT产品类型: 传感器类采集模组');
+INSERT INTO `sys_dict_data` VALUES (600281, '000000', 4, '仪表', 'METER', 'product_type', '', 'success', 'N', 103, 1, '2026-09-21 00:00:00', NULL, NULL, 'IoT产品类型: 电能表等计量仪表');
+INSERT INTO `sys_dict_data` VALUES (600282, '000000', 5, '相机', 'CAMERA', 'product_type', '', 'warning', 'N', 103, 1, '2026-09-21 00:00:00', NULL, NULL, 'IoT产品类型: 工业视觉相机');
 INSERT INTO `sys_dict_data` VALUES (600202, '000000', 1, 'MQTT', 'MQTT', 'iot_protocol_type', '', 'primary', 'N', 103, 1, '2026-06-18 15:46:42', NULL, NULL, 'MQTT协议');
 INSERT INTO `sys_dict_data` VALUES (600203, '000000', 2, 'OPC UA', 'OPC_UA', 'iot_protocol_type', '', 'success', 'N', 103, 1, '2026-06-18 15:46:42', NULL, NULL, 'OPC UA协议');
 INSERT INTO `sys_dict_type` VALUES (600204, '000000', 'IoT事件级别', 'iot_event_level', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'IoT设备事件级别: INFO/WARN/ERROR/CRITICAL');
