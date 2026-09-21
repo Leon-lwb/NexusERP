@@ -10056,47 +10056,15 @@ INSERT INTO `sj_job` VALUES (201, 'dev', 'biz_201', 'ruoyi_group', '设备OEE日
 INSERT INTO `sj_job` VALUES (202, 'dev', 'biz_202', 'ruoyi_group', '设备健康度日评任务', NULL, 1, UNIX_TIMESTAMP(NOW()) * 1000, 1, 1, 4, 1, 'equipmentHealthTask', 3, '0 0 7 * * ?', 1, 300, 3, 1, 60, 116, 0, '', 1, '{}', 'MES-EQ-02 补种: 每日07:00评估全部关联IoT设备健康度, LOW级触发EQUIPMENT安灯', '', 0, '2026-09-20 00:00:00', '2026-09-20 00:00:00');
 INSERT INTO `sj_job` VALUES (205, 'dev', 'biz_203', 'ruoyi_group', '工装校准/保养到期扫描任务', NULL, 1, UNIX_TIMESTAMP(NOW()) * 1000, 1, 1, 4, 1, 'tgMaintenanceDueTask', 3, '0 30 8 * * ?', 1, 300, 3, 1, 60, 116, 0, '', 1, '{}', 'MES-TG-05 补种: 每日08:30扫描工装校准(next_calibration_date)/保养(计划阈值)到期, 分级+限频后SSE提醒', '', 0, '2026-09-20 00:00:00', '2026-09-20 00:00:00');
 INSERT INTO `sj_job` VALUES (30, 'dev', 'biz_30', 'ruoyi_group', 'MES备件ERP过账对账任务', '', 1, UNIX_TIMESTAMP(NOW()) * 1000, 1, 1, 4, 1, 'eqSpareErpSyncTask', 3, '0 */10 * * * ?', 1, 300, 3, 1, 60, 116, 0, '', 1, '{}', 'MES-EQ-04 收口: 每10分钟扫描 eq_spare_erp_sync 中 PENDING/SENT/FAILED 且停滞的记录, 先对账(ERP流水已落账则只标SYNCED)再重投; 单条失败只记WARN不中断整批', '', 0, '2026-09-20 00:00:00', '2026-09-20 00:00:00');
-INSERT INTO `sj_job_executor` VALUES (46, 'dev', 'ruoyi_group', 'eqSpareErpSyncTask', '1', '2026-09-20 00:00:00', '2026-09-20 00:00:00');
+-- ERP-WM-06 补种(2026-09-21): 该任务此前只有 @Scheduled 兜底、缺 sj_job 定义 —— snail-job.enabled=true
+-- 时 SchedulerFallbackUtils 主动让位且 SnailJob 无此任务定义 → 两边都不跑, 批次效期标记永不执行
+INSERT INTO `sj_job` VALUES (206, 'dev', 'biz_206', 'ruoyi_group', '批次效期过期标记任务', '', 1, UNIX_TIMESTAMP(NOW()) * 1000, 1, 1, 4, 1, 'wmBatchExpiryTask', 3, '0 30 1 * * ?', 1, 300, 3, 1, 60, 122, 0, '', 1, '{}', 'ERP-WM-06 补种: 每日01:30把 ACTIVE 且 expiry_date < now 的批次置 EXPIRED(幂等条件更新, 无需推进游标)', '', 0, '2026-09-21 00:00:00', '2026-09-21 00:00:00');
 
-INSERT INTO `sj_job`
-(`namespace_id`, `biz_id`, `group_name`, `job_name`, `args_str`, `args_type`, `next_trigger_at`,
- `job_status`, `task_type`, `route_key`, `executor_type`, `executor_info`, `trigger_type`, `trigger_interval`,
- `block_strategy`, `executor_timeout`, `max_retry_times`, `parallel_num`, `retry_interval`, `bucket_index`,
- `resident`, `notify_ids`, `owner_id`, `labels`, `description`, `ext_attrs`, `deleted`)
-VALUES
-('dev', 'biz_203', 'ruoyi_group', '工装校准/保养到期扫描任务', NULL, 1, UNIX_TIMESTAMP(NOW()) * 1000,
- 1, 1, 4, 1, 'tgMaintenanceDueTask', 3, '0 30 8 * * ?',
- 1, 300, 3, 1, 60, 116,
- 0, '', 1, '{}',
- 'MES-TG-05 补种: 每日08:30扫描工装校准(next_calibration_date)/保养(计划阈值)到期, 分级+限频后SSE提醒', '', 0);
 
-INSERT INTO `sj_job`
-(`namespace_id`, `biz_id`, `group_name`, `job_name`, `args_str`, `args_type`, `next_trigger_at`,
- `job_status`, `task_type`, `route_key`, `executor_type`, `executor_info`, `trigger_type`, `trigger_interval`,
- `block_strategy`, `executor_timeout`, `max_retry_times`, `parallel_num`, `retry_interval`, `bucket_index`,
- `resident`, `notify_ids`, `owner_id`, `labels`, `description`, `ext_attrs`, `deleted`)
-VALUES
-('dev', 'biz_201', 'ruoyi_group', '设备OEE日聚合任务', NULL, 1, UNIX_TIMESTAMP(NOW()) * 1000,
- 1, 1, 4, 1, 'oeeAggregateTask', 3, '0 0 1 * * ?',
- 1, 300, 3, 1, 60, 116,
- 0, '', 1, '{}',
- 'MES-EQ-02 补种: 每日01:00聚合前一天设备OEE写入 eq_oee_record(租户+设备+stat_date 唯一, 幂等可重跑)', '', 0);
 
-INSERT INTO `sj_job`
-(`namespace_id`, `biz_id`, `group_name`, `job_name`, `args_str`, `args_type`, `next_trigger_at`,
- `job_status`, `task_type`, `route_key`, `executor_type`, `executor_info`, `trigger_type`, `trigger_interval`,
- `block_strategy`, `executor_timeout`, `max_retry_times`, `parallel_num`, `retry_interval`, `bucket_index`,
- `resident`, `notify_ids`, `owner_id`, `labels`, `description`, `ext_attrs`, `deleted`)
-VALUES
-('dev', 'biz_202', 'ruoyi_group', '设备健康度日评任务', NULL, 1, UNIX_TIMESTAMP(NOW()) * 1000,
- 1, 1, 4, 1, 'equipmentHealthTask', 3, '0 0 7 * * ?',
- 1, 300, 3, 1, 60, 116,
- 0, '', 1, '{}',
- 'MES-EQ-02 补种: 每日07:00评估全部关联IoT设备健康度, LOW级触发EQUIPMENT安灯', '', 0);
 INSERT INTO `sj_job` VALUES (4, 'dev', 'biz_4', 'ruoyi_group', 'IoT设备数据清理任务', '', 1, 1781715600000, 1, 1, 4, 1, 'iotDataCleanupTask', 3, '0 0 2 * * ?', 1, 60, 3, 1, 1, 50, 0, '', 1, '{}', '', '', 0, '2026-06-18 17:32:23', '2026-09-14 13:18:12');
 INSERT INTO `sj_job` VALUES (5, 'dev', 'biz_5', 'ruoyi_group', 'IoT设备心跳检测任务', '', 1, 1781715600000, 1, 1, 4, 1, 'iotDeviceHeartbeatTask', 3, '0 */5 * * * ?', 1, 60, 3, 1, 1, 51, 0, '', 1, '{}', '', '', 0, '2026-06-18 17:32:23', '2026-09-14 13:18:12');
 INSERT INTO `sj_job` VALUES (29, 'dev', 'biz_29', 'ruoyi_group', 'IoT OTA升级超时检测任务', '', 1, 1789405200000, 1, 1, 4, 1, 'iotOtaTimeoutTask', 3, '0 */5 * * * ?', 1, 60, 3, 1, 1, 51, 0, '', 1, '{}', '', '', 0, '2026-09-20 00:00:00', '2026-09-20 00:00:00');
-INSERT INTO `sj_job_executor` VALUES (45, 'dev', 'ruoyi_group', 'iotOtaTimeoutTask', '1', '2026-09-20 00:00:00', '2026-09-20 00:00:00');
 INSERT INTO `sj_job` VALUES (6, 'dev', 'biz_6', 'ruoyi_group', 'IoT Stream修剪任务', '', 1, 1781715600000, 1, 1, 4, 1, 'iotStreamTrimTask', 3, '0 0 * * * ?', 1, 60, 3, 1, 1, 52, 0, '', 1, '{}', '', '', 0, '2026-06-18 17:32:23', '2026-09-14 13:18:12');
 INSERT INTO `sj_job` VALUES (7, 'dev', 'biz_7', 'ruoyi_group', 'IoT数据自动归档任务', NULL, 1, 1789380600000, 1, 1, 4, 1, 'iotDataArchiveTask', 3, '0 */5 * * * ?', 1, 300, 3, 1, 60, 121, 0, '', 1, '{}', 'IoT自动采集数据归档到 dc_data_record，每5分钟执行一次（拉取6分钟窗口，uk_point_collect_time 去重）', '', 0, '2026-06-26 21:56:01', '2026-09-14 18:04:52');
 INSERT INTO `sj_job` VALUES (8, 'dev', 'biz_8', 'ruoyi_group', '设备保养到期提醒任务', NULL, 1, 1789430400000, 1, 1, 4, 1, 'maintenanceDueTask', 3, '0 0 8 * * ?', 1, 300, 3, 1, 60, 122, 0, '', 1, '{}', '扫描 eq_maintenance_plan 中 next_date<=today 的到期计划, 触发 SSE 推送+EQUIPMENT 安灯(每计划24h限频)', '', 0, '2026-06-27 00:23:54', '2026-09-14 13:18:12');
@@ -10191,6 +10159,7 @@ INSERT INTO `sj_job_executor` VALUES (43, 'dev', 'ruoyi_group', 'equipmentHealth
 INSERT INTO `sj_job_executor` VALUES (44, 'dev', 'ruoyi_group', 'mqSmokeSendTask', '1', '2026-09-06 11:10:24', '2026-09-06 11:10:24');
 -- 销售合同到期扫描（Q9）：每天 01:30 把 expiry_date < 今天 的 EFFECTIVE 合同置为 EXPIRED
 INSERT INTO `sj_job_executor` VALUES (200, 'dev', 'ruoyi_group', 'soContractExpiryTask', '1', '2026-09-19 20:00:00', '2026-09-19 20:00:00');
+INSERT INTO `sj_job_executor` VALUES (47, 'dev', 'ruoyi_group', 'wmBatchExpiryTask', '1', '2026-09-21 00:00:00', '2026-09-21 00:00:00');
 
 -- ----------------------------
 -- Table structure for sj_job_log_message
@@ -90250,20 +90219,14 @@ INSERT INTO `sys_dict_data` VALUES (347, '000000', 2, '已执行', 'EXECUTED', '
 INSERT INTO `sys_dict_data` VALUES (348, '000000', 1, '草稿', 'DRAFT', 'wm_stocktaking_status', '', 'info', 'N', 103, 1, '2026-05-22 00:00:00', NULL, NULL, NULL);
 
 -- ===== 2026-09-20 ERP 前端修复批次所需字典（FE-ERP-02/04）=====
-INSERT IGNORE INTO `sys_dict_type` (`dict_id`, `tenant_id`, `dict_name`, `dict_type`, `create_dept`, `create_by`, `create_time`, `remark`)
-VALUES (600240, '000000', '盘点方式', 'erp_stocktaking_count_mode', 103, 1, NOW(), '盘点计划明盘/盲盘（FE-ERP-04）');
 INSERT IGNORE INTO `sys_dict_data` (`dict_code`, `tenant_id`, `dict_sort`, `dict_label`, `dict_value`, `dict_type`, `css_class`, `list_class`, `is_default`, `create_dept`, `create_by`, `create_time`, `remark`)
 VALUES (600243, '000000', 1, '明盘', 'OPEN', 'erp_stocktaking_count_mode', '', 'primary', 'Y', 103, 1, NOW(), '账面数量对盘点人可见'),
        (600244, '000000', 2, '盲盘', 'BLIND', 'erp_stocktaking_count_mode', '', 'warning', 'N', 103, 1, NOW(), '账面数量对盘点人隐藏');
-INSERT IGNORE INTO `sys_dict_type` (`dict_id`, `tenant_id`, `dict_name`, `dict_type`, `create_dept`, `create_by`, `create_time`, `remark`)
-VALUES (600241, '000000', '生产报工状态', 'prd_work_report_status', 103, 1, NOW(), '工单报工单据状态（FE-ERP-02）');
 INSERT IGNORE INTO `sys_dict_data` (`dict_code`, `tenant_id`, `dict_sort`, `dict_label`, `dict_value`, `dict_type`, `css_class`, `list_class`, `is_default`, `create_dept`, `create_by`, `create_time`, `remark`)
 VALUES (600245, '000000', 1, '草稿', 'DRAFT', 'prd_work_report_status', '', 'info', 'Y', 103, 1, NOW(), ''),
        (600246, '000000', 2, '已提交', 'SUBMITTED', 'prd_work_report_status', '', 'warning', 'N', 103, 1, NOW(), ''),
        (600247, '000000', 3, '已审核', 'APPROVED', 'prd_work_report_status', '', 'success', 'N', 103, 1, NOW(), '审核通过时后端会回写工单累计产量'),
        (600248, '000000', 4, '已驳回', 'REJECTED', 'prd_work_report_status', '', 'danger', 'N', 103, 1, NOW(), '');
-INSERT IGNORE INTO `sys_dict_type` (`dict_id`, `tenant_id`, `dict_name`, `dict_type`, `create_dept`, `create_by`, `create_time`, `remark`)
-VALUES (600242, '000000', '报工途径', 'prd_work_report_channel', 103, 1, NOW(), '报工数据来源渠道（FE-ERP-02）');
 INSERT IGNORE INTO `sys_dict_data` (`dict_code`, `tenant_id`, `dict_sort`, `dict_label`, `dict_value`, `dict_type`, `css_class`, `list_class`, `is_default`, `create_dept`, `create_by`, `create_time`, `remark`)
 VALUES (600249, '000000', 1, 'PC 端', 'PC', 'prd_work_report_channel', '', 'primary', 'Y', 103, 1, NOW(), ''),
        (600250, '000000', 2, 'PDA 手持端', 'PDA', 'prd_work_report_channel', '', 'success', 'N', 103, 1, NOW(), ''),
@@ -90357,18 +90320,6 @@ INSERT INTO `sys_dict_data` VALUES (600281, '000000', 4, '仪表', 'METER', 'pro
 INSERT INTO `sys_dict_data` VALUES (600282, '000000', 5, '相机', 'CAMERA', 'product_type', '', 'warning', 'N', 103, 1, '2026-09-21 00:00:00', NULL, NULL, 'IoT产品类型: 工业视觉相机');
 INSERT INTO `sys_dict_data` VALUES (600202, '000000', 1, 'MQTT', 'MQTT', 'iot_protocol_type', '', 'primary', 'N', 103, 1, '2026-06-18 15:46:42', NULL, NULL, 'MQTT协议');
 INSERT INTO `sys_dict_data` VALUES (600203, '000000', 2, 'OPC UA', 'OPC_UA', 'iot_protocol_type', '', 'success', 'N', 103, 1, '2026-06-18 15:46:42', NULL, NULL, 'OPC UA协议');
-INSERT INTO `sys_dict_type` VALUES (600204, '000000', 'IoT事件级别', 'iot_event_level', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'IoT设备事件级别: INFO/WARN/ERROR/CRITICAL');
-INSERT INTO `sys_dict_type` VALUES (600205, '000000', 'IoT事件处理状态', 'iot_event_process_status', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'IoT设备事件处理状态: PENDING/PROCESSED/IGNORED/FAILED');
-INSERT INTO `sys_dict_type` VALUES (600206, '000000', 'IoT指令类型', 'iot_command_type', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'IoT下行指令类型: PROPERTY_SET/SERVICE_INVOKE');
-INSERT INTO `sys_dict_type` VALUES (600207, '000000', 'IoT指令状态', 'iot_command_status', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'IoT下行指令状态: PENDING/SENT/SUCCESS/FAILED/TIMEOUT');
-INSERT INTO `sys_dict_type` VALUES (600208, '000000', 'IoT转发投递状态', 'iot_forward_status', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'IoT数据转发投递留痕状态: PENDING/SUCCESS/FAILED');
-INSERT INTO `sys_dict_type` VALUES (600209, '000000', 'IoT固件发布状态', 'iot_firmware_status', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'IoT固件发布状态: DRAFT(草稿)/RELEASED(已发布)/DISABLED(已停用)');
-INSERT INTO `sys_dict_type` VALUES (600210, '000000', 'IoT固件校验算法', 'iot_firmware_checksum_type', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'IoT固件包校验算法: MD5/SHA256');
-INSERT INTO `sys_dict_type` VALUES (600211, '000000', 'IoT升级任务状态', 'iot_ota_status', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'IoT OTA升级任务状态: PENDING/SENT/UPGRADING/SUCCESS/FAILED/TIMEOUT/CANCELLED');
-INSERT INTO `sys_dict_type` VALUES (600212, '000000', 'DHR批记录状态', 'mes_dhr_status', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'DHR批记录状态(DRAFT/SUBMITTED/RELEASED/REJECTED/ARCHIVED)');
-INSERT INTO `sys_dict_type` VALUES (600213, '000000', 'DHR批记录分册', 'mes_dhr_section', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'DHR批记录10个固定分册编码');
-INSERT INTO `sys_dict_type` VALUES (600214, '000000', '备件退库单状态', 'mes_spare_return_status', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'MES备件退库单状态: DRAFT/CONFIRMED/CANCELLED');
-INSERT INTO `sys_dict_type` VALUES (600215, '000000', '备件退库类型', 'mes_spare_return_type', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'MES备件退库类型: REPAIR_RETURN/EXCESS_RETURN/OTHER');
 INSERT INTO `sys_dict_data` VALUES (600210, '000000', 1, '信息', 'INFO', 'iot_event_level', '', 'info', 'N', 103, 1, '2026-09-20 00:00:00', NULL, NULL, '常规信息事件');
 INSERT INTO `sys_dict_data` VALUES (600211, '000000', 2, '警告', 'WARN', 'iot_event_level', '', 'warning', 'N', 103, 1, '2026-09-20 00:00:00', NULL, NULL, '警告级事件');
 INSERT INTO `sys_dict_data` VALUES (600212, '000000', 3, '错误', 'ERROR', 'iot_event_level', '', 'danger', 'N', 103, 1, '2026-09-20 00:00:00', NULL, NULL, '错误级事件(会联动告警记录)');
@@ -90421,10 +90372,6 @@ INSERT INTO `sys_dict_data` VALUES (600276, '000000', 3, '已作废', 'CANCELLED
 INSERT INTO `sys_dict_data` VALUES (600277, '000000', 1, '维修退库', 'REPAIR_RETURN', 'mes_spare_return_type', '', 'primary', 'Y', 103, 1, '2026-09-20 00:00:00', NULL, NULL, '维修换件后剩余/拆回备件退库');
 INSERT INTO `sys_dict_data` VALUES (600278, '000000', 2, '余料退库', 'EXCESS_RETURN', 'mes_spare_return_type', '', 'success', 'N', 103, 1, '2026-09-20 00:00:00', NULL, NULL, '领用未用完退回仓库');
 INSERT INTO `sys_dict_data` VALUES (600279, '000000', 3, '其他', 'OTHER', 'mes_spare_return_type', '', 'info', 'N', 103, 1, '2026-09-20 00:00:00', NULL, NULL, '其他退库情形');
-UPDATE `sys_dict_type`
-   SET remark = 'IoT设备状态: 启用(ACTIVE)/停用(INACTIVE)/已注销(DECOMMISSIONED,终态)'
- WHERE dict_type = 'iot_device_status'
-   AND remark <> 'IoT设备状态: 启用(ACTIVE)/停用(INACTIVE)/已注销(DECOMMISSIONED,终态)';
 INSERT INTO `sys_dict_data` VALUES (600204, '000000', 3, 'Modbus', 'MODBUS', 'iot_protocol_type', '', 'warning', 'N', 103, 1, '2026-06-18 15:46:42', NULL, NULL, 'Modbus协议');
 INSERT INTO `sys_dict_data` VALUES (600205, '000000', 4, 'HTTP', 'HTTP', 'iot_protocol_type', '', 'info', 'N', 103, 1, '2026-06-18 15:46:42', NULL, NULL, 'HTTP协议');
 INSERT INTO `sys_dict_data` VALUES (600206, '000000', 1, '在线', 'ONLINE', 'iot_connection_status', '', 'success', 'N', 103, 1, '2026-06-18 15:46:42', NULL, NULL, '设备在线');
@@ -90873,8 +90820,6 @@ INSERT INTO `sys_dict_data` VALUES (2068956987053351046, '000000', 4, '已报废
 INSERT INTO `sys_dict_data` VALUES (2075000000000000002, '000000', 5, '校准中', 'CALIBRATING', 'mes_tooling_status', NULL, 'warning', 'N', 103, 1, NOW(), NULL, NULL, 'MES-TG-01 工装校准中(校准期间不可领用/进站)');
 
 -- ===== 2026-09-20 FE-3 批次字典：工装校准结果（MES-TG-01）=====
-INSERT IGNORE INTO `sys_dict_type` (`dict_id`, `tenant_id`, `dict_name`, `dict_type`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`)
-VALUES (2075000000000000010, '000000', '工装校准结果', 'mes_tooling_calibration_result', 103, 1, NOW(), NULL, NULL, 'MES-TG-01 工装校准结论(PASS/FAIL/ADJUSTED)');
 INSERT IGNORE INTO `sys_dict_data` (`dict_code`, `tenant_id`, `dict_sort`, `dict_label`, `dict_value`, `dict_type`, `css_class`, `list_class`, `is_default`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`)
 VALUES (2075000000000000011, '000000', 1, '合格', 'PASS', 'mes_tooling_calibration_result', NULL, 'success', 'Y', 103, 1, NOW(), NULL, NULL, 'MES-TG-01 校准通过(默认)'),
        (2075000000000000012, '000000', 2, '不合格', 'FAIL', 'mes_tooling_calibration_result', NULL, 'danger', 'N', 103, 1, NOW(), NULL, NULL, 'MES-TG-01 校准未通过: 下次校准日置为本次日期, 立即超期不可用'),
@@ -96033,20 +95978,20 @@ CREATE TABLE `sys_user_notification`  (
 -- ----------------------------
 -- Records of sys_user_notification
 -- ----------------------------
-INSERT INTO `sys_user_notification` VALUES (2068890023689781250, '000000', 101, 'workflow_todo', 'workflow', NULL, '流程待办通知', '流程待办通知<a href=8352dc6f-6de5-11f1-8004-00ff6700037c?taskId=835f1187-6de5-11f1-8004-00ff6700037c&businessKey=2068889177493143553&category=&processed=true>点击这个进行处理</a>', '0', NULL, 103, 1, '2026-06-22 10:53:14', 1, '2026-06-22 10:53:14', NULL), NULL);
-INSERT INTO `sys_user_notification` VALUES (2068918656345104386, '000000', 101, 'workflow_todo', 'workflow', NULL, '流程待办通知', '流程待办通知<a href=6832550e-6df5-11f1-b34c-00ff6700037c?taskId=684fef46-6df5-11f1-b34c-00ff6700037c&businessKey=2068918578570125314&category=&processed=true>点击这个进行处理</a>', '0', NULL, 103, 1, '2026-06-22 12:47:01', 1, '2026-06-22 12:47:01', NULL), NULL);
-INSERT INTO `sys_user_notification` VALUES (2071824851994071041, '000000', 101, 'workflow_todo', 'workflow', NULL, '流程待办通知', '流程待办通知，请处理', '0', NULL, 103, 1, '2026-06-30 13:15:12', 1, '2026-06-30 13:15:12', NULL), NULL);
-INSERT INTO `sys_user_notification` VALUES (2074392778932928514, '000000', 101, 'workflow_todo', 'workflow', NULL, '流程待办通知', '流程待办通知，请处理', '0', NULL, 103, 1, '2026-07-07 15:19:14', 1, '2026-07-07 15:19:14', NULL), NULL);
-INSERT INTO `sys_user_notification` VALUES (2074765446098096130, '000000', 101, 'workflow_todo', 'workflow', NULL, '流程待办通知', '流程待办通知，请处理', '0', NULL, 103, 1, '2026-07-08 16:00:04', 1, '2026-07-08 16:00:04', NULL), NULL);
-INSERT INTO `sys_user_notification` VALUES (2074785093392437249, '000000', 101, 'workflow_todo', 'workflow', NULL, '流程待办通知', '流程待办通知，请处理', '0', NULL, 103, 1, '2026-07-08 17:18:09', 1, '2026-07-08 17:18:09', NULL), NULL);
-INSERT INTO `sys_user_notification` VALUES (2075391867623510018, '000000', 101, 'workflow_todo', 'workflow', NULL, '流程待办通知', '流程待办通知，请处理', '0', NULL, 103, 1, '2026-07-10 09:29:15', 1, '2026-07-10 09:29:15', NULL), NULL);
-INSERT INTO `sys_user_notification` VALUES (2078833256534536193, '000000', 4, 'im_group', 'im_message', '2078833256412901377', '群聊 · 222', '系统管理员：@本部门及以下 密码123456 我单独@你了', '0', NULL, 103, 1, '2026-07-19 21:24:06', 1, '2026-07-19 21:24:06', NULL), NULL);
-INSERT INTO `sys_user_notification` VALUES (2078841596828340227, '000000', 4, 'im_group', 'im_message', '2078841596664762369', '群聊 · 222', '本部门及以下 密码123456：@admin 收到', '0', NULL, 108, 3, '2026-07-19 21:57:14', 3, '2026-07-19 21:57:14', NULL), NULL);
-INSERT INTO `sys_user_notification` VALUES (2080229432973262850, '000000', 101, 'workflow_todo', 'workflow', NULL, '流程待办通知', '流程待办通知，请处理', '0', NULL, 103, 1, '2026-07-23 17:52:00', 1, '2026-07-23 17:52:00', NULL), NULL);
-INSERT INTO `sys_user_notification` VALUES (2088890075231289345, '000000', 1, 'workflow_notice', 'workflow', NULL, '流程任务结束通知', '流程任务结束通知，请点击查看', '1', NULL, 103, 1, '2026-08-16 15:26:18', 1, '2026-08-29 14:33:51', NULL), NULL);
-INSERT INTO `sys_user_notification` VALUES (2089704730375766018, '000000', 1, 'workflow_notice', 'workflow', NULL, '流程任务结束通知', '流程任务结束通知，请点击查看', '1', NULL, 103, 1, '2026-08-18 21:23:27', 1, '2026-08-29 14:33:51', NULL), NULL);
-INSERT INTO `sys_user_notification` VALUES (2091905856923783171, '000000', 3, 'im_private', 'im_message', '2091905856923783170', '私聊 · 系统管理员', 'http://159.75.14.226:9005/ruoyi/2026/08/24/57903b8e894343859255f9805d654a2d.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20260824T150956Z&X-Amz-SignedHeaders=host&X-Amz-Credential=minio%2F20260824%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Expires=120&X-Amz-Signature=e860d0daefffe3ce9ecf04abf17943aa914e3684bb71d305ace4921c99c17720', '0', NULL, 103, 1, '2026-08-24 23:09:57', 1, '2026-08-24 23:09:57', NULL), NULL);
-INSERT INTO `sys_user_notification` VALUES (2091905987337277442, '000000', 3, 'im_friend_request', 'friend_request', '1', '系统管理员 请求添加您为好友', '请求添加您为好友', '0', '{\"status\":\"sent\",\"fromUserId\":1}', 103, 1, '2026-08-24 23:10:28', 1, '2026-08-24 23:10:28', NULL), NULL);
+INSERT INTO `sys_user_notification` VALUES (2068890023689781250, '000000', 101, 'workflow_todo', 'workflow', NULL, '流程待办通知', '流程待办通知<a href=8352dc6f-6de5-11f1-8004-00ff6700037c?taskId=835f1187-6de5-11f1-8004-00ff6700037c&businessKey=2068889177493143553&category=&processed=true>点击这个进行处理</a>', '0', NULL, 103, 1, '2026-06-22 10:53:14', 1, '2026-06-22 10:53:14', NULL, NULL);
+INSERT INTO `sys_user_notification` VALUES (2068918656345104386, '000000', 101, 'workflow_todo', 'workflow', NULL, '流程待办通知', '流程待办通知<a href=6832550e-6df5-11f1-b34c-00ff6700037c?taskId=684fef46-6df5-11f1-b34c-00ff6700037c&businessKey=2068918578570125314&category=&processed=true>点击这个进行处理</a>', '0', NULL, 103, 1, '2026-06-22 12:47:01', 1, '2026-06-22 12:47:01', NULL, NULL);
+INSERT INTO `sys_user_notification` VALUES (2071824851994071041, '000000', 101, 'workflow_todo', 'workflow', NULL, '流程待办通知', '流程待办通知，请处理', '0', NULL, 103, 1, '2026-06-30 13:15:12', 1, '2026-06-30 13:15:12', NULL, NULL);
+INSERT INTO `sys_user_notification` VALUES (2074392778932928514, '000000', 101, 'workflow_todo', 'workflow', NULL, '流程待办通知', '流程待办通知，请处理', '0', NULL, 103, 1, '2026-07-07 15:19:14', 1, '2026-07-07 15:19:14', NULL, NULL);
+INSERT INTO `sys_user_notification` VALUES (2074765446098096130, '000000', 101, 'workflow_todo', 'workflow', NULL, '流程待办通知', '流程待办通知，请处理', '0', NULL, 103, 1, '2026-07-08 16:00:04', 1, '2026-07-08 16:00:04', NULL, NULL);
+INSERT INTO `sys_user_notification` VALUES (2074785093392437249, '000000', 101, 'workflow_todo', 'workflow', NULL, '流程待办通知', '流程待办通知，请处理', '0', NULL, 103, 1, '2026-07-08 17:18:09', 1, '2026-07-08 17:18:09', NULL, NULL);
+INSERT INTO `sys_user_notification` VALUES (2075391867623510018, '000000', 101, 'workflow_todo', 'workflow', NULL, '流程待办通知', '流程待办通知，请处理', '0', NULL, 103, 1, '2026-07-10 09:29:15', 1, '2026-07-10 09:29:15', NULL, NULL);
+INSERT INTO `sys_user_notification` VALUES (2078833256534536193, '000000', 4, 'im_group', 'im_message', '2078833256412901377', '群聊 · 222', '系统管理员：@本部门及以下 密码123456 我单独@你了', '0', NULL, 103, 1, '2026-07-19 21:24:06', 1, '2026-07-19 21:24:06', NULL, NULL);
+INSERT INTO `sys_user_notification` VALUES (2078841596828340227, '000000', 4, 'im_group', 'im_message', '2078841596664762369', '群聊 · 222', '本部门及以下 密码123456：@admin 收到', '0', NULL, 108, 3, '2026-07-19 21:57:14', 3, '2026-07-19 21:57:14', NULL, NULL);
+INSERT INTO `sys_user_notification` VALUES (2080229432973262850, '000000', 101, 'workflow_todo', 'workflow', NULL, '流程待办通知', '流程待办通知，请处理', '0', NULL, 103, 1, '2026-07-23 17:52:00', 1, '2026-07-23 17:52:00', NULL, NULL);
+INSERT INTO `sys_user_notification` VALUES (2088890075231289345, '000000', 1, 'workflow_notice', 'workflow', NULL, '流程任务结束通知', '流程任务结束通知，请点击查看', '1', NULL, 103, 1, '2026-08-16 15:26:18', 1, '2026-08-29 14:33:51', NULL, NULL);
+INSERT INTO `sys_user_notification` VALUES (2089704730375766018, '000000', 1, 'workflow_notice', 'workflow', NULL, '流程任务结束通知', '流程任务结束通知，请点击查看', '1', NULL, 103, 1, '2026-08-18 21:23:27', 1, '2026-08-29 14:33:51', NULL, NULL);
+INSERT INTO `sys_user_notification` VALUES (2091905856923783171, '000000', 3, 'im_private', 'im_message', '2091905856923783170', '私聊 · 系统管理员', 'http://159.75.14.226:9005/ruoyi/2026/08/24/57903b8e894343859255f9805d654a2d.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20260824T150956Z&X-Amz-SignedHeaders=host&X-Amz-Credential=minio%2F20260824%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Expires=120&X-Amz-Signature=e860d0daefffe3ce9ecf04abf17943aa914e3684bb71d305ace4921c99c17720', '0', NULL, 103, 1, '2026-08-24 23:09:57', 1, '2026-08-24 23:09:57', NULL, NULL);
+INSERT INTO `sys_user_notification` VALUES (2091905987337277442, '000000', 3, 'im_friend_request', 'friend_request', '1', '系统管理员 请求添加您为好友', '请求添加您为好友', '0', '{\"status\":\"sent\",\"fromUserId\":1}', 103, 1, '2026-08-24 23:10:28', 1, '2026-08-24 23:10:28', NULL, NULL);
 
 -- ----------------------------
 -- Table structure for sys_user_post
@@ -97058,3 +97003,37 @@ INSERT IGNORE INTO `sys_role_menu` (`role_id`, `menu_id`) SELECT DISTINCT rm.`ro
 -- 2026-09-20 兼容授权：IoT OTA/固件 + MES 备件采购申请 菜单（幂等）
 INSERT IGNORE INTO `sys_role_menu` (`role_id`, `menu_id`) SELECT DISTINCT rm.`role_id`, m.`menu_id` FROM `sys_role_menu` rm JOIN `sys_menu` m ON m.`parent_id` IN (6000,6157,6158) WHERE rm.`menu_id` = 6000;
 INSERT IGNORE INTO `sys_role_menu` (`role_id`, `menu_id`) SELECT DISTINCT rm.`role_id`, 4128 FROM `sys_role_menu` rm WHERE rm.`menu_id` = 2053846181246812173;
+
+-- ----------------------------------------------------------------------------
+-- 2026-09-21 修复：以下语句原先被合并到 sys_dict_data / sj_job 记录区，位于其依赖表
+-- （sys_dict_type / sj_job_executor）的建表语句之前，全新安装时必然报
+-- ERROR 1146 Table ... doesn't exist 而中断导入。统一移到文件末尾（所有建表之后）执行；
+-- 语句本身均为幂等（INSERT IGNORE / 条件 UPDATE），重复执行安全。
+-- ----------------------------------------------------------------------------
+INSERT INTO `sj_job_executor` VALUES (46, 'dev', 'ruoyi_group', 'eqSpareErpSyncTask', '1', '2026-09-20 00:00:00', '2026-09-20 00:00:00');
+INSERT INTO `sj_job_executor` VALUES (45, 'dev', 'ruoyi_group', 'iotOtaTimeoutTask', '1', '2026-09-20 00:00:00', '2026-09-20 00:00:00');
+INSERT IGNORE INTO `sys_dict_type` (`dict_id`, `tenant_id`, `dict_name`, `dict_type`, `create_dept`, `create_by`, `create_time`, `remark`)
+VALUES (600240, '000000', '盘点方式', 'erp_stocktaking_count_mode', 103, 1, NOW(), '盘点计划明盘/盲盘（FE-ERP-04）');
+INSERT IGNORE INTO `sys_dict_type` (`dict_id`, `tenant_id`, `dict_name`, `dict_type`, `create_dept`, `create_by`, `create_time`, `remark`)
+VALUES (600241, '000000', '生产报工状态', 'prd_work_report_status', 103, 1, NOW(), '工单报工单据状态（FE-ERP-02）');
+INSERT IGNORE INTO `sys_dict_type` (`dict_id`, `tenant_id`, `dict_name`, `dict_type`, `create_dept`, `create_by`, `create_time`, `remark`)
+VALUES (600242, '000000', '报工途径', 'prd_work_report_channel', 103, 1, NOW(), '报工数据来源渠道（FE-ERP-02）');
+INSERT INTO `sys_dict_type` VALUES (600204, '000000', 'IoT事件级别', 'iot_event_level', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'IoT设备事件级别: INFO/WARN/ERROR/CRITICAL');
+INSERT INTO `sys_dict_type` VALUES (600205, '000000', 'IoT事件处理状态', 'iot_event_process_status', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'IoT设备事件处理状态: PENDING/PROCESSED/IGNORED/FAILED');
+INSERT INTO `sys_dict_type` VALUES (600206, '000000', 'IoT指令类型', 'iot_command_type', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'IoT下行指令类型: PROPERTY_SET/SERVICE_INVOKE');
+INSERT INTO `sys_dict_type` VALUES (600207, '000000', 'IoT指令状态', 'iot_command_status', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'IoT下行指令状态: PENDING/SENT/SUCCESS/FAILED/TIMEOUT');
+INSERT INTO `sys_dict_type` VALUES (600208, '000000', 'IoT转发投递状态', 'iot_forward_status', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'IoT数据转发投递留痕状态: PENDING/SUCCESS/FAILED');
+INSERT INTO `sys_dict_type` VALUES (600209, '000000', 'IoT固件发布状态', 'iot_firmware_status', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'IoT固件发布状态: DRAFT(草稿)/RELEASED(已发布)/DISABLED(已停用)');
+INSERT INTO `sys_dict_type` VALUES (600210, '000000', 'IoT固件校验算法', 'iot_firmware_checksum_type', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'IoT固件包校验算法: MD5/SHA256');
+INSERT INTO `sys_dict_type` VALUES (600211, '000000', 'IoT升级任务状态', 'iot_ota_status', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'IoT OTA升级任务状态: PENDING/SENT/UPGRADING/SUCCESS/FAILED/TIMEOUT/CANCELLED');
+INSERT INTO `sys_dict_type` VALUES (600212, '000000', 'DHR批记录状态', 'mes_dhr_status', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'DHR批记录状态(DRAFT/SUBMITTED/RELEASED/REJECTED/ARCHIVED)');
+INSERT INTO `sys_dict_type` VALUES (600213, '000000', 'DHR批记录分册', 'mes_dhr_section', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'DHR批记录10个固定分册编码');
+INSERT INTO `sys_dict_type` VALUES (600214, '000000', '备件退库单状态', 'mes_spare_return_status', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'MES备件退库单状态: DRAFT/CONFIRMED/CANCELLED');
+INSERT INTO `sys_dict_type` VALUES (600215, '000000', '备件退库类型', 'mes_spare_return_type', 103, 1, '2026-09-20 00:00:00', NULL, NULL, 'MES备件退库类型: REPAIR_RETURN/EXCESS_RETURN/OTHER');
+UPDATE `sys_dict_type`
+   SET remark = 'IoT设备状态: 启用(ACTIVE)/停用(INACTIVE)/已注销(DECOMMISSIONED,终态)'
+ WHERE dict_type = 'iot_device_status'
+   AND remark <> 'IoT设备状态: 启用(ACTIVE)/停用(INACTIVE)/已注销(DECOMMISSIONED,终态)';
+INSERT IGNORE INTO `sys_dict_type` (`dict_id`, `tenant_id`, `dict_name`, `dict_type`, `create_dept`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`)
+VALUES (2075000000000000010, '000000', '工装校准结果', 'mes_tooling_calibration_result', 103, 1, NOW(), NULL, NULL, 'MES-TG-01 工装校准结论(PASS/FAIL/ADJUSTED)');
+
