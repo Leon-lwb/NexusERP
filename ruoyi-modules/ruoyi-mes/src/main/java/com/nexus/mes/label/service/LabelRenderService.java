@@ -6,11 +6,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.mes.label.domain.MesLabelTemplate;
+import com.nexus.mes.pro.domain.ProSn;
 import lombok.Data;
 import org.springframework.stereotype.Service;
 
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -68,6 +70,25 @@ public class LabelRenderService {
             ? StandardCharsets.UTF_8 : Charset.forName("GBK");
     }
 
+    /**
+     * SN 六字段值域(与模板字段绑定一一对应): 造码联动打印与人工补打共用, 避免两处字段映射漂移
+     *
+     * @param sn SN(可空, 空则全部渲染为空串)
+     */
+    public Map<String, String> snFields(ProSn sn) {
+        Map<String, String> fields = new LinkedHashMap<>(8);
+        if (sn == null) {
+            return fields;
+        }
+        fields.put("snCode", sn.getSnCode());
+        fields.put("materialCode", sn.getMaterialCode());
+        fields.put("materialName", sn.getMaterialName());
+        fields.put("woNo", sn.getWoNo());
+        fields.put("cardNo", sn.getCardNo());
+        fields.put("productionDate", sn.getProductionDate() == null ? "" : String.format("%tF", sn.getProductionDate()));
+        return fields;
+    }
+
     // ==================== TSPL ====================
 
     private String renderTspl(MesLabelTemplate t, LabelContent content, Map<String, String> fields) {
@@ -112,6 +133,9 @@ public class LabelRenderService {
         sb.append("^LL").append(nvl(t.getHeightMm(), 40) * ZPL_DOTS_PER_MM).append("\r\n");
         for (LabelItem item : content.getItems()) {
             String value = valueOf(item, fields);
+            // MES-LABEL-01: ZPL 字段值必须转义 —— ^/~ 是标签指令前缀, 物料名/工单号等自由文本可直接注入
+            // (如 "^FS^FO0,0^A0N,60,60^FDSCRAP^FS^XZ" 可截断标签、改版式、打印任意内容)
+            String safe = escapeZpl(value);
             int x = nvl(item.getX(), 0) * ZPL_DOTS_PER_MM;
             int y = nvl(item.getY(), 0) * ZPL_DOTS_PER_MM;
             switch (item.typeSafe()) {
@@ -119,17 +143,17 @@ public class LabelRenderService {
                     int size = nvl(item.getSize(), 24) * ZPL_DOTS_PER_MM / 4;
                     sb.append("^FO").append(x).append(',').append(y)
                         .append("^A0N,").append(size).append(',').append(Math.max(1, size * 4 / 5))
-                        .append("^FD").append(value).append("^FS\r\n");
+                        .append("^FD").append(safe).append("^FS\r\n");
                 }
                 case "barcode" -> {
                     int height = nvl(item.getHeight(), 48) * ZPL_DOTS_PER_MM / 4;
                     sb.append("^FO").append(x).append(',').append(y)
                         .append("^BY2,3,").append(height)
-                        .append("^BCN,").append(height).append(",Y,N,N^FD").append(value).append("^FS\r\n");
+                        .append("^BCN,").append(height).append(",Y,N,N^FD").append(safe).append("^FS\r\n");
                 }
                 case "qrcode" -> sb.append("^FO").append(x).append(',').append(y)
                     .append("^BQN,2,").append(nvl(item.getSize(), 4))
-                    .append("^FDQA,").append(value).append("^FS\r\n");
+                    .append("^FDQA,").append(safe).append("^FS\r\n");
                 default -> throw new ServiceException("未知打印项类型: " + item.getType() + "(仅支持 text/barcode/qrcode)");
             }
         }
@@ -157,9 +181,33 @@ public class LabelRenderService {
         return value == null ? "" : value;
     }
 
-    /** TSPL 字符串字面量转义(双引号与反斜杠) */
+    /** TSPL 字符串字面量转义(双引号与反斜杠; 并剥离 CR/LF 等控制字符, 否则换行会把一条指令拆成两条) */
     private String escapeTspl(String value) {
-        return value.replace("\\", "\\\\").replace("\"", "\\\"");
+        return sanitize(value).replace("\\", "\\\\").replace("\"", "\\\"");
+    }
+
+    /**
+     * ZPL 字段值转义(MES-LABEL-01): 剥离指令前缀 {@code ^} 与 {@code ~} 及 CR/LF 等控制字符,
+     * 消除"物料名/工单号含 ^FS 等指令"导致的标签指令注入(截断、改版式、~JR 复位)。
+     */
+    private String escapeZpl(String value) {
+        return sanitize(value).replace("^", "").replace("~", "");
+    }
+
+    /** 通用清洗: 去除 CR/LF/TAB 及其余 C0 控制字符与 DEL(标签指令按行解析, 换行即注入新的指令行) */
+    private String sanitize(String value) {
+        if (value == null || value.isEmpty()) {
+            return "";
+        }
+        StringBuilder sb = new StringBuilder(value.length());
+        for (int i = 0; i < value.length(); i++) {
+            char c = value.charAt(i);
+            if (c == '\r' || c == '\n' || c == '\t' || c < 0x20 || c == 0x7F) {
+                continue;
+            }
+            sb.append(c);
+        }
+        return sb.toString();
     }
 
     private int nvl(Integer v, int def) {

@@ -65,7 +65,7 @@ public class QcOqcController extends BaseController {
     @SaCheckPermission("mes:qc:oqc:add")
     @Log(title = "OQC新增", businessType = BusinessType.INSERT)
     @PostMapping
-    public R<QcOqcVo> add(@RequestBody QcOqcBo bo) {
+    public R<QcOqcVo> add(@RequestBody @Validated QcOqcBo bo) {
         return R.ok(qcOqcService.insertByBo(bo));
     }
 
@@ -88,5 +88,46 @@ public class QcOqcController extends BaseController {
                            @RequestParam(required = false) String remark) {
         qcOqcService.inspect(oqcId, inspectResult, defectInfo, sampleQty, remark);
         return R.ok();
+    }
+
+    /**
+     * 查询 OQC 检验单明细(按检验模板快照生成的检验项目)。
+     *
+     * @param oqcId OQC 检验单 ID
+     * @return 检验明细列表
+     */
+    @SaCheckPermission("mes:qc:oqc:query")
+    @GetMapping("/{oqcId}/details")
+    public R<java.util.List<com.nexus.mes.qc.domain.vo.QcInspectDetailVo>> getDetails(@PathVariable Long oqcId) {
+        return R.ok(qcOqcService.selectDetails(oqcId));
+    }
+
+    /**
+     * 按检验明细执行检验(自动判定): 录入各项目实测值, 系统比对标准自动判定
+     * 合格(QUALIFIED)/不合格(UNQUALIFIED), 判定结果走原有 NCR/MQ 回写链路。
+     *
+     * @param oqcId OQC 检验单 ID
+     * @param body  请求体: { details: [{detailId, measuredValue, sampleQty, remark}], defectInfo, remark }
+     */
+    @SaCheckPermission("mes:qc:oqc:inspect")
+    @Log(title = "OQC检验(自动判定)", businessType = BusinessType.UPDATE)
+    @PutMapping("/inspect-details/{oqcId}")
+    public R<Void> inspectWithDetails(@PathVariable Long oqcId,
+                                      @RequestBody InspectDetailsRequest body) {
+        qcOqcService.inspectWithDetails(oqcId, body.getDetails(), body.getDefectInfo(), body.getRemark());
+        return R.ok();
+    }
+
+    /**
+     * 明细检验请求体
+     */
+    @lombok.Data
+    public static class InspectDetailsRequest {
+        /** 明细实测值列表 */
+        private java.util.List<com.nexus.mes.qc.domain.bo.QcInspectEntryBo> details;
+        /** 不良品信息(JSON, 可为空) */
+        private String defectInfo;
+        /** 备注(可为空) */
+        private String remark;
     }
 }

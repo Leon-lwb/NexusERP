@@ -19,12 +19,37 @@ import java.util.List;
  * 定期扫描物料库存，当库存低于安全库存或最低库存时自动生成预警记录
  * <p>任务线程无登录态，需遍历所有租户并在 TenantHelper.dynamic 下执行，否则仅默认租户物料生成预警。</p>
  *
+ * <p><b>切勿在本类上加 {@code @DS("erp")}（2026-09-21 回归修复）</b>：{@code sys_tenant} 只建在
+ * ry-vue(master) 库，类级 {@code @DS("erp")} 会让下面的 {@code sysTenantMapper} 查询打到 ry-erp，
+ * 抛 {@code Table 'ry-erp.sys_tenant' doesn't exist} 并被下方 catch 吞成 failure —— 租户循环
+ * 永不执行，任务静默失效。erp 侧读写由 {@link IWmStockAlertService} 实现类自身的
+ * {@code @DS("erp")} 提供，本类必须走默认(master)数据源。</p>
+ *
  * @author nexus
  */
 @Component
 @RequiredArgsConstructor
 @JobExecutor(name = "stockAlertTask")
 public class StockAlertTask {
+
+    /**
+     * 本地兜底调度开关：SnailJob 客户端启用（{@code snail-job.enabled=true}）时本地兜底让位，
+     * 避免同一任务被 SnailJob 与 {@code @Scheduled} 双重调度。
+     */
+    @org.springframework.beans.factory.annotation.Value("${snail-job.enabled:false}")
+    private boolean snailJobEnabled;
+
+    /**
+     * 本地 {@code @Scheduled} 兜底入口。
+     * <p>生产环境 {@code snail-job.enabled=false} 时 SnailJob 客户端不启动、不会回调
+     * {@link #jobExecute}，安全库存预警静默不生成。cron 与 {@code sj_job} 种子一致（每天 01:00）。
+     * Lock4j 按任务名加分布式锁，多实例下仅一个节点执行，抢锁失败静默跳过。</p>
+     */
+    @org.springframework.scheduling.annotation.Scheduled(cron = "0 0 1 * * ?")
+    public void scheduledExecute() {
+        com.nexus.common.redis.utils.SchedulerFallbackUtils.runIfFallbackEnabled(
+            snailJobEnabled, "stockAlertTask", 900000L, () -> jobExecute(null));
+    }
 
     private final IWmStockAlertService stockAlertService;
     private final SysTenantMapper sysTenantMapper;

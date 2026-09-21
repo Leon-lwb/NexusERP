@@ -38,6 +38,10 @@ export interface WorkVO {
   actualStartDate: string;
   actualEndDate: string;
   woStatus: string;
+  /** 质检状态 */
+  qualityStatus: string;
+  /** 关联质检单号（后端 PrdWorkOrderVo.qualityCheckNo） */
+  qualityCheckNo: string;
   workshopId: number;
   workshopName: string;
   workstationId: number;

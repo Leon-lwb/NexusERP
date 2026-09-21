@@ -27,12 +27,12 @@ public class PrdProductionReportController {
 
     /**
      * 查询工单完工率报表
-     * <p>权限标识：{@code prd:workOrder:list}</p>
+     * <p>权限标识：{@code prd:report:list}</p>
      *
      * @param months 统计月份数，为空时默认 6 个月
      * @return 各月工单总数、完工数与完工率
      */
-    @SaCheckPermission("prd:workOrder:list")
+    @SaCheckPermission("prd:report:list")
     @GetMapping("/completionRate")
     public R<List<Map<String, Object>>> workOrderCompletionRate(
         @RequestParam(required = false) Integer months) {
@@ -41,12 +41,12 @@ public class PrdProductionReportController {
 
     /**
      * 查询生产效率报表
-     * <p>权限标识：{@code prd:workOrder:list}</p>
+     * <p>权限标识：{@code prd:report:list}</p>
      *
      * @param months 统计月份数，为空时默认 6 个月
      * @return 各月计划产量、完工产量与效率百分比
      */
-    @SaCheckPermission("prd:workOrder:list")
+    @SaCheckPermission("prd:report:list")
     @GetMapping("/efficiency")
     public R<List<Map<String, Object>>> productionEfficiency(
         @RequestParam(required = false) Integer months) {

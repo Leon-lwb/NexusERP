@@ -76,10 +76,10 @@
             <el-button link type="primary" icon="Select" @click="handleComplete(scope.row)" v-hasPermi="['prd:rework:edit']" />
           </el-tooltip>
           <el-tooltip content="返工出库" placement="top" v-if="scope.row.status === 'IN_PROGRESS'">
-            <el-button link type="warning" icon="Van" @click="handleIssue(scope.row)" v-hasPermi="['prd:rework:edit']" />
+            <el-button link type="warning" icon="Van" @click="handleIssue(scope.row)" v-hasPermi="['prd:rework:issue']" />
           </el-tooltip>
           <el-tooltip content="返工入库" placement="top" v-if="scope.row.status === 'IN_PROGRESS'">
-            <el-button link type="success" icon="Box" @click="handleReceive(scope.row)" v-hasPermi="['prd:rework:edit']" />
+            <el-button link type="success" icon="Box" @click="handleReceive(scope.row)" v-hasPermi="['prd:rework:receive']" />
           </el-tooltip>
           <el-tooltip content="修改" placement="top" v-if="scope.row.status === 'DRAFT'">
             <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['prd:rework:edit']" />

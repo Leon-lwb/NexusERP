@@ -76,9 +76,10 @@ public class ErpIqcCompletedConsumer extends BaseMessageConsumer<IqcCompletedMes
             return;
         }
 
-        // 1. 收货单头回写 iqc_id/iqc_code（展示用）
+        // 1. 收货单头回写 iqc_id/iqc_code/iqc_status（展示用 + 无到货通知时的上架门禁依据）
         receive.setIqcId(message.getIqcId());
         receive.setIqcCode(message.getIqcCode());
+        receive.setIqcStatus(message.getInspectResult());
         materialReceiveService.updateById(receive);
 
         // 2. 按物料行回写 wm_arrival_notice_line: iqc_id/iqc_code/iqc_status（门禁依据）
@@ -99,11 +100,21 @@ public class ErpIqcCompletedConsumer extends BaseMessageConsumer<IqcCompletedMes
                 message.getInspectResult());
         }
 
-        // 4. 不合格冻结库存: 定位该收货单对应批次并冻结库存行(无批次记录时无法精确定位, 交由上架门禁 confirmShelf 兜底)
+        // 4. 不合格冻结库存: 定位该收货单对应批次并冻结库存行(无批次号时回退批次ID; 都定位不到则记 warn,
+        //    由 confirmShelf 的单据级 iqc_status 门禁兜底)
         if ("UNQUALIFIED".equals(message.getInspectResult()) && message.getMaterialId() != null) {
             int frozen = materialStockService.freezeStockByReceiveBatches(message.getReceiveId(), message.getMaterialId());
             log.info("IQC不合格冻结库存: receiveId={}, materialId={}, 冻结行数={}",
                 message.getReceiveId(), message.getMaterialId(), frozen);
+        }
+
+        // 5. 复检/让步后合格解冻: 冻结必须可解, 否则被 IQC 冻结的库存永久无法发料/出库(审计 MES-X-01)。
+        //    复检合格或让步接收后重新判定合格时, 解除该收货单该物料的库存冻结。
+        if ("QUALIFIED".equals(message.getInspectResult()) && message.getMaterialId() != null) {
+            int unfrozen = materialStockService.unfreezeByReceive(message.getReceiveId(), message.getMaterialId(),
+                "IQC合格解冻(" + message.getIqcCode() + ")");
+            log.info("IQC合格解冻库存: receiveId={}, materialId={}, 解冻行数={}",
+                message.getReceiveId(), message.getMaterialId(), unfrozen);
         }
         log.info("IQC回写收货单完成: receiveId={}, iqcCode={}, result={}",
             message.getReceiveId(), message.getIqcCode(), message.getInspectResult());

@@ -64,6 +64,8 @@ public class WmSubcontractIssueServiceImpl implements IWmSubcontractIssueService
     private final StockOperationStrategyFactory strategyFactory;
     private final IPrdSubcontractClosureService closureService;
     private final LockTemplate lockTemplate;
+    /** WM 公共依赖（ERP-WM-13: 单号改分布式生成，替代并发必重号的 selectCount+1） */
+    private final WmServiceHelper wm;
 
     @Override
     public List<WmSubcontractIssueVo> listBySubcontract(Long subcontractId) {
@@ -197,9 +199,8 @@ public class WmSubcontractIssueServiceImpl implements IWmSubcontractIssueService
 
         WmSubcontractIssue issue = MapstructUtils.convert(bo, WmSubcontractIssue.class);
         issue.setIssueId(null);
-        issue.setIssueNo("WSCI-" + subcontract.getSubcontractNo() + "-"
-            + (issueMapper.selectCount(Wrappers.<WmSubcontractIssue>lambdaQuery()
-                .eq(WmSubcontractIssue::getSubcontractId, bo.getSubcontractId())).intValue() + 1));
+        // ERP-WM-13: 单号改分布式序列生成（原 selectCount+1 并发必重号，且无唯一索引时静默产生脏数据）
+        issue.setIssueNo(wm.autoCodeUtil.genSerialCode("WM_SC_ISSUE_NO", null));
         issue.setStatus("DRAFT");
         issue.setSubcontractNo(subcontract.getSubcontractNo());
         BigDecimal totalQty = bo.getLines().stream()
@@ -288,11 +289,19 @@ public class WmSubcontractIssueServiceImpl implements IWmSubcontractIssueService
             // 策略扣库存 + 写流水(乐观锁, 失败抛异常回滚整体)
             strategyFactory.getStrategy(StockOperationTypeEnum.SUBCONTRACT_ISSUE)
                 .execute(line, allocs, now);
-            // 快照行已发量累加(条件更新防负)
+            // ERP-WM-06: 快照行已发量原子累加 + 需求量上限守卫。
+            // 超发校验原先只在 createIssue(DRAFT) 阶段做，两张草稿发料单会各自看到"已发 0"而双双通过校验；
+            // 过账时必须在同一语句上复核"累计 + 本次 <= 需求量"，影响 0 行即抛异常回滚整单。
             if (line.getBomLineId() != null) {
-                bomLineMapper.update(null, Wrappers.<PrdSubcontractBomLine>lambdaUpdate()
-                    .setSql("issued_qty = IFNULL(issued_qty, 0) + " + line.getIssueQty().toPlainString())
-                    .eq(PrdSubcontractBomLine::getLineId, line.getBomLineId()));
+                BigDecimal issueQty = line.getIssueQty() == null ? BigDecimal.ZERO : line.getIssueQty();
+                int rows = bomLineMapper.update(null, Wrappers.<PrdSubcontractBomLine>lambdaUpdate()
+                    .setSql("issued_qty = IFNULL(issued_qty, 0) + " + issueQty.toPlainString())
+                    .eq(PrdSubcontractBomLine::getLineId, line.getBomLineId())
+                    .apply("IFNULL(issued_qty, 0) + {0} <= IFNULL(demand_qty, 0)", issueQty));
+                if (rows == 0) {
+                    throw new ServiceException("物料【" + line.getMaterialName()
+                        + "】累计发料将超过需求量，已回滚");
+                }
             }
         }
         log.info("委外发料单[{}]过账完成, 行数={}", issue.getIssueNo(), lines.size());

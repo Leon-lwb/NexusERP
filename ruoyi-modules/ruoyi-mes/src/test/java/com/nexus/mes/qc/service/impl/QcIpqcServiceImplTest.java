@@ -44,6 +44,8 @@ class QcIpqcServiceImplTest {
     private IProWorkOrderService proWorkOrderService;
     @Mock
     private INcrOrderService ncrOrderService;
+    @Mock
+    private com.nexus.mes.qc.service.IQcInspectDetailService inspectDetailService;
     @InjectMocks
     private QcIpqcServiceImpl service;
 
@@ -124,6 +126,9 @@ class QcIpqcServiceImplTest {
         assertEquals(20L, captured.getProcessId());
         assertEquals("PC-001", captured.getProcessCode());
         assertEquals("焊接", captured.getProcessName());
+        // MES-QC-02: IPQC 建单必须按 物料/工序 维度匹配模板并生成检验明细
+        verify(inspectDetailService).generateDetails(eq("IPQC"), any(), eq(30L), eq(BigDecimal.valueOf(5)),
+            eq(20L), isNull());
     }
 
     @Test

@@ -86,15 +86,17 @@ public class MiscIssueStrategy extends BaseStockOperationStrategy {
 
         for (WmMaterialStock stock : stockList) {
             if (remaining.compareTo(BigDecimal.ZERO) <= 0) break;
-            BigDecimal stockQty = stock.getStockQuantity() == null ? BigDecimal.ZERO : stock.getStockQuantity();
-            if (stockQty.compareTo(BigDecimal.ZERO) <= 0) continue;
+            // ERP-WM-02: 扣减上限按可用量(在库-已预留)而非账面量, 否则可扣穿其他单据的预留
+            BigDecimal available = availableOf(stock);
+            if (available.compareTo(BigDecimal.ZERO) <= 0) continue;
 
-            BigDecimal deductQty = stockQty.min(remaining);
-            BigDecimal beforeQuantity = stockQty;
-            BigDecimal afterQuantity = stockQty.subtract(deductQty);
-            int affected = stockMapper.deductStock(stock.getStockId(), deductQty, stock.getVersion());
+            BigDecimal deductQty = available.min(remaining);
+            BigDecimal beforeQuantity = stock.getStockQuantity();
+            BigDecimal afterQuantity = beforeQuantity.subtract(deductQty);
+            // ERP-WM-02/WM-09: 原子扣减按可用量守卫(且 frozen_flag=0)
+            int affected = stockMapper.deductStockAvailable(stock.getStockId(), deductQty, stock.getVersion());
             if (affected == 0) {
-                throw new ServiceException("库存并发冲突，请重试: 物料【" + line.getMaterialName() + "】");
+                throw new ServiceException("可用库存不足或已被并发占用，请重试: 物料【" + line.getMaterialName() + "】");
             }
 
             // F3-a:出库按移动平均成本结转(扣减 totalCost,返回单位成本)
@@ -122,6 +124,8 @@ public class MiscIssueStrategy extends BaseStockOperationStrategy {
         lqw.eq(WmMaterialStock::getFrozenFlag, 0L);
         // 排除已预留量，防止杂项出库扣走销售预留库存
         lqw.apply("(stock_quantity - reserved_quantity) > 0");
+        // ERP-WM-06: 效期拦截 —— 已过期批次不得参与杂项出库
+        lqw.apply(NOT_EXPIRED_SQL);
         lqw.orderByAsc(WmMaterialStock::getExpireDate, WmMaterialStock::getRecptDate, WmMaterialStock::getStockId);
 
         List<WmMaterialStock> stockList = stockMapper.selectList(lqw);

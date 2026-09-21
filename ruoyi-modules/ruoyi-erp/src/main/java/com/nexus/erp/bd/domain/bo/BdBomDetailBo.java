@@ -4,6 +4,7 @@ import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import com.nexus.common.mybatis.core.domain.BaseEntity;
@@ -74,6 +75,13 @@ public class BdBomDetailBo extends BaseEntity {
 
     /** 来源类型：PROCUREMENT-采购，PROCESS-加工 */
     private String sourceType;
+
+    /**
+     * 供应方：SELF_PROVIDED-自备，VENDOR_PROVIDED-外协厂供，CUSTOMER_PROVIDED-客供。
+     * <p>ERP-BD-01：该字段此前只存在于实体，BO/VO 都没有，导致委外快照恒为 SELF_PROVIDED。</p>
+     */
+    @Size(max = 32, message = "供应方长度不能超过32")
+    private String supplyType;
 
     /** 预留字段1 */
     private String attr1;

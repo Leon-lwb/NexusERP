@@ -54,6 +54,21 @@ public class TgToolingBo extends BaseEntity {
     /** 总寿命(小时) */
     private BigDecimal totalLifeHours;
 
+    /** 校准周期(天), 空=未纳入校准管理 (MES-TG-01) */
+    private Integer calibrationCycleDays;
+
+    /** 上次校准日期 (MES-TG-01) */
+    private Date lastCalibrationDate;
+
+    /** 下次校准日期(留空且给了周期时按 上次校准日/今天 + 周期 推算) (MES-TG-01) */
+    private Date nextCalibrationDate;
+
+    /** 校准结果: PASS/FAIL/ADJUSTED (MES-TG-01) */
+    private String calibrationResult;
+
+    /** 校准备注 (MES-TG-01) */
+    private String calibrationRemark;
+
     /** 采购日期 */
     private Date purchaseDate;
 

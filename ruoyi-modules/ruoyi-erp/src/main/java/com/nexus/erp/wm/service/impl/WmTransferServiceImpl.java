@@ -128,6 +128,16 @@ public class WmTransferServiceImpl implements IWmTransferService {
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(WmTransferBo bo) {
         WmTransfer entity = MapstructUtils.convert(bo, WmTransfer.class);
+        // ERP-WM-08: 仅草稿可改（驳回在 afterFlowHandle 中即回到 DRAFT）。
+        // 修复前无守卫：已执行调拨单明细可被删改，与 wm_material_stock_tx 的 source_doc_id 对不上，数量无法追溯。
+        WmTransfer existing = baseMapper.selectById(entity.getTransferId());
+        if (existing == null) {
+            throw new com.nexus.common.core.exception.ServiceException("调拨单不存在");
+        }
+        if (!STATUS_DRAFT.equals(existing.getStatus())) {
+            throw new com.nexus.common.core.exception.ServiceException("当前状态不允许修改，只有草稿状态才能修改！");
+        }
+        entity.setStatus(existing.getStatus());
         deleteLinesByTransferId(entity.getTransferId());
         if (bo.getWmTransferLineList() != null) {
             for (WmTransferLine line : bo.getWmTransferLineList()) {
@@ -148,6 +158,11 @@ public class WmTransferServiceImpl implements IWmTransferService {
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {
         for (Long id : ids) {
+            // ERP-WM-08: 仅草稿可删；删除已执行单据会让库存流水成为孤儿、库存调整无凭据
+            WmTransfer existing = baseMapper.selectById(id);
+            if (existing != null && !STATUS_DRAFT.equals(existing.getStatus())) {
+                throw new com.nexus.common.core.exception.ServiceException("当前状态不允许删除，只有草稿状态才能删除！");
+            }
             deleteLinesByTransferId(id);
         }
         return baseMapper.deleteBatchIds(List.of(ids));
@@ -169,13 +184,21 @@ public class WmTransferServiceImpl implements IWmTransferService {
         if (STATUS_EXECUTED.equals(transfer.getStatus())) {
             throw new RuntimeException("调拨单已执行");
         }
-        // 并发防重：条件更新抢占（非 EXECUTED → EXECUTING），影响行数为 0 说明已被并发执行
+        // ERP-WM-07: 只允许「已审批(APPROVED)」或「PDA 已下架(TAKEN_OFF)」状态过账。
+        // 修复前抢占条件为 ne(EXECUTED)，草稿/驳回单可直接过账 —— 既绕过审批流程，
+        // 也绕过 PDA 的"下架→扫目标库位"作业步骤（与 PdaTransferServiceImpl.execute 的白名单对齐）。
         int claimed = baseMapper.update(null, Wrappers.<WmTransfer>lambdaUpdate()
             .set(WmTransfer::getStatus, "EXECUTING")
             .eq(WmTransfer::getTransferId, transferId)
-            .ne(WmTransfer::getStatus, STATUS_EXECUTED));
+            .in(WmTransfer::getStatus, STATUS_APPROVED, STATUS_TAKEN_OFF));
         if (claimed == 0) {
-            throw new RuntimeException("调拨单已执行");
+            throw new RuntimeException("调拨单状态不允许过账（需已审批或已下架），或已被并发执行");
+        }
+
+        // ERP-WM-14: 目标仓库必须非空，否则目标库存行会落 warehouse_id=NULL（库存维度丢失，
+        // 按仓库/库位查询与 3D 库位视图都看不到这批库存）
+        if (transfer.getToWarehouseId() == null) {
+            throw new com.nexus.common.core.exception.ServiceException("调拨单必须指定目标仓库");
         }
 
         LambdaQueryWrapper<WmTransferLine> lineLqw = Wrappers.lambdaQuery();
@@ -184,6 +207,19 @@ public class WmTransferServiceImpl implements IWmTransferService {
 
         if (lines == null || lines.isEmpty()) {
             throw new RuntimeException("调拨单无明细行");
+        }
+
+        // ERP-WM-14: 每行目标库位必须非空，且不得与来源同维度（否则是无意义的原地"调拨"）
+        for (WmTransferLine line : lines) {
+            if (line.getToLocationId() == null) {
+                throw new com.nexus.common.core.exception.ServiceException(
+                    "物料【" + line.getMaterialName() + "】未指定目标库位，禁止过账");
+            }
+            if (transfer.getFromWarehouseId() != null && transfer.getFromWarehouseId().equals(transfer.getToWarehouseId())
+                && line.getFromLocationId() != null && line.getFromLocationId().equals(line.getToLocationId())) {
+                throw new com.nexus.common.core.exception.ServiceException(
+                    "物料【" + line.getMaterialName() + "】来源与目标仓库/库位完全相同，禁止过账");
+            }
         }
 
         for (WmTransferLine line : lines) {

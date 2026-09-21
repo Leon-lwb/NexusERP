@@ -1,6 +1,7 @@
 package com.nexus.mes.flash.service.impl;
 
 import cn.hutool.json.JSONArray;
+import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
@@ -23,6 +24,7 @@ import com.nexus.mes.flash.mapper.FirmwareMapper;
 import com.nexus.mes.flash.mapper.TestRecordMapper;
 import com.nexus.mes.flash.service.ITestItemService;
 import com.nexus.mes.flash.service.ITestRecordService;
+import com.nexus.mes.ncr.service.INcrOrderService;
 import com.nexus.mes.pro.domain.ProSn;
 import com.nexus.mes.pro.mapper.ProSnMapper;
 import com.nexus.system.strategy.AutoCodeUtil;
@@ -36,9 +38,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * MES测试记录 Service 业务层实现 (SN级全检)
@@ -62,6 +66,8 @@ public class TestRecordServiceImpl implements ITestRecordService {
     private final EqEquipmentMapper equipmentMapper;
     private final ITestItemService testItemService;
     private final AutoCodeUtil autoCodeUtil;
+    /** MES-TEST-04: 测试 FAIL 自动建 NCR(不合格品单) */
+    private final INcrOrderService ncrOrderService;
 
     /** SN状态-报废(禁止开单) */
     private static final String SN_STATUS_SCRAPPED = "SCRAPPED";
@@ -191,6 +197,10 @@ public class TestRecordServiceImpl implements ITestRecordService {
         }
         Date now = new Date();
         List<TestRecordVo> result = new ArrayList<>();
+        // MES-TEST-04: 同一 testNo 的多项 FAIL 只建一单 NCR —— 判定前快照"该测试单是否已有 FAIL 行",
+        // 快照在本次写入之前取值(否则会把本次刚判 FAIL 的行当成历史单而漏建), 调用内再用 raised 去重
+        Map<String, Boolean> failRowSnapshot = new HashMap<>();
+        Set<String> ncrRaisedTestNos = new HashSet<>();
         for (TestRecordBo row : rows) {
             if (row.getTestRecordId() == null) {
                 throw new ServiceException("测试行ID不能为空");
@@ -198,6 +208,11 @@ public class TestRecordServiceImpl implements ITestRecordService {
             TestRecord record = baseMapper.selectById(row.getTestRecordId());
             if (record == null) {
                 throw new ServiceException("测试行不存在: " + row.getTestRecordId());
+            }
+            // MES-TEST-03: 已判定行不可反复覆盖改写(FAIL→PASS 会抹掉不合格证据), 重测须重新开单保留历史行
+            if (StringUtils.isNotBlank(record.getResult())) {
+                throw new ServiceException("该测试行已判定(" + record.getResult() + "), 不可重复覆盖; 如需重测请重新开单: "
+                    + record.getTestNo() + "/" + record.getItemCode());
             }
             String dataType = record.getDataType();
             boolean byNumeric = ITestItemService.DATA_TYPE_NUMERIC.equals(dataType);
@@ -212,12 +227,31 @@ public class TestRecordServiceImpl implements ITestRecordService {
             if ((byText || byEnum) && StringUtils.isBlank(row.getTextValue())) {
                 throw new ServiceException("请填写实测值: " + record.getItemName());
             }
-            record.setNumericValue(byNumeric ? row.getNumericValue() : null);
-            record.setTextValue(byText || byEnum ? row.getTextValue() : null);
-            record.setResult(judged);
-            record.setTestTime(now);
-            record.setRemark(StringUtils.isBlank(row.getRemark()) ? record.getRemark() : row.getRemark());
-            baseMapper.updateById(record);
+            // MES-TEST-04: 判定前快照该测试单是否已有 FAIL 行(必须在本次写入之前取值, 否则会把本次刚判 FAIL
+            // 的行当成"历史单"而漏建 NCR); computeIfAbsent 保证同一 testNo 一次调用只查一次
+            failRowSnapshot.computeIfAbsent(record.getTestNo(), this::hasFailRow);
+            // MES-TEST-03: 条件更新(CAS) —— 仅当该行仍未判定(result 为空/NULL)时才写入, 并发重复提交只有一次生效
+            TestRecord update = new TestRecord();
+            update.setTestRecordId(record.getTestRecordId());
+            update.setNumericValue(byNumeric ? row.getNumericValue() : null);
+            update.setTextValue(byText || byEnum ? row.getTextValue() : null);
+            update.setResult(judged);
+            update.setTestTime(now);
+            if (StringUtils.isNotBlank(row.getRemark())) {
+                update.setRemark(row.getRemark());
+            }
+            int updated = baseMapper.update(update, Wrappers.<TestRecord>lambdaUpdate()
+                .eq(TestRecord::getTestRecordId, record.getTestRecordId())
+                .and(w -> w.eq(TestRecord::getResult, "").or().isNull(TestRecord::getResult)));
+            if (updated == 0) {
+                throw new ServiceException("该测试行已被判定(并发重复提交), 本次判定未生效; 如需重测请重新开单: "
+                    + record.getTestNo() + "/" + record.getItemCode());
+            }
+            if (RESULT_FAIL.equals(judged)) {
+                // MES-TEST-04: 判定 FAIL 即触发 NCR 自动建单(同一 testNo 幂等, 只建一单)
+                autoCreateNcrForFail(record, byNumeric ? String.valueOf(row.getNumericValue()) : row.getTextValue(),
+                    failRowSnapshot, ncrRaisedTestNos);
+            }
             result.add(baseMapper.selectVoById(record.getTestRecordId()));
         }
         log.info("测试填报: 行数={}", result.size());
@@ -356,11 +390,26 @@ public class TestRecordServiceImpl implements ITestRecordService {
         for (TestReportBo.TestItemValueBo item : bo.getItems()) {
             dedupItems.put(item.getItemCode(), item);
         }
+        // MES-TEST-01: 必测项全覆盖校验 —— 该物料配置的测试项须全部上报, 缺项不得判 PASS
+        // (否则设备"少报项"即可规避测试, 且未测项在数据上不存在, 事后无法区分"没测"与"测了通过")
+        if (standards != null && !standards.isEmpty()) {
+            List<String> missing = standards.stream()
+                .map(TestItemVo::getItemCode)
+                .filter(code -> !dedupItems.containsKey(code))
+                .toList();
+            if (!missing.isEmpty()) {
+                throw new ServiceException("测试上报缺少必测项, 拒绝判定: " + String.join(",", missing)
+                    + "(该SN物料配置的测试项须全部上报)");
+            }
+        }
         // 逐测试项匹配+判定
         String testNo = autoCodeUtil.genSerialCode("MES_TEST_NO", null);
         Date now = new Date();
         List<String> unmatched = new ArrayList<>();
         int judged = 0;
+        boolean anyFail = false;
+        TestRecord failRecord = null;
+        String failActualValue = null;
         for (TestReportBo.TestItemValueBo item : dedupItems.values()) {
             TestItemVo standard = standardMap.get(item.getItemCode());
             if (standard == null) {
@@ -391,14 +440,13 @@ public class TestRecordServiceImpl implements ITestRecordService {
             r.setEquipmentCode(equipmentCode);
             r.setTestTime(now);
             r.setTestMode(MODE_AUTO);
-            // 设备通道操作员: BO 携带值优先, 免登录时以工号留痕; 旧版客户端不传则为空(容忍)
-            if (bo.getOperatorId() != null) {
-                r.setTesterId(bo.getOperatorId());
-            }
-            if (StringUtils.isNotBlank(bo.getOperatorName())) {
-                r.setTesterName(bo.getOperatorName());
-            } else if (StringUtils.isNotBlank(bo.getOperatorCode())) {
-                r.setTesterName(bo.getOperatorCode());
+            // MES-FLASH-09: 免登录设备通道不信任客户端传入的 testerId/姓名(可冒名), tester_id 一律留空,
+            // 仅把上报工号/姓名以"未验证"来源标注落 tester_name 供展示
+            String reportedOperator = StringUtils.isNotBlank(bo.getOperatorCode()) ? bo.getOperatorCode().trim()
+                : (StringUtils.isNotBlank(bo.getOperatorName()) ? bo.getOperatorName().trim() : null);
+            if (reportedOperator != null) {
+                String marked = "设备上报:" + reportedOperator + "(未验证)";
+                r.setTesterName(marked.length() > 64 ? marked.substring(0, 64) : marked);
             }
             r.setResult(""); // 先落空, 判定后更新(与 manual 待测行一致)
             baseMapper.insert(r);
@@ -412,9 +460,21 @@ public class TestRecordServiceImpl implements ITestRecordService {
             r.setResult(judgedResult);
             baseMapper.updateById(r);
             judged++;
+            if (RESULT_FAIL.equals(judgedResult) && !anyFail) {
+                anyFail = true;
+                failRecord = r;
+                failActualValue = text;
+            }
         }
         if (judged == 0) {
             throw new ServiceException("无匹配测试项: " + String.join(",", unmatched));
+        }
+        // MES-TEST-04: AUTO 上报判定 FAIL 时自动建 NCR(本方法新开测试单, 判定前必无 FAIL 行 -> 快照直接置 false,
+        // 不再回查, 否则会把刚写入的 FAIL 行误判为"历史单")
+        if (anyFail && failRecord != null) {
+            Map<String, Boolean> snapshot = new HashMap<>();
+            snapshot.put(failRecord.getTestNo(), Boolean.FALSE);
+            autoCreateNcrForFail(failRecord, failActualValue, snapshot, new HashSet<>());
         }
         Map<String, Object> single = new HashMap<>();
         single.put("snCode", sn.getSnCode());
@@ -442,6 +502,76 @@ public class TestRecordServiceImpl implements ITestRecordService {
     // ==================== 私有辅助方法 ====================
 
     /**
+     * 该 SN 是否存在未处置的 FAIL 测试行(供工序/完工门禁查询, MES-TEST-04)。
+     * <p>"未处置"口径: mes_test_record 无处置字段, 且已判定行禁止覆盖改写(MES-TEST-03), 故只要存在 FAIL 行
+     * 即视为未处置(重测须重新开单, FAIL 行永久保留供追溯); 若需精确到 NCR 是否关闭, 需 NCR 侧提供
+     * "按 SN/来源单据查询未关闭 NCR" 的接口(见汇报待办)。</p>
+     */
+    @Override
+    public boolean hasUnhandledFail(Long snId) {
+        if (snId == null) {
+            return false;
+        }
+        Long count = baseMapper.selectCount(Wrappers.<TestRecord>lambdaQuery()
+            .eq(TestRecord::getSnId, snId)
+            .eq(TestRecord::getResult, RESULT_FAIL));
+        return count != null && count > 0;
+    }
+
+    /**
+     * MES-TEST-04: 测试判定 FAIL 时自动建 NCR(不合格品单)并触发返工/隔离流程。
+     * <p><b>幂等</b>: 同一 testNo 只建一单 —— 判定前快照该测试单是否已有 FAIL 行(本次刚写入的不算),
+     * 已有则跳过; 同一调用内多项 FAIL 由 {@code raised} 去重。</p>
+     * <p><b>best-effort</b>: 建单失败只记 error 日志, 不阻断测试判定落库(与既有 IQC/IPQC/OQC 自动建单一致)。</p>
+     * <p><b>接口限制</b>: 现有 {@link INcrOrderService#autoCreateFromExit} 入参只有
+     * (cardId, stepRecordId, mesWoId, defectQty, defectInfo), 无 snId/testNo/itemCode,
+     * 故测试单信息经 defectInfo JSON 传入; 建议 NCR 侧新增
+     * {@code autoCreateFromTest(snId, testNo, itemCode, defectInfo)} 以精确落来源单据(见汇报待办)。</p>
+     */
+    private void autoCreateNcrForFail(TestRecord record, String actualValue,
+                                      Map<String, Boolean> failRowSnapshot, Set<String> raised) {
+        String testNo = record.getTestNo();
+        if (StringUtils.isBlank(testNo) || raised.contains(testNo)) {
+            return;
+        }
+        if (Boolean.TRUE.equals(failRowSnapshot.computeIfAbsent(testNo, this::hasFailRow))) {
+            raised.add(testNo);
+            log.info("测试FAIL自动建NCR跳过(该测试单已有FAIL行, 幂等): testNo={}", testNo);
+            return;
+        }
+        JSONObject defect = JSONUtil.createObj();
+        defect.set("source", "TEST");
+        defect.set("snId", record.getSnId());
+        defect.set("snCode", record.getSnCode());
+        defect.set("testNo", testNo);
+        defect.set("itemCode", record.getItemCode());
+        defect.set("itemName", record.getItemName());
+        defect.set("actualValue", actualValue);
+        defect.set("lowerLimit", record.getLowerLimit());
+        defect.set("upperLimit", record.getUpperLimit());
+        try {
+            ncrOrderService.autoCreateFromExit(record.getCardId(), record.getStepRecordId(), record.getMesWoId(),
+                BigDecimal.ONE, defect.toString());
+            raised.add(testNo);
+            log.warn("测试FAIL自动建NCR: testNo={}, snCode={}, itemCode={}, 实测={}",
+                testNo, record.getSnCode(), record.getItemCode(), actualValue);
+        } catch (Exception e) {
+            log.error("测试FAIL自动建NCR失败(不阻断测试判定): testNo={}, itemCode={}", testNo, record.getItemCode(), e);
+        }
+    }
+
+    /** 该测试单是否已有 FAIL 行(判定前快照, 用于 NCR 幂等) */
+    private boolean hasFailRow(String testNo) {
+        if (StringUtils.isBlank(testNo)) {
+            return false;
+        }
+        Long count = baseMapper.selectCount(Wrappers.<TestRecord>lambdaQuery()
+            .eq(TestRecord::getTestNo, testNo)
+            .eq(TestRecord::getResult, RESULT_FAIL));
+        return count != null && count > 0;
+    }
+
+    /**
      * 自动判定: NUMERIC 限值区间 / TEXT 非空 / ENUM 合格值集合
      */
     private String judge(String dataType, BigDecimal numericValue, String textValue,
@@ -467,7 +597,9 @@ public class TestRecordServiceImpl implements ITestRecordService {
                 return RESULT_FAIL;
             }
             if (StringUtils.isBlank(passEnum)) {
-                return RESULT_PASS; // 未配置合格值集合, 宽松通过
+                // MES-TEST-02: fail-closed —— 未配置合格值集合无法判定是否合格, 判 FAIL(仅历史数据/直接改库会命中)
+                log.error("ENUM 测试项未配置合格值集合(pass_enum), 判定 FAIL(fail-closed)");
+                return RESULT_FAIL;
             }
             try {
                 JSONArray arr = JSONUtil.parseArray(passEnum);
@@ -477,8 +609,9 @@ public class TestRecordServiceImpl implements ITestRecordService {
                     }
                 }
             } catch (Exception e) {
-                log.warn("ENUM 合格值解析失败, 按宽松通过: passEnum={}", passEnum);
-                return RESULT_PASS;
+                // MES-TEST-02: fail-closed —— 合格值集合为非法 JSON 时无法判定, 判 FAIL 并留日志, 不得宽松通过
+                log.error("ENUM 合格值解析失败, 判定 FAIL(fail-closed): passEnum={}", passEnum, e);
+                return RESULT_FAIL;
             }
             return RESULT_FAIL;
         }

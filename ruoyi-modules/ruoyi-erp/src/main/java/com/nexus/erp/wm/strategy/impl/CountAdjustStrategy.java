@@ -102,7 +102,9 @@ public class CountAdjustStrategy extends BaseStockOperationStrategy {
         if (diffQuantity.compareTo(BigDecimal.ZERO) > 0) {
             affected = stockMapper.addStock(stock.getStockId(), absDiff, stock.getVersion());
         } else {
-            affected = stockMapper.deductStock(stock.getStockId(), absDiff, stock.getVersion());
+            // 盘点盘亏必须能把冻结行调整到实盘值(冻结是质量状态、不是库存维度),
+            // 故此处用不带 frozen_flag 守卫的入口; deductStock 已按 ERP-WM-09 加了冻结守卫。
+            affected = stockMapper.deductStockIgnoreFrozen(stock.getStockId(), absDiff, stock.getVersion());
         }
         if (affected == 0) {
             throw new ServiceException("库存并发冲突，请重试: 物料【" + line.getMaterialName() + "】");

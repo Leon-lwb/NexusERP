@@ -42,7 +42,11 @@ public class SopViewLogController extends BaseController {
     }
 
     /**
-     * 登记查阅(查看器打开时调): viewer/time/wo/process/IP/UA, signature_id=null(预留P0-6)
+     * 登记查阅(查看器打开时调): viewer/time/wo/process/IP/UA, signature_id=SOP_VIEW 电子签名
+     * <p><b>MES-SOP-01</b>: 权限码从管理侧的 {@code mes:sop:viewlog:list} 改为工位/终端侧的
+     * {@code mes:sop:viewlog:add} —— 此前工位账号只授了查看器所需的
+     * {@code mes:sop:document:list}，调用本端点必然 403，前端又用空 catch 吞掉，
+     * 于是「SOP 已阅确认」在真实工位场景下<b>全部不落库</b>。</p>
      *
      * @param sopId         SOP ID
      * @param versionNo     查阅的版本号(可空)
@@ -53,7 +57,7 @@ public class SopViewLogController extends BaseController {
      * @param workstationId 工位ID(可空)
      * @return 操作结果
      */
-    @SaCheckPermission("mes:sop:viewlog:list")
+    @SaCheckPermission("mes:sop:viewlog:add")
     @Log(title = "SOP查阅登记", businessType = BusinessType.INSERT)
     @PostMapping
     public R<Void> add(@RequestParam Long sopId,
@@ -68,11 +72,13 @@ public class SopViewLogController extends BaseController {
 
     /**
      * 批量删除查阅记录
+     * <p><b>MES-SOP-03</b>: 独立权限码 {@code mes:sop:viewlog:remove}（此前复用 list 权限，
+     * 任一能看列表的账号即可删除）；且服务端禁止删除已签名记录。</p>
      *
      * @param ids 查阅记录ID数组
      * @return 操作结果
      */
-    @SaCheckPermission("mes:sop:viewlog:list")
+    @SaCheckPermission("mes:sop:viewlog:remove")
     @Log(title = "SOP查阅记录删除", businessType = BusinessType.DELETE)
     @DeleteMapping("/{ids}")
     public R<Void> remove(@PathVariable Long[] ids) {

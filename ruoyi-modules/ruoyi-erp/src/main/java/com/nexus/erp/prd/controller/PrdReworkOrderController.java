@@ -172,13 +172,13 @@ public class PrdReworkOrderController extends BaseController {
      * 返工订单出库（领料）
      * <p>
      * 将返工所需物料从库存中扣减，订单状态必须为进行中。
-     * 权限标识：{@code prd:rework:edit}</p>
+     * 权限标识：{@code prd:rework:issue}</p>
      * <p>日志记录：title="返工订单-出库"，businessType=UPDATE</p>
      *
      * @param reworkId 返工订单 ID
      * @return 操作结果
      */
-    @SaCheckPermission("prd:rework:edit")
+    @SaCheckPermission("prd:rework:issue")
     @Log(title = "返工订单-出库", businessType = BusinessType.UPDATE)
     @PutMapping("/issue/{reworkId}")
     public R<Void> issue(@PathVariable Long reworkId) {
@@ -190,13 +190,13 @@ public class PrdReworkOrderController extends BaseController {
      * 返工订单入库（收货）
      * <p>
      * 将返工完成后的物料入库，订单状态必须为进行中。
-     * 权限标识：{@code prd:rework:edit}</p>
+     * 权限标识：{@code prd:rework:receive}</p>
      * <p>日志记录：title="返工订单-入库"，businessType=UPDATE</p>
      *
      * @param reworkId 返工订单 ID
      * @return 操作结果
      */
-    @SaCheckPermission("prd:rework:edit")
+    @SaCheckPermission("prd:rework:receive")
     @Log(title = "返工订单-入库", businessType = BusinessType.UPDATE)
     @PutMapping("/receive/{reworkId}")
     public R<Void> receive(@PathVariable Long reworkId) {

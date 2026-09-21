@@ -72,6 +72,7 @@ class StationSnServiceTest {
         ProSn parent = sn(1L, "SN-P", null);
         ProSn comp = sn(2L, "SN-C1", null);
         when(proSnMapper.selectOne(any())).thenReturn(parent, comp);
+        when(proSnMapper.update(any(), any())).thenReturn(1);
 
         StationSnDtos.BindDto dto = new StationSnDtos.BindDto();
         dto.setParentSnCode("SN-P");
@@ -87,6 +88,28 @@ class StationSnServiceTest {
         verify(bindLogMapper).insert(logCaptor.capture());
         assertEquals("BIND", logCaptor.getValue().getAction());
         assertEquals("SN-P", logCaptor.getValue().getParentSnCode());
+        // 日志父SN与 CAS 写入的目标父SN一致
+        assertEquals(parent.getSnId(), logCaptor.getValue().getParentSnId());
+    }
+
+    /**
+     * MES-STATION-01: CAS 影响 0 行(并发下组件已被他人绑定)必须抛异常, 且不写 BIND 日志、不累加 boundQty。
+     * <p>修复前: rows 未校验 → 返回 boundQty=1 并写入一条与实际 parent_sn_id 矛盾的 BIND 日志。</p>
+     */
+    @Test
+    void bind_casAffectsZeroRowsThrowsAndWritesNoLog() {
+        ProSn parent = sn(1L, "SN-P", null);
+        ProSn comp = sn(2L, "SN-C1", null); // 读到未绑定(TOCTOU), 但 CAS 时已被并发绑走
+        when(proSnMapper.selectOne(any())).thenReturn(parent, comp);
+        when(proSnMapper.update(any(), any())).thenReturn(0);
+
+        StationSnDtos.BindDto dto = new StationSnDtos.BindDto();
+        dto.setParentSnCode("SN-P");
+        dto.setComponentSnCodes(List.of("SN-C1"));
+
+        ServiceException ex = assertThrows(ServiceException.class, () -> service.bind(dto));
+        assertTrue(ex.getMessage().contains("已被并发绑定"), "应提示并发绑定冲突: " + ex.getMessage());
+        verify(bindLogMapper, never()).insert(any(com.nexus.station.domain.MesSnBindLog.class));
     }
 
     @Test
@@ -148,6 +171,7 @@ class StationSnServiceTest {
         ProSn newComp = sn(5L, "SN-NEW", null);
         when(proSnMapper.selectOne(any())).thenReturn(comp, newComp);
         when(proSnMapper.selectById(1L)).thenReturn(parent);
+        when(proSnMapper.update(any(), any())).thenReturn(1);
 
         StationSnDtos.UnbindDto dto = new StationSnDtos.UnbindDto();
         dto.setComponentSnCode("SN-OLD");
@@ -167,6 +191,34 @@ class StationSnServiceTest {
         assertEquals("REBIND", logs.get(1).getAction());
         assertEquals("SN-NEW", logs.get(1).getComponentSnCode());
         assertEquals("SN-OLD", logs.get(1).getNewComponentSnCode());
+    }
+
+    /**
+     * 换板重绑同样按 CAS 影响行数判定: 0 行说明新组件已被并发绑定, 必须失败且不留 REBIND 日志。
+     */
+    @Test
+    void unbind_rebindCasAffectsZeroRowsThrowsAndWritesNoLog() {
+        ProSn comp = sn(2L, "SN-OLD", 1L);
+        comp.setParentSnCode("SN-P");
+        ProSn parent = sn(1L, "SN-P", null);
+        ProSn newComp = sn(5L, "SN-NEW", null);
+        when(proSnMapper.selectOne(any())).thenReturn(comp, newComp);
+        when(proSnMapper.selectById(1L)).thenReturn(parent);
+        // 第一次(解绑)成功, 第二次(换板重绑 CAS)0 行
+        when(proSnMapper.update(any(), any())).thenReturn(1, 0);
+
+        StationSnDtos.UnbindDto dto = new StationSnDtos.UnbindDto();
+        dto.setComponentSnCode("SN-OLD");
+        dto.setNewComponentSnCode("SN-NEW");
+        dto.setReason("换板");
+
+        ServiceException ex = assertThrows(ServiceException.class, () -> service.unbind(dto));
+        assertTrue(ex.getMessage().contains("已被并发绑定"), "应提示并发绑定冲突: " + ex.getMessage());
+        // 只写了解绑那一条 UNBIND 日志, 不得出现 REBIND
+        ArgumentCaptor<com.nexus.station.domain.MesSnBindLog> logCaptor =
+            ArgumentCaptor.forClass(com.nexus.station.domain.MesSnBindLog.class);
+        verify(bindLogMapper, times(1)).insert(logCaptor.capture());
+        assertEquals("UNBIND", logCaptor.getValue().getAction());
     }
 
     @Test

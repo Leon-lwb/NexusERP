@@ -16,6 +16,7 @@ import org.bouncycastle.cms.SignerInformation;
 import org.bouncycastle.cms.jcajce.JcaSimpleSignerInfoVerifierBuilder;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.awt.Color;
@@ -40,6 +41,8 @@ import static org.junit.jupiter.api.Assertions.*;
  *
  * @author nexus
  */
+@Tag("local")
+@Tag("dev")
 class PdfDocumentVerifierTest {
 
     /** RSA-2048 现场生成签名身份（整个测试类共用一次，避免重复耗时的密钥生成）。 */

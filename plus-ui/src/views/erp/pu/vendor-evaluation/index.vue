@@ -38,19 +38,12 @@
         </el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button
-          type="success"
-          plain
-          icon="Calculator"
-          :disabled="single"
-          @click="handleCalculate()"
-          v-hasPermi="['pu:vendorEvaluation:calculate']"
-        >
+        <el-button type="success" plain icon="Calculator" :disabled="single" @click="handleCalculate()" v-hasPermi="['pu:vendorEvaluation:edit']">
           计算评估
         </el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="warning" plain icon="Operation" @click="handleBatchCalculate()" v-hasPermi="['pu:vendorEvaluation:batchCalculate']">
+        <el-button type="warning" plain icon="Operation" @click="handleBatchCalculate()" v-hasPermi="['pu:vendorEvaluation:edit']">
           批量计算
         </el-button>
       </el-col>
@@ -90,11 +83,6 @@
           <el-tag :type="getEvalLevelType(scope.row.evalLevel)" effect="dark">
             {{ scope.row.evalLevel }}
           </el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="评估日期" prop="evalDate">
-        <template #default="scope">
-          <span>{{ parseTime(scope.row.evalDate, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
     </el-table>

@@ -72,8 +72,10 @@
       <el-table-column label="维修成本" prop="repairCost" align="right">
         <template #default="scope">{{ scope.row.repairCost ?? '-' }}</template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="160" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
         <template #default="scope">
+          <!-- FE-MES-03：维修领用备件明细此前前端零入口，只能直连数据库核对 -->
+          <el-button link type="primary" icon="List" @click="handleOpenSpares(scope.row)" v-hasPermi="['mes:eq:repair:query']">备件明细</el-button>
           <el-button
             link
             type="warning"
@@ -125,6 +127,11 @@
     <!-- 维修完成对话框(替代原3连prompt, 含更换备件明细 P1-2 R1) -->
     <el-dialog v-model="completeDialog.visible" :title="`维修完成 - ${completeForm.repairNo}`" width="640px" append-to-body>
       <el-form :model="completeForm" label-width="120px">
+        <!-- FE-MES-04：备件列表加载失败必须可见，否则用户以为「无备件可选」而漏登记备件耗用 -->
+        <el-alert v-if="spareLoadFailed" type="error" show-icon :closable="false" class="mb-2" title="备件列表加载失败">
+          <span>无法选择更换备件；直接提交将不登记备件耗用、不扣减备件库存。</span>
+          <el-button link type="primary" @click="loadSpareOptions()">重试加载备件</el-button>
+        </el-alert>
         <el-form-item label="停机时长(小时)">
           <el-input-number v-model="completeForm.downtimeHours" :min="0" :precision="2" :step="0.5" style="width: 100%" />
         </el-form-item>
@@ -168,6 +175,26 @@
         <el-button type="primary" @click="submitComplete()">确认完成</el-button>
       </template>
     </el-dialog>
+    <!-- FE-MES-03：备件领用明细（后端 EqRepairSpareController，此前 plus-ui 零入口） -->
+    <el-dialog :title="`备件领用明细 - ${sparesDialog.repairNo}`" v-model="sparesDialog.visible" width="720px" append-to-body>
+      <el-table :data="sparesDialog.list" border show-overflow-tooltip max-height="420">
+        <el-table-column label="备件编码" prop="spareCode" min-width="140" />
+        <el-table-column label="备件名称" prop="spareName" min-width="150" />
+        <el-table-column label="规格" prop="spec" min-width="120" />
+        <el-table-column label="单位" prop="unit" align="center" width="80" />
+        <el-table-column label="领用数量" prop="quantity" align="right" width="100" />
+        <el-table-column label="备注" prop="remark" min-width="120" />
+        <el-table-column label="操作" align="center" width="90" :show-overflow-tooltip="false">
+          <template #default="scope">
+            <el-button link type="danger" icon="Delete" @click="handleDelSpare(scope.row)" v-hasPermi="['mes:eq:repair:complete']">删除</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+      <el-empty v-if="sparesDialog.list.length === 0" description="该维修单暂无备件领用记录" />
+      <template #footer>
+        <el-button @click="sparesDialog.visible = false">关 闭</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -176,6 +203,8 @@ import { listRepair, addRepair, startRepair, completeRepair } from '@/api/mes/eq
 import type { EqRepairVO, EqRepairQuery } from '@/api/mes/eq/repair';
 import { listSparePart } from '@/api/mes/eq/spare-part';
 import type { EqSparePartVO } from '@/api/mes/eq/spare-part';
+import { listRepairSpareByRepair, delRepairSpare } from '@/api/mes/eq/repairSpare';
+import type { EqRepairSpareVO } from '@/api/mes/eq/repairSpare';
 import EquipmentSelect from '@/components/EquipmentSelect/index.vue';
 import type { FormInstance } from 'element-plus';
 import { useCrud } from '@/composables/useCrud';
@@ -249,12 +278,49 @@ const completeForm = reactive<{
 });
 /** 备件下拉选项(完成维修时选择更换备件, 懒加载) */
 const spareOptions = ref<EqSparePartVO[]>([]);
+/** FE-MES-04：备件列表加载失败标记（失败必须可见，不得静默） */
+const spareLoadFailed = ref(false);
+const spareLoading = ref(false);
+/** FE-MES-03：备件领用明细对话框 */
+const sparesDialog = reactive({ visible: false, repairNo: '', list: [] as EqRepairSpareVO[] });
 
 const handleStart = async (row: EqRepairVO) => {
   await proxy?.$modal.confirm('确认开工维修单"' + row.repairNo + '"？');
   await startRepair(row.repairId);
   proxy?.$modal.msgSuccess('开工成功');
   getList();
+};
+
+/**
+ * 加载备件下拉选项（懒加载，首次打开或失败后重试）。
+ * <p>FE-MES-04：原实现为空 catch（注释 ignore）静默吞错 —— 网络抖动或缺少
+ * `mes:eq:spare:list` 权限时下拉为空，用户以为「无备件可选」，完工时备件耗用既不落库
+ * 也不扣库存且无任何报错（与 MES-SOP-01 同型的静默失败）。现改为 warn 日志 + 自动重试
+ * 一次 + 弹窗内可见错误与重试按钮。</p>
+ */
+const loadSpareOptions = async (): Promise<boolean> => {
+  spareLoadFailed.value = false;
+  spareLoading.value = true;
+  try {
+    const res = await listSparePart({ pageNum: 1, pageSize: 200 });
+    spareOptions.value = res.rows || [];
+    return true;
+  } catch (err) {
+    console.warn('[维修完工] 备件列表首次加载失败，准备重试一次', err);
+  }
+  try {
+    const res = await listSparePart({ pageNum: 1, pageSize: 200 });
+    spareOptions.value = res.rows || [];
+    return true;
+  } catch (retryErr) {
+    console.error('[维修完工] 备件列表重试后仍失败，本次无法选择备件', retryErr);
+    spareOptions.value = [];
+    spareLoadFailed.value = true;
+    proxy?.$modal.msgWarning('备件列表加载失败，本次将无法选择更换备件（可点「重试加载备件」）');
+    return false;
+  } finally {
+    spareLoading.value = false;
+  }
 };
 
 const handleOpenComplete = async (row: EqRepairVO) => {
@@ -264,14 +330,9 @@ const handleOpenComplete = async (row: EqRepairVO) => {
   completeForm.repairCost = 0;
   completeForm.remark = '';
   completeForm.spares = [];
-  // 懒加载备件选项(仅首次打开)
+  // 懒加载备件选项(仅首次打开; 失败时对话框内可见并可重试)
   if (spareOptions.value.length === 0) {
-    try {
-      const res = await listSparePart({ pageNum: 1, pageSize: 200 });
-      spareOptions.value = res.rows || [];
-    } catch {
-      /* ignore */
-    }
+    await loadSpareOptions();
   }
   completeDialog.visible = true;
 };
@@ -287,6 +348,28 @@ const submitComplete = async () => {
   proxy?.$modal.msgSuccess('完成成功');
   completeDialog.visible = false;
   getList();
+};
+
+/** FE-MES-03：查看某维修单的备件领用明细（后端 GET /mes/eq/repair-spare/repair/{repairId}） */
+const handleOpenSpares = async (row: EqRepairVO) => {
+  sparesDialog.repairNo = row.repairNo;
+  sparesDialog.list = [];
+  sparesDialog.visible = true;
+  try {
+    const res = await listRepairSpareByRepair(row.repairId);
+    sparesDialog.list = res.data || [];
+  } catch (e) {
+    console.error('[维修备件明细] 加载失败', e);
+    proxy?.$modal.msgError('备件领用明细加载失败（需 mes:eq:repair:query 权限）');
+  }
+};
+
+/** 删除备件领用明细（录入纠错；不会自动回补已扣减的备件库存） */
+const handleDelSpare = async (row: EqRepairSpareVO) => {
+  await proxy?.$modal.confirm('确认删除该备件领用明细？删除不会自动回补已扣减的备件库存。');
+  await delRepairSpare(row.id);
+  proxy?.$modal.msgSuccess('已删除');
+  handleOpenSpares({ repairId: row.repairId, repairNo: sparesDialog.repairNo } as EqRepairVO);
 };
 
 function resetQuery() {

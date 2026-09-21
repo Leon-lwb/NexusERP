@@ -5,6 +5,7 @@ import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.awt.Color;
@@ -22,6 +23,8 @@ import static org.junit.jupiter.api.Assertions.*;
  *
  * @author nexus
  */
+@Tag("local")
+@Tag("dev")
 class PdfContentStamperTest {
 
     private static final byte[] SEAL = quadrantSealPng(240);

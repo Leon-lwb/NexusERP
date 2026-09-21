@@ -515,21 +515,29 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
                 + "\n如需强制履行，请确认后重试。");
         }
 
-        // ①' OQC硬门禁：任一行 OQC 不合格则禁止履行(质量门禁，force 不可绕过)
-        List<String> oqcFailedLines = new ArrayList<>();
+        // ①' OQC硬门禁：白名单放行 —— 仅 oqc_status=QUALIFIED 的行可履行(force 不可绕过)。
+        // 非 QUALIFIED(NULL/PENDING/UNQUALIFIED)一律拦截: 回写丢失时 oqc_status 为 NULL 与"尚未检验"
+        // 无法区分, 若沿用"仅阻断 UNQUALIFIED"的口径, 已判定不合格的行会在回写丢失后被静默放行出库
+        // (审计 MES-QC-01)。放行未检验行必须走显式的质量让步审批, 不能靠门禁静默通过。
+        List<String> oqcBlockedLines = new ArrayList<>();
         for (SoSalesOrderLine line : lines) {
-            if ("UNQUALIFIED".equals(line.getOqcStatus())) {
-                oqcFailedLines.add("行" + line.getLineNo() + "(" + line.getMaterialName() + "):"
-                    + line.getOqcCode());
+            if (!"QUALIFIED".equals(line.getOqcStatus())) {
+                String status = line.getOqcStatus() == null ? "未检验/回写缺失" : line.getOqcStatus();
+                oqcBlockedLines.add("行" + line.getLineNo() + "(" + line.getMaterialName() + "):"
+                    + status + (line.getOqcCode() == null ? "" : "/" + line.getOqcCode()));
             }
         }
-        if (!oqcFailedLines.isEmpty()) {
-            throw new RuntimeException("存在OQC检验不合格的销售订单行，禁止履行：\n"
-                + String.join("\n", oqcFailedLines) + "\n请先处理不合格品后再履行。");
+        if (!oqcBlockedLines.isEmpty()) {
+            throw new RuntimeException("存在未通过OQC检验的销售订单行(仅 QUALIFIED 允许履行)，禁止履行：\n"
+                + String.join("\n", oqcBlockedLines)
+                + "\n请先完成或处理出货检验(OQC)后再履行；确需放行未检验行时，须走质量让步审批并留痕。");
         }
 
         // ② 残余预留清理（兜底：正常出库已把 reserved_qty 消耗至 0）
         stockReservationService.unreserve("SALES_ORDER", soId, null);
+        // ERP-SO-01: 库存侧预留已释放, 必须同步清零行字段 reserved_qty, 否则后续出库会按
+        // min(issueQty, reservedQty) 走"消费预留"分支, 扣减一个已不对应任何有效预留的数(行字段单向失真)。
+        clearLineReservedQty(soId);
 
         // ③ 行状态固化 + fulfilled_qty 兜齐 ordered_qty（消除浮点尾差）
         List<Long> lineIds = new ArrayList<>();
@@ -615,6 +623,9 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
         creditCheckService.release(soId);
         // 释放库存预留, 避免预留库存泄漏(与 cancel 保持一致)
         stockReservationService.unreserve("SALES_ORDER", soId, null);
+        // ERP-SO-01: 库存侧预留已释放, 必须同步清零行字段 reserved_qty, 否则后续出库会按
+        // min(issueQty, reservedQty) 走"消费预留"分支, 扣减一个已不对应任何有效预留的数(行字段单向失真)。
+        clearLineReservedQty(soId);
     }
 
     /**
@@ -640,6 +651,9 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
         creditCheckService.release(soId);
         // 释放库存预留, 避免预留库存泄漏
         stockReservationService.unreserve("SALES_ORDER", soId, null);
+        // ERP-SO-01: 库存侧预留已释放, 必须同步清零行字段 reserved_qty, 否则后续出库会按
+        // min(issueQty, reservedQty) 走"消费预留"分支, 扣减一个已不对应任何有效预留的数(行字段单向失真)。
+        clearLineReservedQty(soId);
 
         // 行状态 -> CANCELLED（头尾一致），并关闭关联生产计划（与 fulfill 对称，防取消后计划仍待执行）
         List<SoSalesOrderLine> lines = soSalesOrderLineMapper.selectList(
@@ -1078,8 +1092,8 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
      *
      * <p><b>供应商取值</b>（决策 Q8-A）：优先 {@code bd_material_vendor} 中
      * {@code status=1 且 is_default=1} 的记录；无默认则按 {@code priority} 升序取第一条；
-     * 都没有则供应商留空并 warn —— 单据仍生成，便于后续人工补全（委外单的
-     * {@code release()} 不校验供应商，不会因此卡住）。</p>
+     * 都没有则<b>不建单</b>并告警（ERP-SO-09①：原实现留空也建单，但委外单下达会校验供应商，
+     * 结果是落库后卡在 DRAFT 需人工补供应商，产生半成品单据）。</p>
      *
      * <p>数量取订单行订购量，单价取物料-供应商关系的协议价（无则 0），
      * 收货目标仓取订单行上的默认仓库。</p>
@@ -1110,18 +1124,18 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
     private void createSubcontract(SoSalesOrderLine line, String soNo, BdMaterial material) {
         BdMaterialVendor vendor = resolveDefaultVendor(material.getMaterialId());
         if (vendor == null) {
-            log.warn("物料未配置可用供应商，委外单将不关联供应商（可在委外单中补全）, materialId={}, materialCode={}",
-                material.getMaterialId(), material.getMaterialCode());
+            // ERP-SO-09①: 无供应商时不建单（原实现留空也建单，下达时会因供应商校验卡在 DRAFT）
+            log.warn("物料未配置可用供应商，跳过自动创建委外单（请先维护 bd_material_vendor 或人工建单）: soNo={}, materialId={}, materialCode={}",
+                soNo, material.getMaterialId(), material.getMaterialCode());
+            return;
         }
 
         PrdSubcontract subcontract = new PrdSubcontract();
         subcontract.setSubcontractNo(autoCodeUtil.genSerialCode("PRD_SUBCONTRACT_CODE", null));
-        if (vendor != null) {
-            subcontract.setVendorId(vendor.getVendorId());
-            subcontract.setVendorCode(vendor.getVendorCode());
-            subcontract.setVendorName(vendor.getVendorName());
-            subcontract.setUnitPrice(vendor.getPrice());
-        }
+        subcontract.setVendorId(vendor.getVendorId());
+        subcontract.setVendorCode(vendor.getVendorCode());
+        subcontract.setVendorName(vendor.getVendorName());
+        subcontract.setUnitPrice(vendor.getPrice());
         subcontract.setMaterialId(material.getMaterialId());
         subcontract.setMaterialCode(material.getMaterialCode());
         subcontract.setMaterialName(material.getMaterialName());
@@ -1219,10 +1233,26 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
             transfer.setToWarehouseName(toWarehouse.getWarehouseName());
         }
         transfer.setTransferType("WAREHOUSE");
-        transfer.setTotalQuantity(line.getOrderedQty());
+        // ERP-SO-09②: 调拨数量按来源仓可用量裁剪(原实现直接取订购量, 可大于来源仓可用量,
+        // 调拨执行时会库存不足)。available = 在库 - 已预留。
+        BigDecimal orderedQty = nz(line.getOrderedQty());
+        BigDecimal available = nz(source.getStockQuantity()).subtract(nz(source.getReservedQuantity()));
+        BigDecimal transferQty = orderedQty.min(available);
+        if (transferQty.signum() <= 0) {
+            log.warn("调拨型物料来源仓可用量不足，跳过自动建调拨单: soNo={}, materialCode={}, available={}",
+                soNo, material.getMaterialCode(), available);
+            return;
+        }
+        boolean clipped = transferQty.compareTo(orderedQty) < 0;
+        if (clipped) {
+            log.warn("调拨数量按来源仓可用量裁剪: soNo={}, materialCode={}, orderedQty={}, available={}, transferQty={}",
+                soNo, material.getMaterialCode(), orderedQty, available, transferQty);
+        }
+        transfer.setTotalQuantity(transferQty);
         transfer.setStatus("DRAFT");
         transfer.setTransferDate(new Date());
-        transfer.setRemark("销售订单 " + soNo + " 行 " + line.getLineNo() + " 确认后自动生成");
+        transfer.setRemark("销售订单 " + soNo + " 行 " + line.getLineNo() + " 确认后自动生成"
+            + (clipped ? "（数量按来源仓可用量 " + available.stripTrailingZeros().toPlainString() + " 裁剪）" : ""));
         wmTransferMapper.insert(transfer);
 
         WmTransferLine transferLine = new WmTransferLine();
@@ -1232,7 +1262,7 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
         transferLine.setMaterialName(material.getMaterialName());
         transferLine.setMaterialSpec(material.getMaterialSpec());
         transferLine.setBaseUomName(line.getUnit());
-        transferLine.setQuantity(line.getOrderedQty());
+        transferLine.setQuantity(transferQty);
         transferLine.setRemark("销售订单 " + soNo + " 行 " + line.getLineNo());
         wmTransferLineMapper.insert(transferLine);
         log.info("销售订单确认后自动创建调拨单, soNo={}, materialCode={}, transferNo={}, from={}, to={}",
@@ -1309,6 +1339,18 @@ public class SoSalesOrderHeaderServiceImpl implements ISoSalesOrderHeaderService
         prdProductionPlanMapper.insert(plan);
         log.info("销售订单确认后自动创建生产计划, soNo={}, materialCode={}, planNo={}",
             soNo, material.getMaterialCode(), plan.getPlanNo());
+    }
+
+    /**
+     * 清零销售订单行的 reserved_qty 展示字段(ERP-SO-01)。
+     * <p>预留的权威口径在库存侧(wm_material_stock.reserved_quantity / wm_stock_reservation),
+     * 行字段仅用于展示; 取消/关闭/履行释放库存侧预留后必须一并清零, 否则行字段残留非 0,
+     * 后续出库会按该残留值走"消费预留"分支并条件扣减(.ge(reservedQty, ...)), 造成并发第二个请求报错。
+     */
+    private void clearLineReservedQty(Long soId) {
+        soSalesOrderLineMapper.update(null, Wrappers.<SoSalesOrderLine>lambdaUpdate()
+            .eq(SoSalesOrderLine::getSoId, soId)
+            .set(SoSalesOrderLine::getReservedQty, BigDecimal.ZERO));
     }
 
     /**

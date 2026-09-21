@@ -24,6 +24,7 @@ import com.nexus.system.strategy.AutoCodeUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
 
@@ -125,8 +126,16 @@ public class PuPurchaseReceivingServiceImpl implements PuPurchaseReceivingServic
             noticeLine.setMaterialSpec(orderLine.getMaterialSpec());
             noticeLine.setBaseUomId(String.valueOf(material != null ? material.getBaseUomId() : null));
             noticeLine.setBaseUomName(orderLine.getUnit());
-            noticeLine.setQuantityArrival(orderLine.getOrderQuantity());
-            noticeLine.setQuantityQuanlified(orderLine.getOrderQuantity());
+            // ★ 预填「剩余未收量」而非订单量(ERP-PU-01)：把订单量当作到货量会被下游直接写成收货量，
+            // 导致 received_quantity 虚增并可按虚量开票。
+            BigDecimal orderQty = orderLine.getOrderQuantity() != null ? orderLine.getOrderQuantity() : BigDecimal.ZERO;
+            BigDecimal receivedQty = orderLine.getReceivedQuantity() != null ? orderLine.getReceivedQuantity() : BigDecimal.ZERO;
+            BigDecimal remainingQty = orderQty.subtract(receivedQty);
+            if (remainingQty.compareTo(BigDecimal.ZERO) < 0) {
+                remainingQty = BigDecimal.ZERO;
+            }
+            noticeLine.setQuantityArrival(remainingQty);
+            noticeLine.setQuantityQuanlified(remainingQty);
             // 按物料档案 inspectionRequired 派生 iqcCheck(1=需要来料检验,0=免检)
             noticeLine.setIqcCheck(material != null && Integer.valueOf(1).equals(material.getInspectionRequired()) ? "1" : "0");
             noticeLine.setRemark(orderLine.getRemark());
@@ -183,6 +192,11 @@ public class PuPurchaseReceivingServiceImpl implements PuPurchaseReceivingServic
         receive.setRemark("到货通知审批通过后自动生成");
         materialReceiveMapper.insert(receive);
 
+        // 采购订单行索引：用于把到货通知行对应到采购订单行（到货通知行无 purchase_line_id 列，
+        // 按物料在订单内唯一匹配；无法唯一确定时留空，由回写阶段给出可读错误）
+        List<PuPurchaseOrderLine> orderLines = purchaseOrderLineMapper.selectList(
+            new LambdaQueryWrapper<PuPurchaseOrderLine>().eq(PuPurchaseOrderLine::getOrderId, order.getOrderId()));
+
         // 4. 创建物料收货明细行（从到货通知行拷贝）
         for (WmArrivalNoticeLine noticeLine : noticeLines) {
             WmMaterialReceiveLine receiveLine = new WmMaterialReceiveLine();
@@ -192,12 +206,33 @@ public class PuPurchaseReceivingServiceImpl implements PuPurchaseReceivingServic
             receiveLine.setMaterialName(noticeLine.getMaterialName());
             receiveLine.setMaterialSpec(noticeLine.getMaterialSpec());
             receiveLine.setBaseUomName(noticeLine.getBaseUomName());
-            receiveLine.setQuantityReceived(noticeLine.getQuantityArrival());
+            // ★ 不预填收货量(ERP-PU-01)：草稿由仓库按实收填写，避免"未实收即按订单量回写"造成虚增。
+            // 到货通知行的 quantityArrival 已修正为「剩余未收量」，仅作参考。
+            receiveLine.setQuantityReceived(BigDecimal.ZERO);
+            // ★ 补齐采购订单行维度(ERP-PU-06)：让回写按行匹配而不是按物料 selectOne
+            receiveLine.setPurchaseLineId(resolvePurchaseLineId(orderLines, noticeLine.getMaterialId()));
             receiveLine.setRemark(noticeLine.getRemark());
             materialReceiveLineMapper.insert(receiveLine);
         }
 
         return receive.getReceiveId();
+    }
+
+    /**
+     * 将到货通知行对应到采购订单行：按物料在订单内唯一匹配。
+     *
+     * @param orderLines 采购订单行列表
+     * @param materialId 物料ID
+     * @return 采购订单行ID；匹配不到或多行（无法唯一确定）时返回 null
+     */
+    private Long resolvePurchaseLineId(List<PuPurchaseOrderLine> orderLines, Long materialId) {
+        if (materialId == null || orderLines == null || orderLines.isEmpty()) {
+            return null;
+        }
+        List<PuPurchaseOrderLine> matched = orderLines.stream()
+            .filter(l -> materialId.equals(l.getMaterialId()))
+            .toList();
+        return matched.size() == 1 ? matched.get(0).getLineId() : null;
     }
 
     /**

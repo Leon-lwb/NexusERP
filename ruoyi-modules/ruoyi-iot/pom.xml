@@ -132,4 +132,27 @@
 
     </dependencies>
 
+    <properties>
+        <!-- 覆盖根 pom 的 groups 过滤：根 pom 用 <groups>${profiles.active}</groups> 只执行带 @Tag 的测试，
+             导致本模块无 @Tag 的单测（IotMqttTopicParserTest / IotDataValueResolverTest /
+             IotSchedulerFallbackTest）此前从不执行；覆盖为空 = 全部执行（对齐 ruoyi-mes P0-7 修复）。 -->
+        <iot.groups></iot.groups>
+        <!-- 默认排除 @Tag("integration") 标记的集成测试 -->
+        <iot.excludedGroups>integration</iot.excludedGroups>
+    </properties>
+
+    <build>
+        <plugins>
+            <!-- 定时任务本地兜底单测（IotSchedulerFallbackTest）必须能被执行，故覆盖根 pom surefire 配置 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <groups combine.self="override">${iot.groups}</groups>
+                    <excludedGroups combine.self="override">${iot.excludedGroups}</excludedGroups>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
 </project>

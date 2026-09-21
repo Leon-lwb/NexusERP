@@ -12,6 +12,7 @@ import com.nexus.common.sign.service.IESSealService;
 import org.aopalliance.intercept.MethodInvocation;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.aop.support.AopUtils;
@@ -62,6 +63,8 @@ import static org.junit.jupiter.api.Assertions.*;
  *
  * @author nexus
  */
+@Tag("local")
+@Tag("dev")
 class SignDataSourceMasterTest {
 
     /** 签章库所在数据源名：ry-vue，即 {@code dynamic.datasource.primary: master} */

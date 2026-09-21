@@ -1,6 +1,8 @@
 package com.nexus.mes.lt.service.impl;
 
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
+import com.baomidou.mybatisplus.core.conditions.Wrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.nexus.mes.lt.domain.LtLot;
 import com.nexus.mes.lt.domain.bo.LtLotBo;
@@ -23,6 +25,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -343,6 +347,7 @@ class LtLotServiceImplTest {
         LtLot lot = new LtLot();
         lot.setLotId(1L);
         lot.setStatus("IN_STOCK");
+        lot.setQcStatus("PASS");
         lot.setQuantity(BigDecimal.valueOf(10));
         lot.setConsumedQty(BigDecimal.ZERO);
         when(baseMapper.selectById(1L)).thenReturn(lot);
@@ -357,6 +362,7 @@ class LtLotServiceImplTest {
         LtLot lot = new LtLot();
         lot.setLotId(1L);
         lot.setStatus("IN_STOCK");
+        lot.setQcStatus("PASS");
         lot.setQuantity(BigDecimal.valueOf(100));
         lot.setConsumedQty(BigDecimal.ZERO);
         when(baseMapper.selectById(1L)).thenReturn(lot);
@@ -372,6 +378,7 @@ class LtLotServiceImplTest {
         LtLot lot = new LtLot();
         lot.setLotId(1L);
         lot.setStatus("IN_STOCK");
+        lot.setQcStatus("PASS");
         lot.setQuantity(BigDecimal.valueOf(10));
         lot.setConsumedQty(BigDecimal.ZERO);
         when(baseMapper.selectById(1L)).thenReturn(lot);
@@ -387,6 +394,8 @@ class LtLotServiceImplTest {
         LtLot lot = new LtLot();
         lot.setLotId(1L);
         lot.setStatus("IN_STOCK");
+        lot.setStatus("IN_STOCK");
+        lot.setQcStatus("PASS");
         lot.setQuantity(BigDecimal.valueOf(100));
         lot.setConsumedQty(BigDecimal.ZERO);
         when(baseMapper.selectById(1L)).thenReturn(lot);
@@ -503,7 +512,7 @@ class LtLotServiceImplTest {
 
     @Test
     void applyIqcResultReturnsFalseWhenNoLotLinked() {
-        when(baseMapper.selectOne(any())).thenReturn(null);
+        when(baseMapper.selectList(any())).thenReturn(List.of());
 
         Boolean result = service.applyIqcResult(1L, "QUALIFIED");
 
@@ -515,7 +524,7 @@ class LtLotServiceImplTest {
         LtLot lot = new LtLot();
         lot.setLotId(1L);
         lot.setStatus("IN_STOCK");
-        when(baseMapper.selectOne(any())).thenReturn(lot);
+        when(baseMapper.selectList(any())).thenReturn(List.of(lot));
 
         Boolean result = service.applyIqcResult(1L, "QUALIFIED");
 
@@ -530,7 +539,7 @@ class LtLotServiceImplTest {
         lot.setStatus("IN_STOCK");
         lot.setQuantity(BigDecimal.TEN);
         lot.setConsumedQty(BigDecimal.ZERO);
-        when(baseMapper.selectOne(any())).thenReturn(lot);
+        when(baseMapper.selectList(any())).thenReturn(List.of(lot));
         // quarantine(lotId) 内部会按 ID 重新加载批次
         when(baseMapper.selectById(1L)).thenReturn(lot);
         when(baseMapper.update(any(), any())).thenReturn(1);
@@ -540,6 +549,49 @@ class LtLotServiceImplTest {
         assertTrue(result);
         // quarantine should have been called (2nd update)
         verify(baseMapper, times(2)).update(any(), any());
+    }
+
+    // ==================== MES-QC-10②: 同 iqcId 多批次必须全部回写 ====================
+
+    @Test
+    void applyIqcResultFailUpdatesAllLotsLinkedToSameIqc() {
+        LtLot lot1 = new LtLot();
+        lot1.setLotId(1L);
+        lot1.setStatus("IN_STOCK");
+        lot1.setQuantity(BigDecimal.TEN);
+        lot1.setConsumedQty(BigDecimal.ZERO);
+        LtLot lot2 = new LtLot();
+        lot2.setLotId(2L);
+        lot2.setStatus("IN_STOCK");
+        lot2.setQuantity(BigDecimal.TEN);
+        lot2.setConsumedQty(BigDecimal.ZERO);
+        when(baseMapper.selectList(any())).thenReturn(List.of(lot1, lot2));
+        when(baseMapper.selectById(1L)).thenReturn(lot1);
+        when(baseMapper.selectById(2L)).thenReturn(lot2);
+        when(baseMapper.update(any(), any())).thenReturn(1);
+
+        Boolean result = service.applyIqcResult(7L, "UNQUALIFIED");
+
+        assertTrue(result);
+        // 每个批次: 1 次 qc_status 回写 + 1 次隔离 CAS, 两个批次都要被处理
+        verify(baseMapper, times(4)).update(isNull(), any());
+        verify(baseMapper, times(2)).selectById(any());
+    }
+
+    @Test
+    void applyIqcResultFailOnTerminalLotKeepsFailWithoutQuarantine() {
+        LtLot lot = new LtLot();
+        lot.setLotId(5L);
+        lot.setStatus("SCRAPPED");
+        when(baseMapper.selectList(any())).thenReturn(List.of(lot));
+        when(baseMapper.update(any(), any())).thenReturn(1);
+
+        Boolean result = service.applyIqcResult(7L, "UNQUALIFIED");
+
+        assertTrue(result);
+        // 终态批次只回写 FAIL, 不隔离(但仍必须留 error 级告警, 由日志断言覆盖)
+        verify(baseMapper, times(1)).update(isNull(), any());
+        verify(baseMapper, never()).selectById(any());
     }
 
     @Test
@@ -683,5 +735,121 @@ class LtLotServiceImplTest {
         Boolean result = service.quarantineByNcr(1L, 100L, "质量问题");
 
         assertTrue(result);
+    }
+
+    // ==================== MES-LT-01 原子扣减 + 超发守卫 ====================
+
+    @Test
+    void consumeUsesAtomicSqlWithQuantityGuard() {
+        LtLot lot = new LtLot();
+        lot.setLotId(1L);
+        lot.setStatus("IN_STOCK");
+        lot.setQcStatus("PASS");
+        lot.setQuantity(BigDecimal.TEN);
+        lot.setConsumedQty(BigDecimal.ZERO);
+        when(baseMapper.selectById(1L)).thenReturn(lot);
+        // 并发场景: 守卫命中 0 行 → 拒绝(修复前写绝对值、守卫在 Java 内存里, 会双重通过而超发)
+        when(baseMapper.update(any(), any())).thenReturn(0);
+
+        RuntimeException exception = assertThrows(RuntimeException.class,
+            () -> service.consume(1L, BigDecimal.valueOf(8)));
+        assertTrue(exception.getMessage().contains("状态已变更"));
+
+        ArgumentCaptor<Wrapper> captor = ArgumentCaptor.forClass(Wrapper.class);
+        verify(baseMapper).update(isNull(), captor.capture());
+        LambdaUpdateWrapper<LtLot> wrapper = (LambdaUpdateWrapper<LtLot>) captor.getValue();
+        assertTrue(wrapper.getSqlSet().contains("consumed_qty = consumed_qty +"),
+            "必须是原子自增而非写绝对值");
+        assertTrue(wrapper.getSqlSegment().contains("consumed_qty +"),
+            "必须带 consumed_qty + qty <= quantity 守卫");
+    }
+
+    // ==================== MES-LT-03 效期拦截 ====================
+
+    @Test
+    void consumeRejectsExpiredLot() {
+        LtLot lot = new LtLot();
+        lot.setLotId(1L);
+        lot.setLotCode("LOT-EXP");
+        lot.setStatus("IN_STOCK");
+        lot.setQcStatus("PASS");
+        lot.setQuantity(BigDecimal.TEN);
+        lot.setConsumedQty(BigDecimal.ZERO);
+        lot.setExpiryDate(Date.from(LocalDate.now().minusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant()));
+        when(baseMapper.selectById(1L)).thenReturn(lot);
+
+        RuntimeException exception = assertThrows(RuntimeException.class,
+            () -> service.consume(1L, BigDecimal.ONE));
+
+        assertTrue(exception.getMessage().contains("已过期"));
+        verify(baseMapper, never()).update(any(), any());
+    }
+
+    @Test
+    void checkLotUsableRejectsExpiredLot() {
+        LtLot lot = new LtLot();
+        lot.setLotId(1L);
+        lot.setMaterialId(1L);
+        lot.setStatus("IN_STOCK");
+        lot.setQcStatus("PASS");
+        lot.setQuantity(BigDecimal.TEN);
+        lot.setConsumedQty(BigDecimal.ZERO);
+        lot.setExpiryDate(Date.from(LocalDate.now().minusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant()));
+        when(baseMapper.selectById(1L)).thenReturn(lot);
+
+        Map<String, Object> result = service.checkLotUsable(1L, 1L);
+
+        assertFalse((Boolean) result.get("usable"));
+        assertTrue(((String) result.get("reason")).contains("已过期"));
+    }
+
+    @Test
+    void recommendFefoQueryExcludesExpiredLots() {
+        when(baseMapper.selectVoList(any())).thenReturn(List.of());
+
+        service.recommendFefo(1L, null);
+
+        ArgumentCaptor<Wrapper> captor = ArgumentCaptor.forClass(Wrapper.class);
+        verify(baseMapper).selectVoList(captor.capture());
+        assertTrue(captor.getValue().getSqlSegment().contains("expiry_date"),
+            "FEFO 查询必须过滤过期批次");
+    }
+
+    // ==================== MES-LT-06 QC 门禁 ====================
+
+    @Test
+    void consumeRejectsFailQcLot() {
+        LtLot lot = new LtLot();
+        lot.setLotId(1L);
+        lot.setLotCode("LOT-FAIL");
+        lot.setStatus("IN_STOCK");
+        lot.setQcStatus("FAIL");
+        lot.setQuantity(BigDecimal.TEN);
+        lot.setConsumedQty(BigDecimal.ZERO);
+        when(baseMapper.selectById(1L)).thenReturn(lot);
+
+        RuntimeException exception = assertThrows(RuntimeException.class,
+            () -> service.consume(1L, BigDecimal.ONE));
+
+        assertTrue(exception.getMessage().contains("QC未通过"));
+        verify(baseMapper, never()).update(any(), any());
+    }
+
+    @Test
+    void releaseRejectsFailQcLot() {
+        LtLot lot = new LtLot();
+        lot.setLotId(1L);
+        lot.setLotCode("LOT-FAIL");
+        lot.setStatus("QUARANTINED");
+        lot.setQcStatus("FAIL");
+        lot.setQuantity(BigDecimal.TEN);
+        lot.setConsumedQty(BigDecimal.ZERO);
+        when(baseMapper.selectById(1L)).thenReturn(lot);
+
+        RuntimeException exception = assertThrows(RuntimeException.class,
+            () -> service.release(1L));
+
+        assertTrue(exception.getMessage().contains("不得放行"));
+        verify(baseMapper, never()).update(any(), any());
     }
 }

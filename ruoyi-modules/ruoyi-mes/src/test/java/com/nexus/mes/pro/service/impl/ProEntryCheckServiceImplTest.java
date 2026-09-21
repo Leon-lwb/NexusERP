@@ -19,6 +19,7 @@ import com.nexus.mes.qc.domain.QcIpqc;
 import com.nexus.mes.qc.mapper.QcIpqcMapper;
 import com.nexus.mes.sop.domain.vo.SopDocumentVo;
 import com.nexus.mes.sop.service.ISopProcessBindingService;
+import com.nexus.mes.sop.service.ISopViewLogService;
 import com.nexus.mes.tg.service.ITgToolingService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -35,6 +36,7 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
@@ -58,6 +60,8 @@ class ProEntryCheckServiceImplTest {
     private EqEquipmentMapper eqEquipmentMapper;
     @Mock
     private ISopProcessBindingService sopBindingService;
+    @Mock
+    private ISopViewLogService sopViewLogService;
     @Mock
     private ITgToolingService tgToolingService;
     @Mock
@@ -164,8 +168,8 @@ class ProEntryCheckServiceImplTest {
     }
 
     @Test
-    void runEntryChecksSkipsToolingCheckWhenNoToolingContext() {
-        // 未传 toolingId -> TOOLING_AVAILABLE 规则跳过(不阻断)
+    void runEntryChecksFailsWhenNoToolingContextButRuleRequiresTooling() {
+        // MES-TG-02: 规则要求工装时未传 toolingId 必须拒绝(修复前静默放行, 门禁可被"不传参数"绕过)
         ProFlowCardStep step = buildStep(1L, 100L, 1, 200L);
         when(stepMapper.selectById(1L)).thenReturn(step);
         when(ruleMapper.selectList(any(Wrapper.class))).thenReturn(List.of(
@@ -173,8 +177,87 @@ class ProEntryCheckServiceImplTest {
 
         ProCheckResultVo result = proEntryCheckService.runEntryChecks(1L, new ProEntryBo());
 
-        assertTrue(result.getPassed());
+        assertFalse(result.getPassed(), "未提供工装信息时必须拒绝");
+        assertTrue(result.getFailures().stream()
+            .anyMatch(f -> f.getCheckType().equals(IProEntryCheckService.TYPE_TOOLING_AVAILABLE)));
         verifyNoToolingCall();
+    }
+
+    @Test
+    void runEntryChecksPassesToolingCheckWhenContextProvided() {
+        ProFlowCardStep step = buildStep(1L, 100L, 1, 200L);
+        ProEntryBo bo = new ProEntryBo();
+        bo.setToolingId(300L);
+        Map<String, Object> ret = new HashMap<>();
+        ret.put("usable", true);
+        when(stepMapper.selectById(1L)).thenReturn(step);
+        when(ruleMapper.selectList(any(Wrapper.class))).thenReturn(List.of(
+            rule(IProEntryCheckService.TYPE_TOOLING_AVAILABLE, IProEntryCheckService.STAGE_ENTRY)));
+        when(tgToolingService.checkToolingAvailable(300L)).thenReturn(ret);
+
+        assertTrue(proEntryCheckService.runEntryChecks(1L, bo).getPassed());
+    }
+
+    // ==================== ENTRY: SOP_ACKNOWLEDGED (MES-SOP-02) ====================
+
+    @Test
+    void runEntryChecksFailsWhenSopNotAcknowledged() {
+        ProFlowCardStep step = buildStep(1L, 100L, 1, 200L);
+        ProEntryBo bo = new ProEntryBo();
+        bo.setOperatorId(5L);
+        SopDocumentVo sop = new SopDocumentVo();
+        sop.setSopId(77L);
+        sop.setStatus("PUBLISHED");
+        sop.setCurrentVersion("1.0");
+        when(stepMapper.selectById(1L)).thenReturn(step);
+        when(ruleMapper.selectList(any(Wrapper.class))).thenReturn(List.of(
+            rule(IProEntryCheckService.TYPE_SOP_ACKNOWLEDGED, IProEntryCheckService.STAGE_ENTRY)));
+        when(sopBindingService.getSopForStep(1L)).thenReturn(sop);
+        when(sopViewLogService.hasAcknowledged(77L, "1.0", 5L)).thenReturn(false);
+
+        ProCheckResultVo result = proEntryCheckService.runEntryChecks(1L, bo);
+
+        assertFalse(result.getPassed(), "未确认作业指导书必须拦截进站");
+        assertTrue(result.getFailures().stream()
+            .anyMatch(f -> f.getCheckType().equals(IProEntryCheckService.TYPE_SOP_ACKNOWLEDGED)));
+    }
+
+    @Test
+    void runEntryChecksPassesWhenSopAcknowledged() {
+        ProFlowCardStep step = buildStep(1L, 100L, 1, 200L);
+        ProEntryBo bo = new ProEntryBo();
+        bo.setOperatorId(5L);
+        SopDocumentVo sop = new SopDocumentVo();
+        sop.setSopId(77L);
+        sop.setStatus("PUBLISHED");
+        sop.setCurrentVersion("1.0");
+        when(stepMapper.selectById(1L)).thenReturn(step);
+        when(ruleMapper.selectList(any(Wrapper.class))).thenReturn(List.of(
+            rule(IProEntryCheckService.TYPE_SOP_ACKNOWLEDGED, IProEntryCheckService.STAGE_ENTRY)));
+        when(sopBindingService.getSopForStep(1L)).thenReturn(sop);
+        when(sopViewLogService.hasAcknowledged(77L, "1.0", 5L)).thenReturn(true);
+
+        assertTrue(proEntryCheckService.runEntryChecks(1L, bo).getPassed());
+    }
+
+    @Test
+    void runEntryChecksFailsAckWhenSopNotPublished() {
+        ProFlowCardStep step = buildStep(1L, 100L, 1, 200L);
+        ProEntryBo bo = new ProEntryBo();
+        bo.setOperatorId(5L);
+        SopDocumentVo sop = new SopDocumentVo();
+        sop.setSopId(78L);
+        sop.setStatus("DRAFT");
+        when(stepMapper.selectById(1L)).thenReturn(step);
+        when(ruleMapper.selectList(any(Wrapper.class))).thenReturn(List.of(
+            rule(IProEntryCheckService.TYPE_SOP_ACKNOWLEDGED, IProEntryCheckService.STAGE_ENTRY)));
+        when(sopBindingService.getSopForStep(1L)).thenReturn(sop);
+
+        ProCheckResultVo result = proEntryCheckService.runEntryChecks(1L, bo);
+
+        assertFalse(result.getPassed());
+        verify(sopViewLogService, org.mockito.Mockito.never())
+            .hasAcknowledged(any(), any(), any());
     }
 
     // ==================== ENTRY: EQUIPMENT_STATUS ====================

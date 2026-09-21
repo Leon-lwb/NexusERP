@@ -43,4 +43,13 @@ public interface FlashTypeProvider {
     default ResourceAllocation allocate(FlashContext ctx) {
         return null;
     }
+
+    /**
+     * 池类资源类型(对应 mes_resource_pool.resource_type, 如 MAC/SN); 非池类返回 null。
+     * <p>MES-FLASH-06: 刷写结果回写资源项状态(PASS 置 USED / FAIL 回收 AVAILABLE)需要按资源类型定位池,
+     * 故由池类 Provider 声明; 非池类返回 null 即不参与资源回收。</p>
+     */
+    default String getPoolResourceType() {
+        return null;
+    }
 }

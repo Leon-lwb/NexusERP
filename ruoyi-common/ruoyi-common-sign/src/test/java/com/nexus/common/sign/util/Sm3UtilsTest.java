@@ -1,6 +1,7 @@
 package com.nexus.common.sign.util;
 
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;
@@ -12,6 +13,8 @@ import static org.junit.jupiter.api.Assertions.*;
  *
  * @author nexus
  */
+@Tag("local")
+@Tag("dev")
 class Sm3UtilsTest {
 
     /** GB/T 32905-2016 标准测试向量：SM3("abc") */

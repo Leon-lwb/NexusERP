@@ -20,6 +20,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -34,6 +35,8 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+@Tag("local")
+@Tag("dev")
 @ExtendWith(MockitoExtension.class)
 class EqMaintenancePlanServiceImplTest {
 
@@ -237,6 +240,32 @@ class EqMaintenancePlanServiceImplTest {
         assertTrue(exception.getMessage().contains("不存在"));
     }
 
+    /**
+     * MES-EQ-07 核心断言：CAS 影响 0 行（并发/重复提交）时必须抛异常，且**不得**写入第二条保养记录。
+     * 修复前 completePlan 是读-改-写：两个线程都通过 ACTIVE 校验 → 两条 eq_maintenance_record
+     * 且 next_date 被推进两次。
+     */
+    @Test
+    void completePlanRejectsWhenCasAffectsZeroRowsAndWritesNoRecord() {
+        EqMaintenancePlan plan = new EqMaintenancePlan();
+        plan.setPlanId(1L);
+        plan.setEquipmentId(10L);
+        plan.setMaintenanceType("MONTHLY");
+        plan.setCycleDays(30);
+        plan.setStatus("ACTIVE");
+        when(baseMapper.selectById(1L)).thenReturn(plan);
+        // 条件更新 next_date + status='ACTIVE' 未命中 → 说明已被其他请求完成
+        when(baseMapper.update(isNull(), any())).thenReturn(0);
+
+        ServiceException exception = assertThrows(ServiceException.class,
+            () -> service.completePlan(1L, new EqMaintenanceRecordBo()));
+
+        assertTrue(exception.getMessage().contains("状态已变更"));
+        // 关键：CAS 失败后一条保养记录都不能写
+        verify(maintenanceRecordMapper, never()).insert(any(EqMaintenanceRecord.class));
+        verify(equipmentService, never()).updateStatus(any(), any());
+    }
+
     @Test
     void completePlanRejectsNonActivePlan() {
         EqMaintenancePlan plan = new EqMaintenancePlan();
@@ -258,6 +287,7 @@ class EqMaintenancePlanServiceImplTest {
         plan.setCycleDays(30);
         plan.setStatus("ACTIVE");
         when(baseMapper.selectById(1L)).thenReturn(plan);
+        when(baseMapper.update(isNull(), any())).thenReturn(1);
         when(maintenanceRecordMapper.insert(any(EqMaintenanceRecord.class))).thenReturn(1);
         EqMaintenanceRecordVo recordVo = new EqMaintenanceRecordVo();
         recordVo.setRecordId(100L);
@@ -284,8 +314,8 @@ class EqMaintenancePlanServiceImplTest {
         assertEquals("完成保养", record.getContent());
         assertNotNull(record.getExecuteTime());
 
-        // Verify nextDate advanced
-        verify(baseMapper).update(any(), any());
+        // Verify nextDate advanced (CAS: next_date + status='ACTIVE' 同一条条件更新)
+        verify(baseMapper).update(isNull(), any());
 
         // Verify result
         assertNotNull(result);
@@ -302,6 +332,7 @@ class EqMaintenancePlanServiceImplTest {
         plan.setCycleDays(null);
         plan.setStatus("ACTIVE");
         when(baseMapper.selectById(1L)).thenReturn(plan);
+        when(baseMapper.update(isNull(), any())).thenReturn(1);
         when(maintenanceRecordMapper.insert(any(EqMaintenanceRecord.class))).thenReturn(1);
         EqMaintenanceRecordVo recordVo = new EqMaintenanceRecordVo();
         recordVo.setRecordId(100L);
@@ -313,7 +344,7 @@ class EqMaintenancePlanServiceImplTest {
         service.completePlan(1L, bo);
 
         // 30 days default for MONTHLY
-        verify(baseMapper).update(any(), any());
+        verify(baseMapper).update(isNull(), any());
     }
 
     @Test
@@ -325,6 +356,7 @@ class EqMaintenancePlanServiceImplTest {
         plan.setCycleDays(30);
         plan.setStatus("ACTIVE");
         when(baseMapper.selectById(1L)).thenReturn(plan);
+        when(baseMapper.update(isNull(), any())).thenReturn(1);
         when(maintenanceRecordMapper.insert(any(EqMaintenanceRecord.class))).thenReturn(1);
         EqMaintenanceRecordVo recordVo = new EqMaintenanceRecordVo();
         recordVo.setRecordId(100L);
@@ -337,6 +369,36 @@ class EqMaintenancePlanServiceImplTest {
         service.completePlan(1L, bo);
 
         verify(equipmentService).updateStatus(10L, "MAINTENANCE");
+        // 异常结果不得结束保养
+        verify(equipmentService, never()).finishMaintenance(any(), any());
+    }
+
+    /**
+     * MES-EQ-05 核心断言：保养完成且结果正常时，若设备因上次保养异常处于 MAINTENANCE，
+     * 必须走 finishMaintenance 收口（此前没有任何清除点 → 永久卡"保养中"）。
+     */
+    @Test
+    void completePlanWithNormalResultReleasesMaintenance() {
+        EqMaintenancePlan plan = new EqMaintenancePlan();
+        plan.setPlanId(1L);
+        plan.setEquipmentId(10L);
+        plan.setMaintenanceType("MONTHLY");
+        plan.setCycleDays(30);
+        plan.setStatus("ACTIVE");
+        when(baseMapper.selectById(1L)).thenReturn(plan);
+        when(baseMapper.update(isNull(), any())).thenReturn(1);
+        when(maintenanceRecordMapper.insert(any(EqMaintenanceRecord.class))).thenReturn(1);
+        EqMaintenanceRecordVo recordVo = new EqMaintenanceRecordVo();
+        recordVo.setRecordId(100L);
+        recordVo.setEquipmentId(10L);
+        when(maintenanceRecordMapper.selectVoById(any())).thenReturn(recordVo);
+
+        EqMaintenanceRecordBo bo = new EqMaintenanceRecordBo();
+        bo.setResult("NORMAL");
+
+        service.completePlan(1L, bo);
+
+        verify(equipmentService).finishMaintenance(10L, "保养完成且结果正常");
     }
 
     @Test
@@ -348,6 +410,7 @@ class EqMaintenancePlanServiceImplTest {
         plan.setCycleDays(30);
         plan.setStatus("ACTIVE");
         when(baseMapper.selectById(1L)).thenReturn(plan);
+        when(baseMapper.update(isNull(), any())).thenReturn(1);
         when(maintenanceRecordMapper.insert(any(EqMaintenanceRecord.class))).thenReturn(1);
         EqMaintenanceRecordVo recordVo = new EqMaintenanceRecordVo();
         recordVo.setRecordId(100L);

@@ -47,4 +47,15 @@ public interface IMesLabelTemplateService {
      * @return true 发送成功
      */
     boolean testPrint(Long templateId);
+
+    /**
+     * 人工补打(MES-LABEL-02): 按 SN + 模板重新渲染并直发打印机, 留痕 print_source=REPRINT。
+     * <p>造码联动的自动打印带幂等键(同 SN 同模板已成功打印则跳过), 重打必须走本入口,
+     * 保证"一个 SN 打了几张"在留痕里可查。</p>
+     *
+     * @param snId       SN ID
+     * @param templateId 模板ID
+     * @return true 发送成功
+     */
+    boolean reprint(Long snId, Long templateId);
 }

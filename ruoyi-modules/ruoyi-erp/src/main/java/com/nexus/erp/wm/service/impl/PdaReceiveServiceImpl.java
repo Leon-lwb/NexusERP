@@ -44,6 +44,8 @@ public class PdaReceiveServiceImpl implements IPdaReceiveService {
 
     private final IWmMaterialReceiveService receiveService;
     private final WmMaterialReceiveLineMapper lineMapper;
+    /** 到货通知行 Mapper（ERP-WM-03: 超收上限取自到货通知行应到量 quantity_arrival） */
+    private final com.nexus.erp.wm.mapper.WmArrivalNoticeLineMapper arrivalNoticeLineMapper;
     private final WmMaterialReceiveDetailMapper detailMapper;
     private final WmStorageLocationMapper locationMapper;
     private final IPutawayStrategyService putawayStrategyService;
@@ -146,15 +148,33 @@ public class PdaReceiveServiceImpl implements IPdaReceiveService {
             locationCode = loc.getLocationCode();
         }
 
-        // 行实收数量累计 + 批次回填
-        BigDecimal received = line.getQuantityReceived() == null ? BigDecimal.ZERO : line.getQuantityReceived();
-        line.setQuantityReceived(received.add(bo.getQty()));
-        if (StringUtils.isNotBlank(bo.getBatchCode())) {
-            line.setBatchCode(bo.getBatchCode());
+        if (bo.getQty() == null || bo.getQty().compareTo(BigDecimal.ZERO) <= 0) {
+            return PdaActionResultVo.fail("本次实收数量必须大于0");
         }
-        lineMapper.updateById(line);
 
-        // 上架明细: 每行一条, 数量累计, 库位覆盖
+        // ERP-WM-03: 超收上限 + 原子累加。
+        // 修复前 quantity_received 与上架明细 quantity 都是"读-改-写、无任何上限"的累加，
+        // 同一行重复扫码 / 客户端重放 / 断网重试即可超收入库（账面库存 > 实际到货，多出的库存可被后续消耗）。
+        // 上限取到货通知行"应到量"（quantity_arrival 按物料汇总），与 PdaReturnServiceImpl:114 的超退拦截同型。
+        BigDecimal limit = resolveArrivalLimit(head.getNoticeId(), line.getMaterialId());
+        BigDecimal received = line.getQuantityReceived() == null ? BigDecimal.ZERO : line.getQuantityReceived();
+        BigDecimal newReceived = received.add(bo.getQty());
+        if (limit != null && newReceived.compareTo(limit) > 0) {
+            return PdaActionResultVo.fail("累计实收(" + newReceived.stripTrailingZeros().toPlainString()
+                + ")超过应到数量(" + limit.stripTrailingZeros().toPlainString() + ")");
+        }
+        // 条件更新：数量原子累加 + 上限守卫（影响 0 行 = 并发下已被推到超限，或行已被删除）
+        int updated = lineMapper.update(null, Wrappers.<WmMaterialReceiveLine>lambdaUpdate()
+            .setSql("quantity_received = IFNULL(quantity_received, 0) + " + bo.getQty().toPlainString())
+            .set(StringUtils.isNotBlank(bo.getBatchCode()), WmMaterialReceiveLine::getBatchCode, bo.getBatchCode())
+            .eq(WmMaterialReceiveLine::getLineId, bo.getLineId())
+            .eq(WmMaterialReceiveLine::getReceiveId, receiveId)
+            .apply(limit != null, "IFNULL(quantity_received, 0) + {0} <= {1}", bo.getQty(), limit));
+        if (updated == 0) {
+            return PdaActionResultVo.fail("累计实收超过应到数量或并发冲突，请刷新后重试");
+        }
+
+        // 上架明细: 每行一条, 数量跟随行实收总数(不再独立无上限累加), 库位覆盖
         WmMaterialReceiveDetail detail = detailMapper.selectOne(Wrappers.<WmMaterialReceiveDetail>lambdaQuery()
             .eq(WmMaterialReceiveDetail::getLineId, bo.getLineId())
             .eq(WmMaterialReceiveDetail::getReceiveId, receiveId)
@@ -177,13 +197,13 @@ public class PdaReceiveServiceImpl implements IPdaReceiveService {
             detail.setAreaId(line.getAreaId());
             detail.setAreaCode(line.getAreaCode());
             detail.setAreaName(line.getAreaName());
-            detail.setQuantity(bo.getQty());
+            detail.setQuantity(newReceived);
             detail.setLocationId(locationId);
             detail.setLocationCode(locationCode);
             detailMapper.insert(detail);
         } else {
-            BigDecimal qty = detail.getQuantity() == null ? BigDecimal.ZERO : detail.getQuantity();
-            detail.setQuantity(qty.add(bo.getQty()));
+            // ERP-WM-03: 明细数量与行实收总数保持一致，消除第二条无上限累加路径
+            detail.setQuantity(newReceived);
             if (locationId != null) {
                 detail.setLocationId(locationId);
                 detail.setLocationCode(locationCode);
@@ -274,6 +294,33 @@ public class PdaReceiveServiceImpl implements IPdaReceiveService {
         }
         receiveService.executeReceive(receiveId);
         return PdaActionResultVo.ok(PdaActionResultVo.NEXT_FINISHED);
+    }
+
+    /**
+     * ERP-WM-03: 解析行的"应到量"上限 —— 取到货通知行 {@code quantity_arrival} 按物料汇总。
+     * <p>无到货通知关联（手工建单）时返回 {@code null} 表示无系统上限：
+     * 这类单据在 wm 域内没有可比的"应收"参考量（{@code wm_material_receive_line} 只有实收数量列），
+     * 需接入采购订单行应订量后才能补齐，见修复报告 §2 未修复项。</p>
+     *
+     * @param noticeId   到货通知单 ID（可空）
+     * @param materialId 物料 ID（可空）
+     * @return 应到量上限；{@code null} 表示不限
+     */
+    private BigDecimal resolveArrivalLimit(Long noticeId, Long materialId) {
+        if (noticeId == null || materialId == null) {
+            return null;
+        }
+        List<com.nexus.erp.wm.domain.WmArrivalNoticeLine> noticeLines = arrivalNoticeLineMapper.selectList(
+            Wrappers.<com.nexus.erp.wm.domain.WmArrivalNoticeLine>lambdaQuery()
+                .eq(com.nexus.erp.wm.domain.WmArrivalNoticeLine::getNoticeId, noticeId)
+                .eq(com.nexus.erp.wm.domain.WmArrivalNoticeLine::getMaterialId, materialId));
+        BigDecimal limit = null;
+        for (com.nexus.erp.wm.domain.WmArrivalNoticeLine nl : noticeLines) {
+            if (nl.getQuantityArrival() != null) {
+                limit = (limit == null ? BigDecimal.ZERO : limit).add(nl.getQuantityArrival());
+            }
+        }
+        return limit;
     }
 
     private WmStorageLocation findLocation(Long warehouseId, String locationCode) {

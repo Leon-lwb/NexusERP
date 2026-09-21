@@ -1,9 +1,11 @@
 package com.nexus.mes.qc.service.impl;
 
+import cn.hutool.core.util.IdUtil;
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.MapstructUtils;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
@@ -25,6 +27,7 @@ import com.nexus.mes.qc.service.IQcInspectDetailService;
 import com.nexus.mes.qc.service.QcJudgeEngine;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
@@ -36,6 +39,9 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * MES来料检验 Service 业务层实现
@@ -110,7 +116,17 @@ public class QcIqcServiceImpl implements IQcIqcService {
         iqc.setInspectResult("PENDING");
         iqc.setStatus(STATUS_PENDING);
         iqc.setRemark(bo.getRemark());
-        baseMapper.insert(iqc);
+        try {
+            baseMapper.insert(iqc);
+        } catch (DuplicateKeyException e) {
+            // MES-QC-04: uk_iqc_receive_material 冲突 = 并发下已被其他线程建单, 视为幂等成功(不抛, 避免消费者反复重投)
+            log.info("IQC已存在(唯一键冲突, 幂等跳过): receiveId={}, materialId={}",
+                bo.getReceiveId(), bo.getMaterialId());
+            return baseMapper.selectVoOne(Wrappers.<QcIqc>lambdaQuery()
+                .eq(QcIqc::getReceiveId, bo.getReceiveId())
+                .eq(QcIqc::getMaterialId, bo.getMaterialId())
+                .last("LIMIT 1"));
+        }
         log.info("新增IQC检验单: iqcId={}, iqcNo={}", iqc.getIqcId(), iqc.getIqcNo());
         // 按检验模板快照生成明细(带批量算 AQL 建议抽样量; 无匹配模板返回0, 保持人工判定, 不阻断)
         inspectDetailService.generateDetails("IQC", iqc.getIqcId(), iqc.getMaterialId(), iqc.getQuantity());
@@ -183,6 +199,15 @@ public class QcIqcServiceImpl implements IQcIqcService {
             ncrOrderService.autoCreateFromIqc(iqcId, updated.getReceiveId(), updated.getMaterialId(), defectInfo);
         }
 
+        // MES-QC-10①: 批次QC状态回写不再静默 —— 与IQC判定同库同事务(ry-mes), 失败即回滚整个检验,
+        // 避免"检验单已落库但批次未同步/未隔离"的静默不一致
+        try {
+            ltLotService.applyIqcResult(iqcId, inspectResult);
+        } catch (Exception e) {
+            log.error("IQC回写批次QC状态失败, 检验事务回滚: iqcId={}, iqcNo={}", iqcId, updated.getIqcNo(), e);
+            throw new ServiceException("IQC回写批次QC状态失败, 检验已回滚: " + e.getMessage());
+        }
+
         // 事务提交后异步MQ回传ERP(更新收货单质检状态)
         final Long receiveId = updated.getReceiveId();
         final String iqcCode = updated.getIqcNo();
@@ -192,13 +217,7 @@ public class QcIqcServiceImpl implements IQcIqcService {
             new TransactionSynchronization() {
                 @Override
                 public void afterCommit() {
-                    // 1. 回写关联批次 qc_status (best-effort: lot.iqc_id 已关联才生效; 失败不影响IQC结果与MQ回传)
-                    try {
-                        ltLotService.applyIqcResult(iqcId, result);
-                    } catch (Exception e) {
-                        log.warn("IQC回写批次QC状态失败(不影响IQC结果): iqcNo={}", iqcCode, e);
-                    }
-                    // 2. MQ回传ERP(更新收货单质检状态)
+                    // 批次QC状态已在检验事务内回写; 此处只做 MQ 回传 ERP(更新收货单质检状态)
                     if (receiveId == null) {
                         log.info("IQC未关联ERP收货单, 跳过MQ回传: iqcNo={}", iqcCode);
                         return;
@@ -228,6 +247,8 @@ public class QcIqcServiceImpl implements IQcIqcService {
         if (details.isEmpty()) {
             throw new RuntimeException("检验单没有检验明细(无匹配模板), 请使用人工判定");
         }
+        // MES-QC-05: 判定前校验覆盖率 —— entries 必须覆盖该单全部明细, 不得依赖 judgeOverall 跳过未判定项
+        assertAllDetailsCovered(details, entries);
         // 实测值录入到对应明细行并逐项判定
         List<QcInspectDetail> judged = new ArrayList<>();
         for (QcInspectEntryBo entry : entries) {
@@ -265,15 +286,30 @@ public class QcIqcServiceImpl implements IQcIqcService {
     }
 
     /**
-     * 生成检验编号: 前缀 + yyyyMMdd + 3位序号
-     * 序号基于当日已有数 +1; 并发冲突由 uk_xxx_no 唯一索引兜底
+     * 生成检验编号: 前缀 + yyyyMMdd + 雪花ID后缀。
+     * <p>MES-QC-08: 不再依赖"当日 count+1"(并发下会算出相同序号), 改用雪花ID保证唯一;
+     * 保留可读前缀与日期段, 列宽 varchar(64) 足够。</p>
      */
     private String generateNo(String prefix) {
         String today = LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE);
-        Long count = baseMapper.selectCount(Wrappers.<QcIqc>lambdaQuery()
-            .likeRight(QcIqc::getIqcNo, prefix + "-" + today));
-        int seq = (count == null ? 0 : count.intValue()) + 1;
-        return prefix + "-" + today + "-" + String.format("%03d", seq);
+        return prefix + "-" + today + "-" + IdUtil.getSnowflakeNextIdStr();
+    }
+
+    /**
+     * MES-QC-05: 校验提交的实测值覆盖该检验单全部明细(detailId 差集), 存在未录入项即拒绝提交。
+     */
+    private static void assertAllDetailsCovered(List<QcInspectDetail> details, List<QcInspectEntryBo> entries) {
+        Set<Long> submitted = entries.stream()
+            .map(QcInspectEntryBo::getDetailId)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toSet());
+        List<String> missing = details.stream()
+            .filter(d -> !submitted.contains(d.getDetailId()))
+            .map(d -> d.getItemName() == null ? String.valueOf(d.getDetailId()) : d.getItemName())
+            .collect(Collectors.toList());
+        if (!missing.isEmpty()) {
+            throw new ServiceException("仍有 " + missing.size() + " 项未录入实测值：" + String.join("、", missing));
+        }
     }
 
     /**

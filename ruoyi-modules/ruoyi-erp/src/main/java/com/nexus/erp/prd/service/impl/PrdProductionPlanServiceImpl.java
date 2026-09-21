@@ -1,5 +1,7 @@
 package com.nexus.erp.prd.service.impl;
 
+import com.nexus.erp.prd.util.BomExplosionCalculator;
+
 import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
@@ -711,25 +713,11 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
 
     /**
      * 计算子项需求数量（考虑损耗率）
+     * <p>ERP-PRD-01：口径已抽到 {@link BomExplosionCalculator}，与「导入BOM明细」入口共用。</p>
      */
     private BigDecimal calculateChildQuantity(BigDecimal parentQuantity, BigDecimal quantityPerParent,
                                               BigDecimal lossRate) {
-        if (parentQuantity == null || quantityPerParent == null) {
-            return BigDecimal.ZERO;
-        }
-
-        BigDecimal baseQuantity = parentQuantity.multiply(quantityPerParent);
-
-        if (lossRate != null && lossRate.compareTo(BigDecimal.ZERO) > 0) {
-            BigDecimal lossFactor = BigDecimal.ONE.add(
-                    lossRate.divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP)
-            );
-            BigDecimal result = baseQuantity.multiply(lossFactor);
-            // 含损耗时向上取整：避免因损耗小数导致应领数量无法取件（如 10.5 件应取 11 件）
-            return result.setScale(0, RoundingMode.CEILING);
-        }
-
-        return baseQuantity;
+        return BomExplosionCalculator.calculateChildQuantity(parentQuantity, quantityPerParent, lossRate);
     }
 
     /**
@@ -881,19 +869,8 @@ public class PrdProductionPlanServiceImpl implements IPrdProductionPlanService {
         // 净需求计算: 毛需求 - 现有库存 - 安全库存 = 净需求
         prdMaterialRequirementService.calculateNetRequirements(detail);
 
-        // 提前期偏移: 需求日期 = 当前日期 + 提前期(小时)
-        Date requiredDate;
-        if (parentRequiredDate != null && calcDto.getLeadTime() != null && calcDto.getLeadTime() > 0) {
-            requiredDate = Date.from(parentRequiredDate.toInstant()
-                .minusSeconds(calcDto.getLeadTime() * 3600L));
-        } else if (parentRequiredDate != null) {
-            requiredDate = parentRequiredDate;
-        } else if (calcDto.getLeadTime() != null && calcDto.getLeadTime() > 0) {
-            requiredDate = Date.from(LocalDateTime.now().plusHours(calcDto.getLeadTime())
-                .atZone(ZoneId.systemDefault()).toInstant());
-        } else {
-            requiredDate = new Date();
-        }
+        // 提前期偏移: 需求日期 = 父层需求日期 - 提前期(小时)，口径统一到 BomExplosionCalculator(ERP-PRD-01)
+        Date requiredDate = BomExplosionCalculator.resolveRequiredDate(parentRequiredDate, calcDto.getLeadTime());
         detail.setRequiredDate(requiredDate);
 
         detail.setStatus(1L);

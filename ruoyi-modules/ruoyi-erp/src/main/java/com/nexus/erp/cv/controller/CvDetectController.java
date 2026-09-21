@@ -1,5 +1,6 @@
 package com.nexus.erp.cv.controller;
 
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.nexus.common.core.domain.R;
 import com.nexus.common.cv.client.VisionClient;
 import com.nexus.common.cv.domain.DetectDtos.MaterialDetectResult;
@@ -20,6 +21,8 @@ import java.util.Map;
  * 视觉识别检测控制器(物料 OCR + 操作台人脸)
  * <p>端点与方案文档 3.3 对应:/cv/detect/product(物料 OCR)、/cv/detect/material(YOLO 兜底)、
  * /cv/ops/identify(操作台 1:N top-3)。三端统一经 ERP 代理,不直连 vision 服务。</p>
+ * <p><b>鉴权</b>:三个端点都会消耗视觉服务额度并暴露底库候选,必须带权限码
+ * ({@code cv:detect:query} / {@code cv:ops:identify}),不能仅靠登录态。</p>
  *
  * @author nexus
  * @since 2026-08-02
@@ -39,6 +42,7 @@ public class CvDetectController {
      * <p>返回 YOLO 检测框 + OCR 文本;enableLabelParse=true 时追加标签规则解析
      * (料号/批次/SN 提取 + 物料主数据交叉校验,见 {@link CvLabelParseService})。</p>
      */
+    @SaCheckPermission("cv:detect:query")
     @PostMapping("/detect/product")
     public R<Map<String, Object>> detectProduct(@RequestParam("file") MultipartFile file,
                                                 @RequestParam(value = "enableOcr", defaultValue = "true") boolean enableOcr,
@@ -65,6 +69,7 @@ public class CvDetectController {
     /**
      * YOLO 通用检测(兜底,COCO 80 类;当前不含工厂料件类别)
      */
+    @SaCheckPermission("cv:detect:query")
     @PostMapping("/detect/material")
     public R<MaterialDetectResult> detectMaterial(@RequestParam("file") MultipartFile file) {
         try {
@@ -81,6 +86,7 @@ public class CvDetectController {
      * <p>安全约定:前端手选候选后必须调用 /cv/face/verify 做 1:1 确认,
      * 1:N 结果不得单独作为登录凭证(见方案 3.2.2)。</p>
      */
+    @SaCheckPermission("cv:ops:identify")
     @PostMapping("/ops/identify")
     public R<List<Map<String, Object>>> identify(@RequestParam("file") MultipartFile file,
                                                  @RequestParam(value = "limit", defaultValue = "3") int limit) {

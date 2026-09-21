@@ -130,7 +130,28 @@ public class ReceiveInStrategy extends BaseStockOperationStrategy {
 
             if (stock == null) {
                 stock = buildStockFromReceiveDetail(detail, receive, afterQuantity, now);
-                stockMapper.insert(stock);
+                try {
+                    stockMapper.insert(stock);
+                } catch (org.springframework.dao.DuplicateKeyException e) {
+                    // ERP-WM-08: 「查不到就 insert」在并发收货 / MQ 重投下是典型 TOCTOU ——
+                    // 两个线程都查到 null 各自插入，产生同维度重复库存行，此后该物料所有收货
+                    // 都会因「匹配到多条库存记录」永久失败。唯一键 uk_stock_dim 生效后由数据库兜底，
+                    // 这里捕获冲突后重查已存在的行，改为原子累加。
+                    WmMaterialStock existing = findStockForReceive(detail, receive);
+                    if (existing == null) {
+                        throw e;
+                    }
+                    log.warn("收货并发插入库存行冲突, 已改为复用既有行: materialId={}, batchId={}, locationId={}, stockId={}",
+                        detail.getMaterialId(), detail.getBatchId(), detail.getLocationId(), existing.getStockId());
+                    stock = existing;
+                    beforeQuantity = existing.getStockQuantity() == null
+                        ? BigDecimal.ZERO : existing.getStockQuantity();
+                    afterQuantity = beforeQuantity.add(detail.getQuantity());
+                    int affected = stockMapper.addStock(stock.getStockId(), detail.getQuantity(), stock.getVersion());
+                    if (affected == 0) {
+                        throw new com.nexus.common.core.exception.ServiceException("库存并发冲突，请重试");
+                    }
+                }
             } else {
                 int affected = stockMapper.addStock(stock.getStockId(), detail.getQuantity(), stock.getVersion());
                 if (affected == 0) {

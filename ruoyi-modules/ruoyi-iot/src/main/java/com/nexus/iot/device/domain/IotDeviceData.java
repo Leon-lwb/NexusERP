@@ -99,6 +99,14 @@ public class IotDeviceData implements Serializable {
     private String source;
 
     /**
+     * 来源消息ID(Redis Stream entry id)
+     * <p>
+     * 唯一键 {@code uk_source_msg_id}：Stream 重投（XACK 丢失 / 消费进程在落库后 ACK 前被 kill）
+     * 时同一 entry id 二次入库会命中唯一键冲突，消费端视为「已处理」直接 ACK，实现幂等去重。
+     */
+    private String sourceMsgId;
+
+    /**
      * 创建时间
      */
     private Date createTime;

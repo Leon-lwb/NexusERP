@@ -7,6 +7,7 @@ import com.nexus.common.tenant.core.TenantEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
+import java.math.BigDecimal;
 import java.util.Date;
 
 /**
@@ -49,6 +50,12 @@ public class EqMaintenanceRecord extends TenantEntity {
 
     /** 结果: NORMAL/ABNORMAL */
     private String result;
+
+    /**
+     * 保养占用时长(分钟), 由执行人填写实际耗时, 供 OEE 的 maintenance_minutes 真实汇总(MES-EQ-03)。
+     * <p>为空表示未采集, OEE 汇总时按 0 计入但会在记录备注中标注。</p>
+     */
+    private BigDecimal durationMinutes;
 
     /** 备注 */
     private String remark;

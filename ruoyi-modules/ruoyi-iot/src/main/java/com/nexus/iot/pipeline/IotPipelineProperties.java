@@ -32,6 +32,33 @@ public class IotPipelineProperties {
     private String consumerName = "iot-consumer-1";
 
     /**
+     * 事件流 Redis Stream key（{@code event/post} 设备事件 + {@code property/set_reply} 指令回执，IOT-PIPE-02）。
+     * <p>与属性数据分流：事件量级远低于属性数据，且处理逻辑（告警联动/指令回执）不同，
+     * 分流后互不拖累，也避免改动既有数据消费链路。
+     */
+    private String eventStreamKey = "iot:event:stream";
+
+    /**
+     * 事件流消费者组名
+     */
+    private String eventConsumerGroup = "iot-event-consumers";
+
+    /**
+     * 事件流消费者名
+     */
+    private String eventConsumerName = "iot-event-consumer-1";
+
+    /**
+     * 是否启用事件流消费线程（false 时仅生产 XADD）
+     */
+    private boolean eventConsumerEnabled = true;
+
+    /**
+     * 是否启用数据转发（把设备数据异步投递到 HTTP Webhook，§4#6）
+     */
+    private boolean forwardEnabled = true;
+
+    /**
      * 单批拉取消息数
      */
     private int batchSize = 100;
@@ -52,7 +79,24 @@ public class IotPipelineProperties {
     private boolean consumerEnabled = true;
 
     /**
-     * 硬编码告警阈值：propertyCode → 阈值（numericValue 超过即告警）
+     * collect_time 合理性校验：允许设备时间戳超前服务端时间的上限（毫秒），超出则改用服务端时间。
+     * <p>默认 5 分钟，容忍设备与服务端的轻微时钟漂移与网络延迟。
+     */
+    private long collectTimeFutureToleranceMs = 5 * 60 * 1000L;
+
+    /**
+     * collect_time 合理性校验：允许设备时间戳滞后服务端时间的下限（毫秒），超出则改用服务端时间。
+     * <p>默认 7 天：与 90 天保留策略配合，避免历史时间戳被清理任务立刻删除造成静默丢数。
+     */
+    private long collectTimePastToleranceMs = 7L * 24 * 60 * 60 * 1000;
+
+    /**
+     * YAML 兜底告警阈值：propertyCode → 阈值（numericValue 超过即告警）。
+     * <p>
+     * IOT-ALERT-02 起，告警规则以数据库表 {@code iot_alert_rule} 为准（支持租户隔离、产品/设备范围、
+     * 比较符、持续时长、去抖与级别）；本属性**仅在库内无匹配规则时兜底**，
+     * 优先级：设备规则 &gt; 产品规则 &gt; 全局规则 &gt; 本 YAML 默认值。
+     * 键匹配大小写不敏感（修正原实现"首字母大写属性永不触发"的问题）。
      */
     private Map<String, java.math.BigDecimal> alertThresholds = new HashMap<>();
 

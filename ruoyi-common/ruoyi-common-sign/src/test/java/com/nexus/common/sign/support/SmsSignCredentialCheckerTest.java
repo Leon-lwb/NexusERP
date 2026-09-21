@@ -1,5 +1,7 @@
 package com.nexus.common.sign.support;
 
+import org.junit.jupiter.api.Tag;
+
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.redis.utils.RedisUtils;
 import com.nexus.common.sign.constants.SignAuthMethod;
@@ -20,6 +22,8 @@ import static org.mockito.Mockito.*;
  *
  * @author nexus
  */
+@Tag("local")
+@Tag("dev")
 class SmsSignCredentialCheckerTest {
 
     private static final Long UID = 7L;

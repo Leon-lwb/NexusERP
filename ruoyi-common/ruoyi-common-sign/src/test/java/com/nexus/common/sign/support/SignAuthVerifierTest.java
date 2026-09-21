@@ -3,6 +3,7 @@ package com.nexus.common.sign.support;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.sign.constants.SignAuthMethod;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -15,6 +16,8 @@ import static org.junit.jupiter.api.Assertions.*;
  *
  * @author nexus
  */
+@Tag("local")
+@Tag("dev")
 class SignAuthVerifierTest {
 
     private static final Long UID = 7L;

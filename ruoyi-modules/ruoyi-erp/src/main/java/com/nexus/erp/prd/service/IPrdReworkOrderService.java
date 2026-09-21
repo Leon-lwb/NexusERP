@@ -6,6 +6,7 @@ import com.nexus.erp.prd.domain.PrdReworkOrder;
 import com.nexus.erp.prd.domain.bo.PrdReworkOrderBo;
 import com.nexus.erp.prd.domain.vo.PrdReworkOrderVo;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 /**
@@ -117,4 +118,21 @@ public interface IPrdReworkOrderService {
      * @return 返工订单实体，未找到返回 null
      */
     PrdReworkOrder getById(Long id);
+
+    /**
+     * 根据返工出入库过账结果推进返工订单状态（MQ 消费入口，ERP-PRD-04）。
+     * <p>
+     * 实现要求：
+     * <ul>
+     *   <li>{@code ISSUE}（出库/发料完成）：DRAFT → IN_PROGRESS（条件更新，重复投递幂等返回）</li>
+     *   <li>{@code RECEIVE}（入库/收货完成）：实收 ≥ 返工数量时 IN_PROGRESS → COMPLETED（条件更新）；
+     *       未达量时保持 IN_PROGRESS，允许尾量继续入库</li>
+     * </ul>
+     * 状态推进必须真正落库（此前消费者只 log.info，状态永远停在 IN_PROGRESS）。
+     *
+     * @param reworkId      返工订单 ID
+     * @param operationType 操作类型：ISSUE / RECEIVE
+     * @param quantity      本次过账数量，可为 null（为 null 时取订单 actualQty）
+     */
+    void advanceByStockOperation(Long reworkId, String operationType, BigDecimal quantity);
 }

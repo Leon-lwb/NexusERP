@@ -1,0 +1,31 @@
+=== 增量脚本重跑(修复后)  23:18:38 ===
+[PASS] 2026-09-20-uk-tenant-dimension.sql @ry-erp  (SKIP 63)
+[PASS] 2026-09-20-uk-tenant-dimension.sql @ry-mes  (SKIP 35)
+[PASS] 2026-09-20-iot-security-pipeline.sql @ry-iot
+[PASS] 2026-09-20-mes-quality.sql @ry-mes
+[PASS] 2026-09-20-mes-pro-lt.sql @ry-mes
+[PASS] 2026-09-20-mes-eq.sql @ry-mes
+[PASS] 2026-09-20-mes-flash.sql @ry-mes
+[PASS] 2026-09-20-wm-doc.sql @ry-erp
+[PASS] 2026-09-20-wm-core.sql @ry-erp  (SKIP 1)
+[PASS] 2026-09-20-pu-prd-bd.sql @ry-erp
+[PASS] 2026-09-20-sch-cv.sql @ry-erp
+[FAIL] 2026-09-20-tg-sop.sql @ry-mes
+        ERROR 1146 (42S02) at line 216 in file: 'D:\workspace\nexus-erp\script\sql\update\2026-09-20-tg-sop.sql': Table 'ry-mes.sj_job' doesn't exist
+[PASS] 2026-09-20-iot-alert.sql @ry-iot
+[PASS] 2026-09-20-erp-p2.sql @ry-erp
+[FAIL] 2026-09-20-mes-p2.sql @ry-mes
+        ERROR 1146 (42S02) at line 209 in file: 'D:\workspace\nexus-erp\script\sql\update\2026-09-20-mes-p2.sql': Table 'ry-mes.sys_dict_data' doesn't exist
+[PASS] 2026-09-20-pda-mq.sql @ry-mes
+[PASS] 2026-09-20-iot-device-ops.sql @ry-iot
+[PASS] 2026-09-20-iot-ota.sql @ry-iot
+[PASS] 2026-09-20-mes-spare-erp.sql @ry-mes
+[PASS] 2026-09-20-fin-fix.sql @ry-erp
+[PASS] 2026-09-20-leftover.sql @ry-erp
+[PASS] 2026-09-20-scheduler-fallback.sql @ry-vue
+[PASS] 2026-09-20-perm-seed-alignment.sql @ry-vue
+[PASS] 2026-09-20-fe-erp-dict-seeds.sql @ry-vue
+[PASS] 2026-09-20-fe-iot-alert-menu.sql @ry-vue
+[PASS] 2026-09-20-fe-3.sql @ry-vue
+[PASS] 2026-09-20-fe-iot-ops.sql @ry-vue
+=== 完成: PASS=25 FAIL=2 ===

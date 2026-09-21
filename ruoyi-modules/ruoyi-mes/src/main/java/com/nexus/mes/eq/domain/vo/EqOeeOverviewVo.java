@@ -39,4 +39,13 @@ public class EqOeeOverviewVo implements Serializable {
 
     /** 总运行时长(分钟) */
     private BigDecimal totalRunMinutes;
+
+    /**
+     * 表现率是否已有真实数据源(MES-EQ-03)。
+     * <p>false 表示表现率仍为占位, 前端应展示"占位/无数据"而不是 100%。</p>
+     */
+    private Boolean performanceRateAvailable;
+
+    /** 质量率是否已有真实数据源(区间内至少一条记录有质量率) */
+    private Boolean qualityRateAvailable;
 }

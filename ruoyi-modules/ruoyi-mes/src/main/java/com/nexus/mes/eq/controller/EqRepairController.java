@@ -106,6 +106,22 @@ public class EqRepairController extends BaseController {
     }
 
     /**
+     * 作废/撤销维修单(REPORTED/REPAIRING -> CANCELLED), 联动释放设备状态(MES-EQ-06)
+     *
+     * @param repairId 维修记录ID
+     * @param reason   作废原因(可空)
+     * @return 操作结果
+     */
+    @SaCheckPermission("mes:eq:repair:cancel")
+    @Log(title = "维修作废", businessType = BusinessType.UPDATE)
+    @PutMapping("/cancel/{repairId}")
+    public R<Void> cancel(@PathVariable Long repairId,
+                          @RequestParam(required = false) String reason) {
+        eqRepairService.cancelRepair(repairId, reason);
+        return R.ok();
+    }
+
+    /**
      * 导出维修记录数据
      *
      * @param bo 业务对象（含筛选条件/字段值）

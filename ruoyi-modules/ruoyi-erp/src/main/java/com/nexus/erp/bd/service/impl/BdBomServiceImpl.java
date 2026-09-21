@@ -309,8 +309,32 @@ public class BdBomServiceImpl implements IBdBomService {
         if (bo.getIsCurrent() != null && bo.getIsCurrent() == 1L) {
             clearCurrentFlag(bo.getParentMaterialId());
         }
+        // ★ ERP-BD-07: 不允许把唯一的当前版本改为非当前，否则下游按 is_current=1 取 BOM 会静默取空
+        if (bo.getIsCurrent() != null && bo.getIsCurrent() == 0L && bo.getBomId() != null) {
+            assertNotLastCurrentVersion(bo.getBomId());
+        }
         BdBom entity = MapstructUtils.convert(bo, BdBom.class);
         return baseMapper.updateById(entity);
+    }
+
+    /**
+     * 校验「至少一个当前版本 BOM」不变量（ERP-BD-07）。
+     * <p>若目标 BOM 原本是当前版本，且同父项下没有其它当前版本，则拒绝置为非当前。</p>
+     *
+     * @param bomId 目标 BOM ID
+     */
+    private void assertNotLastCurrentVersion(Long bomId) {
+        BdBom existing = baseMapper.selectById(bomId);
+        if (existing == null || !Long.valueOf(1L).equals(existing.getIsCurrent())) {
+            return;
+        }
+        Long otherCurrent = baseMapper.selectCount(Wrappers.lambdaQuery(BdBom.class)
+            .eq(BdBom::getParentMaterialId, existing.getParentMaterialId())
+            .eq(BdBom::getIsCurrent, 1L)
+            .ne(BdBom::getBomId, bomId));
+        if (otherCurrent == null || otherCurrent == 0L) {
+            throw new ServiceException("该物料至少需要一个当前版本BOM，请先激活其它版本再取消当前标记");
+        }
     }
 
     /**

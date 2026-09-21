@@ -4,6 +4,7 @@ import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.redis.utils.RedisUtils;
 import com.nexus.erp.pu.domain.PuPurchaseOrder;
 import com.nexus.erp.pu.domain.PuPurchaseOrderLine;
@@ -17,6 +18,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
 import java.time.Duration;
@@ -41,6 +44,12 @@ public class PuPurchaseReceiveWritebackServiceImpl implements IPuPurchaseReceive
     private final WmMaterialReceiveLineMapper receiveLineMapper;
 
     /**
+     * 超收容差比例：0 表示严格不允许超收（本仓库既有业务约定为「不得超收」）。
+     * 若业务后续允许一定比例超收，改为如 {@code new BigDecimal("0.05")} 表示允许 5%。
+     */
+    private static final BigDecimal OVER_RECEIVE_TOLERANCE = BigDecimal.ZERO;
+
+    /**
      * 回写采购订单行已收货数量，按物料匹配收货行与采购行，累加已收数量并更新行级收货状态
      *
      * @param receiveId 收货单ID
@@ -50,15 +59,18 @@ public class PuPurchaseReceiveWritebackServiceImpl implements IPuPurchaseReceive
     @Transactional(rollbackFor = Exception.class)
     public void writeBackReceivedQty(Long receiveId, Long purId) {
         log.info("开始回写采购订单已收货数量: receiveId={}, purId={}", receiveId, purId);
-        // 幂等防重：同一收货单只回写一次，防止 MQ 重投/重复发送导致已收数量重复累加
+        // 幂等防重：同一收货单只回写一次，防止 MQ 重投/重复发送导致已收数量重复累加。
+        // 幂等键只在【事务提交成功后】才真正写入（见 registerIdempotentKeyAfterCommit），
+        // 因此回写失败/回滚不会留下占位键，重新投递仍可正常回写（修复 ERP-PU-02）。
         String idempotentKey = "erp:writeback:receive:" + receiveId;
-        if (!RedisUtils.setObjectIfAbsent(idempotentKey, "1", Duration.ofHours(24))) {
+        if (RedisUtils.getCacheObject(idempotentKey) != null) {
             log.info("收货单已回写过，跳过: receiveId={}", receiveId);
             return;
         }
         if (purId == null) {
-            log.warn("采购订单ID为空，跳过回写: receiveId={}", receiveId);
-            return;
+            // 不静默 return：静默返回会让 MQ 认为处理成功、且占位键已写，导致 24h 内永久跳过回写。
+            // 抛异常交给 MQ 重投（补齐 pur_id 后重试）。
+            throw new ServiceException("采购订单ID为空，无法回写已收货数量: receiveId=" + receiveId);
         }
         List<WmMaterialReceiveLine> receiveLines = receiveLineMapper.selectList(
             new LambdaQueryWrapper<WmMaterialReceiveLine>().eq(WmMaterialReceiveLine::getReceiveId, receiveId));
@@ -72,37 +84,42 @@ public class PuPurchaseReceiveWritebackServiceImpl implements IPuPurchaseReceive
             new LambdaQueryWrapper<PuPurchaseOrderLine>().eq(PuPurchaseOrderLine::getOrderId, purId));
         log.info("查询到采购订单行数量: {}", orderLines != null ? orderLines.size() : 0);
         if (orderLines == null || orderLines.isEmpty()) {
-            log.warn("采购订单行为空，跳过回写: purId={}", purId);
-            return;
+            throw new ServiceException("采购订单没有明细行，无法回写已收货数量: purId=" + purId);
         }
 
         for (WmMaterialReceiveLine receiveLine : receiveLines) {
-            // 优先按 purchaseLineId 直接匹配
-            LambdaQueryWrapper<PuPurchaseOrderLine> lineWrapper;
-            if (receiveLine.getPurchaseLineId() != null) {
-                lineWrapper = Wrappers.<PuPurchaseOrderLine>lambdaQuery()
-                    .eq(PuPurchaseOrderLine::getLineId, receiveLine.getPurchaseLineId());
-            } else {
-                // 兜底: 按 orderId + materialId 匹配(兼容旧数据)
-                lineWrapper = Wrappers.<PuPurchaseOrderLine>lambdaQuery()
-                    .eq(PuPurchaseOrderLine::getOrderId, purId)
-                    .eq(PuPurchaseOrderLine::getMaterialId, receiveLine.getMaterialId());
-            }
-            PuPurchaseOrderLine poLine = purchaseOrderLineMapper.selectOne(lineWrapper);
+            PuPurchaseOrderLine poLine = resolveOrderLine(purId, receiveLine);
             if (poLine == null) {
-                log.warn("收货行 {} 未匹配到采购订单行, 跳过", receiveLine.getLineId());
-                continue;
+                throw new ServiceException("收货行[" + receiveLine.getLineId() + "]未匹配到采购订单行，无法回写");
             }
             BigDecimal lineReceivedQty = receiveLine.getQuantityReceived() != null ? receiveLine.getQuantityReceived() : BigDecimal.ZERO;
+            if (lineReceivedQty.compareTo(BigDecimal.ZERO) <= 0) {
+                // 实收为 0（草稿未填写）不产生回写
+                continue;
+            }
+            BigDecimal orderQty = poLine.getOrderQuantity() != null ? poLine.getOrderQuantity() : BigDecimal.ZERO;
             BigDecimal currentReceivedQty = poLine.getReceivedQuantity() != null ? poLine.getReceivedQuantity() : BigDecimal.ZERO;
             BigDecimal newReceivedQty = currentReceivedQty.add(lineReceivedQty);
-            PurchaseOrderLineReceiveStatus lineStatus = calcLineReceiveStatus(poLine.getOrderQuantity(), newReceivedQty);
-            // 原子累加已收数量(避免并发覆盖), 状态基于预期值计算
+            // ★ 超收守卫(ERP-PU-01)：已收 + 本次 <= 订单量 × (1 + 超收容差)
+            BigDecimal maxAllowedQty = orderQty.multiply(BigDecimal.ONE.add(OVER_RECEIVE_TOLERANCE));
+            if (newReceivedQty.compareTo(maxAllowedQty) > 0) {
+                throw new ServiceException("收货数量超过采购订单允许数量: lineId=" + poLine.getLineId()
+                    + ", 订单量=" + orderQty.toPlainString()
+                    + ", 已收=" + currentReceivedQty.toPlainString()
+                    + ", 本次=" + lineReceivedQty.toPlainString()
+                    + ", 超收容差=" + OVER_RECEIVE_TOLERANCE.toPlainString());
+            }
+            PurchaseOrderLineReceiveStatus lineStatus = calcLineReceiveStatus(orderQty, newReceivedQty);
+            // 原子累加已收数量 + SQL 侧再校验一次上界（防并发双回写绕过 Java 侧判断）
             LambdaUpdateWrapper<PuPurchaseOrderLine> updateWrapper = Wrappers.<PuPurchaseOrderLine>lambdaUpdate()
                 .eq(PuPurchaseOrderLine::getLineId, poLine.getLineId())
                 .setSql("received_quantity = received_quantity + " + lineReceivedQty.toPlainString())
-                .set(PuPurchaseOrderLine::getReceiveStatus, lineStatus.getCode());
+                .set(PuPurchaseOrderLine::getReceiveStatus, lineStatus.getCode())
+                .apply("received_quantity + {0} <= order_quantity * (1 + {1})", lineReceivedQty, OVER_RECEIVE_TOLERANCE);
             int rows = purchaseOrderLineMapper.update(null, updateWrapper);
+            if (rows == 0) {
+                throw new ServiceException("收货数量超过采购订单数量，回写被拒绝: lineId=" + poLine.getLineId());
+            }
             log.info("更新采购订单行: lineId={}, receiveStatus={}, 影响行数={}", poLine.getLineId(), lineStatus.getCode(), rows);
         }
 
@@ -110,6 +127,54 @@ public class PuPurchaseReceiveWritebackServiceImpl implements IPuPurchaseReceive
         List<PuPurchaseOrderLine> latestOrderLines = purchaseOrderLineMapper.selectList(
             new LambdaQueryWrapper<PuPurchaseOrderLine>().eq(PuPurchaseOrderLine::getOrderId, purId));
         updatePurchaseOrderStatus(purId, latestOrderLines);
+
+        // 业务写库全部成功后，事务提交时才落幂等键
+        registerIdempotentKeyAfterCommit(idempotentKey);
+    }
+
+    /**
+     * 幂等键延迟到事务提交后写入，保证回写失败可重试（修复 ERP-PU-02）。
+     *
+     * @param idempotentKey 幂等键
+     */
+    private void registerIdempotentKeyAfterCommit(String idempotentKey) {
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    RedisUtils.setObjectIfAbsent(idempotentKey, "1", Duration.ofHours(24));
+                }
+            });
+            return;
+        }
+        RedisUtils.setObjectIfAbsent(idempotentKey, "1", Duration.ofHours(24));
+    }
+
+    /**
+     * 将收货行匹配到采购订单行。
+     * <p>优先按收货行的 {@code purchaseLineId} 精确匹配；旧数据缺失时按 orderId + materialId 兜底，
+     * 同一物料在订单中有多行时给出可读错误（避免 {@code selectOne} 抛 TooManyResultsException，ERP-PU-06）。</p>
+     *
+     * @param purId       采购订单ID
+     * @param receiveLine 收货行
+     * @return 匹配到的采购订单行，未匹配返回 null
+     */
+    private PuPurchaseOrderLine resolveOrderLine(Long purId, WmMaterialReceiveLine receiveLine) {
+        if (receiveLine.getPurchaseLineId() != null) {
+            return purchaseOrderLineMapper.selectOne(Wrappers.<PuPurchaseOrderLine>lambdaQuery()
+                .eq(PuPurchaseOrderLine::getLineId, receiveLine.getPurchaseLineId()));
+        }
+        List<PuPurchaseOrderLine> matched = purchaseOrderLineMapper.selectList(Wrappers.<PuPurchaseOrderLine>lambdaQuery()
+            .eq(PuPurchaseOrderLine::getOrderId, purId)
+            .eq(PuPurchaseOrderLine::getMaterialId, receiveLine.getMaterialId()));
+        if (matched == null || matched.isEmpty()) {
+            return null;
+        }
+        if (matched.size() > 1) {
+            throw new ServiceException("收货行[" + receiveLine.getLineId()
+                + "]对应物料在采购订单中存在多行，无法确定回写目标，请补充收货行的采购订单行ID");
+        }
+        return matched.get(0);
     }
 
     /**
@@ -142,6 +207,9 @@ public class PuPurchaseReceiveWritebackServiceImpl implements IPuPurchaseReceive
      * @param orderLines 采购订单行列表
      */
     private void updatePurchaseOrderStatus(Long orderId, List<PuPurchaseOrderLine> orderLines) {
+        if (orderLines == null || orderLines.isEmpty()) {
+            return;
+        }
         boolean allReceived = true;
         boolean anyReceived = false;
         for (PuPurchaseOrderLine line : orderLines) {
@@ -154,16 +222,18 @@ public class PuPurchaseReceiveWritebackServiceImpl implements IPuPurchaseReceive
                 allReceived = false;
             }
         }
-
-        PuPurchaseOrder order = purchaseOrderMapper.selectById(orderId);
-        if (order == null) {
+        if (!anyReceived) {
             return;
         }
-        if (allReceived) {
-            order.setStatus("RECEIVED");
-        } else if (anyReceived) {
-            order.setStatus("PARTIALLY_RECEIVED");
+        String newStatus = allReceived ? "RECEIVED" : "PARTIALLY_RECEIVED";
+        // ★ 条件更新(ERP-PU-07): 已关闭/已作废订单不允许被收货回写"复活"，
+        // 且不再用整实体 updateById 覆盖其它并发修改的字段。
+        int rows = purchaseOrderMapper.update(null, Wrappers.<PuPurchaseOrder>lambdaUpdate()
+            .set(PuPurchaseOrder::getStatus, newStatus)
+            .eq(PuPurchaseOrder::getOrderId, orderId)
+            .notIn(PuPurchaseOrder::getStatus, "CLOSED", "CANCELLED"));
+        if (rows == 0) {
+            log.warn("采购订单状态未更新(可能已关闭/作废或已被并发修改): orderId={}, expectStatus={}", orderId, newStatus);
         }
-        purchaseOrderMapper.updateById(order);
     }
 }

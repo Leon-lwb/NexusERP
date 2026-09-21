@@ -35,6 +35,8 @@ public class WmMaterialReceive extends TenantEntity {
     private Long iqcId;
     /** 质检单编号 */
     private String iqcCode;
+    /** 来料检验结论: QUALIFIED/UNQUALIFIED(无到货通知时 confirmShelf 的上架门禁依据) */
+    private String iqcStatus;
     /** 到货通知ID */
     private Long noticeId;
     /** 到货通知编号 */

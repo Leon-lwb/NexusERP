@@ -152,8 +152,10 @@ public interface IEqEquipmentService {
     /**
      * 提交设备点检结果
      * <p>
-     * 将点检结果写入 last_inspection JSON 字段; 若 overallPass=false 则
-     * 将设备状态置为 FAULT 并触发 EQUIPMENT 类型安灯.
+     * 将点检结果写入 last_inspection JSON 字段, 并同步写入点检历史表 eq_inspection_record
+     * (与 PDA/工位入口同口径, MES-EQ-09); 若 overallPass=false 则
+     * 将设备状态置为 FAULT 并触发 EQUIPMENT 类型安灯; 若 overallPass=true 则顺带结束保养
+     * (MAINTENANCE -> NORMAL/FAULT, MES-EQ-05).
      *
      * @param equipmentId 设备ID
      * @param bo          点检结果
@@ -172,4 +174,18 @@ public interface IEqEquipmentService {
      * @return 是否实际恢复了 NORMAL(未恢复表示仍有活跃报修或已终态)
      */
     boolean resetToNormalIfNoActiveRepair(Long equipmentId);
+
+    /**
+     * 结束保养: 设备由 {@code MAINTENANCE} 按既有状态机回到可运行态(MES-EQ-05)。
+     * <p>
+     * 此前 {@code MAINTENANCE} 只有写入点(保养结果 ABNORMAL)没有清除点, 设备会永久卡"保养中";
+     * 且 {@code EquipmentStatusSyncTask} 的同步范围只有 NORMAL/OFFLINE, 不会覆盖它。
+     * 本方法以单条条件更新(CAS {@code status='MAINTENANCE'})收口:
+     * 仍有活跃报修则置 {@code FAULT}, 否则置 {@code NORMAL}; 状态实际变更时发布 MQ 事件。
+     *
+     * @param equipmentId 设备ID
+     * @param reason      结束原因(可空)
+     * @return 是否实际结束了保养(false 表示设备不在保养中/不存在)
+     */
+    boolean finishMaintenance(Long equipmentId, String reason);
 }

@@ -14,6 +14,8 @@ import java.math.BigDecimal;
  * MES备件主数据业务对象 eq_spare_part
  *
  * <p>属于MES 设备管理模块，备件零件业务对象（新增/编辑入参）。</p>
+ * <p>{@code materialId} 为 ERP 物料映射（MES-EQ-04）：新增/编辑时服务端会校验物料存在且状态启用；
+ * {@code warehouseId} 为 ERP 仓库映射，过账到 {@code wm_material_stock} 的目标仓库。</p>
  *
  * @author Nexus
  */
@@ -47,6 +49,18 @@ public class EqSparePartBo extends BaseEntity {
 
     /** 安全库存 */
     private BigDecimal safetyStock;
+
+    /** ERP物料ID(bd_material.material_id); 空表示暂不映射(严格模式下无法出入库) */
+    private Long materialId;
+
+    /** ERP仓库ID(wm_warehouse.warehouse_id); 过账到 ERP 仓储的目标仓库 */
+    private Long warehouseId;
+
+    /**
+     * 备件参考单价(成本口径, 人工维护)。
+     * <p>仅在备件主数据新增/编辑时维护；出入库过账的单价一律由服务端读库填充，本字段不参与出入库入参。</p>
+     */
+    private BigDecimal unitCost;
 
     /** 备注 */
     private String remark;

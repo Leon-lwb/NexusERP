@@ -111,6 +111,11 @@ public class SchAttendance extends TenantEntity {
     private String clockInAddress;
 
     /**
+     * 上班打卡定位精度(米, 客户端上报; ERP-CV-05: 原前端已传 accuracy 但后端无字段, 精度信息永久丢弃)
+     */
+    private BigDecimal clockInAccuracy;
+
+    /**
      * 下班打卡纬度
      */
     private BigDecimal clockOutLatitude;
@@ -124,6 +129,11 @@ public class SchAttendance extends TenantEntity {
      * 下班打卡地址/定位描述
      */
     private String clockOutAddress;
+
+    /**
+     * 下班打卡定位精度(米, 客户端上报; ERP-CV-05)
+     */
+    private BigDecimal clockOutAccuracy;
 
     /**
      * 人脸验证状态: NONE未验证, PASS通过, FAIL失败
@@ -147,6 +157,16 @@ public class SchAttendance extends TenantEntity {
      * 打卡人脸照片ossId(MinIO存证)
      */
     private Long faceImageOssId;
+
+    /**
+     * 人脸验证尝试次数(降级补跑计数,达上限后不再占用每轮补跑配额)
+     */
+    private Integer faceVerifyAttempts;
+
+    /**
+     * 人脸验证最近一次尝试时间
+     */
+    private Date faceVerifyLastAttemptTime;
 
     /**
      * 删除标志

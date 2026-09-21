@@ -15,6 +15,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import com.nexus.erp.sch.domain.SchAttendance;
 import com.nexus.erp.sch.domain.SchEmployeeSchedule;
+import com.nexus.erp.sch.domain.SchHoliday;
 import com.nexus.erp.sch.domain.SchWorker;
 import com.nexus.erp.sch.domain.bo.SchApplyApproveBo;
 import com.nexus.erp.sch.domain.bo.SchLeaveApplyBo;
@@ -27,6 +28,7 @@ import com.nexus.erp.sch.domain.vo.SchPunchRuleVo;
 import com.nexus.erp.sch.domain.vo.SchSupplementApplyVo;
 import com.nexus.erp.sch.mapper.SchAttendanceMapper;
 import com.nexus.erp.sch.mapper.SchEmployeeScheduleMapper;
+import com.nexus.erp.sch.mapper.SchHolidayMapper;
 import com.nexus.erp.sch.mapper.SchWorkerMapper;
 import com.nexus.erp.sch.service.ISchAppApplyService;
 import com.nexus.erp.sch.service.ISchAttendanceService;
@@ -62,6 +64,7 @@ public class AppSchAttendanceController {
     private final SchWorkerMapper workerMapper;
     private final SchAttendanceMapper attendanceMapper;
     private final SchEmployeeScheduleMapper employeeScheduleMapper;
+    private final SchHolidayMapper holidayMapper;
     private final ISchAppApplyService schAppApplyService;
 
     /**
@@ -132,11 +135,13 @@ public class AppSchAttendanceController {
 
     /**
      * 上班打卡
-     * <p>记录工人的上班打卡时间、设备信息，并计算考勤状态</p>
+     * <p>记录工人的上班打卡时间、设备信息，并计算考勤状态。打卡主体来自登录身份绑定的工人档案，
+     * 不接受客户端传入的 workerId（防代打卡）。</p>
      *
      * @param params 打卡参数，包含 deviceId（设备ID）、deviceName（设备名称）等
      * @return 打卡结果数据
      */
+    @SaCheckPermission("sch:attendance:clock")
     @PostMapping("/attendance/clock-in")
     public R<?> clockIn(@RequestBody Map<String, Object> params) {
         List<SchWorker> workerList = getWorkerList();
@@ -155,7 +160,8 @@ public class AppSchAttendanceController {
                 (String) params.get("deviceName"),
                 toBigDecimal(params.get("latitude")),
                 toBigDecimal(params.get("longitude")),
-                toText(params.get("address"))
+                toText(params.get("address")),
+                toBigDecimal(params.get("accuracy"))
         );
         // 人脸验证(异步,不阻断打卡):照片随打卡请求上传(base64),存储 + 校验
         Object faceImage = params.get("faceImage");
@@ -181,11 +187,12 @@ public class AppSchAttendanceController {
 
     /**
      * 下班打卡
-     * <p>记录工人的下班打卡时间、设备信息及加班时长，并计算考勤状态</p>
+     * <p>记录工人的下班打卡时间、设备信息及加班时长，并计算考勤状态。打卡主体来自登录身份绑定的工人档案。</p>
      *
      * @param params 打卡参数，包含 deviceId（设备ID）、deviceName（设备名称）、overtimeHours（加班时长）等
      * @return 打卡结果数据
      */
+    @SaCheckPermission("sch:attendance:clock")
     @PostMapping("/attendance/clock-out")
     public R<?> clockOut(@RequestBody Map<String, Object> params) {
         List<SchWorker> workerList = getWorkerList();
@@ -206,7 +213,8 @@ public class AppSchAttendanceController {
                 overtimeHours,
                 toBigDecimal(params.get("latitude")),
                 toBigDecimal(params.get("longitude")),
-                toText(params.get("address"))
+                toText(params.get("address")),
+                toBigDecimal(params.get("accuracy"))
         );
         return R.ok(data);
     }
@@ -245,7 +253,7 @@ public class AppSchAttendanceController {
         Date endDate = calendar.getTime();
 
         int totalDays = lastDay;
-        int workDays = calculateWorkDays(startDate, endDate);
+        int workDays = calculateWorkDays(workerId, startDate, endDate);
 
         LambdaQueryWrapper<SchAttendance> lqw = Wrappers.lambdaQuery();
         lqw.eq(SchAttendance::getWorkerId, workerId);
@@ -662,24 +670,23 @@ public class AppSchAttendanceController {
     }
 
     /**
-     * 解析当前登录用户关联的工人档案(sch_worker.user_id 绑定);
-     * 未关联工人档案时回退全表(兼容历史调用方), 关联多条时取第一条。
-     * 原实现固定取全表第一条——任何登录用户的打卡/统计都落到同一工人, 考勤数据完全错乱。
+     * 解析当前登录用户关联的工人档案(sch_worker.user_id 绑定);未绑定返回空列表。
+     * <p><b>不回退全表</b>:原实现查不到绑定时返回本租户全部工人、调用方一律取 {@code get(0)},
+     * 导致任意登录用户都能把考勤写到"工人列表第一条"名下(ERP-SCH-01 越权)。</p>
      */
     private List<SchWorker> getWorkerList() {
+        Long userId;
         try {
-            Long userId = com.nexus.common.satoken.utils.LoginHelper.getUserId();
-            if (userId != null) {
-                List<SchWorker> mine = workerMapper.selectList(Wrappers.<SchWorker>lambdaQuery()
-                    .eq(SchWorker::getUserId, userId));
-                if (!mine.isEmpty()) {
-                    return mine;
-                }
-            }
+            userId = com.nexus.common.satoken.utils.LoginHelper.getUserId();
         } catch (Exception e) {
-            // 开放接口/无登录上下文时回退旧行为
+            // 无登录上下文(开放接口/内部调用): 不返回任何工人, 由调用方按"未绑定"处理
+            return java.util.Collections.emptyList();
         }
-        return workerMapper.selectList(Wrappers.lambdaQuery());
+        if (userId == null) {
+            return java.util.Collections.emptyList();
+        }
+        return workerMapper.selectList(Wrappers.<SchWorker>lambdaQuery()
+            .eq(SchWorker::getUserId, userId));
     }
 
     /**
@@ -747,22 +754,77 @@ public class AppSchAttendanceController {
         return data;
     }
 
-    private int calculateWorkDays(Date startDate, Date endDate) {
-        int count = 0;
-        Calendar calendar = Calendar.getInstance();
-        calendar.setTime(startDate);
-
+    /**
+     * 计算区间内应出勤天数(ERP-SCH-08)
+     * <p>口径一(优先): 该工人在区间内排班明细中 {@code isWorkingDay=1} 的天数——排班即权威口径,
+     * 休息日/调班/请假排班都体现在排班明细里。</p>
+     * <p>口径二(无排班数据时退化): 自然工作日 − {@code sch_holiday} 非工作日 + 调休工作日。</p>
+     * <p>原实现只排除周六周日,既不读节假日也不读排班,含法定假期的月份出勤率系统性偏低。</p>
+     */
+    private int calculateWorkDays(Long workerId, Date startDate, Date endDate) {
+        Date startDay = truncateToDay(startDate);
         Calendar endCal = Calendar.getInstance();
         endCal.setTime(endDate);
         endCal.add(Calendar.DAY_OF_MONTH, 1);
+        Date endExclusive = truncateToDay(endCal.getTime());
 
-        while (calendar.before(endCal)) {
-            int dayOfWeek = calendar.get(Calendar.DAY_OF_WEEK);
-            if (dayOfWeek != Calendar.SATURDAY && dayOfWeek != Calendar.SUNDAY) {
-                count++;
+        // 口径一: 排班明细的工作日天数
+        List<SchEmployeeSchedule> schedules = employeeScheduleMapper.selectList(
+            Wrappers.<SchEmployeeSchedule>lambdaQuery()
+                .eq(SchEmployeeSchedule::getWorkerId, workerId)
+                .ge(SchEmployeeSchedule::getScheduledDate, startDay)
+                .lt(SchEmployeeSchedule::getScheduledDate, endExclusive));
+        long scheduledWorkDays = schedules.stream()
+            .filter(s -> s.getIsWorkingDay() != null && s.getIsWorkingDay() == 1)
+            .count();
+        if (scheduledWorkDays > 0) {
+            return (int) scheduledWorkDays;
+        }
+
+        // 口径二: 自然工作日 − 节假日(非调休) + 调休工作日
+        List<SchHoliday> holidays = holidayMapper.selectList(
+            Wrappers.<SchHoliday>lambdaQuery()
+                .ge(SchHoliday::getHolidayDate, startDay)
+                .lt(SchHoliday::getHolidayDate, endExclusive));
+        Map<String, SchHoliday> holidayByDay = new HashMap<>();
+        for (SchHoliday holiday : holidays) {
+            if (holiday.getHolidayDate() != null) {
+                holidayByDay.put(dayKey(holiday.getHolidayDate()), holiday);
+            }
+        }
+
+        int count = 0;
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(startDay);
+        while (calendar.before(endExclusive)) {
+            SchHoliday holiday = holidayByDay.get(dayKey(calendar.getTime()));
+            if (holiday != null) {
+                // 调休工作日计入;法定节假日/休息日不计
+                if (holiday.getIsWorkingDay() != null && holiday.getIsWorkingDay() == 1) {
+                    count++;
+                }
+            } else {
+                int dayOfWeek = calendar.get(Calendar.DAY_OF_WEEK);
+                if (dayOfWeek != Calendar.SATURDAY && dayOfWeek != Calendar.SUNDAY) {
+                    count++;
+                }
             }
             calendar.add(Calendar.DAY_OF_MONTH, 1);
         }
         return count;
+    }
+
+    private String dayKey(Date date) {
+        return date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate().toString();
+    }
+
+    private Date truncateToDay(Date date) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(date);
+        calendar.set(Calendar.HOUR_OF_DAY, 0);
+        calendar.set(Calendar.MINUTE, 0);
+        calendar.set(Calendar.SECOND, 0);
+        calendar.set(Calendar.MILLISECOND, 0);
+        return calendar.getTime();
     }
 }

@@ -13,6 +13,7 @@ import com.nexus.mes.tg.domain.TgMaintenancePlan;
 import com.nexus.mes.tg.domain.TgMaintenanceRecord;
 import com.nexus.mes.tg.domain.TgTooling;
 import com.nexus.mes.tg.domain.TgUsageRecord;
+import com.nexus.mes.tg.domain.bo.TgCalibrationBo;
 import com.nexus.mes.tg.domain.bo.TgCheckoutBo;
 import com.nexus.mes.tg.domain.bo.TgMaintenanceRecordBo;
 import com.nexus.mes.tg.domain.bo.TgToolingBo;
@@ -38,13 +39,17 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import cn.hutool.core.date.DateUtil;
+
 /**
  * MES工装 Service 业务层实现
  * <p>
  * 状态机: IDLE ⇄ IN_USE(领用/归还)
+ *                 └-> CALIBRATING -> IDLE(校准登记, MES-TG-01)
  *                 └-> MAINTENANCE -> IDLE(保养归零)
  *                 └-> SCRAPPED(终态)
  * 寿命双轨: used_count(次数) + used_hours(时长), 归还累加, 保养归零
+ * 校准维度: next_calibration_date 超期 + 保养计划到期 均在 checkToolingAvailable/checkout 拦截 (MES-TG-01/TG-02)
  * 编码生成: autoCodeUtil.genSerialCode("MES_TOOLING_CODE", null) -> TG+yyyyMMdd+3位日循环
  *
  * @author Nexus
@@ -104,6 +109,13 @@ public class TgToolingServiceImpl implements ITgToolingService {
         t.setPurchaseDate(bo.getPurchaseDate());
         t.setPurchaseCost(bo.getPurchaseCost());
         t.setRemark(bo.getRemark());
+        // MES-TG-01: 校准维度(周期/上次校准日/下次校准日 + 校准结论)
+        t.setCalibrationCycleDays(bo.getCalibrationCycleDays());
+        t.setLastCalibrationDate(bo.getLastCalibrationDate());
+        t.setNextCalibrationDate(resolveNextCalibration(bo.getCalibrationCycleDays(),
+            bo.getLastCalibrationDate(), bo.getNextCalibrationDate()));
+        t.setCalibrationResult(bo.getCalibrationResult());
+        t.setCalibrationRemark(bo.getCalibrationRemark());
         int rows = baseMapper.insert(t);
         log.info("新增工装成功: code={}, type={}", bo.getToolingCode(), bo.getToolingType());
         return rows > 0;
@@ -130,6 +142,13 @@ public class TgToolingServiceImpl implements ITgToolingService {
         t.setPurchaseDate(bo.getPurchaseDate());
         t.setPurchaseCost(bo.getPurchaseCost());
         t.setRemark(bo.getRemark());
+        // MES-TG-01: 校准周期/日期可编辑(仅 IDLE);下次校准日优先取显式传值, 否则按周期推算
+        t.setCalibrationCycleDays(bo.getCalibrationCycleDays());
+        t.setLastCalibrationDate(bo.getLastCalibrationDate());
+        t.setNextCalibrationDate(resolveNextCalibration(bo.getCalibrationCycleDays(),
+            bo.getLastCalibrationDate(), bo.getNextCalibrationDate()));
+        t.setCalibrationResult(bo.getCalibrationResult());
+        t.setCalibrationRemark(bo.getCalibrationRemark());
         int rows = baseMapper.updateById(t);
         log.info("修改工装成功: toolingId={}", bo.getToolingId());
         return rows > 0;
@@ -173,6 +192,11 @@ public class TgToolingServiceImpl implements ITgToolingService {
         }
         if (!STATUS_IDLE.equals(tooling.getStatus())) {
             throw new RuntimeException("工装非闲置状态,不可领用: " + tooling.getStatus());
+        }
+        // MES-TG-02: 领用前置同一套可用性校验(校准超期/保养到期即拒绝领用, 不只挡进站)
+        Map<String, Object> usable = checkToolingAvailable(toolingId);
+        if (!Boolean.TRUE.equals(usable.get("usable"))) {
+            throw new RuntimeException("工装不可领用: " + usable.get("reason"));
         }
         // CAS IDLE -> IN_USE
         int rows = baseMapper.update(null, Wrappers.<TgTooling>lambdaUpdate()
@@ -264,6 +288,9 @@ public class TgToolingServiceImpl implements ITgToolingService {
         if (STATUS_MAINTENANCE.equals(tooling.getStatus())) {
             throw new RuntimeException("工装已在保养中");
         }
+        if (STATUS_CALIBRATING.equals(tooling.getStatus())) {
+            throw new RuntimeException("工装校准中,请先完成校准再保养");
+        }
         // CAS IDLE -> MAINTENANCE
         int rows = baseMapper.update(null, Wrappers.<TgTooling>lambdaUpdate()
             .set(TgTooling::getStatus, STATUS_MAINTENANCE)
@@ -341,12 +368,12 @@ public class TgToolingServiceImpl implements ITgToolingService {
         if (STATUS_SCRAPPED.equals(tooling.getStatus())) {
             throw new RuntimeException("工装已报废");
         }
-        // CAS IDLE/MAINTENANCE -> SCRAPPED
+        // CAS IDLE/MAINTENANCE/CALIBRATING -> SCRAPPED
         int rows = baseMapper.update(null, Wrappers.<TgTooling>lambdaUpdate()
             .set(TgTooling::getStatus, STATUS_SCRAPPED)
             .set(StringUtils.isNotBlank(reason), TgTooling::getRemark, reason)
             .eq(TgTooling::getToolingId, toolingId)
-            .in(TgTooling::getStatus, STATUS_IDLE, STATUS_MAINTENANCE));
+            .in(TgTooling::getStatus, STATUS_IDLE, STATUS_MAINTENANCE, STATUS_CALIBRATING));
         if (rows == 0) {
             throw new RuntimeException("工装状态已变更,报废失败");
         }
@@ -355,14 +382,19 @@ public class TgToolingServiceImpl implements ITgToolingService {
     }
 
     /**
-     * 校验工装可用性(契约方法: P0-3 进站出站校验调用)
-     * <p>当前 P0-3 未建,此方法作为门禁入口预留。校验: 存在 + status=IDLE。</p>
+     * 校验工装可用性(契约方法: 进站/出站校验 + 领用前置)
+     * <p>MES-TG-01/TG-02 修复: 不再只看 status。校验 存在 + status=IDLE
+     * + <b>校准未超期</b>(next_calibration_date) + <b>保养未到期</b>(已启用保养计划阈值)。</p>
      */
     @Override
     public Map<String, Object> checkToolingAvailable(Long toolingId) {
         Map<String, Object> result = new HashMap<>();
         result.put("usable", false);
-        TgTooling tooling = baseMapper.selectById(toolingId);
+        if (toolingId == null) {
+            result.put("reason", "未提供工装ID");
+            return result;
+        }
+        TgToolingVo tooling = baseMapper.selectVoById(toolingId);
         if (tooling == null) {
             result.put("reason", "工装不存在: " + toolingId);
             return result;
@@ -378,12 +410,31 @@ public class TgToolingServiceImpl implements ITgToolingService {
             result.put("reason", "工装保养中");
             return result;
         }
+        if (STATUS_CALIBRATING.equals(tooling.getStatus())) {
+            result.put("reason", "工装校准中");
+            return result;
+        }
         if (STATUS_IN_USE.equals(tooling.getStatus())) {
             result.put("reason", "工装使用中");
             return result;
         }
         if (!STATUS_IDLE.equals(tooling.getStatus())) {
             result.put("reason", "工装状态非闲置: " + tooling.getStatus());
+            return result;
+        }
+        Date now = new Date();
+        // MES-TG-01: 校准有效期拦截(量具/检具超期不得上机)
+        if (isCalibrationOverdue(tooling, now)) {
+            result.put("calibrationOverdue", true);
+            result.put("reason", "校准已超期(下次校准日 " + DateUtil.formatDate(tooling.getNextCalibrationDate())
+                + "), 请先登记校准");
+            return result;
+        }
+        // MES-TG-02: 保养到期拦截(原实现只判 status, 超寿命/超保养周期照样放行)
+        fillRemaining(tooling);
+        if (isMaintenanceDue(tooling, now)) {
+            result.put("maintenanceDue", true);
+            result.put("reason", "保养已到期(超出已启用保养计划的阈值), 请先完成保养归零");
             return result;
         }
         result.put("usable", true);
@@ -404,6 +455,83 @@ public class TgToolingServiceImpl implements ITgToolingService {
             }
         }
         return due;
+    }
+
+    @Override
+    public List<TgToolingVo> listCalibrationDue() {
+        // 提醒窗口: 今天 ~ 今天 + CALIBRATION_DUE_SOON_DAYS(含已超期, 由 le 条件覆盖)
+        Date window = new Date(System.currentTimeMillis()
+            + (long) CALIBRATION_DUE_SOON_DAYS * 24 * 60 * 60 * 1000L);
+        List<TgToolingVo> list = baseMapper.selectVoList(Wrappers.<TgTooling>lambdaQuery()
+            .in(TgTooling::getStatus, STATUS_IDLE, STATUS_IN_USE)
+            .isNotNull(TgTooling::getNextCalibrationDate)
+            .le(TgTooling::getNextCalibrationDate, window));
+        list.forEach(this::fillRemaining);
+        return list;
+    }
+
+    /**
+     * 登记校准(MES-TG-01): CAS IDLE -> CALIBRATING -> IDLE + 写校准留痕 + 服务端计算下次校准日
+     */
+    @Override
+    @Lock4j(keys = {"#toolingId"})
+    @Transactional(rollbackFor = Exception.class)
+    public Boolean registerCalibration(Long toolingId, TgCalibrationBo bo) {
+        TgTooling tooling = baseMapper.selectById(toolingId);
+        if (tooling == null) {
+            throw new RuntimeException("工装不存在: " + toolingId);
+        }
+        if (STATUS_IN_USE.equals(tooling.getStatus())) {
+            throw new RuntimeException("工装使用中,请先归还再登记校准");
+        }
+        if (STATUS_SCRAPPED.equals(tooling.getStatus())) {
+            throw new RuntimeException("工装已报废,不可登记校准");
+        }
+        if (STATUS_MAINTENANCE.equals(tooling.getStatus())) {
+            throw new RuntimeException("工装保养中,请先完成保养再登记校准");
+        }
+        // CAS IDLE -> CALIBRATING(校准期间不得领用/进站)
+        int rows = baseMapper.update(null, Wrappers.<TgTooling>lambdaUpdate()
+            .set(TgTooling::getStatus, STATUS_CALIBRATING)
+            .eq(TgTooling::getToolingId, toolingId)
+            .eq(TgTooling::getStatus, STATUS_IDLE));
+        if (rows == 0) {
+            throw new RuntimeException("工装状态已变更,登记校准失败");
+        }
+        TgCalibrationBo cmd = bo == null ? new TgCalibrationBo() : bo;
+        Date calDate = cmd.getCalibrationDate() == null ? new Date() : cmd.getCalibrationDate();
+        Integer cycleDays = cmd.getCalibrationCycleDays() != null
+            ? cmd.getCalibrationCycleDays() : tooling.getCalibrationCycleDays();
+        String calResult = StringUtils.isBlank(cmd.getCalibrationResult())
+            ? CALIBRATION_PASS : cmd.getCalibrationResult();
+        // 下次校准日必须服务端算: FAIL 视为本次校准未通过 -> 置为本次日期, 使工装立即处于
+        // 「校准超期」不可用状态, 复校通过前不得领用/进站
+        Date nextDate;
+        if (CALIBRATION_FAIL.equals(calResult)) {
+            nextDate = calDate;
+        } else {
+            nextDate = (cycleDays == null || cycleDays <= 0)
+                ? null : new Date(calDate.getTime() + (long) cycleDays * 24 * 60 * 60 * 1000L);
+        }
+        Long operatorId = cmd.getCalibratedBy() != null ? cmd.getCalibratedBy() : LoginHelper.getUserId();
+        // CAS CALIBRATING -> IDLE + 校准留痕
+        rows = baseMapper.update(null, Wrappers.<TgTooling>lambdaUpdate()
+            .set(TgTooling::getStatus, STATUS_IDLE)
+            .set(TgTooling::getLastCalibrationDate, calDate)
+            .set(TgTooling::getNextCalibrationDate, nextDate)
+            .set(TgTooling::getCalibrationCycleDays, cycleDays)
+            .set(TgTooling::getCalibratedBy, operatorId)
+            .set(TgTooling::getCalibrationResult, calResult)
+            .set(TgTooling::getCalibrationRemark, cmd.getCalibrationRemark())
+            .set(StringUtils.isNotBlank(cmd.getRemark()), TgTooling::getRemark, cmd.getRemark())
+            .eq(TgTooling::getToolingId, toolingId)
+            .eq(TgTooling::getStatus, STATUS_CALIBRATING));
+        if (rows == 0) {
+            throw new RuntimeException("工装状态已变更,登记校准失败");
+        }
+        log.info("工装登记校准: toolingId={}, result={}, cycleDays={}, nextCalibrationDate={}",
+            toolingId, calResult, cycleDays, nextDate);
+        return true;
     }
 
     // ==================== 私有辅助方法 ====================
@@ -433,6 +561,35 @@ public class TgToolingServiceImpl implements ITgToolingService {
             BigDecimal rem = vo.getTotalLifeHours().subtract(used);
             vo.setRemainingHours(rem.compareTo(BigDecimal.ZERO) < 0 ? BigDecimal.ZERO : rem);
         }
+        // MES-TG-01: 校准超期标记(非库列, 供列表展示与提醒分级)
+        vo.setCalibrationOverdue(isCalibrationOverdue(vo, new Date()));
+    }
+
+    /**
+     * 校准是否已超期: next_calibration_date 为空表示未纳入校准管理(存量行), 不拦截;
+     * 否则按「日期粒度」比较 —— 下次校准日当天仍可用, 次日起超期 (MES-TG-01)
+     */
+    private boolean isCalibrationOverdue(TgToolingVo vo, Date now) {
+        Date next = vo.getNextCalibrationDate();
+        if (next == null) {
+            return false;
+        }
+        return next.before(DateUtil.beginOfDay(now));
+    }
+
+    /**
+     * 计算下次校准日: 显式传值优先; 否则 周期 > 0 时按「上次校准日(或今天) + 周期」推算;
+     * 周期为空/非正数返回 null(表示未纳入校准管理) (MES-TG-01)
+     */
+    private Date resolveNextCalibration(Integer cycleDays, Date lastDate, Date explicitNext) {
+        if (explicitNext != null) {
+            return explicitNext;
+        }
+        if (cycleDays == null || cycleDays <= 0) {
+            return null;
+        }
+        Date base = lastDate == null ? new Date() : lastDate;
+        return new Date(base.getTime() + (long) cycleDays * 24 * 60 * 60 * 1000L);
     }
 
     /**

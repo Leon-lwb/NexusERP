@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import com.baomidou.dynamic.datasource.annotation.DS;
 
 /**
  * 采购订单行 收货差异处理
@@ -27,6 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/erp/pu/orderLine")
+@DS("erp")
 public class PuPurchaseOrderLineController {
 
     private final PuPurchaseOrderLineMapper orderLineMapper;

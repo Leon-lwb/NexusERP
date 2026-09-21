@@ -8,6 +8,7 @@ import com.nexus.mes.eq.domain.EqMaintenanceRecord;
 
 import java.io.Serial;
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.util.Date;
 
 /**
@@ -65,6 +66,10 @@ public class EqMaintenanceRecordVo implements Serializable {
     /** 结果 */
     @ExcelProperty("结果")
     private String result;
+
+    /** 保养占用时长(分钟) */
+    @ExcelProperty("保养时长(分钟)")
+    private BigDecimal durationMinutes;
 
     /** 备注 */
     private String remark;

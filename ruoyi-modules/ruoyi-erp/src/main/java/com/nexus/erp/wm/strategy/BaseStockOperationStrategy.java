@@ -13,11 +13,33 @@ import java.util.Date;
  */
 public abstract class BaseStockOperationStrategy implements StockOperationStrategy {
 
+    /**
+     * 效期守卫 SQL（ERP-WM-06）：排除已过期批次（无有效期视为不失效）。
+     * <p>修复前全仓对 {@code expire_date} 只有排序、没有与当前时间比较，
+     * FEFO 反而把「最过期」批次排在最前，过期物料被优先领用/发给客户。
+     * 该片段同时用于拣货策略与各出库策略的选行条件。MySQL 方言（CURDATE()）。</p>
+     */
+    protected static final String NOT_EXPIRED_SQL = "(expire_date IS NULL OR expire_date >= CURDATE())";
+
     /** 库存流水数据访问映射器（Mapper） */
     protected final WmMaterialStockTxMapper stockTxMapper;
 
     protected BaseStockOperationStrategy(WmMaterialStockTxMapper stockTxMapper) {
         this.stockTxMapper = stockTxMapper;
+    }
+
+    /**
+     * 计算库存行可用量 = 在库数量 - 已预留数量（ERP-WM-02）。
+     * <p>出库/领料/转储的扣减上限必须按可用量计算；若按 {@code stock_quantity} 计算，
+     * 会把其他单据已预留的库存扣走，使销售预留承诺落空、可用量出现负数。</p>
+     *
+     * @param stock 库存行
+     * @return 可用量（不小于 0 时不裁剪，由调用方按需判断）
+     */
+    protected BigDecimal availableOf(WmMaterialStock stock) {
+        BigDecimal qty = stock.getStockQuantity() == null ? BigDecimal.ZERO : stock.getStockQuantity();
+        BigDecimal reserved = stock.getReservedQuantity() == null ? BigDecimal.ZERO : stock.getReservedQuantity();
+        return qty.subtract(reserved);
     }
 
     /**

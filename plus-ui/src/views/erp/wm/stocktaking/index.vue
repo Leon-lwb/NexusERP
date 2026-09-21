@@ -19,6 +19,13 @@
             </el-select>
           </el-form-item>
         </el-col>
+        <el-col :span="6">
+          <el-form-item label="盘点方式" prop="countMode">
+            <el-select v-model="queryParams.countMode" placeholder="请选择盘点方式" clearable style="width: 100%">
+              <el-option v-for="dict in erp_stocktaking_count_mode" :key="dict.value" :label="dict.label" :value="dict.value" />
+            </el-select>
+          </el-form-item>
+        </el-col>
         <el-col :span="6" class="search-actions">
           <el-form-item>
             <el-button type="primary" icon="Search" @click="handleQuery()">搜索</el-button>
@@ -60,6 +67,12 @@
           <span>{{ parseTime(scope.row.plannedDate, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
+      <!-- 盘点方式：后端 WmStockTakingPlanBo/Vo/实体 countMode，PDA 端已按 OPEN/BLIND 分支（FE-ERP-04） -->
+      <el-table-column label="盘点方式" align="center" prop="countMode">
+        <template #default="scope">
+          <dict-tag :options="erp_stocktaking_count_mode" :value="scope.row.countMode" />
+        </template>
+      </el-table-column>
       <el-table-column label="状态" align="center" prop="status">
         <template #default="scope">
           <dict-tag :options="wm_stocktaking_status" :value="scope.row.status" />
@@ -96,14 +109,15 @@ import { useCrud } from '@/composables/useCrud';
 
 const router = useRouter();
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
-const { wm_stocktaking_status } = toRefs<any>(proxy.useDict('wm_stocktaking_status'));
+const { wm_stocktaking_status, erp_stocktaking_count_mode } = toRefs<any>(proxy.useDict('wm_stocktaking_status', 'erp_stocktaking_count_mode'));
 
 const queryParams = ref({
   pageNum: 1,
   pageSize: 10,
   planCode: null,
   planName: null,
-  status: null
+  status: null,
+  countMode: null
 });
 
 // 列表骨架（新增/修改/查看为路由表单页，保留本地 router.push 跳转逻辑）

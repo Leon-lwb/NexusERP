@@ -8,6 +8,7 @@ import lombok.EqualsAndHashCode;
 import com.nexus.common.mybatis.core.domain.BaseEntity;
 import com.nexus.mes.eq.domain.EqEquipment;
 
+import java.math.BigDecimal;
 import java.util.Date;
 
 /**
@@ -71,6 +72,9 @@ public class EqEquipmentBo extends BaseEntity {
 
     /** 关联IoT设备ID */
     private Long iotDeviceId;
+
+    /** 计划生产时长(分钟/天), 供 OEE 聚合使用; 空则取 OEE 配置默认值(480) */
+    private BigDecimal plannedMinutesPerDay;
 
     /** 备注 */
     private String remark;

@@ -140,13 +140,20 @@ public class SalesOutStrategy extends BaseStockOperationStrategy {
                 BigDecimal stockQty = stock.getStockQuantity() == null ? BigDecimal.ZERO : stock.getStockQuantity();
                 if (stockQty.compareTo(BigDecimal.ZERO) <= 0) continue;
 
-                BigDecimal deductQty = stockQty.min(remaining);
+                BigDecimal stockReserved = stock.getReservedQuantity() == null
+                    ? BigDecimal.ZERO : stock.getReservedQuantity();
+                // ERP-WM-02: 本行可动用上限 = 未预留可用量 + 本单尚可消耗的预留量。
+                // 手工销售出库(无 SO 行)时 remainingConsumeReserved=0，即严格不越过可用量，
+                // 不再扣穿其他单据的预留；有 SO 预留时仍允许消费本单自己的预留（保持 E8 主链路）。
+                BigDecimal consumableReserved = stockReserved.min(remainingConsumeReserved);
+                BigDecimal maxDeduct = stockQty.subtract(stockReserved).add(consumableReserved);
+                if (maxDeduct.compareTo(BigDecimal.ZERO) <= 0) continue;
+
+                BigDecimal deductQty = maxDeduct.min(remaining);
                 BigDecimal beforeQuantity = stockQty;
                 BigDecimal afterQuantity = stockQty.subtract(deductQty);
 
                 // 本次扣减消费的预留量: 取 min(本次扣减, 该批次已预留, 剩余待消费预留)
-                BigDecimal stockReserved = stock.getReservedQuantity() == null
-                    ? BigDecimal.ZERO : stock.getReservedQuantity();
                 BigDecimal batchConsumeReserved = deductQty
                     .min(stockReserved).min(remainingConsumeReserved);
 
@@ -155,12 +162,19 @@ public class SalesOutStrategy extends BaseStockOperationStrategy {
                     affected = stockMapper.deductStockWithReserved(
                         stock.getStockId(), deductQty, batchConsumeReserved, stock.getVersion());
                 } else {
-                    affected = stockMapper.deductStock(stock.getStockId(), deductQty, stock.getVersion());
+                    // 未消费预留时按可用量守卫扣减（ERP-WM-02）
+                    affected = stockMapper.deductStockAvailable(stock.getStockId(), deductQty, stock.getVersion());
                 }
                 if (affected == 0) {
                     throw new ServiceException("库存并发冲突，请重试: 物料【" + line.getMaterialName() + "】");
                 }
                 remainingConsumeReserved = remainingConsumeReserved.subtract(batchConsumeReserved);
+                // ERP-WM-03: 预留消耗必须记账。原先只减 reserved_quantity 不写流水，
+                // 导致订单取消/关闭时 unreserve 按历史 RESERVE 流水全额释放 → 释放他人预留或直接抛异常。
+                if (batchConsumeReserved.compareTo(BigDecimal.ZERO) > 0 && salesIssue.getSoId() != null) {
+                    stockTxMapper.insert(buildConsumeReservedTx(salesIssue, line, stock, batchConsumeReserved,
+                        beforeQuantity, afterQuantity, now));
+                }
                 // F3-a:出库按移动平均成本结转(扣减 totalCost,返回单位成本)
                 BigDecimal outUnitCost = valuationService.issueStockCost(stock.getStockId(), deductQty);
                 // 流水数量用本次实际扣减量（一行跨多批次拆分时各批次 deductQty 不同，不能用整行数量）
@@ -197,6 +211,8 @@ public class SalesOutStrategy extends BaseStockOperationStrategy {
         lqw.eq(line.getBatchId() != null, WmMaterialStock::getBatchId, line.getBatchId());
         lqw.eq(line.getLocationId() != null, WmMaterialStock::getLocationId, line.getLocationId());
         lqw.eq(WmMaterialStock::getFrozenFlag, 0L);
+        // ERP-WM-06: 效期拦截 —— 已过期批次不得参与销售出库
+        lqw.apply(NOT_EXPIRED_SQL);
         lqw.orderByAsc(WmMaterialStock::getExpireDate, WmMaterialStock::getRecptDate, WmMaterialStock::getStockId);
 
         List<WmMaterialStock> stockList = stockMapper.selectList(lqw);
@@ -204,6 +220,26 @@ public class SalesOutStrategy extends BaseStockOperationStrategy {
             throw new RuntimeException("物料【" + line.getMaterialName() + "】库存不存在");
         }
         return stockList;
+    }
+
+    /**
+     * 构建「预留消耗」流水（ERP-WM-03）
+     * <p>来源单据类型/ID 必须与 {@code WmStockReservationServiceImpl.reserve} 写入的 RESERVE 流水一致
+     * （{@code SALES_ORDER} + soId），{@code unreserve} 才能按
+     * {@code SUM(RESERVE) - SUM(CONSUME_RESERVE) - SUM(UNRESERVE)} 的净额精确释放剩余预留。</p>
+     */
+    private WmMaterialStockTx buildConsumeReservedTx(WmSalesIssue salesIssue, WmSalesIssueLine line,
+                                                     WmMaterialStock stock, BigDecimal consumeQty,
+                                                     BigDecimal beforeQuantity, BigDecimal afterQuantity, Date now) {
+        // 预留消耗不改变在库数量, 只核销预留额度, 故 txFlag=0（与 RESERVE/UNRESERVE 一致）
+        WmMaterialStockTx tx = buildBaseTxFromStock(stock, "CONSUME_RESERVE", 0, consumeQty,
+            beforeQuantity, afterQuantity, now);
+        tx.setSourceDocType("SALES_ORDER");
+        tx.setSourceDocId(salesIssue.getSoId());
+        tx.setSourceDocCode(salesIssue.getSoNo());
+        tx.setSourceDocLineId(line.getSourceDocLineId());
+        tx.setRemark("销售出库消耗预留，出库单号：" + salesIssue.getIssueCode());
+        return tx;
     }
 
     private WmMaterialStockTx buildSalesOutStockTx(WmSalesIssue salesIssue, WmSalesIssueLine line,

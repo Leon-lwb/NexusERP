@@ -171,6 +171,46 @@ class QcJudgeEngineTest {
         assertEquals(QcJudgeEngine.RESULT_QUALIFIED, QcJudgeEngine.judgeOverall(details));
     }
 
+    // ============ MES-QC-06: NOMINAL 三值 null 必须 FAIL 而不是 NPE ============
+
+    @Test
+    void nominalWithMissingNominalValueFailsWithoutNpe() {
+        QcInspectDetail d = detail("QUANTITATIVE", "NOMINAL");
+        d.setTolUpper(new BigDecimal("0.1"));
+        d.setTolLower(new BigDecimal("0.1"));
+        d.setMeasuredValue("10.0");
+
+        assertEquals(QcJudgeEngine.JUDGE_FAIL, QcJudgeEngine.judgeDetail(d), "名义值缺失必须 FAIL 而非 NPE");
+    }
+
+    @Test
+    void nominalWithMissingTolerancesFailsWithoutNpe() {
+        QcInspectDetail d = detail("QUANTITATIVE", "NOMINAL");
+        d.setNominalValue(new BigDecimal("10"));
+        d.setMeasuredValue("10.0");
+        assertEquals(QcJudgeEngine.JUDGE_FAIL, QcJudgeEngine.judgeDetail(d), "上下公差均缺失必须 FAIL 而非 NPE");
+
+        d.setTolUpper(new BigDecimal("0.1"));
+        d.setMeasuredValue("10.0");
+        assertEquals(QcJudgeEngine.JUDGE_FAIL, QcJudgeEngine.judgeDetail(d), "下公差缺失必须 FAIL 而非 NPE");
+
+        d.setTolUpper(null);
+        d.setTolLower(new BigDecimal("0.1"));
+        d.setMeasuredValue("10.0");
+        assertEquals(QcJudgeEngine.JUDGE_FAIL, QcJudgeEngine.judgeDetail(d), "上公差缺失必须 FAIL 而非 NPE");
+    }
+
+    @Test
+    void nominalWithAllThreeValuesStillJudges() {
+        QcInspectDetail d = detail("QUANTITATIVE", "NOMINAL");
+        d.setNominalValue(new BigDecimal("10"));
+        d.setTolUpper(new BigDecimal("0.1"));
+        d.setTolLower(new BigDecimal("0.1"));
+        d.setMeasuredValue("10.0");
+
+        assertEquals(QcJudgeEngine.JUDGE_PASS, QcJudgeEngine.judgeDetail(d));
+    }
+
     private QcInspectDetail judged(String criticality, String result) {
         QcInspectDetail d = new QcInspectDetail();
         d.setCriticality(criticality);

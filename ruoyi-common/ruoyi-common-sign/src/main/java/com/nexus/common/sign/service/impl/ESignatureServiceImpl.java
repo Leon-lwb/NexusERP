@@ -704,8 +704,15 @@ public class ESignatureServiceImpl implements ESignatureService {
      * @return 签名ID
      */
     private Long appendSignature(SignCommand cmd, EsSeal seal, Long userId, Long deptId) {
+        // MES-SOP-05: 逻辑签名也可以绑定正文 —— 传了 docHash 就不再走 DocLink.NONE，
+        // 摘要会被编入链哈希（computeV2 的 docHash 入参），从而「替换正文」可被检出。
+        // 注意 docOssId 落 src_doc_oss_id（本次签署未产出新文档），doc_oss_id 保持 null，
+        // 因此 verifyDocument 对这些记录仍会明确拒绝（「不含签署后文档」），不会误做 PDF/CMS 验签。
+        DocLink link = (cmd.docOssId() == null && StringUtils.isBlank(cmd.docHash()))
+            ? DocLink.NONE
+            : new DocLink(cmd.docOssId(), cmd.docHash(), null, cmd.docHash(), null);
         return appendLedger(cmd.bizType(), cmd.bizId(), cmd.bizNo(), cmd.signatureMeaning(),
-            cmd.authMethod(), seal, userId, deptId, DocLink.NONE);
+            cmd.authMethod(), seal, userId, deptId, link);
     }
 
     /**

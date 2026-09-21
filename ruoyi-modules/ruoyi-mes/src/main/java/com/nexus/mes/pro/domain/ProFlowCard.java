@@ -51,6 +51,9 @@ public class ProFlowCard extends TenantEntity {
     /** 报废数量 */
     private BigDecimal scrapQty;
 
+    /** 完工数量是否已一次性入账到工单(0=未入账 1=已入账); CAS 幂等标记, 防重复聚合(MES-PRO-01) */
+    private Integer aggregatedFlag;
+
     /** 当前工序步骤记录ID */
     private Long currentStepId;
 

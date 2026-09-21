@@ -80,8 +80,27 @@ public interface ISchAttendanceService {
      * @param address   打卡地址/定位描述（可为 null）
      * @return 打卡结果数据
      */
+    default Map<String, Object> performClockIn(Long workerId, String workerName, Date clockInTime, String deviceId, String deviceName,
+                                               BigDecimal latitude, BigDecimal longitude, String address) {
+        return performClockIn(workerId, workerName, clockInTime, deviceId, deviceName, latitude, longitude, address, null);
+    }
+
+    /**
+     * 执行上班打卡（带定位精度，ERP-CV-05）
+     *
+     * @param workerId   工人ID
+     * @param workerName 工人姓名
+     * @param clockInTime 上班打卡时间
+     * @param deviceId   打卡设备ID
+     * @param deviceName 打卡设备名称
+     * @param latitude   打卡纬度（可为 null，前端未定位成功时不阻断打卡）
+     * @param longitude  打卡经度（可为 null）
+     * @param address   打卡地址/定位描述（可为 null）
+     * @param accuracy   定位精度(米，可为 null；落 clock_in_accuracy 供事后评估证据强度)
+     * @return 打卡结果数据
+     */
     Map<String, Object> performClockIn(Long workerId, String workerName, Date clockInTime, String deviceId, String deviceName,
-                                       BigDecimal latitude, BigDecimal longitude, String address);
+                                       BigDecimal latitude, BigDecimal longitude, String address, BigDecimal accuracy);
 
     /**
      * 执行下班打卡
@@ -97,8 +116,30 @@ public interface ISchAttendanceService {
      * @param address   打卡地址/定位描述（可为 null）
      * @return 打卡结果数据
      */
+    default Map<String, Object> performClockOut(Long workerId, String workerName, Date clockOutTime, String deviceId, String deviceName,
+                                                Double overtimeHours, BigDecimal latitude, BigDecimal longitude, String address) {
+        return performClockOut(workerId, workerName, clockOutTime, deviceId, deviceName, overtimeHours,
+            latitude, longitude, address, null);
+    }
+
+    /**
+     * 执行下班打卡（带定位精度，ERP-CV-05）
+     *
+     * @param workerId         工人ID
+     * @param workerName       工人姓名
+     * @param clockOutTime     下班打卡时间
+     * @param deviceId         打卡设备ID
+     * @param deviceName       打卡设备名称
+     * @param overtimeHours    加班时长（小时）
+     * @param latitude         打卡纬度（可为 null）
+     * @param longitude        打卡经度（可为 null）
+     * @param address          打卡地址/定位描述（可为 null）
+     * @param clockOutAccuracy 定位精度(米，可为 null)
+     * @return 打卡结果数据
+     */
     Map<String, Object> performClockOut(Long workerId, String workerName, Date clockOutTime, String deviceId, String deviceName,
-                                        Double overtimeHours, BigDecimal latitude, BigDecimal longitude, String address);
+                                        Double overtimeHours, BigDecimal latitude, BigDecimal longitude, String address,
+                                        BigDecimal clockOutAccuracy);
 
     /**
      * 获取今日打卡状态
@@ -140,6 +181,19 @@ public interface ISchAttendanceService {
      * @param storeImage   是否存 MinIO 存证(打卡传 true;降级补跑传 false 复用已有 ossId,避免重复存证)
      */
     void asyncFaceVerify(Long attendanceId, Long workerId, String tenantId, byte[] imageBytes, boolean storeImage);
+
+    /**
+     * 降级补跑触发人脸验证
+     * <p>与 {@link #asyncFaceVerify} 的差别:<b>补跑场景下若校验结果仍为 NONE,不刷新
+     * {@code face_verify_time}</b>——该字段是补跑任务的 24h 选取窗口,每轮无条件刷新会让
+     * 无照片/取图失败的记录永久占据配额,把真正待补跑的新记录饿死(ERP-SCH-07)。</p>
+     *
+     * @param attendanceId 考勤记录ID
+     * @param workerId     工人ID
+     * @param tenantId     租户ID(异步线程需手动恢复)
+     * @param imageBytes   存证照片字节(复用已有 ossId,不重复存证)
+     */
+    void backfillFaceVerify(Long attendanceId, Long workerId, String tenantId, byte[] imageBytes);
 
     /**
      * FAIL 复查人工标记(改 PASS 或确认 FAIL)

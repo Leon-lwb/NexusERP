@@ -285,7 +285,10 @@ public class ReleasePackageServiceImpl implements IReleasePackageService, WfCall
         if (!STATUS_IN_REVIEW.equals(pkg.getStatus())) {
             throw new ServiceException("仅审批中状态可审批通过, 当前: " + pkg.getStatus());
         }
-        doPublish(packageId);
+        if (doPublish(packageId) == 0) {
+            // CAS 0 行: 状态已被并发变更(双审批/与归档竞态), 与 reject/archive/setDefault 一致显式失败(MES-REL-01)
+            throw new ServiceException("发布包状态已变更, 发布失败");
+        }
         log.info("发布包兜底审批通过: packageId={}, remark={}", packageId, remark);
         return true;
     }
@@ -442,18 +445,27 @@ public class ReleasePackageServiceImpl implements IReleasePackageService, WfCall
     // ==================== 私有辅助方法 ====================
 
     /**
-     * 内部发布: IN_REVIEW -> RELEASED, 记录发布人/时间
+     * 内部发布: IN_REVIEW -> RELEASED, 记录发布人/时间(CAS 状态守卫)
+     *
+     * @param packageId 发布包ID
+     * @return 影响行数, 0 表示状态已被并发变更(未发布)
      */
-    private void doPublish(Long packageId) {
+    private int doPublish(Long packageId) {
         Date now = new Date();
         Long userId = LoginHelper.getUserId();
-        baseMapper.update(null, Wrappers.<ReleasePackage>lambdaUpdate()
+        int rows = baseMapper.update(null, Wrappers.<ReleasePackage>lambdaUpdate()
             .set(ReleasePackage::getStatus, STATUS_RELEASED)
             .set(ReleasePackage::getPublishedBy, userId)
             .set(ReleasePackage::getPublishTime, now)
             .eq(ReleasePackage::getPackageId, packageId)
             .eq(ReleasePackage::getStatus, STATUS_IN_REVIEW));
-        log.info("发布包发布成功: packageId={}", packageId);
+        if (rows > 0) {
+            log.info("发布包发布成功: packageId={}", packageId);
+        } else {
+            // 不再无条件打印"发布成功": 影响 0 行说明状态已变更, 由调用方决定失败语义
+            log.warn("发布包发布未生效(CAS 影响 0 行, 状态已变更): packageId={}", packageId);
+        }
+        return rows;
     }
 
     /**

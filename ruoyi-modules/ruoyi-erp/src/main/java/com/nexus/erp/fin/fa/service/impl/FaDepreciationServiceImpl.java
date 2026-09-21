@@ -162,12 +162,17 @@ public class FaDepreciationServiceImpl implements IFaDepreciationService {
             plan.setCumulativeDepreciation(cumulative);
             plan.setVersion(0);
             baseMapper.insert(plan);
-            // 资产累计折旧用原子累加并校验乐观锁，避免并发（原值调整/转固）下丢失更新但凭证已落库
+            // 资产累计折旧与净值均以「服务端算好的绝对值 + version 乐观锁(CAS)」回写，避免并发（原值调整/转固）下丢失更新。
+            // 注意(FIN-FA-01)：不可在同一 SET 中先累加 cumulative_depreciation 再在 net_book_value 表达式里引用它 ——
+            // MySQL 单表 UPDATE 的 SET 从左到右求值，后面的表达式会读到前面刚写入的新值，
+            // 原实现 "net_book_value = original_value - cumulative_depreciation - X" 因此每月多扣一个 X。
+            // 这里改为显式绝对值（net_book_value = original_value - 新累计折旧），不依赖列间求值顺序。
+            BigDecimal newNetBookValue = nz(asset.getOriginalValue()).subtract(cumulative);
             int assetRows = assetMapper.update(null, Wrappers.<FaAsset>lambdaUpdate()
                 .eq(FaAsset::getAssetId, asset.getAssetId())
                 .eq(FaAsset::getVersion, asset.getVersion())
-                .setSql("cumulative_depreciation = cumulative_depreciation + " + nz(plan.getDepreciationAmount()).toPlainString())
-                .setSql("net_book_value = original_value - cumulative_depreciation - " + nz(plan.getDepreciationAmount()).toPlainString())
+                .set(FaAsset::getCumulativeDepreciation, cumulative)
+                .set(FaAsset::getNetBookValue, newNetBookValue)
                 .set(FaAsset::getVersion, asset.getVersion() + 1));
             if (assetRows == 0) {
                 throw new ServiceException("资产[" + asset.getAssetNo() + "]数据已变更,折旧计提失败,请重试");
@@ -201,7 +206,9 @@ public class FaDepreciationServiceImpl implements IFaDepreciationService {
             }
         } else if (FaConstants.METHOD_SUM_OF_YEARS.equals(method)) {
             // 年数总和:剩余月数 / 月总和 × 应提总额
-            long remaining = life - (monthsInService - 1);
+            // FIN-FA-04: 超使用年限(monthsInService > life)时 remaining 会为负 → 生成负折旧额(冲回),
+            // 这里把剩余月数夹到 0, 配合下方"负额归零"保证超年限资产不再计提。
+            long remaining = Math.max(0, life - (monthsInService - 1));
             BigDecimal sumOfDigits = BigDecimal.valueOf(life * (life + 1L) / 2.0);
             amount = original.subtract(salvage).multiply(BigDecimal.valueOf(remaining))
                 .divide(sumOfDigits, 2, RoundingMode.HALF_UP);
@@ -213,6 +220,10 @@ public class FaDepreciationServiceImpl implements IFaDepreciationService {
         BigDecimal cap = netValue.subtract(salvage);
         if (amount.compareTo(cap) > 0) {
             amount = cap;
+        }
+        // 下限(FIN-FA-04): 任何方法都不得计提负数(超年限/参数异常时归零, 调用方按 0 跳过)
+        if (amount.signum() < 0) {
+            amount = BigDecimal.ZERO;
         }
         return amount;
     }

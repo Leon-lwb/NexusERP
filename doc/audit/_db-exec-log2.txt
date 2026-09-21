@@ -1,0 +1,49 @@
+=== 增量脚本执行(指定默认库)  23:15:56 ===
+[FAIL] 2026-09-20-uk-tenant-dimension.sql @ry-erp  (结果行 60 条)
+        ERROR 1146 (42S02) at line 549 in file: 'D:\workspace\nexus-erp\script\sql\update\2026-09-20-uk-tenant-dimension.sql': Table 'ry-erp.qc_iqc' doesn't exist
+        [OK] bd_bom.uk_parent_version -> (`parent_material_id`, `bom_version`, `tenant_id`)
+        [OK] bd_material.uk_material_code -> (`material_code`, `tenant_id`)
+        [OK] bd_material_vendor.uk_material_supplier -> (`material_id`, `vendor_id`, `tenant_id`)
+        [OK] bd_serial_number_rule.uk_rule_code -> (`rule_code`, `tenant_id`)
+        [OK] bd_unit_of_measure.uk_uom_code -> (`uom_code`, `tenant_id`)
+        [OK] bd_vendor.uk_vendor_code -> (`vendor_code`, `tenant_id`)
+[FAIL] 2026-09-20-uk-tenant-dimension.sql @ry-mes  (结果行 25 条)
+        ERROR 1146 (42S02) at line 350 in file: 'D:\workspace\nexus-erp\script\sql\update\2026-09-20-uk-tenant-dimension.sql': Table 'ry-mes.bd_client_credit' doesn't exist
+        [SKIP] bd_bom.uk_parent_version 不存在（表缺失或索引已改名），请人工核对
+        [SKIP] bd_material.uk_material_code 不存在（表缺失或索引已改名），请人工核对
+        [SKIP] bd_material_vendor.uk_material_supplier 不存在（表缺失或索引已改名），请人工核对
+        [SKIP] bd_serial_number_rule.uk_rule_code 不存在（表缺失或索引已改名），请人工核对
+        [SKIP] bd_unit_of_measure.uk_uom_code 不存在（表缺失或索引已改名），请人工核对
+        [SKIP] bd_vendor.uk_vendor_code 不存在（表缺失或索引已改名），请人工核对
+[PASS] 2026-09-20-wm-doc.sql @ry-erp
+[FAIL] 2026-09-20-wm-core.sql @ry-erp
+        ERROR 1064 (42000) at line 51 in file: 'D:\workspace\nexus-erp\script\sql\update\2026-09-20-wm-core.sql': You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '(IFNULL(batch_id,0)), (IFNULL(warehouse_id,0)), (IFNULL(location_id,0)), (IFNULL' at line 1
+[FAIL] 2026-09-20-sch-cv.sql @ry-erp
+        ERROR 1146 (42S02) at line 73 in file: 'D:\workspace\nexus-erp\script\sql\update\2026-09-20-sch-cv.sql': Table 'ry-erp.sys_menu' doesn't exist
+[FAIL] 2026-09-20-erp-p2.sql @ry-erp
+        ERROR 1146 (42S02) at line 68 in file: 'D:\workspace\nexus-erp\script\sql\update\2026-09-20-erp-p2.sql': Table 'ry-erp.sys_menu' doesn't exist
+[FAIL] 2026-09-20-fin-fix.sql @ry-erp
+        ERROR 1146 (42S02) at line 26 in file: 'D:\workspace\nexus-erp\script\sql\update\2026-09-20-fin-fix.sql': Table 'ry-erp.sys_menu' doesn't exist
+[PASS] 2026-09-20-leftover.sql @ry-erp
+[PASS] 2026-09-20-mes-pro-lt.sql @ry-mes
+[FAIL] 2026-09-20-mes-eq.sql @ry-mes
+        ERROR 1146 (42S02) at line 69 in file: 'D:\workspace\nexus-erp\script\sql\update\2026-09-20-mes-eq.sql': Table 'ry-mes.sys_dict_data' doesn't exist
+[PASS] 2026-09-20-mes-flash.sql @ry-mes
+[FAIL] 2026-09-20-mes-p2.sql @ry-mes
+        ERROR 1146 (42S02) at line 171 in file: 'D:\workspace\nexus-erp\script\sql\update\2026-09-20-mes-p2.sql': Table 'ry-mes.sys_menu' doesn't exist
+[FAIL] 2026-09-20-tg-sop.sql @ry-mes
+        ERROR 1146 (42S02) at line 186 in file: 'D:\workspace\nexus-erp\script\sql\update\2026-09-20-tg-sop.sql': Table 'ry-mes.sys_dict_data' doesn't exist
+[PASS] 2026-09-20-pda-mq.sql @ry-mes
+[FAIL] 2026-09-20-mes-spare-erp.sql @ry-mes
+        ERROR 1146 (42S02) at line 127 in file: 'D:\workspace\nexus-erp\script\sql\update\2026-09-20-mes-spare-erp.sql': Table 'ry-mes.sys_menu' doesn't exist
+[PASS] 2026-09-20-iot-device-ops.sql @ry-iot
+[FAIL] 2026-09-20-iot-ota.sql @ry-iot
+        ERROR 1146 (42S02) at line 99 in file: 'D:\workspace\nexus-erp\script\sql\update\2026-09-20-iot-ota.sql': Table 'ry-iot.sys_menu' doesn't exist
+[PASS] 2026-09-20-scheduler-fallback.sql @ry-vue
+[PASS] 2026-09-20-perm-seed-alignment.sql @ry-vue
+[FAIL] 2026-09-20-fe-erp-dict-seeds.sql @ry-vue
+        ERROR 1054 (42S22) at line 14 in file: 'D:\workspace\nexus-erp\script\sql\update\2026-09-20-fe-erp-dict-seeds.sql': Unknown column 'status' in 'field list'
+[PASS] 2026-09-20-fe-iot-alert-menu.sql @ry-vue
+[PASS] 2026-09-20-fe-3.sql @ry-vue
+[PASS] 2026-09-20-fe-iot-ops.sql @ry-vue
+=== 完成 23:15:58 ===

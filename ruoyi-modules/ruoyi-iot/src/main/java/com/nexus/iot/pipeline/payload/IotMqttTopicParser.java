@@ -25,7 +25,19 @@ public class IotMqttTopicParser {
 
     private static final String TOPIC_PREFIX = "iot";
     private static final Set<String> BIZ_TYPES = Set.of("property", "event");
-    private static final Set<String> ACTIONS = Set.of("post", "set");
+    /**
+     * 合法动作：post（设备上报）/ set（平台下发）/ set_reply（设备回执，IOT-PIPE-02）。
+     * <p>{@code set_reply} 由设备发布到 {@code iot/{tenant}/{device}/property/set_reply}，
+     * 用于回执平台下发的属性设置指令（更新 {@code iot_device_command} 状态）。
+     */
+    private static final Set<String> ACTIONS = Set.of("post", "set", "set_reply");
+
+    /** 动作：设备上报 */
+    public static final String ACTION_POST = "post";
+    /** 动作：平台下发 */
+    public static final String ACTION_SET = "set";
+    /** 动作：设备对下发的回执 */
+    public static final String ACTION_SET_REPLY = "set_reply";
 
     /**
      * 解析 Topic。
@@ -75,9 +87,18 @@ public class IotMqttTopicParser {
          */
         private String bizType;
         /**
-         * 动作：post / set
+         * 动作：post / set / set_reply
          */
         private String action;
+
+        /**
+         * 是否为设备对下行指令的回执（{@code property/set_reply}）。
+         *
+         * @return 回执 Topic 返回 true
+         */
+        public boolean isReply() {
+            return "property".equals(bizType) && ACTION_SET_REPLY.equals(action);
+        }
     }
 
 }

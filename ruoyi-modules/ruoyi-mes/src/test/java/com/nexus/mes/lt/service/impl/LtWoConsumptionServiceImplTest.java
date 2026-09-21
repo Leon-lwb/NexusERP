@@ -12,6 +12,8 @@ import com.nexus.mes.lt.mapper.LtWoConsumptionMapper;
 import com.nexus.mes.lt.service.ILtLotService;
 import com.nexus.mes.lt.service.ILtSnBindingService;
 import com.nexus.mes.lt.domain.bo.LtSnBindingBo;
+import com.nexus.mes.pro.domain.ProWorkOrderBomLine;
+import com.nexus.mes.pro.mapper.ProWorkOrderBomLineMapper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,6 +27,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -43,6 +46,8 @@ class LtWoConsumptionServiceImplTest {
     private LtSnBindingMapper snBindingMapper;
     @Mock
     private ILtSnBindingService snBindingService;
+    @Mock
+    private ProWorkOrderBomLineMapper woBomLineMapper;
     @InjectMocks
     private LtWoConsumptionServiceImpl service;
 
@@ -56,6 +61,9 @@ class LtWoConsumptionServiceImplTest {
         loginHelperMock = mockStatic(LoginHelper.class);
         loginHelperMock.when(LoginHelper::getUserId).thenReturn(1L);
         loginHelperMock.when(LoginHelper::getUsername).thenReturn("tester");
+        // 批次可用性校验(新增门禁)默认通过, 个别用例再覆盖为不可用
+        lenient().when(lotService.checkLotUsable(any(), any()))
+            .thenReturn(Map.of("usable", true, "reason", "可用"));
     }
 
     @AfterEach
@@ -279,5 +287,59 @@ class LtWoConsumptionServiceImplTest {
 
         assertEquals(1, result.size());
         assertEquals(1L, result.get(0).getLotId());
+    }
+
+    // ==================== MES-LT-02 批次物料一致性 + 超领校验 ====================
+
+    @Test
+    void insertByBoRejectsWhenLotCheckNotUsable() {
+        LtLot lot = new LtLot();
+        lot.setLotId(1L);
+        lot.setMaterialId(999L);
+        when(lotMapper.selectById(1L)).thenReturn(lot);
+        when(lotService.checkLotUsable(any(), any()))
+            .thenReturn(Map.of("usable", false, "reason", "批次物料与要求物料不符"));
+
+        LtWoConsumptionBo bo = new LtWoConsumptionBo();
+        bo.setWoId(10L);
+        bo.setLotId(1L);
+        bo.setMaterialId(20L);
+        bo.setConsumedQty(BigDecimal.valueOf(5));
+
+        RuntimeException exception = assertThrows(RuntimeException.class,
+            () -> service.insertByBo(bo));
+
+        assertTrue(exception.getMessage().contains("批次物料与要求物料不符"));
+        verify(lotService, never()).consume(any(), any());
+    }
+
+    @Test
+    void insertByBoRejectsOverPickBeyondBomSnapshot() {
+        LtLot lot = new LtLot();
+        lot.setLotId(1L);
+        lot.setMaterialId(20L);
+        lot.setLotCode("LOT-001");
+        lot.setMaterialCode("MAT-001");
+        when(lotMapper.selectById(1L)).thenReturn(lot);
+        // 工单BOM快照需求量 10
+        ProWorkOrderBomLine bomLine = new ProWorkOrderBomLine();
+        bomLine.setTotalQuantity(BigDecimal.TEN);
+        when(woBomLineMapper.selectOne(any())).thenReturn(bomLine);
+        // 已领 8, 本次 5 → 超领
+        LtWoConsumption existed = new LtWoConsumption();
+        existed.setConsumedQty(BigDecimal.valueOf(8));
+        when(baseMapper.selectList(any())).thenReturn(List.of(existed));
+
+        LtWoConsumptionBo bo = new LtWoConsumptionBo();
+        bo.setWoId(10L);
+        bo.setLotId(1L);
+        bo.setMaterialId(20L);
+        bo.setConsumedQty(BigDecimal.valueOf(5));
+
+        RuntimeException exception = assertThrows(RuntimeException.class,
+            () -> service.insertByBo(bo));
+
+        assertTrue(exception.getMessage().contains("超领"));
+        verify(lotService, never()).consume(any(), any());
     }
 }

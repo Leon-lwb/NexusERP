@@ -46,7 +46,7 @@ CREATE TABLE `bd_bom`  (
   `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`bom_id`) USING BTREE,
-  UNIQUE INDEX `uk_parent_version`(`parent_material_id`, `bom_version`) USING BTREE,
+  UNIQUE INDEX `uk_parent_version`(`parent_material_id`, `bom_version`, `tenant_id`) USING BTREE,
   INDEX `idx_parent_material`(`parent_material_id`) USING BTREE,
   INDEX `idx_current`(`is_current`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
@@ -1015,6 +1015,7 @@ CREATE TABLE `bd_client_credit`  (
   `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`credit_id`) USING BTREE,
+  UNIQUE INDEX `uk_client_tenant`(`client_id`, `tenant_id`) USING BTREE,
   INDEX `idx_client_id`(`client_id`) USING BTREE,
   INDEX `idx_client_code`(`client_code`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
@@ -1076,7 +1077,7 @@ CREATE TABLE `bd_material`  (
   `is_phantom` tinyint(1) NULL DEFAULT 0 COMMENT '是否虚拟件: 0-否 1-是（虚拟件展开时跳层，不入库不生成工单）',
   `inspection_required` int(1) NULL DEFAULT 0 COMMENT '是否需要来料检验(0否/1是)',
   PRIMARY KEY (`material_id`) USING BTREE,
-  UNIQUE INDEX `uk_material_code`(`material_code`) USING BTREE,
+  UNIQUE INDEX `uk_material_code`(`material_code`, `tenant_id`) USING BTREE,
   INDEX `idx_category_id`(`category_id`) USING BTREE,
   INDEX `idx_material_type`(`material_type`) USING BTREE,
   INDEX `idx_status`(`status`) USING BTREE,
@@ -1625,7 +1626,7 @@ CREATE TABLE `bd_material_vendor`  (
   `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`relation_id`) USING BTREE,
-  UNIQUE INDEX `uk_material_supplier`(`material_id`, `vendor_id`) USING BTREE,
+  UNIQUE INDEX `uk_material_supplier`(`material_id`, `vendor_id`, `tenant_id`) USING BTREE,
   INDEX `idx_material_id`(`material_id`) USING BTREE,
   INDEX `idx_supplier_id`(`vendor_id`) USING BTREE,
   INDEX `idx_default`(`is_default`) USING BTREE,
@@ -2403,7 +2404,7 @@ CREATE TABLE `bd_serial_number_rule`  (
   `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`rule_id`) USING BTREE,
-  UNIQUE INDEX `uk_rule_code`(`rule_code`) USING BTREE,
+  UNIQUE INDEX `uk_rule_code`(`rule_code`, `tenant_id`) USING BTREE,
   INDEX `idx_status`(`status`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '产品序列号/条码规则表' ROW_FORMAT = Dynamic;
@@ -2440,7 +2441,7 @@ CREATE TABLE `bd_unit_of_measure`  (
   `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`uom_id`) USING BTREE,
-  UNIQUE INDEX `uk_uom_code`(`uom_code`) USING BTREE,
+  UNIQUE INDEX `uk_uom_code`(`uom_code`, `tenant_id`) USING BTREE,
   INDEX `idx_category`(`category`) USING BTREE,
   INDEX `idx_status`(`status`) USING BTREE,
   INDEX `idx_primary_id`(`primary_id`) USING BTREE,
@@ -2563,7 +2564,7 @@ CREATE TABLE `bd_vendor`  (
   `dept_id` bigint(20) NULL DEFAULT NULL COMMENT '归属部门ID（关联sys_dept）',
   `dept_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '归属部门名称',
   PRIMARY KEY (`vendor_id`) USING BTREE,
-  UNIQUE INDEX `uk_vendor_code`(`vendor_code`) USING BTREE,
+  UNIQUE INDEX `uk_vendor_code`(`vendor_code`, `tenant_id`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '供应商表' ROW_FORMAT = Dynamic;
 
@@ -2612,7 +2613,7 @@ CREATE TABLE `bd_workshop`  (
   `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`workshop_id`) USING BTREE,
-  UNIQUE INDEX `uk_workshop_code`(`workshop_code`) USING BTREE,
+  UNIQUE INDEX `uk_workshop_code`(`workshop_code`, `tenant_id`) USING BTREE,
   INDEX `idx_status`(`status`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE,
   INDEX `idx_dept_id`(`dept_id`) USING BTREE
@@ -2666,7 +2667,7 @@ CREATE TABLE `bd_workstation`  (
   `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`workstation_id`) USING BTREE,
-  UNIQUE INDEX `uk_workstation_code`(`workstation_code`) USING BTREE,
+  UNIQUE INDEX `uk_workstation_code`(`workstation_code`, `tenant_id`) USING BTREE,
   INDEX `idx_workshop_id`(`workshop_id`) USING BTREE,
   INDEX `idx_status`(`status`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
@@ -2920,8 +2921,8 @@ CREATE TABLE `fin_receipt`  (
   `client_id` bigint(20) NULL DEFAULT NULL COMMENT '客户ID(direction=AR)',
   `vendor_id` bigint(20) NULL DEFAULT NULL COMMENT '供应商ID(direction=AP)',
   `payer_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '付款方名称',
-  `amount` decimal(18, 4) NOT NULL DEFAULT 0.0000 COMMENT '收付款金额',
-  `settled_amount` decimal(18, 4) NOT NULL DEFAULT 0.0000 COMMENT '已核销金额',
+  `amount` decimal(18, 2) NULL DEFAULT 0.00 COMMENT '收款金额',
+  `settled_amount` decimal(18, 2) NULL DEFAULT 0.00 COMMENT '已核销金额',
   `currency` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'CNY' COMMENT '币种',
   `exchange_rate` decimal(18, 6) NULL DEFAULT 1.000000 COMMENT '汇率',
   `third_party_no` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '第三方流水号',
@@ -2958,7 +2959,7 @@ CREATE TABLE `fin_settlement`  (
   `invoice_no` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '发票号(冗余)',
   `invoice_type` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '发票类型(冗余)',
   `receipt_id` bigint(20) NOT NULL COMMENT '收付款单ID',
-  `settle_amount` decimal(18, 4) NOT NULL COMMENT '核销金额',
+  `settle_amount` decimal(18, 2) NULL DEFAULT 0.00 COMMENT '核销金额',
   `settle_date` date NULL DEFAULT NULL COMMENT '核销日期',
   `operator` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '操作人',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
@@ -3240,7 +3241,7 @@ CREATE TABLE `po_requisition`  (
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '0' COMMENT '删除标志',
   `applicant_id` bigint(20) NULL DEFAULT NULL COMMENT '申请人ID（关联sys_user）',
   PRIMARY KEY (`requisition_id`) USING BTREE,
-  UNIQUE INDEX `uk_po_requisition_no`(`requisition_no`) USING BTREE,
+  UNIQUE INDEX `uk_po_requisition_no`(`requisition_no`, `tenant_id`) USING BTREE,
   INDEX `idx_po_requisition_status`(`status`) USING BTREE,
   INDEX `idx_po_requisition_applicant`(`applicant_name`) USING BTREE,
   INDEX `idx_po_requisition_dept`(`dept_id`) USING BTREE,
@@ -3350,7 +3351,7 @@ CREATE TABLE `prd_material_requirement`  (
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   `parent_requirement_id` bigint(20) NULL DEFAULT NULL COMMENT '父级物料需求单ID',
   PRIMARY KEY (`requirement_id`) USING BTREE,
-  UNIQUE INDEX `uk_requirement_no`(`requirement_no`) USING BTREE,
+  UNIQUE INDEX `uk_requirement_no`(`requirement_no`, `tenant_id`) USING BTREE,
   INDEX `idx_plan_id`(`plan_id`) USING BTREE,
   INDEX `idx_status`(`status`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
@@ -3440,7 +3441,7 @@ CREATE TABLE `prd_production_plan`  (
   `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`plan_id`) USING BTREE,
-  UNIQUE INDEX `uk_plan_no`(`plan_no`) USING BTREE,
+  UNIQUE INDEX `uk_plan_no`(`plan_no`, `tenant_id`) USING BTREE,
   INDEX `idx_status`(`status`) USING BTREE,
   INDEX `idx_plan_date`(`plan_date`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
@@ -3726,7 +3727,7 @@ CREATE TABLE `prd_work_order`  (
   `client_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '客户名称(冗余)',
   `customer_product_code` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '客户产品代号(来源销售订单行)',
   PRIMARY KEY (`wo_id`) USING BTREE,
-  UNIQUE INDEX `uk_wo_no`(`wo_no`) USING BTREE,
+  UNIQUE INDEX `uk_wo_no`(`wo_no`, `tenant_id`) USING BTREE,
   INDEX `idx_plan_id`(`plan_id`) USING BTREE,
   INDEX `idx_material_id`(`material_id`) USING BTREE,
   INDEX `idx_wo_status`(`wo_status`) USING BTREE,
@@ -3869,7 +3870,7 @@ CREATE TABLE `prd_work_report`  (
   `batch_id` bigint(20) NULL DEFAULT NULL COMMENT '批次ID（关联 wm_batch，统一批次管理）',
   `batch_code` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '批次号（关联 wm_batch.batch_code，统一批次管理）',
   PRIMARY KEY (`report_id`) USING BTREE,
-  UNIQUE INDEX `uk_report_no`(`report_no`) USING BTREE,
+  UNIQUE INDEX `uk_report_no`(`report_no`, `tenant_id`) USING BTREE,
   INDEX `idx_wo_id`(`wo_id`) USING BTREE,
   INDEX `idx_material_id`(`material_id`) USING BTREE,
   INDEX `idx_report_status`(`report_status`) USING BTREE,
@@ -4080,7 +4081,7 @@ CREATE TABLE `pu_purchase_order`  (
   `attr2` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
   `attr3` bigint(20) NULL DEFAULT NULL,
   `attr4` bigint(20) NULL DEFAULT NULL,
-  `tenant_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000',
   `create_dept` bigint(20) NULL DEFAULT NULL,
   `create_by` bigint(20) NULL DEFAULT NULL,
   `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP,
@@ -4095,7 +4096,7 @@ CREATE TABLE `pu_purchase_order`  (
   `buyer_id` bigint(20) NULL DEFAULT NULL COMMENT '采购员ID（关联sys_user）',
   `buyer_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '采购员名称',
   PRIMARY KEY (`order_id`) USING BTREE,
-  UNIQUE INDEX `uk_order_no`(`order_no`) USING BTREE
+  UNIQUE INDEX `uk_order_no`(`order_no`, `tenant_id`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 2080272156951982084 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '采购订单表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
@@ -4114,6 +4115,7 @@ CREATE TABLE `pu_purchase_order_line`  (
   `order_quantity` decimal(18, 4) NULL DEFAULT NULL COMMENT '订购数量',
   `received_quantity` decimal(18, 4) NULL DEFAULT NULL COMMENT '已收货数量',
   `invoiced_qty` decimal(18, 4) NULL DEFAULT 0.0000 COMMENT '已开票数量',
+  `returned_quantity` decimal(18,4) NULL DEFAULT 0.0000 COMMENT '已退货数量(采购退货执行后原子累加, 净采购量口径 ERP-PU-05)',
   `receive_status` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'PENDING' COMMENT '收货状态(PENDING/FULL_RECEIVED/PARTIAL_RECEIVED/OVER_RECEIVED/SHORT_RECEIVED)',
   `unit_price` decimal(18, 4) NULL DEFAULT NULL COMMENT '单价',
   `unit_price_excluding_tax` decimal(18, 4) NULL DEFAULT 0.0000 COMMENT '不含税单价',
@@ -4123,7 +4125,7 @@ CREATE TABLE `pu_purchase_order_line`  (
   `line_tax_amount` decimal(18, 2) NULL DEFAULT 0.00 COMMENT '行税额',
   `sort_order` int(11) NULL DEFAULT NULL COMMENT '排序号',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
-  `tenant_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000' COMMENT '租户ID',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000' COMMENT '租户ID',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
   `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
@@ -4156,7 +4158,7 @@ CREATE TABLE `pu_purchase_requisition`  (
   `attr2` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
   `attr3` bigint(20) NULL DEFAULT NULL,
   `attr4` bigint(20) NULL DEFAULT NULL,
-  `tenant_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000' COMMENT '租户ID',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000' COMMENT '租户ID',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
   `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
@@ -4166,7 +4168,7 @@ CREATE TABLE `pu_purchase_requisition`  (
   `dept_id` bigint(20) NULL DEFAULT NULL COMMENT '采购部门ID（关联sys_dept）',
   `dept_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '采购部门名称',
   PRIMARY KEY (`requisition_id`) USING BTREE,
-  UNIQUE INDEX `uk_requisition_no`(`requisition_no`) USING BTREE
+  UNIQUE INDEX `uk_requisition_no`(`requisition_no`, `tenant_id`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 2080271642264743938 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '采购申请表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
@@ -4192,7 +4194,7 @@ CREATE TABLE `pu_purchase_requisition_line`  (
   `attr2` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
   `attr3` bigint(20) NULL DEFAULT NULL,
   `attr4` bigint(20) NULL DEFAULT NULL,
-  `tenant_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000' COMMENT '租户ID',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000' COMMENT '租户ID',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
   `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
@@ -4228,7 +4230,7 @@ CREATE TABLE `pu_purchase_return`  (
   `attr2` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
   `attr3` bigint(20) NULL DEFAULT NULL,
   `attr4` bigint(20) NULL DEFAULT NULL,
-  `tenant_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000',
   `create_dept` bigint(20) NULL DEFAULT NULL,
   `create_by` bigint(20) NULL DEFAULT NULL,
   `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP,
@@ -4236,7 +4238,7 @@ CREATE TABLE `pu_purchase_return`  (
   `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0),
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0',
   PRIMARY KEY (`return_id`) USING BTREE,
-  UNIQUE INDEX `uk_return_no`(`return_no`) USING BTREE
+  UNIQUE INDEX `uk_return_no`(`return_no`, `tenant_id`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 8800401 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '采购退货表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
@@ -4265,7 +4267,7 @@ CREATE TABLE `pu_purchase_return_line`  (
   `attr2` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
   `attr3` bigint(20) NULL DEFAULT NULL,
   `attr4` bigint(20) NULL DEFAULT NULL,
-  `tenant_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000',
   `create_dept` bigint(20) NULL DEFAULT NULL,
   `create_by` bigint(20) NULL DEFAULT NULL,
   `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP,
@@ -4396,6 +4398,8 @@ CREATE TABLE `sch_attendance`  (
   `face_verify_time` datetime(0) NULL DEFAULT NULL COMMENT '人脸验证时间',
   `face_similarity` decimal(5, 4) NULL DEFAULT NULL COMMENT '人脸相似度',
   `face_image_oss_id` bigint(20) NULL DEFAULT NULL COMMENT '打卡人脸照片ossId(MinIO存证)',
+  `face_verify_attempts` int NULL DEFAULT 0 COMMENT '人脸验证尝试次数(降级补跑计数,达上限后不再进入补跑候选集)',
+  `face_verify_last_attempt_time` datetime(0) NULL DEFAULT NULL COMMENT '人脸验证最近一次尝试时间',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
@@ -4406,14 +4410,17 @@ CREATE TABLE `sch_attendance`  (
   `clock_in_latitude` decimal(10, 7) NULL DEFAULT NULL COMMENT '上班打卡纬度',
   `clock_in_longitude` decimal(10, 7) NULL DEFAULT NULL COMMENT '上班打卡经度',
   `clock_in_address` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '上班打卡地址/定位描述',
+  `clock_in_accuracy` decimal(10, 2) DEFAULT NULL COMMENT '上班打卡定位精度(米, 客户端上报; ERP-CV-05)',
   `clock_out_latitude` decimal(10, 7) NULL DEFAULT NULL COMMENT '下班打卡纬度',
   `clock_out_longitude` decimal(10, 7) NULL DEFAULT NULL COMMENT '下班打卡经度',
   `clock_out_address` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '下班打卡地址/定位描述',
+  `clock_out_accuracy` decimal(10, 2) DEFAULT NULL COMMENT '下班打卡定位精度(米, 客户端上报; ERP-CV-05)',
   PRIMARY KEY (`attendance_id`) USING BTREE,
   UNIQUE INDEX `uk_worker_date`(`tenant_id`, `worker_id`, `record_date`) USING BTREE,
   INDEX `idx_worker_id`(`worker_id`) USING BTREE,
   INDEX `idx_record_date`(`record_date`) USING BTREE,
   INDEX `idx_attendance_status`(`attendance_status`) USING BTREE,
+  INDEX `idx_face_verify_backfill`(`face_verify_status`, `face_verify_time`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '考勤记录表' ROW_FORMAT = Dynamic;
 
@@ -4444,13 +4451,15 @@ CREATE TABLE `sch_employee_schedule`  (
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
   `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
+  `active_worker_date_key` varchar(64) GENERATED ALWAYS AS (IF(`del_flag` = '0', CONCAT(`worker_id`, '#', DATE(`scheduled_date`)), NULL)) VIRTUAL COMMENT '同一人同日活跃排班唯一键(逻辑删除行为 NULL,不参与唯一性)',
   PRIMARY KEY (`schedule_id`) USING BTREE,
   INDEX `idx_plan_id`(`plan_id`) USING BTREE,
   INDEX `idx_worker_id`(`worker_id`) USING BTREE,
   INDEX `idx_team_id`(`team_id`) USING BTREE,
   INDEX `idx_shift_id`(`shift_id`) USING BTREE,
   INDEX `idx_scheduled_date`(`scheduled_date`) USING BTREE,
-  INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
+  INDEX `idx_tenant_id`(`tenant_id`) USING BTREE,
+  UNIQUE INDEX `uk_worker_date_active`(`tenant_id`, `active_worker_date_key`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '员工排班明细表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
@@ -4513,6 +4522,7 @@ CREATE TABLE `sch_leave_apply`  (
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志（0存在 1删除）',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`leave_id`) USING BTREE,
+  UNIQUE KEY `uk_tenant_leave_no` (`tenant_id`, `leave_no`),
   INDEX `idx_worker_status`(`worker_id`, `apply_status`) USING BTREE,
   INDEX `idx_worker_date`(`worker_id`, `start_date`, `end_date`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '考勤请假申请表' ROW_FORMAT = Dynamic;
@@ -4616,8 +4626,8 @@ CREATE TABLE `sch_punch_rule`  (
   `location_lng` decimal(18, 8) NULL DEFAULT NULL COMMENT '打卡中心点经度',
   `location_radius` bigint(20) NULL DEFAULT NULL COMMENT '打卡半径（米）',
   `location_address` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '打卡地点描述',
-  `allow_wifi_ssids` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '允许的Wi-Fi网络SSID列表（JSON数组）',
-  `allow_bluetooth_devices` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '允许的蓝牙设备列表（JSON数组）',
+  `allow_wifi_ssids` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '允许的Wi-Fi网络SSID列表（JSON数组）【未实现-预留】打卡主流程未读取/校验，配置后不生效',
+  `allow_bluetooth_devices` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '允许的蓝牙设备列表（JSON数组）【未实现-预留】打卡主流程未读取/校验，配置后不生效',
   `allow_outdoor_punch` tinyint(4) NULL DEFAULT 0 COMMENT '是否允许外勤打卡 0:否 1:是',
   `outdoor_require_photo` tinyint(4) NULL DEFAULT 0 COMMENT '外勤打卡是否要求拍照 0:否 1:是',
   `allow_supplement` tinyint(4) NULL DEFAULT 1 COMMENT '是否允许补卡 0:否 1:是',
@@ -4699,6 +4709,7 @@ CREATE TABLE `sch_supplement_apply`  (
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志（0存在 1删除）',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`apply_id`) USING BTREE,
+  UNIQUE KEY `uk_tenant_apply_no` (`tenant_id`, `apply_no`),
   INDEX `idx_worker_status`(`worker_id`, `apply_status`) USING BTREE,
   INDEX `idx_worker_date`(`worker_id`, `apply_date`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '考勤补卡申请表' ROW_FORMAT = Dynamic;
@@ -4756,7 +4767,7 @@ CREATE TABLE `sch_team_member`  (
   `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`member_id`) USING BTREE,
-  UNIQUE INDEX `uk_team_worker`(`team_id`, `worker_id`) USING BTREE,
+  UNIQUE INDEX `uk_team_worker`(`team_id`, `worker_id`, `tenant_id`) USING BTREE,
   INDEX `idx_team_id`(`team_id`) USING BTREE,
   INDEX `idx_worker_id`(`worker_id`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
@@ -5161,6 +5172,7 @@ CREATE TABLE `so_credit_usage`  (
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
   `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
   PRIMARY KEY (`usage_id`) USING BTREE,
+  UNIQUE INDEX `uk_credit_so_status`(`tenant_id`, `so_id`, `status`) USING BTREE,
   INDEX `idx_client`(`client_id`) USING BTREE,
   INDEX `idx_so`(`so_id`) USING BTREE,
   INDEX `idx_cu_client_status`(`client_id`, `status`) USING BTREE,
@@ -5322,6 +5334,7 @@ CREATE TABLE `so_price_list`  (
   `valid_from` date NULL DEFAULT NULL,
   `valid_to` date NULL DEFAULT NULL,
   `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'ACTIVE',
+  `del_flag` char(1) NOT NULL DEFAULT '0' COMMENT '删除标志(0存在 2删除; ERP-SO-05 逻辑删除)',
   `create_by` bigint(20) NULL DEFAULT NULL,
   `create_dept` bigint(20) NULL DEFAULT NULL,
   `create_time` datetime(0) NULL DEFAULT NULL,
@@ -5337,7 +5350,7 @@ CREATE TABLE `so_price_list`  (
 -- ----------------------------
 -- Records of so_price_list
 -- ----------------------------
-INSERT INTO `so_price_list` VALUES (1, '000000', 'PL20260914001', '2026 年度标准零售价目表', 'BASE', NULL, 'CNY', 10, '2026-01-01', '2027-12-31', 'ACTIVE', 1, 103, '2026-09-14 15:07:27', NULL, NULL);
+INSERT INTO `so_price_list` VALUES (1, '000000', 'PL20260914001', '2026 年度标准零售价目表', 'BASE', NULL, 'CNY', 10, '2026-01-01', '2027-12-31', 'ACTIVE', '0', 1, 103, '2026-09-14 15:07:27', NULL, NULL);
 
 -- ----------------------------
 -- Table structure for so_price_list_line
@@ -5352,13 +5365,14 @@ CREATE TABLE `so_price_list_line`  (
   `min_qty` decimal(14, 4) NOT NULL DEFAULT 0.0000 COMMENT '最小数量（含）',
   `max_qty` decimal(14, 4) NULL DEFAULT NULL COMMENT '最大数量（含）；NULL 表示不设上限',
   `discount_rate` decimal(5, 2) NULL DEFAULT 0.00 COMMENT '折扣率（百分数：5 表示让利 5%，0 表示不让利）',
+  `del_flag` char(1) NOT NULL DEFAULT '0' COMMENT '删除标志(0存在 2删除; ERP-SO-05 逻辑删除)',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
   `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
   `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
   PRIMARY KEY (`line_id`) USING BTREE,
-  UNIQUE INDEX `uk_pl_line_tier`(`price_list_id`, `material_id`, `min_qty`) USING BTREE,
+  UNIQUE INDEX `uk_pl_line_tier`(`price_list_id`, `material_id`, `min_qty`, `tenant_id`) USING BTREE,
   INDEX `idx_list_material`(`price_list_id`, `material_id`) USING BTREE,
   INDEX `idx_material`(`material_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售价格表行' ROW_FORMAT = Dynamic;
@@ -5366,43 +5380,43 @@ CREATE TABLE `so_price_list_line`  (
 -- ----------------------------
 -- Records of so_price_list_line
 -- ----------------------------
-INSERT INTO `so_price_list_line` VALUES (1, '000000', 1, 1, 45.0000, 1.0000, 9999.0000, 0.00, 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27');
-INSERT INTO `so_price_list_line` VALUES (2, '000000', 1, 2, 2860.0000, 1.0000, 9999.0000, 0.00, 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27');
-INSERT INTO `so_price_list_line` VALUES (3, '000000', 1, 3, 68.0000, 1.0000, 9999.0000, 0.00, 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27');
-INSERT INTO `so_price_list_line` VALUES (4, '000000', 1, 4, 380.0000, 1.0000, 9999.0000, 0.00, 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27');
-INSERT INTO `so_price_list_line` VALUES (5, '000000', 1, 5, 860.0000, 1.0000, 9999.0000, 0.00, 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27');
-INSERT INTO `so_price_list_line` VALUES (6, '000000', 1, 6, 12600.0000, 1.0000, 9999.0000, 0.00, 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27');
-INSERT INTO `so_price_list_line` VALUES (7, '000000', 1, 7, 186.0000, 1.0000, 9999.0000, 0.00, 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27');
-INSERT INTO `so_price_list_line` VALUES (8, '000000', 1, 8, 6800.0000, 1.0000, 9999.0000, 0.00, 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27');
-INSERT INTO `so_price_list_line` VALUES (9, '000000', 1, 9, 3450.0000, 1.0000, 9999.0000, 0.00, 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27');
-INSERT INTO `so_price_list_line` VALUES (10, '000000', 1, 10, 186000.0000, 1.0000, 9999.0000, 0.00, 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27');
-INSERT INTO `so_price_list_line` VALUES (11, '000000', 1, 11, 12800.0000, 1.0000, 9999.0000, 0.00, 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27');
-INSERT INTO `so_price_list_line` VALUES (12, '000000', 1, 12, 28600.0000, 1.0000, 9999.0000, 0.00, 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27');
-INSERT INTO `so_price_list_line` VALUES (13, '000000', 1, 13, 12.5000, 1.0000, 9999.0000, 0.00, 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27');
-INSERT INTO `so_price_list_line` VALUES (14, '000000', 1, 14, 299.0000, 1.0000, 9999.0000, 0.00, 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27');
-INSERT INTO `so_price_list_line` VALUES (15, '000000', 1, 15, 359.0000, 1.0000, 9999.0000, 0.00, 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27');
-INSERT INTO `so_price_list_line` VALUES (16, '000000', 1, 16, 98.0000, 1.0000, 9999.0000, 0.00, 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27');
-INSERT INTO `so_price_list_line` VALUES (17, '000000', 1, 17, 168.0000, 1.0000, 9999.0000, 0.00, 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27');
-INSERT INTO `so_price_list_line` VALUES (18, '000000', 1, 18, 126.0000, 1.0000, 9999.0000, 0.00, 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27');
-INSERT INTO `so_price_list_line` VALUES (19, '000000', 1, 19, 286.0000, 1.0000, 9999.0000, 0.00, 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27');
-INSERT INTO `so_price_list_line` VALUES (20, '000000', 1, 20, 218.0000, 1.0000, 9999.0000, 0.00, 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27');
-INSERT INTO `so_price_list_line` VALUES (21, '000000', 1, 21, 1280.0000, 1.0000, 9999.0000, 0.00, 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27');
-INSERT INTO `so_price_list_line` VALUES (22, '000000', 1, 22, 960.0000, 1.0000, 9999.0000, 0.00, 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27');
-INSERT INTO `so_price_list_line` VALUES (23, '000000', 1, 23, 156.0000, 1.0000, 9999.0000, 0.00, 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27');
-INSERT INTO `so_price_list_line` VALUES (24, '000000', 1, 24, 880.0000, 1.0000, 9999.0000, 0.00, 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27');
-INSERT INTO `so_price_list_line` VALUES (25, '000000', 1, 25, 268.0000, 1.0000, 9999.0000, 0.00, 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27');
-INSERT INTO `so_price_list_line` VALUES (26, '000000', 1, 26, 189.0000, 1.0000, 9999.0000, 0.00, 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27');
-INSERT INTO `so_price_list_line` VALUES (27, '000000', 1, 27, 1280.0000, 1.0000, 9999.0000, 0.00, 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27');
-INSERT INTO `so_price_list_line` VALUES (28, '000000', 1, 28, 36.0000, 1.0000, 9999.0000, 0.00, 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27');
-INSERT INTO `so_price_list_line` VALUES (29, '000000', 1, 29, 52.0000, 1.0000, 9999.0000, 0.00, 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27');
-INSERT INTO `so_price_list_line` VALUES (30, '000000', 1, 30, 2680.0000, 1.0000, 9999.0000, 0.00, 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27');
-INSERT INTO `so_price_list_line` VALUES (31, '000000', 1, 31, 4680.0000, 1.0000, 9999.0000, 0.00, 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27');
-INSERT INTO `so_price_list_line` VALUES (32, '000000', 1, 32, 1080.0000, 1.0000, 9999.0000, 0.00, 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27');
-INSERT INTO `so_price_list_line` VALUES (33, '000000', 1, 33, 68000.0000, 1.0000, 9999.0000, 0.00, 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27');
-INSERT INTO `so_price_list_line` VALUES (34, '000000', 1, 34, 399.0000, 1.0000, 9999.0000, 0.00, 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27');
-INSERT INTO `so_price_list_line` VALUES (35, '000000', 1, 35, 1980.0000, 1.0000, 9999.0000, 0.00, 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27');
-INSERT INTO `so_price_list_line` VALUES (36, '000000', 1, 36, 386.0000, 1.0000, 9999.0000, 0.00, 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27');
-INSERT INTO `so_price_list_line` VALUES (37, '000000', 1, 37, 328.0000, 1.0000, 9999.0000, 0.00, 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27');
+INSERT INTO `so_price_list_line` VALUES (1, '000000', 1, 1, 45.0000, 1.0000, 9999.0000, 0.00, '0', 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27');
+INSERT INTO `so_price_list_line` VALUES (2, '000000', 1, 2, 2860.0000, 1.0000, 9999.0000, 0.00, '0', 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27');
+INSERT INTO `so_price_list_line` VALUES (3, '000000', 1, 3, 68.0000, 1.0000, 9999.0000, 0.00, '0', 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27');
+INSERT INTO `so_price_list_line` VALUES (4, '000000', 1, 4, 380.0000, 1.0000, 9999.0000, 0.00, '0', 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27');
+INSERT INTO `so_price_list_line` VALUES (5, '000000', 1, 5, 860.0000, 1.0000, 9999.0000, 0.00, '0', 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27');
+INSERT INTO `so_price_list_line` VALUES (6, '000000', 1, 6, 12600.0000, 1.0000, 9999.0000, 0.00, '0', 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27');
+INSERT INTO `so_price_list_line` VALUES (7, '000000', 1, 7, 186.0000, 1.0000, 9999.0000, 0.00, '0', 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27');
+INSERT INTO `so_price_list_line` VALUES (8, '000000', 1, 8, 6800.0000, 1.0000, 9999.0000, 0.00, '0', 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27');
+INSERT INTO `so_price_list_line` VALUES (9, '000000', 1, 9, 3450.0000, 1.0000, 9999.0000, 0.00, '0', 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27');
+INSERT INTO `so_price_list_line` VALUES (10, '000000', 1, 10, 186000.0000, 1.0000, 9999.0000, 0.00, '0', 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27');
+INSERT INTO `so_price_list_line` VALUES (11, '000000', 1, 11, 12800.0000, 1.0000, 9999.0000, 0.00, '0', 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27');
+INSERT INTO `so_price_list_line` VALUES (12, '000000', 1, 12, 28600.0000, 1.0000, 9999.0000, 0.00, '0', 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27');
+INSERT INTO `so_price_list_line` VALUES (13, '000000', 1, 13, 12.5000, 1.0000, 9999.0000, 0.00, '0', 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27');
+INSERT INTO `so_price_list_line` VALUES (14, '000000', 1, 14, 299.0000, 1.0000, 9999.0000, 0.00, '0', 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27');
+INSERT INTO `so_price_list_line` VALUES (15, '000000', 1, 15, 359.0000, 1.0000, 9999.0000, 0.00, '0', 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27');
+INSERT INTO `so_price_list_line` VALUES (16, '000000', 1, 16, 98.0000, 1.0000, 9999.0000, 0.00, '0', 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27');
+INSERT INTO `so_price_list_line` VALUES (17, '000000', 1, 17, 168.0000, 1.0000, 9999.0000, 0.00, '0', 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27');
+INSERT INTO `so_price_list_line` VALUES (18, '000000', 1, 18, 126.0000, 1.0000, 9999.0000, 0.00, '0', 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27');
+INSERT INTO `so_price_list_line` VALUES (19, '000000', 1, 19, 286.0000, 1.0000, 9999.0000, 0.00, '0', 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27');
+INSERT INTO `so_price_list_line` VALUES (20, '000000', 1, 20, 218.0000, 1.0000, 9999.0000, 0.00, '0', 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27');
+INSERT INTO `so_price_list_line` VALUES (21, '000000', 1, 21, 1280.0000, 1.0000, 9999.0000, 0.00, '0', 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27');
+INSERT INTO `so_price_list_line` VALUES (22, '000000', 1, 22, 960.0000, 1.0000, 9999.0000, 0.00, '0', 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27');
+INSERT INTO `so_price_list_line` VALUES (23, '000000', 1, 23, 156.0000, 1.0000, 9999.0000, 0.00, '0', 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27');
+INSERT INTO `so_price_list_line` VALUES (24, '000000', 1, 24, 880.0000, 1.0000, 9999.0000, 0.00, '0', 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27');
+INSERT INTO `so_price_list_line` VALUES (25, '000000', 1, 25, 268.0000, 1.0000, 9999.0000, 0.00, '0', 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27');
+INSERT INTO `so_price_list_line` VALUES (26, '000000', 1, 26, 189.0000, 1.0000, 9999.0000, 0.00, '0', 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27');
+INSERT INTO `so_price_list_line` VALUES (27, '000000', 1, 27, 1280.0000, 1.0000, 9999.0000, 0.00, '0', 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27');
+INSERT INTO `so_price_list_line` VALUES (28, '000000', 1, 28, 36.0000, 1.0000, 9999.0000, 0.00, '0', 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27');
+INSERT INTO `so_price_list_line` VALUES (29, '000000', 1, 29, 52.0000, 1.0000, 9999.0000, 0.00, '0', 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27');
+INSERT INTO `so_price_list_line` VALUES (30, '000000', 1, 30, 2680.0000, 1.0000, 9999.0000, 0.00, '0', 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27');
+INSERT INTO `so_price_list_line` VALUES (31, '000000', 1, 31, 4680.0000, 1.0000, 9999.0000, 0.00, '0', 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27');
+INSERT INTO `so_price_list_line` VALUES (32, '000000', 1, 32, 1080.0000, 1.0000, 9999.0000, 0.00, '0', 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27');
+INSERT INTO `so_price_list_line` VALUES (33, '000000', 1, 33, 68000.0000, 1.0000, 9999.0000, 0.00, '0', 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27');
+INSERT INTO `so_price_list_line` VALUES (34, '000000', 1, 34, 399.0000, 1.0000, 9999.0000, 0.00, '0', 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27');
+INSERT INTO `so_price_list_line` VALUES (35, '000000', 1, 35, 1980.0000, 1.0000, 9999.0000, 0.00, '0', 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27');
+INSERT INTO `so_price_list_line` VALUES (36, '000000', 1, 36, 386.0000, 1.0000, 9999.0000, 0.00, '0', 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27');
+INSERT INTO `so_price_list_line` VALUES (37, '000000', 1, 37, 328.0000, 1.0000, 9999.0000, 0.00, '0', 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27');
 
 -- ----------------------------
 -- Table structure for so_quotation
@@ -5620,6 +5634,7 @@ CREATE TABLE `so_sales_order_header`  (
   `select_flow_id` bigint(20) NULL DEFAULT NULL COMMENT '审批流程ID',
   `dept_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '销售部门名称',
   PRIMARY KEY (`so_id`) USING BTREE,
+  KEY `idx_tenant_create_time` (`tenant_id`, `create_time`),
   UNIQUE INDEX `uk_so_no`(`so_no`, `tenant_id`) USING BTREE,
   INDEX `idx_co_id`(`co_id`) USING BTREE,
   INDEX `idx_client_id`(`client_id`) USING BTREE,
@@ -5738,6 +5753,7 @@ CREATE TABLE `wm_arrival_notice_line`  (
   `base_uom_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '单位名称',
   `quantity_arrival` double(12, 2) NOT NULL COMMENT '到货数量',
   `quantity_quanlified` double(12, 2) NULL DEFAULT NULL COMMENT '合格数量',
+  `received_qty` double(12, 2) NOT NULL DEFAULT 0 COMMENT '已收数量(收货执行按物料累加回写, ERP-WM-12)',
   `iqc_check` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '是否来料检验',
   `iqc_id` bigint(20) NULL DEFAULT NULL COMMENT '来料检验单ID',
   `iqc_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '来料检验单编号',
@@ -5782,7 +5798,7 @@ CREATE TABLE `wm_barcode`  (
   `attr2` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
   `attr3` bigint(20) NULL DEFAULT NULL,
   `attr4` bigint(20) NULL DEFAULT NULL,
-  `tenant_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000',
   `create_dept` bigint(20) NULL DEFAULT NULL,
   `create_by` bigint(20) NULL DEFAULT NULL,
   `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP,
@@ -5792,7 +5808,7 @@ CREATE TABLE `wm_barcode`  (
   `batch_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '批次编码',
   `sn_id` bigint(20) NULL DEFAULT NULL COMMENT '序列号ID',
   PRIMARY KEY (`barcode_id`) USING BTREE,
-  UNIQUE INDEX `uk_barcode_code`(`barcode_code`) USING BTREE,
+  UNIQUE INDEX `uk_barcode_code`(`barcode_code`, `tenant_id`) USING BTREE,
   INDEX `idx_barcode_config_id`(`config_id`) USING BTREE,
   INDEX `idx_barcode_biz_type`(`biz_type`) USING BTREE,
   INDEX `idx_barcode_biz_id`(`biz_id`) USING BTREE,
@@ -5821,7 +5837,7 @@ CREATE TABLE `wm_barcode_config`  (
   `attr2` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
   `attr3` bigint(20) NULL DEFAULT NULL,
   `attr4` bigint(20) NULL DEFAULT NULL,
-  `tenant_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000',
   `create_dept` bigint(20) NULL DEFAULT NULL,
   `create_by` bigint(20) NULL DEFAULT NULL,
   `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP,
@@ -5830,7 +5846,7 @@ CREATE TABLE `wm_barcode_config`  (
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0',
   `current_sequence` bigint(20) NULL DEFAULT 0 COMMENT '当前序列号',
   PRIMARY KEY (`config_id`) USING BTREE,
-  UNIQUE INDEX `uk_barcode_config_code`(`config_code`) USING BTREE,
+  UNIQUE INDEX `uk_barcode_config_code`(`config_code`, `tenant_id`) USING BTREE,
   INDEX `idx_barcode_config_biz_type`(`biz_type`) USING BTREE,
   INDEX `idx_barcode_config_category_id`(`category_id`) USING BTREE,
   INDEX `idx_barcode_config_enable_flag`(`enable_flag`) USING BTREE
@@ -5884,7 +5900,7 @@ CREATE TABLE `wm_batch`  (
   `vendor_batch_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '供应商原始批次号',
   `qc_status` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT 'IQC质检状态(QUALIFIED/UNQUALIFIED), 由IQC完成消息回写; NULL=无质检记录',
   PRIMARY KEY (`batch_id`) USING BTREE,
-  UNIQUE INDEX `uk_batch_code`(`batch_code`) USING BTREE,
+  UNIQUE INDEX `uk_batch_code`(`batch_code`, `tenant_id`) USING BTREE,
   INDEX `idx_batch_material`(`material_id`) USING BTREE,
   INDEX `idx_batch_vendor`(`vendor_id`) USING BTREE,
   INDEX `idx_batch_warehouse`(`warehouse_id`) USING BTREE,
@@ -5921,7 +5937,7 @@ CREATE TABLE `wm_material_handover`  (
   `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志(0存在 2删除)',
   PRIMARY KEY (`handover_id`) USING BTREE,
-  UNIQUE INDEX `uk_handover_no`(`handover_no`) USING BTREE,
+  UNIQUE INDEX `uk_handover_no`(`handover_no`, `tenant_id`) USING BTREE,
   INDEX `idx_handover_status`(`status`) USING BTREE,
   INDEX `idx_handover_wo_no`(`wo_no`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '上料交接单' ROW_FORMAT = Dynamic;
@@ -5972,6 +5988,7 @@ CREATE TABLE `wm_material_receive`  (
   `receive_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '入库单名称',
   `iqc_id` bigint(20) NULL DEFAULT NULL COMMENT '来料检验单ID',
   `iqc_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '来料检验单编号',
+  `iqc_status` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '来料检验结论: QUALIFIED/UNQUALIFIED(无到货通知时上架门禁依据)',
   `notice_id` bigint(20) NULL DEFAULT NULL COMMENT '到货通知单ID',
   `notice_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '到货通知单编号',
   `pur_id` bigint(20) NULL DEFAULT NULL COMMENT '采购订单ID',
@@ -6694,7 +6711,7 @@ CREATE TABLE `wm_sales_issue`  (
   `attr3` bigint(20) NULL DEFAULT NULL COMMENT '预留字段3',
   `attr4` bigint(20) NULL DEFAULT NULL COMMENT '预留字段4',
   PRIMARY KEY (`issue_id`) USING BTREE,
-  UNIQUE INDEX `uk_issue_code`(`issue_code`) USING BTREE,
+  UNIQUE INDEX `uk_issue_code`(`issue_code`, `tenant_id`) USING BTREE,
   INDEX `idx_so_id`(`so_id`) USING BTREE,
   INDEX `idx_client_id`(`client_id`) USING BTREE,
   INDEX `idx_status`(`status`) USING BTREE,
@@ -6782,7 +6799,7 @@ CREATE TABLE `wm_sn`  (
   `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`sn_id`) USING BTREE,
-  UNIQUE INDEX `uk_sn_code`(`sn_code`) USING BTREE,
+  UNIQUE INDEX `uk_sn_code`(`sn_code`, `tenant_id`) USING BTREE,
   INDEX `idx_material_id`(`material_id`) USING BTREE,
   INDEX `idx_batch_id`(`batch_id`) USING BTREE,
   INDEX `idx_warehouse_id`(`warehouse_id`) USING BTREE,
@@ -6825,6 +6842,7 @@ CREATE TABLE `wm_stock_alert`  (
   `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`alert_id`) USING BTREE,
+  KEY `idx_tenant_handled` (`tenant_id`, `handled_flag`),
   INDEX `idx_alert_material`(`material_id`, `alert_type`, `handled_flag`) USING BTREE,
   INDEX `idx_alert_tenant`(`tenant_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '安全库存预警表' ROW_FORMAT = Dynamic;
@@ -7427,7 +7445,7 @@ CREATE TABLE `wm_warehouse`  (
   `dept_id` bigint(20) NULL DEFAULT NULL COMMENT '归属部门ID（关联sys_dept）',
   `dept_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '归属部门名称',
   PRIMARY KEY (`warehouse_id`) USING BTREE,
-  UNIQUE INDEX `uk_warehouse_code`(`warehouse_code`) USING BTREE,
+  UNIQUE INDEX `uk_warehouse_code`(`warehouse_code`, `tenant_id`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '仓库表' ROW_FORMAT = Dynamic;
 

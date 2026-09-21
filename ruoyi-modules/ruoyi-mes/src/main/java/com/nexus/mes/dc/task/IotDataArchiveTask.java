@@ -5,9 +5,12 @@ import com.aizuda.snailjob.client.job.core.dto.JobArgs;
 import com.aizuda.snailjob.common.log.SnailJobLog;
 import com.aizuda.snailjob.model.dto.ExecuteResult;
 import com.baomidou.dynamic.datasource.annotation.DS;
+import com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.nexus.common.iot.service.IotDeviceDataQueryService;
+import com.nexus.common.tenant.helper.TenantHelper;
+import com.nexus.mes.common.mapper.MesSysTenantMapper;
 import com.nexus.mes.dc.domain.DcCollectionPoint;
 import com.nexus.mes.dc.domain.DcDataRecord;
 import com.nexus.mes.dc.mapper.DcCollectionPointMapper;
@@ -15,7 +18,6 @@ import com.nexus.mes.dc.mapper.DcDataRecordMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.Duration;
@@ -32,6 +34,13 @@ import java.util.Map;
  * <p>
  * 建议频率：5 分钟一次（在 SnailJob 控制台配置 cron: 0 * 5 * * * ?）
  *
+ * <p><b>多租户（MES-DC-02，2026-09-21 落地修复）</b>：调度线程没有 Sa-Token 上下文，
+ * {@code TenantHelper.getTenantId()} 为 null 时
+ * {@code PlusTenantLineHandler.ignoreTable()} 对**所有表**返回 true（租户插件整体失效），
+ * 于是 ① {@code dc_collection_point} 的 SELECT 会跨租户扫描；② {@code dc_data_record} 的 INSERT
+ * 不带 tenant_id，落库列默认值 {@code '000000'}。结果是所有租户的 IoT 数据都归档进系统租户，
+ * 归属租户在 DHR 的 DATA_COLLECT 分册 / SPC 页面永远查不到。故必须逐个租户注入上下文执行。</p>
+ *
  * @author nexus
  */
 @Component
@@ -40,6 +49,30 @@ import java.util.Map;
 @DS("mes")
 @JobExecutor(name = "iotDataArchiveTask")
 public class IotDataArchiveTask {
+
+    /** 无租户配置时的回退租户 */
+    private static final String DEFAULT_TENANT_ID = "000000";
+
+    /**
+     * 本地兜底调度开关：SnailJob 客户端启用（{@code snail-job.enabled=true}）时本地兜底让位，
+     * 避免同一任务被 SnailJob 与 {@code @Scheduled} 双重调度。
+     */
+    @org.springframework.beans.factory.annotation.Value("${snail-job.enabled:false}")
+    private boolean snailJobEnabled;
+
+    /**
+     * 本地 {@code @Scheduled} 兜底入口（IOT-MES-01）。
+     * <p>生产环境 {@code snail-job.enabled=false} 时 SnailJob 客户端不启动、不会回调
+     * {@link #jobExecute}，IoT→MES 的 {@code dc_data_record} 归档链路因此完全断开
+     * （MES 的 SPC/采集点/健康趋势全部拿不到 IoT 数据）。cron 与 {@code sj_job} 种子一致
+     * （每 5 分钟，拉取 {@link #PULL_WINDOW_MINUTES} 分钟窗口，靠 {@code uk_point_collect_time} 去重）。
+     * Lock4j 按任务名加分布式锁，多实例下仅一个节点执行，抢锁失败静默跳过。</p>
+     */
+    @org.springframework.scheduling.annotation.Scheduled(cron = "0 */5 * * * ?")
+    public void scheduledExecute() {
+        com.nexus.common.redis.utils.SchedulerFallbackUtils.runIfFallbackEnabled(
+            snailJobEnabled, "iotDataArchiveTask", 300000L, () -> jobExecute(null));
+    }
 
     private static final String POINT_TYPE_AUTO = "AUTO";
     private static final String SOURCE_IOT = "IoT";
@@ -54,9 +87,12 @@ public class IotDataArchiveTask {
     private final DcCollectionPointMapper collectionPointMapper;
     private final DcDataRecordMapper dataRecordMapper;
     private final IotDeviceDataQueryService iotDeviceDataQueryService;
+    private final MesSysTenantMapper mesSysTenantMapper;
 
     /**
      * 定时任务执行入口，由调度框架回调。
+     * <p>逐个租户注入上下文执行：单租户失败不影响其它租户；游标 {@code last_archive_time}
+     * 挂在各租户自己的采集点行上，因此按租户迭代天然是"每租户独立推进"。</p>
      *
      * @param jobArgs 任务执行参数
      * @return 任务执行结果
@@ -66,8 +102,18 @@ public class IotDataArchiveTask {
         try {
             Date endTime = new Date();
             Date startTime = new Date(System.currentTimeMillis() - Duration.ofMinutes(PULL_WINDOW_MINUTES).toMillis());
-            int totalInserted = archiveAutoPoints(startTime, endTime);
-            SnailJobLog.REMOTE.info("[IoT归档任务] 完成，归档 {} 条记录", totalInserted);
+            List<String> tenantIds = queryTenantIds();
+            int totalInserted = 0;
+            for (String tenantId : tenantIds) {
+                try {
+                    totalInserted += TenantHelper.dynamic(tenantId,
+                        () -> archiveAutoPoints(startTime, endTime));
+                } catch (Exception e) {
+                    log.warn("[IoT归档任务] 租户 {} 归档失败: {}", tenantId, e.getMessage(), e);
+                }
+            }
+            SnailJobLog.REMOTE.info("[IoT归档任务] 完成，遍历 {} 个租户，归档 {} 条记录",
+                tenantIds.size(), totalInserted);
             return ExecuteResult.success("归档 " + totalInserted + " 条");
         } catch (Exception e) {
             SnailJobLog.REMOTE.error("[IoT归档任务] 失败: {}", e.getMessage());
@@ -76,13 +122,33 @@ public class IotDataArchiveTask {
     }
 
     /**
+     * 查询所有有效租户ID（{@code sys_tenant} 在 ry-vue master 库，需显式切库）；为空时回退默认租户。
+     * <p>此处必须用 {@code push("master")}：本方法不在事务内（{@code jobExecute} 无
+     * {@code @Transactional}），切库才能生效。</p>
+     */
+    private List<String> queryTenantIds() {
+        try {
+            DynamicDataSourceContextHolder.push("master");
+            List<String> ids = mesSysTenantMapper.selectAllTenantIds();
+            return (ids == null || ids.isEmpty()) ? List.of(DEFAULT_TENANT_ID) : ids;
+        } finally {
+            DynamicDataSourceContextHolder.poll();
+        }
+    }
+
+    /**
      * 归档采集点
+     *
+     * <p><b>本方法刻意不加 {@code @Transactional}</b>：它内部通过
+     * {@link IotDeviceDataQueryService}（{@code @DS("iot")}）跨库读 ry-iot，而 Spring 事务一旦开启
+     * 就会在 {@code doBegin} 时把 mes 连接绑定到线程，之后 {@code @DS("iot")} 不再重路由，
+     * 查询会打到 ry-mes 报 {@code Table 'ry-mes.iot_device_data' doesn't exist}，且异常被下面的
+     * 逐点 catch 吞掉 → 归档静默 0 行。若确需事务，必须把跨库读移到事务边界之外。</p>
      *
      * @param startTime 开始时间
      * @param endTime 结束时间
      * @return 数量/结果
      */
-    @Transactional(rollbackFor = Exception.class)
     public int archiveAutoPoints(Date startTime, Date endTime) {
         LambdaQueryWrapper<DcCollectionPoint> wrapper = Wrappers.<DcCollectionPoint>lambdaQuery()
             .eq(DcCollectionPoint::getPointType, POINT_TYPE_AUTO)

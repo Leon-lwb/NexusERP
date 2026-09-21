@@ -96,11 +96,14 @@ public class SchPunchRule extends TenantEntity {
     private String locationAddress;
     /**
      * 允许的Wi-Fi网络SSID列表（JSON数组）
+     * <p><b>未实现（预留字段）</b>：打卡主流程未读取/校验该字段，配置后不会生效（ERP-SCH-04 复核结论）。
+     * 保留仅为后续接入客户端 SSID 上报时使用（客户端可伪造，只能做弱校验）。</p>
      */
     @ExcelProperty("允许的Wi-Fi网络SSID列表")
     private String allowWifiSsids;
     /**
      * 允许的蓝牙设备列表（JSON数组）
+     * <p><b>未实现（预留字段）</b>：同 {@link #allowWifiSsids}，打卡主流程未做任何校验（ERP-SCH-04）。</p>
      */
     @ExcelProperty("允许的蓝牙设备列表")
     private String allowBluetoothDevices;

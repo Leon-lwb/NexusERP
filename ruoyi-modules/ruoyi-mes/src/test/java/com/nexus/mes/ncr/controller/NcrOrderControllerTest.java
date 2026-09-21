@@ -83,8 +83,7 @@ class NcrOrderControllerTest {
 
     @Test
     @DisplayName("反射守卫: 复用已种子化的权限串 mes:ncr:order:dispose 且留操作日志")
-    void disposeWithSignature_permissionAndLogGuards() throws NoSuchMethodException {
-        Method m = NcrOrderController.class.getMethod("disposeWithSignature", Long.class, NcrDisposeSignBo.class);
+    void disposeWithSignature_permissionAndLogGuards() throws NoSuchMethodException {        Method m = NcrOrderController.class.getMethod("disposeWithSignature", Long.class, NcrDisposeSignBo.class);
 
         SaCheckPermission perm = m.getAnnotation(SaCheckPermission.class);
         assertNotNull(perm, "缺少 @SaCheckPermission 会让签署处置对任何登录用户开放");
@@ -95,5 +94,39 @@ class NcrOrderControllerTest {
         // 凭证绝不允许进操作日志（全局排除清单之外再显式声明一道，双保险）
         assertTrue(java.util.Arrays.asList(log.excludeParamNames()).contains("credential"),
             "@Log 必须声明 excludeParamNames 排除 credential");
+    }
+
+    // ==================== MES-NCR-06: 无签名入口只允许可逆处置 ====================
+
+    @Test
+    @DisplayName("无签名入口: 不可逆处置(SCRAP/ACCEPT_AS_IS/RETURN)必须被拒并提示电子签名")
+    void dispose_irreversibleDispositionRequiresSignature() {
+        for (String disposition : new String[]{"SCRAP", "ACCEPT_AS_IS", "RETURN"}) {
+            ServiceException ex = assertThrows(ServiceException.class,
+                () -> controller.dispose(1L, disposition, "备注"), disposition);
+            assertEquals("关键处置(SCRAP/ACCEPT_AS_IS/RETURN)必须电子签名", ex.getMessage());
+        }
+        verify(ncrOrderService, never()).dispose(anyLong(), anyString(), any());
+    }
+
+    @Test
+    @DisplayName("无签名入口: 可逆处置(REWORK)仍可正常转发")
+    void dispose_reworkDelegatesToService() {
+        when(ncrOrderService.dispose(1L, "REWORK", "返工")).thenReturn(true);
+
+        assertEquals(200, controller.dispose(1L, "REWORK", "返工").getCode());
+
+        verify(ncrOrderService).dispose(1L, "REWORK", "返工");
+    }
+
+    @Test
+    @DisplayName("反射守卫: 无签名入口使用独立权限码 mes:ncr:order:dispose-nosign")
+    void dispose_usesSeparatePermissionCode() throws NoSuchMethodException {
+        Method m = NcrOrderController.class.getMethod("dispose", Long.class, String.class, String.class);
+
+        SaCheckPermission perm = m.getAnnotation(SaCheckPermission.class);
+        assertNotNull(perm, "缺少 @SaCheckPermission 会让无签名处置对任何登录用户开放");
+        assertArrayEquals(new String[]{"mes:ncr:order:dispose-nosign"}, perm.value(),
+            "MES-NCR-06: 无签名入口必须与签署入口权限码分离");
     }
 }

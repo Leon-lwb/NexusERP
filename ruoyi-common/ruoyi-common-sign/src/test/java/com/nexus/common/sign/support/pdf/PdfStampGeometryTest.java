@@ -4,6 +4,7 @@ import com.nexus.common.sign.domain.dto.SealPlacement;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.util.Matrix;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -18,6 +19,8 @@ import static org.junit.jupiter.api.Assertions.*;
  *
  * @author nexus
  */
+@Tag("local")
+@Tag("dev")
 class PdfStampGeometryTest {
 
     /** PDFBox 的 A4 是按 mm 精确换算的 595.2756×841.8898，浮点比较需要留余量。 */

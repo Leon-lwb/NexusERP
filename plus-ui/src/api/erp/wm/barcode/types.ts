@@ -30,6 +30,8 @@ export interface BarcodeConfigVO {
   datePattern?: string;
   /** 流水长度 */
   sequenceLength: number;
+  /** 当前流水号（后端 WmBarcodeConfigVo.currentSequence，改规则前判断是否撞号的依据） */
+  currentSequence?: number;
   /** 校验位 */
   withCheckDigit?: number;
   /** 业务类型 */
@@ -62,6 +64,8 @@ export interface BarcodeConfigForm {
   datePattern?: string;
   /** 流水长度 */
   sequenceLength: number;
+  /** 当前流水号（后端 WmBarcodeConfigVo.currentSequence，改规则前判断是否撞号的依据） */
+  currentSequence?: number;
   /** 校验位 */
   withCheckDigit?: number;
   /** 业务类型 */

@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import com.baomidou.dynamic.datasource.annotation.DS;
 
 /**
  * 基于数据库的序列号提供者
@@ -22,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 @RequiredArgsConstructor
 @Component
+@DS("erp")
 public class DatabaseSequenceProvider implements BarcodeSequenceProvider {
 
     private final WmBarcodeConfigMapper barcodeConfigMapper;

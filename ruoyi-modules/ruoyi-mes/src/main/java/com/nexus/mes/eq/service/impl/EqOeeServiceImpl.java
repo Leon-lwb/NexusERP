@@ -11,6 +11,7 @@ import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.mes.common.mapper.MesSysTenantMapper;
 import com.nexus.mes.eq.domain.EqEquipment;
+import com.nexus.mes.eq.domain.EqMaintenanceRecord;
 import com.nexus.mes.eq.domain.EqOeeRecord;
 import com.nexus.mes.eq.domain.EqRepair;
 import com.nexus.mes.eq.domain.bo.EqOeeQueryBo;
@@ -20,11 +21,15 @@ import com.nexus.mes.eq.domain.vo.EqOeeRecordVo;
 import com.nexus.mes.eq.domain.vo.EqOeeTopVo;
 import com.nexus.mes.eq.domain.vo.EqOeeTrendVo;
 import com.nexus.mes.eq.mapper.EqEquipmentMapper;
+import com.nexus.mes.eq.mapper.EqMaintenanceRecordMapper;
 import com.nexus.mes.eq.mapper.EqOeeRecordMapper;
 import com.nexus.mes.eq.mapper.EqRepairMapper;
 import com.nexus.mes.eq.service.IEqOeeService;
+import com.nexus.mes.pro.domain.ProFlowCardStep;
+import com.nexus.mes.pro.mapper.ProFlowCardStepMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -44,9 +49,19 @@ import java.util.stream.Collectors;
 /**
  * MES设备 OEE & 稼动率看板 Service 业务层实现
  * <p>
- * 数据源: ry-mes 库(eq_oee_record / eq_equipment / eq_repair)。
+ * 数据源: ry-mes 库(eq_oee_record / eq_equipment / eq_repair / eq_maintenance_record / pro_flow_card_step)。
  * 类级 @DS("mes"): 所有查询走 mes 库; aggregate 内查租户列表时显式 push("master")。
- * 首版 OEE = 稼动率(availability), 表现率/质量率占位 1.0。
+ * <p>
+ * 口径(MES-EQ-03):
+ * <ul>
+ *   <li>planned_minutes: 优先取 eq_equipment.planned_minutes_per_day(设备级可配置, 两班/三班制),
+ *       为空时取配置项 nexus.mes.eq.oee.planned-minutes-per-day(默认 480 = 8h 单班);</li>
+ *   <li>downtime_minutes: eq_repair.downtime_hours 当日求和 × 60(人工填报口径);</li>
+ *   <li>maintenance_minutes: eq_maintenance_record.duration_minutes 当日真实汇总(未采集的记录按 0 计并在 remark 标注);</li>
+ *   <li>quality_rate: 同工作中心当日流转卡工序的 goodQty /(goodQty+defectQty+scrapQty), 无数据时为 null(占位, 不再伪装 100%);</li>
+ *   <li>performance_rate: 当前无可用的"理论节拍"数据源, 恒为 null(占位);</li>
+ *   <li>oee = availability × (performance_rate ?? 1) × (quality_rate ?? 1), 占位因子在 remark 中显式标注。</li>
+ * </ul>
  *
  * @author Nexus
  */
@@ -57,14 +72,19 @@ import java.util.stream.Collectors;
 public class EqOeeServiceImpl implements IEqOeeService {
 
     private static final BigDecimal SIXTY = new BigDecimal("60");
-    private static final BigDecimal DEFAULT_PERF = BigDecimal.ONE;
     private static final int RECENT_DAYS = 7;
     private static final String STATUS_COMPLETED = "COMPLETED";
     private static final String DEFAULT_TENANT_ID = "000000";
 
+    /** 默认计划生产时长(分钟/天): 设备未配置 planned_minutes_per_day 时使用(MES-EQ-03) */
+    @Value("${nexus.mes.eq.oee.planned-minutes-per-day:480}")
+    private BigDecimal defaultPlannedMinutes;
+
     private final EqOeeRecordMapper baseMapper;
     private final EqEquipmentMapper equipmentMapper;
     private final EqRepairMapper repairMapper;
+    private final EqMaintenanceRecordMapper maintenanceRecordMapper;
+    private final ProFlowCardStepMapper flowCardStepMapper;
     private final MesSysTenantMapper mesSysTenantMapper;
 
     // ==================== 看板查询 ====================
@@ -87,7 +107,19 @@ public class EqOeeServiceImpl implements IEqOeeService {
         BigDecimal avgAvail = totalPlanned.compareTo(BigDecimal.ZERO) > 0
             ? totalRun.divide(totalPlanned, 4, RoundingMode.HALF_UP) : BigDecimal.ZERO;
         vo.setAvgAvailability(avgAvail);
-        vo.setAvgOee(avgAvail); // 首版 OEE = 稼动率
+        // 平均 OEE 按计划时长加权(占位因子按 1 参与, 与明细口径一致), 避免简单平均掩盖长计划设备
+        BigDecimal weightedOee = BigDecimal.ZERO;
+        for (EqOeeRecordVo r : list) {
+            if (r.getOee() == null || r.getPlannedMinutes() == null) {
+                continue;
+            }
+            weightedOee = weightedOee.add(r.getOee().multiply(r.getPlannedMinutes()));
+        }
+        vo.setAvgOee(totalPlanned.compareTo(BigDecimal.ZERO) > 0
+            ? weightedOee.divide(totalPlanned, 4, RoundingMode.HALF_UP) : BigDecimal.ZERO);
+        // 占位标注: 表现率/质量率是否已有真实数据源(无则前端应展示"占位"而不是 100%)
+        vo.setPerformanceRateAvailable(false);
+        vo.setQualityRateAvailable(list.stream().anyMatch(r -> r.getQualityRate() != null));
         vo.setTotalDowntimeMinutes(totalDown);
         vo.setTotalFaultCount(totalFault);
         vo.setEquipmentCount((int) eqCount);
@@ -277,18 +309,47 @@ public class EqOeeServiceImpl implements IEqOeeService {
         }
         BigDecimal downtimeMinutes = downtimeHours.multiply(SIXTY).setScale(2, RoundingMode.HALF_UP);
 
-        // 当日故障次数(报修数, 按 create_time 归集, 不限状态)
+        // 当日故障次数(报修数, 按 create_time 归集, 不含已作废的误报修)
         Long faultCount = repairMapper.selectCount(Wrappers.<EqRepair>lambdaQuery()
             .eq(EqRepair::getEquipmentId, eq.getEquipmentId())
+            .ne(EqRepair::getStatus, "CANCELLED")
             .between(EqRepair::getCreateTime, dayRange[0], dayRange[1]));
 
-        BigDecimal planned = DEFAULT_PLANNED_MINUTES;
+        // 计划生产时长: 设备级配置优先, 否则取配置默认值(默认 480 = 8h 单班)
+        BigDecimal planned = resolvePlannedMinutes(eq);
+
+        // 保养占用时长: 当日保养记录实际耗时汇总(MES-EQ-03), 未采集时长的记录按 0 计并标注
+        List<EqMaintenanceRecord> maintRecords = maintenanceRecordMapper.selectList(
+            Wrappers.<EqMaintenanceRecord>lambdaQuery()
+                .eq(EqMaintenanceRecord::getEquipmentId, eq.getEquipmentId())
+                .between(EqMaintenanceRecord::getExecuteTime, dayRange[0], dayRange[1]));
         BigDecimal maintenance = BigDecimal.ZERO;
-        BigDecimal run = planned.subtract(downtimeMinutes).max(BigDecimal.ZERO);
-        BigDecimal availability = planned.compareTo(BigDecimal.ZERO) > 0
-            ? run.divide(planned, 4, RoundingMode.HALF_UP) : BigDecimal.ZERO;
-        BigDecimal oee = availability.multiply(DEFAULT_PERF).multiply(DEFAULT_PERF).setScale(4, RoundingMode.HALF_UP);
+        int maintMissingDuration = 0;
+        for (EqMaintenanceRecord mr : maintRecords) {
+            if (mr.getDurationMinutes() == null) {
+                maintMissingDuration++;
+            } else if (mr.getDurationMinutes().signum() > 0) {
+                maintenance = maintenance.add(mr.getDurationMinutes());
+            }
+        }
+        maintenance = maintenance.setScale(2, RoundingMode.HALF_UP);
+
+        // 质量率: 同工作中心当日工序报工的良品率; 无报工数据时为 null(占位, 不伪装 100%)
+        BigDecimal qualityRate = clamp01(resolveQualityRate(eq, dayRange));
+        // 表现率: 缺少"理论节拍/标准工时"数据源, 恒为占位 null
+        BigDecimal performanceRate = null;
+
+        BigDecimal run = planned.subtract(downtimeMinutes).subtract(maintenance).max(BigDecimal.ZERO);
+        // MES-EQ-13: 四个比率统一钳制到 [0,1]。原来只有 max(ZERO) 下限, 负停机时长/负保养时长
+        // 或历史脏数据会让 run > planned, 落库 availability/oee > 1, 看板出现"超产"假象。
+        BigDecimal availability = clamp01(planned.compareTo(BigDecimal.ZERO) > 0
+            ? run.divide(planned, 4, RoundingMode.HALF_UP) : BigDecimal.ZERO);
+        BigDecimal oee = clamp01(availability
+            .multiply(performanceRate == null ? BigDecimal.ONE : performanceRate)
+            .multiply(qualityRate == null ? BigDecimal.ONE : qualityRate))
+            .setScale(4, RoundingMode.HALF_UP);
         int fault = faultCount == null ? 0 : faultCount.intValue();
+        String remark = buildOeeRemark(performanceRate, qualityRate, maintRecords.size(), maintMissingDuration);
 
         // upsert by (equipment_id, stat_date) - tenant_id 由多租户插件自动加条件/填充
         EqOeeRecord existing = baseMapper.selectOne(Wrappers.<EqOeeRecord>lambdaQuery()
@@ -307,9 +368,10 @@ public class EqOeeServiceImpl implements IEqOeeService {
                 .set(EqOeeRecord::getRunMinutes, run)
                 .set(EqOeeRecord::getFaultCount, fault)
                 .set(EqOeeRecord::getAvailability, availability)
-                .set(EqOeeRecord::getPerformanceRate, DEFAULT_PERF)
-                .set(EqOeeRecord::getQualityRate, DEFAULT_PERF)
+                .set(EqOeeRecord::getPerformanceRate, performanceRate)
+                .set(EqOeeRecord::getQualityRate, qualityRate)
                 .set(EqOeeRecord::getOee, oee)
+                .set(EqOeeRecord::getRemark, remark)
                 .eq(EqOeeRecord::getRecordId, existing.getRecordId()));
             return 1;
         }
@@ -326,11 +388,92 @@ public class EqOeeServiceImpl implements IEqOeeService {
         rec.setRunMinutes(run);
         rec.setFaultCount(fault);
         rec.setAvailability(availability);
-        rec.setPerformanceRate(DEFAULT_PERF);
-        rec.setQualityRate(DEFAULT_PERF);
+        rec.setPerformanceRate(performanceRate);
+        rec.setQualityRate(qualityRate);
         rec.setOee(oee);
+        rec.setRemark(remark);
         baseMapper.insert(rec);
         return 1;
+    }
+
+    /**
+     * 比率钳制到 [0,1](MES-EQ-13)。
+     * <p>
+     * planned(分母)与 run(分子)都依赖人工填报数据, 负停机/负成本或历史脏数据会让
+     * availability/oee 突破 1 的物理上界; 此处统一做上限钳制。
+     * null 原样返回, 保留"表现率/质量率无数据源 = 占位"的语义。
+     *
+     * @param rate 原始比率(可空)
+     * @return 落在 [0,1] 的比率; 入参为 null 时返回 null
+     */
+    static BigDecimal clamp01(BigDecimal rate) {
+        if (rate == null) {
+            return null;
+        }
+        return rate.max(BigDecimal.ZERO).min(BigDecimal.ONE);
+    }
+
+    /**
+     * 计划生产时长: 设备级 planned_minutes_per_day 优先, 否则取配置默认值(默认 480 = 8h 单班)。
+     */
+    private BigDecimal resolvePlannedMinutes(EqEquipment eq) {
+        if (eq.getPlannedMinutesPerDay() != null && eq.getPlannedMinutesPerDay().signum() > 0) {
+            return eq.getPlannedMinutesPerDay().setScale(2, RoundingMode.HALF_UP);
+        }
+        if (defaultPlannedMinutes != null && defaultPlannedMinutes.signum() > 0) {
+            return defaultPlannedMinutes.setScale(2, RoundingMode.HALF_UP);
+        }
+        return DEFAULT_PLANNED_MINUTES;
+    }
+
+    /**
+     * 质量率 = 当日同工作中心工序报工良品数 /(良品+不良+报废)。无工作中心或无报工数据时返回 null(占位)。
+     */
+    private BigDecimal resolveQualityRate(EqEquipment eq, Date[] dayRange) {
+        if (eq.getWorkcenterId() == null) {
+            return null;
+        }
+        List<ProFlowCardStep> steps = flowCardStepMapper.selectList(Wrappers.<ProFlowCardStep>lambdaQuery()
+            .eq(ProFlowCardStep::getWorkcenterId, eq.getWorkcenterId())
+            .between(ProFlowCardStep::getActualEndTime, dayRange[0], dayRange[1]));
+        BigDecimal good = BigDecimal.ZERO;
+        BigDecimal total = BigDecimal.ZERO;
+        for (ProFlowCardStep s : steps) {
+            if (s.getGoodQty() != null) {
+                good = good.add(s.getGoodQty());
+            }
+            if (s.getGoodQty() != null) {
+                total = total.add(s.getGoodQty());
+            }
+            if (s.getDefectQty() != null) {
+                total = total.add(s.getDefectQty());
+            }
+            if (s.getScrapQty() != null) {
+                total = total.add(s.getScrapQty());
+            }
+        }
+        if (total.signum() <= 0) {
+            return null;
+        }
+        return good.divide(total, 4, RoundingMode.HALF_UP);
+    }
+
+    /**
+     * 生成 OEE 口径备注: 显式标注哪些因子是占位(而非真实的 100%)。
+     */
+    private String buildOeeRemark(BigDecimal performanceRate, BigDecimal qualityRate,
+                                  int maintRecordCount, int maintMissingDuration) {
+        List<String> notes = new ArrayList<>(3);
+        if (performanceRate == null) {
+            notes.add("表现率无数据源(占位, 按1参与计算)");
+        }
+        if (qualityRate == null) {
+            notes.add("质量率无报工数据(占位, 按1参与计算)");
+        }
+        if (maintMissingDuration > 0) {
+            notes.add("保养记录 " + maintMissingDuration + "/" + maintRecordCount + " 条未填时长(按0计)");
+        }
+        return notes.isEmpty() ? null : String.join("; ", notes);
     }
 
     // ==================== 私有辅助 ====================

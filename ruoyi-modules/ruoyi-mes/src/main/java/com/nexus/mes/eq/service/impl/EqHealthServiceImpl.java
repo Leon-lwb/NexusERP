@@ -2,6 +2,7 @@ package com.nexus.mes.eq.service.impl;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.nexus.common.json.utils.JsonUtils;
@@ -15,12 +16,16 @@ import com.nexus.mes.eq.mapper.EqEquipmentMapper;
 import com.nexus.mes.eq.mapper.EqHealthRecordMapper;
 import com.nexus.mes.eq.mapper.EqRepairMapper;
 import com.nexus.mes.eq.service.IEqHealthService;
+import com.nexus.mes.eq.service.IEqRepairService;
 import com.nexus.mes.pro.service.IProAndonService;
 import com.nexus.common.iot.service.IotDeviceDataQueryService;
 import com.nexus.common.iot.util.EwmaUtil;
+import com.nexus.common.redis.utils.RedisUtils;
+import com.nexus.common.tenant.helper.TenantHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.env.Environment;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -91,6 +96,16 @@ public class EqHealthServiceImpl implements IEqHealthService {
      * 统计窗口: 最近 24 小时
      */
     private static final Duration WINDOW = Duration.ofHours(24);
+
+    /**
+     * 健康度安灯限频键前缀(MES-EQ-16): {@code mes:eq:health:andon:{tenantId}:{equipmentId}}
+     */
+    private static final String ANDON_THROTTLE_PREFIX = "mes:eq:health:andon:";
+
+    /**
+     * 健康度安灯限频窗口: 同一设备 24h 内只推一次(MES-EQ-16)
+     */
+    private static final Duration ANDON_THROTTLE_TTL = Duration.ofHours(24);
 
     @Override
     public TableDataInfo<EqHealthRecordVo> selectLatestPage(String equipmentName, String grade, PageQuery pageQuery) {
@@ -183,7 +198,7 @@ public class EqHealthServiceImpl implements IEqHealthService {
             .ge(EqRepair::getRepairStart, since90d));
         Long openRepairs = repairMapper.selectCount(Wrappers.lambdaQuery(EqRepair.class)
             .eq(EqRepair::getEquipmentId, equipment.getEquipmentId())
-            .notIn(EqRepair::getStatus, "COMPLETED", "CANCELLED"));
+            .notIn(EqRepair::getStatus, IEqRepairService.STATUS_COMPLETED, IEqRepairService.STATUS_CANCELLED));
 
         // 4. 评分
         int repairDeduct = Math.min((int) (repairCount90d * DEDUCT_PER_REPAIR), REPAIR_DEDUCT_CAP)
@@ -199,7 +214,9 @@ public class EqHealthServiceImpl implements IEqHealthService {
         Integer prevScore = prev == null ? null : prev.getScore();
         Integer scoreChange = prevScore == null ? null : score - prevScore;
 
-        // 6. 落库(同日重评则覆盖)
+        // 6. 落库: 同设备同日先条件更新(CAS), 影响 0 行才插入(MES-EQ-15)。
+        //    原 select-then-insert/update 在并发重评(定时任务与手工触发重叠)下会插入同设备同日多条;
+        //    eq_health_record 的唯一键 uk_tenant_eq_date(tenant_id, equipment_id, record_date) 兜底(DDL 见汇报)。
         EqHealthRecord record = new EqHealthRecord();
         record.setEquipmentId(equipment.getEquipmentId());
         record.setEquipmentCode(equipment.getEquipmentCode());
@@ -215,29 +232,67 @@ public class EqHealthServiceImpl implements IEqHealthService {
         record.setScoreChange(scoreChange);
         record.setRecordDate(now);
 
-        EqHealthRecord existing = healthRecordMapper.selectOne(Wrappers.lambdaQuery(EqHealthRecord.class)
+        LambdaUpdateWrapper<EqHealthRecord> sameDay = Wrappers.<EqHealthRecord>lambdaUpdate()
             .eq(EqHealthRecord::getEquipmentId, equipment.getEquipmentId())
-            .apply("DATE(record_date) = DATE({0})", now)
-            .last("LIMIT 1"));
-        if (existing != null) {
-            record.setRecordId(existing.getRecordId());
-            healthRecordMapper.updateById(record);
-        } else {
-            healthRecordMapper.insert(record);
+            .apply("DATE(record_date) = DATE({0})", now);
+        if (healthRecordMapper.update(record, sameDay) == 0) {
+            try {
+                healthRecordMapper.insert(record);
+            } catch (DuplicateKeyException e) {
+                // 并发下另一线程已插入同日记录: 退化为更新, 保证"同设备同日一条"
+                log.debug("[设备健康] 同日记录并发插入冲突, 转为更新: equipmentId={}", equipment.getEquipmentId());
+                healthRecordMapper.update(record, Wrappers.<EqHealthRecord>lambdaUpdate()
+                    .eq(EqHealthRecord::getEquipmentId, equipment.getEquipmentId())
+                    .apply("DATE(record_date) = DATE({0})", now));
+            }
         }
 
-        // 7. LOW 且评分下滑 → 安灯
+        // 7. LOW 且评分下滑 → 安灯(同一设备 24h 内只推一次, MES-EQ-16)
         if ("LOW".equals(grade) && (scoreChange == null || scoreChange < 0)) {
-            String reason = String.format("设备健康预警: 设备[%s(%s)] 健康评分 %d(%s), 较前次%s, 24h异常点 %d, 未闭环维修 %d",
-                equipment.getEquipmentName(), equipment.getEquipmentCode(), score, grade,
-                scoreChange == null ? "首次评估" : ("下降 " + Math.abs(scoreChange)), anomalyPoints, openRepairs);
-            try {
-                andonService.callAndon(null, null, null, IProAndonService.TYPE_EQUIPMENT, reason);
-            } catch (Exception e) {
-                log.warn("[设备健康] 设备 {} 触发安灯失败: {}", equipment.getEquipmentId(), e.getMessage());
+            if (!tryAcquireAndonThrottle(TenantHelper.getTenantId(), equipment.getEquipmentId())) {
+                log.debug("[设备健康] 设备 {} 安灯限频中(24h 内已推送), 跳过", equipment.getEquipmentId());
+            } else {
+                String reason = String.format("设备健康预警: 设备[%s(%s)] 健康评分 %d(%s), 较前次%s, 24h异常点 %d, 未闭环维修 %d",
+                    equipment.getEquipmentName(), equipment.getEquipmentCode(), score, grade,
+                    scoreChange == null ? "首次评估" : ("下降 " + Math.abs(scoreChange)), anomalyPoints, openRepairs);
+                try {
+                    andonService.callAndon(null, null, null, IProAndonService.TYPE_EQUIPMENT, reason);
+                } catch (Exception e) {
+                    log.warn("[设备健康] 设备 {} 触发安灯失败: {}", equipment.getEquipmentId(), e.getMessage());
+                }
             }
         }
         return record;
+    }
+
+    /**
+     * 健康度安灯限频键(MES-EQ-16): {@code mes:eq:health:andon:{tenantId}:{equipmentId}}。
+     * <p>equipment_id 为雪花全局唯一, 带上 tenantId 仅为便于按租户排查与批量清理。</p>
+     *
+     * @param tenantId    租户ID(定时任务线程由 TenantHelper.dynamic 注入, 缺失时为空串)
+     * @param equipmentId 设备ID
+     * @return Redis 限频键
+     */
+    static String andonThrottleKey(String tenantId, Long equipmentId) {
+        return ANDON_THROTTLE_PREFIX + (tenantId == null ? "" : tenantId) + ":" + equipmentId;
+    }
+
+    /**
+     * 获取安灯推送许可: 同一设备 24h 内只允许推送一次(MES-EQ-16)。
+     * <p>抽为可覆盖(protected)方法, 便于单测在不静态打桩 {@code RedisUtils} 的前提下验证限频行为。
+     * Redis 不可用时放行(告警优先, 不因缓存故障静默丢弃设备健康预警)。</p>
+     *
+     * @param tenantId    租户ID(可空)
+     * @param equipmentId 设备ID
+     * @return true 表示本次获得推送许可
+     */
+    protected boolean tryAcquireAndonThrottle(String tenantId, Long equipmentId) {
+        try {
+            return RedisUtils.setObjectIfAbsent(andonThrottleKey(tenantId, equipmentId), "1", ANDON_THROTTLE_TTL);
+        } catch (Exception e) {
+            log.warn("[设备健康] 安灯限频键获取失败, 本次仍推送: {}", e.getMessage());
+            return true;
+        }
     }
 
     /**
@@ -259,8 +314,10 @@ public class EqHealthServiceImpl implements IEqHealthService {
             if (x == null) {
                 continue;
             }
+            // MES-EQ-17: 显式取绝对值, 向下突变(骤降)与向上突变同等计为异常点。
+            // EwmaUtil.zScore 内部已返回 |x-mean|/std, 此处 .abs() 为防御性双保险。
             if (EwmaUtil.warmedUp(state, warmup)
-                && EwmaUtil.zScore(state, x).compareTo(BigDecimal.valueOf(zThreshold)) > 0) {
+                && EwmaUtil.zScore(state, x).abs().compareTo(BigDecimal.valueOf(zThreshold)) > 0) {
                 anomalyCount++;
             }
             state = EwmaUtil.update(state, x, lambda);

@@ -4,7 +4,6 @@ import com.baomidou.dynamic.datasource.annotation.DS;
 import com.nexus.common.mq.constant.QueueConstants;
 import com.nexus.common.mq.consumer.BaseMessageConsumer;
 import com.nexus.erp.mq.message.ReworkStockMessage;
-import com.nexus.erp.prd.domain.PrdReworkOrder;
 import com.nexus.erp.prd.service.IPrdReworkOrderService;
 import com.rabbitmq.client.Channel;
 import lombok.RequiredArgsConstructor;
@@ -38,22 +37,16 @@ public class ReworkStockConsumer extends BaseMessageConsumer<ReworkStockMessage>
 
     /**
      * 根据操作类型更新返工订单状态
+     * <p>ERP-PRD-04：此前两个分支都只 log.info，返工单状态永远停在 IN_PROGRESS，
+     * 出入库过账后无法据此自动完工。现改为真正推进状态（条件更新，重复投递幂等）。</p>
      *
      * @param message 返工库存消息
      */
     @Override
     protected void doProcess(ReworkStockMessage message) {
         log.info("处理返工库存消息: reworkId={}, operationType={}", message.getReworkId(), message.getOperationType());
-        PrdReworkOrder rework = reworkOrderService.getById(message.getReworkId());
-        if (rework == null) {
-            log.warn("返工订单不存在: reworkId={}", message.getReworkId());
-            return;
-        }
-        if ("ISSUE".equals(message.getOperationType())) {
-            log.info("返工订单[{}]出库完成，状态更新", rework.getReworkNo());
-        } else if ("RECEIVE".equals(message.getOperationType())) {
-            log.info("返工订单[{}]入库完成，状态更新", rework.getReworkNo());
-        }
+        reworkOrderService.advanceByStockOperation(
+            message.getReworkId(), message.getOperationType(), message.getQuantity());
     }
 
     /**

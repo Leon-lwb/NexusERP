@@ -23,7 +23,8 @@ import java.util.Map;
  * 车间操作台人脸识别服务
  * <p>操作台场景(派工/工单执行页):刷脸 1:N 返回 top-3 候选并映射工人信息,
  * 前端手选候选后转 1:1 确认(verifyFace),避免单凭 1:N 签发身份(防照片/双胞胎攻击,见方案 3.2.2)。</p>
- * <p>subject 约定 EMP-{employeeId},与打卡验证一致;底库无对应工人时候选标记 matched=false。</p>
+ * <p>subject 约定 {@code T{tenantId}-EMP-{employeeId}}(见 {@link CvSubjectHelper}),与打卡验证一致;
+ * 底库无对应工人时候选标记 matched=false。</p>
  *
  * @author nexus
  * @since 2026-08-02
@@ -67,7 +68,7 @@ public class CvOpsService {
                 cand.put("workStatus", worker.getWorkStatus());
             } else {
                 cand.put("workerId", null);
-                cand.put("employeeId", StrUtil.removePrefix(item.getSubject(), "EMP-"));
+                cand.put("employeeId", CvSubjectHelper.employeeId(item.getSubject()));
             }
             candidates.add(cand);
         }
@@ -75,16 +76,13 @@ public class CvOpsService {
     }
 
     /**
-     * 按底库 subject(EMP-工号)反查工人
+     * 按底库 subject(带租户前缀,如 T000000-EMP-1001)反查工人
      *
-     * @param subject 底库工号(如 EMP-1001)
+     * @param subject 底库 subject
      * @return 工人;未注册到员工表返回 null(候选仍返回,前端可手动关联)
      */
     private SchWorker findWorker(String subject) {
-        if (StrUtil.isBlank(subject)) {
-            return null;
-        }
-        String employeeId = StrUtil.removePrefix(subject, "EMP-");
+        String employeeId = CvSubjectHelper.employeeId(subject);
         if (StrUtil.isBlank(employeeId)) {
             return null;
         }

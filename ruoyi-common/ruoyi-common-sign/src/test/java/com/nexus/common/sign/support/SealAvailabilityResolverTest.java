@@ -5,6 +5,7 @@ import com.nexus.common.sign.constants.SealType;
 import com.nexus.common.sign.domain.EsSeal;
 import com.nexus.common.sign.domain.EsSealGrant;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.util.Calendar;
@@ -18,6 +19,8 @@ import static org.junit.jupiter.api.Assertions.*;
  *
  * @author nexus
  */
+@Tag("local")
+@Tag("dev")
 class SealAvailabilityResolverTest {
 
     private static final long ME = 7L;

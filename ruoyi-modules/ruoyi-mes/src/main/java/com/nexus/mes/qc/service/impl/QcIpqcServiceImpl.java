@@ -1,9 +1,11 @@
 package com.nexus.mes.qc.service.impl;
 
+import cn.hutool.core.util.IdUtil;
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
@@ -13,13 +15,20 @@ import com.nexus.mes.common.mq.MesMqSendService;
 import com.nexus.mes.ncr.service.INcrOrderService;
 import com.nexus.mes.pro.domain.vo.ProWorkOrderVo;
 import com.nexus.mes.pro.service.IProWorkOrderService;
+import com.nexus.mes.qc.domain.QcInspectDetail;
 import com.nexus.mes.qc.domain.QcIpqc;
+import com.nexus.mes.qc.domain.bo.QcInspectEntryBo;
 import com.nexus.mes.qc.domain.bo.QcIpqcBo;
+import com.nexus.mes.qc.domain.vo.QcInspectDetailVo;
 import com.nexus.mes.qc.domain.vo.QcIpqcVo;
 import com.nexus.mes.qc.mapper.QcIpqcMapper;
+import com.nexus.mes.qc.service.IQcInspectDetailService;
 import com.nexus.mes.qc.service.IQcIpqcService;
+import com.nexus.mes.qc.service.QcJudgeEngine;
+import com.nexus.common.core.utils.MapstructUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,8 +39,12 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * MES过程检验 Service 业务层实现
@@ -56,6 +69,8 @@ public class QcIpqcServiceImpl implements IQcIpqcService {
     private final IProWorkOrderService proWorkOrderService;
     /** NCR 不合格品服务(P0-4)：检验判定不合格时自动创建 NCR 单。 */
     private final INcrOrderService ncrOrderService;
+    /** 检验单明细服务: 建单时按模板(物料/工序/客户维度)生成明细, 判定后回写结果。 */
+    private final IQcInspectDetailService inspectDetailService;
 
     /**
      * 分页查询 IPQC 过程检验列表。
@@ -108,8 +123,25 @@ public class QcIpqcServiceImpl implements IQcIpqcService {
         ipqc.setInspectResult("PENDING");
         ipqc.setStatus(STATUS_PENDING);
         ipqc.setRemark(bo.getRemark());
-        baseMapper.insert(ipqc);
+        try {
+            baseMapper.insert(ipqc);
+        } catch (DuplicateKeyException e) {
+            // MES-QC-04: uk_ipqc_wo_process 冲突 = 同工单同工序并发建单, 视为幂等成功(不抛, 避免报工事务/消费者反复重投)
+            log.info("IPQC已存在(唯一键冲突, 幂等跳过): mesWoId={}, processId={}",
+                bo.getMesWoId(), bo.getProcessId());
+            return baseMapper.selectVoOne(Wrappers.<QcIpqc>lambdaQuery()
+                .eq(QcIpqc::getMesWoId, bo.getMesWoId())
+                .eq(QcIpqc::getProcessId, bo.getProcessId())
+                .last("LIMIT 1"));
+        }
         log.info("新增IPQC检验单: ipqcId={}, ipqcNo={}", ipqc.getIpqcId(), ipqc.getIpqcNo());
+        // 按检验模板(物料/工序维度)快照生成明细; 无匹配模板时 generateDetails 记 warn 并保持待人工判定
+        int details = inspectDetailService.generateDetails("IPQC", ipqc.getIpqcId(), ipqc.getMaterialId(),
+            ipqc.getSampleQty(), ipqc.getProcessId(), null);
+        if (details == 0) {
+            log.warn("[IPQC] 检验单未生成检验明细(无匹配模板), 待人工判定: ipqcId={}, materialId={}, processId={}",
+                ipqc.getIpqcId(), ipqc.getMaterialId(), ipqc.getProcessId());
+        }
         return baseMapper.selectVoById(ipqc.getIpqcId());
     }
 
@@ -232,6 +264,58 @@ public class QcIpqcServiceImpl implements IQcIpqcService {
             });
     }
 
+    /**
+     * 按检验明细执行检验(自动判定)。
+     * <p>录入实测值 -> QcJudgeEngine 逐项判 PASS/FAIL 落库 -> 汇总单级结果 ->
+     * PARTIAL(仅重要/次要项失败)按不合格处理 -> 复用 {@link #inspect} 完成 NCR/MQ 回写链路。</p>
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void inspectWithDetails(Long ipqcId, List<QcInspectEntryBo> entries, String defectInfo, String remark) {
+        if (entries == null || entries.isEmpty()) {
+            throw new RuntimeException("检验明细为空, 请录入实测值后提交判定");
+        }
+        List<QcInspectDetail> details = inspectDetailService.selectByCheck("IPQC", ipqcId);
+        if (details.isEmpty()) {
+            throw new RuntimeException("检验单没有检验明细(无匹配模板), 请使用人工判定");
+        }
+        // MES-QC-05: 判定前校验覆盖率 —— entries 必须覆盖该单全部明细, 不得依赖 judgeOverall 跳过未判定项
+        assertAllDetailsCovered(details, entries);
+        List<QcInspectDetail> judged = new ArrayList<>();
+        for (QcInspectEntryBo entry : entries) {
+            QcInspectDetail detail = details.stream()
+                .filter(d -> d.getDetailId().equals(entry.getDetailId()))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("检验明细不存在或不属于本检验单: " + entry.getDetailId()));
+            detail.setMeasuredValue(entry.getMeasuredValue());
+            detail.setSampleQty(entry.getSampleQty());
+            if (StringUtils.isNotBlank(entry.getRemark())) {
+                detail.setRemark(entry.getRemark());
+            }
+            QcJudgeEngine.judgeDetail(detail);
+            judged.add(detail);
+        }
+        inspectDetailService.updateDetails(judged);
+
+        String overall = QcJudgeEngine.judgeOverall(details);
+        if (overall == null) {
+            throw new RuntimeException("没有可判定的检验项目, 请录入实测值");
+        }
+        String finalResult = QcJudgeEngine.RESULT_QUALIFIED.equals(overall)
+            ? QcJudgeEngine.RESULT_QUALIFIED : QcJudgeEngine.RESULT_UNQUALIFIED;
+        log.info("IPQC明细自动判定: ipqcId={}, overall={}, final={}", ipqcId, overall, finalResult);
+        // 不良数量不由明细项数推断(项数 != 件数), 保持 null 由人工检验口径填写
+        inspect(ipqcId, finalResult, defectInfo, null, null, remark);
+    }
+
+    /**
+     * 查询 IPQC 检验单明细(按检验模板快照生成)
+     */
+    @Override
+    public List<QcInspectDetailVo> selectDetails(Long ipqcId) {
+        return MapstructUtils.convert(inspectDetailService.selectByCheck("IPQC", ipqcId), QcInspectDetailVo.class);
+    }
+
     // ==================== 私有辅助方法 ====================
 
     /**
@@ -247,14 +331,29 @@ public class QcIpqcServiceImpl implements IQcIpqcService {
     }
 
     /**
-     * 生成IPQC编号: IPQC + yyyyMMdd + 3位序号
+     * 生成IPQC编号: IPQC + yyyyMMdd + 雪花ID后缀。
+     * <p>MES-QC-08: 不再依赖"当日 count+1"(并发下会算出相同序号), 改用雪花ID保证唯一。</p>
      */
     private String generateNo() {
         String today = LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE);
-        Long count = baseMapper.selectCount(Wrappers.<QcIpqc>lambdaQuery()
-            .likeRight(QcIpqc::getIpqcNo, "IPQC-" + today));
-        int seq = (count == null ? 0 : count.intValue()) + 1;
-        return "IPQC-" + today + "-" + String.format("%03d", seq);
+        return "IPQC-" + today + "-" + IdUtil.getSnowflakeNextIdStr();
+    }
+
+    /**
+     * MES-QC-05: 校验提交的实测值覆盖该检验单全部明细(detailId 差集), 存在未录入项即拒绝提交。
+     */
+    private static void assertAllDetailsCovered(List<QcInspectDetail> details, List<QcInspectEntryBo> entries) {
+        Set<Long> submitted = entries.stream()
+            .map(QcInspectEntryBo::getDetailId)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toSet());
+        List<String> missing = details.stream()
+            .filter(d -> !submitted.contains(d.getDetailId()))
+            .map(d -> d.getItemName() == null ? String.valueOf(d.getDetailId()) : d.getItemName())
+            .collect(Collectors.toList());
+        if (!missing.isEmpty()) {
+            throw new ServiceException("仍有 " + missing.size() + " 项未录入实测值：" + String.join("、", missing));
+        }
     }
 
     /**

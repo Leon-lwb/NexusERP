@@ -222,9 +222,9 @@ public class ProDispatchServiceImpl implements IProDispatchService {
      */
     /**
      * 完工派工(IN_PROGRESS -> COMPLETED), 累加数量到工序+流转卡, 自动完成工序
-     * <p>入口不加事务: 先按单加载定位工序, 再以 stepRecordId 粒度程序化加锁后执行带事务的内部方法。
+     * <p>入口不加事务: 先按单加载定位工序, 再以「卡锁 + stepRecordId 锁」两级程序化加锁后执行带事务的内部方法。
      * 锁必须覆盖整个事务——同工序两张派工单并发完工时, 若锁释放在事务提交前, 后者读不到前者未提交的
-     * 状态变更, 会导致 activeCount 判定竞态、工序永不自动完成(M1)。</p>
+     * 状态变更, 会导致 activeCount 判定竞态、工序永不自动完成(M1); 卡锁同时消除卡完工聚合判定的竞态(MES-PRO-02)。</p>
      */
     @Override
     public void completeDispatch(Long dispatchId, BigDecimal goodQty, BigDecimal defectQty, BigDecimal scrapQty) {
@@ -232,15 +232,26 @@ public class ProDispatchServiceImpl implements IProDispatchService {
         if (dispatch == null) {
             throw new RuntimeException("派工单不存在: " + dispatchId);
         }
-        LockInfo stepLock = lockTemplate.lock("mes:dispatch:step:" + dispatch.getStepRecordId(), 30000L, 5000L);
-        if (stepLock == null) {
-            throw new RuntimeException("该工序有完工处理进行中, 请稍后重试");
+        // 锁顺序固定为 卡锁 -> 步锁(全模块唯一加锁顺序, 避免死锁)。
+        // 卡锁必须覆盖 doCompleteDispatch 的整个事务(含卡完工聚合判定): 若卡锁在事务提交前释放,
+        // "工序是否全完成"的判定读不到并发事务未提交的完工记录 → 工序全完成而卡不完工(MES-PRO-02)。
+        LockInfo cardLock = lockTemplate.lock("mes:flowcard:" + dispatch.getCardId(), 30000L, 5000L);
+        if (cardLock == null) {
+            throw new RuntimeException("该流转卡有完工处理进行中, 请稍后重试");
         }
         try {
-            // 经 AOP 代理调用以使事务生效(同类直调绕过代理)
-            SpringUtils.getAopProxy(this).doCompleteDispatch(dispatchId, goodQty, defectQty, scrapQty);
+            LockInfo stepLock = lockTemplate.lock("mes:dispatch:step:" + dispatch.getStepRecordId(), 30000L, 5000L);
+            if (stepLock == null) {
+                throw new RuntimeException("该工序有完工处理进行中, 请稍后重试");
+            }
+            try {
+                // 经 AOP 代理调用以使事务生效(同类直调绕过代理)
+                SpringUtils.getAopProxy(this).doCompleteDispatch(dispatchId, goodQty, defectQty, scrapQty);
+            } finally {
+                lockTemplate.releaseLock(stepLock);
+            }
         } finally {
-            lockTemplate.releaseLock(stepLock);
+            lockTemplate.releaseLock(cardLock);
         }
     }
 
@@ -292,7 +303,8 @@ public class ProDispatchServiceImpl implements IProDispatchService {
             .ne(ProDispatch::getDispatchStatus, STATUS_COMPLETED)
             .ne(ProDispatch::getDispatchStatus, STATUS_CANCELLED));
         if (activeCount == 0) {
-            proFlowCardService.checkAndCompleteStep(cardId, stepRecordId);
+            // completeDispatch 已持有 mes:flowcard:{cardId} 卡锁且覆盖本事务提交, 故走不取锁实现(MES-PRO-02)
+            proFlowCardService.checkAndCompleteStepUnderLock(cardId, stepRecordId);
         }
 
         log.info("派工完工成功: dispatchId={}, goodQty={}, defectQty={}, scrapQty={}",

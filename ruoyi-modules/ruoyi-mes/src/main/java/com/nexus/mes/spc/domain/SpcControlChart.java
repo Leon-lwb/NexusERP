@@ -47,6 +47,15 @@ public class SpcControlChart extends TenantEntity {
     /** 下控制限 */
     private BigDecimal lcl;
 
+    /** 次级图(极差图R/标准差图S/移动极差图MR)上控制限(analyze计算回写) */
+    private BigDecimal rUcl;
+
+    /** 次级图中心线(R̄/S̄/MR̄) */
+    private BigDecimal rCl;
+
+    /** 次级图下控制限 */
+    private BigDecimal rLcl;
+
     /** 规格上限(USL, 用户维护, 计量型图适用) */
     private BigDecimal usl;
 
@@ -61,6 +70,12 @@ public class SpcControlChart extends TenantEntity {
 
     /** 能力等级: A+(>=1.67)/A(>=1.33)/B(>=1.0)/C(<1.0) */
     private String cpkGrade;
+
+    /** 过程性能指数Pp(长期标准差, analyze回写) */
+    private BigDecimal pp;
+
+    /** 过程性能指数Ppk(长期标准差, analyze回写) */
+    private BigDecimal ppk;
 
     /** 样本大小 */
     private Integer sampleSize;

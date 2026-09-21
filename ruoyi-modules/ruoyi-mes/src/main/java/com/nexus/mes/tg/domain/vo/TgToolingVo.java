@@ -51,7 +51,7 @@ public class TgToolingVo implements Serializable {
     @ExcelProperty("车间")
     private String workshopName;
 
-    /** 状态: IDLE/IN_USE/MAINTENANCE/SCRAPPED */
+    /** 状态: IDLE/IN_USE/CALIBRATING/MAINTENANCE/SCRAPPED */
     @ExcelProperty("状态")
     private String status;
 
@@ -73,6 +73,31 @@ public class TgToolingVo implements Serializable {
 
     /** 上次保养时间 */
     private Date lastMaintainTime;
+
+    /** 校准周期(天), 空=未纳入校准管理 (MES-TG-01) */
+    @ExcelProperty("校准周期(天)")
+    private Integer calibrationCycleDays;
+
+    /** 上次校准日期 (MES-TG-01) */
+    @ExcelProperty("上次校准日")
+    private Date lastCalibrationDate;
+
+    /** 下次校准日期 (MES-TG-01) */
+    @ExcelProperty("下次校准日")
+    private Date nextCalibrationDate;
+
+    /** 校准人ID (MES-TG-01) */
+    private Long calibratedBy;
+
+    /** 校准结果: PASS/FAIL/ADJUSTED (MES-TG-01) */
+    @ExcelProperty("校准结果")
+    private String calibrationResult;
+
+    /** 校准备注 (MES-TG-01) */
+    private String calibrationRemark;
+
+    /** 校准是否超期(非库列, Service 填充, MES-TG-01) */
+    private Boolean calibrationOverdue;
 
     /** 采购日期 */
     private Date purchaseDate;

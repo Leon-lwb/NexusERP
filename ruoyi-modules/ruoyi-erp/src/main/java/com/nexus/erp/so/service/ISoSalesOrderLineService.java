@@ -86,4 +86,16 @@ public interface ISoSalesOrderLineService {
      * @return 影响行数
      */
     int updateOqcStatus(Long soId, Long materialId, String oqcStatus, Long oqcId, String oqcCode, Date oqcTime);
+
+    /**
+     * 按销售订单行ID回写OQC状态(精确到行)。
+     *
+     * @param lineId    销售订单行ID
+     * @param oqcStatus OQC检验状态
+     * @param oqcId     OQC检验单ID
+     * @param oqcCode   OQC检验单号
+     * @param oqcTime   检验时间
+     * @return 影响行数
+     */
+    int updateOqcStatusByLineId(Long lineId, String oqcStatus, Long oqcId, String oqcCode, Date oqcTime);
 }

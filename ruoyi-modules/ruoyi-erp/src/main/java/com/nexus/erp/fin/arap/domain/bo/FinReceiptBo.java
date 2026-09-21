@@ -60,10 +60,19 @@ public class FinReceiptBo extends BaseEntity {
     /** 支付订单号(跨库关联 pay_order) */
     private String payOrderNumber;
 
-    /** 来源 MANUAL/PAY_CALLBACK */
+    /**
+     * 来源 MANUAL/PAY_CALLBACK。
+     * <p><b>只读（查询条件）</b>：新增/修改接口不接受该字段，服务端强制 MANUAL；
+     * PAY_CALLBACK 仅由 {@code PayReceivedConsumer} 内部走 {@code save(entity)} 产生（FIN-ARAP-01）。</p>
+     */
     private String source;
 
-    /** 状态 DRAFT/CONFIRMED/SETTLED/CANCELLED */
+    /**
+     * 状态 DRAFT/CONFIRMED/SETTLED/CANCELLED。
+     * <p><b>只读（查询条件）</b>：新增接口只接受 DRAFT（服务端强制置 DRAFT），修改接口不允许变更状态；
+     * DRAFT -&gt; CONFIRMED 必须走 {@code confirm()}（唯一会发出 GL 过账消息的入口），
+     * 否则总账永久缺失凭证（FIN-ARAP-01）。</p>
+     */
     private String status;
 
     /** 收付款日期(凭证日期) */

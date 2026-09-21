@@ -44,7 +44,7 @@ CREATE TABLE `dc_collection_point`  (
   `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`point_id`) USING BTREE,
-  UNIQUE INDEX `uk_point_code`(`point_code`) USING BTREE,
+  UNIQUE INDEX `uk_point_code`(`tenant_id`, `point_code`) USING BTREE,
   INDEX `idx_status`(`status`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'MES数据采集点' ROW_FORMAT = Dynamic;
 
@@ -74,7 +74,7 @@ CREATE TABLE `dc_data_record`  (
   `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`record_id`) USING BTREE,
-  UNIQUE INDEX `uk_point_collect_time`(`point_id`, `collect_time`) USING BTREE,
+  UNIQUE INDEX `uk_point_collect_time`(`tenant_id`, `point_id`, `collect_time`) USING BTREE,
   INDEX `idx_point_id`(`point_id`) USING BTREE,
   INDEX `idx_mes_wo_id`(`mes_wo_id`) USING BTREE,
   INDEX `idx_collect_time`(`collect_time`) USING BTREE
@@ -98,10 +98,11 @@ CREATE TABLE `eq_equipment`  (
   `location` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '安装位置',
   `purchase_date` date NULL DEFAULT NULL COMMENT '购置日期',
   `warranty_date` date NULL DEFAULT NULL COMMENT '保修到期',
-  `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'NORMAL' COMMENT 'NORMAL/MAINTENANCE/FAULT/SCRAPPED',
+  `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'NORMAL' COMMENT 'NORMAL/MAINTENANCE/FAULT/SCRAPPED/OFFLINE',
   `inspection_items` json NULL COMMENT '点检项目及标准(JSON)',
   `last_inspection` json NULL COMMENT '最近一次点检结果(JSON)',
   `iot_device_id` bigint(20) NULL DEFAULT NULL COMMENT '关联IoT设备ID(预留,无外键)',
+  `planned_minutes_per_day` decimal(10,2) NULL DEFAULT NULL COMMENT '计划生产时长(分钟/天), 供OEE聚合; 空则取 nexus.mes.eq.oee.planned-minutes-per-day(默认480)',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
@@ -110,7 +111,8 @@ CREATE TABLE `eq_equipment`  (
   `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`equipment_id`) USING BTREE,
-  UNIQUE INDEX `uk_equipment_code`(`equipment_code`) USING BTREE,
+  UNIQUE INDEX `uk_tenant_iot_device`(`tenant_id`, `iot_device_id`) USING BTREE,
+  UNIQUE INDEX `uk_equipment_code`(`tenant_id`, `equipment_code`) USING BTREE,
   INDEX `idx_status`(`status`) USING BTREE,
   INDEX `idx_workcenter_id`(`workcenter_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'MES设备台账' ROW_FORMAT = Dynamic;
@@ -118,64 +120,64 @@ CREATE TABLE `eq_equipment`  (
 -- ----------------------------
 -- Records of eq_equipment
 -- ----------------------------
-INSERT INTO `eq_equipment` VALUES (1, '000000', 'EQ0001', '激光切割机', 'LASER', 'MODEL-LASER', '浙江智能装备制造有限公司', 'SN202609140001', 1, 'GZZ0001', '下料车间', NULL, NULL, 'NORMAL', NULL, NULL, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `eq_equipment` VALUES (2, '000000', 'EQ0002', '等离子切割机', 'PLASMA', 'MODEL-PLASMA', '浙江智能装备制造有限公司', 'SN202609140002', 2, 'GZZ0002', '下料车间', NULL, NULL, 'NORMAL', NULL, NULL, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `eq_equipment` VALUES (3, '000000', 'EQ0003', '剪板机', 'SHEAR', 'MODEL-SHEAR', '浙江智能装备制造有限公司', 'SN202609140003', 3, 'GZZ0003', '下料车间', NULL, NULL, 'NORMAL', NULL, NULL, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `eq_equipment` VALUES (4, '000000', 'EQ0004', '锯床', 'SAW', 'MODEL-SAW', '浙江智能装备制造有限公司', 'SN202609140004', 4, 'GZZ0004', '下料车间', NULL, NULL, 'NORMAL', NULL, NULL, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `eq_equipment` VALUES (5, '000000', 'EQ0005', '数控车床A', 'CNC', 'MODEL-CNC', '浙江智能装备制造有限公司', 'SN202609140005', 5, 'GZZ0005', '机加车间', NULL, NULL, 'NORMAL', NULL, NULL, 1, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `eq_equipment` VALUES (6, '000000', 'EQ0006', '数控车床B', 'CNC', 'MODEL-CNC', '浙江智能装备制造有限公司', 'SN202609140006', 6, 'GZZ0006', '机加车间', NULL, NULL, 'NORMAL', NULL, NULL, 2, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `eq_equipment` VALUES (7, '000000', 'EQ0007', '加工中心A', 'CNC', 'MODEL-CNC', '浙江智能装备制造有限公司', 'SN202609140007', 7, 'GZZ0007', '机加车间', NULL, NULL, 'NORMAL', NULL, NULL, 3, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `eq_equipment` VALUES (8, '000000', 'EQ0008', '铣床', 'MILL', 'MODEL-MILL', '浙江智能装备制造有限公司', 'SN202609140008', 8, 'GZZ0008', '机加车间', NULL, NULL, 'NORMAL', NULL, NULL, 4, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `eq_equipment` VALUES (9, '000000', 'EQ0009', '磨床', 'GRIND', 'MODEL-GRIND', '浙江智能装备制造有限公司', 'SN202609140009', 9, 'GZZ0009', '机加车间', NULL, NULL, 'NORMAL', NULL, NULL, 5, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `eq_equipment` VALUES (10, '000000', 'EQ0010', '钻床', 'DRILL', 'MODEL-DRILL', '浙江智能装备制造有限公司', 'SN202609140010', 10, 'GZZ0010', '机加车间', NULL, NULL, 'NORMAL', NULL, NULL, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `eq_equipment` VALUES (11, '000000', 'EQ0011', '滚齿机', 'GENERAL', 'MODEL-GEN', '浙江智能装备制造有限公司', 'SN202609140011', 11, 'GZZ0011', '机加车间', NULL, NULL, 'NORMAL', NULL, NULL, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `eq_equipment` VALUES (12, '000000', 'EQ0012', '冲床A', 'PUNCH', 'MODEL-PUNCH', '浙江智能装备制造有限公司', 'SN202609140012', 12, 'GZZ0012', '冲压车间', NULL, NULL, 'NORMAL', NULL, NULL, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `eq_equipment` VALUES (13, '000000', 'EQ0013', '冲床B', 'PUNCH', 'MODEL-PUNCH', '浙江智能装备制造有限公司', 'SN202609140013', 13, 'GZZ0013', '冲压车间', NULL, NULL, 'NORMAL', NULL, NULL, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `eq_equipment` VALUES (14, '000000', 'EQ0014', '折弯机', 'BEND', 'MODEL-BEND', '浙江智能装备制造有限公司', 'SN202609140014', 14, 'GZZ0014', '冲压车间', NULL, NULL, 'NORMAL', NULL, NULL, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `eq_equipment` VALUES (15, '000000', 'EQ0015', '油压机', 'PRESS', 'MODEL-PRESS', '浙江智能装备制造有限公司', 'SN202609140015', 15, 'GZZ0015', '冲压车间', NULL, NULL, 'NORMAL', NULL, NULL, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `eq_equipment` VALUES (16, '000000', 'EQ0016', '锻造机', 'GENERAL', 'MODEL-GEN', '浙江智能装备制造有限公司', 'SN202609140016', 16, 'GZZ0016', '冲压车间', NULL, NULL, 'NORMAL', NULL, NULL, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `eq_equipment` VALUES (17, '000000', 'EQ0017', '折弯工位', 'GENERAL', 'MODEL-GEN', '浙江智能装备制造有限公司', 'SN202609140017', 17, 'GZZ0017', '钣金车间', NULL, NULL, 'NORMAL', NULL, NULL, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `eq_equipment` VALUES (18, '000000', 'EQ0018', '卷圆工位', 'ROLL', 'MODEL-ROLL', '浙江智能装备制造有限公司', 'SN202609140018', 18, 'GZZ0018', '钣金车间', NULL, NULL, 'NORMAL', NULL, NULL, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `eq_equipment` VALUES (19, '000000', 'EQ0019', '冲孔工位', 'PUNCH', 'MODEL-PUNCH', '浙江智能装备制造有限公司', 'SN202609140019', 19, 'GZZ0019', '钣金车间', NULL, NULL, 'NORMAL', NULL, NULL, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `eq_equipment` VALUES (20, '000000', 'EQ0020', '氩弧焊工位', 'WELDING', 'MODEL-WELDING', '浙江智能装备制造有限公司', 'SN202609140020', 20, 'GZZ0020', '焊接车间', NULL, NULL, 'NORMAL', NULL, NULL, 6, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `eq_equipment` VALUES (21, '000000', 'EQ0021', '二保焊工位', 'WELDING', 'MODEL-WELDING', '浙江智能装备制造有限公司', 'SN202609140021', 21, 'GZZ0021', '焊接车间', NULL, NULL, 'NORMAL', NULL, NULL, 7, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `eq_equipment` VALUES (22, '000000', 'EQ0022', '点焊工位', 'WELDING', 'MODEL-WELDING', '浙江智能装备制造有限公司', 'SN202609140022', 22, 'GZZ0022', '焊接车间', NULL, NULL, 'NORMAL', NULL, NULL, 8, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `eq_equipment` VALUES (23, '000000', 'EQ0023', '打磨工位', 'GRIND', 'MODEL-GRIND', '浙江智能装备制造有限公司', 'SN202609140023', 23, 'GZZ0023', '焊接车间', NULL, NULL, 'NORMAL', NULL, NULL, 9, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `eq_equipment` VALUES (24, '000000', 'EQ0024', '注塑机A', 'INJECT', 'MODEL-INJECT', '浙江智能装备制造有限公司', 'SN202609140024', 24, 'GZZ0024', '注塑车间', NULL, NULL, 'NORMAL', NULL, NULL, 10, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `eq_equipment` VALUES (25, '000000', 'EQ0025', '注塑机B', 'INJECT', 'MODEL-INJECT', '浙江智能装备制造有限公司', 'SN202609140025', 25, 'GZZ0025', '注塑车间', NULL, NULL, 'NORMAL', NULL, NULL, 11, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `eq_equipment` VALUES (26, '000000', 'EQ0026', '注塑机C', 'INJECT', 'MODEL-INJECT', '浙江智能装备制造有限公司', 'SN202609140026', 26, 'GZZ0026', '注塑车间', NULL, NULL, 'NORMAL', NULL, NULL, 12, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `eq_equipment` VALUES (27, '000000', 'EQ0027', '去毛刺工位', 'DEBURR', 'MODEL-DEBURR', '浙江智能装备制造有限公司', 'SN202609140027', 27, 'GZZ0027', '注塑车间', NULL, NULL, 'NORMAL', NULL, NULL, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `eq_equipment` VALUES (28, '000000', 'EQ0028', '熔炼炉', 'FURNACE', 'MODEL-FURNACE', '浙江智能装备制造有限公司', 'SN202609140028', 28, 'GZZ0028', '铸造车间', NULL, NULL, 'NORMAL', NULL, NULL, 13, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `eq_equipment` VALUES (29, '000000', 'EQ0029', '压铸机', 'DIE_CAST', 'MODEL-DIE_CAST', '浙江智能装备制造有限公司', 'SN202609140029', 29, 'GZZ0029', '铸造车间', NULL, NULL, 'NORMAL', NULL, NULL, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `eq_equipment` VALUES (30, '000000', 'EQ0030', '清砂工位', 'CLEAN', 'MODEL-CLEAN', '浙江智能装备制造有限公司', 'SN202609140030', 30, 'GZZ0030', '铸造车间', NULL, NULL, 'NORMAL', NULL, NULL, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `eq_equipment` VALUES (31, '000000', 'EQ0031', '淬火炉', 'FURNACE', 'MODEL-FURNACE', '浙江智能装备制造有限公司', 'SN202609140031', 31, 'GZZ0031', '热处理车间', NULL, NULL, 'NORMAL', NULL, NULL, 14, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `eq_equipment` VALUES (32, '000000', 'EQ0032', '回火炉', 'FURNACE', 'MODEL-FURNACE', '浙江智能装备制造有限公司', 'SN202609140032', 32, 'GZZ0032', '热处理车间', NULL, NULL, 'NORMAL', NULL, NULL, 15, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `eq_equipment` VALUES (33, '000000', 'EQ0033', '渗碳炉', 'FURNACE', 'MODEL-FURNACE', '浙江智能装备制造有限公司', 'SN202609140033', 33, 'GZZ0033', '热处理车间', NULL, NULL, 'NORMAL', NULL, NULL, 16, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `eq_equipment` VALUES (34, '000000', 'EQ0034', '电镀线', 'PLATING', 'MODEL-PLATING', '浙江智能装备制造有限公司', 'SN202609140034', 34, 'GZZ0034', '表面处理车间', NULL, NULL, 'NORMAL', NULL, NULL, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `eq_equipment` VALUES (35, '000000', 'EQ0035', '阳极氧化线', 'ANODIZE', 'MODEL-ANODIZE', '浙江智能装备制造有限公司', 'SN202609140035', 35, 'GZZ0035', '表面处理车间', NULL, NULL, 'NORMAL', NULL, NULL, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `eq_equipment` VALUES (36, '000000', 'EQ0036', '喷塑线', 'COATING', 'MODEL-COATING', '浙江智能装备制造有限公司', 'SN202609140036', 36, 'GZZ0036', '表面处理车间', NULL, NULL, 'NORMAL', NULL, NULL, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `eq_equipment` VALUES (37, '000000', 'EQ0037', '喷漆房', 'COATING', 'MODEL-COATING', '浙江智能装备制造有限公司', 'SN202609140037', 37, 'GZZ0037', '表面处理车间', NULL, NULL, 'NORMAL', NULL, NULL, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `eq_equipment` VALUES (38, '000000', 'EQ0038', '丝印工位', 'GENERAL', 'MODEL-GEN', '浙江智能装备制造有限公司', 'SN202609140038', 38, 'GZZ0038', '表面处理车间', NULL, NULL, 'NORMAL', NULL, NULL, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `eq_equipment` VALUES (39, '000000', 'EQ0039', 'SMT贴片线', 'SMT', 'MODEL-SMT', '浙江智能装备制造有限公司', 'SN202609140039', 39, 'GZZ0039', '电子车间', NULL, NULL, 'NORMAL', NULL, NULL, 17, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `eq_equipment` VALUES (40, '000000', 'EQ0040', '插件线', 'INSERT', 'MODEL-INSERT', '浙江智能装备制造有限公司', 'SN202609140040', 40, 'GZZ0040', '电子车间', NULL, NULL, 'NORMAL', NULL, NULL, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `eq_equipment` VALUES (41, '000000', 'EQ0041', '波峰焊', 'WAVE', 'MODEL-WAVE', '浙江智能装备制造有限公司', 'SN202609140041', 41, 'GZZ0041', '电子车间', NULL, NULL, 'NORMAL', NULL, NULL, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `eq_equipment` VALUES (42, '000000', 'EQ0042', '手工焊工位', 'SOLDERING', 'MODEL-SOLDERING', '浙江智能装备制造有限公司', 'SN202609140042', 42, 'GZZ0042', '电子车间', NULL, NULL, 'NORMAL', NULL, NULL, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `eq_equipment` VALUES (43, '000000', 'EQ0043', '绕线机', 'WINDING', 'MODEL-WINDING', '浙江智能装备制造有限公司', 'SN202609140043', 43, 'GZZ0043', '电机车间', NULL, NULL, 'NORMAL', NULL, NULL, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `eq_equipment` VALUES (44, '000000', 'EQ0044', '浸漆工位', 'VARNISH', 'MODEL-VARNISH', '浙江智能装备制造有限公司', 'SN202609140044', 44, 'GZZ0044', '电机车间', NULL, NULL, 'NORMAL', NULL, NULL, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `eq_equipment` VALUES (45, '000000', 'EQ0045', '动平衡机', 'BALANCE', 'MODEL-BALANCE', '浙江智能装备制造有限公司', 'SN202609140045', 45, 'GZZ0045', '电机车间', NULL, NULL, 'NORMAL', NULL, NULL, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `eq_equipment` VALUES (46, '000000', 'EQ0046', '装配线A', 'ASSEMBLY', 'MODEL-ASSEMBLY', '浙江智能装备制造有限公司', 'SN202609140046', 46, 'GZZ0046', '装配车间', NULL, NULL, 'NORMAL', NULL, NULL, 18, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `eq_equipment` VALUES (47, '000000', 'EQ0047', '装配线B', 'ASSEMBLY', 'MODEL-ASSEMBLY', '浙江智能装备制造有限公司', 'SN202609140047', 47, 'GZZ0047', '装配车间', NULL, NULL, 'NORMAL', NULL, NULL, 19, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `eq_equipment` VALUES (48, '000000', 'EQ0048', '调试工位', 'DEBUG', 'MODEL-DEBUG', '浙江智能装备制造有限公司', 'SN202609140048', 48, 'GZZ0048', '装配车间', NULL, NULL, 'NORMAL', NULL, NULL, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `eq_equipment` VALUES (49, '000000', 'EQ0049', '功能测试工位', 'TEST', 'MODEL-TEST', '浙江智能装备制造有限公司', 'SN202609140049', 49, 'GZZ0049', '测试车间', NULL, NULL, 'NORMAL', NULL, NULL, 20, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `eq_equipment` VALUES (50, '000000', 'EQ0050', '老化房', 'AGING', 'MODEL-AGING', '浙江智能装备制造有限公司', 'SN202609140050', 50, 'GZZ0050', '测试车间', NULL, NULL, 'NORMAL', NULL, NULL, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `eq_equipment` VALUES (51, '000000', 'EQ0051', '气密测试台', 'TEST', 'MODEL-TEST', '浙江智能装备制造有限公司', 'SN202609140051', 51, 'GZZ0051', '测试车间', NULL, NULL, 'NORMAL', NULL, NULL, 21, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `eq_equipment` VALUES (52, '000000', 'EQ0052', '精度检验台', 'INSPECTION', 'MODEL-INSPECTION', '浙江智能装备制造有限公司', 'SN202609140052', 52, 'GZZ0052', '测试车间', NULL, NULL, 'NORMAL', NULL, NULL, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `eq_equipment` VALUES (53, '000000', 'EQ0053', '包装线A', 'PACKAGING', 'MODEL-PACKAGING', '浙江智能装备制造有限公司', 'SN202609140053', 53, 'GZZ0053', '包装车间', NULL, NULL, 'NORMAL', NULL, NULL, 22, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `eq_equipment` VALUES (54, '000000', 'EQ0054', '包装线B', 'PACKAGING', 'MODEL-PACKAGING', '浙江智能装备制造有限公司', 'SN202609140054', 54, 'GZZ0054', '包装车间', NULL, NULL, 'NORMAL', NULL, NULL, 23, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `eq_equipment` VALUES (55, '000000', 'EQ0055', '打包工位', 'PACKAGING', 'MODEL-PACKAGING', '浙江智能装备制造有限公司', 'SN202609140055', 55, 'GZZ0055', '包装车间', NULL, NULL, 'NORMAL', NULL, NULL, 24, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `eq_equipment` VALUES (56, '000000', 'EQ0056', '电火花机', 'EDM', 'MODEL-EDM', '浙江智能装备制造有限公司', 'SN202609140056', 56, 'GZZ0056', '模具车间', NULL, NULL, 'NORMAL', NULL, NULL, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `eq_equipment` VALUES (57, '000000', 'EQ0057', '线切割机', 'WEDM', 'MODEL-WEDM', '浙江智能装备制造有限公司', 'SN202609140057', 57, 'GZZ0057', '模具车间', NULL, NULL, 'NORMAL', NULL, NULL, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `eq_equipment` VALUES (58, '000000', 'EQ0058', '抛光工位', 'POLISH', 'MODEL-POLISH', '浙江智能装备制造有限公司', 'SN202609140058', 58, 'GZZ0058', '模具车间', NULL, NULL, 'NORMAL', NULL, NULL, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `eq_equipment` VALUES (1, '000000', 'EQ0001', '激光切割机', 'LASER', 'MODEL-LASER', '浙江智能装备制造有限公司', 'SN202609140001', 1, 'GZZ0001', '下料车间', NULL, NULL, 'NORMAL', NULL, NULL, NULL, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `eq_equipment` VALUES (2, '000000', 'EQ0002', '等离子切割机', 'PLASMA', 'MODEL-PLASMA', '浙江智能装备制造有限公司', 'SN202609140002', 2, 'GZZ0002', '下料车间', NULL, NULL, 'NORMAL', NULL, NULL, NULL, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `eq_equipment` VALUES (3, '000000', 'EQ0003', '剪板机', 'SHEAR', 'MODEL-SHEAR', '浙江智能装备制造有限公司', 'SN202609140003', 3, 'GZZ0003', '下料车间', NULL, NULL, 'NORMAL', NULL, NULL, NULL, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `eq_equipment` VALUES (4, '000000', 'EQ0004', '锯床', 'SAW', 'MODEL-SAW', '浙江智能装备制造有限公司', 'SN202609140004', 4, 'GZZ0004', '下料车间', NULL, NULL, 'NORMAL', NULL, NULL, NULL, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `eq_equipment` VALUES (5, '000000', 'EQ0005', '数控车床A', 'CNC', 'MODEL-CNC', '浙江智能装备制造有限公司', 'SN202609140005', 5, 'GZZ0005', '机加车间', NULL, NULL, 'NORMAL', NULL, NULL, 1, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `eq_equipment` VALUES (6, '000000', 'EQ0006', '数控车床B', 'CNC', 'MODEL-CNC', '浙江智能装备制造有限公司', 'SN202609140006', 6, 'GZZ0006', '机加车间', NULL, NULL, 'NORMAL', NULL, NULL, 2, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `eq_equipment` VALUES (7, '000000', 'EQ0007', '加工中心A', 'CNC', 'MODEL-CNC', '浙江智能装备制造有限公司', 'SN202609140007', 7, 'GZZ0007', '机加车间', NULL, NULL, 'NORMAL', NULL, NULL, 3, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `eq_equipment` VALUES (8, '000000', 'EQ0008', '铣床', 'MILL', 'MODEL-MILL', '浙江智能装备制造有限公司', 'SN202609140008', 8, 'GZZ0008', '机加车间', NULL, NULL, 'NORMAL', NULL, NULL, 4, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `eq_equipment` VALUES (9, '000000', 'EQ0009', '磨床', 'GRIND', 'MODEL-GRIND', '浙江智能装备制造有限公司', 'SN202609140009', 9, 'GZZ0009', '机加车间', NULL, NULL, 'NORMAL', NULL, NULL, 5, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `eq_equipment` VALUES (10, '000000', 'EQ0010', '钻床', 'DRILL', 'MODEL-DRILL', '浙江智能装备制造有限公司', 'SN202609140010', 10, 'GZZ0010', '机加车间', NULL, NULL, 'NORMAL', NULL, NULL, NULL, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `eq_equipment` VALUES (11, '000000', 'EQ0011', '滚齿机', 'GENERAL', 'MODEL-GEN', '浙江智能装备制造有限公司', 'SN202609140011', 11, 'GZZ0011', '机加车间', NULL, NULL, 'NORMAL', NULL, NULL, NULL, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `eq_equipment` VALUES (12, '000000', 'EQ0012', '冲床A', 'PUNCH', 'MODEL-PUNCH', '浙江智能装备制造有限公司', 'SN202609140012', 12, 'GZZ0012', '冲压车间', NULL, NULL, 'NORMAL', NULL, NULL, NULL, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `eq_equipment` VALUES (13, '000000', 'EQ0013', '冲床B', 'PUNCH', 'MODEL-PUNCH', '浙江智能装备制造有限公司', 'SN202609140013', 13, 'GZZ0013', '冲压车间', NULL, NULL, 'NORMAL', NULL, NULL, NULL, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `eq_equipment` VALUES (14, '000000', 'EQ0014', '折弯机', 'BEND', 'MODEL-BEND', '浙江智能装备制造有限公司', 'SN202609140014', 14, 'GZZ0014', '冲压车间', NULL, NULL, 'NORMAL', NULL, NULL, NULL, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `eq_equipment` VALUES (15, '000000', 'EQ0015', '油压机', 'PRESS', 'MODEL-PRESS', '浙江智能装备制造有限公司', 'SN202609140015', 15, 'GZZ0015', '冲压车间', NULL, NULL, 'NORMAL', NULL, NULL, NULL, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `eq_equipment` VALUES (16, '000000', 'EQ0016', '锻造机', 'GENERAL', 'MODEL-GEN', '浙江智能装备制造有限公司', 'SN202609140016', 16, 'GZZ0016', '冲压车间', NULL, NULL, 'NORMAL', NULL, NULL, NULL, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `eq_equipment` VALUES (17, '000000', 'EQ0017', '折弯工位', 'GENERAL', 'MODEL-GEN', '浙江智能装备制造有限公司', 'SN202609140017', 17, 'GZZ0017', '钣金车间', NULL, NULL, 'NORMAL', NULL, NULL, NULL, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `eq_equipment` VALUES (18, '000000', 'EQ0018', '卷圆工位', 'ROLL', 'MODEL-ROLL', '浙江智能装备制造有限公司', 'SN202609140018', 18, 'GZZ0018', '钣金车间', NULL, NULL, 'NORMAL', NULL, NULL, NULL, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `eq_equipment` VALUES (19, '000000', 'EQ0019', '冲孔工位', 'PUNCH', 'MODEL-PUNCH', '浙江智能装备制造有限公司', 'SN202609140019', 19, 'GZZ0019', '钣金车间', NULL, NULL, 'NORMAL', NULL, NULL, NULL, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `eq_equipment` VALUES (20, '000000', 'EQ0020', '氩弧焊工位', 'WELDING', 'MODEL-WELDING', '浙江智能装备制造有限公司', 'SN202609140020', 20, 'GZZ0020', '焊接车间', NULL, NULL, 'NORMAL', NULL, NULL, 6, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `eq_equipment` VALUES (21, '000000', 'EQ0021', '二保焊工位', 'WELDING', 'MODEL-WELDING', '浙江智能装备制造有限公司', 'SN202609140021', 21, 'GZZ0021', '焊接车间', NULL, NULL, 'NORMAL', NULL, NULL, 7, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `eq_equipment` VALUES (22, '000000', 'EQ0022', '点焊工位', 'WELDING', 'MODEL-WELDING', '浙江智能装备制造有限公司', 'SN202609140022', 22, 'GZZ0022', '焊接车间', NULL, NULL, 'NORMAL', NULL, NULL, 8, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `eq_equipment` VALUES (23, '000000', 'EQ0023', '打磨工位', 'GRIND', 'MODEL-GRIND', '浙江智能装备制造有限公司', 'SN202609140023', 23, 'GZZ0023', '焊接车间', NULL, NULL, 'NORMAL', NULL, NULL, 9, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `eq_equipment` VALUES (24, '000000', 'EQ0024', '注塑机A', 'INJECT', 'MODEL-INJECT', '浙江智能装备制造有限公司', 'SN202609140024', 24, 'GZZ0024', '注塑车间', NULL, NULL, 'NORMAL', NULL, NULL, 10, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `eq_equipment` VALUES (25, '000000', 'EQ0025', '注塑机B', 'INJECT', 'MODEL-INJECT', '浙江智能装备制造有限公司', 'SN202609140025', 25, 'GZZ0025', '注塑车间', NULL, NULL, 'NORMAL', NULL, NULL, 11, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `eq_equipment` VALUES (26, '000000', 'EQ0026', '注塑机C', 'INJECT', 'MODEL-INJECT', '浙江智能装备制造有限公司', 'SN202609140026', 26, 'GZZ0026', '注塑车间', NULL, NULL, 'NORMAL', NULL, NULL, 12, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `eq_equipment` VALUES (27, '000000', 'EQ0027', '去毛刺工位', 'DEBURR', 'MODEL-DEBURR', '浙江智能装备制造有限公司', 'SN202609140027', 27, 'GZZ0027', '注塑车间', NULL, NULL, 'NORMAL', NULL, NULL, NULL, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `eq_equipment` VALUES (28, '000000', 'EQ0028', '熔炼炉', 'FURNACE', 'MODEL-FURNACE', '浙江智能装备制造有限公司', 'SN202609140028', 28, 'GZZ0028', '铸造车间', NULL, NULL, 'NORMAL', NULL, NULL, 13, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `eq_equipment` VALUES (29, '000000', 'EQ0029', '压铸机', 'DIE_CAST', 'MODEL-DIE_CAST', '浙江智能装备制造有限公司', 'SN202609140029', 29, 'GZZ0029', '铸造车间', NULL, NULL, 'NORMAL', NULL, NULL, NULL, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `eq_equipment` VALUES (30, '000000', 'EQ0030', '清砂工位', 'CLEAN', 'MODEL-CLEAN', '浙江智能装备制造有限公司', 'SN202609140030', 30, 'GZZ0030', '铸造车间', NULL, NULL, 'NORMAL', NULL, NULL, NULL, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `eq_equipment` VALUES (31, '000000', 'EQ0031', '淬火炉', 'FURNACE', 'MODEL-FURNACE', '浙江智能装备制造有限公司', 'SN202609140031', 31, 'GZZ0031', '热处理车间', NULL, NULL, 'NORMAL', NULL, NULL, 14, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `eq_equipment` VALUES (32, '000000', 'EQ0032', '回火炉', 'FURNACE', 'MODEL-FURNACE', '浙江智能装备制造有限公司', 'SN202609140032', 32, 'GZZ0032', '热处理车间', NULL, NULL, 'NORMAL', NULL, NULL, 15, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `eq_equipment` VALUES (33, '000000', 'EQ0033', '渗碳炉', 'FURNACE', 'MODEL-FURNACE', '浙江智能装备制造有限公司', 'SN202609140033', 33, 'GZZ0033', '热处理车间', NULL, NULL, 'NORMAL', NULL, NULL, 16, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `eq_equipment` VALUES (34, '000000', 'EQ0034', '电镀线', 'PLATING', 'MODEL-PLATING', '浙江智能装备制造有限公司', 'SN202609140034', 34, 'GZZ0034', '表面处理车间', NULL, NULL, 'NORMAL', NULL, NULL, NULL, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `eq_equipment` VALUES (35, '000000', 'EQ0035', '阳极氧化线', 'ANODIZE', 'MODEL-ANODIZE', '浙江智能装备制造有限公司', 'SN202609140035', 35, 'GZZ0035', '表面处理车间', NULL, NULL, 'NORMAL', NULL, NULL, NULL, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `eq_equipment` VALUES (36, '000000', 'EQ0036', '喷塑线', 'COATING', 'MODEL-COATING', '浙江智能装备制造有限公司', 'SN202609140036', 36, 'GZZ0036', '表面处理车间', NULL, NULL, 'NORMAL', NULL, NULL, NULL, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `eq_equipment` VALUES (37, '000000', 'EQ0037', '喷漆房', 'COATING', 'MODEL-COATING', '浙江智能装备制造有限公司', 'SN202609140037', 37, 'GZZ0037', '表面处理车间', NULL, NULL, 'NORMAL', NULL, NULL, NULL, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `eq_equipment` VALUES (38, '000000', 'EQ0038', '丝印工位', 'GENERAL', 'MODEL-GEN', '浙江智能装备制造有限公司', 'SN202609140038', 38, 'GZZ0038', '表面处理车间', NULL, NULL, 'NORMAL', NULL, NULL, NULL, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `eq_equipment` VALUES (39, '000000', 'EQ0039', 'SMT贴片线', 'SMT', 'MODEL-SMT', '浙江智能装备制造有限公司', 'SN202609140039', 39, 'GZZ0039', '电子车间', NULL, NULL, 'NORMAL', NULL, NULL, 17, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `eq_equipment` VALUES (40, '000000', 'EQ0040', '插件线', 'INSERT', 'MODEL-INSERT', '浙江智能装备制造有限公司', 'SN202609140040', 40, 'GZZ0040', '电子车间', NULL, NULL, 'NORMAL', NULL, NULL, NULL, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `eq_equipment` VALUES (41, '000000', 'EQ0041', '波峰焊', 'WAVE', 'MODEL-WAVE', '浙江智能装备制造有限公司', 'SN202609140041', 41, 'GZZ0041', '电子车间', NULL, NULL, 'NORMAL', NULL, NULL, NULL, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `eq_equipment` VALUES (42, '000000', 'EQ0042', '手工焊工位', 'SOLDERING', 'MODEL-SOLDERING', '浙江智能装备制造有限公司', 'SN202609140042', 42, 'GZZ0042', '电子车间', NULL, NULL, 'NORMAL', NULL, NULL, NULL, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `eq_equipment` VALUES (43, '000000', 'EQ0043', '绕线机', 'WINDING', 'MODEL-WINDING', '浙江智能装备制造有限公司', 'SN202609140043', 43, 'GZZ0043', '电机车间', NULL, NULL, 'NORMAL', NULL, NULL, NULL, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `eq_equipment` VALUES (44, '000000', 'EQ0044', '浸漆工位', 'VARNISH', 'MODEL-VARNISH', '浙江智能装备制造有限公司', 'SN202609140044', 44, 'GZZ0044', '电机车间', NULL, NULL, 'NORMAL', NULL, NULL, NULL, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `eq_equipment` VALUES (45, '000000', 'EQ0045', '动平衡机', 'BALANCE', 'MODEL-BALANCE', '浙江智能装备制造有限公司', 'SN202609140045', 45, 'GZZ0045', '电机车间', NULL, NULL, 'NORMAL', NULL, NULL, NULL, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `eq_equipment` VALUES (46, '000000', 'EQ0046', '装配线A', 'ASSEMBLY', 'MODEL-ASSEMBLY', '浙江智能装备制造有限公司', 'SN202609140046', 46, 'GZZ0046', '装配车间', NULL, NULL, 'NORMAL', NULL, NULL, 18, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `eq_equipment` VALUES (47, '000000', 'EQ0047', '装配线B', 'ASSEMBLY', 'MODEL-ASSEMBLY', '浙江智能装备制造有限公司', 'SN202609140047', 47, 'GZZ0047', '装配车间', NULL, NULL, 'NORMAL', NULL, NULL, 19, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `eq_equipment` VALUES (48, '000000', 'EQ0048', '调试工位', 'DEBUG', 'MODEL-DEBUG', '浙江智能装备制造有限公司', 'SN202609140048', 48, 'GZZ0048', '装配车间', NULL, NULL, 'NORMAL', NULL, NULL, NULL, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `eq_equipment` VALUES (49, '000000', 'EQ0049', '功能测试工位', 'TEST', 'MODEL-TEST', '浙江智能装备制造有限公司', 'SN202609140049', 49, 'GZZ0049', '测试车间', NULL, NULL, 'NORMAL', NULL, NULL, 20, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `eq_equipment` VALUES (50, '000000', 'EQ0050', '老化房', 'AGING', 'MODEL-AGING', '浙江智能装备制造有限公司', 'SN202609140050', 50, 'GZZ0050', '测试车间', NULL, NULL, 'NORMAL', NULL, NULL, NULL, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `eq_equipment` VALUES (51, '000000', 'EQ0051', '气密测试台', 'TEST', 'MODEL-TEST', '浙江智能装备制造有限公司', 'SN202609140051', 51, 'GZZ0051', '测试车间', NULL, NULL, 'NORMAL', NULL, NULL, 21, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `eq_equipment` VALUES (52, '000000', 'EQ0052', '精度检验台', 'INSPECTION', 'MODEL-INSPECTION', '浙江智能装备制造有限公司', 'SN202609140052', 52, 'GZZ0052', '测试车间', NULL, NULL, 'NORMAL', NULL, NULL, NULL, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `eq_equipment` VALUES (53, '000000', 'EQ0053', '包装线A', 'PACKAGING', 'MODEL-PACKAGING', '浙江智能装备制造有限公司', 'SN202609140053', 53, 'GZZ0053', '包装车间', NULL, NULL, 'NORMAL', NULL, NULL, 22, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `eq_equipment` VALUES (54, '000000', 'EQ0054', '包装线B', 'PACKAGING', 'MODEL-PACKAGING', '浙江智能装备制造有限公司', 'SN202609140054', 54, 'GZZ0054', '包装车间', NULL, NULL, 'NORMAL', NULL, NULL, 23, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `eq_equipment` VALUES (55, '000000', 'EQ0055', '打包工位', 'PACKAGING', 'MODEL-PACKAGING', '浙江智能装备制造有限公司', 'SN202609140055', 55, 'GZZ0055', '包装车间', NULL, NULL, 'NORMAL', NULL, NULL, 24, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `eq_equipment` VALUES (56, '000000', 'EQ0056', '电火花机', 'EDM', 'MODEL-EDM', '浙江智能装备制造有限公司', 'SN202609140056', 56, 'GZZ0056', '模具车间', NULL, NULL, 'NORMAL', NULL, NULL, NULL, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `eq_equipment` VALUES (57, '000000', 'EQ0057', '线切割机', 'WEDM', 'MODEL-WEDM', '浙江智能装备制造有限公司', 'SN202609140057', 57, 'GZZ0057', '模具车间', NULL, NULL, 'NORMAL', NULL, NULL, NULL, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `eq_equipment` VALUES (58, '000000', 'EQ0058', '抛光工位', 'POLISH', 'MODEL-POLISH', '浙江智能装备制造有限公司', 'SN202609140058', 58, 'GZZ0058', '模具车间', NULL, NULL, 'NORMAL', NULL, NULL, NULL, NULL, '由工位台账自动生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
 
 -- ----------------------------
 -- Table structure for eq_health_record
@@ -204,6 +206,7 @@ CREATE TABLE `eq_health_record`  (
   `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`record_id`) USING BTREE,
+  UNIQUE INDEX `uk_tenant_eq_date`(`tenant_id`, `equipment_id`, `record_date`) USING BTREE,
   INDEX `idx_ehr_equipment`(`equipment_id`) USING BTREE,
   INDEX `idx_ehr_date`(`record_date`) USING BTREE,
   INDEX `idx_ehr_tenant`(`tenant_id`) USING BTREE
@@ -280,6 +283,7 @@ CREATE TABLE `eq_maintenance_record`  (
   `execute_time` datetime(0) NULL DEFAULT NULL COMMENT '执行时间',
   `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '保养内容/执行情况',
   `result` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'NORMAL' COMMENT 'NORMAL/ABNORMAL',
+  `duration_minutes` decimal(10,2) NULL DEFAULT NULL COMMENT '保养占用时长(分钟), 供OEE的maintenance_minutes真实汇总',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
   `create_dept` bigint(20) NULL DEFAULT NULL,
   `create_by` bigint(20) NULL DEFAULT NULL,
@@ -308,12 +312,12 @@ CREATE TABLE `eq_oee_record`  (
   `stat_date` date NOT NULL COMMENT '统计日期(日粒度)',
   `planned_minutes` decimal(10, 2) NULL DEFAULT 480.00 COMMENT '计划生产时长(分钟, 首版默认480=8h单班)',
   `downtime_minutes` decimal(10, 2) NULL DEFAULT 0.00 COMMENT '停机时长(分钟, 来自 eq_repair.downtime_hours 求和)',
-  `maintenance_minutes` decimal(10, 2) NULL DEFAULT 0.00 COMMENT '保养占用时长(分钟, 预留, 首版0)',
+  `maintenance_minutes` decimal(10, 2) NULL DEFAULT 0.00 COMMENT '保养占用时长(分钟, 来自 eq_maintenance_record.duration_minutes 求和)',
   `run_minutes` decimal(10, 2) NULL DEFAULT 0.00 COMMENT '运行时长(分钟, = planned - downtime - maintenance)',
   `fault_count` int(11) NULL DEFAULT 0 COMMENT '故障次数(eq_repair 当日报修数)',
   `availability` decimal(6, 4) NULL DEFAULT 0.0000 COMMENT '可用率/稼动率(0~1), = run/planned',
-  `performance_rate` decimal(6, 4) NULL DEFAULT 1.0000 COMMENT '表现率(首版占位1.0, 待工单报工数据补全)',
-  `quality_rate` decimal(6, 4) NULL DEFAULT 1.0000 COMMENT '质量率(首版占位1.0, 待质量数据补全)',
+  `performance_rate` decimal(6, 4) NULL DEFAULT NULL COMMENT '表现率(无理论节拍数据源时为 NULL 占位)',
+  `quality_rate` decimal(6, 4) NULL DEFAULT NULL COMMENT '质量率(无报工数据时为 NULL 占位)',
   `oee` decimal(6, 4) NULL DEFAULT 0.0000 COMMENT 'OEE = availability * performance * quality',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
   `create_dept` bigint(20) NULL DEFAULT NULL,
@@ -439,7 +443,7 @@ CREATE TABLE `eq_repair`  (
   `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`repair_id`) USING BTREE,
-  UNIQUE INDEX `uk_repair_no`(`repair_no`) USING BTREE,
+  UNIQUE INDEX `uk_repair_no`(`tenant_id`, `repair_no`) USING BTREE,
   INDEX `idx_equipment_id`(`equipment_id`) USING BTREE,
   INDEX `idx_status`(`status`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'MES设备维修记录' ROW_FORMAT = Dynamic;
@@ -484,7 +488,10 @@ CREATE TABLE `eq_spare_part`  (
   `unit` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '单位',
   `category` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '分类(字典 mes_spare_category)',
   `safety_stock` decimal(14, 4) NULL DEFAULT 0.0000 COMMENT '安全库存',
-  `current_stock` decimal(14, 4) NULL DEFAULT 0.0000 COMMENT '当前库存(冗余, 出入库流水维护)',
+  `current_stock` decimal(14, 4) NULL DEFAULT 0.0000 COMMENT '当前库存(ERP库存的派生冗余缓存; 权威账本在 wm_material_stock, 可用量=在库-已预留且frozen_flag=0)',
+  `material_id` bigint(20) NULL DEFAULT NULL COMMENT 'ERP物料ID(bd_material.material_id)',
+  `warehouse_id` bigint(20) NULL DEFAULT NULL COMMENT 'ERP仓库ID(wm_warehouse.warehouse_id)',
+  `unit_cost` decimal(18, 4) NULL DEFAULT 0.0000 COMMENT '备件参考单价(人工维护; 出入库过账时服务端读库填入MQ, 供ERP移动平均计价)',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
   `create_dept` bigint(20) NULL DEFAULT NULL,
   `create_by` bigint(20) NULL DEFAULT NULL,
@@ -493,6 +500,7 @@ CREATE TABLE `eq_spare_part`  (
   `update_time` datetime(0) NULL DEFAULT NULL,
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0',
   PRIMARY KEY (`spare_id`) USING BTREE,
+  INDEX `idx_material_id`(`material_id`) USING BTREE,
   UNIQUE INDEX `uk_tenant_code`(`tenant_id`, `spare_code`) USING BTREE,
   INDEX `idx_category`(`category`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'MES备件主数据' ROW_FORMAT = Dynamic;
@@ -507,7 +515,7 @@ CREATE TABLE `eq_spare_stock_log`  (
   `spare_id` bigint(20) NOT NULL COMMENT '备件ID',
   `spare_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备件编码(冗余)',
   `spare_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备件名称(冗余)',
-  `transaction_type` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'IN/OUT/REPAIR_USE',
+  `transaction_type` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'IN/OUT/REPAIR_USE/RETURN',
   `quantity` decimal(14, 4) NOT NULL COMMENT '变动数量(正数)',
   `before_qty` decimal(14, 4) NULL DEFAULT NULL COMMENT '变动前库存',
   `after_qty` decimal(14, 4) NULL DEFAULT NULL COMMENT '变动后库存',
@@ -558,7 +566,7 @@ CREATE TABLE `lt_lot`  (
   `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`lot_id`) USING BTREE,
-  UNIQUE INDEX `uk_lot_code`(`lot_code`) USING BTREE,
+  UNIQUE INDEX `uk_lot_code`(`tenant_id`, `lot_code`) USING BTREE,
   INDEX `idx_material`(`material_id`) USING BTREE,
   INDEX `idx_status`(`status`) USING BTREE,
   INDEX `idx_qc_status`(`qc_status`) USING BTREE,
@@ -587,7 +595,7 @@ CREATE TABLE `lt_sn_binding`  (
   `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`binding_id`) USING BTREE,
-  UNIQUE INDEX `uk_sn_material`(`sn_id`, `material_id`) USING BTREE,
+  UNIQUE INDEX `uk_sn_material`(`tenant_id`, `sn_id`, `material_id`) USING BTREE,
   INDEX `idx_sn_id`(`sn_id`) USING BTREE,
   INDEX `idx_lot_id`(`lot_id`) USING BTREE,
   INDEX `idx_material_id`(`material_id`) USING BTREE
@@ -818,7 +826,7 @@ CREATE TABLE `mes_label_template`  (
   `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0),
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`template_id`) USING BTREE,
-  UNIQUE INDEX `uk_template_code`(`template_code`) USING BTREE,
+  UNIQUE INDEX `uk_template_code`(`tenant_id`, `template_code`) USING BTREE,
   INDEX `idx_label_type`(`label_type`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '标签打印模板' ROW_FORMAT = Dynamic;
 
@@ -878,7 +886,7 @@ CREATE TABLE `mes_mbom`  (
   `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`mbom_id`) USING BTREE,
-  UNIQUE INDEX `uk_bom_id`(`bom_id`) USING BTREE,
+  UNIQUE INDEX `uk_bom_id`(`tenant_id`, `bom_id`) USING BTREE,
   INDEX `idx_routing_id`(`routing_id`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'MES制造BOM头' ROW_FORMAT = Dynamic;
@@ -1321,7 +1329,7 @@ CREATE TABLE `mes_station_device`  (
   `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0),
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0',
   PRIMARY KEY (`device_id`) USING BTREE,
-  UNIQUE INDEX `uk_device_code`(`device_code`) USING BTREE
+  UNIQUE INDEX `uk_device_code`(`tenant_id`, `device_code`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '工位终端设备台账' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
@@ -1541,7 +1549,7 @@ CREATE TABLE `ncr_defect_code`  (
   `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志(0正常 1删除)',
   PRIMARY KEY (`code_id`) USING BTREE,
-  UNIQUE INDEX `uk_code`(`code`) USING BTREE,
+  UNIQUE INDEX `uk_code`(`tenant_id`, `code`) USING BTREE,
   INDEX `idx_parent_id`(`parent_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '缺陷代码库' ROW_FORMAT = Dynamic;
 
@@ -1649,8 +1657,8 @@ CREATE TABLE `ncr_order`  (
   `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志(0正常 1删除)',
   PRIMARY KEY (`ncr_id`) USING BTREE,
-  UNIQUE INDEX `uk_ncr_code`(`ncr_code`) USING BTREE,
-  UNIQUE INDEX `uk_source`(`source_type`, `source_id`) USING BTREE,
+  UNIQUE INDEX `uk_ncr_code`(`tenant_id`, `ncr_code`) USING BTREE,
+  UNIQUE INDEX `uk_source`(`tenant_id`, `source_type`, `source_id`) USING BTREE,
   INDEX `idx_wo_id`(`wo_id`) USING BTREE,
   INDEX `idx_status`(`status`) USING BTREE,
   INDEX `idx_lot_id`(`lot_id`) USING BTREE
@@ -1679,7 +1687,7 @@ CREATE TABLE `ncr_rework_order`  (
   `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志(0正常 1删除)',
   PRIMARY KEY (`rework_id`) USING BTREE,
-  UNIQUE INDEX `uk_rework_code`(`rework_code`) USING BTREE,
+  UNIQUE INDEX `uk_rework_code`(`tenant_id`, `rework_code`) USING BTREE,
   INDEX `idx_ncr_id`(`ncr_id`) USING BTREE,
   INDEX `idx_rework_wo_id`(`rework_wo_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'NCR返工工单' ROW_FORMAT = Dynamic;
@@ -1711,6 +1719,8 @@ CREATE TABLE `pro_andon`  (
   `duration_minutes` int(11) NULL DEFAULT NULL COMMENT '持续时长(分钟, 解决时计算)',
   `source` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'MANUAL' COMMENT 'MANUAL/IoT(来源)',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
+  `notify_user_ids` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '呼叫通知被通知人ID(逗号分隔)',
+  `notify_time` datetime(0) NULL DEFAULT NULL COMMENT '呼叫通知落库时间(非空=呼叫通知已发出,幂等依据)',
   `create_dept` bigint(20) NULL DEFAULT NULL,
   `create_by` bigint(20) NULL DEFAULT NULL,
   `create_time` datetime(0) NULL DEFAULT NULL,
@@ -1718,7 +1728,7 @@ CREATE TABLE `pro_andon`  (
   `update_time` datetime(0) NULL DEFAULT NULL,
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0',
   PRIMARY KEY (`andon_id`) USING BTREE,
-  UNIQUE INDEX `uk_andon_no`(`andon_no`) USING BTREE,
+  UNIQUE INDEX `uk_andon_no`(`tenant_id`, `andon_no`) USING BTREE,
   INDEX `idx_andon_status`(`andon_status`) USING BTREE,
   INDEX `idx_call_type`(`call_type`) USING BTREE,
   INDEX `idx_mes_wo_id`(`mes_wo_id`) USING BTREE,
@@ -1765,7 +1775,7 @@ CREATE TABLE `pro_dispatch`  (
   `update_time` datetime(0) NULL DEFAULT NULL,
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0',
   PRIMARY KEY (`dispatch_id`) USING BTREE,
-  UNIQUE INDEX `uk_dispatch_no`(`dispatch_no`) USING BTREE,
+  UNIQUE INDEX `uk_dispatch_no`(`tenant_id`, `dispatch_no`) USING BTREE,
   INDEX `idx_mes_wo_id`(`mes_wo_id`) USING BTREE,
   INDEX `idx_card_id`(`card_id`) USING BTREE,
   INDEX `idx_step_record_id`(`step_record_id`) USING BTREE,
@@ -1789,6 +1799,7 @@ CREATE TABLE `pro_flow_card`  (
   `planned_qty` decimal(18, 4) NULL DEFAULT 0.0000 COMMENT '计划数量',
   `completed_qty` decimal(18, 4) NULL DEFAULT 0.0000 COMMENT '已完成数量',
   `scrap_qty` decimal(18, 4) NULL DEFAULT 0.0000 COMMENT '报废数量',
+  `aggregated_flag` tinyint NOT NULL DEFAULT 0 COMMENT '完工数量是否已一次性入账到工单(0=未入账 1=已入账)',
   `current_step_id` bigint(20) NULL DEFAULT NULL COMMENT '当前工序步骤记录ID',
   `current_step_seq` int(4) NULL DEFAULT NULL COMMENT '当前工序序号',
   `card_status` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'CREATED' COMMENT '流转卡状态: CREATED/RELEASED/IN_PROGRESS/COMPLETED/CLOSED',
@@ -1801,8 +1812,8 @@ CREATE TABLE `pro_flow_card`  (
   `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志(0正常 1删除)',
   PRIMARY KEY (`card_id`) USING BTREE,
-  UNIQUE INDEX `uk_card_no`(`card_no`) USING BTREE,
-  UNIQUE INDEX `uk_barcode`(`barcode`) USING BTREE,
+  UNIQUE INDEX `uk_card_no`(`tenant_id`, `card_no`) USING BTREE,
+  UNIQUE INDEX `uk_barcode`(`tenant_id`, `barcode`) USING BTREE,
   INDEX `idx_mes_wo_id`(`mes_wo_id`) USING BTREE,
   INDEX `idx_card_status`(`card_status`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
@@ -1885,7 +1896,7 @@ CREATE TABLE `pro_sn`  (
   `source_id` bigint(20) NULL DEFAULT NULL COMMENT '来源单据ID(委外=subcontract_id)',
   `subcontract_no` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '委外单号(冗余,SN直达追溯委外订单)',
   PRIMARY KEY (`sn_id`) USING BTREE,
-  UNIQUE INDEX `uk_sn_code`(`sn_code`) USING BTREE,
+  UNIQUE INDEX `uk_sn_code`(`tenant_id`, `sn_code`) USING BTREE,
   INDEX `idx_sn_status`(`sn_status`) USING BTREE,
   INDEX `idx_mes_wo_id`(`mes_wo_id`) USING BTREE,
   INDEX `idx_card_id`(`card_id`) USING BTREE,
@@ -1984,7 +1995,7 @@ CREATE TABLE `pro_work_order`  (
   `release_package_ver` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '发布包版本(冗余快照)',
   `release_config` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '发布包配置项快照(JSON数组, 供工位/报表消费)',
   PRIMARY KEY (`mes_wo_id`) USING BTREE,
-  UNIQUE INDEX `uk_wo_no`(`wo_no`) USING BTREE,
+  UNIQUE INDEX `uk_wo_no`(`tenant_id`, `wo_no`) USING BTREE,
   INDEX `idx_erp_wo_id`(`erp_wo_id`) USING BTREE,
   INDEX `idx_material_id`(`material_id`) USING BTREE,
   INDEX `idx_wo_status`(`wo_status`) USING BTREE,
@@ -2388,6 +2399,8 @@ CREATE TABLE `qc_inspect_template`  (
   `material_id` bigint(20) NULL DEFAULT NULL COMMENT '物料ID(空=通用模板)',
   `material_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '物料编码(冗余)',
   `material_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '物料名称(冗余)',
+  `process_id` bigint NULL DEFAULT NULL COMMENT '工序ID(IPQC维度,空=不限工序)',
+  `customer_id` bigint NULL DEFAULT NULL COMMENT '客户ID(客户专属模板维度,空=不限客户)',
   `version_no` int(11) NOT NULL DEFAULT 1 COMMENT '版本号',
   `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'DRAFT' COMMENT '状态: DRAFT/ACTIVE',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
@@ -2398,7 +2411,8 @@ CREATE TABLE `qc_inspect_template`  (
   `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`template_id`) USING BTREE,
-  UNIQUE INDEX `uk_template_code`(`template_code`) USING BTREE,
+  UNIQUE INDEX `uk_template_code`(`tenant_id`, `template_code`) USING BTREE,
+  INDEX `idx_qc_tpl_match`(`template_type`, `status`, `material_id`, `process_id`, `customer_id`) USING BTREE,
   INDEX `idx_template_type`(`template_type`) USING BTREE,
   INDEX `idx_material_id`(`material_id`) USING BTREE,
   INDEX `idx_status`(`status`) USING BTREE,
@@ -2408,43 +2422,43 @@ CREATE TABLE `qc_inspect_template`  (
 -- ----------------------------
 -- Records of qc_inspect_template
 -- ----------------------------
-INSERT INTO `qc_inspect_template` VALUES (1, '000000', 'QC20260914001', '高强度螺栓组套 M12成品检验规范', 'OQC', 1, 'IF20260914001', '高强度螺栓组套 M12', 1, '1', '按产品族通用检验要求生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `qc_inspect_template` VALUES (2, '000000', 'QC20260914002', '精密齿轮箱总成成品检验规范', 'OQC', 2, 'IF20260914002', '精密齿轮箱总成', 1, '1', '按产品族通用检验要求生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `qc_inspect_template` VALUES (3, '000000', 'QC20260914003', '压缩弹簧组成品检验规范', 'OQC', 3, 'IF20260914003', '压缩弹簧组', 1, '1', '按产品族通用检验要求生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `qc_inspect_template` VALUES (4, '000000', 'QC20260914004', '设备钣金机箱成品检验规范', 'OQC', 4, 'IF20260914004', '设备钣金机箱', 1, '1', '按产品族通用检验要求生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `qc_inspect_template` VALUES (5, '000000', 'QC20260914005', '钢结构支架总成成品检验规范', 'OQC', 5, 'IF20260914005', '钢结构支架总成', 1, '1', '按产品族通用检验要求生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `qc_inspect_template` VALUES (6, '000000', 'QC20260914006', '注塑模具成品检验规范', 'OQC', 6, 'IF20260914006', '注塑模具', 1, '1', '按产品族通用检验要求生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `qc_inspect_template` VALUES (7, '000000', 'QC20260914007', '棘轮扳手组套成品检验规范', 'OQC', 7, 'IF20260914007', '棘轮扳手组套', 1, '1', '按产品族通用检验要求生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `qc_inspect_template` VALUES (8, '000000', 'QC20260914008', '齿轮减速机 JZQ-350成品检验规范', 'OQC', 8, 'IF20260914008', '齿轮减速机 JZQ-350', 1, '1', '按产品族通用检验要求生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `qc_inspect_template` VALUES (9, '000000', 'QC20260914009', '单级离心泵成品检验规范', 'OQC', 9, 'IF20260914009', '单级离心泵', 1, '1', '按产品族通用检验要求生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `qc_inspect_template` VALUES (10, '000000', 'QC20260914010', '数控铣床 XK714成品检验规范', 'OQC', 10, 'IF20260914010', '数控铣床 XK714', 1, '1', '按产品族通用检验要求生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `qc_inspect_template` VALUES (11, '000000', 'QC20260914011', '皮带输送线成品检验规范', 'OQC', 11, 'IF20260914011', '皮带输送线', 1, '1', '按产品族通用检验要求生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `qc_inspect_template` VALUES (12, '000000', 'QC20260914012', '螺杆式空压机成品检验规范', 'OQC', 12, 'IF20260914012', '螺杆式空压机', 1, '1', '按产品族通用检验要求生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `qc_inspect_template` VALUES (13, '000000', 'QC20260914013', '双层 PCB 板成品检验规范', 'OQC', 13, 'IF20260914013', '双层 PCB 板', 1, '1', '按产品族通用检验要求生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `qc_inspect_template` VALUES (14, '000000', 'QC20260914014', '智能路由器 WR-1200成品检验规范', 'OQC', 14, 'IF20260914014', '智能路由器 WR-1200', 1, '1', '按产品族通用检验要求生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `qc_inspect_template` VALUES (15, '000000', 'QC20260914015', '变频电风扇成品检验规范', 'OQC', 15, 'IF20260914015', '变频电风扇', 1, '1', '按产品族通用检验要求生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `qc_inspect_template` VALUES (16, '000000', 'QC20260914016', '开关电源模组 SMPS-60成品检验规范', 'OQC', 16, 'IF20260914016', '开关电源模组 SMPS-60', 1, '1', '按产品族通用检验要求生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `qc_inspect_template` VALUES (17, '000000', 'QC20260914017', '无刷直流电机 BLDC-45成品检验规范', 'OQC', 17, 'IF20260914017', '无刷直流电机 BLDC-45', 1, '1', '按产品族通用检验要求生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `qc_inspect_template` VALUES (18, '000000', 'QC20260914018', '温度传感器模组 TS-100成品检验规范', 'OQC', 18, 'IF20260914018', '温度传感器模组 TS-100', 1, '1', '按产品族通用检验要求生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `qc_inspect_template` VALUES (19, '000000', 'QC20260914019', '数字万用表 DM-800成品检验规范', 'OQC', 19, 'IF20260914019', '数字万用表 DM-800', 1, '1', '按产品族通用检验要求生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `qc_inspect_template` VALUES (20, '000000', 'QC20260914020', '汽车门锁总成成品检验规范', 'OQC', 20, 'IF20260914020', '汽车门锁总成', 1, '1', '按产品族通用检验要求生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `qc_inspect_template` VALUES (21, '000000', 'QC20260914021', '城市通勤自行车成品检验规范', 'OQC', 21, 'IF20260914021', '城市通勤自行车', 1, '1', '按产品族通用检验要求生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `qc_inspect_template` VALUES (22, '000000', 'QC20260914022', '四轴无人机机架成品检验规范', 'OQC', 22, 'IF20260914022', '四轴无人机机架', 1, '1', '按产品族通用检验要求生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `qc_inspect_template` VALUES (23, '000000', 'QC20260914023', '不锈钢手术剪成品检验规范', 'OQC', 23, 'IF20260914023', '不锈钢手术剪', 1, '1', '按产品族通用检验要求生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `qc_inspect_template` VALUES (24, '000000', 'QC20260914024', '手动轮椅成品检验规范', 'OQC', 24, 'IF20260914024', '手动轮椅', 1, '1', '按产品族通用检验要求生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `qc_inspect_template` VALUES (25, '000000', 'QC20260914025', '简易金属工具架 RACK-001成品检验规范', 'OQC', 25, 'IF20260914025', '简易金属工具架 RACK-001', 1, '1', '按产品族通用检验要求生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `qc_inspect_template` VALUES (26, '000000', 'QC20260914026', 'LED 护眼台灯成品检验规范', 'OQC', 26, 'IF20260914026', 'LED 护眼台灯', 1, '1', '按产品族通用检验要求生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `qc_inspect_template` VALUES (27, '000000', 'QC20260914027', '智能网关 GW-1000成品检验规范', 'OQC', 27, 'IF20260914027', '智能网关 GW-1000', 1, '1', '按产品族通用检验要求生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `qc_inspect_template` VALUES (28, '000000', 'QC20260914028', '精密塑料外壳 PC-200成品检验规范', 'OQC', 28, 'IF20260914028', '精密塑料外壳 PC-200', 1, '1', '按产品族通用检验要求生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `qc_inspect_template` VALUES (29, '000000', 'QC20260914029', '硅胶密封圈组成品检验规范', 'OQC', 29, 'IF20260914029', '硅胶密封圈组', 1, '1', '按产品族通用检验要求生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `qc_inspect_template` VALUES (30, '000000', 'QC20260914030', '锂电池包 48V20Ah成品检验规范', 'OQC', 30, 'IF20260914030', '锂电池包 48V20Ah', 1, '1', '按产品族通用检验要求生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `qc_inspect_template` VALUES (31, '000000', 'QC20260914031', '交流充电桩 AC-7kW成品检验规范', 'OQC', 31, 'IF20260914031', '交流充电桩 AC-7kW', 1, '1', '按产品族通用检验要求生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `qc_inspect_template` VALUES (32, '000000', 'QC20260914032', '光伏组件 450W成品检验规范', 'OQC', 32, 'IF20260914032', '光伏组件 450W', 1, '1', '按产品族通用检验要求生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `qc_inspect_template` VALUES (33, '000000', 'QC20260914033', '六轴机械臂 RB-6成品检验规范', 'OQC', 33, 'IF20260914033', '六轴机械臂 RB-6', 1, '1', '按产品族通用检验要求生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `qc_inspect_template` VALUES (34, '000000', 'QC20260914034', '智能手环 BAND-3成品检验规范', 'OQC', 34, 'IF20260914034', '智能手环 BAND-3', 1, '1', '按产品族通用检验要求生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `qc_inspect_template` VALUES (35, '000000', 'QC20260914035', '手持 POS 机 POS-8成品检验规范', 'OQC', 35, 'IF20260914035', '手持 POS 机 POS-8', 1, '1', '按产品族通用检验要求生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `qc_inspect_template` VALUES (36, '000000', 'QC20260914036', '网络摄像机 IPC-300成品检验规范', 'OQC', 36, 'IF20260914036', '网络摄像机 IPC-300', 1, '1', '按产品族通用检验要求生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `qc_inspect_template` VALUES (37, '000000', 'QC20260914037', '无线蓝牙音箱 SPK-20成品检验规范', 'OQC', 37, 'IF20260914037', '无线蓝牙音箱 SPK-20', 1, '1', '按产品族通用检验要求生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `qc_inspect_template` VALUES (1, '000000', 'QC20260914001', '高强度螺栓组套 M12成品检验规范', 'OQC', 1, 'IF20260914001', '高强度螺栓组套 M12', NULL, NULL, 1, '1', '按产品族通用检验要求生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `qc_inspect_template` VALUES (2, '000000', 'QC20260914002', '精密齿轮箱总成成品检验规范', 'OQC', 2, 'IF20260914002', '精密齿轮箱总成', NULL, NULL, 1, '1', '按产品族通用检验要求生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `qc_inspect_template` VALUES (3, '000000', 'QC20260914003', '压缩弹簧组成品检验规范', 'OQC', 3, 'IF20260914003', '压缩弹簧组', NULL, NULL, 1, '1', '按产品族通用检验要求生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `qc_inspect_template` VALUES (4, '000000', 'QC20260914004', '设备钣金机箱成品检验规范', 'OQC', 4, 'IF20260914004', '设备钣金机箱', NULL, NULL, 1, '1', '按产品族通用检验要求生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `qc_inspect_template` VALUES (5, '000000', 'QC20260914005', '钢结构支架总成成品检验规范', 'OQC', 5, 'IF20260914005', '钢结构支架总成', NULL, NULL, 1, '1', '按产品族通用检验要求生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `qc_inspect_template` VALUES (6, '000000', 'QC20260914006', '注塑模具成品检验规范', 'OQC', 6, 'IF20260914006', '注塑模具', NULL, NULL, 1, '1', '按产品族通用检验要求生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `qc_inspect_template` VALUES (7, '000000', 'QC20260914007', '棘轮扳手组套成品检验规范', 'OQC', 7, 'IF20260914007', '棘轮扳手组套', NULL, NULL, 1, '1', '按产品族通用检验要求生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `qc_inspect_template` VALUES (8, '000000', 'QC20260914008', '齿轮减速机 JZQ-350成品检验规范', 'OQC', 8, 'IF20260914008', '齿轮减速机 JZQ-350', NULL, NULL, 1, '1', '按产品族通用检验要求生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `qc_inspect_template` VALUES (9, '000000', 'QC20260914009', '单级离心泵成品检验规范', 'OQC', 9, 'IF20260914009', '单级离心泵', NULL, NULL, 1, '1', '按产品族通用检验要求生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `qc_inspect_template` VALUES (10, '000000', 'QC20260914010', '数控铣床 XK714成品检验规范', 'OQC', 10, 'IF20260914010', '数控铣床 XK714', NULL, NULL, 1, '1', '按产品族通用检验要求生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `qc_inspect_template` VALUES (11, '000000', 'QC20260914011', '皮带输送线成品检验规范', 'OQC', 11, 'IF20260914011', '皮带输送线', NULL, NULL, 1, '1', '按产品族通用检验要求生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `qc_inspect_template` VALUES (12, '000000', 'QC20260914012', '螺杆式空压机成品检验规范', 'OQC', 12, 'IF20260914012', '螺杆式空压机', NULL, NULL, 1, '1', '按产品族通用检验要求生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `qc_inspect_template` VALUES (13, '000000', 'QC20260914013', '双层 PCB 板成品检验规范', 'OQC', 13, 'IF20260914013', '双层 PCB 板', NULL, NULL, 1, '1', '按产品族通用检验要求生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `qc_inspect_template` VALUES (14, '000000', 'QC20260914014', '智能路由器 WR-1200成品检验规范', 'OQC', 14, 'IF20260914014', '智能路由器 WR-1200', NULL, NULL, 1, '1', '按产品族通用检验要求生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `qc_inspect_template` VALUES (15, '000000', 'QC20260914015', '变频电风扇成品检验规范', 'OQC', 15, 'IF20260914015', '变频电风扇', NULL, NULL, 1, '1', '按产品族通用检验要求生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `qc_inspect_template` VALUES (16, '000000', 'QC20260914016', '开关电源模组 SMPS-60成品检验规范', 'OQC', 16, 'IF20260914016', '开关电源模组 SMPS-60', NULL, NULL, 1, '1', '按产品族通用检验要求生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `qc_inspect_template` VALUES (17, '000000', 'QC20260914017', '无刷直流电机 BLDC-45成品检验规范', 'OQC', 17, 'IF20260914017', '无刷直流电机 BLDC-45', NULL, NULL, 1, '1', '按产品族通用检验要求生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `qc_inspect_template` VALUES (18, '000000', 'QC20260914018', '温度传感器模组 TS-100成品检验规范', 'OQC', 18, 'IF20260914018', '温度传感器模组 TS-100', NULL, NULL, 1, '1', '按产品族通用检验要求生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `qc_inspect_template` VALUES (19, '000000', 'QC20260914019', '数字万用表 DM-800成品检验规范', 'OQC', 19, 'IF20260914019', '数字万用表 DM-800', NULL, NULL, 1, '1', '按产品族通用检验要求生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `qc_inspect_template` VALUES (20, '000000', 'QC20260914020', '汽车门锁总成成品检验规范', 'OQC', 20, 'IF20260914020', '汽车门锁总成', NULL, NULL, 1, '1', '按产品族通用检验要求生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `qc_inspect_template` VALUES (21, '000000', 'QC20260914021', '城市通勤自行车成品检验规范', 'OQC', 21, 'IF20260914021', '城市通勤自行车', NULL, NULL, 1, '1', '按产品族通用检验要求生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `qc_inspect_template` VALUES (22, '000000', 'QC20260914022', '四轴无人机机架成品检验规范', 'OQC', 22, 'IF20260914022', '四轴无人机机架', NULL, NULL, 1, '1', '按产品族通用检验要求生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `qc_inspect_template` VALUES (23, '000000', 'QC20260914023', '不锈钢手术剪成品检验规范', 'OQC', 23, 'IF20260914023', '不锈钢手术剪', NULL, NULL, 1, '1', '按产品族通用检验要求生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `qc_inspect_template` VALUES (24, '000000', 'QC20260914024', '手动轮椅成品检验规范', 'OQC', 24, 'IF20260914024', '手动轮椅', NULL, NULL, 1, '1', '按产品族通用检验要求生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `qc_inspect_template` VALUES (25, '000000', 'QC20260914025', '简易金属工具架 RACK-001成品检验规范', 'OQC', 25, 'IF20260914025', '简易金属工具架 RACK-001', NULL, NULL, 1, '1', '按产品族通用检验要求生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `qc_inspect_template` VALUES (26, '000000', 'QC20260914026', 'LED 护眼台灯成品检验规范', 'OQC', 26, 'IF20260914026', 'LED 护眼台灯', NULL, NULL, 1, '1', '按产品族通用检验要求生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `qc_inspect_template` VALUES (27, '000000', 'QC20260914027', '智能网关 GW-1000成品检验规范', 'OQC', 27, 'IF20260914027', '智能网关 GW-1000', NULL, NULL, 1, '1', '按产品族通用检验要求生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `qc_inspect_template` VALUES (28, '000000', 'QC20260914028', '精密塑料外壳 PC-200成品检验规范', 'OQC', 28, 'IF20260914028', '精密塑料外壳 PC-200', NULL, NULL, 1, '1', '按产品族通用检验要求生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `qc_inspect_template` VALUES (29, '000000', 'QC20260914029', '硅胶密封圈组成品检验规范', 'OQC', 29, 'IF20260914029', '硅胶密封圈组', NULL, NULL, 1, '1', '按产品族通用检验要求生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `qc_inspect_template` VALUES (30, '000000', 'QC20260914030', '锂电池包 48V20Ah成品检验规范', 'OQC', 30, 'IF20260914030', '锂电池包 48V20Ah', NULL, NULL, 1, '1', '按产品族通用检验要求生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `qc_inspect_template` VALUES (31, '000000', 'QC20260914031', '交流充电桩 AC-7kW成品检验规范', 'OQC', 31, 'IF20260914031', '交流充电桩 AC-7kW', NULL, NULL, 1, '1', '按产品族通用检验要求生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `qc_inspect_template` VALUES (32, '000000', 'QC20260914032', '光伏组件 450W成品检验规范', 'OQC', 32, 'IF20260914032', '光伏组件 450W', NULL, NULL, 1, '1', '按产品族通用检验要求生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `qc_inspect_template` VALUES (33, '000000', 'QC20260914033', '六轴机械臂 RB-6成品检验规范', 'OQC', 33, 'IF20260914033', '六轴机械臂 RB-6', NULL, NULL, 1, '1', '按产品族通用检验要求生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `qc_inspect_template` VALUES (34, '000000', 'QC20260914034', '智能手环 BAND-3成品检验规范', 'OQC', 34, 'IF20260914034', '智能手环 BAND-3', NULL, NULL, 1, '1', '按产品族通用检验要求生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `qc_inspect_template` VALUES (35, '000000', 'QC20260914035', '手持 POS 机 POS-8成品检验规范', 'OQC', 35, 'IF20260914035', '手持 POS 机 POS-8', NULL, NULL, 1, '1', '按产品族通用检验要求生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `qc_inspect_template` VALUES (36, '000000', 'QC20260914036', '网络摄像机 IPC-300成品检验规范', 'OQC', 36, 'IF20260914036', '网络摄像机 IPC-300', NULL, NULL, 1, '1', '按产品族通用检验要求生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `qc_inspect_template` VALUES (37, '000000', 'QC20260914037', '无线蓝牙音箱 SPK-20成品检验规范', 'OQC', 37, 'IF20260914037', '无线蓝牙音箱 SPK-20', NULL, NULL, 1, '1', '按产品族通用检验要求生成', 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
 
 -- ----------------------------
 -- Table structure for qc_ipqc
@@ -2482,7 +2496,8 @@ CREATE TABLE `qc_ipqc`  (
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   `photo_oss_ids` varchar(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '检验照片附件ossId串(逗号分隔)',
   PRIMARY KEY (`ipqc_id`) USING BTREE,
-  UNIQUE INDEX `uk_ipqc_no`(`ipqc_no`) USING BTREE,
+  UNIQUE INDEX `uk_ipqc_no`(`tenant_id`, `ipqc_no`) USING BTREE,
+  UNIQUE INDEX `uk_ipqc_wo_process`(`tenant_id`, `mes_wo_id`, `process_id`) USING BTREE,
   INDEX `idx_mes_wo_id`(`mes_wo_id`) USING BTREE,
   INDEX `idx_status`(`status`) USING BTREE,
   INDEX `idx_card_id`(`card_id`) USING BTREE
@@ -2519,7 +2534,8 @@ CREATE TABLE `qc_iqc`  (
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   `photo_oss_ids` varchar(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '检验照片附件ossId串(逗号分隔)',
   PRIMARY KEY (`iqc_id`) USING BTREE,
-  UNIQUE INDEX `uk_iqc_no`(`iqc_no`) USING BTREE,
+  UNIQUE INDEX `uk_iqc_no`(`tenant_id`, `iqc_no`) USING BTREE,
+  UNIQUE INDEX `uk_iqc_receive_material`(`tenant_id`, `receive_id`, `material_id`) USING BTREE,
   INDEX `idx_status`(`status`) USING BTREE,
   INDEX `idx_receive_id`(`receive_id`) USING BTREE,
   INDEX `idx_material_id`(`material_id`) USING BTREE
@@ -2554,7 +2570,8 @@ CREATE TABLE `qc_oqc`  (
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   `photo_oss_ids` varchar(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '检验照片附件ossId串(逗号分隔)',
   PRIMARY KEY (`oqc_id`) USING BTREE,
-  UNIQUE INDEX `uk_oqc_no`(`oqc_no`) USING BTREE,
+  UNIQUE INDEX `uk_oqc_no`(`tenant_id`, `oqc_no`) USING BTREE,
+  UNIQUE INDEX `uk_oqc_so_material`(`tenant_id`, `so_id`, `material_id`) USING BTREE,
   INDEX `idx_status`(`status`) USING BTREE,
   INDEX `idx_so_id`(`so_id`) USING BTREE,
   INDEX `idx_material_id`(`material_id`) USING BTREE
@@ -2587,7 +2604,7 @@ CREATE TABLE `sop_document`  (
   `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`sop_id`) USING BTREE,
-  UNIQUE INDEX `uk_sop_code`(`sop_code`) USING BTREE,
+  UNIQUE INDEX `uk_sop_code`(`tenant_id`, `sop_code`) USING BTREE,
   INDEX `idx_status`(`status`) USING BTREE,
   INDEX `idx_type`(`sop_type`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = 'MES SOP文档主档' ROW_FORMAT = Dynamic;
@@ -2752,6 +2769,7 @@ CREATE TABLE `sop_version`  (
   `version_no` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '版本号(如1.0/1.1)',
   `file_oss_id` bigint(20) NOT NULL COMMENT '该版本文件OSS ID',
   `file_type` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '文件类型: PDF/IMAGE/VIDEO/WORD',
+  `file_hash` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '该版本正文的 SM3(签名绑定正文用), 空表示尚未计算',
   `change_log` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '变更说明',
   `published_time` datetime(0) NULL DEFAULT NULL COMMENT '发布时间',
   `published_by` bigint(20) NULL DEFAULT NULL COMMENT '发布人ID',
@@ -2765,69 +2783,70 @@ CREATE TABLE `sop_version`  (
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`version_id`) USING BTREE,
   INDEX `idx_sop_id`(`sop_id`) USING BTREE,
-  INDEX `idx_status`(`status`) USING BTREE
+  INDEX `idx_status`(`status`) USING BTREE,
+  UNIQUE INDEX `uk_sop_version_no`(`sop_id`, `version_no`, `tenant_id`, `del_flag`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = 'SOP版本历史' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sop_version
 -- ----------------------------
-INSERT INTO `sop_version` VALUES (1, '000000', 1, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (2, '000000', 2, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (3, '000000', 3, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (4, '000000', 4, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (5, '000000', 5, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (6, '000000', 6, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (7, '000000', 7, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (8, '000000', 8, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (9, '000000', 9, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (10, '000000', 10, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (11, '000000', 11, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (12, '000000', 12, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (13, '000000', 13, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (14, '000000', 14, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (15, '000000', 15, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (16, '000000', 16, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (17, '000000', 17, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (18, '000000', 18, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (19, '000000', 19, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (20, '000000', 20, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (21, '000000', 21, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (22, '000000', 22, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (23, '000000', 23, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (24, '000000', 24, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (25, '000000', 25, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (26, '000000', 26, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (27, '000000', 27, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (28, '000000', 28, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (29, '000000', 29, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (30, '000000', 30, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (31, '000000', 31, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (32, '000000', 32, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (33, '000000', 33, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (34, '000000', 34, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (35, '000000', 35, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (36, '000000', 36, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (37, '000000', 37, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (38, '000000', 38, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (39, '000000', 39, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (40, '000000', 40, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (41, '000000', 41, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (42, '000000', 42, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (43, '000000', 43, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (44, '000000', 44, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (45, '000000', 45, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (46, '000000', 46, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (47, '000000', 47, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (48, '000000', 48, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (49, '000000', 49, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (50, '000000', 50, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (51, '000000', 51, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (52, '000000', 52, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (53, '000000', 53, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (54, '000000', 54, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (55, '000000', 55, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (56, '000000', 56, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
-INSERT INTO `sop_version` VALUES (57, '000000', 57, 'V1.0', 0, 'PDF', '初始版本', '2026-09-14 15:07:27', 1, 'PUBLISHED', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (1, '000000', 1, 'V1.0', 0, 'PDF', NULL, '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (2, '000000', 2, 'V1.0', 0, 'PDF', NULL, '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (3, '000000', 3, 'V1.0', 0, 'PDF', NULL, '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (4, '000000', 4, 'V1.0', 0, 'PDF', NULL, '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (5, '000000', 5, 'V1.0', 0, 'PDF', NULL, '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (6, '000000', 6, 'V1.0', 0, 'PDF', NULL, '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (7, '000000', 7, 'V1.0', 0, 'PDF', NULL, '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (8, '000000', 8, 'V1.0', 0, 'PDF', NULL, '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (9, '000000', 9, 'V1.0', 0, 'PDF', NULL, '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (10, '000000', 10, 'V1.0', 0, 'PDF', NULL, '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (11, '000000', 11, 'V1.0', 0, 'PDF', NULL, '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (12, '000000', 12, 'V1.0', 0, 'PDF', NULL, '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (13, '000000', 13, 'V1.0', 0, 'PDF', NULL, '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (14, '000000', 14, 'V1.0', 0, 'PDF', NULL, '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (15, '000000', 15, 'V1.0', 0, 'PDF', NULL, '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (16, '000000', 16, 'V1.0', 0, 'PDF', NULL, '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (17, '000000', 17, 'V1.0', 0, 'PDF', NULL, '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (18, '000000', 18, 'V1.0', 0, 'PDF', NULL, '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (19, '000000', 19, 'V1.0', 0, 'PDF', NULL, '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (20, '000000', 20, 'V1.0', 0, 'PDF', NULL, '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (21, '000000', 21, 'V1.0', 0, 'PDF', NULL, '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (22, '000000', 22, 'V1.0', 0, 'PDF', NULL, '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (23, '000000', 23, 'V1.0', 0, 'PDF', NULL, '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (24, '000000', 24, 'V1.0', 0, 'PDF', NULL, '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (25, '000000', 25, 'V1.0', 0, 'PDF', NULL, '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (26, '000000', 26, 'V1.0', 0, 'PDF', NULL, '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (27, '000000', 27, 'V1.0', 0, 'PDF', NULL, '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (28, '000000', 28, 'V1.0', 0, 'PDF', NULL, '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (29, '000000', 29, 'V1.0', 0, 'PDF', NULL, '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (30, '000000', 30, 'V1.0', 0, 'PDF', NULL, '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (31, '000000', 31, 'V1.0', 0, 'PDF', NULL, '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (32, '000000', 32, 'V1.0', 0, 'PDF', NULL, '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (33, '000000', 33, 'V1.0', 0, 'PDF', NULL, '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (34, '000000', 34, 'V1.0', 0, 'PDF', NULL, '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (35, '000000', 35, 'V1.0', 0, 'PDF', NULL, '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (36, '000000', 36, 'V1.0', 0, 'PDF', NULL, '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (37, '000000', 37, 'V1.0', 0, 'PDF', NULL, '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (38, '000000', 38, 'V1.0', 0, 'PDF', NULL, '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (39, '000000', 39, 'V1.0', 0, 'PDF', NULL, '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (40, '000000', 40, 'V1.0', 0, 'PDF', NULL, '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (41, '000000', 41, 'V1.0', 0, 'PDF', NULL, '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (42, '000000', 42, 'V1.0', 0, 'PDF', NULL, '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (43, '000000', 43, 'V1.0', 0, 'PDF', NULL, '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (44, '000000', 44, 'V1.0', 0, 'PDF', NULL, '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (45, '000000', 45, 'V1.0', 0, 'PDF', NULL, '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (46, '000000', 46, 'V1.0', 0, 'PDF', NULL, '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (47, '000000', 47, 'V1.0', 0, 'PDF', NULL, '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (48, '000000', 48, 'V1.0', 0, 'PDF', NULL, '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (49, '000000', 49, 'V1.0', 0, 'PDF', NULL, '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (50, '000000', 50, 'V1.0', 0, 'PDF', NULL, '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (51, '000000', 51, 'V1.0', 0, 'PDF', NULL, '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (52, '000000', 52, 'V1.0', 0, 'PDF', NULL, '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (53, '000000', 53, 'V1.0', 0, 'PDF', NULL, '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (54, '000000', 54, 'V1.0', 0, 'PDF', NULL, '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (55, '000000', 55, 'V1.0', 0, 'PDF', NULL, '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (56, '000000', 56, 'V1.0', 0, 'PDF', NULL, '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
+INSERT INTO `sop_version` VALUES (57, '000000', 57, 'V1.0', 0, 'PDF', NULL, '初始版本', '2026-09-14 15:07:27', 1, 'CURRENT', NULL, 103, 1, '2026-09-14 15:07:27', NULL, NULL, '0');
 
 -- ----------------------------
 -- Table structure for sop_view_log
@@ -2876,11 +2895,16 @@ CREATE TABLE `spc_control_chart`  (
   `ucl` decimal(14, 4) NULL DEFAULT NULL COMMENT '上控制限(analyze计算回写)',
   `cl` decimal(14, 4) NULL DEFAULT NULL COMMENT '中心线',
   `lcl` decimal(14, 4) NULL DEFAULT NULL COMMENT '下控制限',
+  `r_ucl` decimal(14,4) NULL DEFAULT NULL COMMENT '次级图(R/S/MR)上控制限',
+  `r_cl` decimal(14,4) NULL DEFAULT NULL COMMENT '次级图(R/S/MR)中心线',
+  `r_lcl` decimal(14,4) NULL DEFAULT NULL COMMENT '次级图(R/S/MR)下控制限',
   `usl` decimal(14, 4) NULL DEFAULT NULL COMMENT '规格上限(USL, 用户维护)',
   `lsl` decimal(14, 4) NULL DEFAULT NULL COMMENT '规格下限(LSL, 用户维护)',
   `cp` decimal(10, 4) NULL DEFAULT NULL COMMENT '过程能力指数Cp(analyze回写)',
   `cpk` decimal(10, 4) NULL DEFAULT NULL COMMENT '过程能力指数Cpk(analyze回写)',
   `cpk_grade` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '能力等级: A+(>=1.67)/A(>=1.33)/B(>=1.0)/C(<1.0)',
+  `pp` decimal(10,4) NULL DEFAULT NULL COMMENT '过程性能指数Pp',
+  `ppk` decimal(10,4) NULL DEFAULT NULL COMMENT '过程性能指数Ppk',
   `sample_size` int(11) NULL DEFAULT 5 COMMENT '样本大小',
   `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'ACTIVE' COMMENT 'ACTIVE/INACTIVE',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
@@ -2906,6 +2930,7 @@ CREATE TABLE `spc_data_point`  (
   `sample_group` int(11) NOT NULL COMMENT '样本组号',
   `sample_index` int(11) NULL DEFAULT NULL COMMENT '组内序号',
   `value` decimal(14, 4) NOT NULL COMMENT '值(组均值/不良率/缺陷数等)',
+  `sub_value` decimal(14,4) NULL DEFAULT NULL COMMENT '组内离散度(R极差/S标准差/MR移动极差)',
   `is_ooc` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '是否超控制限(0/1)',
   `ooc_rule` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '违规规则(RULE1/2/3/4, 多规则逗号拼接)',
   `collect_time` datetime(0) NULL DEFAULT NULL COMMENT '采集时间',
@@ -2916,6 +2941,7 @@ CREATE TABLE `spc_data_point`  (
   `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`data_id`) USING BTREE,
+  UNIQUE INDEX `uk_chart_group`(`tenant_id`, `chart_id`, `sample_group`) USING BTREE,
   INDEX `idx_chart_id`(`chart_id`) USING BTREE,
   INDEX `idx_group`(`chart_id`, `sample_group`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'MES SPC数据点' ROW_FORMAT = Dynamic;
@@ -2945,7 +2971,8 @@ CREATE TABLE `tg_maintenance_plan`  (
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`plan_id`) USING BTREE,
   INDEX `idx_tooling_id`(`tooling_id`) USING BTREE,
-  INDEX `idx_enabled`(`enabled`) USING BTREE
+  INDEX `idx_enabled`(`enabled`) USING BTREE,
+  UNIQUE INDEX `uk_tooling_trigger`(`tooling_id`, `trigger_type`, `tenant_id`, `del_flag`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = 'MES工装保养计划' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
@@ -2992,12 +3019,18 @@ CREATE TABLE `tg_tooling`  (
   `spec` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '规格',
   `workshop_id` bigint(20) NULL DEFAULT NULL COMMENT '所属车间ID',
   `workshop_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '车间名称(冗余)',
-  `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'IDLE' COMMENT '状态: IDLE/IN_USE/MAINTENANCE/SCRAPPED',
+  `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'IDLE' COMMENT '状态: IDLE/IN_USE/CALIBRATING/MAINTENANCE/SCRAPPED',
   `total_life_count` int(11) NULL DEFAULT NULL COMMENT '总寿命(次数)',
   `total_life_hours` decimal(14, 2) NULL DEFAULT NULL COMMENT '总寿命(小时)',
   `used_count` int(11) NULL DEFAULT 0 COMMENT '已使用次数',
   `used_hours` decimal(14, 2) NULL DEFAULT 0.00 COMMENT '已使用时长',
   `last_maintain_time` datetime(0) NULL DEFAULT NULL COMMENT '上次保养时间',
+  `calibration_cycle_days` int(11) NULL DEFAULT NULL COMMENT '校准周期(天), 空=未纳入校准管理',
+  `last_calibration_date` date NULL DEFAULT NULL COMMENT '上次校准日期',
+  `next_calibration_date` date NULL DEFAULT NULL COMMENT '下次校准日期, 到期/超期即拦截领用与进站',
+  `calibrated_by` bigint(20) NULL DEFAULT NULL COMMENT '校准人ID',
+  `calibration_result` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '校准结果: PASS/FAIL/ADJUSTED',
+  `calibration_remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '校准备注',
   `purchase_date` date NULL DEFAULT NULL COMMENT '采购日期',
   `purchase_cost` decimal(14, 2) NULL DEFAULT NULL COMMENT '采购成本',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
@@ -3008,7 +3041,7 @@ CREATE TABLE `tg_tooling`  (
   `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`tooling_id`) USING BTREE,
-  UNIQUE INDEX `uk_tooling_code`(`tooling_code`) USING BTREE,
+  UNIQUE INDEX `uk_tooling_code`(`tenant_id`, `tooling_code`) USING BTREE,
   INDEX `idx_status`(`status`) USING BTREE,
   INDEX `idx_type`(`tooling_type`) USING BTREE,
   INDEX `idx_workshop`(`workshop_id`) USING BTREE
@@ -3047,3 +3080,189 @@ CREATE TABLE `tg_usage_record`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = 'MES工装使用领用记录' ROW_FORMAT = Dynamic;
 
 SET FOREIGN_KEY_CHECKS = 1;
+
+-- ----------------------------
+-- Table structure for mes_label_print_log
+-- ----------------------------
+DROP TABLE IF EXISTS `mes_label_print_log`;
+CREATE TABLE `mes_label_print_log`  (
+  `log_id` bigint(20) NOT NULL COMMENT '打印日志ID',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '000000' COMMENT '租户ID',
+  `sn_id` bigint(20) NULL DEFAULT NULL COMMENT 'SN ID',
+  `sn_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT 'SN编码',
+  `template_id` bigint(20) NULL DEFAULT NULL COMMENT '模板ID',
+  `template_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '模板编码(快照)',
+  `printer_host` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '打印机地址(快照)',
+  `printer_port` int(11) NULL DEFAULT 9100 COMMENT '打印机端口',
+  `print_time` datetime(0) NULL DEFAULT NULL COMMENT '打印时间',
+  `result` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '结果: SUCCESS/FAIL',
+  `fail_reason` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '失败原因',
+  `retry_count` int(11) NULL DEFAULT 0 COMMENT '重打计数(同SN同模板历史打印次数, 首次0)',
+  `print_source` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '来源: AUTO/REPRINT/TEST',
+  `operator_id` bigint(20) NULL DEFAULT NULL COMMENT '操作人ID',
+  `operator_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '操作人姓名',
+  `remark` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
+  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
+  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  PRIMARY KEY (`log_id`) USING BTREE,
+  INDEX `idx_label_print_sn_tpl`(`tenant_id`, `sn_id`, `template_id`, `result`) USING BTREE,
+  INDEX `idx_label_print_time`(`print_time`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '标签打印留痕' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for eq_spare_erp_sync (MES备件→ERP过账同步台账; MES-EQ-04)
+-- ----------------------------
+DROP TABLE IF EXISTS `eq_spare_erp_sync`;
+CREATE TABLE IF NOT EXISTS `eq_spare_erp_sync` (
+  `sync_id` bigint(20) NOT NULL COMMENT '同步台账ID(主键)',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '000000',
+  `biz_key` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '业务幂等键 EQSP:<tenantId>:<logId>',
+  `spare_id` bigint(20) NOT NULL COMMENT '备件ID',
+  `spare_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备件编码(冗余)',
+  `material_id` bigint(20) NULL DEFAULT NULL COMMENT 'ERP物料ID',
+  `warehouse_id` bigint(20) NULL DEFAULT NULL COMMENT 'ERP仓库ID',
+  `transaction_type` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'IN/OUT/REPAIR_USE/RETURN',
+  `quantity` decimal(14, 4) NOT NULL COMMENT '变动数量(正数)',
+  `ref_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '关联单据类型',
+  `ref_id` bigint(20) NULL DEFAULT NULL COMMENT '关联单据ID',
+  `log_id` bigint(20) NULL DEFAULT NULL COMMENT 'MES库存流水ID(eq_spare_stock_log.log_id)',
+  `sync_status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'PENDING' COMMENT 'PENDING/SENT/SYNCED/FAILED',
+  `retry_count` int(11) NULL DEFAULT 0 COMMENT '重投次数',
+  `last_error` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '最近一次失败原因',
+  `last_publish_time` datetime(0) NULL DEFAULT NULL COMMENT '最近一次投递时间',
+  `erp_available_after` decimal(14, 4) NULL DEFAULT NULL COMMENT 'ERP过账后可用量快照',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
+  `create_dept` bigint(20) NULL DEFAULT NULL,
+  `create_by` bigint(20) NULL DEFAULT NULL,
+  `create_time` datetime(0) NULL DEFAULT NULL,
+  `update_by` bigint(20) NULL DEFAULT NULL,
+  `update_time` datetime(0) NULL DEFAULT NULL,
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0',
+  PRIMARY KEY (`sync_id`) USING BTREE,
+  UNIQUE INDEX `uk_tenant_biz_key`(`tenant_id`, `biz_key`) USING BTREE,
+  INDEX `idx_spare_id`(`spare_id`) USING BTREE,
+  INDEX `idx_sync_status`(`sync_status`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'MES备件→ERP过账同步台账' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for dhr_record (DHR 批记录主表; MES P0-6)
+-- ----------------------------
+DROP TABLE IF EXISTS `dhr_record`;
+CREATE TABLE `dhr_record`  (
+  `dhr_id` bigint(20) NOT NULL COMMENT 'DHR主键',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '000000' COMMENT '租户ID',
+  `dhr_no` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT 'DHR编号',
+  `work_order_id` bigint(20) NULL DEFAULT NULL COMMENT 'MES工单ID(pro_work_order.mes_wo_id)',
+  `work_order_no` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '工单编号(冗余快照)',
+  `material_id` bigint(20) NULL DEFAULT NULL COMMENT '产品物料ID',
+  `material_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '产品物料编码(冗余快照)',
+  `material_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '产品物料名称(冗余快照)',
+  `lot_no` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '批次号',
+  `sn` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT 'SN序列号',
+  `planned_qty` decimal(14, 4) NULL DEFAULT NULL COMMENT '计划数量',
+  `completed_qty` decimal(14, 4) NULL DEFAULT NULL COMMENT '完成数量',
+  `scrap_qty` decimal(14, 4) NULL DEFAULT NULL COMMENT '报废数量',
+  `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'DRAFT' COMMENT '状态: DRAFT/SUBMITTED/RELEASED/REJECTED/ARCHIVED',
+  `snapshot_hash` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '快照总哈希(SM3)',
+  `frozen_at` datetime(0) NULL DEFAULT NULL COMMENT '冻结时间(提交时写入)',
+  `frozen_by` bigint(20) NULL DEFAULT NULL COMMENT '冻结人',
+  `submitted_at` datetime(0) NULL DEFAULT NULL COMMENT '提交时间',
+  `submitted_by` bigint(20) NULL DEFAULT NULL COMMENT '提交人',
+  `submit_signature_id` bigint(20) NULL DEFAULT NULL COMMENT '提交签名ID(es_signature, biz_type=DHR_SUBMIT)',
+  `released_at` datetime(0) NULL DEFAULT NULL COMMENT '放行时间',
+  `released_by` bigint(20) NULL DEFAULT NULL COMMENT '放行人',
+  `release_signature_id` bigint(20) NULL DEFAULT NULL COMMENT '放行签名ID(biz_type=DHR_RELEASE)',
+  `rejected_at` datetime(0) NULL DEFAULT NULL COMMENT '驳回时间',
+  `rejected_by` bigint(20) NULL DEFAULT NULL COMMENT '驳回人',
+  `reject_reason` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '驳回原因',
+  `reject_signature_id` bigint(20) NULL DEFAULT NULL COMMENT '驳回签名ID(biz_type=DHR_REJECT)',
+  `archived_at` datetime(0) NULL DEFAULT NULL COMMENT '归档时间',
+  `version` int(11) NULL DEFAULT 1 COMMENT '版本号(每次状态流转+1)',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
+  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
+  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志(0正常 1删除,仅DRAFT可删)',
+  PRIMARY KEY (`dhr_id`) USING BTREE,
+  UNIQUE INDEX `uk_dhr_no`(`tenant_id`, `dhr_no`) USING BTREE,
+  INDEX `idx_dhr_wo`(`tenant_id`, `work_order_id`) USING BTREE,
+  INDEX `idx_dhr_status`(`tenant_id`, `status`) USING BTREE,
+  INDEX `idx_dhr_lot`(`tenant_id`, `lot_no`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'DHR批记录主表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for dhr_section (DHR 分册, append-only; MES P0-6)
+-- ----------------------------
+DROP TABLE IF EXISTS `dhr_section`;
+CREATE TABLE `dhr_section`  (
+  `section_id` bigint(20) NOT NULL COMMENT '分册主键',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '000000' COMMENT '租户ID',
+  `dhr_id` bigint(20) NOT NULL COMMENT '所属DHR主表ID',
+  `section_code` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '分册编码(10个固定值: WO_INFO/PROCESS/MATERIAL/EQUIPMENT/TOOLING/SOP/QC/DATA_COLLECT/SN_TRACE/NCR)',
+  `section_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '分册名称',
+  `item_count` int(11) NULL DEFAULT 0 COMMENT '条目数(无数据时为0,分册仍落库)',
+  `content_json` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '分册条目JSON',
+  `content_hash` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '正文哈希SM3(content_json)',
+  `sort_order` int(11) NULL DEFAULT 0 COMMENT '排序号(1基)',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '写入时间',
+  PRIMARY KEY (`section_id`) USING BTREE,
+  UNIQUE INDEX `uk_dhr_section`(`tenant_id`, `dhr_id`, `section_code`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'DHR批记录分册(append-only)' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for eq_spare_return (MES备件退库单; MES-EQ-04 收口)
+-- ----------------------------
+DROP TABLE IF EXISTS `eq_spare_return`;
+CREATE TABLE `eq_spare_return`  (
+  `return_id` bigint(20) NOT NULL COMMENT '退库单ID(主键)',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '000000',
+  `return_no` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '退库单号 MESRT+yyyyMMdd+4位当日序号',
+  `warehouse_id` bigint(20) NULL DEFAULT NULL COMMENT '退库目标ERP仓库ID(wm_warehouse.warehouse_id)',
+  `return_date` datetime(0) NULL DEFAULT NULL COMMENT '退库日期',
+  `return_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT 'REPAIR_RETURN/EXCESS_RETURN/OTHER',
+  `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'DRAFT' COMMENT 'DRAFT/CONFIRMED/CANCELLED',
+  `total_qty` decimal(14, 4) NULL DEFAULT 0.0000 COMMENT '明细数量合计',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
+  `confirm_by` bigint(20) NULL DEFAULT NULL COMMENT '确认人ID',
+  `confirm_time` datetime(0) NULL DEFAULT NULL COMMENT '确认时间',
+  `version` int(11) NULL DEFAULT 0 COMMENT '版本号(确认时CAS自增)',
+  `create_dept` bigint(20) NULL DEFAULT NULL,
+  `create_by` bigint(20) NULL DEFAULT NULL,
+  `create_time` datetime(0) NULL DEFAULT NULL,
+  `update_by` bigint(20) NULL DEFAULT NULL,
+  `update_time` datetime(0) NULL DEFAULT NULL,
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0',
+  PRIMARY KEY (`return_id`) USING BTREE,
+  UNIQUE INDEX `uk_spare_return_no`(`tenant_id`, `return_no`) USING BTREE,
+  INDEX `idx_spare_return_status`(`tenant_id`, `status`) USING BTREE,
+  INDEX `idx_spare_return_date`(`tenant_id`, `return_date`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'MES备件退库单' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for eq_spare_return_line (MES备件退库单明细; MES-EQ-04 收口)
+-- ----------------------------
+DROP TABLE IF EXISTS `eq_spare_return_line`;
+CREATE TABLE `eq_spare_return_line`  (
+  `line_id` bigint(20) NOT NULL COMMENT '明细行ID(主键)',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '000000',
+  `return_id` bigint(20) NOT NULL COMMENT '退库单ID',
+  `spare_id` bigint(20) NOT NULL COMMENT '备件ID',
+  `spare_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备件编码(冗余)',
+  `spare_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备件名称(冗余)',
+  `return_qty` decimal(14, 4) NOT NULL COMMENT '退库数量(>0)',
+  `unit_cost` decimal(18, 4) NULL DEFAULT NULL COMMENT '备件参考单价快照(服务端从eq_spare_part读取)',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
+  `create_dept` bigint(20) NULL DEFAULT NULL,
+  `create_by` bigint(20) NULL DEFAULT NULL,
+  `create_time` datetime(0) NULL DEFAULT NULL,
+  `update_by` bigint(20) NULL DEFAULT NULL,
+  `update_time` datetime(0) NULL DEFAULT NULL,
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0',
+  PRIMARY KEY (`line_id`) USING BTREE,
+  INDEX `idx_spare_return_line`(`tenant_id`, `return_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'MES备件退库单明细' ROW_FORMAT = Dynamic;

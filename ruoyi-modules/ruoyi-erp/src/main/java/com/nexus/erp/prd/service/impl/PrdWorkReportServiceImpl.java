@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.MapstructUtils;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
@@ -39,6 +40,16 @@ public class PrdWorkReportServiceImpl implements IPrdWorkReportService {
 
     private final PrdWorkReportMapper baseMapper;
     private final PrdWorkOrderMapper workOrderMapper;
+
+    /** 报工状态：已提交 */
+    private static final String STATUS_SUBMITTED = "SUBMITTED";
+    /** 报工状态：已审核 */
+    private static final String STATUS_APPROVED = "APPROVED";
+    /**
+     * 超报工容差比例：0 表示不允许超过工单计划数量。
+     * 若业务允许一定比例超报，改为如 {@code new BigDecimal("0.02")}。
+     */
+    private static final BigDecimal OVER_REPORT_TOLERANCE = BigDecimal.ZERO;
 
     /**
      * 分页查询生产报工列表
@@ -121,13 +132,16 @@ public class PrdWorkReportServiceImpl implements IPrdWorkReportService {
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(PrdWorkReportBo bo) {
         PrdWorkReport entity = MapstructUtils.convert(bo, PrdWorkReport.class);
+        // ★ ERP-PRD-02: 服务端强制状态机，报工新增只能落 SUBMITTED，不能由客户端直接落 APPROVED
+        entity.setReportStatus(STATUS_SUBMITTED);
         return baseMapper.insert(entity);
     }
 
     /**
      * 修改生产报工记录（通过 BO）
      * <p>
-     * 状态从 SUBMITTED 变为 APPROVED 时，自动回写工单累计产量。
+     * 状态从非 APPROVED 变为 APPROVED 时，先以 CAS 抢占状态，成功后再回写工单累计产量，
+     * 防止并发双审核导致 completed_qty 双倍累加（ERP-PRD-02）。
      *
      * @param bo 生产报工业务对象
      * @return 影响的行数
@@ -136,16 +150,61 @@ public class PrdWorkReportServiceImpl implements IPrdWorkReportService {
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(PrdWorkReportBo bo) {
         PrdWorkReport entity = MapstructUtils.convert(bo, PrdWorkReport.class);
-
-        // ★ 新增：状态从SUBMITTED变为APPROVED时，回写工单产量
-        if ("APPROVED".equals(entity.getReportStatus())) {
-            PrdWorkReport old = baseMapper.selectById(entity.getReportId());
-            if (old != null && !"APPROVED".equals(old.getReportStatus())) {
-                syncWorkOrderQuantity(old);
-            }
+        if (STATUS_APPROVED.equals(entity.getReportStatus())) {
+            return approveAndSyncWorkOrder(entity);
         }
-
         return baseMapper.updateById(entity);
+    }
+
+    /**
+     * 审核报工并回写工单产量：CAS 抢占「非 APPROVED → APPROVED」后才累加，保证只累加一次。
+     *
+     * @param entity 报工实体（至少含 reportId）
+     * @return 影响的行数；已被审核过则返回 0（幂等）
+     */
+    private int approveAndSyncWorkOrder(PrdWorkReport entity) {
+        if (entity.getReportId() == null) {
+            throw new ServiceException("报工记录ID不能为空");
+        }
+        PrdWorkReport old = baseMapper.selectById(entity.getReportId());
+        if (old == null) {
+            throw new ServiceException("报工记录不存在");
+        }
+        // 超报工守卫：completed_qty + 本次报工 <= 计划数量 × (1 + 容差)
+        assertNotOverReport(old);
+        int rows = baseMapper.update(null, Wrappers.<PrdWorkReport>lambdaUpdate()
+            .set(PrdWorkReport::getReportStatus, STATUS_APPROVED)
+            .eq(PrdWorkReport::getReportId, entity.getReportId())
+            .ne(PrdWorkReport::getReportStatus, STATUS_APPROVED));
+        if (rows == 0) {
+            log.info("报工记录已被审核过或状态已变更，跳过工单回写: reportId={}", entity.getReportId());
+            return 0;
+        }
+        syncWorkOrderQuantity(old);
+        return rows;
+    }
+
+    /**
+     * 超报工上限校验（ERP-PRD-02）。
+     *
+     * @param report 待审核的报工记录
+     */
+    private void assertNotOverReport(PrdWorkReport report) {
+        if (report.getWoId() == null || report.getReportedQty() == null) {
+            return;
+        }
+        PrdWorkOrder wo = workOrderMapper.selectById(report.getWoId());
+        if (wo == null || wo.getPlannedQty() == null) {
+            return;
+        }
+        BigDecimal completed = wo.getCompletedQty() != null ? wo.getCompletedQty() : BigDecimal.ZERO;
+        BigDecimal maxAllowed = wo.getPlannedQty().multiply(BigDecimal.ONE.add(OVER_REPORT_TOLERANCE));
+        if (completed.add(report.getReportedQty()).compareTo(maxAllowed) > 0) {
+            throw new ServiceException("报工数量超过工单计划数量: plannedQty=" + wo.getPlannedQty().toPlainString()
+                + ", completedQty=" + completed.toPlainString()
+                + ", reportedQty=" + report.getReportedQty().toPlainString()
+                + ", 超报容差=" + OVER_REPORT_TOLERANCE.toPlainString());
+        }
     }
 
     /**
@@ -162,16 +221,20 @@ public class PrdWorkReportServiceImpl implements IPrdWorkReportService {
         LambdaUpdateWrapper<PrdWorkOrder> wrapper = Wrappers.<PrdWorkOrder>lambdaUpdate()
             .eq(PrdWorkOrder::getWoId, report.getWoId())
             .setSql("completed_qty = completed_qty + " + report.getReportedQty().toPlainString())
-            .setSql(scrapSetSql != null, scrapSetSql);
+            .setSql(scrapSetSql != null, scrapSetSql)
+            // ★ SQL 侧超报工上界(ERP-PRD-02)：并发下再挡一次；计划数量为空时不设上限
+            .apply("(planned_qty IS NULL OR IFNULL(completed_qty, 0) + {0} <= planned_qty * (1 + {1}))",
+                report.getReportedQty(), OVER_REPORT_TOLERANCE);
         int rows = workOrderMapper.update(null, wrapper);
         if (rows == 0) {
-            log.warn("报工回写工单数量失败, 工单可能已被修改: woId={}", report.getWoId());
-            throw new RuntimeException("工单数量更新失败, 请重试");
+            log.warn("报工回写工单数量失败, 工单可能已被修改或超出计划数量: woId={}", report.getWoId());
+            throw new ServiceException("工单数量更新失败, 请重试");
         }
     }
 
     /**
      * 修改生产报工记录
+     * <p>ERP-PRD-02：不再允许绕过回写直接 updateById 改状态，审核路径统一走 CAS + 回写。</p>
      *
      * @param prdWorkReport 生产报工实体
      * @return 影响的行数
@@ -179,6 +242,9 @@ public class PrdWorkReportServiceImpl implements IPrdWorkReportService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updatePrdWorkReport(PrdWorkReport prdWorkReport) {
+        if (STATUS_APPROVED.equals(prdWorkReport.getReportStatus())) {
+            return approveAndSyncWorkOrder(prdWorkReport);
+        }
         return baseMapper.updateById(prdWorkReport);
     }
 

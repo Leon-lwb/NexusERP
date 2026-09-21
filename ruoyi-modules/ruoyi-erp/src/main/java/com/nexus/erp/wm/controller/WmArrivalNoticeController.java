@@ -37,13 +37,13 @@ public class WmArrivalNoticeController extends BaseController {
     /**
      * 分页查询到货通知列表
      * <p>
-     * 权限标识：{@code wm:arrivalNotice:list}</p>
+     * 权限标识：{@code wm:arrivalnotice:list}</p>
      *
      * @param bo        查询参数，包含通知单号、供应商、日期范围等筛选条件
      * @param pageQuery 分页参数，包含页码、每页条数及排序信息
      * @return 到货通知分页列表
      */
-    @SaCheckPermission("wm:arrivalNotice:list")
+    @SaCheckPermission("wm:arrivalnotice:list")
     @GetMapping("/list")
     public TableDataInfo<WmArrivalNoticeVo> list(WmArrivalNoticeBo bo, PageQuery pageQuery) {
         return wmArrivalNoticeService.selectPageList(bo, pageQuery);
@@ -51,13 +51,13 @@ public class WmArrivalNoticeController extends BaseController {
 
     /**
      * 导出到货通知数据到 Excel
-     * <p>权限标识：{@code wm:arrivalNotice:export}</p>
+     * <p>权限标识：{@code wm:arrivalnotice:export}</p>
      * <p>日志记录：title="到货通知"，businessType=EXPORT</p>
      *
      * @param bo        查询参数
      * @param response  HTTP 响应对象，用于输出 Excel 文件流
      */
-    @SaCheckPermission("wm:arrivalNotice:export")
+    @SaCheckPermission("wm:arrivalnotice:export")
     @Log(title = "到货通知", businessType = BusinessType.EXPORT)
     @PostMapping("/export")
     public void export(WmArrivalNoticeBo bo, HttpServletResponse response) {
@@ -68,12 +68,12 @@ public class WmArrivalNoticeController extends BaseController {
     /**
      * 根据主键获取到货通知详细信息
      * <p>
-     * 权限标识：{@code wm:arrivalNotice:query}</p>
+     * 权限标识：{@code wm:arrivalnotice:query}</p>
      *
      * @param id 到货通知 ID
      * @return 到货通知详细信息
      */
-    @SaCheckPermission("wm:arrivalNotice:query")
+    @SaCheckPermission("wm:arrivalnotice:query")
     @GetMapping("/{id}")
     public R<WmArrivalNoticeVo> getInfo(@PathVariable Long id) {
         return R.ok(wmArrivalNoticeService.selectById(id));
@@ -82,13 +82,13 @@ public class WmArrivalNoticeController extends BaseController {
     /**
      * 新增到货通知
      * <p>
-     * 权限标识：{@code wm:arrivalNotice:add}</p>
+     * 权限标识：{@code wm:arrivalnotice:add}</p>
      * <p>日志记录：title="到货通知"，businessType=INSERT</p>
      *
      * @param bo 到货通知业务对象，包含供应商信息、到货物料明细等
      * @return 操作结果，成功返回 {@code R.success()}，失败返回 {@code R.fail()}
      */
-    @SaCheckPermission("wm:arrivalNotice:add")
+    @SaCheckPermission("wm:arrivalnotice:add")
     @Log(title = "到货通知", businessType = BusinessType.INSERT)
     @PostMapping
     public R<Void> add(@Validated @RequestBody WmArrivalNoticeBo bo) {
@@ -98,13 +98,13 @@ public class WmArrivalNoticeController extends BaseController {
     /**
      * 修改到货通知
      * <p>
-     * 权限标识：{@code wm:arrivalNotice:edit}</p>
+     * 权限标识：{@code wm:arrivalnotice:edit}</p>
      * <p>日志记录：title="到货通知"，businessType=UPDATE</p>
      *
      * @param bo 到货通知业务对象，包含需要更新的字段信息
      * @return 操作结果，成功返回 {@code R.success()}，失败返回 {@code R.fail()}
      */
-    @SaCheckPermission("wm:arrivalNotice:edit")
+    @SaCheckPermission("wm:arrivalnotice:edit")
     @Log(title = "到货通知", businessType = BusinessType.UPDATE)
     @PutMapping
     public R<Void> edit(@Validated @RequestBody WmArrivalNoticeBo bo) {
@@ -114,13 +114,13 @@ public class WmArrivalNoticeController extends BaseController {
     /**
      * 批量删除到货通知
      * <p>
-     * 权限标识：{@code wm:arrivalNotice:remove}</p>
+     * 权限标识：{@code wm:arrivalnotice:remove}</p>
      * <p>日志记录：title="到货通知"，businessType=DELETE</p>
      *
      * @param ids 要删除的到货通知 ID 数组（支持批量删除）
      * @return 操作结果，成功返回 {@code R.success()}，失败返回 {@code R.fail()}
      */
-    @SaCheckPermission("wm:arrivalNotice:remove")
+    @SaCheckPermission("wm:arrivalnotice:remove")
     @Log(title = "到货通知", businessType = BusinessType.DELETE)
     @DeleteMapping("/{ids}")
     public R<Void> remove(@PathVariable Long[] ids) {
@@ -129,7 +129,7 @@ public class WmArrivalNoticeController extends BaseController {
 
     /**
      * 提交到货通知并启动流程
-     * <p>权限标识：{@code wm:arrivalNotice:submit}</p>
+     * <p>权限标识：{@code wm:arrivalnotice:submit}</p>
      * <p>日志记录：title="到货通知"，businessType=UPDATE</p>
      *
      * @param noticeId     到货通知 ID
@@ -137,7 +137,7 @@ public class WmArrivalNoticeController extends BaseController {
      * @return 操作结果
      * @throws RuntimeException 提交失败时抛出运行时异常
      */
-    @SaCheckPermission("wm:arrivalNotice:submit")
+    @SaCheckPermission("wm:arrivalnotice:submit")
     @Log(title = "到货通知", businessType = BusinessType.UPDATE)
     @PostMapping("/{noticeId}/submit")
     public R<Void> submit(@PathVariable("noticeId") String noticeId,
@@ -151,7 +151,7 @@ public class WmArrivalNoticeController extends BaseController {
      * @param noticeId 到货通知 ID
      * @return 流程实例ID
      */
-    @SaCheckPermission("wm:arrivalNotice:query")
+    @SaCheckPermission("wm:arrivalnotice:query")
     @GetMapping("/{noticeId}/proc")
     public R<String> getProcInsId(@PathVariable("noticeId") String noticeId) {
         return R.ok("查询成功", wmArrivalNoticeService.getProcInsId(noticeId));

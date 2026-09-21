@@ -31,11 +31,13 @@ import com.nexus.common.cv.config.CvProperties;
 import com.nexus.common.cv.domain.FaceDtos.VerifyResult;
 import com.nexus.common.cv.exception.VisionException;
 import com.nexus.common.tenant.helper.TenantHelper;
+import com.nexus.erp.cv.service.CvSubjectHelper;
 import com.nexus.erp.sch.mapper.SchWorkerMapper;
 import com.nexus.erp.sch.domain.SchWorker;
 import com.nexus.system.service.ISysOssService;
 import com.nexus.system.domain.vo.SysOssVo;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.scheduling.annotation.Async;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -154,14 +156,20 @@ public class SchAttendanceServiceImpl implements ISchAttendanceService {
      */
     @Override
     public Map<String, Object> performClockIn(Long workerId, String workerName, Date clockInTime, String deviceId, String deviceName,
-                                              BigDecimal latitude, BigDecimal longitude, String address) {
+                                              BigDecimal latitude, BigDecimal longitude, String address, BigDecimal accuracy) {
         LocalDate todayLd = LocalDate.now();
-        Date today = Date.from(todayLd.atStartOfDay(ZoneId.systemDefault()).toInstant());
+        // 打卡围栏校验(ERP-SCH-03): 必须在落库主流程内计算,不能只依赖前端主动调 /validate-location,
+        // 否则绕过该端点即可异地打卡(原实现硬编码 locationValid=true)。
+        Long distance = requireLocationWithinFence(latitude, longitude);
+        // 排班匹配(含前一日跨天班次),record_date 取命中排班的排班日期,避免跨天班次被拆成两天(ERP-SCH-05)
+        SchEmployeeSchedule matched = findScheduleForPunch(workerId, clockInTime, todayLd);
+        Date recordDate = matched != null ? truncateToDay(matched.getScheduledDate()) : startOfDay(todayLd);
 
         SchAttendance attendance = new SchAttendance();
         attendance.setWorkerId(workerId);
         attendance.setWorkerName(workerName);
-        attendance.setRecordDate(today);
+        attendance.setRecordDate(recordDate);
+        attendance.setScheduleId(matched != null ? matched.getScheduleId() : null);
         attendance.setClockInTime(clockInTime);
         attendance.setSourceType("manual");
         attendance.setDeviceId(deviceId);
@@ -169,48 +177,48 @@ public class SchAttendanceServiceImpl implements ISchAttendanceService {
         attendance.setClockInLatitude(latitude);
         attendance.setClockInLongitude(longitude);
         attendance.setClockInAddress(address);
+        // ERP-CV-05: 前端已上报定位精度, 原后端无列/无字段直接丢弃, 现落 clock_in_accuracy 供证据强度评估
+        attendance.setClockInAccuracy(accuracy);
 
-        String attendanceStatus = determineAttendanceStatus(clockInTime, workerId, today, true);
+        String attendanceStatus = determineAttendanceStatus(clockInTime, workerId, recordDate, true);
         attendance.setAttendanceStatus(attendanceStatus);
 
         long lateMinutes = 0;
-        SchEmployeeSchedule schedule = new SchEmployeeSchedule();
-        schedule.setWorkerId(workerId);
-        schedule.setScheduledDate(today);
-        LambdaQueryWrapper<SchEmployeeSchedule> scheduleLqw = Wrappers.lambdaQuery();
-        scheduleLqw.eq(SchEmployeeSchedule::getWorkerId, workerId);
-        scheduleLqw.eq(SchEmployeeSchedule::getScheduledDate, today);
-        List<SchEmployeeSchedule> scheduleList = employeeScheduleMapper.selectList(scheduleLqw);
-
-        if (!scheduleList.isEmpty()) {
-            SchEmployeeSchedule employeeSchedule = scheduleList.get(0);
-            Date startTime = employeeSchedule.getStartTime();
-            if (startTime != null) {
-                long diff = clockInTime.getTime() - startTime.getTime();
-                lateMinutes = Math.max(0, diff / (1000 * 60));
-            }
+        if (matched != null && matched.getStartTime() != null) {
+            long diff = clockInTime.getTime() - matched.getStartTime().getTime();
+            lateMinutes = Math.max(0, diff / (1000 * 60));
         }
 
         attendance.setLateMinutes(lateMinutes);
 
         LambdaQueryWrapper<SchAttendance> existLqw = Wrappers.lambdaQuery();
         existLqw.eq(SchAttendance::getWorkerId, workerId);
-        existLqw.eq(SchAttendance::getRecordDate, today);
+        existLqw.eq(SchAttendance::getRecordDate, recordDate);
         List<SchAttendance> attendanceList = baseMapper.selectList(existLqw);
 
         if (attendanceList.isEmpty()) {
-            baseMapper.insert(attendance);
+            try {
+                baseMapper.insert(attendance);
+            } catch (DuplicateKeyException e) {
+                // ERP-SCH-09: "先查后写"下并发连点会撞 uk_worker_date(tenant_id, worker_id, record_date),
+                // 原实现直接冒泡成 500。捕获后按"记录已存在"合并覆盖(与下面更新分支同语义),
+                // 让用户看到正常打卡结果而不是服务器错误。
+                log.warn("打卡并发写入冲突, 按已存在记录合并: workerId={}, recordDate={}", workerId, recordDate);
+                SchAttendance concurrent = baseMapper.selectList(existLqw).stream().findFirst().orElse(null);
+                if (concurrent == null) {
+                    throw new ServiceException("打卡记录写入冲突，请重试");
+                }
+                concurrent.setClockInAccuracy(accuracy);
+                applyClockInFields(concurrent, workerName, clockInTime, deviceId, deviceName,
+                    latitude, longitude, address, attendanceStatus, lateMinutes, matched);
+                baseMapper.updateById(concurrent);
+                attendance = concurrent;
+            }
         } else {
             SchAttendance existing = attendanceList.get(0);
-            existing.setClockInTime(clockInTime);
-            existing.setWorkerName(workerName);
-            existing.setDeviceId(deviceId);
-            existing.setDeviceName(deviceName);
-            existing.setClockInLatitude(latitude);
-            existing.setClockInLongitude(longitude);
-            existing.setClockInAddress(address);
-            existing.setAttendanceStatus(attendanceStatus);
-            existing.setLateMinutes(lateMinutes);
+            existing.setClockInAccuracy(accuracy);
+            applyClockInFields(existing, workerName, clockInTime, deviceId, deviceName,
+                latitude, longitude, address, attendanceStatus, lateMinutes, matched);
             baseMapper.updateById(existing);
             attendance = existing;
         }
@@ -218,8 +226,11 @@ public class SchAttendanceServiceImpl implements ISchAttendanceService {
         Map<String, Object> data = new HashMap<>();
         data.put("attendanceId", attendance.getAttendanceId());
         data.put("clockInTime", clockInTime);
+        data.put("recordDate", recordDate);
+        // 走到此处即已通过围栏校验(或该规则未配置围栏),distance 为真实 Haversine 距离
         data.put("locationValid", true);
-        data.put("distance", 0);
+        data.put("locationChecked", distance != null);
+        data.put("distance", distance != null ? distance : 0);
         data.put("isLate", "late".equals(attendance.getAttendanceStatus()));
         data.put("lateMinutes", lateMinutes);
         data.put("nextClockOutTime", null);
@@ -244,16 +255,23 @@ public class SchAttendanceServiceImpl implements ISchAttendanceService {
      */
     @Override
     public Map<String, Object> performClockOut(Long workerId, String workerName, Date clockOutTime, String deviceId, String deviceName,
-                                               Double overtimeHours, BigDecimal latitude, BigDecimal longitude, String address) {
+                                               Double overtimeHours, BigDecimal latitude, BigDecimal longitude, String address,
+                                               BigDecimal clockOutAccuracy) {
         LocalDate todayLd = LocalDate.now();
-        Date today = Date.from(todayLd.atStartOfDay(ZoneId.systemDefault()).toInstant());
+        // 打卡围栏校验(ERP-SCH-03)
+        Long distance = requireLocationWithinFence(latitude, longitude);
+        // 跨天班次匹配(ERP-SCH-05): 次日凌晨的下班打卡要命中"前一日"的跨天排班,
+        // record_date 取该排班的排班日期,才能更新 22:00 上班打卡建立的那条考勤行。
+        SchEmployeeSchedule matched = findScheduleForPunch(workerId, clockOutTime, todayLd);
+        Date recordDate = matched != null ? truncateToDay(matched.getScheduledDate()) : startOfDay(todayLd);
 
         LambdaQueryWrapper<SchAttendance> existLqw = Wrappers.lambdaQuery();
         existLqw.eq(SchAttendance::getWorkerId, workerId);
-        existLqw.eq(SchAttendance::getRecordDate, today);
+        existLqw.eq(SchAttendance::getRecordDate, recordDate);
         List<SchAttendance> attendanceList = baseMapper.selectList(existLqw);
 
         Map<String, Object> result = new HashMap<>();
+        long leaveEarlyMinutes = calcLeaveEarlyMinutes(matched, clockOutTime);
 
         if (!attendanceList.isEmpty()) {
             SchAttendance existing = attendanceList.get(0);
@@ -264,23 +282,12 @@ public class SchAttendanceServiceImpl implements ISchAttendanceService {
             existing.setClockOutLatitude(latitude);
             existing.setClockOutLongitude(longitude);
             existing.setClockOutAddress(address);
-
-            String clockOutAttendanceStatus = determineAttendanceStatus(clockOutTime, workerId, today, false);
-
-            LambdaQueryWrapper<SchEmployeeSchedule> scheduleLqw = Wrappers.lambdaQuery();
-            scheduleLqw.eq(SchEmployeeSchedule::getWorkerId, workerId);
-            scheduleLqw.eq(SchEmployeeSchedule::getScheduledDate, today);
-            List<SchEmployeeSchedule> scheduleList = employeeScheduleMapper.selectList(scheduleLqw);
-
-            long leaveEarlyMinutes = 0;
-            if (!scheduleList.isEmpty()) {
-                SchEmployeeSchedule employeeSchedule = scheduleList.get(0);
-                Date endTime = employeeSchedule.getEndTime();
-                if (endTime != null) {
-                    long diff = endTime.getTime() - clockOutTime.getTime();
-                    leaveEarlyMinutes = Math.max(0, diff / (1000 * 60));
-                }
+            existing.setClockOutAccuracy(clockOutAccuracy);
+            if (matched != null) {
+                existing.setScheduleId(matched.getScheduleId());
             }
+
+            String clockOutAttendanceStatus = determineAttendanceStatus(clockOutTime, workerId, recordDate, false);
 
             existing.setLeaveEarlyMinutes(leaveEarlyMinutes);
 
@@ -306,8 +313,6 @@ public class SchAttendanceServiceImpl implements ISchAttendanceService {
 
             result.put("attendanceId", existing.getAttendanceId());
             result.put("clockOutTime", clockOutTime);
-            result.put("locationValid", true);
-            result.put("distance", 0);
             result.put("isEarlyLeave", "early_leave".equals(existing.getAttendanceStatus()) || "late_early_leave".equals(existing.getAttendanceStatus()));
             result.put("leaveEarlyMinutes", existing.getLeaveEarlyMinutes() != null ? existing.getLeaveEarlyMinutes() : 0);
             result.put("overtimeHours", overtimeHours != null ? overtimeHours : 0.0);
@@ -316,7 +321,8 @@ public class SchAttendanceServiceImpl implements ISchAttendanceService {
             SchAttendance newAttendance = new SchAttendance();
             newAttendance.setWorkerId(workerId);
             newAttendance.setWorkerName(workerName);
-            newAttendance.setRecordDate(today);
+            newAttendance.setRecordDate(recordDate);
+            newAttendance.setScheduleId(matched != null ? matched.getScheduleId() : null);
             newAttendance.setClockOutTime(clockOutTime);
             newAttendance.setSourceType("manual");
             newAttendance.setDeviceId(deviceId);
@@ -324,23 +330,9 @@ public class SchAttendanceServiceImpl implements ISchAttendanceService {
             newAttendance.setClockOutLatitude(latitude);
             newAttendance.setClockOutLongitude(longitude);
             newAttendance.setClockOutAddress(address);
+            newAttendance.setClockOutAccuracy(clockOutAccuracy);
 
-            String clockOutAttendanceStatus = determineAttendanceStatus(clockOutTime, workerId, today, false);
-
-            LambdaQueryWrapper<SchEmployeeSchedule> scheduleLqw = Wrappers.lambdaQuery();
-            scheduleLqw.eq(SchEmployeeSchedule::getWorkerId, workerId);
-            scheduleLqw.eq(SchEmployeeSchedule::getScheduledDate, today);
-            List<SchEmployeeSchedule> scheduleList = employeeScheduleMapper.selectList(scheduleLqw);
-
-            long leaveEarlyMinutes = 0;
-            if (!scheduleList.isEmpty()) {
-                SchEmployeeSchedule employeeSchedule = scheduleList.get(0);
-                Date endTime = employeeSchedule.getEndTime();
-                if (endTime != null) {
-                    long diff = endTime.getTime() - clockOutTime.getTime();
-                    leaveEarlyMinutes = Math.max(0, diff / (1000 * 60));
-                }
-            }
+            String clockOutAttendanceStatus = determineAttendanceStatus(clockOutTime, workerId, recordDate, false);
 
             newAttendance.setLeaveEarlyMinutes(leaveEarlyMinutes);
             newAttendance.setAttendanceStatus(clockOutAttendanceStatus);
@@ -352,15 +344,155 @@ public class SchAttendanceServiceImpl implements ISchAttendanceService {
 
             result.put("attendanceId", newAttendance.getAttendanceId());
             result.put("clockOutTime", clockOutTime);
-            result.put("locationValid", true);
-            result.put("distance", 0);
             result.put("isEarlyLeave", "early_leave".equals(newAttendance.getAttendanceStatus()));
             result.put("leaveEarlyMinutes", newAttendance.getLeaveEarlyMinutes() != null ? newAttendance.getLeaveEarlyMinutes() : 0);
             result.put("overtimeHours", overtimeHours != null ? overtimeHours : 0.0);
             result.put("attendanceStatus", newAttendance.getAttendanceStatus() != null ? newAttendance.getAttendanceStatus() : "normal");
         }
 
+        result.put("recordDate", recordDate);
+        result.put("locationValid", true);
+        result.put("locationChecked", distance != null);
+        result.put("distance", distance != null ? distance : 0);
+
         return result;
+    }
+
+    /**
+     * 上班打卡字段合并（"新建"与"已存在/并发冲突合并"三条路径共用，保证语义一致）
+     */
+    private void applyClockInFields(SchAttendance target, String workerName, Date clockInTime, String deviceId,
+                                    String deviceName, BigDecimal latitude, BigDecimal longitude, String address,
+                                    String attendanceStatus, long lateMinutes, SchEmployeeSchedule matched) {
+        target.setClockInTime(clockInTime);
+        target.setWorkerName(workerName);
+        target.setDeviceId(deviceId);
+        target.setDeviceName(deviceName);
+        target.setClockInLatitude(latitude);
+        target.setClockInLongitude(longitude);
+        target.setClockInAddress(address);
+        target.setAttendanceStatus(attendanceStatus);
+        target.setLateMinutes(lateMinutes);
+        if (matched != null) {
+            target.setScheduleId(matched.getScheduleId());
+        }
+    }
+
+    /**
+     * 打卡围栏校验(ERP-SCH-03): 命中"已启用打卡规则"的围栏时,必须在半径内才允许打卡。
+     * <p>语义:</p>
+     * <ul>
+     *   <li>无已启用规则 / 规则未配置中心点与半径 → 视为未启用围栏,不拦截(返回 null);</li>
+     *   <li>配置了围栏但客户端未上报经纬度 → 拒绝(否则"不带定位"即可绕过);</li>
+     *   <li>超出半径 → 拒绝并抛出实际距离。</li>
+     * </ul>
+     *
+     * @return 实际距离(米,四舍五入);未启用围栏时返回 null
+     */
+    private Long requireLocationWithinFence(BigDecimal latitude, BigDecimal longitude) {
+        SchPunchRuleVo punchRule = pickEnabledPunchRule();
+        if (punchRule == null) {
+            return null;
+        }
+        BigDecimal ruleLat = punchRule.getLocationLat();
+        BigDecimal ruleLng = punchRule.getLocationLng();
+        Long ruleRadius = punchRule.getLocationRadius();
+        if (ruleLat == null || ruleLng == null || ruleRadius == null) {
+            return null;
+        }
+        if (latitude == null || longitude == null) {
+            throw new ServiceException("打卡失败：未获取到定位信息，无法通过打卡范围校验");
+        }
+        double distance = calculateDistance(latitude.doubleValue(), longitude.doubleValue(),
+            ruleLat.doubleValue(), ruleLng.doubleValue());
+        if (distance > ruleRadius) {
+            throw new ServiceException(String.format("打卡失败：超出打卡范围（距离%.0f米，允许范围%d米）",
+                distance, ruleRadius));
+        }
+        return Math.round(distance);
+    }
+
+    /**
+     * 取当前生效的打卡规则(enabled 且 ruleId 最小的一条);无规则返回 null
+     */
+    private SchPunchRuleVo pickEnabledPunchRule() {
+        com.nexus.erp.sch.domain.bo.SchPunchRuleBo ruleQuery = new com.nexus.erp.sch.domain.bo.SchPunchRuleBo();
+        ruleQuery.setIsEnabled(1);
+        List<SchPunchRuleVo> enabledRules = schPunchRuleService.selectList(ruleQuery);
+        if (enabledRules == null || enabledRules.isEmpty()) {
+            return null;
+        }
+        return enabledRules.stream()
+            .filter(r -> r.getIsEnabled() == null || r.getIsEnabled() == 1)
+            .min(Comparator.comparing(SchPunchRuleVo::getRuleId, Comparator.nullsLast(Comparator.naturalOrder())))
+            .orElse(null);
+    }
+
+    /**
+     * 按打卡时间匹配排班(含前一日跨天班次)。
+     * <p>1) 优先取"打卡时间落在 [startTime, endTime] 区间内"的排班(跨天班次 endTime 已推到次日,
+     * 次日凌晨的下班打卡靠这条命中);2) 未命中区间时退化为当天排班,再退化为最近一条(保持原行为)。</p>
+     *
+     * @param workerId  工人ID
+     * @param punchTime 打卡时间
+     * @param todayLd   今天
+     * @return 命中的排班;无任何排班返回 null
+     */
+    private SchEmployeeSchedule findScheduleForPunch(Long workerId, Date punchTime, LocalDate todayLd) {
+        Date from = startOfDay(todayLd.minusDays(1));
+        Date toExclusive = startOfDay(todayLd.plusDays(1));
+        List<SchEmployeeSchedule> list = employeeScheduleMapper.selectList(
+            Wrappers.<SchEmployeeSchedule>lambdaQuery()
+                .eq(SchEmployeeSchedule::getWorkerId, workerId)
+                .ge(SchEmployeeSchedule::getScheduledDate, from)
+                .lt(SchEmployeeSchedule::getScheduledDate, toExclusive)
+                .orderByAsc(SchEmployeeSchedule::getScheduledDate));
+        if (list.isEmpty()) {
+            return null;
+        }
+        for (int i = list.size() - 1; i >= 0; i--) {
+            SchEmployeeSchedule schedule = list.get(i);
+            if (schedule.getStartTime() != null && schedule.getEndTime() != null
+                && !punchTime.before(schedule.getStartTime()) && !punchTime.after(schedule.getEndTime())) {
+                return schedule;
+            }
+        }
+        Date today = startOfDay(todayLd);
+        for (int i = list.size() - 1; i >= 0; i--) {
+            SchEmployeeSchedule schedule = list.get(i);
+            if (schedule.getScheduledDate() != null && today.equals(truncateToDay(schedule.getScheduledDate()))) {
+                return schedule;
+            }
+        }
+        return list.get(list.size() - 1);
+    }
+
+    /**
+     * 早退分钟数: 打卡时间早于排班结束时间即为早退
+     */
+    private long calcLeaveEarlyMinutes(SchEmployeeSchedule schedule, Date clockOutTime) {
+        if (schedule == null || schedule.getEndTime() == null) {
+            return 0;
+        }
+        long diff = schedule.getEndTime().getTime() - clockOutTime.getTime();
+        return Math.max(0, diff / (1000 * 60));
+    }
+
+    private Date startOfDay(LocalDate date) {
+        return Date.from(date.atStartOfDay(ZoneId.systemDefault()).toInstant());
+    }
+
+    private Date truncateToDay(Date date) {
+        if (date == null) {
+            return null;
+        }
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(date);
+        calendar.set(Calendar.HOUR_OF_DAY, 0);
+        calendar.set(Calendar.MINUTE, 0);
+        calendar.set(Calendar.SECOND, 0);
+        calendar.set(Calendar.MILLISECOND, 0);
+        return calendar.getTime();
     }
 
     /**
@@ -643,6 +775,28 @@ public class SchAttendanceServiceImpl implements ISchAttendanceService {
     @Async("cvExecutor")
     @Override
     public void asyncFaceVerify(Long attendanceId, Long workerId, String tenantId, byte[] imageBytes, boolean storeImage) {
+        doFaceVerify(attendanceId, workerId, tenantId, imageBytes, storeImage, false);
+    }
+
+    /**
+     * 降级补跑触发人脸验证(ERP-SCH-07)
+     * <p>复用已有存证照片,不重复存证;若本轮仍为 NONE 则不刷新 {@code face_verify_time},
+     * 让该记录按原始入队时间自然滚出 24h 补跑窗口,不再永久占用每轮 200 条配额。</p>
+     */
+    @Async("cvExecutor")
+    @Override
+    public void backfillFaceVerify(Long attendanceId, Long workerId, String tenantId, byte[] imageBytes) {
+        doFaceVerify(attendanceId, workerId, tenantId, imageBytes, false, true);
+    }
+
+    /**
+     * 人脸校验异步主体: 存证(可选) + 校验 + 回写
+     *
+     * @param storeImage 是否上传存证照片(打卡 true;补跑 false 复用已有 ossId)
+     * @param backfill   是否为降级补跑(补跑且结果仍 NONE 时不刷新 face_verify_time)
+     */
+    private void doFaceVerify(Long attendanceId, Long workerId, String tenantId, byte[] imageBytes,
+                              boolean storeImage, boolean backfill) {
         try {
             TenantHelper.dynamic(tenantId, () -> {
                 Long ossId = null;
@@ -668,7 +822,7 @@ public class SchAttendanceServiceImpl implements ISchAttendanceService {
                 // 2. 校验 + 回写 sch_attendance(erp 库),异步线程需显式切回 erp 数据源
                 DynamicDataSourceContextHolder.push("erp");
                 try {
-                    verifyAndWriteBack(attendanceId, workerId, imageBytes, ossId);
+                    verifyAndWriteBack(attendanceId, workerId, tenantId, imageBytes, ossId, backfill);
                 } finally {
                     DynamicDataSourceContextHolder.poll();
                 }
@@ -682,8 +836,12 @@ public class SchAttendanceServiceImpl implements ISchAttendanceService {
     /**
      * 执行人脸验证并回写考勤记录
      * <p>vision 可用 → PASS/FAIL + similarity;vision 不可用/无照片 → NONE(等待降级补跑)</p>
+     *
+     * @param tenantId 租户ID(用于拼装带租户维度的底库 subject)
+     * @param backfill 降级补跑场景:结果仍为 NONE 时不刷新 face_verify_time(避免永久占用补跑配额)
      */
-    private void verifyAndWriteBack(Long attendanceId, Long workerId, byte[] imageBytes, Long ossId) {
+    private void verifyAndWriteBack(Long attendanceId, Long workerId, String tenantId, byte[] imageBytes, Long ossId,
+                                    boolean backfill) {
         String status = "NONE";
         BigDecimal similarity = null;
         Date verifyTime = new Date();
@@ -694,7 +852,9 @@ public class SchAttendanceServiceImpl implements ISchAttendanceService {
                 log.warn("[cv] 视觉服务不可用, attendanceId={}, 置 NONE 待补跑", attendanceId);
             } else {
                 SchWorker worker = workerMapper.selectById(workerId);
-                String subject = worker != null ? "EMP-" + worker.getEmployeeId() : "EMP-" + workerId;
+                // 底库 subject 必须带租户维度(ERP-CV-02): 不同租户同工号不得串库
+                String subject = CvSubjectHelper.build(tenantId,
+                    worker != null ? worker.getEmployeeId() : String.valueOf(workerId));
                 VerifyResult result = visionClient.verifyFace(imageBytes, subject);
                 similarity = BigDecimal.valueOf(result.getSimilarity());
                 status = result.isMatched() ? "PASS" : "FAIL";
@@ -710,7 +870,11 @@ public class SchAttendanceServiceImpl implements ISchAttendanceService {
                 SchAttendance attendance = baseMapper.selectById(attendanceId);
                 if (attendance != null) {
                     attendance.setFaceVerifyStatus(status);
-                    attendance.setFaceVerifyTime(verifyTime);
+                    // 补跑仍为 NONE 时不刷新 face_verify_time: 该字段是补跑任务的 24h 选取窗口,
+                    // 无条件刷新会让无照片记录永远落在窗口内、每轮被重复选中(ERP-SCH-07 饿死)
+                    if (!backfill || !"NONE".equals(status)) {
+                        attendance.setFaceVerifyTime(verifyTime);
+                    }
                     attendance.setFaceSimilarity(similarity);
                     if (ossId != null) {
                         attendance.setFaceImageOssId(ossId);

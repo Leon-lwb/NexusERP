@@ -190,11 +190,32 @@ public class EqMaintenancePlanServiceImpl implements IEqMaintenancePlanService {
         if (plan == null) {
             throw new ServiceException("保养计划不存在: " + planId);
         }
-        // 状态守卫: 仅 ACTIVE 计划可完成, 防止重复完成/已完成/停用计划产生重复记录并跳过保养周期
+        // 状态守卫: 仅 ACTIVE 计划可完成(前置快速失败, 给出可读错误信息)
         if (!STATUS_ACTIVE.equals(plan.getStatus())) {
             throw new ServiceException("仅启用状态的保养计划可完成, 当前状态: " + plan.getStatus());
         }
-        // 1. 写入保养执行记录(执行人=当前用户, 执行时间=当前时间)
+        // 推进 nextDate = today + cycleDays
+        Integer cycleDays = plan.getCycleDays();
+        if (cycleDays == null || cycleDays <= 0) {
+            cycleDays = defaultCycleDays(plan.getMaintenanceType());
+        }
+        if (cycleDays == null || cycleDays <= 0) {
+            // 未知类型兜底 30 天
+            cycleDays = 30;
+        }
+        java.util.Date newNextDate = java.sql.Date.valueOf(LocalDate.now().plusDays(cycleDays));
+
+        // 1. CAS 先占位: 条件更新含 status='ACTIVE', 影响 0 行说明并发/重复提交已被别的请求完成,
+        //    此时直接抛异常, 保证"只产生一条保养记录、只推进一次周期"(MES-EQ-07)
+        int rows = baseMapper.update(null, Wrappers.<EqMaintenancePlan>lambdaUpdate()
+            .set(EqMaintenancePlan::getNextDate, newNextDate)
+            .eq(EqMaintenancePlan::getPlanId, planId)
+            .eq(EqMaintenancePlan::getStatus, STATUS_ACTIVE));
+        if (rows == 0) {
+            throw new ServiceException("保养计划状态已变更, 完成失败(可能已被其他请求完成)");
+        }
+
+        // 2. 写入保养执行记录(执行人=当前用户, 执行时间=当前时间)
         EqMaintenanceRecord record = new EqMaintenanceRecord();
         record.setPlanId(planId);
         record.setEquipmentId(plan.getEquipmentId());
@@ -206,30 +227,19 @@ public class EqMaintenancePlanServiceImpl implements IEqMaintenancePlanService {
         String result = (bo != null && StringUtils.isNotBlank(bo.getResult())) ? bo.getResult()
             : IEqMaintenanceRecordService.RESULT_NORMAL;
         record.setResult(result);
+        // 保养占用时长(MES-EQ-03): 由执行人填写的实际耗时, 未填则留空(不臆造)
+        record.setDurationMinutes(bo == null ? null : bo.getDurationMinutes());
         record.setRemark(bo == null ? null : bo.getRemark());
         maintenanceRecordMapper.insert(record);
-        log.info("保养计划 {} 完成执行, recordId={}", planId, record.getRecordId());
-
-        // 2. 推进 nextDate = today + cycleDays
-        Integer cycleDays = plan.getCycleDays();
-        if (cycleDays == null || cycleDays <= 0) {
-            cycleDays = defaultCycleDays(plan.getMaintenanceType());
-        }
-        if (cycleDays == null || cycleDays <= 0) {
-            // 未知类型兜底 30 天
-            cycleDays = 30;
-        }
-        java.util.Date newNextDate = java.sql.Date.valueOf(LocalDate.now().plusDays(cycleDays));
-        LambdaUpdateWrapper<EqMaintenancePlan> wrapper = Wrappers.<EqMaintenancePlan>lambdaUpdate()
-            .set(EqMaintenancePlan::getNextDate, newNextDate)
-            .eq(EqMaintenancePlan::getPlanId, planId);
-        baseMapper.update(null, wrapper);
-        log.info("保养计划 {} 已完成, 推进 nextDate={}", planId, newNextDate);
+        log.info("保养计划 {} 完成执行, recordId={}, nextDate={}", planId, record.getRecordId(), newNextDate);
 
         // 3. 保养结果异常: 置设备 MAINTENANCE(需后续处理), 触发设备状态变更事件(P0-5)
         if (IEqMaintenanceRecordService.RESULT_ABNORMAL.equals(result)) {
             equipmentService.updateStatus(plan.getEquipmentId(), IEqEquipmentService.STATUS_MAINTENANCE);
             log.info("保养结果异常, 设备置 MAINTENANCE: equipmentId={}", plan.getEquipmentId());
+        } else {
+            // 4. 保养结果正常: 若设备此前因保养异常处于 MAINTENANCE, 视为异常已闭环, 释放回 NORMAL/FAULT(MES-EQ-05)
+            equipmentService.finishMaintenance(plan.getEquipmentId(), "保养完成且结果正常");
         }
 
         // 补填设备编码/名称, 与详情/列表接口响应结构一致(L2)

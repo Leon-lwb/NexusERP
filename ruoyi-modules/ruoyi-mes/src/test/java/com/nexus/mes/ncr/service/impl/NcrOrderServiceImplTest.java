@@ -10,8 +10,11 @@ import com.nexus.common.sign.constants.SignAuthMethod;
 import com.nexus.common.sign.constants.SignBizType;
 import com.nexus.common.sign.domain.dto.SignCommand;
 import com.nexus.common.sign.service.ESignatureService;
+import com.nexus.mes.lt.domain.LtLot;
+import com.nexus.mes.lt.mapper.LtLotMapper;
 import com.nexus.mes.lt.service.ILtLotService;
 import com.nexus.mes.ncr.domain.NcrOrder;
+import com.nexus.mes.ncr.domain.bo.NcrOrderBo;
 import com.nexus.mes.ncr.domain.vo.NcrOrderVo;
 import com.nexus.mes.ncr.mapper.NcrDefectMapper;
 import com.nexus.mes.ncr.mapper.NcrOrderMapper;
@@ -53,6 +56,8 @@ class NcrOrderServiceImplTest {
     @Mock private NcrDefectMapper defectMapper;
     @Mock private AutoCodeUtil autoCodeUtil;
     @Mock private ILtLotService ltLotService;
+    @Mock private LtLotMapper ltLotMapper;
+    @Mock private com.nexus.mes.qc.mapper.QcIpqcMapper qcIpqcMapper;
     @Mock private IProAndonService proAndonService;
     @Mock private INcrReworkOrderService ncrReworkOrderService;
     @Mock private INcrDefectService defectService;
@@ -61,6 +66,20 @@ class NcrOrderServiceImplTest {
 
     @Captor private ArgumentCaptor<NcrOrder> orderCaptor;
     private MockedStatic<LambdaUtils> lambdaUtilsMock;
+
+    @BeforeAll
+    static void initLotTableInfo() {
+        // LtLot 的真实列缓存: resolveLot/lotCodeOf 会构造 LtLot 查询与条件更新
+        com.baomidou.mybatisplus.core.MybatisConfiguration configuration =
+            new com.baomidou.mybatisplus.core.MybatisConfiguration();
+        com.baomidou.mybatisplus.core.metadata.TableInfoHelper.initTableInfo(
+            new org.apache.ibatis.builder.MapperBuilderAssistant(configuration, ""), LtLot.class);
+    }
+
+    @AfterAll
+    static void clearLotTableInfo() {
+        com.baomidou.mybatisplus.core.metadata.TableInfoHelper.remove(LtLot.class);
+    }
 
     @BeforeEach
     void setUp() {
@@ -75,6 +94,12 @@ class NcrOrderServiceImplTest {
         cols.put("CLOSEDTIME", col("closed_time")); cols.put("CREATEDTIME", col("created_time"));
         cols.put("REMARK", col("remark")); cols.put("LOTID", col("lot_id"));
         cols.put("DISPOSITIONSIGNATUREID", col("disposition_signature_id"));
+        // MES-NCR-03: updateByBo 白名单字段
+        cols.put("WONO", col("wo_no")); cols.put("CARDID", col("card_id"));
+        cols.put("STEPRECORDID", col("step_record_id")); cols.put("PROCESSID", col("process_id"));
+        cols.put("PROCESSNAME", col("process_name")); cols.put("MATERIALID", col("material_id"));
+        cols.put("MATERIALCODE", col("material_code")); cols.put("MATERIALNAME", col("material_name"));
+        cols.put("LOTCODE", col("lot_code"));
         lambdaUtilsMock.when(() -> LambdaUtils.getColumnMap(NcrOrder.class)).thenReturn(cols);
     }
     private ColumnCache col(String c) { return new ColumnCache(c, c); }
@@ -348,5 +373,152 @@ class NcrOrderServiceImplTest {
             Long.class, String.class, String.class, String.class, String.class);
         assertNotNull(m.getAnnotation(Transactional.class), "disposeWithSignature 必须声明 @Transactional");
         assertNotNull(m.getAnnotation(Lock4j.class), "disposeWithSignature 必须持有与 dispose 相同的 NCR 锁");
+    }
+
+    // ==================== MES-NCR-01: lotId 必须落真实批次 ====================
+
+    @Test
+    void autoCreateFromIqc_linksRealLotFromIqcAssociation() {
+        stubCreate(100L, "NCR-100");
+        LtLot lot = new LtLot();
+        lot.setLotId(500L);
+        lot.setLotCode("LOT-500");
+        when(ltLotMapper.selectList(any())).thenReturn(java.util.List.of(lot));
+
+        service.autoCreateFromIqc(9L, 9001L, 1001L, "");
+
+        verify(baseMapper).insert(orderCaptor.capture());
+        assertEquals(500L, orderCaptor.getValue().getLotId(), "MES-NCR-01: 必须传入真实批次ID");
+        verify(ltLotService).quarantineByNcr(eq(500L), any(), any());
+    }
+
+    @Test
+    void autoCreateFromIqc_withoutResolvableLot_keepsNullAndDoesNotFakeLot() {
+        stubCreate(101L, "NCR-101");
+        when(ltLotMapper.selectList(any())).thenReturn(java.util.List.of());
+
+        service.autoCreateFromIqc(10L, 9002L, 1002L, "");
+
+        verify(baseMapper).insert(orderCaptor.capture());
+        assertNull(orderCaptor.getValue().getLotId(), "无法取得批次时不得伪造批次ID");
+        verify(ltLotService, never()).quarantineByNcr(any(), any(), any());
+    }
+
+    // ==================== MES-NCR-02: 批次动作失败必须回滚 ====================
+
+    @Test
+    void dispose_scrap_batchActionFailure_rollsBackWithoutClosing() {
+        NcrOrder o = new NcrOrder();
+        o.setNcrId(1L); o.setNcrCode("NCR-001"); o.setStatus("OPEN"); o.setLotId(20L);
+        when(baseMapper.selectById(1L)).thenReturn(o);
+        when(baseMapper.update(isNull(), any())).thenReturn(1);
+        when(ltLotService.scrap(eq(20L), any())).thenThrow(new RuntimeException("批次状态非 QUARANTINED"));
+
+        RuntimeException ex = assertThrows(RuntimeException.class, () -> service.dispose(1L, "SCRAP", "报废"));
+
+        assertTrue(ex.getMessage().contains("批次报废失败"), "MES-NCR-02: 批次报废失败必须抛出回滚");
+        // 只允许处置 CAS(DISPOSITION) 一次写入; 不得继续 CAS 到 CLOSED
+        verify(baseMapper, times(1)).update(isNull(), any());
+    }
+
+    @Test
+    void dispose_accept_batchReleaseFailure_rollsBackWithoutClosing() {
+        NcrOrder o = new NcrOrder();
+        o.setNcrId(2L); o.setNcrCode("NCR-002"); o.setStatus("REVIEW"); o.setLotId(21L);
+        when(baseMapper.selectById(2L)).thenReturn(o);
+        when(baseMapper.update(isNull(), any())).thenReturn(1);
+        when(ltLotService.release(21L)).thenThrow(new RuntimeException("批次状态已变更"));
+
+        RuntimeException ex = assertThrows(RuntimeException.class, () -> service.dispose(2L, "ACCEPT_AS_IS", "让步"));
+
+        assertTrue(ex.getMessage().contains("批次放行失败"), "MES-NCR-02: 批次放行失败必须抛出回滚");
+        verify(baseMapper, times(1)).update(isNull(), any());
+    }
+
+    // ==================== MES-NCR-03: 编辑不得回落处置后的状态 ====================
+
+    @Test
+    @SuppressWarnings("rawtypes")
+    void updateByBo_usesConditionalUpdate_neverUpdateById() {
+        NcrOrder o = new NcrOrder();
+        o.setNcrId(1L);
+        o.setStatus("OPEN");
+        when(baseMapper.selectById(1L)).thenReturn(o);
+        when(baseMapper.update(isNull(), any())).thenReturn(1);
+
+        NcrOrderBo bo = new NcrOrderBo();
+        bo.setNcrId(1L);
+        bo.setWoNo("WO-001");
+        bo.setDefectQty(new BigDecimal("3"));
+
+        assertTrue(service.updateByBo(bo));
+
+        // 绝不整实体 updateById: 否则会把并发的 CLOSED/DISPOSITION 状态写回去
+        verify(baseMapper, never()).updateById(any(NcrOrder.class));
+        ArgumentCaptor<Wrapper> captor = ArgumentCaptor.forClass(Wrapper.class);
+        verify(baseMapper).update(isNull(), captor.capture());
+        LambdaUpdateWrapper<?> wrapper = (LambdaUpdateWrapper<?>) captor.getValue();
+        assertFalse(String.valueOf(wrapper.getSqlSet()).contains("status"),
+            "MES-NCR-03: status 不在可编辑白名单内, 不得出现在 SET 中");
+        assertTrue(String.valueOf(wrapper.getSqlSegment()).contains("status"),
+            "必须带 status IN (OPEN, REVIEW) 的条件守卫");
+    }
+
+    @Test
+    void updateByBo_statusChangedConcurrently_throws() {
+        NcrOrder o = new NcrOrder();
+        o.setNcrId(1L);
+        o.setStatus("OPEN");
+        when(baseMapper.selectById(1L)).thenReturn(o);
+        when(baseMapper.update(isNull(), any())).thenReturn(0);
+
+        NcrOrderBo bo = new NcrOrderBo();
+        bo.setNcrId(1L);
+        bo.setWoNo("WO-001");
+
+        ServiceException ex = assertThrows(ServiceException.class, () -> service.updateByBo(bo));
+
+        assertTrue(ex.getMessage().contains("状态已变更"), ex.getMessage());
+        verify(baseMapper, never()).updateById(any(NcrOrder.class));
+    }
+
+    @Test
+    void updateByBo_rejectsDispositionStatus() {
+        NcrOrder o = new NcrOrder();
+        o.setNcrId(1L);
+        o.setStatus("DISPOSITION");
+        when(baseMapper.selectById(1L)).thenReturn(o);
+
+        NcrOrderBo bo = new NcrOrderBo();
+        bo.setNcrId(1L);
+
+        assertThrows(RuntimeException.class, () -> service.updateByBo(bo));
+        verify(baseMapper, never()).update(any(), any());
+        verify(baseMapper, never()).updateById(any(NcrOrder.class));
+    }
+
+    // ==================== MES-NCR-05: 工序出口 sourceId 唯一定位一次出站 ====================
+
+    @Test
+    void autoCreateFromExit_usesStepRecordIdAsSourceId() {
+        stubCreate(300L, "NCR-300");
+
+        service.autoCreateFromExit(11L, 22L, 33L, BigDecimal.ONE, "");
+
+        verify(baseMapper).insert(orderCaptor.capture());
+        assertEquals(22L, orderCaptor.getValue().getSourceId(),
+            "MES-NCR-05: sourceId 必须能唯一定位一次出站(stepRecordId), 否则幂等检查被绕过");
+    }
+
+    // ==================== MES-NCR-06: 处置方式白名单 ====================
+
+    @Test
+    void disposeWithSignature_rejectsUnknownDispositionBeforeSigning() {
+        ServiceException ex = assertThrows(ServiceException.class,
+            () -> service.disposeWithSignature(1L, "FOO", null, SignAuthMethod.PASSWORD, "cred"));
+
+        assertTrue(ex.getMessage().contains("不支持的处置方式"), ex.getMessage());
+        verifyNoInteractions(eSignatureService);
+        verifyNoInteractions(baseMapper);
     }
 }

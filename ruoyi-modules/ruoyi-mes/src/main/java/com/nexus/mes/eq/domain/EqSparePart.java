@@ -12,8 +12,15 @@ import java.math.BigDecimal;
 /**
  * MES备件主数据对象 eq_spare_part
  * <p>
- * current_stock 为冗余字段, 由出入库流水({@code eq_spare_stock_log})维护,
- * 出库用条件更新 current_stock &gt;= quantity 防超卖。
+ * <b>账本口径（MES-EQ-04 MVP）</b>：ERP 仓储（{@code wm_material_stock}）是<b>唯一实物账本</b>。
+ * <ul>
+ *   <li>{@link #materialId} 把备件映射到 ERP 物料（{@code bd_material}），是过账与可用量查询的前提；</li>
+ *   <li>{@link #warehouseId} 指定备件在 ERP 中的存放仓库，过账到 {@code wm_material_stock} 时必填；</li>
+ *   <li>{@link #currentStock} 为 <b>ERP 库存的派生冗余缓存（只读视图语义）</b>：
+ *       同步方向 = ERP → MES，时机 = 每次备件出入库过账后由 {@code EqSparePartServiceImpl} 刷新；
+ *       不再作为权威账本，查询可用量一律读 ERP（在库 − 已预留，且 {@code frozen_flag = 0}）。
+ *       历史遗留：升级前的数据由增量脚本 {@code 2026-09-20-mes-spare-erp.sql} 标记为待对账。</li>
+ * </ul>
  *
  * @author Nexus
  */
@@ -47,8 +54,21 @@ public class EqSparePart extends TenantEntity {
     /** 安全库存 */
     private BigDecimal safetyStock;
 
-    /** 当前库存(冗余, 出入库流水维护) */
+    /** 当前库存(ERP 库存的派生冗余缓存, 只读视图语义; 权威账本在 wm_material_stock) */
     private BigDecimal currentStock;
+
+    /** ERP物料ID(bd_material.material_id), NULL 表示未映射 */
+    private Long materialId;
+
+    /** ERP仓库ID(wm_warehouse.warehouse_id), 过账到 ERP 仓储的目标仓库 */
+    private Long warehouseId;
+
+    /**
+     * 备件参考单价(人工维护, 成本口径)。
+     * <p>出入库过账时由<b>服务端从本表读取</b>后随 MQ 消息下发，供 ERP 侧
+     * {@code IInventoryValuationService} 做移动平均计价；<b>绝不采信客户端传入的单价</b>。</p>
+     */
+    private BigDecimal unitCost;
 
     /** 备注 */
     private String remark;

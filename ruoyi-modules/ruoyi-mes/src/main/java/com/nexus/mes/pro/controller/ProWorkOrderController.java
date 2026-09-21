@@ -140,4 +140,28 @@ public class ProWorkOrderController extends BaseController {
         // 使用 R.ok(String msg, T data) 重载，避免 R.ok(String) 把 ID 误塞进 msg
         return R.ok("查询成功", proWorkOrderService.getProcInsId(String.valueOf(mesWoId)));
     }
+
+    /**
+     * 取消MES工单(CREATED/RELEASED/APPROVING -> CANCELLED)
+     * <p>工单下存在在制流转卡时拒绝取消(MES-PRO-11)。</p>
+     */
+    @SaCheckPermission("mes:pro:work:cancel")
+    @Log(title = "MES工单取消", businessType = BusinessType.UPDATE)
+    @PutMapping("/cancel/{mesWoId}")
+    public R<Void> cancel(@PathVariable Long mesWoId,
+                          @RequestParam(required = false) String reason) {
+        proWorkOrderService.cancel(mesWoId, reason);
+        return R.ok();
+    }
+
+    /**
+     * 关闭MES工单(COMPLETED/PARTIAL_COMPLETED -> CLOSED)
+     */
+    @SaCheckPermission("mes:pro:work:close")
+    @Log(title = "MES工单关闭", businessType = BusinessType.UPDATE)
+    @PutMapping("/close/{mesWoId}")
+    public R<Void> close(@PathVariable Long mesWoId) {
+        proWorkOrderService.close(mesWoId);
+        return R.ok();
+    }
 }

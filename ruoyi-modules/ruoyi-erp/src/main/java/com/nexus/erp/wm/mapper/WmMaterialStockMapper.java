@@ -36,7 +36,48 @@ public interface WmMaterialStockMapper extends BaseMapperPlus<WmMaterialStock, W
     List<WmLocationStockAggVo> aggregateStockByWarehouse(@Param("warehouseId") Long warehouseId);
 
     /**
-     * 原子扣减库存
+     * 原子扣减库存（含冻结守卫）
+     * <p>ERP-WM-09：守卫下沉到原子 SQL 加 {@code frozen_flag = 0}，消除「读库存行 → IQC 冻结 → 扣减」
+     * 窗口内冻结被绕过（不合格品被领用）的 TOCTOU 缺陷。
+     * 盘点盘亏需调整冻结行时改用 {@link #deductStockIgnoreFrozen}。</p>
+     *
+     * @param stockId   库存ID
+     * @param deductQty 扣减数量
+     * @param version   乐观锁版本号
+     * @return 影响行数，0 表示库存不足 / 已冻结 / 版本冲突
+     */
+    @Update("UPDATE wm_material_stock SET stock_quantity = stock_quantity - #{deductQty}, " +
+            "version = version + 1, update_time = NOW() " +
+            "WHERE stock_id = #{stockId} AND stock_quantity >= #{deductQty} " +
+            "AND frozen_flag = 0 AND version = #{version}")
+    int deductStock(@Param("stockId") Long stockId,
+                    @Param("deductQty") BigDecimal deductQty,
+                    @Param("version") Integer version);
+
+    /**
+     * 原子扣减库存（可用量守卫，ERP-WM-02）
+     * <p>与 {@link #deductStock} 的区别：扣减上限按「可用量 = stock_quantity - reserved_quantity」判定。
+     * 供生产领料 / 杂项出库 / 库位转储 / 委外发料等「不得扣穿他人预留」的出库路径使用；
+     * 同时保留 {@code frozen_flag = 0} 守卫（ERP-WM-09）。</p>
+     *
+     * @param stockId   库存ID
+     * @param deductQty 扣减数量
+     * @param version   乐观锁版本号
+     * @return 影响行数，0 表示可用量不足 / 已冻结 / 版本冲突
+     */
+    @Update("UPDATE wm_material_stock SET stock_quantity = stock_quantity - #{deductQty}, " +
+            "version = version + 1, update_time = NOW() " +
+            "WHERE stock_id = #{stockId} " +
+            "AND (stock_quantity - IFNULL(reserved_quantity, 0)) >= #{deductQty} " +
+            "AND frozen_flag = 0 AND version = #{version}")
+    int deductStockAvailable(@Param("stockId") Long stockId,
+                             @Param("deductQty") BigDecimal deductQty,
+                             @Param("version") Integer version);
+
+    /**
+     * 原子扣减库存（不带冻结守卫，仅供盘点盘亏使用）
+     * <p>盘点必须能把冻结行调整到实盘值（冻结是质量状态、不是库存维度），
+     * 因此该入口只保留「不超扣」与乐观锁守卫，调用方须自行确认业务语义。</p>
      *
      * @param stockId   库存ID
      * @param deductQty 扣减数量
@@ -46,9 +87,24 @@ public interface WmMaterialStockMapper extends BaseMapperPlus<WmMaterialStock, W
     @Update("UPDATE wm_material_stock SET stock_quantity = stock_quantity - #{deductQty}, " +
             "version = version + 1, update_time = NOW() " +
             "WHERE stock_id = #{stockId} AND stock_quantity >= #{deductQty} AND version = #{version}")
-    int deductStock(@Param("stockId") Long stockId,
-                    @Param("deductQty") BigDecimal deductQty,
-                    @Param("version") Integer version);
+    int deductStockIgnoreFrozen(@Param("stockId") Long stockId,
+                                @Param("deductQty") BigDecimal deductQty,
+                                @Param("version") Integer version);
+
+    /**
+     * 出库成本结转（原子相对扣减，ERP-WM-01）
+     * <p>原实现先 {@code selectById} 再用「扣减后余量」校验 {@code outQty > qty}，导致单批次扣减超过
+     * 扣减后余量（整批出库 100% 命中）即抛「出库数量超过库存数量」并整单回滚。
+     * 这里改为原子相对扣减，数量充足性完全由 {@code deductStock*} 的守卫保证，不再重复校验。</p>
+     *
+     * @param stockId 库存ID
+     * @param outQty  出库数量
+     * @return 影响行数
+     */
+    @Update("UPDATE wm_material_stock SET total_cost = GREATEST(IFNULL(total_cost, 0) - IFNULL(unit_cost, 0) * #{outQty}, 0), " +
+            "update_time = NOW() " +
+            "WHERE stock_id = #{stockId}")
+    int issueStockCost(@Param("stockId") Long stockId, @Param("outQty") BigDecimal outQty);
 
     /**
      * 原子增加库存
@@ -101,6 +157,7 @@ public interface WmMaterialStockMapper extends BaseMapperPlus<WmMaterialStock, W
             "WHERE stock_id = #{stockId} " +
             "AND stock_quantity >= #{outQty} " +
             "AND reserved_quantity >= #{consumeReservedQty} " +
+            "AND frozen_flag = 0 " +
             "AND version = #{version}")
     int deductStockWithReserved(@Param("stockId") Long stockId,
                                 @Param("outQty") BigDecimal outQty,

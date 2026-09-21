@@ -149,9 +149,12 @@ public class PuPurchaseRequisitionServiceImpl implements IPuPurchaseRequisitionS
         if (entity.getStatus() == null) {
             entity.setStatus(STATUS_DRAFT);
         }
+        // 占位：下面会被强制覆盖（保留顺序以便阅读）
         if (entity.getRequisitionDate() == null) {
             entity.setRequisitionDate(new Date());
         }
+        // ★ 服务端强制状态机(ERP-PU-04)：不采信客户端传入的 status，新建单一律为草稿
+        entity.setStatus(STATUS_DRAFT);
         int rows = baseMapper.insert(entity);
         insertLines(entity.getRequisitionId(), bo.getPuPurchaseRequisitionLineList());
         return rows;
@@ -173,6 +176,8 @@ public class PuPurchaseRequisitionServiceImpl implements IPuPurchaseRequisitionS
         if (!STATUS_DRAFT.equals(current.getStatus()) && !STATUS_SUBMITTED.equals(current.getStatus())) {
             throw new ServiceException("当前状态不允许编辑采购申请单");
         }
+        // ★ 状态只能由 submit/afterFlowHandle/close 等状态机入口变更(ERP-PU-04)
+        entity.setStatus(null);
         deleteLinesByRequisitionId(entity.getRequisitionId());
         insertLines(entity.getRequisitionId(), bo.getPuPurchaseRequisitionLineList());
         return baseMapper.updateById(entity);
@@ -452,7 +457,10 @@ public class PuPurchaseRequisitionServiceImpl implements IPuPurchaseRequisitionS
     public List<Long> generateFromLowStock() {
         List<BdMaterial> materials = bdMaterialMapper.selectList(
             new LambdaQueryWrapper<BdMaterial>()
-                .eq(BdMaterial::getStatus, "ACTIVE")
+                // ★ ERP-BD-02: bd_material.status 是 tinyint(0=停用/1=启用)，
+                // 不能与供应商状态字符串 'ACTIVE' 比较（MySQL 隐式转换为 0，只会命中停用物料）。
+                // 与 WmStockAlertServiceImpl:154 保持一致，用数值比较。
+                .eq(BdMaterial::getStatus, 1L)
                 .isNotNull(BdMaterial::getSafetyStock)
                 .gt(BdMaterial::getSafetyStock, BigDecimal.ZERO));
 

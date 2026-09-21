@@ -157,9 +157,8 @@ public class PuPurchaseOrderServiceImpl implements IPuPurchaseOrderService {
         if (StringUtils.isBlank(entity.getOrderNo())) {
             entity.setOrderNo(autoCodeUtil.genSerialCode("PU_ORDER_CODE", null));
         }
-        if (StringUtils.isBlank(entity.getStatus())) {
-            entity.setStatus(STATUS_DRAFT);
-        }
+        // ★ 服务端强制状态机(ERP-PU-04)：不采信客户端传入的 status，新建单一律为草稿
+        entity.setStatus(STATUS_DRAFT);
         if (entity.getOrderDate() == null) {
             entity.setOrderDate(new Date());
         }
@@ -186,6 +185,8 @@ public class PuPurchaseOrderServiceImpl implements IPuPurchaseOrderService {
         if (!STATUS_DRAFT.equals(current.getStatus()) && !STATUS_SUBMITTED.equals(current.getStatus())) {
             throw new ServiceException("当前状态不允许编辑采购订单");
         }
+        // ★ 状态只能由 submit/afterFlowHandle/close/cancel 等状态机入口变更(ERP-PU-04)
+        entity.setStatus(null);
         deleteLines(entity.getOrderId());
         saveLines(entity.getOrderId(), bo.getLineList());
         return baseMapper.updateById(entity);

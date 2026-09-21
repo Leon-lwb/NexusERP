@@ -37,9 +37,17 @@
       </el-table-column>
       <el-table-column label="发票号" align="center" prop="invoiceNo" width="180" />
       <el-table-column label="收付款单号" align="center" prop="receiptNo" width="180" />
-      <el-table-column label="核销金额" align="center" prop="settleAmount" width="120" />
+      <!-- FE-ERP-09：核销金额右对齐，便于按位比较 -->
+      <el-table-column label="核销金额" align="right" prop="settleAmount" width="120" />
       <el-table-column label="核销日期" align="center" prop="settleDate" width="120" />
       <el-table-column label="操作人" align="center" prop="operator" width="120" />
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
+        <template #default="scope">
+          <el-button link type="danger" icon="RefreshLeft" @click="handleUnsettle(scope.row)" v-hasPermi="['fin:arap:settlement:unsettle']"
+            >反核销</el-button
+          >
+        </template>
+      </el-table-column>
     </el-table>
 
     <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize" @pagination="getList" />
@@ -79,7 +87,7 @@
 </template>
 
 <script setup lang="ts" name="FinSettlement">
-import { listFinSettlement, settleFinSettlement, listOpenItems } from '@/api/erp/fin/settlement';
+import { listFinSettlement, settleFinSettlement, listOpenItems, unsettleFinSettlement } from '@/api/erp/fin/settlement';
 import { FinSettlementVO, FinSettlementForm, FinSettlementQuery, OpenItemVO } from '@/api/erp/fin/settlement/types';
 import type { FormInstance } from 'element-plus';
 import { useCrud } from '@/composables/useCrud';
@@ -153,6 +161,20 @@ function submitSettle() {
     open.value = false;
     getList();
   });
+}
+
+/** 反核销（FIN-ARAP-02）：回退发票/收付款单金额与状态并逻辑删除核销记录，不可逆，需二次确认 */
+function handleUnsettle(row: FinSettlementVO) {
+  proxy.$modal
+    .confirm(`是否确认对核销单【${row.settlementNo}】执行反核销？将回退发票与收付款单的已核销金额及状态。`)
+    .then(async () => {
+      await unsettleFinSettlement(row.settlementId);
+      proxy.$modal.msgSuccess('反核销成功');
+      getList();
+    })
+    .catch(() => {
+      /* 用户取消 */
+    });
 }
 
 getList();

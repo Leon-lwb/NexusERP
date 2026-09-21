@@ -41,6 +41,10 @@ public class SpcDataPointVo implements Serializable {
     @ExcelProperty("值")
     private BigDecimal value;
 
+    /** 组内离散度: 极差R/标准差S/移动极差MR */
+    @ExcelProperty("组内离散度")
+    private BigDecimal subValue;
+
     /** 是否超控制限(0/1) */
     @ExcelProperty("是否OOC")
     private String isOoc;

@@ -42,6 +42,10 @@
       <el-col :span="1.5">
         <el-button type="warning" plain icon="Bell" @click="handleDue()" v-hasPermi="['mes:tg:tooling:list']">保养到期</el-button>
       </el-col>
+      <!-- MES-TG-05：校准到期/超期预警（服务端窗口：今天 ~ 今天+7 天，含已超期） -->
+      <el-col :span="1.5">
+        <el-button type="danger" plain icon="AlarmClock" @click="handleCalibrationDue()" v-hasPermi="['mes:tg:tooling:list']">校准到期</el-button>
+      </el-col>
       <el-col :span="1.5">
         <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete()" v-hasPermi="['mes:tg:tooling:remove']"
           >删除</el-button
@@ -50,7 +54,7 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="list" show-overflow-tooltip @selection-change="handleSelectionChange">
+    <el-table v-loading="loading" :data="list" show-overflow-tooltip :row-class-name="rowClassName" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="工装编码" prop="toolingCode" min-width="140" />
       <el-table-column label="工装名称" prop="toolingName" min-width="130" />
@@ -63,10 +67,29 @@
           <span :class="lifeWarn(scope.row) ? 'text-danger' : ''"> {{ scope.row.usedCount || 0 }} / {{ scope.row.totalLifeCount ?? '-' }} </span>
         </template>
       </el-table-column>
+      <!-- MES-TG-01/TG-05：校准字段（后端 TgToolingVo.calibrationCycleDays / lastCalibrationDate /
+           nextCalibrationDate / calibrationResult / calibrationOverdue），超期行由 rowClassName 高亮 -->
+      <el-table-column label="校准周期(天)" prop="calibrationCycleDays" align="right" width="110">
+        <template #default="scope">{{ scope.row.calibrationCycleDays ?? '未纳入' }}</template>
+      </el-table-column>
+      <el-table-column label="上次校准日" align="center" width="110">
+        <template #default="scope">{{ fmtDate(scope.row.lastCalibrationDate) }}</template>
+      </el-table-column>
+      <el-table-column label="下次校准日" align="center" width="110">
+        <template #default="scope">
+          <span :class="scope.row.calibrationOverdue ? 'text-danger' : ''">{{ fmtDate(scope.row.nextCalibrationDate) }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="校准结果" align="center" width="100">
+        <template #default="scope">
+          <dict-tag v-if="scope.row.calibrationResult" :options="mes_tooling_calibration_result" :value="scope.row.calibrationResult" />
+          <span v-else>-</span>
+        </template>
+      </el-table-column>
       <el-table-column label="状态" prop="status" align="center" width="90">
         <template #default="scope"><dict-tag :options="mes_tooling_status" :value="scope.row.status" /></template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="340" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="400" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button
             link
@@ -112,6 +135,16 @@
             v-if="scope.row.status === 'MAINTENANCE'"
             v-hasPermi="['mes:tg:tooling:maintain']"
             >完成保养</el-button
+          >
+          <!-- MES-TG-01：登记校准（服务端 CAS IDLE -> CALIBRATING -> IDLE，并算下次校准日） -->
+          <el-button
+            link
+            type="primary"
+            icon="AlarmClock"
+            @click="handleCalibrate(scope.row)"
+            v-if="scope.row.status === 'IDLE'"
+            v-hasPermi="['mes:tg:tooling:calibrate']"
+            >登记校准</el-button
           >
           <el-button
             link
@@ -186,6 +219,19 @@
           <el-col :span="12">
             <el-form-item label="采购成本">
               <el-input-number v-model="form.purchaseCost" :min="0" :precision="2" controls-position="right" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <!-- MES-TG-01：把工装纳入校准管理（校准周期决定下次校准日，为空表示不纳入） -->
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="校准周期(天)">
+              <el-input-number v-model="form.calibrationCycleDays" :min="0" controls-position="right" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="下次校准日">
+              <el-date-picker v-model="form.nextCalibrationDate" type="date" value-format="YYYY-MM-DD" style="width: 100%" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -267,6 +313,75 @@
         <el-button type="primary" @click="submitCompleteMaintain()">确认完成</el-button>
         <el-button @click="maintainDialog.visible = false">取 消</el-button>
       </template>
+    </el-dialog>
+
+    <!-- 登记校准(MES-TG-01): IDLE -> CALIBRATING -> IDLE, 下次校准日由服务端按 校准日期+周期 计算 -->
+    <el-dialog title="登记校准" v-model="calibrationDialog.visible" width="520px" append-to-body>
+      <el-alert
+        type="info"
+        :closable="false"
+        show-icon
+        class="mb-2"
+        title="下次校准日由服务端按「校准日期 + 校准周期」计算，不接受手工指定"
+        description="校准结果为「不合格」时，服务端把下次校准日置为本次日期，工装立即进入校准超期（不可领用/进站），复校通过前不得使用。"
+      />
+      <el-form :model="calibrationForm" label-width="110px">
+        <el-form-item label="工装">
+          <el-input :model-value="calibrationToolingLabel" disabled />
+        </el-form-item>
+        <el-form-item label="校准日期">
+          <el-date-picker
+            v-model="calibrationForm.calibrationDate"
+            type="date"
+            value-format="YYYY-MM-DD"
+            placeholder="留空取当前日期"
+            style="width: 100%"
+          />
+        </el-form-item>
+        <el-form-item label="校准周期(天)">
+          <el-input-number v-model="calibrationForm.calibrationCycleDays" :min="0" controls-position="right" style="width: 100%" />
+          <div class="text-gray-400 text-xs mt-1">留空沿用台账上的校准周期；为 0 或留空表示不纳入校准管理</div>
+        </el-form-item>
+        <el-form-item label="校准结果">
+          <el-select v-model="calibrationForm.calibrationResult" style="width: 100%">
+            <el-option v-for="d in mes_tooling_calibration_result" :key="d.value" :label="d.label" :value="d.value" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="校准备注">
+          <el-input v-model="calibrationForm.calibrationRemark" type="textarea" :rows="2" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button type="primary" :loading="calibrationSubmitting" @click="submitCalibration()">确认登记</el-button>
+        <el-button @click="calibrationDialog.visible = false">取 消</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 校准到期/超期预警(MES-TG-05): 今天 ~ 今天+7 天, 含已超期 -->
+    <el-dialog title="校准到期预警" v-model="calibrationDueDialog.visible" width="880px" append-to-body>
+      <el-table :data="calibrationDueDialog.list" show-overflow-tooltip max-height="420">
+        <el-table-column label="工装编码" prop="toolingCode" min-width="140" />
+        <el-table-column label="工装名称" prop="toolingName" min-width="130" />
+        <el-table-column label="校准周期(天)" prop="calibrationCycleDays" align="right" width="110" />
+        <el-table-column label="上次校准日" align="center" width="110">
+          <template #default="scope">{{ fmtDate(scope.row.lastCalibrationDate) }}</template>
+        </el-table-column>
+        <el-table-column label="下次校准日" align="center" width="110">
+          <template #default="scope">
+            <span :class="scope.row.calibrationOverdue ? 'text-danger' : ''">{{ fmtDate(scope.row.nextCalibrationDate) }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="校准状态" align="center" width="100">
+          <template #default="scope">
+            <el-tag v-if="scope.row.calibrationOverdue" type="danger" size="small">已超期</el-tag>
+            <el-tag v-else type="warning" size="small">即将到期</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="状态" prop="status" align="center" width="90">
+          <template #default="scope"><dict-tag :options="mes_tooling_status" :value="scope.row.status" /></template>
+        </el-table-column>
+      </el-table>
+      <el-empty v-if="calibrationDueDialog.list.length === 0" description="近 7 天内无校准到期工装" />
     </el-dialog>
 
     <!-- 车间选择对话框 -->
@@ -406,9 +521,11 @@ import {
   startMaintainTooling,
   completeMaintainTooling,
   scrapTooling,
-  listMaintenanceDue
+  listMaintenanceDue,
+  listCalibrationDue,
+  registerCalibration
 } from '@/api/mes/tg/tooling';
-import type { TgToolingVO, TgToolingQuery, TgCheckoutBo, TgMaintainCompleteBo } from '@/api/mes/tg/tooling';
+import type { TgToolingVO, TgToolingQuery, TgCheckoutBo, TgMaintainCompleteBo, TgCalibrationBo } from '@/api/mes/tg/tooling';
 import { previewCode } from '@/api/system/autocode/rule';
 import { listWorkshop } from '@/api/erp/bd/workshop';
 import { listWorkstation } from '@/api/erp/bd/workstation';
@@ -418,8 +535,8 @@ import type { FormInstance } from 'element-plus';
 import { useCrud } from '@/composables/useCrud';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
-const { mes_tooling_status, mes_tooling_type, tg_maintenance_type, prd_wo_status } = toRefs<any>(
-  proxy?.useDict('mes_tooling_status', 'mes_tooling_type', 'tg_maintenance_type', 'prd_wo_status')
+const { mes_tooling_status, mes_tooling_type, tg_maintenance_type, prd_wo_status, mes_tooling_calibration_result } = toRefs<any>(
+  proxy?.useDict('mes_tooling_status', 'mes_tooling_type', 'tg_maintenance_type', 'prd_wo_status', 'mes_tooling_calibration_result')
 );
 
 const toolingRef = ref<FormInstance>();
@@ -433,6 +550,13 @@ const returnForm = reactive<{ usageCount: number; usageHours: number; remark: st
 const maintainDialog = reactive({ visible: false });
 const maintainForm = reactive<TgMaintainCompleteBo>({ maintainType: 'PLANNED' });
 const dueDialog = reactive({ visible: false, list: [] as TgToolingVO[] });
+
+// ===== 校准(MES-TG-01/TG-05) =====
+const calibrationDialog = reactive({ visible: false });
+const calibrationSubmitting = ref(false);
+const calibrationToolingLabel = ref('');
+const calibrationForm = reactive<TgCalibrationBo>({ calibrationResult: 'PASS' });
+const calibrationDueDialog = reactive({ visible: false, list: [] as TgToolingVO[] });
 
 const userSelectTarget = ref<'operator' | 'maintainer'>('operator');
 const workshopDialog = reactive({
@@ -509,6 +633,8 @@ const {
     totalLifeHours: undefined,
     purchaseDate: '',
     purchaseCost: undefined,
+    calibrationCycleDays: undefined,
+    nextCalibrationDate: '',
     remark: ''
   }),
   onReset: () => {
@@ -598,6 +724,53 @@ const handleDue = async () => {
   dueDialog.list = res.data;
   dueDialog.visible = true;
 };
+
+// ===== 校准(MES-TG-01/TG-05) =====
+
+/** 校准到期/超期预警：服务端窗口为 今天 ~ 今天+7 天，含已超期 */
+const handleCalibrationDue = async () => {
+  const res = await listCalibrationDue();
+  calibrationDueDialog.list = res.data || [];
+  calibrationDueDialog.visible = true;
+};
+
+/** 打开「登记校准」对话框 */
+const handleCalibrate = (row: TgToolingVO) => {
+  currentToolingId.value = row.toolingId;
+  calibrationToolingLabel.value = `${row.toolingCode} - ${row.toolingName}`;
+  Object.assign(calibrationForm, {
+    calibrationCycleDays: row.calibrationCycleDays,
+    calibrationDate: undefined,
+    calibrationResult: 'PASS',
+    calibratedBy: undefined,
+    calibrationRemark: '',
+    remark: undefined
+  });
+  calibrationDialog.visible = true;
+};
+
+/** 提交登记校准：下次校准日由服务端计算（TgToolingServiceImpl.registerCalibration），前端不传 */
+const submitCalibration = async () => {
+  if (!calibrationForm.calibrationResult) {
+    proxy?.$modal.msgWarning('请选择校准结果');
+    return;
+  }
+  calibrationSubmitting.value = true;
+  try {
+    await registerCalibration(currentToolingId.value, calibrationForm);
+    proxy?.$modal.msgSuccess('校准已登记');
+    calibrationDialog.visible = false;
+    getList();
+  } finally {
+    calibrationSubmitting.value = false;
+  }
+};
+
+/** 校准超期行高亮（MES-TG-01，后端 TgToolingVo.calibrationOverdue） */
+const rowClassName = ({ row }: { row: TgToolingVO }) => (row.calibrationOverdue ? 'calibration-overdue-row' : '');
+
+/** 日期格式化：截取到日（与 mes/eq/oee、mes/eq/repair/statistics 同型实现） */
+const fmtDate = (s?: string) => (s ? String(s).substring(0, 10) : '-');
 
 const lifeWarn = (row: TgToolingVO) => {
   if (!row.totalLifeCount) return false;
@@ -690,5 +863,9 @@ getList();
 .text-danger {
   color: var(--el-color-danger);
   font-weight: bold;
+}
+/* MES-TG-01：校准超期行高亮（row-class-name 落在 <tr> 上，需 :deep 穿透 scoped） */
+:deep(.calibration-overdue-row) > td.el-table__cell {
+  background-color: var(--el-color-danger-light-9);
 }
 </style>

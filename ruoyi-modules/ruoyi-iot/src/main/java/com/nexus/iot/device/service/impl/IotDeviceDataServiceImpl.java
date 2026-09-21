@@ -54,21 +54,41 @@ public class IotDeviceDataServiceImpl implements IIotDeviceDataService {
     }
 
     /**
-     * 查询设备历史数据，按采集时间区间过滤并倒序返回。
+     * 查询设备历史数据，按采集时间区间过滤并倒序返回，LIMIT 下推到 DB。
+     * <p>
+     * IOT-DATA-01：原实现无 DB 层 LIMIT，先全量载入内存再由 Controller {@code subList} 截断，
+     * 单设备 24h（1Hz 上报即 86400 行）即可造成数百 MB 堆占用。现由调用方传入上限并下推 SQL。
      *
      * @param deviceId 设备 ID
      * @param start    起始采集时间（可空）
      * @param end      截止采集时间（可空）
+     * @param limit    返回条数上限（null/非正数取默认值，超过绝对上限截断）
      * @return 历史数据列表
      */
     @Override
-    public List<IotDeviceData> selectHistory(Long deviceId, Date start, Date end) {
+    public List<IotDeviceData> selectHistory(Long deviceId, Date start, Date end, Integer limit) {
+        int safeLimit = safeLimit(limit);
         LambdaQueryWrapper<IotDeviceData> lqw = Wrappers.<IotDeviceData>lambdaQuery()
             .eq(IotDeviceData::getDeviceId, deviceId)
             .ge(start != null, IotDeviceData::getCollectTime, start)
             .le(end != null, IotDeviceData::getCollectTime, end)
-            .orderByDesc(IotDeviceData::getCollectTime);
+            .orderByDesc(IotDeviceData::getCollectTime)
+            // LIMIT 下推到 DB（idx_device_time 支撑该查询），禁止全量载入内存后再截断
+            .last("LIMIT " + safeLimit);
         return baseMapper.selectList(lqw);
+    }
+
+    /**
+     * 归一化内部查询条数：null/非正数取默认值，超过绝对上限则截断。
+     *
+     * @param limit 请求条数
+     * @return 安全的查询条数
+     */
+    private static int safeLimit(Integer limit) {
+        if (limit == null || limit <= 0) {
+            return IIotDeviceDataService.DEFAULT_HISTORY_LIMIT;
+        }
+        return Math.min(limit, IIotDeviceDataService.ABSOLUTE_MAX_QUERY_LIMIT);
     }
 
     /** 单批删除上限，避免长事务锁表 */

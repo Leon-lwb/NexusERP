@@ -1,5 +1,7 @@
 package com.nexus.erp.prd.service.impl;
 
+import com.nexus.erp.prd.util.BomExplosionCalculator;
+
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -342,14 +344,17 @@ public class PrdMaterialRequirementServiceImpl implements IPrdMaterialRequiremen
             reqDetail.setBomQuantity(detail.getQuantityPerParent());
             reqDetail.setLossRate(detail.getLossRate());
             if (detail.getQuantityPerParent() != null) {
-                reqDetail.setRequiredQuantity(detail.getQuantityPerParent().multiply(totalRequiredQuantity));
+                // ★ ERP-PRD-01: 与计划驱动路径统一口径（含损耗率 + CEILING 取整）
+                reqDetail.setRequiredQuantity(BomExplosionCalculator.calculateChildQuantity(
+                    totalRequiredQuantity, detail.getQuantityPerParent(), detail.getLossRate()));
             }
             reqDetail.setIssuedQuantity(BigDecimal.ZERO);
             reqDetail.setStockQuantity(BigDecimal.ZERO);
             reqDetail.setShortageQuantity(BigDecimal.ZERO);
             reqDetail.setOperationStep(detail.getOperationStep() != null ? Long.valueOf(detail.getOperationStep()) : null);
             reqDetail.setLeadTime(detail.getLeadTime() != null ? Long.valueOf(detail.getLeadTime()) : null);
-            reqDetail.setRequiredDate(resolveRequiredDate(detail.getLeadTime()));
+            // ★ ERP-PRD-01: leadTime 单位统一为小时，需求日期按「基准 - leadTime」倒排（此处无父层，基准取当前时间）
+            reqDetail.setRequiredDate(BomExplosionCalculator.resolveRequiredDate(null, detail.getLeadTime()));
             reqDetail.setStatus(1L);
             // sourceType 优先取子项物料的（统一编码后），物料未配置时回退父BOM
             reqDetail.setSourceType(mat != null && mat.getSourceType() != null ? mat.getSourceType() : finalSourceType);
@@ -472,6 +477,8 @@ public class PrdMaterialRequirementServiceImpl implements IPrdMaterialRequiremen
             LambdaQueryWrapper<WmMaterialStock> lqw = Wrappers.lambdaQuery();
             lqw.eq(WmMaterialStock::getMaterialId, materialId);
             lqw.gt(WmMaterialStock::getStockQuantity, BigDecimal.ZERO);
+            // ★ ERP-PRD-07: 冻结库存不计入可用量，与 PuPurchaseRequisitionServiceImpl 低库存口径一致
+            lqw.eq(WmMaterialStock::getFrozenFlag, 0L);
             List<WmMaterialStock> stocks = wmMaterialStockMapper.selectList(lqw);
             return stocks.stream()
                     .map(WmMaterialStock::getStockQuantity)
@@ -483,13 +490,15 @@ public class PrdMaterialRequirementServiceImpl implements IPrdMaterialRequiremen
         }
     }
 
+    /**
+     * 按提前期倒排需求日期。
+     *
+     * @deprecated ERP-PRD-01 起统一走 {@link BomExplosionCalculator#resolveRequiredDate(java.util.Date, Number)}，
+     *             本方法仅为兼容历史调用保留，请勿在新代码中使用。
+     */
+    @Deprecated
     private Date resolveRequiredDate(Integer leadTime) {
-        Date requiredDate = new Date();
-        if (leadTime == null || leadTime <= 0) {
-            return requiredDate;
-        }
-        long offsetMillis = leadTime.longValue() * 24L * 60L * 60L * 1000L;
-        return new Date(System.currentTimeMillis() - offsetMillis);
+        return BomExplosionCalculator.resolveRequiredDate(null, leadTime);
     }
 
     /**

@@ -12,11 +12,25 @@ export interface SpcControlChartVO {
   ucl?: number;
   cl?: number;
   lcl?: number;
+  /** 次级图(极差图R/标准差图S/移动极差图MR)上控制限 */
+  rUcl?: number;
+  /** 次级图中心线(R̄/S̄/MR̄) */
+  rCl?: number;
+  /** 次级图下控制限 */
+  rLcl?: number;
   usl?: number;
   lsl?: number;
   cp?: number;
   cpk?: number;
   cpkGrade?: string;
+  /** 过程性能指数Pp(长期标准差) */
+  pp?: number;
+  /** 过程性能指数Ppk(长期标准差) */
+  ppk?: number;
+  /** 过程能力样本量不足(仅 analyze 返回, 不落库) */
+  capabilityInsufficient?: boolean;
+  /** 过程能力不足原因(仅 analyze 返回, 不落库) */
+  capabilityInsufficientReason?: string;
   sampleSize: number;
   status: string;
   remark?: string;
@@ -52,6 +66,8 @@ export interface SpcDataPointVO {
   sampleGroup: number;
   sampleIndex?: number;
   value: number;
+  /** 组内离散度(R/S/MR), 次级图取值 */
+  subValue?: number;
   isOoc: string;
   oocRule?: string;
   collectTime?: string;
@@ -65,9 +81,20 @@ export interface SpcAnalyzeResult {
   ucl: number;
   cl: number;
   lcl: number;
+  /** 次级图(极差图R/标准差图S/移动极差图MR)控制限 */
+  rUcl?: number;
+  rCl?: number;
+  rLcl?: number;
   cp?: number;
   cpk?: number;
   cpkGrade?: string;
+  /** 过程性能指数Pp/Ppk(长期标准差) */
+  pp?: number;
+  ppk?: number;
+  /** 过程能力样本量不足(子组<25 或样本<50 或未维护规格限) */
+  capabilityInsufficient?: boolean;
+  /** 过程能力不足原因 */
+  capabilityInsufficientReason?: string;
 }
 
 /** 分页查询控制图 */
@@ -90,6 +117,6 @@ export const updateControlChart = (data: SpcControlChartForm): AxiosPromise<SpcC
 export const delControlChart = (chartIds: Array<string | number> | string | number): AxiosPromise<void> =>
   request({ url: `/mes/spc/control-chart/${chartIds}`, method: 'delete' });
 
-/** 分析控制图(计算控制限 + OOC判定) */
+/** 分析控制图(计算控制限 + OOC判定; 后端 MES-SPC-03 已改 POST, GET 会 405) */
 export const analyzeControlChart = (chartId: string | number): AxiosPromise<SpcAnalyzeResult> =>
-  request({ url: `/mes/spc/control-chart/analyze/${chartId}`, method: 'get' });
+  request({ url: `/mes/spc/control-chart/analyze/${chartId}`, method: 'post' });

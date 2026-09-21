@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 信用检查Service实现类，负责信用额度校验、冻结和释放
@@ -42,9 +43,19 @@ public class CreditCheckServiceImpl implements ICreditCheckService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void checkAndFreeze(Long clientId, Long soId, BigDecimal orderAmount) {
-        LambdaQueryWrapper<BdClientCredit> creditLqw = Wrappers.lambdaQuery();
-        creditLqw.eq(BdClientCredit::getClientId, clientId);
-        BdClientCredit credit = bdClientCreditMapper.selectOne(creditLqw);
+        // ERP-BD-09: bd_client_credit 的 (client_id, tenant_id) 唯一键由增量脚本
+        // script/sql/update/2026-09-20-uk-tenant-dimension.sql 补上。为兼容尚未执行该脚本的存量库
+        // (历史上可由手工 SQL 引入同客户多行信用记录), 这里不使用 selectOne —— 多行会抛
+        // TooManyResultsException 导致销售订单确认 500; 改为按 credit_id 倒序取最新一行并对重复行告警。
+        List<BdClientCredit> credits = bdClientCreditMapper.selectList(
+            Wrappers.<BdClientCredit>lambdaQuery()
+                .eq(BdClientCredit::getClientId, clientId)
+                .orderByDesc(BdClientCredit::getCreditId));
+        if (credits.size() > 1) {
+            log.warn("客户[{}]存在 {} 条信用额度记录, 取最新一条(creditId={}); 请执行增量脚本补唯一键并清理重复行",
+                clientId, credits.size(), credits.get(0).getCreditId());
+        }
+        BdClientCredit credit = credits.isEmpty() ? null : credits.get(0);
 
         if (credit == null || credit.getClientCredit() == null) {
             log.info("客户未配置信用额度，跳过信用检查, clientId={}", clientId);
@@ -147,17 +158,19 @@ public class CreditCheckServiceImpl implements ICreditCheckService {
      */
     @Override
     public BigDecimal getUsedAmount(Long clientId) {
-        LambdaQueryWrapper<SoCreditUsage> lqw = Wrappers.lambdaQuery();
-        lqw.eq(SoCreditUsage::getClientId, clientId);
-        lqw.in(SoCreditUsage::getStatus, "FROZEN", "USED");
-        List<SoCreditUsage> usageList = creditUsageMapper.selectList(lqw);
-
-        BigDecimal total = BigDecimal.ZERO;
-        for (SoCreditUsage usage : usageList) {
-            if (usage.getAmount() != null) {
-                total = total.add(usage.getAmount());
-            }
+        // ERP-SO-08: 改为数据库端 SUM, 避免把该客户全部占用记录拉进内存循环累加
+        // (so_credit_usage 随订单线性增长)。聚合查询走 MP 包装器, 由多租户插件自动补 tenant_id 条件。
+        List<Map<String, Object>> rows = creditUsageMapper.selectMaps(Wrappers.<SoCreditUsage>query()
+            .select("COALESCE(SUM(amount), 0) AS total")
+            .eq("client_id", clientId)
+            .in("status", "FROZEN", "USED"));
+        if (rows == null || rows.isEmpty() || rows.get(0) == null) {
+            return BigDecimal.ZERO;
         }
-        return total;
+        Object total = rows.get(0).get("total");
+        if (total == null) {
+            return BigDecimal.ZERO;
+        }
+        return total instanceof BigDecimal decimal ? decimal : new BigDecimal(total.toString());
     }
 }

@@ -71,6 +71,8 @@ public class WmMaterialReceiveExecutorServiceImpl implements IWmMaterialReceiveE
     private final WmMaterialStockTxMapper materialStockTxMapper;
     /** 到货通知数据访问映射器（Mapper） */
     private final WmArrivalNoticeMapper arrivalNoticeMapper;
+    /** 到货通知行数据访问映射器（ERP-WM-12: 按行回写已收数量） */
+    private final com.nexus.erp.wm.mapper.WmArrivalNoticeLineMapper arrivalNoticeLineMapper;
     /** 物料领用执行器业务服务，提供物料领用执行器相关能力 */
     private final IBdMaterialService bdMaterialService;
     /** 条码业务服务，提供条码相关能力 */
@@ -161,11 +163,38 @@ public class WmMaterialReceiveExecutorServiceImpl implements IWmMaterialReceiveE
             receiveLineMapper.updateById(dbLine);
         }
 
-        // 更新关联的到货通知单状态为已完成
+        // ERP-WM-12: 按物料回写"已收数量"到到货通知行，并把"任何一次入库都整单 FINISHED"改为
+        // "全部行收满才 FINISHED，否则 PARTIAL_RECEIVED"，补齐 到货通知→收货→上架 的数量闭环。
         if (receive.getNoticeId() != null) {
+            List<com.nexus.erp.wm.domain.WmArrivalNoticeLine> noticeLines = arrivalNoticeLineMapper.selectList(
+                new LambdaQueryWrapper<com.nexus.erp.wm.domain.WmArrivalNoticeLine>()
+                    .eq(com.nexus.erp.wm.domain.WmArrivalNoticeLine::getNoticeId, receive.getNoticeId()));
+            // 本次入库数量按物料汇总（同一收货单可能有多行同物料）
+            Map<Long, BigDecimal> recvByMaterial = new LinkedHashMap<>();
+            for (WmMaterialReceiveLineVo line : lines) {
+                if (line.getMaterialId() == null) {
+                    continue;
+                }
+                recvByMaterial.merge(line.getMaterialId(), nvl(line.getQuantityReceived()), BigDecimal::add);
+            }
+            boolean allReceived = true;
+            for (com.nexus.erp.wm.domain.WmArrivalNoticeLine nl : noticeLines) {
+                BigDecimal delta = recvByMaterial.get(nl.getMaterialId());
+                if (delta != null && delta.compareTo(BigDecimal.ZERO) > 0) {
+                    // 条件更新原子累加，避免并发入库丢失更新
+                    arrivalNoticeLineMapper.update(null,
+                        Wrappers.<com.nexus.erp.wm.domain.WmArrivalNoticeLine>lambdaUpdate()
+                            .setSql("received_qty = IFNULL(received_qty, 0) + " + delta.toPlainString())
+                            .eq(com.nexus.erp.wm.domain.WmArrivalNoticeLine::getLineId, nl.getLineId()));
+                    nl.setReceivedQty(nvl(nl.getReceivedQty()).add(delta));
+                }
+                if (nvl(nl.getReceivedQty()).compareTo(nvl(nl.getQuantityArrival())) < 0) {
+                    allReceived = false;
+                }
+            }
             WmArrivalNotice notice = arrivalNoticeMapper.selectById(receive.getNoticeId());
             if (notice != null) {
-                notice.setStatus(ORDER_STATUS_FINISHED);
+                notice.setStatus(allReceived ? ORDER_STATUS_FINISHED : "PARTIAL_RECEIVED");
                 notice.setUpdateTime(new Date());
                 arrivalNoticeMapper.updateById(notice);
             }

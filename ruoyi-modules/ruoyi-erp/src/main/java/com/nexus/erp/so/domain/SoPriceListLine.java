@@ -2,6 +2,7 @@ package com.nexus.erp.so.domain;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
 import io.github.linpeilie.annotations.AutoMapper;
 import lombok.Data;
@@ -40,4 +41,10 @@ public class SoPriceListLine extends TenantEntity {
     private BigDecimal maxQty;
     /** 折扣率 */
     private BigDecimal discountRate;
+
+    /**
+     * 删除标志（ERP-SO-05：价目表行随表头逻辑删除，不再物理删除）
+     */
+    @TableLogic
+    private String delFlag;
 }

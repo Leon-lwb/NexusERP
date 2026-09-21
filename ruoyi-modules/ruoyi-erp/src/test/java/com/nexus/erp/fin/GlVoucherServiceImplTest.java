@@ -58,7 +58,8 @@ import static org.mockito.Mockito.when;
  * <ul>
  *   <li>业务来源（{@code createAndPost}，非 MANUAL）允许负数分录；</li>
  *   <li>手工来源（{@code insertByBo}/{@code updateByBo}）仍拒绝负数分录，保持防呆；</li>
- *   <li>{@code post()} 按凭证自身来源判定，红字凭证反过账后仍可再过账。</li>
+ *   <li>{@code post()} 按凭证自身来源判定，红字凭证反过账后仍可再过账；</li>
+ *   <li>反过账/作废已过账凭证只允许 OPEN 期间（FIN-GL-02）。</li>
  * </ul>
  */
 @ExtendWith(MockitoExtension.class)
@@ -291,6 +292,54 @@ class GlVoucherServiceImplTest {
         ServiceException ex = assertThrows(ServiceException.class, () -> voucherService.post(7L));
         assertTrue(ex.getMessage().contains("不能为负数"), "实际: " + ex.getMessage());
         verify(baseMapper, never()).update(any(), any(Wrapper.class));
+    }
+
+    /**
+     * <b>FIN-GL-02 核心</b>：已关账(CLOSED)期间的凭证不可反过账。
+     * <p>修复前只拒 LOCKED，CLOSED 期间反过账会回冲余额并把凭证置 DRAFT，
+     * 而 {@code post()} 又要求 OPEN，凭证永久卡死且关账后报表数字被静默改变。</p>
+     */
+    @Test
+    void unpost_rejectsClosedPeriod() {
+        GlVoucher posted = new GlVoucher();
+        posted.setVoucherId(7L);
+        posted.setStatus(GlConstants.VOUCHER_STATUS_POSTED);
+        posted.setVersion(1);
+        posted.setPeriodId(9L);
+        when(baseMapper.selectById(7L)).thenReturn(posted);
+        GlPeriod closed = new GlPeriod();
+        closed.setPeriodId(9L);
+        closed.setPeriodName("2026-01");
+        closed.setStatus(GlConstants.PERIOD_CLOSED);
+        when(periodMapper.selectById(9L)).thenReturn(closed);
+
+        ServiceException ex = assertThrows(ServiceException.class, () -> voucherService.unpost(7L));
+        assertTrue(ex.getMessage().contains("不可反过账"), "实际: " + ex.getMessage());
+        verify(balanceService, never()).reversePosting(anyLong(), any());
+        verify(baseMapper, never()).update(any(), any(Wrapper.class));
+    }
+
+    /** OPEN 期间反过账照常执行（反过账 -> 再过账 闭环不被破坏） */
+    @Test
+    void unpost_allowsOpenPeriod() {
+        GlVoucher posted = new GlVoucher();
+        posted.setVoucherId(7L);
+        posted.setStatus(GlConstants.VOUCHER_STATUS_POSTED);
+        posted.setVersion(1);
+        posted.setPeriodId(9L);
+        when(baseMapper.selectById(7L)).thenReturn(posted);
+        GlPeriod open = new GlPeriod();
+        open.setPeriodId(9L);
+        open.setPeriodName("2026-01");
+        open.setStatus(GlConstants.PERIOD_OPEN);
+        when(periodMapper.selectById(9L)).thenReturn(open);
+        when(lineMapper.selectList(any())).thenReturn(List.of(line(1L, "100.00", null)));
+        when(baseMapper.update(any(), any(Wrapper.class))).thenReturn(1);
+
+        voucherService.unpost(7L);
+
+        verify(balanceService).reversePosting(anyLong(), any());
+        verify(baseMapper).update(any(), any(Wrapper.class));
     }
 
     /** 便于构造 GlVoucherBo 的小工具（避免测试类里到处 new） */

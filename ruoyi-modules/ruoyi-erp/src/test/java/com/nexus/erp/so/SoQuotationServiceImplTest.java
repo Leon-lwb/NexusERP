@@ -286,6 +286,9 @@ class SoQuotationServiceImplTest {
             return 1;
         });
         when(salesOrderLineMapper.insertBatch(anyList())).thenReturn(true);
+        // ERP-SO-04: 转单状态回写已改为条件更新 CAS（CONFIRMED -> CONVERTED），
+        // 必须让该条件更新影响 1 行，否则服务端判定为「已被并发转换」而回滚
+        when(baseMapper.update(any(), any())).thenReturn(1);
 
         assertEquals(66L, quotationService.convertToSalesOrder(1L));
 
@@ -293,9 +296,10 @@ class SoQuotationServiceImplTest {
         verify(salesOrderMapper).insert(orderCaptor.capture());
         assertEquals(ISoQuotationService.STATUS_DRAFT, orderCaptor.getValue().getOrderStatus());
         assertEquals("SO-FROM-BJ-001", orderCaptor.getValue().getSoNo());
-        // 报价单状态回写为已转换
+        // 报价单状态回写为已转换：走 CAS 条件更新，不再使用 updateById
         assertEquals(ISoQuotationService.STATUS_CONVERTED, q.getStatus());
-        verify(baseMapper).updateById(q);
+        verify(baseMapper).update(any(), any());
+        verify(baseMapper, never()).updateById(any(SoQuotation.class));
     }
 
     // ==================== 明细「未提交」语义（null vs 空集合）====================

@@ -190,6 +190,32 @@ class SoSalesOrderHeaderServiceImplTest {
         return l;
     }
 
+    // ==================== fulfill: OQC 白名单门禁 (审计 MES-QC-01) ====================
+
+    /** OQC 结论尚未回写(NULL)时也必须拦截: 回写丢失时 NULL 与"不合格"无法区分, 放行即不合格品出库 */
+    @Test
+    void fulfill_rejectsOqcNullStatusEvenWhenForced() {
+        when(baseMapper.selectById(1L)).thenReturn(header(1L, ISoSalesOrderHeaderService.STATUS_CONFIRMED));
+        when(soSalesOrderLineMapper.selectList(any())).thenReturn(java.util.List.of(line(1L, "10", "10", null)));
+
+        RuntimeException ex = assertThrows(RuntimeException.class, () -> headerService.fulfill(1L, true));
+
+        assertTrue(ex.getMessage().contains("OQC"));
+        verify(stockReservationService, never()).unreserve(any(), any(), any());
+    }
+
+    /** OQC 结论为 PENDING(未完成检验)时同样拦截(白名单: 仅 QUALIFIED 可履行) */
+    @Test
+    void fulfill_rejectsOqcPendingEvenWhenForced() {
+        when(baseMapper.selectById(1L)).thenReturn(header(1L, ISoSalesOrderHeaderService.STATUS_CONFIRMED));
+        when(soSalesOrderLineMapper.selectList(any())).thenReturn(java.util.List.of(line(1L, "10", "10", "PENDING")));
+
+        RuntimeException ex = assertThrows(RuntimeException.class, () -> headerService.fulfill(1L, true));
+
+        assertTrue(ex.getMessage().contains("OQC"));
+        verify(stockReservationService, never()).unreserve(any(), any(), any());
+    }
+
     // ==================== confirm ====================
 
     /** 非 DRAFT/APPROVED 状态不允许确认 */
@@ -295,8 +321,14 @@ class SoSalesOrderHeaderServiceImplTest {
         // publishEvent 有 (ApplicationEvent) 与 (Object) 两个重载，调用点会选更具体的 ApplicationEvent 重载，
         // 因此这里必须用 ApplicationEvent 类型匹配，否则会验证到未被调用的 Object 重载上
         verify(applicationEventPublisher).publishEvent(any(ApplicationEvent.class));
-        // 行状态固化为 FULFILLED 且 fulfilled_qty 兜齐 ordered_qty（逐行条件更新，不新增行）
-        verify(soSalesOrderLineMapper).update(any(), any());
+        // 行状态固化为 FULFILLED 且 fulfilled_qty 兜齐 ordered_qty（逐行条件更新）
+        // + ERP-SO-01：释放库存侧预留后清零行 reserved_qty 展示字段（整单批量条件更新），共 2 次条件更新
+        @SuppressWarnings("rawtypes")
+        ArgumentCaptor<Wrapper> wrapperCaptor = ArgumentCaptor.forClass(Wrapper.class);
+        verify(soSalesOrderLineMapper, times(2)).update(any(), wrapperCaptor.capture());
+        assertTrue(wrapperCaptor.getAllValues().stream()
+                .anyMatch(w -> w.getSqlSet() != null && w.getSqlSet().contains("reserved_qty")),
+            "ERP-SO-01: 释放库存预留后必须清零行 reserved_qty，否则残留值会让后续出库走消费预留分支");
         verify(soSalesOrderLineMapper, never()).insert(any(SoSalesOrderLine.class));
     }
 
@@ -365,7 +397,13 @@ class SoSalesOrderHeaderServiceImplTest {
         assertEquals("客户撤单", h.getCancelledReason());
         verify(creditCheckService).release(1L);
         verify(stockReservationService).unreserve("SALES_ORDER", 1L, null);
-        verify(soSalesOrderLineMapper).update(any(), any());
+        // 行状态置 CANCELLED（逐行条件更新）+ ERP-SO-01 清零行 reserved_qty（整单批量条件更新）
+        @SuppressWarnings("rawtypes")
+        ArgumentCaptor<Wrapper> cancelCaptor = ArgumentCaptor.forClass(Wrapper.class);
+        verify(soSalesOrderLineMapper, times(2)).update(any(), cancelCaptor.capture());
+        assertTrue(cancelCaptor.getAllValues().stream()
+                .anyMatch(w -> w.getSqlSet() != null && w.getSqlSet().contains("reserved_qty")),
+            "ERP-SO-01: 取消订单释放预留后必须清零行 reserved_qty");
     }
 
     // ==================== insertByBo / selectById ====================
@@ -1175,30 +1213,24 @@ class SoSalesOrderHeaderServiceImplTest {
     }
 
     /**
-     * 委外（SUBCONTRACT）行确认订单后自动建委外单，且**不**占用本仓现货。
-     * <p>修复前：委外行既不建单也不预留（只有一条 warn），履约链路断在这里。</p>
+     * 委外（SUBCONTRACT）行在**无可用供应商**时不自动建委外单（ERP-SO-09①）。
+     * <p>原实现"供应商留空也建单"，但委外单下达时必然因供应商校验卡在 DRAFT ——
+     * 改为跳过并告警（"物料未配置可用供应商，跳过自动创建委外单"），交由人工处理。</p>
+     * <p>无论是否建单，委外行都**不**占用本仓现货、也不生成生产计划。</p>
      */
     @Test
-    void confirm_subcontractLine_createsSubcontractAndSkipsReservation() {
+    void confirm_subcontractLineWithoutVendor_skipsSubcontractCreation() {
         SoSalesOrderLine subcontractLine = line(100L, "10", "0", null);
         when(baseMapper.selectById(1L)).thenReturn(header(1L, ISoSalesOrderHeaderService.STATUS_DRAFT));
         when(baseMapper.update(any(), any())).thenReturn(1);
         when(soSalesOrderLineMapper.selectList(any())).thenReturn(List.of(subcontractLine));
         when(bdMaterialMapper.selectById(100L)).thenReturn(material(100L, "SUBCONTRACT"));
-        when(autoCodeUtil.genSerialCode(eq("PRD_SUBCONTRACT_CODE"), any())).thenReturn("SC-0001");
-        when(prdSubcontractMapper.insert(any(PrdSubcontract.class))).thenReturn(1);
-        // 无默认供应商 -> 供应商留空但仍建单
+        // 无可用供应商 -> 不建委外单（只 warn）
         when(bdMaterialVendorMapper.selectList(any())).thenReturn(List.of());
 
         headerService.confirm(1L);
 
-        ArgumentCaptor<PrdSubcontract> captor = ArgumentCaptor.forClass(PrdSubcontract.class);
-        verify(prdSubcontractMapper).insert(captor.capture());
-        PrdSubcontract saved = captor.getValue();
-        assertEquals("SC-0001", saved.getSubcontractNo());
-        assertEquals(100L, saved.getMaterialId());
-        assertEquals(0, new BigDecimal("10").compareTo(saved.getPlannedQty()));
-        assertEquals("DRAFT", saved.getStatus());
+        verify(prdSubcontractMapper, never()).insert(any(PrdSubcontract.class));
         // 委外不走库存预留（货源不是本仓现货）
         verify(stockReservationService, never()).reserve(any(), any(), any(), anyString(), any(), any());
         // 也不生成生产计划

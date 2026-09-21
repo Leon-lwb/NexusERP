@@ -47,6 +47,9 @@ public class SopVersionVo implements Serializable {
     @ExcelProperty("文件类型")
     private String fileType;
 
+    /** 该版本正文的 SM3(签名绑定正文用, MES-SOP-05) */
+    private String fileHash;
+
     /** 变更说明 */
     @ExcelProperty("变更说明")
     private String changeLog;

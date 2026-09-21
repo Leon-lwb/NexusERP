@@ -97,4 +97,24 @@ public interface IQcIpqcService {
      */
     void inspect(Long ipqcId, String inspectResult, String defectInfo,
                  BigDecimal sampleQty, BigDecimal defectQty, String remark);
+
+    /**
+     * 按检验明细执行检验(自动判定): 录入各项目实测值, 系统比对标准自动判定
+     * 合格(QUALIFIED)/不合格(UNQUALIFIED), 判定结果走原有 NCR/MQ 回写链路。
+     *
+     * @param ipqcId     IPQC 检验单 ID
+     * @param entries    明细实测值列表({detailId, measuredValue, sampleQty, remark})
+     * @param defectInfo 不良品信息(JSON, 可为空)
+     * @param remark     备注(可为空)
+     */
+    void inspectWithDetails(Long ipqcId, java.util.List<com.nexus.mes.qc.domain.bo.QcInspectEntryBo> entries,
+                            String defectInfo, String remark);
+
+    /**
+     * 查询 IPQC 检验单明细(按检验模板快照生成)
+     *
+     * @param ipqcId IPQC 检验单 ID
+     * @return 明细列表(按序号升序)
+     */
+    java.util.List<com.nexus.mes.qc.domain.vo.QcInspectDetailVo> selectDetails(Long ipqcId);
 }

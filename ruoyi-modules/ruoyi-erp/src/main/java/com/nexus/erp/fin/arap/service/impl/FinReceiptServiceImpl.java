@@ -67,23 +67,34 @@ public class FinReceiptServiceImpl implements IFinReceiptService {
         return baseMapper.selectVoById(receiptId);
     }
 
-    /** 新增,自动填充单据编号/状态/来源/币种/汇率/日期/version 默认值 */
+    /**
+     * 新增,自动填充单据编号/状态/来源/币种/汇率/日期/version 默认值。
+     * <p><b>服务端权威字段（FIN-ARAP-01）</b>：{@code status} 强制 DRAFT、{@code source} 强制 MANUAL、
+     * {@code settledAmount} 强制 0；入参携带非 DRAFT 状态或非 MANUAL 来源一律拒绝。
+     * 原因：唯一会发出 {@code GlPostingMessage(RECEIPT)} 的入口是 {@link #confirm(Long)}，
+     * 若允许客户端直建 CONFIRMED，则该笔收付款在 AR/AP 子账已发生却永不产生总账凭证。
+     * 支付回调建单走 {@code PayReceivedConsumer -> save(entity)}（该路径自行发过账消息），不经本方法。</p>
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean insertByBo(FinReceiptBo bo) {
+        if (StringUtils.isNotBlank(bo.getStatus())
+            && !ArapConstants.RECEIPT_STATUS_DRAFT.equals(bo.getStatus())) {
+            throw new ServiceException("收付款单状态由服务端管理,不接受入参【{}】;如需确认请调用确认接口(会触发总账过账)",
+                bo.getStatus());
+        }
+        if (StringUtils.isNotBlank(bo.getSource())
+            && !ArapConstants.SOURCE_MANUAL.equals(bo.getSource())) {
+            throw new ServiceException("收付款单来源由服务端管理,不接受入参【{}】", bo.getSource());
+        }
         FinReceipt entity = MapstructUtils.convert(bo, FinReceipt.class);
         if (StringUtils.isBlank(entity.getReceiptNo())) {
             entity.setReceiptNo("RC" + IdWorker.getId());
         }
-        if (StringUtils.isBlank(entity.getStatus())) {
-            entity.setStatus(ArapConstants.RECEIPT_STATUS_DRAFT);
-        }
-        if (StringUtils.isBlank(entity.getSource())) {
-            entity.setSource(ArapConstants.SOURCE_MANUAL);
-        }
-        if (entity.getSettledAmount() == null) {
-            entity.setSettledAmount(BigDecimal.ZERO);
-        }
+        // 服务端权威字段:状态机起点只能是 DRAFT(确认才发 GL 过账消息)
+        entity.setStatus(ArapConstants.RECEIPT_STATUS_DRAFT);
+        entity.setSource(ArapConstants.SOURCE_MANUAL);
+        entity.setSettledAmount(BigDecimal.ZERO);
         if (StringUtils.isBlank(entity.getCurrency())) {
             entity.setCurrency("CNY");
         }
@@ -108,7 +119,12 @@ public class FinReceiptServiceImpl implements IFinReceiptService {
             .eq(FinReceipt::getPayOrderNumber, payOrderNumber));
     }
 
-    /** 修改,仅 DRAFT 可修改,乐观锁 version 防并发 */
+    /**
+     * 修改,仅 DRAFT 可修改,乐观锁 version 防并发。
+     * <p><b>字段白名单（FIN-ARAP-01）</b>：显式拷贝可编辑字段，<b>不覆盖</b>
+     * receiptNo/status/source/settledAmount/version；入参若携带与库中不一致的 status/source 直接拒绝，
+     * 防止用「修改」接口把 DRAFT 直接改成 CONFIRMED 从而绕过 {@code confirm()} 的 GL 过账。</p>
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean updateByBo(FinReceiptBo bo) {
@@ -119,7 +135,26 @@ public class FinReceiptServiceImpl implements IFinReceiptService {
         if (!ArapConstants.RECEIPT_STATUS_DRAFT.equals(existing.getStatus())) {
             throw new ServiceException("当前状态【{}】不允许修改", existing.getStatus());
         }
-        FinReceipt entity = MapstructUtils.convert(bo, FinReceipt.class);
+        if (StringUtils.isNotBlank(bo.getStatus()) && !existing.getStatus().equals(bo.getStatus())) {
+            throw new ServiceException("收付款单状态不可通过修改接口变更(当前【{}】);如需确认请调用确认接口", existing.getStatus());
+        }
+        if (StringUtils.isNotBlank(bo.getSource()) && !existing.getSource().equals(bo.getSource())) {
+            throw new ServiceException("收付款单来源不可修改");
+        }
+        FinReceipt entity = new FinReceipt();
+        entity.setReceiptId(bo.getReceiptId());
+        entity.setReceiptType(bo.getReceiptType());
+        entity.setDirection(bo.getDirection());
+        entity.setClientId(bo.getClientId());
+        entity.setVendorId(bo.getVendorId());
+        entity.setPayerName(bo.getPayerName());
+        entity.setAmount(bo.getAmount());
+        entity.setCurrency(bo.getCurrency());
+        entity.setExchangeRate(bo.getExchangeRate());
+        entity.setThirdPartyNo(bo.getThirdPartyNo());
+        entity.setPayOrderNumber(bo.getPayOrderNumber());
+        entity.setReceiptDate(bo.getReceiptDate());
+        entity.setRemark(bo.getRemark());
         entity.setVersion(existing.getVersion());
         return baseMapper.updateById(entity) > 0;
     }

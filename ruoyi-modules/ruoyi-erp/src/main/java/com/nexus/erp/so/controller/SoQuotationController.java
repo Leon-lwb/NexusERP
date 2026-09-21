@@ -129,7 +129,7 @@ public class SoQuotationController extends BaseController {
      * @param quotationId 销售报价ID
      * @return 操作结果
      */
-    @SaCheckPermission("so:quotation:edit")
+    @SaCheckPermission("so:quotation:confirm")
     @Log(title = "销售报价", businessType = BusinessType.UPDATE)
     @PutMapping("/confirm/{quotationId}")
     public R<Void> confirm(@PathVariable Long quotationId) {
@@ -139,14 +139,14 @@ public class SoQuotationController extends BaseController {
 
     /**
      * 将销售报价转换为销售订单（仅「已确认」可转；加防重复提交）
-     * <p>权限标识：{@code so:quotation:edit}</p>
+     * <p>权限标识：{@code so:quotation:convert}（ERP-SO-07：原复用 {@code so:quotation:edit}）</p>
      * <p>日志记录：title="销售报价"，businessType=UPDATE</p>
      *
      * @param quotationId 销售报价ID
      * @return 生成的销售订单ID
      */
     @RepeatSubmit
-    @SaCheckPermission("so:quotation:edit")
+    @SaCheckPermission("so:quotation:convert")
     @Log(title = "销售报价", businessType = BusinessType.UPDATE)
     @PostMapping("/convertToOrder/{quotationId}")
     public R<Long> convertToOrder(@PathVariable Long quotationId) {

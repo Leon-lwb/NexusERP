@@ -122,7 +122,14 @@ public class SchAppApplyServiceImpl implements ISchAppApplyService {
         apply.setApplyType(bo.getApplyType());
         apply.setReason(bo.getReason());
         apply.setApplyStatus(STATUS_PENDING);
-        supplementApplyMapper.insert(apply);
+        try {
+            supplementApplyMapper.insert(apply);
+        } catch (org.springframework.dao.DuplicateKeyException e) {
+            // ERP-SCH-11: 单号为"前缀+秒级时间", 同秒并发会撞 uk_tenant_apply_no(增量脚本 §2)。
+            // 捕获后给出可读提示而非 500(重试即可拿到新单号)。
+            log.warn("[sch] 补卡单号冲突: applyNo={}", apply.getApplyNo());
+            throw new ServiceException("补卡单号生成冲突，请重试");
+        }
         return apply.getApplyId();
     }
 
@@ -166,21 +173,33 @@ public class SchAppApplyServiceImpl implements ISchAppApplyService {
             throw new ServiceException("该申请已审批，不能重复操作");
         }
 
-        apply.setApplyStatus(Boolean.TRUE.equals(bo.getApproved()) ? STATUS_APPROVED : STATUS_REJECTED);
-        apply.setApproveUserId(currentUserId());
-        apply.setApproveUserName(currentUserName());
-        apply.setApproveTime(new Date());
-        apply.setApproveRemark(bo.getApproveRemark());
-        supplementApplyMapper.updateById(apply);
+        String targetStatus = Boolean.TRUE.equals(bo.getApproved()) ? STATUS_APPROVED : STATUS_REJECTED;
+        // ERP-SCH-09: "读-改-写"改为条件更新(CAS)。双审批人并发时只有一方能把 pending 推进,
+        // 影响 0 行即抛异常回滚, 避免两人都通过并各自回写考勤(原实现可双通过)。
+        int rows = supplementApplyMapper.update(null, Wrappers.<SchSupplementApply>lambdaUpdate()
+            .eq(SchSupplementApply::getApplyId, bo.getApplyId())
+            .eq(SchSupplementApply::getApplyStatus, STATUS_PENDING)
+            .set(SchSupplementApply::getApplyStatus, targetStatus)
+            .set(SchSupplementApply::getApproveUserId, currentUserId())
+            .set(SchSupplementApply::getApproveUserName, currentUserName())
+            .set(SchSupplementApply::getApproveTime, new Date())
+            .set(SchSupplementApply::getApproveRemark, bo.getApproveRemark()));
+        if (rows == 0) {
+            throw new ServiceException("该申请已审批，不能重复操作");
+        }
 
         if (Boolean.TRUE.equals(bo.getApproved())) {
+            apply.setApplyStatus(targetStatus);
             writeBackSupplement(apply);
         }
     }
 
     /**
-     * 补卡通过后回写考勤记录：按当日排班的上下班时间补齐缺卡侧打卡，
-     * 状态置 normal（补卡视为正常出勤），来源 manual。
+     * 补卡通过后回写考勤记录：按当日排班的上下班时间补齐缺卡侧打卡，来源 manual。
+     * <p><b>不覆盖已判定的迟到/早退</b>（ERP-SCH-02）：原实现无条件把 {@code attendance_status}
+     * 置 normal，会把当天已经判定的 late/early_leave 抹平，与仍然保留的 {@code late_minutes}
+     * 自相矛盾、月度考勤口径失真。现在只在"新建记录"或"原状态为空"时才置 normal，
+     * 已有判定结果原样保留，仅补缺卡侧时间。</p>
      */
     private void writeBackSupplement(SchSupplementApply apply) {
         LocalDate date = apply.getApplyDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
@@ -230,7 +249,9 @@ public class SchAppApplyServiceImpl implements ISchAppApplyService {
             if (fixClockOut && attendance.getClockOutTime() == null) {
                 update.setClockOutTime(scheduledEnd != null ? scheduledEnd : dayStart);
             }
-            update.setAttendanceStatus("normal");
+            // 仅当原记录尚无考勤判定结果时才置 normal；迟到/早退等已判定状态必须保留(ERP-SCH-02)
+            update.setAttendanceStatus(StrUtil.isBlank(attendance.getAttendanceStatus())
+                ? "normal" : attendance.getAttendanceStatus());
             update.setSourceType("manual");
             update.setRemark("补卡通过：" + apply.getApplyNo());
             attendanceMapper.updateById(update);
@@ -313,7 +334,13 @@ public class SchAppApplyServiceImpl implements ISchAppApplyService {
         apply.setDurationDays(BigDecimal.valueOf(days));
         apply.setReason(bo.getReason());
         apply.setApplyStatus(STATUS_PENDING);
-        leaveApplyMapper.insert(apply);
+        try {
+            leaveApplyMapper.insert(apply);
+        } catch (org.springframework.dao.DuplicateKeyException e) {
+            // ERP-SCH-11: 单号为"前缀+秒级时间", 同秒并发会撞 uk_tenant_leave_no(增量脚本 §2)
+            log.warn("[sch] 请假单号冲突: leaveNo={}", apply.getLeaveNo());
+            throw new ServiceException("请假单号生成冲突，请重试");
+        }
         return apply.getLeaveId();
     }
 
@@ -356,15 +383,23 @@ public class SchAppApplyServiceImpl implements ISchAppApplyService {
             throw new ServiceException("该申请已审批，不能重复操作");
         }
 
-        apply.setApplyStatus(Boolean.TRUE.equals(bo.getApproved()) ? STATUS_APPROVED : STATUS_REJECTED);
-        apply.setApproveUserId(currentUserId());
-        apply.setApproveUserName(currentUserName());
-        apply.setApproveTime(new Date());
-        apply.setApproveRemark(bo.getApproveRemark());
-        leaveApplyMapper.updateById(apply);
+        String targetStatus = Boolean.TRUE.equals(bo.getApproved()) ? STATUS_APPROVED : STATUS_REJECTED;
+        // ERP-SCH-09: 同补卡审批, 条件更新(CAS)防双审批人并发通过
+        int rows = leaveApplyMapper.update(null, Wrappers.<SchLeaveApply>lambdaUpdate()
+            .eq(SchLeaveApply::getLeaveId, bo.getApplyId())
+            .eq(SchLeaveApply::getApplyStatus, STATUS_PENDING)
+            .set(SchLeaveApply::getApplyStatus, targetStatus)
+            .set(SchLeaveApply::getApproveUserId, currentUserId())
+            .set(SchLeaveApply::getApproveUserName, currentUserName())
+            .set(SchLeaveApply::getApproveTime, new Date())
+            .set(SchLeaveApply::getApproveRemark, bo.getApproveRemark()));
+        if (rows == 0) {
+            throw new ServiceException("该申请已审批，不能重复操作");
+        }
 
         // 审批通过：请假区间逐日落考勤记录(状态 leave)，月度统计 leaveDays 生效
         if (Boolean.TRUE.equals(bo.getApproved())) {
+            apply.setApplyStatus(targetStatus);
             LocalDate start = apply.getStartDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
             LocalDate end = apply.getEndDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
             for (LocalDate d = start; !d.isAfter(end); d = d.plusDays(1)) {

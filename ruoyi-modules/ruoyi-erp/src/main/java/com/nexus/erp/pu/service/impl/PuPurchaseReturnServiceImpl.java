@@ -14,10 +14,12 @@ import com.nexus.common.flowable.core.domain.ActStatus;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.erp.pu.domain.PuPurchaseReturn;
+import com.nexus.erp.pu.domain.PuPurchaseOrderLine;
 import com.nexus.erp.pu.domain.PuPurchaseReturnLine;
 import com.nexus.erp.pu.domain.bo.PuPurchaseReturnBo;
 import com.nexus.erp.pu.domain.vo.PuPurchaseReturnVo;
 import com.nexus.erp.pu.invoice.service.IPuInvoiceService;
+import com.nexus.erp.pu.mapper.PuPurchaseOrderLineMapper;
 import com.nexus.erp.pu.mapper.PuPurchaseReturnLineMapper;
 import com.nexus.erp.pu.mapper.PuPurchaseReturnMapper;
 import com.nexus.erp.pu.service.IPuPurchaseReturnService;
@@ -60,6 +62,7 @@ public class PuPurchaseReturnServiceImpl implements IPuPurchaseReturnService {
 
     private final PuPurchaseReturnMapper baseMapper;
     private final PuPurchaseReturnLineMapper lineMapper;
+    private final PuPurchaseOrderLineMapper orderLineMapper;
     private final WmMaterialStockMapper stockMapper;
     private final WmMaterialStockTxMapper stockTxMapper;
     private final AutoCodeUtil autoCodeUtil;
@@ -112,9 +115,8 @@ public class PuPurchaseReturnServiceImpl implements IPuPurchaseReturnService {
         if (StringUtils.isBlank(entity.getReturnNo())) {
             entity.setReturnNo(autoCodeUtil.genSerialCode("PU_RETURN_CODE", null));
         }
-        if (StringUtils.isBlank(entity.getStatus())) {
-            entity.setStatus(STATUS_DRAFT);
-        }
+        // ★ 服务端强制状态机(ERP-PU-04)：不采信客户端传入的 status，新建单一律为草稿
+        entity.setStatus(STATUS_DRAFT);
         if (entity.getReturnDate() == null) {
             entity.setReturnDate(new Date());
         }
@@ -139,6 +141,8 @@ public class PuPurchaseReturnServiceImpl implements IPuPurchaseReturnService {
         if (!STATUS_DRAFT.equals(current.getStatus())) {
             throw new ServiceException("只有草稿状态的采购退货单才能编辑");
         }
+        // ★ 状态只能由 confirm/execute/afterFlowHandle 等状态机入口变更(ERP-PU-04)
+        entity.setStatus(null);
         deleteLines(entity.getReturnId());
         insertLines(entity.getReturnId(), bo.getPuPurchaseReturnLineList());
         return baseMapper.updateById(entity);
@@ -189,16 +193,20 @@ public class PuPurchaseReturnServiceImpl implements IPuPurchaseReturnService {
         if (STATUS_EXECUTED.equals(purchaseReturn.getStatus())) {
             return;
         }
+        // ★ 状态机守卫(ERP-PU-03)：必须已确认(CONFIRMED)才能执行，草稿单不得直接扣库存/红冲进项
+        if (!STATUS_CONFIRMED.equals(purchaseReturn.getStatus())) {
+            throw new ServiceException("只有已确认状态的采购退货单才能执行退货，当前状态：" + purchaseReturn.getStatus());
+        }
         List<PuPurchaseReturnLine> lines = lineMapper.selectList(Wrappers.lambdaQuery(PuPurchaseReturnLine.class).eq(PuPurchaseReturnLine::getReturnId, returnId));
         if (lines == null || lines.isEmpty()) {
             throw new ServiceException("采购退货单无明细行");
         }
-        // 条件更新抢占状态 → EXECUTED, 防并发双执行(重复扣库存/重复红冲)
+        // 条件更新抢占状态 CONFIRMED → EXECUTED, 防并发双执行(重复扣库存/重复红冲)
         int updated = baseMapper.update(null,
             Wrappers.<PuPurchaseReturn>lambdaUpdate()
                 .set(PuPurchaseReturn::getStatus, STATUS_EXECUTED)
                 .eq(PuPurchaseReturn::getReturnId, returnId)
-                .eq(PuPurchaseReturn::getStatus, purchaseReturn.getStatus()));
+                .eq(PuPurchaseReturn::getStatus, STATUS_CONFIRMED));
         if (updated == 0) {
             throw new ServiceException("采购退货单状态已被并发操作变更，请刷新后重试");
         }
@@ -214,6 +222,16 @@ public class PuPurchaseReturnServiceImpl implements IPuPurchaseReturnService {
             }
         }
         if (!poLineReturnQty.isEmpty()) {
+            // ★ 回写采购订单行退货数量(ERP-PU-05)：净采购量 = order_quantity - returned_quantity
+            for (Map.Entry<Long, BigDecimal> entry : poLineReturnQty.entrySet()) {
+                int rows = orderLineMapper.update(null,
+                    Wrappers.<PuPurchaseOrderLine>lambdaUpdate()
+                        .eq(PuPurchaseOrderLine::getLineId, entry.getKey())
+                        .setSql("returned_quantity = IFNULL(returned_quantity, 0) + " + entry.getValue().toPlainString()));
+                if (rows == 0) {
+                    log.warn("采购退货[{}]回写订单行退货数量失败, orderLineId={}", purchaseReturn.getReturnNo(), entry.getKey());
+                }
+            }
             int redCount = puInvoiceService.redFlushForReturnByPoLines(poLineReturnQty);
             if (redCount > 0) {
                 log.info("采购退货[{}]触发进项转出红冲,生成红字发票{}张", purchaseReturn.getReturnNo(), redCount);

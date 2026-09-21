@@ -72,10 +72,13 @@
           <el-tag :type="scope.row.status === 'ENABLED' ? 'success' : 'info'">{{ scope.row.status === 'ENABLED' ? '启用' : '停用' }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" width="220" class-name="small-padding fixed-width" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" width="310" class-name="small-padding fixed-width" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['mes:flash:pool:edit']">编辑</el-button>
           <el-button link type="success" icon="Upload" @click="handleImport(scope.row)" v-hasPermi="['mes:flash:pool:import']">导入资源</el-button>
+          <el-button link type="warning" icon="Connection" @click="handleAllocate(scope.row)" v-hasPermi="['mes:flash:pool:edit']"
+            >手工分配</el-button
+          >
           <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['mes:flash:pool:remove']">删除</el-button>
         </template>
       </el-table-column>
@@ -134,12 +137,56 @@
         <el-button @click="importOpen = false">取 消</el-button>
       </template>
     </el-dialog>
+
+    <!-- 手工分配资源项(MES-TEST-05: 池自动分配取错号 / 需指定某号时人工补分配) -->
+    <el-dialog :title="'手工分配资源 - ' + (allocatePool.poolName || '')" v-model="allocateOpen" width="520px" append-to-body>
+      <el-alert
+        type="info"
+        :closable="false"
+        show-icon
+        style="margin-bottom: 12px"
+        title="从池内取一个可用资源项分配给指定 SN(资源类型需与刷写类型匹配, 如 MAC 池配 MAC 类型)"
+      />
+      <el-form label-width="90px">
+        <el-form-item label="SN" required>
+          <el-select
+            v-model="allocateForm.snId"
+            filterable
+            remote
+            reserve-keyword
+            :remote-method="searchSn"
+            :loading="snLoading"
+            placeholder="输入 SN 编码搜索"
+            style="width: 100%"
+            @change="handleSnChange"
+          >
+            <el-option
+              v-for="sn in snOptions"
+              :key="sn.snId"
+              :label="sn.snCode + (sn.materialName ? ' / ' + sn.materialName : '')"
+              :value="sn.snId"
+            />
+          </el-select>
+        </el-form-item>
+      </el-form>
+      <el-descriptions v-if="allocateResult" :column="1" border size="small">
+        <el-descriptions-item label="资源值">{{ allocateResult.resourceValue }}</el-descriptions-item>
+        <el-descriptions-item label="资源状态">{{ allocateResult.status }}</el-descriptions-item>
+        <el-descriptions-item label="绑定SN ID">{{ allocateResult.boundSnId ?? '-' }}</el-descriptions-item>
+      </el-descriptions>
+      <template #footer>
+        <el-button type="primary" :loading="allocateLoading" @click="submitAllocate()">分 配</el-button>
+        <el-button @click="allocateOpen = false">关 闭</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts" name="MesFlashPool">
-import { listPool, getPool, addPool, updatePool, delPool, importPoolItems } from '@/api/mes/flash/pool';
-import type { MesResourcePoolVO, MesResourcePoolForm, MesResourcePoolQuery } from '@/api/mes/flash/pool';
+import { listPool, getPool, addPool, updatePool, delPool, importPoolItems, allocatePoolResource } from '@/api/mes/flash/pool';
+import type { MesResourcePoolVO, MesResourcePoolForm, MesResourcePoolQuery, MesResourceItemVO } from '@/api/mes/flash/pool';
+import { listSnOptions } from '@/api/mes/flash/flash';
+import type { SnOptionVO } from '@/api/mes/flash/flash';
 import type { FormInstance } from 'element-plus';
 import { useCrud } from '@/composables/useCrud';
 
@@ -230,6 +277,60 @@ const submitImport = async () => {
   proxy?.$modal.msgSuccess(`导入成功 ${count} 条`);
   importOpen.value = false;
   getList();
+};
+
+// ============ 手工分配资源项(MES-TEST-05) ============
+const allocateOpen = ref(false);
+const allocatePool = ref<any>({});
+const allocateForm = reactive<{ snId?: number | string; snCode?: string }>({ snId: undefined, snCode: undefined });
+const allocateResult = ref<MesResourceItemVO | null>(null);
+const allocateLoading = ref(false);
+const snLoading = ref(false);
+const snOptions = ref<SnOptionVO[]>([]);
+
+const handleAllocate = (row: MesResourcePoolVO) => {
+  allocatePool.value = row;
+  allocateForm.snId = undefined;
+  allocateForm.snCode = undefined;
+  allocateResult.value = null;
+  snOptions.value = [];
+  allocateOpen.value = true;
+};
+
+const searchSn = async (query: string) => {
+  if (!query) {
+    snOptions.value = [];
+    return;
+  }
+  snLoading.value = true;
+  try {
+    const res = await listSnOptions(query);
+    snOptions.value = (res.data as SnOptionVO[]) || [];
+  } finally {
+    snLoading.value = false;
+  }
+};
+
+const handleSnChange = (snId: number | string) => {
+  allocateForm.snCode = snOptions.value.find((s) => String(s.snId) === String(snId))?.snCode;
+};
+
+const submitAllocate = async () => {
+  if (allocateForm.snId == null || allocateForm.snId === '') {
+    proxy?.$modal.msgError('请选择 SN');
+    return;
+  }
+  allocateLoading.value = true;
+  try {
+    const res = await allocatePoolResource(allocatePool.value.poolId, allocateForm.snId, allocateForm.snCode);
+    allocateResult.value = (res.data as MesResourceItemVO) || null;
+    proxy?.$modal.msgSuccess('分配成功');
+    getList();
+  } catch (e) {
+    proxy?.$modal.msgError('分配失败: ' + (e as Error).message);
+  } finally {
+    allocateLoading.value = false;
+  }
 };
 
 getList();

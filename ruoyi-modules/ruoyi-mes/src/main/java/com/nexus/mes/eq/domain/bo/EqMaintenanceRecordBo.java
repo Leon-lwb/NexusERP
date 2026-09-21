@@ -8,6 +8,7 @@ import lombok.EqualsAndHashCode;
 import com.nexus.common.mybatis.core.domain.BaseEntity;
 import com.nexus.mes.eq.domain.EqMaintenanceRecord;
 
+import java.math.BigDecimal;
 import java.util.Date;
 
 /**
@@ -49,6 +50,9 @@ public class EqMaintenanceRecordBo extends BaseEntity {
 
     /** 结果: NORMAL/ABNORMAL */
     private String result;
+
+    /** 保养占用时长(分钟), 供 OEE 的 maintenance_minutes 真实汇总(MES-EQ-03) */
+    private BigDecimal durationMinutes;
 
     /** 备注 */
     private String remark;

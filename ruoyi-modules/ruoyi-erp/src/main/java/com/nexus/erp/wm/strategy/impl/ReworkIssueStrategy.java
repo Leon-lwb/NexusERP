@@ -6,6 +6,7 @@ import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.mq.constant.ExchangeConstants;
 import com.nexus.common.mq.constant.RoutingKeyConstants;
 import com.nexus.common.mq.producer.ReliableMessageProducer;
+import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.erp.mq.message.ReworkStockMessage;
 import com.nexus.erp.wm.domain.WmMaterialStock;
 import com.nexus.erp.wm.domain.WmMaterialStockTx;
@@ -138,6 +139,17 @@ public class ReworkIssueStrategy extends BaseStockOperationStrategy {
         msg.setMaterialId(materialId);
         msg.setQuantity(quantity);
         msg.setSourceModule("wm");
+        // 显式携带租户(消费端 fail-closed: 缺 tenantId 会重试/死信, 绝不静默落到 000000):
+        // 拿不到可靠租户即显式失败并回滚本次出库, 不投递必然死信的消息
+        String tenantIdStr = TenantHelper.getTenantId();
+        if (tenantIdStr == null || tenantIdStr.isBlank()) {
+            throw new ServiceException("返工领料出库 MQ 消息缺少租户上下文, 拒绝投递: reworkId=" + reworkId);
+        }
+        try {
+            msg.setTenantId(Long.parseLong(tenantIdStr));
+        } catch (NumberFormatException e) {
+            throw new ServiceException("返工领料出库 MQ 消息租户ID非法, 拒绝投递: tenantId=" + tenantIdStr);
+        }
         messageProducer.send(ExchangeConstants.TOPIC_EXCHANGE,
             RoutingKeyConstants.REWORK_STOCK, msg);
     }

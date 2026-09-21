@@ -112,6 +112,8 @@
           <dict-tag :options="bd_quality_status" :value="scope.row.qualityStatus" />
         </template>
       </el-table-column>
+      <!-- 关联质检单号：后端 PrdWorkOrderVo.qualityCheckNo 已返回，此前前端零命中 -->
+      <el-table-column label="质检单号" align="center" prop="qualityCheckNo" min-width="120" />
       <el-table-column label="是否倒冲" align="center" prop="backflushFlag">
         <template #default="scope">
           <dict-tag :options="prd_backflush_flag" :value="scope.row.backflushFlag" />

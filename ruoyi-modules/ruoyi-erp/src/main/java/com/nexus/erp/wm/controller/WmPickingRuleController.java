@@ -40,7 +40,7 @@ public class WmPickingRuleController extends BaseController {
      * @param pageQuery 分页查询参数，包含页码、每页大小及排序条件
      * @return 结果对象
      */
-    @SaCheckPermission("wm:pickingrule:list")
+    @SaCheckPermission("wm:pickingRule:list")
     @GetMapping("/list")
     public TableDataInfo<WmPickingRuleVo> list(WmPickingRuleBo bo, PageQuery pageQuery) {
         return pickingRuleService.selectPageList(bo, pageQuery);
@@ -53,7 +53,7 @@ public class WmPickingRuleController extends BaseController {
      * @param response 参数 response
      * @return 结果
      */
-    @SaCheckPermission("wm:pickingrule:export")
+    @SaCheckPermission("wm:pickingRule:export")
     @Log(title = "拣货策略", businessType = BusinessType.EXPORT)
     @PostMapping("/export")
     public void export(WmPickingRuleBo bo, HttpServletResponse response) {
@@ -67,7 +67,7 @@ public class WmPickingRuleController extends BaseController {
      * @param id 主键 ID
      * @return 结果对象
      */
-    @SaCheckPermission("wm:pickingrule:query")
+    @SaCheckPermission("wm:pickingRule:query")
     @GetMapping("/{id}")
     public R<WmPickingRuleVo> getInfo(@PathVariable Long id) {
         return R.ok(pickingRuleService.selectById(id));
@@ -79,7 +79,7 @@ public class WmPickingRuleController extends BaseController {
      * @param bo 拣货规则业务对象（BO）
      * @return 结果对象
      */
-    @SaCheckPermission("wm:pickingrule:add")
+    @SaCheckPermission("wm:pickingRule:add")
     @Log(title = "拣货策略", businessType = BusinessType.INSERT)
     @PostMapping
     public R<Void> add(@Validated @RequestBody WmPickingRuleBo bo) {
@@ -92,7 +92,7 @@ public class WmPickingRuleController extends BaseController {
      * @param bo 拣货规则业务对象（BO）
      * @return 结果对象
      */
-    @SaCheckPermission("wm:pickingrule:edit")
+    @SaCheckPermission("wm:pickingRule:edit")
     @Log(title = "拣货策略", businessType = BusinessType.UPDATE)
     @PutMapping
     public R<Void> edit(@Validated @RequestBody WmPickingRuleBo bo) {
@@ -105,7 +105,7 @@ public class WmPickingRuleController extends BaseController {
      * @param ids 主键 ID 数组（支持批量操作）
      * @return 结果对象
      */
-    @SaCheckPermission("wm:pickingrule:remove")
+    @SaCheckPermission("wm:pickingRule:remove")
     @Log(title = "拣货策略", businessType = BusinessType.DELETE)
     @DeleteMapping("/{ids}")
     public R<Void> remove(@PathVariable Long[] ids) {

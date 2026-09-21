@@ -9,6 +9,7 @@ import com.nexus.common.log.enums.BusinessType;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.common.web.core.BaseController;
+import com.nexus.mes.eq.domain.EqSpareErpSync;
 import com.nexus.mes.eq.domain.bo.EqSparePartBo;
 import com.nexus.mes.eq.domain.bo.EqSpareStockBo;
 import com.nexus.mes.eq.domain.vo.EqSparePartVo;
@@ -27,6 +28,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * MES备件主数据 Controller
@@ -170,5 +174,75 @@ public class EqSparePartController extends BaseController {
     @GetMapping("/lowStock")
     public R<List<EqSparePartVo>> lowStock() {
         return R.ok(eqSparePartService.selectLowStock());
+    }
+
+    /**
+     * 低库存一键生成 ERP 采购申请(MES-EQ-04)
+     * <p>请求体: {"spareIds": [1,2], "remark": "..."}；spareIds 为空表示取当前全部低库存备件。</p>
+     *
+     * @param body 请求体
+     * @return 提交的请购行数
+     */
+    @SaCheckPermission("mes:eq:spare:purchase")
+    @Log(title = "备件采购申请", businessType = BusinessType.INSERT)
+    @PostMapping("/purchase-request")
+    public R<Integer> purchaseRequest(@RequestBody(required = false) Map<String, Object> body) {
+        List<Long> spareIds = null;
+        String remark = null;
+        if (body != null) {
+            Object ids = body.get("spareIds");
+            if (ids instanceof List<?> list) {
+                spareIds = list.stream()
+                    .filter(Objects::nonNull)
+                    .map(v -> Long.valueOf(String.valueOf(v).trim()))
+                    .collect(Collectors.toList());
+            }
+            Object remarkValue = body.get("remark");
+            if (remarkValue != null) {
+                remark = String.valueOf(remarkValue);
+            }
+        }
+        return R.ok("已提交 ERP 采购申请生成请求",
+            eqSparePartService.generatePurchaseRequest(spareIds, remark));
+    }
+
+    /**
+     * 备件→ERP 过账同步台账(失败可见: MES-EQ-04)
+     *
+     * @param syncStatus 同步状态过滤(PENDING/SENT/SYNCED/FAILED, 可空)
+     * @return 台账列表
+     */
+    @SaCheckPermission("mes:eq:spare:query")
+    @GetMapping("/erp-sync")
+    public R<List<EqSpareErpSync>> erpSync(String syncStatus) {
+        return R.ok(eqSparePartService.selectErpSyncList(syncStatus));
+    }
+
+    /**
+     * 存量备件默认仓库回填(MES-EQ-04 收口)
+     * <p>把 {@code warehouse_id IS NULL} 的备件统一回填为服务端配置
+     * {@code nexus.mes.eq.spare.default-warehouse-id}（幂等）；<b>无请求体</b>——默认仓库不接受客户端传参，
+     * 避免任意仓库覆盖。</p>
+     *
+     * @return 影响行数
+     */
+    @SaCheckPermission("mes:eq:spare:edit")
+    @Log(title = "备件默认仓库回填", businessType = BusinessType.UPDATE)
+    @PostMapping("/backfill-warehouse")
+    public R<Integer> backfillWarehouse() {
+        return R.ok("回填完成", eqSparePartService.backfillWarehouse());
+    }
+
+    /**
+     * 重投/对账单笔过账(MES-EQ-04)
+     *
+     * @param syncId 同步台账ID
+     * @return 是否已确认 ERP 落账
+     */
+    @SaCheckPermission("mes:eq:spare:stock")
+    @Log(title = "备件ERP过账重投", businessType = BusinessType.UPDATE)
+    @PostMapping("/erp-sync/{syncId}/retry")
+    public R<Boolean> retryErpSync(@PathVariable Long syncId) {
+        return R.ok(eqSparePartService.retryErpSync(syncId));
     }
 }

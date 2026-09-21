@@ -89,6 +89,8 @@ public class TransferStrategy extends BaseStockOperationStrategy {
         fromLqw.eq(line.getFromLocationId() != null, WmMaterialStock::getLocationId, line.getFromLocationId());
         fromLqw.eq(WmMaterialStock::getFrozenFlag, 0L);
         fromLqw.apply("(stock_quantity - reserved_quantity) > 0");
+        // ERP-WM-06: 效期拦截 —— 已过期批次不得参与调拨
+        fromLqw.apply(NOT_EXPIRED_SQL);
         fromLqw.orderByAsc(WmMaterialStock::getExpireDate, WmMaterialStock::getRecptDate, WmMaterialStock::getStockId);
 
         List<WmMaterialStock> fromStocks = stockMapper.selectList(fromLqw);
@@ -99,15 +101,16 @@ public class TransferStrategy extends BaseStockOperationStrategy {
         BigDecimal remaining = line.getQuantity();
         for (WmMaterialStock fromStock : fromStocks) {
             if (remaining.compareTo(BigDecimal.ZERO) <= 0) break;
-            BigDecimal stockQty = fromStock.getStockQuantity() == null ? BigDecimal.ZERO : fromStock.getStockQuantity();
-            if (stockQty.compareTo(BigDecimal.ZERO) <= 0) continue;
+            // ERP-WM-02: 扣减上限按可用量(在库-已预留)而非账面量, 否则调拨可扣穿销售预留
+            BigDecimal available = availableOf(fromStock);
+            if (available.compareTo(BigDecimal.ZERO) <= 0) continue;
 
-            BigDecimal deductQty = stockQty.min(remaining);
-            BigDecimal beforeQty = stockQty;
-            BigDecimal afterQty = stockQty.subtract(deductQty);
-            int affected = stockMapper.deductStock(fromStock.getStockId(), deductQty, fromStock.getVersion());
+            BigDecimal deductQty = available.min(remaining);
+            BigDecimal beforeQty = fromStock.getStockQuantity();
+            BigDecimal afterQty = beforeQty.subtract(deductQty);
+            int affected = stockMapper.deductStockAvailable(fromStock.getStockId(), deductQty, fromStock.getVersion());
             if (affected == 0) {
-                throw new ServiceException("库存并发冲突，请重试: 物料【" + line.getMaterialName() + "】");
+                throw new ServiceException("可用库存不足或已被并发占用，请重试: 物料【" + line.getMaterialName() + "】");
             }
             stockTxMapper.insert(buildTransferOutTx(line, fromStock, deductQty, beforeQty, afterQty, now));
             remaining = remaining.subtract(deductQty);
@@ -116,12 +119,17 @@ public class TransferStrategy extends BaseStockOperationStrategy {
             throw new RuntimeException("物料【" + line.getMaterialName() + "】来源库存不足");
         }
 
-        // 2. 目标库存增加（按目标仓库过滤）
+        // 2. 目标库存增加（ERP-WM-14: 目标仓库/库位改为强制条件，缺失直接拒绝）
+        //    修复前用条件 eq：维度为空时该条件被跳过 → 会命中"任意仓库"里同物料同批次的第一条库存行
+        //    并直接加数量（跨仓错账）；新建行也会落 warehouse_id/location_id=NULL（库存维度丢失）。
+        if (line.getToWarehouseId() == null || line.getToLocationId() == null) {
+            throw new ServiceException("调拨目标仓库/库位不能为空: 物料【" + line.getMaterialName() + "】");
+        }
         LambdaQueryWrapper<WmMaterialStock> toLqw = Wrappers.lambdaQuery();
         toLqw.eq(WmMaterialStock::getMaterialId, line.getMaterialId());
-        toLqw.eq(line.getToWarehouseId() != null, WmMaterialStock::getWarehouseId, line.getToWarehouseId());
+        toLqw.eq(WmMaterialStock::getWarehouseId, line.getToWarehouseId());
         toLqw.eq(line.getBatchId() != null, WmMaterialStock::getBatchId, line.getBatchId());
-        toLqw.eq(line.getToLocationId() != null, WmMaterialStock::getLocationId, line.getToLocationId());
+        toLqw.eq(WmMaterialStock::getLocationId, line.getToLocationId());
         toLqw.eq(WmMaterialStock::getFrozenFlag, 0L);
         List<WmMaterialStock> toStocks = stockMapper.selectList(toLqw);
 

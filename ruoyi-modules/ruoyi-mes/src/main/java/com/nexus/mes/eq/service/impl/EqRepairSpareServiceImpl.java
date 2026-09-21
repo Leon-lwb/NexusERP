@@ -23,8 +23,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * MES维修领用备件明细 Service 业务层实现
@@ -127,9 +129,32 @@ public class EqRepairSpareServiceImpl implements IEqRepairSpareService {
         if (ids == null || ids.length == 0) {
             return false;
         }
-        // 删除前回滚库存: 每条领用明细归还对应备件数量(IN 入库)
         List<EqRepairSpare> records = baseMapper.selectList(Wrappers.<EqRepairSpare>lambdaQuery()
             .in(EqRepairSpare::getId, Arrays.asList(ids)));
+        if (records.isEmpty()) {
+            return false;
+        }
+        // 守卫(先校验后动库存, 与 batchAdd 同等口径): 领用明细只允许在维修单"维修中"时撤销。
+        // 维修单已完工/已作废后删除明细并回滚库存 = 抹除已发生的备件消耗与成本, 属旁路(MES-EQ-08)。
+        // 去重后逐个校验维修单, 避免同一维修单被反复查询。
+        Set<Long> repairIds = new LinkedHashSet<>();
+        for (EqRepairSpare rs : records) {
+            if (rs.getRepairId() == null) {
+                throw new ServiceException("领用明细缺少维修单关联, 无法删除: id=" + rs.getId());
+            }
+            repairIds.add(rs.getRepairId());
+        }
+        for (Long repairId : repairIds) {
+            EqRepair repair = repairMapper.selectById(repairId);
+            if (repair == null) {
+                throw new ServiceException("维修单不存在: " + repairId);
+            }
+            if (!IEqRepairService.STATUS_REPAIRING.equals(repair.getStatus())) {
+                throw new ServiceException("维修单不在维修中状态, 无法删除领用明细(已完工/已作废的消耗不可回滚): "
+                    + repairId + ", 当前状态: " + repair.getStatus());
+            }
+        }
+        // 校验通过后才回滚库存: 每条领用明细归还对应备件数量(IN 入库)
         for (EqRepairSpare rs : records) {
             if (rs.getSpareId() != null && rs.getQuantity() != null && rs.getQuantity().signum() > 0) {
                 EqSpareStockBo stockBo = new EqSpareStockBo();

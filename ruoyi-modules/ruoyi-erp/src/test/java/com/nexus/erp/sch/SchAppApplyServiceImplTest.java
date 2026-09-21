@@ -2,6 +2,7 @@ package com.nexus.erp.sch;
 
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.erp.sch.domain.SchAttendance;
+import com.nexus.erp.sch.domain.SchEmployeeSchedule;
 import com.nexus.erp.sch.domain.SchLeaveApply;
 import com.nexus.erp.sch.domain.SchSupplementApply;
 import com.nexus.erp.sch.domain.bo.SchApplyApproveBo;
@@ -20,7 +21,11 @@ import com.nexus.erp.sch.service.impl.SchAppApplyServiceImpl;
 import com.nexus.common.satoken.utils.LoginHelper;
 import com.nexus.system.mapper.SysUserMapper;
 import com.nexus.system.service.ISysOssService;
+import com.baomidou.mybatisplus.core.MybatisConfiguration;
+import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
+import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -39,10 +44,12 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -82,6 +89,16 @@ class SchAppApplyServiceImplTest {
 
     private static final Long WORKER_ID = 100L;
     private static final String WORKER_NAME = "张三";
+
+    @BeforeAll
+    static void initTableInfo() {
+        // 审批改为条件更新(CAS, ERP-SCH-09)后用 lambdaUpdate(...).set(...)，MP 会即时解析列名，
+        // 单测无 Spring 上下文需手工注册实体列缓存，否则抛 can not find lambda cache
+        MybatisConfiguration configuration = new MybatisConfiguration();
+        MapperBuilderAssistant assistant = new MapperBuilderAssistant(configuration, "");
+        TableInfoHelper.initTableInfo(assistant, SchSupplementApply.class);
+        TableInfoHelper.initTableInfo(assistant, SchLeaveApply.class);
+    }
 
     @BeforeEach
     void setUp() {
@@ -295,12 +312,12 @@ class SchAppApplyServiceImplTest {
     void approveLeave_rejected_noAttendanceWriteBack() {
         SchLeaveApply apply = pendingLeave(1L, "2026-09-01", "2026-09-03");
         when(leaveApplyMapper.selectById(1L)).thenReturn(apply);
+        when(leaveApplyMapper.update(any(), any())).thenReturn(1);
 
         service.approveLeaveApply(approveBo(1L, false));
 
-        ArgumentCaptor<SchLeaveApply> captor = ArgumentCaptor.forClass(SchLeaveApply.class);
-        verify(leaveApplyMapper).updateById(captor.capture());
-        assertEquals("rejected", captor.getValue().getApplyStatus());
+        // ERP-SCH-09: 审批由"读-改-写"改为条件更新(CAS), 不再 updateById
+        verify(leaveApplyMapper).update(isNull(), any());
         // 驳回不落考勤记录
         verify(attendanceMapper, never()).insert(any(SchAttendance.class));
     }
@@ -309,19 +326,124 @@ class SchAppApplyServiceImplTest {
     void approveLeave_approved_writesBackLeaveAttendancePerDay() {
         SchLeaveApply apply = pendingLeave(1L, "2026-09-01", "2026-09-03");
         when(leaveApplyMapper.selectById(1L)).thenReturn(apply);
+        when(leaveApplyMapper.update(any(), any())).thenReturn(1);
         // 区间内无已有考勤记录 → 每天新建
         when(attendanceMapper.selectOne(any())).thenReturn(null);
 
         service.approveLeaveApply(approveBo(1L, true));
 
-        ArgumentCaptor<SchLeaveApply> leaveCaptor = ArgumentCaptor.forClass(SchLeaveApply.class);
-        verify(leaveApplyMapper).updateById(leaveCaptor.capture());
-        assertEquals("approved", leaveCaptor.getValue().getApplyStatus());
+        // ERP-SCH-09: CAS 条件更新推进 pending → approved
+        verify(leaveApplyMapper).update(isNull(), any());
 
         // 3 天请假 → 3 条 leave 考勤记录
         ArgumentCaptor<SchAttendance> attendanceCaptor = ArgumentCaptor.forClass(SchAttendance.class);
         verify(attendanceMapper, Mockito.times(3)).insert(attendanceCaptor.capture());
         attendanceCaptor.getAllValues().forEach(a -> assertEquals("leave", a.getAttendanceStatus()));
+    }
+
+    // ==================== 补卡回写不覆盖已判定状态(ERP-SCH-02) ====================
+
+    @Test
+    void approveSupplement_clockOut_keepsExistingLateStatus() {
+        SchSupplementApply apply = new SchSupplementApply();
+        apply.setApplyId(1L);
+        apply.setApplyNo("BC20260920000001");
+        apply.setWorkerId(WORKER_ID);
+        apply.setWorkerName(WORKER_NAME);
+        apply.setApplyDate(Date.from(LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant()));
+        apply.setApplyType("clock_out");
+        apply.setApplyStatus("pending");
+        when(supplementApplyMapper.selectById(1L)).thenReturn(apply);
+        when(supplementApplyMapper.update(any(), any())).thenReturn(1);
+
+        SchEmployeeSchedule schedule = new SchEmployeeSchedule();
+        schedule.setWorkerId(WORKER_ID);
+        schedule.setStartTime(Date.from(LocalDate.now().atTime(9, 0).atZone(ZoneId.systemDefault()).toInstant()));
+        schedule.setEndTime(Date.from(LocalDate.now().atTime(18, 0).atZone(ZoneId.systemDefault()).toInstant()));
+        when(employeeScheduleMapper.selectList(any())).thenReturn(List.of(schedule));
+
+        // 当天已判定迟到: 9:30 上班打卡 → late / late_minutes=30, 下班卡缺失
+        SchAttendance existing = new SchAttendance();
+        existing.setAttendanceId(900L);
+        existing.setWorkerId(WORKER_ID);
+        existing.setClockInTime(Date.from(LocalDate.now().atTime(9, 30).atZone(ZoneId.systemDefault()).toInstant()));
+        existing.setAttendanceStatus("late");
+        existing.setLateMinutes(30L);
+        when(attendanceMapper.selectOne(any())).thenReturn(existing);
+
+        service.approveSupplementApply(approveBo(1L, true));
+
+        ArgumentCaptor<SchAttendance> captor = ArgumentCaptor.forClass(SchAttendance.class);
+        verify(attendanceMapper).updateById(captor.capture());
+        SchAttendance updated = captor.getValue();
+        // 补齐缺的下班卡
+        assertNotNull(updated.getClockOutTime());
+        // 关键回归: 不得把已判定的迟到抹成 normal(修复前恒为 normal)
+        assertEquals("late", updated.getAttendanceStatus());
+        // 未触碰迟到分钟数(MP updateById 忽略 null 字段 → 库中仍为 30)
+        assertNull(updated.getLateMinutes());
+        verify(attendanceMapper, never()).insert(any(SchAttendance.class));
+    }
+
+    @Test
+    void approveSupplement_clockIn_onEmptyRecord_setsNormal() {
+        SchSupplementApply apply = new SchSupplementApply();
+        apply.setApplyId(2L);
+        apply.setApplyNo("BC20260920000002");
+        apply.setWorkerId(WORKER_ID);
+        apply.setWorkerName(WORKER_NAME);
+        apply.setApplyDate(Date.from(LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant()));
+        apply.setApplyType("clock_in");
+        apply.setApplyStatus("pending");
+        when(supplementApplyMapper.selectById(2L)).thenReturn(apply);
+        when(supplementApplyMapper.update(any(), any())).thenReturn(1);
+        when(employeeScheduleMapper.selectList(any())).thenReturn(List.of());
+        // 当天完全没有考勤记录 → 新建, 状态 normal
+        when(attendanceMapper.selectOne(any())).thenReturn(null);
+
+        service.approveSupplementApply(approveBo(2L, true));
+
+        ArgumentCaptor<SchAttendance> captor = ArgumentCaptor.forClass(SchAttendance.class);
+        verify(attendanceMapper).insert(captor.capture());
+        assertEquals("normal", captor.getValue().getAttendanceStatus());
+        assertEquals(WORKER_ID, captor.getValue().getWorkerId());
+    }
+
+    // ==================== 审批并发/单号冲突(ERP-SCH-09 / ERP-SCH-11) ====================
+
+    @Test
+    void approveSupplement_concurrentLoser_throwsAndSkipsWriteBack() {
+        SchSupplementApply apply = new SchSupplementApply();
+        apply.setApplyId(1L);
+        apply.setApplyNo("BC20260920000009");
+        apply.setWorkerId(WORKER_ID);
+        apply.setApplyDate(new Date());
+        apply.setApplyType("clock_in");
+        apply.setApplyStatus("pending");
+        when(supplementApplyMapper.selectById(1L)).thenReturn(apply);
+        // 另一审批人已抢先推进状态 → CAS 影响 0 行
+        when(supplementApplyMapper.update(any(), any())).thenReturn(0);
+
+        ServiceException ex = assertThrows(ServiceException.class,
+            () -> service.approveSupplementApply(approveBo(1L, true)));
+        assertTrue(ex.getMessage().contains("已审批"));
+        // 关键回归：CAS 失败不得回写考勤（修复前两人都能通过并各自回写）
+        verify(attendanceMapper, never()).insert(any(SchAttendance.class));
+        verify(attendanceMapper, never()).updateById(any(SchAttendance.class));
+    }
+
+    @Test
+    void submitSupplement_duplicateApplyNo_throwsReadableError() {
+        when(schPunchRuleService.selectList(any(SchPunchRuleBo.class)))
+            .thenReturn(List.of(rule(1, 7L, 1, 0)));
+        when(supplementApplyMapper.selectCount(any())).thenReturn(0L);
+        when(supplementApplyMapper.insert(any(SchSupplementApply.class)))
+            .thenThrow(new org.springframework.dao.DuplicateKeyException("Duplicate entry 'BC...'"));
+
+        String yesterday = LocalDate.now().minusDays(1).toString();
+        ServiceException ex = assertThrows(ServiceException.class,
+            () -> service.submitSupplementApply(WORKER_ID, WORKER_NAME, supplementBo(yesterday, "clock_in")));
+        assertTrue(ex.getMessage().contains("单号"));
     }
 
     private SchLeaveApply pendingLeave(Long id, String start, String end) {

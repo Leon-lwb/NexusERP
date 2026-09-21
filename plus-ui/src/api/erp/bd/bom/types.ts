@@ -76,6 +76,8 @@ export interface BomDetailVO {
   statusDesc: string;
   remark: string;
   sourceType?: string;
+  /** 供应方: SELF_PROVIDED 自备 / VENDOR_PROVIDED 外协厂供 / CUSTOMER_PROVIDED 客供（ERP-BD-01，字典 bd_supply_type） */
+  supplyType?: string;
   backflushFlag?: number;
 }
 
@@ -95,6 +97,8 @@ export interface BomDetailForm {
   status?: number;
   remark?: string;
   sourceType?: string;
+  /** 供应方（ERP-BD-01，后端 BdBomDetailBo/Vo.supplyType 已打通） */
+  supplyType?: string;
 }
 
 export interface BomTreeNodeVo {

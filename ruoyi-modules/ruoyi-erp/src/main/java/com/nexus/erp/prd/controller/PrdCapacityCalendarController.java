@@ -50,6 +50,7 @@ public class PrdCapacityCalendarController extends BaseController {
      * @param pageQuery 分页参数，包含页码、每页条数及排序信息
      * @return 产能日历分页列表
      */
+    @SaCheckPermission("prd:capacityCalendar:list")
     @GetMapping("/list")
     public TableDataInfo<PrdCapacityCalendarVo> list(PrdCapacityCalendarBo bo, PageQuery pageQuery) {
         return capacityCalendarService.selectPageList(bo, pageQuery);
@@ -63,6 +64,7 @@ public class PrdCapacityCalendarController extends BaseController {
      * @param bo       查询参数
      * @param response HTTP 响应对象，用于输出 Excel 文件流
      */
+    @SaCheckPermission("prd:capacityCalendar:export")
     @Log(title = "产能日历", businessType = BusinessType.EXPORT)
     @PostMapping("/export")
     public void export(PrdCapacityCalendarBo bo, HttpServletResponse response) {
@@ -78,6 +80,7 @@ public class PrdCapacityCalendarController extends BaseController {
      * @param calendarId 产能日历 ID
      * @return 产能日历详细信息
      */
+    @SaCheckPermission("prd:capacityCalendar:query")
     @GetMapping("/{calendarId}")
     public R<PrdCapacityCalendarVo> getInfo(@NotNull(message = "日历ID不能为空") @PathVariable Long calendarId) {
         return R.ok(capacityCalendarService.selectById(calendarId));
@@ -92,6 +95,7 @@ public class PrdCapacityCalendarController extends BaseController {
      * @param bo 产能日历业务对象，包含日期、班次、可用工时等信息
      * @return 操作结果，成功返回 {@code R.success()}，失败返回 {@code R.fail()}
      */
+    @SaCheckPermission("prd:capacityCalendar:add")
     @Log(title = "产能日历", businessType = BusinessType.INSERT)
     @PostMapping
     public R<Void> add(@Validated(AddGroup.class) @RequestBody PrdCapacityCalendarBo bo) {
@@ -107,6 +111,7 @@ public class PrdCapacityCalendarController extends BaseController {
      * @param bo 产能日历业务对象，包含需要更新的字段信息
      * @return 操作结果，成功返回 {@code R.success()}，失败返回 {@code R.fail()}
      */
+    @SaCheckPermission("prd:capacityCalendar:edit")
     @Log(title = "产能日历", businessType = BusinessType.UPDATE)
     @PutMapping
     public R<Void> edit(@Validated(EditGroup.class) @RequestBody PrdCapacityCalendarBo bo) {
@@ -122,6 +127,7 @@ public class PrdCapacityCalendarController extends BaseController {
      * @param calendarIds 要删除的产能日历 ID 数组（支持批量删除）
      * @return 操作结果，成功返回 {@code R.success()}，失败返回 {@code R.fail()}
      */
+    @SaCheckPermission("prd:capacityCalendar:remove")
     @Log(title = "产能日历", businessType = BusinessType.DELETE)
     @DeleteMapping("/{calendarIds}")
     public R<Void> remove(@NotEmpty(message = "日历ID不能为空") @PathVariable Long[] calendarIds) {

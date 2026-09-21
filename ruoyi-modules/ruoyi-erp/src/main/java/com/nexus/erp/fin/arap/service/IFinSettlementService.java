@@ -23,6 +23,21 @@ public interface IFinSettlementService {
      */
     void settle(FinSettlementBo bo);
 
+    /**
+     * 反核销（撤销一次核销，FIN-ARAP-02）。
+     * <p>按核销记录反向回退三处状态，全部条件更新 + 乐观锁 + 金额守卫：</p>
+     * <ol>
+     *   <li>发票 {@code verified_amount -= settle_amount}，状态回退（不再满额则回 ISSUED）；</li>
+     *   <li>{@code fin_receipt.settled_amount -= settle_amount}，状态回退（不再满额则回 CONFIRMED）；</li>
+     *   <li>{@code gl_voucher_line} 中 {@code cleared_by = settlementId} 的未清项复位为未清账；</li>
+     *   <li>逻辑删除 {@code fin_settlement} 记录。</li>
+     * </ol>
+     * <p>幂等：重复调用（记录已逻辑删除）直接抛异常，不会二次回滚金额。</p>
+     *
+     * @param settlementId 核销记录ID
+     */
+    void unsettle(Long settlementId);
+
     /** 核销记录分页 */
     TableDataInfo<FinSettlementVo> queryPageList(FinSettlementBo bo, PageQuery pageQuery);
 

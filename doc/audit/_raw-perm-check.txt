@@ -1,0 +1,151 @@
+== SaCheckPermission 权限码统计 ==
+代码中出现的权限码总数: 803   已在SQL种子中出现: 718   未出现(疑似缺种子): 85
+
+== 未在 script/sql/** 任何脚本中出现的权限码（非超管角色将 403）==
+fin:arap:receipt:edit	<- ruoyi-modules\ruoyi-erp\src\main\java\com\nexus\erp\fin\arap\controller\FinReceiptController.java
+fin:arap:receipt:export	<- ruoyi-modules\ruoyi-erp\src\main\java\com\nexus\erp\fin\arap\controller\FinReceiptController.java
+fin:arap:receipt:remove	<- ruoyi-modules\ruoyi-erp\src\main\java\com\nexus\erp\fin\arap\controller\FinReceiptController.java
+fin:gl:currency:add	<- ruoyi-modules\ruoyi-erp\src\main\java\com\nexus\erp\fin\gl\controller\GlCurrencyRateController.java
+fin:gl:currency:edit	<- ruoyi-modules\ruoyi-erp\src\main\java\com\nexus\erp\fin\gl\controller\GlCurrencyRateController.java
+fin:gl:currency:remove	<- ruoyi-modules\ruoyi-erp\src\main\java\com\nexus\erp\fin\gl\controller\GlCurrencyRateController.java
+fin:gl:voucher:export	<- ruoyi-modules\ruoyi-erp\src\main\java\com\nexus\erp\fin\gl\controller\GlVoucherController.java
+mes:eq:patrol:task:edit	<- ruoyi-modules\ruoyi-mes\src\main\java\com\nexus\mes\eq\controller\EqPatrolController.java
+mes:ncr:8d:query	<- ruoyi-modules\ruoyi-mes\src\main\java\com\nexus\mes\ncr\controller\Ncr8dReportController.java
+mes:ncr:defect:list	<- ruoyi-modules\ruoyi-mes\src\main\java\com\nexus\mes\ncr\controller\NcrDefectController.java
+mes:pro:trace:query	<- ruoyi-modules\ruoyi-mes\src\main\java\com\nexus\mes\pro\controller\ProTraceabilityController.java
+prd:workOrder:list	<- ruoyi-modules\ruoyi-erp\src\main\java\com\nexus\erp\prd\report\controller\PrdProductionReportController.java
+pu:contract:export	<- ruoyi-modules\ruoyi-erp\src\main\java\com\nexus\erp\pu\controller\PuContractController.java
+pu:order:approve	<- ruoyi-modules\ruoyi-erp\src\main\java\com\nexus\erp\pu\controller\PuPurchaseOrderController.java
+pu:order:cancel	<- ruoyi-modules\ruoyi-erp\src\main\java\com\nexus\erp\pu\controller\PuPurchaseOrderController.java
+pu:order:close	<- ruoyi-modules\ruoyi-erp\src\main\java\com\nexus\erp\pu\controller\PuPurchaseOrderController.java
+pu:order:receive	<- ruoyi-modules\ruoyi-erp\src\main\java\com\nexus\erp\pu\controller\PuPurchaseOrderController.java
+pu:order:submit	<- ruoyi-modules\ruoyi-erp\src\main\java\com\nexus\erp\pu\controller\PuPurchaseOrderController.java
+pu:purchaseOrder:list	<- ruoyi-modules\ruoyi-erp\src\main\java\com\nexus\erp\pu\report\controller\PuPurchaseReportController.java
+pu:requisition:approve	<- ruoyi-modules\ruoyi-erp\src\main\java\com\nexus\erp\pu\controller\PuPurchaseRequisitionController.java
+pu:requisition:cancel	<- ruoyi-modules\ruoyi-erp\src\main\java\com\nexus\erp\pu\controller\PuPurchaseRequisitionController.java
+pu:requisition:close	<- ruoyi-modules\ruoyi-erp\src\main\java\com\nexus\erp\pu\controller\PuPurchaseRequisitionController.java
+pu:requisition:convert	<- ruoyi-modules\ruoyi-erp\src\main\java\com\nexus\erp\pu\controller\PuPurchaseRequisitionController.java
+pu:requisition:submit	<- ruoyi-modules\ruoyi-erp\src\main\java\com\nexus\erp\pu\controller\PuPurchaseRequisitionController.java
+pu:return:confirm	<- ruoyi-modules\ruoyi-erp\src\main\java\com\nexus\erp\pu\controller\PuPurchaseReturnController.java
+pu:return:execute	<- ruoyi-modules\ruoyi-erp\src\main\java\com\nexus\erp\pu\controller\PuPurchaseReturnController.java
+sch:planteam:edit	<- ruoyi-modules\ruoyi-erp\src\main\java\com\nexus\erp\sch\controller\SchPlanTeamController.java
+sch:planteam:export	<- ruoyi-modules\ruoyi-erp\src\main\java\com\nexus\erp\sch\controller\SchPlanTeamController.java
+sch:planteam:list	<- ruoyi-modules\ruoyi-erp\src\main\java\com\nexus\erp\sch\controller\SchPlanTeamController.java
+sch:teamSchedule:edit	<- ruoyi-modules\ruoyi-erp\src\main\java\com\nexus\erp\sch\controller\SchTeamScheduleController.java
+sch:teamSchedule:export	<- ruoyi-modules\ruoyi-erp\src\main\java\com\nexus\erp\sch\controller\SchTeamScheduleController.java
+sch:teamSchedule:list	<- ruoyi-modules\ruoyi-erp\src\main\java\com\nexus\erp\sch\controller\SchTeamScheduleController.java
+wm:arrivalNotice:add	<- ruoyi-modules\ruoyi-erp\src\main\java\com\nexus\erp\wm\controller\WmArrivalNoticeController.java
+wm:arrivalNotice:edit	<- ruoyi-modules\ruoyi-erp\src\main\java\com\nexus\erp\wm\controller\WmArrivalNoticeController.java
+wm:arrivalNotice:export	<- ruoyi-modules\ruoyi-erp\src\main\java\com\nexus\erp\wm\controller\WmArrivalNoticeController.java
+wm:arrivalNotice:list	<- ruoyi-modules\ruoyi-erp\src\main\java\com\nexus\erp\wm\controller\WmArrivalNoticeController.java
+wm:arrivalNotice:query	<- ruoyi-modules\ruoyi-erp\src\main\java\com\nexus\erp\wm\controller\WmArrivalNoticeController.java
+wm:arrivalNotice:remove	<- ruoyi-modules\ruoyi-erp\src\main\java\com\nexus\erp\wm\controller\WmArrivalNoticeController.java
+wm:arrivalNotice:submit	<- ruoyi-modules\ruoyi-erp\src\main\java\com\nexus\erp\wm\controller\WmArrivalNoticeController.java
+wm:arrivalNoticeLine:add	<- ruoyi-modules\ruoyi-erp\src\main\java\com\nexus\erp\wm\controller\WmArrivalNoticeLineController.java
+wm:arrivalNoticeLine:edit	<- ruoyi-modules\ruoyi-erp\src\main\java\com\nexus\erp\wm\controller\WmArrivalNoticeLineController.java
+wm:arrivalNoticeLine:export	<- ruoyi-modules\ruoyi-erp\src\main\java\com\nexus\erp\wm\controller\WmArrivalNoticeLineController.java
+wm:arrivalNoticeLine:list	<- ruoyi-modules\ruoyi-erp\src\main\java\com\nexus\erp\wm\controller\WmArrivalNoticeLineController.java
+wm:arrivalNoticeLine:query	<- ruoyi-modules\ruoyi-erp\src\main\java\com\nexus\erp\wm\controller\WmArrivalNoticeLineController.java
+wm:arrivalNoticeLine:remove	<- ruoyi-modules\ruoyi-erp\src\main\java\com\nexus\erp\wm\controller\WmArrivalNoticeLineController.java
+wm:detail:add	<- ruoyi-modules\ruoyi-erp\src\main\java\com\nexus\erp\wm\controller\WmMaterialReceiveDetailController.java
+wm:detail:edit	<- ruoyi-modules\ruoyi-erp\src\main\java\com\nexus\erp\wm\controller\WmMaterialReceiveDetailController.java
+wm:detail:export	<- ruoyi-modules\ruoyi-erp\src\main\java\com\nexus\erp\wm\controller\WmMaterialReceiveDetailController.java
+wm:detail:list	<- ruoyi-modules\ruoyi-erp\src\main\java\com\nexus\erp\wm\controller\WmMaterialReceiveDetailController.java
+wm:detail:query	<- ruoyi-modules\ruoyi-erp\src\main\java\com\nexus\erp\wm\controller\WmMaterialReceiveDetailController.java
+wm:detail:remove	<- ruoyi-modules\ruoyi-erp\src\main\java\com\nexus\erp\wm\controller\WmMaterialReceiveDetailController.java
+wm:materialStock:list	<- ruoyi-modules\ruoyi-erp\src\main\java\com\nexus\erp\wm\report\controller\WmInventoryReportController.java
+wm:pickingrule:add	<- ruoyi-modules\ruoyi-erp\src\main\java\com\nexus\erp\wm\controller\WmPickingRuleController.java
+wm:pickingrule:edit	<- ruoyi-modules\ruoyi-erp\src\main\java\com\nexus\erp\wm\controller\WmPickingRuleController.java
+wm:pickingrule:export	<- ruoyi-modules\ruoyi-erp\src\main\java\com\nexus\erp\wm\controller\WmPickingRuleController.java
+wm:pickingrule:list	<- ruoyi-modules\ruoyi-erp\src\main\java\com\nexus\erp\wm\controller\WmPickingRuleController.java
+wm:pickingrule:query	<- ruoyi-modules\ruoyi-erp\src\main\java\com\nexus\erp\wm\controller\WmPickingRuleController.java
+wm:pickingrule:remove	<- ruoyi-modules\ruoyi-erp\src\main\java\com\nexus\erp\wm\controller\WmPickingRuleController.java
+wm:putawayrule:add	<- ruoyi-modules\ruoyi-erp\src\main\java\com\nexus\erp\wm\controller\WmPutawayRuleController.java
+wm:putawayrule:edit	<- ruoyi-modules\ruoyi-erp\src\main\java\com\nexus\erp\wm\controller\WmPutawayRuleController.java
+wm:putawayrule:export	<- ruoyi-modules\ruoyi-erp\src\main\java\com\nexus\erp\wm\controller\WmPutawayRuleController.java
+wm:putawayrule:list	<- ruoyi-modules\ruoyi-erp\src\main\java\com\nexus\erp\wm\controller\WmPutawayRuleController.java
+wm:putawayrule:query	<- ruoyi-modules\ruoyi-erp\src\main\java\com\nexus\erp\wm\controller\WmPutawayRuleController.java
+wm:putawayrule:remove	<- ruoyi-modules\ruoyi-erp\src\main\java\com\nexus\erp\wm\controller\WmPutawayRuleController.java
+wm:receive:add	<- ruoyi-modules\ruoyi-erp\src\main\java\com\nexus\erp\wm\controller\WmMaterialReceiveController.java
+wm:receive:edit	<- ruoyi-modules\ruoyi-erp\src\main\java\com\nexus\erp\wm\controller\WmMaterialReceiveController.java, ruoyi-modules\ruoyi-erp\src\main\java\com\nexus\erp\wm\controller\app\AppPdaReceiveController.java
+wm:receive:execute	<- ruoyi-modules\ruoyi-erp\src\main\java\com\nexus\erp\wm\controller\WmMaterialReceiveController.java
+wm:receive:export	<- ruoyi-modules\ruoyi-erp\src\main\java\com\nexus\erp\wm\controller\WmMaterialReceiveController.java
+wm:receive:query	<- ruoyi-modules\ruoyi-erp\src\main\java\com\nexus\erp\wm\controller\WmMaterialReceiveController.java
+wm:receive:remove	<- ruoyi-modules\ruoyi-erp\src\main\java\com\nexus\erp\wm\controller\WmMaterialReceiveController.java
+wm:receive:submit	<- ruoyi-modules\ruoyi-erp\src\main\java\com\nexus\erp\wm\controller\WmMaterialReceiveController.java
+wm:receiveLine:add	<- ruoyi-modules\ruoyi-erp\src\main\java\com\nexus\erp\wm\controller\WmMaterialReceiveLineController.java
+wm:receiveLine:edit	<- ruoyi-modules\ruoyi-erp\src\main\java\com\nexus\erp\wm\controller\WmMaterialReceiveLineController.java
+wm:receiveLine:export	<- ruoyi-modules\ruoyi-erp\src\main\java\com\nexus\erp\wm\controller\WmMaterialReceiveLineController.java
+wm:receiveLine:list	<- ruoyi-modules\ruoyi-erp\src\main\java\com\nexus\erp\wm\controller\WmMaterialReceiveLineController.java
+wm:receiveLine:query	<- ruoyi-modules\ruoyi-erp\src\main\java\com\nexus\erp\wm\controller\WmMaterialReceiveLineController.java
+wm:receiveLine:remove	<- ruoyi-modules\ruoyi-erp\src\main\java\com\nexus\erp\wm\controller\WmMaterialReceiveLineController.java
+wm:salesIssue:complete	<- ruoyi-modules\ruoyi-erp\src\main\java\com\nexus\erp\wm\controller\WmSalesIssueController.java
+wm:salesIssue:confirm	<- ruoyi-modules\ruoyi-erp\src\main\java\com\nexus\erp\wm\controller\WmSalesIssueController.java
+wm:stocktx:add	<- ruoyi-modules\ruoyi-erp\src\main\java\com\nexus\erp\wm\controller\WmMaterialStockTxController.java
+wm:stocktx:edit	<- ruoyi-modules\ruoyi-erp\src\main\java\com\nexus\erp\wm\controller\WmMaterialStockTxController.java
+wm:stocktx:export	<- ruoyi-modules\ruoyi-erp\src\main\java\com\nexus\erp\wm\controller\WmMaterialStockTxController.java
+wm:stocktx:list	<- ruoyi-modules\ruoyi-erp\src\main\java\com\nexus\erp\wm\controller\WmMaterialStockTxController.java
+wm:stocktx:query	<- ruoyi-modules\ruoyi-erp\src\main\java\com\nexus\erp\wm\controller\WmMaterialStockTxController.java
+wm:stocktx:remove	<- ruoyi-modules\ruoyi-erp\src\main\java\com\nexus\erp\wm\controller\WmMaterialStockTxController.java
+
+== 各权限码使用点数量(前 60，用于识别复用/粒度问题) ==
+prd:subcontract:edit	14
+bd:bom:query	14
+prd:subcontract:query	11
+mes:sop:document:list	8
+prd:plan:edit	7
+wm:stocktaking:edit	7
+bd:category:edit	6
+mes:eq:equipment:query	6
+so:orderheader:list	6
+so:orderheader:edit	6
+wm:transfer:edit	6
+prd:work:edit	6
+mes:pro:dispatch:list	5
+prd:rework:edit	5
+bd:bom:edit	5
+wm:productionissue:query	4
+pu:order:query	4
+bd:bom:add	4
+bd:category:query	4
+wm:batch:edit	4
+so:return:edit	4
+mes:eq:oee:query	4
+wm:receive:edit	4
+iot:device:query	4
+wm:sn:edit	4
+wm:productionissue:edit	4
+bd:materialVendor:list	4
+sch:appApply:approve	4
+fin:gl:period:edit	4
+mes:eq:equipment:list	4
+mes:release:package:list	4
+mes:station:device:list	4
+bd:routing:query	4
+fin:report:list	4
+wm:materialHandover:list	3
+mes:eq:repair:complete	3
+mes:qc:oqc:list	3
+mes:pro:flowcard:complete	3
+pu:invoice:edit	3
+bd:material:edit	3
+so:quotation:edit	3
+mes:pro:sn:query	3
+pu:order:edit	3
+mes:sop:viewlog:list	3
+wm:receive:list	3
+pu:contract:edit	3
+fin:fa:category:list	3
+mes:flash:flash:list	3
+mes:eq:maintenance:list	3
+mes:pro:mbom:query	3
+mes:eq:maintenance:complete	3
+mes:qc:template:edit	3
+pu:vendorEvaluation:edit	3
+wm:storagearea:list	3
+prd:capacityCalendar:edit	3
+prd:workOrderResource:query	3
+wm:transfer:list	3
+mes:qc:iqc:inspect	3
+mes:eq:patrol:task:execute	3
+fin:closing:list	3

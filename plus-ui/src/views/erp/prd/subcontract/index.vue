@@ -54,9 +54,10 @@
       <el-table-column label="供应商" align="center" prop="vendorName" min-width="150" show-overflow-tooltip />
       <el-table-column label="物料编码" align="center" prop="materialCode" />
       <el-table-column label="物料名称" align="center" prop="materialName" min-width="150" show-overflow-tooltip />
-      <el-table-column label="计划数量" align="center" prop="plannedQty" />
-      <el-table-column label="单价" align="center" prop="unitPrice" />
-      <el-table-column label="总金额" align="center" prop="totalAmount" />
+      <!-- FE-ERP-09：数量/金额类列右对齐，便于按位比较 -->
+      <el-table-column label="计划数量" align="right" prop="plannedQty" />
+      <el-table-column label="单价" align="right" prop="unitPrice" />
+      <el-table-column label="总金额" align="right" prop="totalAmount" />
       <el-table-column label="计划开始" align="center" prop="planStartDate" />
       <el-table-column label="计划结束" align="center" prop="planEndDate" />
       <el-table-column label="关联工单" align="center" prop="woNo" />

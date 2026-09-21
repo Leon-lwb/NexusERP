@@ -99,4 +99,10 @@ public class ProAndonVo implements Serializable {
 
     /** 备注 */
     private String remark;
+
+    /** 呼叫通知被通知人ID(逗号分隔) */
+    private String notifyUserIds;
+
+    /** 呼叫通知落库时间 */
+    private Date notifyTime;
 }

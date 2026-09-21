@@ -169,8 +169,29 @@
             />
           </el-select>
         </el-form-item>
+        <!-- MES-TG-02 门禁前置：工装上下文必须以 toolingId 提交（后端 ProEntryBo.toolingId）。
+             此前界面收集的 toolingCode 从未进入请求体，后端 TOOLING_AVAILABLE 规则形同虚设。 -->
         <el-form-item label="工装">
-          <el-input v-model="entryForm.toolingCode" placeholder="可选,扫码或输入工装编码" />
+          <el-select
+            v-model="entryForm.toolingId"
+            placeholder="扫码/输入编码后回车选择（仅 IDLE 工装）"
+            filterable
+            clearable
+            default-first-option
+            :loading="toolingLoading"
+            style="width: 100%"
+          >
+            <el-option
+              v-for="t in toolingOptions"
+              :key="t.toolingId"
+              :label="`${t.toolingCode} - ${t.toolingName}${t.calibrationOverdue ? '（校准超期）' : ''}`"
+              :value="t.toolingId"
+            />
+          </el-select>
+          <div v-if="toolingLoadFailed" class="text-xs mt-1" style="color: var(--el-color-danger)">
+            工装列表加载失败，未选择工装将无法通过工装门禁。
+            <el-button link type="primary" @click="loadToolings()">重试</el-button>
+          </div>
         </el-form-item>
         <el-form-item label="批次">
           <el-input v-model="entryForm.lotNo" placeholder="可选,扫码或输入批次号" />
@@ -262,6 +283,8 @@ import type { ProDispatchVO } from '@/api/mes/pro/dispatch';
 import { generateSnForCard } from '@/api/mes/pro/sn';
 import { listWorker } from '@/api/erp/sch/worker/index';
 import type { WorkerVO } from '@/api/erp/sch/worker/types';
+import { listTooling } from '@/api/mes/tg/tooling';
+import type { TgToolingVO } from '@/api/mes/tg/tooling';
 import type { FormInstance, FormRules } from 'element-plus';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
@@ -306,11 +329,39 @@ const entrySubmitting = ref(false);
 const entryFormRef = ref<FormInstance>();
 const entryForm = ref({
   operatorId: undefined as number | undefined,
-  toolingCode: '',
+  /** MES-TG-02：进站必须传后端认的 toolingId（ProEntryBo.toolingId），toolingCode 后端不解析 */
+  toolingId: undefined as number | undefined,
   lotNo: ''
 });
 const entryRules: FormRules = {
   operatorId: [{ required: true, message: '请选择操作员', trigger: 'change' }]
+};
+
+// ===== 进站工装选择（MES-TG-02 门禁前置） =====
+const toolingOptions = ref<TgToolingVO[]>([]);
+const toolingLoading = ref(false);
+const toolingLoadFailed = ref(false);
+
+/**
+ * 加载可领用工装（status=IDLE）。后端 buildQueryWrapper 的 toolingCode 为精确匹配，
+ * 因此一次拉取 IDLE 列表，交由 el-select 的 filterable + default-first-option 做
+ * 「扫码/输入编码 → 回车选中」。
+ */
+const loadToolings = async () => {
+  toolingLoading.value = true;
+  toolingLoadFailed.value = false;
+  try {
+    const res = await listTooling({ pageNum: 1, pageSize: 200, status: 'IDLE' });
+    toolingOptions.value = res.rows || [];
+  } catch (e) {
+    // 不得静默：取不到列表时用户会以为「没有可用工装」，进站会因缺 toolingId 被门禁拒绝
+    console.error('[进站工装] 列表加载失败', e);
+    toolingOptions.value = [];
+    toolingLoadFailed.value = true;
+    proxy?.$modal.msgWarning('工装列表加载失败（需 mes:tg:tooling:list 权限），未选工装可能无法通过工装门禁');
+  } finally {
+    toolingLoading.value = false;
+  }
 };
 
 // 出站相关
@@ -375,10 +426,11 @@ const handleEntry = (row: ProFlowCardStepVO) => {
   currentStep.value = row;
   entryForm.value = {
     operatorId: undefined,
-    toolingCode: '',
+    toolingId: undefined,
     lotNo: ''
   };
   entryDialogVisible.value = true;
+  loadToolings();
 };
 
 const handleSubmitEntry = async () => {
@@ -391,7 +443,9 @@ const handleSubmitEntry = async () => {
     const bo: ProEntryBo = {
       cardId: currentStep.value.cardId,
       stepRecordId: currentStep.value.stepRecordId,
-      operatorId: entryForm.value.operatorId!
+      operatorId: entryForm.value.operatorId!,
+      // MES-TG-02：工装上下文（未选择时后端 TOOLING_AVAILABLE 规则会拒绝，不再静默放行）
+      toolingId: entryForm.value.toolingId || undefined
     };
     const res = await entryFlowCard(bo);
     const result: ProCheckResultVo = res.data;

@@ -2,12 +2,14 @@ package com.nexus.mes.label.service;
 
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.mes.label.domain.MesLabelTemplate;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -16,6 +18,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *
  * @author Nexus
  */
+@Tag("local")
+@Tag("dev")
 class LabelRenderServiceTest {
 
     private final LabelRenderService renderService = new LabelRenderService();
@@ -105,6 +109,71 @@ class LabelRenderServiceTest {
         assertTrue(payload.contains("^FO64,480^BY2,3,"));
         assertTrue(payload.contains("^FD网关主板^FS"));
         assertTrue(payload.trim().endsWith("^XZ"));
+    }
+
+    // ==================== ZPL 指令注入防护(MES-LABEL-01) ====================
+
+    @Test
+    void zpl_stripsCaretInjectionInValues() {
+        Map<String, String> f = fields();
+        // 物料名被注入 ZPL 指令: 修复前会提前 ^XZ 截断标签并打印 SCRAP
+        f.put("materialName", "X^FS^FO0,0^A0N,60,60^FDSCRAP^FS^XZ");
+        // 打印项自身坐标取 5,5(→^FO40,40), 便于区分注入的 ^FO0,0
+        String content = "{\"items\":[{\"type\":\"text\",\"field\":\"materialName\",\"x\":5,\"y\":5}]}";
+        String payload = renderService.render(template("ZPL", content), f);
+
+        assertEquals(1, countOccurrences(payload, "^FS"), "整串只应有一个 ^FS(本打印项自己的结束符): " + payload);
+        assertEquals(1, countOccurrences(payload, "^XZ"), "标签只应有一个 ^XZ(末尾), 未被注入提前截断: " + payload);
+        assertFalse(payload.contains("^FO0,0"), "不得出现注入的定位指令: " + payload);
+        assertFalse(payload.contains("^A0N,60,60"), "不得出现注入的字体指令: " + payload);
+    }
+
+    @Test
+    void zpl_stripsTildeResetInjectionInBarcodeAndQrcode() {
+        Map<String, String> f = fields();
+        f.put("snCode", "SN~JR~HS^XA");
+        String content = """
+            {"items":[
+              {"type":"barcode","field":"snCode","x":0,"y":0},
+              {"type":"qrcode","field":"snCode","x":0,"y":0}
+            ]}""";
+        String payload = renderService.render(template("ZPL", content), f);
+
+        assertFalse(payload.contains("~"), "不得残留 ~ 指令前缀(如 ~JR 复位): " + payload);
+        assertEquals(1, countOccurrences(payload, "^XA"), payload);
+        assertTrue(payload.contains("^FDSNJRHSXA^FS"), payload);
+    }
+
+    @Test
+    void zpl_stripsNewlinesInValues() {
+        Map<String, String> f = fields();
+        f.put("materialName", "第一行\r\n^FS^XA第二行");
+        String content = "{\"items\":[{\"type\":\"text\",\"field\":\"materialName\",\"x\":0,\"y\":0}]}";
+        String payload = renderService.render(template("ZPL", content), f);
+
+        assertEquals(1, countOccurrences(payload, "^XA"), "换行不得拆出新的指令行: " + payload);
+        assertTrue(payload.contains("^FD第一行FSXA第二行^FS"), payload);
+    }
+
+    @Test
+    void tspl_stripsNewlinesInValues() {
+        Map<String, String> f = fields();
+        f.put("materialName", "行一\r\nPRINT 9,9");
+        String content = "{\"items\":[{\"type\":\"text\",\"field\":\"materialName\",\"x\":0,\"y\":0}]}";
+        String payload = renderService.render(template("TSPL", content), f);
+
+        // 换行被剥离后整串仍在同一字面量内(修复前会被拆成两条指令)
+        assertTrue(payload.contains("\"行一PRINT 9,9\""), payload);
+    }
+
+    private int countOccurrences(String text, String needle) {
+        int count = 0;
+        int idx = text.indexOf(needle);
+        while (idx >= 0) {
+            count++;
+            idx = text.indexOf(needle, idx + needle.length());
+        }
+        return count;
     }
 
     // ==================== 公共行为 ====================

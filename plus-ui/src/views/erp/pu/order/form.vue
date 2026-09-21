@@ -76,8 +76,9 @@
             </el-form-item>
           </el-col>
           <el-col :span="8">
+            <!-- ERP-PU-04：服务端新增时强制 DRAFT 并忽略客户端 status，改为只读展示，避免用户误以为可改 -->
             <el-form-item label="状态" prop="status">
-              <el-select v-model="form.status">
+              <el-select v-model="form.status" disabled placeholder="状态由服务端管理" style="width: 100%">
                 <el-option v-for="dict in pu_purchase_order_status" :key="dict.value" :label="dict.label" :value="dict.value" />
               </el-select>
             </el-form-item>
@@ -105,33 +106,35 @@
 
         <!-- 财务信息 -->
         <el-divider content-position="left">财务信息</el-divider>
-        <!-- 第三行：币别、汇率、备注 -->
+        <!-- 第三行：币别、汇率、运费、审批流程 -->
         <el-row :gutter="20">
-          <el-col :span="8">
+          <el-col :span="6">
             <el-form-item label="币别" prop="currency">
               <el-select v-model="form.currency">
                 <el-option v-for="dict in so_currency_type" :key="dict.value" :label="dict.label" :value="dict.value" />
               </el-select>
             </el-form-item>
           </el-col>
-          <el-col :span="8">
+          <el-col :span="6">
             <el-form-item label="汇率" prop="exchangeRate">
-              <el-input
-                v-model="form.exchangeRate"
-                @change="
-                  lineList.forEach(
-                    (r) =>
-                      (r.lineAmount = (
-                        (parseFloat(r.orderQuantity) || 0) *
-                        (parseFloat(r.unitPrice) || 0) *
-                        (parseFloat(form.exchangeRate) || 1)
-                      ).toFixed(2))
-                  )
-                "
+              <!-- 汇率变化必须整单重算（行金额/行税额/不含税金额/税额合计/价税合计），见 recalcLines -->
+              <el-input v-model="form.exchangeRate" @change="recalcLines" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="6">
+            <el-form-item label="运费" prop="freightAmount">
+              <!-- 后端 PuPurchaseOrderBo/Vo/实体三层均有 freightAmount，此前前端零命中（FE-ERP-03） -->
+              <el-input-number
+                v-model="form.freightAmount"
+                :min="0"
+                :precision="2"
+                controls-position="right"
+                style="width: 100%"
+                @change="recalcHeader"
               />
             </el-form-item>
           </el-col>
-          <el-col :span="8">
+          <el-col :span="6">
             <el-form-item label="审批流程" prop="selectFlowId">
               <el-select
                 v-model="form.selectFlowId"
@@ -210,35 +213,32 @@
           </el-table-column>
           <el-table-column label="数量">
             <template #default="scope">
-              <el-input
-                v-model="scope.row.orderQuantity"
-                @change="
-                  scope.row.lineAmount = (
-                    (parseFloat(scope.row.orderQuantity) || 0) *
-                    (parseFloat(scope.row.unitPrice) || 0) *
-                    (parseFloat(form.exchangeRate) || 1)
-                  ).toFixed(2)
-                "
-              />
+              <el-input v-model="scope.row.orderQuantity" @change="recalcLine(scope.row)" />
             </template>
           </el-table-column>
           <el-table-column label="单价">
             <template #default="scope">
-              <el-input
-                v-model="scope.row.unitPrice"
-                @change="
-                  scope.row.lineAmount = (
-                    (parseFloat(scope.row.orderQuantity) || 0) *
-                    (parseFloat(scope.row.unitPrice) || 0) *
-                    (parseFloat(form.exchangeRate) || 1)
-                  ).toFixed(2)
-                "
-              />
+              <el-input v-model="scope.row.unitPrice" @change="recalcLine(scope.row)" />
+            </template>
+          </el-table-column>
+          <el-table-column label="税率">
+            <template #default="scope">
+              <el-input v-model="scope.row.taxRate" placeholder="如 0.13" @change="recalcLine(scope.row)" />
             </template>
           </el-table-column>
           <el-table-column label="金额">
             <template #default="scope">
               <el-input v-model="scope.row.lineAmount" readonly />
+            </template>
+          </el-table-column>
+          <el-table-column label="税额">
+            <template #default="scope">
+              <el-input v-model="scope.row.lineTaxAmount" readonly />
+            </template>
+          </el-table-column>
+          <el-table-column label="不含税金额">
+            <template #default="scope">
+              <el-input v-model="scope.row.lineAmountExcludingTax" readonly />
             </template>
           </el-table-column>
           <el-table-column label="备注">
@@ -506,6 +506,9 @@ function reset() {
     selectFlowId: null,
     currency: 'CNY',
     exchangeRate: 1,
+    freightAmount: 0,
+    taxAmount: 0,
+    totalAmount: 0,
     remark: null,
     vendorId: null,
     vendorCode: null,
@@ -705,11 +708,7 @@ function selectVendor(row: any) {
     const target = lineList.value[currentMaterialIndex.value];
     if (target) {
       target.unitPrice = row.price;
-      target.lineAmount = (
-        (parseFloat(target.orderQuantity) || 0) *
-        (parseFloat(target.unitPrice) || 0) *
-        (parseFloat(form.value.exchangeRate) || 1)
-      ).toFixed(2);
+      recalcLine(target);
     }
   }
   vendorDialog.visible = false;
@@ -788,9 +787,52 @@ function handleSelectRequisition() {
 }
 
 /**
+ * 金额重算（FE-ERP-06）
+ * <p>口径与后端采购侧既有实现保持一致：{@code PuContractServiceImpl} 的
+ * {@code lineAmount = 含税单价 × 数量}、{@code taxAmount = lineAmount × taxRate}、
+ * {@code lineAmountExcludingTax = lineAmount - taxAmount}（BigDecimal HALF_UP 保留 2 位）；
+ * 价税合计 {@code totalAmount = Σ lineAmount + freightAmount}（运费计入价税合计，FE-ERP-03）。</p>
+ * <p>原实现在模板内联用 {@code 数量×单价×汇率} 只改 lineAmount，改汇率后 taxAmount/totalAmount
+ * 仍是旧值，界面自相矛盾；现统一收敛到本组函数，任何金额入口都走同一口径。</p>
+ */
+function round2(n: number): number {
+  return Math.round((Number(n) || 0) * 100 + Number.EPSILON) / 100;
+}
+
+/** 单行重算：含税行金额 → 行税额 → 不含税行金额，并联动表头合计 */
+function recalcLine(row: any) {
+  const qty = parseFloat(row.orderQuantity) || 0;
+  const price = parseFloat(row.unitPrice) || 0;
+  const rate = parseFloat(form.value.exchangeRate) || 1;
+  const taxRate = parseFloat(row.taxRate) || 0;
+  const lineAmount = round2(qty * price * rate);
+  const lineTaxAmount = round2(lineAmount * taxRate);
+  row.lineAmount = lineAmount;
+  row.lineTaxAmount = lineTaxAmount;
+  row.lineAmountExcludingTax = round2(lineAmount - lineTaxAmount);
+  recalcHeader();
+}
+
+/** 整单重算：汇率/行数据变化时逐行重算 */
+function recalcLines() {
+  lineList.value.forEach(recalcLine);
+  recalcHeader();
+}
+
+/** 表头合计：税额合计 = Σ 行税额；价税合计 = Σ 含税行金额 + 运费 */
+function recalcHeader() {
+  const totalAmount = lineList.value.reduce((s, r) => s + (parseFloat(r.lineAmount) || 0), 0);
+  const taxAmount = lineList.value.reduce((s, r) => s + (parseFloat(r.lineTaxAmount) || 0), 0);
+  const freightAmount = parseFloat(form.value.freightAmount) || 0;
+  form.value.taxAmount = round2(taxAmount);
+  form.value.totalAmount = round2(totalAmount + freightAmount);
+}
+
+/**
  * 提交表单
  */
 function submitForm() {
+  recalcLines();
   form.value.lineList = lineList.value;
   // 自动生成开关打开时清空编码，由后端 isBlank 兜底生成，避免预览消耗流水号
   if (autoGenFlag.value) {

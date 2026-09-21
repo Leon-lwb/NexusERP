@@ -18,7 +18,10 @@ import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.common.satoken.utils.LoginHelper;
 import com.nexus.common.web.core.BaseController;
 import com.nexus.iot.device.domain.IotDeviceData;
+import com.nexus.iot.device.domain.bo.IotDeviceStatusBo;
 import com.nexus.iot.device.domain.bo.IotDeviceBo;
+import com.nexus.iot.device.domain.vo.IotDeviceOpsVo;
+import com.nexus.iot.device.domain.vo.IotDeviceSecretVo;
 import com.nexus.iot.device.domain.vo.IotDeviceVo;
 import com.nexus.iot.device.service.IIotDeviceDataService;
 import com.nexus.iot.device.service.IIotDeviceService;
@@ -139,6 +142,8 @@ public class IotDeviceController extends BaseController {
 
     /**
      * 查询设备历史数据（采集时间区间，默认近 24 小时，最多 limit 条）
+     * <p>
+     * IOT-DATA-01：LIMIT 下推到 DB，不再全量载入内存后 subList 截断。
      */
     @SaCheckPermission("iot:device:query")
     @GetMapping("/{deviceId}/data")
@@ -152,12 +157,8 @@ public class IotDeviceController extends BaseController {
         // 默认窗口：近 24 小时
         Date actualEnd = end != null ? end : new Date();
         Date actualStart = start != null ? start : new Date(System.currentTimeMillis() - 24L * 60 * 60 * 1000);
-        List<IotDeviceData> list = iotDeviceDataService.selectHistory(deviceId, actualStart, actualEnd);
-        // selectHistory 已按 collect_time 倒序，内存截断 limit 条
-        int max = limit == null || limit <= 0 ? 1000 : Math.min(limit, 1000);
-        if (list.size() > max) {
-            list = list.subList(0, max);
-        }
+        int max = IIotDeviceDataService.normalizeLimit(limit);
+        List<IotDeviceData> list = iotDeviceDataService.selectHistory(deviceId, actualStart, actualEnd, max);
         return TableDataInfo.build(list);
     }
 
@@ -182,6 +183,50 @@ public class IotDeviceController extends BaseController {
         response.setHeader("X-Accel-Buffering", "no");
         String sessionKey = LoginHelper.getUserId() + ":" + IdUtil.fastSimpleUUID();
         return realtimeSseManager.connect(deviceId, sessionKey);
+    }
+
+    /**
+     * 重置设备密钥（轮换 device_secret）。
+     * <p>
+     * 新密钥仅在本次响应中返回一次（{@code IotDeviceVo.deviceSecret} 被 {@code @JsonIgnore} 屏蔽，
+     * 故用专用 DTO {@link IotDeviceSecretVo} 承载）；重置后旧密钥立即失效，设备须用新密钥重连。
+     */
+    @SaCheckPermission("iot:device:resetSecret")
+    @Log(title = "IoT设备密钥重置", businessType = BusinessType.UPDATE)
+    @PutMapping("/{deviceId}/resetSecret")
+    public R<IotDeviceSecretVo> resetSecret(@PathVariable Long deviceId) {
+        IotDeviceSecretVo vo = iotDeviceService.resetSecret(deviceId);
+        if (vo == null) {
+            return R.fail("设备不存在或无权限访问");
+        }
+        return R.ok(vo);
+    }
+
+    /**
+     * 查询设备运维详情（在线状态 / 最后上报时间 / 固件版本 / 分组与标签）
+     */
+    @SaCheckPermission("iot:device:query")
+    @GetMapping("/{deviceId}/ops")
+    public R<IotDeviceOpsVo> ops(@PathVariable Long deviceId) {
+        IotDeviceOpsVo vo = iotDeviceService.selectOps(deviceId);
+        if (vo == null) {
+            return R.fail("设备不存在或无权限访问");
+        }
+        return R.ok(vo);
+    }
+
+    /**
+     * 变更设备生命周期状态：激活(ACTIVE) / 禁用(INACTIVE) / 注销(DECOMMISSIONED)。
+     * <p>
+     * 条件更新（CAS），影响 0 行视为状态已被并发变更；禁用/注销后 MQTT 认证立即被拒
+     * （{@code IotMqttAuthenticator} 仅放行 ACTIVE），并把连接状态置 OFFLINE。
+     */
+    @SaCheckPermission("iot:device:changeStatus")
+    @Log(title = "IoT设备状态变更", businessType = BusinessType.UPDATE)
+    @PutMapping("/{deviceId}/lifecycle")
+    public R<Void> changeLifecycle(@PathVariable Long deviceId,
+                                   @Validated @RequestBody IotDeviceStatusBo bo) {
+        return toAjax(iotDeviceService.changeStatus(deviceId, bo.getStatus(), bo.getRemark()));
     }
 
     /**

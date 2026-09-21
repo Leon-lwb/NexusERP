@@ -1,5 +1,7 @@
 package com.nexus.common.sign.service.impl;
 
+import org.junit.jupiter.api.Tag;
+
 import com.baomidou.mybatisplus.core.toolkit.LambdaUtils;
 import com.baomidou.mybatisplus.core.toolkit.support.ColumnCache;
 import com.baomidou.lock.LockTemplate;
@@ -42,6 +44,8 @@ import static org.mockito.Mockito.when;
  */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
+@Tag("local")
+@Tag("dev")
 class ESignatureVerifyTest {
 
     @Mock private EsSignatureMapper signatureMapper;

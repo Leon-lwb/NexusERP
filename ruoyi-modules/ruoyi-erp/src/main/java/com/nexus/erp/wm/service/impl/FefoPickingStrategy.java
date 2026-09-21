@@ -42,6 +42,9 @@ public class FefoPickingStrategy implements IPickingStrategyService {
         lqw.eq(WmMaterialStock::getFrozenFlag, 0);
         lqw.gt(WmMaterialStock::getStockQuantity, BigDecimal.ZERO);
         lqw.isNotNull(WmMaterialStock::getExpireDate);
+        // ERP-WM-06: 效期零拦截修复 —— 排除已过期批次。
+        // 原先只按 expire_date 升序排序，等于把「最过期」批次排在最前优先拣出。
+        lqw.apply("(expire_date IS NULL OR expire_date >= CURDATE())");
         lqw.orderByAsc(WmMaterialStock::getExpireDate);
         List<WmMaterialStock> stocks = materialStockMapper.selectList(lqw);
         return allocateStocks(stocks, quantity);

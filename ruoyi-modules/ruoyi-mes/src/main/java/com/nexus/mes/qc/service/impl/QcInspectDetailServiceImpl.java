@@ -41,6 +41,13 @@ public class QcInspectDetailServiceImpl implements IQcInspectDetailService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int generateDetails(String checkType, Long checkId, Long materialId, BigDecimal lotQty) {
+        return generateDetails(checkType, checkId, materialId, lotQty, null, null);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int generateDetails(String checkType, Long checkId, Long materialId, BigDecimal lotQty,
+                               Long processId, Long customerId) {
         // 幂等: 已有明细不重复生成
         Long exist = baseMapper.selectCount(Wrappers.lambdaQuery(QcInspectDetail.class)
             .eq(QcInspectDetail::getCheckType, checkType)
@@ -48,14 +55,14 @@ public class QcInspectDetailServiceImpl implements IQcInspectDetailService {
         if (exist != null && exist > 0) {
             return 0;
         }
-        QcInspectTemplate template = matchTemplate(checkType, materialId);
+        QcInspectTemplate template = matchTemplate(checkType, materialId, processId, customerId);
         if (template == null) {
-            log.info("[QcDetail] 检验单无匹配模板, 保持人工判定: checkType={}, checkId={}, materialId={}",
-                checkType, checkId, materialId);
+            // 无匹配模板: 记 warn 并保持 PENDING(待人工判定) —— 不静默判合格, 也不阻断建单
+            log.warn("[QcDetail] 检验单无匹配模板, 置为待人工判定: checkType={}, checkId={}, materialId={}, processId={}, customerId={}",
+                checkType, checkId, materialId, processId, customerId);
             return 0;
         }
-        // 批量给定时按 GB/T 2828.1(检验水平II)计算建议抽样量
-        BigDecimal sampleQty = lotQty != null ? suggestSampleQty(lotQty) : null;
+        // MES-QC-07: 批量给定时按项目抽样配置(检验水平 + AQL)逐项计算建议抽样量; 未配置时退回检验水平 II
         List<QcInspectItem> items = itemMapper.selectList(Wrappers.lambdaQuery(QcInspectItem.class)
             .eq(QcInspectItem::getTemplateId, template.getTemplateId())
             .eq(QcInspectItem::getEnabled, "1")
@@ -73,7 +80,7 @@ public class QcInspectDetailServiceImpl implements IQcInspectDetailService {
             detail.setStandardDesc(buildStandardDesc(item));
             detail.setUnit(item.getUnit());
             detail.setCriticality(item.getCriticality());
-            detail.setSampleQty(sampleQty);
+            detail.setSampleQty(lotQty == null ? null : suggestSampleQty(lotQty, item.getAqlLevel(), item.getSamplePlanCode()));
             detail.setNominalValue(item.getNominalValue());
             detail.setLslValue(item.getLslValue());
             detail.setUslValue(item.getUslValue());
@@ -117,10 +124,12 @@ public class QcInspectDetailServiceImpl implements IQcInspectDetailService {
     }
 
     /**
-     * 建议抽样量: GB/T 2828.1 检验水平II 字码行样本量(不做 AQL 箭头修正);
-     * 批量≤0 取 0, 批量<2 按批量本身(不适用抽样表的极小批)。
+     * 建议抽样量: 按项目的检验水平与 AQL 调 {@link AqlSampler} 得出样本量(GB/T 2828.1 正常检验一次抽样)。
+     * <p>MES-QC-07: 项目级 {@code aqlLevel}/{@code samplePlanCode} 接入抽样量; 两项均未配置时保持原有口径
+     * (检验水平 II 的字码样本量)。批量≤0 取 0, 批量&lt;2 按批量本身(不适用抽样表的极小批)。
+     * 注: 只取样本量, Ac/Re 判定未接入。</p>
      */
-    private static BigDecimal suggestSampleQty(BigDecimal lotQty) {
+    private static BigDecimal suggestSampleQty(BigDecimal lotQty, String aqlLevel, String samplePlanCode) {
         if (lotQty.signum() <= 0) {
             return BigDecimal.ZERO;
         }
@@ -128,28 +137,103 @@ public class QcInspectDetailServiceImpl implements IQcInspectDetailService {
         if (lot < 2) {
             return BigDecimal.valueOf(lot);
         }
-        return BigDecimal.valueOf(AqlSampler.letterSampleSize(lot, "II"));
+        String level = parseLevel(aqlLevel, samplePlanCode);
+        Double aql = parseAql(aqlLevel, samplePlanCode);
+        if (aql == null) {
+            return BigDecimal.valueOf(AqlSampler.letterSampleSize(lot, level));
+        }
+        return BigDecimal.valueOf(AqlSampler.plan(lot, level, aql).getSampleSize());
+    }
+
+    /** 解析检验水平: 兼容 "II" / "LEVEL II" / "水平II"; 两字段均无法解析时默认 II */
+    private static String parseLevel(String aqlLevel, String samplePlanCode) {
+        String level = levelToken(aqlLevel);
+        if (level == null) {
+            level = levelToken(samplePlanCode);
+        }
+        return level == null ? "II" : level;
+    }
+
+    private static String levelToken(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return null;
+        }
+        String s = raw.trim().toUpperCase().replace("LEVEL", "").replace("水平", "").trim();
+        if ("I".equals(s) || "II".equals(s) || "III".equals(s)) {
+            return s;
+        }
+        return null;
+    }
+
+    /** 解析 AQL 数值: 兼容 "AQL1.0" / "1.0"; 超出简化表范围或无法解析返回 null */
+    private static Double parseAql(String aqlLevel, String samplePlanCode) {
+        Double aql = aqlToken(aqlLevel);
+        if (aql == null) {
+            aql = aqlToken(samplePlanCode);
+        }
+        return aql;
+    }
+
+    private static Double aqlToken(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return null;
+        }
+        String s = raw.trim().toUpperCase().replace("AQL", "").trim();
+        try {
+            double value = Double.parseDouble(s);
+            return AqlSampler.isSupportedAql(value) ? value : null;
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 
     /**
-     * 匹配 ACTIVE 模板: 物料专属优先, 无则通用模板(material_id 为空)
+     * 匹配 ACTIVE 模板, 维度优先级: 物料+工序 &gt; 物料 &gt; 工序 &gt; 客户 &gt; 通用。
+     * <p>每一档都要求其余维度为空, 避免通用模板抢走更具体的匹配(与审计 MES-QC-02 的
+     * "物料/工序/客户维度优先级"对齐)。</p>
      */
-    private QcInspectTemplate matchTemplate(String checkType, Long materialId) {
-        if (materialId != null) {
-            QcInspectTemplate specific = templateMapper.selectOne(Wrappers.lambdaQuery(QcInspectTemplate.class)
-                .eq(QcInspectTemplate::getTemplateType, checkType)
-                .eq(QcInspectTemplate::getStatus, "ACTIVE")
-                .eq(QcInspectTemplate::getMaterialId, materialId)
-                .orderByDesc(QcInspectTemplate::getVersionNo)
-                .last("LIMIT 1"));
-            if (specific != null) {
-                return specific;
+    private QcInspectTemplate matchTemplate(String checkType, Long materialId, Long processId, Long customerId) {
+        if (materialId != null && processId != null) {
+            QcInspectTemplate t = selectActive(checkType, materialId, processId, null);
+            if (t != null) {
+                return t;
             }
         }
+        if (materialId != null) {
+            QcInspectTemplate t = selectActive(checkType, materialId, null, null);
+            if (t != null) {
+                return t;
+            }
+        }
+        if (processId != null) {
+            QcInspectTemplate t = selectActive(checkType, null, processId, null);
+            if (t != null) {
+                return t;
+            }
+        }
+        if (customerId != null) {
+            QcInspectTemplate t = selectActive(checkType, null, null, customerId);
+            if (t != null) {
+                return t;
+            }
+        }
+        // 通用模板: 三个维度均为空
+        return selectActive(checkType, null, null, null);
+    }
+
+    /**
+     * 按给定维度精确匹配一条 ACTIVE 模板(维度为 null 时按 IS NULL 匹配, 取版本号最大者)
+     */
+    private QcInspectTemplate selectActive(String checkType, Long materialId, Long processId, Long customerId) {
         return templateMapper.selectOne(Wrappers.lambdaQuery(QcInspectTemplate.class)
             .eq(QcInspectTemplate::getTemplateType, checkType)
             .eq(QcInspectTemplate::getStatus, "ACTIVE")
-            .isNull(QcInspectTemplate::getMaterialId)
+            .eq(materialId != null, QcInspectTemplate::getMaterialId, materialId)
+            .isNull(materialId == null, QcInspectTemplate::getMaterialId)
+            .eq(processId != null, QcInspectTemplate::getProcessId, processId)
+            .isNull(processId == null, QcInspectTemplate::getProcessId)
+            .eq(customerId != null, QcInspectTemplate::getCustomerId, customerId)
+            .isNull(customerId == null, QcInspectTemplate::getCustomerId)
             .orderByDesc(QcInspectTemplate::getVersionNo)
             .last("LIMIT 1"));
     }

@@ -19,14 +19,14 @@ public class PuPurchaseReportController {
 
     private final PuPurchaseReportServiceImpl reportService;
 
-    @SaCheckPermission("pu:purchaseOrder:list")
+    @SaCheckPermission("pu:order:list")
     @GetMapping("/execution")
     public R<List<Map<String, Object>>> purchaseExecution(
         @RequestParam(required = false) Integer months) {
         return R.ok(reportService.getPurchaseExecution(months));
     }
 
-    @SaCheckPermission("pu:purchaseOrder:list")
+    @SaCheckPermission("pu:order:list")
     @GetMapping("/deliveryRate")
     public R<List<Map<String, Object>>> vendorDeliveryRate(
         @RequestParam(required = false) Integer months) {

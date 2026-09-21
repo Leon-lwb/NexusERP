@@ -96,15 +96,16 @@ public class SpcControlChartController extends BaseController {
     }
 
     /**
-     * 分析 SPC 控制图：拉取采集点数据、按样本分组、计算 UCL/CL/LCL 并回写，
-     * 重建数据点并执行 OOC 判定，返回图表、数据点、OOC 数量与控制限。
+     * 分析 SPC 控制图：拉取采集点数据、按样本分组、计算 UCL/CL/LCL（含次级图 R/S/MR 控制限）并回写，
+     * 按 sample_group 增量维护数据点并执行 OOC 判定（主图 + 组内离散度各判一遍）。
+     * <p>写操作，使用 POST（原 GET 会被浏览器/网关预取或重放导致重复写库）。</p>
      *
      * @param chartId 控制图 ID
-     * @return 分析结果，包含 chart / points / oocCount / ucl / cl / lcl
+     * @return 分析结果，包含 chart / points / oocCount / ucl / cl / lcl / rUcl / rCl / rLcl / pp / ppk
      */
     @SaCheckPermission("mes:spc:chart:analyze")
     @Log(title = "控制图分析", businessType = BusinessType.OTHER)
-    @GetMapping("/analyze/{chartId}")
+    @PostMapping("/analyze/{chartId}")
     public R<Map<String, Object>> analyze(@PathVariable Long chartId) {
         return R.ok(spcControlChartService.analyze(chartId));
     }

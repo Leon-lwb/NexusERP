@@ -88,6 +88,16 @@ public class SopProcessBindingServiceImpl implements ISopProcessBindingService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean insertByBo(SopProcessBindingBo bo) {
+        // MES-SOP-06: 绑定前必须校验 SOP 状态 —— 此前只落 sopId, 可把 DRAFT/ARCHIVED 绑到工序,
+        // 绑定列表"明明绑了"而工位 getSopForProcess 因非 PUBLISHED 返回 null → 作业指导书静默不可用
+        SopDocumentVo sop = sopDocumentMapper.selectVoById(bo.getSopId());
+        if (sop == null) {
+            throw new RuntimeException("SOP不存在: " + bo.getSopId());
+        }
+        if (!ISopDocumentService.STATUS_PUBLISHED.equals(sop.getStatus())) {
+            throw new RuntimeException("仅已发布(PUBLISHED)的SOP可绑定工序,当前状态: " + sop.getStatus()
+                + "(草稿/审批中/已归档的SOP绑定后工位侧取不到作业指导书)");
+        }
         com.nexus.mes.sop.domain.SopProcessBinding b = new com.nexus.mes.sop.domain.SopProcessBinding();
         b.setProcessId(bo.getProcessId());
         b.setProcessCode(bo.getProcessCode());

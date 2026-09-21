@@ -766,7 +766,7 @@ export const dynamicRoutes: RouteRecordRaw[] = [
         path: '',
         component: () => import('@/views/iot/product/index.vue'),
         name: 'IotProduct',
-        meta: { title: '产品管理', activeMenu: '/iot/product' }
+        meta: { title: '产品管理', activeMenu: '/iot/asset/product' }
       }
     ]
   },
@@ -780,7 +780,7 @@ export const dynamicRoutes: RouteRecordRaw[] = [
         path: '',
         component: () => import('@/views/iot/device/index.vue'),
         name: 'IotDevice',
-        meta: { title: '设备管理', activeMenu: '/iot/device' }
+        meta: { title: '设备管理', activeMenu: '/iot/asset/device' }
       }
     ]
   },
@@ -794,7 +794,7 @@ export const dynamicRoutes: RouteRecordRaw[] = [
         path: '',
         component: () => import('@/views/iot/device/realtime.vue'),
         name: 'IotDeviceRealtime',
-        meta: { title: '设备实时数据', activeMenu: '/iot/device' }
+        meta: { title: '设备实时数据', activeMenu: '/iot/asset/device' }
       }
     ]
   }

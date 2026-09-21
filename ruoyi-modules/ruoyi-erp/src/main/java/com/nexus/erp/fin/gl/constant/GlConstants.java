@@ -25,6 +25,8 @@ public class GlConstants {
     public static final String SOURCE_RECEIPT = "RECEIPT";
     /** 凭证来源:折旧计提 */
     public static final String SOURCE_DEPRECIATION = "DEPRECIATION";
+    /** 固定资产处置(FaDisposalServiceImpl 过账; FIN-FA-03: 处置不再复用 DEPRECIATION) */
+    public static final String SOURCE_FA_DISPOSAL = "FA_DISPOSAL";
     /** 凭证来源:成本核算 */
     public static final String SOURCE_COST = "COST";
     /** 凭证来源:调整 */

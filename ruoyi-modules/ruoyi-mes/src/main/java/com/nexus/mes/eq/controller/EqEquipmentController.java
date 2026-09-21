@@ -176,6 +176,20 @@ public class EqEquipmentController extends BaseController {
     }
 
     /**
+     * 结束保养: 设备由 MAINTENANCE 按既有状态机回到 NORMAL(仍有活跃报修则 FAULT) (MES-EQ-05)
+     *
+     * @param equipmentId 设备ID
+     * @return 操作结果
+     */
+    @SaCheckPermission("mes:eq:equipment:edit")
+    @Log(title = "设备结束保养", businessType = BusinessType.UPDATE)
+    @PutMapping("/{equipmentId}/finishMaintenance")
+    public R<Void> finishMaintenance(@PathVariable Long equipmentId,
+                                     @RequestParam(required = false) String reason) {
+        return toAjax(eqEquipmentService.finishMaintenance(equipmentId, reason));
+    }
+
+    /**
      * 批量查询设备 IoT 在线状态(消除前端逐行 N+1 HTTP 请求)
      *
      * @param equipmentIds 设备ID列表（逗号分隔）

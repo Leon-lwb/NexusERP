@@ -219,6 +219,15 @@
                 </el-select>
               </template>
             </el-table-column>
+            <!-- ERP-BD-01：后端 BdBomDetailBo/Vo.supplyType 已打通（此前前端全仓 0 命中，
+                 导致 PrdSubcontractClosureServiceImpl 只能取到恒定 SELF_PROVIDED 快照） -->
+            <el-table-column label="供应方" align="center" prop="supplyType" width="140">
+              <template #default="scope">
+                <el-select v-model="scope.row.supplyType" placeholder="请选择供应方" :disabled="isViewMode" clearable style="width: 100%">
+                  <el-option v-for="dict in bd_supply_type" :key="dict.value" :label="dict.label" :value="dict.value" />
+                </el-select>
+              </template>
+            </el-table-column>
             <el-table-column label="生效日期" align="center" prop="effectiveDate" width="140">
               <template #default="scope">
                 <el-date-picker
@@ -539,18 +548,27 @@ import type { BomForm } from '@/api/erp/bd/bom/types';
 const router = useRouter();
 const route = useRoute();
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
-const { sys_true_or_false, sys_core_status, bd_material_type, prd_material_source_type, prd_backflush_flag, bd_bom_type, bd_substitution_type } =
-  toRefs<any>(
-    proxy.useDict(
-      'sys_true_or_false',
-      'sys_core_status',
-      'bd_material_type',
-      'prd_material_source_type',
-      'prd_backflush_flag',
-      'bd_bom_type',
-      'bd_substitution_type'
-    )
-  );
+const {
+  sys_true_or_false,
+  sys_core_status,
+  bd_material_type,
+  prd_material_source_type,
+  prd_backflush_flag,
+  bd_bom_type,
+  bd_substitution_type,
+  bd_supply_type
+} = toRefs<any>(
+  proxy.useDict(
+    'sys_true_or_false',
+    'sys_core_status',
+    'bd_material_type',
+    'prd_material_source_type',
+    'prd_backflush_flag',
+    'bd_bom_type',
+    'bd_substitution_type',
+    'bd_supply_type'
+  )
+);
 
 // 表单相关
 const formRef = ref(null);

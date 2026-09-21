@@ -14,6 +14,7 @@ import com.nexus.erp.so.domain.bo.SoSalesOrderLineBo;
 import com.nexus.erp.so.domain.vo.SoSalesOrderLineVo;
 import com.nexus.erp.so.mapper.SoSalesOrderLineMapper;
 import com.nexus.erp.so.service.ISoSalesOrderLineService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,6 +27,7 @@ import java.util.List;
  *
  * @author nexus
  */
+@Slf4j
 @RequiredArgsConstructor
 @DS("erp")
 @Service
@@ -97,19 +99,41 @@ public class SoSalesOrderLineServiceImpl implements ISoSalesOrderLineService {
     }
 
     /**
-     * 按销售订单ID和物料ID更新OQC状态
+     * 按销售订单ID和物料ID更新OQC状态。
+     * <p>ERP-SO-02: 原先直接按 (soId, materialId) 条件更新, 会把同一订单同一物料的<b>所有行</b>
+     * (不同行号/交期)一起改写。OQC 消息只带 soId+materialId, 无法区分行, 因此先确定唯一目标行
+     * (未取消行中 line_id 最小者), 再按 line_id 精确更新; 命中多行时告警留痕。
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateOqcStatus(Long soId, Long materialId, String oqcStatus, Long oqcId, String oqcCode, Date oqcTime) {
+        List<SoSalesOrderLine> candidates = baseMapper.selectList(Wrappers.<SoSalesOrderLine>lambdaQuery()
+            .eq(SoSalesOrderLine::getSoId, soId)
+            .eq(SoSalesOrderLine::getMaterialId, materialId)
+            .ne(SoSalesOrderLine::getLineStatus, "CANCELLED")
+            .orderByAsc(SoSalesOrderLine::getLineId));
+        if (candidates.isEmpty()) {
+            return 0;
+        }
+        if (candidates.size() > 1) {
+            log.warn("同一销售订单同一物料存在 {} 行, OQC 结果无法按行区分, 仅回写首行: soId={}, materialId={}, lineId={}",
+                candidates.size(), soId, materialId, candidates.get(0).getLineId());
+        }
+        return updateOqcStatusByLineId(candidates.get(0).getLineId(), oqcStatus, oqcId, oqcCode, oqcTime);
+    }
+
+    /**
+     * 按销售订单行ID更新OQC状态(精确到行)。
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int updateOqcStatusByLineId(Long lineId, String oqcStatus, Long oqcId, String oqcCode, Date oqcTime) {
         return baseMapper.update(null, Wrappers.<SoSalesOrderLine>lambdaUpdate()
             .set(SoSalesOrderLine::getOqcStatus, oqcStatus)
             .set(SoSalesOrderLine::getOqcId, oqcId)
             .set(SoSalesOrderLine::getOqcCode, oqcCode)
             .set(SoSalesOrderLine::getOqcTime, oqcTime)
-            .eq(SoSalesOrderLine::getSoId, soId)
-            .eq(SoSalesOrderLine::getMaterialId, materialId)
-            .ne(SoSalesOrderLine::getLineStatus, "CANCELLED"));
+            .eq(SoSalesOrderLine::getLineId, lineId));
     }
 
     /**

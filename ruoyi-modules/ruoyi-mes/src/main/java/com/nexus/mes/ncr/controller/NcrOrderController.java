@@ -2,6 +2,7 @@ package com.nexus.mes.ncr.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.nexus.common.core.domain.R;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.log.annotation.Log;
 import com.nexus.common.log.enums.BusinessType;
 import com.nexus.common.mybatis.core.page.PageQuery;
@@ -14,6 +15,8 @@ import com.nexus.mes.ncr.service.INcrOrderService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Set;
 
 /**
  * MES NCR不合格品单 Controller
@@ -28,6 +31,9 @@ import org.springframework.web.bind.annotation.*;
 public class NcrOrderController extends BaseController {
 
     private final INcrOrderService ncrOrderService;
+
+    /** MES-NCR-06: 不可逆处置白名单 —— 无签名入口不得执行, 必须走 /dispose/{ncrId}/sign */
+    private static final Set<String> IRREVERSIBLE_DISPOSITIONS = Set.of("SCRAP", "ACCEPT_AS_IS", "RETURN");
 
     /**
      * 分页查询NCR单列表
@@ -108,18 +114,24 @@ public class NcrOrderController extends BaseController {
 
     /**
      * 处置NCR单(OPEN/REVIEW -> DISPOSITION)
+     * <p>MES-NCR-06: 无签名入口使用独立权限码 {@code mes:ncr:order:dispose-nosign}, 与签署入口
+     * {@code mes:ncr:order:dispose} 分离; 且本入口只允许可逆处置(REWORK) —— 不可逆处置
+     * (SCRAP/ACCEPT_AS_IS/RETURN)必须走 {@link #disposeWithSignature} 完成电子签名授权。</p>
      *
      * @param ncrId       NCR单ID
-     * @param disposition 处置方式(REWORK/SCRAP/ACCEPT_AS_IS/RETURN)
+     * @param disposition 处置方式(仅 REWORK 允许无签名; 其余请走签署入口)
      * @param remark      处置备注(可空)
      * @return 操作结果
      */
-    @SaCheckPermission("mes:ncr:order:dispose")
+    @SaCheckPermission("mes:ncr:order:dispose-nosign")
     @Log(title = "NCR处置", businessType = BusinessType.UPDATE)
     @PutMapping("/dispose/{ncrId}")
     public R<Void> dispose(@PathVariable Long ncrId,
                            @RequestParam String disposition,
                            @RequestParam(required = false) String remark) {
+        if (IRREVERSIBLE_DISPOSITIONS.contains(disposition)) {
+            throw new ServiceException("关键处置(SCRAP/ACCEPT_AS_IS/RETURN)必须电子签名");
+        }
         return toAjax(ncrOrderService.dispose(ncrId, disposition, remark));
     }
 

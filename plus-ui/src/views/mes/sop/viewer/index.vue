@@ -10,6 +10,14 @@
             <el-tag v-if="sop?.currentVersion" type="success" size="small">v{{ sop.currentVersion }}</el-tag>
           </div>
           <div class="header-right">
+            <!-- MES-SOP-02 门禁前置：显式「我已阅读并确认」，由查阅登记端点产出 SOP_VIEW 电子签名 -->
+            <el-tag v-if="viewLogConfirmed" type="success" size="small" class="mr-2">已确认阅读 {{ confirmedTime }}</el-tag>
+            <el-button v-if="sop && !viewLogConfirmed" type="primary" icon="Select" :loading="viewLogSubmitting" @click="confirmRead"
+              >我已阅读并确认</el-button
+            >
+            <!-- MES-SOP-01：确认/登记失败不再静默，给出可见状态与补登入口 -->
+            <el-tag v-if="viewLogFailed" type="warning" size="small" class="mr-2">查阅登记未成功</el-tag>
+            <el-button v-if="viewLogFailed" type="warning" plain icon="RefreshRight" @click="retryViewLog">重试登记</el-button>
             <el-button icon="Refresh" @click="loadSop" :disabled="!processId && !stepRecordId && !sopId">刷新</el-button>
           </div>
         </div>
@@ -25,6 +33,17 @@
       </el-empty>
 
       <div v-if="sop" class="sop-content">
+        <!-- MES-SOP-02：未确认前给出醒目提示 —— 配置了 SOP_ACKNOWLEDGED 门禁的工序会因缺少
+             非空 signature_id 的查阅记录而拒绝进站，用户必须知道「还没点确认」 -->
+        <el-alert
+          v-if="!viewLogConfirmed"
+          class="mb-2"
+          type="warning"
+          show-icon
+          :closable="false"
+          title="尚未确认已阅读"
+          description="请阅读完作业指导书后点击右上角「我已阅读并确认」完成登记；未确认时，配置了 SOP 已阅门禁的工序将无法进站。"
+        />
         <el-descriptions :column="3" border size="small" class="sop-meta">
           <el-descriptions-item label="SOP编码">{{ sop.sopCode }}</el-descriptions-item>
           <el-descriptions-item label="文件类型">{{ sop.fileType || '-' }}</el-descriptions-item>
@@ -77,6 +96,18 @@ const { mes_sop_type } = toRefs<any>(proxy?.useDict('mes_sop_type'));
 
 const sop = ref<SopDocumentVO | null>(null);
 const loading = ref(true);
+/** MES-SOP-01：查阅登记最终失败标记（403 权限码错配时原先被空 catch 静默吞掉） */
+const viewLogFailed = ref(false);
+/** MES-SOP-02：确认提交中 */
+const viewLogSubmitting = ref(false);
+/** MES-SOP-02：已确认的文档键（sopId#version），切换 SOP/版本自动回到未确认态 */
+const confirmedDocKey = ref('');
+/** 确认时间（展示用） */
+const confirmedTime = ref('');
+/** 当前文档键 */
+const docKey = computed(() => (sop.value?.sopId ? `${sop.value.sopId}#${sop.value.currentVersion ?? ''}` : ''));
+/** 是否已确认阅读（后端按 (operatorId, sopId, currentVersion) 且 signature_id 非空判定） */
+const viewLogConfirmed = computed(() => !!docKey.value && confirmedDocKey.value === docKey.value);
 
 // 雪花ID为19位长整型，route.query 传字符串，不能 Number() 截断，保持字符串透传
 const processId = computed(() => (route.query.processId ? String(route.query.processId) : ''));
@@ -128,25 +159,82 @@ const loadSop = async () => {
       return;
     }
     sop.value = res.data;
-    // 登记查阅(signature_id=null, 预留 P0-6)
-    if (sop.value?.sopId) {
-      recordViewLog({
-        sopId: sop.value.sopId,
-        versionNo: sop.value.currentVersion,
-        woId: woId.value,
-        woNo: woNo.value,
-        processId: processId.value || undefined,
-        workstationId: workstationId.value
-      }).catch(() => {
-        /* 查阅登记失败不阻断查看 */
-      });
-    }
+    // MES-SOP-02 门禁前置：查阅登记改为「显式确认」触发（右上角「我已阅读并确认」按钮），
+    // 不再在打开页面时隐式登记 —— 门禁按 (operatorId, sopId, currentVersion) 且 signature_id
+    // 非空判定「已阅确认」，隐式登记会把「打开过」当成「已确认」。
   } catch (e) {
     proxy!.$modal.msgError('SOP加载失败');
   } finally {
     loading.value = false;
   }
 };
+
+/** 组装查阅登记入参（sopId 为雪花ID，保持字符串透传由 axios 序列化） */
+function buildViewLogPayload() {
+  return {
+    sopId: sop.value!.sopId,
+    versionNo: sop.value?.currentVersion,
+    woId: woId.value,
+    woNo: woNo.value,
+    processId: processId.value || undefined,
+    workstationId: workstationId.value
+  };
+}
+
+/**
+ * 显式「我已阅读并确认」（MES-SOP-02 门禁前置）。
+ * <p>调用查阅登记端点 `/mes/sop/view-log`，后端据正文哈希产出 SOP_VIEW 电子签名；
+ * 门禁 SOP_ACKNOWLEDGED 按 (operatorId, sopId, currentVersion) 且 signature_id 非空判定已阅。</p>
+ * <p>失败不静默（MES-SOP-01）：打 warn/error 日志 + 自动重试一次 + 页面可见提示与补登入口。</p>
+ */
+async function confirmRead(): Promise<boolean> {
+  if (!sop.value?.sopId) {
+    proxy!.$modal.msgWarning('当前没有可确认的SOP');
+    return false;
+  }
+  viewLogSubmitting.value = true;
+  try {
+    const ok = await submitViewLog(buildViewLogPayload());
+    if (ok) {
+      confirmedDocKey.value = docKey.value;
+      confirmedTime.value = new Date().toLocaleString();
+      proxy!.$modal.msgSuccess('已确认阅读，确认记录已登记');
+    }
+    return ok;
+  } finally {
+    viewLogSubmitting.value = false;
+  }
+}
+
+/**
+ * 提交查阅登记：失败自动重试一次，仍失败则记录状态并在页面给出可读提示。
+ * <p>MES-SOP-01：原实现为空 catch，403（查阅登记端点权限码与查看器菜单权限码错配）
+ * 会被彻底吞掉 —— 页面看起来正常，但 sop_view_log 无行、es_signature 无 SOP_VIEW。</p>
+ */
+async function submitViewLog(payload: ReturnType<typeof buildViewLogPayload>): Promise<boolean> {
+  try {
+    await recordViewLog(payload);
+    viewLogFailed.value = false;
+    return true;
+  } catch (err) {
+    console.warn('[SOP已阅确认] 首次提交失败，准备重试一次', err);
+  }
+  try {
+    await recordViewLog(payload);
+    viewLogFailed.value = false;
+    return true;
+  } catch (retryErr) {
+    console.error('[SOP已阅确认] 重试后仍失败，本次确认未登记', retryErr);
+    viewLogFailed.value = true;
+    proxy!.$modal.msgWarning('SOP 已阅确认登记失败，本次确认未记录（可点「重试登记」补登）');
+    return false;
+  }
+}
+
+/** 手动补登（首次+重试均失败后使用），成功后同样进入已确认态 */
+function retryViewLog() {
+  confirmRead();
+}
 
 const goBack = () => {
   router.back();

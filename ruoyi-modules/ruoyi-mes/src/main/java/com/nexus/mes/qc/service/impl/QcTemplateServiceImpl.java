@@ -70,9 +70,8 @@ public class QcTemplateServiceImpl implements IQcTemplateService {
     public int insertByBo(QcInspectTemplateBo bo) {
         validateItems(bo.getItems());
         QcInspectTemplate entity = MapstructUtils.convert(bo, QcInspectTemplate.class);
-        if (entity.getStatus() == null) {
-            entity.setStatus(STATUS_DRAFT);
-        }
+        // MES-QC-09: 状态由服务端强制为草稿, 忽略入参 —— 新建模板不得直接落 ACTIVE 绕过启用校验
+        entity.setStatus(STATUS_DRAFT);
         if (entity.getVersionNo() == null) {
             entity.setVersionNo(1);
         }
@@ -90,6 +89,8 @@ public class QcTemplateServiceImpl implements IQcTemplateService {
             throw new ServiceException("检验模板不存在");
         }
         QcInspectTemplate entity = MapstructUtils.convert(bo, QcInspectTemplate.class);
+        // MES-QC-09: 状态由服务端强制为草稿, 忽略入参 —— 编辑不得把模板改成 ACTIVE 绕过 changeStatus 校验
+        entity.setStatus(STATUS_DRAFT);
         int rows = baseMapper.updateById(entity);
         // 先删后插项目明细
         itemMapper.delete(Wrappers.lambdaQuery(QcInspectItem.class)
@@ -129,11 +130,20 @@ public class QcTemplateServiceImpl implements IQcTemplateService {
             if (enabled == null || enabled == 0) {
                 throw new ServiceException("模板没有启用的检验项目，无法启用");
             }
-            template.setStatus(STATUS_ACTIVE);
+            // MES-QC-09: 条件更新(CAS) —— 仅 DRAFT 可启用, 影响 0 行说明状态已被并发变更
+            int rows = baseMapper.update(null, Wrappers.<QcInspectTemplate>lambdaUpdate()
+                .set(QcInspectTemplate::getStatus, STATUS_ACTIVE)
+                .eq(QcInspectTemplate::getTemplateId, templateId)
+                .eq(QcInspectTemplate::getStatus, STATUS_DRAFT));
+            if (rows == 0) {
+                throw new ServiceException("模板状态已变更(仅草稿状态可启用)，请刷新后重试");
+            }
+            log.info("检验模板启用: templateId={}", templateId);
         } else {
             template.setStatus(STATUS_DRAFT);
+            baseMapper.updateById(template);
+            log.info("检验模板停用(转草稿): templateId={}", templateId);
         }
-        baseMapper.updateById(template);
     }
 
     @Override
@@ -219,10 +229,20 @@ public class QcTemplateServiceImpl implements IQcTemplateService {
                         requireValue(item.getNominalValue(), prefix + "NOMINAL 需要名义值");
                         requireValue(item.getTolUpper(), prefix + "NOMINAL 需要上公差");
                         requireValue(item.getTolLower(), prefix + "NOMINAL 需要下公差");
+                        // MES-QC-06: 公差必须为正 —— 负公差会被判定引擎按"名义值 ± 负数"反向收窄区间, 属配置错误
+                        if (item.getTolUpper().signum() < 0 || item.getTolLower().signum() < 0) {
+                            throw new ServiceException(prefix + "上/下公差请填正值（下公差按名义值减）");
+                        }
                     }
                     default -> throw new ServiceException(prefix + "未知标准类型: " + standardType);
                 }
             }
+        }
+        // MES-QC-09: 至少一个启用项目, 否则模板启用后无任何可检验内容
+        boolean anyEnabled = items.stream()
+            .anyMatch(i -> i.getEnabled() == null || !"0".equals(i.getEnabled()));
+        if (!anyEnabled) {
+            throw new ServiceException("检验模板至少需要一个启用的检验项目");
         }
         long distinct = items.stream().map(QcInspectItemBo::getItemCode).filter(Objects::nonNull).distinct().count();
         if (distinct != items.size()) {

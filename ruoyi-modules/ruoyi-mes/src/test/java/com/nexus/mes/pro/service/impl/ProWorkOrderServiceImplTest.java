@@ -2,7 +2,9 @@ package com.nexus.mes.pro.service.impl;
 
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
+import cn.hutool.extra.spring.SpringUtil;
 import com.nexus.common.core.exception.ServiceException;
+import com.nexus.common.flowable.core.domain.ActStatus;
 import com.nexus.common.flowable.helper.FlowableProcInsIdHelper;
 import com.nexus.common.mq.message.WorkOrderReleaseMessage;
 import com.nexus.mes.common.bridge.IMesErpBridgeService;
@@ -17,24 +19,29 @@ import com.nexus.mes.pro.domain.ProWorkOrder;
 import com.nexus.mes.pro.domain.ProWorkOrderStep;
 import com.nexus.mes.pro.domain.vo.MesMbomLineVo;
 import com.nexus.mes.pro.domain.vo.MesMbomVo;
+import com.nexus.mes.pro.mapper.ProFlowCardMapper;
 import com.nexus.mes.pro.mapper.ProWorkOrderBomLineMapper;
 import com.nexus.mes.pro.mapper.ProWorkOrderMapper;
 import com.nexus.mes.pro.mapper.ProWorkOrderStepMapper;
 import com.nexus.mes.pro.service.IMesMbomService;
 import com.nexus.mes.pro.domain.bo.UpdateStepFirmwareBo;
+import com.nexus.mes.qc.domain.QcIpqc;
 import com.nexus.mes.qc.mapper.QcIpqcMapper;
+import com.nexus.mes.qc.service.IQcIpqcService;
 import com.nexus.mes.release.domain.vo.ReleasePackageVo;
 import com.nexus.mes.release.domain.vo.ReleasePkgBomItemVo;
 import com.nexus.mes.release.domain.vo.ReleasePkgFirmwareVo;
 import com.nexus.mes.release.service.IReleasePackageService;
 import com.nexus.common.core.utils.SpringUtils;
 import com.nexus.mes.testsupport.SpringStaticBootstrap;
+import com.nexus.workflow.domain.WfMyBusiness;
 import com.nexus.workflow.service.IWfProcessService;
 import com.nexus.workflow.service.impl.WfMyBusinessServiceImpl;
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -43,6 +50,7 @@ import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
 import java.util.HashMap;
@@ -56,9 +64,12 @@ import static org.mockito.Mockito.*;
 /**
  * ProWorkOrderServiceImpl 发布包集成单元测试:
  * 固件覆写优先级 / fail-loudly / BOM选配 / FLASH下达门禁 / 工序固件更改
+ * + MES-PRO-03(审批通过下达生成工序与快照) / QC-03(完工关键工序IPQC门禁) / MES-PRO-11(取消/关闭)
  *
  * @author Nexus
  */
+@Tag("local")
+@Tag("dev")
 @ExtendWith(MockitoExtension.class)
 class ProWorkOrderServiceImplTest {
 
@@ -70,6 +81,8 @@ class ProWorkOrderServiceImplTest {
         MapperBuilderAssistant assistant = new MapperBuilderAssistant(new MybatisConfiguration(), "");
         TableInfoHelper.initTableInfo(assistant, ProWorkOrder.class);
         TableInfoHelper.initTableInfo(assistant, ProWorkOrderStep.class);
+        TableInfoHelper.initTableInfo(assistant, com.nexus.mes.pro.domain.ProWorkOrderBomLine.class);
+        TableInfoHelper.initTableInfo(assistant, com.nexus.mes.pro.domain.ProFlowCard.class);
     }
 
     private MockedStatic<SpringUtils> aopProxyMock;
@@ -115,6 +128,8 @@ class ProWorkOrderServiceImplTest {
     private NcrReworkOrderMapper ncrReworkOrderMapper;
     @Mock
     private NcrOrderMapper ncrOrderMapper;
+    @Mock
+    private ProFlowCardMapper flowCardMapper;
     @Spy
     private FwProperties fwProperties = new FwProperties();
     @Mock
@@ -452,5 +467,229 @@ class ProWorkOrderServiceImplTest {
         // 多类型JSON固件项同步改写(777)且保留 mac 项(456)
         assertTrue(params.stream().anyMatch(v -> v instanceof String s && s.contains("mac") && s.contains("777")));
         assertTrue(params.stream().anyMatch(v -> v instanceof String s && s.contains("mac") && s.contains("456")));
+    }
+
+    // ==================== MES-PRO-03 审批通过下达 ====================
+
+    /**
+     * 审批通过必须与 release() 同路径: 生成工序 + MBOM 快照(原实现只改状态, 工序数为 0)
+     */
+    @Test
+    void afterFlowHandle_pass_generatesStepsAndBomSnapshot() {
+        WfMyBusiness business = new WfMyBusiness();
+        business.setDataId("1");
+        business.setActStatus(ActStatus.pass);
+
+        ProWorkOrder wo = new ProWorkOrder();
+        wo.setMesWoId(1L);
+        wo.setWoNo("WO-001");
+        wo.setWoStatus("APPROVING");
+        wo.setSourceType("ERP");
+        wo.setRoutingId(9L);
+        wo.setBomId(20L);
+        wo.setMaterialId(100L);
+        when(baseMapper.selectById(1L)).thenReturn(wo);
+        when(mesErpBridgeService.getRoutingSteps(9L))
+            .thenReturn(List.of(routingStep(12L, 20, 4L, "OP20_ASM", "装配", null)));
+
+        MesMbomVo mbom = new MesMbomVo();
+        MesMbomLineVo line = new MesMbomLineVo();
+        line.setMbomLineId(1L);
+        line.setChildMaterialId(201L);
+        line.setChildMaterialCode("SSD-256");
+        line.setChildMaterialName("SSD 256G");
+        line.setQuantityPerParent(BigDecimal.ONE);
+        line.setSortOrder(1);
+        mbom.setLines(new java.util.ArrayList<>(List.of(line)));
+        when(mesMbomService.selectByBomId(20L)).thenReturn(mbom);
+
+        when(stepMapper.selectCount(any())).thenReturn(0L);
+        when(woBomLineMapper.selectCount(any())).thenReturn(0L);
+        when(baseMapper.update(any(), any())).thenReturn(1);
+
+        service.afterFlowHandle(business);
+
+        // 工序已生成(原实现审批通过后 pro_work_order_step 为空)
+        ArgumentCaptor<ProWorkOrderStep> stepCaptor = ArgumentCaptor.forClass(ProWorkOrderStep.class);
+        verify(stepMapper).insert(stepCaptor.capture());
+        assertEquals(1L, stepCaptor.getValue().getMesWoId());
+        assertEquals("OP20_ASM", stepCaptor.getValue().getProcessCode());
+        // MBOM 快照已落库
+        verify(woBomLineMapper).insert(any(com.nexus.mes.pro.domain.ProWorkOrderBomLine.class));
+        // CAS 置 RELEASED
+        verify(baseMapper).update(any(), any());
+    }
+
+    /**
+     * 无工序步骤 + 手工来源 -> 拒绝下达(原实现对 0 工序直接放行)
+     */
+    @Test
+    void release_rejectsManualWorkOrderWithoutSteps() {
+        ProWorkOrder wo = new ProWorkOrder();
+        wo.setMesWoId(1L);
+        wo.setWoStatus("CREATED");
+        wo.setSourceType("MANUAL");
+        when(baseMapper.selectById(1L)).thenReturn(wo);
+        when(stepMapper.selectCount(any())).thenReturn(0L);
+
+        ServiceException ex = assertThrows(ServiceException.class, () -> service.release(1L));
+        assertTrue(ex.getMessage().contains("无工序步骤"));
+        verify(baseMapper, never()).update(any(), any());
+    }
+
+    // ==================== QC-03 完工关键工序 IPQC 门禁 ====================
+
+    private ProWorkOrder inProgressWo() {
+        ProWorkOrder wo = new ProWorkOrder();
+        wo.setMesWoId(1L);
+        wo.setWoNo("WO-001");
+        wo.setWoStatus("IN_PROGRESS");
+        wo.setSourceType("ERP");
+        return wo;
+    }
+
+    private ProWorkOrderStep keyStep(long stepId, long processId, String processName) {
+        ProWorkOrderStep step = new ProWorkOrderStep();
+        step.setStepId(stepId);
+        step.setMesWoId(1L);
+        step.setProcessId(processId);
+        step.setProcessName(processName);
+        step.setIsKeyProcess(1);
+        return step;
+    }
+
+    /**
+     * 关键工序无 IPQC 单 -> 完工被拦截(报工侧自动建单失败后的唯一兜底)
+     */
+    @Test
+    void completeWo_blocksWhenKeyProcessIpqcMissing() {
+        when(baseMapper.selectById(1L)).thenReturn(inProgressWo());
+        when(stepMapper.selectList(any())).thenReturn(List.of(keyStep(10L, 3L, "BIOS刷写")));
+        when(qcIpqcMapper.selectList(any())).thenReturn(List.of());
+
+        ServiceException ex = assertThrows(ServiceException.class, () -> service.completeWo(1L));
+        assertTrue(ex.getMessage().contains("尚未完成IPQC"));
+        assertTrue(ex.getMessage().contains("BIOS刷写"));
+        assertTrue(ex.getMessage().contains("尚无IPQC单"));
+        verify(baseMapper, never()).update(any(), any());
+    }
+
+    /**
+     * 关键工序 IPQC 合格 -> 完工放行
+     */
+    @Test
+    void completeWo_passesWhenKeyProcessIpqcQualified() {
+        when(baseMapper.selectById(1L)).thenReturn(inProgressWo());
+        when(stepMapper.selectList(any())).thenReturn(List.of(keyStep(10L, 3L, "BIOS刷写")));
+        QcIpqc qualified = new QcIpqc();
+        qualified.setProcessId(3L);
+        qualified.setIpqcNo("IPQC-001");
+        qualified.setInspectResult("QUALIFIED");
+        when(qcIpqcMapper.selectList(any())).thenReturn(List.of(qualified));
+        when(baseMapper.update(any(), any())).thenReturn(1);
+
+        // completeWo 会注册 afterCommit 同步(通知 ERP), 单测需激活事务同步
+        TransactionSynchronizationManager.initSynchronization();
+        try {
+            assertDoesNotThrow(() -> service.completeWo(1L));
+        } finally {
+            TransactionSynchronizationManager.clearSynchronization();
+        }
+        verify(baseMapper).update(any(), any());
+    }
+
+    /**
+     * 门禁优先复用 qc 模块只读接口 IQcIpqcService.selectByMesWoId(此前实现存在但全仓无调用者)
+     */
+    @Test
+    void completeWo_ipqcGateUsesQcIpqcServiceWhenAvailable() {
+        when(baseMapper.selectById(1L)).thenReturn(inProgressWo());
+        when(stepMapper.selectList(any())).thenReturn(List.of(keyStep(10L, 3L, "BIOS刷写")));
+
+        IQcIpqcService ipqcService = mock(IQcIpqcService.class);
+        QcIpqc unqualified = new QcIpqc();
+        unqualified.setProcessId(3L);
+        unqualified.setIpqcNo("IPQC-009");
+        unqualified.setInspectResult("UNQUALIFIED");
+        when(ipqcService.selectByMesWoId(1L)).thenReturn(List.of(unqualified));
+
+        try (MockedStatic<SpringUtil> springUtilMock = mockStatic(SpringUtil.class)) {
+            springUtilMock.when(() -> SpringUtil.getBean(IQcIpqcService.class)).thenReturn(ipqcService);
+            ServiceException ex = assertThrows(ServiceException.class, () -> service.completeWo(1L));
+            assertTrue(ex.getMessage().contains("IPQC-009"));
+            assertTrue(ex.getMessage().contains("不合格"));
+        }
+        // 接口可用时不再直查 Mapper
+        verify(qcIpqcMapper, never()).selectList(any());
+    }
+
+    // ==================== MES-PRO-11 取消/关闭 ====================
+
+    private ProWorkOrder wo(String status) {
+        ProWorkOrder wo = new ProWorkOrder();
+        wo.setMesWoId(1L);
+        wo.setWoNo("WO-001");
+        wo.setWoStatus(status);
+        wo.setSourceType("ERP");
+        return wo;
+    }
+
+    @Test
+    void cancel_rejectsWorkOrderWithActiveFlowCards() {
+        when(baseMapper.selectById(1L)).thenReturn(wo("RELEASED"));
+        when(flowCardMapper.selectCount(any())).thenReturn(2L);
+
+        ServiceException ex = assertThrows(ServiceException.class, () -> service.cancel(1L, "客户撤单"));
+        assertTrue(ex.getMessage().contains("在制流转卡"));
+        verify(baseMapper, never()).update(any(), any());
+    }
+
+    @Test
+    void cancel_rejectsInProgressWorkOrder() {
+        when(baseMapper.selectById(1L)).thenReturn(wo("IN_PROGRESS"));
+        when(flowCardMapper.selectCount(any())).thenReturn(0L);
+        // 状态不在可取消集合内 -> CAS 影响 0 行
+        when(baseMapper.update(any(), any())).thenReturn(0);
+
+        ServiceException ex = assertThrows(ServiceException.class, () -> service.cancel(1L, null));
+        assertTrue(ex.getMessage().contains("仅新建/已下达/审批中状态可取消"));
+    }
+
+    @Test
+    void cancel_releasedWorkOrder_succeeds() {
+        when(baseMapper.selectById(1L)).thenReturn(wo("RELEASED"));
+        when(flowCardMapper.selectCount(any())).thenReturn(0L);
+        when(baseMapper.update(any(), any())).thenReturn(1);
+
+        assertDoesNotThrow(() -> service.cancel(1L, "客户撤单"));
+        verify(baseMapper).update(any(), any());
+    }
+
+    @Test
+    void cancel_throwsWhenCasAffectsNoRow() {
+        when(baseMapper.selectById(1L)).thenReturn(wo("CREATED"));
+        when(flowCardMapper.selectCount(any())).thenReturn(0L);
+        when(baseMapper.update(any(), any())).thenReturn(0);
+
+        ServiceException ex = assertThrows(ServiceException.class, () -> service.cancel(1L, "重复取消"));
+        assertTrue(ex.getMessage().contains("工单状态已变更"));
+    }
+
+    @Test
+    void close_completedWorkOrder_succeeds() {
+        when(baseMapper.selectById(1L)).thenReturn(wo("COMPLETED"));
+        when(baseMapper.update(any(), any())).thenReturn(1);
+
+        assertDoesNotThrow(() -> service.close(1L));
+        verify(baseMapper).update(any(), any());
+    }
+
+    @Test
+    void close_rejectsUnfinishedWorkOrder() {
+        when(baseMapper.selectById(1L)).thenReturn(wo("IN_PROGRESS"));
+        when(baseMapper.update(any(), any())).thenReturn(0);
+
+        ServiceException ex = assertThrows(ServiceException.class, () -> service.close(1L));
+        assertTrue(ex.getMessage().contains("仅已完工/部分完工状态可关闭"));
     }
 }

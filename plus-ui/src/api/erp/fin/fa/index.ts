@@ -13,6 +13,8 @@ export interface FaAssetCategoryVO {
   creditAccountId: number;
   disposalLossAccountId: number;
   disposalGainAccountId: number;
+  /** 处置损失科目名称（后端 FaAssetCategoryVo.disposalLossAccountName） */
+  disposalLossAccountName: string;
   status: string;
   sortOrder: number;
   debitAccountName: string;
@@ -31,6 +33,10 @@ export interface FaAssetVO {
   usefulLife: number;
   depreciationMethod: string;
   methodLabel: string;
+  /** 类别默认折旧方法（后端 FaAssetVo.categoryMethod） */
+  categoryMethod: string;
+  /** 剩余折旧月数（后端 FaAssetVo.remainingMonths） */
+  remainingMonths: number;
   acquisitionDate: string;
   inUseDate: string;
   location: string;
