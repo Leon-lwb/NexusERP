@@ -62,6 +62,20 @@ export interface DhrSectionVo {
   sortOrder?: number;
 }
 
+/** 验签结果（对应后端 com.nexus.common.sign.domain.vo.VerifyResultVo） */
+export interface SignVerifyResult {
+  /** 整体是否通过 */
+  passed?: boolean;
+  /** 链校验是否通过 */
+  chainPassed?: boolean;
+  /** 断链位置（首个不一致的 signatureId；无断链为 null） */
+  brokenAt?: number | string | null;
+  /** 校验的记录条数 */
+  checkedCount?: number;
+  /** 明细说明 */
+  messages?: string[];
+}
+
 /** DHR 校验结果视图对象 */
 export interface DhrVerifyVo {
   /** 冻结时记录的快照哈希 */
@@ -70,8 +84,8 @@ export interface DhrVerifyVo {
   recomputedHash?: string;
   /** 两个哈希是否一致 */
   hashMatched?: boolean;
-  /** 签名链校验结论（后端下发的文案/布尔语义，原样展示） */
-  chainVerify?: string | boolean;
+  /** 签名链校验结果（后端下发 VerifyResultVo 对象，非文案） */
+  chainVerify?: SignVerifyResult;
   /** 综合结论 */
   verdict?: string;
 }

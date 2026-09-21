@@ -394,7 +394,7 @@ import {
   archiveDhr,
   exportDhr
 } from '@/api/mes/dhr';
-import type { DhrRecordVo, DhrRecordQuery, DhrRecordForm, DhrSectionVo, DhrVerifyVo, DhrSignatureVo } from '@/api/mes/dhr/types';
+import type { DhrRecordVo, DhrRecordQuery, DhrRecordForm, DhrSectionVo, DhrVerifyVo, DhrSignatureVo, SignVerifyResult } from '@/api/mes/dhr/types';
 import { listWorkOrder } from '@/api/mes/pro/workorder';
 import type { ProWorkOrderVO } from '@/api/mes/pro/types';
 import SignAuthDialog from '@/components/sign/SignAuthDialog.vue';
@@ -528,10 +528,29 @@ const cellFormatter = (_row: any, _col: any, cellValue: any) => {
   if (typeof cellValue === 'object') return JSON.stringify(cellValue);
   return String(cellValue);
 };
-/** chainVerify 后端可能下发布尔或文案，两种都原样呈现 */
-const chainVerifyText = (value?: string | boolean) => {
+/**
+ * 签名链校验结论文案。
+ * <p>后端 {@code DhrVerifyVo.chainVerify} 是 {@code VerifyResultVo} **对象**
+ * （{@code passed/chainPassed/brokenAt/checkedCount/messages}），不是布尔或文案；
+ * 若按标量插值会渲染成 `[object Object]`，且断链位置与明细永远看不到 ——
+ * 而这两项正是 DHR 合规台账的核心结论。此处显式展开。</p>
+ */
+const chainVerifyText = (value?: SignVerifyResult | string | boolean | null) => {
+  if (value === null || value === undefined || value === '') return '—';
   if (typeof value === 'boolean') return value ? '通过' : '未通过';
-  return value || '—';
+  if (typeof value === 'string') return value;
+  const passed = value.chainPassed ?? value.passed;
+  const parts: string[] = [passed === true ? '通过' : passed === false ? '未通过' : '—'];
+  if (value.brokenAt !== null && value.brokenAt !== undefined) {
+    parts.push(`断链于签名 ${value.brokenAt}`);
+  }
+  if (typeof value.checkedCount === 'number') {
+    parts.push(`已校验 ${value.checkedCount} 条`);
+  }
+  if (Array.isArray(value.messages) && value.messages.length) {
+    parts.push(value.messages.join('；'));
+  }
+  return parts.join('，');
 };
 
 // ==================== 列表 ====================

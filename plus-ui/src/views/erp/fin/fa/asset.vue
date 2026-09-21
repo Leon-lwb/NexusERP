@@ -34,7 +34,7 @@
     <!-- 操作按钮区域 -->
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
-        <el-button type="primary" plain icon="Plus" @click="handleAdd()" v-hasPermi="['fa:asset:add']">新增卡片</el-button>
+        <el-button type="primary" plain icon="Plus" @click="handleAdd()" v-hasPermi="['fin:fa:asset:add']">新增卡片</el-button>
       </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
@@ -82,7 +82,7 @@
             type="primary"
             icon="Edit"
             @click="handleUpdate(scope.row)"
-            v-hasPermi="['fa:asset:edit']"
+            v-hasPermi="['fin:fa:asset:edit']"
             >修改</el-button
           >
           <el-button
@@ -91,7 +91,7 @@
             type="warning"
             icon="Position"
             @click="handleActivate(scope.row)"
-            v-hasPermi="['fa:asset:activate']"
+            v-hasPermi="['fin:fa:asset:activate']"
             >转固</el-button
           >
           <el-button
@@ -100,7 +100,7 @@
             type="danger"
             icon="Delete"
             @click="handleDelete(scope.row)"
-            v-hasPermi="['fa:asset:remove']"
+            v-hasPermi="['fin:fa:asset:remove']"
             >删除</el-button
           >
         </template>
