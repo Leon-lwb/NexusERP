@@ -305,6 +305,11 @@ public class IotDeviceCommandServiceImpl implements IIotDeviceCommandService {
 
     /**
      * 匹配回执对应的指令：优先按设备回传的 commandId，其次按"该设备最近一条未回执指令"。
+     *
+     * <p><b>归属校验（2026-09-21）</b>：按 commandId 直查时**必须**校验指令属于上报设备。
+     * 雪花 commandId 可枚举，若不校验，设备 A 可以带上设备 B 的 commandId 把 B 的未回执指令
+     * 置为 SUCCESS/FAILED，并把 A 的 ack 载荷写进 B 的 {@code ack_payload}／{@code ack_msg_id}，
+     * 伪造整条下行审计链。归属不符时直接丢弃该回执（不回落兜底匹配）。</p>
      */
     private IotDeviceCommand matchCommand(IotDevice device, Map<Object, Object> entry) {
         String commandIdStr = str(entry.get("command_id"));
@@ -312,6 +317,13 @@ public class IotDeviceCommandServiceImpl implements IIotDeviceCommandService {
             try {
                 IotDeviceCommand byId = baseMapper.selectById(Long.parseLong(commandIdStr.trim()));
                 if (byId != null) {
+                    boolean sameDevice = StringUtils.equals(byId.getDeviceCode(), device.getDeviceCode())
+                        || (byId.getDeviceId() != null && byId.getDeviceId().equals(device.getDeviceId()));
+                    if (!sameDevice) {
+                        log.warn("指令回执归属不符，已丢弃：reporter={}, commandId={}, cmdDevice={}",
+                            device.getDeviceCode(), byId.getCommandId(), byId.getDeviceCode());
+                        return null;
+                    }
                     return byId;
                 }
             } catch (NumberFormatException e) {

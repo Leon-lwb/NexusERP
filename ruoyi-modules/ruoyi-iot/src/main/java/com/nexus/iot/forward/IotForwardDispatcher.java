@@ -19,6 +19,7 @@ import com.nexus.iot.forward.mapper.IotForwardRuleMapper;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import com.baomidou.dynamic.datasource.annotation.DS;
+import com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder;
 
 import java.util.Date;
 import java.util.LinkedHashMap;
@@ -255,6 +256,15 @@ public class IotForwardDispatcher {
 
     /**
      * 提交异步投递（工作线程无租户上下文，需重新传播）。
+     *
+     * <p><b>必须显式 {@code push("iot")}（2026-09-21 修复）</b>：dynamic-datasource 的
+     * {@code DynamicDataSourceContextHolder} 是普通 {@code ThreadLocal}（非 Inheritable），
+     * 线程池工作线程的数据源栈为空 → 回落到 {@code primary: master}（ry-vue）；
+     * 而 {@code iot_forward_log}/{@code iot_forward_rule} 只建在 ry-iot，
+     * 查询会抛 {@code BadSqlGrammarException} 并被下方 catch 吞成一条 warn →
+     * 留痕永远停在 PENDING、**转发 100% 不投递**（重试只扫 FAILED，也捞不到）。
+     * 类级 {@code @DS("iot")} 在这里帮不上忙：lambda 内是 {@code this.deliver(...)} 自调用，
+     * 已绕过 AOP 代理。故必须在新线程内手动压栈，并在 finally 弹栈。</p>
      */
     private void submit(Long logId, String tenantId) {
         if (executor == null || executor.isShutdown()) {
@@ -262,9 +272,12 @@ public class IotForwardDispatcher {
         }
         executor.submit(() -> {
             try {
+                DynamicDataSourceContextHolder.push("iot");
                 TenantHelper.dynamic(tenantId, () -> deliver(logId));
             } catch (Exception e) {
-                log.warn("IoT 数据转发投递异常：logId={}, err={}", logId, e.getMessage());
+                log.warn("IoT 数据转发投递异常：logId={}, err={}", logId, e.getMessage(), e);
+            } finally {
+                DynamicDataSourceContextHolder.poll();
             }
         });
     }

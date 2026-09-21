@@ -44,6 +44,7 @@ import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * IoT OTA 固件升级任务Service业务层处理（审计 §4「功能缺失清单」#1 OTA MVP）。
@@ -609,10 +610,24 @@ public class IotOtaTaskServiceImpl implements IIotOtaTaskService {
 
     /**
      * 回执任务匹配：优先 taskId，其次"该设备最近一条进行中任务"。
+     *
+     * <p><b>归属校验（2026-09-21）</b>：按 taskId 直查时**必须**校验任务属于上报设备。
+     * 雪花 taskId 时间有序、可枚举，若不校验，设备 A 只要在自己的 {@code event/post} 里带上
+     * 设备 B 的 taskId，就能把 B 的任务 CAS 成 SUCCESS/FAILED，并把 **A 自己** 的
+     * {@code iot_device.firmware_version} 覆写成 B 的目标版本（伪造升级完成）。</p>
      */
     private IotOtaTask resolveTask(IotDevice device, Long taskId) {
         if (taskId != null) {
-            return baseMapper.selectById(taskId);
+            IotOtaTask task = baseMapper.selectById(taskId);
+            if (task == null) {
+                return null;
+            }
+            if (!Objects.equals(task.getDeviceId(), device.getDeviceId())) {
+                log.warn("OTA 回执任务归属不符，已拒绝：reporter={}, taskId={}, taskDeviceId={}",
+                    device.getDeviceCode(), taskId, task.getDeviceId());
+                throw new ServiceException("升级任务不属于当前设备，回执被拒绝");
+            }
+            return task;
         }
         return baseMapper.selectOne(Wrappers.<IotOtaTask>lambdaQuery()
             .eq(IotOtaTask::getDeviceId, device.getDeviceId())
