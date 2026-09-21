@@ -219,6 +219,21 @@ public class EqSparePartController extends BaseController {
     }
 
     /**
+     * 存量备件默认仓库回填(MES-EQ-04 收口)
+     * <p>把 {@code warehouse_id IS NULL} 的备件统一回填为服务端配置
+     * {@code nexus.mes.eq.spare.default-warehouse-id}（幂等）；<b>无请求体</b>——默认仓库不接受客户端传参，
+     * 避免任意仓库覆盖。</p>
+     *
+     * @return 影响行数
+     */
+    @SaCheckPermission("mes:eq:spare:edit")
+    @Log(title = "备件默认仓库回填", businessType = BusinessType.UPDATE)
+    @PostMapping("/backfill-warehouse")
+    public R<Integer> backfillWarehouse() {
+        return R.ok("回填完成", eqSparePartService.backfillWarehouse());
+    }
+
+    /**
      * 重投/对账单笔过账(MES-EQ-04)
      *
      * @param syncId 同步台账ID

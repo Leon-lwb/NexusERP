@@ -24,7 +24,9 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.util.Collection;
@@ -33,10 +35,12 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -325,6 +329,85 @@ class EqSparePartServiceImplTest {
         verify(erpMqPublisher, times(1)).publish(captor.capture());
         assertEquals("SPARE_PURCHASE", captor.getValue().get("bizType"));
         assertNotNull(captor.getValue().get("lines"));
+    }
+
+    // ==================== MES-EQ-04 收口: 默认仓库回填 / 成本单价 / 跨库事务防回归 ====================
+
+    @Test
+    void erpCrossDbReadMethodsMustNotBeTransactional() {
+        // @DS("mes") 服务用 DynamicDataSourceContextHolder.push("erp") 做跨库只读:
+        // 事务开启时连接已按类级 @DS("mes") 绑定到线程, push 不会重新路由,
+        // 查询会打到 ry-mes 并报 Table 'ry-mes.bd_material' doesn't exist。
+        // 以下三个公开方法内含跨库只读(validateErpMapping / countEnabledWarehouse), 必须保持无事务。
+        for (String name : new String[]{"insertByBo", "updateByBo", "backfillWarehouse"}) {
+            Method method = declaredMethod(EqSparePartServiceImpl.class, name);
+            assertNull(method.getAnnotation(Transactional.class),
+                name + " 不得标 @Transactional: 事务内 push(\"erp\") 失效, 跨库只读会打到 ry-mes");
+        }
+    }
+
+    @Test
+    void backfillWarehouseRejectsWhenDefaultWarehouseNotConfigured() {
+        ServiceException exception = assertThrows(ServiceException.class, () -> service.backfillWarehouse());
+
+        assertTrue(exception.getMessage().contains("未配置 nexus.mes.eq.spare.default-warehouse-id"));
+        // 配置为空时必须先拒绝, 不得误回填任何仓库
+        verifyNoInteractions(sparePartMapper, erpSpareStockQueryMapper);
+    }
+
+    @Test
+    void backfillWarehouseBackfillsOnlyUnmappedSparesForEnabledErpWarehouse() throws Exception {
+        setDefaultWarehouseId("2");
+        when(erpSpareStockQueryMapper.countEnabledWarehouse(anyString(), eq(2L))).thenReturn(1L);
+        when(sparePartMapper.update(any(), any())).thenReturn(3);
+
+        int rows = service.backfillWarehouse();
+
+        assertEquals(3, rows);
+        // 默认仓库只来自服务端配置, 端点不接受客户端传参
+        verify(erpSpareStockQueryMapper).countEnabledWarehouse(anyString(), eq(2L));
+    }
+
+    @Test
+    void backfillWarehouseRejectsDisabledOrMissingErpWarehouse() throws Exception {
+        setDefaultWarehouseId("9");
+        when(erpSpareStockQueryMapper.countEnabledWarehouse(anyString(), eq(9L))).thenReturn(0L);
+
+        ServiceException exception = assertThrows(ServiceException.class, () -> service.backfillWarehouse());
+
+        assertTrue(exception.getMessage().contains("不存在或已停用"));
+        verify(sparePartMapper, never()).update(any(), any());
+    }
+
+    @Test
+    void stockTransactionPublishesServerSideUnitCostIntoErpPayload() {
+        EqSparePartVo spare = mappedSpare(new BigDecimal("10"));
+        // 单价只可能来自服务端读库(eq_spare_part.unit_cost): EqSpareStockBo 根本没有 unitCost 入参
+        spare.setUnitCost(new BigDecimal("12.5000"));
+        when(sparePartMapper.selectVoById(1L)).thenReturn(spare);
+        when(sparePartMapper.update(any(), any())).thenReturn(1);
+        when(sparePartMapper.selectById(1L)).thenReturn(sparePart(new BigDecimal("7")));
+
+        service.stockTransaction(request("OUT", "3"));
+
+        ArgumentCaptor<Map<String, Object>> captor = ArgumentCaptor.forClass(Map.class);
+        verify(erpMqPublisher).publish(captor.capture());
+        assertEquals(0, new BigDecimal("12.5000").compareTo((BigDecimal) captor.getValue().get("unitCost")));
+    }
+
+    private static Method declaredMethod(Class<?> type, String name) {
+        for (Method method : type.getDeclaredMethods()) {
+            if (method.getName().equals(name)) {
+                return method;
+            }
+        }
+        throw new IllegalStateException("方法不存在: " + name);
+    }
+
+    private void setDefaultWarehouseId(String value) throws Exception {
+        Field field = EqSparePartServiceImpl.class.getDeclaredField("defaultWarehouseId");
+        field.setAccessible(true);
+        field.set(service, value);
     }
 
     // ==================== 构造辅助 ====================

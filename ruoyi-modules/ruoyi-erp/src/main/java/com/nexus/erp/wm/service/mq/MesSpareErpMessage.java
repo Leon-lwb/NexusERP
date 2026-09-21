@@ -63,6 +63,12 @@ public class MesSpareErpMessage {
     /** 变动数量(正数) */
     private BigDecimal quantity;
 
+    /**
+     * 备件参考单价（MES 侧从 {@code eq_spare_part.unit_cost} 读取后下发，服务端取值、不采信客户端）。
+     * <p>可空：为空或 ≤0 时 ERP 侧跳过移动平均计价并记 WARN，避免用 0 拉低均价。</p>
+     */
+    private BigDecimal unitCost;
+
     /** 关联单据类型 */
     private String refType;
 
@@ -97,6 +103,7 @@ public class MesSpareErpMessage {
         msg.setWarehouseId(longVal(map.get("warehouseId")));
         msg.setTransactionType(str(map.get("transactionType")));
         msg.setQuantity(decimal(map.get("quantity")));
+        msg.setUnitCost(decimal(map.get("unitCost")));
         msg.setRefType(str(map.get("refType")));
         msg.setRefId(longVal(map.get("refId")));
         msg.setRemark(str(map.get("remark")));

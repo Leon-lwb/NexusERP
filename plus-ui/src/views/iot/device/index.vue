@@ -109,7 +109,7 @@
           <span v-else>-</span>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="288" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="DataLine" @click="handleRealtime(scope.row)" v-hasPermi="['iot:device:query']">实时</el-button>
           <el-button link type="primary" icon="Monitor" @click="handleOps(scope.row)" v-hasPermi="['iot:device:query']">运维</el-button>
@@ -123,6 +123,16 @@
             @click="openLifecycle(scope.row)"
             v-hasPermi="['iot:device:changeStatus']"
             >状态</el-button
+          >
+          <!-- OTA 增量入口：仅启用中设备可下发（禁用/注销后端会拒绝） -->
+          <el-button
+            link
+            type="success"
+            icon="Promotion"
+            :disabled="scope.row.status !== 'ACTIVE'"
+            @click="openOtaSend(scope.row)"
+            v-hasPermi="['iot:ota:create']"
+            >下发升级</el-button
           >
           <el-button link type="primary" icon="Link" @click="handleBindMes(scope.row)" v-hasPermi="['iot:device:edit']">关联MES</el-button>
           <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['iot:device:remove']">删除</el-button>
@@ -219,6 +229,39 @@
       </template>
     </el-dialog>
 
+    <!-- 下发固件升级（OTA 增量入口：选已发布固件 → 调单设备下发端点） -->
+    <el-dialog v-model="otaSendDialog.visible" title="下发固件升级" width="560px" append-to-body>
+      <el-form label-width="100px">
+        <el-form-item label="设备">
+          <span>{{ otaSendDialog.deviceCode }} - {{ otaSendDialog.deviceName }}</span>
+        </el-form-item>
+        <el-form-item label="目标固件">
+          <el-select v-model="otaSendDialog.firmwareId" placeholder="请选择已发布固件" filterable style="width: 100%">
+            <el-option
+              v-for="item in otaFirmwareOptions"
+              :key="item.firmwareId"
+              :label="`${item.firmwareName}（${item.productKey ? item.productKey + '/' : ''}${item.version}）`"
+              :value="item.firmwareId"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="备注">
+          <el-input v-model="otaSendDialog.remark" type="textarea" placeholder="请输入备注" />
+        </el-form-item>
+        <el-alert
+          type="info"
+          :closable="false"
+          title="仅列出已发布固件；后端会校验设备为启用中、产品型号匹配、且同设备同固件不存在进行中任务。升级进度请在「IoT平台 → 升级任务」查看。"
+        />
+      </el-form>
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button type="primary" :loading="otaSendDialog.loading" @click="submitOtaSend()">确 定</el-button>
+          <el-button @click="otaSendDialog.visible = false">取 消</el-button>
+        </div>
+      </template>
+    </el-dialog>
+
     <!-- 运维详情（在线状态 / 最后在线 / 最后上报 / 固件版本 / 分组标签） -->
     <el-drawer title="设备运维详情" v-model="opsOpen" size="45%">
       <el-descriptions v-loading="opsLoading" :column="1" border>
@@ -290,6 +333,9 @@ import { listDevice, getDevice, delDevice, addDevice, updateDevice, deviceOps, c
 import type { DeviceVO, DeviceQuery, DeviceOpsVO, DeviceLifecycleForm } from '@/api/iot/device/types';
 import { listDeviceGroup } from '@/api/iot/deviceGroup';
 import type { DeviceGroupVO } from '@/api/iot/deviceGroup/types';
+import { optionFirmware } from '@/api/iot/firmware';
+import type { FirmwareVO } from '@/api/iot/firmware/types';
+import { createOtaTask } from '@/api/iot/ota';
 import { optionDeviceTag } from '@/api/iot/deviceTag';
 import type { DeviceTagVO } from '@/api/iot/deviceTag/types';
 import { listProduct } from '@/api/iot/product';
@@ -577,6 +623,63 @@ function submitLifecycle() {
     }
     doSubmit();
   });
+}
+
+/**
+ * OTA 下发升级（增量能力）：选已发布固件 → 调单设备下发端点 `POST /iot/ota/create`。
+ * 权限码 `iot:ota:create`（后端 IotOtaController#create）。
+ */
+const otaSendDialog = reactive<{
+  visible: boolean;
+  deviceId: string | number | null;
+  deviceCode: string;
+  deviceName: string;
+  firmwareId: string | null;
+  remark: string;
+  loading: boolean;
+}>({ visible: false, deviceId: null, deviceCode: '', deviceName: '', firmwareId: null, remark: '', loading: false });
+const otaFirmwareOptions = ref<FirmwareVO[]>([]);
+
+/** 打开下发升级对话框（仅列出已发布固件，后端只允许对 RELEASED 固件下发） */
+function openOtaSend(row: DeviceVO) {
+  otaSendDialog.deviceId = row.deviceId;
+  otaSendDialog.deviceCode = row.deviceCode;
+  otaSendDialog.deviceName = row.deviceName;
+  otaSendDialog.firmwareId = null;
+  otaSendDialog.remark = '';
+  optionFirmware({ status: 'RELEASED' })
+    .then((res: any) => {
+      otaFirmwareOptions.value = (res.data || []) as FirmwareVO[];
+    })
+    .catch(() => {
+      otaFirmwareOptions.value = [];
+    });
+  otaSendDialog.visible = true;
+}
+
+/** 提交单设备下发 */
+function submitOtaSend() {
+  if (!otaSendDialog.firmwareId) {
+    proxy.$modal.msgWarning('请选择已发布固件');
+    return;
+  }
+  otaSendDialog.loading = true;
+  createOtaTask({
+    firmwareId: otaSendDialog.firmwareId,
+    deviceId: otaSendDialog.deviceId as string,
+    remark: otaSendDialog.remark
+  })
+    .then(() => {
+      proxy.$modal.msgSuccess('升级任务已下发');
+      otaSendDialog.visible = false;
+    })
+    .catch((e: any) => {
+      // 拦截器已统一提示后端原因（固件未发布/设备禁用/产品型号不匹配/重复进行中任务等）
+      if (e?.message) proxy.$modal.msgError(e.message);
+    })
+    .finally(() => {
+      otaSendDialog.loading = false;
+    });
 }
 
 loadProductOptions();

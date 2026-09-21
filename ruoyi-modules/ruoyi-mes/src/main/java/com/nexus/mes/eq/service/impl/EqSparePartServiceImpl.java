@@ -64,6 +64,17 @@ import java.util.stream.Collectors;
  *   <li><b>失败可见</b>：投递失败写 {@code eq_spare_erp_sync.sync_status = FAILED} 与失败原因，
  *       提供 {@code /erp-sync/failed} 列表与 {@code /erp-sync/{id}/retry} 重投，绝不静默。</li>
  * </ul>
+ * <p>
+ * <b>⚠ 跨库只读与事务互斥（重要，勿回退）</b>：本类标 {@code @DS("mes")}，跨库 ERP 只读经
+ * {@code DynamicDataSourceContextHolder.push("erp")} 编程式切换。<b>因此调用
+ * {@link #queryErpAvailable} / {@link #queryErpMaterial} / {@link #validateErpMapping} 的公开方法
+ * 不得开启事务</b>：Spring 事务开启时已按类级 {@code @DS("mes")} 把 mes 连接绑定到线程，
+ * 之后再 {@code push("erp")} 不会重新路由（{@code DataSourceUtils.getConnection} 复用已绑定连接），
+ * 查询会打到 {@code ry-mes} 并报 {@code Table 'ry-mes.bd_material' doesn't exist}。
+ * 故 {@link #insertByBo} / {@link #updateByBo} / {@link #backfillWarehouse} <b>刻意不加</b>
+ * {@code @Transactional}（各自只有一条写语句，单语句本身原子；备件编码唯一性由 DB 唯一键
+ * {@code uk_tenant_code(tenant_id, spare_code)} 兜底）。
+ * 防回归断言见 {@code EqSparePartServiceImplTest#erpCrossDbReadMethodsMustNotBeTransactional}。
  *
  * @author Nexus
  */
@@ -96,6 +107,14 @@ public class EqSparePartServiceImpl implements IEqSparePartService {
      */
     @Value("${nexus.mes.eq.spare.erp-strict:true}")
     private boolean erpStrict = true;
+
+    /**
+     * 备件默认 ERP 仓库ID（存量 {@code warehouse_id} 回填入口专用，MES-EQ-04 收口）。
+     * <p>默认空值：未配置时回填入口抛业务异常并提示运维配置；<b>不作为客户端可传参数</b>，
+     * 避免任意仓库覆盖。配置形如 {@code nexus.mes.eq.spare.default-warehouse-id: 1}。</p>
+     */
+    @Value("${nexus.mes.eq.spare.default-warehouse-id:}")
+    private String defaultWarehouseId;
 
     /**
      * 分页查询备件零件列表
@@ -141,12 +160,14 @@ public class EqSparePartServiceImpl implements IEqSparePartService {
 
     /**
      * 新增备件零件
+     * <p><b>刻意不加 {@code @Transactional}</b>：本方法会经 {@link #validateErpMapping} 做跨库 ERP 只读
+     * （{@code push("erp")}），事务开启后连接已绑定 {@code mes} 数据源，跨库读会失效；且本方法只有
+     * 一条写语句（{@code insert}），单语句自身原子。详见类 javadoc「跨库只读与事务互斥」。</p>
      *
      * @param bo 业务对象（含筛选条件/字段值）
      * @return 返回结果
      */
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public EqSparePartVo insertByBo(EqSparePartBo bo) {
         // 校验编码唯一
         Long cnt = baseMapper.selectCount(Wrappers.<EqSparePart>lambdaQuery()
@@ -167,6 +188,8 @@ public class EqSparePartServiceImpl implements IEqSparePartService {
         spare.setCurrentStock(BigDecimal.ZERO);
         spare.setMaterialId(bo.getMaterialId());
         spare.setWarehouseId(bo.getWarehouseId());
+        // 备件参考单价(成本口径): 主数据人工维护, 缺省 0; 出入库过账单价一律服务端读库填充
+        spare.setUnitCost(bo.getUnitCost() != null ? bo.getUnitCost() : BigDecimal.ZERO);
         spare.setRemark(bo.getRemark());
         baseMapper.insert(spare);
         log.info("新增备件: spareId={}, code={}, materialId={}, warehouseId={}",
@@ -176,12 +199,13 @@ public class EqSparePartServiceImpl implements IEqSparePartService {
 
     /**
      * 更新备件零件
+     * <p><b>刻意不加 {@code @Transactional}</b>：同 {@link #insertByBo}，需先做跨库 ERP 只读校验，
+     * 且只有一条写语句（{@code updateById}）。</p>
      *
      * @param bo 业务对象（含筛选条件/字段值）
      * @return 是否成功
      */
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public Boolean updateByBo(EqSparePartBo bo) {
         validateErpMapping(bo.getMaterialId(), bo.getWarehouseId());
         EqSparePart spare = new EqSparePart();
@@ -195,6 +219,7 @@ public class EqSparePartServiceImpl implements IEqSparePartService {
         spare.setSafetyStock(bo.getSafetyStock());
         spare.setMaterialId(bo.getMaterialId());
         spare.setWarehouseId(bo.getWarehouseId());
+        spare.setUnitCost(bo.getUnitCost());
         spare.setRemark(bo.getRemark());
         return baseMapper.updateById(spare) > 0;
     }
@@ -471,7 +496,47 @@ public class EqSparePartServiceImpl implements IEqSparePartService {
         return false;
     }
 
-    // ==================== 私有辅助 ====================
+    /**
+     * 存量备件默认仓库回填（MES-EQ-04 收口）
+     * <p>仅回填 {@code warehouse_id IS NULL AND del_flag = '0'} 的备件（幂等，已映射的不动）；
+     * 回填前跨库只读校验目标仓库在 ERP {@code wm_warehouse} 中<b>存在且启用</b>
+     * （{@code status = 1 AND del_flag = '0'} 且同租户）。</p>
+     * <p><b>刻意不加 {@code @Transactional}</b>：方法内含跨库 ERP 只读（{@code push("erp")}），
+     * 事务开启后连接已绑定 {@code mes}，push 不生效会打到 {@code ry-mes} 报
+     * {@code Table 'ry-mes.wm_warehouse' doesn't exist}；且只有一条 UPDATE，单语句自身原子。</p>
+     *
+     * @return 影响行数
+     */
+    @Override
+    public int backfillWarehouse() {
+        if (StringUtils.isBlank(defaultWarehouseId)) {
+            throw new ServiceException("未配置 nexus.mes.eq.spare.default-warehouse-id，请先配置备件默认仓库");
+        }
+        Long warehouseId;
+        try {
+            warehouseId = Long.valueOf(defaultWarehouseId.trim());
+        } catch (NumberFormatException e) {
+            throw new ServiceException("nexus.mes.eq.spare.default-warehouse-id 配置非法(需为仓库ID数字): "
+                + defaultWarehouseId);
+        }
+        // 跨库只读校验: 仓库存在且启用(否则回填后过账会打到已停用仓库)
+        long enabled;
+        try {
+            DynamicDataSourceContextHolder.push("erp");
+            enabled = erpSpareStockQueryMapper.countEnabledWarehouse(currentTenantId(), warehouseId);
+        } finally {
+            DynamicDataSourceContextHolder.poll();
+        }
+        if (enabled <= 0) {
+            throw new ServiceException("ERP 仓库不存在或已停用, 无法作为备件默认仓库: warehouseId=" + warehouseId);
+        }
+        int rows = baseMapper.update(null, Wrappers.<EqSparePart>lambdaUpdate()
+            .set(EqSparePart::getWarehouseId, warehouseId)
+            .isNull(EqSparePart::getWarehouseId)
+            .eq(EqSparePart::getDelFlag, "0"));
+        log.info("备件默认仓库回填完成: warehouseId={}, rows={}", warehouseId, rows);
+        return rows;
+    }
 
     private LambdaQueryWrapper<EqSparePart> buildQueryWrapper(EqSparePartBo bo) {
         return Wrappers.<EqSparePart>lambdaQuery()
@@ -533,6 +598,9 @@ public class EqSparePartServiceImpl implements IEqSparePartService {
 
     /**
      * 查询 ERP 可用量（按物料汇总，在库 − 已预留，且 frozen_flag = 0）
+     * <p><b>⚠ 调用方不得处于事务中</b>：本方法用 {@code DynamicDataSourceContextHolder.push("erp")}
+     * 编程式切库，事务开启时连接已按类级 {@code @DS("mes")} 绑定到线程，push 不会重新路由，
+     * 查询会打到 {@code ry-mes} 报 {@code Table 'ry-mes.wm_material_stock' doesn't exist}。</p>
      *
      * @param materialIds 物料ID集合
      * @return 物料 → 可用量；ERP 不可达时返回 {@code null}（调用方降级并显式标注口径）
@@ -564,6 +632,7 @@ public class EqSparePartServiceImpl implements IEqSparePartService {
 
     /**
      * 查询 ERP 物料主数据（用于映射校验与请购行冗余字段）
+     * <p><b>⚠ 调用方不得处于事务中</b>（同 {@link #queryErpAvailable}）。</p>
      *
      * @param materialId 物料ID
      * @return 物料 Map；不存在返回 null
@@ -585,6 +654,9 @@ public class EqSparePartServiceImpl implements IEqSparePartService {
 
     /**
      * 校验 ERP 物料/仓库映射（存在 + 物料状态启用）
+     * <p><b>⚠ 调用方不得处于事务中</b>（同 {@link #queryErpAvailable}）：
+     * 事务内 {@code push("erp")} 失效，会报 {@code Table 'ry-mes.bd_material' doesn't exist}。
+     * 防回归断言见 {@code EqSparePartServiceImplTest#erpCrossDbReadMethodsMustNotBeTransactional}。</p>
      *
      * @param materialId  ERP 物料ID(可空)
      * @param warehouseId ERP 仓库ID(可空)
@@ -728,6 +800,9 @@ public class EqSparePartServiceImpl implements IEqSparePartService {
         payload.put("warehouseId", spare.getWarehouseId());
         payload.put("transactionType", sync.getTransactionType());
         payload.put("quantity", sync.getQuantity());
+        // 成本计价(MES-EQ-04 收口): 单价由服务端从 eq_spare_part.unit_cost 读取(此处的 spare 即库中读出的视图),
+        // 绝不采信客户端传入的单价; 为空/≤0 时 ERP 侧跳过移动平均并记 WARN
+        payload.put("unitCost", spare.getUnitCost());
         payload.put("refType", sync.getRefType());
         payload.put("refId", sync.getRefId());
         payload.put("remark", sync.getRemark());

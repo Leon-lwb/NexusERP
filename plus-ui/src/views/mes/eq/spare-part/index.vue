@@ -35,6 +35,11 @@
       <el-col :span="1.5">
         <el-button type="warning" plain icon="Download" @click="handleExport()" v-hasPermi="['mes:eq:spare:export']">导出</el-button>
       </el-col>
+      <el-col :span="1.5">
+        <el-button type="info" plain icon="Connection" :loading="backfilling" @click="handleBackfillWarehouse()" v-hasPermi="['mes:eq:spare:edit']"
+          >回填默认仓库</el-button
+        >
+      </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList()"></right-toolbar>
     </el-row>
 
@@ -52,11 +57,34 @@
         </template>
       </el-table-column>
       <el-table-column label="安全库存" prop="safetyStock" align="right" width="100" />
-      <el-table-column label="当前库存" prop="currentStock" align="right" width="100">
+      <el-table-column label="当前库存" prop="currentStock" align="right" width="140">
         <template #default="scope">
           <el-tag v-if="scope.row.lowStock" type="danger" size="small">{{ scope.row.currentStock }}</el-tag>
           <span v-else>{{ scope.row.currentStock }}</span>
+          <div v-if="scope.row.lowStockBasis === 'NOT_MAPPED'" class="basis-hint">未映射 ERP 物料，无法出入库</div>
+          <div v-else-if="scope.row.lowStockBasis === 'ERP_UNAVAILABLE'" class="basis-hint">ERP 不可达，已降级为 MES 派生缓存口径</div>
         </template>
+      </el-table-column>
+      <el-table-column label="ERP物料" min-width="170" show-overflow-tooltip>
+        <template #default="scope">
+          <span v-if="scope.row.materialId">{{ materialLabel(scope.row.materialId) }}</span>
+          <span v-else class="basis-hint">未映射 ERP 物料，无法出入库</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="ERP仓库" min-width="140" show-overflow-tooltip>
+        <template #default="scope">
+          <span v-if="scope.row.warehouseId">{{ warehouseLabel(scope.row.warehouseId) }}</span>
+          <span v-else class="basis-hint">未映射 ERP 仓库，无法出入库</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="ERP可用量" prop="erpAvailableStock" align="right" width="110">
+        <template #default="scope">
+          <span v-if="scope.row.erpAvailableStock === null || scope.row.erpAvailableStock === undefined">-</span>
+          <span v-else>{{ scope.row.erpAvailableStock }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="参考单价" prop="unitCost" align="right" width="100">
+        <template #default="scope">{{ scope.row.unitCost ?? '-' }}</template>
       </el-table-column>
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="240" :show-overflow-tooltip="false">
         <template #default="scope">
@@ -95,6 +123,19 @@
         </el-form-item>
         <el-form-item label="安全库存">
           <el-input-number v-model="form.safetyStock" :min="0" :precision="4" :step="1" style="width: 100%" placeholder="低于此值告警" />
+        </el-form-item>
+        <el-form-item label="ERP物料">
+          <el-select v-model="form.materialId" placeholder="请选择 ERP 物料(仅启用)" filterable clearable style="width: 100%">
+            <el-option v-for="m in materialOptions" :key="m.materialId" :label="m.materialCode + ' - ' + m.materialName" :value="m.materialId" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="ERP仓库">
+          <el-select v-model="form.warehouseId" placeholder="请选择 ERP 仓库(出入库过账目标)" filterable clearable style="width: 100%">
+            <el-option v-for="w in warehouseOptions" :key="w.warehouseId" :label="w.warehouseCode + ' - ' + w.warehouseName" :value="w.warehouseId" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="参考单价">
+          <el-input-number v-model="form.unitCost" :min="0" :precision="4" :step="1" style="width: 100%" placeholder="用于 ERP 移动平均计价" />
         </el-form-item>
         <el-form-item label="备注">
           <el-input v-model="form.remark" type="textarea" :rows="2" placeholder="备注" />
@@ -139,8 +180,18 @@
 </template>
 
 <script setup lang="ts" name="MesEqSparePart">
-import { listSparePart, getSparePart, addSparePart, updateSparePart, delSparePart, stockTransaction } from '@/api/mes/eq/spare-part';
+import {
+  listSparePart,
+  getSparePart,
+  addSparePart,
+  updateSparePart,
+  delSparePart,
+  stockTransaction,
+  backfillWarehouse
+} from '@/api/mes/eq/spare-part';
 import type { EqSparePartVO, EqSparePartQuery, EqSpareStockBo } from '@/api/mes/eq/spare-part';
+import { listMaterial } from '@/api/erp/bd/material/index';
+import { listWarehouse } from '@/api/erp/wm/warehouse/index';
 import type { FormInstance } from 'element-plus';
 import { useCrud } from '@/composables/useCrud';
 
@@ -192,11 +243,62 @@ const {
     unit: '',
     category: '',
     safetyStock: 0,
+    materialId: undefined,
+    warehouseId: undefined,
+    unitCost: undefined,
     remark: ''
   }),
   exportUrl: '/mes/eq/spare-part/export',
   exportFileName: 'spare_part'
 });
+
+/** ERP 物料/仓库下拉（仅启用）与默认仓库回填（MES-EQ-04） */
+const materialOptions = ref<{ materialId: string; materialCode: string; materialName: string }[]>([]);
+const warehouseOptions = ref<{ warehouseId: string; warehouseCode: string; warehouseName: string }[]>([]);
+const backfilling = ref(false);
+
+const loadErpOptions = async () => {
+  try {
+    const [mRes, wRes] = await Promise.all([
+      listMaterial({ pageNum: 1, pageSize: 500, status: 1 } as any),
+      listWarehouse({ pageNum: 1, pageSize: 500, status: 1 } as any)
+    ]);
+    materialOptions.value = (mRes as any)?.rows || [];
+    warehouseOptions.value = (wRes as any)?.rows || [];
+  } catch (e) {
+    // 下拉加载失败不阻断主列表；映射列退化为显示 ID
+    console.error('ERP 物料/仓库下拉加载失败', e);
+  }
+};
+
+/** 列表映射列文案：已映射显示「编码 - 名称」，下拉未加载/超出前 500 条时退化为 #ID */
+const materialLabel = (materialId?: string) => {
+  const hit = materialOptions.value.find((m) => String(m.materialId) === String(materialId));
+  return hit ? `${hit.materialCode} - ${hit.materialName}` : `#${materialId}`;
+};
+const warehouseLabel = (warehouseId?: string) => {
+  const hit = warehouseOptions.value.find((w) => String(w.warehouseId) === String(warehouseId));
+  return hit ? `${hit.warehouseCode} - ${hit.warehouseName}` : `#${warehouseId}`;
+};
+
+/** 回填默认仓库（后端未配置默认仓库时原样提示后端错误） */
+const handleBackfillWarehouse = async () => {
+  try {
+    await proxy?.$modal.confirm('将按系统默认仓库回填所有未映射 ERP 仓库的备件，确认继续？');
+  } catch {
+    return;
+  }
+  backfilling.value = true;
+  try {
+    const res: any = await backfillWarehouse();
+    proxy?.$modal.msgSuccess(`回填完成，影响 ${res?.data ?? 0} 行`);
+    getList();
+  } catch (e: any) {
+    proxy?.$modal.msgError(e?.message || '回填失败');
+  } finally {
+    backfilling.value = false;
+  }
+};
 
 /** 出入库弹窗(本地保留) */
 const stockDialog = reactive<{ visible: boolean; type: 'IN' | 'OUT'; spareId: number; spareCode: string; spareName: string; currentStock: number }>({
@@ -254,5 +356,15 @@ function resetQuery() {
   handleQuery();
 }
 
+loadErpOptions();
 getList();
 </script>
+
+<style scoped>
+.basis-hint {
+  color: #e6a23c;
+  font-size: 12px;
+  line-height: 1.3;
+  white-space: normal;
+}
+</style>

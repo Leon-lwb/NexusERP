@@ -56,6 +56,12 @@ public class EqSparePartBo extends BaseEntity {
     /** ERP仓库ID(wm_warehouse.warehouse_id); 过账到 ERP 仓储的目标仓库 */
     private Long warehouseId;
 
+    /**
+     * 备件参考单价(成本口径, 人工维护)。
+     * <p>仅在备件主数据新增/编辑时维护；出入库过账的单价一律由服务端读库填充，本字段不参与出入库入参。</p>
+     */
+    private BigDecimal unitCost;
+
     /** 备注 */
     private String remark;
 

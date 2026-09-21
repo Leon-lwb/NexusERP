@@ -63,6 +63,13 @@ public class EqSparePart extends TenantEntity {
     /** ERP仓库ID(wm_warehouse.warehouse_id), 过账到 ERP 仓储的目标仓库 */
     private Long warehouseId;
 
+    /**
+     * 备件参考单价(人工维护, 成本口径)。
+     * <p>出入库过账时由<b>服务端从本表读取</b>后随 MQ 消息下发，供 ERP 侧
+     * {@code IInventoryValuationService} 做移动平均计价；<b>绝不采信客户端传入的单价</b>。</p>
+     */
+    private BigDecimal unitCost;
+
     /** 备注 */
     private String remark;
 

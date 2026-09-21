@@ -64,6 +64,19 @@ public interface ErpSpareStockQueryMapper {
     long countWarehouse(@Param("tenantId") String tenantId, @Param("warehouseId") Long warehouseId);
 
     /**
+     * 查询 ERP 仓库是否存在<b>且启用</b>（{@code status = 1}）
+     * <p>用于 {@code warehouse_id} 存量回填入口的前置校验：回填目标仓库必须是启用仓库，
+     * 否则回填后出入库过账会打到已停用仓库。</p>
+     *
+     * @param tenantId    租户ID
+     * @param warehouseId 仓库ID
+     * @return 命中行数，> 0 表示存在且启用
+     */
+    @Select("SELECT COUNT(1) FROM wm_warehouse WHERE warehouse_id = #{warehouseId} " +
+        "AND del_flag = '0' AND status = 1 AND tenant_id = #{tenantId}")
+    long countEnabledWarehouse(@Param("tenantId") String tenantId, @Param("warehouseId") Long warehouseId);
+
+    /**
      * 查询某笔备件过账是否已在 ERP 落账（对账判据）
      *
      * @param tenantId 租户ID

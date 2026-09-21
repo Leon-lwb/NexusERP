@@ -112,18 +112,37 @@
           <template #header>
             <div class="card-header">
               <span>低库存告警</span>
-              <el-button link type="warning" icon="Box" @click="router.push('/mes/eq-spare/spare-part')" v-hasPermi="['mes:eq:spare:list']"
-                >备件管理</el-button
-              >
+              <div>
+                <el-button
+                  link
+                  type="primary"
+                  icon="ShoppingCart"
+                  :loading="purchaseSubmitting"
+                  @click="handlePurchaseRequest()"
+                  v-hasPermi="['mes:eq:spare:purchase']"
+                  >一键生成采购申请</el-button
+                >
+                <el-button link type="warning" icon="Box" @click="router.push('/mes/eq-spare/spare-part')" v-hasPermi="['mes:eq:spare:list']"
+                  >备件管理</el-button
+                >
+              </div>
             </div>
           </template>
           <el-table :data="lowStockList" size="small" max-height="160" show-overflow-tooltip>
             <el-table-column label="备件编码" prop="spareCode" width="110" />
             <el-table-column label="备件名称" prop="spareName" min-width="120" show-overflow-tooltip />
             <el-table-column label="安全库存" prop="safetyStock" align="right" width="90" />
-            <el-table-column label="当前库存" prop="currentStock" align="right" width="90">
+            <el-table-column label="当前库存" prop="currentStock" align="right" width="110">
               <template #default="scope">
                 <el-tag type="danger" size="small">{{ scope.row.currentStock }}</el-tag>
+                <div v-if="scope.row.lowStockBasis === 'NOT_MAPPED'" class="basis-hint">未映射 ERP 物料，无法出入库</div>
+                <div v-else-if="scope.row.lowStockBasis === 'ERP_UNAVAILABLE'" class="basis-hint">ERP 不可达，已降级为 MES 派生缓存口径</div>
+              </template>
+            </el-table-column>
+            <el-table-column label="ERP可用量" prop="erpAvailableStock" align="right" width="100">
+              <template #default="scope">
+                <span v-if="scope.row.erpAvailableStock === null || scope.row.erpAvailableStock === undefined">-</span>
+                <span v-else>{{ scope.row.erpAvailableStock }}</span>
               </template>
             </el-table-column>
           </el-table>
@@ -139,7 +158,7 @@ import { listEquipment, batchIotStatus, getEquipmentSummary } from '@/api/mes/eq
 import type { EqEquipmentVO } from '@/api/mes/eq/equipment';
 import { listRepair, getRepairSummary } from '@/api/mes/eq/repair';
 import type { EqRepairVO } from '@/api/mes/eq/repair';
-import { listLowStock } from '@/api/mes/eq/spare-part';
+import { listLowStock, purchaseRequest } from '@/api/mes/eq/spare-part';
 import type { EqSparePartVO } from '@/api/mes/eq/spare-part';
 
 const router = useRouter();
@@ -212,6 +231,40 @@ const loadAll = async () => {
 // 定时刷新(30秒)
 let timer: ReturnType<typeof setInterval> | null = null;
 
+/** 低库存一键生成 ERP 采购申请（MES-EQ-04，权限 mes:eq:spare:purchase） */
+const purchaseSubmitting = ref(false);
+const handlePurchaseRequest = async () => {
+  if (lowStockList.value.length === 0) {
+    proxy?.$modal.msgWarning('当前没有低库存备件');
+    return;
+  }
+  // 未映射备件先在前端拦截并列出编码（后端仍是权威，会再次拒绝并返回编码列表）
+  const unmapped = lowStockList.value.filter((r) => !r.materialId);
+  if (unmapped.length > 0) {
+    proxy?.$modal.msgWarning(`以下备件未映射 ERP 物料，无法生成采购申请：${unmapped.map((r) => r.spareCode).join('、')}`);
+    return;
+  }
+  try {
+    await proxy?.$modal.confirm(`将为 ${lowStockList.value.length} 个低库存备件提交 ERP 采购申请生成请求，是否继续？`);
+  } catch {
+    return;
+  }
+  purchaseSubmitting.value = true;
+  try {
+    const res: any = await purchaseRequest({ spareIds: lowStockList.value.map((r) => r.spareId), remark: 'MES 低库存备件预警' });
+    proxy?.$modal.msgSuccess(`已提交 ERP 采购申请生成请求（${res?.data ?? 0} 行）`);
+    proxy?.$modal
+      .confirm('请到 ERP 采购申请列表查看生成的草稿请购单，是否现在前往？')
+      .then(() => router.push('/erp/pu/requisition'))
+      .catch(() => {});
+  } catch (e: any) {
+    // 接口已关闭统一错误 toast，这里原样展示后端拒绝原因（含未映射编码列表）
+    proxy?.$modal.msgError(e?.message || '采购申请提交失败');
+  } finally {
+    purchaseSubmitting.value = false;
+  }
+};
+
 onMounted(() => {
   loadAll();
   timer = setInterval(loadAll, 30000);
@@ -227,6 +280,13 @@ onUnmounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+.basis-hint {
+  color: #e6a23c;
+  font-size: 12px;
+  line-height: 1.3;
+  white-space: normal;
+  text-align: left;
 }
 .status-card {
   text-align: center;

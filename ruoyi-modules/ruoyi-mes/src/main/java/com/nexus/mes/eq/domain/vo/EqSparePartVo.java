@@ -67,6 +67,10 @@ public class EqSparePartVo implements Serializable {
     /** ERP仓库ID(wm_warehouse.warehouse_id) */
     private Long warehouseId;
 
+    /** 备件参考单价(成本口径, 人工维护; 出入库过账时随消息下发给 ERP 做移动平均计价) */
+    @ExcelProperty("参考单价")
+    private BigDecimal unitCost;
+
     /** ERP可用量(在库 − 已预留, 且 frozen_flag = 0); 未映射物料时为 null */
     private BigDecimal erpAvailableStock;
 

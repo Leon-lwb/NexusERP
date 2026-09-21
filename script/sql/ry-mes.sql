@@ -491,6 +491,7 @@ CREATE TABLE `eq_spare_part`  (
   `current_stock` decimal(14, 4) NULL DEFAULT 0.0000 COMMENT '当前库存(ERP库存的派生冗余缓存; 权威账本在 wm_material_stock, 可用量=在库-已预留且frozen_flag=0)',
   `material_id` bigint(20) NULL DEFAULT NULL COMMENT 'ERP物料ID(bd_material.material_id)',
   `warehouse_id` bigint(20) NULL DEFAULT NULL COMMENT 'ERP仓库ID(wm_warehouse.warehouse_id)',
+  `unit_cost` decimal(18, 4) NULL DEFAULT 0.0000 COMMENT '备件参考单价(人工维护; 出入库过账时服务端读库填入MQ, 供ERP移动平均计价)',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
   `create_dept` bigint(20) NULL DEFAULT NULL,
   `create_by` bigint(20) NULL DEFAULT NULL,
@@ -514,7 +515,7 @@ CREATE TABLE `eq_spare_stock_log`  (
   `spare_id` bigint(20) NOT NULL COMMENT '备件ID',
   `spare_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备件编码(冗余)',
   `spare_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备件名称(冗余)',
-  `transaction_type` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'IN/OUT/REPAIR_USE',
+  `transaction_type` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'IN/OUT/REPAIR_USE/RETURN',
   `quantity` decimal(14, 4) NOT NULL COMMENT '变动数量(正数)',
   `before_qty` decimal(14, 4) NULL DEFAULT NULL COMMENT '变动前库存',
   `after_qty` decimal(14, 4) NULL DEFAULT NULL COMMENT '变动后库存',
@@ -3145,3 +3146,123 @@ CREATE TABLE IF NOT EXISTS `eq_spare_erp_sync` (
   INDEX `idx_spare_id`(`spare_id`) USING BTREE,
   INDEX `idx_sync_status`(`sync_status`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'MES备件→ERP过账同步台账' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for dhr_record (DHR 批记录主表; MES P0-6)
+-- ----------------------------
+DROP TABLE IF EXISTS `dhr_record`;
+CREATE TABLE `dhr_record`  (
+  `dhr_id` bigint(20) NOT NULL COMMENT 'DHR主键',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '000000' COMMENT '租户ID',
+  `dhr_no` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT 'DHR编号',
+  `work_order_id` bigint(20) NULL DEFAULT NULL COMMENT 'MES工单ID(pro_work_order.mes_wo_id)',
+  `work_order_no` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '工单编号(冗余快照)',
+  `material_id` bigint(20) NULL DEFAULT NULL COMMENT '产品物料ID',
+  `material_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '产品物料编码(冗余快照)',
+  `material_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '产品物料名称(冗余快照)',
+  `lot_no` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '批次号',
+  `sn` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT 'SN序列号',
+  `planned_qty` decimal(14, 4) NULL DEFAULT NULL COMMENT '计划数量',
+  `completed_qty` decimal(14, 4) NULL DEFAULT NULL COMMENT '完成数量',
+  `scrap_qty` decimal(14, 4) NULL DEFAULT NULL COMMENT '报废数量',
+  `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'DRAFT' COMMENT '状态: DRAFT/SUBMITTED/RELEASED/REJECTED/ARCHIVED',
+  `snapshot_hash` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '快照总哈希(SM3)',
+  `frozen_at` datetime(0) NULL DEFAULT NULL COMMENT '冻结时间(提交时写入)',
+  `frozen_by` bigint(20) NULL DEFAULT NULL COMMENT '冻结人',
+  `submitted_at` datetime(0) NULL DEFAULT NULL COMMENT '提交时间',
+  `submitted_by` bigint(20) NULL DEFAULT NULL COMMENT '提交人',
+  `submit_signature_id` bigint(20) NULL DEFAULT NULL COMMENT '提交签名ID(es_signature, biz_type=DHR_SUBMIT)',
+  `released_at` datetime(0) NULL DEFAULT NULL COMMENT '放行时间',
+  `released_by` bigint(20) NULL DEFAULT NULL COMMENT '放行人',
+  `release_signature_id` bigint(20) NULL DEFAULT NULL COMMENT '放行签名ID(biz_type=DHR_RELEASE)',
+  `rejected_at` datetime(0) NULL DEFAULT NULL COMMENT '驳回时间',
+  `rejected_by` bigint(20) NULL DEFAULT NULL COMMENT '驳回人',
+  `reject_reason` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '驳回原因',
+  `reject_signature_id` bigint(20) NULL DEFAULT NULL COMMENT '驳回签名ID(biz_type=DHR_REJECT)',
+  `archived_at` datetime(0) NULL DEFAULT NULL COMMENT '归档时间',
+  `version` int(11) NULL DEFAULT 1 COMMENT '版本号(每次状态流转+1)',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
+  `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
+  `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+  `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志(0正常 1删除,仅DRAFT可删)',
+  PRIMARY KEY (`dhr_id`) USING BTREE,
+  UNIQUE INDEX `uk_dhr_no`(`tenant_id`, `dhr_no`) USING BTREE,
+  INDEX `idx_dhr_wo`(`tenant_id`, `work_order_id`) USING BTREE,
+  INDEX `idx_dhr_status`(`tenant_id`, `status`) USING BTREE,
+  INDEX `idx_dhr_lot`(`tenant_id`, `lot_no`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'DHR批记录主表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for dhr_section (DHR 分册, append-only; MES P0-6)
+-- ----------------------------
+DROP TABLE IF EXISTS `dhr_section`;
+CREATE TABLE `dhr_section`  (
+  `section_id` bigint(20) NOT NULL COMMENT '分册主键',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '000000' COMMENT '租户ID',
+  `dhr_id` bigint(20) NOT NULL COMMENT '所属DHR主表ID',
+  `section_code` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '分册编码(10个固定值: WO_INFO/PROCESS/MATERIAL/EQUIPMENT/TOOLING/SOP/QC/DATA_COLLECT/SN_TRACE/NCR)',
+  `section_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '分册名称',
+  `item_count` int(11) NULL DEFAULT 0 COMMENT '条目数(无数据时为0,分册仍落库)',
+  `content_json` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '分册条目JSON',
+  `content_hash` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '正文哈希SM3(content_json)',
+  `sort_order` int(11) NULL DEFAULT 0 COMMENT '排序号(1基)',
+  `create_time` datetime(0) NULL DEFAULT NULL COMMENT '写入时间',
+  PRIMARY KEY (`section_id`) USING BTREE,
+  UNIQUE INDEX `uk_dhr_section`(`tenant_id`, `dhr_id`, `section_code`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'DHR批记录分册(append-only)' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for eq_spare_return (MES备件退库单; MES-EQ-04 收口)
+-- ----------------------------
+DROP TABLE IF EXISTS `eq_spare_return`;
+CREATE TABLE `eq_spare_return`  (
+  `return_id` bigint(20) NOT NULL COMMENT '退库单ID(主键)',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '000000',
+  `return_no` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '退库单号 MESRT+yyyyMMdd+4位当日序号',
+  `warehouse_id` bigint(20) NULL DEFAULT NULL COMMENT '退库目标ERP仓库ID(wm_warehouse.warehouse_id)',
+  `return_date` datetime(0) NULL DEFAULT NULL COMMENT '退库日期',
+  `return_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT 'REPAIR_RETURN/EXCESS_RETURN/OTHER',
+  `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'DRAFT' COMMENT 'DRAFT/CONFIRMED/CANCELLED',
+  `total_qty` decimal(14, 4) NULL DEFAULT 0.0000 COMMENT '明细数量合计',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
+  `confirm_by` bigint(20) NULL DEFAULT NULL COMMENT '确认人ID',
+  `confirm_time` datetime(0) NULL DEFAULT NULL COMMENT '确认时间',
+  `version` int(11) NULL DEFAULT 0 COMMENT '版本号(确认时CAS自增)',
+  `create_dept` bigint(20) NULL DEFAULT NULL,
+  `create_by` bigint(20) NULL DEFAULT NULL,
+  `create_time` datetime(0) NULL DEFAULT NULL,
+  `update_by` bigint(20) NULL DEFAULT NULL,
+  `update_time` datetime(0) NULL DEFAULT NULL,
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0',
+  PRIMARY KEY (`return_id`) USING BTREE,
+  UNIQUE INDEX `uk_spare_return_no`(`tenant_id`, `return_no`) USING BTREE,
+  INDEX `idx_spare_return_status`(`tenant_id`, `status`) USING BTREE,
+  INDEX `idx_spare_return_date`(`tenant_id`, `return_date`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'MES备件退库单' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for eq_spare_return_line (MES备件退库单明细; MES-EQ-04 收口)
+-- ----------------------------
+DROP TABLE IF EXISTS `eq_spare_return_line`;
+CREATE TABLE `eq_spare_return_line`  (
+  `line_id` bigint(20) NOT NULL COMMENT '明细行ID(主键)',
+  `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '000000',
+  `return_id` bigint(20) NOT NULL COMMENT '退库单ID',
+  `spare_id` bigint(20) NOT NULL COMMENT '备件ID',
+  `spare_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备件编码(冗余)',
+  `spare_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备件名称(冗余)',
+  `return_qty` decimal(14, 4) NOT NULL COMMENT '退库数量(>0)',
+  `unit_cost` decimal(18, 4) NULL DEFAULT NULL COMMENT '备件参考单价快照(服务端从eq_spare_part读取)',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
+  `create_dept` bigint(20) NULL DEFAULT NULL,
+  `create_by` bigint(20) NULL DEFAULT NULL,
+  `create_time` datetime(0) NULL DEFAULT NULL,
+  `update_by` bigint(20) NULL DEFAULT NULL,
+  `update_time` datetime(0) NULL DEFAULT NULL,
+  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0',
+  PRIMARY KEY (`line_id`) USING BTREE,
+  INDEX `idx_spare_return_line`(`tenant_id`, `return_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'MES备件退库单明细' ROW_FORMAT = Dynamic;

@@ -154,4 +154,15 @@ public interface IEqSparePartService {
      * @return 是否已确认 ERP 落账
      */
     boolean retryErpSync(Long syncId);
+
+    /**
+     * 存量备件默认仓库回填（MES-EQ-04 收口）
+     * <p>把 {@code warehouse_id IS NULL AND del_flag = '0'} 的备件统一回填为服务端配置的
+     * {@code nexus.mes.eq.spare.default-warehouse-id}（幂等：已映射的备件不动）。</p>
+     * <p><b>默认仓库不接受客户端传参</b>（避免任意仓库覆盖）；配置为空、配置非法或该仓库在 ERP
+     * {@code wm_warehouse} 中不存在/未启用时抛 {@link com.nexus.common.core.exception.ServiceException}。</p>
+     *
+     * @return 影响行数
+     */
+    int backfillWarehouse();
 }

@@ -8,6 +8,7 @@ import com.nexus.erp.wm.domain.WmMaterialStock;
 import com.nexus.erp.wm.domain.WmMaterialStockTx;
 import com.nexus.erp.wm.mapper.WmMaterialStockMapper;
 import com.nexus.erp.wm.mapper.WmMaterialStockTxMapper;
+import com.nexus.erp.wm.service.IInventoryValuationService;
 import com.nexus.erp.wm.service.IWmSpareStockPostingService;
 import com.nexus.erp.wm.service.mq.MesSpareErpMessage;
 import com.nexus.erp.wm.service.mq.WmSpareStockDedupGuard;
@@ -36,6 +37,11 @@ import java.util.List;
  * <p>
  * <b>失败可见</b>：可用量不足、数量非法、仓库缺失均抛 {@code ServiceException}，由消费端记录 ERROR
  * 并在 MES 侧过账同步台账保持 PENDING/FAILED，可人工重投，绝不静默部分过账。
+ * <p>
+ * <b>成本计价（MES-EQ-04 收口）</b>：数量增减成功后调用 {@link IInventoryValuationService} 做移动平均：
+ * 入库方向 {@code updateStockCost}（单价为空或 ≤0 时跳过并记 WARN，不用 0 拉低均价）、
+ * 出库方向 {@code issueStockCost} 取出库移动平均单位成本写入流水 {@code unit_cost}；
+ * 计价与数量增减在<b>同一事务</b>内，计价异常直接抛出由整单回滚，不吞异常。
  *
  * @author Nexus
  */
@@ -55,6 +61,7 @@ public class WmSpareStockPostingServiceImpl implements IWmSpareStockPostingServi
     private final WmMaterialStockMapper stockMapper;
     private final WmMaterialStockTxMapper stockTxMapper;
     private final WmSpareStockDedupGuard dedupGuard;
+    private final IInventoryValuationService valuationService;
 
     /**
      * 查询 ERP 可用量（在库 − 已预留，且 frozen_flag = 0）
@@ -178,7 +185,9 @@ public class WmSpareStockPostingServiceImpl implements IWmSpareStockPostingServi
             // 新建库存行必须显式 setVersion(0), 否则乐观锁失效
             created.setVersion(0);
             stockMapper.insert(created);
-            writeTx(message, created, qty, true, BigDecimal.ZERO, qty);
+            // 新建行按 updateStockCost 语义设置初值: 数量已含本次入库, total_cost = 0 + qty*单价 → unit_cost = 单价
+            applyInboundCost(created.getStockId(), qty, message.getUnitCost(), message.getBizKey());
+            writeTx(message, created, qty, true, BigDecimal.ZERO, qty, inboundTxUnitCost(message, created));
             return;
         }
         WmMaterialStock target = stocks.get(0);
@@ -190,7 +199,9 @@ public class WmSpareStockPostingServiceImpl implements IWmSpareStockPostingServi
             BigDecimal before = fresh.getStockQuantity() == null ? BigDecimal.ZERO : fresh.getStockQuantity();
             int affected = stockMapper.addStock(fresh.getStockId(), qty, fresh.getVersion());
             if (affected > 0) {
-                writeTx(message, fresh, qty, true, before, before.add(qty));
+                // 数量原子增加成功后计价(同一事务): 移动平均 = (原总成本 + 本次金额) / 入库后数量
+                applyInboundCost(fresh.getStockId(), qty, message.getUnitCost(), message.getBizKey());
+                writeTx(message, fresh, qty, true, before, before.add(qty), inboundTxUnitCost(message, fresh));
                 return;
             }
         }
@@ -218,7 +229,8 @@ public class WmSpareStockPostingServiceImpl implements IWmSpareStockPostingServi
         }
         BigDecimal remaining = qty;
         // 先收集拟写流水, 待全量覆盖后再落库: 任一缺口即整单回滚, 不留"半成品"流水
-        record PendingTx(WmMaterialStock stock, BigDecimal qty, BigDecimal before, BigDecimal after) {
+        record PendingTx(WmMaterialStock stock, BigDecimal qty, BigDecimal before, BigDecimal after,
+                         BigDecimal outUnitCost) {
         }
         List<PendingTx> pending = new ArrayList<>();
         for (WmMaterialStock row : stocks) {
@@ -245,7 +257,9 @@ public class WmSpareStockPostingServiceImpl implements IWmSpareStockPostingServi
             if (affected == 0 || deduct.signum() <= 0) {
                 continue;
             }
-            pending.add(new PendingTx(fresh, deduct, before, before.subtract(deduct)));
+            pending.add(new PendingTx(fresh, deduct, before, before.subtract(deduct),
+                // 出库成本结转: 按行内当前移动平均单位成本扣减 total_cost, 返回出库单位成本
+                valuationService.issueStockCost(fresh.getStockId(), deduct)));
             remaining = remaining.subtract(deduct);
         }
         if (remaining.signum() > 0) {
@@ -254,22 +268,55 @@ public class WmSpareStockPostingServiceImpl implements IWmSpareStockPostingServi
                 + ", bizKey=" + message.getBizKey());
         }
         for (PendingTx tx : pending) {
-            writeTx(message, tx.stock(), tx.qty(), false, tx.before(), tx.after());
+            writeTx(message, tx.stock(), tx.qty(), false, tx.before(), tx.after(), tx.outUnitCost());
         }
+    }
+
+    /**
+     * 入库移动平均计价（数量原子增加成功后调用）
+     * <p>单价为空或 ≤0 时<b>跳过计价并记 WARN</b>：不写 0，避免把库存均价拉低成 0。</p>
+     * <p>不 try/catch：计价异常必须让外层 {@code @Transactional} 整单回滚。</p>
+     *
+     * @param stockId  库存行ID
+     * @param qty      本次入库数量
+     * @param unitCost 本次入库参考单价（MES 侧服务端下发）
+     * @param bizKey   业务幂等键（仅用于日志定位）
+     */
+    private void applyInboundCost(Long stockId, BigDecimal qty, BigDecimal unitCost, String bizKey) {
+        if (unitCost == null || unitCost.signum() <= 0) {
+            log.warn("备件入库未携带有效参考单价, 跳过移动平均计价(不以 0 拉低均价): stockId={}, qty={}, bizKey={}",
+                stockId, qty, bizKey);
+            return;
+        }
+        valuationService.updateStockCost(stockId, qty, unitCost);
+    }
+
+    /**
+     * 入库流水的单位成本：优先用本次入库参考单价（真实入库成本），
+     * 缺单价时退回库存行当前均价（保持既有行为，不写 null）。
+     *
+     * @param message 过账消息
+     * @param stock   库存行
+     * @return 流水单位成本
+     */
+    private BigDecimal inboundTxUnitCost(MesSpareErpMessage message, WmMaterialStock stock) {
+        BigDecimal unitCost = message.getUnitCost();
+        return (unitCost != null && unitCost.signum() > 0) ? unitCost : stock.getUnitCost();
     }
 
     /**
      * 写库存事务流水（MES_SPARE_IN / MES_SPARE_OUT）
      *
-     * @param message 过账消息
-     * @param stock   库存行（已原子更新后的读值）
-     * @param qty     数量
-     * @param inbound 是否入库
-     * @param before  变动前数量
-     * @param after   变动后数量
+     * @param message  过账消息
+     * @param stock    库存行（已原子更新后的读值）
+     * @param qty      数量
+     * @param inbound  是否入库
+     * @param before   变动前数量
+     * @param after    变动后数量
+     * @param unitCost 本笔成本单价：入库 = 本次入库参考单价；出库 = {@code issueStockCost} 返回的移动平均单位成本
      */
     private void writeTx(MesSpareErpMessage message, WmMaterialStock stock, BigDecimal qty,
-                         boolean inbound, BigDecimal before, BigDecimal after) {
+                         boolean inbound, BigDecimal before, BigDecimal after, BigDecimal unitCost) {
         WmMaterialStockTx tx = new WmMaterialStockTx();
         tx.setTxType(inbound ? TX_TYPE_IN : TX_TYPE_OUT);
         tx.setTxFlag(inbound ? 1 : 0);
@@ -284,14 +331,19 @@ public class WmSpareStockPostingServiceImpl implements IWmSpareStockPostingServi
         tx.setSourceDocCode(message.getBizKey());
         tx.setMaterialStockId(stock.getStockId());
         tx.setTxQuantity(qty);
-        tx.setUnitCost(stock.getUnitCost());
+        // 成本(MES-EQ-04 收口): 出库替换掉原先写"库存行快照 unit_cost"的旧行为, 改写出库移动平均单位成本
+        tx.setUnitCost(unitCost);
+        if (unitCost != null) {
+            tx.setTxAmount(unitCost.multiply(qty));
+        }
         tx.setBeforeQuantity(before);
         tx.setAfterQuantity(after);
         tx.setTxDate(new Date());
         tx.setPosted(0);
         tx.setDelFlag("0");
         tx.setRemark("MES备件" + (inbound ? "入库" : "出库")
-            + " refType=" + message.getRefType() + " refId=" + message.getRefId());
+            + " refType=" + message.getRefType() + " refId=" + message.getRefId()
+            + (unitCost == null ? " (无有效单价, 未计价)" : " 单位成本=" + unitCost));
         stockTxMapper.insert(tx);
     }
 }

@@ -7,6 +7,7 @@ import com.nexus.erp.wm.domain.WmMaterialStock;
 import com.nexus.erp.wm.domain.WmMaterialStockTx;
 import com.nexus.erp.wm.mapper.WmMaterialStockMapper;
 import com.nexus.erp.wm.mapper.WmMaterialStockTxMapper;
+import com.nexus.erp.wm.service.IInventoryValuationService;
 import com.nexus.erp.wm.service.IWmSpareStockPostingService;
 import com.nexus.erp.wm.service.mq.MesSpareErpMessage;
 import com.nexus.erp.wm.service.mq.WmSpareStockDedupGuard;
@@ -23,10 +24,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -52,6 +56,8 @@ class WmSpareStockPostingServiceImplTest {
     private WmMaterialStockTxMapper stockTxMapper;
     @Mock
     private WmSpareStockDedupGuard dedupGuard;
+    @Mock
+    private IInventoryValuationService valuationService;
     @InjectMocks
     private WmSpareStockPostingServiceImpl service;
 
@@ -190,6 +196,93 @@ class WmSpareStockPostingServiceImplTest {
         verify(stockTxMapper).insert(captor.capture());
         assertEquals("MES_SPARE_IN", captor.getValue().getTxType());
         assertEquals(0, new BigDecimal("12").compareTo(captor.getValue().getAfterQuantity()));
+    }
+
+    // ==================== MES-EQ-04 收口: 移动平均计价 ====================
+
+    @Test
+    void inboundAppliesMovingAverageCostWhenUnitCostPresent() {
+        WmMaterialStock row = stock(7L, "10", "0", 0L, 2);
+        when(dedupGuard.tryMark(anyString())).thenReturn(true);
+        when(stockTxMapper.selectCount(any())).thenReturn(0L);
+        when(stockMapper.selectList(any())).thenReturn(List.of(row));
+        when(stockMapper.selectById(7L)).thenReturn(row);
+        when(stockMapper.addStock(eq(7L), eq(new BigDecimal("2")), eq(2))).thenReturn(1);
+
+        service.postSpareStock(messageWithCost("EQSP:000000:8", "IN", "2", "3.5"));
+
+        // 数量原子增加成功后按移动平均计价(与数量增减同一事务, 异常即整单回滚)
+        verify(valuationService).updateStockCost(7L, new BigDecimal("2"), new BigDecimal("3.5"));
+        ArgumentCaptor<WmMaterialStockTx> captor = ArgumentCaptor.forClass(WmMaterialStockTx.class);
+        verify(stockTxMapper).insert(captor.capture());
+        assertEquals(0, new BigDecimal("3.5").compareTo(captor.getValue().getUnitCost()));
+        assertEquals(0, new BigDecimal("7.0").compareTo(captor.getValue().getTxAmount()));
+    }
+
+    @Test
+    void inboundSkipsValuationWhenUnitCostMissingOrZero() {
+        WmMaterialStock row = stock(7L, "10", "0", 0L, 2);
+        when(dedupGuard.tryMark(anyString())).thenReturn(true);
+        when(stockTxMapper.selectCount(any())).thenReturn(0L);
+        when(stockMapper.selectList(any())).thenReturn(List.of(row));
+        when(stockMapper.selectById(7L)).thenReturn(row);
+        when(stockMapper.addStock(eq(7L), eq(new BigDecimal("2")), eq(2))).thenReturn(1);
+
+        service.postSpareStock(messageWithCost("EQSP:000000:9", "IN", "2", "0"));
+
+        // 单价 0 必须跳过计价: 用 0 计价会把库存均价拉低成 0
+        verify(valuationService, never()).updateStockCost(any(), any(), any());
+    }
+
+    @Test
+    void inboundCreatesStockRowAndInitialisesCostViaMovingAverage() {
+        when(dedupGuard.tryMark(anyString())).thenReturn(true);
+        when(stockTxMapper.selectCount(any())).thenReturn(0L);
+        when(stockMapper.selectList(any())).thenReturn(Collections.emptyList());
+
+        service.postSpareStock(messageWithCost("EQSP:000000:10", "IN", "4", "2.5"));
+
+        // 新建库存行按 updateStockCost 语义设初值(数量已含本次入库 → unit_cost = 本次单价)
+        verify(valuationService).updateStockCost(any(), eq(new BigDecimal("4")), eq(new BigDecimal("2.5")));
+    }
+
+    @Test
+    void outboundWritesIssuedMovingAverageCostToLedger() {
+        WmMaterialStock row = stock(5L, "10", "8", 0L, 3);
+        when(dedupGuard.tryMark(anyString())).thenReturn(true);
+        when(stockTxMapper.selectCount(any())).thenReturn(0L);
+        when(stockMapper.selectList(any())).thenReturn(List.of(row));
+        when(stockMapper.selectById(5L)).thenReturn(row);
+        when(stockMapper.deductStockAvailable(eq(5L), eq(new BigDecimal("2")), eq(3))).thenReturn(1);
+        when(valuationService.issueStockCost(5L, new BigDecimal("2"))).thenReturn(new BigDecimal("7.5"));
+
+        service.postSpareStock(message("EQSP:000000:11", "REPAIR_USE", "2"));
+
+        // 出库流水 unit_cost 必须写出库移动平均单位成本(替换旧的"库存行快照 unit_cost"行为)
+        verify(valuationService).issueStockCost(5L, new BigDecimal("2"));
+        ArgumentCaptor<WmMaterialStockTx> captor = ArgumentCaptor.forClass(WmMaterialStockTx.class);
+        verify(stockTxMapper).insert(captor.capture());
+        assertEquals(0, new BigDecimal("7.5").compareTo(captor.getValue().getUnitCost()));
+        assertEquals(0, new BigDecimal("15.0").compareTo(captor.getValue().getTxAmount()));
+    }
+
+    @Test
+    void messageFromMapParsesUnitCostContract() {
+        Map<String, Object> map = new HashMap<>();
+        map.put("bizKey", "EQSP:000000:12");
+        map.put("quantity", "2");
+        map.put("unitCost", "12.5000");
+
+        MesSpareErpMessage parsed = MesSpareErpMessage.fromMap(map);
+
+        assertNotNull(parsed);
+        assertEquals(0, new BigDecimal("12.5000").compareTo(parsed.getUnitCost()));
+    }
+
+    private MesSpareErpMessage messageWithCost(String bizKey, String txnType, String qty, String unitCost) {
+        MesSpareErpMessage message = message(bizKey, txnType, qty);
+        message.setUnitCost(new BigDecimal(unitCost));
+        return message;
     }
 
     private WmMaterialStock stock(Long stockId, String stockQty, String reservedQty, Long frozenFlag, Integer version) {
