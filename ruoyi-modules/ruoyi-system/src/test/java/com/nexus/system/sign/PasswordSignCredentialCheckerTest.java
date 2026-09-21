@@ -11,6 +11,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -37,6 +38,8 @@ import static org.mockito.Mockito.when;
  * @author nexus
  */
 @ExtendWith(MockitoExtension.class)
+@Tag("local")
+@Tag("dev")
 class PasswordSignCredentialCheckerTest {
 
     private static final Long UID = 7L;
