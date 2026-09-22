@@ -643,4 +643,49 @@ class SysDicAreaServiceImplTest {
             () -> service.insertSysDicArea(bo(null, 330100L, 330000L, 2L)));
         assertTrue(ex.getMessage().contains("上级行政区划层级缺失"));
     }
+
+    // ------------------------------------------------------------------
+    // 导出契约（Task 5）：children 必须排除、业务字段必须有中文表头、
+    // createTime 必须存在（前端列表"创建时间"列依赖它）
+    // ------------------------------------------------------------------
+
+    /** 导出契约：children 必须被 ExcelIgnore 排除，否则 FastExcel 无法可靠写出 List 字段 */
+    @Test
+    void areaVoExcludesChildrenFromExcel() {
+        try {
+            java.lang.reflect.Field children = SysDicAreaVo.class.getDeclaredField("children");
+            assertNotNull(children.getAnnotation(cn.idev.excel.annotation.ExcelIgnore.class),
+                "children 必须标注 @ExcelIgnore");
+        } catch (NoSuchFieldException e) {
+            fail("SysDicAreaVo 缺少 children 字段");
+        }
+    }
+
+    /** 导出契约：业务字段必须有中文表头 */
+    @Test
+    void areaVoHasChineseExcelHeaders() {
+        String[] expected = {"areaId", "parentAreaId", "areaName", "layered", "sort", "address", "lat", "lng", "createTime", "updateTime"};
+        for (String name : expected) {
+            try {
+                java.lang.reflect.Field f = SysDicAreaVo.class.getDeclaredField(name);
+                cn.idev.excel.annotation.ExcelProperty p =
+                    f.getAnnotation(cn.idev.excel.annotation.ExcelProperty.class);
+                assertNotNull(p, name + " 必须标注 @ExcelProperty");
+                assertFalse(p.value()[0].isBlank(), name + " 的表头不能为空");
+            } catch (NoSuchFieldException e) {
+                fail("SysDicAreaVo 缺少字段: " + name);
+            }
+        }
+    }
+
+    /** 前端列表"创建时间"列依赖 createTime 字段存在 */
+    @Test
+    void areaVoExposesCreateTime() {
+        try {
+            java.lang.reflect.Field f = SysDicAreaVo.class.getDeclaredField("createTime");
+            assertEquals(java.util.Date.class, f.getType());
+        } catch (NoSuchFieldException e) {
+            fail("SysDicAreaVo 缺少 createTime，前端创建时间列将恒为空");
+        }
+    }
 }
