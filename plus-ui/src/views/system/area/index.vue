@@ -201,9 +201,8 @@ function handleAdd(row) {
 }
 
 function handleExpand(row) {
+  // 该接口返回 R<List<AreaVO>>（非分页），pageNum/pageSize 会被后端忽略，故不再传
   const query: AreaQuery = {
-    pageNum: 1,
-    pageSize: queryParams.value.pageSize,
     parentAreaId: row.areaId,
     layered: row.layered + 1
   };

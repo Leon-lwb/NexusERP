@@ -25,6 +25,16 @@ type Level = 'city' | 'district' | 'street';
 /** 发生变更的层级（用于清空其下级的选项与选中值） */
 type ChangeLevel = 'province' | 'city' | 'district';
 
+/** useAreaCascade 的可选项 */
+export interface UseAreaCascadeOptions {
+  /**
+   * 拼接结果写入表单的哪个字段，默认 `address`。
+   * 仓库页 wm/warehouse 用的是 `location`（WarehouseVO.location），
+   * 若沿用默认值会导致该页地址不再回填。
+   */
+  addressField?: string;
+}
+
 /**
  * 省 / 市 / 区县 / 街道 四级联动。
  *
@@ -32,10 +42,12 @@ type ChangeLevel = 'province' | 'city' | 'district';
  * 而 streetId 是 Java String（JSON 字符串）。因此一律用 String(id) 比较，
  * 避免 `number === string` 恒为 false 导致街道名退化成数字代码。
  *
- * @param form 表单 ref，需含 provinceAreaId / cityAreaId / districtAreaId / streetId / address 字段
+ * @param form 表单 ref，需含 provinceAreaId / cityAreaId / districtAreaId / streetId 及目标地址字段
+ * @param options 可选项，见 {@link UseAreaCascadeOptions}
  * @returns    各级选项与级联事件处理方法
  */
-export function useAreaCascade(form: Ref<AreaAddressForm>) {
+export function useAreaCascade(form: Ref<AreaAddressForm>, options: UseAreaCascadeOptions = {}) {
+  const addressField = options.addressField ?? 'address';
   const provinceOptions = ref<AreaVO[]>([]);
   const cityOptions = ref<AreaVO[]>([]);
   const districtOptions = ref<AreaVO[]>([]);
@@ -82,28 +94,38 @@ export function useAreaCascade(form: Ref<AreaAddressForm>) {
       nameOf(districtOptions.value, form.value.districtAreaId),
       nameOf(streetOptions.value, form.value.streetId)
     ].filter((part) => part !== '');
-    form.value.address = parts.join('');
+    form.value[addressField] = parts.join('');
   }
 
   /** 省份变更：清空市/区县/街道并加载城市选项 */
   async function onProvinceChange(value: string | number | null) {
     resetBelow('province');
-    if (value) await loadChildren('city', value);
-    updateAddress();
+    // 子级加载失败也必须回填地址，否则会残留上一次的拼接结果
+    try {
+      if (value) await loadChildren('city', value);
+    } finally {
+      updateAddress();
+    }
   }
 
   /** 城市变更：清空区县/街道并加载区县选项 */
   async function onCityChange(value: string | number | null) {
     resetBelow('city');
-    if (value) await loadChildren('district', value);
-    updateAddress();
+    try {
+      if (value) await loadChildren('district', value);
+    } finally {
+      updateAddress();
+    }
   }
 
   /** 区县变更：清空街道并加载街道选项 */
   async function onDistrictChange(value: string | number | null) {
     resetBelow('district');
-    if (value) await loadChildren('street', value);
-    updateAddress();
+    try {
+      if (value) await loadChildren('street', value);
+    } finally {
+      updateAddress();
+    }
   }
 
   /** 街道变更：仅重算地址 */
