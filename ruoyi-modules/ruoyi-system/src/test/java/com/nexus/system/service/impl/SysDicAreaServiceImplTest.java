@@ -3,6 +3,7 @@ package com.nexus.system.service.impl;
 import com.nexus.system.domain.SysDicArea;
 import com.nexus.system.domain.vo.SysDicAreaVo;
 import com.nexus.system.mapper.SysDicAreaMapper;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -15,6 +16,14 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
+/**
+ * {@link SysDicAreaServiceImpl} 单元测试。
+ * <p><b>必须保留 {@code @Tag}：</b>根 pom 的 surefire 配置为 {@code <groups>${profiles.active}</groups>}
+ * （默认 local），只有带对应 {@code @Tag} 的测试才会被执行。缺少标签时 surefire 会报
+ * "Tests run: 0" 并 BUILD SUCCESS —— 即静默假绿。</p>
+ */
+@Tag("local")
+@Tag("dev")
 @ExtendWith(MockitoExtension.class)
 class SysDicAreaServiceImplTest {
 
