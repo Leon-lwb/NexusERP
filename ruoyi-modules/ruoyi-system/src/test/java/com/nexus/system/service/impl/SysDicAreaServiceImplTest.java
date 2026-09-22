@@ -236,4 +236,55 @@ class SysDicAreaServiceImplTest {
 
         assertTrue(tree.isEmpty(), "按 areaId 匹配应排除浙江省及其子树杭州市，结果为全空");
     }
+
+    /** 排除叶子节点：父节点应保留，且其余兄弟不受影响 */
+    @Test
+    void treeExcludeSubtreeRemovesLeafOnly() {
+        when(baseMapper.selectVoList(any())).thenReturn(List.of(
+            vo(1L, 330000L, 156L, 1L, "浙江省"),
+            vo(2L, 330100L, 330000L, 2L, "杭州市"),
+            vo(3L, 330102L, 330100L, 3L, "上城区"),
+            vo(4L, 330103L, 330100L, 3L, "下城区")
+        ));
+
+        List<SysDicAreaVo> tree = service.selectTreeExcludeSubtree(330102L);
+
+        assertEquals(1, tree.size());
+        assertEquals(330000L, tree.get(0).getAreaId());
+        List<SysDicAreaVo> cities = tree.get(0).getChildren();
+        assertEquals(1, cities.size());
+        assertEquals(330100L, cities.get(0).getAreaId());
+        List<SysDicAreaVo> districts = cities.get(0).getChildren();
+        assertEquals(1, districts.size(), "仅上城区被排除，下城区应保留");
+        assertEquals(330103L, districts.get(0).getAreaId());
+    }
+
+    /** 被排除的子树内部成环时不得死循环（visited 守卫） */
+    @Test
+    void treeExcludeSubtreeTerminatesOnCycleInsideExcludedSubtree() {
+        when(baseMapper.selectVoList(any())).thenReturn(List.of(
+            vo(1L, 100L, 200L, 1L, "A"),
+            vo(2L, 200L, 100L, 2L, "B"),
+            vo(3L, 300L, 100L, 3L, "C")
+        ));
+
+        List<SysDicAreaVo> tree = service.selectTreeExcludeSubtree(200L);
+
+        assertTrue(tree.isEmpty(), "A/B/C 均应在被排除的子树上");
+    }
+
+    /** areaId 不存在时静默返回全树（既有行为，此处固定下来） */
+    @Test
+    void treeExcludeSubtreeWithUnknownAreaIdReturnsFullTree() {
+        when(baseMapper.selectVoList(any())).thenReturn(List.of(
+            vo(1L, 330000L, 156L, 1L, "浙江省"),
+            vo(2L, 330100L, 330000L, 2L, "杭州市")
+        ));
+
+        List<SysDicAreaVo> tree = service.selectTreeExcludeSubtree(999999L);
+
+        assertEquals(1, tree.size());
+        assertEquals(330000L, tree.get(0).getAreaId());
+        assertEquals(1, tree.get(0).getChildren().size());
+    }
 }

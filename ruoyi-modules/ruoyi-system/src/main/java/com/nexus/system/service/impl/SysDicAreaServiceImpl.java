@@ -118,8 +118,12 @@ public class SysDicAreaServiceImpl implements ISysDicAreaService {
         if (areaId == null) {
             return buildTree(areas);
         }
-        Set<Long> excluded = new HashSet<>();
-        collectSubtreeIds(areaId, areas, excluded);
+        // 匹配不到时静默返回全树会让"防环"失效，且与"传了 pkid"这一历史错误难以区分，故留痕
+        if (!areas.isEmpty() && areas.stream().noneMatch(a -> areaId.equals(a.getAreaId()))) {
+            log.warn("行政区划排除子树：areaId={} 不存在于 sys_dic_area，将返回全树；"
+                + "若此处传入的是 pkid 而非 areaId，排除逻辑会静默失效", areaId);
+        }
+        Set<Long> excluded = collectSubtreeIds(areaId, areas);
         List<SysDicAreaVo> remaining = areas.stream()
             .filter(a -> a.getAreaId() == null || !excluded.contains(a.getAreaId()))
             .collect(Collectors.toList());
@@ -274,20 +278,35 @@ public class SysDicAreaServiceImpl implements ISysDicAreaService {
 
     /**
      * 收集 areaId 及其所有下级的 areaId。
-     * <p>{@code acc} 兼作已访问集合，脏数据成环时不会死循环。</p>
+     * <p>先建 {@code parentAreaId -> 子节点} 反向索引再迭代下推，复杂度 O(n)，
+     * 与 {@link #buildTree} 的建树方式保持一致；不使用递归，深度不受限。
+     * {@code visited} 兼作结果集与已访问集合，脏数据成环时不会死循环。</p>
      *
      * @param areaId 起始节点的行政区划代码
      * @param areas  全量扁平列表
-     * @param acc    结果与已访问集合（入参出参）
+     * @return 含起始节点及其全部下级的 areaId 集合
      */
-    private void collectSubtreeIds(Long areaId, List<SysDicAreaVo> areas, Set<Long> acc) {
-        if (areaId == null || !acc.add(areaId)) {
-            return;
+    private Set<Long> collectSubtreeIds(Long areaId, List<SysDicAreaVo> areas) {
+        Set<Long> visited = new HashSet<>();
+        if (areaId == null || !visited.add(areaId)) {
+            return visited;
         }
+        Map<Long, List<Long>> childIdsByParent = new HashMap<>();
         for (SysDicAreaVo area : areas) {
-            if (areaId.equals(area.getParentAreaId())) {
-                collectSubtreeIds(area.getAreaId(), areas, acc);
+            if (area.getParentAreaId() != null && area.getAreaId() != null) {
+                childIdsByParent.computeIfAbsent(area.getParentAreaId(), k -> new ArrayList<>())
+                    .add(area.getAreaId());
             }
         }
+        Deque<Long> stack = new ArrayDeque<>();
+        stack.push(areaId);
+        while (!stack.isEmpty()) {
+            for (Long childId : childIdsByParent.getOrDefault(stack.pop(), List.of())) {
+                if (visited.add(childId)) {
+                    stack.push(childId);
+                }
+            }
+        }
+        return visited;
     }
 }
