@@ -114,13 +114,7 @@
         <el-row :gutter="20">
           <el-col :span="6">
             <el-form-item label="省份" prop="provinceAreaId">
-              <el-select
-                v-model="form.provinceAreaId"
-                placeholder="请选择省份"
-                :disabled="isViewMode"
-                @change="handleProvinceChange"
-                style="width: 100%"
-              >
+              <el-select v-model="form.provinceAreaId" placeholder="请选择省份" :disabled="isViewMode" @change="onProvinceChange" style="width: 100%">
                 <el-option v-for="item in provinceOptions" :key="item.areaId" :label="item.areaName" :value="item.areaId"> </el-option>
               </el-select>
             </el-form-item>
@@ -131,7 +125,7 @@
                 v-model="form.cityAreaId"
                 placeholder="请选择城市"
                 :disabled="isViewMode || !cityOptions.length"
-                @change="handleCityChange"
+                @change="onCityChange"
                 style="width: 100%"
               >
                 <el-option v-for="item in cityOptions" :key="item.areaId" :label="item.areaName" :value="item.areaId"> </el-option>
@@ -144,7 +138,7 @@
                 v-model="form.districtAreaId"
                 placeholder="请选择区县"
                 :disabled="isViewMode || !districtOptions.length"
-                @change="handleDistrictChange"
+                @change="onDistrictChange"
                 style="width: 100%"
               >
                 <el-option v-for="item in districtOptions" :key="item.areaId" :label="item.areaName" :value="item.areaId"> </el-option>
@@ -158,7 +152,7 @@
                 placeholder="请选择街道"
                 :disabled="isViewMode || !streetOptions.length"
                 style="width: 100%"
-                @change="handleStreetChange"
+                @change="onStreetChange"
               >
                 <el-option v-for="item in streetOptions" :key="item.areaId" :label="item.areaName" :value="item.areaId"> </el-option>
               </el-select>
@@ -294,9 +288,9 @@
 <script setup lang="ts" name="Warehouse">
 import { listWarehouse, getWarehouse, delWarehouse, addWarehouse, updateWarehouse } from '@/api/erp/wm/warehouse';
 import { listUser } from '@/api/system/user';
-import { getProvinces, getNextLevel } from '@/api/system/area';
 import type { FormInstance } from 'element-plus';
 import { useCrud } from '@/composables/useCrud';
+import { useAreaCascade } from '@/composables/useAreaCascade';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { wm_warehouse_status } = toRefs<any>(proxy.useDict('wm_warehouse_status'));
@@ -314,11 +308,6 @@ const userQueryParams = reactive({
   userName: undefined,
   phonenumber: undefined
 });
-
-const provinceOptions = ref([]);
-const cityOptions = ref([]);
-const districtOptions = ref([]);
-const streetOptions = ref([]);
 
 const queryParams = ref({
   pageNum: 1,
@@ -397,22 +386,26 @@ const {
   },
   beforeSubmit: () => codeRef.value?.applyAutoGen(),
   afterLoad: (data: any) => {
-    // 回填省市区街道级联选项
-    loadProvinceOptions().then(() => {
-      if (data.provinceAreaId) {
-        loadCityOptions(data.provinceAreaId).then(() => {
-          if (data.cityAreaId) {
-            loadDistrictOptions(data.cityAreaId).then(() => {
-              if (data.streetId && data.districtAreaId) {
-                loadStreetOptions(data.districtAreaId);
-              }
-            });
-          }
-        });
-      }
-    });
+    // 回填省市区街道级联选项：useCrud 已先执行 form.value = res.data，故这里直接读 form。
+    // 形参 data 不可删除：它参与 useCrud 的泛型 T 推断，删除后 form 收窄为 Partial<WarehouseVO>，
+    // 而该 VO 未声明 deptId/deptName（既有类型缺口，不在本任务范围），会新增 3 处 vue-tsc 报错。
+    loadAddressCascade();
   }
 });
+
+// 地址级联（省 / 市 / 区县 / 街道），本页无 address 字段，拼接结果写入 form.location
+const {
+  provinceOptions,
+  cityOptions,
+  districtOptions,
+  streetOptions,
+  loadProvinces,
+  loadAddressCascade,
+  onProvinceChange,
+  onCityChange,
+  onDistrictChange,
+  onStreetChange
+} = useAreaCascade(form, { addressField: 'location' });
 
 /** 部门变更：回填部门名称 */
 function handleDeptChange(dept) {
@@ -428,7 +421,7 @@ function resetQuery() {
 function handleAdd() {
   rawHandleAdd(() => {
     codeRef.value?.reset();
-    loadProvinceOptions();
+    loadProvinces();
   });
 }
 
@@ -464,89 +457,6 @@ function resetUserQuery() {
   userQueryParams.userName = undefined;
   userQueryParams.phonenumber = undefined;
   getUserList();
-}
-
-function loadProvinceOptions() {
-  return getProvinces().then((response: any) => {
-    provinceOptions.value = response.data;
-  });
-}
-
-function handleProvinceChange(value: any) {
-  form.value.cityAreaId = null;
-  form.value.districtAreaId = null;
-  form.value.streetId = null;
-  cityOptions.value = [];
-  districtOptions.value = [];
-  streetOptions.value = [];
-
-  if (value) {
-    loadCityOptions(value);
-  }
-
-  nextTick(() => {
-    updateAddressField();
-  });
-}
-
-function loadCityOptions(parentId: any) {
-  return getNextLevel(parentId).then((response: any) => {
-    cityOptions.value = response.data;
-  });
-}
-
-function handleCityChange(value: any) {
-  form.value.districtAreaId = null;
-  form.value.streetId = null;
-  districtOptions.value = [];
-  streetOptions.value = [];
-
-  if (value) {
-    loadDistrictOptions(value);
-  }
-
-  nextTick(() => {
-    updateAddressField();
-  });
-}
-
-function handleDistrictChange(value: any) {
-  form.value.streetId = null;
-  streetOptions.value = [];
-
-  if (value) {
-    loadStreetOptions(value);
-  }
-
-  nextTick(() => {
-    updateAddressField();
-  });
-}
-
-function handleStreetChange(value: any) {
-  updateAddressField();
-}
-
-function loadDistrictOptions(parentId: any) {
-  return getNextLevel(parentId).then((response: any) => {
-    districtOptions.value = response.data;
-  });
-}
-
-function loadStreetOptions(parentId: any) {
-  return getNextLevel(parentId).then((response: any) => {
-    streetOptions.value = response.data;
-  });
-}
-
-function updateAddressField() {
-  const provinceName = provinceOptions.value.find((p: any) => p.areaId === form.value.provinceAreaId)?.areaName || '';
-  const cityName = cityOptions.value.find((c: any) => c.areaId === form.value.cityAreaId)?.areaName || '';
-  const districtName = districtOptions.value.find((d: any) => d.areaId === form.value.districtAreaId)?.areaName || '';
-  const streetName = streetOptions.value.find((s: any) => s.areaId === form.value.streetId)?.areaName || '';
-
-  const addressParts = [provinceName, cityName, districtName, streetName].filter((part) => part !== '');
-  form.value.location = addressParts.join('');
 }
 
 function handleStoragearea(warehouseId: number) {

@@ -151,7 +151,7 @@
                     v-model="form.provinceAreaId"
                     placeholder="请选择省份"
                     :disabled="isViewMode"
-                    @change="handleProvinceChange"
+                    @change="onProvinceChange"
                     style="width: 100%"
                   >
                     <el-option v-for="item in provinceOptions" :key="item.areaId" :label="item.areaName" :value="item.areaId"> </el-option>
@@ -164,7 +164,7 @@
                     v-model="form.cityAreaId"
                     placeholder="请选择城市"
                     :disabled="isViewMode || !cityOptions.length"
-                    @change="handleCityChange"
+                    @change="onCityChange"
                     style="width: 100%"
                   >
                     <el-option v-for="item in cityOptions" :key="item.areaId" :label="item.areaName" :value="item.areaId"> </el-option>
@@ -177,7 +177,7 @@
                     v-model="form.districtAreaId"
                     placeholder="请选择区县"
                     :disabled="isViewMode || !districtOptions.length"
-                    @change="handleDistrictChange"
+                    @change="onDistrictChange"
                     style="width: 100%"
                   >
                     <el-option v-for="item in districtOptions" :key="item.areaId" :label="item.areaName" :value="item.areaId"> </el-option>
@@ -191,7 +191,7 @@
                     placeholder="请选择街道"
                     :disabled="isViewMode || !streetOptions.length"
                     style="width: 100%"
-                    @change="handleStreetChange"
+                    @change="onStreetChange"
                   >
                     <el-option v-for="item in streetOptions" :key="item.areaId" :label="item.areaName" :value="item.areaId"> </el-option>
                   </el-select>
@@ -361,9 +361,9 @@
 import { listVendor, getVendor, delVendor, addVendor, updateVendor } from '@/api/erp/bd/vendor';
 import { listUser } from '@/api/system/user';
 import { previewCode } from '@/api/system/autocode/rule';
-import { getProvinces, getNextLevel } from '@/api/system/area';
 import type { FormInstance } from 'element-plus';
 import { useCrud } from '@/composables/useCrud';
+import { useAreaCascade } from '@/composables/useAreaCascade';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { bd_industry, bd_region, bd_vendor_status, bd_vendor_category, pu_invoice_type } = toRefs<any>(
@@ -372,12 +372,6 @@ const { bd_industry, bd_region, bd_vendor_status, bd_vendor_category, pu_invoice
 
 const activeTab = ref('basic');
 const autoGenFlag = ref(false); // 自动生成标识
-
-// 地址级联选项
-const provinceOptions = ref([]);
-const cityOptions = ref([]);
-const districtOptions = ref([]);
-const streetOptions = ref([]);
 
 const vendorRef = ref<FormInstance>();
 
@@ -482,6 +476,20 @@ const {
   }
 });
 
+// 地址级联（省 / 市 / 区县 / 街道），拼接结果写入 form.address
+const {
+  provinceOptions,
+  cityOptions,
+  districtOptions,
+  streetOptions,
+  loadProvinces,
+  loadAddressCascade,
+  onProvinceChange,
+  onCityChange,
+  onDistrictChange,
+  onStreetChange
+} = useAreaCascade(form);
+
 /** 重置按钮操作 */
 function resetQuery() {
   proxy.resetForm('queryRef');
@@ -491,7 +499,7 @@ function resetQuery() {
 /** 新增按钮操作（新增时需加载省份数据） */
 function handleAdd() {
   rawHandleAdd(() => {
-    loadProvinceOptions();
+    loadProvinces();
   });
 }
 
@@ -504,134 +512,6 @@ function handleAutoGenChange(autoGenFlag) {
   } else {
     form.value.vendorCode = null;
   }
-}
-
-/** 修改/查看时按已保存的地址逐级回填级联选项 */
-function loadAddressCascade() {
-  loadProvinceOptions().then(() => {
-    if (form.value.provinceAreaId) {
-      loadCityOptions(form.value.provinceAreaId).then(() => {
-        if (form.value.cityAreaId) {
-          loadDistrictOptions(form.value.cityAreaId).then(() => {
-            // 如果有街道ID，加载街道数据
-            if (form.value.streetId && form.value.districtAreaId) {
-              loadStreetOptions(form.value.districtAreaId).then(() => {
-                // 确保街道选项中包含当前选中的街道
-                const selectedStreet = streetOptions.value.find((option) => option.areaId === form.value.streetId);
-                if (!selectedStreet && form.value.streetId) {
-                  // 如果街道选项中没有当前选中的街道，添加该街道到选项中
-                  const newStreetOption = {
-                    areaId: form.value.streetId,
-                    areaName: form.value.streetName || form.value.streetId,
-                    parentAreaId: form.value.districtAreaId
-                  };
-                  streetOptions.value.push(newStreetOption);
-                }
-              });
-            }
-          });
-        }
-      });
-    }
-  });
-}
-
-// 加载省份数据
-function loadProvinceOptions() {
-  return getProvinces().then((response) => {
-    provinceOptions.value = response.data;
-  });
-}
-
-// 省份变化处理
-function handleProvinceChange(value) {
-  form.value.cityAreaId = null;
-  form.value.districtAreaId = null;
-  form.value.streetId = null;
-  cityOptions.value = [];
-  districtOptions.value = [];
-  streetOptions.value = [];
-
-  if (value) {
-    loadCityOptions(value);
-  }
-
-  // 更新地址字段
-  nextTick(() => {
-    updateAddressField();
-  });
-}
-
-// 加载城市数据
-function loadCityOptions(parentId) {
-  return getNextLevel(parentId).then((response) => {
-    cityOptions.value = response.data;
-  });
-}
-
-// 城市变化处理
-function handleCityChange(value) {
-  form.value.districtAreaId = null;
-  form.value.streetId = null;
-  districtOptions.value = [];
-  streetOptions.value = [];
-
-  if (value) {
-    loadDistrictOptions(value);
-  }
-
-  // 更新地址字段
-  nextTick(() => {
-    updateAddressField();
-  });
-}
-
-// 区县变化处理
-function handleDistrictChange(value) {
-  form.value.streetId = null;
-  streetOptions.value = [];
-
-  if (value) {
-    loadStreetOptions(value);
-  }
-
-  // 更新地址字段
-  nextTick(() => {
-    updateAddressField();
-  });
-}
-
-// 街道变化处理
-function handleStreetChange(value) {
-  // 更新地址字段
-  updateAddressField();
-}
-
-// 加载区县数据
-function loadDistrictOptions(parentId) {
-  return getNextLevel(parentId).then((response) => {
-    districtOptions.value = response.data;
-  });
-}
-
-// 加载街道数据
-function loadStreetOptions(parentId) {
-  return getNextLevel(parentId).then((response) => {
-    streetOptions.value = response.data;
-  });
-}
-
-// 更新地址字段
-function updateAddressField() {
-  // 获取各级区域的名称
-  const provinceName = provinceOptions.value.find((p) => p.areaId === form.value.provinceAreaId)?.areaName || '';
-  const cityName = cityOptions.value.find((c) => c.areaId === form.value.cityAreaId)?.areaName || '';
-  const districtName = districtOptions.value.find((d) => d.areaId === form.value.districtAreaId)?.areaName || '';
-  const streetName = streetOptions.value.find((s) => s.areaId === form.value.streetId)?.areaName || '';
-
-  // 拼接地址
-  const addressParts = [provinceName, cityName, districtName, streetName].filter((part) => part !== '');
-  form.value.address = addressParts.join('');
 }
 
 // ============ 采购员 / 部门选择 ============
