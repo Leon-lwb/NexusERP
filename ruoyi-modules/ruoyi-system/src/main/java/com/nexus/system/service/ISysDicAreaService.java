@@ -1,6 +1,7 @@
 package com.nexus.system.service;
 
 import com.nexus.system.domain.SysDicArea;
+import com.nexus.system.domain.bo.SysDicAreaBo;
 import com.nexus.system.domain.vo.SysDicAreaVo;
 
 import java.util.List;
@@ -62,26 +63,18 @@ public interface ISysDicAreaService {
     /**
      * 新增行政区划字典记录。
      *
-     * @param sysDicArea 待新增的行政区划
+     * @param bo 待新增的行政区划
      * @return 受影响行数
      */
-    int insertSysDicArea(SysDicArea sysDicArea);
+    int insertSysDicArea(SysDicAreaBo bo);
 
     /**
      * 更新行政区划字典记录。
      *
-     * @param sysDicArea 待更新的行政区划
+     * @param bo 待更新的行政区划
      * @return 受影响行数
      */
-    int updateSysDicArea(SysDicArea sysDicArea);
-
-    /**
-     * 根据主键 ID 删除行政区划字典记录。
-     *
-     * @param pkid 行政区划主键 ID
-     * @return 受影响行数
-     */
-    int deleteSysDicAreaByPkid(Long pkid);
+    int updateSysDicArea(SysDicAreaBo bo);
 
     /**
      * 批量删除行政区划字典记录。

@@ -9,6 +9,7 @@ import com.nexus.common.log.annotation.Log;
 import com.nexus.common.log.enums.BusinessType;
 import com.nexus.common.web.core.BaseController;
 import com.nexus.system.domain.SysDicArea;
+import com.nexus.system.domain.bo.SysDicAreaBo;
 import com.nexus.system.domain.vo.SysDicAreaVo;
 import com.nexus.system.service.ISysDicAreaService;
 import org.springframework.validation.annotation.Validated;
@@ -121,27 +122,27 @@ public class SysDicAreaController extends BaseController {
     /**
      * 新增行政区划。
      *
-     * @param sysDicArea 行政区划新增参数
+     * @param bo 行政区划新增参数
      * @return 操作结果，成功时返回成功状态
      */
     @SaCheckPermission("system:area:add")
     @Log(title = "行政区划", businessType = BusinessType.INSERT)
     @PostMapping
-    public R<Void> add(@RequestBody SysDicArea sysDicArea) {
-        return toAjax(sysDicAreaService.insertSysDicArea(sysDicArea));
+    public R<Void> add(@Validated @RequestBody SysDicAreaBo bo) {
+        return toAjax(sysDicAreaService.insertSysDicArea(bo));
     }
 
     /**
      * 修改行政区划。
      *
-     * @param sysDicArea 行政区划修改参数
+     * @param bo 行政区划修改参数
      * @return 操作结果，成功时返回成功状态
      */
     @SaCheckPermission("system:area:edit")
     @Log(title = "行政区划", businessType = BusinessType.UPDATE)
     @PutMapping
-    public R<Void> edit(@RequestBody SysDicArea sysDicArea) {
-        return toAjax(sysDicAreaService.updateSysDicArea(sysDicArea));
+    public R<Void> edit(@Validated @RequestBody SysDicAreaBo bo) {
+        return toAjax(sysDicAreaService.updateSysDicArea(bo));
     }
 
     /**
