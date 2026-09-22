@@ -5,7 +5,6 @@ import { AxiosPromise } from 'axios';
 export interface AreaVO {
   pkid?: string | number;
   parentAreaId?: string | number;
-  ancestors?: string;
   areaId?: string | number;
   areaName?: string;
   layered?: number;
@@ -14,11 +13,18 @@ export interface AreaVO {
   lng?: string;
   address?: string;
   remark?: string;
+  /** 创建时间（后端 Date，按 yyyy-MM-dd HH:mm:ss 序列化） */
+  createTime?: string;
+  /** 更新时间（后端 Date，按 yyyy-MM-dd HH:mm:ss 序列化） */
+  updateTime?: string;
   children?: AreaVO[];
 }
 
-/** 行政区划查询条件 */
-export interface AreaQuery extends PageQuery {
+/**
+ * 行政区划查询条件
+ * <p>接口返回 {@code R<List<AreaVO>>} 而非分页结构，故不继承 {@link PageQuery}。</p>
+ */
+export interface AreaQuery {
   areaName?: string;
   layered?: number;
   parentAreaId?: string | number;
