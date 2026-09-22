@@ -1,5 +1,6 @@
 package com.nexus.system.service.impl;
 
+import cn.hutool.core.collection.CollUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
 import com.nexus.common.core.utils.MapstructUtils;
@@ -10,8 +11,9 @@ import com.nexus.system.service.ISysDicAreaService;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Map;
 
 /**
  * 行政区划 服务实现类，实现 {@link ISysDicAreaService} 接口。属于 System 系统管理模块。
@@ -152,31 +154,33 @@ public class SysDicAreaServiceImpl implements ISysDicAreaService {
         return wrapper;
     }
 
+    /**
+     * 由扁平列表构建森林。
+     * <p>根 = 父节点不在结果集中的节点（而非"层级为 1"），因此：
+     * 过滤条件命中任意层级时都不会丢数据；父节点缺失的孤儿节点会升级为根，不会不可见。
+     * 单次遍历 + Map 索引，复杂度 O(n)。</p>
+     */
     private List<SysDicAreaVo> buildTree(List<SysDicAreaVo> areas) {
-        List<SysDicAreaVo> roots = areas.stream()
-            .filter(a -> a.getLayered() != null && a.getLayered() == 1)
-            .peek(a -> a.setChildren(new ArrayList<>()))
-            .collect(Collectors.toList());
-
-        for (SysDicAreaVo root : roots) {
-            buildSubTree(root, areas);
+        if (CollUtil.isEmpty(areas)) {
+            return new ArrayList<>();
         }
-        return roots;
-    }
-
-    private void buildSubTree(SysDicAreaVo parent, List<SysDicAreaVo> areas) {
-        List<SysDicAreaVo> children = new ArrayList<>();
+        Map<Long, SysDicAreaVo> byAreaId = new LinkedHashMap<>(areas.size());
         for (SysDicAreaVo area : areas) {
-            if (parent.getAreaId() != null
-                && parent.getAreaId().equals(area.getParentAreaId())
-                && area.getLayered() != null
-                && parent.getLayered() != null
-                && area.getLayered().equals(parent.getLayered() + 1)) {
-                area.setChildren(new ArrayList<>());
-                children.add(area);
-                buildSubTree(area, areas);
+            area.setChildren(new ArrayList<>());
+            if (area.getAreaId() != null) {
+                byAreaId.put(area.getAreaId(), area);
             }
         }
-        parent.setChildren(children);
+        List<SysDicAreaVo> roots = new ArrayList<>();
+        for (SysDicAreaVo area : areas) {
+            SysDicAreaVo parent = area.getParentAreaId() == null ? null : byAreaId.get(area.getParentAreaId());
+            // 父节点缺失，或脏数据把自己当父节点 → 升级为根，避免节点丢失或自环
+            if (parent == null || parent == area) {
+                roots.add(area);
+            } else {
+                parent.getChildren().add(area);
+            }
+        }
+        return roots;
     }
 }
