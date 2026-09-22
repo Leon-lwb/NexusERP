@@ -3,6 +3,7 @@ package com.nexus.system.service.impl;
 import cn.hutool.core.collection.CollUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import com.nexus.common.core.utils.MapstructUtils;
 import com.nexus.system.domain.SysDicArea;
 import com.nexus.system.domain.vo.SysDicAreaVo;
@@ -10,14 +11,21 @@ import com.nexus.system.mapper.SysDicAreaMapper;
 import com.nexus.system.service.ISysDicAreaService;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * 行政区划 服务实现类，实现 {@link ISysDicAreaService} 接口。属于 System 系统管理模块。
  */
+@Slf4j
 @RequiredArgsConstructor
 @Service
 public class SysDicAreaServiceImpl implements ISysDicAreaService {
@@ -158,7 +166,18 @@ public class SysDicAreaServiceImpl implements ISysDicAreaService {
      * 由扁平列表构建森林。
      * <p>根 = 父节点不在结果集中的节点（而非"层级为 1"），因此：
      * 过滤条件命中任意层级时都不会丢数据；父节点缺失的孤儿节点会升级为根，不会不可见。
-     * 单次遍历 + Map 索引，复杂度 O(n)。</p>
+     * 复杂度 O(n)。</p>
+     *
+     * <p><b>成环防护</b>：长度 ≥ 2 的父子环（A.parent=B, B.parent=A）会使环上节点从任何根都不可达。
+     * 若只按"父不在集合中"判根，环上节点既不会出现在结果里（整棵树可能返回空），
+     * 也可能让 Jackson 序列化时无限递归。故此处按 BFS 逐层挂载，只挂载"父节点已落位"的节点；
+     * 遍历结束后仍未落位的节点必然在环上或环的下游，统一提升为根。</p>
+     *
+     * <p><b>副作用</b>：本方法会就地重置入参元素的 {@code children}。调用方必须保证传入的是独占列表，
+     * 且不得复用已构建的树（否则前一次构建结果会被后续构建破坏）。</p>
+     *
+     * <p><b>降级语义</b>：成环时，环及其下游节点会被提升为根并丢失原有的父子关系（节点本身不丢）。
+     * 这是脏数据的降级路径，正常数据不会触发；触发时会打 WARN 日志。</p>
      */
     private List<SysDicAreaVo> buildTree(List<SysDicAreaVo> areas) {
         if (CollUtil.isEmpty(areas)) {
@@ -171,15 +190,50 @@ public class SysDicAreaServiceImpl implements ISysDicAreaService {
                 byAreaId.put(area.getAreaId(), area);
             }
         }
+        // 反向索引：parentAreaId -> 直接子节点（按 areas 顺序，保持 sort 排序）
+        Map<Long, List<SysDicAreaVo>> childrenByParent = new HashMap<>();
+        for (SysDicAreaVo area : areas) {
+            if (area.getParentAreaId() != null) {
+                childrenByParent.computeIfAbsent(area.getParentAreaId(), k -> new ArrayList<>()).add(area);
+            }
+        }
+        // 根：父节点缺失，或脏数据把自己当父节点
         List<SysDicAreaVo> roots = new ArrayList<>();
+        // 必须用 identity 集合：SysDicAreaVo 是 Lombok @Data，equals/hashCode 会递归比较 children，
+        // 在成环的结构上调用会栈溢出。全程不得对节点调用 equals/hashCode。
+        Set<SysDicAreaVo> placed = Collections.newSetFromMap(new IdentityHashMap<>());
         for (SysDicAreaVo area : areas) {
             SysDicAreaVo parent = area.getParentAreaId() == null ? null : byAreaId.get(area.getParentAreaId());
-            // 父节点缺失，或脏数据把自己当父节点 → 升级为根，避免节点丢失或自环
             if (parent == null || parent == area) {
                 roots.add(area);
-            } else {
-                parent.getChildren().add(area);
+                placed.add(area);
             }
+        }
+        // BFS 逐层挂载：只挂"父已落位"的节点，天然不会形成环
+        Deque<SysDicAreaVo> queue = new ArrayDeque<>(roots);
+        while (!queue.isEmpty()) {
+            SysDicAreaVo node = queue.poll();
+            List<SysDicAreaVo> kids = node.getAreaId() == null ? null : childrenByParent.get(node.getAreaId());
+            if (kids == null) {
+                continue;
+            }
+            for (SysDicAreaVo kid : kids) {
+                if (placed.add(kid)) {
+                    node.getChildren().add(kid);
+                    queue.add(kid);
+                }
+            }
+        }
+        // 仍未落位的节点：在环上或环的下游 → 提升为根，保证一个都不丢
+        int promoted = 0;
+        for (SysDicAreaVo area : areas) {
+            if (placed.add(area)) {
+                roots.add(area);
+                promoted++;
+            }
+        }
+        if (promoted > 0) {
+            log.warn("行政区划树构建：{} 个节点因父子成环（或挂在环下）被提升为根，请检查 sys_dic_area 的 parent_area_id 数据", promoted);
         }
         return roots;
     }
