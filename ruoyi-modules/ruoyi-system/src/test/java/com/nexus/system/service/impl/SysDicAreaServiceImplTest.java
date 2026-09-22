@@ -16,6 +16,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -319,7 +320,7 @@ class SysDicAreaServiceImplTest {
         when(baseMapper.deleteByIds(any())).thenReturn(1);
 
         assertEquals(1, service.deleteSysDicAreaByPkids(new Long[]{3L}));
-        verify(baseMapper).deleteByIds(any());
+        verify(baseMapper).deleteByIds(eq(List.of(3L)));
     }
 
     /** 空数组直接返回 0，不查库 */
@@ -336,13 +337,14 @@ class SysDicAreaServiceImplTest {
         verify(baseMapper, never()).selectById(any());
     }
 
-    /** 主键不存在时跳过校验，不抛异常 */
+    /** 主键不存在时跳过校验（不查下级），不抛异常 */
     @Test
     void deleteSkipsUnknownPkid() {
         when(baseMapper.selectById(99L)).thenReturn(null);
         when(baseMapper.deleteByIds(any())).thenReturn(0);
 
         assertEquals(0, service.deleteSysDicAreaByPkids(new Long[]{99L}));
+        verify(baseMapper, never()).exists(any());
     }
 
     /** 批量中任一项有下级 → 整体拒绝，且一行都不删 */

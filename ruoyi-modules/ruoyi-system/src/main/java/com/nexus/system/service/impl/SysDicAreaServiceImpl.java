@@ -165,8 +165,18 @@ public class SysDicAreaServiceImpl implements ISysDicAreaService {
 
     /**
      * 批量删除行政区划（逻辑删除）。
-     * <p>删除前校验是否存在下级：存在则整体拒绝，避免产生孤儿节点。
-     * 校验与删除在同一事务内，任一节点被拒则全部回滚。</p>
+     * <p>删除前校验是否存在下级：存在则整体拒绝。校验与删除在同一事务内，
+     * 任一节点被拒则全部回滚。</p>
+     *
+     * <p><b>语义说明</b>：
+     * <ul>
+     *   <li>子节点检查只统计<b>未删除</b>的下级（{@code exists} 由 {@code @TableLogic} 自动追加
+     *       {@code del_flag='0'}）。因此已逻辑删除的下级不会阻止父节点删除——这是刻意为之，
+     *       否则被软删的子树会永久锁死其祖先。</li>
+     *   <li>本校验是<b>尽力而为</b>，不是并发安全的：它无法阻止"校验通过后、删除提交前"
+     *       另一事务插入新下级。该窗口很小（管理端接口、前端逐条删除），如需彻底关闭，
+     *       应在插入与删除两侧共用同一把分布式锁（Lock4j 已可用），锁键取行政区划代码。</li>
+     * </ul>
      *
      * @param pkids 待删除的主键数组
      * @return 受影响行数
@@ -185,7 +195,8 @@ public class SysDicAreaServiceImpl implements ISysDicAreaService {
             boolean hasChild = baseMapper.exists(new LambdaQueryWrapper<SysDicArea>()
                 .eq(SysDicArea::getParentAreaId, self.getAreaId()));
             if (hasChild) {
-                throw new ServiceException("存在下级行政区划，不允许删除：" + self.getAreaName());
+                String label = self.getAreaName() != null ? self.getAreaName() : String.valueOf(self.getAreaId());
+                throw new ServiceException("存在下级行政区划，不允许删除：" + label);
             }
         }
         return baseMapper.deleteByIds(Arrays.asList(pkids));
