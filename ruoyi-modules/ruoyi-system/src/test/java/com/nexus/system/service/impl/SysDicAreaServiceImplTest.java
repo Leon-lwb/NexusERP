@@ -247,11 +247,37 @@ class SysDicAreaServiceImplTest {
         assertEquals(2, tree.size(), "两个孤儿应各自成为根");
     }
 
+    /**
+     * 排除必须是"整棵子树"，而不是只排除该节点。
+     * <p>回归防护：若只排除自身，其后代会因父缺失被 buildTree 提升为根，
+     * 从而仍然出现在"选择上级"下拉里，防环就失效了。</p>
+     */
+    @Test
+    void treeExcludeSubtreeRemovesWholeSubtreeAtAnyDepth() {
+        when(baseMapper.selectVoList(any())).thenReturn(List.of(
+            vo(1L, 330000L, 156L, 1L, "浙江省"),
+            vo(2L, 330100L, 330000L, 2L, "杭州市"),
+            vo(3L, 330102L, 330100L, 3L, "上城区"),
+            vo(4L, 330102001L, 330102L, 4L, "清波街道"),   // 曾孙级
+            vo(5L, 330102001001L, 330102001L, 5L, "某社区"), // 玄孙级
+            vo(6L, 330200L, 330000L, 2L, "宁波市")
+        ));
+
+        List<SysDicAreaVo> tree = service.selectTreeExcludeSubtree(330100L);
+
+        List<Long> ids = new ArrayList<>();
+        collectAreaIds(tree, ids);
+        assertEquals(2, ids.size(), "只应剩下浙江省与宁波市，杭州市及其所有后代都必须被排除");
+        assertTrue(ids.containsAll(List.of(330000L, 330200L)));
+        assertFalse(ids.contains(330102L), "区县不得出现");
+        assertFalse(ids.contains(330102001L), "街道不得作为顶级选项出现");
+        assertFalse(ids.contains(330102001001L), "更深层后代同样不得出现");
+    }
+
     /** 二元环：不得返回空树，也不得死循环 */
     @Test
     void treeListHandlesTwoNodeCycle() {
-        when(baseMapper.selectVoList(any())).thenReturn(List.of(
-            vo(1L, 330100L, 330102L, 2L, "杭州市"),
+        when(baseMapper.selectVoList(any())).thenReturn(List.of(            vo(1L, 330100L, 330102L, 2L, "杭州市"),
             vo(2L, 330102L, 330100L, 3L, "上城区")
         ));
 
