@@ -590,4 +590,57 @@ class SysDicAreaServiceImplTest {
         assertEquals(330100L, saved.getParentAreaId());
         assertEquals(3L, saved.getLayered());
     }
+
+    /**
+     * 存量脏数据兼容：省级行 parent_area_id=156（该 area_id 不存在），
+     * 未改动上级的编辑必须放行，否则 34 个省级行将完全无法编辑。
+     */
+    @Test
+    void updateAllowsUnchangedDanglingParent() {
+        SysDicArea self = area(1L, 330000L, 1L, "浙江省");
+        self.setParentAreaId(156L);
+        when(baseMapper.countByAreaIdIncludeDeleted(anyLong(), anyLong())).thenReturn(0L);
+        when(baseMapper.selectById(1L)).thenReturn(self);
+        when(baseMapper.selectOne(any())).thenReturn(null); // 156 不存在
+        when(baseMapper.updateById(any(SysDicArea.class))).thenReturn(1);
+
+        assertEquals(1, service.updateSysDicArea(bo(1L, 330000L, 156L, 1L)));
+        verify(baseMapper).updateById(any(SysDicArea.class));
+    }
+
+    /** 但把上级改成另一个不存在的代码仍必须拒绝 */
+    @Test
+    void updateRejectsChangedParentToMissingNode() {
+        SysDicArea self = area(1L, 330000L, 1L, "浙江省");
+        self.setParentAreaId(156L);
+        when(baseMapper.countByAreaIdIncludeDeleted(anyLong(), anyLong())).thenReturn(0L);
+        when(baseMapper.selectById(1L)).thenReturn(self);
+        when(baseMapper.selectOne(any())).thenReturn(null);
+
+        ServiceException ex = assertThrows(ServiceException.class,
+            () -> service.updateSysDicArea(bo(1L, 330000L, 999999L, 1L)));
+        assertTrue(ex.getMessage().contains("上级行政区划不存在"));
+        verify(baseMapper, never()).updateById(any(SysDicArea.class));
+    }
+
+    /** layered 为 null 应给业务异常而非 NPE */
+    @Test
+    void insertRejectsNullLayeredWithBusinessError() {
+        SysDicAreaBo b = bo(null, 330100L, 330000L, null);
+
+        ServiceException ex = assertThrows(ServiceException.class, () -> service.insertSysDicArea(b));
+        assertTrue(ex.getMessage().contains("层级不能为空"));
+        verify(baseMapper, never()).insert(any(SysDicArea.class));
+    }
+
+    /** 上级存在但自身层级缺失时，应明确报错而不是静默跳过连续性校验 */
+    @Test
+    void insertRejectsWhenParentLayeredMissing() {
+        when(baseMapper.countByAreaIdIncludeDeleted(anyLong(), anyLong())).thenReturn(0L);
+        when(baseMapper.selectOne(any())).thenReturn(area(1L, 330000L, null, "浙江省"));
+
+        ServiceException ex = assertThrows(ServiceException.class,
+            () -> service.insertSysDicArea(bo(null, 330100L, 330000L, 2L)));
+        assertTrue(ex.getMessage().contains("上级行政区划层级缺失"));
+    }
 }

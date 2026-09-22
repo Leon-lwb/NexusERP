@@ -14,7 +14,12 @@ import com.nexus.system.domain.SysDicArea;
 
 /**
  * 行政区划业务对象 sys_dic_area
- * <p>承接前端增改请求，避免直接暴露实体导致 tenantId/delFlag/createBy 等字段被越权写入。</p>
+ * <p>承接前端增改请求，避免直接暴露实体导致 {@code tenantId}/{@code delFlag} 等字段被越权写入
+ * （这两个字段既不在本 BO 上，也不在 {@link BaseEntity} 上）。</p>
+ *
+ * <p><b>注意</b>：{@link BaseEntity} 自带 {@code createBy}/{@code createDept}/{@code createTime} 等审计字段，
+ * 本 BO 继承后这些字段仍可被请求体覆盖 —— 与项目其他 BO 的既有约定一致，非本类引入的问题。
+ * 若需严格锁定审计字段，应在 BO/{@code BaseEntity} 的公共约定层统一处理，而非只改这一个类。</p>
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -37,12 +42,16 @@ public class SysDicAreaBo extends BaseEntity {
     @Size(max = 255, message = "地区名称长度不能超过 255")
     private String areaName;
 
-    /** 纬度 */
-    @Pattern(regexp = "^-?\\d{1,3}(\\.\\d+)?$", message = "纬度格式不正确")
+    /**
+     * 纬度。
+     * <p>正则允许空串：存量数据中有 11 行 {@code lat=''}（空串而非 NULL）。若只允许 null 或数字，
+     * 这些行一旦编辑就会被校验拦下 —— 即使用户并未改动坐标。</p>
+     */
+    @Pattern(regexp = "^$|^-?\\d{1,3}(\\.\\d+)?$", message = "纬度格式不正确")
     private String lat;
 
-    /** 经度 */
-    @Pattern(regexp = "^-?\\d{1,3}(\\.\\d+)?$", message = "经度格式不正确")
+    /** 经度，同 {@link #lat}，允许空串 */
+    @Pattern(regexp = "^$|^-?\\d{1,3}(\\.\\d+)?$", message = "经度格式不正确")
     private String lng;
 
     /** 层级 */

@@ -163,9 +163,18 @@ public class SysDicAreaServiceImpl implements ISysDicAreaService {
      * <p>唯一性校验绕过逻辑删除（见 {@link SysDicAreaMapper#countByAreaIdIncludeDeleted}），
      * 避免"删除后重建同码"产生重复 area_id。</p>
      *
+     * <p><b>存量脏数据的兼容策略</b>：现有 1661 行中有 106 行的 {@code parent_area_id} 指向不存在的
+     * 节点（34 个省级行的 {@code parent_area_id=156} 即属此类，156 这个 area_id 并不存在）。
+     * 若一律拒绝，这些行将完全无法编辑。因此"父级存在性"仅在<b>本次确实修改了上级</b>时强制；
+     * 未改动上级的编辑放行并打 WARN，避免新校验把存量数据锁死。数据本身由后续的数据清洗任务修复。</p>
+     *
      * @param bo 待写入的行政区划
      */
     private void validate(SysDicAreaBo bo) {
+        if (bo.getLayered() == null) {
+            throw new ServiceException("层级不能为空");
+        }
+
         // 1. area_id 唯一（含已逻辑删除的行，排除自身）
         long occupied = baseMapper.countByAreaIdIncludeDeleted(
             bo.getAreaId(), bo.getPkid() != null ? bo.getPkid() : -1L);
@@ -182,27 +191,36 @@ public class SysDicAreaServiceImpl implements ISysDicAreaService {
         }
 
         // 3. 父级必须存在，且层级必须为父级 + 1
+        SysDicArea existing = bo.getPkid() != null ? baseMapper.selectById(bo.getPkid()) : null;
+        boolean parentChanged = existing == null
+            || !bo.getParentAreaId().equals(existing.getParentAreaId());
         SysDicArea parent = baseMapper.selectOne(new LambdaQueryWrapper<SysDicArea>()
             .eq(SysDicArea::getAreaId, bo.getParentAreaId()));
         if (parent == null) {
-            throw new ServiceException("上级行政区划不存在：" + bo.getParentAreaId());
+            if (parentChanged) {
+                throw new ServiceException("上级行政区划不存在：" + bo.getParentAreaId());
+            }
+            // 存量脏数据且本次未改上级：放行，仅告警，避免锁死编辑
+            log.warn("行政区划 areaId={} 的上级 areaId={} 不存在（存量脏数据），本次未修改上级，跳过存在性与层级校验",
+                bo.getAreaId(), bo.getParentAreaId());
+            return;
         }
-        if (parent.getLayered() != null && bo.getLayered() != parent.getLayered() + 1) {
+        if (parent.getLayered() == null) {
+            throw new ServiceException("上级行政区划层级缺失，无法校验层级连续性：areaId=" + parent.getAreaId());
+        }
+        if (bo.getLayered() != parent.getLayered() + 1) {
             throw new ServiceException("层级必须为上级层级 + 1（上级 "
                 + parent.getLayered() + "，当前 " + bo.getLayered() + "）");
         }
 
         // 4. 修改时父级不能是自己或自己的下级（防环）
-        if (bo.getPkid() != null) {
-            SysDicArea self = baseMapper.selectById(bo.getPkid());
-            if (self != null && self.getAreaId() != null) {
-                if (self.getAreaId().equals(bo.getParentAreaId())) {
-                    throw new ServiceException("上级行政区划不能是自己");
-                }
-                Set<Long> subtree = collectSubtreeIds(self.getAreaId(), selectSysDicAreaList(new SysDicArea()));
-                if (subtree.contains(bo.getParentAreaId())) {
-                    throw new ServiceException("上级行政区划不能是自己的下级");
-                }
+        if (existing != null && existing.getAreaId() != null) {
+            if (existing.getAreaId().equals(bo.getParentAreaId())) {
+                throw new ServiceException("上级行政区划不能是自己");
+            }
+            Set<Long> subtree = collectSubtreeIds(existing.getAreaId(), selectSysDicAreaList(new SysDicArea()));
+            if (subtree.contains(bo.getParentAreaId())) {
+                throw new ServiceException("上级行政区划不能是自己的下级");
             }
         }
     }
