@@ -165,8 +165,11 @@ public class SysDicAreaServiceImpl implements ISysDicAreaService {
     /**
      * 由扁平列表构建森林。
      * <p>根 = 父节点不在结果集中的节点（而非"层级为 1"），因此：
-     * 过滤条件命中任意层级时都不会丢数据；父节点缺失的孤儿节点会升级为根，不会不可见。
-     * 复杂度 O(n)。</p>
+     * 过滤条件命中任意层级时都不会丢数据；父节点缺失的孤儿节点会升级为根，不会不可见。</p>
+     *
+     * <p><b>复杂度</b>：{@code area_id} 唯一时为 O(n)（BFS 每条子边只处理一次）。
+     * 若存在重复 {@code area_id}，同一子列表会被每个同码节点各扫一次，
+     * 退化为 O(重复数 × 扇出)；建表脚本只有非唯一索引 {@code idx_area_id}，未强制唯一。</p>
      *
      * <p><b>成环防护</b>：长度 ≥ 2 的父子环（A.parent=B, B.parent=A）会使环上节点从任何根都不可达。
      * 若只按"父不在集合中"判根，环上节点既不会出现在结果里（整棵树可能返回空），
@@ -204,9 +207,9 @@ public class SysDicAreaServiceImpl implements ISysDicAreaService {
         Set<SysDicAreaVo> placed = Collections.newSetFromMap(new IdentityHashMap<>());
         for (SysDicAreaVo area : areas) {
             SysDicAreaVo parent = area.getParentAreaId() == null ? null : byAreaId.get(area.getParentAreaId());
-            if (parent == null || parent == area) {
+            // placed.add 兼作去重：同一实例在入参中重复出现时只登记一次，避免响应里出现重复子树
+            if ((parent == null || parent == area) && placed.add(area)) {
                 roots.add(area);
-                placed.add(area);
             }
         }
         // BFS 逐层挂载：只挂"父已落位"的节点，天然不会形成环
@@ -226,14 +229,20 @@ public class SysDicAreaServiceImpl implements ISysDicAreaService {
         }
         // 仍未落位的节点：在环上或环的下游 → 提升为根，保证一个都不丢
         int promoted = 0;
+        StringBuilder sample = new StringBuilder();
         for (SysDicAreaVo area : areas) {
             if (placed.add(area)) {
                 roots.add(area);
                 promoted++;
+                // 附带有界的 areaId 样本，便于运维直接定位脏数据（最多 10 个）
+                if (promoted <= 10) {
+                    sample.append(sample.isEmpty() ? "" : ",").append(area.getAreaId());
+                }
             }
         }
         if (promoted > 0) {
-            log.warn("行政区划树构建：{} 个节点因父子成环（或挂在环下）被提升为根，请检查 sys_dic_area 的 parent_area_id 数据", promoted);
+            log.warn("行政区划树构建：{} 个节点因父子成环（或挂在环下）被提升为根，areaId 样本[{}]，请检查 sys_dic_area 的 parent_area_id 数据",
+                promoted, sample);
         }
         return roots;
     }
