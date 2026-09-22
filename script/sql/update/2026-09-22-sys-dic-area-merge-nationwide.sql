@@ -11,15 +11,19 @@
 --      故"区县前缀 == 父市前缀"时改取 9 位。
 --   5. 商城为 2021 快照，缺 2021 年后新设区县；ERP 浙江数据更新，故 WHERE NOT EXISTS 保留 ERP 版本。
 --   6. 本脚本不使用窗口函数（目标库为 MySQL 5.7），sort 直接用商城 id 保持原有顺序。
+--
+-- ⚠️ 本脚本为「执行一次」脚本：DML 部分是幂等的（WHERE NOT EXISTS + 唯一键兜底），
+--    但备份步骤与唯一键 DDL 已做防重入保护，重复执行不会破坏备份、也不会中断。
+--    重复执行是安全的，但不会产生任何额外效果。
 -- ============================================================================
 
 use `ry-vue`;
 
 -- ---------------------------------------------------------------------------
 -- 0. 备份（务必先执行；失败可整表回滚）
+--    用 if not exists：重复执行本脚本时**不得覆盖**首次的 1661 行原始快照
 -- ---------------------------------------------------------------------------
-drop table if exists sys_dic_area_bak_20260922;
-create table sys_dic_area_bak_20260922 as select * from sys_dic_area;
+create table if not exists sys_dic_area_bak_20260922 as select * from sys_dic_area;
 select 'BACKUP_ROWS' as k, count(*) as v from sys_dic_area_bak_20260922;
 
 -- ---------------------------------------------------------------------------
@@ -104,8 +108,18 @@ select 'INSERTED_DISTRICTS' as k, row_count() as v;
 -- ---------------------------------------------------------------------------
 -- 6. 唯一约束：area_id 全局唯一（表已加入租户排除，不再按租户隔离）
 --    这同时把 Task 4 的"软删后不可重建同码"从应用层约定升级为存储层约束。
+--    用 information_schema 做条件判断：重复执行时不会因 ERROR 1061 中断脚本。
 -- ---------------------------------------------------------------------------
-alter table sys_dic_area add unique key uk_area_tenant (tenant_id, area_id);
+set @uk_exists := (select count(*) from information_schema.statistics
+                   where table_schema = database()
+                     and table_name = 'sys_dic_area'
+                     and index_name = 'uk_area_tenant');
+set @uk_ddl := if(@uk_exists = 0,
+                  'alter table sys_dic_area add unique key uk_area_tenant (tenant_id, area_id)',
+                  'select ''uk_area_tenant 已存在，跳过'' as note');
+prepare uk_stmt from @uk_ddl;
+execute uk_stmt;
+deallocate prepare uk_stmt;
 
 -- ---------------------------------------------------------------------------
 -- 7. 校验
@@ -129,14 +143,25 @@ select layered, count(*) as cnt from sys_dic_area group by layered order by laye
 --
 --   use `ry-vue`;
 --   alter table sys_dic_area drop index uk_area_tenant;
+--   start transaction;
 --   delete from sys_dic_area;
 --   insert into sys_dic_area select * from sys_dic_area_bak_20260922;
+--   commit;
 --   alter table sys_dic_area auto_increment = 2951;
 --
 -- 注意：回滚会丢弃合并进来的 3451 行，并恢复 34 个省级行的 parent_area_id=156
 -- 与 72 行悬空父码。确认无需回滚后，可 drop table sys_dic_area_bak_20260922;
 --
--- 另外：本次数据变更后必须清一次 Redis 全量树缓存（Task 6 引入，TTL 12h 兜底）：
---   redis-cli -n 0 DEL sys_dic_area_tree
--- 否则 12 小时内接口仍返回旧的 1661 行树。
+-- ============================================================================
+-- ⚠️ 数据变更后必须清一次 Redis 全量树缓存（Task 6 引入，TTL 12h 兜底）
+-- ============================================================================
+-- 缓存 key 带租户前缀（TenantKeyPrefixHandler 会给所有非全局 key 加 "<tenantId>:"），
+-- 所以真实 key 是 000000:sys_dic_area_tree，**不是** sys_dic_area_tree：
+--
+--   redis-cli -n 0 DEL 000000:sys_dic_area_tree
+--
+-- 用 --scan 确认更稳妥：
+--   redis-cli -n 0 --scan --pattern '*sys_dic_area_tree*'
+--
+-- 否则 12 小时内接口仍返回旧的 1661 行树。应用运行中即时生效、无需重启。
 

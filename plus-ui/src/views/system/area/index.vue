@@ -165,7 +165,11 @@ const data = reactive({
     areaName: [{ required: true, message: '地区名称不能为空', trigger: 'blur' }],
     areaId: [
       { required: true, message: '地区代码不能为空', trigger: 'blur' },
-      { pattern: /^\d{6,9}$/, message: '地区代码应为 6~9 位数字', trigger: 'blur' }
+      // 只做宽松的数字校验，不锁定 6~9 位：
+      //   - 存量数据含 3 位异常码（如 102 经济技术开发区）
+      //   - sys_area_level 的 5 级「社区/村」用 12 位码（如 330102001051）
+      //   - 后端 SysDicAreaBo 对 areaId 只有 @NotNull，此处若更严会把真实数据锁死无法保存
+      { pattern: /^\d{1,12}$/, message: '地区代码应为 1~12 位数字', trigger: 'blur' }
     ],
     sort: [{ required: true, message: '显示排序不能为空', trigger: 'blur' }],
     layered: [{ required: true, message: '层级不能为空', trigger: 'change' }],

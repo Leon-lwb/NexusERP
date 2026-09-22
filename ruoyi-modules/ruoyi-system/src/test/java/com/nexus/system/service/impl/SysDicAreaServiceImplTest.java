@@ -277,7 +277,8 @@ class SysDicAreaServiceImplTest {
     /** 二元环：不得返回空树，也不得死循环 */
     @Test
     void treeListHandlesTwoNodeCycle() {
-        when(baseMapper.selectVoList(any())).thenReturn(List.of(            vo(1L, 330100L, 330102L, 2L, "杭州市"),
+        when(baseMapper.selectVoList(any())).thenReturn(List.of(
+            vo(1L, 330100L, 330102L, 2L, "杭州市"),
             vo(2L, 330102L, 330100L, 3L, "上城区")
         ));
 
