@@ -21,11 +21,11 @@
     </resultMap>
 
     <select id="selectProvinces" resultMap="SysDicAreaResult">
-        select * from sys_dic_area where layered = 1 order by sort asc
+        select * from sys_dic_area where del_flag = '0' and layered = 1 order by sort asc
     </select>
 
     <select id="selectNextLevel" resultMap="SysDicAreaResult">
-        select * from sys_dic_area where parent_area_id = #{parentAreaId} order by sort asc
+        select * from sys_dic_area where del_flag = '0' and parent_area_id = #{parentAreaId} order by sort asc
     </select>
 
 </mapper>

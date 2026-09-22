@@ -4,15 +4,18 @@ import cn.hutool.core.collection.CollUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.MapstructUtils;
 import com.nexus.system.domain.SysDicArea;
 import com.nexus.system.domain.vo.SysDicAreaVo;
 import com.nexus.system.mapper.SysDicAreaMapper;
 import com.nexus.system.service.ISysDicAreaService;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
@@ -161,17 +164,31 @@ public class SysDicAreaServiceImpl implements ISysDicAreaService {
     }
 
     /**
-     * 删除记录。
-     * @param pkids 待删除的 ID 数组
+     * 批量删除行政区划（逻辑删除）。
+     * <p>删除前校验是否存在下级：存在则整体拒绝，避免产生孤儿节点。
+     * 校验与删除在同一事务内，任一节点被拒则全部回滚。</p>
+     *
+     * @param pkids 待删除的主键数组
      * @return 受影响行数
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public int deleteSysDicAreaByPkids(Long[] pkids) {
-        int count = 0;
-        for (Long pkid : pkids) {
-            count += baseMapper.deleteById(pkid);
+        if (pkids == null || pkids.length == 0) {
+            return 0;
         }
-        return count;
+        for (Long pkid : pkids) {
+            SysDicArea self = baseMapper.selectById(pkid);
+            if (self == null || self.getAreaId() == null) {
+                continue;
+            }
+            boolean hasChild = baseMapper.exists(new LambdaQueryWrapper<SysDicArea>()
+                .eq(SysDicArea::getParentAreaId, self.getAreaId()));
+            if (hasChild) {
+                throw new ServiceException("存在下级行政区划，不允许删除：" + self.getAreaName());
+            }
+        }
+        return baseMapper.deleteByIds(Arrays.asList(pkids));
     }
 
     private LambdaQueryWrapper<SysDicArea> buildQueryWrapper(SysDicArea area) {

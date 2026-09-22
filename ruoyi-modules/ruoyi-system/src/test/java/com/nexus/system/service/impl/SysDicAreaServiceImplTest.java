@@ -1,5 +1,6 @@
 package com.nexus.system.service.impl;
 
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.system.domain.SysDicArea;
 import com.nexus.system.domain.vo.SysDicAreaVo;
 import com.nexus.system.mapper.SysDicAreaMapper;
@@ -15,6 +16,8 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
@@ -286,5 +289,82 @@ class SysDicAreaServiceImplTest {
         assertEquals(1, tree.size());
         assertEquals(330000L, tree.get(0).getAreaId());
         assertEquals(1, tree.get(0).getChildren().size());
+    }
+
+    /** 有下级时禁止删除，且不得调用删除 */
+    @Test
+    void deleteRejectsParentWithChildren() {
+        SysDicArea self = new SysDicArea();
+        self.setPkid(1L);
+        self.setAreaId(330100L);
+        self.setAreaName("杭州市");
+        when(baseMapper.selectById(1L)).thenReturn(self);
+        when(baseMapper.exists(any())).thenReturn(true);
+
+        ServiceException ex = assertThrows(ServiceException.class,
+            () -> service.deleteSysDicAreaByPkids(new Long[]{1L}));
+        assertTrue(ex.getMessage().contains("存在下级行政区划"));
+        verify(baseMapper, never()).deleteByIds(any());
+    }
+
+    /** 无下级时批量删除 */
+    @Test
+    void deleteRemovesLeafNodes() {
+        SysDicArea self = new SysDicArea();
+        self.setPkid(3L);
+        self.setAreaId(330102L);
+        self.setAreaName("上城区");
+        when(baseMapper.selectById(3L)).thenReturn(self);
+        when(baseMapper.exists(any())).thenReturn(false);
+        when(baseMapper.deleteByIds(any())).thenReturn(1);
+
+        assertEquals(1, service.deleteSysDicAreaByPkids(new Long[]{3L}));
+        verify(baseMapper).deleteByIds(any());
+    }
+
+    /** 空数组直接返回 0，不查库 */
+    @Test
+    void deleteWithEmptyArrayReturnsZero() {
+        assertEquals(0, service.deleteSysDicAreaByPkids(new Long[0]));
+        verify(baseMapper, never()).selectById(any());
+    }
+
+    /** null 入参同样直接返回 0 */
+    @Test
+    void deleteWithNullReturnsZero() {
+        assertEquals(0, service.deleteSysDicAreaByPkids(null));
+        verify(baseMapper, never()).selectById(any());
+    }
+
+    /** 主键不存在时跳过校验，不抛异常 */
+    @Test
+    void deleteSkipsUnknownPkid() {
+        when(baseMapper.selectById(99L)).thenReturn(null);
+        when(baseMapper.deleteByIds(any())).thenReturn(0);
+
+        assertEquals(0, service.deleteSysDicAreaByPkids(new Long[]{99L}));
+    }
+
+    /** 批量中任一项有下级 → 整体拒绝，且一行都不删 */
+    @Test
+    void deleteRejectsWholeBatchWhenAnyNodeHasChildren() {
+        SysDicArea leaf = new SysDicArea();
+        leaf.setPkid(3L);
+        leaf.setAreaId(330102L);
+        leaf.setAreaName("上城区");
+        SysDicArea parent = new SysDicArea();
+        parent.setPkid(1L);
+        parent.setAreaId(330100L);
+        parent.setAreaName("杭州市");
+        when(baseMapper.selectById(3L)).thenReturn(leaf);
+        when(baseMapper.selectById(1L)).thenReturn(parent);
+        // 第一次 exists（叶子 3L）为 false → 通过校验；第二次（父节点 1L）为 true → 触发整体拒绝。
+        // 必须按序返回：若恒为 true，服务会在第一个元素就抛出，1L 的 selectById 桩永不执行
+        // （MockitoExtension 默认 STRICT_STUBS 会判 UnnecessaryStubbing），且"批内任一项有下级"未被真正覆盖。
+        when(baseMapper.exists(any())).thenReturn(false, true);
+
+        assertThrows(ServiceException.class,
+            () -> service.deleteSysDicAreaByPkids(new Long[]{3L, 1L}));
+        verify(baseMapper, never()).deleteByIds(any());
     }
 }
