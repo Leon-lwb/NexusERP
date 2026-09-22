@@ -4,8 +4,10 @@ import cn.hutool.core.collection.CollUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import com.nexus.common.core.constant.CacheNames;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.MapstructUtils;
+import com.nexus.common.redis.utils.RedisUtils;
 import com.nexus.system.domain.SysDicArea;
 import com.nexus.system.domain.bo.SysDicAreaBo;
 import com.nexus.system.domain.vo.SysDicAreaVo;
@@ -14,6 +16,7 @@ import com.nexus.system.service.ISysDicAreaService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -35,6 +38,27 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Service
 public class SysDicAreaServiceImpl implements ISysDicAreaService {
+
+    /**
+     * 全量树缓存 key（单键缓存整棵树）。
+     * <p><b>为什么用编程式缓存而不是 {@code @Cacheable}</b>：{@link #selectFullTree()} 会被本类的
+     * {@link #selectSysDicAreaTreeList(SysDicArea)} 直接调用，属于<b>同类自调用</b>，不经过 Spring AOP
+     * 代理，注解会静默失效（与仓库 AGENTS.md 里 {@code @DS} 自调用的坑同源）。编程式缓存没有代理问题，
+     * 也是本项目既有写法（{@code PrdShortageRiskServiceImpl} / {@code ImConversationCache}）。</p>
+     * <p><b>租户隔离</b>：Redisson 装配的是 {@code TenantKeyPrefixHandler}，会自动给 key 加
+     * {@code 租户id:} 前缀，因此单键不会跨租户串数据（与 {@link CacheNames#BD_CATEGORY_TREE} 同理）。</p>
+     */
+    private static final String FULL_TREE_CACHE_KEY = CacheNames.SYS_DIC_AREA_TREE;
+
+    /**
+     * 全量树缓存有效期：兜底自愈。
+     * <p>写路径（增/改/删）都会主动清除，此处 TTL 仅防御两类场景：
+     * ① 绕过 service 直接改库（运维 SQL、数据清洗任务）；
+     * ② 缓存值因类重命名/字段变更等原因无法反序列化——此时键会一直存在且读取必然失败，
+     * 没有 TTL 就只能靠人工 flush（兄弟项目 nexus-shop 2026-09-21 的
+     * {@code city_list_tree} 无 TTL 事故正是如此）。</p>
+     */
+    private static final Duration FULL_TREE_TTL = Duration.ofHours(12);
 
     /** SysDicAreaMapper 数据访问层组件，提供 行政区划 的持久化能力。 */
     private final SysDicAreaMapper baseMapper;
@@ -63,16 +87,48 @@ public class SysDicAreaServiceImpl implements ISysDicAreaService {
 
     /**
      * 根据条件查询行政区划列表。
+     * <p><b>无任何条件</b>时走全量树缓存（{@link #selectFullTree()}）；<b>带条件</b>时仍每次查库
+     * ——把过滤结果也塞进同一个 key 会让不同条件互相污染（后一次请求读到前一次的结果）。</p>
+     *
      * @param sysDicArea 查询条件（行政区划）
      * @return 匹配条件的行政区划列表
      */
     @Override
     public List<SysDicAreaVo> selectSysDicAreaTreeList(SysDicArea sysDicArea) {
+        boolean noCondition = sysDicArea.getAreaId() == null && sysDicArea.getAreaName() == null
+            && sysDicArea.getLayered() == null && sysDicArea.getParentAreaId() == null;
+        if (noCondition) {
+            return selectFullTree();
+        }
         List<SysDicAreaVo> areas = selectSysDicAreaList(sysDicArea);
         if (sysDicArea.getParentAreaId() != null) {
             return areas;
         }
         return buildTree(areas);
+    }
+
+    /**
+     * 查询全量行政区划树（带 TTL 缓存）。
+     * <p>缓存 key 为单键（{@link #FULL_TREE_CACHE_KEY}），写路径（增/改/删）成功后主动清除，
+     * 另配 {@link #FULL_TREE_TTL} 兜底。</p>
+     *
+     * <p><b>返回值为只读</b>：命中缓存时返回的就是缓存中的同一个实例，调用方不得修改
+     * （尤其不得把返回的 VO 再交给 {@link #buildTree}——它会就地重置 {@code children}）。</p>
+     *
+     * <p>缓存读写在 Redis 异常时不做降级：本项目鉴权（{@code PlusSaTokenDao}）本身就走 Redis，
+     * Redis 不可用时请求早已在鉴权阶段失败，此处再包一层 try/catch 只会掩盖问题。</p>
+     *
+     * @return 全量行政区划树
+     */
+    @Override
+    public List<SysDicAreaVo> selectFullTree() {
+        List<SysDicAreaVo> cached = RedisUtils.getCacheObject(FULL_TREE_CACHE_KEY);
+        if (cached != null) {
+            return cached;
+        }
+        List<SysDicAreaVo> tree = buildTree(selectSysDicAreaList(new SysDicArea()));
+        RedisUtils.setCacheObject(FULL_TREE_CACHE_KEY, tree, FULL_TREE_TTL);
+        return tree;
     }
 
     /**
@@ -113,6 +169,13 @@ public class SysDicAreaServiceImpl implements ISysDicAreaService {
      * {@code row.areaId}。被排除节点的直接子节点因父不在结果集中，会由 {@link #buildTree} 升级为根，
      * 因此排除的是"整棵子树"而非仅该节点本身。</p>
      *
+     * <p><b>为什么不复用 {@link #selectFullTree()} 的缓存</b>：本方法需要的是<b>扁平</b>列表
+     * （{@link #collectSubtreeIds} 要按 parent 建反向索引），而缓存里存的是<b>已建好的树</b>。
+     * 要把树还原成扁平列表再过滤重建，就必须先把每个 VO 深拷贝一份——因为 {@link #buildTree} 会
+     * 就地重置入参的 {@code children}，直接把缓存实例喂回去会把缓存里的树打断成错误结构。
+     * 本接口是管理端"选择上级"下拉（低频），为此每次深拷贝 1600+ 个对象并不划算，
+     * 因此这里保持每次查库（安全、简单）。</p>
+     *
      * @param areaId 待排除节点的行政区划代码，可为空（为空则返回全树）
      * @return 排除后的行政区划树
      */
@@ -143,7 +206,9 @@ public class SysDicAreaServiceImpl implements ISysDicAreaService {
     public int insertSysDicArea(SysDicAreaBo bo) {
         validate(bo);
         SysDicArea entity = MapstructUtils.convert(bo, SysDicArea.class);
-        return baseMapper.insert(entity);
+        int rows = baseMapper.insert(entity);
+        evictFullTreeCache();
+        return rows;
     }
 
     /**
@@ -155,7 +220,9 @@ public class SysDicAreaServiceImpl implements ISysDicAreaService {
     public int updateSysDicArea(SysDicAreaBo bo) {
         validate(bo);
         SysDicArea entity = MapstructUtils.convert(bo, SysDicArea.class);
-        return baseMapper.updateById(entity);
+        int rows = baseMapper.updateById(entity);
+        evictFullTreeCache();
+        return rows;
     }
 
     /**
@@ -261,7 +328,18 @@ public class SysDicAreaServiceImpl implements ISysDicAreaService {
                 throw new ServiceException("存在下级行政区划，不允许删除：" + label);
             }
         }
-        return baseMapper.deleteByIds(Arrays.asList(pkids));
+        int rows = baseMapper.deleteByIds(Arrays.asList(pkids));
+        // 必须放在删除成功之后：上面的子节点校验抛 ServiceException 时缓存不应被清掉（清了也无害，但没必要）
+        evictFullTreeCache();
+        return rows;
+    }
+
+    /**
+     * 清除全量树缓存。
+     * <p>仅在写库调用返回后执行，保证校验/写入失败时缓存不被无谓清空。</p>
+     */
+    private void evictFullTreeCache() {
+        RedisUtils.deleteObject(FULL_TREE_CACHE_KEY);
     }
 
     private LambdaQueryWrapper<SysDicArea> buildQueryWrapper(SysDicArea area) {

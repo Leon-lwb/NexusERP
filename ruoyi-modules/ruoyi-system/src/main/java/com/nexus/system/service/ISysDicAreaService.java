@@ -23,11 +23,22 @@ public interface ISysDicAreaService {
 
     /**
      * 查询行政区划字典的树形列表（含全部层级的层级结构）。
+     * <p>无任何查询条件时会命中全量树缓存（见 {@link #selectFullTree()}），此时返回的列表
+     * 与缓存中<b>是同一实例</b>，调用方同样不得修改。</p>
      *
      * @param sysDicArea 查询条件
      * @return 树形结构的行政区划视图对象列表
      */
     List<SysDicAreaVo> selectSysDicAreaTreeList(SysDicArea sysDicArea);
+
+    /**
+     * 查询全量行政区划树（带缓存）。
+     * <p>供级联选择与"选择上级"下拉使用。返回的列表视为<b>只读</b>，调用方不得修改
+     * （缓存中是同一实例，修改会污染后续请求）。</p>
+     *
+     * @return 全量行政区划树
+     */
+    List<SysDicAreaVo> selectFullTree();
 
     /**
      * 查询指定行政区划下的下级子节点树形列表。

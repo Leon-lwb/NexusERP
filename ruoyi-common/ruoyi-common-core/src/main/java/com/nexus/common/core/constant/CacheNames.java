@@ -87,6 +87,15 @@ public interface CacheNames {
     String SYS_OSS_CONFIG = GlobalConstants.GLOBAL_REDIS_KEY + "sys_oss_config";
 
     /**
+     * 行政区划全量树
+     * <p><b>用法说明</b>：本名称由 {@code SysDicAreaServiceImpl} 直接作为 Redis bucket key 使用
+     * （配 {@code RedisUtils.setCacheObject(key, value, Duration)} 显式 TTL），<b>不</b>经 Spring
+     * CacheManager，因此无需 {@code #ttl} 后缀。也正因如此，该名称不得再用于
+     * {@code @Cacheable}/{@code @CacheEvict} —— 同名 RMap 与 RBucket 会互相 WRONGTYPE。</p>
+     */
+    String SYS_DIC_AREA_TREE = "sys_dic_area_tree";
+
+    /**
      * 在线用户
      */
     String ONLINE_TOKEN = "online_tokens";

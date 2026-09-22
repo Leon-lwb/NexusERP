@@ -1,13 +1,17 @@
 package com.nexus.system.service.impl;
 
 import cn.hutool.extra.spring.SpringUtil;
+import com.nexus.common.core.constant.CacheNames;
 import com.nexus.common.core.exception.ServiceException;
+import com.nexus.common.redis.utils.RedisUtils;
 import com.nexus.system.domain.SysDicArea;
 import com.nexus.system.domain.bo.SysDicAreaBo;
 import com.nexus.system.domain.vo.SysDicAreaVo;
 import com.nexus.system.mapper.SysDicAreaMapper;
 import io.github.linpeilie.Converter;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -16,16 +20,24 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.redisson.api.RedissonClient;
 
+import java.time.Duration;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -34,6 +46,11 @@ import static org.mockito.Mockito.when;
  * <p><b>必须保留 {@code @Tag}：</b>根 pom 的 surefire 配置为 {@code <groups>${profiles.active}</groups>}
  * （默认 local），只有带对应 {@code @Tag} 的测试才会被执行。缺少标签时 surefire 会报
  * "Tests run: 0" 并 BUILD SUCCESS —— 即静默假绿。</p>
+ *
+ * <p><b>Task 6 起还依赖 {@code RedisUtils} 静态桩</b>：全量树缓存是编程式的（{@code RedisUtils}
+ * 直接调用），因此每个用例都在 {@code @BeforeEach} 里装一层内存版 Redis（见
+ * {@link #stubRedisWithInMemoryBucket()}）。不装桩时 {@code RedisUtils.CLIENT} 为 null，
+ * 服务里的缓存读写会直接 NPE。</p>
  */
 @Tag("local")
 @Tag("dev")
@@ -46,8 +63,13 @@ class SysDicAreaServiceImplTest {
     @InjectMocks
     private SysDicAreaServiceImpl service;
 
+    /** 内存版 Redis bucket：key -> value，仅用于驱动缓存读/写/删三条路径 */
+    private final Map<String, Object> fakeRedis = new HashMap<>();
+
+    private MockedStatic<RedisUtils> redisMock;
+
     /**
-     * 预热 {@code MapstructUtils} 的静态初始化。
+     * 预热依赖 Spring 容器的静态工具类。
      * <p><b>为什么必须做</b>：{@code MapstructUtils.CONVERTER = SpringUtils.getBean(Converter.class)}
      * 是「静态 final 字段 + Spring 容器」写法，纯 Mockito 单测没有容器，首次触碰
      * {@code MapstructUtils.convert(...)} 即抛 {@code ExceptionInInitializerError}
@@ -58,16 +80,58 @@ class SysDicAreaServiceImplTest {
      * mapstruct-plus {@code Converter}——它会在构造时扫描 classpath 上的 {@code *MapperImpl}，
      * 因此 {@code SysDicAreaBo -> SysDicArea} 走的是编译期由 {@code @AutoMapper} 生成的
      * {@code SysDicAreaBoToSysDicAreaMapperImpl}，不是测试替身。</p>
+     * <p>{@code RedisUtils.CLIENT = SpringUtils.getBean(RedissonClient.class)} 同理依赖容器：
+     * 若任其在「无容器」状态下首次初始化，{@code <clinit>} 失败后
+     * {@code mockStatic(RedisUtils.class)} 会报
+     * "Cannot instrument class ... because it or one of its supertypes could not be initialized"，
+     * 故在同一个静态桩窗口内用桩 Client 让它安全完成初始化。</p>
      */
     @BeforeAll
-    static void warmUpMapstructUtils() {
+    static void warmUpSpringDependentUtils() {
         try (MockedStatic<SpringUtil> springMock = mockStatic(SpringUtil.class)) {
             springMock.when(() -> SpringUtil.getBean(Converter.class)).thenReturn(new Converter());
+            springMock.when(() -> SpringUtil.getBean(RedissonClient.class))
+                .thenReturn(mock(RedissonClient.class));
             // 类字面量不触发 <clinit>，必须显式初始化；且必须在静态桩窗口内完成
-            Class.forName("com.nexus.common.core.utils.MapstructUtils", true,
-                SysDicAreaServiceImplTest.class.getClassLoader());
+            initialize("com.nexus.common.core.utils.MapstructUtils");
+            initialize("com.nexus.common.redis.utils.RedisUtils");
+        }
+    }
+
+    /** 触发指定类的静态初始化；类不在测试类路径上时立即失败（说明依赖缺失，不能静默放过） */
+    private static void initialize(String className) {
+        try {
+            Class.forName(className, true, SysDicAreaServiceImplTest.class.getClassLoader());
         } catch (ClassNotFoundException e) {
-            throw new IllegalStateException("MapstructUtils 不在测试类路径上，无法预热静态初始化", e);
+            throw new IllegalStateException(className + " 不在测试类路径上，无法预热静态初始化", e);
+        }
+    }
+
+    /**
+     * 把 {@code RedisUtils} 换成内存实现。
+     * <p>缓存是进程级单例（真实环境是 Redis），必须逐用例隔离：每个用例一份新的
+     * {@link #fakeRedis}，否则用例执行顺序会改变结果。这里刻意<b>不</b>伪造语义——
+     * 服务调用的是真实的 {@code getCacheObject/setCacheObject/deleteObject}，
+     * 只是这三条被路由到 Map 上，因此读穿透、命中、失效都是真的在被执行。</p>
+     */
+    @BeforeEach
+    void stubRedisWithInMemoryBucket() {
+        redisMock = mockStatic(RedisUtils.class);
+        redisMock.when(() -> RedisUtils.getCacheObject(anyString()))
+            .thenAnswer(inv -> fakeRedis.get(inv.getArgument(0)));
+        redisMock.when(() -> RedisUtils.setCacheObject(anyString(), any(), any(Duration.class)))
+            .thenAnswer(inv -> {
+                fakeRedis.put(inv.getArgument(0), inv.getArgument(1));
+                return null;
+            });
+        redisMock.when(() -> RedisUtils.deleteObject(anyString()))
+            .thenAnswer(inv -> fakeRedis.remove(inv.getArgument(0)) != null);
+    }
+
+    @AfterEach
+    void closeRedisMock() {
+        if (redisMock != null) {
+            redisMock.close();
         }
     }
 
@@ -687,5 +751,207 @@ class SysDicAreaServiceImplTest {
         } catch (NoSuchFieldException e) {
             fail("SysDicAreaVo 缺少 createTime，前端创建时间列将恒为空");
         }
+    }
+
+    // ------------------------------------------------------------------
+    // 缓存（Task 6）：全量树单键 TTL 缓存 + 无条件下推 + 写路径失效
+    // ------------------------------------------------------------------
+
+    /**
+     * 全量树命中缓存后不再查库。
+     * <p>{@code assertSame} 把"命中缓存返回的是同一个实例"这一契约固定下来——正因为是同一实例，
+     * 接口 javadoc 才要求调用方只读（否则会污染后续请求）。</p>
+     */
+    @Test
+    void fullTreeQueriesDatabaseOnlyOnceWhenCached() {
+        when(baseMapper.selectVoList(any())).thenReturn(List.of(
+            vo(1L, 330000L, 156L, 1L, "浙江省")
+        ));
+
+        List<SysDicAreaVo> first = service.selectFullTree();
+        List<SysDicAreaVo> second = service.selectFullTree();
+
+        verify(baseMapper, times(1)).selectVoList(any());
+        assertSame(first, second, "第二次必须直接返回缓存实例");
+    }
+
+    /**
+     * 缓存写入必须带有限 TTL。
+     * <p>兄弟项目 nexus-shop 2026-09-21 的事故根因就是 {@code city_list_tree} 写成永久缓存：
+     * 包重命名后缓存里的 Jackson 载荷再也反序列化不出来，端点持续 500 直到人工 flush。
+     * 本断言锁住"确实带了有限 TTL"，防止回归成永久缓存。</p>
+     */
+    @Test
+    void fullTreeCacheWriteCarriesBoundedTtl() {
+        when(baseMapper.selectVoList(any())).thenReturn(List.of(
+            vo(1L, 330000L, 156L, 1L, "浙江省")
+        ));
+
+        service.selectFullTree();
+
+        redisMock.verify(() -> RedisUtils.setCacheObject(
+            eq(CacheNames.SYS_DIC_AREA_TREE),
+            any(),
+            argThat(ttl -> ttl != null && ttl.compareTo(Duration.ZERO) > 0
+                && ttl.compareTo(Duration.ofDays(1)) <= 0)));
+    }
+
+    /** 无条件查询走全量树缓存：两次调用只查库一次 */
+    @Test
+    void treeListWithoutConditionUsesCachedFullTree() {
+        when(baseMapper.selectVoList(any())).thenReturn(List.of(
+            vo(1L, 330000L, 156L, 1L, "浙江省"),
+            vo(2L, 330100L, 330000L, 2L, "杭州市")
+        ));
+
+        List<SysDicAreaVo> first = service.selectSysDicAreaTreeList(new SysDicArea());
+        List<SysDicAreaVo> second = service.selectSysDicAreaTreeList(new SysDicArea());
+
+        verify(baseMapper, times(1)).selectVoList(any());
+        assertSame(first, second, "无条件查询应命中同一份缓存树");
+        assertEquals(1, first.size());
+        assertEquals(330000L, first.get(0).getAreaId());
+    }
+
+    /**
+     * 带条件的查询每次都要查库，且<b>不得</b>写进全量树那个 key。
+     * <p>把过滤结果也缓存到同一个 key 会让不同条件互相污染：后一次请求会读到前一次的结果。</p>
+     */
+    @Test
+    void treeListWithConditionDoesNotUseFullTreeCache() {
+        when(baseMapper.selectVoList(any())).thenReturn(List.of(
+            vo(2L, 330100L, 330000L, 2L, "杭州市")
+        ));
+
+        SysDicArea query = new SysDicArea();
+        query.setAreaName("杭州");
+        service.selectSysDicAreaTreeList(query);
+        service.selectSysDicAreaTreeList(query);
+
+        verify(baseMapper, times(2)).selectVoList(any());
+        redisMock.verify(() -> RedisUtils.setCacheObject(
+            eq(CacheNames.SYS_DIC_AREA_TREE), any(), any(Duration.class)), never());
+    }
+
+    /**
+     * 反向污染防护：缓存已填充时，带条件查询仍必须查库并返回库侧过滤后的结果。
+     * <p>夹具让两次查询返回不同结果：无条件查询是"浙江省 → 杭州市"，带条件查询只有"杭州市"。
+     * 若实现从全量树缓存里取，根节点会是 330000；若实现把过滤结果写回同一个 key，
+     * 断言也会因调用次数不符而失败。</p>
+     */
+    @Test
+    void treeListWithConditionIsNotServedFromFullTreeCache() {
+        when(baseMapper.selectVoList(any()))
+            .thenReturn(List.of(
+                vo(1L, 330000L, 156L, 1L, "浙江省"),
+                vo(2L, 330100L, 330000L, 2L, "杭州市")
+            ))
+            .thenReturn(List.of(
+                vo(2L, 330100L, 330000L, 2L, "杭州市")
+            ));
+
+        List<SysDicAreaVo> full = service.selectSysDicAreaTreeList(new SysDicArea());
+
+        SysDicArea query = new SysDicArea();
+        query.setAreaName("杭州");
+        List<SysDicAreaVo> filtered = service.selectSysDicAreaTreeList(query);
+
+        verify(baseMapper, times(2)).selectVoList(any());
+        assertEquals(330000L, full.get(0).getAreaId());
+        assertEquals(1, filtered.size());
+        assertEquals(330100L, filtered.get(0).getAreaId(), "带条件查询必须走库，不能吃全量树缓存");
+        assertNotSame(full, filtered);
+    }
+
+    /**
+     * 新增成功后必须清缓存。
+     * <p>计数说明：{@code insert} 的 {@code validate} 不会查 {@code selectVoList}
+     * （新增时 {@code pkid} 为空，防环分支不进入），故这里恰好 2 次——缓存填充 1 次 + 失效后重查 1 次。</p>
+     */
+    @Test
+    void insertEvictsFullTreeCache() {
+        when(baseMapper.countByAreaIdIncludeDeleted(anyLong(), anyLong())).thenReturn(0L);
+        when(baseMapper.selectOne(any())).thenReturn(area(1L, 330000L, 1L, "浙江省"));
+        when(baseMapper.insert(any(SysDicArea.class))).thenReturn(1);
+        when(baseMapper.selectVoList(any())).thenReturn(List.of(
+            vo(1L, 330000L, 156L, 1L, "浙江省")
+        ));
+
+        service.selectFullTree(); // 填充缓存
+        assertEquals(1, service.insertSysDicArea(bo(null, 330100L, 330000L, 2L)));
+        service.selectFullTree(); // 缓存已被清 → 必须重新查库
+
+        verify(baseMapper, times(2)).selectVoList(any());
+        redisMock.verify(() -> RedisUtils.deleteObject(CacheNames.SYS_DIC_AREA_TREE));
+    }
+
+    /**
+     * 更新成功后必须清缓存。
+     * <p>计数说明：{@code update} 的 {@code validate} 会为防环检查查一次 {@code selectVoList}
+     * （与缓存无关），故总共 3 次——缓存填充 1 次 + 防环 1 次 + 失效后重查 1 次。</p>
+     */
+    @Test
+    void updateEvictsFullTreeCache() {
+        SysDicArea self = area(3L, 330102L, 3L, "上城区");
+        when(baseMapper.countByAreaIdIncludeDeleted(anyLong(), anyLong())).thenReturn(0L);
+        when(baseMapper.selectOne(any())).thenReturn(area(2L, 330100L, 2L, "杭州市"));
+        when(baseMapper.selectById(3L)).thenReturn(self);
+        when(baseMapper.updateById(any(SysDicArea.class))).thenReturn(1);
+        when(baseMapper.selectVoList(any())).thenReturn(List.of(
+            vo(2L, 330100L, 330000L, 2L, "杭州市"),
+            vo(3L, 330102L, 330100L, 3L, "上城区")
+        ));
+
+        service.selectFullTree(); // 填充缓存
+        assertEquals(1, service.updateSysDicArea(bo(3L, 330102L, 330100L, 3L)));
+        service.selectFullTree(); // 缓存已被清 → 必须重新查库
+
+        verify(baseMapper, times(3)).selectVoList(any());
+        redisMock.verify(() -> RedisUtils.deleteObject(CacheNames.SYS_DIC_AREA_TREE));
+    }
+
+    /** 删除成功后必须清缓存 */
+    @Test
+    void deleteEvictsFullTreeCache() {
+        SysDicArea self = new SysDicArea();
+        self.setPkid(3L);
+        self.setAreaId(330102L);
+        self.setAreaName("上城区");
+        when(baseMapper.selectById(3L)).thenReturn(self);
+        when(baseMapper.exists(any())).thenReturn(false);
+        when(baseMapper.deleteByIds(any())).thenReturn(1);
+        when(baseMapper.selectVoList(any())).thenReturn(List.of(
+            vo(3L, 330102L, 330100L, 3L, "上城区")
+        ));
+
+        service.selectFullTree(); // 填充缓存
+        assertEquals(1, service.deleteSysDicAreaByPkids(new Long[]{3L}));
+        service.selectFullTree(); // 缓存已被清 → 必须重新查库
+
+        verify(baseMapper, times(2)).selectVoList(any());
+        redisMock.verify(() -> RedisUtils.deleteObject(CacheNames.SYS_DIC_AREA_TREE));
+    }
+
+    /**
+     * 校验失败（抛 {@code ServiceException}）时缓存必须原样保留。
+     * <p>失效动作放在写库调用<b>之后</b>，因此"代码重复"这类校验失败不会把缓存无谓清空；
+     * 否则一次失败的编辑就会让后续所有请求都重新查 1661 行。</p>
+     */
+    @Test
+    void failedInsertKeepsFullTreeCache() {
+        when(baseMapper.selectVoList(any())).thenReturn(List.of(
+            vo(1L, 330000L, 156L, 1L, "浙江省")
+        ));
+        when(baseMapper.countByAreaIdIncludeDeleted(anyLong(), anyLong())).thenReturn(1L);
+
+        service.selectFullTree(); // 填充缓存
+
+        assertThrows(ServiceException.class,
+            () -> service.insertSysDicArea(bo(null, 330100L, 330000L, 2L)));
+
+        service.selectFullTree(); // 仍应命中缓存，不再查库
+
+        verify(baseMapper, times(1)).selectVoList(any());
+        redisMock.verify(() -> RedisUtils.deleteObject(CacheNames.SYS_DIC_AREA_TREE), never());
     }
 }
