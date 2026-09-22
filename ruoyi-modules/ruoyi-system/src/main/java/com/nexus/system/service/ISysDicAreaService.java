@@ -90,4 +90,13 @@ public interface ISysDicAreaService {
      * @return 受影响行数
      */
     int deleteSysDicAreaByPkids(Long[] pkids);
+
+    /**
+     * 查询行政区划树，并排除指定节点及其整棵子树。
+     * <p>用于"选择上级"下拉，避免把节点自己或自己的下级设为自己的上级而形成环。</p>
+     *
+     * @param areaId 待排除节点的行政区划代码（非主键 pkid，可为空，为空则返回全树）
+     * @return 排除后的行政区划树
+     */
+    List<SysDicAreaVo> selectTreeExcludeSubtree(Long areaId);
 }

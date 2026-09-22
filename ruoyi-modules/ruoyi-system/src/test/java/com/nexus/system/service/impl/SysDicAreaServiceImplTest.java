@@ -187,4 +187,53 @@ class SysDicAreaServiceImplTest {
 
         assertTrue(tree.isEmpty());
     }
+
+    /** 排除指定节点及其整棵子树 */
+    @Test
+    void treeExcludeSubtreeRemovesSelfAndDescendants() {
+        when(baseMapper.selectVoList(any())).thenReturn(List.of(
+            vo(1L, 330000L, 156L, 1L, "浙江省"),
+            vo(2L, 330100L, 330000L, 2L, "杭州市"),
+            vo(3L, 330102L, 330100L, 3L, "上城区"),
+            vo(4L, 330200L, 330000L, 2L, "宁波市")
+        ));
+
+        List<SysDicAreaVo> tree = service.selectTreeExcludeSubtree(330100L);
+
+        assertEquals(1, tree.size());
+        assertEquals(330000L, tree.get(0).getAreaId());
+        assertEquals(1, tree.get(0).getChildren().size(), "杭州市及其子树上城区都应被排除");
+        assertEquals(330200L, tree.get(0).getChildren().get(0).getAreaId());
+    }
+
+    /** areaId 为空时返回全树 */
+    @Test
+    void treeExcludeSubtreeWithNullReturnsFullTree() {
+        when(baseMapper.selectVoList(any())).thenReturn(List.of(
+            vo(1L, 330000L, 156L, 1L, "浙江省")
+        ));
+
+        List<SysDicAreaVo> tree = service.selectTreeExcludeSubtree(null);
+
+        assertEquals(1, tree.size());
+    }
+
+    /**
+     * 回归防护：确认按 areaId 匹配而非 pkid。
+     * <p>杭州市(areaId=330100)的父节点就是浙江省(areaId=330000)，因此排除 330000 时
+     * 整棵树应被排除干净，返回空列表。</p>
+     * <p>若实现误按 pkid 匹配：pkid 只有 1、2，均不等于 330000，查不到 → 返回全树
+     * {浙江省→杭州市}（size=1），本断言即失败。</p>
+     */
+    @Test
+    void treeExcludeSubtreeMatchesByAreaIdNotPkid() {
+        when(baseMapper.selectVoList(any())).thenReturn(List.of(
+            vo(1L, 330000L, 156L, 1L, "浙江省"),
+            vo(2L, 330100L, 330000L, 2L, "杭州市")
+        ));
+
+        List<SysDicAreaVo> tree = service.selectTreeExcludeSubtree(330000L);
+
+        assertTrue(tree.isEmpty(), "按 areaId 匹配应排除浙江省及其子树杭州市，结果为全空");
+    }
 }

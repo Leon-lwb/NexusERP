@@ -16,11 +16,13 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * 行政区划 服务实现类，实现 {@link ISysDicAreaService} 接口。属于 System 系统管理模块。
@@ -99,6 +101,29 @@ public class SysDicAreaServiceImpl implements ISysDicAreaService {
     public List<SysDicAreaVo> selectNextLevel(Long parentAreaId) {
         List<SysDicArea> nextLevel = baseMapper.selectNextLevel(parentAreaId);
         return MapstructUtils.convert(nextLevel, SysDicAreaVo.class);
+    }
+
+    /**
+     * 查询行政区划树，并排除指定节点及其整棵子树。
+     * <p>按 {@code areaId}（行政区划代码）匹配，而非主键 {@code pkid}：前端"选择上级"传的是
+     * {@code row.areaId}。被排除节点的直接子节点因父不在结果集中，会由 {@link #buildTree} 升级为根，
+     * 因此排除的是"整棵子树"而非仅该节点本身。</p>
+     *
+     * @param areaId 待排除节点的行政区划代码，可为空（为空则返回全树）
+     * @return 排除后的行政区划树
+     */
+    @Override
+    public List<SysDicAreaVo> selectTreeExcludeSubtree(Long areaId) {
+        List<SysDicAreaVo> areas = selectSysDicAreaList(new SysDicArea());
+        if (areaId == null) {
+            return buildTree(areas);
+        }
+        Set<Long> excluded = new HashSet<>();
+        collectSubtreeIds(areaId, areas, excluded);
+        List<SysDicAreaVo> remaining = areas.stream()
+            .filter(a -> a.getAreaId() == null || !excluded.contains(a.getAreaId()))
+            .collect(Collectors.toList());
+        return buildTree(remaining);
     }
 
     /**
@@ -245,5 +270,24 @@ public class SysDicAreaServiceImpl implements ISysDicAreaService {
                 promoted, sample);
         }
         return roots;
+    }
+
+    /**
+     * 收集 areaId 及其所有下级的 areaId。
+     * <p>{@code acc} 兼作已访问集合，脏数据成环时不会死循环。</p>
+     *
+     * @param areaId 起始节点的行政区划代码
+     * @param areas  全量扁平列表
+     * @param acc    结果与已访问集合（入参出参）
+     */
+    private void collectSubtreeIds(Long areaId, List<SysDicAreaVo> areas, Set<Long> acc) {
+        if (areaId == null || !acc.add(areaId)) {
+            return;
+        }
+        for (SysDicAreaVo area : areas) {
+            if (areaId.equals(area.getParentAreaId())) {
+                collectSubtreeIds(area.getAreaId(), areas, acc);
+            }
+        }
     }
 }

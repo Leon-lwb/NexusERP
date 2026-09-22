@@ -81,15 +81,15 @@ public class SysDicAreaController extends BaseController {
     }
 
     /**
-     * 查询行政区划树形列表并排除指定节点（用于选择上级时回显）。
+     * 查询行政区划树形列表并排除指定节点及其子树（用于选择上级时回显）。
      *
-     * @param pkid 待排除的节点 ID（为空则不排除）
+     * @param areaId 待排除节点的行政区划代码
      * @return 排除后的行政区划树列表
      */
     @SaCheckPermission("system:area:list")
-    @GetMapping("/list/exclude/{pkid}")
-    public R<List<SysDicAreaVo>> listAreaExcludeChild(@PathVariable(required = false) Long pkid) {
-        return R.ok(sysDicAreaService.selectSysDicAreaTreeList(new SysDicArea()));
+    @GetMapping("/list/exclude/{areaId}")
+    public R<List<SysDicAreaVo>> listAreaExcludeChild(@PathVariable Long areaId) {
+        return R.ok(sysDicAreaService.selectTreeExcludeSubtree(areaId));
     }
 
     /**
