@@ -167,6 +167,10 @@ tenant:
     - sys_user_role
     - sys_client
     - sys_oss_config
+    # 行政区划（sys_dic_area）：国家标准参考数据，全局共享，不按租户隔离。
+    # 否则新租户开通时该表无数据（SysTenantServiceImpl 只复制 dict/config），
+    # 客户/供应商/仓库表单的省市区级联会全空。
+    - sys_dic_area
     # AI 运行参数配置（全局共享，Redis 广播重载时订阅回调线程无租户上下文）
     - ai_config
     - flow_spel
