@@ -1,0 +1,36 @@
+package com.nexus.common.ai.decision.dto;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.nexus.common.ai.decision.enums.DecisionBusinessType;
+import com.nexus.common.ai.decision.enums.DecisionTriggerType;
+import jakarta.validation.constraints.AssertTrue;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
+import lombok.Data;
+
+import java.io.Serializable;
+import java.util.List;
+
+@Data
+public class DeliveryRiskRunRequest implements Serializable {
+    @NotNull
+    private DecisionBusinessType bizType;
+    private Long bizId;
+    @NotNull
+    @Min(1)
+    @Max(90)
+    private Integer horizonDays = 30;
+    private List<String> scenarioCodes = List.of("BASELINE_CURRENT", "APS_EDD", "APS_CR", "APS_CR_EXPEDITE");
+    private DecisionTriggerType triggerType = DecisionTriggerType.MANUAL;
+    private String userQuestion;
+    private String context;
+    private Boolean forceRestart = false;
+
+    /** A horizon covers the tenant's visible work orders, not a single business record. */
+    @JsonIgnore
+    @AssertTrue(message = "SHORTAGE_HORIZON 不允许 bizId，其他业务类型必须提供 bizId")
+    public boolean isBusinessScopeValid() {
+        return bizType == null || (bizType == DecisionBusinessType.SHORTAGE_HORIZON ? bizId == null : bizId != null);
+    }
+}
