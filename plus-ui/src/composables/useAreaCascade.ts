@@ -9,6 +9,59 @@
 import { ref, type Ref } from 'vue';
 import { getProvinces, getNextLevel, type AreaVO } from '@/api/system/area';
 
+/**
+ * 省级行政区划 GB 码前两位 → 大区字典值（`bd_region`）。
+ * <p>
+ * 用 GB 码而非省份名匹配：省份名可能变更或带「省/市/自治区」后缀差异，GB 码稳定。
+ */
+const PROVINCE_REGION: Record<string, string> = {
+  '11': '1',
+  '12': '1',
+  '13': '1',
+  '14': '1',
+  '15': '1', // 华北
+  '21': '3',
+  '22': '3',
+  '23': '3', // 东北
+  '31': '2',
+  '32': '2',
+  '33': '2',
+  '34': '2',
+  '35': '2',
+  '36': '2',
+  '37': '2',
+  '71': '2', // 华东
+  '41': '4',
+  '42': '4',
+  '43': '4', // 华中
+  '44': '5',
+  '45': '5',
+  '46': '5',
+  '81': '5',
+  '82': '5', // 华南
+  '50': '6',
+  '51': '6',
+  '52': '6',
+  '53': '6',
+  '54': '6', // 西南
+  '61': '7',
+  '62': '7',
+  '63': '7',
+  '64': '7',
+  '65': '7' // 西北
+};
+
+/**
+ * 由省份行政区划 ID（GB 码）推导大区字典值。
+ *
+ * @param provinceAreaId 省份 areaId，如 330000
+ * @returns 大区字典值（`1`~`7`），无法识别时返回空串
+ */
+export function regionOfProvince(provinceAreaId: unknown): string {
+  if (provinceAreaId == null) return '';
+  return PROVINCE_REGION[String(provinceAreaId).slice(0, 2)] ?? '';
+}
+
 /** 地址表单中与行政区划相关的字段 */
 export interface AreaAddressForm {
   provinceAreaId?: string | number | null;
@@ -33,6 +86,11 @@ export interface UseAreaCascadeOptions {
    * 若沿用默认值会导致该页地址不再回填。
    */
   addressField?: string;
+  /**
+   * 大区字段名。传入时按省份自动派生并写入 `bd_region` 字典值（只读派生，不接受手工输入）。
+   * 供应商页传 `'region'`；客户页 / 仓库页不传，行为与改动前完全一致。
+   */
+  regionField?: string;
 }
 
 /**
@@ -48,6 +106,7 @@ export interface UseAreaCascadeOptions {
  */
 export function useAreaCascade(form: Ref<AreaAddressForm>, options: UseAreaCascadeOptions = {}) {
   const addressField = options.addressField ?? 'address';
+  const regionField = options.regionField;
   const provinceOptions = ref<AreaVO[]>([]);
   const cityOptions = ref<AreaVO[]>([]);
   const districtOptions = ref<AreaVO[]>([]);
@@ -97,6 +156,17 @@ export function useAreaCascade(form: Ref<AreaAddressForm>, options: UseAreaCasca
     form.value[addressField] = parts.join('');
   }
 
+  /**
+   * 省份 → 大区派生（仅在配置了 regionField 时生效）。
+   * <p>
+   * 省份为空时把大区一并清空，避免残留上一次的手工值或旧标签。
+   */
+  function syncRegion() {
+    if (!regionField) return;
+    const region = regionOfProvince(form.value.provinceAreaId);
+    form.value[regionField] = region === '' ? null : region;
+  }
+
   /** 省份变更：清空市/区县/街道并加载城市选项 */
   async function onProvinceChange(value: string | number | null) {
     resetBelow('province');
@@ -105,6 +175,7 @@ export function useAreaCascade(form: Ref<AreaAddressForm>, options: UseAreaCasca
       if (value) await loadChildren('city', value);
     } finally {
       updateAddress();
+      syncRegion();
     }
   }
 
@@ -136,6 +207,8 @@ export function useAreaCascade(form: Ref<AreaAddressForm>, options: UseAreaCasca
   /** 编辑/查看态逐级回显 */
   async function loadAddressCascade() {
     await loadProvinces();
+    // 先派生一次：省份为空时也要清掉历史遗留的大区标签（如旧数据的「华东」）
+    syncRegion();
     if (!form.value.provinceAreaId) return;
     await loadChildren('city', form.value.provinceAreaId);
     if (!form.value.cityAreaId) return;
