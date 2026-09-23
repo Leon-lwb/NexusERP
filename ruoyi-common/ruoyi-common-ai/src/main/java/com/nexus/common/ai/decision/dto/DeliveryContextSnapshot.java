@@ -10,6 +10,7 @@ import java.time.OffsetDateTime;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,6 +32,8 @@ public record DeliveryContextSnapshot(
     LocalDateTime snapshotAt,
     List<String> warnings
 ) implements Serializable {
+
+    private static final long JS_MAX_SAFE_INTEGER = 9007199254740991L;
 
     public DeliveryContextSnapshot {
         salesOrders = copyList(salesOrders);
@@ -66,6 +69,7 @@ public record DeliveryContextSnapshot(
         return Collections.unmodifiableMap(copy);
     }
 
+    /** Audit/view data only: algorithms consume typed facts and the APS port, never cast schedule values. */
     private static Map<String, Object> copySchedule(Map<String, Object> source) {
         if (source == null) return null;
         Map<String, Object> copy = new LinkedHashMap<>();
@@ -73,7 +77,7 @@ public record DeliveryContextSnapshot(
         return Collections.unmodifiableMap(copy);
     }
 
-    /** The dynamic schedule is JSON-shaped; unsupported mutable values cannot be hashed safely. */
+    /** Canonical JSON-safe scalars keep the hash and JSON round-trip stable under production Jackson. */
     private static Object copyScheduleValue(Object value) {
         if (value instanceof Map<?, ?> map) {
             Map<String, Object> copy = new LinkedHashMap<>();
@@ -90,12 +94,32 @@ public record DeliveryContextSnapshot(
             list.forEach(element -> copy.add(copyScheduleValue(element)));
             return Collections.unmodifiableList(copy);
         }
-        if (value == null || value instanceof String || value instanceof Boolean || value instanceof Character
-            || value instanceof Byte || value instanceof Short || value instanceof Integer || value instanceof Long
-            || value instanceof Float || value instanceof Double || value instanceof BigInteger
-            || value instanceof BigDecimal || value instanceof LocalDate || value instanceof LocalDateTime
-            || value instanceof Instant || value instanceof OffsetDateTime || value instanceof ZonedDateTime
-            || value instanceof UUID || value instanceof Enum<?>) {
+        if (value instanceof Long number) {
+            if (number > JS_MAX_SAFE_INTEGER || number < -JS_MAX_SAFE_INTEGER) return number.toString();
+            if (number >= Integer.MIN_VALUE && number <= Integer.MAX_VALUE) {
+                return Integer.valueOf(number.intValue());
+            }
+            return number;
+        }
+        if (value instanceof BigDecimal decimal) return decimal.toPlainString();
+        if (value instanceof BigInteger integer) return integer.toString();
+        if (value instanceof LocalDate || value instanceof LocalDateTime || value instanceof Instant
+            || value instanceof OffsetDateTime || value instanceof ZonedDateTime || value instanceof UUID) {
+            return value.toString();
+        }
+        if (value instanceof Date date) return Instant.ofEpochMilli(date.getTime()).toString();
+        if (value instanceof Enum<?> code) return code.name();
+        if (value instanceof Character character) return character.toString();
+        if (value instanceof Float number) {
+            if (!Float.isFinite(number)) throw new IllegalArgumentException("排产快照不接受非有限数值");
+            return Double.valueOf(number.toString());
+        }
+        if (value instanceof Double number) {
+            if (!Double.isFinite(number)) throw new IllegalArgumentException("排产快照不接受非有限数值");
+            return number;
+        }
+        if (value == null || value instanceof String || value instanceof Boolean || value instanceof Byte
+            || value instanceof Short || value instanceof Integer) {
             return value;
         }
         throw new IllegalArgumentException("排产快照包含不支持的可变值: " + value.getClass().getName());

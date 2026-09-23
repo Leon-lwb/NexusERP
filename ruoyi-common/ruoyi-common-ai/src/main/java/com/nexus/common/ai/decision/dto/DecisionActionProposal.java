@@ -13,8 +13,10 @@ import java.util.Map;
 
 /**
  * Strongly typed action/target IDs retain Long and use the global Jackson serializer.
- * Dynamic payload IDs must be decimal strings (including nested ID lists); no Long or BigInteger
- * is accepted anywhere in payload. Non-ID Integer/BigDecimal values remain JSON numbers.
+ * Dynamic payload IDs must be decimal strings (including nested ID lists). Non-ID Long values
+ * inside the JavaScript-safe range stay JSON numbers; larger Long values fail fast. BigDecimal
+ * and BigInteger become plain decimal strings so the production Jackson modules cannot change
+ * their types during round-trip serialization.
  */
 public record DecisionActionProposal(
     Long actionId,
@@ -31,6 +33,8 @@ public record DecisionActionProposal(
     int sequence,
     List<Long> dependencyIds
 ) implements Serializable {
+
+    private static final long JS_MAX_SAFE_INTEGER = 9007199254740991L;
 
     /** Dynamic payload contract: identifiers are decimal strings, not JSON numbers. */
     public DecisionActionProposal {
@@ -80,13 +84,27 @@ public record DecisionActionProposal(
             list.forEach(element -> copy.add(copyValue(element)));
             return Collections.unmodifiableList(copy);
         }
-        // No guessing whether an unknown Long key is an ID or a metric: fail closed.
-        if (value instanceof Long || value instanceof BigInteger) {
-            throw new IllegalArgumentException("动作 payload 不接受 Long/BigInteger；ID 用十进制字符串，数量用安全数值类型");
+        if (value instanceof Long number) {
+            if (number > JS_MAX_SAFE_INTEGER || number < -JS_MAX_SAFE_INTEGER) {
+                throw new IllegalArgumentException("动作 payload 的非 ID Long 超出 JS 安全整数范围；请使用明确类型");
+            }
+            if (number >= Integer.MIN_VALUE && number <= Integer.MAX_VALUE) {
+                return Integer.valueOf(number.intValue());
+            }
+            return number;
+        }
+        if (value instanceof BigDecimal decimal) return decimal.toPlainString();
+        if (value instanceof BigInteger integer) return integer.toString();
+        if (value instanceof Float number) {
+            if (!Float.isFinite(number)) throw new IllegalArgumentException("动作 payload 不接受非有限数值");
+            return Double.valueOf(number.toString());
+        }
+        if (value instanceof Double number) {
+            if (!Double.isFinite(number)) throw new IllegalArgumentException("动作 payload 不接受非有限数值");
+            return number;
         }
         if (value == null || value instanceof String || value instanceof Boolean || value instanceof Byte
-            || value instanceof Short || value instanceof Integer || value instanceof Float
-            || value instanceof Double || value instanceof BigDecimal) {
+            || value instanceof Short || value instanceof Integer) {
             return value;
         }
         throw new IllegalArgumentException("动作 payload 包含不支持的值: " + value.getClass().getName());

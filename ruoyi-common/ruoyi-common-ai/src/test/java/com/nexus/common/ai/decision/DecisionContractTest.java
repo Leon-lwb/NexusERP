@@ -30,7 +30,6 @@ import com.nexus.common.ai.decision.enums.DecisionRunStatus;
 import com.nexus.common.ai.decision.enums.DecisionTriggerType;
 import com.nexus.common.ai.decision.port.DecisionWorkflowPort;
 import com.nexus.common.ai.decision.port.IndustrialDecisionDataPort;
-import com.nexus.common.web.config.JacksonConfig;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import org.junit.jupiter.api.Tag;
@@ -38,12 +37,15 @@ import org.junit.jupiter.api.Test;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.LinkedHashMap;
+import java.util.Date;
 import java.util.EnumSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -280,13 +282,21 @@ class DecisionContractTest {
     }
 
     @Test
-    void dynamicActionPayloadRejectsUnsafeOrAmbiguousNumericIdentifiers() {
+    void dynamicActionPayloadRejectsNumericIdsAndUnsafeLongs() {
         long snowflake = 9007199254740993L;
         assertThrows(IllegalArgumentException.class, () -> proposal(snowflake, Map.of("workOrderId", snowflake)));
         assertThrows(IllegalArgumentException.class, () -> proposal(snowflake,
             Map.of("lines", List.of(Map.of("ambiguousNumber", snowflake)))));
         assertThrows(IllegalArgumentException.class, () -> proposal(snowflake, Map.of("workOrderId", 7)));
-        assertThrows(IllegalArgumentException.class, () -> proposal(snowflake, Map.of("quantity", 2L)));
+        assertEquals(2, proposal(snowflake, Map.of("quantity", 2L)).payload().get("quantity"));
+        assertEquals(2147483648L, proposal(snowflake, Map.of("quantity", 2147483648L))
+            .payload().get("quantity"));
+        assertEquals(9007199254740991L, proposal(snowflake, Map.of("quantity", 9007199254740991L))
+            .payload().get("quantity"));
+        assertThrows(IllegalArgumentException.class,
+            () -> proposal(snowflake, Map.of("quantity", 9007199254740992L)));
+        assertThrows(IllegalArgumentException.class,
+            () -> proposal(snowflake, Map.of("quantity", -9007199254740992L)));
         assertThrows(IllegalArgumentException.class, () -> proposal(snowflake,
             Map.of("dependentIds", List.of("7", 8))));
     }
@@ -297,8 +307,11 @@ class DecisionContractTest {
         String id = Long.toString(snowflake);
         Map<String, Object> line = new LinkedHashMap<>();
         line.put("workOrderId", id);
-        line.put("quantity", 12);
+        line.put("quantity", 2L);
+        line.put("aboveInt", 2147483648L);
         line.put("amount", new BigDecimal("125.50"));
+        line.put("scientificAmount", new BigDecimal("1E+3"));
+        line.put("massiveCount", new BigInteger("12345678901234567890"));
         List<Object> lines = new ArrayList<>(List.of(line));
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("tenantId", "000023");
@@ -306,7 +319,7 @@ class DecisionContractTest {
         payload.put("lines", lines);
         payload.put("reportCount", 42);
         DecisionActionProposal action = proposal(snowflake, payload);
-        ObjectMapper mapper = new ObjectMapper().registerModule(new JacksonConfig().bigNumberModule());
+        ObjectMapper mapper = productionMapper();
         assertTrue(mapper.readTree(mapper.writeValueAsString(Map.of("workOrderId", snowflake)))
             .path("workOrderId").isTextual(), "实际 BigNumberSerializer 会将动态 Map 的大 Long 转为 String");
         String json = mapper.writeValueAsString(action);
@@ -316,7 +329,13 @@ class DecisionContractTest {
         assertTrue(root.path("target").path("id").isTextual());
         assertTrue(root.path("payload").path("lines").get(0).path("workOrderId").isTextual());
         assertTrue(root.path("payload").path("lines").get(0).path("quantity").isNumber());
-        assertTrue(root.path("payload").path("lines").get(0).path("amount").isNumber());
+        assertEquals(2, root.path("payload").path("lines").get(0).path("quantity").intValue());
+        assertTrue(root.path("payload").path("lines").get(0).path("aboveInt").isNumber());
+        assertEquals(2147483648L, root.path("payload").path("lines").get(0).path("aboveInt").longValue());
+        assertTrue(root.path("payload").path("lines").get(0).path("amount").isTextual());
+        assertEquals("125.50", root.path("payload").path("lines").get(0).path("amount").textValue());
+        assertEquals("1000", root.path("payload").path("lines").get(0).path("scientificAmount").textValue());
+        assertEquals("12345678901234567890", root.path("payload").path("lines").get(0).path("massiveCount").textValue());
         assertTrue(root.path("payload").path("reportCount").isNumber());
 
         line.put("workOrderId", "tampered");
@@ -328,8 +347,11 @@ class DecisionContractTest {
         assertEquals(snowflake, roundTrip.target().id());
         Map<?, ?> lineAfter = (Map<?, ?>) ((List<?>) roundTrip.payload().get("lines")).get(0);
         assertEquals(id, lineAfter.get("workOrderId"));
-        assertTrue(lineAfter.get("quantity") instanceof Number);
-        assertTrue(lineAfter.get("amount") instanceof Number);
+        assertEquals(2, lineAfter.get("quantity"));
+        assertEquals(2147483648L, lineAfter.get("aboveInt"));
+        assertEquals("125.50", lineAfter.get("amount"));
+        assertEquals("1000", lineAfter.get("scientificAmount"));
+        assertEquals("12345678901234567890", lineAfter.get("massiveCount"));
         assertEquals(List.of(id), roundTrip.payload().get("runIds"));
         assertThrows(UnsupportedOperationException.class, () -> roundTrip.payload().put("id", "7"));
         assertThrows(UnsupportedOperationException.class, () -> lineAfter.clear());
@@ -461,6 +483,54 @@ class DecisionContractTest {
     }
 
     @Test
+    void currentScheduleUsesCanonicalJsonSafeValuesWithRealProductionModules() throws Exception {
+        long snowflake = 9007199254740993L;
+        Instant moment = Instant.parse("2026-09-23T01:02:03Z");
+        Map<String, Object> nested = new LinkedHashMap<>();
+        nested.put("businessId", snowflake);
+        nested.put("amount", new BigDecimal("2.500"));
+        nested.put("readyDate", LocalDate.of(2026, 9, 25));
+        Map<String, Object> schedule = new LinkedHashMap<>();
+        schedule.put("runId", snowflake);
+        schedule.put("qty", 2L);
+        schedule.put("aboveInt", 2147483648L);
+        schedule.put("amount", new BigDecimal("1E+3"));
+        schedule.put("date", LocalDate.of(2026, 9, 24));
+        schedule.put("startTime", LocalDateTime.of(2026, 9, 23, 10, 11, 12));
+        schedule.put("instant", moment);
+        schedule.put("Date", Date.from(moment));
+        schedule.put("tasks", List.of(nested));
+        DeliveryContextSnapshot snapshot = new DeliveryContextSnapshot(
+            new DecisionBusinessRef(DecisionBusinessType.WORK_ORDER, snowflake, "WO-1"),
+            List.of(new DeliveryContextSnapshot.OrderFact(snowflake, "SO-1", LocalDate.of(2026, 9, 28), "OPEN")),
+            List.of(), Map.of(), List.of(), List.of(), List.of(),
+            Map.of(LocalDate.of(2026, 9, 23), Map.of("WS-A", new BigDecimal("3.50"))),
+            List.of(), schedule, List.of(), "hash", LocalDateTime.of(2026, 9, 23, 10, 11, 12), List.of());
+        ObjectMapper mapper = productionMapper();
+        String json = mapper.writeValueAsString(snapshot);
+        JsonNode raw = mapper.readTree(json);
+        JsonNode view = raw.path("currentSchedule");
+        assertTrue(raw.path("rootBusinessRef").path("id").isTextual());
+        assertEquals(Long.toString(snowflake), view.path("runId").textValue());
+        assertTrue(view.path("qty").isInt());
+        assertEquals(2, view.path("qty").intValue());
+        assertTrue(view.path("aboveInt").isNumber());
+        assertEquals(2147483648L, view.path("aboveInt").longValue());
+        assertEquals("1000", view.path("amount").textValue());
+        assertEquals("2026-09-24", view.path("date").textValue());
+        assertEquals("2026-09-23T10:11:12", view.path("startTime").textValue());
+        assertEquals("2026-09-23T01:02:03Z", view.path("instant").textValue());
+        assertEquals("2026-09-23T01:02:03Z", view.path("Date").textValue());
+        assertEquals(Long.toString(snowflake), view.path("tasks").get(0).path("businessId").textValue());
+        assertEquals("2.500", view.path("tasks").get(0).path("amount").textValue());
+        DeliveryContextSnapshot restored = mapper.readValue(json, DeliveryContextSnapshot.class);
+        assertEquals(json, mapper.writeValueAsString(restored));
+        assertEquals(snowflake, restored.salesOrders().get(0).id());
+        assertEquals(new BigDecimal("3.50"),
+            restored.capacityByDate().get(LocalDate.of(2026, 9, 23)).get("WS-A"));
+    }
+
+    @Test
     void snapshotDeserializesLegacyNullCollectionsWithoutChangingTheirMeaning() throws Exception {
         ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule());
         DeliveryContextSnapshot old = mapper.readValue("{\"snapshotHash\":\"legacy\"}",
@@ -589,6 +659,12 @@ class DecisionContractTest {
             assertEquals(DecisionActionExecutionResult.class,
                 IndustrialDecisionDataPort.class.getMethod(operation, signature).getReturnType(), operation);
         }
+    }
+
+    private static ObjectMapper productionMapper() {
+        return new ObjectMapper()
+            .registerModule(new com.nexus.common.json.config.JacksonConfig().registerJavaTimeModule())
+            .registerModule(new com.nexus.common.web.config.JacksonConfig().bigNumberModule());
     }
 
     private static DecisionActionProposal proposal(long actionId, Map<String, Object> payload) {
