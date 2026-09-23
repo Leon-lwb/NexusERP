@@ -282,6 +282,26 @@ class DecisionContractTest {
     }
 
     @Test
+    void actionDependencyIdsAreCopiedUnmodifiableAndNullableAcrossJson() throws Exception {
+        long snowflake = 9007199254740993L;
+        List<Long> dependencies = new ArrayList<>(List.of(snowflake, 7L));
+        DecisionActionProposal action = proposal(8L, Map.of(), dependencies);
+        dependencies.set(0, 99L);
+        dependencies.add(10L);
+        assertEquals(List.of(snowflake, 7L), action.dependencyIds());
+        assertThrows(UnsupportedOperationException.class, () -> action.dependencyIds().add(11L));
+        ObjectMapper mapper = productionMapper();
+        DecisionActionProposal restored = mapper.readValue(mapper.writeValueAsString(action),
+            DecisionActionProposal.class);
+        assertEquals(List.of(snowflake, 7L), restored.dependencyIds());
+        assertThrows(UnsupportedOperationException.class, () -> restored.dependencyIds().clear());
+        DecisionActionProposal nullable = proposal(8L, Map.of(), null);
+        assertNull(nullable.dependencyIds());
+        assertNull(mapper.readValue(mapper.writeValueAsString(nullable),
+            DecisionActionProposal.class).dependencyIds());
+    }
+
+    @Test
     void dynamicActionPayloadRejectsNumericIdsAndUnsafeLongs() {
         long snowflake = 9007199254740993L;
         assertThrows(IllegalArgumentException.class, () -> proposal(snowflake, Map.of("workOrderId", snowflake)));
@@ -483,6 +503,49 @@ class DecisionContractTest {
     }
 
     @Test
+    void currentScheduleDistinguishesIdKeysFromNonIdLongsAtEveryDepth() throws Exception {
+        long snowflake = 9007199254740993L;
+        Map<String, Object> row = new LinkedHashMap<>();
+        row.put("runId", 7L);
+        row.put("material_id", snowflake);
+        row.put("stepIds", new ArrayList<>(List.of(7L, snowflake)));
+        row.put("Date", Date.from(Instant.parse("2026-09-23T01:02:03Z")));
+        row.put("quantity", 2L);
+        row.put("amount", new BigDecimal("1E+3"));
+        Map<String, Object> schedule = new LinkedHashMap<>();
+        schedule.put("runId", 7L);
+        schedule.put("items", List.of(row));
+        DeliveryContextSnapshot snapshot = snapshotWithSchedule(schedule);
+        ObjectMapper mapper = productionMapper();
+        String json = mapper.writeValueAsString(snapshot);
+        JsonNode view = mapper.readTree(json).path("currentSchedule");
+        assertEquals("7", view.path("runId").textValue());
+        JsonNode nested = view.path("items").get(0);
+        assertEquals("7", nested.path("runId").textValue());
+        assertEquals(Long.toString(snowflake), nested.path("material_id").textValue());
+        assertEquals("7", nested.path("stepIds").get(0).textValue());
+        assertEquals(Long.toString(snowflake), nested.path("stepIds").get(1).textValue());
+        assertEquals("2026-09-23T01:02:03Z", nested.path("Date").textValue());
+        assertTrue(nested.path("quantity").isNumber());
+        assertEquals("1000", nested.path("amount").textValue());
+        row.put("runId", 8L);
+        schedule.clear();
+        assertEquals(json, mapper.writeValueAsString(snapshot));
+        assertEquals(json, mapper.writeValueAsString(mapper.readValue(json, DeliveryContextSnapshot.class)));
+    }
+
+    @Test
+    void currentScheduleRejectsUnsafeNonIdLongsIncludingNestedAndNegative() {
+        long beyondSafe = 9007199254740992L;
+        assertThrows(IllegalArgumentException.class,
+            () -> snapshotWithSchedule(Map.of("quantity", beyondSafe)));
+        assertThrows(IllegalArgumentException.class,
+            () -> snapshotWithSchedule(Map.of("items", List.of(Map.of("quantity", beyondSafe)))));
+        assertThrows(IllegalArgumentException.class,
+            () -> snapshotWithSchedule(Map.of("quantity", -beyondSafe)));
+    }
+
+    @Test
     void currentScheduleUsesCanonicalJsonSafeValuesWithRealProductionModules() throws Exception {
         long snowflake = 9007199254740993L;
         Instant moment = Instant.parse("2026-09-23T01:02:03Z");
@@ -667,11 +730,23 @@ class DecisionContractTest {
             .registerModule(new com.nexus.common.web.config.JacksonConfig().bigNumberModule());
     }
 
+    private static DeliveryContextSnapshot snapshotWithSchedule(Map<String, Object> schedule) {
+        return new DeliveryContextSnapshot(
+            new DecisionBusinessRef(DecisionBusinessType.WORK_ORDER, 11L, "WO-11"),
+            List.of(), List.of(), Map.of(), List.of(), List.of(), List.of(), Map.of(),
+            List.of(), schedule, List.of(), "hash", LocalDateTime.of(2026, 9, 23, 10, 0), List.of());
+    }
+
     private static DecisionActionProposal proposal(long actionId, Map<String, Object> payload) {
+        return proposal(actionId, payload, List.of());
+    }
+
+    private static DecisionActionProposal proposal(long actionId, Map<String, Object> payload,
+                                                   List<Long> dependencyIds) {
         return new DecisionActionProposal(actionId, DecisionActionType.CREATE_PURCHASE_REQUISITION_DRAFT,
             "draft", "shortage", new DecisionBusinessRef(DecisionBusinessType.WORK_ORDER, actionId, "WO-42"),
             payload, DecisionRiskLevel.HIGH, true, "pu:requisition:add", "action-idempotency-key",
-            "purchaseRequisitionDraft", 1, List.of());
+            "purchaseRequisitionDraft", 1, dependencyIds);
     }
 
     @Test

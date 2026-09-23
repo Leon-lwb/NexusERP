@@ -73,8 +73,51 @@ public record DeliveryContextSnapshot(
     private static Map<String, Object> copySchedule(Map<String, Object> source) {
         if (source == null) return null;
         Map<String, Object> copy = new LinkedHashMap<>();
-        source.forEach((key, value) -> copy.put(key, copyScheduleValue(value)));
+        source.forEach((key, value) -> copy.put(key, copyScheduleEntry(key, value)));
         return Collections.unmodifiableMap(copy);
+    }
+
+    /** ID conventions apply to keys, never to types such as java.util.Date. */
+    private static Object copyScheduleEntry(String key, Object value) {
+        if (key == null) throw new IllegalArgumentException("排产快照 Map 的键必须为 String");
+        if (isIdKey(key)) return decimalId(value, key);
+        if (isIdListKey(key)) {
+            if (value == null) return null;
+            if (!(value instanceof List<?> ids)) {
+                throw new IllegalArgumentException("排产快照的 ID 列表必须是 List: " + key);
+            }
+            List<Object> copy = new ArrayList<>(ids.size());
+            ids.forEach(id -> copy.add(decimalId(id, key)));
+            return Collections.unmodifiableList(copy);
+        }
+        return copyScheduleValue(value);
+    }
+
+    private static boolean isIdKey(String key) {
+        return key.equalsIgnoreCase("id") || key.endsWith("Id") || key.endsWith("ID")
+            || key.endsWith("_id") || key.endsWith("_ID");
+    }
+
+    private static boolean isIdListKey(String key) {
+        return key.equalsIgnoreCase("ids") || key.endsWith("Ids") || key.endsWith("IDs")
+            || key.endsWith("_ids") || key.endsWith("_IDS");
+    }
+
+    private static String decimalId(Object value, String key) {
+        if (value == null) return null;
+        String id;
+        if (value instanceof String text) {
+            id = text;
+        } else if (value instanceof Long || value instanceof Integer || value instanceof Short
+            || value instanceof Byte || value instanceof BigInteger) {
+            id = value.toString();
+        } else {
+            throw new IllegalArgumentException("排产快照 ID 必须是整数或十进制字符串: " + key);
+        }
+        if (!id.matches("[0-9]+")) {
+            throw new IllegalArgumentException("排产快照 ID 必须是十进制字符串: " + key);
+        }
+        return id;
     }
 
     /** Canonical JSON-safe scalars keep the hash and JSON round-trip stable under production Jackson. */
@@ -85,7 +128,7 @@ public record DeliveryContextSnapshot(
                 if (!(key instanceof String name)) {
                     throw new IllegalArgumentException("排产快照 Map 的键必须为 String");
                 }
-                copy.put(name, copyScheduleValue(nested));
+                copy.put(name, copyScheduleEntry(name, nested));
             });
             return Collections.unmodifiableMap(copy);
         }
@@ -95,7 +138,9 @@ public record DeliveryContextSnapshot(
             return Collections.unmodifiableList(copy);
         }
         if (value instanceof Long number) {
-            if (number > JS_MAX_SAFE_INTEGER || number < -JS_MAX_SAFE_INTEGER) return number.toString();
+            if (number > JS_MAX_SAFE_INTEGER || number < -JS_MAX_SAFE_INTEGER) {
+                throw new IllegalArgumentException("排产快照的非 ID Long 超出 JS 安全整数范围");
+            }
             if (number >= Integer.MIN_VALUE && number <= Integer.MAX_VALUE) {
                 return Integer.valueOf(number.intValue());
             }

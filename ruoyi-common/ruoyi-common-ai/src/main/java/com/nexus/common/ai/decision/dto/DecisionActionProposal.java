@@ -39,6 +39,8 @@ public record DecisionActionProposal(
     /** Dynamic payload contract: identifiers are decimal strings, not JSON numbers. */
     public DecisionActionProposal {
         payload = copyPayload(payload);
+        dependencyIds = dependencyIds == null ? null
+            : Collections.unmodifiableList(new ArrayList<>(dependencyIds));
     }
 
     private static Map<String, Object> copyPayload(Map<?, ?> source) {
