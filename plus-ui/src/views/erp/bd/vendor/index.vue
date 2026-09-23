@@ -14,8 +14,8 @@
         </el-col>
         <el-col :span="6">
           <el-form-item label="行业" prop="industry">
-            <el-select v-model="queryParams.industry" placeholder="请选择行业" clearable style="width: 100%">
-              <el-option v-for="dict in bd_industry" :key="dict.value" :label="dict.label" :value="dict.value" />
+            <el-select v-model="queryParams.industry" placeholder="请选择供货品类" clearable style="width: 100%">
+              <el-option v-for="dict in bd_vendor_industry" :key="dict.value" :label="dict.label" :value="dict.value" />
             </el-select>
           </el-form-item>
         </el-col>
@@ -66,9 +66,9 @@
       <el-table-column label="序号" type="index" align="center" />
       <el-table-column label="供应商编码" align="center" prop="vendorCode" />
       <el-table-column label="供应商名称" align="center" prop="vendorName" min-width="120" show-overflow-tooltip />
-      <el-table-column label="行业" align="center" prop="industry">
+      <el-table-column label="供货品类" align="center" prop="industry">
         <template #default="scope">
-          <dict-tag :options="bd_industry" :value="scope.row.industry" />
+          <dict-tag :options="bd_vendor_industry" :value="scope.row.industry" />
         </template>
       </el-table-column>
       <el-table-column label="地区" align="center" prop="region">
@@ -245,15 +245,15 @@
           <el-tab-pane label="分类信息" name="category">
             <el-row>
               <el-col :span="12">
-                <el-form-item label="行业" prop="industry">
-                  <el-select v-model="form.industry" placeholder="请选择行业" style="width: 100%" :disabled="isViewMode">
-                    <el-option v-for="dict in bd_industry" :key="dict.value" :label="dict.label" :value="dict.value"></el-option>
+                <el-form-item label="供货品类" prop="industry">
+                  <el-select v-model="form.industry" placeholder="请选择供货品类" style="width: 100%" :disabled="isViewMode">
+                    <el-option v-for="dict in bd_vendor_industry" :key="dict.value" :label="dict.label" :value="dict.value"></el-option>
                   </el-select>
                 </el-form-item>
               </el-col>
               <el-col :span="12">
                 <el-form-item label="地区" prop="region">
-                  <el-select v-model="form.region" placeholder="请选择地区" style="width: 100%" :disabled="isViewMode">
+                  <el-select v-model="form.region" placeholder="由省份自动带出" disabled style="width: 100%">
                     <el-option v-for="dict in bd_region" :key="dict.value" :label="dict.label" :value="dict.value"></el-option>
                   </el-select>
                 </el-form-item>
@@ -366,8 +366,8 @@ import { useCrud } from '@/composables/useCrud';
 import { useAreaCascade } from '@/composables/useAreaCascade';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
-const { bd_industry, bd_region, bd_vendor_status, bd_vendor_category, pu_invoice_type } = toRefs<any>(
-  proxy.useDict('bd_industry', 'bd_region', 'bd_vendor_status', 'bd_vendor_category', 'pu_invoice_type')
+const { bd_vendor_industry, bd_region, bd_vendor_status, bd_vendor_category, pu_invoice_type } = toRefs<any>(
+  proxy.useDict('bd_vendor_industry', 'bd_region', 'bd_vendor_status', 'bd_vendor_category', 'pu_invoice_type')
 );
 
 const activeTab = ref('basic');
@@ -429,11 +429,11 @@ const {
     invoiceTitle: null,
     invoiceAddressPhone: null,
     invoiceBankName: null,
-    defaultInvoiceType: null,
+    defaultInvoiceType: 'VAT_SPECIAL',
     industry: null,
     region: null,
     category: null,
-    status: null,
+    status: 'ACTIVE',
     remark: null,
     attr1: null,
     attr2: null,
@@ -488,7 +488,7 @@ const {
   onCityChange,
   onDistrictChange,
   onStreetChange
-} = useAreaCascade(form);
+} = useAreaCascade(form, { regionField: 'region' });
 
 /** 重置按钮操作 */
 function resetQuery() {
