@@ -3,9 +3,19 @@ package com.nexus.common.ai.decision.dto;
 import com.nexus.common.ai.decision.enums.DecisionActionType;
 import com.nexus.common.ai.decision.enums.DecisionRiskLevel;
 import java.io.Serializable;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Strongly typed action/target IDs retain Long and use the global Jackson serializer.
+ * Dynamic payload IDs must be decimal strings (including nested ID lists); no Long or BigInteger
+ * is accepted anywhere in payload. Non-ID Integer/BigDecimal values remain JSON numbers.
+ */
 public record DecisionActionProposal(
     Long actionId,
     DecisionActionType actionType,
@@ -21,4 +31,64 @@ public record DecisionActionProposal(
     int sequence,
     List<Long> dependencyIds
 ) implements Serializable {
+
+    /** Dynamic payload contract: identifiers are decimal strings, not JSON numbers. */
+    public DecisionActionProposal {
+        payload = copyPayload(payload);
+    }
+
+    private static Map<String, Object> copyPayload(Map<?, ?> source) {
+        if (source == null) return null;
+        Map<String, Object> copy = new LinkedHashMap<>();
+        source.forEach((rawKey, value) -> {
+            if (!(rawKey instanceof String key)) {
+                throw new IllegalArgumentException("动作 payload 的键必须是 String");
+            }
+            if (isIdKey(key)) {
+                requireDecimalString(value, key);
+            } else if (isIdListKey(key) && value != null) {
+                if (!(value instanceof List<?> ids)) {
+                    throw new IllegalArgumentException("动作 payload 中的 ID 列表必须是十进制字符串列表: " + key);
+                }
+                ids.forEach(id -> requireDecimalString(id, key));
+            }
+            copy.put(key, copyValue(value));
+        });
+        return Collections.unmodifiableMap(copy);
+    }
+
+    private static boolean isIdKey(String key) {
+        return key.equalsIgnoreCase("id") || key.endsWith("Id") || key.endsWith("ID")
+            || key.endsWith("_id") || key.endsWith("_ID");
+    }
+
+    private static boolean isIdListKey(String key) {
+        return key.equalsIgnoreCase("ids") || key.endsWith("Ids") || key.endsWith("IDs")
+            || key.endsWith("_ids") || key.endsWith("_IDS");
+    }
+
+    private static void requireDecimalString(Object value, String key) {
+        if (value != null && (!(value instanceof String text) || !text.matches("[0-9]+"))) {
+            throw new IllegalArgumentException("动作 payload 的 ID 必须以十进制字符串提供: " + key);
+        }
+    }
+
+    private static Object copyValue(Object value) {
+        if (value instanceof Map<?, ?> map) return copyPayload(map);
+        if (value instanceof List<?> list) {
+            List<Object> copy = new ArrayList<>(list.size());
+            list.forEach(element -> copy.add(copyValue(element)));
+            return Collections.unmodifiableList(copy);
+        }
+        // No guessing whether an unknown Long key is an ID or a metric: fail closed.
+        if (value instanceof Long || value instanceof BigInteger) {
+            throw new IllegalArgumentException("动作 payload 不接受 Long/BigInteger；ID 用十进制字符串，数量用安全数值类型");
+        }
+        if (value == null || value instanceof String || value instanceof Boolean || value instanceof Byte
+            || value instanceof Short || value instanceof Integer || value instanceof Float
+            || value instanceof Double || value instanceof BigDecimal) {
+            return value;
+        }
+        throw new IllegalArgumentException("动作 payload 包含不支持的值: " + value.getClass().getName());
+    }
 }

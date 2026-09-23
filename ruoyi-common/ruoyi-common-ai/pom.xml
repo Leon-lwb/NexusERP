@@ -53,6 +53,13 @@
             <version>3.0.5</version>
         </dependency>
 
+        <!-- 仅测试使用生产 Web Jackson 的 BigNumberSerializer；运行时不依赖 Web -->
+        <dependency>
+            <groupId>com.nexus</groupId>
+            <artifactId>ruoyi-common-web</artifactId>
+            <scope>test</scope>
+        </dependency>
+
         <!-- 单元测试（能力枚举规范化等纯逻辑测试） -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

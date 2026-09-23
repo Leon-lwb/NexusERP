@@ -1,5 +1,6 @@
 package com.nexus.common.ai.decision;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.nexus.common.ai.decision.dto.ApsScenarioCompareResult;
@@ -29,6 +30,7 @@ import com.nexus.common.ai.decision.enums.DecisionRunStatus;
 import com.nexus.common.ai.decision.enums.DecisionTriggerType;
 import com.nexus.common.ai.decision.port.DecisionWorkflowPort;
 import com.nexus.common.ai.decision.port.IndustrialDecisionDataPort;
+import com.nexus.common.web.config.JacksonConfig;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import org.junit.jupiter.api.Tag;
@@ -38,7 +40,9 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
@@ -48,6 +52,7 @@ import java.util.stream.Collectors;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -275,6 +280,67 @@ class DecisionContractTest {
     }
 
     @Test
+    void dynamicActionPayloadRejectsUnsafeOrAmbiguousNumericIdentifiers() {
+        long snowflake = 9007199254740993L;
+        assertThrows(IllegalArgumentException.class, () -> proposal(snowflake, Map.of("workOrderId", snowflake)));
+        assertThrows(IllegalArgumentException.class, () -> proposal(snowflake,
+            Map.of("lines", List.of(Map.of("ambiguousNumber", snowflake)))));
+        assertThrows(IllegalArgumentException.class, () -> proposal(snowflake, Map.of("workOrderId", 7)));
+        assertThrows(IllegalArgumentException.class, () -> proposal(snowflake, Map.of("quantity", 2L)));
+        assertThrows(IllegalArgumentException.class, () -> proposal(snowflake,
+            Map.of("dependentIds", List.of("7", 8))));
+    }
+
+    @Test
+    void dynamicActionPayloadPreservesStringIdsAndNumericFactsWithProductionSerializer() throws Exception {
+        long snowflake = 9007199254740993L;
+        String id = Long.toString(snowflake);
+        Map<String, Object> line = new LinkedHashMap<>();
+        line.put("workOrderId", id);
+        line.put("quantity", 12);
+        line.put("amount", new BigDecimal("125.50"));
+        List<Object> lines = new ArrayList<>(List.of(line));
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("tenantId", "000023");
+        payload.put("runIds", new ArrayList<>(List.of(id)));
+        payload.put("lines", lines);
+        payload.put("reportCount", 42);
+        DecisionActionProposal action = proposal(snowflake, payload);
+        ObjectMapper mapper = new ObjectMapper().registerModule(new JacksonConfig().bigNumberModule());
+        assertTrue(mapper.readTree(mapper.writeValueAsString(Map.of("workOrderId", snowflake)))
+            .path("workOrderId").isTextual(), "实际 BigNumberSerializer 会将动态 Map 的大 Long 转为 String");
+        String json = mapper.writeValueAsString(action);
+        JsonNode root = mapper.readTree(json);
+        assertTrue(root.get("actionId").isTextual());
+        assertEquals(id, root.get("actionId").textValue());
+        assertTrue(root.path("target").path("id").isTextual());
+        assertTrue(root.path("payload").path("lines").get(0).path("workOrderId").isTextual());
+        assertTrue(root.path("payload").path("lines").get(0).path("quantity").isNumber());
+        assertTrue(root.path("payload").path("lines").get(0).path("amount").isNumber());
+        assertTrue(root.path("payload").path("reportCount").isNumber());
+
+        line.put("workOrderId", "tampered");
+        lines.clear();
+        payload.clear();
+        assertEquals(json, mapper.writeValueAsString(action));
+        DecisionActionProposal roundTrip = mapper.readValue(json, DecisionActionProposal.class);
+        assertEquals(snowflake, roundTrip.actionId());
+        assertEquals(snowflake, roundTrip.target().id());
+        Map<?, ?> lineAfter = (Map<?, ?>) ((List<?>) roundTrip.payload().get("lines")).get(0);
+        assertEquals(id, lineAfter.get("workOrderId"));
+        assertTrue(lineAfter.get("quantity") instanceof Number);
+        assertTrue(lineAfter.get("amount") instanceof Number);
+        assertEquals(List.of(id), roundTrip.payload().get("runIds"));
+        assertThrows(UnsupportedOperationException.class, () -> roundTrip.payload().put("id", "7"));
+        assertThrows(UnsupportedOperationException.class, () -> lineAfter.clear());
+        assertThrows(UnsupportedOperationException.class, () -> ((List<?>) roundTrip.payload().get("lines")).clear());
+        String invalidIdJson = json.replace("\"workOrderId\":\"" + id + "\"",
+            "\"workOrderId\":" + id);
+        assertThrows(com.fasterxml.jackson.databind.JsonMappingException.class,
+            () -> mapper.readValue(invalidIdJson, DecisionActionProposal.class));
+    }
+
+    @Test
     void approvalBoundsCommentAndOutcomePreservesTypedIds() throws Exception {
         DecisionApprovalRequest request = new ObjectMapper().readValue(
             "{\"runVersion\":2,\"approvedActionIds\":[9007199254740993],"
@@ -323,6 +389,91 @@ class DecisionContractTest {
         assertEquals(LocalDate.of(2026, 9, 25), parsed.items().get(0).firstShortageDate());
         assertEquals(List.of(11L), parsed.items().get(0).affectedWorkOrderIds());
         assertEquals(BigDecimal.valueOf(9), parsed.items().get(0).maxGap());
+    }
+
+    @Test
+    void snapshotMakesDeepDefensiveCopiesOfEveryHashRelevantCollection() throws Exception {
+        List<DeliveryContextSnapshot.OrderFact> orders = new ArrayList<>(List.of(
+            new DeliveryContextSnapshot.OrderFact(1L, "SO-1", LocalDate.of(2026, 9, 28), "OPEN")));
+        List<DeliveryContextSnapshot.WorkOrderFact> workOrders = new ArrayList<>();
+        List<DeliveryContextSnapshot.RequirementFact> requirements = new ArrayList<>();
+        List<DeliveryContextSnapshot.StockFact> stocks = new ArrayList<>();
+        List<DeliveryContextSnapshot.ArrivalFact> arrivals = new ArrayList<>();
+        List<LocalDate> holidays = new ArrayList<>();
+        List<DeliveryContextSnapshot.SupplierMetricFact> suppliers = new ArrayList<>();
+        List<String> warnings = new ArrayList<>();
+        List<DeliveryContextSnapshot.RoutingStepFact> steps = new ArrayList<>(List.of(
+            new DeliveryContextSnapshot.RoutingStepFact(3L, 4L, 1, 5L, 6L, BigDecimal.ONE)));
+        Map<Long, List<DeliveryContextSnapshot.RoutingStepFact>> routes = new LinkedHashMap<>();
+        routes.put(2L, steps);
+        Map<String, BigDecimal> dayCapacity = new LinkedHashMap<>();
+        dayCapacity.put("WS-5", BigDecimal.TEN);
+        Map<LocalDate, Map<String, BigDecimal>> capacities = new LinkedHashMap<>();
+        capacities.put(LocalDate.of(2026, 9, 25), dayCapacity);
+        List<String> slots = new ArrayList<>(List.of("morning"));
+        Map<String, Object> task = new LinkedHashMap<>();
+        task.put("slots", slots);
+        List<Object> tasks = new ArrayList<>(List.of(task));
+        Map<String, Object> schedule = new LinkedHashMap<>();
+        schedule.put("tasks", tasks);
+
+        DeliveryContextSnapshot snapshot = new DeliveryContextSnapshot(
+            new DecisionBusinessRef(DecisionBusinessType.WORK_ORDER, 11L, "WO-11"),
+            orders, workOrders, routes, requirements, stocks, arrivals, capacities,
+            holidays, schedule, suppliers, "hash-v1", LocalDateTime.of(2026, 9, 23, 9, 0), warnings);
+        ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule());
+        String originalJson = mapper.writeValueAsString(snapshot);
+
+        orders.clear();
+        workOrders.add(null);
+        requirements.add(null);
+        stocks.add(null);
+        arrivals.add(null);
+        holidays.add(LocalDate.of(2026, 9, 26));
+        suppliers.add(null);
+        warnings.add("changed");
+        steps.clear();
+        routes.clear();
+        dayCapacity.clear();
+        capacities.clear();
+        slots.clear();
+        task.clear();
+        tasks.clear();
+        schedule.clear();
+
+        assertEquals(originalJson, mapper.writeValueAsString(snapshot));
+        assertEquals(1, snapshot.routingByMaterial().get(2L).size());
+        assertEquals(BigDecimal.TEN, snapshot.capacityByDate().get(LocalDate.of(2026, 9, 25)).get("WS-5"));
+        List<?> snapTasks = (List<?>) snapshot.currentSchedule().get("tasks");
+        Map<?, ?> snapTask = (Map<?, ?>) snapTasks.get(0);
+        List<?> snapSlots = (List<?>) snapTask.get("slots");
+        assertEquals(List.of("morning"), snapSlots);
+        assertThrows(UnsupportedOperationException.class, () -> snapshot.salesOrders().clear());
+        assertThrows(UnsupportedOperationException.class, () -> snapshot.routingByMaterial().clear());
+        assertThrows(UnsupportedOperationException.class, () -> snapshot.routingByMaterial().get(2L).clear());
+        assertThrows(UnsupportedOperationException.class, () -> snapshot.capacityByDate().clear());
+        assertThrows(UnsupportedOperationException.class, snapTask::clear);
+        assertThrows(UnsupportedOperationException.class, () -> snapshot.capacityByDate()
+            .get(LocalDate.of(2026, 9, 25)).clear());
+        assertThrows(UnsupportedOperationException.class, snapSlots::clear);
+        DeliveryContextSnapshot parsed = mapper.readValue(originalJson, DeliveryContextSnapshot.class);
+        assertEquals(originalJson, mapper.writeValueAsString(parsed));
+    }
+
+    @Test
+    void snapshotDeserializesLegacyNullCollectionsWithoutChangingTheirMeaning() throws Exception {
+        ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule());
+        DeliveryContextSnapshot old = mapper.readValue("{\"snapshotHash\":\"legacy\"}",
+            DeliveryContextSnapshot.class);
+        assertEquals("legacy", old.snapshotHash());
+        assertNull(old.salesOrders());
+        assertNull(old.routingByMaterial());
+        assertNull(old.capacityByDate());
+        assertNull(old.currentSchedule());
+        DeliveryContextSnapshot restored = mapper.readValue(mapper.writeValueAsString(old),
+            DeliveryContextSnapshot.class);
+        assertNull(restored.warnings());
+        assertEquals("legacy", restored.snapshotHash());
     }
 
     @Test
@@ -438,6 +589,13 @@ class DecisionContractTest {
             assertEquals(DecisionActionExecutionResult.class,
                 IndustrialDecisionDataPort.class.getMethod(operation, signature).getReturnType(), operation);
         }
+    }
+
+    private static DecisionActionProposal proposal(long actionId, Map<String, Object> payload) {
+        return new DecisionActionProposal(actionId, DecisionActionType.CREATE_PURCHASE_REQUISITION_DRAFT,
+            "draft", "shortage", new DecisionBusinessRef(DecisionBusinessType.WORK_ORDER, actionId, "WO-42"),
+            payload, DecisionRiskLevel.HIGH, true, "pu:requisition:add", "action-idempotency-key",
+            "purchaseRequisitionDraft", 1, List.of());
     }
 
     @Test
