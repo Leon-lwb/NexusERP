@@ -19485,6 +19485,16 @@ INSERT INTO `sys_dict_data` VALUES (147, '000000', 3, '服务类', '3', 'bd_vend
 INSERT INTO `sys_dict_data` VALUES (148, '000000', 4, '综合型', '4', 'bd_vendor_category', NULL, 'default', 'N', 103, 1, '2025-09-22 15:42:59', NULL, NULL, NULL);
 INSERT INTO `sys_dict_data` VALUES (149, '000000', 1, '合作中', 'ACTIVE', 'bd_vendor_status', NULL, 'success', 'N', 103, 1, '2025-09-22 15:44:26', NULL, NULL, NULL);
 INSERT INTO `sys_dict_data` VALUES (150, '000000', 2, '已冻结', 'FROZEN', 'bd_vendor_status', NULL, 'warning', 'N', 103, 1, '2025-09-22 15:45:47', NULL, NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (2075000000000000132, '000000', 1, '金属材料', 'METAL', 'bd_vendor_industry', NULL, 'default', 'N', 103, 1, '2026-09-23 09:00:00', NULL, NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (2075000000000000133, '000000', 2, '塑料材料', 'PLASTIC', 'bd_vendor_industry', NULL, 'default', 'N', 103, 1, '2026-09-23 09:00:00', NULL, NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (2075000000000000134, '000000', 3, '橡胶与复合材料', 'RUBBER_COMP', 'bd_vendor_industry', NULL, 'default', 'N', 103, 1, '2026-09-23 09:00:00', NULL, NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (2075000000000000135, '000000', 4, '电子元器件', 'ELECTRONIC', 'bd_vendor_industry', NULL, 'default', 'N', 103, 1, '2026-09-23 09:00:00', NULL, NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (2075000000000000136, '000000', 5, '电池与电源', 'BATTERY', 'bd_vendor_industry', NULL, 'default', 'N', 103, 1, '2026-09-23 09:00:00', NULL, NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (2075000000000000137, '000000', 6, '五金件', 'HARDWARE', 'bd_vendor_industry', NULL, 'default', 'N', 103, 1, '2026-09-23 09:00:00', NULL, NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (2075000000000000138, '000000', 7, '包装材料', 'PACKAGING', 'bd_vendor_industry', NULL, 'default', 'N', 103, 1, '2026-09-23 09:00:00', NULL, NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (2075000000000000139, '000000', 8, '化工辅料', 'CHEMICAL', 'bd_vendor_industry', NULL, 'default', 'N', 103, 1, '2026-09-23 09:00:00', NULL, NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (2075000000000000140, '000000', 9, '铸锻件', 'SM_CAST', 'bd_vendor_industry', NULL, 'default', 'N', 103, 1, '2026-09-23 09:00:00', NULL, NULL, NULL);
+INSERT INTO `sys_dict_data` VALUES (2075000000000000141, '000000', 10, '其他', 'OTHER', 'bd_vendor_industry', NULL, 'info', 'Y', 103, 1, '2026-09-23 09:00:00', NULL, NULL, NULL);
 INSERT INTO `sys_dict_data` VALUES (151, '000000', 1, '正常', '1', 'wm_warehouse_status', NULL, 'success', 'N', 103, 1, '2025-09-30 11:33:50', NULL, NULL, NULL);
 INSERT INTO `sys_dict_data` VALUES (152, '000000', 2, '冻结', '0', 'wm_warehouse_status', NULL, 'warning', 'N', 103, 1, '2025-09-30 11:34:16', NULL, NULL, NULL);
 INSERT INTO `sys_dict_data` VALUES (153, '000000', 1, '启用', '1', 'sys_core_status', NULL, 'success', 'N', 103, 1, '2025-09-30 14:47:49', NULL, NULL, NULL);
@@ -20442,6 +20452,7 @@ INSERT INTO `sys_dict_type` VALUES (104, '000000', '所属行业', 'bd_industry'
 INSERT INTO `sys_dict_type` VALUES (105, '000000', '地区', 'bd_region', 103, 1, '2025-09-22 15:36:46', NULL, NULL, '地区');
 INSERT INTO `sys_dict_type` VALUES (106, '000000', '供应商分类', 'bd_vendor_category', 103, 1, '2025-09-22 15:42:00', NULL, NULL, '供应商分类');
 INSERT INTO `sys_dict_type` VALUES (107, '000000', '合作状态', 'bd_vendor_status', 103, 1, '2025-09-22 15:43:50', NULL, NULL, '合作状态');
+INSERT INTO `sys_dict_type` VALUES (2075000000000000011, '000000', '供应商供货品类', 'bd_vendor_industry', 103, 1, '2026-09-23 09:00:00', NULL, NULL, '供应商供货品类，值对齐 bd_material_category.category_code');
 INSERT INTO `sys_dict_type` VALUES (108, '000000', '仓库状态', 'wm_warehouse_status', 103, 1, '2025-09-30 11:33:24', NULL, NULL, '仓库状态');
 INSERT INTO `sys_dict_type` VALUES (109, '000000', '状态', 'sys_core_status', 103, 1, '2025-09-30 14:47:12', NULL, '2025-09-30 14:47:31', '通用状态字典，0:停用 1:启用');
 INSERT INTO `sys_dict_type` VALUES (110, '000000', '系统自定义是否', 'sys_true_or_false', 103, 1, '2025-09-30 14:58:14', NULL, '2025-09-30 15:05:30', '系统是否，0否，1是');
