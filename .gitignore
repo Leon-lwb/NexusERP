@@ -91,3 +91,6 @@ __pycache__/
 # T1 生图管线：去水印前的 SenseNova 原图（可由 API 重新生成，40MB+，不入库）
 # 去水印后的成品图在 doc/assets/product-images-2026-09-15/ 正常入库
 doc/assets/_t1_work/raw/
+
+# Local isolated worktrees (kept outside tracked sources)
+.worktrees/
