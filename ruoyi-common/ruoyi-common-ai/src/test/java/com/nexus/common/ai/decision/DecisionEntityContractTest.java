@@ -197,11 +197,115 @@ class DecisionEntityContractTest {
         assertFalse(Arrays.asList(actionColumns.split(",")).contains("payload_json"));
         assertFalse(Arrays.asList(actionColumns.split(",")).contains("result_json"));
     }
+
+    @Test
+    void decisionH2DatabaseMustReleaseTablesBeforeReusingSameName() throws Exception {
+        String url = "jdbc:h2:mem:decision_reuse_" + UUID.randomUUID() + ";MODE=MySQL;DB_CLOSE_DELAY=-1";
+        for (int attempt = 0; attempt < 2; attempt++) {
+            var datasource = new DriverManagerDataSource(url, "sa", "");
+            try {
+                createDecisionTables(datasource);
+                try (Connection connection = datasource.getConnection();
+                     Statement statement = connection.createStatement();
+                     var rows = statement.executeQuery("SELECT COUNT(*) FROM ai_decision_run")) {
+                    assertTrue(rows.next());
+                    assertEquals(0, rows.getInt(1));
+                }
+            } finally {
+                shutdownDecisionDatabase(datasource);
+            }
+        }
+    }
+
+    @Test
+    void uninitializedVersionsMustStillGuardStaleUpdates() throws Exception {
+        var datasource = new DriverManagerDataSource(
+            "jdbc:h2:mem:decision_version_" + UUID.randomUUID() + ";MODE=MySQL;DB_CLOSE_DELAY=-1", "sa", "");
+        try {
+            verifyUninitializedVersionCas(datasource);
+        } finally {
+            shutdownDecisionDatabase(datasource);
+        }
+    }
+
+    private static void verifyUninitializedVersionCas(DriverManagerDataSource datasource) throws Exception {
+        createDecisionTables(datasource);
+        var interceptor = new MybatisPlusInterceptor();
+        interceptor.addInnerInterceptor(new OptimisticLockerInnerInterceptor());
+        var factoryBean = new MybatisSqlSessionFactoryBean();
+        factoryBean.setDataSource(datasource);
+        factoryBean.setPlugins(interceptor);
+        factoryBean.afterPropertiesSet();
+        SqlSessionFactory factory = factoryBean.getObject();
+        assertNotNull(factory);
+        factory.getConfiguration().addMapper(AiDecisionRunMapper.class);
+        factory.getConfiguration().addMapper(AiDecisionActionMapper.class);
+
+        try (SqlSession session = factory.openSession(true)) {
+            var runs = session.getMapper(AiDecisionRunMapper.class);
+            var actions = session.getMapper(AiDecisionActionMapper.class);
+            var run = new AiDecisionRun();
+            run.setId(120L);
+            run.setTenantId("000000");
+            run.setSceneCode("DELIVERY_RISK");
+            run.setBizType("ORDER");
+            run.setTriggerType("MANUAL");
+            run.setStatus("INITIAL");
+            assertEquals(1, runs.insert(run)); // intentionally no setVersion
+            Integer insertedRunVersion = run.getVersion();
+            var runWinner = runs.selectById(run.getId());
+            assertEquals(0, runWinner.getVersion()); // DB default is visible on read
+            runWinner.setStatus("WINNER");
+            assertEquals(1, runs.updateById(runWinner));
+            assertEquals(1, runWinner.getVersion());
+            run.setStatus("STALE");
+            int staleRunUpdate = runs.updateById(run);
+
+            var action = new AiDecisionAction();
+            action.setId(320L);
+            action.setTenantId("000000");
+            action.setRunId(run.getId());
+            action.setActionType("NOTIFY");
+            action.setTitle("notify");
+            action.setPayloadJson("{}");
+            action.setRiskLevel("LOW");
+            action.setApprovalStatus("PENDING");
+            action.setExecutionStatus("INITIAL");
+            action.setExecutorCode("TEST");
+            action.setIdempotencyKey("action-320");
+            assertEquals(1, actions.insert(action)); // intentionally no setVersion
+            Integer insertedActionVersion = action.getVersion();
+            var actionWinner = actions.selectById(action.getId());
+            assertEquals(0, actionWinner.getVersion());
+            actionWinner.setExecutionStatus("WINNER");
+            assertEquals(1, actions.updateById(actionWinner));
+            assertEquals(1, actionWinner.getVersion());
+            action.setExecutionStatus("STALE");
+            int staleActionUpdate = actions.updateById(action);
+
+            org.junit.jupiter.api.Assertions.assertAll("new entities must retain their optimistic lock versions",
+                () -> assertEquals(0, insertedRunVersion, "run.version after insert"),
+                () -> assertEquals(0, staleRunUpdate, "stale run update count"),
+                () -> assertEquals("WINNER", runs.selectById(run.getId()).getStatus()),
+                () -> assertEquals(0, insertedActionVersion, "action.version after insert"),
+                () -> assertEquals(0, staleActionUpdate, "stale action update count"),
+                () -> assertEquals("WINNER", actions.selectById(action.getId()).getExecutionStatus()));
+        }
+    }
+
     @Test
     void mapperInsertSelectUpdateAndSummaryProjectionRoundTrip() throws Exception {
         // H2 validates mapper SQL/type handling in MySQL mode; real MySQL dialect remains Task19 scope.
         var datasource = new DriverManagerDataSource(
             "jdbc:h2:mem:decision_" + UUID.randomUUID() + ";MODE=MySQL;DB_CLOSE_DELAY=-1", "sa", "");
+        try {
+            verifyMapperRoundTrip(datasource);
+        } finally {
+            shutdownDecisionDatabase(datasource);
+        }
+    }
+
+    private static void verifyMapperRoundTrip(DriverManagerDataSource datasource) throws Exception {
         createDecisionTables(datasource);
         var interceptor = new MybatisPlusInterceptor();
         interceptor.addInnerInterceptor(new OptimisticLockerInnerInterceptor());
@@ -369,6 +473,12 @@ class DecisionEntityContractTest {
                 assertNull(actionSummary.getPayloadJson());
                 assertNull(actionSummary.getResultJson());
             }
+        }
+    }
+
+    private static void shutdownDecisionDatabase(DriverManagerDataSource datasource) throws Exception {
+        try (Connection connection = datasource.getConnection(); Statement statement = connection.createStatement()) {
+            statement.execute("SHUTDOWN");
         }
     }
 

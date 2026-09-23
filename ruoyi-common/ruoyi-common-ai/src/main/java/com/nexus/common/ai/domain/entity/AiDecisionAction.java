@@ -85,7 +85,7 @@ public class AiDecisionAction extends BaseEntity {
     private LocalDateTime finishedAt;
 
     @Version
-    private Integer version;
+    private Integer version = 0;
 
     @TableLogic
     private String delFlag;
