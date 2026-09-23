@@ -10,13 +10,18 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -25,7 +30,8 @@ import static org.junit.jupiter.api.Assertions.fail;
 @Tag("prod")
 class AiDecisionSqlContractTest {
 
-    private static final Pattern MENU_INSERT = Pattern.compile("(?m)^INSERT INTO `sys_menu` VALUES \\((\\d+),([^\\r\\n]*);$");
+    private static final Pattern MENU_INSERT = Pattern.compile("(?m)^INSERT INTO `sys_menu` VALUES \\((\\d+),([^\\r\\n]*)\\);$");
+    private static final Pattern MENU_VALUE = Pattern.compile("\\s*('(?:''|[^'])*'|NULL|-?\\d+)\\s*(?:,\\s*|$)");
     private static String sql;
 
     @BeforeAll
@@ -53,6 +59,7 @@ class AiDecisionSqlContractTest {
                     "input_tokens", "output_tokens", "estimated_cost", "analysis_flow_instance_id",
                     "execution_flow_instance_id", "error_code", "error_message", "started_at", "analysis_finished_at",
                     "finished_at", "version");
+                assertColumnDefinition(run, "version", "int NOT NULL DEFAULT 0");
                 assertTrue(run.contains("KEY `idx_decision_tenant_scene_status` (`tenant_id`,`scene_code`,`status`)"));
                 assertTrue(run.contains("KEY `idx_decision_biz` (`tenant_id`,`biz_type`,`biz_id`)"));
                 assertTrue(run.contains("KEY `idx_decision_create_time` (`tenant_id`,`create_time`)"));
@@ -78,6 +85,7 @@ class AiDecisionSqlContractTest {
                     "sequence_no", "dependency_ids_json", "idempotency_key", "approved_by", "approved_at",
                     "approval_comment", "result_biz_type", "result_biz_id", "result_biz_code", "result_json",
                     "retry_count", "last_error_code", "last_error_message", "started_at", "finished_at", "version");
+                assertColumnDefinition(action, "version", "int NOT NULL DEFAULT 0");
                 assertTrue(action.contains("UNIQUE KEY `uk_decision_action_idempotency` (`tenant_id`,`idempotency_key`)"));
                 assertTrue(action.contains("KEY `idx_decision_action_run` (`run_id`,`sequence_no`)"));
                 assertTrue(action.contains("KEY `idx_decision_action_approval` (`tenant_id`,`approval_status`)"));
@@ -87,45 +95,125 @@ class AiDecisionSqlContractTest {
 
     @Test
     void decisionMenusAndPermissionsMustExist() {
-        List<Executable> checks = new ArrayList<>();
-        checks.add(() -> assertTrue(sql.contains("'工业决策中心'"), "缺少工业决策中心"));
-        checks.add(() -> assertTrue(sql.contains("'ai/decision/index'"), "缺少决策看板路由"));
-        checks.add(() -> assertTrue(sql.contains("'ai/decision/detail'"), "缺少决策详情路由"));
-        for (String permission : new String[]{"query", "run", "approve", "execute", "export", "config", "benchmark"}) {
-            checks.add(() -> assertTrue(sql.contains("'ai:decision:" + permission + "'"), "缺少权限 ai:decision:" + permission));
-        }
-        assertAll("decision menu permissions", checks);
+        assertMenuPermissions(sql);
     }
 
     @Test
     void decisionMenuIdsMustBeUniqueAndComplete() {
-        Matcher matcher = MENU_INSERT.matcher(sql);
-        Set<String> ids = new HashSet<>();
-        Set<String> decisionIds = new HashSet<>();
-        while (matcher.find()) {
-            String id = matcher.group(1);
-            assertTrue(ids.add(id), "sys_menu ID 重复: " + id);
-            if (id.matches("185[0-9]")) {
-                decisionIds.add(id);
-            }
-        }
-        assertEquals(10, decisionIds.size(), "缺少决策菜单 ID 1850–1859");
+        assertMenuIds(sql);
+    }
+
+    @Test
+    void wrongApprovalMenuParentMustBeRejected() {
+        String mutated = sql.replace("VALUES (1855, '审批决策', 1851,", "VALUES (1855, '审批决策', 1700,");
+        assertFalse(sql.equals(mutated), "测试输入未找到 1855 菜单行");
+        assertThrows(AssertionError.class, () -> {
+            assertMenuPermissions(mutated);
+            assertMenuIds(mutated);
+        }, "1855 挂错父菜单不应通过 SQL 契约");
+    }
+
+    @Test
+    void wrongRunVersionTypeMustBeRejected() {
+        String original = "`version` int NOT NULL DEFAULT 0";
+        String mutated = sql.replaceFirst(Pattern.quote(original), "`version` varchar(20) NULL DEFAULT NULL");
+        assertFalse(sql.equals(mutated), "测试输入未找到 ai_decision_run.version");
+        assertThrows(AssertionError.class, () -> assertVersionColumns(mutated),
+            "version 仍存在但类型和默认值错误时不应通过 SQL 契约");
+    }
+
+    private static void assertMenuPermissions(String source) {
+        Map<Integer, MenuRow> rows = decisionMenus(source);
+        assertAll("decision menu mapping",
+            () -> assertMenuRow(rows, 1850, "工业决策中心", 1700, "M", "0", "decision", null, null),
+            () -> assertMenuRow(rows, 1851, "交付风险看板", 1850, "C", "0", "index", "ai/decision/index", "ai:decision:query"),
+            () -> assertMenuRow(rows, 1852, "决策运行详情", 1850, "C", "1", "detail", "ai/decision/detail", "ai:decision:query"),
+            () -> assertMenuRow(rows, 1853, "决策查询", 1851, "F", "0", "", "", "ai:decision:query"),
+            () -> assertMenuRow(rows, 1854, "发起决策", 1851, "F", "0", "", "", "ai:decision:run"),
+            () -> assertMenuRow(rows, 1855, "审批决策", 1851, "F", "0", "", "", "ai:decision:approve"),
+            () -> assertMenuRow(rows, 1856, "执行重试", 1851, "F", "0", "", "", "ai:decision:execute"),
+            () -> assertMenuRow(rows, 1857, "决策导出", 1851, "F", "0", "", "", "ai:decision:export"),
+            () -> assertMenuRow(rows, 1858, "决策配置", 1851, "F", "0", "", "", "ai:decision:config"),
+            () -> assertMenuRow(rows, 1859, "决策评测", 1851, "F", "0", "", "", "ai:decision:benchmark"));
+    }
+
+    private static void assertMenuRow(Map<Integer, MenuRow> rows, int id, String name, int parentId, String type,
+                                      String visible, String path, String component, String permission) {
+        MenuRow row = rows.get(id);
+        assertNotNull(row, "缺少决策菜单 ID " + id);
+        assertEquals(new MenuRow(name, parentId, type, visible, path, component, permission), row,
+            "menu_id=" + id + " 的父级/类型/可见性/路由/权限映射错误");
+    }
+
+    private static void assertMenuIds(String source) {
+        Map<Integer, MenuRow> rows = decisionMenus(source);
+        assertEquals(10, rows.size(), "缺少决策菜单 ID 1850–1859");
         for (int id = 1850; id <= 1859; id++) {
-            assertTrue(decisionIds.contains(Integer.toString(id)), "缺少决策菜单 ID " + id);
+            assertTrue(rows.containsKey(id), "缺少决策菜单 ID " + id);
         }
     }
 
+    private static Map<Integer, MenuRow> decisionMenus(String source) {
+        Matcher matcher = MENU_INSERT.matcher(source);
+        Set<String> allIds = new HashSet<>();
+        Map<Integer, MenuRow> rows = new LinkedHashMap<>();
+        while (matcher.find()) {
+            String id = matcher.group(1);
+            assertTrue(allIds.add(id), "sys_menu ID 重复: " + id);
+            if (id.matches("185[0-9]")) {
+                int decisionId = Integer.parseInt(id);
+                List<String> fields = parseMenuValues(matcher.group(2), decisionId);
+                rows.put(decisionId, new MenuRow(fields.get(0), Integer.parseInt(fields.get(1)), fields.get(8),
+                    fields.get(9), fields.get(3), fields.get(4), fields.get(11)));
+            }
+        }
+        return rows;
+    }
+
+    private static List<String> parseMenuValues(String values, int id) {
+        List<String> fields = new ArrayList<>();
+        Matcher token = MENU_VALUE.matcher(values);
+        int offset = 0;
+        while (offset < values.length()) {
+            token.region(offset, values.length());
+            assertTrue(token.lookingAt(), "sys_menu " + id + " VALUES 格式错误，位置 " + offset);
+            String value = token.group(1);
+            fields.add(value.equals("NULL") ? null : value.startsWith("'")
+                ? value.substring(1, value.length() - 1).replace("''", "'") : value);
+            offset = token.end();
+        }
+        assertEquals(19, fields.size(), "sys_menu " + id + " 字段数量异常");
+        return fields;
+    }
+
+    private record MenuRow(String name, int parentId, String type, String visible,
+                           String path, String component, String permission) { }
+
+    private static void assertVersionColumns(String source) {
+        assertColumnDefinition(tableDefinition(source, "ai_decision_run"), "version", "int NOT NULL DEFAULT 0");
+        assertColumnDefinition(tableDefinition(source, "ai_decision_action"), "version", "int NOT NULL DEFAULT 0");
+    }
+
     private static String tableDefinition(String name) {
-        Matcher matcher = Pattern.compile("(?s)CREATE TABLE `" + name + "`\\s*\\((.*?)\\) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4").matcher(sql);
+        return tableDefinition(sql, name);
+    }
+
+    private static String tableDefinition(String source, String name) {
+        Matcher matcher = Pattern.compile("(?s)CREATE TABLE `" + name + "`\\s*\\((.*?)\\) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4").matcher(source);
         if (!matcher.find()) {
             return fail("缺少 CREATE TABLE `" + name + "` (InnoDB utf8mb4)");
         }
         String definition = matcher.group(1);
         assertColumns(definition, "create_dept", "create_by", "create_time", "update_by", "update_time",
             "del_flag", "attr1", "attr2", "attr3", "attr4");
-        assertTrue(definition.contains("`tenant_id` varchar(20) NOT NULL DEFAULT '000000'"), name + " 租户类型/默认值错误");
+        assertColumnDefinition(definition, "tenant_id", "varchar(20) NOT NULL DEFAULT '000000'");
         assertTrue(definition.contains("PRIMARY KEY (`id`)"), name + " 缺主键");
         return definition;
+    }
+
+    private static void assertColumnDefinition(String table, String name, String expected) {
+        assertTrue(Pattern.compile("(?m)^  `" + name + "` " + Pattern.quote(expected) + "(?:\\s|,)")
+            .matcher(table).find(), name + " 应为 " + expected);
     }
 
     private static void assertColumns(String definition, String... columns) {
