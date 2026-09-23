@@ -5,7 +5,16 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
-public record ShortageSimulationResult(List<Item> items, List<String> warnings) implements Serializable {
+public record ShortageSimulationResult(
+    boolean hasRisk,
+    int riskMaterialCount,
+    LocalDate earliestShortageDate,
+    BigDecimal totalGap,
+    List<Item> items,
+    DecisionKpiSet kpis,
+    List<String> evidenceRefs,
+    List<String> warnings
+) implements Serializable {
 
     public record Item(
         Long materialId,

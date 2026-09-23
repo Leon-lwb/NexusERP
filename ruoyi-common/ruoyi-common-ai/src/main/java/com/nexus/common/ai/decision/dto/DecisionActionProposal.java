@@ -16,6 +16,7 @@ public record DecisionActionProposal(
     DecisionRiskLevel riskLevel,
     boolean approvalRequired,
     String permissionCode,
+    String idempotencyKey,
     String executorCode,
     int sequence,
     List<Long> dependencyIds

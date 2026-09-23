@@ -38,10 +38,12 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -176,6 +178,24 @@ class DecisionContractTest {
     }
 
     @Test
+    void recordScopedBusinessIdsMustBePositive() throws Exception {
+        Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
+        ObjectMapper mapper = new ObjectMapper();
+        for (DecisionBusinessType type : List.of(DecisionBusinessType.SALES_ORDER,
+            DecisionBusinessType.WORK_ORDER, DecisionBusinessType.SCHEDULE_PLAN)) {
+            for (long id : List.of(0L, -1L)) {
+                DeliveryRiskRunRequest request = mapper.readValue(
+                    "{\"bizType\":\"" + type + "\",\"bizId\":" + id + "}", DeliveryRiskRunRequest.class);
+                assertTrue(validator.validate(request).stream().anyMatch(v -> "bizId".equals(v.getPropertyPath().toString())),
+                    type + " rejects " + id);
+            }
+        }
+        DeliveryRiskRunRequest horizon = mapper.readValue(
+            "{\"bizType\":\"SHORTAGE_HORIZON\",\"bizId\":null}", DeliveryRiskRunRequest.class);
+        assertTrue(validator.validate(horizon).isEmpty());
+    }
+
+    @Test
     void horizonDaysMustRemainInConfiguredRange() throws Exception {
         Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
         ObjectMapper mapper = new ObjectMapper();
@@ -192,16 +212,18 @@ class DecisionContractTest {
     void resultKeepsTypedScenariosEvidenceActionsAndKpis() throws Exception {
         DecisionKpiSet kpis = new DecisionKpiSet(2, 1, 3, 3, "2026-09-24", 1,
             BigDecimal.valueOf(5), "2026-09-25", BigDecimal.ONE, 0, 1, BigDecimal.ZERO);
-        EvidenceItem evidence = new EvidenceItem("ERP:ORDER:7:promise_date", "ERP", "ORDER", 7L,
+        EvidenceItem evidence = new EvidenceItem(9L, "ERP:ORDER:7:promise_date", "ERP", "ORDER", 7L,
             "SO-7", "订单", "promise_date", "承诺交期", "DATE", "2026-09-25", null,
             LocalDateTime.of(2026, 9, 23, 9, 0), "v1", BigDecimal.ONE,
             true, false, List.of(), "订单/交期");
         DecisionScenario scenario = new DecisionScenario("APS_EDD", "按交期", "EDD", true,
-            List.of(), kpis, BigDecimal.TEN, 1, Map.of(), List.of(evidence.evidenceKey()), List.of());
+            List.of(), kpis, BigDecimal.TEN, 1, Map.of(), List.of(evidence.evidenceKey()), List.of(),
+            "sha256-input", List.of(7L), List.of("workstation:1"));
         DecisionActionProposal action = new DecisionActionProposal(8L,
             DecisionActionType.CREATE_PURCHASE_REQUISITION_DRAFT, "补货", "缺料",
             new DecisionBusinessRef(DecisionBusinessType.WORK_ORDER, 7L, "WO-7"), Map.of(),
-            DecisionRiskLevel.HIGH, true, "pu:requisition:add", "purchaseRequisitionDraft", 1, List.of());
+            DecisionRiskLevel.HIGH, true, "pu:requisition:add", "tenant-000023-run-9-action-8",
+            "purchaseRequisitionDraft", 1, List.of());
         DecisionResult result = new DecisionResult(9L, action.target(), 65,
             DecisionRiskLevel.HIGH, "HIGH", List.of("SHORTAGE"), kpis, List.of(scenario),
             scenario.scenarioCode(), Map.of("summary", "延期"), List.of(evidence), List.of(action), List.of());
@@ -214,6 +236,42 @@ class DecisionContractTest {
         assertTrue(Serializable.class.isAssignableFrom(DecisionKpiSet.class));
         assertTrue(Serializable.class.isAssignableFrom(DecisionScenario.class));
         assertTrue(Serializable.class.isAssignableFrom(EvidenceItem.class));
+    }
+
+    @Test
+    void scenarioRoundTripPreservesInputHashDelaysAndBottlenecks() throws Exception {
+        DecisionScenario scenario = new DecisionScenario("APS_EDD", "交期优先", "EDD", true,
+            List.of(), null, BigDecimal.ONE, 1, Map.of("horizonDays", 30), List.of("ERP:ORDER:7:due"),
+            List.of(Map.of("workOrderId", 9L)), "sha256-input",
+            List.of(9007199254740993L), List.of("workstation:104"));
+        ObjectMapper mapper = new ObjectMapper();
+        DecisionScenario parsed = mapper.readValue(mapper.writeValueAsString(scenario), DecisionScenario.class);
+        assertEquals("sha256-input", parsed.inputHash());
+        assertEquals(List.of(9007199254740993L), parsed.delayedOrders());
+        assertEquals(List.of("workstation:104"), parsed.bottleneckResources());
+        assertEquals(List.of("ERP:ORDER:7:due"), parsed.evidenceKeys());
+    }
+
+    @Test
+    void actionIdempotencyAndEvidenceRunIdSurviveJsonRoundTrip() throws Exception {
+        Long runId = 9007199254740993L;
+        EvidenceItem evidence = new EvidenceItem(runId, "ERP:ORDER:7:promise_date", "ERP", "ORDER", 7L,
+            "SO-7", "订单", "promise_date", "承诺交期", "DATE", "2026-09-28", null,
+            LocalDateTime.of(2026, 9, 23, 9, 0), "v1", BigDecimal.ONE,
+            true, false, List.of(), "订单/交期");
+        DecisionActionProposal action = new DecisionActionProposal(8L,
+            DecisionActionType.CREATE_PURCHASE_REQUISITION_DRAFT, "补货", "缺料",
+            new DecisionBusinessRef(DecisionBusinessType.WORK_ORDER, 7L, "WO-7"), Map.of(),
+            DecisionRiskLevel.HIGH, true, "pu:requisition:add", "tenant-000023-run-9-action-8",
+            "purchaseRequisitionDraft", 1, List.of());
+        ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule());
+        EvidenceItem parsedEvidence = mapper.readValue(mapper.writeValueAsString(evidence), EvidenceItem.class);
+        DecisionActionProposal parsedAction = mapper.readValue(mapper.writeValueAsString(action),
+            DecisionActionProposal.class);
+        assertEquals(runId, parsedEvidence.runId());
+        assertEquals("ERP:ORDER:7:promise_date", parsedEvidence.evidenceKey());
+        assertEquals("tenant-000023-run-9-action-8", parsedAction.idempotencyKey());
+        assertEquals("purchaseRequisitionDraft", parsedAction.executorCode());
     }
 
     @Test
@@ -242,7 +300,7 @@ class DecisionContractTest {
             List.of(new DeliveryContextSnapshot.OrderFact(1L, "SO-1", LocalDate.of(2026, 9, 28), "OPEN")),
             List.of(new DeliveryContextSnapshot.WorkOrderFact(11L, "WO-11", 2L,
                 BigDecimal.TEN, LocalDate.of(2026, 9, 28), 1L, 3L)),
-            List.of(new DeliveryContextSnapshot.RequirementFact(2L, "MAT-2", "钢", LocalDate.of(2026, 9, 25),
+            Map.of(), List.of(new DeliveryContextSnapshot.RequirementFact(2L, "MAT-2", "钢", LocalDate.of(2026, 9, 25),
                 BigDecimal.TEN, 11L, "WO-11")),
             List.of(new DeliveryContextSnapshot.StockFact(2L, BigDecimal.ONE, BigDecimal.ZERO, BigDecimal.ZERO)),
             List.of(new DeliveryContextSnapshot.ArrivalFact(2L, 5L, LocalDate.of(2026, 9, 26), BigDecimal.ONE, 6L)),
@@ -257,12 +315,60 @@ class DecisionContractTest {
         ShortageSimulationResult.Item item = new ShortageSimulationResult.Item(
             2L, "MAT-2", "钢", LocalDate.of(2026, 9, 25), BigDecimal.valueOf(9), BigDecimal.ONE,
             List.of(11L), List.of(1L), "EXPEDITE", List.of("ERP:STOCK:2:available_qty"));
-        ShortageSimulationResult simulation = new ShortageSimulationResult(List.of(item), List.of());
+        ShortageSimulationResult simulation = new ShortageSimulationResult(true, 1,
+            LocalDate.of(2026, 9, 25), BigDecimal.valueOf(9), List.of(item), null,
+            List.of("ERP:STOCK:2:available_qty"), List.of());
         ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule());
         ShortageSimulationResult parsed = mapper.readValue(mapper.writeValueAsString(simulation), ShortageSimulationResult.class);
         assertEquals(LocalDate.of(2026, 9, 25), parsed.items().get(0).firstShortageDate());
         assertEquals(List.of(11L), parsed.items().get(0).affectedWorkOrderIds());
         assertEquals(BigDecimal.valueOf(9), parsed.items().get(0).maxGap());
+    }
+
+    @Test
+    void snapshotRoutingStepsRoundTripWithMaterialIdsAndWorkstationFacts() throws Exception {
+        long materialId = 9007199254740993L;
+        Map<Long, List<DeliveryContextSnapshot.RoutingStepFact>> routes = Map.of(materialId,
+            List.of(new DeliveryContextSnapshot.RoutingStepFact(101L, 102L, 3, 103L, 104L,
+                new BigDecimal("1.75"))));
+        DeliveryContextSnapshot snapshot = new DeliveryContextSnapshot(
+            new DecisionBusinessRef(DecisionBusinessType.WORK_ORDER, 1L, "WO-1"),
+            List.of(), List.of(), routes, List.of(), List.of(), List.of(), Map.of(), List.of(),
+            Map.of(), List.of(), "hash", LocalDateTime.of(2026, 9, 23, 9, 0), List.of());
+        ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule());
+        DeliveryContextSnapshot parsed = mapper.readValue(mapper.writeValueAsString(snapshot),
+            DeliveryContextSnapshot.class);
+        assertEquals(routes, parsed.routingByMaterial());
+        DeliveryContextSnapshot.RoutingStepFact step = parsed.routingByMaterial().get(materialId).get(0);
+        assertEquals(101L, step.routingId());
+        assertEquals(102L, step.stepId());
+        assertEquals(3, step.seqNum());
+        assertEquals(103L, step.workstationId());
+        assertEquals(104L, step.workshopId());
+        assertEquals(new BigDecimal("1.75"), step.standardHours());
+    }
+
+    @Test
+    void shortageSimulationCarriesRiskSummaryKpisAndEvidenceReferences() throws Exception {
+        DecisionKpiSet kpis = new DecisionKpiSet(1, 1, 2, 2, "2026-09-28", 1,
+            new BigDecimal("9.25"), "2026-09-25", BigDecimal.ONE, 0, 0, BigDecimal.ZERO);
+        ShortageSimulationResult.Item item = new ShortageSimulationResult.Item(
+            7L, "MAT-7", "钢", LocalDate.of(2026, 9, 25), new BigDecimal("9.25"), BigDecimal.ONE,
+            List.of(11L), List.of(12L), "EXPEDITE", List.of("ERP:STOCK:7:available_qty"));
+        ShortageSimulationResult simulation = new ShortageSimulationResult(true, 1,
+            LocalDate.of(2026, 9, 25), new BigDecimal("9.25"), List.of(item), kpis,
+            List.of("ERP:STOCK:7:available_qty"), List.of("supplier pending"));
+        ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule());
+        ShortageSimulationResult parsed = mapper.readValue(mapper.writeValueAsString(simulation),
+            ShortageSimulationResult.class);
+        assertTrue(parsed.hasRisk());
+        assertEquals(1, parsed.riskMaterialCount());
+        assertEquals(LocalDate.of(2026, 9, 25), parsed.earliestShortageDate());
+        assertEquals(new BigDecimal("9.25"), parsed.totalGap());
+        assertEquals(1, parsed.kpis().shortageMaterialCount());
+        assertEquals(List.of("ERP:STOCK:7:available_qty"), parsed.evidenceRefs());
+        assertEquals("java.util.List<java.lang.String>", ShortageSimulationResult.class
+            .getRecordComponents()[6].getGenericType().getTypeName());
     }
 
     @Test
@@ -304,6 +410,9 @@ class DecisionContractTest {
             .getMethod("startExecution", DecisionWorkflowStartCommand.class).getReturnType());
         assertEquals(boolean.class, DecisionWorkflowPort.class
             .getMethod("stop", Long.class, DecisionActor.class).getReturnType());
+        assertEquals(Set.of("startAnalysis", "startExecution", "stop"), Arrays.stream(
+            DecisionWorkflowPort.class.getDeclaredMethods()).map(method -> method.getName()).collect(
+                Collectors.toSet()));
         assertEquals(boolean.class, IndustrialDecisionDataPort.class
             .getMethod("canAccess", DecisionBusinessRef.class, DecisionActor.class).getReturnType());
         assertEquals(DeliveryContextSnapshot.class, IndustrialDecisionDataPort.class
@@ -340,7 +449,7 @@ class DecisionContractTest {
             DecisionApprovalRequest.class, DecisionOutcome.class, DecisionFreshnessResult.class,
             DecisionWorkflowStartCommand.class, DecisionActionExecutionResult.class, RetrievalHit.class,
             DeliveryContextSnapshot.OrderFact.class, DeliveryContextSnapshot.WorkOrderFact.class,
-            DeliveryContextSnapshot.RequirementFact.class, DeliveryContextSnapshot.StockFact.class,
+            DeliveryContextSnapshot.RoutingStepFact.class, DeliveryContextSnapshot.RequirementFact.class, DeliveryContextSnapshot.StockFact.class,
             DeliveryContextSnapshot.ArrivalFact.class, DeliveryContextSnapshot.SupplierMetricFact.class,
             ShortageSimulationResult.Item.class)) {
             assertTrue(Serializable.class.isAssignableFrom(dto), dto.getName());

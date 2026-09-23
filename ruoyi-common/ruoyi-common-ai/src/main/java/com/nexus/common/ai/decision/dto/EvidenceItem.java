@@ -6,6 +6,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public record EvidenceItem(
+    Long runId,
     String evidenceKey,
     String sourceDomain,
     String sourceType,

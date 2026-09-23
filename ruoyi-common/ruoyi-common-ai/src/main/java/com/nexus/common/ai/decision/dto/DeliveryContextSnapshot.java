@@ -11,6 +11,7 @@ public record DeliveryContextSnapshot(
     DecisionBusinessRef rootBusinessRef,
     List<OrderFact> salesOrders,
     List<WorkOrderFact> workOrders,
+    Map<Long, List<RoutingStepFact>> routingByMaterial,
     List<RequirementFact> requirements,
     List<StockFact> stocks,
     List<ArrivalFact> arrivals,
@@ -28,6 +29,10 @@ public record DeliveryContextSnapshot(
 
     public record WorkOrderFact(Long id, String code, Long materialId, BigDecimal remainingQty,
                                 LocalDate planEndDate, Long priority, Long workshopId) implements Serializable {
+    }
+
+    public record RoutingStepFact(Long routingId, Long stepId, Integer seqNum, Long workstationId,
+                                  Long workshopId, BigDecimal standardHours) implements Serializable {
     }
 
     public record RequirementFact(Long materialId, String materialCode, String materialName,

@@ -16,6 +16,9 @@ public record DecisionScenario(
     int rank,
     Map<String, Object> overrides,
     List<String> evidenceKeys,
-    List<Map<String, Object>> schedulePreview
+    List<Map<String, Object>> schedulePreview,
+    String inputHash,
+    List<Long> delayedOrders,
+    List<String> bottleneckResources
 ) implements Serializable {
 }
