@@ -73,7 +73,7 @@ public class BdVendorBo extends BaseEntity {
     private String defaultInvoiceType;
 
     /**
-     * 行业
+     * 供货品类（字典 bd_vendor_industry）
      */
     private String industry;
 

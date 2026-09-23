@@ -70,7 +70,7 @@ public class BdVendor extends TenantEntity {
     private String defaultInvoiceType;
 
     /**
-     * 所属行业
+     * 供货品类（字典 bd_vendor_industry，值对齐 bd_material_category.category_code）
      */
     private String industry;
 
