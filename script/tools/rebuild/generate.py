@@ -271,16 +271,18 @@ w()
 # ---------------------------------------------------------------- 6. 供应商 / 客户
 w("-- ============ 6. 供应商与客户 ============")
 ven_id, vals = {}, []
-for i, (name, ind, desc) in enumerate(VENDORS, start=1):
+for i, (name, ind_code, cat, desc) in enumerate(VENDORS, start=1):
     ven_id[name] = i
+    # region 固定 2=华东、省市区固定 浙江省/杭州市/余杭区 —— 与上面的硬编码 address 一致
     vals.append(row([i, TENANT, "V%05d" % i, name, None, "浙江省杭州市余杭区",
-                     None, "0571-8888%04d" % i, None, None, None, None, 1,
-                     ind, "华东", ind, 1, desc, BY, DEPT, "0"]))
+                     None, "0571-8888%04d" % i, None, None, None, None, "VAT_SPECIAL",
+                     ind_code, "2", cat, "ACTIVE", desc,
+                     330000, 330100, 330110, BY, DEPT, "0"]))
 w("INSERT INTO `ry-erp`.bd_vendor")
 w("  (vendor_id, tenant_id, vendor_code, vendor_name, tax_id, address, contact_person,")
 w("   phone, bank_account, invoice_title, invoice_address_phone, invoice_bank_name,")
 w("   default_invoice_type, industry, region, category, status, remark,")
-w("   create_by, create_dept, del_flag) VALUES")
+w("   province_area_id, city_area_id, district_area_id, create_by, create_dept, del_flag) VALUES")
 w(",\n".join(vals) + ";")
 w()
 C.issue("VENDOR_CODE", len(VENDORS), "V%05d" % len(VENDORS))
