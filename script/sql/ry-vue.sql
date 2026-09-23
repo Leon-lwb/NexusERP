@@ -2906,6 +2906,164 @@ INSERT INTO `ai_config` VALUES ('vector_store', '{\"type\": \"milvus\", \"milvus
 INSERT INTO `ai_config` VALUES ('web_search', '{\"topN\": 5, \"apiKey\": \"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\", \"enabled\": true, \"provider\": \"tavily\", \"timeoutMs\": 15000}', NULL, 103, 1, '2026-09-08 23:05:56', 1, '2026-09-08 23:05:56');
 
 -- ----------------------------
+-- Table structure for ai_decision_run
+-- ----------------------------
+DROP TABLE IF EXISTS `ai_decision_run`;
+CREATE TABLE `ai_decision_run` (
+  `id` bigint(20) NOT NULL COMMENT '主键',
+  `tenant_id` varchar(20) NOT NULL DEFAULT '000000' COMMENT '租户编号',
+  `scene_code` varchar(64) NOT NULL COMMENT '场景编码',
+  `biz_type` varchar(32) NOT NULL COMMENT '业务类型',
+  `biz_id` bigint(20) NULL COMMENT '根业务ID',
+  `biz_code` varchar(64) NULL COMMENT '根业务编号',
+  `parent_run_id` bigint(20) NULL COMMENT '父运行ID',
+  `superseded_by_run_id` bigint(20) NULL COMMENT '替代运行ID',
+  `trigger_type` varchar(20) NOT NULL COMMENT '触发类型',
+  `status` varchar(32) NOT NULL COMMENT '运行状态',
+  `risk_score` decimal(8,2) NULL COMMENT '风险分数',
+  `risk_level` varchar(16) NULL COMMENT '风险等级',
+  `confidence_level` varchar(16) NULL COMMENT '置信度等级',
+  `recommended_scenario_code` varchar(64) NULL COMMENT '推荐方案编码',
+  `input_snapshot_json` longtext NULL COMMENT '输入快照JSON',
+  `input_snapshot_hash` varchar(64) NULL COMMENT '输入快照SHA-256',
+  `snapshot_time` datetime NULL COMMENT '快照时间',
+  `valid_until` datetime NULL COMMENT '审批有效截止时间',
+  `score_config_json` text NULL COMMENT '评分配置快照',
+  `scenario_result_json` longtext NULL COMMENT '场景推演结果',
+  `narrative_json` longtext NULL COMMENT '决策说明JSON',
+  `result_json` longtext NULL COMMENT '完整决策结果JSON',
+  `outcome_json` longtext NULL COMMENT '执行后结果JSON',
+  `summary_mode` varchar(32) NULL COMMENT 'MODEL/TEMPLATE_FALLBACK',
+  `model_id` bigint(20) NULL COMMENT '模型ID',
+  `model_name` varchar(128) NULL COMMENT '模型名称快照',
+  `prompt_version` varchar(32) NULL COMMENT 'Prompt版本',
+  `input_tokens` int NULL COMMENT '输入Token',
+  `output_tokens` int NULL COMMENT '输出Token',
+  `estimated_cost` decimal(18,6) NULL COMMENT '估算成本',
+  `analysis_flow_instance_id` bigint(20) NULL COMMENT '分析Flow实例ID',
+  `execution_flow_instance_id` bigint(20) NULL COMMENT '执行Flow实例ID',
+  `error_code` varchar(64) NULL COMMENT '错误码',
+  `error_message` varchar(1000) NULL COMMENT '脱敏错误信息',
+  `started_at` datetime NULL COMMENT '开始时间',
+  `analysis_finished_at` datetime NULL COMMENT '分析完成时间',
+  `finished_at` datetime NULL COMMENT '完成时间',
+  `version` int NOT NULL DEFAULT 0 COMMENT '乐观锁版本',
+  `create_dept` bigint(20) NULL COMMENT '创建部门',
+  `create_by` bigint(20) NULL COMMENT '创建者',
+  `create_time` datetime NULL COMMENT '创建时间',
+  `update_by` bigint(20) NULL COMMENT '更新者',
+  `update_time` datetime NULL COMMENT '更新时间',
+  `del_flag` char(1) NOT NULL DEFAULT '0' COMMENT '删除标志',
+  `attr1` varchar(256) NULL COMMENT '预留字段1',
+  `attr2` varchar(256) NULL COMMENT '预留字段2',
+  `attr3` varchar(256) NULL COMMENT '预留字段3',
+  `attr4` varchar(256) NULL COMMENT '预留字段4',
+  PRIMARY KEY (`id`),
+  KEY `idx_decision_tenant_scene_status` (`tenant_id`,`scene_code`,`status`),
+  KEY `idx_decision_biz` (`tenant_id`,`biz_type`,`biz_id`),
+  KEY `idx_decision_create_time` (`tenant_id`,`create_time`),
+  KEY `idx_decision_parent` (`parent_run_id`),
+  KEY `idx_decision_analysis_flow` (`analysis_flow_instance_id`),
+  KEY `idx_decision_execution_flow` (`execution_flow_instance_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='AI工业决策运行';
+
+-- ----------------------------
+-- Table structure for ai_decision_evidence
+-- ----------------------------
+DROP TABLE IF EXISTS `ai_decision_evidence`;
+CREATE TABLE `ai_decision_evidence` (
+  `id` bigint(20) NOT NULL COMMENT '主键',
+  `tenant_id` varchar(20) NOT NULL DEFAULT '000000' COMMENT '租户编号',
+  `run_id` bigint(20) NOT NULL COMMENT '决策运行ID',
+  `evidence_key` varchar(128) NOT NULL COMMENT '运行内证据键',
+  `source_domain` varchar(20) NOT NULL COMMENT 'ERP/MES/IOT/RAG/RULE/DERIVED',
+  `source_type` varchar(64) NOT NULL COMMENT '来源类型',
+  `source_id` bigint(20) NULL COMMENT '来源ID',
+  `source_code` varchar(128) NULL COMMENT '来源编号',
+  `source_name` varchar(255) NULL COMMENT '来源名称',
+  `metric_code` varchar(64) NOT NULL COMMENT '指标编码',
+  `metric_name` varchar(128) NOT NULL COMMENT '指标名称',
+  `value_type` varchar(20) NOT NULL COMMENT '值类型',
+  `metric_value` varchar(2000) NULL COMMENT '指标展示值',
+  `unit` varchar(32) NULL COMMENT '单位',
+  `observed_at` datetime NULL COMMENT '观察时间',
+  `data_version` varchar(128) NULL COMMENT '数据版本',
+  `confidence` decimal(5,4) NULL COMMENT '置信度',
+  `verifiable` char(1) NOT NULL DEFAULT 'Y' COMMENT '是否可验证',
+  `normative` char(1) NOT NULL DEFAULT 'N' COMMENT '是否规范性证据',
+  `derived_from_json` text NULL COMMENT '派生来源证据键JSON',
+  `display_path` varchar(500) NULL COMMENT '前端业务跳转路径',
+  `create_dept` bigint(20) NULL COMMENT '创建部门',
+  `create_by` bigint(20) NULL COMMENT '创建者',
+  `create_time` datetime NULL COMMENT '创建时间',
+  `update_by` bigint(20) NULL COMMENT '更新者',
+  `update_time` datetime NULL COMMENT '更新时间',
+  `del_flag` char(1) NOT NULL DEFAULT '0' COMMENT '删除标志',
+  `attr1` varchar(256) NULL COMMENT '预留字段1',
+  `attr2` varchar(256) NULL COMMENT '预留字段2',
+  `attr3` varchar(256) NULL COMMENT '预留字段3',
+  `attr4` varchar(256) NULL COMMENT '预留字段4',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_decision_evidence` (`run_id`,`evidence_key`),
+  KEY `idx_decision_evidence_source` (`tenant_id`,`source_type`,`source_id`),
+  KEY `idx_decision_evidence_run` (`run_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='AI工业决策证据';
+
+-- ----------------------------
+-- Table structure for ai_decision_action
+-- ----------------------------
+DROP TABLE IF EXISTS `ai_decision_action`;
+CREATE TABLE `ai_decision_action` (
+  `id` bigint(20) NOT NULL COMMENT '主键',
+  `tenant_id` varchar(20) NOT NULL DEFAULT '000000' COMMENT '租户编号',
+  `run_id` bigint(20) NOT NULL COMMENT '决策运行ID',
+  `action_type` varchar(64) NOT NULL COMMENT '动作类型',
+  `title` varchar(255) NOT NULL COMMENT '动作标题',
+  `display_reason` varchar(1000) NULL COMMENT '展示理由',
+  `target_biz_type` varchar(32) NULL COMMENT '目标业务类型',
+  `target_biz_id` bigint(20) NULL COMMENT '目标业务ID',
+  `target_biz_code` varchar(64) NULL COMMENT '目标业务编号',
+  `payload_json` longtext NOT NULL COMMENT '白名单动作参数JSON',
+  `risk_level` varchar(16) NOT NULL COMMENT '动作风险等级',
+  `approval_required` char(1) NOT NULL DEFAULT 'Y' COMMENT '是否需要审批',
+  `approval_status` varchar(32) NOT NULL COMMENT '审批状态',
+  `execution_status` varchar(32) NOT NULL COMMENT '执行状态',
+  `permission_code` varchar(128) NULL COMMENT '业务权限码',
+  `executor_code` varchar(64) NOT NULL COMMENT '执行器编码',
+  `sequence_no` int NOT NULL DEFAULT 0 COMMENT '执行顺序',
+  `dependency_ids_json` varchar(2000) NULL COMMENT '依赖动作ID JSON',
+  `idempotency_key` varchar(128) NOT NULL COMMENT '幂等键',
+  `approved_by` bigint(20) NULL COMMENT '审批人',
+  `approved_at` datetime NULL COMMENT '审批时间',
+  `approval_comment` varchar(1000) NULL COMMENT '审批意见',
+  `result_biz_type` varchar(32) NULL COMMENT '结果业务类型',
+  `result_biz_id` bigint(20) NULL COMMENT '结果业务ID',
+  `result_biz_code` varchar(64) NULL COMMENT '结果业务编号',
+  `result_json` longtext NULL COMMENT '执行结果JSON',
+  `retry_count` int NOT NULL DEFAULT 0 COMMENT '重试次数',
+  `last_error_code` varchar(64) NULL COMMENT '最后错误码',
+  `last_error_message` varchar(1000) NULL COMMENT '最后脱敏错误',
+  `started_at` datetime NULL COMMENT '执行开始时间',
+  `finished_at` datetime NULL COMMENT '执行完成时间',
+  `version` int NOT NULL DEFAULT 0 COMMENT '乐观锁版本',
+  `create_dept` bigint(20) NULL COMMENT '创建部门',
+  `create_by` bigint(20) NULL COMMENT '创建者',
+  `create_time` datetime NULL COMMENT '创建时间',
+  `update_by` bigint(20) NULL COMMENT '更新者',
+  `update_time` datetime NULL COMMENT '更新时间',
+  `del_flag` char(1) NOT NULL DEFAULT '0' COMMENT '删除标志',
+  `attr1` varchar(256) NULL COMMENT '预留字段1',
+  `attr2` varchar(256) NULL COMMENT '预留字段2',
+  `attr3` varchar(256) NULL COMMENT '预留字段3',
+  `attr4` varchar(256) NULL COMMENT '预留字段4',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_decision_action_idempotency` (`tenant_id`,`idempotency_key`),
+  KEY `idx_decision_action_run` (`run_id`,`sequence_no`),
+  KEY `idx_decision_action_approval` (`tenant_id`,`approval_status`),
+  KEY `idx_decision_action_execution` (`tenant_id`,`execution_status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='AI工业决策动作';
+
+-- ----------------------------
 -- Table structure for ai_flow
 -- ----------------------------
 DROP TABLE IF EXISTS `ai_flow`;
@@ -20939,6 +21097,16 @@ INSERT INTO `sys_menu` VALUES (1839, '实例详情', 1833, 2, 'detail', 'ai/flow
 INSERT INTO `sys_menu` VALUES (1840, '运行历史列表', 1833, 1, 'index', 'ai/flow/monitor/index', NULL, 1, 0, 'C', '0', '0', 'ai:flow:list', 'monitor', 103, 1, '2026-08-06 23:53:30', NULL, NULL, '运行历史列表页');
 INSERT INTO `sys_menu` VALUES (1841, '参数设置', 1707, 3, 'aiConfig', 'ai/config/index', NULL, 1, 0, 'C', '0', '0', 'ai:config:list', 'edit', 103, 1, '2026-09-07 23:55:47', 1, '2026-09-08 22:48:15', 'AI运行参数设置页(SQL安全/向量存储/联网搜索/流程编排/知识图谱)');
 INSERT INTO `sys_menu` VALUES (1842, '参数修改', 1841, 1, '', NULL, NULL, 1, 0, 'F', '0', '0', 'ai:config:edit', '#', 103, 1, '2026-09-07 23:55:47', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (1850, '工业决策中心', 1700, 7, 'decision', NULL, NULL, 1, 0, 'M', '0', '0', NULL, 'data-analysis', 103, 1, '2026-09-23 00:00:00', NULL, NULL, '工业交付风险决策目录');
+INSERT INTO `sys_menu` VALUES (1851, '交付风险看板', 1850, 1, 'index', 'ai/decision/index', NULL, 1, 0, 'C', '0', '0', 'ai:decision:query', 'warning', 103, 1, '2026-09-23 00:00:00', NULL, NULL, '工业交付风险看板');
+INSERT INTO `sys_menu` VALUES (1852, '决策运行详情', 1850, 2, 'detail', 'ai/decision/detail', NULL, 1, 0, 'C', '1', '0', 'ai:decision:query', 'document', 103, 1, '2026-09-23 00:00:00', NULL, NULL, '隐藏详情路由');
+INSERT INTO `sys_menu` VALUES (1853, '决策查询', 1851, 1, '', '', '', 1, 0, 'F', '0', '0', 'ai:decision:query', '#', 103, 1, '2026-09-23 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (1854, '发起决策', 1851, 2, '', '', '', 1, 0, 'F', '0', '0', 'ai:decision:run', '#', 103, 1, '2026-09-23 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (1855, '审批决策', 1851, 3, '', '', '', 1, 0, 'F', '0', '0', 'ai:decision:approve', '#', 103, 1, '2026-09-23 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (1856, '执行重试', 1851, 4, '', '', '', 1, 0, 'F', '0', '0', 'ai:decision:execute', '#', 103, 1, '2026-09-23 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (1857, '决策导出', 1851, 5, '', '', '', 1, 0, 'F', '0', '0', 'ai:decision:export', '#', 103, 1, '2026-09-23 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (1858, '决策配置', 1851, 6, '', '', '', 1, 0, 'F', '0', '0', 'ai:decision:config', '#', 103, 1, '2026-09-23 00:00:00', NULL, NULL, '');
+INSERT INTO `sys_menu` VALUES (1859, '决策评测', 1851, 7, '', '', '', 1, 0, 'F', '0', '0', 'ai:decision:benchmark', '#', 103, 1, '2026-09-23 00:00:00', NULL, NULL, '');
 INSERT INTO `sys_menu` VALUES (2000, 'ERP系统', 0, 5, 'erp', NULL, NULL, 1, 0, 'M', '0', '0', '', 'build', 103, 1, '2026-04-30 10:41:23', 1, '2026-06-17 17:37:21', 'ERP业务系统根菜单');
 INSERT INTO `sys_menu` VALUES (2001, '物料主数据', 2000, 1, 'bd', NULL, NULL, 1, 0, 'M', '0', '0', '', 'category', 103, 1, '2026-04-30 10:41:23', NULL, NULL, '基础数据管理');
 INSERT INTO `sys_menu` VALUES (2002, '物料分类', 2001, 1, 'materialCategory', 'erp/bd/category/index', NULL, 1, 0, 'C', '0', '0', 'bd:category:list', 'tree-table', 103, 1, '2026-04-30 10:41:23', NULL, NULL, '物料分类菜单');
