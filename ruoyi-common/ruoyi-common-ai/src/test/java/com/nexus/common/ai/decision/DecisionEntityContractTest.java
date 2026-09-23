@@ -1,25 +1,41 @@
 package com.nexus.common.ai.decision;
 
+import com.baomidou.mybatisplus.annotation.DbType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.annotation.Version;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.MybatisPlusInterceptor;
+import com.baomidou.mybatisplus.extension.plugins.inner.OptimisticLockerInnerInterceptor;
+import com.baomidou.mybatisplus.extension.plugins.inner.PaginationInnerInterceptor;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.baomidou.mybatisplus.extension.spring.MybatisSqlSessionFactoryBean;
 import com.nexus.common.ai.domain.bo.AiDecisionRunBo;
 import com.nexus.common.ai.domain.entity.AiDecisionAction;
+import com.nexus.common.ai.domain.entity.AiDecisionActionToAiDecisionActionVoMapperImpl;
 import com.nexus.common.ai.domain.entity.AiDecisionEvidence;
+import com.nexus.common.ai.domain.entity.AiDecisionEvidenceToAiDecisionEvidenceVoMapperImpl;
 import com.nexus.common.ai.domain.entity.AiDecisionRun;
+import com.nexus.common.ai.domain.entity.AiDecisionRunToAiDecisionRunVoMapperImpl;
 import com.nexus.common.ai.domain.vo.AiDecisionActionVo;
 import com.nexus.common.ai.domain.vo.AiDecisionEvidenceVo;
 import com.nexus.common.ai.domain.vo.AiDecisionRunVo;
 import com.nexus.common.ai.mapper.AiDecisionActionMapper;
 import com.nexus.common.ai.mapper.AiDecisionEvidenceMapper;
 import com.nexus.common.ai.mapper.AiDecisionRunMapper;
+import com.nexus.common.core.utils.SpringUtils;
 import com.nexus.common.mybatis.core.domain.BaseEntity;
 import com.nexus.common.mybatis.core.mapper.BaseMapperPlus;
+import io.github.linpeilie.Converter;
+import io.github.linpeilie.mapstruct.SpringConverterFactory;
+import org.apache.ibatis.session.SqlSession;
+import org.apache.ibatis.session.SqlSessionFactory;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+import org.springframework.jdbc.datasource.DriverManagerDataSource;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -27,11 +43,13 @@ import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.sql.Connection;
+import java.sql.Statement;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Set;
-import java.util.TreeSet;
+import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -105,19 +123,26 @@ class DecisionEntityContractTest {
                 .matcher(sql);
             assertTrue(createTable.find(), table);
             Matcher columns = Pattern.compile("(?m)^  `([a-z0-9_]+)` ").matcher(createTable.group(1));
-            Set<String> expected = new TreeSet<>();
+            List<String> expected = new ArrayList<>();
             while (columns.find()) {
                 expected.add(columns.group(1));
             }
-            Set<String> actual = new TreeSet<>();
+            List<String> actual = new ArrayList<>();
             Stream.concat(Arrays.stream(entity.getDeclaredFields()), Arrays.stream(BaseEntity.class.getDeclaredFields()))
                 .filter(field -> !java.lang.reflect.Modifier.isStatic(field.getModifiers()))
                 .filter(field -> field.getAnnotation(TableField.class) == null || field.getAnnotation(TableField.class).exist())
                 .forEach(field -> actual.add(field.getName().replaceAll("([a-z])([A-Z])", "$1_$2").toLowerCase(java.util.Locale.ROOT)));
-            assertEquals(expected, actual, table);
+            assertSameColumns(expected, actual, table);
         }
     }
 
+    @Test
+    void columnContractMustExposeRepeatedNamesOnEitherSide() {
+        org.junit.jupiter.api.Assertions.assertThrows(AssertionError.class,
+            () -> assertSameColumns(List.of("id", "id"), List.of("id"), "duplicated DDL"));
+        org.junit.jupiter.api.Assertions.assertThrows(AssertionError.class,
+            () -> assertSameColumns(List.of("id"), List.of("id", "id"), "duplicated entity"));
+    }
     @Test
     void fieldTypesMatchQueryAndDisplayContracts() throws NoSuchFieldException {
         assertEquals(LocalDateTime.class, AiDecisionRun.class.getDeclaredField("snapshotTime").getType());
@@ -172,6 +197,211 @@ class DecisionEntityContractTest {
         assertFalse(Arrays.asList(actionColumns.split(",")).contains("payload_json"));
         assertFalse(Arrays.asList(actionColumns.split(",")).contains("result_json"));
     }
+    @Test
+    void mapperInsertSelectUpdateAndSummaryProjectionRoundTrip() throws Exception {
+        // H2 validates mapper SQL/type handling in MySQL mode; real MySQL dialect remains Task19 scope.
+        var datasource = new DriverManagerDataSource(
+            "jdbc:h2:mem:decision_" + UUID.randomUUID() + ";MODE=MySQL;DB_CLOSE_DELAY=-1", "sa", "");
+        createDecisionTables(datasource);
+        var interceptor = new MybatisPlusInterceptor();
+        interceptor.addInnerInterceptor(new OptimisticLockerInnerInterceptor());
+        interceptor.addInnerInterceptor(new PaginationInnerInterceptor(DbType.H2));
+        var factoryBean = new MybatisSqlSessionFactoryBean();
+        factoryBean.setDataSource(datasource);
+        factoryBean.setPlugins(interceptor);
+        factoryBean.afterPropertiesSet();
+        SqlSessionFactory factory = factoryBean.getObject();
+        assertNotNull(factory);
+        factory.getConfiguration().addMapper(AiDecisionRunMapper.class);
+        factory.getConfiguration().addMapper(AiDecisionEvidenceMapper.class);
+        factory.getConfiguration().addMapper(AiDecisionActionMapper.class);
+
+        try (var context = new AnnotationConfigApplicationContext()) {
+            context.register(SpringUtils.class);
+            context.registerBean(Converter.class, () -> new Converter(new SpringConverterFactory(context)));
+            context.registerBean(AiDecisionRunToAiDecisionRunVoMapperImpl.class);
+            context.registerBean(AiDecisionEvidenceToAiDecisionEvidenceVoMapperImpl.class);
+            context.registerBean(AiDecisionActionToAiDecisionActionVoMapperImpl.class);
+            context.refresh();
+            try (SqlSession session = factory.openSession(true)) {
+                AiDecisionRunMapper runs = session.getMapper(AiDecisionRunMapper.class);
+                AiDecisionEvidenceMapper evidences = session.getMapper(AiDecisionEvidenceMapper.class);
+                AiDecisionActionMapper actions = session.getMapper(AiDecisionActionMapper.class);
+
+                AiDecisionRun run = new AiDecisionRun();
+                run.setId(100L);
+                run.setTenantId("000000");
+                run.setSceneCode("DELIVERY_RISK");
+                run.setBizType("ORDER");
+                run.setTriggerType("MANUAL");
+                run.setStatus("RUNNING");
+                run.setRiskScore(new java.math.BigDecimal("12.34"));
+                run.setRecommendedScenarioCode("scenario-1");
+                run.setInputSnapshotJson("{\"x\":1}");
+                run.setScenarioResultJson("{\"scenario\":true}");
+                run.setResultJson("{\"outcome\":true}");
+                run.setVersion(0);
+                assertEquals(1, runs.insert(run));
+                AiDecisionRun readRun = runs.selectById(100L);
+                assertEquals("000000", readRun.getTenantId());
+                assertEquals(run.getInputSnapshotJson(), readRun.getInputSnapshotJson());
+                assertNull(readRun.getScoreConfigJson());
+                assertEquals(run.getResultJson(), readRun.getResultJson());
+                assertNull(readRun.getOutcomeJson());
+                readRun.setOutcomeJson("{\"done\":true}");
+                readRun.setStatus("FINISHED");
+                assertEquals(1, runs.updateById(readRun));
+                assertEquals(1, readRun.getVersion());
+                AiDecisionRun stale = new AiDecisionRun();
+                stale.setId(100L);
+                stale.setVersion(0);
+                stale.setStatus("STALE_WRITE");
+                assertEquals(0, runs.updateById(stale));
+                assertEquals("FINISHED", runs.selectById(100L).getStatus());
+                assertEquals("{\"done\":true}", runs.selectById(100L).getOutcomeJson());
+
+                AiDecisionRun nullableRun = new AiDecisionRun();
+                nullableRun.setId(101L);
+                nullableRun.setTenantId("000000");
+                nullableRun.setSceneCode("DELIVERY_RISK");
+                nullableRun.setBizType("ORDER");
+                nullableRun.setTriggerType("MANUAL");
+                nullableRun.setStatus("PENDING");
+                nullableRun.setVersion(0);
+                assertEquals(1, runs.insert(nullableRun));
+                assertNull(runs.selectById(101L).getResultJson());
+                var runPage = runs.selectSummaryPage(new Page<AiDecisionRun>(1, 10),
+                    new QueryWrapper<AiDecisionRun>().eq("tenant_id", "000000"));
+                assertEquals(2, runPage.getTotal());
+                assertEquals(2, runPage.getRecords().size());
+                AiDecisionRunVo summary = runPage.getRecords().stream()
+                    .filter(vo -> vo.getId() == 100L).findFirst().orElseThrow();
+                assertEquals("000000", summary.getTenantId());
+                assertEquals("scenario-1", summary.getRecommendedScenarioCode());
+                assertNull(summary.getResultJson());
+                assertNull(summary.getOutcomeJson());
+
+                AiDecisionEvidence evidence = new AiDecisionEvidence();
+                evidence.setId(200L);
+                evidence.setTenantId("000000");
+                evidence.setRunId(100L);
+                evidence.setEvidenceKey("ev1");
+                evidence.setSourceDomain("ERP");
+                evidence.setSourceType("ORDER");
+                evidence.setMetricCode("DELAY");
+                evidence.setMetricName("Delay");
+                evidence.setValueType("NUMBER");
+                evidence.setDerivedFromJson("[\"ev0\"]");
+                assertEquals(1, evidences.insert(evidence));
+                assertEquals("000000", evidences.selectById(200L).getTenantId());
+                assertEquals("[\"ev0\"]", evidences.selectById(200L).getDerivedFromJson());
+                evidence.setDerivedFromJson("[\"ev2\"]");
+                assertEquals(1, evidences.updateById(evidence));
+                assertEquals("[\"ev2\"]", evidences.selectById(200L).getDerivedFromJson());
+                AiDecisionEvidence nullableEvidence = new AiDecisionEvidence();
+                nullableEvidence.setId(201L);
+                nullableEvidence.setTenantId("000000");
+                nullableEvidence.setRunId(100L);
+                nullableEvidence.setEvidenceKey("ev2");
+                nullableEvidence.setSourceDomain("ERP");
+                nullableEvidence.setSourceType("ORDER");
+                nullableEvidence.setMetricCode("DELAY");
+                nullableEvidence.setMetricName("Delay");
+                nullableEvidence.setValueType("NUMBER");
+                assertEquals(1, evidences.insert(nullableEvidence));
+                assertNull(evidences.selectById(201L).getDerivedFromJson());
+                var evidencePage = evidences.selectSummaryPage(new Page<AiDecisionEvidence>(1, 10),
+                    new QueryWrapper<AiDecisionEvidence>().eq("tenant_id", "000000"));
+                assertEquals(2, evidencePage.getRecords().size());
+                assertNull(evidencePage.getRecords().stream().filter(vo -> vo.getId() == 200L)
+                    .findFirst().orElseThrow().getDerivedFromJson());
+
+                AiDecisionAction action = new AiDecisionAction();
+                action.setId(300L);
+                action.setTenantId("000000");
+                action.setRunId(100L);
+                action.setActionType("NOTIFY");
+                action.setTitle("notify");
+                action.setPayloadJson("{\"k\":\"v\"}");
+                action.setRiskLevel("LOW");
+                action.setApprovalStatus("PENDING");
+                action.setExecutionStatus("PENDING");
+                action.setExecutorCode("TEST");
+                action.setIdempotencyKey("action-300");
+                action.setResultJson("{\"ok\":true}");
+                action.setVersion(0);
+                assertEquals(1, actions.insert(action));
+                AiDecisionAction readAction = actions.selectById(300L);
+                assertEquals("000000", readAction.getTenantId());
+                assertEquals(action.getPayloadJson(), readAction.getPayloadJson());
+                assertEquals(action.getResultJson(), readAction.getResultJson());
+                readAction.setExecutionStatus("DONE");
+                readAction.setResultJson(null); // selective update must preserve existing non-null JSON
+                assertEquals(1, actions.updateById(readAction));
+                assertEquals(1, readAction.getVersion());
+                assertEquals(action.getResultJson(), actions.selectById(300L).getResultJson());
+                AiDecisionAction staleAction = new AiDecisionAction();
+                staleAction.setId(300L);
+                staleAction.setVersion(0);
+                staleAction.setExecutionStatus("STALE_WRITE");
+                assertEquals(0, actions.updateById(staleAction));
+                assertEquals("DONE", actions.selectById(300L).getExecutionStatus());
+                AiDecisionAction nullableAction = new AiDecisionAction();
+                nullableAction.setId(301L);
+                nullableAction.setTenantId("000000");
+                nullableAction.setRunId(100L);
+                nullableAction.setActionType("NOTIFY");
+                nullableAction.setTitle("notify-2");
+                nullableAction.setPayloadJson("{}"); // NOT NULL in DDL
+                nullableAction.setRiskLevel("LOW");
+                nullableAction.setApprovalStatus("PENDING");
+                nullableAction.setExecutionStatus("PENDING");
+                nullableAction.setExecutorCode("TEST");
+                nullableAction.setIdempotencyKey("action-301");
+                nullableAction.setVersion(0);
+                assertEquals(1, actions.insert(nullableAction));
+                assertNull(actions.selectById(301L).getResultJson());
+                var actionPage = actions.selectSummaryPage(new Page<AiDecisionAction>(1, 10),
+                    new QueryWrapper<AiDecisionAction>().eq("tenant_id", "000000"));
+                assertEquals(2, actionPage.getRecords().size());
+                AiDecisionActionVo actionSummary = actionPage.getRecords().stream()
+                    .filter(vo -> vo.getId() == 300L).findFirst().orElseThrow();
+                assertNull(actionSummary.getPayloadJson());
+                assertNull(actionSummary.getResultJson());
+            }
+        }
+    }
+
+    private static void createDecisionTables(DriverManagerDataSource datasource) throws Exception {
+        Path directory = Path.of("").toAbsolutePath();
+        while (directory != null && !Files.exists(directory.resolve("script/sql/ry-vue.sql"))) {
+            directory = directory.getParent();
+        }
+        assertNotNull(directory);
+        String sql = Files.readString(directory.resolve("script/sql/ry-vue.sql"));
+        try (Connection connection = datasource.getConnection(); Statement statement = connection.createStatement()) {
+            for (String table : List.of("ai_decision_run", "ai_decision_evidence", "ai_decision_action")) {
+                Matcher ddl = Pattern.compile("CREATE TABLE `" + table + "` \\((.*?)\\) ENGINE=", Pattern.DOTALL)
+                    .matcher(sql);
+                assertTrue(ddl.find(), table);
+                // Keep columns/types/nullability/defaults from production; strip MySQL-only keys, comments and engine.
+                List<String> columns = Arrays.stream(ddl.group(1).split("\\R"))
+                    .map(String::trim)
+                    .filter(line -> line.startsWith("`"))
+                    .map(line -> line.replaceFirst(",?$", "")
+                        .replaceAll("(?i)bigint\\(\\d+\\)", "bigint")
+                        .replaceAll("(?i)\\s+COMMENT\\s+'(?:''|[^'])*'", ""))
+                    .toList();
+                statement.execute("CREATE TABLE `" + table + "` (" + String.join(",", columns)
+                    + ", PRIMARY KEY (`id`))");
+            }
+        }
+    }
+
+    private static void assertSameColumns(List<String> expected, List<String> actual, String table) {
+        assertEquals(expected.stream().sorted().toList(), actual.stream().sorted().toList(), table);
+    }
+
     private static void assertMapper(Class<?> mapper, Class<?> entity, Class<?> vo) {
         assertEquals(BaseMapperPlus.class, ((ParameterizedType) mapper.getGenericInterfaces()[0]).getRawType());
         var args = ((ParameterizedType) mapper.getGenericInterfaces()[0]).getActualTypeArguments();

@@ -60,6 +60,14 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- 仅供 Decision Mapper 往返合同测试，不进入运行时依赖 -->
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <version>2.3.232</version>
+            <scope>test</scope>
+        </dependency>
+
         <!-- 单元测试（能力枚举规范化等纯逻辑测试） -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
