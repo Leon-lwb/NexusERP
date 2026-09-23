@@ -72,4 +72,14 @@ public class SysDicAreaVo implements Serializable {
     /** 子行政区划（仅用于树形传输，不参与导出） */
     @ExcelIgnore
     private List<SysDicAreaVo> children;
+
+    /**
+     * 是否存在下级行政区划（仅用于树形传输，不参与导出）。
+     * <p>懒加载表格与 {@code el-tree-select} 都靠它决定是否渲染展开箭头：没有该字段时前端只能按
+     * "层级 &lt; 5" 猜，而库里 5112 行中只有 470 行真有下级 —— 会多出 4640 个点了返回空列表的假箭头。</p>
+     * <p>由 {@code SysDicAreaServiceImpl} 回填：扁平（懒加载每一级）与过滤结果集都以库为准；
+     * 全量树用内存中的 children 推导。为 {@code null} 时前端回退到层级启发式。</p>
+     */
+    @ExcelIgnore
+    private Boolean hasChildren;
 }

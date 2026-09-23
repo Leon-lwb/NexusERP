@@ -18,6 +18,12 @@ export interface AreaVO {
   /** 更新时间（后端 Date，按 yyyy-MM-dd HH:mm:ss 序列化） */
   updateTime?: string;
   children?: AreaVO[];
+  /**
+   * 是否存在下级（后端回填）。
+   * <p>懒加载表格与 el-tree-select 靠它决定是否显示展开箭头；过滤结果集不完整时可能为 null，
+   * 前端需回退到"层级 < 5"的启发式。</p>
+   */
+  hasChildren?: boolean;
 }
 
 /**
@@ -28,6 +34,8 @@ export interface AreaQuery {
   areaName?: string;
   layered?: number;
   parentAreaId?: string | number;
+  /** 精确匹配行政区划代码（用于按代码取单个节点，如回显上级名称） */
+  areaId?: string | number;
 }
 
 /** 行政区划表单 */
@@ -57,6 +65,18 @@ export const listArea = (query?: AreaQuery): AxiosPromise<AreaVO[]> => {
 export const listAreaExcludeChild = (areaId: string | number): AxiosPromise<AreaVO[]> => {
   return request({
     url: '/system/area/list/exclude/' + areaId,
+    method: 'get'
+  });
+};
+
+/**
+ * 查询指定节点及其整棵子树的行政区划代码集合。
+ * <p>用于"选择上级"懒加载下拉做防环：把这些节点置为不可选，用户就选不到自己或自己的下级。
+ * 只回一串 id（省份级最大约 1500 个），比 listAreaExcludeChild 返回整棵树轻得多。</p>
+ */
+export const getSubtreeAreaIds = (areaId: string | number): AxiosPromise<number[]> => {
+  return request({
+    url: '/system/area/subtreeIds/' + areaId,
     method: 'get'
   });
 };

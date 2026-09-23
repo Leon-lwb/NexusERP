@@ -94,6 +94,21 @@ public class SysDicAreaController extends BaseController {
     }
 
     /**
+     * 查询指定节点及其整棵子树的行政区划代码集合。
+     * <p>供前端"选择上级"懒加载下拉做防环：前端把这些节点置为不可选，即可阻止把节点自己
+     * 或自己的下级设为自己的上级。返回的是纯 id 列表（省份级最大约 1500 个），
+     * 比 {@code /list/exclude/{areaId}} 返回整棵树轻得多。</p>
+     *
+     * @param areaId 起始节点的行政区划代码（非主键 pkid）
+     * @return 含起始节点及其全部下级的 areaId 列表
+     */
+    @SaCheckPermission("system:area:list")
+    @GetMapping("/subtreeIds/{areaId}")
+    public R<List<Long>> subtreeIds(@PathVariable Long areaId) {
+        return R.ok(sysDicAreaService.selectSubtreeAreaIds(areaId));
+    }
+
+    /**
      * 导出行政区划列表为 Excel 文件。
      *
      * @param response   HTTP 响应，用于写入导出的 Excel 流

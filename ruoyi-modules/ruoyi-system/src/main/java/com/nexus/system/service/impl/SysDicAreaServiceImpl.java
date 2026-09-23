@@ -28,6 +28,7 @@ import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -101,6 +102,8 @@ public class SysDicAreaServiceImpl implements ISysDicAreaService {
             return selectFullTree();
         }
         List<SysDicAreaVo> areas = selectSysDicAreaList(sysDicArea);
+        // 过滤结果集可能不含下级，故 hasChildren 一律以库为准（一次 0.6ms 的 IN 索引查询）
+        markHasChildrenByDb(areas);
         if (sysDicArea.getParentAreaId() != null) {
             return areas;
         }
@@ -126,7 +129,10 @@ public class SysDicAreaServiceImpl implements ISysDicAreaService {
         if (cached != null) {
             return cached;
         }
-        List<SysDicAreaVo> tree = buildTree(selectSysDicAreaList(new SysDicArea()));
+        List<SysDicAreaVo> areas = selectSysDicAreaList(new SysDicArea());
+        // 全表在手：直接用内存中的父子关系推导 hasChildren，省掉一次查询
+        markHasChildrenFromCompleteSet(areas);
+        List<SysDicAreaVo> tree = buildTree(areas);
         RedisUtils.setCacheObject(FULL_TREE_CACHE_KEY, tree, FULL_TREE_TTL);
         return tree;
     }
@@ -139,6 +145,7 @@ public class SysDicAreaServiceImpl implements ISysDicAreaService {
     @Override
     public List<SysDicAreaVo> selectChildrenTreeList(SysDicArea sysDicArea) {
         List<SysDicAreaVo> areas = selectSysDicAreaList(sysDicArea);
+        markHasChildrenByDb(areas);
         return buildTree(areas);
     }
 
@@ -182,6 +189,7 @@ public class SysDicAreaServiceImpl implements ISysDicAreaService {
     @Override
     public List<SysDicAreaVo> selectTreeExcludeSubtree(Long areaId) {
         List<SysDicAreaVo> areas = selectSysDicAreaList(new SysDicArea());
+        markHasChildrenFromCompleteSet(areas);
         if (areaId == null) {
             return buildTree(areas);
         }
@@ -194,7 +202,30 @@ public class SysDicAreaServiceImpl implements ISysDicAreaService {
         List<SysDicAreaVo> remaining = areas.stream()
             .filter(a -> a.getAreaId() == null || !excluded.contains(a.getAreaId()))
             .collect(Collectors.toList());
+        // 注意：remaining 已非完整结果集，此处沿用过滤前按全表算出的 hasChildren。
+        // 被排除子树的父节点会保留"有下级"的箭头（点开为空），属可接受的降级——本接口已不再被
+        // 前端调用（前端改用 /subtreeIds 懒加载），不值得为此再查一次库。
         return buildTree(remaining);
+    }
+
+    /**
+     * 查询指定节点及其整棵子树的 areaId 集合。
+     * <p>供前端"选择上级"懒加载下拉做防环：把这些节点置为 {@code disabled}，用户就选不到自己或自己的下级。
+     * 相比 {@link #selectTreeExcludeSubtree(Long)} 返回整棵树（约 1.18MB），本方法只回一串 id
+     * （省份级最大约 1500 个、区县级通常几十个），前端拿一次即可覆盖整棵懒加载树。</p>
+     *
+     * <p><b>代价</b>：需要一次全表查询（5112 行，实测 ~2ms）在内存里做 BFS，与
+     * {@link #selectTreeExcludeSubtree(Long)} 相同；但每次打开弹窗只调一次，而不是每展开一级调一次。</p>
+     *
+     * @param areaId 起始节点的行政区划代码（非主键 pkid），可为空（为空返回空集合）
+     * @return 含起始节点及其全部下级的 areaId 列表
+     */
+    @Override
+    public List<Long> selectSubtreeAreaIds(Long areaId) {
+        if (areaId == null) {
+            return new ArrayList<>();
+        }
+        return new ArrayList<>(collectSubtreeIds(areaId, selectSysDicAreaList(new SysDicArea())));
     }
 
     /**
@@ -357,6 +388,66 @@ public class SysDicAreaServiceImpl implements ISysDicAreaService {
             wrapper.eq(SysDicArea::getLayered, area.getLayered());
         }
         return wrapper;
+    }
+
+    /**
+     * 依据库中真实下级回填 {@code hasChildren}（一次 {@code IN} 索引查询）。
+     *
+     * <p><b>为什么需要它</b>：懒加载表格与 {@code el-tree-select} 只给"有下级"的行渲染展开箭头。
+     * 前端此前按 {@code layered < 5} 猜，而库里 5112 行只有 470 行真有下级 —— 4640 行显示假箭头、
+     * 点开返回空列表，每个都是一次多余的往返。</p>
+     *
+     * <p><b>为什么是"按本页 IN"而不是全表 {@code group by}</b>：全表分组要扫完整个
+     * {@code idx_parent_area_id}（实测 4.8ms），而本页 IN 只做几十到几百次索引查找
+     * （34 个省级实测 <b>0.6ms</b>）。过滤查询命中量大时 IN 列表会长一些，但仍远小于全表扫描。</p>
+     *
+     * <p>查不到（或查询异常返回空）时统一置 false：宁可少一个箭头（用户还能靠搜索找到下级），
+     * 也不要多出点了没反应的假箭头。</p>
+     *
+     * @param areas 待回填的节点（扁平列表即可，建树前后都可调用；本方法不读 {@code children}）
+     */
+    private void markHasChildrenByDb(List<SysDicAreaVo> areas) {
+        if (CollUtil.isEmpty(areas)) {
+            return;
+        }
+        List<Long> areaIds = areas.stream()
+            .map(SysDicAreaVo::getAreaId)
+            .filter(Objects::nonNull)
+            .distinct()
+            .collect(Collectors.toList());
+        if (areaIds.isEmpty()) {
+            return;
+        }
+        List<Long> parentIds = baseMapper.selectParentAreaIdsHavingChildren(areaIds);
+        Set<Long> withChildren = CollUtil.isEmpty(parentIds) ? Collections.emptySet() : new HashSet<>(parentIds);
+        for (SysDicAreaVo area : areas) {
+            area.setHasChildren(area.getAreaId() != null && withChildren.contains(area.getAreaId()));
+        }
+    }
+
+    /**
+     * 用<b>完整结果集</b>在内存里推导 {@code hasChildren}（不查库）。
+     *
+     * <p><b>前提</b>：入参必须包含全部未删除行，否则"某节点的 areaId 不在 parentAreaId 集合中"
+     * 可能只是因为它不在结果集里。目前只有两个调用点满足：{@link #selectFullTree()}（全表建树前）
+     * 与 {@link #selectTreeExcludeSubtree(Long)}（全表过滤前）。<b>过滤场景请用
+     * {@link #markHasChildrenByDb(List)}</b>。</p>
+     *
+     * @param areas 全量扁平列表（建树前后均可，本方法不读 {@code children}）
+     */
+    private void markHasChildrenFromCompleteSet(List<SysDicAreaVo> areas) {
+        if (CollUtil.isEmpty(areas)) {
+            return;
+        }
+        Set<Long> parentIds = new HashSet<>();
+        for (SysDicAreaVo area : areas) {
+            if (area.getParentAreaId() != null) {
+                parentIds.add(area.getParentAreaId());
+            }
+        }
+        for (SysDicAreaVo area : areas) {
+            area.setHasChildren(area.getAreaId() != null && parentIds.contains(area.getAreaId()));
+        }
     }
 
     /**

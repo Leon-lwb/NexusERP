@@ -103,4 +103,14 @@ public interface ISysDicAreaService {
      * @return 排除后的行政区划树
      */
     List<SysDicAreaVo> selectTreeExcludeSubtree(Long areaId);
+
+    /**
+     * 查询指定节点及其整棵子树的行政区划代码集合。
+     * <p>供前端"选择上级"懒加载下拉做防环：把这些节点置为不可选，用户就选不到自己或自己的下级。
+     * 相比 {@link #selectTreeExcludeSubtree(Long)} 返回整棵树，本方法只回一串 id，适合懒加载场景。</p>
+     *
+     * @param areaId 起始节点的行政区划代码（非主键 pkid，可为空，为空返回空集合）
+     * @return 含起始节点及其全部下级的 areaId 列表
+     */
+    List<Long> selectSubtreeAreaIds(Long areaId);
 }

@@ -25,8 +25,10 @@ import org.redisson.api.RedissonClient;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -980,5 +982,104 @@ class SysDicAreaServiceImplTest {
 
         verify(baseMapper, times(1)).selectVoList(any());
         redisMock.verify(() -> RedisUtils.deleteObject(CacheNames.SYS_DIC_AREA_TREE), never());
+    }
+
+    // ------------------------------------------------------------------
+    // 首屏性能（P0）：hasChildren 回填 + 子树 id 接口
+    // ------------------------------------------------------------------
+
+    /** 构造懒加载用的查询条件（带 parentAreaId → 后端返回扁平列表，不建树） */
+    private static SysDicArea parentQuery(Long parentAreaId, Long layered) {
+        SysDicArea q = new SysDicArea();
+        q.setParentAreaId(parentAreaId);
+        q.setLayered(layered);
+        return q;
+    }
+
+    /**
+     * 扁平（懒加载每一级）查询必须回填<b>库里的真实</b> hasChildren。
+     * <p>前端懒加载表格与 el-tree-select 只给"有下级"的行渲染展开箭头。靠"层级 &lt; 5"猜的话，
+     * 库里 5112 行只有 470 行真有下级，会多出 4640 个点了返回空列表的假箭头。</p>
+     */
+    @Test
+    void flatListFillsHasChildrenFromDb() {
+        when(baseMapper.selectVoList(any())).thenReturn(List.of(
+            vo(1L, 330000L, 0L, 1L, "浙江省"),
+            vo(2L, 330100L, 330000L, 2L, "杭州市")
+        ));
+        // 只有 330000 在库里存在下级
+        when(baseMapper.selectParentAreaIdsHavingChildren(any())).thenReturn(List.of(330000L));
+
+        List<SysDicAreaVo> rows = service.selectSysDicAreaTreeList(parentQuery(0L, 1L));
+
+        assertEquals(2, rows.size(), "带 parentAreaId 时必须返回扁平列表，不能建树");
+        assertEquals(Boolean.TRUE, rows.get(0).getHasChildren(), "浙江省有下级");
+        assertEquals(Boolean.FALSE, rows.get(1).getHasChildren(), "杭州市（夹具中）无下级");
+    }
+
+    /**
+     * 带条件的树查询同样以库为准回填 hasChildren。
+     * <p>过滤结果集里可能只有"杭州市"而没有它的下级，若按结果集内 children 判断会误判成叶子，
+     * 前端就展不开——必须查库。</p>
+     */
+    @Test
+    void filteredTreeFillsHasChildrenFromDb() {
+        when(baseMapper.selectVoList(any())).thenReturn(List.of(
+            vo(2L, 330100L, 330000L, 2L, "杭州市")
+        ));
+        when(baseMapper.selectParentAreaIdsHavingChildren(any())).thenReturn(List.of(330100L));
+
+        SysDicArea query = new SysDicArea();
+        query.setAreaName("杭州");
+        List<SysDicAreaVo> tree = service.selectSysDicAreaTreeList(query);
+
+        assertEquals(1, tree.size());
+        assertEquals(Boolean.TRUE, tree.get(0).getHasChildren(),
+            "杭州市在库里还有下级（只是不在过滤结果集里），必须查库判断");
+    }
+
+    /**
+     * 全量树用内存中的 children 推导 hasChildren，不应为此再查一次库。
+     * <p>全量树本身就含全部 5112 行，"有 children"等价于"库里有下级"，多查一次纯属浪费
+     * （而且 IN 列表会有 5112 个元素）。</p>
+     */
+    @Test
+    void fullTreeFillsHasChildrenFromMemoryWithoutExtraQuery() {
+        when(baseMapper.selectVoList(any())).thenReturn(List.of(
+            vo(1L, 330000L, 0L, 1L, "浙江省"),
+            vo(2L, 330100L, 330000L, 2L, "杭州市")
+        ));
+
+        List<SysDicAreaVo> tree = service.selectFullTree();
+
+        assertEquals(Boolean.TRUE, tree.get(0).getHasChildren(), "浙江省有子节点");
+        assertEquals(Boolean.FALSE, tree.get(0).getChildren().get(0).getHasChildren(), "杭州市是叶子");
+        verify(baseMapper, never()).selectParentAreaIdsHavingChildren(any());
+    }
+
+    /**
+     * 子树 id 接口：返回自己 + 全部下级。
+     * <p>前端"选择上级"懒加载下拉用它把待编辑节点的整棵子树置为 disabled（防环）。旧实现走
+     * {@code /list/exclude/{areaId}}，为了防环每次都要传回 1.18MB 的整棵树。</p>
+     */
+    @Test
+    void subtreeAreaIdsContainsSelfAndDescendants() {
+        when(baseMapper.selectVoList(any())).thenReturn(List.of(
+            vo(1L, 330000L, 0L, 1L, "浙江省"),
+            vo(2L, 330100L, 330000L, 2L, "杭州市"),
+            vo(3L, 330102L, 330100L, 3L, "上城区"),
+            vo(4L, 330200L, 330000L, 2L, "宁波市")
+        ));
+
+        List<Long> ids = service.selectSubtreeAreaIds(330100L);
+
+        assertEquals(Set.of(330100L, 330102L), new HashSet<>(ids), "只含自己与自己的下级，不含兄弟节点");
+    }
+
+    /** 子树 id 接口：areaId 为空返回空集合（而不是 null，也不该白查一次库） */
+    @Test
+    void subtreeAreaIdsWithNullReturnsEmpty() {
+        assertTrue(service.selectSubtreeAreaIds(null).isEmpty());
+        verify(baseMapper, never()).selectVoList(any());
     }
 }

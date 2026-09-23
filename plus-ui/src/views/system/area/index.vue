@@ -69,13 +69,21 @@
         <el-row>
           <el-col :span="24">
             <el-form-item label="上级地区" prop="parentAreaId">
+              <!--
+                懒加载：全量树有 5112 个节点（≈1.18MB），el-tree 不做虚拟滚动，一次性灌进去要建 5000+ 个
+                TreeNode 并渲染成 DOM，弹窗会卡住好几秒。这里改成按需逐级拉取（根只有"顶级节点"一个，
+                展开一级才发一次 ~6KB 的请求），并用 disabled 阻止选中自己或自己的下级（防环）。
+              -->
               <el-tree-select
                 v-model="form.parentAreaId"
-                :data="areaOptions"
+                lazy
+                :load="loadParentOptions"
+                :cache-data="parentCacheData"
                 :props="areaTreeProps"
                 value-key="areaId"
                 placeholder="选择上级地区"
                 check-strictly
+                @node-click="onParentNodeClick"
               />
             </el-form-item>
           </el-col>
@@ -129,8 +137,8 @@
 </template>
 
 <script setup lang="ts" name="Area">
-import { ref, reactive, toRefs, watch, onMounted, getCurrentInstance } from 'vue';
-import { listArea, listAreaExcludeChild, getArea, delArea, addArea, updateArea, AreaVO, AreaQuery, AreaForm } from '@/api/system/area';
+import { ref, reactive, toRefs, onMounted, getCurrentInstance } from 'vue';
+import { listArea, getSubtreeAreaIds, getArea, delArea, addArea, updateArea, AreaVO, AreaQuery, AreaForm } from '@/api/system/area';
 
 const { proxy } = getCurrentInstance();
 const { sys_area_level } = toRefs<any>(proxy.useDict('sys_area_level'));
@@ -139,19 +147,36 @@ const { sys_area_level } = toRefs<any>(proxy.useDict('sys_area_level'));
  * el-tree-select 字段映射。
  * 声明为常量对象而不是模板内联字面量：Element Plus 的 TreeOptionProps 未声明 value 字段，
  * 内联字面量会触发"对象字面量的多余属性检查"，此前只能靠 `as any` 绕过。
+ * <p>{@code isLeaf} / {@code disabled} 未在此声明，走 el-tree-select 的默认字段名（同名）。</p>
  */
 const areaTreeProps = { value: 'areaId', label: 'areaName', children: 'children' };
+
+/**
+ * el-tree-select 懒加载节点：在 AreaVO 之上补两个树组件专用字段。
+ * <p>{@code isLeaf} 决定是否显示展开箭头，{@code disabled} 用于防环。</p>
+ */
+type AreaTreeNode = AreaVO & { isLeaf?: boolean; disabled?: boolean };
 
 const areaList = ref<AreaVO[]>([]);
 const open = ref(false);
 const loading = ref(false);
 const showSearch = ref(true);
 const title = ref('');
-const areaOptions = ref<AreaVO[]>([]);
 /** 表格重挂载标记：懒加载模式下 Element Plus 会缓存已展开节点的子数据，列表刷新后必须重挂载表格，否则改名/新增/删除不会反映到已展开的节点上 */
 const tableKey = ref(0);
 const queryRef = ref<ElFormInstance>();
 const areaRef = ref<ElFormInstance>();
+/**
+ * 上级下拉的回显数据（el-tree-select 的 cache-data）。
+ * 懒加载模式下树里只有"展开过"的节点，选中值所在节点不在树里时，组件拿不到 label 就只能显示数字代码，
+ * 必须显式把已选上级喂进去。
+ */
+const parentCacheData = ref<AreaVO[]>([]);
+/**
+ * 防环禁用集合：待编辑节点整棵子树的 areaId（字符串形式，避免 number/string 比较踩坑）。
+ * 懒加载时命中该集合的节点会被置为 disabled，用户就选不到自己或自己的下级。
+ */
+const excludedAreaIds = ref<Set<string>>(new Set());
 
 const data = reactive({
   form: {} as AreaForm,
@@ -181,20 +206,31 @@ const data = reactive({
 
 const { queryParams, form, rules } = toRefs(data);
 
+/**
+ * 给表格行打展开标记。
+ * <p>优先用后端回填的 {@code hasChildren}（扁平/懒加载路径下是查库得到的真实值）；后端未给时
+ * 才回退到"层级 < 5"的启发式——库里 5112 行只有 470 行真有下级，纯靠猜会多出 4640 个假箭头。</p>
+ */
+function withHasChildren(rows: AreaVO[]): AreaVO[] {
+  return rows
+    .filter((item) => item !== null && item !== undefined)
+    .map((item) => ({
+      ...item,
+      hasChildren: item.hasChildren ?? (item.layered ?? 0) < 5
+    }));
+}
+
 function getList() {
   loading.value = true;
-  listArea(queryParams.value)
+  const query = queryParams.value;
+  // 首屏只需要第一级（34 个省级）：无参调用会让后端返回整棵 5112 节点树（≈1.18MB、服务端 153ms），
+  // 而 Element Plus 懒加载表只渲染根节点，其余 5078 个节点白下载、白解析、白占内存。
+  // 显式带上 parentAreaId/layered 后后端走 idx_parent_area_id 返回扁平列表（≈6.8KB、~3ms）。
+  // 只有按名称/层级筛选时才需要整树。
+  const params: AreaQuery = query.areaName || query.layered ? query : { parentAreaId: 0, layered: 1 };
+  listArea(params)
     .then((response) => {
-      areaList.value = [];
-      if (response.data && Array.isArray(response.data)) {
-        const filteredData = response.data.filter((item) => item !== null && item !== undefined);
-        // 懒加载模式下 Element Plus 只按 hasChildren 决定是否渲染展开箭头；统一按"层级 < 5"打标
-        // （与 sys_area_level 字典一致，1~5），子节点交给 loadChildren 逐级拉取。
-        areaList.value = filteredData.map((item) => ({
-          ...item,
-          hasChildren: item.layered < 5
-        }));
-      }
+      areaList.value = response.data && Array.isArray(response.data) ? withHasChildren(response.data) : [];
       loading.value = false;
       // 重挂载表格以丢弃懒加载缓存，保证增删改后已展开节点显示最新数据（旧实现是重置 expandedRowKeys 收起全部）
       tableKey.value += 1;
@@ -209,11 +245,7 @@ function getList() {
 function loadChildren(row: AreaVO, _treeNode: unknown, resolve: (rows: AreaVO[]) => void) {
   listArea({ parentAreaId: row.areaId, layered: (row.layered ?? 0) + 1 })
     .then((response) => {
-      const rows = (response.data ?? []).map((item) => ({
-        ...item,
-        hasChildren: (item.layered ?? 0) < 5
-      }));
-      resolve(rows);
+      resolve(withHasChildren(response.data ?? []));
     })
     .catch(() => {
       proxy.$modal.msgError('加载下级失败');
@@ -252,76 +284,126 @@ function reset() {
 }
 
 /**
- * 构建"上级地区"下拉数据。
- * <p>不传参时调 listArea()（无任何条件 → 后端返回完整树，可挂到市/区/街道下）；
- * 传 areaId 时调 listAreaExcludeChild(areaId) 排除该节点及其整棵子树，避免把上级选成自己或自己的下级。</p>
- * <p><b>必须传 areaId（行政区划代码，如 330100），不能传 pkid</b>：后端按 area_id 匹配，
- * 传 pkid 会匹配不到 → 静默返回全树 → 防环失效；详情接口 getArea 才是按 pkid 查。</p>
+ * 把接口返回的一级行政区划转成 el-tree-select 的懒加载节点。
+ * <p>{@code isLeaf} 用后端回填的 {@code hasChildren}（缺失时才回退到层级启发式）：懒加载树靠它决定
+ * 是否渲染展开箭头，标错会出现"点开是空"或"有下级却展不开"。</p>
+ * <p>{@code disabled} 用防环集合：编辑时该节点整棵子树都不可选，避免把上级设成自己或自己的下级。</p>
  */
-function buildAreaOptions(excludeAreaId?: string | number): Promise<void> {
-  const request = excludeAreaId !== undefined && excludeAreaId !== null ? listAreaExcludeChild(excludeAreaId) : listArea();
-  return request
-    .then((response) => {
-      const rows = (response.data ?? []).filter((item) => item !== null && item !== undefined);
-      // 顶级节点（areaId=0）必须可表示：存量 34 个省级行的 parent_area_id=156（节点不存在），
-      // 只有选中"顶级节点"才能把它们修正为合法的 parentAreaId=0 + layered=1。
-      areaOptions.value = [{ areaId: 0, areaName: '顶级节点', children: rows }];
-    })
-    .catch(() => {
-      areaOptions.value = [{ areaId: 0, areaName: '顶级节点', children: [] }];
-      proxy.$modal.msgError('获取上级地区列表失败');
+function toParentNodes(rows: AreaVO[], fallbackLayered: number): AreaTreeNode[] {
+  return rows
+    .filter((item) => item !== null && item !== undefined)
+    .map((item) => {
+      const layered = Number(item.layered ?? fallbackLayered);
+      return {
+        ...item,
+        layered,
+        isLeaf: !(item.hasChildren ?? layered < 5),
+        disabled: excludedAreaIds.value.has(String(item.areaId))
+      };
     });
 }
 
-/** 在上级地区树中按 areaId 查找节点（areaId 可能是数字或字符串，统一按字符串比较） */
-function findInTree(nodes: AreaVO[], areaId?: string | number): AreaVO | undefined {
-  for (const node of nodes) {
-    if (String(node.areaId) === String(areaId)) return node;
-    const hit = node.children ? findInTree(node.children, areaId) : undefined;
-    if (hit) return hit;
-  }
-  return undefined;
-}
-
-/** 按当前选中的上级推导层级：顶级节点固定为 1，其余为上级层级 + 1（后端强校验该不变量） */
-function syncLayeredFromParent() {
-  const parentAreaId = form.value.parentAreaId;
-  if (parentAreaId === 0 || parentAreaId === null || parentAreaId === undefined) {
-    form.value.layered = 1;
+/**
+ * "上级地区"下拉的懒加载回调。
+ * <p>根只给一个"顶级节点"（areaId=0），展开后才逐级按 parentAreaId 拉取——旧实现一次性把 5112 个
+ * 节点灌进 el-tree-select，光建 TreeNode + 渲染 DOM 就要好几秒。</p>
+ * <p>顶级节点必须可表示：它是把存量省级行（parent_area_id 为悬空码）修正为 parentAreaId=0 的唯一入口。</p>
+ */
+function loadParentOptions(node: { level: number; data: AreaTreeNode }, resolve: (rows: AreaTreeNode[]) => void) {
+  if (node.level === 0) {
+    resolve([{ areaId: 0, areaName: '顶级节点', layered: 0, hasChildren: true, isLeaf: false } as AreaTreeNode]);
     return;
   }
-  const parent = findInTree(areaOptions.value, parentAreaId);
-  if (parent?.layered !== undefined && parent?.layered !== null) {
-    form.value.layered = Number(parent.layered) + 1;
-  }
+  const parent = node.data;
+  const layered = Number(parent.layered ?? 0) + 1;
+  listArea({ parentAreaId: parent.areaId, layered })
+    .then((response) => resolve(toParentNodes(response.data ?? [], layered)))
+    .catch(() => {
+      proxy.$modal.msgError('获取上级地区列表失败');
+      resolve([]);
+    });
 }
 
-// 选中上级后自动带出层级 = 上级层级 + 1
-watch(() => form.value.parentAreaId, syncLayeredFromParent);
+/**
+ * 选中上级节点后推导层级 = 上级层级 + 1（后端强校验该不变量）。
+ * <p><b>为什么监听 node-click 而不是 watch(parentAreaId)</b>：懒加载下树里只有展开过的节点，
+ * 旧实现那套"在整棵树里找父节点再 +1"的做法已经拿不到数据；而 node-click 直接把被点击节点的
+ * {@code layered} 交给我们，最准也最省事。</p>
+ * <p>点 disabled 节点不会改变选中值（el-tree-select 内部会拦），此时不能改层级，否则会与
+ * parentAreaId 对不上。</p>
+ */
+function onParentNodeClick(data: AreaTreeNode) {
+  if (data.disabled) {
+    return;
+  }
+  form.value.layered = Number(data.layered ?? 0) + 1;
+}
+
+/** 每次打开弹窗前重置懒加载下拉的状态（禁用集合与回显数据都只属于当前这次编辑） */
+function resetParentPicker() {
+  parentCacheData.value = [];
+  excludedAreaIds.value = new Set();
+}
 
 /** 新增：不传 row 即新增顶级节点（parentAreaId=0、layered=1） */
-async function handleAdd(row?: AreaVO) {
+function handleAdd(row?: AreaVO) {
   reset();
+  resetParentPicker();
   form.value.parentAreaId = row?.areaId ?? 0;
   open.value = true;
   title.value = '添加行政区划';
-  // 上级下拉是异步加载的：首次触发 watch 时 areaOptions 还是空的，加载完成后再推导一次层级
-  await buildAreaOptions();
-  syncLayeredFromParent();
+  // 新增的节点还没有子树，无需禁用任何节点。
+  // 层级直接由被点击行的层级推导（懒加载下树里还没加载过该节点）：顶级节点固定 1，
+  // 其余 = 上级层级 + 1 —— 后端强校验该不变量。
+  const parentLayered = row?.layered;
+  form.value.layered = parentLayered === undefined || parentLayered === null ? 1 : Number(parentLayered) + 1;
 }
 
 function handleUpdate(row: AreaVO) {
   reset();
-  // 排除自身及子树用 areaId（行政区划代码），详情用 pkid（主键）——两个 ID 用途不同
-  buildAreaOptions(row.areaId);
+  resetParentPicker();
+  title.value = '修改行政区划';
+  // 防环：取该节点整棵子树的 areaId，懒加载时把这些节点置为 disabled（旧实现是返回"排除子树后的整棵树"，
+  // 为了防环每次都要传 1.18MB；现在只传一串 id，且每次打开弹窗只调一次）
+  getSubtreeAreaIds(row.areaId)
+    .then((response) => {
+      excludedAreaIds.value = new Set((response.data ?? []).map((id) => String(id)));
+    })
+    .catch(() => {
+      // 取不到禁用集合时不阻断编辑，交由后端 validate() 兜底（会明确报"上级不能是自己或自己的下级"）
+      proxy.$modal.msgError('获取可选的上级地区失败，提交时仍会校验上下级关系');
+    });
+  // 详情按 pkid（主键）查；防环用的是 areaId（行政区划代码），两个 ID 用途不同
   getArea(row.pkid).then((response) => {
     form.value = response.data;
     if (form.value.layered !== undefined && form.value.layered !== null) {
       form.value.layered = Number(form.value.layered);
     }
     open.value = true;
-    title.value = '修改行政区划';
+    // 懒加载模式下树里没有"已选上级"这个节点，必须用 cache-data 提供名称，否则只显示数字代码
+    loadParentCacheData(form.value.parentAreaId);
   });
+}
+
+/** 拉取已选上级的名称，供 el-tree-select 在懒加载模式下回显 */
+function loadParentCacheData(parentAreaId?: string | number) {
+  if (parentAreaId === undefined || parentAreaId === null) {
+    return;
+  }
+  if (Number(parentAreaId) === 0) {
+    parentCacheData.value = [{ areaId: 0, areaName: '顶级节点', layered: 0 } as AreaVO];
+    return;
+  }
+  listArea({ areaId: parentAreaId })
+    .then((response) => {
+      const parent = (response.data ?? []).find((item) => String(item.areaId) === String(parentAreaId));
+      if (parent) {
+        parentCacheData.value = [parent];
+      }
+    })
+    .catch(() => {
+      // 回显失败只影响显示名称，不影响提交；保持数字代码可见即可
+    });
 }
 
 function submitForm() {
