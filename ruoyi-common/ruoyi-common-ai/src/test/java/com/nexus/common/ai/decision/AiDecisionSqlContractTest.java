@@ -114,6 +114,15 @@ class AiDecisionSqlContractTest {
     }
 
     @Test
+    void trailingCommaInApprovalMenuMustBeRejected() {
+        Matcher menu = Pattern.compile("(?m)^INSERT INTO `sys_menu` VALUES \\(1855,[^\\r\\n]*\\);$").matcher(sql);
+        assertTrue(menu.find(), "缺少 1855 菜单行，无法构造尾逗号变体");
+        String mutated = sql.substring(0, menu.end() - 2) + ",);" + sql.substring(menu.end());
+        assertThrows(AssertionError.class, () -> assertMenuPermissions(mutated),
+            "1855 VALUES 末尾多余逗号不应通过 SQL 契约");
+    }
+
+    @Test
     void wrongRunVersionTypeMustBeRejected() {
         String original = "`version` int NOT NULL DEFAULT 0";
         String mutated = sql.replaceFirst(Pattern.quote(original), "`version` varchar(20) NULL DEFAULT NULL");
@@ -171,6 +180,7 @@ class AiDecisionSqlContractTest {
     }
 
     private static List<String> parseMenuValues(String values, int id) {
+        assertFalse(values.stripTrailing().endsWith(","), "sys_menu " + id + " VALUES 不允许尾随逗号");
         List<String> fields = new ArrayList<>();
         Matcher token = MENU_VALUE.matcher(values);
         int offset = 0;
