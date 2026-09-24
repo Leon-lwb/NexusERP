@@ -11,6 +11,7 @@ import com.nexus.common.core.utils.MapstructUtils;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.flowable.core.domain.ActStatus;
+import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.erp.bd.domain.BdMaterial;
@@ -121,6 +122,20 @@ public class PuPurchaseRequisitionServiceImpl implements IPuPurchaseRequisitionS
         return vo;
     }
 
+    /** 决策创建后同一事务中对主表与明细执行 current read。 */
+    @Override
+    public PuPurchaseRequisitionVo selectByIdForDecision(Long id) {
+        PuPurchaseRequisition entity = baseMapper.selectOne(Wrappers.lambdaQuery(PuPurchaseRequisition.class)
+            .eq(PuPurchaseRequisition::getRequisitionId, id).last("FOR UPDATE"));
+        if (entity == null) {
+            return null;
+        }
+        PuPurchaseRequisitionVo vo = copyToVo(entity);
+        vo.setPuPurchaseRequisitionLineList(lineMapper.selectList(Wrappers.lambdaQuery(PuPurchaseRequisitionLine.class)
+            .eq(PuPurchaseRequisitionLine::getRequisitionId, id).last("FOR UPDATE")));
+        return vo;
+    }
+
     /**
      * 将实体转换为 VO 对象
      */
@@ -182,7 +197,10 @@ public class PuPurchaseRequisitionServiceImpl implements IPuPurchaseRequisitionS
             }
             PuPurchaseRequisition existing = findByDecisionKeyForUpdate(decisionKey);
             if (existing == null) {
-                throw new ServiceException("采购申请幂等冲突后无法重读已有单据");
+                if (isCompensatedDecisionKey(decisionKey)) {
+                    throw new ServiceException("采购申请已补偿，幂等键永久占用，不可重试");
+                }
+                throw duplicate;
             }
             reuseExistingDraft(bo, existing, lines);
             return 0;
@@ -240,6 +258,14 @@ public class PuPurchaseRequisitionServiceImpl implements IPuPurchaseRequisitionS
             .last("FOR UPDATE"));
     }
 
+    private boolean isCompensatedDecisionKey(String key) {
+        String tenantId = TenantHelper.getTenantId();
+        if (StringUtils.isBlank(tenantId)) {
+            throw new ServiceException("租户上下文缺失，无法确认采购申请幂等冲突");
+        }
+        return baseMapper.findCompensatedDecisionId(tenantId, key) != null;
+    }
+
     private void reuseExistingDraft(PuPurchaseRequisitionBo requested,
                                     PuPurchaseRequisition existing,
                                     List<PuPurchaseRequisitionLine> requestedLines) {
@@ -248,7 +274,8 @@ public class PuPurchaseRequisitionServiceImpl implements IPuPurchaseRequisitionS
         }
         List<PuPurchaseRequisitionLine> existingLines = lineMapper.selectList(
             Wrappers.lambdaQuery(PuPurchaseRequisitionLine.class)
-                .eq(PuPurchaseRequisitionLine::getRequisitionId, existing.getRequisitionId()));
+                .eq(PuPurchaseRequisitionLine::getRequisitionId, existing.getRequisitionId())
+                .last("FOR UPDATE"));
         if (!lineFingerprints(requestedLines).equals(lineFingerprints(existingLines))) {
             throw new ServiceException("幂等键对应的采购申请来源或载荷不一致");
         }
@@ -489,17 +516,31 @@ public class PuPurchaseRequisitionServiceImpl implements IPuPurchaseRequisitionS
         }
         Long requisitionId = Long.parseLong(business.getDataId());
         PuPurchaseRequisition requisition = ensureRequisition(requisitionId);
+        String nextStatus;
         if (ActStatus.pass.equals(actStatus)) {
-            requisition.setStatus(STATUS_APPROVED);
+            nextStatus = STATUS_APPROVED;
         } else if (ActStatus.reject.equals(actStatus) || ActStatus.retrun.equals(actStatus)) {
-            requisition.setStatus(STATUS_REJECTED);
+            nextStatus = STATUS_REJECTED;
         } else if (ActStatus.revoke.equals(actStatus) || ActStatus.stop.equals(actStatus)
             || ActStatus.recall.equals(actStatus)) {
-            requisition.setStatus(STATUS_DRAFT);
+            nextStatus = STATUS_DRAFT;
         } else {
             return;
         }
-        updateExistingOrThrow(requisition, "采购申请审批状态已被并发修改");
+        if (!STATUS_APPROVING.equals(requisition.getStatus())) {
+            throw new ServiceException("采购申请不在审批中，不能处理审批回调");
+        }
+        int version = currentVersion(requisition);
+        int updated = baseMapper.update(null, Wrappers.lambdaUpdate(PuPurchaseRequisition.class)
+            .eq(PuPurchaseRequisition::getRequisitionId, requisitionId)
+            .eq(PuPurchaseRequisition::getStatus, STATUS_APPROVING)
+            .eq(PuPurchaseRequisition::getVersion, version)
+            .set(PuPurchaseRequisition::getStatus, nextStatus)
+            .set(PuPurchaseRequisition::getVersion, version + 1)
+            .set(PuPurchaseRequisition::getUpdateTime, new Date()));
+        if (updated != 1) {
+            throw new ServiceException("采购申请审批状态已被并发修改");
+        }
     }
 
     /**

@@ -62,6 +62,9 @@ public interface IPuPurchaseRequisitionService extends WfCallBackServiceI {
      */
     PuPurchaseRequisitionVo selectById(Long id);
 
+    /** 决策创建后同事务重读主表与明细，使用锁定读避免 RR 旧快照。 */
+    PuPurchaseRequisitionVo selectByIdForDecision(Long id);
+
     /**
      * 新增采购申请，含明细行
      *

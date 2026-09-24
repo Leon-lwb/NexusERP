@@ -1,6 +1,7 @@
 package com.nexus.erp.ai.adapter;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.nexus.common.ai.decision.dto.DecisionActionExecutionResult;
 import com.nexus.common.ai.decision.dto.DecisionActionProposal;
 import com.nexus.common.ai.decision.dto.DecisionActor;
@@ -168,7 +169,7 @@ public class ErpDecisionActionExecutor {
         if (requisitionId == null || requisitionId <= 0) {
             throw new ServiceException("采购申请草稿未返回有效ID");
         }
-        PuPurchaseRequisitionVo persisted = purchaseRequisitionService.selectById(requisitionId);
+        PuPurchaseRequisitionVo persisted = purchaseRequisitionService.selectByIdForDecision(requisitionId);
         if (persisted == null) {
             throw new ServiceException("采购申请草稿创建后无法重读");
         }
@@ -206,7 +207,9 @@ public class ErpDecisionActionExecutor {
         if (created == null || created.getPlanId() == null || created.getPlanId() <= 0) {
             throw new ServiceException("排程方案未返回有效ID");
         }
-        PrdSchedulePlan persisted = planMapper.selectById(created.getPlanId());
+        PrdSchedulePlan persisted = planMapper.selectOne(Wrappers
+            .lambdaQuery(PrdSchedulePlan.class)
+            .eq(PrdSchedulePlan::getPlanId, created.getPlanId()).last("FOR UPDATE"));
         if (persisted == null) {
             throw new ServiceException("排程方案创建后无法重读");
         }

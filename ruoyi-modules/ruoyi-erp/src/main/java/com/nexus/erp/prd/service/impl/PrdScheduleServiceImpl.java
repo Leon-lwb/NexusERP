@@ -9,6 +9,7 @@ import com.nexus.common.core.utils.MapstructUtils;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.json.utils.JsonUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
+import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
 import com.nexus.erp.prd.domain.PrdSchedulePlan;
 import com.nexus.erp.prd.domain.PrdScheduleTask;
@@ -253,7 +254,10 @@ public class PrdScheduleServiceImpl implements IPrdScheduleService {
             }
             PrdSchedulePlan existing = findByDecisionKeyForUpdate(plan.getDecisionIdempotencyKey());
             if (existing == null) {
-                throw new ServiceException("排程方案幂等冲突后无法重读已有方案");
+                if (isCompensatedDecisionKey(plan.getDecisionIdempotencyKey())) {
+                    throw new ServiceException("排程方案已补偿，幂等键永久占用，不可重试");
+                }
+                throw duplicate;
             }
             validateExistingDecisionPlan(bo, existing);
             return MapstructUtils.convert(existing, PrdSchedulePlanVo.class);
@@ -315,6 +319,14 @@ public class PrdScheduleServiceImpl implements IPrdScheduleService {
         return planMapper.selectOne(Wrappers.lambdaQuery(PrdSchedulePlan.class)
             .eq(PrdSchedulePlan::getDecisionIdempotencyKey, key)
             .last("FOR UPDATE"));
+    }
+
+    private boolean isCompensatedDecisionKey(String key) {
+        String tenantId = TenantHelper.getTenantId();
+        if (StringUtils.isBlank(tenantId)) {
+            throw new ServiceException("租户上下文缺失，无法确认排程方案幂等冲突");
+        }
+        return planMapper.findCompensatedDecisionId(tenantId, key) != null;
     }
 
     private void validateExistingDecisionPlan(PrdSchedulePlanBo requested, PrdSchedulePlan existing) {

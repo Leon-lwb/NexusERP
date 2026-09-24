@@ -1,15 +1,23 @@
 package com.nexus.erp.ai.adapter;
 
+import com.nexus.erp.prd.mapper.PrdSchedulePlanMapper;
+import com.nexus.erp.pu.mapper.PuPurchaseRequisitionMapper;
+import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** 主初始化脚本中的 ERP 决策草稿结构契约测试；不连接或修改真实数据库。 */
@@ -40,6 +48,31 @@ class ErpDecisionDraftSqlContractTest {
         assertColumn(table, "version", "int(?:\\(11\\))?\\s+not\\s+null\\s+default\\s+0");
         assertContains(table, "unique index `uk_psp_decision_idem`(`tenant_id`, `decision_idempotency_key`)");
         assertContains(table, "index `idx_psp_decision_run`(`tenant_id`, `decision_run_id`)");
+    }
+
+    @Test
+    void purchaseTombstoneLookupIsTenantScopedCurrentRead() {
+        assertTombstoneLookup(PuPurchaseRequisitionMapper.class, "pu_purchase_requisition", "requisition_id");
+    }
+
+    @Test
+    void scheduleTombstoneLookupIsTenantScopedCurrentRead() {
+        assertTombstoneLookup(PrdSchedulePlanMapper.class, "prd_schedule_plan", "plan_id");
+    }
+
+    private void assertTombstoneLookup(Class<?> mapper, String table, String idColumn) {
+        Method lookup = assertDoesNotThrow(() -> mapper.getDeclaredMethod(
+            "findCompensatedDecisionId", String.class, String.class));
+        Select select = lookup.getAnnotation(Select.class);
+        assertNotNull(select, "必须显式查询包含逻辑删除行");
+        String sql = String.join(" ", select.value()).toLowerCase(Locale.ROOT).replaceAll("\\s+", " ");
+        assertTrue(sql.contains("select " + idColumn + " from " + table), sql);
+        assertTrue(sql.contains("tenant_id = #{tenantid}"), sql);
+        assertTrue(sql.contains("decision_idempotency_key = #{key}"), sql);
+        assertTrue(sql.contains("del_flag = '1'"), sql);
+        assertTrue(sql.endsWith("for update"), sql);
+        assertEquals("tenantId", lookup.getParameters()[0].getAnnotation(Param.class).value());
+        assertEquals("key", lookup.getParameters()[1].getAnnotation(Param.class).value());
     }
 
     private String tableSql(String tableName) throws IOException {

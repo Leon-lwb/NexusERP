@@ -63,9 +63,9 @@ class ErpDecisionActionExecutorTransactionTest {
             jdbcTemplate.update("INSERT INTO decision_tx_probe(id) VALUES (7001)");
             return 7001L;
         });
-        when(purchaseService.selectById(7001L)).thenReturn(null);
 
         assertThrows(RuntimeException.class, () -> executor.execute(purchaseAction(), actor()));
+        org.mockito.Mockito.verify(purchaseService).selectByIdForDecision(7001L);
 
         assertEquals(0, jdbcTemplate.queryForObject("SELECT COUNT(*) FROM decision_tx_probe", Integer.class));
     }

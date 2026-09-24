@@ -10,6 +10,7 @@ import com.nexus.common.core.domain.R;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.flowable.core.domain.ActStatus;
 import com.nexus.common.flowable.helper.FlowableProcInsIdHelper;
+import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.erp.bd.domain.BdMaterial;
 import com.nexus.erp.bd.mapper.BdMaterialMapper;
 import com.nexus.erp.pu.domain.PuPurchaseOrder;
@@ -36,6 +37,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.transaction.annotation.Transactional;
@@ -50,6 +53,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -294,6 +298,92 @@ class PuPurchaseRequisitionServiceImplTest {
     }
 
     @Test
+    void duplicateKeyReplayReadsLinesWithCurrentReadAfterOldSnapshot() {
+        PuPurchaseRequisitionBo bo = decisionPurchaseBo();
+        when(baseMapper.selectOne(any(Wrapper.class))).thenReturn(null, matchingExistingRequisition());
+        when(autoCodeUtil.genSerialCode("PU_REQUISITION_CODE", null)).thenReturn("PR-RACE");
+        when(baseMapper.insert(any(PuPurchaseRequisition.class)))
+            .thenThrow(new DuplicateKeyException("duplicate decision key"));
+        when(lineMapper.selectList(any(Wrapper.class))).thenAnswer(invocation -> {
+            Wrapper<?> query = invocation.getArgument(0);
+            return query.getSqlSegment().toUpperCase(Locale.ROOT).contains("FOR UPDATE")
+                ? matchingLines(7001L) : List.of();
+        });
+
+        assertEquals(7001L, assertDoesNotThrow(() -> requisitionService.createDraft(bo)));
+        ArgumentCaptor<Wrapper<PuPurchaseRequisitionLine>> lines = wrapperCaptor();
+        verify(lineMapper).selectList(lines.capture());
+        assertSqlContains(lines.getValue(), "for update");
+        verify(baseMapper, never()).delete(any(Wrapper.class));
+    }
+
+    @Test
+    void decisionPostCreateReadsBothHeaderAndLinesWithForUpdate() {
+        when(baseMapper.selectOne(any(Wrapper.class))).thenAnswer(invocation -> {
+            Wrapper<?> query = invocation.getArgument(0);
+            return query.getSqlSegment().toUpperCase(Locale.ROOT).contains("FOR UPDATE")
+                ? matchingExistingRequisition() : null;
+        });
+        when(lineMapper.selectList(any(Wrapper.class))).thenAnswer(invocation -> {
+            Wrapper<?> query = invocation.getArgument(0);
+            return query.getSqlSegment().toUpperCase(Locale.ROOT).contains("FOR UPDATE")
+                ? matchingLines(7001L) : List.of();
+        });
+
+        assertEquals(1, assertDoesNotThrow(() -> requisitionService.selectByIdForDecision(7001L))
+            .getPuPurchaseRequisitionLineList().size());
+        ArgumentCaptor<Wrapper<PuPurchaseRequisition>> header = wrapperCaptor();
+        ArgumentCaptor<Wrapper<PuPurchaseRequisitionLine>> lines = wrapperCaptor();
+        verify(baseMapper).selectOne(header.capture());
+        verify(lineMapper).selectList(lines.capture());
+        assertSqlContains(header.getValue(), "requisition_id", "for update");
+        assertSqlContains(lines.getValue(), "requisition_id", "for update");
+    }
+
+    @Test
+    void decisionPostCreateCurrentReadIsExposedOnPurchaseService() {
+        assertDoesNotThrow(() -> com.nexus.erp.pu.service.IPuPurchaseRequisitionService.class
+            .getMethod("selectByIdForDecision", Long.class));
+    }
+
+    @Test
+    void compensatedPurchaseKeyCannotBeRecreatedAfterLogicalDelete() {
+        PuPurchaseRequisitionBo bo = decisionPurchaseBo();
+        when(baseMapper.delete(any(Wrapper.class))).thenReturn(1);
+        when(baseMapper.selectOne(any(Wrapper.class))).thenReturn(null);
+        when(autoCodeUtil.genSerialCode("PU_REQUISITION_CODE", null)).thenReturn("PR-NEW");
+        when(baseMapper.insert(any(PuPurchaseRequisition.class)))
+            .thenThrow(new DuplicateKeyException("tenant and decision key still occupied"));
+        when(baseMapper.findCompensatedDecisionId("000000", IDEM_KEY)).thenReturn(7001L);
+
+        assertTrue(requisitionService.deleteDraftIfUnchanged(7001L, "V:4", RUN_ID, ACTION_ID, IDEM_KEY));
+        try (MockedStatic<TenantHelper> tenant = Mockito.mockStatic(TenantHelper.class)) {
+            tenant.when(TenantHelper::getTenantId).thenReturn("000000");
+            ServiceException error = assertThrows(ServiceException.class, () -> requisitionService.createDraft(bo));
+            assertTrue(error.getMessage().contains("已补偿"), error.getMessage());
+        }
+        verify(baseMapper).findCompensatedDecisionId("000000", IDEM_KEY);
+        verify(lineMapper, never()).insert(any(PuPurchaseRequisitionLine.class));
+    }
+
+    @Test
+    void unrelatedPurchaseUniqueKeyCollisionIsNotMisclassifiedAsCompensated() {
+        PuPurchaseRequisitionBo bo = decisionPurchaseBo();
+        when(baseMapper.selectOne(any(Wrapper.class))).thenReturn(null);
+        when(autoCodeUtil.genSerialCode("PU_REQUISITION_CODE", null)).thenReturn("PR-CODE-COLLISION");
+        DuplicateKeyException duplicate = new DuplicateKeyException("duplicate business code");
+        when(baseMapper.insert(any(PuPurchaseRequisition.class))).thenThrow(duplicate);
+        when(baseMapper.findCompensatedDecisionId("000000", IDEM_KEY)).thenReturn(null);
+
+        try (MockedStatic<TenantHelper> tenant = Mockito.mockStatic(TenantHelper.class)) {
+            tenant.when(TenantHelper::getTenantId).thenReturn("000000");
+            assertSame(duplicate, assertThrows(DuplicateKeyException.class, () -> requisitionService.createDraft(bo)));
+        }
+        verify(baseMapper).findCompensatedDecisionId("000000", IDEM_KEY);
+        verify(lineMapper, never()).insert(any(PuPurchaseRequisitionLine.class));
+    }
+
+    @Test
     void createDraftRejectsInvalidInputBeforeWriting() {
         PuPurchaseRequisitionBo withId = purchaseBo();
         withId.setRequisitionId(9L);
@@ -453,35 +543,75 @@ class PuPurchaseRequisitionServiceImplTest {
     }
 
     @Test
-    void terminalFlowCallbacksStillUpdateExistingStatus() {
-        when(baseMapper.selectById(7001L)).thenAnswer(invocation -> matchingExistingRequisition());
-        when(baseMapper.updateById(any(PuPurchaseRequisition.class))).thenReturn(1);
+    void terminalFlowCallbacksCasFromApprovingWithStatusAndVersionInSameSql() {
+        when(baseMapper.selectById(7001L)).thenAnswer(invocation -> {
+            PuPurchaseRequisition current = matchingExistingRequisition();
+            current.setStatus("APPROVING");
+            current.setVersion(4);
+            return current;
+        });
+        when(baseMapper.update(isNull(), any(Wrapper.class))).thenReturn(1);
         String[] actions = {ActStatus.pass, ActStatus.reject, ActStatus.retrun,
             ActStatus.revoke, ActStatus.stop, ActStatus.recall};
         for (String action : actions) {
             WfMyBusiness business = new WfMyBusiness();
             business.setDataId("7001");
             business.setActStatus(action);
-            requisitionService.afterFlowHandle(business);
+            assertDoesNotThrow(() -> requisitionService.afterFlowHandle(business));
         }
 
-        ArgumentCaptor<PuPurchaseRequisition> updated = ArgumentCaptor.forClass(PuPurchaseRequisition.class);
-        verify(baseMapper, times(actions.length)).updateById(updated.capture());
-        assertEquals(List.of("APPROVED", "REJECTED", "REJECTED", "DRAFT", "DRAFT", "DRAFT"),
-            updated.getAllValues().stream().map(PuPurchaseRequisition::getStatus).toList());
+        ArgumentCaptor<Wrapper<PuPurchaseRequisition>> updated = wrapperCaptor();
+        verify(baseMapper, times(actions.length)).update(isNull(), updated.capture());
+        List<String> destinations = List.of("APPROVED", "REJECTED", "REJECTED", "DRAFT", "DRAFT", "DRAFT");
+        for (int i = 0; i < actions.length; i++) {
+            Wrapper<PuPurchaseRequisition> cas = updated.getAllValues().get(i);
+            assertSqlContains(cas, "requisition_id", "status", "version");
+            assertSqlSetContains(cas, "status", "version", "update_time");
+            assertTrue(parameters(cas).containsValue("APPROVING"));
+            assertTrue(parameters(cas).containsValue(4));
+            assertTrue(parameters(cas).containsValue(5));
+            assertTrue(parameters(cas).containsValue(destinations.get(i)));
+        }
+        verify(baseMapper, never()).updateById(any(PuPurchaseRequisition.class));
+    }
+
+    @Test
+    void terminalFlowCallbacksCannotReopenClosedCancelledOrOrdered() {
+        String[] sources = {"CLOSED", "CANCELLED", "ORDERED"};
+        String[] actions = {ActStatus.pass, ActStatus.reject, ActStatus.retrun,
+            ActStatus.revoke, ActStatus.stop, ActStatus.recall};
+        for (String source : sources) {
+            for (String action : actions) {
+                PuPurchaseRequisition current = matchingExistingRequisition();
+                current.setStatus(source);
+                when(baseMapper.selectById(7001L)).thenReturn(current);
+                WfMyBusiness business = new WfMyBusiness();
+                business.setDataId("7001");
+                business.setActStatus(action);
+                assertThrows(ServiceException.class, () -> requisitionService.afterFlowHandle(business));
+            }
+        }
+        verify(baseMapper, never()).update(isNull(), any(Wrapper.class));
+        verify(baseMapper, never()).updateById(any(PuPurchaseRequisition.class));
     }
 
     @Test
     void afterFlowCloseAndCancelThrowWhenOptimisticUpdateMisses() {
         PuPurchaseRequisition current = matchingExistingRequisition();
+        current.setStatus("APPROVING");
         current.setVersion(4);
         when(baseMapper.selectById(7001L)).thenReturn(current);
+        when(baseMapper.update(isNull(), any(Wrapper.class))).thenReturn(0);
         when(baseMapper.updateById(any(PuPurchaseRequisition.class))).thenReturn(0);
         WfMyBusiness business = new WfMyBusiness();
         business.setDataId("7001");
         business.setActStatus(ActStatus.pass);
 
         assertThrows(ServiceException.class, () -> requisitionService.afterFlowHandle(business));
+        ArgumentCaptor<Wrapper<PuPurchaseRequisition>> cas = wrapperCaptor();
+        verify(baseMapper).update(isNull(), cas.capture());
+        assertSqlContains(cas.getValue(), "status", "version");
+        assertTrue(parameters(cas.getValue()).containsValue("APPROVING"));
         assertThrows(ServiceException.class, () -> requisitionService.close(7001L));
         current.setStatus("DRAFT");
         assertThrows(ServiceException.class, () -> requisitionService.cancel(7001L));

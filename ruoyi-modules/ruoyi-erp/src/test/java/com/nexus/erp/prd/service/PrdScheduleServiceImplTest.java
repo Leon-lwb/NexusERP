@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.nexus.common.core.exception.ServiceException;
+import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.erp.prd.domain.PrdSchedulePlan;
 import com.nexus.erp.prd.domain.PrdScheduleTask;
 import com.nexus.erp.prd.domain.PrdWorkOrder;
@@ -29,6 +30,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DuplicateKeyException;
 
@@ -45,6 +48,7 @@ import java.util.TimeZone;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -52,6 +56,7 @@ import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -197,7 +202,11 @@ class PrdScheduleServiceImplTest {
     @Test
     void duplicateDecisionInsertRereadsMatchingPlanWithoutTasks() {
         PrdSchedulePlanBo bo = decisionScheduleBo();
-        when(planMapper.selectOne(any(Wrapper.class))).thenReturn(null, matchingExistingPlan());
+        when(planMapper.selectOne(any(Wrapper.class))).thenAnswer(invocation -> {
+            Wrapper<?> query = invocation.getArgument(0);
+            return query.getSqlSegment().toUpperCase(Locale.ROOT).contains("FOR UPDATE")
+                ? matchingExistingPlan() : null;
+        });
         when(scheduleInputAssembler.assemble(bo, List.of(11L, 12L))).thenReturn(scheduleInput());
         when(planMapper.selectCount(any(Wrapper.class))).thenReturn(0L);
         when(planMapper.insert(any(PrdSchedulePlan.class)))
@@ -206,6 +215,50 @@ class PrdScheduleServiceImplTest {
         PrdSchedulePlanVo vo = scheduleService.runSchedule(bo, List.of(11L, 12L));
 
         assertEquals(8001L, vo.getPlanId());
+        ArgumentCaptor<Wrapper<PrdSchedulePlan>> reads = wrapperCaptor();
+        verify(planMapper, times(2)).selectOne(reads.capture());
+        assertSqlContains(reads.getAllValues().get(1), "for update");
+        verify(taskMapper, never()).insert(any(PrdScheduleTask.class));
+    }
+
+    @Test
+    void compensatedScheduleKeyCannotBeRecreatedAfterLogicalDelete() {
+        PrdSchedulePlanBo bo = decisionScheduleBo();
+        when(planMapper.delete(any(Wrapper.class))).thenReturn(1);
+        when(planMapper.selectOne(any(Wrapper.class))).thenReturn(null);
+        when(scheduleInputAssembler.assemble(bo, List.of(11L, 12L))).thenReturn(scheduleInput());
+        when(planMapper.selectCount(any(Wrapper.class))).thenReturn(0L);
+        when(planMapper.insert(any(PrdSchedulePlan.class)))
+            .thenThrow(new DuplicateKeyException("tenant and decision key still occupied"));
+        when(planMapper.findCompensatedDecisionId("000000", IDEM_KEY)).thenReturn(8001L);
+
+        assertTrue(scheduleService.deleteCompletedIfUnchanged(8001L, "V:4", RUN_ID, ACTION_ID, IDEM_KEY, SCENARIO));
+        try (MockedStatic<TenantHelper> tenant = Mockito.mockStatic(TenantHelper.class)) {
+            tenant.when(TenantHelper::getTenantId).thenReturn("000000");
+            ServiceException error = assertThrows(ServiceException.class,
+                () -> scheduleService.runSchedule(bo, List.of(11L, 12L)));
+            assertTrue(error.getMessage().contains("已补偿"), error.getMessage());
+        }
+        verify(planMapper).findCompensatedDecisionId("000000", IDEM_KEY);
+        verify(taskMapper, never()).insert(any(PrdScheduleTask.class));
+    }
+
+    @Test
+    void unrelatedScheduleUniqueKeyCollisionIsNotMisclassifiedAsCompensated() {
+        PrdSchedulePlanBo bo = decisionScheduleBo();
+        when(planMapper.selectOne(any(Wrapper.class))).thenReturn(null);
+        when(scheduleInputAssembler.assemble(bo, List.of(11L, 12L))).thenReturn(scheduleInput());
+        when(planMapper.selectCount(any(Wrapper.class))).thenReturn(0L);
+        DuplicateKeyException duplicate = new DuplicateKeyException("duplicate plan number");
+        when(planMapper.insert(any(PrdSchedulePlan.class))).thenThrow(duplicate);
+        when(planMapper.findCompensatedDecisionId("000000", IDEM_KEY)).thenReturn(null);
+
+        try (MockedStatic<TenantHelper> tenant = Mockito.mockStatic(TenantHelper.class)) {
+            tenant.when(TenantHelper::getTenantId).thenReturn("000000");
+            assertSame(duplicate, assertThrows(DuplicateKeyException.class,
+                () -> scheduleService.runSchedule(bo, List.of(11L, 12L))));
+        }
+        verify(planMapper).findCompensatedDecisionId("000000", IDEM_KEY);
         verify(taskMapper, never()).insert(any(PrdScheduleTask.class));
     }
 

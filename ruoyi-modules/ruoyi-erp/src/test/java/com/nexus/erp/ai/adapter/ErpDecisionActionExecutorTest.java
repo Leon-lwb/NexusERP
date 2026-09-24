@@ -1,6 +1,8 @@
 package com.nexus.erp.ai.adapter;
 
+import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
+import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.nexus.common.ai.decision.dto.DecisionActionExecutionResult;
 import com.nexus.common.ai.decision.dto.DecisionActionProposal;
 import com.nexus.common.ai.decision.dto.DecisionActor;
@@ -18,6 +20,8 @@ import com.nexus.erp.pu.domain.PuPurchaseRequisitionLine;
 import com.nexus.erp.pu.domain.bo.PuPurchaseRequisitionBo;
 import com.nexus.erp.pu.domain.vo.PuPurchaseRequisitionVo;
 import com.nexus.erp.pu.service.IPuPurchaseRequisitionService;
+import org.apache.ibatis.builder.MapperBuilderAssistant;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -35,6 +39,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -72,6 +77,11 @@ class ErpDecisionActionExecutorTest {
     @InjectMocks
     private ErpDecisionActionExecutor executor;
 
+    @BeforeAll
+    static void initPlanTableInfo() {
+        TableInfoHelper.initTableInfo(new MapperBuilderAssistant(new MybatisConfiguration(), ""), PrdSchedulePlan.class);
+    }
+
     @Test
     void executeIsPublicTransactionalRollbackForException() throws Exception {
         Transactional transactional = ErpDecisionActionExecutor.class
@@ -86,7 +96,7 @@ class ErpDecisionActionExecutorTest {
     void executePurchasePopulatesStructuredProvenanceActorAndVersionResult() {
         DecisionActionProposal action = purchaseAction(purchasePayload());
         when(purchaseRequisitionService.createDraft(any(PuPurchaseRequisitionBo.class))).thenReturn(7001L);
-        when(purchaseRequisitionService.selectById(7001L)).thenReturn(purchaseVo());
+        when(purchaseRequisitionService.selectByIdForDecision(7001L)).thenReturn(purchaseVo());
 
         DecisionActionExecutionResult result = executor.execute(action, purchaseActor());
 
@@ -121,7 +131,7 @@ class ErpDecisionActionExecutorTest {
         PrdSchedulePlanVo created = new PrdSchedulePlanVo();
         created.setPlanId(8001L);
         when(scheduleService.runSchedule(any(PrdSchedulePlanBo.class), anyCollection())).thenReturn(created);
-        when(planMapper.selectById(8001L)).thenReturn(schedulePlan("APS_CR_EXPEDITE", "CR"));
+        when(planMapper.selectOne(any(Wrapper.class))).thenReturn(schedulePlan("APS_CR_EXPEDITE", "CR"));
 
         DecisionActionExecutionResult result = executor.execute(action, scheduleActor());
 
@@ -148,10 +158,39 @@ class ErpDecisionActionExecutorTest {
     }
 
     @Test
+    void executePurchasePostCreateUsesBeanCurrentReadInsteadOfOldSnapshot() {
+        when(purchaseRequisitionService.createDraft(any(PuPurchaseRequisitionBo.class))).thenReturn(7001L);
+        when(purchaseRequisitionService.selectByIdForDecision(7001L)).thenReturn(purchaseVo());
+
+        assertTrue(assertDoesNotThrow(() -> executor.execute(
+            purchaseAction(purchasePayload()), purchaseActor())).success());
+        verify(purchaseRequisitionService).selectByIdForDecision(7001L);
+        verify(purchaseRequisitionService, never()).selectById(7001L);
+    }
+
+    @Test
+    void executeSchedulePostCreateUsesCurrentReadInsteadOfOldSnapshot() {
+        PrdSchedulePlanVo created = new PrdSchedulePlanVo();
+        created.setPlanId(8001L);
+        when(scheduleService.runSchedule(any(PrdSchedulePlanBo.class), anyCollection())).thenReturn(created);
+        when(planMapper.selectOne(any(Wrapper.class))).thenAnswer(invocation -> {
+            Wrapper<?> query = invocation.getArgument(0);
+            return query.getSqlSegment().toUpperCase().contains("FOR UPDATE")
+                ? schedulePlan("APS_EDD", "EDD") : null;
+        });
+
+        assertTrue(assertDoesNotThrow(() -> executor.execute(
+            scheduleAction(schedulePayload("APS_EDD", "EDD")), scheduleActor())).success());
+        ArgumentCaptor<Wrapper<PrdSchedulePlan>> query = ArgumentCaptor.forClass(Wrapper.class);
+        verify(planMapper).selectOne(query.capture());
+        assertTrue(query.getValue().getSqlSegment().toUpperCase().contains("FOR UPDATE"));
+    }
+
+    @Test
     void sameKeyReplayReturnsSameBusinessId() {
         DecisionActionProposal action = purchaseAction(purchasePayload());
         when(purchaseRequisitionService.createDraft(any(PuPurchaseRequisitionBo.class))).thenReturn(7001L);
-        when(purchaseRequisitionService.selectById(7001L)).thenReturn(purchaseVo());
+        when(purchaseRequisitionService.selectByIdForDecision(7001L)).thenReturn(purchaseVo());
 
         DecisionActionExecutionResult first = executor.execute(action, purchaseActor());
         DecisionActionExecutionResult replay = executor.execute(action, purchaseActor());
@@ -166,7 +205,7 @@ class ErpDecisionActionExecutorTest {
         when(purchaseRequisitionService.createDraft(any(PuPurchaseRequisitionBo.class)))
             .thenReturn(7001L)
             .thenThrow(new ServiceException("幂等键对应的采购申请来源或载荷不一致"));
-        when(purchaseRequisitionService.selectById(7001L)).thenReturn(purchaseVo());
+        when(purchaseRequisitionService.selectByIdForDecision(7001L)).thenReturn(purchaseVo());
 
         assertTrue(executor.execute(action, purchaseActor()).success());
         assertThrows(ServiceException.class, () -> executor.execute(action, purchaseActor()));
@@ -270,7 +309,7 @@ class ErpDecisionActionExecutorTest {
             .setApplyQuantity(new BigDecimal("99999999999999.9999"));
         vo.getPuPurchaseRequisitionLineList().get(0)
             .setShortageQuantity(new BigDecimal("99999999999999.9999"));
-        when(purchaseRequisitionService.selectById(7001L)).thenReturn(vo);
+        when(purchaseRequisitionService.selectByIdForDecision(7001L)).thenReturn(vo);
 
         assertTrue(executor.execute(purchaseAction(payload), purchaseActor()).success());
     }
