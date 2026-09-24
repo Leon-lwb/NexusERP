@@ -24,6 +24,11 @@
 
         <dependency>
             <groupId>com.nexus</groupId>
+            <artifactId>ruoyi-common-ai</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.nexus</groupId>
             <artifactId>ruoyi-common-doc</artifactId>
         </dependency>
 
