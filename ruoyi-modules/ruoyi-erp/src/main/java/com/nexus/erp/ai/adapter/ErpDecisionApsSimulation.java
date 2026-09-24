@@ -69,34 +69,31 @@ public class ErpDecisionApsSimulation {
             throw new IllegalArgumentException("场景编码必须非空、唯一且最多四个");
         }
         TreeMap<Long, WorkOrderFact> facts = snapshotWorkOrders(snapshot.workOrders());
-        TreeMap<Long, LocalDate> savedEnds = parseId(snapshot.currentSchedule().get("planId")) == null
-            ? new TreeMap<>() : savedEnds(snapshot.currentSchedule(), facts);
+        SavedSchedule saved = readSavedSchedule(snapshot.currentSchedule(), facts);
+        Map<Long, LocalDate> savedEnds = parseId(snapshot.currentSchedule().get("planId")) == null
+            || saved.invalid() ? Map.of() : saved.ends();
         List<DecisionScenario> results = new ArrayList<>();
         LinkedHashSet<String> warnings = new LinkedHashSet<>();
         if (snapshot.warnings() != null) warnings.addAll(snapshot.warnings());
         DecisionScenario cr = null;
         Map<Strategy, ScheduleInput> usedInputs = new HashMap<>();
         for (String code : codes) {
-            try {
-                switch (code) {
-                    case "BASELINE_CURRENT" -> results.add(baseline(snapshot, facts, savedEnds, horizonDays, warnings));
-                    case "APS_EDD" -> results.add(candidate(snapshot, facts, savedEnds, "APS_EDD", Strategy.EDD,
-                        horizonDays, warnings, usedInputs));
-                    case "APS_CR" -> {
-                        if (cr == null) cr = candidate(snapshot, facts, savedEnds, "APS_CR", Strategy.CR,
-                            horizonDays, warnings, usedInputs);
-                        results.add(cr);
-                    }
-                    case "APS_CR_EXPEDITE" -> {
-                        if (cr == null) cr = candidate(snapshot, facts, savedEnds, "APS_CR", Strategy.CR,
-                            horizonDays, warnings, usedInputs);
-                        results.add(expedite(snapshot, cr, horizonDays, warnings, usedInputs.get(Strategy.CR)));
-                    }
-                    default -> results.add(infeasible(code, code, "UNSUPPORTED_SCENARIO"));
+            switch (code) {
+                case "BASELINE_CURRENT" -> results.add(baseline(snapshot, facts, saved, horizonDays, warnings));
+                case "APS_EDD" -> results.add(candidate(snapshot, facts, savedEnds, "APS_EDD", Strategy.EDD,
+                    horizonDays, warnings, usedInputs));
+                case "APS_CR" -> {
+                    if (cr == null) cr = candidate(snapshot, facts, savedEnds, "APS_CR", Strategy.CR,
+                        horizonDays, warnings, usedInputs);
+                    results.add(cr);
                 }
-            } catch (ServiceException | IllegalArgumentException expected) {
-                results.add(infeasible(code, code, expected.getMessage() == null
-                    ? "SCENARIO_INPUT_INVALID" : expected.getMessage()));
+                case "APS_CR_EXPEDITE" -> {
+                    if (cr == null) cr = candidate(snapshot, facts, savedEnds, "APS_CR", Strategy.CR,
+                        horizonDays, warnings, usedInputs);
+                    results.add(expedite(snapshot, cr, horizonDays, warnings, usedInputs.get(Strategy.CR)));
+                }
+                default -> results.add(unavailable(snapshot, facts, horizonDays, code, code,
+                    "UNSUPPORTED_SCENARIO"));
             }
         }
         if (results.stream().noneMatch(DecisionScenario::feasible)) warnings.add("ALL_SCENARIOS_INFEASIBLE");
@@ -128,18 +125,22 @@ public class ErpDecisionApsSimulation {
     }
 
     private DecisionScenario baseline(DeliveryContextSnapshot snapshot, Map<Long, WorkOrderFact> facts,
-                                      Map<Long, LocalDate> ends, int horizonDays, Set<String> warnings) {
+                                      SavedSchedule schedule, int horizonDays, Set<String> warnings) {
         Map<String, Object> saved = snapshot.currentSchedule();
-        if (parseId(saved.get("planId")) == null || ends.isEmpty()) {
-            return infeasible("BASELINE_CURRENT", "CURRENT", "NO_SAVED_SCHEDULE");
+        if (parseId(saved.get("planId")) == null || schedule.ends().isEmpty() && !schedule.invalid()) {
+            return unavailable(snapshot, facts, horizonDays, "BASELINE_CURRENT", "CURRENT", "NO_SAVED_SCHEDULE");
         }
         String strategy = saved.get("strategy") instanceof String s && !s.isBlank() ? s : "CURRENT";
         LocalDate makespan = parseDay(saved.get("makespanDate"));
-        if (makespan == null) makespan = ends.values().stream().max(LocalDate::compareTo).orElse(null);
+        LocalDate terminalMax = schedule.ends().values().stream().max(LocalDate::compareTo).orElse(null);
+        if (schedule.invalid() || makespan != null && terminalMax != null && makespan.isBefore(terminalMax)) {
+            return unavailable(snapshot, facts, horizonDays, "BASELINE_CURRENT", strategy,
+                "INVALID_SAVED_SCHEDULE");
+        }
+        if (makespan == null) makespan = terminalMax;
         List<Map<String, Object>> preview = new ArrayList<>();
         for (Object task : (List<?>) saved.get("tasks")) {
-            if (!(task instanceof Map<?, ?> row) || !ends.containsKey(parseId(row.get("woId")))) continue;
-            if (parseDay(row.get("startTime")) == null || parseDay(row.get("endTime")) == null) continue;
+            if (!(task instanceof Map<?, ?> row) || !schedule.ends().containsKey(parseId(row.get("woId")))) continue;
             LinkedHashMap<String, Object> copy = new LinkedHashMap<>();
             row.forEach((key, value) -> {
                 if (key instanceof String name) copy.put(name, name.endsWith("Id") && value != null
@@ -152,10 +153,12 @@ public class ErpDecisionApsSimulation {
         ShortageSimulationResult shortage = simulateShortage(snapshot, horizonDays, Map.of(), warnings);
         LinkedHashSet<String> reasons = new LinkedHashSet<>();
         addMaterialReasons(shortage, reasons);
-        DecisionKpiSet kpis = kpis(ends, facts, makespan, null, 0, 0, shortage);
-        return new DecisionScenario("BASELINE_CURRENT", "已保存排程", strategy, reasons.isEmpty(),
+        DecisionKpiSet kpis = materialKnown(shortage)
+            ? kpis(schedule.ends(), facts, makespan, null, 0, 0, shortage) : null;
+        return new DecisionScenario("BASELINE_CURRENT", "saved schedule", strategy, reasons.isEmpty(),
             List.copyOf(reasons), kpis, null, 0, Map.of(), evidence(snapshot, shortage),
-            limitPreview(preview), hashBaseline(snapshot, facts, saved), delayedIds(ends, facts), List.of());
+            limitPreview(preview), hashBaseline(snapshot, facts, saved, horizonDays, "BASELINE_CURRENT", strategy),
+            delayedIds(schedule.ends(), facts), List.of());
     }
 
     private DecisionScenario candidate(DeliveryContextSnapshot snapshot, Map<Long, WorkOrderFact> facts,
@@ -164,31 +167,33 @@ public class ErpDecisionApsSimulation {
                                        Map<Strategy, ScheduleInput> usedInputs) {
         // Never use the unscoped assembler overload. Validate every row before the second, scoped load.
         List<Long> ids = new ArrayList<>(facts.keySet());
-        if (ids.isEmpty()) return infeasible(code, strategy.name(), "NO_SCHEDULABLE_WORK_ORDERS");
+        if (ids.isEmpty()) return unavailable(snapshot, facts, horizonDays, code, strategy.name(),
+            "NO_SCHEDULABLE_WORK_ORDERS");
         Map<Long, PrdWorkOrder> loaded = new TreeMap<>();
         for (int offset = 0; offset < ids.size(); offset += 500) {
             List<Long> batch = ids.subList(offset, Math.min(offset + 500, ids.size()));
             List<PrdWorkOrder> rows = workOrderMapper.selectList(Wrappers.lambdaQuery(PrdWorkOrder.class)
                 .in(PrdWorkOrder::getWoId, batch));
-            if (rows == null) return infeasible(code, strategy.name(), "SCOPED_WORK_ORDER_INCOMPLETE");
+            if (rows == null) throw stale("scoped work orders not returned");
             for (PrdWorkOrder row : rows) {
                 if (row == null || !batch.contains(row.getWoId())
                     || loaded.putIfAbsent(row.getWoId(), row) != null) {
-                    return infeasible(code, strategy.name(), "SCOPED_WORK_ORDER_INCOMPLETE");
+                    throw stale("unexpected or duplicate scoped work order");
                 }
             }
         }
-        if (loaded.size() != facts.size()) return infeasible(code, strategy.name(), "SCOPED_WORK_ORDER_INCOMPLETE");
+        if (loaded.size() != facts.size()) throw stale("scoped work orders incomplete");
         List<Long> schedulable = new ArrayList<>();
         for (Map.Entry<Long, PrdWorkOrder> entry : loaded.entrySet()) {
             PrdWorkOrder row = entry.getValue();
             // Check every row (including currently unschedulable ones) against the observed snapshot.
             if (!matches(row, facts.get(entry.getKey()))) {
-                return infeasible(code, strategy.name(), "STALE_SNAPSHOT");
+                throw stale("work order changed during scoped read");
             }
             if (SCHEDULABLE.contains(row.getWoStatus())) schedulable.add(entry.getKey());
         }
-        if (schedulable.isEmpty()) return infeasible(code, strategy.name(), "NO_SCHEDULABLE_WORK_ORDERS");
+        if (schedulable.isEmpty()) return unavailable(snapshot, facts, horizonDays, code, strategy.name(),
+            "NO_SCHEDULABLE_WORK_ORDERS");
         PrdSchedulePlanBo bo = new PrdSchedulePlanBo();
         bo.setStrategy(strategy.name());
         bo.setStartDate(Date.from(snapshot.snapshotAt().toLocalDate().atStartOfDay(BUSINESS_ZONE).toInstant()));
@@ -199,16 +204,17 @@ public class ErpDecisionApsSimulation {
             || !input.getStartDate().equals(snapshot.snapshotAt().toLocalDate())
             || input.getHorizonDays() != horizonDays || input.getStrategy() != strategy
             || input.getWorkOrders().size() != schedulable.size()) {
-            return infeasible(code, strategy.name(), "STALE_SNAPSHOT");
+            throw stale("scoped assembler input changed");
         }
         Set<Long> seen = new HashSet<>();
         for (WoInfo wo : input.getWorkOrders()) {
             if (wo == null || !schedulable.contains(wo.getWoId()) || !seen.add(wo.getWoId())
                 || !matches(wo, facts.get(wo.getWoId()))) {
-                return infeasible(code, strategy.name(), "STALE_SNAPSHOT");
+                throw stale("work order changed during scoped read");
             }
         }
         usedInputs.put(strategy, input);
+        validateScopedFacts(snapshot, input, horizonDays);
         ScheduleResult scheduled = PrdScheduleEngine.schedule(input);
         List<ScheduledTask> tasks = scheduled.getTasks();
         TreeMap<Long, LocalDate> ends = new TreeMap<>();
@@ -245,9 +251,10 @@ public class ErpDecisionApsSimulation {
         List<String> bottlenecks = scheduled.getLoads() == null ? List.of() : scheduled.getLoads().stream()
             .filter(load -> load.getResourceKey() != null && maxRate != null && maxRate.compareTo(load.getRate()) == 0)
             .map(ResourceLoad::getResourceKey).sorted().toList();
-        DecisionKpiSet kpis = kpis(ends, facts, scheduled.getMakespan(), maxRate, overloaded, changed, shortage);
+        DecisionKpiSet kpis = materialKnown(shortage)
+            ? kpis(ends, facts, scheduled.getMakespan(), maxRate, overloaded, changed, shortage) : null;
         return new DecisionScenario(code, code, strategy.name(), reasons.isEmpty(), List.copyOf(reasons), kpis,
-            null, 0, Map.of(), evidence(snapshot, shortage), limitPreview(preview), hashInput(input, Map.of()),
+            null, 0, Map.of(), evidence(snapshot, shortage), limitPreview(preview), hashInput(snapshot, input, code, horizonDays, Map.of()),
             delayedIds(ends, facts), bottlenecks);
     }
 
@@ -255,31 +262,31 @@ public class ErpDecisionApsSimulation {
                                       int horizonDays, Set<String> warnings, ScheduleInput crInput) {
         String code = "APS_CR_EXPEDITE";
         if (cr.kpis() == null) {
-            return infeasible(code, "CR", cr.infeasibleReasons().isEmpty()
-                ? "SCHEDULE_INCOMPLETE" : cr.infeasibleReasons().get(0));
+            return copyExpedite(cr, List.of("SHORTAGE_UNKNOWN"), Map.of(),
+                expediteHash(snapshot, crInput, horizonDays, Map.of()), cr.evidenceKeys());
         }
         ShortageSimulationResult baseline = simulateShortage(snapshot, horizonDays, Map.of(), warnings);
         if (baseline == null || baseline.kpis() == null) return copyExpedite(cr,
-            List.of("SHORTAGE_UNKNOWN"), Map.of(), cr.inputHash(), cr.evidenceKeys());
+            List.of("SHORTAGE_UNKNOWN"), Map.of(), expediteHash(snapshot, crInput, horizonDays, Map.of()), cr.evidenceKeys());
         LocalDate today = snapshot.snapshotAt().toLocalDate();
         TreeMap<Long, String> overridesByLine = new TreeMap<>();
         for (ShortageSimulationResult.Item item : baseline.items()) {
             if (item.firstShortageDate() == null) continue;
             if (snapshot.arrivals() == null) return copyExpedite(cr,
-                List.of("SHORTAGE_UNKNOWN"), Map.of(), cr.inputHash(), cr.evidenceKeys());
+                List.of("SHORTAGE_UNKNOWN"), Map.of(), expediteHash(snapshot, crInput, horizonDays, Map.of()), cr.evidenceKeys());
             ArrivalFact line = snapshot.arrivals().stream()
                 .filter(a -> Objects.equals(a.materialId(), item.materialId()) && a.purchaseLineId() != null
                     && a.expectedDate() != null && a.expectedDate().isAfter(item.firstShortageDate())
                     && a.remainingQty() != null && a.remainingQty().signum() > 0)
                 .min(Comparator.comparing(ArrivalFact::purchaseLineId)).orElse(null);
             if (line == null) return copyExpedite(cr,
-                List.of("NO_EXPEDITABLE_PURCHASE_LINE"), Map.of(), cr.inputHash(), cr.evidenceKeys());
+                List.of("NO_EXPEDITABLE_PURCHASE_LINE"), Map.of(), expediteHash(snapshot, crInput, horizonDays, Map.of()), cr.evidenceKeys());
             LocalDate proposed = item.firstShortageDate().minusDays(1);
             if (proposed.isBefore(today)) proposed = today;
             overridesByLine.put(line.purchaseLineId(), proposed.toString());
         }
         if (overridesByLine.isEmpty()) return copyExpedite(cr,
-            List.of("NO_EXPEDITABLE_PURCHASE_LINE"), Map.of(), cr.inputHash(), cr.evidenceKeys());
+            List.of("NO_EXPEDITABLE_PURCHASE_LINE"), Map.of(), expediteHash(snapshot, crInput, horizonDays, Map.of()), cr.evidenceKeys());
         Map<String, String> datesByLine = new LinkedHashMap<>();
         overridesByLine.forEach((id, date) -> datesByLine.put(String.valueOf(id), date));
         Map<String, Object> overrides = Map.of("purchaseArrivalOverrides", datesByLine);
@@ -290,18 +297,28 @@ public class ErpDecisionApsSimulation {
         reasons.remove("SHORTAGE_UNKNOWN");
         addMaterialReasons(changed, reasons);
         DecisionKpiSet old = cr.kpis();
-        DecisionKpiSet changedKpis = new DecisionKpiSet(
-            changed == null || changed.kpis() == null ? old.impactedOrderCount() : changed.kpis().impactedOrderCount(),
+        DecisionKpiSet changedKpis = materialKnown(changed) ? new DecisionKpiSet(
+            changed.kpis().impactedOrderCount(),
             old.delayedWorkOrderCount(), old.totalTardinessDays(), old.maxTardinessDays(), old.makespanDate(),
-            changed == null ? old.shortageMaterialCount() : changed.riskMaterialCount(),
-            changed == null || changed.kpis() == null ? null : changed.totalGap(),
-            changed == null || changed.earliestShortageDate() == null ? null : changed.earliestShortageDate().toString(),
-            old.maxResourceUtilization(), old.overloadedResourceCount(), old.changedWorkOrderCount(), old.actionCost());
+            changed.riskMaterialCount(), changed.totalGap(),
+            changed.earliestShortageDate() == null ? null : changed.earliestShortageDate().toString(),
+            old.maxResourceUtilization(), old.overloadedResourceCount(), old.changedWorkOrderCount(), old.actionCost())
+            : null;
         // Derive the CR input hash from exactly the same input, with only the override changing.
-        String hash = hashInput(crInput, overrides);
+        String hash = expediteHash(snapshot, crInput, horizonDays, overrides);
         return new DecisionScenario(code, code, "CR", reasons.isEmpty(), List.copyOf(reasons), changedKpis,
             null, 0, overrides, evidence(snapshot, changed), cr.schedulePreview(), hash,
             cr.delayedOrders(), cr.bottleneckResources());
+    }
+
+    private static String expediteHash(DeliveryContextSnapshot snapshot, ScheduleInput input,
+                                       int horizonDays, Map<String, Object> overrides) {
+        if (input == null) {
+            Map<Long, WorkOrderFact> facts = snapshotWorkOrders(snapshot.workOrders());
+            return hashBaseline(snapshot, facts, snapshot.currentSchedule(), horizonDays,
+                "APS_CR_EXPEDITE", "CR");
+        }
+        return hashInput(snapshot, input, "APS_CR_EXPEDITE", horizonDays, overrides);
     }
 
     private static DecisionScenario copyExpedite(DecisionScenario cr, List<String> reasons,
@@ -325,10 +342,77 @@ public class ErpDecisionApsSimulation {
             return null;
         }
     }
+    private static ServiceException stale(String detail) {
+        return new ServiceException("STALE_SNAPSHOT: " + detail);
+    }
+
+    private record RouteStep(Long id, Integer sequence, Long station, String hours) { }
+
+    private static void validateScopedFacts(DeliveryContextSnapshot snapshot, ScheduleInput input, int horizonDays) {
+        LocalDate start = snapshot.snapshotAt().toLocalDate();
+        LocalDate end = start.plusDays(horizonDays - 1L);
+        if (snapshot.routingByMaterial() == null || snapshot.capacityByDate() == null
+            || snapshot.holidays() == null || input.getCapacityByDate() == null || input.getHolidays() == null) {
+            throw stale("missing route, capacity or holiday facts");
+        }
+        Set<Long> materials = new HashSet<>();
+        for (WoInfo wo : input.getWorkOrders()) {
+            Long materialId = wo.getMaterialId();
+            if (materialId == null || !materials.add(materialId)) continue;
+            List<DeliveryContextSnapshot.RoutingStepFact> snapshotSteps = snapshot.routingByMaterial().get(materialId);
+            List<StepInfo> liveSteps = input.getRoutingProvider() == null ? null
+                : input.getRoutingProvider().apply(materialId);
+            if (snapshotSteps == null || liveSteps == null || snapshotSteps.stream().anyMatch(Objects::isNull)
+                || liveSteps.stream().anyMatch(Objects::isNull)) {
+                throw stale("missing routing for material " + materialId);
+            }
+            List<RouteStep> expected = snapshotSteps.stream()
+                .map(step -> new RouteStep(step.stepId(), step.seqNum(), step.workstationId(),
+                    decimal(step.standardHours())))
+                .sorted(ROUTE_ORDER).toList();
+            List<RouteStep> actual = liveSteps.stream()
+                .map(step -> new RouteStep(step.getStepId(), step.getSeqNum(), step.getWorkstationId(),
+                    decimal(step.getStandardHours())))
+                .sorted(ROUTE_ORDER).toList();
+            if (!expected.equals(actual)) throw stale("routing changed for material " + materialId);
+        }
+        if (!capacityInWindow(snapshot.capacityByDate(), start, end)
+                .equals(capacityInWindow(input.getCapacityByDate(), start, end))) {
+            throw stale("capacity changed");
+        }
+        List<LocalDate> savedHolidays = snapshot.holidays().stream()
+            .filter(day -> !day.isBefore(start) && !day.isAfter(end)).sorted().toList();
+        List<LocalDate> liveHolidays = input.getHolidays().stream()
+            .filter(day -> !day.isBefore(start) && !day.isAfter(end)).sorted().toList();
+        if (!savedHolidays.equals(liveHolidays)) throw stale("holidays changed");
+    }
+
+    private static final Comparator<RouteStep> ROUTE_ORDER =
+        Comparator.comparing(RouteStep::sequence, Comparator.nullsLast(Integer::compareTo))
+            .thenComparing(RouteStep::id, Comparator.nullsLast(Long::compareTo))
+            .thenComparing(RouteStep::station, Comparator.nullsLast(Long::compareTo))
+            .thenComparing(RouteStep::hours, Comparator.nullsLast(String::compareTo));
+
+    private static Map<String, Map<String, String>> capacityInWindow(
+        Map<LocalDate, Map<String, BigDecimal>> byDay, LocalDate start, LocalDate end) {
+        TreeMap<String, Map<String, String>> normalized = new TreeMap<>();
+        byDay.forEach((day, resources) -> {
+            if (day == null || resources == null) throw stale("invalid capacity facts");
+            if (!day.isBefore(start) && !day.isAfter(end)) {
+                TreeMap<String, String> sorted = new TreeMap<>();
+                resources.forEach((key, hours) -> sorted.put(key, decimal(hours)));
+                normalized.put(day.toString(), sorted);
+            }
+        });
+        return normalized;
+    }
+
     private static boolean matches(PrdWorkOrder row, WorkOrderFact fact) {
         BigDecimal planned = row.getPlannedQty() == null ? BigDecimal.ZERO : row.getPlannedQty();
         BigDecimal completed = row.getCompletedQty() == null ? BigDecimal.ZERO : row.getCompletedQty();
-        return fact.remainingQty() != null && fact.remainingQty().compareTo(planned.subtract(completed).max(BigDecimal.ZERO)) == 0
+        return Objects.equals(row.getWoNo(), fact.code())
+            && fact.remainingQty() != null
+            && fact.remainingQty().compareTo(planned.subtract(completed).max(BigDecimal.ZERO)) == 0
             && Objects.equals(row.getMaterialId(), fact.materialId())
             && Objects.equals(row.getPriority(), fact.priority())
             && Objects.equals(row.getWorkshopId(), fact.workshopId())
@@ -336,7 +420,8 @@ public class ErpDecisionApsSimulation {
     }
 
     private static boolean matches(WoInfo wo, WorkOrderFact fact) {
-        return fact != null && wo.getRemainingQty() != null && fact.remainingQty() != null
+        return fact != null && Objects.equals(wo.getWoNo(), fact.code())
+            && wo.getRemainingQty() != null && fact.remainingQty() != null
             && wo.getRemainingQty().compareTo(fact.remainingQty()) == 0
             && Objects.equals(wo.getMaterialId(), fact.materialId())
             && Objects.equals(wo.getPriority(), fact.priority())
@@ -350,8 +435,13 @@ public class ErpDecisionApsSimulation {
         return Instant.ofEpochMilli(date.getTime()).atZone(BUSINESS_ZONE).toLocalDate();
     }
 
+    private static boolean materialKnown(ShortageSimulationResult result) {
+        return result != null && result.kpis() != null
+            && (result.warnings() == null || !result.warnings().contains("NO_REQUIREMENT_DATA"));
+    }
+
     private static void addMaterialReasons(ShortageSimulationResult result, Set<String> reasons) {
-        if (result == null || result.kpis() == null) reasons.add("SHORTAGE_UNKNOWN");
+        if (!materialKnown(result)) reasons.add("SHORTAGE_UNKNOWN");
         else if (result.hasRisk()) reasons.add("MATERIAL_SHORTAGE");
     }
 
@@ -379,19 +469,48 @@ public class ErpDecisionApsSimulation {
             && e.getValue().isAfter(facts.get(e.getKey()).planEndDate())).map(Map.Entry::getKey).sorted().toList();
     }
 
-    private static TreeMap<Long, LocalDate> savedEnds(Map<String, Object> saved, Map<Long, WorkOrderFact> facts) {
+    private record SavedTask(long taskId, int sequence, LocalDate start, LocalDate end) { }
+
+    private record SavedSchedule(TreeMap<Long, LocalDate> ends, boolean invalid) { }
+
+    /** Dates are taken from the terminal operation (sequence, then task ID), never from a previous step. */
+    private static SavedSchedule readSavedSchedule(Map<String, Object> saved, Map<Long, WorkOrderFact> facts) {
         TreeMap<Long, LocalDate> ends = new TreeMap<>();
-        if (!(saved.get("tasks") instanceof List<?> tasks)) return ends;
+        if (!(saved.get("tasks") instanceof List<?> tasks) || tasks.isEmpty()) {
+            return new SavedSchedule(ends, false);
+        }
+        TreeMap<Long, List<SavedTask>> byWorkOrder = new TreeMap<>();
+        boolean invalid = false;
         for (Object task : tasks) {
-            if (!(task instanceof Map<?, ?> row)) continue;
-            Long id = parseId(row.get("woId"));
-            if (!facts.containsKey(id)) continue;
+            if (!(task instanceof Map<?, ?> row)) { invalid = true; continue; }
+            Long woId = parseId(row.get("woId"));
+            if (!facts.containsKey(woId)) continue;
+            Long taskId = parseId(row.get("taskId"));
+            Object number = row.get("seqNum");
             LocalDate start = parseDay(row.get("startTime"));
             LocalDate end = parseDay(row.get("endTime"));
-            if (end == null || start == null || end.isBefore(start)) continue;
-            ends.merge(id, end, (a, b) -> a.isAfter(b) ? a : b);
+            if (taskId == null || !(number instanceof Number seq) || seq.longValue() < 0
+                || seq.longValue() > Integer.MAX_VALUE || start == null || end == null || end.isBefore(start)) {
+                invalid = true;
+                continue;
+            }
+            byWorkOrder.computeIfAbsent(woId, ignored -> new ArrayList<>())
+                .add(new SavedTask(taskId, seq.intValue(), start, end));
         }
-        return ends;
+        for (Map.Entry<Long, List<SavedTask>> entry : byWorkOrder.entrySet()) {
+            List<SavedTask> ordered = entry.getValue();
+            ordered.sort(Comparator.comparingInt(SavedTask::sequence).thenComparingLong(SavedTask::taskId));
+            Set<Long> taskIds = new HashSet<>();
+            SavedTask previous = null;
+            for (SavedTask task : ordered) {
+                if (!taskIds.add(task.taskId()) || previous != null && task.start().isBefore(previous.end())) {
+                    invalid = true;
+                }
+                previous = task;
+            }
+            ends.put(entry.getKey(), ordered.get(ordered.size() - 1).end());
+        }
+        return new SavedSchedule(ends, invalid);
     }
 
     private static Map<String, Object> taskPreview(ScheduledTask task) {
@@ -415,7 +534,10 @@ public class ErpDecisionApsSimulation {
         Comparator.comparing((Map<String, Object> row) -> parseId(row.get("woId")),
                 Comparator.nullsLast(Comparator.naturalOrder()))
             .thenComparing(row -> row.get("seqNum") instanceof Number n ? n.intValue() : Integer.MAX_VALUE)
-            .thenComparing(row -> String.valueOf(row.get("startTime")));
+            .thenComparing(row -> parseId(row.get("taskId")), Comparator.nullsLast(Long::compareTo))
+            .thenComparing(row -> String.valueOf(row.get("startTime")))
+            .thenComparing(row -> parseId(row.get("stepId")), Comparator.nullsLast(Long::compareTo))
+            .thenComparing(row -> JsonUtils.toJsonString(new TreeMap<>(row)));
 
     private static List<Map<String, Object>> limitPreview(List<Map<String, Object>> rows) {
         return rows.stream().limit(50)
@@ -437,9 +559,13 @@ public class ErpDecisionApsSimulation {
     }
 
     private static String hashBaseline(DeliveryContextSnapshot snapshot, Map<Long, WorkOrderFact> facts,
-                                       Map<String, Object> saved) {
+                                       Map<String, Object> saved, int horizonDays, String code, String strategy) {
         LinkedHashMap<String, Object> canonical = new LinkedHashMap<>();
         canonical.put("snapshotHash", snapshot.snapshotHash());
+        canonical.put("horizonDays", horizonDays);
+        canonical.put("scenarioCode", code);
+        canonical.put("strategy", strategy);
+        canonical.put("overrides", Map.of());
         canonical.put("workOrders", facts.values().stream().map(ErpDecisionApsSimulation::workOrderFactMap).toList());
         TreeMap<String, Object> normalized = new TreeMap<>(saved);
         if (saved.get("tasks") instanceof List<?> tasks) {
@@ -453,6 +579,30 @@ public class ErpDecisionApsSimulation {
             }
             sortedTasks.sort(PREVIEW_ORDER);
             normalized.put("tasks", sortedTasks);
+        }
+        if (saved.get("workOrderSalesOrders") instanceof List<?> links) {
+            List<Map<String, Object>> sortedLinks = new ArrayList<>();
+            for (Object item : links) {
+                if (item instanceof Map<?, ?> link) {
+                    TreeMap<String, Object> row = new TreeMap<>();
+                    link.forEach((key, value) -> { if (key instanceof String name) row.put(name, value); });
+                    sortedLinks.add(row);
+                }
+            }
+            sortedLinks.sort(Comparator
+                .comparing((Map<String, Object> row) -> parseId(row.get("workOrderId")),
+                    Comparator.nullsLast(Long::compareTo))
+                .thenComparing(row -> parseId(row.get("salesOrderId")),
+                    Comparator.nullsLast(Long::compareTo)));
+            normalized.put("workOrderSalesOrders", sortedLinks);
+        }
+        for (String idKey : List.of("workOrderIds", "workOrderSalesOrderIds")) {
+            if (saved.get(idKey) instanceof List<?> ids) {
+                normalized.put(idKey, ids.stream().map(String::valueOf)
+                    .sorted(Comparator.comparing((String id) -> parseId(id),
+                        Comparator.nullsLast(Long::compareTo)).thenComparing(Comparator.naturalOrder()))
+                    .toList());
+            }
         }
         canonical.put("savedSchedule", normalized);
         TreeMap<Long, List<Map<String, Object>>> routes = new TreeMap<>();
@@ -485,6 +635,7 @@ public class ErpDecisionApsSimulation {
     private static Map<String, Object> workOrderFactMap(WorkOrderFact fact) {
         LinkedHashMap<String, Object> row = new LinkedHashMap<>();
         row.put("id", String.valueOf(fact.id()));
+        row.put("code", fact.code());
         row.put("materialId", fact.materialId() == null ? null : String.valueOf(fact.materialId()));
         row.put("qty", decimal(fact.remainingQty()));
         row.put("due", fact.planEndDate() == null ? null : fact.planEndDate().toString());
@@ -493,15 +644,19 @@ public class ErpDecisionApsSimulation {
         return row;
     }
 
-    private static String hashInput(ScheduleInput input, Map<String, Object> overrides) {
+    private static String hashInput(DeliveryContextSnapshot snapshot, ScheduleInput input,
+                                    String code, int horizonDays, Map<String, Object> overrides) {
         LinkedHashMap<String, Object> canonical = new LinkedHashMap<>();
+        canonical.put("snapshotHash", snapshot.snapshotHash());
+        canonical.put("scenarioCode", code);
         canonical.put("strategy", input.getStrategy().name());
         canonical.put("startDate", input.getStartDate().toString());
-        canonical.put("horizonDays", input.getHorizonDays());
+        canonical.put("horizonDays", horizonDays);
         canonical.put("workOrders", input.getWorkOrders().stream().sorted(Comparator.comparing(WoInfo::getWoId))
             .map(wo -> {
                 LinkedHashMap<String, Object> row = new LinkedHashMap<>();
                 row.put("id", String.valueOf(wo.getWoId()));
+                row.put("code", wo.getWoNo());
                 row.put("materialId", wo.getMaterialId() == null ? null : String.valueOf(wo.getMaterialId()));
                 row.put("qty", decimal(wo.getRemainingQty()));
                 row.put("due", wo.getDueDate() == null ? null : wo.getDueDate().toString());
@@ -578,8 +733,11 @@ public class ErpDecisionApsSimulation {
         catch (RuntimeException e) { return null; }
     }
 
-    private static DecisionScenario infeasible(String code, String strategy, String reason) {
+    private static DecisionScenario unavailable(DeliveryContextSnapshot snapshot, Map<Long, WorkOrderFact> facts,
+                                                 int horizonDays, String code, String strategy, String reason) {
         return new DecisionScenario(code, code, strategy, false, List.of(reason), null,
-            null, 0, Map.of(), List.of(), List.of(), null, List.of(), List.of());
+            null, 0, Map.of(), List.of("snapshot:" + snapshot.snapshotHash()), List.of(),
+            hashBaseline(snapshot, facts, snapshot.currentSchedule(), horizonDays, code, strategy),
+            List.of(), List.of());
     }
 }
