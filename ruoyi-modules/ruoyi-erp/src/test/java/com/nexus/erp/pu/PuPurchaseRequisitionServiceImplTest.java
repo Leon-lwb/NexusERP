@@ -58,6 +58,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.doAnswer;
@@ -405,6 +406,90 @@ class PuPurchaseRequisitionServiceImplTest {
         when(lineMapper.insert(any(PuPurchaseRequisitionLine.class))).thenReturn(0);
 
         assertThrows(ServiceException.class, () -> requisitionService.createDraft(bo));
+    }
+
+    @Test
+    void deleteByIdsRejectsApprovingBeforeDeletingParentOrLines() {
+        PuPurchaseRequisition current = matchingExistingRequisition();
+        current.setStatus("APPROVING");
+        when(baseMapper.selectById(7001L)).thenReturn(current);
+
+        ServiceException error = assertThrows(ServiceException.class,
+            () -> requisitionService.deleteByIds(new Long[]{7001L}));
+
+        assertTrue(error.getMessage().contains("审批"), error.getMessage());
+        assertEquals("APPROVING", current.getStatus());
+        verifyNoInteractions(lineMapper);
+        verify(baseMapper, never()).delete(any(Wrapper.class));
+        verify(baseMapper, never()).deleteBatchIds(anyCollection());
+    }
+
+    @Test
+    void deleteByIdsClaimsEligibleParentWithStatusAndVersionBeforeDeletingLines() {
+        PuPurchaseRequisition current = matchingExistingRequisition();
+        current.setVersion(0);
+        when(baseMapper.selectById(7001L)).thenReturn(current);
+        when(baseMapper.delete(any(Wrapper.class))).thenReturn(1);
+
+        assertEquals(1, requisitionService.deleteByIds(new Long[]{7001L}));
+
+        ArgumentCaptor<Wrapper<PuPurchaseRequisition>> parent = wrapperCaptor();
+        InOrder order = inOrder(baseMapper, lineMapper);
+        order.verify(baseMapper).selectById(7001L);
+        order.verify(baseMapper).delete(parent.capture());
+        order.verify(lineMapper).delete(any(Wrapper.class));
+        assertSqlContains(parent.getValue(), "requisition_id", "status", "version");
+        assertTrue(parameters(parent.getValue()).containsValue(7001L));
+        assertTrue(parameters(parent.getValue()).containsValue("DRAFT"));
+        assertTrue(parameters(parent.getValue()).containsValue(0));
+        verify(baseMapper, never()).deleteBatchIds(anyCollection());
+    }
+
+    @Test
+    void deleteByIdsCasMissAfterConcurrentSubmitThrowsBeforeTouchingLines() {
+        PuPurchaseRequisition staleDraft = matchingExistingRequisition();
+        staleDraft.setVersion(0);
+        when(baseMapper.selectById(7001L)).thenReturn(staleDraft);
+        when(baseMapper.delete(any(Wrapper.class))).thenReturn(0);
+
+        ServiceException error = assertThrows(ServiceException.class,
+            () -> requisitionService.deleteByIds(new Long[]{7001L}));
+
+        assertTrue(error.getMessage().contains("状态") || error.getMessage().contains("并发"), error.getMessage());
+        verify(baseMapper).delete(any(Wrapper.class));
+        verifyNoInteractions(lineMapper);
+        verify(baseMapper, never()).deleteBatchIds(anyCollection());
+    }
+
+    @Test
+    void deleteByIdsLaterCasConflictThrowsBeforeLinesAndDeclaresTransactionRollback() throws Exception {
+        PuPurchaseRequisition first = matchingExistingRequisition();
+        first.setVersion(0);
+        PuPurchaseRequisition second = matchingExistingRequisition();
+        second.setRequisitionId(7002L);
+        second.setVersion(0);
+        when(baseMapper.selectById(7001L)).thenReturn(first);
+        when(baseMapper.selectById(7002L)).thenReturn(second);
+        when(baseMapper.delete(any(Wrapper.class))).thenReturn(1, 0);
+
+        assertThrows(ServiceException.class, () -> requisitionService.deleteByIds(new Long[]{7001L, 7002L}));
+
+        verify(baseMapper, times(2)).delete(any(Wrapper.class));
+        verifyNoInteractions(lineMapper);
+        verify(baseMapper, never()).deleteBatchIds(anyCollection());
+        Transactional transaction = PuPurchaseRequisitionServiceImpl.class
+            .getMethod("deleteByIds", Long[].class).getAnnotation(Transactional.class);
+        assertNotNull(transaction);
+        assertTrue(List.of(transaction.rollbackFor()).contains(Exception.class));
+    }
+
+    @Test
+    void deleteByIdsRejectsInvalidAndDuplicateIdsBeforeAnyMapperCall() {
+        Long[][] invalid = {null, {}, {null}, {0L}, {-1L}, {7001L, 7001L}};
+        for (Long[] ids : invalid) {
+            assertThrows(ServiceException.class, () -> requisitionService.deleteByIds(ids));
+        }
+        verifyNoInteractions(baseMapper, lineMapper);
     }
 
     @Test

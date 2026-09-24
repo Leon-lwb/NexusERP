@@ -48,6 +48,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -393,10 +394,35 @@ public class PuPurchaseRequisitionServiceImpl implements IPuPurchaseRequisitionS
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteByIds(Long[] ids) {
+        if (ids == null || ids.length == 0) {
+            throw new ServiceException("采购申请ID不能为空");
+        }
+        LinkedHashSet<Long> uniqueIds = new LinkedHashSet<>();
         for (Long id : ids) {
+            if (id == null || id <= 0 || !uniqueIds.add(id)) {
+                throw new ServiceException("采购申请ID无效或重复");
+            }
+        }
+        for (Long id : uniqueIds) {
+            PuPurchaseRequisition current = ensureRequisition(id);
+            if (STATUS_APPROVING.equals(current.getStatus())) {
+                throw new ServiceException("采购申请正在审批中，请先通过流程撤回或终止再删除");
+            }
+            if (current.getVersion() == null || StringUtils.isBlank(current.getStatus())) {
+                throw new ServiceException("采购申请状态或版本无效，无法删除");
+            }
+            int deleted = baseMapper.delete(Wrappers.lambdaQuery(PuPurchaseRequisition.class)
+                .eq(PuPurchaseRequisition::getRequisitionId, id)
+                .eq(PuPurchaseRequisition::getVersion, current.getVersion())
+                .eq(PuPurchaseRequisition::getStatus, current.getStatus()));
+            if (deleted != 1) {
+                throw new ServiceException("采购申请状态或版本已变化，删除冲突");
+            }
+        }
+        for (Long id : uniqueIds) {
             deleteLinesByRequisitionId(id);
         }
-        return baseMapper.deleteBatchIds(List.of(ids));
+        return uniqueIds.size();
     }
 
     @Override
