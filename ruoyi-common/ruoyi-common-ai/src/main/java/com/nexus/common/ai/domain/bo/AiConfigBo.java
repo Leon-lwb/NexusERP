@@ -226,7 +226,7 @@ public class AiConfigBo {
         @NotNull @Min(10) @Max(300) private Integer analysisTimeoutSeconds;
         @NotNull @Min(5) @Max(120) private Integer actionTimeoutSeconds;
         @NotNull @Min(30) @Max(3600) private Integer staleThresholdSeconds;
-        @NotEmpty private List<String> requireApprovalLevels;
+        @NotEmpty private List<@NotBlank @Pattern(regexp = "LOW|MEDIUM|HIGH|CRITICAL") String> requireApprovalLevels;
         @NotNull private Boolean allowAutoLowRiskNotify;
         @NotNull private Boolean benchmarkMode;
         @NotNull @Min(1) @Max(90) private Integer defaultHorizonDays;

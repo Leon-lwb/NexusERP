@@ -3,6 +3,7 @@ import {
   createDefaultDecisionConfig,
   decisionRiskPointSum,
   decisionRankingWeightSum,
+  normalizeDecisionConfig,
   validateDecisionConfig
 } from '../node_modules/.tmp/decision-config.mjs';
 
@@ -29,4 +30,22 @@ assert.equal(validateDecisionConfig(badId), null);
 badId.policyKnowledgeId = '1.5';
 assert.match(validateDecisionConfig(badId), /ID/);
 
-process.stdout.write('Decision config checks: 5 passed' + String.fromCharCode(10));
+const legacy = normalizeDecisionConfig(undefined);
+assert.equal(legacy.maxScenarios, 4);
+assert.deepEqual(legacy.requireApprovalLevels, ['HIGH', 'CRITICAL']);
+
+const timeout = createDefaultDecisionConfig();
+timeout.analysisTimeoutSeconds = 1;
+assert.match(validateDecisionConfig(timeout), /分析超时/);
+timeout.analysisTimeoutSeconds = 60;
+timeout.actionTimeoutSeconds = 999;
+assert.match(validateDecisionConfig(timeout), /动作超时/);
+timeout.actionTimeoutSeconds = 30;
+timeout.staleThresholdSeconds = 1;
+assert.match(validateDecisionConfig(timeout), /证据过期/);
+
+const overflowId = createDefaultDecisionConfig();
+overflowId.policyKnowledgeId = '9223372036854775808';
+assert.match(validateDecisionConfig(overflowId), /Long/);
+
+process.stdout.write('Decision config checks: 10 passed' + String.fromCharCode(10));

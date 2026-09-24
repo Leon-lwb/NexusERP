@@ -11,22 +11,32 @@ import com.nexus.common.ai.domain.entity.AiConfig;
 import com.nexus.common.ai.mapper.AiConfigMapper;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.json.utils.JsonUtils;
+import com.nexus.common.redis.utils.RedisUtils;
+import org.redisson.api.RedissonClient;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import java.util.concurrent.ThreadPoolExecutor;
+import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
+import org.mockito.MockedStatic;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -47,7 +57,9 @@ class AiDecisionConfigContractTest {
         try (var spring = mockStatic(SpringUtil.class)) {
             spring.when(() -> SpringUtil.getBean(ObjectMapper.class))
                 .thenReturn(new ObjectMapper().findAndRegisterModules());
+            spring.when(() -> SpringUtil.getBean(RedissonClient.class)).thenReturn(mock(RedissonClient.class));
             Class.forName(JsonUtils.class.getName(), true, JsonUtils.class.getClassLoader());
+            Class.forName(RedisUtils.class.getName(), true, RedisUtils.class.getClassLoader());
         }
     }
 
@@ -125,6 +137,58 @@ class AiDecisionConfigContractTest {
     }
 
     @Test
+    void nullApprovalLevelIsRejectedAsServiceErrorBeforePersistence() {
+        AiConfigBo bo = completeRequest();
+        bo.getDecision().setRequireApprovalLevels(Arrays.asList("HIGH", "CRITICAL", null));
+        assertThrows(ServiceException.class, () -> service.updateConfig(bo));
+        verify(mapper, never()).insert(any(AiConfig.class));
+    }
+
+    @Test
+    void databaseFailureDoesNotPublishUncommittedDecisionConfig() {
+        AiConfigBo bo = completeRequest();
+        bo.getDecision().setMaxScenarios(3);
+        when(mapper.selectById(any())).thenReturn(null);
+        doAnswer(invocation -> {
+            AiConfig config = invocation.getArgument(0);
+            if (AiConfigServiceImpl.GROUP_DECISION.equals(config.getConfigGroup())) {
+                throw new IllegalStateException("db down");
+            }
+            return 1;
+        }).when(mapper).insert(any(AiConfig.class));
+        TransactionSynchronizationManager.initSynchronization();
+        try {
+            assertThrows(IllegalStateException.class, () -> service.updateConfig(bo));
+            assertEquals(4, properties.getDecision().getMaxScenarios());
+            assertTrue(TransactionSynchronizationManager.getSynchronizations().isEmpty());
+        } finally {
+            TransactionSynchronizationManager.clearSynchronization();
+        }
+    }
+
+    @Test
+    void decisionConfigIsPublishedOnlyAfterCommitAndCannotBeMutatedThroughGetterOrVo() {
+        AiConfigBo bo = completeRequest();
+        bo.getDecision().setMaxScenarios(3);
+        bo.getDecision().setRequireApprovalLevels(new ArrayList<>(List.of("HIGH", "CRITICAL")));
+        when(mapper.selectById(any())).thenReturn(null);
+        TransactionSynchronizationManager.initSynchronization();
+        try {
+            service.updateConfig(bo);
+            assertEquals(4, properties.getDecision().getMaxScenarios(), "提交前不得发布新配置");
+            commitRegisteredSynchronizations();
+        } finally {
+            TransactionSynchronizationManager.clearSynchronization();
+        }
+        assertEquals(3, properties.getDecision().getMaxScenarios());
+        assertThrows(UnsupportedOperationException.class,
+            () -> properties.getDecision().getRequireApprovalLevels().clear());
+        var voLevels = service.getConfig().getDecision().getRequireApprovalLevels();
+        voLevels.clear();
+        assertTrue(properties.getDecision().getRequireApprovalLevels().contains("HIGH"));
+    }
+
+    @Test
     void validDecisionConfigIsPersistedAndCanBeReloaded() {
         AiConfigBo bo = completeRequest();
         bo.getDecision().setMaxScenarios(3);
@@ -132,6 +196,8 @@ class AiDecisionConfigContractTest {
         TransactionSynchronizationManager.initSynchronization();
         try {
             service.updateConfig(bo);
+            assertEquals(4, properties.getDecision().getMaxScenarios());
+            commitRegisteredSynchronizations();
         } finally {
             TransactionSynchronizationManager.clearSynchronization();
         }
@@ -159,6 +225,18 @@ class AiDecisionConfigContractTest {
         } finally {
             executor.shutdown();
         }
+    }
+
+    private static void commitRegisteredSynchronizations() {
+        List<TransactionSynchronization> synchronizations = TransactionSynchronizationManager.getSynchronizations();
+        assertFalse(synchronizations.isEmpty());
+        synchronizations.forEach(sync -> sync.beforeCommit(false));
+        synchronizations.forEach(TransactionSynchronization::beforeCompletion);
+        try (MockedStatic<RedisUtils> redis = mockStatic(RedisUtils.class)) {
+            synchronizations.forEach(TransactionSynchronization::afterCommit);
+            redis.verify(() -> RedisUtils.publish(org.mockito.ArgumentMatchers.eq("ai:config:refresh"), org.mockito.ArgumentMatchers.anyString()));
+        }
+        synchronizations.forEach(sync -> sync.afterCompletion(TransactionSynchronization.STATUS_COMMITTED));
     }
 
     private AiConfigBo completeRequest() {

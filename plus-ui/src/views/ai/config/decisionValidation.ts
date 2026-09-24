@@ -28,6 +28,19 @@ export function createDefaultDecisionConfig(): DecisionConfig {
   };
 }
 
+/** 兼容旧节点尚未返回 decision 分组的配置响应。 */
+export function normalizeDecisionConfig(value?: Partial<DecisionConfig> | null): DecisionConfig {
+  const defaults = createDefaultDecisionConfig();
+  return {
+    ...defaults,
+    ...value,
+    requireApprovalLevels: value?.requireApprovalLevels ? [...value.requireApprovalLevels] : [...defaults.requireApprovalLevels],
+    policyKnowledgeId: value?.policyKnowledgeId == null ? null : String(value.policyKnowledgeId),
+    risk: { ...defaults.risk, ...value?.risk },
+    ranking: { ...defaults.ranking, ...value?.ranking }
+  };
+}
+
 export function decisionRiskPointSum(risk: DecisionRiskConfig): number {
   return risk.tardinessPoints + risk.shortagePoints + risk.capacityPoints + risk.supplierPoints;
 }
@@ -79,11 +92,25 @@ export function validateDecisionConfig(config: DecisionConfig): string | null {
   ) {
     return '并发上限或方案数量不在允许范围';
   }
+  if (!Number.isInteger(config.analysisTimeoutSeconds) || config.analysisTimeoutSeconds < 10 || config.analysisTimeoutSeconds > 300) {
+    return '分析超时必须在 10～300 秒';
+  }
+  if (!Number.isInteger(config.actionTimeoutSeconds) || config.actionTimeoutSeconds < 5 || config.actionTimeoutSeconds > 120) {
+    return '动作超时必须在 5～120 秒';
+  }
+  if (!Number.isInteger(config.staleThresholdSeconds) || config.staleThresholdSeconds < 30 || config.staleThresholdSeconds > 3600) {
+    return '证据过期阈值必须在 30～3600 秒';
+  }
   if (!config.requireApprovalLevels.includes('HIGH') || !config.requireApprovalLevels.includes('CRITICAL')) {
     return '高风险及严重风险必须保留人工审批';
   }
-  if (config.policyKnowledgeId && !/^[1-9]\d*$/.test(config.policyKnowledgeId)) {
-    return '企业制度知识库 ID 必须是正整数';
+  if (config.policyKnowledgeId) {
+    if (!/^[1-9]\d*$/.test(config.policyKnowledgeId)) {
+      return '企业制度知识库 ID 必须是正整数';
+    }
+    if (BigInt(config.policyKnowledgeId) > 9223372036854775807n) {
+      return '企业制度知识库 ID 超出 Java Long 上限';
+    }
   }
   return null;
 }

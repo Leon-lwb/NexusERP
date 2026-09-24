@@ -130,7 +130,7 @@ public class AiConfigServiceImpl implements IAiConfigService, ApplicationRunner 
         decisionVo.setAnalysisTimeoutSeconds(decision.getAnalysisTimeoutSeconds());
         decisionVo.setActionTimeoutSeconds(decision.getActionTimeoutSeconds());
         decisionVo.setStaleThresholdSeconds(decision.getStaleThresholdSeconds());
-        decisionVo.setRequireApprovalLevels(decision.getRequireApprovalLevels());
+        decisionVo.setRequireApprovalLevels(new java.util.ArrayList<>(decision.getRequireApprovalLevels()));
         decisionVo.setAllowAutoLowRiskNotify(decision.isAllowAutoLowRiskNotify());
         decisionVo.setBenchmarkMode(decision.isBenchmarkMode());
         decisionVo.setDefaultHorizonDays(decision.getDefaultHorizonDays());
@@ -159,26 +159,22 @@ public class AiConfigServiceImpl implements IAiConfigService, ApplicationRunner 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void updateConfig(AiConfigBo bo) {
-        // 校验必须先于现有五组配置的内存回填和数据库写入。
-        AiProperties.DecisionConfig validatedDecision = toDecisionConfig(bo.getDecision());
-        validateDecisionWeights(validatedDecision);
         String preservedApiKey = resolvePreservedApiKey(bo);
+        ConfigCandidate candidate = buildCandidate(bo, preservedApiKey);
+        validateDecisionWeights(candidate.decision());
         synchronized (this) {
-            Snapshot before = Snapshot.of(aiProperties);
-            applyBo(bo, preservedApiKey, validatedDecision);
-            upsertGroup(GROUP_SQL_SAFETY, JsonUtils.toJsonString(toSqlSafetyData()));
-            upsertGroup(GROUP_VECTOR_STORE, JsonUtils.toJsonString(aiProperties.getVectorStore()));
-            upsertGroup(GROUP_WEB_SEARCH, JsonUtils.toJsonString(aiProperties.getWebSearch()));
-            upsertGroup(GROUP_FLOW, JsonUtils.toJsonString(aiProperties.getFlow()));
-            upsertGroup(GROUP_KNOWLEDGE_GRAPH, JsonUtils.toJsonString(aiProperties.getKnowledgeGraph()));
-            upsertGroup(GROUP_DECISION, JsonUtils.toJsonString(aiProperties.getDecision()));
-            handleCacheInvalidation(before, Snapshot.of(aiProperties));
+            // 运行态保持旧值，直到数据库事务真正提交。
+            persistCandidate(candidate);
         }
-        log.info("[AiConfig] AI 参数设置已保存并生效");
-        // 广播必须在事务提交后：其他节点收到即重载落库值，提交前广播会读到旧数据
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override
             public void afterCommit() {
+                synchronized (AiConfigServiceImpl.this) {
+                    Snapshot before = Snapshot.of(aiProperties);
+                    applyCandidate(candidate);
+                    handleCacheInvalidation(before, Snapshot.of(aiProperties));
+                }
+                log.info("[AiConfig] AI 参数设置已提交并生效");
                 RedisUtils.publish(CONFIG_REFRESH_CHANNEL, String.valueOf(System.currentTimeMillis()));
             }
         });
@@ -206,13 +202,12 @@ public class AiConfigServiceImpl implements IAiConfigService, ApplicationRunner 
         return aiProperties.getWebSearch().getApiKey();
     }
 
-    /**
-     * 将业务对象回填到 AiProperties（逐字段拷贝，嵌套组直接替换为新构建实例）
-     */
-    private void applyBo(AiConfigBo bo, String apiKey, AiProperties.DecisionConfig decision) {
-        aiProperties.setAllowedTablePrefixes(bo.getSqlSafety().getAllowedTablePrefixes());
-        aiProperties.setSqlTimeout(bo.getSqlSafety().getSqlTimeout());
-        aiProperties.setSqlMaxRows(bo.getSqlSafety().getSqlMaxRows());
+    /** 根据完整表单构建与当前运行态隔离的候选配置。 */
+    private ConfigCandidate buildCandidate(AiConfigBo bo, String apiKey) {
+        SqlSafetyData sqlSafety = new SqlSafetyData();
+        sqlSafety.setAllowedTablePrefixes(List.copyOf(bo.getSqlSafety().getAllowedTablePrefixes()));
+        sqlSafety.setSqlTimeout(bo.getSqlSafety().getSqlTimeout());
+        sqlSafety.setSqlMaxRows(bo.getSqlSafety().getSqlMaxRows());
 
         AiProperties.VectorStoreConfig vectorStore = new AiProperties.VectorStoreConfig();
         vectorStore.setType(bo.getVectorStore().getType());
@@ -221,7 +216,6 @@ public class AiConfigServiceImpl implements IAiConfigService, ApplicationRunner 
         milvus.setCollectionName(bo.getVectorStore().getMilvusCollectionName().trim());
         milvus.setDimension(bo.getVectorStore().getMilvusDimension());
         vectorStore.setMilvus(milvus);
-        aiProperties.setVectorStore(vectorStore);
 
         AiProperties.WebSearchConfig webSearch = new AiProperties.WebSearchConfig();
         webSearch.setEnabled(bo.getWebSearch().getEnabled());
@@ -229,11 +223,9 @@ public class AiConfigServiceImpl implements IAiConfigService, ApplicationRunner 
         webSearch.setApiKey(apiKey);
         webSearch.setTopN(bo.getWebSearch().getTopN());
         webSearch.setTimeoutMs(bo.getWebSearch().getTimeoutMs());
-        aiProperties.setWebSearch(webSearch);
 
         AiProperties.FlowConfig flow = new AiProperties.FlowConfig();
         flow.setParallel(bo.getFlow().getParallel());
-        aiProperties.setFlow(flow);
 
         AiProperties.KnowledgeGraphConfig kg = new AiProperties.KnowledgeGraphConfig();
         kg.setEnabled(bo.getKnowledgeGraph().getEnabled());
@@ -248,8 +240,32 @@ public class AiConfigServiceImpl implements IAiConfigService, ApplicationRunner 
         kg.setLabelPropagationMaxIter(bo.getKnowledgeGraph().getLabelPropagationMaxIter());
         kg.setMaxCommunities(bo.getKnowledgeGraph().getMaxCommunities());
         kg.setMaxCommunitiesForGlobal(bo.getKnowledgeGraph().getMaxCommunitiesForGlobal());
-        aiProperties.setKnowledgeGraph(kg);
-        aiProperties.setDecision(decision);
+
+        return new ConfigCandidate(sqlSafety, vectorStore, webSearch, flow, kg,
+            toDecisionConfig(bo.getDecision()));
+    }
+
+    /** 在事务中只持久化候选值，不提前污染本节点运行态。 */
+    private void persistCandidate(ConfigCandidate candidate) {
+        upsertGroup(GROUP_SQL_SAFETY, JsonUtils.toJsonString(candidate.sqlSafety()));
+        upsertGroup(GROUP_VECTOR_STORE, JsonUtils.toJsonString(candidate.vectorStore()));
+        upsertGroup(GROUP_WEB_SEARCH, JsonUtils.toJsonString(candidate.webSearch()));
+        upsertGroup(GROUP_FLOW, JsonUtils.toJsonString(candidate.flow()));
+        upsertGroup(GROUP_KNOWLEDGE_GRAPH, JsonUtils.toJsonString(candidate.knowledgeGraph()));
+        upsertGroup(GROUP_DECISION, JsonUtils.toJsonString(candidate.decision()));
+    }
+
+    /** 仅由事务 afterCommit 或可信数据库重载路径发布。 */
+    private void applyCandidate(ConfigCandidate candidate) {
+        SqlSafetyData sqlSafety = candidate.sqlSafety();
+        aiProperties.setAllowedTablePrefixes(List.copyOf(sqlSafety.getAllowedTablePrefixes()));
+        aiProperties.setSqlTimeout(sqlSafety.getSqlTimeout());
+        aiProperties.setSqlMaxRows(sqlSafety.getSqlMaxRows());
+        aiProperties.setVectorStore(candidate.vectorStore());
+        aiProperties.setWebSearch(candidate.webSearch());
+        aiProperties.setFlow(candidate.flow());
+        aiProperties.setKnowledgeGraph(candidate.knowledgeGraph());
+        aiProperties.setDecision(candidate.decision());
     }
 
     /**
@@ -340,7 +356,8 @@ public class AiConfigServiceImpl implements IAiConfigService, ApplicationRunner 
     private void validateDecisionWeights(AiProperties.DecisionConfig config) {
         List<String> required = config.getRequireApprovalLevels();
         if (required == null || !required.contains("HIGH") || !required.contains("CRITICAL")
-            || required.stream().anyMatch(level -> !java.util.Set.of("LOW", "MEDIUM", "HIGH", "CRITICAL").contains(level))) {
+            || required.stream().anyMatch(level -> level == null
+                || !java.util.Set.of("LOW", "MEDIUM", "HIGH", "CRITICAL").contains(level))) {
             throw new com.nexus.common.core.exception.ServiceException("高风险及严重风险必须保留人工审批");
         }
         var risk = config.getRisk();
@@ -407,12 +424,13 @@ public class AiConfigServiceImpl implements IAiConfigService, ApplicationRunner 
         }
     }
 
-    private SqlSafetyData toSqlSafetyData() {
-        SqlSafetyData data = new SqlSafetyData();
-        data.setAllowedTablePrefixes(aiProperties.getAllowedTablePrefixes());
-        data.setSqlTimeout(aiProperties.getSqlTimeout());
-        data.setSqlMaxRows(aiProperties.getSqlMaxRows());
-        return data;
+    private record ConfigCandidate(
+        SqlSafetyData sqlSafety,
+        AiProperties.VectorStoreConfig vectorStore,
+        AiProperties.WebSearchConfig webSearch,
+        AiProperties.FlowConfig flow,
+        AiProperties.KnowledgeGraphConfig knowledgeGraph,
+        AiProperties.DecisionConfig decision) {
     }
 
     /**

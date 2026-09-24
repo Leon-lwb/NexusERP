@@ -339,7 +339,7 @@
 <script setup lang="ts" name="AiConfig">
 import { getAiConfig, updateAiConfig } from '@/api/ai/config';
 import type { AiConfig } from '@/api/ai/config';
-import { createDefaultDecisionConfig, validateDecisionConfig } from './decisionValidation';
+import { createDefaultDecisionConfig, normalizeDecisionConfig, validateDecisionConfig } from './decisionValidation';
 import DecisionSettings from './DecisionSettings.vue';
 import { listModelOptions } from '@/api/ai/model';
 import { AiModel } from '@/api/ai/model';
@@ -459,16 +459,8 @@ const handleMenuSelect = (key: string) => {
 /** 应用后端返回的配置到表单并刷新快照 */
 const applyConfig = (data: AiConfig) => {
   // 与旧版本响应兼容，同时保留企业知识库雪花 ID 的十进制字符串。
-  const defaults = createDefaultDecisionConfig();
-  const received = data.decision;
   Object.assign(form, data, {
-    decision: {
-      ...defaults,
-      ...received,
-      risk: { ...defaults.risk, ...received?.risk },
-      ranking: { ...defaults.ranking, ...received?.ranking },
-      policyKnowledgeId: received?.policyKnowledgeId == null ? null : String(received.policyKnowledgeId)
-    }
+    decision: normalizeDecisionConfig(data.decision)
   });
   apiKeySet.value = !!data.webSearch.apiKeySet;
   form.webSearch.apiKey = '';

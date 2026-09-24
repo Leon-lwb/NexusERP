@@ -44,7 +44,18 @@ public class AiProperties {
     private KnowledgeGraphConfig knowledgeGraph = new KnowledgeGraphConfig();
 
     /** 工业决策运行与评分配置 */
-    private DecisionConfig decision = new DecisionConfig();
+    private volatile DecisionConfig decision = new DecisionConfig();
+
+
+    /** 返回防御副本，避免调用方绕过配置校验直接修改运行态。 */
+    public DecisionConfig getDecision() {
+        return DecisionConfig.copyOf(decision);
+    }
+
+    /** 原子发布经校验的不可共享配置快照。 */
+    public void setDecision(DecisionConfig decision) {
+        this.decision = DecisionConfig.copyOf(decision);
+    }
 
     @Data
     public static class VectorStoreConfig {
@@ -138,6 +149,29 @@ public class AiProperties {
         private Long policyKnowledgeId;
         private DecisionRiskConfig risk = new DecisionRiskConfig();
         private DecisionRankingConfig ranking = new DecisionRankingConfig();
+
+        public static DecisionConfig copyOf(DecisionConfig source) {
+            if (source == null) {
+                return new DecisionConfig();
+            }
+            DecisionConfig copy = new DecisionConfig();
+            copy.enabled = source.enabled;
+            copy.maxConcurrentRuns = source.maxConcurrentRuns;
+            copy.maxScenarios = source.maxScenarios;
+            copy.analysisTimeoutSeconds = source.analysisTimeoutSeconds;
+            copy.actionTimeoutSeconds = source.actionTimeoutSeconds;
+            copy.staleThresholdSeconds = source.staleThresholdSeconds;
+            copy.requireApprovalLevels = source.requireApprovalLevels == null
+                ? null : List.copyOf(source.requireApprovalLevels);
+            copy.allowAutoLowRiskNotify = source.allowAutoLowRiskNotify;
+            copy.benchmarkMode = source.benchmarkMode;
+            copy.defaultHorizonDays = source.defaultHorizonDays;
+            copy.maxHorizonDays = source.maxHorizonDays;
+            copy.policyKnowledgeId = source.policyKnowledgeId;
+            copy.risk = DecisionRiskConfig.copyOf(source.risk);
+            copy.ranking = DecisionRankingConfig.copyOf(source.ranking);
+            return copy;
+        }
     }
 
     @Data
@@ -149,6 +183,16 @@ public class AiProperties {
 
         public int pointSum() {
             return tardinessPoints + shortagePoints + capacityPoints + supplierPoints;
+        }
+
+        static DecisionRiskConfig copyOf(DecisionRiskConfig source) {
+            if (source == null) return null;
+            DecisionRiskConfig copy = new DecisionRiskConfig();
+            copy.tardinessPoints = source.tardinessPoints;
+            copy.shortagePoints = source.shortagePoints;
+            copy.capacityPoints = source.capacityPoints;
+            copy.supplierPoints = source.supplierPoints;
+            return copy;
         }
     }
 
@@ -165,6 +209,19 @@ public class AiProperties {
         public double weightSum() {
             return tardinessWeight + delayedCountWeight + shortageWeight + utilizationWeight
                 + actionCostWeight + planChangeWeight + infeasibleWeight;
+        }
+
+        static DecisionRankingConfig copyOf(DecisionRankingConfig source) {
+            if (source == null) return null;
+            DecisionRankingConfig copy = new DecisionRankingConfig();
+            copy.tardinessWeight = source.tardinessWeight;
+            copy.delayedCountWeight = source.delayedCountWeight;
+            copy.shortageWeight = source.shortageWeight;
+            copy.utilizationWeight = source.utilizationWeight;
+            copy.actionCostWeight = source.actionCostWeight;
+            copy.planChangeWeight = source.planChangeWeight;
+            copy.infeasibleWeight = source.infeasibleWeight;
+            return copy;
         }
     }
 
