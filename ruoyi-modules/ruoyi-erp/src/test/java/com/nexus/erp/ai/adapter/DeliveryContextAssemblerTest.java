@@ -1346,6 +1346,71 @@ class DeliveryContextAssemblerTest {
         return calendar;
     }
 
+    @Test
+    void salesOrderWithoutScheduleStillPublishesTypedWorkOrderSalesLinks() {
+        SoSalesOrderHeader order = salesOrder(100L, "SO-100");
+        SoSalesOrderLine line = salesOrderLine(101L, 100L, 501L);
+        PrdProductionPlan plan = productionPlan(201L, 101L, 301L);
+        PrdWorkOrder wo = workOrder(11L, 811L, 201L, "RELEASED");
+        when(salesOrderHeaderMapper.selectById(100L)).thenReturn(order);
+        when(salesOrderLineMapper.selectList(any())).thenReturn(List.of(line));
+        when(productionPlanMapper.selectList(any())).thenReturn(List.of(plan));
+        when(workOrderMapper.selectList(any())).thenReturn(List.of(wo));
+        when(scheduleInputAssembler.assemble(any(PrdSchedulePlanBo.class), anyCollection()))
+            .thenReturn(scheduleInput(List.of(wo), false));
+        stubEmptyRelatedFacts();
+        when(scheduleTaskMapper.selectList(any())).thenReturn(List.of());
+
+        DeliveryContextSnapshot snapshot = assembler.assemble(
+            new DecisionBusinessRef(DecisionBusinessType.SALES_ORDER, 100L, null), 14,
+            actor("ai:decision:run", "so:orderheader:query"));
+
+        assertTrue(snapshot.currentSchedule().isEmpty());
+        assertEquals(List.of(new DeliveryContextSnapshot.WorkOrderSalesLinkFact(11L, 100L)),
+            snapshot.workOrderSalesLinks());
+    }
+
+    @Test
+    void workOrderWithoutScheduleStillPublishesTypedWorkOrderSalesLinks() {
+        PrdWorkOrder wo = stubLinkedWorkOrderWithoutSchedule();
+        when(workOrderMapper.selectById(11L)).thenReturn(wo);
+
+        DeliveryContextSnapshot snapshot = assembler.assemble(
+            new DecisionBusinessRef(DecisionBusinessType.WORK_ORDER, 11L, null), 14,
+            actor("ai:decision:run", "prd:work:query"));
+
+        assertTrue(snapshot.currentSchedule().isEmpty());
+        assertEquals(List.of(new DeliveryContextSnapshot.WorkOrderSalesLinkFact(11L, 100L)),
+            snapshot.workOrderSalesLinks());
+    }
+
+    @Test
+    void shortageHorizonWithoutScheduleStillPublishesTypedWorkOrderSalesLinks() {
+        PrdWorkOrder wo = stubLinkedWorkOrderWithoutSchedule();
+        when(workOrderMapper.selectList(any())).thenReturn(List.of(wo));
+
+        DeliveryContextSnapshot snapshot = assembler.assemble(
+            new DecisionBusinessRef(DecisionBusinessType.SHORTAGE_HORIZON, null, null), 14,
+            actor("ai:decision:run", "prd:shortage:query"));
+
+        assertTrue(snapshot.currentSchedule().isEmpty());
+        assertEquals(List.of(new DeliveryContextSnapshot.WorkOrderSalesLinkFact(11L, 100L)),
+            snapshot.workOrderSalesLinks());
+    }
+
+    private PrdWorkOrder stubLinkedWorkOrderWithoutSchedule() {
+        SoSalesOrderLine line = salesOrderLine(101L, 100L, 501L);
+        PrdProductionPlan plan = productionPlan(201L, 101L, 301L);
+        PrdWorkOrder wo = workOrder(11L, 811L, 201L, "RELEASED");
+        when(productionPlanMapper.selectBatchIds(anyCollection())).thenReturn(List.of(plan));
+        when(salesOrderLineMapper.selectBatchIds(anyCollection())).thenReturn(List.of(line));
+        when(salesOrderHeaderMapper.selectById(100L)).thenReturn(salesOrder(100L, "SO-100"));
+        when(scheduleInputAssembler.assemble(any(PrdSchedulePlanBo.class), anyCollection()))
+            .thenReturn(scheduleInput(List.of(wo), false));
+        stubEmptyRelatedFacts();
+        when(scheduleTaskMapper.selectList(any())).thenReturn(List.of());
+        return wo;
+    }
     private void stubEmptyRelatedFacts() {
         when(requirementMapper.selectList(any())).thenReturn(List.of());
         when(requirementDetailMapper.selectList(any())).thenReturn(List.of());

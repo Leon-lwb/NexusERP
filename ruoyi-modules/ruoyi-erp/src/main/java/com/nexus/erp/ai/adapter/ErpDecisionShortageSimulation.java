@@ -5,6 +5,8 @@ import com.nexus.common.ai.decision.dto.DeliveryContextSnapshot;
 import com.nexus.common.ai.decision.dto.DeliveryContextSnapshot.ArrivalFact;
 import com.nexus.common.ai.decision.dto.DeliveryContextSnapshot.RequirementFact;
 import com.nexus.common.ai.decision.dto.DeliveryContextSnapshot.StockFact;
+import com.nexus.common.ai.decision.dto.DeliveryContextSnapshot.WorkOrderSalesLinkFact;
+import com.nexus.common.ai.decision.dto.DeliveryContextSnapshot.WorkOrderFact;
 import com.nexus.common.ai.decision.dto.ShortageSimulationResult;
 import com.nexus.common.ai.decision.enums.DecisionBusinessType;
 import com.nexus.common.core.exception.ServiceException;
@@ -52,24 +54,34 @@ public class ErpDecisionShortageSimulation {
 
         // All facts, IDs and overrides must be checked before any material can be simulated.
         TreeMap<Long, MaterialDemand> demands = collectDemands(snapshot.requirements(), today, end, warnings);
+        boolean incompleteEvidence = missingRequirementScope(snapshot.workOrders(), snapshot.requirements(),
+            today, end, warnings);
         Map<Long, StockTotal> stocks = collectStocks(snapshot.stocks());
         Map<Long, ArrivalFact> arrivalsById = new HashMap<>();
         Map<Long, List<PurchaseArrivalLine>> linesByMaterial =
-            collectArrivals(snapshot.arrivals(), arrivalsById, warnings);
-        Map<Long, LocalDate> arrivalOverrides = parseOverrides(overrides, arrivalsById);
+            collectArrivals(snapshot.arrivals(), arrivalsById, today, warnings);
+        Map<Long, LocalDate> arrivalOverrides = parseOverrides(overrides, arrivalsById, today);
         for (Long purchaseLineId : arrivalOverrides.keySet()) {
             Long materialId = arrivalsById.get(purchaseLineId).materialId();
             require(demands.containsKey(materialId),
                 "采购行 " + purchaseLineId + " 的物料 " + materialId + " 在本窗口无需求");
+            ArrivalFact fact = arrivalsById.get(purchaseLineId);
+            if (fact.expectedDate().isBefore(today)) {
+                linesByMaterial.computeIfAbsent(materialId, id -> new ArrayList<>())
+                    .add(new PurchaseArrivalLine(purchaseLineId, fact.expectedDate(), fact.remainingQty()));
+            }
         }
+        linesByMaterial.values().forEach(lines ->
+            lines.sort(Comparator.comparing(PurchaseArrivalLine::purchaseLineId)));
         for (Long materialId : linesByMaterial.keySet()) {
             if (!demands.containsKey(materialId)) {
                 warnings.add("IGNORED_ARRIVAL_WITHOUT_DEMAND:" + materialId);
             }
         }
-        Map<Long, Long> salesOrdersByWorkOrder = parseSalesOrderLinks(snapshot.currentSchedule());
+        Map<Long, Long> salesOrdersByWorkOrder = parseSalesOrderLinks(snapshot.workOrderSalesLinks());
 
         if (demands.isEmpty()) {
+            if (incompleteEvidence) throw new ServiceException("SHORTAGE_SIMULATION_INCOMPLETE: 缺少工单需求证据");
             warnings.add(NO_REQUIREMENT_DATA);
             warnings.add("缺少需求证据，不能判定无风险");
             return new ShortageSimulationResult(false, 0, null, null,
@@ -84,11 +96,12 @@ public class ErpDecisionShortageSimulation {
             PrdShortageInput input = demand.input();
             StockTotal stock = stocks.get(materialId);
             if (stock == null) {
-                warnings.add("物料 " + materialId + " 无库存事实，按 0 推演");
-            } else {
-                input.setStockQty(stock.available);
-                input.setSafetyStock(stock.safety);
+                warnings.add("MISSING_STOCK_FACT:" + materialId);
+                incompleteEvidence = true;
+                continue;
             }
+            input.setStockQty(stock.available);
+            input.setSafetyStock(stock.safety);
             List<PurchaseArrivalLine> lines = linesByMaterial.getOrDefault(materialId, List.of());
             Map<Long, LocalDate> perMaterialOverrides = new TreeMap<>();
             for (PurchaseArrivalLine line : lines) {
@@ -105,13 +118,26 @@ public class ErpDecisionShortageSimulation {
                 PrdShortageResult result = scenarioService.simulate(input, lines, perMaterialOverrides, today);
                 if (result == null) throw new IllegalStateException("推演结果为空");
                 List<String> evidence = new ArrayList<>();
-                evidence.add("erp:requirement:" + materialId);
+                evidence.add("snapshot:requirementAggregate:" + snapshot.snapshotHash() + ":" + materialId);
+                evidence.add("snapshot:stockAggregate:" + snapshot.snapshotHash() + ":" + materialId);
                 for (PurchaseArrivalLine line : lines) {
                     evidence.add("erp:purchaseLine:" + line.purchaseLineId());
                 }
-                List<Long> workOrderIds = List.copyOf(demand.workOrderIds());
+                LocalDate shortageDate = result.getEarliestShortageDate();
+                if (shortageDate != null && shortageDate.isAfter(end)) shortageDate = null;
+                TreeSet<Long> affectedWorkOrders = new TreeSet<>();
+                if (shortageDate != null) {
+                    demand.workOrderIdsByDate().tailMap(shortageDate, true).forEach((date, ids) -> {
+                        affectedWorkOrders.addAll(ids);
+                        if (ids.size() > 1) {
+                            warnings.add("AMBIGUOUS_SAME_DAY_WORK_ORDERS:" + materialId + ":" + date);
+                        }
+                    });
+                }
+                List<Long> workOrderIds = List.copyOf(affectedWorkOrders);
                 TreeSet<Long> salesOrderIds = new TreeSet<>();
-                if (workOrderIds.isEmpty() && snapshot.rootBusinessRef().type() == DecisionBusinessType.SALES_ORDER) {
+                if (shortageDate != null && workOrderIds.isEmpty()
+                    && snapshot.rootBusinessRef().type() == DecisionBusinessType.SALES_ORDER) {
                     salesOrderIds.add(snapshot.rootBusinessRef().id());
                 }
                 for (Long workOrderId : workOrderIds) {
@@ -122,9 +148,7 @@ public class ErpDecisionShortageSimulation {
                         salesOrderIds.add(snapshot.rootBusinessRef().id());
                     }
                 }
-                LocalDate shortageDate = result.getEarliestShortageDate();
-                // Late purchase lines remain on-order evidence, not a receipt inside this horizon.
-                if (shortageDate != null && shortageDate.isAfter(end)) shortageDate = null;
+
                 items.add(new ShortageSimulationResult.Item(materialId, input.getMaterialCode(),
                     input.getMaterialName(), shortageDate,
                     shortageDate == null ? BigDecimal.ZERO : result.getMaxGap(), result.getOnOrderQty(),
@@ -134,14 +158,14 @@ public class ErpDecisionShortageSimulation {
             } catch (IllegalArgumentException invalid) {
                 // Invalid scenario facts must never be turned into an apparently safe result.
                 throw invalid;
-            } catch (RuntimeException failure) {
+            } catch (MaterialSimulationException failure) {
                 failedMaterials++;
                 warnings.add("物料 " + materialId + " 缺料推演失败，风险未知");
             }
         }
 
-        if (failedMaterials != 0) {
-            warnings.add("部分物料推演失败，汇总仅覆盖成功物料，完整风险未知");
+        if (failedMaterials != 0 || incompleteEvidence) {
+            warnings.add("SHORTAGE_SIMULATION_INCOMPLETE: 仅列已确认风险，完整风险未知");
             if (items.stream().noneMatch(item -> item.firstShortageDate() != null)) {
                 throw new ServiceException("SHORTAGE_SIMULATION_INCOMPLETE: 推演未完成，无法判定无风险");
             }
@@ -168,13 +192,13 @@ public class ErpDecisionShortageSimulation {
             }
         }
         DecisionKpiSet kpis = null;
-        if (failedMaterials == 0) {
+        if (failedMaterials == 0 && !incompleteEvidence) {
             warnings.add("仅计算缺料/影响订单指标，其余 APS KPI 未计算（0/null 为占位）");
             kpis = new DecisionKpiSet(impactedOrders.size(), 0, 0, 0, null,
                 riskCount, totalGap, earliest == null ? null : earliest.toString(), null, 0, 0, null);
         }
         return new ShortageSimulationResult(riskCount > 0, riskCount, earliest,
-            failedMaterials == 0 ? totalGap : null, List.copyOf(items), kpis,
+            failedMaterials == 0 && !incompleteEvidence ? totalGap : null, List.copyOf(items), kpis,
             List.copyOf(evidenceRefs), List.copyOf(warnings));
     }
 
@@ -205,11 +229,14 @@ public class ErpDecisionShortageSimulation {
             MaterialDemand material = demands.computeIfAbsent(fact.materialId(), id -> {
                 PrdShortageInput input = new PrdShortageInput();
                 input.setMaterialId(id);
-                return new MaterialDemand(input, new TreeSet<>());
+                return new MaterialDemand(input, new TreeMap<>());
             });
             setMetadata(material.input(), fact, warnings);
             material.input().addDemand(fact.requiredDate(), fact.requiredQty());
-            if (fact.workOrderId() != null) material.workOrderIds().add(fact.workOrderId());
+            if (fact.workOrderId() != null) {
+                material.workOrderIdsByDate().computeIfAbsent(fact.requiredDate(), date -> new TreeSet<>())
+                    .add(fact.workOrderId());
+            }
         }
         return demands;
     }
@@ -230,6 +257,31 @@ public class ErpDecisionShortageSimulation {
         return next;
     }
 
+    private static boolean missingRequirementScope(List<WorkOrderFact> workOrders,
+                                                   List<RequirementFact> requirements, LocalDate today,
+                                                   LocalDate end, Set<String> warnings) {
+        if (workOrders == null) {
+            warnings.add("INCOMPLETE_REQUIREMENT_SCOPE:NO_WORK_ORDER_FACTS");
+            return true;
+        }
+        Set<Long> linked = new HashSet<>();
+        for (RequirementFact fact : requirements) {
+            if (fact.workOrderId() != null && fact.requiredQty().signum() > 0
+                && !fact.requiredDate().isBefore(today) && !fact.requiredDate().isAfter(end)) {
+                linked.add(fact.workOrderId());
+            }
+        }
+        Set<Long> seen = new HashSet<>();
+        boolean incomplete = false;
+        for (WorkOrderFact workOrder : workOrders) {
+            require(workOrder != null && positive(workOrder.id()), "范围工单 ID 无效");
+            if (!seen.add(workOrder.id()) || !linked.contains(workOrder.id())) {
+                warnings.add("INCOMPLETE_REQUIREMENT_SCOPE:WO:" + workOrder.id());
+                incomplete = true;
+            }
+        }
+        return incomplete;
+    }
     private static Map<Long, StockTotal> collectStocks(List<StockFact> stocks) {
         Map<Long, StockTotal> totals = new HashMap<>();
         for (StockFact fact : stocks) {
@@ -247,7 +299,7 @@ public class ErpDecisionShortageSimulation {
 
     private static Map<Long, List<PurchaseArrivalLine>> collectArrivals(List<ArrivalFact> arrivals,
                                                                          Map<Long, ArrivalFact> byId,
-                                                                         Set<String> warnings) {
+                                                                         LocalDate today, Set<String> warnings) {
         Map<Long, List<PurchaseArrivalLine>> lines = new HashMap<>();
         for (ArrivalFact fact : arrivals) {
             require(fact != null && positive(fact.materialId()) && fact.remainingQty() != null,
@@ -264,6 +316,10 @@ public class ErpDecisionShortageSimulation {
                     + (fact.purchaseLineId() == null ? "" : "，采购行 " + fact.purchaseLineId()));
                 continue;
             }
+            if (fact.expectedDate().isBefore(today)) {
+                warnings.add("OVERDUE_ARRIVAL_UNCONFIRMED:" + fact.purchaseLineId());
+                continue;
+            }
             lines.computeIfAbsent(fact.materialId(), id -> new ArrayList<>())
                 .add(new PurchaseArrivalLine(fact.purchaseLineId(), fact.expectedDate(), fact.remainingQty()));
         }
@@ -272,7 +328,7 @@ public class ErpDecisionShortageSimulation {
     }
 
     private static Map<Long, LocalDate> parseOverrides(Map<String, Object> overrides,
-                                                        Map<Long, ArrivalFact> arrivalsById) {
+                                                        Map<Long, ArrivalFact> arrivalsById, LocalDate today) {
         if (overrides == null || overrides.isEmpty()) return Map.of();
         require(overrides.size() == 1 && overrides.containsKey(OVERRIDE_KEY), "不支持的到货覆盖字段");
         require(overrides.get(OVERRIDE_KEY) instanceof Map<?, ?>, "采购到货覆盖必须为 Map");
@@ -291,6 +347,7 @@ public class ErpDecisionShortageSimulation {
             } catch (DateTimeException invalid) {
                 throw new IllegalArgumentException("采购行 " + id + " 到货日期无效", invalid);
             }
+            require(!date.isBefore(today), "采购行 " + id + " 覆盖到货日不得早于快照日");
             ArrivalFact fact = arrivalsById.get(id);
             require(fact != null, "到货覆盖包含未知采购行 ID: " + id);
             require(fact.expectedDate() != null && fact.remainingQty().signum() > 0,
@@ -300,23 +357,15 @@ public class ErpDecisionShortageSimulation {
         return parsed;
     }
 
-    private static Map<Long, Long> parseSalesOrderLinks(Map<String, Object> schedule) {
-        if (schedule == null || !schedule.containsKey("workOrderSalesOrders")) return Map.of();
-        require(schedule.get("workOrderSalesOrders") instanceof List<?>, "工单销售订单关联必须是列表");
+    private static Map<Long, Long> parseSalesOrderLinks(List<WorkOrderSalesLinkFact> facts) {
         Map<Long, Long> links = new HashMap<>();
-        for (Object row : (List<?>) schedule.get("workOrderSalesOrders")) {
-            require(row instanceof Map<?, ?>, "工单销售订单关联不完整");
-            Map<?, ?> link = (Map<?, ?>) row;
-            require(link.get("workOrderId") instanceof String && link.get("salesOrderId") instanceof String,
-                "工单销售订单关联 ID 必须是字符串");
-            Long workOrderId = parseId((String) link.get("workOrderId"));
-            Long salesOrderId = parseId((String) link.get("salesOrderId"));
-            Long previous = links.putIfAbsent(workOrderId, salesOrderId);
-            require(previous == null || previous.equals(salesOrderId), "工单销售订单关联冲突: " + workOrderId);
+        for (WorkOrderSalesLinkFact fact : facts) {
+            Long previous = links.putIfAbsent(fact.workOrderId(), fact.salesOrderId());
+            require(previous == null || previous.equals(fact.salesOrderId()),
+                "工单销售订单关联冲突: " + fact.workOrderId());
         }
         return links;
     }
-
     private static Long parseId(String id) {
         require(id != null && id.matches("[0-9]+"), "ID 必须是正十进制字符串");
         try {
@@ -336,7 +385,13 @@ public class ErpDecisionShortageSimulation {
         if (!valid) throw new IllegalArgumentException(message);
     }
 
-    private record MaterialDemand(PrdShortageInput input, TreeSet<Long> workOrderIds) {
+    /** Only explicitly recoverable single-material failures may be isolated. */
+    static final class MaterialSimulationException extends RuntimeException {
+        MaterialSimulationException(String message) {
+            super(message);
+        }
+    }
+    private record MaterialDemand(PrdShortageInput input, TreeMap<LocalDate, TreeSet<Long>> workOrderIdsByDate) {
     }
 
     private static final class StockTotal {

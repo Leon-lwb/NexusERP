@@ -5,6 +5,8 @@ import com.nexus.common.ai.decision.dto.DeliveryContextSnapshot;
 import com.nexus.common.ai.decision.dto.DeliveryContextSnapshot.ArrivalFact;
 import com.nexus.common.ai.decision.dto.DeliveryContextSnapshot.RequirementFact;
 import com.nexus.common.ai.decision.dto.DeliveryContextSnapshot.StockFact;
+import com.nexus.common.ai.decision.dto.DeliveryContextSnapshot.WorkOrderSalesLinkFact;
+import com.nexus.common.ai.decision.dto.DeliveryContextSnapshot.WorkOrderFact;
 import com.nexus.common.ai.decision.dto.ShortageSimulationResult;
 import com.nexus.common.ai.decision.enums.DecisionBusinessType;
 import com.nexus.common.core.exception.ServiceException;
@@ -52,7 +54,8 @@ class ErpDecisionShortageSimulationTest {
                 arrival(101L, 5002L, TODAY.plusDays(1), "4")),
             Map.of("workOrderSalesOrders", List.of(Map.of("workOrderId", "11", "salesOrderId", "42"),
                 Map.of("workOrderId", "22", "salesOrderId", "99")),
-                "workOrderSalesOrderIds", List.of("42", "99")));
+                "workOrderSalesOrderIds", List.of("42", "99")),
+            List.of(new WorkOrderSalesLinkFact(11L, 42L), new WorkOrderSalesLinkFact(22L, 99L)));
 
         ShortageSimulationResult base = simulation.simulate(snapshot, 7, null);
         ShortageSimulationResult changed = simulation.simulate(snapshot, 7,
@@ -68,7 +71,8 @@ class ErpDecisionShortageSimulationTest {
         assertEquals("URGE", base.items().get(0).recommendationCode());
         assertEquals(List.of(11L), base.items().get(0).affectedWorkOrderIds());
         assertEquals(List.of(42L), base.items().get(0).affectedSalesOrderIds());
-        assertEquals(List.of("erp:requirement:101", "erp:purchaseLine:5001", "erp:purchaseLine:5002"),
+        assertEquals(List.of("snapshot:requirementAggregate:hash:101", "snapshot:stockAggregate:hash:101",
+                "erp:purchaseLine:5001", "erp:purchaseLine:5002"),
             base.items().get(0).evidenceKeys());
         assertEquals(List.of(99L), base.items().get(1).affectedSalesOrderIds());
 
@@ -155,7 +159,8 @@ class ErpDecisionShortageSimulationTest {
         assertEquals(new BigDecimal("3.50"), result.totalGap());
         assertEquals(new BigDecimal("7.25"), result.items().get(0).onOrderQty());
         assertEquals("PURCHASE", result.items().get(0).recommendationCode());
-        assertEquals(List.of("erp:requirement:101", "erp:purchaseLine:5001", "erp:purchaseLine:5002"),
+        assertEquals(List.of("snapshot:requirementAggregate:hash:101", "snapshot:stockAggregate:hash:101",
+                "erp:purchaseLine:5001", "erp:purchaseLine:5002"),
             result.items().get(0).evidenceKeys());
         assertEquals(List.of(11L), result.items().get(0).affectedWorkOrderIds());
     }
@@ -166,7 +171,8 @@ class ErpDecisionShortageSimulationTest {
             List.of(stock(101L, "0", "0", "0")), List.of(),
             Map.of("workOrderSalesOrders", List.of(Map.of("workOrderId", "11", "salesOrderId", "42"),
                 Map.of("workOrderId", "22", "salesOrderId", "99")),
-                "workOrderSalesOrderIds", List.of("42", "99")));
+                "workOrderSalesOrderIds", List.of("42", "99")),
+            List.of(new WorkOrderSalesLinkFact(11L, 42L), new WorkOrderSalesLinkFact(22L, 99L)));
         assertEquals(List.of(42L), simulation.simulate(mapped, 3, null).items().get(0).affectedSalesOrderIds());
 
         DeliveryContextSnapshot noMapping = snapshot(mapped.requirements(), mapped.stocks(), List.of(),
@@ -206,13 +212,9 @@ class ErpDecisionShortageSimulationTest {
             List.of(requirement(101L, TODAY, "10", 11L), requirement(102L, TODAY, "4", 22L)),
             List.of(stock(101L, "0", "0", "0"), stock(102L, "1", "0", "0")),
             List.of(arrival(101L, 5001L, TODAY.plusDays(1), "10")), null);
-        ShortageSimulationResult result = isolated.simulate(snapshot, 2, null);
-        assertEquals(List.of(102L), result.items().stream().map(ShortageSimulationResult.Item::materialId).toList());
-        assertTrue(result.hasRisk());
-        assertEquals(new BigDecimal("3"), result.items().get(0).maxGap());
-        assertNull(result.totalGap());
-        assertNull(result.kpis());
-        assertTrue(result.warnings().stream().anyMatch(w -> w.contains("101") && w.contains("失败")));
+        IllegalStateException failure = assertThrows(IllegalStateException.class,
+            () -> isolated.simulate(snapshot, 2, null));
+        assertEquals("service unavailable", failure.getMessage());
         assertThrows(IllegalArgumentException.class, () -> isolated.simulate(snapshot, 2,
             Map.of("purchaseArrivalOverrides", Map.of("9999", "2026-09-24"))));
     }
@@ -221,14 +223,13 @@ class ErpDecisionShortageSimulationTest {
     void invalidArrivalFactsWarnButOverridesCannotTargetThemAndOutOfWindowIsNotActualArrival() {
         DeliveryContextSnapshot snapshot = snapshot(
             List.of(requirement(101L, TODAY, "3", 11L)),
-            List.of(),
+            List.of(stock(101L, "0", "0", "0")),
             List.of(arrival(101L, null, TODAY, "2"),
                 arrival(101L, 5001L, null, "2"),
                 arrival(101L, 5002L, TODAY.plusDays(10), "4")), null);
         ShortageSimulationResult result = simulation.simulate(snapshot, 2, null);
         assertEquals(new BigDecimal("3"), result.totalGap());
         assertEquals(new BigDecimal("4"), result.items().get(0).onOrderQty());
-        assertTrue(result.warnings().stream().anyMatch(w -> w.contains("无库存")));
         assertTrue(result.warnings().stream().anyMatch(w -> w.contains("无效") && w.contains("采购")));
         assertTrue(result.warnings().stream().anyMatch(w -> w.contains("窗口外") && w.contains("非已到货")));
         assertThrows(IllegalArgumentException.class, () -> simulation.simulate(snapshot, 2,
@@ -260,8 +261,9 @@ class ErpDecisionShortageSimulationTest {
         ShortageSimulationResult two = simulation.simulate(reversed, 3, null);
         assertEquals(one, two);
         assertEquals(List.of(101L, 102L), one.items().stream().map(ShortageSimulationResult.Item::materialId).toList());
-        assertEquals(List.of("erp:requirement:101", "erp:purchaseLine:5001", "erp:purchaseLine:5002",
-            "erp:requirement:102"), one.evidenceRefs());
+        assertEquals(List.of("snapshot:requirementAggregate:hash:101", "snapshot:stockAggregate:hash:101",
+            "erp:purchaseLine:5001", "erp:purchaseLine:5002",
+            "snapshot:requirementAggregate:hash:102", "snapshot:stockAggregate:hash:102"), one.evidenceRefs());
         assertEquals(one.warnings().stream().distinct().sorted().toList(), one.warnings());
     }
 
@@ -281,7 +283,7 @@ class ErpDecisionShortageSimulationTest {
     @Test
     void salesOrderRootIsFallbackWhenRequirementHasNoWorkOrderId() {
         DeliveryContextSnapshot snapshot = snapshot(List.of(new RequirementFact(101L, "M-101", "物料-101",
-            TODAY, new BigDecimal("2"), null, null)), List.of(), List.of(), null);
+            TODAY, new BigDecimal("2"), null, null)), List.of(stock(101L, "0", "0", "0")), List.of(), null);
         ShortageSimulationResult result = simulation.simulate(snapshot, 1, null);
         assertEquals(List.of(900L), result.items().get(0).affectedSalesOrderIds());
         assertEquals(1, result.kpis().impactedOrderCount());
@@ -332,11 +334,11 @@ class ErpDecisionShortageSimulationTest {
     @Test
     void allMaterialsFailingThrowsIncompleteAfterAttemptingEveryMaterial() {
         PrdShortageScenarioService service = mock(PrdShortageScenarioService.class);
-        doAnswer(call -> { throw new IllegalStateException("simulator offline"); })
+        doAnswer(call -> { throw new ErpDecisionShortageSimulation.MaterialSimulationException("recoverable failure"); })
             .when(service).simulate(any(), any(), any(), eq(TODAY));
         DeliveryContextSnapshot snapshot = snapshot(
             List.of(requirement(101L, TODAY, "1", 11L), requirement(102L, TODAY, "2", 22L)),
-            List.of(), List.of(), null);
+            List.of(stock(101L, "0", "0", "0"), stock(102L, "0", "0", "0")), List.of(), null);
 
         ServiceException failure = assertThrows(ServiceException.class,
             () -> new ErpDecisionShortageSimulation(service).simulate(snapshot, 1, null));
@@ -351,13 +353,13 @@ class ErpDecisionShortageSimulationTest {
         PrdShortageScenarioService service = mock(PrdShortageScenarioService.class);
         doAnswer(call -> {
             if (call.<com.nexus.erp.prd.schedule.PrdShortageInput>getArgument(0).getMaterialId() == 101L) {
-                throw new IllegalStateException("simulator offline");
+                throw new ErpDecisionShortageSimulation.MaterialSimulationException("recoverable failure");
             }
             return delegate.simulate(call.getArgument(0), call.getArgument(1), call.getArgument(2), call.getArgument(3));
         }).when(service).simulate(any(), any(), any(), eq(TODAY));
         DeliveryContextSnapshot snapshot = snapshot(
             List.of(requirement(101L, TODAY, "5", 11L), requirement(102L, TODAY, "1", 22L)),
-            List.of(stock(102L, "2", "0", "0")), List.of(), null);
+            List.of(stock(101L, "0", "0", "0"), stock(102L, "2", "0", "0")), List.of(), null);
 
         ServiceException failure = assertThrows(ServiceException.class,
             () -> new ErpDecisionShortageSimulation(service).simulate(snapshot, 1, null));
@@ -380,6 +382,206 @@ class ErpDecisionShortageSimulationTest {
         assertEquals("ADJUST_SAFETY", result.items().get(0).recommendationCode());
     }
 
+    @Test
+    void salesLinksUseTypedSnapshotFactsEvenWithNoScheduleOrUntrustedDisplayMap() {
+        DeliveryContextSnapshot snapshot = snapshot(
+            List.of(requirement(101L, TODAY, "2", 11L)),
+            List.of(stock(101L, "0", "0", "0")), List.of(),
+            Map.of("workOrderSalesOrders", List.of(Map.of("workOrderId", "11", "salesOrderId", "999"))),
+            List.of(new WorkOrderSalesLinkFact(11L, 42L)));
+        ShortageSimulationResult result = simulation.simulate(snapshot, 1, null);
+        assertEquals(List.of(42L), result.items().get(0).affectedSalesOrderIds());
+
+        DeliveryContextSnapshot noPlan = snapshot(snapshot.requirements(), snapshot.stocks(), List.of(),
+            Map.of(), List.of(new WorkOrderSalesLinkFact(11L, 42L)));
+        assertEquals(List.of(42L), simulation.simulate(noPlan, 1, null)
+            .items().get(0).affectedSalesOrderIds());
+        DeliveryContextSnapshot workOrderRoot = new DeliveryContextSnapshot(
+            new DecisionBusinessRef(DecisionBusinessType.WORK_ORDER, 11L, "WO-11"),
+            List.of(), List.of(), Map.of(), snapshot.requirements(), snapshot.stocks(), List.of(), Map.of(),
+            List.of(), Map.of("workOrderSalesOrders", List.of(Map.of("workOrderId", "11", "salesOrderId", "999"))),
+            List.of(), "hash", SNAPSHOT_AT, List.of(), List.of());
+        assertEquals(List.of(), simulation.simulate(workOrderRoot, 1, null)
+            .items().get(0).affectedSalesOrderIds(), "无 typed 关系的 WORK_ORDER 不得信任展示 Map");
+    }
+    @Test
+    void scopedSecondWorkOrderWithoutMrpPreventsNoRiskEvenWithFirstCovered() {
+        DeliveryContextSnapshot snapshot = scopedSnapshot(
+            List.of(workOrder(11L), workOrder(22L)),
+            List.of(requirement(101L, TODAY, "1", 11L)),
+            List.of(stock(101L, "2", "0", "0")), List.of());
+        ServiceException error = assertThrows(ServiceException.class,
+            () -> simulation.simulate(snapshot, 1, null));
+        assertTrue(error.getMessage().contains("SHORTAGE_SIMULATION_INCOMPLETE"));
+
+        DeliveryContextSnapshot unknownOwner = scopedSnapshot(List.of(workOrder(11L)),
+            List.of(new RequirementFact(101L, "M-101", "物料-101", TODAY, BigDecimal.ONE, null, null)),
+            List.of(stock(101L, "2", "0", "0")), List.of());
+        assertThrows(ServiceException.class, () -> simulation.simulate(unknownOwner, 1, null));
+    }
+
+    @Test
+    void scopedMrpGapStaysKnownButMissingSecondWorkOrderMakesTotalsUnknown() {
+        DeliveryContextSnapshot snapshot = scopedSnapshot(List.of(workOrder(11L), workOrder(22L)),
+            List.of(requirement(101L, TODAY, "5", 11L)),
+            List.of(stock(101L, "0", "0", "0")), List.of());
+        ShortageSimulationResult result = simulation.simulate(snapshot, 1, null);
+        assertTrue(result.hasRisk());
+        assertEquals(List.of(101L), result.items().stream().map(ShortageSimulationResult.Item::materialId).toList());
+        assertTrue(result.warnings().stream().anyMatch(w -> w.contains("INCOMPLETE_REQUIREMENT_SCOPE") && w.contains("22")));
+        assertNull(result.totalGap());
+        assertNull(result.kpis());
+    }
+
+    @Test
+    void missingStockWithTodaysArrivalCannotProveNoRiskAndDoesNotSpoofKnownRisk() {
+        DeliveryContextSnapshot missingOnly = snapshot(List.of(requirement(101L, TODAY, "1", 11L)),
+            List.of(), List.of(arrival(101L, 5001L, TODAY, "3")), null);
+        assertThrows(ServiceException.class, () -> simulation.simulate(missingOnly, 1, null));
+
+        DeliveryContextSnapshot partial = snapshot(
+            List.of(requirement(101L, TODAY, "1", 11L), requirement(102L, TODAY, "4", 22L)),
+            List.of(stock(102L, "0", "0", "0")),
+            List.of(arrival(101L, 5001L, TODAY, "3")), null);
+        ShortageSimulationResult result = simulation.simulate(partial, 1, null);
+        assertTrue(result.hasRisk());
+        assertEquals(List.of(102L), result.items().stream().map(ShortageSimulationResult.Item::materialId).toList());
+        assertTrue(result.warnings().stream().anyMatch(w -> w.contains("MISSING_STOCK_FACT") && w.contains("101")));
+        assertNull(result.totalGap());
+        assertNull(result.kpis());
+    }
+
+    private static WorkOrderFact workOrder(Long id) {
+        return new WorkOrderFact(id, "WO-" + id, 901L, BigDecimal.ONE, TODAY, 1L, 7L);
+    }
+
+    private static DeliveryContextSnapshot scopedSnapshot(List<WorkOrderFact> workOrders,
+        List<RequirementFact> requirements, List<StockFact> stocks, List<ArrivalFact> arrivals) {
+        return new DeliveryContextSnapshot(
+            new DecisionBusinessRef(DecisionBusinessType.SALES_ORDER, 900L, "SO-900"),
+            List.of(), workOrders, Map.of(), requirements, stocks, arrivals, Map.of(), List.of(),
+            Map.of(), List.of(), "hash", SNAPSHOT_AT, List.of(), List.of());
+    }
+    @Test
+    void overdueUnreceivedArrivalCannotCreatePastShortageOrCountAsAvailable() {
+        DeliveryContextSnapshot snapshot = snapshot(
+            List.of(requirement(101L, TODAY.plusDays(1), "1", 11L)),
+            List.of(stock(101L, "0", "0", "5")),
+            List.of(arrival(101L, 5001L, TODAY.minusDays(1), "2"),
+                arrival(101L, 5002L, TODAY, "5")), null);
+
+        ShortageSimulationResult baseline = simulation.simulate(snapshot, 2, null);
+        assertEquals(TODAY.plusDays(1), baseline.earliestShortageDate());
+        assertEquals(BigDecimal.ONE, baseline.totalGap());
+        assertEquals(new BigDecimal("5"), baseline.items().get(0).onOrderQty());
+        assertTrue(baseline.warnings().stream().anyMatch(w -> w.contains("OVERDUE_ARRIVAL_UNCONFIRMED")
+            && w.contains("5001")));
+        assertEquals(List.of("erp:purchaseLine:5002"), baseline.items().get(0).evidenceKeys().stream()
+            .filter(key -> key.startsWith("erp:purchaseLine:")).toList());
+
+        ShortageSimulationResult expedited = simulation.simulate(snapshot, 2,
+            Map.of("purchaseArrivalOverrides", Map.of("5001", "2026-09-25")));
+        assertFalse(expedited.hasRisk());
+        assertEquals(new BigDecimal("7"), expedited.items().get(0).onOrderQty());
+        assertEquals(TODAY.minusDays(1), snapshot.arrivals().get(0).expectedDate());
+    }
+
+    @Test
+    void overrideCannotReinterpretUnreceivedArrivalAsPastReceipt() {
+        DeliveryContextSnapshot snapshot = snapshot(
+            List.of(requirement(101L, TODAY, "1", 11L)),
+            List.of(stock(101L, "0", "0", "0")),
+            List.of(arrival(101L, 5001L, TODAY.minusDays(1), "5")), null);
+        assertThrows(IllegalArgumentException.class, () -> simulation.simulate(snapshot, 2,
+            Map.of("purchaseArrivalOverrides", Map.of("5001", "2026-09-23"))));
+    }
+    @Test
+    void affectedWorkOrdersOnlyIncludeDemandOnOrAfterFirstShortageDate() {
+        DeliveryContextSnapshot snapshot = new DeliveryContextSnapshot(
+            new DecisionBusinessRef(DecisionBusinessType.WORK_ORDER, 22L, "WO-22"),
+            List.of(), List.of(workOrder(11L), workOrder(22L)), Map.of(),
+            List.of(requirement(101L, TODAY, "4", 11L),
+                requirement(101L, TODAY.plusDays(1), "3", 22L)),
+            List.of(stock(101L, "5", "0", "0")), List.of(), Map.of(), List.of(), Map.of(),
+            List.of(), "hash", SNAPSHOT_AT, List.of(),
+            List.of(new WorkOrderSalesLinkFact(11L, 42L), new WorkOrderSalesLinkFact(22L, 99L)));
+        ShortageSimulationResult result = simulation.simulate(snapshot, 2, null);
+        assertEquals(TODAY.plusDays(1), result.earliestShortageDate());
+        assertEquals(List.of(22L), result.items().get(0).affectedWorkOrderIds());
+        assertEquals(List.of(99L), result.items().get(0).affectedSalesOrderIds());
+        assertEquals(1, result.kpis().impactedOrderCount());
+    }
+
+    @Test
+    void sameDayMultipleWorkOrdersWarnOfIndeterminateAllocation() {
+        DeliveryContextSnapshot snapshot = scopedSnapshot(List.of(workOrder(11L), workOrder(22L)),
+            List.of(requirement(101L, TODAY.plusDays(1), "2", 11L),
+                requirement(101L, TODAY.plusDays(1), "3", 22L)),
+            List.of(stock(101L, "0", "0", "0")), List.of());
+        ShortageSimulationResult result = simulation.simulate(snapshot, 2, null);
+        assertEquals(TODAY.plusDays(1), result.items().get(0).firstShortageDate());
+        assertEquals(List.of(11L, 22L), result.items().get(0).affectedWorkOrderIds());
+        assertTrue(result.warnings().stream().anyMatch(w -> w.contains("AMBIGUOUS_SAME_DAY_WORK_ORDERS")
+            && w.contains("101") && w.contains("2026-09-25")));
+    }
+    @Test
+    void programmingErrorInOneMaterialFailsTheWholeRequestWithoutForgingPartialRisk() {
+        PrdShortageScenarioService service = mock(PrdShortageScenarioService.class);
+        doAnswer(call -> { throw new NullPointerException("simulator bug"); })
+            .when(service).simulate(any(), any(), any(), eq(TODAY));
+        DeliveryContextSnapshot snapshot = snapshot(
+            List.of(requirement(101L, TODAY, "4", 11L), requirement(102L, TODAY, "2", 22L)),
+            List.of(stock(101L, "0", "0", "0"), stock(102L, "0", "0", "0")), List.of(), null);
+
+        NullPointerException error = assertThrows(NullPointerException.class,
+            () -> new ErpDecisionShortageSimulation(service).simulate(snapshot, 1, null));
+        assertEquals("simulator bug", error.getMessage());
+        verify(service, times(1)).simulate(any(), any(), any(), eq(TODAY));
+    }
+    @Test
+    void explicitlyRecoverableMaterialFailureKeepsKnownItemWithoutFullTotals() {
+        PrdShortageScenarioService delegate = new PrdShortageScenarioService();
+        PrdShortageScenarioService service = mock(PrdShortageScenarioService.class);
+        doAnswer(call -> {
+            if (call.<com.nexus.erp.prd.schedule.PrdShortageInput>getArgument(0).getMaterialId() == 101L) {
+                throw new ErpDecisionShortageSimulation.MaterialSimulationException("recoverable failure");
+            }
+            return delegate.simulate(call.getArgument(0), call.getArgument(1), call.getArgument(2), call.getArgument(3));
+        }).when(service).simulate(any(), any(), any(), eq(TODAY));
+        DeliveryContextSnapshot snapshot = snapshot(
+            List.of(requirement(101L, TODAY, "10", 11L), requirement(102L, TODAY, "4", 22L)),
+            List.of(stock(101L, "0", "0", "0"), stock(102L, "1", "0", "0")), List.of(), null);
+
+        ShortageSimulationResult result = new ErpDecisionShortageSimulation(service).simulate(snapshot, 1, null);
+        assertTrue(result.hasRisk());
+        assertEquals(List.of(102L), result.items().stream().map(ShortageSimulationResult.Item::materialId).toList());
+        assertEquals(new BigDecimal("3"), result.items().get(0).maxGap());
+        assertNull(result.totalGap());
+        assertNull(result.kpis());
+        assertTrue(result.warnings().stream().anyMatch(w -> w.contains("101") && w.contains("失败")));
+        verify(service, times(2)).simulate(any(), any(), any(), eq(TODAY));
+    }
+    @Test
+    void aggregateEvidenceIsBoundToSnapshotHashAndOnlyPurchaseLinesUseRealErpIds() {
+        DeliveryContextSnapshot facts = snapshot(
+            List.of(requirement(101L, TODAY, "6", 11L)),
+            List.of(stock(101L, "0", "0", "0")),
+            List.of(arrival(101L, 5001L, TODAY.plusDays(1), "2")), Map.of());
+        DeliveryContextSnapshot first = new DeliveryContextSnapshot(facts.rootBusinessRef(),
+            List.of(), List.of(), Map.of(), facts.requirements(), facts.stocks(), facts.arrivals(),
+            Map.of(), List.of(), Map.of(), List.of(), "sha256-A", SNAPSHOT_AT, List.of());
+        ShortageSimulationResult result = simulation.simulate(first, 2, null);
+        assertEquals(List.of("snapshot:requirementAggregate:sha256-A:101",
+            "snapshot:stockAggregate:sha256-A:101", "erp:purchaseLine:5001"),
+            result.items().get(0).evidenceKeys());
+        assertEquals(result.items().get(0).evidenceKeys(), result.evidenceRefs());
+        assertTrue(result.evidenceRefs().stream().noneMatch(key -> key.startsWith("erp:requirement:")));
+        DeliveryContextSnapshot second = new DeliveryContextSnapshot(facts.rootBusinessRef(),
+            List.of(), List.of(), Map.of(), facts.requirements(), facts.stocks(), facts.arrivals(),
+            Map.of(), List.of(), Map.of(), List.of(), "sha256-B", SNAPSHOT_AT, List.of());
+        assertEquals("snapshot:requirementAggregate:sha256-B:101",
+            simulation.simulate(second, 2, null).items().get(0).evidenceKeys().get(0));
+    }
     private static DeliveryContextSnapshot fixture() {
         return snapshot(List.of(requirement(101L, TODAY, "10", 11L)),
             List.of(stock(101L, "0", "0", "0")),
@@ -405,6 +607,13 @@ class ErpDecisionShortageSimulationTest {
             SNAPSHOT_AT, "hash", requirements, stocks, arrivals, schedule);
     }
 
+    private static DeliveryContextSnapshot snapshot(List<RequirementFact> requirements, List<StockFact> stocks,
+                                                    List<ArrivalFact> arrivals, Map<String, Object> schedule,
+                                                    List<WorkOrderSalesLinkFact> links) {
+        return new DeliveryContextSnapshot(new DecisionBusinessRef(DecisionBusinessType.SALES_ORDER, 900L, "SO-900"),
+            List.of(), List.of(), Map.of(), requirements, stocks, arrivals, Map.of(), List.of(),
+            schedule, List.of(), "hash", SNAPSHOT_AT, List.of("snapshot notice", "snapshot notice"), links);
+    }
     private static DeliveryContextSnapshot snapshot(DecisionBusinessRef ref, LocalDateTime at, String hash,
                                                     List<RequirementFact> requirements, List<StockFact> stocks,
                                                     List<ArrivalFact> arrivals, Map<String, Object> schedule) {

@@ -724,6 +724,40 @@ class DecisionContractTest {
         }
     }
 
+    @Test
+    void typedWorkOrderSalesLinksRemainSortedImmutableAndJsonBackwardCompatible() throws Exception {
+        var links = new ArrayList<>(List.of(
+            new DeliveryContextSnapshot.WorkOrderSalesLinkFact(22L, 9007199254740993L),
+            new DeliveryContextSnapshot.WorkOrderSalesLinkFact(11L, 42L)));
+        DeliveryContextSnapshot snapshot = new DeliveryContextSnapshot(
+            new DecisionBusinessRef(DecisionBusinessType.WORK_ORDER, 11L, "WO-11"),
+            List.of(), List.of(), Map.of(), List.of(), List.of(), List.of(), Map.of(),
+            List.of(), Map.of(), List.of(), "hash", LocalDateTime.of(2026, 9, 24, 10, 0), List.of(), links);
+        links.clear();
+        assertEquals(List.of(new DeliveryContextSnapshot.WorkOrderSalesLinkFact(11L, 42L),
+            new DeliveryContextSnapshot.WorkOrderSalesLinkFact(22L, 9007199254740993L)),
+            snapshot.workOrderSalesLinks());
+        assertThrows(UnsupportedOperationException.class,
+            () -> snapshot.workOrderSalesLinks().clear());
+        assertThrows(IllegalArgumentException.class,
+            () -> new DeliveryContextSnapshot.WorkOrderSalesLinkFact(0L, 42L));
+        assertThrows(IllegalArgumentException.class,
+            () -> new DeliveryContextSnapshot.WorkOrderSalesLinkFact(11L, null));
+
+        ObjectMapper mapper = productionMapper();
+        String json = mapper.writeValueAsString(snapshot);
+        assertTrue(mapper.readTree(json).path("workOrderSalesLinks").get(1)
+            .path("salesOrderId").isTextual());
+        DeliveryContextSnapshot restored = mapper.readValue(json, DeliveryContextSnapshot.class);
+        assertEquals(snapshot.workOrderSalesLinks(), restored.workOrderSalesLinks());
+        var legacyJson = (com.fasterxml.jackson.databind.node.ObjectNode) mapper.readTree(json);
+        legacyJson.remove("workOrderSalesLinks");
+        DeliveryContextSnapshot fromLegacy = mapper.readValue(mapper.writeValueAsString(legacyJson),
+            DeliveryContextSnapshot.class);
+        assertEquals(List.of(), fromLegacy.workOrderSalesLinks());
+        assertEquals(List.of(), snapshotWithSchedule(Map.of()).workOrderSalesLinks(),
+            "14 参数 Java 构造器保留为空 typed 关系");
+    }
     private static ObjectMapper productionMapper() {
         return new ObjectMapper()
             .registerModule(new com.nexus.common.json.config.JacksonConfig().registerJavaTimeModule())

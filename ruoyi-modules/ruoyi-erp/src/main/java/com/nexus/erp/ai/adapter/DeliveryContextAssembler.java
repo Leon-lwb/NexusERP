@@ -13,6 +13,7 @@ import com.nexus.common.ai.decision.dto.DeliveryContextSnapshot.RoutingStepFact;
 import com.nexus.common.ai.decision.dto.DeliveryContextSnapshot.StockFact;
 import com.nexus.common.ai.decision.dto.DeliveryContextSnapshot.SupplierMetricFact;
 import com.nexus.common.ai.decision.dto.DeliveryContextSnapshot.WorkOrderFact;
+import com.nexus.common.ai.decision.dto.DeliveryContextSnapshot.WorkOrderSalesLinkFact;
 import com.nexus.common.ai.decision.enums.DecisionBusinessType;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.json.utils.JsonUtils;
@@ -200,7 +201,10 @@ public class DeliveryContextAssembler {
             projection.supplierMetrics(),
             freshnessHash,
             LocalDateTime.now(BUSINESS_ZONE),
-            projection.warnings());
+            projection.warnings(),
+            scope.workOrderSalesOrderIds().entrySet().stream()
+                .map(entry -> new WorkOrderSalesLinkFact(entry.getKey(), entry.getValue()))
+                .toList());
     }
 
     /** 固定 90 天重算关键业务指纹；保持包可见供 checker 与同包测试使用。 */

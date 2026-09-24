@@ -10,6 +10,7 @@ import java.time.OffsetDateTime;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -30,10 +31,23 @@ public record DeliveryContextSnapshot(
     List<SupplierMetricFact> supplierMetrics,
     String snapshotHash,
     LocalDateTime snapshotAt,
-    List<String> warnings
+    List<String> warnings,
+    List<WorkOrderSalesLinkFact> workOrderSalesLinks
 ) implements Serializable {
 
     private static final long JS_MAX_SAFE_INTEGER = 9007199254740991L;
+
+    /** Keep the previous Java constructor descriptor for already compiled clients. */
+    public DeliveryContextSnapshot(DecisionBusinessRef rootBusinessRef, List<OrderFact> salesOrders,
+                                   List<WorkOrderFact> workOrders, Map<Long, List<RoutingStepFact>> routingByMaterial,
+                                   List<RequirementFact> requirements, List<StockFact> stocks,
+                                   List<ArrivalFact> arrivals, Map<LocalDate, Map<String, BigDecimal>> capacityByDate,
+                                   List<LocalDate> holidays, Map<String, Object> currentSchedule,
+                                   List<SupplierMetricFact> supplierMetrics, String snapshotHash,
+                                   LocalDateTime snapshotAt, List<String> warnings) {
+        this(rootBusinessRef, salesOrders, workOrders, routingByMaterial, requirements, stocks, arrivals,
+            capacityByDate, holidays, currentSchedule, supplierMetrics, snapshotHash, snapshotAt, warnings, List.of());
+    }
 
     public DeliveryContextSnapshot {
         salesOrders = copyList(salesOrders);
@@ -47,6 +61,16 @@ public record DeliveryContextSnapshot(
         currentSchedule = copySchedule(currentSchedule);
         supplierMetrics = copyList(supplierMetrics);
         warnings = copyList(warnings);
+        workOrderSalesLinks = copyWorkOrderSalesLinks(workOrderSalesLinks);
+    }
+
+    private static List<WorkOrderSalesLinkFact> copyWorkOrderSalesLinks(List<WorkOrderSalesLinkFact> source) {
+        if (source == null) return List.of(); // missing in legacy JSON payloads
+        List<WorkOrderSalesLinkFact> copy = new ArrayList<>(source);
+        if (copy.contains(null)) throw new IllegalArgumentException("工单销售订单关系不能为空");
+        copy.sort(Comparator.comparing(WorkOrderSalesLinkFact::workOrderId)
+            .thenComparing(WorkOrderSalesLinkFact::salesOrderId));
+        return List.copyOf(copy);
     }
 
     private static <T> List<T> copyList(List<T> source) {
@@ -168,6 +192,14 @@ public record DeliveryContextSnapshot(
             return value;
         }
         throw new IllegalArgumentException("排产快照包含不支持的可变值: " + value.getClass().getName());
+    }
+
+    public record WorkOrderSalesLinkFact(Long workOrderId, Long salesOrderId) implements Serializable {
+        public WorkOrderSalesLinkFact {
+            if (workOrderId == null || workOrderId <= 0 || salesOrderId == null || salesOrderId <= 0) {
+                throw new IllegalArgumentException("工单销售订单关系 ID 必须为正数");
+            }
+        }
     }
 
     public record OrderFact(Long id, String code, LocalDate promiseDate, String status) implements Serializable {
