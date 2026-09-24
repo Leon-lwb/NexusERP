@@ -30,6 +30,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -235,6 +236,9 @@ public class ErpDecisionActionExecutor {
         if (actor.userId() == null || actor.userId() <= 0) {
             throw new ServiceException("用户ID无效");
         }
+        if (actor.userName() == null || actor.userName().isBlank()) {
+            throw new ServiceException("用户名不能为空");
+        }
         if (actor.permissions() == null || actor.permissions().isEmpty()) {
             throw new ServiceException("权限集合不能为空");
         }
@@ -412,32 +416,32 @@ public class ErpDecisionActionExecutor {
             && Objects.equals(current.getWorkshopId(), intent.workshopId());
     }
 
-    private List<String> purchaseLineFingerprints(PurchaseIntent intent) {
-        return intent.lines().stream().map(line -> String.join("|",
-                String.valueOf(line.materialId()),
-                Objects.toString(line.materialCode(), ""),
-                Objects.toString(line.materialName(), ""),
-                decimalFingerprint(line.applyQuantity()),
-                decimalFingerprint(line.shortageQuantity()),
-                line.requiredDate().toString(),
+    private List<LineFingerprint> purchaseLineFingerprints(PurchaseIntent intent) {
+        return intent.lines().stream().map(line -> new LineFingerprint(
+                line.materialId(),
+                line.materialCode(),
+                line.materialName(),
+                normalizedDecimal(line.applyQuantity()),
+                normalizedDecimal(line.shortageQuantity()),
+                line.requiredDate(),
                 SOURCE_AI_DECISION,
-                String.valueOf(intent.runId())))
+                intent.runId()))
             .sorted().toList();
     }
 
-    private List<String> purchaseLineFingerprints(List<PuPurchaseRequisitionLine> lines) {
+    private List<LineFingerprint> purchaseLineFingerprints(List<PuPurchaseRequisitionLine> lines) {
         if (lines == null) {
             return List.of();
         }
-        return lines.stream().map(line -> String.join("|",
-                String.valueOf(line.getMaterialId()),
-                Objects.toString(line.getMaterialCode(), ""),
-                Objects.toString(line.getMaterialName(), ""),
-                decimalFingerprint(line.getApplyQuantity()),
-                decimalFingerprint(line.getShortageQuantity()),
-                line.getRequiredDate() == null ? "" : toLocalDate(line.getRequiredDate()).toString(),
-                Objects.toString(line.getSourceType(), ""),
-                String.valueOf(line.getSourceId())))
+        return lines.stream().map(line -> new LineFingerprint(
+                line.getMaterialId(),
+                line.getMaterialCode(),
+                line.getMaterialName(),
+                normalizedDecimal(line.getApplyQuantity()),
+                normalizedDecimal(line.getShortageQuantity()),
+                toLocalDate(line.getRequiredDate()),
+                line.getSourceType(),
+                line.getSourceId()))
             .sorted().toList();
     }
 
@@ -585,8 +589,8 @@ public class ErpDecisionActionExecutor {
         return Instant.ofEpochMilli(value.getTime()).atZone(BUSINESS_ZONE).toLocalDate();
     }
 
-    private String decimalFingerprint(BigDecimal value) {
-        return value == null ? "" : value.stripTrailingZeros().toPlainString();
+    private BigDecimal normalizedDecimal(BigDecimal value) {
+        return value == null ? null : value.stripTrailingZeros();
     }
 
     private String versionMarker(Integer version) {
@@ -631,6 +635,27 @@ public class ErpDecisionActionExecutor {
                                                         String errorCode, String errorMessage) {
         return new DecisionActionExecutionResult(false, false, original.resultBizType(), original.resultBizId(),
             original.resultBizCode(), original.result(), errorCode, errorMessage);
+    }
+
+    private record LineFingerprint(Long materialId, String materialCode, String materialName,
+                                   BigDecimal applyQuantity, BigDecimal shortageQuantity,
+                                   LocalDate requiredDate, String sourceType, Long sourceId)
+        implements Comparable<LineFingerprint> {
+
+        private static final Comparator<LineFingerprint> ORDER = Comparator
+            .comparing(LineFingerprint::materialId, Comparator.nullsFirst(Comparator.naturalOrder()))
+            .thenComparing(LineFingerprint::materialCode, Comparator.nullsFirst(Comparator.naturalOrder()))
+            .thenComparing(LineFingerprint::materialName, Comparator.nullsFirst(Comparator.naturalOrder()))
+            .thenComparing(LineFingerprint::applyQuantity, Comparator.nullsFirst(Comparator.naturalOrder()))
+            .thenComparing(LineFingerprint::shortageQuantity, Comparator.nullsFirst(Comparator.naturalOrder()))
+            .thenComparing(LineFingerprint::requiredDate, Comparator.nullsFirst(Comparator.naturalOrder()))
+            .thenComparing(LineFingerprint::sourceType, Comparator.nullsFirst(Comparator.naturalOrder()))
+            .thenComparing(LineFingerprint::sourceId, Comparator.nullsFirst(Comparator.naturalOrder()));
+
+        @Override
+        public int compareTo(LineFingerprint other) {
+            return ORDER.compare(this, other);
+        }
     }
 
     private record PurchaseIntent(long runId, LocalDate requiredDate, List<PurchaseLineIntent> lines) {

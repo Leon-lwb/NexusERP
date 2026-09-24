@@ -44,6 +44,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -267,25 +268,46 @@ public class PuPurchaseRequisitionServiceImpl implements IPuPurchaseRequisitionS
             && Objects.equals(requested.getSourceType(), existing.getSourceType());
     }
 
-    private List<String> lineFingerprints(List<PuPurchaseRequisitionLine> lines) {
+    private List<LineFingerprint> lineFingerprints(List<PuPurchaseRequisitionLine> lines) {
         if (lines == null) {
             return List.of();
         }
-        return lines.stream().map(line -> String.join("|",
-                String.valueOf(line.getMaterialId()),
-                Objects.toString(line.getMaterialCode(), ""),
-                Objects.toString(line.getMaterialName(), ""),
-                decimalFingerprint(line.getApplyQuantity()),
-                decimalFingerprint(line.getShortageQuantity()),
-                line.getRequiredDate() == null ? "" : toBusinessDate(line.getRequiredDate()).toString(),
-                Objects.toString(line.getSourceType(), ""),
-                String.valueOf(line.getSourceId())))
+        return lines.stream().map(line -> new LineFingerprint(
+                line.getMaterialId(),
+                line.getMaterialCode(),
+                line.getMaterialName(),
+                normalizedDecimal(line.getApplyQuantity()),
+                normalizedDecimal(line.getShortageQuantity()),
+                line.getRequiredDate() == null ? null : toBusinessDate(line.getRequiredDate()),
+                line.getSourceType(),
+                line.getSourceId()))
             .sorted()
             .toList();
     }
 
-    private String decimalFingerprint(BigDecimal value) {
-        return value == null ? "" : value.stripTrailingZeros().toPlainString();
+    private BigDecimal normalizedDecimal(BigDecimal value) {
+        return value == null ? null : value.stripTrailingZeros();
+    }
+
+    private record LineFingerprint(Long materialId, String materialCode, String materialName,
+                                   BigDecimal applyQuantity, BigDecimal shortageQuantity,
+                                   LocalDate requiredDate, String sourceType, Long sourceId)
+        implements Comparable<LineFingerprint> {
+
+        private static final Comparator<LineFingerprint> ORDER = Comparator
+            .comparing(LineFingerprint::materialId, Comparator.nullsFirst(Comparator.naturalOrder()))
+            .thenComparing(LineFingerprint::materialCode, Comparator.nullsFirst(Comparator.naturalOrder()))
+            .thenComparing(LineFingerprint::materialName, Comparator.nullsFirst(Comparator.naturalOrder()))
+            .thenComparing(LineFingerprint::applyQuantity, Comparator.nullsFirst(Comparator.naturalOrder()))
+            .thenComparing(LineFingerprint::shortageQuantity, Comparator.nullsFirst(Comparator.naturalOrder()))
+            .thenComparing(LineFingerprint::requiredDate, Comparator.nullsFirst(Comparator.naturalOrder()))
+            .thenComparing(LineFingerprint::sourceType, Comparator.nullsFirst(Comparator.naturalOrder()))
+            .thenComparing(LineFingerprint::sourceId, Comparator.nullsFirst(Comparator.naturalOrder()));
+
+        @Override
+        public int compareTo(LineFingerprint other) {
+            return ORDER.compare(this, other);
+        }
     }
 
     private LocalDate toBusinessDate(Date value) {
@@ -460,12 +482,14 @@ public class PuPurchaseRequisitionServiceImpl implements IPuPurchaseRequisitionS
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void afterFlowHandle(WfMyBusiness business) {
+        String actStatus = business.getActStatus();
+        // submit 已在外层事务 CAS 抢占 APPROVING；同步 doing 回调不能再访问持锁行。
+        if (ActStatus.doing.equals(actStatus)) {
+            return;
+        }
         Long requisitionId = Long.parseLong(business.getDataId());
         PuPurchaseRequisition requisition = ensureRequisition(requisitionId);
-        String actStatus = business.getActStatus();
-        if (ActStatus.doing.equals(actStatus)) {
-            requisition.setStatus(STATUS_APPROVING);
-        } else if (ActStatus.pass.equals(actStatus)) {
+        if (ActStatus.pass.equals(actStatus)) {
             requisition.setStatus(STATUS_APPROVED);
         } else if (ActStatus.reject.equals(actStatus) || ActStatus.retrun.equals(actStatus)) {
             requisition.setStatus(STATUS_REJECTED);

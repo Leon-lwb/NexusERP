@@ -213,6 +213,39 @@ class ErpDecisionActionExecutorTest {
     }
 
     @Test
+    void executePurchaseRejectsMissingUserNameBeforeDelegating() {
+        DecisionActionProposal action = purchaseAction(purchasePayload());
+        for (String name : new String[]{null, "", " \t "}) {
+            DecisionActor actor = new DecisionActor("000000", 7L, name, Set.of("pu:requisition:add"));
+            assertThrows(ServiceException.class, () -> executor.execute(action, actor));
+        }
+        verifyNoInteractions(purchaseRequisitionService, scheduleService, planMapper);
+    }
+
+    @Test
+    void executeScheduleRejectsMissingUserNameBeforeDelegating() {
+        DecisionActionProposal action = scheduleAction(schedulePayload("APS_EDD", "EDD"));
+        for (String name : new String[]{null, "", " \t "}) {
+            DecisionActor actor = new DecisionActor("000000", 7L, name, Set.of("prd:schedule:run"));
+            assertThrows(ServiceException.class, () -> executor.execute(action, actor));
+        }
+        verifyNoInteractions(purchaseRequisitionService, scheduleService, planMapper);
+    }
+
+    @Test
+    void verifyRejectsMissingUserNameBeforeReadingEitherBusinessObject() {
+        for (String name : new String[]{null, "", " \t "}) {
+            DecisionActor purchase = new DecisionActor("000000", 7L, name, Set.of("pu:requisition:add"));
+            DecisionActor schedule = new DecisionActor("000000", 7L, name, Set.of("prd:schedule:run"));
+            assertThrows(ServiceException.class, () -> executor.verify(purchaseAction(purchasePayload()),
+                purchaseResult(7001L, "PR-7001", "V:0", "99", "501"), purchase));
+            assertThrows(ServiceException.class, () -> executor.verify(scheduleAction(schedulePayload("APS_EDD", "EDD")),
+                scheduleResult(8001L, "APS202609240001", "V:0", "99", "502", "APS_EDD"), schedule));
+        }
+        verifyNoInteractions(purchaseRequisitionService, scheduleService, planMapper);
+    }
+
+    @Test
     void decimalRejectsScalePrecisionAndUnboundedInputBeforeDelegate() {
         Map<String, Object> tooMuchScale = purchasePayloadWithQuantity("1.00001");
         Map<String, Object> tooLarge = purchasePayloadWithQuantity("100000000000000.0000");
@@ -271,6 +304,55 @@ class ErpDecisionActionExecutorTest {
         DecisionActionExecutionResult verified = executor.verify(action, original, purchaseActor());
 
         assertSame(original, verified);
+    }
+
+    @Test
+    void verifyPurchaseRejectsDelimiterCollisionBetweenMaterialCodeAndName() {
+        Map<String, Object> payload = purchasePayload();
+        Map<String, Object> requested = new LinkedHashMap<>();
+        requested.put("materialId", "101");
+        requested.put("materialCode", "A|B");
+        requested.put("materialName", "C");
+        requested.put("quantity", "5.0000");
+        requested.put("gap", "5.0000");
+        requested.put("requiredDate", "2026-09-28");
+        payload.put("materialLines", List.of(requested));
+        PuPurchaseRequisitionVo persisted = purchaseVo();
+        PuPurchaseRequisitionLine persistedLine = persisted.getPuPurchaseRequisitionLineList().get(0);
+        persistedLine.setMaterialCode("A");
+        persistedLine.setMaterialName("B|C");
+        when(purchaseRequisitionService.selectById(7001L)).thenReturn(persisted);
+
+        DecisionActionExecutionResult verified = executor.verify(purchaseAction(payload),
+            purchaseResult(7001L, "PR-7001", "V:0", "99", "501"), purchaseActor());
+
+        assertFalse(verified.success());
+        assertEquals("VERIFY_CONFLICT", verified.errorCode());
+    }
+
+    @Test
+    void verifyPurchasePreservesDuplicateLineCountsAndIgnoresLineOrderAndDecimalScale() {
+        Map<String, Object> payload = purchasePayload();
+        Map<String, Object> first = Map.of(
+            "materialId", "101", "materialCode", "M-101", "materialName", "物料101",
+            "quantity", "5.0000", "gap", "5.0000", "requiredDate", "2026-09-28");
+        Map<String, Object> other = new LinkedHashMap<>(first);
+        other.put("materialId", "202");
+        payload.put("materialLines", List.of(first, first, other));
+        PuPurchaseRequisitionVo persisted = purchaseVo();
+        PuPurchaseRequisitionLine existing = persisted.getPuPurchaseRequisitionLineList().get(0);
+        existing.setApplyQuantity(new BigDecimal("5.0"));
+        PuPurchaseRequisitionLine existingOther = purchaseVo().getPuPurchaseRequisitionLineList().get(0);
+        existingOther.setMaterialId(202L);
+        persisted.setPuPurchaseRequisitionLineList(List.of(existingOther, existing, existing));
+        PuPurchaseRequisitionVo missingDuplicate = purchaseVo();
+        missingDuplicate.setPuPurchaseRequisitionLineList(List.of(existingOther, existing));
+        when(purchaseRequisitionService.selectById(7001L)).thenReturn(persisted, missingDuplicate);
+        DecisionActionProposal action = purchaseAction(payload);
+        DecisionActionExecutionResult original = purchaseResult(7001L, "PR-7001", "V:0", "99", "501");
+
+        assertSame(original, executor.verify(action, original, purchaseActor()));
+        assertEquals("VERIFY_CONFLICT", executor.verify(action, original, purchaseActor()).errorCode());
     }
 
     @Test

@@ -46,6 +46,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -57,8 +58,10 @@ import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 /** 采购申请幂等创建、乐观并发和条件补偿测试。 */
@@ -224,6 +227,58 @@ class PuPurchaseRequisitionServiceImplTest {
     }
 
     @Test
+    void sameDecisionKeyRejectsDelimiterCollisionBetweenMaterialCodeAndName() {
+        PuPurchaseRequisitionBo bo = decisionPurchaseBo();
+        PuPurchaseRequisitionLine requested = bo.getPuPurchaseRequisitionLineList().get(0);
+        requested.setMaterialCode("A|B");
+        requested.setMaterialName("C");
+        PuPurchaseRequisitionLine persisted = matchingLines(7001L).get(0);
+        persisted.setMaterialCode("A");
+        persisted.setMaterialName("B|C");
+        when(baseMapper.selectOne(any(Wrapper.class))).thenReturn(matchingExistingRequisition());
+        when(lineMapper.selectList(any(Wrapper.class))).thenReturn(List.of(persisted));
+
+        assertThrows(ServiceException.class, () -> requisitionService.createDraft(bo));
+
+        verify(baseMapper, never()).insert(any(PuPurchaseRequisition.class));
+        verify(lineMapper, never()).insert(any(PuPurchaseRequisitionLine.class));
+    }
+
+    @Test
+    void sameDecisionKeyKeepsDuplicateLineCountsWhileIgnoringOrderAndDecimalScale() {
+        PuPurchaseRequisitionBo bo = decisionPurchaseBo();
+        PuPurchaseRequisitionLine requested = bo.getPuPurchaseRequisitionLineList().get(0);
+        PuPurchaseRequisitionLine requestedOther = matchingLines(null).get(0);
+        requestedOther.setMaterialId(202L);
+        bo.setPuPurchaseRequisitionLineList(List.of(requested, requested, requestedOther));
+        PuPurchaseRequisitionLine existing = matchingLines(7001L).get(0);
+        existing.setApplyQuantity(new BigDecimal("5.0"));
+        PuPurchaseRequisitionLine existingOther = matchingLines(7001L).get(0);
+        existingOther.setMaterialId(202L);
+        when(baseMapper.selectOne(any(Wrapper.class))).thenReturn(matchingExistingRequisition());
+        when(lineMapper.selectList(any(Wrapper.class)))
+            .thenReturn(List.of(existingOther, existing, existing));
+
+        assertEquals(7001L, requisitionService.createDraft(bo));
+
+        verify(baseMapper, never()).insert(any(PuPurchaseRequisition.class));
+        verify(lineMapper, never()).insert(any(PuPurchaseRequisitionLine.class));
+    }
+
+    @Test
+    void sameDecisionKeyRejectsChangedDuplicateLineCount() {
+        PuPurchaseRequisitionBo bo = decisionPurchaseBo();
+        PuPurchaseRequisitionLine line = bo.getPuPurchaseRequisitionLineList().get(0);
+        bo.setPuPurchaseRequisitionLineList(List.of(line, line));
+        when(baseMapper.selectOne(any(Wrapper.class))).thenReturn(matchingExistingRequisition());
+        when(lineMapper.selectList(any(Wrapper.class))).thenReturn(matchingLines(7001L));
+
+        assertThrows(ServiceException.class, () -> requisitionService.createDraft(bo));
+
+        verify(baseMapper, never()).insert(any(PuPurchaseRequisition.class));
+    }
+
+    @Test
     void duplicateDecisionInsertRereadsAndReturnsMatchingExistingRow() {
         PuPurchaseRequisitionBo bo = decisionPurchaseBo();
         when(baseMapper.selectOne(any(Wrapper.class))).thenReturn(null, matchingExistingRequisition());
@@ -346,9 +401,16 @@ class PuPurchaseRequisitionServiceImplTest {
         current.setSelectFlowId(55L);
         when(baseMapper.selectById(7001L)).thenReturn(current);
         when(baseMapper.update(isNull(), any(Wrapper.class))).thenReturn(1);
-        when(processService.startProcessByDataId(anyString(), anyString(), anyString(), any())).thenReturn(R.ok());
+        when(processService.startProcessByDataId(anyString(), anyString(), anyString(), any()))
+            .thenAnswer(invocation -> {
+                WfMyBusiness doing = new WfMyBusiness();
+                doing.setDataId("7001");
+                doing.setActStatus(ActStatus.doing);
+                requisitionService.afterFlowHandle(doing);
+                return R.ok();
+            });
 
-        assertTrue(requisitionService.submit("7001", null));
+        assertTrue(assertDoesNotThrow(() -> requisitionService.submit("7001", null)));
 
         ArgumentCaptor<Wrapper<PuPurchaseRequisition>> cas = wrapperCaptor();
         InOrder order = inOrder(baseMapper, processService);
@@ -360,6 +422,8 @@ class PuPurchaseRequisitionServiceImplTest {
         assertTrue(parameters(cas.getValue()).containsValue("APPROVING"));
         assertTrue(parameters(cas.getValue()).containsValue(3));
         assertSqlSetContains(cas.getValue(), "status", "version", "update_time");
+        verify(baseMapper).selectById(7001L);
+        verifyNoMoreInteractions(baseMapper, lineMapper);
     }
 
     @Test
@@ -374,6 +438,37 @@ class PuPurchaseRequisitionServiceImplTest {
         assertThrows(ServiceException.class, () -> requisitionService.submit("7001", null));
 
         verifyNoInteractions(processService);
+    }
+
+    @Test
+    void doingFlowCallbackReturnsBeforeParsingIdOrTouchingAnyMapper() {
+        WfMyBusiness business = new WfMyBusiness();
+        business.setDataId("not-a-number");
+        business.setActStatus(ActStatus.doing);
+
+        assertDoesNotThrow(() -> requisitionService.afterFlowHandle(business));
+
+        verifyNoInteractions(baseMapper, lineMapper, purchaseOrderMapper, purchaseOrderLineMapper,
+            bdMaterialMapper, materialStockMapper);
+    }
+
+    @Test
+    void terminalFlowCallbacksStillUpdateExistingStatus() {
+        when(baseMapper.selectById(7001L)).thenAnswer(invocation -> matchingExistingRequisition());
+        when(baseMapper.updateById(any(PuPurchaseRequisition.class))).thenReturn(1);
+        String[] actions = {ActStatus.pass, ActStatus.reject, ActStatus.retrun,
+            ActStatus.revoke, ActStatus.stop, ActStatus.recall};
+        for (String action : actions) {
+            WfMyBusiness business = new WfMyBusiness();
+            business.setDataId("7001");
+            business.setActStatus(action);
+            requisitionService.afterFlowHandle(business);
+        }
+
+        ArgumentCaptor<PuPurchaseRequisition> updated = ArgumentCaptor.forClass(PuPurchaseRequisition.class);
+        verify(baseMapper, times(actions.length)).updateById(updated.capture());
+        assertEquals(List.of("APPROVED", "REJECTED", "REJECTED", "DRAFT", "DRAFT", "DRAFT"),
+            updated.getAllValues().stream().map(PuPurchaseRequisition::getStatus).toList());
     }
 
     @Test
