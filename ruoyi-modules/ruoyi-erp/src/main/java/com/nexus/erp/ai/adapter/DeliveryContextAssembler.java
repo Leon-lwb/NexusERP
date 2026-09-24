@@ -199,7 +199,7 @@ public class DeliveryContextAssembler {
             projection.currentSchedule(),
             projection.supplierMetrics(),
             freshnessHash,
-            LocalDateTime.now(),
+            LocalDateTime.now(BUSINESS_ZONE),
             projection.warnings());
     }
 
@@ -358,9 +358,12 @@ public class DeliveryContextAssembler {
         for (PrdWorkOrder workOrder : candidates.values()) {
             boolean productionChain = workOrder.getPlanId() != null
                 && productionPlanIds.contains(workOrder.getPlanId());
-            boolean legacyDirect = Objects.equals(salesOrderId, workOrder.getSourceId())
-                || (workOrder.getSourceLineId() != null && lineIds.contains(workOrder.getSourceLineId()))
-                || (hasText(order.getSoNo()) && Objects.equals(order.getSoNo(), workOrder.getSourceNo()));
+            boolean legacyDirect = !isMaterialRequirementSource(workOrder)
+                && (Objects.equals(salesOrderId, workOrder.getSourceId())
+                    || (workOrder.getSourceLineId() != null
+                        && lineIds.contains(workOrder.getSourceLineId()))
+                    || (hasText(order.getSoNo())
+                        && Objects.equals(order.getSoNo(), workOrder.getSourceNo())));
             if (!isTerminalWorkOrder(workOrder) && (productionChain || legacyDirect)) {
                 scoped.put(workOrder.getWoId(), workOrder);
             }
@@ -926,16 +929,19 @@ public class DeliveryContextAssembler {
     }
 
     private ScheduleSelection loadCurrentSchedule(DecisionScope scope, List<String> warnings) {
-        if (scope.workOrders().isEmpty()) {
-            return new ScheduleSelection(null, List.of());
-        }
         if (scope.specifiedSchedulePlan() != null) {
-            List<PrdScheduleTask> tasks = scope.specifiedScheduleTasks().stream()
+            List<PrdScheduleTask> fingerprintTasks = scope.specifiedScheduleTasks().stream()
                 .filter(task -> Objects.equals(scope.specifiedSchedulePlan().getPlanId(), task.getPlanId()))
-                .filter(task -> scope.workOrderIds().contains(task.getWoId()))
                 .sorted(scheduleTaskComparator())
                 .toList();
-            return new ScheduleSelection(scope.specifiedSchedulePlan(), tasks);
+            List<PrdScheduleTask> displayTasks = fingerprintTasks.stream()
+                .filter(task -> scope.workOrderIds().contains(task.getWoId()))
+                .toList();
+            return new ScheduleSelection(
+                scope.specifiedSchedulePlan(), displayTasks, fingerprintTasks);
+        }
+        if (scope.workOrders().isEmpty()) {
+            return new ScheduleSelection(null, List.of(), List.of());
         }
         List<Long> workOrderIds = scope.workOrderIds();
         List<PrdScheduleTask> tasks = safeList(scheduleTaskMapper.selectList(
@@ -951,7 +957,7 @@ public class DeliveryContextAssembler {
             .collect(Collectors.toCollection(LinkedHashSet::new));
         if (planIds.isEmpty()) {
             warnings.add("当前决策范围尚无排产方案");
-            return new ScheduleSelection(null, List.of());
+            return new ScheduleSelection(null, List.of(), List.of());
         }
         List<PrdSchedulePlan> plans = safeList(schedulePlanMapper.selectBatchIds(planIds)).stream()
             .filter(plan -> plan.getPlanId() != null && planIds.contains(plan.getPlanId()))
@@ -959,13 +965,13 @@ public class DeliveryContextAssembler {
         PrdSchedulePlan latest = plans.stream().max(schedulePlanLatestComparator()).orElse(null);
         if (latest == null) {
             warnings.add("当前决策范围的排产任务缺少对应排产方案");
-            return new ScheduleSelection(null, List.of());
+            return new ScheduleSelection(null, List.of(), List.of());
         }
         List<PrdScheduleTask> selectedTasks = tasks.stream()
             .filter(task -> Objects.equals(latest.getPlanId(), task.getPlanId()))
             .sorted(scheduleTaskComparator())
             .toList();
-        return new ScheduleSelection(latest, selectedTasks);
+        return new ScheduleSelection(latest, selectedTasks, selectedTasks);
     }
 
     private SourceFacts loadSourceFacts(DecisionScope scope,
@@ -1360,7 +1366,7 @@ public class DeliveryContextAssembler {
         schedule.put("makespanDate", toIsoDate(plan.getMakespanDate()));
         schedule.put("totalHours", decimal(plan.getTotalHours()));
 
-        List<String> workOrderIds = selection.tasks().stream()
+        List<String> workOrderIds = selection.displayTasks().stream()
             .map(PrdScheduleTask::getWoId)
             .filter(Objects::nonNull)
             .distinct()
@@ -1369,7 +1375,7 @@ public class DeliveryContextAssembler {
             .toList();
         schedule.put("workOrderIds", workOrderIds);
 
-        List<Map<String, Object>> taskPreview = selection.tasks().stream()
+        List<Map<String, Object>> taskPreview = selection.displayTasks().stream()
             .sorted(scheduleTaskComparator())
             .map(this::scheduleTaskMap)
             .toList();
@@ -1620,7 +1626,7 @@ public class DeliveryContextAssembler {
             return null;
         }
         PrdSchedulePlan plan = selection.plan();
-        List<CriticalScheduleTask> tasks = selection.tasks().stream()
+        List<CriticalScheduleTask> tasks = selection.fingerprintTasks().stream()
             .sorted(scheduleTaskComparator())
             .map(task -> new CriticalScheduleTask(
                 task.getTaskId(), task.getWoId(), task.getSeqNum(), task.getStepId(),
@@ -1986,7 +1992,11 @@ public class DeliveryContextAssembler {
     ) {
     }
 
-    private record ScheduleSelection(PrdSchedulePlan plan, List<PrdScheduleTask> tasks) {
+    private record ScheduleSelection(
+        PrdSchedulePlan plan,
+        List<PrdScheduleTask> displayTasks,
+        List<PrdScheduleTask> fingerprintTasks
+    ) {
     }
 
     private record SourceFacts(RoutingSourceBundle routing, CapacitySourceBundle capacity) {

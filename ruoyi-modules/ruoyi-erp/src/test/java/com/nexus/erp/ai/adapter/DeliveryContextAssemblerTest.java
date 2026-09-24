@@ -189,6 +189,30 @@ class DeliveryContextAssemblerTest {
     }
 
     @Test
+    void snapshotAtUsesAsiaShanghaiWhenJvmDefaultIsUtc() {
+        TimeZone original = TimeZone.getDefault();
+        try {
+            TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
+            SoSalesOrderHeader order = salesOrder(100L, "SO-100");
+            when(salesOrderHeaderMapper.selectById(100L)).thenReturn(order);
+            when(salesOrderLineMapper.selectList(any())).thenReturn(List.of());
+            when(workOrderMapper.selectList(any())).thenReturn(List.of());
+            stubEmptyRelatedFacts();
+            LocalDateTime before = LocalDateTime.now(ZoneId.of("Asia/Shanghai"));
+
+            DeliveryContextSnapshot snapshot = assembler.assemble(
+                new DecisionBusinessRef(DecisionBusinessType.SALES_ORDER, 100L, null), 14,
+                actor("ai:decision:run", "so:orderheader:query"));
+
+            LocalDateTime after = LocalDateTime.now(ZoneId.of("Asia/Shanghai"));
+            assertFalse(snapshot.snapshotAt().isBefore(before), snapshot.snapshotAt().toString());
+            assertFalse(snapshot.snapshotAt().isAfter(after), snapshot.snapshotAt().toString());
+        } finally {
+            TimeZone.setDefault(original);
+        }
+    }
+
+    @Test
     void freshnessHashIsStableAcrossJvmDefaultTimeZones() {
         TimeZone original = TimeZone.getDefault();
         try {
@@ -295,6 +319,33 @@ class DeliveryContextAssemblerTest {
     }
 
     @Test
+    void salesOrderLegacyDirectExcludesMaterialRequirementSourceWithoutProductionChain() {
+        SoSalesOrderHeader order = salesOrder(100L, "SO-100");
+        SoSalesOrderLine line = salesOrderLine(101L, 100L, 501L);
+        PrdWorkOrder unrelated = workOrder(11L, 811L, 999L, "RELEASED");
+        unrelated.setSourceType("MATERIAL_REQUIREMENT");
+        unrelated.setSourceId(100L);
+        unrelated.setSourceLineId(101L);
+        unrelated.setSourceNo("SO-100");
+        when(salesOrderHeaderMapper.selectById(100L)).thenReturn(order);
+        when(salesOrderLineMapper.selectList(any())).thenReturn(List.of(line));
+        when(productionPlanMapper.selectList(any())).thenReturn(List.of());
+        when(workOrderMapper.selectList(any())).thenReturn(List.of(unrelated));
+        when(scheduleInputAssembler.assemble(any(PrdSchedulePlanBo.class), anyCollection()))
+            .thenReturn(scheduleInput(List.of(unrelated), false));
+        stubEmptyRelatedFacts();
+
+        DeliveryContextSnapshot snapshot = assembler.assemble(
+            new DecisionBusinessRef(DecisionBusinessType.SALES_ORDER, 100L, null), 14,
+            actor("ai:decision:run", "so:orderheader:query"));
+
+        assertTrue(snapshot.workOrders().isEmpty());
+        assertTrue(snapshot.warnings().stream().anyMatch(text -> text.contains("NO_WORK_ORDER")),
+            snapshot.warnings().toString());
+        verify(scheduleInputAssembler, never()).assemble(any(PrdSchedulePlanBo.class), anyCollection());
+    }
+
+    @Test
     void mixedStatusScopeKeepsApprovingAndSchedulesOnlyEligibleWorkOrders() {
         SoSalesOrderHeader order = salesOrder(100L, "SO-100");
         when(salesOrderHeaderMapper.selectById(100L)).thenReturn(order);
@@ -343,6 +394,55 @@ class DeliveryContextAssemblerTest {
             snapshot.warnings().toString());
         verify(scheduleInputAssembler, never()).assemble(any(PrdSchedulePlanBo.class), anyCollection());
         verify(scheduleInputAssembler, never()).assemble(any(PrdSchedulePlanBo.class));
+    }
+
+    @Test
+    void schedulePlanWithOnlyTerminalWorkOrdersPreservesPlanAndFingerprintVersions() {
+        AtomicReference<String> strategy = new AtomicReference<>("EDD");
+        AtomicReference<Date> planUpdate =
+            new AtomicReference<>(toDateTime(2026, 9, 23, 8, 0));
+        AtomicReference<Long> resourceId = new AtomicReference<>(6011L);
+        AtomicReference<Date> taskUpdate =
+            new AtomicReference<>(toDateTime(2026, 9, 23, 9, 0));
+        when(schedulePlanMapper.selectById(9001L)).thenAnswer(invocation -> {
+            PrdSchedulePlan plan =
+                schedulePlan(9001L, "APS-9001", "PUBLISHED", TODAY, TODAY.plusDays(7));
+            plan.setStrategy(strategy.get());
+            plan.setUpdateTime(planUpdate.get());
+            return plan;
+        });
+        when(scheduleTaskMapper.selectList(any())).thenAnswer(invocation -> {
+            PrdScheduleTask task = scheduleTask(501L, 9001L, 11L, 1, "1.250", TODAY);
+            task.setResourceId(resourceId.get());
+            task.setUpdateTime(taskUpdate.get());
+            return List.of(task);
+        });
+        when(workOrderMapper.selectList(any())).thenReturn(
+            List.of(workOrder(11L, 811L, 201L, "COMPLETED")));
+        stubEmptyRelatedFacts();
+        DecisionBusinessRef ref =
+            new DecisionBusinessRef(DecisionBusinessType.SCHEDULE_PLAN, 9001L, null);
+        DecisionActor actor = actor("ai:decision:run", "prd:schedule:query");
+
+        DeliveryContextSnapshot snapshot = assembler.assemble(ref, 14, actor);
+
+        assertTrue(snapshot.workOrders().isEmpty());
+        assertEquals("9001", snapshot.currentSchedule().get("planId"));
+        assertEquals("PUBLISHED", snapshot.currentSchedule().get("status"));
+        assertEquals("EDD", snapshot.currentSchedule().get("strategy"));
+        assertEquals(List.of(), snapshot.currentSchedule().get("tasks"));
+        String baseline = snapshot.snapshotHash();
+
+        strategy.set("CR");
+        planUpdate.set(toDateTime(2026, 9, 23, 8, 1));
+        assertNotEquals(baseline, assembler.computeFreshnessHash(ref, actor));
+
+        strategy.set("EDD");
+        planUpdate.set(toDateTime(2026, 9, 23, 8, 0));
+        resourceId.set(6012L);
+        taskUpdate.set(toDateTime(2026, 9, 23, 9, 1));
+        assertNotEquals(baseline, assembler.computeFreshnessHash(ref, actor));
+        verify(scheduleInputAssembler, never()).assemble(any(PrdSchedulePlanBo.class), anyCollection());
     }
 
     @Test

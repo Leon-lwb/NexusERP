@@ -159,6 +159,42 @@ class PrdScheduleInputAssemblerTest {
     }
 
     @Test
+    void routeWorkstationDerivesWorkshopAndAppliesLaborWhenWorkOrderWorkshopIsNull() {
+        PrdWorkOrder workOrder = workOrder(1L, 100L, "RELEASED");
+        workOrder.setWorkshopId(null);
+        workOrder.setWorkshopName(null);
+        when(workOrderMapper.selectList(any())).thenReturn(List.of(workOrder));
+        when(routingMapper.selectList(any())).thenReturn(List.of(routing(200L, 100L)));
+        when(routingStepMapper.selectList(any())).thenReturn(
+            List.of(routingStep(210L, 200L, 1, 400L)));
+        when(workstationMapper.selectList(any())).thenReturn(List.of(workstation(400L, 10L)));
+        when(capacityCalendarMapper.selectList(any())).thenReturn(
+            List.of(capacity(START_DATE, "WORKSTATION", 400L, "12")));
+        when(holidayMapper.selectList(any())).thenReturn(List.of());
+        when(teamMapper.selectList(argThat(wrapper ->
+            wrapper.getSqlSegment().contains("workshop_id") && queryValues(wrapper).contains(10L))))
+            .thenReturn(List.of(team(500L, 10L)));
+        when(employeeScheduleMapper.selectList(argThat(wrapper ->
+            wrapper.getSqlSegment().contains("team_id") && queryValues(wrapper).contains(500L))))
+            .thenReturn(List.of(employeeSchedule(101L, 500L, 600L, null,
+                START_DATE, 1, "scheduled")));
+        when(shiftMapper.selectBatchIds(argThat(ids -> ids.contains(600L))))
+            .thenReturn(List.of(shift(600L, "6")));
+        when(leaveApplyMapper.selectList(argThat(wrapper ->
+            wrapper.getSqlSegment().contains("worker_id") && queryValues(wrapper).contains(101L))))
+            .thenReturn(List.of());
+
+        ScheduleInput input = assembler.assemble(scheduleBo(3, "EDD"), List.of(1L));
+
+        assertEquals(0, new BigDecimal("6").compareTo(input.getCapacityByDate()
+            .get(START_DATE).get(ScheduleModel.resourceKey("WORKSTATION", 400L))));
+        verify(workstationMapper, times(1)).selectList(any());
+        verify(teamMapper).selectList(any());
+        verify(employeeScheduleMapper).selectList(any());
+        verify(leaveApplyMapper).selectList(any());
+    }
+
+    @Test
     void scopedAssemblyQueriesOnlyRelatedCapacityAndLaborResources() {
         PrdWorkOrder workOrder = workOrder(1L, 100L, "RELEASED");
         when(workOrderMapper.selectList(any())).thenReturn(List.of(workOrder));

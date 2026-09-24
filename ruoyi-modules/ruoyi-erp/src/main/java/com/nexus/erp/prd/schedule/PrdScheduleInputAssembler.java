@@ -345,7 +345,36 @@ public class PrdScheduleInputAssembler {
             .filter(Objects::nonNull)
             .sorted()
             .forEach(workstationIds::add);
-        return new ResourceScope(workshopIds, workstationIds);
+        List<BdWorkstation> scopedWorkstations = List.of();
+        if (!workstationIds.isEmpty() || !workshopIds.isEmpty()) {
+            var query = Wrappers.lambdaQuery(BdWorkstation.class);
+            if (!workstationIds.isEmpty() && !workshopIds.isEmpty()) {
+                query.and(resources -> resources
+                    .in(BdWorkstation::getWorkstationId, workstationIds)
+                    .or().in(BdWorkstation::getWorkshopId, workshopIds));
+            } else if (!workstationIds.isEmpty()) {
+                query.in(BdWorkstation::getWorkstationId, workstationIds);
+            } else {
+                query.in(BdWorkstation::getWorkshopId, workshopIds);
+            }
+            List<BdWorkstation> returned = workstationMapper.selectList(query);
+            if (returned != null) {
+                Set<Long> originalWorkshopIds = Set.copyOf(workshopIds);
+                Set<Long> originalWorkstationIds = Set.copyOf(workstationIds);
+                scopedWorkstations = returned.stream()
+                    .filter(workstation -> workstation.getWorkstationId() != null)
+                    .filter(workstation -> originalWorkstationIds.contains(workstation.getWorkstationId())
+                        || originalWorkshopIds.contains(workstation.getWorkshopId()))
+                    .sorted(Comparator.comparing(BdWorkstation::getWorkstationId))
+                    .toList();
+                scopedWorkstations.stream()
+                    .map(BdWorkstation::getWorkshopId)
+                    .filter(Objects::nonNull)
+                    .sorted()
+                    .forEach(workshopIds::add);
+            }
+        }
+        return new ResourceScope(workshopIds, workstationIds, scopedWorkstations);
     }
 
     /** 仅加载 scoped WORKSHOP/WORKSTATION 产能。 */
@@ -512,18 +541,8 @@ public class PrdScheduleInputAssembler {
             log.info("APS人力产能: scoped 排班无有效人力, 沿用产能日历");
             return;
         }
-        var workstationQuery = Wrappers.lambdaQuery(BdWorkstation.class);
-        if (!scope.workstationIds().isEmpty()) {
-            workstationQuery.and(resources -> resources
-                .in(BdWorkstation::getWorkstationId, scope.workstationIds())
-                .or().in(BdWorkstation::getWorkshopId, laborByWorkshop.keySet()));
-        } else {
-            workstationQuery.in(BdWorkstation::getWorkshopId, laborByWorkshop.keySet());
-        }
-        List<BdWorkstation> workstations = workstationMapper.selectList(workstationQuery);
         Map<Long, List<Long>> workstationsByShop = new LinkedHashMap<>();
-        if (workstations != null) {
-            for (BdWorkstation workstation : workstations) {
+        for (BdWorkstation workstation : scope.workstations()) {
                 if (workstation.getWorkstationId() == null || workstation.getWorkshopId() == null
                     || !laborByWorkshop.containsKey(workstation.getWorkshopId())) {
                     continue;
@@ -537,7 +556,6 @@ public class PrdScheduleInputAssembler {
                     workstation.getWorkshopId(), ignored -> new ArrayList<>())
                     .add(workstation.getWorkstationId());
             }
-        }
         PrdLaborCapacity.applyCap(capacityByDate, laborByWorkshop, workstationsByShop);
         log.info("APS人力产能: 已接入 scoped 排班约束, 车间数={}, 有效排班行={}",
             laborByWorkshop.size(), rows.size());
@@ -598,7 +616,11 @@ public class PrdScheduleInputAssembler {
         return keys;
     }
 
-    private record ResourceScope(Set<Long> workshopIds, Set<Long> workstationIds) {
+    private record ResourceScope(
+        Set<Long> workshopIds,
+        Set<Long> workstationIds,
+        List<BdWorkstation> workstations
+    ) {
     }
 
     private LocalDate toLocalDate(Date date) {
