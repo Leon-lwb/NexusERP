@@ -790,6 +790,65 @@ class DeliveryContextAssemblerTest {
     }
 
     @Test
+    void routingSourceFactsCarryEngineTimingAndOutsourceFields() {
+        RichFixture fixture = stubRichSalesOrderFixture(new AtomicBoolean(false),
+            new AtomicReference<>(new BigDecimal("20")), new AtomicReference<>(new BigDecimal("3")));
+        stubRoutingSourceFacts(new AtomicReference<>(7001L),
+            new AtomicReference<>(toDateTime(2026, 9, 23, 8, 0)));
+        when(routingStepMapper.selectList(any())).thenAnswer(invocation -> {
+            BdRoutingStep step = new BdRoutingStep();
+            step.setStepId(7101L);
+            step.setRoutingId(7001L);
+            step.setSequenceNum(1);
+            step.setWorkstationId(1100L);
+            step.setStandardHours(new BigDecimal("1.250"));
+            step.setSetupHours(new BigDecimal("0.625"));
+            step.setIsOutsource(1);
+            step.setWaitTime(new BigDecimal("9.5"));
+            step.setTransferTime(new BigDecimal("2.25"));
+            return List.of(step);
+        });
+        var route = assembler.assemble(fixture.ref(), 14, fixture.actor())
+            .routingByMaterial().get(811L).get(0);
+        assertEquals(7001L, route.routingId());
+        assertEquals(new BigDecimal("0.625"), route.setupHours());
+        assertEquals(1, route.isOutsource());
+        assertEquals(new BigDecimal("9.5"), route.waitTime());
+        assertEquals(new BigDecimal("2.25"), route.transferTime());
+    }
+
+    @Test
+    void routingFallbackFactsCarryEngineTimingAndOutsourceFields() {
+        RichFixture fixture = stubRichSalesOrderFixture(new AtomicBoolean(false),
+            new AtomicReference<>(new BigDecimal("20")), new AtomicReference<>(new BigDecimal("3")));
+        when(scheduleInputAssembler.assemble(any(PrdSchedulePlanBo.class), anyCollection()))
+            .thenAnswer(invocation -> {
+                var input = scheduleInput(List.of(workOrder(11L, 811L, 701L, "RELEASED"),
+                    workOrder(12L, 812L, 702L, "IN_PROGRESS")), false);
+                var original = input.getRoutingProvider();
+                input.setRoutingProvider(materialId -> {
+                    List<StepInfo> steps = original.apply(materialId);
+                    if (materialId == 811L) {
+                        var step = steps.get(0);
+                        step.setSetupHours(new BigDecimal("0.625"));
+                        step.setIsOutsource(1);
+                        step.setWaitTime(new BigDecimal("9.5"));
+                        step.setTransferTime(new BigDecimal("2.25"));
+                    }
+                    return steps;
+                });
+                return input;
+            });
+        var route = assembler.assemble(fixture.ref(), 14, fixture.actor())
+            .routingByMaterial().get(811L).get(0);
+        assertNull(route.routingId());
+        assertEquals(new BigDecimal("0.625"), route.setupHours());
+        assertEquals(1, route.isOutsource());
+        assertEquals(new BigDecimal("9.5"), route.waitTime());
+        assertEquals(new BigDecimal("2.25"), route.transferTime());
+    }
+
+    @Test
     void routingSourceVersionChangesHashAndSnapshotUsesRealRoutingId() {
         RichFixture fixture = stubRichSalesOrderFixture(
             new AtomicBoolean(false), new AtomicReference<>(new BigDecimal("20")),
@@ -1406,7 +1465,8 @@ class DeliveryContextAssemblerTest {
         when(salesOrderHeaderMapper.selectById(100L)).thenReturn(null);
         when(requirementMapper.selectList(any())).thenReturn(List.of(requirement(301L, 201L)));
         when(requirementDetailMapper.selectList(any())).thenReturn(List.of(
-            requirementDetail(901L, 301L, 501L, "1", "0", TODAY)));
+            requirementDetail(901L, 301L, 501L, "1", "0",
+                LocalDate.now(ZoneId.of("Asia/Shanghai")))));
         when(materialMapper.selectBatchIds(anyCollection())).thenReturn(List.of(material(501L, "0")));
         DecisionBusinessRef ref = new DecisionBusinessRef(DecisionBusinessType.WORK_ORDER, 11L, null);
         DecisionActor actor = actor("ai:decision:run", "prd:work:query");
@@ -1492,12 +1552,13 @@ class DeliveryContextAssemblerTest {
     private void stubSingleMaterialDemandAndArrival(PrdWorkOrder workOrder) {
         when(workOrderMapper.selectById(11L)).thenReturn(workOrder);
         when(requirementMapper.selectList(any())).thenReturn(List.of(requirement(301L, 201L)));
+        LocalDate businessDay = LocalDate.now(ZoneId.of("Asia/Shanghai"));
         when(requirementDetailMapper.selectList(any())).thenReturn(List.of(
-            requirementDetail(901L, 301L, 501L, "1", "0", TODAY)));
+            requirementDetail(901L, 301L, 501L, "1", "0", businessDay)));
         when(purchaseOrderLineMapper.selectList(any())).thenReturn(List.of(
             purchaseLine(2101L, 2001L, 501L, "2", "0")));
         when(purchaseOrderMapper.selectList(any())).thenReturn(List.of(
-            purchaseOrder(2001L, 301L, "APPROVED", TODAY)));
+            purchaseOrder(2001L, 301L, "APPROVED", businessDay)));
     }
     @Test
     void confirmedLegacySalesLinkChangeWithinSameUpdateSecondChangesApprovalFingerprint() {

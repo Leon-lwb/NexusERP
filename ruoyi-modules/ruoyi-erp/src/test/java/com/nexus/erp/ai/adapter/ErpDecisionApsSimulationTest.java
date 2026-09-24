@@ -245,10 +245,22 @@ class ErpDecisionApsSimulationTest {
             if ("EDD".equals(bo.getStrategy())) throw new com.nexus.common.core.exception.ServiceException("NO_ROUTE");
             return engineInput("CR", new BigDecimal("8"));
         });
-        var error = assertThrows(com.nexus.common.core.exception.ServiceException.class, () ->
-            simulation.compare(withMaterialEvidence(Map.of(), true, true, true),
-                List.of("APS_EDD", "APS_CR"), 7));
-        assertEquals("NO_ROUTE", error.getMessage());
+        var base = withMaterialEvidence(savedOneTask(), true, true, false);
+        var safe = new DeliveryContextSnapshot(base.rootBusinessRef(), base.salesOrders(),
+            base.workOrders(), base.routingByMaterial(), base.requirements(),
+            List.of(new DeliveryContextSnapshot.StockFact(200L, new BigDecimal("20"),
+                BigDecimal.ZERO, BigDecimal.ZERO)), base.arrivals(), base.capacityByDate(),
+            base.holidays(), base.currentSchedule(), base.supplierMetrics(), base.snapshotHash(),
+            base.snapshotAt(), base.warnings());
+        var result = withRealShortage().compare(safe,
+            List.of("BASELINE_CURRENT", "APS_EDD", "APS_CR"), 7);
+        assertTrue(result.scenarios().get(0).feasible(), "saved baseline should remain available");
+        assertEquals(List.of("NO_ROUTE"), result.scenarios().get(1).infeasibleReasons());
+        assertFalse(result.scenarios().get(1).feasible());
+        assertNotNull(result.scenarios().get(1).inputHash());
+        assertTrue(result.scenarios().get(2).feasible());
+        assertNotNull(result.scenarios().get(2).kpis());
+        verify(assembler, times(2)).assemble(any(), any(java.util.Collection.class));
         reset(assembler);
         when(assembler.assemble(any(), any(java.util.Collection.class))).thenThrow(new NullPointerException("bug"));
         assertThrows(NullPointerException.class, () -> simulation.compare(withMaterialEvidence(Map.of(), true, true, true), List.of("APS_EDD"), 7));
@@ -725,6 +737,67 @@ class ErpDecisionApsSimulationTest {
         String after = withRealShortage().compare(changed, List.of("APS_EDD"), 7)
             .scenarios().get(0).inputHash();
         assertNotEquals(before, after);
+    }
+
+    @Test
+    void reviewRouteDriftInSetupOutsourceWaitOrTransferAbortsTheWholeCompare() {
+        var snapshot = withMaterialEvidence(savedOneTask(), true, true, true);
+        when(workOrderMapper.selectList(any())).thenReturn(List.of(liveWo(11L, "CREATED")));
+        for (String field : List.of("setup", "outsource", "wait", "transfer")) {
+            var input = engineInput("EDD", new BigDecimal("8"));
+            var step = input.getRoutingProvider().apply(101L).get(0);
+            switch (field) {
+                case "setup" -> step.setSetupHours(new BigDecimal("2"));
+                case "outsource" -> step.setIsOutsource(1);
+                case "wait" -> step.setWaitTime(new BigDecimal("12"));
+                case "transfer" -> step.setTransferTime(new BigDecimal("3"));
+                default -> fail("unknown test case");
+            }
+            when(assembler.assemble(any(), any(java.util.Collection.class))).thenReturn(input);
+            assertStale(() -> withRealShortage().compare(snapshot,
+                List.of("BASELINE_CURRENT", "APS_EDD"), 7));
+        }
+    }
+
+    @Test
+    void baselineHashIncludesEveryRouteTimingFieldEvenWithSameSnapshotHash() {
+        var base = withMaterialEvidence(savedOneTask(), true, true, true);
+        String original = simulation.compare(base, List.of("BASELINE_CURRENT"), 7)
+            .scenarios().get(0).inputHash();
+        for (String field : List.of("setup", "outsource", "wait", "transfer")) {
+            var changed = switch (field) {
+                case "setup" -> new DeliveryContextSnapshot.RoutingStepFact(
+                    9010L, 901L, 1, null, 3L, BigDecimal.ONE,
+                    new BigDecimal("2"), 0, BigDecimal.ZERO, BigDecimal.ZERO);
+                case "outsource" -> new DeliveryContextSnapshot.RoutingStepFact(
+                    9010L, 901L, 1, null, 3L, BigDecimal.ONE,
+                    BigDecimal.ZERO, 1, BigDecimal.ZERO, BigDecimal.ZERO);
+                case "wait" -> new DeliveryContextSnapshot.RoutingStepFact(
+                    9010L, 901L, 1, null, 3L, BigDecimal.ONE,
+                    BigDecimal.ZERO, 0, new BigDecimal("2"), BigDecimal.ZERO);
+                case "transfer" -> new DeliveryContextSnapshot.RoutingStepFact(
+                    9010L, 901L, 1, null, 3L, BigDecimal.ONE,
+                    BigDecimal.ZERO, 0, BigDecimal.ZERO, new BigDecimal("2"));
+                default -> throw new IllegalStateException("unknown test case");
+            };
+            var snapshot = withApsFacts(base, Map.of(101L, List.of(changed)),
+                base.capacityByDate(), base.holidays(), base.snapshotHash());
+            var hash = simulation.compare(snapshot, List.of("BASELINE_CURRENT"), 7)
+                .scenarios().get(0).inputHash();
+            assertNotEquals(original, hash, field);
+        }
+    }
+
+    @Test
+    void scopeBaselineUsesTerminalMaxNotGlobalPlanMakespan() {
+        var saved = new java.util.LinkedHashMap<String, Object>(savedOneTask());
+        saved.put("makespanDate", TODAY.plusDays(5).toString());
+        saved.put("tasks", List.of(Map.of("taskId", "101", "woId", "11", "seqNum", 1,
+            "startTime", TODAY.toString(), "endTime", TODAY.plusDays(1).toString())));
+        var baseline = withRealShortage().compare(withMaterialEvidence(saved, true, true, true),
+            List.of("BASELINE_CURRENT"), 7).scenarios().get(0);
+        assertEquals(TODAY.plusDays(1).toString(), baseline.kpis().makespanDate());
+        assertEquals(1, baseline.kpis().totalTardinessDays());
     }
 
     @Test

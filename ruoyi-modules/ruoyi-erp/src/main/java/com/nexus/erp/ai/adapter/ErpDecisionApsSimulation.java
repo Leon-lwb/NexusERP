@@ -80,15 +80,15 @@ public class ErpDecisionApsSimulation {
         for (String code : codes) {
             switch (code) {
                 case "BASELINE_CURRENT" -> results.add(baseline(snapshot, facts, saved, horizonDays, warnings));
-                case "APS_EDD" -> results.add(candidate(snapshot, facts, savedEnds, "APS_EDD", Strategy.EDD,
+                case "APS_EDD" -> results.add(candidateOrUnavailable(snapshot, facts, savedEnds, "APS_EDD", Strategy.EDD,
                     horizonDays, warnings, usedInputs));
                 case "APS_CR" -> {
-                    if (cr == null) cr = candidate(snapshot, facts, savedEnds, "APS_CR", Strategy.CR,
+                    if (cr == null) cr = candidateOrUnavailable(snapshot, facts, savedEnds, "APS_CR", Strategy.CR,
                         horizonDays, warnings, usedInputs);
                     results.add(cr);
                 }
                 case "APS_CR_EXPEDITE" -> {
-                    if (cr == null) cr = candidate(snapshot, facts, savedEnds, "APS_CR", Strategy.CR,
+                    if (cr == null) cr = candidateOrUnavailable(snapshot, facts, savedEnds, "APS_CR", Strategy.CR,
                         horizonDays, warnings, usedInputs);
                     results.add(expedite(snapshot, cr, horizonDays, warnings, usedInputs.get(Strategy.CR)));
                 }
@@ -137,7 +137,8 @@ public class ErpDecisionApsSimulation {
             return unavailable(snapshot, facts, horizonDays, "BASELINE_CURRENT", strategy,
                 "INVALID_SAVED_SCHEDULE");
         }
-        if (makespan == null) makespan = terminalMax;
+        // The saved plan's makespan may include work orders outside this decision's scope.
+        makespan = terminalMax;
         List<Map<String, Object>> preview = new ArrayList<>();
         for (Object task : (List<?>) saved.get("tasks")) {
             if (!(task instanceof Map<?, ?> row) || !schedule.ends().containsKey(parseId(row.get("woId")))) continue;
@@ -159,6 +160,25 @@ public class ErpDecisionApsSimulation {
             List.copyOf(reasons), kpis, null, 0, Map.of(), evidence(snapshot, shortage),
             limitPreview(preview), hashBaseline(snapshot, facts, saved, horizonDays, "BASELINE_CURRENT", strategy),
             delayedIds(schedule.ends(), facts), List.of());
+    }
+
+    /** Only a deliberately classified business case may fail independently of other scenarios. */
+    private static final class ScenarioUnavailableException extends RuntimeException {
+        private ScenarioUnavailableException(String reason) {
+            super(reason);
+        }
+    }
+
+    private DecisionScenario candidateOrUnavailable(DeliveryContextSnapshot snapshot,
+                                                     Map<Long, WorkOrderFact> facts,
+                                                     Map<Long, LocalDate> savedEnds, String code, Strategy strategy,
+                                                     int horizonDays, Set<String> warnings,
+                                                     Map<Strategy, ScheduleInput> usedInputs) {
+        try {
+            return candidate(snapshot, facts, savedEnds, code, strategy, horizonDays, warnings, usedInputs);
+        } catch (ScenarioUnavailableException unavailable) {
+            return unavailable(snapshot, facts, horizonDays, code, strategy.name(), unavailable.getMessage());
+        }
     }
 
     private DecisionScenario candidate(DeliveryContextSnapshot snapshot, Map<Long, WorkOrderFact> facts,
@@ -198,7 +218,17 @@ public class ErpDecisionApsSimulation {
         bo.setStrategy(strategy.name());
         bo.setStartDate(Date.from(snapshot.snapshotAt().toLocalDate().atStartOfDay(BUSINESS_ZONE).toInstant()));
         bo.setHorizonDays(horizonDays);
-        ScheduleInput input = scheduleInputAssembler.assemble(bo, List.copyOf(schedulable));
+        ScheduleInput input;
+        try {
+            input = scheduleInputAssembler.assemble(bo, List.copyOf(schedulable));
+        } catch (ServiceException failure) {
+            // Only this explicit assembler business signal is recoverable; DB, permission and
+            // scoped-load errors (including any other ServiceException) abort the whole comparison.
+            if ("NO_ROUTE".equals(failure.getMessage())) {
+                throw new ScenarioUnavailableException("NO_ROUTE");
+            }
+            throw failure;
+        }
         // The assembler performs another database read; reject facts changed between the two reads.
         if (input == null || input.getWorkOrders() == null || input.getStartDate() == null
             || !input.getStartDate().equals(snapshot.snapshotAt().toLocalDate())
@@ -346,7 +376,16 @@ public class ErpDecisionApsSimulation {
         return new ServiceException("STALE_SNAPSHOT: " + detail);
     }
 
-    private record RouteStep(Long id, Integer sequence, Long station, String hours) { }
+    private record RouteStep(Long id, Integer sequence, Long station, String hours,
+                             String setup, int outsource, String waitTime, String transferTime) { }
+
+    private static String engineHours(BigDecimal value) {
+        return decimal(value == null ? BigDecimal.ZERO : value);
+    }
+
+    private static int engineOutsource(Integer value) {
+        return Objects.equals(value, 1) ? 1 : 0;
+    }
 
     private static void validateScopedFacts(DeliveryContextSnapshot snapshot, ScheduleInput input, int horizonDays) {
         LocalDate start = snapshot.snapshotAt().toLocalDate();
@@ -368,11 +407,15 @@ public class ErpDecisionApsSimulation {
             }
             List<RouteStep> expected = snapshotSteps.stream()
                 .map(step -> new RouteStep(step.stepId(), step.seqNum(), step.workstationId(),
-                    decimal(step.standardHours())))
+                    engineHours(step.standardHours()), engineHours(step.setupHours()),
+                    engineOutsource(step.isOutsource()), engineHours(step.waitTime()),
+                    engineHours(step.transferTime())))
                 .sorted(ROUTE_ORDER).toList();
             List<RouteStep> actual = liveSteps.stream()
                 .map(step -> new RouteStep(step.getStepId(), step.getSeqNum(), step.getWorkstationId(),
-                    decimal(step.getStandardHours())))
+                    engineHours(step.getStandardHours()), engineHours(step.getSetupHours()),
+                    engineOutsource(step.getIsOutsource()), engineHours(step.getWaitTime()),
+                    engineHours(step.getTransferTime())))
                 .sorted(ROUTE_ORDER).toList();
             if (!expected.equals(actual)) throw stale("routing changed for material " + materialId);
         }
@@ -391,7 +434,11 @@ public class ErpDecisionApsSimulation {
         Comparator.comparing(RouteStep::sequence, Comparator.nullsLast(Integer::compareTo))
             .thenComparing(RouteStep::id, Comparator.nullsLast(Long::compareTo))
             .thenComparing(RouteStep::station, Comparator.nullsLast(Long::compareTo))
-            .thenComparing(RouteStep::hours, Comparator.nullsLast(String::compareTo));
+            .thenComparing(RouteStep::hours)
+            .thenComparing(RouteStep::setup)
+            .thenComparingInt(RouteStep::outsource)
+            .thenComparing(RouteStep::waitTime)
+            .thenComparing(RouteStep::transferTime);
 
     private static Map<String, Map<String, String>> capacityInWindow(
         Map<LocalDate, Map<String, BigDecimal>> byDay, LocalDate start, LocalDate end) {
@@ -620,7 +667,11 @@ public class ErpDecisionApsSimulation {
                         row.put("seq", step.seqNum());
                         row.put("station", step.workstationId() == null ? null : String.valueOf(step.workstationId()));
                         row.put("workshop", step.workshopId() == null ? null : String.valueOf(step.workshopId()));
-                        row.put("hours", decimal(step.standardHours()));
+                        row.put("hours", engineHours(step.standardHours()));
+                        row.put("setup", engineHours(step.setupHours()));
+                        row.put("outsource", engineOutsource(step.isOutsource()));
+                        row.put("wait", engineHours(step.waitTime()));
+                        row.put("transfer", engineHours(step.transferTime()));
                         return row;
                     }).toList());
             });
@@ -676,11 +727,11 @@ public class ErpDecisionApsSimulation {
                     row.put("stepId", step.getStepId() == null ? null : String.valueOf(step.getStepId()));
                     row.put("seq", step.getSeqNum());
                     row.put("workstationId", step.getWorkstationId() == null ? null : String.valueOf(step.getWorkstationId()));
-                    row.put("hours", decimal(step.getStandardHours()));
-                    row.put("setup", decimal(step.getSetupHours()));
-                    row.put("outsource", step.getIsOutsource());
-                    row.put("wait", decimal(step.getWaitTime()));
-                    row.put("transfer", decimal(step.getTransferTime()));
+                    row.put("hours", engineHours(step.getStandardHours()));
+                    row.put("setup", engineHours(step.getSetupHours()));
+                    row.put("outsource", engineOutsource(step.getIsOutsource()));
+                    row.put("wait", engineHours(step.getWaitTime()));
+                    row.put("transfer", engineHours(step.getTransferTime()));
                     return (Map<String, Object>) row;
                 }).toList());
         }

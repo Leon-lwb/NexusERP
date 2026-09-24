@@ -633,6 +633,36 @@ class DecisionContractTest {
     }
 
     @Test
+    void routingStepFactPreservesLegacyJsonAndRoundTripsApsTimingFields() throws Exception {
+        ObjectMapper mapper = productionMapper();
+        DeliveryContextSnapshot.RoutingStepFact legacy = mapper.readValue(
+            "{\"routingId\":\"101\",\"stepId\":\"102\",\"seqNum\":3,"
+                + "\"workstationId\":\"103\",\"workshopId\":\"104\",\"standardHours\":1.75}",
+            DeliveryContextSnapshot.RoutingStepFact.class);
+        assertEquals(BigDecimal.ZERO, legacy.setupHours());
+        assertEquals(0, legacy.isOutsource());
+        assertEquals(BigDecimal.ZERO, legacy.waitTime());
+        assertEquals(BigDecimal.ZERO, legacy.transferTime());
+        assertEquals(new DeliveryContextSnapshot.RoutingStepFact(101L, 102L, 3, 103L, 104L,
+            new BigDecimal("1.75")), legacy, "legacy six-argument Java API must retain its defaults");
+
+        var changed = new DeliveryContextSnapshot.RoutingStepFact(101L, 102L, 3, 103L, 104L,
+            new BigDecimal("1.75"), new BigDecimal("0.50"), 1,
+            new BigDecimal("24.25"), new BigDecimal("3.5"));
+        var base = snapshotWithSchedule(Map.of());
+        var snapshot = new DeliveryContextSnapshot(base.rootBusinessRef(), base.salesOrders(),
+            base.workOrders(), Map.of(811L, List.of(changed)), base.requirements(), base.stocks(),
+            base.arrivals(), base.capacityByDate(), base.holidays(), base.currentSchedule(),
+            base.supplierMetrics(), base.snapshotHash(), base.snapshotAt(), base.warnings());
+        String json = mapper.writeValueAsString(snapshot);
+        var parsed = mapper.readValue(json, DeliveryContextSnapshot.class);
+        assertEquals(changed, parsed.routingByMaterial().get(811L).get(0));
+        assertEquals("0.50", mapper.readTree(json).path("routingByMaterial")
+            .path("811").get(0).path("setupHours").asText());
+        assertEquals(1, parsed.routingByMaterial().get(811L).get(0).isOutsource());
+    }
+
+    @Test
     void shortageSimulationCarriesRiskSummaryKpisAndEvidenceReferences() throws Exception {
         DecisionKpiSet kpis = new DecisionKpiSet(1, 1, 2, 2, "2026-09-28", 1,
             new BigDecimal("9.25"), "2026-09-25", BigDecimal.ONE, 0, 0, BigDecimal.ZERO);

@@ -1250,7 +1250,8 @@ public class DeliveryContextAssembler {
                             step.getSequenceNum(),
                             step.getWorkstationId(),
                             workshopId,
-                            step.getStandardHours());
+                            step.getStandardHours(), step.getSetupHours(), step.getIsOutsource(),
+                            step.getWaitTime(), step.getTransferTime());
                     })
                     .toList();
             } else {
@@ -1262,7 +1263,8 @@ public class DeliveryContextAssembler {
                         step.getSeqNum(),
                         step.getWorkstationId(),
                         workshopId,
-                        step.getStandardHours()))
+                        step.getStandardHours(), step.getSetupHours(), step.getIsOutsource(),
+                        step.getWaitTime(), step.getTransferTime()))
                     .toList();
             }
             routes.put(materialId, facts);

@@ -210,7 +210,22 @@ public record DeliveryContextSnapshot(
     }
 
     public record RoutingStepFact(Long routingId, Long stepId, Integer seqNum, Long workstationId,
-                                  Long workshopId, BigDecimal standardHours) implements Serializable {
+                                  Long workshopId, BigDecimal standardHours,
+                                  BigDecimal setupHours, Integer isOutsource,
+                                  BigDecimal waitTime, BigDecimal transferTime) implements Serializable {
+        /** Previous Java/JSON snapshots had no timing or outsourcing fields. Engine treats them as zero. */
+        public RoutingStepFact(Long routingId, Long stepId, Integer seqNum, Long workstationId,
+                               Long workshopId, BigDecimal standardHours) {
+            this(routingId, stepId, seqNum, workstationId, workshopId, standardHours,
+                BigDecimal.ZERO, 0, BigDecimal.ZERO, BigDecimal.ZERO);
+        }
+
+        public RoutingStepFact {
+            setupHours = setupHours == null ? BigDecimal.ZERO : setupHours;
+            isOutsource = isOutsource == null ? 0 : isOutsource;
+            waitTime = waitTime == null ? BigDecimal.ZERO : waitTime;
+            transferTime = transferTime == null ? BigDecimal.ZERO : transferTime;
+        }
     }
 
     public record RequirementFact(Long materialId, String materialCode, String materialName,
