@@ -444,6 +444,9 @@ public class PrdScheduleInputAssembler {
     }
 
     private LocalDate toLocalDate(Date date) {
+        if (date instanceof java.sql.Date sqlDate) {
+            return sqlDate.toLocalDate();
+        }
         return date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
     }
 

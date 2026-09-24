@@ -47,6 +47,7 @@ import java.time.ZoneId;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -146,6 +147,65 @@ class PrdScheduleInputAssemblerTest {
         assertTrue(sql.contains("workshop_id"), sql);
         assertTrue(queryValues(queryCaptor.getValue()).contains(10L));
         verify(routingService).getCurrentRouting(100L);
+    }
+
+    @Test
+    void assembleConvertsSqlDateStartAndDueDates() {
+        PrdSchedulePlanBo bo = scheduleBo(3, "EDD");
+        bo.setStartDate(java.sql.Date.valueOf("2026-09-24"));
+        PrdWorkOrder workOrder = workOrder(1L, 100L, "CREATED");
+        workOrder.setPlanEndDate(java.sql.Date.valueOf("2026-09-30"));
+        when(workOrderMapper.selectList(any())).thenReturn(List.of(workOrder));
+        stubRouting(100L);
+        stubEmptyCapacityInputs();
+
+        ScheduleInput input = assembler.assemble(bo);
+
+        assertEquals(LocalDate.of(2026, 9, 24), input.getStartDate());
+        assertEquals(LocalDate.of(2026, 9, 30), input.getWorkOrders().get(0).getDueDate());
+    }
+
+    @Test
+    void assembleAppliesCalendarHolidayShiftTeamLeaveAndRestDayCapacity() {
+        LocalDate day1 = START_DATE;
+        LocalDate day2 = START_DATE.plusDays(1);
+        LocalDate day3 = START_DATE.plusDays(2);
+        when(workOrderMapper.selectList(any())).thenReturn(List.of(workOrder(1L, 100L, "CREATED")));
+        stubRouting(100L);
+        when(capacityCalendarMapper.selectList(any())).thenReturn(List.of(
+            capacity(day1, "WORKSTATION", 400L, "12"),
+            capacity(day1, "WORKSHOP", 10L, "20"),
+            capacity(day2, "WORKSTATION", 400L, "8"),
+            capacity(day3, "WORKSTATION", 999L, "5")
+        ));
+        when(holidayMapper.selectList(any())).thenReturn(List.of(holiday(day3)));
+        when(employeeScheduleMapper.selectList(any())).thenReturn(List.of(
+            employeeSchedule(101L, 500L, 600L, 601L, day1, 1, "scheduled"),
+            employeeSchedule(102L, 500L, 600L, null, day1, 1, "scheduled"),
+            employeeSchedule(103L, 500L, 600L, null, day2, 0, "rest")
+        ));
+        when(shiftMapper.selectBatchIds(any())).thenReturn(List.of(
+            shift(600L, "8"),
+            shift(601L, "6")
+        ));
+        when(teamMapper.selectBatchIds(any())).thenReturn(List.of(team(500L, 10L)));
+        when(leaveApplyMapper.selectList(any())).thenReturn(List.of(approvedLeave(102L, day1)));
+        when(workstationMapper.selectList(any())).thenReturn(List.of(workstation(400L, 10L)));
+
+        ScheduleInput input = assembler.assemble(scheduleBo(3, "CR"));
+
+        Map<LocalDate, Map<String, BigDecimal>> capacity = input.getCapacityByDate();
+        assertEquals(START_DATE, input.getStartDate());
+        assertEquals(3, input.getHorizonDays());
+        assertTrue(input.getHolidays().contains(day3));
+        assertEquals(0, new BigDecimal("6").compareTo(
+            capacity.get(day1).get(ScheduleModel.resourceKey("WORKSTATION", 400L))));
+        assertEquals(0, new BigDecimal("6").compareTo(
+            capacity.get(day1).get(ScheduleModel.resourceKey("WORKSHOP", 10L))));
+        assertEquals(0, capacity.get(day2).get(ScheduleModel.resourceKey("WORKSTATION", 400L)).signum());
+        assertEquals(0, capacity.get(day2).get(ScheduleModel.resourceKey("WORKSHOP", 10L)).signum());
+        assertEquals(0, new BigDecimal("5").compareTo(
+            capacity.get(day3).get(ScheduleModel.resourceKey("WORKSTATION", 999L))));
     }
 
     @Test
@@ -291,6 +351,68 @@ class PrdScheduleInputAssemblerTest {
 
         assertTrue(error.getMessage().contains("基线"), error.getMessage());
         verify(workOrderMapper, never()).selectList(any());
+    }
+
+    private PrdCapacityCalendar capacity(LocalDate day, String objectType, Long objectId, String hours) {
+        PrdCapacityCalendar calendar = new PrdCapacityCalendar();
+        calendar.setCalendarDate(toDate(day));
+        calendar.setObjectType(objectType);
+        calendar.setObjectId(objectId);
+        calendar.setRemainingHours(new BigDecimal(hours));
+        calendar.setStatus("ACTIVE");
+        return calendar;
+    }
+
+    private SchHoliday holiday(LocalDate day) {
+        SchHoliday holiday = new SchHoliday();
+        holiday.setHolidayDate(toDate(day));
+        holiday.setHolidayName("停工日");
+        holiday.setIsWorkingDay(0);
+        return holiday;
+    }
+
+    private SchEmployeeSchedule employeeSchedule(Long workerId, Long teamId, Long shiftId,
+                                                   Long actualShiftId, LocalDate day,
+                                                   Integer isWorkingDay, String status) {
+        SchEmployeeSchedule schedule = new SchEmployeeSchedule();
+        schedule.setWorkerId(workerId);
+        schedule.setTeamId(teamId);
+        schedule.setShiftId(shiftId);
+        schedule.setActualShiftId(actualShiftId);
+        schedule.setScheduledDate(toDate(day));
+        schedule.setIsWorkingDay(isWorkingDay);
+        schedule.setScheduleStatus(status);
+        return schedule;
+    }
+
+    private SchShift shift(Long shiftId, String hours) {
+        SchShift shift = new SchShift();
+        shift.setShiftId(shiftId);
+        shift.setWorkHours(new BigDecimal(hours));
+        return shift;
+    }
+
+    private SchTeam team(Long teamId, Long workshopId) {
+        SchTeam team = new SchTeam();
+        team.setTeamId(teamId);
+        team.setWorkshopId(workshopId);
+        return team;
+    }
+
+    private SchLeaveApply approvedLeave(Long workerId, LocalDate day) {
+        SchLeaveApply leave = new SchLeaveApply();
+        leave.setWorkerId(workerId);
+        leave.setStartDate(toDate(day));
+        leave.setEndDate(toDate(day));
+        leave.setApplyStatus("approved");
+        return leave;
+    }
+
+    private BdWorkstation workstation(Long workstationId, Long workshopId) {
+        BdWorkstation workstation = new BdWorkstation();
+        workstation.setWorkstationId(workstationId);
+        workstation.setWorkshopId(workshopId);
+        return workstation;
     }
 
     private void stubRouting(Long materialId) {
