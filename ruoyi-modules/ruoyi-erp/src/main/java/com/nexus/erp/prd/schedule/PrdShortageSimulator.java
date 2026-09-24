@@ -58,6 +58,7 @@ public final class PrdShortageSimulator {
         LocalDate earliestShortage = null;
         BigDecimal maxGap = BigDecimal.ZERO;
         long gapDays = 0;
+        List<LocalDate> shortageDemandDates = new ArrayList<>();
 
         for (LocalDate date : dates) {
             // 截至当日的累计到货与累计需求
@@ -71,6 +72,7 @@ public final class PrdShortageSimulator {
                     earliestShortage = date;
                 }
                 gapDays++;
+                if (input.getDemands().containsKey(date)) shortageDemandDates.add(date);
                 BigDecimal gap = current.abs();
                 if (gap.compareTo(maxGap) > 0) {
                     maxGap = gap;
@@ -83,6 +85,7 @@ public final class PrdShortageSimulator {
         result.setEarliestShortageDate(earliestShortage);
         result.setMaxGap(maxGap);
         result.setGapDays(gapDays);
+        result.setShortageDemandDates(shortageDemandDates);
 
         if (earliestShortage == null) {
             // 无缺口: 最低余额是否逼近安全线(0)

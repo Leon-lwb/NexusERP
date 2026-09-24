@@ -1447,7 +1447,13 @@ public class DeliveryContextAssembler {
             .map(workOrder -> new CriticalWorkOrder(
                 workOrder.getWoId(), workOrder.getWoStatus(), toIsoDate(workOrder.getPlanEndDate()),
                 canonicalDecimal(remaining(workOrder.getPlannedQty(), workOrder.getCompletedQty())),
-                toIsoDateTime(workOrder.getUpdateTime())))
+                toIsoDateTime(workOrder.getUpdateTime()), workOrder.getPlanId(),
+                workOrder.getSourceType(), workOrder.getSourceId(),
+                workOrder.getSourceLineId(), workOrder.getSourceNo()))
+            .toList();
+        List<CriticalWorkOrderSalesLink> workOrderSalesLinks = scope.workOrderSalesOrderIds().entrySet().stream()
+            .sorted(Map.Entry.comparingByKey())
+            .map(entry -> new CriticalWorkOrderSalesLink(entry.getKey(), entry.getValue()))
             .toList();
 
         List<CriticalRequirementHeader> requirementHeaders = context.requirementRows().stream()
@@ -1496,7 +1502,7 @@ public class DeliveryContextAssembler {
         CriticalSourceVersions sourceVersions = buildCriticalSourceVersions(context.sourceFacts());
         CriticalSchedule currentSchedule = buildCriticalSchedule(context.schedule());
         return new CriticalFreshnessFingerprint(
-            root, orders, orderLines, workOrders, requirementHeaders, requirements,
+            root, orders, orderLines, workOrders, workOrderSalesLinks, requirementHeaders, requirements,
             stocks, materials, purchaseOrders, purchaseLines, apsInput, sourceVersions, currentSchedule);
     }
 
@@ -2071,6 +2077,7 @@ public class DeliveryContextAssembler {
         List<CriticalOrder> orders,
         List<CriticalOrderLine> orderLines,
         List<CriticalWorkOrder> workOrders,
+        List<CriticalWorkOrderSalesLink> workOrderSalesLinks,
         List<CriticalRequirementHeader> requirementHeaders,
         List<CriticalRequirementDetail> requirements,
         List<CriticalStockRow> stocks,
@@ -2110,8 +2117,16 @@ public class DeliveryContextAssembler {
         String status,
         String planEndDate,
         String remainingQty,
-        String updateTime
+        String updateTime,
+        Long planId,
+        String sourceType,
+        Long sourceId,
+        Long sourceLineId,
+        String sourceNo
     ) {
+    }
+
+    private record CriticalWorkOrderSalesLink(Long workOrderId, Long salesOrderId) {
     }
 
     private record CriticalRequirementHeader(Long id, Long planId, String status, String updateTime) {

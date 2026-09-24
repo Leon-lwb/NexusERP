@@ -131,17 +131,17 @@ public class ErpDecisionShortageSimulation {
                 LocalDate shortageDate = result.getEarliestShortageDate();
                 if (shortageDate != null && shortageDate.isAfter(end)) shortageDate = null;
                 TreeSet<Long> affectedWorkOrders = new TreeSet<>();
-                if (shortageDate != null) {
-                    demand.workOrderIdsByDate().tailMap(shortageDate, true).forEach((date, ids) -> {
-                        affectedWorkOrders.addAll(ids);
-                        if (ids.size() > 1) {
-                            warnings.add("AMBIGUOUS_SAME_DAY_WORK_ORDERS:" + materialId + ":" + date);
-                        }
-                    });
+                for (LocalDate date : result.getShortageDemandDates()) {
+                    TreeSet<Long> ids = demand.workOrderIdsByDate().get(date);
+                    if (ids == null) continue;
+                    affectedWorkOrders.addAll(ids);
+                    if (ids.size() > 1) {
+                        warnings.add("AMBIGUOUS_SAME_DAY_WORK_ORDERS:" + materialId + ":" + date);
+                    }
                 }
                 List<Long> workOrderIds = List.copyOf(affectedWorkOrders);
                 TreeSet<Long> salesOrderIds = new TreeSet<>();
-                if (shortageDate != null && workOrderIds.isEmpty()
+                if (!result.getShortageDemandDates().isEmpty() && workOrderIds.isEmpty()
                     && snapshot.rootBusinessRef().type() == DecisionBusinessType.SALES_ORDER) {
                     salesOrderIds.add(snapshot.rootBusinessRef().id());
                 }

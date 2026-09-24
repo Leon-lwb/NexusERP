@@ -1499,6 +1499,74 @@ class DeliveryContextAssemblerTest {
         when(purchaseOrderMapper.selectList(any())).thenReturn(List.of(
             purchaseOrder(2001L, 301L, "APPROVED", TODAY)));
     }
+    @Test
+    void confirmedLegacySalesLinkChangeWithinSameUpdateSecondChangesApprovalFingerprint() {
+        PrdWorkOrder changing = stubStableLegacySalesSources();
+        DecisionBusinessRef ref = new DecisionBusinessRef(DecisionBusinessType.SHORTAGE_HORIZON, null, null);
+        DecisionActor actor = actor("ai:decision:run", "prd:shortage:query");
+        Date unchangedUpdate = changing.getUpdateTime();
+
+        DeliveryContextSnapshot first = assembler.assemble(ref, 14, actor);
+        changing.setSourceId(200L);
+        DeliveryContextSnapshot second = assembler.assemble(ref, 14, actor);
+
+        assertEquals(List.of(100L, 200L), first.salesOrders().stream()
+            .map(DeliveryContextSnapshot.OrderFact::id).toList());
+        assertEquals(first.salesOrders(), second.salesOrders(), "两个 SO 的可见头事实保持不变");
+        assertEquals(unchangedUpdate, changing.getUpdateTime());
+        assertTrue(first.workOrderSalesLinks().contains(
+            new DeliveryContextSnapshot.WorkOrderSalesLinkFact(11L, 100L)));
+        assertTrue(second.workOrderSalesLinks().contains(
+            new DeliveryContextSnapshot.WorkOrderSalesLinkFact(11L, 200L)));
+        assertNotEquals(first.snapshotHash(), second.snapshotHash(), "审批指纹必须覆盖已验证 WO→SO 关系");
+    }
+
+    @Test
+    void eachWorkOrderSourceFieldIsIncludedEvenWhenTypedLinkDoesNotChange() {
+        PrdWorkOrder changing = stubStableLegacySalesSources();
+        DecisionBusinessRef ref = new DecisionBusinessRef(DecisionBusinessType.SHORTAGE_HORIZON, null, null);
+        DecisionActor actor = actor("ai:decision:run", "prd:shortage:query");
+        DeliveryContextSnapshot first = assembler.assemble(ref, 14, actor);
+        String baseline = first.snapshotHash();
+
+        changing.setSourceType("CUSTOMER_ORDER");
+        assertNotEquals(baseline, assembler.computeFreshnessHash(ref, actor), "sourceType");
+        changing.setSourceType("SALES_ORDER");
+        changing.setSourceLineId(1001L);
+        assertNotEquals(baseline, assembler.computeFreshnessHash(ref, actor), "sourceLineId");
+        changing.setSourceLineId(null);
+        changing.setSourceNo("SO-100");
+        assertNotEquals(baseline, assembler.computeFreshnessHash(ref, actor), "sourceNo");
+        changing.setSourceNo(null);
+        changing.setPlanId(799L);
+        assertNotEquals(baseline, assembler.computeFreshnessHash(ref, actor), "planId");
+        assertEquals(first.workOrderSalesLinks(), assembler.assemble(ref, 14, actor).workOrderSalesLinks());
+    }
+
+    private PrdWorkOrder stubStableLegacySalesSources() {
+        PrdWorkOrder changing = workOrder(11L, 811L, 701L, "RELEASED");
+        PrdWorkOrder fixedA = workOrder(12L, 812L, 702L, "RELEASED");
+        PrdWorkOrder fixedB = workOrder(13L, 813L, 703L, "RELEASED");
+        changing.setSourceType("SALES_ORDER");
+        fixedA.setSourceType("SALES_ORDER");
+        fixedB.setSourceType("SALES_ORDER");
+        changing.setSourceId(100L);
+        fixedA.setSourceId(100L);
+        fixedB.setSourceId(200L);
+        Date sameSecond = toDateTime(2026, 9, 24, 10, 0);
+        changing.setUpdateTime(sameSecond);
+        fixedA.setUpdateTime(sameSecond);
+        fixedB.setUpdateTime(sameSecond);
+        List<PrdWorkOrder> workOrders = List.of(changing, fixedA, fixedB);
+        when(workOrderMapper.selectList(any())).thenReturn(workOrders);
+        when(salesOrderHeaderMapper.selectBatchIds(anyCollection()))
+            .thenReturn(List.of(salesOrder(100L, "SO-100"), salesOrder(200L, "SO-200")));
+        when(scheduleInputAssembler.assemble(any(PrdSchedulePlanBo.class), anyCollection()))
+            .thenReturn(scheduleInput(workOrders, false));
+        stubEmptyRelatedFacts();
+        when(scheduleTaskMapper.selectList(any())).thenReturn(List.of());
+        return changing;
+    }
     private PrdWorkOrder stubLinkedWorkOrderWithoutSchedule() {
         SoSalesOrderLine line = salesOrderLine(101L, 100L, 501L);
         PrdProductionPlan plan = productionPlan(201L, 101L, 301L);

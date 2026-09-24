@@ -5,6 +5,7 @@ import lombok.Data;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 
 /**
  * 缺料推演结果(物料级)
@@ -29,12 +30,18 @@ public class PrdShortageResult {
     private LocalDate earliestShortageDate;
     /** 最大缺口(最深负余额的绝对值) */
     private BigDecimal maxGap = BigDecimal.ZERO;
+    /** 存在缺口的需求日期（不包含仅到货的日期，按时间升序） */
+    private List<LocalDate> shortageDemandDates = List.of();
     /** 缺口天数(余额 < 0 的天数) */
     private long gapDays;
     /** 建议动作: 催货/提前采购/调安全库存/无 */
     private String suggestion;
     /** 建议动作说明 */
     private String suggestionText;
+
+    public void setShortageDemandDates(List<LocalDate> shortageDemandDates) {
+        this.shortageDemandDates = List.copyOf(shortageDemandDates);
+    }
 
     /**
      * 是否存在缺料风险

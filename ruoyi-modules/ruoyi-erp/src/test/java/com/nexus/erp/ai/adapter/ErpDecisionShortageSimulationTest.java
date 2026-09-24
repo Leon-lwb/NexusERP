@@ -607,6 +607,35 @@ class ErpDecisionShortageSimulationTest {
         assertNull(result.kpis());
         assertTrue(result.warnings().contains("MISSING_MATERIAL_MASTER:101"));
     }
+    @Test
+    void recoveryBeforeLaterDemandDoesNotAffectSatisfiedWorkOrderOrSalesOrder() {
+        DeliveryContextSnapshot snapshot = new DeliveryContextSnapshot(
+            new DecisionBusinessRef(DecisionBusinessType.WORK_ORDER, 11L, "WO-11"),
+            List.of(), List.of(workOrder(11L), workOrder(22L)), Map.of(),
+            List.of(requirement(101L, TODAY, "10", 11L),
+                requirement(101L, TODAY.plusDays(2), "5", 22L)),
+            List.of(stock(101L, "0", "0", "0")),
+            List.of(arrival(101L, 5001L, TODAY.plusDays(1), "20")),
+            Map.of(), List.of(), Map.of(), List.of(), "hash", SNAPSHOT_AT, List.of(),
+            List.of(new WorkOrderSalesLinkFact(11L, 42L), new WorkOrderSalesLinkFact(22L, 99L)));
+
+        ShortageSimulationResult baseline = simulation.simulate(snapshot, 3, null);
+        assertEquals(TODAY, baseline.earliestShortageDate());
+        assertEquals(new BigDecimal("10"), baseline.totalGap());
+        assertEquals(new BigDecimal("20"), baseline.items().get(0).onOrderQty());
+        assertEquals(List.of(11L), baseline.items().get(0).affectedWorkOrderIds());
+        assertEquals(List.of(42L), baseline.items().get(0).affectedSalesOrderIds());
+        assertEquals(1, baseline.kpis().impactedOrderCount());
+        assertTrue(baseline.warnings().stream().noneMatch(w -> w.contains("AMBIGUOUS_SAME_DAY_WORK_ORDERS")));
+
+        ShortageSimulationResult expedited = simulation.simulate(snapshot, 3,
+            Map.of("purchaseArrivalOverrides", Map.of("5001", "2026-09-24")));
+        assertFalse(expedited.hasRisk());
+        assertEquals(List.of(), expedited.items().get(0).affectedWorkOrderIds());
+        assertEquals(List.of(), expedited.items().get(0).affectedSalesOrderIds());
+        assertEquals(0, expedited.kpis().impactedOrderCount());
+        assertEquals(TODAY.plusDays(1), snapshot.arrivals().get(0).expectedDate());
+    }
     private static DeliveryContextSnapshot fixture() {
         return snapshot(List.of(requirement(101L, TODAY, "10", 11L)),
             List.of(stock(101L, "0", "0", "0")),
