@@ -65,6 +65,11 @@ public class PrdSchedulePlanBo extends BaseEntity {
     private String strategy;
 
     /**
+     * 备注
+     */
+    private String remark;
+
+    /**
      * 状态: COMPLETED-已生成, PUBLISHED-已发布
      */
     private String status;

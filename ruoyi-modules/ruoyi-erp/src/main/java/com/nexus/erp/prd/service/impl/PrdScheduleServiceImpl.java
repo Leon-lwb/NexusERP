@@ -36,6 +36,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
@@ -62,6 +63,7 @@ public class PrdScheduleServiceImpl implements IPrdScheduleService {
     private final PrdWorkOrderMapper workOrderMapper;
     private final PrdScheduleInputAssembler scheduleInputAssembler;
 
+    private static final ZoneId BUSINESS_ZONE = ZoneId.of("Asia/Shanghai");
     private static final String PLAN_STATUS_COMPLETED = "COMPLETED";
     private static final String PLAN_STATUS_PUBLISHED = "PUBLISHED";
 
@@ -167,7 +169,16 @@ public class PrdScheduleServiceImpl implements IPrdScheduleService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public PrdSchedulePlanVo runSchedule(PrdSchedulePlanBo bo) {
-        ScheduleInput input = scheduleInputAssembler.assemble(bo);
+        return scheduleAndPersist(bo, scheduleInputAssembler.assemble(bo));
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public PrdSchedulePlanVo runSchedule(PrdSchedulePlanBo bo, Collection<Long> workOrderIds) {
+        return scheduleAndPersist(bo, scheduleInputAssembler.assemble(bo, workOrderIds));
+    }
+
+    private PrdSchedulePlanVo scheduleAndPersist(PrdSchedulePlanBo bo, ScheduleInput input) {
         ScheduleResult result = PrdScheduleEngine.schedule(input);
         LocalDate startDate = input.getStartDate();
         int horizonDays = input.getHorizonDays();
@@ -191,7 +202,16 @@ public class PrdScheduleServiceImpl implements IPrdScheduleService {
         plan.setMakespanDate(result.getMakespan() == null ? null : toDate(result.getMakespan()));
         plan.setUtilizationJson(JsonUtils.toJsonString(result.getLoads()));
         plan.setStatus(PLAN_STATUS_COMPLETED);
-        planMapper.insert(plan);
+        plan.setRemark(bo.getRemark());
+
+        int rows = planMapper.insert(plan);
+        if (rows != 1) {
+            throw new ServiceException("排程方案主表写入失败");
+        }
+        if (plan.getPlanId() == null || plan.getPlanId() <= 0 || plan.getPlanNo() == null
+            || plan.getPlanNo().isBlank() || plan.getCreateTime() == null || plan.getUpdateTime() == null) {
+            throw new ServiceException("排程方案主表未生成完整标识或版本时间");
+        }
 
         for (ScheduledTask task : result.getTasks()) {
             PrdScheduleTask entity = toTaskEntity(plan.getPlanId(), task);
@@ -240,6 +260,53 @@ public class PrdScheduleServiceImpl implements IPrdScheduleService {
             taskMapper.delete(Wrappers.lambdaQuery(PrdScheduleTask.class).eq(PrdScheduleTask::getPlanId, planId));
         }
         return planMapper.deleteByIds(List.of(planIds)) > 0;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean deleteCompletedIfUnchanged(Long planId, String versionMarker) {
+        VersionMarker marker = parseVersionMarker(planId, versionMarker);
+        if (marker == null) {
+            return false;
+        }
+        LambdaQueryWrapper<PrdSchedulePlan> wrapper = Wrappers.lambdaQuery(PrdSchedulePlan.class)
+            .eq(PrdSchedulePlan::getPlanId, planId)
+            .eq(PrdSchedulePlan::getStatus, PLAN_STATUS_COMPLETED);
+        if (marker.type() == 'U') {
+            wrapper.eq(PrdSchedulePlan::getUpdateTime, marker.time());
+        } else {
+            wrapper.isNull(PrdSchedulePlan::getUpdateTime)
+                .eq(PrdSchedulePlan::getCreateTime, marker.time());
+        }
+        if (planMapper.delete(wrapper) != 1) {
+            return false;
+        }
+        taskMapper.delete(Wrappers.lambdaQuery(PrdScheduleTask.class)
+            .eq(PrdScheduleTask::getPlanId, planId));
+        return true;
+    }
+
+    private VersionMarker parseVersionMarker(Long id, String marker) {
+        if (id == null || id <= 0 || marker == null || marker.length() < 3 || marker.charAt(1) != ':') {
+            return null;
+        }
+        char type = marker.charAt(0);
+        if (type != 'U' && type != 'C') {
+            return null;
+        }
+        String millisText = marker.substring(2);
+        if (millisText.isEmpty() || !millisText.chars().allMatch(Character::isDigit)) {
+            return null;
+        }
+        try {
+            long millis = Long.parseLong(millisText);
+            return millis < 0 ? null : new VersionMarker(type, new Date(millis));
+        } catch (NumberFormatException ignored) {
+            return null;
+        }
+    }
+
+    private record VersionMarker(char type, Date time) {
     }
 
     private PrdScheduleTask toTaskEntity(Long planId, ScheduledTask task) {
@@ -294,10 +361,10 @@ public class PrdScheduleServiceImpl implements IPrdScheduleService {
     }
 
     private Date toDate(LocalDate date) {
-        return Date.from(date.atStartOfDay(ZoneId.systemDefault()).toInstant());
+        return Date.from(date.atStartOfDay(BUSINESS_ZONE).toInstant());
     }
 
     private Date endOfDay(LocalDate date) {
-        return Date.from(date.atTime(23, 59, 59).atZone(ZoneId.systemDefault()).toInstant());
+        return Date.from(date.atTime(23, 59, 59).atZone(BUSINESS_ZONE).toInstant());
     }
 }

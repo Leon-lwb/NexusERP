@@ -7,6 +7,7 @@ import com.nexus.erp.prd.domain.vo.PrdSchedulePlanVo;
 import com.nexus.erp.prd.domain.vo.PrdScheduleTaskVo;
 import com.nexus.erp.prd.domain.vo.ScheduleGanttVo;
 
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -48,6 +49,24 @@ public interface IPrdScheduleService {
      * @return 生成的方案
      */
     PrdSchedulePlanVo runSchedule(PrdSchedulePlanBo bo);
+
+    /**
+     * 仅对明确指定的工单执行排程并持久化方案。
+     *
+     * @param bo           排程参数
+     * @param workOrderIds 明确指定的工单ID集合
+     * @return 生成的方案
+     */
+    PrdSchedulePlanVo runSchedule(PrdSchedulePlanBo bo, Collection<Long> workOrderIds);
+
+    /**
+     * 仅在方案仍为已生成状态且版本未变化时执行条件补偿删除。
+     *
+     * @param planId        排程方案ID
+     * @param versionMarker 版本标记（U:更新时间毫秒值或C:创建时间毫秒值）
+     * @return 是否删除成功
+     */
+    boolean deleteCompletedIfUnchanged(Long planId, String versionMarker);
 
     /**
      * 发布方案：将末序完工日期回写工单计划开始/结束日期，方案置 PUBLISHED

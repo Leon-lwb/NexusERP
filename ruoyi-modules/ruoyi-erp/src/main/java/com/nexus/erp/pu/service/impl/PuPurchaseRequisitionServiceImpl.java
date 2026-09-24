@@ -139,24 +139,57 @@ public class PuPurchaseRequisitionServiceImpl implements IPuPurchaseRequisitionS
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(PuPurchaseRequisitionBo bo) {
-        if (bo.getRequisitionId() != null) {
+        if (bo != null && bo.getRequisitionId() != null) {
             return updateByBo(bo);
         }
+        return createDraftInternal(bo);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Long createDraft(PuPurchaseRequisitionBo bo) {
+        createDraftInternal(bo);
+        return bo.getRequisitionId();
+    }
+
+    private int createDraftInternal(PuPurchaseRequisitionBo bo) {
+        if (bo == null) {
+            throw new IllegalArgumentException("采购申请不能为空");
+        }
+        if (bo.getRequisitionId() != null) {
+            throw new ServiceException("新建采购申请时ID必须为空");
+        }
+        List<PuPurchaseRequisitionLine> lines = bo.getPuPurchaseRequisitionLineList();
+        if (lines == null || lines.isEmpty() || lines.stream().anyMatch(line ->
+            line == null || line.getMaterialId() == null || line.getMaterialId() <= 0
+                || line.getApplyQuantity() == null || line.getApplyQuantity().compareTo(BigDecimal.ZERO) <= 0)) {
+            throw new ServiceException("采购申请至少需要一条有效明细");
+        }
+
         PuPurchaseRequisition entity = MapstructUtils.convert(bo, PuPurchaseRequisition.class);
         if (StringUtils.isBlank(entity.getRequisitionNo())) {
             entity.setRequisitionNo(autoCodeUtil.genSerialCode("PU_REQUISITION_CODE", null));
         }
-        if (entity.getStatus() == null) {
-            entity.setStatus(STATUS_DRAFT);
-        }
-        // 占位：下面会被强制覆盖（保留顺序以便阅读）
         if (entity.getRequisitionDate() == null) {
             entity.setRequisitionDate(new Date());
         }
-        // ★ 服务端强制状态机(ERP-PU-04)：不采信客户端传入的 status，新建单一律为草稿
         entity.setStatus(STATUS_DRAFT);
+
         int rows = baseMapper.insert(entity);
-        insertLines(entity.getRequisitionId(), bo.getPuPurchaseRequisitionLineList());
+        if (rows != 1) {
+            throw new ServiceException("采购申请主表写入失败");
+        }
+        if (entity.getRequisitionId() == null || entity.getRequisitionId() <= 0
+            || StringUtils.isBlank(entity.getRequisitionNo())) {
+            throw new ServiceException("采购申请主表未生成有效ID或编号");
+        }
+
+        bo.setRequisitionId(entity.getRequisitionId());
+        bo.setRequisitionNo(entity.getRequisitionNo());
+        bo.setStatus(entity.getStatus());
+        bo.setCreateTime(entity.getCreateTime());
+        bo.setUpdateTime(entity.getUpdateTime());
+        insertLines(entity.getRequisitionId(), lines);
         return rows;
     }
 
@@ -193,6 +226,29 @@ public class PuPurchaseRequisitionServiceImpl implements IPuPurchaseRequisitionS
             deleteLinesByRequisitionId(id);
         }
         return baseMapper.deleteBatchIds(List.of(ids));
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean deleteDraftIfUnchanged(Long requisitionId, String versionMarker) {
+        VersionMarker marker = parseVersionMarker(requisitionId, versionMarker);
+        if (marker == null) {
+            return false;
+        }
+        LambdaQueryWrapper<PuPurchaseRequisition> wrapper = Wrappers.lambdaQuery(PuPurchaseRequisition.class)
+            .eq(PuPurchaseRequisition::getRequisitionId, requisitionId)
+            .eq(PuPurchaseRequisition::getStatus, STATUS_DRAFT);
+        if (marker.type() == 'U') {
+            wrapper.eq(PuPurchaseRequisition::getUpdateTime, marker.time());
+        } else {
+            wrapper.isNull(PuPurchaseRequisition::getUpdateTime)
+                .eq(PuPurchaseRequisition::getCreateTime, marker.time());
+        }
+        if (baseMapper.delete(wrapper) != 1) {
+            return false;
+        }
+        deleteLinesByRequisitionId(requisitionId);
+        return true;
     }
 
     // /**
@@ -416,6 +472,29 @@ public class PuPurchaseRequisitionServiceImpl implements IPuPurchaseRequisitionS
         baseMapper.updateById(requisition);
         log.info("采购申请 {} 已转采购订单 {}", requisitionId, order.getOrderId());
         return order.getOrderId();
+    }
+
+    private VersionMarker parseVersionMarker(Long id, String marker) {
+        if (id == null || id <= 0 || marker == null || marker.length() < 3 || marker.charAt(1) != ':') {
+            return null;
+        }
+        char type = marker.charAt(0);
+        if (type != 'U' && type != 'C') {
+            return null;
+        }
+        String millisText = marker.substring(2);
+        if (millisText.isEmpty() || !millisText.chars().allMatch(Character::isDigit)) {
+            return null;
+        }
+        try {
+            long millis = Long.parseLong(millisText);
+            return millis < 0 ? null : new VersionMarker(type, new Date(millis));
+        } catch (NumberFormatException ignored) {
+            return null;
+        }
+    }
+
+    private record VersionMarker(char type, Date time) {
     }
 
     /**

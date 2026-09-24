@@ -71,6 +71,23 @@ public interface IPuPurchaseRequisitionService extends WfCallBackServiceI {
     int insertByBo(PuPurchaseRequisitionBo bo);
 
     /**
+     * 创建采购申请草稿并返回 Mapper 生成的主键。
+     *
+     * @param bo 采购申请业务对象
+     * @return 新建采购申请ID
+     */
+    Long createDraft(PuPurchaseRequisitionBo bo);
+
+    /**
+     * 仅在采购申请仍为草稿且版本未变化时执行条件补偿删除。
+     *
+     * @param requisitionId 采购申请ID
+     * @param versionMarker 版本标记（U:更新时间毫秒值或C:创建时间毫秒值）
+     * @return 是否删除成功
+     */
+    boolean deleteDraftIfUnchanged(Long requisitionId, String versionMarker);
+
+    /**
      * 修改采购申请，含明细行
      *
      * @param bo 采购申请业务对象
