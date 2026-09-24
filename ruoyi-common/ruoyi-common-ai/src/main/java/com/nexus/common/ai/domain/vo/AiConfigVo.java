@@ -29,6 +29,9 @@ public class AiConfigVo {
     /** 知识图谱配置 */
     private KnowledgeGraphVo knowledgeGraph;
 
+    /** 工业决策配置 */
+    private DecisionVo decision;
+
     @Data
     public static class SqlSafetyVo {
 
@@ -123,4 +126,42 @@ public class AiConfigVo {
         /** 全局检索参与 map 的社区上限 */
         private Integer maxCommunitiesForGlobal;
     }
+
+    @Data
+    public static class DecisionVo {
+        private Boolean enabled;
+        private Integer maxConcurrentRuns;
+        private Integer maxScenarios;
+        private Integer analysisTimeoutSeconds;
+        private Integer actionTimeoutSeconds;
+        private Integer staleThresholdSeconds;
+        private List<String> requireApprovalLevels;
+        private Boolean allowAutoLowRiskNotify;
+        private Boolean benchmarkMode;
+        private Integer defaultHorizonDays;
+        private Integer maxHorizonDays;
+        private Long policyKnowledgeId;
+        private DecisionRiskVo risk;
+        private DecisionRankingVo ranking;
+    }
+
+    @Data
+    public static class DecisionRiskVo {
+        private Integer tardinessPoints;
+        private Integer shortagePoints;
+        private Integer capacityPoints;
+        private Integer supplierPoints;
+    }
+
+    @Data
+    public static class DecisionRankingVo {
+        private Double tardinessWeight;
+        private Double delayedCountWeight;
+        private Double shortageWeight;
+        private Double utilizationWeight;
+        private Double actionCostWeight;
+        private Double planChangeWeight;
+        private Double infeasibleWeight;
+    }
+
 }

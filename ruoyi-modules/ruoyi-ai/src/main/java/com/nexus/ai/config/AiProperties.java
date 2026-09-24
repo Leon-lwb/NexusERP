@@ -43,6 +43,9 @@ public class AiProperties {
     /** 知识图谱配置 */
     private KnowledgeGraphConfig knowledgeGraph = new KnowledgeGraphConfig();
 
+    /** 工业决策运行与评分配置 */
+    private DecisionConfig decision = new DecisionConfig();
+
     @Data
     public static class VectorStoreConfig {
         /** 向量存储类型：milvus / inmemory */
@@ -117,4 +120,52 @@ public class AiProperties {
         /** 全局检索参与 map 的社区上限（超出按 entity_count 取 topN） */
         private int maxCommunitiesForGlobal = 50;
     }
+
+    /** 工业交付风险决策：yml 初始值，运行时可由 ai_config 决策分组覆盖。 */
+    @Data
+    public static class DecisionConfig {
+        private boolean enabled = true;
+        private int maxConcurrentRuns = 4;
+        private int maxScenarios = 4;
+        private int analysisTimeoutSeconds = 60;
+        private int actionTimeoutSeconds = 30;
+        private int staleThresholdSeconds = 300;
+        private List<String> requireApprovalLevels = List.of("HIGH", "CRITICAL");
+        private boolean allowAutoLowRiskNotify = true;
+        private boolean benchmarkMode = false;
+        private int defaultHorizonDays = 30;
+        private int maxHorizonDays = 90;
+        private Long policyKnowledgeId;
+        private DecisionRiskConfig risk = new DecisionRiskConfig();
+        private DecisionRankingConfig ranking = new DecisionRankingConfig();
+    }
+
+    @Data
+    public static class DecisionRiskConfig {
+        private int tardinessPoints = 40;
+        private int shortagePoints = 30;
+        private int capacityPoints = 20;
+        private int supplierPoints = 10;
+
+        public int pointSum() {
+            return tardinessPoints + shortagePoints + capacityPoints + supplierPoints;
+        }
+    }
+
+    @Data
+    public static class DecisionRankingConfig {
+        private double tardinessWeight = 0.30;
+        private double delayedCountWeight = 0.20;
+        private double shortageWeight = 0.15;
+        private double utilizationWeight = 0.10;
+        private double actionCostWeight = 0.10;
+        private double planChangeWeight = 0.10;
+        private double infeasibleWeight = 0.05;
+
+        public double weightSum() {
+            return tardinessWeight + delayedCountWeight + shortageWeight + utilizationWeight
+                + actionCostWeight + planChangeWeight + infeasibleWeight;
+        }
+    }
+
 }

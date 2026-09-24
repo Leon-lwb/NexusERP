@@ -1,12 +1,13 @@
 import request from '@/utils/request';
 
-/** AI 运行参数配置（5 组：SQL 安全/向量存储/联网搜索/流程编排/知识图谱） */
+/** AI 运行参数配置（6 组：SQL 安全/向量存储/联网搜索/流程编排/知识图谱/工业决策） */
 export interface AiConfig {
   sqlSafety: SqlSafety;
   vectorStore: VectorStore;
   webSearch: WebSearch;
   flow: Flow;
   knowledgeGraph: KnowledgeGraph;
+  decision: DecisionConfig;
 }
 
 /** SQL 安全配置（AI 数据查询白名单前缀/超时/行数上限） */
@@ -61,6 +62,43 @@ export interface KnowledgeGraph {
   labelPropagationMaxIter: number;
   maxCommunities: number;
   maxCommunitiesForGlobal: number;
+}
+
+/** 工业决策风险分数（四项总和必须为 100）。 */
+export interface DecisionRiskConfig {
+  tardinessPoints: number;
+  shortagePoints: number;
+  capacityPoints: number;
+  supplierPoints: number;
+}
+
+/** 方案确定性评分权重（总和必须为 1）。 */
+export interface DecisionRankingConfig {
+  tardinessWeight: number;
+  delayedCountWeight: number;
+  shortageWeight: number;
+  utilizationWeight: number;
+  actionCostWeight: number;
+  planChangeWeight: number;
+  infeasibleWeight: number;
+}
+
+export interface DecisionConfig {
+  enabled: boolean;
+  maxConcurrentRuns: number;
+  maxScenarios: number;
+  analysisTimeoutSeconds: number;
+  actionTimeoutSeconds: number;
+  staleThresholdSeconds: number;
+  requireApprovalLevels: string[];
+  allowAutoLowRiskNotify: boolean;
+  benchmarkMode: boolean;
+  defaultHorizonDays: number;
+  maxHorizonDays: number;
+  /** 雪花 ID 在表单中只用十进制字符串，避免 JS Number 截断。 */
+  policyKnowledgeId?: string | null;
+  risk: DecisionRiskConfig;
+  ranking: DecisionRankingConfig;
 }
 
 /**
