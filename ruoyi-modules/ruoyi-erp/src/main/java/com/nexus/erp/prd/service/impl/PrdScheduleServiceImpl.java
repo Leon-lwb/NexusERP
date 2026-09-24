@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.MapstructUtils;
+import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.json.utils.JsonUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
@@ -30,9 +31,11 @@ import com.nexus.erp.prd.schedule.ScheduleModel.WoInfo;
 import com.nexus.erp.prd.service.IPrdScheduleService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
@@ -40,8 +43,10 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -169,13 +174,38 @@ public class PrdScheduleServiceImpl implements IPrdScheduleService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public PrdSchedulePlanVo runSchedule(PrdSchedulePlanBo bo) {
+        if (bo == null) {
+            throw new ServiceException("排程参数不能为空");
+        }
+        if (StringUtils.isNotBlank(bo.getDecisionIdempotencyKey())) {
+            throw new ServiceException("AI决策排程必须提供显式工单范围");
+        }
         return scheduleAndPersist(bo, scheduleInputAssembler.assemble(bo));
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public PrdSchedulePlanVo runSchedule(PrdSchedulePlanBo bo, Collection<Long> workOrderIds) {
-        return scheduleAndPersist(bo, scheduleInputAssembler.assemble(bo, workOrderIds));
+        if (bo == null) {
+            throw new ServiceException("排程参数不能为空");
+        }
+        List<Long> normalizedIds = normalizeWorkOrderIds(workOrderIds);
+        String scopeJson = workOrderIdsJson(normalizedIds);
+        if (StringUtils.isBlank(bo.getDecisionWorkOrderIdsJson())) {
+            bo.setDecisionWorkOrderIdsJson(scopeJson);
+        } else if (!scopeJson.equals(bo.getDecisionWorkOrderIdsJson())) {
+            throw new ServiceException("排程工单范围与结构化来源不一致");
+        }
+        String decisionKey = normalizeDecisionKey(bo.getDecisionIdempotencyKey());
+        if (decisionKey != null) {
+            validateDecisionIdentity(bo);
+            PrdSchedulePlan existing = findByDecisionKey(decisionKey);
+            if (existing != null) {
+                validateExistingDecisionPlan(bo, existing);
+                return MapstructUtils.convert(existing, PrdSchedulePlanVo.class);
+            }
+        }
+        return scheduleAndPersist(bo, scheduleInputAssembler.assemble(bo, normalizedIds));
     }
 
     private PrdSchedulePlanVo scheduleAndPersist(PrdSchedulePlanBo bo, ScheduleInput input) {
@@ -203,23 +233,104 @@ public class PrdScheduleServiceImpl implements IPrdScheduleService {
         plan.setUtilizationJson(JsonUtils.toJsonString(result.getLoads()));
         plan.setStatus(PLAN_STATUS_COMPLETED);
         plan.setRemark(bo.getRemark());
+        plan.setDecisionRunId(bo.getDecisionRunId());
+        plan.setDecisionActionId(bo.getDecisionActionId());
+        plan.setDecisionIdempotencyKey(normalizeDecisionKey(bo.getDecisionIdempotencyKey()));
+        plan.setDecisionScenarioCode(bo.getDecisionScenarioCode());
+        plan.setDecisionWorkOrderIdsJson(bo.getDecisionWorkOrderIdsJson());
+        plan.setVersion(0);
+        plan.setCreateBy(bo.getCreateBy());
+        plan.setUpdateBy(bo.getUpdateBy());
 
-        int rows = planMapper.insert(plan);
-        if (rows != 1) {
-            throw new ServiceException("排程方案主表写入失败");
+        try {
+            int rows = planMapper.insert(plan);
+            if (rows != 1) {
+                throw new ServiceException("排程方案主表写入失败");
+            }
+        } catch (DuplicateKeyException duplicate) {
+            if (plan.getDecisionIdempotencyKey() == null) {
+                throw duplicate;
+            }
+            PrdSchedulePlan existing = findByDecisionKeyForUpdate(plan.getDecisionIdempotencyKey());
+            if (existing == null) {
+                throw new ServiceException("排程方案幂等冲突后无法重读已有方案");
+            }
+            validateExistingDecisionPlan(bo, existing);
+            return MapstructUtils.convert(existing, PrdSchedulePlanVo.class);
         }
-        if (plan.getPlanId() == null || plan.getPlanId() <= 0 || plan.getPlanNo() == null
-            || plan.getPlanNo().isBlank() || plan.getCreateTime() == null || plan.getUpdateTime() == null) {
+        if (plan.getPlanId() == null || plan.getPlanId() <= 0 || StringUtils.isBlank(plan.getPlanNo())
+            || plan.getCreateTime() == null || plan.getUpdateTime() == null) {
             throw new ServiceException("排程方案主表未生成完整标识或版本时间");
         }
 
         for (ScheduledTask task : result.getTasks()) {
             PrdScheduleTask entity = toTaskEntity(plan.getPlanId(), task);
-            taskMapper.insert(entity);
+            if (taskMapper.insert(entity) != 1) {
+                throw new ServiceException("排程任务写入失败");
+            }
         }
         log.info("APS排程完成: planNo={}, 工单数={}, 任务数={}, 拖期={}, 跳过={}",
             plan.getPlanNo(), plan.getWoCount(), plan.getTaskCount(), plan.getDelayedCount(), plan.getSkippedCount());
         return MapstructUtils.convert(plan, PrdSchedulePlanVo.class);
+    }
+
+    private List<Long> normalizeWorkOrderIds(Collection<Long> workOrderIds) {
+        if (workOrderIds == null || workOrderIds.isEmpty()) {
+            throw new ServiceException("排程工单ID不能为空");
+        }
+        LinkedHashSet<Long> unique = new LinkedHashSet<>();
+        for (Long id : workOrderIds) {
+            if (id == null || id <= 0 || !unique.add(id)) {
+                throw new ServiceException("排程工单ID必须为不重复的正数");
+            }
+        }
+        return unique.stream().sorted().toList();
+    }
+
+    private String workOrderIdsJson(List<Long> workOrderIds) {
+        return JsonUtils.toJsonString(workOrderIds.stream().map(String::valueOf).toList());
+    }
+
+    private String normalizeDecisionKey(String key) {
+        return StringUtils.isBlank(key) ? null : key;
+    }
+
+    private void validateDecisionIdentity(PrdSchedulePlanBo bo) {
+        if (bo.getDecisionRunId() == null || bo.getDecisionRunId() <= 0
+            || bo.getDecisionActionId() == null || bo.getDecisionActionId() <= 0
+            || StringUtils.isBlank(bo.getDecisionScenarioCode())) {
+            throw new ServiceException("AI决策排程缺少有效runId/actionId/scenario");
+        }
+        if (bo.getDecisionIdempotencyKey().length() > 128) {
+            throw new ServiceException("AI决策幂等键长度不能超过128");
+        }
+    }
+
+    private PrdSchedulePlan findByDecisionKey(String key) {
+        return planMapper.selectOne(Wrappers.lambdaQuery(PrdSchedulePlan.class)
+            .eq(PrdSchedulePlan::getDecisionIdempotencyKey, key));
+    }
+
+    private PrdSchedulePlan findByDecisionKeyForUpdate(String key) {
+        return planMapper.selectOne(Wrappers.lambdaQuery(PrdSchedulePlan.class)
+            .eq(PrdSchedulePlan::getDecisionIdempotencyKey, key)
+            .last("FOR UPDATE"));
+    }
+
+    private void validateExistingDecisionPlan(PrdSchedulePlanBo requested, PrdSchedulePlan existing) {
+        boolean matches = Objects.equals(requested.getDecisionRunId(), existing.getDecisionRunId())
+            && Objects.equals(requested.getDecisionActionId(), existing.getDecisionActionId())
+            && Objects.equals(requested.getDecisionIdempotencyKey(), existing.getDecisionIdempotencyKey())
+            && Objects.equals(requested.getDecisionScenarioCode(), existing.getDecisionScenarioCode())
+            && Objects.equals(requested.getDecisionWorkOrderIdsJson(), existing.getDecisionWorkOrderIdsJson())
+            && Objects.equals(requested.getPlanName(), existing.getPlanName())
+            && Objects.equals(requested.getWorkshopId(), existing.getWorkshopId())
+            && Objects.equals(toLocalDate(requested.getStartDate()), toLocalDate(existing.getStartDate()))
+            && Objects.equals(requested.getHorizonDays(), existing.getHorizonDays())
+            && Objects.equals(requested.getStrategy(), existing.getStrategy());
+        if (!matches) {
+            throw new ServiceException("幂等键对应的排程方案来源或载荷不一致");
+        }
     }
 
     @Override
@@ -229,28 +340,44 @@ public class PrdScheduleServiceImpl implements IPrdScheduleService {
         if (plan == null) {
             throw new ServiceException("排程方案不存在");
         }
-        if (PLAN_STATUS_PUBLISHED.equals(plan.getStatus())) {
-            throw new ServiceException("方案已发布, 请勿重复操作");
+        if (!PLAN_STATUS_COMPLETED.equals(plan.getStatus())) {
+            throw new ServiceException(PLAN_STATUS_PUBLISHED.equals(plan.getStatus())
+                ? "方案已发布, 请勿重复操作" : "当前方案状态不允许发布");
         }
-        // 末序任务日期回写工单计划开始/结束
+        int version = plan.getVersion() == null ? 0 : plan.getVersion();
+        int claimed = planMapper.update(null, Wrappers.lambdaUpdate(PrdSchedulePlan.class)
+            .eq(PrdSchedulePlan::getPlanId, planId)
+            .eq(PrdSchedulePlan::getStatus, PLAN_STATUS_COMPLETED)
+            .eq(PrdSchedulePlan::getVersion, version)
+            .set(PrdSchedulePlan::getStatus, PLAN_STATUS_PUBLISHED)
+            .set(PrdSchedulePlan::getVersion, version + 1)
+            .set(PrdSchedulePlan::getUpdateTime, new Date()));
+        if (claimed != 1) {
+            throw new ServiceException("排程方案状态或版本已变化，发布失败");
+        }
+
         List<PrdScheduleTask> tasks = taskMapper.selectList(
             Wrappers.lambdaQuery(PrdScheduleTask.class).eq(PrdScheduleTask::getPlanId, planId));
-        Map<Long, List<PrdScheduleTask>> byWo = tasks.stream().collect(Collectors.groupingBy(PrdScheduleTask::getWoId));
+        Map<Long, List<PrdScheduleTask>> byWo = tasks.stream()
+            .collect(Collectors.groupingBy(PrdScheduleTask::getWoId));
         for (Map.Entry<Long, List<PrdScheduleTask>> entry : byWo.entrySet()) {
             List<PrdScheduleTask> woTasks = entry.getValue().stream()
                 .sorted(Comparator.comparing(t -> t.getSeqNum() == null ? Integer.MAX_VALUE : t.getSeqNum()))
                 .toList();
-            Date start = woTasks.get(0).getStartTime();
-            Date end = woTasks.get(woTasks.size() - 1).getEndTime();
             PrdWorkOrder wo = workOrderMapper.selectById(entry.getKey());
-            if (wo != null && !isTerminalStatus(wo.getWoStatus())) {
-                wo.setPlanStartDate(start);
-                wo.setPlanEndDate(end);
-                workOrderMapper.updateById(wo);
+            if (wo == null) {
+                throw new ServiceException("排程任务关联工单不存在: " + entry.getKey());
+            }
+            if (isTerminalStatus(wo.getWoStatus())) {
+                continue;
+            }
+            wo.setPlanStartDate(woTasks.get(0).getStartTime());
+            wo.setPlanEndDate(woTasks.get(woTasks.size() - 1).getEndTime());
+            if (workOrderMapper.updateById(wo) != 1) {
+                throw new ServiceException("工单计划日期回写失败: " + entry.getKey());
             }
         }
-        plan.setStatus(PLAN_STATUS_PUBLISHED);
-        return planMapper.updateById(plan) > 0;
+        return true;
     }
 
     @Override
@@ -264,20 +391,23 @@ public class PrdScheduleServiceImpl implements IPrdScheduleService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public boolean deleteCompletedIfUnchanged(Long planId, String versionMarker) {
-        VersionMarker marker = parseVersionMarker(planId, versionMarker);
-        if (marker == null) {
+    public boolean deleteCompletedIfUnchanged(Long planId, String versionMarker,
+                                              Long decisionRunId, Long decisionActionId,
+                                              String decisionIdempotencyKey, String scenarioCode) {
+        Integer version = parseVersionMarker(planId, versionMarker);
+        if (version == null || decisionRunId == null || decisionRunId <= 0
+            || decisionActionId == null || decisionActionId <= 0
+            || StringUtils.isBlank(decisionIdempotencyKey) || StringUtils.isBlank(scenarioCode)) {
             return false;
         }
         LambdaQueryWrapper<PrdSchedulePlan> wrapper = Wrappers.lambdaQuery(PrdSchedulePlan.class)
             .eq(PrdSchedulePlan::getPlanId, planId)
-            .eq(PrdSchedulePlan::getStatus, PLAN_STATUS_COMPLETED);
-        if (marker.type() == 'U') {
-            wrapper.eq(PrdSchedulePlan::getUpdateTime, marker.time());
-        } else {
-            wrapper.isNull(PrdSchedulePlan::getUpdateTime)
-                .eq(PrdSchedulePlan::getCreateTime, marker.time());
-        }
+            .eq(PrdSchedulePlan::getStatus, PLAN_STATUS_COMPLETED)
+            .eq(PrdSchedulePlan::getVersion, version)
+            .eq(PrdSchedulePlan::getDecisionRunId, decisionRunId)
+            .eq(PrdSchedulePlan::getDecisionActionId, decisionActionId)
+            .eq(PrdSchedulePlan::getDecisionIdempotencyKey, decisionIdempotencyKey)
+            .eq(PrdSchedulePlan::getDecisionScenarioCode, scenarioCode);
         if (planMapper.delete(wrapper) != 1) {
             return false;
         }
@@ -286,27 +416,20 @@ public class PrdScheduleServiceImpl implements IPrdScheduleService {
         return true;
     }
 
-    private VersionMarker parseVersionMarker(Long id, String marker) {
-        if (id == null || id <= 0 || marker == null || marker.length() < 3 || marker.charAt(1) != ':') {
+    private Integer parseVersionMarker(Long id, String marker) {
+        if (id == null || id <= 0 || marker == null || !marker.startsWith("V:")) {
             return null;
         }
-        char type = marker.charAt(0);
-        if (type != 'U' && type != 'C') {
-            return null;
-        }
-        String millisText = marker.substring(2);
-        if (millisText.isEmpty() || !millisText.chars().allMatch(Character::isDigit)) {
+        String versionText = marker.substring(2);
+        if (versionText.isEmpty() || !versionText.chars().allMatch(Character::isDigit)) {
             return null;
         }
         try {
-            long millis = Long.parseLong(millisText);
-            return millis < 0 ? null : new VersionMarker(type, new Date(millis));
+            int version = Integer.parseInt(versionText);
+            return version < 0 ? null : version;
         } catch (NumberFormatException ignored) {
             return null;
         }
-    }
-
-    private record VersionMarker(char type, Date time) {
     }
 
     private PrdScheduleTask toTaskEntity(Long planId, ScheduledTask task) {
@@ -358,6 +481,16 @@ public class PrdScheduleServiceImpl implements IPrdScheduleService {
                 .likeRight(PrdSchedulePlan::getPlanNo, "APS" + startDate.format(java.time.format.DateTimeFormatter.BASIC_ISO_DATE)));
         return String.format("APS%s%04d", startDate.format(java.time.format.DateTimeFormatter.BASIC_ISO_DATE),
             todayCount + 1);
+    }
+
+    private LocalDate toLocalDate(Date value) {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof java.sql.Date sqlDate) {
+            return sqlDate.toLocalDate();
+        }
+        return Instant.ofEpochMilli(value.getTime()).atZone(BUSINESS_ZONE).toLocalDate();
     }
 
     private Date toDate(LocalDate date) {

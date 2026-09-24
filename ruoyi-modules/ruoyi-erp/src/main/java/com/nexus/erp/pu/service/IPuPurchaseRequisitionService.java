@@ -82,10 +82,12 @@ public interface IPuPurchaseRequisitionService extends WfCallBackServiceI {
      * 仅在采购申请仍为草稿且版本未变化时执行条件补偿删除。
      *
      * @param requisitionId 采购申请ID
-     * @param versionMarker 版本标记（U:更新时间毫秒值或C:创建时间毫秒值）
+     * @param versionMarker 版本标记（V:非负整数版本）
      * @return 是否删除成功
      */
-    boolean deleteDraftIfUnchanged(Long requisitionId, String versionMarker);
+    boolean deleteDraftIfUnchanged(Long requisitionId, String versionMarker,
+                                   Long decisionRunId, Long decisionActionId,
+                                   String decisionIdempotencyKey);
 
     /**
      * 修改采购申请，含明细行

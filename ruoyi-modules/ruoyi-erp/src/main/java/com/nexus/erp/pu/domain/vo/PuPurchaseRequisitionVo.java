@@ -58,8 +58,20 @@ public class PuPurchaseRequisitionVo extends BaseEntity {
     /** 申请人ID */
     private Long applicantId;
 
+    /** AI决策运行ID */
+    private Long decisionRunId;
+
+    /** AI决策动作ID */
+    private Long decisionActionId;
+
+    /** 租户内决策幂等键 */
+    private String decisionIdempotencyKey;
+
     /** 选用的审批流ID */
     private Long selectFlowId;
+
+    /** 乐观锁版本 */
+    private Integer version = 0;
 
     /** 备注 */
     private String remark;

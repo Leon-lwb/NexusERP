@@ -63,10 +63,12 @@ public interface IPrdScheduleService {
      * 仅在方案仍为已生成状态且版本未变化时执行条件补偿删除。
      *
      * @param planId        排程方案ID
-     * @param versionMarker 版本标记（U:更新时间毫秒值或C:创建时间毫秒值）
+     * @param versionMarker 版本标记（V:非负整数版本）
      * @return 是否删除成功
      */
-    boolean deleteCompletedIfUnchanged(Long planId, String versionMarker);
+    boolean deleteCompletedIfUnchanged(Long planId, String versionMarker,
+                                       Long decisionRunId, Long decisionActionId,
+                                       String decisionIdempotencyKey, String scenarioCode);
 
     /**
      * 发布方案：将末序完工日期回写工单计划开始/结束日期，方案置 PUBLISHED

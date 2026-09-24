@@ -3495,6 +3495,12 @@ CREATE TABLE `prd_schedule_plan`  (
   `start_date` date NOT NULL COMMENT '排产起始日',
   `horizon_days` int(11) NOT NULL DEFAULT 14 COMMENT '排产跨度(天)',
   `strategy` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'EDD' COMMENT '排序策略: EDD-最早交期, CR-临界比, PRIORITY-优先级',
+  `decision_run_id` bigint(20) NULL DEFAULT NULL COMMENT 'AI决策运行ID',
+  `decision_action_id` bigint(20) NULL DEFAULT NULL COMMENT 'AI决策动作ID',
+  `decision_idempotency_key` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '租户内AI决策幂等键',
+  `decision_scenario_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT 'AI决策场景编码',
+  `decision_work_order_ids_json` varchar(4000) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '显式工单ID十进制字符串JSON',
+  `version` int(11) NOT NULL DEFAULT 0 COMMENT '乐观锁版本',
   `wo_count` int(11) NULL DEFAULT 0 COMMENT '参与排产工单数',
   `task_count` int(11) NULL DEFAULT 0 COMMENT '排产工序任务数',
   `skipped_count` int(11) NULL DEFAULT 0 COMMENT '跳过工单数(无工艺路线等)',
@@ -3513,7 +3519,9 @@ CREATE TABLE `prd_schedule_plan`  (
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`plan_id`) USING BTREE,
   INDEX `idx_psp_tenant`(`tenant_id`) USING BTREE,
-  INDEX `idx_psp_no`(`plan_no`) USING BTREE
+  INDEX `idx_psp_no`(`plan_no`) USING BTREE,
+  UNIQUE INDEX `uk_psp_decision_idem`(`tenant_id`, `decision_idempotency_key`) USING BTREE,
+  INDEX `idx_psp_decision_run`(`tenant_id`, `decision_run_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'APS排程方案表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
@@ -4161,6 +4169,10 @@ CREATE TABLE `pu_purchase_requisition`  (
   `requisition_date` datetime(0) NULL DEFAULT NULL COMMENT '申请日期',
   `required_date` datetime(0) NULL DEFAULT NULL COMMENT '需求日期',
   `source_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '来源类型',
+  `decision_run_id` bigint(20) NULL DEFAULT NULL COMMENT 'AI决策运行ID',
+  `decision_action_id` bigint(20) NULL DEFAULT NULL COMMENT 'AI决策动作ID',
+  `decision_idempotency_key` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '租户内AI决策幂等键',
+  `version` int(11) NOT NULL DEFAULT 0 COMMENT '乐观锁版本',
   `status` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'DRAFT' COMMENT '状态',
   `select_flow_id` bigint(20) NULL DEFAULT NULL COMMENT '流程ID',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
@@ -4178,7 +4190,9 @@ CREATE TABLE `pu_purchase_requisition`  (
   `dept_id` bigint(20) NULL DEFAULT NULL COMMENT '采购部门ID（关联sys_dept）',
   `dept_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '采购部门名称',
   PRIMARY KEY (`requisition_id`) USING BTREE,
-  UNIQUE INDEX `uk_requisition_no`(`requisition_no`, `tenant_id`) USING BTREE
+  UNIQUE INDEX `uk_requisition_no`(`requisition_no`, `tenant_id`) USING BTREE,
+  UNIQUE INDEX `uk_pur_decision_idem`(`tenant_id`, `decision_idempotency_key`) USING BTREE,
+  INDEX `idx_pur_decision_run`(`tenant_id`, `decision_run_id`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '采购申请表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------

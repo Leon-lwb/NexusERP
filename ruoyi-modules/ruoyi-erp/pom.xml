@@ -111,6 +111,14 @@
             <artifactId>ruoyi-system</artifactId>
         </dependency>
 
+        <!-- H2 仅用于证明 Executor 外层 Spring 事务回滚，不用于模拟 MySQL DDL -->
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <version>2.3.232</version>
+            <scope>test</scope>
+        </dependency>
+
         <!-- 单元测试 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
