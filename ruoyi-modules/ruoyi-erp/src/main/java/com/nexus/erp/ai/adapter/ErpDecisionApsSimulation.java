@@ -80,15 +80,15 @@ public class ErpDecisionApsSimulation {
         for (String code : codes) {
             switch (code) {
                 case "BASELINE_CURRENT" -> results.add(baseline(snapshot, facts, saved, horizonDays, warnings));
-                case "APS_EDD" -> results.add(candidateOrUnavailable(snapshot, facts, savedEnds, "APS_EDD", Strategy.EDD,
+                case "APS_EDD" -> results.add(candidate(snapshot, facts, savedEnds, "APS_EDD", Strategy.EDD,
                     horizonDays, warnings, usedInputs));
                 case "APS_CR" -> {
-                    if (cr == null) cr = candidateOrUnavailable(snapshot, facts, savedEnds, "APS_CR", Strategy.CR,
+                    if (cr == null) cr = candidate(snapshot, facts, savedEnds, "APS_CR", Strategy.CR,
                         horizonDays, warnings, usedInputs);
                     results.add(cr);
                 }
                 case "APS_CR_EXPEDITE" -> {
-                    if (cr == null) cr = candidateOrUnavailable(snapshot, facts, savedEnds, "APS_CR", Strategy.CR,
+                    if (cr == null) cr = candidate(snapshot, facts, savedEnds, "APS_CR", Strategy.CR,
                         horizonDays, warnings, usedInputs);
                     results.add(expedite(snapshot, cr, horizonDays, warnings, usedInputs.get(Strategy.CR)));
                 }
@@ -162,25 +162,6 @@ public class ErpDecisionApsSimulation {
             delayedIds(schedule.ends(), facts), List.of());
     }
 
-    /** Only a deliberately classified business case may fail independently of other scenarios. */
-    private static final class ScenarioUnavailableException extends RuntimeException {
-        private ScenarioUnavailableException(String reason) {
-            super(reason);
-        }
-    }
-
-    private DecisionScenario candidateOrUnavailable(DeliveryContextSnapshot snapshot,
-                                                     Map<Long, WorkOrderFact> facts,
-                                                     Map<Long, LocalDate> savedEnds, String code, Strategy strategy,
-                                                     int horizonDays, Set<String> warnings,
-                                                     Map<Strategy, ScheduleInput> usedInputs) {
-        try {
-            return candidate(snapshot, facts, savedEnds, code, strategy, horizonDays, warnings, usedInputs);
-        } catch (ScenarioUnavailableException unavailable) {
-            return unavailable(snapshot, facts, horizonDays, code, strategy.name(), unavailable.getMessage());
-        }
-    }
-
     private DecisionScenario candidate(DeliveryContextSnapshot snapshot, Map<Long, WorkOrderFact> facts,
                                        Map<Long, LocalDate> savedEnds, String code, Strategy strategy,
                                        int horizonDays, Set<String> warnings,
@@ -218,17 +199,7 @@ public class ErpDecisionApsSimulation {
         bo.setStrategy(strategy.name());
         bo.setStartDate(Date.from(snapshot.snapshotAt().toLocalDate().atStartOfDay(BUSINESS_ZONE).toInstant()));
         bo.setHorizonDays(horizonDays);
-        ScheduleInput input;
-        try {
-            input = scheduleInputAssembler.assemble(bo, List.copyOf(schedulable));
-        } catch (ServiceException failure) {
-            // Only this explicit assembler business signal is recoverable; DB, permission and
-            // scoped-load errors (including any other ServiceException) abort the whole comparison.
-            if ("NO_ROUTE".equals(failure.getMessage())) {
-                throw new ScenarioUnavailableException("NO_ROUTE");
-            }
-            throw failure;
-        }
+        ScheduleInput input = scheduleInputAssembler.assemble(bo, List.copyOf(schedulable));
         // The assembler performs another database read; reject facts changed between the two reads.
         if (input == null || input.getWorkOrders() == null || input.getStartDate() == null
             || !input.getStartDate().equals(snapshot.snapshotAt().toLocalDate())

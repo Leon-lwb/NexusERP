@@ -238,7 +238,7 @@ class ErpDecisionApsSimulationTest {
     }
 
     @Test
-    void serviceErrorIsIsolatedButProgrammingBugIsNotSwallowed() {
+    void assemblerErrorsAndProgrammingBugsAbortWithoutContinuingScenarios() {
         when(workOrderMapper.selectList(any())).thenReturn(List.of(liveWo(11L, "CREATED")));
         when(assembler.assemble(any(), any(java.util.Collection.class))).thenAnswer(call -> {
             var bo = (com.nexus.erp.prd.domain.bo.PrdSchedulePlanBo) call.getArgument(0);
@@ -252,18 +252,52 @@ class ErpDecisionApsSimulationTest {
                 BigDecimal.ZERO, BigDecimal.ZERO)), base.arrivals(), base.capacityByDate(),
             base.holidays(), base.currentSchedule(), base.supplierMetrics(), base.snapshotHash(),
             base.snapshotAt(), base.warnings());
-        var result = withRealShortage().compare(safe,
-            List.of("BASELINE_CURRENT", "APS_EDD", "APS_CR"), 7);
-        assertTrue(result.scenarios().get(0).feasible(), "saved baseline should remain available");
-        assertEquals(List.of("NO_ROUTE"), result.scenarios().get(1).infeasibleReasons());
-        assertFalse(result.scenarios().get(1).feasible());
-        assertNotNull(result.scenarios().get(1).inputHash());
-        assertTrue(result.scenarios().get(2).feasible());
-        assertNotNull(result.scenarios().get(2).kpis());
-        verify(assembler, times(2)).assemble(any(), any(java.util.Collection.class));
+        var sim = withRealShortage();
+        assertTrue(sim.compare(safe, List.of("BASELINE_CURRENT"), 7).scenarios().get(0).feasible());
+        var failure = assertThrows(com.nexus.common.core.exception.ServiceException.class, () ->
+            sim.compare(safe, List.of("BASELINE_CURRENT", "APS_EDD", "APS_CR"), 7));
+        assertEquals("NO_ROUTE", failure.getMessage());
+        verify(assembler, times(1)).assemble(any(), any(java.util.Collection.class));
+        // The CR candidate must not run after an unclassified assembler exception.
         reset(assembler);
         when(assembler.assemble(any(), any(java.util.Collection.class))).thenThrow(new NullPointerException("bug"));
         assertThrows(NullPointerException.class, () -> simulation.compare(withMaterialEvidence(Map.of(), true, true, true), List.of("APS_EDD"), 7));
+    }
+
+    @Test
+    void assemblerNoRouteWithForbiddenCodeMustAbortEvenAfterFeasibleBaseline() {
+        var snapshot = withMaterialEvidence(savedOneTask(), true, true, true);
+        when(shortage.simulate(any(), anyInt(), any())).thenReturn(knownMaterialResult());
+        assertTrue(simulation.compare(snapshot, List.of("BASELINE_CURRENT"), 7)
+            .scenarios().get(0).feasible());
+        when(workOrderMapper.selectList(any())).thenReturn(List.of(liveWo(11L, "CREATED")));
+        var forbidden = new com.nexus.common.core.exception.ServiceException("NO_ROUTE", 403);
+        when(assembler.assemble(any(), any(java.util.Collection.class))).thenAnswer(call -> {
+            var bo = (com.nexus.erp.prd.domain.bo.PrdSchedulePlanBo) call.getArgument(0);
+            if ("EDD".equals(bo.getStrategy())) throw forbidden;
+            return engineInput("CR", new BigDecimal("8"));
+        });
+        var caught = assertThrows(com.nexus.common.core.exception.ServiceException.class, () ->
+            simulation.compare(snapshot, List.of("BASELINE_CURRENT", "APS_EDD", "APS_CR"), 7));
+        assertSame(forbidden, caught, "must preserve original error code and instance");
+        assertEquals(403, caught.getCode());
+        verify(assembler, times(1)).assemble(any(), any(java.util.Collection.class));
+    }
+
+    @Test
+    void unsupportedScenarioDoesNotPreventLaterScopedCr() {
+        var snapshot = withMaterialEvidence(Map.of(), true, true, true);
+        when(shortage.simulate(any(), anyInt(), any())).thenReturn(knownMaterialResult());
+        when(workOrderMapper.selectList(any())).thenReturn(List.of(liveWo(11L, "CREATED")));
+        when(assembler.assemble(any(), any(java.util.Collection.class)))
+            .thenReturn(engineInput("CR", new BigDecimal("8")));
+        var compared = simulation.compare(snapshot, List.of("NOT_SUPPORTED", "APS_CR"), 7);
+        assertEquals(2, compared.scenarios().size());
+        assertEquals(List.of("UNSUPPORTED_SCENARIO"), compared.scenarios().get(0).infeasibleReasons());
+        assertNotNull(compared.scenarios().get(0).inputHash());
+        assertTrue(compared.scenarios().get(1).feasible());
+        assertFalse(compared.scenarios().get(1).schedulePreview().isEmpty());
+        verify(assembler, times(1)).assemble(any(), any(java.util.Collection.class));
     }
 
     @Test
