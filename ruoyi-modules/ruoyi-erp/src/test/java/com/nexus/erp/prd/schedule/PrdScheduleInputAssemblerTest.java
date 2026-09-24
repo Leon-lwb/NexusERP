@@ -50,6 +50,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TimeZone;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -159,6 +160,107 @@ class PrdScheduleInputAssemblerTest {
     }
 
     @Test
+    void sameWorkshopUnreferencedWorkstationIsExcludedFromLaborCapacity() {
+        PrdWorkOrder workOrder = workOrder(1L, 100L, "RELEASED");
+        when(workOrderMapper.selectList(any())).thenReturn(List.of(workOrder));
+        when(routingMapper.selectList(any())).thenReturn(List.of(routing(200L, 100L)));
+        when(routingStepMapper.selectList(any())).thenReturn(
+            List.of(routingStep(210L, 200L, 1, 400L)));
+        when(workstationMapper.selectList(any())).thenReturn(List.of(
+            workstation(400L, 10L), workstation(999L, 10L)));
+        when(capacityCalendarMapper.selectList(any())).thenReturn(List.of(
+            capacity(START_DATE, "WORKSTATION", 400L, "12"),
+            capacity(START_DATE, "WORKSTATION", 999L, "12")));
+        when(holidayMapper.selectList(any())).thenReturn(List.of());
+        when(teamMapper.selectList(any())).thenReturn(List.of(team(500L, 10L)));
+        when(employeeScheduleMapper.selectList(any())).thenReturn(List.of(
+            employeeSchedule(101L, 500L, 600L, null, START_DATE, 1, "scheduled")));
+        when(shiftMapper.selectBatchIds(any())).thenReturn(List.of(shift(600L, "6")));
+        when(leaveApplyMapper.selectList(any())).thenReturn(List.of());
+
+        ScheduleInput input = assembler.assemble(scheduleBo(3, "EDD"), List.of(1L));
+
+        Map<String, BigDecimal> day = input.getCapacityByDate().get(START_DATE);
+        assertEquals(0, new BigDecimal("6").compareTo(
+            day.get(ScheduleModel.resourceKey("WORKSTATION", 400L))));
+        assertFalse(day.containsKey(ScheduleModel.resourceKey("WORKSTATION", 999L)), day.toString());
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Wrapper<BdWorkstation>> query = ArgumentCaptor.forClass(Wrapper.class);
+        verify(workstationMapper, times(1)).selectList(query.capture());
+        assertTrue(query.getValue().getSqlSegment().contains("workstation_id"),
+            query.getValue().getSqlSegment());
+        assertFalse(query.getValue().getSqlSegment().contains("workshop_id"),
+            query.getValue().getSqlSegment());
+    }
+
+    @Test
+    void datetimeScopesUseExclusiveNextDayAndKeepFinalDayFacts() {
+        LocalDate lastDay = START_DATE.plusDays(2);
+        PrdWorkOrder workOrder = workOrder(1L, 100L, "RELEASED");
+        when(workOrderMapper.selectList(any())).thenReturn(List.of(workOrder));
+        when(routingMapper.selectList(any())).thenReturn(List.of(routing(200L, 100L)));
+        when(routingStepMapper.selectList(any())).thenReturn(
+            List.of(routingStep(210L, 200L, 1, 400L)));
+        when(workstationMapper.selectList(any())).thenReturn(List.of(workstation(400L, 10L)));
+
+        PrdCapacityCalendar calendar = capacity(lastDay, "WORKSTATION", 400L, "12");
+        calendar.setCalendarDate(atTime(lastDay, 23, 59, 59));
+        when(capacityCalendarMapper.selectList(any())).thenReturn(List.of(calendar));
+        SchHoliday holiday = holiday(lastDay);
+        holiday.setHolidayDate(atTime(lastDay, 12, 0, 0));
+        SchHoliday outsideHoliday = holiday(lastDay.plusDays(1));
+        outsideHoliday.setHolidayDate(atTime(lastDay.plusDays(1), 12, 0, 0));
+        when(holidayMapper.selectList(any())).thenReturn(List.of(outsideHoliday, holiday));
+        when(teamMapper.selectList(any())).thenReturn(List.of(team(500L, 10L)));
+        SchEmployeeSchedule available =
+            employeeSchedule(101L, 500L, 600L, null, lastDay, 1, "scheduled");
+        available.setScheduledDate(atTime(lastDay, 23, 59, 59));
+        SchEmployeeSchedule absent =
+            employeeSchedule(102L, 500L, 600L, null, lastDay, 1, "scheduled");
+        absent.setScheduledDate(atTime(lastDay, 12, 0, 0));
+        when(employeeScheduleMapper.selectList(any())).thenReturn(List.of(available, absent));
+        when(shiftMapper.selectBatchIds(any())).thenReturn(List.of(shift(600L, "6")));
+        SchLeaveApply leave = approvedLeave(102L, lastDay);
+        leave.setStartDate(atTime(lastDay, 12, 0, 0));
+        leave.setEndDate(atTime(lastDay, 23, 59, 59));
+        when(leaveApplyMapper.selectList(any())).thenReturn(List.of(leave));
+
+        ScheduleInput input = assembler.assemble(scheduleBo(3, "EDD"), List.of(1L));
+
+        assertTrue(input.getHolidays().contains(lastDay), input.getHolidays().toString());
+        assertFalse(input.getHolidays().contains(lastDay.plusDays(1)), input.getHolidays().toString());
+        assertEquals(0, new BigDecimal("6").compareTo(input.getCapacityByDate().get(lastDay)
+            .get(ScheduleModel.resourceKey("WORKSTATION", 400L))));
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Wrapper<PrdCapacityCalendar>> capacityQuery =
+            ArgumentCaptor.forClass(Wrapper.class);
+        verify(capacityCalendarMapper).selectList(capacityQuery.capture());
+        assertHalfOpenWindow(capacityQuery.getValue(), "calendar_date", START_DATE, lastDay.plusDays(1));
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Wrapper<SchHoliday>> holidayQuery = ArgumentCaptor.forClass(Wrapper.class);
+        verify(holidayMapper).selectList(holidayQuery.capture());
+        assertHalfOpenWindow(holidayQuery.getValue(), "holiday_date", START_DATE, lastDay.plusDays(1));
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Wrapper<SchEmployeeSchedule>> scheduleQuery =
+            ArgumentCaptor.forClass(Wrapper.class);
+        verify(employeeScheduleMapper).selectList(scheduleQuery.capture());
+        assertHalfOpenWindow(scheduleQuery.getValue(), "scheduled_date", START_DATE, lastDay.plusDays(1));
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Wrapper<SchLeaveApply>> leaveQuery = ArgumentCaptor.forClass(Wrapper.class);
+        verify(leaveApplyMapper).selectList(leaveQuery.capture());
+        String leaveSql = leaveQuery.getValue().getSqlSegment();
+        assertTrue(leaveSql.contains("start_date <"), leaveSql);
+        assertFalse(leaveSql.contains("start_date <="), leaveSql);
+        assertTrue(leaveSql.contains("end_date >="), leaveSql);
+        assertDateParameter(leaveQuery.getValue(), START_DATE);
+        assertDateParameter(leaveQuery.getValue(), lastDay.plusDays(1));
+    }
+
+    @Test
     void routeWorkstationDerivesWorkshopAndAppliesLaborWhenWorkOrderWorkshopIsNull() {
         PrdWorkOrder workOrder = workOrder(1L, 100L, "RELEASED");
         workOrder.setWorkshopId(null);
@@ -242,7 +344,8 @@ class PrdScheduleInputAssemblerTest {
         Collection<?> workstationValues = queryValues(workstationQuery.getValue());
         String workstationSql = workstationQuery.getValue().getSqlSegment();
         assertTrue(workstationSql.contains("workstation_id"), workstationSql);
-        assertTrue(workstationSql.contains("workshop_id"), workstationSql);
+        assertFalse(workstationSql.contains("workshop_id"), workstationSql);
+        assertTrue(workstationValues.contains(400L), workstationValues.toString());
         assertFalse(workstationValues.contains(999L), workstationValues.toString());
     }
 
@@ -308,6 +411,28 @@ class PrdScheduleInputAssemblerTest {
         assertTrue(sql.contains("workshop_id"), sql);
         assertTrue(queryValues(queryCaptor.getValue()).contains(10L));
         verify(routingMapper).selectList(any());
+    }
+
+    @Test
+    void assemblePreservesSqlDateLogicalValuesAcrossJvmDefaultTimeZones() {
+        TimeZone original = TimeZone.getDefault();
+        try {
+            TimeZone.setDefault(TimeZone.getTimeZone("Pacific/Kiritimati"));
+            PrdSchedulePlanBo bo = scheduleBo(3, "EDD");
+            bo.setStartDate(java.sql.Date.valueOf("2026-09-24"));
+            PrdWorkOrder workOrder = workOrder(1L, 100L, "CREATED");
+            workOrder.setPlanEndDate(java.sql.Date.valueOf("2026-09-30"));
+            when(workOrderMapper.selectList(any())).thenReturn(List.of(workOrder));
+            stubRouting(100L);
+            stubEmptyCapacityInputs();
+
+            ScheduleInput input = assembler.assemble(bo);
+
+            assertEquals(LocalDate.of(2026, 9, 24), input.getStartDate());
+            assertEquals(LocalDate.of(2026, 9, 30), input.getWorkOrders().get(0).getDueDate());
+        } finally {
+            TimeZone.setDefault(original);
+        }
     }
 
     @Test
@@ -647,6 +772,29 @@ class PrdScheduleInputAssemblerTest {
         wo.setWorkshopId(10L);
         wo.setWorkshopName("一车间");
         return wo;
+    }
+
+    private void assertHalfOpenWindow(Wrapper<?> wrapper, String column,
+                                      LocalDate startInclusive, LocalDate endExclusive) {
+        String sql = wrapper.getSqlSegment();
+        assertTrue(sql.contains(column + " >="), sql);
+        assertTrue(sql.contains(column + " <"), sql);
+        assertFalse(sql.contains(column + " <="), sql);
+        assertDateParameter(wrapper, startInclusive);
+        assertDateParameter(wrapper, endExclusive);
+    }
+
+    private void assertDateParameter(Wrapper<?> wrapper, LocalDate day) {
+        long expected = day.atStartOfDay(ZoneId.of("Asia/Shanghai")).toInstant().toEpochMilli();
+        assertTrue(queryValues(wrapper).stream()
+            .filter(Date.class::isInstance)
+            .map(Date.class::cast)
+            .anyMatch(value -> value.getTime() == expected), queryValues(wrapper).toString());
+    }
+
+    private Date atTime(LocalDate day, int hour, int minute, int second) {
+        return Date.from(day.atTime(hour, minute, second)
+            .atZone(ZoneId.of("Asia/Shanghai")).toInstant());
     }
 
     private Collection<?> queryValues(Wrapper<?> wrapper) {

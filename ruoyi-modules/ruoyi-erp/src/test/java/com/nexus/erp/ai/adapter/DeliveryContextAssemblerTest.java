@@ -213,17 +213,43 @@ class DeliveryContextAssemblerTest {
     }
 
     @Test
+    void sqlDateKeepsLogicalDateWhenJvmDefaultUsesDifferentZone() {
+        TimeZone original = TimeZone.getDefault();
+        try {
+            TimeZone.setDefault(TimeZone.getTimeZone("Pacific/Kiritimati"));
+            SoSalesOrderHeader order = salesOrder(100L, "SO-100");
+            order.setPromiseDate(java.sql.Date.valueOf(TODAY));
+            when(salesOrderHeaderMapper.selectById(100L)).thenReturn(order);
+            when(salesOrderLineMapper.selectList(any())).thenReturn(List.of());
+            when(workOrderMapper.selectList(any())).thenReturn(List.of());
+            stubEmptyRelatedFacts();
+
+            DeliveryContextSnapshot snapshot = assembler.assemble(
+                new DecisionBusinessRef(DecisionBusinessType.SALES_ORDER, 100L, null), 14,
+                actor("ai:decision:run", "so:orderheader:query"));
+
+            assertEquals(TODAY, snapshot.salesOrders().get(0).promiseDate());
+        } finally {
+            TimeZone.setDefault(original);
+        }
+    }
+
+    @Test
     void freshnessHashIsStableAcrossJvmDefaultTimeZones() {
         TimeZone original = TimeZone.getDefault();
         try {
             TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
-            RichFixture fixture = stubRichSalesOrderFixture(
+            RichFixture utcFixture = stubRichSalesOrderFixture(
                 new AtomicBoolean(false), new AtomicReference<>(new BigDecimal("20")),
                 new AtomicReference<>(new BigDecimal("3")));
-            String utcHash = assembler.computeFreshnessHash(fixture.ref(), fixture.actor());
+            String utcHash = assembler.computeFreshnessHash(utcFixture.ref(), utcFixture.actor());
 
             TimeZone.setDefault(TimeZone.getTimeZone("America/Los_Angeles"));
-            String losAngelesHash = assembler.computeFreshnessHash(fixture.ref(), fixture.actor());
+            RichFixture losAngelesFixture = stubRichSalesOrderFixture(
+                new AtomicBoolean(false), new AtomicReference<>(new BigDecimal("20")),
+                new AtomicReference<>(new BigDecimal("3")));
+            String losAngelesHash = assembler.computeFreshnessHash(
+                losAngelesFixture.ref(), losAngelesFixture.actor());
 
             assertEquals(utcHash, losAngelesHash);
         } finally {
@@ -273,9 +299,7 @@ class DeliveryContextAssemblerTest {
         verify(requirementDetailMapper, atLeastOnce()).selectList(queries.capture());
         for (Wrapper<PrdMaterialRequirementDetail> query : queries.getAllValues()) {
             assertTrue(query.getSqlSegment().contains("required_date"), query.getSqlSegment());
-            Collection<?> values = queryValues(query);
-            assertTrue(values.contains(java.sql.Date.valueOf(TODAY)), values.toString());
-            assertTrue(values.contains(java.sql.Date.valueOf(TODAY.plusDays(89))), values.toString());
+            assertHalfOpenWindow(query, "required_date", TODAY, TODAY.plusDays(90));
         }
     }
 
@@ -312,9 +336,56 @@ class DeliveryContextAssemblerTest {
             String sql = query.getSqlSegment();
             assertTrue(sql.contains("expected_arrival_date"), sql);
             assertTrue(sql.contains("IS NULL"), sql);
-            assertTrue(sql.contains("<="), sql);
-            assertTrue(queryValues(query).contains(java.sql.Date.valueOf(TODAY.plusDays(89))),
-                queryValues(query).toString());
+            assertTrue(sql.contains("expected_arrival_date <"), sql);
+            assertFalse(sql.contains("expected_arrival_date <="), sql);
+            assertDateParameter(query, TODAY.plusDays(90));
+        }
+    }
+
+    @Test
+    void fixedNinetyDayDatetimeWindowIncludesFinalDayFactsAndUsesExclusiveNextDay() {
+        RichFixture fixture = stubRichSalesOrderFixture(
+            new AtomicBoolean(false), new AtomicReference<>(new BigDecimal("20")),
+            new AtomicReference<>(new BigDecimal("3")));
+        LocalDate lastDay = TODAY.plusDays(89);
+
+        PrdMaterialRequirement requirement = requirement(801L, 701L);
+        PrdMaterialRequirementDetail detail =
+            requirementDetail(9901L, 801L, 501L, "10", "2", lastDay);
+        detail.setRequiredDate(atTime(lastDay, 23, 59, 59));
+        when(requirementMapper.selectList(any())).thenReturn(List.of(requirement));
+        when(requirementDetailMapper.selectList(any())).thenReturn(List.of(detail));
+
+        PuPurchaseOrderLine line = purchaseLine(9902L, 9903L, 501L, "10", "1");
+        PuPurchaseOrder order = purchaseOrder(9903L, 301L, "APPROVED", lastDay);
+        order.setExpectedArrivalDate(atTime(lastDay, 12, 0, 0));
+        when(purchaseOrderLineMapper.selectList(any())).thenReturn(List.of(line));
+        when(purchaseOrderMapper.selectList(any())).thenReturn(List.of(order));
+
+        DeliveryContextSnapshot snapshot = assembler.assemble(fixture.ref(), 90, fixture.actor());
+
+        assertTrue(snapshot.requirements().stream()
+            .anyMatch(fact -> lastDay.equals(fact.requiredDate()) && fact.materialId() == 501L),
+            snapshot.requirements().toString());
+        assertTrue(snapshot.arrivals().stream()
+            .anyMatch(fact -> lastDay.equals(fact.expectedDate()) && fact.purchaseLineId() == 9902L),
+            snapshot.arrivals().toString());
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Wrapper<PrdMaterialRequirementDetail>> requirementQueries =
+            ArgumentCaptor.forClass(Wrapper.class);
+        verify(requirementDetailMapper, atLeastOnce()).selectList(requirementQueries.capture());
+        requirementQueries.getAllValues().forEach(query ->
+            assertHalfOpenWindow(query, "required_date", TODAY, TODAY.plusDays(90)));
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Wrapper<PuPurchaseOrder>> purchaseQueries = ArgumentCaptor.forClass(Wrapper.class);
+        verify(purchaseOrderMapper, atLeastOnce()).selectList(purchaseQueries.capture());
+        for (Wrapper<PuPurchaseOrder> query : purchaseQueries.getAllValues()) {
+            String sql = query.getSqlSegment();
+            assertTrue(sql.contains("expected_arrival_date <"), sql);
+            assertFalse(sql.contains("expected_arrival_date <="), sql);
+            assertDateParameter(query, TODAY.plusDays(90));
         }
     }
 
@@ -508,6 +579,60 @@ class DeliveryContextAssemblerTest {
     }
 
     @Test
+    void materialRequirementWorkOrderDoesNotRestoreSalesOrderByAccidentalSourceNumber() {
+        PrdWorkOrder workOrder = workOrder(11L, 811L, 201L, "RELEASED");
+        workOrder.setSourceType("MATERIAL_REQUIREMENT");
+        workOrder.setSourceId(301L);
+        workOrder.setSourceNo("SO-100");
+        when(workOrderMapper.selectById(11L)).thenReturn(workOrder);
+        when(productionPlanMapper.selectBatchIds(argThat(ids -> ids.contains(201L))))
+            .thenReturn(List.of());
+        when(salesOrderHeaderMapper.selectList(any())).thenReturn(List.of(salesOrder(100L, "SO-100")));
+        when(scheduleInputAssembler.assemble(any(PrdSchedulePlanBo.class), anyCollection()))
+            .thenReturn(scheduleInput(List.of(workOrder), false));
+        stubEmptyRelatedFacts();
+        when(scheduleTaskMapper.selectList(any())).thenReturn(List.of());
+
+        DeliveryContextSnapshot snapshot = assembler.assemble(
+            new DecisionBusinessRef(DecisionBusinessType.WORK_ORDER, 11L, null), 14,
+            actor("ai:decision:run", "prd:work:query"));
+
+        assertTrue(snapshot.salesOrders().isEmpty(), snapshot.salesOrders().toString());
+        verify(salesOrderHeaderMapper, never()).selectList(any());
+    }
+
+    @Test
+    void materialRequirementSchedulePlanDoesNotMapSalesOrderByAccidentalSourceNumber() {
+        PrdWorkOrder workOrder = workOrder(11L, 811L, 201L, "RELEASED");
+        workOrder.setSourceType("MATERIAL_REQUIREMENT");
+        workOrder.setSourceId(301L);
+        workOrder.setSourceNo("SO-100");
+        PrdSchedulePlan schedulePlan =
+            schedulePlan(9001L, "APS-9001", "PUBLISHED", TODAY, TODAY.plusDays(7));
+        PrdScheduleTask task = scheduleTask(501L, 9001L, 11L, 1, "1.250", TODAY);
+        when(schedulePlanMapper.selectById(9001L)).thenReturn(schedulePlan);
+        when(scheduleTaskMapper.selectList(any())).thenReturn(List.of(task));
+        when(workOrderMapper.selectList(argThat(wrapper ->
+            wrapper.getSqlSegment().contains("wo_id") && queryValues(wrapper).contains(11L))))
+            .thenReturn(List.of(workOrder));
+        when(productionPlanMapper.selectBatchIds(argThat(ids -> ids.contains(201L))))
+            .thenReturn(List.of());
+        when(salesOrderHeaderMapper.selectList(any())).thenReturn(List.of(salesOrder(100L, "SO-100")));
+        when(scheduleInputAssembler.assemble(any(PrdSchedulePlanBo.class), anyCollection()))
+            .thenReturn(scheduleInput(List.of(workOrder), false));
+        stubEmptyRelatedFacts();
+
+        DeliveryContextSnapshot snapshot = assembler.assemble(
+            new DecisionBusinessRef(DecisionBusinessType.SCHEDULE_PLAN, 9001L, null), 14,
+            actor("ai:decision:run", "prd:schedule:query"));
+
+        assertTrue(snapshot.salesOrders().isEmpty(), snapshot.salesOrders().toString());
+        assertEquals(List.of(), snapshot.currentSchedule().get("workOrderSalesOrderIds"));
+        assertEquals(List.of(), snapshot.currentSchedule().get("workOrderSalesOrders"));
+        verify(salesOrderHeaderMapper, never()).selectList(any());
+    }
+
+    @Test
     void workOrderRestoresSalesOrderThroughProductionPlanOrderLine() {
         SoSalesOrderHeader order = salesOrder(100L, "SO-100");
         SoSalesOrderLine line = salesOrderLine(101L, 100L, 501L);
@@ -579,6 +704,42 @@ class DeliveryContextAssemblerTest {
             "computeFreshnessHash", DecisionBusinessRef.class, DecisionActor.class);
 
         assertEquals("erp", resolver.findKey(method, assembler, DS.class));
+    }
+
+    @Test
+    void sameWorkshopUnreferencedWorkstationVersionDoesNotChangeHash() {
+        RichFixture fixture = stubRichSalesOrderFixture(
+            new AtomicBoolean(false), new AtomicReference<>(new BigDecimal("20")),
+            new AtomicReference<>(new BigDecimal("3")));
+        stubRoutingSourceFacts(new AtomicReference<>(7001L),
+            new AtomicReference<>(toDateTime(2026, 9, 23, 8, 0)));
+        AtomicReference<Long> unrelatedStatus = new AtomicReference<>(1L);
+        AtomicReference<Date> unrelatedUpdate =
+            new AtomicReference<>(toDateTime(2026, 9, 23, 9, 0));
+        when(workstationMapper.selectList(any())).thenAnswer(invocation -> {
+            BdWorkstation relevant = workstation(1100L, 20L);
+            relevant.setStatus(1L);
+            relevant.setUpdateTime(toDateTime(2026, 9, 23, 8, 30));
+            BdWorkstation unrelated = workstation(9999L, 20L);
+            unrelated.setStatus(unrelatedStatus.get());
+            unrelated.setUpdateTime(unrelatedUpdate.get());
+            return List.of(unrelated, relevant);
+        });
+
+        String first = assembler.computeFreshnessHash(fixture.ref(), fixture.actor());
+        unrelatedStatus.set(0L);
+        unrelatedUpdate.set(toDateTime(2026, 9, 23, 9, 1));
+        String second = assembler.computeFreshnessHash(fixture.ref(), fixture.actor());
+
+        assertEquals(first, second);
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Wrapper<BdWorkstation>> queries = ArgumentCaptor.forClass(Wrapper.class);
+        verify(workstationMapper, atLeastOnce()).selectList(queries.capture());
+        for (Wrapper<BdWorkstation> query : queries.getAllValues()) {
+            assertTrue(query.getSqlSegment().contains("workstation_id"), query.getSqlSegment());
+            assertFalse(query.getSqlSegment().contains("workshop_id"), query.getSqlSegment());
+            assertFalse(queryValues(query).contains(9999L), queryValues(query).toString());
+        }
     }
 
     @Test
@@ -1167,6 +1328,13 @@ class DeliveryContextAssemblerTest {
         });
     }
 
+    private BdWorkstation workstation(long workstationId, long workshopId) {
+        BdWorkstation workstation = new BdWorkstation();
+        workstation.setWorkstationId(workstationId);
+        workstation.setWorkshopId(workshopId);
+        return workstation;
+    }
+
     private PrdCapacityCalendar capacityCalendar(long id, String objectType, long objectId, String remaining) {
         PrdCapacityCalendar calendar = new PrdCapacityCalendar();
         calendar.setCalendarId(id);
@@ -1399,6 +1567,29 @@ class DeliveryContextAssemblerTest {
 
     private Collection<?> queryValues(Wrapper<?> wrapper) {
         return ((AbstractWrapper<?, ?, ?>) wrapper).getParamNameValuePairs().values();
+    }
+
+    private void assertHalfOpenWindow(Wrapper<?> wrapper, String column,
+                                      LocalDate startInclusive, LocalDate endExclusive) {
+        String sql = wrapper.getSqlSegment();
+        assertTrue(sql.contains(column + " >="), sql);
+        assertTrue(sql.contains(column + " <"), sql);
+        assertFalse(sql.contains(column + " <="), sql);
+        assertDateParameter(wrapper, startInclusive);
+        assertDateParameter(wrapper, endExclusive);
+    }
+
+    private void assertDateParameter(Wrapper<?> wrapper, LocalDate day) {
+        long expected = day.atStartOfDay(ZoneId.of("Asia/Shanghai")).toInstant().toEpochMilli();
+        assertTrue(queryValues(wrapper).stream()
+            .filter(Date.class::isInstance)
+            .map(Date.class::cast)
+            .anyMatch(value -> value.getTime() == expected), queryValues(wrapper).toString());
+    }
+
+    private Date atTime(LocalDate day, int hour, int minute, int second) {
+        return Date.from(day.atTime(hour, minute, second)
+            .atZone(ZoneId.of("Asia/Shanghai")).toInstant());
     }
 
     private LocalDate toLocalDate(Date date) {

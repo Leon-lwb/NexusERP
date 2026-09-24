@@ -532,6 +532,7 @@ public class DeliveryContextAssembler {
             }
         }
         LinkedHashSet<String> sourceNumbers = workOrders.stream()
+            .filter(workOrder -> !isMaterialRequirementSource(workOrder))
             .filter(workOrder -> !mapping.containsKey(workOrder.getWoId()))
             .map(PrdWorkOrder::getSourceNo)
             .filter(DeliveryContextAssembler::hasText)
@@ -556,7 +557,8 @@ public class DeliveryContextAssembler {
             }
             SoSalesOrderHeader order = isMaterialRequirementSource(workOrder)
                 || workOrder.getSourceId() == null ? null : orderById.get(workOrder.getSourceId());
-            if (order == null && hasText(workOrder.getSourceNo())) {
+            if (order == null && !isMaterialRequirementSource(workOrder)
+                && hasText(workOrder.getSourceNo())) {
                 order = orderByNumber.get(workOrder.getSourceNo());
             }
             if (order != null) {
@@ -730,8 +732,8 @@ public class DeliveryContextAssembler {
                 Wrappers.lambdaQuery(PrdMaterialRequirementDetail.class)
                     .in(PrdMaterialRequirementDetail::getRequirementId, batch)
                     .isNotNull(PrdMaterialRequirementDetail::getRequiredDate)
-                    .ge(PrdMaterialRequirementDetail::getRequiredDate, java.sql.Date.valueOf(startDate))
-                    .le(PrdMaterialRequirementDetail::getRequiredDate, java.sql.Date.valueOf(endDate))))) {
+                    .ge(PrdMaterialRequirementDetail::getRequiredDate, startOfDay(startDate))
+                    .lt(PrdMaterialRequirementDetail::getRequiredDate, startOfDay(endDate.plusDays(1)))))) {
                 if (detail.getDetailId() != null && requirementIds.contains(detail.getRequirementId())
                     && within(detail.getRequiredDate(), startDate, endDate)) {
                     details.put(detail.getDetailId(), detail);
@@ -856,8 +858,8 @@ public class DeliveryContextAssembler {
                     .in(PuPurchaseOrder::getOrderId, batch)
                     .in(PuPurchaseOrder::getStatus, OPEN_PURCHASE_ORDER_STATUSES)
                     .and(date -> date.isNull(PuPurchaseOrder::getExpectedArrivalDate)
-                        .or().le(PuPurchaseOrder::getExpectedArrivalDate,
-                            java.sql.Date.valueOf(horizonEnd)))))) {
+                        .or().lt(PuPurchaseOrder::getExpectedArrivalDate,
+                            startOfDay(horizonEnd.plusDays(1))))))) {
                 LocalDate expectedDate = toLocalDate(order.getExpectedArrivalDate());
                 if (order.getOrderId() != null && orderIds.contains(order.getOrderId())
                     && OPEN_PURCHASE_ORDER_STATUSES.contains(order.getStatus())
@@ -1077,7 +1079,7 @@ public class DeliveryContextAssembler {
             .sorted()
             .collect(Collectors.toCollection(LinkedHashSet::new));
 
-        List<BdWorkstation> workstations = loadSourceWorkstations(workstationIds, workshopIds);
+        List<BdWorkstation> workstations = loadSourceWorkstations(workstationIds);
         workstations.stream()
             .map(BdWorkstation::getWorkshopId)
             .filter(Objects::nonNull)
@@ -1091,8 +1093,8 @@ public class DeliveryContextAssembler {
             : safeList(capacityCalendarMapper.selectList(
                 Wrappers.lambdaQuery(PrdCapacityCalendar.class)
                     .eq(PrdCapacityCalendar::getStatus, "ACTIVE")
-                    .ge(PrdCapacityCalendar::getCalendarDate, java.sql.Date.valueOf(startDate))
-                    .le(PrdCapacityCalendar::getCalendarDate, java.sql.Date.valueOf(endDate))
+                    .ge(PrdCapacityCalendar::getCalendarDate, startOfDay(startDate))
+                    .lt(PrdCapacityCalendar::getCalendarDate, startOfDay(endDate.plusDays(1)))
                     .in(PrdCapacityCalendar::getObjectId, capacityObjectIds))).stream()
                 .filter(calendar -> isRelatedCapacity(
                     calendar, workshopIds, workstationIds, productionLineIds, startDate, endDate))
@@ -1101,8 +1103,8 @@ public class DeliveryContextAssembler {
 
         List<SchHoliday> holidays = safeList(holidayMapper.selectList(
             Wrappers.lambdaQuery(SchHoliday.class)
-                .ge(SchHoliday::getHolidayDate, java.sql.Date.valueOf(startDate))
-                .le(SchHoliday::getHolidayDate, java.sql.Date.valueOf(endDate)))).stream()
+                .ge(SchHoliday::getHolidayDate, startOfDay(startDate))
+                .lt(SchHoliday::getHolidayDate, startOfDay(endDate.plusDays(1))))).stream()
             .filter(holiday -> within(holiday.getHolidayDate(), startDate, endDate))
             .sorted(holidayComparator())
             .toList();
@@ -1122,8 +1124,8 @@ public class DeliveryContextAssembler {
             : safeList(employeeScheduleMapper.selectList(
                 Wrappers.lambdaQuery(SchEmployeeSchedule.class)
                     .in(SchEmployeeSchedule::getTeamId, relatedTeamIds)
-                    .ge(SchEmployeeSchedule::getScheduledDate, java.sql.Date.valueOf(startDate))
-                    .le(SchEmployeeSchedule::getScheduledDate, java.sql.Date.valueOf(endDate)))).stream()
+                    .ge(SchEmployeeSchedule::getScheduledDate, startOfDay(startDate))
+                    .lt(SchEmployeeSchedule::getScheduledDate, startOfDay(endDate.plusDays(1))))).stream()
                 .filter(schedule -> schedule.getScheduleId() != null)
                 .filter(schedule -> schedule.getTeamId() != null
                     && relatedTeamIds.contains(schedule.getTeamId()))
@@ -1154,8 +1156,8 @@ public class DeliveryContextAssembler {
                 Wrappers.lambdaQuery(SchLeaveApply.class)
                     .eq(SchLeaveApply::getApplyStatus, "approved")
                     .in(SchLeaveApply::getWorkerId, workerIds)
-                    .le(SchLeaveApply::getStartDate, java.sql.Date.valueOf(endDate))
-                    .ge(SchLeaveApply::getEndDate, java.sql.Date.valueOf(startDate)))).stream()
+                    .lt(SchLeaveApply::getStartDate, startOfDay(endDate.plusDays(1)))
+                    .ge(SchLeaveApply::getEndDate, startOfDay(startDate)))).stream()
                 .filter(leave -> workerIds.contains(leave.getWorkerId()))
                 .filter(leave -> "approved".equalsIgnoreCase(leave.getApplyStatus()))
                 .filter(leave -> overlaps(leave.getStartDate(), leave.getEndDate(), startDate, endDate))
@@ -1165,23 +1167,15 @@ public class DeliveryContextAssembler {
             calendars, holidays, schedules, shifts, teams, leaves, workstations);
     }
 
-    private List<BdWorkstation> loadSourceWorkstations(Set<Long> workstationIds, Set<Long> workshopIds) {
-        if (workstationIds.isEmpty() && workshopIds.isEmpty()) {
+    private List<BdWorkstation> loadSourceWorkstations(Set<Long> workstationIds) {
+        if (workstationIds.isEmpty()) {
             return List.of();
         }
-        var query = Wrappers.lambdaQuery(BdWorkstation.class);
-        if (!workstationIds.isEmpty() && !workshopIds.isEmpty()) {
-            query.and(nested -> nested.in(BdWorkstation::getWorkstationId, workstationIds)
-                .or().in(BdWorkstation::getWorkshopId, workshopIds));
-        } else if (!workstationIds.isEmpty()) {
-            query.in(BdWorkstation::getWorkstationId, workstationIds);
-        } else {
-            query.in(BdWorkstation::getWorkshopId, workshopIds);
-        }
-        return safeList(workstationMapper.selectList(query)).stream()
-            .filter(workstation -> workstation.getWorkstationId() != null)
-            .filter(workstation -> workstationIds.contains(workstation.getWorkstationId())
-                || workshopIds.contains(workstation.getWorkshopId()))
+        return safeList(workstationMapper.selectList(
+            Wrappers.lambdaQuery(BdWorkstation.class)
+                .in(BdWorkstation::getWorkstationId, workstationIds))).stream()
+            .filter(workstation -> workstation.getWorkstationId() != null
+                && workstationIds.contains(workstation.getWorkstationId()))
             .sorted(workstationComparator())
             .toList();
     }
@@ -1716,9 +1710,16 @@ public class DeliveryContextAssembler {
         return value == null ? null : value.toString();
     }
 
+    private static Date startOfDay(LocalDate value) {
+        return Date.from(value.atStartOfDay(BUSINESS_ZONE).toInstant());
+    }
+
     private static LocalDate toLocalDate(Date value) {
         if (value == null) {
             return null;
+        }
+        if (value instanceof java.sql.Date sqlDate) {
+            return sqlDate.toLocalDate();
         }
         return java.time.Instant.ofEpochMilli(value.getTime())
             .atZone(BUSINESS_ZONE).toLocalDate();

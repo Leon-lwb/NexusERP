@@ -346,25 +346,14 @@ public class PrdScheduleInputAssembler {
             .sorted()
             .forEach(workstationIds::add);
         List<BdWorkstation> scopedWorkstations = List.of();
-        if (!workstationIds.isEmpty() || !workshopIds.isEmpty()) {
-            var query = Wrappers.lambdaQuery(BdWorkstation.class);
-            if (!workstationIds.isEmpty() && !workshopIds.isEmpty()) {
-                query.and(resources -> resources
-                    .in(BdWorkstation::getWorkstationId, workstationIds)
-                    .or().in(BdWorkstation::getWorkshopId, workshopIds));
-            } else if (!workstationIds.isEmpty()) {
-                query.in(BdWorkstation::getWorkstationId, workstationIds);
-            } else {
-                query.in(BdWorkstation::getWorkshopId, workshopIds);
-            }
-            List<BdWorkstation> returned = workstationMapper.selectList(query);
+        if (!workstationIds.isEmpty()) {
+            List<BdWorkstation> returned = workstationMapper.selectList(
+                Wrappers.lambdaQuery(BdWorkstation.class)
+                    .in(BdWorkstation::getWorkstationId, workstationIds));
             if (returned != null) {
-                Set<Long> originalWorkshopIds = Set.copyOf(workshopIds);
-                Set<Long> originalWorkstationIds = Set.copyOf(workstationIds);
                 scopedWorkstations = returned.stream()
-                    .filter(workstation -> workstation.getWorkstationId() != null)
-                    .filter(workstation -> originalWorkstationIds.contains(workstation.getWorkstationId())
-                        || originalWorkshopIds.contains(workstation.getWorkshopId()))
+                    .filter(workstation -> workstation.getWorkstationId() != null
+                        && workstationIds.contains(workstation.getWorkstationId()))
                     .sorted(Comparator.comparing(BdWorkstation::getWorkstationId))
                     .toList();
                 scopedWorkstations.stream()
@@ -387,8 +376,8 @@ public class PrdScheduleInputAssembler {
         }
         var query = Wrappers.lambdaQuery(PrdCapacityCalendar.class)
             .eq(PrdCapacityCalendar::getStatus, "ACTIVE")
-            .ge(PrdCapacityCalendar::getCalendarDate, toDate(start))
-            .le(PrdCapacityCalendar::getCalendarDate, toDate(end));
+            .ge(PrdCapacityCalendar::getCalendarDate, startOfDay(start))
+            .lt(PrdCapacityCalendar::getCalendarDate, startOfDay(end.plusDays(1)));
         query.and(resources -> {
             boolean hasWorkshop = !scope.workshopIds().isEmpty();
             if (hasWorkshop) {
@@ -437,15 +426,20 @@ public class PrdScheduleInputAssembler {
     private Set<LocalDate> loadHolidays(LocalDate start, LocalDate end) {
         List<SchHoliday> holidays = schHolidayMapper.selectList(
             Wrappers.lambdaQuery(SchHoliday.class)
-                .ge(SchHoliday::getHolidayDate, toDate(start))
-                .le(SchHoliday::getHolidayDate, toDate(end)));
+                .ge(SchHoliday::getHolidayDate, startOfDay(start))
+                .lt(SchHoliday::getHolidayDate, startOfDay(end.plusDays(1))));
         Set<LocalDate> result = new HashSet<>();
         if (holidays == null) {
             return result;
         }
         for (SchHoliday holiday : holidays) {
-            if (holiday.getIsWorkingDay() == null || holiday.getIsWorkingDay() == 0) {
-                result.add(toLocalDate(holiday.getHolidayDate()));
+            if (holiday.getHolidayDate() == null) {
+                continue;
+            }
+            LocalDate day = toLocalDate(holiday.getHolidayDate());
+            if (!day.isBefore(start) && !day.isAfter(end)
+                && (holiday.getIsWorkingDay() == null || holiday.getIsWorkingDay() == 0)) {
+                result.add(day);
             }
         }
         return result;
@@ -477,8 +471,8 @@ public class PrdScheduleInputAssembler {
         List<SchEmployeeSchedule> schedules = employeeScheduleMapper.selectList(
             Wrappers.lambdaQuery(SchEmployeeSchedule.class)
                 .in(SchEmployeeSchedule::getTeamId, teamWorkshop.keySet())
-                .ge(SchEmployeeSchedule::getScheduledDate, toDate(start))
-                .le(SchEmployeeSchedule::getScheduledDate, toDate(end)));
+                .ge(SchEmployeeSchedule::getScheduledDate, startOfDay(start))
+                .lt(SchEmployeeSchedule::getScheduledDate, startOfDay(end.plusDays(1))));
         if (schedules == null || schedules.isEmpty()) {
             log.info("APS人力产能: {} ~ {} scoped 班组无排班数据, 沿用产能日历", start, end);
             return;
@@ -594,8 +588,8 @@ public class PrdScheduleInputAssembler {
             Wrappers.lambdaQuery(SchLeaveApply.class)
                 .eq(SchLeaveApply::getApplyStatus, "approved")
                 .in(SchLeaveApply::getWorkerId, workerIds)
-                .le(SchLeaveApply::getStartDate, toDate(end))
-                .ge(SchLeaveApply::getEndDate, toDate(start)));
+                .lt(SchLeaveApply::getStartDate, startOfDay(end.plusDays(1)))
+                .ge(SchLeaveApply::getEndDate, startOfDay(start)));
         if (leaves == null) {
             return keys;
         }
@@ -624,11 +618,14 @@ public class PrdScheduleInputAssembler {
     }
 
     private LocalDate toLocalDate(Date date) {
+        if (date instanceof java.sql.Date sqlDate) {
+            return sqlDate.toLocalDate();
+        }
         return java.time.Instant.ofEpochMilli(date.getTime())
             .atZone(BUSINESS_ZONE).toLocalDate();
     }
 
-    private Date toDate(LocalDate date) {
+    private Date startOfDay(LocalDate date) {
         return Date.from(date.atStartOfDay(BUSINESS_ZONE).toInstant());
     }
 }
