@@ -48,6 +48,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -593,6 +594,90 @@ class PuPurchaseRequisitionServiceImplTest {
         }
         verify(baseMapper, never()).update(isNull(), any(Wrapper.class));
         verify(baseMapper, never()).updateById(any(PuPurchaseRequisition.class));
+    }
+
+    @Test
+    void closeRejectsInFlightWorkflowWithoutChangingRequisition() {
+        PuPurchaseRequisition current = matchingExistingRequisition();
+        current.setStatus("APPROVING");
+        when(baseMapper.selectById(7001L)).thenReturn(current);
+
+        ServiceException error = assertThrows(ServiceException.class, () -> requisitionService.close(7001L));
+
+        assertTrue(error.getMessage().contains("流程"), error.getMessage());
+        assertTrue(error.getMessage().contains("撤回") || error.getMessage().contains("终止"), error.getMessage());
+        assertEquals("APPROVING", current.getStatus());
+        verify(baseMapper, never()).updateById(any(PuPurchaseRequisition.class));
+        verify(baseMapper, never()).update(isNull(), any(Wrapper.class));
+    }
+
+    @Test
+    void cancelRejectsInFlightWorkflowWithoutChangingRequisition() {
+        PuPurchaseRequisition current = matchingExistingRequisition();
+        current.setStatus("APPROVING");
+        when(baseMapper.selectById(7001L)).thenReturn(current);
+
+        ServiceException error = assertThrows(ServiceException.class, () -> requisitionService.cancel(7001L));
+
+        assertTrue(error.getMessage().contains("流程"), error.getMessage());
+        assertTrue(error.getMessage().contains("撤回") || error.getMessage().contains("终止"), error.getMessage());
+        assertEquals("APPROVING", current.getStatus());
+        verify(baseMapper, never()).updateById(any(PuPurchaseRequisition.class));
+        verify(baseMapper, never()).update(isNull(), any(Wrapper.class));
+    }
+
+    @Test
+    void closeAndCancelStillAcceptCreatedDraftAndApproved() {
+        AtomicReference<PuPurchaseRequisition> selected = new AtomicReference<>();
+        when(baseMapper.selectById(7001L)).thenAnswer(invocation -> selected.get());
+        when(baseMapper.updateById(any(PuPurchaseRequisition.class))).thenReturn(1);
+        for (String source : List.of("CREATED", "DRAFT", "APPROVED")) {
+            PuPurchaseRequisition closing = matchingExistingRequisition();
+            closing.setStatus(source);
+            selected.set(closing);
+            requisitionService.close(7001L);
+            assertEquals("CLOSED", closing.getStatus());
+
+            PuPurchaseRequisition cancelling = matchingExistingRequisition();
+            cancelling.setStatus(source);
+            selected.set(cancelling);
+            requisitionService.cancel(7001L);
+            assertEquals("CANCELLED", cancelling.getStatus());
+        }
+        verify(baseMapper, times(6)).updateById(any(PuPurchaseRequisition.class));
+    }
+
+    @Test
+    void flowReturnToDraftThenPermitsCancellationOrClosure() {
+        AtomicReference<PuPurchaseRequisition> selected = new AtomicReference<>();
+        when(baseMapper.selectById(7001L)).thenAnswer(invocation -> selected.get());
+        when(baseMapper.update(isNull(), any(Wrapper.class))).thenAnswer(invocation -> {
+            selected.get().setStatus("DRAFT");
+            selected.get().setVersion(5);
+            return 1;
+        });
+        when(baseMapper.updateById(any(PuPurchaseRequisition.class))).thenReturn(1);
+
+        for (String actStatus : List.of(ActStatus.revoke, ActStatus.stop)) {
+            PuPurchaseRequisition current = matchingExistingRequisition();
+            current.setStatus("APPROVING");
+            selected.set(current);
+            WfMyBusiness business = new WfMyBusiness();
+            business.setDataId("7001");
+            business.setActStatus(actStatus);
+
+            requisitionService.afterFlowHandle(business);
+            assertEquals("DRAFT", current.getStatus());
+            if (ActStatus.revoke.equals(actStatus)) {
+                requisitionService.cancel(7001L);
+                assertEquals("CANCELLED", current.getStatus());
+            } else {
+                requisitionService.close(7001L);
+                assertEquals("CLOSED", current.getStatus());
+            }
+        }
+        verify(baseMapper, times(2)).update(isNull(), any(Wrapper.class));
+        verify(baseMapper, times(2)).updateById(any(PuPurchaseRequisition.class));
     }
 
     @Test

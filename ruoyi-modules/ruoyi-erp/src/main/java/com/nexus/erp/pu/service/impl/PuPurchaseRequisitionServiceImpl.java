@@ -600,6 +600,9 @@ public class PuPurchaseRequisitionServiceImpl implements IPuPurchaseRequisitionS
     @Transactional(rollbackFor = Exception.class)
     public void close(Long requisitionId) {
         PuPurchaseRequisition requisition = ensureRequisition(requisitionId);
+        if (STATUS_APPROVING.equals(requisition.getStatus())) {
+            throw new ServiceException("采购申请正在审批中，请先通过流程撤回或终止再关闭");
+        }
         requisition.setStatus(STATUS_CLOSED);
         updateExistingOrThrow(requisition, "采购申请关闭时版本已变化");
     }
@@ -611,6 +614,9 @@ public class PuPurchaseRequisitionServiceImpl implements IPuPurchaseRequisitionS
     @Transactional(rollbackFor = Exception.class)
     public void cancel(Long requisitionId) {
         PuPurchaseRequisition requisition = ensureRequisition(requisitionId);
+        if (STATUS_APPROVING.equals(requisition.getStatus())) {
+            throw new ServiceException("采购申请正在审批中，请先通过流程撤回或终止再作废");
+        }
         if (STATUS_ORDERED.equals(requisition.getStatus())) {
             throw new ServiceException("已转单的采购申请不能作废");
         }
