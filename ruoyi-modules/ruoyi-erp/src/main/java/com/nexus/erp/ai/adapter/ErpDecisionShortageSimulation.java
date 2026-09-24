@@ -100,6 +100,11 @@ public class ErpDecisionShortageSimulation {
                 incompleteEvidence = true;
                 continue;
             }
+            if (stock.safety == null) {
+                warnings.add("MISSING_MATERIAL_MASTER:" + materialId);
+                incompleteEvidence = true;
+                continue;
+            }
             input.setStockQty(stock.available);
             input.setSafetyStock(stock.safety);
             List<PurchaseArrivalLine> lines = linesByMaterial.getOrDefault(materialId, List.of());
@@ -286,12 +291,16 @@ public class ErpDecisionShortageSimulation {
         Map<Long, StockTotal> totals = new HashMap<>();
         for (StockFact fact : stocks) {
             require(fact != null && positive(fact.materialId()) && fact.stockQty() != null
-                && fact.reservedQty() != null && fact.safetyStock() != null, "库存事实不完整");
+                && fact.reservedQty() != null, "库存事实不完整");
             require(fact.stockQty().signum() >= 0 && fact.reservedQty().signum() >= 0
-                && fact.safetyStock().signum() >= 0, "库存事实数量无效");
+                && (fact.safetyStock() == null || fact.safetyStock().signum() >= 0), "库存事实数量无效");
             StockTotal total = totals.computeIfAbsent(fact.materialId(), id -> new StockTotal(fact.safetyStock()));
-            require(total.safety.compareTo(fact.safetyStock()) == 0,
-                "物料 " + fact.materialId() + " 安全库存冲突");
+            if (total.safety == null || fact.safetyStock() == null) {
+                total.safety = null;
+            } else {
+                require(total.safety.compareTo(fact.safetyStock()) == 0,
+                    "物料 " + fact.materialId() + " 安全库存冲突");
+            }
             total.available = total.available.add(fact.stockQty().subtract(fact.reservedQty()));
         }
         return totals;
@@ -396,7 +405,7 @@ public class ErpDecisionShortageSimulation {
 
     private static final class StockTotal {
         private BigDecimal available = BigDecimal.ZERO;
-        private final BigDecimal safety;
+        private BigDecimal safety;
 
         private StockTotal(BigDecimal safety) {
             this.safety = safety;

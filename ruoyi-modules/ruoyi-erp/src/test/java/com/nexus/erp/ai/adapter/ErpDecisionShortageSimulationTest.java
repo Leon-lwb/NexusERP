@@ -582,6 +582,31 @@ class ErpDecisionShortageSimulationTest {
         assertEquals("snapshot:requirementAggregate:sha256-B:101",
             simulation.simulate(second, 2, null).items().get(0).evidenceKeys().get(0));
     }
+    @Test
+    void unknownSafetyStockIsIncompleteAndDoesNotHideKnownRiskInAnotherMaterial() {
+        DeliveryContextSnapshot missingOnly = snapshot(
+            List.of(requirement(101L, TODAY, "1", 11L)),
+            List.of(new StockFact(101L, BigDecimal.ZERO, BigDecimal.ZERO, null)),
+            List.of(arrival(101L, 5001L, TODAY, "2")), null);
+        ServiceException incomplete = assertThrows(ServiceException.class,
+            () -> simulation.simulate(missingOnly, 1, null));
+        assertTrue(incomplete.getMessage().contains("SHORTAGE_SIMULATION_INCOMPLETE"));
+
+        DeliveryContextSnapshot partial = snapshot(
+            List.of(requirement(101L, TODAY, "1", 11L),
+                requirement(102L, TODAY, "4", 22L)),
+            List.of(new StockFact(101L, BigDecimal.ZERO, BigDecimal.ZERO, null),
+                stock(102L, "0", "0", "0")),
+            List.of(arrival(101L, 5001L, TODAY, "2")), null);
+        ShortageSimulationResult result = simulation.simulate(partial, 1, null);
+        assertTrue(result.hasRisk());
+        assertEquals(List.of(102L), result.items().stream()
+            .map(ShortageSimulationResult.Item::materialId).toList());
+        assertEquals(new BigDecimal("4"), result.items().get(0).maxGap());
+        assertNull(result.totalGap());
+        assertNull(result.kpis());
+        assertTrue(result.warnings().contains("MISSING_MATERIAL_MASTER:101"));
+    }
     private static DeliveryContextSnapshot fixture() {
         return snapshot(List.of(requirement(101L, TODAY, "10", 11L)),
             List.of(stock(101L, "0", "0", "0")),

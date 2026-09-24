@@ -569,6 +569,7 @@ public class DeliveryContextAssembler {
                 mapping.put(workOrder.getWoId(), order.getSoId());
             }
         }
+        mapping.entrySet().removeIf(entry -> !orderById.containsKey(entry.getValue()));
         return new ResolvedSalesContext(
             List.copyOf(orderById.values()), lines, immutableLinkedMap(mapping));
     }
@@ -649,6 +650,7 @@ public class DeliveryContextAssembler {
         List<LocalDate> holidays = context.holidays().stream()
             .filter(date -> !date.isBefore(businessDate) && !date.isAfter(horizonEnd))
             .toList();
+        List<StockFact> stockFacts = buildStockFacts(materialIds, stocks, warnings);
         List<String> stableWarnings = warnings.stream()
             .filter(Objects::nonNull)
             .distinct()
@@ -657,7 +659,7 @@ public class DeliveryContextAssembler {
         return new SnapshotProjection(
             context.routingByMaterial(),
             buildRequirementFacts(requirementRows),
-            buildStockFacts(materialIds, stocks),
+            stockFacts,
             arrivals,
             Collections.unmodifiableMap(capacity),
             holidays,
@@ -1292,7 +1294,8 @@ public class DeliveryContextAssembler {
             .toList();
     }
 
-    private List<StockFact> buildStockFacts(LinkedHashSet<Long> materialIds, StockBundle stocks) {
+    private List<StockFact> buildStockFacts(LinkedHashSet<Long> materialIds, StockBundle stocks,
+                                            List<String> warnings) {
         Map<Long, BdMaterial> materialById = stocks.materials().stream()
             .collect(Collectors.toMap(BdMaterial::getMaterialId, material -> material, (left, right) -> left));
         Map<Long, BigDecimal> stockByMaterial = new TreeMap<>();
@@ -1308,11 +1311,12 @@ public class DeliveryContextAssembler {
         List<StockFact> facts = new ArrayList<>();
         for (Long materialId : materialIds) {
             BdMaterial material = materialById.get(materialId);
+            if (material == null) warnings.add("MISSING_MATERIAL_MASTER:" + materialId);
             facts.add(new StockFact(
                 materialId,
                 stockByMaterial.getOrDefault(materialId, BigDecimal.ZERO),
                 reservedByMaterial.getOrDefault(materialId, BigDecimal.ZERO),
-                material == null ? BigDecimal.ZERO : zero(material.getSafetyStock())));
+                material == null ? null : zero(material.getSafetyStock())));
         }
         return List.copyOf(facts);
     }

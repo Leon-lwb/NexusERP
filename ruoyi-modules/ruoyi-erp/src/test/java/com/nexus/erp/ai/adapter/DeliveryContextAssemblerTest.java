@@ -35,6 +35,7 @@ import com.nexus.erp.prd.mapper.PrdSchedulePlanMapper;
 import com.nexus.erp.prd.mapper.PrdScheduleTaskMapper;
 import com.nexus.erp.prd.mapper.PrdWorkOrderMapper;
 import com.nexus.erp.prd.schedule.PrdScheduleInputAssembler;
+import com.nexus.erp.prd.schedule.PrdShortageScenarioService;
 import com.nexus.erp.prd.schedule.ScheduleModel.ScheduleInput;
 import com.nexus.erp.prd.schedule.ScheduleModel.StepInfo;
 import com.nexus.erp.prd.schedule.ScheduleModel.Strategy;
@@ -1398,6 +1399,106 @@ class DeliveryContextAssemblerTest {
             snapshot.workOrderSalesLinks());
     }
 
+    @Test
+    void workOrderWithoutConfirmedSalesHeaderDoesNotExposeLinkedSalesOrderOrImpactCount() {
+        PrdWorkOrder wo = stubLinkedWorkOrderWithoutSchedule();
+        when(workOrderMapper.selectById(11L)).thenReturn(wo);
+        when(salesOrderHeaderMapper.selectById(100L)).thenReturn(null);
+        when(requirementMapper.selectList(any())).thenReturn(List.of(requirement(301L, 201L)));
+        when(requirementDetailMapper.selectList(any())).thenReturn(List.of(
+            requirementDetail(901L, 301L, 501L, "1", "0", TODAY)));
+        when(materialMapper.selectBatchIds(anyCollection())).thenReturn(List.of(material(501L, "0")));
+        DecisionBusinessRef ref = new DecisionBusinessRef(DecisionBusinessType.WORK_ORDER, 11L, null);
+        DecisionActor actor = actor("ai:decision:run", "prd:work:query");
+
+        DeliveryContextSnapshot snapshot = assembler.assemble(ref, 14, actor);
+        assertTrue(snapshot.salesOrders().isEmpty());
+        assertTrue(snapshot.workOrderSalesLinks().isEmpty(), "未验证的销售订单头不可进入 typed 关联");
+        var result = new ErpDecisionShortageSimulation(new PrdShortageScenarioService())
+            .simulate(snapshot, 14, null);
+        assertTrue(result.hasRisk());
+        assertEquals(List.of(), result.items().get(0).affectedSalesOrderIds());
+        assertEquals(0, result.kpis().impactedOrderCount());
+
+        when(salesOrderHeaderMapper.selectById(100L)).thenReturn(salesOrder(100L, "SO-100"));
+        assertEquals(List.of(new DeliveryContextSnapshot.WorkOrderSalesLinkFact(11L, 100L)),
+            assembler.assemble(ref, 14, actor).workOrderSalesLinks());
+    }
+
+    @Test
+    void schedulePlanWithMismatchedSalesHeaderDoesNotPublishUnconfirmedTypedLink() {
+        PrdWorkOrder wo = stubLinkedWorkOrderWithoutSchedule();
+        when(salesOrderHeaderMapper.selectById(100L)).thenReturn(salesOrder(999L, "SO-999"));
+        when(schedulePlanMapper.selectById(9001L))
+            .thenReturn(schedulePlan(9001L, "APS-9001", "PUBLISHED", TODAY, TODAY.plusDays(7)));
+        when(scheduleTaskMapper.selectList(any()))
+            .thenReturn(List.of(scheduleTask(501L, 9001L, 11L, 1, "1.250", TODAY)));
+        when(workOrderMapper.selectList(any())).thenReturn(List.of(wo));
+
+        DeliveryContextSnapshot snapshot = assembler.assemble(
+            new DecisionBusinessRef(DecisionBusinessType.SCHEDULE_PLAN, 9001L, null), 14,
+            actor("ai:decision:run", "prd:schedule:query"));
+
+        assertTrue(snapshot.salesOrders().isEmpty());
+        assertTrue(snapshot.workOrderSalesLinks().isEmpty());
+        assertEquals(List.of(), snapshot.currentSchedule().get("workOrderSalesOrderIds"));
+    }
+    @Test
+    void missingMaterialMasterLeavesSafetyStockUnknownDespitePurchaseArrival() {
+        PrdWorkOrder wo = stubLinkedWorkOrderWithoutSchedule();
+        stubSingleMaterialDemandAndArrival(wo);
+
+        DeliveryContextSnapshot snapshot = assembler.assemble(
+            new DecisionBusinessRef(DecisionBusinessType.WORK_ORDER, 11L, null), 14,
+            actor("ai:decision:run", "prd:work:query"));
+
+        DeliveryContextSnapshot.StockFact stock = snapshot.stocks().stream()
+            .filter(fact -> fact.materialId().equals(501L)).findFirst().orElseThrow();
+        assertEquals(BigDecimal.ZERO, stock.stockQty(), "无库存行但物料有作用域，显示库存 0");
+        assertNull(stock.safetyStock(), "无 BdMaterial 时不得伪装成安全库存 0");
+        assertTrue(snapshot.warnings().contains("MISSING_MATERIAL_MASTER:501"));
+        assertEquals(new BigDecimal("2"), snapshot.arrivals().stream()
+            .filter(fact -> fact.materialId().equals(501L)).findFirst().orElseThrow().remainingQty());
+        ServiceException failure = assertThrows(ServiceException.class,
+            () -> new ErpDecisionShortageSimulation(new PrdShortageScenarioService())
+                .simulate(snapshot, 14, null));
+        assertTrue(failure.getMessage().contains("SHORTAGE_SIMULATION_INCOMPLETE"));
+    }
+
+    @Test
+    void knownMaterialWithNullSafetySettingDefaultsToZeroWithNoInventoryRows() {
+        PrdWorkOrder wo = stubLinkedWorkOrderWithoutSchedule();
+        stubSingleMaterialDemandAndArrival(wo);
+        BdMaterial known = new BdMaterial();
+        known.setMaterialId(501L);
+        known.setSafetyStock(null);
+        when(materialMapper.selectBatchIds(anyCollection())).thenReturn(List.of(known));
+
+        DeliveryContextSnapshot snapshot = assembler.assemble(
+            new DecisionBusinessRef(DecisionBusinessType.WORK_ORDER, 11L, null), 14,
+            actor("ai:decision:run", "prd:work:query"));
+
+        DeliveryContextSnapshot.StockFact stock = snapshot.stocks().stream()
+            .filter(fact -> fact.materialId().equals(501L)).findFirst().orElseThrow();
+        assertEquals(BigDecimal.ZERO, stock.stockQty());
+        assertEquals(BigDecimal.ZERO, stock.safetyStock());
+        assertFalse(snapshot.warnings().contains("MISSING_MATERIAL_MASTER:501"));
+        var result = new ErpDecisionShortageSimulation(new PrdShortageScenarioService())
+            .simulate(snapshot, 14, null);
+        assertFalse(result.hasRisk());
+        assertEquals(BigDecimal.ZERO, result.totalGap());
+    }
+
+    private void stubSingleMaterialDemandAndArrival(PrdWorkOrder workOrder) {
+        when(workOrderMapper.selectById(11L)).thenReturn(workOrder);
+        when(requirementMapper.selectList(any())).thenReturn(List.of(requirement(301L, 201L)));
+        when(requirementDetailMapper.selectList(any())).thenReturn(List.of(
+            requirementDetail(901L, 301L, 501L, "1", "0", TODAY)));
+        when(purchaseOrderLineMapper.selectList(any())).thenReturn(List.of(
+            purchaseLine(2101L, 2001L, 501L, "2", "0")));
+        when(purchaseOrderMapper.selectList(any())).thenReturn(List.of(
+            purchaseOrder(2001L, 301L, "APPROVED", TODAY)));
+    }
     private PrdWorkOrder stubLinkedWorkOrderWithoutSchedule() {
         SoSalesOrderLine line = salesOrderLine(101L, 100L, 501L);
         PrdProductionPlan plan = productionPlan(201L, 101L, 301L);
