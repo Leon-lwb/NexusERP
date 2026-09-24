@@ -187,27 +187,21 @@ public class TenantHelper {
     }
 
     /**
-     * 仅清理线程级动态租户(不动全局 Redis 键)
-     * <p>供 {@link #dynamic(String, Runnable)}/{@link #dynamic(String, Supplier)} 的 finally 使用:
-     * dynamic 只设置了线程级 TEMP_DYNAMIC_TENANT, 若复用 clearDynamic() 会把用户此前
-     * setDynamic(tenantId, true) 写入的全局动态租户 Redis 键一并删除, 导致后续请求租户上下文丢失(C3)。</p>
-     */
-    private static void clearTempDynamic() {
-        TEMP_DYNAMIC_TENANT.remove();
-    }
-
-    /**
      * 在动态租户中执行
      *
      * @param handle 处理执行方法
      */
     public static void dynamic(String tenantId, Runnable handle) {
+        String previous = TEMP_DYNAMIC_TENANT.get();
         setDynamic(tenantId);
         try {
             handle.run();
         } finally {
-            // 只清线程级租户, 不清全局键(见 clearTempDynamic 注释)
-            clearTempDynamic();
+            if (previous == null) {
+                TEMP_DYNAMIC_TENANT.remove();
+            } else {
+                TEMP_DYNAMIC_TENANT.set(previous);
+            }
         }
     }
 
@@ -217,12 +211,16 @@ public class TenantHelper {
      * @param handle 处理执行方法
      */
     public static <T> T dynamic(String tenantId, Supplier<T> handle) {
+        String previous = TEMP_DYNAMIC_TENANT.get();
         setDynamic(tenantId);
         try {
             return handle.get();
         } finally {
-            // 只清线程级租户, 不清全局键(见 clearTempDynamic 注释)
-            clearTempDynamic();
+            if (previous == null) {
+                TEMP_DYNAMIC_TENANT.remove();
+            } else {
+                TEMP_DYNAMIC_TENANT.set(previous);
+            }
         }
     }
 
