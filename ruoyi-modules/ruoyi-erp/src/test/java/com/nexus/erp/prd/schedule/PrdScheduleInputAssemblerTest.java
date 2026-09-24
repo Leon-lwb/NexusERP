@@ -49,6 +49,7 @@ import java.util.Date;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -198,6 +199,38 @@ class PrdScheduleInputAssemblerTest {
     }
 
     @Test
+    void scopedAssemblyIgnoresWorkshopFilterWhenIdsAreExplicit() {
+        PrdSchedulePlanBo bo = scheduleBo(14, "EDD");
+        bo.setWorkshopId(10L);
+        PrdWorkOrder selected = workOrder(1L, 100L, "CREATED");
+        selected.setWorkshopId(20L);
+        selected.setWorkshopName("二车间");
+        when(workOrderMapper.selectList(any())).thenReturn(List.of(selected));
+        stubRouting(100L);
+        stubEmptyCapacityInputs();
+
+        ScheduleInput input = assembler.assemble(bo, List.of(1L));
+
+        assertEquals(List.of(1L), input.getWorkOrders().stream()
+            .map(ScheduleModel.WoInfo::getWoId)
+            .toList());
+        assertEquals(20L, input.getWorkOrders().get(0).getWorkshopId());
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Wrapper<PrdWorkOrder>> queryCaptor =
+            ArgumentCaptor.forClass(Wrapper.class);
+        verify(workOrderMapper).selectList(queryCaptor.capture());
+        String sql = queryCaptor.getValue().getSqlSegment();
+        assertTrue(sql.contains("wo_id"), sql);
+        assertFalse(sql.contains("workshop_id"), sql);
+        assertFalse(sql.contains("wo_status"), sql);
+        Collection<?> queryValues = queryValues(queryCaptor.getValue());
+        assertEquals(1, queryValues.size());
+        assertTrue(queryValues.contains(1L), queryValues.toString());
+        assertFalse(queryValues.contains(10L), queryValues.toString());
+    }
+
+    @Test
     void scopedAssemblyRejectsNullOrEmptyIdsWithoutFallingBackToAllWorkOrders() {
         ServiceException nullIds = assertThrows(ServiceException.class,
             () -> assembler.assemble(scheduleBo(14, "EDD"), null));
@@ -219,6 +252,21 @@ class PrdScheduleInputAssemblerTest {
         assertTrue(error.getMessage().contains("2"), error.getMessage());
         verify(workOrderMapper, times(1)).selectList(any());
         verifyNoInteractions(routingService);
+    }
+
+    @Test
+    void scopedAssemblyRejectsDuplicateMapperRowsBeforeLoadingDependencies() {
+        PrdWorkOrder first = workOrder(1L, 100L, "CREATED");
+        PrdWorkOrder duplicate = workOrder(1L, 100L, "CREATED");
+        when(workOrderMapper.selectList(any())).thenReturn(List.of(first, duplicate));
+
+        ServiceException error = assertThrows(ServiceException.class,
+            () -> assembler.assemble(scheduleBo(14, "EDD"), List.of(1L)));
+
+        assertTrue(error.getMessage().contains("重复"), error.getMessage());
+        verify(workOrderMapper, times(1)).selectList(any());
+        verifyNoInteractions(routingService, routingStepMapper, capacityCalendarMapper, holidayMapper,
+            employeeScheduleMapper, shiftMapper, teamMapper, leaveApplyMapper, workstationMapper);
     }
 
     @Test

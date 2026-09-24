@@ -100,7 +100,7 @@ public class PrdScheduleInputAssembler {
         List<PrdWorkOrder> selected = workOrderMapper.selectList(
             Wrappers.lambdaQuery(PrdWorkOrder.class)
                 .in(PrdWorkOrder::getWoId, requestedIds));
-        List<PrdWorkOrder> ordered = validateAndOrderScopedWorkOrders(bo, requestedIds, selected);
+        List<PrdWorkOrder> ordered = validateAndOrderScopedWorkOrders(requestedIds, selected);
         return assemble(bo, strategy, ordered);
     }
 
@@ -179,8 +179,7 @@ public class PrdScheduleInputAssembler {
         return requestedIds;
     }
 
-    private List<PrdWorkOrder> validateAndOrderScopedWorkOrders(PrdSchedulePlanBo bo,
-                                                                 LinkedHashSet<Long> requestedIds,
+    private List<PrdWorkOrder> validateAndOrderScopedWorkOrders(LinkedHashSet<Long> requestedIds,
                                                                  List<PrdWorkOrder> selected) {
         Map<Long, PrdWorkOrder> byId = new LinkedHashMap<>();
         Set<Long> duplicateIds = new LinkedHashSet<>();
@@ -221,17 +220,6 @@ public class PrdScheduleInputAssembler {
         if (!unschedulable.isEmpty()) {
             throw new ServiceException(
                 "指定工单不可排产(仅支持 CREATED/APPROVED/RELEASED/IN_PROGRESS): {}", unschedulable);
-        }
-
-        if (bo.getWorkshopId() != null) {
-            List<Long> otherWorkshopIds = requestedIds.stream()
-                .map(byId::get)
-                .filter(wo -> !Objects.equals(bo.getWorkshopId(), wo.getWorkshopId()))
-                .map(PrdWorkOrder::getWoId)
-                .toList();
-            if (!otherWorkshopIds.isEmpty()) {
-                throw new ServiceException("指定工单不属于车间 {}: {}", bo.getWorkshopId(), otherWorkshopIds);
-            }
         }
 
         return requestedIds.stream().map(byId::get).toList();
