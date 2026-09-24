@@ -134,14 +134,11 @@ public class PuPurchaseRequisitionServiceImpl implements IPuPurchaseRequisitionS
      * 新增采购申请
      * <p>
      * 自动生成申请单号（如为空）、默认设为草稿状态、默认申请日期为当天，同时保存明细行。
-     * 如果 BO 中已存在 ID，则自动转为更新操作，防止前端误调用导致重复插入。
+     * BO 中存在 ID 时按新建契约拒绝，已有单据必须显式调用更新入口。
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(PuPurchaseRequisitionBo bo) {
-        if (bo != null && bo.getRequisitionId() != null) {
-            return updateByBo(bo);
-        }
         return createDraftInternal(bo);
     }
 

@@ -143,6 +143,19 @@ class PuPurchaseRequisitionServiceImplTest {
     }
 
     @Test
+    void insertByBoRejectsExistingIdWithoutPersistence() {
+        PuPurchaseRequisitionBo bo = purchaseBo();
+        bo.setRequisitionId(9L);
+
+        ServiceException exception = assertThrows(ServiceException.class,
+            () -> requisitionService.insertByBo(bo));
+
+        assertTrue(exception.getMessage().contains("新建"), exception.getMessage());
+        assertTrue(exception.getMessage().contains("ID"), exception.getMessage());
+        verifyNoInteractions(baseMapper, lineMapper, autoCodeUtil);
+    }
+
+    @Test
     void createDraftRejectsInvalidInputBeforeWriting() {
         PuPurchaseRequisitionBo withId = purchaseBo();
         withId.setRequisitionId(9L);
