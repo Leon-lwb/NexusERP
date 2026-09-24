@@ -10,13 +10,21 @@ import com.nexus.common.ai.decision.dto.DeliveryContextSnapshot;
 import com.nexus.common.ai.decision.enums.DecisionBusinessType;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.erp.bd.domain.BdMaterial;
+import com.nexus.erp.bd.domain.BdRouting;
+import com.nexus.erp.bd.domain.BdRoutingStep;
+import com.nexus.erp.bd.domain.BdWorkstation;
 import com.nexus.erp.bd.mapper.BdMaterialMapper;
+import com.nexus.erp.bd.mapper.BdRoutingMapper;
+import com.nexus.erp.bd.mapper.BdRoutingStepMapper;
+import com.nexus.erp.bd.mapper.BdWorkstationMapper;
+import com.nexus.erp.prd.domain.PrdCapacityCalendar;
 import com.nexus.erp.prd.domain.PrdMaterialRequirement;
 import com.nexus.erp.prd.domain.PrdMaterialRequirementDetail;
 import com.nexus.erp.prd.domain.PrdSchedulePlan;
 import com.nexus.erp.prd.domain.PrdScheduleTask;
 import com.nexus.erp.prd.domain.PrdWorkOrder;
 import com.nexus.erp.prd.domain.bo.PrdSchedulePlanBo;
+import com.nexus.erp.prd.mapper.PrdCapacityCalendarMapper;
 import com.nexus.erp.prd.mapper.PrdMaterialRequirementDetailMapper;
 import com.nexus.erp.prd.mapper.PrdMaterialRequirementMapper;
 import com.nexus.erp.prd.mapper.PrdSchedulePlanMapper;
@@ -37,6 +45,16 @@ import com.nexus.erp.so.domain.SoSalesOrderHeader;
 import com.nexus.erp.so.domain.SoSalesOrderLine;
 import com.nexus.erp.so.mapper.SoSalesOrderHeaderMapper;
 import com.nexus.erp.so.mapper.SoSalesOrderLineMapper;
+import com.nexus.erp.sch.domain.SchEmployeeSchedule;
+import com.nexus.erp.sch.domain.SchHoliday;
+import com.nexus.erp.sch.domain.SchLeaveApply;
+import com.nexus.erp.sch.domain.SchShift;
+import com.nexus.erp.sch.domain.SchTeam;
+import com.nexus.erp.sch.mapper.SchEmployeeScheduleMapper;
+import com.nexus.erp.sch.mapper.SchHolidayMapper;
+import com.nexus.erp.sch.mapper.SchLeaveApplyMapper;
+import com.nexus.erp.sch.mapper.SchShiftMapper;
+import com.nexus.erp.sch.mapper.SchTeamMapper;
 import com.nexus.erp.wm.domain.WmMaterialStock;
 import com.nexus.erp.wm.mapper.WmMaterialStockMapper;
 import org.apache.ibatis.builder.MapperBuilderAssistant;
@@ -65,6 +83,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -76,8 +95,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
@@ -110,6 +132,24 @@ class DeliveryContextAssemblerTest {
     @Mock
     private BdMaterialMapper materialMapper;
     @Mock
+    private BdRoutingMapper routingMapper;
+    @Mock
+    private BdRoutingStepMapper routingStepMapper;
+    @Mock
+    private PrdCapacityCalendarMapper capacityCalendarMapper;
+    @Mock
+    private SchHolidayMapper holidayMapper;
+    @Mock
+    private SchEmployeeScheduleMapper employeeScheduleMapper;
+    @Mock
+    private SchShiftMapper shiftMapper;
+    @Mock
+    private SchTeamMapper teamMapper;
+    @Mock
+    private SchLeaveApplyMapper leaveApplyMapper;
+    @Mock
+    private BdWorkstationMapper workstationMapper;
+    @Mock
     private PuPurchaseOrderMapper purchaseOrderMapper;
     @Mock
     private PuPurchaseOrderLineMapper purchaseOrderLineMapper;
@@ -129,9 +169,229 @@ class DeliveryContextAssemblerTest {
             SoSalesOrderHeader.class, SoSalesOrderLine.class, PrdWorkOrder.class,
             PrdSchedulePlan.class, PrdScheduleTask.class, PrdMaterialRequirement.class,
             PrdMaterialRequirementDetail.class, WmMaterialStock.class, BdMaterial.class,
-            PuPurchaseOrder.class, PuPurchaseOrderLine.class, PuVendorEvaluation.class)) {
+            PuPurchaseOrder.class, PuPurchaseOrderLine.class, PuVendorEvaluation.class,
+            BdRouting.class, BdRoutingStep.class, PrdCapacityCalendar.class, SchHoliday.class,
+            SchEmployeeSchedule.class, SchShift.class, SchTeam.class, SchLeaveApply.class,
+            BdWorkstation.class)) {
             TableInfoHelper.initTableInfo(assistant, entity);
         }
+    }
+
+    @Test
+    void capacitySourceUpdateChangesHashEvenWhenDerivedCapacityIsUnchanged() {
+        RichFixture fixture = stubRichSalesOrderFixture(
+            new AtomicBoolean(false), new AtomicReference<>(new BigDecimal("20")),
+            new AtomicReference<>(new BigDecimal("3")));
+        stubRoutingSourceFacts(new AtomicReference<>(7001L),
+            new AtomicReference<>(toDateTime(2026, 9, 23, 8, 0)));
+        AtomicReference<Date> calendarUpdate =
+            new AtomicReference<>(toDateTime(2026, 9, 23, 9, 0));
+        when(capacityCalendarMapper.selectList(any())).thenAnswer(invocation -> {
+            PrdCapacityCalendar calendar = capacityCalendar(6001L, "WORKSTATION", 1100L, "8");
+            calendar.setUpdateTime(calendarUpdate.get());
+            return List.of(calendar);
+        });
+
+        String first = assembler.computeFreshnessHash(fixture.ref(), fixture.actor());
+        calendarUpdate.set(toDateTime(2026, 9, 23, 9, 1));
+        String changed = assembler.computeFreshnessHash(fixture.ref(), fixture.actor());
+
+        assertNotEquals(first, changed);
+    }
+
+    @Test
+    void routingSourceVersionChangesHashAndSnapshotUsesRealRoutingId() {
+        RichFixture fixture = stubRichSalesOrderFixture(
+            new AtomicBoolean(false), new AtomicReference<>(new BigDecimal("20")),
+            new AtomicReference<>(new BigDecimal("3")));
+        AtomicReference<Long> routingId = new AtomicReference<>(7001L);
+        AtomicReference<Date> routingUpdate =
+            new AtomicReference<>(toDateTime(2026, 9, 23, 8, 0));
+        stubRoutingSourceFacts(routingId, routingUpdate);
+
+        DeliveryContextSnapshot snapshot = assembler.assemble(fixture.ref(), 14, fixture.actor());
+        assertEquals(7001L, snapshot.routingByMaterial().get(811L).get(0).routingId());
+        String baseline = snapshot.snapshotHash();
+
+        routingId.set(7002L);
+        String idChanged = assembler.computeFreshnessHash(fixture.ref(), fixture.actor());
+        assertNotEquals(baseline, idChanged);
+
+        routingId.set(7001L);
+        routingUpdate.set(toDateTime(2026, 9, 23, 8, 1));
+        String versionChanged = assembler.computeFreshnessHash(fixture.ref(), fixture.actor());
+        assertNotEquals(baseline, versionChanged);
+    }
+
+    @Test
+    void currentScheduleResourceStartTimeAndPlanStrategyChangeHash() {
+        RichFixture fixture = stubRichSalesOrderFixture(
+            new AtomicBoolean(false), new AtomicReference<>(new BigDecimal("20")),
+            new AtomicReference<>(new BigDecimal("3")));
+        AtomicReference<Long> resourceId = new AtomicReference<>(6012L);
+        AtomicReference<LocalDate> startDay = new AtomicReference<>(TODAY.plusDays(1));
+        AtomicReference<String> strategy = new AtomicReference<>("EDD");
+        when(schedulePlanMapper.selectBatchIds(anyCollection())).thenAnswer(invocation -> {
+            PrdSchedulePlan plan = schedulePlan(5002L, "APS-5002", "PUBLISHED", TODAY, TODAY.plusDays(5));
+            plan.setStrategy(strategy.get());
+            plan.setTotalHours(new BigDecimal("16.500"));
+            plan.setUpdateTime(toDateTime(2026, 9, 23, 8, 0));
+            return List.of(plan);
+        });
+        when(scheduleTaskMapper.selectList(any())).thenAnswer(invocation -> {
+            PrdScheduleTask task = scheduleTask(4002L, 5002L, 12L, 1, "2.000", startDay.get());
+            task.setResourceId(resourceId.get());
+            task.setUpdateTime(toDateTime(2026, 9, 23, 9, 0));
+            return List.of(task);
+        });
+
+        String baseline = assembler.computeFreshnessHash(fixture.ref(), fixture.actor());
+        resourceId.set(6013L);
+        assertNotEquals(baseline, assembler.computeFreshnessHash(fixture.ref(), fixture.actor()));
+
+        resourceId.set(6012L);
+        startDay.set(TODAY.plusDays(2));
+        assertNotEquals(baseline, assembler.computeFreshnessHash(fixture.ref(), fixture.actor()));
+
+        startDay.set(TODAY.plusDays(1));
+        strategy.set("CR");
+        assertNotEquals(baseline, assembler.computeFreshnessHash(fixture.ref(), fixture.actor()));
+    }
+
+    @Test
+    void salesOrderWithoutWorkOrdersReturnsEmptySnapshotAndStableHash() {
+        SoSalesOrderHeader order = salesOrder(100L, "SO-100");
+        when(salesOrderHeaderMapper.selectById(100L)).thenReturn(order);
+        when(salesOrderLineMapper.selectList(any())).thenReturn(List.of());
+        when(workOrderMapper.selectList(any())).thenReturn(List.of());
+        DecisionBusinessRef ref = new DecisionBusinessRef(DecisionBusinessType.SALES_ORDER, 100L, null);
+        DecisionActor actor = actor("ai:decision:run", "so:orderheader:query");
+
+        assertTrue(assembler.exists(ref, actor));
+        DeliveryContextSnapshot snapshot = assembler.assemble(ref, 14, actor);
+        String independentlyRecomputed = assembler.computeFreshnessHash(ref, actor);
+
+        assertEquals(1, snapshot.salesOrders().size());
+        assertTrue(snapshot.workOrders().isEmpty());
+        assertTrue(snapshot.routingByMaterial().isEmpty());
+        assertTrue(snapshot.capacityByDate().isEmpty());
+        assertTrue(snapshot.holidays().isEmpty());
+        assertTrue(snapshot.currentSchedule().isEmpty());
+        assertTrue(snapshot.warnings().stream().anyMatch(text -> text.contains("NO_WORK_ORDER")),
+            snapshot.warnings().toString());
+        assertEquals(snapshot.snapshotHash(), independentlyRecomputed);
+        verify(scheduleInputAssembler, never()).assemble(any(PrdSchedulePlanBo.class), anyCollection());
+        verify(scheduleInputAssembler, never()).assemble(any(PrdSchedulePlanBo.class));
+    }
+
+    @Test
+    void shortageHorizonWithoutWorkOrdersReturnsEmptySnapshotAndStableHash() {
+        when(workOrderMapper.selectList(any())).thenReturn(List.of());
+        DecisionBusinessRef ref = new DecisionBusinessRef(DecisionBusinessType.SHORTAGE_HORIZON, null, null);
+        DecisionActor actor = actor("ai:decision:run", "prd:shortage:query");
+
+        assertTrue(assembler.exists(ref, actor));
+        DeliveryContextSnapshot snapshot = assembler.assemble(ref, 30, actor);
+        String independentlyRecomputed = assembler.computeFreshnessHash(ref, actor);
+
+        assertTrue(snapshot.salesOrders().isEmpty());
+        assertTrue(snapshot.workOrders().isEmpty());
+        assertTrue(snapshot.routingByMaterial().isEmpty());
+        assertTrue(snapshot.requirements().isEmpty());
+        assertTrue(snapshot.stocks().isEmpty());
+        assertTrue(snapshot.arrivals().isEmpty());
+        assertTrue(snapshot.capacityByDate().isEmpty());
+        assertTrue(snapshot.holidays().isEmpty());
+        assertTrue(snapshot.currentSchedule().isEmpty());
+        assertTrue(snapshot.warnings().stream().anyMatch(text -> text.contains("NO_WORK_ORDER")),
+            snapshot.warnings().toString());
+        assertEquals(snapshot.snapshotHash(), independentlyRecomputed);
+        verify(scheduleInputAssembler, never()).assemble(any(PrdSchedulePlanBo.class), anyCollection());
+        verify(scheduleInputAssembler, never()).assemble(any(PrdSchedulePlanBo.class));
+    }
+
+    @Test
+    void rejectsMismatchedSalesOrderRootIdBeforeLoadingDownstreamFacts() {
+        SoSalesOrderHeader wrong = salesOrder(999L, "SO-999");
+        when(salesOrderHeaderMapper.selectById(100L)).thenReturn(wrong);
+        DecisionBusinessRef ref = new DecisionBusinessRef(DecisionBusinessType.SALES_ORDER, 100L, null);
+        DecisionActor actor = actor("ai:decision:run", "so:orderheader:query");
+
+        assertFalse(assembler.exists(ref, actor));
+        ServiceException assembleError = assertThrows(ServiceException.class,
+            () -> assembler.assemble(ref, 14, actor));
+        ServiceException hashError = assertThrows(ServiceException.class,
+            () -> assembler.computeFreshnessHash(ref, actor));
+
+        assertTrue(assembleError.getMessage().contains("不存在或不可访问"), assembleError.getMessage());
+        assertTrue(hashError.getMessage().contains("不存在或不可访问"), hashError.getMessage());
+        verifyNoInteractions(salesOrderLineMapper, workOrderMapper, scheduleInputAssembler);
+    }
+
+    @Test
+    void rejectsMismatchedWorkOrderRootIdBeforeLoadingDownstreamFacts() {
+        PrdWorkOrder wrong = workOrder(999L, 811L, 701L, "RELEASED");
+        when(workOrderMapper.selectById(11L)).thenReturn(wrong);
+        DecisionBusinessRef ref = new DecisionBusinessRef(DecisionBusinessType.WORK_ORDER, 11L, null);
+        DecisionActor actor = actor("ai:decision:run", "prd:work:query");
+
+        assertFalse(assembler.exists(ref, actor));
+        ServiceException assembleError = assertThrows(ServiceException.class,
+            () -> assembler.assemble(ref, 14, actor));
+        ServiceException hashError = assertThrows(ServiceException.class,
+            () -> assembler.computeFreshnessHash(ref, actor));
+
+        assertTrue(assembleError.getMessage().contains("不存在或不可访问"), assembleError.getMessage());
+        assertTrue(hashError.getMessage().contains("不存在或不可访问"), hashError.getMessage());
+        verifyNoInteractions(salesOrderHeaderMapper, scheduleInputAssembler);
+    }
+
+    @Test
+    void rejectsMismatchedSchedulePlanRootIdBeforeLoadingDownstreamFacts() {
+        PrdSchedulePlan wrong = schedulePlan(9999L, "APS-9999", "PUBLISHED", TODAY, TODAY.plusDays(7));
+        when(schedulePlanMapper.selectById(9001L)).thenReturn(wrong);
+        DecisionBusinessRef ref = new DecisionBusinessRef(DecisionBusinessType.SCHEDULE_PLAN, 9001L, null);
+        DecisionActor actor = actor("ai:decision:run", "prd:schedule:query");
+
+        assertFalse(assembler.exists(ref, actor));
+        ServiceException assembleError = assertThrows(ServiceException.class,
+            () -> assembler.assemble(ref, 14, actor));
+        ServiceException hashError = assertThrows(ServiceException.class,
+            () -> assembler.computeFreshnessHash(ref, actor));
+
+        assertTrue(assembleError.getMessage().contains("不存在或不可访问"), assembleError.getMessage());
+        assertTrue(hashError.getMessage().contains("不存在或不可访问"), hashError.getMessage());
+        verifyNoInteractions(scheduleTaskMapper, workOrderMapper, scheduleInputAssembler);
+    }
+
+    @Test
+    void assembleUsesOneBusinessDateAndOneFactReadForSnapshotAndHash() {
+        AtomicBoolean reverse = new AtomicBoolean(false);
+        AtomicReference<BigDecimal> stockQty = new AtomicReference<>(new BigDecimal("20"));
+        AtomicReference<BigDecimal> reservedQty = new AtomicReference<>(new BigDecimal("3"));
+        RichFixture fixture = stubRichSalesOrderFixture(reverse, stockQty, reservedQty);
+        AtomicInteger stockReads = new AtomicInteger();
+        when(stockMapper.selectList(any())).thenAnswer(invocation -> {
+            if (stockReads.incrementAndGet() > 1) {
+                throw new AssertionError("assemble 不得为 hash 二次读取库存事实");
+            }
+            return List.of(
+                stock(10001L, 501L, "20", "3"),
+                stock(10002L, 501L, "5", "1"),
+                stock(10003L, 502L, "8", "0"));
+        });
+        DeliveryContextAssembler singleDateAssembler = spy(assembler);
+        doReturn(TODAY, TODAY.plusDays(1)).when(singleDateAssembler).businessDate();
+
+        DeliveryContextSnapshot snapshot = singleDateAssembler.assemble(fixture.ref(), 14, fixture.actor());
+
+        assertEquals(1, stockReads.get());
+        assertEquals(new BigDecimal("25"), snapshot.stocks().stream()
+            .filter(stock -> Long.valueOf(501L).equals(stock.materialId()))
+            .findFirst().orElseThrow().stockQty());
+        assertTrue(snapshot.snapshotHash().matches("[0-9a-f]{64}"), snapshot.snapshotHash());
+        verify(salesOrderHeaderMapper, times(1)).selectById(100L);
+        verify(singleDateAssembler, times(1)).businessDate();
     }
 
     @Test
@@ -191,8 +451,8 @@ class DeliveryContextAssemblerTest {
         verify(scheduleInputAssembler, atLeastOnce()).assemble(bos.capture(), scopedIds.capture());
         assertTrue(scopedIds.getAllValues().stream()
             .allMatch(ids -> new LinkedHashSet<>(ids).equals(new LinkedHashSet<>(List.of(11L, 12L)))));
-        assertTrue(bos.getAllValues().stream().anyMatch(bo -> Integer.valueOf(14).equals(bo.getHorizonDays())));
-        assertTrue(bos.getAllValues().stream().anyMatch(bo -> Integer.valueOf(90).equals(bo.getHorizonDays())));
+        assertTrue(bos.getAllValues().stream()
+            .allMatch(bo -> Integer.valueOf(90).equals(bo.getHorizonDays())));
         verify(scheduleInputAssembler, never()).assemble(any(PrdSchedulePlanBo.class));
     }
 
@@ -437,6 +697,46 @@ class DeliveryContextAssemblerTest {
         return new RichFixture(
             new DecisionBusinessRef(DecisionBusinessType.SALES_ORDER, 100L, "ignored"),
             actor("ai:decision:run", "so:orderheader:query"));
+    }
+
+    private void stubRoutingSourceFacts(AtomicReference<Long> routingId,
+                                        AtomicReference<Date> routingUpdate) {
+        when(routingMapper.selectList(any())).thenAnswer(invocation -> {
+            BdRouting routing = new BdRouting();
+            routing.setRoutingId(routingId.get());
+            routing.setMaterialId(811L);
+            routing.setRoutingVersion("1.0");
+            routing.setIsCurrent(1L);
+            routing.setStatus(1L);
+            routing.setTotalHours(new BigDecimal("2.000"));
+            routing.setUpdateTime(routingUpdate.get());
+            return List.of(routing);
+        });
+        when(routingStepMapper.selectList(any())).thenAnswer(invocation -> {
+            BdRoutingStep step = new BdRoutingStep();
+            step.setStepId(7101L);
+            step.setRoutingId(routingId.get());
+            step.setSequenceNum(1);
+            step.setWorkstationId(1100L);
+            step.setStandardHours(new BigDecimal("1.250"));
+            step.setSetupHours(new BigDecimal("0.500"));
+            step.setIsOutsource(0);
+            step.setWaitTime(BigDecimal.ZERO);
+            step.setTransferTime(BigDecimal.ZERO);
+            step.setUpdateTime(routingUpdate.get());
+            return List.of(step);
+        });
+    }
+
+    private PrdCapacityCalendar capacityCalendar(long id, String objectType, long objectId, String remaining) {
+        PrdCapacityCalendar calendar = new PrdCapacityCalendar();
+        calendar.setCalendarId(id);
+        calendar.setCalendarDate(java.sql.Date.valueOf(TODAY));
+        calendar.setObjectType(objectType);
+        calendar.setObjectId(objectId);
+        calendar.setRemainingHours(new BigDecimal(remaining));
+        calendar.setStatus("ACTIVE");
+        return calendar;
     }
 
     private void stubEmptyRelatedFacts() {

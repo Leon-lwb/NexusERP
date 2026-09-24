@@ -17,13 +17,21 @@ import com.nexus.common.ai.decision.enums.DecisionBusinessType;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.json.utils.JsonUtils;
 import com.nexus.erp.bd.domain.BdMaterial;
+import com.nexus.erp.bd.domain.BdRouting;
+import com.nexus.erp.bd.domain.BdRoutingStep;
+import com.nexus.erp.bd.domain.BdWorkstation;
 import com.nexus.erp.bd.mapper.BdMaterialMapper;
+import com.nexus.erp.bd.mapper.BdRoutingMapper;
+import com.nexus.erp.bd.mapper.BdRoutingStepMapper;
+import com.nexus.erp.bd.mapper.BdWorkstationMapper;
+import com.nexus.erp.prd.domain.PrdCapacityCalendar;
 import com.nexus.erp.prd.domain.PrdMaterialRequirement;
 import com.nexus.erp.prd.domain.PrdMaterialRequirementDetail;
 import com.nexus.erp.prd.domain.PrdSchedulePlan;
 import com.nexus.erp.prd.domain.PrdScheduleTask;
 import com.nexus.erp.prd.domain.PrdWorkOrder;
 import com.nexus.erp.prd.domain.bo.PrdSchedulePlanBo;
+import com.nexus.erp.prd.mapper.PrdCapacityCalendarMapper;
 import com.nexus.erp.prd.mapper.PrdMaterialRequirementDetailMapper;
 import com.nexus.erp.prd.mapper.PrdMaterialRequirementMapper;
 import com.nexus.erp.prd.mapper.PrdSchedulePlanMapper;
@@ -32,6 +40,7 @@ import com.nexus.erp.prd.mapper.PrdWorkOrderMapper;
 import com.nexus.erp.prd.schedule.PrdScheduleInputAssembler;
 import com.nexus.erp.prd.schedule.ScheduleModel.ScheduleInput;
 import com.nexus.erp.prd.schedule.ScheduleModel.StepInfo;
+import com.nexus.erp.prd.schedule.ScheduleModel.Strategy;
 import com.nexus.erp.prd.schedule.ScheduleModel.WoInfo;
 import com.nexus.erp.pu.domain.PuPurchaseOrder;
 import com.nexus.erp.pu.domain.PuPurchaseOrderLine;
@@ -43,6 +52,16 @@ import com.nexus.erp.so.domain.SoSalesOrderHeader;
 import com.nexus.erp.so.domain.SoSalesOrderLine;
 import com.nexus.erp.so.mapper.SoSalesOrderHeaderMapper;
 import com.nexus.erp.so.mapper.SoSalesOrderLineMapper;
+import com.nexus.erp.sch.domain.SchEmployeeSchedule;
+import com.nexus.erp.sch.domain.SchHoliday;
+import com.nexus.erp.sch.domain.SchLeaveApply;
+import com.nexus.erp.sch.domain.SchShift;
+import com.nexus.erp.sch.domain.SchTeam;
+import com.nexus.erp.sch.mapper.SchEmployeeScheduleMapper;
+import com.nexus.erp.sch.mapper.SchHolidayMapper;
+import com.nexus.erp.sch.mapper.SchLeaveApplyMapper;
+import com.nexus.erp.sch.mapper.SchShiftMapper;
+import com.nexus.erp.sch.mapper.SchTeamMapper;
 import com.nexus.erp.wm.domain.WmMaterialStock;
 import com.nexus.erp.wm.mapper.WmMaterialStockMapper;
 import lombok.RequiredArgsConstructor;
@@ -66,6 +85,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * 装配 ERP 工业交付决策上下文，并生成可在审批前重算的关键业务指纹。
@@ -92,6 +112,15 @@ public class DeliveryContextAssembler {
     private final PrdMaterialRequirementDetailMapper requirementDetailMapper;
     private final WmMaterialStockMapper stockMapper;
     private final BdMaterialMapper materialMapper;
+    private final BdRoutingMapper routingMapper;
+    private final BdRoutingStepMapper routingStepMapper;
+    private final PrdCapacityCalendarMapper capacityCalendarMapper;
+    private final SchHolidayMapper holidayMapper;
+    private final SchEmployeeScheduleMapper employeeScheduleMapper;
+    private final SchShiftMapper shiftMapper;
+    private final SchTeamMapper teamMapper;
+    private final SchLeaveApplyMapper leaveApplyMapper;
+    private final BdWorkstationMapper workstationMapper;
     private final PuPurchaseOrderMapper purchaseOrderMapper;
     private final PuPurchaseOrderLineMapper purchaseOrderLineMapper;
     private final PuVendorEvaluationMapper vendorEvaluationMapper;
@@ -104,12 +133,19 @@ public class DeliveryContextAssembler {
         try {
             validateAccess(ref, actor);
             return switch (ref.type()) {
-                case SALES_ORDER -> salesOrderHeaderMapper.selectById(ref.id()) != null;
+                case SALES_ORDER -> {
+                    SoSalesOrderHeader order = salesOrderHeaderMapper.selectById(ref.id());
+                    yield order != null && Objects.equals(ref.id(), order.getSoId());
+                }
                 case WORK_ORDER -> {
                     PrdWorkOrder workOrder = workOrderMapper.selectById(ref.id());
-                    yield workOrder != null && !isTerminalWorkOrder(workOrder);
+                    yield workOrder != null && Objects.equals(ref.id(), workOrder.getWoId())
+                        && !isTerminalWorkOrder(workOrder);
                 }
-                case SCHEDULE_PLAN -> schedulePlanMapper.selectById(ref.id()) != null;
+                case SCHEDULE_PLAN -> {
+                    PrdSchedulePlan plan = schedulePlanMapper.selectById(ref.id());
+                    yield plan != null && Objects.equals(ref.id(), plan.getPlanId());
+                }
                 case SHORTAGE_HORIZON -> true;
                 default -> throw unsupportedType();
             };
@@ -124,9 +160,11 @@ public class DeliveryContextAssembler {
     public DeliveryContextSnapshot assemble(DecisionBusinessRef ref, int horizonDays, DecisionActor actor) {
         validateHorizon(horizonDays);
         validateAccess(ref, actor);
+        LocalDate businessDate = businessDate();
         DecisionScope scope = loadScope(ref);
-        LoadedContext context = loadContext(scope, horizonDays, true);
-        String freshnessHash = computeFreshnessHash(ref, actor);
+        LoadedContext context = loadContext(scope, FRESHNESS_HORIZON_DAYS, businessDate);
+        String freshnessHash = hash(buildFingerprint(scope, context));
+        SnapshotProjection projection = projectSnapshot(scope, context, horizonDays, businessDate);
 
         List<OrderFact> orderFacts = scope.salesOrders().stream()
             .sorted(orderComparator())
@@ -141,34 +179,37 @@ public class DeliveryContextAssembler {
                 toLocalDate(workOrder.getPlanEndDate()), workOrder.getPriority(), workOrder.getWorkshopId()))
             .toList();
 
-        List<String> warnings = context.warnings().stream()
-            .filter(Objects::nonNull)
-            .distinct()
-            .sorted()
-            .toList();
         return new DeliveryContextSnapshot(
             scope.normalizedRef(),
             orderFacts,
             workOrderFacts,
-            context.routingByMaterial(),
-            context.requirementFacts(),
-            context.stockFacts(),
-            context.arrivalFacts(),
-            context.capacityByDate(),
-            context.holidays(),
-            context.currentSchedule(),
-            context.supplierMetrics(),
+            projection.routingByMaterial(),
+            projection.requirementFacts(),
+            projection.stockFacts(),
+            projection.arrivalFacts(),
+            projection.capacityByDate(),
+            projection.holidays(),
+            projection.currentSchedule(),
+            projection.supplierMetrics(),
             freshnessHash,
             LocalDateTime.now(),
-            warnings);
+            projection.warnings());
     }
 
     /** 固定 90 天重算关键业务指纹；保持包可见供 checker 与同包测试使用。 */
     String computeFreshnessHash(DecisionBusinessRef ref, DecisionActor actor) {
         validateAccess(ref, actor);
+        LocalDate businessDate = businessDate();
         DecisionScope scope = loadScope(ref);
-        LoadedContext context = loadContext(scope, FRESHNESS_HORIZON_DAYS, false);
-        CriticalFreshnessFingerprint fingerprint = buildFingerprint(scope, context);
+        LoadedContext context = loadContext(scope, FRESHNESS_HORIZON_DAYS, businessDate);
+        return hash(buildFingerprint(scope, context));
+    }
+
+    LocalDate businessDate() {
+        return LocalDate.now();
+    }
+
+    private String hash(CriticalFreshnessFingerprint fingerprint) {
         return SecureUtil.sha256(JsonUtils.toJsonString(fingerprint));
     }
 
@@ -246,7 +287,7 @@ public class DeliveryContextAssembler {
 
     private DecisionScope loadSalesOrderScope(Long salesOrderId) {
         SoSalesOrderHeader order = salesOrderHeaderMapper.selectById(salesOrderId);
-        if (order == null) {
+        if (order == null || !Objects.equals(salesOrderId, order.getSoId())) {
             throw new ServiceException("销售订单不存在或不可访问");
         }
         List<SoSalesOrderLine> lines = safeList(salesOrderLineMapper.selectList(
@@ -277,8 +318,6 @@ public class DeliveryContextAssembler {
                 || (hasText(order.getSoNo()) && Objects.equals(order.getSoNo(), workOrder.getSourceNo())))
             .sorted(workOrderComparator())
             .toList();
-        ensureScopedWorkOrders(workOrders, "销售订单未关联可用于决策的生产工单");
-
         LinkedHashMap<Long, Long> mapping = new LinkedHashMap<>();
         workOrders.forEach(workOrder -> mapping.put(workOrder.getWoId(), salesOrderId));
         return new DecisionScope(
@@ -288,7 +327,7 @@ public class DeliveryContextAssembler {
 
     private DecisionScope loadWorkOrderScope(Long workOrderId) {
         PrdWorkOrder workOrder = workOrderMapper.selectById(workOrderId);
-        if (workOrder == null) {
+        if (workOrder == null || !Objects.equals(workOrderId, workOrder.getWoId())) {
             throw new ServiceException("生产工单不存在或不可访问");
         }
         if (isTerminalWorkOrder(workOrder)) {
@@ -304,7 +343,7 @@ public class DeliveryContextAssembler {
 
     private DecisionScope loadSchedulePlanScope(Long schedulePlanId) {
         PrdSchedulePlan plan = schedulePlanMapper.selectById(schedulePlanId);
-        if (plan == null) {
+        if (plan == null || !Objects.equals(schedulePlanId, plan.getPlanId())) {
             throw new ServiceException("排产方案不存在或不可访问");
         }
         List<PrdScheduleTask> tasks = safeList(scheduleTaskMapper.selectList(
@@ -337,7 +376,6 @@ public class DeliveryContextAssembler {
             .filter(workOrder -> !isTerminalWorkOrder(workOrder))
             .sorted(workOrderComparator())
             .toList();
-        ensureScopedWorkOrders(workOrders, "当前范围内没有非终态生产工单");
         List<SoSalesOrderHeader> orders = resolveSalesOrders(workOrders);
         Map<Long, Long> mapping = mapWorkOrdersToSalesOrders(workOrders, orders);
         return new DecisionScope(
@@ -434,26 +472,25 @@ public class DeliveryContextAssembler {
         return immutableLinkedMap(mapping);
     }
 
-    private LoadedContext loadContext(DecisionScope scope, int horizonDays, boolean displaySnapshot) {
-        LocalDate businessDate = LocalDate.now();
+    private LoadedContext loadContext(DecisionScope scope, int horizonDays, LocalDate businessDate) {
         LocalDate horizonEnd = businessDate.plusDays(horizonDays - 1L);
         ScheduleInput apsInput = assembleScheduleInput(scope.workOrders(), horizonDays, businessDate);
+        SourceFacts sourceFacts = loadSourceFacts(scope, apsInput, businessDate, horizonEnd);
         List<String> warnings = new ArrayList<>();
+        if (scope.workOrders().isEmpty()) {
+            warnings.add("NO_WORK_ORDER: 当前决策范围没有生产工单");
+        }
 
-        List<RequirementLink> requirementRows = loadRequirementRows(
-            scope, businessDate, horizonEnd, displaySnapshot, warnings);
+        List<RequirementLink> requirementRows = loadRequirementRows(scope, warnings);
         LinkedHashSet<Long> materialIds = collectRelevantMaterialIds(scope, requirementRows);
         StockBundle stocks = loadStocks(materialIds);
-        PurchaseBundle purchases = loadPurchases(materialIds, horizonEnd, warnings);
+        PurchaseBundle purchases = loadPurchases(materialIds, warnings);
         List<SupplierMetricFact> supplierMetrics = loadSupplierMetrics(purchases.vendorIds(), warnings);
         ScheduleSelection schedule = loadCurrentSchedule(scope, warnings);
 
-        Map<Long, List<RoutingStepFact>> routingByMaterial = buildRoutingFacts(scope, apsInput);
+        Map<Long, List<RoutingStepFact>> routingByMaterial = buildRoutingFacts(scope, apsInput, sourceFacts);
         Map<LocalDate, Map<String, BigDecimal>> capacityByDate = sortedCapacity(apsInput.getCapacityByDate());
         List<LocalDate> holidays = safeCollection(apsInput.getHolidays()).stream().sorted().toList();
-        List<RequirementFact> requirementFacts = buildRequirementFacts(requirementRows);
-        List<StockFact> stockFacts = buildStockFacts(materialIds, stocks);
-        List<ArrivalFact> arrivalFacts = buildArrivalFacts(purchases, horizonEnd, warnings);
         Map<String, Object> currentSchedule = buildCurrentSchedule(scope, schedule);
 
         return new LoadedContext(
@@ -464,15 +501,61 @@ public class DeliveryContextAssembler {
             purchases.orders(),
             purchases.lines(),
             schedule,
+            sourceFacts,
             routingByMaterial,
-            requirementFacts,
-            stockFacts,
-            arrivalFacts,
             capacityByDate,
             holidays,
             currentSchedule,
             supplierMetrics,
             List.copyOf(warnings));
+    }
+
+    private SnapshotProjection projectSnapshot(DecisionScope scope,
+                                               LoadedContext context,
+                                               int horizonDays,
+                                               LocalDate businessDate) {
+        LocalDate horizonEnd = businessDate.plusDays(horizonDays - 1L);
+        List<RequirementLink> requirementRows = context.requirementRows();
+        if (scope.normalizedRef().type() == DecisionBusinessType.SHORTAGE_HORIZON) {
+            requirementRows = requirementRows.stream()
+                .filter(row -> {
+                    LocalDate requiredDate = toLocalDate(row.detail().getRequiredDate());
+                    return requiredDate != null && !requiredDate.isBefore(businessDate)
+                        && !requiredDate.isAfter(horizonEnd);
+                })
+                .toList();
+        }
+        LinkedHashSet<Long> materialIds = collectRelevantMaterialIds(scope, requirementRows);
+        StockBundle stocks = new StockBundle(context.stockRows(), context.materials());
+        PurchaseBundle purchases = new PurchaseBundle(
+            context.purchaseOrders(), context.purchaseLines(), List.of());
+        List<String> warnings = new ArrayList<>(context.warnings());
+        List<ArrivalFact> arrivals = buildArrivalFacts(purchases, materialIds, horizonEnd);
+
+        LinkedHashMap<LocalDate, Map<String, BigDecimal>> capacity = new LinkedHashMap<>();
+        context.capacityByDate().forEach((date, resources) -> {
+            if (!date.isBefore(businessDate) && !date.isAfter(horizonEnd)) {
+                capacity.put(date, resources);
+            }
+        });
+        List<LocalDate> holidays = context.holidays().stream()
+            .filter(date -> !date.isBefore(businessDate) && !date.isAfter(horizonEnd))
+            .toList();
+        List<String> stableWarnings = warnings.stream()
+            .filter(Objects::nonNull)
+            .distinct()
+            .sorted()
+            .toList();
+        return new SnapshotProjection(
+            context.routingByMaterial(),
+            buildRequirementFacts(requirementRows),
+            buildStockFacts(materialIds, stocks),
+            arrivals,
+            Collections.unmodifiableMap(capacity),
+            holidays,
+            context.currentSchedule(),
+            context.supplierMetrics(),
+            stableWarnings);
     }
 
     private ScheduleInput assembleScheduleInput(List<PrdWorkOrder> workOrders, int horizonDays,
@@ -484,7 +567,15 @@ public class DeliveryContextAssembler {
             .sorted()
             .toList();
         if (workOrderIds.isEmpty()) {
-            throw new ServiceException("决策范围内没有可装配 APS 输入的工单");
+            ScheduleInput empty = new ScheduleInput();
+            empty.setWorkOrders(List.of());
+            empty.setRoutingProvider(materialId -> List.of());
+            empty.setCapacityByDate(new LinkedHashMap<>());
+            empty.setHolidays(new LinkedHashSet<>());
+            empty.setStartDate(businessDate);
+            empty.setHorizonDays(horizonDays);
+            empty.setStrategy(Strategy.EDD);
+            return empty;
         }
         PrdSchedulePlanBo bo = new PrdSchedulePlanBo();
         bo.setStartDate(java.sql.Date.valueOf(businessDate));
@@ -494,9 +585,6 @@ public class DeliveryContextAssembler {
     }
 
     private List<RequirementLink> loadRequirementRows(DecisionScope scope,
-                                                       LocalDate businessDate,
-                                                       LocalDate horizonEnd,
-                                                       boolean displaySnapshot,
                                                        List<String> warnings) {
         LinkedHashSet<Long> planIds = scope.workOrders().stream()
             .map(PrdWorkOrder::getPlanId)
@@ -533,11 +621,6 @@ public class DeliveryContextAssembler {
                 .in(PrdMaterialRequirementDetail::getRequirementId, requirementIds)))) {
             PrdMaterialRequirement requirement = requirementById.get(detail.getRequirementId());
             if (requirement == null || detail.getDetailId() == null) {
-                continue;
-            }
-            LocalDate requiredDate = toLocalDate(detail.getRequiredDate());
-            if (displaySnapshot && scope.normalizedRef().type() == DecisionBusinessType.SHORTAGE_HORIZON
-                && (requiredDate == null || requiredDate.isBefore(businessDate) || requiredDate.isAfter(horizonEnd))) {
                 continue;
             }
             List<PrdWorkOrder> candidates = safeList(workOrdersByPlan.get(requirement.getPlanId())).stream()
@@ -600,7 +683,6 @@ public class DeliveryContextAssembler {
     }
 
     private PurchaseBundle loadPurchases(LinkedHashSet<Long> materialIds,
-                                          LocalDate horizonEnd,
                                           List<String> warnings) {
         if (materialIds.isEmpty()) {
             return new PurchaseBundle(List.of(), List.of(), List.of());
@@ -696,6 +778,9 @@ public class DeliveryContextAssembler {
     }
 
     private ScheduleSelection loadCurrentSchedule(DecisionScope scope, List<String> warnings) {
+        if (scope.workOrders().isEmpty()) {
+            return new ScheduleSelection(null, List.of());
+        }
         if (scope.specifiedSchedulePlan() != null) {
             List<PrdScheduleTask> tasks = scope.specifiedScheduleTasks().stream()
                 .filter(task -> Objects.equals(scope.specifiedSchedulePlan().getPlanId(), task.getPlanId()))
@@ -735,26 +820,297 @@ public class DeliveryContextAssembler {
         return new ScheduleSelection(latest, selectedTasks);
     }
 
-    private Map<Long, List<RoutingStepFact>> buildRoutingFacts(DecisionScope scope, ScheduleInput input) {
+    private SourceFacts loadSourceFacts(DecisionScope scope,
+                                        ScheduleInput apsInput,
+                                        LocalDate startDate,
+                                        LocalDate endDate) {
+        if (scope.workOrders().isEmpty()) {
+            return SourceFacts.empty();
+        }
+        RoutingSourceBundle routingSources = loadRoutingSources(scope, apsInput);
+        CapacitySourceBundle capacitySources = loadCapacitySources(
+            scope, routingSources, startDate, endDate);
+        return new SourceFacts(routingSources, capacitySources);
+    }
+
+    private RoutingSourceBundle loadRoutingSources(DecisionScope scope, ScheduleInput apsInput) {
+        LinkedHashSet<Long> materialIds = new LinkedHashSet<>();
+        scope.workOrders().stream()
+            .map(PrdWorkOrder::getMaterialId)
+            .filter(Objects::nonNull)
+            .sorted()
+            .forEach(materialIds::add);
+        safeList(apsInput.getWorkOrders()).stream()
+            .map(WoInfo::getMaterialId)
+            .filter(Objects::nonNull)
+            .sorted()
+            .forEach(materialIds::add);
+        if (materialIds.isEmpty()) {
+            return new RoutingSourceBundle(List.of());
+        }
+        List<BdRouting> candidates = safeList(routingMapper.selectList(
+            Wrappers.lambdaQuery(BdRouting.class)
+                .eq(BdRouting::getIsCurrent, 1L)
+                .eq(BdRouting::getStatus, 1L)
+                .and(query -> query.in(BdRouting::getMaterialId, materialIds)
+                    .or().isNull(BdRouting::getMaterialId)))).stream()
+            .filter(routing -> Objects.equals(1L, routing.getIsCurrent()))
+            .filter(routing -> Objects.equals(1L, routing.getStatus()))
+            .filter(routing -> routing.getMaterialId() == null || materialIds.contains(routing.getMaterialId()))
+            .sorted(routingComparator())
+            .toList();
+        List<RoutingAssignment> selected = new ArrayList<>();
+        for (Long materialId : materialIds) {
+            BdRouting routing = candidates.stream()
+                .filter(candidate -> Objects.equals(materialId, candidate.getMaterialId()))
+                .max(routingComparator())
+                .orElseGet(() -> candidates.stream()
+                    .filter(candidate -> candidate.getMaterialId() == null)
+                    .max(routingComparator())
+                    .orElse(null));
+            if (routing != null && routing.getRoutingId() != null) {
+                selected.add(new RoutingAssignment(materialId, routing, List.of()));
+            }
+        }
+        LinkedHashSet<Long> routingIds = selected.stream()
+            .map(assignment -> assignment.routing().getRoutingId())
+            .collect(Collectors.toCollection(LinkedHashSet::new));
+        Map<Long, List<BdRoutingStep>> stepsByRouting = new TreeMap<>();
+        if (!routingIds.isEmpty()) {
+            for (BdRoutingStep step : safeList(routingStepMapper.selectList(
+                Wrappers.lambdaQuery(BdRoutingStep.class)
+                    .in(BdRoutingStep::getRoutingId, routingIds)))) {
+                if (step.getRoutingId() != null && routingIds.contains(step.getRoutingId())) {
+                    stepsByRouting.computeIfAbsent(step.getRoutingId(), ignored -> new ArrayList<>()).add(step);
+                }
+            }
+        }
+        List<RoutingAssignment> assignments = selected.stream()
+            .map(assignment -> new RoutingAssignment(
+                assignment.materialId(),
+                assignment.routing(),
+                safeList(stepsByRouting.get(assignment.routing().getRoutingId())).stream()
+                    .sorted(routingStepSourceComparator())
+                    .toList()))
+            .sorted(Comparator.comparing(RoutingAssignment::materialId))
+            .toList();
+        return new RoutingSourceBundle(assignments);
+    }
+
+    private CapacitySourceBundle loadCapacitySources(DecisionScope scope,
+                                                      RoutingSourceBundle routingSources,
+                                                      LocalDate startDate,
+                                                      LocalDate endDate) {
+        LinkedHashSet<Long> workshopIds = scope.workOrders().stream()
+            .map(PrdWorkOrder::getWorkshopId)
+            .filter(Objects::nonNull)
+            .sorted()
+            .collect(Collectors.toCollection(LinkedHashSet::new));
+        LinkedHashSet<Long> workstationIds = scope.workOrders().stream()
+            .map(PrdWorkOrder::getWorkstationId)
+            .filter(Objects::nonNull)
+            .sorted()
+            .collect(Collectors.toCollection(LinkedHashSet::new));
+        routingSources.assignments().stream()
+            .flatMap(assignment -> assignment.steps().stream())
+            .map(BdRoutingStep::getWorkstationId)
+            .filter(Objects::nonNull)
+            .sorted()
+            .forEach(workstationIds::add);
+        LinkedHashSet<Long> productionLineIds = scope.workOrders().stream()
+            .map(PrdWorkOrder::getProductionLineId)
+            .filter(Objects::nonNull)
+            .sorted()
+            .collect(Collectors.toCollection(LinkedHashSet::new));
+
+        List<BdWorkstation> workstations = loadSourceWorkstations(workstationIds, workshopIds);
+        workstations.stream()
+            .map(BdWorkstation::getWorkshopId)
+            .filter(Objects::nonNull)
+            .forEach(workshopIds::add);
+
+        LinkedHashSet<Long> capacityObjectIds = new LinkedHashSet<>();
+        capacityObjectIds.addAll(workshopIds);
+        capacityObjectIds.addAll(workstationIds);
+        capacityObjectIds.addAll(productionLineIds);
+        List<PrdCapacityCalendar> calendars = capacityObjectIds.isEmpty() ? List.of()
+            : safeList(capacityCalendarMapper.selectList(
+                Wrappers.lambdaQuery(PrdCapacityCalendar.class)
+                    .eq(PrdCapacityCalendar::getStatus, "ACTIVE")
+                    .ge(PrdCapacityCalendar::getCalendarDate, java.sql.Date.valueOf(startDate))
+                    .le(PrdCapacityCalendar::getCalendarDate, java.sql.Date.valueOf(endDate))
+                    .in(PrdCapacityCalendar::getObjectId, capacityObjectIds))).stream()
+                .filter(calendar -> isRelatedCapacity(
+                    calendar, workshopIds, workstationIds, productionLineIds, startDate, endDate))
+                .sorted(capacityCalendarComparator())
+                .toList();
+
+        List<SchHoliday> holidays = safeList(holidayMapper.selectList(
+            Wrappers.lambdaQuery(SchHoliday.class)
+                .ge(SchHoliday::getHolidayDate, java.sql.Date.valueOf(startDate))
+                .le(SchHoliday::getHolidayDate, java.sql.Date.valueOf(endDate)))).stream()
+            .filter(holiday -> within(holiday.getHolidayDate(), startDate, endDate))
+            .sorted(holidayComparator())
+            .toList();
+
+        List<SchTeam> teams = workshopIds.isEmpty() ? List.of()
+            : safeList(teamMapper.selectList(
+                Wrappers.lambdaQuery(SchTeam.class)
+                    .in(SchTeam::getWorkshopId, workshopIds))).stream()
+                .filter(team -> team.getTeamId() != null)
+                .filter(team -> team.getWorkshopId() != null && workshopIds.contains(team.getWorkshopId()))
+                .sorted(teamComparator())
+                .toList();
+        LinkedHashSet<Long> relatedTeamIds = teams.stream()
+            .map(SchTeam::getTeamId)
+            .collect(Collectors.toCollection(LinkedHashSet::new));
+        List<SchEmployeeSchedule> schedules = relatedTeamIds.isEmpty() ? List.of()
+            : safeList(employeeScheduleMapper.selectList(
+                Wrappers.lambdaQuery(SchEmployeeSchedule.class)
+                    .in(SchEmployeeSchedule::getTeamId, relatedTeamIds)
+                    .ge(SchEmployeeSchedule::getScheduledDate, java.sql.Date.valueOf(startDate))
+                    .le(SchEmployeeSchedule::getScheduledDate, java.sql.Date.valueOf(endDate)))).stream()
+                .filter(schedule -> schedule.getScheduleId() != null)
+                .filter(schedule -> schedule.getTeamId() != null
+                    && relatedTeamIds.contains(schedule.getTeamId()))
+                .filter(schedule -> within(schedule.getScheduledDate(), startDate, endDate))
+                .sorted(employeeScheduleComparator())
+                .toList();
+
+        LinkedHashSet<Long> shiftIds = schedules.stream()
+            .flatMap(schedule -> Stream.of(schedule.getShiftId(), schedule.getActualShiftId()))
+            .filter(Objects::nonNull)
+            .sorted()
+            .collect(Collectors.toCollection(LinkedHashSet::new));
+        calendars.stream().map(PrdCapacityCalendar::getShiftId)
+            .filter(Objects::nonNull).sorted().forEach(shiftIds::add);
+        List<SchShift> shifts = shiftIds.isEmpty() ? List.of()
+            : safeList(shiftMapper.selectBatchIds(shiftIds)).stream()
+                .filter(shift -> shift.getShiftId() != null && shiftIds.contains(shift.getShiftId()))
+                .sorted(shiftComparator())
+                .toList();
+
+        LinkedHashSet<Long> workerIds = schedules.stream()
+            .map(SchEmployeeSchedule::getWorkerId)
+            .filter(Objects::nonNull)
+            .sorted()
+            .collect(Collectors.toCollection(LinkedHashSet::new));
+        List<SchLeaveApply> leaves = workerIds.isEmpty() ? List.of()
+            : safeList(leaveApplyMapper.selectList(
+                Wrappers.lambdaQuery(SchLeaveApply.class)
+                    .eq(SchLeaveApply::getApplyStatus, "approved")
+                    .in(SchLeaveApply::getWorkerId, workerIds)
+                    .le(SchLeaveApply::getStartDate, java.sql.Date.valueOf(endDate))
+                    .ge(SchLeaveApply::getEndDate, java.sql.Date.valueOf(startDate)))).stream()
+                .filter(leave -> workerIds.contains(leave.getWorkerId()))
+                .filter(leave -> "approved".equalsIgnoreCase(leave.getApplyStatus()))
+                .filter(leave -> overlaps(leave.getStartDate(), leave.getEndDate(), startDate, endDate))
+                .sorted(leaveComparator())
+                .toList();
+        return new CapacitySourceBundle(
+            calendars, holidays, schedules, shifts, teams, leaves, workstations);
+    }
+
+    private List<BdWorkstation> loadSourceWorkstations(Set<Long> workstationIds, Set<Long> workshopIds) {
+        if (workstationIds.isEmpty() && workshopIds.isEmpty()) {
+            return List.of();
+        }
+        var query = Wrappers.lambdaQuery(BdWorkstation.class);
+        if (!workstationIds.isEmpty() && !workshopIds.isEmpty()) {
+            query.and(nested -> nested.in(BdWorkstation::getWorkstationId, workstationIds)
+                .or().in(BdWorkstation::getWorkshopId, workshopIds));
+        } else if (!workstationIds.isEmpty()) {
+            query.in(BdWorkstation::getWorkstationId, workstationIds);
+        } else {
+            query.in(BdWorkstation::getWorkshopId, workshopIds);
+        }
+        return safeList(workstationMapper.selectList(query)).stream()
+            .filter(workstation -> workstation.getWorkstationId() != null)
+            .filter(workstation -> workstationIds.contains(workstation.getWorkstationId())
+                || workshopIds.contains(workstation.getWorkshopId()))
+            .sorted(workstationComparator())
+            .toList();
+    }
+
+    private boolean isRelatedCapacity(PrdCapacityCalendar calendar,
+                                      Set<Long> workshopIds,
+                                      Set<Long> workstationIds,
+                                      Set<Long> productionLineIds,
+                                      LocalDate startDate,
+                                      LocalDate endDate) {
+        if (calendar.getObjectId() == null || !within(calendar.getCalendarDate(), startDate, endDate)
+            || !"ACTIVE".equalsIgnoreCase(calendar.getStatus())) {
+            return false;
+        }
+        String objectType = calendar.getObjectType() == null
+            ? "" : calendar.getObjectType().toUpperCase(Locale.ROOT);
+        return switch (objectType) {
+            case "WORKSHOP" -> workshopIds.contains(calendar.getObjectId());
+            case "WORKSTATION" -> workstationIds.contains(calendar.getObjectId());
+            case "LINE" -> productionLineIds.contains(calendar.getObjectId());
+            default -> false;
+        };
+    }
+
+    private static boolean within(Date date, LocalDate startDate, LocalDate endDate) {
+        LocalDate value = toLocalDate(date);
+        return value != null && !value.isBefore(startDate) && !value.isAfter(endDate);
+    }
+
+    private static boolean overlaps(Date from, Date to, LocalDate startDate, LocalDate endDate) {
+        LocalDate first = toLocalDate(from);
+        LocalDate last = toLocalDate(to);
+        return first != null && last != null && !first.isAfter(endDate) && !last.isBefore(startDate);
+    }
+
+    private Map<Long, List<RoutingStepFact>> buildRoutingFacts(DecisionScope scope,
+                                                                        ScheduleInput input,
+                                                                        SourceFacts sourceFacts) {
         LinkedHashMap<Long, List<RoutingStepFact>> routes = new LinkedHashMap<>();
-        List<Long> materialIds = input.getWorkOrders().stream()
+        List<Long> materialIds = safeList(input.getWorkOrders()).stream()
             .map(WoInfo::getMaterialId)
             .filter(Objects::nonNull)
             .distinct()
             .sorted()
             .toList();
+        Map<Long, RoutingAssignment> assignments = sourceFacts.routing().assignments().stream()
+            .collect(Collectors.toMap(RoutingAssignment::materialId, assignment -> assignment));
+        Map<Long, BdWorkstation> workstationById = sourceFacts.capacity().workstations().stream()
+            .filter(workstation -> workstation.getWorkstationId() != null)
+            .collect(Collectors.toMap(BdWorkstation::getWorkstationId,
+                workstation -> workstation, (left, right) -> left));
         for (Long materialId : materialIds) {
-            Long workshopId = uniqueWorkshopId(scope.workOrders(), materialId);
-            List<StepInfo> steps = routingSteps(input, materialId);
-            List<RoutingStepFact> facts = steps.stream()
-                .map(step -> new RoutingStepFact(
-                    null,
-                    step.getStepId(),
-                    step.getSeqNum(),
-                    step.getWorkstationId(),
-                    workshopId,
-                    step.getStandardHours()))
-                .toList();
+            RoutingAssignment assignment = assignments.get(materialId);
+            List<RoutingStepFact> facts;
+            if (assignment != null) {
+                facts = assignment.steps().stream()
+                    .sorted(routingStepSourceComparator())
+                    .map(step -> {
+                        BdWorkstation workstation = workstationById.get(step.getWorkstationId());
+                        Long workshopId = workstation == null
+                            ? uniqueWorkshopId(scope.workOrders(), materialId)
+                            : workstation.getWorkshopId();
+                        return new RoutingStepFact(
+                            assignment.routing().getRoutingId(),
+                            step.getStepId(),
+                            step.getSequenceNum(),
+                            step.getWorkstationId(),
+                            workshopId,
+                            step.getStandardHours());
+                    })
+                    .toList();
+            } else {
+                Long workshopId = uniqueWorkshopId(scope.workOrders(), materialId);
+                facts = routingSteps(input, materialId).stream()
+                    .map(step -> new RoutingStepFact(
+                        null,
+                        step.getStepId(),
+                        step.getSeqNum(),
+                        step.getWorkstationId(),
+                        workshopId,
+                        step.getStandardHours()))
+                    .toList();
+            }
             routes.put(materialId, facts);
         }
         return Collections.unmodifiableMap(routes);
@@ -810,12 +1166,15 @@ public class DeliveryContextAssembler {
     }
 
     private List<ArrivalFact> buildArrivalFacts(PurchaseBundle purchases,
-                                                 LocalDate horizonEnd,
-                                                 List<String> warnings) {
+                                                 Set<Long> materialIds,
+                                                 LocalDate horizonEnd) {
         Map<Long, PuPurchaseOrder> orderById = purchases.orders().stream()
             .collect(Collectors.toMap(PuPurchaseOrder::getOrderId, order -> order));
         List<ArrivalFact> arrivals = new ArrayList<>();
         for (PuPurchaseOrderLine line : purchases.lines()) {
+            if (materialIds != null && !materialIds.contains(line.getMaterialId())) {
+                continue;
+            }
             PuPurchaseOrder order = orderById.get(line.getOrderId());
             if (order == null || order.getExpectedArrivalDate() == null) {
                 continue;
@@ -978,10 +1337,11 @@ public class DeliveryContextAssembler {
             .toList();
 
         CriticalApsInput apsInput = buildCriticalApsInput(scope, context.apsInput());
+        CriticalSourceVersions sourceVersions = buildCriticalSourceVersions(context.sourceFacts());
         CriticalSchedule currentSchedule = buildCriticalSchedule(context.schedule());
         return new CriticalFreshnessFingerprint(
             root, orders, orderLines, workOrders, requirementHeaders, requirements,
-            stocks, materials, purchaseOrders, purchaseLines, apsInput, currentSchedule);
+            stocks, materials, purchaseOrders, purchaseLines, apsInput, sourceVersions, currentSchedule);
     }
 
     private CriticalApsInput buildCriticalApsInput(DecisionScope scope, ScheduleInput input) {
@@ -1023,6 +1383,90 @@ public class DeliveryContextAssembler {
             workOrders, List.copyOf(routingSteps), List.copyOf(capacity), holidays);
     }
 
+    private CriticalSourceVersions buildCriticalSourceVersions(SourceFacts sourceFacts) {
+        List<CriticalRoutingSource> routings = sourceFacts.routing().assignments().stream()
+            .sorted(Comparator.comparing(RoutingAssignment::materialId))
+            .map(assignment -> {
+                BdRouting routing = assignment.routing();
+                return new CriticalRoutingSource(
+                    assignment.materialId(), routing.getRoutingId(), routing.getMaterialId(),
+                    routing.getRoutingVersion(), routing.getIsCurrent(), routing.getStatus(),
+                    toIsoDate(routing.getEffectiveDate()), toIsoDate(routing.getExpiryDate()),
+                    decimal(routing.getTotalHours()), toIsoDateTime(routing.getUpdateTime()));
+            })
+            .toList();
+        List<CriticalRoutingStepSource> routingSteps = sourceFacts.routing().assignments().stream()
+            .flatMap(assignment -> assignment.steps().stream()
+                .map(step -> new CriticalRoutingStepSource(
+                    assignment.materialId(), step.getRoutingId(), step.getStepId(),
+                    step.getSequenceNum(), step.getWorkstationId(), decimal(step.getStandardHours()),
+                    decimal(step.getSetupHours()), step.getIsOutsource(), decimal(step.getWaitTime()),
+                    decimal(step.getTransferTime()), toIsoDateTime(step.getUpdateTime()))))
+            .sorted(Comparator
+                .comparing(CriticalRoutingStepSource::materialId,
+                    Comparator.nullsLast(Comparator.naturalOrder()))
+                .thenComparing(CriticalRoutingStepSource::sequenceNum,
+                    Comparator.nullsLast(Comparator.naturalOrder()))
+                .thenComparing(CriticalRoutingStepSource::stepId,
+                    Comparator.nullsLast(Comparator.naturalOrder())))
+            .toList();
+        CapacitySourceBundle capacity = sourceFacts.capacity();
+        List<CriticalCapacityCalendarSource> calendars = capacity.calendars().stream()
+            .sorted(capacityCalendarComparator())
+            .map(row -> new CriticalCapacityCalendarSource(
+                row.getCalendarId(), row.getObjectType(), row.getObjectId(),
+                toIsoDate(row.getCalendarDate()), row.getShiftId(), decimal(row.getAvailableHours()),
+                decimal(row.getPlannedHours()), decimal(row.getActualHours()),
+                decimal(row.getEfficiency()), decimal(row.getEffectiveHours()),
+                decimal(row.getRemainingHours()), row.getStatus(), toIsoDateTime(row.getUpdateTime())))
+            .toList();
+        List<CriticalHolidaySource> holidays = capacity.holidays().stream()
+            .sorted(holidayComparator())
+            .map(row -> new CriticalHolidaySource(
+                row.getHolidayId(), toIsoDate(row.getHolidayDate()), row.getIsWorkingDay(),
+                toIsoDateTime(row.getUpdateTime())))
+            .toList();
+        List<CriticalEmployeeScheduleSource> employeeSchedules = capacity.employeeSchedules().stream()
+            .sorted(employeeScheduleComparator())
+            .map(row -> new CriticalEmployeeScheduleSource(
+                row.getScheduleId(), row.getWorkerId(), row.getTeamId(), row.getShiftId(),
+                row.getActualShiftId(), toIsoDate(row.getScheduledDate()), row.getIsWorkingDay(),
+                row.getScheduleStatus(), toScheduleTime(row.getStartTime()),
+                toScheduleTime(row.getEndTime()), toIsoDateTime(row.getUpdateTime())))
+            .toList();
+        List<CriticalShiftSource> shifts = capacity.shifts().stream()
+            .sorted(shiftComparator())
+            .map(row -> new CriticalShiftSource(
+                row.getShiftId(), toScheduleTime(row.getStartTime()), toScheduleTime(row.getEndTime()),
+                decimal(row.getWorkHours()), row.getIsCrossDay(),
+                toScheduleTime(row.getRestStartTime()), toScheduleTime(row.getRestEndTime()),
+                toIsoDateTime(row.getUpdateTime())))
+            .toList();
+        List<CriticalTeamSource> teams = capacity.teams().stream()
+            .sorted(teamComparator())
+            .map(row -> new CriticalTeamSource(
+                row.getTeamId(), row.getWorkshopId(), row.getStatus(), row.getMemberCount(),
+                toIsoDateTime(row.getUpdateTime())))
+            .toList();
+        List<CriticalLeaveSource> leaves = capacity.leaves().stream()
+            .sorted(leaveComparator())
+            .map(row -> new CriticalLeaveSource(
+                row.getLeaveId(), row.getWorkerId(), toIsoDate(row.getStartDate()),
+                toIsoDate(row.getEndDate()), row.getApplyStatus(), decimal(row.getDurationDays()),
+                toIsoDateTime(row.getUpdateTime())))
+            .toList();
+        List<CriticalWorkstationSource> workstations = capacity.workstations().stream()
+            .sorted(workstationComparator())
+            .map(row -> new CriticalWorkstationSource(
+                row.getWorkstationId(), row.getWorkshopId(), row.getStatus(),
+                row.getOperatorCount(), decimal(row.getStandardCapacity()),
+                toIsoDateTime(row.getUpdateTime())))
+            .toList();
+        return new CriticalSourceVersions(
+            routings, routingSteps, calendars, holidays, employeeSchedules,
+            shifts, teams, leaves, workstations);
+    }
+
     private CriticalSchedule buildCriticalSchedule(ScheduleSelection selection) {
         if (selection.plan() == null) {
             return null;
@@ -1031,12 +1475,16 @@ public class DeliveryContextAssembler {
         List<CriticalScheduleTask> tasks = selection.tasks().stream()
             .sorted(scheduleTaskComparator())
             .map(task -> new CriticalScheduleTask(
-                task.getTaskId(), task.getPlanId(), task.getWoId(), task.getSeqNum(), task.getStepId(),
-                toScheduleTime(task.getEndTime()), task.getDelayFlag(), toIsoDateTime(task.getUpdateTime())))
+                task.getTaskId(), task.getWoId(), task.getSeqNum(), task.getStepId(),
+                task.getResourceType(), task.getResourceId(), decimal(task.getSetupHours()),
+                decimal(task.getProcessHours()), toScheduleTime(task.getStartTime()),
+                toScheduleTime(task.getEndTime()), task.getDurationDays(), task.getDelayFlag(),
+                toIsoDateTime(task.getUpdateTime())))
             .toList();
         return new CriticalSchedule(
-            plan.getPlanId(), plan.getStatus(), toIsoDate(plan.getMakespanDate()),
-            toIsoDateTime(plan.getUpdateTime()), tasks);
+            plan.getPlanId(), plan.getPlanNo(), plan.getStatus(), plan.getStrategy(),
+            toIsoDate(plan.getStartDate()), plan.getHorizonDays(), toIsoDate(plan.getMakespanDate()),
+            decimal(plan.getTotalHours()), toIsoDateTime(plan.getUpdateTime()), tasks);
     }
 
     private List<StepInfo> routingSteps(ScheduleInput input, Long materialId) {
@@ -1067,12 +1515,6 @@ public class DeliveryContextAssembler {
                 sorted.put(entry.getKey(), Collections.unmodifiableMap(resources));
             });
         return Collections.unmodifiableMap(sorted);
-    }
-
-    private void ensureScopedWorkOrders(List<PrdWorkOrder> workOrders, String message) {
-        if (workOrders.isEmpty()) {
-            throw new ServiceException(message);
-        }
     }
 
     private boolean isTerminalWorkOrder(PrdWorkOrder workOrder) {
@@ -1246,6 +1688,73 @@ public class DeliveryContextAssembler {
             .thenComparing(StepInfo::getWorkstationId, Comparator.nullsLast(Comparator.naturalOrder()));
     }
 
+    private static Comparator<BdRouting> routingComparator() {
+        return Comparator
+            .comparing(BdRouting::getEffectiveDate, Comparator.nullsFirst(Comparator.naturalOrder()))
+            .thenComparing(BdRouting::getUpdateTime, Comparator.nullsFirst(Comparator.naturalOrder()))
+            .thenComparing(BdRouting::getRoutingId, Comparator.nullsFirst(Comparator.naturalOrder()));
+    }
+
+    private static Comparator<BdRoutingStep> routingStepSourceComparator() {
+        return Comparator
+            .comparing(BdRoutingStep::getSequenceNum, Comparator.nullsLast(Comparator.naturalOrder()))
+            .thenComparing(BdRoutingStep::getStepId, Comparator.nullsLast(Comparator.naturalOrder()));
+    }
+
+    private static Comparator<PrdCapacityCalendar> capacityCalendarComparator() {
+        return Comparator
+            .comparing((PrdCapacityCalendar row) -> toLocalDate(row.getCalendarDate()),
+                Comparator.nullsLast(Comparator.naturalOrder()))
+            .thenComparing(PrdCapacityCalendar::getObjectType,
+                Comparator.nullsLast(Comparator.naturalOrder()))
+            .thenComparing(PrdCapacityCalendar::getObjectId,
+                Comparator.nullsLast(Comparator.naturalOrder()))
+            .thenComparing(PrdCapacityCalendar::getCalendarId,
+                Comparator.nullsLast(Comparator.naturalOrder()));
+    }
+
+    private static Comparator<SchHoliday> holidayComparator() {
+        return Comparator
+            .comparing((SchHoliday row) -> toLocalDate(row.getHolidayDate()),
+                Comparator.nullsLast(Comparator.naturalOrder()))
+            .thenComparing(SchHoliday::getHolidayId, Comparator.nullsLast(Comparator.naturalOrder()));
+    }
+
+    private static Comparator<SchEmployeeSchedule> employeeScheduleComparator() {
+        return Comparator
+            .comparing((SchEmployeeSchedule row) -> toLocalDate(row.getScheduledDate()),
+                Comparator.nullsLast(Comparator.naturalOrder()))
+            .thenComparing(SchEmployeeSchedule::getWorkerId,
+                Comparator.nullsLast(Comparator.naturalOrder()))
+            .thenComparing(SchEmployeeSchedule::getScheduleId,
+                Comparator.nullsLast(Comparator.naturalOrder()));
+    }
+
+    private static Comparator<SchShift> shiftComparator() {
+        return Comparator.comparing(SchShift::getShiftId,
+            Comparator.nullsLast(Comparator.naturalOrder()));
+    }
+
+    private static Comparator<SchTeam> teamComparator() {
+        return Comparator.comparing(SchTeam::getTeamId,
+            Comparator.nullsLast(Comparator.naturalOrder()));
+    }
+
+    private static Comparator<SchLeaveApply> leaveComparator() {
+        return Comparator
+            .comparing((SchLeaveApply row) -> toLocalDate(row.getStartDate()),
+                Comparator.nullsLast(Comparator.naturalOrder()))
+            .thenComparing(SchLeaveApply::getWorkerId,
+                Comparator.nullsLast(Comparator.naturalOrder()))
+            .thenComparing(SchLeaveApply::getLeaveId,
+                Comparator.nullsLast(Comparator.naturalOrder()));
+    }
+
+    private static Comparator<BdWorkstation> workstationComparator() {
+        return Comparator.comparing(BdWorkstation::getWorkstationId,
+            Comparator.nullsLast(Comparator.naturalOrder()));
+    }
+
     private static Comparator<CriticalRoutingStep> criticalRoutingComparator() {
         return Comparator
             .comparing(CriticalRoutingStep::materialId, Comparator.nullsLast(Comparator.naturalOrder()))
@@ -1295,6 +1804,46 @@ public class DeliveryContextAssembler {
     private record ScheduleSelection(PrdSchedulePlan plan, List<PrdScheduleTask> tasks) {
     }
 
+    private record SourceFacts(RoutingSourceBundle routing, CapacitySourceBundle capacity) {
+        private static SourceFacts empty() {
+            return new SourceFacts(new RoutingSourceBundle(List.of()), CapacitySourceBundle.empty());
+        }
+    }
+
+    private record RoutingSourceBundle(List<RoutingAssignment> assignments) {
+    }
+
+    private record RoutingAssignment(Long materialId, BdRouting routing, List<BdRoutingStep> steps) {
+    }
+
+    private record CapacitySourceBundle(
+        List<PrdCapacityCalendar> calendars,
+        List<SchHoliday> holidays,
+        List<SchEmployeeSchedule> employeeSchedules,
+        List<SchShift> shifts,
+        List<SchTeam> teams,
+        List<SchLeaveApply> leaves,
+        List<BdWorkstation> workstations
+    ) {
+        private static CapacitySourceBundle empty() {
+            return new CapacitySourceBundle(
+                List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List.of());
+        }
+    }
+
+    private record SnapshotProjection(
+        Map<Long, List<RoutingStepFact>> routingByMaterial,
+        List<RequirementFact> requirementFacts,
+        List<StockFact> stockFacts,
+        List<ArrivalFact> arrivalFacts,
+        Map<LocalDate, Map<String, BigDecimal>> capacityByDate,
+        List<LocalDate> holidays,
+        Map<String, Object> currentSchedule,
+        List<SupplierMetricFact> supplierMetrics,
+        List<String> warnings
+    ) {
+    }
+
     private record LoadedContext(
         ScheduleInput apsInput,
         List<RequirementLink> requirementRows,
@@ -1303,10 +1852,8 @@ public class DeliveryContextAssembler {
         List<PuPurchaseOrder> purchaseOrders,
         List<PuPurchaseOrderLine> purchaseLines,
         ScheduleSelection schedule,
+        SourceFacts sourceFacts,
         Map<Long, List<RoutingStepFact>> routingByMaterial,
-        List<RequirementFact> requirementFacts,
-        List<StockFact> stockFacts,
-        List<ArrivalFact> arrivalFacts,
         Map<LocalDate, Map<String, BigDecimal>> capacityByDate,
         List<LocalDate> holidays,
         Map<String, Object> currentSchedule,
@@ -1327,6 +1874,7 @@ public class DeliveryContextAssembler {
         List<CriticalPurchaseOrder> purchaseOrders,
         List<CriticalPurchaseLine> purchaseLines,
         CriticalApsInput apsInput,
+        CriticalSourceVersions sourceVersions,
         CriticalSchedule currentSchedule
     ) {
     }
@@ -1437,22 +1985,151 @@ public class DeliveryContextAssembler {
     private record CriticalCapacity(String date, String resource, String remainingHours) {
     }
 
+    private record CriticalSourceVersions(
+        List<CriticalRoutingSource> routings,
+        List<CriticalRoutingStepSource> routingSteps,
+        List<CriticalCapacityCalendarSource> capacityCalendars,
+        List<CriticalHolidaySource> holidays,
+        List<CriticalEmployeeScheduleSource> employeeSchedules,
+        List<CriticalShiftSource> shifts,
+        List<CriticalTeamSource> teams,
+        List<CriticalLeaveSource> leaves,
+        List<CriticalWorkstationSource> workstations
+    ) {
+    }
+
+    private record CriticalRoutingSource(
+        Long materialId,
+        Long routingId,
+        Long routingMaterialId,
+        String version,
+        Long current,
+        Long status,
+        String effectiveDate,
+        String expiryDate,
+        String totalHours,
+        String updateTime
+    ) {
+    }
+
+    private record CriticalRoutingStepSource(
+        Long materialId,
+        Long routingId,
+        Long stepId,
+        Integer sequenceNum,
+        Long workstationId,
+        String standardHours,
+        String setupHours,
+        Integer outsource,
+        String waitTime,
+        String transferTime,
+        String updateTime
+    ) {
+    }
+
+    private record CriticalCapacityCalendarSource(
+        Long id,
+        String objectType,
+        Long objectId,
+        String date,
+        Long shiftId,
+        String availableHours,
+        String plannedHours,
+        String actualHours,
+        String efficiency,
+        String effectiveHours,
+        String remainingHours,
+        String status,
+        String updateTime
+    ) {
+    }
+
+    private record CriticalHolidaySource(Long id, String date, Integer workingDay, String updateTime) {
+    }
+
+    private record CriticalEmployeeScheduleSource(
+        Long id,
+        Long workerId,
+        Long teamId,
+        Long shiftId,
+        Long actualShiftId,
+        String date,
+        Integer workingDay,
+        String status,
+        String startTime,
+        String endTime,
+        String updateTime
+    ) {
+    }
+
+    private record CriticalShiftSource(
+        Long id,
+        String startTime,
+        String endTime,
+        String workHours,
+        Integer crossDay,
+        String restStartTime,
+        String restEndTime,
+        String updateTime
+    ) {
+    }
+
+    private record CriticalTeamSource(
+        Long id,
+        Long workshopId,
+        Long status,
+        Long memberCount,
+        String updateTime
+    ) {
+    }
+
+    private record CriticalLeaveSource(
+        Long id,
+        Long workerId,
+        String startDate,
+        String endDate,
+        String status,
+        String durationDays,
+        String updateTime
+    ) {
+    }
+
+    private record CriticalWorkstationSource(
+        Long id,
+        Long workshopId,
+        Long status,
+        Long operatorCount,
+        String standardCapacity,
+        String updateTime
+    ) {
+    }
+
     private record CriticalSchedule(
         Long planId,
+        String planNo,
         String status,
-        String endDate,
+        String strategy,
+        String startDate,
+        Integer horizonDays,
+        String makespanDate,
+        String totalHours,
         String updateTime,
         List<CriticalScheduleTask> tasks
     ) {
     }
 
     private record CriticalScheduleTask(
-        Long id,
-        Long planId,
+        Long taskId,
         Long workOrderId,
         Integer seqNum,
         Long stepId,
+        String resourceType,
+        Long resourceId,
+        String setupHours,
+        String processHours,
+        String startTime,
         String endTime,
+        Integer durationDays,
         Integer delayFlag,
         String updateTime
     ) {
