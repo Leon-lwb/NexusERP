@@ -1,6 +1,9 @@
 package com.nexus.common.tenant.helper;
 
+import cn.dev33.satoken.context.SaHolder;
+import cn.dev33.satoken.context.model.SaStorage;
 import cn.hutool.extra.spring.SpringUtil;
+import com.nexus.common.core.constant.GlobalConstants;
 import com.nexus.common.core.utils.SpringUtils;
 import com.nexus.common.redis.utils.RedisUtils;
 import com.nexus.common.satoken.utils.LoginHelper;
@@ -8,13 +11,19 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.when;
 
 @Tag("local")
 @Tag("dev")
@@ -101,6 +110,77 @@ class TenantHelperDynamicTest {
                 })));
             assertEquals("EXISTING", TenantHelper.getDynamic());
         });
+    }
+
+    @Test
+    void loggedInRunnableKeepsGlobalTenantAfterNormalExit() {
+        withLoggedInGlobalTenant(() ->
+            TenantHelper.dynamic("TEMP", (Runnable) () ->
+                assertEquals("TEMP", TenantHelper.getDynamic())));
+    }
+
+    @Test
+    void loggedInSupplierKeepsGlobalTenantAfterException() {
+        withLoggedInGlobalTenant(() -> {
+            IllegalStateException failure = new IllegalStateException("temporary tenant failed");
+            assertSame(failure, assertThrows(IllegalStateException.class, () ->
+                TenantHelper.dynamic("TEMP", () -> {
+                    assertEquals("TEMP", TenantHelper.getDynamic());
+                    throw failure;
+                })));
+        });
+    }
+
+    private void withLoggedInGlobalTenant(Runnable assertions) {
+        long userId = 7L;
+        String cacheKey = GlobalConstants.GLOBAL_REDIS_KEY + "dynamicTenant:" + userId;
+        AtomicReference<String> redisValue = new AtomicReference<>();
+        Map<String, Object> storageValues = new HashMap<>();
+        SaStorage storage = mock(SaStorage.class);
+        when(storage.getString(cacheKey)).thenAnswer(invocation -> (String) storageValues.get(cacheKey));
+        when(storage.set(cacheKey, "GLOBAL")).thenAnswer(invocation -> {
+            storageValues.put(cacheKey, "GLOBAL");
+            return storage;
+        });
+        when(storage.delete(cacheKey)).thenAnswer(invocation -> {
+            storageValues.remove(cacheKey);
+            return storage;
+        });
+
+        // Mock both stores: no real Redis or request-scoped Sa-Token storage is accessed.
+        try (MockedStatic<SpringUtil> spring = mockStatic(SpringUtil.class);
+             MockedStatic<LoginHelper> login = mockStatic(LoginHelper.class);
+             MockedStatic<RedisUtils> redis = mockStatic(RedisUtils.class);
+             MockedStatic<SaHolder> holder = mockStatic(SaHolder.class)) {
+            spring.when(() -> SpringUtils.getProperty("tenant.enable")).thenReturn("true");
+            login.when(LoginHelper::isLogin).thenReturn(true);
+            login.when(LoginHelper::getUserId).thenReturn(userId);
+            holder.when(SaHolder::getStorage).thenReturn(storage);
+            redis.when(() -> RedisUtils.setCacheObject(cacheKey, "GLOBAL")).thenAnswer(invocation -> {
+                redisValue.set("GLOBAL");
+                return null;
+            });
+            redis.when(() -> RedisUtils.getCacheObject(cacheKey)).thenAnswer(invocation -> redisValue.get());
+            redis.when(() -> RedisUtils.deleteObject(cacheKey)).thenAnswer(invocation ->
+                redisValue.getAndSet(null) != null);
+
+            TenantHelper.setDynamic("GLOBAL", true);
+            try {
+                assertEquals("GLOBAL", redisValue.get());
+                assertEquals("GLOBAL", storageValues.get(cacheKey));
+                assertions.run();
+                assertEquals("GLOBAL", TenantHelper.getDynamic());
+                assertEquals("GLOBAL", redisValue.get());
+                assertEquals("GLOBAL", storageValues.get(cacheKey));
+                redis.verify(() -> RedisUtils.deleteObject(cacheKey), never());
+            } finally {
+                // Clear only our thread-local context; closing the mock discards request storage.
+                login.when(LoginHelper::isLogin).thenReturn(false);
+                TenantHelper.clearDynamic();
+                storageValues.clear();
+                redisValue.set(null);
+            }
+        }
     }
 
     private void withTenantEnabled(Runnable assertions) {
