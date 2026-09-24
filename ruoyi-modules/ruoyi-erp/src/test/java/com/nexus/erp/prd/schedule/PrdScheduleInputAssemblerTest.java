@@ -5,9 +5,10 @@ import com.baomidou.mybatisplus.core.conditions.AbstractWrapper;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.nexus.common.core.exception.ServiceException;
+import com.nexus.erp.bd.domain.BdRouting;
 import com.nexus.erp.bd.domain.BdRoutingStep;
 import com.nexus.erp.bd.domain.BdWorkstation;
-import com.nexus.erp.bd.domain.vo.BdRoutingVo;
+import com.nexus.erp.bd.mapper.BdRoutingMapper;
 import com.nexus.erp.bd.mapper.BdRoutingStepMapper;
 import com.nexus.erp.bd.mapper.BdWorkstationMapper;
 import com.nexus.erp.bd.service.IBdRoutingService;
@@ -48,12 +49,14 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -88,6 +91,8 @@ class PrdScheduleInputAssemblerTest {
     @Mock
     private IBdRoutingService routingService;
     @Mock
+    private BdRoutingMapper routingMapper;
+    @Mock
     private BdRoutingStepMapper routingStepMapper;
 
     @InjectMocks
@@ -98,6 +103,7 @@ class PrdScheduleInputAssemblerTest {
         MybatisConfiguration configuration = new MybatisConfiguration();
         MapperBuilderAssistant assistant = new MapperBuilderAssistant(configuration, "");
         TableInfoHelper.initTableInfo(assistant, PrdWorkOrder.class);
+        TableInfoHelper.initTableInfo(assistant, BdRouting.class);
         TableInfoHelper.initTableInfo(assistant, BdRoutingStep.class);
         TableInfoHelper.initTableInfo(assistant, PrdCapacityCalendar.class);
         TableInfoHelper.initTableInfo(assistant, SchHoliday.class);
@@ -106,6 +112,125 @@ class PrdScheduleInputAssemblerTest {
         TableInfoHelper.initTableInfo(assistant, SchTeam.class);
         TableInfoHelper.initTableInfo(assistant, SchLeaveApply.class);
         TableInfoHelper.initTableInfo(assistant, BdWorkstation.class);
+    }
+
+    @Test
+    void duplicateCurrentActiveRoutesFailClosedBeforeLoadingSteps() {
+        PrdWorkOrder workOrder = workOrder(1L, 100L, "RELEASED");
+        when(workOrderMapper.selectList(any())).thenReturn(List.of(workOrder));
+        when(routingMapper.selectList(any())).thenReturn(
+            List.of(routing(200L, 100L), routing(201L, 100L)));
+
+        ServiceException error = assertThrows(ServiceException.class,
+            () -> assembler.assemble(scheduleBo(14, "EDD"), List.of(1L)));
+
+        assertTrue(error.getMessage().contains("多条当前有效工艺路线"), error.getMessage());
+        verify(routingStepMapper, never()).selectList(any());
+    }
+
+    @Test
+    void multipleMaterialsLoadRoutesAndStepsInTwoBatchQueriesWithoutServiceNPlusOne() {
+        PrdWorkOrder wo1 = workOrder(1L, 100L, "RELEASED");
+        PrdWorkOrder wo2 = workOrder(2L, 101L, "RELEASED");
+        when(workOrderMapper.selectList(any())).thenReturn(List.of(wo2, wo1));
+        when(routingMapper.selectList(argThat(wrapper -> {
+            Collection<?> values = queryValues(wrapper);
+            return wrapper.getSqlSegment().contains("material_id")
+                && values.contains(100L) && values.contains(101L);
+        }))).thenReturn(List.of(routing(200L, 100L), routing(201L, 101L)));
+        when(routingStepMapper.selectList(argThat(wrapper -> {
+            Collection<?> values = queryValues(wrapper);
+            return wrapper.getSqlSegment().contains("routing_id")
+                && values.contains(200L) && values.contains(201L);
+        }))).thenReturn(List.of(
+            routingStep(210L, 200L, 1, 400L),
+            routingStep(211L, 201L, 1, 401L)));
+        stubEmptyCapacityInputs();
+
+        ScheduleInput input = assembler.assemble(scheduleBo(14, "EDD"), List.of(1L, 2L));
+
+        assertEquals(List.of(210L), input.getRoutingProvider().apply(100L).stream()
+            .map(StepInfo::getStepId).toList());
+        assertEquals(List.of(211L), input.getRoutingProvider().apply(101L).stream()
+            .map(StepInfo::getStepId).toList());
+        verify(routingMapper, times(1)).selectList(any());
+        verify(routingStepMapper, times(1)).selectList(any());
+        verifyNoInteractions(routingService);
+    }
+
+    @Test
+    void scopedAssemblyQueriesOnlyRelatedCapacityAndLaborResources() {
+        PrdWorkOrder workOrder = workOrder(1L, 100L, "RELEASED");
+        when(workOrderMapper.selectList(any())).thenReturn(List.of(workOrder));
+        when(routingMapper.selectList(any())).thenReturn(List.of(routing(200L, 100L)));
+        when(routingStepMapper.selectList(any())).thenReturn(
+            List.of(routingStep(210L, 200L, 1, 400L)));
+        when(capacityCalendarMapper.selectList(any())).thenReturn(List.of(
+            capacity(START_DATE, "WORKSTATION", 400L, "8"),
+            capacity(START_DATE, "WORKSTATION", 999L, "99")));
+        when(holidayMapper.selectList(any())).thenReturn(List.of());
+        when(teamMapper.selectList(argThat(wrapper ->
+            wrapper.getSqlSegment().contains("workshop_id") && queryValues(wrapper).contains(10L))))
+            .thenReturn(List.of(team(500L, 10L)));
+        when(employeeScheduleMapper.selectList(argThat(wrapper ->
+            wrapper.getSqlSegment().contains("team_id") && queryValues(wrapper).contains(500L))))
+            .thenReturn(List.of(employeeSchedule(101L, 500L, 600L, null,
+                START_DATE, 1, "scheduled")));
+        when(shiftMapper.selectBatchIds(argThat(ids -> ids.contains(600L))))
+            .thenReturn(List.of(shift(600L, "8")));
+        when(leaveApplyMapper.selectList(argThat(wrapper ->
+            wrapper.getSqlSegment().contains("worker_id") && queryValues(wrapper).contains(101L))))
+            .thenReturn(List.of());
+        when(workstationMapper.selectList(any()))
+            .thenReturn(List.of(workstation(400L, 10L), workstation(999L, 99L)));
+
+        ScheduleInput input = assembler.assemble(scheduleBo(3, "EDD"), List.of(1L));
+
+        Map<String, BigDecimal> day = input.getCapacityByDate().get(START_DATE);
+        assertTrue(day.containsKey(ScheduleModel.resourceKey("WORKSTATION", 400L)), day.toString());
+        assertFalse(day.containsKey(ScheduleModel.resourceKey("WORKSTATION", 999L)), day.toString());
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Wrapper<PrdCapacityCalendar>> capacityQuery = ArgumentCaptor.forClass(Wrapper.class);
+        verify(capacityCalendarMapper).selectList(capacityQuery.capture());
+        assertTrue(capacityQuery.getValue().getSqlSegment().contains("object_id"),
+            capacityQuery.getValue().getSqlSegment());
+        assertFalse(queryValues(capacityQuery.getValue()).contains(999L),
+            queryValues(capacityQuery.getValue()).toString());
+        verify(teamMapper).selectList(any());
+        verify(employeeScheduleMapper).selectList(any());
+        verify(leaveApplyMapper).selectList(any());
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Wrapper<BdWorkstation>> workstationQuery = ArgumentCaptor.forClass(Wrapper.class);
+        verify(workstationMapper).selectList(workstationQuery.capture());
+        Collection<?> workstationValues = queryValues(workstationQuery.getValue());
+        String workstationSql = workstationQuery.getValue().getSqlSegment();
+        assertTrue(workstationSql.contains("workstation_id"), workstationSql);
+        assertTrue(workstationSql.contains("workshop_id"), workstationSql);
+        assertFalse(workstationValues.contains(999L), workstationValues.toString());
+    }
+
+    @Test
+    void fullAndScopedOverloadsUseSameAssemblyRulesForSameWorkOrders() {
+        PrdWorkOrder wo1 = workOrder(1L, 100L, "RELEASED");
+        PrdWorkOrder wo2 = workOrder(2L, 101L, "IN_PROGRESS");
+        when(workOrderMapper.selectList(any())).thenReturn(List.of(wo2, wo1));
+        when(routingMapper.selectList(any())).thenReturn(
+            List.of(routing(200L, 100L), routing(201L, 101L)));
+        when(routingStepMapper.selectList(any())).thenReturn(List.of(
+            routingStep(210L, 200L, 1, 400L),
+            routingStep(211L, 201L, 1, 401L)));
+        stubEmptyCapacityInputs();
+
+        ScheduleInput full = assembler.assemble(scheduleBo(14, "EDD"));
+        ScheduleInput scoped = assembler.assemble(scheduleBo(14, "EDD"), List.of(2L, 1L));
+
+        assertEquals(full.getWorkOrders().stream().map(ScheduleModel.WoInfo::getWoId).toList(),
+            scoped.getWorkOrders().stream().map(ScheduleModel.WoInfo::getWoId).toList());
+        assertEquals(full.getRoutingProvider().apply(100L).stream().map(StepInfo::getStepId).toList(),
+            scoped.getRoutingProvider().apply(100L).stream().map(StepInfo::getStepId).toList());
+        assertEquals(full.getCapacityByDate(), scoped.getCapacityByDate());
+        assertEquals(full.getHolidays(), scoped.getHolidays());
     }
 
     @Test
@@ -146,7 +271,7 @@ class PrdScheduleInputAssemblerTest {
         assertTrue(sql.contains("wo_status"), sql);
         assertTrue(sql.contains("workshop_id"), sql);
         assertTrue(queryValues(queryCaptor.getValue()).contains(10L));
-        verify(routingService).getCurrentRouting(100L);
+        verify(routingMapper).selectList(any());
     }
 
     @Test
@@ -188,7 +313,7 @@ class PrdScheduleInputAssemblerTest {
             shift(600L, "8"),
             shift(601L, "6")
         ));
-        when(teamMapper.selectBatchIds(any())).thenReturn(List.of(team(500L, 10L)));
+        when(teamMapper.selectList(any())).thenReturn(List.of(team(500L, 10L)));
         when(leaveApplyMapper.selectList(any())).thenReturn(List.of(approvedLeave(102L, day1)));
         when(workstationMapper.selectList(any())).thenReturn(List.of(workstation(400L, 10L)));
 
@@ -204,8 +329,8 @@ class PrdScheduleInputAssemblerTest {
             capacity.get(day1).get(ScheduleModel.resourceKey("WORKSHOP", 10L))));
         assertEquals(0, capacity.get(day2).get(ScheduleModel.resourceKey("WORKSTATION", 400L)).signum());
         assertEquals(0, capacity.get(day2).get(ScheduleModel.resourceKey("WORKSHOP", 10L)).signum());
-        assertEquals(0, new BigDecimal("5").compareTo(
-            capacity.get(day3).get(ScheduleModel.resourceKey("WORKSTATION", 999L))));
+        assertFalse(capacity.getOrDefault(day3, Map.of())
+            .containsKey(ScheduleModel.resourceKey("WORKSTATION", 999L)));
     }
 
     @Test
@@ -245,7 +370,7 @@ class PrdScheduleInputAssemblerTest {
             .map(ScheduleModel.WoInfo::getWoId)
             .toList());
         verify(workOrderMapper, times(1)).selectList(any());
-        verify(routingService, times(1)).getCurrentRouting(100L);
+        verify(routingMapper, times(1)).selectList(any());
 
         @SuppressWarnings("unchecked")
         ArgumentCaptor<Wrapper<PrdWorkOrder>> queryCaptor =
@@ -325,7 +450,7 @@ class PrdScheduleInputAssemblerTest {
 
         assertTrue(error.getMessage().contains("重复"), error.getMessage());
         verify(workOrderMapper, times(1)).selectList(any());
-        verifyNoInteractions(routingService, routingStepMapper, capacityCalendarMapper, holidayMapper,
+        verifyNoInteractions(routingService, routingMapper, routingStepMapper, capacityCalendarMapper, holidayMapper,
             employeeScheduleMapper, shiftMapper, teamMapper, leaveApplyMapper, workstationMapper);
     }
 
@@ -415,11 +540,33 @@ class PrdScheduleInputAssemblerTest {
         return workstation;
     }
 
+    private BdRouting routing(Long routingId, Long materialId) {
+        BdRouting routing = new BdRouting();
+        routing.setRoutingId(routingId);
+        routing.setMaterialId(materialId);
+        routing.setIsCurrent(1L);
+        routing.setStatus(1L);
+        return routing;
+    }
+
+    private BdRoutingStep routingStep(Long stepId, Long routingId, Integer sequence,
+                                             Long workstationId) {
+        BdRoutingStep step = new BdRoutingStep();
+        step.setStepId(stepId);
+        step.setRoutingId(routingId);
+        step.setSequenceNum(sequence);
+        step.setProcessCode("P-" + stepId);
+        step.setProcessName("工序-" + stepId);
+        step.setWorkstationId(workstationId);
+        step.setWorkstationName("WS-" + workstationId);
+        step.setStandardHours(BigDecimal.ONE);
+        step.setSetupHours(BigDecimal.ZERO);
+        step.setIsOutsource(0);
+        return step;
+    }
+
     private void stubRouting(Long materialId) {
-        BdRoutingVo routing = new BdRoutingVo();
-        routing.setRoutingId(200L);
-        routing.setRoutingCode("R-1");
-        when(routingService.getCurrentRouting(materialId)).thenReturn(routing);
+        when(routingMapper.selectList(any())).thenReturn(List.of(routing(200L, materialId)));
 
         BdRoutingStep step = new BdRoutingStep();
         step.setStepId(201L);
@@ -439,7 +586,7 @@ class PrdScheduleInputAssemblerTest {
     private void stubEmptyCapacityInputs() {
         when(capacityCalendarMapper.selectList(any())).thenReturn(List.of());
         when(holidayMapper.selectList(any())).thenReturn(List.of());
-        when(employeeScheduleMapper.selectList(any())).thenReturn(List.of());
+        when(teamMapper.selectList(any())).thenReturn(List.of());
     }
 
     private PrdSchedulePlanBo scheduleBo(Integer horizonDays, String strategy) {
@@ -471,6 +618,6 @@ class PrdScheduleInputAssemblerTest {
     }
 
     private Date toDate(LocalDate date) {
-        return Date.from(date.atStartOfDay(ZoneId.systemDefault()).toInstant());
+        return Date.from(date.atStartOfDay(ZoneId.of("Asia/Shanghai")).toInstant());
     }
 }

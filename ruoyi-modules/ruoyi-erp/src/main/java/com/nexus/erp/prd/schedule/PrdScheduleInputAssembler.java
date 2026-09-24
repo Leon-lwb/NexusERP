@@ -2,12 +2,12 @@ package com.nexus.erp.prd.schedule;
 
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.nexus.common.core.exception.ServiceException;
+import com.nexus.erp.bd.domain.BdRouting;
 import com.nexus.erp.bd.domain.BdRoutingStep;
 import com.nexus.erp.bd.domain.BdWorkstation;
-import com.nexus.erp.bd.domain.vo.BdRoutingVo;
+import com.nexus.erp.bd.mapper.BdRoutingMapper;
 import com.nexus.erp.bd.mapper.BdRoutingStepMapper;
 import com.nexus.erp.bd.mapper.BdWorkstationMapper;
-import com.nexus.erp.bd.service.IBdRoutingService;
 import com.nexus.erp.prd.domain.PrdCapacityCalendar;
 import com.nexus.erp.prd.domain.PrdWorkOrder;
 import com.nexus.erp.prd.domain.bo.PrdSchedulePlanBo;
@@ -37,6 +37,7 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -47,6 +48,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 /**
@@ -65,6 +67,8 @@ public class PrdScheduleInputAssembler {
     /**
      * 参与排产的工单状态: 已创建/已批准/已下达/生产中(未完工都可重排)
      */
+    private static final ZoneId BUSINESS_ZONE = ZoneId.of("Asia/Shanghai");
+
     private static final List<String> SCHEDULABLE_STATUS =
         List.of("CREATED", "APPROVED", "RELEASED", "IN_PROGRESS");
 
@@ -76,7 +80,7 @@ public class PrdScheduleInputAssembler {
     private final SchTeamMapper schTeamMapper;
     private final SchLeaveApplyMapper schLeaveApplyMapper;
     private final BdWorkstationMapper workstationMapper;
-    private final IBdRoutingService routingService;
+    private final BdRoutingMapper routingMapper;
     private final BdRoutingStepMapper routingStepMapper;
 
     /**
@@ -112,7 +116,12 @@ public class PrdScheduleInputAssembler {
         LocalDate startDate = toLocalDate(bo.getStartDate());
         int horizonDays = Math.max(1, bo.getHorizonDays() == null ? 14 : bo.getHorizonDays());
 
-        Map<Long, List<StepInfo>> routingMap = new HashMap<>();
+        LinkedHashSet<Long> materialIds = workOrders.stream()
+            .map(PrdWorkOrder::getMaterialId)
+            .filter(Objects::nonNull)
+            .sorted()
+            .collect(Collectors.toCollection(LinkedHashSet::new));
+        Map<Long, List<StepInfo>> routingMap = loadRoutingSteps(materialIds);
         List<WoInfo> woInfos = new ArrayList<>();
         for (PrdWorkOrder wo : workOrders) {
             WoInfo info = new WoInfo();
@@ -129,16 +138,14 @@ public class PrdScheduleInputAssembler {
             info.setWorkshopId(wo.getWorkshopId());
             info.setWorkshopName(wo.getWorkshopName());
             woInfos.add(info);
-
-            if (wo.getMaterialId() != null && !routingMap.containsKey(wo.getMaterialId())) {
-                routingMap.put(wo.getMaterialId(), loadRoutingSteps(wo.getMaterialId()));
-            }
         }
 
+        ResourceScope resourceScope = resourceScope(workOrders, routingMap);
         LocalDate horizonEnd = startDate.plusDays(horizonDays - 1L);
-        Map<LocalDate, Map<String, BigDecimal>> capacityByDate = loadCapacity(startDate, horizonEnd);
+        Map<LocalDate, Map<String, BigDecimal>> capacityByDate =
+            loadCapacity(startDate, horizonEnd, resourceScope);
         Set<LocalDate> holidays = loadHolidays(startDate, horizonEnd);
-        applyLaborCapacity(capacityByDate, startDate, horizonEnd);
+        applyLaborCapacity(capacityByDate, startDate, horizonEnd, resourceScope);
 
         ScheduleInput input = new ScheduleInput();
         input.setWorkOrders(woInfos);
@@ -226,60 +233,171 @@ public class PrdScheduleInputAssembler {
     }
 
     /**
-     * 加载物料当前版本工艺路线步骤(无则空列表 → 引擎跳过该工单)
+     * 批量加载物料当前有效路线及步骤。专属路线优先，通用路线兜底；重复 current active fail-closed。
      */
-    private List<StepInfo> loadRoutingSteps(Long materialId) {
-        BdRoutingVo routing = routingService.getCurrentRouting(materialId);
-        if (routing == null) {
-            return List.of();
+    private Map<Long, List<StepInfo>> loadRoutingSteps(LinkedHashSet<Long> materialIds) {
+        LinkedHashMap<Long, List<StepInfo>> result = new LinkedHashMap<>();
+        materialIds.forEach(materialId -> result.put(materialId, List.of()));
+        if (materialIds.isEmpty()) {
+            return result;
         }
-        List<BdRoutingStep> steps = routingStepMapper.selectList(
-            Wrappers.lambdaQuery(BdRoutingStep.class)
-                .eq(BdRoutingStep::getRoutingId, routing.getRoutingId())
-                .orderByAsc(BdRoutingStep::getSequenceNum));
-        if (steps == null || steps.isEmpty()) {
-            return List.of();
+        List<BdRouting> routings = routingMapper.selectList(
+            Wrappers.lambdaQuery(BdRouting.class)
+                .eq(BdRouting::getIsCurrent, 1L)
+                .eq(BdRouting::getStatus, 1L)
+                .and(query -> query.in(BdRouting::getMaterialId, materialIds)
+                    .or().isNull(BdRouting::getMaterialId)));
+        List<BdRouting> candidates = routings == null ? List.of() : routings.stream()
+            .filter(routing -> Objects.equals(1L, routing.getIsCurrent()))
+            .filter(routing -> Objects.equals(1L, routing.getStatus()))
+            .filter(routing -> routing.getMaterialId() == null || materialIds.contains(routing.getMaterialId()))
+            .sorted(Comparator.comparing(BdRouting::getRoutingId,
+                Comparator.nullsLast(Comparator.naturalOrder())))
+            .toList();
+        List<BdRouting> generic = candidates.stream()
+            .filter(routing -> routing.getMaterialId() == null)
+            .toList();
+        if (generic.size() > 1) {
+            throw new ServiceException("存在多条当前有效通用工艺路线: "
+                + generic.stream().map(BdRouting::getRoutingId).toList());
         }
-        return steps.stream().map(step -> {
-            StepInfo info = new StepInfo();
-            info.setStepId(step.getStepId());
-            info.setSeqNum(step.getSequenceNum());
-            info.setProcessCode(step.getProcessCode());
-            info.setProcessName(step.getProcessName());
-            info.setWorkstationId(step.getWorkstationId());
-            info.setWorkstationCode(step.getWorkstationCode());
-            info.setWorkstationName(step.getWorkstationName());
-            info.setStandardHours(step.getStandardHours());
-            info.setSetupHours(step.getSetupHours());
-            info.setIsOutsource(step.getIsOutsource());
-            info.setWaitTime(step.getWaitTime());
-            info.setTransferTime(step.getTransferTime());
-            return info;
-        }).toList();
+        LinkedHashMap<Long, BdRouting> selected = new LinkedHashMap<>();
+        for (Long materialId : materialIds) {
+            List<BdRouting> specific = candidates.stream()
+                .filter(routing -> Objects.equals(materialId, routing.getMaterialId()))
+                .toList();
+            if (specific.size() > 1) {
+                throw new ServiceException("物料 " + materialId + " 存在多条当前有效工艺路线: "
+                    + specific.stream().map(BdRouting::getRoutingId).toList());
+            }
+            BdRouting routing = specific.isEmpty() ? (generic.isEmpty() ? null : generic.get(0)) : specific.get(0);
+            if (routing != null && routing.getRoutingId() != null) {
+                selected.put(materialId, routing);
+            }
+        }
+        LinkedHashSet<Long> routingIds = selected.values().stream()
+            .map(BdRouting::getRoutingId)
+            .collect(Collectors.toCollection(LinkedHashSet::new));
+        Map<Long, List<BdRoutingStep>> stepsByRouting = new TreeMap<>();
+        if (!routingIds.isEmpty()) {
+            List<BdRoutingStep> steps = routingStepMapper.selectList(
+                Wrappers.lambdaQuery(BdRoutingStep.class)
+                    .in(BdRoutingStep::getRoutingId, routingIds)
+                    .orderByAsc(BdRoutingStep::getRoutingId, BdRoutingStep::getSequenceNum));
+            if (steps != null) {
+                for (BdRoutingStep step : steps) {
+                    if (step.getRoutingId() != null && routingIds.contains(step.getRoutingId())) {
+                        stepsByRouting.computeIfAbsent(step.getRoutingId(), ignored -> new ArrayList<>()).add(step);
+                    }
+                }
+            }
+        }
+        for (Long materialId : materialIds) {
+            BdRouting routing = selected.get(materialId);
+            if (routing == null) {
+                continue;
+            }
+            List<StepInfo> steps = stepsByRouting
+                .getOrDefault(routing.getRoutingId(), List.of()).stream()
+                .sorted(Comparator
+                    .comparing(BdRoutingStep::getSequenceNum,
+                        Comparator.nullsLast(Comparator.naturalOrder()))
+                    .thenComparing(BdRoutingStep::getStepId,
+                        Comparator.nullsLast(Comparator.naturalOrder())))
+                .map(this::toStepInfo)
+                .toList();
+            result.put(materialId, steps);
+        }
+        return result;
     }
 
-    /**
-     * 产能日历按日聚合: WORKSTATION 与 WORKSHOP 两种对象类型的剩余小时按资源键合并(多班次求和)
-     */
-    private Map<LocalDate, Map<String, BigDecimal>> loadCapacity(LocalDate start, LocalDate end) {
-        List<PrdCapacityCalendar> calendars = capacityCalendarMapper.selectList(
-            Wrappers.lambdaQuery(PrdCapacityCalendar.class)
-                .eq(PrdCapacityCalendar::getStatus, "ACTIVE")
-                .ge(PrdCapacityCalendar::getCalendarDate, toDate(start))
-                .le(PrdCapacityCalendar::getCalendarDate, toDate(end)));
-        Map<LocalDate, Map<String, BigDecimal>> capacity = new HashMap<>();
+    private StepInfo toStepInfo(BdRoutingStep step) {
+        StepInfo info = new StepInfo();
+        info.setStepId(step.getStepId());
+        info.setSeqNum(step.getSequenceNum());
+        info.setProcessCode(step.getProcessCode());
+        info.setProcessName(step.getProcessName());
+        info.setWorkstationId(step.getWorkstationId());
+        info.setWorkstationCode(step.getWorkstationCode());
+        info.setWorkstationName(step.getWorkstationName());
+        info.setStandardHours(step.getStandardHours());
+        info.setSetupHours(step.getSetupHours());
+        info.setIsOutsource(step.getIsOutsource());
+        info.setWaitTime(step.getWaitTime());
+        info.setTransferTime(step.getTransferTime());
+        return info;
+    }
+
+    private ResourceScope resourceScope(List<PrdWorkOrder> workOrders,
+                                        Map<Long, List<StepInfo>> routingMap) {
+        LinkedHashSet<Long> workshopIds = workOrders.stream()
+            .map(PrdWorkOrder::getWorkshopId)
+            .filter(Objects::nonNull)
+            .sorted()
+            .collect(Collectors.toCollection(LinkedHashSet::new));
+        LinkedHashSet<Long> workstationIds = workOrders.stream()
+            .map(PrdWorkOrder::getWorkstationId)
+            .filter(Objects::nonNull)
+            .sorted()
+            .collect(Collectors.toCollection(LinkedHashSet::new));
+        routingMap.values().stream().flatMap(List::stream)
+            .map(StepInfo::getWorkstationId)
+            .filter(Objects::nonNull)
+            .sorted()
+            .forEach(workstationIds::add);
+        return new ResourceScope(workshopIds, workstationIds);
+    }
+
+    /** 仅加载 scoped WORKSHOP/WORKSTATION 产能。 */
+    private Map<LocalDate, Map<String, BigDecimal>> loadCapacity(LocalDate start,
+                                                                 LocalDate end,
+                                                                 ResourceScope scope) {
+        Map<LocalDate, Map<String, BigDecimal>> capacity = new LinkedHashMap<>();
+        if (scope.workshopIds().isEmpty() && scope.workstationIds().isEmpty()) {
+            return capacity;
+        }
+        var query = Wrappers.lambdaQuery(PrdCapacityCalendar.class)
+            .eq(PrdCapacityCalendar::getStatus, "ACTIVE")
+            .ge(PrdCapacityCalendar::getCalendarDate, toDate(start))
+            .le(PrdCapacityCalendar::getCalendarDate, toDate(end));
+        query.and(resources -> {
+            boolean hasWorkshop = !scope.workshopIds().isEmpty();
+            if (hasWorkshop) {
+                resources.nested(resource -> resource
+                    .eq(PrdCapacityCalendar::getObjectType, "WORKSHOP")
+                    .in(PrdCapacityCalendar::getObjectId, scope.workshopIds()));
+            }
+            if (!scope.workstationIds().isEmpty()) {
+                if (hasWorkshop) {
+                    resources.or();
+                }
+                resources.nested(resource -> resource
+                    .eq(PrdCapacityCalendar::getObjectType, "WORKSTATION")
+                    .in(PrdCapacityCalendar::getObjectId, scope.workstationIds()));
+            }
+        });
+        List<PrdCapacityCalendar> calendars = capacityCalendarMapper.selectList(query);
         if (calendars == null) {
             return capacity;
         }
         for (PrdCapacityCalendar calendar : calendars) {
-            LocalDate day = toLocalDate(calendar.getCalendarDate());
-            if (calendar.getObjectId() == null) {
+            if (calendar.getObjectId() == null || calendar.getObjectType() == null) {
                 continue;
             }
-            String key = ScheduleModel.resourceKey(calendar.getObjectType(), calendar.getObjectId());
+            String objectType = calendar.getObjectType().toUpperCase(Locale.ROOT);
+            boolean related = "WORKSHOP".equals(objectType)
+                ? scope.workshopIds().contains(calendar.getObjectId())
+                : "WORKSTATION".equals(objectType)
+                    && scope.workstationIds().contains(calendar.getObjectId());
+            LocalDate day = toLocalDate(calendar.getCalendarDate());
+            if (!related || day == null || day.isBefore(start) || day.isAfter(end)) {
+                continue;
+            }
+            String key = ScheduleModel.resourceKey(objectType, calendar.getObjectId());
             BigDecimal remaining = calendar.getRemainingHours() == null
                 ? BigDecimal.ZERO : calendar.getRemainingHours();
-            capacity.computeIfAbsent(day, ignored -> new HashMap<>()).merge(key, remaining, BigDecimal::add);
+            capacity.computeIfAbsent(day, ignored -> new LinkedHashMap<>())
+                .merge(key, remaining, BigDecimal::add);
         }
         return capacity;
     }
@@ -304,64 +422,79 @@ public class PrdScheduleInputAssembler {
         return result;
     }
 
-    /**
-     * 把排班/班次/请假折算的人力可用性并入产能视图。
-     */
+    /** 把 scoped 排班/班次/请假折算的人力可用性并入产能视图。 */
     private void applyLaborCapacity(Map<LocalDate, Map<String, BigDecimal>> capacityByDate,
-                                    LocalDate start, LocalDate end) {
+                                    LocalDate start,
+                                    LocalDate end,
+                                    ResourceScope scope) {
+        if (scope.workshopIds().isEmpty()) {
+            return;
+        }
+        List<SchTeam> teams = schTeamMapper.selectList(
+            Wrappers.lambdaQuery(SchTeam.class)
+                .in(SchTeam::getWorkshopId, scope.workshopIds()));
+        Map<Long, Long> teamWorkshop = new LinkedHashMap<>();
+        if (teams != null) {
+            teams.stream()
+                .filter(team -> team.getTeamId() != null && team.getWorkshopId() != null)
+                .filter(team -> scope.workshopIds().contains(team.getWorkshopId()))
+                .sorted(Comparator.comparing(SchTeam::getTeamId))
+                .forEach(team -> teamWorkshop.put(team.getTeamId(), team.getWorkshopId()));
+        }
+        if (teamWorkshop.isEmpty()) {
+            log.info("APS人力产能: scoped 车间无班组, 沿用产能日历");
+            return;
+        }
         List<SchEmployeeSchedule> schedules = employeeScheduleMapper.selectList(
-            Wrappers.<SchEmployeeSchedule>lambdaQuery()
+            Wrappers.lambdaQuery(SchEmployeeSchedule.class)
+                .in(SchEmployeeSchedule::getTeamId, teamWorkshop.keySet())
                 .ge(SchEmployeeSchedule::getScheduledDate, toDate(start))
                 .le(SchEmployeeSchedule::getScheduledDate, toDate(end)));
         if (schedules == null || schedules.isEmpty()) {
-            log.info("APS人力产能: {} ~ {} 无排班数据, 沿用产能日历", start, end);
+            log.info("APS人力产能: {} ~ {} scoped 班组无排班数据, 沿用产能日历", start, end);
             return;
         }
-
-        Set<Long> shiftIds = new HashSet<>();
-        for (SchEmployeeSchedule schedule : schedules) {
-            Long shiftId = schedule.getActualShiftId() != null
-                ? schedule.getActualShiftId() : schedule.getShiftId();
-            if (shiftId != null) {
-                shiftIds.add(shiftId);
-            }
-        }
-        Map<Long, BigDecimal> shiftHours = new HashMap<>();
+        List<SchEmployeeSchedule> scopedSchedules = schedules.stream()
+            .filter(schedule -> schedule.getTeamId() != null
+                && teamWorkshop.containsKey(schedule.getTeamId()))
+            .filter(schedule -> schedule.getScheduledDate() != null)
+            .filter(schedule -> {
+                LocalDate day = toLocalDate(schedule.getScheduledDate());
+                return day != null && !day.isBefore(start) && !day.isAfter(end);
+            })
+            .toList();
+        LinkedHashSet<Long> shiftIds = scopedSchedules.stream()
+            .map(schedule -> schedule.getActualShiftId() != null
+                ? schedule.getActualShiftId() : schedule.getShiftId())
+            .filter(Objects::nonNull)
+            .sorted()
+            .collect(Collectors.toCollection(LinkedHashSet::new));
+        Map<Long, BigDecimal> shiftHours = new LinkedHashMap<>();
         if (!shiftIds.isEmpty()) {
             for (SchShift shift : schShiftMapper.selectBatchIds(shiftIds)) {
-                if (shift.getWorkHours() != null) {
+                if (shift.getShiftId() != null && shiftIds.contains(shift.getShiftId())
+                    && shift.getWorkHours() != null) {
                     shiftHours.put(shift.getShiftId(), shift.getWorkHours());
                 }
             }
         }
-
-        Set<Long> teamIds = schedules.stream()
-            .map(SchEmployeeSchedule::getTeamId)
+        LinkedHashSet<Long> workerIds = scopedSchedules.stream()
+            .map(SchEmployeeSchedule::getWorkerId)
             .filter(Objects::nonNull)
-            .collect(Collectors.toSet());
-        Map<Long, Long> teamWorkshop = new HashMap<>();
-        if (!teamIds.isEmpty()) {
-            for (SchTeam team : schTeamMapper.selectBatchIds(teamIds)) {
-                if (team.getWorkshopId() != null) {
-                    teamWorkshop.put(team.getTeamId(), team.getWorkshopId());
-                }
-            }
-        }
-
-        Set<String> onLeave = loadApprovedLeaveKeys(start, end);
+            .sorted()
+            .collect(Collectors.toCollection(LinkedHashSet::new));
+        Set<String> onLeave = loadApprovedLeaveKeys(start, end, workerIds);
         List<PrdLaborCapacity.LaborRow> rows = new ArrayList<>();
-        for (SchEmployeeSchedule schedule : schedules) {
-            if (schedule.getIsWorkingDay() == null || schedule.getIsWorkingDay() != 1) {
+        for (SchEmployeeSchedule schedule : scopedSchedules) {
+            if (schedule.getIsWorkingDay() == null || schedule.getIsWorkingDay() != 1
+                || "rest".equalsIgnoreCase(schedule.getScheduleStatus())) {
                 continue;
             }
-            if ("rest".equalsIgnoreCase(schedule.getScheduleStatus())) {
-                continue;
-            }
-            Long workshopId = schedule.getTeamId() == null ? null : teamWorkshop.get(schedule.getTeamId());
-            if (workshopId == null || schedule.getScheduledDate() == null) {
-                continue;
-            }
+            Long workshopId = teamWorkshop.get(schedule.getTeamId());
             LocalDate day = toLocalDate(schedule.getScheduledDate());
+            if (workshopId == null || day == null) {
+                continue;
+            }
             if (schedule.getWorkerId() != null
                 && onLeave.contains(PrdLaborCapacity.leaveKey(schedule.getWorkerId(), day))) {
                 continue;
@@ -373,24 +506,40 @@ public class PrdScheduleInputAssembler {
             row.setHours(resolveShiftHours(schedule, shiftHours));
             rows.add(row);
         }
-
         Map<Long, Map<LocalDate, BigDecimal>> laborByWorkshop =
             PrdLaborCapacity.aggregate(rows, start, end);
         if (laborByWorkshop.isEmpty()) {
-            log.info("APS人力产能: 排班未关联班组/车间, 无法折算人力, 沿用产能日历");
+            log.info("APS人力产能: scoped 排班无有效人力, 沿用产能日历");
             return;
         }
-
-        Map<Long, List<Long>> workstationsByShop = new HashMap<>();
-        List<BdWorkstation> workstations = workstationMapper.selectList(
-            Wrappers.<BdWorkstation>lambdaQuery()
-                .in(BdWorkstation::getWorkshopId, laborByWorkshop.keySet()));
-        for (BdWorkstation workstation : workstations) {
-            workstationsByShop.computeIfAbsent(workstation.getWorkshopId(), ignored -> new ArrayList<>())
-                .add(workstation.getWorkstationId());
+        var workstationQuery = Wrappers.lambdaQuery(BdWorkstation.class);
+        if (!scope.workstationIds().isEmpty()) {
+            workstationQuery.and(resources -> resources
+                .in(BdWorkstation::getWorkstationId, scope.workstationIds())
+                .or().in(BdWorkstation::getWorkshopId, laborByWorkshop.keySet()));
+        } else {
+            workstationQuery.in(BdWorkstation::getWorkshopId, laborByWorkshop.keySet());
+        }
+        List<BdWorkstation> workstations = workstationMapper.selectList(workstationQuery);
+        Map<Long, List<Long>> workstationsByShop = new LinkedHashMap<>();
+        if (workstations != null) {
+            for (BdWorkstation workstation : workstations) {
+                if (workstation.getWorkstationId() == null || workstation.getWorkshopId() == null
+                    || !laborByWorkshop.containsKey(workstation.getWorkshopId())) {
+                    continue;
+                }
+                if (!scope.workstationIds().isEmpty()
+                    && !scope.workstationIds().contains(workstation.getWorkstationId())
+                    && !scope.workshopIds().contains(workstation.getWorkshopId())) {
+                    continue;
+                }
+                workstationsByShop.computeIfAbsent(
+                    workstation.getWorkshopId(), ignored -> new ArrayList<>())
+                    .add(workstation.getWorkstationId());
+            }
         }
         PrdLaborCapacity.applyCap(capacityByDate, laborByWorkshop, workstationsByShop);
-        log.info("APS人力产能: 已接入排班人力约束, 车间数={}, 有效排班行={}",
+        log.info("APS人力产能: 已接入 scoped 排班约束, 车间数={}, 有效排班行={}",
             laborByWorkshop.size(), rows.size());
     }
 
@@ -415,21 +564,27 @@ public class PrdScheduleInputAssembler {
         return PrdLaborCapacity.DEFAULT_HOURS_PER_WORKER_DAY;
     }
 
-    /**
-     * 已通过的请假 → (工人ID|日期) 键集合，用于把请假人员从当日人力中剔除
-     */
-    private Set<String> loadApprovedLeaveKeys(LocalDate start, LocalDate end) {
+    /** 已通过的 scoped 请假 → (工人ID|日期) 键集合。 */
+    private Set<String> loadApprovedLeaveKeys(LocalDate start,
+                                               LocalDate end,
+                                               Set<Long> workerIds) {
+        Set<String> keys = new HashSet<>();
+        if (workerIds.isEmpty()) {
+            return keys;
+        }
         List<SchLeaveApply> leaves = schLeaveApplyMapper.selectList(
-            Wrappers.<SchLeaveApply>lambdaQuery()
+            Wrappers.lambdaQuery(SchLeaveApply.class)
                 .eq(SchLeaveApply::getApplyStatus, "approved")
+                .in(SchLeaveApply::getWorkerId, workerIds)
                 .le(SchLeaveApply::getStartDate, toDate(end))
                 .ge(SchLeaveApply::getEndDate, toDate(start)));
-        Set<String> keys = new HashSet<>();
         if (leaves == null) {
             return keys;
         }
         for (SchLeaveApply leave : leaves) {
-            if (leave.getWorkerId() == null || leave.getStartDate() == null || leave.getEndDate() == null) {
+            if (leave.getWorkerId() == null || !workerIds.contains(leave.getWorkerId())
+                || leave.getStartDate() == null || leave.getEndDate() == null
+                || !"approved".equalsIgnoreCase(leave.getApplyStatus())) {
                 continue;
             }
             LocalDate from = toLocalDate(leave.getStartDate());
@@ -443,14 +598,15 @@ public class PrdScheduleInputAssembler {
         return keys;
     }
 
+    private record ResourceScope(Set<Long> workshopIds, Set<Long> workstationIds) {
+    }
+
     private LocalDate toLocalDate(Date date) {
-        if (date instanceof java.sql.Date sqlDate) {
-            return sqlDate.toLocalDate();
-        }
-        return date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+        return java.time.Instant.ofEpochMilli(date.getTime())
+            .atZone(BUSINESS_ZONE).toLocalDate();
     }
 
     private Date toDate(LocalDate date) {
-        return Date.from(date.atStartOfDay(ZoneId.systemDefault()).toInstant());
+        return Date.from(date.atStartOfDay(BUSINESS_ZONE).toInstant());
     }
 }

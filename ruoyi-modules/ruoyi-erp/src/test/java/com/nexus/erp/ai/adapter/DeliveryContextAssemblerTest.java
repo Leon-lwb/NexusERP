@@ -1,5 +1,7 @@
 package com.nexus.erp.ai.adapter;
 
+import com.baomidou.dynamic.datasource.annotation.DS;
+import com.baomidou.dynamic.datasource.support.DataSourceClassResolver;
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.conditions.AbstractWrapper;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
@@ -19,6 +21,7 @@ import com.nexus.erp.bd.mapper.BdRoutingStepMapper;
 import com.nexus.erp.bd.mapper.BdWorkstationMapper;
 import com.nexus.erp.prd.domain.PrdCapacityCalendar;
 import com.nexus.erp.prd.domain.PrdMaterialRequirement;
+import com.nexus.erp.prd.domain.PrdProductionPlan;
 import com.nexus.erp.prd.domain.PrdMaterialRequirementDetail;
 import com.nexus.erp.prd.domain.PrdSchedulePlan;
 import com.nexus.erp.prd.domain.PrdScheduleTask;
@@ -27,6 +30,7 @@ import com.nexus.erp.prd.domain.bo.PrdSchedulePlanBo;
 import com.nexus.erp.prd.mapper.PrdCapacityCalendarMapper;
 import com.nexus.erp.prd.mapper.PrdMaterialRequirementDetailMapper;
 import com.nexus.erp.prd.mapper.PrdMaterialRequirementMapper;
+import com.nexus.erp.prd.mapper.PrdProductionPlanMapper;
 import com.nexus.erp.prd.mapper.PrdSchedulePlanMapper;
 import com.nexus.erp.prd.mapper.PrdScheduleTaskMapper;
 import com.nexus.erp.prd.mapper.PrdWorkOrderMapper;
@@ -59,16 +63,19 @@ import com.nexus.erp.wm.domain.WmMaterialStock;
 import com.nexus.erp.wm.mapper.WmMaterialStockMapper;
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 
+import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -82,6 +89,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -94,11 +102,11 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -125,6 +133,8 @@ class DeliveryContextAssemblerTest {
     private PrdScheduleTaskMapper scheduleTaskMapper;
     @Mock
     private PrdMaterialRequirementMapper requirementMapper;
+    @Mock
+    private PrdProductionPlanMapper productionPlanMapper;
     @Mock
     private PrdMaterialRequirementDetailMapper requirementDetailMapper;
     @Mock
@@ -158,6 +168,7 @@ class DeliveryContextAssemblerTest {
     @Mock
     private PrdScheduleInputAssembler scheduleInputAssembler;
 
+    @Spy
     @InjectMocks
     private DeliveryContextAssembler assembler;
 
@@ -166,7 +177,7 @@ class DeliveryContextAssemblerTest {
         MybatisConfiguration configuration = new MybatisConfiguration();
         MapperBuilderAssistant assistant = new MapperBuilderAssistant(configuration, "");
         for (Class<?> entity : List.of(
-            SoSalesOrderHeader.class, SoSalesOrderLine.class, PrdWorkOrder.class,
+            SoSalesOrderHeader.class, SoSalesOrderLine.class, PrdWorkOrder.class, PrdProductionPlan.class,
             PrdSchedulePlan.class, PrdScheduleTask.class, PrdMaterialRequirement.class,
             PrdMaterialRequirementDetail.class, WmMaterialStock.class, BdMaterial.class,
             PuPurchaseOrder.class, PuPurchaseOrderLine.class, PuVendorEvaluation.class,
@@ -175,6 +186,323 @@ class DeliveryContextAssemblerTest {
             BdWorkstation.class)) {
             TableInfoHelper.initTableInfo(assistant, entity);
         }
+    }
+
+    @Test
+    void freshnessHashIsStableAcrossJvmDefaultTimeZones() {
+        TimeZone original = TimeZone.getDefault();
+        try {
+            TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
+            RichFixture fixture = stubRichSalesOrderFixture(
+                new AtomicBoolean(false), new AtomicReference<>(new BigDecimal("20")),
+                new AtomicReference<>(new BigDecimal("3")));
+            String utcHash = assembler.computeFreshnessHash(fixture.ref(), fixture.actor());
+
+            TimeZone.setDefault(TimeZone.getTimeZone("America/Los_Angeles"));
+            String losAngelesHash = assembler.computeFreshnessHash(fixture.ref(), fixture.actor());
+
+            assertEquals(utcHash, losAngelesHash);
+        } finally {
+            TimeZone.setDefault(original);
+        }
+    }
+
+    @Test
+    void freshnessDecimalCanonicalIgnoresScaleAndNormalizesZero() {
+        AtomicReference<BigDecimal> stockQty = new AtomicReference<>(new BigDecimal("20.00"));
+        AtomicReference<BigDecimal> reservedQty = new AtomicReference<>(new BigDecimal("0.00"));
+        RichFixture fixture = stubRichSalesOrderFixture(new AtomicBoolean(false), stockQty, reservedQty);
+
+        String first = assembler.computeFreshnessHash(fixture.ref(), fixture.actor());
+        stockQty.set(new BigDecimal("20.0"));
+        reservedQty.set(BigDecimal.ZERO);
+        String second = assembler.computeFreshnessHash(fixture.ref(), fixture.actor());
+
+        assertEquals(first, second);
+    }
+
+    @Test
+    void freshnessIgnoresRequirementsOutsideFixedNinetyDayWindowAndQueriesDates() {
+        RichFixture fixture = stubRichSalesOrderFixture(
+            new AtomicBoolean(false), new AtomicReference<>(new BigDecimal("20")),
+            new AtomicReference<>(new BigDecimal("3")));
+        PrdMaterialRequirement requirement = requirement(801L, 701L);
+        when(requirementMapper.selectList(any())).thenReturn(List.of(requirement));
+        AtomicReference<BigDecimal> outsideRequired = new AtomicReference<>(new BigDecimal("10"));
+        when(requirementDetailMapper.selectList(any())).thenAnswer(invocation -> {
+            PrdMaterialRequirementDetail inside =
+                requirementDetail(901L, 801L, 501L, "10", "2", TODAY.plusDays(10));
+            PrdMaterialRequirementDetail outside =
+                requirementDetail(902L, 801L, 999L, outsideRequired.get().toPlainString(), "0",
+                    TODAY.plusDays(100));
+            return List.of(outside, inside);
+        });
+
+        String first = assembler.computeFreshnessHash(fixture.ref(), fixture.actor());
+        outsideRequired.set(new BigDecimal("99"));
+        String second = assembler.computeFreshnessHash(fixture.ref(), fixture.actor());
+
+        assertEquals(first, second);
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Wrapper<PrdMaterialRequirementDetail>> queries =
+            ArgumentCaptor.forClass(Wrapper.class);
+        verify(requirementDetailMapper, atLeastOnce()).selectList(queries.capture());
+        for (Wrapper<PrdMaterialRequirementDetail> query : queries.getAllValues()) {
+            assertTrue(query.getSqlSegment().contains("required_date"), query.getSqlSegment());
+            Collection<?> values = queryValues(query);
+            assertTrue(values.contains(java.sql.Date.valueOf(TODAY)), values.toString());
+            assertTrue(values.contains(java.sql.Date.valueOf(TODAY.plusDays(89))), values.toString());
+        }
+    }
+
+    @Test
+    void freshnessKeepsOverdueAndNullArrivalsButIgnoresExplicitlyLateArrivals() {
+        RichFixture fixture = stubRichSalesOrderFixture(
+            new AtomicBoolean(false), new AtomicReference<>(new BigDecimal("20")),
+            new AtomicReference<>(new BigDecimal("3")));
+        AtomicReference<Date> lateUpdate =
+            new AtomicReference<>(toDateTime(2026, 9, 23, 10, 0));
+        when(purchaseOrderLineMapper.selectList(any())).thenReturn(List.of(
+            purchaseLine(2101L, 2001L, 501L, "10", "1"),
+            purchaseLine(2102L, 2002L, 501L, "10", "1"),
+            purchaseLine(2103L, 2003L, 501L, "10", "1"),
+            purchaseLine(2104L, 2004L, 501L, "10", "1")));
+        when(purchaseOrderMapper.selectList(any())).thenAnswer(invocation -> {
+            PuPurchaseOrder overdue = purchaseOrder(2001L, 301L, "APPROVED", TODAY.minusDays(2));
+            PuPurchaseOrder unknown = purchaseOrder(2002L, 302L, "APPROVED", null);
+            PuPurchaseOrder within = purchaseOrder(2003L, 303L, "APPROVED", TODAY.plusDays(20));
+            PuPurchaseOrder late = purchaseOrder(2004L, 304L, "APPROVED", TODAY.plusDays(100));
+            late.setUpdateTime(lateUpdate.get());
+            return List.of(late, within, unknown, overdue);
+        });
+
+        String first = assembler.computeFreshnessHash(fixture.ref(), fixture.actor());
+        lateUpdate.set(toDateTime(2026, 9, 23, 10, 1));
+        String second = assembler.computeFreshnessHash(fixture.ref(), fixture.actor());
+
+        assertEquals(first, second);
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Wrapper<PuPurchaseOrder>> queries = ArgumentCaptor.forClass(Wrapper.class);
+        verify(purchaseOrderMapper, atLeastOnce()).selectList(queries.capture());
+        for (Wrapper<PuPurchaseOrder> query : queries.getAllValues()) {
+            String sql = query.getSqlSegment();
+            assertTrue(sql.contains("expected_arrival_date"), sql);
+            assertTrue(sql.contains("IS NULL"), sql);
+            assertTrue(sql.contains("<="), sql);
+            assertTrue(queryValues(query).contains(java.sql.Date.valueOf(TODAY.plusDays(89))),
+                queryValues(query).toString());
+        }
+    }
+
+    @Test
+    void mixedStatusScopeKeepsApprovingAndSchedulesOnlyEligibleWorkOrders() {
+        SoSalesOrderHeader order = salesOrder(100L, "SO-100");
+        when(salesOrderHeaderMapper.selectById(100L)).thenReturn(order);
+        when(salesOrderLineMapper.selectList(any())).thenReturn(List.of());
+        PrdWorkOrder approving = workOrder(11L, 811L, 201L, "APPROVING");
+        approving.setSourceId(100L);
+        PrdWorkOrder released = workOrder(12L, 812L, 202L, "RELEASED");
+        released.setSourceId(100L);
+        PrdWorkOrder completed = workOrder(13L, 813L, 203L, "COMPLETED");
+        completed.setSourceId(100L);
+        when(workOrderMapper.selectList(any())).thenReturn(List.of(completed, released, approving));
+        when(scheduleInputAssembler.assemble(any(PrdSchedulePlanBo.class),
+            argThat(ids -> new LinkedHashSet<>(ids).equals(new LinkedHashSet<>(List.of(12L))))))
+            .thenReturn(scheduleInput(List.of(released), false));
+        stubEmptyRelatedFacts();
+        when(scheduleTaskMapper.selectList(any())).thenReturn(List.of());
+
+        DeliveryContextSnapshot snapshot = assembler.assemble(
+            new DecisionBusinessRef(DecisionBusinessType.SALES_ORDER, 100L, null), 14,
+            actor("ai:decision:run", "so:orderheader:query"));
+
+        assertEquals(List.of(11L, 12L), snapshot.workOrders().stream()
+            .map(DeliveryContextSnapshot.WorkOrderFact::id).toList());
+        assertFalse(snapshot.warnings().stream()
+            .anyMatch(text -> text.contains("NO_SCHEDULABLE_WORK_ORDER")));
+        verify(scheduleInputAssembler).assemble(any(PrdSchedulePlanBo.class),
+            argThat(ids -> new LinkedHashSet<>(ids).equals(new LinkedHashSet<>(List.of(12L)))));
+    }
+
+    @Test
+    void approvingRootWorkOrderReturnsFactsWithEmptyApsWarning() {
+        PrdWorkOrder approving = workOrder(11L, 811L, 201L, "APPROVING");
+        when(workOrderMapper.selectById(11L)).thenReturn(approving);
+        stubEmptyRelatedFacts();
+
+        DecisionBusinessRef ref = new DecisionBusinessRef(DecisionBusinessType.WORK_ORDER, 11L, null);
+        DecisionActor actor = actor("ai:decision:run", "prd:work:query");
+        assertTrue(assembler.exists(ref, actor));
+        DeliveryContextSnapshot snapshot = assembler.assemble(ref, 14, actor);
+
+        assertEquals(List.of(11L), snapshot.workOrders().stream()
+            .map(DeliveryContextSnapshot.WorkOrderFact::id).toList());
+        assertTrue(snapshot.capacityByDate().isEmpty());
+        assertTrue(snapshot.warnings().stream()
+            .anyMatch(text -> text.contains("NO_SCHEDULABLE_WORK_ORDER")),
+            snapshot.warnings().toString());
+        verify(scheduleInputAssembler, never()).assemble(any(PrdSchedulePlanBo.class), anyCollection());
+        verify(scheduleInputAssembler, never()).assemble(any(PrdSchedulePlanBo.class));
+    }
+
+    @Test
+    void schedulePlanCompletedTaskWorkOrderDoesNotFailOrEnterScope() {
+        PrdSchedulePlan plan = schedulePlan(9001L, "APS-9001", "PUBLISHED", TODAY, TODAY.plusDays(7));
+        PrdScheduleTask completedTask = scheduleTask(501L, 9001L, 11L, 1, "1.000", TODAY);
+        PrdScheduleTask releasedTask = scheduleTask(502L, 9001L, 12L, 1, "1.000", TODAY);
+        PrdWorkOrder completed = workOrder(11L, 811L, 201L, "COMPLETED");
+        PrdWorkOrder released = workOrder(12L, 812L, 202L, "RELEASED");
+        when(schedulePlanMapper.selectById(9001L)).thenReturn(plan);
+        when(scheduleTaskMapper.selectList(any())).thenReturn(List.of(completedTask, releasedTask));
+        when(workOrderMapper.selectList(any())).thenReturn(List.of(completed, released));
+        when(scheduleInputAssembler.assemble(any(PrdSchedulePlanBo.class),
+            argThat(ids -> new LinkedHashSet<>(ids).equals(new LinkedHashSet<>(List.of(12L))))))
+            .thenReturn(scheduleInput(List.of(released), false));
+        stubEmptyRelatedFacts();
+
+        DeliveryContextSnapshot snapshot = assembler.assemble(
+            new DecisionBusinessRef(DecisionBusinessType.SCHEDULE_PLAN, 9001L, null), 14,
+            actor("ai:decision:run", "prd:schedule:query"));
+
+        assertEquals(List.of(12L), snapshot.workOrders().stream()
+            .map(DeliveryContextSnapshot.WorkOrderFact::id).toList());
+    }
+
+    @Test
+    void salesOrderUsesLineProductionPlanChainAndBindsRequirementToSourceWorkOrder() {
+        SoSalesOrderHeader order = salesOrder(100L, "SO-100");
+        SoSalesOrderLine line = salesOrderLine(101L, 100L, 501L);
+        PrdProductionPlan plan = productionPlan(201L, 101L, 301L);
+        PrdMaterialRequirement requirement = requirement(301L, 201L);
+        PrdMaterialRequirementDetail detail = requirementDetail(901L, 301L, 501L, "10", "2", TODAY);
+        PrdWorkOrder workOrder = workOrder(11L, 811L, 201L, "RELEASED");
+        workOrder.setSourceType("MATERIAL_REQUIREMENT");
+        workOrder.setSourceId(301L);
+        when(salesOrderHeaderMapper.selectById(100L)).thenReturn(order);
+        when(salesOrderLineMapper.selectList(argThat(wrapper ->
+            wrapper.getSqlSegment().contains("so_id") && queryValues(wrapper).contains(100L))))
+            .thenReturn(List.of(line));
+        when(productionPlanMapper.selectList(argThat(wrapper ->
+            wrapper.getSqlSegment().contains("order_line_id") && queryValues(wrapper).contains(101L))))
+            .thenReturn(List.of(plan));
+        when(workOrderMapper.selectList(argThat(wrapper ->
+            wrapper.getSqlSegment().contains("plan_id") && queryValues(wrapper).contains(201L))))
+            .thenReturn(List.of(workOrder));
+        when(requirementMapper.selectList(any())).thenReturn(List.of(requirement));
+        when(requirementDetailMapper.selectList(any())).thenReturn(List.of(detail));
+        when(stockMapper.selectList(any())).thenReturn(List.of());
+        when(materialMapper.selectBatchIds(anyCollection())).thenReturn(List.of());
+        when(purchaseOrderLineMapper.selectList(any())).thenReturn(List.of());
+        when(scheduleTaskMapper.selectList(any())).thenReturn(List.of());
+        when(scheduleInputAssembler.assemble(any(PrdSchedulePlanBo.class), anyCollection()))
+            .thenReturn(scheduleInput(List.of(workOrder), false));
+
+        DeliveryContextSnapshot snapshot = assembler.assemble(
+            new DecisionBusinessRef(DecisionBusinessType.SALES_ORDER, 100L, null), 14,
+            actor("ai:decision:run", "so:orderheader:query"));
+
+        assertEquals(List.of(11L), snapshot.workOrders().stream()
+            .map(DeliveryContextSnapshot.WorkOrderFact::id).toList());
+        assertEquals(11L, snapshot.requirements().get(0).workOrderId());
+        assertEquals("WO-11", snapshot.requirements().get(0).workOrderNo());
+    }
+
+    @Test
+    void workOrderRestoresSalesOrderThroughProductionPlanOrderLine() {
+        SoSalesOrderHeader order = salesOrder(100L, "SO-100");
+        SoSalesOrderLine line = salesOrderLine(101L, 100L, 501L);
+        PrdProductionPlan plan = productionPlan(201L, 101L, 301L);
+        PrdWorkOrder workOrder = workOrder(11L, 811L, 201L, "RELEASED");
+        workOrder.setSourceType("MATERIAL_REQUIREMENT");
+        workOrder.setSourceId(301L);
+        when(workOrderMapper.selectById(11L)).thenReturn(workOrder);
+        when(productionPlanMapper.selectBatchIds(argThat(ids -> ids.contains(201L))))
+            .thenReturn(List.of(plan));
+        when(salesOrderLineMapper.selectBatchIds(argThat(ids -> ids.contains(101L))))
+            .thenReturn(List.of(line));
+        when(salesOrderHeaderMapper.selectById(100L)).thenReturn(order);
+        when(scheduleInputAssembler.assemble(any(PrdSchedulePlanBo.class), anyCollection()))
+            .thenReturn(scheduleInput(List.of(workOrder), false));
+        stubEmptyRelatedFacts();
+        when(scheduleTaskMapper.selectList(any())).thenReturn(List.of());
+
+        DeliveryContextSnapshot snapshot = assembler.assemble(
+            new DecisionBusinessRef(DecisionBusinessType.WORK_ORDER, 11L, null), 14,
+            actor("ai:decision:run", "prd:work:query"));
+
+        assertEquals(List.of(100L), snapshot.salesOrders().stream()
+            .map(DeliveryContextSnapshot.OrderFact::id).toList());
+    }
+
+    @Test
+    void schedulePlanRestoresSalesOrderAndWorkOrderMappingThroughProductionPlan() {
+        SoSalesOrderHeader order = salesOrder(100L, "SO-100");
+        SoSalesOrderLine line = salesOrderLine(101L, 100L, 501L);
+        PrdProductionPlan productionPlan = productionPlan(201L, 101L, 301L);
+        PrdWorkOrder workOrder = workOrder(11L, 811L, 201L, "RELEASED");
+        workOrder.setSourceType("MATERIAL_REQUIREMENT");
+        workOrder.setSourceId(301L);
+        PrdSchedulePlan schedulePlan = schedulePlan(9001L, "APS-9001", "PUBLISHED", TODAY, TODAY.plusDays(7));
+        PrdScheduleTask task = scheduleTask(501L, 9001L, 11L, 1, "1.250", TODAY);
+        when(schedulePlanMapper.selectById(9001L)).thenReturn(schedulePlan);
+        when(scheduleTaskMapper.selectList(any())).thenReturn(List.of(task));
+        when(workOrderMapper.selectList(argThat(wrapper ->
+            wrapper.getSqlSegment().contains("wo_id") && queryValues(wrapper).contains(11L))))
+            .thenReturn(List.of(workOrder));
+        when(productionPlanMapper.selectBatchIds(argThat(ids -> ids.contains(201L))))
+            .thenReturn(List.of(productionPlan));
+        when(salesOrderLineMapper.selectBatchIds(argThat(ids -> ids.contains(101L))))
+            .thenReturn(List.of(line));
+        when(salesOrderHeaderMapper.selectById(100L)).thenReturn(order);
+        when(scheduleInputAssembler.assemble(any(PrdSchedulePlanBo.class), anyCollection()))
+            .thenReturn(scheduleInput(List.of(workOrder), false));
+        stubEmptyRelatedFacts();
+
+        DeliveryContextSnapshot snapshot = assembler.assemble(
+            new DecisionBusinessRef(DecisionBusinessType.SCHEDULE_PLAN, 9001L, null), 14,
+            actor("ai:decision:run", "prd:schedule:query"));
+
+        assertEquals(List.of(100L), snapshot.salesOrders().stream()
+            .map(DeliveryContextSnapshot.OrderFact::id).toList());
+        assertEquals(List.of("100"), snapshot.currentSchedule().get("workOrderSalesOrderIds"));
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> mappings =
+            (List<Map<String, Object>>) snapshot.currentSchedule().get("workOrderSalesOrders");
+        assertEquals("11", mappings.get(0).get("workOrderId"));
+        assertEquals("100", mappings.get(0).get("salesOrderId"));
+    }
+
+    @Test
+    void computeFreshnessHashResolvesErpDatasourceForPublicInvocation() throws Exception {
+        DataSourceClassResolver resolver = new DataSourceClassResolver(true);
+        Method method = DeliveryContextAssembler.class.getMethod(
+            "computeFreshnessHash", DecisionBusinessRef.class, DecisionActor.class);
+
+        assertEquals("erp", resolver.findKey(method, assembler, DS.class));
+    }
+
+    @Test
+    void unrelatedCapacitySourceUpdateDoesNotChangeHash() {
+        RichFixture fixture = stubRichSalesOrderFixture(
+            new AtomicBoolean(false), new AtomicReference<>(new BigDecimal("20")),
+            new AtomicReference<>(new BigDecimal("3")));
+        stubRoutingSourceFacts(new AtomicReference<>(7001L),
+            new AtomicReference<>(toDateTime(2026, 9, 23, 8, 0)));
+        AtomicReference<Date> unrelatedUpdate =
+            new AtomicReference<>(toDateTime(2026, 9, 23, 9, 0));
+        when(capacityCalendarMapper.selectList(any())).thenAnswer(invocation -> {
+            PrdCapacityCalendar relevant = capacityCalendar(6001L, "WORKSTATION", 1100L, "8");
+            relevant.setUpdateTime(toDateTime(2026, 9, 23, 8, 30));
+            PrdCapacityCalendar unrelated = capacityCalendar(6002L, "WORKSTATION", 9999L, "8");
+            unrelated.setUpdateTime(unrelatedUpdate.get());
+            return List.of(unrelated, relevant);
+        });
+
+        String first = assembler.computeFreshnessHash(fixture.ref(), fixture.actor());
+        unrelatedUpdate.set(toDateTime(2026, 9, 23, 9, 1));
+        String second = assembler.computeFreshnessHash(fixture.ref(), fixture.actor());
+
+        assertEquals(first, second);
     }
 
     @Test
@@ -364,6 +692,11 @@ class DeliveryContextAssemblerTest {
         verifyNoInteractions(scheduleTaskMapper, workOrderMapper, scheduleInputAssembler);
     }
 
+    @BeforeEach
+    void fixedBusinessDate() {
+        doReturn(TODAY).when(assembler).businessDate();
+    }
+
     @Test
     void assembleUsesOneBusinessDateAndOneFactReadForSnapshotAndHash() {
         AtomicBoolean reverse = new AtomicBoolean(false);
@@ -380,10 +713,7 @@ class DeliveryContextAssemblerTest {
                 stock(10002L, 501L, "5", "1"),
                 stock(10003L, 502L, "8", "0"));
         });
-        DeliveryContextAssembler singleDateAssembler = spy(assembler);
-        doReturn(TODAY, TODAY.plusDays(1)).when(singleDateAssembler).businessDate();
-
-        DeliveryContextSnapshot snapshot = singleDateAssembler.assemble(fixture.ref(), 14, fixture.actor());
+        DeliveryContextSnapshot snapshot = assembler.assemble(fixture.ref(), 14, fixture.actor());
 
         assertEquals(1, stockReads.get());
         assertEquals(new BigDecimal("25"), snapshot.stocks().stream()
@@ -391,7 +721,7 @@ class DeliveryContextAssemblerTest {
             .findFirst().orElseThrow().stockQty());
         assertTrue(snapshot.snapshotHash().matches("[0-9a-f]{64}"), snapshot.snapshotHash());
         verify(salesOrderHeaderMapper, times(1)).selectById(100L);
-        verify(singleDateAssembler, times(1)).businessDate();
+        verify(assembler, times(1)).businessDate();
     }
 
     @Test
@@ -492,16 +822,22 @@ class DeliveryContextAssemblerTest {
         @SuppressWarnings("unchecked")
         ArgumentCaptor<Wrapper<PrdWorkOrder>> queries = ArgumentCaptor.forClass(Wrapper.class);
         verify(workOrderMapper, atLeastOnce()).selectList(queries.capture());
-        for (Wrapper<PrdWorkOrder> query : queries.getAllValues()) {
-            String sql = query.getSqlSegment();
-            assertTrue(sql.contains("source_id"), sql);
-            assertTrue(sql.contains("source_line_id"), sql);
-            assertTrue(sql.contains("source_no"), sql);
-            Collection<?> values = queryValues(query);
-            assertTrue(values.contains(100L), values.toString());
-            assertTrue(values.contains(1002L), values.toString());
-            assertTrue(values.contains("SO-100"), values.toString());
-        }
+        List<String> sqlSegments = queries.getAllValues().stream()
+            .map(Wrapper::getSqlSegment)
+            .toList();
+        List<Object> values = queries.getAllValues().stream()
+            .flatMap(query -> queryValues(query).stream())
+            .map(value -> (Object) value)
+            .toList();
+        assertTrue(sqlSegments.stream().anyMatch(sql -> sql.contains("source_id")),
+            sqlSegments.toString());
+        assertTrue(sqlSegments.stream().anyMatch(sql -> sql.contains("source_line_id")),
+            sqlSegments.toString());
+        assertTrue(sqlSegments.stream().anyMatch(sql -> sql.contains("source_no")),
+            sqlSegments.toString());
+        assertTrue(values.contains(100L), values.toString());
+        assertTrue(values.contains(1002L), values.toString());
+        assertTrue(values.contains("SO-100"), values.toString());
         verify(scheduleInputAssembler, never()).assemble(any(PrdSchedulePlanBo.class));
     }
 
@@ -648,13 +984,16 @@ class DeliveryContextAssemblerTest {
         List<PrdMaterialRequirementDetail> details = List.of(detail1, detail2);
         when(requirementDetailMapper.selectList(any())).thenAnswer(invocation -> ordered(details, reverse.get()));
 
+        Date stockUpdate1 = toDateTime(2026, 9, 23, 12, 0);
+        Date stockUpdate2 = toDateTime(2026, 9, 23, 12, 1);
+        Date stockUpdate3 = toDateTime(2026, 9, 23, 12, 2);
         when(stockMapper.selectList(any())).thenAnswer(invocation -> {
             WmMaterialStock stock1 = stock(10001L, 501L, stockQty.get().toPlainString(), reservedQty.get().toPlainString());
-            stock1.setUpdateTime(toDateTime(2026, 9, 23, 12, 0));
+            stock1.setUpdateTime(stockUpdate1);
             WmMaterialStock stock2 = stock(10002L, 501L, "5", "1");
-            stock2.setUpdateTime(toDateTime(2026, 9, 23, 12, 1));
+            stock2.setUpdateTime(stockUpdate2);
             WmMaterialStock stock3 = stock(10003L, 502L, "8", "0");
-            stock3.setUpdateTime(toDateTime(2026, 9, 23, 12, 2));
+            stock3.setUpdateTime(stockUpdate3);
             return ordered(List.of(stock1, stock2, stock3), reverse.get());
         });
         List<BdMaterial> materials = List.of(material(501L, "2"), material(502L, "1"));
@@ -831,6 +1170,16 @@ class DeliveryContextAssemblerTest {
         return workOrder;
     }
 
+    private PrdProductionPlan productionPlan(long id, long orderLineId, long requirementId) {
+        PrdProductionPlan plan = new PrdProductionPlan();
+        plan.setPlanId(id);
+        plan.setPlanNo("PP-" + id);
+        plan.setOrderLineId(orderLineId);
+        plan.setMaterialRequirementId(requirementId);
+        plan.setStatus("RELEASED");
+        return plan;
+    }
+
     private PrdMaterialRequirement requirement(long id, long planId) {
         PrdMaterialRequirement requirement = new PrdMaterialRequirement();
         requirement.setRequirementId(id);
@@ -953,15 +1302,13 @@ class DeliveryContextAssemblerTest {
     }
 
     private LocalDate toLocalDate(Date date) {
-        if (date instanceof java.sql.Date sqlDate) {
-            return sqlDate.toLocalDate();
-        }
-        return date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+        return java.time.Instant.ofEpochMilli(date.getTime())
+            .atZone(ZoneId.of("Asia/Shanghai")).toLocalDate();
     }
 
     private Date toDateTime(int year, int month, int day, int hour, int minute) {
         return Date.from(LocalDateTime.of(year, month, day, hour, minute)
-            .atZone(ZoneId.systemDefault()).toInstant());
+            .atZone(ZoneId.of("Asia/Shanghai")).toInstant());
     }
 
     private <T> List<T> ordered(List<T> source, boolean reverse) {

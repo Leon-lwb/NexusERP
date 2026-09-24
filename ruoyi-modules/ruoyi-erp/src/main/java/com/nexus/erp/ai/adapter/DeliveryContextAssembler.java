@@ -27,6 +27,7 @@ import com.nexus.erp.bd.mapper.BdWorkstationMapper;
 import com.nexus.erp.prd.domain.PrdCapacityCalendar;
 import com.nexus.erp.prd.domain.PrdMaterialRequirement;
 import com.nexus.erp.prd.domain.PrdMaterialRequirementDetail;
+import com.nexus.erp.prd.domain.PrdProductionPlan;
 import com.nexus.erp.prd.domain.PrdSchedulePlan;
 import com.nexus.erp.prd.domain.PrdScheduleTask;
 import com.nexus.erp.prd.domain.PrdWorkOrder;
@@ -34,6 +35,7 @@ import com.nexus.erp.prd.domain.bo.PrdSchedulePlanBo;
 import com.nexus.erp.prd.mapper.PrdCapacityCalendarMapper;
 import com.nexus.erp.prd.mapper.PrdMaterialRequirementDetailMapper;
 import com.nexus.erp.prd.mapper.PrdMaterialRequirementMapper;
+import com.nexus.erp.prd.mapper.PrdProductionPlanMapper;
 import com.nexus.erp.prd.mapper.PrdSchedulePlanMapper;
 import com.nexus.erp.prd.mapper.PrdScheduleTaskMapper;
 import com.nexus.erp.prd.mapper.PrdWorkOrderMapper;
@@ -96,10 +98,14 @@ import java.util.stream.Stream;
 public class DeliveryContextAssembler {
 
     static final int FRESHNESS_HORIZON_DAYS = 90;
+    private static final int IN_BATCH_SIZE = 500;
 
+    private static final ZoneId BUSINESS_ZONE = ZoneId.of("Asia/Shanghai");
     private static final String ADMIN_PERMISSION = "*:*:*";
     private static final String RUN_PERMISSION = "ai:decision:run";
     private static final Set<String> TERMINAL_WORK_ORDER_STATUSES = Set.of("COMPLETED", "CLOSED");
+    private static final Set<String> SCHEDULABLE_WORK_ORDER_STATUSES =
+        Set.of("CREATED", "APPROVED", "RELEASED", "IN_PROGRESS");
     private static final Set<String> OPEN_PURCHASE_ORDER_STATUSES =
         Set.of("APPROVED", "PARTIALLY_RECEIVED");
 
@@ -110,6 +116,7 @@ public class DeliveryContextAssembler {
     private final PrdScheduleTaskMapper scheduleTaskMapper;
     private final PrdMaterialRequirementMapper requirementMapper;
     private final PrdMaterialRequirementDetailMapper requirementDetailMapper;
+    private final PrdProductionPlanMapper productionPlanMapper;
     private final WmMaterialStockMapper stockMapper;
     private final BdMaterialMapper materialMapper;
     private final BdRoutingMapper routingMapper;
@@ -197,7 +204,7 @@ public class DeliveryContextAssembler {
     }
 
     /** 固定 90 天重算关键业务指纹；保持包可见供 checker 与同包测试使用。 */
-    String computeFreshnessHash(DecisionBusinessRef ref, DecisionActor actor) {
+    public String computeFreshnessHash(DecisionBusinessRef ref, DecisionActor actor) {
         validateAccess(ref, actor);
         LocalDate businessDate = businessDate();
         DecisionScope scope = loadScope(ref);
@@ -206,7 +213,7 @@ public class DeliveryContextAssembler {
     }
 
     LocalDate businessDate() {
-        return LocalDate.now();
+        return LocalDate.now(BUSINESS_ZONE);
     }
 
     private String hash(CriticalFreshnessFingerprint fingerprint) {
@@ -296,28 +303,69 @@ public class DeliveryContextAssembler {
             .filter(line -> Objects.equals(salesOrderId, line.getSoId()))
             .sorted(orderLineComparator())
             .toList();
-        Set<Long> lineIds = lines.stream()
+        LinkedHashSet<Long> lineIds = lines.stream()
             .map(SoSalesOrderLine::getLineId)
             .filter(Objects::nonNull)
+            .sorted()
+            .collect(Collectors.toCollection(LinkedHashSet::new));
+        TreeMap<Long, PrdProductionPlan> productionPlanById = new TreeMap<>();
+        for (List<Long> batch : batches(lineIds)) {
+            for (PrdProductionPlan plan : safeList(productionPlanMapper.selectList(
+                Wrappers.lambdaQuery(PrdProductionPlan.class)
+                    .in(PrdProductionPlan::getOrderLineId, batch)))) {
+                if (plan.getPlanId() != null && lineIds.contains(plan.getOrderLineId())) {
+                    productionPlanById.put(plan.getPlanId(), plan);
+                }
+            }
+        }
+        List<PrdProductionPlan> productionPlans = List.copyOf(productionPlanById.values());
+        LinkedHashSet<Long> productionPlanIds = productionPlans.stream()
+            .map(PrdProductionPlan::getPlanId)
             .collect(Collectors.toCollection(LinkedHashSet::new));
 
-        List<PrdWorkOrder> queried = safeList(workOrderMapper.selectList(
+        TreeMap<Long, PrdWorkOrder> candidates = new TreeMap<>();
+        for (List<Long> batch : batches(productionPlanIds)) {
+            for (PrdWorkOrder workOrder : safeList(workOrderMapper.selectList(
+                Wrappers.lambdaQuery(PrdWorkOrder.class)
+                    .in(PrdWorkOrder::getPlanId, batch)))) {
+                if (workOrder.getWoId() != null) {
+                    candidates.put(workOrder.getWoId(), workOrder);
+                }
+            }
+        }
+        for (List<Long> batch : batches(lineIds)) {
+            for (PrdWorkOrder workOrder : safeList(workOrderMapper.selectList(
+                Wrappers.lambdaQuery(PrdWorkOrder.class)
+                    .in(PrdWorkOrder::getSourceLineId, batch)))) {
+                if (workOrder.getWoId() != null) {
+                    candidates.put(workOrder.getWoId(), workOrder);
+                }
+            }
+        }
+        for (PrdWorkOrder workOrder : safeList(workOrderMapper.selectList(
             Wrappers.lambdaQuery(PrdWorkOrder.class)
-                .and(query -> {
-                    query.eq(PrdWorkOrder::getSourceId, salesOrderId);
-                    if (!lineIds.isEmpty()) {
-                        query.or().in(PrdWorkOrder::getSourceLineId, lineIds);
-                    }
+                .and(direct -> {
+                    direct.eq(PrdWorkOrder::getSourceId, salesOrderId);
                     if (hasText(order.getSoNo())) {
-                        query.or().eq(PrdWorkOrder::getSourceNo, order.getSoNo());
+                        direct.or().eq(PrdWorkOrder::getSourceNo, order.getSoNo());
                     }
-                })));
-        List<PrdWorkOrder> workOrders = queried.stream()
-            .filter(workOrder -> Objects.equals(salesOrderId, workOrder.getSourceId())
+                })))) {
+            if (workOrder.getWoId() != null) {
+                candidates.put(workOrder.getWoId(), workOrder);
+            }
+        }
+        TreeMap<Long, PrdWorkOrder> scoped = new TreeMap<>();
+        for (PrdWorkOrder workOrder : candidates.values()) {
+            boolean productionChain = workOrder.getPlanId() != null
+                && productionPlanIds.contains(workOrder.getPlanId());
+            boolean legacyDirect = Objects.equals(salesOrderId, workOrder.getSourceId())
                 || (workOrder.getSourceLineId() != null && lineIds.contains(workOrder.getSourceLineId()))
-                || (hasText(order.getSoNo()) && Objects.equals(order.getSoNo(), workOrder.getSourceNo())))
-            .sorted(workOrderComparator())
-            .toList();
+                || (hasText(order.getSoNo()) && Objects.equals(order.getSoNo(), workOrder.getSourceNo()));
+            if (!isTerminalWorkOrder(workOrder) && (productionChain || legacyDirect)) {
+                scoped.put(workOrder.getWoId(), workOrder);
+            }
+        }
+        List<PrdWorkOrder> workOrders = List.copyOf(scoped.values());
         LinkedHashMap<Long, Long> mapping = new LinkedHashMap<>();
         workOrders.forEach(workOrder -> mapping.put(workOrder.getWoId(), salesOrderId));
         return new DecisionScope(
@@ -334,11 +382,10 @@ public class DeliveryContextAssembler {
             throw new ServiceException("已完工或已关闭的生产工单不能发起交付决策");
         }
         List<PrdWorkOrder> workOrders = List.of(workOrder);
-        List<SoSalesOrderHeader> orders = resolveSalesOrders(workOrders);
-        Map<Long, Long> mapping = mapWorkOrdersToSalesOrders(workOrders, orders);
+        ResolvedSalesContext sales = resolveSalesContext(workOrders);
         return new DecisionScope(
             new DecisionBusinessRef(DecisionBusinessType.WORK_ORDER, workOrderId, workOrder.getWoNo()),
-            orders, List.of(), workOrders, null, List.of(), mapping);
+            sales.orders(), sales.lines(), workOrders, null, List.of(), sales.workOrderSalesOrderIds());
     }
 
     private DecisionScope loadSchedulePlanScope(Long schedulePlanId) {
@@ -361,12 +408,13 @@ public class DeliveryContextAssembler {
         if (workOrderIds.isEmpty()) {
             throw new ServiceException("排产方案未包含生产工单");
         }
-        List<PrdWorkOrder> workOrders = loadExactWorkOrders(workOrderIds);
-        List<SoSalesOrderHeader> orders = resolveSalesOrders(workOrders);
-        Map<Long, Long> mapping = mapWorkOrdersToSalesOrders(workOrders, orders);
+        List<PrdWorkOrder> workOrders = loadExactWorkOrders(workOrderIds).stream()
+            .filter(workOrder -> !isTerminalWorkOrder(workOrder))
+            .toList();
+        ResolvedSalesContext sales = resolveSalesContext(workOrders);
         return new DecisionScope(
             new DecisionBusinessRef(DecisionBusinessType.SCHEDULE_PLAN, schedulePlanId, plan.getPlanNo()),
-            orders, List.of(), workOrders, plan, tasks, mapping);
+            sales.orders(), sales.lines(), workOrders, plan, tasks, sales.workOrderSalesOrderIds());
     }
 
     private DecisionScope loadShortageScope() {
@@ -376,11 +424,10 @@ public class DeliveryContextAssembler {
             .filter(workOrder -> !isTerminalWorkOrder(workOrder))
             .sorted(workOrderComparator())
             .toList();
-        List<SoSalesOrderHeader> orders = resolveSalesOrders(workOrders);
-        Map<Long, Long> mapping = mapWorkOrdersToSalesOrders(workOrders, orders);
+        ResolvedSalesContext sales = resolveSalesContext(workOrders);
         return new DecisionScope(
             new DecisionBusinessRef(DecisionBusinessType.SHORTAGE_HORIZON, null, "SHORTAGE_HORIZON"),
-            orders, List.of(), workOrders, null, List.of(), mapping);
+            sales.orders(), sales.lines(), workOrders, null, List.of(), sales.workOrderSalesOrderIds());
     }
 
     private List<PrdWorkOrder> loadExactWorkOrders(Collection<Long> requestedIds) {
@@ -392,16 +439,17 @@ public class DeliveryContextAssembler {
         if (ids.isEmpty()) {
             throw new ServiceException("指定工单 ID 不能为空");
         }
-        List<PrdWorkOrder> rows = safeList(workOrderMapper.selectList(
-            Wrappers.lambdaQuery(PrdWorkOrder.class)
-                .in(PrdWorkOrder::getWoId, ids)));
         TreeMap<Long, PrdWorkOrder> byId = new TreeMap<>();
-        for (PrdWorkOrder row : rows) {
-            if (row.getWoId() == null || !ids.contains(row.getWoId())) {
-                continue;
-            }
-            if (byId.put(row.getWoId(), row) != null) {
-                throw new ServiceException("工单查询返回重复记录: " + row.getWoId());
+        for (List<Long> batch : batches(ids)) {
+            for (PrdWorkOrder row : safeList(workOrderMapper.selectList(
+                Wrappers.lambdaQuery(PrdWorkOrder.class)
+                    .in(PrdWorkOrder::getWoId, batch)))) {
+                if (row.getWoId() == null || !ids.contains(row.getWoId())) {
+                    continue;
+                }
+                if (byId.put(row.getWoId(), row) != null) {
+                    throw new ServiceException("工单查询返回重复记录: " + row.getWoId());
+                }
             }
         }
         List<Long> missing = ids.stream().filter(id -> !byId.containsKey(id)).toList();
@@ -411,65 +459,113 @@ public class DeliveryContextAssembler {
         return List.copyOf(byId.values());
     }
 
-    private List<SoSalesOrderHeader> resolveSalesOrders(List<PrdWorkOrder> workOrders) {
-        LinkedHashSet<Long> sourceIds = workOrders.stream()
+    private ResolvedSalesContext resolveSalesContext(List<PrdWorkOrder> workOrders) {
+        LinkedHashSet<Long> planIds = workOrders.stream()
+            .map(PrdWorkOrder::getPlanId)
+            .filter(Objects::nonNull)
+            .sorted()
+            .collect(Collectors.toCollection(LinkedHashSet::new));
+        TreeMap<Long, PrdProductionPlan> resolvedPlanById = new TreeMap<>();
+        for (List<Long> batch : batches(planIds)) {
+            for (PrdProductionPlan plan : safeList(productionPlanMapper.selectBatchIds(batch))) {
+                if (plan.getPlanId() != null && planIds.contains(plan.getPlanId())) {
+                    resolvedPlanById.put(plan.getPlanId(), plan);
+                }
+            }
+        }
+        List<PrdProductionPlan> productionPlans = List.copyOf(resolvedPlanById.values());
+        Map<Long, PrdProductionPlan> planById = productionPlans.stream()
+            .collect(Collectors.toMap(PrdProductionPlan::getPlanId, plan -> plan, (left, right) -> left));
+        LinkedHashSet<Long> orderLineIds = productionPlans.stream()
+            .map(PrdProductionPlan::getOrderLineId)
+            .filter(Objects::nonNull)
+            .sorted()
+            .collect(Collectors.toCollection(LinkedHashSet::new));
+        TreeMap<Long, SoSalesOrderLine> resolvedLineById = new TreeMap<>();
+        for (List<Long> batch : batches(orderLineIds)) {
+            for (SoSalesOrderLine line : safeList(salesOrderLineMapper.selectBatchIds(batch))) {
+                if (line.getLineId() != null && orderLineIds.contains(line.getLineId())) {
+                    resolvedLineById.put(line.getLineId(), line);
+                }
+            }
+        }
+        List<SoSalesOrderLine> lines = List.copyOf(resolvedLineById.values());
+        Map<Long, SoSalesOrderLine> lineById = lines.stream()
+            .collect(Collectors.toMap(SoSalesOrderLine::getLineId, line -> line, (left, right) -> left));
+
+        LinkedHashMap<Long, Long> mapping = new LinkedHashMap<>();
+        for (PrdWorkOrder workOrder : workOrders.stream().sorted(workOrderComparator()).toList()) {
+            PrdProductionPlan plan = planById.get(workOrder.getPlanId());
+            SoSalesOrderLine line = plan == null ? null : lineById.get(plan.getOrderLineId());
+            if (line != null && line.getSoId() != null && workOrder.getWoId() != null) {
+                mapping.put(workOrder.getWoId(), line.getSoId());
+            }
+        }
+
+        LinkedHashSet<Long> orderIds = new LinkedHashSet<>(mapping.values());
+        LinkedHashSet<Long> legacySourceIds = workOrders.stream()
+            .filter(workOrder -> !isMaterialRequirementSource(workOrder))
+            .filter(workOrder -> !mapping.containsKey(workOrder.getWoId()))
             .map(PrdWorkOrder::getSourceId)
             .filter(Objects::nonNull)
             .filter(id -> id > 0)
             .sorted()
             .collect(Collectors.toCollection(LinkedHashSet::new));
+        orderIds.addAll(legacySourceIds);
+        TreeMap<Long, SoSalesOrderHeader> orderById = new TreeMap<>();
+        if (orderIds.size() == 1) {
+            Long id = orderIds.iterator().next();
+            SoSalesOrderHeader order = salesOrderHeaderMapper.selectById(id);
+            if (order != null && Objects.equals(id, order.getSoId())) {
+                orderById.put(id, order);
+            }
+        } else if (!orderIds.isEmpty()) {
+            for (List<Long> batch : batches(orderIds)) {
+                for (SoSalesOrderHeader order : safeList(salesOrderHeaderMapper.selectBatchIds(batch))) {
+                    if (order.getSoId() != null && orderIds.contains(order.getSoId())) {
+                        orderById.put(order.getSoId(), order);
+                    }
+                }
+            }
+        }
         LinkedHashSet<String> sourceNumbers = workOrders.stream()
+            .filter(workOrder -> !mapping.containsKey(workOrder.getWoId()))
             .map(PrdWorkOrder::getSourceNo)
             .filter(DeliveryContextAssembler::hasText)
             .map(String::trim)
             .sorted()
             .collect(Collectors.toCollection(LinkedHashSet::new));
-        TreeMap<Long, SoSalesOrderHeader> resolved = new TreeMap<>();
-
-        if (sourceIds.size() == 1) {
-            SoSalesOrderHeader order = salesOrderHeaderMapper.selectById(sourceIds.iterator().next());
-            if (order != null && order.getSoId() != null && sourceIds.contains(order.getSoId())) {
-                resolved.put(order.getSoId(), order);
-            }
-        } else if (!sourceIds.isEmpty()) {
-            for (SoSalesOrderHeader order : safeList(salesOrderHeaderMapper.selectBatchIds(sourceIds))) {
-                if (order.getSoId() != null && sourceIds.contains(order.getSoId())) {
-                    resolved.put(order.getSoId(), order);
-                }
-            }
-        }
         if (!sourceNumbers.isEmpty()) {
-            List<SoSalesOrderHeader> byNumber = safeList(salesOrderHeaderMapper.selectList(
+            for (SoSalesOrderHeader order : safeList(salesOrderHeaderMapper.selectList(
                 Wrappers.lambdaQuery(SoSalesOrderHeader.class)
-                    .in(SoSalesOrderHeader::getSoNo, sourceNumbers)));
-            for (SoSalesOrderHeader order : byNumber) {
+                    .in(SoSalesOrderHeader::getSoNo, sourceNumbers)))) {
                 if (order.getSoId() != null && sourceNumbers.contains(order.getSoNo())) {
-                    resolved.putIfAbsent(order.getSoId(), order);
+                    orderById.putIfAbsent(order.getSoId(), order);
                 }
             }
         }
-        return List.copyOf(resolved.values());
-    }
-
-    private Map<Long, Long> mapWorkOrdersToSalesOrders(List<PrdWorkOrder> workOrders,
-                                                        List<SoSalesOrderHeader> orders) {
-        Map<Long, SoSalesOrderHeader> byId = orders.stream()
-            .filter(order -> order.getSoId() != null)
-            .collect(Collectors.toMap(SoSalesOrderHeader::getSoId, order -> order, (left, right) -> left));
-        Map<String, SoSalesOrderHeader> byNumber = orders.stream()
+        Map<String, SoSalesOrderHeader> orderByNumber = orderById.values().stream()
             .filter(order -> hasText(order.getSoNo()))
             .collect(Collectors.toMap(SoSalesOrderHeader::getSoNo, order -> order, (left, right) -> left));
-        LinkedHashMap<Long, Long> mapping = new LinkedHashMap<>();
-        workOrders.stream().sorted(workOrderComparator()).forEach(workOrder -> {
-            SoSalesOrderHeader order = workOrder.getSourceId() == null ? null : byId.get(workOrder.getSourceId());
-            if (order == null && hasText(workOrder.getSourceNo())) {
-                order = byNumber.get(workOrder.getSourceNo());
+        for (PrdWorkOrder workOrder : workOrders.stream().sorted(workOrderComparator()).toList()) {
+            if (workOrder.getWoId() == null || mapping.containsKey(workOrder.getWoId())) {
+                continue;
             }
-            if (order != null && workOrder.getWoId() != null) {
+            SoSalesOrderHeader order = isMaterialRequirementSource(workOrder)
+                || workOrder.getSourceId() == null ? null : orderById.get(workOrder.getSourceId());
+            if (order == null && hasText(workOrder.getSourceNo())) {
+                order = orderByNumber.get(workOrder.getSourceNo());
+            }
+            if (order != null) {
                 mapping.put(workOrder.getWoId(), order.getSoId());
             }
-        });
-        return immutableLinkedMap(mapping);
+        }
+        return new ResolvedSalesContext(
+            List.copyOf(orderById.values()), lines, immutableLinkedMap(mapping));
+    }
+
+    private boolean isMaterialRequirementSource(PrdWorkOrder workOrder) {
+        return workOrder != null && "MATERIAL_REQUIREMENT".equalsIgnoreCase(workOrder.getSourceType());
     }
 
     private LoadedContext loadContext(DecisionScope scope, int horizonDays, LocalDate businessDate) {
@@ -479,12 +575,15 @@ public class DeliveryContextAssembler {
         List<String> warnings = new ArrayList<>();
         if (scope.workOrders().isEmpty()) {
             warnings.add("NO_WORK_ORDER: 当前决策范围没有生产工单");
+        } else if (safeList(apsInput.getWorkOrders()).isEmpty()) {
+            warnings.add("NO_SCHEDULABLE_WORK_ORDER: 当前决策范围没有可排产工单");
         }
 
-        List<RequirementLink> requirementRows = loadRequirementRows(scope, warnings);
+        List<RequirementLink> requirementRows = loadRequirementRows(
+            scope, businessDate, horizonEnd, warnings);
         LinkedHashSet<Long> materialIds = collectRelevantMaterialIds(scope, requirementRows);
         StockBundle stocks = loadStocks(materialIds);
-        PurchaseBundle purchases = loadPurchases(materialIds, warnings);
+        PurchaseBundle purchases = loadPurchases(materialIds, horizonEnd, warnings);
         List<SupplierMetricFact> supplierMetrics = loadSupplierMetrics(purchases.vendorIds(), warnings);
         ScheduleSelection schedule = loadCurrentSchedule(scope, warnings);
 
@@ -561,6 +660,7 @@ public class DeliveryContextAssembler {
     private ScheduleInput assembleScheduleInput(List<PrdWorkOrder> workOrders, int horizonDays,
                                                 LocalDate businessDate) {
         List<Long> workOrderIds = workOrders.stream()
+            .filter(this::isSchedulableWorkOrder)
             .map(PrdWorkOrder::getWoId)
             .filter(Objects::nonNull)
             .distinct()
@@ -585,6 +685,8 @@ public class DeliveryContextAssembler {
     }
 
     private List<RequirementLink> loadRequirementRows(DecisionScope scope,
+                                                       LocalDate startDate,
+                                                       LocalDate endDate,
                                                        List<String> warnings) {
         LinkedHashSet<Long> planIds = scope.workOrders().stream()
             .map(PrdWorkOrder::getPlanId)
@@ -595,13 +697,17 @@ public class DeliveryContextAssembler {
         if (planIds.isEmpty()) {
             return List.of();
         }
-        List<PrdMaterialRequirement> requirements = safeList(requirementMapper.selectList(
-            Wrappers.lambdaQuery(PrdMaterialRequirement.class)
-                .in(PrdMaterialRequirement::getPlanId, planIds))).stream()
-            .filter(requirement -> requirement.getRequirementId() != null)
-            .filter(requirement -> planIds.contains(requirement.getPlanId()))
-            .sorted(requirementComparator())
-            .toList();
+        TreeMap<Long, PrdMaterialRequirement> requirementRows = new TreeMap<>();
+        for (List<Long> batch : batches(planIds)) {
+            for (PrdMaterialRequirement requirement : safeList(requirementMapper.selectList(
+                Wrappers.lambdaQuery(PrdMaterialRequirement.class)
+                    .in(PrdMaterialRequirement::getPlanId, batch)))) {
+                if (requirement.getRequirementId() != null && planIds.contains(requirement.getPlanId())) {
+                    requirementRows.put(requirement.getRequirementId(), requirement);
+                }
+            }
+        }
+        List<PrdMaterialRequirement> requirements = List.copyOf(requirementRows.values());
         LinkedHashSet<Long> requirementIds = requirements.stream()
             .map(PrdMaterialRequirement::getRequirementId)
             .collect(Collectors.toCollection(LinkedHashSet::new));
@@ -615,18 +721,37 @@ public class DeliveryContextAssembler {
             .filter(workOrder -> workOrder.getPlanId() != null)
             .collect(Collectors.groupingBy(PrdWorkOrder::getPlanId));
 
+        TreeMap<Long, PrdMaterialRequirementDetail> details = new TreeMap<>();
+        for (List<Long> batch : batches(requirementIds)) {
+            for (PrdMaterialRequirementDetail detail : safeList(requirementDetailMapper.selectList(
+                Wrappers.lambdaQuery(PrdMaterialRequirementDetail.class)
+                    .in(PrdMaterialRequirementDetail::getRequirementId, batch)
+                    .isNotNull(PrdMaterialRequirementDetail::getRequiredDate)
+                    .ge(PrdMaterialRequirementDetail::getRequiredDate, java.sql.Date.valueOf(startDate))
+                    .le(PrdMaterialRequirementDetail::getRequiredDate, java.sql.Date.valueOf(endDate))))) {
+                if (detail.getDetailId() != null && requirementIds.contains(detail.getRequirementId())
+                    && within(detail.getRequiredDate(), startDate, endDate)) {
+                    details.put(detail.getDetailId(), detail);
+                }
+            }
+        }
         List<RequirementLink> links = new ArrayList<>();
-        for (PrdMaterialRequirementDetail detail : safeList(requirementDetailMapper.selectList(
-            Wrappers.lambdaQuery(PrdMaterialRequirementDetail.class)
-                .in(PrdMaterialRequirementDetail::getRequirementId, requirementIds)))) {
+        for (PrdMaterialRequirementDetail detail : details.values()) {
             PrdMaterialRequirement requirement = requirementById.get(detail.getRequirementId());
-            if (requirement == null || detail.getDetailId() == null) {
+            if (requirement == null) {
                 continue;
             }
-            List<PrdWorkOrder> candidates = safeList(workOrdersByPlan.get(requirement.getPlanId())).stream()
+            List<PrdWorkOrder> directCandidates = scope.workOrders().stream()
+                .filter(this::isMaterialRequirementSource)
+                .filter(workOrder -> Objects.equals(requirement.getRequirementId(), workOrder.getSourceId()))
                 .sorted(workOrderComparator())
                 .toList();
-            PrdWorkOrder linkedWorkOrder = candidates.size() == 1 ? candidates.get(0) : null;
+            List<PrdWorkOrder> planCandidates = safeList(workOrdersByPlan.get(requirement.getPlanId())).stream()
+                .sorted(workOrderComparator())
+                .toList();
+            PrdWorkOrder linkedWorkOrder = directCandidates.size() == 1
+                ? directCandidates.get(0)
+                : directCandidates.isEmpty() && planCandidates.size() == 1 ? planCandidates.get(0) : null;
             BigDecimal net = nonNegative(subtract(detail.getRequiredQuantity(), detail.getIssuedQuantity()));
             if (net.signum() > 0 && linkedWorkOrder == null) {
                 warnings.add("物料需求明细 " + detail.getDetailId() + " 无法唯一关联生产工单");
@@ -669,30 +794,47 @@ public class DeliveryContextAssembler {
         if (materialIds.isEmpty()) {
             return new StockBundle(List.of(), List.of());
         }
-        List<WmMaterialStock> rows = safeList(stockMapper.selectList(
-            Wrappers.lambdaQuery(WmMaterialStock.class)
-                .in(WmMaterialStock::getMaterialId, materialIds))).stream()
-            .filter(row -> row.getMaterialId() != null && materialIds.contains(row.getMaterialId()))
-            .sorted(stockRowComparator())
-            .toList();
-        List<BdMaterial> materials = safeList(materialMapper.selectBatchIds(materialIds)).stream()
-            .filter(material -> material.getMaterialId() != null && materialIds.contains(material.getMaterialId()))
-            .sorted(materialComparator())
-            .toList();
+        TreeMap<Long, WmMaterialStock> stockRows = new TreeMap<>();
+        TreeMap<Long, BdMaterial> materialsById = new TreeMap<>();
+        for (List<Long> batch : batches(materialIds)) {
+            for (WmMaterialStock row : safeList(stockMapper.selectList(
+                Wrappers.lambdaQuery(WmMaterialStock.class)
+                    .in(WmMaterialStock::getMaterialId, batch)))) {
+                if (row.getStockId() != null && row.getMaterialId() != null
+                    && materialIds.contains(row.getMaterialId())) {
+                    stockRows.put(row.getStockId(), row);
+                }
+            }
+            for (BdMaterial material : safeList(materialMapper.selectBatchIds(batch))) {
+                if (material.getMaterialId() != null && materialIds.contains(material.getMaterialId())) {
+                    materialsById.put(material.getMaterialId(), material);
+                }
+            }
+        }
+        List<WmMaterialStock> rows = stockRows.values().stream().sorted(stockRowComparator()).toList();
+        List<BdMaterial> materials = materialsById.values().stream().sorted(materialComparator()).toList();
         return new StockBundle(rows, materials);
     }
 
     private PurchaseBundle loadPurchases(LinkedHashSet<Long> materialIds,
+                                          LocalDate horizonEnd,
                                           List<String> warnings) {
         if (materialIds.isEmpty()) {
             return new PurchaseBundle(List.of(), List.of(), List.of());
         }
-        List<PuPurchaseOrderLine> candidateLines = safeList(purchaseOrderLineMapper.selectList(
-            Wrappers.lambdaQuery(PuPurchaseOrderLine.class)
-                .in(PuPurchaseOrderLine::getMaterialId, materialIds))).stream()
-            .filter(line -> line.getLineId() != null)
-            .filter(line -> line.getMaterialId() != null && materialIds.contains(line.getMaterialId()))
-            .filter(line -> remaining(line.getOrderQuantity(), line.getReceivedQuantity()).signum() > 0)
+        TreeMap<Long, PuPurchaseOrderLine> candidateById = new TreeMap<>();
+        for (List<Long> batch : batches(materialIds)) {
+            for (PuPurchaseOrderLine line : safeList(purchaseOrderLineMapper.selectList(
+                Wrappers.lambdaQuery(PuPurchaseOrderLine.class)
+                    .in(PuPurchaseOrderLine::getMaterialId, batch)))) {
+                if (line.getLineId() != null && line.getMaterialId() != null
+                    && materialIds.contains(line.getMaterialId())
+                    && remaining(line.getOrderQuantity(), line.getReceivedQuantity()).signum() > 0) {
+                    candidateById.put(line.getLineId(), line);
+                }
+            }
+        }
+        List<PuPurchaseOrderLine> candidateLines = candidateById.values().stream()
             .sorted(purchaseLineComparator())
             .toList();
         LinkedHashSet<Long> orderIds = candidateLines.stream()
@@ -704,28 +846,34 @@ public class DeliveryContextAssembler {
         if (orderIds.isEmpty()) {
             return new PurchaseBundle(List.of(), List.of(), List.of());
         }
-        List<PuPurchaseOrder> orders = safeList(purchaseOrderMapper.selectList(
-            Wrappers.lambdaQuery(PuPurchaseOrder.class)
-                .in(PuPurchaseOrder::getOrderId, orderIds)
-                .in(PuPurchaseOrder::getStatus, OPEN_PURCHASE_ORDER_STATUSES))).stream()
-            .filter(order -> order.getOrderId() != null && orderIds.contains(order.getOrderId()))
-            .filter(order -> OPEN_PURCHASE_ORDER_STATUSES.contains(order.getStatus()))
-            .sorted(purchaseOrderComparator())
-            .toList();
-        Set<Long> validOrderIds = orders.stream()
-            .map(PuPurchaseOrder::getOrderId)
-            .collect(Collectors.toSet());
+        TreeMap<Long, PuPurchaseOrder> orderById = new TreeMap<>();
+        for (List<Long> batch : batches(orderIds)) {
+            for (PuPurchaseOrder order : safeList(purchaseOrderMapper.selectList(
+                Wrappers.lambdaQuery(PuPurchaseOrder.class)
+                    .in(PuPurchaseOrder::getOrderId, batch)
+                    .in(PuPurchaseOrder::getStatus, OPEN_PURCHASE_ORDER_STATUSES)
+                    .and(date -> date.isNull(PuPurchaseOrder::getExpectedArrivalDate)
+                        .or().le(PuPurchaseOrder::getExpectedArrivalDate,
+                            java.sql.Date.valueOf(horizonEnd)))))) {
+                LocalDate expectedDate = toLocalDate(order.getExpectedArrivalDate());
+                if (order.getOrderId() != null && orderIds.contains(order.getOrderId())
+                    && OPEN_PURCHASE_ORDER_STATUSES.contains(order.getStatus())
+                    && (expectedDate == null || !expectedDate.isAfter(horizonEnd))) {
+                    orderById.put(order.getOrderId(), order);
+                }
+            }
+        }
+        Set<Long> validOrderIds = orderById.keySet();
         List<PuPurchaseOrderLine> lines = candidateLines.stream()
             .filter(line -> validOrderIds.contains(line.getOrderId()))
             .toList();
         Set<Long> orderIdsWithLines = lines.stream()
             .map(PuPurchaseOrderLine::getOrderId)
             .collect(Collectors.toSet());
-        List<PuPurchaseOrder> relatedOrders = orders.stream()
+        List<PuPurchaseOrder> relatedOrders = orderById.values().stream()
             .filter(order -> orderIdsWithLines.contains(order.getOrderId()))
+            .sorted(purchaseOrderComparator())
             .toList();
-        Map<Long, PuPurchaseOrder> orderById = relatedOrders.stream()
-            .collect(Collectors.toMap(PuPurchaseOrder::getOrderId, order -> order));
         LinkedHashSet<Long> vendors = new LinkedHashSet<>();
         for (PuPurchaseOrderLine line : lines) {
             PuPurchaseOrder order = orderById.get(line.getOrderId());
@@ -1281,16 +1429,16 @@ public class DeliveryContextAssembler {
             .sorted(orderLineComparator())
             .map(line -> new CriticalOrderLine(
                 line.getLineId(), line.getSoId(), line.getMaterialId(), line.getLineStatus(),
-                decimal(line.getOrderedQty()), decimal(line.getDeliveredQty()),
-                decimal(line.getFulfilledQty()), decimal(line.getProductionQty()),
-                decimal(line.getPurchaseQty()), decimal(line.getReservedQty()),
+                canonicalDecimal(line.getOrderedQty()), canonicalDecimal(line.getDeliveredQty()),
+                canonicalDecimal(line.getFulfilledQty()), canonicalDecimal(line.getProductionQty()),
+                canonicalDecimal(line.getPurchaseQty()), canonicalDecimal(line.getReservedQty()),
                 toIsoDate(line.getPromiseDate()), toIsoDateTime(line.getUpdateTime())))
             .toList();
         List<CriticalWorkOrder> workOrders = scope.workOrders().stream()
             .sorted(workOrderComparator())
             .map(workOrder -> new CriticalWorkOrder(
                 workOrder.getWoId(), workOrder.getWoStatus(), toIsoDate(workOrder.getPlanEndDate()),
-                decimal(remaining(workOrder.getPlannedQty(), workOrder.getCompletedQty())),
+                canonicalDecimal(remaining(workOrder.getPlannedQty(), workOrder.getCompletedQty())),
                 toIsoDateTime(workOrder.getUpdateTime())))
             .toList();
 
@@ -1307,19 +1455,19 @@ public class DeliveryContextAssembler {
             .sorted(requirementLinkComparator())
             .map(row -> new CriticalRequirementDetail(
                 row.detail().getDetailId(), row.detail().getRequirementId(), row.detail().getMaterialId(),
-                toIsoDate(row.detail().getRequiredDate()), decimal(row.netQuantity()),
+                toIsoDate(row.detail().getRequiredDate()), canonicalDecimal(row.netQuantity()),
                 toIsoDateTime(row.detail().getUpdateTime())))
             .toList();
         List<CriticalStockRow> stocks = context.stockRows().stream()
             .sorted(stockRowComparator())
             .map(row -> new CriticalStockRow(
-                row.getStockId(), row.getMaterialId(), decimal(zero(row.getStockQuantity())),
-                decimal(zero(row.getReservedQuantity())), toIsoDateTime(row.getUpdateTime())))
+                row.getStockId(), row.getMaterialId(), canonicalDecimal(zero(row.getStockQuantity())),
+                canonicalDecimal(zero(row.getReservedQuantity())), toIsoDateTime(row.getUpdateTime())))
             .toList();
         List<CriticalMaterial> materials = context.materials().stream()
             .sorted(materialComparator())
             .map(material -> new CriticalMaterial(
-                material.getMaterialId(), decimal(zero(material.getSafetyStock())),
+                material.getMaterialId(), canonicalDecimal(zero(material.getSafetyStock())),
                 toIsoDateTime(material.getUpdateTime())))
             .toList();
         List<CriticalPurchaseOrder> purchaseOrders = context.purchaseOrders().stream()
@@ -1332,7 +1480,7 @@ public class DeliveryContextAssembler {
             .sorted(purchaseLineComparator())
             .map(line -> new CriticalPurchaseLine(
                 line.getLineId(), line.getOrderId(), line.getMaterialId(),
-                decimal(remaining(line.getOrderQuantity(), line.getReceivedQuantity())),
+                canonicalDecimal(remaining(line.getOrderQuantity(), line.getReceivedQuantity())),
                 toIsoDateTime(line.getUpdateTime())))
             .toList();
 
@@ -1348,7 +1496,7 @@ public class DeliveryContextAssembler {
         List<CriticalApsWorkOrder> workOrders = safeList(input.getWorkOrders()).stream()
             .sorted(Comparator.comparing(WoInfo::getWoId, Comparator.nullsLast(Comparator.naturalOrder())))
             .map(workOrder -> new CriticalApsWorkOrder(
-                workOrder.getWoId(), workOrder.getMaterialId(), decimal(workOrder.getRemainingQty()),
+                workOrder.getWoId(), workOrder.getMaterialId(), canonicalDecimal(workOrder.getRemainingQty()),
                 iso(workOrder.getDueDate()), workOrder.getPriority(), workOrder.getWorkshopId()))
             .toList();
         List<CriticalRoutingStep> routingSteps = new ArrayList<>();
@@ -1363,8 +1511,8 @@ public class DeliveryContextAssembler {
             for (StepInfo step : routingSteps(input, materialId)) {
                 routingSteps.add(new CriticalRoutingStep(
                     materialId, step.getStepId(), step.getSeqNum(), step.getWorkstationId(), workshopId,
-                    decimal(step.getStandardHours()), decimal(step.getSetupHours()), step.getIsOutsource(),
-                    decimal(step.getWaitTime()), decimal(step.getTransferTime())));
+                    canonicalDecimal(step.getStandardHours()), canonicalDecimal(step.getSetupHours()), step.getIsOutsource(),
+                    canonicalDecimal(step.getWaitTime()), canonicalDecimal(step.getTransferTime())));
             }
         }
         routingSteps.sort(criticalRoutingComparator());
@@ -1372,7 +1520,7 @@ public class DeliveryContextAssembler {
         List<CriticalCapacity> capacity = new ArrayList<>();
         sortedCapacity(input.getCapacityByDate()).forEach((date, resources) ->
             resources.forEach((resource, hours) ->
-                capacity.add(new CriticalCapacity(date.toString(), resource, decimal(hours)))));
+                capacity.add(new CriticalCapacity(date.toString(), resource, canonicalDecimal(hours)))));
         List<String> holidays = safeCollection(input.getHolidays()).stream()
             .sorted()
             .map(LocalDate::toString)
@@ -1392,16 +1540,16 @@ public class DeliveryContextAssembler {
                     assignment.materialId(), routing.getRoutingId(), routing.getMaterialId(),
                     routing.getRoutingVersion(), routing.getIsCurrent(), routing.getStatus(),
                     toIsoDate(routing.getEffectiveDate()), toIsoDate(routing.getExpiryDate()),
-                    decimal(routing.getTotalHours()), toIsoDateTime(routing.getUpdateTime()));
+                    canonicalDecimal(routing.getTotalHours()), toIsoDateTime(routing.getUpdateTime()));
             })
             .toList();
         List<CriticalRoutingStepSource> routingSteps = sourceFacts.routing().assignments().stream()
             .flatMap(assignment -> assignment.steps().stream()
                 .map(step -> new CriticalRoutingStepSource(
                     assignment.materialId(), step.getRoutingId(), step.getStepId(),
-                    step.getSequenceNum(), step.getWorkstationId(), decimal(step.getStandardHours()),
-                    decimal(step.getSetupHours()), step.getIsOutsource(), decimal(step.getWaitTime()),
-                    decimal(step.getTransferTime()), toIsoDateTime(step.getUpdateTime()))))
+                    step.getSequenceNum(), step.getWorkstationId(), canonicalDecimal(step.getStandardHours()),
+                    canonicalDecimal(step.getSetupHours()), step.getIsOutsource(), canonicalDecimal(step.getWaitTime()),
+                    canonicalDecimal(step.getTransferTime()), toIsoDateTime(step.getUpdateTime()))))
             .sorted(Comparator
                 .comparing(CriticalRoutingStepSource::materialId,
                     Comparator.nullsLast(Comparator.naturalOrder()))
@@ -1415,10 +1563,10 @@ public class DeliveryContextAssembler {
             .sorted(capacityCalendarComparator())
             .map(row -> new CriticalCapacityCalendarSource(
                 row.getCalendarId(), row.getObjectType(), row.getObjectId(),
-                toIsoDate(row.getCalendarDate()), row.getShiftId(), decimal(row.getAvailableHours()),
-                decimal(row.getPlannedHours()), decimal(row.getActualHours()),
-                decimal(row.getEfficiency()), decimal(row.getEffectiveHours()),
-                decimal(row.getRemainingHours()), row.getStatus(), toIsoDateTime(row.getUpdateTime())))
+                toIsoDate(row.getCalendarDate()), row.getShiftId(), canonicalDecimal(row.getAvailableHours()),
+                canonicalDecimal(row.getPlannedHours()), canonicalDecimal(row.getActualHours()),
+                canonicalDecimal(row.getEfficiency()), canonicalDecimal(row.getEffectiveHours()),
+                canonicalDecimal(row.getRemainingHours()), row.getStatus(), toIsoDateTime(row.getUpdateTime())))
             .toList();
         List<CriticalHolidaySource> holidays = capacity.holidays().stream()
             .sorted(holidayComparator())
@@ -1438,7 +1586,7 @@ public class DeliveryContextAssembler {
             .sorted(shiftComparator())
             .map(row -> new CriticalShiftSource(
                 row.getShiftId(), toScheduleTime(row.getStartTime()), toScheduleTime(row.getEndTime()),
-                decimal(row.getWorkHours()), row.getIsCrossDay(),
+                canonicalDecimal(row.getWorkHours()), row.getIsCrossDay(),
                 toScheduleTime(row.getRestStartTime()), toScheduleTime(row.getRestEndTime()),
                 toIsoDateTime(row.getUpdateTime())))
             .toList();
@@ -1452,14 +1600,14 @@ public class DeliveryContextAssembler {
             .sorted(leaveComparator())
             .map(row -> new CriticalLeaveSource(
                 row.getLeaveId(), row.getWorkerId(), toIsoDate(row.getStartDate()),
-                toIsoDate(row.getEndDate()), row.getApplyStatus(), decimal(row.getDurationDays()),
+                toIsoDate(row.getEndDate()), row.getApplyStatus(), canonicalDecimal(row.getDurationDays()),
                 toIsoDateTime(row.getUpdateTime())))
             .toList();
         List<CriticalWorkstationSource> workstations = capacity.workstations().stream()
             .sorted(workstationComparator())
             .map(row -> new CriticalWorkstationSource(
                 row.getWorkstationId(), row.getWorkshopId(), row.getStatus(),
-                row.getOperatorCount(), decimal(row.getStandardCapacity()),
+                row.getOperatorCount(), canonicalDecimal(row.getStandardCapacity()),
                 toIsoDateTime(row.getUpdateTime())))
             .toList();
         return new CriticalSourceVersions(
@@ -1476,15 +1624,15 @@ public class DeliveryContextAssembler {
             .sorted(scheduleTaskComparator())
             .map(task -> new CriticalScheduleTask(
                 task.getTaskId(), task.getWoId(), task.getSeqNum(), task.getStepId(),
-                task.getResourceType(), task.getResourceId(), decimal(task.getSetupHours()),
-                decimal(task.getProcessHours()), toScheduleTime(task.getStartTime()),
+                task.getResourceType(), task.getResourceId(), canonicalDecimal(task.getSetupHours()),
+                canonicalDecimal(task.getProcessHours()), toScheduleTime(task.getStartTime()),
                 toScheduleTime(task.getEndTime()), task.getDurationDays(), task.getDelayFlag(),
                 toIsoDateTime(task.getUpdateTime())))
             .toList();
         return new CriticalSchedule(
             plan.getPlanId(), plan.getPlanNo(), plan.getStatus(), plan.getStrategy(),
             toIsoDate(plan.getStartDate()), plan.getHorizonDays(), toIsoDate(plan.getMakespanDate()),
-            decimal(plan.getTotalHours()), toIsoDateTime(plan.getUpdateTime()), tasks);
+            canonicalDecimal(plan.getTotalHours()), toIsoDateTime(plan.getUpdateTime()), tasks);
     }
 
     private List<StepInfo> routingSteps(ScheduleInput input, Long materialId) {
@@ -1522,6 +1670,12 @@ public class DeliveryContextAssembler {
             && TERMINAL_WORK_ORDER_STATUSES.contains(workOrder.getWoStatus().trim().toUpperCase(Locale.ROOT));
     }
 
+    private boolean isSchedulableWorkOrder(PrdWorkOrder workOrder) {
+        return workOrder != null && hasText(workOrder.getWoStatus())
+            && SCHEDULABLE_WORK_ORDER_STATUSES.contains(
+                workOrder.getWoStatus().trim().toUpperCase(Locale.ROOT));
+    }
+
     private static BigDecimal remaining(BigDecimal planned, BigDecimal completed) {
         return nonNegative(subtract(planned, completed));
     }
@@ -1542,6 +1696,16 @@ public class DeliveryContextAssembler {
         return value == null ? null : value.toPlainString();
     }
 
+    private static String canonicalDecimal(BigDecimal value) {
+        if (value == null) {
+            return null;
+        }
+        if (value.signum() == 0) {
+            return "0";
+        }
+        return value.stripTrailingZeros().toPlainString();
+    }
+
     private static String idString(Long value) {
         return value == null ? null : value.toString();
     }
@@ -1550,20 +1714,16 @@ public class DeliveryContextAssembler {
         if (value == null) {
             return null;
         }
-        if (value instanceof java.sql.Date sqlDate) {
-            return sqlDate.toLocalDate();
-        }
-        return value.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+        return java.time.Instant.ofEpochMilli(value.getTime())
+            .atZone(BUSINESS_ZONE).toLocalDate();
     }
 
     private static LocalDateTime toLocalDateTime(Date value) {
         if (value == null) {
             return null;
         }
-        if (value instanceof java.sql.Date sqlDate) {
-            return sqlDate.toLocalDate().atStartOfDay();
-        }
-        return value.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
+        return java.time.Instant.ofEpochMilli(value.getTime())
+            .atZone(BUSINESS_ZONE).toLocalDateTime();
     }
 
     private static String toIsoDate(Date value) {
@@ -1577,8 +1737,8 @@ public class DeliveryContextAssembler {
     }
 
     private static String toScheduleTime(Date value) {
-        if (value instanceof java.sql.Date sqlDate) {
-            return sqlDate.toLocalDate().toString();
+        if (value instanceof java.sql.Date) {
+            return toIsoDate(value);
         }
         return toIsoDateTime(value);
     }
@@ -1589,6 +1749,19 @@ public class DeliveryContextAssembler {
 
     private static boolean hasText(String value) {
         return value != null && !value.trim().isEmpty();
+    }
+
+    private static <T> List<List<T>> batches(Collection<T> values) {
+        if (values == null || values.isEmpty()) {
+            return List.of();
+        }
+        List<T> ordered = new ArrayList<>(values);
+        List<List<T>> result = new ArrayList<>();
+        for (int start = 0; start < ordered.size(); start += IN_BATCH_SIZE) {
+            result.add(List.copyOf(ordered.subList(start,
+                Math.min(start + IN_BATCH_SIZE, ordered.size()))));
+        }
+        return List.copyOf(result);
     }
 
     private static <T> List<T> safeList(List<T> source) {
@@ -1615,6 +1788,11 @@ public class DeliveryContextAssembler {
 
     private static Comparator<PrdWorkOrder> workOrderComparator() {
         return Comparator.comparing(PrdWorkOrder::getWoId,
+            Comparator.nullsLast(Comparator.naturalOrder()));
+    }
+
+    private static Comparator<PrdProductionPlan> productionPlanComparator() {
+        return Comparator.comparing(PrdProductionPlan::getPlanId,
             Comparator.nullsLast(Comparator.naturalOrder()));
     }
 
@@ -1781,6 +1959,13 @@ public class DeliveryContextAssembler {
                 .sorted()
                 .toList();
         }
+    }
+
+    private record ResolvedSalesContext(
+        List<SoSalesOrderHeader> orders,
+        List<SoSalesOrderLine> lines,
+        Map<Long, Long> workOrderSalesOrderIds
+    ) {
     }
 
     private record RequirementLink(
