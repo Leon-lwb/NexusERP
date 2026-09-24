@@ -7,6 +7,7 @@ import com.nexus.common.ai.decision.dto.DeliveryContextSnapshot.RequirementFact;
 import com.nexus.common.ai.decision.dto.DeliveryContextSnapshot.StockFact;
 import com.nexus.common.ai.decision.dto.ShortageSimulationResult;
 import com.nexus.common.ai.decision.enums.DecisionBusinessType;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.erp.prd.schedule.PrdShortageScenarioService;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -29,6 +30,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 @Tag("dev")
 class ErpDecisionShortageSimulationTest {
@@ -180,6 +184,7 @@ class ErpDecisionShortageSimulationTest {
             assertFalse(result.hasRisk());
             assertEquals(0, result.riskMaterialCount());
             assertTrue(result.items().isEmpty());
+            assertNull(result.totalGap(), "无需求证据不能生成总缺口 0");
             assertNull(result.kpis());
             assertTrue(result.warnings().contains("NO_REQUIREMENT_DATA"));
             assertTrue(result.warnings().stream().anyMatch(w -> w.contains("缺少需求证据，不能判定无风险")));
@@ -203,7 +208,10 @@ class ErpDecisionShortageSimulationTest {
             List.of(arrival(101L, 5001L, TODAY.plusDays(1), "10")), null);
         ShortageSimulationResult result = isolated.simulate(snapshot, 2, null);
         assertEquals(List.of(102L), result.items().stream().map(ShortageSimulationResult.Item::materialId).toList());
-        assertEquals(new BigDecimal("3"), result.totalGap());
+        assertTrue(result.hasRisk());
+        assertEquals(new BigDecimal("3"), result.items().get(0).maxGap());
+        assertNull(result.totalGap());
+        assertNull(result.kpis());
         assertTrue(result.warnings().stream().anyMatch(w -> w.contains("101") && w.contains("失败")));
         assertThrows(IllegalArgumentException.class, () -> isolated.simulate(snapshot, 2,
             Map.of("purchaseArrivalOverrides", Map.of("9999", "2026-09-24"))));
@@ -278,6 +286,100 @@ class ErpDecisionShortageSimulationTest {
         assertEquals(List.of(900L), result.items().get(0).affectedSalesOrderIds());
         assertEquals(1, result.kpis().impactedOrderCount());
     }
+
+    @Test
+    void rejectsOverrideForMaterialWithoutHorizonDemandWhenNoRequirementsExist() {
+        DeliveryContextSnapshot snapshot = snapshot(List.of(), List.of(),
+            List.of(arrival(101L, 5001L, TODAY.plusDays(1), "4")), null);
+        PrdShortageScenarioService service = mock(PrdShortageScenarioService.class);
+        ErpDecisionShortageSimulation guarded = new ErpDecisionShortageSimulation(service);
+
+        IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
+            () -> guarded.simulate(snapshot, 3,
+                Map.of("purchaseArrivalOverrides", Map.of("5001", "2026-09-24"))));
+
+        assertTrue(error.getMessage().contains("5001"));
+        assertTrue(error.getMessage().contains("101"));
+        verifyNoInteractions(service);
+        ShortageSimulationResult baseline = simulation.simulate(snapshot, 3, null);
+        assertTrue(baseline.warnings().contains("IGNORED_ARRIVAL_WITHOUT_DEMAND:101"));
+    }
+
+    @Test
+    void rejectsOverrideForExistingLineOfMaterialOutsideDemandScopeBeforeAnySimulation() {
+        DeliveryContextSnapshot snapshot = snapshot(
+            List.of(requirement(101L, TODAY, "3", 11L),
+                requirement(102L, TODAY.plusDays(4), "8", 22L)),
+            List.of(stock(101L, "0", "0", "0")),
+            List.of(arrival(101L, 5001L, TODAY.plusDays(1), "2"),
+                arrival(102L, 5002L, TODAY.plusDays(1), "8")), null);
+        PrdShortageScenarioService service = mock(PrdShortageScenarioService.class);
+        ErpDecisionShortageSimulation guarded = new ErpDecisionShortageSimulation(service);
+
+        IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
+            () -> guarded.simulate(snapshot, 3,
+                Map.of("purchaseArrivalOverrides", Map.of("5002", "2026-09-24"))));
+
+        assertTrue(error.getMessage().contains("5002"));
+        assertTrue(error.getMessage().contains("102"));
+        verifyNoInteractions(service);
+        ShortageSimulationResult baseline = simulation.simulate(snapshot, 3, null);
+        assertEquals(List.of(101L), baseline.items().stream().map(ShortageSimulationResult.Item::materialId).toList());
+        assertEquals(new BigDecimal("2"), baseline.items().get(0).onOrderQty());
+        assertTrue(baseline.warnings().contains("IGNORED_ARRIVAL_WITHOUT_DEMAND:102"));
+    }
+
+    @Test
+    void allMaterialsFailingThrowsIncompleteAfterAttemptingEveryMaterial() {
+        PrdShortageScenarioService service = mock(PrdShortageScenarioService.class);
+        doAnswer(call -> { throw new IllegalStateException("simulator offline"); })
+            .when(service).simulate(any(), any(), any(), eq(TODAY));
+        DeliveryContextSnapshot snapshot = snapshot(
+            List.of(requirement(101L, TODAY, "1", 11L), requirement(102L, TODAY, "2", 22L)),
+            List.of(), List.of(), null);
+
+        ServiceException failure = assertThrows(ServiceException.class,
+            () -> new ErpDecisionShortageSimulation(service).simulate(snapshot, 1, null));
+
+        assertTrue(failure.getMessage().startsWith("SHORTAGE_SIMULATION_INCOMPLETE"));
+        verify(service, times(2)).simulate(any(), any(), any(), eq(TODAY));
+    }
+
+    @Test
+    void failedMaterialWithOnlyNoRiskSuccessfulMaterialsThrowsIncomplete() {
+        PrdShortageScenarioService delegate = new PrdShortageScenarioService();
+        PrdShortageScenarioService service = mock(PrdShortageScenarioService.class);
+        doAnswer(call -> {
+            if (call.<com.nexus.erp.prd.schedule.PrdShortageInput>getArgument(0).getMaterialId() == 101L) {
+                throw new IllegalStateException("simulator offline");
+            }
+            return delegate.simulate(call.getArgument(0), call.getArgument(1), call.getArgument(2), call.getArgument(3));
+        }).when(service).simulate(any(), any(), any(), eq(TODAY));
+        DeliveryContextSnapshot snapshot = snapshot(
+            List.of(requirement(101L, TODAY, "5", 11L), requirement(102L, TODAY, "1", 22L)),
+            List.of(stock(102L, "2", "0", "0")), List.of(), null);
+
+        ServiceException failure = assertThrows(ServiceException.class,
+            () -> new ErpDecisionShortageSimulation(service).simulate(snapshot, 1, null));
+
+        assertTrue(failure.getMessage().startsWith("SHORTAGE_SIMULATION_INCOMPLETE"));
+        verify(service, times(2)).simulate(any(), any(), any(), eq(TODAY));
+    }
+
+    @Test
+    void preservesRealSimulatorAdjustSafetyWhenBalanceExactlyMeetsSafetyLine() {
+        DeliveryContextSnapshot snapshot = snapshot(
+            List.of(requirement(101L, TODAY, "5", 11L)),
+            List.of(stock(101L, "8", "0", "3")), List.of(), null);
+
+        ShortageSimulationResult result = simulation.simulate(snapshot, 1, null);
+
+        assertFalse(result.hasRisk());
+        assertNull(result.items().get(0).firstShortageDate());
+        assertEquals(BigDecimal.ZERO, result.items().get(0).maxGap());
+        assertEquals("ADJUST_SAFETY", result.items().get(0).recommendationCode());
+    }
+
     private static DeliveryContextSnapshot fixture() {
         return snapshot(List.of(requirement(101L, TODAY, "10", 11L)),
             List.of(stock(101L, "0", "0", "0")),

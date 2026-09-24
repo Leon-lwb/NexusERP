@@ -7,6 +7,7 @@ import com.nexus.common.ai.decision.dto.DeliveryContextSnapshot.RequirementFact;
 import com.nexus.common.ai.decision.dto.DeliveryContextSnapshot.StockFact;
 import com.nexus.common.ai.decision.dto.ShortageSimulationResult;
 import com.nexus.common.ai.decision.enums.DecisionBusinessType;
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.erp.prd.schedule.PrdShortageInput;
 import com.nexus.erp.prd.schedule.PrdShortageResult;
 import com.nexus.erp.prd.schedule.PrdShortageScenarioService;
@@ -56,12 +57,22 @@ public class ErpDecisionShortageSimulation {
         Map<Long, List<PurchaseArrivalLine>> linesByMaterial =
             collectArrivals(snapshot.arrivals(), arrivalsById, warnings);
         Map<Long, LocalDate> arrivalOverrides = parseOverrides(overrides, arrivalsById);
+        for (Long purchaseLineId : arrivalOverrides.keySet()) {
+            Long materialId = arrivalsById.get(purchaseLineId).materialId();
+            require(demands.containsKey(materialId),
+                "采购行 " + purchaseLineId + " 的物料 " + materialId + " 在本窗口无需求");
+        }
+        for (Long materialId : linesByMaterial.keySet()) {
+            if (!demands.containsKey(materialId)) {
+                warnings.add("IGNORED_ARRIVAL_WITHOUT_DEMAND:" + materialId);
+            }
+        }
         Map<Long, Long> salesOrdersByWorkOrder = parseSalesOrderLinks(snapshot.currentSchedule());
 
         if (demands.isEmpty()) {
             warnings.add(NO_REQUIREMENT_DATA);
             warnings.add("缺少需求证据，不能判定无风险");
-            return new ShortageSimulationResult(false, 0, null, BigDecimal.ZERO,
+            return new ShortageSimulationResult(false, 0, null, null,
                 List.of(), null, List.of(), List.copyOf(warnings));
         }
 
@@ -118,7 +129,8 @@ public class ErpDecisionShortageSimulation {
                     input.getMaterialName(), shortageDate,
                     shortageDate == null ? BigDecimal.ZERO : result.getMaxGap(), result.getOnOrderQty(),
                     workOrderIds, List.copyOf(salesOrderIds),
-                    shortageDate == null ? "NO_RISK" : result.getSuggestion(), List.copyOf(evidence)));
+                    shortageDate == null && result.getSuggestion() == null ? "NO_RISK" : result.getSuggestion(),
+                    List.copyOf(evidence)));
             } catch (IllegalArgumentException invalid) {
                 // Invalid scenario facts must never be turned into an apparently safe result.
                 throw invalid;
@@ -128,7 +140,12 @@ public class ErpDecisionShortageSimulation {
             }
         }
 
-        if (failedMaterials != 0) warnings.add("部分物料推演失败，汇总仅覆盖成功物料，风险未知");
+        if (failedMaterials != 0) {
+            warnings.add("部分物料推演失败，汇总仅覆盖成功物料，完整风险未知");
+            if (items.stream().noneMatch(item -> item.firstShortageDate() != null)) {
+                throw new ServiceException("SHORTAGE_SIMULATION_INCOMPLETE: 推演未完成，无法判定无风险");
+            }
+        }
         if (items.isEmpty()) {
             return new ShortageSimulationResult(false, 0, null, BigDecimal.ZERO,
                 List.of(), null, List.of(), List.copyOf(warnings));
@@ -150,11 +167,15 @@ public class ErpDecisionShortageSimulation {
                 impactedOrders.addAll(item.affectedSalesOrderIds());
             }
         }
-        warnings.add("仅计算缺料/影响订单指标，其余 APS KPI 未计算（0/null 为占位）");
-        DecisionKpiSet kpis = new DecisionKpiSet(impactedOrders.size(), 0, 0, 0, null,
-            riskCount, totalGap, earliest == null ? null : earliest.toString(), null, 0, 0, null);
-        return new ShortageSimulationResult(riskCount > 0, riskCount, earliest, totalGap,
-            List.copyOf(items), kpis, List.copyOf(evidenceRefs), List.copyOf(warnings));
+        DecisionKpiSet kpis = null;
+        if (failedMaterials == 0) {
+            warnings.add("仅计算缺料/影响订单指标，其余 APS KPI 未计算（0/null 为占位）");
+            kpis = new DecisionKpiSet(impactedOrders.size(), 0, 0, 0, null,
+                riskCount, totalGap, earliest == null ? null : earliest.toString(), null, 0, 0, null);
+        }
+        return new ShortageSimulationResult(riskCount > 0, riskCount, earliest,
+            failedMaterials == 0 ? totalGap : null, List.copyOf(items), kpis,
+            List.copyOf(evidenceRefs), List.copyOf(warnings));
     }
 
     private static void validateSnapshot(DeliveryContextSnapshot snapshot, int horizonDays) {
