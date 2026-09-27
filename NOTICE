@@ -1,0 +1,18 @@
+Nexus-ERP third-party and upstream attribution
+============================================
+
+Nexus-ERP is distributed under the MIT license (see LICENSE).
+This project is a derivative of RuoYi-Vue-Plus v5.6.0. Preserve its upstream
+attribution and applicable upstream notices when redistributing the source or
+bundled artifacts. The Nexus-ERP-specific decision, ERP, MES, IoT, AI and
+frontend changes do not replace upstream authorship.
+
+The build also uses independently maintained components such as Spring Boot,
+MyBatis-Plus, Sa-Token, LangChain4j, Vue and Element Plus. Their copyright
+and license terms are governed by their own distributions and dependency
+manifests (pom.xml and plus-ui/package-lock.json); this NOTICE does not
+purport to relicense third-party code or assert an unverified complete SBOM.
+
+Nexus-App is a separate repository with its own dependencies and notices.
+Before a competition/public release, the maintainer must review the bundled
+licenses and the exact upstream attribution in the final artifacts.

@@ -177,7 +177,7 @@ VENDORS = [
 |---|---|
 | `script/sql/ry-vue.sql` | 新增 `bd_vendor_industry` 字典类型 + 10 条字典数据 |
 | `script/sql/ry-erp.sql` | 12 行 `bd_vendor` INSERT 改为字典合法值 + 回填行政区划 ID |
-| `script/sql/update/2026-09-23-bd-vendor-dict-align.sql` | 存量库修复脚本（幂等 + 镜像备份表 + 回滚语句） |
+| `doc/erp/scripts/2026-09-23-bd-vendor-dict-align.sql` | 存量库修复脚本（幂等 + 镜像备份表 + 回滚语句） |
 | `doc/system/数据库增量变更记录.md` | 登记 09-23 批次 |
 | `script/tools/rebuild/catalog.py`、`generate.py` | 根因修复 |
 | `plus-ui/src/views/erp/bd/vendor/index.vue`、`plus-ui/src/composables/useAreaCascade.ts` | 前端接入 |

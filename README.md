@@ -20,6 +20,16 @@ Nexus-ERP 是一套面向制造业与贸易型企业的综合管理系统，涵�
 
 ---
 
+## 2026 AI+工业软件参赛入口
+
+- [工业交付风险闭环决策正式设计](doc/ai/2026-09-23-工业交付风险闭环决策参赛设计.md) / [任务实施计划](doc/ai/plans/2026-09-23-工业交付风险闭环决策实施计划.md)
+- [40 案例 Benchmark、隔离数据和复现指南](doc/ai/benchmark/delivery-risk/README.md) / [2026-10 基线报告：未实测](doc/ai/benchmark/delivery-risk/reports/2026-10-competition-baseline.md)
+- [部署指南](doc/system/deployment/docker部署文档.md) / [主机 Compose](docker-compose-main.yml) / [辅助 Compose](docker-compose-assist.yml)：目前**没有已验真的竞赛一键部署脚本**，部署前请先隔离新数据库。
+- [演示视频链接登记位置](doc/ai/benchmark/delivery-risk/README.md#视频链接位置)：待 Task 19 制作与核验；目前无视频链接。
+- [作品介绍草稿](doc/ai/competition/2026-工业决策-作品介绍.md) / [录屏脚本](doc/ai/competition/演示视频脚本.md) / [提交核验清单（均未正式交付）](doc/ai/competition/提交核验清单.md) / [贡献说明](CONTRIBUTING.md) / [安全报告](SECURITY.md)。
+- 核心代码：[AI 决策](ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision) / [ERP 业务快照与推演](ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/ai/adapter) / [Flow 工业节点](ruoyi-modules/ruoyi-flow/src/main/java/com/nexus/flow/node/industrial) / [PC 页面](plus-ui/src/views/ai/decision)。App 位于独立 `Nexus_App` 仓库。
+
+---
 ## 项目定位
 
 Nexus-ERP 不只是一个通用后台，而是一个以企业经营流程为核心的业务系统。当前重点聚焦于以下几个方向：

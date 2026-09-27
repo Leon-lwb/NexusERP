@@ -16,7 +16,7 @@
 
 | 文件 | 职责 | 动作 |
 |---|---|---|
-| `script/sql/update/2026-09-23-bd-vendor-dict-align.sql` | 存量库可执行修复（字典 + 数据 + 备份 + 回滚） | 创建 |
+| `doc/erp/scripts/2026-09-23-bd-vendor-dict-align.sql` | 存量库可执行修复（字典 + 数据 + 备份 + 回滚） | 创建 |
 | `script/sql/ry-vue.sql` | 全新安装的字典种子 | 修改 |
 | `script/sql/ry-erp.sql` | 全新安装的供应商种子 + 列注释 | 修改 |
 | `ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/bd/service/impl/BdVendorServiceImpl.java` | 供应商查询条件 | 修改 |
@@ -49,7 +49,7 @@
 ### Task 1: 增量修复脚本（字典 + 存量数据）
 
 **Files:**
-- Create: `script/sql/update/2026-09-23-bd-vendor-dict-align.sql`
+- Create: `doc/erp/scripts/2026-09-23-bd-vendor-dict-align.sql`
 
 - [ ] **Step 1: 建立失败基线（修复前必须先看到非法值）**
 
@@ -61,7 +61,7 @@ Expected（修复前）：`region` orphan=12、`status` orphan=10、`invoice` or
 
 - [ ] **Step 2: 写脚本**
 
-创建 `script/sql/update/2026-09-23-bd-vendor-dict-align.sql`，内容如下（`ry-erp` / `ry-vue` 均显式限定库名，避免依赖 `USE`）：
+创建 `doc/erp/scripts/2026-09-23-bd-vendor-dict-align.sql`，内容如下（`ry-erp` / `ry-vue` 均显式限定库名，避免依赖 `USE`）：
 
 ```sql
 -- ============================================================================
@@ -195,7 +195,7 @@ SELECT 'invoice',  v.vendor_id, v.default_invoice_type          FROM `ry-erp`.`b
 - [ ] **Step 3: 执行脚本**
 
 ```powershell
-& 'D:\software\mysql-5.7.14\bin\mysql.exe' --host=localhost --port=3306 --user=root --default-character-set=utf8mb4 --table -e "source D:/workspace/nexus-erp/script/sql/update/2026-09-23-bd-vendor-dict-align.sql"
+& 'D:\software\mysql-5.7.14\bin\mysql.exe' --host=localhost --port=3306 --user=root --default-character-set=utf8mb4 --table -e "source D:/workspace/nexus-erp/doc/erp/scripts/2026-09-23-bd-vendor-dict-align.sql"
 ```
 
 Expected：§3.1 的 5 个自检查询返回**空结果集**（无行），无 `ERROR`。
@@ -211,7 +211,7 @@ Expected：12 行，`industry` 为 `METAL`/`HARDWARE`/`PLASTIC`/`ELECTRONIC`/`BA
 - [ ] **Step 5: 验证幂等（重跑必须 0 行）**
 
 ```powershell
-& 'D:\software\mysql-5.7.14\bin\mysql.exe' --host=localhost --port=3306 --user=root --default-character-set=utf8mb4 -e "source D:/workspace/nexus-erp/script/sql/update/2026-09-23-bd-vendor-dict-align.sql" 2>&1 | Select-String -Pattern "ERROR"
+& 'D:\software\mysql-5.7.14\bin\mysql.exe' --host=localhost --port=3306 --user=root --default-character-set=utf8mb4 -e "source D:/workspace/nexus-erp/doc/erp/scripts/2026-09-23-bd-vendor-dict-align.sql" 2>&1 | Select-String -Pattern "ERROR"
 ```
 
 Expected：无输出（无 ERROR）。再用 Step 4 的查询确认数据未变、Step 1 的查询确认 orphan 全为 0。
@@ -227,7 +227,7 @@ Expected：返回 `0` 或 `1`（该键可能不存在）。若本机 Redis 非 D
 - [ ] **Step 7: 提交**
 
 ```powershell
-git add script/sql/update/2026-09-23-bd-vendor-dict-align.sql
+git add doc/erp/scripts/2026-09-23-bd-vendor-dict-align.sql
 git commit -m "fix(erp-bd): 供应商字典口径对齐增量脚本(供货品类字典+12行存量修复)"
 ```
 

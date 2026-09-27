@@ -1,0 +1,595 @@
+{
+  "mode": "只读审查，未执行结构或业务写入",
+  "base": "dad61b09b11425e2aee6a3807798e91c5aa64736",
+  "feature": "9fd0634f",
+  "environments": {
+    "daily": {
+      "port": 3306,
+      "version": "5.7.14",
+      "identityVerified": true,
+      "decisionRowCounts": {},
+      "menus": [],
+      "dictionaries": [
+        [
+          "000000",
+          "bd_vendor_industry",
+          "METAL",
+          "金属材料"
+        ],
+        [
+          "000000",
+          "bd_vendor_industry",
+          "PLASTIC",
+          "塑料材料"
+        ],
+        [
+          "000000",
+          "bd_vendor_industry",
+          "RUBBER_COMP",
+          "橡胶与复合材料"
+        ],
+        [
+          "000000",
+          "bd_vendor_industry",
+          "ELECTRONIC",
+          "电子元器件"
+        ],
+        [
+          "000000",
+          "bd_vendor_industry",
+          "BATTERY",
+          "电池与电源"
+        ],
+        [
+          "000000",
+          "bd_vendor_industry",
+          "HARDWARE",
+          "五金件"
+        ],
+        [
+          "000000",
+          "bd_vendor_industry",
+          "PACKAGING",
+          "包装材料"
+        ],
+        [
+          "000000",
+          "bd_vendor_industry",
+          "CHEMICAL",
+          "化工辅料"
+        ],
+        [
+          "000000",
+          "bd_vendor_industry",
+          "SM_CAST",
+          "铸锻件"
+        ],
+        [
+          "000000",
+          "bd_vendor_industry",
+          "OTHER",
+          "其他"
+        ],
+        [
+          "000000",
+          "pu_source_type",
+          "MANUAL",
+          "手工"
+        ],
+        [
+          "000000",
+          "pu_source_type",
+          "REQ_CONVERT",
+          "需求转入"
+        ],
+        [
+          "000000",
+          "pu_source_type",
+          "RECEIVE_LINK",
+          "到货联动"
+        ]
+      ],
+      "sourceDictionaryIdCheck": [],
+      "vendorCounts": {
+        "total": 12,
+        "active": 12,
+        "legacyOne": 0
+      },
+      "requiredTables": {
+        "ai_decision_run": {
+          "exists": false,
+          "columns": {},
+          "indexes": {}
+        },
+        "ai_decision_evidence": {
+          "exists": false,
+          "columns": {},
+          "indexes": {}
+        },
+        "ai_decision_action": {
+          "exists": false,
+          "columns": {},
+          "indexes": {}
+        },
+        "ai_flow_node_run": {
+          "exists": true,
+          "columns": {
+            "node_type": {
+              "type": "varchar(30)",
+              "nullable": "NO",
+              "default": "NULL"
+            }
+          },
+          "indexes": {}
+        },
+        "prd_schedule_plan": {
+          "exists": true,
+          "columns": {},
+          "indexes": {}
+        },
+        "pu_purchase_requisition": {
+          "exists": true,
+          "columns": {
+            "dept_id": {
+              "type": "bigint(20)",
+              "nullable": "YES",
+              "default": "NULL"
+            },
+            "dept_name": {
+              "type": "varchar(100)",
+              "nullable": "YES",
+              "default": "NULL"
+            }
+          },
+          "indexes": {}
+        },
+        "pu_purchase_requisition_line": {
+          "exists": true,
+          "columns": {
+            "material_name": {
+              "type": "varchar(128)",
+              "nullable": "YES",
+              "default": "NULL"
+            },
+            "material_spec": {
+              "type": "varchar(128)",
+              "nullable": "YES",
+              "default": "NULL"
+            },
+            "unit": {
+              "type": "varchar(32)",
+              "nullable": "YES",
+              "default": "NULL"
+            }
+          },
+          "indexes": {}
+        }
+      }
+    },
+    "demo": {
+      "port": 13307,
+      "version": "5.7.14",
+      "identityVerified": true,
+      "decisionRowCounts": {
+        "ai_decision_run": 19,
+        "ai_decision_evidence": 1997,
+        "ai_decision_action": 9
+      },
+      "menus": [
+        [
+          "1850",
+          "工业决策中心",
+          "1700",
+          "decision",
+          "NULL",
+          "M",
+          "NULL"
+        ],
+        [
+          "1851",
+          "交付风险看板",
+          "1850",
+          "index",
+          "ai/decision/index",
+          "C",
+          "ai:decision:query"
+        ],
+        [
+          "1852",
+          "决策运行详情",
+          "1850",
+          "detail",
+          "ai/decision/detail",
+          "C",
+          "ai:decision:query"
+        ],
+        [
+          "1853",
+          "决策查询",
+          "1851",
+          "",
+          "",
+          "F",
+          "ai:decision:query"
+        ],
+        [
+          "1854",
+          "发起决策",
+          "1851",
+          "",
+          "",
+          "F",
+          "ai:decision:run"
+        ],
+        [
+          "1855",
+          "审批决策",
+          "1851",
+          "",
+          "",
+          "F",
+          "ai:decision:approve"
+        ],
+        [
+          "1856",
+          "执行重试",
+          "1851",
+          "",
+          "",
+          "F",
+          "ai:decision:execute"
+        ],
+        [
+          "1857",
+          "决策导出",
+          "1851",
+          "",
+          "",
+          "F",
+          "ai:decision:export"
+        ],
+        [
+          "1858",
+          "决策配置",
+          "1851",
+          "",
+          "",
+          "F",
+          "ai:decision:config"
+        ],
+        [
+          "1859",
+          "决策评测",
+          "1851",
+          "",
+          "",
+          "F",
+          "ai:decision:benchmark"
+        ]
+      ],
+      "dictionaries": [
+        [
+          "000000",
+          "pu_source_type",
+          "MANUAL",
+          "手工"
+        ],
+        [
+          "000000",
+          "pu_source_type",
+          "REQ_CONVERT",
+          "需求转入"
+        ],
+        [
+          "000000",
+          "pu_source_type",
+          "RECEIVE_LINK",
+          "到货联动"
+        ],
+        [
+          "000000",
+          "pu_source_type",
+          "AI_DECISION",
+          "AI交付风险决策"
+        ]
+      ],
+      "sourceDictionaryIdCheck": [
+        [
+          "3000044",
+          "000000",
+          "pu_source_type",
+          "AI_DECISION"
+        ]
+      ],
+      "vendorCounts": {
+        "total": 52,
+        "active": 2,
+        "legacyOne": 10
+      },
+      "requiredTables": {
+        "ai_decision_run": {
+          "exists": true,
+          "columns": {
+            "approval_context_json": {
+              "type": "longtext",
+              "nullable": "YES",
+              "default": "NULL"
+            },
+            "analysis_finished_at": {
+              "type": "datetime",
+              "nullable": "YES",
+              "default": "NULL"
+            },
+            "version": {
+              "type": "int(11)",
+              "nullable": "NO",
+              "default": "0"
+            }
+          },
+          "indexes": {
+            "idx_decision_analysis_flow": {
+              "unique": false,
+              "columns": [
+                "analysis_flow_instance_id"
+              ]
+            },
+            "idx_decision_biz": {
+              "unique": false,
+              "columns": [
+                "tenant_id",
+                "biz_type",
+                "biz_id"
+              ]
+            },
+            "idx_decision_create_time": {
+              "unique": false,
+              "columns": [
+                "tenant_id",
+                "create_time"
+              ]
+            },
+            "idx_decision_execution_flow": {
+              "unique": false,
+              "columns": [
+                "execution_flow_instance_id"
+              ]
+            },
+            "idx_decision_parent": {
+              "unique": false,
+              "columns": [
+                "parent_run_id"
+              ]
+            },
+            "idx_decision_tenant_scene_status": {
+              "unique": false,
+              "columns": [
+                "tenant_id",
+                "scene_code",
+                "status"
+              ]
+            },
+            "PRIMARY": {
+              "unique": true,
+              "columns": [
+                "id"
+              ]
+            }
+          }
+        },
+        "ai_decision_evidence": {
+          "exists": true,
+          "columns": {},
+          "indexes": {
+            "idx_decision_evidence_run": {
+              "unique": false,
+              "columns": [
+                "run_id"
+              ]
+            },
+            "idx_decision_evidence_source": {
+              "unique": false,
+              "columns": [
+                "tenant_id",
+                "source_type",
+                "source_id"
+              ]
+            },
+            "PRIMARY": {
+              "unique": true,
+              "columns": [
+                "id"
+              ]
+            },
+            "uk_decision_evidence": {
+              "unique": true,
+              "columns": [
+                "run_id",
+                "evidence_key"
+              ]
+            }
+          }
+        },
+        "ai_decision_action": {
+          "exists": true,
+          "columns": {
+            "version": {
+              "type": "int(11)",
+              "nullable": "NO",
+              "default": "0"
+            }
+          },
+          "indexes": {
+            "idx_decision_action_approval": {
+              "unique": false,
+              "columns": [
+                "tenant_id",
+                "approval_status"
+              ]
+            },
+            "idx_decision_action_execution": {
+              "unique": false,
+              "columns": [
+                "tenant_id",
+                "execution_status"
+              ]
+            },
+            "idx_decision_action_run": {
+              "unique": false,
+              "columns": [
+                "run_id",
+                "sequence_no"
+              ]
+            },
+            "PRIMARY": {
+              "unique": true,
+              "columns": [
+                "id"
+              ]
+            },
+            "uk_decision_action_idempotency": {
+              "unique": true,
+              "columns": [
+                "tenant_id",
+                "idempotency_key"
+              ]
+            }
+          }
+        },
+        "ai_flow_node_run": {
+          "exists": true,
+          "columns": {
+            "node_type": {
+              "type": "varchar(64)",
+              "nullable": "NO",
+              "default": "NULL"
+            }
+          },
+          "indexes": {}
+        },
+        "prd_schedule_plan": {
+          "exists": true,
+          "columns": {
+            "decision_run_id": {
+              "type": "bigint(20)",
+              "nullable": "YES",
+              "default": "NULL"
+            },
+            "decision_action_id": {
+              "type": "bigint(20)",
+              "nullable": "YES",
+              "default": "NULL"
+            },
+            "decision_idempotency_key": {
+              "type": "varchar(128)",
+              "nullable": "YES",
+              "default": "NULL"
+            },
+            "decision_scenario_code": {
+              "type": "varchar(64)",
+              "nullable": "YES",
+              "default": "NULL"
+            },
+            "decision_work_order_ids_json": {
+              "type": "varchar(4000)",
+              "nullable": "YES",
+              "default": "NULL"
+            },
+            "version": {
+              "type": "int(11)",
+              "nullable": "NO",
+              "default": "0"
+            }
+          },
+          "indexes": {
+            "idx_psp_decision_run": {
+              "unique": false,
+              "columns": [
+                "tenant_id",
+                "decision_run_id"
+              ]
+            },
+            "uk_psp_decision_idem": {
+              "unique": true,
+              "columns": [
+                "tenant_id",
+                "decision_idempotency_key"
+              ]
+            }
+          }
+        },
+        "pu_purchase_requisition": {
+          "exists": true,
+          "columns": {
+            "decision_run_id": {
+              "type": "bigint(20)",
+              "nullable": "YES",
+              "default": "NULL"
+            },
+            "decision_action_id": {
+              "type": "bigint(20)",
+              "nullable": "YES",
+              "default": "NULL"
+            },
+            "decision_idempotency_key": {
+              "type": "varchar(128)",
+              "nullable": "YES",
+              "default": "NULL"
+            },
+            "version": {
+              "type": "int(11)",
+              "nullable": "NO",
+              "default": "0"
+            },
+            "dept_id": {
+              "type": "bigint(20)",
+              "nullable": "YES",
+              "default": "NULL"
+            },
+            "dept_name": {
+              "type": "varchar(100)",
+              "nullable": "YES",
+              "default": "NULL"
+            }
+          },
+          "indexes": {
+            "idx_pur_decision_run": {
+              "unique": false,
+              "columns": [
+                "tenant_id",
+                "decision_run_id"
+              ]
+            },
+            "uk_pur_decision_idem": {
+              "unique": true,
+              "columns": [
+                "tenant_id",
+                "decision_idempotency_key"
+              ]
+            }
+          }
+        },
+        "pu_purchase_requisition_line": {
+          "exists": true,
+          "columns": {
+            "material_name": {
+              "type": "varchar(200)",
+              "nullable": "YES",
+              "default": "NULL"
+            },
+            "material_spec": {
+              "type": "varchar(500)",
+              "nullable": "YES",
+              "default": "NULL"
+            },
+            "unit": {
+              "type": "varchar(64)",
+              "nullable": "YES",
+              "default": "NULL"
+            }
+          },
+          "indexes": {}
+        }
+      }
+    }
+  }
+}
