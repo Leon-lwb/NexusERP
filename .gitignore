@@ -1,5 +1,5 @@
 ######################################################################
-# Build Tools
+# 构建工具
 
 .gradle
 /build/
@@ -9,7 +9,7 @@ target/
 !.mvn/wrapper/maven-wrapper.jar
 
 ######################################################################
-# IDE
+# 开发工具
 
 ### STS ###
 .apt_generated
@@ -36,12 +36,12 @@ nbdist/
 .nb-gradle/
 
 ######################################################################
-# Claude Code
+# Claude Code 本地文件
 .claude
 **/.claude
 
 ######################################################################
-# OS
+# 操作系统文件
 .DS_Store
 .DS_Store?
 Thumbs.db
@@ -49,13 +49,13 @@ ehthumbs.db
 Desktop.ini
 
 ######################################################################
-# Java
+# Java 编译及运行产物
 *.class
 hs_err_pid*
 replay_pid*
 
 ######################################################################
-# Others
+# 其他临时文件
 *.log
 *.log.gz
 *.xml.versionsBackup
@@ -64,7 +64,7 @@ replay_pid*
 !*/build/*.java
 
 ######################################################################
-# Secret Config
+# 本机秘密配置
 **/application-secret.yml
 **/*.run.xml.local
 !*/build/*.html
@@ -91,3 +91,9 @@ __pycache__/
 # T1 生图管线：去水印前的 SenseNova 原图（可由 API 重新生成，40MB+，不入库）
 # 去水印后的成品图在 doc/assets/product-images-2026-09-15/ 正常入库
 doc/assets/_t1_work/raw/
+
+# 本地隔离工作树，不纳入源码跟踪
+.worktrees/
+
+# 本地原始 HTTP 基线报告保留供审计，不自动提交
+doc/ai/benchmark/delivery-risk/reports/latest.md

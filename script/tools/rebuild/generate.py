@@ -428,7 +428,7 @@ FG_LEVEL_KW = ("纸盒", "彩盒", "纸箱", "塑盒", "包装", "说明书", "�
                "润滑油", "涂料", "粉末", "漆", "胶", "溶剂", "氧化剂",
                "焊丝", "密封", "紧固件包", "连接件包")
 
-alt_vals = []          # bd_bom_alternative
+alt_vals = []          # 物料清单替代料表 bd_bom_alternative。
 alt_id = 0
 # 主料 → [(替代料, 替代类型)]
 SUB_MAP = {}
@@ -747,7 +747,7 @@ for wsx, eqn in sorted(eq_by_ws.items()):
         w("UPDATE `ry-mes`.eq_equipment SET iot_device_id=%d WHERE equipment_id=%d;" % (dev, eqn))
 w()
 
-# ---------------------------------------------------------------- 11. SOP
+# 第十一部分：标准作业程序。
 w("-- ============ 11. SOP 文档与工序绑定 ============")
 sop_vals, ver_vals, bind_vals = [], [], []
 sopn, vern, bindn = 0, 0, 0

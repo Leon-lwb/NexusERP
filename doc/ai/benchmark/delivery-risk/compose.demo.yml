@@ -1,0 +1,37 @@
+name: nexus-decision-demo
+services:
+  redis:
+    image: redis:7.2.8
+    container_name: nexus-decision-demo-redis
+    environment:
+      REDIS_PASSWORD: ${DECISION_DEMO_REDIS_PASSWORD:?local demo secret required}
+    command: ["sh", "-c", "exec redis-server --appendonly yes --requirepass \"$$REDIS_PASSWORD\""]
+    ports:
+      - "127.0.0.1:6385:6379"
+    volumes:
+      - redis-demo-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "REDISCLI_AUTH=\"$$REDIS_PASSWORD\" redis-cli ping | grep -q PONG"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: nexus-decision-demo-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ${DECISION_DEMO_MQ_USER:?local demo account required}
+      RABBITMQ_DEFAULT_PASS: ${DECISION_DEMO_MQ_PASSWORD:?local demo secret required}
+      RABBITMQ_DEFAULT_VHOST: ${DECISION_DEMO_MQ_VHOST:?local demo vhost required}
+    ports:
+      - "127.0.0.1:5685:5672"
+      - "127.0.0.1:15685:15672"
+    volumes:
+      - rabbitmq-demo-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 10s
+      retries: 12
+volumes:
+  redis-demo-data:
+  rabbitmq-demo-data:

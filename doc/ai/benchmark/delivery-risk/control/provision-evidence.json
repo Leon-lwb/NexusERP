@@ -1,0 +1,32 @@
+{
+  "schemas": {
+    "sys": "nexus_ai_decision_control_20260927_sys",
+    "erp": "nexus_ai_decision_control_20260927_erp",
+    "mes": "nexus_ai_decision_control_20260927_mes",
+    "iot": "nexus_ai_decision_control_20260927_iot"
+  },
+  "sourceChecksumsBefore": "nexus_ai_decision_demo_erp.bd_material\t3509450484\r\nnexus_ai_decision_demo_erp.bd_material_category\t2612491178\r\nnexus_ai_decision_demo_erp.bd_process\t1181189369\r\nnexus_ai_decision_demo_erp.bd_routing\t376215682\r\nnexus_ai_decision_demo_erp.bd_routing_step\t3159849224\r\nnexus_ai_decision_demo_erp.bd_vendor\t783163710\r\nnexus_ai_decision_demo_erp.bd_workshop\t1286791497\r\nnexus_ai_decision_demo_erp.bd_workstation\t2402055354\r\nnexus_ai_decision_demo_erp.prd_capacity_calendar\t249346290\r\nnexus_ai_decision_demo_erp.prd_material_requirement\t898090371\r\nnexus_ai_decision_demo_erp.prd_material_requirement_detail\t1131767789\r\nnexus_ai_decision_demo_erp.prd_production_plan\t258449528\r\nnexus_ai_decision_demo_erp.prd_schedule_plan\t2380125460\r\nnexus_ai_decision_demo_erp.prd_schedule_task\t3301505993\r\nnexus_ai_decision_demo_erp.prd_work_order\t3353229986\r\nnexus_ai_decision_demo_erp.pu_purchase_order\t784754566\r\nnexus_ai_decision_demo_erp.pu_purchase_order_line\t2899164021\r\nnexus_ai_decision_demo_erp.pu_vendor_evaluation\t1577810774\r\nnexus_ai_decision_demo_erp.wm_material_stock\t3845202052\r\nnexus_ai_decision_demo_erp.wm_warehouse\t2037712697",
+  "sourceTables": [
+    "bd_material",
+    "bd_material_category",
+    "bd_process",
+    "bd_routing",
+    "bd_routing_step",
+    "bd_vendor",
+    "bd_workshop",
+    "bd_workstation",
+    "prd_capacity_calendar",
+    "prd_material_requirement",
+    "prd_material_requirement_detail",
+    "prd_production_plan",
+    "prd_schedule_plan",
+    "prd_schedule_task",
+    "prd_work_order",
+    "pu_purchase_order",
+    "pu_purchase_order_line",
+    "pu_vendor_evaluation",
+    "wm_material_stock",
+    "wm_warehouse"
+  ],
+  "sourceChecksumsAfter": "nexus_ai_decision_demo_erp.bd_material\t3509450484\r\nnexus_ai_decision_demo_erp.bd_material_category\t2612491178\r\nnexus_ai_decision_demo_erp.bd_process\t1181189369\r\nnexus_ai_decision_demo_erp.bd_routing\t376215682\r\nnexus_ai_decision_demo_erp.bd_routing_step\t3159849224\r\nnexus_ai_decision_demo_erp.bd_vendor\t783163710\r\nnexus_ai_decision_demo_erp.bd_workshop\t1286791497\r\nnexus_ai_decision_demo_erp.bd_workstation\t2402055354\r\nnexus_ai_decision_demo_erp.prd_capacity_calendar\t249346290\r\nnexus_ai_decision_demo_erp.prd_material_requirement\t898090371\r\nnexus_ai_decision_demo_erp.prd_material_requirement_detail\t1131767789\r\nnexus_ai_decision_demo_erp.prd_production_plan\t258449528\r\nnexus_ai_decision_demo_erp.prd_schedule_plan\t2380125460\r\nnexus_ai_decision_demo_erp.prd_schedule_task\t3301505993\r\nnexus_ai_decision_demo_erp.prd_work_order\t3353229986\r\nnexus_ai_decision_demo_erp.pu_purchase_order\t784754566\r\nnexus_ai_decision_demo_erp.pu_purchase_order_line\t2899164021\r\nnexus_ai_decision_demo_erp.pu_vendor_evaluation\t1577810774\r\nnexus_ai_decision_demo_erp.wm_material_stock\t3845202052\r\nnexus_ai_decision_demo_erp.wm_warehouse\t2037712697"
+}

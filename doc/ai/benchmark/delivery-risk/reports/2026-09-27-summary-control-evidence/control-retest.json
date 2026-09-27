@@ -1,0 +1,172 @@
+[
+  {
+    "name": "CONTROL002_READ_ONLY_USER",
+    "passed": true,
+    "evidence": {
+      "runId": "2104198671833907202",
+      "queryCode": 200,
+      "approveCode": 403,
+      "retryCode": 403
+    },
+    "time": "2026-09-27T13:53:18.407Z"
+  },
+  {
+    "name": "CONTROL002_FORBIDDEN_ACTION",
+    "passed": true,
+    "evidence": {
+      "injection": "system-copy action type changed, no execution bypass",
+      "approveCode": 500,
+      "runId": "2104207758080577538",
+      "status": "WAITING_APPROVAL",
+      "executionFlowId": null,
+      "actions": [
+        {
+          "id": "2104207858471243778",
+          "type": "PUBLISH_SCHEDULE_PLAN",
+          "approval": "PROPOSED",
+          "execution": "NOT_STARTED",
+          "resultBizId": null,
+          "errorCode": null
+        },
+        {
+          "id": "2104207858479632386",
+          "type": "CREATE_PURCHASE_REQUISITION_DRAFT",
+          "approval": "PROPOSED",
+          "execution": "NOT_STARTED",
+          "resultBizId": null,
+          "errorCode": null
+        },
+        {
+          "id": "2104207858500603905",
+          "type": "CREATE_SCHEDULE_PLAN_DRAFT",
+          "approval": "PROPOSED",
+          "execution": "NOT_STARTED",
+          "resultBizId": null,
+          "errorCode": null
+        }
+      ]
+    },
+    "time": "2026-09-27T13:53:43.603Z"
+  },
+  {
+    "name": "CONTROL004_CONCURRENT_APPROVAL_AND_IDEMPOTENCY",
+    "passed": true,
+    "evidence": {
+      "replyCodes": [
+        500,
+        200
+      ],
+      "draftCount": 1,
+      "flowCount": 1,
+      "retryCode": 200,
+      "runId": "2104207863596683265",
+      "status": "SUCCEEDED",
+      "executionFlowId": "2104207961370103809",
+      "actions": [
+        {
+          "id": "2104207960459939841",
+          "type": "CREATE_PURCHASE_REQUISITION_DRAFT",
+          "approval": "APPROVED",
+          "execution": "SUCCEEDED",
+          "resultBizId": "2104207961684676610",
+          "errorCode": null
+        }
+      ]
+    },
+    "time": "2026-09-27T13:54:07.966Z"
+  },
+  {
+    "name": "CONTROL005_PARTIAL_SUCCESS",
+    "passed": false,
+    "error": "PARTIAL_APPROVAL_REJECTED",
+    "time": "2026-09-27T13:54:27.062Z"
+  },
+  {
+    "name": "CONTROL005_REAL_COMPENSATION",
+    "passed": true,
+    "evidence": {
+      "postRealVerificationInjection": true,
+      "mutation": "none",
+      "businessId": "2104208165649485826",
+      "businessRow": {
+        "status": "DRAFT",
+        "deleted": "1",
+        "version": 0
+      },
+      "runId": "2104208045860163585",
+      "status": "ROLLED_BACK",
+      "executionFlowId": "2104208165448159233",
+      "actions": [
+        {
+          "id": "2104208163325841410",
+          "type": "CREATE_PURCHASE_REQUISITION_DRAFT",
+          "approval": "APPROVED",
+          "execution": "COMPENSATED",
+          "resultBizId": "2104208165649485826",
+          "errorCode": null
+        }
+      ]
+    },
+    "time": "2026-09-27T13:54:56.329Z"
+  },
+  {
+    "name": "CONTROL005_NON_DRAFT_NOT_DELETED",
+    "passed": true,
+    "evidence": {
+      "postRealVerificationInjection": true,
+      "mutation": "status",
+      "businessId": "2104208275129208834",
+      "businessRow": {
+        "status": "APPROVING",
+        "deleted": "0",
+        "version": 0
+      },
+      "runId": "2104208168614858753",
+      "status": "FAILED",
+      "executionFlowId": "2104208274982408194",
+      "actions": [
+        {
+          "id": "2104208272470020097",
+          "type": "CREATE_PURCHASE_REQUISITION_DRAFT",
+          "approval": "APPROVED",
+          "execution": "COMPENSATE_FAILED",
+          "resultBizId": "2104208275129208834",
+          "errorCode": "COMPENSATION_NOT_ALLOWED"
+        }
+      ]
+    },
+    "time": "2026-09-27T13:55:22.739Z"
+  },
+  {
+    "name": "CONTROL003_MODEL_UNAVAILABLE",
+    "passed": true,
+    "evidence": {
+      "stubHttp": 401,
+      "requestCount": 2,
+      "fakeCredentialsOnly": true,
+      "summaryMode": "TEMPLATE_FALLBACK",
+      "runId": "2104208280971874305",
+      "status": "WAITING_APPROVAL",
+      "executionFlowId": null,
+      "actions": [
+        {
+          "id": "2104208286919397378",
+          "type": "CREATE_PURCHASE_REQUISITION_DRAFT",
+          "approval": "PROPOSED",
+          "execution": "NOT_STARTED",
+          "resultBizId": null,
+          "errorCode": null
+        }
+      ]
+    },
+    "time": "2026-09-27T13:55:24.943Z"
+  },
+  {
+    "name": "STOCK_UNCHANGED",
+    "passed": true,
+    "evidence": {
+      "checksum": "3845202052"
+    },
+    "time": "2026-09-27T13:55:25.086Z"
+  }
+]

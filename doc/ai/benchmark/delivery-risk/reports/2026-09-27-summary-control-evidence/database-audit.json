@@ -1,0 +1,575 @@
+{
+  "date": "2026-09-27",
+  "timezone": "Asia/Shanghai",
+  "schemas": {
+    "sys": "nexus_ai_decision_control_20260927_sys",
+    "erp": "nexus_ai_decision_control_20260927_erp",
+    "mes": "nexus_ai_decision_control_20260927_mes",
+    "iot": "nexus_ai_decision_control_20260927_iot"
+  },
+  "originalSourceChecksumsBefore": "nexus_ai_decision_demo_erp.bd_material\t3509450484\r\nnexus_ai_decision_demo_erp.bd_material_category\t2612491178\r\nnexus_ai_decision_demo_erp.bd_process\t1181189369\r\nnexus_ai_decision_demo_erp.bd_routing\t376215682\r\nnexus_ai_decision_demo_erp.bd_routing_step\t3159849224\r\nnexus_ai_decision_demo_erp.bd_vendor\t783163710\r\nnexus_ai_decision_demo_erp.bd_workshop\t1286791497\r\nnexus_ai_decision_demo_erp.bd_workstation\t2402055354\r\nnexus_ai_decision_demo_erp.prd_capacity_calendar\t249346290\r\nnexus_ai_decision_demo_erp.prd_material_requirement\t898090371\r\nnexus_ai_decision_demo_erp.prd_material_requirement_detail\t1131767789\r\nnexus_ai_decision_demo_erp.prd_production_plan\t258449528\r\nnexus_ai_decision_demo_erp.prd_schedule_plan\t2380125460\r\nnexus_ai_decision_demo_erp.prd_schedule_task\t3301505993\r\nnexus_ai_decision_demo_erp.prd_work_order\t3353229986\r\nnexus_ai_decision_demo_erp.pu_purchase_order\t784754566\r\nnexus_ai_decision_demo_erp.pu_purchase_order_line\t2899164021\r\nnexus_ai_decision_demo_erp.pu_vendor_evaluation\t1577810774\r\nnexus_ai_decision_demo_erp.wm_material_stock\t3845202052\r\nnexus_ai_decision_demo_erp.wm_warehouse\t2037712697",
+  "originalSourceChecksumsAfter": "nexus_ai_decision_demo_erp.bd_material\t3509450484\r\nnexus_ai_decision_demo_erp.bd_material_category\t2612491178\r\nnexus_ai_decision_demo_erp.bd_process\t1181189369\r\nnexus_ai_decision_demo_erp.bd_routing\t376215682\r\nnexus_ai_decision_demo_erp.bd_routing_step\t3159849224\r\nnexus_ai_decision_demo_erp.bd_vendor\t783163710\r\nnexus_ai_decision_demo_erp.bd_workshop\t1286791497\r\nnexus_ai_decision_demo_erp.bd_workstation\t2402055354\r\nnexus_ai_decision_demo_erp.prd_capacity_calendar\t249346290\r\nnexus_ai_decision_demo_erp.prd_material_requirement\t898090371\r\nnexus_ai_decision_demo_erp.prd_material_requirement_detail\t1131767789\r\nnexus_ai_decision_demo_erp.prd_production_plan\t258449528\r\nnexus_ai_decision_demo_erp.prd_schedule_plan\t2380125460\r\nnexus_ai_decision_demo_erp.prd_schedule_task\t3301505993\r\nnexus_ai_decision_demo_erp.prd_work_order\t3353229986\r\nnexus_ai_decision_demo_erp.pu_purchase_order\t784754566\r\nnexus_ai_decision_demo_erp.pu_purchase_order_line\t2899164021\r\nnexus_ai_decision_demo_erp.pu_vendor_evaluation\t1577810774\r\nnexus_ai_decision_demo_erp.wm_material_stock\t3845202052\r\nnexus_ai_decision_demo_erp.wm_warehouse\t2037712697",
+  "originalSourceUnchanged": true,
+  "controlledStockChecksum": "3845202052",
+  "baselineStateCounts": {
+    "FAILED": 6,
+    "WAITING_APPROVAL": 29,
+    "SUCCEEDED": 5
+  },
+  "baselineModeCounts": {
+    "NONE": 6,
+    "FLOW_LLM": 34
+  },
+  "baselineHttpFirstPass": "39/40",
+  "initial034LlmMs": 112991,
+  "retry034": {
+    "mode": "FLOW_LLM",
+    "risk": "CRITICAL",
+    "runId": "2104210984469221378",
+    "flowId": "2104210984557301761",
+    "status": "WAITING_APPROVAL",
+    "llmDurationMs": 25771
+  },
+  "approvedControlChecks": [
+    {
+      "name": "BASELINE_CAPTURE",
+      "passed": true,
+      "evidence": {
+        "count": 40
+      },
+      "time": "2026-09-27T13:28:30.436Z",
+      "stage": "first"
+    },
+    {
+      "name": "CONTROL001_VERSION_AND_HASH",
+      "passed": true,
+      "evidence": {
+        "runId": "2104198732882001921",
+        "versionCode": 500,
+        "hashCode": 500
+      },
+      "time": "2026-09-27T13:28:30.960Z",
+      "stage": "first"
+    },
+    {
+      "name": "CONTROL001_SOURCE_STALE",
+      "passed": true,
+      "evidence": {
+        "code": 500,
+        "runId": "2104198732882001921",
+        "status": "STALE",
+        "executionFlowId": null,
+        "actions": [
+          {
+            "id": "2104198831213264897",
+            "type": "SEND_EXPEDITE_NOTICE",
+            "approval": "PROPOSED",
+            "execution": "NOT_STARTED",
+            "resultBizId": null
+          },
+          {
+            "id": "2104198831221653506",
+            "type": "CREATE_PURCHASE_REQUISITION_DRAFT",
+            "approval": "PROPOSED",
+            "execution": "NOT_STARTED",
+            "resultBizId": null
+          },
+          {
+            "id": "2104198831225847810",
+            "type": "CREATE_SCHEDULE_PLAN_DRAFT",
+            "approval": "PROPOSED",
+            "execution": "NOT_STARTED",
+            "resultBizId": null
+          }
+        ]
+      },
+      "time": "2026-09-27T13:28:31.967Z",
+      "stage": "first"
+    },
+    {
+      "name": "CONTROL002_TENANT_BOUNDARY",
+      "passed": true,
+      "evidence": {
+        "ownQueryFixtureId": "9100001",
+        "ownCode": 200,
+        "foreignCodes": [
+          500,
+          500,
+          500
+        ],
+        "targetId": "2104198671833907202"
+      },
+      "time": "2026-09-27T13:28:33.002Z",
+      "stage": "first"
+    },
+    {
+      "name": "CONTROL005_VERSION_NOT_DELETED",
+      "passed": true,
+      "evidence": {
+        "postRealVerificationInjection": true,
+        "mutation": "version",
+        "businessId": "2104202827118297089",
+        "businessRow": {
+          "status": "DRAFT",
+          "deleted": "0",
+          "version": 1
+        },
+        "runId": "2104198747583037441",
+        "status": "FAILED",
+        "executionFlowId": "2104202826866638850",
+        "actions": [
+          {
+            "id": "2104198876373336065",
+            "type": "CREATE_PURCHASE_REQUISITION_DRAFT",
+            "approval": "APPROVED",
+            "execution": "COMPENSATE_FAILED",
+            "resultBizId": "2104202827118297089"
+          }
+        ]
+      },
+      "time": "2026-09-27T13:33:43.786Z",
+      "stage": "first"
+    },
+    {
+      "name": "STOCK_UNCHANGED",
+      "passed": true,
+      "evidence": {
+        "checksum": "3845202052"
+      },
+      "time": "2026-09-27T14:04:45.764Z",
+      "stage": "final"
+    },
+    {
+      "name": "CONTROL002_READ_ONLY_USER",
+      "passed": true,
+      "evidence": {
+        "runId": "2104198671833907202",
+        "queryCode": 200,
+        "approveCode": 403,
+        "retryCode": 403
+      },
+      "time": "2026-09-27T13:53:18.407Z",
+      "stage": "retest"
+    },
+    {
+      "name": "CONTROL002_FORBIDDEN_ACTION",
+      "passed": true,
+      "evidence": {
+        "injection": "system-copy action type changed, no execution bypass",
+        "approveCode": 500,
+        "runId": "2104207758080577538",
+        "status": "WAITING_APPROVAL",
+        "executionFlowId": null,
+        "actions": [
+          {
+            "id": "2104207858471243778",
+            "type": "PUBLISH_SCHEDULE_PLAN",
+            "approval": "PROPOSED",
+            "execution": "NOT_STARTED",
+            "resultBizId": null,
+            "errorCode": null
+          },
+          {
+            "id": "2104207858479632386",
+            "type": "CREATE_PURCHASE_REQUISITION_DRAFT",
+            "approval": "PROPOSED",
+            "execution": "NOT_STARTED",
+            "resultBizId": null,
+            "errorCode": null
+          },
+          {
+            "id": "2104207858500603905",
+            "type": "CREATE_SCHEDULE_PLAN_DRAFT",
+            "approval": "PROPOSED",
+            "execution": "NOT_STARTED",
+            "resultBizId": null,
+            "errorCode": null
+          }
+        ]
+      },
+      "time": "2026-09-27T13:53:43.603Z",
+      "stage": "retest"
+    },
+    {
+      "name": "CONTROL004_CONCURRENT_APPROVAL_AND_IDEMPOTENCY",
+      "passed": true,
+      "evidence": {
+        "replyCodes": [
+          500,
+          200
+        ],
+        "draftCount": 1,
+        "flowCount": 1,
+        "retryCode": 200,
+        "runId": "2104207863596683265",
+        "status": "SUCCEEDED",
+        "executionFlowId": "2104207961370103809",
+        "actions": [
+          {
+            "id": "2104207960459939841",
+            "type": "CREATE_PURCHASE_REQUISITION_DRAFT",
+            "approval": "APPROVED",
+            "execution": "SUCCEEDED",
+            "resultBizId": "2104207961684676610",
+            "errorCode": null
+          }
+        ]
+      },
+      "time": "2026-09-27T13:54:07.966Z",
+      "stage": "retest"
+    },
+    {
+      "name": "CONTROL005_REAL_COMPENSATION",
+      "passed": true,
+      "evidence": {
+        "postRealVerificationInjection": true,
+        "mutation": "none",
+        "businessId": "2104208165649485826",
+        "businessRow": {
+          "status": "DRAFT",
+          "deleted": "1",
+          "version": 0
+        },
+        "runId": "2104208045860163585",
+        "status": "ROLLED_BACK",
+        "executionFlowId": "2104208165448159233",
+        "actions": [
+          {
+            "id": "2104208163325841410",
+            "type": "CREATE_PURCHASE_REQUISITION_DRAFT",
+            "approval": "APPROVED",
+            "execution": "COMPENSATED",
+            "resultBizId": "2104208165649485826",
+            "errorCode": null
+          }
+        ]
+      },
+      "time": "2026-09-27T13:54:56.329Z",
+      "stage": "retest"
+    },
+    {
+      "name": "CONTROL005_NON_DRAFT_NOT_DELETED",
+      "passed": true,
+      "evidence": {
+        "postRealVerificationInjection": true,
+        "mutation": "status",
+        "businessId": "2104208275129208834",
+        "businessRow": {
+          "status": "APPROVING",
+          "deleted": "0",
+          "version": 0
+        },
+        "runId": "2104208168614858753",
+        "status": "FAILED",
+        "executionFlowId": "2104208274982408194",
+        "actions": [
+          {
+            "id": "2104208272470020097",
+            "type": "CREATE_PURCHASE_REQUISITION_DRAFT",
+            "approval": "APPROVED",
+            "execution": "COMPENSATE_FAILED",
+            "resultBizId": "2104208275129208834",
+            "errorCode": "COMPENSATION_NOT_ALLOWED"
+          }
+        ]
+      },
+      "time": "2026-09-27T13:55:22.739Z",
+      "stage": "retest"
+    },
+    {
+      "name": "CONTROL003_MODEL_UNAVAILABLE",
+      "passed": true,
+      "evidence": {
+        "stubHttp": 401,
+        "requestCount": 2,
+        "fakeCredentialsOnly": true,
+        "summaryMode": "TEMPLATE_FALLBACK",
+        "runId": "2104208280971874305",
+        "status": "WAITING_APPROVAL",
+        "executionFlowId": null,
+        "actions": [
+          {
+            "id": "2104208286919397378",
+            "type": "CREATE_PURCHASE_REQUISITION_DRAFT",
+            "approval": "PROPOSED",
+            "execution": "NOT_STARTED",
+            "resultBizId": null,
+            "errorCode": null
+          }
+        ]
+      },
+      "time": "2026-09-27T13:55:24.943Z",
+      "stage": "retest"
+    },
+    {
+      "name": "CONTROL005_PARTIAL_SUCCESS",
+      "passed": true,
+      "evidence": {
+        "retryCode": 500,
+        "runId": "2104210538635677698",
+        "status": "PARTIAL_SUCCESS",
+        "executionFlowId": "2104210635775758338",
+        "actions": [
+          {
+            "id": "2104210634056093698",
+            "type": "SEND_EXPEDITE_NOTICE",
+            "approval": "APPROVED",
+            "execution": "FAILED",
+            "resultBizId": null,
+            "errorCode": "ACTION_FAILED"
+          },
+          {
+            "id": "2104210634064482306",
+            "type": "CREATE_PURCHASE_REQUISITION_DRAFT",
+            "approval": "APPROVED",
+            "execution": "SUCCEEDED",
+            "resultBizId": "2104210636199383042",
+            "errorCode": null
+          },
+          {
+            "id": "2104210634072870913",
+            "type": "CREATE_SCHEDULE_PLAN_DRAFT",
+            "approval": "APPROVED",
+            "execution": "FAILED",
+            "resultBizId": null,
+            "errorCode": "ACTION_FAILED"
+          }
+        ]
+      },
+      "time": "2026-09-27T14:04:45.578Z",
+      "stage": "final"
+    }
+  ],
+  "executionInstancesForConcurrentRunId": 1,
+  "draftsForSameIdempotencyKey": 1,
+  "tenantBOwnRecordProvenance": "Server-side seeded QUERY_FIXTURE only; not an actual tenant-B industrial analysis",
+  "finalBuild": {
+    "jarSha256": "13c01f95a0a18e8ca52b5976d460e82dbbbc0c0c78995dace909dec4b2824825",
+    "testHarnessAbsentFromJar": true,
+    "counts": {
+      "tests": 572,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "testFiles": [
+      [
+        "ruoyi-admin\\target\\surefire-reports\\TEST-com.nexus.decisioncontrol.DecisionControlTestConfigurationTest.xml",
+        6
+      ],
+      [
+        "ruoyi-admin\\target\\surefire-reports\\TEST-com.nexus.test.DecisionDemoProfileTest.xml",
+        3
+      ],
+      [
+        "ruoyi-modules\\ruoyi-ai\\target\\surefire-reports\\TEST-com.nexus.ai.config.AiDecisionConfigContractTest.xml",
+        12
+      ],
+      [
+        "ruoyi-modules\\ruoyi-ai\\target\\surefire-reports\\TEST-com.nexus.ai.controller.AiDecisionControllerTest.xml",
+        2
+      ],
+      [
+        "ruoyi-modules\\ruoyi-ai\\target\\surefire-reports\\TEST-com.nexus.ai.service.chat.provider.ChatServiceProviderFactoryTest.xml",
+        6
+      ],
+      [
+        "ruoyi-modules\\ruoyi-ai\\target\\surefire-reports\\TEST-com.nexus.ai.service.decision.api.DeliveryRiskScoringPublicApiTest.xml",
+        4
+      ],
+      [
+        "ruoyi-modules\\ruoyi-ai\\target\\surefire-reports\\TEST-com.nexus.ai.service.decision.ApsWhatIfSimulationServiceTest.xml",
+        4
+      ],
+      [
+        "ruoyi-modules\\ruoyi-ai\\target\\surefire-reports\\TEST-com.nexus.ai.service.decision.DecisionActionExecutionServiceTest.xml",
+        7
+      ],
+      [
+        "ruoyi-modules\\ruoyi-ai\\target\\surefire-reports\\TEST-com.nexus.ai.service.decision.DecisionActionProposalServiceTest.xml",
+        9
+      ],
+      [
+        "ruoyi-modules\\ruoyi-ai\\target\\surefire-reports\\TEST-com.nexus.ai.service.decision.DecisionAnalysisAssemblyServiceTest.xml",
+        11
+      ],
+      [
+        "ruoyi-modules\\ruoyi-ai\\target\\surefire-reports\\TEST-com.nexus.ai.service.decision.DecisionApprovalServiceTest.xml",
+        9
+      ],
+      [
+        "ruoyi-modules\\ruoyi-ai\\target\\surefire-reports\\TEST-com.nexus.ai.service.decision.DecisionEvidenceServiceTest.xml",
+        11
+      ],
+      [
+        "ruoyi-modules\\ruoyi-ai\\target\\surefire-reports\\TEST-com.nexus.ai.service.decision.DecisionFinalizeServiceTest.xml",
+        1
+      ],
+      [
+        "ruoyi-modules\\ruoyi-ai\\target\\surefire-reports\\TEST-com.nexus.ai.service.decision.DecisionOutcomeServiceTest.xml",
+        2
+      ],
+      [
+        "ruoyi-modules\\ruoyi-ai\\target\\surefire-reports\\TEST-com.nexus.ai.service.decision.DecisionPersistenceServiceTest.xml",
+        24
+      ],
+      [
+        "ruoyi-modules\\ruoyi-ai\\target\\surefire-reports\\TEST-com.nexus.ai.service.decision.DecisionPolicyGuardServiceTest.xml",
+        18
+      ],
+      [
+        "ruoyi-modules\\ruoyi-ai\\target\\surefire-reports\\TEST-com.nexus.ai.service.decision.DecisionQueryServiceTest.xml",
+        7
+      ],
+      [
+        "ruoyi-modules\\ruoyi-ai\\target\\surefire-reports\\TEST-com.nexus.ai.service.decision.DecisionRunStateMachineTest.xml",
+        3
+      ],
+      [
+        "ruoyi-modules\\ruoyi-ai\\target\\surefire-reports\\TEST-com.nexus.ai.service.decision.DecisionScenarioRankingServiceTest.xml",
+        13
+      ],
+      [
+        "ruoyi-modules\\ruoyi-ai\\target\\surefire-reports\\TEST-com.nexus.ai.service.decision.DecisionSummaryServiceTest.xml",
+        19
+      ],
+      [
+        "ruoyi-modules\\ruoyi-ai\\target\\surefire-reports\\TEST-com.nexus.ai.service.decision.DeliveryDecisionBenchmarkTest.xml",
+        53
+      ],
+      [
+        "ruoyi-modules\\ruoyi-ai\\target\\surefire-reports\\TEST-com.nexus.ai.service.decision.DeliveryRiskDecisionOrchestratorTest.xml",
+        26
+      ],
+      [
+        "ruoyi-modules\\ruoyi-ai\\target\\surefire-reports\\TEST-com.nexus.ai.service.decision.DeliveryRiskScoringServiceTest.xml",
+        5
+      ],
+      [
+        "ruoyi-modules\\ruoyi-ai\\target\\surefire-reports\\TEST-com.nexus.ai.service.model.AiProviderPolicyRegistryTest.xml",
+        10
+      ],
+      [
+        "ruoyi-modules\\ruoyi-ai\\target\\surefire-reports\\TEST-com.nexus.ai.service.sse.AiDecisionSseMessageHelperTest.xml",
+        1
+      ],
+      [
+        "ruoyi-modules\\ruoyi-erp\\target\\surefire-reports\\TEST-com.nexus.erp.ai.adapter.DeliveryContextAssemblerTest.xml",
+        50
+      ],
+      [
+        "ruoyi-modules\\ruoyi-erp\\target\\surefire-reports\\TEST-com.nexus.erp.ai.adapter.ErpDecisionActionExecutorTest.xml",
+        25
+      ],
+      [
+        "ruoyi-modules\\ruoyi-erp\\target\\surefire-reports\\TEST-com.nexus.erp.ai.adapter.ErpDecisionActionExecutorTransactionTest.xml",
+        1
+      ],
+      [
+        "ruoyi-modules\\ruoyi-erp\\target\\surefire-reports\\TEST-com.nexus.erp.ai.adapter.ErpDecisionApsSimulationTest.xml",
+        40
+      ],
+      [
+        "ruoyi-modules\\ruoyi-erp\\target\\surefire-reports\\TEST-com.nexus.erp.ai.adapter.ErpDecisionDraftSqlContractTest.xml",
+        4
+      ],
+      [
+        "ruoyi-modules\\ruoyi-erp\\target\\surefire-reports\\TEST-com.nexus.erp.ai.adapter.ErpDecisionFreshnessCheckerTest.xml",
+        3
+      ],
+      [
+        "ruoyi-modules\\ruoyi-erp\\target\\surefire-reports\\TEST-com.nexus.erp.ai.adapter.ErpDecisionShortageSimulationTest.xml",
+        30
+      ],
+      [
+        "ruoyi-modules\\ruoyi-erp\\target\\surefire-reports\\TEST-com.nexus.erp.ai.adapter.ErpIndustrialDecisionDataAdapterTest.xml",
+        10
+      ],
+      [
+        "ruoyi-modules\\ruoyi-erp\\target\\surefire-reports\\TEST-com.nexus.erp.prd.schedule.PrdShortageScenarioServiceTest.xml",
+        8
+      ],
+      [
+        "ruoyi-modules\\ruoyi-erp\\target\\surefire-reports\\TEST-com.nexus.erp.prd.schedule.PrdShortageSimulatorTest.xml",
+        8
+      ],
+      [
+        "ruoyi-modules\\ruoyi-erp\\target\\surefire-reports\\TEST-com.nexus.erp.wm.DailyCodeSequenceProviderTest.xml",
+        2
+      ],
+      [
+        "ruoyi-modules\\ruoyi-flow\\target\\surefire-reports\\TEST-com.nexus.flow.adapter.AiDecisionWorkflowAdapterTest.xml",
+        15
+      ],
+      [
+        "ruoyi-modules\\ruoyi-flow\\target\\surefire-reports\\TEST-com.nexus.flow.adapter.DecisionFlowDefinitionFactoryTest.xml",
+        6
+      ],
+      [
+        "ruoyi-modules\\ruoyi-flow\\target\\surefire-reports\\TEST-com.nexus.flow.controller.DecisionFlowControllerSecurityTest.xml",
+        3
+      ],
+      [
+        "ruoyi-modules\\ruoyi-flow\\target\\surefire-reports\\TEST-com.nexus.flow.node.industrial.DecisionNodeSupportEvidenceFailureTest.xml",
+        4
+      ],
+      [
+        "ruoyi-modules\\ruoyi-flow\\target\\surefire-reports\\TEST-com.nexus.flow.node.industrial.DecisionWorkflowWiringTest.xml",
+        1
+      ],
+      [
+        "ruoyi-modules\\ruoyi-flow\\target\\surefire-reports\\TEST-com.nexus.flow.node.industrial.IndustrialDecisionNodeProviderTest.xml",
+        14
+      ],
+      [
+        "ruoyi-modules\\ruoyi-flow\\target\\surefire-reports\\TEST-com.nexus.flow.node.industrial.IndustrialDecisionProvidersSmokeTest.xml",
+        8
+      ],
+      [
+        "ruoyi-modules\\ruoyi-mes\\target\\surefire-reports\\TEST-com.nexus.mes.flash.provider.ExternalRestFlashProviderTest.xml",
+        15
+      ],
+      [
+        "ruoyi-modules\\ruoyi-mes\\target\\surefire-reports\\TEST-com.nexus.mes.flash.provider.MacPoolFlashProviderTest.xml",
+        10
+      ],
+      [
+        "ruoyi-common\\ruoyi-common-ai\\target\\surefire-reports\\TEST-com.nexus.common.ai.decision.AiDecisionSqlContractTest.xml",
+        6
+      ],
+      [
+        "ruoyi-common\\ruoyi-common-ai\\target\\surefire-reports\\TEST-com.nexus.common.ai.decision.DecisionContractTest.xml",
+        29
+      ],
+      [
+        "ruoyi-common\\ruoyi-common-ai\\target\\surefire-reports\\TEST-com.nexus.common.ai.decision.DecisionEntityContractTest.xml",
+        13
+      ],
+      [
+        "ruoyi-common\\ruoyi-common-ai\\target\\surefire-reports\\TEST-com.nexus.common.ai.decision.DecisionEvidenceExceptionTest.xml",
+        1
+      ]
+    ],
+    "fixtureHashes": {
+      "cases.jsonl": "43e5a9d0974cbae50e39ff58e1dd4a49f4fcde496812d1875b882fc39162fff8",
+      "expected-results.jsonl": "f4fcf3c4dd5978b72776980990efd10f7e177a459e624ba1137b1acd180c94ea"
+    },
+    "sourceHashes": {
+      "ruoyi-modules\\ruoyi-ai\\src\\main\\java\\com\\nexus\\ai\\service\\decision\\DecisionSummaryService.java": "930ce4f63a74b280b13e3993b64b5610ce34c7449106cb8caa7c9fec53babd3f",
+      "ruoyi-modules\\ruoyi-ai\\src\\main\\java\\com\\nexus\\ai\\service\\decision\\DecisionApprovalService.java": "5b37c175f2819669c61c0848406388d118bec5901d4c719f46fd17fe14da1a51",
+      "ruoyi-modules\\ruoyi-erp\\src\\main\\java\\com\\nexus\\erp\\ai\\adapter\\DeliveryContextAssembler.java": "d4677a186fc5811155138594f02c56019d8191531ed14ef956d63c562bd53821",
+      "script\\sql\\ry-vue.sql": "72e9838eaab01bc572aa53e0d51a1fd36eab254ea5fe67687810cd3de4b81f0b"
+    }
+  },
+  "baselineJarHash": "Not captured before first replay; do not attribute final JAR hash to that initial replay",
+  "testCaptcha": "Disabled only by isolated 8081 launch override; normal application.yml remains true",
+  "encryptedProviderCopiedServerSide": true,
+  "finalDefaultModelId": "2103871286244564993",
+  "cleanup": {
+    "selfStarted8081Stopped": true,
+    "loopback401Closed": true,
+    "original8080Preserved": true,
+    "schemasAndRedisVhostKeptForAudit": true,
+    "captchaDisableLaunchOverrideNotInNormalConfig": true
+  }
+}

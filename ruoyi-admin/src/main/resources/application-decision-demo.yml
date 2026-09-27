@@ -1,0 +1,57 @@
+--- # 仅显式激活 dev,decision-demo 时使用隔离资源；日常 dev 保持 plus 原配置。
+spring:
+  config:
+    activate:
+      on-profile: "dev & decision-demo"
+  datasource:
+    dynamic:
+      datasource:
+        master:
+          url: jdbc:mysql://${DECISION_DEMO_DB_HOST}:${DECISION_DEMO_DB_PORT}/nexus_ai_decision_demo_sys?useUnicode=true&characterEncoding=utf8&connectionCollation=utf8mb4_unicode_ci&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&autoReconnect=true&rewriteBatchedStatements=true&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true
+          username: ${DECISION_DEMO_DB_USER}
+          password: ${DECISION_DEMO_DB_PASSWORD}
+        erp:
+          url: jdbc:mysql://${DECISION_DEMO_DB_HOST}:${DECISION_DEMO_DB_PORT}/nexus_ai_decision_demo_erp?useUnicode=true&characterEncoding=utf8&connectionCollation=utf8mb4_unicode_ci&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&autoReconnect=true&rewriteBatchedStatements=true&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true
+          username: ${DECISION_DEMO_DB_USER}
+          password: ${DECISION_DEMO_DB_PASSWORD}
+        mes:
+          url: jdbc:mysql://${DECISION_DEMO_DB_HOST}:${DECISION_DEMO_DB_PORT}/nexus_ai_decision_demo_mes?useUnicode=true&characterEncoding=utf8&connectionCollation=utf8mb4_unicode_ci&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&autoReconnect=true&rewriteBatchedStatements=true&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true
+          username: ${DECISION_DEMO_DB_USER}
+          password: ${DECISION_DEMO_DB_PASSWORD}
+        iot:
+          url: jdbc:mysql://${DECISION_DEMO_DB_HOST}:${DECISION_DEMO_DB_PORT}/nexus_ai_decision_demo_iot?useUnicode=true&characterEncoding=utf8&connectionCollation=utf8mb4_unicode_ci&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&autoReconnect=true&rewriteBatchedStatements=true&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true
+          username: ${DECISION_DEMO_DB_USER}
+          password: ${DECISION_DEMO_DB_PASSWORD}
+  data:
+    redis:
+      # 独立 Redis 实例，不能仅通过数据库索引与日常服务共享。
+      host: ${DECISION_DEMO_REDIS_HOST}
+      port: ${DECISION_DEMO_REDIS_PORT}
+      database: 0
+      password: ${DECISION_DEMO_REDIS_PASSWORD}
+  rabbitmq:
+    # 独立 Broker/虚拟主机，避免消费或发布到日常队列。
+    host: ${DECISION_DEMO_MQ_HOST}
+    port: ${DECISION_DEMO_MQ_PORT}
+    username: ${DECISION_DEMO_MQ_USER}
+    password: ${DECISION_DEMO_MQ_PASSWORD}
+    virtual-host: ${DECISION_DEMO_MQ_VHOST}
+  boot:
+    admin:
+      client:
+        enabled: false
+snail-job:
+  enabled: false
+flowable:
+  # 演示账号仅有 DML 权限，不允许自动改动 Flowable 表结构。
+  database-schema-update: false
+nexus:
+  iot:
+    mqtt:
+      enabled: false
+    pipeline:
+      consumer-enabled: false
+
+# 测试演示可关闭验证码，不影响日常 dev。
+captcha:
+  enable: false

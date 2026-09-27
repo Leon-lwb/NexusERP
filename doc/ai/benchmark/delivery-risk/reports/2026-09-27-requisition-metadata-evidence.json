@@ -1,0 +1,77 @@
+{
+  "liveRunId": "2104234368481529857",
+  "liveActionId": "2104234476916871169",
+  "runStatus": "SUCCEEDED",
+  "schema": "nexus_ai_decision_control_20260927_erp",
+  "header": {
+    "id": "2104234948994174978",
+    "deptId": 103,
+    "status": "DRAFT",
+    "version": 0,
+    "createBy": 1,
+    "deptName": "研发部门",
+    "createDept": 103
+  },
+  "lines": [
+    {
+      "code": "DEMO-AI-DECISION-015-COMP",
+      "name": "Demo component 015",
+      "spec": null,
+      "unit": null,
+      "remark": "物料规格、基本计量单位未维护，请完善物料档案；未进行单位换算",
+      "tenant": "000000",
+      "createBy": 1,
+      "quantity": "40.0000",
+      "updateBy": 1,
+      "createDept": 103,
+      "materialId": "9007199254747015",
+      "approvedQuantity": null
+    },
+    {
+      "code": "DEMO-AI-DECISION-015-COMP-2",
+      "name": "Demo second component 015",
+      "spec": null,
+      "unit": null,
+      "remark": "物料规格、基本计量单位未维护，请完善物料档案；未进行单位换算",
+      "tenant": "000000",
+      "createBy": 1,
+      "quantity": "3.0000",
+      "updateBy": 1,
+      "createDept": 103,
+      "materialId": "9007199254895015",
+      "approvedQuantity": null
+    }
+  ],
+  "provesMasterLookupInsideErpExecution": "ERP schema has no sys_user/sys_dept; real successful department resolution proves transaction-suspended master lookup",
+  "testCounts": {
+    "tests": 623,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "existingDraftId": "2104222804449787906",
+  "existingDraftVersion": 1,
+  "existingQuantityUnchanged": "19.0000",
+  "dictionary": "pu_source_type/AI_DECISION/AI交付风险决策",
+  "original20ContextChecksumsUnchanged": true,
+  "sourceSpecAndUnitStillUnconfigured": true,
+  "existingDraftProtectedFields": {
+    "gap": "19.0000",
+    "flowId": null,
+    "approved": null,
+    "quantity": "19.0000",
+    "sourceId": "2104078508723687425",
+    "headerState": "DRAFT",
+    "requiredDate": "2026-10-03"
+  },
+  "liveJarSha256": "c1c2a961c24bc9858be291e8c4577dbabe031fd938ac2e4c2bef04aef4e1d6e7",
+  "finalJarSha256": "73eb8668c7b7e77c9541759cd258afc69a913ac6613e910b7b24cb266c8de20f",
+  "finalChangeAfterLiveTest": "Only normalization of ordinary-form AI source rejection; metadata creation path unchanged and fully regression-tested",
+  "latestTestCounts": {
+    "tests": 623,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "testHarnessNotInJar": true
+}

@@ -1,0 +1,47 @@
+[
+  {
+    "name": "CONTROL005_PARTIAL_SUCCESS",
+    "passed": true,
+    "evidence": {
+      "retryCode": 500,
+      "runId": "2104210538635677698",
+      "status": "PARTIAL_SUCCESS",
+      "executionFlowId": "2104210635775758338",
+      "actions": [
+        {
+          "id": "2104210634056093698",
+          "type": "SEND_EXPEDITE_NOTICE",
+          "approval": "APPROVED",
+          "execution": "FAILED",
+          "resultBizId": null,
+          "errorCode": "ACTION_FAILED"
+        },
+        {
+          "id": "2104210634064482306",
+          "type": "CREATE_PURCHASE_REQUISITION_DRAFT",
+          "approval": "APPROVED",
+          "execution": "SUCCEEDED",
+          "resultBizId": "2104210636199383042",
+          "errorCode": null
+        },
+        {
+          "id": "2104210634072870913",
+          "type": "CREATE_SCHEDULE_PLAN_DRAFT",
+          "approval": "APPROVED",
+          "execution": "FAILED",
+          "resultBizId": null,
+          "errorCode": "ACTION_FAILED"
+        }
+      ]
+    },
+    "time": "2026-09-27T14:04:45.578Z"
+  },
+  {
+    "name": "STOCK_UNCHANGED",
+    "passed": true,
+    "evidence": {
+      "checksum": "3845202052"
+    },
+    "time": "2026-09-27T14:04:45.764Z"
+  }
+]

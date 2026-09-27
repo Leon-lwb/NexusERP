@@ -1,0 +1,2243 @@
+{
+  "status": "PENDING_BUSINESS_APPROVAL",
+  "active": false,
+  "appliedToBenchmark": false,
+  "sourceSchema": "nexus_ai_decision_verified_20260927_sys",
+  "sourceReport": "2026-09-27-node-summary-40-regression.md",
+  "originalExpectedSha256": "e05859947ea468cc14dd5cb99c55f3ced0f0b62370bc1361dbb37da1587275c8",
+  "scope": "Only proposed recommendation/requiredActions; all case data, risk, confidence, root causes and safety gates unchanged",
+  "revisions": [
+    {
+      "caseId": "DELIVERY-006",
+      "bizId": "9007199254745006",
+      "runId": "2104173387067838466",
+      "reasonCode": "EXPEDITE_ONLY_FEASIBLE",
+      "currentGolden": {
+        "recommendedScenarioCode": "APS_EDD",
+        "requiredActions": [
+          "SEND_EXPEDITE_NOTICE",
+          "CREATE_PURCHASE_REQUISITION_DRAFT",
+          "CREATE_SCHEDULE_PLAN_DRAFT"
+        ]
+      },
+      "proposedGolden": {
+        "recommendedScenarioCode": "APS_CR_EXPEDITE",
+        "requiredActions": [
+          "CREATE_PURCHASE_REQUISITION_DRAFT",
+          "CREATE_SCHEDULE_PLAN_DRAFT",
+          "SEND_EXPEDITE_NOTICE"
+        ]
+      },
+      "facts": {
+        "scenarios": [
+          {
+            "scenarioCode": "APS_CR_EXPEDITE",
+            "feasible": true,
+            "infeasibleReasons": [],
+            "rank": 1,
+            "objectiveScore": "0.200000",
+            "kpis": {
+              "impactedOrderCount": 0,
+              "delayedWorkOrderCount": 0,
+              "totalTardinessDays": 0,
+              "maxTardinessDays": 0,
+              "makespanDate": "2026-09-30",
+              "shortageMaterialCount": 0,
+              "totalShortageGap": "0",
+              "earliestShortageDate": null,
+              "maxResourceUtilization": "20.7",
+              "overloadedResourceCount": 0,
+              "changedWorkOrderCount": 1,
+              "actionCost": "1"
+            }
+          },
+          {
+            "scenarioCode": "APS_CR",
+            "feasible": false,
+            "infeasibleReasons": [
+              "MATERIAL_SHORTAGE"
+            ],
+            "rank": 2,
+            "objectiveScore": "0.300000",
+            "kpis": {
+              "impactedOrderCount": 0,
+              "delayedWorkOrderCount": 0,
+              "totalTardinessDays": 0,
+              "maxTardinessDays": 0,
+              "makespanDate": "2026-09-30",
+              "shortageMaterialCount": 1,
+              "totalShortageGap": "18.0000",
+              "earliestShortageDate": "2026-10-03",
+              "maxResourceUtilization": "20.7",
+              "overloadedResourceCount": 0,
+              "changedWorkOrderCount": 1,
+              "actionCost": "0"
+            }
+          },
+          {
+            "scenarioCode": "APS_EDD",
+            "feasible": false,
+            "infeasibleReasons": [
+              "MATERIAL_SHORTAGE"
+            ],
+            "rank": 3,
+            "objectiveScore": "0.300000",
+            "kpis": {
+              "impactedOrderCount": 0,
+              "delayedWorkOrderCount": 0,
+              "totalTardinessDays": 0,
+              "maxTardinessDays": 0,
+              "makespanDate": "2026-09-30",
+              "shortageMaterialCount": 1,
+              "totalShortageGap": "18.0000",
+              "earliestShortageDate": "2026-10-03",
+              "maxResourceUtilization": "20.7",
+              "overloadedResourceCount": 0,
+              "changedWorkOrderCount": 1,
+              "actionCost": "0"
+            }
+          },
+          {
+            "scenarioCode": "BASELINE_CURRENT",
+            "feasible": false,
+            "infeasibleReasons": [
+              "MATERIAL_SHORTAGE"
+            ],
+            "rank": 4,
+            "objectiveScore": "0.700000",
+            "kpis": {
+              "impactedOrderCount": 0,
+              "delayedWorkOrderCount": 1,
+              "totalTardinessDays": 3,
+              "maxTardinessDays": 3,
+              "makespanDate": "2026-10-13",
+              "shortageMaterialCount": 1,
+              "totalShortageGap": "18.0000",
+              "earliestShortageDate": "2026-10-03",
+              "maxResourceUtilization": "65.0",
+              "overloadedResourceCount": 0,
+              "changedWorkOrderCount": 0,
+              "actionCost": "0"
+            }
+          }
+        ],
+        "shortages": [
+          {
+            "materialId": "9007199254747006",
+            "gap": "18.0000",
+            "onOrderQty": "18.0000",
+            "firstShortageDate": "2026-10-03"
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "DELIVERY-007",
+      "bizId": "9007199254745007",
+      "runId": "2104173355992240129",
+      "reasonCode": "NO_FEASIBLE_SCENARIO",
+      "currentGolden": {
+        "recommendedScenarioCode": "APS_EDD",
+        "requiredActions": [
+          "CREATE_PURCHASE_REQUISITION_DRAFT"
+        ]
+      },
+      "proposedGolden": {
+        "recommendedScenarioCode": null,
+        "requiredActions": [
+          "CREATE_PURCHASE_REQUISITION_DRAFT"
+        ]
+      },
+      "facts": {
+        "scenarios": [
+          {
+            "scenarioCode": "BASELINE_CURRENT",
+            "feasible": false,
+            "infeasibleReasons": [
+              "MATERIAL_SHORTAGE"
+            ],
+            "rank": 1,
+            "objectiveScore": "0.050000",
+            "kpis": {
+              "impactedOrderCount": 0,
+              "delayedWorkOrderCount": 0,
+              "totalTardinessDays": 0,
+              "maxTardinessDays": 0,
+              "makespanDate": "2026-10-10",
+              "shortageMaterialCount": 1,
+              "totalShortageGap": "19.0000",
+              "earliestShortageDate": "2026-10-03",
+              "maxResourceUtilization": "65.0",
+              "overloadedResourceCount": 0,
+              "changedWorkOrderCount": 0,
+              "actionCost": "0"
+            }
+          },
+          {
+            "scenarioCode": "APS_CR",
+            "feasible": false,
+            "infeasibleReasons": [
+              "MATERIAL_SHORTAGE"
+            ],
+            "rank": 2,
+            "objectiveScore": "0.150000",
+            "kpis": {
+              "impactedOrderCount": 0,
+              "delayedWorkOrderCount": 0,
+              "totalTardinessDays": 0,
+              "maxTardinessDays": 0,
+              "makespanDate": "2026-09-30",
+              "shortageMaterialCount": 1,
+              "totalShortageGap": "19.0000",
+              "earliestShortageDate": "2026-10-03",
+              "maxResourceUtilization": "20.7",
+              "overloadedResourceCount": 0,
+              "changedWorkOrderCount": 1,
+              "actionCost": "0"
+            }
+          },
+          {
+            "scenarioCode": "APS_EDD",
+            "feasible": false,
+            "infeasibleReasons": [
+              "MATERIAL_SHORTAGE"
+            ],
+            "rank": 3,
+            "objectiveScore": "0.150000",
+            "kpis": {
+              "impactedOrderCount": 0,
+              "delayedWorkOrderCount": 0,
+              "totalTardinessDays": 0,
+              "maxTardinessDays": 0,
+              "makespanDate": "2026-09-30",
+              "shortageMaterialCount": 1,
+              "totalShortageGap": "19.0000",
+              "earliestShortageDate": "2026-10-03",
+              "maxResourceUtilization": "20.7",
+              "overloadedResourceCount": 0,
+              "changedWorkOrderCount": 1,
+              "actionCost": "0"
+            }
+          },
+          {
+            "scenarioCode": "APS_CR_EXPEDITE",
+            "feasible": false,
+            "infeasibleReasons": [
+              "MATERIAL_SHORTAGE",
+              "NO_EXPEDITABLE_PURCHASE_LINE",
+              "MISSING_KPI"
+            ],
+            "rank": 4,
+            "objectiveScore": null,
+            "kpis": {
+              "impactedOrderCount": 0,
+              "delayedWorkOrderCount": 0,
+              "totalTardinessDays": 0,
+              "maxTardinessDays": 0,
+              "makespanDate": "2026-09-30",
+              "shortageMaterialCount": 1,
+              "totalShortageGap": "19.0000",
+              "earliestShortageDate": "2026-10-03",
+              "maxResourceUtilization": "20.7",
+              "overloadedResourceCount": 0,
+              "changedWorkOrderCount": 1,
+              "actionCost": null
+            }
+          }
+        ],
+        "shortages": [
+          {
+            "materialId": "9007199254747007",
+            "gap": "19.0000",
+            "onOrderQty": "1.0000",
+            "firstShortageDate": "2026-10-03"
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "DELIVERY-008",
+      "bizId": "9007199254745008",
+      "runId": "2104173369481121794",
+      "reasonCode": "NO_FEASIBLE_SCENARIO",
+      "currentGolden": {
+        "recommendedScenarioCode": "APS_EDD",
+        "requiredActions": [
+          "CREATE_PURCHASE_REQUISITION_DRAFT"
+        ]
+      },
+      "proposedGolden": {
+        "recommendedScenarioCode": null,
+        "requiredActions": [
+          "CREATE_PURCHASE_REQUISITION_DRAFT"
+        ]
+      },
+      "facts": {
+        "scenarios": [
+          {
+            "scenarioCode": "BASELINE_CURRENT",
+            "feasible": false,
+            "infeasibleReasons": [
+              "MATERIAL_SHORTAGE"
+            ],
+            "rank": 1,
+            "objectiveScore": "0.050000",
+            "kpis": {
+              "impactedOrderCount": 0,
+              "delayedWorkOrderCount": 0,
+              "totalTardinessDays": 0,
+              "maxTardinessDays": 0,
+              "makespanDate": "2026-10-10",
+              "shortageMaterialCount": 1,
+              "totalShortageGap": "20.0000",
+              "earliestShortageDate": "2026-10-03",
+              "maxResourceUtilization": "65.0",
+              "overloadedResourceCount": 0,
+              "changedWorkOrderCount": 0,
+              "actionCost": "0"
+            }
+          },
+          {
+            "scenarioCode": "APS_CR",
+            "feasible": false,
+            "infeasibleReasons": [
+              "MATERIAL_SHORTAGE"
+            ],
+            "rank": 2,
+            "objectiveScore": "0.150000",
+            "kpis": {
+              "impactedOrderCount": 0,
+              "delayedWorkOrderCount": 0,
+              "totalTardinessDays": 0,
+              "maxTardinessDays": 0,
+              "makespanDate": "2026-09-30",
+              "shortageMaterialCount": 1,
+              "totalShortageGap": "20.0000",
+              "earliestShortageDate": "2026-10-03",
+              "maxResourceUtilization": "20.7",
+              "overloadedResourceCount": 0,
+              "changedWorkOrderCount": 1,
+              "actionCost": "0"
+            }
+          },
+          {
+            "scenarioCode": "APS_EDD",
+            "feasible": false,
+            "infeasibleReasons": [
+              "MATERIAL_SHORTAGE"
+            ],
+            "rank": 3,
+            "objectiveScore": "0.150000",
+            "kpis": {
+              "impactedOrderCount": 0,
+              "delayedWorkOrderCount": 0,
+              "totalTardinessDays": 0,
+              "maxTardinessDays": 0,
+              "makespanDate": "2026-09-30",
+              "shortageMaterialCount": 1,
+              "totalShortageGap": "20.0000",
+              "earliestShortageDate": "2026-10-03",
+              "maxResourceUtilization": "20.7",
+              "overloadedResourceCount": 0,
+              "changedWorkOrderCount": 1,
+              "actionCost": "0"
+            }
+          },
+          {
+            "scenarioCode": "APS_CR_EXPEDITE",
+            "feasible": false,
+            "infeasibleReasons": [
+              "MATERIAL_SHORTAGE",
+              "NO_EXPEDITABLE_PURCHASE_LINE",
+              "MISSING_KPI"
+            ],
+            "rank": 4,
+            "objectiveScore": null,
+            "kpis": {
+              "impactedOrderCount": 0,
+              "delayedWorkOrderCount": 0,
+              "totalTardinessDays": 0,
+              "maxTardinessDays": 0,
+              "makespanDate": "2026-09-30",
+              "shortageMaterialCount": 1,
+              "totalShortageGap": "20.0000",
+              "earliestShortageDate": "2026-10-03",
+              "maxResourceUtilization": "20.7",
+              "overloadedResourceCount": 0,
+              "changedWorkOrderCount": 1,
+              "actionCost": null
+            }
+          }
+        ],
+        "shortages": [
+          {
+            "materialId": "9007199254747008",
+            "gap": "20.0000",
+            "onOrderQty": "1.0000",
+            "firstShortageDate": "2026-10-03"
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "DELIVERY-009",
+      "bizId": "9007199254745009",
+      "runId": "2104173471679533057",
+      "reasonCode": "NO_FEASIBLE_SCENARIO",
+      "currentGolden": {
+        "recommendedScenarioCode": "APS_EDD",
+        "requiredActions": [
+          "CREATE_PURCHASE_REQUISITION_DRAFT"
+        ]
+      },
+      "proposedGolden": {
+        "recommendedScenarioCode": null,
+        "requiredActions": [
+          "CREATE_PURCHASE_REQUISITION_DRAFT"
+        ]
+      },
+      "facts": {
+        "scenarios": [
+          {
+            "scenarioCode": "BASELINE_CURRENT",
+            "feasible": false,
+            "infeasibleReasons": [
+              "MATERIAL_SHORTAGE"
+            ],
+            "rank": 1,
+            "objectiveScore": "0.050000",
+            "kpis": {
+              "impactedOrderCount": 0,
+              "delayedWorkOrderCount": 0,
+              "totalTardinessDays": 0,
+              "maxTardinessDays": 0,
+              "makespanDate": "2026-10-10",
+              "shortageMaterialCount": 1,
+              "totalShortageGap": "21.0000",
+              "earliestShortageDate": "2026-10-03",
+              "maxResourceUtilization": "65.0",
+              "overloadedResourceCount": 0,
+              "changedWorkOrderCount": 0,
+              "actionCost": "0"
+            }
+          },
+          {
+            "scenarioCode": "APS_CR",
+            "feasible": false,
+            "infeasibleReasons": [
+              "MATERIAL_SHORTAGE"
+            ],
+            "rank": 2,
+            "objectiveScore": "0.150000",
+            "kpis": {
+              "impactedOrderCount": 0,
+              "delayedWorkOrderCount": 0,
+              "totalTardinessDays": 0,
+              "maxTardinessDays": 0,
+              "makespanDate": "2026-09-30",
+              "shortageMaterialCount": 1,
+              "totalShortageGap": "21.0000",
+              "earliestShortageDate": "2026-10-03",
+              "maxResourceUtilization": "20.7",
+              "overloadedResourceCount": 0,
+              "changedWorkOrderCount": 1,
+              "actionCost": "0"
+            }
+          },
+          {
+            "scenarioCode": "APS_EDD",
+            "feasible": false,
+            "infeasibleReasons": [
+              "MATERIAL_SHORTAGE"
+            ],
+            "rank": 3,
+            "objectiveScore": "0.150000",
+            "kpis": {
+              "impactedOrderCount": 0,
+              "delayedWorkOrderCount": 0,
+              "totalTardinessDays": 0,
+              "maxTardinessDays": 0,
+              "makespanDate": "2026-09-30",
+              "shortageMaterialCount": 1,
+              "totalShortageGap": "21.0000",
+              "earliestShortageDate": "2026-10-03",
+              "maxResourceUtilization": "20.7",
+              "overloadedResourceCount": 0,
+              "changedWorkOrderCount": 1,
+              "actionCost": "0"
+            }
+          },
+          {
+            "scenarioCode": "APS_CR_EXPEDITE",
+            "feasible": false,
+            "infeasibleReasons": [
+              "MATERIAL_SHORTAGE",
+              "NO_EXPEDITABLE_PURCHASE_LINE",
+              "MISSING_KPI"
+            ],
+            "rank": 4,
+            "objectiveScore": null,
+            "kpis": {
+              "impactedOrderCount": 0,
+              "delayedWorkOrderCount": 0,
+              "totalTardinessDays": 0,
+              "maxTardinessDays": 0,
+              "makespanDate": "2026-09-30",
+              "shortageMaterialCount": 1,
+              "totalShortageGap": "21.0000",
+              "earliestShortageDate": "2026-10-03",
+              "maxResourceUtilization": "20.7",
+              "overloadedResourceCount": 0,
+              "changedWorkOrderCount": 1,
+              "actionCost": null
+            }
+          }
+        ],
+        "shortages": [
+          {
+            "materialId": "9007199254747009",
+            "gap": "21.0000",
+            "onOrderQty": "1.0000",
+            "firstShortageDate": "2026-10-03"
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "DELIVERY-010",
+      "bizId": "9007199254745010",
+      "runId": "2104173488972648449",
+      "reasonCode": "NO_FEASIBLE_SCENARIO",
+      "currentGolden": {
+        "recommendedScenarioCode": "APS_EDD",
+        "requiredActions": [
+          "CREATE_PURCHASE_REQUISITION_DRAFT"
+        ]
+      },
+      "proposedGolden": {
+        "recommendedScenarioCode": null,
+        "requiredActions": [
+          "CREATE_PURCHASE_REQUISITION_DRAFT"
+        ]
+      },
+      "facts": {
+        "scenarios": [
+          {
+            "scenarioCode": "BASELINE_CURRENT",
+            "feasible": false,
+            "infeasibleReasons": [
+              "MATERIAL_SHORTAGE"
+            ],
+            "rank": 1,
+            "objectiveScore": "0.050000",
+            "kpis": {
+              "impactedOrderCount": 0,
+              "delayedWorkOrderCount": 0,
+              "totalTardinessDays": 0,
+              "maxTardinessDays": 0,
+              "makespanDate": "2026-10-10",
+              "shortageMaterialCount": 1,
+              "totalShortageGap": "22.0000",
+              "earliestShortageDate": "2026-10-03",
+              "maxResourceUtilization": "65.0",
+              "overloadedResourceCount": 0,
+              "changedWorkOrderCount": 0,
+              "actionCost": "0"
+            }
+          },
+          {
+            "scenarioCode": "APS_CR",
+            "feasible": false,
+            "infeasibleReasons": [
+              "MATERIAL_SHORTAGE"
+            ],
+            "rank": 2,
+            "objectiveScore": "0.150000",
+            "kpis": {
+              "impactedOrderCount": 0,
+              "delayedWorkOrderCount": 0,
+              "totalTardinessDays": 0,
+              "maxTardinessDays": 0,
+              "makespanDate": "2026-09-30",
+              "shortageMaterialCount": 1,
+              "totalShortageGap": "22.0000",
+              "earliestShortageDate": "2026-10-03",
+              "maxResourceUtilization": "20.7",
+              "overloadedResourceCount": 0,
+              "changedWorkOrderCount": 1,
+              "actionCost": "0"
+            }
+          },
+          {
+            "scenarioCode": "APS_EDD",
+            "feasible": false,
+            "infeasibleReasons": [
+              "MATERIAL_SHORTAGE"
+            ],
+            "rank": 3,
+            "objectiveScore": "0.150000",
+            "kpis": {
+              "impactedOrderCount": 0,
+              "delayedWorkOrderCount": 0,
+              "totalTardinessDays": 0,
+              "maxTardinessDays": 0,
+              "makespanDate": "2026-09-30",
+              "shortageMaterialCount": 1,
+              "totalShortageGap": "22.0000",
+              "earliestShortageDate": "2026-10-03",
+              "maxResourceUtilization": "20.7",
+              "overloadedResourceCount": 0,
+              "changedWorkOrderCount": 1,
+              "actionCost": "0"
+            }
+          },
+          {
+            "scenarioCode": "APS_CR_EXPEDITE",
+            "feasible": false,
+            "infeasibleReasons": [
+              "MATERIAL_SHORTAGE",
+              "NO_EXPEDITABLE_PURCHASE_LINE",
+              "MISSING_KPI"
+            ],
+            "rank": 4,
+            "objectiveScore": null,
+            "kpis": {
+              "impactedOrderCount": 0,
+              "delayedWorkOrderCount": 0,
+              "totalTardinessDays": 0,
+              "maxTardinessDays": 0,
+              "makespanDate": "2026-09-30",
+              "shortageMaterialCount": 1,
+              "totalShortageGap": "22.0000",
+              "earliestShortageDate": "2026-10-03",
+              "maxResourceUtilization": "20.7",
+              "overloadedResourceCount": 0,
+              "changedWorkOrderCount": 1,
+              "actionCost": null
+            }
+          }
+        ],
+        "shortages": [
+          {
+            "materialId": "9007199254747010",
+            "gap": "22.0000",
+            "onOrderQty": "1.0000",
+            "firstShortageDate": "2026-10-03"
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "DELIVERY-011",
+      "bizId": "9007199254745011",
+      "runId": "2104173433666555906",
+      "reasonCode": "NO_FEASIBLE_SCENARIO",
+      "currentGolden": {
+        "recommendedScenarioCode": "APS_EDD",
+        "requiredActions": [
+          "CREATE_PURCHASE_REQUISITION_DRAFT"
+        ]
+      },
+      "proposedGolden": {
+        "recommendedScenarioCode": null,
+        "requiredActions": [
+          "CREATE_PURCHASE_REQUISITION_DRAFT"
+        ]
+      },
+      "facts": {
+        "scenarios": [
+          {
+            "scenarioCode": "BASELINE_CURRENT",
+            "feasible": false,
+            "infeasibleReasons": [
+              "MATERIAL_SHORTAGE"
+            ],
+            "rank": 1,
+            "objectiveScore": "0.050000",
+            "kpis": {
+              "impactedOrderCount": 0,
+              "delayedWorkOrderCount": 0,
+              "totalTardinessDays": 0,
+              "maxTardinessDays": 0,
+              "makespanDate": "2026-10-10",
+              "shortageMaterialCount": 1,
+              "totalShortageGap": "23.0000",
+              "earliestShortageDate": "2026-10-03",
+              "maxResourceUtilization": "65.0",
+              "overloadedResourceCount": 0,
+              "changedWorkOrderCount": 0,
+              "actionCost": "0"
+            }
+          },
+          {
+            "scenarioCode": "APS_CR",
+            "feasible": false,
+            "infeasibleReasons": [
+              "MATERIAL_SHORTAGE"
+            ],
+            "rank": 2,
+            "objectiveScore": "0.150000",
+            "kpis": {
+              "impactedOrderCount": 0,
+              "delayedWorkOrderCount": 0,
+              "totalTardinessDays": 0,
+              "maxTardinessDays": 0,
+              "makespanDate": "2026-09-30",
+              "shortageMaterialCount": 1,
+              "totalShortageGap": "23.0000",
+              "earliestShortageDate": "2026-10-03",
+              "maxResourceUtilization": "20.7",
+              "overloadedResourceCount": 0,
+              "changedWorkOrderCount": 1,
+              "actionCost": "0"
+            }
+          },
+          {
+            "scenarioCode": "APS_EDD",
+            "feasible": false,
+            "infeasibleReasons": [
+              "MATERIAL_SHORTAGE"
+            ],
+            "rank": 3,
+            "objectiveScore": "0.150000",
+            "kpis": {
+              "impactedOrderCount": 0,
+              "delayedWorkOrderCount": 0,
+              "totalTardinessDays": 0,
+              "maxTardinessDays": 0,
+              "makespanDate": "2026-09-30",
+              "shortageMaterialCount": 1,
+              "totalShortageGap": "23.0000",
+              "earliestShortageDate": "2026-10-03",
+              "maxResourceUtilization": "20.7",
+              "overloadedResourceCount": 0,
+              "changedWorkOrderCount": 1,
+              "actionCost": "0"
+            }
+          },
+          {
+            "scenarioCode": "APS_CR_EXPEDITE",
+            "feasible": false,
+            "infeasibleReasons": [
+              "MATERIAL_SHORTAGE",
+              "NO_EXPEDITABLE_PURCHASE_LINE",
+              "MISSING_KPI"
+            ],
+            "rank": 4,
+            "objectiveScore": null,
+            "kpis": {
+              "impactedOrderCount": 0,
+              "delayedWorkOrderCount": 0,
+              "totalTardinessDays": 0,
+              "maxTardinessDays": 0,
+              "makespanDate": "2026-09-30",
+              "shortageMaterialCount": 1,
+              "totalShortageGap": "23.0000",
+              "earliestShortageDate": "2026-10-03",
+              "maxResourceUtilization": "20.7",
+              "overloadedResourceCount": 0,
+              "changedWorkOrderCount": 1,
+              "actionCost": null
+            }
+          }
+        ],
+        "shortages": [
+          {
+            "materialId": "9007199254747011",
+            "gap": "23.0000",
+            "onOrderQty": "1.0000",
+            "firstShortageDate": "2026-10-03"
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "DELIVERY-012",
+      "bizId": "9007199254745012",
+      "runId": "2104173173468712961",
+      "reasonCode": "NO_FEASIBLE_SCENARIO",
+      "currentGolden": {
+        "recommendedScenarioCode": "APS_EDD",
+        "requiredActions": [
+          "CREATE_PURCHASE_REQUISITION_DRAFT",
+          "CREATE_SCHEDULE_PLAN_DRAFT"
+        ]
+      },
+      "proposedGolden": {
+        "recommendedScenarioCode": null,
+        "requiredActions": [
+          "CREATE_PURCHASE_REQUISITION_DRAFT"
+        ]
+      },
+      "facts": {
+        "scenarios": [
+          {
+            "scenarioCode": "APS_CR",
+            "feasible": false,
+            "infeasibleReasons": [
+              "MATERIAL_SHORTAGE"
+            ],
+            "rank": 1,
+            "objectiveScore": "0.150000",
+            "kpis": {
+              "impactedOrderCount": 0,
+              "delayedWorkOrderCount": 0,
+              "totalTardinessDays": 0,
+              "maxTardinessDays": 0,
+              "makespanDate": "2026-09-30",
+              "shortageMaterialCount": 2,
+              "totalShortageGap": "40.0000",
+              "earliestShortageDate": "2026-10-03",
+              "maxResourceUtilization": "20.7",
+              "overloadedResourceCount": 0,
+              "changedWorkOrderCount": 1,
+              "actionCost": "0"
+            }
+          },
+          {
+            "scenarioCode": "APS_EDD",
+            "feasible": false,
+            "infeasibleReasons": [
+              "MATERIAL_SHORTAGE"
+            ],
+            "rank": 2,
+            "objectiveScore": "0.150000",
+            "kpis": {
+              "impactedOrderCount": 0,
+              "delayedWorkOrderCount": 0,
+              "totalTardinessDays": 0,
+              "maxTardinessDays": 0,
+              "makespanDate": "2026-09-30",
+              "shortageMaterialCount": 2,
+              "totalShortageGap": "40.0000",
+              "earliestShortageDate": "2026-10-03",
+              "maxResourceUtilization": "20.7",
+              "overloadedResourceCount": 0,
+              "changedWorkOrderCount": 1,
+              "actionCost": "0"
+            }
+          },
+          {
+            "scenarioCode": "BASELINE_CURRENT",
+            "feasible": false,
+            "infeasibleReasons": [
+              "MATERIAL_SHORTAGE"
+            ],
+            "rank": 3,
+            "objectiveScore": "0.550000",
+            "kpis": {
+              "impactedOrderCount": 0,
+              "delayedWorkOrderCount": 1,
+              "totalTardinessDays": 2,
+              "maxTardinessDays": 2,
+              "makespanDate": "2026-10-12",
+              "shortageMaterialCount": 2,
+              "totalShortageGap": "40.0000",
+              "earliestShortageDate": "2026-10-03",
+              "maxResourceUtilization": "65.0",
+              "overloadedResourceCount": 0,
+              "changedWorkOrderCount": 0,
+              "actionCost": "0"
+            }
+          },
+          {
+            "scenarioCode": "APS_CR_EXPEDITE",
+            "feasible": false,
+            "infeasibleReasons": [
+              "MATERIAL_SHORTAGE",
+              "NO_EXPEDITABLE_PURCHASE_LINE",
+              "MISSING_KPI"
+            ],
+            "rank": 4,
+            "objectiveScore": null,
+            "kpis": {
+              "impactedOrderCount": 0,
+              "delayedWorkOrderCount": 0,
+              "totalTardinessDays": 0,
+              "maxTardinessDays": 0,
+              "makespanDate": "2026-09-30",
+              "shortageMaterialCount": 2,
+              "totalShortageGap": "40.0000",
+              "earliestShortageDate": "2026-10-03",
+              "maxResourceUtilization": "20.7",
+              "overloadedResourceCount": 0,
+              "changedWorkOrderCount": 1,
+              "actionCost": null
+            }
+          }
+        ],
+        "shortages": [
+          {
+            "materialId": "9007199254747012",
+            "gap": "37.0000",
+            "onOrderQty": "1.0000",
+            "firstShortageDate": "2026-10-03"
+          },
+          {
+            "materialId": "9007199254895012",
+            "gap": "3.0000",
+            "onOrderQty": "0",
+            "firstShortageDate": "2026-10-03"
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "DELIVERY-013",
+      "bizId": "9007199254745013",
+      "runId": "2104173173468712964",
+      "reasonCode": "NO_FEASIBLE_SCENARIO",
+      "currentGolden": {
+        "recommendedScenarioCode": "APS_EDD",
+        "requiredActions": [
+          "CREATE_PURCHASE_REQUISITION_DRAFT",
+          "CREATE_SCHEDULE_PLAN_DRAFT"
+        ]
+      },
+      "proposedGolden": {
+        "recommendedScenarioCode": null,
+        "requiredActions": [
+          "CREATE_PURCHASE_REQUISITION_DRAFT"
+        ]
+      },
+      "facts": {
+        "scenarios": [
+          {
+            "scenarioCode": "APS_CR",
+            "feasible": false,
+            "infeasibleReasons": [
+              "MATERIAL_SHORTAGE"
+            ],
+            "rank": 1,
+            "objectiveScore": "0.150000",
+            "kpis": {
+              "impactedOrderCount": 0,
+              "delayedWorkOrderCount": 0,
+              "totalTardinessDays": 0,
+              "maxTardinessDays": 0,
+              "makespanDate": "2026-09-30",
+              "shortageMaterialCount": 2,
+              "totalShortageGap": "41.0000",
+              "earliestShortageDate": "2026-10-03",
+              "maxResourceUtilization": "20.7",
+              "overloadedResourceCount": 0,
+              "changedWorkOrderCount": 1,
+              "actionCost": "0"
+            }
+          },
+          {
+            "scenarioCode": "APS_EDD",
+            "feasible": false,
+            "infeasibleReasons": [
+              "MATERIAL_SHORTAGE"
+            ],
+            "rank": 2,
+            "objectiveScore": "0.150000",
+            "kpis": {
+              "impactedOrderCount": 0,
+              "delayedWorkOrderCount": 0,
+              "totalTardinessDays": 0,
+              "maxTardinessDays": 0,
+              "makespanDate": "2026-09-30",
+              "shortageMaterialCount": 2,
+              "totalShortageGap": "41.0000",
+              "earliestShortageDate": "2026-10-03",
+              "maxResourceUtilization": "20.7",
+              "overloadedResourceCount": 0,
+              "changedWorkOrderCount": 1,
+              "actionCost": "0"
+            }
+          },
+          {
+            "scenarioCode": "BASELINE_CURRENT",
+            "feasible": false,
+            "infeasibleReasons": [
+              "MATERIAL_SHORTAGE"
+            ],
+            "rank": 3,
+            "objectiveScore": "0.550000",
+            "kpis": {
+              "impactedOrderCount": 0,
+              "delayedWorkOrderCount": 1,
+              "totalTardinessDays": 2,
+              "maxTardinessDays": 2,
+              "makespanDate": "2026-10-12",
+              "shortageMaterialCount": 2,
+              "totalShortageGap": "41.0000",
+              "earliestShortageDate": "2026-10-03",
+              "maxResourceUtilization": "65.0",
+              "overloadedResourceCount": 0,
+              "changedWorkOrderCount": 0,
+              "actionCost": "0"
+            }
+          },
+          {
+            "scenarioCode": "APS_CR_EXPEDITE",
+            "feasible": false,
+            "infeasibleReasons": [
+              "MATERIAL_SHORTAGE",
+              "NO_EXPEDITABLE_PURCHASE_LINE",
+              "MISSING_KPI"
+            ],
+            "rank": 4,
+            "objectiveScore": null,
+            "kpis": {
+              "impactedOrderCount": 0,
+              "delayedWorkOrderCount": 0,
+              "totalTardinessDays": 0,
+              "maxTardinessDays": 0,
+              "makespanDate": "2026-09-30",
+              "shortageMaterialCount": 2,
+              "totalShortageGap": "41.0000",
+              "earliestShortageDate": "2026-10-03",
+              "maxResourceUtilization": "20.7",
+              "overloadedResourceCount": 0,
+              "changedWorkOrderCount": 1,
+              "actionCost": null
+            }
+          }
+        ],
+        "shortages": [
+          {
+            "materialId": "9007199254747013",
+            "gap": "38.0000",
+            "onOrderQty": "1.0000",
+            "firstShortageDate": "2026-10-03"
+          },
+          {
+            "materialId": "9007199254895013",
+            "gap": "3.0000",
+            "onOrderQty": "0",
+            "firstShortageDate": "2026-10-03"
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "DELIVERY-014",
+      "bizId": "9007199254745014",
+      "runId": "2104173173468712962",
+      "reasonCode": "NO_FEASIBLE_SCENARIO",
+      "currentGolden": {
+        "recommendedScenarioCode": "APS_EDD",
+        "requiredActions": [
+          "CREATE_PURCHASE_REQUISITION_DRAFT",
+          "CREATE_SCHEDULE_PLAN_DRAFT"
+        ]
+      },
+      "proposedGolden": {
+        "recommendedScenarioCode": null,
+        "requiredActions": [
+          "CREATE_PURCHASE_REQUISITION_DRAFT"
+        ]
+      },
+      "facts": {
+        "scenarios": [
+          {
+            "scenarioCode": "APS_CR",
+            "feasible": false,
+            "infeasibleReasons": [
+              "MATERIAL_SHORTAGE"
+            ],
+            "rank": 1,
+            "objectiveScore": "0.150000",
+            "kpis": {
+              "impactedOrderCount": 0,
+              "delayedWorkOrderCount": 0,
+              "totalTardinessDays": 0,
+              "maxTardinessDays": 0,
+              "makespanDate": "2026-09-30",
+              "shortageMaterialCount": 2,
+              "totalShortageGap": "42.0000",
+              "earliestShortageDate": "2026-10-03",
+              "maxResourceUtilization": "20.7",
+              "overloadedResourceCount": 0,
+              "changedWorkOrderCount": 1,
+              "actionCost": "0"
+            }
+          },
+          {
+            "scenarioCode": "APS_EDD",
+            "feasible": false,
+            "infeasibleReasons": [
+              "MATERIAL_SHORTAGE"
+            ],
+            "rank": 2,
+            "objectiveScore": "0.150000",
+            "kpis": {
+              "impactedOrderCount": 0,
+              "delayedWorkOrderCount": 0,
+              "totalTardinessDays": 0,
+              "maxTardinessDays": 0,
+              "makespanDate": "2026-09-30",
+              "shortageMaterialCount": 2,
+              "totalShortageGap": "42.0000",
+              "earliestShortageDate": "2026-10-03",
+              "maxResourceUtilization": "20.7",
+              "overloadedResourceCount": 0,
+              "changedWorkOrderCount": 1,
+              "actionCost": "0"
+            }
+          },
+          {
+            "scenarioCode": "BASELINE_CURRENT",
+            "feasible": false,
+            "infeasibleReasons": [
+              "MATERIAL_SHORTAGE"
+            ],
+            "rank": 3,
+            "objectiveScore": "0.550000",
+            "kpis": {
+              "impactedOrderCount": 0,
+              "delayedWorkOrderCount": 1,
+              "totalTardinessDays": 2,
+              "maxTardinessDays": 2,
+              "makespanDate": "2026-10-12",
+              "shortageMaterialCount": 2,
+              "totalShortageGap": "42.0000",
+              "earliestShortageDate": "2026-10-03",
+              "maxResourceUtilization": "65.0",
+              "overloadedResourceCount": 0,
+              "changedWorkOrderCount": 0,
+              "actionCost": "0"
+            }
+          },
+          {
+            "scenarioCode": "APS_CR_EXPEDITE",
+            "feasible": false,
+            "infeasibleReasons": [
+              "MATERIAL_SHORTAGE",
+              "NO_EXPEDITABLE_PURCHASE_LINE",
+              "MISSING_KPI"
+            ],
+            "rank": 4,
+            "objectiveScore": null,
+            "kpis": {
+              "impactedOrderCount": 0,
+              "delayedWorkOrderCount": 0,
+              "totalTardinessDays": 0,
+              "maxTardinessDays": 0,
+              "makespanDate": "2026-09-30",
+              "shortageMaterialCount": 2,
+              "totalShortageGap": "42.0000",
+              "earliestShortageDate": "2026-10-03",
+              "maxResourceUtilization": "20.7",
+              "overloadedResourceCount": 0,
+              "changedWorkOrderCount": 1,
+              "actionCost": null
+            }
+          }
+        ],
+        "shortages": [
+          {
+            "materialId": "9007199254747014",
+            "gap": "39.0000",
+            "onOrderQty": "1.0000",
+            "firstShortageDate": "2026-10-03"
+          },
+          {
+            "materialId": "9007199254895014",
+            "gap": "3.0000",
+            "onOrderQty": "0",
+            "firstShortageDate": "2026-10-03"
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "DELIVERY-015",
+      "bizId": "9007199254745015",
+      "runId": "2104173267811192833",
+      "reasonCode": "NO_FEASIBLE_SCENARIO",
+      "currentGolden": {
+        "recommendedScenarioCode": "APS_EDD",
+        "requiredActions": [
+          "CREATE_PURCHASE_REQUISITION_DRAFT",
+          "CREATE_SCHEDULE_PLAN_DRAFT"
+        ]
+      },
+      "proposedGolden": {
+        "recommendedScenarioCode": null,
+        "requiredActions": [
+          "CREATE_PURCHASE_REQUISITION_DRAFT"
+        ]
+      },
+      "facts": {
+        "scenarios": [
+          {
+            "scenarioCode": "APS_CR",
+            "feasible": false,
+            "infeasibleReasons": [
+              "MATERIAL_SHORTAGE"
+            ],
+            "rank": 1,
+            "objectiveScore": "0.150000",
+            "kpis": {
+              "impactedOrderCount": 0,
+              "delayedWorkOrderCount": 0,
+              "totalTardinessDays": 0,
+              "maxTardinessDays": 0,
+              "makespanDate": "2026-09-30",
+              "shortageMaterialCount": 2,
+              "totalShortageGap": "43.0000",
+              "earliestShortageDate": "2026-10-03",
+              "maxResourceUtilization": "20.7",
+              "overloadedResourceCount": 0,
+              "changedWorkOrderCount": 1,
+              "actionCost": "0"
+            }
+          },
+          {
+            "scenarioCode": "APS_EDD",
+            "feasible": false,
+            "infeasibleReasons": [
+              "MATERIAL_SHORTAGE"
+            ],
+            "rank": 2,
+            "objectiveScore": "0.150000",
+            "kpis": {
+              "impactedOrderCount": 0,
+              "delayedWorkOrderCount": 0,
+              "totalTardinessDays": 0,
+              "maxTardinessDays": 0,
+              "makespanDate": "2026-09-30",
+              "shortageMaterialCount": 2,
+              "totalShortageGap": "43.0000",
+              "earliestShortageDate": "2026-10-03",
+              "maxResourceUtilization": "20.7",
+              "overloadedResourceCount": 0,
+              "changedWorkOrderCount": 1,
+              "actionCost": "0"
+            }
+          },
+          {
+            "scenarioCode": "BASELINE_CURRENT",
+            "feasible": false,
+            "infeasibleReasons": [
+              "MATERIAL_SHORTAGE"
+            ],
+            "rank": 3,
+            "objectiveScore": "0.550000",
+            "kpis": {
+              "impactedOrderCount": 0,
+              "delayedWorkOrderCount": 1,
+              "totalTardinessDays": 2,
+              "maxTardinessDays": 2,
+              "makespanDate": "2026-10-12",
+              "shortageMaterialCount": 2,
+              "totalShortageGap": "43.0000",
+              "earliestShortageDate": "2026-10-03",
+              "maxResourceUtilization": "65.0",
+              "overloadedResourceCount": 0,
+              "changedWorkOrderCount": 0,
+              "actionCost": "0"
+            }
+          },
+          {
+            "scenarioCode": "APS_CR_EXPEDITE",
+            "feasible": false,
+            "infeasibleReasons": [
+              "MATERIAL_SHORTAGE",
+              "NO_EXPEDITABLE_PURCHASE_LINE",
+              "MISSING_KPI"
+            ],
+            "rank": 4,
+            "objectiveScore": null,
+            "kpis": {
+              "impactedOrderCount": 0,
+              "delayedWorkOrderCount": 0,
+              "totalTardinessDays": 0,
+              "maxTardinessDays": 0,
+              "makespanDate": "2026-09-30",
+              "shortageMaterialCount": 2,
+              "totalShortageGap": "43.0000",
+              "earliestShortageDate": "2026-10-03",
+              "maxResourceUtilization": "20.7",
+              "overloadedResourceCount": 0,
+              "changedWorkOrderCount": 1,
+              "actionCost": null
+            }
+          }
+        ],
+        "shortages": [
+          {
+            "materialId": "9007199254747015",
+            "gap": "40.0000",
+            "onOrderQty": "1.0000",
+            "firstShortageDate": "2026-10-03"
+          },
+          {
+            "materialId": "9007199254895015",
+            "gap": "3.0000",
+            "onOrderQty": "0",
+            "firstShortageDate": "2026-10-03"
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "DELIVERY-016",
+      "bizId": "9007199254745016",
+      "runId": "2104173453748883458",
+      "reasonCode": "EXPEDITE_ONLY_FEASIBLE",
+      "currentGolden": {
+        "recommendedScenarioCode": "APS_EDD",
+        "requiredActions": [
+          "SEND_EXPEDITE_NOTICE",
+          "CREATE_PURCHASE_REQUISITION_DRAFT",
+          "CREATE_SCHEDULE_PLAN_DRAFT"
+        ]
+      },
+      "proposedGolden": {
+        "recommendedScenarioCode": "APS_CR_EXPEDITE",
+        "requiredActions": [
+          "CREATE_PURCHASE_REQUISITION_DRAFT",
+          "CREATE_SCHEDULE_PLAN_DRAFT",
+          "SEND_EXPEDITE_NOTICE"
+        ]
+      },
+      "facts": {
+        "scenarios": [
+          {
+            "scenarioCode": "APS_CR_EXPEDITE",
+            "feasible": true,
+            "infeasibleReasons": [],
+            "rank": 1,
+            "objectiveScore": "0.200000",
+            "kpis": {
+              "impactedOrderCount": 0,
+              "delayedWorkOrderCount": 0,
+              "totalTardinessDays": 0,
+              "maxTardinessDays": 0,
+              "makespanDate": "2026-09-30",
+              "shortageMaterialCount": 0,
+              "totalShortageGap": "0",
+              "earliestShortageDate": null,
+              "maxResourceUtilization": "20.7",
+              "overloadedResourceCount": 0,
+              "changedWorkOrderCount": 1,
+              "actionCost": "1"
+            }
+          },
+          {
+            "scenarioCode": "APS_CR",
+            "feasible": false,
+            "infeasibleReasons": [
+              "MATERIAL_SHORTAGE"
+            ],
+            "rank": 2,
+            "objectiveScore": "0.300000",
+            "kpis": {
+              "impactedOrderCount": 0,
+              "delayedWorkOrderCount": 0,
+              "totalTardinessDays": 0,
+              "maxTardinessDays": 0,
+              "makespanDate": "2026-09-30",
+              "shortageMaterialCount": 1,
+              "totalShortageGap": "26.0000",
+              "earliestShortageDate": "2026-10-03",
+              "maxResourceUtilization": "20.7",
+              "overloadedResourceCount": 0,
+              "changedWorkOrderCount": 1,
+              "actionCost": "0"
+            }
+          },
+          {
+            "scenarioCode": "APS_EDD",
+            "feasible": false,
+            "infeasibleReasons": [
+              "MATERIAL_SHORTAGE"
+            ],
+            "rank": 3,
+            "objectiveScore": "0.300000",
+            "kpis": {
+              "impactedOrderCount": 0,
+              "delayedWorkOrderCount": 0,
+              "totalTardinessDays": 0,
+              "maxTardinessDays": 0,
+              "makespanDate": "2026-09-30",
+              "shortageMaterialCount": 1,
+              "totalShortageGap": "26.0000",
+              "earliestShortageDate": "2026-10-03",
+              "maxResourceUtilization": "20.7",
+              "overloadedResourceCount": 0,
+              "changedWorkOrderCount": 1,
+              "actionCost": "0"
+            }
+          },
+          {
+            "scenarioCode": "BASELINE_CURRENT",
+            "feasible": false,
+            "infeasibleReasons": [
+              "MATERIAL_SHORTAGE"
+            ],
+            "rank": 4,
+            "objectiveScore": "0.700000",
+            "kpis": {
+              "impactedOrderCount": 0,
+              "delayedWorkOrderCount": 1,
+              "totalTardinessDays": 3,
+              "maxTardinessDays": 3,
+              "makespanDate": "2026-10-13",
+              "shortageMaterialCount": 1,
+              "totalShortageGap": "26.0000",
+              "earliestShortageDate": "2026-10-03",
+              "maxResourceUtilization": "65.0",
+              "overloadedResourceCount": 0,
+              "changedWorkOrderCount": 0,
+              "actionCost": "0"
+            }
+          }
+        ],
+        "shortages": [
+          {
+            "materialId": "9007199254747016",
+            "gap": "26.0000",
+            "onOrderQty": "26.0000",
+            "firstShortageDate": "2026-10-03"
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "DELIVERY-017",
+      "bizId": "9007199254745017",
+      "runId": "2104173540399009793",
+      "reasonCode": "EXPEDITE_ONLY_FEASIBLE",
+      "currentGolden": {
+        "recommendedScenarioCode": "APS_EDD",
+        "requiredActions": [
+          "SEND_EXPEDITE_NOTICE",
+          "CREATE_PURCHASE_REQUISITION_DRAFT",
+          "CREATE_SCHEDULE_PLAN_DRAFT"
+        ]
+      },
+      "proposedGolden": {
+        "recommendedScenarioCode": "APS_CR_EXPEDITE",
+        "requiredActions": [
+          "CREATE_PURCHASE_REQUISITION_DRAFT",
+          "CREATE_SCHEDULE_PLAN_DRAFT",
+          "SEND_EXPEDITE_NOTICE"
+        ]
+      },
+      "facts": {
+        "scenarios": [
+          {
+            "scenarioCode": "APS_CR_EXPEDITE",
+            "feasible": true,
+            "infeasibleReasons": [],
+            "rank": 1,
+            "objectiveScore": "0.200000",
+            "kpis": {
+              "impactedOrderCount": 0,
+              "delayedWorkOrderCount": 0,
+              "totalTardinessDays": 0,
+              "maxTardinessDays": 0,
+              "makespanDate": "2026-09-30",
+              "shortageMaterialCount": 0,
+              "totalShortageGap": "0",
+              "earliestShortageDate": null,
+              "maxResourceUtilization": "20.7",
+              "overloadedResourceCount": 0,
+              "changedWorkOrderCount": 1,
+              "actionCost": "1"
+            }
+          },
+          {
+            "scenarioCode": "APS_CR",
+            "feasible": false,
+            "infeasibleReasons": [
+              "MATERIAL_SHORTAGE"
+            ],
+            "rank": 2,
+            "objectiveScore": "0.300000",
+            "kpis": {
+              "impactedOrderCount": 0,
+              "delayedWorkOrderCount": 0,
+              "totalTardinessDays": 0,
+              "maxTardinessDays": 0,
+              "makespanDate": "2026-09-30",
+              "shortageMaterialCount": 1,
+              "totalShortageGap": "27.0000",
+              "earliestShortageDate": "2026-10-03",
+              "maxResourceUtilization": "20.7",
+              "overloadedResourceCount": 0,
+              "changedWorkOrderCount": 1,
+              "actionCost": "0"
+            }
+          },
+          {
+            "scenarioCode": "APS_EDD",
+            "feasible": false,
+            "infeasibleReasons": [
+              "MATERIAL_SHORTAGE"
+            ],
+            "rank": 3,
+            "objectiveScore": "0.300000",
+            "kpis": {
+              "impactedOrderCount": 0,
+              "delayedWorkOrderCount": 0,
+              "totalTardinessDays": 0,
+              "maxTardinessDays": 0,
+              "makespanDate": "2026-09-30",
+              "shortageMaterialCount": 1,
+              "totalShortageGap": "27.0000",
+              "earliestShortageDate": "2026-10-03",
+              "maxResourceUtilization": "20.7",
+              "overloadedResourceCount": 0,
+              "changedWorkOrderCount": 1,
+              "actionCost": "0"
+            }
+          },
+          {
+            "scenarioCode": "BASELINE_CURRENT",
+            "feasible": false,
+            "infeasibleReasons": [
+              "MATERIAL_SHORTAGE"
+            ],
+            "rank": 4,
+            "objectiveScore": "0.700000",
+            "kpis": {
+              "impactedOrderCount": 0,
+              "delayedWorkOrderCount": 1,
+              "totalTardinessDays": 3,
+              "maxTardinessDays": 3,
+              "makespanDate": "2026-10-13",
+              "shortageMaterialCount": 1,
+              "totalShortageGap": "27.0000",
+              "earliestShortageDate": "2026-10-03",
+              "maxResourceUtilization": "65.0",
+              "overloadedResourceCount": 0,
+              "changedWorkOrderCount": 0,
+              "actionCost": "0"
+            }
+          }
+        ],
+        "shortages": [
+          {
+            "materialId": "9007199254747017",
+            "gap": "27.0000",
+            "onOrderQty": "27.0000",
+            "firstShortageDate": "2026-10-03"
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "DELIVERY-018",
+      "bizId": "9007199254745018",
+      "runId": "2104173613040160770",
+      "reasonCode": "EXPEDITE_ONLY_FEASIBLE",
+      "currentGolden": {
+        "recommendedScenarioCode": "APS_EDD",
+        "requiredActions": [
+          "SEND_EXPEDITE_NOTICE",
+          "CREATE_PURCHASE_REQUISITION_DRAFT",
+          "CREATE_SCHEDULE_PLAN_DRAFT"
+        ]
+      },
+      "proposedGolden": {
+        "recommendedScenarioCode": "APS_CR_EXPEDITE",
+        "requiredActions": [
+          "CREATE_PURCHASE_REQUISITION_DRAFT",
+          "CREATE_SCHEDULE_PLAN_DRAFT",
+          "SEND_EXPEDITE_NOTICE"
+        ]
+      },
+      "facts": {
+        "scenarios": [
+          {
+            "scenarioCode": "APS_CR_EXPEDITE",
+            "feasible": true,
+            "infeasibleReasons": [],
+            "rank": 1,
+            "objectiveScore": "0.200000",
+            "kpis": {
+              "impactedOrderCount": 0,
+              "delayedWorkOrderCount": 0,
+              "totalTardinessDays": 0,
+              "maxTardinessDays": 0,
+              "makespanDate": "2026-09-30",
+              "shortageMaterialCount": 0,
+              "totalShortageGap": "0",
+              "earliestShortageDate": null,
+              "maxResourceUtilization": "20.7",
+              "overloadedResourceCount": 0,
+              "changedWorkOrderCount": 1,
+              "actionCost": "1"
+            }
+          },
+          {
+            "scenarioCode": "APS_CR",
+            "feasible": false,
+            "infeasibleReasons": [
+              "MATERIAL_SHORTAGE"
+            ],
+            "rank": 2,
+            "objectiveScore": "0.300000",
+            "kpis": {
+              "impactedOrderCount": 0,
+              "delayedWorkOrderCount": 0,
+              "totalTardinessDays": 0,
+              "maxTardinessDays": 0,
+              "makespanDate": "2026-09-30",
+              "shortageMaterialCount": 1,
+              "totalShortageGap": "28.0000",
+              "earliestShortageDate": "2026-10-03",
+              "maxResourceUtilization": "20.7",
+              "overloadedResourceCount": 0,
+              "changedWorkOrderCount": 1,
+              "actionCost": "0"
+            }
+          },
+          {
+            "scenarioCode": "APS_EDD",
+            "feasible": false,
+            "infeasibleReasons": [
+              "MATERIAL_SHORTAGE"
+            ],
+            "rank": 3,
+            "objectiveScore": "0.300000",
+            "kpis": {
+              "impactedOrderCount": 0,
+              "delayedWorkOrderCount": 0,
+              "totalTardinessDays": 0,
+              "maxTardinessDays": 0,
+              "makespanDate": "2026-09-30",
+              "shortageMaterialCount": 1,
+              "totalShortageGap": "28.0000",
+              "earliestShortageDate": "2026-10-03",
+              "maxResourceUtilization": "20.7",
+              "overloadedResourceCount": 0,
+              "changedWorkOrderCount": 1,
+              "actionCost": "0"
+            }
+          },
+          {
+            "scenarioCode": "BASELINE_CURRENT",
+            "feasible": false,
+            "infeasibleReasons": [
+              "MATERIAL_SHORTAGE"
+            ],
+            "rank": 4,
+            "objectiveScore": "0.700000",
+            "kpis": {
+              "impactedOrderCount": 0,
+              "delayedWorkOrderCount": 1,
+              "totalTardinessDays": 3,
+              "maxTardinessDays": 3,
+              "makespanDate": "2026-10-13",
+              "shortageMaterialCount": 1,
+              "totalShortageGap": "28.0000",
+              "earliestShortageDate": "2026-10-03",
+              "maxResourceUtilization": "65.0",
+              "overloadedResourceCount": 0,
+              "changedWorkOrderCount": 0,
+              "actionCost": "0"
+            }
+          }
+        ],
+        "shortages": [
+          {
+            "materialId": "9007199254747018",
+            "gap": "28.0000",
+            "onOrderQty": "28.0000",
+            "firstShortageDate": "2026-10-03"
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "DELIVERY-019",
+      "bizId": "9007199254745019",
+      "runId": "2104173539862138881",
+      "reasonCode": "EXPEDITE_ONLY_FEASIBLE",
+      "currentGolden": {
+        "recommendedScenarioCode": "APS_EDD",
+        "requiredActions": [
+          "SEND_EXPEDITE_NOTICE",
+          "CREATE_PURCHASE_REQUISITION_DRAFT",
+          "CREATE_SCHEDULE_PLAN_DRAFT"
+        ]
+      },
+      "proposedGolden": {
+        "recommendedScenarioCode": "APS_CR_EXPEDITE",
+        "requiredActions": [
+          "CREATE_PURCHASE_REQUISITION_DRAFT",
+          "CREATE_SCHEDULE_PLAN_DRAFT",
+          "SEND_EXPEDITE_NOTICE"
+        ]
+      },
+      "facts": {
+        "scenarios": [
+          {
+            "scenarioCode": "APS_CR_EXPEDITE",
+            "feasible": true,
+            "infeasibleReasons": [],
+            "rank": 1,
+            "objectiveScore": "0.200000",
+            "kpis": {
+              "impactedOrderCount": 0,
+              "delayedWorkOrderCount": 0,
+              "totalTardinessDays": 0,
+              "maxTardinessDays": 0,
+              "makespanDate": "2026-09-30",
+              "shortageMaterialCount": 0,
+              "totalShortageGap": "0",
+              "earliestShortageDate": null,
+              "maxResourceUtilization": "20.7",
+              "overloadedResourceCount": 0,
+              "changedWorkOrderCount": 1,
+              "actionCost": "1"
+            }
+          },
+          {
+            "scenarioCode": "APS_CR",
+            "feasible": false,
+            "infeasibleReasons": [
+              "MATERIAL_SHORTAGE"
+            ],
+            "rank": 2,
+            "objectiveScore": "0.300000",
+            "kpis": {
+              "impactedOrderCount": 0,
+              "delayedWorkOrderCount": 0,
+              "totalTardinessDays": 0,
+              "maxTardinessDays": 0,
+              "makespanDate": "2026-09-30",
+              "shortageMaterialCount": 1,
+              "totalShortageGap": "29.0000",
+              "earliestShortageDate": "2026-10-03",
+              "maxResourceUtilization": "20.7",
+              "overloadedResourceCount": 0,
+              "changedWorkOrderCount": 1,
+              "actionCost": "0"
+            }
+          },
+          {
+            "scenarioCode": "APS_EDD",
+            "feasible": false,
+            "infeasibleReasons": [
+              "MATERIAL_SHORTAGE"
+            ],
+            "rank": 3,
+            "objectiveScore": "0.300000",
+            "kpis": {
+              "impactedOrderCount": 0,
+              "delayedWorkOrderCount": 0,
+              "totalTardinessDays": 0,
+              "maxTardinessDays": 0,
+              "makespanDate": "2026-09-30",
+              "shortageMaterialCount": 1,
+              "totalShortageGap": "29.0000",
+              "earliestShortageDate": "2026-10-03",
+              "maxResourceUtilization": "20.7",
+              "overloadedResourceCount": 0,
+              "changedWorkOrderCount": 1,
+              "actionCost": "0"
+            }
+          },
+          {
+            "scenarioCode": "BASELINE_CURRENT",
+            "feasible": false,
+            "infeasibleReasons": [
+              "MATERIAL_SHORTAGE"
+            ],
+            "rank": 4,
+            "objectiveScore": "0.700000",
+            "kpis": {
+              "impactedOrderCount": 0,
+              "delayedWorkOrderCount": 1,
+              "totalTardinessDays": 3,
+              "maxTardinessDays": 3,
+              "makespanDate": "2026-10-13",
+              "shortageMaterialCount": 1,
+              "totalShortageGap": "29.0000",
+              "earliestShortageDate": "2026-10-03",
+              "maxResourceUtilization": "65.0",
+              "overloadedResourceCount": 0,
+              "changedWorkOrderCount": 0,
+              "actionCost": "0"
+            }
+          }
+        ],
+        "shortages": [
+          {
+            "materialId": "9007199254747019",
+            "gap": "29.0000",
+            "onOrderQty": "29.0000",
+            "firstShortageDate": "2026-10-03"
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "DELIVERY-029",
+      "bizId": "9007199254745029",
+      "runId": "2104173736189120513",
+      "reasonCode": "LEXICAL_TIE_BREAK",
+      "currentGolden": {
+        "recommendedScenarioCode": "APS_EDD",
+        "requiredActions": [
+          "CREATE_SCHEDULE_PLAN_DRAFT"
+        ]
+      },
+      "proposedGolden": {
+        "recommendedScenarioCode": "APS_CR",
+        "requiredActions": [
+          "CREATE_SCHEDULE_PLAN_DRAFT"
+        ]
+      },
+      "facts": {
+        "scenarios": [
+          {
+            "scenarioCode": "APS_CR",
+            "feasible": true,
+            "infeasibleReasons": [],
+            "rank": 1,
+            "objectiveScore": "0.100000",
+            "kpis": {
+              "impactedOrderCount": 0,
+              "delayedWorkOrderCount": 0,
+              "totalTardinessDays": 0,
+              "maxTardinessDays": 0,
+              "makespanDate": "2026-10-03",
+              "shortageMaterialCount": 0,
+              "totalShortageGap": "0",
+              "earliestShortageDate": null,
+              "maxResourceUtilization": "36.2",
+              "overloadedResourceCount": 0,
+              "changedWorkOrderCount": 1,
+              "actionCost": "0"
+            }
+          },
+          {
+            "scenarioCode": "APS_EDD",
+            "feasible": true,
+            "infeasibleReasons": [],
+            "rank": 2,
+            "objectiveScore": "0.100000",
+            "kpis": {
+              "impactedOrderCount": 0,
+              "delayedWorkOrderCount": 0,
+              "totalTardinessDays": 0,
+              "maxTardinessDays": 0,
+              "makespanDate": "2026-10-03",
+              "shortageMaterialCount": 0,
+              "totalShortageGap": "0",
+              "earliestShortageDate": null,
+              "maxResourceUtilization": "36.2",
+              "overloadedResourceCount": 0,
+              "changedWorkOrderCount": 1,
+              "actionCost": "0"
+            }
+          },
+          {
+            "scenarioCode": "BASELINE_CURRENT",
+            "feasible": true,
+            "infeasibleReasons": [],
+            "rank": 3,
+            "objectiveScore": "0.600000",
+            "kpis": {
+              "impactedOrderCount": 0,
+              "delayedWorkOrderCount": 1,
+              "totalTardinessDays": 4,
+              "maxTardinessDays": 4,
+              "makespanDate": "2026-10-14",
+              "shortageMaterialCount": 0,
+              "totalShortageGap": "0",
+              "earliestShortageDate": null,
+              "maxResourceUtilization": "85.0",
+              "overloadedResourceCount": 0,
+              "changedWorkOrderCount": 0,
+              "actionCost": "0"
+            }
+          },
+          {
+            "scenarioCode": "APS_CR_EXPEDITE",
+            "feasible": false,
+            "infeasibleReasons": [
+              "NO_EXPEDITABLE_PURCHASE_LINE",
+              "MISSING_KPI"
+            ],
+            "rank": 4,
+            "objectiveScore": null,
+            "kpis": {
+              "impactedOrderCount": 0,
+              "delayedWorkOrderCount": 0,
+              "totalTardinessDays": 0,
+              "maxTardinessDays": 0,
+              "makespanDate": "2026-10-03",
+              "shortageMaterialCount": 0,
+              "totalShortageGap": "0",
+              "earliestShortageDate": null,
+              "maxResourceUtilization": "36.2",
+              "overloadedResourceCount": 0,
+              "changedWorkOrderCount": 1,
+              "actionCost": null
+            }
+          }
+        ],
+        "shortages": [
+          {
+            "materialId": "9007199254747029",
+            "gap": "0",
+            "onOrderQty": "1.0000",
+            "firstShortageDate": null
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "DELIVERY-030",
+      "bizId": "9007199254745030",
+      "runId": "2104173828426059778",
+      "reasonCode": "LEXICAL_TIE_BREAK",
+      "currentGolden": {
+        "recommendedScenarioCode": "APS_EDD",
+        "requiredActions": [
+          "CREATE_SCHEDULE_PLAN_DRAFT"
+        ]
+      },
+      "proposedGolden": {
+        "recommendedScenarioCode": "APS_CR",
+        "requiredActions": [
+          "CREATE_SCHEDULE_PLAN_DRAFT"
+        ]
+      },
+      "facts": {
+        "scenarios": [
+          {
+            "scenarioCode": "APS_CR",
+            "feasible": true,
+            "infeasibleReasons": [],
+            "rank": 1,
+            "objectiveScore": "0.100000",
+            "kpis": {
+              "impactedOrderCount": 0,
+              "delayedWorkOrderCount": 0,
+              "totalTardinessDays": 0,
+              "maxTardinessDays": 0,
+              "makespanDate": "2026-10-03",
+              "shortageMaterialCount": 0,
+              "totalShortageGap": "0",
+              "earliestShortageDate": null,
+              "maxResourceUtilization": "36.2",
+              "overloadedResourceCount": 0,
+              "changedWorkOrderCount": 1,
+              "actionCost": "0"
+            }
+          },
+          {
+            "scenarioCode": "APS_EDD",
+            "feasible": true,
+            "infeasibleReasons": [],
+            "rank": 2,
+            "objectiveScore": "0.100000",
+            "kpis": {
+              "impactedOrderCount": 0,
+              "delayedWorkOrderCount": 0,
+              "totalTardinessDays": 0,
+              "maxTardinessDays": 0,
+              "makespanDate": "2026-10-03",
+              "shortageMaterialCount": 0,
+              "totalShortageGap": "0",
+              "earliestShortageDate": null,
+              "maxResourceUtilization": "36.2",
+              "overloadedResourceCount": 0,
+              "changedWorkOrderCount": 1,
+              "actionCost": "0"
+            }
+          },
+          {
+            "scenarioCode": "BASELINE_CURRENT",
+            "feasible": true,
+            "infeasibleReasons": [],
+            "rank": 3,
+            "objectiveScore": "0.600000",
+            "kpis": {
+              "impactedOrderCount": 0,
+              "delayedWorkOrderCount": 1,
+              "totalTardinessDays": 4,
+              "maxTardinessDays": 4,
+              "makespanDate": "2026-10-14",
+              "shortageMaterialCount": 0,
+              "totalShortageGap": "0",
+              "earliestShortageDate": null,
+              "maxResourceUtilization": "85.0",
+              "overloadedResourceCount": 0,
+              "changedWorkOrderCount": 0,
+              "actionCost": "0"
+            }
+          },
+          {
+            "scenarioCode": "APS_CR_EXPEDITE",
+            "feasible": false,
+            "infeasibleReasons": [
+              "NO_EXPEDITABLE_PURCHASE_LINE",
+              "MISSING_KPI"
+            ],
+            "rank": 4,
+            "objectiveScore": null,
+            "kpis": {
+              "impactedOrderCount": 0,
+              "delayedWorkOrderCount": 0,
+              "totalTardinessDays": 0,
+              "maxTardinessDays": 0,
+              "makespanDate": "2026-10-03",
+              "shortageMaterialCount": 0,
+              "totalShortageGap": "0",
+              "earliestShortageDate": null,
+              "maxResourceUtilization": "36.2",
+              "overloadedResourceCount": 0,
+              "changedWorkOrderCount": 1,
+              "actionCost": null
+            }
+          }
+        ],
+        "shortages": [
+          {
+            "materialId": "9007199254747030",
+            "gap": "0",
+            "onOrderQty": "1.0000",
+            "firstShortageDate": null
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "DELIVERY-031",
+      "bizId": "9007199254745031",
+      "runId": "2104173728949751809",
+      "reasonCode": "LEXICAL_TIE_BREAK",
+      "currentGolden": {
+        "recommendedScenarioCode": "APS_EDD",
+        "requiredActions": [
+          "CREATE_SCHEDULE_PLAN_DRAFT"
+        ]
+      },
+      "proposedGolden": {
+        "recommendedScenarioCode": "APS_CR",
+        "requiredActions": [
+          "CREATE_SCHEDULE_PLAN_DRAFT"
+        ]
+      },
+      "facts": {
+        "scenarios": [
+          {
+            "scenarioCode": "APS_CR",
+            "feasible": true,
+            "infeasibleReasons": [],
+            "rank": 1,
+            "objectiveScore": "0.100000",
+            "kpis": {
+              "impactedOrderCount": 0,
+              "delayedWorkOrderCount": 0,
+              "totalTardinessDays": 0,
+              "maxTardinessDays": 0,
+              "makespanDate": "2026-10-03",
+              "shortageMaterialCount": 0,
+              "totalShortageGap": "0",
+              "earliestShortageDate": null,
+              "maxResourceUtilization": "36.2",
+              "overloadedResourceCount": 0,
+              "changedWorkOrderCount": 1,
+              "actionCost": "0"
+            }
+          },
+          {
+            "scenarioCode": "APS_EDD",
+            "feasible": true,
+            "infeasibleReasons": [],
+            "rank": 2,
+            "objectiveScore": "0.100000",
+            "kpis": {
+              "impactedOrderCount": 0,
+              "delayedWorkOrderCount": 0,
+              "totalTardinessDays": 0,
+              "maxTardinessDays": 0,
+              "makespanDate": "2026-10-03",
+              "shortageMaterialCount": 0,
+              "totalShortageGap": "0",
+              "earliestShortageDate": null,
+              "maxResourceUtilization": "36.2",
+              "overloadedResourceCount": 0,
+              "changedWorkOrderCount": 1,
+              "actionCost": "0"
+            }
+          },
+          {
+            "scenarioCode": "BASELINE_CURRENT",
+            "feasible": true,
+            "infeasibleReasons": [],
+            "rank": 3,
+            "objectiveScore": "0.600000",
+            "kpis": {
+              "impactedOrderCount": 0,
+              "delayedWorkOrderCount": 1,
+              "totalTardinessDays": 4,
+              "maxTardinessDays": 4,
+              "makespanDate": "2026-10-14",
+              "shortageMaterialCount": 0,
+              "totalShortageGap": "0",
+              "earliestShortageDate": null,
+              "maxResourceUtilization": "85.0",
+              "overloadedResourceCount": 0,
+              "changedWorkOrderCount": 0,
+              "actionCost": "0"
+            }
+          },
+          {
+            "scenarioCode": "APS_CR_EXPEDITE",
+            "feasible": false,
+            "infeasibleReasons": [
+              "NO_EXPEDITABLE_PURCHASE_LINE",
+              "MISSING_KPI"
+            ],
+            "rank": 4,
+            "objectiveScore": null,
+            "kpis": {
+              "impactedOrderCount": 0,
+              "delayedWorkOrderCount": 0,
+              "totalTardinessDays": 0,
+              "maxTardinessDays": 0,
+              "makespanDate": "2026-10-03",
+              "shortageMaterialCount": 0,
+              "totalShortageGap": "0",
+              "earliestShortageDate": null,
+              "maxResourceUtilization": "36.2",
+              "overloadedResourceCount": 0,
+              "changedWorkOrderCount": 1,
+              "actionCost": null
+            }
+          }
+        ],
+        "shortages": [
+          {
+            "materialId": "9007199254747031",
+            "gap": "0",
+            "onOrderQty": "1.0000",
+            "firstShortageDate": null
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "DELIVERY-032",
+      "bizId": "9007199254745032",
+      "runId": "2104173762147667969",
+      "reasonCode": "LEXICAL_TIE_BREAK",
+      "currentGolden": {
+        "recommendedScenarioCode": "APS_EDD",
+        "requiredActions": [
+          "CREATE_SCHEDULE_PLAN_DRAFT"
+        ]
+      },
+      "proposedGolden": {
+        "recommendedScenarioCode": "APS_CR",
+        "requiredActions": [
+          "CREATE_SCHEDULE_PLAN_DRAFT"
+        ]
+      },
+      "facts": {
+        "scenarios": [
+          {
+            "scenarioCode": "APS_CR",
+            "feasible": true,
+            "infeasibleReasons": [],
+            "rank": 1,
+            "objectiveScore": "0.100000",
+            "kpis": {
+              "impactedOrderCount": 0,
+              "delayedWorkOrderCount": 0,
+              "totalTardinessDays": 0,
+              "maxTardinessDays": 0,
+              "makespanDate": "2026-10-03",
+              "shortageMaterialCount": 0,
+              "totalShortageGap": "0",
+              "earliestShortageDate": null,
+              "maxResourceUtilization": "36.2",
+              "overloadedResourceCount": 0,
+              "changedWorkOrderCount": 1,
+              "actionCost": "0"
+            }
+          },
+          {
+            "scenarioCode": "APS_EDD",
+            "feasible": true,
+            "infeasibleReasons": [],
+            "rank": 2,
+            "objectiveScore": "0.100000",
+            "kpis": {
+              "impactedOrderCount": 0,
+              "delayedWorkOrderCount": 0,
+              "totalTardinessDays": 0,
+              "maxTardinessDays": 0,
+              "makespanDate": "2026-10-03",
+              "shortageMaterialCount": 0,
+              "totalShortageGap": "0",
+              "earliestShortageDate": null,
+              "maxResourceUtilization": "36.2",
+              "overloadedResourceCount": 0,
+              "changedWorkOrderCount": 1,
+              "actionCost": "0"
+            }
+          },
+          {
+            "scenarioCode": "BASELINE_CURRENT",
+            "feasible": true,
+            "infeasibleReasons": [],
+            "rank": 3,
+            "objectiveScore": "0.600000",
+            "kpis": {
+              "impactedOrderCount": 0,
+              "delayedWorkOrderCount": 1,
+              "totalTardinessDays": 4,
+              "maxTardinessDays": 4,
+              "makespanDate": "2026-10-14",
+              "shortageMaterialCount": 0,
+              "totalShortageGap": "0",
+              "earliestShortageDate": null,
+              "maxResourceUtilization": "85.0",
+              "overloadedResourceCount": 0,
+              "changedWorkOrderCount": 0,
+              "actionCost": "0"
+            }
+          },
+          {
+            "scenarioCode": "APS_CR_EXPEDITE",
+            "feasible": false,
+            "infeasibleReasons": [
+              "NO_EXPEDITABLE_PURCHASE_LINE",
+              "MISSING_KPI"
+            ],
+            "rank": 4,
+            "objectiveScore": null,
+            "kpis": {
+              "impactedOrderCount": 0,
+              "delayedWorkOrderCount": 0,
+              "totalTardinessDays": 0,
+              "maxTardinessDays": 0,
+              "makespanDate": "2026-10-03",
+              "shortageMaterialCount": 0,
+              "totalShortageGap": "0",
+              "earliestShortageDate": null,
+              "maxResourceUtilization": "36.2",
+              "overloadedResourceCount": 0,
+              "changedWorkOrderCount": 1,
+              "actionCost": null
+            }
+          }
+        ],
+        "shortages": [
+          {
+            "materialId": "9007199254747032",
+            "gap": "0",
+            "onOrderQty": "1.0000",
+            "firstShortageDate": null
+          }
+        ]
+      }
+    }
+  ]
+}

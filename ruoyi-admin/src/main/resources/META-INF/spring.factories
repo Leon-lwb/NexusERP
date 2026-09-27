@@ -1,0 +1,2 @@
+# 显式演示环境在任何资源组件初始化前核对最终配置。
+org.springframework.boot.env.EnvironmentPostProcessor=org.dromara.config.DecisionDemoEnvironmentGuard

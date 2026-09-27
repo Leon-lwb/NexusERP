@@ -1,0 +1,161 @@
+[
+  {
+    "name": "BASELINE_CAPTURE",
+    "passed": true,
+    "evidence": {
+      "count": 40
+    },
+    "time": "2026-09-27T13:28:30.436Z"
+  },
+  {
+    "name": "CONTROL001_VERSION_AND_HASH",
+    "passed": true,
+    "evidence": {
+      "runId": "2104198732882001921",
+      "versionCode": 500,
+      "hashCode": 500
+    },
+    "time": "2026-09-27T13:28:30.960Z"
+  },
+  {
+    "name": "CONTROL001_SOURCE_STALE",
+    "passed": true,
+    "evidence": {
+      "code": 500,
+      "runId": "2104198732882001921",
+      "status": "STALE",
+      "executionFlowId": null,
+      "actions": [
+        {
+          "id": "2104198831213264897",
+          "type": "SEND_EXPEDITE_NOTICE",
+          "approval": "PROPOSED",
+          "execution": "NOT_STARTED",
+          "resultBizId": null
+        },
+        {
+          "id": "2104198831221653506",
+          "type": "CREATE_PURCHASE_REQUISITION_DRAFT",
+          "approval": "PROPOSED",
+          "execution": "NOT_STARTED",
+          "resultBizId": null
+        },
+        {
+          "id": "2104198831225847810",
+          "type": "CREATE_SCHEDULE_PLAN_DRAFT",
+          "approval": "PROPOSED",
+          "execution": "NOT_STARTED",
+          "resultBizId": null
+        }
+      ]
+    },
+    "time": "2026-09-27T13:28:31.967Z"
+  },
+  {
+    "name": "CONTROL002_READ_ONLY_USER",
+    "passed": false,
+    "error": "READER_QUERY_NOT_VALID",
+    "time": "2026-09-27T13:28:32.157Z"
+  },
+  {
+    "name": "CONTROL002_TENANT_BOUNDARY",
+    "passed": true,
+    "evidence": {
+      "ownQueryFixtureId": "9100001",
+      "ownCode": 200,
+      "foreignCodes": [
+        500,
+        500,
+        500
+      ],
+      "targetId": "2104198671833907202"
+    },
+    "time": "2026-09-27T13:28:33.002Z"
+  },
+  {
+    "name": "CONTROL002_FORBIDDEN_ACTION",
+    "passed": true,
+    "evidence": {
+      "injection": "system-copy action type changed, no execution bypass",
+      "approveCode": 200,
+      "runId": "2104198645900525569",
+      "status": "APPROVED",
+      "executionFlowId": "2104201529757155330",
+      "actions": [
+        {
+          "id": "2104198745137758209",
+          "type": "PUBLISH_SCHEDULE_PLAN",
+          "approval": "APPROVED",
+          "execution": "NOT_STARTED",
+          "resultBizId": null
+        }
+      ]
+    },
+    "time": "2026-09-27T13:28:35.721Z"
+  },
+  {
+    "name": "CONTROL004_CONCURRENT_APPROVAL_AND_IDEMPOTENCY",
+    "passed": false,
+    "error": "STATE_TIMEOUT",
+    "time": "2026-09-27T13:30:11.154Z"
+  },
+  {
+    "name": "CONTROL005_PARTIAL_SUCCESS",
+    "passed": false,
+    "error": "STATE_TIMEOUT",
+    "time": "2026-09-27T13:31:46.617Z"
+  },
+  {
+    "name": "CONTROL005_REAL_COMPENSATION",
+    "passed": false,
+    "error": "STATE_TIMEOUT",
+    "time": "2026-09-27T13:33:22.231Z"
+  },
+  {
+    "name": "CONTROL005_NON_DRAFT_NOT_DELETED",
+    "passed": false,
+    "error": "REAL_VERIFY_NOT_OBSERVED",
+    "time": "2026-09-27T13:33:42.539Z"
+  },
+  {
+    "name": "CONTROL005_VERSION_NOT_DELETED",
+    "passed": true,
+    "evidence": {
+      "postRealVerificationInjection": true,
+      "mutation": "version",
+      "businessId": "2104202827118297089",
+      "businessRow": {
+        "status": "DRAFT",
+        "deleted": "0",
+        "version": 1
+      },
+      "runId": "2104198747583037441",
+      "status": "FAILED",
+      "executionFlowId": "2104202826866638850",
+      "actions": [
+        {
+          "id": "2104198876373336065",
+          "type": "CREATE_PURCHASE_REQUISITION_DRAFT",
+          "approval": "APPROVED",
+          "execution": "COMPENSATE_FAILED",
+          "resultBizId": "2104202827118297089"
+        }
+      ]
+    },
+    "time": "2026-09-27T13:33:43.786Z"
+  },
+  {
+    "name": "CONTROL003_MODEL_UNAVAILABLE",
+    "passed": false,
+    "error": "DUMMY_MODEL_REJECTED",
+    "time": "2026-09-27T13:33:44.042Z"
+  },
+  {
+    "name": "STOCK_UNCHANGED",
+    "passed": true,
+    "evidence": {
+      "checksum": "3845202052"
+    },
+    "time": "2026-09-27T13:33:44.184Z"
+  }
+]
