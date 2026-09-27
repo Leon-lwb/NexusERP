@@ -21,7 +21,7 @@ export interface FlowNodeData {
   timeoutSeconds?: number;
 }
 
-/** 画布节点类型（宽松 Node 结构，避免 @vue-flow Node 泛型深实例化） */
+/** 画布节点类型（宽松 Node 结构，避免 @vue-flow 节点 泛型深实例化） */
 export interface FlowCanvasNode {
   id: string;
   type?: string;
@@ -32,7 +32,7 @@ export interface FlowCanvasNode {
   hidden?: boolean;
 }
 
-/** 节点分组（对齐 n8n node groups 的简化版：包围框 + 标题栏，成员为普通节点） */
+/** 节点分组（对齐 n8n 节点分组 的简化版：包围框 + 标题栏，成员为普通节点） */
 export interface FlowGroup {
   id: string;
   name: string;
@@ -73,6 +73,10 @@ export const useFlowStore = defineStore('aiFlow', () => {
   const flowId = ref<string | number | null>(null);
   /** 是否未保存变更（返回/离开时确认；保存成功或加载流程后清除） */
   const dirty = ref(false);
+  /**
+   * 系统图 JSON 保持逐字节不变，自动坐标仅用于展示。
+   */
+  const displayOnlyConfigJson = ref<string | null>(null);
   /** 节点分组（视图状态，不随 config 保存） */
   const groups = ref<FlowGroup[]>([]);
   /** 当前选中的分组 ID（高亮边框；Delete 解除分组） */
@@ -93,6 +97,7 @@ export const useFlowStore = defineStore('aiFlow', () => {
     selectedNodeId.value = null;
     nodeStatusMap.value = {};
     currentInstanceId.value = null;
+    displayOnlyConfigJson.value = null;
     nodeRunCache.value = {};
     groups.value = [];
     selectedGroupId.value = null;
@@ -109,6 +114,7 @@ export const useFlowStore = defineStore('aiFlow', () => {
    * <p>对齐契约：{nodes:[{id,type,position,data}], edges:[{id,source,target,sourceHandle,targetHandle}]}</p>
    */
   function toConfigJson(): string {
+    if (displayOnlyConfigJson.value !== null && !dirty.value) return displayOnlyConfigJson.value;
     const data = {
       // 便利贴是本地视图标注，不随流程保存（后端无此节点类型）
       nodes: nodes.value
@@ -145,16 +151,31 @@ export const useFlowStore = defineStore('aiFlow', () => {
    * 从后端 config_json 加载画布
    * @param configJson 后端存储的 JSON
    */
-  function fromConfigJson(configJson: string) {
+  function fromConfigJson(configJson: string, options?: { displayOnlyLayout?: boolean }) {
+    displayOnlyConfigJson.value = null;
     try {
       const data = JSON.parse(configJson);
       const rawNodes = Array.isArray(data.nodes) ? data.nodes : [];
       const rawEdges = Array.isArray(data.edges) ? data.edges : [];
+      const validPosition = (n: Record<string, any>) =>
+        Array.isArray(n.position) && n.position.length === 2 && Number.isFinite(n.position[0]) && Number.isFinite(n.position[1]);
+      const missingPosition = rawNodes.some((n: Record<string, any>) => !validPosition(n));
+      const overlappingPosition = rawNodes.some(
+        (n: Record<string, any>, index: number) =>
+          validPosition(n) &&
+          rawNodes
+            .slice(index + 1)
+            .some(
+              (other: Record<string, any>) =>
+                validPosition(other) && Math.abs(n.position[0] - other.position[0]) < 160 && Math.abs(n.position[1] - other.position[1]) < 80
+            )
+      );
+      const needsLayout = options?.displayOnlyLayout && (missingPosition || overlappingPosition);
 
       nodes.value = rawNodes.map((n: Record<string, any>) => ({
         id: n.id,
         type: 'flow-node',
-        position: Array.isArray(n.position) ? { x: n.position[0], y: n.position[1] } : { x: 0, y: 0 },
+        position: validPosition(n) ? { x: n.position[0], y: n.position[1] } : { x: 0, y: 0 },
         data: {
           label: n.data?.label ?? n.id,
           type: n.type,
@@ -176,6 +197,8 @@ export const useFlowStore = defineStore('aiFlow', () => {
         markerEnd: 'arrowclosed',
         ...(e.loop ? { loop: true } : {})
       }));
+      if (needsLayout) autoLayout();
+      if (options?.displayOnlyLayout) displayOnlyConfigJson.value = configJson;
       // 分组/折叠是视图状态，不随配置保存——加载时重置
       groups.value = [];
       selectedGroupId.value = null;
@@ -276,7 +299,7 @@ export const useFlowStore = defineStore('aiFlow', () => {
     return node;
   }
 
-  /* ==================== 节点分组（对齐 n8n node groups 简化版） ==================== */
+  /* ==================== 节点分组（对齐 n8n 节点分组 简化版） ==================== */
 
   /** 节点默认尺寸（与 FlowNode .flow-node 一致，包围框计算用） */
   const NODE_W = 160;
@@ -504,7 +527,8 @@ export const useFlowStore = defineStore('aiFlow', () => {
     const layer: Record<string, number> = {};
     nodes.value.forEach((n) => (layer[n.id] = 0));
     let changed = true;
-    while (changed) {
+    let passes = 0;
+    while (changed && passes++ < nodes.value.length) {
       changed = false;
       for (const e of edges.value) {
         if ((e as any).loop) continue;

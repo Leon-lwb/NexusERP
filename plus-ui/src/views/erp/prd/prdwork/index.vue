@@ -127,9 +127,10 @@
           <dict-tag :options="so_order_priority" :value="scope.row.priority" />
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="340" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
+          <el-button link type="warning" @click.stop="handleDeliveryDecision(scope.row)" v-hasPermi="['ai:decision:run']">交付风险分析</el-button>
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['prd:work:edit']">修改</el-button>
           <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['prd:work:remove']">删除</el-button>
           <el-button
@@ -209,10 +210,21 @@ import {
   getWorkProcId
 } from '@/api/erp/prd/work';
 import { useRouter } from 'vue-router';
+import { runDeliveryRisk } from '@/api/ai/decision';
 import type { FormInstance } from 'element-plus';
 import { useCrud } from '@/composables/useCrud';
 
 const router = useRouter();
+async function handleDeliveryDecision(row: { woId?: string | number }) {
+  if (row.woId == null) return;
+  try {
+    const res = await runDeliveryRisk({ bizType: 'WORK_ORDER', bizId: String(row.woId), horizonDays: 30, triggerType: 'MANUAL' });
+    await router.push({ path: '/ai/decision/detail', query: { runId: String(res.data.runId) } });
+  } catch {
+    proxy?.$modal.msgError('交付风险分析未能启动，请检查权限或稍后重试');
+  }
+}
+
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { prd_source_type, so_order_priority, prd_wo_status, prd_backflush_flag, bd_quality_status } = toRefs<any>(
   proxy.useDict('prd_source_type', 'so_order_priority', 'prd_wo_status', 'prd_backflush_flag', 'bd_quality_status')

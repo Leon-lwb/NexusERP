@@ -97,7 +97,7 @@ export interface UseAreaCascadeOptions {
  * 省 / 市 / 区县 / 街道 四级联动。
  *
  * 关键点：后端 provinceAreaId/cityAreaId/districtAreaId 是 Long（JSON 数字），
- * 而 streetId 是 Java String（JSON 字符串）。因此一律用 String(id) 比较，
+ * 而 streetId 是 Java 字符串（JSON 字符串）。因此一律用 String(id) 比较，
  * 避免 `number === string` 恒为 false 导致街道名退化成数字代码。
  *
  * @param form 表单 ref，需含 provinceAreaId / cityAreaId / districtAreaId / streetId 及目标地址字段

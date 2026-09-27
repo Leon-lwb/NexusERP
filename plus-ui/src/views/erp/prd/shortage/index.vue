@@ -21,6 +21,7 @@
       </el-col>
       <el-col :span="14" style="text-align: right">
         <el-button icon="Refresh" @click="handleRefresh" v-hasPermi="['prd:shortage:query']">重新推演</el-button>
+        <el-button type="primary" icon="MagicStick" @click="handleDeliveryDecision" v-hasPermi="['ai:decision:run']">交付风险分析</el-button>
       </el-col>
     </el-row>
 
@@ -65,7 +66,7 @@
           <el-button link type="primary" icon="Promotion" @click="handleUrge(scope.row)" v-if="scope.row.hasRisk" v-hasPermi="['prd:shortage:query']"
             >去催货</el-button
           >
-          <el-button link type="primary" icon="MagicStick" @click="handleAiAnalyze" v-hasPermi="['prd:shortage:query']">AI 分析</el-button>
+          <el-button link type="primary" icon="MagicStick" @click="handleAiAnalyze" v-hasPermi="['prd:shortage:query']">AI 文字解读</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -79,6 +80,7 @@
 import { predictShortage, predictShortageRefresh } from '@/api/erp/prd/shortage';
 import type { PrdShortageRiskVO } from '@/api/erp/prd/shortage';
 import AiChatDrawer from '@/components/ai/AiChatDrawer.vue';
+import { runDeliveryRisk } from '@/api/ai/decision';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 
@@ -132,6 +134,15 @@ function handleUrge(row: PrdShortageRiskVO) {
   const route = router.resolve({ path: '/puExec/order', query: { materialCode: row.materialCode } });
   if (route.href) {
     window.open(route.href, '_self');
+  }
+}
+
+async function handleDeliveryDecision() {
+  try {
+    const res = await runDeliveryRisk({ bizType: 'SHORTAGE_HORIZON', bizId: undefined, horizonDays: days.value, triggerType: 'MANUAL' });
+    await router.push({ path: '/ai/decision/detail', query: { runId: String(res.data.runId) } });
+  } catch {
+    proxy?.$modal.msgError('交付风险分析未能启动，请检查权限或稍后重试');
   }
 }
 

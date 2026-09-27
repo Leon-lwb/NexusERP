@@ -3,10 +3,15 @@ import { dispatchRealtimeMessage } from '@/utils/realtimeDispatch';
 
 const MAX_RETRIES = 5;
 const RECONNECT_DELAY = 5000;
+let connected = false;
+/**
+ * 仅在共享事件流不可用时，通知决策详情启用有界轮询。
+ */
+export const isSseConnected = () => connected;
 
 /**
  * 基于 fetch 的 SSE 客户端。
- * <p>EventSource 无法自定义请求头，旧实现把 token 拼在 URL query（易进日志/代理缓存）；
+ * <p>EventSource 无法自定义请求头，旧实现把 token 拼在 地址查询参数（易进日志/代理缓存）；
  * 这里用 fetch + ReadableStream 手动解析 SSE 帧，鉴权方式与普通 API 一致（Authorization 请求头）。</p>
  *
  * @param url SSE 端点地址
@@ -34,6 +39,7 @@ const connectSSE = (url: string, onMessage: (data: string) => void) => {
         }
         // 连接成功后重置重试计数
         retries = 0;
+        connected = true;
         const reader = res.body.getReader();
         const decoder = new TextDecoder('utf-8');
         let buffer = '';
@@ -59,6 +65,7 @@ const connectSSE = (url: string, onMessage: (data: string) => void) => {
         // 服务端断开：视为连接失败，走重连
         throw new Error('SSE stream closed by server');
       } catch {
+        connected = false;
         if (closed || controller.signal.aborted) {
           return;
         }
@@ -74,6 +81,7 @@ const connectSSE = (url: string, onMessage: (data: string) => void) => {
 
   return () => {
     closed = true;
+    connected = false;
     controller.abort();
   };
 };

@@ -26,9 +26,9 @@ import { useFlowStore, type FlowCanvasNode } from './useFlowStore';
  */
 
 const props = defineProps<{
-  /** 画布节点（vue-flow Node 结构，data 含 label/type/status） */
+  /** 画布节点（vue-flow 节点 结构，data 含 label/type/status） */
   nodes: FlowCanvasNode[];
-  /** 画布边（vue-flow Edge 结构，sourceHandle/targetHandle 编码 outputs/main/0） */
+  /** 画布边（vue-flow 连线 结构，sourceHandle/targetHandle 编码 outputs/main/0） */
   edges: Edge[];
   /** 是否只读（运行监控重放用） */
   readonly?: boolean;
@@ -49,6 +49,9 @@ const emit = defineEmits<{
   (e: 'shortcut-help'): void;
 }>();
 
+const canvasEl = ref<HTMLElement | null>(null);
+let canvasResizeObserver: ResizeObserver | undefined;
+let fitFrame: number | undefined;
 const store = useFlowStore();
 const { screenToFlowCoordinate, viewport, fitBounds, getSelectedNodes, addSelectedNodes, removeSelectedNodes } = useVueFlow();
 
@@ -57,7 +60,7 @@ const { screenToFlowCoordinate, viewport, fitBounds, getSelectedNodes, addSelect
 /** 接收 FlowNode 浮动工具栏动作：focus 就地 fitBounds，其余转发父组件 */
 function onNodeActionEvent(e: Event) {
   const detail = (e as CustomEvent).detail;
-  if (!detail?.nodeId) return;
+  if (!detail?.nodeId || (props.readonly && detail.action !== 'focus')) return;
   if (detail.action === 'focus') {
     const node = props.nodes.find((n) => n.id === detail.nodeId);
     if (node) {
@@ -77,10 +80,22 @@ function onNodeActionEvent(e: Event) {
 onMounted(() => {
   window.addEventListener('keydown', onKeyDown);
   window.addEventListener('flow-node-action', onNodeActionEvent);
+  // 移除节点面板后，nextTick 会扩大只读画布；Vue Flow 通过 ResizeObserver 获取尺寸。
+  canvasResizeObserver = new ResizeObserver(() => {
+    if (!props.readonly || !props.nodes.length) return;
+    if (fitFrame !== undefined) cancelAnimationFrame(fitFrame);
+    fitFrame = requestAnimationFrame(() => {
+      fitFrame = undefined;
+      fitAllNodes();
+    });
+  });
+  if (canvasEl.value) canvasResizeObserver.observe(canvasEl.value);
 });
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', onKeyDown);
   window.removeEventListener('flow-node-action', onNodeActionEvent);
+  canvasResizeObserver?.disconnect();
+  if (fitFrame !== undefined) cancelAnimationFrame(fitFrame);
 });
 
 /* ==================== 时间线播放小球（跟随当前播放节点移动） ==================== */
@@ -113,7 +128,7 @@ watch(
 /** slot 注册自定义节点（n8n 同款方式，非 nodeTypes 对象） */
 const nodeTypes = { 'flow-node': FlowNode, 'flow-note': FlowNote };
 
-/** 连线校验：source 与 target 的 handle type 必须相反（outputs→inputs） */
+/** 连线校验：source 与 target 的 连接端类型 必须相反（outputs→inputs） */
 function isValidConnection(connection: Connection): boolean {
   const source = connection.sourceHandle ?? '';
   const target = connection.targetHandle ?? '';
@@ -185,6 +200,7 @@ function onNodeMouseLeave() {
 
 /** 节点拖入（NodePalette HTML5 draggable） */
 function onDrop(event: DragEvent) {
+  if (props.readonly) return;
   const type = event.dataTransfer?.getData('application/x-flow-node-type');
   if (!type) return;
   const config = getNodeTypeConfig(type);
@@ -389,11 +405,23 @@ function onKeyDown(e: KeyboardEvent) {
   }
 }
 
-defineExpose({ onRemoveNode });
+/**
+ * 异步加载系统图后重新适配视图；初始化适配发生在接口返回之前。
+ */
+function fitAllNodes() {
+  if (!props.nodes.length) return;
+  const left = Math.min(...props.nodes.map((node) => node.position.x));
+  const top = Math.min(...props.nodes.map((node) => node.position.y));
+  const right = Math.max(...props.nodes.map((node) => node.position.x + NODE_WIDTH));
+  const bottom = Math.max(...props.nodes.map((node) => node.position.y + 80));
+  fitBounds({ x: left, y: top, width: right - left, height: bottom - top }, { padding: 0.18 });
+}
+
+defineExpose({ onRemoveNode, fitAllNodes });
 </script>
 
 <template>
-  <div class="flow-canvas" @drop="onDrop" @dragover="onDragOver">
+  <div ref="canvasEl" class="flow-canvas" @drop="onDrop" @dragover="onDragOver">
     <VueFlow
       :nodes="props.nodes"
       :edges="props.edges"

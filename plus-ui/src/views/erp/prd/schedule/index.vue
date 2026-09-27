@@ -143,7 +143,17 @@
       <template #header>
         <div class="gantt-drawer-header">
           <span>{{ ganttTitle }}</span>
-          <el-button type="primary" plain icon="MagicStick" size="small" @click="handleAiInterpret">AI 解读本方案</el-button>
+          <el-button
+            type="primary"
+            plain
+            icon="MagicStick"
+            size="small"
+            :disabled="!selectedPlanId"
+            @click="handleDeliveryDecision"
+            v-hasPermi="['ai:decision:run']"
+            >交付风险分析</el-button
+          >
+          <el-button link type="info" size="small" @click="handleAiInterpret">AI 文字解读</el-button>
         </div>
       </template>
       <div v-loading="ganttLoading" class="gantt-body">
@@ -221,8 +231,11 @@ import { SchedulePlanVO, SchedulePlanQuery, ScheduleRunForm, ScheduleGanttVO } f
 import * as echarts from 'echarts';
 import dayjs from 'dayjs';
 import AiChatDrawer from '@/components/ai/AiChatDrawer.vue';
+import { runDeliveryRisk } from '@/api/ai/decision';
+import { useRouter } from 'vue-router';
 
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
+const router = useRouter();
 
 const loading = ref(false);
 const running = ref(false);
@@ -335,6 +348,24 @@ const handleDelete = async () => {
   await delSchedule(ids.value);
   proxy?.$modal.msgSuccess('删除成功');
   getList();
+};
+
+/**
+ * 先执行确定性分析，不将计划的雪花标识转换为 Number。
+ */
+const handleDeliveryDecision = async () => {
+  if (!selectedPlanId.value) return;
+  try {
+    const res = await runDeliveryRisk({
+      bizType: 'SCHEDULE_PLAN',
+      bizId: String(selectedPlanId.value),
+      horizonDays: gantt.value?.horizonDays || 30,
+      triggerType: 'MANUAL'
+    });
+    await router.push({ path: '/ai/decision/detail', query: { runId: String(res.data.runId) } });
+  } catch {
+    proxy?.$modal.msgError('交付风险分析未能启动，请检查权限或稍后重试');
+  }
 };
 
 /** AI 解读: 唤起全局 AI 助手并预填分析指令(Agent 调排产工具作答) */

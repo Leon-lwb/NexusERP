@@ -128,9 +128,10 @@
           <dict-tag :options="so_order_status" :value="scope.row.orderStatus" />
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="208" :show-overflow-tooltip="false">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="340" :show-overflow-tooltip="false">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
+          <el-button link type="warning" @click.stop="handleDeliveryDecision(scope.row)" v-hasPermi="['ai:decision:run']">交付风险分析</el-button>
           <el-button
             link
             type="primary"
@@ -206,10 +207,21 @@ import {
   cancelOrder
 } from '@/api/erp/so/orderheader';
 import { useRouter } from 'vue-router';
+import { runDeliveryRisk } from '@/api/ai/decision';
 import type { FormInstance } from 'element-plus';
 import { useCrud } from '@/composables/useCrud';
 
 const router = useRouter();
+async function handleDeliveryDecision(row: { soId?: string | number }) {
+  if (row.soId == null) return;
+  try {
+    const res = await runDeliveryRisk({ bizType: 'SALES_ORDER', bizId: String(row.soId), horizonDays: 30, triggerType: 'MANUAL' });
+    await router.push({ path: '/ai/decision/detail', query: { runId: String(res.data.runId) } });
+  } catch {
+    proxy?.$modal.msgError('交付风险分析未能启动，请检查权限或稍后重试');
+  }
+}
+
 const { proxy } = getCurrentInstance() as ComponentInternalInstance;
 const { so_credit_status, so_order_status, so_currency_type } = toRefs<any>(proxy.useDict('so_credit_status', 'so_order_status', 'so_currency_type'));
 
@@ -269,7 +281,7 @@ function handleSelectionChange(selection: any[]) {
 
 /**
  * 列表数据被整体替换（搜索 / 重置 / 翻页 / 删除后刷新）时清空勾选。
- * 原实现只在 selection-change 里记录，搜索或重置后 ids/selectedRow 仍指向旧行，
+ * 原实现只在 框选变化事件 里记录，搜索或重置后 ids/selectedRow 仍指向旧行，
  * 导致工具栏「确认/履行/关闭/取消/修改/删除」按一张已不在列表里的单据判断可用态。
  */
 watch(orderheaderList, () => {

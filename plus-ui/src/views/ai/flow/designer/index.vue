@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Search } from '@element-plus/icons-vue';
@@ -40,6 +40,10 @@ const router = useRouter();
 const store = useFlowStore();
 
 const loading = ref(false);
+/**
+ * 系统决策图仅使用本地展示坐标，不持久化画布编辑。
+ */
+const isSystemDecisionFlow = ref(false);
 const saving = ref(false);
 const running = ref(false);
 // 流程级测试入参：持久化到 localStorage，刷新/重开设计器可复用（P11-C ③）
@@ -165,7 +169,7 @@ const advancedExpanded = ref<string[]>(['config']);
 
 /* ==================== 框选工具栏（多选后浮出：分组/删除） ==================== */
 
-/** 当前框选节点（FlowCanvas selection-change） */
+/** 当前框选节点（FlowCanvas 框选变化事件） */
 const selectedNodes = ref<Array<{ id: string; data: { label?: string } }>>([]);
 
 function onSelectionChange(nodes: any[]) {
@@ -191,7 +195,7 @@ function removeSelected() {
 
 const shortcutHelpVisible = ref(false);
 
-/** 快捷键清单（与 FlowCanvas onKeyDown 实现一致） */
+/** 快捷键清单（与 FlowCanvas 的键盘事件 实现一致） */
 const SHORTCUTS: Array<{ keys: string; desc: string }> = [
   { keys: 'Ctrl+S', desc: '保存流程' },
   { keys: 'Ctrl+Enter', desc: '测试运行流程' },
@@ -285,13 +289,19 @@ async function loadFlow(flowId: string | number) {
   try {
     const res = await getFlow(flowId);
     const flow = res.data;
+    isSystemDecisionFlow.value = typeof flow.flowKey === 'string' && flow.flowKey.startsWith('system_delivery_risk_');
+    selectedNodes.value = [];
     store.flowName = flow.flowName;
     store.flowId = flow.id;
     if (flow.configJson) {
       store.clearHistory();
-      store.fromConfigJson(flow.configJson);
+      store.fromConfigJson(flow.configJson, { displayOnlyLayout: isSystemDecisionFlow.value });
     }
     store.clearDirty();
+    if (isSystemDecisionFlow.value) {
+      await nextTick();
+      canvasRef.value?.fitAllNodes();
+    }
   } finally {
     loading.value = false;
   }
@@ -315,6 +325,10 @@ function validateRequired(): { nodeId: string; nodeLabel: string; paramLabel: st
 
 /** 保存流程 */
 async function saveFlow(showTip = true) {
+  if (isSystemDecisionFlow.value) {
+    ElMessage.warning('系统托管的工业决策流程仅供查看，不能通过通用设计器保存');
+    return false;
+  }
   if (!store.flowName.trim()) {
     ElMessage.warning('请输入流程名称');
     return false;
@@ -372,7 +386,7 @@ async function publish() {
   }
 }
 
-/** 测试运行流程（对齐 n8n Execute Workflow：无需发布，用画布当前配置） */
+/** 测试运行流程（对齐 n8n 执行流程：无需发布，用画布当前配置） */
 async function run() {
   if (!store.flowId) {
     ElMessage.warning('请先保存流程');
@@ -518,7 +532,7 @@ function viewDetail() {
 
 /** 自动布局（BFS 分层） */
 function autoLayout() {
-  if (!store.nodes.length) return;
+  if (isSystemDecisionFlow.value || !store.nodes.length) return;
   store.snapshot();
   store.autoLayout();
   store.markDirty();
@@ -736,7 +750,7 @@ function saveTestInput() {
   ElMessage.success('已保存测试入参');
 }
 
-/* ==================== 版本历史（对齐 n8n Version History：列表/只读预览/恢复） ==================== */
+/* ==================== 版本历史（对齐 n8n 版本历史：列表/只读预览/恢复） ==================== */
 
 /** 版本历史抽屉可见性 */
 const versionDrawerVisible = ref(false);
@@ -869,7 +883,7 @@ onBeforeUnmount(() => {
     <!-- 顶栏 -->
     <div class="flow-designer__toolbar">
       <el-button @click="goBack">返回</el-button>
-      <el-input v-model="store.flowName" placeholder="流程名称" class="flow-designer__name" maxlength="50">
+      <el-input v-model="store.flowName" :disabled="isSystemDecisionFlow" placeholder="流程名称" class="flow-designer__name" maxlength="50">
         <template #suffix>
           <el-tooltip v-if="store.dirty" content="有未保存的修改" placement="bottom">
             <span class="flow-designer__dirty-dot" />
@@ -877,13 +891,14 @@ onBeforeUnmount(() => {
         </template>
       </el-input>
       <div class="flow-designer__spacer" />
-      <el-button @click="quickAddVisible = true">+ 添加节点</el-button>
-      <el-button @click="store.addNote()">便利贴</el-button>
-      <el-button :loading="saving" @click="saveFlow()">保存</el-button>
-      <el-button type="primary" @click="publish">发布</el-button>
+      <el-tag v-if="isSystemDecisionFlow" type="info" effect="plain">系统托管 · 只读预览</el-tag>
+      <el-button :disabled="isSystemDecisionFlow" @click="quickAddVisible = true">+ 添加节点</el-button>
+      <el-button :disabled="isSystemDecisionFlow" @click="store.addNote()">便利贴</el-button>
+      <el-button :loading="saving" :disabled="isSystemDecisionFlow" @click="saveFlow()">保存</el-button>
+      <el-button type="primary" :disabled="isSystemDecisionFlow" @click="publish">发布</el-button>
       <el-button @click="openVersionHistory">版本历史</el-button>
-      <el-button @click="autoLayout">自动布局</el-button>
-      <el-button type="success" :disabled="running" @click="run">测试运行</el-button>
+      <el-button :disabled="isSystemDecisionFlow" @click="autoLayout">自动布局</el-button>
+      <el-button type="success" :disabled="isSystemDecisionFlow || running" @click="run">测试运行</el-button>
       <el-button type="danger" :disabled="!running || !store.currentInstanceId" @click="stop"> 停止 </el-button>
       <el-tooltip content="快捷键帮助 (?)" placement="bottom">
         <el-button circle @click="shortcutHelpVisible = true">?</el-button>
@@ -892,13 +907,14 @@ onBeforeUnmount(() => {
 
     <div class="flow-designer__body">
       <!-- 左：节点面板 -->
-      <NodePalette />
+      <NodePalette v-if="!isSystemDecisionFlow" />
       <!-- 中：画布 -->
       <div class="flow-designer__canvas-wrap">
         <FlowCanvas
           ref="canvasRef"
           :nodes="store.nodes"
           :edges="store.edges"
+          :readonly="isSystemDecisionFlow"
           @update:nodes="onNodesChange"
           @update:edges="onEdgesChange"
           @node-click="onCanvasNodeClick"
@@ -908,7 +924,7 @@ onBeforeUnmount(() => {
           @shortcut-help="shortcutHelpVisible = true"
         />
         <!-- 框选工具栏（≥2 节点时浮出：分组/删除） -->
-        <div v-if="selectedNodes.length >= 2" class="flow-designer__selection-toolbar">
+        <div v-if="!isSystemDecisionFlow && selectedNodes.length >= 2" class="flow-designer__selection-toolbar">
           <span class="flow-designer__selection-count">{{ selectedNodes.length }} 个节点已选</span>
           <el-button type="primary" plain size="small" @click="groupSelected">分组 (Ctrl+G)</el-button>
           <el-button type="danger" plain size="small" @click="removeSelected">删除</el-button>
@@ -1164,7 +1180,7 @@ onBeforeUnmount(() => {
       </el-table>
     </el-dialog>
 
-    <!-- 版本历史抽屉（列表/恢复，对齐 n8n Version History） -->
+    <!-- 版本历史抽屉（列表/恢复，对齐 n8n 版本历史） -->
     <el-drawer v-model="versionDrawerVisible" title="版本历史" size="520px">
       <div v-loading="versionLoading" class="flow-designer__versions">
         <el-alert

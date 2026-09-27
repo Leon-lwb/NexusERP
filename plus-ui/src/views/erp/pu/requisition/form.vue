@@ -72,8 +72,8 @@
           </el-col>
           <el-col :span="8">
             <el-form-item label="来源类型" prop="sourceType">
-              <el-select v-model="form.sourceType" placeholder="请选择来源类型">
-                <el-option v-for="dict in pu_source_type" :key="dict.value" :label="dict.label" :value="dict.value" />
+              <el-select v-model="form.sourceType" :disabled="form.sourceType === 'AI_DECISION'" placeholder="请选择来源类型">
+                <el-option v-for="dict in sourceTypeOptions" :key="dict.value" :label="dict.label" :value="dict.value" />
               </el-select>
             </el-form-item>
           </el-col>
@@ -244,6 +244,10 @@ const form = ref<any>({
   remark: null,
   puPurchaseRequisitionLineList: []
 }); // 表单数据
+// AI 来源仅供展示，普通表单不得冒充工业决策流程。
+const sourceTypeOptions = computed(() =>
+  (pu_source_type.value || []).filter((dict: any) => dict.value !== 'AI_DECISION' || form.value.sourceType === 'AI_DECISION')
+);
 const lineList = ref<any[]>([]); // 请购明细列表
 const checkedLines = ref<any[]>([]); // 已选中的明细行
 const currentMaterialIndex = ref(-1); // 当前选择的物料索引

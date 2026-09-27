@@ -325,6 +325,10 @@
                 </el-col>
               </el-row>
             </section>
+
+            <section v-show="activeSection === 'decision'">
+              <DecisionSettings v-model="form.decision" />
+            </section>
           </el-form>
         </el-card>
       </el-col>
@@ -334,7 +338,9 @@
 
 <script setup lang="ts" name="AiConfig">
 import { getAiConfig, updateAiConfig } from '@/api/ai/config';
-import { AiConfig } from '@/api/ai/config';
+import type { AiConfig } from '@/api/ai/config';
+import { createDefaultDecisionConfig, normalizeDecisionConfig, validateDecisionConfig } from './decisionValidation';
+import DecisionSettings from './DecisionSettings.vue';
 import { listModelOptions } from '@/api/ai/model';
 import { AiModel } from '@/api/ai/model';
 
@@ -347,7 +353,8 @@ const groups = [
   { key: 'vector', label: '向量存储', icon: 'Coin' },
   { key: 'search', label: '联网搜索', icon: 'Search' },
   { key: 'flow', label: '流程编排', icon: 'Share' },
-  { key: 'kg', label: '知识图谱', icon: 'Connection' }
+  { key: 'kg', label: '知识图谱', icon: 'Connection' },
+  { key: 'decision', label: '工业决策', icon: 'DataAnalysis' }
 ];
 
 /** 表单字段前缀 → 分组 key 映射（校验失败时自动切到出错分组） */
@@ -356,7 +363,8 @@ const FIELD_GROUP: Record<string, string> = {
   vectorStore: 'vector',
   webSearch: 'search',
   flow: 'flow',
-  knowledgeGraph: 'kg'
+  knowledgeGraph: 'kg',
+  decision: 'decision'
 };
 
 const loading = ref(true);
@@ -409,7 +417,8 @@ const initFormData: AiConfig = {
     labelPropagationMaxIter: 8,
     maxCommunities: 50,
     maxCommunitiesForGlobal: 50
-  }
+  },
+  decision: createDefaultDecisionConfig()
 };
 
 const form = reactive<AiConfig>(JSON.parse(JSON.stringify(initFormData)));
@@ -449,7 +458,10 @@ const handleMenuSelect = (key: string) => {
 
 /** 应用后端返回的配置到表单并刷新快照 */
 const applyConfig = (data: AiConfig) => {
-  Object.assign(form, data);
+  // 与旧版本响应兼容，同时保留企业知识库雪花 ID 的十进制字符串。
+  Object.assign(form, data, {
+    decision: normalizeDecisionConfig(data.decision)
+  });
   apiKeySet.value = !!data.webSearch.apiKeySet;
   form.webSearch.apiKey = '';
   vectorConnSnapshot.value = `${data.vectorStore.type}|${data.vectorStore.milvusUrl}|${data.vectorStore.milvusCollectionName}|${data.vectorStore.milvusDimension}`;
@@ -490,6 +502,12 @@ const submitForm = () => {
       proxy?.$modal.msgWarning('请检查表单填写');
       return;
     }
+    const decisionError = validateDecisionConfig(form.decision);
+    if (decisionError) {
+      activeSection.value = 'decision';
+      proxy?.$modal.msgWarning(decisionError);
+      return;
+    }
     if (vectorStoreChanged.value) {
       await proxy?.$modal.confirm('向量库连接/类型/维度已修改，既有知识库向量可能不可检索，确认保存？');
     }
@@ -497,6 +515,9 @@ const submitForm = () => {
     if (!payload.webSearch.apiKey) {
       // 留空 = 保留原值
       delete payload.webSearch.apiKey;
+    }
+    if (!payload.decision.policyKnowledgeId) {
+      payload.decision.policyKnowledgeId = null;
     }
     saving.value = true;
     try {
