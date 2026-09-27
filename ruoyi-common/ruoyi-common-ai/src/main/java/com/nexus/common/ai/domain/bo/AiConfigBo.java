@@ -48,6 +48,11 @@ public class AiConfigBo {
     @Valid
     private KnowledgeGraphBo knowledgeGraph;
 
+    /** 工业决策配置（整表提交，防止将未验证的权重持久化） */
+    @NotNull
+    @Valid
+    private DecisionBo decision;
+
     /**
      * SQL 安全配置（AI 数据查询的白名单前缀/超时/行数上限）
      */
@@ -113,7 +118,7 @@ public class AiConfigBo {
         @Pattern(regexp = "tavily|bing", message = "搜索厂商仅支持 tavily / bing")
         private String provider;
 
-        /** 搜索 API Key（写专用：空/null 表示保留原值） */
+        /** 搜索 接口密钥（写专用：空/null 表示保留原值） */
         private String apiKey;
 
         /** 返回结果数 */
@@ -212,4 +217,42 @@ public class AiConfigBo {
         @Max(1000)
         private Integer maxCommunitiesForGlobal;
     }
+
+    @Data
+    public static class DecisionBo {
+        @NotNull private Boolean enabled;
+        @NotNull @Min(1) @Max(16) private Integer maxConcurrentRuns;
+        @NotNull @Min(2) @Max(8) private Integer maxScenarios;
+        @NotNull @Min(10) @Max(300) private Integer analysisTimeoutSeconds;
+        @NotNull @Min(5) @Max(120) private Integer actionTimeoutSeconds;
+        @NotNull @Min(30) @Max(3600) private Integer staleThresholdSeconds;
+        @NotEmpty private List<@NotBlank @Pattern(regexp = "LOW|MEDIUM|HIGH|CRITICAL") String> requireApprovalLevels;
+        @NotNull private Boolean allowAutoLowRiskNotify;
+        @NotNull private Boolean benchmarkMode;
+        @NotNull @Min(1) @Max(90) private Integer defaultHorizonDays;
+        @NotNull @Min(1) @Max(90) private Integer maxHorizonDays;
+        @jakarta.validation.constraints.Positive private Long policyKnowledgeId;
+        @NotNull @Valid private DecisionRiskBo risk;
+        @NotNull @Valid private DecisionRankingBo ranking;
+    }
+
+    @Data
+    public static class DecisionRiskBo {
+        @NotNull @Min(0) @Max(100) private Integer tardinessPoints;
+        @NotNull @Min(0) @Max(100) private Integer shortagePoints;
+        @NotNull @Min(0) @Max(100) private Integer capacityPoints;
+        @NotNull @Min(0) @Max(100) private Integer supplierPoints;
+    }
+
+    @Data
+    public static class DecisionRankingBo {
+        @NotNull @DecimalMin("0.0") @DecimalMax("1.0") private Double tardinessWeight;
+        @NotNull @DecimalMin("0.0") @DecimalMax("1.0") private Double delayedCountWeight;
+        @NotNull @DecimalMin("0.0") @DecimalMax("1.0") private Double shortageWeight;
+        @NotNull @DecimalMin("0.0") @DecimalMax("1.0") private Double utilizationWeight;
+        @NotNull @DecimalMin("0.0") @DecimalMax("1.0") private Double actionCostWeight;
+        @NotNull @DecimalMin("0.0") @DecimalMax("1.0") private Double planChangeWeight;
+        @NotNull @DecimalMin("0.0") @DecimalMax("1.0") private Double infeasibleWeight;
+    }
+
 }

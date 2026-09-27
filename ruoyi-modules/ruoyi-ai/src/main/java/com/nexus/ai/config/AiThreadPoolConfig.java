@@ -105,6 +105,19 @@ public class AiThreadPoolConfig {
         return executor;
     }
 
+    /** 工业决策专用有界线程池；满载时拒绝，不回退到 HTTP 请求线程。 */
+    @Bean("decisionExecutor")
+    public Executor decisionExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(2);
+        executor.setMaxPoolSize(4);
+        executor.setQueueCapacity(20);
+        executor.setThreadNamePrefix("ai-decision-");
+        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.AbortPolicy());
+        executor.initialize();
+        return executor;
+    }
+
     /**
      * 定时清理 OutputChannel 注册表中的过期条目（每 10 分钟执行一次）
      * <p>防止 Agent 异常退出时注册表泄漏</p>

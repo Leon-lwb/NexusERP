@@ -2,6 +2,7 @@ package com.nexus.flow.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.nexus.flow.engine.FlowEngine;
+import com.nexus.flow.adapter.DecisionFlowAccessGuard;
 import com.nexus.common.flow.domain.bo.FlowInstanceBo;
 import com.nexus.common.flow.domain.vo.FlowInstanceVo;
 import com.nexus.common.flow.domain.vo.FlowNodeRunVo;
@@ -65,7 +66,7 @@ public class FlowInstanceController extends BaseController {
     }
 
     /**
-     * 查询实例的节点运行记录（按开始时间升序，含 input/output JSON 快照）
+     * 查询实例的节点运行记录（按开始时间升序，含 输入及输出 JSON 快照）
      * <p>权限标识：{@code ai:flow:list}</p>
      *
      * @param instanceId 实例ID
@@ -87,6 +88,9 @@ public class FlowInstanceController extends BaseController {
     @SaCheckPermission("ai:flow:run")
     @PostMapping("/{instanceId}/retry")
     public R<Long> retry(@PathVariable Long instanceId) {
+        var instance = aiFlowInstanceService.selectById(instanceId);
+        if (instance == null || DecisionFlowAccessGuard.protectedConfig(instance.getConfigSnapshot()))
+            return R.fail("工业系统实例不可通过通用入口重试");
         try {
             String tenantIdStr = LoginHelper.getTenantId();
             Long userId = LoginHelper.getUserId();

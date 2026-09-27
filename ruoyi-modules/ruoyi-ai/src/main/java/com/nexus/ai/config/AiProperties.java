@@ -43,6 +43,20 @@ public class AiProperties {
     /** 知识图谱配置 */
     private KnowledgeGraphConfig knowledgeGraph = new KnowledgeGraphConfig();
 
+    /** 工业决策运行与评分配置 */
+    private volatile DecisionConfig decision = new DecisionConfig();
+
+
+    /** 返回防御副本，避免调用方绕过配置校验直接修改运行态。 */
+    public DecisionConfig getDecision() {
+        return DecisionConfig.copyOf(decision);
+    }
+
+    /** 原子发布经校验的不可共享配置快照。 */
+    public void setDecision(DecisionConfig decision) {
+        this.decision = DecisionConfig.copyOf(decision);
+    }
+
     @Data
     public static class VectorStoreConfig {
         /** 向量存储类型：milvus / inmemory */
@@ -60,7 +74,7 @@ public class AiProperties {
         /** 集合名称前缀 */
         private String collectionName = "AiKnowledge";
 
-        /** 向量维度（legacy 未配置 embedding_dimension 的 Embedding 模型的全局兜底默认值） */
+        /** 向量维度（legacy 未配置 embedding_dimension 的 嵌入模型的全局兜底默认值） */
         private int dimension = 1024;
     }
 
@@ -70,7 +84,7 @@ public class AiProperties {
         private boolean enabled = true;
         /** 搜索厂商：tavily | bing */
         private String provider = "tavily";
-        /** 搜索 API Key */
+        /** 搜索 接口密钥 */
         private String apiKey = "";
         /** 返回结果数 */
         private int topN = 5;
@@ -85,6 +99,8 @@ public class AiProperties {
     public static class FlowConfig {
         /** 是否启用并行分支执行（默认 false 串行；含循环的图强制串行） */
         private boolean parallel = false;
+        /** 工业交付决策 LLM 节点单次等待时长（秒，30-120）；仅影响新启动的分析流程。 */
+        private int industrialDecisionLlmTimeoutSeconds = 90;
     }
 
     /**
@@ -117,4 +133,98 @@ public class AiProperties {
         /** 全局检索参与 map 的社区上限（超出按 entity_count 取 topN） */
         private int maxCommunitiesForGlobal = 50;
     }
+
+    /** 工业交付风险决策：yml 初始值，运行时可由 ai_config 决策分组覆盖。 */
+    @Data
+    public static class DecisionConfig {
+        private boolean enabled = true;
+        private int maxConcurrentRuns = 4;
+        private int maxScenarios = 4;
+        private int analysisTimeoutSeconds = 60;
+        private int actionTimeoutSeconds = 30;
+        private int staleThresholdSeconds = 300;
+        private List<String> requireApprovalLevels = List.of("HIGH", "CRITICAL");
+        private boolean allowAutoLowRiskNotify = true;
+        private boolean benchmarkMode = false;
+        private int defaultHorizonDays = 30;
+        private int maxHorizonDays = 90;
+        private Long policyKnowledgeId;
+        private DecisionRiskConfig risk = new DecisionRiskConfig();
+        private DecisionRankingConfig ranking = new DecisionRankingConfig();
+
+        public static DecisionConfig copyOf(DecisionConfig source) {
+            if (source == null) {
+                return new DecisionConfig();
+            }
+            DecisionConfig copy = new DecisionConfig();
+            copy.enabled = source.enabled;
+            copy.maxConcurrentRuns = source.maxConcurrentRuns;
+            copy.maxScenarios = source.maxScenarios;
+            copy.analysisTimeoutSeconds = source.analysisTimeoutSeconds;
+            copy.actionTimeoutSeconds = source.actionTimeoutSeconds;
+            copy.staleThresholdSeconds = source.staleThresholdSeconds;
+            copy.requireApprovalLevels = source.requireApprovalLevels == null
+                ? null : List.copyOf(source.requireApprovalLevels);
+            copy.allowAutoLowRiskNotify = source.allowAutoLowRiskNotify;
+            copy.benchmarkMode = source.benchmarkMode;
+            copy.defaultHorizonDays = source.defaultHorizonDays;
+            copy.maxHorizonDays = source.maxHorizonDays;
+            copy.policyKnowledgeId = source.policyKnowledgeId;
+            copy.risk = DecisionRiskConfig.copyOf(source.risk);
+            copy.ranking = DecisionRankingConfig.copyOf(source.ranking);
+            return copy;
+        }
+    }
+
+    @Data
+    public static class DecisionRiskConfig {
+        private int tardinessPoints = 40;
+        private int shortagePoints = 30;
+        private int capacityPoints = 20;
+        private int supplierPoints = 10;
+
+        public int pointSum() {
+            return tardinessPoints + shortagePoints + capacityPoints + supplierPoints;
+        }
+
+        static DecisionRiskConfig copyOf(DecisionRiskConfig source) {
+            if (source == null) return null;
+            DecisionRiskConfig copy = new DecisionRiskConfig();
+            copy.tardinessPoints = source.tardinessPoints;
+            copy.shortagePoints = source.shortagePoints;
+            copy.capacityPoints = source.capacityPoints;
+            copy.supplierPoints = source.supplierPoints;
+            return copy;
+        }
+    }
+
+    @Data
+    public static class DecisionRankingConfig {
+        private double tardinessWeight = 0.30;
+        private double delayedCountWeight = 0.20;
+        private double shortageWeight = 0.15;
+        private double utilizationWeight = 0.10;
+        private double actionCostWeight = 0.10;
+        private double planChangeWeight = 0.10;
+        private double infeasibleWeight = 0.05;
+
+        public double weightSum() {
+            return tardinessWeight + delayedCountWeight + shortageWeight + utilizationWeight
+                + actionCostWeight + planChangeWeight + infeasibleWeight;
+        }
+
+        static DecisionRankingConfig copyOf(DecisionRankingConfig source) {
+            if (source == null) return null;
+            DecisionRankingConfig copy = new DecisionRankingConfig();
+            copy.tardinessWeight = source.tardinessWeight;
+            copy.delayedCountWeight = source.delayedCountWeight;
+            copy.shortageWeight = source.shortageWeight;
+            copy.utilizationWeight = source.utilizationWeight;
+            copy.actionCostWeight = source.actionCostWeight;
+            copy.planChangeWeight = source.planChangeWeight;
+            copy.infeasibleWeight = source.infeasibleWeight;
+            return copy;
+        }
+    }
+
 }

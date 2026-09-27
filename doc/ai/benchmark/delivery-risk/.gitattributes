@@ -1,0 +1,10 @@
+# v2 在 Windows 与 Linux 检出时保持相同内容字节。
+/cases.jsonl text eol=lf
+/expected-results.jsonl text eol=lf
+# v1 保留真实测试的 CRLF 工作区字节，禁止归一化历史归档。
+/golden/versions/v1/*.jsonl -text whitespace=cr-at-eol
+/.gitattributes text eol=lf
+/golden/2026-09-27-v2-approval.json text eol=lf
+
+# 已提交的历史验收及原始审计证据不进行换行转换。
+/reports/** -text

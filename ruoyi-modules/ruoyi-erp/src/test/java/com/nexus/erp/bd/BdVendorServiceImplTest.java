@@ -45,7 +45,7 @@ class BdVendorServiceImplTest {
     @BeforeAll
     static void initTableInfo() {
         // LambdaQueryWrapper 解析 BdVendor::getStatus 依赖 TableInfo 的 lambda 缓存，
-        // 未初始化会抛 "can not find lambda cache for this entity"
+        // 未初始化会抛 "未找到当前实体的表达式缓存"
         MybatisConfiguration configuration = new MybatisConfiguration();
         MapperBuilderAssistant assistant = new MapperBuilderAssistant(configuration, "");
         TableInfoHelper.initTableInfo(assistant, BdVendor.class);

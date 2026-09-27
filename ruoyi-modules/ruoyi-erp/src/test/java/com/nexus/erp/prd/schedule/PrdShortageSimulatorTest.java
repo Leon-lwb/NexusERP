@@ -105,6 +105,25 @@ class PrdShortageSimulatorTest {
     }
 
     @Test
+    void shortageDemandDatesExcludeDemandAfterRecoveryAndAreImmutable() {
+        LocalDate firstDay = LocalDate.of(2026, 9, 24);
+        PrdShortageInput in = input("RECOVER", BigDecimal.ZERO, BigDecimal.ZERO);
+        in.addDemand(firstDay, bd("10"));
+        in.addArrival(firstDay.plusDays(1), bd("20"));
+        in.addDemand(firstDay.plusDays(2), bd("5"));
+
+        PrdShortageResult result = PrdShortageSimulator.simulate(in, firstDay);
+
+        assertEquals(firstDay, result.getEarliestShortageDate());
+        assertEquals(bd("10"), result.getMaxGap());
+        assertEquals(bd("20"), result.getOnOrderQty());
+        assertEquals(List.of(firstDay), result.getShortageDemandDates());
+        assertThrows(UnsupportedOperationException.class,
+            () -> result.getShortageDemandDates().add(firstDay.plusDays(2)));
+        assertEquals(List.of(), PrdShortageSimulator.simulate(
+            input("NO_DEMAND", BigDecimal.ZERO, BigDecimal.ZERO), firstDay).getShortageDemandDates());
+    }
+    @Test
     void simulateAllSortsByEarliestShortageDate() {
         PrdShortageInput noRisk = input("A", bd("100"), bd("0"));
         noRisk.addDemand(D1, bd("10"));

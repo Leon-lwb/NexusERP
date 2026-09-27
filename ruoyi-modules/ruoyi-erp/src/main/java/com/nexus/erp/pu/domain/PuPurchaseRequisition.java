@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.Version;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -72,8 +73,21 @@ public class PuPurchaseRequisition extends TenantEntity {
      */
     private String status;
 
+    /** AI决策运行ID */
+    private Long decisionRunId;
+
+    /** AI决策动作ID */
+    private Long decisionActionId;
+
+    /** 租户内决策幂等键 */
+    private String decisionIdempotencyKey;
+
     /** 选用的审批流ID */
     private Long selectFlowId;
+
+    /** 乐观锁版本 */
+    @Version
+    private Integer version = 0;
 
     /** 备注 */
     private String remark;

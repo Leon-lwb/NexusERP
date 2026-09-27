@@ -94,10 +94,28 @@ public class PrdSchedulePlanVo extends BaseEntity {
      */
     private String utilizationJson;
 
+    /** AI决策运行ID */
+    private Long decisionRunId;
+
+    /** AI决策动作ID */
+    private Long decisionActionId;
+
+    /** 租户内决策幂等键 */
+    private String decisionIdempotencyKey;
+
+    /** AI决策场景编码 */
+    private String decisionScenarioCode;
+
+    /** 显式工单ID十进制字符串JSON */
+    private String decisionWorkOrderIdsJson;
+
     /**
      * 状态: COMPLETED-已生成, PUBLISHED-已发布
      */
     private String status;
+
+    /** 乐观锁版本 */
+    private Integer version = 0;
 
     /**
      * 备注

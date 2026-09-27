@@ -5,14 +5,18 @@ import com.nexus.ai.config.AiProperties;
 import com.nexus.ai.service.kg.GraphStoreStrategy;
 import com.nexus.common.ai.domain.entity.AiKnowledge;
 import com.nexus.common.ai.domain.entity.AiKnowledgeChunk;
+import com.nexus.common.ai.domain.entity.AiKnowledgeDocument;
+import com.nexus.common.ai.decision.dto.RetrievalHit;
 import com.nexus.common.ai.domain.entity.AiKnowledgeGraph;
 import com.nexus.common.ai.domain.entity.AiKgEntity;
 import com.nexus.common.ai.domain.entity.AiKgRelation;
 import com.nexus.common.ai.domain.entity.AiModel;
 import com.nexus.common.ai.mapper.AiKnowledgeChunkMapper;
+import com.nexus.common.ai.mapper.AiKnowledgeDocumentMapper;
 import com.nexus.common.ai.service.IAiKnowledgeService;
 import com.nexus.common.ai.service.IAiModelService;
 import com.nexus.common.core.exception.ServiceException;
+import com.nexus.common.tenant.helper.TenantHelper;
 import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.store.embedding.EmbeddingMatch;
 import lombok.RequiredArgsConstructor;
@@ -43,6 +47,7 @@ public class RetrieverService {
     private final IAiModelService aiModelService;
     private final GraphStoreStrategy graphStoreStrategy;
     private final AiProperties aiProperties;
+    private final AiKnowledgeDocumentMapper documentMapper;
 
     /** 默认最大返回结果数 */
     private static final int DEFAULT_MAX_RESULTS = 5;
@@ -80,42 +85,100 @@ public class RetrieverService {
      * @return 相关片段内容列表
      */
     public List<String> retrieve(Long knowledgeId, String query, java.util.Map<String, Object> overrides) {
+        return retrieveHits(knowledgeId, query, overrides).stream().map(RetrievalHit::content).toList();
+    }
+
+    public List<RetrievalHit> retrieveHits(Long knowledgeId, String query) {
+        return retrieveHits(knowledgeId, query, null);
+    }
+
+    /**
+     * 结构化结果在倒数排名融合及可选重排过程中保留独立片段标识。
+     */
+    public List<RetrievalHit> retrieveHits(Long knowledgeId, String query, Map<String, Object> overrides) {
         AiKnowledge config = getKnowledgeConfig(knowledgeId);
         assertIndexReady(config);
-
-        // 应用参数覆盖
-        if (overrides != null) {
-            applyOverrides(config, overrides);
-        }
-
+        if (overrides != null) applyOverrides(config, overrides);
         int maxResults = config.getRetrieveLimit() != null ? config.getRetrieveLimit() : DEFAULT_MAX_RESULTS;
-        double minScore = config.getSimilarityThreshold() != null ? config.getSimilarityThreshold() : DEFAULT_MIN_SCORE;
-
-        // 启用重排序时扩大召回量
-        int expandFactor = (config.getEnableRerank() != null && config.getEnableRerank() == 1) ? RERANK_EXPANSION_FACTOR : 1;
-
-        List<String> results;
-        String embeddingModel = config.getEmbeddingModel();
-        if (config.getEnableHybrid() != null && config.getEnableHybrid() == 1) {
-            results = hybridRetrieve(knowledgeId, query, maxResults * expandFactor, minScore, config.getHybridAlpha(), embeddingModel);
-        } else {
-            results = vectorRetrieve(knowledgeId, query, maxResults * expandFactor, minScore, embeddingModel);
-        }
-
-        // 重排序阶段
-        if (config.getEnableRerank() != null && config.getEnableRerank() == 1 && results.size() > 1) {
+        double minScore = config.getSimilarityThreshold() != null
+            ? config.getSimilarityThreshold() : DEFAULT_MIN_SCORE;
+        int expand = config.getEnableRerank() != null && config.getEnableRerank() == 1
+            ? RERANK_EXPANSION_FACTOR : 1;
+        String model = config.getEmbeddingModel();
+        List<Candidate> candidates = config.getEnableHybrid() != null && config.getEnableHybrid() == 1
+            ? hybridRetrieveCandidates(knowledgeId, query, maxResults * expand, minScore,
+                config.getHybridAlpha(), model)
+            : vectorRetrieveCandidates(knowledgeId, query, maxResults * expand, minScore, model);
+        // 仅返回文本的重排接口无法区分内容相同的片段，保留原融合或向量顺序，
+        // 不得把选中的重复文本任意关联到某个文档。
+        boolean distinctTexts = candidates.stream().map(Candidate::content).distinct().count() == candidates.size();
+        if (config.getEnableRerank() != null && config.getEnableRerank() == 1
+            && candidates.size() > 1 && distinctTexts) {
             Long rerankModelId = null;
             if (config.getRerankModel() != null && !config.getRerankModel().isEmpty()) {
                 AiModel rerankModel = aiModelService.selectModelByName(config.getRerankModel());
-                if (rerankModel != null) {
-                    rerankModelId = rerankModel.getId();
-                }
+                if (rerankModel != null) rerankModelId = rerankModel.getId();
             }
-            results = rerankService.rerank(query, results, maxResults, rerankModelId);
-            log.info("[Retriever] 重排序完成: knowledgeId={}, 结果数={}", knowledgeId, results.size());
+            List<String> ordered = rerankService.rerank(query,
+                candidates.stream().map(Candidate::content).toList(), maxResults, rerankModelId);
+            candidates = restoreCandidatesByText(candidates, ordered);
+            log.info("[Retriever] 重排序完成: knowledgeId={}, 结果数={}", knowledgeId, candidates.size());
         }
+        List<Candidate> selected = candidates.subList(0, Math.min(maxResults, candidates.size()));
+        // 向量元数据可能落后于片段更新；声明规范来源前，先根据当前
+        // 租户过滤后的关系表行核验标识与文本。
+        Set<Long> chunkIds = selected.stream().map(Candidate::chunkId)
+            .filter(Objects::nonNull).collect(Collectors.toCollection(LinkedHashSet::new));
+        Map<Long, AiKnowledgeChunk> storedChunks = new HashMap<>();
+        if (!chunkIds.isEmpty()) {
+            List<AiKnowledgeChunk> current = chunkMapper.selectList(new LambdaQueryWrapper<AiKnowledgeChunk>()
+                .eq(AiKnowledgeChunk::getKnowledgeId, knowledgeId)
+                .in(AiKnowledgeChunk::getId, chunkIds));
+            if (current != null) current.forEach(chunk -> storedChunks.put(chunk.getId(), chunk));
+        }
+        Set<Long> documentIds = selected.stream().map(Candidate::documentId)
+            .filter(Objects::nonNull).collect(Collectors.toCollection(LinkedHashSet::new));
+        Map<Long, AiKnowledgeDocument> documents = new HashMap<>();
+        if (!documentIds.isEmpty()) {
+            documentMapper.selectList(new LambdaQueryWrapper<AiKnowledgeDocument>()
+                .eq(AiKnowledgeDocument::getKnowledgeId, knowledgeId)
+                .in(AiKnowledgeDocument::getId, documentIds)
+                .eq(AiKnowledgeDocument::getStatus, "2"))
+                .forEach(doc -> documents.put(doc.getId(), doc));
+        }
+        List<RetrievalHit> results = new ArrayList<>();
+        for (Candidate candidate : selected) {
+            AiKnowledgeDocument document = documents.get(candidate.documentId());
+            AiKnowledgeChunk currentChunk = storedChunks.get(candidate.chunkId());
+            Date versionTime = document == null ? null
+                : document.getUpdateTime() != null ? document.getUpdateTime() : document.getCreateTime();
+            String version = versionTime == null ? null : Long.toString(versionTime.getTime());
+            boolean verified = version != null && currentChunk != null
+                && Objects.equals(currentChunk.getKnowledgeId(), knowledgeId)
+                && Objects.equals(currentChunk.getDocumentId(), candidate.documentId())
+                && Objects.equals(currentChunk.getContent(), candidate.content());
+            // 兼容旧文本检索，同时明确标记不可验证的命中项。
+            results.add(new RetrievalHit(knowledgeId, candidate.documentId(), candidate.chunkId(),
+                document == null ? null : document.getFileName(), candidate.content(),
+                candidate.vectorScore(), candidate.keywordRank(), null, candidate.graphPath(), version,
+                null, verified ? candidate.sourceType() : "UNVERIFIED"));
+        }
+        return List.copyOf(results);
+    }
 
-        return results.subList(0, Math.min(maxResults, results.size()));
+    /**
+     * 旧重排接口仅返回文本；按文本维护先进先出队列，不将文本用作唯一键。
+     */
+    private static List<Candidate> restoreCandidatesByText(List<Candidate> candidates, List<String> ordered) {
+        Map<String, Deque<Candidate>> queues = new LinkedHashMap<>();
+        candidates.forEach(c -> queues.computeIfAbsent(c.content(), ignored -> new ArrayDeque<>()).addLast(c));
+        List<Candidate> result = new ArrayList<>();
+        if (ordered == null) return result;
+        for (String text : ordered) {
+            Deque<Candidate> queue = queues.get(text);
+            if (queue != null && !queue.isEmpty()) result.add(queue.removeFirst());
+        }
+        return result;
     }
 
     /**
@@ -165,7 +228,7 @@ public class RetrieverService {
      * @param query             查询文本
      * @param maxResults        最大返回结果数
      * @param minScore          最低相似度阈值
-     * @param embeddingModelName 使用的 Embedding 模型名称（可为 null，使用默认模型）
+     * @param embeddingModelName 使用的 嵌入模型名称（可为 null，使用默认模型）
      * @return 片段内容列表
      */
     private List<String> vectorRetrieve(Long knowledgeId, String query, int maxResults, double minScore, String embeddingModelName) {
@@ -186,69 +249,79 @@ public class RetrieverService {
      * @param maxResults        最大返回结果数
      * @param minScore          最低相似度阈值
      * @param alpha             混合检索权重（0=纯向量，1=纯关键词）
-     * @param embeddingModelName 使用的 Embedding 模型名称（可为 null）
+     * @param embeddingModelName 使用的 嵌入模型名称（可为 null）
      * @return 融合后的片段内容列表
      */
-    private List<String> hybridRetrieve(Long knowledgeId, String query, int maxResults, double minScore, Double alpha, String embeddingModelName) {
-        if (alpha == null) alpha = 0.5;
+    private List<Candidate> vectorRetrieveCandidates(Long knowledgeId, String query, int maxResults,
+                                                      double minScore, String embeddingModelName) {
+        List<EmbeddingMatch<TextSegment>> matches = vectorStoreService.search(
+            knowledgeId, query, maxResults, minScore, embeddingModelName);
+        return matches.stream().map(match -> candidate(knowledgeId, match)).toList();
+    }
 
-        // 1. 向量搜索
-        List<EmbeddingMatch<TextSegment>> vectorMatches = vectorStoreService.search(knowledgeId, query, maxResults, minScore, embeddingModelName);
-
-        // 2. MySQL 全文搜索
-        List<AiKnowledgeChunk> fulltextChunks = fulltextSearch(knowledgeId, query, maxResults);
-
-        // 3. RRF 融合
-        Map<Long, Double> scoreMap = new HashMap<>();
-        Map<Long, String> contentMap = new HashMap<>();
-
-        // 向量搜索结果打分
-        for (int i = 0; i < vectorMatches.size(); i++) {
-            EmbeddingMatch<TextSegment> match = vectorMatches.get(i);
-            String chunkIdStr = match.embedded().metadata().getString("chunkId");
-            Long chunkId = null;
-            if (chunkIdStr != null) {
-                try {
-                    chunkId = Long.parseLong(chunkIdStr);
-                } catch (NumberFormatException e) {
-                    log.warn("[Retriever] 向量搜索结果 chunkId 解析失败: {}", chunkIdStr);
-                }
-            }
-            if (chunkId != null) {
-                double rrfScore = (1 - alpha) * (1.0 / (RRF_K + i + 1));
-                scoreMap.merge(chunkId, rrfScore, Double::sum);
-                contentMap.putIfAbsent(chunkId, match.embedded().text());
-            }
+    private Candidate candidate(Long knowledgeId, EmbeddingMatch<TextSegment> match) {
+        var metadata = match.embedded().metadata();
+        Long foundKnowledge = parseId(metadata.getString("knowledgeId"));
+        if (foundKnowledge != null && !foundKnowledge.equals(knowledgeId)) {
+            throw new ServiceException("向量命中不属于当前知识库");
         }
+        return new Candidate(parseId(metadata.getString("chunkId")),
+            parseId(metadata.getString("documentId")), match.embedded().text(), match.score(),
+            null, null, "VECTOR");
+    }
 
-        // 全文搜索结果打分
-        for (int i = 0; i < fulltextChunks.size(); i++) {
-            AiKnowledgeChunk chunk = fulltextChunks.get(i);
-            double rrfScore = alpha * (1.0 / (RRF_K + i + 1));
-            scoreMap.merge(chunk.getId(), rrfScore, Double::sum);
-            contentMap.putIfAbsent(chunk.getId(), chunk.getContent());
+    private static Long parseId(String raw) {
+        if (raw == null) return null;
+        try { return Long.valueOf(raw); }
+        catch (NumberFormatException ex) { return null; }
+    }
+
+    /**
+     * 向量、MySQL 全文及可选图谱召回，倒数排名融合严格以片段标识为键。
+     */
+    private List<Candidate> hybridRetrieveCandidates(Long knowledgeId, String query, int maxResults,
+                                                     double minScore, Double alpha, String embeddingModelName) {
+        double keywordWeight = alpha == null ? 0.5 : alpha;
+        List<EmbeddingMatch<TextSegment>> vectors = vectorStoreService.search(
+            knowledgeId, query, maxResults, minScore, embeddingModelName);
+        List<AiKnowledgeChunk> fulltext = fulltextSearch(knowledgeId, query, maxResults);
+        Map<Long, Double> scores = new HashMap<>();
+        Map<Long, Candidate> candidates = new HashMap<>();
+        for (int i = 0; i < vectors.size(); i++) {
+            Candidate c = candidate(knowledgeId, vectors.get(i));
+            if (c.chunkId() == null) continue; // 沿用旧混合检索的融合范围。
+            scores.merge(c.chunkId(), (1 - keywordWeight) / (RRF_K + i + 1.0), Double::sum);
+            candidates.putIfAbsent(c.chunkId(), c);
         }
-
-        // 3. 图谱召回（第三路，并入 RRF）
+        for (int i = 0; i < fulltext.size(); i++) {
+            AiKnowledgeChunk chunk = fulltext.get(i);
+            if (chunk.getId() == null) continue;
+            scores.merge(chunk.getId(), keywordWeight / (RRF_K + i + 1.0), Double::sum);
+            Candidate old = candidates.get(chunk.getId());
+            candidates.put(chunk.getId(), new Candidate(chunk.getId(), chunk.getDocumentId(),
+                chunk.getContent(), old == null ? null : old.vectorScore(),
+                i + 1, old == null ? null : old.graphPath(), "HYBRID"));
+        }
         AiProperties.KnowledgeGraphConfig graphCfg = aiProperties.getKnowledgeGraph();
         if (graphCfg.isEnabled()) {
             List<AiKnowledgeChunk> graphChunks = performGraphRecall(knowledgeId, query, maxResults, graphCfg);
-            double gw = graphCfg.getGraphWeight();
             for (int i = 0; i < graphChunks.size(); i++) {
-                AiKnowledgeChunk c = graphChunks.get(i);
-                scoreMap.merge(c.getId(), gw * (1.0 / (RRF_K + i + 1)), Double::sum);
-                contentMap.putIfAbsent(c.getId(), c.getContent());
+                AiKnowledgeChunk chunk = graphChunks.get(i);
+                if (chunk.getId() == null) continue;
+                scores.merge(chunk.getId(), graphCfg.getGraphWeight() / (RRF_K + i + 1.0), Double::sum);
+                Candidate old = candidates.get(chunk.getId());
+                candidates.put(chunk.getId(), new Candidate(chunk.getId(), chunk.getDocumentId(),
+                    chunk.getContent(), old == null ? null : old.vectorScore(),
+                    old == null ? null : old.keywordRank(), null, "GRAPH"));
             }
         }
-
-        // 按 RRF 分数降序排列
-        return scoreMap.entrySet().stream()
-            .sorted(Map.Entry.<Long, Double>comparingByValue().reversed())
-            .limit(maxResults)
-            .map(entry -> contentMap.get(entry.getKey()))
-            .filter(Objects::nonNull)
-            .collect(Collectors.toList());
+        return scores.entrySet().stream().sorted(Map.Entry.<Long, Double>comparingByValue().reversed()
+                .thenComparing(Map.Entry::getKey)).limit(maxResults)
+            .map(entry -> candidates.get(entry.getKey())).filter(Objects::nonNull).toList();
     }
+
+    private record Candidate(Long chunkId, Long documentId, String content, Double vectorScore,
+                             Integer keywordRank, String graphPath, String sourceType) { }
 
     /**
      * MySQL 全文检索（ngram 分词器）
@@ -260,8 +333,10 @@ public class RetrieverService {
      */
     private List<AiKnowledgeChunk> fulltextSearch(Long knowledgeId, String query, int limit) {
         try {
+            String tenantId = TenantHelper.getTenantId();
+            if (tenantId == null || tenantId.isBlank()) return List.of(); // JDBC 绕过 MyBatis 租户插件，必须显式隔离。
             String sql = "SELECT id, knowledge_id, document_id, content, chunk_index FROM ai_knowledge_chunk " +
-                "WHERE knowledge_id = ? AND MATCH(content) AGAINST(? IN NATURAL LANGUAGE MODE) " +
+                "WHERE knowledge_id = ? AND tenant_id = ? AND MATCH(content) AGAINST(? IN NATURAL LANGUAGE MODE) " +
                 "ORDER BY MATCH(content) AGAINST(? IN NATURAL LANGUAGE MODE) DESC LIMIT ?";
             return jdbcTemplate.query(sql,
                 (rs, rowNum) -> {
@@ -273,7 +348,7 @@ public class RetrieverService {
                     chunk.setChunkIndex(rs.getInt("chunk_index"));
                     return chunk;
                 },
-                knowledgeId, query, query, limit);
+                knowledgeId, tenantId, query, query, limit);
         } catch (Exception e) {
             log.warn("[RetrieverService] MySQL 全文检索失败，回退到纯向量检索: {}", e.getMessage());
             return List.of();
@@ -366,7 +441,7 @@ public class RetrieverService {
     }
 
     /**
-     * 图谱局部召回（local search）：实体链接 → 1 跳邻居 → 回溯来源 chunk
+     * 图谱局部召回（局部搜索）：实体链接 → 1 跳邻居 → 回溯来源 chunk
      * <p>仅图谱构建完成（status=2）时生效；失败回退空列表，不阻断 RRF 融合</p>
      *
      * @param knowledgeId 知识库ID
@@ -433,7 +508,7 @@ public class RetrieverService {
                 }
             }
 
-            // 按来源实体 max mention 降序，截 limit
+            // 按来源实体 最大提及次数 降序，截 limit
             List<Long> ordered = candidateChunkIds.stream()
                 .sorted(Comparator.comparingLong((Long c) -> chunkToMaxMention.getOrDefault(c, 0L)).reversed())
                 .limit(limit)

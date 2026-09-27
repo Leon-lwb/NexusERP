@@ -72,6 +72,14 @@ public class FlowEngineImpl implements FlowEngine {
     @Override
     public Long start(Flow flow, JsonNode input, String triggerType,
                       String tenantIdStr, Long userId, String userName) {
+        // 无效或不可信图不得遗留运行中的实例。
+        FlowGraph graph = validatedGraph(flow);
+        if ("DECISION".equals(triggerType)) {
+            if (flow.getFlowKey() == null || !flow.getFlowKey().startsWith("system_delivery_risk_"))
+                throw new IllegalArgumentException("决策执行必须使用持久化的系统流程");
+        } else {
+            com.nexus.flow.adapter.DecisionFlowAccessGuard.requireGeneral(flow);
+        }
         // 1. 建实例（RUNNING）落库
         FlowInstance instance = new FlowInstance();
         instance.setFlowId(flow.getId());
@@ -87,10 +95,6 @@ public class FlowEngineImpl implements FlowEngine {
             return instance.getId();
         });
 
-        // 2. 解析图 + 校验
-        FlowGraph graph = FlowGraph.parse(flow.getConfigJson());
-        graph.validate(nodeRegistry::contains);
-
         // 3. 注册停止标志 + 事件序号
         stopRegistry.register(instanceId);
         seqMap.put(instanceId, new AtomicLong(0));
@@ -101,12 +105,25 @@ public class FlowEngineImpl implements FlowEngine {
         return instanceId;
     }
 
+    private FlowGraph validatedGraph(Flow flow) {
+        if (flow == null || flow.getConfigJson() == null || flow.getConfigJson().isBlank())
+            throw new IllegalArgumentException("流程缺少可信的完整配置");
+        FlowGraph graph = FlowGraph.parse(flow.getConfigJson());
+        graph.validate(nodeRegistry::contains);
+        for (FlowNodeDef node : graph.getNodes().values()) {
+            FlowNodeProvider provider = nodeRegistry.getProvider(node.getType());
+            if (provider == null) throw new IllegalArgumentException("未注册节点: " + node.getType());
+            provider.validateConfig(node.getConfig());
+        }
+        return graph;
+    }
+
     @Override
     public Long startToNode(Flow flow, JsonNode input, String triggerType,
                             String tenantIdStr, Long userId, String userName, String destinationNodeId) {
         // 1. 解析图 + 校验 + 目标节点存在性（先于建实例，避免非法请求留孤儿 RUNNING 实例）
-        FlowGraph graph = FlowGraph.parse(flow.getConfigJson());
-        graph.validate(nodeRegistry::contains);
+        FlowGraph graph = validatedGraph(flow);
+        com.nexus.flow.adapter.DecisionFlowAccessGuard.requireGeneral(flow);
         if (!graph.getNodes().containsKey(destinationNodeId)) {
             throw new IllegalArgumentException("目标节点不存在: " + destinationNodeId);
         }
@@ -413,6 +430,8 @@ public class FlowEngineImpl implements FlowEngine {
         if (instance == null) {
             throw new IllegalArgumentException("实例不存在: " + instanceId);
         }
+        if (com.nexus.flow.adapter.DecisionFlowAccessGuard.protectedConfig(instance.getConfigSnapshot()))
+            throw new IllegalArgumentException("工业决策流程不允许通过通用入口续跑");
         if (!"FAILED".equals(instance.getStatus()) && !"STOPPED".equals(instance.getStatus())) {
             throw new IllegalArgumentException("仅 FAILED/STOPPED 状态的实例可续跑（当前: " + instance.getStatus() + "）");
         }
@@ -420,6 +439,8 @@ public class FlowEngineImpl implements FlowEngine {
         // 2. 取配置（对齐 n8n：优先当前流程配置——用户修复后 retry 生效；无当前配置时降级快照）
         //    快照仍保留在实例上供审计，续跑执行用当前配置（n8n retry 语义）
         Flow current = TenantHelper.dynamic(tenantIdStr, () -> flowMapper.selectById(instance.getFlowId()));
+        if (com.nexus.flow.adapter.DecisionFlowAccessGuard.protectedFlow(current))
+            throw new IllegalArgumentException("工业决策流程必须由受控入口重试");
         String configJson = current != null ? current.getConfigJson() : null;
         if (configJson == null || configJson.isBlank()) {
             configJson = instance.getConfigSnapshot();
@@ -698,7 +719,7 @@ public class FlowEngineImpl implements FlowEngine {
                 queue.add(startId);
             }
 
-            // 节点执行总次数护栏（防拓扑缺陷死循环，对齐 n8n endless loop 检测）
+            // 节点执行总次数护栏（防拓扑缺陷死循环，对齐 n8n 无限循环 检测）
             // 循环场景: 非循环体节点×(maxRetry+1) + 循环体节点×迭代上限(1000) + 1
             int loopBodyCount = graph.getLoopBodyNodes().size();
             int normalCount = graph.getNodeCount() - loopBodyCount;
@@ -956,7 +977,7 @@ public class FlowEngineImpl implements FlowEngine {
                 ctx.setInstanceId(instanceId);
                 ctx.setFlowId(flow.getId());
                 ctx.setUserId(userId);
-                // 租户经 ctx 传递（节点在 ForkJoinPool 线程执行，AiRequestContext ThreadLocal 不可达）
+                // 租户经 ctx 传递（节点在 ForkJoinPool 线程执行，AiRequestContext 线程上下文 不可达）
                 ctx.setTenantId(tenantIdStr);
                 ctx.setGraph(graph);
 
@@ -1414,7 +1435,7 @@ public class FlowEngineImpl implements FlowEngine {
         if (loops == null || !loops.isObject() || loops.isEmpty()) {
             return 0;
         }
-        // 取最大的 split index 作为批次（循环体线性链，当前轮的 split index 即本轮批次）
+        // 取最大的 拆分索引 作为批次（循环体线性链，当前轮的 拆分索引 即本轮批次）
         int maxIndex = 0;
         var it = loops.fields();
         while (it.hasNext()) {

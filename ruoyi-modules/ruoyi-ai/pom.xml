@@ -23,6 +23,12 @@
             <artifactId>ruoyi-common-ai</artifactId>
         </dependency>
 
+        <!-- 共享流程节点运行时间线类型，不引入 ruoyi-flow 运行时依赖。 -->
+        <dependency>
+            <groupId>com.nexus</groupId>
+            <artifactId>ruoyi-common-flow</artifactId>
+        </dependency>
+
         <!-- SSE 推送 -->
         <dependency>
             <groupId>com.nexus</groupId>
@@ -47,7 +53,7 @@
             <artifactId>ruoyi-common-log</artifactId>
         </dependency>
 
-        <!-- Web -->
+        <!-- 网页接口依赖。 -->
         <dependency>
             <groupId>com.nexus</groupId>
             <artifactId>ruoyi-common-web</artifactId>
@@ -68,7 +74,7 @@
             <version>${langchain4j.version}</version>
         </dependency>
 
-        <!-- Anthropic Messages 协议（/v1/messages，OpenCode Go 等 Anthropic 兼容端点同用） -->
+        <!-- Anthropic 消息 协议（/v1/messages，OpenCode Go 等 Anthropic 兼容端点同用） -->
         <dependency>
             <groupId>dev.langchain4j</groupId>
             <artifactId>langchain4j-anthropic</artifactId>
@@ -160,14 +166,14 @@
             <artifactId>caffeine</artifactId>
         </dependency>
 
-        <!-- 测试依赖（test scope，不打入生产包；参照 ruoyi-im 模式） -->
-        <!-- spring-boot-starter-test 已包含 JUnit 5 + Mockito 5 + AssertJ + Spring Test -->
+        <!-- 测试依赖（测试作用域，不打入生产包；参照 ruoyi-im 模式） -->
+        <!-- spring-boot-starter-test 已包含 JUnit 5 + Mockito 5 + AssertJ + Spring 测试支持 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
             <exclusions>
-                <!-- 排除 JUnit Vintage，只用 JUnit 5 -->
+                <!-- 排除 JUnit 旧版本测试引擎，只用 JUnit 5 -->
                 <exclusion>
                     <groupId>org.junit.vintage</groupId>
                     <artifactId>junit-vintage-engine</artifactId>
@@ -184,14 +190,14 @@
     </dependencies>
 
     <properties>
-        <!-- P1-6: 覆盖根 pom surefire 配置，使无 @Tag 测试在所有 profile 下执行（参照 ruoyi-mes P0-7 修复） -->
+        <!-- P1-6: 覆盖根 pom 的 Surefire 测试执行 配置，使无 @Tag 测试在所有环境配置 下执行（参照 ruoyi-mes P0-7 修复） -->
         <ai.groups></ai.groups>
         <ai.excludedGroups></ai.excludedGroups>
     </properties>
 
     <build>
         <plugins>
-            <!-- P1-6: 覆盖根 pom surefire @Tag 过滤（根 pom 的 groups=${profiles.active} 会导致无 @Tag 测试从不执行） -->
+            <!-- P1-6: 覆盖根 pom 的 Surefire 测试执行 @Tag 过滤（根 pom 的 groups=${profiles.active} 会导致无 @Tag 测试从不执行） -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>

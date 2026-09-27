@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.nexus.flow.engine.FlowEngine;
+import com.nexus.flow.adapter.DecisionFlowAccessGuard;
 import com.nexus.flow.model.FlowEdgeDef;
 import com.nexus.flow.model.FlowGraph;
 import com.nexus.flow.model.FlowNodeDef;
@@ -123,6 +124,8 @@ public class FlowController extends BaseController {
     @SaCheckPermission("ai:flow:add")
     @PostMapping
     public R<Long> add(@Validated @RequestBody FlowBo bo) {
+        if (protectedBo(bo) || bo.getId() != null && DecisionFlowAccessGuard.protectedFlow(aiFlowService.selectById(bo.getId())))
+            return R.fail("工业系统流程不允许通用创建");
         return R.ok(aiFlowService.insertByBo(bo));
     }
 
@@ -136,6 +139,8 @@ public class FlowController extends BaseController {
     @SaCheckPermission("ai:flow:edit")
     @PutMapping
     public R<Void> edit(@Validated @RequestBody FlowBo bo) {
+        if (protectedBo(bo) || bo.getId() != null && DecisionFlowAccessGuard.protectedFlow(aiFlowService.selectById(bo.getId())))
+            return R.fail("工业系统流程不允许通用修改");
         return toAjax(aiFlowService.updateByBo(bo));
     }
 
@@ -149,6 +154,8 @@ public class FlowController extends BaseController {
     @SaCheckPermission("ai:flow:publish")
     @PostMapping("/publish")
     public R<Void> publish(@RequestParam Long flowId) {
+        if (DecisionFlowAccessGuard.protectedFlow(aiFlowService.selectById(flowId)))
+            return R.fail("工业系统流程不可通用发布");
         // 发布前校验图合法性（节点类型注册 + 拓扑无环 + 起点存在）
         Flow flow = aiFlowService.selectById(flowId);
         if (flow == null) {
@@ -185,6 +192,8 @@ public class FlowController extends BaseController {
     @SaCheckPermission("ai:flow:edit")
     @PostMapping("/offline")
     public R<Void> offline(@RequestParam Long flowId) {
+        if (DecisionFlowAccessGuard.protectedFlow(aiFlowService.selectById(flowId)))
+            return R.fail("工业系统流程不可通用下线");
         return toAjax(aiFlowService.offline(flowId));
     }
 
@@ -198,6 +207,9 @@ public class FlowController extends BaseController {
     @SaCheckPermission("ai:flow:remove")
     @DeleteMapping("/{flowIds}")
     public R<Void> remove(@PathVariable Long[] flowIds) {
+        if (flowIds == null || java.util.Arrays.stream(flowIds).anyMatch(id ->
+            DecisionFlowAccessGuard.protectedFlow(aiFlowService.selectById(id))))
+            return R.fail("工业系统流程不可通用删除");
         return toAjax(aiFlowService.deleteByIds(flowIds));
     }
 
@@ -218,6 +230,7 @@ public class FlowController extends BaseController {
         if (flow == null) {
             return R.fail("流程不存在");
         }
+        if (DecisionFlowAccessGuard.protectedFlow(flow)) return R.fail("工业系统流程只能通过决策 API 启动");
         if (!"PUBLISHED".equals(flow.getStatus())) {
             return R.fail("仅 PUBLISHED 状态的流程可运行");
         }
@@ -243,7 +256,7 @@ public class FlowController extends BaseController {
     }
 
     /**
-     * 设计器测试运行（对齐 n8n Execute Workflow）
+     * 设计器测试运行（对齐 n8n 执行流程）
      * <p>与正式 run 的区别：不要求 PUBLISHED（DRAFT 即可），且接受画布当前配置
      * configJson 直接执行（未保存也能测）；仍做图校验 + 逐节点 config 校验。
      * 实例 triggerType=TEST，历史页可过滤。权限标识：{@code ai:flow:run}</p>
@@ -261,7 +274,10 @@ public class FlowController extends BaseController {
         if (flow == null) {
             return R.fail("流程不存在");
         }
+        if (DecisionFlowAccessGuard.protectedFlow(flow)) return R.fail("工业系统流程只能通过决策 API 启动");
         // 用画布当前配置覆盖（未保存也能测）；null 时回退 DB 配置
+        if (DecisionFlowAccessGuard.protectedConfig(request.getConfigJson()))
+            return R.fail("通用测试禁止工业节点");
         if (request.getConfigJson() != null && !request.getConfigJson().isBlank()) {
             try {
                 MAPPER.readTree(request.getConfigJson());
@@ -317,6 +333,9 @@ public class FlowController extends BaseController {
         if (request.getInstanceId() == null) {
             return R.fail("instanceId 不能为空");
         }
+        FlowInstance instance = instanceService.selectById(request.getInstanceId());
+        if (instance == null || DecisionFlowAccessGuard.protectedConfig(instance.getConfigSnapshot()))
+            return R.fail("工业系统实例禁止通过通用入口停止");
         boolean first = flowEngine.stop(request.getInstanceId());
         return first ? R.ok() : R.fail("实例不存在或已停止");
     }
@@ -342,6 +361,9 @@ public class FlowController extends BaseController {
         if (flow == null) {
             return R.fail("流程不存在");
         }
+        if (DecisionFlowAccessGuard.protectedFlow(flow)) return R.fail("工业系统流程只能通过决策 API 启动");
+        if (DecisionFlowAccessGuard.protectedConfig(request.getConfigJson()))
+            return R.fail("通用测试禁止工业节点");
         if (request.getConfigJson() != null && !request.getConfigJson().isBlank()) {
             try {
                 MAPPER.readTree(request.getConfigJson());
@@ -400,6 +422,7 @@ public class FlowController extends BaseController {
         if (flow == null) {
             return R.fail("流程不存在");
         }
+        if (DecisionFlowAccessGuard.protectedFlow(flow)) return R.fail("工业系统流程只能通过决策 API 启动");
         try {
             // 解析图 + 校验
             FlowGraph graph = FlowGraph.parse(flow.getConfigJson());
@@ -451,7 +474,7 @@ public class FlowController extends BaseController {
             ctx.setConfig(nodeDef.getConfig());
             ctx.setState(state);
             ctx.setGraph(graph);
-            // 租户经 ctx 传递（节点内不依赖 AiRequestContext ThreadLocal）
+            // 租户经 ctx 传递（节点内不依赖 AiRequestContext 线程上下文）
             ctx.setTenantId(LoginHelper.getTenantId());
             JsonNode output = provider.execute(ctx);
             return R.ok(output);
@@ -550,6 +573,10 @@ public class FlowController extends BaseController {
         if (request.getVersionId() == null) {
             return R.fail("versionId 不能为空");
         }
+        FlowVersionVo version = aiFlowVersionService.selectVoById(request.getVersionId());
+        if (version == null || DecisionFlowAccessGuard.protectedFlow(aiFlowService.selectById(version.getFlowId()))
+            || DecisionFlowAccessGuard.protectedConfig(version.getConfigJson()))
+            return R.fail("工业系统流程不允许通用版本恢复");
         try {
             return R.ok(aiFlowVersionService.restore(request.getVersionId()));
         } catch (ServiceException e) {
@@ -593,6 +620,7 @@ public class FlowController extends BaseController {
         if (flow == null) {
             return R.fail("流程不存在: " + flowKey);
         }
+        if (DecisionFlowAccessGuard.protectedFlow(flow)) return R.fail("工业决策禁止 Webhook 调用");
         if (!"PUBLISHED".equals(flow.getStatus())) {
             return R.fail("流程未发布，无法 Webhook 触发");
         }
@@ -683,7 +711,7 @@ public class FlowController extends BaseController {
     }
 
     /**
-     * 测试运行请求（设计器 Execute Workflow）
+     * 测试运行请求（设计器 执行流程）
      *
      * @param flowId     流程ID
      * @param configJson 画布当前配置（可选；null 时用 DB 配置）
@@ -781,5 +809,9 @@ public class FlowController extends BaseController {
         public void setDestinationNodeId(String destinationNodeId) {
             this.destinationNodeId = destinationNodeId;
         }
+    }
+    private boolean protectedBo(FlowBo bo) {
+        return bo == null || bo.getFlowKey() != null && bo.getFlowKey().startsWith("system_delivery_risk_")
+            || DecisionFlowAccessGuard.protectedConfig(bo.getConfigJson());
     }
 }

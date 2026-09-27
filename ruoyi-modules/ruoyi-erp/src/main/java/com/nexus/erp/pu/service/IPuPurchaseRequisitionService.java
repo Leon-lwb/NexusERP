@@ -62,6 +62,9 @@ public interface IPuPurchaseRequisitionService extends WfCallBackServiceI {
      */
     PuPurchaseRequisitionVo selectById(Long id);
 
+    /** 决策创建后同事务重读主表与明细，使用锁定读避免 RR 旧快照。 */
+    PuPurchaseRequisitionVo selectByIdForDecision(Long id);
+
     /**
      * 新增采购申请，含明细行
      *
@@ -69,6 +72,25 @@ public interface IPuPurchaseRequisitionService extends WfCallBackServiceI {
      * @return 影响行数
      */
     int insertByBo(PuPurchaseRequisitionBo bo);
+
+    /**
+     * 创建采购申请草稿并返回 Mapper 生成的主键。
+     *
+     * @param bo 采购申请业务对象
+     * @return 新建采购申请ID
+     */
+    Long createDraft(PuPurchaseRequisitionBo bo);
+
+    /**
+     * 仅在采购申请仍为草稿且版本未变化时执行条件补偿删除。
+     *
+     * @param requisitionId 采购申请ID
+     * @param versionMarker 版本标记（V:非负整数版本）
+     * @return 是否删除成功
+     */
+    boolean deleteDraftIfUnchanged(Long requisitionId, String versionMarker,
+                                   Long decisionRunId, Long decisionActionId,
+                                   String decisionIdempotencyKey);
 
     /**
      * 修改采购申请，含明细行
@@ -86,11 +108,6 @@ public interface IPuPurchaseRequisitionService extends WfCallBackServiceI {
      */
     int deleteByIds(Long[] ids);
 
-    // /**
-    //  * 提交采购申请（草稿 → 已提交，已废弃，请使用 Flowable 工作流）
-    //  */
-    // void submit(Long requisitionId);
-
     /**
      * 提交流程审批（启动 Flowable 审批流）
      *
@@ -107,11 +124,6 @@ public interface IPuPurchaseRequisitionService extends WfCallBackServiceI {
      * @return 流程实例ID
      */
     String getProcInsId(String requisitionIdStr);
-
-    // /**
-    //  * 审批通过采购申请（已废弃，请使用 Flowable 工作流审批）
-    //  */
-    // void approve(Long requisitionId);
 
     /**
      * 关闭采购申请

@@ -1,0 +1,115 @@
+package com.nexus.common.ai.decision.dto;
+
+import com.nexus.common.ai.decision.enums.DecisionActionType;
+import com.nexus.common.ai.decision.enums.DecisionRiskLevel;
+import java.io.Serializable;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * 强类型动作和目标标识保留 Long，使用全局 Jackson 序列化器。
+ * 动态载荷中的标识（含嵌套标识列表）必须为十进制字符串。
+ * JavaScript 安全整数范围内的非标识 Long 保持 JSON 数值，超范围立即拒绝。
+ * BigDecimal 和 BigInteger 使用普通十进制字符串，避免生产 Jackson 配置改变往返类型。
+ */
+public record DecisionActionProposal(
+    Long actionId,
+    DecisionActionType actionType,
+    String title,
+    String displayReason,
+    DecisionBusinessRef target,
+    Map<String, Object> payload,
+    DecisionRiskLevel riskLevel,
+    boolean approvalRequired,
+    String permissionCode,
+    String idempotencyKey,
+    String executorCode,
+    int sequence,
+    List<Long> dependencyIds
+) implements Serializable {
+
+    private static final long JS_MAX_SAFE_INTEGER = 9007199254740991L;
+
+    /**
+     * 动态载荷契约：标识为十进制字符串，不使用 JSON 数值。
+     */
+    public DecisionActionProposal {
+        payload = copyPayload(payload);
+        dependencyIds = dependencyIds == null ? null
+            : Collections.unmodifiableList(new ArrayList<>(dependencyIds));
+    }
+
+    private static Map<String, Object> copyPayload(Map<?, ?> source) {
+        if (source == null) return null;
+        Map<String, Object> copy = new LinkedHashMap<>();
+        source.forEach((rawKey, value) -> {
+            if (!(rawKey instanceof String key)) {
+                throw new IllegalArgumentException("动作 payload 的键必须是 String");
+            }
+            if (isIdKey(key)) {
+                requireDecimalString(value, key);
+            } else if (isIdListKey(key) && value != null) {
+                if (!(value instanceof List<?> ids)) {
+                    throw new IllegalArgumentException("动作 payload 中的 ID 列表必须是十进制字符串列表: " + key);
+                }
+                ids.forEach(id -> requireDecimalString(id, key));
+            }
+            copy.put(key, copyValue(value));
+        });
+        return Collections.unmodifiableMap(copy);
+    }
+
+    private static boolean isIdKey(String key) {
+        return key.equalsIgnoreCase("id") || key.endsWith("Id") || key.endsWith("ID")
+            || key.endsWith("_id") || key.endsWith("_ID");
+    }
+
+    private static boolean isIdListKey(String key) {
+        return key.equalsIgnoreCase("ids") || key.endsWith("Ids") || key.endsWith("IDs")
+            || key.endsWith("_ids") || key.endsWith("_IDS");
+    }
+
+    private static void requireDecimalString(Object value, String key) {
+        if (value != null && (!(value instanceof String text) || !text.matches("[0-9]+"))) {
+            throw new IllegalArgumentException("动作 payload 的 ID 必须以十进制字符串提供: " + key);
+        }
+    }
+
+    private static Object copyValue(Object value) {
+        if (value instanceof Map<?, ?> map) return copyPayload(map);
+        if (value instanceof List<?> list) {
+            List<Object> copy = new ArrayList<>(list.size());
+            list.forEach(element -> copy.add(copyValue(element)));
+            return Collections.unmodifiableList(copy);
+        }
+        if (value instanceof Long number) {
+            if (number > JS_MAX_SAFE_INTEGER || number < -JS_MAX_SAFE_INTEGER) {
+                throw new IllegalArgumentException("动作 payload 的非 ID Long 超出 JS 安全整数范围；请使用明确类型");
+            }
+            if (number >= Integer.MIN_VALUE && number <= Integer.MAX_VALUE) {
+                return Integer.valueOf(number.intValue());
+            }
+            return number;
+        }
+        if (value instanceof BigDecimal decimal) return decimal.toPlainString();
+        if (value instanceof BigInteger integer) return integer.toString();
+        if (value instanceof Float number) {
+            if (!Float.isFinite(number)) throw new IllegalArgumentException("动作 payload 不接受非有限数值");
+            return Double.valueOf(number.toString());
+        }
+        if (value instanceof Double number) {
+            if (!Double.isFinite(number)) throw new IllegalArgumentException("动作 payload 不接受非有限数值");
+            return number;
+        }
+        if (value == null || value instanceof String || value instanceof Boolean || value instanceof Byte
+            || value instanceof Short || value instanceof Integer) {
+            return value;
+        }
+        throw new IllegalArgumentException("动作 payload 包含不支持的值: " + value.getClass().getName());
+    }
+}

@@ -1,24 +1,24 @@
 /*
- Navicat Premium Data Transfer
+ Navicat 数据导出说明
 
- Source Server         : whbuild
- Source Server Type    : MySQL
- Source Server Version : 50720
- Source Host           : localhost:3306
- Source Schema         : ry-erp
+ 源服务器         : whbuild
+ 源服务器类型    : MySQL
+ 源服务器版本 : 50720
+ 源地址           : localhost:3306
+ 源数据库         : ry-erp
 
- Target Server Type    : MySQL
- Target Server Version : 50720
- File Encoding         : 65001
+ 目标服务器类型    : MySQL
+ 目标服务器版本 : 50720
+ 文件编码         : 65001
 
- Date: 22/09/2026 17:49:29
+ 导出日期： 22/09/2026 17:49:29
 */
 
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 
 -- ----------------------------
--- Table structure for bd_bom
+-- 表结构：bd_bom
 -- ----------------------------
 DROP TABLE IF EXISTS `bd_bom`;
 CREATE TABLE `bd_bom`  (
@@ -53,7 +53,7 @@ CREATE TABLE `bd_bom`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'BOM主表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Records of bd_bom
+-- 初始数据：bd_bom
 -- ----------------------------
 INSERT INTO `bd_bom` VALUES (1, '000000', 1, '1.0', '高强度螺栓组套 M12标准版BOM', 'PROCESS', 'MBOM', 1, '2026-09-14', NULL, 1, 1, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 17:52:07', '0');
 INSERT INTO `bd_bom` VALUES (2, '000000', 38, '1.0', '冷镦坯 M12组件BOM', 'PROCESS', 'MBOM', NULL, '2026-09-14', NULL, 1, 1, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
@@ -194,7 +194,7 @@ INSERT INTO `bd_bom` VALUES (136, '000000', 137, '1.0', '功放板 PCBA-SPK20组
 INSERT INTO `bd_bom` VALUES (137, '000000', 138, '1.0', '音箱上下壳 注塑件组件BOM', 'PROCESS', 'MBOM', NULL, '2026-09-14', NULL, 1, 1, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
 
 -- ----------------------------
--- Table structure for bd_bom_alternative
+-- 表结构：bd_bom_alternative
 -- ----------------------------
 DROP TABLE IF EXISTS `bd_bom_alternative`;
 CREATE TABLE `bd_bom_alternative`  (
@@ -226,7 +226,7 @@ CREATE TABLE `bd_bom_alternative`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'BOM替代料表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Records of bd_bom_alternative
+-- 初始数据：bd_bom_alternative
 -- ----------------------------
 INSERT INTO `bd_bom_alternative` VALUES (1, '000000', 4, 1, 261, 'IF20260914261', '包装纸盒 小号 加强', 1.000000, 1, 'INTERCHANGEABLE', NULL, NULL, 1, '可替代主料', 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
 INSERT INTO `bd_bom_alternative` VALUES (2, '000000', 5, 2, 188, 'IF20260914188', '冷轧钢板 DC01', 1.100000, 2, 'FULL', NULL, NULL, 1, '可替代主料', 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
@@ -388,7 +388,7 @@ INSERT INTO `bd_bom_alternative` VALUES (204, '000000', 445, 137, 239, 'IF202609
 INSERT INTO `bd_bom_alternative` VALUES (205, '000000', 447, 137, 254, 'IF20260914254', '锂聚合物电池 高容量版', 1.000000, 1, 'PARTIAL', NULL, NULL, 1, '可替代主料', 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
 
 -- ----------------------------
--- Table structure for bd_bom_detail
+-- 表结构：bd_bom_detail
 -- ----------------------------
 DROP TABLE IF EXISTS `bd_bom_detail`;
 CREATE TABLE `bd_bom_detail`  (
@@ -425,7 +425,7 @@ CREATE TABLE `bd_bom_detail`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'BOM明细表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Records of bd_bom_detail
+-- 初始数据：bd_bom_detail
 -- ----------------------------
 INSERT INTO `bd_bom_detail` VALUES (1, '000000', 1, 38, 1.000000, 'PROCESS', 0.0000, 1, 0, NULL, NULL, 1, 1, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0', 'SELF_PROVIDED');
 INSERT INTO `bd_bom_detail` VALUES (2, '000000', 1, 39, 1.000000, 'PROCESS', 0.0000, 2, 0, NULL, NULL, 2, 1, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0', 'SELF_PROVIDED');
@@ -888,7 +888,7 @@ INSERT INTO `bd_bom_detail` VALUES (511, '000000', 122, 145, 0.960252, 'PROCUREM
 INSERT INTO `bd_bom_detail` VALUES (512, '000000', 122, 263, 0.040011, 'PROCUREMENT', 0.0000, NULL, NULL, NULL, NULL, 20, 1, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 17:52:06', NULL, '2026-09-14 17:52:07', '0', 'SELF_PROVIDED');
 
 -- ----------------------------
--- Table structure for bd_category_attribute
+-- 表结构：bd_category_attribute
 -- ----------------------------
 DROP TABLE IF EXISTS `bd_category_attribute`;
 CREATE TABLE `bd_category_attribute`  (
@@ -919,7 +919,7 @@ CREATE TABLE `bd_category_attribute`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料分类属性模板' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for bd_client
+-- 表结构：bd_client
 -- ----------------------------
 DROP TABLE IF EXISTS `bd_client`;
 CREATE TABLE `bd_client`  (
@@ -978,7 +978,7 @@ CREATE TABLE `bd_client`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '客户表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Records of bd_client
+-- 初始数据：bd_client
 -- ----------------------------
 INSERT INTO `bd_client` VALUES (1, '000000', 'C00001', '北京北方机械制造有限公司', NULL, NULL, '北京北方机械制造有限公司', '企业客户', NULL, '北京市', NULL, 'bfjx@163.com', '0571-66660001', '联系人1', '13800000001', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'VAT_SPECIAL', NULL, NULL, NULL, NULL, NULL, 110000, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', 1, '2026-09-19 12:42:27', '0', NULL, NULL, NULL, NULL);
 INSERT INTO `bd_client` VALUES (2, '000000', 'C00002', '上海精工自动化设备有限公司', NULL, NULL, '上海精工自动化设备有限公司', '企业客户', NULL, '上海市华东区产业大道 2 号', NULL, 'shjg@163.com', '0571-66660002', '联系人2', '13800000002', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'VAT_SPECIAL', NULL, NULL, NULL, NULL, NULL, 310000, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', 1, '2026-09-19 12:47:48', '0', NULL, NULL, NULL, NULL);
@@ -990,7 +990,7 @@ INSERT INTO `bd_client` VALUES (7, '000000', 'C00007', '西安新能源设备有
 INSERT INTO `bd_client` VALUES (8, '000000', 'C00008', '沈阳汽车零部件有限公司', NULL, NULL, '沈阳汽车零部件有限公司', '企业客户', NULL, '吉林省', NULL, 'jlqc@163.com', '0571-66660008', '联系人8', '13800000008', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'VAT_SPECIAL', NULL, NULL, NULL, NULL, NULL, 220000, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', 1, '2026-09-19 12:48:31', '0', NULL, NULL, NULL, NULL);
 
 -- ----------------------------
--- Table structure for bd_client_credit
+-- 表结构：bd_client_credit
 -- ----------------------------
 DROP TABLE IF EXISTS `bd_client_credit`;
 CREATE TABLE `bd_client_credit`  (
@@ -1022,7 +1022,7 @@ CREATE TABLE `bd_client_credit`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '客户信用表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Records of bd_client_credit
+-- 初始数据：bd_client_credit
 -- ----------------------------
 INSERT INTO `bd_client_credit` VALUES (1, '000000', 1, 'C00001', '北京北方机械制造有限公司', NULL, 500000, 30, 'B', 90, NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
 INSERT INTO `bd_client_credit` VALUES (2, '000000', 2, 'C00002', '上海精工自动化设备有限公司', NULL, 800000, 30, 'A', 90, NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
@@ -1034,7 +1034,7 @@ INSERT INTO `bd_client_credit` VALUES (7, '000000', 7, 'C00007', '西安新能�
 INSERT INTO `bd_client_credit` VALUES (8, '000000', 8, 'C00008', '沈阳汽车零部件有限公司', NULL, 900000, 30, 'A', 90, NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
 
 -- ----------------------------
--- Table structure for bd_material
+-- 表结构：bd_material
 -- ----------------------------
 DROP TABLE IF EXISTS `bd_material`;
 CREATE TABLE `bd_material`  (
@@ -1087,7 +1087,7 @@ CREATE TABLE `bd_material`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料产品主表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Records of bd_material
+-- 初始数据：bd_material
 -- ----------------------------
 INSERT INTO `bd_material` VALUES (1, '000000', 'IF20260914001', '高强度螺栓组套 M12', 'M12×60 8.8级 含螺母平垫', NULL, 50, 27, 27, 27, 27, 3, 'PROCESS', 0, 1, 0.0000, 0.0000, 0.0000, 32.4000, 45.0000, 1, NULL, 0, 3.3091, 0.000932742, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 17:52:06', '0', 0, 1);
 INSERT INTO `bd_material` VALUES (2, '000000', 'IF20260914002', '精密齿轮箱总成', '速比 1:10 额定扭矩 120N·m', NULL, 51, 55, 55, 55, 55, 3, 'PROCESS', 0, 1, 0.0000, 0.0000, 0.0000, 2059.2000, 2860.0000, 1, NULL, 0, 185.5201, 0.030169825, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 17:52:06', '0', 0, 1);
@@ -1378,7 +1378,7 @@ INSERT INTO `bd_material` VALUES (286, '000000', 'IF20260914286', '板式冷却�
 INSERT INTO `bd_material` VALUES (287, '000000', 'IF20260914287', 'PLC 控制器', '含 7 寸触摸屏', NULL, 144, 27, 27, 27, 27, 1, 'PROCUREMENT', 0, 0, 0.0000, 0.0000, 0.0000, 1000.0000, 1080.0000, 1, NULL, 0, 3.5000, 0.004000000, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 17:52:06', NULL, '2026-09-14 17:52:06', '0', 0, 1);
 
 -- ----------------------------
--- Table structure for bd_material_attribute_value
+-- 表结构：bd_material_attribute_value
 -- ----------------------------
 DROP TABLE IF EXISTS `bd_material_attribute_value`;
 CREATE TABLE `bd_material_attribute_value`  (
@@ -1405,7 +1405,7 @@ CREATE TABLE `bd_material_attribute_value`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料扩展属性值' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for bd_material_category
+-- 表结构：bd_material_category
 -- ----------------------------
 DROP TABLE IF EXISTS `bd_material_category`;
 CREATE TABLE `bd_material_category`  (
@@ -1440,7 +1440,7 @@ CREATE TABLE `bd_material_category`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料产品分类表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Records of bd_material_category
+-- 初始数据：bd_material_category
 -- ----------------------------
 INSERT INTO `bd_material_category` VALUES (1, '000000', 0, 'RAW', '原材料', NULL, 1, '1', '原材料', 1, 1, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
 INSERT INTO `bd_material_category` VALUES (2, '000000', 0, 'SEMI', '半成品', NULL, 1, '2', '半成品', 2, 1, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
@@ -1595,7 +1595,7 @@ INSERT INTO `bd_material_category` VALUES (150, '000000', 2, 'SM_RUBBER', '橡�
 INSERT INTO `bd_material_category` VALUES (151, '000000', 2, 'SM_SOFTWARE', '软件与固件', NULL, 2, '2,151', '半成品,软件与固件', 235, 1, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 17:52:06', NULL, '2026-09-14 17:52:06', '0');
 
 -- ----------------------------
--- Table structure for bd_material_vendor
+-- 表结构：bd_material_vendor
 -- ----------------------------
 DROP TABLE IF EXISTS `bd_material_vendor`;
 CREATE TABLE `bd_material_vendor`  (
@@ -1634,7 +1634,7 @@ CREATE TABLE `bd_material_vendor`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料供应商关系表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Records of bd_material_vendor
+-- 初始数据：bd_material_vendor
 -- ----------------------------
 INSERT INTO `bd_material_vendor` VALUES (1, '000000', 139, 1, 'V00001', '华东钢材供应链有限公司', 20, 500.0000, 19.6500, 'CNY', 1, 1, NULL, NULL, 1, '主供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
 INSERT INTO `bd_material_vendor` VALUES (2, '000000', 139, 2, 'V00002', '江苏精密紧固件制造厂', 20, 500.0000, 19.6500, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
@@ -1902,7 +1902,7 @@ INSERT INTO `bd_material_vendor` VALUES (263, '000000', 270, 8, 'V00008', '广�
 INSERT INTO `bd_material_vendor` VALUES (264, '000000', 270, 9, 'V00009', '青岛橡胶密封件有限公司', 11, 10.0000, 29.0000, 'CNY', 0, 2, NULL, NULL, 1, '备供', NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
 
 -- ----------------------------
--- Table structure for bd_process
+-- 表结构：bd_process
 -- ----------------------------
 DROP TABLE IF EXISTS `bd_process`;
 CREATE TABLE `bd_process`  (
@@ -1941,7 +1941,7 @@ CREATE TABLE `bd_process`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '工序定义表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Records of bd_process
+-- 初始数据：bd_process
 -- ----------------------------
 INSERT INTO `bd_process` VALUES (1, '000000', 'LASER', '激光切割', NULL, '下料', NULL, NULL, NULL, 0.3000, 0.1000, 2, 1, 0, 0, 0, 1, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
 INSERT INTO `bd_process` VALUES (2, '000000', 'PLASMA', '等离子切割', NULL, '下料', NULL, NULL, NULL, 0.3500, 0.1000, 2, 1, 0, 0, 0, 1, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
@@ -2002,7 +2002,7 @@ INSERT INTO `bd_process` VALUES (56, '000000', 'CLEAN', '清洗', NULL, '通用'
 INSERT INTO `bd_process` VALUES (57, '000000', 'DEBURR', '去毛刺', NULL, '通用', NULL, NULL, NULL, 0.1500, 0.1000, 2, 1, 0, 0, 0, 1, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
 
 -- ----------------------------
--- Table structure for bd_routing
+-- 表结构：bd_routing
 -- ----------------------------
 DROP TABLE IF EXISTS `bd_routing`;
 CREATE TABLE `bd_routing`  (
@@ -2040,7 +2040,7 @@ CREATE TABLE `bd_routing`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '工艺路线主表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Records of bd_routing
+-- 初始数据：bd_routing
 -- ----------------------------
 INSERT INTO `bd_routing` VALUES (1, '000000', 'RT20260914001', '高强度螺栓组套 M12装配工艺路线V1.0', NULL, 1, 'IF20260914001', '高强度螺栓组套 M12', '1.0', 1, 7, 3.8500, '2026-09-14', NULL, 1, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
 INSERT INTO `bd_routing` VALUES (2, '000000', 'RT20260914002', '精密齿轮箱总成装配工艺路线V1.0', NULL, 2, 'IF20260914002', '精密齿轮箱总成', '1.0', 1, 8, 5.2500, '2026-09-14', NULL, 1, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
@@ -2081,7 +2081,7 @@ INSERT INTO `bd_routing` VALUES (36, '000000', 'RT20260914036', '网络摄像机
 INSERT INTO `bd_routing` VALUES (37, '000000', 'RT20260914037', '无线蓝牙音箱 SPK-20装配工艺路线V1.0', NULL, 37, 'IF20260914037', '无线蓝牙音箱 SPK-20', '1.0', 1, 7, 5.6200, '2026-09-14', NULL, 1, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
 
 -- ----------------------------
--- Table structure for bd_routing_step
+-- 表结构：bd_routing_step
 -- ----------------------------
 DROP TABLE IF EXISTS `bd_routing_step`;
 CREATE TABLE `bd_routing_step`  (
@@ -2124,7 +2124,7 @@ CREATE TABLE `bd_routing_step`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '工艺路线步骤表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Records of bd_routing_step
+-- 初始数据：bd_routing_step
 -- ----------------------------
 INSERT INTO `bd_routing_step` VALUES (1, '000000', 1, 10, 9, 'FORGE', '锻造', 'FORGE', 16, 'GZZ0016', '锻造机', 0.0070, 0.1000, 2, 1, 50.000000, 100.000000, 0, NULL, NULL, NULL, 0, 0, 0.1000, 0.0500, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 17:52:07');
 INSERT INTO `bd_routing_step` VALUES (2, '000000', 1, 20, 10, 'TURN', '车削', 'TURN', 5, 'GZZ0005', '数控车床A', 0.0058, 0.1000, 2, 1, 50.000000, 100.000000, 0, NULL, NULL, NULL, 0, 0, 0.1000, 0.0500, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 17:52:07');
@@ -2376,7 +2376,7 @@ INSERT INTO `bd_routing_step` VALUES (247, '000000', 37, 60, 47, 'FUNC_TEST', '�
 INSERT INTO `bd_routing_step` VALUES (248, '000000', 37, 70, 55, 'PKG', '包装', 'PKG', 54, 'GZZ0054', '包装线B', 0.0070, 0.1000, 2, 1, 50.000000, 100.000000, 0, NULL, NULL, NULL, 0, 0, 0.1000, 0.0500, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 17:52:07');
 
 -- ----------------------------
--- Table structure for bd_serial_number_rule
+-- 表结构：bd_serial_number_rule
 -- ----------------------------
 DROP TABLE IF EXISTS `bd_serial_number_rule`;
 CREATE TABLE `bd_serial_number_rule`  (
@@ -2410,14 +2410,14 @@ CREATE TABLE `bd_serial_number_rule`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '产品序列号/条码规则表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Records of bd_serial_number_rule
+-- 初始数据：bd_serial_number_rule
 -- ----------------------------
 INSERT INTO `bd_serial_number_rule` VALUES (1, '000000', 'SN-FG-001', '成品序列号规则', 'PRODUCT_SN', 'SN', 'yyyyMMdd', 4, 'DAY', 0, 'NONE', 'ACTIVE', '成品序列号，按日重置序号', NULL, NULL, 0, 0, 100, 1, '2026-06-21 20:52:46', NULL, '2026-09-14 13:00:33', '0');
 INSERT INTO `bd_serial_number_rule` VALUES (2, '000000', 'SN-BATCH-001', '批次号规则', 'BATCH_NO', 'B', 'yyyyMM', 6, 'MONTH', 0, 'NONE', 'ACTIVE', '批次号，按月重置序号', NULL, NULL, 0, 0, 100, 1, '2026-06-21 20:52:46', NULL, '2026-09-14 13:00:33', '0');
 INSERT INTO `bd_serial_number_rule` VALUES (3, '000000', 'SN-BC-001', '条码规则', 'BARCODE', 'BC', NULL, 8, 'NONE', 0, 'MOD10', 'ACTIVE', '产品条码，全局递增，含校验位', NULL, NULL, 0, 0, 100, 1, '2026-06-21 20:52:46', NULL, '2026-09-14 13:00:33', '0');
 
 -- ----------------------------
--- Table structure for bd_unit_of_measure
+-- 表结构：bd_unit_of_measure
 -- ----------------------------
 DROP TABLE IF EXISTS `bd_unit_of_measure`;
 CREATE TABLE `bd_unit_of_measure`  (
@@ -2449,7 +2449,7 @@ CREATE TABLE `bd_unit_of_measure`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '计量单位表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Records of bd_unit_of_measure
+-- 初始数据：bd_unit_of_measure
 -- ----------------------------
 INSERT INTO `bd_unit_of_measure` VALUES (1, '000000', 'GRAM', '克', 'g', '重量', 1, NULL, NULL, 1.000000, 1, 1, NULL, NULL, NULL, '2025-09-30 16:55:06', NULL, '2025-09-30 17:13:46', '0');
 INSERT INTO `bd_unit_of_measure` VALUES (2, '000000', 'KILOGRAM', '千克', 'kg', '重量', 0, 1, '克', 1000.000000, 1, 2, NULL, NULL, NULL, '2025-09-30 16:55:06', NULL, '2025-09-30 17:13:58', '0');
@@ -2521,7 +2521,7 @@ INSERT INTO `bd_unit_of_measure` VALUES (67, '000000', 'REEL', '盘', NULL, NULL
 INSERT INTO `bd_unit_of_measure` VALUES (68, '000000', 'CAN', '罐', NULL, NULL, 0, NULL, NULL, 1.000000, 1, 0, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
 
 -- ----------------------------
--- Table structure for bd_vendor
+-- 表结构：bd_vendor
 -- ----------------------------
 DROP TABLE IF EXISTS `bd_vendor`;
 CREATE TABLE `bd_vendor`  (
@@ -2569,7 +2569,7 @@ CREATE TABLE `bd_vendor`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '供应商表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Records of bd_vendor
+-- 初始数据：bd_vendor
 -- ----------------------------
 INSERT INTO `bd_vendor` VALUES (1, '000000', 'V00001', '华东钢材供应链有限公司', NULL, '浙江省杭州市余杭区', NULL, '0571-88880001', NULL, NULL, NULL, NULL, 'VAT_SPECIAL', 'METAL', '2', '1', 'ACTIVE', '钢铁及有色金属材料供应', NULL, NULL, NULL, NULL, 330000, 330100, 330110, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', 1, '2026-09-19 12:50:13', '0', NULL, NULL, NULL, NULL);
 INSERT INTO `bd_vendor` VALUES (2, '000000', 'V00002', '江苏精密紧固件制造厂', NULL, '浙江省杭州市余杭区', NULL, '0571-88880002', NULL, NULL, NULL, NULL, 'VAT_SPECIAL', 'HARDWARE', '2', '2', 'ACTIVE', '标准紧固件与连接件', NULL, NULL, NULL, NULL, 330000, 330100, 330110, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', 1, '2026-09-19 12:49:53', '0', NULL, NULL, NULL, NULL);
@@ -2585,7 +2585,7 @@ INSERT INTO `bd_vendor` VALUES (11, '000000', 'V00011', '常州铸造材料有�
 INSERT INTO `bd_vendor` VALUES (12, '000000', 'V00012', '天津精密铸造厂', NULL, '浙江省杭州市余杭区', NULL, '0571-88880012', NULL, NULL, NULL, NULL, 'VAT_SPECIAL', 'SM_CAST', '2', '1', 'ACTIVE', '铝合金压铸件与铸钢件', NULL, NULL, NULL, NULL, 330000, 330100, 330110, NULL, NULL, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0', NULL, NULL, NULL, NULL);
 
 -- ----------------------------
--- Table structure for bd_workshop
+-- 表结构：bd_workshop
 -- ----------------------------
 DROP TABLE IF EXISTS `bd_workshop`;
 CREATE TABLE `bd_workshop`  (
@@ -2620,7 +2620,7 @@ CREATE TABLE `bd_workshop`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '车间表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Records of bd_workshop
+-- 初始数据：bd_workshop
 -- ----------------------------
 INSERT INTO `bd_workshop` VALUES (1, '000000', 'CJ001', '下料车间', NULL, 1, 'admin', NULL, NULL, 1000.00, 1, 1, NULL, NULL, NULL, 0, 0, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
 INSERT INTO `bd_workshop` VALUES (2, '000000', 'CJ002', '机加车间', NULL, 1, 'admin', NULL, NULL, 1000.00, 1, 2, NULL, NULL, NULL, 0, 0, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
@@ -2639,7 +2639,7 @@ INSERT INTO `bd_workshop` VALUES (14, '000000', 'CJ014', '包装车间', NULL, 1
 INSERT INTO `bd_workshop` VALUES (15, '000000', 'CJ015', '模具车间', NULL, 1, 'admin', NULL, NULL, 1000.00, 1, 15, NULL, NULL, NULL, 0, 0, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
 
 -- ----------------------------
--- Table structure for bd_workstation
+-- 表结构：bd_workstation
 -- ----------------------------
 DROP TABLE IF EXISTS `bd_workstation`;
 CREATE TABLE `bd_workstation`  (
@@ -2674,7 +2674,7 @@ CREATE TABLE `bd_workstation`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '工作站表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Records of bd_workstation
+-- 初始数据：bd_workstation
 -- ----------------------------
 INSERT INTO `bd_workstation` VALUES (1, '000000', 'GZZ0001', '激光切割机', 1, 'CJ001', '下料车间', NULL, NULL, 2, 120.00, 1, NULL, NULL, NULL, 0, 0, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
 INSERT INTO `bd_workstation` VALUES (2, '000000', 'GZZ0002', '等离子切割机', 1, 'CJ001', '下料车间', NULL, NULL, 2, 100.00, 1, NULL, NULL, NULL, 0, 0, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
@@ -2736,7 +2736,7 @@ INSERT INTO `bd_workstation` VALUES (57, '000000', 'GZZ0057', '线切割机', 15
 INSERT INTO `bd_workstation` VALUES (58, '000000', 'GZZ0058', '抛光工位', 15, 'CJ015', '模具车间', NULL, NULL, 2, 90.00, 1, NULL, NULL, NULL, 0, 0, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
 
 -- ----------------------------
--- Table structure for erp_subcontract_doc
+-- 表结构：erp_subcontract_doc
 -- ----------------------------
 DROP TABLE IF EXISTS `erp_subcontract_doc`;
 CREATE TABLE `erp_subcontract_doc`  (
@@ -2761,7 +2761,7 @@ CREATE TABLE `erp_subcontract_doc`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '委外工程文件' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for fa_asset
+-- 表结构：fa_asset
 -- ----------------------------
 DROP TABLE IF EXISTS `fa_asset`;
 CREATE TABLE `fa_asset`  (
@@ -2794,7 +2794,7 @@ CREATE TABLE `fa_asset`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '固定资产卡片' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for fa_asset_category
+-- 表结构：fa_asset_category
 -- ----------------------------
 DROP TABLE IF EXISTS `fa_asset_category`;
 CREATE TABLE `fa_asset_category`  (
@@ -2823,14 +2823,14 @@ CREATE TABLE `fa_asset_category`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '固定资产类别(折旧政策)' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Records of fa_asset_category
+-- 初始数据：fa_asset_category
 -- ----------------------------
 INSERT INTO `fa_asset_category` VALUES (6100001, '000000', 'FA_CAT_MACHINE', '机器设备', 'STRAIGHT_LINE', 120, 0.0500, 6005053, 6005010, 6005058, 6005059, '0', 1, 0, NULL, NULL, '2026-07-31 22:31:31', NULL, '2026-07-31 22:31:31', '0');
 INSERT INTO `fa_asset_category` VALUES (6100002, '000000', 'FA_CAT_OFFICE', '办公设备', 'STRAIGHT_LINE', 60, 0.0500, 6005053, 6005010, 6005058, 6005059, '0', 2, 0, NULL, NULL, '2026-07-31 22:31:31', NULL, '2026-07-31 22:31:31', '0');
 INSERT INTO `fa_asset_category` VALUES (6100003, '000000', 'FA_CAT_VEHICLE', '运输工具', 'DOUBLE_DECLINING', 96, 0.0500, 6005053, 6005010, 6005058, 6005059, '0', 3, 0, NULL, NULL, '2026-07-31 22:31:31', NULL, '2026-07-31 22:31:31', '0');
 
 -- ----------------------------
--- Table structure for fa_depreciation
+-- 表结构：fa_depreciation
 -- ----------------------------
 DROP TABLE IF EXISTS `fa_depreciation`;
 CREATE TABLE `fa_depreciation`  (
@@ -2857,7 +2857,7 @@ CREATE TABLE `fa_depreciation`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '固定资产折旧记录' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for fa_disposal
+-- 表结构：fa_disposal
 -- ----------------------------
 DROP TABLE IF EXISTS `fa_disposal`;
 CREATE TABLE `fa_disposal`  (
@@ -2886,7 +2886,7 @@ CREATE TABLE `fa_disposal`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '固定资产处置记录' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for fin_close_log
+-- 表结构：fin_close_log
 -- ----------------------------
 DROP TABLE IF EXISTS `fin_close_log`;
 CREATE TABLE `fin_close_log`  (
@@ -2909,7 +2909,7 @@ CREATE TABLE `fin_close_log`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '期末关账执行日志' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for fin_receipt
+-- 表结构：fin_receipt
 -- ----------------------------
 DROP TABLE IF EXISTS `fin_receipt`;
 CREATE TABLE `fin_receipt`  (
@@ -2947,7 +2947,7 @@ CREATE TABLE `fin_receipt`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '收付款单(AR收款/AP付款合一)' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for fin_settlement
+-- 表结构：fin_settlement
 -- ----------------------------
 DROP TABLE IF EXISTS `fin_settlement`;
 CREATE TABLE `fin_settlement`  (
@@ -2976,7 +2976,7 @@ CREATE TABLE `fin_settlement`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '应收应付核销记录' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for gl_account
+-- 表结构：gl_account
 -- ----------------------------
 DROP TABLE IF EXISTS `gl_account`;
 CREATE TABLE `gl_account`  (
@@ -3011,7 +3011,7 @@ CREATE TABLE `gl_account`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '会计科目表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Records of gl_account
+-- 初始数据：gl_account
 -- ----------------------------
 INSERT INTO `gl_account` VALUES (6005001, '000000', '1001', '库存现金', 'ASSET', 'DEBIT', 0, 1, '6005001', '库存现金', '1', '0', NULL, '0', 'CNY', '0', 1, 0, NULL, NULL, '2026-07-30 21:32:29', NULL, '2026-07-30 21:32:29', '0');
 INSERT INTO `gl_account` VALUES (6005002, '000000', '1002', '银行存款', 'ASSET', 'DEBIT', 0, 1, '6005002', '银行存款', '1', '0', NULL, '0', 'CNY', '0', 2, 0, NULL, NULL, '2026-07-30 21:32:29', NULL, '2026-07-30 21:32:29', '0');
@@ -3046,7 +3046,7 @@ INSERT INTO `gl_account` VALUES (6005058, '000000', '6711', '营业外支出', '
 INSERT INTO `gl_account` VALUES (6005059, '000000', '6301', '营业外收入', 'INCOME', 'CREDIT', 0, 1, '6005059', '营业外收入', '1', '0', NULL, '0', 'CNY', '0', 59, 0, NULL, NULL, '2026-07-31 21:25:39', NULL, '2026-07-31 21:25:39', '0');
 
 -- ----------------------------
--- Table structure for gl_account_balance
+-- 表结构：gl_account_balance
 -- ----------------------------
 DROP TABLE IF EXISTS `gl_account_balance`;
 CREATE TABLE `gl_account_balance`  (
@@ -3075,7 +3075,7 @@ CREATE TABLE `gl_account_balance`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '科目余额表(试算/报表基座)' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for gl_currency_rate
+-- 表结构：gl_currency_rate
 -- ----------------------------
 DROP TABLE IF EXISTS `gl_currency_rate`;
 CREATE TABLE `gl_currency_rate`  (
@@ -3099,7 +3099,7 @@ CREATE TABLE `gl_currency_rate`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '币种汇率' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for gl_period
+-- 表结构：gl_period
 -- ----------------------------
 DROP TABLE IF EXISTS `gl_period`;
 CREATE TABLE `gl_period`  (
@@ -3130,7 +3130,7 @@ CREATE TABLE `gl_period`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '会计期间' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Records of gl_period
+-- 初始数据：gl_period
 -- ----------------------------
 INSERT INTO `gl_period` VALUES (1, '000000', 2026, 1, '2026年01期', '2026-01-01', '2026-01-31', 'OPEN', '0', 0, NULL, 0, NULL, NULL, 1, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
 INSERT INTO `gl_period` VALUES (2, '000000', 2026, 2, '2026年02期', '2026-02-01', '2026-02-28', 'OPEN', '0', 0, NULL, 0, NULL, NULL, 1, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
@@ -3146,7 +3146,7 @@ INSERT INTO `gl_period` VALUES (11, '000000', 2026, 11, '2026年11期', '2026-11
 INSERT INTO `gl_period` VALUES (12, '000000', 2026, 12, '2026年12期', '2026-12-01', '2026-12-31', 'OPEN', '0', 0, NULL, 0, NULL, NULL, 1, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
 
 -- ----------------------------
--- Table structure for gl_voucher
+-- 表结构：gl_voucher
 -- ----------------------------
 DROP TABLE IF EXISTS `gl_voucher`;
 CREATE TABLE `gl_voucher`  (
@@ -3183,7 +3183,7 @@ CREATE TABLE `gl_voucher`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '记账凭证头' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for gl_voucher_line
+-- 表结构：gl_voucher_line
 -- ----------------------------
 DROP TABLE IF EXISTS `gl_voucher_line`;
 CREATE TABLE `gl_voucher_line`  (
@@ -3220,7 +3220,7 @@ CREATE TABLE `gl_voucher_line`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '记账凭证明细行' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for po_requisition
+-- 表结构：po_requisition
 -- ----------------------------
 DROP TABLE IF EXISTS `po_requisition`;
 CREATE TABLE `po_requisition`  (
@@ -3249,7 +3249,7 @@ CREATE TABLE `po_requisition`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '请购单主表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for po_requisition_detail
+-- 表结构：po_requisition_detail
 -- ----------------------------
 DROP TABLE IF EXISTS `po_requisition_detail`;
 CREATE TABLE `po_requisition_detail`  (
@@ -3281,7 +3281,7 @@ CREATE TABLE `po_requisition_detail`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '请购单明细表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for prd_capacity_calendar
+-- 表结构：prd_capacity_calendar
 -- ----------------------------
 DROP TABLE IF EXISTS `prd_capacity_calendar`;
 CREATE TABLE `prd_capacity_calendar`  (
@@ -3316,7 +3316,7 @@ CREATE TABLE `prd_capacity_calendar`  (
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '产能日历表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for prd_material_requirement
+-- 表结构：prd_material_requirement
 -- ----------------------------
 DROP TABLE IF EXISTS `prd_material_requirement`;
 CREATE TABLE `prd_material_requirement`  (
@@ -3358,7 +3358,7 @@ CREATE TABLE `prd_material_requirement`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料需求单表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for prd_material_requirement_detail
+-- 表结构：prd_material_requirement_detail
 -- ----------------------------
 DROP TABLE IF EXISTS `prd_material_requirement_detail`;
 CREATE TABLE `prd_material_requirement_detail`  (
@@ -3399,7 +3399,7 @@ CREATE TABLE `prd_material_requirement_detail`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料需求单明细表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for prd_production_plan
+-- 表结构：prd_production_plan
 -- ----------------------------
 DROP TABLE IF EXISTS `prd_production_plan`;
 CREATE TABLE `prd_production_plan`  (
@@ -3448,7 +3448,7 @@ CREATE TABLE `prd_production_plan`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '生产计划表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for prd_rework_order
+-- 表结构：prd_rework_order
 -- ----------------------------
 DROP TABLE IF EXISTS `prd_rework_order`;
 CREATE TABLE `prd_rework_order`  (
@@ -3483,7 +3483,7 @@ CREATE TABLE `prd_rework_order`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '返工订单表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for prd_schedule_plan
+-- 表结构：prd_schedule_plan
 -- ----------------------------
 DROP TABLE IF EXISTS `prd_schedule_plan`;
 CREATE TABLE `prd_schedule_plan`  (
@@ -3495,6 +3495,12 @@ CREATE TABLE `prd_schedule_plan`  (
   `start_date` date NOT NULL COMMENT '排产起始日',
   `horizon_days` int(11) NOT NULL DEFAULT 14 COMMENT '排产跨度(天)',
   `strategy` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'EDD' COMMENT '排序策略: EDD-最早交期, CR-临界比, PRIORITY-优先级',
+  `decision_run_id` bigint(20) NULL DEFAULT NULL COMMENT 'AI决策运行ID',
+  `decision_action_id` bigint(20) NULL DEFAULT NULL COMMENT 'AI决策动作ID',
+  `decision_idempotency_key` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '租户内AI决策幂等键',
+  `decision_scenario_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT 'AI决策场景编码',
+  `decision_work_order_ids_json` varchar(4000) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '显式工单ID十进制字符串JSON',
+  `version` int(11) NOT NULL DEFAULT 0 COMMENT '乐观锁版本',
   `wo_count` int(11) NULL DEFAULT 0 COMMENT '参与排产工单数',
   `task_count` int(11) NULL DEFAULT 0 COMMENT '排产工序任务数',
   `skipped_count` int(11) NULL DEFAULT 0 COMMENT '跳过工单数(无工艺路线等)',
@@ -3513,11 +3519,13 @@ CREATE TABLE `prd_schedule_plan`  (
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志',
   PRIMARY KEY (`plan_id`) USING BTREE,
   INDEX `idx_psp_tenant`(`tenant_id`) USING BTREE,
-  INDEX `idx_psp_no`(`plan_no`) USING BTREE
+  INDEX `idx_psp_no`(`plan_no`) USING BTREE,
+  UNIQUE INDEX `uk_psp_decision_idem`(`tenant_id`, `decision_idempotency_key`) USING BTREE,
+  INDEX `idx_psp_decision_run`(`tenant_id`, `decision_run_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'APS排程方案表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for prd_schedule_task
+-- 表结构：prd_schedule_task
 -- ----------------------------
 DROP TABLE IF EXISTS `prd_schedule_task`;
 CREATE TABLE `prd_schedule_task`  (
@@ -3554,7 +3562,7 @@ CREATE TABLE `prd_schedule_task`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'APS排程工序任务表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for prd_subcontract
+-- 表结构：prd_subcontract
 -- ----------------------------
 DROP TABLE IF EXISTS `prd_subcontract`;
 CREATE TABLE `prd_subcontract`  (
@@ -3602,7 +3610,7 @@ CREATE TABLE `prd_subcontract`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '委外订单表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for prd_subcontract_bom_line
+-- 表结构：prd_subcontract_bom_line
 -- ----------------------------
 DROP TABLE IF EXISTS `prd_subcontract_bom_line`;
 CREATE TABLE `prd_subcontract_bom_line`  (
@@ -3633,7 +3641,7 @@ CREATE TABLE `prd_subcontract_bom_line`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '委外订单BOM快照行' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for prd_subcontract_quote
+-- 表结构：prd_subcontract_quote
 -- ----------------------------
 DROP TABLE IF EXISTS `prd_subcontract_quote`;
 CREATE TABLE `prd_subcontract_quote`  (
@@ -3663,7 +3671,7 @@ CREATE TABLE `prd_subcontract_quote`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '委外订单报价记录' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for prd_work_order
+-- 表结构：prd_work_order
 -- ----------------------------
 DROP TABLE IF EXISTS `prd_work_order`;
 CREATE TABLE `prd_work_order`  (
@@ -3735,7 +3743,7 @@ CREATE TABLE `prd_work_order`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '生产工单表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for prd_work_order_resource
+-- 表结构：prd_work_order_resource
 -- ----------------------------
 DROP TABLE IF EXISTS `prd_work_order_resource`;
 CREATE TABLE `prd_work_order_resource`  (
@@ -3770,7 +3778,7 @@ CREATE TABLE `prd_work_order_resource`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '生产工单资源分配表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for prd_work_report
+-- 表结构：prd_work_report
 -- ----------------------------
 DROP TABLE IF EXISTS `prd_work_report`;
 CREATE TABLE `prd_work_report`  (
@@ -3881,7 +3889,7 @@ CREATE TABLE `prd_work_report`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '生产报工表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for pu_contract
+-- 表结构：pu_contract
 -- ----------------------------
 DROP TABLE IF EXISTS `pu_contract`;
 CREATE TABLE `pu_contract`  (
@@ -3918,12 +3926,12 @@ CREATE TABLE `pu_contract`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '采购合同头表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Records of pu_contract
+-- 初始数据：pu_contract
 -- ----------------------------
 INSERT INTO `pu_contract` VALUES (2100790232863444993, '123', '测试', 1, 'V00001', '华东钢材供应链有限公司', 'FRAMEWORK', '2026-09-18 00:00:00', '2026-09-18 00:00:00', '2026-09-25 00:00:00', 30000.0000, 3900.00, 26100.00, 'CNY', '333', 'DRAFT', NULL, NULL, NULL, NULL, NULL, NULL, '000000', 103, 1, '2026-09-18 11:33:17', 1, '2026-09-18 11:33:17', '0');
 
 -- ----------------------------
--- Table structure for pu_contract_line
+-- 表结构：pu_contract_line
 -- ----------------------------
 DROP TABLE IF EXISTS `pu_contract_line`;
 CREATE TABLE `pu_contract_line`  (
@@ -3959,12 +3967,12 @@ CREATE TABLE `pu_contract_line`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '采购合同行表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Records of pu_contract_line
+-- 初始数据：pu_contract_line
 -- ----------------------------
 INSERT INTO `pu_contract_line` VALUES (2100790232926359553, 2100790232863444993, 10, 'IF20260914010', '数控铣床 XK714', '行程 700×400×500mm 主轴 8000rpm', '台', 30000.0000, 13.00, 1.0000, 30000.0000, 3900.00, 26100.00, '2026-09-23 00:00:00', 1, NULL, NULL, NULL, NULL, NULL, '000000', 103, 1, '2026-09-18 11:33:17', 1, '2026-09-18 11:33:17', '0');
 
 -- ----------------------------
--- Table structure for pu_invoice
+-- 表结构：pu_invoice
 -- ----------------------------
 DROP TABLE IF EXISTS `pu_invoice`;
 CREATE TABLE `pu_invoice`  (
@@ -4021,7 +4029,7 @@ CREATE TABLE `pu_invoice`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '采购进项发票表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for pu_invoice_line
+-- 表结构：pu_invoice_line
 -- ----------------------------
 DROP TABLE IF EXISTS `pu_invoice_line`;
 CREATE TABLE `pu_invoice_line`  (
@@ -4062,7 +4070,7 @@ CREATE TABLE `pu_invoice_line`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '采购进项发票明细行表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for pu_purchase_order
+-- 表结构：pu_purchase_order
 -- ----------------------------
 DROP TABLE IF EXISTS `pu_purchase_order`;
 CREATE TABLE `pu_purchase_order`  (
@@ -4110,7 +4118,7 @@ CREATE TABLE `pu_purchase_order`  (
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '采购订单表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for pu_purchase_order_line
+-- 表结构：pu_purchase_order_line
 -- ----------------------------
 DROP TABLE IF EXISTS `pu_purchase_order_line`;
 CREATE TABLE `pu_purchase_order_line`  (
@@ -4149,7 +4157,7 @@ CREATE TABLE `pu_purchase_order_line`  (
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '采购订单明细表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for pu_purchase_requisition
+-- 表结构：pu_purchase_requisition
 -- ----------------------------
 DROP TABLE IF EXISTS `pu_purchase_requisition`;
 CREATE TABLE `pu_purchase_requisition`  (
@@ -4161,6 +4169,10 @@ CREATE TABLE `pu_purchase_requisition`  (
   `requisition_date` datetime(0) NULL DEFAULT NULL COMMENT '申请日期',
   `required_date` datetime(0) NULL DEFAULT NULL COMMENT '需求日期',
   `source_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '来源类型',
+  `decision_run_id` bigint(20) NULL DEFAULT NULL COMMENT 'AI决策运行ID',
+  `decision_action_id` bigint(20) NULL DEFAULT NULL COMMENT 'AI决策动作ID',
+  `decision_idempotency_key` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '租户内AI决策幂等键',
+  `version` int(11) NOT NULL DEFAULT 0 COMMENT '乐观锁版本',
   `status` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'DRAFT' COMMENT '状态',
   `select_flow_id` bigint(20) NULL DEFAULT NULL COMMENT '流程ID',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
@@ -4178,11 +4190,13 @@ CREATE TABLE `pu_purchase_requisition`  (
   `dept_id` bigint(20) NULL DEFAULT NULL COMMENT '采购部门ID（关联sys_dept）',
   `dept_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '采购部门名称',
   PRIMARY KEY (`requisition_id`) USING BTREE,
-  UNIQUE INDEX `uk_requisition_no`(`requisition_no`, `tenant_id`) USING BTREE
+  UNIQUE INDEX `uk_requisition_no`(`requisition_no`, `tenant_id`) USING BTREE,
+  UNIQUE INDEX `uk_pur_decision_idem`(`tenant_id`, `decision_idempotency_key`) USING BTREE,
+  INDEX `idx_pur_decision_run`(`tenant_id`, `decision_run_id`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '采购申请表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for pu_purchase_requisition_line
+-- 表结构：pu_purchase_requisition_line
 -- ----------------------------
 DROP TABLE IF EXISTS `pu_purchase_requisition_line`;
 CREATE TABLE `pu_purchase_requisition_line`  (
@@ -4190,9 +4204,9 @@ CREATE TABLE `pu_purchase_requisition_line`  (
   `requisition_id` bigint(20) NOT NULL COMMENT '所属采购申请ID',
   `material_id` bigint(20) NULL DEFAULT NULL COMMENT '物料ID',
   `material_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '物料编码',
-  `material_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '物料名称',
-  `material_spec` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '规格型号',
-  `unit` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '计量单位',
+  `material_name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '物料名称',
+  `material_spec` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '规格型号',
+  `unit` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '计量单位',
   `apply_quantity` decimal(18, 4) NULL DEFAULT NULL COMMENT '申请数量',
   `approved_quantity` decimal(18, 4) NULL DEFAULT NULL COMMENT '已批准数量',
   `shortage_quantity` decimal(18, 4) NULL DEFAULT NULL COMMENT '短缺数量',
@@ -4217,7 +4231,7 @@ CREATE TABLE `pu_purchase_requisition_line`  (
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '采购申请明细表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for pu_purchase_return
+-- 表结构：pu_purchase_return
 -- ----------------------------
 DROP TABLE IF EXISTS `pu_purchase_return`;
 CREATE TABLE `pu_purchase_return`  (
@@ -4252,7 +4266,7 @@ CREATE TABLE `pu_purchase_return`  (
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '采购退货表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for pu_purchase_return_line
+-- 表结构：pu_purchase_return_line
 -- ----------------------------
 DROP TABLE IF EXISTS `pu_purchase_return_line`;
 CREATE TABLE `pu_purchase_return_line`  (
@@ -4289,7 +4303,7 @@ CREATE TABLE `pu_purchase_return_line`  (
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '采购退货行表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for pu_vendor_evaluation
+-- 表结构：pu_vendor_evaluation
 -- ----------------------------
 DROP TABLE IF EXISTS `pu_vendor_evaluation`;
 CREATE TABLE `pu_vendor_evaluation`  (
@@ -4327,14 +4341,14 @@ CREATE TABLE `pu_vendor_evaluation`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '供应商评估记录表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Records of pu_vendor_evaluation
+-- 初始数据：pu_vendor_evaluation
 -- ----------------------------
 INSERT INTO `pu_vendor_evaluation` VALUES (2101172146381262849, '000000', 1, 'V00001', '华东钢材供应链有限公司', '2026-09', 0.00, 0.00, 80.00, 20.00, 'D', 0, 0, 0.0000, 0.0000, 0.0000, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-09-19 12:50:52', 1, '2026-09-19 12:51:11', '1');
 INSERT INTO `pu_vendor_evaluation` VALUES (2101172146381262850, '000000', 2, 'V00002', '江苏精密紧固件制造厂', '2026-09', 0.00, 0.00, 80.00, 20.00, 'D', 0, 0, 0.0000, 0.0000, 0.0000, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-09-19 12:50:52', 1, '2026-09-19 12:51:11', '1');
 INSERT INTO `pu_vendor_evaluation` VALUES (2101172380549255169, '000000', 1, 'V00001', '华东钢材供应链有限公司', '2026-08', NULL, NULL, NULL, NULL, NULL, 1, 1, 1.0000, NULL, 0.0000, NULL, NULL, NULL, NULL, NULL, 103, 1, '2026-09-19 12:51:48', 1, '2026-09-19 12:52:04', '1');
 
 -- ----------------------------
--- Table structure for report_item
+-- 表结构：report_item
 -- ----------------------------
 DROP TABLE IF EXISTS `report_item`;
 CREATE TABLE `report_item`  (
@@ -4362,7 +4376,7 @@ CREATE TABLE `report_item`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '报表项目-科目映射' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Records of report_item
+-- 初始数据：report_item
 -- ----------------------------
 INSERT INTO `report_item` VALUES (7000001, '000000', 'BALANCE', 'BS_MONETARY', '货币资金', 10, 0, '0', '1001,1002', '1', '0', 0, NULL, NULL, '2026-07-31 21:26:56', NULL, '2026-07-31 21:26:56', '0');
 INSERT INTO `report_item` VALUES (7000002, '000000', 'BALANCE', 'BS_AR', '应收账款', 20, 0, '0', '1122', '1', '0', 0, NULL, NULL, '2026-07-31 21:26:56', NULL, '2026-07-31 21:26:56', '0');
@@ -4392,7 +4406,7 @@ INSERT INTO `report_item` VALUES (7000204, '000000', 'CASH', 'CF_SALARY_PAY', '�
 INSERT INTO `report_item` VALUES (7000205, '000000', 'CASH', 'CF_FA_PAY', '购建固定资产支付的现金', 50, 0, '0', '1601', '-1', '0', 0, NULL, NULL, '2026-07-31 21:26:56', NULL, '2026-07-31 21:26:56', '0');
 
 -- ----------------------------
--- Table structure for sch_attendance
+-- 表结构：sch_attendance
 -- ----------------------------
 DROP TABLE IF EXISTS `sch_attendance`;
 CREATE TABLE `sch_attendance`  (
@@ -4442,7 +4456,7 @@ CREATE TABLE `sch_attendance`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '考勤记录表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for sch_employee_schedule
+-- 表结构：sch_employee_schedule
 -- ----------------------------
 DROP TABLE IF EXISTS `sch_employee_schedule`;
 CREATE TABLE `sch_employee_schedule`  (
@@ -4480,7 +4494,7 @@ CREATE TABLE `sch_employee_schedule`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '员工排班明细表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for sch_holiday
+-- 表结构：sch_holiday
 -- ----------------------------
 DROP TABLE IF EXISTS `sch_holiday`;
 CREATE TABLE `sch_holiday`  (
@@ -4505,14 +4519,14 @@ CREATE TABLE `sch_holiday`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '节假日设置表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Records of sch_holiday
+-- 初始数据：sch_holiday
 -- ----------------------------
 INSERT INTO `sch_holiday` VALUES (1, '000000', '2026-01-01 00:00:00', '元旦', 'LEGAL', 2026, 0, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
 INSERT INTO `sch_holiday` VALUES (2, '000000', '2026-05-01 00:00:00', '劳动节', 'LEGAL', 2026, 0, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
 INSERT INTO `sch_holiday` VALUES (3, '000000', '2026-10-01 00:00:00', '国庆节', 'LEGAL', 2026, 0, NULL, 103, 1, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
 
 -- ----------------------------
--- Table structure for sch_leave_apply
+-- 表结构：sch_leave_apply
 -- ----------------------------
 DROP TABLE IF EXISTS `sch_leave_apply`;
 CREATE TABLE `sch_leave_apply`  (
@@ -4545,7 +4559,7 @@ CREATE TABLE `sch_leave_apply`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '考勤请假申请表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for sch_outdoor_punch
+-- 表结构：sch_outdoor_punch
 -- ----------------------------
 DROP TABLE IF EXISTS `sch_outdoor_punch`;
 CREATE TABLE `sch_outdoor_punch`  (
@@ -4572,7 +4586,7 @@ CREATE TABLE `sch_outdoor_punch`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '外勤打卡记录表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for sch_plan
+-- 表结构：sch_plan
 -- ----------------------------
 DROP TABLE IF EXISTS `sch_plan`;
 CREATE TABLE `sch_plan`  (
@@ -4601,7 +4615,7 @@ CREATE TABLE `sch_plan`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '排班计划表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for sch_plan_team
+-- 表结构：sch_plan_team
 -- ----------------------------
 DROP TABLE IF EXISTS `sch_plan_team`;
 CREATE TABLE `sch_plan_team`  (
@@ -4624,7 +4638,7 @@ CREATE TABLE `sch_plan_team`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '计划班组关联表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for sch_punch_rule
+-- 表结构：sch_punch_rule
 -- ----------------------------
 DROP TABLE IF EXISTS `sch_punch_rule`;
 CREATE TABLE `sch_punch_rule`  (
@@ -4667,7 +4681,7 @@ CREATE TABLE `sch_punch_rule`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '打卡规则表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for sch_shift
+-- 表结构：sch_shift
 -- ----------------------------
 DROP TABLE IF EXISTS `sch_shift`;
 CREATE TABLE `sch_shift`  (
@@ -4701,7 +4715,7 @@ CREATE TABLE `sch_shift`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '班次定义表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for sch_supplement_apply
+-- 表结构：sch_supplement_apply
 -- ----------------------------
 DROP TABLE IF EXISTS `sch_supplement_apply`;
 CREATE TABLE `sch_supplement_apply`  (
@@ -4732,7 +4746,7 @@ CREATE TABLE `sch_supplement_apply`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '考勤补卡申请表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for sch_team
+-- 表结构：sch_team
 -- ----------------------------
 DROP TABLE IF EXISTS `sch_team`;
 CREATE TABLE `sch_team`  (
@@ -4762,7 +4776,7 @@ CREATE TABLE `sch_team`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '班组设置表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for sch_team_member
+-- 表结构：sch_team_member
 -- ----------------------------
 DROP TABLE IF EXISTS `sch_team_member`;
 CREATE TABLE `sch_team_member`  (
@@ -4791,7 +4805,7 @@ CREATE TABLE `sch_team_member`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '班组成员表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for sch_team_schedule
+-- 表结构：sch_team_schedule
 -- ----------------------------
 DROP TABLE IF EXISTS `sch_team_schedule`;
 CREATE TABLE `sch_team_schedule`  (
@@ -4819,7 +4833,7 @@ CREATE TABLE `sch_team_schedule`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '班组排班（模板）表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for sch_worker
+-- 表结构：sch_worker
 -- ----------------------------
 DROP TABLE IF EXISTS `sch_worker`;
 CREATE TABLE `sch_worker`  (
@@ -4860,7 +4874,7 @@ CREATE TABLE `sch_worker`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '生产工人档案表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Records of sch_worker
+-- 初始数据：sch_worker
 -- ----------------------------
 INSERT INTO `sch_worker` VALUES (12, '000000', 105, 13, '测试车间', '张明', 'SCZX20251222017', '13812345678', '0', '焊工', 'JUNIOR', 'ON_DUTY', '2025-12-01 00:00:00', '2025-12-08 00:00:00', '定时任务同步用户', 103, 1, '2025-12-22 14:21:40', 1, '2026-09-14 13:19:51', '0', 36.00, 'SCZX20260914012', NULL, '1992-09-14', '中专', '家属12', '13900000012');
 INSERT INTO `sch_worker` VALUES (13, '000000', 106, 14, '包装车间', '李芳华', 'SCZX20251222018', '15687654321', '1', NULL, 'INTERMEDIATE', 'ON_DUTY', '2026-05-24 13:19:31', '2026-08-22 13:19:31', '定时任务同步用户', 103, 1, '2025-12-22 14:21:40', 1, '2026-09-14 13:19:51', '0', 48.00, 'SCZX20260914013', NULL, '1991-09-14', '中专', '家属13', '13900000013');
@@ -4901,7 +4915,7 @@ INSERT INTO `sch_worker` VALUES (2091200581782777858, '000000', NULL, 4, '钣金
 INSERT INTO `sch_worker` VALUES (2091200581975715841, '000000', NULL, 7, '铸造车间', '王五常', 'SCZX20260823005', '13875715841', '0', '包装工', 'INTERMEDIATE', 'ON_DUTY', '2026-01-01 00:00:00', '2026-04-01 00:00:00', NULL, 103, 1, '2026-08-23 00:27:26', 1, '2026-09-14 13:19:51', '0', 48.00, 'SCZX20260914209', NULL, '1988-09-14', '中专', '家属41', '13975715841');
 
 -- ----------------------------
--- Table structure for sch_worker_certificate
+-- 表结构：sch_worker_certificate
 -- ----------------------------
 DROP TABLE IF EXISTS `sch_worker_certificate`;
 CREATE TABLE `sch_worker_certificate`  (
@@ -4930,7 +4944,7 @@ CREATE TABLE `sch_worker_certificate`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '工人资质证书' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Records of sch_worker_certificate
+-- 初始数据：sch_worker_certificate
 -- ----------------------------
 INSERT INTO `sch_worker_certificate` VALUES (1, '000000', 1, '工人01', 'CERT20260914001', '焊接作业资格证', 'SPECIAL', '浙江省应急管理厅', '2024-03-15', '2030-03-14', 'VALID', NULL, 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
 INSERT INTO `sch_worker_certificate` VALUES (2, '000000', 2, '工人02', 'CERT20260914002', '起重机械操作证', 'SPECIAL', '浙江省应急管理厅', '2024-03-15', '2030-03-14', 'VALID', NULL, 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
@@ -4946,7 +4960,7 @@ INSERT INTO `sch_worker_certificate` VALUES (11, '000000', 11, '工人11', 'CERT
 INSERT INTO `sch_worker_certificate` VALUES (12, '000000', 12, '工人12', 'CERT20260914012', '熔化焊接与热切割作业证', 'SPECIAL', '浙江省应急管理厅', '2024-03-15', '2030-03-14', 'VALID', NULL, 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
 
 -- ----------------------------
--- Table structure for sch_worker_skill
+-- 表结构：sch_worker_skill
 -- ----------------------------
 DROP TABLE IF EXISTS `sch_worker_skill`;
 CREATE TABLE `sch_worker_skill`  (
@@ -4975,7 +4989,7 @@ CREATE TABLE `sch_worker_skill`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '工人技能矩阵' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Records of sch_worker_skill
+-- 初始数据：sch_worker_skill
 -- ----------------------------
 INSERT INTO `sch_worker_skill` VALUES (1, '000000', 1, '工人01', 1, 'LASER', '激光切割', 'QUALIFIED', 60, 1, 1.0, NULL, 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
 INSERT INTO `sch_worker_skill` VALUES (2, '000000', 1, '工人01', 2, 'PLASMA', '等离子切割', 'SKILLED', 71, 1, 2.0, NULL, 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
@@ -5090,7 +5104,7 @@ INSERT INTO `sch_worker_skill` VALUES (110, '000000', 37, '工人37', 53, 'WATER
 INSERT INTO `sch_worker_skill` VALUES (111, '000000', 37, '工人37', 54, 'QC', '质检', 'EXPERT', 94, 1, 3.0, NULL, 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-14 15:07:27', '0');
 
 -- ----------------------------
--- Table structure for so_contract
+-- 表结构：so_contract
 -- ----------------------------
 DROP TABLE IF EXISTS `so_contract`;
 CREATE TABLE `so_contract`  (
@@ -5130,12 +5144,12 @@ CREATE TABLE `so_contract`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售合同表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Records of so_contract
+-- 初始数据：so_contract
 -- ----------------------------
 INSERT INTO `so_contract` VALUES (2100477528151883778, '000000', '测试', '测试', 'SALES', 1, '北京北方机械制造有限公司', '2026-09-17', '2026-09-18', '2026-09-25', 2.00, 'CNY', '1', NULL, '测试', 'DRAFT', NULL, '', NULL, NULL, NULL, NULL, 103, 1, '2026-09-17 14:50:42', 1, '2026-09-17 14:50:42', '0');
 
 -- ----------------------------
--- Table structure for so_contract_line
+-- 表结构：so_contract_line
 -- ----------------------------
 DROP TABLE IF EXISTS `so_contract_line`;
 CREATE TABLE `so_contract_line`  (
@@ -5175,12 +5189,12 @@ CREATE TABLE `so_contract_line`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售合同明细行表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Records of so_contract_line
+-- 初始数据：so_contract_line
 -- ----------------------------
 INSERT INTO `so_contract_line` VALUES (2100477528189632513, '000000', 2100477528151883778, '1', 1, 'IF20260914001', '高强度螺栓组套 M12', 'M12×60 8.8级 含螺母平垫', 1.0000, '套', 2.0000, 2.00, 0.00, 0.00, '2026-09-19', 0.0000, 0.0000, 'DRAFT', 0, '', NULL, NULL, NULL, NULL, 103, 1, '2026-09-17 14:50:42', 1, '2026-09-17 14:50:42', '0');
 
 -- ----------------------------
--- Table structure for so_credit_usage
+-- 表结构：so_credit_usage
 -- ----------------------------
 DROP TABLE IF EXISTS `so_credit_usage`;
 CREATE TABLE `so_credit_usage`  (
@@ -5207,7 +5221,7 @@ CREATE TABLE `so_credit_usage`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '信用占用记录' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for so_customer_order
+-- 表结构：so_customer_order
 -- ----------------------------
 DROP TABLE IF EXISTS `so_customer_order`;
 CREATE TABLE `so_customer_order`  (
@@ -5249,12 +5263,12 @@ CREATE TABLE `so_customer_order`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '客户订单表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Records of so_customer_order
+-- 初始数据：so_customer_order
 -- ----------------------------
 INSERT INTO `so_customer_order` VALUES (2101168396673486850, '000000', 'CO20260919001', 1, '北京北方机械制造有限公司', '联系人1', '0571-66660001', '2026-09-19 00:00:00', '2026-09-26 00:00:00', 'CNY', NULL, NULL, 0, NULL, 'SALES', 'C00001', NULL, 101, '麦得朶', NULL, 103, 1, '2026-09-19 12:35:58', 1, '2026-09-19 12:35:58', '0');
 
 -- ----------------------------
--- Table structure for so_invoice
+-- 表结构：so_invoice
 -- ----------------------------
 DROP TABLE IF EXISTS `so_invoice`;
 CREATE TABLE `so_invoice`  (
@@ -5310,7 +5324,7 @@ CREATE TABLE `so_invoice`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售发票表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for so_invoice_line
+-- 表结构：so_invoice_line
 -- ----------------------------
 DROP TABLE IF EXISTS `so_invoice_line`;
 CREATE TABLE `so_invoice_line`  (
@@ -5351,7 +5365,7 @@ CREATE TABLE `so_invoice_line`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售发票明细行表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for so_price_list
+-- 表结构：so_price_list
 -- ----------------------------
 DROP TABLE IF EXISTS `so_price_list`;
 CREATE TABLE `so_price_list`  (
@@ -5380,12 +5394,12 @@ CREATE TABLE `so_price_list`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售价格表头' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Records of so_price_list
+-- 初始数据：so_price_list
 -- ----------------------------
 INSERT INTO `so_price_list` VALUES (1, '000000', 'PL20260914001', '2026 年度标准零售价目表', 'BASE', NULL, 'CNY', 10, '2026-01-01', '2027-12-31', 'ACTIVE', '0', 1, 103, '2026-09-14 15:07:27', NULL, NULL);
 
 -- ----------------------------
--- Table structure for so_price_list_line
+-- 表结构：so_price_list_line
 -- ----------------------------
 DROP TABLE IF EXISTS `so_price_list_line`;
 CREATE TABLE `so_price_list_line`  (
@@ -5410,7 +5424,7 @@ CREATE TABLE `so_price_list_line`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售价格表行' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Records of so_price_list_line
+-- 初始数据：so_price_list_line
 -- ----------------------------
 INSERT INTO `so_price_list_line` VALUES (1, '000000', 1, 1, 45.0000, 1.0000, 9999.0000, 0.00, '0', 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-19 23:21:23');
 INSERT INTO `so_price_list_line` VALUES (2, '000000', 1, 2, 2860.0000, 1.0000, 9999.0000, 0.00, '0', 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-19 23:21:23');
@@ -5451,7 +5465,7 @@ INSERT INTO `so_price_list_line` VALUES (36, '000000', 1, 36, 386.0000, 1.0000, 
 INSERT INTO `so_price_list_line` VALUES (37, '000000', 1, 37, 328.0000, 1.0000, 9999.0000, 0.00, '0', 1, 103, '2026-09-14 15:07:27', NULL, '2026-09-19 23:21:23');
 
 -- ----------------------------
--- Table structure for so_quotation
+-- 表结构：so_quotation
 -- ----------------------------
 DROP TABLE IF EXISTS `so_quotation`;
 CREATE TABLE `so_quotation`  (
@@ -5493,7 +5507,7 @@ CREATE TABLE `so_quotation`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售报价单表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for so_quotation_line
+-- 表结构：so_quotation_line
 -- ----------------------------
 DROP TABLE IF EXISTS `so_quotation_line`;
 CREATE TABLE `so_quotation_line`  (
@@ -5530,7 +5544,7 @@ CREATE TABLE `so_quotation_line`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售报价行表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for so_return
+-- 表结构：so_return
 -- ----------------------------
 DROP TABLE IF EXISTS `so_return`;
 CREATE TABLE `so_return`  (
@@ -5575,7 +5589,7 @@ CREATE TABLE `so_return`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售退货单表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for so_return_line
+-- 表结构：so_return_line
 -- ----------------------------
 DROP TABLE IF EXISTS `so_return_line`;
 CREATE TABLE `so_return_line`  (
@@ -5614,7 +5628,7 @@ CREATE TABLE `so_return_line`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售退货行表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for so_sales_order_header
+-- 表结构：so_sales_order_header
 -- ----------------------------
 DROP TABLE IF EXISTS `so_sales_order_header`;
 CREATE TABLE `so_sales_order_header`  (
@@ -5676,7 +5690,7 @@ CREATE TABLE `so_sales_order_header`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售订单主表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for so_sales_order_line
+-- 表结构：so_sales_order_line
 -- ----------------------------
 DROP TABLE IF EXISTS `so_sales_order_line`;
 CREATE TABLE `so_sales_order_line`  (
@@ -5737,7 +5751,7 @@ CREATE TABLE `so_sales_order_line`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售订单行表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for wm_arrival_notice
+-- 表结构：wm_arrival_notice
 -- ----------------------------
 DROP TABLE IF EXISTS `wm_arrival_notice`;
 CREATE TABLE `wm_arrival_notice`  (
@@ -5771,7 +5785,7 @@ CREATE TABLE `wm_arrival_notice`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '到货通知单表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for wm_arrival_notice_line
+-- 表结构：wm_arrival_notice_line
 -- ----------------------------
 DROP TABLE IF EXISTS `wm_arrival_notice_line`;
 CREATE TABLE `wm_arrival_notice_line`  (
@@ -5807,7 +5821,7 @@ CREATE TABLE `wm_arrival_notice_line`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '到货通知单行表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for wm_barcode
+-- 表结构：wm_barcode
 -- ----------------------------
 DROP TABLE IF EXISTS `wm_barcode`;
 CREATE TABLE `wm_barcode`  (
@@ -5850,7 +5864,7 @@ CREATE TABLE `wm_barcode`  (
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '条码实例表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for wm_barcode_config
+-- 表结构：wm_barcode_config
 -- ----------------------------
 DROP TABLE IF EXISTS `wm_barcode_config`;
 CREATE TABLE `wm_barcode_config`  (
@@ -5885,13 +5899,13 @@ CREATE TABLE `wm_barcode_config`  (
 ) ENGINE = InnoDB AUTO_INCREMENT = 2062021060516102147 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '条码配置表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Records of wm_barcode_config
+-- 初始数据：wm_barcode_config
 -- ----------------------------
 INSERT INTO `wm_barcode_config` VALUES (900001, 'WM_RECEIVE_DEFAULT', '收货入库默认条码规则', 'RC', 'yyyyMMdd', 6, 0, 'RECEIVE_IN', NULL, 1, '默认收货入库条码配置，入库后自动生成条码实例.', NULL, NULL, NULL, NULL, '000000', NULL, NULL, '2026-05-23 17:46:58', 1, '2026-09-14 13:00:33', '0', 0);
 INSERT INTO `wm_barcode_config` VALUES (2062021060516102146, 'SO_SALESOUT_DEFAULT', '销售订单出库配置', 'SO', 'yyyyMMdd', 6, 0, 'SALES_OUT', NULL, 1, '', NULL, NULL, NULL, NULL, '000000', 103, 1, '2026-06-03 11:58:26', 1, '2026-06-03 11:59:25', '0', 0);
 
 -- ----------------------------
--- Table structure for wm_batch
+-- 表结构：wm_batch
 -- ----------------------------
 DROP TABLE IF EXISTS `wm_batch`;
 CREATE TABLE `wm_batch`  (
@@ -5944,7 +5958,7 @@ CREATE TABLE `wm_batch`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '批次管理表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for wm_material_handover
+-- 表结构：wm_material_handover
 -- ----------------------------
 DROP TABLE IF EXISTS `wm_material_handover`;
 CREATE TABLE `wm_material_handover`  (
@@ -5975,7 +5989,7 @@ CREATE TABLE `wm_material_handover`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '上料交接单' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for wm_material_handover_line
+-- 表结构：wm_material_handover_line
 -- ----------------------------
 DROP TABLE IF EXISTS `wm_material_handover_line`;
 CREATE TABLE `wm_material_handover_line`  (
@@ -6011,7 +6025,7 @@ CREATE TABLE `wm_material_handover_line`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '上料交接单行' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for wm_material_receive
+-- 表结构：wm_material_receive
 -- ----------------------------
 DROP TABLE IF EXISTS `wm_material_receive`;
 CREATE TABLE `wm_material_receive`  (
@@ -6062,7 +6076,7 @@ CREATE TABLE `wm_material_receive`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料入库单表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for wm_material_receive_detail
+-- 表结构：wm_material_receive_detail
 -- ----------------------------
 DROP TABLE IF EXISTS `wm_material_receive_detail`;
 CREATE TABLE `wm_material_receive_detail`  (
@@ -6107,7 +6121,7 @@ CREATE TABLE `wm_material_receive_detail`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料入库单明细表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for wm_material_receive_line
+-- 表结构：wm_material_receive_line
 -- ----------------------------
 DROP TABLE IF EXISTS `wm_material_receive_line`;
 CREATE TABLE `wm_material_receive_line`  (
@@ -6151,7 +6165,7 @@ CREATE TABLE `wm_material_receive_line`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '物料入库单行表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for wm_material_return
+-- 表结构：wm_material_return
 -- ----------------------------
 DROP TABLE IF EXISTS `wm_material_return`;
 CREATE TABLE `wm_material_return`  (
@@ -6175,7 +6189,7 @@ CREATE TABLE `wm_material_return`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '生产退料单' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for wm_material_return_line
+-- 表结构：wm_material_return_line
 -- ----------------------------
 DROP TABLE IF EXISTS `wm_material_return_line`;
 CREATE TABLE `wm_material_return_line`  (
@@ -6206,7 +6220,7 @@ CREATE TABLE `wm_material_return_line`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '生产退料单行' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for wm_material_stock
+-- 表结构：wm_material_stock
 -- ----------------------------
 DROP TABLE IF EXISTS `wm_material_stock`;
 CREATE TABLE `wm_material_stock`  (
@@ -6269,7 +6283,7 @@ CREATE TABLE `wm_material_stock`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '库存物料记录表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Records of wm_material_stock
+-- 初始数据：wm_material_stock
 -- ----------------------------
 INSERT INTO `wm_material_stock` VALUES (9900003001, NULL, 9900000001, 1, 'DEMO-M001', '粗铜线', '2.5mm', NULL, '千克', NULL, 'B20260801', 9900000001, 'WH-3D-DEMO', '3D示例仓库', 9900000011, 'A3D01', '原料货架区', 9900000101, 'A1-L1C1', 'A1排1层1列', NULL, NULL, NULL, NULL, 480.00, 0.00, NULL, NULL, NULL, '2026-08-01 08:30:00', NULL, 0, NULL, NULL, 0, 0, '000000', NULL, '0', NULL, 1, 1, '2026-08-23 00:42:51', 1, '2026-08-23 00:42:51', 45.000000, 21600.0000, NULL, NULL);
 INSERT INTO `wm_material_stock` VALUES (9900003002, NULL, 9900000001, 1, 'DEMO-M001', '粗铜线', '2.5mm', NULL, '千克', NULL, 'B20260808', 9900000001, 'WH-3D-DEMO', '3D示例仓库', 9900000011, 'A3D01', '原料货架区', 9900000102, 'A1-L1C2', 'A1排1层2列', NULL, NULL, NULL, NULL, 260.00, 0.00, NULL, NULL, NULL, '2026-08-08 09:10:00', NULL, 0, NULL, NULL, 0, 0, '000000', NULL, '0', NULL, 1, 1, '2026-08-23 00:42:51', 1, '2026-08-23 00:42:51', 45.000000, 11700.0000, NULL, NULL);
@@ -6328,7 +6342,7 @@ INSERT INTO `wm_material_stock` VALUES (9900003054, NULL, 9900000006, 4, 'DEMO-F
 INSERT INTO `wm_material_stock` VALUES (9900003055, NULL, 9900000006, 4, 'DEMO-F001', '防静电包装箱', '600×400mm', NULL, '个', NULL, 'B20260801', 9900000001, 'WH-3D-DEMO', '3D示例仓库', 9900000014, 'D3D04', '散货堆放区', 9900000403, 'D-P3', '散货堆位3', NULL, NULL, NULL, NULL, 350.00, 0.00, NULL, NULL, NULL, '2026-08-01 08:30:00', NULL, 1, NULL, NULL, 0, 0, '000000', NULL, '0', NULL, 1, 1, '2026-08-23 00:42:51', 1, '2026-08-23 00:42:51', 15.000000, 5250.0000, NULL, NULL);
 
 -- ----------------------------
--- Table structure for wm_material_stock_tx
+-- 表结构：wm_material_stock_tx
 -- ----------------------------
 DROP TABLE IF EXISTS `wm_material_stock_tx`;
 CREATE TABLE `wm_material_stock_tx`  (
@@ -6391,7 +6405,7 @@ CREATE TABLE `wm_material_stock_tx`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '库存事务表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for wm_misc_issue
+-- 表结构：wm_misc_issue
 -- ----------------------------
 DROP TABLE IF EXISTS `wm_misc_issue`;
 CREATE TABLE `wm_misc_issue`  (
@@ -6421,7 +6435,7 @@ CREATE TABLE `wm_misc_issue`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '杂项出库单表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for wm_misc_issue_line
+-- 表结构：wm_misc_issue_line
 -- ----------------------------
 DROP TABLE IF EXISTS `wm_misc_issue_line`;
 CREATE TABLE `wm_misc_issue_line`  (
@@ -6459,7 +6473,7 @@ CREATE TABLE `wm_misc_issue_line`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '杂项出库行表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for wm_misc_recpt
+-- 表结构：wm_misc_recpt
 -- ----------------------------
 DROP TABLE IF EXISTS `wm_misc_recpt`;
 CREATE TABLE `wm_misc_recpt`  (
@@ -6492,7 +6506,7 @@ CREATE TABLE `wm_misc_recpt`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '杂项入库单表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for wm_misc_recpt_line
+-- 表结构：wm_misc_recpt_line
 -- ----------------------------
 DROP TABLE IF EXISTS `wm_misc_recpt_line`;
 CREATE TABLE `wm_misc_recpt_line`  (
@@ -6530,7 +6544,7 @@ CREATE TABLE `wm_misc_recpt_line`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '杂项入库行表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for wm_picking_rule
+-- 表结构：wm_picking_rule
 -- ----------------------------
 DROP TABLE IF EXISTS `wm_picking_rule`;
 CREATE TABLE `wm_picking_rule`  (
@@ -6556,7 +6570,7 @@ CREATE TABLE `wm_picking_rule`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '拣货规则配置表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for wm_production_issue
+-- 表结构：wm_production_issue
 -- ----------------------------
 DROP TABLE IF EXISTS `wm_production_issue`;
 CREATE TABLE `wm_production_issue`  (
@@ -6593,7 +6607,7 @@ CREATE TABLE `wm_production_issue`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '生产领料单表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for wm_production_issue_line
+-- 表结构：wm_production_issue_line
 -- ----------------------------
 DROP TABLE IF EXISTS `wm_production_issue_line`;
 CREATE TABLE `wm_production_issue_line`  (
@@ -6643,7 +6657,7 @@ CREATE TABLE `wm_production_issue_line`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '生产领料行表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for wm_production_recpt
+-- 表结构：wm_production_recpt
 -- ----------------------------
 DROP TABLE IF EXISTS `wm_production_recpt`;
 CREATE TABLE `wm_production_recpt`  (
@@ -6683,7 +6697,7 @@ CREATE TABLE `wm_production_recpt`  (
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '生产完工入库表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for wm_putaway_rule
+-- 表结构：wm_putaway_rule
 -- ----------------------------
 DROP TABLE IF EXISTS `wm_putaway_rule`;
 CREATE TABLE `wm_putaway_rule`  (
@@ -6710,7 +6724,7 @@ CREATE TABLE `wm_putaway_rule`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '上架规则配置表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for wm_sales_issue
+-- 表结构：wm_sales_issue
 -- ----------------------------
 DROP TABLE IF EXISTS `wm_sales_issue`;
 CREATE TABLE `wm_sales_issue`  (
@@ -6752,7 +6766,7 @@ CREATE TABLE `wm_sales_issue`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售出库主表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for wm_sales_issue_line
+-- 表结构：wm_sales_issue_line
 -- ----------------------------
 DROP TABLE IF EXISTS `wm_sales_issue_line`;
 CREATE TABLE `wm_sales_issue_line`  (
@@ -6793,7 +6807,7 @@ CREATE TABLE `wm_sales_issue_line`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '销售出库明细表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for wm_sn
+-- 表结构：wm_sn
 -- ----------------------------
 DROP TABLE IF EXISTS `wm_sn`;
 CREATE TABLE `wm_sn`  (
@@ -6842,7 +6856,7 @@ CREATE TABLE `wm_sn`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '序列号管理表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for wm_stock_alert
+-- 表结构：wm_stock_alert
 -- ----------------------------
 DROP TABLE IF EXISTS `wm_stock_alert`;
 CREATE TABLE `wm_stock_alert`  (
@@ -6880,7 +6894,7 @@ CREATE TABLE `wm_stock_alert`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '安全库存预警表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for wm_stock_reconciliation
+-- 表结构：wm_stock_reconciliation
 -- ----------------------------
 DROP TABLE IF EXISTS `wm_stock_reconciliation`;
 CREATE TABLE `wm_stock_reconciliation`  (
@@ -6909,7 +6923,7 @@ CREATE TABLE `wm_stock_reconciliation`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '库存台账校验表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for wm_stock_taking_line
+-- 表结构：wm_stock_taking_line
 -- ----------------------------
 DROP TABLE IF EXISTS `wm_stock_taking_line`;
 CREATE TABLE `wm_stock_taking_line`  (
@@ -6949,7 +6963,7 @@ CREATE TABLE `wm_stock_taking_line`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '盘点行表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for wm_stock_taking_plan
+-- 表结构：wm_stock_taking_plan
 -- ----------------------------
 DROP TABLE IF EXISTS `wm_stock_taking_plan`;
 CREATE TABLE `wm_stock_taking_plan`  (
@@ -6981,7 +6995,7 @@ CREATE TABLE `wm_stock_taking_plan`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '盘点计划表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for wm_storage_area
+-- 表结构：wm_storage_area
 -- ----------------------------
 DROP TABLE IF EXISTS `wm_storage_area`;
 CREATE TABLE `wm_storage_area`  (
@@ -7028,7 +7042,7 @@ CREATE TABLE `wm_storage_area`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '库区表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Records of wm_storage_area
+-- 初始数据：wm_storage_area
 -- ----------------------------
 INSERT INTO `wm_storage_area` VALUES (1, 'A0001', '金属库区', 1, 200.00, 1, 1, 0, NULL, NULL, NULL, 0, 0, '000000', 103, '0', 1, NULL, NULL, NULL, 'GRID', 0.00, 0.00, 0.00, NULL, NULL, 3.00, 0.00, 0.00, 0.00, '#4CAF50', 0.80, 'CUBE', NULL, 1, 1, 1, NULL);
 INSERT INTO `wm_storage_area` VALUES (2, 'A0002', '塑料库区', 1, 200.00, 1, 1, 0, NULL, NULL, NULL, 0, 0, '000000', 103, '0', 1, NULL, NULL, NULL, 'GRID', 0.00, 0.00, 0.00, NULL, NULL, 3.00, 0.00, 0.00, 0.00, '#4CAF50', 0.80, 'CUBE', NULL, 1, 1, 1, NULL);
@@ -7053,7 +7067,7 @@ INSERT INTO `wm_storage_area` VALUES (9900000013, 'C3D03', '拣选网格区', 99
 INSERT INTO `wm_storage_area` VALUES (9900000014, 'D3D04', '散货堆放区', 9900000001, 60.00, 1, 1, 0, '3D示例·地堆位（2×2）', NULL, NULL, 0, 0, '000000', NULL, '0', 1, '2026-08-23 00:42:51', 1, '2026-08-23 00:42:51', 'BULK', 0.00, 0.00, 8.00, 10.00, 6.00, 3.00, 0.00, 0.00, 0.00, '#909399', 0.12, 'CUBE', NULL, 1, 1, 1, NULL);
 
 -- ----------------------------
--- Table structure for wm_storage_location
+-- 表结构：wm_storage_location
 -- ----------------------------
 DROP TABLE IF EXISTS `wm_storage_location`;
 CREATE TABLE `wm_storage_location`  (
@@ -7119,7 +7133,7 @@ CREATE TABLE `wm_storage_location`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '库位表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Records of wm_storage_location
+-- 初始数据：wm_storage_location
 -- ----------------------------
 INSERT INTO `wm_storage_location` VALUES (1, 'L001', '钢板库位', 1, 1, NULL, 6.00, 1000.00, NULL, NULL, NULL, 1, 1, 1, 0, NULL, NULL, NULL, 0, 0, '000000', 103, '0', 1, NULL, NULL, NULL, 'STORAGE', NULL, 1, 1, 1, 0.00, 0.00, 0.00, 1.00, 1.00, 1.00, 0.00, 0.00, 0.00, '#4CAF50', '#2196F3', '#F44336', '#FF9800', 0.85, 1, '#000000', 0.02, 1, 'TOP', 0.30, 0, 0.00, NULL, NULL, NULL);
 INSERT INTO `wm_storage_location` VALUES (2, 'L002', '型材库位', 1, 1, NULL, 6.00, 1000.00, NULL, NULL, NULL, 1, 1, 1, 0, NULL, NULL, NULL, 0, 0, '000000', 103, '0', 1, NULL, NULL, NULL, 'STORAGE', NULL, 1, 1, 1, 0.00, 0.00, 0.00, 1.00, 1.00, 1.00, 0.00, 0.00, 0.00, '#4CAF50', '#2196F3', '#F44336', '#FF9800', 0.85, 1, '#000000', 0.02, 1, 'TOP', 0.30, 0, 0.00, NULL, NULL, NULL);
@@ -7272,7 +7286,7 @@ INSERT INTO `wm_storage_location` VALUES (9900000403, 'D-P3', '散货堆位3', 9
 INSERT INTO `wm_storage_location` VALUES (9900000404, 'D-P4', '散货堆位4', 9900000001, 9900000014, NULL, 6.00, 2000.00, NULL, NULL, NULL, 1, 1, 1, 0, '', NULL, NULL, 0, 0, '000000', NULL, '0', 1, '2026-08-23 00:42:51', 1, '2026-08-23 00:42:51', 'STORAGE', NULL, 1, 2, 2, 1.50, 0.00, 9.00, 3.00, 1.50, 2.00, 0.00, 0.00, 0.00, '#909399', '#409eff', '#f56c6c', '#e6a23c', 0.85, 1, '#9aa5b1', 0.02, 0, 'TOP', 0.50, 0, 0.00, NULL, NULL, NULL);
 
 -- ----------------------------
--- Table structure for wm_subcontract_issue
+-- 表结构：wm_subcontract_issue
 -- ----------------------------
 DROP TABLE IF EXISTS `wm_subcontract_issue`;
 CREATE TABLE `wm_subcontract_issue`  (
@@ -7298,7 +7312,7 @@ CREATE TABLE `wm_subcontract_issue`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '委外发料单' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for wm_subcontract_issue_line
+-- 表结构：wm_subcontract_issue_line
 -- ----------------------------
 DROP TABLE IF EXISTS `wm_subcontract_issue_line`;
 CREATE TABLE `wm_subcontract_issue_line`  (
@@ -7328,7 +7342,7 @@ CREATE TABLE `wm_subcontract_issue_line`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '委外发料单行' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for wm_subcontract_receive
+-- 表结构：wm_subcontract_receive
 -- ----------------------------
 DROP TABLE IF EXISTS `wm_subcontract_receive`;
 CREATE TABLE `wm_subcontract_receive`  (
@@ -7368,7 +7382,7 @@ CREATE TABLE `wm_subcontract_receive`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '委外收货单' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for wm_transfer
+-- 表结构：wm_transfer
 -- ----------------------------
 DROP TABLE IF EXISTS `wm_transfer`;
 CREATE TABLE `wm_transfer`  (
@@ -7409,7 +7423,7 @@ CREATE TABLE `wm_transfer`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '库存调拨单表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for wm_transfer_line
+-- 表结构：wm_transfer_line
 -- ----------------------------
 DROP TABLE IF EXISTS `wm_transfer_line`;
 CREATE TABLE `wm_transfer_line`  (
@@ -7445,7 +7459,7 @@ CREATE TABLE `wm_transfer_line`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '库存调拨行表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for wm_warehouse
+-- 表结构：wm_warehouse
 -- ----------------------------
 DROP TABLE IF EXISTS `wm_warehouse`;
 CREATE TABLE `wm_warehouse`  (
@@ -7483,7 +7497,7 @@ CREATE TABLE `wm_warehouse`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '仓库表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Records of wm_warehouse
+-- 初始数据：wm_warehouse
 -- ----------------------------
 INSERT INTO `wm_warehouse` VALUES (1, 'WH001', '原料仓库', '浙江省杭州市余杭区智造园区', 2000.00, 'admin', 1, NULL, 1, NULL, NULL, NULL, NULL, '000000', 103, '0', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO `wm_warehouse` VALUES (2, 'WH002', '半成品仓库', '浙江省杭州市余杭区智造园区', 2000.00, 'admin', 1, NULL, 1, NULL, NULL, NULL, NULL, '000000', 103, '0', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);

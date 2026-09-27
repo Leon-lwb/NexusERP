@@ -37,7 +37,8 @@ class RetrieverServiceIndexGateTest {
         return new RetrieverService(vectorStoreService, aiKnowledgeService,
             mock(com.nexus.common.ai.mapper.AiKnowledgeChunkMapper.class),
             mock(JdbcTemplate.class), mock(RerankService.class), mock(IAiModelService.class),
-            mock(com.nexus.ai.service.kg.GraphStoreStrategy.class), new AiProperties());
+            mock(com.nexus.ai.service.kg.GraphStoreStrategy.class), new AiProperties(),
+            mock(com.nexus.common.ai.mapper.AiKnowledgeDocumentMapper.class));
     }
 
     @Test

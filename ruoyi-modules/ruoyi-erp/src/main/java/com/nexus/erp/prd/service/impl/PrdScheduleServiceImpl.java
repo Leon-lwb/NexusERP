@@ -6,16 +6,11 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.MapstructUtils;
+import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.json.utils.JsonUtils;
 import com.nexus.common.mybatis.core.page.PageQuery;
+import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.common.mybatis.core.page.TableDataInfo;
-import com.nexus.erp.bd.domain.BdRoutingStep;
-import com.nexus.erp.bd.domain.vo.BdRoutingVo;
-import com.nexus.erp.bd.domain.BdWorkstation;
-import com.nexus.erp.bd.mapper.BdRoutingStepMapper;
-import com.nexus.erp.bd.mapper.BdWorkstationMapper;
-import com.nexus.erp.bd.service.IBdRoutingService;
-import com.nexus.erp.prd.domain.PrdCapacityCalendar;
 import com.nexus.erp.prd.domain.PrdSchedulePlan;
 import com.nexus.erp.prd.domain.PrdScheduleTask;
 import com.nexus.erp.prd.domain.PrdWorkOrder;
@@ -23,64 +18,43 @@ import com.nexus.erp.prd.domain.bo.PrdSchedulePlanBo;
 import com.nexus.erp.prd.domain.vo.PrdSchedulePlanVo;
 import com.nexus.erp.prd.domain.vo.PrdScheduleTaskVo;
 import com.nexus.erp.prd.domain.vo.ScheduleGanttVo;
-import com.nexus.erp.prd.mapper.PrdCapacityCalendarMapper;
 import com.nexus.erp.prd.mapper.PrdSchedulePlanMapper;
 import com.nexus.erp.prd.mapper.PrdScheduleTaskMapper;
 import com.nexus.erp.prd.mapper.PrdWorkOrderMapper;
-import com.nexus.erp.prd.schedule.PrdLaborCapacity;
 import com.nexus.erp.prd.schedule.PrdScheduleEngine;
-import com.nexus.erp.prd.schedule.ScheduleModel;
-import com.nexus.erp.prd.service.IPrdScheduleService;
+import com.nexus.erp.prd.schedule.PrdScheduleInputAssembler;
 import com.nexus.erp.prd.schedule.ScheduleModel.ResourceLoad;
 import com.nexus.erp.prd.schedule.ScheduleModel.ScheduleInput;
 import com.nexus.erp.prd.schedule.ScheduleModel.ScheduleResult;
 import com.nexus.erp.prd.schedule.ScheduleModel.ScheduledTask;
 import com.nexus.erp.prd.schedule.ScheduleModel.Strategy;
 import com.nexus.erp.prd.schedule.ScheduleModel.WoInfo;
-import com.nexus.erp.sch.domain.SchEmployeeSchedule;
-import com.nexus.erp.sch.domain.SchHoliday;
-import com.nexus.erp.sch.domain.SchLeaveApply;
-import com.nexus.erp.sch.domain.SchShift;
-import com.nexus.erp.sch.domain.SchTeam;
-import com.nexus.erp.sch.mapper.SchEmployeeScheduleMapper;
-import com.nexus.erp.sch.mapper.SchHolidayMapper;
-import com.nexus.erp.sch.mapper.SchLeaveApplyMapper;
-import com.nexus.erp.sch.mapper.SchShiftMapper;
-import com.nexus.erp.sch.mapper.SchTeamMapper;
+import com.nexus.erp.prd.service.IPrdScheduleService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * APS 智能排产 Service 实现
+ * APS 智能排产 Service 实现。
  * <p>
- * 数据装配：CREATED/APPROVED/RELEASED/IN_PROGRESS 工单 → 当前版本工艺路线(isCurrent=1,status=1)
- * → 工序步骤(工作站资源) + 产能日历(WORKSTATION/WORKSHOP 按日剩余工时) + 假期
- * + <b>人力可用性</b>(班次/班组/工人排班 − 已通过请假) → {@link PrdScheduleEngine}。
- * 委外工序不占产能；无日历日期按默认 8h/日；同物料工艺路线按物料缓存一次查询。
- * <p>
- * <b>人力口径（ERP-PRD-01）</b>：排产不仅受设备产能日历约束，还受排班人力约束——
- * 车间日可用人力工时 = Σ(该车间班组下 {@code sch_employee_schedule.isWorkingDay=1 且 scheduleStatus!=rest}
- * 的排班行工时)，单条工时取 {@code sch_shift.work_hours}，缺失时按排班起止时间折算，再缺失按 8h 兜底；
- * 已通过请假({@code sch_leave_apply.apply_status='approved'})的 (工人, 日期) 被剔除，未排班人员天然不计入。
- * 该人力工时作为车间及其工作站资源的日产能上限（与日历产能取小；日历无记录时以人力工时为准），
- * 从而"班组休息日/全员请假日"不再被排产。详见 {@link PrdLaborCapacity}。
+ * 排程输入统一由 {@link PrdScheduleInputAssembler} 装配；本服务负责调用排程引擎以及方案/任务持久化、
+ * 发布和删除。
  *
  * @author nexus
  */
@@ -93,21 +67,9 @@ public class PrdScheduleServiceImpl implements IPrdScheduleService {
     private final PrdSchedulePlanMapper planMapper;
     private final PrdScheduleTaskMapper taskMapper;
     private final PrdWorkOrderMapper workOrderMapper;
-    private final PrdCapacityCalendarMapper capacityCalendarMapper;
-    private final SchHolidayMapper schHolidayMapper;
-    private final SchEmployeeScheduleMapper employeeScheduleMapper;
-    private final SchShiftMapper schShiftMapper;
-    private final SchTeamMapper schTeamMapper;
-    private final SchLeaveApplyMapper schLeaveApplyMapper;
-    private final BdWorkstationMapper workstationMapper;
-    private final IBdRoutingService routingService;
-    private final BdRoutingStepMapper routingStepMapper;
+    private final PrdScheduleInputAssembler scheduleInputAssembler;
 
-    /**
-     * 参与排产的工单状态: 已创建/已批准/已下达/生产中(未完工都可重排)
-     */
-    private static final List<String> SCHEDULABLE_STATUS = List.of("CREATED", "APPROVED", "RELEASED", "IN_PROGRESS");
-
+    private static final ZoneId BUSINESS_ZONE = ZoneId.of("Asia/Shanghai");
     private static final String PLAN_STATUS_COMPLETED = "COMPLETED";
     private static final String PLAN_STATUS_PUBLISHED = "PUBLISHED";
 
@@ -213,65 +175,47 @@ public class PrdScheduleServiceImpl implements IPrdScheduleService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public PrdSchedulePlanVo runSchedule(PrdSchedulePlanBo bo) {
-        LocalDate startDate = toLocalDate(bo.getStartDate());
-        int horizonDays = bo.getHorizonDays() == null ? 14 : bo.getHorizonDays();
-        Strategy strategy = Strategy.parse(bo.getStrategy());
-
-        // 1. 待排工单
-        LambdaQueryWrapper<PrdWorkOrder> woQuery = Wrappers.lambdaQuery(PrdWorkOrder.class)
-            .in(PrdWorkOrder::getWoStatus, SCHEDULABLE_STATUS)
-            .eq(bo.getWorkshopId() != null, PrdWorkOrder::getWorkshopId, bo.getWorkshopId());
-        List<PrdWorkOrder> workOrders = workOrderMapper.selectList(woQuery);
-        if (workOrders.isEmpty()) {
-            throw new ServiceException("没有可排产的工单(需存在 CREATED/APPROVED/RELEASED/IN_PROGRESS 状态工单)");
+        if (bo == null) {
+            throw new ServiceException("排程参数不能为空");
         }
+        if (StringUtils.isNotBlank(bo.getDecisionIdempotencyKey())) {
+            throw new ServiceException("AI决策排程必须提供显式工单范围");
+        }
+        return scheduleAndPersist(bo, scheduleInputAssembler.assemble(bo));
+    }
 
-        // 2. 工艺路线(同物料缓存)
-        Map<Long, List<com.nexus.erp.prd.schedule.ScheduleModel.StepInfo>> routingMap = new HashMap<>();
-        List<WoInfo> woInfos = new ArrayList<>();
-        for (PrdWorkOrder wo : workOrders) {
-            WoInfo info = new WoInfo();
-            info.setWoId(wo.getWoId());
-            info.setWoNo(wo.getWoNo());
-            info.setMaterialId(wo.getMaterialId());
-            info.setMaterialCode(wo.getMaterialCode());
-            info.setMaterialName(wo.getMaterialName());
-            BigDecimal completed = wo.getCompletedQty() == null ? BigDecimal.ZERO : wo.getCompletedQty();
-            BigDecimal planned = wo.getPlannedQty() == null ? BigDecimal.ZERO : wo.getPlannedQty();
-            info.setRemainingQty(planned.subtract(completed).max(BigDecimal.ZERO));
-            info.setPriority(wo.getPriority());
-            info.setDueDate(wo.getPlanEndDate() == null ? null : toLocalDate(wo.getPlanEndDate()));
-            info.setWorkshopId(wo.getWorkshopId());
-            info.setWorkshopName(wo.getWorkshopName());
-            woInfos.add(info);
-
-            if (wo.getMaterialId() != null && !routingMap.containsKey(wo.getMaterialId())) {
-                routingMap.put(wo.getMaterialId(), loadRoutingSteps(wo.getMaterialId()));
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public PrdSchedulePlanVo runSchedule(PrdSchedulePlanBo bo, Collection<Long> workOrderIds) {
+        if (bo == null) {
+            throw new ServiceException("排程参数不能为空");
+        }
+        List<Long> normalizedIds = normalizeWorkOrderIds(workOrderIds);
+        String scopeJson = workOrderIdsJson(normalizedIds);
+        if (StringUtils.isBlank(bo.getDecisionWorkOrderIdsJson())) {
+            bo.setDecisionWorkOrderIdsJson(scopeJson);
+        } else if (!scopeJson.equals(bo.getDecisionWorkOrderIdsJson())) {
+            throw new ServiceException("排程工单范围与结构化来源不一致");
+        }
+        String decisionKey = normalizeDecisionKey(bo.getDecisionIdempotencyKey());
+        if (decisionKey != null) {
+            validateDecisionIdentity(bo);
+            PrdSchedulePlan existing = findByDecisionKey(decisionKey);
+            if (existing != null) {
+                validateExistingDecisionPlan(bo, existing);
+                return MapstructUtils.convert(existing, PrdSchedulePlanVo.class);
             }
         }
-        // 3. 产能日历视图: 日期 → (资源键 → 剩余小时)
-        LocalDate horizonEnd = startDate.plusDays(horizonDays - 1L);
-        Map<LocalDate, Map<String, BigDecimal>> capacityByDate = loadCapacity(startDate, horizonEnd);
+        return scheduleAndPersist(bo, scheduleInputAssembler.assemble(bo, normalizedIds));
+    }
 
-        // 4. 假期
-        Set<LocalDate> holidays = loadHolidays(startDate, horizonEnd);
-
-        // 4.1 人力可用性(ERP-PRD-01): 排班/班次/请假 → 车间日人力工时上限, 与设备产能取小。
-        //     原实现只读 sch_holiday, 班组休息日/全员请假日仍会被排产(排产↔排班↔考勤断点)。
-        applyLaborCapacity(capacityByDate, startDate, horizonEnd);
-
-        // 5. 引擎排产
-        ScheduleInput input = new ScheduleInput();
-        input.setWorkOrders(woInfos);
-        input.setRoutingProvider(routingMap::get);
-        input.setCapacityByDate(capacityByDate);
-        input.setHolidays(holidays);
-        input.setStartDate(startDate);
-        input.setHorizonDays(horizonDays);
-        input.setStrategy(strategy);
+    private PrdSchedulePlanVo scheduleAndPersist(PrdSchedulePlanBo bo, ScheduleInput input) {
         ScheduleResult result = PrdScheduleEngine.schedule(input);
+        LocalDate startDate = input.getStartDate();
+        int horizonDays = input.getHorizonDays();
+        Strategy strategy = input.getStrategy();
+        List<WoInfo> woInfos = input.getWorkOrders();
 
-        // 6. 落库
         PrdSchedulePlan plan = new PrdSchedulePlan();
         plan.setPlanNo(generatePlanNo(startDate));
         plan.setPlanName(bo.getPlanName() != null && !bo.getPlanName().isBlank() ? bo.getPlanName()
@@ -289,15 +233,116 @@ public class PrdScheduleServiceImpl implements IPrdScheduleService {
         plan.setMakespanDate(result.getMakespan() == null ? null : toDate(result.getMakespan()));
         plan.setUtilizationJson(JsonUtils.toJsonString(result.getLoads()));
         plan.setStatus(PLAN_STATUS_COMPLETED);
-        planMapper.insert(plan);
+        plan.setRemark(bo.getRemark());
+        plan.setDecisionRunId(bo.getDecisionRunId());
+        plan.setDecisionActionId(bo.getDecisionActionId());
+        plan.setDecisionIdempotencyKey(normalizeDecisionKey(bo.getDecisionIdempotencyKey()));
+        plan.setDecisionScenarioCode(bo.getDecisionScenarioCode());
+        plan.setDecisionWorkOrderIdsJson(bo.getDecisionWorkOrderIdsJson());
+        plan.setVersion(0);
+        plan.setCreateBy(bo.getCreateBy());
+        plan.setUpdateBy(bo.getUpdateBy());
+
+        try {
+            int rows = planMapper.insert(plan);
+            if (rows != 1) {
+                throw new ServiceException("排程方案主表写入失败");
+            }
+        } catch (DuplicateKeyException duplicate) {
+            if (plan.getDecisionIdempotencyKey() == null) {
+                throw duplicate;
+            }
+            PrdSchedulePlan existing = findByDecisionKeyForUpdate(plan.getDecisionIdempotencyKey());
+            if (existing == null) {
+                if (isCompensatedDecisionKey(plan.getDecisionIdempotencyKey())) {
+                    throw new ServiceException("排程方案已补偿，幂等键永久占用，不可重试");
+                }
+                throw duplicate;
+            }
+            validateExistingDecisionPlan(bo, existing);
+            return MapstructUtils.convert(existing, PrdSchedulePlanVo.class);
+        }
+        if (plan.getPlanId() == null || plan.getPlanId() <= 0 || StringUtils.isBlank(plan.getPlanNo())
+            || plan.getCreateTime() == null || plan.getUpdateTime() == null) {
+            throw new ServiceException("排程方案主表未生成完整标识或版本时间");
+        }
 
         for (ScheduledTask task : result.getTasks()) {
             PrdScheduleTask entity = toTaskEntity(plan.getPlanId(), task);
-            taskMapper.insert(entity);
+            if (taskMapper.insert(entity) != 1) {
+                throw new ServiceException("排程任务写入失败");
+            }
         }
         log.info("APS排程完成: planNo={}, 工单数={}, 任务数={}, 拖期={}, 跳过={}",
             plan.getPlanNo(), plan.getWoCount(), plan.getTaskCount(), plan.getDelayedCount(), plan.getSkippedCount());
         return MapstructUtils.convert(plan, PrdSchedulePlanVo.class);
+    }
+
+    private List<Long> normalizeWorkOrderIds(Collection<Long> workOrderIds) {
+        if (workOrderIds == null || workOrderIds.isEmpty()) {
+            throw new ServiceException("排程工单ID不能为空");
+        }
+        LinkedHashSet<Long> unique = new LinkedHashSet<>();
+        for (Long id : workOrderIds) {
+            if (id == null || id <= 0 || !unique.add(id)) {
+                throw new ServiceException("排程工单ID必须为不重复的正数");
+            }
+        }
+        return unique.stream().sorted().toList();
+    }
+
+    private String workOrderIdsJson(List<Long> workOrderIds) {
+        return JsonUtils.toJsonString(workOrderIds.stream().map(String::valueOf).toList());
+    }
+
+    private String normalizeDecisionKey(String key) {
+        return StringUtils.isBlank(key) ? null : key;
+    }
+
+    private void validateDecisionIdentity(PrdSchedulePlanBo bo) {
+        if (bo.getDecisionRunId() == null || bo.getDecisionRunId() <= 0
+            || bo.getDecisionActionId() == null || bo.getDecisionActionId() <= 0
+            || StringUtils.isBlank(bo.getDecisionScenarioCode())) {
+            throw new ServiceException("AI决策排程缺少有效runId/actionId/scenario");
+        }
+        if (bo.getDecisionIdempotencyKey().length() > 128) {
+            throw new ServiceException("AI决策幂等键长度不能超过128");
+        }
+    }
+
+    private PrdSchedulePlan findByDecisionKey(String key) {
+        return planMapper.selectOne(Wrappers.lambdaQuery(PrdSchedulePlan.class)
+            .eq(PrdSchedulePlan::getDecisionIdempotencyKey, key));
+    }
+
+    private PrdSchedulePlan findByDecisionKeyForUpdate(String key) {
+        return planMapper.selectOne(Wrappers.lambdaQuery(PrdSchedulePlan.class)
+            .eq(PrdSchedulePlan::getDecisionIdempotencyKey, key)
+            .last("FOR UPDATE"));
+    }
+
+    private boolean isCompensatedDecisionKey(String key) {
+        String tenantId = TenantHelper.getTenantId();
+        if (StringUtils.isBlank(tenantId)) {
+            throw new ServiceException("租户上下文缺失，无法确认排程方案幂等冲突");
+        }
+        return planMapper.findCompensatedDecisionId(tenantId, key) != null;
+    }
+
+    private void validateExistingDecisionPlan(PrdSchedulePlanBo requested, PrdSchedulePlan existing) {
+        boolean matches = Objects.equals(requested.getDecisionRunId(), existing.getDecisionRunId())
+            && Objects.equals(requested.getDecisionActionId(), existing.getDecisionActionId())
+            && Objects.equals(requested.getDecisionIdempotencyKey(), existing.getDecisionIdempotencyKey())
+            && Objects.equals(requested.getDecisionScenarioCode(), existing.getDecisionScenarioCode())
+            && Objects.equals(requested.getDecisionWorkOrderIdsJson(), existing.getDecisionWorkOrderIdsJson())
+            && Objects.equals(requested.getPlanName(), existing.getPlanName())
+            && Objects.equals(requested.getWorkshopId(), existing.getWorkshopId())
+            && Objects.equals(toLocalDate(requested.getStartDate()), toLocalDate(existing.getStartDate()))
+            && Objects.equals(requested.getHorizonDays(), existing.getHorizonDays())
+            && Objects.equals(requested.getStrategy(), existing.getStrategy());
+        if (!matches) {
+            throw new ServiceException("幂等键对应的排程方案来源或载荷不一致");
+        }
     }
 
     @Override
@@ -307,28 +352,44 @@ public class PrdScheduleServiceImpl implements IPrdScheduleService {
         if (plan == null) {
             throw new ServiceException("排程方案不存在");
         }
-        if (PLAN_STATUS_PUBLISHED.equals(plan.getStatus())) {
-            throw new ServiceException("方案已发布, 请勿重复操作");
+        if (!PLAN_STATUS_COMPLETED.equals(plan.getStatus())) {
+            throw new ServiceException(PLAN_STATUS_PUBLISHED.equals(plan.getStatus())
+                ? "方案已发布, 请勿重复操作" : "当前方案状态不允许发布");
         }
-        // 末序任务日期回写工单计划开始/结束
+        int version = plan.getVersion() == null ? 0 : plan.getVersion();
+        int claimed = planMapper.update(null, Wrappers.lambdaUpdate(PrdSchedulePlan.class)
+            .eq(PrdSchedulePlan::getPlanId, planId)
+            .eq(PrdSchedulePlan::getStatus, PLAN_STATUS_COMPLETED)
+            .eq(PrdSchedulePlan::getVersion, version)
+            .set(PrdSchedulePlan::getStatus, PLAN_STATUS_PUBLISHED)
+            .set(PrdSchedulePlan::getVersion, version + 1)
+            .set(PrdSchedulePlan::getUpdateTime, new Date()));
+        if (claimed != 1) {
+            throw new ServiceException("排程方案状态或版本已变化，发布失败");
+        }
+
         List<PrdScheduleTask> tasks = taskMapper.selectList(
             Wrappers.lambdaQuery(PrdScheduleTask.class).eq(PrdScheduleTask::getPlanId, planId));
-        Map<Long, List<PrdScheduleTask>> byWo = tasks.stream().collect(Collectors.groupingBy(PrdScheduleTask::getWoId));
+        Map<Long, List<PrdScheduleTask>> byWo = tasks.stream()
+            .collect(Collectors.groupingBy(PrdScheduleTask::getWoId));
         for (Map.Entry<Long, List<PrdScheduleTask>> entry : byWo.entrySet()) {
             List<PrdScheduleTask> woTasks = entry.getValue().stream()
                 .sorted(Comparator.comparing(t -> t.getSeqNum() == null ? Integer.MAX_VALUE : t.getSeqNum()))
                 .toList();
-            Date start = woTasks.get(0).getStartTime();
-            Date end = woTasks.get(woTasks.size() - 1).getEndTime();
             PrdWorkOrder wo = workOrderMapper.selectById(entry.getKey());
-            if (wo != null && !isTerminalStatus(wo.getWoStatus())) {
-                wo.setPlanStartDate(start);
-                wo.setPlanEndDate(end);
-                workOrderMapper.updateById(wo);
+            if (wo == null) {
+                throw new ServiceException("排程任务关联工单不存在: " + entry.getKey());
+            }
+            if (isTerminalStatus(wo.getWoStatus())) {
+                continue;
+            }
+            wo.setPlanStartDate(woTasks.get(0).getStartTime());
+            wo.setPlanEndDate(woTasks.get(woTasks.size() - 1).getEndTime());
+            if (workOrderMapper.updateById(wo) != 1) {
+                throw new ServiceException("工单计划日期回写失败: " + entry.getKey());
             }
         }
-        plan.setStatus(PLAN_STATUS_PUBLISHED);
-        return planMapper.updateById(plan) > 0;
+        return true;
     }
 
     @Override
@@ -340,208 +401,47 @@ public class PrdScheduleServiceImpl implements IPrdScheduleService {
         return planMapper.deleteByIds(List.of(planIds)) > 0;
     }
 
-    /**
-     * 加载物料当前版本工艺路线步骤(无则空列表 → 引擎跳过该工单)
-     */
-    private List<com.nexus.erp.prd.schedule.ScheduleModel.StepInfo> loadRoutingSteps(Long materialId) {
-        BdRoutingVo routing = routingService.getCurrentRouting(materialId);
-        if (routing == null) {
-            return List.of();
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean deleteCompletedIfUnchanged(Long planId, String versionMarker,
+                                              Long decisionRunId, Long decisionActionId,
+                                              String decisionIdempotencyKey, String scenarioCode) {
+        Integer version = parseVersionMarker(planId, versionMarker);
+        if (version == null || decisionRunId == null || decisionRunId <= 0
+            || decisionActionId == null || decisionActionId <= 0
+            || StringUtils.isBlank(decisionIdempotencyKey) || StringUtils.isBlank(scenarioCode)) {
+            return false;
         }
-        List<BdRoutingStep> steps = routingStepMapper.selectList(
-            Wrappers.lambdaQuery(BdRoutingStep.class)
-                .eq(BdRoutingStep::getRoutingId, routing.getRoutingId())
-                .orderByAsc(BdRoutingStep::getSequenceNum));
-        if (steps == null || steps.isEmpty()) {
-            return List.of();
+        LambdaQueryWrapper<PrdSchedulePlan> wrapper = Wrappers.lambdaQuery(PrdSchedulePlan.class)
+            .eq(PrdSchedulePlan::getPlanId, planId)
+            .eq(PrdSchedulePlan::getStatus, PLAN_STATUS_COMPLETED)
+            .eq(PrdSchedulePlan::getVersion, version)
+            .eq(PrdSchedulePlan::getDecisionRunId, decisionRunId)
+            .eq(PrdSchedulePlan::getDecisionActionId, decisionActionId)
+            .eq(PrdSchedulePlan::getDecisionIdempotencyKey, decisionIdempotencyKey)
+            .eq(PrdSchedulePlan::getDecisionScenarioCode, scenarioCode);
+        if (planMapper.delete(wrapper) != 1) {
+            return false;
         }
-        return steps.stream().map(s -> {
-            com.nexus.erp.prd.schedule.ScheduleModel.StepInfo info =
-                new com.nexus.erp.prd.schedule.ScheduleModel.StepInfo();
-            info.setStepId(s.getStepId());
-            info.setSeqNum(s.getSequenceNum());
-            info.setProcessCode(s.getProcessCode());
-            info.setProcessName(s.getProcessName());
-            info.setWorkstationId(s.getWorkstationId());
-            info.setWorkstationCode(s.getWorkstationCode());
-            info.setWorkstationName(s.getWorkstationName());
-            info.setStandardHours(s.getStandardHours());
-            info.setSetupHours(s.getSetupHours());
-            info.setIsOutsource(s.getIsOutsource());
-            info.setWaitTime(s.getWaitTime());
-            info.setTransferTime(s.getTransferTime());
-            return info;
-        }).toList();
+        taskMapper.delete(Wrappers.lambdaQuery(PrdScheduleTask.class)
+            .eq(PrdScheduleTask::getPlanId, planId));
+        return true;
     }
 
-    /**
-     * 产能日历按日聚合: WORKSTATION 与 WORKSHOP 两种对象类型的剩余小时按资源键合并(多班次求和)
-     */
-    private Map<LocalDate, Map<String, BigDecimal>> loadCapacity(LocalDate start, LocalDate end) {
-        List<PrdCapacityCalendar> calendars = capacityCalendarMapper.selectList(
-            Wrappers.lambdaQuery(PrdCapacityCalendar.class)
-                .eq(PrdCapacityCalendar::getStatus, "ACTIVE")
-                .ge(PrdCapacityCalendar::getCalendarDate, toDate(start))
-                .le(PrdCapacityCalendar::getCalendarDate, toDate(end)));
-        Map<LocalDate, Map<String, BigDecimal>> capacity = new HashMap<>();
-        for (PrdCapacityCalendar cal : calendars) {
-            LocalDate day = toLocalDate(cal.getCalendarDate());
-            if (cal.getObjectId() == null) {
-                continue;
-            }
-            String key = ScheduleModel.resourceKey(cal.getObjectType(), cal.getObjectId());
-            BigDecimal remaining = cal.getRemainingHours() == null ? BigDecimal.ZERO : cal.getRemainingHours();
-            capacity.computeIfAbsent(day, k -> new HashMap<>()).merge(key, remaining, BigDecimal::add);
+    private Integer parseVersionMarker(Long id, String marker) {
+        if (id == null || id <= 0 || marker == null || !marker.startsWith("V:")) {
+            return null;
         }
-        return capacity;
-    }
-
-    /**
-     * 加载假期(排产起始日至跨度末日, 只取非工作日)
-     */
-    private Set<LocalDate> loadHolidays(LocalDate start, LocalDate end) {
-        List<SchHoliday> holidays = schHolidayMapper.selectList(
-            Wrappers.lambdaQuery(SchHoliday.class)
-                .ge(SchHoliday::getHolidayDate, toDate(start))
-                .le(SchHoliday::getHolidayDate, toDate(end)));
-        Set<LocalDate> result = new HashSet<>();
-        for (SchHoliday h : holidays) {
-            // isWorkingDay: 1=工作日(调休), 0=休息; 仅休息日产能为 0
-            if (h.getIsWorkingDay() == null || h.getIsWorkingDay() == 0) {
-                result.add(toLocalDate(h.getHolidayDate()));
-            }
+        String versionText = marker.substring(2);
+        if (versionText.isEmpty() || !versionText.chars().allMatch(Character::isDigit)) {
+            return null;
         }
-        return result;
-    }
-
-    /**
-     * 把排班/班次/请假折算的人力可用性并入产能视图（ERP-PRD-01，原地收窄 {@code capacityByDate}）。
-     * <p>口径见类注释与 {@link PrdLaborCapacity}。无排班数据或排班未关联班组/车间时不做收窄，
-     * 保持原有"产能日历 + 默认 8h"行为，避免未启用排班模块的环境排产全部归零。</p>
-     *
-     * @param capacityByDate 日期 → (资源键 → 小时)，被原地收窄
-     * @param start          排产起始日（含）
-     * @param end            排产跨度末日（含）
-     */
-    private void applyLaborCapacity(Map<LocalDate, Map<String, BigDecimal>> capacityByDate,
-                                    LocalDate start, LocalDate end) {
-        List<SchEmployeeSchedule> schedules = employeeScheduleMapper.selectList(
-            Wrappers.<SchEmployeeSchedule>lambdaQuery()
-                .ge(SchEmployeeSchedule::getScheduledDate, toDate(start))
-                .le(SchEmployeeSchedule::getScheduledDate, toDate(end)));
-        if (schedules == null || schedules.isEmpty()) {
-            log.info("APS人力产能: {} ~ {} 无排班数据, 沿用产能日历", start, end);
-            return;
+        try {
+            int version = Integer.parseInt(versionText);
+            return version < 0 ? null : version;
+        } catch (NumberFormatException ignored) {
+            return null;
         }
-        // 班次工时: shift_id / actual_shift_id(调班覆盖) → work_hours
-        Set<Long> shiftIds = new HashSet<>();
-        for (SchEmployeeSchedule s : schedules) {
-            Long shiftId = s.getActualShiftId() != null ? s.getActualShiftId() : s.getShiftId();
-            if (shiftId != null) {
-                shiftIds.add(shiftId);
-            }
-        }
-        Map<Long, BigDecimal> shiftHours = new HashMap<>();
-        if (!shiftIds.isEmpty()) {
-            for (SchShift shift : schShiftMapper.selectBatchIds(shiftIds)) {
-                if (shift.getWorkHours() != null) {
-                    shiftHours.put(shift.getShiftId(), shift.getWorkHours());
-                }
-            }
-        }
-        // 班组 → 所属车间(人力归集维度)
-        Set<Long> teamIds = schedules.stream().map(SchEmployeeSchedule::getTeamId)
-            .filter(Objects::nonNull).collect(Collectors.toSet());
-        Map<Long, Long> teamWorkshop = new HashMap<>();
-        if (!teamIds.isEmpty()) {
-            for (SchTeam team : schTeamMapper.selectBatchIds(teamIds)) {
-                if (team.getWorkshopId() != null) {
-                    teamWorkshop.put(team.getTeamId(), team.getWorkshopId());
-                }
-            }
-        }
-        Set<String> onLeave = loadApprovedLeaveKeys(start, end);
-        List<PrdLaborCapacity.LaborRow> rows = new ArrayList<>();
-        for (SchEmployeeSchedule s : schedules) {
-            // 休息日(排班模板标记)与 rest 状态均不计人力
-            if (s.getIsWorkingDay() == null || s.getIsWorkingDay() != 1) {
-                continue;
-            }
-            if ("rest".equalsIgnoreCase(s.getScheduleStatus())) {
-                continue;
-            }
-            Long workshopId = s.getTeamId() == null ? null : teamWorkshop.get(s.getTeamId());
-            if (workshopId == null || s.getScheduledDate() == null) {
-                continue;
-            }
-            LocalDate day = toLocalDate(s.getScheduledDate());
-            if (s.getWorkerId() != null && onLeave.contains(PrdLaborCapacity.leaveKey(s.getWorkerId(), day))) {
-                continue;
-            }
-            PrdLaborCapacity.LaborRow row = new PrdLaborCapacity.LaborRow();
-            row.setWorkshopId(workshopId);
-            row.setScheduledDate(day);
-            row.setWorkerId(s.getWorkerId());
-            row.setHours(resolveShiftHours(s, shiftHours));
-            rows.add(row);
-        }
-        Map<Long, Map<LocalDate, BigDecimal>> laborByWorkshop = PrdLaborCapacity.aggregate(rows, start, end);
-        if (laborByWorkshop.isEmpty()) {
-            log.info("APS人力产能: 排班未关联班组/车间, 无法折算人力, 沿用产能日历");
-            return;
-        }
-        // 车间 → 工作站: 把车间人力上限传导到工作站资源键(引擎按工作站记账)
-        Map<Long, List<Long>> workstationsByShop = new HashMap<>();
-        List<BdWorkstation> workstations = workstationMapper.selectList(
-            Wrappers.<BdWorkstation>lambdaQuery().in(BdWorkstation::getWorkshopId, laborByWorkshop.keySet()));
-        for (BdWorkstation ws : workstations) {
-            workstationsByShop.computeIfAbsent(ws.getWorkshopId(), k -> new ArrayList<>()).add(ws.getWorkstationId());
-        }
-        PrdLaborCapacity.applyCap(capacityByDate, laborByWorkshop, workstationsByShop);
-        log.info("APS人力产能: 已接入排班人力约束, 车间数={}, 有效排班行={}", laborByWorkshop.size(), rows.size());
-    }
-
-    /**
-     * 单条排班工时：班次定义工时 → 排班起止时间折算 → 8h/人·日兜底
-     */
-    private BigDecimal resolveShiftHours(SchEmployeeSchedule s, Map<Long, BigDecimal> shiftHours) {
-        Long shiftId = s.getActualShiftId() != null ? s.getActualShiftId() : s.getShiftId();
-        BigDecimal hours = shiftId == null ? null : shiftHours.get(shiftId);
-        if (hours != null && hours.signum() > 0) {
-            return hours;
-        }
-        if (s.getStartTime() != null && s.getEndTime() != null && s.getEndTime().after(s.getStartTime())) {
-            long minutes = (s.getEndTime().getTime() - s.getStartTime().getTime()) / 60000L;
-            if (minutes > 0) {
-                return BigDecimal.valueOf(minutes).divide(BigDecimal.valueOf(60), 2, RoundingMode.HALF_UP);
-            }
-        }
-        return PrdLaborCapacity.DEFAULT_HOURS_PER_WORKER_DAY;
-    }
-
-    /**
-     * 已通过的请假 → (工人ID|日期) 键集合，用于把请假人员从当日人力中剔除
-     */
-    private Set<String> loadApprovedLeaveKeys(LocalDate start, LocalDate end) {
-        List<SchLeaveApply> leaves = schLeaveApplyMapper.selectList(
-            Wrappers.<SchLeaveApply>lambdaQuery()
-                .eq(SchLeaveApply::getApplyStatus, "approved")
-                .le(SchLeaveApply::getStartDate, toDate(end))
-                .ge(SchLeaveApply::getEndDate, toDate(start)));
-        Set<String> keys = new HashSet<>();
-        for (SchLeaveApply leave : leaves) {
-            if (leave.getWorkerId() == null || leave.getStartDate() == null || leave.getEndDate() == null) {
-                continue;
-            }
-            LocalDate from = toLocalDate(leave.getStartDate());
-            LocalDate to = toLocalDate(leave.getEndDate());
-            LocalDate d = from.isBefore(start) ? start : from;
-            LocalDate last = to.isAfter(end) ? end : to;
-            for (; !d.isAfter(last); d = d.plusDays(1)) {
-                keys.add(PrdLaborCapacity.leaveKey(leave.getWorkerId(), d));
-            }
-        }
-        return keys;
     }
 
     private PrdScheduleTask toTaskEntity(Long planId, ScheduledTask task) {
@@ -595,15 +495,21 @@ public class PrdScheduleServiceImpl implements IPrdScheduleService {
             todayCount + 1);
     }
 
-    private LocalDate toLocalDate(Date date) {
-        return date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+    private LocalDate toLocalDate(Date value) {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof java.sql.Date sqlDate) {
+            return sqlDate.toLocalDate();
+        }
+        return Instant.ofEpochMilli(value.getTime()).atZone(BUSINESS_ZONE).toLocalDate();
     }
 
     private Date toDate(LocalDate date) {
-        return Date.from(date.atStartOfDay(ZoneId.systemDefault()).toInstant());
+        return Date.from(date.atStartOfDay(BUSINESS_ZONE).toInstant());
     }
 
     private Date endOfDay(LocalDate date) {
-        return Date.from(date.atTime(23, 59, 59).atZone(ZoneId.systemDefault()).toInstant());
+        return Date.from(date.atTime(23, 59, 59).atZone(BUSINESS_ZONE).toInstant());
     }
 }

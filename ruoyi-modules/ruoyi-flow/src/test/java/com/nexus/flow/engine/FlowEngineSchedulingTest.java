@@ -59,7 +59,7 @@ class FlowEngineSchedulingTest {
         insertedRuns = new ArrayList<>();
         insertedInstances = new ArrayList<>();
 
-        // mock TenantHelper.dynamic 直接执行 handle（不切租户）
+        // 模拟 TenantHelper.dynamic 直接执行 handle（不切租户）
         tenantHelperMock = Mockito.mockStatic(TenantHelper.class);
         tenantHelperMock.when(() -> TenantHelper.dynamic(anyString(), any(Runnable.class)))
             .thenAnswer(inv -> {
@@ -70,7 +70,7 @@ class FlowEngineSchedulingTest {
         tenantHelperMock.when(() -> TenantHelper.dynamic(anyString(), any(java.util.function.Supplier.class)))
             .thenAnswer(inv -> inv.getArgument(1, java.util.function.Supplier.class).get());
 
-        // mock SSE 推送（单测环境无 Spring/Redis，SseMessageUtils 静态初始化会失败）
+        // 模拟 SSE 推送（单测环境无 Spring/Redis，SseMessageUtils 静态初始化会失败）
         sseHelperMock = Mockito.mockStatic(com.nexus.ai.service.sse.AiSseMessageHelper.class);
         sseHelperMock.when(() -> com.nexus.ai.service.sse.AiSseMessageHelper.sendFlowStatus(any(), any()))
             .thenAnswer(inv -> null);
@@ -198,6 +198,24 @@ class FlowEngineSchedulingTest {
         java.util.concurrent.ExecutorService flowExecutor = java.util.concurrent.Executors.newSingleThreadExecutor();
         return new FlowEngineImpl(registry, stopRegistry, instanceMapper, nodeRunMapper, flowMapper, aiProperties,
             syncExecutor(), flowExecutor);
+    }
+
+    @Test
+    void genericEngineEntryCannotLaunchForgedIndustrialNodeWithRunId() {
+        var engine = engine(providerWith("steal", MAPPER.createObjectNode(), false));
+        var malicious = flow("{\"nodes\":[{\"id\":\"steal\",\"type\":\"industrial.executeApprovedActions\",\"data\":{\"config\":{}}}],\"edges\":[]}");
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class,
+            () -> engine.start(malicious, MAPPER.createObjectNode().put("runId", "99"),
+                "MANUAL", "000000", 1L, "admin"));
+        assertTrue(insertedInstances.isEmpty());
+    }
+
+    @Test
+    void invalidGraphNeverLeavesOrphanRunningInstance() {
+        var engine = engine(providerWith("a", MAPPER.createObjectNode(), false));
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class,
+            () -> engine.start(flow("{}"), MAPPER.createObjectNode(), "MANUAL", "000000", 1L, "admin"));
+        assertTrue(insertedInstances.isEmpty());
     }
 
     @Test

@@ -47,7 +47,7 @@ import static org.mockito.Mockito.when;
  * {@link SysDicAreaServiceImpl} 单元测试。
  * <p><b>必须保留 {@code @Tag}：</b>根 pom 的 surefire 配置为 {@code <groups>${profiles.active}</groups>}
  * （默认 local），只有带对应 {@code @Tag} 的测试才会被执行。缺少标签时 surefire 会报
- * "Tests run: 0" 并 BUILD SUCCESS —— 即静默假绿。</p>
+ * 测试执行数为零却报告构建成功 —— 即静默假绿。</p>
  *
  * <p><b>Task 6 起还依赖 {@code RedisUtils} 静态桩</b>：全量树缓存是编程式的（{@code RedisUtils}
  * 直接调用），因此每个用例都在 {@code @BeforeEach} 里装一层内存版 Redis（见
@@ -65,7 +65,7 @@ class SysDicAreaServiceImplTest {
     @InjectMocks
     private SysDicAreaServiceImpl service;
 
-    /** 内存版 Redis bucket：key -> value，仅用于驱动缓存读/写/删三条路径 */
+    /** 内存版 Redis 缓存容器：键到值的映射，仅用于驱动缓存读/写/删三条路径 */
     private final Map<String, Object> fakeRedis = new HashMap<>();
 
     private MockedStatic<RedisUtils> redisMock;
@@ -73,10 +73,10 @@ class SysDicAreaServiceImplTest {
     /**
      * 预热依赖 Spring 容器的静态工具类。
      * <p><b>为什么必须做</b>：{@code MapstructUtils.CONVERTER = SpringUtils.getBean(Converter.class)}
-     * 是「静态 final 字段 + Spring 容器」写法，纯 Mockito 单测没有容器，首次触碰
+     * 是「静态不可变字段 + Spring 容器」写法，纯 Mockito 单测没有容器，首次触碰
      * {@code MapstructUtils.convert(...)} 即抛 {@code ExceptionInInitializerError}
-     * （{@code No ConfigurableListableBeanFactory or ApplicationContext injected}）；
-     * 而 JVM 对失败的 {@code <clinit>} 是<b>粘性</b>的，同一 fork 内后续所有测试都会退化为
+     * （{@code 未注入可配置容器或应用上下文}）；
+     * 而 JVM 对失败的 {@code <clinit>} 是<b>粘性</b>的，同一测试子进程内后续所有测试都会退化为
      * {@code NoClassDefFoundError}（仓库内 ruoyi-erp / ruoyi-mes 的 SpringStaticBootstrap 同因）。</p>
      * <p>做法：在 {@code SpringUtil} 静态桩窗口内主动触发该类的静态初始化，注入<b>真实的</b>
      * mapstruct-plus {@code Converter}——它会在构造时扫描 classpath 上的 {@code *MapperImpl}，
@@ -85,8 +85,8 @@ class SysDicAreaServiceImplTest {
      * <p>{@code RedisUtils.CLIENT = SpringUtils.getBean(RedissonClient.class)} 同理依赖容器：
      * 若任其在「无容器」状态下首次初始化，{@code <clinit>} 失败后
      * {@code mockStatic(RedisUtils.class)} 会报
-     * "Cannot instrument class ... because it or one of its supertypes could not be initialized"，
-     * 故在同一个静态桩窗口内用桩 Client 让它安全完成初始化。</p>
+     * "类或其父类未能初始化，无法创建类模拟"，
+     * 故在同一个静态桩窗口内用模拟客户端 让它安全完成初始化。</p>
      */
     @BeforeAll
     static void warmUpSpringDependentUtils() {

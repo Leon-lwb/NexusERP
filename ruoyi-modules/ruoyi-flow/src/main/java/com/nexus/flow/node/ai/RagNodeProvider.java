@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.nexus.flow.state.FlowTemplateRenderer;
 import com.nexus.ai.service.rag.RetrieverService;
+import com.nexus.common.ai.decision.dto.RetrievalHit;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -83,10 +84,24 @@ public class RagNodeProvider implements FlowNodeProvider {
             overrides.put("minScore", config.get("minScore").asDouble());
         }
 
-        List<String> chunks = retrieverService.retrieve(knowledgeId, query, overrides);
+        List<RetrievalHit> hits = retrieverService.retrieveHits(knowledgeId, query, overrides);
+        List<String> chunks = hits.stream().map(RetrievalHit::content).toList();
 
-        // 组装输出
+        // 保留结构化来源；显式转字符串，避免雪花 ID 绕过全局 Jackson 序列化器。
         ObjectNode output = MAPPER.createObjectNode();
+        ArrayNode hitsNode = output.putArray("hits");
+        for (RetrievalHit hit : hits) {
+            ObjectNode item = hitsNode.addObject();
+            item.put("knowledgeId", String.valueOf(hit.knowledgeId()));
+            item.put("documentId", String.valueOf(hit.documentId()));
+            item.put("chunkId", String.valueOf(hit.chunkId()));
+            item.put("documentName", hit.documentName());
+            item.put("content", hit.content());
+            if (hit.rerankScore() != null) item.put("rerankScore", hit.rerankScore());
+            item.put("sourceType", hit.sourceType());
+            item.put("version", hit.version());
+            if (hit.effectiveDate() != null) item.put("effectiveDate", hit.effectiveDate().toString());
+        }
         ArrayNode chunksNode = output.putArray("chunks");
         chunks.forEach(chunksNode::add);
         output.put("count", chunks.size());

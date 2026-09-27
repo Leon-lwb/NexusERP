@@ -30,10 +30,10 @@ import java.util.Objects;
  * <p>配置模型：ai_config 表按分组存 JSON（分组键见 {@code GROUP_*} 常量），
  * 启动时全量加载回填 {@link AiProperties}（ApplicationRunner，先于 ApplicationReadyEvent 的
  * ERP 表结构缓存加载），无记录的组沿用 yml 兜底默认值；此后以表为准</p>
- * <p>即时生效：所有消费方均调用时读取 AiProperties getter，回填 bean 字段即生效；
+ * <p>即时生效：所有消费方均调用时读取 AiProperties 的读取方法，回填 bean 字段即生效；
  * 需联动的缓存 —— 向量库连接参数变更逐出 Milvus 客户端缓存（缓存 key 不含连接参数），
  * 表前缀变更刷新 ERP 表结构缓存（按前缀全量加载）</p>
- * <p>多节点：修改后通过 Redis Pub/Sub 广播，各节点收到后从库重载回填（ai_config 已加入
+ * <p>多节点：修改后通过 Redis 发布订阅 广播，各节点收到后从库重载回填（ai_config 已加入
  * tenant.excludes，无租户上下文的订阅回调线程亦可查询）</p>
  *
  * @author NexusERP
@@ -53,6 +53,9 @@ public class AiConfigServiceImpl implements IAiConfigService, ApplicationRunner 
     public static final String GROUP_FLOW = "flow";
     /** 配置分组：知识图谱 */
     public static final String GROUP_KNOWLEDGE_GRAPH = "knowledge_graph";
+
+    /** 工业决策参数：风险评分、方案权重与执行护栏。 */
+    public static final String GROUP_DECISION = "decision";
 
     /** 多节点配置刷新广播通道 */
     private static final String CONFIG_REFRESH_CHANNEL = "ai:config:refresh";
@@ -119,6 +122,37 @@ public class AiConfigServiceImpl implements IAiConfigService, ApplicationRunner 
         kgVo.setMaxCommunitiesForGlobal(kg.getMaxCommunitiesForGlobal());
         vo.setKnowledgeGraph(kgVo);
 
+        AiProperties.DecisionConfig decision = aiProperties.getDecision();
+        AiConfigVo.DecisionVo decisionVo = new AiConfigVo.DecisionVo();
+        decisionVo.setEnabled(decision.isEnabled());
+        decisionVo.setMaxConcurrentRuns(decision.getMaxConcurrentRuns());
+        decisionVo.setMaxScenarios(decision.getMaxScenarios());
+        decisionVo.setAnalysisTimeoutSeconds(decision.getAnalysisTimeoutSeconds());
+        decisionVo.setActionTimeoutSeconds(decision.getActionTimeoutSeconds());
+        decisionVo.setStaleThresholdSeconds(decision.getStaleThresholdSeconds());
+        decisionVo.setRequireApprovalLevels(new java.util.ArrayList<>(decision.getRequireApprovalLevels()));
+        decisionVo.setAllowAutoLowRiskNotify(decision.isAllowAutoLowRiskNotify());
+        decisionVo.setBenchmarkMode(decision.isBenchmarkMode());
+        decisionVo.setDefaultHorizonDays(decision.getDefaultHorizonDays());
+        decisionVo.setMaxHorizonDays(decision.getMaxHorizonDays());
+        decisionVo.setPolicyKnowledgeId(decision.getPolicyKnowledgeId());
+        AiConfigVo.DecisionRiskVo riskVo = new AiConfigVo.DecisionRiskVo();
+        riskVo.setTardinessPoints(decision.getRisk().getTardinessPoints());
+        riskVo.setShortagePoints(decision.getRisk().getShortagePoints());
+        riskVo.setCapacityPoints(decision.getRisk().getCapacityPoints());
+        riskVo.setSupplierPoints(decision.getRisk().getSupplierPoints());
+        decisionVo.setRisk(riskVo);
+        AiConfigVo.DecisionRankingVo rankingVo = new AiConfigVo.DecisionRankingVo();
+        rankingVo.setTardinessWeight(decision.getRanking().getTardinessWeight());
+        rankingVo.setDelayedCountWeight(decision.getRanking().getDelayedCountWeight());
+        rankingVo.setShortageWeight(decision.getRanking().getShortageWeight());
+        rankingVo.setUtilizationWeight(decision.getRanking().getUtilizationWeight());
+        rankingVo.setActionCostWeight(decision.getRanking().getActionCostWeight());
+        rankingVo.setPlanChangeWeight(decision.getRanking().getPlanChangeWeight());
+        rankingVo.setInfeasibleWeight(decision.getRanking().getInfeasibleWeight());
+        decisionVo.setRanking(rankingVo);
+        vo.setDecision(decisionVo);
+
         return vo;
     }
 
@@ -126,21 +160,21 @@ public class AiConfigServiceImpl implements IAiConfigService, ApplicationRunner 
     @Transactional(rollbackFor = Exception.class)
     public void updateConfig(AiConfigBo bo) {
         String preservedApiKey = resolvePreservedApiKey(bo);
+        ConfigCandidate candidate = buildCandidate(bo, preservedApiKey);
+        validateDecisionWeights(candidate.decision());
         synchronized (this) {
-            Snapshot before = Snapshot.of(aiProperties);
-            applyBo(bo, preservedApiKey);
-            upsertGroup(GROUP_SQL_SAFETY, JsonUtils.toJsonString(toSqlSafetyData()));
-            upsertGroup(GROUP_VECTOR_STORE, JsonUtils.toJsonString(aiProperties.getVectorStore()));
-            upsertGroup(GROUP_WEB_SEARCH, JsonUtils.toJsonString(aiProperties.getWebSearch()));
-            upsertGroup(GROUP_FLOW, JsonUtils.toJsonString(aiProperties.getFlow()));
-            upsertGroup(GROUP_KNOWLEDGE_GRAPH, JsonUtils.toJsonString(aiProperties.getKnowledgeGraph()));
-            handleCacheInvalidation(before, Snapshot.of(aiProperties));
+            // 运行态保持旧值，直到数据库事务真正提交。
+            persistCandidate(candidate);
         }
-        log.info("[AiConfig] AI 参数设置已保存并生效");
-        // 广播必须在事务提交后：其他节点收到即重载落库值，提交前广播会读到旧数据
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override
             public void afterCommit() {
+                synchronized (AiConfigServiceImpl.this) {
+                    Snapshot before = Snapshot.of(aiProperties);
+                    applyCandidate(candidate);
+                    handleCacheInvalidation(before, Snapshot.of(aiProperties));
+                }
+                log.info("[AiConfig] AI 参数设置已提交并生效");
                 RedisUtils.publish(CONFIG_REFRESH_CHANNEL, String.valueOf(System.currentTimeMillis()));
             }
         });
@@ -168,13 +202,12 @@ public class AiConfigServiceImpl implements IAiConfigService, ApplicationRunner 
         return aiProperties.getWebSearch().getApiKey();
     }
 
-    /**
-     * 将业务对象回填到 AiProperties（逐字段拷贝，嵌套组直接替换为新构建实例）
-     */
-    private void applyBo(AiConfigBo bo, String apiKey) {
-        aiProperties.setAllowedTablePrefixes(bo.getSqlSafety().getAllowedTablePrefixes());
-        aiProperties.setSqlTimeout(bo.getSqlSafety().getSqlTimeout());
-        aiProperties.setSqlMaxRows(bo.getSqlSafety().getSqlMaxRows());
+    /** 根据完整表单构建与当前运行态隔离的候选配置。 */
+    private ConfigCandidate buildCandidate(AiConfigBo bo, String apiKey) {
+        SqlSafetyData sqlSafety = new SqlSafetyData();
+        sqlSafety.setAllowedTablePrefixes(List.copyOf(bo.getSqlSafety().getAllowedTablePrefixes()));
+        sqlSafety.setSqlTimeout(bo.getSqlSafety().getSqlTimeout());
+        sqlSafety.setSqlMaxRows(bo.getSqlSafety().getSqlMaxRows());
 
         AiProperties.VectorStoreConfig vectorStore = new AiProperties.VectorStoreConfig();
         vectorStore.setType(bo.getVectorStore().getType());
@@ -183,7 +216,6 @@ public class AiConfigServiceImpl implements IAiConfigService, ApplicationRunner 
         milvus.setCollectionName(bo.getVectorStore().getMilvusCollectionName().trim());
         milvus.setDimension(bo.getVectorStore().getMilvusDimension());
         vectorStore.setMilvus(milvus);
-        aiProperties.setVectorStore(vectorStore);
 
         AiProperties.WebSearchConfig webSearch = new AiProperties.WebSearchConfig();
         webSearch.setEnabled(bo.getWebSearch().getEnabled());
@@ -191,11 +223,9 @@ public class AiConfigServiceImpl implements IAiConfigService, ApplicationRunner 
         webSearch.setApiKey(apiKey);
         webSearch.setTopN(bo.getWebSearch().getTopN());
         webSearch.setTimeoutMs(bo.getWebSearch().getTimeoutMs());
-        aiProperties.setWebSearch(webSearch);
 
         AiProperties.FlowConfig flow = new AiProperties.FlowConfig();
         flow.setParallel(bo.getFlow().getParallel());
-        aiProperties.setFlow(flow);
 
         AiProperties.KnowledgeGraphConfig kg = new AiProperties.KnowledgeGraphConfig();
         kg.setEnabled(bo.getKnowledgeGraph().getEnabled());
@@ -210,7 +240,32 @@ public class AiConfigServiceImpl implements IAiConfigService, ApplicationRunner 
         kg.setLabelPropagationMaxIter(bo.getKnowledgeGraph().getLabelPropagationMaxIter());
         kg.setMaxCommunities(bo.getKnowledgeGraph().getMaxCommunities());
         kg.setMaxCommunitiesForGlobal(bo.getKnowledgeGraph().getMaxCommunitiesForGlobal());
-        aiProperties.setKnowledgeGraph(kg);
+
+        return new ConfigCandidate(sqlSafety, vectorStore, webSearch, flow, kg,
+            toDecisionConfig(bo.getDecision()));
+    }
+
+    /** 在事务中只持久化候选值，不提前污染本节点运行态。 */
+    private void persistCandidate(ConfigCandidate candidate) {
+        upsertGroup(GROUP_SQL_SAFETY, JsonUtils.toJsonString(candidate.sqlSafety()));
+        upsertGroup(GROUP_VECTOR_STORE, JsonUtils.toJsonString(candidate.vectorStore()));
+        upsertGroup(GROUP_WEB_SEARCH, JsonUtils.toJsonString(candidate.webSearch()));
+        upsertGroup(GROUP_FLOW, JsonUtils.toJsonString(candidate.flow()));
+        upsertGroup(GROUP_KNOWLEDGE_GRAPH, JsonUtils.toJsonString(candidate.knowledgeGraph()));
+        upsertGroup(GROUP_DECISION, JsonUtils.toJsonString(candidate.decision()));
+    }
+
+    /** 仅由事务 afterCommit 或可信数据库重载路径发布。 */
+    private void applyCandidate(ConfigCandidate candidate) {
+        SqlSafetyData sqlSafety = candidate.sqlSafety();
+        aiProperties.setAllowedTablePrefixes(List.copyOf(sqlSafety.getAllowedTablePrefixes()));
+        aiProperties.setSqlTimeout(sqlSafety.getSqlTimeout());
+        aiProperties.setSqlMaxRows(sqlSafety.getSqlMaxRows());
+        aiProperties.setVectorStore(candidate.vectorStore());
+        aiProperties.setWebSearch(candidate.webSearch());
+        aiProperties.setFlow(candidate.flow());
+        aiProperties.setKnowledgeGraph(candidate.knowledgeGraph());
+        aiProperties.setDecision(candidate.decision());
     }
 
     /**
@@ -273,7 +328,66 @@ public class AiConfigServiceImpl implements IAiConfigService, ApplicationRunner 
                     aiProperties.setKnowledgeGraph(parsed);
                 }
             }
+            case GROUP_DECISION -> {
+                AiProperties.DecisionConfig parsed = JsonUtils.parseObject(json, AiProperties.DecisionConfig.class);
+                if (parsed != null) {
+                    validateDecisionWeights(parsed);
+                    aiProperties.setDecision(parsed);
+                }
+            }
             default -> log.warn("[AiConfig] 未知的配置分组: {}", group);
+        }
+    }
+
+    /** 请求字段映射为运行态配置；未提供决策组的旧客户端需要先更新表单。 */
+    private AiProperties.DecisionConfig toDecisionConfig(AiConfigBo.DecisionBo bo) {
+        if (bo == null || bo.getRisk() == null || bo.getRanking() == null) {
+            throw new com.nexus.common.core.exception.ServiceException("工业决策配置、风险分值及方案权重不能为空");
+        }
+        AiProperties.DecisionConfig config = JsonUtils.parseObject(
+            JsonUtils.toJsonString(bo), AiProperties.DecisionConfig.class);
+        if (config == null) {
+            throw new com.nexus.common.core.exception.ServiceException("工业决策配置无法解析");
+        }
+        return config;
+    }
+
+    /** 持久化或重载前检查两个评分维度；拒绝无穷和无效比例。 */
+    private void validateDecisionWeights(AiProperties.DecisionConfig config) {
+        List<String> required = config.getRequireApprovalLevels();
+        if (required == null || !required.contains("HIGH") || !required.contains("CRITICAL")
+            || required.stream().anyMatch(level -> level == null
+                || !java.util.Set.of("LOW", "MEDIUM", "HIGH", "CRITICAL").contains(level))) {
+            throw new com.nexus.common.core.exception.ServiceException("高风险及严重风险必须保留人工审批");
+        }
+        var risk = config.getRisk();
+        if (risk == null
+            || risk.getTardinessPoints() < 0 || risk.getTardinessPoints() > 100
+            || risk.getShortagePoints() < 0 || risk.getShortagePoints() > 100
+            || risk.getCapacityPoints() < 0 || risk.getCapacityPoints() > 100
+            || risk.getSupplierPoints() < 0 || risk.getSupplierPoints() > 100
+            || ((long) risk.getTardinessPoints() + risk.getShortagePoints()
+                + risk.getCapacityPoints() + risk.getSupplierPoints()) != 100L) {
+            throw new com.nexus.common.core.exception.ServiceException("决策风险分值必须在0到100且合计为100");
+        }
+        var ranking = config.getRanking();
+        if (ranking == null || !Double.isFinite(ranking.weightSum())
+            || Math.abs(ranking.weightSum() - 1.0) > 0.000001
+            || ranking.getTardinessWeight() < 0 || ranking.getDelayedCountWeight() < 0
+            || ranking.getShortageWeight() < 0 || ranking.getUtilizationWeight() < 0
+            || ranking.getActionCostWeight() < 0 || ranking.getPlanChangeWeight() < 0
+            || ranking.getInfeasibleWeight() < 0) {
+            throw new com.nexus.common.core.exception.ServiceException("决策方案排名权重必须非负且合计为1");
+        }
+        if (config.getMaxConcurrentRuns() < 1 || config.getMaxConcurrentRuns() > 16
+            || config.getMaxScenarios() < 2 || config.getMaxScenarios() > 8
+            || config.getAnalysisTimeoutSeconds() < 10 || config.getAnalysisTimeoutSeconds() > 300
+            || config.getActionTimeoutSeconds() < 5 || config.getActionTimeoutSeconds() > 120
+            || config.getStaleThresholdSeconds() < 30 || config.getStaleThresholdSeconds() > 3600
+            || config.getDefaultHorizonDays() < 1 || config.getMaxHorizonDays() > 90
+            || config.getDefaultHorizonDays() > config.getMaxHorizonDays()
+            || (config.getPolicyKnowledgeId() != null && config.getPolicyKnowledgeId() <= 0)) {
+            throw new com.nexus.common.core.exception.ServiceException("工业决策并发、方案数或推演跨度不合法");
         }
     }
 
@@ -310,12 +424,13 @@ public class AiConfigServiceImpl implements IAiConfigService, ApplicationRunner 
         }
     }
 
-    private SqlSafetyData toSqlSafetyData() {
-        SqlSafetyData data = new SqlSafetyData();
-        data.setAllowedTablePrefixes(aiProperties.getAllowedTablePrefixes());
-        data.setSqlTimeout(aiProperties.getSqlTimeout());
-        data.setSqlMaxRows(aiProperties.getSqlMaxRows());
-        return data;
+    private record ConfigCandidate(
+        SqlSafetyData sqlSafety,
+        AiProperties.VectorStoreConfig vectorStore,
+        AiProperties.WebSearchConfig webSearch,
+        AiProperties.FlowConfig flow,
+        AiProperties.KnowledgeGraphConfig knowledgeGraph,
+        AiProperties.DecisionConfig decision) {
     }
 
     /**

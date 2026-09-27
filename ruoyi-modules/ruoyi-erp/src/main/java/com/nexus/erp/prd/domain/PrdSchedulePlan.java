@@ -3,6 +3,7 @@ package com.nexus.erp.prd.domain;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.Version;
 import com.nexus.common.tenant.core.TenantEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -100,10 +101,29 @@ public class PrdSchedulePlan extends TenantEntity {
      */
     private String utilizationJson;
 
+    /** AI决策运行ID */
+    private Long decisionRunId;
+
+    /** AI决策动作ID */
+    private Long decisionActionId;
+
+    /** 租户内决策幂等键 */
+    private String decisionIdempotencyKey;
+
+    /** AI决策场景编码 */
+    private String decisionScenarioCode;
+
+    /** 显式工单ID十进制字符串JSON */
+    private String decisionWorkOrderIdsJson;
+
     /**
      * 状态: COMPLETED-已生成, PUBLISHED-已发布
      */
     private String status;
+
+    /** 乐观锁版本 */
+    @Version
+    private Integer version = 0;
 
     /**
      * 备注

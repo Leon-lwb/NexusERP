@@ -10,7 +10,7 @@ import com.nexus.erp.prd.domain.vo.PrdShortageRiskVo;
 import com.nexus.erp.prd.mapper.PrdMaterialRequirementDetailMapper;
 import com.nexus.erp.prd.schedule.PrdShortageInput;
 import com.nexus.erp.prd.schedule.PrdShortageResult;
-import com.nexus.erp.prd.schedule.PrdShortageSimulator;
+import com.nexus.erp.prd.schedule.PrdShortageScenarioService;
 import com.nexus.erp.prd.service.IPrdShortageRiskService;
 import com.nexus.erp.pu.domain.PuPurchaseOrder;
 import com.nexus.erp.pu.domain.PuPurchaseOrderLine;
@@ -53,6 +53,7 @@ public class PrdShortageRiskServiceImpl implements IPrdShortageRiskService {
     private final BdMaterialMapper materialMapper;
     private final PuPurchaseOrderMapper purchaseOrderMapper;
     private final PuPurchaseOrderLineMapper purchaseOrderLineMapper;
+    private final PrdShortageScenarioService scenarioService;
 
     @Override
     public List<PrdShortageRiskVo> predict(int days) {
@@ -73,7 +74,7 @@ public class PrdShortageRiskServiceImpl implements IPrdShortageRiskService {
         return predict(days);
     }
 
-    // ============ private ============
+    // 内部辅助方法。
 
     private String buildCacheKey(int days) {
         // 租户由 MyBatis-Plus 多租户插件在下述查询中自动隔离, 缓存 key 需自行带上租户
@@ -153,7 +154,22 @@ public class PrdShortageRiskServiceImpl implements IPrdShortageRiskService {
         }
 
         // 5. 推演(按最早缺料日升序)
-        List<PrdShortageResult> results = PrdShortageSimulator.simulateAll(new ArrayList<>(inputs.values()), today);
+        List<PrdShortageResult> results = new ArrayList<>();
+        for (PrdShortageInput input : inputs.values()) {
+            results.add(scenarioService.simulate(input, List.of(), Map.of(), today));
+        }
+        results.sort((a, b) -> {
+            if (a.getEarliestShortageDate() == null && b.getEarliestShortageDate() == null) {
+                return 0;
+            }
+            if (a.getEarliestShortageDate() == null) {
+                return 1;
+            }
+            if (b.getEarliestShortageDate() == null) {
+                return -1;
+            }
+            return a.getEarliestShortageDate().compareTo(b.getEarliestShortageDate());
+        });
         log.info("[ShortageRisk] 推演完成: days={}, 物料数={}, 有风险数={}",
             days, results.size(), results.stream().filter(PrdShortageResult::hasRisk).count());
         return results.stream().map(this::toVo).toList();

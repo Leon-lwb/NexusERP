@@ -1,0 +1,28 @@
+{
+  "version": "v2",
+  "status": "APPLIED",
+  "approvedAt": "2026-09-27",
+  "approval": "User explicitly adopted the 18 reviewed golden revisions and requested six safe evidence failure codes.",
+  "approvedRevisionsCount": 18,
+  "sourceCommit": "bc72309c",
+  "proposal": "reports/2026-09-27-golden-revision-proposal.json",
+  "previousVersion": "golden/versions/v1",
+  "previousHashes": {
+    "cases.jsonl": "f5f0d089e51130a84156fb77c441dd53aa433fb9dad87ba0abf08bdee32fd3d3",
+    "expected-results.jsonl": "e05859947ea468cc14dd5cb99c55f3ced0f0b62370bc1361dbb37da1587275c8"
+  },
+  "activeHashes": {
+    "cases.jsonl": "43e5a9d0974cbae50e39ff58e1dd4a49f4fcde496812d1875b882fc39162fff8",
+    "expected-results.jsonl": "f4fcf3c4dd5978b72776980990efd10f7e177a459e624ba1137b1acd180c94ea"
+  },
+  "scope": "18 recommendation/requiredActions changes, plus exact expectedFailureCode for 6 negative cases. Input facts/IDs/risk/confidence/root causes/expectedFailurePattern unchanged. No seed SQL changes.",
+  "negativeCodes": {
+    "DELIVERY-026": "ROUTING_EVIDENCE_MISSING",
+    "DELIVERY-027": "ROUTING_EVIDENCE_MISSING",
+    "DELIVERY-028": "ROUTING_EVIDENCE_MISSING",
+    "DELIVERY-038": "SCHEDULE_EVIDENCE_MISSING",
+    "DELIVERY-039": "SHORTAGE_SIMULATION_INCOMPLETE",
+    "DELIVERY-040": "CAPACITY_EVIDENCE_MISSING"
+  },
+  "bytePolicy": "Active v2 is canonical LF on every OS; v1 is -text exact historical CRLF. Previous hashes and proposal remain unchanged."
+}
