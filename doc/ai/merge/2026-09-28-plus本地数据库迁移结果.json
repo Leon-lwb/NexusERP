@@ -1,0 +1,181 @@
+{
+  "endpoint": "127.0.0.1:3306",
+  "identityVerified": true,
+  "decisionTables": {
+    "ai_decision_run": {
+      "columnsMatchMain": true,
+      "indexesMatchMain": true,
+      "engineAndCollationMatch": true,
+      "rows": 0
+    },
+    "ai_decision_evidence": {
+      "columnsMatchMain": true,
+      "indexesMatchMain": true,
+      "engineAndCollationMatch": true,
+      "rows": 0
+    },
+    "ai_decision_action": {
+      "columnsMatchMain": true,
+      "indexesMatchMain": true,
+      "engineAndCollationMatch": true,
+      "rows": 0
+    }
+  },
+  "modifiedTables": {
+    "ry-vue.ai_flow_node_run": {
+      "onlyApprovedColumnsChanged": true,
+      "indexesMatch": true,
+      "approvedColumns": [
+        "node_type"
+      ]
+    },
+    "ry-erp.prd_schedule_plan": {
+      "onlyApprovedColumnsChanged": true,
+      "indexesMatch": true,
+      "approvedColumns": [
+        "decision_run_id",
+        "decision_action_id",
+        "decision_idempotency_key",
+        "decision_scenario_code",
+        "decision_work_order_ids_json",
+        "version"
+      ]
+    },
+    "ry-erp.pu_purchase_requisition": {
+      "onlyApprovedColumnsChanged": true,
+      "indexesMatch": true,
+      "approvedColumns": [
+        "decision_run_id",
+        "decision_action_id",
+        "decision_idempotency_key",
+        "version"
+      ]
+    },
+    "ry-erp.pu_purchase_requisition_line": {
+      "onlyApprovedColumnsChanged": true,
+      "indexesMatch": true,
+      "approvedColumns": [
+        "material_name",
+        "material_spec",
+        "unit"
+      ]
+    }
+  },
+  "originalData": {
+    "ry-vue.ai_flow_node_run": {
+      "rows": 371,
+      "originalProjectionSha256": "e592022bb7e94c5119bc4d8303fde2150bfbccffc00095758b58488c85b105a3",
+      "unchanged": true
+    },
+    "ry-erp.prd_schedule_plan": {
+      "rows": 0,
+      "originalProjectionSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "unchanged": true
+    },
+    "ry-erp.pu_purchase_requisition": {
+      "rows": 0,
+      "originalProjectionSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "unchanged": true
+    },
+    "ry-erp.pu_purchase_requisition_line": {
+      "rows": 0,
+      "originalProjectionSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "unchanged": true
+    },
+    "ry-erp.bd_vendor": {
+      "rows": 12,
+      "originalProjectionSha256": "ff72d224a1fca9d07f1b947902cd8e7975417f5bf0e6cb3e3bfccc363a004b8b",
+      "unchanged": true
+    },
+    "ry-vue.sys_role_menu": {
+      "rows": 1005,
+      "originalProjectionSha256": "fd6fed5e5f616ac51a379387bd9b8ebf82a8aacc5e37afd81e0f5827cecd7bc7",
+      "unchanged": true
+    },
+    "ry-vue.sys_tenant_package": {
+      "rows": 1,
+      "originalProjectionSha256": "d66f5a17eea675279a22068772f25113878f3d51b0d18ea4248103670595b411",
+      "unchanged": true
+    },
+    "ry-vue.sys_menu": {
+      "rows": 1269,
+      "originalProjectionSha256": "76e4fd9dc01c9c007593e2a438fa08ba481292ef02ce9ce1e4ec8ee5808bc249",
+      "unchanged": true
+    },
+    "ry-vue.sys_dict_data": {
+      "rows": 1037,
+      "originalProjectionSha256": "90700c8d6bb7a015d793e64b7890d0b55a2c4792b14b212e7922703704bd30ec",
+      "unchanged": true
+    }
+  },
+  "menuCount": 10,
+  "sourceDictionaryCount": 1,
+  "sqlSha256": "17f13a1d3284af2d3edda37e4e7702b846ac36b5186ef77247a3ba51f2101945",
+  "executedAt": "2026-09-28T08:22:10.230174+08:00",
+  "verifiedAt": "2026-09-28T08:25:29.618636+08:00",
+  "status": "VERIFIED",
+  "backupDirectory": "D:\\workspace\\nexus-plus-decision-backups\\20260928-080946-59424c0b",
+  "cache": {
+    "port": 6379,
+    "database": 0,
+    "key": "000000:sys_dict",
+    "field": "pu_source_type",
+    "wasCached": false,
+    "removedFields": 0,
+    "otherFieldsPreserved": true
+  },
+  "remotePush": false,
+  "backups": {
+    "ry-vue": {
+      "bytes": 14659384,
+      "sha256": "d98eb19225ed93531d98cb089828d6af8a3159d5055eb47fbbe06ca31182a5eb",
+      "tableDefinitions": 195,
+      "completed": true
+    },
+    "ry-erp": {
+      "bytes": 914289,
+      "sha256": "f6db2c2e534d3c622d84c9236e35ffb7ffab53f25d0712a8d526aaa5e4b6691a",
+      "tableDefinitions": 128,
+      "completed": true
+    }
+  },
+  "validation": {
+    "offlinePythonTests": 66,
+    "migrationContractTests": 7,
+    "java": {
+      "tests": 49,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "javaClasses": {
+      "com.nexus.test.DecisionDemoProfileTest": {
+        "tests": 26,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "com.nexus.erp.ai.adapter.ErpDecisionDraftSqlContractTest": {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "com.nexus.common.ai.decision.AiDecisionSqlContractTest": {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "com.nexus.common.ai.decision.DecisionEntityContractTest": {
+        "tests": 13,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    },
+    "independentLiveDatabaseVerification": true,
+    "wrongEndpointSessionGuardRejected": true,
+    "alreadyAppliedSessionGuardRejected": true
+  }
+}

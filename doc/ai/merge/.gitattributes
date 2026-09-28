@@ -1,0 +1,5 @@
+# 固定本次执行脚本与验证记录的字节口径，避免检出时换行转换造成哈希漂移。
+/2026-09-28-plus工业决策本地增量.sql text eol=lf
+/2026-09-28-plus本地数据库迁移结果.json text eol=lf
+/test-local-plus-migration.py text eol=lf
+/.gitattributes text eol=lf
