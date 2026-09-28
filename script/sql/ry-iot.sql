@@ -1,17 +1,17 @@
 /*
  Navicat Premium Data Transfer
 
- Source Server         : whbuild
+ Source Server         : 本地5.7
  Source Server Type    : MySQL
- Source Server Version : 50720
+ Source Server Version : 50714 (5.7.14)
  Source Host           : localhost:3306
  Source Schema         : ry-iot
 
  Target Server Type    : MySQL
- Target Server Version : 50720
+ Target Server Version : 50714 (5.7.14)
  File Encoding         : 65001
 
- Date: 22/09/2026 17:49:17
+ Date: 28/09/2026 08:33:33
 */
 
 SET NAMES utf8mb4;
@@ -31,13 +31,13 @@ CREATE TABLE `iot_alert_notify_log`  (
   `message` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '结果说明',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`log_id`) USING BTREE,
   INDEX `idx_alert`(`alert_id`) USING BTREE,
   INDEX `idx_tenant_time`(`tenant_id`, `create_time`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'IoT告警通知投递留痕(无在线用户也不丢)' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'IoT告警通知投递留痕(无在线用户也不丢)' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of iot_alert_notify_log
@@ -80,26 +80,26 @@ CREATE TABLE `iot_alert_record`  (
   `alert_message` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '告警描述',
   `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'ACTIVE' COMMENT '状态机: ACTIVE/ACKNOWLEDGED/RESOLVED',
   `active_flag` tinyint(1) NULL DEFAULT 1 COMMENT '未恢复标记(1=未恢复, NULL=已恢复); 唯一键组成',
-  `trigger_time` datetime(0) NOT NULL COMMENT '首次触发时间',
-  `last_trigger_time` datetime(0) NULL DEFAULT NULL COMMENT '最近触发时间',
-  `ack_time` datetime(0) NULL DEFAULT NULL COMMENT '确认时间',
+  `trigger_time` datetime NOT NULL COMMENT '首次触发时间',
+  `last_trigger_time` datetime NULL DEFAULT NULL COMMENT '最近触发时间',
+  `ack_time` datetime NULL DEFAULT NULL COMMENT '确认时间',
   `ack_by` bigint(20) NULL DEFAULT NULL COMMENT '确认人',
   `ack_remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '确认备注',
-  `resolve_time` datetime(0) NULL DEFAULT NULL COMMENT '恢复时间',
+  `resolve_time` datetime NULL DEFAULT NULL COMMENT '恢复时间',
   `resolve_by` bigint(20) NULL DEFAULT NULL COMMENT '恢复操作人(空=系统自动恢复)',
   `resolve_value` decimal(14, 4) NULL DEFAULT NULL COMMENT '恢复值',
   `resolve_remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '恢复备注',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`alert_id`) USING BTREE,
   UNIQUE INDEX `uk_active_alert`(`tenant_id`, `device_id`, `property_code`, `active_flag`) USING BTREE,
   INDEX `idx_query`(`tenant_id`, `device_id`, `status`, `trigger_time`) USING BTREE,
   INDEX `idx_status_time`(`tenant_id`, `status`, `trigger_time`) USING BTREE,
   INDEX `idx_rule`(`rule_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'IoT告警记录(含确认/恢复状态机)' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'IoT告警记录(含确认/恢复状态机)' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of iot_alert_record
@@ -137,13 +137,13 @@ CREATE TABLE `iot_alert_rule`  (
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`rule_id`) USING BTREE,
   UNIQUE INDEX `uk_rule_scope`(`tenant_id`, `product_id`, `device_id`, `property_code`) USING BTREE,
   INDEX `idx_tenant_property`(`tenant_id`, `property_code`, `enabled`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'IoT告警规则' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'IoT告警规则' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of iot_alert_rule
@@ -170,7 +170,7 @@ CREATE TABLE `iot_device`  (
   `product_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '产品名称(冗余)',
   `protocol_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'MQTT' COMMENT '协议类型: MQTT/OPC_UA/MODBUS/HTTP',
   `connection_status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'OFFLINE' COMMENT '连接状态: ONLINE/OFFLINE',
-  `last_online_time` datetime(0) NULL DEFAULT NULL COMMENT '最后在线时间',
+  `last_online_time` datetime NULL DEFAULT NULL COMMENT '最后在线时间',
   `device_secret` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '设备密钥(MQTT认证)',
   `ip_address` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT 'IP地址',
   `firmware_version` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '固件版本',
@@ -180,16 +180,16 @@ CREATE TABLE `iot_device`  (
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志(0正常 1删除)',
   PRIMARY KEY (`device_id`) USING BTREE,
   UNIQUE INDEX `uk_code`(`device_code`, `tenant_id`) USING BTREE,
   INDEX `idx_product`(`product_id`) USING BTREE,
   INDEX `idx_status`(`connection_status`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'IoT设备实例' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'IoT设备实例' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of iot_device
@@ -233,8 +233,8 @@ CREATE TABLE `iot_device_command`  (
   `payload` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '下发载荷(JSON)',
   `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'PENDING' COMMENT '状态: PENDING/SENT/SUCCESS/FAILED/TIMEOUT',
   `retry_count` int(11) NOT NULL DEFAULT 0 COMMENT '重发次数',
-  `sent_time` datetime(0) NULL DEFAULT NULL COMMENT '下发时间',
-  `ack_time` datetime(0) NULL DEFAULT NULL COMMENT '设备回执时间',
+  `sent_time` datetime NULL DEFAULT NULL COMMENT '下发时间',
+  `ack_time` datetime NULL DEFAULT NULL COMMENT '设备回执时间',
   `ack_payload` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '设备回执载荷',
   `ack_msg_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '回执消息ID(幂等去重键)',
   `result_message` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '下发/回执结果说明',
@@ -242,14 +242,14 @@ CREATE TABLE `iot_device_command`  (
   `operator_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '下发人名称',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`command_id`) USING BTREE,
   UNIQUE INDEX `uk_ack_msg_id`(`ack_msg_id`) USING BTREE,
   INDEX `idx_query`(`tenant_id`, `device_id`, `create_time`) USING BTREE,
   INDEX `idx_status`(`tenant_id`, `status`, `create_time`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'IoT下行指令(下发留痕+回执状态)' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'IoT下行指令(下发留痕+回执状态)' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of iot_device_command
@@ -285,18 +285,18 @@ CREATE TABLE `iot_device_data`  (
   `numeric_value` decimal(14, 4) NULL DEFAULT NULL COMMENT '数值型值',
   `text_value` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '文本型值',
   `bool_value` tinyint(1) NULL DEFAULT NULL COMMENT '布尔型值(0/1)',
-  `collect_time` datetime(0) NOT NULL COMMENT '采集时间(设备侧)',
-  `receive_time` datetime(0) NOT NULL COMMENT '接收时间(服务端)',
+  `collect_time` datetime NOT NULL COMMENT '采集时间(设备侧)',
+  `receive_time` datetime NOT NULL COMMENT '接收时间(服务端)',
   `quality` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'GOOD' COMMENT '数据质量: GOOD/BAD/UNCERTAIN',
   `source` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'MQTT' COMMENT '数据来源: MQTT/OPC_UA/MODBUS/HTTP',
   `source_msg_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '来源消息ID(Redis Stream entry id,幂等去重键)',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`data_id`) USING BTREE,
   UNIQUE INDEX `uk_source_msg_id`(`source_msg_id`) USING BTREE,
   INDEX `idx_device_time`(`device_id`, `collect_time`) USING BTREE,
   INDEX `idx_property`(`device_id`, `property_code`, `collect_time`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'IoT设备数据(原始)' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'IoT设备数据(原始)' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of iot_device_data
@@ -350,8 +350,8 @@ CREATE TABLE `iot_device_event`  (
   `event_code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT '事件编码',
   `event_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '事件名称(设备上报)',
   `event_level` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '事件级别: INFO/WARN/ERROR/CRITICAL(设备上报)',
-  `event_time` datetime(0) NOT NULL COMMENT '事件发生时间(设备侧)',
-  `receive_time` datetime(0) NULL DEFAULT NULL COMMENT '服务端接收时间',
+  `event_time` datetime NOT NULL COMMENT '事件发生时间(设备侧)',
+  `receive_time` datetime NULL DEFAULT NULL COMMENT '服务端接收时间',
   `payload` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '事件原始载荷(JSON)',
   `quality` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'GOOD' COMMENT '数据质量: GOOD/BAD/UNCERTAIN',
   `process_status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'PENDING' COMMENT '处理状态: PENDING/PROCESSED/IGNORED/FAILED',
@@ -359,13 +359,13 @@ CREATE TABLE `iot_device_event`  (
   `alert_id` bigint(20) NULL DEFAULT NULL COMMENT '联动生成的告警ID(空=未联动)',
   `source` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'MQTT' COMMENT '数据来源: MQTT/HTTP',
   `source_msg_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '来源消息ID(Redis Stream entry id,幂等去重键)',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`event_id`) USING BTREE,
   UNIQUE INDEX `uk_source_msg_id`(`source_msg_id`) USING BTREE,
   INDEX `idx_query`(`tenant_id`, `device_id`, `event_time`) USING BTREE,
   INDEX `idx_status`(`tenant_id`, `process_status`, `event_time`) USING BTREE,
   INDEX `idx_code`(`tenant_id`, `event_code`, `event_time`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'IoT设备事件上报(含处理状态与告警联动)' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'IoT设备事件上报(含处理状态与告警联动)' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of iot_device_event
@@ -399,15 +399,15 @@ CREATE TABLE `iot_device_group`  (
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志(0正常 1删除)',
   PRIMARY KEY (`group_id`) USING BTREE,
   UNIQUE INDEX `uk_code`(`tenant_id`, `group_code`) USING BTREE,
   INDEX `idx_parent`(`tenant_id`, `parent_id`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'IoT设备分组(树形)' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'IoT设备分组(树形)' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of iot_device_group
@@ -435,12 +435,12 @@ CREATE TABLE `iot_device_group_rel`  (
   `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '000000' COMMENT '租户ID',
   `device_id` bigint(20) NOT NULL COMMENT '设备ID',
   `group_id` bigint(20) NOT NULL COMMENT '分组ID',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`rel_id`) USING BTREE,
   UNIQUE INDEX `uk_device_group`(`tenant_id`, `device_id`, `group_id`) USING BTREE,
   INDEX `idx_group`(`tenant_id`, `group_id`) USING BTREE,
   INDEX `idx_device`(`device_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'IoT设备与分组关系(多对多)' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'IoT设备与分组关系(多对多)' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of iot_device_group_rel
@@ -482,14 +482,14 @@ CREATE TABLE `iot_device_tag`  (
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志(0正常 1删除)',
   PRIMARY KEY (`tag_id`) USING BTREE,
   UNIQUE INDEX `uk_name`(`tenant_id`, `tag_name`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'IoT设备标签' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'IoT设备标签' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of iot_device_tag
@@ -510,12 +510,12 @@ CREATE TABLE `iot_device_tag_rel`  (
   `tenant_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '000000' COMMENT '租户ID',
   `device_id` bigint(20) NOT NULL COMMENT '设备ID',
   `tag_id` bigint(20) NOT NULL COMMENT '标签ID',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`rel_id`) USING BTREE,
   UNIQUE INDEX `uk_device_tag`(`tenant_id`, `device_id`, `tag_id`) USING BTREE,
   INDEX `idx_tag`(`tenant_id`, `tag_id`) USING BTREE,
   INDEX `idx_device`(`device_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'IoT设备与标签关系(多对多)' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'IoT设备与标签关系(多对多)' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of iot_device_tag_rel
@@ -569,19 +569,19 @@ CREATE TABLE `iot_firmware`  (
   `checksum_type` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'MD5' COMMENT '校验算法: MD5/SHA256',
   `checksum` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT '校验值(小写十六进制)',
   `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'DRAFT' COMMENT '发布状态: DRAFT/RELEASED/DISABLED',
-  `release_time` datetime(0) NULL DEFAULT NULL COMMENT '发布时间',
+  `release_time` datetime NULL DEFAULT NULL COMMENT '发布时间',
   `change_log` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '变更说明',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志(0正常 1删除)',
   PRIMARY KEY (`firmware_id`) USING BTREE,
   UNIQUE INDEX `uk_version`(`tenant_id`, `product_key`, `version`) USING BTREE,
   INDEX `idx_status`(`tenant_id`, `status`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'IoT固件登记(版本/包/校验值/发布状态)' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'IoT固件登记(版本/包/校验值/发布状态)' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of iot_firmware
@@ -611,15 +611,15 @@ CREATE TABLE `iot_forward_log`  (
   `retry_count` int(11) NOT NULL DEFAULT 0 COMMENT '已重试次数',
   `http_status` int(11) NULL DEFAULT NULL COMMENT 'HTTP响应码',
   `error_msg` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '失败原因',
-  `next_retry_time` datetime(0) NULL DEFAULT NULL COMMENT '下次重试时间(空=不再重试)',
-  `last_attempt_time` datetime(0) NULL DEFAULT NULL COMMENT '最近一次投递时间',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `next_retry_time` datetime NULL DEFAULT NULL COMMENT '下次重试时间(空=不再重试)',
+  `last_attempt_time` datetime NULL DEFAULT NULL COMMENT '最近一次投递时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`log_id`) USING BTREE,
   INDEX `idx_retry`(`tenant_id`, `status`, `next_retry_time`) USING BTREE,
   INDEX `idx_rule`(`rule_id`) USING BTREE,
   INDEX `idx_device`(`tenant_id`, `device_id`, `create_time`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'IoT数据转发投递留痕(失败可重试)' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'IoT数据转发投递留痕(失败可重试)' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of iot_forward_log
@@ -656,13 +656,13 @@ CREATE TABLE `iot_forward_rule`  (
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`rule_id`) USING BTREE,
   UNIQUE INDEX `uk_rule_scope`(`tenant_id`, `product_id`, `device_id`, `rule_name`) USING BTREE,
   INDEX `idx_enabled`(`tenant_id`, `enabled`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'IoT数据转发规则(HTTP Webhook)' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'IoT数据转发规则(HTTP Webhook)' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of iot_forward_rule
@@ -689,9 +689,9 @@ CREATE TABLE `iot_ota_task`  (
   `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'PENDING' COMMENT '状态: PENDING/SENT/UPGRADING/SUCCESS/FAILED/TIMEOUT/CANCELLED',
   `progress` int(11) NOT NULL DEFAULT 0 COMMENT '升级进度(0-100)',
   `retry_count` int(11) NOT NULL DEFAULT 0 COMMENT '人工重试次数',
-  `sent_time` datetime(0) NULL DEFAULT NULL COMMENT '指令下发时间',
-  `start_time` datetime(0) NULL DEFAULT NULL COMMENT '设备开始升级时间',
-  `finish_time` datetime(0) NULL DEFAULT NULL COMMENT '结束时间',
+  `sent_time` datetime NULL DEFAULT NULL COMMENT '指令下发时间',
+  `start_time` datetime NULL DEFAULT NULL COMMENT '设备开始升级时间',
+  `finish_time` datetime NULL DEFAULT NULL COMMENT '结束时间',
   `fail_reason` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '失败/取消原因',
   `report_msg_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '最近一次回执的消息ID(Stream entry id,便于取证)',
   `operator_id` bigint(20) NULL DEFAULT NULL COMMENT '下发人',
@@ -699,15 +699,15 @@ CREATE TABLE `iot_ota_task`  (
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`task_id`) USING BTREE,
   INDEX `idx_device`(`tenant_id`, `device_id`, `create_time`) USING BTREE,
   INDEX `idx_status`(`tenant_id`, `status`, `sent_time`) USING BTREE,
   INDEX `idx_firmware`(`tenant_id`, `firmware_id`) USING BTREE,
   INDEX `idx_batch`(`batch_no`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'IoT OTA固件升级任务(单设备/按分组批量)' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'IoT OTA固件升级任务(单设备/按分组批量)' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of iot_ota_task
@@ -742,14 +742,14 @@ CREATE TABLE `iot_product`  (
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
   `create_by` bigint(20) NULL DEFAULT NULL COMMENT '创建人',
-  `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` bigint(20) NULL DEFAULT NULL COMMENT '更新人',
-  `update_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '更新时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '0' COMMENT '删除标志(0正常 1删除)',
   PRIMARY KEY (`product_id`) USING BTREE,
   UNIQUE INDEX `uk_code`(`product_code`, `tenant_id`) USING BTREE,
   INDEX `idx_tenant_id`(`tenant_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'IoT产品(设备模板)' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'IoT产品(设备模板)' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of iot_product
