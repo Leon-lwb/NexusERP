@@ -79,7 +79,10 @@ public class SmsAuthStrategy implements IAuthStrategy {
      * 校验短信验证码
      */
     private boolean validateSmsCode(String tenantId, String phonenumber, String smsCode) {
-        String code = RedisUtils.getCacheObject(GlobalConstants.CAPTCHA_CODE_KEY + phonenumber);
+        String key = GlobalConstants.CAPTCHA_CODE_KEY + phonenumber;
+        String code = RedisUtils.getCacheObject(key);
+        // 与密码登录验证码一致：读取即作废，阻止有效验证码在过期前重复登录。
+        RedisUtils.deleteObject(key);
         if (StringUtils.isBlank(code)) {
             loginService.recordLogininfor(tenantId, phonenumber, Constants.LOGIN_FAIL, MessageUtils.message("user.jcaptcha.expire"));
             throw new CaptchaExpireException();

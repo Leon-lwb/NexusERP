@@ -406,3 +406,8 @@ nexus:
     max-image-dim: 4096
     enabled: true
     health-fail-threshold: 3
+
+--- # App 临时认证：未接入短信服务时回显真实验证码（默认关闭；公网访问可凭手机号登录任意账号，接入短信服务后必须开启真实通道并保持关闭）
+app:
+  auth:
+    sms-code-echo: ${APP_SMS_CODE_ECHO:false}

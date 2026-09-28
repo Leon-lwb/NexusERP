@@ -16,6 +16,7 @@ import com.nexus.common.core.domain.model.SmsLoginBody;
 import com.nexus.common.core.utils.MapstructUtils;
 import com.nexus.common.json.utils.JsonUtils;
 import com.nexus.common.redis.utils.RedisUtils;
+import com.nexus.common.ratelimiter.annotation.RateLimiter;
 import com.nexus.common.satoken.utils.LoginHelper;
 import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.system.domain.bo.SysTenantBo;
@@ -31,6 +32,8 @@ import me.zhyd.oauth.cache.AuthStateCache;
 import com.nexus.web.service.IAuthStrategy;
 import com.nexus.web.service.SysLoginService;
 import org.springframework.beans.factory.annotation.Value;
+import jakarta.validation.constraints.Pattern;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Duration;
@@ -47,6 +50,7 @@ import java.util.Map;
  */
 @Slf4j
 @RequiredArgsConstructor
+@Validated
 @RestController
 @RequestMapping("/app/auth")
 public class AppAuthController {
@@ -57,7 +61,7 @@ public class AppAuthController {
     private static final String APP_CLIENT_ID = "428a8310cd442757ae699df5d894f051";
 
     /**
-     * 开发环境短信验证码回显开关 (默认关闭; 生产环境严禁开启, 否则任意手机号可接管账号)
+     * 临时验证码回显开关 (默认关闭; 对公网开放时知道手机号即可登录该账号, 接入短信后必须关闭)
      */
     @Value("${app.auth.sms-code-echo:false}")
     private boolean smsCodeEcho;
@@ -71,27 +75,32 @@ public class AppAuthController {
     private final AuthStateCache authRedisStateCache;
 
     /**
-     * 获取短信验证码（开发环境）
+     * 获取临时回显验证码
      * <p>
-     * 不发送真实短信，验证码直接返回给前端展示。生产环境请配置真实短信服务商后使用 /resource/sms/code。
+     * 暂未接入短信服务时生成真实登录验证码并回显给请求者。接入短信后关闭此开关并使用 /resource/sms/code。
      */
     @SaIgnore
+    @RateLimiter(key = "#phonenumber", time = 60, count = 1)
     @GetMapping("/smsCode")
-    public R<Map<String, Object>> smsCode(@RequestParam String phonenumber) {
-        // 验证码明文回显仅限开发环境; 默认关闭, 防止生产环境被用于接管任意手机号账号
+    public R<Map<String, Object>> smsCode(@RequestParam @Pattern(regexp = "^1[3-9]\\d{9}$", message = "手机号格式错误") String phonenumber) {
+        // 回显仅为未接入短信服务时的临时措施，任何请求者均可拿到该手机号的登录凭据
         if (!smsCodeEcho) {
             return R.fail("短信验证码回显未开启, 请使用真实短信通道");
         }
         String key = GlobalConstants.CAPTCHA_CODE_KEY + phonenumber;
-        String code = RandomUtil.randomNumbers(6);
+        String code = generateSmsCode();
         RedisUtils.setCacheObject(key, code, Duration.ofMinutes(Constants.CAPTCHA_EXPIRATION));
-        log.info("App开发模式短信验证码: phone={}, code={}", phonenumber, code);
+        log.info("App临时验证码已生成: phone={}", phonenumber);
 
         Map<String, Object> result = new HashMap<>();
         result.put("code", code);
         result.put("phonenumber", phonenumber);
-        result.put("message", "短信服务商未配置，开发环境验证码：" + code);
+        result.put("message", "短信服务商未配置，当前验证码已回显");
         return R.ok(result);
+    }
+
+    static String generateSmsCode() {
+        return RandomUtil.randomNumbers(4);
     }
 
     /**

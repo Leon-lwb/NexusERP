@@ -356,10 +356,10 @@ spring.rabbitmq:
       acknowledge-mode: manual
       prefetch: 10
 
---- # App 认证: 开发环境开启短信验证码回显 (生产环境严禁开启)
+--- # App 认证: 开发环境开启短信验证码回显 (生产环境严禁开启；开关值由环境变量 APP_SMS_CODE_ECHO 控制)
 app:
   auth:
-    sms-code-echo: true
+    sms-code-echo: ${APP_SMS_CODE_ECHO:true}
 
 # 开发环境本机MCP端点配置
 nexus:
