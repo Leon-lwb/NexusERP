@@ -1,5 +1,7 @@
 # 供应商字典口径对齐实施计划（bd_vendor）
 
+> 文档复核（2026-09-28）：09-23 已有字典、种子、后端、前端和生成器相关提交（如 `f2790753`、`f8dd2aa0`、`7fdce226`、`c9df7fdd`）；本计划的逐步复核框仍保留原状，尚有手工浏览器/存量环境验收步骤，故不因代码存在而标记“全部完成”或归档。
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 让 `bd_vendor` 的行业/地区/分类/合作状态/默认发票类型五个字段全部命中字典值，并把「行业」口径从国民经济门类改为与 `bd_material_category` 对齐的供货品类。

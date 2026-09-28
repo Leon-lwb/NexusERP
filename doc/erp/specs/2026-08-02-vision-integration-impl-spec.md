@@ -2,7 +2,7 @@
 
 > 状态：**全部完成** —— Phase 1a+1b（打卡人脸+管理端）与 Phase 2（物料 OCR+操作台+标签识别组件）均已完成并端到端验证通过（2026-08-02）；Phase 3（自定义 YOLO / App/PAD 落地）待立项需求
 > 日期：2026-08-02
-> 关联服务：[nexus-vision-service](D:\workspace\nexus-vision-service)（已实现 V0–V4）
+> 关联服务：`nexus-vision-service`（独立仓库；历史本机路径不作为文档链接）（已实现 V0–V4）
 > 本文档规划 V5 阶段：`ruoyi-common-cv` Java 客户端 + ERP/Web/App 三端接入落地路径
 
 ---

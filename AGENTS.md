@@ -1,20 +1,28 @@
-# AGENTS.md
+# AGENTS.md — Nexus-ERP 全工具 Agent 协作指南
 
-本文件为 Codex (Codex.ai/code) 在本仓库中工作时提供指导。
+> 核对日期：2026-09-28。适用于 Codex、Claude Code、Gemini CLI、Cursor 及其他参与本仓库工作的 Agent/自动化工具；不依赖某一工具的专有命令。
+
+本文件是仓库级统一指导。工具若不会自动读取 `AGENTS.md`，请在任务上下文中显式提供它；不要维护内容相同但逐渐漂移的工具专属副本。先看 `git status` 与相关模块代码，尊重工作区已有修改；未经要求不清理他人的改动、不自动提交/推送、不运行会改写现有数据库的脚本。以**实际代码/配置及最新提交**为事实来源，历史方案和测试报告只代表其标注日期、分支与环境。资料入口见 [文档中心](doc/README.md) 和 [贡献规范](doc/CONTRIBUTING.md)；不要把本地通过当作生产已部署或人工已验收。
+
+## 通用工作约定
+
+1. **先确认现场**：核对 `git status`、实际文件/模块路径、目标分支和最新提交；不覆盖或清理既有未提交改动。历史开发计划、演示数据与生产运行分别核实。
+2. **只改任务范围**：遵守现有分层、租户/权限、跨库事务及消息幂等边界；涉及 SQL、演示数据库、外部服务、密钥、真实业务数据时先确认适用环境，未经明确授权不执行写操作。
+3. **留可复核证据**：修改后运行相关模块测试与前端类型检查/构建；测试必须有非零用例数，不能把跳过的测试、旧报告或本机数据库验证写成生产验收。报告改动文件、所跑命令、结果和未验证事项。
 
 ## 项目概述
 
-Nexus-ERP 是一套面向制造业与贸易型企业的综合管理系统，涵盖 **ERP（企业资源计划）、MES（制造执行）、IoT（物联网数据采集）、AI 智能助手** 四大核心能力。基于 **RuoYi-Vue-Plus v5.6.0** 二次开发而来，并针对分布式/集群部署进行了大量重写。采用 MIT 许可证。
+Nexus-ERP 是一套面向制造业与贸易型企业的综合管理系统，以 **ERP、MES、IoT、AI** 为核心，扩展了 Flow 流程编排、IM、CV 视觉识别、Station 工位通道、电子签章及工业决策闭环。基于 **RuoYi-Vue-Plus v5.6.0** 二次开发而来，并针对分布式/集群部署进行了大量重写。采用 MIT 许可证。
 
 ## 构建与运行
 
 ### 后端 (Java / Maven)
 
 - **构建**: `mvn clean package` (默认跳过测试 — 根 pom 中 `skipTests=true`)
-- **运行测试**: `mvn test -DskipTests=false`
-- **本地运行**: `mvn spring-boot:run -P local` (或者将 `ruoyi-admin` 模块导入 IDE 并运行 `DromaraApplication`)
-- **激活的环境**: `local`、`dev`、`prod` (通过 `<profiles.active>` 属性设置)
-- 入口点: `ruoyi-admin/src/main/java/org/dromara/DromaraApplication.java`
+- **运行测试**: `mvn test -DskipTests=false -Dprofiles.active=`；根 `pom.xml` 的 Surefire `groups=${profiles.active}` 会按环境 Tag 过滤，必须检查输出的 `Tests run` 大于 0，不能仅凭 `BUILD SUCCESS` 判定已测。限定模块时可使用 `mvn -pl ruoyi-modules/ruoyi-erp -am test -DskipTests=false -Dprofiles.active=` 等。
+- **本地运行**: 先完成模块构建，再在 `ruoyi-admin` 模块运行 `mvn spring-boot:run -P local`（或在 IDE 运行 `com.nexus.NexusApplication`）；不要假定根聚合 POM 直接运行应用。
+- **激活的环境**: `local`、`dev`、`prod`（Maven 默认 `dev`；通过 `-P local` / `-P prod` 切换；测试时可显式设置空的 `profiles.active` 以免漏测）。
+- 入口点: `ruoyi-admin/src/main/java/com/nexus/NexusApplication.java`（包名 `com.nexus`；勿再引用历史 `DromaraApplication`）。
 - Web 服务器: Undertow，默认端口 8080，上下文路径 `/`
 
 ### 前端 (plus-ui / Vue 3)
@@ -22,34 +30,34 @@ Nexus-ERP 是一套面向制造业与贸易型企业的综合管理系统，涵�
 - **开发服务器**: `npm run dev` (端口 80，代理 `/dev-api` → `http://localhost:8080`)
 - **生产构建**: `npm run build:prod`
 - **代码检查**: `npm run lint:eslint` (使用 `lint:eslint:fix` 自动修复)
-- **代码格式化**: `npm run prettier`
+- **类型检查/单测**: `npm run type-check`、`npm run test:unit`（在 `plus-ui/` 下执行）。`npm run prettier` 会批量改写全仓前端文件，只对实际修改文件运行定向格式化/检查，避免污染无关改动。
 - 要求 Node >= 20.19.0
 
 ### 数据库
 
-初始化 SQL 脚本位于 `script/sql/` 目录 (按依赖顺序导入，均落到 `ry-vue` 系统库 / `ry-erp` 业务库):
+初始化 SQL 脚本位于 `script/sql/`；按系统库和各业务数据源分别导入对应数据库，具体库名及导入顺序以环境配置、[变更登记](doc/system/数据库增量变更记录.md)为准，切勿把 MES/IoT 表误导入 ERP 库：
 - `ry-vue.sql` — 基础系统表 (系统库 `ry-vue`)
 - `ry-erp.sql` — ERP 业务表
 - `ry-mes.sql` — MES 业务表
 - `ry-iot.sql` — IoT 业务表
 - `app.sql` — 移动端 App 相关表
 
-> 2026-08-29 起不再维护 `update/` 增量脚本目录（44 个历史脚本已全部核对并入上述主脚本后删除）。数据库变更直接修改对应主脚本，并在 `doc/system/数据库增量变更记录.md` 登记。
+> 2026-08-29 清理的是当时已合并主脚本的 44 个**旧**增量；截至 2026-09-28，`script/sql/update/` 又有 **63 个受 Git 跟踪文件**（含存量库迁移/测试数据）。新增结构须更新 `ry-*.sql` 的全新安装定义并登记 [数据库变更](doc/system/数据库增量变更记录.md)；已有环境按适用基线单独审查、备份并执行迁移脚本，核对是否允许重放。**绝不**在已有库导入含 `DROP TABLE` 的主初始化脚本，不为“清理文档”删除未经核对的升级脚本。
 
 ### Docker 部署 (双机)
 
 仓库提供双机 Docker Compose 编排 (生产环境):
-- `docker-compose-main.yml` — 主服务器: MySQL 8.0、Redis、RabbitMQ、MinIO、Nginx+前端、NexusServer (均为 `network_mode: host`)
-- `docker-compose-assist.yml` — 辅助服务器: 应用服务、监控等
-- 凭证与主机 IP 内嵌于文件中，部署前需核对替换
+- `docker-compose-main.yml` — 主服务器: 当前镜像为 **`mysql:5.7`**（不是旧指南所写 8.0）、Redis、RabbitMQ、MinIO、Nginx+前端、NexusServer（主服务使用 host 网络）；仅仓库**根目录**编排是现行入口。
+- `docker-compose-assist.yml` — 辅助服务器: MonitorAdmin、SnailJobServer；业务应用运行在主服务器。
+- 生产部署前核对 `.env` 环境变量、服务地址、凭证与备份；部分配置存在仓库默认值，不得将其视为生产安全值。严禁将密钥、Token、业务备份和真实用户数据复制进 Agent 输出、文档或提交；不自动启停用户服务。
 
 ## 架构
 
 ### 后端模块结构图
 
 ```
-ruoyi-admin/              — Spring Boot 入口 (DromaraApplication)。组装所有模块。
-ruoyi-common/             — 共享库 (28 个子模块)。每个均为可自动配置的独立 jar。
+ruoyi-admin/              — Spring Boot 入口 (NexusApplication)。组装所有模块。
+ruoyi-common/             — 共享库 (当前 31 个子模块；具体依赖以各 pom 为准)。
   ruoyi-common-core/      —    基础层: 领域模型、枚举、异常、校验器、工具类
   ruoyi-common-web/       —    Web 层: 全局异常处理、响应包装、过滤器
   ruoyi-common-satoken/   —    认证 (Sa-Token + JWT)
@@ -63,7 +71,7 @@ ruoyi-common/             — 共享库 (28 个子模块)。每个均为可自�
   ruoyi-common-oss/       —    对象存储 (Minio / S3 协议)
   ruoyi-common-flowable/  —    Flowable 工作流引擎集成
   ... 以及更多 (任务、日志、短信、邮件、社交、Excel、加密等)
-ruoyi-modules/            — 业务模块
+ruoyi-modules/            — 业务模块 (当前 15 个子模块)
   ruoyi-system/           —    系统管理 (用户、角色、菜单、部门、租户、客户端、字典等)
   ruoyi-erp/              —    ERP 业务 (基础数据、销售、采购、排产、仓储)
   ruoyi-mes/              —    MES 制造执行 (工单、安灯、数据采集、设备、质量、SPC)
@@ -97,7 +105,7 @@ service/                  — 服务接口
 service/impl/             — 服务实现
 ```
 
-模块通过 Spring Boot 自动配置 (`spring.factories` / `AutoConfiguration.imports`) 进行注册，而非组件扫描。
+入口 `com.nexus.NexusApplication` 的 Spring Boot 默认扫描覆盖 `com.nexus.*` 业务组件；部分 common 模块通过 `AutoConfiguration.imports` 等自动配置注册。新增 Bean 时检查实际包路径、扫描范围及配置注册，不能笼统假定“只靠自动配置”。
 
 ### ERP 模块子包
 
@@ -162,8 +170,9 @@ AI 模块 (`ruoyi-ai`) 按 LangChain4j Agent 架构组织:
 |---------|-------------|
 | `agent` | Agent 接口定义 (ErpQueryAgent/ErpReportAgent/GraphExtractionAgent/WebSearchAgent)，使用 `@Agent` / `@SystemMessage` 注解声明 |
 | `config` | 配置类 (AiProperties — `nexus.ai` 前缀、AiThreadPoolConfig — 异步线程池、AiPromptTemplateInitializer、AiSqlExampleInitializer) |
+| `service/decision` | 工业交付风险分析、证据/策略守卫、审批状态机、幂等执行、结构化摘要；入口 `AiDecisionController` (`/ai/decision/**`) |
 | `context` | AiRequestContext — 异步线程传播 tenantId/userId (Sa-Token ThreadLocal 不自动传播)；SearchSourceHolder — 搜索源上下文 |
-| `controller` | 所有 REST 控制器 (AiChatController、AiModelController、AiProviderController、AiKnowledgeController、AiKnowledgeGraphController、AiPromptTemplateController、AiSqlExampleController、AiTokenUsageController、AiImageController、AiAbTestController、McpMarketController、McpToolController) |
+| `controller` | 对话、模型、知识库、MCP、参数配置及 `AiDecisionController` 等 REST 控制器；以该目录实际类为准 |
 | `domain/dto` | 共享 DTO (ImageGenerateRequest、McpToolTestResult) |
 | `listener` | AiModelChangeListener — 模型变更事件监听 |
 | `mcp/service` | MCP 服务层 (McpClientManager、ToolProviderFactory、McpToolServiceImpl、IMcpMarketService) |
@@ -183,7 +192,8 @@ AI 公共模块 (`ruoyi-common-ai`) 存放跨模块共享的实体和接口:
 
 | 包 | 描述 |
 |---------|-------------|
-| `domain/entity` | AiProvider、AiModel、AiSession、AiMessage (对应 ai_provider/ai_model/ai_session/ai_message 表) |
+| `domain/entity` | AiProvider/AiModel/AiSession/AiMessage、AiConfig 及 AiDecisionRun/AiDecisionEvidence/AiDecisionAction 等共享持久化实体 |
+| `decision` | 工业决策 DTO、枚举及 `IndustrialDecisionDataPort` / `DecisionWorkflowPort` 等跨模块契约；数值与业务事实不可由模型自行编造 |
 | `mapper` | MyBatis-Plus Mapper 接口 |
 | `dto` | AiChatRequest (聊天请求 DTO) |
 | `service` | IAiModelService 及实现 (模型配置查询) |
@@ -200,6 +210,7 @@ AI 公共模块 (`ruoyi-common-ai`) 存放跨模块共享的实体和接口:
 | `model` | FlowGraph (DAG 图)、FlowEdgeDef (边定义)、FlowNodeDef (节点定义) |
 | `node` | 核心接口: FlowNodeProvider (节点提供者 SPI)、FlowNodeRegistry (节点注册中心)、FlowExecutionContext (执行上下文)、NodeParamSchema (参数 Schema) |
 | `node/ai` | AI 节点: LlmNodeProvider (LLM 调用)、AgentNodeProvider (Agent 编排)、RagNodeProvider (RAG 检索)、ErpToolNodeProvider (ERP 工具) |
+| `node/industrial` | 工业决策节点（交付上下文、APS/缺料推演、方案排序/建议、审批策略及执行）；受保护图不能由通用画布任意替换 |
 | `node/logic` | 逻辑节点: IfNodeProvider (条件分支)、SetNodeProvider (变量赋值)、CodeNodeProvider (代码执行)、SqlNodeProvider (SQL 查询) |
 | `node/integration` | 集成节点: HttpNodeProvider (HTTP 请求 + SSRF 防护)、MqSendNodeProvider (MQ 消息发送)、OssNodeProvider (OSS 文件操作) |
 | `node/notify` | 通知节点: MailNodeProvider (邮件)、SmsNodeProvider (短信)、ImWebhookNodeProvider (IM Webhook)、NotifyNodeProvider (系统通知) |
@@ -220,17 +231,26 @@ AI 公共模块 (`ruoyi-common-ai`) 存放跨模块共享的实体和接口:
 
 > **注意**: API 路径 `/ai/flow/**` 保持不变，数据库表名 `ai_flow*` 保持不变。`ruoyi-flow` 依赖 `ruoyi-ai` (AI 节点需要 AiRequestContext/ChatModelFactory/RetrieverService 等)。
 
+### Station 工位与电子签章
+
+- `ruoyi-modules/ruoyi-station` 提供 `/mes/station/**` 设备通道（工位过站、SN、安灯、心跳、SOP、上料等）；配套 Electron 客户端在独立仓库，后端提交不等于现场真机验收。设备通道必须保留密钥、租户边界和幂等校验。
+- `ruoyi-common/ruoyi-common-sign` 提供 `ESignatureService`、印章/授权及签署留痕；电子签章 P1 代码任务 1–16 已实施，**Task 17 人工端到端验收未完成**，P2 PDF 盖章为独立范围。见 [签章规格](doc/system/specs/2026-09-15-esignature-impl-spec.md)。
+
+### 工业决策跨模块边界
+
+`ruoyi-common/ruoyi-common-ai/src/main/java/com/nexus/common/ai/decision` 存契约，决策实体在同模块 `domain/entity`；`ruoyi-modules/ruoyi-erp/src/main/java/com/nexus/erp/ai/adapter` 提供可信 ERP 快照/推演与草稿动作；`ruoyi-modules/ruoyi-ai/src/main/java/com/nexus/ai/service/decision` 管状态机/证据/策略；`ruoyi-modules/ruoyi-flow/src/main/java/com/nexus/flow/adapter` 与 `node/industrial` 编排受保护图；PC 位于 `plus-ui/src/views/ai/decision`。模型仅生成定性说明，不得自行计算工业 KPI、构造证据或直接写业务数据；审批/执行受权限、租户、版本及幂等约束。2026-09-28 本机 `plus` 数据库的增量已经执行并有 [本地迁移记录](doc/ai/merge/2026-09-28-plus本地数据库迁移与合并记录.md)，**不能**据此宣称生产部署、全部 40 案例单构建 SLA 或竞赛正式提交已完成。
+
 ### 前端结构 (plus-ui)
 
 ```
 src/api/                  — API 层 (对应后端模块: system, cv, erp/{bd,so,pu,prd,sch,wm}, mes/{pro,dc,eq,qc,spc}, iot/{device,product,realtime}, im/chat, ai/chat, workflow)
 src/views/                — 页面组件 (结构对应)
-src/views/ai/             —   AI 页面: model/ (厂商/模型配置)、knowledge/ (知识库)、assistant/ (助手)
+src/views/ai/             —   AI 页面: model/、knowledge/、assistant/、config/、decision/、flow/ 等
 src/views/cv/             —   CV 页面: detect/ (物料OCR)、face/ (人脸底库)、face-review/ (FAIL 复查)
-src/views/mes/            —   MES 页面: pro/ (工单)、dc/ (数据采集)、eq/ (设备)、qc/ (质量)、spc/ (SPC)、md/ (MBOM)
+src/views/mes/            —   MES 页面: pro/、dc/、eq/、qc/、spc/、md/，以及 station/、dhr/、flash/、sop/ 等
 src/views/iot/            —   IoT 页面: device/ (设备管理)、product/ (产品管理)
 src/views/im/             —   IM 页面: chat/ (即时通讯)
-src/components/ai/        —   AI 组件: AiChatDrawer.vue (全局对话抽屉，Markdown 渲染，SSE 消息接收)
+src/components/ai/        —   对话抽屉及 decision/ 结构化风险、方案、证据、审批组件
 src/components/cv/        —   CV 组件: LabelCapture.vue (标签拍照识别组件)
 src/router/               — Vue Router 配置 (index.ts)
 src/store/modules/        — Pinia 状态库 (app, user, permission, dict, tagsView, settings, notice)
@@ -247,7 +267,7 @@ src/package/              — BPMN 流程设计器 (Flowable 集成)
 | 关注点 | 技术 |
 |---------|------------|
 | 认证 | Sa-Token + JWT (无状态)，密钥: `Authorization` 请求头 |
-| ORM | MyBatis-Plus 3.5.x，ID 策略: ASSIGN_ID (雪花算法) |
+| ORM | MyBatis-Plus 3.5.16（以根 pom 为准），ID 策略: ASSIGN_ID (雪花算法) |
 | 数据库连接池 | HikariCP |
 | 缓存 | Redis (通过 Redisson 和 Spring Cache 注解) |
 | 多租户 | 自定义 MyBatis-Plus 多租户插件 |
@@ -277,19 +297,19 @@ src/package/              — BPMN 流程设计器 (Flowable 集成)
 - 默认通知机制为 SSE 推送；WebSocket 默认禁用
 - Flowable 异步执行器和 IDM 引擎已禁用 — 仅运行核心流程引擎
 - Logback 配置: `logback-plus.xml`，日志写入 `./logs/` 目录
-- 敏感凭证位于 `application-dev.yml` / `application-prod.yml` 中 (不在基础 `application.yml` 中)
-- `application-dev.yml`中的一些支付宝支付配置、微信小程序配置等在`application-secret.yml`中，需要自行更换配置
+- 环境敏感项涉及 `application-dev.yml` / `application-prod.yml`、`application-secret.yml` 及 `.env`；不得输出原文、提交新真实密钥或将历史默认值当成安全配置。
+- `application-decision-demo.yml` 只用于显式隔离演示环境；既有 `dev`/生产库禁止因演示准备被自动清理或重导。
 
 ### AI 模块配置与约束
 
-- AI 配置前缀: `nexus.ai` (避免与 Spring AI 的 `spring.ai` 冲突)，关键属性: `defaultProvider`、`defaultModel`、`allowedTablePrefixes`、`sqlTimeout`、`sqlMaxRows`
-- AI 厂商和模型配置存储在 `ry-vue` 库的 `ai_provider` / `ai_model` 表中，运行时由 ChatModelFactory 动态构建并缓存
+- AI 配置前缀: `nexus.ai`（避免与 Spring AI 的 `spring.ai` 冲突）；`AiProperties` 当前承载 `allowedTablePrefixes`、`sqlTimeout`、`sqlMaxRows`、向量/搜索/Flow/KG/工业决策参数。默认厂商与模型从 `ai_provider`/`ai_model` 管理，不再由 `defaultProvider/defaultModel` yml 字段决定。
+- AI 厂商/模型配置存于系统库 `ai_provider` / `ai_model`；运行参数还涉及 `ai_config`（后台页面管理）与 `nexus.ai` 的配置兜底，运行时通过工厂/服务读取。变更时检查缓存广播、租户权限及旧配置兼容。
 - AI 数据查询走 `@DS("erp")` 数据源 (ry-erp 库)，系统配置走默认 master 数据源 (ry-vue 库)
 - SQL 执行安全: 仅允许 SELECT，内置危险关键词黑名单、表名前缀白名单 (bd_/so_/pu_/prd_/wm_/sch_)，自动注入 tenant_id 隔离条件
 - 异步线程上下文: Sa-Token 的 ThreadLocal 不会传播到异步线程，必须通过 `AiRequestContext.set(tenantId, userId)` 手动传播，任务结束时调用 `AiRequestContext.clear()`
 - SSE 推送: AI 回复通过 `AiSseMessageHelper` → `SseMessageUtils.publishMessage` (Redis Pub/Sub 广播) → 前端 SSE 连接接收
 - AI 线程池: `AiThreadPoolConfig` 定义的 `aiExecutor` Bean，专用于 AI 异步任务
-- AI 实体类 (AiProvider/AiModel/AiSession/AiMessage) 在 `ruoyi-common-ai` 中，不在 `ruoyi-ai` 中，以便跨模块引用
+- AI 提供者、模型、会话、配置及决策持久化实体位于 `ruoyi-common-ai`，不要在业务模块复制并产生不同字段口径。
 
 ### IoT 模块配置与约束
 
@@ -313,7 +333,7 @@ src/package/              — BPMN 流程设计器 (Flowable 集成)
 
 - MES 通过 `MesErpBridgeService` 与 `ruoyi-erp` 模块交互，获取 BOM、工艺路线(Routing)、物料、车间、工位等基础数据
 - MES 工单下发通过 RabbitMQ 消息队列异步处理 (`WorkOrderReleaseConsumer`，`@RabbitListener` 监听 `QueueConstants.MES_WORKORDER_QUEUE`)
-- MES 与 IoT 通过数据采集模块(`dc`)对接，IoT 采集的数据可回写到 MES 生产数据记录中
+- MES 与 IoT 通过数据采集模块 (`dc`) 对接；`IotDataArchiveTask` 负责拉取并归档 IoT 历史数据（已有逐租户修复），生产定时任务是否实际运行需另验。
 
 ### ERP 模块配置与约束
 
@@ -329,5 +349,5 @@ src/package/              — BPMN 流程设计器 (Flowable 集成)
 - **雪花 ID 在前端的精度丢失**: ID 策略为 `ASSIGN_ID` (雪花算法)，64 位 long 超出 JS 安全整数会被截断。项目已通过全局 `JacksonConfig` 注册 `BigNumberSerializer` 将 long 序列化为字符串根治此问题 —— 新增返回雪花 ID 的接口无需额外处理，但**切勿**在局部 `ObjectMapper` 或 fastjson2 配置中绕过该序列化器。
 - **AI 异步线程的租户上下文丢失**: Sa-Token 的 ThreadLocal 不会传播到 `aiExecutor` 异步线程，导致异步写库时 `tenant_id` 落 0。任何 AI 异步写库都必须通过 `AiRequestContext.set(tenantId, userId)` 手动传播，并在 `TenantHelper.dynamic` 中执行写库，任务结束时调用 `AiRequestContext.clear()`。其他自定义异步线程(如 `@Async`、MQ 消费者)写多租户表时同理。
 - **多数据源切换**: AI 数据查询走 `@DS("erp")` (ry-erp 库)，系统配置走默认 master (ry-vue 库)；跨库调用注意 `@DS` 注解必须放在被实际调用的 Service 方法上，同类内部方法调用不会触发 AOP 切换。
-- **API 加密默认开启**: 前后端必须同时启用或同时禁用，否则请求无法解密。本地调试若遇到 400/解密失败，先确认两端 `api-decrypt` 配置一致。
+- **API 加密默认开启但不替代 HTTPS**: 前后端开关与密钥需一致；调试解密失败先核对配置。仓库可能含演示用密钥/默认值，生产必须替换，绝不在日志、文档、回复中打印私钥、Token 或完整配置。
 - **Sa-Token 认证异常被通用处理器抢先捕获**: `NotLoginException`/`NotPermissionException`/`NotRoleException` 均继承自 `RuntimeException`。全局有多个 `@RestControllerAdvice`，其中 `GlobalExceptionHandler` 标了 `@Order(1)` 且含 `@ExceptionHandler(RuntimeException.class)`，若不提升 `SaTokenExceptionHandler` 优先级，认证异常会被它抢先捕获，执行 `R.fail(e.getMessage())` 返回 500 且把 "token 已被冻结：eyJ…" 等 JWT 明文暴露给前端。`SaTokenExceptionHandler` 已加 `@Order(Ordered.HIGHEST_PRECEDENCE)` 确保认证/鉴权异常优先返回 401/403。新增其它 `@RestControllerAdvice` 时，若其处理 `RuntimeException` 子类，务必用 `@Order` 控制优先级，否则同样会被 `GlobalExceptionHandler` 抢先。

@@ -1,6 +1,6 @@
 # NexusERP 工位终端设备通道开发计划（C2-C12 + M1 遗留）
 
-> 承接 `doc/station/plans/2026-08-21-station-device-channel-plan.md`（C1 已交付，本计划为其 C2-C12/M1 的详细执行方案）
+> 承接 `doc/station/plans/archive/2026-08-21-station-device-channel-plan.md`（C1 已交付，本计划为其 C2-C12/M1 的详细执行方案）
 > 契约权威定义：nexus-station M2 计划表 1（已与客户端 `src/main/mes/client.ts`、`types.ts` 逐字段核对）
 
 ## 一、总体设计
@@ -153,7 +153,7 @@ ALTER TABLE pro_andon ADD INDEX idx_station_code (station_code);
 
 ### 收尾：文档同步（0.5d）
 
-- 更新 `doc/station/README.md` 契约状态表、`doc/station/plans/2026-08-21-station-device-channel-plan.md` 排期勾选；若 C2 降级语义与 nexus-station 实现有偏差，同步备注
+- 更新 `doc/station/README.md` 契约状态表、`doc/station/plans/archive/2026-08-21-station-device-channel-plan.md` 排期勾选；若 C2 降级语义与 nexus-station 实现有偏差，同步备注
 
 ## 四、风险与对策
 

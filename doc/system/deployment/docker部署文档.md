@@ -1,5 +1,7 @@
 # NexusERP Docker 双机部署方案
 
+> 文档核对：2026-09-28。**部署编排只从仓库根目录读取**：[主服务器 Compose](../../../docker-compose-main.yml)、[辅助服务器 Compose](../../../docker-compose-assist.yml)。原 `doc/system/deployment/docker/` 主服务器副本缺少根目录现有的安全环境变量，已撤销；不要从旧文档副本启动容器。以下主机、端口和命令为历史环境范例，实际执行前核对 `.env`、密钥、数据库版本与备份；本次文档整理未进行生产部署或验收。
+
 > **服务器信息**
 > - 主服务器：`159.75.14.226`（4核4G）—— 部署 MySQL 5.7、Redis、RabbitMQ、MinIO、Nginx+前端、NexusServer
 > - 辅助服务器：`117.72.190.225`（2核2G）—— 部署 MonitorAdmin、SnailJobServer

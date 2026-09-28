@@ -3,9 +3,9 @@
 > **文档状态**: ✅ 实施完成文档 — 本文档为MES模块的完整设计方案与可执行开发记录。
 > MES Phase 1-3 全部交付（实际 Week 17-27，领先原计划约 5 周），详见 §十九。
 > ERP侧集成准备状态：主数据API已就绪✅，MQ消息发送+队列常量已完成✅，MES→ERP MQ双向贯通✅（Week 25 ErpIqcCompletedConsumer + ErpWorkOrderCompletedConsumer）。
-> MES↔IoT集成状态：IMesAndonService 安灯联动✅（Week 23），设备关联字段已建✅，IoT自动采集归档⏳待打通。
-> 参考实施计划：[MES Phase 1~3 + IoT 阶段一实施计划](./plans/2026-06-16-mes-iot-phase-plan.md)
-> 后续升级方案：[NexusERP 三模块共同升级方案](../system/NexusERP_三模块共同升级方案.md)
+> MES↔IoT 状态校正（代码核对至 2026-09-28）：安灯联动已交付；`IotDataArchiveTask`（MES 侧）在 07-29 已实现 IoT 历史数据归档，09-21 已补逐租户处理；运行环境任务是否启用、实际归档结果需另验。下文旧周次表格若写“待打通”，仅为当时基线。
+> 参考历史里程碑：[MES 模块索引](./README.md)（原 MES-IoT 阶段计划已在 08-30 清理，当前无原件）
+> 历史三模块升级方案已在 08-30 清理；后续代码进度须以 [带日期的功能进度](../PROGRESS.md) 及当前实现为准。
 >
 > **命名规范**: MES表命名与ERP保持一致，采用一级前缀 `{模块缩写}_{业务实体名}`（如 `pro_work_order`、`qc_iqc`），
 > 不使用 `mes_` 二级前缀，因为MES在独立库 `ry-mes` 中，库名已标识来源。
@@ -1520,7 +1520,7 @@ TransactionSynchronizationManager.registerSynchronization(new TransactionSynchro
 | IoT→MES 安灯联动（IMesAndonService） | ✅ 已通 | Week 23 |
 | MES→IoT 设备数据查询 | ⏳ 契约就绪，MES 侧未调用 | - |
 | 设备软关联（iot_device_id ↔ mes_equipment_id） | ⏳ 字段已建，双向查询未打通 | - |
-| IoT 自动采集归档到 dc_data_record | ⏳ 常量预留，无写入逻辑 | - |
+| IoT 自动采集归档到 dc_data_record | ✅ 07-29 已实现 `IotDataArchiveTask`；09-21 加强逐租户处理，生产运行尚待实测 | 2026-07-29 / 2026-09-21 |
 
 ### 19.5 归档计划文档清单
 
@@ -1715,4 +1715,3 @@ CREATE TABLE `pro_work_order_bom_line` (
 | 前端代码（MBOM 编制页 + 工单 BOM Tab） | 见变更说明文档 | 详见同上 §5.2 |
 
 > **与主文档其他章节关系**: 本节为 Phase 1-3 之外的独立扩展，不在 §10「MES 实施计划」原计划周次内。`mes_mbom`/`mes_mbom_line`/`pro_work_order_bom_line` 三表未计入 §2「~17 张表」统计，单独列出。
-

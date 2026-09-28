@@ -3,7 +3,7 @@
 > **文档编号**: NexusERP-SPEC-2026-006-F2
 > **创建日期**: 2026-08-01
 > **状态**: 设计待评审
-> **所属计划**: [2026-07-29-erp-financial-core-dev-plan.md](../plans/2026-07-29-erp-financial-core-dev-plan.md)(财务核心 F2 阶段)
+> **所属计划**: [ERP 模块主文档](../NexusERP_ERP文档.md)（原 07-29 财务开发总计划已清理，当前仓库无原件）(财务核心 F2 阶段)
 > **前置**: F0 GL 总账(凭证引擎/科目余额/期间状态机)、F1 AR/AP(Poster 模式)、F5 报表/关账(期间联动)。科目 1601 固定资产(统驭 FA)/1602 累计折旧已由 F0 seed 提供。
 > **后置依赖方**: F5 资产负债表 `BS_FA_NET`(1601+1602)自动纳入固定资产净值;F5 现金流量表 `CF_FA_PAY`(1601 借方发生)自动归集购建支出。
 > **核心约束**: **F0/F1/F5 代码零改动**——F2 仅新增 `fin.fa` 包与一个 `FaDepreciationPoster` 实现 `AccountingPoster` 接口;F0 预留的 `SOURCE_DEPRECIATION`/`RECON_FA` 常量(GlConstants.java:27,45)直接使用。

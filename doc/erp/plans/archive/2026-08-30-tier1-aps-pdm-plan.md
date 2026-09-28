@@ -1,6 +1,6 @@
 # 第一梯队开发计划：APS 智能排产 + 预测性维护 PdM
 
-> 分支: `feat/aps-intelligent-scheduling` | 日期: 2026-08-30 | 状态: 实施中
+> 分支: `feat/aps-intelligent-scheduling` | 日期: 2026-08-30 | 状态: 第一梯队后端已交付（APS `4cd0f168`、PdM `801aceba`，均为 2026-09-02 代码提交；存量环境上线仍需单独确认）
 > 背景: AI+工业软件赛道第一梯队开发——方向02（工艺优化与生产排程）补齐排程优化引擎；方向03（质量检测与设备运维）补齐数据驱动的设备健康评估。
 
 ---
@@ -156,3 +156,4 @@ CREATE TABLE prd_schedule_task (
 1. A: DDL → 实体/Mapper → 引擎+测试 → Service/Controller → 前端 → 菜单 SQL
 2. B: EWMA 工具+测试 → 检测器挂钩 → 健康服务+任务 → 控制器 → 前端 → 菜单 SQL
 3. `mvn compile` 验证 + 分组提交（APS 一个 commit、PdM 一个、菜单/文档归入各自 commit）
+

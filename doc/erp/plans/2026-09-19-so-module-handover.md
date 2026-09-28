@@ -1,6 +1,6 @@
 # 销售模块（so）优化 · 交接报告
 
-> 创建: 2026-09-19 | 配套计划: [2026-09-19-so-module-optimization-plan.md](./2026-09-19-so-module-optimization-plan.md)
+> 创建: 2026-09-19 | 配套计划: [2026-09-19-so-module-optimization-plan.md](./archive/2026-09-19-so-module-optimization-plan.md)
 > 范围: 后端 `ruoyi-modules/ruoyi-erp/.../so`（审计时 85 文件 / 9541 行；改造后 87 文件 / 10716 行）+ 14 张 `so_` 表 + 前端 `plus-ui` 销售页面
 > 状态: **计划内 6 批次全部完成**；Q1~Q5 决策已落地实施完毕；**Q7/Q8/Q9 已于后续轮次按用户决策全部实施完毕**（见 §5.2）
 

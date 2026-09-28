@@ -3,17 +3,21 @@
 > **创建日期**: 2026-08-21
 > **模块代码**: `ruoyi-modules/ruoyi-station`（包名 `com.nexus.station`）
 > **服务对象**: [nexus-station](../../../nexus-station) 工位智能终端（Electron + Vue 3，烧录/FCT/装配工位工控机）
-> **状态**: ✅ C1-C20 + M1-a/M1-b 全部交付（2026-08-21，批次0-6 + 阶段4 全部四批次，M1/M2/M3 全闭环）
+> **状态**: ✅ 后端 C1-C20 + M1-a/M1-b 已交付（C19/C20 于 2026-08-22 提交 `e75c9e12`；客户端真机验收须单独核实）
 
 本目录包含 NexusERP 为 nexus-station 工位终端提供后端能力支持的接口契约与开发计划。全部接口为 **X-API-KEY 免登录设备通道**（请求头 `X-API-KEY`，密钥配置 `mes.api-key`），URL 前缀 `/mes/station/**`（`security.excludes` 已放行），租户固定 `000000`。
 
 ## 文档清单
 
-### 开发计划（plans/）
+### 历史实施计划与待核验报告
+
+下表区分后端代码交付与客户端/真机验收；未标明真机验证完成的环节不可据“交付”推定通过。
 | 文档 | 主题 | 状态 |
 |------|------|------|
-| [2026-08-21-station-device-channel-plan.md](./plans/2026-08-21-station-device-channel-plan.md) | 设备通道接口开发计划（契约 C1-C12 清单、模块设计、排期） | ✅ 批次0-6 已交付（commit c3c27907） |
-| [2026-08-21-station-code-review-and-next-plan.md](./plans/2026-08-21-station-code-review-and-next-plan.md) | 双端代码审查（3 个集成缺陷 F-1~F-4 已修复）+ 下一阶段计划 | ✅ 阶段0 完成 |
+| [设备通道 C1-C12 计划](./plans/archive/2026-08-21-station-device-channel-plan.md) | 后端契约、模块设计、排期 | ✅ 已交付（`c3c27907`） |
+| [设备通道 C2-C12 明细](./plans/archive/2026-08-21-station-device-channel-C2-C12-plan.md) | 开发时契约与验收标准 | ✅ 后端已交付；真机结果另核验 |
+| [物料上料 C19/C20](./plans/archive/2026-08-22-station-material-load-C19-C20-plan.md) | 上料防错及当前状态 | ✅ 后端已交付（`e75c9e12`） |
+| [双端代码审查及下一阶段](./plans/2026-08-21-station-code-review-and-next-plan.md) | 阶段 0 审查结果及部分真机/后续待办 | 🚧 保留待核验项 |
 | [2026-08-21-station-smoke-test-report.md](./plans/2026-08-21-station-smoke-test-report.md) | 阶段1 API 级联调冒烟报告：C1-C12+M1-a/b 全链验通；联调新发现并修复 F-5~F-8（跨库×事务×数据源注解类缺陷）；沉淀 4 条开发约定 | ✅ 阶段1 完成 |
 
 ## 模块概览

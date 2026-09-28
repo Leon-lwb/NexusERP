@@ -1,7 +1,7 @@
 # 第二梯队开发计划：AI+工业软件赛道冲奖（APS/PdM 之后的深化）
 
 > 分支: `feat/aps-intelligent-scheduling` | 创建: 2026-09-02 | 执行方式: **分段执行**
-> 前置: 第一梯队已完成（APS 智能排产 + PdM 预测性维护，见 `doc/erp/plans/2026-08-30-tier1-aps-pdm-plan.md`）
+> 前置: 第一梯队已完成（APS 智能排产 + PdM 预测性维护，见 `doc/erp/plans/archive/2026-08-30-tier1-aps-pdm-plan.md`）
 > 本文档是第二梯队的总计划：已完成的项标记 ✅ 并附 commit，未完成的项给出**可直接开工的分段任务清单**，逐段执行、逐段提交。
 
 ---

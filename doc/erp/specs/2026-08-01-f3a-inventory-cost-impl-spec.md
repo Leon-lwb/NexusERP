@@ -3,7 +3,7 @@
 > **文档编号**: NexusERP-SPEC-2026-007-F3A
 > **创建日期**: 2026-08-01
 > **状态**: 设计待评审
-> **所属计划**: [2026-07-29-erp-financial-core-dev-plan.md](../plans/2026-07-29-erp-financial-core-dev-plan.md)(财务核心 F3-a 阶段,收敛版)
+> **所属计划**: [ERP 模块主文档](../NexusERP_ERP文档.md)（原 07-29 财务开发总计划已清理，当前仓库无原件）(财务核心 F3-a 阶段,收敛版)
 > **前置**: F0 GL(凭证引擎/科目余额)、F1 AR/AP(Poster 模式)、F2 FA(过账模式)、F5 报表/关账。
 > **核心约束**: **收敛** —— 计价引擎 `MovingAverageValuationServiceImpl`(IInventoryValuationService)已存在但**零调用者**,本阶段只做"接线 + 过账",不新建计价算法、不触碰 MES。
 

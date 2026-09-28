@@ -702,7 +702,7 @@ RAG 检索知识库 → LLM 摘要 → IF 判断 → Agent 查询 ERP 库存 →
 |---|---|---|
 | `langchain4j-agentic` 1.18.0-beta28（依赖 L82） | 中 | Agent 节点**只搬已生产验证的调用方式**（invokeWithAgent 同款），不引入 supervisor 新 API；升级依赖必须回归 AiServiceFacade 全路径 |
 | GraalJS 引入重依赖/沙箱漏洞 | 中 | 已决策：MVP 用 SpEL 只读模式；代码中预留 `SpelFlowExpressionEvaluator` 接口，未来换 JS 引擎只动一个类 |
-| 定时触发无登录态 → tenant_id 落 0 | 高（本项目已知坑） | trigger_by=flow.create_by；所有写库 `TenantHelper.dynamic(tenantIdStr, ...)`（CLAUDE.md 已记录）；AiRequestContext 流程级 set/clear 成对 |
+| 定时触发无登录态 → tenant_id 落 0 | 高（本项目已知坑） | trigger_by=flow.create_by；所有写库 `TenantHelper.dynamic(tenantIdStr, ...)`（AGENTS.md 已记录）；AiRequestContext 流程级 set/clear 成对 |
 | SSE 在定时任务场景可能无人在线 | 低 | SSE 尽力而为；历史页可查实例状态（Poll/刷新兜底），文档说明 |
 | 同步 ChatModel 无法中断（stop 只停节点边界） | 低 | UI 文案如实说明"运行中 LLM 调用不打断"；可接受（n8n 早期同款行为） |
 | SpEL 表达式安全 | 中 | SimpleEvaluationContext（无方法/类型解析）+ 2000 字符 + 500ms 超时 + 异常转中文；**禁止**用 StandardEvaluationContext |

@@ -4,7 +4,7 @@
 > **审查日期**: 2026-08-21
 > **审查范围**: 后端 commit `c3c27907`（C2-C12 + M1-a/b 全量交付, 2168 行新增）× nexus-station 客户端（M1/M2 全部契约调用方）
 > **审查结论**: 🟡 契约覆盖完整、架构合理，但存在 **3 个跨端集成缺陷**（P0×1 / P1×2），必须修复后才能进入真机联调；另有 2 项次要改进建议。
-> **前序文档**: [2026-08-21-station-device-channel-plan.md](./2026-08-21-station-device-channel-plan.md)
+> **前序文档**: [2026-08-21-station-device-channel-plan.md](./archive/2026-08-21-station-device-channel-plan.md)
 
 ---
 

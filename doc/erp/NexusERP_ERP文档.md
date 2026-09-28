@@ -1304,7 +1304,9 @@ Week 37+    ░░░░░░░░ IoT 阶段二 (按需, 触发条件未满�
 
 > **Week 25 修复**: `sendWorkOrderCompleted` 原发 `DIRECT_EXCHANGE`（与队列绑定 `TOPIC_EXCHANGE` 不匹配），已修正。DTO 已从 `ruoyi-mes` 迁移至 `ruoyi-common-mq`。
 
-### 14.3 ERP 剩余工作量
+### 14.3 ERP 剩余工作量（原阶段测算，非现行待办）
+
+> 此表为 2026-06 原阶段预估。物料-供应商关系管理在 §13.1 已标明 Week 13 完成；不能根据本表再次排期。现行功能进度见 [跨模块进度](../PROGRESS.md) 并以代码核对。
 
 | 任务 | 优先级 | 人天 | 说明 |
 |------|--------|------|------|
@@ -1329,7 +1331,7 @@ Week 37+    ░░░░░░░░ IoT 阶段二 (按需, 触发条件未满�
 ## 十五、视觉识别接入（CV，2026-08-02）
 
 > 详见 [specs/2026-08-02-vision-integration-impl-spec.md](./specs/2026-08-02-vision-integration-impl-spec.md)（NexusERP-SPEC-2026-006-CV）。
-> 关联服务：[nexus-vision-service](D:\workspace\nexus-vision-service)（SCRFD+ArcFace 人脸 / YOLO / RapidOCR，:5001）。
+> 关联服务：`nexus-vision-service`（独立仓库；历史本机路径不作为文档链接）（SCRFD+ArcFace 人脸 / YOLO / RapidOCR，:5001）。
 
 ### 15.1 交付总览（Phase 1a+1b + Phase 2 全部完成并验证）
 

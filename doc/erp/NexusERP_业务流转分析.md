@@ -282,7 +282,7 @@ DRAFT(草稿) → APPROVING(审批中) → APPROVED(待上架) → SHELVED(待�
 | `BdMaterial` | `bd_material` | materialCode, materialName, categoryId, uomIds, materialType, sourceType, isBatchManage, isSerialManage, safetyStock, minStock, maxStock, standardCost, referencePrice, shelfLife |
 | `BdMaterialCategory` | `bd_material_category` | categoryId, parentId, levelNum, pathIds |
 | `BdBom` | `bd_bom` | bomId, parentMaterialId, bomVersion, isCurrent, effectiveDate, expiryDate, sourceType |
-| `BdBomDetail` | `bd_bom_detail` | childMaterialId, quantityPerParent, lossRate, operationStep, workstationId, leadTime |
+| `BdBomDetail` | `bd_bom_detail` | childMaterialId, quantityPerParent, lossRate, operationStep, leadTime（工序/工位关联由 MES MBOM 管理） |
 | `BdClient` | `bd_client` | clientCode, clientName, clientType, creditCode, address, contacts |
 | `BdClientCredit` | `bd_client_credit` | 客户信用额度 |
 | `BdVendor` | `bd_vendor` | vendorCode, vendorName, taxId, contactPerson, phone, bankAccount, industry, region, category |

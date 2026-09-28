@@ -4,8 +4,8 @@
 > **阶段一（Week 33-36）**: ✅ 全部完成，验收报告已产出（`doc/iot/NexusERP_IoT阶段一验收报告.md`）。
 > **Week 34 额外**: MQTT 租户访问控制策略已实现（`git cc3781a`），设备认证含多租户隔离。
 > **MES 联动实际进度**: IMesAndonService 安灯联动✅（MES Week 23），设备台账✅（MES Week 26），数据采集点✅（MES Week 27）。
-> **MES↔IoT 未打通**: IoT→MES REST 查询（契约就绪，MES 侧未调用）、设备双向软关联查询、IoT 自动采集归档到 dc_data_record。详见 §二十一。
-> 后续升级方案：[NexusERP 三模块共同升级方案](../system/NexusERP_三模块共同升级方案.md)
+> **MES↔IoT 进度勘误（核对至 2026-09-28）**：MES 侧已有 `IotDataArchiveTask` 使用共享查询服务归档 IoT 历史数据（07-29 实现，09-21 逐租户修复）；这不是“MES 通过 REST 调用 IoT”。设备双向软关联及实际运行数据仍需逐项验证。下文 §二十一旧周次状态为当时快照。
+> 原三模块共同升级方案在 08-30 清理，现行跟踪请结合 [进度表](../PROGRESS.md) 与对应代码/运行验证。
 >
 > 参考实施计划：[IoT 阶段一 Week 33 开发计划](./plans/archive/2026-06-12-iot-week33-plan.md)、[IoT 阶段一 Week 34 开发计划](./plans/archive/2026-06-13-iot-week34-plan.md)、[IoT 阶段一 Week 35 开发计划](./plans/archive/2026-06-14-iot-week35-plan.md)、[IoT 阶段一 Week 36 开发计划](./plans/archive/2026-06-15-iot-week36-plan.md)
 >
@@ -620,7 +620,7 @@ IoT设备数据 → Redis缓存 → MES数据采集模块(mes_dc)
 | 设备台账 | `mes/eq/equipment` | ✅ MES Week 26已建 | IoT设备可关联MES设备 |
 | 安灯接口 | `IMesAndonService` | ✅ MES Week 23已通 | IoT告警→MES安灯（MesAndonServiceImpl @Primary + IotAlertNotifier 第70行） |
 | 数据采集点 | `mes/dc/collection-point` | ✅ MES Week 27已建 | IoT自动采集可关联 dc point_type=AUTO |
-| 数据采集记录 | `mes/dc/data-record` | ⏳ MES侧仅手动录入 | IoT自动采集归档到 dc_data_record 待打通 |
+| 数据采集记录 | `mes/dc/data-record` | ✅ MES 侧已有自动归档任务（07-29 起） | 当前环境的任务执行与数据质量仍须实测 |
 | 设备双向软关联查询 | `iot_device.mes_equipment_id` ↔ `eq_equipment.iot_device_id` | ⏳ 字段已建 | 双向查询 API 待实现 |
 
 ---
@@ -949,14 +949,14 @@ mosquitto_pub -h localhost -p 1883 \
 | Week 35 | 后端 REST+前端产品/设备页+4 字典 | ✅ | eslint ✅ |
 | Week 36 | ECharts 仪表盘+SnailJob 3 任务+验收报告 | ✅ | 验收 11 项全通过 |
 
-### 21.2 MES 联动状态（对照 §14.3 / §17）
+### 21.2 MES 联动状态（原周次记录 + 09-28 代码勘误）
 
 | 联动点 | 状态 | 完成周次 | 说明 |
 |--------|------|---------|------|
 | IoT 告警→MES 安灯（IMesAndonService） | ✅ 已通 | MES Week 23 | MesAndonServiceImpl @Primary + IotAlertNotifier |
 | IoT→MES REST 查询（latest/status/data） | ⏳ 契约就绪 | IoT Week 34（实现） | IoT 已实现，MES 侧未调用（计划在共同升级方案第一波次打通） |
 | 设备双向软关联查询 | ⏳ 字段已建 | IoT Week 33 + MES Week 26 | iot_device.mes_equipment_id + eq_equipment.iot_device_id，查询 API 未实现 |
-| IoT 自动采集归档到 dc_data_record | ⏳ 常量预留 | MES Week 27 | point_type=AUTO + source=IoT 已预留，写入逻辑未实现 |
+| IoT 自动采集归档到 dc_data_record | ✅ MES `IotDataArchiveTask` 已实现；实际运行另验 | 2026-07-29 / 2026-09-21 | 使用共享 `IotDeviceDataQueryService`，逐租户处理已补 |
 
 ### 21.3 阶段二状态
 
@@ -968,7 +968,7 @@ mosquitto_pub -h localhost -p 1883 \
 | 时序数据库迁移（TDengine） | 未启动 | iot_device_data > 1000 万行时 |
 | 边缘网关 | 未启动 | 设备超 100 台或需协议转换时 |
 
-> 以上均保持触发条件驱动。详见 [三模块共同升级方案](../system/NexusERP_三模块共同升级方案.md) 第二波次。
+> 上述早期波次计划的原三模块升级方案已经清理；具体落地进度参见 [进度表](../PROGRESS.md) 并逐项核对代码及环境。
 
 ### 21.4 验收报告
 

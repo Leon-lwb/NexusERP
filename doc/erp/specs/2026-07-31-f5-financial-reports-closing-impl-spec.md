@@ -3,7 +3,7 @@
 > **文档编号**: NexusERP-SPEC-2026-005-F5
 > **创建日期**: 2026-07-31
 > **状态**: 设计待评审
-> **所属计划**: [2026-07-29-erp-financial-core-dev-plan.md](../plans/2026-07-29-erp-financial-core-dev-plan.md)(财务核心 F5 阶段)
+> **所属计划**: [ERP 模块主文档](../NexusERP_ERP文档.md)（原 07-29 财务开发总计划已清理，当前仓库无原件）(财务核心 F5 阶段)
 > **前置**: F0 GL 总账(凭证引擎/科目余额/期间)、F1 AR/AP(发票/收付款过账数据已入 GL)。F5 报表只读 GL,不依赖 F2/F3 的业务凭证(缺业务凭证的科目自然为零)。
 > **后置依赖方**: 无(F5 是报表与关账终点;F6 对账、F7 电票与其无强依赖,可并行)
 > **核心约束**: **F0/F1 零改动**——不修改 GlVoucherService/GlAccountBalanceService/GlPeriodService 代码。F5 通过新增 `fin.report` 包 + `GlAccountBalanceService.carryForward` 增强(新增接口方法,不改动既有方法)与 F0 衔接。

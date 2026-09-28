@@ -3,7 +3,7 @@
 > **文档编号**: NexusERP-SPEC-2026-005-F0
 > **创建日期**: 2026-07-29
 > **状态**: 设计待评审
-> **所属计划**: [2026-07-29-erp-financial-core-dev-plan.md](../plans/2026-07-29-erp-financial-core-dev-plan.md)(财务核心 F0 阶段)
+> **所属计划**: [ERP 模块主文档](../NexusERP_ERP文档.md)（原 07-29 财务开发总计划已清理，当前仓库无原件）(财务核心 F0 阶段)
 > **前置**: 无(F0 是财务核心地基,无财务前置依赖)
 > **后置依赖方**: F1 AR/AP 核销(发票/收付款过账)、F2 FA(折旧过账)、F3 CO(成本过账)、F5 报表(读取 GL 余额)均依赖本模块的凭证引擎与 AccountingPoster SPI
 > **模式参考**: so/pu_invoice(P1/P2 已落地)、BdMaterialCategory(物化路径树)、WmInventoryReportController(报表)、AutoCodeUtil(单号)
