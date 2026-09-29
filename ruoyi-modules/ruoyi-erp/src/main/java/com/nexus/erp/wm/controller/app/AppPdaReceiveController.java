@@ -26,7 +26,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * PDA 收货作业接口 (登录态, 契约见 doc/plans/2026-08-30-M1-执行计划.md 阶段 2)
+ * PDA 收货作业接口 (登录态, 契约见 nexus-pda/doc/plans/M1-执行计划.md 阶段 2)
  * <p>
  * 状态机: 行级核销(累计实收+写上架明细) → 上架确认(APPROVED→SHELVED) → 收货过账(SHELVED→FINISHED)
  */

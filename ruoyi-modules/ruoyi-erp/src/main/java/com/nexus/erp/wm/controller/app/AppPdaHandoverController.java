@@ -24,7 +24,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * PDA 上料交接作业接口 (M3 批次2; 契约见 doc/plans/2026-08-30-M3-执行计划.md 批次 2)
+ * PDA 上料交接作业接口 (M3 批次2; 契约见 nexus-pda/doc/plans/M3-执行计划.md 批次 2)
  * <p>
  * 流程: PC 建单(DRAFT) → 材料员行级核销(累计实交) → 产线操作工签收(过账 源库位出→线边库位入)。
  * 幂等键约定: 核销 单号:行号:confirm(带每次操作 nonce); 签收 单号:0:sign。

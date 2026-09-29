@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * PDA 统一追溯查询接口 (M3 批次4; 契约见 nexus-pda doc/plans/2026-08-30-M3-执行计划.md 批次 4)
+ * PDA 统一追溯查询接口 (M3 批次4; 契约见 nexus-pda/doc/plans/M3-执行计划.md 批次 4)
  * <p>
  * 一次输入(批次号/SN/物料编码/MES 批次号)聚合三套既有追溯能力:
  * ERP 库存流水正反向追溯 + MES 批次链。erp/mes 模块互不依赖, 门面置于聚合模块 ruoyi-admin。

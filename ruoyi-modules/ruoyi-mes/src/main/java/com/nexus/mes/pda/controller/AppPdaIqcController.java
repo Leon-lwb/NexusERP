@@ -24,7 +24,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * PDA IQC 来料检验接口 (M3 批次3; 契约见 nexus-pda doc/plans/2026-08-30-M3-执行计划.md 批次 3)
+ * PDA IQC 来料检验接口 (M3 批次3; 契约见 nexus-pda/doc/plans/M3-执行计划.md 批次 3)
  * <p>
  * 提交委托既有 IQC 检验链路(状态 CAS/不合格自动 NCR/afterCommit MQ 回传 ERP 更新收货单质检状态)。
  * 幂等键约定: 单号:0:inspect(带每次操作 nonce)。
