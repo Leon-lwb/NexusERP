@@ -97,3 +97,5 @@ doc/assets/_t1_work/raw/
 
 # 本地原始 HTTP 基线报告保留供审计，不自动提交
 doc/ai/benchmark/delivery-risk/reports/latest.md
+
+/.codex/full-flow-20260928/
