@@ -28,6 +28,7 @@ import com.nexus.erp.pu.mapper.PuPurchaseOrderMapper;
 import com.nexus.erp.pu.mapper.PuPurchaseRequisitionLineMapper;
 import com.nexus.erp.pu.mapper.PuPurchaseRequisitionMapper;
 import com.nexus.erp.pu.service.IPuPurchaseOrderService;
+import com.nexus.erp.pu.service.IPuPurchaseRequisitionService;
 import com.nexus.erp.pu.service.PuPurchaseReceivingService;
 import com.nexus.system.strategy.AutoCodeUtil;
 import com.nexus.workflow.domain.WfMyBusiness;
@@ -43,8 +44,11 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -146,18 +150,22 @@ public class PuPurchaseOrderServiceImpl implements IPuPurchaseOrderService {
      * 新增采购订单
      * <p>
      * 自动生成订单号（如为空）、默认设为草稿状态、默认订单日期为当天，
-     * 同时保存明细行。
+     * 同时保存明细行。带采购申请（含申请行）来源的新订单必须通过申请转单入口创建。
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertByBo(PuPurchaseOrderBo bo) {
+        if (bo.getRequisitionId() != null || (bo.getLineList() != null && bo.getLineList().stream()
+            .anyMatch(line -> line != null && line.getRequisitionLineId() != null))) {
+            throw new ServiceException("带采购申请来源的采购订单必须通过采购申请转单入口（convertToPurchaseOrder）生成，不能直接新增保存");
+        }
         PuPurchaseOrder entity = new PuPurchaseOrder();
         BeanUtils.copyProperties(bo, entity);
         validateVendor(entity.getVendorId(), entity.getExpectedArrivalDate());
         if (StringUtils.isBlank(entity.getOrderNo())) {
             entity.setOrderNo(autoCodeUtil.genSerialCode("PU_ORDER_CODE", null));
         }
-        // ★ 服务端强制状态机(ERP-PU-04)：不采信客户端传入的 status，新建单一律为草稿
+        /** ★ 服务端强制状态机(ERP-PU-04)：不采信客户端传入的 status，新建单一律为草稿 */
         entity.setStatus(STATUS_DRAFT);
         if (entity.getOrderDate() == null) {
             entity.setOrderDate(new Date());
@@ -170,14 +178,14 @@ public class PuPurchaseOrderServiceImpl implements IPuPurchaseOrderService {
     /**
      * 修改采购订单
      * <p>
-     * 仅草稿或已提交状态的订单允许编辑。修改时先删除全部旧明细行，再插入新明细行。
+     * 仅草稿或已提交状态的订单允许编辑，申请来源及原来源行的物料关系不可通过编辑新增、改变或移除。
+     * 未提供明细列表时仅更新表头；提供列表时先核验来源身份，再删除旧明细并插入新明细。
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateByBo(PuPurchaseOrderBo bo) {
         PuPurchaseOrder entity = new PuPurchaseOrder();
         BeanUtils.copyProperties(bo, entity);
-        validateVendor(entity.getVendorId(), entity.getExpectedArrivalDate());
         PuPurchaseOrder current = baseMapper.selectById(entity.getOrderId());
         if (current == null) {
             throw new ServiceException("采购订单不存在");
@@ -185,10 +193,14 @@ public class PuPurchaseOrderServiceImpl implements IPuPurchaseOrderService {
         if (!STATUS_DRAFT.equals(current.getStatus()) && !STATUS_SUBMITTED.equals(current.getStatus())) {
             throw new ServiceException("当前状态不允许编辑采购订单");
         }
-        // ★ 状态只能由 submit/afterFlowHandle/close/cancel 等状态机入口变更(ERP-PU-04)
+        validateRequisitionSourceForEdit(bo, current);
+        validateVendor(entity.getVendorId(), entity.getExpectedArrivalDate());
+        /** ★ 状态只能由 submit/afterFlowHandle/close/cancel 等状态机入口变更(ERP-PU-04) */
         entity.setStatus(null);
-        deleteLines(entity.getOrderId());
-        saveLines(entity.getOrderId(), bo.getLineList());
+        if (bo.getLineList() != null) {
+            deleteLines(entity.getOrderId());
+            saveLines(entity.getOrderId(), bo.getLineList());
+        }
         return baseMapper.updateById(entity);
     }
 
@@ -206,21 +218,25 @@ public class PuPurchaseOrderServiceImpl implements IPuPurchaseOrderService {
         return baseMapper.deleteBatchIds(List.of(ids));
     }
 
-    // /**
-    //  * 提交采购订单（已废弃，请使用 Flowable 工作流提交审批）
-    //  */
-    // @Override
-    // @Transactional(rollbackFor = Exception.class)
-    // public void submit(Long orderId) {
-    //     PuPurchaseOrder order = ensureOrder(orderId);
-    //     if (!STATUS_DRAFT.equals(order.getStatus())) {
-    //         throw new ServiceException("只有草稿状态的采购订单才能提交");
-    //     }
-    //     order.setStatus(STATUS_SUBMITTED);
-    //     baseMapper.updateById(order);
-    // }
+    /**
+     * 已废弃的采购订单提交实现，仅保留作历史参考；请使用 Flowable 工作流提交审批。
+     * 以下代码仍是注释，原草稿状态保护条件和异常字符串保持不变。
+     *
+     * <pre>{@code
+     * @Override
+     * @Transactional(rollbackFor = Exception.class)
+     * public void submit(Long orderId) {
+     *     PuPurchaseOrder order = ensureOrder(orderId);
+     *     if (!STATUS_DRAFT.equals(order.getStatus())) {
+     *         throw new ServiceException("只有草稿状态的采购订单才能提交");
+     *     }
+     *     order.setStatus(STATUS_SUBMITTED);
+     *     baseMapper.updateById(order);
+     * }
+     * }</pre>
+     */
 
-    // ==================== Flowable 工作流集成 ====================
+    /** Flowable 工作流集成。 */
 
     /**
      * 发起审批流程（Flowable 工作流回调）：校验订单存在并启动对应审批流，注入流程变量。
@@ -336,19 +352,23 @@ public class PuPurchaseOrderServiceImpl implements IPuPurchaseOrderService {
         return null;
     }
 
-    // /**
-    //  * 审批采购订单（已废弃，请使用 Flowable 工作流审批）
-    //  */
-    // @Override
-    // @Transactional(rollbackFor = Exception.class)
-    // public void approve(Long orderId) {
-    //     PuPurchaseOrder order = ensureOrder(orderId);
-    //     if (!STATUS_SUBMITTED.equals(order.getStatus()) && !STATUS_APPROVING.equals(order.getStatus())) {
-    //         throw new ServiceException("当前状态不允许审批采购订单");
-    //     }
-    //     order.setStatus(STATUS_APPROVED);
-    //     baseMapper.updateById(order);
-    // }
+    /**
+     * 已废弃的采购订单审批实现，仅保留作历史参考；请使用 Flowable 工作流审批。
+     * 以下代码仍是注释，原已提交或审批中状态保护条件和异常字符串保持不变。
+     *
+     * <pre>{@code
+     * @Override
+     * @Transactional(rollbackFor = Exception.class)
+     * public void approve(Long orderId) {
+     *     PuPurchaseOrder order = ensureOrder(orderId);
+     *     if (!STATUS_SUBMITTED.equals(order.getStatus()) && !STATUS_APPROVING.equals(order.getStatus())) {
+     *         throw new ServiceException("当前状态不允许审批采购订单");
+     *     }
+     *     order.setStatus(STATUS_APPROVED);
+     *     baseMapper.updateById(order);
+     * }
+     * }</pre>
+     */
 
     /**
      * 关闭采购订单：仅 RECEIVED / PARTIALLY_RECEIVED 状态可关闭
@@ -361,7 +381,7 @@ public class PuPurchaseOrderServiceImpl implements IPuPurchaseOrderService {
             throw new ServiceException("采购订单不存在");
         }
         PurchaseOrderStatusEnum current = PurchaseOrderStatusEnum.fromCode(order.getStatus());
-        // 关闭仅允许 RECEIVED / PARTIALLY_RECEIVED 状态(已收货的订单才可关闭)
+        /** 关闭仅允许 RECEIVED / PARTIALLY_RECEIVED 状态(已收货的订单才可关闭) */
         if (!current.canTransitionTo(PurchaseOrderStatusEnum.CLOSED)) {
             throw new ServiceException("采购订单状态[" + current.getLabel() + "]不可关闭, 仅已收货订单可关闭");
         }
@@ -385,8 +405,10 @@ public class PuPurchaseOrderServiceImpl implements IPuPurchaseOrderService {
             throw new ServiceException("采购订单不存在");
         }
         PurchaseOrderStatusEnum current = PurchaseOrderStatusEnum.fromCode(order.getStatus());
-        // 作废仅允许 DRAFT / SUBMITTED / APPROVING / REJECTED / APPROVED 状态
-        // 已收货(PARTIALLY_RECEIVED / RECEIVED)不可作废
+        /**
+         * 作废仅允许 DRAFT / SUBMITTED / APPROVING / REJECTED / APPROVED 状态
+         * 已收货(PARTIALLY_RECEIVED / RECEIVED)不可作废
+         */
         if (!current.canTransitionTo(PurchaseOrderStatusEnum.CANCELLED)) {
             throw new ServiceException("采购订单状态[" + current.getLabel() + "]不可作废, 已收货订单不可作废");
         }
@@ -419,7 +441,9 @@ public class PuPurchaseOrderServiceImpl implements IPuPurchaseOrderService {
      * 从采购申请生成采购订单草稿
      * <p>
      * 根据采购申请ID查询申请主表和明细行，将申请物料信息转换为采购订单明细行，
-     * 并设置默认币种（CNY）、汇率（1）、备注等，返回未持久化的订单业务对象供前端确认后保存。
+     * 并设置默认币种（CNY）、汇率（1）、备注等，仅返回未持久化的只读预填对象，不能直接新增保存。
+     * 创建订单必须调用 {@link IPuPurchaseRequisitionService#convertToPurchaseOrder(Long)}，
+     * 由该入口处理申请状态的原子转单；本方法不承接或修改申请。
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -427,6 +451,13 @@ public class PuPurchaseOrderServiceImpl implements IPuPurchaseOrderService {
         PuPurchaseRequisition requisition = requisitionMapper.selectById(requisitionId);
         if (requisition == null) {
             throw new ServiceException("采购申请不存在");
+        }
+        if (!IPuPurchaseRequisitionService.STATUS_APPROVED.equals(requisition.getStatus())) {
+            throw new ServiceException("只有已批准的采购申请才能预填采购订单，请通过采购申请转单入口创建订单");
+        }
+        if (baseMapper.selectCount(Wrappers.<PuPurchaseOrder>lambdaQuery()
+            .eq(PuPurchaseOrder::getRequisitionId, requisitionId)) > 0) {
+            throw new ServiceException("采购申请已有采购订单承接，请通过采购申请转单入口查询已有订单，不能重复生成");
         }
         List<PuPurchaseRequisitionLine> reqLines = requisitionLineMapper.selectList(
             new LambdaQueryWrapper<PuPurchaseRequisitionLine>().eq(PuPurchaseRequisitionLine::getRequisitionId, requisitionId)
@@ -477,6 +508,63 @@ public class PuPurchaseOrderServiceImpl implements IPuPurchaseOrderService {
             list.add(orderLine);
         }
         return list;
+    }
+
+    /** 按持久化的订单行身份核验来源，不能把申请来源贴到新行或原手工行。 */
+    private void validateRequisitionSourceForEdit(PuPurchaseOrderBo bo, PuPurchaseOrder current) {
+        if (!Objects.equals(current.getRequisitionId(), bo.getRequisitionId())
+            || (current.getRequisitionId() != null
+                && !Objects.equals(current.getRequisitionNo(), bo.getRequisitionNo()))) {
+            throw new ServiceException("采购订单来源关联不可通过编辑新增、改变或移除，请通过采购申请转单入口生成订单");
+        }
+        if (bo.getLineList() == null) {
+            return;
+        }
+        List<PuPurchaseOrderLine> currentLines = listLines(current.getOrderId());
+        if (currentLines == null) {
+            throw new ServiceException("采购订单原来源明细读取失败，不能编辑明细");
+        }
+        /** 只能以本订单的持久化明细证明来源；空值或重复身份不能由客户端同值补作证明。 */
+        Map<Long, PuPurchaseOrderLine> currentById = new HashMap<>();
+        boolean hasPersistedSourceLines = false;
+        for (PuPurchaseOrderLine original : currentLines) {
+            if (original == null || original.getLineId() == null
+                || !Objects.equals(current.getOrderId(), original.getOrderId())
+                || currentById.containsKey(original.getLineId())) {
+                throw new ServiceException("采购订单原来源明细身份无法核验，不能编辑明细");
+            }
+            if (original.getRequisitionLineId() != null) {
+                if (original.getMaterialId() == null) {
+                    throw new ServiceException("采购订单原来源明细物料关系无法核验，不能编辑明细");
+                }
+                hasPersistedSourceLines = true;
+            }
+            currentById.put(original.getLineId(), original);
+        }
+        if (current.getRequisitionId() != null && !hasPersistedSourceLines) {
+            throw new ServiceException("采购订单原申请来源明细无法核验，不能编辑明细");
+        }
+        Set<Long> retainedSourceLineIds = new HashSet<>();
+        for (PuPurchaseOrderLine line : bo.getLineList()) {
+            if (line == null) {
+                throw new ServiceException("采购订单来源明细不能为空，请提供完整明细列表");
+            }
+            PuPurchaseOrderLine original = currentById.get(line.getLineId());
+            if (line.getRequisitionLineId() != null
+                || (original != null && original.getRequisitionLineId() != null)) {
+                if (original == null
+                    || !Objects.equals(original.getRequisitionLineId(), line.getRequisitionLineId())
+                    || !Objects.equals(original.getMaterialId(), line.getMaterialId())
+                    || !retainedSourceLineIds.add(original.getLineId())) {
+                    throw new ServiceException("采购订单来源明细身份及物料关系不可改变、重复或转移到其他行");
+                }
+            }
+        }
+        for (PuPurchaseOrderLine original : currentLines) {
+            if (original.getRequisitionLineId() != null && !retainedSourceLineIds.contains(original.getLineId())) {
+                throw new ServiceException("采购订单原申请来源明细不可通过编辑移除");
+            }
+        }
     }
 
     /**

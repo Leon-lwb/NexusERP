@@ -137,6 +137,50 @@ class DecisionActionExecutionServiceTest {
         ordered.verify(events).sendActionStatus(1L, 10L, 20L, "SUCCEEDED");
     }
 
+    @Test void legacyPurchaseApprovedRunIsRejectedBeforeAnyStateChange() {
+        var executor = mock(com.nexus.ai.service.decision.executor.DecisionActionExecutor.class);
+        when(executor.type()).thenReturn(com.nexus.common.ai.decision.enums.DecisionActionType.CREATE_PURCHASE_REQUISITION_DRAFT);
+        var service = new DecisionActionExecutionService(store, List.of(executor),
+            new com.fasterxml.jackson.databind.ObjectMapper());
+        when(store.requireRun(10L, "000000")).thenReturn(run(10L, DecisionRunStatus.APPROVED));
+        when(store.listActions(10L)).thenReturn(List.of(legacyPurchase("NOT_STARTED")));
+        var failure = assertThrows(com.nexus.common.core.exception.ServiceException.class,
+            () -> service.executeApproved(10L, actor()));
+        assertTrue(failure.getMessage().contains("采购"));
+        verify(store, never()).transition(10L, DecisionRunStatus.APPROVED, DecisionRunStatus.EXECUTING);
+        verify(store, never()).transitionAction(anyLong(), anyString(), anyString(), anyString());
+        verify(executor, never()).execute(any(), any());
+    }
+
+    @Test void legacyPurchaseFailedActionCannotRetryOrIncrementCounter() {
+        var executor = mock(com.nexus.ai.service.decision.executor.DecisionActionExecutor.class);
+        when(executor.type()).thenReturn(com.nexus.common.ai.decision.enums.DecisionActionType.CREATE_PURCHASE_REQUISITION_DRAFT);
+        var service = new DecisionActionExecutionService(store, List.of(executor),
+            new com.fasterxml.jackson.databind.ObjectMapper());
+        when(store.requireAction(20L, "000000")).thenReturn(legacyPurchase("FAILED"));
+        when(store.requireRun(10L, "000000")).thenReturn(run(10L, DecisionRunStatus.EXECUTING));
+        var failure = assertThrows(com.nexus.common.core.exception.ServiceException.class,
+            () -> service.retry(20L, actor()));
+        assertTrue(failure.getMessage().contains("采购"));
+        verify(store, never()).transitionAction(anyLong(), anyString(), anyString(), anyString());
+        verify(store, never()).saveActionResult(anyLong(), any(), anyInt());
+        verify(executor, never()).execute(any(), any());
+    }
+
+    private AiDecisionAction legacyPurchase(String executionStatus) {
+        AiDecisionAction action = new AiDecisionAction();
+        action.setId(20L); action.setRunId(10L); action.setTenantId("000000");
+        action.setActionType("CREATE_PURCHASE_REQUISITION_DRAFT");
+        action.setApprovalRequired("Y"); action.setApprovalStatus("APPROVED");
+        action.setExecutionStatus(executionStatus);
+        action.setPermissionCode("pu:requisition:add");
+        action.setExecutorCode("purchaseRequisitionDraft");
+        action.setTargetBizType("SCHEDULE_PLAN"); action.setTargetBizId(9001L);
+        action.setRiskLevel("MEDIUM"); action.setSequenceNo(1);
+        action.setPayloadJson("{\"runId\":\"10\",\"requiredDate\":\"2026-10-09\",\"materialLines\":[{\"materialId\":\"140\",\"gap\":\"5.4292\",\"requiredDate\":\"2026-10-09\"}]}");
+        action.setDependencyIdsJson("[]");
+        return action;
+    }
     @Test void alreadySucceededActionIsNeverExecutedTwice() {
         var service = new DecisionActionExecutionService(store, List.of(), new com.fasterxml.jackson.databind.ObjectMapper());
         AiDecisionAction action = succeededAction(20L);

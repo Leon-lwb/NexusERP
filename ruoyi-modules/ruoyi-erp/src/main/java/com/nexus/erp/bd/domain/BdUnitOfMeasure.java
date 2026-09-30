@@ -1,6 +1,7 @@
 package com.nexus.erp.bd.domain;
 
 import cn.idev.excel.annotation.ExcelProperty;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
@@ -10,6 +11,7 @@ import lombok.NoArgsConstructor;
 import com.nexus.common.tenant.core.TenantEntity;
 
 import java.math.BigDecimal;
+import java.util.Date;
 
 /**
  * 计量单位对象 bd_unit_of_measure
@@ -94,6 +96,16 @@ public class BdUnitOfMeasure extends TenantEntity {
      */
     @TableLogic
     private String delFlag;
+
+    /** 核验后的订货数量精度；NULL 表示不能信任历史换算。 */
+    @TableField("quantity_scale")
+    private Integer quantityScale;
+
+    @TableField("conversion_version")
+    private String conversionVersion;
+
+    @TableField("conversion_verified_at")
+    private Date conversionVerifiedAt;
 
     /**
      * 备注

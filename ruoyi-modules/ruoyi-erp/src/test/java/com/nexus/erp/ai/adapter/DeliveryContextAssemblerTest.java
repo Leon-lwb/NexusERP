@@ -25,6 +25,8 @@ import com.nexus.erp.prd.domain.PrdProductionPlan;
 import com.nexus.erp.prd.domain.PrdMaterialRequirementDetail;
 import com.nexus.erp.prd.domain.PrdSchedulePlan;
 import com.nexus.erp.prd.domain.PrdScheduleTask;
+import com.nexus.erp.prd.domain.PrdScheduleTaskDayLoad;
+import com.nexus.erp.prd.domain.PrdScheduleCapacityBooking;
 import com.nexus.erp.prd.domain.PrdWorkOrder;
 import com.nexus.erp.prd.domain.bo.PrdSchedulePlanBo;
 import com.nexus.erp.prd.mapper.PrdCapacityCalendarMapper;
@@ -33,6 +35,8 @@ import com.nexus.erp.prd.mapper.PrdMaterialRequirementMapper;
 import com.nexus.erp.prd.mapper.PrdProductionPlanMapper;
 import com.nexus.erp.prd.mapper.PrdSchedulePlanMapper;
 import com.nexus.erp.prd.mapper.PrdScheduleTaskMapper;
+import com.nexus.erp.prd.mapper.PrdScheduleTaskDayLoadMapper;
+import com.nexus.erp.prd.mapper.PrdScheduleCapacityBookingMapper;
 import com.nexus.erp.prd.mapper.PrdWorkOrderMapper;
 import com.nexus.erp.prd.schedule.PrdScheduleInputAssembler;
 import com.nexus.erp.prd.schedule.PrdShortageScenarioService;
@@ -75,6 +79,9 @@ import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.springframework.transaction.annotation.Isolation;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
@@ -98,6 +105,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -113,7 +121,8 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 /**
- * ERP 工业决策上下文装配测试：作用域必须精确，展示快照与可重算指纹必须稳定且 校验失败即拒绝。
+ * ERP 工业决策上下文装配测试：作用域必须精确，展示快照与可重算指纹必须稳定；
+ * 校验失败时必须拒绝。
  */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -132,6 +141,10 @@ class DeliveryContextAssemblerTest {
     private PrdSchedulePlanMapper schedulePlanMapper;
     @Mock
     private PrdScheduleTaskMapper scheduleTaskMapper;
+    @Mock
+    private PrdScheduleTaskDayLoadMapper taskDayLoadMapper;
+    @Mock
+    private PrdScheduleCapacityBookingMapper capacityBookingMapper;
     @Mock
     private PrdMaterialRequirementMapper requirementMapper;
     @Mock
@@ -179,7 +192,8 @@ class DeliveryContextAssemblerTest {
         MapperBuilderAssistant assistant = new MapperBuilderAssistant(configuration, "");
         for (Class<?> entity : List.of(
             SoSalesOrderHeader.class, SoSalesOrderLine.class, PrdWorkOrder.class, PrdProductionPlan.class,
-            PrdSchedulePlan.class, PrdScheduleTask.class, PrdMaterialRequirement.class,
+            PrdSchedulePlan.class, PrdScheduleTask.class, PrdScheduleTaskDayLoad.class,
+            PrdScheduleCapacityBooking.class, PrdMaterialRequirement.class,
             PrdMaterialRequirementDetail.class, WmMaterialStock.class, BdMaterial.class,
             PuPurchaseOrder.class, PuPurchaseOrderLine.class, PuVendorEvaluation.class,
             BdRouting.class, BdRoutingStep.class, PrdCapacityCalendar.class, SchHoliday.class,
@@ -368,6 +382,38 @@ class DeliveryContextAssemblerTest {
             assertFalse(sql.contains("expected_arrival_date <="), sql);
             assertDateParameter(query, TODAY.plusDays(90));
         }
+    }
+
+    @Test
+    void distinctMrpDetailIdsWithSameWorkOrderMaterialAndDayStayAsDistinctSnapshotFacts() {
+        RichFixture fixture = stubRichSalesOrderFixture(
+            new AtomicBoolean(false), new AtomicReference<>(new BigDecimal("20")),
+            new AtomicReference<>(new BigDecimal("3")));
+        PrdMaterialRequirement requirement = requirement(801L, 701L);
+        when(requirementMapper.selectList(any())).thenReturn(List.of(requirement));
+        when(requirementDetailMapper.selectList(any())).thenReturn(List.of(
+            requirementDetail(9901L, 801L, 501L, "10", "2", TODAY),
+            requirementDetail(9902L, 801L, 501L, "5", "2", TODAY)));
+
+        DeliveryContextSnapshot snapshot = assembler.assemble(fixture.ref(), 14, fixture.actor());
+        assertEquals(List.of(9901L, 9902L), snapshot.requirements().stream()
+            .map(DeliveryContextSnapshot.RequirementFact::detailId).toList());
+        assertEquals(List.of(new BigDecimal("8"), new BigDecimal("3")), snapshot.requirements().stream()
+            .map(DeliveryContextSnapshot.RequirementFact::requiredQty).toList());
+    }
+
+    @Test
+    void repeatedMrpDetailIdMustFailInsteadOfKeepingOnlyOneRow() {
+        RichFixture fixture = stubRichSalesOrderFixture(
+            new AtomicBoolean(false), new AtomicReference<>(new BigDecimal("20")),
+            new AtomicReference<>(new BigDecimal("3")));
+        PrdMaterialRequirement requirement = requirement(801L, 701L);
+        when(requirementMapper.selectList(any())).thenReturn(List.of(requirement));
+        when(requirementDetailMapper.selectList(any())).thenReturn(List.of(
+            requirementDetail(9901L, 801L, 501L, "10", "2", TODAY),
+            requirementDetail(9901L, 801L, 501L, "6", "1", TODAY)));
+
+        assertThrows(ServiceException.class, () -> assembler.assemble(fixture.ref(), 14, fixture.actor()));
     }
 
     @Test
@@ -604,6 +650,8 @@ class DeliveryContextAssemblerTest {
             .map(DeliveryContextSnapshot.WorkOrderFact::id).toList());
         assertEquals(11L, snapshot.requirements().get(0).workOrderId());
         assertEquals("WO-11", snapshot.requirements().get(0).workOrderNo());
+        assertEquals(901L, snapshot.requirements().get(0).detailId(),
+            "The exact MRP detail row must survive in the snapshot for numeric evidence ownership");
     }
 
     @Test
@@ -795,7 +843,7 @@ class DeliveryContextAssemblerTest {
     }
 
     @Test
-    void savedScheduleCarriesOnlyScopedCalendarLoadForVerifiedBaselineUtilization() {
+    void incompletePublishedPlanCannotUseCalendarAsVerifiedBaseline() {
         RichFixture fixture = stubRichSalesOrderFixture(new AtomicBoolean(false),
             new AtomicReference<>(new BigDecimal("20")), new AtomicReference<>(new BigDecimal("3")));
         stubRoutingSourceFacts(new AtomicReference<>(7001L),
@@ -810,10 +858,8 @@ class DeliveryContextAssemblerTest {
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> observed =
             (List<Map<String, Object>>) snapshot.currentSchedule().get("capacityCalendars");
-        org.junit.jupiter.api.Assertions.assertNotNull(observed);
-        assertTrue(observed.stream().anyMatch(row -> "6001".equals(row.get("calendarId"))
-            && "1100".equals(row.get("resourceId")) && "2".equals(row.get("effectiveHours"))
-            && "3".equals(row.get("plannedHours"))), observed.toString());
+        assertNull(observed, "a calendar cannot make an incomplete published plan a verified baseline");
+        assertTrue(snapshot.currentSchedule().isEmpty());
     }
     @Test
     void capacitySourceUpdateChangesHashEvenWhenDerivedCapacityIsUnchanged() {
@@ -939,7 +985,8 @@ class DeliveryContextAssemblerTest {
             PrdScheduleTask task = scheduleTask(4002L, 5002L, 12L, 1, "2.000", startDay.get());
             task.setResourceId(resourceId.get());
             task.setUpdateTime(toDateTime(2026, 9, 23, 9, 0));
-            return List.of(task);
+            PrdScheduleTask remainingScope = scheduleTask(4001L, 5002L, 11L, 1, "1.000", TODAY);
+            return List.of(remainingScope, task);
         });
 
         String baseline = assembler.computeFreshnessHash(fixture.ref(), fixture.actor());
@@ -1094,6 +1141,288 @@ class DeliveryContextAssemblerTest {
     }
 
     @Test
+    void newerDraftOrLegacyPublishedPlanCannotReplaceAttributablePublishedBaseline() {
+        RichFixture fixture = stubRichSalesOrderFixture(new AtomicBoolean(false),
+            new AtomicReference<>(new BigDecimal("20")), new AtomicReference<>(new BigDecimal("3")));
+        PrdSchedulePlan trusted = schedulePlan(5002L, "APS-5002", "PUBLISHED", TODAY, TODAY.plusDays(3));
+        trusted.setCapacityCalcVersion(2);
+        trusted.setUpdateTime(toDateTime(2026, 9, 23, 8, 0));
+        PrdSchedulePlan draft = schedulePlan(5003L, "APS-5003", "COMPLETED", TODAY, TODAY.plusDays(4));
+        draft.setCapacityCalcVersion(2);
+        draft.setUpdateTime(toDateTime(2026, 9, 23, 9, 0));
+        PrdSchedulePlan legacy = schedulePlan(5004L, "APS-5004", "PUBLISHED", TODAY, TODAY.plusDays(5));
+        legacy.setCapacityCalcVersion(0);
+        legacy.setUpdateTime(toDateTime(2026, 9, 23, 10, 0));
+        when(schedulePlanMapper.selectBatchIds(anyCollection())).thenReturn(List.of(trusted, draft, legacy));
+        when(scheduleTaskMapper.selectList(any())).thenReturn(List.of(
+            scheduleTask(4002L, 5002L, 11L, 1, "2.000", TODAY),
+            scheduleTask(4005L, 5002L, 12L, 1, "1.000", TODAY),
+            scheduleTask(4003L, 5003L, 11L, 1, "2.000", TODAY),
+            scheduleTask(4004L, 5004L, 11L, 1, "2.000", TODAY)));
+
+        DeliveryContextSnapshot snapshot = assembler.assemble(fixture.ref(), 14, fixture.actor());
+
+        assertEquals("5002", snapshot.currentSchedule().get("planId"));
+        assertEquals(2, snapshot.currentSchedule().get("capacityCalcVersion"));
+        assertEquals("PUBLISHED", snapshot.currentSchedule().get("status"));
+    }
+    @Test
+    void scheduleProvenanceReadsUseOneIndependentErpRepeatableReadSnapshot() throws Exception {
+        DS source = DeliveryContextAssembler.class.getAnnotation(DS.class);
+        assertNotNull(source);
+        assertEquals("erp", source.value());
+        for (Method method : List.of(
+            DeliveryContextAssembler.class.getMethod("assemble", DecisionBusinessRef.class, int.class, DecisionActor.class),
+            DeliveryContextAssembler.class.getMethod("computeFreshnessHash", DecisionBusinessRef.class, DecisionActor.class))) {
+            Transactional boundary = method.getAnnotation(Transactional.class);
+            assertNotNull(boundary, method.getName() + " must pin all ERP SELECTs to one transaction");
+            assertTrue(boundary.readOnly());
+            assertEquals(Isolation.REPEATABLE_READ, boundary.isolation());
+            assertEquals(Propagation.REQUIRES_NEW, boundary.propagation());
+        }
+    }
+
+    @Test
+    void automaticBaselineRejectsPublishedPlanMissingOneSalesOrderWorkOrder() {
+        RichFixture fixture = stubRichSalesOrderFixture(new AtomicBoolean(false),
+            new AtomicReference<>(new BigDecimal("20")), new AtomicReference<>(new BigDecimal("3")));
+        PrdSchedulePlan partial = schedulePlan(5002L, "APS-5002", "PUBLISHED", TODAY, TODAY.plusDays(2));
+        when(schedulePlanMapper.selectBatchIds(anyCollection())).thenReturn(List.of(partial));
+        when(scheduleTaskMapper.selectList(any())).thenReturn(List.of(
+            scheduleTask(4002L, 5002L, 11L, 1, "2.00", TODAY)));
+
+        DeliveryContextSnapshot snapshot = assembler.assemble(fixture.ref(), 14, fixture.actor());
+        assertEquals(List.of(11L, 12L), snapshot.workOrders().stream()
+            .map(DeliveryContextSnapshot.WorkOrderFact::id).sorted().toList());
+        assertTrue(snapshot.currentSchedule().isEmpty(),
+            "a one-work-order plan cannot be the saved baseline for a two-work-order sales scope");
+    }
+
+    @Test
+    void ownedBookingAndAllPlanCalendarLedgerEnterSnapshotAndFreshnessHash() {
+        RichFixture fixture = stubRichSalesOrderFixture(new AtomicBoolean(false),
+            new AtomicReference<>(new BigDecimal("20")), new AtomicReference<>(new BigDecimal("3")));
+        PrdWorkOrder linked = workOrder(11L, 811L, 701L, "RELEASED");
+        linked.setSourceId(100L);
+        linked.setWorkstationId(1100L);
+        PrdWorkOrder peer = workOrder(12L, 812L, 702L, "IN_PROGRESS");
+        peer.setSourceLineId(1002L);
+        when(workOrderMapper.selectList(any())).thenReturn(List.of(linked, peer));        PrdSchedulePlan plan = schedulePlan(5002L, "APS-5002", "PUBLISHED", TODAY, TODAY.plusDays(5));
+        AtomicReference<String> otherPlanStatus = new AtomicReference<>("PUBLISHED");
+        when(schedulePlanMapper.selectBatchIds(anyCollection())).thenAnswer(invocation -> {
+            Collection<?> ids = invocation.getArgument(0);
+            if (ids.contains(5000L)) return List.of(schedulePlan(5000L, "APS-5000", otherPlanStatus.get(), TODAY, TODAY.plusDays(5)));
+            return List.of(plan);
+        });
+        PrdScheduleTask task = scheduleTask(4002L, 5002L, 11L, 1, "2.00", TODAY);
+        task.setResourceId(1100L);
+        task.setEndTime(java.sql.Date.valueOf(TODAY));
+        task.setDurationDays(1);
+        PrdScheduleTask outsourced = scheduleTask(4007L, 5002L, 12L, 1, "1.00", TODAY);
+        outsourced.setResourceType("OUTSOURCE");
+        outsourced.setResourceId(null);
+        outsourced.setEndTime(java.sql.Date.valueOf(TODAY));
+        AtomicBoolean missingUnrelatedPlanTask = new AtomicBoolean(false);
+        PrdScheduleTask missingTask = scheduleTask(4010L, 5002L, 13L, 1, "1.00", TODAY);
+        missingTask.setResourceId(1100L);
+        missingTask.setEndTime(java.sql.Date.valueOf(TODAY));
+        PrdScheduleTask unshownTask = scheduleTask(4003L, 5002L, 13L, 1, "1.50", TODAY);
+        unshownTask.setResourceId(1100L);
+        unshownTask.setEndTime(java.sql.Date.valueOf(TODAY));
+        AtomicBoolean includeUnshownTask = new AtomicBoolean(false);
+        when(scheduleTaskMapper.selectList(any())).thenAnswer(invocation -> {
+            String sql = ((Wrapper<?>) invocation.getArgument(0)).getSqlSegment().toLowerCase();
+            if (missingUnrelatedPlanTask.get() && sql.contains("plan_id")) return List.of(task, outsourced, missingTask);
+            if (includeUnshownTask.get() && sql.contains("plan_id")) return List.of(task, outsourced, unshownTask);
+            return List.of(task, outsourced);
+        });
+        PrdScheduleTask otherTask = scheduleTask(4099L, 5000L, 99L, 1, "1.00", TODAY);
+        otherTask.setResourceId(1100L);
+        otherTask.setEndTime(java.sql.Date.valueOf(TODAY));
+        when(scheduleTaskMapper.selectBatchIds(anyCollection())).thenAnswer(invocation -> {
+            Collection<?> ids = invocation.getArgument(0);
+            return ids.contains(4099L) ? List.of(otherTask) : List.of();
+        });
+        when(scheduleTaskMapper.selectById(4003L)).thenReturn(unshownTask);
+        PrdCapacityCalendar calendar = capacityCalendar(6001L, "WORKSTATION", 1100L, "4");
+        calendar.setEffectiveHours(new BigDecimal("8"));
+        calendar.setPlannedHours(new BigDecimal("4"));
+        when(capacityCalendarMapper.selectList(any())).thenReturn(List.of(calendar));
+        AtomicBoolean includeEarlierVerifiedDay = new AtomicBoolean(false);
+        PrdCapacityCalendar earlierCalendar = capacityCalendar(6002L, "WORKSTATION", 1100L, "1");
+        earlierCalendar.setCalendarDate(java.sql.Date.valueOf(TODAY.minusDays(1)));
+        earlierCalendar.setEffectiveHours(new BigDecimal("8"));
+        earlierCalendar.setPlannedHours(new BigDecimal("1"));
+        when(capacityCalendarMapper.selectBatchIds(anyCollection())).thenAnswer(invocation ->
+            includeEarlierVerifiedDay.get() ? List.of(earlierCalendar) : List.of());
+        PrdScheduleTaskDayLoad load = new PrdScheduleTaskDayLoad();
+        load.setLoadId(7001L); load.setTenantId("000000"); load.setPlanId(5002L);
+        load.setTaskId(4002L); load.setResourceType("WORKSTATION"); load.setResourceId(1100L);
+        load.setLoadDate(java.sql.Date.valueOf(TODAY)); load.setPlannedHours(new BigDecimal("2.50"));
+        PrdScheduleTaskDayLoad earlierLoad = new PrdScheduleTaskDayLoad();
+        earlierLoad.setLoadId(7002L); earlierLoad.setTenantId("000000"); earlierLoad.setPlanId(5002L);
+        earlierLoad.setTaskId(4002L); earlierLoad.setResourceType("WORKSTATION"); earlierLoad.setResourceId(1100L);
+        earlierLoad.setLoadDate(java.sql.Date.valueOf(TODAY.minusDays(1)));
+        earlierLoad.setPlannedHours(new BigDecimal("1.00"));
+        AtomicReference<BigDecimal> otherSourceHours = new AtomicReference<>(new BigDecimal("1.50"));
+        PrdScheduleTaskDayLoad otherLoad = new PrdScheduleTaskDayLoad();
+        otherLoad.setLoadId(7003L); otherLoad.setTenantId("000000"); otherLoad.setPlanId(5000L);
+        otherLoad.setTaskId(4099L); otherLoad.setResourceType("WORKSTATION"); otherLoad.setResourceId(1100L);
+        otherLoad.setLoadDate(java.sql.Date.valueOf(TODAY));
+        PrdScheduleTaskDayLoad unshownLoad = new PrdScheduleTaskDayLoad();
+        unshownLoad.setLoadId(7004L); unshownLoad.setTenantId("000000"); unshownLoad.setPlanId(5002L);
+        unshownLoad.setTaskId(4003L); unshownLoad.setResourceType("WORKSTATION");
+        unshownLoad.setResourceId(1100L); unshownLoad.setLoadDate(java.sql.Date.valueOf(TODAY));
+        unshownLoad.setPlannedHours(new BigDecimal("1.00"));
+        when(taskDayLoadMapper.selectList(any())).thenAnswer(invocation -> {
+            if (((Wrapper<?>) invocation.getArgument(0)).getSqlSegment().contains("task_id")) {
+                otherLoad.setPlannedHours(otherSourceHours.get());
+                return List.of(otherLoad);
+            }
+            if (includeUnshownTask.get()) return List.of(load, unshownLoad);
+            return includeEarlierVerifiedDay.get() ? List.of(load, earlierLoad) : List.of(load);
+        });
+        AtomicReference<BigDecimal> otherPlanHours = new AtomicReference<>(new BigDecimal("1.50"));
+        AtomicReference<Long> otherBookingId = new AtomicReference<>(8002L);
+        AtomicBoolean wrongOtherBookingDate = new AtomicBoolean(false);
+        AtomicBoolean invalidOtherTask = new AtomicBoolean(false);
+        AtomicBoolean unseenOwnerTask = new AtomicBoolean(false);
+        AtomicBoolean unseenOwnerCalendar = new AtomicBoolean(false);
+        when(capacityBookingMapper.selectList(any())).thenAnswer(invocation -> {
+            PrdScheduleCapacityBooking owned = new PrdScheduleCapacityBooking();
+            owned.setBookingId(8001L); owned.setTenantId("000000"); owned.setPlanId(5002L);
+            owned.setTaskId(4002L); owned.setCalendarId(6001L);
+            owned.setLoadDate(java.sql.Date.valueOf(TODAY)); owned.setBookedHours(new BigDecimal("2.50"));
+            PrdScheduleCapacityBooking other = new PrdScheduleCapacityBooking();
+            other.setBookingId(otherBookingId.get()); other.setTenantId("000000"); other.setPlanId(5000L);
+            other.setTaskId(invalidOtherTask.get() ? 4999L : 4099L); other.setCalendarId(6001L);
+            other.setLoadDate(java.sql.Date.valueOf(wrongOtherBookingDate.get() ? TODAY.plusDays(1) : TODAY));
+            other.setBookedHours(otherPlanHours.get());
+            PrdScheduleCapacityBooking unknownTask = new PrdScheduleCapacityBooking();
+            unknownTask.setBookingId(8004L); unknownTask.setTenantId("000000"); unknownTask.setPlanId(5002L);
+            unknownTask.setTaskId(9999L); unknownTask.setCalendarId(6001L);
+            unknownTask.setLoadDate(java.sql.Date.valueOf(TODAY));
+            unknownTask.setBookedHours(new BigDecimal("0.25"));
+            String sql = ((Wrapper<?>) invocation.getArgument(0)).getSqlSegment().toLowerCase();
+            PrdScheduleCapacityBooking earlier = new PrdScheduleCapacityBooking();
+            earlier.setBookingId(8005L); earlier.setTenantId("000000"); earlier.setPlanId(5002L);
+            earlier.setTaskId(4002L); earlier.setCalendarId(6002L);
+            earlier.setLoadDate(java.sql.Date.valueOf(TODAY.minusDays(1)));
+            earlier.setBookedHours(new BigDecimal("1.00"));
+            PrdScheduleCapacityBooking unshown = new PrdScheduleCapacityBooking();
+            unshown.setBookingId(8006L); unshown.setTenantId("000000"); unshown.setPlanId(5002L);
+            unshown.setTaskId(4003L); unshown.setCalendarId(6001L);
+            unshown.setLoadDate(java.sql.Date.valueOf(TODAY));
+            unshown.setBookedHours(new BigDecimal("1.00"));
+            if (sql.contains("task_id")) return List.of(other);
+            if (sql.contains("plan_id")) {
+                if (includeUnshownTask.get()) return List.of(owned, unshown);
+                if (includeEarlierVerifiedDay.get()) return List.of(owned, earlier);
+                if (unseenOwnerCalendar.get()) {
+                    PrdScheduleCapacityBooking hidden = new PrdScheduleCapacityBooking();
+                    hidden.setBookingId(8003L); hidden.setTenantId("000000"); hidden.setPlanId(5002L);
+                    hidden.setTaskId(4002L); hidden.setCalendarId(9999L);
+                    hidden.setLoadDate(java.sql.Date.valueOf(TODAY));
+                    hidden.setBookedHours(new BigDecimal("0.25"));
+                    return List.of(owned, hidden);
+                }
+                return unseenOwnerTask.get() ? List.of(owned, unknownTask) : List.of(owned);
+            }
+            if (includeUnshownTask.get()) return List.of(owned, other, unshown);
+            if (includeEarlierVerifiedDay.get()) return List.of(owned, earlier, other);
+            return unseenOwnerTask.get() ? List.of(owned, other, unknownTask) : List.of(owned, other);
+        });
+
+        DeliveryContextSnapshot snapshot = assembler.assemble(fixture.ref(), 14, fixture.actor());
+        Map<String, Object> schedule = snapshot.currentSchedule();
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> owned = (List<Map<String, Object>>) schedule.get("capacityBookings");
+        assertEquals(List.of("8001"), owned.stream().map(row -> row.get("bookingId")).toList());
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> dates = (List<Map<String, Object>>) schedule.get("taskDayLoads");
+        assertEquals(List.of("7001"), dates.stream().map(row -> row.get("loadId")).toList());
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> observedCalendars = (List<Map<String, Object>>) schedule.get("capacityCalendars");
+        assertEquals("4.00", new BigDecimal((String) observedCalendars.get(0).get("ledgerHours"))
+            .setScale(2).toPlainString());
+        var observed = com.nexus.common.ai.decision.util.SavedScheduleCapacity.measure(schedule);
+        assertNotNull(observed, "only the owned booking plus a reconciled shared calendar proves utilization");
+        assertEquals(0, new BigDecimal("50.0").compareTo(observed.maxUtilization()));
+        verify(taskDayLoadMapper, atLeastOnce()).selectList(argThat(query ->
+            query.getSqlSegment().toUpperCase().contains("LIMIT 100001")));
+        verify(capacityBookingMapper, atLeastOnce()).selectList(argThat(query ->
+            query.getSqlSegment().toUpperCase().contains("LIMIT 100001")));
+        otherPlanHours.set(new BigDecimal("1.75"));
+        assertThrows(ServiceException.class, () -> assembler.computeFreshnessHash(fixture.ref(), fixture.actor()),
+            "a changed ledger without a matching other-plan day-load must fail closed before approval");
+        otherPlanHours.set(new BigDecimal("1.50"));
+        otherTask.setProcessHours(new BigDecimal("2.00"));
+        assertThrows(ServiceException.class, () -> assembler.computeFreshnessHash(fixture.ref(), fixture.actor()),
+            "the other plan task hours must agree with its actual day-load and all bookings");
+        otherTask.setProcessHours(new BigDecimal("1.00"));
+        otherSourceHours.set(new BigDecimal("2.00"));
+        assertThrows(ServiceException.class, () -> assembler.computeFreshnessHash(fixture.ref(), fixture.actor()),
+            "the other plan day-load cannot be larger than its complete booking sum");
+        otherSourceHours.set(new BigDecimal("1.50"));
+        otherTask.setProcessHours(new BigDecimal("1.10"));
+        otherTask.setSetupHours(new BigDecimal("0.40"));
+        assertNotEquals(snapshot.snapshotHash(), assembler.computeFreshnessHash(fixture.ref(), fixture.actor()),
+            "the other plan task composition must enter approval freshness even when total hours do not change");
+        otherTask.setProcessHours(new BigDecimal("1.00"));
+        otherTask.setSetupHours(new BigDecimal("0.500"));
+        otherBookingId.set(8012L);
+        assertNotEquals(snapshot.snapshotHash(), assembler.computeFreshnessHash(fixture.ref(), fixture.actor()),
+            "a replaced other-plan booking must change freshness even if booked hours remain unchanged");
+        otherBookingId.set(8002L);
+        otherPlanStatus.set("COMPLETED");
+        assertThrows(ServiceException.class, () -> assembler.computeFreshnessHash(fixture.ref(), fixture.actor()),
+            "a draft plan cannot contribute to the all-plan ledger");
+        otherPlanStatus.set("PUBLISHED");
+        wrongOtherBookingDate.set(true);
+        assertThrows(ServiceException.class, () -> assembler.computeFreshnessHash(fixture.ref(), fixture.actor()),
+            "another plan booking must agree with its sourced calendar date");
+        wrongOtherBookingDate.set(false);
+        invalidOtherTask.set(true);
+        assertThrows(ServiceException.class, () -> assembler.computeFreshnessHash(fixture.ref(), fixture.actor()),
+            "a booking must belong to an actual task of the other published plan");
+        invalidOtherTask.set(false);
+        unseenOwnerTask.set(true);
+        assertThrows(ServiceException.class, () -> assembler.computeFreshnessHash(fixture.ref(), fixture.actor()),
+            "a booking for an unverified task in this plan cannot be hidden in the shared ledger");
+        unseenOwnerTask.set(false);
+        missingUnrelatedPlanTask.set(true);
+        assertThrows(ServiceException.class, () -> assembler.computeFreshnessHash(fixture.ref(), fixture.actor()),
+            "a plan task lacking both day-load and booking must not disappear outside the decision work-order scope");
+        missingUnrelatedPlanTask.set(false);
+        unseenOwnerCalendar.set(true);
+        assertThrows(ServiceException.class, () -> assembler.computeFreshnessHash(fixture.ref(), fixture.actor()),
+            "a booking for this task outside sourced calendars must never disappear from the hash");
+        unseenOwnerCalendar.set(false);
+        includeUnshownTask.set(true);
+        calendar.setPlannedHours(new BigDecimal("5"));
+        assertThrows(ServiceException.class, () -> assembler.computeFreshnessHash(fixture.ref(), fixture.actor()),
+            "an undisplayed task must still match its own process plus setup total");
+        unshownTask.setProcessHours(new BigDecimal("0.50"));
+        assertNotNull(com.nexus.common.ai.decision.util.SavedScheduleCapacity.measure(
+            assembler.assemble(fixture.ref(), 14, fixture.actor()).currentSchedule()),
+            "a valid task from the same plan may be outside the decision's displayed work orders");
+        includeUnshownTask.set(false);
+        calendar.setPlannedHours(new BigDecimal("4"));
+        includeEarlierVerifiedDay.set(true);
+        plan.setStartDate(java.sql.Date.valueOf(TODAY.minusDays(1)));
+        task.setStartTime(java.sql.Date.valueOf(TODAY.minusDays(1)));
+        task.setProcessHours(new BigDecimal("3.00"));
+        var savedAcrossBoundary = assembler.assemble(fixture.ref(), 14, fixture.actor()).currentSchedule();
+        assertEquals(2, ((List<?>) savedAcrossBoundary.get("taskDayLoads")).size());
+        assertEquals(2, ((List<?>) savedAcrossBoundary.get("capacityBookings")).size());
+        assertNotNull(com.nexus.common.ai.decision.util.SavedScheduleCapacity.measure(savedAcrossBoundary),
+            "an older verified calendar may be outside today's APS input window without invalidating a published plan");
+        String earlierHash = assembler.computeFreshnessHash(fixture.ref(), fixture.actor());
+        earlierCalendar.setShiftId(700L);
+        assertNotEquals(earlierHash, assembler.computeFreshnessHash(fixture.ref(), fixture.actor()),
+            "an occupied historical calendar changing shift must stale the approval");
+    }
+    @Test
     void schedulePlanScopeLoadsOnlyTaskWorkOrdersAndProducesJsonSafeCurrentSchedule() {
         PrdSchedulePlan plan = schedulePlan(9001L, "APS-9001", "PUBLISHED", TODAY, TODAY.plusDays(7));
         plan.setTotalHours(new BigDecimal("16.500"));
@@ -1123,6 +1452,10 @@ class DeliveryContextAssemblerTest {
 
         Map<String, Object> schedule = snapshot.currentSchedule();
         assertEquals("9001", schedule.get("planId"));
+        assertEquals("000000", schedule.get("tenantId"));
+        assertEquals(2, schedule.get("capacityCalcVersion"));
+        assertTrue(schedule.get("taskDayLoads") instanceof List<?>, "saved tasks must carry their own daily load evidence");
+        assertTrue(schedule.get("capacityBookings") instanceof List<?>, "saved tasks must carry their own capacity bookings");
         assertEquals("2026-09-24", schedule.get("startDate"));
         assertEquals("2026-10-01", schedule.get("makespanDate"));
         assertEquals(List.of("11", "12"), schedule.get("workOrderIds"));
@@ -1446,6 +1779,7 @@ class DeliveryContextAssemblerTest {
     private PrdCapacityCalendar capacityCalendar(long id, String objectType, long objectId, String remaining) {
         PrdCapacityCalendar calendar = new PrdCapacityCalendar();
         calendar.setCalendarId(id);
+        calendar.setTenantId("000000");
         calendar.setCalendarDate(java.sql.Date.valueOf(TODAY));
         calendar.setObjectType(objectType);
         calendar.setObjectId(objectId);
@@ -1867,6 +2201,8 @@ class DeliveryContextAssemblerTest {
         plan.setPlanId(id);
         plan.setPlanNo(no);
         plan.setStatus(status);
+        plan.setTenantId("000000");
+        plan.setCapacityCalcVersion(2);
         plan.setStrategy("EDD");
         plan.setStartDate(java.sql.Date.valueOf(startDate));
         plan.setHorizonDays(14);
@@ -1877,6 +2213,7 @@ class DeliveryContextAssemblerTest {
     private PrdScheduleTask scheduleTask(long id, long planId, long woId, int seq,
                                          String processHours, LocalDate day) {
         PrdScheduleTask task = new PrdScheduleTask();
+        task.setTenantId("000000");
         task.setTaskId(id);
         task.setPlanId(planId);
         task.setWoId(woId);

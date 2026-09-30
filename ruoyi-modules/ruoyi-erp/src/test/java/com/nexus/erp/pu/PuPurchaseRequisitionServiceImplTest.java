@@ -23,6 +23,7 @@ import com.nexus.erp.pu.mapper.PuPurchaseOrderMapper;
 import com.nexus.erp.pu.mapper.PuPurchaseRequisitionLineMapper;
 import com.nexus.erp.pu.mapper.PuPurchaseRequisitionMapper;
 import com.nexus.erp.pu.service.impl.PuPurchaseRequisitionServiceImpl;
+import com.nexus.erp.pu.service.PuDecisionDraftReadinessGuard;
 import com.nexus.erp.wm.mapper.WmMaterialStockMapper;
 import com.nexus.system.strategy.AutoCodeUtil;
 import com.nexus.workflow.domain.WfMyBusiness;
@@ -42,6 +43,7 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
 import java.util.Date;
@@ -81,6 +83,9 @@ class PuPurchaseRequisitionServiceImplTest {
     private static final long ACTION_ID = 501L;
     private static final String IDEM_KEY = "decision-idem-501";
 
+    /** 基础幂等测试模拟未来已核验的边界；此 Mock 绝不是生产启用开关。 */
+    @Mock
+    private PuDecisionDraftReadinessGuard decisionDraftReadinessGuard;
     @Mock
     private PuPurchaseRequisitionMapper baseMapper;
     @Mock
@@ -124,6 +129,39 @@ class PuPurchaseRequisitionServiceImplTest {
         verifyNoInteractions(baseMapper,lineMapper,autoCodeUtil);
     }
 
+    @Test
+    void ordinaryFormCannotCreateUnattributedDemandOrLowStockLines() {
+        for (String source : List.of("LOW_STOCK", "MES_SPARE_LOW_STOCK", "REQ_CONVERT", "MRP")) {
+            PuPurchaseRequisitionBo bo = purchaseBo();
+            bo.setSourceType(source);
+            ServiceException error = assertThrows(ServiceException.class, () -> requisitionService.insertByBo(bo));
+            assertTrue(error.getMessage().contains("来源占用"), source);
+        }
+        for (String source : List.of("AI_DECISION", "LOW_STOCK", "MRP")) {
+            PuPurchaseRequisitionBo bo = purchaseBo();
+            bo.getPuPurchaseRequisitionLineList().get(0).setSourceType(source);
+            ServiceException error = assertThrows(ServiceException.class, () -> requisitionService.insertByBo(bo));
+            assertTrue(error.getMessage().contains("来源占用"), source);
+        }
+        verifyNoInteractions(baseMapper, lineMapper, autoCodeUtil);
+    }
+
+    @Test
+    void directDraftMustRejectLegacyAiIdentityBeforeIdempotentLookupOrWrites() {
+        ReflectionTestUtils.setField(requisitionService, "decisionDraftReadinessGuard", new PuDecisionDraftReadinessGuard());
+        ServiceException error = assertThrows(ServiceException.class,
+            () -> requisitionService.createDraft(decisionPurchaseBo()));
+        assertTrue(error.getMessage().contains("来源占用"));
+        verifyNoInteractions(baseMapper, lineMapper, autoCodeUtil);
+    }
+    @Test
+    void directDraftCannotBypassLowStockSourceGate() {
+        PuPurchaseRequisitionBo bo = purchaseBo();
+        bo.setSourceType("MES_SPARE_LOW_STOCK");
+        ServiceException error = assertThrows(ServiceException.class, () -> requisitionService.createDraft(bo));
+        assertTrue(error.getMessage().contains("来源占用"));
+        verifyNoInteractions(baseMapper, lineMapper, autoCodeUtil);
+    }
     @Test
     void lineAuditInheritsTrustedHeaderInsteadOfMissingAsyncLoginOrClientValues() {
         var bo=decisionPurchaseBo();bo.setCreateBy(1L);bo.setUpdateBy(1L);bo.setCreateDept(103L);
@@ -553,13 +591,103 @@ class PuPurchaseRequisitionServiceImplTest {
     }
 
     @Test
+    void manualDraftEditCannotIntroduceAnAiHeaderOrDecisionIdentity() {
+        for (boolean aiHeader : List.of(true, false)) {
+            PuPurchaseRequisition current = manualExistingRequisition();
+            when(baseMapper.selectById(7001L)).thenReturn(current);
+            PuPurchaseRequisitionBo bo = aiHeader ? decisionPurchaseBo() : purchaseBo();
+            bo.setRequisitionId(7001L);
+            if (!aiHeader) bo.setDecisionRunId(RUN_ID);
+
+            ServiceException error = assertThrows(ServiceException.class, () -> requisitionService.updateByBo(bo));
+            assertTrue(error.getMessage().contains("来源"));
+        }
+        verify(baseMapper, never()).updateById(any(PuPurchaseRequisition.class));
+        verify(lineMapper, never()).delete(any(Wrapper.class));
+        verify(lineMapper, never()).insert(any(PuPurchaseRequisitionLine.class));
+    }
+
+    @Test
+    void manualHeaderCannotWashLegacyAiLineProvenanceDuringEdit() {
+        PuPurchaseRequisition current = manualExistingRequisition();
+        when(baseMapper.selectById(7001L)).thenReturn(current);
+        Mockito.lenient().when(lineMapper.selectList(any(Wrapper.class))).thenReturn(matchingLines(7001L));
+        PuPurchaseRequisitionBo bo = purchaseBo();
+        bo.setRequisitionId(7001L);
+
+        ServiceException error = assertThrows(ServiceException.class, () -> requisitionService.updateByBo(bo));
+        assertTrue(error.getMessage().contains("来源"));
+        verify(baseMapper, never()).updateById(any(PuPurchaseRequisition.class));
+        verify(lineMapper, never()).delete(any(Wrapper.class));
+        verify(lineMapper, never()).insert(any(PuPurchaseRequisitionLine.class));
+    }
+    @Test
+    void updateByBoCannotConcealPersistedAiDraftBehindManualHeaderAndLines() {
+        PuPurchaseRequisition current = matchingExistingRequisition();
+        when(baseMapper.selectById(7001L)).thenReturn(current);
+        PuPurchaseRequisitionBo bo = purchaseBo();
+        bo.setRequisitionId(7001L);
+
+        ServiceException error = assertThrows(ServiceException.class, () -> requisitionService.updateByBo(bo));
+        assertTrue(error.getMessage().contains("来源"));
+        verify(baseMapper, never()).updateById(any(PuPurchaseRequisition.class));
+        verifyNoInteractions(lineMapper);
+    }
+
+    @Test
+    void deleteByIdsMustNotHideOrderedRequisitionProvenance() {
+        PuPurchaseRequisition current = matchingExistingRequisition();
+        current.setStatus("ORDERED");
+        when(baseMapper.selectById(7001L)).thenReturn(current);
+
+        ServiceException error = assertThrows(ServiceException.class,
+            () -> requisitionService.deleteByIds(new Long[]{7001L}));
+        assertTrue(error.getMessage().contains("转单"));
+        verify(baseMapper, never()).delete(any(Wrapper.class));
+        verifyNoInteractions(lineMapper);
+    }
+
+    @Test
+    void cancelClosedRequisitionWithDownstreamOrderMustNotReleaseItsSource() {
+        PuPurchaseRequisition current = matchingExistingRequisition();
+        current.setStatus("CLOSED");
+        when(baseMapper.selectById(7001L)).thenReturn(current);
+        when(purchaseOrderMapper.selectCount(any())).thenReturn(1L);
+
+        ServiceException error = assertThrows(ServiceException.class, () -> requisitionService.cancel(7001L));
+        assertTrue(error.getMessage().contains("下游订单"));
+        verify(baseMapper, never()).updateById(any(PuPurchaseRequisition.class));
+        verifyNoInteractions(lineMapper);
+    }
+    @Test
+    void updateByBoRejectsUnverifiedMrpSourceBeforeMutatingHeaderOrLines() {
+        PuPurchaseRequisition current = matchingExistingRequisition();
+        current.setStatus("DRAFT");
+        current.setSourceType("MANUAL");
+        current.setDecisionIdempotencyKey(null);
+        when(baseMapper.selectById(7001L)).thenReturn(current);
+        PuPurchaseRequisitionBo bo = purchaseBo();
+        bo.setRequisitionId(7001L);
+        bo.setSourceType("REQ_CONVERT");
+
+        ServiceException error = assertThrows(ServiceException.class, () -> requisitionService.updateByBo(bo));
+        assertTrue(error.getMessage().contains("来源占用"));
+        verify(baseMapper, never()).updateById(any(PuPurchaseRequisition.class));
+        verifyNoInteractions(lineMapper);
+    }
+    @Test
     void updateByBoUpdatesParentOptimisticallyBeforeReplacingLines() {
         PuPurchaseRequisition current = matchingExistingRequisition();
+        current.setSourceType("MANUAL");
+        current.setDecisionRunId(null);
+        current.setDecisionActionId(null);
+        current.setDecisionIdempotencyKey(null);
         current.setStatus("DRAFT");
         current.setVersion(3);
         PuPurchaseRequisitionBo bo = purchaseBo();
         bo.setRequisitionId(7001L);
         when(baseMapper.selectById(7001L)).thenReturn(current);
+        when(lineMapper.selectList(any(Wrapper.class))).thenReturn(manualExistingLines(7001L));
         when(baseMapper.updateById(any(PuPurchaseRequisition.class))).thenReturn(1);
         when(lineMapper.delete(any(Wrapper.class))).thenReturn(1);
         when(lineMapper.insert(any(PuPurchaseRequisitionLine.class))).thenReturn(1);
@@ -578,11 +706,16 @@ class PuPurchaseRequisitionServiceImplTest {
     @Test
     void updateByBoCasMissLeavesLinesUntouched() {
         PuPurchaseRequisition current = matchingExistingRequisition();
+        current.setSourceType("MANUAL");
+        current.setDecisionRunId(null);
+        current.setDecisionActionId(null);
+        current.setDecisionIdempotencyKey(null);
         current.setStatus("DRAFT");
         current.setVersion(3);
         PuPurchaseRequisitionBo bo = purchaseBo();
         bo.setRequisitionId(7001L);
         when(baseMapper.selectById(7001L)).thenReturn(current);
+        when(lineMapper.selectList(any(Wrapper.class))).thenReturn(manualExistingLines(7001L));
         when(baseMapper.updateById(any(PuPurchaseRequisition.class))).thenReturn(0);
 
         assertThrows(ServiceException.class, () -> requisitionService.updateByBo(bo));
@@ -835,19 +968,25 @@ class PuPurchaseRequisitionServiceImplTest {
         assertTrue(List.of(transactional.rollbackFor()).contains(Exception.class));
     }
 
-    /** 物料状态条件必须是数值 1（启用），且不得再出现字符串 ACTIVE。 */
+    /** 没有同租户物料全局锁及逐需求占用时，低库存入口不能绕过 ERP 防重直接生成申请。 */
     @Test
-    @SuppressWarnings("unchecked")
-    void generateFromLowStockMaterialStatusComparedNumerically() {
-        when(bdMaterialMapper.selectList(any())).thenReturn(List.of());
+    void convertToPurchaseOrderMustNotDuplicateLegacyDownstreamCommitment() {
+        PuPurchaseRequisition current = matchingExistingRequisition();
+        current.setStatus("APPROVED");
+        when(baseMapper.selectById(7001L)).thenReturn(current);
+        when(purchaseOrderMapper.selectCount(any())).thenReturn(1L);
 
-        requisitionService.generateFromLowStock();
-
-        ArgumentCaptor<LambdaQueryWrapper<BdMaterial>> captor = ArgumentCaptor.forClass(LambdaQueryWrapper.class);
-        verify(bdMaterialMapper).selectList(captor.capture());
-        captor.getValue().getSqlSegment();
-        assertTrue(captor.getValue().getParamNameValuePairs().containsValue(1L));
-        assertFalse(captor.getValue().getParamNameValuePairs().containsValue("ACTIVE"));
+        ServiceException error = assertThrows(ServiceException.class,
+            () -> requisitionService.convertToPurchaseOrder(7001L));
+        assertTrue(error.getMessage().contains("下游订单"));
+        verify(purchaseOrderMapper, never()).insert(any(PuPurchaseOrder.class));
+        verifyNoInteractions(lineMapper, purchaseOrderLineMapper, autoCodeUtil);
+    }
+    @Test
+    void generateFromLowStockFailsClosedBeforeReadingOrWritingBusinessData() {
+        ServiceException error = assertThrows(ServiceException.class, () -> requisitionService.generateFromLowStock());
+        assertTrue(error.getMessage().contains("低库存"));
+        verifyNoInteractions(bdMaterialMapper, materialStockMapper, baseMapper, lineMapper, autoCodeUtil);
     }
 
     private PuPurchaseRequisitionBo purchaseBo() {
@@ -859,12 +998,16 @@ class PuPurchaseRequisitionServiceImplTest {
         bo.setApplicantId(7L);
         bo.setApplicantName("tester");
         bo.setPuPurchaseRequisitionLineList(matchingLines(null));
+        bo.getPuPurchaseRequisitionLineList().get(0).setSourceType("MANUAL");
+        bo.getPuPurchaseRequisitionLineList().get(0).setSourceId(null);
         return bo;
     }
 
     private PuPurchaseRequisitionBo decisionPurchaseBo() {
         PuPurchaseRequisitionBo bo = purchaseBo();
         bo.setSourceType("AI_DECISION");
+        bo.getPuPurchaseRequisitionLineList().get(0).setSourceType("AI_DECISION");
+        bo.getPuPurchaseRequisitionLineList().get(0).setSourceId(RUN_ID);
         bo.setDecisionRunId(RUN_ID);
         bo.setDecisionActionId(ACTION_ID);
         bo.setDecisionIdempotencyKey(IDEM_KEY);
@@ -872,6 +1015,21 @@ class PuPurchaseRequisitionServiceImplTest {
         return bo;
     }
 
+    private PuPurchaseRequisition manualExistingRequisition() {
+        PuPurchaseRequisition current = matchingExistingRequisition();
+        current.setSourceType("MANUAL");
+        current.setDecisionRunId(null);
+        current.setDecisionActionId(null);
+        current.setDecisionIdempotencyKey(null);
+        return current;
+    }
+
+    private List<PuPurchaseRequisitionLine> manualExistingLines(Long requisitionId) {
+        List<PuPurchaseRequisitionLine> lines = matchingLines(requisitionId);
+        lines.get(0).setSourceType("MANUAL");
+        lines.get(0).setSourceId(null);
+        return lines;
+    }
     private PuPurchaseRequisition matchingExistingRequisition() {
         PuPurchaseRequisition entity = new PuPurchaseRequisition();
         entity.setRequisitionId(7001L);

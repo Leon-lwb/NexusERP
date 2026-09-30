@@ -6,10 +6,12 @@ import com.nexus.common.ai.decision.enums.DecisionBusinessType;
 import com.nexus.common.ai.domain.entity.AiDecisionRun;
 import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.ai.decision.exception.DecisionEvidenceException;
+import com.nexus.common.ai.decision.util.SavedScheduleCapacity;
 import org.junit.jupiter.api.Test;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -32,14 +34,8 @@ class DecisionAnalysisAssemblyServiceTest {
             List.of(new DeliveryContextSnapshot.RequirementFact(3L, "M-3", "物料", LocalDate.of(2026, 9, 28),
                 BigDecimal.ONE, 2L, "WO-2")),
             List.of(new DeliveryContextSnapshot.StockFact(3L, BigDecimal.TEN, BigDecimal.ZERO, BigDecimal.ZERO)),
-            List.of(), Map.of(LocalDate.of(2026, 9, 27), Map.of("resource-1", BigDecimal.valueOf(8))),
-            List.of(), Map.of("planId", "1",
-                "tasks", List.of(Map.of("taskId", "4", "woId", "2", "resourceType", "WORKSTATION",
-                    "resourceId", "1", "processHours", "1",
-                    "startTime", "2026-09-27", "endTime", "2026-09-27")),
-                "capacityCalendars", List.of(Map.of("calendarId", "8", "calendarDate", "2026-09-27",
-                    "resourceType", "WORKSTATION", "resourceId", "1", "plannedHours", "5.6",
-                    "effectiveHours", "8"))),
+            List.of(), Map.of(LocalDate.of(2026, 9, 27), Map.of("WORKSTATION:1", BigDecimal.valueOf(8))),
+            List.of(), savedSchedule("5.6", "5.6", "8"),
             List.of(new DeliveryContextSnapshot.SupplierMetricFact(7L, BigDecimal.valueOf(98), 10, at)),
             "hash", at, List.of());
         AiDecisionRun run = new AiDecisionRun();
@@ -50,7 +46,12 @@ class DecisionAnalysisAssemblyServiceTest {
             k, BigDecimal.ZERO, 1, Map.of(), List.of("snapshot:hash"), List.of(), "scenario-specific-fingerprint", List.of(), List.of());
         var shortage = new ShortageSimulationResult(false, 0, null, BigDecimal.ZERO, List.of(),
             k, List.of(), List.of());
+        var observed = SavedScheduleCapacity.measure(snapshot.currentSchedule());
+        assertNotNull(observed);
+        assertEquals(new BigDecimal("70.0"), observed.maxUtilization());
+        assertEquals(0, observed.overloadedResources());
         var result = service.prepare(run, snapshot, shortage, List.of(scenario), List.of(), null);
+        assertEquals(0, k.maxResourceUtilization().compareTo(observed.maxUtilization()));
         assertEquals(0d, result.riskScore());
         assertTrue(result.evidence().stream().anyMatch(e -> e.evidenceKey().equals("ERP:STOCK:3:stock_qty")
             && e.dataVersion().equals("hash")));
@@ -68,14 +69,8 @@ class DecisionAnalysisAssemblyServiceTest {
             List.of(new DeliveryContextSnapshot.RequirementFact(3L, "M-3", "物料", LocalDate.of(2026, 9, 28),
                 BigDecimal.ONE, 2L, "WO-2")),
             List.of(new DeliveryContextSnapshot.StockFact(3L, BigDecimal.TEN, BigDecimal.ZERO, BigDecimal.ZERO)),
-            List.of(), Map.of(LocalDate.of(2026, 9, 27), Map.of("resource-1", BigDecimal.valueOf(8))),
-            List.of(), Map.of("planId", "1",
-                "tasks", List.of(Map.of("taskId", "4", "woId", "2", "resourceType", "WORKSTATION",
-                    "resourceId", "1", "processHours", "1",
-                    "startTime", "2026-09-27", "endTime", "2026-09-27")),
-                "capacityCalendars", List.of(Map.of("calendarId", "8", "calendarDate", "2026-09-27",
-                    "resourceType", "WORKSTATION", "resourceId", "1", "plannedHours", "5.6",
-                    "effectiveHours", "8"))),
+            List.of(), Map.of(LocalDate.of(2026, 9, 27), Map.of("WORKSTATION:1", BigDecimal.valueOf(8))),
+            List.of(), savedSchedule("5.6", "5.6", "8"),
             List.of(new DeliveryContextSnapshot.SupplierMetricFact(7L, BigDecimal.valueOf(98), 10, at)),
             "hash", at, List.of());
         AiDecisionRun run = new AiDecisionRun();
@@ -109,14 +104,8 @@ class DecisionAnalysisAssemblyServiceTest {
             List.of(new DeliveryContextSnapshot.RequirementFact(3L, "M-3", "物料", LocalDate.of(2026, 9, 28),
                 BigDecimal.ONE, 2L, "WO-2")),
             List.of(new DeliveryContextSnapshot.StockFact(3L, BigDecimal.TEN, BigDecimal.ZERO, BigDecimal.ZERO)),
-            List.of(), Map.of(LocalDate.of(2026, 9, 27), Map.of("resource-1", BigDecimal.valueOf(8))),
-            List.of(), Map.of("planId", "1",
-                "tasks", List.of(Map.of("taskId", "4", "woId", "2", "resourceType", "WORKSTATION",
-                    "resourceId", "1", "processHours", "1",
-                    "startTime", "2026-09-27", "endTime", "2026-09-27")),
-                "capacityCalendars", List.of(Map.of("calendarId", "8", "calendarDate", "2026-09-27",
-                    "resourceType", "WORKSTATION", "resourceId", "1", "plannedHours", "5.6",
-                    "effectiveHours", "8"))),
+            List.of(), Map.of(LocalDate.of(2026, 9, 27), Map.of("WORKSTATION:1", BigDecimal.valueOf(8))),
+            List.of(), savedSchedule("5.6", "5.6", "8"),
             List.of(new DeliveryContextSnapshot.SupplierMetricFact(7L, BigDecimal.valueOf(98), 10, at)),
             "hash", at, List.of());
         AiDecisionRun run = new AiDecisionRun();
@@ -143,13 +132,7 @@ class DecisionAnalysisAssemblyServiceTest {
     @Test void forgedSavedBaselineCapacityCannotBeMadeTrustedByAScenarioResult() {
         var ref = new DecisionBusinessRef(DecisionBusinessType.WORK_ORDER, 2L, "WO-2");
         var at = LocalDateTime.of(2026, 9, 26, 9, 0);
-        var saved = Map.<String, Object>of("planId", "1",
-            "tasks", List.of(Map.of("taskId", "4", "woId", "2", "resourceType", "WORKSTATION",
-                "resourceId", "1", "processHours", "1",
-                "startTime", "2026-09-27", "endTime", "2026-09-27")),
-            "capacityCalendars", List.of(Map.of("calendarId", "8", "calendarDate", "2026-09-27",
-                "resourceType", "WORKSTATION", "resourceId", "1", "plannedHours", "12",
-                "effectiveHours", "8")));
+        var saved = savedSchedule("12", "12", "8");
         var snapshot = new DeliveryContextSnapshot(ref, List.of(),
             List.of(new DeliveryContextSnapshot.WorkOrderFact(2L, "WO-2", 3L,
                 BigDecimal.TEN, LocalDate.of(2026, 9, 28), 1L, 1L)),
@@ -169,20 +152,58 @@ class DecisionAnalysisAssemblyServiceTest {
             forged, BigDecimal.ZERO, 1, Map.of(), List.of("snapshot:hash"), List.of(), "scenario-hash", List.of(), List.of());
         var shortage = new ShortageSimulationResult(false, 0, null, BigDecimal.ZERO, List.of(),
             forged, List.of(), List.of());
-        assertThrows(ServiceException.class, () -> service.prepare(run, snapshot, shortage,
+        var observed = SavedScheduleCapacity.measure(snapshot.currentSchedule());
+        assertNotNull(observed, "The source must be sound; only the scenario's zero KPI is forged");
+        assertEquals(new BigDecimal("150.0"), observed.maxUtilization());
+        var rejected = assertThrows(ServiceException.class, () -> service.prepare(run, snapshot, shortage,
             List.of(scenario), List.of(), null));
+        assertEquals("已保存排程利用率缺少可信产能日历，或与 ERP 源事实不一致", rejected.getMessage());
     }
+    @Test void unverifiableSavedScheduleCannotPublishForgedZeroUtilization() {
+        var input = evidenceFixture();
+        var source = input.snapshot();
+        var zeroKpis = new DecisionKpiSet(0, 0, 0, 0, "2026-09-28", 0, BigDecimal.ZERO, null,
+            BigDecimal.ZERO, 0, 0, BigDecimal.ZERO);
+        var forged = new DecisionScenario("BASELINE_CURRENT", "基线", "BASELINE_CURRENT", true, List.of(),
+            zeroKpis, BigDecimal.ZERO, 1, Map.of(), List.of("snapshot:hash"), List.of(),
+            "scenario-specific-fingerprint", List.of(), List.of());
+        var summaries = mock(DecisionSummaryService.class);
+        var policy = mock(DecisionPolicyGuardService.class);
+        var checked = new DecisionAnalysisAssemblyService(new DeliveryRiskScoringService(new AiProperties()),
+            new DecisionEvidenceService(), new DecisionSourceFactVerifier(), summaries, policy);
+        var saved = source.currentSchedule();
+        var invalidCases = Map.of(
+            "legacy version zero", withScheduleField(saved, "capacityCalcVersion", 0),
+            "unpublished plan", withScheduleField(saved, "status", "DRAFT"),
+            "cross-tenant plan", withScheduleField(saved, "tenantId", "100001"),
+            "missing own bookings", withScheduleField(saved, "capacityBookings", List.of()),
+            "cross-tenant booking", withScheduleRowField(saved, "capacityBookings", "tenantId", "100001"),
+            "unreconciled all-plan ledger", withScheduleRowField(saved, "capacityCalendars", "ledgerHours", "0"),
+            "no load at first task day", withScheduleRowField(saved, "tasks", "startTime", "2026-09-26"));
+        for (var entry : invalidCases.entrySet()) {
+            var invalid = entry.getValue();
+            assertNull(SavedScheduleCapacity.measure(invalid), entry.getKey());
+            var rejected = assertThrows(ServiceException.class, () -> checked.prepare(input.run(),
+                withSchedule(source, invalid), input.shortage(), List.of(forged), List.of(), null), entry.getKey());
+            assertEquals("已保存排程利用率缺少可信产能日历，或与 ERP 源事实不一致",
+                rejected.getMessage(), entry.getKey());
+        }
+        verifyNoInteractions(summaries, policy);
+    }
+
     @Test void sameHashCannotHideTamperedSavedResourceCalendarAcrossReread() {
         var ref = new DecisionBusinessRef(DecisionBusinessType.WORK_ORDER, 2L, "WO-2");
         var at = LocalDateTime.of(2026, 9, 26, 9, 0);
         var task = Map.<String, Object>of("taskId", "4", "woId", "2", "resourceType", "WORKSTATION",
-            "resourceId", "1", "processHours", "1", "startTime", "2026-09-27", "endTime", "2026-09-27");
+            "resourceId", "1", "processHours", "12", "startTime", "2026-09-27", "endTime", "2026-09-27");
         var originalCalendar = Map.<String, Object>of("calendarId", "8", "calendarDate", "2026-09-27",
             "resourceType", "WORKSTATION", "resourceId", "1", "plannedHours", "12", "effectiveHours", "8");
         var changedCalendar = Map.<String, Object>of("calendarId", "8", "calendarDate", "2026-09-27",
-            "resourceType", "WORKSTATION", "resourceId", "1", "plannedHours", "5", "effectiveHours", "8");
+            "resourceType", "WORKSTATION", "resourceId", "1", "plannedHours", "13", "effectiveHours", "8");
         var original = sourceSnapshot(ref, at, task, originalCalendar);
         var changed = sourceSnapshot(ref, at, task, changedCalendar);
+        assertEquals(new BigDecimal("150.0"), SavedScheduleCapacity.measure(original.currentSchedule()).maxUtilization());
+        assertEquals(new BigDecimal("162.5"), SavedScheduleCapacity.measure(changed.currentSchedule()).maxUtilization());
         var verifier = new DecisionSourceFactVerifier();
         var roots = verifier.numericFacts(5L, original);
         assertTrue(roots.stream().anyMatch(f -> "ERP:CALENDAR:8:planned_hours".equals(f.evidenceKey())));
@@ -209,14 +230,8 @@ class DecisionAnalysisAssemblyServiceTest {
             List.of(new DeliveryContextSnapshot.RequirementFact(3L, "M-3", "物料", LocalDate.of(2026, 9, 28),
                 BigDecimal.ONE, 2L, "WO-2")),
             List.of(new DeliveryContextSnapshot.StockFact(3L, BigDecimal.TEN, BigDecimal.ZERO, BigDecimal.ZERO)),
-            List.of(), Map.of(LocalDate.of(2026, 9, 27), Map.of("resource-1", BigDecimal.valueOf(8))),
-            List.of(), Map.of("planId", "1",
-                "tasks", List.of(Map.of("taskId", "4", "woId", "2", "resourceType", "WORKSTATION",
-                    "resourceId", "1", "processHours", "1",
-                    "startTime", "2026-09-27", "endTime", "2026-09-27")),
-                "capacityCalendars", List.of(Map.of("calendarId", "8", "calendarDate", "2026-09-27",
-                    "resourceType", "WORKSTATION", "resourceId", "1", "plannedHours", "5.6",
-                    "effectiveHours", "8"))),
+            List.of(), Map.of(LocalDate.of(2026, 9, 27), Map.of("WORKSTATION:1", BigDecimal.valueOf(8))),
+            List.of(), savedSchedule("5.6", "5.6", "8"),
             List.of(new DeliveryContextSnapshot.SupplierMetricFact(7L, BigDecimal.valueOf(98), 10, at)),
             "hash", at, List.of());
         AiDecisionRun run = new AiDecisionRun();
@@ -312,14 +327,8 @@ class DecisionAnalysisAssemblyServiceTest {
             List.of(new DeliveryContextSnapshot.RequirementFact(3L, "M-3", "物料", LocalDate.of(2026, 9, 28),
                 BigDecimal.ONE, 2L, "WO-2")),
             List.of(new DeliveryContextSnapshot.StockFact(3L, BigDecimal.TEN, BigDecimal.ZERO, BigDecimal.ZERO)),
-            List.of(), Map.of(LocalDate.of(2026, 9, 27), Map.of("resource-1", BigDecimal.valueOf(8))),
-            List.of(), Map.of("planId", "1",
-                "tasks", List.of(Map.of("taskId", "4", "woId", "2", "resourceType", "WORKSTATION",
-                    "resourceId", "1", "processHours", "1",
-                    "startTime", "2026-09-27", "endTime", "2026-09-27")),
-                "capacityCalendars", List.of(Map.of("calendarId", "8", "calendarDate", "2026-09-27",
-                    "resourceType", "WORKSTATION", "resourceId", "1", "plannedHours", "5.6",
-                    "effectiveHours", "8"))),
+            List.of(), Map.of(LocalDate.of(2026, 9, 27), Map.of("WORKSTATION:1", BigDecimal.valueOf(8))),
+            List.of(), savedSchedule("5.6", "5.6", "8"),
             List.of(new DeliveryContextSnapshot.SupplierMetricFact(7L, BigDecimal.valueOf(98), 10, at)),
             "hash", at, List.of());
         AiDecisionRun run = new AiDecisionRun();
@@ -335,11 +344,60 @@ class DecisionAnalysisAssemblyServiceTest {
     private record EvidenceFixture(AiDecisionRun run, DeliveryContextSnapshot snapshot,
                                    ShortageSimulationResult shortage, DecisionScenario scenario) { }
 
+    private Map<String, Object> withScheduleField(Map<String, Object> schedule, String field, Object value) {
+        var copy = new HashMap<>(schedule);
+        copy.put(field, value);
+        return copy;
+    }
+
+    private Map<String, Object> withScheduleRowField(Map<String, Object> schedule, String rows,
+                                                      String field, Object value) {
+        var row = (Map<?, ?>) ((List<?>) schedule.get(rows)).get(0);
+        Map<String, Object> copy = new HashMap<>();
+        row.forEach((key, original) -> copy.put((String) key, original));
+        copy.put(field, value);
+        return withScheduleField(schedule, rows, List.of(copy));
+    }
+
+    private DeliveryContextSnapshot withSchedule(DeliveryContextSnapshot source, Map<String, Object> schedule) {
+        return new DeliveryContextSnapshot(source.rootBusinessRef(), source.salesOrders(), source.workOrders(),
+            source.routingByMaterial(), source.requirements(), source.stocks(), source.arrivals(),
+            source.capacityByDate(), source.holidays(), schedule, source.supplierMetrics(),
+            source.snapshotHash(), source.snapshotAt(), source.warnings(), source.workOrderSalesLinks());
+    }
+
     private DeliveryContextSnapshot sourceSnapshot(DecisionBusinessRef ref, LocalDateTime at,
                                                    Map<String, Object> task, Map<String, Object> calendar) {
         return new DeliveryContextSnapshot(ref, List.of(), List.of(), Map.of(), List.of(), List.of(),
-            List.of(), Map.of(), List.of(), Map.of("planId", "1", "tasks", List.of(task),
-            "capacityCalendars", List.of(calendar)), List.of(), "same-hash", at, List.of());
+            List.of(), Map.of(), List.of(), savedSchedule(task, calendar), List.of(), "same-hash", at, List.of());
+    }
+
+    private Map<String, Object> savedSchedule(String taskHours, String plannedHours, String effectiveHours) {
+        return savedSchedule(
+            Map.of("taskId", "4", "woId", "2", "resourceType", "WORKSTATION",
+                "resourceId", "1", "processHours", taskHours,
+                "startTime", "2026-09-27", "endTime", "2026-09-27"),
+            Map.of("calendarId", "8", "calendarDate", "2026-09-27", "resourceType", "WORKSTATION",
+                "resourceId", "1", "plannedHours", plannedHours, "effectiveHours", effectiveHours));
+    }
+
+    private Map<String, Object> savedSchedule(Map<String, Object> task, Map<String, Object> calendar) {
+        /** 服务端将本计划的预订与同租户全部方案的日历账册分别提供。 */
+        String tenantId = "000000";
+        return Map.of("planId", "1", "tenantId", tenantId, "status", "PUBLISHED", "capacityCalcVersion", 2,
+            "tasks", List.of(task),
+            "taskDayLoads", List.of(Map.of("loadId", "9", "tenantId", tenantId, "planId", "1",
+                "taskId", task.get("taskId"), "resourceType", task.get("resourceType"),
+                "resourceId", task.get("resourceId"), "loadDate", "2026-09-27",
+                "plannedHours", task.get("processHours"))),
+            "capacityBookings", List.of(Map.of("bookingId", "10", "tenantId", tenantId, "planId", "1",
+                "taskId", task.get("taskId"), "calendarId", calendar.get("calendarId"),
+                "loadDate", "2026-09-27", "bookedHours", task.get("processHours"))),
+            "capacityCalendars", List.of(Map.of("calendarId", calendar.get("calendarId"),
+                "tenantId", tenantId, "status", "ACTIVE", "calendarDate", calendar.get("calendarDate"),
+                "resourceType", calendar.get("resourceType"), "resourceId", calendar.get("resourceId"),
+                "plannedHours", calendar.get("plannedHours"), "ledgerHours", calendar.get("plannedHours"),
+                "effectiveHours", calendar.get("effectiveHours"))));
     }
     @Test void trustedSourceFactVerifierIsAvailableAsSpringBean() {
         assertNotNull(DecisionSourceFactVerifier.class.getAnnotation(org.springframework.stereotype.Component.class));

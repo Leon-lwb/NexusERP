@@ -40,11 +40,32 @@ public class DecisionSourceFactVerifier {
             fact(facts, runId, snapshot, "WORK_ORDER", work.id(), work.code(),
                 "remaining_qty", work.remainingQty());
         }
+        Set<String> requirementSourceKeys = new HashSet<>();
+        boolean hasIdentifiedRequirement = false;
+        boolean hasLegacyRequirement = false;
         if (snapshot.requirements() != null) for (var req : snapshot.requirements()) {
             if (req == null || req.materialId() == null) throw new ServiceException("需求事实不完整");
             String code = req.workOrderId() + ":" + req.materialId() + ":" + req.requiredDate();
-            fact(facts, runId, snapshot, "REQUIREMENT", null, code, "required_qty", req.requiredQty());
+            if (req.detailId() != null && req.detailId() <= 0)
+                throw new ServiceException("物料需求明细来源 ID 无效");
+            if (req.detailId() == null) hasLegacyRequirement = true;
+            else hasIdentifiedRequirement = true;
+            /**
+             * 缺料仿真器会统计每一行；即便完全相同的重复行也会
+             * 使需求翻倍；这里拒绝重复行比按数值事实键去重更安全。
+             */
+            String sourceKey = req.detailId() == null ? code : req.detailId().toString();
+            if (!requirementSourceKeys.add(sourceKey))
+                throw new ServiceException("物料需求明细重复，不能生成唯一数值证据");
+            /**
+             * 同一工单、物料和日期可能有不同的 BOM/MRP 明细行及数量。
+             * 保留行 ID 作为证据键；编码仍是便于阅读的范围元数据。
+             * 旧快照缺少行 ID 时，相互冲突的值仍会产生键冲突并拒绝放行。
+             */
+            fact(facts, runId, snapshot, "REQUIREMENT", req.detailId(), code, "required_qty", req.requiredQty());
         }
+        if (hasLegacyRequirement && hasIdentifiedRequirement)
+            throw new ServiceException("物料需求明细来源新旧混杂，不能生成可信证据");
         if (snapshot.arrivals() != null) for (var arrival : snapshot.arrivals()) {
             if (arrival == null || arrival.purchaseLineId() == null) throw new ServiceException("在途事实不完整");
             fact(facts, runId, snapshot, "ARRIVAL", arrival.purchaseLineId(),
@@ -52,7 +73,7 @@ public class DecisionSourceFactVerifier {
         }
         if (snapshot.supplierMetrics() != null) for (var supplier : snapshot.supplierMetrics()) {
             if (supplier == null || supplier.vendorId() == null) throw new ServiceException("供应商事实不完整");
-            if (supplier.observedAt() == null) continue; // 来源未知不等于零风险事实。
+            if (supplier.observedAt() == null) continue; /** 来源未知不等于零风险事实。 */
             fact(facts, runId, snapshot, "SUPPLIER", supplier.vendorId(),
                 supplier.vendorId().toString(), "on_time_rate", supplier.onTimeRate(), supplier.observedAt());
             fact(facts, runId, snapshot, "SUPPLIER", supplier.vendorId(),
@@ -64,8 +85,10 @@ public class DecisionSourceFactVerifier {
             resources.forEach((resource, hours) -> fact(facts, runId, snapshot, "CAPACITY", null,
                 date + ":" + resource, "available_hours", hours));
         });
-        // 这些叶子证据将已保存基线绑定至来源日历行和限定任务资源关系。
-        // 相同指纹的 ERP 重读必须能复现数值及其来源范围。
+        /**
+         * 这些叶子证据将已保存基线绑定至来源日历行和限定任务资源关系。
+         * 相同指纹的 ERP 重读必须能复现数值及其来源范围。
+         */
         if (snapshot.currentSchedule() != null && snapshot.currentSchedule().containsKey("capacityCalendars")) {
             Object calendars = snapshot.currentSchedule().get("capacityCalendars");
             Object tasks = snapshot.currentSchedule().get("tasks");
@@ -88,7 +111,7 @@ public class DecisionSourceFactVerifier {
                 fact(facts, runId, snapshot, "SCHEDULE_TASK", id, sourceCode,
                     "process_hours", sourceDecimal(row.get("processHours")));
             }
-        }        // 重复事实键会使最后一项掩盖相互矛盾的来源值，必须拒绝。
+        }        /** 重复事实键会使最后一项掩盖相互矛盾的来源值，必须拒绝。 */
         Map<String, EvidenceItem> byKey = new LinkedHashMap<>();
         for (EvidenceItem item : facts) {
             EvidenceItem previous = byKey.putIfAbsent(item.evidenceKey(), item);

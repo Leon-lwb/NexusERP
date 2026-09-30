@@ -68,6 +68,8 @@ class ErpDecisionActionExecutorTest {
     private static final String WORK_ORDER_IDS_JSON = "[\"11\",\"12\"]";
 
     @Mock
+    private ErpDecisionPurchaseGate purchaseGate;
+    @Mock
     private IPuPurchaseRequisitionService purchaseRequisitionService;
     @Mock
     private IPrdScheduleService scheduleService;
@@ -89,6 +91,39 @@ class ErpDecisionActionExecutorTest {
         TableInfoHelper.initTableInfo(new MapperBuilderAssistant(new MybatisConfiguration(), ""), PrdSchedulePlan.class);
     }
 
+    @Test
+    void p0LegacyPurchaseIsRejectedByRealErpGateIncludingForgedV2Marker() {
+        ErpDecisionPurchaseGate gate = new ErpDecisionPurchaseGate();
+        var original = purchaseAction(purchasePayload());
+        assertThrows(ServiceException.class, () -> gate.require(original, purchaseActor()));
+        var forged = new LinkedHashMap<>(purchasePayload());
+        forged.put("purchase_payload_version", 2);
+        assertThrows(ServiceException.class, () -> gate.require(purchaseAction(forged), purchaseActor()));
+        verifyNoInteractions(purchaseRequisitionService);
+    }
+
+    @Test
+    void defaultErpExecutorRefusesLegacyAndForgedPurchaseWithoutBusinessWrite() {
+        var guarded = new ErpDecisionActionExecutor(purchaseRequisitionService, scheduleService,
+            planMapper, purchaseEnricher, new ErpDecisionPurchaseGate());
+        assertThrows(ServiceException.class,
+            () -> guarded.execute(purchaseAction(purchasePayload()), purchaseActor()));
+        var forged = new LinkedHashMap<>(purchasePayload());
+        forged.put("purchase_payload_version", 2);
+        assertThrows(ServiceException.class,
+            () -> guarded.execute(purchaseAction(forged), purchaseActor()));
+        verifyNoInteractions(purchaseRequisitionService, purchaseEnricher);
+    }
+    @Test
+    void directErpExecuteRequiresSourceGateBeforeCreatingPurchaseDraft() {
+        var action = purchaseAction(purchasePayload());
+        var actor = purchaseActor();
+        org.mockito.Mockito.doThrow(new ServiceException("采购来源未核验"))
+            .when(purchaseGate).require(action, actor);
+        assertThrows(ServiceException.class, () -> executor.execute(action, actor));
+        verify(purchaseGate).require(action, actor);
+        verifyNoInteractions(purchaseRequisitionService, purchaseEnricher);
+    }
     @Test
     void frozenIntentWithoutDisplayNamesAcceptsServerEnrichedNamesButNotChangedQuantities() {
         var payload=new LinkedHashMap<>(purchasePayload());

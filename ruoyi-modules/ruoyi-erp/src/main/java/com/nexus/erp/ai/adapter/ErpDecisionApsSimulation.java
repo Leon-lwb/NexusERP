@@ -139,7 +139,7 @@ public class ErpDecisionApsSimulation {
             return unavailable(snapshot, facts, horizonDays, "BASELINE_CURRENT", strategy,
                 "INVALID_SAVED_SCHEDULE");
         }
-        // 已保存计划的总工期可能包含此次决策范围外的工单。
+        /** 已保存计划的总工期可能包含此次决策范围外的工单。 */
         makespan = terminalMax;
         List<Map<String, Object>> preview = new ArrayList<>();
         for (Object task : (List<?>) saved.get("tasks")) {
@@ -170,7 +170,7 @@ public class ErpDecisionApsSimulation {
                                        Map<Long, LocalDate> savedEnds, String code, Strategy strategy,
                                        int horizonDays, Set<String> warnings,
                                        Map<Strategy, ScheduleInput> usedInputs) {
-        // 不得调用无范围装配重载；第二次限定范围读取前先验证每行。
+        /** 不得调用无范围装配重载；第二次限定范围读取前先验证每行。 */
         List<Long> ids = new ArrayList<>(facts.keySet());
         if (ids.isEmpty()) return unavailable(snapshot, facts, horizonDays, code, strategy.name(),
             "NO_SCHEDULABLE_WORK_ORDERS");
@@ -191,7 +191,7 @@ public class ErpDecisionApsSimulation {
         List<Long> schedulable = new ArrayList<>();
         for (Map.Entry<Long, PrdWorkOrder> entry : loaded.entrySet()) {
             PrdWorkOrder row = entry.getValue();
-            // 检查所有行与观测快照一致，包括当前不可排程的行。
+            /** 检查所有行与观测快照一致，包括当前不可排程的行。 */
             if (!matches(row, facts.get(entry.getKey()))) {
                 throw stale("work order changed during scoped read");
             }
@@ -204,7 +204,7 @@ public class ErpDecisionApsSimulation {
         bo.setStartDate(Date.from(snapshot.snapshotAt().toLocalDate().atStartOfDay(BUSINESS_ZONE).toInstant()));
         bo.setHorizonDays(horizonDays);
         ScheduleInput input = scheduleInputAssembler.assemble(bo, List.copyOf(schedulable));
-        // 装配器会再次读取数据库，两次读取间事实变化时必须拒绝。
+        /** 装配器会再次读取数据库，两次读取间事实变化时必须拒绝。 */
         if (input == null || input.getWorkOrders() == null || input.getStartDate() == null
             || !input.getStartDate().equals(snapshot.snapshotAt().toLocalDate())
             || input.getHorizonDays() != horizonDays || input.getStrategy() != strategy
@@ -220,7 +220,20 @@ public class ErpDecisionApsSimulation {
         }
         usedInputs.put(strategy, input);
         validateScopedFacts(snapshot, input, horizonDays);
-        ScheduleResult scheduled = PrdScheduleEngine.schedule(input);
+        ScheduleResult scheduled;
+        try {
+            scheduled = PrdScheduleEngine.schedule(input);
+        } catch (PrdScheduleEngine.CapacityHorizonExceededException insufficient) {
+            /** 不得让推测的完工日期或利用率进入 AI 决策。 */
+            warnings.add("INSUFFICIENT_CAPACITY_WITHIN_HORIZON");
+            ShortageSimulationResult shortage = simulateShortage(snapshot, horizonDays, Map.of(), warnings);
+            LinkedHashSet<String> reasons = new LinkedHashSet<>();
+            reasons.add("SCHEDULE_INCOMPLETE");
+            addMaterialReasons(shortage, reasons);
+            return new DecisionScenario(code, code, strategy.name(), false, List.copyOf(reasons), null,
+                null, 0, Map.of(), evidence(snapshot, shortage), List.of(),
+                hashInput(snapshot, input, code, horizonDays, Map.of()), List.of(), List.of());
+        }
         List<ScheduledTask> tasks = scheduled.getTasks();
         TreeMap<Long, LocalDate> ends = new TreeMap<>();
         List<Map<String, Object>> preview = new ArrayList<>();
@@ -266,7 +279,7 @@ public class ErpDecisionApsSimulation {
     private DecisionScenario expedite(DeliveryContextSnapshot snapshot, DecisionScenario cr,
                                       int horizonDays, Set<String> warnings, ScheduleInput crInput) {
         String code = "APS_CR_EXPEDITE";
-        if (cr.kpis() == null) {
+        if (cr.kpis() == null && !cr.infeasibleReasons().contains("SCHEDULE_INCOMPLETE")) {
             return copyExpedite(cr, List.of("SHORTAGE_UNKNOWN"), Map.of(),
                 expediteHash(snapshot, crInput, horizonDays, Map.of()), cr.evidenceKeys());
         }
@@ -292,6 +305,10 @@ public class ErpDecisionApsSimulation {
         }
         if (overridesByLine.isEmpty()) return copyExpedite(cr,
             List.of("NO_EXPEDITABLE_PURCHASE_LINE"), Map.of(), expediteHash(snapshot, crInput, horizonDays, Map.of()), cr.evidenceKeys());
+        if (cr.kpis() == null) {
+            return copyExpedite(cr, List.of("SCHEDULE_INCOMPLETE"), Map.of(),
+                expediteHash(snapshot, crInput, horizonDays, Map.of()), cr.evidenceKeys());
+        }
         Map<String, String> datesByLine = new LinkedHashMap<>();
         overridesByLine.forEach((id, date) -> datesByLine.put(String.valueOf(id), date));
         Map<String, Object> overrides = Map.of("purchaseArrivalOverrides", datesByLine);
@@ -309,10 +326,10 @@ public class ErpDecisionApsSimulation {
             changed.riskMaterialCount(), changed.totalGap(),
             changed.earliestShortageDate() == null ? null : changed.earliestShortageDate().toString(),
             old.maxResourceUtilization(), old.overloadedResourceCount(), old.changedWorkOrderCount(),
-            // 策略 v1 的代理成本：每条变动采购行计一个单位，不是货币报价。
+            /** 策略 v1 的代理成本：每条变动采购行计一个单位，不是货币报价。 */
             BigDecimal.valueOf(datesByLine.size()))
             : null;
-        // 使用完全相同的输入计算 CR 哈希，仅允许覆盖值变化。
+        /** 使用完全相同的输入计算 CR 哈希，仅允许覆盖值变化。 */
         String hash = expediteHash(snapshot, crInput, horizonDays, overrides);
         return new DecisionScenario(code, code, "CR", reasons.isEmpty(), List.copyOf(reasons), changedKpis,
             null, 0, overrides, evidence(snapshot, changed), cr.schedulePreview(), hash,

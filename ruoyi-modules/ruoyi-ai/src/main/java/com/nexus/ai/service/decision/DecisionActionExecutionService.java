@@ -62,8 +62,11 @@ public class DecisionActionExecutionService {
             if (!"APPROVED".equals(action.getApprovalStatus()) || !"FAILED".equals(action.getExecutionStatus()))
                 throw new ServiceException("只有已经批准且失败的动作可重试");
             var run = persistence.requireRun(action.getRunId(), actor.tenantId());
-            // 终态运行保持不可变；终态上的动作失败必须重新分析，
-            // 不得原地改写，否则会伪造运行与结果状态。
+            DecisionPurchaseContractGuard.requireExecutable(run, action);
+            /**
+             * 终态运行保持不可变；终态上的动作失败必须重新分析，
+             * 不得原地改写，否则会伪造运行与结果状态。
+             */
             if (!"EXECUTING".equals(run.getStatus()))
                 throw new ServiceException("运行已结束；请重新分析后执行，不可原地重试动作");
             executeOne(action, actor, true);
@@ -79,6 +82,8 @@ public class DecisionActionExecutionService {
             List<AiDecisionAction> approved = persistence.listActions(runId).stream()
                 .filter(a -> "APPROVED".equals(a.getApprovalStatus())).toList();
             if (approved.isEmpty()) throw new ServiceException("运行没有已批准的动作");
+            for (AiDecisionAction action : approved)
+                DecisionPurchaseContractGuard.requireExecutable(run, action);
             List<AiDecisionAction> ordered = order(approved);
             for (AiDecisionAction action : ordered) validateAction(action, actor);
             persistence.transition(runId, DecisionRunStatus.APPROVED, DecisionRunStatus.EXECUTING);
@@ -94,7 +99,7 @@ public class DecisionActionExecutionService {
                 if (outcome == ExecutionOutcome.SUCCESS) succeeded.add(action.getId());
                 else if (outcome == ExecutionOutcome.FAILED) failures++;
                 else {
-                    // 不得将此前成功动作误称为已回滚。
+                    /** 不得将此前成功动作误称为已回滚。 */
                     boolean allCompensated = outcome == ExecutionOutcome.COMPENSATED && succeeded.isEmpty();
                     for (AiDecisionAction later : ordered.subList(ordered.indexOf(action) + 1, ordered.size()))
                         persistence.transitionAction(later.getId(), "APPROVED", "NOT_STARTED", "SKIPPED");
@@ -117,7 +122,7 @@ public class DecisionActionExecutionService {
             || !type.permissionCode().equals(row.getPermissionCode())
             || !hasLivePermission(actor, type.permissionCode()))
             throw new ServiceException("动作执行器或当前操作人权限无效");
-        proposal(row, type); // 修改运行前先反序列化并验证冻结载荷。
+        proposal(row, type); /** 修改运行前先反序列化并验证冻结载荷。 */
     }
 
     private enum ExecutionOutcome { SUCCESS, FAILED, COMPENSATED, COMPENSATION_FAILED }
@@ -132,6 +137,9 @@ public class DecisionActionExecutionService {
             throw new ServiceException("动作缺少可信执行器或权限配置");
         if (!hasLivePermission(actor, type.permissionCode()))
             throw new ServiceException("执行人缺少此动作所需权限");
+        if (type == DecisionActionType.CREATE_PURCHASE_REQUISITION_DRAFT)
+            DecisionPurchaseContractGuard.requireExecutable(
+                persistence.requireRun(row.getRunId(), actor.tenantId()), row);
         var action = proposal(row, type);
         persistence.transitionAction(row.getId(), "APPROVED", retryFailed ? "FAILED" : "NOT_STARTED", "EXECUTING");
         DecisionActionExecutionResult result = null;
@@ -150,7 +158,7 @@ public class DecisionActionExecutionService {
                             performed.resultBizId(), performed.resultBizCode(), Map.of(), "VERIFY_FAILED",
                             "业务草稿独立核验失败");
                     }
-                    if (result == null || !result.success()) break; // 成功写入后不得再次创建草稿。
+                    if (result == null || !result.success()) break; /** 成功写入后不得再次创建草稿。 */
                     createdButUnverified = null;
                 } else result = performed;
                 if (result != null && result.success()) break;
@@ -176,8 +184,10 @@ public class DecisionActionExecutionService {
         if (events != null) events.sendActionStatus(actor.userId(), row.getRunId(), row.getId(),
             result.success() ? "SUCCEEDED" : "FAILED");
         if (createdButUnverified == null) return result.success() ? ExecutionOutcome.SUCCESS : ExecutionOutcome.FAILED;
-        // ERP 草稿已创建但独立核验失败时，停止所有后续动作，
-        // 进入可审计回滚状态，并交由 ERP 仅限草稿的补偿护栏处理。
+        /**
+         * ERP 草稿已创建但独立核验失败时，停止所有后续动作，
+         * 进入可审计回滚状态，并交由 ERP 仅限草稿的补偿护栏处理。
+         */
         persistence.transition(row.getRunId(), DecisionRunStatus.EXECUTING, DecisionRunStatus.ROLLING_BACK);
         persistence.transitionAction(row.getId(), "APPROVED", "FAILED", "COMPENSATING");
         DecisionActionExecutionResult compensation;
@@ -242,7 +252,7 @@ public class DecisionActionExecutionService {
 
     private boolean hasLivePermission(DecisionActor actor, String code) {
         if (!actor.permissions().contains(code) && !actor.permissions().contains("*:*:*")) return false;
-        if (permissionService == null) return true; // 仅供隔离单元测试使用的构造器。
+        if (permissionService == null) return true; /** 仅供隔离单元测试使用的构造器。 */
         try {
             Set<String> current = TenantHelper.dynamic(actor.tenantId(),
                 () -> permissionService.getMenuPermission(actor.userId()));

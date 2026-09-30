@@ -65,12 +65,16 @@ public class ErpDecisionActionExecutor {
     private final IPrdScheduleService scheduleService;
     private final PrdSchedulePlanMapper planMapper;
     private final DecisionPurchaseDraftEnricher purchaseEnricher;
+    private final ErpDecisionPurchaseGate purchaseGate;
 
     @Transactional(rollbackFor = Exception.class)
     public DecisionActionExecutionResult execute(DecisionActionProposal action, DecisionActor actor) {
         validateCommon(action, actor);
         return switch (action.actionType()) {
-            case CREATE_PURCHASE_REQUISITION_DRAFT -> executePurchase(action, actor);
+            case CREATE_PURCHASE_REQUISITION_DRAFT -> {
+                purchaseGate.require(action, actor);
+                yield executePurchase(action, actor);
+            }
             case CREATE_SCHEDULE_PLAN_DRAFT -> executeSchedule(action, actor);
             default -> throw new ServiceException("不支持的ERP决策动作: " + action.actionType());
         };
@@ -441,7 +445,7 @@ public class ErpDecisionActionExecutor {
             if (match < 0) return false;
             remaining.remove(match);
         }
-        // 缺失可选名称时，仅在服务端主数据快照独立核验后接受补充值。
+        /** 缺失可选名称时，仅在服务端主数据快照独立核验后接受补充值。 */
         return remaining.isEmpty();
     }
 

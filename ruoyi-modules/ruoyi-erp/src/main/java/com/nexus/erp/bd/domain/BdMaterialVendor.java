@@ -1,5 +1,6 @@
 package com.nexus.erp.bd.domain;
 
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
@@ -120,6 +121,39 @@ public class BdMaterialVendor extends TenantEntity {
      * 预留字段4
      */
     private Long attr4;
+
+    /** 经业务核验的订购单位；历史供应商条款不得推断。 */
+    @TableField("order_uom_id")
+    private Long orderUomId;
+
+    /** 经业务核验的 MOQ，不从 minOrderQty 自动回填。 */
+    @TableField("verified_moq_qty")
+    private BigDecimal verifiedMoqQty;
+
+    @TableField("moq_uom_id")
+    private Long moqUomId;
+
+    @TableField("order_multiple")
+    private BigDecimal orderMultiple;
+
+    /** NULL 代表未核验，不能当作允许拆零。 */
+    @TableField("allow_split")
+    private Boolean allowSplit;
+
+    @TableField("units_per_pack")
+    private BigDecimal unitsPerPack;
+
+    @TableField("terms_version")
+    private String termsVersion;
+
+    @TableField("terms_effective_at")
+    private Date termsEffectiveAt;
+
+    @TableField("terms_expires_at")
+    private Date termsExpiresAt;
+
+    @TableField("terms_verified_at")
+    private Date termsVerifiedAt;
 
     /**
      * 删除标志

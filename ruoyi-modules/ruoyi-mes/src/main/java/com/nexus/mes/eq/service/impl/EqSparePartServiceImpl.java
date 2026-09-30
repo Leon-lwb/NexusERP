@@ -33,7 +33,6 @@ import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
@@ -45,7 +44,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
- * MES备件主数据 Service 业务层实现
+ * MES 备件主数据业务层服务实现
  * <p>
  * 数据源: ry-mes 库；ERP 只读查询经 {@code DynamicDataSourceContextHolder.push("erp")} 切换。
  * <p>
@@ -70,9 +69,9 @@ import java.util.stream.Collectors;
  * {@link #queryErpAvailable} / {@link #queryErpMaterial} / {@link #validateErpMapping} 的公开方法
  * 不得开启事务</b>：Spring 事务开启时已按类级 {@code @DS("mes")} 把 mes 连接绑定到线程，
  * 之后再 {@code push("erp")} 不会重新路由（{@code DataSourceUtils.getConnection} 复用已绑定连接），
- * 查询会打到 {@code ry-mes} 并报 {@code Table 'ry-mes.bd_material' doesn't exist}。
+ * 查询会打到 {@code ry-mes} 并报“表 {@code ry-mes.bd_material} 不存在”。
  * 故 {@link #insertByBo} / {@link #updateByBo} / {@link #backfillWarehouse} <b>刻意不加</b>
- * {@code @Transactional}（各自只有一条写语句，单语句本身原子；备件编码唯一性由 DB 唯一键
+ * {@code @Transactional}（各自只有一条写语句，单语句本身原子；备件编码唯一性由 数据库唯一键
  * {@code uk_tenant_code(tenant_id, spare_code)} 兜底）。
  * 防回归断言见 {@code EqSparePartServiceImplTest#erpCrossDbReadMethodsMustNotBeTransactional}。
  *
@@ -90,8 +89,6 @@ public class EqSparePartServiceImpl implements IEqSparePartService {
     private static final String BASIS_NOT_MAPPED = "NOT_MAPPED";
     /** 低库存判定口径: ERP 不可达, 降级用 MES 派生缓存 */
     private static final String BASIS_ERP_UNAVAILABLE = "ERP_UNAVAILABLE";
-    /** ERP 过账单号前缀(采购建议) */
-    private static final String PR_BIZ_KEY_PREFIX = "EQSP-PR:";
     /** 过账幂等键前缀 */
     private static final String BIZ_KEY_PREFIX = "EQSP:";
 
@@ -162,20 +159,20 @@ public class EqSparePartServiceImpl implements IEqSparePartService {
      * 新增备件零件
      * <p><b>刻意不加 {@code @Transactional}</b>：本方法会经 {@link #validateErpMapping} 做跨库 ERP 只读
      * （{@code push("erp")}），事务开启后连接已绑定 {@code mes} 数据源，跨库读会失效；且本方法只有
-     * 一条写语句（{@code insert}），单语句自身原子。详见类 javadoc「跨库只读与事务互斥」。</p>
+     * 一条写语句（{@code insert}），单语句自身原子。详见类文档「跨库只读与事务互斥」。</p>
      *
      * @param bo 业务对象（含筛选条件/字段值）
      * @return 返回结果
      */
     @Override
     public EqSparePartVo insertByBo(EqSparePartBo bo) {
-        // 校验编码唯一
+        /** 校验编码唯一 */
         Long cnt = baseMapper.selectCount(Wrappers.<EqSparePart>lambdaQuery()
             .eq(EqSparePart::getSpareCode, bo.getSpareCode()));
         if (cnt != null && cnt > 0) {
             throw new ServiceException("备件编码已存在: " + bo.getSpareCode());
         }
-        // MES-EQ-04: 映射维护 —— 校验 ERP 物料存在且启用、仓库存在
+        /** MES-EQ-04: 映射维护 —— 校验 ERP 物料存在且启用、仓库存在 */
         validateErpMapping(bo.getMaterialId(), bo.getWarehouseId());
         EqSparePart spare = new EqSparePart();
         spare.setSpareCode(bo.getSpareCode());
@@ -188,7 +185,7 @@ public class EqSparePartServiceImpl implements IEqSparePartService {
         spare.setCurrentStock(BigDecimal.ZERO);
         spare.setMaterialId(bo.getMaterialId());
         spare.setWarehouseId(bo.getWarehouseId());
-        // 备件参考单价(成本口径): 主数据人工维护, 缺省 0; 出入库过账单价一律服务端读库填充
+        /** 备件参考单价(成本口径): 主数据人工维护, 缺省 0; 出入库过账单价一律服务端读库填充 */
         spare.setUnitCost(bo.getUnitCost() != null ? bo.getUnitCost() : BigDecimal.ZERO);
         spare.setRemark(bo.getRemark());
         baseMapper.insert(spare);
@@ -236,7 +233,7 @@ public class EqSparePartServiceImpl implements IEqSparePartService {
         if (ids == null || ids.length == 0) {
             return false;
         }
-        // 校验库存为0才允许删除
+        /** 校验库存为0才允许删除 */
         List<EqSparePartVo> list = baseMapper.selectVoList(Wrappers.<EqSparePart>lambdaQuery()
             .in(EqSparePart::getSpareId, Arrays.asList(ids)));
         for (EqSparePartVo v : list) {
@@ -268,11 +265,11 @@ public class EqSparePartServiceImpl implements IEqSparePartService {
             throw new ServiceException("备件不存在: " + bo.getSpareId());
         }
         BigDecimal qty = bo.getQuantity();
-        // 数量校验：必须非空且大于 0，防止 null 触发 NPE、负值绕过防超卖/反向加库存
+        /** 数量校验：必须非空且大于 0，防止 null 触发 NPE、负值绕过防超卖/反向加库存 */
         if (qty == null || qty.signum() <= 0) {
             throw new ServiceException("备件出入库数量必须大于0");
         }
-        // MES-EQ-04: 映射缺失时行为明确 —— 拒绝并提示, 不静默只改 MES 台账
+        /** MES-EQ-04: 映射缺失时行为明确 —— 拒绝并提示, 不静默只改 MES 台账 */
         assertErpMapping(spare);
 
         boolean inbound = TXN_IN.equals(type) || TXN_RETURN.equals(type);
@@ -285,7 +282,7 @@ public class EqSparePartServiceImpl implements IEqSparePartService {
                 .setSql("current_stock = current_stock + {0}", qty.toPlainString())
                 .eq(EqSparePart::getSpareId, bo.getSpareId()));
         } else {
-            // OUT / REPAIR_USE: 防超卖
+            /** OUT / REPAIR_USE: 防超卖 */
             computedAfter = before.subtract(qty);
             rows = baseMapper.update(null, Wrappers.<EqSparePart>lambdaUpdate()
                 .setSql("current_stock = current_stock - {0}", qty.toPlainString())
@@ -295,12 +292,14 @@ public class EqSparePartServiceImpl implements IEqSparePartService {
         if (rows == 0) {
             throw new ServiceException("库存不足, 当前库存: " + before + ", 需扣减: " + qty);
         }
-        // 回读落库后的实际库存作为流水基准(MES-EQ-14): 原子 SQL 只保证"增量"正确,
-        // 而 before/after 由 Java 先算, 在并发出入库下会与实际 current_stock 漂移。
+        /**
+         * 回读落库后的实际库存作为流水基准(MES-EQ-14): 原子 SQL 只保证"增量"正确,
+         * 而 before/after 由 Java 先算, 在并发出入库下会与实际 current_stock 漂移。
+         */
         BigDecimal actualAfter = readCurrentStock(bo.getSpareId());
         BigDecimal after = actualAfter == null ? computedAfter : actualAfter;
         BigDecimal beforeQty = inbound ? after.subtract(qty) : after.add(qty);
-        // 写流水
+        /** 写流水 */
         EqSpareStockLog logEntry = new EqSpareStockLog();
         logEntry.setSpareId(bo.getSpareId());
         logEntry.setSpareCode(spare.getSpareCode());
@@ -316,10 +315,10 @@ public class EqSparePartServiceImpl implements IEqSparePartService {
         logEntry.setOperateTime(new Date());
         logEntry.setRemark(bo.getRemark());
         stockLogMapper.insert(logEntry);
-        // MES-EQ-04: 同事务写 ERP 过账同步台账(业务幂等键 = EQSP:<tenantId>:<logId>)
+        /** MES-EQ-04: 同事务写 ERP 过账同步台账(业务幂等键 = {@code EQSP:<tenantId>:<logId>}) */
         EqSpareErpSync sync = buildSync(spare, logEntry, type, qty, bo);
         erpSyncMapper.insert(sync);
-        // 事务提交后投递: 避免回滚产生"幻影过账", 投递失败落 FAILED 并保留失败原因
+        /** 事务提交后投递: 避免回滚产生"幻影过账", 投递失败落 FAILED 并保留失败原因 */
         publishAfterCommit(sync);
         log.info("备件出入库: spareId={}, type={}, qty={}, before={}, after={}, bizKey={}",
             bo.getSpareId(), type, qty, beforeQty, after, sync.getBizKey());
@@ -378,70 +377,19 @@ public class EqSparePartServiceImpl implements IEqSparePartService {
     }
 
     /**
-     * 低库存一键生成 ERP 采购申请
+     * 低库存自动申请尚未接入 ERP 逐来源占用账，服务端暂停消息投递
      *
      * @param spareIds 备件ID集合；为空时取当前全部低库存备件
      * @param remark   备注
-     * @return 提交的请购行数
+     * @throws ServiceException 来源占用尚不可用时拒绝请购
      */
     @Override
     public int generatePurchaseRequest(List<Long> spareIds, String remark) {
-        List<EqSparePartVo> spares;
-        if (spareIds == null || spareIds.isEmpty()) {
-            spares = selectLowStock();
-        } else {
-            spares = baseMapper.selectVoList(Wrappers.<EqSparePart>lambdaQuery()
-                .in(EqSparePart::getSpareId, spareIds));
-            fillErpStock(spares);
-        }
-        if (spares.isEmpty()) {
-            throw new ServiceException("没有可生成采购申请的备件(低库存列表为空)");
-        }
-        List<Map<String, Object>> lines = new ArrayList<>();
-        List<String> unmapped = new ArrayList<>();
-        for (EqSparePartVo v : spares) {
-            if (v.getMaterialId() == null) {
-                unmapped.add(v.getSpareCode());
-                continue;
-            }
-            BigDecimal available = v.getErpAvailableStock() == null ? BigDecimal.ZERO : v.getErpAvailableStock();
-            BigDecimal safety = v.getSafetyStock() == null ? BigDecimal.ZERO : v.getSafetyStock();
-            BigDecimal apply = safety.subtract(available);
-            if (apply.signum() <= 0) {
-                apply = safety;
-            }
-            Map<String, Object> material = queryErpMaterial(v.getMaterialId());
-            Map<String, Object> line = new LinkedHashMap<>();
-            line.put("materialId", v.getMaterialId());
-            line.put("materialCode", material == null ? v.getSpareCode() : material.get("materialCode"));
-            line.put("materialName", material == null ? v.getSpareName() : material.get("materialName"));
-            line.put("unit", v.getUnit());
-            line.put("applyQuantity", apply);
-            line.put("spareId", v.getSpareId());
-            line.put("spareCode", v.getSpareCode());
-            lines.add(line);
-        }
-        if (!unmapped.isEmpty()) {
-            throw new ServiceException("以下备件未映射 ERP 物料, 无法生成采购申请: " + String.join(",", unmapped));
-        }
-        if (lines.isEmpty()) {
-            throw new ServiceException("没有可生成采购申请的备件行");
-        }
-        String tenantId = currentTenantId();
-        Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("bizType", "SPARE_PURCHASE");
-        payload.put("tenantId", tenantId);
-        payload.put("bizKey", PR_BIZ_KEY_PREFIX + tenantId + ":" + System.currentTimeMillis());
-        payload.put("remark", StringUtils.isNotBlank(remark) ? remark : "MES 备件低库存自动请购");
-        payload.put("lines", lines);
-        try {
-            erpMqPublisher.publish(payload);
-        } catch (Exception e) {
-            log.error("备件采购申请消息投递失败: lines={}", lines.size(), e);
-            throw new ServiceException("采购申请消息投递失败, 请稍后重试: " + e.getMessage());
-        }
-        log.info("已提交备件采购申请生成请求: 行数={}, tenantId={}", lines.size(), tenantId);
-        return lines.size();
+        /**
+         * 与 ERP 申请行共用物料护栏/逐需求占用账之前，不得异步返回“已提交”
+         * 却在消费者里无来源创建草稿；无需读取库存或向 MQ 发布采购消息。
+         */
+        throw new ServiceException("备件低库存自动请购已暂停：采购需求来源占用尚未核验，请在 ERP 人工关联需求后办理");
     }
 
     /**
@@ -472,7 +420,7 @@ public class EqSparePartServiceImpl implements IEqSparePartService {
         if (SYNC_SYNCED.equals(sync.getSyncStatus())) {
             return true;
         }
-        // 先对账: ERP 已落账则直接确认, 避免重复过账
+        /** 先对账: ERP 已落账则直接确认, 避免重复过账 */
         if (countErpPosting(sync.getBizKey()) > 0) {
             markSync(sync, SYNC_SYNCED, null);
             refreshDerivedStock(sync);
@@ -503,7 +451,7 @@ public class EqSparePartServiceImpl implements IEqSparePartService {
      * （{@code status = 1 AND del_flag = '0'} 且同租户）。</p>
      * <p><b>刻意不加 {@code @Transactional}</b>：方法内含跨库 ERP 只读（{@code push("erp")}），
      * 事务开启后连接已绑定 {@code mes}，push 不生效会打到 {@code ry-mes} 报
-     * {@code Table 'ry-mes.wm_warehouse' doesn't exist}；且只有一条 UPDATE，单语句自身原子。</p>
+     * “表 {@code ry-mes.wm_warehouse} 不存在”；且只有一条 UPDATE，单语句自身原子。</p>
      *
      * @return 影响行数
      */
@@ -519,7 +467,7 @@ public class EqSparePartServiceImpl implements IEqSparePartService {
             throw new ServiceException("nexus.mes.eq.spare.default-warehouse-id 配置非法(需为仓库ID数字): "
                 + defaultWarehouseId);
         }
-        // 跨库只读校验: 仓库存在且启用(否则回填后过账会打到已停用仓库)
+        /** 跨库只读校验: 仓库存在且启用(否则回填后过账会打到已停用仓库) */
         long enabled;
         try {
             DynamicDataSourceContextHolder.push("erp");
@@ -574,13 +522,13 @@ public class EqSparePartServiceImpl implements IEqSparePartService {
         for (EqSparePartVo v : list) {
             BigDecimal safe = v.getSafetyStock() == null ? BigDecimal.ZERO : v.getSafetyStock();
             if (v.getMaterialId() == null) {
-                // 未映射: 无法判定 ERP 可用量, 显式提示而非静默用 MES 旧账
+                /** 未映射: 无法判定 ERP 可用量, 显式提示而非静默用 MES 旧账 */
                 v.setErpMapped(false);
                 v.setErpAvailableStock(null);
                 v.setLowStockBasis(BASIS_NOT_MAPPED);
                 v.setLowStock(true);
             } else if (available == null) {
-                // ERP 不可达: 降级用 MES 派生缓存, 并显式标注口径
+                /** ERP 不可达: 降级用 MES 派生缓存, 并显式标注口径 */
                 BigDecimal cur = v.getCurrentStock() == null ? BigDecimal.ZERO : v.getCurrentStock();
                 v.setErpMapped(true);
                 v.setErpAvailableStock(null);
@@ -600,7 +548,7 @@ public class EqSparePartServiceImpl implements IEqSparePartService {
      * 查询 ERP 可用量（按物料汇总，在库 − 已预留，且 frozen_flag = 0）
      * <p><b>⚠ 调用方不得处于事务中</b>：本方法用 {@code DynamicDataSourceContextHolder.push("erp")}
      * 编程式切库，事务开启时连接已按类级 {@code @DS("mes")} 绑定到线程，push 不会重新路由，
-     * 查询会打到 {@code ry-mes} 报 {@code Table 'ry-mes.wm_material_stock' doesn't exist}。</p>
+     * 查询会打到 {@code ry-mes} 报“表 {@code ry-mes.wm_material_stock} 不存在”。</p>
      *
      * @param materialIds 物料ID集合
      * @return 物料 → 可用量；ERP 不可达时返回 {@code null}（调用方降级并显式标注口径）
@@ -655,7 +603,7 @@ public class EqSparePartServiceImpl implements IEqSparePartService {
     /**
      * 校验 ERP 物料/仓库映射（存在 + 物料状态启用）
      * <p><b>⚠ 调用方不得处于事务中</b>（同 {@link #queryErpAvailable}）：
-     * 事务内 {@code push("erp")} 失效，会报 {@code Table 'ry-mes.bd_material' doesn't exist}。
+     * 事务内 {@code push("erp")} 失效，会报“表 {@code ry-mes.bd_material} 不存在”。
      * 防回归断言见 {@code EqSparePartServiceImplTest#erpCrossDbReadMethodsMustNotBeTransactional}。</p>
      *
      * @param materialId  ERP 物料ID(可空)
@@ -721,7 +669,7 @@ public class EqSparePartServiceImpl implements IEqSparePartService {
                                      BigDecimal qty, EqSpareStockBo bo) {
         String tenantId = currentTenantId();
         EqSpareErpSync sync = new EqSpareErpSync();
-        // 幂等键优先用雪花流水ID; 极少数主键策略未回填时退化为 备件ID+纳秒 兜底(仍唯一)
+        /** 幂等键优先用雪花流水ID; 极少数主键策略未回填时退化为 备件ID+纳秒 兜底(仍唯一) */
         String suffix = logEntry.getLogId() != null
             ? String.valueOf(logEntry.getLogId())
             : spare.getSpareId() + "-" + System.nanoTime();
@@ -800,8 +748,10 @@ public class EqSparePartServiceImpl implements IEqSparePartService {
         payload.put("warehouseId", spare.getWarehouseId());
         payload.put("transactionType", sync.getTransactionType());
         payload.put("quantity", sync.getQuantity());
-        // 成本计价(MES-EQ-04 收口): 单价由服务端从 eq_spare_part.unit_cost 读取(此处的 spare 即库中读出的视图),
-        // 绝不采信客户端传入的单价; 为空/≤0 时 ERP 侧跳过移动平均并记 WARN
+        /**
+         * 成本计价(MES-EQ-04 收口): 单价由服务端从 eq_spare_part.unit_cost 读取(此处的 spare 即库中读出的视图),
+         * 绝不采信客户端传入的单价; 为空/≤0 时 ERP 侧跳过移动平均并记 WARN
+         */
         payload.put("unitCost", spare.getUnitCost());
         payload.put("refType", sync.getRefType());
         payload.put("refId", sync.getRefId());
@@ -879,7 +829,7 @@ public class EqSparePartServiceImpl implements IEqSparePartService {
             String tenantId = TenantHelper.getTenantId();
             return StringUtils.isNotBlank(tenantId) ? tenantId : "000000";
         } catch (Throwable e) {
-            // 无租户上下文(定时/MQ/单测)时 Sa-Token 取用户会抛异常, 退化为系统租户(与租户插件默认一致)
+            /** 无租户上下文(定时/MQ/单测)时 Sa-Token 取用户会抛异常, 退化为系统租户(与租户插件默认一致) */
             return "000000";
         }
     }

@@ -76,6 +76,14 @@ public class DecisionApprovalService {
             || !Objects.equals(request.getExpectedSnapshotHash(), run.getInputSnapshotHash())
             || request.getApprovedActionIds() == null || request.getRejectedActionIds() == null)
             throw new ServiceException("审批版本、决策状态或快照不匹配");
+        /** 先只读检查选中批准的采购动作；freshness 可能写 STALE，必须在它之前拒绝旧合同。 */
+        List<AiDecisionAction> actions = persistence.listActions(id);
+        if (actions == null) throw new ServiceException("审批动作不存在，须重新分析");
+        for (AiDecisionAction action : actions) {
+            if (action == null) throw new ServiceException("审批动作不存在，须重新分析");
+            if (request.getApprovedActionIds().contains(action.getId()))
+                DecisionPurchaseContractGuard.requireExecutable(run, action);
+        }
         DecisionBusinessRef ref = new DecisionBusinessRef(DecisionBusinessType.valueOf(run.getBizType()),
             run.getBizId(), run.getBizCode());
         if (!dataPort.canAccess(ref, actor)) throw new ServiceException("业务访问权限已失效");
@@ -85,7 +93,6 @@ public class DecisionApprovalService {
             persistence.transition(id, DecisionRunStatus.WAITING_APPROVAL, DecisionRunStatus.STALE);
             throw new ServiceException("源业务数据已变化，须重新分析后审批");
         }
-        List<AiDecisionAction> actions = persistence.listActions(id);
         Set<Long> approved = new HashSet<>(request.getApprovedActionIds());
         Set<Long> rejected = new HashSet<>(request.getRejectedActionIds());
         if (approved.size() != request.getApprovedActionIds().size()
@@ -110,7 +117,7 @@ public class DecisionApprovalService {
                     approved.contains(action.getId()) ? "APPROVED" : "REJECTED", actor, request.getComment());
             }
             persistence.transition(id, DecisionRunStatus.WAITING_APPROVAL, DecisionRunStatus.APPROVED);
-        }); // 异步执行线程读取运行前，必须先提交审批事务。
+        }); /** 异步执行线程读取运行前，必须先提交审批事务。 */
         DecisionWorkflowStartCommand command = new DecisionWorkflowStartCommand(id,
             "system_delivery_risk_execution", actor.tenantId(), actor.userId(), actor.userName(),
             Map.of("runId", String.valueOf(id)));
@@ -178,7 +185,7 @@ public class DecisionApprovalService {
     }
 
     private void atomic(Runnable body) {
-        if (transaction == null) body.run(); // 仅供隔离单元测试使用的构造器。
+        if (transaction == null) body.run(); /** 仅供隔离单元测试使用的构造器。 */
         else transaction.executeWithoutResult(ignored -> body.run());
     }
 
@@ -191,7 +198,7 @@ public class DecisionApprovalService {
     private void requirePermission(DecisionActor actor, String code) {
         if (!actor.permissions().contains(code) && !actor.permissions().contains("*:*:*"))
             throw new ServiceException("决策操作权限不足");
-        if (permissionService == null) return; // 仅供隔离单元测试使用的构造器。
+        if (permissionService == null) return; /** 仅供隔离单元测试使用的构造器。 */
         try {
             Set<String> live = TenantHelper.dynamic(actor.tenantId(),
                 () -> permissionService.getMenuPermission(actor.userId()));

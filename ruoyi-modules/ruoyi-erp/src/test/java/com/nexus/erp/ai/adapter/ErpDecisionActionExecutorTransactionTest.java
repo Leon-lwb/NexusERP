@@ -132,7 +132,8 @@ class ErpDecisionActionExecutorTransactionTest {
                                            IPrdScheduleService scheduleService,
                                            PrdSchedulePlanMapper planMapper) {
             return new ErpDecisionActionExecutor(purchaseService, scheduleService, planMapper,
-                Mockito.mock(DecisionPurchaseDraftEnricher.class));
+                Mockito.mock(DecisionPurchaseDraftEnricher.class),
+                Mockito.mock(ErpDecisionPurchaseGate.class));
         }
     }
 }

@@ -89,7 +89,7 @@ class EqSparePartServiceImplTest {
 
     @Test
     void stockTransactionOutDeductsFromCurrentStockWithOversellGuard() {
-        // stockTransaction 现按 selectVoById 读当前库存余额, 更新走 setSql 原子加减+防超卖守卫
+        /** stockTransaction 现按 selectVoById 读当前库存余额, 更新走 setSql 原子加减+防超卖守卫 */
         EqSparePartVo spare = mappedSpare(new BigDecimal("10"));
         when(sparePartMapper.selectVoById(1L)).thenReturn(spare);
         when(sparePartMapper.update(any(), any())).thenReturn(1);
@@ -97,7 +97,7 @@ class EqSparePartServiceImplTest {
         BigDecimal balance = service.stockTransaction(request("OUT", "3"));
 
         assertEquals(0, new BigDecimal("7").compareTo(balance));
-        // selectVoById 被调用两次: 出入库入口一次 + 事务提交后组装消息体一次
+        /** selectVoById 被调用两次: 出入库入口一次 + 事务提交后组装消息体一次 */
         verify(sparePartMapper, atLeastOnce()).selectVoById(1L);
     }
 
@@ -106,7 +106,7 @@ class EqSparePartServiceImplTest {
         EqSparePartVo spare = mappedSpare(new BigDecimal("10"));
         when(sparePartMapper.selectVoById(1L)).thenReturn(spare);
         when(sparePartMapper.update(any(), any())).thenReturn(1);
-        // 并发场景: 本事务原子扣减 3 后, 实际库存已是 5(另一笔出库先扣了 2)
+        /** 并发场景: 本事务原子扣减 3 后, 实际库存已是 5(另一笔出库先扣了 2) */
         EqSparePart actual = new EqSparePart();
         actual.setSpareId(1L);
         actual.setCurrentStock(new BigDecimal("5"));
@@ -114,12 +114,12 @@ class EqSparePartServiceImplTest {
 
         BigDecimal balance = service.stockTransaction(request("OUT", "3"));
 
-        // 修复前: Java 先算 before/after(10/7), 与实际库存 5 不符
+        /** 修复前: Java 先算 before/after(10/7), 与实际库存 5 不符 */
         assertEquals(0, new BigDecimal("5").compareTo(balance));
         ArgumentCaptor<EqSpareStockLog> captor = ArgumentCaptor.forClass(EqSpareStockLog.class);
         verify(stockLogMapper).insert(captor.capture());
         assertEquals(0, new BigDecimal("5").compareTo(captor.getValue().getAfterQty()));
-        // 出库: before = after + qty → 流水自洽(after - before == -qty)
+        /** 出库: before = after + qty → 流水自洽(after - before == -qty) */
         assertEquals(0, new BigDecimal("8").compareTo(captor.getValue().getBeforeQty()));
     }
 
@@ -139,7 +139,7 @@ class EqSparePartServiceImplTest {
         assertEquals(0, new BigDecimal("10").compareTo(captor.getValue().getBeforeQty()));
     }
 
-    // ==================== MES-EQ-04: 出入库走 ERP ====================
+    /** ==================== MES-EQ-04: 出入库走 ERP ==================== */
 
     @Test
     void stockTransactionPublishesErpPostingWithStableIdempotentBizKey() {
@@ -147,7 +147,7 @@ class EqSparePartServiceImplTest {
         when(sparePartMapper.selectVoById(1L)).thenReturn(spare);
         when(sparePartMapper.update(any(), any())).thenReturn(1);
         when(sparePartMapper.selectById(1L)).thenReturn(sparePart(new BigDecimal("7")));
-        // 模拟主键回填: 流水落库后 logId = 999
+        /** 模拟主键回填: 流水落库后 logId = 999 */
         when(stockLogMapper.insert(any(EqSpareStockLog.class))).thenAnswer(invocation -> {
             EqSpareStockLog entity = invocation.getArgument(0);
             entity.setLogId(999L);
@@ -156,7 +156,7 @@ class EqSparePartServiceImplTest {
 
         service.stockTransaction(request("REPAIR_USE", "3"));
 
-        // ① 同步台账: 业务幂等键 = EQSP:<tenantId>:<logId>
+        /** ① 同步台账: 业务幂等键 = {@code EQSP:<tenantId>:<logId>} */
         ArgumentCaptor<EqSpareErpSync> syncCaptor = ArgumentCaptor.forClass(EqSpareErpSync.class);
         verify(erpSyncMapper).insert(syncCaptor.capture());
         EqSpareErpSync sync = syncCaptor.getValue();
@@ -164,8 +164,10 @@ class EqSparePartServiceImplTest {
         assertEquals("REPAIR_USE", sync.getTransactionType());
         assertEquals(Long.valueOf(1L), sync.getMaterialId());
         assertEquals(Long.valueOf(2L), sync.getWarehouseId());
-        // 注: syncStatus 由后续 markSync 在同一对象上回写(捕获的是引用), 状态断言见下方 updateById 捕获
-        // ② 事务外(无事务上下文)立即投递, 消息体带同一幂等键与 ERP 物料/仓库
+        /**
+         * 注: syncStatus 由后续 markSync 在同一对象上回写(捕获的是引用), 状态断言见下方 updateById 捕获
+         * ② 事务外(无事务上下文)立即投递, 消息体带同一幂等键与 ERP 物料/仓库
+         */
         ArgumentCaptor<Map<String, Object>> payloadCaptor = ArgumentCaptor.forClass(Map.class);
         verify(erpMqPublisher).publish(payloadCaptor.capture());
         Map<String, Object> payload = payloadCaptor.getValue();
@@ -174,7 +176,7 @@ class EqSparePartServiceImplTest {
         assertEquals("REPAIR_USE", payload.get("transactionType"));
         assertEquals(Long.valueOf(1L), payload.get("materialId"));
         assertEquals(Long.valueOf(2L), payload.get("warehouseId"));
-        // ③ 投递成功回写 SENT
+        /** ③ 投递成功回写 SENT */
         ArgumentCaptor<EqSpareErpSync> updateCaptor = ArgumentCaptor.forClass(EqSpareErpSync.class);
         verify(erpSyncMapper).updateById(updateCaptor.capture());
         assertEquals("SENT", updateCaptor.getValue().getSyncStatus());
@@ -190,7 +192,7 @@ class EqSparePartServiceImplTest {
             () -> service.stockTransaction(request("OUT", "3")));
 
         assertTrue(exception.getMessage().contains("未映射 ERP 物料"));
-        // 映射缺失必须显式拒绝: 既不改 MES 台账, 也不留流水/同步台账/消息
+        /** 映射缺失必须显式拒绝: 既不改 MES 台账, 也不留流水/同步台账/消息 */
         verify(sparePartMapper, never()).update(any(), any());
         verifyNoInteractions(stockLogMapper, erpSyncMapper, erpMqPublisher);
     }
@@ -212,14 +214,14 @@ class EqSparePartServiceImplTest {
     void stockTransactionRejectsInsufficientStockAndLeavesNoResidue() {
         EqSparePartVo spare = mappedSpare(new BigDecimal("1"));
         when(sparePartMapper.selectVoById(1L)).thenReturn(spare);
-        // 原子扣减守卫影响 0 行 = 库存不足
+        /** 原子扣减守卫影响 0 行 = 库存不足 */
         when(sparePartMapper.update(any(), any())).thenReturn(0);
 
         ServiceException exception = assertThrows(ServiceException.class,
             () -> service.stockTransaction(request("OUT", "3")));
 
         assertTrue(exception.getMessage().contains("库存不足"));
-        // 不留半成品: 无流水、无同步台账、无 ERP 消息
+        /** 不留半成品: 无流水、无同步台账、无 ERP 消息 */
         verifyNoInteractions(stockLogMapper, erpSyncMapper, erpMqPublisher);
     }
 
@@ -238,20 +240,20 @@ class EqSparePartServiceImplTest {
 
         service.stockTransaction(request("OUT", "3"));
 
-        // 失败可见: 同步台账置 FAILED 并记录失败原因(不静默)
+        /** 失败可见: 同步台账置 FAILED 并记录失败原因(不静默) */
         ArgumentCaptor<EqSpareErpSync> updateCaptor = ArgumentCaptor.forClass(EqSpareErpSync.class);
         verify(erpSyncMapper).updateById(updateCaptor.capture());
         assertEquals("FAILED", updateCaptor.getValue().getSyncStatus());
         assertNotNull(updateCaptor.getValue().getLastError());
     }
 
-    // ==================== MES-EQ-04: 低库存读 ERP 可用量 ====================
+    /** ==================== MES-EQ-04: 低库存读 ERP 可用量 ==================== */
 
     @Test
     void selectLowStockReadsErpAvailableInsteadOfMesCache() {
-        EqSparePartVo low = mappedSpare(new BigDecimal("999"));   // MES 缓存很高, ERP 可用只有 3
+        EqSparePartVo low = mappedSpare(new BigDecimal("999"));   /** MES 缓存很高, ERP 可用只有 3 */
         low.setSafetyStock(new BigDecimal("5"));
-        EqSparePartVo enough = mappedSpare(new BigDecimal("0"));  // MES 缓存为 0, ERP 可用 10 足够
+        EqSparePartVo enough = mappedSpare(new BigDecimal("0"));  /** MES 缓存为 0, ERP 可用 10 足够 */
         enough.setSpareId(2L);
         enough.setMaterialId(2L);
         enough.setSafetyStock(new BigDecimal("5"));
@@ -291,7 +293,7 @@ class EqSparePartServiceImplTest {
         Select select = method.getAnnotation(Select.class);
         assertNotNull(select);
         String sql = String.join(" ", select.value());
-        // 可用量口径: 在库 − 已预留, 且排除冻结行(MES-EQ-04 / ERP-WM-02 / ERP-WM-09 统一口径)
+        /** 可用量口径: 在库 − 已预留, 且排除冻结行(MES-EQ-04 / ERP-WM-02 / ERP-WM-09 统一口径) */
         assertTrue(sql.contains("reserved_quantity"), sql);
         assertTrue(sql.contains("frozen_flag = 0"), sql);
         assertTrue(sql.contains("stock_quantity"), sql);
@@ -299,46 +301,24 @@ class EqSparePartServiceImplTest {
     }
 
     @Test
-    void generatePurchaseRequestRejectsUnmappedSpare() {
-        EqSparePartVo unmapped = mappedSpare(new BigDecimal("1"));
-        unmapped.setMaterialId(null);
-        when(sparePartMapper.selectVoList(any())).thenReturn(List.of(unmapped));
-
-        ServiceException exception = assertThrows(ServiceException.class,
-            () -> service.generatePurchaseRequest(List.of(1L), "test"));
-
-        assertTrue(exception.getMessage().contains("未映射 ERP 物料"));
-        verify(erpMqPublisher, never()).publish(any());
+    void generatePurchaseRequestPausesBeforeQueuingUnattributedLowStockProcurement() {
+        for (List<Long> selected : List.of(List.<Long>of(), List.of(1L))) {
+            ServiceException exception = assertThrows(ServiceException.class,
+                () -> service.generatePurchaseRequest(selected, "低库存请购"));
+            assertTrue(exception.getMessage().contains("暂停"));
+        }
+        verifyNoInteractions(sparePartMapper, erpSpareStockQueryMapper, erpMqPublisher);
     }
-
-    @Test
-    void generatePurchaseRequestPublishesPurchaseMessage() {
-        EqSparePartVo spare = mappedSpare(new BigDecimal("2"));
-        spare.setSafetyStock(new BigDecimal("10"));
-        when(sparePartMapper.selectVoList(any())).thenReturn(List.of(spare));
-        when(erpSpareStockQueryMapper.selectAvailableByMaterialIds(anyString(), any()))
-            .thenReturn(List.of(Map.<String, Object>of("materialId", 1L, "availableQty", new BigDecimal("2"))));
-        when(erpSpareStockQueryMapper.selectMaterial(anyString(), any()))
-            .thenReturn(Map.<String, Object>of("materialId", 1L, "materialCode", "M-1",
-                "materialName", "物料1", "status", 1L));
-
-        int lines = service.generatePurchaseRequest(List.of(1L), "低库存请购");
-
-        assertEquals(1, lines);
-        ArgumentCaptor<Map<String, Object>> captor = ArgumentCaptor.forClass(Map.class);
-        verify(erpMqPublisher, times(1)).publish(captor.capture());
-        assertEquals("SPARE_PURCHASE", captor.getValue().get("bizType"));
-        assertNotNull(captor.getValue().get("lines"));
-    }
-
-    // ==================== MES-EQ-04 收口: 默认仓库回填 / 成本单价 / 跨库事务防回归 ====================
+    /** ==================== MES-EQ-04 收口: 默认仓库回填 / 成本单价 / 跨库事务防回归 ==================== */
 
     @Test
     void erpCrossDbReadMethodsMustNotBeTransactional() {
-        // @DS("mes") 服务用 DynamicDataSourceContextHolder.push("erp") 做跨库只读:
-        // 事务开启时连接已按类级 @DS("mes") 绑定到线程, push 不会重新路由,
-        // 查询会打到 ry-mes 并报 Table 'ry-mes.bd_material' doesn't exist。
-        // 以下三个公开方法内含跨库只读(validateErpMapping / countEnabledWarehouse), 必须保持无事务。
+        /**
+         * 使用 {@code @DS("mes")} 的服务通过 DynamicDataSourceContextHolder.push("erp") 做跨库只读:
+         * 事务开启时连接已按类级 @DS("mes") 绑定到线程, push 不会重新路由,
+         * 查询会打到 ry-mes 并报“表 ry-mes.bd_material 不存在”。
+         * 以下三个公开方法内含跨库只读(validateErpMapping / countEnabledWarehouse), 必须保持无事务。
+         */
         for (String name : new String[]{"insertByBo", "updateByBo", "backfillWarehouse"}) {
             Method method = declaredMethod(EqSparePartServiceImpl.class, name);
             assertNull(method.getAnnotation(Transactional.class),
@@ -351,7 +331,7 @@ class EqSparePartServiceImplTest {
         ServiceException exception = assertThrows(ServiceException.class, () -> service.backfillWarehouse());
 
         assertTrue(exception.getMessage().contains("未配置 nexus.mes.eq.spare.default-warehouse-id"));
-        // 配置为空时必须先拒绝, 不得误回填任何仓库
+        /** 配置为空时必须先拒绝, 不得误回填任何仓库 */
         verifyNoInteractions(sparePartMapper, erpSpareStockQueryMapper);
     }
 
@@ -364,7 +344,7 @@ class EqSparePartServiceImplTest {
         int rows = service.backfillWarehouse();
 
         assertEquals(3, rows);
-        // 默认仓库只来自服务端配置, 端点不接受客户端传参
+        /** 默认仓库只来自服务端配置, 端点不接受客户端传参 */
         verify(erpSpareStockQueryMapper).countEnabledWarehouse(anyString(), eq(2L));
     }
 
@@ -382,7 +362,7 @@ class EqSparePartServiceImplTest {
     @Test
     void stockTransactionPublishesServerSideUnitCostIntoErpPayload() {
         EqSparePartVo spare = mappedSpare(new BigDecimal("10"));
-        // 单价只可能来自服务端读库(eq_spare_part.unit_cost): EqSpareStockBo 根本没有 unitCost 入参
+        /** 单价只可能来自服务端读库(eq_spare_part.unit_cost): EqSpareStockBo 根本没有 unitCost 入参 */
         spare.setUnitCost(new BigDecimal("12.5000"));
         when(sparePartMapper.selectVoById(1L)).thenReturn(spare);
         when(sparePartMapper.update(any(), any())).thenReturn(1);
@@ -410,7 +390,7 @@ class EqSparePartServiceImplTest {
         field.set(service, value);
     }
 
-    // ==================== 构造辅助 ====================
+    /** ==================== 构造辅助 ==================== */
 
     private EqSparePartVo mappedSpare(BigDecimal currentStock) {
         EqSparePartVo spare = new EqSparePartVo();

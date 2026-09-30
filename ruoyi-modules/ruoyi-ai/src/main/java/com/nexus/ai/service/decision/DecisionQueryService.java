@@ -11,6 +11,8 @@ import com.nexus.common.core.service.PermissionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import com.nexus.common.ai.decision.dto.DeliveryRiskRunRequest;
 import com.nexus.common.ai.decision.enums.DecisionBusinessType;
+import com.nexus.common.ai.decision.enums.DecisionActionType;
+import com.nexus.common.ai.domain.entity.AiDecisionAction;
 import com.nexus.common.ai.domain.entity.AiDecisionRun;
 import com.nexus.common.ai.domain.vo.AiDecisionRunVo;
 import com.nexus.common.ai.mapper.AiDecisionRunMapper;
@@ -144,7 +146,7 @@ public class DecisionQueryService {
         PageQuery bounded = query == null ? new PageQuery(20, 1) : query;
         if (bounded.getPageSize() == null || bounded.getPageSize() > 100) bounded.setPageSize(100);
         if (bounded.getPageNum() == null || bounded.getPageNum() < 1) bounded.setPageNum(1);
-        // 映射器投影刻意排除 input_snapshot_json 与 result_json。
+        /** 映射器投影刻意排除 input_snapshot_json 与 result_json。 */
         QueryWrapper<AiDecisionRun> conditions = new QueryWrapper<AiDecisionRun>()
             .eq("tenant_id", tenant).eq("scene_code", DecisionPersistenceService.SCENE_CODE)
             .in("biz_type", visibleTypes).eq(statusFilter != null, "status", statusFilter).eq(riskFilter != null, "risk_level", riskFilter)
@@ -165,8 +167,26 @@ public class DecisionQueryService {
 
     public Map<String, Object> view(Long runId, String tenant) {
         AiDecisionRunVo run = detail(runId, tenant);
-        return Map.of("run", run, "actions", persistence.listActions(runId),
-            "evidence", persistence.listEvidence(runId));
+        List<AiDecisionAction> actions = persistence.listActions(runId);
+        Map<String, String> blockReasons = new LinkedHashMap<>();
+        AiDecisionRun persistedRun = null;
+        for (AiDecisionAction action : actions) {
+            if (action == null) throw new ServiceException("决策动作无效，须重新分析");
+            if (!DecisionActionType.CREATE_PURCHASE_REQUISITION_DRAFT.name().equals(action.getActionType())
+                && !DecisionActionType.CREATE_PURCHASE_REQUISITION_DRAFT.executorCode().equals(action.getExecutorCode()))
+                continue;
+            if (persistedRun == null) persistedRun = persistence.requireRun(runId, tenant);
+            try {
+                DecisionPurchaseContractGuard.requireExecutable(persistedRun, action);
+            } catch (ServiceException blocked) {
+                /** P0 只读提示：不把异常或冻结 payload 原文带到客户端，也不更改审批/运行状态。 */
+                blockReasons.put(String.valueOf(action.getId()), "采购动作合同尚未启用，当前不可批准或执行，须重新分析");
+            }
+        }
+        var evidences = persistence.listEvidence(runId);
+        if (blockReasons.isEmpty()) return Map.of("run", run, "actions", actions, "evidence", evidences);
+        return Map.of("run", run, "actions", actions, "evidence", evidences,
+            "actionBlockReasons", Map.copyOf(blockReasons));
     }
 
     public List<com.nexus.common.ai.domain.entity.AiDecisionEvidence> evidence(Long runId, String tenant) {
@@ -232,7 +252,12 @@ public class DecisionQueryService {
             } catch (Exception invalid) { throw new ServiceException("报告结果无法解码"); }
         }
         output.append("\n## 推荐方案\n\n").append(escape(vo.getRecommendedScenarioCode()))
-            .append("\n\n## 证据清单\n\n|来源|指标|数值|版本|\n|---|---|---|---|\n");
+            .append("\n\n## 证据清单\n\n");
+        if (evidences.stream().anyMatch(e -> "total_shortage_gap".equals(e.getMetricCode()))) {
+            output.append("**注意：total_shortage_gap 原始聚合未验证单位一致性。**可能由不同单位累加，")
+                .append("不得直接作为同单位采购量、收益或方案排名证据；下表保留原始 metric/value；同值场景归属须在受控详情页核对。\n\n");
+        }
+        output.append("|来源|指标|数值|版本|\n|---|---|---|---|\n");
         evidences.forEach(e -> output.append('|').append(escape(e.getSourceDomain() + "/" + e.getSourceType()))
             .append('|').append(escape(e.getMetricCode())).append('|').append(escape(e.getMetricValue()))
             .append('|').append(escape(e.getDataVersion())).append("|\n"));

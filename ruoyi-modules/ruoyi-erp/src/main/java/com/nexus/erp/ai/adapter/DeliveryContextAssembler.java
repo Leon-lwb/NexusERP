@@ -16,6 +16,7 @@ import com.nexus.common.ai.decision.dto.DeliveryContextSnapshot.WorkOrderFact;
 import com.nexus.common.ai.decision.dto.DeliveryContextSnapshot.WorkOrderSalesLinkFact;
 import com.nexus.common.ai.decision.enums.DecisionBusinessType;
 import com.nexus.common.core.exception.ServiceException;
+import com.nexus.common.tenant.helper.TenantHelper;
 import com.nexus.common.json.utils.JsonUtils;
 import com.nexus.erp.bd.domain.BdMaterial;
 import com.nexus.erp.bd.domain.BdRouting;
@@ -31,6 +32,8 @@ import com.nexus.erp.prd.domain.PrdMaterialRequirementDetail;
 import com.nexus.erp.prd.domain.PrdProductionPlan;
 import com.nexus.erp.prd.domain.PrdSchedulePlan;
 import com.nexus.erp.prd.domain.PrdScheduleTask;
+import com.nexus.erp.prd.domain.PrdScheduleTaskDayLoad;
+import com.nexus.erp.prd.domain.PrdScheduleCapacityBooking;
 import com.nexus.erp.prd.domain.PrdWorkOrder;
 import com.nexus.erp.prd.domain.bo.PrdSchedulePlanBo;
 import com.nexus.erp.prd.mapper.PrdCapacityCalendarMapper;
@@ -39,6 +42,8 @@ import com.nexus.erp.prd.mapper.PrdMaterialRequirementMapper;
 import com.nexus.erp.prd.mapper.PrdProductionPlanMapper;
 import com.nexus.erp.prd.mapper.PrdSchedulePlanMapper;
 import com.nexus.erp.prd.mapper.PrdScheduleTaskMapper;
+import com.nexus.erp.prd.mapper.PrdScheduleTaskDayLoadMapper;
+import com.nexus.erp.prd.mapper.PrdScheduleCapacityBookingMapper;
 import com.nexus.erp.prd.mapper.PrdWorkOrderMapper;
 import com.nexus.erp.prd.schedule.PrdScheduleInputAssembler;
 import com.nexus.erp.prd.schedule.ScheduleModel.ScheduleInput;
@@ -69,6 +74,9 @@ import com.nexus.erp.wm.domain.WmMaterialStock;
 import com.nexus.erp.wm.mapper.WmMaterialStockMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Isolation;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -79,6 +87,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -115,6 +125,8 @@ public class DeliveryContextAssembler {
     private final PrdWorkOrderMapper workOrderMapper;
     private final PrdSchedulePlanMapper schedulePlanMapper;
     private final PrdScheduleTaskMapper scheduleTaskMapper;
+    private final PrdScheduleTaskDayLoadMapper taskDayLoadMapper;
+    private final PrdScheduleCapacityBookingMapper capacityBookingMapper;
     private final PrdMaterialRequirementMapper requirementMapper;
     private final PrdMaterialRequirementDetailMapper requirementDetailMapper;
     private final PrdProductionPlanMapper productionPlanMapper;
@@ -134,9 +146,7 @@ public class DeliveryContextAssembler {
     private final PuVendorEvaluationMapper vendorEvaluationMapper;
     private final PrdScheduleInputAssembler scheduleInputAssembler;
 
-    /**
-     * 仅返回当前 actor 是否可读取该精确根对象；非法请求与无权限请求均 校验失败即拒绝。
-     */
+    /** 仅判断当前 actor 是否可读取该精确根对象；非法请求或无权限请求均拒绝。 */
     public boolean exists(DecisionBusinessRef ref, DecisionActor actor) {
         try {
             validateAccess(ref, actor, true);
@@ -165,6 +175,7 @@ public class DeliveryContextAssembler {
     /**
      * 按调用方 horizon 装配展示快照；snapshotHash 始终使用固定 90 天关键指纹重算。
      */
+    @Transactional(propagation = Propagation.REQUIRES_NEW, isolation = Isolation.REPEATABLE_READ, readOnly = true)
     public DeliveryContextSnapshot assemble(DecisionBusinessRef ref, int horizonDays, DecisionActor actor) {
         validateHorizon(horizonDays);
         validateAccess(ref, actor);
@@ -208,6 +219,7 @@ public class DeliveryContextAssembler {
     }
 
     /** 固定 90 天重算关键业务指纹；保持包可见供 checker 与同包测试使用。 */
+    @Transactional(propagation = Propagation.REQUIRES_NEW, isolation = Isolation.REPEATABLE_READ, readOnly = true)
     public String computeFreshnessHash(DecisionBusinessRef ref, DecisionActor actor) {
         validateAccess(ref, actor);
         LocalDate businessDate = businessDate();
@@ -263,8 +275,10 @@ public class DeliveryContextAssembler {
             }
             default -> throw unsupportedType();
         }
-        // 仅有查询权限时只允许存在性检查，不执行仿真、快照装配或新鲜度计算。
-        // 已授权执行人应能复核来源事实，不必额外授予发起新分析的权限。
+        /**
+         * 仅有查询权限时只允许存在性检查，不执行仿真、快照装配或新鲜度计算。
+         * 已授权执行人应能复核来源事实，不必额外授予发起新分析的权限。
+         */
         boolean decisionRight = hasPermission(actor.permissions(), RUN_PERMISSION)
             || hasPermission(actor.permissions(), "ai:decision:execute")
             || existenceOnly && hasPermission(actor.permissions(), "ai:decision:query");
@@ -750,7 +764,9 @@ public class DeliveryContextAssembler {
                     .lt(PrdMaterialRequirementDetail::getRequiredDate, startOfDay(endDate.plusDays(1)))))) {
                 if (detail.getDetailId() != null && requirementIds.contains(detail.getRequirementId())
                     && within(detail.getRequiredDate(), startDate, endDate)) {
-                    details.put(detail.getDetailId(), detail);
+                    if (details.putIfAbsent(detail.getDetailId(), detail) != null) {
+                        throw new ServiceException("MRP 需求明细 ID 重复，来源不可核验");
+                    }
                 }
             }
         }
@@ -944,8 +960,16 @@ public class DeliveryContextAssembler {
         return List.copyOf(metrics);
     }
 
+    private static boolean verifiablePublishedSchedule(PrdSchedulePlan plan) {
+        return plan != null && "PUBLISHED".equals(plan.getStatus())
+            && Integer.valueOf(2).equals(plan.getCapacityCalcVersion());
+    }
     private ScheduleSelection loadCurrentSchedule(DecisionScope scope, List<String> warnings) {
         if (scope.specifiedSchedulePlan() != null) {
+            if (!verifiablePublishedSchedule(scope.specifiedSchedulePlan())) {
+                warnings.add("排程尚未按可信口径发布，不能视为已保存的产能基线");
+                return new ScheduleSelection(null, List.of(), List.of());
+            }
             List<PrdScheduleTask> fingerprintTasks = scope.specifiedScheduleTasks().stream()
                 .filter(task -> Objects.equals(scope.specifiedSchedulePlan().getPlanId(), task.getPlanId()))
                 .sorted(scheduleTaskComparator())
@@ -975,8 +999,17 @@ public class DeliveryContextAssembler {
             warnings.add("当前决策范围尚无排产方案");
             return new ScheduleSelection(null, List.of(), List.of());
         }
+        /**
+         * 自动选择的基准计划必须涵盖范围内的每个工单。
+         * 不能用更新但仅含一个工单的计划，悄然替换完整的销售订单基准计划。
+         */
         List<PrdSchedulePlan> plans = safeList(schedulePlanMapper.selectBatchIds(planIds)).stream()
             .filter(plan -> plan.getPlanId() != null && planIds.contains(plan.getPlanId()))
+            .filter(DeliveryContextAssembler::verifiablePublishedSchedule)
+            .filter(plan -> tasks.stream()
+                .filter(task -> Objects.equals(plan.getPlanId(), task.getPlanId()))
+                .map(PrdScheduleTask::getWoId).collect(Collectors.toSet())
+                .containsAll(workOrderIds))
             .toList();
         PrdSchedulePlan latest = plans.stream().max(schedulePlanLatestComparator()).orElse(null);
         if (latest == null) {
@@ -1294,6 +1327,7 @@ public class DeliveryContextAssembler {
         return rows.stream()
             .filter(row -> row.netQuantity().signum() > 0)
             .map(row -> new RequirementFact(
+                row.detail().getDetailId(),
                 row.detail().getMaterialId(),
                 row.detail().getMaterialCode(),
                 row.detail().getMaterialName(),
@@ -1371,6 +1405,8 @@ public class DeliveryContextAssembler {
         }
         LinkedHashMap<String, Object> schedule = new LinkedHashMap<>();
         schedule.put("planId", idString(plan.getPlanId()));
+        schedule.put("tenantId", plan.getTenantId());
+        schedule.put("capacityCalcVersion", plan.getCapacityCalcVersion());
         schedule.put("planNo", plan.getPlanNo());
         schedule.put("status", plan.getStatus());
         schedule.put("strategy", plan.getStrategy());
@@ -1393,18 +1429,26 @@ public class DeliveryContextAssembler {
             .map(this::scheduleTaskMap)
             .toList();
         schedule.put("tasks", taskPreview);
-        // 来源日历版本已包含在关键新鲜度指纹中。
-        // 原始计划与有效工时须和 APS 剩余工时分开保存，以便独立重读并重算
-        // 已保存资源负荷，不能从候选方案推断。
-        List<Map<String, Object>> capacityCalendars = safeList(calendars).stream()
+        ScheduleProvenance provenance = attachScheduleProvenance(selection, calendars, schedule);
+        Map<Long, BigDecimal> ledgerHours = provenance.ledgerHours();
+        /**
+         * 来源日历版本已包含在关键新鲜度指纹中。
+         * 原始计划与有效工时须和 APS 剩余工时分开保存，以便独立重读并重算
+         * 已保存资源负荷，不能从候选方案推断。
+         */
+        List<Map<String, Object>> capacityCalendars = provenance.calendars().stream()
             .sorted(capacityCalendarComparator())
             .map(calendar -> {
                 Map<String, Object> row = new LinkedHashMap<>();
                 row.put("calendarId", idString(calendar.getCalendarId()));
+                row.put("tenantId", calendar.getTenantId());
+                row.put("status", calendar.getStatus());
                 row.put("calendarDate", toIsoDate(calendar.getCalendarDate()));
                 row.put("resourceType", calendar.getObjectType());
                 row.put("resourceId", idString(calendar.getObjectId()));
+                row.put("shiftId", idString(calendar.getShiftId()));
                 row.put("plannedHours", decimal(calendar.getPlannedHours()));
+                row.put("ledgerHours", decimal(ledgerHours.getOrDefault(calendar.getCalendarId(), BigDecimal.ZERO)));
                 row.put("effectiveHours", decimal(calendar.getEffectiveHours()));
                 return Collections.unmodifiableMap(row);
             }).toList();
@@ -1430,6 +1474,413 @@ public class DeliveryContextAssembler {
         return schedule;
     }
 
+    /** 同一快照内读本方案逐日行及相关产能日历的租户全账册，避免借用他计划的工时。 */
+    private ScheduleProvenance attachScheduleProvenance(ScheduleSelection selection, List<PrdCapacityCalendar> calendars,
+                                           LinkedHashMap<String, Object> schedule) {
+        PrdSchedulePlan plan = selection.plan();
+        String tenant = plan.getTenantId();
+        if (tenant == null || tenant.isBlank() || plan.getPlanId() == null)
+            throw new ServiceException("排程缺少可信租户或方案标识");
+        if (TenantHelper.isEnable() && !tenant.equals(TenantHelper.getTenantId()))
+            throw new ServiceException("排程与当前租户不匹配");
+        List<PrdScheduleTaskDayLoad> allLoads = safeList(taskDayLoadMapper.selectList(
+            Wrappers.lambdaQuery(PrdScheduleTaskDayLoad.class)
+                .eq(PrdScheduleTaskDayLoad::getTenantId, tenant)
+                .eq(PrdScheduleTaskDayLoad::getPlanId, plan.getPlanId())
+                .last("LIMIT 100001")));
+        if (allLoads.size() > 100000 || allLoads.stream().anyMatch(row -> row == null
+            || !tenant.equals(row.getTenantId()) || !plan.getPlanId().equals(row.getPlanId())))
+            throw new ServiceException("排程逐日来源超界或归属不一致");
+        Set<Long> displayedTasks = selection.displayTasks().stream().map(PrdScheduleTask::getTaskId)
+            .filter(Objects::nonNull).collect(Collectors.toSet());
+        List<Map<String, Object>> dayLoads = allLoads.stream()
+            .filter(row -> displayedTasks.contains(row.getTaskId()))
+            .sorted(Comparator.comparing(PrdScheduleTaskDayLoad::getLoadId, Comparator.nullsLast(Comparator.naturalOrder())))
+            .map(row -> {
+                Map<String, Object> value = new LinkedHashMap<>();
+                value.put("loadId", idString(row.getLoadId()));
+                value.put("tenantId", row.getTenantId());
+                value.put("planId", idString(row.getPlanId()));
+                value.put("taskId", idString(row.getTaskId()));
+                value.put("resourceType", row.getResourceType());
+                value.put("resourceId", idString(row.getResourceId()));
+                value.put("loadDate", toIsoDate(row.getLoadDate()));
+                value.put("plannedHours", decimal(row.getPlannedHours()));
+                return Collections.unmodifiableMap(value);
+            }).toList();
+        schedule.put("taskDayLoads", dayLoads);
+
+        /**
+         * 计划加载器已限定所选任务的范围；计划逐日负荷引用的其他任务标识需独立查询，
+         * 避免把跨工单计划误判为伪造任务。
+         */
+        List<PrdScheduleTask> planTasks = selection.fingerprintTasks();
+        if (planTasks.size() > 1000) throw new ServiceException("排程任务来源超界");
+        Map<Long, PrdScheduleTask> taskById = new HashMap<>();
+        for (PrdScheduleTask row : planTasks) {
+            if (row == null || row.getTaskId() == null || !tenant.equals(row.getTenantId())
+                || !plan.getPlanId().equals(row.getPlanId())
+                || taskById.putIfAbsent(row.getTaskId(), row) != null)
+                throw new ServiceException("排程任务归属不一致");
+        }
+        if (!taskById.keySet().containsAll(displayedTasks))
+            throw new ServiceException("排程展示任务不属于当前方案");
+        Map<String, PrdScheduleTaskDayLoad> loadByTaskDate = new HashMap<>();
+        for (PrdScheduleTaskDayLoad row : allLoads) {
+            PrdScheduleTask task = row == null ? null : taskById.get(row.getTaskId());
+            if (row != null && task == null && row.getTaskId() != null) {
+                task = scheduleTaskMapper.selectById(row.getTaskId());
+                if (task == null || !tenant.equals(task.getTenantId())
+                    || !plan.getPlanId().equals(task.getPlanId())
+                    || taskById.putIfAbsent(row.getTaskId(), task) != null)
+                    throw new ServiceException("排程逐日来源的任务归属不一致");
+            }
+            LocalDate date = row == null ? null : toLocalDate(row.getLoadDate());
+            if (task == null || date == null || row.getPlannedHours() == null
+                || row.getPlannedHours().signum() <= 0 || !Objects.equals(row.getResourceType(), task.getResourceType())
+                || !Objects.equals(row.getResourceId(), task.getResourceId())
+                || loadByTaskDate.putIfAbsent(row.getTaskId() + ":" + date, row) != null)
+                throw new ServiceException("排程逐日来源与方案任务不一致");
+        }
+        /** 按计划查询，而非仅按来源日历或展示的任务标识查询，以发现隐藏的计划行。 */
+        List<PrdScheduleCapacityBooking> planBookings = safeList(capacityBookingMapper.selectList(
+            Wrappers.lambdaQuery(PrdScheduleCapacityBooking.class)
+                .eq(PrdScheduleCapacityBooking::getTenantId, tenant)
+                .eq(PrdScheduleCapacityBooking::getPlanId, plan.getPlanId())
+                .last("LIMIT 100001")));
+        if (planBookings.size() > 100000) throw new ServiceException("本方案产能占用超界");
+        if (!planBookings.isEmpty()) {
+            /** 仅按已观测逐日负荷加载，会漏掉证据已全部删除但仍然有效的计划任务。 */
+            List<PrdScheduleTask> fullPlanTasks = safeList(scheduleTaskMapper.selectList(
+                Wrappers.lambdaQuery(PrdScheduleTask.class)
+                    .eq(PrdScheduleTask::getTenantId, tenant)
+                    .eq(PrdScheduleTask::getPlanId, plan.getPlanId())
+                    .last("LIMIT 1001")));
+            if (fullPlanTasks.isEmpty() || fullPlanTasks.size() > 1000)
+                throw new ServiceException("已发布排程任务缺失或超界");
+            Set<Long> fullIds = new HashSet<>();
+            for (PrdScheduleTask task : fullPlanTasks) {
+                if (task == null || task.getTaskId() == null || !tenant.equals(task.getTenantId())
+                    || !plan.getPlanId().equals(task.getPlanId()) || !fullIds.add(task.getTaskId()))
+                    throw new ServiceException("已发布排程任务归属不一致");
+                PrdScheduleTask seen = taskById.putIfAbsent(task.getTaskId(), task);
+                if (seen != null && !seen.equals(task))
+                    throw new ServiceException("排程任务在同一来源快照内发生变化");
+            }
+            if (!fullIds.containsAll(taskById.keySet()))
+                throw new ServiceException("排程逐日来源的任务不在完整方案中");
+            schedule.put("capacityPlanTasks", fullPlanTasks.stream()
+                .sorted(scheduleTaskComparator())
+                .map(task -> {
+                    Map<String, Object> value = new LinkedHashMap<>(scheduleTaskMap(task));
+                    value.put("updateTime", toIsoDateTime(task.getUpdateTime()));
+                    return Collections.unmodifiableMap(value);
+                }).toList());
+            schedule.put("capacityPlanDayLoads", allLoads.stream()
+                .sorted(Comparator.comparing(PrdScheduleTaskDayLoad::getLoadId))
+                .map(this::dayLoadMap).toList());
+        }
+        Map<Long, PrdCapacityCalendar> calendarById = new HashMap<>();
+        for (PrdCapacityCalendar calendar : safeList(calendars)) {
+            if (calendar == null || calendar.getCalendarId() == null || !tenant.equals(calendar.getTenantId())
+                || calendarById.putIfAbsent(calendar.getCalendarId(), calendar) != null)
+                throw new ServiceException("产能日历来源异常");
+        }
+        Set<Long> missingCalendarIds = new HashSet<>();
+        for (PrdScheduleCapacityBooking row : planBookings) {
+            if (row == null || row.getBookingId() == null || row.getCalendarId() == null
+                || !tenant.equals(row.getTenantId()) || !plan.getPlanId().equals(row.getPlanId())
+                || !taskById.containsKey(row.getTaskId()))
+                throw new ServiceException("本方案产能占用归属不一致");
+            if (!calendarById.containsKey(row.getCalendarId())) missingCalendarIds.add(row.getCalendarId());
+        }
+        if (calendarById.size() + missingCalendarIds.size() > 10000)
+            throw new ServiceException("排程产能日历来源超界");
+        /** APS 输入窗口不是账册边界：仍处于已发布状态的计划可能跨越更早的日期。 */
+        for (List<Long> batch : batches(missingCalendarIds)) {
+            for (PrdCapacityCalendar calendar : safeList(capacityCalendarMapper.selectBatchIds(batch))) {
+                if (calendar == null || calendar.getCalendarId() == null
+                    || !batch.contains(calendar.getCalendarId()) || !tenant.equals(calendar.getTenantId())
+                    || calendarById.putIfAbsent(calendar.getCalendarId(), calendar) != null)
+                    throw new ServiceException("排程关联日历重复或租户归属无效");
+            }
+        }
+        if (!calendarById.keySet().containsAll(missingCalendarIds))
+            throw new ServiceException("排程关联的历史产能日历不存在");
+        List<Long> calendarIds = calendarById.keySet().stream().sorted().toList();
+        Set<Long> calendarIdSet = calendarById.keySet();
+        List<PrdScheduleCapacityBooking> allBookings = calendarIds.isEmpty() ? List.of() :
+            safeList(capacityBookingMapper.selectList(Wrappers.lambdaQuery(PrdScheduleCapacityBooking.class)
+                .eq(PrdScheduleCapacityBooking::getTenantId, tenant)
+                .in(PrdScheduleCapacityBooking::getCalendarId, calendarIds)
+                .last("LIMIT 100001")));
+        if (allBookings.size() > 100000) throw new ServiceException("产能账册来源超界");
+        Map<Long, PrdScheduleCapacityBooking> ledgerById = new HashMap<>();
+        Map<Long, BigDecimal> ledgerHours = new HashMap<>();
+        Set<Long> otherPlanIds = new HashSet<>();
+        for (PrdScheduleCapacityBooking row : allBookings) {
+            PrdCapacityCalendar calendar = row == null ? null : calendarById.get(row.getCalendarId());
+            if (row == null || row.getBookingId() == null || row.getPlanId() == null
+                || row.getTaskId() == null || row.getCalendarId() == null
+                || !calendarIdSet.contains(row.getCalendarId()) || !tenant.equals(row.getTenantId())
+                || calendar == null || !"ACTIVE".equals(calendar.getStatus())
+                || !Objects.equals(toLocalDate(calendar.getCalendarDate()), toLocalDate(row.getLoadDate()))
+                || row.getBookedHours() == null || row.getBookedHours().signum() <= 0
+                || ledgerById.putIfAbsent(row.getBookingId(), row) != null)
+                throw new ServiceException("产能账册日期、负荷或租户归属无效");
+            if (!plan.getPlanId().equals(row.getPlanId())) otherPlanIds.add(row.getPlanId());
+            ledgerHours.merge(row.getCalendarId(), row.getBookedHours(), BigDecimal::add);
+        }
+        Map<Long, PrdSchedulePlan> otherPlans = new HashMap<>();
+        for (List<Long> batch : batches(otherPlanIds)) {
+            for (PrdSchedulePlan other : safeList(schedulePlanMapper.selectBatchIds(batch))) {
+                if (other == null || other.getPlanId() == null || !batch.contains(other.getPlanId())
+                    || !tenant.equals(other.getTenantId()) || !verifiablePublishedSchedule(other)
+                    || otherPlans.putIfAbsent(other.getPlanId(), other) != null)
+                    throw new ServiceException("共享产能占用的方案来源不可信");
+            }
+        }
+        if (!otherPlans.keySet().containsAll(otherPlanIds))
+            throw new ServiceException("共享产能占用缺少已发布方案");
+        Set<Long> otherTaskIds = allBookings.stream()
+            .filter(row -> !plan.getPlanId().equals(row.getPlanId()))
+            .map(PrdScheduleCapacityBooking::getTaskId).collect(Collectors.toSet());
+        Map<Long, PrdScheduleTask> otherTasks = new HashMap<>();
+        for (List<Long> batch : batches(otherTaskIds)) {
+            for (PrdScheduleTask task : safeList(scheduleTaskMapper.selectBatchIds(batch))) {
+                if (task == null || task.getTaskId() == null || !batch.contains(task.getTaskId())
+                    || !tenant.equals(task.getTenantId()) || !otherPlanIds.contains(task.getPlanId())
+                    || otherTasks.putIfAbsent(task.getTaskId(), task) != null)
+                    throw new ServiceException("共享产能预约的任务来源无效");
+            }
+        }
+        if (!otherTasks.keySet().containsAll(otherTaskIds))
+            throw new ServiceException("共享产能预约缺少真实任务");
+        verifyOtherPlanProvenance(tenant, otherTasks, allBookings, calendarById, ledgerById, schedule);
+        Map<Long, PrdScheduleCapacityBooking> planById = new HashMap<>();
+        Map<String, BigDecimal> bookedByTaskDate = new HashMap<>();
+        for (PrdScheduleCapacityBooking row : planBookings) {
+            PrdCapacityCalendar calendar = calendarById.get(row.getCalendarId());
+            PrdScheduleTaskDayLoad load = loadByTaskDate.get(row.getTaskId() + ":" + toLocalDate(row.getLoadDate()));
+            if (calendar == null || load == null || !"ACTIVE".equals(calendar.getStatus())
+                || !Objects.equals(toLocalDate(calendar.getCalendarDate()), toLocalDate(row.getLoadDate()))
+                || !Objects.equals(calendar.getObjectType(), load.getResourceType())
+                || !Objects.equals(calendar.getObjectId(), load.getResourceId())
+                || row.getBookedHours() == null || row.getBookedHours().signum() <= 0
+                || planById.putIfAbsent(row.getBookingId(), row) != null
+                || !row.equals(ledgerById.get(row.getBookingId())))
+                throw new ServiceException("本方案产能占用与日历总账或逐日来源不一致");
+            bookedByTaskDate.merge(row.getTaskId() + ":" + toLocalDate(row.getLoadDate()),
+                row.getBookedHours(), BigDecimal::add);
+        }
+        for (var entry : loadByTaskDate.entrySet()) {
+            if (entry.getValue().getPlannedHours().compareTo(
+                bookedByTaskDate.getOrDefault(entry.getKey(), BigDecimal.ZERO)) != 0)
+                throw new ServiceException("排程逐日负荷与本方案班次预约不一致");
+        }
+        if (!planBookings.isEmpty()) {
+            Map<Long, BigDecimal> totalByTask = new HashMap<>();
+            Map<Long, LocalDate> firstByTask = new HashMap<>();
+            Map<Long, LocalDate> lastByTask = new HashMap<>();
+            for (PrdScheduleTaskDayLoad row : allLoads) {
+                LocalDate date = toLocalDate(row.getLoadDate());
+                totalByTask.merge(row.getTaskId(), row.getPlannedHours(), BigDecimal::add);
+                firstByTask.merge(row.getTaskId(), date, (a, b) -> a.isBefore(b) ? a : b);
+                lastByTask.merge(row.getTaskId(), date, (a, b) -> a.isAfter(b) ? a : b);
+            }
+            for (PrdScheduleTask task : taskById.values()) {
+                BigDecimal total = totalByTask.getOrDefault(task.getTaskId(), BigDecimal.ZERO);
+                if (task.getProcessHours() == null || task.getSetupHours() == null
+                    || task.getProcessHours().signum() < 0 || task.getSetupHours().signum() < 0)
+                    throw new ServiceException("本方案工序工时来源无效");
+                if ("OUTSOURCE".equals(task.getResourceType())) {
+                    if (total.signum() != 0) throw new ServiceException("委外工序不应占用内部班次");
+                    continue;
+                }
+                if (task.getProcessHours().add(task.getSetupHours()).compareTo(total) != 0
+                    || !Objects.equals(toLocalDate(task.getStartTime()), firstByTask.get(task.getTaskId()))
+                    || !Objects.equals(toLocalDate(task.getEndTime()), lastByTask.get(task.getTaskId())))
+                    throw new ServiceException("本方案工序总工时与全方案逐日及班次预约不一致");
+            }
+        }
+        for (PrdScheduleCapacityBooking row : allBookings) {
+            if (plan.getPlanId().equals(row.getPlanId()) && !planById.containsKey(row.getBookingId()))
+                throw new ServiceException("日历总账包含未归属本方案的占用");
+        }
+        List<Map<String, Object>> ownBookings = planBookings.stream()
+            .filter(row -> displayedTasks.contains(row.getTaskId()))
+            .sorted(Comparator.comparing(PrdScheduleCapacityBooking::getBookingId))
+            .map(this::bookingMap).toList();
+        schedule.put("capacityBookings", ownBookings);
+        schedule.put("capacityLedgerBookings", allBookings.stream()
+            .sorted(Comparator.comparing(PrdScheduleCapacityBooking::getBookingId))
+            .map(this::bookingMap).toList());
+        schedule.put("capacityLedgerPlans", otherPlans.values().stream()
+            .sorted(Comparator.comparing(PrdSchedulePlan::getPlanId))
+            .map(other -> {
+                Map<String, Object> value = new LinkedHashMap<>();
+                value.put("planId", idString(other.getPlanId()));
+                value.put("tenantId", other.getTenantId());
+                value.put("status", other.getStatus());
+                value.put("capacityCalcVersion", other.getCapacityCalcVersion());
+                return Collections.unmodifiableMap(value);
+            }).toList());
+        return new ScheduleProvenance(ledgerHours, List.copyOf(calendarById.values()));
+    }
+
+    /** 重新读取共享同一日历的其他计划的全部事实；其局部预占记录不足以证明负荷。 */
+    private void verifyOtherPlanProvenance(String tenant, Map<Long, PrdScheduleTask> tasks,
+                                            List<PrdScheduleCapacityBooking> sharedLedger,
+                                            Map<Long, PrdCapacityCalendar> sharedCalendars,
+                                            Map<Long, PrdScheduleCapacityBooking> sharedById,
+                                            LinkedHashMap<String, Object> schedule) {
+        if (tasks.isEmpty()) return;
+        List<PrdScheduleTaskDayLoad> sourceLoads = new ArrayList<>();
+        List<PrdScheduleCapacityBooking> sourceBookings = new ArrayList<>();
+        for (List<Long> batch : batches(tasks.keySet())) {
+            List<PrdScheduleTaskDayLoad> queriedLoads = safeList(taskDayLoadMapper.selectList(
+                Wrappers.lambdaQuery(PrdScheduleTaskDayLoad.class)
+                    .eq(PrdScheduleTaskDayLoad::getTenantId, tenant)
+                    .in(PrdScheduleTaskDayLoad::getTaskId, batch)
+                    .last("LIMIT 100001")));
+            List<PrdScheduleCapacityBooking> queriedBookings = safeList(capacityBookingMapper.selectList(
+                Wrappers.lambdaQuery(PrdScheduleCapacityBooking.class)
+                    .eq(PrdScheduleCapacityBooking::getTenantId, tenant)
+                    .in(PrdScheduleCapacityBooking::getTaskId, batch)
+                    .last("LIMIT 100001")));
+            if (queriedLoads.size() > 100000 || queriedBookings.size() > 100000
+                || sourceLoads.size() + queriedLoads.size() > 100000
+                || sourceBookings.size() + queriedBookings.size() > 100000)
+                throw new ServiceException("共享产能来源超界");
+            sourceLoads.addAll(queriedLoads);
+            sourceBookings.addAll(queriedBookings);
+        }
+        Map<String, PrdScheduleTaskDayLoad> byTaskDate = new HashMap<>();
+        Map<Long, BigDecimal> sourceTotals = new HashMap<>();
+        Map<Long, LocalDate> firstDays = new HashMap<>();
+        Map<Long, LocalDate> lastDays = new HashMap<>();
+        Set<Long> loadIds = new HashSet<>();
+        for (PrdScheduleTaskDayLoad load : sourceLoads) {
+            PrdScheduleTask task = load == null ? null : tasks.get(load.getTaskId());
+            LocalDate day = load == null ? null : toLocalDate(load.getLoadDate());
+            LocalDate start = task == null ? null : toLocalDate(task.getStartTime());
+            LocalDate end = task == null ? null : toLocalDate(task.getEndTime());
+            if (task == null || load.getLoadId() == null || !loadIds.add(load.getLoadId())
+                || !tenant.equals(load.getTenantId()) || !Objects.equals(task.getPlanId(), load.getPlanId())
+                || !Objects.equals(task.getResourceType(), load.getResourceType())
+                || !Objects.equals(task.getResourceId(), load.getResourceId())
+                || "OUTSOURCE".equals(task.getResourceType()) || day == null || start == null || end == null
+                || day.isBefore(start) || day.isAfter(end) || load.getPlannedHours() == null
+                || load.getPlannedHours().signum() <= 0 || load.getPlannedHours().scale() > 2
+                || byTaskDate.putIfAbsent(load.getTaskId() + ":" + day, load) != null)
+                throw new ServiceException("共享产能来源逐日负荷无效");
+            sourceTotals.merge(load.getTaskId(), load.getPlannedHours(), BigDecimal::add);
+            firstDays.merge(load.getTaskId(), day, (a, b) -> a.isBefore(b) ? a : b);
+            lastDays.merge(load.getTaskId(), day, (a, b) -> a.isAfter(b) ? a : b);
+        }
+        for (PrdScheduleTask task : tasks.values()) {
+            if (task.getProcessHours() == null || task.getSetupHours() == null
+                || task.getProcessHours().signum() < 0 || task.getSetupHours().signum() < 0
+                || task.getProcessHours().add(task.getSetupHours()).compareTo(
+                    sourceTotals.getOrDefault(task.getTaskId(), BigDecimal.ZERO)) != 0
+                || !Objects.equals(toLocalDate(task.getStartTime()), firstDays.get(task.getTaskId()))
+                || !Objects.equals(toLocalDate(task.getEndTime()), lastDays.get(task.getTaskId())))
+                throw new ServiceException("共享产能的工序总工时与逐日负荷不一致");
+        }
+        Map<Long, PrdCapacityCalendar> calendars = new HashMap<>(sharedCalendars);
+        Set<Long> missingIds = new HashSet<>();
+        for (PrdScheduleCapacityBooking row : sourceBookings) {
+            if (row == null || row.getCalendarId() == null) throw new ServiceException("共享产能预约缺少日历");
+            if (!calendars.containsKey(row.getCalendarId())) missingIds.add(row.getCalendarId());
+        }
+        if (calendars.size() + missingIds.size() > 10000)
+            throw new ServiceException("共享产能预约关联日历超界");
+        for (List<Long> batch : batches(missingIds)) {
+            for (PrdCapacityCalendar calendar : safeList(capacityCalendarMapper.selectBatchIds(batch))) {
+                if (calendar == null || calendar.getCalendarId() == null || !batch.contains(calendar.getCalendarId())
+                    || !tenant.equals(calendar.getTenantId())
+                    || calendars.putIfAbsent(calendar.getCalendarId(), calendar) != null)
+                    throw new ServiceException("共享产能预约日历归属不一致");
+            }
+        }
+        if (!calendars.keySet().containsAll(missingIds))
+            throw new ServiceException("共享产能预约关联日历不存在");
+        Map<String, BigDecimal> bookedByTaskDate = new HashMap<>();
+        Map<Long, PrdScheduleCapacityBooking> bookingById = new HashMap<>();
+        for (PrdScheduleCapacityBooking row : sourceBookings) {
+            PrdScheduleTask task = tasks.get(row.getTaskId());
+            PrdCapacityCalendar calendar = calendars.get(row.getCalendarId());
+            LocalDate day = toLocalDate(row.getLoadDate());
+            if (task == null || row.getBookingId() == null || calendar == null || day == null
+                || !tenant.equals(row.getTenantId()) || !"ACTIVE".equals(calendar.getStatus())
+                || !Objects.equals(row.getPlanId(), task.getPlanId())
+                || !Objects.equals(day, toLocalDate(calendar.getCalendarDate()))
+                || !Objects.equals(task.getResourceType(), calendar.getObjectType())
+                || !Objects.equals(task.getResourceId(), calendar.getObjectId())
+                || !byTaskDate.containsKey(row.getTaskId() + ":" + day)
+                || row.getBookedHours() == null || row.getBookedHours().signum() <= 0
+                || bookingById.putIfAbsent(row.getBookingId(), row) != null
+                || sharedById.containsKey(row.getBookingId())
+                    && !row.equals(sharedById.get(row.getBookingId())))
+                throw new ServiceException("共享产能预约与原始工序/日历不一致");
+            bookedByTaskDate.merge(row.getTaskId() + ":" + day, row.getBookedHours(), BigDecimal::add);
+        }
+        for (PrdScheduleCapacityBooking row : sharedLedger) {
+            if (tasks.containsKey(row.getTaskId()) && !bookingById.containsKey(row.getBookingId()))
+                throw new ServiceException("共享产能账册缺少跨方案预约来源");
+        }
+        for (var entry : byTaskDate.entrySet()) {
+            if (entry.getValue().getPlannedHours().compareTo(
+                bookedByTaskDate.getOrDefault(entry.getKey(), BigDecimal.ZERO)) != 0)
+                throw new ServiceException("共享产能逐日负荷与完整班次预约不一致");
+        }
+        schedule.put("capacityDependencyTasks", tasks.values().stream()
+            .sorted(scheduleTaskComparator()).map(this::scheduleTaskMap).toList());
+        schedule.put("capacityDependencyDayLoads", sourceLoads.stream()
+            .sorted(Comparator.comparing(PrdScheduleTaskDayLoad::getLoadId)).map(this::dayLoadMap).toList());
+        schedule.put("capacityDependencyBookings", sourceBookings.stream()
+            .sorted(Comparator.comparing(PrdScheduleCapacityBooking::getBookingId)).map(this::bookingMap).toList());
+        schedule.put("capacityDependencyCalendars", missingIds.stream().sorted()
+            .map(id -> {
+                PrdCapacityCalendar row = calendars.get(id);
+                Map<String, Object> value = new LinkedHashMap<>();
+                value.put("calendarId", idString(id));
+                value.put("tenantId", row.getTenantId());
+                value.put("status", row.getStatus());
+                value.put("calendarDate", toIsoDate(row.getCalendarDate()));
+                value.put("resourceType", row.getObjectType());
+                value.put("resourceId", idString(row.getObjectId()));
+                value.put("shiftId", idString(row.getShiftId()));
+                value.put("plannedHours", decimal(row.getPlannedHours()));
+                value.put("effectiveHours", decimal(row.getEffectiveHours()));
+                return Collections.unmodifiableMap(value);
+            }).toList());
+    }
+
+    private Map<String, Object> dayLoadMap(PrdScheduleTaskDayLoad row) {
+        Map<String, Object> value = new LinkedHashMap<>();
+        value.put("loadId", idString(row.getLoadId()));
+        value.put("tenantId", row.getTenantId());
+        value.put("planId", idString(row.getPlanId()));
+        value.put("taskId", idString(row.getTaskId()));
+        value.put("resourceType", row.getResourceType());
+        value.put("resourceId", idString(row.getResourceId()));
+        value.put("loadDate", toIsoDate(row.getLoadDate()));
+        value.put("plannedHours", decimal(row.getPlannedHours()));
+        return Collections.unmodifiableMap(value);
+    }
+
+    private Map<String, Object> bookingMap(PrdScheduleCapacityBooking row) {
+        Map<String, Object> value = new LinkedHashMap<>();
+        value.put("bookingId", idString(row.getBookingId()));
+        value.put("tenantId", row.getTenantId());
+        value.put("planId", idString(row.getPlanId()));
+        value.put("taskId", idString(row.getTaskId()));
+        value.put("calendarId", idString(row.getCalendarId()));
+        value.put("loadDate", toIsoDate(row.getLoadDate()));
+        value.put("bookedHours", decimal(row.getBookedHours()));
+        return Collections.unmodifiableMap(value);
+    }
     private Map<String, Object> scheduleTaskMap(PrdScheduleTask task) {
         LinkedHashMap<String, Object> row = new LinkedHashMap<>();
         row.put("taskId", idString(task.getTaskId()));
@@ -1527,7 +1978,7 @@ public class DeliveryContextAssembler {
 
         CriticalApsInput apsInput = buildCriticalApsInput(scope, context.apsInput());
         CriticalSourceVersions sourceVersions = buildCriticalSourceVersions(context.sourceFacts());
-        CriticalSchedule currentSchedule = buildCriticalSchedule(context.schedule());
+        CriticalSchedule currentSchedule = buildCriticalSchedule(context.schedule(), context.currentSchedule());
         return new CriticalFreshnessFingerprint(
             root, orders, orderLines, workOrders, workOrderSalesLinks, requirementHeaders, requirements,
             stocks, materials, purchaseOrders, purchaseLines, apsInput, sourceVersions, currentSchedule);
@@ -1656,7 +2107,7 @@ public class DeliveryContextAssembler {
             shifts, teams, leaves, workstations);
     }
 
-    private CriticalSchedule buildCriticalSchedule(ScheduleSelection selection) {
+    private CriticalSchedule buildCriticalSchedule(ScheduleSelection selection, Map<String, Object> observedSchedule) {
         if (selection.plan() == null) {
             return null;
         }
@@ -1673,7 +2124,8 @@ public class DeliveryContextAssembler {
         return new CriticalSchedule(
             plan.getPlanId(), plan.getPlanNo(), plan.getStatus(), plan.getStrategy(),
             toIsoDate(plan.getStartDate()), plan.getHorizonDays(), toIsoDate(plan.getMakespanDate()),
-            canonicalDecimal(plan.getTotalHours()), toIsoDateTime(plan.getUpdateTime()), tasks);
+            canonicalDecimal(plan.getTotalHours()), toIsoDateTime(plan.getUpdateTime()),
+            plan.getCapacityCalcVersion(), SecureUtil.sha256(JsonUtils.toJsonString(observedSchedule)), tasks);
     }
 
     private List<StepInfo> routingSteps(ScheduleInput input, Long materialId) {
@@ -2034,6 +2486,8 @@ public class DeliveryContextAssembler {
     ) {
     }
 
+    private record ScheduleProvenance(Map<Long, BigDecimal> ledgerHours, List<PrdCapacityCalendar> calendars) { }
+
     private record ScheduleSelection(
         PrdSchedulePlan plan,
         List<PrdScheduleTask> displayTasks,
@@ -2360,6 +2814,8 @@ public class DeliveryContextAssembler {
         String makespanDate,
         String totalHours,
         String updateTime,
+        Integer capacityCalcVersion,
+        String provenanceHash,
         List<CriticalScheduleTask> tasks
     ) {
     }

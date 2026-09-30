@@ -6,6 +6,7 @@ import com.nexus.common.ai.decision.dto.DecisionScenario;
 import com.nexus.common.ai.decision.dto.DeliveryContextSnapshot;
 import com.nexus.common.ai.decision.dto.DeliveryContextSnapshot.WorkOrderFact;
 import com.nexus.common.ai.decision.enums.DecisionBusinessType;
+import com.nexus.common.ai.decision.util.SavedScheduleCapacity;
 import com.nexus.erp.prd.mapper.PrdWorkOrderMapper;
 import com.nexus.erp.prd.schedule.PrdScheduleInputAssembler;
 import org.junit.jupiter.api.Tag;
@@ -23,6 +24,9 @@ import static org.mockito.Mockito.*;
 @Tag("dev")
 class ErpDecisionApsSimulationTest {
     private static final LocalDate TODAY = LocalDate.of(2026, 9, 24);
+    private static final String PLAN_ID = "9007199254740993";
+    private static final String TASK_ID = "9007199254740995";
+    private static final String TENANT_ID = "000001";
     private final PrdScheduleInputAssembler assembler = mock(PrdScheduleInputAssembler.class);
     private final PrdWorkOrderMapper workOrderMapper = mock(PrdWorkOrderMapper.class);
     private final ErpDecisionShortageSimulation shortage = mock(ErpDecisionShortageSimulation.class);
@@ -47,6 +51,53 @@ class ErpDecisionApsSimulationTest {
             List.of(new WorkOrderFact(11L, "WO-11", 101L, BigDecimal.ONE, TODAY.plusDays(1), 1L, 3L)),
             Map.of(), List.of(), List.of(), List.of(), Map.of(), List.of(), schedule,
             List.of(), "hash", LocalDateTime.of(2026, 9, 24, 10, 0), List.of());
+    }
+
+    /** 所有 ID 均序列化为字符串；已保存计划和任务的 ID 超出 JavaScript 安全整数范围。 */
+    private Map<String, Object> bookedTask(LocalDate end, String hours) {
+        return Map.of("taskId", TASK_ID, "woId", "11", "seqNum", 1,
+            "resourceType", "WORKSTATION", "resourceId", "12", "processHours", hours,
+            "startTime", TODAY.toString(), "endTime", end.toString());
+    }
+
+    private Map<String, Object> dayLoad(String id, LocalDate day, String hours) {
+        return Map.of("loadId", id, "tenantId", TENANT_ID, "planId", PLAN_ID, "taskId", TASK_ID,
+            "resourceType", "WORKSTATION", "resourceId", "12", "loadDate", day.toString(),
+            "plannedHours", hours);
+    }
+
+    private Map<String, Object> booking(String id, String calendarId, LocalDate day, String hours) {
+        return Map.of("bookingId", id, "tenantId", TENANT_ID, "planId", PLAN_ID, "taskId", TASK_ID,
+            "calendarId", calendarId, "loadDate", day.toString(), "bookedHours", hours);
+    }
+
+    private Map<String, Object> activeCalendar(String id, LocalDate day, String planned, String effective) {
+        return Map.of("calendarId", id, "tenantId", TENANT_ID, "status", "ACTIVE",
+            "calendarDate", day.toString(), "resourceType", "WORKSTATION", "resourceId", "12",
+            "plannedHours", planned, "ledgerHours", planned, "effectiveHours", effective);
+    }
+
+    private Map<String, Object> publishedSchedule(LocalDate end, String hours,
+                                                   List<Map<String, Object>> loads,
+                                                   List<Map<String, Object>> bookings,
+                                                   List<Map<String, Object>> calendars) {
+        return Map.of("planId", PLAN_ID, "tenantId", TENANT_ID, "status", "PUBLISHED",
+            "capacityCalcVersion", 2, "strategy", "EDD", "tasks", List.of(bookedTask(end, hours)),
+            "taskDayLoads", loads, "capacityBookings", bookings, "capacityCalendars", calendars);
+    }
+
+    private Map<String, Object> withField(Map<String, Object> row, String field, Object value) {
+        var copy = new java.util.HashMap<>(row);
+        copy.put(field, value);
+        return copy;
+    }
+
+    private DeliveryContextSnapshot snapshotWithHoliday(Map<String, Object> saved, LocalDate holiday) {
+        var base = snapshot(saved);
+        return new DeliveryContextSnapshot(base.rootBusinessRef(), base.salesOrders(), base.workOrders(),
+            base.routingByMaterial(), base.requirements(), base.stocks(), base.arrivals(),
+            base.capacityByDate(), List.of(holiday), base.currentSchedule(), base.supplierMetrics(),
+            base.snapshotHash(), base.snapshotAt(), base.warnings());
     }
 
     @Test
@@ -81,7 +132,8 @@ class ErpDecisionApsSimulationTest {
         verifyNoInteractions(workOrderMapper, assembler);
     }
 
-    @Test void savedBaselineUsesOnlyCompletePersistedCalendarLoadNotHypotheticalApsRate() {
+    @Test
+    void legacyCalendarOnlyDoesNotCertifySavedBaselineUtilization() {
         Map<String, Object> saved = Map.of("planId", "1", "strategy", "EDD",
             "tasks", List.of(Map.of("taskId", "5", "woId", "11", "seqNum", 1,
                 "resourceType", "WORKSTATION", "resourceId", "12", "processHours", "2",
@@ -93,15 +145,129 @@ class ErpDecisionApsSimulationTest {
                 Map.of("calendarId", "8", "calendarDate", TODAY.plusDays(1).toString(),
                     "resourceType", "WORKSTATION", "resourceId", "12",
                     "plannedHours", "3", "effectiveHours", "2")));
+        assertNull(SavedScheduleCapacity.measure(saved));
         when(shortage.simulate(any(), anyInt(), any())).thenReturn(knownMaterialResult());
-        var baseline = simulation.compare(snapshot(saved), List.of("BASELINE_CURRENT"), 7)
-            .scenarios().get(0);
-        assertEquals(0, new BigDecimal("150").compareTo(baseline.kpis().maxResourceUtilization()));
-        assertEquals(1, baseline.kpis().overloadedResourceCount());
-        assertFalse(simulation.compare(snapshot(saved), List.of("BASELINE_CURRENT"), 7).warnings()
-            .contains("NO_BASELINE_UTILIZATION"));
+        var result = simulation.compare(snapshot(saved), List.of("BASELINE_CURRENT"), 7);
+        var baseline = result.scenarios().get(0);
+        assertTrue(baseline.feasible());
+        assertNull(baseline.kpis().maxResourceUtilization());
+        assertEquals(0, baseline.kpis().overloadedResourceCount());
+        assertTrue(result.warnings().contains("NO_BASELINE_UTILIZATION"));
         verifyNoInteractions(workOrderMapper, assembler);
     }
+
+    @Test
+    void publishedBaselineUsesReconciledOwnBookingsRatherThanHypotheticalApsRate() {
+        String firstCalendar = "9007199254740997";
+        String lastCalendar = "9007199254740999";
+        var saved = publishedSchedule(TODAY.plusDays(1), "2",
+            List.of(dayLoad("9007199254741001", TODAY, "1"),
+                dayLoad("9007199254741003", TODAY.plusDays(1), "1")),
+            List.of(booking("9007199254741005", firstCalendar, TODAY, "1"),
+                booking("9007199254741007", lastCalendar, TODAY.plusDays(1), "1")),
+            List.of(activeCalendar(firstCalendar, TODAY, "4", "8"),
+                activeCalendar(lastCalendar, TODAY.plusDays(1), "3", "2"),
+                /** 另一个资源有大量账册记录，但当前计划没有在该资源上预占。 */
+                withField(activeCalendar("9007199254741009", TODAY, "100", "1"),
+                    "resourceId", "13")));
+        when(shortage.simulate(any(), anyInt(), any())).thenReturn(knownMaterialResult());
+        var result = simulation.compare(snapshot(saved), List.of("BASELINE_CURRENT"), 7);
+        var baseline = result.scenarios().get(0);
+        assertTrue(baseline.feasible());
+        assertEquals("EDD", baseline.strategy());
+        assertEquals(TASK_ID, baseline.schedulePreview().get(0).get("taskId"));
+        assertNotNull(baseline.kpis().maxResourceUtilization());
+        assertEquals(0, new BigDecimal("150.0").compareTo(baseline.kpis().maxResourceUtilization()));
+        assertEquals(1, baseline.kpis().overloadedResourceCount());
+        assertFalse(result.warnings().contains("NO_BASELINE_UTILIZATION"));
+        verifyNoInteractions(workOrderMapper, assembler);
+    }
+
+    @Test
+    void foreignPlanOrResourceBookingsCannotCertifyOwnBaselineLoad() {
+        String firstCalendar = "9007199254740997";
+        String lastCalendar = "9007199254740999";
+        var ownBooking = booking("9007199254741005", firstCalendar, TODAY, "1");
+        var lastBooking = booking("9007199254741007", lastCalendar, TODAY.plusDays(1), "1");
+        var calendars = List.of(activeCalendar(firstCalendar, TODAY, "4", "8"),
+            activeCalendar(lastCalendar, TODAY.plusDays(1), "3", "2"));
+        var saved = publishedSchedule(TODAY.plusDays(1), "2",
+            List.of(dayLoad("9007199254741001", TODAY, "1"),
+                dayLoad("9007199254741003", TODAY.plusDays(1), "1")),
+            List.of(ownBooking, lastBooking), calendars);
+        when(shortage.simulate(any(), anyInt(), any())).thenReturn(knownMaterialResult());
+
+        /** 租户、任务、日期和日历均相同，但相邻的雪花 ID 属于另一个计划。 */
+        var foreignPlan = withField(saved, "capacityBookings", List.of(
+            withField(ownBooking, "planId", "9007199254740992"),
+            withField(lastBooking, "planId", "9007199254740992")));
+        /** 真实快照仅包含此计划的预占记录；仅有外部账册记录不足以证明本计划负荷。 */
+        var noOwnBooking = simulation.compare(snapshot(withField(saved, "capacityBookings", List.of())),
+            List.of("BASELINE_CURRENT"), 7);
+        assertNull(noOwnBooking.scenarios().get(0).kpis().maxResourceUtilization());
+        assertTrue(noOwnBooking.warnings().contains("NO_BASELINE_UTILIZATION"));
+        var foreignPlanResult = simulation.compare(snapshot(foreignPlan), List.of("BASELINE_CURRENT"), 7);
+        assertTrue(foreignPlanResult.scenarios().get(0).feasible());
+        assertNull(foreignPlanResult.scenarios().get(0).kpis().maxResourceUtilization());
+        assertTrue(foreignPlanResult.warnings().contains("NO_BASELINE_UTILIZATION"));
+
+        /** 同一天属于本计划的预占记录，不能使用属于另一个资源的日历作为证明。 */
+        var foreignResource = withField(saved, "capacityCalendars", List.of(
+            withField(calendars.get(0), "resourceId", "13"), calendars.get(1)));
+        var foreignResourceResult = simulation.compare(snapshot(foreignResource), List.of("BASELINE_CURRENT"), 7);
+        assertNull(foreignResourceResult.scenarios().get(0).kpis().maxResourceUtilization());
+        assertTrue(foreignResourceResult.warnings().contains("NO_BASELINE_UTILIZATION"));
+        verifyNoInteractions(workOrderMapper, assembler);
+    }
+
+    @Test
+    void savedTaskSpanningHolidayNeedsBookingsOnlyOnItsPositiveLoadDays() {
+        String firstCalendar = "9007199254740997";
+        String lastCalendar = "9007199254740999";
+        LocalDate holiday = TODAY.plusDays(1);
+        LocalDate lastDay = TODAY.plusDays(2);
+        var firstBooking = booking("9007199254741005", firstCalendar, TODAY, "1");
+        var lastBooking = booking("9007199254741007", lastCalendar, lastDay, "1");
+        var calendars = List.of(activeCalendar(firstCalendar, TODAY, "1", "4"),
+            activeCalendar(lastCalendar, lastDay, "1", "4"));
+        var saved = publishedSchedule(lastDay, "2",
+            List.of(dayLoad("9007199254741001", TODAY, "1"),
+                dayLoad("9007199254741003", lastDay, "1")),
+            List.of(firstBooking, lastBooking), calendars);
+        when(shortage.simulate(any(), anyInt(), any())).thenReturn(knownMaterialResult());
+        var noHolidayLoad = simulation.compare(snapshotWithHoliday(saved, holiday),
+            List.of("BASELINE_CURRENT"), 7);
+        assertNotNull(noHolidayLoad.scenarios().get(0).kpis().maxResourceUtilization());
+        assertEquals(0, new BigDecimal("25.0").compareTo(
+            noHolidayLoad.scenarios().get(0).kpis().maxResourceUtilization()));
+        assertFalse(noHolidayLoad.warnings().contains("NO_BASELINE_UTILIZATION"));
+
+        /** 不能根据前后日期的预占，推断中间日期的正负荷也已预占。 */
+        var holidayLoad = withField(saved, "tasks", List.of(bookedTask(lastDay, "3")));
+        holidayLoad = withField(holidayLoad, "taskDayLoads", List.of(
+            dayLoad("9007199254741001", TODAY, "1"),
+            dayLoad("9007199254741011", holiday, "1"),
+            dayLoad("9007199254741003", lastDay, "1")));
+        var missingBooking = simulation.compare(snapshotWithHoliday(holidayLoad, holiday),
+            List.of("BASELINE_CURRENT"), 7);
+        assertNull(missingBooking.scenarios().get(0).kpis().maxResourceUtilization());
+        assertTrue(missingBooking.warnings().contains("NO_BASELINE_UTILIZATION"));
+
+        /** 已记录的正工时假日班次，只有具备自身匹配的预占记录和日历时才可计量。 */
+        String holidayCalendar = "9007199254741013";
+        var fullyBooked = withField(holidayLoad, "capacityBookings", List.of(firstBooking,
+            booking("9007199254741015", holidayCalendar, holiday, "1"), lastBooking));
+        fullyBooked = withField(fullyBooked, "capacityCalendars", List.of(calendars.get(0),
+            activeCalendar(holidayCalendar, holiday, "1", "4"), calendars.get(1)));
+        var withHolidayLoad = simulation.compare(snapshotWithHoliday(fullyBooked, holiday),
+            List.of("BASELINE_CURRENT"), 7);
+        assertNotNull(withHolidayLoad.scenarios().get(0).kpis().maxResourceUtilization());
+        assertEquals(0, new BigDecimal("25.0").compareTo(
+            withHolidayLoad.scenarios().get(0).kpis().maxResourceUtilization()));
+        assertFalse(withHolidayLoad.warnings().contains("NO_BASELINE_UTILIZATION"));
+        verifyNoInteractions(workOrderMapper, assembler);
+    }
+
     private DeliveryContextSnapshot withMaterialEvidence(Map<String, Object> schedule, boolean demand,
                                                          boolean stock, boolean arrival) {
         return new DeliveryContextSnapshot(new DecisionBusinessRef(DecisionBusinessType.WORK_ORDER, 11L, "WO-11"),
@@ -283,7 +449,7 @@ class ErpDecisionApsSimulationTest {
             sim.compare(safe, List.of("BASELINE_CURRENT", "APS_EDD", "APS_CR"), 7));
         assertEquals("NO_ROUTE", failure.getMessage());
         verify(assembler, times(1)).assemble(any(), any(java.util.Collection.class));
-        // 未分类装配异常出现后，不得继续运行 CR 候选。
+        /** 未分类装配异常出现后，不得继续运行 CR 候选。 */
         reset(assembler);
         when(assembler.assemble(any(), any(java.util.Collection.class))).thenThrow(new NullPointerException("bug"));
         assertThrows(NullPointerException.class, () -> simulation.compare(withMaterialEvidence(Map.of(), true, true, true), List.of("APS_EDD"), 7));
@@ -588,7 +754,7 @@ class ErpDecisionApsSimulationTest {
         changed.setRoutingProvider(material -> List.of(newStep));
         when(assembler.assemble(any(), any(java.util.Collection.class))).thenReturn(changed);
         assertStale(() -> withRealShortage().compare(snap, List.of("BASELINE_CURRENT", "APS_EDD"), 7));
-        // 缺失的旧工艺路线不得由新建的实时路线悄然补齐。
+        /** 缺失的旧工艺路线不得由新建的实时路线悄然补齐。 */
         var missing = withApsFacts(snap, Map.of(), snap.capacityByDate(), List.of(), "hash-no-route");
         assertStale(() -> withRealShortage().compare(missing, List.of("APS_EDD"), 7));
     }

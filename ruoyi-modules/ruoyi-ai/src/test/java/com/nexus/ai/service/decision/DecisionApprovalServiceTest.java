@@ -160,6 +160,116 @@ class DecisionApprovalServiceTest {
         verifyNoInteractions(flows);
     }
 
+    @Test void historicalPurchaseCannotApproveOrMarkStaleBeforeContractGate() {
+        readyForApproval();
+        var run = store.requireRun(10L, "000000");
+        var action = historicalPurchaseAction();
+        when(store.listActions(10L)).thenReturn(List.of(action));
+        when(data.checkFreshness(any(), anyString(), any()))
+            .thenReturn(new DecisionFreshnessResult(false, "changed", List.of("stock")));
+
+        var request = approvalRequest();
+        request.setComment("{\"purchase_payload_version\":2}"); /** 客户端文本不能修改冻结动作。 */
+        var error = assertThrows(ServiceException.class, () -> service.approve(10L, request, actor()));
+        assertTrue(error.getMessage().contains("采购动作"));
+        assertEquals("WAITING_APPROVAL", run.getStatus());
+        assertEquals("PROPOSED", action.getApprovalStatus());
+        assertEquals("NOT_STARTED", action.getExecutionStatus());
+        assertEquals(0, run.getVersion());
+        verify(data, never()).checkFreshness(any(), anyString(), any());
+        verify(store, never()).transition(anyLong(), any(), any());
+        verify(store, never()).bindExecutionActor(anyLong(), any());
+        verify(store, never()).setActionApproval(anyLong(), anyString(), anyString(), any(), anyString());
+        verifyNoInteractions(flows);
+    }
+
+    @Test void claimedV2InFrozenPurchasePayloadDoesNotEnableApprovalBeforeP1() {
+        readyForApproval();
+        var action = historicalPurchaseAction();
+        when(store.listActions(10L)).thenReturn(List.of(action));
+        for (String payload : List.of(
+            "{\"runId\":\"10\",\"purchase_payload_version\":\"2\",\"materialLines\":[{\"materialId\":\"139\"}]}",
+            "{\"runId\":\"10\",\"purchase_payload_version\":2.0,\"materialLines\":[{\"materialId\":\"139\"}]}",
+            "{\"runId\":\"10\",\"purchase_payload_version\":2}",
+            "{\"runId\":\"10\",\"purchase_payload_version\":2,\"materialLines\":[{\"materialId\":\"139\",\"base_uom_id\":\"1\",\"requirement_detail_ids\":[\"500\"]}]}")) {
+            action.setPayloadJson(payload);
+            var error = assertThrows(ServiceException.class, () -> service.approve(10L, approvalRequest(), actor()));
+            assertTrue(error.getMessage().contains("采购动作"));
+        }
+        verify(data, never()).checkFreshness(any(), anyString(), any());
+        verify(store, never()).transition(anyLong(), any(), any());
+        verify(store, never()).setActionApproval(anyLong(), anyString(), anyString(), any(), anyString());
+        verifyNoInteractions(flows);
+    }
+
+    @Test void mismatchedPurchaseRunAndTenantAreRejectedBeforeFreshness() {
+        readyForApproval();
+        var action = historicalPurchaseAction();
+        when(store.listActions(10L)).thenReturn(List.of(action));
+        action.setRunId(11L);
+        assertThrows(ServiceException.class, () -> service.approve(10L, approvalRequest(), actor()));
+        action.setRunId(10L);
+        action.setTenantId("another-tenant");
+        assertTrue(assertThrows(ServiceException.class, () -> service.approve(10L, approvalRequest(), actor()))
+            .getMessage().contains("归属"));
+        verify(data, never()).checkFreshness(any(), anyString(), any());
+        verify(store, never()).transition(anyLong(), any(), any());
+        verifyNoInteractions(flows);
+    }
+
+    @Test void purchasePayloadCannotClaimAnotherRunEvenWhenItClaimsV2() {
+        readyForApproval();
+        var action = historicalPurchaseAction();
+        action.setPayloadJson("{\"runId\":\"11\",\"purchase_payload_version\":2,\"materialLines\":[{\"materialId\":\"139\",\"base_uom_id\":\"1\",\"requirement_detail_ids\":[\"500\"]}]}");
+        when(store.listActions(10L)).thenReturn(List.of(action));
+
+        assertTrue(assertThrows(ServiceException.class, () -> service.approve(10L, approvalRequest(), actor()))
+            .getMessage().contains("归属"));
+        verify(data, never()).checkFreshness(any(), anyString(), any());
+        verify(store, never()).transition(anyLong(), any(), any());
+        verifyNoInteractions(flows);
+    }
+    @Test void explicitlyRejectedPurchaseDoesNotBlockApprovedNonPurchaseAction() {
+        readyForApproval();
+        var purchase = historicalPurchaseAction();
+        purchase.setId(21L);
+        var notification = store.listActions(10L).get(0);
+        when(store.listActions(10L)).thenReturn(List.of(notification, purchase));
+        var request = approvalRequest();
+        request.setRejectedActionIds(List.of(21L));
+        when(flows.startExecution(any())).thenReturn(77L);
+
+        assertDoesNotThrow(() -> service.approve(10L, request, actor()));
+        verify(data).checkFreshness(any(), eq("hash-old"), any());
+        verify(store).setActionApproval(20L, "PROPOSED", "APPROVED", actor(), request.getComment());
+        verify(store).setActionApproval(21L, "PROPOSED", "REJECTED", actor(), request.getComment());
+        verify(flows).startExecution(any());
+    }
+
+    @Test void manualRejectionOfHistoricalPurchaseIsStillAvailable() {
+        readyForApproval();
+        var action = historicalPurchaseAction();
+        when(store.listActions(10L)).thenReturn(List.of(action));
+
+        var reviewer = new com.nexus.common.ai.decision.dto.DecisionActor("000000", 1L, "reviewer",
+            java.util.Set.of("ai:decision:approve"));
+        assertDoesNotThrow(() -> service.reject(10L, "旧采购来源未证实", reviewer));
+        verify(store).setActionApproval(20L, "PROPOSED", "REJECTED", reviewer, "旧采购来源未证实");
+        verify(store).transition(10L, DecisionRunStatus.WAITING_APPROVAL, DecisionRunStatus.REJECTED);
+        verify(data, never()).checkFreshness(any(), anyString(), any());
+        verifyNoInteractions(flows);
+    }
+
+    private com.nexus.common.ai.domain.entity.AiDecisionAction historicalPurchaseAction() {
+        var action = new com.nexus.common.ai.domain.entity.AiDecisionAction();
+        action.setId(20L); action.setRunId(10L); action.setTenantId("000000");
+        action.setApprovalStatus("PROPOSED"); action.setExecutionStatus("NOT_STARTED");
+        action.setActionType("CREATE_PURCHASE_REQUISITION_DRAFT");
+        action.setPermissionCode("pu:requisition:add"); action.setExecutorCode("purchaseRequisitionDraft");
+        action.setApprovalRequired("Y");
+        action.setPayloadJson("{\"runId\":\"10\",\"requiredDate\":\"2026-10-01\",\"materialLines\":[{\"materialId\":\"139\",\"gap\":\"14.659\",\"requiredDate\":\"2026-10-01\"}]}");
+        return action;
+    }
     @Test void riskPolicyMayRequireExtraApprovalForAnOtherwiseOptionalNotification() {
         readyForApproval();
         store.listActions(10L).get(0).setApprovalRequired("Y");

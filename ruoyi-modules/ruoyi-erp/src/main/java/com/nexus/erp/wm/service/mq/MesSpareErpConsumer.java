@@ -1,5 +1,6 @@
 package com.nexus.erp.wm.service.mq;
 
+import com.nexus.common.core.exception.ServiceException;
 import com.nexus.common.core.utils.StringUtils;
 import com.nexus.common.mq.constant.QueueConstants;
 import com.nexus.common.redis.utils.RedisUtils;
@@ -8,7 +9,7 @@ import com.nexus.erp.pu.domain.PuPurchaseRequisitionLine;
 import com.nexus.erp.pu.domain.bo.PuPurchaseRequisitionBo;
 import com.nexus.erp.pu.service.IPuPurchaseRequisitionService;
 import com.nexus.erp.wm.service.IWmSpareStockPostingService;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.Queue;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
@@ -28,8 +29,8 @@ import java.util.Map;
  * 消费 {@code QueueConstants.MES_SPARE_ERP_QUEUE}：
  * <ul>
  *   <li>{@code SPARE_STOCK}：调用 {@link IWmSpareStockPostingService} 过账到 {@code wm_material_stock}（幂等）；</li>
- *   <li>{@code SPARE_PURCHASE}：低库存一键请购，复用 ERP 采购申请服务
- *       {@link IPuPurchaseRequisitionService#insertByBo} 落草稿单。</li>
+ *   <li>{@code SPARE_PURCHASE}：2026-09-30 P1 已暂停未接入采购来源账的低库存请购；
+ *       消费入口先提交系统库待处理审计，不创建 Redis 去重占位或采购草稿。</li>
  * </ul>
  * <p>
  * 队列用 {@code queuesToDeclare} 在本模块声明（{@code RabbitMqInitializer} 不在本次改动所有权内），
@@ -37,14 +38,18 @@ import java.util.Map;
  * <p>
  * <b>租户</b>：消息携带 {@code tenantId} 时用 {@code TenantHelper.dynamic} 包裹执行，避免 {@code tenant_id} 落 0。
  * <p>
- * <b>失败可见</b>：处理异常时记录 ERROR 并累计 Redis 重试计数；未达上限抛出以触发重投，
- * 达上限则记录 ERROR 后确认消息（避免毒消息无限重投）——MES 侧过账同步台账保持 PENDING/FAILED 可人工重投。
+ * <b>库存失败可见</b>：库存处理异常时记录 ERROR 并累计 Redis 重试计数；未达上限抛出以触发重投，
+ * 达上限则记录 ERROR 后确认消息（保留原有行为）。
+ * <p>
+ * <b>采购暂停</b>：暂停异常不进入库存重试计数/达上限正常返回路径，重复投递亦不能静默确认成功。
+ * 暂停消息原载荷保存在系统库 mq_dead_letter_record（PENDING）；独立审计事务提交后才正常返回。
+ * 审计不可用则抛错，不按成功确认；存量 Redis 占位不会吞掉暂停消息。
+ * 本仅接收 Map 的监听器显式 AUTO ACK，避免继承全局 MANUAL 却没有 Channel 导致消息永久未确认。
  *
  * @author Nexus
  */
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class MesSpareErpConsumer {
 
     /** 消费重试上限 */
@@ -58,16 +63,47 @@ public class MesSpareErpConsumer {
 
     private final IWmSpareStockPostingService spareStockPostingService;
     private final IPuPurchaseRequisitionService purchaseRequisitionService;
+    private final MesSparePurchasePauseAuditService purchasePauseAuditService;
+
+    @Autowired
+    public MesSpareErpConsumer(IWmSpareStockPostingService stockPostingService,
+                              IPuPurchaseRequisitionService purchaseRequisitionService,
+                              MesSparePurchasePauseAuditService purchasePauseAuditService) {
+        this.spareStockPostingService = stockPostingService;
+        this.purchaseRequisitionService = purchaseRequisitionService;
+        this.purchasePauseAuditService = purchasePauseAuditService;
+    }
+
+    /** 供独立调用方使用的兼容构造器：缺少审计支持时必须拒绝处理，不能默认放行。 */
+    public MesSpareErpConsumer(IWmSpareStockPostingService stockPostingService,
+                              IPuPurchaseRequisitionService purchaseRequisitionService) {
+        this(stockPostingService, purchaseRequisitionService, null);
+    }
 
     /**
      * 监听备件过账队列
      *
      * @param payload 消息体（Map，字段见 {@link MesSpareErpMessage}）
      */
-    @RabbitListener(queuesToDeclare = @Queue(name = QueueConstants.MES_SPARE_ERP_QUEUE, durable = "true"))
+    @RabbitListener(ackMode = "AUTO", containerFactory = "mesSpareRabbitListenerContainerFactory",
+        queuesToDeclare = @Queue(name = QueueConstants.MES_SPARE_ERP_QUEUE, durable = "true"))
     public void onMessage(Map<String, Object> payload) {
         MesSpareErpMessage message = MesSpareErpMessage.fromMap(payload);
-        if (message == null || StringUtils.isBlank(message.getBizKey())) {
+        /**
+         * 既定的采购暂停不属于消息代理的暂时性重试故障；必须先将解码后的原始载荷保存到
+         * 已提交的审计记录，再返回以进行 AUTO ACK。
+         */
+        if (message != null && MesSpareErpMessage.BIZ_PURCHASE.equals(message.getBizType())) {
+            if (purchasePauseAuditService == null) {
+                throw new ServiceException("P1 已暂停 MES 备件低库存请购：来源账未接入且采购消息审计不可用，不创建采购草稿、不确认消息");
+            }
+            Long auditId = purchasePauseAuditService.persist(payload);
+            if (auditId == null || auditId <= 0) {
+                throw new ServiceException("采购暂停消息审计未返回有效凭据，不得确认消息");
+            }
+            log.warn("MES备件采购已暂停并留待人工处理，未创建采购申请: auditId={}", auditId);
+            return;
+        }        if (message == null || StringUtils.isBlank(message.getBizKey())) {
             log.error("备件过账消息非法(缺少 bizKey), 丢弃: payload={}", payload);
             return;
         }
@@ -109,9 +145,11 @@ public class MesSpareErpConsumer {
     }
 
     /**
-     * 低库存一键请购：复用 ERP 采购申请服务生成草稿单
+     * 历史低库存一键请购实现，原用于复用 ERP 采购申请服务生成草稿。
+     * 当前消费入口对该类采购消息先暂停并提交系统库待处理审计，
+     * 不会进入此方法创建 Redis 占位或采购草稿；此历史实现不代表采购门禁已开放。
      *
-     * @param message 消息
+     * @param message 备件采购消息
      */
     private void handlePurchaseRequest(MesSpareErpMessage message) {
         String dedupKey = PR_DEDUP_PREFIX + message.getBizKey();

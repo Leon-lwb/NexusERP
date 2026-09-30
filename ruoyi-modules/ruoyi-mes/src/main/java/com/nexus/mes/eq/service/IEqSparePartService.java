@@ -12,7 +12,7 @@ import java.math.BigDecimal;
 import java.util.List;
 
 /**
- * MES备件主数据 Service 业务层接口
+ * MES 备件主数据业务层服务接口
  * <p>
  * <b>账本口径（MES-EQ-04）</b>：ERP 仓储 {@code wm_material_stock} 为唯一实物账本，MES 侧
  * {@code eq_spare_part.current_stock} 降级为派生冗余缓存；出入库统一经
@@ -129,7 +129,7 @@ public interface IEqSparePartService {
     List<EqSparePartVo> selectLowStock();
 
     /**
-     * 低库存一键生成 ERP 采购申请（经 MQ 交由 ERP 采购申请服务落单）
+     * 低库存一键请购入口：逐需求占用及同物料护栏 未接入前暂停发布采购消息。
      *
      * @param spareIds 备件ID集合；为空时取当前全部低库存备件
      * @param remark   备注
